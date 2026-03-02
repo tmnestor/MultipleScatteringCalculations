@@ -1,14 +1,48 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article}
+
+% --- Encoding & fonts ---
 \usepackage[T1]{fontenc}
-\usepackage[latin9]{inputenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpazo}              % Palatino for text and math
+\usepackage[scaled=0.85]{helvet}   % Helvetica for sans-serif
+\usepackage{microtype}             % Improved typographic refinement
+
+% --- Mathematics ---
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{slantsc}
 
-\oddsidemargin=14.6mm
-\evensidemargin=14.6mm
-\textwidth=150mm
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
 
-% Macros from the thesis
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Nestor (1996) --- Thesis Extracts}
+\fancyhead[R]{\small\itshape Sections 2.1.2, 3.1 \& 3.2}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section formatting ---
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\vspace{0.3em}\hrule\vspace{0.5em}]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape\bfseries}{}{0em}{}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+
+% --- Hyperlinks (must be loaded last, before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black, citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros from the thesis ---
 \newcommand{\CB}[1]{\mbox{\boldmath$\cal #1$\unboldmath}}
 \newcommand{\bmi}[1]{\mbox{\boldmath$\mit #1$\unboldmath}}
 \newcommand{\rf}[1]{\stackrel{\scriptscriptstyle _{\,\,\circ}}{ #1}}
@@ -16,21 +50,24 @@
 
 \begin{document}
 
+% --- Title block ---
+\thispagestyle{plain}
 \begin{center}
-{\Large Sections 2.1.2 \& 3.1: Governing Equations and\\
-The Free Space Green's Tensor}\\[1.5em]
-{\large T.M. Nestor}\\
-{\it Research School of Earth Sciences, Australian National University}
+\vspace*{1em}
+{\LARGE\bfseries Governing Equations and Representations of\\[0.3em]
+the Free Space Green's Tensor}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
 \end{center}
 
-\vspace{1em}
-\noindent\rule{\textwidth}{0.4pt}\\[0.5em]
-Extracted from Chapter 2 of: {\it Seismic Wave Propagation in Complex Media: Summing the Multiple
-Scattering Series}, PhD Thesis, ANU (1996).\\[0.5em]
-\noindent\rule{\textwidth}{0.4pt}
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\small\textbf{Source:}\enspace Extracted from Chapters 2 and 3 of:
+\textit{Seismic Wave Propagation in Complex Media: Summing the
+Multiple Scattering Series}, PhD Thesis, ANU (1996).
+Sections 2.1.2, 3.1, and 3.2 are reproduced here.}}
 
 
-\subsection*{2.1.2\quad The Governing Equations}
+\section*{2.1.2\quad The Governing Equations}
 
 
 Assuming that the depth below the free surface is measured by the
@@ -38,12 +75,12 @@ $z-$coordinate, the forced elastic displacement ${\bmi  u} = {({u}_{z},{u}_{x},{
 and traction vector ${\bmi  t} = {({\tau}_{zz},{\tau}_{xz},{\tau}_{yz})}^{T }$ on a
 fixed depth plane (i.e. $z=const.$) with unit
 normal ${\bmi  e}_{z}$,  are grouped into the $6$-vector
-\begin{eqnarray} \label{bdef}
-\lefteqn{{\bmi  b}  (z,x,y)= {  \left[ \begin{array}{cccccc}{ u}_{ z}
-(z,x,y),&{u}_{x}(z,x,y),&{u}_{y}(z,x,y),&{\tau}_{zz}(z,x,y),&{\tau}_{xz}(z,x,y),&
-{\tau}_{yz}(z,x,y)\end{array} \right]}^{  T }.}\nonumber\\
-&&
-\end{eqnarray}
+\begin{equation} \label{bdef}
+{\bmi  b}(z,x,y)= {\left[ \begin{array}{ccc}{ u}_{ z}
+(z,x,y),&{u}_{x}(z,x,y),&{u}_{y}(z,x,y),\\
+{\tau}_{zz}(z,x,y),&{\tau}_{xz}(z,x,y),&
+{\tau}_{yz}(z,x,y)\end{array} \right]}^{  T }.
+\end{equation}
 The governing equation for time harmonic elastic wave motion in an {\em isotropic  medium\/}
 is then a
 set of $6$ coupled partial differential equations (first order with respect
@@ -54,9 +91,8 @@ to the depth coordinate) which may be written in the operator notation
 \end{equation}
 where ${\bmi  b}$ is given in (\ref{bdef})  and
 ${\CB A}$ is defined as
-\begin{eqnarray} \label{Adef0}
-\lefteqn{{\CB A}({\bmi x};{\partial }_{x},{\partial }_{y})=}\nonumber\\
-&&\left[{\begin{array}{cccccc}
+\begin{equation} \label{Adef0}
+{\CB A}({\bmi x};{\partial }_{x},{\partial }_{y})=\left[{\begin{array}{cccccc}
 0&- \gamma {\partial }_{  x}&  - \gamma {\partial }_{  y}&  a&0&0\\
 -{ \partial }_{x}&0&0&0&b&0\\
 -{\partial }_{y}&0&0&0&0&b\\
@@ -68,7 +104,7 @@ ${\CB A}$ is defined as
    - \rho {\omega }^{  2}  -{ \partial }_{y} \zeta {\partial }_{  y}
  -{ \partial }_{x} \mu {\partial }_{  x}&  -{ \partial }_{y} \gamma &  0&0\end{array}}
  \right]
-\end{eqnarray}
+\end{equation}
 and the material parameters in (\ref{Adef0}) are defined in Table \ref{ATable}.
 
 \begin{table}[h]
@@ -110,10 +146,8 @@ where ${\bmi b}(z,x,{k}_{y})$ is now governed by
 \tilde{\bmi  f}
 \end{equation}
 with
-\begin{eqnarray} \label{Adef}
-\lefteqn{{\CB A}(z,x;{\partial }_{x},i {k}_{y})
-=}\nonumber\\
-&&\left[{\begin{array}{cccccc}
+\begin{equation} \label{Adef}
+{\CB A}(z,x;{\partial }_{x},i {k}_{y})=\left[{\begin{array}{cccccc}
 0&- \gamma {\partial }_{  x}&  -i \gamma {  k}_{  y}&  a&0&0\\ -{ \partial
 }_{x}&0&0&0&b&0\\ -i{k}_{y}&0&0&0&0&b\\ - \rho {\omega }^{
 2}&  0&0&0&-{ \partial }_{x}&-i{k}_{y}\\ 0&- \rho {\omega
@@ -125,7 +159,7 @@ x}  + \mu {  k}_{  y}^{  2}&
 }_{x} \mu &  - \rho {\omega }^{  2}  + \zeta
 {  k}_{  y}^{  2}  -{ \partial }_{x} \mu
 {\partial }_{  x}&  -i{k}_{y} \gamma &  0&0\end{array}}\right]
-\end{eqnarray}
+\end{equation}
 and
 \begin{equation} \label{kysynf}
 \tilde{\bmi f}=\int_{R} \, {\rm d}{k}_{y}\,{\bmi f}(z,x,y)
@@ -226,11 +260,8 @@ Consistent with the decomposition of the material properties, we
 +{{\mit \Delta} {\bmi A}}({\bmi x};{\partial }_{x},{\partial }_{y})
 \end{equation}
 where
-\begin{eqnarray} \label{Adefref}
-\lefteqn{
-{\rf{\bmi A}}(z,x;{\partial }_{x},{k}_{y})
-=}\nonumber\\
-&&\left[{\begin{array}{cccccc}
+\begin{equation} \label{Adefref}
+{\rf{\bmi A}}(z,x;{\partial }_{x},{k}_{y})=\left[{\begin{array}{cccccc}
 0&- {\rf \gamma} {\partial }_{  x}&  -i {\rf \gamma} {  k}_{  y}&  {\rf a}&0&0\\ -{ \partial
 }_{x}&0&0&0&{\rf b}&0\\ -i{k}_{y}&0&0&0&0&{\rf b}\\ - {\rf \rho} {\omega }^{
 2}&  0&0&0&-{ \partial }_{x}&-i{k}_{y}\\ 0&- {\rf \rho} {\omega
@@ -243,17 +274,13 @@ x}  + {\rf \mu} {  k}_{  y}^{  2}&
 {  k}_{  y}^{  2}  -{ \partial }_{x} {\rf \mu}
 {\partial }_{  x}&  -i{k}_{y} {\rf \gamma} &
 0&0\end{array}}\right]
-\end{eqnarray}
+\end{equation}
 where ${\rf \gamma}$ is the {\em reference medium\/} value of ${\gamma}$
 from Table \ref{ATable} and similar definitions hold for the remaining
 {\em reference\/} material parameters
 in (\ref{Adefref}). Also,
-\begin{eqnarray} \label{dAdef}
-\lefteqn{
-{{\mit \Delta} {\bmi A}}(z,x;{\partial }_{x},{k}_{y})
-=}\\
-&&\!\!\!\!\!\!\!\!\!\!\!\!
-\left[{\begin{array}{cccccc}
+\begin{equation} \label{dAdef}
+{{\mit \Delta} {\bmi A}}(z,x;{\partial }_{x},{k}_{y})=\left[{\begin{array}{cccccc}
 0&- {{\mit \Delta} \gamma} {\partial }_{  x}&  -i {{\mit \Delta} \gamma} {  k}_{  y}&
 {{\mit \Delta} a}&0&0\\0&0&0&0&{{\mit \Delta} b}&0\\ 0&0&0&0&0&{{\mit \Delta} b}\\ - {{\mit \Delta} \rho} {\omega }^{
 2}&  0&0&0&0&0\\ 0&- {{\mit \Delta} \rho} {\omega
@@ -264,8 +291,8 @@ x}  + {{\mit \Delta} \mu} {  k}_{  y}^{  2}&
 0&-i{k}_{y} {{\mit \Delta} \chi} {\partial }_{  x}  -i{k}_{y}{ \partial
 }_{x} {{\mit \Delta} \mu} &  - {{\mit \Delta} \rho} {\omega }^{  2}  + {{\mit \Delta} \zeta }
 {  k}_{  y}^{  2}  -{ \partial }_{x} {{\mit \Delta} \mu}
-{\partial }_{  x}&  -i{k}_{y} {{\mit \Delta} \gamma} &  0&0\end{array}}\right]\nonumber
-\end{eqnarray}
+{\partial }_{  x}&  -i{k}_{y} {{\mit \Delta} \gamma} &  0&0\end{array}}\right]
+\end{equation}
 with the material contrast parameters in (\ref{dAdef}) defined in Table \ref{contrastTable}.
 
 \begin{table}[h]
@@ -309,11 +336,9 @@ L}(z,x;{\partial }_{z},{\partial }_{x},{k}_{y})$ when no misunderstanding
 is likely.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \newpage
 
-\subsection*{Chapter 3: Representations of the time harmonic elastic wave Green's tensor}
+\section*{Chapter 3: Representations of the Time Harmonic Elastic Wave Green's Tensor}
 
 We recall from Chapter 2 that
  the material
@@ -383,7 +408,7 @@ deleterious effects of the numerical instability inherent in
 numerical evaluation of (\ref{InvLaplace}) is presented in
 {\em Davies \& Martin\/}~(1979).
 
-\subsubsection*{3.1\quad The free space, time harmonic,  elastic wave Green's tensor}
+\subsection*{3.1\quad The Free Space, Time Harmonic, Elastic Wave Green's Tensor}
 Given the 2-D vectors
 \[
 {\bmi  x}\equiv (z,x), \quad {\bmi  x}^{\prime}\equiv (z^{\prime},x^{\prime})
@@ -444,15 +469,15 @@ of the wavevector,
 so that the transverse {\em Fourier\/} transform of the governing equation
 (\ref{GreenDef})
 may be written as
-\begin{eqnarray}	\label{FLdef}
-\lefteqn{\langle { {k}_{x}} | {\CB L }| { {k}_{x}}^{\prime}\rangle
+\begin{align}	\label{FLdef}
+\langle { {k}_{x}} | {\CB L }| { {k}_{x}}^{\prime}\rangle
 \langle { {k}_{x}}^{\prime}| x\rangle\langle x| \,\rf{\bmi
-G}({\bmi x};{\bmi x}^{\prime};k_y)}\nonumber\\
-&&\equiv{\bmi  L}(z,{k}_{x},{k}_{y}) \,\rf{\bmi  G}(z,{k}_{x};z^{\prime},x^{\prime};k_y)\nonumber\\
-&& \equiv \left[\partial_z -{\bmi  A}({k}_{x},{k}_{y})\,  \right]\,\rf{\bmi
+G}({\bmi x};{\bmi x}^{\prime};k_y)&\nonumber\\
+&\equiv{\bmi  L}(z,{k}_{x},{k}_{y}) \,\rf{\bmi  G}(z,{k}_{x};z^{\prime},x^{\prime};k_y)\nonumber\\
+&\equiv \left[\partial_z -{\bmi  A}({k}_{x},{k}_{y})\,  \right]\,\rf{\bmi
 G}(z,{k}_{x};z^{\prime},x^{\prime};k_y)={\bmi  I}_{6}
 	\delta(z-z^{\prime}) \, \frac{\exp(-i {k}_{x} x^{\prime})}{\sqrt{2 \pi}}
-\end{eqnarray}
+\end{align}
 where the {\em Fourier domain system matrix\/} $\langle { {k}_{x}} | {\CB A }|
 { {k}_{x}}^{\prime}\rangle= \delta({ {k}_{x}}-{ {k}_{x}}^{\prime}) {\bmi
 A}({k}_{x},{k}_{y})$ is defined
@@ -481,14 +506,12 @@ A}({k}_{x},{k}_{y}) \equiv {\bf 0}_6
 where ${\bmi  J}_6$ is the {\em canonically symplectic\/} array.
 The {\em diagonal array\/} ${\bmi
 \Lambda}$ {\em of eigenvalues\/}  of ${\bmi  A}({k}_{x},{k}_{y})$ is defined as
-\begin{eqnarray}	\label{eigDef}
-\lefteqn{	{\bmi \Lambda}({k}_{x},{k}_{y}) =}\\
-&&\!\!\!\!\!\!\!\!\!\!\!\!
-i \ \mbox{diag} \left[{k}_{z,P
+\begin{equation}	\label{eigDef}
+{\bmi \Lambda}({k}_{x},{k}_{y}) = i \ \mbox{diag} \left[{k}_{z,P
 	}({k}_{x},{k}_{y}),{k}_{z,S }({k}_{x},{k}_{y}),{k}_{z,H }({k}_{x},{k}_{y}),
 	-{k}_{z,P }({k}_{x},{k}_{y}),-{k}_{z,S }({k}_{x},{k}_{y}),
-	-{k}_{z,H }({k}_{x},{k}_{y}) \right] \nonumber
-\end{eqnarray}
+	-{k}_{z,H }({k}_{x},{k}_{y}) \right]
+\end{equation}
 where
 \begin{equation}	\label{kzcDef}
 	{k}_{z,c}({k}_{x},{k}_{y}) = \left\{
@@ -520,16 +543,14 @@ spectral representation\/}:
 	\Lambda }({k}_{x},{k}_{y}){\bmi  D}_{z}^{ -1}({k}_{x},{k}_{y});
 \end{equation}
 where the {\em eigen matrix\/} ${\bmi  D}_{z}({k}_{x},{k}_{y})$ is  defined as
-\begin{eqnarray} \label{Ddef}
-\lefteqn{{\bmi D}_{z}(k_{x},k_{y})=}\\
-&&\!\!\!\!\!\!\!\!\!\!\!\!
-\left[\begin{array}{cccccc}
+\begin{equation} \label{Ddef}
+{\bmi D}_{z}(k_{x},k_{y})=\left[\begin{array}{cccccc}
 \left|+,P, k_{x},k_{y}  \right\rangle&\left|+,S, k_{x},k_{y}
 \right\rangle&\left|+,H, k_{x},k_{y}  \right\rangle&
 \left|-,P, k_{x},k_{y}  \right\rangle&\left|-,S, k_{x},k_{y}
 \right\rangle&\left|-,H, k_{x},k_{y}  \right\rangle
-\end{array}\right]\nonumber
-\end{eqnarray}
+\end{array}\right]
+\end{equation}
 with:
 \begin{itemize}
 \item the $\left|\pm,P, k_{x},k_{y}  \right\rangle$ eigen-vectors
@@ -604,9 +625,9 @@ To begin, it follows from (\ref{eigDef}) and (\ref{kzcDef}) that ${\bmi
 \Lambda}(-{k}_{x},-{k}_{y})={\bmi \Lambda} ({k}_{x},{k}_{y})$,
 so that
 \begin{eqnarray*}
-{\bmi  D}_{z}(-{k}_{x},-{k}_{y}){\bmi \Lambda} ({k}_{x},{k}_{y})&=&
+{\bmi  D}_{z}(-{k}_{x},-{k}_{y}){\bmi \Lambda} ({k}_{x},{k}_{y})&=
 {\bmi  A}(-{k}_{x},-{k}_{y}){\bmi  D}_{z}(-{k}_{x},-{k}_{y})\\
-&=&{\bmi  J}_{6}{\bmi
+&={\bmi  J}_{6}{\bmi
 A}^{T}({k}_{x},{k}_{y}){\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})
 \end{eqnarray*}
 which implies upon rearrangement that
@@ -685,24 +706,24 @@ k}=(k_{z},k_{x})$, so that
 \end{equation}
 Using the spectral representation (\ref{specA}) in  (\ref{FzLdef1}),
 we get
-\begin{eqnarray} \label{InvLDef0}
+\begin{align} \label{InvLDef0}
 \rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y)
-&=&{\bmi  D}_{z}({k}_{x},{k}_{y})
+&={\bmi  D}_{z}({k}_{x},{k}_{y})
 {\left[i\, {\bmi  I}_{6}\, {k}_{z}\, -\, i\,   {\bmi \Lambda} \right]}^{-1}
 {\bmi  D}_{z}^{-1}({k}_{x},{k}_{y}) \frac{\exp({-i {\bmi k}\cdot {\bmi x}^{\prime}})}{2 \pi}
 \nonumber\\
-&=&{\bmi  D}_{z}({k}_{x},{k}_{y})
+&={\bmi  D}_{z}({k}_{x},{k}_{y})
 {\left[{\bmi  J}_{6}\, {k}_{z}\, - \,{\bmi  J}_{6}\, {\bmi \Lambda}
 \right]}^{-1}
 {\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})\,{\bmi  J}_6
 \frac{\exp(-i {\bmi k}\cdot {\bmi x}^{\prime})}{2 \pi}\nonumber\\
-&=&{\bmi  D}_{z}({k}_{x},{k}_{y})
+&={\bmi  D}_{z}({k}_{x},{k}_{y})
 \left[{\begin{array}{cc}{\bf 0}_{3}&-{\bmi W}^{+}\\
 {\bmi W}^{-}&{\bf 0}_{3}\end{array}}\right]
 {\bmi
 D}_{z}^{T}(-{k}_{x},-{k}_{y})
 \,{\bmi  J}_6 \frac{\exp(-i {\bmi k}\cdot {\bmi x}^{\prime})}{{2 \pi}}
-\end{eqnarray}
+\end{align}
 where
 \[
 {\bmi W}^{\pm}=\mbox{diag}
@@ -719,18 +740,18 @@ ${\CB F}^{-1}\, [\cdot]({\bmi x}) \equiv \frac{1}{{2 \pi}}
 it follows from (\ref{InvLDef0}),
 that $\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)$
 may be written
-\begin{eqnarray} \label{InvLDef}
-\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)&=&{\CB F}^{-1}\, \left[\rf{\bmi  G}({\bmi
+\begin{align} \label{InvLDef}
+\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)&={\CB F}^{-1}\, \left[\rf{\bmi  G}({\bmi
 k};{\bmi x}^{\prime};k_y) \right]({\bmi x}) =\frac{1}{4 \pi^2}
 \int_{R^2 } {\rm d}{\bmi k} \exp \left[i {\bmi k}\cdot ({\bmi x}-{\bmi
 x}^{\prime})\right]\nonumber\\
-&&\times {\bmi  D}_{z}({k}_{x},{k}_{y})
+&\quad\times {\bmi  D}_{z}({k}_{x},{k}_{y})
 \left[{\begin{array}{cc}{\bf 0}_{3}&-{\bmi W}^{+}\\
 {\bmi W}^{-}&{\bf 0}_{3}\end{array}}\right]{\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})
 \,{\bmi  J}_6
-\end{eqnarray}
+\end{align}
 
-\subsubsection*{3.1.1\quad The classical up/down, plane wave Green's tensor}
+\subsubsection*{3.1.1\quad The Classical Up/Down, Plane Wave Green's Tensor}
 We now evaluate the $k_{z}$ integral in (\ref{InvLDef}) using the calculus of
 residues [e.g. {\em Aki \& Richards\/}~(1980)], which is possible provided
 the $z$ component of  $({\bmi x}-{\bmi x}^{\prime})$ in  (\ref{InvLDef})
@@ -748,14 +769,14 @@ residue contributions, associated with
 ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small upgoing}}}}$
 group velocity, to get
 %%% FIX: use multline to prevent the long equation from overflowing the page
-\begin{multline} \label{Gzres}
-\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)=\frac{- i}{2 \pi}
+\begin{align} \label{Gzres}
+\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)&=\frac{- i}{2 \pi}
 \int_{R} {\rm d}{ k}_{x} \exp \left[i { k}_{x} ({ x}-{
-x}^{\prime})\right] \\
-\times\, {\bmi  D}_{z}({k}_{x},{k}_{y})
+x}^{\prime})\right] \nonumber\\
+&\quad\times\, {\bmi  D}_{z}({k}_{x},{k}_{y})
 {\bmi Q}^{z}(z;z^{\prime}){\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})
 \,{\bmi  J}_6
-\end{multline}
+\end{align}
 where
 ${\bmi Q}^{z}(z;z^{\prime})$ in (\ref{Gzres}),
 is defined  as
@@ -777,5 +798,565 @@ The imposition of the {\em radiation boundary conditions\/} employed here,
 follows {\em Lighthill}~(1960). Alternatively,  we may
  introduce {\em attenuation\/} to move the
 poles off the integration contour [e.g. {\em Aki \& Richards\/}~(1980)].
+
+\newpage
+
+\subsection*{3.2\quad Discrete Plane Wave Representations of the Free Space Elastodynamic Green's Tensor}
+
+\subsubsection*{3.2.1\quad The $z$ Splitting}
+
+Basic results concerning the discrete Fourier (DFT) approximation to the inverse
+Fourier transform over horizontal wavenumber of a scalar function,
+ are summarized in {\sc Box} $\bf 3.2$ and a simple extension of the
+ basic theory to incorporate Filon quadrature, while exploiting the speed
+ of the FFT algorithm is presented in {\sc Box} $\bf 3.3$.
+We will employ these results to develop a DFT approximation to (\ref{Gzres}).
+We assume the $N_k=2 M$ element {\em Fourier lattice\/}
+\begin{equation} \label{pspec}
+\left\{
+ {k}_{j} =j {\mit \Delta} k_{x} \ |\  j=-M,\cdots ,M-1
+\right\}
+\end{equation}
+where ${\mit \Delta} k_{x} =2 \pi  j/L_{x}$ and   $L_{x}$ defines the {\em fundamental spatial period\/}
+of the representation.
+We may then approximate (\ref{Gzres}) by the {\em discrete
+plane wave sum\/}
+\begin{align} \label{Gdef5}
+\rf{\bmi G}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)&=\frac{- i\,{\mit \Delta} {k}_{x}}{2 \pi}
+\sum\limits_{{j=-M}}^{j=M-1}
+\nonumber\\
+&\quad\times
+\exp \left[i {k}_{j} ({ x}-{
+x}^{\prime})\right] {\bmi  D}_{z}({k}_{j},{k}_{y})
+{\bmi Q}^{z}({k}_{j};z;z^{\prime}){\bmi  D}_{z}^{T}(-{k}_{j},-{k}_{y})
+\,{\bmi  J}_6
+\end{align}
+The discrete representation (\ref{Gdef5}) is equivalent to assuming that the
+transverse dependence of the wavefield is both {\em  bandlimited\/}
+(since $N_k$ is
+finite) and periodically repeated (since ${\mit \Delta} {k}_{x}$ is finite).
+
+
+The next step will be to rewrite the discrete sum (\ref{Gdef5}) as an
+equivalent matrix operation. To this end, we define the $N_k-$element
+diagonal,
+horizontal-wavevector array:
+\begin{equation} \label{gKx}
+{\bf  k}_{x} =\mbox{diag}\left[0,
+{\mit \Delta} k_{x},\cdots, (M -1){\mit \Delta} k_{x},
+-M {\mit \Delta} k_{x},\cdots,-{\mit \Delta} k_{x},\right];
+\end{equation}
+the $N_k-$element
+diagonal,
+vertical-wavevector array
+\begin{equation} \label{gKz}
+{\bf  k}_{z,c} =\mbox{diag}\left[{ k}_{z,c}(0),{ k}_{z,c}({\mit \Delta} k_{x}),\cdots,
+{ k}_{z,c}((M-1){\mit \Delta} k_{x}),
+{ k}_{z,c}(-M{\mit \Delta} k_{x}),
+\cdots, { k}_{z,c}(-{\mit \Delta} k_{x})\right], \quad c\in\{P,S,H\}
+\end{equation}
+and the $N_k-$element {\em Fourier vector\/}
+\begin{equation} \label{Fdef}
+{\bmi F}(x;{\bf k}_{x})=
+\left[\begin{array}{ccc} 1&, \cdots, &1 \end{array}
+\right]\cdot{\rm e}^{i\,
+{\bf k}_{x}\,x}.
+\end{equation}
+It is important to note that ${\bmi F}(x;{\bf k}_{x})$ as defined in
+(\ref{Fdef}) is an $N_k-$ row vector, even though ${\bf k}_{x}$ is an
+$N_k-$diagonal matrix.
+
+
+Using the newly defined arrays (\ref{gKx})--(\ref{Fdef}),
+we can  rewrite the {\em discrete plane wave\/}
+approximation (\ref{Gdef5}) to the $6 \times 6$ Green's tensor in the equivalent matrix
+form
+\begin{align} \label{superG}
+\rf{\bmi G}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)
+&=- i\,\left({\bmi I}_6\otimes
+{\bmi F}(x;{\bf k}_{x})  \right) {\bmi  D}_{z}({\bf k}_{x},{k}_{y})\nonumber\\
+&\quad\times
+{\bmi Q}^{z}({\bf k}_{x};z;z^{\prime}){\bmi  D}_{z}^{T}(-{\bf k}_{x},-{k}_{y})
+\,\left({\bmi I}_6\otimes {\bmi F}^{T}(x^{\prime};-{\bf k}_{x})  \right)\,{\bmi  J}_6
+\end{align}
+where:\newline
+the {\em Kronecker product\/}
+$\,\left({\bmi I}_6\otimes {\bmi F}(x^{\prime};{\bf k}_{x})  \right)$ is
+a $  6 \times 6 N_k$ array,
+${\bmi F}^{H}(x;{\bf k}_{x})$ is the {\em Hermitian transpose\/} of the
+Fourier vector ${\bmi F}(x;{\bf k}_{x})$ defined in (\ref{Fdef})
+(so that ${\bmi F}^{H}(x;{\bf k}_{x})\equiv {\bmi F}^{T}(x;-{\bf
+k}_{x})$);\newline
+ the $(6N_k)\times (6N_k)$ matrix analogue of (\ref{Ddef}) is defined
+as
+\begin{equation} \label{Dsuperdef}
+{\bmi D}_{z}({\bf k}_{x},k_{y})=\left[\begin{array}{cccccc}
+\left|+,P, {\bf k}_{x},k_{y}  \right\rangle&\left|+,S, {\bf k}_{x},k_{y}
+\right\rangle&\left|+,H, {\bf k}_{x},k_{y}  \right\rangle&
+\left|-,P, {\bf k}_{x},k_{y}  \right\rangle&\left|-,S, {\bf k}_{x},k_{y}
+\right\rangle&\left|-,H, {\bf k}_{x},k_{y}  \right\rangle
+\end{array}\right]
+\end{equation}
+in terms of
+\begin{itemize}
+\item the $6 N_k \times N_k$ $P$-wave partition
+\begin{equation} \label{PeigenSuper}
+\left|\pm,P, {\bf k}_x,k_{y}  \right\rangle=
+\sqrt{\frac{{\mit \Delta} k_{x}}{{4 \pi \rho {\omega
+}^{  2}{\bf  k}_{
+z, P }}}}\,\left[\begin{array}{c} \pm i\,{\bf k}_{z,P}\\i\,{\bf k}_{x}\\
+i\,k_{y}\,{\bmi I}\\
+  \rho \,\left( 2\,{\beta^2}\,{{\bf k}_{x}^2} + ( 2\,{\beta^2}\,{k_{y}^2} -
+     {\omega^2}){\bmi I} \right) \\ \mp 2\,\rho\,{\beta^2}\,{\bf k}_{x}\,{\bf k}_{z,P} \\
+  \mp 2\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{z,P} \end{array}\right]
+\end{equation}
+
+\item  the $6 N_k \times N_k$ $SV$-wave partition
+\begin{equation} \label{SVeigenSuper}
+\left|\pm,S, {\bf k}_x,k_{y}  \right\rangle=\frac{\omega }{\beta \hat{K}_{S}}\,
+\sqrt{\frac{{\mit \Delta} k_{x}}{{4 \pi \rho {\omega
+}^{  2}{\bf  k}_{
+z, S }}}}\,\left[\begin{array}{c}
+i\,{\bf k}_{x}\\
+\mp i\,{\bf k}_{z,S}\\ {\bf 0} \\
+\mp 2\,\rho\,{\beta^2}\,{\bf k}_{x}\,{\bf k}_{z,S} \\
+  \rho \,\left(({\omega^2} - {\beta^2}\,{k_{y}^2}) {\bmi I}-2\,{\beta^2}\,{{\bf k}_{x}^2}   \right) \\
+  -\rho\,{\beta^2}\,k_{y}\,{\bf k}_{x} \end{array}\right]
+\end{equation}
+
+\item the $6 N_k \times N_k$ $SH$-wave partition
+\begin{equation} \label{SHeigenSuper}
+\left|\pm,H, {\bf k}_x, k_{y}  \right\rangle=\frac{1 }{\hat{K}_{H}}\,
+\sqrt{\frac{{\mit \Delta} k_{x}}{{4 \pi \rho {\omega
+}^{  2}{\bf  k}_{
+z, H }}}}\,\left[\begin{array}{c}
+\mp k_{y}\,{\bf k}_{z,H} \\-k_{y}\,{\bf k}_{x} \\
+  \hat{K}_{H}^2 {\bmi I}\\
+-2\,i\,\rho \,{\beta^2}\,k_{y}\,{{\bf k}_{z,H}^2}\\
+  \mp 2\,i\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{x}\,{\bf k}_{z,H} \\
+  \pm i\,\rho\,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2}
+  \right)\,{\bf k}_{z,H}  \end{array}\right]
+\end{equation}
+
+\end{itemize}
+The $(6N_k)\times (6N_k)$ {\em plane wave propagator\/}
+${\bmi Q}^{z}({\bf k}_{x};z;z^{\prime})$ in (\ref{superG}),
+is defined  as
+\begin{equation} \label{Qdef}
+{\bmi Q}^{z}({\bf k}_x;z;z^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3N_k}&H(z-{z}^{\prime}){\bmi E}({\bf k}_x;z;{z}^{\prime})\\
+H(z^{\prime}-{z}){\bmi E}({\bf k}_x;z;{z}^{\prime})&{\bf 0}_{3N_k}\end{array}}\right]
+\end{equation}
+where the $(3N_k)\times (3N_k)$ {\em vertical phase shift array\/} is
+defined as
+\[
+{\bmi E}({\bf k}_x;z;{z}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{\bf k}_{z,P}|z-{z}^{\prime}|}&{\bf 0}_{N_k}&{\bf 0}_{N_k}\\
+{\bf 0}_{N_k}&{\rm e}^{
+i{\bf k}_{z,S}|z-{z}^{\prime}|}&{\bf 0}_{N_k}\\ {\bf 0}_{N_k}&{\bf 0}_{N_k}&{\rm e}^{
+i{\bf k}_{z,H}|z-{z}^{\prime}|}\end{array}}\right] ,
+\]
+in terms of the diagonal wavevector array ${\bf k}_{z,c}, c\in\{P,S,H
+\}$ of (\ref{gKz}).
+
+It will be convenient in later applications,  to split (\ref{superG}) into the product
+\[
+\rf{\bmi G}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)=
+\rf{\bmi P}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)\cdot{\bmi J}_6
+\]
+where ${\bmi J}_6$ is the $6\times 6$ {\em canonically symplectic\/} array and
+\begin{align} \label{superP}
+\rf{\bmi P}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)
+&=- i\,\left({\bmi I}_6\otimes
+{\bmi F}(x;{\bf k}_{x})  \right) {\bmi  D}_{z}({\bf k}_{x},{k}_{y})\nonumber\\
+&\quad\times
+{\bmi Q}^{z}({\bf k}_{x};z;z^{\prime}){\bmi  D}_{z}^{T}(-{\bf k}_{x},-{k}_{y})
+\,\left({\bmi I}_6\otimes {\bmi F}^{T}(x^{\prime};-{\bf k}_{x})  \right).
+\end{align}
+might be called the {\em propagator\/}, for the want of a better name. The
+propagator is an entity in itself for most numerical applications
+considered here.
+
+The representation (\ref{superG}) (or equivalently, (\ref{superP})) is readily extensible
+to the plane stratified problem.
+
+\subsubsection*{3.2.2\quad The $x$ Splitting}
+
+
+Recalling the definition (\ref{Ddef}) for the columns of the eigen-matrix
+${\bmi  D}_{z}$, (\ref{InvLDef}) may be rewritten as
+\begin{align}\label{grep2}
+\rf{\bmi  G}({\bmi  x};{{\bmi  x}}^{\prime};k_y)
+&=\sum\limits_{c\in \{P,S,H\}}
+{\frac{1}{4{ \pi }^{2}}}\int_{{R}^{2}} {\rm d}{\bmi k} \exp \left[{i {\bmi k}  \cdot
+  ({\bmi x}-{\bmi x}^{\prime})}\right]\nonumber\\
+&\quad\times\Biggl[\frac{
+  \left|-,c, k_{x},k_{y}  \right\rangle\otimes \left|+,c, -k_{x},-k_{y}  \right\rangle
+  }{{k}_{z}+{k}_{z, c }({k}_{x})}\nonumber\\
+&\qquad\qquad{}-\frac{
+\left|+,c, k_{x},k_{y}  \right\rangle\otimes \left|-,c, -k_{x},-k_{y}  \right\rangle
+  }{{k}_{z}-{k}_{z, c }({k}_{x})}\Biggr]\,{\bmi J}_{6}
+\nonumber\\
+&=
+\rf{\bmi  G}_{P}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{S}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{H}({\bmi  x};{{\bmi  x}}^{\prime};k_y)
+\end{align}
+where  $\otimes$ is the {\em tensor product\/}.
+We will ultimately evaluate the integrals in (\ref{grep2}) using the
+residues at the simple poles, where
+\begin{equation} \label{dispersion}
+{k}^2_{z}+{k}^2_{x}+{k}^2_{y}=\frac{\omega^2}{c^2},\quad \mbox{for}\quad c\in\{P,S,H\}.
+\end{equation}
+Hence,  (\ref{grep2}) may be replaced by an expression that is
+{\em equivalent at these poles\/}. Introducing the partial differential
+operators
+\begin{align} \label{Labdef}
+\begin{array}{lll}
+{\bmi L}_{P}=&\qquad{\bmi L}_{S}=&\qquad{\bmi L}_{H}=\\
+\left[\begin{array}{c}
+\partial_{z} \\
+\partial_{x} \\
+\partial_{y} \\
+2 \mu \partial_{zz} - {\lambda \omega^{2}\over \alpha^2}\\
+    2 \mu \partial_{xz} \\
+   2 \mu \partial_{yz}
+\end{array}\right]&\qquad
+\frac{\omega }{\beta \hat{K}_{S}}\,
+\left[\begin{array}{c}
+\partial_{x} \\-\partial_{z} \\ 0 \\
+2 \mu \partial_{xz}\\
+   \mu (-\partial_{zz} + \partial_{xx}) \\
+   \mu \partial_{xy}
+\end{array}\right]&\qquad
+\frac{1 }{\hat{K}_{H}}\,
+\left[\begin{array}{c}
+   \partial_{yz} \\
+\partial_{xy} \\
+{\omega^{2}\over \beta^2} + \partial_{yy} \\
+ 2 \mu \partial_{yzz}\\
+    2 \mu \partial_{xyz} \\
+   \mu ({\omega^{2}\over \beta^2}\partial_{z} + 2 \partial_{yyz})
+\end{array}\right]
+\end{array}
+\end{align}
+$\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y)$  in  (\ref{grep2}) may be replaced
+with the {\em equivalent\/} expression
+\begin{align}\label{grepc}
+\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y)
+&= {\frac{1}{8{ \pi }^{2} \rho \omega^2}}\int_{{R}^{2}} {\rm d}{\bmi k}\,
+\frac{
+{\bmi L}_{c} \otimes {\bmi  L}_{c}^{\prime}
+\left(
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]\right)
+}{ {k}_{z, c }({k}_{x})\,[{k}_{z}+{k}_{z, c }({k}_{x})]} {\bmi J}_{6}\nonumber\\
+&\quad -
+{\frac{1}{8  { \pi }^{2}\rho \omega^2}}\int_{{R}^{2}} {\rm d}{\bmi k}\,
+\frac{{\bmi L}_{c} \otimes {\bmi  L}_{c}^{\prime}\left(
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]\right)
+}{{k}_{z, c }({k}_{x})\, [{k}_{z}-{k}_{z, c }({k}_{x})]} {\bmi J}_{6},\nonumber\\
+&\hspace{20em}
+c\in\{ P, S , H\};\nonumber\\
+&= \frac{1}{4{ \pi }^{2}\rho \omega^2}
+\int_{{R}^{2}} {\rm d}{\bmi k}\, {\bmi L}_{c} \otimes {\bmi  L}_{c}^{\prime}
+\frac{
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]
+}{ \hat{K}^{2}_{ c } - {k}^{2}_{z} - {k}^{2}_{x}} {\bmi J}_{6}
+\end{align}
+where we have used the algebraic relation (\ref{dispersion}) and
+ the differential operator ${\bmi  L}_{c}^{\prime}$ operates on the
+${\bmi  x}^{\prime}$ coordinate.
+
+
+Assuming that $x \not = x^{\prime}$ in (\ref{grepc}) we may  evaluate the $k_x$ integral in
+that equation using the calculus of residues to get
+\begin{align} \label{grep3x}
+\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y)&=
+\frac{-i}{2{ \pi }\rho \omega^2}
+\int_{{R}} {\rm d}{k}_z \,{\bmi L}_{c } \otimes {\bmi  L}_{c}^{\prime}\nonumber\\
+&\quad\times\frac{\exp \left[{i {k}_z  ({z}-{z}^{\prime})}\right]
+\exp \left[{i {k}_{x,c}({k}_z,{k}_y)  |{x}-{x}^{\prime}|}\right]
+}{ 2\,{k}_{x,c}({k}_z,{k}_y)}{\bmi J}_{6},
+\end{align}
+with
+\begin{equation}	\label{kxcDef}
+	{k}_{x,c}({k}_{z},{k}_{y}) = \left\{
+	\begin{array}{c}
+	\sqrt {\hat{ K}_{c}^{2}({k}_{y})\ -\ {k}_{z}^{2}}\ \ \ \ \ \ |{k}_{x}|\ <\
+	|\hat{K}_{c}({k}_{y})|\\
+	i\sqrt {{k}_{z}^{ 2}\ -\ \hat{ K}_{c}^{2}({k}_{y})} \ \ \ \ |{k}_{x}|\ \ge   \
+	|\hat{K}_{c}({k}_{y})|
+\end{array}\right.
+\end{equation}
+and $\hat{ K}_{c}({k}_{y})$ was given by (\ref{Kdef}).
+Using (\ref{grep3x}) in (\ref{grep2})
+we get
+\begin{align} \label{GxGRep}
+\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y)&=
+\frac{-i}{2{ \pi }\rho \omega^2}\,\sum\limits_{c\in \{P,S,H\}}\nonumber\\
+&\quad\times
+\int_{{R}} {\rm d}{k}_z \,{\bmi L}_{c } \otimes {\bmi  L}_{c}^{\prime}
+\frac{\exp \left[{i {k}_z  ({z}-{z}^{\prime})}\right]
+\exp \left[{i {k}_{x,c}({k}_z,{k}_y)  |{x}-{x}^{\prime}|}\right]
+}{ 2\,{k}_{x,c}({k}_z,{k}_y)}{\bmi J}_{6}
+\end{align}
+
+Using the definition of the
+partial differential operators ${\bmi L}_{c }$ from (\ref{Labdef}) in (\ref{grep2}) and
+performing the relevant spatial differentiations  we get
+\begin{align} \label{Gxres}
+\rf{\bmi G}({\bmi x};{\bmi x}^{\prime};k_y)&=\frac{- i}{2 \pi}
+\int_{R} {\rm d}{ k}_{z} \exp \left[i { k}_{z} ({ z}-{
+z}^{\prime})\right]\nonumber\\
+&\quad\times\, {\bmi  D}_{x}({k}_{z},{k}_{y})
+{\bmi Q}^{x}(k_z;x;x^{\prime}){\bmi  D}_{x}^{T}(-{k}_{z},-{k}_{y})
+\,{\bmi  J}_6
+\end{align}
+provided $x \not = x^{\prime}$, where:\newline
+\begin{equation} \label{Dxdef}
+{\bmi D}_{x}(k_{z},k_{y})=\left[\begin{array}{cccccc}
+\overline{\left|+,P, k_{z},k_{y}  \right\rangle}&\overline{\left|+,S, k_{z},k_{y}
+\right\rangle}&\overline{\left|+,H, k_{z},k_{y}  \right\rangle}&
+\overline{\left|-,P, k_{z},k_{y}  \right\rangle}&\overline{\left|-,S, k_{z},k_{y}
+\right\rangle}&\overline{\left|-,H, k_{z},k_{y}  \right\rangle}
+\end{array}\right]
+\end{equation}
+where:
+\begin{itemize}
+\item the $\overline{\left|\pm,P, k_{z},k_{y}  \right\rangle}$ states
+are the   ${\stackrel{\mbox{\small rightgoing}}{{}_{\mbox{\small
+leftgoing}}}}$  $P-$waves
+\begin{equation} \label{Pxeigen}
+\overline{\left|\pm,P, k_{x,P},k_{y}  \right\rangle}=\frac{1}{\sqrt{2 \rho {\omega }^{  2}{  k}_{
+x, P }}}\,\left[\begin{array}{c}
+i\,{k}_{z}\\ \pm i\,k_{x,P}(k_x,k_y)\\i\,k_{y}\\
+  \rho \,\left( 2\,{\beta^2}\,{k_{x,P}^2(k_x,k_y)} + 2\,{\beta^2}\,{k_{y}^2} -
+     {\omega^2} \right) \\ \mp 2\,\rho\,{\beta^2}\,k_{x,P}(k_x,k_y)\,{k}_{z} \\
+  - 2\,\rho\,{\beta^2}\,k_{y}\,{k}_{z} \end{array}\right]
+\end{equation}
+
+\item the $\overline{\left|\pm,S, k_{z},k_{y}  \right\rangle}$ states
+are the   ${\stackrel{\mbox{\small rightgoing}}{{}_{\mbox{\small
+leftgoing}}}}$  quasi-$SV-$waves
+\begin{equation} \label{SVxeigen}
+\overline{\left|\pm,S, k_{z},k_{y}  \right\rangle}=\frac{\omega}{\beta\,\hat{K}_{S }\,
+\sqrt{2 \rho {\omega }^{  2}  {  k}_{
+x, S }}}\,
+\left[\begin{array}{c}
+\pm i\,k_{x,S}(k_x,k_y)\\
+- i\,{k}_{z}\\0\\
+\mp 2\,\rho\,{\beta^2}\,k_{x,S}(k_x,k_y)\,{k}_{z} \\
+  \rho \,\left({\omega^2} -2\,{\beta^2}\,{k_{x,S}^2(k_x,k_y)} - {\beta^2}\,{k_{y}^2}  \right) \\
+  \mp \rho\,{\beta^2}\,k_{x,S}(k_x,k_y)\,k_{y} \end{array}\right]
+\end{equation}
+
+\item the $\overline{\left|\pm,H, k_{z},k_{y}  \right\rangle}$ states
+are the   ${\stackrel{\mbox{\small rightgoing}}{{}_{\mbox{\small
+leftgoing}}}}$  quasi-$SH-$waves
+\begin{equation} \label{SHxeigen}
+\overline{\left|\pm,H, k_{z},k_{y}  \right\rangle}=
+\frac{1}{\hat{K}_{H }\, \sqrt{2 \rho {\omega }^{  2}  {  k}_{
+x, H }}} \,\left[\begin{array}{c}
+- k_{y}\,{k}_{z} \\\mp k_{x,H}(k_x,k_y)\,k_{y} \\
+  \hat{K}_{H}^2\\
+2\,i\,k_{y}\,\rho \,\left({\beta^2}\,{k_{x,H}^2(k_x,k_y)} +
+     {\beta^2}\,{k_{y}^2} - {\omega^2} \right) \\
+  \mp  2\,i\,\rho\,{\beta^2}\,k_{x,H}(k_x,k_y)\,k_{y}\,{k}_{z}\\
+   i\,{k}_{z}\,\rho \,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2} \right) \end{array}\right]
+\end{equation}
+\end{itemize}
+the {\em horizontal plane wave propagator\/} ${\bmi Q}^{x}(k_z;x;x^{\prime})$ in (\ref{Gxres}),
+is defined  as
+\begin{equation} \label{Qxdef}
+{\bmi Q}^{x}(k_z;x;x^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3}&H(x-{x}^{\prime}){\bmi E}(k_z;x;{x}^{\prime})\\
+H(x^{\prime}-{x}){\bmi E}(k_z;x;{x}^{\prime})&{\bf 0}_{3}\end{array}}\right]
+\end{equation}
+with the {\em horizontal phase shift\/} array
+\[
+{\bmi E}(k_z;x;{x}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{ k}_{x,P}(k_{z})|x-{x}^{\prime}|}&{ 0}&{ 0}\\
+{ 0}&{\rm e}^{
+i{ k}_{x,S}(k_{z})|x-{x}^{\prime}|}&{ 0}\\ { 0}&{ 0}&{\rm e}^{
+i{ k}_{x,H}(k_{z})|x-{x}^{\prime}|}\end{array}}\right] ,
+\]
+and $H(\cdot)$ is the {\em Heaviside step function\/}.
+
+
+For computational purposes, we must employ a {\em discrete plane wave\/}
+or {\em Fourier lattice\/} version of the wavenumber integral
+(\ref{Gxres}). The development closely parallels that of \S 3.2.1.
+We will now derive a {\em discrete plane wave\/} version of
+(\ref{Gxres}), and we note that we
+will employ (\ref{Gxres}) only in the special case where $z=z^{\prime}$
+so that $\exp \left[i \overline{k}_{j} ({ z}-{
+z}^{\prime})\right]\equiv 1$ and consequently
+\begin{align} \label{Gxres0}
+\rf{\bmi G}({ x};{ x}^{\prime};k_y)&=\frac{- i}{2 \pi}
+\int_{R} {\rm d}{ k}_{z}\,  {\bmi  D}_{x}({k}_{z},{k}_{y})\nonumber\\
+&\quad\times\,{\bmi Q}^{x}(k_z;x;x^{\prime}){\bmi  D}_{x}^{T}(-{k}_{z},-{k}_{y})
+\,{\bmi  J}_6, \quad z=z^{\prime}, \ x\not=x^{\prime}
+\end{align}
+so there will be no {\em
+aliasing\/} or {\em wraparound\/} in the $z-$coordinate. This observation
+is crucial to the success in the intended application of $\rf{\bmi G}({\bmi
+x};{\bmi x}^{\prime};k_y)$ from (\ref{Gxres0}) to problems with a
+$z-$stratification in material properties.
+
+
+Given the $\overline{N}_k=2 \overline{M}+1$ element {\em Fourier lattice\/}
+\begin{equation} \label{pxspec}
+\left\{
+ \overline{k}_{j} =j {\mit \Delta} k_{z} \ |\  j=-\overline{M},\cdots
+ ,\overline{M}
+\right\}
+\end{equation}
+where ${\mit \Delta} k_{z} =2 \pi  j/L_{z}$ and   $L_{z}$
+controls the  {\em wavenumber sampling rate,\/} we may approximate
+(\ref{Gxres0}) by the {\em discrete
+plane wave sum\/}
+\begin{align} \label{Gxdef5}
+\rf{\bmi G}\!{}^{x}({ x};{ x}^{\prime};k_y)&=\frac{- i\,{\mit \Delta} {k}_{z}}{2 \pi}
+\sum\limits_{{j=-\overline{M}}}^{j=\overline{M}}
+{\bmi  D}_{x}(\overline{k}_{j},{k}_{y})\nonumber\\
+&\quad\times\,{\bmi Q}^{x}(\overline{k}_{j};x;x^{\prime}){\bmi  D}_{x}^{T}(-\overline{k}_{j},-{k}_{y})
+\,{\bmi  J}_6
+\end{align}
+The discrete representation (\ref{Gxdef5}) is equivalent to assuming that the
+$z-$dependence of the wavefield is {\em  bandlimited\/} (since $\overline{M}$ is
+finite), which is certainly not the case in the limit $x \leftarrow
+x^{\prime}$.
+
+
+The next step will be to rewrite the discrete sum (\ref{Gxdef5}) as an
+equivalent matrix operation. To this end, we define the diagonal wave
+vector arrays:
+\begin{equation} \label{gbarKz}
+{\bf  k}_{z} =\mbox{diag}\left[{-\overline{M} {\mit \Delta} k_{z},\cdots,-{\mit
+\Delta} k_{z},0,
+{\mit \Delta} k_{z},\cdots, \overline{M} {\mit \Delta} k_{z}}\right];
+\end{equation}
+\begin{equation} \label{gbarKx}
+{\bf  k}_{x,c} =\mbox{diag}\left[{{ k}_{x,c}(-\overline{M} {\mit \Delta} k_{z}),\cdots,
+{ k}_{x,c}(-{\mit \Delta} k_{z}),
+{ k}_{x,c}(0),
+{ k}_{z,c}({\mit \Delta} k_{z}),\cdots, { k}_{x,c}(\overline{M}{\mit \Delta} k_{z})}\right]
+\end{equation}
+and the $\overline{N}_k-$element {\em projection \/} vector
+\begin{equation} \label{Fbardef}
+\overline{\bmi F}(0)=\left[\begin{array}{ccccc}
+1& \cdots &
+1& \cdots &
+1\end{array}\right].
+\end{equation}
+
+
+We can  rewrite the {\em discrete plane wave\/}
+approximation (\ref{Gxdef5}) to the $6 \times 6$ Green's tensor in the equivalent matrix
+form
+\begin{align} \label{superGx}
+\rf{\bmi G}\!{}^{x}({ x};{ x}^{\prime};k_y)
+&=- i\,
+\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\nonumber\\
+&\quad\times
+{\bmi Q}^{x}({\bf k}_{z};x;x^{\prime}){\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)\,{\bmi  J}_6
+\end{align}
+where:\newline
+the $(6\bar{N}_k)\times (6\bar{N}_k)$ matrix analogue of (\ref{Dxdef}) is defined
+as
+\begin{equation} \label{Dxsuperdef}
+{\bmi D}_{x}({\bf k}_{z},k_{y})=\left[\begin{array}{cccccc}
+\overline{\left|+,P, {\bf k}_{z},k_{y}  \right\rangle}&\overline{\left|+,S, {\bf k}_{z},k_{y}
+\right\rangle}&\overline{\left|+,H, {\bf k}_{z},k_{y}  \right\rangle}&
+\overline{\left|-,P, {\bf k}_{z},k_{y}  \right\rangle}&\overline{\left|-,S, {\bf k}_{z},k_{y}
+\right\rangle}&\overline{\left|-,H, {\bf k}_{z},k_{y}  \right\rangle}
+\end{array}\right]
+\end{equation}
+in terms of
+\begin{itemize}
+\item the $6 \overline{N}_k \times \overline{N}_k$ $P$-wave partition
+\begin{equation} \label{PxeigenSuper}
+\overline{\left|\pm,P, {\bf k}_z,k_{y}  \right\rangle}=
+\sqrt{\frac{{\mit \Delta} k_{z}}{{4 \pi \rho {\omega
+}^{  2}{\bf  k}_{
+x, P }}}}
+\left[\begin{array}{c} i\,{\bf k}_{z}\\ \pm i\,{\bf k}_{x,P}\\
+i\,k_{y}\,{\bmi I}\\
+  \rho \,\left( 2\,{\beta^2}\,{{\bf k}_{x,P}^2} + ( 2\,{\beta^2}\,{k_{y}^2} -
+     {\omega^2}){\bmi I} \right) \\ \mp 2\,\rho\,{\beta^2}\,{\bf k}_{x,P}\,{\bf k}_{z} \\
+  - 2\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{z} \end{array}\right]
+\end{equation}
+
+\item  the $6 \overline{N}_k \times \overline{N}_k$ $SV$-wave
+\begin{equation} \label{SVxeigenSuper}
+\overline{\left|\pm,S, {\bf k}_z,k_{y}  \right\rangle}=
+\frac{\omega }{\beta \hat{K}_{S}}\,\sqrt{\frac{{\mit \Delta} k_{z}}{{4 \pi \rho {\omega
+}^{  2}{\bf  k}_{
+x, S }}}}\,\left[\begin{array}{c}
+\pm i\,{\bf k}_{x,S}\\
+- i\,{\bf k}_{z}\\ {\bf 0} \\
+\mp 2\,\rho\,{\beta^2}\,{\bf k}_{x,S}\,{\bf k}_{z} \\
+  \rho \,\left(({\omega^2} - {\beta^2}\,{k_{y}^2}) {\bmi
+  I}-2\,{\beta^2}\,{{\bf k}_{x,S}^2}   \right) \\
+ \mp \rho\,{\beta^2}\,k_{y}\,{\bf k}_{x,S} \end{array}\right]
+\end{equation}
+
+\item the $6 \overline{N}_k \times \overline{N}_k$ $SH$-wave partition
+\begin{equation} \label{SHxeigenSuper}
+\overline{\left|\pm,H, {\bf k}_z, k_{y}  \right\rangle}=\frac{1 }{\hat{K}_{H}}\,
+\sqrt{\frac{{\mit \Delta} k_{z}}{{4 \pi \rho {\omega
+}^{  2}{\bf  k}_{
+x, H }}}}\,\left[\begin{array}{c}
+- k_{y}\,{\bf k}_{z} \\ \mp k_{y}\,{\bf k}_{x,H} \\
+  \hat{K}_{H}^2 {\bmi I}\\
+-2\,i\,\rho \,{\beta^2}\,k_{y}\,{{\bf k}_{z}^2}\\
+  \mp 2\,i\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{x,H}\,{\bf k}_{z} \\
+   i\,\rho\,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2}
+  \right)\,{\bf k}_{z}  \end{array}\right]
+\end{equation}
+
+\end{itemize}
+where  ${\bf  k}_{x}$ and ${\bf  k}_{z,c}$ were given in
+(\ref{gbarKx}) and (\ref{gbarKz}) respectively.
+
+The $(6\bar{N}_k)\times (6\bar{N}_k)$ {\em plane wave propagator\/}
+${\bmi Q}^{x}({\bf k}_{z};x;x^{\prime})$ in (\ref{superGx}),
+is defined  as
+\begin{equation} \label{gQxdef}
+{\bmi Q}^{x}({\bf k}_z;x;x^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3\bar{N}_k}&H(x-{x}^{\prime}){\bmi E}({\bf
+k}_z;x;{x}^{\prime})\\
+H(x^{\prime}-{x}){\bmi E}({\bf k}_z;x;{x}^{\prime})&{\bf 0}_{3\bar{N}_k}\end{array}}\right]
+\end{equation}
+where the $(3\bar{N}_k)\times (3\bar{N}_k)$ {\em vertical phase shift array\/} is
+defined as
+\[
+{\bmi E}({\bf k}_z;x;{x}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{\bf k}_{z,P}|x-{x}^{\prime}|}&{\bf 0}_{\overline{N}_k}&{\bf 0}_{\overline{N}_k}\\
+{\bf 0}_{\overline{N}_k}&{\rm e}^{
+i{\bf k}_{z,S}|x-{x}^{\prime}|}&{\bf 0}_{\overline{N}_k}\\ {\bf 0}_{\overline{N}_k}&{\bf 0}_{\overline{N}_k}&
+{\rm e}^{
+i{\bf k}_{z,H}|x-{x}^{\prime}|}\end{array}}\right] ,
+\]
+in terms of the diagonal wavevector array ${\bf k}_{x,c}, c\in\{P,S,H
+\}$ of (\ref{gbarKx}).
+
+For computational efficiency, we split (\ref{superGx}) into
+\[
+\rf{\bmi G}\!{}^{x}({ x};{ x}^{\prime};k_y)=\rf{\bmi P}\!{}^{x}({ x};{ x}^{\prime};k_y){\bmi  J}_6
+\]
+where
+\begin{align} \label{superPx}
+\rf{\bmi P}\!{}^{x}({ x};{ x}^{\prime};k_y)
+&=- i\,
+\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\nonumber\\
+&\quad\times
+{\bmi Q}^{x}({\bf k}_{z};x;x^{\prime}){\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)
+\end{align}
+
 
 \end{document}
