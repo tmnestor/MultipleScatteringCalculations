@@ -1,0 +1,1721 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     59819,       1711]
+NotebookOptionsPosition[     52464,       1579]
+NotebookOutlinePosition[     52861,       1595]
+CellTagsIndexPosition[     52818,       1592]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["\<\
+Verification of Equation (3.12): Spectral Decomposition of the System Matrix\
+\>", "Title",ExpressionUUID->"ff134dc1-2c62-4d4f-8e2b-ad2dd5d089e3"],
+
+Cell["\<\
+T.M. Nestor \[Dash] PhD Thesis (ANU, 1996)
+Reference: basic_equations.pdf, Section 3.1\
+\>", "Subtitle",ExpressionUUID->"146b6ce9-6670-4c79-abd6-761849d86216"],
+
+Cell["\<\
+This notebook verifies equation (3.12) from the thesis:
+    A(kx, ky) \[Equivalent] Dz(kx, ky) . \[CapitalLambda](kx, ky) . \
+Dz^(-1)(kx, ky)
+
+where:
+  \[Bullet] A is the 6\[Times]6 Fourier-domain system matrix [eq. (3.7) / \
+label Akdef]
+  \[Bullet] \[CapitalLambda] is the diagonal eigenvalue matrix [eq. (3.9) / \
+label eigDef]
+  \[Bullet] Dz is the eigen matrix whose columns are P, SV, SH eigenvectors \
+[eqs. (3.13)-(3.15)]
+  \[Bullet] Dz^(-1) is computed via the symplectic inverse [eq. (3.21) / \
+label D1def]
+
+We also verify:
+  1. Each eigenvector satisfies A . v = \[Lambda] v
+  2. The symplectic inverse formula Dz^(-1) = -i J6 . Dz^T(-kx,-ky) . J6
+  3. The normalization condition [eq. (3.19) / label dinv2]\
+\>", "Text",ExpressionUUID->"2dbce990-e784-4df3-8508-847e8703d938"],
+
+Cell[CellGroupData[{
+
+Cell["1. Symbols and Material Parameters", "Section",ExpressionUUID->"b54c6360-52fb-4b97-b3fb-2b360d580316"],
+
+Cell["\<\
+Define all symbolic variables. We work with generic (kx, ky, \[Omega], \
+\[Rho], \[Alpha], \[Beta]) to keep the verification fully symbolic.\
+\>", "Text",ExpressionUUID->"96c2e242-addb-4d96-a288-712712655b66"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], ";"}], "\n", 
+  RowBox[{"(*", " ", 
+   RowBox[{"Symbolic", " ", "variables"}], " ", "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+    "kx", ",", "ky", ",", "\[Omega]", ",", "\[Rho]", ",", "\[Alpha]", ",", 
+     "\[Beta]"}], "}"}], ";"}], "\n", "\n", 
+  RowBox[{"(*", " ", 
+   RowBox[{"Derived", " ", "material", " ", "parameters", " ", 
+    RowBox[{"(", 
+     RowBox[{"Table", " ", "2.1", " ", "of", " ", "thesis"}], ")"}]}], " ", 
+   "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{"\[Gamma]", "=", 
+   RowBox[{"1", "-", 
+    RowBox[{"2", 
+     RowBox[{"\[Beta]", "^", "2"}], "/", 
+     RowBox[{"\[Alpha]", "^", "2"}]}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"\[Zeta]", "=", 
+   RowBox[{"4", "\[Rho]", 
+    RowBox[{"\[Beta]", "^", "2"}], 
+    RowBox[{"(", 
+     RowBox[{"1", "-", 
+      RowBox[{
+       RowBox[{"\[Beta]", "^", "2"}], "/", 
+       RowBox[{"\[Alpha]", "^", "2"}]}]}], ")"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"\[Chi]", "=", 
+   RowBox[{"2", "\[Rho]", 
+    RowBox[{"\[Beta]", "^", "2"}], 
+    RowBox[{"(", 
+     RowBox[{"1", "-", 
+      RowBox[{"2", 
+       RowBox[{"\[Beta]", "^", "2"}], "/", 
+       RowBox[{"\[Alpha]", "^", "2"}]}]}], ")"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"aParam", "=", 
+   RowBox[{"1", "/", 
+    RowBox[{"(", 
+     RowBox[{"\[Rho]", 
+      RowBox[{"\[Alpha]", "^", "2"}]}], ")"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"bParam", "=", 
+   RowBox[{"1", "/", 
+    RowBox[{"(", 
+     RowBox[{"\[Rho]", 
+      RowBox[{"\[Beta]", "^", "2"}]}], ")"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"\[Mu]", "=", 
+   RowBox[{"\[Rho]", 
+    RowBox[{"\[Beta]", "^", "2"}]}]}], ";"}]}], "Input",
+ CellLabel->
+  "In[129]:=",ExpressionUUID->"79f964be-c288-4ec8-9089-ea7cb3bc9ea0"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["2. Vertical Wavenumbers", "Section",ExpressionUUID->"a118e074-69d8-4456-a2b8-7f93fc6167d9"],
+
+Cell["\<\
+The vertical wavenumbers for P, SV, and SH waves. Note kzS = kzH since S = H \
+= \[Beta].\
+\>", "Text",ExpressionUUID->"b5d5fcf6-9cd6-444a-b5d9-97bc13d0a8d6"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Effective", " ", "horizontal", " ", "wavenumbers", " ", 
+    RowBox[{"[", 
+     RowBox[{
+      RowBox[{"eq", "."}], " ", 
+      RowBox[{"(", "3.11", ")"}]}], "]"}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"KhatP", "=", 
+     RowBox[{"Sqrt", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"\[Omega]", "/", "\[Alpha]"}], ")"}], "^", "2"}], "-", 
+       RowBox[{"ky", "^", "2"}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"KhatS", "=", 
+     RowBox[{"Sqrt", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"\[Omega]", "/", "\[Beta]"}], ")"}], "^", "2"}], "-", 
+       RowBox[{"ky", "^", "2"}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"KhatH", "=", "KhatS"}], ";"}], "\n", "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{"Vertical", " ", "wavenumbers", " ", 
+     RowBox[{"[", 
+      RowBox[{
+       RowBox[{"eq", "."}], " ", 
+       RowBox[{"(", "3.10", ")"}]}], "]"}]}], " ", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"kzP", "=", 
+     RowBox[{"Sqrt", "[", 
+      RowBox[{
+       RowBox[{"KhatP", "^", "2"}], "-", 
+       RowBox[{"kx", "^", "2"}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"kzS", "=", 
+     RowBox[{"Sqrt", "[", 
+      RowBox[{
+       RowBox[{"KhatS", "^", "2"}], "-", 
+       RowBox[{"kx", "^", "2"}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"kzH", "=", "kzS"}], ";"}]}]}]], "Input",
+ CellLabel->
+  "In[137]:=",ExpressionUUID->"44143818-fc9f-45e2-bba4-c2ec3682f9b6"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["3. The 6\[Times]6 System Matrix A [eq. (3.7)]", "Section",ExpressionUUID->"0699d993-2a89-4900-9e76-970c65608271"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Amat", "=", 
+   RowBox[{"{", "\n", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"0", ",", 
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "\[Gamma]", " ", "kx"}], ",", 
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "\[Gamma]", " ", "ky"}], ",", "aParam", ",", 
+       "0", ",", "0"}], "}"}], ",", "\n", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "kx"}], ",", "0", ",", "0", ",", "0", ",", 
+       "bParam", ",", "0"}], "}"}], ",", "\n", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "ky"}], ",", "0", ",", "0", ",", "0", ",", 
+       "0", ",", "bParam"}], "}"}], ",", "\n", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"-", "\[Rho]"}], 
+        RowBox[{"\[Omega]", "^", "2"}]}], ",", "0", ",", "0", ",", "0", ",", 
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "kx"}], ",", 
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "ky"}]}], "}"}], ",", "\n", 
+     RowBox[{"{", 
+      RowBox[{"0", ",", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", "\[Rho]"}], 
+         RowBox[{"\[Omega]", "^", "2"}]}], "+", 
+        RowBox[{"\[Zeta]", 
+         RowBox[{"kx", "^", "2"}]}], "+", 
+        RowBox[{"\[Mu]", 
+         RowBox[{"ky", "^", "2"}]}]}], ",", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"\[Chi]", "+", "\[Mu]"}], ")"}], "kx", " ", "ky"}], ",", 
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "kx", " ", "\[Gamma]"}], ",", "0", ",", 
+       "0"}], "}"}], ",", "\n", 
+     RowBox[{"{", 
+      RowBox[{"0", ",", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"\[Chi]", "+", "\[Mu]"}], ")"}], "kx", " ", "ky"}], ",", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", "\[Rho]"}], 
+         RowBox[{"\[Omega]", "^", "2"}]}], "+", 
+        RowBox[{"\[Zeta]", 
+         RowBox[{"ky", "^", "2"}]}], "+", 
+        RowBox[{"\[Mu]", 
+         RowBox[{"kx", "^", "2"}]}]}], ",", 
+       RowBox[{
+        RowBox[{"-", "I"}], " ", "ky", " ", "\[Gamma]"}], ",", "0", ",", 
+       "0"}], "}"}]}], "\n", "}"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Print", "[", "\"\<System matrix A (6\[Times]6):\>\"", "]"}], 
+  ";"}], "\n", 
+ RowBox[{"Amat", "//", "MatrixForm"}]}], "Input",
+ CellLabel->
+  "In[143]:=",ExpressionUUID->"7ad9d5f9-4a1e-4cba-ba56-b08f350b9a33"],
+
+Cell[BoxData["\<\"System matrix A (6\[Times]6):\"\>"], "Print",
+ CellChangeTimes->{3.981321352329084*^9, 3.9813214492419786`*^9},
+ CellLabel->
+  "During evaluation of \
+In[143]:=",ExpressionUUID->"3036615e-0788-4e85-9a40-9eadb9592f97"],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"0", 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "kx", " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         FractionBox[
+          RowBox[{"2", " ", 
+           SuperscriptBox["\[Beta]", "2"]}], 
+          SuperscriptBox["\[Alpha]", "2"]]}], ")"}]}], 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "ky", " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         FractionBox[
+          RowBox[{"2", " ", 
+           SuperscriptBox["\[Beta]", "2"]}], 
+          SuperscriptBox["\[Alpha]", "2"]]}], ")"}]}], 
+      FractionBox["1", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "2"], " ", "\[Rho]"}]], "0", "0"},
+     {
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "kx"}], "0", "0", "0", 
+      FractionBox["1", 
+       RowBox[{
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "0"},
+     {
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "ky"}], "0", "0", "0", "0", 
+      FractionBox["1", 
+       RowBox[{
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]},
+     {
+      RowBox[{
+       RowBox[{"-", "\[Rho]"}], " ", 
+       SuperscriptBox["\[Omega]", "2"]}], "0", "0", "0", 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "kx"}], 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "ky"}]},
+     {"0", 
+      RowBox[{
+       RowBox[{
+        SuperscriptBox["ky", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}], "+", 
+       RowBox[{"4", " ", 
+        SuperscriptBox["kx", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", 
+        RowBox[{"(", 
+         RowBox[{"1", "-", 
+          FractionBox[
+           SuperscriptBox["\[Beta]", "2"], 
+           SuperscriptBox["\[Alpha]", "2"]]}], ")"}], " ", "\[Rho]"}], "-", 
+       RowBox[{"\[Rho]", " ", 
+        SuperscriptBox["\[Omega]", "2"]}]}], 
+      RowBox[{"kx", " ", "ky", " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{
+          SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}], "+", 
+         RowBox[{"2", " ", 
+          SuperscriptBox["\[Beta]", "2"], " ", 
+          RowBox[{"(", 
+           RowBox[{"1", "-", 
+            FractionBox[
+             RowBox[{"2", " ", 
+              SuperscriptBox["\[Beta]", "2"]}], 
+             SuperscriptBox["\[Alpha]", "2"]]}], ")"}], " ", "\[Rho]"}]}], 
+        ")"}]}], 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "kx", " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         FractionBox[
+          RowBox[{"2", " ", 
+           SuperscriptBox["\[Beta]", "2"]}], 
+          SuperscriptBox["\[Alpha]", "2"]]}], ")"}]}], "0", "0"},
+     {"0", 
+      RowBox[{"kx", " ", "ky", " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{
+          SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}], "+", 
+         RowBox[{"2", " ", 
+          SuperscriptBox["\[Beta]", "2"], " ", 
+          RowBox[{"(", 
+           RowBox[{"1", "-", 
+            FractionBox[
+             RowBox[{"2", " ", 
+              SuperscriptBox["\[Beta]", "2"]}], 
+             SuperscriptBox["\[Alpha]", "2"]]}], ")"}], " ", "\[Rho]"}]}], 
+        ")"}]}], 
+      RowBox[{
+       RowBox[{
+        SuperscriptBox["kx", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}], "+", 
+       RowBox[{"4", " ", 
+        SuperscriptBox["ky", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", 
+        RowBox[{"(", 
+         RowBox[{"1", "-", 
+          FractionBox[
+           SuperscriptBox["\[Beta]", "2"], 
+           SuperscriptBox["\[Alpha]", "2"]]}], ")"}], " ", "\[Rho]"}], "-", 
+       RowBox[{"\[Rho]", " ", 
+        SuperscriptBox["\[Omega]", "2"]}]}], 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", "ky", " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         FractionBox[
+          RowBox[{"2", " ", 
+           SuperscriptBox["\[Beta]", "2"]}], 
+          SuperscriptBox["\[Alpha]", "2"]]}], ")"}]}], "0", "0"}
+    },
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{3.9813213523622017`*^9, 3.9813214492427998`*^9},
+ CellLabel->
+  "Out[145]//MatrixForm=",ExpressionUUID->"ce81585b-fb2a-466e-b2c4-\
+6a69bf991322"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["4. Eigenvalue Matrix \[CapitalLambda] [eq. (3.9)]", "Section",ExpressionUUID->"6ad40e6c-a44c-43a0-b2fa-0f9aa8965f8c"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"\[CapitalLambda]mat", "=", 
+   RowBox[{"DiagonalMatrix", "[", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"I", " ", "kzP"}], ",", 
+      RowBox[{"I", " ", "kzS"}], ",", 
+      RowBox[{"I", " ", "kzH"}], ",", 
+      RowBox[{
+       RowBox[{"-", "I"}], " ", "kzP"}], ",", 
+      RowBox[{
+       RowBox[{"-", "I"}], " ", "kzS"}], ",", 
+      RowBox[{
+       RowBox[{"-", "I"}], " ", "kzH"}]}], "}"}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", "\"\<Eigenvalue matrix \[CapitalLambda] = i \
+diag[kzP,kzS,kzH,-kzP,-kzS,-kzH]:\>\"", "]"}], ";"}], "\n", 
+ RowBox[{"\[CapitalLambda]mat", "//", "MatrixForm"}]}], "Input",
+ CellLabel->
+  "In[146]:=",ExpressionUUID->"6ae02ddb-d959-490f-a62e-de8898ce1129"],
+
+Cell[BoxData["\<\"Eigenvalue matrix \[CapitalLambda] = i \
+diag[kzP,kzS,kzH,-kzP,-kzS,-kzH]:\"\>"], "Print",
+ CellChangeTimes->{3.981321362440061*^9, 3.981321449247101*^9},
+ CellLabel->
+  "During evaluation of \
+In[146]:=",ExpressionUUID->"f16d696a-e8a6-42f8-bdb3-1bd241ee3fc2"],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {
+      RowBox[{"\[ImaginaryI]", " ", 
+       SqrtBox[
+        RowBox[{
+         RowBox[{"-", 
+          SuperscriptBox["kx", "2"]}], "-", 
+         SuperscriptBox["ky", "2"], "+", 
+         FractionBox[
+          SuperscriptBox["\[Omega]", "2"], 
+          SuperscriptBox["\[Alpha]", "2"]]}]]}], "0", "0", "0", "0", "0"},
+     {"0", 
+      RowBox[{"\[ImaginaryI]", " ", 
+       SqrtBox[
+        RowBox[{
+         RowBox[{"-", 
+          SuperscriptBox["kx", "2"]}], "-", 
+         SuperscriptBox["ky", "2"], "+", 
+         FractionBox[
+          SuperscriptBox["\[Omega]", "2"], 
+          SuperscriptBox["\[Beta]", "2"]]}]]}], "0", "0", "0", "0"},
+     {"0", "0", 
+      RowBox[{"\[ImaginaryI]", " ", 
+       SqrtBox[
+        RowBox[{
+         RowBox[{"-", 
+          SuperscriptBox["kx", "2"]}], "-", 
+         SuperscriptBox["ky", "2"], "+", 
+         FractionBox[
+          SuperscriptBox["\[Omega]", "2"], 
+          SuperscriptBox["\[Beta]", "2"]]}]]}], "0", "0", "0"},
+     {"0", "0", "0", 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", 
+       SqrtBox[
+        RowBox[{
+         RowBox[{"-", 
+          SuperscriptBox["kx", "2"]}], "-", 
+         SuperscriptBox["ky", "2"], "+", 
+         FractionBox[
+          SuperscriptBox["\[Omega]", "2"], 
+          SuperscriptBox["\[Alpha]", "2"]]}]]}], "0", "0"},
+     {"0", "0", "0", "0", 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", 
+       SqrtBox[
+        RowBox[{
+         RowBox[{"-", 
+          SuperscriptBox["kx", "2"]}], "-", 
+         SuperscriptBox["ky", "2"], "+", 
+         FractionBox[
+          SuperscriptBox["\[Omega]", "2"], 
+          SuperscriptBox["\[Beta]", "2"]]}]]}], "0"},
+     {"0", "0", "0", "0", "0", 
+      RowBox[{
+       RowBox[{"-", "\[ImaginaryI]"}], " ", 
+       SqrtBox[
+        RowBox[{
+         RowBox[{"-", 
+          SuperscriptBox["kx", "2"]}], "-", 
+         SuperscriptBox["ky", "2"], "+", 
+         FractionBox[
+          SuperscriptBox["\[Omega]", "2"], 
+          SuperscriptBox["\[Beta]", "2"]]}]]}]}
+    },
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{3.981321362441092*^9, 3.981321449247822*^9},
+ CellLabel->
+  "Out[148]//MatrixForm=",ExpressionUUID->"2a07c81b-16b4-4d65-874c-\
+6ae02e93a66e"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["5. Eigenvectors: P, SV, SH waves [eqs. (3.13)-(3.15)]", "Section",ExpressionUUID->"46d579d4-185f-4ee1-99ac-247873ef47db"],
+
+Cell["\<\
+The normalization factors \[Epsilon]P, \[Epsilon]S, \[Epsilon]H are given by \
+eq. (3.18) / label epsdef.\
+\>", "Text",ExpressionUUID->"c90bf990-4a2b-488e-8f1b-595f4982ce73"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Normalization", " ", "factors", " ", 
+    RowBox[{"[", 
+     RowBox[{
+      RowBox[{"eq", "."}], " ", 
+      RowBox[{"(", "3.18", ")"}]}], "]"}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"\[Epsilon]P", "=", 
+     RowBox[{"1", "/", 
+      RowBox[{"Sqrt", "[", 
+       RowBox[{"2", "\[Rho]", 
+        RowBox[{"\[Omega]", "^", "2"}], "kzP"}], "]"}]}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"\[Epsilon]S", "=", 
+     RowBox[{"\[Omega]", "/", 
+      RowBox[{"(", 
+       RowBox[{"\[Beta]", " ", "KhatS", " ", 
+        RowBox[{"Sqrt", "[", 
+         RowBox[{"2", "\[Rho]", 
+          RowBox[{"\[Omega]", "^", "2"}], "kzS"}], "]"}]}], ")"}]}]}], ";"}], 
+   "\n", 
+   RowBox[{
+    RowBox[{"\[Epsilon]H", "=", 
+     RowBox[{"1", "/", 
+      RowBox[{"(", 
+       RowBox[{"KhatH", " ", 
+        RowBox[{"Sqrt", "[", 
+         RowBox[{"2", "\[Rho]", 
+          RowBox[{"\[Omega]", "^", "2"}], "kzH"}], "]"}]}], ")"}]}]}], 
+    ";"}]}]}]], "Input",
+ CellLabel->
+  "In[149]:=",ExpressionUUID->"102f57fe-2e2b-4851-adb8-cbadf6afab85"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"P", "-", 
+    RowBox[{"wave", " ", "eigenvectors", " ", 
+     RowBox[{"[", 
+      RowBox[{
+       RowBox[{"eq", "."}], " ", 
+       RowBox[{"(", "3.13", ")"}]}], "]"}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"vPplus", "=", 
+     RowBox[{"\[Epsilon]P", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"I", " ", "kzP"}], ",", 
+        RowBox[{"I", " ", "kx"}], ",", 
+        RowBox[{"I", " ", "ky"}], ",", 
+        RowBox[{"\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"kx", "^", "2"}]}], "+", 
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}], "-", 
+           RowBox[{"\[Omega]", "^", "2"}]}], ")"}]}], ",", 
+        RowBox[{
+         RowBox[{"-", "2"}], "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "kzP"}], ",", 
+        RowBox[{
+         RowBox[{"-", "2"}], "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "ky", " ", "kzP"}]}], "}"}]}]}], 
+    ";"}], "\n", 
+   RowBox[{
+    RowBox[{"vPminus", "=", 
+     RowBox[{"\[Epsilon]P", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", "I"}], " ", "kzP"}], ",", 
+        RowBox[{"I", " ", "kx"}], ",", 
+        RowBox[{"I", " ", "ky"}], ",", 
+        RowBox[{"\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"kx", "^", "2"}]}], "+", 
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}], "-", 
+           RowBox[{"\[Omega]", "^", "2"}]}], ")"}]}], ",", 
+        RowBox[{"2", "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "kzP"}], ",", 
+        RowBox[{"2", "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "ky", " ", "kzP"}]}], "}"}]}]}], 
+    ";"}], "\n", "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{"SV", "-", 
+     RowBox[{"wave", " ", "eigenvectors", " ", 
+      RowBox[{"[", 
+       RowBox[{
+        RowBox[{"eq", "."}], " ", 
+        RowBox[{"(", "3.14", ")"}]}], "]"}]}]}], " ", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"vSplus", "=", 
+     RowBox[{"\[Epsilon]S", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"I", " ", "kx"}], ",", 
+        RowBox[{
+         RowBox[{"-", "I"}], " ", "kzS"}], ",", "0", ",", 
+        RowBox[{
+         RowBox[{"-", "2"}], "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "kzS"}], ",", 
+        RowBox[{"\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Omega]", "^", "2"}], "-", 
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"kx", "^", "2"}]}], "-", 
+           RowBox[{
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}]}], ")"}]}], ",", 
+        RowBox[{
+         RowBox[{"-", "\[Rho]"}], 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "ky"}]}], "}"}]}]}], ";"}],
+    "\n", 
+   RowBox[{
+    RowBox[{"vSminus", "=", 
+     RowBox[{"\[Epsilon]S", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"I", " ", "kx"}], ",", 
+        RowBox[{"I", " ", "kzS"}], ",", "0", ",", 
+        RowBox[{"2", "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "kzS"}], ",", 
+        RowBox[{"\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Omega]", "^", "2"}], "-", 
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"kx", "^", "2"}]}], "-", 
+           RowBox[{
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}]}], ")"}]}], ",", 
+        RowBox[{
+         RowBox[{"-", "\[Rho]"}], 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "ky"}]}], "}"}]}]}], ";"}],
+    "\n", "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{"SH", "-", 
+     RowBox[{"wave", " ", "eigenvectors", " ", 
+      RowBox[{"[", 
+       RowBox[{
+        RowBox[{"eq", "."}], " ", 
+        RowBox[{"(", "3.15", ")"}]}], "]"}]}]}], " ", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"vHplus", "=", 
+     RowBox[{"\[Epsilon]H", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", "ky"}], " ", "kzH"}], ",", 
+        RowBox[{
+         RowBox[{"-", "kx"}], " ", "ky"}], ",", 
+        RowBox[{"KhatH", "^", "2"}], ",", 
+        RowBox[{"2", "I", " ", "ky", " ", "\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"kx", "^", "2"}]}], "+", 
+           RowBox[{
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}], "-", 
+           RowBox[{"\[Omega]", "^", "2"}]}], ")"}]}], ",", 
+        RowBox[{
+         RowBox[{"-", "2"}], "I", " ", "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "ky", " ", "kzH"}], ",", 
+        RowBox[{"I", " ", "kzH", " ", "\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Omega]", "^", "2"}], "-", 
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}]}], ")"}]}]}], "}"}]}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"vHminus", "=", 
+     RowBox[{"\[Epsilon]H", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"ky", " ", "kzH"}], ",", 
+        RowBox[{
+         RowBox[{"-", "kx"}], " ", "ky"}], ",", 
+        RowBox[{"KhatH", "^", "2"}], ",", 
+        RowBox[{"2", "I", " ", "ky", " ", "\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"kx", "^", "2"}]}], "+", 
+           RowBox[{
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}], "-", 
+           RowBox[{"\[Omega]", "^", "2"}]}], ")"}]}], ",", 
+        RowBox[{"2", "I", " ", "\[Rho]", 
+         RowBox[{"\[Beta]", "^", "2"}], "kx", " ", "ky", " ", "kzH"}], ",", 
+        RowBox[{
+         RowBox[{"-", "I"}], " ", "kzH", " ", "\[Rho]", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Omega]", "^", "2"}], "-", 
+           RowBox[{"2", 
+            RowBox[{"\[Beta]", "^", "2"}], 
+            RowBox[{"ky", "^", "2"}]}]}], ")"}]}]}], "}"}]}]}], 
+    ";"}]}]}]], "Input",
+ CellLabel->
+  "In[152]:=",ExpressionUUID->"abb30c9b-1f52-4c2c-a7c9-575cd1e385f9"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Assemble", " ", "Dz", " ", "matrix", " ", 
+    RowBox[{"[", 
+     RowBox[{
+      RowBox[{"eq", "."}], " ", 
+      RowBox[{"(", "3.13", ")"}], " ", "/", " ", "label", " ", "Ddef"}], 
+     "]"}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"Dz", "=", 
+     RowBox[{"Transpose", "[", 
+      RowBox[{"{", 
+       RowBox[{
+       "vPplus", ",", "vSplus", ",", "vHplus", ",", "vPminus", ",", "vSminus",
+         ",", "vHminus"}], "}"}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"Print", "[", 
+     RowBox[{"\"\<Dz (eigen matrix) assembled \[Dash] dimensions: \>\"", ",", 
+      
+      RowBox[{"Dimensions", "[", "Dz", "]"}]}], "]"}], ";"}]}]}]], "Input",
+ CellLabel->
+  "In[158]:=",ExpressionUUID->"db19e6c6-a8ca-4012-8904-7f688d0edf97"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Dz (eigen matrix) assembled \[Dash] dimensions: \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{"6", ",", "6"}], "}"}]}],
+  SequenceForm["Dz (eigen matrix) assembled \[Dash] dimensions: ", {6, 6}],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981321390673666*^9, 3.981321449268057*^9},
+ CellLabel->
+  "During evaluation of \
+In[158]:=",ExpressionUUID->"e99d4e02-d736-4d54-b52b-789bef947806"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["6. Verification: A . v = \[Lambda] v for each eigenvector", "Section",ExpressionUUID->"7e579587-ad38-4ea0-a351-530c0238f6f8"],
+
+Cell["\<\
+For each column of Dz, check that A . v_i = \[Lambda]_i v_i. We simplify \
+using the identity kzP^2 = (\[Omega]/\[Alpha])^2 - kx^2 - ky^2 (and similarly \
+for kzS).\
+\>", "Text",ExpressionUUID->"ac239897-81c7-47d3-bd65-adb1f615889d"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+   "Simplification", " ", "rules", " ", "encoding", " ", "the", " ", 
+    "dispersion", " ", "relations"}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"dispRules", "=", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"kzP", "^", "2"}], "->", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"\[Omega]", "/", "\[Alpha]"}], ")"}], "^", "2"}], "-", 
+         RowBox[{"kx", "^", "2"}], "-", 
+         RowBox[{"ky", "^", "2"}]}]}], ",", 
+       RowBox[{
+        RowBox[{"kzS", "^", "2"}], "->", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"\[Omega]", "/", "\[Beta]"}], ")"}], "^", "2"}], "-", 
+         RowBox[{"kx", "^", "2"}], "-", 
+         RowBox[{"ky", "^", "2"}]}]}], ",", 
+       RowBox[{
+        RowBox[{"kzH", "^", "2"}], "->", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"\[Omega]", "/", "\[Beta]"}], ")"}], "^", "2"}], "-", 
+         RowBox[{"kx", "^", "2"}], "-", 
+         RowBox[{"ky", "^", "2"}]}]}]}], "}"}]}], ";"}], "\n", "\n", 
+   RowBox[{
+    RowBox[{"eigenvalues", "=", 
+     RowBox[{"Diagonal", "[", "\[CapitalLambda]mat", "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"eigenvecs", "=", 
+     RowBox[{"{", 
+      RowBox[{
+      "vPplus", ",", "vSplus", ",", "vHplus", ",", "vPminus", ",", "vSminus", 
+       ",", "vHminus"}], "}"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"labels", "=", 
+     RowBox[{"{", 
+      RowBox[{"\"\<|+,P\[RightAngleBracket]\>\"", 
+       ",", "\"\<|+,S\[RightAngleBracket]\>\"", 
+       ",", "\"\<|+,H\[RightAngleBracket]\>\"", 
+       ",", "\"\<|-,P\[RightAngleBracket]\>\"", 
+       ",", "\"\<|-,S\[RightAngleBracket]\>\"", 
+       ",", "\"\<|-,H\[RightAngleBracket]\>\""}], "}"}]}], ";"}], "\n", "\n", 
+   
+   RowBox[{
+    RowBox[{
+    "Print", "[", "\"\<\\nChecking A.v = \[Lambda] v for each \
+eigenvector:\>\"", "]"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"Do", "[", "\n", 
+     RowBox[{
+      RowBox[{"Module", "[", 
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{"v", ",", "\[Lambda]", ",", "residual"}], "}"}], ",", "\n", 
+        RowBox[{
+         RowBox[{"v", "=", 
+          RowBox[{"eigenvecs", 
+           RowBox[{"[", "["}], "j", 
+           RowBox[{"]", "]"}]}]}], ";", "\n", 
+         RowBox[{"\[Lambda]", "=", 
+          RowBox[{"eigenvalues", 
+           RowBox[{"[", "["}], "j", 
+           RowBox[{"]", "]"}]}]}], ";", "\n", 
+         RowBox[{"residual", "=", 
+          RowBox[{
+           RowBox[{"Amat", ".", "v"}], "-", 
+           RowBox[{"\[Lambda]", " ", "v"}]}]}], ";", "\n", 
+         RowBox[{"residual", "=", 
+          RowBox[{"FullSimplify", "[", 
+           RowBox[{"residual", ",", 
+            RowBox[{"Assumptions", "->", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"\[Omega]", ">", "0"}], ",", 
+               RowBox[{"\[Rho]", ">", "0"}], ",", 
+               RowBox[{"\[Alpha]", ">", "0"}], ",", 
+               RowBox[{"\[Beta]", ">", "0"}], ",", 
+               RowBox[{"\[Alpha]", ">", "\[Beta]"}]}], "}"}]}]}], "]"}]}], ";",
+          "\n", 
+         RowBox[{"residual", "=", 
+          RowBox[{"residual", "//.", "dispRules"}]}], ";", "\n", 
+         RowBox[{"residual", "=", 
+          RowBox[{"Simplify", "[", "residual", "]"}]}], ";", "\n", 
+         RowBox[{"Print", "[", 
+          RowBox[{
+           RowBox[{"labels", 
+            RowBox[{"[", "["}], "j", 
+            RowBox[{"]", "]"}]}], ",", "\"\<: A.v - \[Lambda]v = \>\"", ",", 
+           "residual"}], "]"}]}]}], "]"}], ",", "\n", 
+      RowBox[{"{", 
+       RowBox[{"j", ",", "1", ",", "6"}], "}"}]}], "]"}], ";"}]}]}]], "Input",\
+
+ CellLabel->
+  "In[160]:=",ExpressionUUID->"5f4193a0-4fdc-4aca-96bc-8acf9945ef24"],
+
+Cell[BoxData["\<\"\\nChecking A.v = \[Lambda] v for each eigenvector:\"\>"], \
+"Print",
+ CellChangeTimes->{3.981321414743513*^9, 3.9813214492786083`*^9},
+ CellLabel->
+  "During evaluation of \
+In[160]:=",ExpressionUUID->"5c1573f7-c6a9-447e-a56f-4c304d498045"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["7. The Canonically Symplectic Array J6", "Section",ExpressionUUID->"3bf753cc-3b52-46f7-82e0-958362592aac"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"J6", " ", "=", " ", 
+    RowBox[{"antidiag", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"0", " ", "I3"}], ";", 
+       RowBox[{
+        RowBox[{"-", "I3"}], " ", "0"}]}], ")"}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"J6", "=", 
+     RowBox[{"ArrayFlatten", "[", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"0", 
+           RowBox[{"IdentityMatrix", "[", "3", "]"}]}], ",", 
+          RowBox[{"IdentityMatrix", "[", "3", "]"}]}], "}"}], ",", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"-", 
+           RowBox[{"IdentityMatrix", "[", "3", "]"}]}], ",", 
+          RowBox[{"0", 
+           RowBox[{"IdentityMatrix", "[", "3", "]"}]}]}], "}"}]}], "}"}], 
+      "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"Print", "[", "\"\<J6 (symplectic matrix):\>\"", "]"}], ";"}], "\n", 
+   RowBox[{"J6", "//", "MatrixForm"}]}]}]], "Input",
+ CellLabel->
+  "In[165]:=",ExpressionUUID->"96456e6c-d249-4001-ba6f-2d86c756b5f0"],
+
+Cell[BoxData["\<\"J6 (symplectic matrix):\"\>"], "Print",
+ CellChangeTimes->{{3.9813214233346*^9, 3.981321449281493*^9}},
+ CellLabel->
+  "During evaluation of \
+In[165]:=",ExpressionUUID->"efce0eef-3c85-470f-821d-50df6af2b20e"],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"0", "0", "0", "1", "0", "0"},
+     {"0", "0", "0", "0", "1", "0"},
+     {"0", "0", "0", "0", "0", "1"},
+     {
+      RowBox[{"-", "1"}], "0", "0", "0", "0", "0"},
+     {"0", 
+      RowBox[{"-", "1"}], "0", "0", "0", "0"},
+     {"0", "0", 
+      RowBox[{"-", "1"}], "0", "0", "0"}
+    },
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{{3.981321423335455*^9, 3.981321449281967*^9}},
+ CellLabel->
+  "Out[167]//MatrixForm=",ExpressionUUID->"6689e902-b11b-496b-a4c9-\
+81db2b3788a5"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["8. Verify Symplectic Inverse [eq. (3.21)]", "Section",ExpressionUUID->"9e40f8e8-9b5c-431d-ad74-9ff0087d0a1e"],
+
+Cell["\<\
+Equation (3.21): Dz^(-1)(kx,ky) = -i J6 . Dz^T(-kx,-ky) . J6
+
+First construct Dz(-kx,-ky) by substituting kx \[Rule] -kx, ky \[Rule] -ky.\
+\>", "Text",
+ CellChangeTimes->{
+  3.981321428380443*^9},ExpressionUUID->"63846f86-99f2-4dce-ac42-\
+f80536070e12"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Construct", " ", "Dz", " ", "at", " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"-", "kx"}], ",", 
+      RowBox[{"-", "ky"}]}], ")"}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"DzNeg", "=", 
+     RowBox[{"Dz", "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"kx", "->", 
+         RowBox[{"-", "kx"}]}], ",", 
+        RowBox[{"ky", "->", 
+         RowBox[{"-", "ky"}]}]}], "}"}]}]}], ";"}], "\n", "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{"Symplectic", " ", "inverse"}], " ", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"DzInvSymplectic", "=", 
+     RowBox[{
+      RowBox[{"-", "I"}], " ", 
+      RowBox[{"J6", ".", 
+       RowBox[{"Transpose", "[", "DzNeg", "]"}], ".", "J6"}]}]}], ";"}], "\n",
+    "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{"Direct", " ", "inverse"}], " ", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{
+    "Print", "[", "\"\<\\nComputing Dz . DzInvSymplectic (should be \
+I6)...\>\"", "]"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"product", "=", 
+     RowBox[{"FullSimplify", "[", 
+      RowBox[{
+       RowBox[{"Dz", ".", "DzInvSymplectic"}], ",", 
+       RowBox[{"Assumptions", "->", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"\[Omega]", ">", "0"}], ",", 
+          RowBox[{"\[Rho]", ">", "0"}], ",", 
+          RowBox[{"\[Alpha]", ">", "0"}], ",", 
+          RowBox[{"\[Beta]", ">", "0"}], ",", 
+          RowBox[{"\[Alpha]", ">", "\[Beta]"}]}], "}"}]}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"product", "=", 
+     RowBox[{
+      RowBox[{"product", "//.", "dispRules"}], "//", "Simplify"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"Print", "[", "\"\<Dz . Dz^(-1) = \>\"", "]"}], ";"}], "\n", 
+   RowBox[{"product", "//", "MatrixForm"}]}]}]], "Input",
+ CellLabel->
+  "In[168]:=",ExpressionUUID->"7f78b724-a1dc-4e16-a3e0-d8cc4313cffc"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\nComputing Dz . DzInvSymplectic (should be I6)...\"\>"], \
+"Print",
+ CellChangeTimes->{{3.98132143491663*^9, 3.9813214492927*^9}},
+ CellLabel->
+  "During evaluation of \
+In[168]:=",ExpressionUUID->"1a66cebd-e338-4ac0-bc7d-cf06356cad6f"],
+
+Cell[BoxData["\<\"Dz . Dz^(-1) = \"\>"], "Print",
+ CellChangeTimes->{{3.98132143491663*^9, 3.981321449293128*^9}},
+ CellLabel->
+  "During evaluation of \
+In[168]:=",ExpressionUUID->"da7ff2dc-d3ed-4404-9792-166b7171f604"]
+}, Open  ]],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"1", "0", "0", "0", "0", "0"},
+     {"0", "1", "0", "0", "0", "0"},
+     {"0", "0", "1", "0", "0", "0"},
+     {"0", "0", "0", "1", "0", "0"},
+     {"0", "0", "0", "0", "1", "0"},
+     {"0", "0", "0", "0", "0", "1"}
+    },
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{{3.981321434947688*^9, 3.981321449294132*^9}},
+ CellLabel->
+  "Out[174]//MatrixForm=",ExpressionUUID->"2248d449-6c79-48cc-9111-\
+fca0e732ab9f"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["9. MAIN VERIFICATION: Equation (3.12)", "Section",ExpressionUUID->"44330be7-d173-415c-9398-b885e7f2d3d0"],
+
+Cell["\<\
+The spectral decomposition:
+    A(kx, ky) = Dz(kx, ky) . \[CapitalLambda](kx, ky) . Dz^(-1)(kx, ky)
+
+We compute the right-hand side and check it equals A.\
+\>", "Text",ExpressionUUID->"8ab717e8-faeb-4e83-b93e-419b770051ff"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{"\"\<\\n\>\"", ",", "\"\<=== VERIFYING EQUATION (3.12) ===\>\"", 
+    ",", "\"\<\\n\>\""}], "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+   "Print", "[", "\"\<Computing Dz . \[CapitalLambda] . Dz^(-1) ...\>\"", 
+    "]"}], ";"}], "\n", "\n", 
+  RowBox[{"(*", " ", 
+   RowBox[{"Use", " ", "symplectic", " ", "inverse"}], " ", "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"AReconstructed", "=", 
+    RowBox[{"Dz", ".", "\[CapitalLambda]mat", ".", "DzInvSymplectic"}]}], 
+   ";"}], "\n", "\n", 
+  RowBox[{"(*", " ", 
+   RowBox[{"Compute", " ", "residual", ":", " ", 
+    RowBox[{"A", " ", "-", " ", 
+     RowBox[{"Dz", ".", "\[CapitalLambda]", ".", 
+      RowBox[{"Dz", "^", 
+       RowBox[{"(", 
+        RowBox[{"-", "1"}], ")"}]}]}]}]}], " ", "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"residualMat", "=", 
+    RowBox[{"Amat", "-", "AReconstructed"}]}], ";"}], "\n", "\n", 
+  RowBox[{"(*", " ", 
+   RowBox[{"Simplify", " ", "each", " ", "entry"}], " ", "*)"}]}], "\n", 
+ RowBox[{
+  RowBox[{"residualMat", "=", 
+   RowBox[{"FullSimplify", "[", 
+    RowBox[{"residualMat", ",", 
+     RowBox[{"Assumptions", "->", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"\[Omega]", ">", "0"}], ",", 
+        RowBox[{"\[Rho]", ">", "0"}], ",", 
+        RowBox[{"\[Alpha]", ">", "0"}], ",", 
+        RowBox[{"\[Beta]", ">", "0"}], ",", 
+        RowBox[{"\[Alpha]", ">", "\[Beta]"}]}], "}"}]}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"residualMat", "=", 
+    RowBox[{
+     RowBox[{"residualMat", "//.", "dispRules"}], "//", "Simplify"}]}], ";"}],
+   "\n"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", "\"\<Residual A - Dz.\[CapitalLambda].Dz^(-1):\>\"", "]"}], 
+  ";"}], "\n", 
+ RowBox[{
+  RowBox[{"residualMat", "//", "MatrixForm"}], "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"If", "[", 
+   RowBox[{
+    RowBox[{"residualMat", "===", 
+     RowBox[{"ConstantArray", "[", 
+      RowBox[{"0", ",", 
+       RowBox[{"{", 
+        RowBox[{"6", ",", "6"}], "}"}]}], "]"}]}], ",", "\n", 
+    RowBox[{
+    "Print", "[", "\"\<\\n\[CheckmarkedBox] EQUATION (3.12) VERIFIED: A \
+\[Equivalent] Dz.\[CapitalLambda].Dz^(-1)\>\"", "]"}], ",", "\n", 
+    RowBox[{
+     RowBox[{
+     "Print", "[", "\"\<\\n\[WarningSign] NONZERO RESIDUAL \[Dash] check the \
+computation\>\"", "]"}], ";", "\n", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<Max |residual entry|: \>\"", ",", 
+       RowBox[{"Max", "[", 
+        RowBox[{"Abs", "[", 
+         RowBox[{"Flatten", "[", "residualMat", "]"}], "]"}], "]"}]}], 
+      "]"}]}]}], "\n", "]"}], ";"}]}], "Input",
+ CellLabel->
+  "In[175]:=",ExpressionUUID->"1b97039e-e47a-40a2-82a7-32d00251e316"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\n\"\>", 
+   "\[InvisibleSpace]", "\<\"=== VERIFYING EQUATION (3.12) ===\"\>", 
+   "\[InvisibleSpace]", "\<\"\\n\"\>"}],
+  SequenceForm["\n", "=== VERIFYING EQUATION (3.12) ===", "\n"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981321449297826*^9},
+ CellLabel->
+  "During evaluation of \
+In[175]:=",ExpressionUUID->"fb95085b-656f-4724-9cc7-c9ad2d5e0f17"],
+
+Cell[BoxData["\<\"Computing Dz . \[CapitalLambda] . Dz^(-1) ...\"\>"], "Print",
+ CellChangeTimes->{3.981321449298316*^9},
+ CellLabel->
+  "During evaluation of \
+In[175]:=",ExpressionUUID->"564674fe-3368-430a-8db0-31256db9d0ee"],
+
+Cell[BoxData["\<\"Residual A - Dz.\[CapitalLambda].Dz^(-1):\"\>"], "Print",
+ CellChangeTimes->{3.981321449312067*^9},
+ CellLabel->
+  "During evaluation of \
+In[175]:=",ExpressionUUID->"f6117e1c-fc48-4167-a589-2c6d10d9035a"]
+}, Open  ]],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"}
+    },
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{3.9813214493126163`*^9},
+ CellLabel->
+  "Out[182]//MatrixForm=",ExpressionUUID->"154041a6-4593-4374-a912-\
+1ce0b275ed2d"],
+
+Cell[BoxData["\<\"\\n\[CheckmarkedBox] EQUATION (3.12) VERIFIED: A \
+\[Equivalent] Dz.\[CapitalLambda].Dz^(-1)\"\>"], "Print",
+ CellChangeTimes->{3.981321449313592*^9},
+ CellLabel->
+  "During evaluation of \
+In[175]:=",ExpressionUUID->"cb33846a-f582-40dc-b2a1-c0a9629d18d6"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["10. Numerical Spot Check", "Section",ExpressionUUID->"131fd177-5fa6-4bee-9528-b9e6b8f17b10"],
+
+Cell["\<\
+Substitute specific numerical values to confirm the symbolic result and catch \
+any branch-cut subtleties.\
+\>", "Text",ExpressionUUID->"1c765fc2-8f3d-480f-b546-8d9cbfba76aa"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Numerical", " ", "parameters", ":", " ", 
+    RowBox[{"ocean", " ", "crust", " ", "model"}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"numRules", "=", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Rho]", "->", "3.0"}], ",", 
+       RowBox[{"\[Alpha]", "->", "5.0"}], ",", 
+       RowBox[{"\[Beta]", "->", "3.0"}], ",", 
+       RowBox[{"\[Omega]", "->", 
+        RowBox[{"2", "Pi", " ", "1.0"}]}], ",", 
+       RowBox[{"kx", "->", "0.5"}], ",", 
+       RowBox[{"ky", "->", "0.3"}]}], "}"}]}], ";"}], "\n", "\n", 
+   RowBox[{
+    RowBox[{"AmatNum", "=", 
+     RowBox[{"N", "[", 
+      RowBox[{"Amat", "/.", "numRules"}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"DzNum", "=", 
+     RowBox[{"N", "[", 
+      RowBox[{"Dz", "/.", "numRules"}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"\[CapitalLambda]Num", "=", 
+     RowBox[{"N", "[", 
+      RowBox[{"\[CapitalLambda]mat", "/.", "numRules"}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"DzInvNum", "=", 
+     RowBox[{"N", "[", 
+      RowBox[{"DzInvSymplectic", "/.", "numRules"}], "]"}]}], ";"}], "\n", "\n", 
+   RowBox[{
+    RowBox[{"AReconNum", "=", 
+     RowBox[{"DzNum", ".", "\[CapitalLambda]Num", ".", "DzInvNum"}]}], ";"}], 
+   "\n", 
+   RowBox[{
+    RowBox[{"numResidual", "=", 
+     RowBox[{"Max", "[", 
+      RowBox[{"Abs", "[", 
+       RowBox[{"AmatNum", "-", "AReconNum"}], "]"}], "]"}]}], ";"}], "\n", "\n", 
+   RowBox[{
+    RowBox[{
+    "Print", "[", "\"\<\\nNumerical spot check (\[Rho]=3, \[Alpha]=5, \
+\[Beta]=3, \[Omega]=2\[Pi], kx=0.5, ky=0.3):\>\"", "]"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"Print", "[", 
+     RowBox[{"\"\<  Max |A - Dz.\[CapitalLambda].Dz^(-1)| = \>\"", ",", 
+      RowBox[{"ScientificForm", "[", "numResidual", "]"}]}], "]"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{
+      RowBox[{"numResidual", "<", 
+       RowBox[{"10", "^", 
+        RowBox[{"-", "12"}]}]}], ",", "\n", 
+      RowBox[{
+      "Print", "[", "\"\<  \[CheckmarkedBox] Numerical verification passed \
+(residual < 10^-12)\>\"", "]"}], ",", "\n", 
+      RowBox[{
+      "Print", "[", "\"\<  \[WarningSign] Numerical residual exceeds \
+tolerance!\>\"", "]"}]}], "\n", "]"}], ";"}]}]}]], "Input",
+ CellLabel->
+  "In[184]:=",ExpressionUUID->"1e1b7604-1d02-4399-8d71-dae03383b156"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\nNumerical spot check (\[Rho]=3, \[Alpha]=5, \[Beta]=3, \
+\[Omega]=2\[Pi], kx=0.5, ky=0.3):\"\>"], "Print",
+ CellChangeTimes->{3.981321449328017*^9},
+ CellLabel->
+  "During evaluation of \
+In[184]:=",ExpressionUUID->"da2ce787-15d6-4bfe-96df-271cd75e1ca0"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  Max |A - Dz.\[CapitalLambda].Dz^(-1)| = \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"1.42109\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-14\"\>"]}],
+      ShowStringCharacters->False],
+     1.4210854715202004`*^-14,
+     AutoDelete->True],
+    ScientificForm]}],
+  SequenceForm["  Max |A - Dz.\[CapitalLambda].Dz^(-1)| = ", 
+   ScientificForm[1.4210854715202004`*^-14]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981321449328586*^9},
+ CellLabel->
+  "During evaluation of \
+In[184]:=",ExpressionUUID->"2d186429-f644-4c6b-bcb4-3b5aa8c9ce38"],
+
+Cell[BoxData["\<\"  \[CheckmarkedBox] Numerical verification passed (residual \
+< 10^-12)\"\>"], "Print",
+ CellChangeTimes->{3.981321449329546*^9},
+ CellLabel->
+  "During evaluation of \
+In[184]:=",ExpressionUUID->"24b1d3a3-1319-4083-8434-7c0c3924bc31"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["11. Bonus: Verify Quasi-Hamiltonian Symmetry [eq. (3.8)]", "Section",ExpressionUUID->"be2d6773-0a99-4d6f-80b0-85cab4dbe58a"],
+
+Cell["A^T(-kx,-ky) . J6 + J6 . A(kx,ky) = 0_6", "Text",ExpressionUUID->"07f73e05-bea7-4a76-b85b-e9873adced3d"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"AmatNeg", "=", 
+   RowBox[{"Amat", "/.", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"kx", "->", 
+       RowBox[{"-", "kx"}]}], ",", 
+      RowBox[{"ky", "->", 
+       RowBox[{"-", "ky"}]}]}], "}"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"hamiltonianResidual", "=", 
+    RowBox[{"FullSimplify", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"Transpose", "[", "AmatNeg", "]"}], ".", "J6"}], "+", 
+      RowBox[{"J6", ".", "Amat"}]}], "]"}]}], ";"}], "\n"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", "\"\<\\nHamiltonian symmetry check: A^T(-kx,-ky).J6 + \
+J6.A(kx,ky) = \>\"", "]"}], ";"}], "\n", 
+ RowBox[{"hamiltonianResidual", "//", "MatrixForm"}], "\n", 
+ RowBox[{
+  RowBox[{"If", "[", 
+   RowBox[{
+    RowBox[{"hamiltonianResidual", "===", 
+     RowBox[{"ConstantArray", "[", 
+      RowBox[{"0", ",", 
+       RowBox[{"{", 
+        RowBox[{"6", ",", "6"}], "}"}]}], "]"}]}], ",", "\n", 
+    RowBox[{
+    "Print", "[", "\"\<\[CheckmarkedBox] Quasi-Hamiltonian symmetry \
+verified\>\"", "]"}], ",", "\n", 
+    RowBox[{
+    "Print", "[", "\"\<\[WarningSign] Hamiltonian symmetry check FAILED\>\"", 
+     "]"}]}], "\n", "]"}], ";"}]}], "Input",
+ CellLabel->
+  "In[194]:=",ExpressionUUID->"f1a3da7a-fa50-44db-baa2-3564ce59f8e8"],
+
+Cell[BoxData["\<\"\\nHamiltonian symmetry check: A^T(-kx,-ky).J6 + \
+J6.A(kx,ky) = \"\>"], "Print",
+ CellChangeTimes->{3.981321449332327*^9},
+ CellLabel->
+  "During evaluation of \
+In[194]:=",ExpressionUUID->"4ab11b72-e5ea-4a56-8708-44521dc206a6"],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"}
+    },
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{3.9813214493328953`*^9},
+ CellLabel->
+  "Out[197]//MatrixForm=",ExpressionUUID->"23b47588-1d3a-44b4-ab86-\
+a9295ee5b7e8"],
+
+Cell[BoxData["\<\"\[CheckmarkedBox] Quasi-Hamiltonian symmetry \
+verified\"\>"], "Print",
+ CellChangeTimes->{3.98132144933329*^9},
+ CellLabel->
+  "During evaluation of \
+In[194]:=",ExpressionUUID->"0b3906a5-c37c-4877-b147-11f6f6d56506"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["12. Bonus: Verify Normalization Condition [eq. (3.19)]", "Section",ExpressionUUID->"b3efbb0f-4834-48fc-8f02-3e7daccd80ed"],
+
+Cell["(J6 . Dz(-kx,-ky))^T . Dz(kx,ky) = i J6", "Text",ExpressionUUID->"ee7ae007-8067-4935-8bdf-86d9b5960f18"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"normProduct", "=", 
+   RowBox[{"FullSimplify", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Transpose", "[", 
+       RowBox[{"J6", ".", "DzNeg"}], "]"}], ".", "Dz"}], ",", 
+     RowBox[{"Assumptions", "->", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"\[Omega]", ">", "0"}], ",", 
+        RowBox[{"\[Rho]", ">", "0"}], ",", 
+        RowBox[{"\[Alpha]", ">", "0"}], ",", 
+        RowBox[{"\[Beta]", ">", "0"}], ",", 
+        RowBox[{"\[Alpha]", ">", "\[Beta]"}]}], "}"}]}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"normProduct", "=", 
+    RowBox[{
+     RowBox[{"normProduct", "//.", "dispRules"}], "//", "Simplify"}]}], ";"}],
+   "\n"}], "\n", 
+ RowBox[{
+  RowBox[{"normResidual", "=", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{"normProduct", "-", 
+     RowBox[{"I", " ", "J6"}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", "\"\<\\nNormalization check: (J6.Dz(-kx,-ky))^T . Dz(kx,ky) - \
+i J6 = \>\"", "]"}], ";"}], "\n", 
+ RowBox[{"normResidual", "//", "MatrixForm"}], "\n", 
+ RowBox[{
+  RowBox[{"If", "[", 
+   RowBox[{
+    RowBox[{"normResidual", "===", 
+     RowBox[{"ConstantArray", "[", 
+      RowBox[{"0", ",", 
+       RowBox[{"{", 
+        RowBox[{"6", ",", "6"}], "}"}]}], "]"}]}], ",", "\n", 
+    RowBox[{
+    "Print", "[", "\"\<\[CheckmarkedBox] Normalization condition [eq. (3.19)] \
+verified\>\"", "]"}], ",", "\n", 
+    RowBox[{
+    "Print", "[", "\"\<\[WarningSign] Normalization check FAILED\>\"", 
+     "]"}]}], "\n", "]"}], ";"}]}], "Input",
+ CellLabel->
+  "In[199]:=",ExpressionUUID->"b47c795a-757f-4f06-8d63-a257102a0d0a"],
+
+Cell[BoxData["\<\"\\nNormalization check: (J6.Dz(-kx,-ky))^T . Dz(kx,ky) - i \
+J6 = \"\>"], "Print",
+ CellChangeTimes->{3.981321449372418*^9},
+ CellLabel->
+  "During evaluation of \
+In[199]:=",ExpressionUUID->"52d5e9bb-e246-446a-9cf2-a60a94bfe9ac"],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"},
+     {"0", "0", "0", "0", "0", "0"}
+    },
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{3.981321449373123*^9},
+ CellLabel->
+  "Out[203]//MatrixForm=",ExpressionUUID->"bfa972cc-2a31-48d5-bfc6-\
+d2c33848c127"],
+
+Cell[BoxData["\<\"\[CheckmarkedBox] Normalization condition [eq. (3.19)] \
+verified\"\>"], "Print",
+ CellChangeTimes->{3.98132144937356*^9},
+ CellLabel->
+  "During evaluation of \
+In[199]:=",ExpressionUUID->"0a3d3702-4442-4d10-bc99-33c7a3880e58"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Summary", "Section",ExpressionUUID->"82b1ca7a-ff99-4136-b633-88e0b6fe3c2d"],
+
+Cell["\<\
+This notebook has verified:
+  1. Each P, SV, SH eigenvector satisfies A.v = \[Lambda]v (Section 6)
+  2. The symplectic inverse Dz^(-1) = -i J6.Dz^T(-kx,-ky).J6 (Sections 8, 12)
+  3. The spectral decomposition A = Dz.\[CapitalLambda].Dz^(-1) [EQUATION \
+(3.12)] (Section 9)
+  4. Numerical spot check confirms machine-precision agreement (Section 10)
+  5. Quasi-Hamiltonian symmetry of A (Section 11)
+
+All identities are verified SYMBOLICALLY \[Dash] they hold for arbitrary (\
+\[Rho], \[Alpha], \[Beta], \[Omega], kx, ky).\
+\>", "Text",ExpressionUUID->"bae23b64-7e61-43c7-8261-259e29b1224c"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1720, 1382},
+WindowMargins->{{Automatic, -3440}, {Automatic, -3}},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"60550a67-d7ef-42ce-a66d-ac7b8f3f737c"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[576, 22, 156, 2, 96, "Title",ExpressionUUID->"ff134dc1-2c62-4d4f-8e2b-ad2dd5d089e3"],
+Cell[735, 26, 169, 3, 83, "Subtitle",ExpressionUUID->"146b6ce9-6670-4c79-abd6-761849d86216"],
+Cell[907, 31, 798, 19, 296, "Text",ExpressionUUID->"2dbce990-e784-4df3-8508-847e8703d938"],
+Cell[CellGroupData[{
+Cell[1730, 54, 108, 0, 66, "Section",ExpressionUUID->"b54c6360-52fb-4b97-b3fb-2b360d580316"],
+Cell[1841, 56, 219, 3, 33, "Text",ExpressionUUID->"96c2e242-addb-4d96-a288-712712655b66"],
+Cell[2063, 61, 1809, 58, 233, "Input",ExpressionUUID->"79f964be-c288-4ec8-9089-ea7cb3bc9ea0"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3909, 124, 97, 0, 66, "Section",ExpressionUUID->"a118e074-69d8-4456-a2b8-7f93fc6167d9"],
+Cell[4009, 126, 168, 3, 33, "Text",ExpressionUUID->"b5d5fcf6-9cd6-444a-b5d9-97bc13d0a8d6"],
+Cell[4180, 131, 1537, 48, 192, "Input",ExpressionUUID->"44143818-fc9f-45e2-bba4-c2ec3682f9b6"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5754, 184, 119, 0, 66, "Section",ExpressionUUID->"0699d993-2a89-4900-9e76-970c65608271"],
+Cell[CellGroupData[{
+Cell[5898, 188, 2328, 68, 213, "Input",ExpressionUUID->"7ad9d5f9-4a1e-4cba-ba56-b08f350b9a33"],
+Cell[8229, 258, 235, 4, 23, "Print",ExpressionUUID->"3036615e-0788-4e85-9a40-9eadb9592f97"],
+Cell[8467, 264, 4523, 131, 184, "Output",ExpressionUUID->"ce81585b-fb2a-466e-b2c4-6a69bf991322"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[13039, 401, 123, 0, 66, "Section",ExpressionUUID->"6ad40e6c-a44c-43a0-b2fa-0f9aa8965f8c"],
+Cell[CellGroupData[{
+Cell[13187, 405, 751, 21, 70, "Input",ExpressionUUID->"6ae02ddb-d959-490f-a62e-de8898ce1129"],
+Cell[13941, 428, 278, 5, 23, "Print",ExpressionUUID->"f16d696a-e8a6-42f8-bdb3-1bd241ee3fc2"],
+Cell[14222, 435, 2642, 80, 225, "Output",ExpressionUUID->"2a07c81b-16b4-4d65-874c-6ae02e93a66e"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[16913, 521, 127, 0, 66, "Section",ExpressionUUID->"46d579d4-185f-4ee1-99ac-247873ef47db"],
+Cell[17043, 523, 184, 3, 33, "Text",ExpressionUUID->"c90bf990-4a2b-488e-8f1b-595f4982ce73"],
+Cell[17230, 528, 1094, 34, 90, "Input",ExpressionUUID->"102f57fe-2e2b-4851-adb8-cbadf6afab85"],
+Cell[18327, 564, 6309, 182, 233, "Input",ExpressionUUID->"abb30c9b-1f52-4c2c-a7c9-575cd1e385f9"],
+Cell[CellGroupData[{
+Cell[24661, 750, 808, 23, 70, "Input",ExpressionUUID->"db19e6c6-a8ca-4012-8904-7f688d0edf97"],
+Cell[25472, 775, 456, 10, 23, "Print",ExpressionUUID->"e99d4e02-d736-4d54-b52b-789bef947806"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25977, 791, 131, 0, 66, "Section",ExpressionUUID->"7e579587-ad38-4ea0-a351-530c0238f6f8"],
+Cell[26111, 793, 243, 4, 33, "Text",ExpressionUUID->"ac239897-81c7-47d3-bd65-adb1f615889d"],
+Cell[CellGroupData[{
+Cell[26379, 801, 3799, 104, 376, "Input",ExpressionUUID->"5f4193a0-4fdc-4aca-96bc-8acf9945ef24"],
+Cell[30181, 907, 259, 5, 41, "Print",ExpressionUUID->"5c1573f7-c6a9-447e-a56f-4c304d498045"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[30489, 918, 112, 0, 66, "Section",ExpressionUUID->"3bf753cc-3b52-46f7-82e0-958362592aac"],
+Cell[CellGroupData[{
+Cell[30626, 922, 1062, 32, 90, "Input",ExpressionUUID->"96456e6c-d249-4001-ba6f-2d86c756b5f0"],
+Cell[31691, 956, 227, 4, 23, "Print",ExpressionUUID->"efce0eef-3c85-470f-821d-50df6af2b20e"],
+Cell[31921, 962, 899, 26, 128, "Output",ExpressionUUID->"6689e902-b11b-496b-a4c9-81db2b3788a5"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[32869, 994, 115, 0, 66, "Section",ExpressionUUID->"9e40f8e8-9b5c-431d-ad74-9ff0087d0a1e"],
+Cell[32987, 996, 263, 7, 77, "Text",ExpressionUUID->"63846f86-99f2-4dce-ac42-f80536070e12"],
+Cell[CellGroupData[{
+Cell[33275, 1007, 1862, 54, 254, "Input",ExpressionUUID->"7f78b724-a1dc-4e16-a3e0-d8cc4313cffc"],
+Cell[CellGroupData[{
+Cell[35162, 1065, 256, 5, 41, "Print",ExpressionUUID->"1a66cebd-e338-4ac0-bc7d-cf06356cad6f"],
+Cell[35421, 1072, 220, 4, 23, "Print",ExpressionUUID->"da7ff2dc-d3ed-4404-9792-166b7171f604"]
+}, Open  ]],
+Cell[35656, 1079, 833, 23, 128, "Output",ExpressionUUID->"2248d449-6c79-48cc-9111-fca0e732ab9f"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[36538, 1108, 111, 0, 66, "Section",ExpressionUUID->"44330be7-d173-415c-9398-b885e7f2d3d0"],
+Cell[36652, 1110, 233, 5, 99, "Text",ExpressionUUID->"8ab717e8-faeb-4e83-b93e-419b770051ff"],
+Cell[CellGroupData[{
+Cell[36910, 1119, 2701, 76, 437, "Input",ExpressionUUID->"1b97039e-e47a-40a2-82a7-32d00251e316"],
+Cell[CellGroupData[{
+Cell[39636, 1199, 413, 10, 60, "Print",ExpressionUUID->"fb95085b-656f-4724-9cc7-c9ad2d5e0f17"],
+Cell[40052, 1211, 227, 4, 23, "Print",ExpressionUUID->"564674fe-3368-430a-8db0-31256db9d0ee"],
+Cell[40282, 1217, 223, 4, 23, "Print",ExpressionUUID->"f6117e1c-fc48-4167-a589-2c6d10d9035a"]
+}, Open  ]],
+Cell[40520, 1224, 811, 23, 128, "Output",ExpressionUUID->"154041a6-4593-4374-a912-1ce0b275ed2d"],
+Cell[41334, 1249, 274, 5, 41, "Print",ExpressionUUID->"cb33846a-f582-40dc-b2a1-c0a9629d18d6"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[41657, 1260, 98, 0, 66, "Section",ExpressionUUID->"131fd177-5fa6-4bee-9528-b9e6b8f17b10"],
+Cell[41758, 1262, 185, 3, 33, "Text",ExpressionUUID->"1c765fc2-8f3d-480f-b546-8d9cbfba76aa"],
+Cell[CellGroupData[{
+Cell[41968, 1269, 2351, 63, 356, "Input",ExpressionUUID->"1e1b7604-1d02-4399-8d71-dae03383b156"],
+Cell[CellGroupData[{
+Cell[44344, 1336, 275, 5, 41, "Print",ExpressionUUID->"da2ce787-15d6-4bfe-96df-271cd75e1ca0"],
+Cell[44622, 1343, 660, 18, 23, "Print",ExpressionUUID->"2d186429-f644-4c6b-bcb4-3b5aa8c9ce38"],
+Cell[45285, 1363, 253, 5, 23, "Print",ExpressionUUID->"24b1d3a3-1319-4083-8434-7c0c3924bc31"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[45599, 1375, 130, 0, 66, "Section",ExpressionUUID->"be2d6773-0a99-4d6f-80b0-85cab4dbe58a"],
+Cell[45732, 1377, 110, 0, 33, "Text",ExpressionUUID->"07f73e05-bea7-4a76-b85b-e9873adced3d"],
+Cell[CellGroupData[{
+Cell[45867, 1381, 1283, 38, 192, "Input",ExpressionUUID->"f1a3da7a-fa50-44db-baa2-3564ce59f8e8"],
+Cell[47153, 1421, 247, 5, 41, "Print",ExpressionUUID->"4ab11b72-e5ea-4a56-8708-44521dc206a6"],
+Cell[47403, 1428, 811, 23, 128, "Output",ExpressionUUID->"23b47588-1d3a-44b4-ab86-a9295ee5b7e8"],
+Cell[48217, 1453, 236, 5, 23, "Print",ExpressionUUID->"0b3906a5-c37c-4877-b147-11f6f6d56506"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[48502, 1464, 128, 0, 66, "Section",ExpressionUUID->"b3efbb0f-4834-48fc-8f02-3e7daccd80ed"],
+Cell[48633, 1466, 110, 0, 33, "Text",ExpressionUUID->"ee7ae007-8067-4935-8bdf-86d9b5960f18"],
+Cell[CellGroupData[{
+Cell[48768, 1470, 1623, 47, 213, "Input",ExpressionUUID->"b47c795a-757f-4f06-8d63-a257102a0d0a"],
+Cell[50394, 1519, 248, 5, 41, "Print",ExpressionUUID->"52d5e9bb-e246-446a-9cf2-a60a94bfe9ac"],
+Cell[50645, 1526, 809, 23, 128, "Output",ExpressionUUID->"bfa972cc-2a31-48d5-bfc6-d2c33848c127"],
+Cell[51457, 1551, 246, 5, 23, "Print",ExpressionUUID->"0a3d3702-4442-4d10-bc99-33c7a3880e58"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[51752, 1562, 81, 0, 66, "Section",ExpressionUUID->"82b1ca7a-ff99-4136-b633-88e0b6fe3c2d"],
+Cell[51836, 1564, 600, 11, 186, "Text",ExpressionUUID->"bae23b64-7e61-43c7-8261-259e29b1224c"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+

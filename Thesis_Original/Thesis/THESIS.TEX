@@ -1,0 +1,119 @@
+\documentclass[onecolumn,english,envcountsame,envcountchap]{svmono}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{ifthen}
+\usepackage{makeidx}
+\makeindex
+
+\makeatletter
+
+%\documentstyle[11pt,fleqn,authordate1-4]{book}
+%\documentstyle[11pt,fleqn,authordate1-4,thesis]{book}
+%\documentstyle[authordate1-4]{thesis}
+%\documentstyle[]{thesis}
+
+%\makeindex
+\bibliographystyle{authordate3}
+
+%%%%%%%%%%%%Font Substitution%%%%%%%%%%%%%%%%%%%%%%%%
+%\font\twlpal=palatino at 11pt
+%\font\twlpalb=palatinob at 11pt
+%\font\twlpali=palatinoi at 11pt
+%\font\twlpalbi=palatinobi at 11pt
+%\let\twlrm=\twlpal
+%\let\twlit=\twlpali
+%\let\twlbf=\twlpalb
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+%\input lcdlatex       					%for printing at R.S.E.S
+\newcommand{\Bbb}[1]{\rm #1}   %lucida black board bold mask
+                            %comment out at R.S.E.S
+
+%\input blnkmath.tex
+\newcommand{\T}{\textstyle}
+\newfont{\mib}{cmmib10 scaled 1100}
+\newfont{\CBM}{cmbsy10 scaled 1100}
+
+
+\newcommand{\CB}[1]{\mbox{\boldmath$\cal #1$\unboldmath}}
+\newcommand{\bmi}[1]{\mbox{\boldmath$\mit #1$\unboldmath}}
+
+
+\newcommand{\rf}[1]{\stackrel{\scriptscriptstyle _{\,\,\circ}}{ #1}}
+\newcommand{\gtlt}[0]{\stackrel{\scriptscriptstyle >}{\scriptscriptstyle _<}}
+\renewcommand{\labelitemii}{}
+\renewcommand{\labelitemiii}{}
+\renewcommand{\labelitemiv}{}
+\renewcommand{\labelenumi}{\bf \arabic{enumi}.}
+\renewcommand{\labelenumiii}{}
+\renewcommand{\labelenumiv}{}
+
+\renewcommand{\bibtitle}{Bibliography}
+\renewcommand{\bibheadtitle}{{\em bibliography} } 
+\def\re{\underline{\mbox{re}}}
+\def\ou{\underline{\mbox{ou}}}
+
+%macros
+\def\eqref #1{\rm ($\ref{#1}$)}
+\def\Itbf #1{\setbox3=\hbox{$#1$} \setbox4=\vbox{$#1$}
+   {#1}\kern-1.0225\wd3\raise0.025\ht4\hbox{$#1$} }
+\def\Sfbf #1{\setbox3=\hbox{$#1$} \setbox4=\vbox{$#1$}
+   {#1}\kern-1.075\wd3\raise0.0125\ht4\hbox{$#1$} }
+\def\Fat #1{\setbox3=\hbox{$#1$} \setbox4=\vbox{$#1$}
+   {#1}\kern-1.045\wd3\raise0.05\ht4\hbox{$#1$} }
+\def\slantfrac#1#2{\hbox{$\,^#1\!/_#2$}}
+\def\onehalf{\slantfrac{1}{2}}
+\def\degr{^\circ}
+\def\dr{{\rm d}}
+
+
+\begin{document}
+
+
+\includeonly{Introduction}
+%\includeonly{MSRepresentations}
+%\includeonly{GRepresentations}
+%\includeonly{TRepresentations}
+%\includeonly{GstratRep}
+%\includeonly{VariationalSum}
+%\includeonly{SurfaceWaves}
+
+%\nofiles
+
+
+
+\tableofcontents
+
+%\listoffigures
+
+
+%\input{paper1}
+
+%\include{Appendix}
+%\include{ReciprocityAppendix}
+%\include{layerstack}
+%\include{Riccati}
+%\include{current}
+%\include{ThesisTemp}
+
+\include{Introduction}
+\include{MSRepresentations}
+\include{GRepresentations}
+\include{TRepresentations}
+\include{GstratRep}
+\include{VariationalSum}
+\include{SurfaceWaves}
+
+
+\clearpage
+\bibliography{Thesis}
+\include{Thesis.bbl}
+
+%\include Thesis.ind
+\end{document}
+
+
+\bye

@@ -1,0 +1,2557 @@
+\chapter{Representations of the time harmonic elastic wave Green's 
+tensor}\label{Grep}
+%\ \hrulefill
+%\rule{154.0mm}{10pt}\\
+We recall from chapter \ref{MSrep} that
+ the material 
+properties of the propagation environment have been defined as  
+the sum of a reference and residual component, i.e.
+$(\rho, \alpha, \beta)=(\rf{\rho}+{\mit \Delta}\rho,\rf{\alpha}+{\mit 
+\Delta}\alpha,\rf{\beta}+{\mit \Delta}\beta)$. In this chapter, we will 
+be concerned exclusively with uniform media so that 
+residual properties $({\mit \Delta}\rho,{\mit 
+\Delta}\alpha,{\mit \Delta}\beta)$ vanish and we have
+$(\rho, \alpha, \beta)=(\rf{\rho},\rf{\alpha},\rf{\beta})$. To simplify 
+notation, we discontinue the practice of writing  $(\rf{\rho},\rf{\alpha},\rf{\beta})$
+to denote reference medium parameters and write 
+$({\rho},{\alpha},{\beta})$ instead.
+
+This chapter is concerned with the construction of the time harmonic 
+elastic wave motion driven by a {\em lattice of multipolar point forces\/} 
+${\bmi f}$ {\em  superimposed on a homogeneous medium\/}.
+The homogeneous medium is
+characterized by the  elastic parameters $(\rho,\alpha,\beta)$, which 
+denote the density, compressional and shear speeds respectively, in an 
+isotropic medium. 
+
+Each point force  ${\bmi f}$,  has an assumed time 
+dependence of the form \linebreak
+$\exp(\epsilon t -i 2 \pi \nu t)$ where 
+$\nu $ is the  frequency and $\epsilon$ is a non-negative {\em 
+growth\/} parameter. The {\em adiabatic growth term\/} ${\rm e}^{\epsilon 
+t}$, 
+evolves the wavefield from a state of quiescence in the infinite past, to 
+its 
+present value, following a path that ensures that the {\em wavefield is 
+always in steady 
+state equilibrium with the driving force\/} ${\bmi f}$. This device has been 
+employed by 
+{\em Lighthill} ~\shortcite{Lighthill} to enforce the {\em radiation 
+boundary conditions\/}.
+For  convenience, we introduce the {\em complex angular frequency\/}
+\begin{equation} \label{w+}
+\omega\equiv 2 \pi \nu +i \epsilon.
+\end{equation}
+We can then synthesize {\em transient motion\/} from a discrete set of 
+{\em 
+forced motions\/}, sampled from the {\em Bromwich contour\/} in the 
+complex frequency 
+domain [e.g.{\em Chapman} ~\shortcite{Chap78}] as
+\begin{equation}	\label{InvLaplace}
+	\left[{\cdot }\right](t)=2 \, {\rm e}^{\epsilon  t}\,
+	\Re \int_{ 0}^{\nu_{max}} {\rm d}\nu \ {\rm e}^{ -i 
+	2 \pi \nu t}\left[{\cdot }\right] (2 \pi \nu +i \epsilon)
+\end{equation}
+where $\nu_{{max}}$ is the maximum frequency of the source field. 
+Usually the growth parameter $\epsilon$ is chosen so that $5 \le \epsilon T
+\le 10$ \cite{Banerjee}, where $T$ is the length of the required time series (which is 
+usually determined by trial and error). Using the complex angular frequency $\omega$ smoothes the frequency domain 
+response, which enhances the conditioning of the problem, 
+causing the complex frequency multiple scattering series to converge 
+faster than the real frequency version. However, we must be aware that the 
+process is equivalent to an analytic continuation, and is inherently 
+unstable. The instability, is manifested by the sensitivity of 
+(\ref{InvLaplace}) to errors in the frequency domain response. This is a 
+particularly troubling issue, as the multiple scattering series is 
+usually only summed to a relative error of $10^{-6}$ and it remains an 
+open question whether we have secured sufficient accuracy to avoid the 
+deleterious effects of the numerical instability inherent in 
+(\ref{InvLaplace}). An excellent survey of numerical methods for the 
+numerical evaluation of (\ref{InvLaplace}) is presented in 
+{\em Davies \& Martin\/}~(1979).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{The free space, time harmonic,  elastic wave Green's tensor} \label{classpwprop}
+Given the 2-D vectors
+\[
+{\bmi  x}\equiv (z,x), \quad {\bmi  x}^{\prime}\equiv (z^{\prime},x^{\prime})
+\]
+a particularly useful solution $\rf{\bmi  G }({\bmi  x};{\bmi  x}^{\prime};k_y)$, 
+satisfies (\ref{govEqn0}) 	when the the material properties in 
+Table \ref{ATable} are homogeneous and the  {\em $y-$Fourier transformed body 
+force\/} ${\bmi F}({\bmi x};{\bmi x}^{\prime})$ assumes the 
+special form 
+\[
+{\bmi F}({\bmi x};{\bmi x}^{\prime})=
+{\bmi  I}_6 \delta({\bmi x}-{\bmi x}^{\prime}),
+\] 
+with ${\bmi  I}_6$ the $6 \times 6$ {\em identity matrix\/}, {\em viz\/}
+\begin{equation} \label{(2.1.6)} 
+{{\CB L}}\cdot \rf{\bmi  G}({\bmi  x};{\bmi  x}^{\prime};k_y)={\bmi  I}_6 
+\delta({z}-{z}^{\prime})\delta({x}-{x}^{\prime}).
+\end{equation}
+We can then use the linearity of (\ref{govEqn0}) to pose the {\em 
+particular solution\/} ${\bmi  b}_{P}$ of (\ref{govEqn0}) as the {\em 
+superposition integral\/}
+\begin{equation}	\label{superposition}
+	{\bmi  b}_{P}=\int {\rm d}{\bmi  x}^{\prime}\, \rf{\bmi  G}({\bmi  x};{\bmi 
+x}^{\prime};k_y){\bmi 
+	f}({\bmi  x}^{\prime})
+\end{equation}
+for an arbitrary body force $\bmi  f$.
+It will be  convenient for the purpose of subsequent constructions, to 
+interpret 
+$\rf{\bmi  G}({\bmi  x};{\bmi  x}^{\prime};k_y)$  of (\ref{superposition}), as the 
+{\em integral kernel\/} of the formal inverse
+\begin{equation}	\label{invDef}
+	\left[{{\CB L}}^{-1} {\bmi  w}\right]({\bmi  x})\equiv \int {\rm d}{\bmi 
+	x}^{\prime}\, \rf{\bmi  G }({\bmi  x};{\bmi  x}^{\prime};k_y)\cdot{\bmi  w}({\bmi 
+x}^{\prime}) 
+\end{equation}
+for an arbitrary {\em test\/} vector-function $\bmi  w$, where ${{\CB L}}$ is the governing 
+operator in (\ref{govEqn0}). Equation 
+(\ref{invDef}) is strictly formal,  as the {\em null space\/} of 
+${{\CB L}}$ is spanned by the set of {\em homogeneous\/} solutions and 
+consequently, 
+$\rf{\bmi  G}$ is not unique. To get a {\em well posed\/} inverse, we invoke 
+the {\em radiation condition\/} that {\em there are no homogeneous 
+solutions 
+of\/} (\ref{govEqn0}) {\em due to sources at infinity\/}.
+
+
+
+To solve for $\rf{\bmi  G}$ in (\ref{(2.1.6)}), or equivalently, to construct 
+the 
+inverse  ${{\CB L}}^{-1}$ in (\ref{invDef}), we follow the 
+classical {\em Fourier Transform\/} route. To begin, we transform the $x-$ 
+dependence via ${\cal F}_{x}\, [\cdot]({k}_{x})\equiv \frac{1}{\sqrt{2 
+\pi}}\int_{-\infty }^{ \infty 
+}dx\ \exp \left({-i\, {k}_{x} x}\right)\, [\cdot](x)$, where  ${k}_{x}$ is the 
+horizontal 
+component 
+of the wavevector,
+so that the transverse {\em Fourier\/} transform of the governing equation 
+(\ref{(2.1.6)})
+may be written as
+\begin{eqnarray}	\label{FLdef}
+\lefteqn{\langle { {k}_{x}} | {\CB L }| { {k}_{x}}^{\prime}\rangle
+\langle { {k}_{x}}^{\prime}| x\rangle\langle x| \,\rf{\bmi 
+G}({\bmi x};{\bmi x}^{\prime};k_y)}\nonumber\\
+&&\equiv{\bmi  L}(z,{k}_{x},{k}_{y}) \,\rf{\bmi  G}(z,{k}_{x};z^{\prime},x^{\prime};k_y)\nonumber\\
+&& \equiv \left[\partial_z -{\bmi  A}({k}_{x},{k}_{y})\,  \right]\,\rf{\bmi 
+G}(z,{k}_{x};z^{\prime},x^{\prime};k_y)={\bmi  I}_{6} 
+	\delta(z-z^{\prime}) \, \frac{\exp(-i {k}_{x} x^{\prime})}{\sqrt{2 \pi}}
+\end{eqnarray}
+where the {\em Fourier domain system matrix\/} $\langle { {k}_{x}} | {\CB A }| 
+{ {k}_{x}}^{\prime}\rangle= \delta({ {k}_{x}}-{ {k}_{x}}^{\prime}) {\bmi  
+A}({k}_{x},{k}_{y})$ is defined
+\begin{equation}	\label{Akdef}
+	{\bmi  A}({k}_{x},{k}_{y})=\left[{\begin{array}{cccccc} 
+0&-i \gamma {  k}_{  x}& 
+ - \gamma   i\ {k}_{y}&a&0&0\\ -i{k}_{x}&0&0&0&b&0\\ 
+-i{k}_{y}&0&0&0&0&b\\ - \rho {\omega }^{  2}&  
+0&0&0&-i{k}_{x}&-i{k}_{y}\\ 
+0&- \rho {\omega }^{  2}  + 
+\zeta {  k}_{  x}^{  2}  + \mu {  
+k}_{  y}^{  2}&{  k}_{  x}{  k}_{ 
+ y}\left({\chi   + \mu }\right)&  -i{k}_{x} \gamma 
+&  0&0\\ 0&{k}_{x}{k}_{y}\left({ \chi   + \mu 
+}\right)&- \rho {\omega }^{  2}  + \zeta {  
+k}_{  y}^{  2}  + \mu {  k}_{  
+x}^{  2}&  -i{k}_{y} \gamma &  0&0\end{array}}\right]
+\end{equation}
+due to the {\em translational invariance of\/} ${\CB A }$.
+The system operator ${\bmi  A}({k}_{x},{k}_{y})$ of 
+(\ref{Akdef}) is {\em quasi-Hamiltonian\/} since
+\begin{equation} \label{ATdef}
+{\bmi  A}^{T}(-{k}_{x},-{k}_{y}){\bmi  J}_6 + {\bmi  J}_6 {\bmi  
+A}({k}_{x},{k}_{y}) \equiv {\bf 0}_6
+\end{equation}
+where ${\bmi  J}_6$ is the {\em canonically symplectic\/} array of 
+(\ref{Jdef}).
+The {\em diagonal array\/} ${\bmi 
+\Lambda}$ {\em of eigenvalues\/}  of ${\bmi  A}({k}_{x},{k}_{y})$ is defined as
+\begin{samepage}\begin{eqnarray}	\label{eigDef}
+\lefteqn{	{\bmi \Lambda}({k}_{x},{k}_{y}) =}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+i \ \mbox{diag} \left[{k}_{z,P 
+	}({k}_{x},{k}_{y}),{k}_{z,S }({k}_{x},{k}_{y}),{k}_{z,H }({k}_{x},{k}_{y}),
+	-{k}_{z,P }({k}_{x},{k}_{y}),-{k}_{z,S }({k}_{x},{k}_{y}),
+	-{k}_{z,H }({k}_{x},{k}_{y}) \right] \nonumber
+\end{eqnarray}\end{samepage}
+where
+\begin{equation}	\label{kzcDef}
+	{k}_{z,c}({k}_{x},{k}_{y}) = \left\{
+	\begin{array}{c}
+	\sqrt {\hat{ K}_{c}^{2}({k}_{y})\ -\ {k}_{x}^{2}}\ \ \ \ \ \ |{k}_{x}|\ <\ 
+	|\hat{K}_{c}({k}_{y})|\\
+	i\sqrt {{k}_{x}^{ 2}\ -\ \hat{ K}_{c}^{2}({k}_{y})} \ \ \ \ |{k}_{x}|\ \ge   \ 
+	|\hat{K}_{c}({k}_{y})|
+\end{array}
+\right. , \quad  c\in\{P,S,H\}, 
+\end{equation}
+with
+\begin{equation}	\label{Kdef}
+	\hat{K}_{c}({k}_{y}) = \left\{
+	\begin{array}{c}
+	\sqrt {(\omega/{c})^{2}\ -\ {k}_{y}^{2}}\ \ \ \ \ \ |{k}_{y}|\ <\ 
+	|\omega/{c}|\\
+	i\sqrt {{k}_{y}^{ 2}\ -\ (\omega/{c})^{2}} \ \ \ \ |{k}_{y}|\ \ge   \ |\omega/{c}|
+\end{array} \right. , \quad  c\in\{P,S,H\}. 
+\end{equation}
+{\em We note that ${k}_{z,S }={k}_{z,H }$ 
+because $S=H=\beta$ from Table \ref{ATable}. We distinguish 
+between ${k}_{z,S }$ and ${k}_{z,H }$,  only to maintain a self-consistent 
+notational convention.\/}
+ The system matrix ${\bmi  A}({k}_{x},{k}_{y})$ of (\ref{Akdef}) has an equivalent {\em 
+spectral representation\/}:
+\begin{equation}	\label{specA}
+	{\bmi  A}({k}_{x},{k}_{y}) \equiv {\bmi  D}_{z}({k}_{x},{k}_{y}){\bmi 
+	\Lambda }({k}_{x},{k}_{y}){\bmi  D}_{z}^{ -1}({k}_{x},{k}_{y});
+\end{equation} 
+where the {\em eigen matrix\/} ${\bmi  D}_{z}({k}_{x},{k}_{y})$ is  defined as
+\begin{eqnarray} \label{Ddef}
+\lefteqn{{\bmi D}_{z}(k_{x},k_{y})=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[\begin{array}{cccccc}
+\left|+,P, k_{x},k_{y}  \right\rangle&\left|+,S, k_{x},k_{y}  
+\right\rangle&\left|+,H, k_{x},k_{y}  \right\rangle&
+\left|-,P, k_{x},k_{y}  \right\rangle&\left|-,S, k_{x},k_{y}  
+\right\rangle&\left|-,H, k_{x},k_{y}  \right\rangle
+\end{array}\right]\nonumber
+\end{eqnarray}
+with:
+\begin{itemize}
+\item the $\left|\pm,P, k_{x},k_{y}  \right\rangle$ eigen-vectors 
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small 
+upgoing}}}}$  $P-$waves 
+\begin{equation} \label{Peigen}
+\left|\pm,P, k_{x},k_{y}  \right\rangle=\left[\begin{array}{c} \pm 
+i\,{k}_{z,P}(k_x,k_y)\\i\,k_{x}\\i\,k_{y}\\
+  \rho \,\left( 2\,{\beta^2}\,{k_{x}^2} + 2\,{\beta^2}\,{k_{y}^2} - 
+     {\omega^2} \right) \\ \mp 2\,\rho\,{\beta^2}\,k_{x}\,{k}_{z,P}(k_x,k_y) \\
+  \mp 2\,\rho\,{\beta^2}\,k_{y}\,{k}_{z,P}(k_x,k_y) \end{array}\right]
+  \epsilon_{P}
+\end{equation}
+with the  normalization factor ${\epsilon}_{P}$
+
+\item the $\left|\pm,S, k_{x},k_{y}  \right\rangle$ eigen-vectors 
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small 
+upgoing}}}}$  quasi-$SV-$waves 
+\begin{equation} \label{SVeigen}
+\left|\pm,S, k_{x},k_{y}  \right\rangle=\left[\begin{array}{c} 
+i\,k_{x}\\
+\mp i\,{k}_{z,S}(k_x,k_y)\\0\\
+\mp 2\,\rho\,{\beta^2}\,k_{x}\,{k}_{z,S}(k_x,k_y) \\
+  \rho \,\left({\omega^2} -2\,{\beta^2}\,{k_{x}^2} - {\beta^2}\,{k_{y}^2}  \right) \\
+  -\rho\,{\beta^2}\,k_{x}\,k_{y} \end{array}\right]
+  \epsilon_{S}
+\end{equation}
+with the  normalization factor ${\epsilon}_{S}$
+
+\item the $\left|\pm,H, k_{x},k_{y}  \right\rangle$ eigen-vectors 
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small 
+upgoing}}}}$  quasi-$SH-$waves 
+\begin{equation} \label{SHeigen}
+\left|\pm,H, k_{x},k_{y}  \right\rangle=\left[\begin{array}{c} 
+\mp k_{y}\,{k}_{z,H}(k_x,k_y) \\-k_{x}\,k_{y} \\
+  \hat{K}_{H}^2\\
+2\,i\,k_{y}\,\rho \,\left({\beta^2}\,{k_{x}^2} + 
+     {\beta^2}\,{k_{y}^2} - {\omega^2} \right) \\
+  \mp 2\,i\,\rho\,{\beta^2}\,k_{x}\,k_{y}\,{k}_{z,H}(k_x,k_y) \\
+  \pm i\,{k}_{z,H}(k_x,k_y)\,\rho \,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2} \right) \end{array}\right]
+  \epsilon_{H}
+\end{equation}
+with the  normalization factor ${\epsilon}_{H}$
+\end{itemize}
+We have called the eigen-vectors in (\ref{SVeigen}) and (\ref{SHeigen}) 
+{\em quasi-\/}$SV$ and {\em quasi-\/}$SH$ waves respectively, because the 
+corresponding vector fields are {\em solenoidal\/} and are {\em in the 
+$(z,x)$ plane\/} 
+and {\em out of the $(z,x)$ plane\/} respectively, when $k_{y}=0$. However, our 
+choice of the  shear wavefield decomposition into quasi-inplane and quasi-out 
+of plane components
+differs from the choice commonly used in seismology [e.g. 
+{\em Prange \& Toks\"oz}~(1990)]. Unlike the conventional decomposition,  the basis vectors 
+(\ref{SVeigen}) and (\ref{SHeigen}) are {\em non-degenerate\/} when 
+${k}_{x}=0$ and ${k}_{y}=0$.
+The normalization factors ${\epsilon}_{P},{\epsilon}_{S} $ and 
+${\epsilon}_{H}$
+in Eqns.(\ref{Peigen})-(\ref{SHeigen}) are chosen so that ${\bmi  
+D}_{z}^{-1}({k}_{x},{k}_{y})$ 
+takes a simple form.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Using the standard result that eigenspaces of ${\bmi  A}^{T}({k}_{x},{k}_{y})$ annihilate
+eigenspaces of ${\bmi  A}({k}_{x},{k}_{y})$ (and vice versa) 
+[e.g. {\em Milne\/}~\shortcite{Milne}, 
+{\em p.89\/}], we can avoid constructing  ${\bmi  D}_{z}^{-1}({k}_{x},{k}_{y})$ in (\ref{specA}) by explicit 
+matrix inversion, since we use the {\em Hamiltonian symmetry\/} 
+(\ref{ATdef}), to relate ${\bmi  D}_{z}^{-1}({k}_{x},{k}_{y})$ to the eigen matrix of the 
+{\em transposed\/} or {\em 
+dual\/} system matrix ${\bmi  A}^{T}({k}_{x},{k}_{y})$ defined as
+\[
+{\bmi  A}^{T}({k}_{x},{k}_{y})\equiv {\bmi  J}_6 {\bmi  A}(-{k}_{x},-{k}_{y}) {\bmi  J}_6
+\] 
+To begin, it follows from (\ref{eigDef}) and (\ref{kzcDef}) that ${\bmi 
+\Lambda}(-{k}_{x},-{k}_{y})={\bmi \Lambda} ({k}_{x},{k}_{y})$, 
+so that
+\begin{samepage}
+\begin{eqnarray*}
+{\bmi  D}_{z}(-{k}_{x},-{k}_{y}){\bmi \Lambda} ({k}_{x},{k}_{y})&=&
+{\bmi  A}(-{k}_{x},-{k}_{y}){\bmi  D}_{z}(-{k}_{x},-{k}_{y})\\
+&=&{\bmi  J}_{6}{\bmi 
+A}^{T}({k}_{x},{k}_{y}){\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})
+\end{eqnarray*}
+\end{samepage}
+which implies upon rearrangement that
+\[
+{\bmi  A}^{T}({k}_{x},{k}_{y}){\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})=-{\bmi  J}_{6}
+{\bmi  D}_{z}(-{k}_{x},-{k}_{y}){\bmi  
+\Lambda} ({k}_{x},{k}_{y}).
+\]
+Consequently, ${\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})$ is an eigenbasis of the dual 
+operator ${\bmi 
+A}^{T}({k}_{x},{k}_{y})$, with $-{\bmi  \Lambda} ({k}_{x},{k}_{y})$ the corresponding eigenvalue array. 
+From direct evaluation it follows that
+\begin{equation} \label{dinv1}
+{\left({{\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})}\right)}^{T}{\bmi  
+D}_{z}({k}_{x},{k}_{y})= i\left[{\begin{array}{cc}{\bf 0}_{3}&{\bmi V}\\
+-{\bmi V}&{\bf 0}_{3}\end{array}}\right]
+\end{equation}
+where
+\[
+{\bmi V}=
+\mbox{diag}\left[\begin{array}{ccc}
+2 \rho {\omega }^{  2}{  k}_{  z, P }({k}_{x}){\epsilon 
+}_{P}^{  2},\,&
+2 \mu {  k}_{  z, S }({k}_{x}) \hat{K}_{S }^{2}{\epsilon }_{S}^{  
+2},\,&
+2 \rho {\omega }^{  2}{  k}_{  z, H }({k}_{x}) \hat{K}_{H }^{2}{\epsilon }_{H}^{  2}
+\end{array}\right]
+\]
+and  $\hat{K}_{c}, c\in\{P,S,H\}$ was given by (\ref{Kdef}),
+ so that if we choose the normalization factors ${\epsilon }_{P }$, 
+${\epsilon }_{S}$ and ${\epsilon }_{H}$ in Eqns.(\ref{Peigen})-(\ref{SHeigen})
+according to 
+ \begin{equation} \label{epsdef}
+{\epsilon }_{P }= \frac{1}{\sqrt{2 \rho {\omega }^{  2}{  k}_{  
+z, P }}}, \quad
+{\epsilon }_{S }= \frac{\omega}{\beta\,\hat{K}_{S }\,\sqrt{2 \rho {\omega }^{  2}  {  k}_{  
+z, S }}}
+, \quad \mbox{and} \quad
+{\epsilon }_{H }= \frac{1}{\hat{K}_{H }\, \sqrt{2 \rho {\omega }^{  2}  {  k}_{  
+z, H }}} 
+\end{equation}
+ then (\ref{dinv1}) simplifies to
+\begin{equation} \label{dinv2}
+{\left({{\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})}\right)}^{T}{\bmi  D}_{z}({k}_{x},{k}_{y})
+=i {\bmi  J}_{6}
+\end{equation}
+so that upon rearrangement of (\ref{dinv2}) we get
+\begin{equation}	\label{D1def}
+{\bmi  D}_{z}^{-1}({k}_{x},{k}_{y})=-i\	{\bmi  J}_6{\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y}){\bmi  J}_6
+\end{equation}
+Equation (\ref{D1def}) for the inverse is reminiscent of the {\em 
+symplectic\/} structures found in {\em Hamiltonian dynamical systems\/} 
+[e.g. {\em 
+Goldstein}~\shortcite{Goldstein}] ({\em see also \/} {\sc Box} 
+$\bf 3.1$). 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\fbox{
+\begin{minipage} {142.0mm}
+{\sc Box} $\bf 3.1$ \newline
+A {\em fundamental\/} investigation of 
+the seismic wave equations as a {\em Hamiltonian dynamical system\/} may 
+be found 
+in {\em Kennett }~\shortcite{K74b},
+{\em Chapman \& Woodhouse }~\shortcite{ChapWood}, where it is shown that 
+the coupled 
+second order elastic wave equations are the {\em Euler\/} equations for 
+the stationary value of a {\em Lagrangian variational principle\/}. 
+The ``Hamiltonian" first order system employed in this thesis is then 
+obtained via a {\em Legendre transformation\/} [e.g. {\em 
+Goldstein}~\shortcite{Goldstein} Ch. $12$]. Unlike, the equations of 
+{\em static elastic equilibrium\/}, variational principles for the time 
+harmonic elastic wave equations are not {\em extremal\/}, due to the 
+complex nature of the {\em radiation conditions\/}, which siphon energy 
+out of the system, as well as the {\em D'Alembert forces\/}, which render 
+the wave equations {\em indefinite\/}. The lack of an extremum, vitiates 
+some of the numerical procedures that have been developed by 
+mathematicians and engineers to handle the static problem. None the less,
+identifying the time harmonic wave elastic wave equation as a Hamiltonian 
+dynamical 
+system suggests a very useful {\em propagation invariant\/} that follows 
+from the {\em incompressibility of a Hamiltonian flow in  
+displacement-traction phase space\/} [e.g. {\em 
+Schultz\/}~\shortcite{Schultz}], so that 
+${\bmi  b}_{ 1}\wedge {\bmi  b}_{ 2}|_{z_1}={\bmi  b}_{ 1}\wedge {\bmi  b}_{ 
+2}|_{z_2}$. In theoretical seismology, the exterior product ``$\wedge$" is 
+expressed in terms of the canonically symplectic array ${\bmi  J}_6$ of (\ref{Jdef}), 
+so that
+\[
+{\bmi  b}_{ 1}^{ T} (z_1,-{k}_{x},-{k}_{y}){\bmi  J}_{6}{\bmi  b}_{2}(z_1,{k}_{x},{k}_{y})=
+{\bmi  b}_{ 1}^{ T} (z_2,-{k}_{x},-{k}_{y}){\bmi  J}_{6}{\bmi  
+b}_{2}(z_2,{k}_{x},{k}_{y})\hspace{9 em}(1)
+\]
+for a pair of wavefields ${\bmi  b}_{1},{\bmi  b}_{2}$ in a {\em source 
+free\/} depth interval $z_1 \le \zeta \le z_2$.
+An appreciable portion of the {\em matrix  mechanics\/} for seismic wave 
+propagation in stratified 
+media, may be developed, with (1) as the starting point 
+\cite{K83}. The identity (1) plays a role analogous to the 
+{\em Rayleigh-Betti\/} representation of the conventional coupled 
+second order theory. 
+\vspace{6mm}
+\end{minipage}
+}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+We now transform the $z-$dependence of  (\ref{FLdef}) using
+the {\em  Fourier transform\/} 
+\[
+{\cal F}_{z}\, 
+[\cdot] ({k}_{z}) \equiv \frac{1}{\sqrt{2 \pi}}\int_{-\infty }^{ \infty } 
+dz\ \exp \left({-i\ {k}_{z}\ z}\right)\, [\cdot] (z) ,\]
+ to get
+\begin{equation}	\label{FzLdef}
+	\tilde{\bmi  L}({\bmi k}) \,\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y) \equiv \left[i 
+{\bmi  I}_6 {k}_{z} -{\bmi 
+A}({k}_{x},{k}_{y})\,  
+	\right]\,\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y)={\bmi  I}_{6} 	
+	\frac{\exp({-i {\bmi k}\cdot {\bmi x}^{\prime}})}{{2 \pi}},
+\end{equation}
+where ${\bmi x}^{\prime}=(z^{\prime},x^{\prime})$ and  ${\bmi 
+k}=(k_{z},k_{x})$, so that
+\begin{equation}	\label{FzLdef1}
+	\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y) \equiv
+	\left[i {\bmi  I}_6 {k}_{z} -{\bmi  A}({k}_{x},{k}_{y}) \right]^{-1} 
+	\frac{\exp({-i {\bmi k}\cdot {\bmi x}^{\prime}})}{{2 \pi}}.
+\end{equation}
+Using the spectral representation (\ref{specA}) in  (\ref{FzLdef1}), 
+we get 
+\begin{eqnarray} \label{InvLDef0}
+\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y) 
+&=&{\bmi  D}_{z}({k}_{x},{k}_{y}) 
+{\left[i\, {\bmi  I}_{6}\, {k}_{z}\, -\, i\,   {\bmi \Lambda} \right]}^{-1}
+{\bmi  D}_{z}^{-1}({k}_{x},{k}_{y}) \frac{\exp({-i {\bmi k}\cdot {\bmi x}^{\prime}})}{2 \pi}
+\nonumber\\
+&=&{\bmi  D}_{z}({k}_{x},{k}_{y}) 
+{\left[{\bmi  J}_{6}\, {k}_{z}\, - \,{\bmi  J}_{6}\, {\bmi \Lambda} 
+\right]}^{-1}
+{\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})\,{\bmi  J}_6
+\frac{\exp(-i {\bmi k}\cdot {\bmi x}^{\prime})}{2 \pi}\nonumber\\
+&=&{\bmi  D}_{z}({k}_{x},{k}_{y})
+\left[{\begin{array}{cc}{\bf 0}_{3}&-{\bmi W}^{+}\\
+{\bmi W}^{-}&{\bf 0}_{3}\end{array}}\right]
+{\bmi  
+D}_{z}^{T}(-{k}_{x},-{k}_{y})
+\,{\bmi  J}_6 \frac{\exp(-i {\bmi k}\cdot {\bmi x}^{\prime})}{{2 \pi}}
+\end{eqnarray} 
+where
+\[
+{\bmi W}^{\pm}=\mbox{diag}
+\left[\begin{array}{ccc}
+\frac{1}{({k}_{z}\mp{k}_{z,P })},\,&\frac{1}{({k}_{z}\mp{k}_{z,S 
+})},\,&\frac{1}{({k}_{z}\mp{k}_{z,S })}\end{array}\right]
+\]
+
+
+Applying the inverse Fourier transform 
+${\CB F}^{-1}\, [\cdot]({\bmi x}) \equiv \frac{1}{{2 \pi}} 
+\int_{R^2 } {\rm d}{\bmi k} \exp \left(i {\bmi k}\cdot {\bmi x}\right)\, 
+[\cdot] ({\bmi k})$, 
+it follows from (\ref{InvLDef0}),
+that $\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)$ 
+may be written
+\begin{samepage}
+\begin{eqnarray} \label{InvLDef}
+\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)&=&{\CB F}^{-1}\, \left[\rf{\bmi  G}({\bmi 
+k};{\bmi x}^{\prime};k_y) \right]({\bmi x}) =\frac{1}{4 \pi^2} 
+\int_{R^2 } {\rm d}{\bmi k} \exp \left[i {\bmi k}\cdot ({\bmi x}-{\bmi 
+x}^{\prime})\right]\nonumber\\
+&&\times {\bmi  D}_{z}({k}_{x},{k}_{y})
+\left[{\begin{array}{cc}{\bf 0}_{3}&-{\bmi W}^{+}\\
+{\bmi W}^{-}&{\bf 0}_{3}\end{array}}\right]{\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})
+\,{\bmi  J}_6
+\end{eqnarray}
+\end{samepage} 
+
+\subsection{The classical up/down, plane wave Green's tensor}
+We now evaluate the $k_{z}$ integral in (\ref{InvLDef}) using the calculus of 
+residues [e.g. {\em Aki \& Richards\/}~(1980)], which is possible provided
+the $z$ component of  $({\bmi x}-{\bmi x}^{\prime})$ in  (\ref{InvLDef}) 
+is non-zero, i.e. $({z}-{z}^{\prime})\not=0 $.
+
+We  close the 
+$k_z$ integration contour 
+in the ${\stackrel{{\mbox{{\small upper }}}}{{}_{\mbox{{\small lower }}}}}$ half of the 
+complex ${k}_{z}-$plane when 
+$(z-{z}^{\prime})\gtlt0$, in so doing  we pick up the 
+\[
+\Re(\partial \omega/\partial { k}_{z,c})\gtlt 0
+\]
+residue contributions (Fig.\ref{Poles}), associated with 
+${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small upgoing}}}}$ 
+group velocity, to get
+\begin{eqnarray} \label{Gzres}
+\lefteqn{\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)=\frac{- i}{2 \pi} 
+\int_{R} {\rm d}{ k}_{x} \exp \left[i { k}_{x} ({ x}-{ 
+x}^{\prime})\right] {\bmi  D}_{z}({k}_{x},{k}_{y})
+{\bmi Q}^{z}(z;z^{\prime}){\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})
+\,{\bmi  J}_6}\nonumber\\
+&&
+\end{eqnarray} 
+where
+${\bmi Q}^{z}(z;z^{\prime})$ in (\ref{Gzres}),
+is defined  as
+\begin{equation} \label{Qzdef}
+{\bmi Q}^{z}(z;z^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3}&H(z-{z}^{\prime}){\bmi E}(k_x;z;{z}^{\prime})\\
+H(z^{\prime}-{z}){\bmi E}(k_x;z;{z}^{\prime})&{\bf 0}_{3}\end{array}}\right]
+\end{equation}
+with
+\begin{equation} \label{Ek1def}
+{\bmi E}(k_x;z;{z}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{ k}_{z,P}(k_{x})|z-{z}^{\prime}|}&{ 0}&{ 0}\\ 
+{ 0}&{\rm e}^{ 
+i{ k}_{z,S}(k_{x})|z-{z}^{\prime}|}&{ 0}\\ { 0}&{ 0}&{\rm e}^{ 
+i{ k}_{z,H}(k_{x})|z-{z}^{\prime}|}\end{array}}\right] ,
+\end{equation}
+and $H(\cdot)$ is the {\em Heaviside step function\/}.
+The imposition of the {\em radiation boundary conditions\/} employed here, 
+follows {\em Lighthill}~\shortcite{Lighthill}. Alternatively,  we may
+ introduce {\em attenuation\/} to move the 
+poles off the integration contour [e.g. {\em Aki \& Richards\/}~(1980)].
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\HideDisplacementBoxes
+%\ShowDisplacementBoxes
+\centerline{\BoxedEPSF{Poles.EPSF scaled 800}}
+\caption{The movement of poles in the complex $k_z$ plane consistent with
+$2 \pi \nu \rightarrow 2 \pi \nu +i \epsilon$}
+\protect\label{Poles}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\section[Discrete plane wave representations]
+{Discrete plane wave representations of the free space 
+elastodynamic Green's tensor}\label{secPWG}
+
+\subsection{The $z$ splitting}\label{secStandardz}
+\begin{figure}
+\fbox{
+\begin{minipage} {142.0mm}
+{\sc Box} $\bf 3.2$ {\sc The discrete Fourier transform\/}\newline
+Given the Fourier integral
+\begin{equation} \label{invF}
+\phi  (x)={\frac{1}{2 \pi }}\int_{- {\mit \Omega} }^{ {\mit \Omega} }{\rm d}{k}_{x}
+\exp \left({i{k}_{x}x}\right)\tilde{ \phi }({k}_{x}).
+\end{equation}
+we will now show how to approximate it using quadrature.
+To begin,  (\ref{invF}) may be approximated by the 
+$2M$-panel {\em trapezoidal rule\/} as
+\begin{eqnarray} \label{DFT0}
+ \phi   (x) &\approx& {\frac{{\mit \Delta} {  k}_{  
+x}}{  2 \pi }}\left[{{\frac{  \exp \left({-i {\mit \Omega} 
+  x}\right)\tilde{ \phi }(- {\mit \Omega}   )+\exp 
+\left({i {\mit \Omega}   x}\right)\tilde{ \phi }( {\mit \Omega}   
+)}{2}} }\right] \nonumber\\
+&& + \sum\limits_{  j= -M+1}^{  M-1}  
+ \exp \left({ij {\mit \Delta} {  k}_{  x}  
+x}\right)\tilde{ \phi }(j {\mit \Delta} {  k}_{  x}  
+)
+\end{eqnarray} 
+where the wavenumber sampling interval  ${\mit \Delta} {  k}_{  x}$ is 
+defined as
+\[
+{\mit \Delta} {  k}_{  x}=\frac{2 {\mit \Omega}}{2 M}=\frac{{\mit \Omega}}{M}
+\]
+For computational purposes, we {\em alias\/} the endpoints in 
+(\ref{DFT0}), i.e.
+\begin{equation} \label{aliasapprox}
+{{\frac{  \exp \left({-i {\mit \Omega} 
+  x}\right)\tilde{ \phi }(- {\mit \Omega}   )+\exp 
+\left({i {\mit \Omega}   x}\right)\tilde{ \phi }( {\mit \Omega}   
+)}{2}} }\equiv 
+\exp \left({-i {\mit \Omega} 
+  x}\right)\tilde{ \phi }(- {\mit \Omega}   )
+\end{equation}
+so that (\ref{DFT0}) becomes
+\begin{equation} \label{DFT1}
+ \phi(x) \approx {\frac{{\mit \Delta} {  k}_{  
+x}}{  2 \pi }}\sum\limits_{  j= -M}^{  M-1}  
+ \exp \left({ij {\mit \Delta} {  k}_{  x}  
+x}\right)\tilde{ \phi }(j {\mit \Delta} {  k}_{  x}  )
+\end{equation} 
+The approximation (\ref{aliasapprox}) is feasible when
+\begin{equation} \label{endpoints}
+\tilde{ \phi }(- {\mit \Omega}   )=
+\tilde{ \phi }({\mit \Omega}   )= 0
+\end{equation}
+which is the approximation adopted here.  
+
+We will now proceed to manipulate (\ref{DFT1}) into a {\em discrete Fourier 
+transform\/} (DFT). To begin, we rewrite the sum in (\ref{DFT1}) as
+\begin{eqnarray} \label{DFT2}
+ \phi   (x) &\approx& {\frac{{\mit \Delta} {  k}_{  
+x}}{  2 \pi }}\left[{\sum\limits_{  j=0}^{  M-1} 
+  \exp \left({ij {\mit \Delta} {  k}_{  x}  
+x}\right)\tilde{ \phi }(j {\mit \Delta} {  k}_{  x}  
+)+ \sum\limits_{  j=-M}^{  -1}   \exp \left({i j 
+{\mit \Delta} {  k}_{  x}  x}\right)\tilde{ \phi }(j 
+{\mit \Delta} {  k}_{  x}  )}\right]\nonumber\\
+& \approx& {\frac{{\mit \Delta} {  k}_{  x}}{  2 \pi 
+}}\left[\sum\limits_{  j=0}^{  M-1}   \exp 
+\left({i j {\mit \Delta} {  k}_{  x}  x}\right)\tilde{ 
+\phi }(j {\mit \Delta} {  k}_{  x}  ) \right.\nonumber\\
+&&\qquad\qquad
+\left.+ \sum\limits_{ 
+ j=M}^{  2M-1}   \exp \left({i(j-2M) {\mit \Delta} {  
+k}_{  x}  x}\right)\tilde{ \phi }((j-2M) {\mit \Delta} { 
+ k}_{  x}  )\right]
+\end{eqnarray} 
+We now discretize $x$ in (\ref{DFT2}) so that
+\begin{equation} \label{xgrid}
+{x}_{l}=l {\mit {\mit \Delta}}  x,\qquad 0 \le  l \le  2M-1.
+\end{equation}
+
+Using  ${x}_{l}$ from (\ref{xgrid}) in place of $x$ in (\ref{DFT2}) we get
+\begin{samepage}
+\begin{eqnarray} \label{DFT3}
+\lefteqn{ \phi   ({x}_{l}) \approx {\frac{{\mit \Delta} {  k}_{ 
+ x}}{  2 \pi }}\left[\sum\limits_{  j=0}^{  
+M-1}   \exp \left({ijl {\mit \Delta} {  k}_{  x}{\mit \Delta} 
+  x}\right)\tilde{ \phi }(j {\mit \Delta} {  k}_{  
+x}  )+\exp \left({-i2Ml {\mit \Delta} {  k}_{  x}{\mit \Delta} 
+  x}\right)\right.}\nonumber\\
+&&
+\left.
+\qquad
+\times \sum\limits_{  j=M}^{  2M-1}   
+\exp \left({ijl {\mit \Delta} {  k}_{  x}{\mit \Delta}   
+x}\right)\tilde{ \phi }((j-2M) {\mit \Delta} {  k}_{  x}  )\right],
+\quad  0 \le l \le 2M-1
+\end{eqnarray} 
+\end{samepage}
+
+\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+
+\begin{figure}
+\fbox{
+\begin{minipage} {142.0mm}
+{\sc Box} $\bf 3.2${\em continued\/} \newline
+
+
+Finally, we impose the fundamental condition in Discrete Fourier analysis 
+that
+\begin{equation}  \label{Fconstraint}
+{\mit \Delta} { k}_{ x}{\mit \Delta}  x={\frac{2 \pi }{ 2M}}
+\end{equation}
+and employing this constraint in (\ref{DFT3}) we get
+\begin{equation}\label{DFT}
+ \phi ({x}_{l}) \approx {\frac{{\mit \Delta} { k}_{  x}}{
+  2 \pi }}\sum\limits_{ j=0}^{ 2M-1}  \exp \left({{\frac{2 \pi  i j l}{2M}}}\right)
+\tilde{ \varphi }(j {\mit \Delta} { k}_{ x} ), \qquad  0 \le l \le 2M-1
+\end{equation} 
+where we have introduced the {\em DFT-ordered vector\/} $\tilde{\varphi 
+}$ defined as
+\begin{equation} \label{Forder}
+\tilde{\varphi }(j {\mit \Delta} { k}_{ x} )=
+\left\{{\begin{array}{cl}\tilde{ \phi }(j {\mit \Delta} { k}_{ x} )&0 \le  j\rm \le  M-1\\ 
+\tilde{ \phi 
+}([j-2M] {\mit \Delta} { k}_{ x} )&M \le  
+j \le  2M-1\end{array}}\right.
+\end{equation} 
+and  used the identity
+\[
+\exp \left({-i2 M l  {\mit \Delta} {  k}_{  x}{\mit \Delta}   x}\right)
+=\exp \left(-i2 M l  \frac{2 \pi }{ 2M}\right)=1
+\]
+which follows directly from the constraint (\ref{Fconstraint}). To 
+evaluate the DFT (\ref{DFT}) using the {\em fast Fourier transform\/}(FFT) algorithm, 
+we impose the further condition 
+\[
+2M=2^m, \quad m\in\{1,2,3,\cdots  \}
+\]
+in which case the floating point operation count of (\ref{DFT}) is 
+reduced from $O(4 M^2)$ to $O(2 m M)$.
+
+Finally, an efficient method to incorporate {\em Filon quadrature\/} 
+into the DFT approximation is discussed in {\sc Box} $\bf 3.3$.
+\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+
+Basic results concerning the discrete Fourier (DFT) approximation to the inverse 
+Fourier transform over horizontal wavenumber of a scalar function,
+ are summarized in {\sc Box} $\bf 3.2$ and a simple extension of the 
+ basic theory to incorporate Filon quadrature, while exploiting the speed 
+ of the FFT algorithm is presented in {\sc Box} $\bf 3.3$. 
+We will employ these results to develop a DFT approximation to (\ref{Gzres}).  
+We assume the $N_k=2 M$ element {\em Fourier lattice\/}  
+\begin{equation} \label{pspec}
+\left\{ 
+ {k}_{j} =j {\mit \Delta} k_{x} \ |\  j=-M,\cdots ,M-1 
+\right\} 
+\end{equation} 
+where ${\mit \Delta} k_{x} =2 \pi  j/L_{x}$ and   $L_{x}$ defines the {\em fundamental spatial period\/} 
+of the representation.
+We may then approximate (\ref{Gzres}) by the {\em discrete 
+plane wave sum\/}
+\begin{samepage}
+\begin{eqnarray} \label{Gdef5}
+\rf{\bmi G}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)&=&\frac{- i\,{\mit \Delta} {k}_{x}}{2 \pi} 
+\sum\limits_{{j=-M}}^{j=M-1}
+\nonumber\\
+&&\times
+\exp \left[i {k}_{j} ({ x}-{ 
+x}^{\prime})\right] {\bmi  D}_{z}({k}_{j},{k}_{y})
+{\bmi Q}^{z}({k}_{j};z;z^{\prime}){\bmi  D}_{z}^{T}(-{k}_{j},-{k}_{y})
+\,{\bmi  J}_6
+\end{eqnarray} 
+\end{samepage}
+The discrete representation (\ref{Gdef5}) is equivalent to assuming that the 
+transverse dependence of the wavefield is both {\em  bandlimited\/} 
+(since $N_k$ is 
+finite) and periodically repeated (since ${\mit \Delta} {k}_{x}$ is finite).
+
+
+\begin{figure}
+\fbox{
+\begin{minipage} {142.0mm}
+{\sc Box} $\bf 3.3$ {\sc An application of systematic Filon 
+quadrature to the discrete Fourier transform\/}\newline
+
+An interesting method for {\em attenuating the effects of aliasing\/} in 
+the discrete Fourier transform of  {\sc Box} $\bf 3.2$ is to iterpolate 
+the spectrum before transforming: a technique commonly employed in the 
+Filon method [e.g. {\em Frazer \& Gettrust\/}~(1984), {\em Press \& 
+Teukolsky\/}~(1989)]. We will demonstrate this technique with a specific example.
+
+We interpolate the digitized spectrum
+\[
+\{\tilde{ \phi }(j {\mit \Delta} {  k}_{  x}  ): -M \le j \le M \}
+\]
+with the {\em chapeau shape function\/} $\tilde{X}(k_x)$ (of finite 
+element fame), defined as
+\[
+\tilde{X}({k}_{x})=\left\{{\begin{array}{cc}1-\left|{{k}_{x}/ {\mit \Delta}   
+k_x}\right|&- {\mit \Delta}   k_x \le {  k}_{  x}\le {\mit \Delta} 
+  k_x\\ 0&\mbox{otherwise}\end{array}}\right.
+\] 
+so that the spectrum may be approximated as
+\begin{equation} \label{interp}
+\tilde{ \Phi }({  k}_{  x}  )=\sum\limits_{j=-M}^{ M} \tilde{ X} 
+({k}_{x}-j {\mit \Delta} { k}_{ x})\tilde{ \phi }(j {\mit \Delta} { k}_{ x} ) 
+=\tilde{ X}({k}_{x})\, {\ast}
+\sum\limits_{j=-M}^{ M} \delta 
+({k}_{x}-j {\mit \Delta} { k}_{ x})\tilde{ \phi }(j {\mit \Delta} { k}_{ x} )
+\end{equation}
+where the binary operator ``$\ast$" denotes a {\em convolution\/} and 
+$\delta$ is the Dirac delta function. Applying the inverse Fourier 
+transform to  (\ref{interp}) gives
+\begin{eqnarray} \label{interp1}
+\lefteqn{{\frac{1}{2 \pi }}\int {\rm d}\, {k}_{x}{\rm e}^{i{k}_{x}x}\tilde{ \Phi 
+}({k}_{x})={\frac{1}{2 \pi }}\int {\rm d}{k}_{x}{\rm e}^{i{k}_{x}x} 
+\sum\limits_{  j=-M}^{  M} \tilde{  X}  
+({k}_{x}-j {\mit \Delta} {  k}_{  x}  )\tilde{ \phi 
+}(j {\mit \Delta} {  k}_{  x}  )}\nonumber\\
+&&\!\!\!\!\!\!
+= \left[ {\frac{1}{2 \pi }}\int {\rm d}({k}_{x}-j {\mit \Delta} {  k}_{  x}  )\,
+{\rm e}^{i({k}_{x}-j {\mit \Delta} {  k}_{  x}  )x}
+ \tilde{  X}  
+({k}_{x}-j {\mit \Delta} {  k}_{  x}  )\right]\,\sum\limits_{  j=-M}^{  M} {\rm e}^{i j {\mit \Delta} {  
+k}_{  x} x}\,\tilde{ \phi 
+}(j {\mit \Delta} {  k}_{  x}  )\nonumber\\
+&&\!\!\!\!\!\!
+=\left[ {\frac{{\mit \Delta} {  k}_{  x}}{2 \pi }}
+\mbox{sinc}^{2}\left( \frac{{\mit \Delta} {  k}_{  x}\, x}{2} \right)
+\right]\,\sum\limits_{  j=-M}^{  M} {\rm e}^{i j {\mit \Delta} {  
+k}_{  x} x}\,\tilde{ \phi 
+}(j {\mit \Delta} {  k}_{  x}  )
+\end{eqnarray} 
+
+$\quad$ The extra {\em multiplicative factor\/}
+\[
+A(x)=\mbox{sinc}^{2}\left(\frac{{\mit \Delta} {  k}_{  x}\, x}{2}\right)
+\] 
+in (\ref{interp1}) {\em attenuates \/} the basic DFT sum 
+\begin{equation} \label{Atendef}
+{\frac{{\mit \Delta} {  k}_{  x}}{2 \pi }}\,
+\sum\limits_{  j=-M}^{  M} {\rm e}^{i j {\mit \Delta} {  
+k}_{  x} x}\,\tilde{ \phi 
+}(j {\mit \Delta} {  k}_{  x}  )
+\end{equation}
+that we met previously in {\sc Box } $3.2$. If the fundamental period 
+ of the representation is $L_x$, then the wavenumber sampling interval
+ ${\mit \Delta} {  k}_{  x}$ is chosen according to
+\[
+{\mit \Delta} {  k}_{  x} =\frac{2 \pi }{L_x}
+\] 
+in which case (\ref{Atendef}) is a {\em monotone decreasing \/}  function of $x$ for $ 0 
+\le x \le L_x$. In particular 
+\[
+A(x)\sim \left\{ \begin{array}{cc}  1 &x \rightarrow 0 \\ 0 & x 
+\rightarrow L_x  \end{array}\right.
+\]
+
+$\quad$ In this thesis, we always choose $L_x$ so that $0 \le x 
+\le L_x/8$, and consequently $A(x)\approx 1$. Even so, if we decide to 
+include larger offsets into the basic method, 
+the attenuation factor (\ref{Atendef}) could be included as a  
+multiplicative correction, at little additional cost. 
+\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The next step will be to rewrite the discrete sum (\ref{Gdef5}) as an 
+equivalent matrix operation. To this end, we define the $N_k-$element 
+diagonal, 
+horizontal-wavevector array:
+\begin{equation} \label{gKx}
+{\bf  k}_{x} =\mbox{diag}\left[0,
+{\mit \Delta} k_{x},\cdots, (M -1){\mit \Delta} k_{x},
+-M {\mit \Delta} k_{x},\cdots,-{\mit \Delta} k_{x},\right];
+\end{equation}
+the $N_k-$element 
+diagonal, 
+vertical-wavevector array 
+\begin{eqnarray} \label{gKz}
+\lefteqn{{\bf  k}_{z,c} =\mbox{diag}\left[{ k}_{z,c}(0),{ k}_{z,c}({\mit \Delta} k_{x}),\cdots,
+{ k}_{z,c}((M-1){\mit \Delta} k_{x}),
+{ k}_{z,c}(-M{\mit \Delta} k_{x}),
+\cdots, { k}_{z,c}(-{\mit \Delta} k_{x})\right]}\nonumber\\
+&&\hspace{25em} c\in\{P,S,H\};
+\end{eqnarray} 
+and the $N_k-$element {\em Fourier vector\/}
+\begin{equation} \label{Fdef}
+{\bmi F}(x;{\bf k}_{x})=
+\left[\begin{array}{ccc} 1&, \cdots, &1 \end{array}  
+\right]\cdot{\rm e}^{i\, 
+{\bf k}_{x}\,x}.
+\end{equation} 
+It is important to note that ${\bmi F}(x;{\bf k}_{x})$ as defined in 
+(\ref{Fdef}) is an $N_k-$ row vector, even though ${\bf k}_{x}$ is an 
+$N_k-$diagonal matrix. Also, the elements of (\ref{gKx}),
+(\ref{gKz})  and (\ref{Fdef})  have the DFT 
+ordering of (\ref{Forder}) for the reasons indicated in {\sc Box} 
+$\bf 3.2$.
+
+
+Using the newly defined arrays (\ref{gKx})--(\ref{Fdef}),
+we can  rewrite the {\em discrete plane wave\/} 
+approximation (\ref{Gdef5}) to the $6 \times 6$ Green's tensor in the equivalent matrix 
+form
+\begin{samepage}
+\begin{eqnarray} \label{superG}
+\rf{\bmi G}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)
+&=&- i\,\left({\bmi I}_6\otimes 
+{\bmi F}(x;{\bf k}_{x})  \right) {\bmi  D}_{z}({\bf k}_{x},{k}_{y})\nonumber\\
+&& \times
+{\bmi Q}^{z}({\bf k}_{x};z;z^{\prime}){\bmi  D}_{z}^{T}(-{\bf k}_{x},-{k}_{y})
+\,\left({\bmi I}_6\otimes {\bmi F}^{T}(x^{\prime};-{\bf k}_{x})  \right)\,{\bmi  J}_6
+\end{eqnarray} 
+\end{samepage}
+where:\newline
+the {\em Kronecka product\/}
+$\,\left({\bmi I}_6\otimes {\bmi F}(x^{\prime};{\bf k}_{x})  \right)$ is 
+a $  6 \times 6 N_k$ array, 
+${\bmi F}^{H}(x;{\bf k}_{x})$ is the {\em Hermitian transpose\/} of the 
+Fourier vector ${\bmi F}(x;{\bf k}_{x})$ defined in (\ref{Fdef})
+(so that ${\bmi F}^{H}(x;{\bf k}_{x})\equiv {\bmi F}^{T}(x;-{\bf 
+k}_{x})$);\newline
+ the $(6N_k)\times (6N_k)$ matrix analogue of (\ref{Ddef}) is defined 
+as
+\begin{eqnarray} \label{Dsuperdef}
+\lefteqn{{\bmi D}_{z}({\bf k}_{x},k_{y})=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[\begin{array}{cccccc}
+\left|+,P, {\bf k}_{x},k_{y}  \right\rangle&\left|+,S, {\bf k}_{x},k_{y}  
+\right\rangle&\left|+,H, {\bf k}_{x},k_{y}  \right\rangle&
+\left|-,P, {\bf k}_{x},k_{y}  \right\rangle&\left|-,S, {\bf k}_{x},k_{y}  
+\right\rangle&\left|-,H, {\bf k}_{x},k_{y}  \right\rangle
+\end{array}\right]\nonumber
+\end{eqnarray}
+in terms of
+\begin{itemize}
+\item the $6 N_k \times N_k$ $P$-wave partition
+\begin{equation} \label{PeigenSuper}
+\left|\pm,P, {\bf k}_x,k_{y}  \right\rangle=
+\sqrt{\frac{{\mit \Delta} k_{x}}{{4 \pi \rho {\omega 
+}^{  2}{\bf  k}_{  
+z, P }}}}\,\left[\begin{array}{c} \pm i\,{\bf k}_{z,P}\\i\,{\bf k}_{x}\\
+i\,k_{y}\,{\bmi I}\\
+  \rho \,\left( 2\,{\beta^2}\,{{\bf k}_{x}^2} + ( 2\,{\beta^2}\,{k_{y}^2} - 
+     {\omega^2}){\bmi I} \right) \\ \mp 2\,\rho\,{\beta^2}\,{\bf k}_{x}\,{\bf k}_{z,P} \\
+  \mp 2\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{z,P} \end{array}\right]
+\end{equation}
+
+\item  the $6 N_k \times N_k$ $SV$-wave partition
+\begin{equation} \label{SVeigenSuper}
+\left|\pm,S, {\bf k}_x,k_{y}  \right\rangle=\frac{\omega }{\beta \hat{K}_{S}}\,
+\sqrt{\frac{{\mit \Delta} k_{x}}{{4 \pi \rho {\omega 
+}^{  2}{\bf  k}_{  
+z, S }}}}\,\left[\begin{array}{c} 
+i\,{\bf k}_{x}\\
+\mp i\,{\bf k}_{z,S}\\ {\bf 0} \\
+\mp 2\,\rho\,{\beta^2}\,{\bf k}_{x}\,{\bf k}_{z,S} \\
+  \rho \,\left(({\omega^2} - {\beta^2}\,{k_{y}^2}) {\bmi I}-2\,{\beta^2}\,{{\bf k}_{x}^2}   \right) \\
+  -\rho\,{\beta^2}\,k_{y}\,{\bf k}_{x} \end{array}\right]
+\end{equation}
+
+\begin{samepage}
+\item the $6 N_k \times N_k$ $SH$-wave partition
+\begin{equation} \label{SHeigenSuper}
+\left|\pm,H, {\bf k}_x, k_{y}  \right\rangle=\frac{1 }{\hat{K}_{H}}\,
+\sqrt{\frac{{\mit \Delta} k_{x}}{{4 \pi \rho {\omega 
+}^{  2}{\bf  k}_{  
+z, H }}}}\,\left[\begin{array}{c} 
+\mp k_{y}\,{\bf k}_{z,H} \\-k_{y}\,{\bf k}_{x} \\
+  \hat{K}_{H}^2 {\bmi I}\\
+-2\,i\,\rho \,{\beta^2}\,k_{y}\,{{\bf k}_{z,H}^2}\\
+  \mp 2\,i\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{x}\,{\bf k}_{z,H} \\
+  \pm i\,\rho\,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2} 
+  \right)\,{\bf k}_{z,H}  \end{array}\right]
+\end{equation}
+\end{samepage}
+
+\end{itemize}
+The $(6N_k)\times (6N_k)$ {\em plane wave propagator\/} 
+${\bmi Q}^{z}({\bf k}_{x};z;z^{\prime})$ in (\ref{superG}),
+is defined  as
+\begin{equation} \label{Qdef}
+{\bmi Q}^{z}({\bf k}_x;z;z^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3N_k}&H(z-{z}^{\prime}){\bmi E}({\bf k}_x;z;{z}^{\prime})\\
+H(z^{\prime}-{z}){\bmi E}({\bf k}_x;z;{z}^{\prime})&{\bf 0}_{3N_k}\end{array}}\right]
+\end{equation}
+where the $(3N_k)\times (3N_k)$ {\em vertical phase shift array\/} is 
+defined as
+\[
+{\bmi E}({\bf k}_x;z;{z}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{\bf k}_{z,P}|z-{z}^{\prime}|}&{\bf 0}_{N_k}&{\bf 0}_{N_k}\\ 
+{\bf 0}_{N_k}&{\rm e}^{ 
+i{\bf k}_{z,S}|z-{z}^{\prime}|}&{\bf 0}_{N_k}\\ {\bf 0}_{N_k}&{\bf 0}_{N_k}&{\rm e}^{ 
+i{\bf k}_{z,H}|z-{z}^{\prime}|}\end{array}}\right] ,
+\]
+in terms of the diagonal wavevector array ${\bf k}_{z,c}, c\in\{P,S,H  
+\}$ of (\ref{gKz}).
+
+It will be convenient in later applications,  to split (\ref{superG}) into the product
+\[
+\rf{\bmi G}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)=
+\rf{\bmi P}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)\cdot{\bmi J}_6
+\]
+where ${\bmi J}_6$ was given by (\ref{Jdef}) and
+\begin{samepage}
+\begin{eqnarray} \label{superP}
+\rf{\bmi P}\!{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)
+&=&- i\,\left({\bmi I}_6\otimes 
+{\bmi F}(x;{\bf k}_{x})  \right) {\bmi  D}_{z}({\bf k}_{x},{k}_{y})\nonumber\\
+&& \times
+{\bmi Q}^{z}({\bf k}_{x};z;z^{\prime}){\bmi  D}_{z}^{T}(-{\bf k}_{x},-{k}_{y})
+\,\left({\bmi I}_6\otimes {\bmi F}^{T}(x^{\prime};-{\bf k}_{x})  \right).
+\end{eqnarray} 
+\end{samepage}
+might be called the {\em propagator\/}, for the want of a better name. The 
+propagator is an entity in itself for most numerical applications 
+considered here.
+
+The representation (\ref{superG}) (or equivalently, (\ref{superP})) is readily extensible 
+to the plane stratified problem and we investigate this extension in 
+chapter {\ref{stratG}}. 
+
+\subsection{The $x$ splitting }\label{secxsplit}
+
+
+Recalling the definition (\ref{Ddef}) for the columns of the eigen-matrix 
+${\bmi  D}_{z}$, (\ref{InvLDef}) may be rewritten as 
+\begin{samepage} 
+\begin{eqnarray}\label{grep2}
+\rf{\bmi  G}({\bmi  x};{{\bmi  x}}^{\prime};k_y)& =&\sum\limits_{c\in \{P,S,H\}}
+{\frac{1}{4{ \pi }^{2}}}\int_{{R}^{2}} {\rm d}{\bmi k} \exp \left[{i {\bmi k}  \cdot 
+  ({\bmi x}-{\bmi x}^{\prime})}\right]\nonumber\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!
+\times\left[{{\frac{
+  \left|-,c, k_{x},k_{y}  \right\rangle\otimes \left|+,c, -k_{x},-k_{y}  \right\rangle
+  }{{k}_{z}+{k}_{z, c }({k}_{x})}}-{\frac{
+\left|+,c, k_{x},k_{y}  \right\rangle\otimes \left|-,c, -k_{x},-k_{y}  \right\rangle
+  }{{k}_{z}-{k}_{z, c }({k}_{x})}}}\right]{\bmi J}_{6}
+\nonumber\\
+&=&
+\rf{\bmi  G}_{P}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{S}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{H}({\bmi  x};{{\bmi  x}}^{\prime};k_y)
+\end{eqnarray} 
+\end{samepage}
+where  $\otimes$ is the {\em tensor product\/}.
+We will ultimately evaluate the integrals in (\ref{grep2}) using the 
+residues at the simple poles, where  
+\begin{equation} \label{dispersion}
+{k}^2_{z}+{k}^2_{x}+{k}^2_{y}=\frac{\omega^2}{c^2},\quad \mbox{for}\quad c\in\{P,S,H\}.
+\end{equation}
+Hence,  (\ref{grep2}) may be replaced by an expression that is 
+{\em equivalent at these poles\/}. Introducing the partial differential 
+operators
+\begin{eqnarray} \label{Labdef}
+\begin{array}{lll}
+{\bmi L}_{P}=&\qquad{\bmi L}_{S}=&\qquad{\bmi L}_{H}=\\
+\left[\begin{array}{c}
+\partial_{z} \\
+\partial_{x} \\ 
+\partial_{y} \\ 
+2 \mu \partial_{zz} - {\lambda \omega^{2}\over \alpha^2}\\
+    2 \mu \partial_{xz} \\ 
+   2 \mu \partial_{yz}
+\end{array}\right]&\qquad
+\frac{\omega }{\beta \hat{K}_{S}}\,
+\left[\begin{array}{c}
+\partial_{x} \\-\partial_{z} \\ 0 \\
+2 \mu \partial_{xz}\\  
+   \mu (-\partial_{zz} + \partial_{xx}) \\ 
+   \mu \partial_{xy} 
+\end{array}\right]&\qquad
+\frac{1 }{\hat{K}_{H}}\,
+\left[\begin{array}{c}
+   \partial_{yz} \\
+\partial_{xy} \\ 
+{\omega^{2}\over \beta^2} + \partial_{yy} \\ 
+ 2 \mu \partial_{yzz}\\
+    2 \mu \partial_{xyz} \\ 
+   \mu ({\omega^{2}\over \beta^2}\partial_{z} + 2 \partial_{yyz}) 
+\end{array}\right]
+\end{array}
+\end{eqnarray}
+$\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y)$  in  (\ref{grep2}) may be replaced 
+with the {\em equivalent\/} expression
+\begin{eqnarray}\label{grepc}
+\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y) &=&
+{\frac{1}{8{ \pi }^{2} \rho \omega^2}}\int_{{R}^{2}} {\rm d}{\bmi k}\,  
+\frac{
+{\bmi L}_{c} \otimes {\bmi  L}_{c}^{\prime}
+\left(
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]\right)  
+}{ {k}_{z, c }({k}_{x})\,[{k}_{z}+{k}_{z, c }({k}_{x})]} {\bmi J}_{6}\nonumber\\
+&&-
+{\frac{1}{8  { \pi }^{2}\rho \omega^2}}\int_{{R}^{2}} {\rm d}{\bmi k}\,  
+\frac{{\bmi L}_{c} \otimes {\bmi  L}_{c}^{\prime}\left(
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]\right)  
+}{{k}_{z, c }({k}_{x})\, [{k}_{z}-{k}_{z, c }({k}_{x})]} {\bmi J}_{6},\  
+c\in\{ P, S , H\};\nonumber\\
+&=& \frac{1}{4{ \pi }^{2}\rho \omega^2}
+\int_{{R}^{2}} {\rm d}{\bmi k}\, {\bmi L}_{c} \otimes {\bmi  L}_{c}^{\prime}
+\frac{
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]  
+}{ \hat{K}^{2}_{ c } - {k}^{2}_{z} - {k}^{2}_{x}} {\bmi J}_{6}
+\end{eqnarray} 
+where we have used the algebraic relation (\ref{dispersion}) and
+ the differential operator ${\bmi  L}_{c}^{\prime}$ operates on the
+${\bmi  x}^{\prime}$ coordinate. 
+
+
+Assuming that $x \not = x^{\prime}$ in (\ref{grepc}) we may  evaluate the $k_x$ integral in  
+that equation using the calculus of residues to get
+\begin{samepage}
+\begin{eqnarray} \label{grep3x}
+\lefteqn{\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y)=
+\frac{-i}{2{ \pi }\rho \omega^2}
+\int_{{R}} {\rm d}{k}_z \,{\bmi L}_{c } \otimes {\bmi  L}_{c}^{\prime}
+\frac{\exp \left[{i {k}_z  ({z}-{z}^{\prime})}\right]
+\exp \left[{i {k}_{x,c}({k}_z,{k}_y)  |{x}-{x}^{\prime}|}\right]  
+}{ 2\,{k}_{x,c}({k}_z,{k}_y)}{\bmi J}_{6},}\nonumber\\
+&&
+\end{eqnarray}
+\end{samepage}
+with 
+\begin{equation}	\label{kxcDef}
+	{k}_{x,c}({k}_{z},{k}_{y}) = \left\{
+	\begin{array}{c}
+	\sqrt {\hat{ K}_{c}^{2}({k}_{y})\ -\ {k}_{z}^{2}}\ \ \ \ \ \ |{k}_{x}|\ <\ 
+	|\hat{K}_{c}({k}_{y})|\\
+	i\sqrt {{k}_{z}^{ 2}\ -\ \hat{ K}_{c}^{2}({k}_{y})} \ \ \ \ |{k}_{x}|\ \ge   \ 
+	|\hat{K}_{c}({k}_{y})|
+\end{array}\right.
+\end{equation}
+and $\hat{ K}_{c}({k}_{y})$ was given by (\ref{Kdef}).
+Using (\ref{grep3x}) in (\ref{grep2}) 
+we get
+\begin{eqnarray} \label{GxGRep}
+\rf{\bmi G}_{c}({\bmi  x};{{\bmi  x}}^{\prime};k_y)&=&
+\frac{-i}{2{ \pi }\rho \omega^2}\,\sum\limits_{c\in \{P,S,H\}}\nonumber\\
+&\times& 
+\int_{{R}} {\rm d}{k}_z \,{\bmi L}_{c } \otimes {\bmi  L}_{c}^{\prime}
+\frac{\exp \left[{i {k}_z  ({z}-{z}^{\prime})}\right]
+\exp \left[{i {k}_{x,c}({k}_z,{k}_y)  |{x}-{x}^{\prime}|}\right]  
+}{ 2\,{k}_{x,c}({k}_z,{k}_y)}{\bmi J}_{6}
+\end{eqnarray}
+
+Using the definition of the 
+partial differential operators ${\bmi L}_{c }$ from (\ref{Labdef}) in (\ref{grep2}) and 
+performing the relevant spatial differentiations  we get
+\begin{eqnarray} \label{Gxres}
+\lefteqn{\rf{\bmi G}({\bmi x};{\bmi x}^{\prime};k_y)=\frac{- i}{2 \pi} 
+\int_{R} {\rm d}{ k}_{z} \exp \left[i { k}_{z} ({ z}-{ 
+z}^{\prime})\right] {\bmi  D}_{x}({k}_{z},{k}_{y})
+{\bmi Q}^{x}(k_z;x;x^{\prime}){\bmi  D}_{x}^{T}(-{k}_{z},-{k}_{y})
+\,{\bmi  J}_6}\nonumber\\
+&&
+\end{eqnarray} 
+provided $x \not = x^{\prime}$, where:\newline
+\begin{eqnarray} \label{Dxdef}
+\lefteqn{{\bmi D}_{x}(k_{z},k_{y})=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[\begin{array}{cccccc}
+\overline{\left|+,P, k_{z},k_{y}  \right\rangle}&\overline{\left|+,S, k_{z},k_{y}  
+\right\rangle}&\overline{\left|+,H, k_{z},k_{y}  \right\rangle}&
+\overline{\left|-,P, k_{z},k_{y}  \right\rangle}&\overline{\left|-,S, k_{z},k_{y}  
+\right\rangle}&\overline{\left|-,H, k_{z},k_{y}  \right\rangle}
+\end{array}\right]\nonumber
+\end{eqnarray}
+where:
+\begin{itemize}
+\item the $\overline{\left|\pm,P, k_{z},k_{y}  \right\rangle}$ states 
+are the   ${\stackrel{\mbox{\small rightgoing}}{{}_{\mbox{\small 
+leftgoing}}}}$  $P-$waves 
+\begin{equation} \label{Pxeigen}
+\overline{\left|\pm,P, k_{x,P},k_{y}  \right\rangle}=\frac{1}{\sqrt{2 \rho {\omega }^{  2}{  k}_{  
+x, P }}}\,\left[\begin{array}{c}  
+i\,{k}_{z}\\ \pm i\,k_{x,P}(k_x,k_y)\\i\,k_{y}\\
+  \rho \,\left( 2\,{\beta^2}\,{k_{x,P}^2(k_x,k_y)} + 2\,{\beta^2}\,{k_{y}^2} - 
+     {\omega^2} \right) \\ \mp 2\,\rho\,{\beta^2}\,k_{x,P}(k_x,k_y)\,{k}_{z} \\
+  - 2\,\rho\,{\beta^2}\,k_{y}\,{k}_{z} \end{array}\right]
+\end{equation}
+
+\begin{samepage}
+\item the $\overline{\left|\pm,S, k_{z},k_{y}  \right\rangle}$ states 
+are the   ${\stackrel{\mbox{\small rightgoing}}{{}_{\mbox{\small 
+leftgoing}}}}$  quasi-$SV-$waves 
+\begin{equation} \label{SVxeigen}
+\overline{\left|\pm,S, k_{z},k_{y}  \right\rangle}=\frac{\omega}{\beta\,\hat{K}_{S }\,
+\sqrt{2 \rho {\omega }^{  2}  {  k}_{  
+x, S }}}\,
+\left[\begin{array}{c} 
+\pm i\,k_{x,S}(k_x,k_y)\\
+- i\,{k}_{z}\\0\\
+\mp 2\,\rho\,{\beta^2}\,k_{x,S}(k_x,k_y)\,{k}_{z} \\
+  \rho \,\left({\omega^2} -2\,{\beta^2}\,{k_{x,S}^2(k_x,k_y)} - {\beta^2}\,{k_{y}^2}  \right) \\
+  \mp \rho\,{\beta^2}\,k_{x,S}(k_x,k_y)\,k_{y} \end{array}\right]
+\end{equation}
+\end{samepage}
+
+\item the $\overline{\left|\pm,H, k_{z},k_{y}  \right\rangle}$ states 
+are the   ${\stackrel{\mbox{\small rightgoing}}{{}_{\mbox{\small 
+leftgoing}}}}$  quasi-$SH-$waves 
+\begin{equation} \label{SHxeigen}
+\overline{\left|\pm,H, k_{z},k_{y}  \right\rangle}=
+\frac{1}{\hat{K}_{H }\, \sqrt{2 \rho {\omega }^{  2}  {  k}_{  
+x, H }}} \,\left[\begin{array}{c} 
+- k_{y}\,{k}_{z} \\\mp k_{x,H}(k_x,k_y)\,k_{y} \\
+  \hat{K}_{H}^2\\
+2\,i\,k_{y}\,\rho \,\left({\beta^2}\,{k_{x,H}^2(k_x,k_y)} + 
+     {\beta^2}\,{k_{y}^2} - {\omega^2} \right) \\
+  \mp  2\,i\,\rho\,{\beta^2}\,k_{x,H}(k_x,k_y)\,k_{y}\,{k}_{z}\\
+   i\,{k}_{z}\,\rho \,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2} \right) \end{array}\right]
+\end{equation}
+\end{itemize}
+the {\em horizontal plane wave propagator\/} ${\bmi Q}^{x}(k_z;x;x^{\prime})$ in (\ref{Gxres}),
+is defined  as
+\begin{equation} \label{Qxdef}
+{\bmi Q}^{x}(k_z;x;x^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3}&H(x-{x}^{\prime}){\bmi E}(k_z;x;{x}^{\prime})\\
+H(x^{\prime}-{x}){\bmi E}(k_z;x;{x}^{\prime})&{\bf 0}_{3}\end{array}}\right]
+\end{equation}
+with the {\em horizontal phase shift\/} array
+\[
+{\bmi E}(k_z;x;{x}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{ k}_{x,P}(k_{z})|x-{x}^{\prime}|}&{ 0}&{ 0}\\ 
+{ 0}&{\rm e}^{ 
+i{ k}_{x,S}(k_{z})|x-{x}^{\prime}|}&{ 0}\\ { 0}&{ 0}&{\rm e}^{ 
+i{ k}_{x,H}(k_{z})|x-{x}^{\prime}|}\end{array}}\right] ,
+\]
+and $H(\cdot)$ is the {\em Heaviside step function\/}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+For computational purposes, we must employ a {\em discrete plane wave\/} 
+or {\em Fourier lattice\/} version of the wavenumber integral 
+(\ref{Gxres}). The development closely parallels that of \S\ref{secStandardz}.
+One of the many problems associated with discrete Fourier representations 
+of the Green's tensor operators commonly employed seismology is 
+wraparound. In the standard reflectivity method, we employ a horizontal 
+wavenumber sampling, and as a consequence we get aliased versions of the 
+wavefield {\em wrapping\/} into the computational domain from the sides 
+(Mallick \& Frazier, 1988). This is not such a serious problem provided 
+we extend the transverse support of the computational domain, or 
+equivalently, decrease the horizontal wavenumber sampling interval 
+interval   ${\mit \Delta} k_{x}$.
+
+We will now derive a {\em discrete plane wave\/} version of 
+(\ref{Gxres}), and we may expect wraparound in $z$. This is a far more 
+serious problem than wraparound in $x$ because we will eventually extend 
+the representation to $z-$stratified media, so that the wraparound phases 
+will interact with the stratification in a complicated manner, that may 
+not be removed.
+However, we 
+will employ (\ref{Gxres}) only in the special case where $z=z^{\prime}$ 
+so that $\exp \left[i \overline{k}_{j} ({ z}-{ 
+z}^{\prime})\right]\equiv 1$ and consequently 
+\begin{eqnarray} \label{Gxres0}
+\lefteqn{\rf{\bmi G}({ x};{ x}^{\prime};k_y)=\frac{- i}{2 \pi} 
+\int_{R} {\rm d}{ k}_{z}  {\bmi  D}_{x}({k}_{z},{k}_{y})
+{\bmi Q}^{x}(k_z;x;x^{\prime}){\bmi  D}_{x}^{T}(-{k}_{z},-{k}_{y})
+\,{\bmi  J}_6, \ z=z^{\prime}, \ x\not=x^{\prime} }\nonumber\\
+&&
+\end{eqnarray} 
+so there will be no {\em 
+aliasing\/} or {\em wraparound\/} in the $z-$coordinate. This observation 
+is crucial to the success in the intended application of $\rf{\bmi G}({\bmi 
+x};{\bmi x}^{\prime};k_y)$ from (\ref{Gxres0}) to problems with a 
+$z-$stratification in material properties. 
+
+
+Given the $\overline{N}_k=2 \overline{M}+1$ element {\em Fourier lattice\/}  
+\begin{equation} \label{pxspec}
+\left\{ 
+ \overline{k}_{j} =j {\mit \Delta} k_{z} \ |\  j=-\overline{M},\cdots 
+ ,\overline{M} 
+\right\} 
+\end{equation} 
+where ${\mit \Delta} k_{z} =2 \pi  j/L_{z}$ and   $L_{z}$ 
+controls the  {\em wavenumber sampling rate,\/} we may approximate 
+(\ref{Gxres0}) by the {\em discrete 
+plane wave sum\/}
+\begin{equation} \label{Gxdef5}
+\rf{\bmi G}\!{}^{x}({ x};{ x}^{\prime};k_y)=\frac{- i\,{\mit \Delta} {k}_{z}}{2 \pi} 
+\sum\limits_{{j=-\overline{M}}}^{j=\overline{M}}
+{\bmi  D}_{x}(\overline{k}_{j},{k}_{y})
+{\bmi Q}^{x}(\overline{k}_{j};x;x^{\prime}){\bmi  D}_{x}^{T}(-\overline{k}_{j},-{k}_{y})
+\,{\bmi  J}_6
+\end{equation} 
+The discrete representation (\ref{Gxdef5}) is equivalent to assuming that the 
+$z-$dependence of the wavefield is {\em  bandlimited\/} (since $\overline{M}$ is 
+finite), which is certainly not the case in the limit $x \leftarrow 
+x^{\prime}$.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The next step will be to rewrite the discrete sum (\ref{Gxdef5}) as an 
+equivalent matrix operation. To this end, we define the diagonal wave 
+vector arrays:
+\begin{equation} \label{gbarKz}
+{\bf  k}_{z} =\mbox{diag}\left[{-\overline{M} {\mit \Delta} k_{z},\cdots,-{\mit 
+\Delta} k_{z},0,
+{\mit \Delta} k_{z},\cdots, \overline{M} {\mit \Delta} k_{z}}\right];
+\end{equation} 
+\begin{equation} \label{gbarKx}
+{\bf  k}_{x,c} =\mbox{diag}\left[{{ k}_{x,c}(-\overline{M} {\mit \Delta} k_{z}),\cdots,
+{ k}_{x,c}(-{\mit \Delta} k_{z}),
+{ k}_{x,c}(0),
+{ k}_{z,c}({\mit \Delta} k_{z}),\cdots, { k}_{x,c}(\overline{M}{\mit \Delta} k_{z})}\right]
+\end{equation} 
+and the $\overline{N}_k-$element {\em projection \/} vector
+\begin{equation} \label{Fbardef}
+\overline{\bmi F}(0)=\left[\begin{array}{ccccc}
+1& \cdots & 
+1& \cdots & 
+1\end{array}\right].
+\end{equation} 
+
+
+We can  rewrite the {\em discrete plane wave\/} 
+approximation (\ref{Gxdef5}) to the $6 \times 6$ Green's tensor in the equivalent matrix 
+form
+\begin{samepage}
+\begin{eqnarray} \label{superGx}
+\rf{\bmi G}\!{}^{x}({ x};{ x}^{\prime};k_y)
+&=&- i\, 
+\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\nonumber\\
+&&\times
+{\bmi Q}^{x}({\bf k}_{z};x;x^{\prime}){\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)\,{\bmi  J}_6
+\end{eqnarray} 
+\end{samepage}
+where:\newline
+the $(6\bar{N}_k)\times (6\bar{N}_k)$ matrix analogue of (\ref{Dxdef}) is defined 
+as
+\begin{eqnarray} \label{Dxsuperdef}
+\lefteqn{{\bmi D}_{x}({\bf k}_{z},k_{y})=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[\begin{array}{cccccc}
+\overline{\left|+,P, {\bf k}_{z},k_{y}  \right\rangle}&\overline{\left|+,S, {\bf k}_{z},k_{y}  
+\right\rangle}&\overline{\left|+,H, {\bf k}_{z},k_{y}  \right\rangle}&
+\overline{\left|-,P, {\bf k}_{z},k_{y}  \right\rangle}&\overline{\left|-,S, {\bf k}_{z},k_{y}  
+\right\rangle}&\overline{\left|-,H, {\bf k}_{z},k_{y}  \right\rangle}
+\end{array}\right]\nonumber
+\end{eqnarray}
+in terms of
+\begin{itemize}
+\item the $6 \overline{N}_k \times \overline{N}_k$ $P$-wave partition
+\begin{equation} \label{PxeigenSuper}
+\overline{\left|\pm,P, {\bf k}_z,k_{y}  \right\rangle}=
+\sqrt{\frac{{\mit \Delta} k_{z}}{{4 \pi \rho {\omega 
+}^{  2}{\bf  k}_{  
+x, P }}}}
+\left[\begin{array}{c} i\,{\bf k}_{z}\\ \pm i\,{\bf k}_{x,P}\\
+i\,k_{y}\,{\bmi I}\\
+  \rho \,\left( 2\,{\beta^2}\,{{\bf k}_{x,P}^2} + ( 2\,{\beta^2}\,{k_{y}^2} - 
+     {\omega^2}){\bmi I} \right) \\ \mp 2\,\rho\,{\beta^2}\,{\bf k}_{x,P}\,{\bf k}_{z} \\
+  - 2\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{z} \end{array}\right]
+\end{equation}
+
+\item  the $6 \overline{N}_k \times \overline{N}_k$ $SV$-wave
+\begin{equation} \label{SVxeigenSuper}
+\overline{\left|\pm,S, {\bf k}_z,k_{y}  \right\rangle}=
+\frac{\omega }{\beta \hat{K}_{S}}\,\sqrt{\frac{{\mit \Delta} k_{z}}{{4 \pi \rho {\omega 
+}^{  2}{\bf  k}_{  
+x, S }}}}\,\left[\begin{array}{c} 
+\pm i\,{\bf k}_{x,S}\\
+- i\,{\bf k}_{z}\\ {\bf 0} \\
+\mp 2\,\rho\,{\beta^2}\,{\bf k}_{x,S}\,{\bf k}_{z} \\
+  \rho \,\left(({\omega^2} - {\beta^2}\,{k_{y}^2}) {\bmi 
+  I}-2\,{\beta^2}\,{{\bf k}_{x,S}^2}   \right) \\
+ \mp \rho\,{\beta^2}\,k_{y}\,{\bf k}_{x,S} \end{array}\right]
+\end{equation}
+
+\item the $6 \overline{N}_k \times \overline{N}_k$ $SH$-wave partition
+\begin{equation} \label{SHxeigenSuper}
+\overline{\left|\pm,H, {\bf k}_z, k_{y}  \right\rangle}=\frac{1 }{\hat{K}_{H}}\,
+\sqrt{\frac{{\mit \Delta} k_{z}}{{4 \pi \rho {\omega 
+}^{  2}{\bf  k}_{  
+x, H }}}}\,\left[\begin{array}{c} 
+- k_{y}\,{\bf k}_{z} \\ \mp k_{y}\,{\bf k}_{x,H} \\
+  \hat{K}_{H}^2 {\bmi I}\\
+-2\,i\,\rho \,{\beta^2}\,k_{y}\,{{\bf k}_{z}^2}\\
+  \mp 2\,i\,\rho\,{\beta^2}\,k_{y}\,{\bf k}_{x,H}\,{\bf k}_{z} \\
+   i\,\rho\,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2} 
+  \right)\,{\bf k}_{z}  \end{array}\right]
+\end{equation}
+
+\end{itemize}
+where  ${\bf  k}_{x}$ and ${\bf  k}_{z,c}$ were given in
+(\ref{gbarKx}) and (\ref{gbarKz}) respectively.
+
+The $(6\bar{N}_k)\times (6\bar{N}_k)$ {\em plane wave propagator\/} 
+${\bmi Q}^{x}({\bf k}_{z};x;x^{\prime})$ in (\ref{superGx}),
+is defined  as
+\begin{equation} \label{gQxdef}
+{\bmi Q}^{x}({\bf k}_z;x;x^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3\bar{N}_k}&H(x-{x}^{\prime}){\bmi E}({\bf 
+k}_z;x;{x}^{\prime})\\
+H(x^{\prime}-{x}){\bmi E}({\bf k}_z;x;{x}^{\prime})&{\bf 0}_{3\bar{N}_k}\end{array}}\right]
+\end{equation}
+where the $(3\bar{N}_k)\times (3\bar{N}_k)$ {\em vertical phase shift array\/} is 
+defined as
+\[
+{\bmi E}({\bf k}_z;x;{x}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{\bf k}_{z,P}|x-{x}^{\prime}|}&{\bf 0}_{\overline{N}_k}&{\bf 0}_{\overline{N}_k}\\ 
+{\bf 0}_{\overline{N}_k}&{\rm e}^{ 
+i{\bf k}_{z,S}|x-{x}^{\prime}|}&{\bf 0}_{\overline{N}_k}\\ {\bf 0}_{\overline{N}_k}&{\bf 0}_{\overline{N}_k}&
+{\rm e}^{ 
+i{\bf k}_{z,H}|x-{x}^{\prime}|}\end{array}}\right] ,
+\]
+in terms of the diagonal wavevector array ${\bf k}_{x,c}, c\in\{P,S,H  
+\}$ of (\ref{gbarKx}).
+
+For computational efficiency, we split (\ref{superGx}) into
+\[
+\rf{\bmi G}\!{}^{x}({ x};{ x}^{\prime};k_y)=\rf{\bmi P}\!{}^{x}({ x};{ x}^{\prime};k_y){\bmi  J}_6
+\]
+where
+\begin{samepage}
+\begin{eqnarray} \label{superPx}
+\rf{\bmi P}\!{}^{x}({ x};{ x}^{\prime};k_y)
+&=&- i\, 
+\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\nonumber\\
+&&\times
+{\bmi Q}^{x}({\bf k}_{z};x;x^{\prime}){\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)
+\end{eqnarray} 
+\end{samepage}
+
+
+
+
+\section{Lattice propagator representations in free space} \label{latticeP}
+This section is central to the thesis. In this section the medium is 
+homogeneous. The method to be expounded here is extended to a stratified 
+halfspace in chapter \ref{stratG}. 
+
+To begin, we define a  uniform lattice (Fig.\ref{lattice})
+with $L$ rows and ${N}_{x}$ lattice 
+points per row.
+The lattice points are numbered in the 
+same order that words are read on the written page, 
+i.e. from left to right, from top to bottom.
+ For many applications it is helpful to label the lattice 
+points as if they were the elements of a $2-$D array. For this purpose we 
+introduce the matrix row index $1\le \rho \le L$ and the matrix column 
+index $1 \le \chi \le N_x$, so that the global index $i$ is related to 
+the matrix indices via
+\[
+i=(\rho -1) N_x + \chi, \quad 1 \le i \le L N_x, 
+\quad 1 \le \rho \le L, \quad 1 \le \chi \le N_x
+\] 
+Please note that use of $\rho$ and $\chi$ to indicate the row and column 
+indices respectively, are confined to this section, and are not to 
+be confused with the other applications of these symbols throughout the thesis.
+
+
+We want to {\em 
+communicate\/} the influence of the {\em secondary force field\/} $6-$vector
+ $\bar{\bmi f}_{ j}$, from a given lattice point 
+to all the {\em other\/} lattice points.
+Using the naive matrix/vector operation
+\begin{eqnarray} \label{GFdef0}
+\rf{\CB G} \cdot \bar{\CB F} &\equiv& \sum\limits_{ \stackrel{j= 1}{j\not= i}}^{ 
+L{N}_{x}} \rf{\bmi G}({\bmi R}_{i};{\bmi R}_{j};{k}_{y}) \cdot \bar{\bmi f}_{ j}
+\qquad 1\le  i \le L{N}_{x}
+\end{eqnarray} 
+where   $\rf{\bmi G}$ is the $6 \times 6$ Green's 
+tensor (\ref{(2.1.6)}), (\ref{GFdef0}) may be implemented as
+\[
+N_1=(6 \times {N}_{x} \times 
+L)^2 - (6 \times {N}_{x} \times L)
+\]
+separate interactions.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\HideDisplacementBoxes
+%\ShowDisplacementBoxes
+\centerline{\BoxedEPSF{lattice.EPSF scaled 800}}
+\caption{The lattice geometry}
+\protect\label{lattice}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+We will employ the plane wave expansions (\ref{superG}), (\ref{superGx}),
+[or equivalently,  (\ref{superP}), (\ref{superPx})] , the  Fast Fourier 
+Transform and 
+matrix factorization techniques so that (\ref{GFdef0}) is computed using
+\begin{eqnarray} \label{GFdef}
+\rf{\CB G} \cdot \bar{\CB F} &\equiv& \sum\limits_{ \stackrel{j= 1}{j\not= i}}^{ 
+L{N}_{x}} \left[
+(1-\delta_{\rho \rho^{\prime}})
+\rf{\bmi P}\!{}^{z}({\bmi R}_{i};{\bmi R}_{j};{k}_{y}) \cdot {\bmi J}_6 \bar{\bmi f}_{ j}
++
+\delta_{\rho \rho^{\prime}}\rf{\bmi P}\!{}^{x}({\bmi R}_{i};{\bmi R}_{j};{k}_{y}) 
+ \cdot {\bmi J}_6 \bar{\bmi f}_{ j}\right]\nonumber\\
+&\equiv&- i\,\sum\limits_{ \stackrel{j= 1}{j\not= i}}^{ L{N}_{x}}
+(1-\delta_{\rho \rho^{\prime}})\left({\bmi I}_6\otimes 
+{\bmi F}(X_i;{\bf k}_{x})  \right) {\bmi  D}_{z}({\bf k}_{x},{k}_{y})\nonumber\\
+&& \times 
+{\bmi Q}^{z}({\bf k}_{x};Z_i;Z_j){\bmi  D}_{z}^{T}(-{\bf k}_{x},-{k}_{y})
+\,\left({\bmi I}_6\otimes {\bmi F}^{T}(x^{\prime};-{\bf k}_{x})  \right)
+\,\cdot\,{\bmi f}_{ j}\nonumber\\
+&&- i\, \sum\limits_{ \stackrel{j= 1}{j\not= i}}^{ L{N}_{x}}
+\delta_{\rho \rho^{\prime}}
+\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\nonumber\\
+&&\times
+ {\bmi Q}^{x}({\bf k}_{z};X_i;X_j){\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)\,\cdot\,{\bmi f}_{ j}\nonumber\\
+&&\qquad i\in \mbox{row}_{\rho}, \qquad j\in \mbox{row}_{\rho^{\prime}}, \qquad 
+\mbox{for}\ \mbox{each} \quad  1\le  i \le L{N}_{x}
+\end{eqnarray} 
+where
+\[
+{\bmi f}_{ j}\equiv {\bmi J}_6 \bar{\bmi f}_{ j}
+\]
+to reduce the  floating point operation count of (\ref{GFdef0}) to
+\[
+N_2\approx2\,(L-1)\,\left[ 39 N_k + 6 N_k \log_2 N_k \right]+ 
+78\,L\,(N_x-1)  \overline{N}_k
+\]
+where $N_k$ is the number of plane waves employed to propagate the 
+secondary source field between rows, while $\bar{N}_k$ is the number of plane
+ waves employed to propagate the 
+secondary source field between lattice points within a given row.
+If we employ critical (i.e. Nyquist) sampling rates so that $N_k=N_x$, then $N_2 \ll N_1$. 
+However, for the sake of accuracy, we need to employ a substantial amount 
+of oversampling so that $N_k>N_x$, which increases the operation count 
+$N_2$ of our plane wave expansion method. In the applications presented 
+in chapter \ref{variational}, $N_k=16 N_x$ or even $N_k=32 N_x$, so that the plane 
+wave method is not substantially faster than the naive operation count 
+$N_1$; at least for the scale of the problems tested, for larger problems 
+we observe that $N_2$ grows much more slowly than $N_1$. The principal merit of the method to 
+be presented in this section lies in its 
+extensibility to a plane stratified  medium.
+
+Recall that we have introduced a so called {\em propagator\/}, denoted as 
+$\rf{\bmi P}\!{}^{z,x}({\bmi 
+R}_{i};{\bmi R}_{j};k_y)$, and defined by reference to the Green's 
+tensors of (\ref{superG}) and (\ref{superGx}). We will denote the generic 
+propagator as $\rf{\bmi P}\!({\bmi 
+R}_{i};{\bmi R}_{j};k_y)$, and will re-introduce the superscripts in 
+$\rf{\bmi P}\!\!{}^{z}({\bmi 
+R}_{i};{\bmi R}_{j};k_y)$ and $\rf{\bmi P}\!\!{}^{x}({\bmi 
+R}_{i};{\bmi R}_{j};k_y)$, when appropriate.
+Let us assemble these $6 \times 6$ propagators $\rf{\bmi P}\!\!({\bmi 
+R}_{i};{\bmi R}_{j};k_y)$  for lattice points ${\bmi R}_{i}$ and ${\bmi 
+R}_{j}$ into a $6 {N}_{x} L \times 6  {N}_{x} L$ {\em super-matrix\/} 
+${\CB P}$ 
+where the $(i, j)$ partition ${\CB P}_{i,j}$ of ${\CB P}$ is defined as
+\begin{equation} \label{Gijdef}
+{\CB P}_{i,j}=(1-{\delta }_{ij})\rf{\bmi P}({\bmi R}_{i};{\bmi 
+R}_{j};k_y)
+\end{equation}
+so that  (\ref{GFdef}) may be expressed as the equivalent matrix vector operation
+\begin{equation} \label{CBGdef}
+{\CB P}\cdot{\CB F}=\left[{\begin{array}{cccc}
+{\bf 0}_6&{\CB P}_{1,2}&\cdots &{\CB P}_{1,{N}_{x} L}\\
+{\CB P}_{2,1}&{\bf 0}_6&&\vdots\\
+\vdots&&\ddots&{\CB P}_{{N}_{x} L-1,{N}_{x} L}\\
+{\CB P}_{{N}_{x} L,1}&\cdots &{\CB P}_{{N}_{x} L,{N}_{x} L-1}&{\bf 0}_6\end{array}}\right]
+\cdot\left[\begin{array}{c} {\bmi f}_1\\
+{\bmi f}_2\\\vdots\\{\bmi f}_{L N_x}    \end{array}\right]
+\end{equation}
+
+We assemble each of the $6-$vectors ${\bmi f}_{{N}_{x}({\rho 
+}^{\prime}-1)+\chi}, \ 1 \le \chi \le N_x$ in $\mbox{row}_{\rho^{\prime}}$ of the 
+lattice into the $6 N_x$-vector
+\begin{equation} \label{Frho}
+{\CB F}_{{\rho }^{\prime}}=\left[{\begin{array}{c}
+{\bmi f}_{{N}_{x}({\rho }^{\prime}-1)+1}\\
+\vdots\\
+{\bmi f}_{{N}_{x}{\rho }^{\prime}}\end{array}}\right]
+\end{equation}
+From (\ref{GFdef}), we observe  that the propagator partitions $\rf{\bmi P}({\bmi 
+R}_{i};{\bmi R}_{j})$ have different plane wave 
+expansions depending on whether the lattice points ${\bmi 
+R}_{i}$ and ${\bmi R}_{j}$ are within the same or different rows of the 
+lattice. Consequently, we label the partitions of (\ref{CBGdef}) depending 
+on the source and receiver row, i.e.
+\begin{equation} \label{CBdef1}
+{\CB P}=\left[{\begin{array}{cccc}{\CB P}_{1 \leftarrow   1}&{\CB P}_{1 
+\leftarrow   2}&\cdots &{\CB P}_{1 \leftarrow   L}\\ {\CB P}_{2 
+\leftarrow   1}&{\CB P}_{2 \leftarrow   2}&&\vdots\\ 
+\vdots&&\ddots&{\CB P}_{L-1 \leftarrow   L}\\ {\CB P}_{L \leftarrow   
+1}&\cdots &{\CB P}_{L \leftarrow   L-1}&{\CB P}_{L \leftarrow   
+L}\end{array}}\right] 
+\end{equation}
+where the $6 {N}_{x} \times 6 {N}_{x}$ partition ${\CB P}_{\rho 
+\leftarrow   \rho^{\prime}}$ defines 
+the {\em influence\/} of the source field ${\CB F}_{\rho^{\prime}}$ 
+(\ref{Frho}), 
+from the ${N}_{x}$ lattice points in 
+$\mbox{row}_{\rho^{\prime}}$ on the ${N}_{x}$ lattice points of 
+$\mbox{row}_{\rho}$,  and is defined as
+\begin{eqnarray} \label{CBdef2}
+\lefteqn{{\CB P}_{\rho \leftarrow   \rho^{\prime}}=\left[{\begin{array}{cccc}
+{\CB P}_{(\rho-1) {N}_{x}+1,(\rho^{\prime}-1) {N}_{x}+1}&{\CB P}_{(\rho-1) {N}_{x}+1,(\rho^{\prime}-1) {N}_{x}+2}&\cdots &{\CB P}_{(\rho-1) {N}_{x}+1,\rho^{\prime} {N}_{x}}\\
+{\CB P}_{(\rho-1) {N}_{x}+2,(\rho^{\prime}-1) {N}_{x}+1}&{\CB P}_{(\rho-1) {N}_{x}+ 2,(\rho^{\prime}-1) {N}_{x}+2}&&\vdots\\
+\vdots&&\ddots&{\CB P}_{\rho {N}_{x}-1 , \rho^{\prime} {N}_{x}}\\
+{\CB P}_{\rho {N}_{x},(\rho^{\prime}-1) {N}_{x}+1}&\cdots &{\CB P}_{\rho {N}_{x},\rho^{\prime} {N}_{x}-1}&{\CB P}_{\rho {N}_{x},\rho^{\prime} {N}_{x}}
+\end{array}}\right]}\nonumber\\
+&&
+\end{eqnarray}
+$1 \le \rho,\rho^{\prime} \le L$, with $6\times 6$ component arrays ${\CB P}_{i,j}$ 
+given by (\ref{Gijdef}). We now split (\ref{CBdef1}) into its off-diagonal 
+and diagonal blocks to get
+\begin{equation} \label{CBGsplit}
+{\CB P}={\CB P}{}^{z} + {\CB P}{}^{x}
+\end{equation}
+where
+\begin{equation} \label{CBdef3}
+{\CB P}{}^{z}=\left[{\begin{array}{cccc}
+{\bf 0}_{6N_x}&{\CB P}_{1 
+\leftarrow   2}&\cdots &{\CB P}_{1 \leftarrow   L}\\ {\CB P}_{2 
+\leftarrow   1}&{\bf 0}_{6N_x}&&\vdots\\ 
+\vdots&&\ddots&{\CB P}_{L-1 \leftarrow   L}\\ {\CB P}_{L \leftarrow   
+1}&\cdots &{\CB P}_{L \leftarrow   L-1}&{\bf 0}_{6N_x}\end{array}}\right] 
+\end{equation}
+defines the interaction between {\em distinct\/} rows of the lattice
+and
+\begin{equation} \label{CBdef4}
+{\CB P}^{x}=\mbox{diag}\left[\begin{array}{cccc}
+{\CB P}_{1 \leftarrow   1},&{\CB P}_{2 
+\leftarrow   2},&\cdots, &{\CB P}_{L \leftarrow   L}
+\end{array}\right] 
+\end{equation}
+defines the interaction between points within the  {\em same\/} row of the 
+lattice.
+
+
+Our next task will be to generalize the definition of (\ref{superG}), (\ref{superGx})
+ to find a computational construction for (\ref{CBdef3}) and 
+(\ref{CBdef4}), respectively.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{ Implementing $\mbox{\CBM  P}\,{}^{z}\cdot\mbox{\CBM  F}$}
+
+ 
+ 
+ 
+ 
+Using $\rf{\bmi P}{}^{z}({\bmi x};{\bmi x}^{\prime};k_y)$ from 
+(\ref{superP}) for the partitions of
+${\CB P}_{\rho \leftarrow   \rho^{\prime}}$ in 
+(\ref{CBdef2}), we get
+\begin{eqnarray} \label{CBGrhorho1}
+{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}
+&=&-i\left[{\begin{array}{c}
+\left({\bmi I}_6\otimes 
+{\bmi F}(x_1;{\bf k}_{x})  \right)\\ \vdots\\ \left({\bmi I}_6\otimes 
+{\bmi F}({x}_{{N}_{x}};{\bf k}_{x})\right)\end{array}}\right]
+{\bmi  D}_{z}({\bf k}_{x},{k}_{y}) {\bmi Q}_{ \rho 
+\leftarrow {\rho }^{\prime}}^{z}({\bf k}_{x})
+{\bmi  D}^{T}_{z}(-{\bf k}_{x},-{k}_{y})\nonumber\\
+&&\times \left[{\begin{array}{ccc}
+\left({\bmi I}_6\otimes{\bmi F}^{T}(x_1;-{\bf k}_{x})  \right)&\cdots &
+\left({\bmi I}_6\otimes 
+{\bmi F}^{T}({x}_{{N}_{x}};-{\bf k}_{x})\right)\end{array}}\right], 
+\quad \rho \not= {\rho }^{\prime}
+\end{eqnarray} 
+where
+\begin{equation} \label{Qdefg}
+{\bmi Q}^{z}_{\rho\leftarrow {\rho}^{\prime}}({\bf k}_{x})=
+\left[{\begin{array}{cc}{\bf 0}_{3N}&H(z_{\rho}-z_{{\rho}^{\prime}}){\bf E}({\bf k}_{x})^{|\rho-{\rho}^{\prime}|}\\
+H(z_{{\rho}^{\prime}}-z_{\rho}){\bf E}({\bf k}_{x})^{|\rho-{\rho}^{\prime}|}&{\bf 0}_{3N}\end{array}}\right]
+\end{equation}
+with
+\[
+{\bf E}({\bf k}_{x})=\left[{\begin{array}{ccc}
+{\rm e}^{i{\bf k}_{z,P}\,{\mit \Delta}z}&{\bf 0}_{N}&{\bf 0}_{N}\\ 
+{\bf 0}_{N}&{\rm e}^{ 
+i{\bf k}_{z,S}\,{\mit \Delta}z}&{\bf 0}_{N}\\ {\bf 0}_{N}&{\bf 0}_{N}&{\rm e}^{ 
+i{\bf k}_{z,H}\,{\mit \Delta}z}\end{array}}\right] ,
+\]
+${\mit \Delta}z$ the vertical separation between adjacent rows of the 
+lattice in Fig.\ref{lattice}, $H(\cdot)$ is the {\em Heaviside step function\/} 
+and the diagonal wavevector array ${\bf k}_{z,c}, c\in\{P,S,H  \}$ was 
+given by (\ref{gKz}) and is an implicit function of ${\bf k}_{x}$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We will now show how to evaluate the matrix/vector product 
+\[
+{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}\cdot{\CB F}_{{\rho }^{\prime}}
+\]
+using the fast Fourier transform (FFT) algorithm. To utilize the FFT 
+algorithm, we must  transform the $6 N_x$-vector
+ ${\CB F}_{{\rho }^{\prime}}$ from (\ref{Frho}) into
+the $6 N_k$-vector $\tilde{\CB F}_{{\rho }^{\prime}}\equiv 
+{\bmi \Phi}[{\CB F}_{{\rho }^{\prime}}]$ where
+\begin{eqnarray} \label{upsample}
+{\bmi \Phi}\left[{\CB F}_{{\rho }^{\prime}}\right]\left({N_k (n-1)+m\,{N}_{\mit \Delta }}\right)
+&=&\left\{
+\begin{array}{cl}
+ {\CB F}_{{\rho }^{\prime}}\left({6(m-1)+n}\right)& 1 \le  m \le N_x, \quad 1 \le  n \le 6\\
+ 0& \mbox{otherwise}
+ \end{array}\right.\nonumber\\
+ &&
+\end{eqnarray} 
+with 
+\begin{equation} \label{Nkdef}
+N_k = {N}_{\mit \Delta } {N}_{L } N_x.
+\end{equation}
+The mapping (\ref{upsample}) and the corresponding inverse mapping are 
+summarized in the pseudo-code of Alg.3.1.
+
+
+We observe that (\ref{upsample}) defines a dual purpose mapping:
+\begin{itemize}
+\item firstly, we re-organize the components of ${\CB F}_{{\rho 
+}^{\prime}}$ defined in (\ref{Frho}). We recall that all $6$ components 
+of the force vector ${\bmi f}_{{N}_{x}({\rho }^{\prime}-1)+\chi}$ for 
+each  $ 1 \le 
+\chi \le N_x$ are stored contiguously in the $6 N_x$-vector ${\CB 
+F}_{{\rho }^{\prime}}$. To employ the DFT, we need to store each fixed 
+component, at all gridpoints in a contiguous fashion. This may be 
+explained in another way,  ${\CB F}_{{\rho 
+}^{\prime}}$ is constructed with an outer loop over each of the $N_x$ the lattice points and 
+an inner loop over each of the $6$-components, while the order of the 
+inner and outer loop has been swapped in the construction of ${\bmi \Phi}[{\CB F}_{{\rho 
+}^{\prime}}]$, so that we have an outer loop over the $6$-components and 
+an inner loop over the lattice points.
+\item secondly, the mapping ${\bmi \Phi}[\cdot]$ defines an upsampling, 
+due to the ${N}_{\mit \Delta }$ factor in (\ref{upsample}). The reason 
+for the upsampling will be explained presently.
+\end{itemize}
+
+Also the integer relation (\ref{Nkdef}) requires further explanation.  While the width of the 
+lattice is  $x_{N_x}\equiv   N_x\,{\mit \Delta }x$, the corresponding {\em Nyquist 
+sampling rate\/} for the $k_x$ wavenumber based on this width, i.e.
+\[
+{\mit \Delta}k_x=\frac{2 \pi }{ N_x\,{\mit \Delta }x},
+\]
+is usually too coarse, resulting in a significant amount aliasing.  
+To get a finer value of  ${\mit \Delta}k_x$, we extend the width 
+of the computational grid by a factor ${N}_{L }$ (Fig.\ref{xlattice}) 
+so that the actual value 
+of ${\mit \Delta}k_x$ is given by
+\[
+{\mit \Delta}k_x=\frac{2 \pi }{N_L\, N_x\,{\mit \Delta }x}
+\]
+Also, the wavenumber band width $-{\mit \Omega} \le k_x \le {\mit 
+\Omega}$ is usually very wide, (${\mit \Omega}\approx 20 \omega/\beta $ 
+in the applications of chapter \ref{variational}) so that the  {\em Nyquist 
+spatial sampling rate\/} value of ${\mit \Delta }x$, defined as
+\[
+{\mit \Delta }x=\frac{ \pi }{{\mit \Omega}} 
+\]
+is much finer than the actual lattice spacing ${\mit \Delta }x$ in 
+Fig.\ref{lattice} and Fig.\ref{xlattice}. Consequently, we have introduced the 
+positive integer ${N}_{\mit \Delta }$ in (\ref{Nkdef}) so that the 
+lattice spacing is a multiple of the corresponding Nyquist spatial sampling rate 
+value, i.e.
+\[
+{\mit \Delta }x=\frac{{N}_{\mit \Delta } \pi }{{\mit \Omega}} 
+\]
+The positive integers ${N}_{\mit \Delta }$ and  ${N}_{L }$ can be chosen 
+to improve the accuracy of the plane wave representation (\ref{CBGrhorho1}). 
+However, this  improvement comes at the cost of employing ${N}_{\mit 
+\Delta }\times {N}_{L}$ more wavenumbers in (\ref{CBGrhorho1}) than are 
+required by {\em Shannon's sampling theorem\/}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\HideDisplacementBoxes
+%\ShowDisplacementBoxes
+\centerline{\BoxedEPSF{xlattice.EPSF scaled 800}}
+\caption{The $x$-lattice superimposed on the computational grid.
+ Circles are the lattice points and 
+bullets are the corresponding grid points at the  Nyquist sampling rate. 
+$L_x$ is the fundamental 
+period of the Fourier representation, while $x_{N_x}$ is the width of the 
+lattice}
+\protect\label{xlattice}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The upsampled version of ${\CB P}_{ \rho \leftarrow {\rho }^{\prime}}
+\cdot
+{\CB F}_{{\rho }^{\prime}}$ from
+ (\ref{CBGrhorho1}), corresponding the 
+oversampled grid (a single row of that grid is depicted by the ``bullets" 
+in Fig.\ref{xlattice}) and operating on the $6 N_k-$element upsampled 
+force vector ${\bmi \Phi}\left[{\CB F}_{{\rho }^{\prime}}\right]$ of 
+(\ref{upsample}), and may be written as
+\[
+\tilde{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}\cdot{\bmi \Phi}\left[
+{\CB F}_{{\rho }^{\prime}}\right]
+\] 
+where the $6 N_k \times 6 N_k $ {\em upsampled Green's tensor\/} $\tilde{\CB P}_{ \rho 
+\leftarrow {\rho }^{\prime}}$ is an augmented version of $6 N_x \times 6 
+N_x $ ${\CB P}_{ \rho 
+\leftarrow {\rho }^{\prime}}$ from (\ref{CBGrhorho1}) and is defined as
+\begin{samepage}
+\begin{eqnarray} \label{tildeCBGrhorho1}
+\lefteqn{\tilde{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}
+=}\\
+&&-i \left({\bmi I}_6\otimes 
+{\bf DFT}({\bf k}_x) \right)
+{\bmi  D}_{z}({\bf k}_{x},{k}_{y}) {\bmi Q}_{ \rho 
+\leftarrow {\rho }^{\prime}}^{z}({\bf k}_{x})
+{\bmi  D}^{T}_{z}(-{\bf k}_{x},-{k}_{y})\left({\bmi I}_6\otimes
+{\bf DFT}^{T}(-{\bf k}_x)  \right)\nonumber
+\end{eqnarray} 
+\end{samepage}
+In (\ref{tildeCBGrhorho1}), the  ${\bf DFT}({\bf k}_{x})$ represents the $N_k \times N_k$ 
+discrete Fourier transform array, with elements
+\begin{equation} \label{DFTdef}
+\left[{\bf DFT}({\bf k}_x)\right]_{l,j}=\exp \left({{\frac{2 \pi  i (l-1)(j-1)}{N_k}}}\right), \qquad 1 
+\le l,j \le N_k   
+\end{equation}
+while  the elements of {\em Hermitian transpose\/} ${\bf DFT}^{T}(-{\bf 
+k}_x)$   
+ are defined as
+\begin{eqnarray} \label{DFTHdef}
+\lefteqn{\left[{\bf DFT}^{T}(-{\bf k}_x)\right]_{l,j}=
+\left[{\bf DFT}^{H}({\bf k}_x)\right]_{l,j}=
+\exp \left({{\frac{-2 \pi  i (l-1)(j-1)}{N_k}}}\right), \quad 1 
+\le l,j \le N_k}\nonumber\\
+&&   
+\end{eqnarray}
+We recall that the Kronecka product $\left({\bmi I}_6\otimes 
+{\bf DFT}({\bf k}_x) \right)$ in (\ref{tildeCBGrhorho1})  may be written more explicitly as
+the $6 N_k \times 6 N_k$ block diagonal array
+\begin{samepage}
+\begin{eqnarray*}
+\lefteqn{\left({\bmi I}_6\otimes {\bf DFT}({\bf k}_x) \right)\equiv}\\
+&&
+\mbox{diag}\left[{\begin{array}{cccccc}
+{\bf DFT}({\bf k}_x)&{\bf DFT}({\bf k}_x)&{\bf DFT}({\bf k}_x)&
+{\bf DFT}({\bf k}_x)&{\bf DFT}({\bf k}_x)&{\bf DFT}({\bf k}_x)\end{array}}\right]
+\end{eqnarray*}
+\end{samepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{samepage}
+\begin{figure}
+\fbox{
+\begin{minipage} {140.0mm}
+{\bf  Algorithm}~{\bf 3.1} {\sc The upsampling ${\bmi \Phi}[\cdot]$ and downsampling 
+${\bmi \Phi}^{-1}[\cdot]$ operators}
+
+\begin{tt}
+
+Complex $\tilde{\CB F}_{\rho}(N_k,6), {\CB F}_{\rho}(6,N_x)$\newline
+C0=(0,0)
+
+
+\begin{itemize}
+\item Initialize  $\tilde{\CB F}_{\rho}$
+
+
+\begin{itemize}
+\item For j=1,6
+\begin{itemize}
+\item For k=1,$N_k$
+\begin{itemize}
+\item $\tilde{\CB F}_{\rho}$(k,j)=C0
+\end{itemize}
+\item End !k-loop
+\end{itemize}
+\item End !j-loop
+\end{itemize}
+
+\vspace{1 mm}
+
+\item The upsampling  mapping $\tilde{\CB F}_{\rho}={\bmi \Phi}[{\CB F}_{\rho}]$
+
+\begin{itemize}
+\item For j=1,6
+\begin{itemize}
+\item For k=1,$N_x$
+\begin{itemize}
+\item $\tilde{\CB F}_{\rho}$((k-1)$N_{\mit 
+\Delta}+$1,j)=${\CB F}_{\rho}$(j,k)
+\end{itemize}
+\item End !k-loop
+\end{itemize}
+\item End !j-loop
+\end{itemize}
+
+
+
+\end{itemize}
+
+\vspace{2 mm}
+
+\begin{itemize}
+\item The downsampling  mapping ${\CB F}_{\rho}={\bmi \Phi}^{-1}[\tilde{\CB F}_{\rho}]$
+\begin{itemize}
+\item For j=1,6
+\begin{itemize}
+\item For k=1,$N_x$
+\begin{itemize}
+\item ${\CB F}_{\rho}$(j,k)$=\tilde{\CB F}_{\rho}$((k-1)$N_{\mit 
+\Delta}+$1,j)
+\end{itemize}
+\item End !k-loop
+\end{itemize}
+\item End !j-loop
+\end{itemize}
+\end{itemize}
+
+\end{tt} 
+
+\vspace{2 mm}
+\end{minipage}
+}
+\end{figure}
+\vfill
+\end{samepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+To summarize, to implement (\ref{CBGrhorho1}) using the DFT algorithm, we:
+\begin{itemize}
+\item {\em upsample\/} the $6 N_x$-element lattice force vector ${\CB F}_{{\rho }^{\prime}}$ 
+from (\ref{Frho}) using the 
+upsampling operator ${\bmi \Phi}[\cdot]$ of (\ref{upsample}) to get the 
+$6 N_k$-element computational vector $\tilde{\CB F}_{{\rho }^{\prime}}$
+
+\item we perform the  mapping 
+\[
+\tilde{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}\cdot{\bmi \Phi}[{\CB F}_{{\rho 
+}^{\prime}}],
+\] 
+where the $6 N_k \times 6 N_k$ Green's tensor $\tilde{\CB P}_{ \rho 
+\leftarrow {\rho }^{\prime}}$ mapping the lattice force on 
+$\mbox{row}_{\rho^{\prime}}$ to the 
+incident displacement/traction  field on upsampled $\mbox{row}_{\rho}$ 
+({\em cf.\/} Fig.\ref{xlattice}),  was defined 
+in (\ref{tildeCBGrhorho1}).
+
+\item we apply the inverse operation ${\bmi \Phi}^{-1}[\cdot]$ to the 
+result, i.e.
+\[
+{\bmi \Phi}^{-1}\left[\tilde{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}
+\cdot{\bmi \Phi}[{\CB F}_{{\rho 
+}^{\prime}}]\right]
+\]
+that down-samples or {\em decimates\/} the field, to the {\em circles\/} 
+in Fig.\ref{xlattice}, while re-ordering the components, so that they are 
+stored with an outer loop over offset, and an inner loop over the 
+$6-$components of displacement an traction.
+\end{itemize}
+
+If we discount the cost of the transformations ${\bmi \Phi}[\cdot]$, 
+${\bmi \Phi}^{-1}[\cdot]$, then the floating point operation count of 
+$\tilde{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}
+\cdot{\bmi \Phi}[{\CB F}_{{\rho 
+}^{\prime}}]$ is 
+approximately
+\[
+N_3\approx 75\,{N}_{k}+12\ {N}_{k}^{2}
+\]
+However, provided $N_k= 2^n$ for some positive integer $n$,
+the DFT operations in (\ref{tildeCBGrhorho1}) may be performed with the 
+FFT algorithm, in which case $\tilde{\CB P}_{ \rho \leftarrow {\rho }^{\prime}}
+\cdot{\bmi \Phi}[{\CB F}_{{\rho 
+}^{\prime}}]$ may be implemented in
+\[
+N_4 \approx 75\,{N}_{k}+12\ {N}_{k} \log_2 N_k
+\]
+floating point operations.
+
+
+Next, we consider the mapping
+\begin{equation} \label{CBdef03}
+{\CB P}{}^{z}\cdot {\CB F}=\left[{\begin{array}{cccc}
+{\bf 0}_{6N_x}&{\CB P}_{1 
+\leftarrow   2}&\cdots &{\CB P}_{1 \leftarrow   L}\\ {\CB P}_{2 
+\leftarrow   1}&{\bf 0}_{6N_x}&&\vdots\\ 
+\vdots&&\ddots&{\CB P}_{L-1 \leftarrow   L}\\ {\CB P}_{L \leftarrow   
+1}&\cdots &{\CB P}_{L \leftarrow   L-1}&{\bf 0}_{6N_x}\end{array}}\right] 
+\left[\begin{array}{c}
+{\CB F}_{1}\\ {\CB F}_{2}\\
+\vdots\\
+{\CB F}_{L}  \end{array}  \right]
+\end{equation}
+where ${\CB P}{}^{z}$ was introduced in (\ref{CBGsplit}),  the $6 N_x \times 6 N_x$ partition ${\CB P}_{\rho 
+\leftarrow   \rho^{\prime}}$ was defined previously by (\ref{CBGrhorho1})
+and the $6 N_x$ secondary force vector ${\CB F}_{\rho^{\prime}}$
+was introduced in  (\ref{CBGdef}). Once again, we will utilize the DFT (or 
+more particularly, the FFT) algorithm to implement (\ref{CBdef03}) in a 
+$3$ step process:
+\begin{itemize}
+\item we introduce the upsampled lattice force vector $\tilde{\CB F}$, 
+defined as
+\[
+\tilde{\CB F}=
+\left[\begin{array}{c}
+{\bmi \Phi}[{\CB F}_{1}]\\ {\bmi \Phi}[{\CB F}_{2}]\\
+\vdots\\
+{\bmi \Phi}[{\CB F}_{L}]  \end{array}  \right]
+=
+\left[\begin{array}{c}
+\tilde{\CB F}_{1}\\ \tilde{\CB F}_{2}\\
+\vdots\\
+\tilde{\CB F}_{L}  \end{array}  \right]
+\]
+\item we replace  (\ref{CBdef03})  by the upsampled equation
+\begin{equation} \label{tildeCBdef3}
+\tilde{\CB P}{}^{z}\cdot \tilde{\CB F}=\left[{\begin{array}{cccc}
+{\bf 0}_{6N_x}&\tilde{\CB P}_{1 
+\leftarrow   2}&\cdots &\tilde{\CB P}_{1 \leftarrow   L}\\ \tilde{\CB P}_{2 
+\leftarrow   1}&{\bf 0}_{6N_x}&&\vdots\\ 
+\vdots&&\ddots&\tilde{\CB P}_{L-1 \leftarrow   L}\\ \tilde{\CB P}_{L \leftarrow   
+1}&\cdots &\tilde{\CB P}_{L \leftarrow   L-1}&{\bf 0}_{6N_x}\end{array}}\right] 
+\left[\begin{array}{c}
+\tilde{\CB F}_{1}\\ \tilde{\CB F}_{2}\\
+\vdots\\
+\tilde{\CB F}_{L}  \end{array}  \right]
+\end{equation}
+where the $6 N_k \times 6 N_k$ partition $\tilde{\CB P}_{\rho 
+\leftarrow   \rho^{\prime}}$ was defined previously by 
+(\ref{tildeCBGrhorho1}).
+
+\item We then downsample the relevant blocks of $\tilde{\CB P}{}^{z}\cdot 
+\tilde{\CB F}$ using the down sampling operator ${\bmi \Phi}^{-1}[\cdot]$
+\end{itemize}
+
+However, $\tilde{\CB P}{}^{z}$ in (\ref{tildeCBdef3}) may be replaced by the 
+factored equation
+\begin{eqnarray} \label{GGz1}
+\tilde{\CB P}^{z}
+&=&-i {\bmi I}_L \otimes\left[\left({\bmi I}_6\otimes 
+{\bf DFT}({\bf k}_{x}) \right){\bmi  D}_{z}({\bf k}_{x},{k}_{y})\right]
+ {\CB Q}^{z}\nonumber\\
+ &&\qquad\qquad\qquad
+ \times
+ {\bmi I}_L \otimes \left[
+{\bmi  D}^{T}_{z}(-{\bf k}_{x},-{k}_{y})\left({\bmi I}_6\otimes
+{\bf DFT}^{T}(-{\bf k}_{x})  \right)\right]
+\end{eqnarray} 
+where
+\begin{equation} \label{CBQdef}
+{\CB Q}^{z}=\left[{\begin{array}{cccc}
+{\bf 0}_{6N_k}&{\bmi Q}^{z}_{1 
+\leftarrow   2}&\cdots &{\bmi Q}^{z}_{1 \leftarrow   L}\\ {\bmi Q}^{z}_{2 
+\leftarrow   1}&{\bf 0}_{6N_k}&&\vdots\\ 
+\vdots&&\ddots&{\bmi Q}^{z}_{L-1 \leftarrow   L}\\ {\bmi Q}^{z}_{L \leftarrow   
+1}&\cdots &{\bmi Q}^{z}_{L \leftarrow   L-1}&{\bf 0}_{6N_k}\end{array}}\right].
+\end{equation}
+We employ (\ref{Qdefg}) for the partitions ${\bmi Q}^{z}_{i \leftarrow   
+j}$ in (\ref{CBQdef}) to get
+\begin{equation} \label{Qzcomp}
+{\CB Q}^{z}=\left[
+{\begin{array}{ccccc}{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+ {\bf E}& {\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{ {\bf E}}^{2}&{\bf 0}\end{array}}&\cdots &{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{ {\bf E}}^{L-1}&{\bf 0}\end{array}}\\
+{\begin{array}{cc}{\bf 0}& {\bf E}\\
+ {\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+ {\bf E}& {\bf 0}\end{array}}&\cdots &{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{ {\bf E}}^{L-2}&{\bf 0}\end{array}}\\
+{\begin{array}{cc}{\bf 0}&{ {\bf E}}^{ 2}\\
+{\bf 0}&{\bf 0}\end{array}}&&\ddots&& \vdots\\
+ \vdots&&&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+ {\bf E}& {\bf 0}\end{array}}\\
+{\begin{array}{cc}{\bf 0}&{ {\bf E}}^{ L-1}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{ {\bf E}}^{ L-2}\\
+{\bf 0}&{\bf 0}\end{array}}& \cdots &{\begin{array}{cc} {\bf 0}&{ {\bf E}}^{}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc} {\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}\end{array}}
+\right]
+\end{equation}
+We can reduce the floating point operation count of $\tilde{\CB 
+P}{}^{z}\cdot \tilde{\CB F}$, with $\tilde{\CB 
+P}{}^{z}$ given by (\ref{GGz1}), by factorizing  the ${\CB Q}^{z}$ factor, 
+defined by (\ref{Qzcomp}).
+
+We demonstrate the plane wave propagator factorization technique, by 
+factoring ${\CB Q}^{z}$ when the lattice has $3$ rows, i.e. $L=3$, so that (\ref{Qzcomp}) reduces to
+\begin{equation} \label{Qz3}
+{\CB Q}^{z}=
+\left[{\begin{array}{cccccc} 
+{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}& {\bf E}& {\bf 0}&{\bf E}^{2}&{\bf 0}\\
+{\bf 0}& {\bf E}& {\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}& {\bf E}& {\bf 0}\\
+{\bf 0}&{\bf E}^{2}&{\bf 0}& {\bf E}& {\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\end{array}}\right]
+\end{equation}
+which may then be factored as
+\begin{equation} \label{Qz3fac}
+{\CB Q}^{z}={\left[{\begin{array}{cccccc} 
+{\bmi I}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bmi I}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\\
+-\, {\bf E}& {\bf 0}&{\bmi I}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bmi I}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&-\, {\bf E}& {\bf 0}&{\bmi I}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bmi I}\end{array}}\right]}^{-1}
+{\left[{\begin{array}{cccccc} {\bmi I}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bmi I}&{\bf 0}&-\, {\bf E}& {\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bmi I}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bmi I}&{\bf 0}&-\, {\bf E}\\
+ {\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bmi I}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bmi I}\end{array}}\right]}^{-1}
+\left[{\begin{array}{cccccc} {\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}& {\bf E}& {\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}& {\bf E}& {\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}& {\bf E}& {\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}& {\bf E}& {\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}&{\bf 0}\end{array}}\right]
+\end{equation}
+
+Let
+\begin{equation} \label{zsource}
+\left[\begin{array}{c}
+{\bmi \Sigma}^{\rho^{\prime}}_{\uparrow}\\
+{\bmi \Sigma}^{\rho^{\prime}}_{\downarrow}
+\end{array}  \right]\equiv
+-i\,
+{\bmi  D}^{T}_{z}(-{\bf k}_{x},-{k}_{y})\left({\bmi I}_6\otimes
+{\bf DFT}^{T}(-{\bf k}_{x})  \right)\cdot \tilde{\CB F}_{\rho^{\prime}}
+\end{equation}
+denote the $\left[{\stackrel{\mbox{\small upgoing}}{{}_{\mbox{\small 
+downgoing}}}}\right]$ planewave radiation from $\mbox{row}_{\rho^{\prime}}$
+for each  $1 \le {\rho^{\prime}} \le 3$.
+
+ 
+Then the action 
+\[
+{\CB Q}^{z}
+ {\bmi I}_L \otimes \left[
+{\bmi  D}^{T}_{z}(-{\bf k}_{x},-{k}_{y})\left({\bmi I}_6\otimes
+{\bf DFT}^{T}(-{\bf k}_{x})  \right)\right]\cdot \tilde{\CB F}
+\]
+may be computed using the 
+factored representation of (\ref{Qz3fac}), computing the inverses using 
+forward and backward substitution. The result of the calculation may be 
+summarized as:
+\begin{equation} \label{zmarch}
+\left.\begin{array}{cc}
+{\mit \Delta} { \bmi V}_{\uparrow }^{  {\rho^{\prime}}}  = {\bf E}\left({{ \bmi
+\Sigma}_{ \uparrow }^{{\rho^{\prime}}+1}+ {\mit \Delta} {\bmi  V}_{\uparrow }^{  
+{\rho^{\prime}}+1}}\right)&{\rho^{\prime}}=1,2\\
+{\mit \Delta} {\bmi  V}_{\downarrow }^{  {\rho^{\prime}}} ={\bf E}\left({{ \bmi
+\Sigma}_{ \downarrow }^{{\rho^{\prime}}-1}+ {\mit \Delta} { \bmi V}_{\downarrow }^{{\rho^{\prime}}-1}}
+\right)& {\rho^{\prime}}=2,3
+\end{array}\right\}
+\end{equation} 
+where ${\mit \Delta} { \bmi V}_{\uparrow }^{  {\rho^{\prime}}}$(${\mit \Delta} { \bmi 
+V}_{\downarrow }^{  {\rho^{\prime}}}$) is the upward(downward) incident field on 
+$\mbox{row}_{\rho^{\prime}}$ of the lattice. It is not too difficult to generalize 
+(\ref{zmarch}) to a lattice with $L$ rows, in which case we get
+\begin{equation} \label{zmarchL}
+\left.\begin{array}{cl}
+{\mit \Delta} { \bmi V}_{\uparrow }^{  {\rho^{\prime}}}  = {\bf E}\left({{ \bmi
+\Sigma}_{ \uparrow }^{{\rho^{\prime}}+1}+ {\mit \Delta} {\bmi  V}_{\uparrow }^{  
+{\rho^{\prime}}+1}}\right)&{\rho^{\prime}}=1,L-1\\
+{\mit \Delta} {\bmi  V}_{\downarrow }^{  {\rho^{\prime}}} ={\bf E}\left({{ \bmi
+\Sigma}_{ \downarrow }^{{\rho^{\prime}}-1}+ {\mit \Delta} { \bmi V}_{\downarrow }^{{\rho^{\prime}}-1}}
+\right)& {\rho^{\prime}}=2,L
+\end{array}\right\}
+\end{equation} 
+
+\begin{samepage}
+Given that
+\[
+\left[\begin{array}{c}
+{\mit \Delta} {\bmi  V}_{\downarrow }^{  \rho}\\
+{\mit \Delta} {\bmi  V}_{\uparrow }^{  \rho}
+\end{array}  \right]
+\]
+\end{samepage}
+denotes the $\left[{\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small 
+upgoing}}}}\right]$
+incident plane wave radiation on $\mbox{row}_{\rho}$ of the lattice, we 
+synthesize the  $6 N_k$ displacement/traction vector using
+\begin{equation} \label{zsynthesis}
+\left[\begin{array}{c}
+\tilde{\bmi u}_{  \rho}\\
+\tilde{\bmi t}_{  \rho}
+\end{array}  \right]
+=
+\left({\bmi I}_6\otimes 
+{\bf DFT}({\bf k}_{x}) \right){\bmi  D}_{z}({\bf k}_{x},{k}_{y})
+\left[\begin{array}{c}
+{\mit \Delta} {\bmi  V}_{\downarrow }^{  \rho}\\
+{\mit \Delta} {\bmi  V}_{\uparrow }^{  \rho}
+\end{array}\right]
+\end{equation}
+operation. Finally, we downsample or decimate this result, to get
+\[
+\left[\begin{array}{c}
+{\bmi u}_{  \rho}\\
+{\bmi t}_{  \rho}
+\end{array}  \right]=
+{\bmi \Phi}^{-1}\left[\begin{array}{c}
+\tilde{\bmi u}_{  \rho}\\
+\tilde{\bmi t}_{  \rho}
+\end{array}  \right],
+\]
+the $6$ component displacement/traction vector  at each of the $N_x$ 
+lattice points in $\mbox{row}_{\rho}$ of the lattice.
+
+In summary, if we implement the $6 N_x L$ matrix/vector mapping
+${\CB P}{}^{z}\cdot {\CB F}$ of (\ref{CBdef03}) using 
+(\ref{zsource})--(\ref{zsynthesis}), the floating point operation count 
+is asymptotically
+\begin{equation} \label{N5def}
+N_5=2\,(L-1)\,\left[ 39 N_k + 6 N_k \log_2 N_k \right]
+\end{equation}
+This algorithm is an elastic wave generalization of the acoustic wave $(\omega, k)$ {\em phase shift 
+method\/} of {\em Gazdag\/}~(1981). However, our algorithm has been set 
+up with the intention of extending it to a plane stratified background 
+model.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{ Implementing $\mbox{\CBM  P}\,{}^{x}\cdot\mbox{\CBM  F}$}
+
+We now find a representation of the $6 N_x \times 6 N_x$ partition  ${\CB P}_{\rho \leftarrow 
+\rho}$ of array ${\CB P}^{x}$ in (\ref{CBdef4}) using (\ref{superPx}) for the 
+$6 \times 6$ component partitions. 
+
+From (\ref{CBdef2}) with $\rho=\rho^{\prime}$, 
+and using (\ref{Gijdef}) for the definition of the  partitions we have
+\begin{eqnarray} \label{CBdef5}
+{\CB P}_{\rho \leftarrow   \rho}=
+\left[{\begin{array}{cccc}
+{\bf 0}_{6}&\rf{\bmi P}\!{}^{x}({x_1},{x_2})&\cdots 
+&\rf{\bmi P}\!{}^{x}({x_1},{x_{N_x}})\\
+\rf{\bmi P}\!{}^{x}({x_2},{x_1})&{\bf 0}_{6}&&\vdots\\
+\vdots&&\ddots&\rf{\bmi P}\!{}^{x}(x_{N_x-1} , {x_{N_x}})\\
+\rf{\bmi P}\!{}^{x}(x_{N_x},x_1)&\cdots &
+\rf{\bmi P}\!{}^{x}(x_{N_x},x_{N_x-1})&{\bf 0}_{6}
+\end{array}}\right]
+\end{eqnarray}
+
+
+By employing the propagator of (\ref{superPx}) for the partitions of  (\ref{CBdef5}),
+ we get
+\begin{samepage}
+\begin{eqnarray}	\label{GGx0}
+\lefteqn{\rf{\CB P}_{\rho \leftarrow   \rho} \equiv}\\
+&&
+ -i{\bmi I}_{N_x} \otimes
+\left[\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\right]
+ {\CB Q}^{x}_{\rho \leftarrow \rho}
+{\bmi I}_{N_x} \otimes \left[{\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)
+\right]\nonumber
+\end{eqnarray}
+\end{samepage}
+where:
+\begin{itemize}
+\begin{samepage}
+\item the  $(6 N_x N_k) \times (6 N_x N_k)$, {\em transverse\/} 
+plane wave propagator ${\CB Q}^{x}_{\rho \leftarrow \rho}$ is  defined as
+\begin{equation} \label{CBQxdef}
+{\CB Q}^{x}_{\rho \leftarrow   \rho}=
+\left[{\begin{array}{cccc}
+{\bf 0}_{6N_k}&{\bmi Q}^{x}({x}_1,{x}_2)&\cdots 
+&{\bmi Q}^{x}({x}_1,{x}_{N_x})\\
+{\bmi Q}^{x}({x}_2,{x}_1)&{\bf 
+0}_{6N_k}&&\vdots\\
+\vdots&&\ddots&{\bmi Q}^{x}({x}_{N_x -1},{x}_{N_x})\\
+{\bmi Q}^{x}({x}_{N_x},{x}_{1})&\cdots &
+{\bmi Q}^{x}({x}_{N_x},{x}_{N_x-1})&{\bf 0}_{6N_k}
+\end{array}}\right]
+\end{equation}
+\end{samepage}
+where the  $6 N_k \times 6 N_k$ plane wave propagator partition, 
+${\bmi Q}^{x}({x}_{\chi},{x}_{\chi^{\prime}}), \ 1 \le \chi, \chi^{\prime} \le N_x$ in 
+(\ref{CBQxdef}) 
+is given by  
+\begin{equation} \label{Qxdefg}
+{\bmi Q}^{x}({x}_{\chi},{x}_{\chi^{\prime}})=
+\left[{\begin{array}{cc}{\bf 0}_{3N_k}&H(\chi - \chi^{\prime}){\bf E}_{x}^{|\chi - \chi^{\prime}|}\\
+H(\chi^{\prime}-\chi){\bf E}_{x}^{|\chi - \chi^{\prime}|}&{\bf 0}_{3N_k}\end{array}}\right]
+\end{equation}
+with the $3 N_k$-diagonal phase shift array ${\bf E}_{x}$ defined by
+ \begin{equation} \label{Exdef}
+{\bf E}_{x}=\left[{\begin{array}{ccc}
+{\rm e}^{i{\bf k}_{x,P}\,{\mit \Delta}x}&{\bf 0}_{N}&{\bf 0}_{N}\\ 
+{\bf 0}_{N}&{\rm e}^{ 
+i{\bf k}_{x,S}\,{\mit \Delta}x}&{\bf 0}_{N}\\ {\bf 0}_{N}&{\bf 0}_{N}&{\rm e}^{ 
+i{\bf k}_{x,H}\,{\mit \Delta}x}\end{array}}\right] 
+\end{equation}
+and  ${\bf k}_{x,c}, \ c\in\{ P,S,H\}$ was given by (\ref{gbarKx}), so that
+\begin{equation} \label{Qxcomp}
+{\CB Q}^{x}_{\rho \leftarrow   \rho}=\left[
+{\begin{array}{ccccc}{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+ {\bf E}_{x}& {\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf E}_{x}^{2}&{\bf 0}\end{array}}&\cdots &{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf E}_{x}^{N-1}&{\bf 0}\end{array}}\\
+{\begin{array}{cc}{\bf 0}& {\bf E}_{x}\\
+ {\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+ {\bf E}_{x}& {\bf 0}\end{array}}&\cdots &{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf E}_{x}^{N-2}&{\bf 0}\end{array}}\\
+{\begin{array}{cc}{\bf 0}&{\bf E}_{x}^{ 2}\\
+{\bf 0}&{\bf 0}\end{array}}&&\ddots&& \vdots\\
+ \vdots&&&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf 0}\\
+ {\bf E}_{x}& {\bf 0}\end{array}}\\
+{\begin{array}{cc}{\bf 0}&{\bf E}_{x}^{ N-1}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc}{\bf 0}&{\bf E}_{x}^{ N-2}\\
+{\bf 0}&{\bf 0}\end{array}}& \cdots &{\begin{array}{cc} {\bf 0}&{\bf E}_{x}\\
+{\bf 0}&{\bf 0}\end{array}}&{\begin{array}{cc} {\bf 0}&{\bf 0}\\
+{\bf 0}&{\bf 0}\end{array}}\end{array}}
+\right]
+\end{equation}
+
+
+\item the $6 N_k \times 6 N_k$ array ${\bmi  D}_{x}({\bf k}_{z},{k}_{y})$ was defined in (\ref{Dxsuperdef})
+
+\item the $6 N_k$-vector $\overline{\bmi F}(0)$ was defined in (\ref{Fbardef})
+\end{itemize}
+
+With $\rf{\CB P}_{\rho \leftarrow   \rho}$ given by (\ref{GGx0}), and  ${\CB  F}_{\rho}$ given by
+(\ref{Frho}), we can reduce the cost of the $6 N_x$ matrix/vector 
+products
+\[
+\rf{\CB P}_{\rho \leftarrow   \rho}\cdot{\CB  F}_{\rho}, \qquad 1 \le \rho \le L
+\]
+by factoring the plane wave propagator ${\CB Q}^{x}_{\rho \leftarrow   \rho}$
+component of $\rf{\CB P}_{\rho \leftarrow   \rho}$ that was defined in 
+(\ref{Qxcomp}).
+
+Let us denote the left(right) going plane waves from a lattice 
+point in $\mbox{column}_\chi$ of $\mbox{row}_\rho$ by ${\bmi 
+\Sigma}^{(\rho,\chi)}_{\leftarrow}$(${\bmi \Sigma}^{(\rho,\chi)}_{\rightarrow}$) for 
+$1 \le \rho \le L$, $1 \le \chi \le N_x$, then
+\begin{eqnarray} \label{LRsource}
+\left[\begin{array}{c}
+{\bmi \Sigma}^{(\rho,\chi)}_{\leftarrow}\\
+{\bmi \Sigma}^{(\rho,\chi)}_{\rightarrow}
+\end{array}\right]&=&
+{\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right){\bmi J}_6 
+\bar{\bmi f}_{N_x(\rho-1)+\chi}\nonumber\\
+&=&
+{\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)
+{\bmi f}_{N_x(\rho-1)+\chi}
+\end{eqnarray}
+ By analogy with (\ref{zmarchL}) we have
+\begin{equation} \label{xmarchL}
+\begin{array}{ll}
+\left.\begin{array}{cl}
+{\mit \Delta} { \bmi V}_{\leftarrow }^{(\rho,\chi)}  = {\bf E}_{x}\left({{ \bmi
+\Sigma}_{ \leftarrow }^{(\rho,\chi+1)}+ {\mit \Delta} {\bmi  V}_{\leftarrow }^{  
+(\rho,\chi+1)}}\right)&\chi=1,N_x-1\\
+{\mit \Delta} {\bmi  V}_{\rightarrow }^{(\rho,\chi)} ={\bf E}_{x}\left({{ \bmi
+\Sigma}_{ \rightarrow }^{(\rho,\chi-1)}+ {\mit \Delta} { \bmi V}_{\rightarrow 
+}^{(\rho,\chi-1)}}
+\right)& \chi=2,N_x
+\end{array}\right\}&\rho=1,L
+\end{array}
+\end{equation} 
+where  ${\mit \Delta} { \bmi V}_{\leftarrow }^{(\rho,\chi)}$(${\mit \Delta} { \bmi 
+V}_{\rightarrow }^{(\rho,\chi)}$) is the leftward(rightward) incident field on 
+$(\mbox{row}_\rho,\mbox{column}_\chi)$ of the lattice.
+Finally, we synthesize the components of displacement and traction at
+$(\mbox{row}_\rho,\mbox{column}_\chi)$ from the incident plane waves, using
+\begin{eqnarray} \label{utxsyn}
+\left[\begin{array}{c}
+{\bmi u}^{(\rho,\chi)}\\
+{\bmi t}^{(\rho,\chi)}
+\end{array}\right]=
+\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})
+ \left[\begin{array}{c}
+{\mit \Delta}{\bmi V}^{(\rho,\chi)}_{\rightarrow}\\
+{\mit \Delta}{\bmi V}^{(\rho,\chi)}_{\leftarrow}
+\end{array}\right], \quad \rho=1,L, \quad \chi=1,N_x
+\end{eqnarray}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The computations (\ref{LRsource})--(\ref{utxsyn}) may be summarized by the matrix formula
+\[
+\left[ \begin{array}{c}{\bmi u}\\ {\bmi t}\end{array} \right]=
+\rf{\CB P}\!{}^{x}\cdot {\CB  F}
+\]
+with
+\begin{samepage}
+\begin{eqnarray}	\label{GGx1}
+\lefteqn{\rf{\CB P}\!{}^{x} \equiv -{i}{\bmi I}_L \otimes\left( \right.}\\
+&&
+\left.
+{\bmi I}_{N_x} \otimes
+\left[\left({\bmi I}_6\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\right]
+ {\CB Q}^{x}_{\rho \leftarrow \rho}
+{\bmi I}_{N_x} \otimes \left[{\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_6\otimes \overline{\bmi F}^{T}(0)  \right)
+\right] \right)\nonumber
+\end{eqnarray}
+\end{samepage}
+an explicit representation of the array ${\CB P}^{x}$ introduced in (\ref{CBdef4}),
+that follows after using (\ref{GGx0}) for the diagonal blocks ${\CB P}^{x}_{\rho \leftarrow 
+\rho}, \ 1 \le \rho \le L$.
+The asmyptotic floating point operation count of eqns. (\ref{LRsource})--(\ref{utxsyn})
+is
+\begin{equation} \label{N6def}
+N_6=78\,L\,(N_x-1)  \overline{N}_k
+\end{equation} 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{ Implementing $\mbox{\CBM  P}\cdot\mbox{\CBM  F}$}
+
+
+Finally, in the culmination of the chapter, we use (\ref{GGz1}) and (\ref{GGx1}) in 
+(\ref{CBGsplit}) to get the representation of 
+the {\em lattice propagator\/} $\rf{\CB P}$, which may be written as
+\[
+\!\!\!\!\!\!\fbox{
+\begin{minipage} {146.0mm}
+\begin{samepage}
+\begin{eqnarray}\label{GGlattice}
+\!\!\!\!\!\!\!\!\!
+\rf{\CB P} &\equiv&
+\rf{\CB P}\!{}^{z}\left[ \cdot \right]+ \rf{\CB  P}\!{}^{x}\nonumber\\
+&&\!\!\!\!\!\!= -i{\bmi \Phi}{}^{-1}\left[  {\bmi I}_L \otimes\left[\left({\bmi I}_{6}\otimes 
+{\bf DFT}({\bf k}_{x}) \right){\bmi  D}_{z}({\bf k}_{x},{k}_{y})\right]
+ {\CB Q}^{z}\right.\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad
+\times \left.
+ {\bmi I}_L \otimes \left[
+{\bmi  D}^{T}_{z}(-{\bf k}_{x},-{k}_{y})\left({\bmi I}_{6}\otimes
+{\bf DFT}^{T}(-{\bf k}_{x})  \right)  {\bmi \Phi}\left[ \cdot \right] \right]\right]\nonumber\\
+&&
+ -{i}{\bmi I}_L \otimes\left\{ {\bmi I}_{N_x} \otimes
+\left[\left({\bmi I}_{6}\otimes \overline{\bmi F}(0)  \right)
+ {\bmi  D}_{x}({\bf k}_{z},{k}_{y})\right]
+ {\CB Q}{}^{x}_{\rho \leftarrow \rho}
+\right.\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad
+\left.
+\times{\bmi I}_{N_x} \otimes \left[{\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_{6}\otimes \overline{\bmi F}^{T}(0)  \right)
+\right] \right\}
+\end{eqnarray}
+\end{samepage}
+\vspace{1 mm}
+\end{minipage}
+}
+\]
+Note that we have incorporated to upsampling and downsampling operators 
+within (\ref{GGlattice}), so that $\rf{\CB P}$ operates on $6 L 
+N_x$-vectors.
+
+
+In (\ref{xmarchL}), we have a left/right sweep in each of the $L$ rows of 
+the lattice, where as (\ref{zmarchL}) is composed of a single up/down 
+sweep. An accurate measure of the number of floating point operations 
+embodied in  (\ref{zmarchL})[(\ref{xmarchL})] may be ascertained by counting 
+the number of applications of the vertical[horizontal] phase shift arrays 
+${\bf E}$[${\bf E}_{x}$]. For our $L-$row, $N_x-$column lattice, we have
+$2(L-1)$ applications of ${\bf E}$ and $2 L (N_x-1)$ applications of 
+${\bf E}_{x}$, where ${\bf E}$ is a $3 N_k$-element diagonal array and 
+${\bf E}_{x}$ is a $3 \overline{N}$-element diagonal array, with 
+$\overline{N}_k\le 
+{N}_k$. 
+
+We generally use less plane waves in the transverse phase shifts of ${\bf E}_{x}$
+than the vertical phase shifts of ${\bf E}$ because all points in a 
+given row have the same depth coordinate $z$ and consequently, there is no possibility of 
+{\em aliasing\/}
+caused by 
+undersampling of the complex exponential $\exp (i k_z {\mit \Delta}z)$ 
+because ${\mit \Delta}z\equiv 0$ when phase shifting between points 
+within the same row. However, when we compute the vertical phase shifts, 
+we must ensure that we have employed an adequate $k_x-$wavenumber 
+bandwidth $2 {\mit \Omega}$ and sampling rate ${\mit \Delta}k_x$ so that the DFT arrays 
+${\bf DFT}$ in (\ref{GGlattice}) correctly model the transverse phase shifts between 
+lattice points at {\em opposite ends  of  adjacent rows in the 
+lattice\/}. 
+At the Nyquist sampling rate, the number of lattice points within a given 
+row $N_x$ is equal to the number of plane waves $N_k$ used to phase shift between 
+rows.
+ However, in numerical applications of the techniques described 
+here, we have found it necessary to employ a considerable amount of 
+{\em oversampling\/}, so that
+\[
+N_k = {N}_{\mit \Delta } {N}_{L } N_x.
+\]
+which was defined above in (\ref{Nkdef}). In the numerical computations 
+of chapter \ref{variational}, ${N}_{\mit \Delta }=8$, ${N}_{L }=4$, so that
+\[
+N_k = 32  N_x
+\]
+i.e., $32$ times the number of plane 
+waves that would be necessary from Shannon's sampling theorem (Jerri, 1977; Brigham, 1988). 
+We compute 
+the relevant quantities at the actual grid points by {\em decimating\/} 
+or {\em downsampling\/} 
+the results at the fictitious oversampled lattice points (Alg. 3.1).
+Usually, we have taken $\overline{N}_k=N_k/2$ or $\overline{N_k}=N_k/4$, where 
+$N_k=2048$ or $N_k=4096$ is the number of oversampled plane waves 
+employed in the vertical phase shifts between rows and $\overline{N}_k$ is the 
+corresponding number of plane waves in the transverse shifts between 
+lattice points within the same row.
+
+The advantages of the representation (\ref{GGlattice}) are twofold:
+\begin{enumerate}
+\item the action of (\ref{GGlattice}) on a secondary source field 
+${\CB F}$ with $6$-vector components ${\bmi f}_j$ at each of the $N_x\times L$ lattice 
+points of Fig\ref{lattice},  may be computed in the order of 
+\[
+N_2\approx2\,(L-1)\,\left[ 39 N_k + 6 N_k \log_2 N_k \right]+ 
+78\,L\,(N_x-1)  \overline{N}_k
+\]
+floating point operations, which is often  far less arithmetic than 
+the ostensible 
+\[
+N_1\approx36 N_x^2 \times L^2 - 6 N_x \times L
+\]
+ floating point operation count. However,  the oversampling requirement
+ (\ref{Nkdef}),
+ erodes the numerical advantage of $N_2$ over $N_1$.  
+\item  (\ref{GGlattice}) is readily extensible to 
+the important case where the lattice is superimposed on a plane 
+stratified half space. We consider this problem in chapter \ref{stratG}.
+\end{enumerate} 
+
+
+In summary,
+the key steps in achieving the goal expressed by item-({\bf 1}) above is to:
+\begin{enumerate} 
+\item factor the plane wave propagators ${\CB Q}^{z}$ and ${\CB Q}{}^{x}$ 
+in (\ref{GGlattice}) into the product of {\em sparse\/} matrices
+\item employ the {\em Fast Fourier Transform\/}(FFT) algorithm to compute the
+action of the {\em Discrete Fourier Transform\/}(DFT) matrix ${\bf DFT}$ 
+from (\ref{DFTdef}) on a field vector. The FFT algorithm factors ${\bf DFT}$ into 
+a product of sparse arrays so that the cost of applying ${\bf DFT}$ to an 
+$N_k-$vector is reduced from $O(N_k^2)$ to $O(N_k \log_2 N_k)$ floating point 
+operations. 
+\end{enumerate}
+ 
+
+In closing this chapter, we note that although we have assumed that the 
+secondary source vector ${\CB F}$ in (\ref{GFdef0}), has $6-$vector components
+${\bmi f}_j, \ 1 \le j \le L N_x$, it will be shown in chapter \ref{Trep}, that
+${\bmi f}_j, \ 1 \le j \le L N_x$ is most conveniently expressed as an 
+$8-$vector. The reason we have employed $6-$vectors here is related to 
+the fact that the partial wave displacement/traction states  used to 
+construct the Green's tensor have $6$ components, i.e. $3 $ components 
+of displacement $(u_z,u_x,u_y)$, and $3$ components of traction
+$(\tau_{zz},\tau_{xz},\tau_{yz})$. In chapter \ref{Trep}, 
+we employ  integration by parts, so that the partial wave components of 
+the Green's tensor that propagates the field between successive scattering 
+interactions, are augmented by the $(\partial_{x}u_x,\partial_{x}u_y)$ 
+components. Consequently, the {\em effective\/} 
+secondary source vector $\hat{\CB F}$ has $8-$vector components, say,
+$\hat{\bmi f}_j, \ 1 \le j \le L N_x$. Some of the results presented here 
+will then require minor modification, and these modifications will be 
+outlined in chapter \ref{Trep}.
+
+
+
+

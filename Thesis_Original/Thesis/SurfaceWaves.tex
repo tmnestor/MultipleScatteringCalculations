@@ -1,0 +1,1487 @@
+\chapter{Surface Waves}\label{exten}
+
+
+\section{The elastodynamic Jost Solutions in a stratified 
+half space}\label{subsecJost}
+
+Solving the elastodynamic wave equations is greatly simplified by 
+exploiting their {\em linearity\/}. The solution of a linear problem, may 
+expressed in terms of the {\em basis states\/} of the solution space. In 
+seismology, the solution space basis is referred to as the {\em 
+fundamental solution\/}. When  modeling wave propagation in a plane stratified medium, the 
+{\em plane wave basis\/} is pre-eminent, because plane 
+stratified media are transversely invariant, and plane waves are the 
+eigen vectors of the translation operator (an eigen basis is always the 
+preferred basis, assuming that it is available). Each of these plane waves 
+is a solution to the wave equation in its own right.
+
+For  fixed values of $(\omega, k_y)$, the  elastodynamic basis states 
+may be classified on the basis of $3$ separate 
+physical properties:
+\begin{itemize}
+\item the scattering characteristics of an earth region can be defined by the outcome of a {\em 
+dual pair of scattering experiments}, initiated by downward incident 
+energy from above, and upward incident energy from below, labeled as experiment ``$u$'' and ``$v$''
+respectively. We shall consider these scattering experiments in detail later, but for now we
+merely point out that they are the elastodynamic generalization of a related pair of
+scattering experiments commonly employed in quantum scattering. In the solution of the
+quantum problem, the outcomes are referred to as the {\em Jost solutions}, hence we
+adopt the appellation  {\em  elastodynamic Jost solution} to label these outcomes in the
+elastodynamic problem. When the reference medium is a homogeneous space, 
+rather than a stratified half space,  the ``$u$'' solution is exclusively 
+comprised of downgoing plane waves, while the ``$v$'' solution is exclusively 
+comprised of upgoing plane waves. But when the reference medium is 
+stratified,  ``$u$'' and ``$v$'' have both up and downgoing components.
+\item each such elastodynamic Jost solution is further characterized by its
+incident polarization  i.e. either  {\em P},  {\em SV} or {\em SH-}wavemotion
+\item  at any depth $z$  the transverse (i.e. $x$) dependence  of the wavefield is expanded 
+in a Fourier basis of plane 
+waves.  The incident field is further classified on the basis of the incident 
+horizontal wavenumber $k_{x}$
+\end{itemize}
+We introduce {\em multi-indices} $\nu=(J,c,k_x)\in \{ \{u,v  \} \times \{ 
+P, S, H \} 
+\times (-\infty, \infty)   \}$ to summarize these three 
+physical properties, i.e. the first index $J$ takes the value $J=u$ for the 
+``$u$'' Jost solution and $J=v$ for the ``$v$'' Jost solution. The second 
+index $c$ , takes values $P$, $S$ and $H$, denoting incident {\em P} 
+{\em SV} and {\em SH-}polarizations respectively.  The final index $k_x$ of the 
+3-tuple multi-index is the
+horizontal wavenumber component, so that there are $6$ different basis states 
+for each value of $k_x$.
+
+ The solution basis states (or partial wave 
+states) at ${\bmi x}=(z,x)$ and fixed $(\omega, k_y)$ may be written in the Dirac notation as
+\[
+\left|\nu, {\bmi x}  \right\rangle, \quad \nu=(J,c,k_x)\in \{ \{u,v  \} \times \{ 
+P, S, H \} 
+\times (-\infty, \infty)   \}
+\]
+If we introduce the synthesis operator
+\[
+\sum\nolimits_\nu\!\!\!\!\!\!\!\!\! \int\,\,\, \equiv {\frac{1}{2 \pi }}\int_{- \infty }^{ \infty }\, {\rm d}{k}_{x}\, 
+\sum\limits_{ J  \in   \left\{{u,v}\right\}} 
+\sum\limits_{ c  \in   \left\{{P,S,H}\right\}}
+\]
+then, at fixed $(\omega, k_y)$, we synthesize an 
+arbitrary displacement/ traction field 
+\begin{eqnarray} \label{bdefSurf}
+\lefteqn{{\bmi b}({\bmi x};k_y,\omega)=}\\
+&&\!\!\!\!\!\!
+\left[u_{z}({\bmi x};k_y,\omega),\ u_{x}({\bmi x};k_y,\omega),\ u_{y}({\bmi x};k_y,\omega), 
+\ \tau_{zz}({\bmi x};k_y,\omega),\  \tau_{xz}({\bmi x};k_y,\omega),\ 
+\tau_{yz}({\bmi x};k_y,\omega) \right]^{T}\nonumber
+\end{eqnarray}
+in a stratified reference medium, from the partial 
+wave states according to
+\begin{equation} \label{bsynthesis}
+{\bmi b}({\bmi x};k_y,\omega)=
+\sum\nolimits_\nu\!\!\!\!\!\!\!\!\! \int \,\,\, \left|\nu, {\bmi x}  
+\right\rangle.
+\end{equation}
+ 
+The {\em partial wave synthesis\/} (\ref{bsynthesis}) is a rather concise statement of a 
+complex physical process, but has little practical utility unless we know 
+how the partial wave states $\left|\nu, {\bmi x}  
+\right\rangle$ evolve over space. We have already met this problem under 
+various guises in the preceding chapters. We recall the spectral 
+representation (\ref{Ddef}), where we constructed the fixed 
+$(k_x,k_y,\omega)$ displacement/ traction field
+${\bmi b}(k_x,k_y,\omega)$ in free space, using the eigen states of the system 
+matrix (\ref{Akdef}). In this section, we will exploit the plane 
+stratified nature of the reference medium, so that the $k_x$ label
+of a partial wave state  is conserved as the state evolves over depth.
+Consequently, the spectral 
+representation (\ref{Ddef}) may be used over the depth interval $z_{l-1} \le z \le 
+z_{l}$  of plane reference layer$-l$ for each $1 \le l \le L$, but we 
+must allow for coupling between the different $c\in \{P, S, H\}$ labels 
+as we cross the plane interface between adjacent layers. Of course, this 
+problem has been studied in great detail in numerous texts on 
+theoretical seismology.  
+
+
+
+Due to the plane stratified nature of the reference medium, ${\bmi 
+b}({\bmi x};k_y,\omega)$ may be constructed over the depth interval $z_{l-1} \le z \le 
+z_{l}$  of plane reference layer$-l$ for each $1 \le l \le L$,  according to
+\begin{eqnarray} \label{brepj}
+{\bmi b}_{l}({\bmi x};k_y,\omega)&=& \sum\nolimits_{\nu_{l}}\!\!\!\!\!\!\!\!\!\!\! 
+\int \,\,\,\,\, \left|\nu_{l}, {\bmi x}  
+\right\rangle\\
+&=& \frac{1}{2 \pi} \int_{-\infty}^{\infty} {\rm d}k \, 
+{\bmi \Theta}_{l}({\bmi x};k_{x},k_{y})
+\left[\begin{array}{c}
+{\bmi V}_{\downarrow 
+,P_{l} }({z}_{l-1};k_{x},k_{y})\\
+{\bmi V}_{\downarrow ,S_{l} }({z}_{l-1};k_{x},k_{y})\\
+{\bmi V}_{\downarrow ,H_{l} }({z}_{l-1};k_{x},k_{y})\\
+{\bmi V}_{\uparrow , P_{l} }({z}_{l};k_{x},k_{y})\\
+{\bmi V}_{\uparrow , S_{l} }({z}_{l};k_{x},k_{y})\\
+{\bmi V}_{\uparrow , S_{l} }({z}_{l};k_{x},k_{y})
+\end{array}\right], \quad z_{l-1}\le z \le z_{l}\nonumber
+\end{eqnarray}
+where:
+\begin{itemize}
+\item the partial wave amplitudes 
+\[{\bmi V}_{\downarrow ,P_{l} 
+}({z}_{l-1}; k_{x},k_{y}),\quad 
+{\bmi V}_{\downarrow ,S_{l} }({z}_{l-1};k_{x},k_{y})\quad \mbox{and}
+\quad{\bmi V}_{\downarrow ,H_{l} }({z}_{l-1};k_{x},k_{y})
+\]
+ are the amplitudes 
+of the downgoing  $P$, $SV$ and $SH$  partial waves  respectively, phased relative to 
+the top of layer-$l$
+\item the partial wave amplitudes 
+\[{\bmi V}_{\uparrow ,P_{l} }({z}_{l};k_{x},k_{y}),\quad
+{\bmi V}_{\uparrow ,S_{l} }({z}_{l};k_{x},k_{y})\quad \mbox{ and} 
+\quad{\bmi V}_{\uparrow ,H_{l} }({z}_{l};k_{x},k_{y})
+\]
+ are the amplitudes of the upgoing $P$, $SV$ and $SH$ partial waves  respectively, phased relative to 
+the bottom of layer-$l$
+\item the $6 \times 6$ array
+\begin{eqnarray} \label{Thetaldef}
+\lefteqn{{\bmi \Theta}_{l}({\bmi x};k_{x},k_{y})=
+{\rm e}^{i{ k}_{x} x} {\bmi D}_{z,l}(k_{x},k_{y})}\\
+&&\!\!\!\!\!\!
+\times
+\mbox{diag}\left[\begin{array}{cccccc}
+{\rm e}^{i{ k}_{z,P_l} (z-z_{l-1})}&
+{\rm e}^{i{ k}_{z,S_l} (z-z_{l-1})}
+&{\rm e}^{i{ k}_{z,H_l} (z-z_{l-1})}
+&{\rm e}^{i{ k}_{z,P_l} (z_{l}-z)}
+&{\rm e}^{i{ k}_{z,S_l} (z_{l}-z)}&
+{\rm e}^{i{ k}_{z,H_l} (z_{l}-z)}
+\end{array}\right]\nonumber
+\end{eqnarray} 
+{\em synthesizes the  displacement-traction field\/} at fixed $(k_x,k_y, 
+\omega)$ from the partial wave amplitudes
+
+\item  ${\bmi D}_{z}(k_{x},k_{y})$  was given by (\ref{Ddef})
+\item ${ k}_{c_l,z}$ was given by (\ref{kzc1Def})
+\end{itemize}
+
+Using (\ref{Thetaldef}), we now construct a $6 $ element basis 
+${\bmi B} ({\bmi x};k_{x},k_{y})$ of solutions like (\ref{brepj}) 
+for fixed $(k_{x},k_{y},\omega)$, using the partial wave amplitudes 
+${\bmi V}_{\downarrow,\uparrow ,c_{l} 
+}$ within each layer. 
+This fundamental solution ${\bmi B} ({\bmi x};k_{x},k_{y})$ may be 
+written  as
+\begin{eqnarray} \label{fundamental}
+\lefteqn{{\bmi B} ({\bmi x};k_{x},k_{y}) = 
+\left[\begin{array}{cc} {\bmi  B}_{u} ({\bmi x};k_{x},k_{y}) & {\bmi  
+B}_{v} ({\bmi x};k_{x},k_{y})\end{array}\right]}\nonumber\\
+&&= {\bmi \Theta}_{l}({\bmi x};k_{x},k_{y})
+\left[\begin{array}{cc} {\bmi  V}_{u,l}(k_{x},k_{y}) & {\bmi  
+V}_{v,l}(k_{x},k_{y})\end{array}\right], \quad     z_{l-1}\le z \le z_{l}, \quad 
+ 1 \le l \le L\nonumber\\
+ &&= {\bmi \Theta}({\bmi x};k_{x},k_{y})\left[\begin{array}{cc} 
+ {\bmi  V}_{u}(k_{x},k_{y}) & 
+ {\bmi  V}_{v}(k_{x},k_{y})\end{array}\right]
+\end{eqnarray} 
+where:
+\begin{itemize}
+\item 
+the  $6L\times 6 L$ block diagonal displacement-traction synthesis array 
+${\bmi \Theta}({\bmi x};k_{x},k_{y})$ at fixed $(k_x,k_y,\omega)$,
+ is defined in terms of its layer contributions 
+${\bmi \Theta}_{l}({\bmi x};k_{x},k_{y}), 1\le l \le L$, from 
+(\ref{Thetaldef}) as
+\[
+{\bmi \Theta}({\bmi x};k_{x},k_{y})\equiv
+\mbox{diag}\left[\begin{array}{ccc}{\bmi \Theta}_{1}({\bmi x};k_{x},k_{y})&
+\cdots& {\bmi \Theta}_{L}({\bmi x};k_{x},k_{y})  \end{array}  \right]
+\]
+\item the $(6  L)\times (3 )$ arrays 
+\begin{equation} \label{Vvw} 
+\!\!\!\!\!\!
+{\bmi {V}}_{u}(k_{x},k_{y})=
+\left(\begin{array}{c} 
+{{\bmi V}}_{ u,1}(k_{x},k_{y})\\
+\vdots\\ {{\bmi V}}_{ u,l}(k_{x},k_{y})\\
+\vdots\\  {{\bmi V}}_{ u,L}(k_{x},k_{y})
+\end{array}\right) \ \mbox{and} \
+{\bmi {V}}_{v}(k_{x},k_{y})=
+\left(\begin{array}{c} 
+{{\bmi V}}_{ v,1}(k_{x},k_{y})\\
+\vdots\\ {{\bmi V}}_{ v,l}(k_{x},k_{y})\\
+\vdots\\  {{\bmi V}}_{ v,L}(k_{x},k_{y})
+\end{array}\right)
+\end{equation}
+are to be constructed from the matrix factorizations of \S\ref{RTfactor}, after we 
+have chosen the appropriate source radiation
+\end{itemize}
+We propose that:
+\begin{itemize}
+\item ${\bmi  V}_{u}(k_{x},k_{y})$,  
+is initiated by a {\em free surface source layer\/}
+with source radiation  \newline
+${\bmi \Sigma}_{u}(k_{x},k_{y}) = [{\bmi 
+\Sigma}_{u,\uparrow}(k_{x},k_{y}),{\bmi 
+\Sigma}_{u,\downarrow}(k_{x},k_{y})]^{T} =
+[{\bf 0}_{3},{\bmi I}_{3}]^{T}$ 
+radiating $P$  waves, $SV$ waves and $SH$ waves down into the stratified half space. 
+Each such partial wave component of ${\bmi  V}_{u}(k_{x},k_{y})$ satisfies the 
+radiation condition in the lower half space. 
+\item ${\bmi  V}_{v}(k_{x},k_{y})$, has its source in the lower half space
+with source radiation \newline
+${\bmi \Sigma}_{v}(k_{x},k_{y})=
+[{\bmi \Sigma}_{v,\uparrow}(k_{x},k_{y}),
+{\bmi \Sigma}_{v,\uparrow}(k_{x},k_{y})]^{T}=[{\bmi I}_{3},
+{\bf 0}_{3}]^{T}$ radiating $P$  waves, $SV$ waves and $SH$  waves from the lower half space. Each such partial wave component of 
+${\bmi  V}_{v}(k_{x},k_{y})$ satisfies the 
+{\em traction free condition\/} at the free surface.
+\end{itemize}
+In the downward reflection, and upward transmission problems of this 
+thesis, 
+we are interested in modeling wave propagation on the interval $z_0\le 
+\zeta \le z_L$, so that the source depths $z_S$ for 
+${\bmi  V}_{u}$ and ${\bmi  V}_{v}$ are chosen outside this interval. 
+Otherwise, if $z_{0}\le 
+z_S \le z_{L}$, then ${\bmi  V}_{u}$ and ${\bmi  V}_{v}$ will suffer jump 
+discontinuities across  $z_S$ and this will complicate the analysis 
+considerably.  Consequently, the source fields for ${\bmi  V}_{u}$ and ${\bmi  V}_{v}$
+irradiate the layer stack from above, and below respectively.
+The fields ${\bmi  B}_{u}({\bmi x};k_{x},k_{y})$ and 
+${\bmi  B}_{v}({\bmi x};k_{x},k_{y})$ in (\ref{fundamental}), play a 
+role analogous to the matrix {\em Jost solutions\/} in mathematically rigorous 
+formulations of quantum scattering [\cite{Taylor}, \cite{Newton}] and also 
+the theory of solitons \cite{Lamb}. The precise definition of the source 
+radiation ${\bmi \Sigma}_{u}(k_{x},k_{y})$ and 
+${\bmi \Sigma}_{v}(k_{x},k_{y})$, initiating the two Jost solutions 
+will not affect the final form of the equations, 
+but may simplify the development.
+
+
+By setting source depth $z_s=f+$ (i.e. just below the free surface) and  
+source radiation ${\bmi \Sigma}(k_{x},k_{y})={\bmi \Sigma}_{u}
+(k_{x},k_{y})=[{\bmi 
+\Sigma}_{u,\uparrow}(k_{x},k_{y}),{\bmi \Sigma}_{u,\downarrow}
+(k_{x},k_{y})]^{T}=
+[{\bf 0}_{3 },{\bmi I}_{3 }]^{T}$  in (\ref{incdown}), 
+the depth evolution of ${\bmi {V}}_{u}(k_{x},k_{y})$, may be written in terms of its reference layer 
+contributions as
+\begin{eqnarray} \label{Vudef} 
+{{\bmi V}}_{u,l}(k_{x},k_{y})&=&
+\left[\begin{array}{c}
+{\bmi I}_{3 }\\ 
+{\bmi S}{}_{\uparrow \downarrow }^{ [l , \infty)}
+ \ {{\bmi E}}_{l}\end{array}\right] 
+\ {\left[{ \ {\bmi  I}_{3 }-
+{\bmi S}{}_{\downarrow \uparrow }^{ (f , l-1]} \ {\bmi S}{}_{ \uparrow 
+\downarrow }^{ (l-1 , \infty)} \ }\right]}^{  - 1}
+{\bmi S}{}_{\downarrow \downarrow }^{ (f , l-1]} \nonumber\\
+&& \qquad \qquad \times  {\left[{ {\bmi  I}_{3 } 
+- {\bmi S}{}_{ \downarrow \uparrow }^{ f} \ {\bmi S}{}_{\uparrow \downarrow 
+}^{(f, \infty)}  }\right]}^{ - 1}(k_{x},k_{y}),\qquad 1 \le l \le L
+\end{eqnarray}
+and ${\bmi S}{}_{\downarrow \uparrow }^{ (f , l-1]}(k_{x},k_{y})$ is the net upward 
+incident reflection operator for the half open depth interval
+$0< z \le l-1$ from the top of layer-$l$, but with 
+the free surface reflection operator 
+${\bmi S}{}_{ \downarrow \uparrow }^{ f}(k_{x},k_{y})$ set to zero.
+
+
+
+ 
+The interface variables ${\bmi V}_{ u,l}(k_{x},k_{y})$ of
+(\ref{Vudef}) characterize the solution field in each of $L$ uniform 
+layers by the amplitudes of $ \downarrow \!  \!-going\ $
+ {\em P, SV\/} and {\em SH\/} plane waves phased relative to  the top of layer-$l$ (ie. 
+\( z={z}_{l-1}^{+}\) ), and the amplitudes of
+\(  \uparrow \!  
+\!-going\ \) 
+{\em P, SV\/} and {\em SH\/} waves phased 
+relative to the bottom of layer-$l$ (i.e.
+\(z={z}_{l}^{-}\) ) for each   $1 \le    l \le   L$
+ of the reference stratification .
+
+
+Using ${\bmi V}_{ u,l}(k_{x},k_{y})$ from (\ref{Vudef}), the {\em 
+Jost solution\/} ${\bmi B}_{u}$ is written as
+\begin{eqnarray}\label{Budef}
+{\bmi B}_{u}({\bmi x};k_{x},k_{y})
+&\equiv&{\rm e}^{i{ k}_{x} x}\,
+\left[\begin{array}{ccc} (u,P,k_x,k_{y},z)&(u,S,k_x,k_{y},z)
+&(u,H,k_x,k_{y},z)\end{array} \right]\nonumber\\
+&\equiv&{\bmi \Theta}_{l}({\bmi x};k_{x},k_{y}){{\bmi 
+V}}_{u,l}(k_{x},k_{y}),
+\ \  z_{l-1} \le z \le{z}_{l} \ \mbox{for each}  \ 1 \le    l \le   L
+\end{eqnarray}
+where ${\bmi \Theta}_{l}({\bmi x};k_{x},k_{y})$ was defined in 
+(\ref{Thetaldef}).
+	
+Similarly, from (\ref{incup}),  with the source depth $z_s=z_{L}+$ (i.e. 
+at the top of the lower half-space, {\em see\/} Fig.\ref{BasicStack}), the  source radiation 
+${\bmi \Sigma}(k_{x},k_{y})={\bmi \Sigma}_{u}(k_{x},k_{y})=[{\bmi 
+\Sigma}_{u,\uparrow}(k_{x},k_{y}),{\bmi \Sigma}_{u,\downarrow}(k_{x},k_{y})]^{T}=
+[{\bmi I}_{3 },{\bf 0}_{3 }]^{T}$ and 
+${\bmi S}{}_{\uparrow\downarrow}^{(z_s, \infty)}(k_{x},k_{y})={\bf 0}_{3 }$ (because we now 
+assume for simplicity, that the medium is homogeneous below the source),   
+the depth evolution of ${\bmi V}_{v}$, may be written in terms of its reference layer 
+contributions as
+\begin{equation} \label{Vvdef} 
+{{\bmi V}}_{ v,l}(k_{x},k_{y})=
+\left[{\begin{array}{c} 
+{\bmi S}{}_{\downarrow \uparrow}^{[f, l-1]}\ {{\bmi E}}_{l} 
+\\{\bmi I}_{3 }\end{array}}\right]
+ {\left[{  {\bmi  I}_{3 }- 
+ {\bmi S}{}_{ \uparrow \downarrow }^{[l, \infty)} 
+ {\bmi S}{}_{\downarrow \uparrow }^{[f, l)} }\right]}^{-1}
+ {\bmi S}{}_{\uparrow \uparrow }^{ [l, L]}(k_{x},k_{y}), \qquad 1 \le l \le L .
+\end{equation}
+
+Using ${\bmi V}_{ v,l}(k_{x},k_{y})$ from (\ref{Vvdef}), the {\em 
+Jost solution\/} ${\bmi B}_{v}$ is written as
+\begin{eqnarray}\label{Bvdef}
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})
+&\equiv&{\rm e}^{i{ k}_{x} x}\,\left[\begin{array}{ccc} 
+(v,P,k_x,k_{y},z)&(v,S,k_x,k_{y},z)
+&(v,H,k_x,k_{y},z)\end{array} \right]\nonumber\\
+&\equiv&{\bmi \Theta}_{l}({\bmi x};k_{x},k_{y}){{\bmi V}}_{v,l}(k_{x},k_{y})
+\  z_{l-1} \le z \le{z}_{l}, \ \ \mbox{for each} \  1 \le    l \le   L
+\end{eqnarray}
+where ${\bmi \Theta}_{l}({\bmi x};k_{x},k_{y})$ was defined in 
+(\ref{Thetaldef}).
+\subsection{Elementary properties of the Jost solutions}
+
+We now introduce  the {\em skew symmetric bilinear functional\/} 
+$\langle \cdot , \cdot \rangle$, given by
+\begin{equation} \label{functional}
+\langle {\bmi  u}_{1} , {\bmi  u}_{2} \rangle \stackrel{\mbox{\tiny def}}{=}
+({\bmi  u}_{1})^{ T} {\bmi  J}_6 {\bmi  u}_{2}
+\end{equation}
+for a pair of $6-$vector fields ${\bmi  u}_{1}$ and ${\bmi  
+u}_{2}$.
+If instead, we have a $6\times l$ array
+${\bmi V}=({\bmi u}_{1}  ,\cdots,  {\bmi u}_{l})$ and a $6\times m$ array
+${\bmi W}=({\bmi v}_{1}  ,\cdots,  {\bmi v}_{m})$
+then
+\begin{equation} \label{functionalnm}
+\langle {\bmi V} , {\bmi W}
+\rangle= 
+\left(
+\begin{array}{ccc}
+\langle {\bmi u}_{1},  {\bmi v}_{1} \rangle&\cdots&\langle {\bmi u}_{1},  {\bmi
+v}_{m} \rangle\\
+\cdots&\langle {\bmi u}_{i},  {\bmi v}_{l} \rangle&\cdots\\
+\langle {\bmi u}_{l},  {\bmi v}_{1} \rangle&\cdots&\langle {\bmi u}_{l},  {\bmi
+v}_{m} \rangle
+\end{array}
+\right)
+\end{equation}
+is an $l \times m$ array, where $\langle {\bmi u}_{i},  {\bmi v}_{l} 
+\rangle$ is defined by (\ref{functional}). 
+
+In the next section, we will evaluate a number of functionals similar to 
+the prototype
+\begin{equation}\label{BuBv}
+\langle {\bmi B}_{u}({\bmi x};-k_{x},-k_{y}) , 
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})\rangle
+\end{equation}
+ where ${\bmi B}_{u}({\bmi x};-k_{x},-k_{y}) $ and 
+$ {\bmi B}_{v}({\bmi x};k_{x},k_{y})$ are the {\em Jost solutions\/} of 
+(\ref{Budef}) and  (\ref{Bvdef})  respectively.
+The key to the efficient evaluation of (\ref{BuBv})
+is to observe that it is depth invariant over the interval $f+\le z \le 
+L+$ because ${\bmi B}_{u}({\bmi x};-k_{x},-k_{y})$ and 
+${\bmi B}_{v}({\bmi x};k_{x},k_{y})$ are {\em 
+homogeneous\/} solutions of (\ref{Leqn})
+\begin{equation} \label{LeqnSurf}
+{\bmi L}(z,x;{\partial }_{z},{\partial }_{x},{k}_{y})
+{\bmi B}_{v}({\bmi x};k_{x},k_{y}) = 
+{\bmi L}(z,x;{\partial }_{z},{\partial }_{x},-{k}_{y})
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}) ={\bf 0}
+\end{equation}
+where 
+\[
+{\bmi L}(z,x;{\partial }_{z},{\partial }_{x},{k}_{y})\equiv
+\left[\partial_{z}-\rf{\bmi A}(z,x;{\partial }_{x},{k}_{y})\right]
+\]
+was given earlier in (\ref{Lref}).
+Using (\ref{LeqnSurf}) we have
+\begin{eqnarray} \label{invariant}
+\lefteqn{
+{\partial }_{z}\left\langle{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})\right\rangle}\nonumber\\
+&&\!\!\!\!\!\!
+=
+\left\langle{{ \partial 
+}_{z}{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})}\right\rangle+
+\left\langle{{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),{ \partial 
+}_{z}{\bmi B}_{v}({\bmi x};k_{x},k_{y})}\right\rangle \nonumber\\
+&&\!\!\!\!\!\!
+=
+\left\langle{\rf{\bmi A}(z,x;{\partial }_{x},-{k}_{y})
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})}\right\rangle\nonumber\\
+&&\qquad\qquad
++
+\left\langle{{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),
+\rf{\bmi A}(z,x;{\partial }_{x},{k}_{y}){\bmi B}_{v}
+({\bmi x};k_{x},k_{y})}\right\rangle={\bf 
+0}
+\end{eqnarray}
+because 
+\begin{equation} \label{rfAsym}
+\left\langle{\rf{\bmi A}(z;{\partial }_{x},-{k}_{y})\cdot,\cdot}\right\rangle=-
+\left\langle{\cdot,\rf{\bmi A}(z;{\partial }_{x},{k}_{y})\cdot}\right\rangle
+\end{equation}
+which follows after two operations of integration by parts.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+A final property of the Jost solutions  ${\bmi  B}_{u}$ and ${\bmi  
+B}_{v}$ is the {\em closure condition\/} ({\em vid.\/} {\sc  Box}~$\bf 7.1$)
+\begin{eqnarray} \label{closure}
+\lefteqn{{\bmi  T}({ x};k_y) \equiv
+\frac{1}{2 \pi}\int_{-\infty}^{\infty} \left[{\bmi B}_{ v}({\bmi x};k_{x},k_{y}) \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  {\bmi B}_{v}({\bmi x};k_{x},k_{y})
+}\rangle^{-1} \right.}\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad\qquad\times \int_{-\infty}^{\infty} \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  {\bmi  T}({ x};k_y)
+}\rangle {\rm d}x \nonumber\\
+&&- 
+{\bmi B}_{ u} ({\bmi x};k_{x},k_{y}) \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})
+}\rangle^{-T}\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad\qquad\times \left.
+\int_{-\infty}^{\infty} \langle{ {\bmi B}_{v}({\bmi x};-k_{x},-k_{y}),  
+{\bmi  T}({ x};k_y)}\rangle {\rm d}x\right]{\rm d}k_x
+\end{eqnarray}
+for ${\bmi  T}$ in the space of {\em $6-$component,  Fourier transformable 
+vector fields\/}.
+The closure condition (\ref{closure}), 
+will be needed in the construction of the time harmonic elastic wave 
+Green's tensor for a stratified half space.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\fbox{
+\begin{minipage} {142.0mm}
+{\sc \bf  Box} $\bf 7.1$ {\sc The closure property of the elastodynamic 
+Jost solutions in a basis of plane waves} \newline
+\vspace{4mm}
+
+For convenience, we introduce the short hand notation
+\begin{equation} \label{tildeBdef}
+\left[{\bmi  B}_{u}({\bmi x}; k_x,k_y,\omega),
+{\bmi  B}_{v}({\bmi x}; k_x,k_y,\omega)\right]=
+{\rm e}^{i k_x x}
+\left[\tilde{\bmi  B}_{u}(k_x,k_y),\tilde{\bmi  B}_{v}(k_x,k_y)\right]
+\end{equation}
+where $\left[{\bmi  B}_{u}({\bmi x}; k_x,k_y,\omega),
+{\bmi  B}_{v}({\bmi x}; k_x,k_y,\omega)\right]$ was defined in (\ref{fundamental}).
+
+$\quad$ Using the bilinear form (\ref{functional}), we define the {\em Gramm\/} or 
+{\em overlap\/} matrix 
+$\langle \tilde{\bmi  B}(-k_x,-k_y), \tilde{\bmi  B}(k_x,k_y) \rangle$, 
+of  $[\tilde{\bmi  B}_{u},\tilde{\bmi  B}_{v}]$ from 
+(\ref{tildeBdef}) according to
+\begin{eqnarray*}
+\lefteqn{\!\!\!
+\left\langle{ \tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y)}\right\rangle 
+\!=\!\left[{\begin{array}{cc}\left\langle{\tilde{\bmi  B}_{u}(-k_x,-k_y),\tilde{\bmi 
+B}_{u}(k_x,k_y)}\right\rangle&
+\left\langle{\tilde{\bmi  B}_{u}(-k_x,-k_y),\tilde{\bmi  B}_{v}(k_x,k_y)}\right\rangle\\ 
+\left\langle{\tilde{\bmi  B}_{v}(-k_x,-k_y),\tilde{\bmi  B}_{u}(k_x,k_y)}\right\rangle&
+\left\langle{\tilde{\bmi 
+B}_{v}(-k_x,-k_y),\tilde{\bmi  B}_{v}(k_x,k_y)}
+\right\rangle\end{array}}\right]}\\
+&&=\left({\begin{array}{cc}{\bf 
+0}_{3}&\left\langle{
+\tilde{\bmi  B}_{u}(-k_x,-k_y),\tilde{\bmi  B}_{v}(k_x,k_y)}\right\rangle\\ 
+-{\left\langle{\tilde{\bmi  B}_{u}(-k_x,-k_y),\tilde{\bmi  B}_{v}(k_x,k_y)}\right\rangle}^{T}&{\bf 
+0}_{3}\end{array}}\right)
+\end{eqnarray*} 
+but $\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  
+B}(-k_x,-k_y),\tilde{\bmi 
+B}(k_x,k_y)}\right\rangle}^{-1}\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\cdot 
+}\right\rangle$ is a  {\em projection\/} onto the space spanned by  $\tilde{\bmi 
+B}(k_x,k_y)$, because 
+\begin{eqnarray*}
+\lefteqn{
+\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y)}
+\right\rangle}^{-1}}\\
+&&\qquad \qquad \times \left\langle{\tilde{\bmi 
+B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),
+\tilde{\bmi  B}(k_x,k_y)}\right\rangle}^{-1}
+\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\cdot 
+}\right\rangle}\right\rangle=\\
+&&\!\!\!\!\!\!
+\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi 
+B}(k_x,k_y)}\right\rangle}^{-1}\left\langle{\tilde{\bmi  B}(-k_x,-k_y),
+\tilde{\bmi  B}(k_x,k_y)}\right
+\rangle\\
+&&\qquad \qquad \times {\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y)}\right\rangle}^{-1}
+\left\langle{\tilde{\bmi 
+B}(-k_x,-k_y),\cdot 
+}\right\rangle=\\
+&&\!\!\!\!\!\!
+\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi 
+B}(k_x,k_y)}\right\rangle}^{-1}\left\langle{\tilde{\bmi  B}(k_x,k_y),\cdot 
+}\right\rangle
+\end{eqnarray*} 
+so that 
+\[
+\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi 
+B}(k_x,k_y)}\right\rangle}^{-1}\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\cdot }
+\right\rangle 
+\] 
+is {\em idempotent\/}.
+
+Now, assuming we are given a field ${\bmi  T}(k_x,k_y)=\tilde{\bmi  B}(k_x,k_y)\cdot {\bmi 
+C}$, with arbitrary expansion coefficients $\bmi  C$, we have
+\begin{eqnarray*}
+\lefteqn{ 
+\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y)}
+\right\rangle}^{-1}\left\langle{\tilde{\bmi 
+B}(-k_x,-k_y),{\bmi  T}(k_x,k_y)}\right\rangle=}\\
+&&
+\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y)}
+\right\rangle}^{-1}\left\langle{\tilde{\bmi 
+B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y)\cdot 
+ {\bmi  C}}\right\rangle=\\
+&&\tilde{\bmi  B}(k_x,k_y){\left\langle{\tilde{\bmi  B}(-k_x,-k_y),
+ \tilde{\bmi  B}(k_x,k_y)}\right\rangle}^{-1}
+ \left\langle{\tilde{\bmi  B}(-k_x,-k_y),\tilde{\bmi  B}(k_x,k_y)}\right\rangle\cdot  
+ {\bmi  C}=\\
+&&\tilde{\bmi  B}(k_x,k_y)\cdot  
+ {\bmi  C}={\bmi  T}(k_x,k_y)
+\end{eqnarray*} 
+\begin{eqnarray*}
+\lefteqn{ 
+{\left\langle{{\bmi  B }(-k_x,-k_y),{ \bmi  B }(k_x,k_y)}\right\rangle}^{\rm -1} 
+}\\
+&&={\left({\begin{array}{cc}{\bf 0}_{3}&\left\langle{\tilde{\bmi  B}_{u}(-k_x,-k_y),
+\tilde{\bmi  B}_{v}(k_x,k_y)}\right\rangle\\ 
+-{\left\langle{\tilde{\bmi  B}_{u}(-k_x,-k_y),\tilde{\bmi  B}_{v}
+(k_x,k_y)}\right\rangle}^{T}&{\bf 0}_{3}\end{array}}\right)}^{-1}\\
+&&=
+\left({\begin{array}{cc}{\bf 0}_{3}&-{\left\langle{
+\tilde{\bmi  B}_{u}(-k_x,-k_y),\tilde{\bmi  B}_{v}(k_x,k_y)}\right\rangle}^{-T}\\ 
+{\left\langle{\tilde{\bmi  B}_{u}(-k_x,-k_y),\tilde{\bmi  B}_{v}(k_x,k_y)}\right\rangle}^{-1}
+&{\bf 0}_{3}\end{array}}\right)
+\end{eqnarray*} 
+
+\vspace{6mm}
+\end{minipage}
+}
+\end{figure}
+\begin{figure}
+\fbox{
+\begin{minipage} {142.0mm}
+{\sc \bf  Box} $\bf 7.1$ {\em continued}\newline
+and using 
+in the previous equation, we get
+\begin{eqnarray} \label{reconstruct0}
+\lefteqn{\tilde{\bmi  B}_{ v}(k_x,k_y) \langle{ 
+\tilde{\bmi  B}_{u}(-k_x,-k_y),  \tilde{\bmi  B}_{v}(k_x,k_y)
+}\rangle^{-1}  \langle{ 
+\tilde{\bmi  B}_{u}(-k_x,-k_y),  {\bmi  T}(k_x,k_y)
+}\rangle  - }\nonumber\\
+&&
+\tilde{\bmi  B}_{ u}(k_x,k_y) \langle{ 
+\tilde{\bmi  B}_{u}(-k_x,-k_y),  \tilde{\bmi  B}_{v}(k_x,k_y)
+}\rangle^{-T}
+\langle{  
+\tilde{\bmi  B}_{v}(-k_x,-k_y),  {\bmi  T}(k_x,k_y)
+}\rangle\equiv {\bmi  T}(k_x,k_y)
+\end{eqnarray}
+
+But, using a Fourier transform of $x$ we have 
+\[
+{\bmi  T}(k_x,k_y)=\int_{-\infty}^{\infty} {\rm d}x\, {\rm e}^{-i k_x x} {\bmi  T}(x,k_y)
+\]
+and substituting this result in (\ref{reconstruct0}), gives
+\begin{eqnarray} \label{reconstruct1}
+\lefteqn{\tilde{\bmi  B}_{ v}(k_x,k_y) \langle{ 
+\tilde{\bmi  B}_{u}(-k_x,-k_y),  \tilde{\bmi  B}_{v}(k_x,k_y)
+}\rangle^{-1}  \int_{-\infty}^{\infty} \langle{ 
+{\rm e}^{-i k_x x} \tilde{\bmi  B}_{u}(-k_x,-k_y),  {\bmi  T}(x,k_y)
+}\rangle {\rm d}x - }\nonumber\\
+&&\!\!\!\!\!\!
+\tilde{\bmi  B}_{ u}(k_x,k_y) \langle{ 
+\tilde{\bmi  B}_{u}(-k_x,-k_y),  \tilde{\bmi  B}_{v}(k_x,k_y)
+}\rangle^{-T}
+\int_{-\infty}^{\infty} \langle{ 
+{\rm e}^{-i k_x x} \tilde{\bmi  B}_{v}(-k_x,-k_y),  {\bmi  T}(x,k_y)
+}\rangle {\rm d}x \nonumber\\
+&&\!\!\!\!\!\!\equiv {\bmi  T}(k_x,k_y)
+\end{eqnarray}
+However,
+\[
+{\bmi  T}(x,k_y)=\frac{1}{2 \pi}\int_{-\infty}^{\infty} {\rm d}k\, 
+{\rm e}^{i k_x x} {\bmi  T}(k_x,k_y)
+\]
+so that operating on both sides of  (\ref{reconstruct1}) with 
+$\frac{1}{2 \pi}\int_{-\infty}^{\infty} {\rm d}k\, 
+{\rm e}^{i k_x x}$ gives
+\begin{eqnarray} \label{reconstruct2}
+\lefteqn{
+\!\!\!\!\!\!
+\frac{1}{2 \pi}\int_{-\infty}^{\infty}\!\!\!  \left[{\rm e}^{i k_x x}\tilde{\bmi  B}_{ v}(k_x,k_y) \langle{ 
+\tilde{\bmi  B}_{u}(-k_x,-k_y),  \tilde{\bmi  B}_{v}(k_x,k_y)
+}\rangle^{-1}\!\!\!  \int_{-\infty}^{\infty}\!\!\! \langle{ 
+{\rm e}^{-i k_x x} \tilde{\bmi  B}_{u}(-k_x,-k_y),  {\bmi  T}(x,k_y)
+}\rangle\, {\rm d}x  \right.}\nonumber\\
+&&\!\!\!\!\!\!
+\left. -{\rm e}^{i k_x x} \tilde{\bmi  B}_{ u}(k_x,k_y) \langle{ 
+\tilde{\bmi  B}_{u}(-k_x,-k_y),  \tilde{\bmi  B}_{v}(k_x,k_y)
+}\rangle^{-T}\!\!\!
+\int_{-\infty}^{\infty} \!\!\! \langle{ 
+{\rm e}^{-i k_x x} \tilde{\bmi  B}_{v}(-k_x,-k_y),  {\bmi  T}(x,k_y)
+}\rangle {\rm d}x
+\right]{\rm d}k\nonumber\\
+&&\!\!\!\!\!\!\equiv {\bmi  T}(x,k_y)
+\end{eqnarray}
+
+Using the definition (\ref{tildeBdef}) in (\ref{reconstruct2}) we get
+\begin{eqnarray} \label{reconstruct3}
+\lefteqn{
+\frac{1}{2 \pi}\int_{-\infty}^{\infty} {\rm d}k\, \bigg[
+{\bmi  B}_{ v}({\bmi x};k_x,k_y,\omega) \langle{ 
+{\bmi  B}_{u}({\bmi x};-k_x,-k_y,\omega),  {\bmi  B}_{v}({\bmi x};k_x,k_y,\omega)
+}\rangle^{-1}    }\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\times \int_{-\infty}^{\infty} \langle{ 
+{\bmi  B}_{u}({\bmi x};-k_x,-k_y,\omega),  {\bmi  T}(x,k_y)
+}\rangle {\rm d}x\nonumber\\
+&&
+-{\bmi  B}_{ u}({\bmi x};k_x,k_y,\omega) \langle{ 
+{\bmi  B}_{u}({\bmi x};-k_x,-k_y,\omega),  {\bmi  B}_{v}({\bmi x};k_x,k_y,\omega)
+}\rangle^{-T}\nonumber\\
+&& \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\times
+ \int_{-\infty}^{\infty} \langle{ 
+{\bmi  B}_{v}({\bmi x};-k_x,-k_y,\omega),  {\bmi  T}(x,k_y)
+}\rangle {\rm d}x
+\bigg]\nonumber\\
+&&\equiv {\bmi  T}(x,k_y)
+\end{eqnarray}
+
+\vspace{6mm}
+\end{minipage}
+}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\newpage
+\section{A Jost solution construction for the Lippmann-Schwinger equation} 
+\label{sectionstratG}
+In this section, we  re-derive the {\em  Lippmann-Schwinger equation\/} of 
+(\ref{LSmat}), but this time we employ the {\em Jost solutions\/} of (\ref{fundamental}).
+
+The {\em  heterogeneous half space Green's tensor field \/}  
+${\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)$, 
+driven by a point source at ${\bmi  
+x}_S\equiv (z_S,x_S)$,  obeys the
+following  boundary value problem, defined in terms of the 
+bilinear form $\langle \cdot, \cdot \rangle$ of (\ref{functional}) as:
+\begin{samepage} 
+\begin{eqnarray} \label{Geqntotal} 
+\!\!\!\!\!\!
+\lefteqn{
+\left\{ \begin{array}{l}
+\int_{-\infty}^{\infty} \langle {\bmi B}_{ v} ((f+,x);-k_x,-k_y)
+, {\bmi G}  ({\bmi  x} ; {\bmi  x}_{ S}; k_y)\rangle \, {\rm d}x = 
+{\bf 0}_{ 3   \times  6} 
+\\
+ \left[{\partial}_{z} -  
+\rf{\bmi A}(z,{\partial}_{x}, k_y)\right] {\bmi G}   ({\bmi  x} ; {\bmi  
+x}_{ S}; k_y)= 
+{\mit \Delta}{\bmi A}({\bmi x},{\partial}_{x}, k_y) 
+{\bmi G}   ({\bmi  x} ; {\bmi  x}_{ S}; k_y) +  
+ \delta({\bmi  x} - {\bmi  x}_{ S}) {\bmi  I}_{6} \\
+\int_{-\infty}^{\infty} \langle {\bmi B}_{ u} ((L+,x);-k_x,-k_y), 
+{\bmi G}  ({\bmi  x} ; {\bmi  x}_{ S}; k_y)\rangle \, {\rm d}x
+= {\bf 0}_{3   \times  6} 
+\end{array} \right.  
+}\nonumber\\ 
+&&
+\end{eqnarray}
+\end{samepage}
+where $\rf{\bmi A}(z,{\partial}_{x}, k_y)$ was given by (\ref{Adefref}) and 
+${\mit \Delta}{\bmi A}({\bmi x},{\partial}_{x}, k_y)$ by (\ref{dAdef}).
+ The $3 $ boundary conditions 
+\[
+\int_{-\infty}^{\infty} \langle {\bmi B}_{ v} ((f+,x);-k_x,-k_y)
+, {\bmi G}  ({\bmi  x} ; {\bmi  x}_{ S};k_y)\rangle \, {\rm d}x = 
+{\bf 0}_{ 3   \times  6}
+\]
+ ensure that the traction field vanishes at the 
+free surface, while the $3 $ boundary conditions 
+\[
+\int_{-\infty}^{\infty} \langle {\bmi B}_{ u} ((L+,x);-k_x,-k_y), 
+{\bmi G}  ({\bmi  x} ; {\bmi  x}_{ S};k_y)\rangle \, {\rm d}x
+= {\bf 0}_{3   \times  6}
+\]
+ensure that
+there is no $\uparrow\! \!-going$ incident field at the base of the 
+stratification. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+We now construct the depth evolution equations for the bilinear functional 
+\[
+\int_{-\infty}^{\infty} \langle{\bmi B}_{u}({\bmi x};-k_x,-k_y), 
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)\ \rangle \, {\rm d}x
+\]
+ comprised
+of ${\bmi B}_{u}({\bmi x};-k_x,-k_y)$ from (\ref{Budef})  
+and the  Greens tensor ${\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)$ of 
+(\ref{Geqntotal}) {\em viz. \/},
+\begin{eqnarray} \label{(2.4.2)} 
+\lefteqn{{\partial }_{z} \int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x  =
+}\nonumber\\
+&&
+\int_{-\infty}^{\infty} \left\langle{ {\partial }_{z}  {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \nonumber\\
+&&+
+\int_{-\infty}^{\infty} \left\langle{   {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\partial }_{z} {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x=\nonumber\\
+&&
+\int_{-\infty}^{\infty} \bigg[ \langle \rf{\bmi A}({z},{\partial}_{x}, -k_y) {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle   \nonumber\\
+&&
++\langle{\bmi B}_{u}({\bmi x};-k_x,-k_y), 
+\rf{\bmi A}({z},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) 
+\rangle\bigg]\,{\rm d}x\nonumber\\
+&&
++ \delta (z-{z}_{S}) {\bmi B}{}_{u}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}  \nonumber\\
+&&
++ 
+\int_{-\infty}^{\infty} \langle{\bmi B}_{u}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle \,{\rm d}x
+\end{eqnarray} 
+but
+\begin{eqnarray} \label{Asym1}
+\lefteqn{\int_{-\infty}^{\infty} \bigg[ \langle \rf{\bmi A}({z},{\partial}_{x}, -k_y) {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle }  \nonumber\\
+&&
+\qquad\qquad\quad
++\langle{\bmi B}_{u}({\bmi x};-k_x,-k_y), 
+\rf{\bmi A}({z},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) 
+\rangle\bigg]\,{\rm d}x= {\bf 0}_3
+\end{eqnarray}
+from (\ref{rfAsym}),
+due to the {\em quasi-Hamiltonian symmetry\/} of $\rf{\bmi A}$. Using 
+(\ref{Asym1}) in (\ref{(2.4.2)}) gives
+\begin{eqnarray} \label{BuG} 
+\lefteqn{{\partial }_{z} \int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x  =\delta (z-{z}_{S}) 
+{\bmi B}{}_{u}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}
+}\nonumber\\
+&&
+\qquad\qquad\qquad+ 
+\int_{-\infty}^{\infty} \langle{\bmi B}_{u}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle \,{\rm d}x
+\end{eqnarray} 
+
+
+
+
+Upon integrating  (\ref{BuG}) over the depth interval 
+$z+ \le z \le {z}_{L}+$ we get 
+\begin{eqnarray*}  
+\lefteqn{\overbrace{\left.\int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \right|_{{z}_{L+}}}^{={\bf 0} \ \mbox{by 
+radiation conditions}}}\\
+&&\qquad\qquad\qquad
+-\left.\int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \right|_{{z}_{+}}=\\
+&&
+H({z}_{S}-z) {\bmi B}{}_{u}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}  \\
+&&\qquad\qquad\qquad
++\int_{z}^{z_L}
+\int_{-\infty}^{\infty} \langle{\bmi B}_{u}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle 
+\,{\rm d}x\,{\rm d}z
+\end{eqnarray*} 
+so that
+\begin{eqnarray}  \label{(2.4.3)}
+\lefteqn{\!\!\!\!\!\!
+\left.\int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{u}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \right|_{{z}_{+}}=-H({z}_{S}-z) {\bmi B}{}_{u}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}}\nonumber\\
+&&\qquad
+-\int_{z}^{z_L}
+\int_{-\infty}^{\infty} \langle{\bmi B}_{u}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle 
+\,{\rm d}x\,{\rm d}z
+\end{eqnarray} 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Similarly, we construct the evolution equations for 
+\[
+\int_{-\infty}^{\infty} \langle{\bmi B}_{v}({\bmi x};-k_x,-k_y), 
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)\ \rangle \, {\rm d}x
+\]
+ comprised
+of ${\bmi B}_{v}({\bmi x};-k_x,-k_y)$ from (\ref{Bvdef})  
+and the  Greens tensor ${\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)$ of 
+(\ref{Geqntotal}) {\em viz. \/},
+\begin{eqnarray} \label{(2.4.4)} 
+\lefteqn{{\partial }_{z} \int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x  =
+}\nonumber\\
+&&
+\int_{-\infty}^{\infty} \left\langle{ {\partial }_{z}  {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \nonumber\\
+&&+
+\int_{-\infty}^{\infty} \left\langle{   {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\partial }_{z} {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x=\nonumber\\
+&&
+\int_{-\infty}^{\infty} \bigg[ \langle \rf{\bmi A}({z},{\partial}_{x}, -k_y) {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle   \nonumber\\
+&&
++\langle{\bmi B}_{v}({\bmi x};-k_x,-k_y), 
+\rf{\bmi A}({z},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) 
+\rangle\bigg]\,{\rm d}x\nonumber\\
+&&
++ \delta (z-{z}_{S}) {\bmi B}{}_{v}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}  \nonumber\\
+&&
++ 
+\int_{-\infty}^{\infty} \langle{\bmi B}_{v}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle \,{\rm d}x
+\end{eqnarray} 
+but
+\begin{eqnarray} \label{Asym2}
+\lefteqn{\int_{-\infty}^{\infty} \bigg[ \langle \rf{\bmi A}({z},{\partial}_{x}, -k_y) {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle }  \nonumber\\
+&&
+\qquad\qquad\quad
++\langle{\bmi B}_{v}({\bmi x};-k_x,-k_y), 
+\rf{\bmi A}({z},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) 
+\rangle\bigg]\,{\rm d}x= {\bf 0}_3
+\end{eqnarray}
+from (\ref{rfAsym}),
+due to the {\em quasi-Hamiltonian symmetry\/} of $\rf{\bmi A}$. Using 
+(\ref{Asym2}) in (\ref{(2.4.4)}) gives
+\begin{eqnarray} \label{BvG} 
+\lefteqn{{\partial }_{z} \int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x  =\delta (z-{z}_{S}) 
+{\bmi B}{}_{v}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}
+}\nonumber\\
+&&
+\qquad\qquad\qquad+ 
+\int_{-\infty}^{\infty} \langle{\bmi B}_{v}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle \,{\rm d}x
+\end{eqnarray} 
+
+
+
+
+Upon integrating  (\ref{BvG}) over the depth interval 
+$f+ \le z \le z-$ we get 
+\begin{eqnarray*}  
+\lefteqn{{\left.\int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \right|_{{z}-}}}\\
+&&\qquad\qquad\qquad
+-\overbrace{\left.\int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \right|_{{z}_{f}+}}^{={\bf 0} \ \mbox{by 
+free surface conditions}}=\\
+&&
+H(z-{z}_{S}) {\bmi B}{}_{v}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}  \\
+&&\qquad\qquad\qquad
++\int_{z_f}^{z}
+\int_{-\infty}^{\infty} \langle{\bmi B}_{v}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle 
+\,{\rm d}x\,{\rm d}z
+\end{eqnarray*} 
+so that
+\begin{eqnarray}  \label{(2.4.5)}
+\lefteqn{\!\!\!\!\!\!
+\left.\int_{-\infty}^{\infty} \left\langle{  {\bmi B}_{v}({\bmi x};-k_x,-k_y),  
+{\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y)
+}\right\rangle \,{\rm d}x \right|_{{z}_{-}}=H(z-{z}_{S}) {\bmi B}{}_{v}^{T}({\bmi x}_{S};-k_x,-k_y)
+{\bmi  J}_{6}}\nonumber\\
+&&\qquad
++\int_{z_f}^{z}
+\int_{-\infty}^{\infty} \langle{\bmi B}_{v}({\bmi x};-k_x,-k_y), {\mit \Delta}
+{\bmi A}({\bmi x},{\partial}_{x}, k_y) {\bmi G}({\bmi  x} ; {\bmi  x}_{ S};k_y) \rangle 
+\,{\rm d}x\,{\rm d}z
+\end{eqnarray} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Next we form the  linear combination 
+\begin{eqnarray} \label{(2.4.6)}
+\lefteqn{\frac{1}{2 \pi}\int_{-\infty}^{\infty} \bigg[{\bmi B}_{ v}({\bmi x};k_{x},k_{y}) \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  {\bmi B}_{v}({\bmi x};k_{x},k_{y})
+}\rangle^{-1}\times (\ref{(2.4.3)}) }\nonumber\\
+&&- 
+{\bmi B}_{ u} ({\bmi x};k_{x},k_{y}) \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})
+}\rangle^{-T}\times (\ref{(2.4.5)})\bigg]\,{\rm d}k_x
+\end{eqnarray}
+concocted so that the resulting left hand side reduces to
+
+\begin{samepage}
+\begin{eqnarray*}
+\lefteqn{{\bmi  G}({\bmi x},{\bmi x}_{S};k_y) \equiv
+\frac{1}{2 \pi}\int_{-\infty}^{\infty} \left[
+{\bmi B}_{ v}({\bmi x};k_{x},k_{y}) \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  {\bmi B}_{v}({\bmi x};k_{x},k_{y})
+}\rangle^{-1} \right.}\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad\times \int_{-\infty}^{\infty} \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  {\bmi  G}({\bmi x},{\bmi 
+x}_{S};k_y)
+}\rangle {\rm d}x \nonumber\\
+&&- 
+{\bmi B}_{ u} ({\bmi x};k_{x},k_{y}) \langle{  
+{\bmi B}_{u}({\bmi x};-k_{x},-k_{y}),  
+{\bmi B}_{v}({\bmi x};k_{x},k_{y})
+}\rangle^{-T}\\
+&&\qquad\qquad\qquad\qquad\qquad\times \left.
+\int_{-\infty}^{\infty} \langle{ {\bmi B}_{v}({\bmi x};-k_{x},-k_{y}),  
+{\bmi  G}({\bmi x},{\bmi x}_{S};k_y)}\rangle {\rm d}x\right]{\rm d}k_x\nonumber
+\end{eqnarray*}
+\end{samepage}
+which follows from the {\em closure\/} property (\ref{closure}), of the 
+Jost solutions $\{ {\bmi B}_{ u},{\bmi B}_{ v} \}$. From
+(\ref{(2.4.6)}) we get the {\em Lippmann-Schwinger\/} integral equation
+\begin{eqnarray} \label{LSformal}
+{\bmi G}({\bmi x},{\bmi x}_{S};k_y)&=&
+\rf{\bmi G}\!({\bmi x},{\bmi x}_{S};k_y)\nonumber\\
+&+&\int_{f+}^{L+}\!\!\!\int_{-\infty}^{\infty} 
+\!\! \rf{\bmi G}\!({\bmi x},{\bmi x}^{\prime};k_y) 
+{\mit \Delta}{\bmi A}({\bmi x}^{\prime},{\partial}_{x};k_y) 
+{\bmi G}({\bmi x}^{\prime},{\bmi x}_{S};k_y)\, {\rm d}{\bmi x}^{\prime}
+\end{eqnarray}
+where the {\em stratified reference Green's tensor\/} $\rf{\bmi G} 
+({\bmi x},{\bmi x}_{S};k_y)$ in (\ref{LSformal}) is defined as
+\begin{eqnarray}\label{GT0}
+\lefteqn{\rf{\bmi G}({\bmi x},{\bmi x}_{S};k_y)= 
+\frac{1}{2 \pi}\int_{-\infty}^{\infty} {\rm d}k_x}\\
+&&
+\times\left\{
+{\begin{array}{ll}
+\textstyle
+-{\bmi B}_{ v}({\bmi x};{\bmi K}_{T}) \langle{  
+{\bmi B}_{u}({\bmi x}^{\prime};-{\bmi K}_{T}),  
+{\bmi B}_{v}({\bmi x}^{\prime};{\bmi K}_{T})
+}\rangle^{-1}
+{\bmi B}^{T}_{u}({\bmi x}_{S};-{\bmi K}_{T}) {\bmi  J}_{6}& 
+z<z_{S} \\
+\textstyle
+-{\bmi B}_{ u} ({\bmi x};{\bmi K}_{T}) \langle{  
+{\bmi B}_{u}({\bmi x}^{\prime};-{\bmi K}_{T}),  
+{\bmi B}_{v}({\bmi x}^{\prime};{\bmi K}_{T})
+}\rangle^{-T}
+{\bmi B}^{T}_{v}({\bmi x}_{S};-{\bmi K}_{T}) {\bmi  J}_{6}& z>z_{S} 
+\end{array} }\right.\nonumber
+\end{eqnarray} 
+for an arbitrary depth point ${\bmi x}^{\prime}$, a source at
+${\bmi x}_S$ a receiver at ${\bmi x}$, and we have introduced  
+${\bmi K}_{T}=(k_x , k_y)$ for the horizontal component of the wavenumber.
+
+
+The {\em inverse invariant\/} 
+$\langle{ \ {\bmi B}_{u},  {\bmi B}_{v}\ }\rangle^{-1}$  
+in  (\ref{GT0}) is singular, i.e.
+\begin{eqnarray} \label{polecondition}
+\lefteqn{\mbox{Det}\langle {\bmi  B}_{u}({\bmi x}^{\prime},-{\bmi K}_{T}),
+{\bmi B}_{v}({\bmi x}^{\prime},{\bmi K}_{T}) \rangle
+=}\nonumber\\
+&&\!\!\!\!\!\!\!\!\!
+\left|{\begin{array}{ccc}
+\left\langle{(u,P,-{\bmi K}_{T}),(v,P,{\bmi K}_{T})}\right\rangle&
+\left\langle{(u,P,-{\bmi K}_{T}),(v,S,{\bmi K}_{T})}\right\rangle&
+\left\langle{(u,P,-{\bmi K}_{T}),(v,H,{\bmi K}_{T})}\right\rangle\\ 
+\left\langle{(u,S,-{\bmi K}_{T}),(v,P,{\bmi K}_{T})}\right\rangle&
+\left\langle{(u,S,-{\bmi K}_{T}),(v,S,{\bmi K}_{T})}\right\rangle&
+\left\langle{(u,S,-{\bmi K}_{T}),(v,H,{\bmi K}_{T})}\right\rangle\\
+\left\langle{(u,H,-{\bmi K}_{T}),(v,P,{\bmi K}_{T})}\right\rangle&
+\left\langle{(u,H,-{\bmi K}_{T}),(v,S,{\bmi K}_{T})}\right\rangle&
+\left\langle{(u,H,-{\bmi K}_{T}),(v,H,{\bmi K}_{T})}\right\rangle
+\end{array}}\right|\nonumber\\
+&&\!\!\!\!\!\!
+=0
+\end{eqnarray}
+at  the surface wave poles ${\bmi K}_{T}={\bmi k}_{\mu}$ on the real axis. In the basic method, we avoid 
+ the surface wave poles by moving them off the real wavenumber axis 
+ through the agency of the complex frequency. 
+However,  surface waves are often an important phase on seismic 
+ records at regional offsets and beyond, and it would be very worthwhile 
+ to explicitly extract these phases from the companion body wave phases 
+ by {\em evaluating the residues\/} at the singular points of 
+ $\langle{ \ {\bmi B}_{u},  {\bmi B}_{v}\ }\rangle^{-1}$.  
+
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section {Extracting  the surface waves}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+We deform  both ends of the $k_x$ wavenumber contour 
+({\em vid.\/} Fig.\ref{contour}) into the $\Im(k_x) \gtlt 0$ plane for 
+$(x-x_S) \gtlt 0$, so that the wave number integrand in (\ref{GT0}) 
+decays exponentially.
+Following {\em Kennett\/}~(1981), we account for the surface waves by 
+calculating the {\em residues\/} of the integrand in (\ref{GT0})  at the 
+values of ${\bmi K}_{T}={\bmi k}_{\mu}$ where the pole condition 
+(\ref{polecondition}) is fulfilled.
+
+\begin{figure}
+\HideDisplacementBoxes
+%\ShowDisplacementBoxes
+\centerline{\BoxedEPSF{contour.EPSF scaled 800}}
+\caption{The wavenumber contour to separate body wave and surface wave 
+phases. Body wave phases are synthesized from the wavenumber integrals, 
+and the surface wave phases from the residues at the poles, identified
+as black dots. }
+\protect\label{contour}
+\end{figure}
+ 
+We recall that Jost solution ${\bmi B}_{u}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ 
+from (\ref{Budef})  
+was constructed to satisfy the {\em 
+radiation condition\/} in the lower half space $z> z_L$, while 
+Jost solution ${\bmi B}_{v}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ from 
+(\ref{Bvdef}) satisfies the {\em traction free condition\/} 
+at the free surface $z=f$. At the poles, we assume ``one" of ``three" conditions is 
+satisfied:
+\begin{itemize}
+\item the $P-$wave columns $(v,P,\pm{\bmi K}_{T}, z^{\prime})$ of 
+${\bmi B}_{v}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ satisfy the 
+radiation condition
+and the $P-$wave columns $(u,P,\pm{\bmi K}_{T}, z^{\prime})$ of 
+${\bmi B}_{u}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ satisfy the 
+free surface condition.
+
+\item the $SV-$wave columns $(v,S,\pm{\bmi K}_{T}, z^{\prime})$ of 
+${\bmi B}_{v}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ satisfy the 
+radiation condition
+and the $SV-$wave columns $(u,S,\pm{\bmi K}_{T}, z^{\prime})$ of 
+${\bmi B}_{u}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ satisfy the 
+free surface condition.
+
+\item the $SH-$wave columns $(v,H,\pm{\bmi K}_{T}, z^{\prime})$ of 
+${\bmi B}_{v}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ satisfy the 
+radiation condition
+and the $SH-$wave columns $(u,H,\pm{\bmi K}_{T}, z^{\prime})$ of 
+${\bmi B}_{u}({\bmi x}^{\prime};\pm{\bmi K}_{T})$ satisfy the 
+free surface condition.
+
+\end{itemize}
+By actually locating a surface wave pole, it can be verified that, either
+\begin{itemize}
+\item $(v,P,{\bmi K}_{T},z)$ is a linear multiple $(u,P,{\bmi K}_{T},z)$ 
+\item or $(v,S,{\bmi K}_{T},z)$ is a linear multiple $(u,S,{\bmi K}_{T},z)$ 
+\item or $(v,H,{\bmi K}_{T},z)$ is a linear multiple $(u,H,{\bmi K}_{T},z)$
+\end{itemize}
+The {\em degenerate\/} case where any two of the $P$, $S$, $H$ columns in 
+${\bmi B}_{u}$ and ${\bmi  B}_{v}$ are scalar multiples, leads to a 
+second order pole, and is not considered further, although this 
+possibility cannot be ruled out {\em a priori\/}.
+
+
+Following the method of {\em Kennett\/}~(1983) Ch.11, we employ Cramer's 
+rule to write 
+\begin{equation}  \label{InvCond}
+\left\langle{\bmi  B}_{u}({\bmi x}^{\prime},-{\bmi K}_{T}),{\bmi 
+B}_{v}({\bmi x}^{\prime},{\bmi K}_{T})\right\rangle^{-1}=\frac{
+\mbox{Adj} \left\langle{\bmi  B}_{u}({\bmi x}^{\prime},-{\bmi K}_{T}),{\bmi 
+B}_{v}({\bmi x}^{\prime},{\bmi K}_{T})\right\rangle }{\mbox{Det}\left\langle{\bmi  B}_{u}({\bmi x}^{\prime},-{\bmi K}_{T}),{\bmi 
+B}_{v}({\bmi x}^{\prime},{\bmi K}_{T})\right\rangle}
+\end{equation}
+where 
+\[
+\mbox{Det}\left(\left\langle{\bmi  B}_{u}(z,-{\bmi K}_{T}),
+{\bmi  B}_{v}({\bmi x}^{\prime},{\bmi K}_{T})\right\rangle\right)
+\]
+is the determinant and 
+\[
+\mbox{Adj}\left(\left\langle{\bmi  B}_{u}(z,-{\bmi K}_{T}),
+{\bmi  B}_{v}({\bmi x}^{\prime},{\bmi K}_{T})\right\rangle\right)
+\]
+is the adjoint matrix (i.e. the transposed matrix of cofactors).
+
+
+Let's assume $(x-x_S)>0$, and we have a P-wave pole at 
+${\bmi K}_{T}={\bmi k}_{\mu}$ in the 
+{\em first quadrant of the complex $k_x$ plane\/}, 
+so that the P-wave columns satisfy 
+\[
+(u,P,-{\bmi k}_{\mu})=\gamma_{P} (v,P,-{\bmi k}_{\mu}),
+\]
+ for an arbitrary constant 
+$\gamma_{P}$, then using similar arguments to those employed in {\em 
+Kennett\/}(1983),  Appendix to chapter 11, we get:
+\begin{eqnarray} \label{zeroinv}
+\lefteqn{
+\!\!\!\!\!\!
+\left\langle{\left({u,P,-{\bmi K}_{T}}\right),\left({v,P,{\bmi K}_{T}}\right)}\right\rangle=
+\left\langle{\left({u,P,-{\bmi K}_{T}}\right),\left({v,S,{\bmi K}_{T}}\right)}\right\rangle=
+\left\langle{\left({u,P,-{\bmi K}_{T}}\right),\left({v,H,{\bmi 
+K}_{T}}\right)}\right\rangle}\nonumber\\
+&&
+=\left\langle{\left({u,S,-{\bmi K}_{T}}\right),\left({v,P,{\bmi K}_{T}}\right)}\right\rangle=
+\left\langle{\left({u,H,-{\bmi K}_{T}}\right),\left({v,P,{\bmi 
+K}_{T}}\right)}\right\rangle=0
+\end{eqnarray}
+because both factors in $\langle \cdot, \cdot \rangle$ satisfy the same 
+homogeneous boundary conditions (i.e. free surface or radiation). Also, 
+the bilinear form  $\langle \cdot, \cdot \rangle$ defined on the Jost 
+solutions is depth invariant, for the reasons explained in (\ref{invariant}), so 
+that if a term like $\left\langle{\left({u,P,-{\bmi K}_{T}}\right),\left({v,P,{\bmi 
+K}_{T}}\right)}\right\rangle$ vanishes at either the free surface $z=z_f$ 
+or at infinity $z=\infty$ then $\left\langle{\left({u,P,-{\bmi K}_{T}}\right),\left({v,P,{\bmi 
+K}_{T}}\right)}\right\rangle=0, \ z_f \le z \le \infty$ (which is why we 
+drop the spatial dependence in Jost solutions like $\left({u,P,-{\bmi 
+K}_{T}}\right)$ inside $\langle \cdot, \cdot \rangle$, 
+when space on the printed page is at a premium). 
+
+
+Employing (\ref{zeroinv}) in (\ref{InvCond}) and canceling common factors,
+we get
+\begin{equation} \label{zeroinv1}
+\left\langle{\bmi  B}_{u}({\bmi x}^{\prime},-{\bmi K}_{T}),{\bmi 
+B}_{v}({\bmi x}^{\prime},{\bmi K}_{T})\right\rangle^{-1}\sim 
+\frac{
+\left({\begin{array}{ccc}1&0&0\\0&0&0\\0&0&0\end{array}}\right)
+}{\left\langle{\left({u,P,-{\bmi K}_{T}}\right),
+\left({v,P,{\bmi K}_{T}}\right)}\right\rangle}
+\ \mbox{as} \ {\bmi K}_{T}\rightarrow {\bmi k}_{\mu}
+\end{equation}
+where ${\bmi k}_{\mu}$ is a pole position in the complex wavenumber plane. 
+Substituting (\ref{zeroinv1}) for  $\left\langle{\bmi  B}_{u}({\bmi x}^{\prime},-{\bmi K}_{T}),{\bmi 
+B}_{v}({\bmi x}^{\prime},{\bmi K}_{T})\right\rangle^{-1}$ in the Green's tensor 
+(\ref{GT0}), the singular contribution $\rf{\bmi G}_{P,\mu}$ at the $P-$wave pole
+${\bmi K}_{T}= {\bmi k}_{\mu}$ may be written as
+\begin{samepage}
+\begin{eqnarray}\label{GTres}
+\lefteqn{\rf{\bmi G}_{P,\mu}\!({\bmi x},{\bmi x}_{S};k_{y}) \sim 
+\frac{1}{2 \pi}\int_{-\infty}^{\infty} {\rm d}k_x\, 
+\exp\left[{i{k}_{x }({x-{x}_{S}})}\right]}\\
+&&
+\times\left\{
+{\begin{array}{ll}
+-\frac{\textstyle \left({ v,P,{\bmi K}_{T},z}\right) \otimes
+\left({ u,P,-{\bmi K}_{T},z_S}\right) {\bmi  J}_{6}}
+{\textstyle \left\langle{\left({u,P,-{\bmi K}_{T}}\right),
+\left({v,P,{\bmi K}_{T}}\right)}\right\rangle}& 
+z<z_{S} \\
+-\frac{\textstyle \left({ u,P,{\bmi K}_{T},z}\right) \otimes
+\left({ v,P,-{\bmi K}_{T},z_S}\right) {\bmi  J}_{6}}
+{\textstyle \left\langle{\left({u,P,-{\bmi K}_{T}}\right),
+\left({v,P,{\bmi K}_{T}}\right)}\right\rangle}& z>z_{S} 
+\end{array} }\right. \quad \mbox{as} \quad {\bmi K}_{T}\rightarrow {\bmi k}_{\mu}
+\nonumber
+\end{eqnarray} 
+\end{samepage}
+but employing the linear dependence relation $(u,P,-{\bmi k}_{\mu})=
+\gamma (v,P,-{\bmi k}_{\mu})$, in  (\ref{GTres})  and canceling common 
+factors, we get
+\begin{samepage}
+\begin{eqnarray}\label{GTres1}
+\lefteqn{\rf{\bmi G}_{P,\mu}\!({\bmi x},{\bmi x}_{S};k_{y}) \sim 
+\frac{1}{2 \pi}\int_{-\infty}^{\infty} {\rm d}k_x\, 
+\exp\left[{i{k}_{x }({x-{x}_{S}})}\right]}\\
+&&
+\times\left\{
+{\begin{array}{ll}
+-\frac{\textstyle \left({ v,P,{\bmi K}_{T},z}\right) \otimes
+\left({ v,P,-{\bmi K}_{T},z_S}\right) {\bmi  J}_{6}}
+{\textstyle \left\langle{\left({v,P,-{\bmi K}_{T}}\right),
+\left({v,P,{\bmi K}_{T}}\right)}\right\rangle}& 
+0 \le z,z_{S} \le \infty \\
+-\frac{\textstyle \left({ u,P,{\bmi K}_{T},z}\right) \otimes
+\left({ u,P,-{\bmi K}_{T},z_S}\right) {\bmi  J}_{6}}
+{\textstyle \left\langle{\left({u,P,-{\bmi K}_{T}}\right),
+\left({u,P,{\bmi K}_{T}}\right)}\right\rangle}& 
+0 \le z,z_{S} \le \infty 
+\end{array} }\right. \quad \mbox{as} \quad {\bmi K}_{T}\rightarrow {\bmi k}_{\mu}
+\nonumber
+\end{eqnarray} 
+\end{samepage}
+The surface wave is given 
+by the $ 2 \pi i \times$ {residue of } (\ref{GTres1}) at $
+{\bmi k}_{ \mu }=(k_{\mu, x}(k_{ y},\omega), k_{ y})$  in first quadrant
+of the complex $k_x-$plane, so that
+\begin{equation} 	\label{pole1}
+	\rf{\bmi  G}_{P,\mu}\!({\bmi  x},{\bmi  x}_{S};k_{y})=
+	-i {\frac{\exp\left[{i{k}_{ \mu,x }({x-{x}_{S}})}\right]
+	\left({ u,P,{\bmi k}_{ \mu 	},{z}}\right)\otimes 
+	\left({ u,P,-{\bmi k}_{ \mu },{z}_{S}}\right)
+	{ \bmi  J}_{6} }{ {\frac{{\rm d}\,}{ {\rm d}\,{k}_{x}}} 
+	{\left.{\left\langle{\left({ u,P,-{\bmi K}_{T}}\right) , 
+	\left({u,P,{\bmi K}_{T}}\right)}\right\rangle}\right|}_{{\bmi K}_{T} =
+	{\bmi k}_{ \mu }}}}  
+\end{equation}
+
+Similarly, assuming that $(x-x_S)<0$ we pick up $- 2 \pi i \times $ the 
+residue  at the  pole  ${\bmi K}_{T}= - {\bmi k}_{\mu}=-(k_{\mu, x}(k_{ y},\omega), k_{ y})$, in the
+third quadrant of the complex $k_x-$plane, so that
+\begin{equation}	\label{pole2}
+	\rf{\bmi  G}_{P,\mu}\!({\bmi  x},{\bmi  x}_{S};k_{y})=
+	i\,
+	\frac{ \exp \left[{i{k}_{ \mu,x }({x-{x}_{S}})}\right] \left({ u,P,{\bmi k}_{ \mu 
+	},z}\right)\otimes \left({ u,P,-{\bmi k}_{ \mu },z_S}\right){ \bmi  J}_{6}}{ 
+	{\frac{{\rm d}\,}{ {\rm d}\,{ k}_{x}}} {\left.{\left\langle{\left({ 
+	u,P,-{\bmi K}_{T }}\right) ,\ \left({u,P,{\bmi K}_{T 
+	}}\right)}\right\rangle}\right|}_{{\bmi K}_{T} =-{\bmi k}_{ \mu }}}  
+\end{equation}
+but it turns out that 
+\[
+{\frac{{\rm d}\,}{ {\rm d}\,{ k}_{x}}}{\left.\left\langle\left( 
+	u,P,-{k}_{ x }\right) ,\ \left(u,P,{\bmi K}_{T} 
+	\right)\right\rangle\right|}_{{\bmi K}_{T} =-{\bmi k}_{ \mu }} = - 
+{\frac{{\rm d}\,}{ {\rm d}\,{ k}_{x}}}{\left.\left\langle\left( 
+	u,P,-{\bmi K}_{T}\right) ,\ \left(u,P,{\bmi K}_{T}\right)
+	\right\rangle\right|}_{{\bmi K}_{T} ={\bmi k}_{ \mu }}
+\]
+so that  (\ref{pole1}) and (\ref{pole2}) together imply that
+\begin{equation} 	\label{polenu}
+	\rf{\bmi  G}_{P,\mu}\!({\bmi  x},{\bmi  x}_{S};k_{y})=-i {\frac{
+	\exp\left[{i{\bmi k}_{ \mu }|{x-{x}_{S}}|}\right] \left({ v,P,{\bmi k}_{ \mu 
+	},z}\right)\otimes \left({ u,P,-{\bmi k}_{ \mu },z_S}\right){ \bmi  J}_{6}}{ 
+	{\frac{{\rm d}\,}{ {\rm d}\,{ k}_{x}}} {\left.{\left\langle{\left({ 
+	u,P,-{k}_{ x },\zeta}\right) ,\ \left({v,P,{k}_{ x 
+	},\zeta}\right)}\right\rangle}\right|}_{{ k}_{ x} ={\bmi k}_{ \mu }}}}  
+\end{equation}
+
+We could calculate 
+${\frac{{\rm d}\,}{ {\rm d}\,{ k}_{x}}}{\left.\left\langle\left( 
+	u,P,-{k}_{ x },\zeta\right) ,\ \left(v,P,{k}_{ x 
+	},\zeta\right)\right\rangle\right|}_{{ k}_{ x} ={\bmi k}_{ \mu }}$ 
+in (\ref{polenu}) using a finite difference approximation to the 
+derivative, but the calculation is rather susceptible to roundoff. 
+Instead, we develop an analytic expression, that is 
+the cartesian  analogue  of the result in {\em 
+Kennett\/}~(1983),  Appendix to chapter 11.
+
+\subsection{Calculating the residue at a surface wave pole}
+Since
+\begin{equation} 	\label{m1}
+	{ \partial }_{z}\left(u,P,\pm{\bmi K}_{T},z\right)=
+	{\rf{\bmi A}}(z,\pm{\bmi K}_{T})\left(u,P,\pm{\bmi K}_{T},z\right)
+\end{equation}
+where  ${\rf{\bmi A}}(z,{\bmi K}_{T})$ is the Fourier domain system matrix
+\begin{eqnarray} \label{Akzdef}
+\lefteqn{
+{\rf{\bmi A}}(z,{\bmi K}_{T})
+=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[{\begin{array}{cccccc}
+0&- i k_x {\rf \gamma}(z) &  -i {  k}_{  y} {\rf \gamma}(z) &  {\rf a}(z)&0&0\\ 
+-i k_x&0&0&0&{\rf b}(z)&0\\ -i{k}_{y}&0&0&0&0&{\rf b}(z)\\ - {\rf \rho}(z) 
+{\omega }^{  2}&  0&0&0&-i k_x&-i{k}_{y}\\ 0&\!\!\!\!\!\!
+k^{2}_x{\rf \zeta}(z)  + {\rf \mu}(z) {  k}_{  y}^{  2}- {\rf \rho}(z) {\omega 
+}^{  2} &  
+{k}_{x}{k}_{y} ({\rf \chi}(z)+ {\rf \mu}(z))&  -i {k}_{x} {\rf \gamma}(z) &  0&0\\ 
+0&{k}_{x}{k}_{y} ({\rf \chi}(z)+ {\rf \mu}(z)) & \!\!\! \!\!\!
+{\rf \zeta }(z){  k}_{  y}^{  2}  + {  k}_{  x}^{  2} {\rf \mu}(z) 
+- {\rf \rho}(z) {\omega }^{  2}   &  -i{k}_{y} {\rf \gamma}(z) &  
+0&0\end{array}}\right]\nonumber
+\end{eqnarray}
+it follows that
+\begin{eqnarray} 	\label{m2}
+{\partial }_{z}{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\left({u,P,\pm{\bmi K}_{T},z}\right)&=&
+\rf{\bmi  A}(z,\pm{\bmi K}_{T}){\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\left({u,P,\pm{\bmi K}_{T},z}\right)\nonumber\\
+&&
++
+{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(z,\pm{\bmi K}_{T})\left({u,P,\pm{\bmi 
+K}_{T},z}\right)
+\end{eqnarray}
+Using  (\ref{m1}) and (\ref{m2}) gives
+\begin{eqnarray} \label{m4}
+\lefteqn{{ \partial 
+}_{z}\left\langle{{\frac{{\rm d}\,}{{\rm d}\,{ k}_{x}}}
+\left({u,P,-{\bmi K}_{T},z}\right), 
+\left({u,P,{\bmi K}_{T},z}\right)}\right\rangle}\nonumber\\ 
+&&=\left\langle{{\rm \partial 
+}_{z}{\frac{{\rm d}\,}{{\rm d}\,{ k}_{x}}}\left({u,P,-{\bmi K}_{T},z}\right), 
+\left({u,P,{\bmi K}_{T},z}\right)}\right\rangle+\left\langle 
+{{\frac{{\rm d}\,}{{\rm d}\,{ k}_{x}}}\left({u,P,-{\bmi K}_{T},z}\right),{\rm \partial 
+}_{z}\left({u,P,{\bmi K}_{T},z}\right)}\right\rangle\nonumber\\
+&&=\left\langle{\rf{\bmi A}(z,-{\bmi K}_{T}){\frac{{\rm d}\,}{{\rm d}\,{ k}_{x}}}\left({u,P,-{\bmi K}_{T},z}\right),
+\left({u,P,{\bmi K}_{T},z}\right)}\right\rangle\nonumber\\
+&&\qquad+\left\langle{
+{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(z,-{\bmi K}_{T})
+\left({u,P,-{\bmi K}_{T},z}\right),\left({u,P,{\bmi K}_{T},z}\right)}\right\rangle\nonumber\\
+&&\qquad +
+\left\langle{{\frac{{\rm d}\,}{{\rm d}\,{ k}_{x}}}
+\left({u,P,-{\bmi K}_{T},z}\right),\rf{\bmi A}(z,{\bmi K}_{T})
+\left({u,P,{\bmi K}_{T},z}\right)}\right\rangle\nonumber\\
+&&=-\left\langle{
+\left({u,P,-{\bmi K}_{T},z}\right),{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(z,{\bmi K}_{T})\left({u,P,{\bmi K}_{T},z}\right)}\right\rangle
+\end{eqnarray} 
+where we have used the Hamiltonian symmetries
+\[
+\left\langle{\rf{\bmi  A}(z,-{\bmi K}_{T}) \cdot   , \cdot 
+}\right\rangle=-\left\langle{ \cdot   ,\ \rf{\bmi  A}(z,{\bmi K}_{T}) 
+\cdot }\right\rangle
+\]
+and
+\[
+\langle{{\frac{{\rm d}\,}{{\rm d}\,{ k}_{x}}}
+\rf{\bmi  A}(z,-{\bmi K}_{T}) \cdot   
+, \cdot }\rangle=-\langle{ \cdot   ,\ 
+{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(z,{\bmi K}_{T}) \cdot }\rangle
+\] 
+Upon integrating (\ref{m4}) over the depth interval $z\le \zeta \le 
+\infty$, 
+and using the {\em radiation condition\/} at $\zeta =\infty$, we get
+\begin{eqnarray}	\label{mint1}
+\lefteqn{
+{\left.{\left\langle{{\frac{{\rm d}\,}{{\rm d}\,{ k}_{ x}}}\left({ 
+	u,P,-{\bmi K}_{T},\zeta }\right) ,\left({u,P,{\bmi K}_{T},\zeta 
+	}\right)}\right\rangle}\right|}_{ \zeta   =z} =}\nonumber\\
+&&\int_{ 
+	z}^{\infty } {\rm d} \zeta \left\langle{\left({ u,P,-{\bmi K}_{T},\zeta 
+	}\right) ,{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(\zeta  ,{\bmi K}_{T})\left({u,P,{\bmi K}_{T},\zeta 
+	}\right)}\right\rangle
+\end{eqnarray}
+
+
+
+
+Similarly, integrating 
+(\ref{m4}) over the depth interval $0\le \zeta \le z$, and remembering that
+$\left({ u,P,\pm{\bmi K}_{T},\zeta=0 }\right)$ satisfy the traction free 
+condition at $\zeta =0$ in the limit as $ \pm{\bmi K}_{T} 
+\rightarrow \pm{\bmi k}_{\mu}$ (which is the only case of interest),
+we get 
+\begin{eqnarray} \label{mint2}
+\lefteqn{{\left.{\left\langle{\left({ u,P,-{\bmi K}_{T},\zeta }\right) , 
+{\frac{{\rm d}\,}{{\rm d}\,{ 
+k}_{ x}}}\left({u,P,{\bmi K}_{T},\zeta }\right)}\right\rangle}\right|}_{ \zeta 
+=z} =}\nonumber\\
+&&\int_{ 0}^{z } {\rm d} \zeta \left\langle{\left({ u,P,-{\bmi K}_{T},\zeta 
+}\right) ,{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(\zeta ,{\bmi K}_{T})\left({u,P,{\bmi K}_{T},\zeta 
+}\right)}\right\rangle 
+\end{eqnarray} 
+Now, (\ref{mint1}) and 
+(\ref{mint2}) together imply that 
+\begin{eqnarray}	\label{deriv}
+\lefteqn{{\frac{{\rm d}\,}{{\rm d}\,{ k}_{ 
+	x}}}\left\langle{\left({ u,P,-{\bmi K}_{T},{ z}}\right)
+	,\left({u,P,{\bmi K}_{T},{ z}}\right)}\right\rangle =}\nonumber\\
+&&\int_{ 
+	0}^{\infty } {\rm d} \zeta \left\langle{\left({ u,P,-{\bmi K}_{T},\zeta 
+	}\right) ,{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(\zeta  ,{\bmi K}_{T})\left({u,P,{\bmi K}_{T},\zeta 
+	}\right)}\right\rangle
+\end{eqnarray}
+for an arbitrary depth point $z$.
+
+\subsection{The surface wave contributions to the Green's tensor}
+
+ Finally, using (\ref{deriv}) in (\ref{polenu}), and summing over the
+ $N_{P}(k_y, \omega )$ $P-$wave poles in the first quadrant of the $k_x$ plane 
+at fixed $(k_y, \omega)$, 
+we get the surface wave contributions to the Green's tensor as
+\begin{eqnarray}	\label{surfGp}
+\lefteqn{
+\rf{\bmi  G}_{P}({\bmi  x},{\bmi  x}_{S};k_y)=-i 
+\sum\limits_{\mu = 1}^{  N_{P}( \omega)} 
+{\frac{\exp\left[{i{ k}_{ \mu,x }\left|{x-{x}_{S}}\right|}\right]
+	\left({  u,P,{\bmi k}_{ \mu },z}\right)\otimes \left({  
+	u,P,-{\bmi k}_{ \mu },z_S}\right){ \bmi  J}_{6}}{\int_{  
+	0}^{\infty }  {\rm d} \zeta {\left.{\left\langle{\left({  
+	u,P,-{\bmi K}_{T},\zeta}\right)  ,{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(\zeta,k_x)
+	\left({u,P,{\bmi K}_{T},\zeta}\right)}\right\rangle}\right|}_{{ 
+	 \bmi K}_{T}  ={\bmi k}_{ \mu }}}}  
+}\nonumber\\
+&& 
+\end{eqnarray}
+
+The surface wave contributions to  $\rf{\bmi  G}_{S}$ and  $\rf{\bmi  G}_{H}$
+ that result from the 
+\[
+(u,S,-{\bmi k}_{\mu})=\gamma_{S} (v,S,-{\bmi k}_{\mu}),
+\]
+and
+\[
+(u,H,-{\bmi k}_{\mu})=\gamma_{H} (v,H,-{\bmi k}_{\mu}),
+\]
+cases respectively,  are treated  with the same method that we have just outlined for 
+$\rf{\bmi  G}_{P}$ in (\ref{surfGp}), although the pole positions ${\bmi 
+k}_{\mu}$ will vary in each case.
+
+To summarize, the surface wave Green's tensor may be written as 
+\begin{eqnarray}	\label{surfG}
+\lefteqn{
+\rf{\bmi  G}({\bmi  x},{\bmi  x}_{S};k_y)=-i \times
+}\\
+&& \sum\limits_{c \in \{ P,S,H \}}
+\sum\limits_{\mu_c = 1}^{  N_{c}( \omega)}  
+{\frac{\exp\left[{i{ k}_{ \mu_c,x }\left|{x-{x}_{S}}\right|}\right]
+	\left({  u,P,{\bmi k}_{ \mu_c },z}\right)\otimes \left({  
+	u,P,-{\bmi k}_{ \mu_c },z_S}\right){ \bmi  J}_{6}}{\int_{  
+	0}^{\infty }  {\rm d} \zeta {\left.{\left\langle{\left({  
+	u,P,-{\bmi K}_{T},\zeta}\right)  ,{\frac{{\rm d}\,}{{\rm 
+d}\,{ k}_{x}}}\rf{\bmi  A}(\zeta,k_x)
+	\left({u,P,{\bmi K}_{T},\zeta}\right)}\right\rangle}\right|}_{{ 
+	 \bmi K}_{T}  ={\bmi k}_{ \mu_c }}}}\nonumber 
+\end{eqnarray}
+
+We recall that the specific formula chosen in (\ref{GT0}) depends on 
+whether $(z-z_S) \gtlt 0$ ( the {\em up/down dichotomy\/}), 
+while the specific formula for the extracted 
+surface wave components (\ref{surfG}) depends on
+whether $(x-x_S) \gtlt 0$ (the {\em left/right dichotomy\/}). 
+Note that the complex plane portion wavenumber contour  in 
+Fig.\ref{contour}
+is subject to both the  {\em up/down dichotomy\/} and the {\em left/right 
+dichotomy\/} which may be handled by an {\em alternating direction, Riccati 
+sweep\/}, i.e. {\em each offset of the left/right sweep has an embedded 
+up/down sweep\/}. The possibility of explicitly calculating modal/body wave 
+coupling may be of use in certain studies.
+
+Unfortunately, the stumbling block is the actual calculation of the 
+surface wave pole positions. By employing the complex plane contour
+of Fig.\ref{contour}, the number of plane waves needed to synthesize the 
+body wave phases is greatly reduced, but the number of poles is very 
+large indeed, and it is a major computational problem to locate them to 
+the required accuracy.
+
+
+
+
+
+

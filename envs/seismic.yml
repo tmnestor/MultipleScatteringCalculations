@@ -1,0 +1,15 @@
+name: seismic
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - obspy
+  - numpy
+  - scipy
+  - matplotlib
+  - pytorch
+  - tqdm
+  - pip
+  - pip:
+    - devito

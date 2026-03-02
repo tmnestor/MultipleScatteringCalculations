@@ -1,0 +1,96 @@
+% =============================================================================
+%  Analytical T-Matrix for Elastic Scatterers:
+%  Sphere and Cube Geometries
+%  Derived from the Lippmann--Schwinger Integral Equation
+%
+%  Formatted for Geophysical Journal International
+% =============================================================================
+\documentclass[extra,mreferee]{gji}
+
+% --- Packages ----------------------------------------------------------------
+\usepackage{timet}              % GJI Times font package
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{url}
+
+% --- Custom commands ---------------------------------------------------------
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bD}{\mathbf{D}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bt}{\mathbf{t}}
+\newcommand{\Hmat}{\mathcal{H}}
+
+% --- Title and authors -------------------------------------------------------
+\title[T-Matrix for Elastic Scatterers]{%
+  Analytical T-Matrix for Elastic Scatterers:
+  Sphere and Cube Geometries ---
+  Derived from the Lippmann--Schwinger Integral Equation}
+
+\author[T.\,M.\ Nestor]{%
+  T.\,M.\ Nestor$^{1}$ \\
+  $^{1}$Research School of Earth Sciences,
+  Australian National University, Canberra, ACT, Australia
+}
+
+\date{Received \today; in original form \today}
+
+% =============================================================================
+\begin{document}
+
+\maketitle
+
+% --- Summary -----------------------------------------------------------------
+\begin{summary}
+We apply symbolic computer algebra (SymPy) to evaluate the
+Lippmann--Schwinger integral equation analytically for two scatterer
+geometries: a sphere and a cube, both with constant isotropic contrasts
+$\Delta\lambda$, $\Delta\mu$, $\Delta\rho$, embedded in a homogeneous
+isotropic background.  The sphere yields closed-form results with isotropic
+effective contrasts; the cube introduces cubic anisotropy in the effective
+stiffness, providing the natural building block for effective medium
+theories of heterogeneous solids.  Self-consistent amplification factors
+are derived that sum the multiple-scattering series inside each inclusion
+exactly, yielding a T-matrix that satisfies the optical theorem.  The local
+site T-matrix is then embedded in the Foldy--Lax multiple-scattering
+framework with the inter-site Green's tensor provided by the Kennett
+reflectivity propagator for layered media.  A hybrid numerical
+implementation in NumPy achieves $\sim\!10^{-8}$ relative accuracy by
+combining Gauss--Legendre quadrature for the convergent Green's tensor
+integral with a polynomial Taylor expansion that avoids the divergent
+Eshelby singularity in the second-derivative integrals.  The displacement-traction
+$6\times 6$ T-matrix is derived for direct integration into the Kennett
+propagator framework.
+\end{summary}
+
+% --- Keywords ----------------------------------------------------------------
+\begin{keywords}
+  Seismic wave propagation --
+  Computational seismology --
+  Wave scattering and diffraction --
+  Numerical modelling --
+  Theoretical seismology.
+\end{keywords}
+
+% --- Body chapters -----------------------------------------------------------
+\input{part1_sphere}
+\input{part2_cube}
+\input{part3_effective}
+\input{part4_global}
+\input{part5_numerical}
+
+% --- Bibliography ------------------------------------------------------------
+\bibliographystyle{gji}
+\bibliography{references}
+
+\end{document}

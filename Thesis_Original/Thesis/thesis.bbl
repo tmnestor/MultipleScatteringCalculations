@@ -1,0 +1,647 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citename{Agassi \& Gal, }1973]{AgassiandGal}
+{\sc Agassi, D., \& Gal, A.} 1973.
+\newblock Scattering from non-overlapping potentials.
+\newblock {\em Annals of Physics}, {\bf 75}, 56--76.
+
+\bibitem[\protect\citename{Aki \& Richards, }1980]{AR1}
+{\sc Aki, K., \& Richards, P.G.} 1980.
+\newblock {\em Quantitative Seismology: Theory and Methods}.
+\newblock  2 Vols. 
+\newblock W.H. Freeman \& Co.
+
+\bibitem[\protect\citename{Arfken, }1985]{Arfken}
+{\sc Arfken, G.} 1985.
+\newblock {\em Mathematical Methods for Physicists}.
+\newblock Academic Press.
+
+\bibitem[\protect\citename{Barrett, Berry, Chan, Demmel, Donato, 
+Dongarra, Eijkhout, Pozo, Romine, \& van der Vorst, }1994]{templates}
+{\sc Barrett,R.,  Berry,M.,  Chan,T.F.,  Demmel,J.,  Donato,J., 
+Dongarra,J.,  Eijkhout,V.,  Pozo,R.,  Romine,C.,  \& van der Vorst, H.} 1994.
+\newblock Templates for the solution of linear systems: Building blocks 
+for iterative methods.
+\newblock SIAM.
+
+
+
+\bibitem[\protect\citename{Banerjee, Ahmad \& Manolis, }1987]{Banerjee}
+{\sc Banerjee, P.K., Ahmad, S., \& Manolis, G.D.} 1987.
+\newblock Advanced elastodynamic analysis.
+\newblock {\em Pages  258--284 of:} {\sc Beskos, D.E.} (ed), {\em Boundary
+  element methods in mechanics}.
+\newblock Elsevier.
+
+\bibitem[\protect\citename{Bender \& Orszag, }1978]{BenderandOrszag}
+{\sc Bender, C.M., \& Orszag, S.A.,}. 1978.
+\newblock {\em Advanced mathematical methods for scientists and engineers}.
+\newblock McGraw \& Hill.
+
+%\bibitem[\protect\citename{Bostock, }1991]{Bostock}
+%{\sc Bostock, M. G.} 1991.
+%\newblock Surface wave scattering from 3-D obstacles.
+%\newblock {\em Geophys.J.Int.}, {\bf 104}, 351--370.
+
+%\bibitem[\protect\citename{Bostock \& Kennett, }1992]{BostockandKennett}
+%{\sc Bostock, M. G., \& Kennett, B.L.N.} 1992.
+%\newblock Multiple scattering of surface waves from discrete obstacles.
+%\newblock {\em Geophys.J.Int.}, {\bf 108}, 52--70.
+
+\bibitem[\protect\citename{Bostrom \& Karlson, }1984]{BK}
+{\sc Bostrom, A. \& Karlson, A.} 1984.
+\newblock Exact synthetic seismograms for an inhomogeneity in a 
+layered elastic half-space.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 79}, 835--862.
+
+
+\bibitem[\protect\citename{Brigham, }1988]{Brigham}
+{\sc Brigham, E.O. } 1988.
+\newblock {\em The fast Fourier transform and its applications}.
+\newblock Prentice-Hall.
+
+\bibitem[\protect\citename{Bruaset, }1995]{Bruaset}
+{\sc Bruaset, A.M.} 1995.
+\newblock {\em A survey of preconditioned iterative methods}.
+\newblock Pitman Research Notes in Mathematics Series, no. ~238.
+\newblock Longman.
+
+\bibitem[\protect\citename{Bunch \& Grow, }1990]{BG}
+{\sc Bunch, K.J, \& Grow, R.W,} 1990.
+\newblock Numerical aspects of the boundary residual method.
+\newblock {\em Int. J. Numer. Modelling: Electronic Newtworks, 
+Devices and Fields}, {\bf 3}, 57--71.
+
+
+%\bibitem[\protect\citename{Chapman \& Orcutt, }1985]{ChapOrc}
+%{\sc Chapman, C.~H., \& Orcutt, J.~A.} 1985.
+%\newblock The Computation of Body Wave Synthetic Seismograms in Laterally  Homogeneous Media.
+%\newblock {\em Reviews of Geophysics}, {\bf 23}, 105--163.
+
+\bibitem[\protect\citename{Chapman, }1978]{Chap78}
+{\sc Chapman, C.H.} 1978.
+\newblock A new method for computing synthetic seismograms.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 54}, 481--518.
+
+%\bibitem[\protect\citename{Chapman, }1994]{Chap94}
+%{\sc Chapman, C.H.} 1994.
+%\newblock Reflection/transmission reciprocities in anisotropic media.
+%\newblock {\em Geophys.J.Int.}, {\bf 116}, 498--501.
+
+\bibitem[\protect\citename{Chapman \& Woodhouse, }1981]{ChapWood}
+{\sc Chapman, C.H., \& Woodhouse, J.H.} 1981.
+\newblock Symmetry of the wave equation and excitation of body waves.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 65}, 777--782.
+
+\bibitem[\protect\citename{Chin, Hedstrom \& Thigpen, }1984]{Chinetal}
+{\sc Chin, R.C.Y., Hedstrom, G.W., \& Thigpen, L.} 1984.
+\newblock Matrix methods in synthetic seismograms.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 77}, 483--502.
+
+%\bibitem[\protect\citename{Cini \& Fubini, }1954]{CiniandFubini}
+%{\sc Cini, M., \& Fubini, S.} 1954.
+%\newblock {\em Nuovo Cimento}, {\bf 11}, 142.
+
+\bibitem[\protect\citename{Coates \& Chapman, }1991]{CoatesChap}
+{\sc Coates, R.T., \& Chapman, C.H.} 1991.
+\newblock Generalized Born scattering of seismic waves in a 3-D elastic medium.
+\newblock {\em Geophys.J.Int.}, {\bf 107}, 231--263.
+
+\bibitem[\protect\citename{Coates \& Charrette, }1993]{CoatesCharrette}
+{\sc Coates, R.T., \& Charrette, E.E} 1993.
+\newblock A comparison of single scattering and finite difference 
+synthetic seismograms in realizations of 2-D elastic random media.
+\newblock {\em Geophys.J.Int.}, {\bf 113}, 463--482.
+
+\bibitem[\protect\citename{Coleman \& van Loan, }1988]{MatHand}
+{\sc Coleman, T.~F., \& van Loan, C.} 1988.
+\newblock {\em Handbook for Matrix Computations}.
+\newblock Frontiers in applied mathematics, no. ~4.
+\newblock SIAM.
+
+\bibitem[\protect\citename{Davies \& Martin, }1979]{DaviesMartin}
+{\sc Davies, B.  \& Martin, B. } 1993.
+\newblock Numerical iInversion of the Laplace Transform: a Survey and
+ Comparison of Methods.
+\newblock {\em J. Comput. Phys.}, {\bf 33}, 1--32.
+
+
+%\bibitem[\protect\citename{Delves \& Mohamed, }1985]{DelvesandMohamed}
+%{\sc Delves, L.~M., \& Mohamed, J.~L.} 1985.
+%\newblock {\em Computational Methods for Integral Equations}.
+%\newblock Cambridge Univ. Press.
+
+\bibitem[\protect\citename{Duneczky \& Wyatt, }1988]{DuneczkyandWyatt}
+{\sc Duneczky, C., \& Wyatt, R.E.} 1988.
+\newblock Lanczos recursion, continued fractions, Pad\'{e} approximants, and
+  variational principles in quantum scattering theory.
+\newblock {\em J. Chem. Phys.}, {\bf 89}, 1448--1463.
+
+\bibitem[\protect\citename{Daudt, Braile,Nowack, \& Chiang,}1989]{Duadtetal}
+{\sc Daudt,C.R., Braile, L.W., Nowack, R.L. \& Chiang, C.S.} 1989.
+\newblock A comparison of finite difference and Fourier method 
+calculation of synthetic seismograms.
+\newblock {\em Bull. seism. Soc. Am.}, {\bf 79}, 1210--1230.
+
+
+%\bibitem[\protect\citename{Engheta, Murphy, Rokhlin \& Vassilou, }1992]{FMM}
+%{\sc Engheta, N., Murphy, W.D.,  Rokhlin, V., \& Vassilou, M.S.} 1992.
+%\newblock The fast multipole method (FMM) for electromagnetic scattering  problems.
+%\newblock {\em IEEE Trans. Antenn. Propag.}, {\bf 40}, 634--641.
+
+%\bibitem[\protect\citename{Evans, }1986]{Evans}
+%{\sc Evans, R.B.} 1986.
+%\newblock The decoupling of seismic waves.
+%\newblock {\em Wave Motion}, {\bf 8}, 321--328.
+
+\bibitem[\protect\citename{Fisk, Charrette, \& McCartor }1992]{Fisketal}
+{\sc Fisk,M.D.,  Charrette,E.E., \& McCartor, G.D.} 1992.
+\newblock A comparison of phase screen and finite difference calculations
+for elastic waves in random media.
+\newblock {\em J. Geophys. Res.}, {\bf 97}, 12409--12423.
+
+\bibitem[\protect\citename{ Frazer \& Gettrust, }1984]{FrazerandGettrust}
+{\sc Frazer, L.N., \& Gettrust, J.F.} 1984.
+\newblock On a generalization of Filon's method and the computation of 
+the oscillatory integrals of seismology.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 76}, 461--481.
+
+\bibitem[\protect\citename{Freund \& Farrell, }1990]{FreundandFarrell}
+{\sc Freund, D.E., \& Farrell,R.A.} 1990.
+\newblock A variational principle for the scattered wave.
+\newblock {\em J. Acoust. Soc. Am. }, {\bf 87}, 1847--1860.
+
+\bibitem[\protect\citename{Foldy, }1945]{Foldy}
+{\sc Foldy, L.L.} 1945.
+\newblock The multiple scattering of waves I. General theory of isotropic
+scattering by randomly distributed scatterers.
+\newblock {\em Phys. Rev.}, {\bf 67}, 107--119.
+
+\bibitem[\protect\citename{Fornberg, }1987]{Fornberg}
+{\sc Fornberg, B} 1987.
+\newblock The pseudospectral method: Comparisons with finite differences 
+for the elastic wave equation.
+\newblock {\em Geophysics }, {\bf 52}, 483--501.
+
+\bibitem[\protect\citename{Fuchs \& M\"{u}ller, }1971]{FuchsMuller}
+{\sc Fuchs, K., \& M\"{u}ller, G.,} 1971.
+\newblock Computation of synthetic seismograms with the reflectivity 
+method and comparison with observations.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 23}, 417--433.
+
+\bibitem[\protect\citename{Garibotti, }1972]{Garibotti}
+{\sc Garibotti, C.R.} 1972.
+\newblock Schwinger variational principle and Pad\'{e} approximants.
+\newblock {\em Annals of Physics}, {\bf 71}, 486--496.
+
+\bibitem[\protect\citename{Gazdag, }1981]{Gazdag}
+{\sc Gazdag,J.} 1981.
+\newblock Modeling the acoustic wave equation with transform methods.
+\newblock {\em Geophysics}, {\bf 46}, 854.
+
+\bibitem[\protect\citename{Gerjouy, Rau \& Spruch, }1983]{Gerjouyetal}
+{\sc Gerjouy,E.,  Rau, R.P, \& Spruch,L.} 1983.
+\newblock A unified formulation of the construction of variational 
+principles.
+\newblock {\em Rev. Mod. Phys. }, {\bf 55}, 725--774.
+
+\bibitem[\protect\citename{Goldstein, }1980]{Goldstein}
+{\sc Goldstein, H.} 1980.
+\newblock {\em Classical Mechanics}.
+\newblock Addison-Wesley.
+
+\bibitem[\protect\citename{Golub \& Van Loan }1989]{Golub}
+{\sc Golub, G. \& Van Loan, C.} 1989.
+\newblock {\em Matrix Computations}.
+\newblock John-Hopkins Univ. Press.
+ 
+
+\bibitem[\protect\citename{Gonis, }1992]{Gonis}
+{\sc Gonis, A.} 1992.
+\newblock {\em Green functions for ordered and disordered systems}.
+\newblock North-Holland.
+
+\bibitem[\protect\citename{Gutknecht, }1990]{Gutknecht90}
+{\sc Gutknecht, M.H.} 1990.
+\newblock {\em The unsymmetric Lanczos algorithms and their relations to
+Pad\'{e} approximation, continued fraction, and the qd algorithm \/}
+in Proceedings of the Copper Mountain Conference on iterative 
+methods.
+
+
+\bibitem[\protect\citename{Gutknecht, }1992]{Gutknecht92}
+{\sc Gutknecht, M.H.} 1992.
+\newblock A completed theory of the unsymmetric Lanczos process and 
+related algorithms, part I.
+\newblock {\em SIAM J. Matrix Anal. Appl.}, {\bf 13}, 594--639.
+
+\bibitem[\protect\citename{Gutknecht, }1993]{Gutknecht93}
+{\sc Gutknecht, M.H.} 1993.
+\newblock Variants of {\sc BICGSTAB} for matrices with complex spectrum.
+\newblock {\em SIAM J. Sci. Comput.}, {\bf 14}, 1020--1033.
+
+
+\bibitem[\protect\citename{Ha, }1985]{Ha85}
+{\sc Ha, J.} 1985.
+\newblock Recurrence relations for computing complete P and SV seismograms.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 23}, 105--163.
+
+%\bibitem[\protect\citename{Haines, }1988]{H88}
+%{\sc Haines, A.J.} 1988.
+%\newblock Multi-source, multi-receiver synthetic seismograms for laterally  heterogeneous media using F-K domain propagators.
+%\newblock {\em Geophys.J.}, {\bf 95}, 237--260.
+
+%\bibitem[\protect\citename{Harrington, }1987]{Harrington}
+%{\sc Harrington, R.F.} 1987.
+%\newblock The method of moments in electromagnetics.
+%\newblock {\em J. Electromag. Waves and Applic.}, {\bf 1}, 181--200.
+
+%\bibitem[\protect\citename{Hudson \& Heritage, }1981]{HH81}
+%{\sc Hudson, J.A., \& Heritage,J.R.} 1981.
+%\newblock The use of the Born approximation in seismic scattering problems.
+%\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 66}, 221--240.
+
+\bibitem[\protect\citename{Jerri, }1977]{Jerri}
+{\sc Jerri, A.J.} 1977.
+\newblock The Shannon sampling theorem--
+Its various extensions and applications: A tutorial review.
+\newblock {\em Proc. IEEE}, {\bf 65}, 1565--1596.
+
+
+\bibitem[\protect\citename{Kadioglu \& Mudrick, }1992]{KadiogluandMudrick}
+{\sc Kadio\u{g}lu, M.  \& Mudrick, S.} 1992.
+\newblock On implementing the GMRES(m) method to elliptic 
+equations in meteorology.
+\newblock {\em J. Comput. Phys.}, {\bf 102}, 348--359.
+
+\bibitem[\protect\citename{Keister, }1983]{Keister}
+{\sc Keister, B.D.} 1983.
+\newblock Multiple scattering in closely packed systems of arbitrary
+  non-overlapping shapes.
+\newblock {\em Annals of Physics}, {\bf 149}, 162--178.
+
+\bibitem[\protect\citename{Kennett, }1972]{K72}
+{\sc Kennett, B.L.N.} 1972.
+\newblock Seismic waves in laterally inhomogeneous media.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 27}, 301--325.
+
+\bibitem[\protect\citename{Kennett, }1974a]{K74a}
+{\sc Kennett, B.L.N.} 1974.
+\newblock Reflections, rays and reverberations.
+\newblock {\em Bull.Seis.Soc.Am.}, {\bf 64}, 1685--1696.
+
+\bibitem[\protect\citename{Kennett, }1974b]{K74b}
+{\sc Kennett, B.L.N.} 1974.
+\newblock On variational principles and matrix methods in elastodynamics.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 37}, 391--405.
+
+\bibitem[\protect\citename{Kennett, }1981]{K81}
+{\sc Kennett, B.L.N.} 1981.
+\newblock On coupled seismic waves.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 64}, 91--114.
+
+\bibitem[\protect\citename{Kennett, }1983]{K83}
+{\sc Kennett, B.L.N.} 1983.
+\newblock {\em Seismic wave propagation in stratified media.}
+\newblock Cambridge Univ. Press.
+
+\bibitem[\protect\citename{Kennett, }1984a]{K84a}
+{\sc Kennett, B.L.N.} 1984.
+\newblock Reflection operator methods for elastic waves I-
+irregular interfaces and regions.
+\newblock {\em Wave Motion}, {\bf 6}, 407--418.
+
+\bibitem[\protect\citename{Kennett, }1984b]{K84b}
+{\sc Kennett, B.L.N.} 1984.
+\newblock Reflection operator methods for elastic waves II-
+composite regions and source problems.
+\newblock {\em Wave Motion}, {\bf 6}, 419--429.
+
+\bibitem[\protect\citename{Kennett, }1986]{K86}
+{\sc Kennett, B.L.N.} 1986.
+\newblock Wavenumber and wavetype coupling in laterally heterogeneous media.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 87}, 313--331.
+
+%\bibitem[\protect\citename{Kennett \& Kerry, }1979]{K79}
+%{\sc Kennett, B.L.N., \& Kerry, N.J.} 1979.
+%\newblock Seismic Waves in a Stratified Half Space.
+%\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 57}, 557--583.
+
+%\bibitem[\protect\citename{Kennett, Koketsu \& Haines, }1990]{KKH}
+%{\sc Kennett, B.L.N., Koketsu, K., \& Haines, A.J.} 1990.
+%\newblock Propagation invariants, reflection and transmission in anisotropic,  laterally heterogeneous media.
+%\newblock {\em Geophys.J.Int.}, {\bf 103}, 95--101.
+
+%\bibitem[\protect\citename{Koketsu, Kennett \& Takenaka, }1991]{KKT}
+%{\sc Koketsu, K., Kennett, B.L.N., \& Takenaka, H.} 1991.
+%\newblock {\sc 2-D} reflectivity method and synthetic seismograms for  irregularly layered structures, II Invariant embedding approach.
+%\newblock {\em Geophys.J.Int.}, {\bf 105}, 119--130.
+
+%\bibitem[\protect\citename{Korneev \& Johnson, }1993]{KJa}
+%{\sc Korneev,V. \& Johnson, L.R.} 1993.
+%\newblock Scattering of elastic waves by a spherical inclusion--I. Theory and numerical results
+%\newblock {\em Geophys.J.Int.}, {\bf 115}, 230--250.
+
+%\bibitem[\protect\citename{Korneev \& Johnson, }1993]{KJb}
+%{\sc Korneev,V. \& Johnson, L.R.} 1993.
+%\newblock Scattering of elastic waves by a spherical inclusion--II. Limitations and asymptotic solutions
+%\newblock {\em Geophys.J.Int.}, {\bf 115}, 251--263.
+
+\bibitem[\protect\citename{Kosloff, Reshef \& Loewenthal }1984]{Kosloff}
+{\sc Kosloff, D.,Reshef, M. \& Loewenthal, D.} 1984.
+\newblock Elastic wave calculations by the Fourier method.
+\newblock {\em Bull.Seis.Soc.Am.}, {\bf 74}, 875--891.
+
+\bibitem[\protect\citename{Lamb, }1980]{Lamb}
+{\sc Lamb, G.L}. 1980.
+\newblock {\em Elements of soliton theory}.
+\newblock Wiley.
+
+\bibitem[\protect\citename{Lanczos, }1950]{Lanczos1}
+{\sc Lanczos, C.} 1950.
+\newblock An iteration method for the solution of the eigenvalue problem of
+  linear differential and integral operators.
+\newblock {\em J.Res.Natl.Bur.Stand.}, {\bf 45}, 255--282.
+
+\bibitem[\protect\citename{Lanczos, }1952]{Lanczos2}
+{\sc Lanczos, C.} 1952.
+\newblock Solution of systems of linear equations by minimized iterations.
+\newblock {\em J.Res.Natl.Bur.Stand.}, {\bf 49}, 33--53.
+
+\bibitem[\protect\citename{Lapwood \& Hudson, }1975]{LH75}
+{\sc Lapwood, E.~R., \& Hudson, J.~A.} 1975.
+\newblock The Passage of Elastic Waves through an Anomalous Region-III.
+  Transmission of obliquely incident body waves.
+\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 40}, 255--268.
+
+\bibitem[\protect\citename{Lax, }1951]{Lax}
+{\sc Lax, M.} 1951.
+\newblock Multiple scattering of waves.
+\newblock {\em Rev. Mod. Phys.}, {\bf 23}, 287-310.
+
+\bibitem[\protect\citename{Levander, }1988]{Lev88}
+{\sc Levander, A.R.} 1988.
+\newblock Fourth order finite-difference {\sc P-SV} seismograms.
+\newblock {\em Geophysics}, {\bf 53}, 1425--1436.
+
+\bibitem[\protect\citename{Lighthill, }1978]{Lighthill}
+{\sc Lighthill, J.} 1978.
+\newblock {\em Waves in Fluids}.
+\newblock Cambridge Univ. Press.
+
+%\bibitem[\protect\citename{Lim, }92]{Lim92}
+%{\sc Lim, R.} 92.
+%\newblock Multiple scattering by many bounded obstacles in a multilayered  acoustic medium.
+%\newblock {\em J.Acoust.Soc.Am.}, {\bf 92}, 1593--1612.
+
+%\bibitem[\protect\citename{Lim \& Hackman, }1992]{LimandHackman92}
+%{\sc Lim, R., \& Hackman, R.H.} 1992.
+%\newblock A formulation of multiple scattering by many bounded  obstacles using a multicentered, T supermatrix.
+%\newblock {\em J.Acoust.Soc.Am.}, {\bf 91}, 613--638.
+
+\bibitem[\protect\citename{Lippmann \& Schwinger, }1950]{LS}
+{\sc Lippmann, B.~A., \& Schwinger, J.} 1950.
+\newblock Variational principles for scattering processes, Parts I \& II.
+\newblock {\em Phys. Rev.}, {\bf 79}, 469--486.
+
+\bibitem[\protect\citename{Lucchese, Takatsuka, \& McKoy, 
+}1986]{Luccheseetal}
+{\sc Lucchese,R.R., Takatsuka,K., \& McKoy, V.} 1986.
+\newblock Applications of the Schwinger Variational principle to electron 
+molecule collisions and molecular photoionization.
+\newblock {\em Physics Reports}, {\bf 131}, 147--221.
+
+\bibitem[\protect\citename{MacMillan \& Redish, }1986]{MacMillanandRedish}
+{\sc MacMillan,D.S., \& Redish, E.F.} 1986.
+\newblock Convergence of distorted wave methods: Theory and a simple 
+example.
+\newblock {\em Phys. Rev. }, {\bf C 33}, 804--817.
+
+\bibitem[\protect\citename{Mallick \& Frazer, }1987]{MallickandFrazer}
+{\sc Mallick, S., \& Frazer, L.N.} 1987.
+\newblock Practical aspects of reflectivity modeling.
+\newblock {\em Geophysics}, {\bf 52}, 1355--1364.
+
+%\bibitem[\protect\citename{Mallick \& Frazer, }1988]{MallickandFrazer88}
+%{\sc Mallick, S., \& Frazer, L.N.} 1988.
+%\newblock Rapid computation of multioffset vertical seismic profile synthetic seismograms for layered media.
+%\newblock {\em Geophysics}, {\bf 53}, 479--491.
+
+
+\bibitem[\protect\citename{Marfurt,}1984]{Marfurt}
+{\sc Marfurt, } 1984.
+\newblock Accuracy of finite difference and finite element 
+modeling of the scalar and elastic wave equations.
+\newblock {\em Geophysics}, {\bf 49}, 533--549.
+
+
+
+\bibitem[\protect\citename{Milne, }1980]{Milne}
+{\sc Milne, R.D.} 1980.
+\newblock {\em Applied functional analysis}.
+\newblock Pitman.
+
+%\bibitem[\protect\citename{Moiseiwitsch, }1966]{Mois}
+%{\sc Moiseiwitsch, B.L.} 1966.
+%\newblock {\em Variational Principles}.
+%\newblock Interscience.
+
+\bibitem[\protect\citename{M\"{u}ller, }1985]{Muller}
+{\sc Muller, G.} 1985.
+\newblock The reflectivity method: a tutorial.
+\newblock {\em J. Geophys.}, {\bf 58}, 153--174.
+
+\bibitem[\protect\citename{Newton, }1982]{Newton}
+{\sc Newton, R.G.} 1982.
+\newblock {\em Scattering Theory of Waves and Particles}.
+\newblock Springer- Verlag.
+
+\bibitem[\protect\citename{Nuttall, }1970]{PadeBook}
+{\sc Nuttall, J.} 1970.
+\newblock Connection of {\sc P}ad\'{e} approximants with stationary variational
+  principles of certain Pade approximants.
+\newblock {\em Pages  219--230 of:} {\sc G.A.~Baker, Jr., \& Gammel, J.L.}
+  (eds), {\em Pad\'{e} Approximations in Theoretical Physics}.
+\newblock mathematics in science and engineering, vol. 71.
+\newblock Academic Press.
+
+\bibitem[\protect\citename{Orszag, }1972]{Orszag}
+{\sc Orszag, S.A.} 1972.
+\newblock Comparison of pseudospectral and spectral approximation.
+\newblock {\em Stud. Appl. Math.}, {\bf 51}, 253--259.
+
+%\bibitem[\protect\citename{Pao \& Varatharalajulu , }1977]{PaoandVaratharalajulu}
+%{\sc Pao, Y.H. \& Varatharalajulu, V.} 1976.
+%\newblock Huygens' principle, radiation conditions, and integral formulas for the scattering of elastic waves.
+%\newblock {\em J.Acoust.Soc.Am.}, {\bf 59}, 1361--1371.
+
+\bibitem[\protect\citename{Prange \& Toks\"oz, }1990]{PrangeandToksoz}
+{\sc Prange, M. \& Toks\"oz, M.N} 1990.
+\newblock Perturbation approximation of 3-D seismic scattering
+\newblock {\em Geophys.J.Int.}, {\bf 101}, 713--738.
+
+\bibitem[\protect\citename{Press \& Teukolsky, }1989]{PressandTeukolsky}
+{\sc Press, W. H., \& Teukolsky, S. A. } 1989.
+\newblock Computing accurate integrals with the FFT
+\newblock {\em Computers in Physics}, {\bf Jan/Feb}, 91--94.
+
+\bibitem[\protect\citename{Rayleigh, }1897]{Rayleigh}
+{\sc Rayleigh, Lord} 1897.
+\newblock On the incidence of aerial and electric waves upon small 
+obstacles in the form of ellipsoids or elliptic cylinders and on the 
+passage of electric waves through a circular aperture in a conducting 
+screen.
+\newblock {\em Philos. Mag.}, {\bf 44}, 28-52.
+
+\bibitem[\protect\citename{Reshef \& Kosloff, }1985]{ReshefKosloff}
+{\sc Reshef, M. \& Kosloff, D.} 1985.
+\newblock Applications of elastic forward modeling to seismic interpretation
+\newblock {\em Geophysics}, {\bf 50}, 1266--1272.
+
+%\bibitem[\protect\citename{Saad, }1982]{Saad82}
+%{\sc Saad, R.} 1982.
+%\newblock The Lanczos biorthogonalization algorithm and other oblique  projection methods for solving large unsymmetric systems.
+%\newblock {\em SIAM J. Numer. Anal.}, {\bf 19}, 485--506.
+
+\bibitem[\protect\citename{Saad \& Schultz, }1986]{SaadSchultz}
+{\sc Saad, Y., \& Schultz, M.} 1986.
+\newblock GMRES: A generalised minimal residual algorithm for solving
+  nonsymmetric linear systems.
+\newblock {\em SIAM J. Sci. Statist. Comput.}, {\bf 7}, 856--869.
+
+%\bibitem[\protect\citename{Sakar, }1987]{Sakar}
+%{\sc Sakar, T.K.} 1987.
+%\newblock On the application of the generalized biconjugate gradient method.
+%\newblock {\em J. Electromag. Waves and Applic.}, {\bf 1}, 223--242.
+
+%\bibitem[\protect\citename{Sakurai, }1985]{Sakurai}
+%{\sc Sakurai, J.J.} 1985.
+%\newblock {\em Modern Quantum Mechanics}.
+%\newblock Benjamin/Cummins.
+
+
+%\bibitem[\protect\citename{Sato, }1994]{Sato}
+%{\sc Sato, H.} 1994.
+%\newblock Formulation of the multiple non-isotropic scattering process in 2-D space on the basis of energy transport theory.
+%\newblock {\em Geophys.J.Int.}, {\bf 117}, 272--732.
+
+%\bibitem[\protect\citename{Schmidt \& Tango, }1986]{ScmidtandTango}
+%{\sc Schmidt, H. \& Tango, G.} 1986.
+%\newblock Efficient global matrix approach to the computation of synthetic seismograms.
+%\newblock {\em Geophys. J.R. astr. Soc.}, {\bf 84}, 331--359.
+
+\bibitem[\protect\citename{Schultz, }1980]{Schultz}
+{\sc Schultz, B. } 1980.
+\newblock {\em Geometrical methods of mathematical physics}.
+\newblock Cambridge Univ. Press.
+
+\bibitem[\protect\citename{Schuster, }1985]{Schuster}
+{\sc Schuster, G.T.} 1985.
+\newblock A hybrid BIE + Born series modeling scheme: 
+Generalized Born series .
+\newblock {\em J. Acoust. Soc. Am.}, {\bf 77}, 865--879.
+
+\bibitem[\protect\citename{Sobczyk, }1985]{Sobczyk}
+{\sc Sobczyk, K.} 1988.
+\newblock {\em Stochastic wave propagation}.
+\newblock Fundamental studies in engineering, no. ~6.
+\newblock Elsevier.
+
+\bibitem[\protect\citename{Taylor, }1972]{Taylor}
+{\sc Taylor, J.R.} 1972.
+\newblock {\em Scattering Theory}.
+\newblock John Wiley \& Sons.
+
+%\bibitem[\protect\citename{Thomson \& Chapman, }1985]{ThomsonandChapman85}
+%{\sc Thomson, C.~J., \& Chapman, C.~H.} 1985.
+%\newblock An introduction to Maslov's asymptotic method.
+%\newblock {\em Geophys.J.R.astr.Soc.}, {\bf 83}, 143--168.
+
+\bibitem[\protect\citename{Tromp \& Snieder, }1989]{TrompandSnieder}
+{\sc Tromp, J.  \& Snieder, R.} 1989.
+\newblock The reflection and transmission of plane P- and S-waves by a 
+continuously stratified band: a new approach using invariant imbedding.
+\newblock {\em Geophys.J.}, {\bf 96}, 447--456.
+
+\bibitem[\protect\citename{Tromp \& Dahlen, }1990]{TrompandDahlen}
+{\sc Tromp, J.  \& Dahlen, F. A.} 1990.
+\newblock Summation of the Born series for the normal modes of the earth.
+\newblock {\em Geophys.J.Int.}, {\bf 100}, 527--533.
+
+
+\bibitem[\protect\citename{van~der Vorst, }1992]{vanderVorst}
+{\sc van~der Vorst, H.} 1992.
+\newblock Bi-CGSTAB:A fast smoothly convergent variant of Bi-CG for the
+  solution of nonsymmetric linear systems.
+\newblock {\em SIAM J. Sci. Statist. Comput.}, {\bf 13}, 631--644.
+
+%\bibitem[\protect\citename{Varadan \& Varadan, }1989]{Varadanetal}
+%{\sc Varadan, V.~K., Ma,Y., \& Varadan, V.~V.} 1989.
+%\newblock Scattering and Attenuation of Elastic Waves in Random Media.
+%\newblock {\em PAGEOPH.}, {\bf 131}.
+
+%\bibitem[\protect\citename{Varadan \& Varadan, }1986]{Varadan86}
+%{\sc Varadan, V.~K., \& Varadan, V.~V.} 1986.
+%\newblock {\em Acoustic, Electromagnetic and Elastic Wave Scattering. Vol 2.}
+%\newblock North-Holland
+
+%\bibitem[\protect\citename{Varatharalajulu, }1977]{Varatharalajulu}
+%{\sc Varatharalajulu, V.} 1977.
+%\newblock Reciprocity relations and forward amplitude theorems for elastic waves.
+%\newblock {\em J. Math. Phys.}, {\bf 18}, 537--543.
+
+\bibitem[\protect\citename{Virieux, }1986]{Vir86}
+{\sc Virieux, J.} 1986.
+\newblock {\sc P-SV} wave propagation in heterogeneous media.
+\newblock {\em Geophysics}, {\bf 51}, 889--901.
+
+\bibitem[\protect\citename{Volterra, }1884]{volterra}
+{\sc Volterra, V.} 1884.
+\newblock Sopra un problema di elettrostatica.
+\newblock {\em Nuouvo Cimento}, {\bf 16}, 49--57.
+
+
+\bibitem[\protect\citename{Vorobyev, }1965]{Vorobyev65}
+{\sc Vorobyev, Y.~V.} 1965.
+\newblock {\em Method of Moments in Applied Mathematics.}
+\newblock New-York: Gordon \& Breach.
+
+\bibitem[\protect\citename{Walker, }1988]{Walker}
+{\sc Walker, H.F.} 1988.
+\newblock Implementation of the GMRES method using Householder transformations.
+\newblock {\em SIAM J. Sci. Statist. Comput.}, {\bf 9}, 856--869.
+
+\bibitem[\protect\citename{Wandzura \& Turley, }1992]{WandzuraandTurley}
+{\sc Wandzura, S., \& Turley, R.S.} 1992.
+\newblock Variational improvements to scattering amplitude calculations.
+\newblock {\em Wave Motion}, {\bf 16}, 207--215.
+
+%\bibitem[\protect\citename{Waterman, }1968]{Waterman}
+%{\sc Waterman, P.C.} 1968.
+%\newblock New formulation of acoustic scattering.
+%\newblock {\em J. Acoust. Soc. Am.}, {\bf 45}, 1417--1429.
+
+\bibitem[\protect\citename{Watkins, }1991]{Watkins}
+{\sc Watkins, D.S.} 1991.
+\newblock {\em Fundamentals of Matrix Computations}.
+\newblock John Wiley \& Sons.
+
+\bibitem[\protect\citename{Wu, }1994]{Wu}
+{\sc Wu, R.S.} 1994.
+\newblock Wide-angle elastic wave one-way propagation in heterogeneous
+media and an elastic wave complex-screen method.
+\newblock {\em J. Geophys. Res.}, {\bf 99}, 751--766.
+
+\bibitem[\protect\citename{Wu \& Aki, }1985]{WuandAki}
+{\sc Wu, R.S., \& Aki, K.} 1985.
+\newblock Scattering characteristics of elastic waves by an elastic 
+heterogeneity.
+\newblock {\em Geophysics}, {\bf 50}, 582--595.
+
+
+\bibitem[\protect\citename{Znojil, }1986]{Znojil}
+{\sc Znojil, M.} 1986.
+\newblock iterative solution of the Lippmann-Schwinger--type equations.
+\newblock {\em Phys. Rev.}, {\bf A 34}, 2697-2705.
+
+\end{thebibliography}

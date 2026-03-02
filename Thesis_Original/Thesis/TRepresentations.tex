@@ -1,0 +1,2662 @@
+\chapter{Representations of the coupling matrix}\label{Trep}
+In this chapter we recommence the practice of writing the material 
+properties as the sum of a reference and residual component, i.e.
+$(\rho, \alpha, \beta)=(\rf{\rho}+{\mit \Delta}\rho,\rf{\alpha}+{\mit 
+\Delta}\alpha,\rf{\beta}+{\mit \Delta}\beta)$ where the  uniform host 
+material has the reference   properties $(\rf{\rho},\rf{\alpha},\rf{\beta})$.
+ 
+
+
+
+\section{Overview}
+In chapter \ref{Grep}, we developed various  plane wave representations of the 
+displacement/ traction elastic wave Green's tensor ${\rf{\bmi G}}$, 
+appropriate for a lattice of source points. We were purposely vague about the nature of the 
+source ${\bmi f}_j$ at each lattice point $1 \le j \le L N_x$ other than 
+to suppose that it was a $6-$vector. 
+In this chapter we will see that some of the components of ${\bmi f}_j$ 
+have $\partial_x$ operators. We always transfer these partial 
+differentiations to the source and receiver coordinates of the relevant 
+Green's tensors, using integration by parts. Consequently,  it is convenient to augment 
+the definitions of the Green's tensors to carry these partially 
+differentiated components as well as the usual displacement and traction 
+fields. The Green's tensors are then expressed through $8 \times 8 $ matrices,
+rather than the $6 \times 6$ arrays that we have employed in  chapter 
+\ref{Grep}. The advantage of this representation is that the scattering 
+induced by heterogeneity superimposed on the reference medium may be 
+modelled as a {\em multiplicative operator\/} rather than the 
+differential operator (\ref{dAdef}). This is the essence of the {\em 
+pseudo-spectral approximation\/} (Orszag, 1972), where a {\em spectral 
+convolution\/} is replaced by a {\em spatial multiplication\/}. 
+
+We recall that the convolution of two $N-$sequences, is a $2 N-$sequence.
+The ``approximation" 
+in the term ``pseudo-spectral approximation" derives from the neglect of 
+the aliasing terms that result from sampling the $2N-$spectral 
+convolution (of two $N-$spectral sequences) as if it was an  $N-$sequence-- 
+the approximation that is commonly employed in what has become known as the pseudo-spectral 
+method [e.g. {\em Fornberg\/}~(1987)]. In our method, we are 
+oversampling by a factor $\ge 2$ (usually $16$, or $32$). So that the 
+aliasing contribution we have just mentioned will not occur. 
+
+
+In Corollary 1, of \S\ref{secLS} we found the singular 
+integro/differential {\em Lippmann-Schwinger type operator 
+equation\/}, reproduced here as
+\begin{eqnarray} \label{LSTrep}
+{{\bmi G}}({\bmi x};{\bmi x}_{S};k_y)&=&
+{\rf{\bmi G}}({\bmi x};{\bmi x}_{S};k_y)\nonumber\\
+&&+\int_{{\mit \Omega}} {\rf{\bmi G}}({\bmi x};{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x}^{\prime},\partial_{{x}^{\prime}};k_y) {\bmi G}({\bmi x}^{\prime},{\bmi x}_{S};k_y) {\rm d}{\bmi 
+x}^{\prime},
+\quad {\bmi x}\in R^{2}
+\end{eqnarray}
+for the unknown Green's tensor ${{\bmi G}}({\bmi x};{\bmi 
+x}_{S};k_y)$, defined in terms of the {\em known reference medium Green's 
+tensor\/} 
+${\rf{\bmi G}}$ where the {\em differential coupling operator\/}  ${{\mit 
+\Delta} {\bmi A}}$ is 
+defined as 
+\begin{samepage}
+\begin{eqnarray*}
+\lefteqn{
+{{\mit \Delta} {\bmi A}}({\bmi x};{\partial }_{x},{k}_{y})
+=\hspace{26em}(\ref{dAdef})}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[{\begin{array}{cccccc}
+0&- {{\mit \Delta} \gamma} {\partial }_{  x}&  
+-i {{\mit \Delta} \gamma} {  k}_{  y}&  {{\mit \Delta} a}&0&0\\0&0&0&0&{{\mit \Delta} b}&0\\0&0&0&0&0&{{\mit \Delta} b}\\ - {{\mit \Delta} \rho} {\omega }^{  
+2}&  0&0&0&0&0\\ 0&- {{\mit \Delta} \rho} {\omega 
+}^{  2}  -{ \partial }_{x} {{\mit \Delta} \zeta} {\partial }_{  
+x}  + {{\mit \Delta} \mu} {  k}_{  y}^{  2}&  
+-i{k}_{y}{ \partial }_{x} {{\mit \Delta} \chi}   -i{k}_{y} {{\mit \Delta} \mu} {\partial 
+}_{  x}&  -{ \partial }_{x} {{\mit \Delta} \gamma} &  0&0\\ 
+0&-i{k}_{y} {{\mit \Delta} \chi} {\partial }_{  x}  -i{k}_{y}{ \partial 
+}_{x} {{\mit \Delta} \mu} &  - {{\mit \Delta} \rho} {\omega }^{  2}  + {{\mit \Delta} \zeta }
+{  k}_{  y}^{  2}  -{ \partial }_{x} {{\mit \Delta} \mu} 
+{\partial }_{  x}&  -i{k}_{y} {{\mit \Delta} \gamma} &  0&0\end{array}}\right]
+\end{eqnarray*}
+\end{samepage}
+with the material contrast parameters in (\ref{dAdef}) defined in Table \ref{contrastTable}.
+ The integral $\int_{{\mit \Omega}} \cdot$ in Corollary 1
+was defined over the spatial support ${\mit \Omega}$ of the inclusion.
+
+In this chapter, we will replace the singular 
+integro/differential {\em Lippmann- Schwinger type operator 
+equation\/} of chapter \ref{MSrep}  by a nonsingular, compact integral operator equation, that 
+is much simpler to discretize and solve. To effect this transformation we
+employ a {\em Galerkin\/} type projection 
+of the range space of (\ref{LSTrep}) onto the span of 
+\[
+\int_{{\mit \Omega}}{\rm d}{\bmi x}\, {\rf{\bmi G}}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y) \cdot
+\]
+so that (\ref{LSTrep}) is replaced by
+\begin{eqnarray} \label{LSTrep1}
+\lefteqn{\int_{{\mit \Omega}} {\rm d}{\bmi x}\,{\rf{\bmi G}}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y){{\bmi G}}({\bmi x};{\bmi x}_{S};k_y)=}\nonumber\\
+&&
+\int_{{\mit \Omega}} {\rm d}{\bmi x}\,{\rf{\bmi G}}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y){\rf{\bmi G}}({\bmi x};{\bmi x}_{S};k_y)\\
+&&+\int_{{\mit \Omega}} {\rm d}{\bmi x}\, {\rf{\bmi G}}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y)\int_{{\mit \Omega}}{\rm d}{\bmi x}^{\prime}\, 
+{\rf{\bmi G}}({\bmi x};{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x}^{\prime},\partial_{x^{\prime}};k_y) {\bmi G}({\bmi x}^{\prime},{\bmi 
+x}_{S};k_y) .
+\nonumber
+\end{eqnarray}
+
+Let us denote the reference ${\rf{\bmi G}}$ and actual ${{\bmi G}}$ 
+displacement/traction Green's tensors in terms of their $3 \times 3$ 
+displacement and traction partitions  as
+\[
+{\rf{\bmi G}}=\left[{\begin{array}{cc}
+\rf{\bmi P}_{uu}&\rf{\bmi P}_{ut}\\ 
+\rf{\bmi P}_{tu}&\rf{\bmi P}_{tt}
+\end{array}}\right]{\bmi J}_{6}, \quad \mbox{and} \quad
+{{\bmi G}}=\left[{\begin{array}{cc}
+{\bmi P}_{uu}&{\bmi P}_{ut}\\ 
+{\bmi P}_{tu}&{\bmi P}_{tt}
+\end{array}}\right]{\bmi J}_{6}
+\] 
+respectively. 
+Next we employ integration by parts in (\ref{LSTrep1}) to transfer the 
+$\partial_{x}$ operators  in ${\mit \Delta} {\bmi A}$ onto the field 
+coordinate of the unknown Green's tensor  ${{\bmi G}}$ to give the augmented 
+operator ${{\bmi G}_{r}}$, and onto both the 
+source and field coordinate of the reference  Green's tensor  ${\rf{\bmi 
+G}}$, to give ${\rf{\bmi P}_{r,s}}$ where
+the augmented operators may be written as:
+\[{{\bmi G}_{r}}=\left[{\begin{array}{cc}{\bmi P}_{uu}&{\bmi P}_{ut}\\ 
+{\bmi P}_{tu}&{\bmi P}_{tt}\\
+{\bmi P}_{du}&{\bmi P}_{dt}\end{array}}\right]{\bmi J}_{6}
+, \quad
+{\rf{\bmi P}_{s}}=\left[{\begin{array}{ccc}
+\rf{\bmi P}_{uu}&\rf{\bmi P}_{ut}&\rf{\bmi P}_{ud}\\ 
+\rf{\bmi P}_{tu}&\rf{\bmi P}_{tt}&\rf{\bmi P}_{td}
+\end{array}}\right]
+, \quad
+{\rf{\bmi P}_{r,s}}=\left[{\begin{array}{ccc}
+\rf{\bmi P}_{uu}&\rf{\bmi P}_{ut}&\rf{\bmi P}_{ud}\\ 
+\rf{\bmi P}_{tu}&\rf{\bmi P}_{tt}&\rf{\bmi P}_{td}\\
+\rf{\bmi P}_{du}&\rf{\bmi P}_{dt}&\rf{\bmi P}_{dd}
+\end{array}}\right]
+\]
+ These integration by parts 
+operations may be summarized in the somewhat stylized notation 
+\begin{samepage}
+\begin{eqnarray} \label{LSTrep2}
+\lefteqn{\int_{{\mit \Omega}} {\rm d}{\bmi x}\,{\rf{\bmi P}}_{s}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x};k_y){{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)=}\nonumber\\
+&&
+\int_{{\mit \Omega}} {\rm d}{\bmi x}\,{\rf{\bmi P}}_{s}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x};k_y){\rf{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)\\
+&&+\int_{{\mit \Omega}} {\rm d}{\bmi x}\, {\rf{\bmi P}}_{s}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x};k_y)\int_{{\mit \Omega}}{\rm d}{\bmi x}^{\prime}\, 
+{\rf{\bmi P}}_{r,s}({\bmi x};{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x}^{\prime};k_y) {\bmi G}_{r}({\bmi x}^{\prime},{\bmi 
+x}_{S};k_y) .
+\nonumber
+\end{eqnarray}
+\end{samepage}
+where ${\mit \Delta} {\bmi C}$ is an $8 \times 8$ multiplicative operator 
+defined as
+\begin{samepage}
+\begin{eqnarray*}
+\lefteqn{
+{\mit \Delta}{\bmi C}({\bmi x};k_y)=}\\
+&&
+\left[{\begin{array}{cccccccc}
+\displaystyle - {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0\\ \displaystyle 0& \displaystyle {\mit \Delta}\mu { 
+k}_{ y}^{ 2} - {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle 0& \displaystyle -i{k}_{y} 
+{\mit \Delta}\mu \\ \displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\zeta { k}_{ y}^{ 2} 
+- {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle -i{k}_{y} {\mit \Delta}\gamma & \displaystyle 0& 
+\displaystyle 0& \displaystyle -i{k}_{y} \chi & \displaystyle 0\\ 
+\displaystyle 0& \displaystyle 0& \displaystyle i {\mit \Delta}\gamma { k}_{ y}& 
+\displaystyle -{\mit \Delta}a& \displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\gamma & 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle -{\mit \Delta}b& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle -{\mit \Delta}b& \displaystyle 0& 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle i{k}_{y} 
+{\mit \Delta}\chi & \displaystyle {\mit \Delta}\gamma & \displaystyle 0& \displaystyle 0& 
+\displaystyle {\mit \Delta}\zeta & \displaystyle 0\\ \displaystyle 0& \displaystyle 
+i{k}_{y} {\mit \Delta}\mu & \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\mu 
+\end{array}}\right]\nonumber 
+\end{eqnarray*}
+\end{samepage}
+
+However, (\ref{LSTrep2}) is equivalent to 
+\begin{samepage}
+\begin{eqnarray} \label{LSTrep30}
+\lefteqn{\int_{{\mit \Omega}} {\rm d}{\bmi x}\,{\rf{\bmi P}}_{s}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x};k_y)\left[{{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)-{\rf{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)
+\right.}\nonumber\\
+&&\qquad \qquad \qquad \qquad \qquad
+\left.-\int_{{\mit \Omega}}{\rm d}{\bmi x}^{\prime}\, 
+{\rf{\bmi P}}_{r,s}({\bmi x};{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x}^{\prime};k_y) {\bmi G}_{r}({\bmi x}^{\prime},{\bmi 
+x}_{S};k_y)\right]= {\bf 0} .
+\nonumber
+\end{eqnarray}
+\end{samepage}
+which is the {\em weak\/} statement of the {\em orthogonality\/} of the residual
+\[{\bmi R}\equiv
+{{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)-{\rf{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)
+-\int_{{\mit \Omega}}{\rm d}{\bmi x}^{\prime}\, 
+{\rf{\bmi P}}_{r,s}({\bmi x};{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x}^{\prime};k_y) {\bmi G}_{r}({\bmi x}^{\prime},{\bmi 
+x}_{S};k_y)
+\] 
+ to the {\em test\/} space spanned by
+\[
+\int_{{\mit \Omega}} {\rm d}{\bmi x}\,{\rf{\bmi P}}_{s}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x};k_y) \left[\cdot\right], \qquad \mbox{for arbitrary }\quad {\bmi x}_{R}
+\]
+
+In this chapter, we will solve for ${{\bmi G}}_{r}$ from the {\em 
+augmented equation\/} 
+\begin{equation} \label{LSTrep3}
+{{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)={\rf{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)
++\int_{{\mit \Omega}}{\rm d}{\bmi x}^{\prime}\, 
+{\rf{\bmi P}}_{r,s}({\bmi x};{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi C}({\bmi
+x}^{\prime};k_y) {\bmi G}_{r}({\bmi x}^{\prime},{\bmi 
+x}_{S};k_y)
+\end{equation} 
+instead of ${{\bmi G}}$ from (\ref{LSTrep1}). The advantage of 
+(\ref{LSTrep3}), is that it is an integral equation,  while
+ the original formulation (\ref{LSTrep1}) was an integro/differential 
+ equation. 
+
+However, (\ref{LSTrep3}) is {\em strongly singular\/} because
+\[
+{\rf{\bmi P}}_{r,s}({\bmi x};{\bmi x}^{\prime};k_y)\approx 
+O\left(\| {\bmi x}-{\bmi x}^{\prime} \|^{-2} \right), \quad \mbox{in the 
+limit} \quad \| {\bmi x}-{\bmi x}^{\prime} \|\rightarrow 0
+\]
+We can {\em subtract \/} the singular part of (\ref{LSTrep3}) and invert 
+it analytically. The resulting {\em renormalized\/} equation
+\begin{eqnarray} \label{LSTrep4}
+\lefteqn{{{\bmi G}}_{r}({\bmi x};{\bmi x}_{S};k_y)={\rf{\bmi 
+G}}_{r}({\bmi x};{\bmi x}_{S};k_y)}\nonumber\\
+&&
++\int_{{\mit \Omega}}{\rm d}{\bmi x}^{\prime}\, 
+{\rf{\bmi P}}_{r,s}({\bmi x};{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi C}_{eff}({\bmi
+x}^{\prime};k_y) {\bmi G}_{r}({\bmi x}^{\prime},{\bmi 
+x}_{S};k_y), \quad {\bmi x}\not={\bmi x}^{\prime}
+\end{eqnarray} 
+is both {\em nonsingular\/} and {\em compact\/}, where 
+we have introduced the {\em effective coupling matrix\/} ${\mit \Delta} 
+{\bmi C}_{eff}$ defined later in (\ref{dCeff}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The two centred, harmonic expansion of the reference Green's tensor}
+In this section, we derive a closed form expression for the 
+reference medium Green's tensor $\rf{\bmi G}$, in a {\em basis of cylindrical harmonics\/}. 
+The expansion is two centred, i.e. it is constructed in two separate coordinate 
+systems, one coordinate system for the {\em source\/} point
+${\bmi  x}^{\prime}$, and one coordinate system for the {\em field\/} point  ${\bmi  x}$.
+We will utilize $\rf{\bmi G}$ to investigate the near field 
+singularity of ${\rf{\bmi P}}_{r,s}$ from (\ref{LSTrep3}).
+
+We recall from \S\ref{secxsplit}, that
+$\rf{\bmi G}$ may be written as 
+\begin{samepage} 
+\begin{eqnarray}\label{c4grepc}
+\rf{\bmi  G}({\bmi  x};{{\bmi  x}}^{\prime};k_y)& =&\sum\limits_{c\in \{P,S,H\}}
+\frac{1}{4{ \pi }^{2}\rho \omega^2}
+\int_{{R}^{2}} {\rm d}{\bmi k}\, {\bmi L}_{c} \otimes {\bmi  L}_{c}^{\prime}
+\frac{
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]  
+}{ \hat{K}^{2}_{ c } - {k}^{2}_{z} - {k}^{2}_{x}} {\bmi J}_{6}\nonumber\\
+&=&
+\rf{\bmi  G}_{P}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{S}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{H}({\bmi  x};{{\bmi  x}}^{\prime};k_y)
+\end{eqnarray} 
+\end{samepage}
+where  $\otimes$ is the {\em tensor product\/} and 
+ the partial differential 
+operators
+\begin{eqnarray} \label{c4Labdef}
+\begin{array}{lll}
+{\bmi L}_{P}=&{\bmi L}_{S}=&{\bmi L}_{H}=\\
+\left[\begin{array}{c}
+\partial_{z} \\
+\partial_{x} \\ 
+\partial_{y} \\ 
+2 \rf{\mu} \partial_{zz} - {\lambda \omega^{2}\over \rf{\alpha}\!{}^2}\\
+    2 \rf{\mu} \partial_{xz} \\ 
+   2 \rf{\mu} \partial_{yz}
+\end{array}\right], \quad& 
+\frac{\omega }{\rf{\beta} \hat{K}_{S}}\,
+\left[\begin{array}{c}
+\partial_{x} \\-\partial_{z} \\ 0 \\
+2 \rf{\mu} \partial_{xz}\\  
+   \rf{\mu} (-\partial_{zz} + \partial_{xx}) \\ 
+   \rf{\mu} \partial_{xy} 
+\end{array}\right], \quad&
+\frac{1 }{\hat{K}_{H}}\,
+\left[\begin{array}{c}
+   \partial_{yz} \\
+\partial_{xy} \\ 
+{\omega^{2}\over \rf{\beta}\!{}^2} + \partial_{yy} \\ 
+ 2 \rf{\mu} \partial_{yzz}\\
+    2 \rf{\mu} \partial_{xyz} \\ 
+   \rf{\mu} ({\omega^{2}\over \rf{\beta}\!{}^2}\partial_{z} + 2 \partial_{yyz}) 
+\end{array}\right]
+\end{array}
+\end{eqnarray}
+were defined earlier in (\ref{Labdef}).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{figure}
+\HideDisplacementBoxes
+%\ShowDisplacementBoxes
+\centerline{\BoxedEPSF{coords.EPSF scaled 1000}}
+\caption{A pair of shifted cylindrical coordinate systems, with 
+coordinate centres at $\mbox{\mib R}{}_{i}\equiv(Z_i,X_i)$
+and $\mbox{\mib R}{}_{j}\equiv(Z_j,X_j)$. The source point
+$\mbox{\mib x}{}^{\prime}$
+and field 
+point $\mbox{\mib x}$ are inside non-overlapping discs. This geometrical 
+constraint is often called the {\em muffin tin\/} condition. }
+\protect\label{coords}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+Assuming that ${\bmi  x}\not={{\bmi  x}}^{\prime}$ in (\ref{c4grepc}), the 
+wavenumber integrals are {\em uniformly convergent\/} (due to the choice of complex 
+frequency), so that the differential operators may be taken outside the 
+respective integrals to get
+\begin{eqnarray} \label{grep3}
+\rf{\bmi  G}({\bmi  x};{{\bmi  x}}^{\prime};k_y)&=&\sum\limits_{c\in \{P,S,H\}}
+ {\bmi L}_{c } \otimes {\bmi  L}_{c}^{\prime}
+\left[ \frac{1}{4{ \pi }^{2}\rho \omega^2}
+\int_{{R}^{2}} {\rm d}{\bmi k} 
+\frac{
+\exp \left[{i {\bmi k}  \cdot  ({\bmi x}-{\bmi x}^{\prime})}\right]  
+}{ \hat{K}^{2}_{ c } - {k}^{2}_{z} - {k}^{2}_{x}}
+\right] {\bmi J}_{6}\nonumber\\
+&=&
+\rf{\bmi  G}_{P}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{S}({\bmi  x};{{\bmi  x}}^{\prime};k_y)+
+\rf{\bmi  G}_{H}({\bmi  x};{{\bmi  x}}^{\prime};k_y)
+\end{eqnarray}
+where $\hat{K}_{c}^2$ was given by (\ref{Kdef}).
+Or equivalently, we have
+\begin{eqnarray}	\label{Gdef1}
+\rf{\bmi  G}({\bmi  x};{{\bmi  x}}^{\prime};k_y)&=& {\frac{1}{\rho 
+\omega^2}}\left[{\bmi 
+L}_{P} \otimes {\bmi  L}_{P}^{\prime}\left[{ g}_{P } ({\bmi  x}-{{\bmi 
+	x}}^{\prime})\right] {\bmi  J}_6 \  
+	+\  {\bmi  L}_{S}
+	\otimes {\bmi  L}_{S}^{\prime}\left[{ g}_{S } ({\bmi  x}-{{\bmi 
+	x}}^{\prime})\right] {\bmi  J}_6\right.\nonumber\\
+	&&\left. +\  {\bmi  L}_{H}
+	\otimes {\bmi  L}_{H}^{\prime}\left[{ g}_{H } ({\bmi  x}-{{\bmi 
+	x}}^{\prime})\right] {\bmi  J}_6 \right], \quad {\bmi  x}\not={{\bmi  x}}^{\prime}
+\end{eqnarray}
+where the {\em scalar Green's function\/},
+\begin{equation} \label{Ig}
+{g}_{c }({\bmi  x} -{\bmi  x}^{\prime} ) =  \frac{1}{4{ \pi }^{2}}
+\int_{{\Bbb R}^2} \frac{\exp \left[i\ {\bmi  k}
+\cdot ({\bmi  x} -{\bmi  x}^{\prime} )\right]}{\hat{K}^{2}_{ c } - {k}^{2}_{z} - {k}^{2}_{x}}\
+{ {\rm d}}{\bmi  k},\quad  c\in\{P,S,H\}
+\end{equation} 
+is the solution of the {\em Helmholtz equation\/}
+\begin{equation} \label{HelmhotzEqn}
+ {\mit \Delta} {  g}_{c }  ({\bmi  x}-{{\bmi  x}}^{ \prime})+\hat{K}_{ c }^{2}{g}_{ c
+}({\bmi  x}-{{\bmi  x}}^{ \prime})\ =\  \delta   ({\bmi  x}-{{\bmi  x}}^{ 
+\prime}).
+\end{equation}
+
+We have invoked the condition ${\bmi  x}\not={{\bmi  x}}^{\prime}$ in (\ref{c4grepc})
+in order to take the differential operators outside the integral signs, 
+so that (\ref{Gdef1}) is inapplicable in the limit $\| {\bmi  
+x}-{{\bmi  x}}^{\prime} \|\rightarrow 0$. In this limit, ${  g}_{c }$ in 
+(\ref{HelmhotzEqn}) is a {\em distribution\/}, so that the $\partial_z, 
+\partial_x$ 
+operators implicit in some of the components of ${\bmi 
+L}_{c} \otimes {\bmi  L}_{c}^{\prime}{  g}_{c }, \ c\in\{P,S,H\}$, will 
+generate {\em 
+delta functions\/}. We will re-introduce these missing delta function 
+terms in \S\ref{secEffScat}.
+
+Introducing the {\em local coordinate transformations\/}({\em vid.\/} {Fig}.\ref{coords})
+\[
+{\bmi  x}={\bmi  R}_{i}+{\bmi  r}_{i} \quad \mbox{and} \quad 
+{\bmi  x}^{\prime}={\bmi  R}_{j}+{\bmi  r}_{j}
+\]
+for  {\em local coordinate centres\/}  ${\bmi  R}_{i}\equiv(Z_i,X_i)$ and ${\bmi 
+R}_{j}\equiv(Z_j,X_j)$, 
+(\ref{Ig}) may be
+written as
+\begin{eqnarray} \label{Ig1} 
+\lefteqn{{g}_{c }({\bmi  x} -{\bmi  x}^{\prime} )}\nonumber\\
+&&\!\!\!\!\!\!
+={\frac{1}{4{ \pi }^{2}}}
+\int {\frac{
+\exp \left({i\ {\bmi  k}
+\cdot ({\bmi  x} -{\bmi  R}_{i})}\right) 
+\exp \left({i\ {\bmi  k}
+\cdot ({\bmi  R}_{i} -{\bmi  R}_{j})}\right)
+\exp \left({-i\ {\bmi  k}
+\cdot ({\bmi  x}^{\prime} -{\bmi  R}_{j} )}\right)} 
+{\hat{ K}_{c}^{2}-{k}_{z}^{2}-{k}_{x}^{2}}}\ {{\rm d}}{\bmi  k}\nonumber\\
+&&\!\!\!\!\!\!
+={\frac{1}{4{ \pi }^{2}}}
+\int {\frac{
+\exp \left({i\ {\bmi  k}
+\cdot {\bmi  r}_{i}}\right) 
+\exp \left({i\ {\bmi  k}
+\cdot ({\bmi  R}_{i} -{\bmi  R}_{j})}\right)
+\exp \left({-i\ {\bmi  k}
+\cdot {\bmi  r}_{j}}\right)} 
+{\hat{ K}_{c}^{2}-{k}^{2}}}\ {{\rm d}}{\bmi  k}
+\end{eqnarray}
+where  ${k}^{2}={k}_{z}^{2}+{k}_{x}^{2}$.
+We now introduce a set of {\em shifted cylindrical coordinate\/} systems
+so that
+\begin{eqnarray} 
+{\bmi  k}&=&k(\cos \lambda \ ,\sin \lambda)\nonumber\\ 
+{ {\rm d}}{\bmi  k}&=&k {{\rm d}}{ k} {{\rm d}}{\lambda}\nonumber\\ 
+{\bmi  r}_{i}&=&{\bmi  x}-{\bmi  R}_i=r_{i}(\cos \theta_i \ ,\sin 
+\theta_i)\nonumber\\
+{\bmi  R}_{ij}&=&{\bmi  R}_{i}-{\bmi  R}_{j}= R_{ij}(\cos \theta_{ij} \ 
+,\sin\theta_{ij})\nonumber\\
+ {\bmi  r}_{j}&=&{\bmi  x}^{\prime}-{\bmi  R}_{j}=r_{j}(\cos \theta_j \ ,\sin 
+ \theta_j)
+\end{eqnarray} 
+hence (\ref{Ig1}) is transformed into
+\begin{eqnarray} \label{Ig2} {g}_{c }({\bmi  x} -{\bmi  x}^{\prime} 
+)&=&{\frac{1}{4{ \pi }^{2}}}
+\int_{0}^{\infty}  
+\frac{{{\rm d}}{ k}\  k}{{\hat{ K}_{c }^{2}-{k}^{2}}} \times \nonumber\\ &&
+\int_{0}^{2 \pi}{{\rm d}}{\lambda}
+\exp i k \left[ {  r_{i}}\cos(\theta_i-\lambda) + {  
+R}_{ij}\cos(\theta_{ij}-\lambda) -  {
+r}_{j} \cos(\theta_j-\lambda) 
+\right] .
+\end{eqnarray} 
+
+Using the {\em Jacobi-Anger\/}  expansion [e.g {\em 
+Arfken}~\shortcite{Arfken}, {\em p.}$585$]
+\begin{equation} \label{JacobiAnger}
+\exp(i r \cos s)=\sum\limits_{ n\ =\ -\infty }^{ \infty } { i}^{ n} \
+{J}_{n}(r)\ \exp \left({i\ n\ s}\right)
+\end{equation} for arbitrary real numbers $r$ and $s$, we transform the
+exponential appearing in (\ref{Ig2}) into
+\begin{eqnarray} \label{Ig3} 
+\lefteqn{{g}_{c }({\bmi  x} -{\bmi  x}^{\prime} )=\frac{1}{{4 \pi }^{2}}
+\sum\limits_{ m,n,p = -\infty }^{ \infty } (-1)^{n}{ i}^{ n+m+p}
+\int_{0}^{\infty}  
+\frac{{{\rm d}}{ k}\  k}{{\hat{ K}_{c }^{2}-{k}^{2}}} {J}_{m}(k r_i) \ {J}_{n}(k
+r_{j})\ {J}_{p}(k  R_{ij})
+}\nonumber\\  
+&&\times \int_{0}^{2 \pi}{{\rm d}}{\lambda} \exp i  \left[
+m(\theta_i-\lambda) + p (\theta_{ij}-\lambda ) -n(\theta_j-\lambda)
+\right]\nonumber\\
+&&={\frac{1}{2{ \pi }}}
+\sum\limits_{ m,n,p = -\infty }^{ \infty } (-1)^{n}{ i}^{ n+m+p}
+\delta_{n-m-p}   \exp i  \left[ m \theta_i + p \theta_{j} -n\theta_j 
+\right]
+\nonumber\\  
+&&\times \int_{0}^{\infty}  
+\frac{{{\rm d}}{ k}\  k}{{\hat{ K}_{c }^{2}-{k}^{2}}} {J}_{m}(k r_i) \ {J}_{n}(k
+r_j)\ {J}_{p}(k  R_{ij})\nonumber\\
+&&={\frac{1}{2{ \pi }}}
+\sum\limits_{ m,n = -\infty }^{ \infty }  {\rm e}^{ i  \left[ m \theta_i + 
+(n-m)
+\theta_{ij} -n\theta_j \right]}\int_{0}^{\infty}  
+\frac{{{\rm d}}{ k}\  k}{{\hat{ K}_{c }^{2}-{k}^{2}}} {J}_{m}(k r_i)  {J}_{n}(k
+r_j) {J}_{n-m}(k  R_{ij}).
+\end{eqnarray}
+
+
+Assuming the geometrical (or {\em muffin tin\/}) constraint [see {\em 
+Gonis\/}~(1992)]  
+\begin{equation} \label{Muffin}
+ R_{ij} > r_{i} + r_{j},
+\end{equation}  
+so that ${\bmi r}_{i}$ and ${\bmi r}_{j}$ are inside {\em non-overlapping\/} discs 
+centred at ${\bmi R}_{i}$ and ${\bmi R}_{j}$ respectively,
+we can evaluate the $k$-integral in (\ref{Ig3}) using the calculus of residues.
+ The geometrical constraint 
+(\ref{Muffin})
+ is necessary to ensure the {\em uniform convergence\/} 
+of subsequent contour integrals.
+
+Given the {\em unit \/} cartesian $2-$vectors $\hat{\bmi k}=({k}_{z},{k}_{x})/k$ and 
+$\hat{\bmi r}=({z},{x})/r$
+where $k^{2}={k}_{z}^{2}+{k}_{x}^{2}$ and $r^{2}={z}^{2}+{x}^{2}$, 
+we define the {\em cylindrical harmonics\/}
+\begin{equation} \label{Ydef}
+{Y}_{n}(\hat{\bmi k})={\left({{\frac{{k}_{z}+i{k}_{x}}{k}}}\right)}^{n}, 
+\quad \mbox{and} \quad 
+{Y}_{n}(\hat{\bmi r})={\left({{\frac{{z}+i{x}}{r}}}\right)}^{n}
+\end{equation}
+and their complex conjugates
+\begin{equation} \label{Ycdef}
+{Y}_{n}^{\ast}(\hat{\bmi k})={\left({{\frac{{k}_{z}-i{k}_{x}}{k}}}\right)}^{n}, 
+\quad \mbox{and} \quad 
+{Y}_{n}^{\ast}(\hat{\bmi r})={\left({{\frac{{z}-i{x}}{r}}}\right)}^{n}.
+\end{equation}
+
+Recalling the standard Bessel function  identity
+${J}_{n-m}(k  R_{ij})=
+\frac{1}{2}({H}^{(1)}_{n-m}(k  R_{ij})+ {H}^{(2)}_{n-m}(k  R_{ij}))$, and 
+evaluating the $k$ integral in (\ref{Ig3}) using the residue theorem, we get
+\begin{eqnarray} \label{Ig4} 
+\lefteqn{
+g_{c}({\bmi  x} -{\bmi  x}^{\prime} )}\nonumber\\
+&&=\frac{-i}{4}
+\sum\limits_{ m,n=-\infty }^{ \infty }  \exp i  \left[ m \theta_i + (n-m)
+\theta_{ij} -n\theta_j \right]
+ {J}_{m}(\hat{K}_{c} r_i) {J}_{n}(\hat{K}_{c} r_j) \
+{H}^{(1)}_{n-m}(\hat{K}_{c}R_{ij})\nonumber\\
+&&=
+{\frac{-i}{4}} \sum\limits_{ n,m=- \infty }^{ \infty } 
+{ J}_{ m} (\hat{ K}_{c}{r}_{i}){Y}_{m}({\hat{\bmi r}}_{i}){H}_{n-m}^{(1)}(\hat{ K}_{c}{R}_{ij})
+{Y}_{n-m}(\hat{{\bmi R}}_{ij}){J}_{n}(\hat{ K}_{c}{r}_{j}){Y}_{n}^{{}^\ast}
+({\hat{\bmi r}}_{j})\nonumber\\
+&&=
+{\frac{-i}{4}} \sum\limits_{ n,m=- \infty }^{ \infty } 
+{ J}_{ m} (\hat{ K}_{c}{r}_{i}){Y}_{m}({\hat{\bmi r}}_{i}){H}_{m-n}^{(1)}(\hat{ K}_{c}{R}_{ij})
+{Y}_{m-n}^{{}^\ast}(\hat{{\bmi R}}_{ji}){J}_{n}(\hat{ K}_{c}{r}_{j}){Y}_{n}^{{}^\ast}
+({\hat{\bmi r}}_{j})
+\end{eqnarray}
+
+Upon using $g_c$ of (\ref{Ig4}) in the expression (\ref{Gdef1}) we find
+the Green's tensor in terms of its {\em cylindrical partial wave\/} components, {\em viz.\/}
+\begin{displaymath}
+\fbox{
+\begin{minipage} {143.0mm}
+\begin{eqnarray} \label{G1Trep}
+\lefteqn{\rf{\bmi G}({\bmi x},{\bmi x}^{\prime};k_y)=}\nonumber\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\frac{-i}{4 \rho \omega^2}\!\!\!\!
+\sum\limits_{\stackrel{m,n}{c\in\{P,S,H\}}}\!\! \!\!\!\! 
+{H}_{m-n}^{(1)}(\hat{ K}_{c}{R}_{ij})
+{Y}_{m-n}^{{}^\ast}(\hat{{\bmi R}}_{ji})
+{\bmi L}_{c}\left[{ J}_{ m} (\hat{ K}_{c}{r}_{i}){Y}_{m}({\hat{\bmi r}}_{i})  \right] \otimes 
+{\bmi  L}_{c}^{\prime}\left[{J}_{n}(\hat{ K}_{c}{r}_{j}){Y}_{n}^{{}^\ast}
+({\hat{\bmi r}}_{j})  \right]{\bmi J}_{6}\nonumber\\
+ &&\!\!\!\!\!\!\!\!\!\!\!\!=\frac{-i}{4 \rho \omega^2}\!\!\!\!
+\sum\limits_{\stackrel{m,n}{c\in\{P,S,H\}}} \!\!\!\!\!\!
+{H}_{m-n}^{(1)}(\hat{ K}_{c}{R}_{ij})
+{Y}_{m-n}^{{}^\ast}(\hat{{\bmi R}}_{ji})
+ |(\re,k_y,c,m),{\bmi r}_{i}\rangle 
+ \langle(\re,k_y,c,n),{\bmi r}_{j}|{\bmi J}_{6}
+\end{eqnarray} 
+\vspace{2mm}
+\end{minipage}
+}
+\end{displaymath}
+where
+\[
+{\bmi x}={\bmi R}_i+{\bmi x}_i, \quad {\bmi x}^{\prime}={\bmi R}_j+{\bmi 
+x}_j,
+\quad  R_{ij}=\|{\bmi R}_j-{\bmi R}_i\|,
+\quad \hat{{\bmi R}}_{ji}= ({\bmi R}_j-{\bmi R}_i)/R_{ij},
+\]
+the $6-$component basis states 
+$|(\re,k_y,c,m),{\bmi r}_{i}\rangle$ are defined in {\sc Box} {\bf 4.1}, 
+with the dual states $\langle(\re,k_y,c,m),{\bmi r}_{i}|$ given by the rule
+\[
+\langle(\re,k_y,c,m),{\bmi r}_{i}|\equiv (-1)^m |(\re,-k_y,c,-m),{\bmi 
+r}_{i}\rangle^{T}.
+\]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\fbox{
+\begin{minipage} {140.0mm}
+{\sc \bf  Box} ${\bf  4.1}$ {\sc The $6-$component cylindrical polar basis states}  \newline
+Given that
+\[
+M=m(m+1), \qquad {Y}_{m}(\hat{\bmi r})=\frac{\left( z\, + i\,x \right)^m}{r^m}
+\]
+
+The {\em regular\/} basis states are defined as
+\[
+|(\re,k_y,c,m),{\bmi r}\rangle \equiv {\bmi L}_{c}
+\left[ {J}_{m}(\hat{K}_{c}  r) {Y}_{m}(\hat{\bmi r}) \right], \quad c\in 
+\{ P,S,H \}
+\]
+and the {\em outgoing\/} basis states are defined as
+\[
+|(\ou,k_y,c,m),{\bmi r}\rangle \equiv {\bmi L}_{c}
+\left[ {H}^{(1)}_{m}(\hat{K}_{c}  r) {Y}_{m}(\hat{\bmi r}) \right], \quad c\in 
+\{ P,S,H \}
+\]
+where the differential operators ${\bmi L}_{c}$ were defined in (\ref{Labdef}).
+
+Then, assuming $C_m\in \{ {J}_{m}, {H}^{(1)}_{m} \}$ we have
+\begin{samepage}
+\begin{eqnarray} \label{BPdef}
+\lefteqn{|(\{\re, \ou\},k_y,P,m),{\bmi r}\rangle \equiv {\bmi L}_{P}\left[ 
+{C}_{m}(\hat{K}_{P}  r)
+{Y}_{m}(\hat{\bmi r}) \right]=
+{{Y}_{m}(\hat{\bmi r})}
+\times}\nonumber\\
+&&\!\!\!\!\!\!
+\left[\begin{array}{c}
+\frac{ C_{m-1}(\hat{K}_{P} r)\,\hat{K}_{P}\, z}{ r} - 
+    \frac{C_{m}(\hat{K}_{P} r)\,m\,\left( z + i\,x \right) }{r^2}\\
+{{C_{m-1}(\hat{K}_{P} r)\,\hat{K}_{P}\,x}\over {r}} -  
+    {{{C_{m}(\hat{K}_{P} r)}\,m\,\left(   x\,- i\,z \right) }\over 
+{{r^2}}}\\ 
+i k_{y} {C_{m}(\hat{K}_{P} r)}\\
+{{2\,\rf{\mu}\,C_{m-1}(\hat{K}_{P} r) \,\hat{K}_{P}\, 
+        \left( {x^2} -{z^2} - 2\,i\,m\,z\,x  \right) }\over {{r^3}}} -  
+{\scriptstyle{C_{m}(\hat{K}_{P} r)}}\left[ \lambda \, {K}^{2}_{P} -  
+{{2\,\rf{\mu} \, 
+           \left( -r^2\,z^2\,\hat{K}^{2}_{P}
++ M \,{{\left( z + i\,x \right) }^2} 
+             \right) }\over 
+          {{r^4}}} \right]\\
+2 \rf{\mu} \,\left[{{C_{m-1}(\hat{K}_{P} r) \,\hat{K}_{P}\, 
+        \left(i\,m\,({z^2} -\,{x^2})   - 2\,z\,x  \right) 
+}\over{{r^3}}} 
+- {{{C_{m}(\hat{K}_{P} r)} \, \left( 
+r^2\,z\,x\,\hat{K}^{2}_{P} 
++  i\,M  \,{{\left( z + i\,x \right) }^2} \right) } \over {{r^4}}}\right]\\
+ 2\, \rf{\mu}\,i\, k_{y}\left[ \frac{ C_{m-1}(\hat{K}_{P} r)\,\hat{K}_{P}\, z}{ r} - 
+    \frac{C_{m}(\hat{K}_{P} r)\,m\,\left( z\, + i\,x \right) }{r^2}\right]
+\end{array}
+\right];
+\end{eqnarray}
+\end{samepage}
+\begin{samepage}
+\begin{eqnarray} \label{BSdef}
+\lefteqn{|(\{\re, \ou\},k_y,S,m),{\bmi r}\rangle \equiv {\bmi L}_{S}\left[ {C}_{m}(\hat{K}_{S}  r)
+{Y}_{m}(\hat{\bmi r}) \right]=
+\frac{\omega \,{{Y}_{m}(\hat{\bmi r})}}{\rf{\beta} \hat{K}_{S}}
+\times}\nonumber\\
+&&\!\!\!\!\!\!
+\left[
+\begin{array}{c}
+{{C_{m-1}(\hat{K}_{S} r)\,\hat{K}_{S}\,x}\over {r}} - 
+    {{{C_{m}(\hat{K}_{S} r)}\,m\,\left(   x\, - i\,z \right) }\over 
+{{r^2}}}\\
+-{{C_{m-1}(\hat{K}_{S} r)\,\hat{K}_{S}\,z}\over {r}} + 
+    {{{C_{m}(\hat{K}_{S} r)}\,m\,\left( z\, + i\,x \right) }\over {{r^2}}}\\
+    0\\
+2\, \rf{\mu}\,\left[{{C_{m-1}(\hat{K}_{S} r) \,\hat{K}_{S}\,
+        \left(i\,m\,\left( {z^2} - {x^2} \right) -2\,z\,x   \right) 
+}\over 
+      {{r^3}}}-
+{{{C_{m}(\hat{K}_{S} r)} \,\left( 
+r^2\,\,z\,x\,\hat{K}^{2}_{S} + 
+          i\,M \,{{\left( z\, + i\,x \right) }^2} \right) }\
+       \over {{r^4}}}\right]\\
+2 \rf{\mu} \left[{{C_{m-1}(\hat{K}_{S} r) \,\hat{K}_{S}\,
+        \left( {z^2} + 2\,i\,m\,z\,x - {x^2} \right) }\over {{r^3}}} + 
+{C_{m}(\hat{K}_{S} r)}\,\left( \frac{\hat{K}^{2}_{S} (z^2 - x^2)}{2 r^2}
+- {{ M \,{{\left( z\, + i\,x \right) }^2}  }
+             \over {{r^4}}}\right)\right]\\ 
+ \rf{\mu}\, i\, k_{y}\left[{{C_{m-1}(\hat{K}_{S} r)\,\hat{K}_{S}\,x}\over {r}} - 
+    {{{C_{m}(\hat{K}_{S} r)}\,m\,\left(  x\, - i\,z \right) }\over 
+{{r^2}}}\right]
+\end{array}
+\right];
+\end{eqnarray}
+\end{samepage}
+\begin{samepage}
+\begin{eqnarray} \label{BHdef}
+\lefteqn{|(\{\re, \ou\},k_y,H,m),{\bmi r}\rangle \equiv {\bmi L}_{H}\left[ {C}_{m}(\hat{K}_{H}  r)
+{Y}_{m}(\hat{\bmi r}) \right]=
+\frac{{{Y}_{m}(\hat{\bmi r})}}{\hat{K}_{H}}
+\times}\nonumber\\
+&&\!\!\!\!\!\!
+\left[\begin{array}{c} 
+i\, k_{y}\left[\frac{ C_{m-1}(\hat{K}_{H} 
+r)\,\hat{K}_{H}\, z}{ r} - \frac{C_{m}(\hat{K}_{H} r)\,m\,\left( 
+z\, + i\,x \right) }{r^2}\right]\\ 
+i\, k_{y} \left[{{C_{m-1}(\hat{K}_{H} 
+r)\,\hat{K}_{H}\,x}\over {r}} - {{{C_{m}(\hat{K}_{H} r)}\,m\,\left( 
+x\, - i\,z \right) }\over {{r^2}}}\right]\\ \hat{K}^{2}_{H} 
+{C_{m}(\hat{K}_{H} r)}\\ 2\, \rf{\mu}\, i\, k_{y}\, \left[{{C_{m-1}(\hat{K}_{H} 
+r) \,\hat{K}_{H}\, \left( {x^2} -{z^2} - 2\,i\,m\,z\,x \right) }\over 
+{{r^3}}} + {{{C_{m}(\hat{K}_{H} r)}\, \left( 
+-r^2\,{z^2}\,\hat{K}^{2}_{H} + M \,{{\left( z\, + i\,x \right) }^2} 
+\right) }\over {{r^4}}} \right]\\ 
+2\,\rf{\mu}\,i\, k_{y} \left[ 
+{{C_{m-1}(\hat{K}_{H} r) \,\hat{K}_{H}\, \left(i\,m\,({z^2} 
+-\,{x^2}) - 2\,z\,x \right) }\over{{r^3}}} - {{{C_{m}(\hat{K}_{H} r)} 
+\, \left( r^2\,z\,x\,\hat{K}^{2}_{H} + i\,M \,{{\left( z\, + i\,x \right) 
+}^2} \right) } \over {{r^4}}}\right]\\ \rf{\mu} \left(\hat{K}_{H}^{2}- 
+k_{y}^{2} \right)\left[\frac{ C_{m-1}(\hat{K}_{H} r)\, 
+\hat{K}_{H}\, z}{ r} - \frac{C_{m}(\hat{K}_{H} r)\,m\,\left( z + 
+i\,x \right) }{r^2}\right] 
+\end{array}
+\right];
+\end{eqnarray}
+\end{samepage}
+with dual basis vectors 
+\[
+\langle(\{\re, \ou\},k_y,c,m),{\bmi r}|=(-1)^m |(\{\re, \ou\},-k_y,c,-m),{\bmi r}\rangle^{T},\quad
+c\in\{P,S,H\}  
+\]
+\vspace{6mm}
+\end{minipage}
+}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+\section{An effective point scattering model} \label{secEffScat}
+In this section we will take care of the nearfield singularity of the 
+reference medium Green's tensor ${\rf{\bmi G}}$ in the limit as the 
+source point and field point coincide. The plane wave representations of 
+the Green's tensor from chapter \ref{Grep} are ill suited to this task, 
+and we will need to employ 
+the {\em spatial domain\/} representation (\ref{G1Trep}) of ${\rf{\bmi G}}$. Using this 
+newly acquired Green's tensor, we will sum the multiple scattering series 
+for the special case of a uniform medium with heterogeneity supported 
+exclusively on the square subregion
+${\mit \Omega}_j$ with a midpoint at ${\bmi R}_j$, and 
+a side length ${\mit \Delta}={\mit \Delta}x={\mit \Delta}z$ 
+that is small on the scale of the incident 
+wavelength. We let the square ${\mit \Omega}_j$ shrink to point, while 
+maintaining its square shape. All of the singular multiple scattering 
+interactions may then be summarized by replacing the material contrasts 
+responsible for the scattering by their {\em effective \/} values, i.e. 
+{\em a single scattering interaction with  the effective material contrasts 
+on ${\mit \Omega}_j$ is equivalent to the sum of all multiple scattering 
+interactions from the actual material contrasts\/}. This approach has two 
+advantages:
+\begin{itemize}
+\item we replace the multiple scattering series with a 
+single scattering interaction, and consequently, we avoid the nearfield 
+singularity of  ${\rf{\bmi G}}$
+
+\item the effective material contrasts are generally smaller than the 
+actual contrasts. As a result the multiple scattering series appropriate 
+to the  effective medium scattering problem is 
+easier  to sum than the corresponding series in the original medium. This 
+is consistent with the numerical experience of {\em Schuster\/}~(1985), 
+who employed a similar renormalization strategy to solve a multi-inclusion 
+acoustic scattering problem using a boundary integral equation method.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Single scattering}
+
+The {\em single scattering interaction\/} at ${\mit 
+\Omega}_j$ may be expressed as 
+\begin{equation} \label{Sscat}
+{\rf{\bmi G}}{\mit \Delta} {\bmi A} {\rf{\bmi G}}\equiv
+\int_{{\mit \Omega}_j} {\rf{\bmi G}}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y) {\rf{\bmi G}}({\bmi x},{\bmi x}_{S};k_y) {\rm 
+d}{\bmi x}.
+\end{equation}
+Using (\ref{G1Trep}) for the components of ${\rf{\bmi G}}$ in (\ref{Sscat}) 
+gives
+\begin{eqnarray} \label{Sscat1}
+\lefteqn{{\rf{\bmi G}}{\mit \Delta} {\bmi A} {\rf{\bmi G}}=
+\sum\limits_{\stackrel{m,n}{c\in\{P,S,H\}}} 
+\sum\limits_{\stackrel{m^{\prime},n^{\prime}}{c^{\prime}\in\{P^{\prime},S^{\prime},H^{\prime}\}}}
+\frac{- 1}{16 \rf{\rho}\!{}^2 \omega^4 }
+ } \nonumber\\
+&&\times
+ |(\re,k_y,c,m),{\bmi r}_{R}\rangle {H}_{m-n}^{(1)}(\hat{ K}_{c}{R}_{Rj})
+{Y}_{m-n}^{{}^\ast}(\hat{{\bmi R}}_{jR})\nonumber\\
+ &&
+\times \int_{{\mit \Omega}_j}  \langle(\re,k_y,c,n),{\bmi x}-{\bmi R}_{j}|{\bmi J}_{6}
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y)  |(\re,k_y,c^{\prime},m^{\prime}),{\bmi x}-{\bmi R}_{j}\rangle 
+{\rm d}{\bmi x}\nonumber\\
+&&
+\times {H}_{m^{\prime}-n^{\prime}}^{(1)}(\hat{ K}_{c^{\prime}}{R}_{jS})
+{Y}_{m^{\prime}-n^{\prime}}^{{}^\ast}(\hat{{\bmi R}}_{Sj}) 
+ \langle(\re,k_y,c^{\prime},n^{\prime}),{\bmi r}_{S}|{\bmi J}_{6}
+\end{eqnarray} 
+where 
+\[
+{\bmi x}_{R}={\bmi R}_{R}+{\bmi r}_{R}, \qquad {\bmi x}_{S}={\bmi 
+R}_{S}+{\bmi r}_{S}
+\]
+in (\ref{Sscat}) and (\ref{Sscat1}).
+The integrals 
+\begin{eqnarray} \label{Celems}
+\lefteqn{{\mit \Delta}{\bmi C}^{j}_{c,n;c^{\prime},m^{\prime}}=\int_{{\mit \Omega}_j}
+\left\langle (\re,k_y,c,n),{\bmi x}-{\bmi R}_{j}\left|
+{\bmi J}_{6}{{\mit \Delta} {\bmi A}}({\bmi x};{\partial 
+}_{x},{k}_{y})\right|(\re,k_y,c^{\prime},m^{\prime}),
+{\bmi x}-{\bmi R}_{j}\right\rangle\, {\rm d}{\bmi x}}\nonumber\\
+&&
+\end{eqnarray}
+in (\ref{Sscat1}) represent the {\em single scattering approximation\/} to the 
+coupling between the multipoles induced by the material heterogeneity at 
+${\bmi R}_{j}$. 
+
+
+\begin{figure}
+%\setlength{\fboxrule}{1mm}
+\fbox{
+\begin{minipage} {145.0mm}
+{\sc  Box} ${\bf  4.2}$ {\sc Weak formulations for the displacement 
+traction wavefield}\newline
+The $L_{x}$-periodic wave field 
+\[
+{\bmi 
+b}(z,x)={\left({\begin{array}{cccccc}{u}_{z}&{u}_{x}&{u}_{y}&
+{ \tau }_{zz}&{ \tau}_{xz}&{ \tau}_{yz}\end{array}}\right)}^{T},
+\] 
+is continuous in a 
+source free region, because it must satisfy the wave equation, so that 
+the components are differentiable, and consequently, they are continuous. 
+More explicitly,
+\[
+{u}_{z},{u}_{x},{u}_{y}\in C^{1}[0,L_x]\quad \mbox{and} \quad
+{ \tau }_{zz},{ \tau}_{xz},{ \tau}_{yz}\in C^{0}[0,L_x].
+\] 
+However, we have not chosen to include ${ \tau }_{xx}$ in the dependent 
+variable ${\bmi b}(z,x)$. Using a momentum balance argument, we know that
+${ \tau }_{xx}$ should be continuous across transverse discontinuities of 
+the medium properties. Yet, we have no guarantee that this condition will 
+be fulfilled, because we do not model ${ \tau }_{xx}$ explicitly, instead 
+we construct it  via the elastic wave stress-strain relations that may be 
+expressed in the adopted notation as
+\begin{equation} \label{TxxDef}
+{\tau }_{xx}={\rf{\zeta}} {\partial }_{ x}{ u}_{ x}
++i\,{k}_{y} {{\rf{\chi}}}{ u}_{ y}+{\rf{\gamma}} {\tau }_{zz},
+\end{equation}
+where the material parameters ${\rf{\gamma}}$, ${\rf{\chi}}$ and ${\rf{\zeta}}$ where 
+introduced in Table \ref{ATable} and are re-written here as
+\[
+{\rf{\gamma}} =\left[{1-2{\frac{\rf{\beta }{}^{2}}{\rf{\alpha}{}^{2}}}}\right]
+\quad
+{\rf{\chi}}=2 \rf{\rho} \rf{\beta}{}^2\left[1- 
+2{\rf{\beta}{}^{2}\over\rf{\alpha}{}^{2}}\right]
+\quad \mbox{ and}\quad 
+{\rf{\zeta}}  =4 \rf{\rho} \rf{\beta }{}^{2}
+\left[{ 1-{\frac{\rf{ \beta }{}^{2}}{\rf{ \alpha }{}^{2}}}}\right]
+\]  
+
+Now, let us assume  that the material parameters  ${\rf{\gamma}}$, ${\rf{\chi}}$ and ${\rf{\zeta}}$  in 
+(\ref{TxxDef}) 
+have a {\em finite jump discontinuity\/} at $x=d\in(0,L_x)$, so that
+\[
+\left[{ {\rf{\gamma}} }\right](d) \equiv   \lim\limits_{ 
+\varepsilon    \rightarrow   0+}\  {\rf{\gamma}}   (d+ 
+\varepsilon   )- {\rf{\gamma}}   (d- \varepsilon)\quad 
+ \left[{ {\rf{\chi}} }\right](d) \equiv   \lim\limits_{ 
+\varepsilon    \rightarrow   0+}\  {\rf{\chi}}   (d+ 
+\varepsilon   )- {\rf{\chi}}   (d- \varepsilon)\]
+\[
+\mbox{and}\quad
+\left[{ {\rf{\zeta}} }\right](d) \equiv   \lim\limits_{ 
+\varepsilon    \rightarrow   0+}\  {\rf{\zeta}}   (d+ 
+\varepsilon   )- {\rf{\zeta}}   (d- \varepsilon)
+\] 
+then the traction component ${\tau }_{xx}$ suffers a similar saltus, since
+\[
+\lim\limits_{ 
+\varepsilon    \rightarrow   0+}\  {\tau }_{xx}   (d+ 
+\varepsilon   )- {\tau }_{xx}   (d- \varepsilon)=
+\left[{ {\rf{\zeta}} }\right]\!(d)\,{\partial }_{ x}{ u}_{ x}
++i\, k_y\,\left[{ {\rf{\chi}} }\right]\!(d)\,{ u}_{ y}
++\left[{ {\rf{\gamma}} }\right]\!(d)\, {\tau }_{zz}
+\]
+where we have used the continuity of $\partial_x{ u}_{ x}$, ${ u}_{y}$  
+and ${\tau }_{zz}$, because 
+these are components of the solution to a source free wave equation.
+
+Given the $L_x$-periodic test function $\phi(x)$, we want to find the {\em 
+projection\/}
+\begin{equation} \label{projection}
+\int_{0}^{L_x} \phi \partial_{x}{\tau }_{xx} { d}x\equiv\int_{0}^{d-} \phi \partial_{x}{\tau }_{xx} 
+{ d}x+\int_{d+}^{L_x} \phi \partial_{x} {\tau }_{xx} {\rm d}x
+\end{equation} 
+and the right hand side of (\ref{projection}) follows from the left because 
+the integral $\int_{d-}^{d+} (\cdot) {\rm d}x$ has a 
+vanishing measure.
+
+
+The projection (\ref{projection}) is mathematically equivalent to
+\begin{equation} \label{projection1}
+\int_{0}^{L_x} \phi \partial_{x}{\tau }_{xx} {\rm d}x\equiv -\int_{0}^{d-} 
+(\partial_{x}\phi) {\tau }_{xx} 
+{\rm d}x-\int_{d+}^{L_x} (\partial_{x}\phi)  {\tau }_{xx} {\rm d}x
++\left( \phi {\tau }_{xx}\right]_{0}^{d-}+\left( \phi {\tau 
+}_{xx}\right]_{d+}^{L_x}
+\end{equation} 
+which follows after an integration by parts. Due to periodicity, 
+$(\phi  {\tau }_{xx})(0)=(\phi  {\tau 
+}_{xx})(L_x)$, so that (\ref{projection1}) may be written in the equivalent 
+form
+\begin{equation} \label{projection2}
+\int_{0}^{L_x} \phi \partial_{x}{\tau }_{xx} {\rm d}x\equiv -\int_{0}^{L_x} 
+(\partial_{x}\phi) {\tau }_{xx} 
+{\rm d}x -\left[ \phi {\tau }_{xx}\right](d)
+\end{equation} 
+where
+
+\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+\begin{figure}
+\fbox{
+\begin{minipage} {145.0mm}
+{\sc \bf  Box} ${\bmi  4}$.${\bmi 2}${\em continued\/} \newline
+$
+\left[ \phi {\tau }_{xx}\right](d)\equiv \lim\limits_{ 
+\varepsilon    \rightarrow   0+}\  \left(\phi {\tau }_{xx}\right)(d+ \varepsilon   )- 
+\left(\phi {\tau }_{xx}\right)(d- \varepsilon   )
+$\newline
+If we now drop the jump term $\left[ \phi {\tau }_{xx}\right](d)$ from 
+(\ref{projection2}) so that
+\begin{equation} \label{projection3}
+\int_{0}^{L_x} \phi \partial_{x}{\tau }_{xx} {\rm d}x\equiv -\int_{0}^{L_x} 
+(\partial_{x}\phi) {\tau }_{xx} 
+{\rm d}x
+\end{equation} 
+we are implicitly assuming that
+\begin{equation} \label{weakjump}
+\left[ \phi {\tau }_{xx}\right](d)\equiv 
+\int_{ 0}^{ L_x}\phi(x) \delta 
+(x-d)\left[{{\tau}_{xx}}\right](d)\,{\rm d}x\equiv 0
+\end{equation}
+
+for all periodic test functions $\phi(x)$. The identity 
+(\ref{projection3}) is then a statement that ${\tau}_{xx}$ is continuous 
+across jumps in $\rf{\gamma}$, $\rf{\chi}$ and $\rf{\zeta}$ in a {\em projectional sense\/}, i.e. 
+${\tau}_{xx}$ is {\em weakly continuous\/} on the interval $x\in [-,L_x)$.
+To achieve a better understanding of the {\em weak\/} nature of 
+(\ref{weakjump}), we should contrast it with the analogous {\em strong form\/}   
+\[
+\| \left[{\tau }_{xx}\right](d) \|\equiv  0
+\]
+in particular, if we choose the {\em uniform norm\/} 
+$\| \cdot  \|_{\infty}$, then
+\begin{equation} \label{strongjump1}
+\| \left[ {\tau }_{xx}\right](d) \|_{\infty}\equiv  \left[ {\tau }_{xx}\right](d)=0
+\end{equation}
+so that continuity is enforced {\em pointwise\/} at $x=d$. While 
+(\ref{strongjump1}) $\Rightarrow$(\ref{weakjump}), the converse is not 
+generally true, i.e. (\ref{strongjump1})$\, \not \! \Leftarrow$ (\ref{weakjump}).
+In the method of this thesis, the wave equations are being solved in a 
+weak sense, because the boundary conditions (\ref{Geqntotal}) on the  Green's  tensor, 
+were enforced by projection onto the space of bandlimited, 
+periodic wavefields in the reference medium. Consequently, it is logically consistent to enforce 
+the continuity of ${\tau }_{xx}$ in a projectional sense also.
+
+
+Finally, the weak approximation of the {\em coupling integral\/} 
+\[
+\int {\rm d}x\left[{\begin{array}{cccccc}
+{\tilde{u}}_{z}&{\tilde{u}}_{x}&{\tilde{u}}_{y}&{\tilde{ 
+\tau }}_{zz}&{\tilde{ \tau }}_{xz}&{\tilde{ \tau 
+}}_{yz}\end{array}}\right]{\bmi J}_6 \times\]
+\[
+\left[{\begin{array}{cccccc}
+0&- {{\mit \Delta} \gamma} {\partial }_{  x}&  
+-i {{\mit \Delta} \gamma} {  k}_{  y}&  {{\mit \Delta} a}&0&0\\0&0&0&0&{{\mit \Delta} b}&0\\0&0&0&0&0&{{\mit \Delta} b}\\ - {{\mit \Delta} \rho} {\omega }^{  
+2}&  0&0&0&0&0\\ 0&- {{\mit \Delta} \rho} {\omega 
+}^{  2}  -{ \partial }_{x} {{\mit \Delta} \zeta} {\partial }_{  
+x}  + {{\mit \Delta} \mu} {  k}_{  y}^{  2}&  
+-i{k}_{y}{ \partial }_{x} {{\mit \Delta} \chi}   -i{k}_{y} {{\mit \Delta} \mu} {\partial 
+}_{  x}&  -{ \partial }_{x} {{\mit \Delta} \gamma} &  0&0\\ 
+0&-i{k}_{y} {{\mit \Delta} \chi} {\partial }_{  x}  -i{k}_{y}{ \partial 
+}_{x} {{\mit \Delta} \mu} &  - {{\mit \Delta} \rho} {\omega }^{  2}  + {{\mit \Delta} \zeta }
+{  k}_{  y}^{  2}  -{ \partial }_{x} {{\mit \Delta} \mu} 
+{\partial }_{  x}&  -i{k}_{y} {{\mit \Delta} \gamma} &  0&0\end{array}}\right]
+\left[{\begin{array}{c}{u}_{z}\\ 
+{u}_{x}\\
+{u}_{y}\\
+{ \tau }_{zz}\\
+{ \tau }_{xz}\\
+{ \tau }_{yz}\end{array}}\right]
+\]
+may be written as
+\[
+\int {\rm d}x\left[{\begin{array}{cccccccc}
+{\tilde{u}}_{z}&{\tilde{u}}_{x}&{\tilde{u}}_{y}&{\tilde{ 
+\tau }}_{zz}&{\tilde{ \tau }}_{xz}&{\tilde{ \tau 
+}}_{yz}&\partial_x {\tilde{u}}_{x}&\partial_x {\tilde{u}}_{y}\end{array}}\right]\times\]
+\[\left[{\begin{array}{cccccccc}
+\displaystyle - {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0\\ \displaystyle 0& \displaystyle {\mit \Delta}\mu { 
+k}_{ y}^{ 2} - {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle 0& \displaystyle -i{k}_{y} 
+{\mit \Delta}\mu \\ \displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\zeta { k}_{ y}^{ 2} 
+- {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle -i{k}_{y} {\mit \Delta}\gamma & \displaystyle 0& 
+\displaystyle 0& \displaystyle -i{k}_{y} \chi & \displaystyle 0\\ 
+\displaystyle 0& \displaystyle 0& \displaystyle i {\mit \Delta}\gamma { k}_{ y}& 
+\displaystyle -{\mit \Delta}a& \displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\gamma & 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle -{\mit \Delta}b& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle -{\mit \Delta}b& \displaystyle 0& 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle i{k}_{y} 
+{\mit \Delta}\chi & \displaystyle {\mit \Delta}\gamma & \displaystyle 0& \displaystyle 0& 
+\displaystyle {\mit \Delta}\zeta & \displaystyle 0\\ \displaystyle 0& \displaystyle 
+i{k}_{y} {\mit \Delta}\mu & \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\mu 
+\end{array}}\right]
+\left[\begin{array}{c}
+{u}_{z}\\ 
+{u}_{x}\\
+{u}_{y}\\
+{ \tau }_{zz}\\
+{ \tau }_{xz}\\
+{ \tau }_{yz}\\
+\partial_x{u}_{x}\\
+\partial_x{u}_{y}\end{array}\right]
+\]
+\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+\begin{figure}
+\fbox{
+\begin{minipage} {145.0mm}
+{\sc \bf  Box} ${\bmi  4}$.${\bmi 2}${\em continued\/} \newline
+where
+\[
+\left[{\begin{array}{cccccc}
+{{u}}_{z},&{{u}}_{x},&{{u}}_{y},&{{ 
+\tau }}_{zz},&{{ \tau }}_{xz},&{{ \tau 
+}}_{yz}\end{array}}\right]^{T}
+\quad
+\mbox{and }
+\quad
+\left[{\begin{array}{cccccc}
+{\tilde{u}}_{z},&{\tilde{u}}_{x},&{\tilde{u}}_{y},&{\tilde{ 
+\tau }}_{zz},&{\tilde{ \tau }}_{xz},&{\tilde{ \tau 
+}}_{yz}\end{array}}\right]^{T}
+\]
+are the displacement/traction components of the incident and scattered 
+partial wave states respectively.
+
+\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+We evaluate the coupling integrals (\ref{Celems}) in the following two step process:
+\begin{itemize}
+\item we interpret the $\partial_x$ operators in ${{\mit \Delta} {\bmi A}}({\bmi x};{\partial 
+}_{x},{k}_{y})$ in a {\em weak\/} or {\em projectional\/} fashion ({\em 
+see\/} {\sc  Box} ${\bf  4.2}$). Consequently we employ integration by parts to transfer the 
+$\partial_x$ operators from
+${{\mit \Delta} {\bmi A}}({\bmi x};{\partial 
+}_{x},{k}_{y})$ onto the basis vectors $\langle (\re,k_y,c,n),{\bmi 
+x}-{\bmi R}_{j}|$ and  $|(\re,k_y,c^{\prime},m^{\prime}),
+{\bmi x}-{\bmi R}_{j}\rangle$. The basis vectors are {\em augmented\/} by 
+their partially differentiated components $(\partial_x u_x, \partial_x 
+u_y)$. These augmented basis states are denoted by  
+$\left|(\re,k_y,c,m),{\bmi r}\right)$,
+where
+\[
+\left|(\re,k_y,c,m),{\bmi r}\right) \equiv \hat{\bmi L}_{c}\left[ 
+{J}_{m}(\hat{K}_{c}  r)
+{Y}_{m}(\hat{\bmi r}) \right], \ c\in\{P,S,H\}
+\]
+with
+\begin{eqnarray} \label{Labaugdef}
+\begin{array}{lll}
+\hat{\bmi L}_{P}=&\hat{\bmi L}_{S}=&\hat{\bmi L}_{H}=\\
+\left[\begin{array}{c}
+\partial_{z} \\
+\partial_{x} \\ 
+\partial_{y} \\ 
+2 \rf{\mu} \partial_{zz} - {\rf{\lambda} \omega^{2}\over \rf{\alpha}\!{}^2}\\
+    2 \rf{\mu} \partial_{xz} \\ 
+   2 \rf{\mu} \partial_{yz}\\
+   \partial_{xx} \\
+\partial_{xy}
+\end{array}\right], \quad&
+\frac{\omega }{\rf{\beta} \hat{K}_{S}}\,
+\left[\begin{array}{c}
+\partial_{x} \\-\partial_{z} \\ 0 \\
+2 \rf{\mu} \partial_{xz}\\  
+   \rf{\mu} (-\partial_{zz} + \partial_{xx}) \\ 
+   \rf{\mu} \partial_{xy} \\
+  - \partial_{xz} \\0
+\end{array}\right], \quad&
+\frac{1 }{\hat{K}_{H}}\,
+\left[\begin{array}{c}
+   \partial_{yz} \\
+\partial_{xy} \\ 
+{\omega^{2}\over \rf{\beta}\!{}^2} + \partial_{yy} \\ 
+ 2 \rf{\mu} \partial_{yzz}\\
+    2 \rf{\mu} \partial_{xyz} \\ 
+   \rf{\mu} ({\omega^{2}\over \rf{\beta}\!{}^2}\partial_{z} + 2 \partial_{yyz})\\
+      \partial_{xxy} \\
+{\omega^{2}\over \rf{\beta}\!{}^2}\partial_{x} + \partial_{xyy}  
+\end{array}\right]
+\end{array}
+\end{eqnarray}
+so that the $6-$vectors $\langle 
+\cdot |$ and $| 
+\cdot \rangle$ all concatenated with two extra components. 
+The corresponding dual states $\left((\re,k_y,c,m),{\bmi r}\right|$ are 
+given by the familiar rule
+\[
+\left((\re,k_y,c,m),{\bmi r}\right|\equiv (-1)^m \left|(\re,-k_y,c,-m),{\bmi 
+r}\right)^{T}
+\]
+ 
+The resulting {\em weak\/} approximation 
+to the elements of the coupling matrix (\ref{Celems}) may now be written 
+as
+\begin{samepage}
+\begin{eqnarray} \label{weakRay0}
+\lefteqn{
+\int_{{\mit \Omega}_j}
+\left\langle (\re,k_y,c,n),{\bmi x}-{\bmi R}_{j}\left|
+{\bmi J}_{6}{{\mit \Delta} {\bmi A}}({\bmi x};{\partial 
+}_{x},{k}_{y})\right|(\re,k_y,c^{\prime},m^{\prime}),
+{\bmi x}-{\bmi R}_{j}\right\rangle\, {\rm d}{\bmi x}
+}\nonumber\\
+&&\qquad =\int_{{\mit \Omega}_j}
+\left( (\re,k_y,c,n),{\bmi x}-{\bmi R}_{j}\left|
+{{\mit \Delta} {\bmi C}}({\bmi x};{k}_{y})\right|(\re,k_y,c^{\prime},m^{\prime}),
+{\bmi x}-{\bmi R}_{j}\right)\, {\rm d}{\bmi x}
+\end{eqnarray}
+\end{samepage}
+where the {\em augmented coupling matrix\/} is defined as
+\begin{samepage}
+\begin{eqnarray}\label{CdefAug}
+\lefteqn{
+{\mit \Delta}{\bmi C}({\bmi R}_j;k_y)=}\\
+&&\!\!\!\!\!\!
+\left[{\begin{array}{cccccccc}
+\displaystyle - {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0\\ \displaystyle 0& \displaystyle {\mit \Delta}\mu { 
+k}_{ y}^{ 2} - {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle 0& \displaystyle -i{k}_{y} 
+{\mit \Delta}\mu \\ \displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\zeta { k}_{ y}^{ 2} 
+- {\mit \Delta}\rho {\omega }^{ 2}& \displaystyle -i{k}_{y} {\mit \Delta}\gamma & \displaystyle 0& 
+\displaystyle 0& \displaystyle -i{k}_{y} \chi & \displaystyle 0\\ 
+\displaystyle 0& \displaystyle 0& \displaystyle i {\mit \Delta}\gamma { k}_{ y}& 
+\displaystyle -{\mit \Delta}a& \displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\gamma & 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle -{\mit \Delta}b& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle -{\mit \Delta}b& \displaystyle 0& 
+\displaystyle 0\\ \displaystyle 0& \displaystyle 0& \displaystyle i{k}_{y} 
+{\mit \Delta}\chi & \displaystyle {\mit \Delta}\gamma & \displaystyle 0& \displaystyle 0& 
+\displaystyle {\mit \Delta}\zeta & \displaystyle 0\\ \displaystyle 0& \displaystyle 
+i{k}_{y} {\mit \Delta}\mu & \displaystyle 0& \displaystyle 0& \displaystyle 0& 
+\displaystyle 0& \displaystyle 0& \displaystyle {\mit \Delta}\mu 
+\end{array}}\right]\nonumber 
+\end{eqnarray}
+\end{samepage}
+with all material contrast parameters evaluated at the mid point ${\bmi 
+R}_j$ of ${\mit \Omega}_j$. The operator is {\em multiplicative\/}, with the material contrast parameters in 
+(\ref{CdefAug}) defined (with reference to Table \ref{ATable}) by Table \ref{contrastTable}, so that 
+${\mit \Delta }\zeta$ is the difference between $\zeta$ inside the inclusion and 
+the value of $\zeta$ in the homogeneous background medium,  with 
+analogous definitions for the remaining contrasts. 
+
+
+
+\item we evaluate the resulting integrals (\ref{weakRay0}) using the {\em midpoint\/} or 
+{\em Rayleigh\/}  
+approximation, to get the {\em bilinear form\/}
+\begin{eqnarray} \label{weakRay}
+\lefteqn{
+\int_{{\mit \Omega}_j}
+\left( (\re,k_y,c,n),{\bmi x}-{\bmi R}_{j}\left|
+{\bmi J}_{6}{{\mit \Delta} {\bmi A}}({\bmi x};{\partial 
+}_{x},{k}_{y})\right|(\re,k_y,c^{\prime},m^{\prime}),
+{\bmi x}-{\bmi R}_{j}\right)\, {\rm d}{\bmi x}
+}\nonumber\\
+&&\qquad\qquad\qquad ={\mit \Delta}^{2}  \left( (\re,k_y,c,n),{\bf 0}+\left|
+{\mit \Delta}{\bmi C}({\bmi R}_j;k_y)
+\right|(\re,k_y,c^{\prime},m^{\prime}),{\bf 0}+\right)
+\end{eqnarray}
+where the {\em the augmented basis vectors\/} are given in {\sc Box} {\bf  
+4.3} and we have used the Taylor series 
+representations [e.g. {\em Ben-Menahem \& Singh\/}~(1981)]
+\[
+{J}_{n}(\hat{K}_{c}r)\underline{\sim 
+}\left\{{\begin{array}{cc}
+1-{\frac{{\left({\hat{K}_{c}r}\right)}^{2}}{2}}&n=0\\ 
+{\frac{{\left({\hat{K}_{c}r}\right)}^{n}}{{2}^{n}n!}}&n>0
+\end{array}}\right.
+\quad \mbox{and employed}  \quad
+{J}_{-n}(\hat{K}_{c}r)=(-1)^n {J}_{n}(\hat{K}_{c}r)
+\]
+where necessary.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\fbox{
+\begin{minipage} {145.0mm}
+{\sc \bf  Box} ${\bmi  4}$.${\bmi 3}$ {\sc Multipole amplitudes of the 
+augmented cylindrical harmonic basis states} \newline
+
+When we take the limits
+\[
+\lim\limits_{{\bmi  x} \rightarrow {\bmi  R}_{j}}\ \left|(\re,k_y,c,m),{\bmi  x}- {\bmi  
+R}_{j}\right)\equiv
+\lim\limits_{r \rightarrow 0+}\ \hat{\bmi L}_{c}\left[ 
+{J}_{m}(\hat{K}_{c}  r)
+{Y}_{m}(\hat{\bmi r}) \right]
+ \quad 
+c\in\{P,S,H\}
+\] 
+ we find that:
+\begin{itemize}
+\item there are only $5$ nonvanishing  
+harmonics $m\in \{-2,-1,0,1,2\}$ for the $P-$mode
+\item there are only $4$ nonvanishing  
+harmonics $m\in \{-2,-1,1,2\}$ for the $SV-$mode
+\item there are only $5$ nonvanishing  
+harmonics $m\in \{-2,-1,0,1,2\}$ for the $SH-$mode
+\end{itemize}
+We assemble these nonvanishing states $(\re,k_y,c,m), c\in \{P,S,H \}$ 
+ into the $8 \times 14$ array 
+$|\re,k_y,{\bf 0+})$  with the ordering
+\begin{equation} \label{Bab0Def} 
+|\re,k_y,{\bf 0+})=
+\left[{\begin{array}{ccc}|(\re,k_y,P),{\bf 0+})&
+|(\re,k_y,S),{\bf 0+})&
+|(\re,k_y,H),{\bf 0+})\end{array}}\right]   
+\end{equation}
+where
+\begin{equation} \label{P0rep}
+\! |(\re,k_y,P),{\bf 0+})=\!\!\!\!
+\begin{array}{ccccc}
+\scriptstyle|(k_y,P,-2),{\bf 0}+)&\scriptstyle|(k_y,P,-1),{\bf 0}+)&
+\scriptstyle|(k_y,P,0),{\bf 0}+)&
+\scriptstyle|(k_y,P,1),{\bf 0}+)&\scriptstyle|(k_y,P,2),{\bf 0}+)\\
+\left[\begin{array}{c} 0\\0\\0\\{{{\hat{K}_{P}^2}\,\rf{\mu}}\over 2}\\
+  {-i\,\hat{K}_{P}^2\,\rf{\mu} \over 2}\\0\\{{-{\hat{K}_{P}^2}}\over 4}\\0
+\end{array}\right.&
+\begin{array}{c} {{-\hat{K}_{P}}\over 2}\\{i\,\hat{K}_{P}\over 2}\\0\\0\\0\\
+-i\,k_y\,\hat{K}_{P}\,\rf{\mu}\\
+  0\\{{- k_y\,\hat{K}_{P} }\over 2}
+\end{array}&
+\begin{array}{c} 0\\0\\i\,k_y\\- {{\omega^2}\,\lambda \over \rf{\alpha}{}^2}   - 
+   {\hat{K}_{P}^2}\,\rf{\mu}\\0\\0\\{{-{\hat{K}_{P}^2}}\over 2}\\0
+\end{array}&
+\begin{array}{c} {{K}_{P}\over 2}\\{i\over 2}\,\hat{K}_{P}\\0\\0\\0\\i\,k_y\,\hat{K}_{P}\,\rf{\mu}\\0\\
+  {{- k_y\,\hat{K}_{P} }\over 2}
+\end{array}&
+\left.
+\begin{array}{c} 0\\0\\0\\{{{\hat{K}_{P}^2}\,\rf{\mu}}\over 2}\\
+{i\,{\hat{K}_{P}^2}\,\rf{\mu}\over 2}\\0\\
+  {{-{\hat{K}_{P}^2}}\over 4}\\0
+\end{array}\right]\!\!
+\end{array}
+\end{equation}
+\begin{equation} \label{S0rep}
+|(\re,k_y,S),{\bf 0+})=\frac{\omega}{\rf{\beta}}\!\!
+\begin{array}{cccc}
+\scriptstyle|(k_y,S,-2),{\bf 0}+)&\scriptstyle|(k_y,S,-1),{\bf 0}+)&
+\scriptstyle|(k_y,S,1),{\bf 0}+)&\scriptstyle|(k_y,S,2),{\bf 0}+)\\
+\left[\begin{array}{c} 0\\0\\0\\{{-i \,{\hat{K}_{S}}\,\rf{\mu}}\over 2}\\
+  {{-{\hat{K}_{S}}\,\rf{\mu} }\over 2}\\0\\{i\,{\hat{K}_{S}}\over 4}\\0
+\end{array}\right.&
+\begin{array}{c} {i\over 2}\\{1\over 2}\\0\\0\\0\\
+  {{- k_y\,\rf{\mu}  }\over 2}\\0\\0
+\end{array}&
+\begin{array}{c} {i\over 2}\\{{-1}\over 2}\\0\\0\\0\\
+  {{- k_y\,\rf{\mu}  }\over 2}\\0\\0
+\end{array}&\left.
+\begin{array}{c} 0\\0\\0\\{i\,{\hat{K}_{S}}\,\rf{\mu}\over 2}\\
+  {{-{\hat{K}_{S}}\,\rf{\mu} }\over 2}\\0\\
+  {{-i\,{\hat{K}_{S}}}\over 4}\\0
+\end{array}\right]
+\end{array}
+\end{equation}
+\begin{samepage}  
+\begin{eqnarray} \label{H0rep}
+\lefteqn{
+|(\re,k_y,H),{\bf 0+})=}\\
+&&\begin{array}{ccccc}
+\scriptstyle|(k_y,H,-2),{\bf 0}+)&\scriptstyle|(k_y,H,-1),{\bf 0}+)&
+\scriptstyle|(k_y,H,0),{\bf 0}+)&
+\scriptstyle|(k_y,H,1),{\bf 0}+)&\scriptstyle|(k_y,H,2),{\bf 0}+)\\
+\left[\begin{array}{c} 0\\0\\0\\{i\,k_y\,{\hat{K}_{H}}\,\rf{\mu}\over 2}\\
+  {{k_y\,{\hat{K}_{H}}\,\rf{\mu}}\over 2}\\0\\
+  {{-i\,k_y\,{\hat{K}_{H}}}\over 4}\\0
+\end{array}\right.&
+\begin{array}{c} {{-i\,k_y}\over 2}\\
+{{- k_y }\over 2}\\0\\
+  0\\0\\{{\rf{\mu}\,\left(2\, \rf{\beta}{}^2\, k_y^2-{\omega^2}  \right) }\over { 2\, \rf{\beta}{}^2} } 
+  \\0\\{i\,{\hat{K}_{H}^2}\over 2}
+\end{array}&
+\begin{array}{c} 0\\0\\ \scriptstyle{\hat{K}_{H}}\\ \scriptstyle-i\,k_y\,{\hat{K}_{H}}\,\rf{\mu}\\0\\0\\
+  {{-i\,k_y\,{\hat{K}_{H}}}\over 2}\\0
+\end{array}&
+\begin{array}{c} {i\,k_y\over 2}\\{{- k_y }\over 2}\\0\\0\\0\\
+  {{\rf{\mu}\,\left({\omega^2}-2\, \rf{\beta}{}^2\, k_y^2  \right) }\over { 2\, \rf{\beta}{}^2} }\\
+  0\\{i\,{\hat{K}_{H}^2}\over 2}
+\end{array}&\left.
+\begin{array}{c} 0\\0\\0\\{i\,k_y\,{\hat{K}_{H}}\,\rf{\mu}\over 2}\\
+  {{- k_y\,{\hat{K}_{H}}\,\rf{\mu} }\over 2}\\0\\
+  {{-i\,k_y\,{\hat{K}_{H}}}\over 4}\\0
+\end{array}\right]
+\end{array}\nonumber
+\end{eqnarray}
+\end{samepage}
+
+
+%\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Writing down the high order multiple scattering analogs of (\ref{Sscat}) in 
+component form is very cumbersome. To simplify the notation, we introduce 
+a matrix notation.
+To this end, we assemble the basis states (\ref{P0rep})--(\ref{H0rep}) 
+from {\sc Box} {\bf 4.3} into the $8 
+\times 14$
+array
+\begin{equation} \label{Bab0aug}
+|\re,k_y,{\bf 0}+)\equiv \left[ \begin{array}{ccc} |(\re,k_y,P),{\bf 0+}) & 
+|(\re,k_y,S),{\bf 0+}) & |(\re,k_y,H),{\bf 0+}) \end{array}\right]
+\end{equation}
+%which is an augmented version of $6 \times 14$ array $|\re,k_y,{\bf 0+}\rangle$ from (\ref{Bab0Def}).
+Also, we introduce inter-scatterer propagator ${{\bmi  H}}({\bmi  
+R}_{i},{\bmi  R}_{j})$ defined as
+\begin{equation} \label{Pdef1}
+{{\bmi  H}}({\bmi  R}_{i},{\bmi  R}_{j})=
+\left[{\begin{array}{ccc}{\bmi H}_{P}({\bmi R}_{i};{\bmi R}_{j})&{\bf 0}&{\bf 0}\\
+{\bf 0}&{\bmi H}_{S}({\bmi R}_{i};{\bmi R}_{j})&{\bf 0}\\
+{\bf 0}&{\bf 0}&{\bmi H}_{H}({\bmi R}_{i};{\bmi R}_{j})\end{array}}\right]
+\end{equation}
+with partitions
+\begin{eqnarray} \label{PaDef0}
+\lefteqn{{\bmi H}_{c }({\bmi R}_{i};{\bmi R}_{j})=\frac{1}{4 \rf{\rho} \omega^2}\times}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!\!\!
+\left[{\begin{array}{ccccc}
+\scriptstyle 
+{H}^{(1)}_{0}(\hat{K}_{c}{R}_{ij})&\scriptstyle\!\!\! -{H}^{(1)}_{1}(\hat{K}_{c}{R}_{ij})
+Y_{1}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{2}(\hat{K}_{c}{R}_{ij})
+Y_{2}(\hat{\bf R}_{ji})&\scriptstyle\!\!\! -{H}^{(1)}_{3}(\hat{K}_{c}{R}_{ij})
+Y_{3}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{4}(\hat{K}_{c}{R}_{ij})
+Y_{4}(\hat{\bf R}_{ji})\\ \scriptstyle {H}^{(1)}_{1}(\hat{K}_{c}{R}_{ij})
+Y_{1}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{0}(\hat{K}_{c}{R}_{ij})&\scriptstyle\!\!\! -{H}^{(1)}_{1}
+(\hat{K}_{c}{R}_{ij})Y_{1}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{2}(\hat{K}_{c}{R}_{ij})
+Y_{2}(\hat{\bf R}_{ji})&\scriptstyle\!\!\! -{H}^{(1)}_{3}(\hat{K}_{c}{R}_{ij})
+Y_{3}(\hat{\bf R}_{ji})\\ \scriptstyle {H}^{(1)}_{2}(\hat{K}_{c}{R}_{ij})
+Y_{2}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{1}(\hat{K}_{c}{R}_{ij})
+Y_{1}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{0}(\hat{K}_{c}{R}_{ij})&\scriptstyle\!\!\! -{H}^{(1)}_{1}
+(\hat{K}_{c}{R}_{ij})
+Y_{1}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{2}(\hat{K}_{c}{R}_{ij})
+Y_{2}(\hat{\bf R}_{ji})\\ \scriptstyle {H}^{(1)}_{3}(\hat{K}_{c}{R}_{ij})
+Y_{3}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{2}(\hat{K}_{c}{R}_{ij})
+Y_{2}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{1}(\hat{K}_{c}{R}_{ij})
+Y_{1}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{0}(\hat{K}_{c}{R}_{ij})&\scriptstyle\!\!\! -{H}^{(1)}_{1}
+(\hat{K}_{c}{R}_{ij})Y_{1}(\hat{\bf R}_{ji})\\\!\! \scriptstyle {H}^{(1)}_{4}
+(\hat{K}_{c}{R}_{ij})Y_{4}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{3}
+(\hat{K}_{c}{R}_{ij})Y_{3}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{2}
+(\hat{K}_{c}{R}_{ij})Y_{2}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{1}
+(\hat{K}_{c}{R}_{ij})Y_{1}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{0}
+(\hat{K}_{c}{R}_{ij})\end{array}}\!\!\right];\nonumber 
+\end{eqnarray} 
+for $c\in \{ P,H\}$, and
+\begin{eqnarray} \label{PbDef0} 
+\lefteqn{
+{\bmi H}_{S}({\bmi R}_{i};{\bmi R}_{j})=\frac{1}{4 \rf{\rho} \omega^2}\times}\\
+ && \left[{\begin{array}{cccc} 
+\scriptstyle{H}^{(1)}_{0}(\hat{K}_{S}{R}_{ij})&\scriptstyle-{H}^{(1)}_{1}
+(\hat{K}_{S}{R}_{ij})Y_{1}(\hat{\bf R}_{ji})&\scriptstyle-
+{H}^{(1)}_{3}(\hat{K}_{S}{R}_{ij})Y_{3}(\hat{\bf R}_{ji})&
+\scriptstyle{H}^{(1)}_{4}(\hat{K}_{S}{R}_{ij})Y_{4}(\hat{\bf R}_{ji})\\ 
+\scriptstyle {H}^{(1)}_{1}(\hat{K}_{S}{R}_{ij})Y_{1}^{\ast}(\hat{\bf R}_{ji})&
+\scriptstyle{H}^{(1)}_{0}(\hat{K}_{S}{R}_{ij})&\scriptstyle
+{H}^{(1)}_{2}(\hat{K}_{S}{R}_{ij})Y_{2}(\hat{\bf R}_{ji})&\scriptstyle-
+{H}^{(1)}_{3}(\hat{K}_{S}{R}_{ij})Y_{3}(\hat{\bf R}_{ji})\\ \scriptstyle 
+{H}^{(1)}_{3}(\hat{K}_{S}{R}_{ij})Y_{3}^{\ast}(\hat{\bf R}_{ji})&
+\scriptstyle{H}^{(1)}_{2}(\hat{K}_{S}{R}_{ij})Y_{2}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{0}(\hat{K}_{S}{R}_{ij})&\scriptstyle-{H}^{(1)}_{1}
+(\hat{K}_{S}{R}_{ij})Y_{1}(\hat{\bf R}_{ji})\\ \scriptstyle 
+{H}^{(1)}_{4}(\hat{K}_{S}{R}_{ij})Y_{4}^{\ast}(\hat{\bf R}_{ji})&
+\scriptstyle{H}^{(1)}_{3}(\hat{K}_{S}{R}_{ij})Y_{3}^{\ast}(\hat{\bf R}_{ji})&
+\scriptstyle{H}^{(1)}_{1}(\hat{K}_{S}{R}_{ij})Y_{1}^{\ast}(\hat{\bf R}_{ji})&\scriptstyle{H}^{(1)}_{0}(\hat{K}_{S}{R}_{ij}) 
+\end{array}}\right].\nonumber 
+\end{eqnarray} 
+When $|k_y| > |\omega/c|$, we take the $+ve$ imaginary 
+branch of the square root of $\hat{K}_c$ in (\ref{Kdef}), so that the Hankel 
+functions  ${H}^{(1)}_{m}(\hat{K}_{c}r)$ in (\ref{PaDef0})--(\ref{PbDef0})
+decay exponentially for large values of $r$.
+
+
+
+
+
+Using (\ref{Bab0aug}) and (\ref{Pdef1}), we define the further arrays
+\begin{equation}	\label{G1mat}
+{\rf{\bmi  G}}({\bmi  x},{\bmi  x}^{\prime};k_y)
+		\equiv -i\,
+	|\re,k_y,{\bmi r}_{i}\rangle {{\bmi  H}}({\bmi  R}_{i};{\bmi  R}_{j})
+	\langle\re,k_y,{\bmi r}_{j}|{\bmi J}_{6}
+\end{equation}
+which is the matrix analogue of (\ref{G1Trep}),
+\begin{equation}	\label{Grmat}
+{\rf{\bmi  G}_{r}}({\bmi  R}_{i},{\bmi  x}^{\prime};k_y)
+		\equiv -i\,
+	|\re,k_y,{\bf 0}+) {{\bmi  H}}({\bmi  R}_{i};{\bmi  R}_{j})
+	\langle\re,k_y,{\bmi r}_{j}|{\bmi J}_{6},
+\end{equation}
+and
+\begin{equation}	\label{Psmat}
+{\rf{\bmi  P}_{s}}({\bmi  R}_{i},{\bmi  R}_{j};k_y)
+		\equiv -i\,
+	|\re,k_y,{\bmi r}_{i}\rangle {{\bmi  H}}({\bmi  R}_{i};{\bmi  R}_{j})
+	(\re,k_y,{\bf 0}+|.
+\end{equation}
+
+
+
+The components (\ref{Sscat1}) of the single scattering interaction, may be 
+assembled into an equivalent matrix form
+\begin{eqnarray} \label{Sscat1mat}
+\lefteqn{{\rf{\bmi G}}{\mit \Delta} {\bmi A} {\rf{\bmi G}}= {\rf{\bmi 
+P}_{s}}{\mit \Delta} {\bmi C} {\rf{\bmi G}_{r}}}\nonumber\\
+&&=\left(-i\,|\re,k_y,{\bmi r}_R\rangle {\bmi  H}({\bmi  R}_{R};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+)^{T}\right)\nonumber\\
+&&\times\left({\mit \Delta}{\bmi C}({\bmi R}_j;k_y)\,{\mit \Delta}^2  \right)
+\left( -i\,|\re,k_y,{\bf 0}+) {\bmi  H}({\bmi  R}_{j};{\bmi  R}_{S})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bmi r}_S\rangle^{T}\right){\bmi 
+	J}_{6}
+\end{eqnarray}
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Double scattering}
+Let us now consider the {\em double scattering interaction\/} 
+\begin{eqnarray} \label{Dscat}
+\lefteqn{{\rf{\bmi G}}{\mit \Delta} {\bmi A} {\rf{\bmi G}}
+{\mit \Delta} {\bmi A}{\rf{\bmi G}}\equiv}\\
+&&
+\int_{{\mit \Omega}_j} \int_{{\mit \Omega}_k}{\rf{\bmi G}}({\bmi x}_{R};{\bmi x};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y) {\rf{\bmi G}}({\bmi x},{\bmi x}^{\prime};k_y)
+{\mit \Delta} {\bmi A}({\bmi
+x}^{\prime},\partial_{x};k_y) {\rf{\bmi G}}({\bmi x}^{\prime},{\bmi 
+x}_{S};k_y) 
+{\rm d}{\bmi x}\, {\rm d}{\bmi x}^{\prime}\nonumber
+\end{eqnarray}
+between two small, 
+square subregions of heterogeneity ${\mit \Omega}_k$ with centre at ${\bmi 
+R}_k$ and  ${\mit \Omega}_j$ with centre at ${\bmi R}_j$. 
+Using (\ref{G1Trep}) for the components of ${\rf{\bmi G}}$ in (\ref{Dscat}) 
+gives
+\begin{eqnarray} \label{Dscat1}
+\lefteqn{{\rf{\bmi G}}{\mit \Delta} {\bmi A} {\rf{\bmi G}}
+{\mit \Delta} {\bmi A}{\rf{\bmi G}}=
+\sum\limits_{\stackrel{m,n}{c\in\{P,S,H\}}} 
+\sum\limits_{\stackrel{m^{\prime},n^{\prime}}{c^{\prime}\in\{P,S,H\}}}
+\sum\limits_{\stackrel{m^{\prime\prime},n^{\prime\prime}}
+{c^{\prime\prime}\in\{P,S,H\}}}
+\frac{i }{64\,\rf{\rho}\!\!{}^3\,\omega^6 }
+ } \nonumber\\
+&&\times
+ |(\re,k_y,c,m),{\bmi r}_{R}\rangle {H}_{m-n}^{(1)}(\hat{ K}_{c}{R}_{Rj})
+{Y}_{m-n}^{{}^\ast}(\hat{{\bmi R}}_{jR}) \nonumber\\
+&&\times 
+\int_{{\mit \Omega}_j}  \langle(\re,k_y,c,n),{\bmi x}-{\bmi R}_{j}|{\bmi J}_{6}
+{\mit \Delta} {\bmi A}({\bmi
+x},\partial_{x};k_y)  |(\re,k_y,c^{\prime},m^{\prime}),{\bmi x}-{\bmi R}_{j}\rangle 
+{\rm d}{\bmi x}\nonumber\\
+&&
+\times {H}_{m^{\prime}-n^{\prime}}^{(1)}(\hat{ K}_{c^{\prime}}{R}_{jk})
+{Y}_{m^{\prime}-n^{\prime}}^{{}^\ast}(\hat{{\bmi R}}_{kj}) \nonumber\\
+  &&
+\times \int_{{\mit \Omega}_k}  \langle(\re,k_y,c,n^{\prime}),{\bmi x}^{\prime}-{\bmi 
+R}_{k}|{\bmi J}_{6}
+{\mit \Delta} {\bmi A}({\bmi x}^{\prime},\partial_{x};k_y)  
+|(\re,k_y,c^{\prime\prime},m^{\prime\prime}),{\bmi x}^{\prime}-{\bmi R}_{k}\rangle 
+{\rm d}{\bmi x}^{\prime}\nonumber\\
+&&
+\times {H}_{m^{\prime\prime}-n^{\prime\prime}}^{(1)}(\hat{ 
+K}_{c^{\prime\prime}}{R}_{kS})
+{Y}_{m^{\prime\prime}-n^{\prime\prime}}^{{}^\ast}(\hat{{\bmi R}}_{Sk}) 
+ \langle(\re,k_y,c^{\prime\prime},n^{\prime\prime}),{\bmi r}_{S}|{\bmi J}_{6}
+\end{eqnarray} 
+where we interpret the coupling integrals using the weak form 
+of the Rayleigh approximation.
+
+
+Once again, the components 
+(\ref{Dscat1}) may be assembled into an equivalent matrix equation, which 
+may be written as
+\begin{eqnarray} \label{Dscat1mat}
+ \lefteqn{{\rf{\bmi G}}{\mit \Delta} {\bmi A} {\rf{\bmi G}}
+{\mit \Delta} {\bmi A}{\rf{\bmi G}}= {\rf{\bmi P}_{s}}{\mit 
+\Delta} {\bmi C} {\rf{\bmi P}_{r,s}}
+{\mit \Delta} {\bmi C}{\rf{\bmi G}_{r}}}\nonumber\\
+&&=
+\left(-i\,|\re,k_y,{\bmi r}_R\rangle {\bmi  H}({\bmi  R}_{R};{\bmi  R}_{j})
+	(\re,-k_y,{\bf 0}+|\right)\left({\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\,{\mit \Delta}^2  \right)\nonumber\\
+&&\!\!
+\times
+{\rf{\bmi  P}_{r,s}}({\bmi  R}_{j},{\bmi  R}_{k})
+\left({\mit \Delta}{\bmi  C}({\bmi R}_j;k_y)\,{\mit \Delta}^2  \right)
+\left( -i\,|\re,k_y,{\bf 0}+) {\bmi  H}({\bmi  R}_{i};{\bmi  R}_{j})
+	\langle\re,k_y,{\bmi r}_S|\right){\bmi J}_{6}
+\end{eqnarray}
+to within the {\em weak Rayleigh approximation\/},
+where the $8 \times 8 $ augmented coupling matrix  was given by 
+(\ref{CdefAug}) and the $8 \times 8$ augmented propagator array
+ ${\rf{\bmi  P}_{r,s}}$ has been written 
+in the  matrix form
+\begin{eqnarray}	\label{Prsmat}
+	{\rf{\bmi  P}_{r,s}}({\bmi  R}_{i},{\bmi  R}_{j})
+		\equiv	-i\,|\re,k_y,{\bf 0}+) {\bmi  H}({\bmi  R}_{i};{\bmi  R}_{j})
+	(\re,k_y,{\bf 0}+|,
+\end{eqnarray} 
+and ${{\bmi  H}}({\bmi  R}_{i},{\bmi  R}_{j})$ was given by 
+(\ref{Pdef1}).
+
+
+\subsection{Evaluating the near field singularity}
+
+
+
+
+We now consider the limiting case of (\ref{Dscat1mat}) where ${\mit 
+\Omega}_j={\mit \Omega}_k={\mit \Omega}_{\varepsilon}$ is an 
+{\em infinitesimal square\/} at the coordinate origin Fig.\ref{Omegaeps}. 
+In this limiting case, the modified 
+Green's tensor of (\ref{Prsmat}) is strongly singular, and we will 
+have to be very careful how we interpret integrals involving 
+(\ref{Prsmat}). We employ the small argument asymptotic approximations 
+in Table \ref{HTable}, 
+to the Hankel function entries in the diagonal blocks of 
+(\ref{Pdef1}) that were defined in (\ref{PaDef0})--(\ref{PbDef0}).
+ After a substantial amount of algebra, the leading order 
+behaviour of the  Green's tensor 
+in (\ref{Prsmat}) reduces to ${\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r})$ given in {\sc Box} $\bf 4.4$. The $\delta-$function terms in 
+${\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r})$ are correction terms that arose when we took the partial 
+differential operators ${\bmi L}_c, c\in \{P,S,H\}$ outside the integrals in (\ref{c4grepc}). We 
+ignored these terms in the earlier representations of the Green's 
+tensor because it was always assumed that the source and field point of 
+the Green's tensor were distinct.  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\HideDisplacementBoxes
+%\ShowDisplacementBoxes
+\centerline{\BoxedEPSF{Omegaeps.EPSF scaled 800}}
+\caption{The infinitesimal square $\Omega$ with an inscribed disc 
+$D_{\varepsilon}$}
+\protect\label{Omegaeps}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{table}
+\begin{minipage} {90.0mm}
+\begin{tabular*}{85mm}{ccl}\hline
+$H^{(1)}_m(r)$&&\mbox{leading order asymptotics}\\ \hline
+$H^{(1)}_0(r)$&$\approx$&$1 + i\,{{2}\over {\pi }}\,\left( \gamma_{E} + 
+     {{ \log ({1\over 2}) + \log (r)  }} \right)+O(r)$\\
+$H^{(1)}_1(r)$&$\approx$&$-{{2\,i}\over {\pi \,r}}+O(r)$\\
+$H^{(1)}_2(r)$&$\approx$&$-{i\over {\pi }} - {4\,i\over {\pi \,{r^2}}}
++O(r)$\\
+$H^{(1)}_3(r)$&$\approx$&$ - {2\,i\over {\pi \,r}} -{{16\,i}\over {\pi \,{r^3}}}
++O(r)$\\
+$H^{(1)}_4(r)$&$\approx$&$-{{i}\over {2\,\pi }} - {8\,i\over {\pi 
+\,{r^2}}}  - {{96\,i}\over {\pi \,{r^4}}}
++O(r)$\\
+\hline
+\end{tabular*}
+\caption{\label{HTable} {$\gamma_{E}=0.5772156649015328606...$ {\em is the
+ Euler-Mascheroni constant\/} (e.g. {\em Arfken\/}~(1985), p.284)}}
+\end{minipage}
+\end{table} 
+
+
+The integral
+\[
+\lim\limits_{{ \mit \Omega }_{ \varepsilon }\ \rightarrow  \ 0}\ 
+\int_{{\mit \Omega }_{ \varepsilon }}{\rf{\bmi  P}_{r,s}}({\bf 0},{\bmi  r}) \cdot 
+{\mit \Delta}{\bmi C}({\bmi  r})\ 
+{\rm d}{\bmi r}
+\]
+has a {\em strong singularity\/} because the Green's tensor 
+${\rf{\bmi  P}_{r,s}}({\bf 0},{\bmi  r})$ is  $O(\|{\bmi  
+r}\|^{-2})$ in the near field. To handle this integral
+we employ the classical technique of {\em subtracting the singularity\/}, 
+i.e.
+\begin{eqnarray} \label{subint}
+\lefteqn{\lim\limits_{{\mit  \Omega }_{ \varepsilon }\ \rightarrow  \ 0}\ 
+\int_{{\mit  \Omega }_{ \varepsilon }}{\rf{\bmi  P}_{r,s}}({\bf 0},{\bmi  r}) \cdot 
+{\mit \Delta}{\bmi C}({\bmi  r})\ 
+{\rm d}{\bmi r}
+=\lim\limits_{{\mit  \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{ \mit \Omega }_{ \varepsilon 
+}}\left({{\rf{\bmi  P}_{r,s}}({\bf 0},{\bmi  r})-
+{\tilde{\bmi  P}_{r,s}}({\bf 0},{\bmi  r})}\right) \cdot {\mit \Delta}{\bmi C}({\bmi  r})\ 
+{\rm d}{\bmi r}}\nonumber\\
+&&\qquad\qquad\qquad
++
+\left(\lim\limits_{{ \mit \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit  \Omega }_{ \varepsilon }}^{}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}\right) \cdot{\mit \Delta}{\bmi C}({\bf 0}+)
+\end{eqnarray}
+as the domain of integration  ${ \mit \Omega }_{ \varepsilon }$ shrinks down 
+to a point,
+where the dominant near field term ${\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r})$ of the Green's tensor is given in {\sc Box} {\bf 4.4}.
+If the coupling matrix ${\mit \Delta}{\bmi C}({\bmi  r})$ is {\em 
+Holder continuous\/} (i.e. it is smoother than just continuous , but not 
+necessarily so smooth as to be differentiable)  in an open neighbourhood of the point ${\bmi r}={\bf 
+0}$, then 
+\[
+\lim\limits_{{ \mit \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit \Omega }_{ \varepsilon 
+}}\left({{\rf{\bmi  P}_{r,s}}({\bf 0},{\bmi  r})-
+{\tilde{\bmi  P}_{r,s}}({\bf 0},{\bmi  r})}\right) \cdot {\mit \Delta}{\bmi C}({\bmi  r})\ 
+{\rm d}{\bmi r} \ \rightarrow  \ {\bf 0}_8
+\]
+in (\ref{subint}) so that we are left with
+\begin{equation} \label{subint1}
+\lim\limits_{{\mit \Omega }_{ \varepsilon }\ \rightarrow  \ 0}\ 
+\int_{{\mit \Omega }_{ \varepsilon }}{\rf{\bmi  P}_{r,s}}({\bf 0},{\bmi  r}) \cdot 
+{\mit \Delta}{\bmi C}({\bmi  r})\ 
+{\rm d}{\bmi r}
+=\left(\lim\limits_{{\mit \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit \Omega }_{ \varepsilon }}^{}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}\right) \cdot{\mit \Delta}{\bmi C}({\bf 0}+)
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\fbox{
+\begin{minipage} {142.0mm}
+{\sc Box} {\bf 4.4}  {\sc The leading order terms of the modified Green's tensor (\ref{Prsmat}) 
+in the near field} 
+ 
+\vspace{3mm}
+\[
+{\tilde{\bmi  P}_{r,s}}({\bf 0},{\bmi  r}) =
+\]  
+\[
+-\delta(r)
+   \left[\begin{array}{cccccccc} 
+   0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&\rf{\lambda}+2 \rf{\mu}&0&0&0&0\\ 0&0&0&0&\rf{\mu}&0&0&0\\
+   0&0&0&0&0&\rf{\mu}&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&0&0&0&0&0\end{array}\right]
++
+{{\left( {\rf{\alpha}\!{}^2} - {\rf{\beta}\!{}^2} \right) \,\cos 4\,\theta }\over 
+   {{\rf{\alpha}\!{}^2}\,\pi \,{r^2}}}
+   \left[\begin{array}{cccccccc} 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&\rf{\mu}&0&0&-{1\over 2}&0\\ 0&0&0&0&-\rf{\mu}&0&0&0\\
+   0&0&0&0&0&0&0&0\\ 0&0&0&-{1\over 2}&0&0&{1\over {4\,\rf{\mu}}}&0\\
+   0&0&0&0&0&0&0&0\end{array}\right]
+\]
+  
+
+   
+\[
++
+{{\left( {\rf{\alpha}\!{}^2} - {\rf{\beta}\!{}^2} \right) \,\sin 4\,\theta }\over 
+   {{\rf{\alpha}\!{}^2}\,\pi \,{r^2}}}
+\left[\begin{array}{cccccccc} 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&0&\rf{\mu}&0&0&0\\ 0&0&0&\rf{\mu}&0&0&-{1\over 2}&0\\
+   0&0&0&0&0&0&0&0\\ 0&0&0&0&-{1\over 2}&0&0&0\\ 0&0&0&0&0&0&0&0\end{array}\right]
+\]
+  
+
+\[
++
+{{\cos 2\,\theta }\over {{r^2}}}
+\left[\begin{array}{cccccccc} 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&{{2\,{\rf{\beta}\!{}^2}\,\left( {\rf{\alpha}\!{}^2} - {\rf{\beta}\!{}^2} \right) \,
+       {\rf{\rho}}}\over {{\rf{\alpha}\!{}^2}\,\pi }}&0&0&
+   {{-{\rf{\alpha}\!{}^2} + 2\,{\rf{\beta}\!{}^2}}\over {2\,{\rf{\alpha}\!{}^2}\,\pi }}&0\\
+   0&0&0&0&0&0&0&0\\ 0&0&0&0&0&
+   {{{\rf{\beta}\!{}^2}\,{\rf{\rho}}}\over {2\,\pi }}&0&0\\
+   0&0&0&{{-{\rf{\alpha}\!{}^2} + 2\,{\rf{\beta}\!{}^2}}\over 
+     {2\,{\rf{\alpha}\!{}^2}\,\pi }}&0&0&
+   {{-1}\over {2\,{\rf{\alpha}\!{}^2}\,\pi \,{\rf{\rho}}}}&0\\
+   0&0&0&0&0&0&0&{{-1}\over {2\,{\rf{\beta}\!{}^2}\,\pi \,{\rf{\rho}}}}\end{array}\right]
+\]
+  
+  
+
+\[
++
+{{\sin 2\,\theta }\over {{r^2}}}  
+\left[\begin{array}{cccccccc} 
+0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&0&{{{\rf{\beta}\!{}^2}\,\left( {\rf{\alpha}\!{}^2} - {\rf{\beta}\!{}^2} \right) \,
+       {\rf{\rho}}}\over {{\rf{\alpha}\!{}^2}\,\pi }}&0&0&0\\
+   0&0&0&0&0&0&{{{\rf{\beta}\!{}^2}}\over {2\,{\rf{\alpha}\!{}^2}\,\pi }}&0\\
+   0&0&0&0&0&0&0&{1\over {2\,\pi }}\\
+   0&0&0&0&{{{\rf{\beta}\!{}^2}}\over {2\,{\rf{\alpha}\!{}^2}\,\pi }}&0&0&0\\
+   0&0&0&0&0&{1\over {2\,\pi }}&0&0\end{array}\right]
+\] 
+\vspace{3mm}
+\end{minipage}
+}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+We divide the infinitesimal square ${\mit \Omega }_{ \varepsilon }= 
+\{(z,x): -\varepsilon \le z,x \le \varepsilon\} $ in (\ref{subint1}) into the sum 
+of an inscribed {\em disc\/} ${\mit D}_{ \varepsilon }= 
+\{(z,x): \sqrt{z^2 + x^2} \le \varepsilon\} $ and the 
+remainder ${\mit \Omega}_{ \varepsilon }\backslash{\mit D}_{ \varepsilon 
+}$ (Fig.\ref{Omegaeps}),
+so that (\ref{subint1}) may be written as
+\begin{eqnarray} \label{subint2}
+\lefteqn{\lim\limits_{{\mit \Omega }_{ \varepsilon }\ \rightarrow  \ 0}\ 
+\int_{{\mit \Omega }_{ \varepsilon }}{\rf{\bmi  P}_{r,s}}({\bf 0},{\bmi  r}) \cdot 
+{\mit \Delta}{\bmi C}({\bmi  r})\ 
+{\rm d}{\bmi r}
+=}\\
+&&\left(\lim\limits_{{\mit D }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit D }_{ \varepsilon }}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}\right) \cdot{\mit \Delta}{\bmi C}({\bf 
+0}+)
++
+\left(\lim\limits_{{\mit \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit \Omega }_{ \varepsilon }\backslash
+{\mit D}_{ \varepsilon }}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}\right) \cdot{\mit \Delta}{\bmi C}({\bf 
+0}+)\nonumber
+\end{eqnarray}
+Once again, we employ classical techniques to evaluate the two {\em 
+strongly singular \/} integrals on the right hand side of (\ref{subint2}).
+First, we consider the integral
+\[
+\lim\limits_{{\mit D }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit D}_{ \varepsilon }}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}
+\]
+The $\delta-$function contributions to this integral that were indicated 
+in {\sc Box} {\bf 4.4} are trivial to integrate. To evaluate the
+$\int_{{\mit \Omega}_{\varepsilon}}{{\cos m\,\theta }\over {{r^2}}}$ and 
+$\int_{{\mit \Omega}_{\varepsilon}}{{\sin m\,\theta }\over {{r^2}}}, m\in 
+\{2,4\}$ integrals,  we employ the 
+$2-$D {\em divergence theorem\/} in cylindrical coordinates, i.e.
+given the $2-$D vector field ${\bmi v}=({v}_{r},{v}_{\theta })$ in 
+cylindrical coordinates, then
+\begin{equation} \label{divthm}
+\int_{{\mit D }_{ \varepsilon }}^{} \nabla \cdot   
+{\bmi v} {\rm d}{\bmi r} \equiv \int_{  0}^{  2 \pi }  {\rm d} \theta 
+\int_{  0}^{\varepsilon }  r\ 
+{\rm d}r\left[{{\frac{1}{r}}{\frac{ \partial   \,{v}_{ \theta }}{ 
+\partial   \, \theta }}+{\frac{1}{r}}{\frac{ \partial   
+\,r{v}_{r}}{ \partial   \, r }}}\right] \equiv 
+\left.\int_{  0}^{  2 \pi }r {  v}_{  
+r}  {\rm d} \theta \right|_{r=\varepsilon}
+\end{equation} 
+ Using
+\[
+{\frac{\cos\ \left({m\rm \theta 
+}\right)}{{r}^{2}}}={\frac{1}{r}}{\frac{\rm \partial \rm \mit \,}{\rm 
+\partial \rm \mit \,\rm \theta }}{\frac{\sin\ \left({m\rm \theta 
+}\right)}{m\ r}} \qquad \mbox{and} \qquad 
+{\frac{\sin\ \left({m\rm \theta 
+}\right)}{{r}^{2}}}=-{\frac{1}{r}}{\frac{\rm \partial \rm \mit \,}{\rm 
+\partial \rm \mit \,\rm \theta }}{\frac{\cos\ \left({m\rm \theta 
+}\right)}{m\ r}}
+\] 
+it follows from (\ref{divthm}) that
+\[
+\int_{{\mit D}_{\varepsilon}}{{\cos m\,\theta }\over {{r^2}}} {\rm 
+d}{\bmi r}\equiv 0, \quad \mbox{and}
+\quad \int_{{\mit D}_{\varepsilon}}{{\sin m\,\theta }\over {{r^2}}} {\rm 
+d}{\bmi r}\equiv 0, \quad m\in\{2,4\}
+\]
+because the $v_r$ components in (\ref{divthm}) vanish. Consequently, we 
+are left with the $\delta-$function terms, i.e.
+\begin{equation} \label{intD}
+\lim\limits_{{\mit D }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit D}_{ \varepsilon }}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}
+\equiv
+-   \left[\begin{array}{cccccccc} 
+   0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&\rf{\lambda}+2 \rf{\mu}&0&0&0&0\\ 0&0&0&0&\rf{\mu}&0&0&0\\
+   0&0&0&0&0&\rf{\mu}&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&0&0&0&0&0\end{array}\right].
+\end{equation}
+
+
+Next we consider the integral
+\begin{equation} \label{intDm}
+\lim\limits_{{\mit \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit \Omega }_{ \varepsilon }\backslash{\mit D}_{ \varepsilon }}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}
+\end{equation}
+from (\ref{subint2}). In this case the $\delta-$function terms in 
+${\tilde{\bmi  P}_{r,s}}$ are 
+excluded from the domain of integration, and we need only consider the 
+integrals
+\[
+\int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}{{\cos m\,\theta }\over {{r^2}}} {\rm 
+d}{\bmi r}, \quad \mbox{and}
+\quad \int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}{{\sin m\,\theta }\over {{r^2}}} {\rm 
+d}{\bmi r}, \quad m\in\{2,4\}.
+\]
+But $\int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}$
+ may be split into the sum of the {\em quadrant\/} integrals
+\begin{eqnarray} \label{quadint}
+\int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}\left[ \cdot 
+\right] {\rm d}{\bmi r}&\equiv&
+\int_{- \pi   /4}^{ \pi   /4}{\rm d} \theta 
+\int_{\varepsilon }^{\varepsilon   /\cos\ \left({ \theta 
+}\right)}\left[ \cdot 
+\right] r\ {\rm d}r\ + \
+\int_{3 \pi   /4}^{5 \pi   
+/4}{\rm d} \theta \int_{\varepsilon }^{  - \varepsilon   
+/\cos\ \left({ \theta }\right)}\left[ \cdot 
+\right] r\ {\rm d}r \nonumber\\
+&&  +\ \int_{ \pi   
+/4}^{3 \pi   /4}{\rm d} \theta \int_{\varepsilon }^{\varepsilon  
+ /\sin\ \left({ \theta }\right)}\left[ \cdot 
+\right] r\ {\rm d}r\ +\ \int_{5 \pi 
+  /4}^{7 \pi   /4}{\rm d} \theta \int_{\varepsilon }^{ 
+ - \varepsilon   /\sin\ \left({ \theta }\right)}\left[ \cdot 
+\right] 
+r\ {\rm d}r.
+\end{eqnarray} 
+Using the quadrant integrals (and integration by parts where 
+necessary) we get
+\[
+\int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}{{\cos 4\,\theta }\over {{r^2}}}  
+{\rm d}{\bmi r}= {{\pi - 4} \over 2}
+\]
+and
+\[
+\int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}{{\cos 2\,\theta }\over {{r^2}}}  {\rm d}{\bmi r}= 
+\int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}{{\sin 
+4\,\theta }\over {{r^2}}}  {\rm d}{\bmi r}=
+\int_{{\mit \Omega}_{\varepsilon}\backslash{\mit D}_{ \varepsilon }}{{\sin 
+2\,\theta }\over {{r^2}}}  {\rm d}{\bmi r}=0.
+\]
+so that (\ref{intDm}) becomes
+\begin{equation} \label{intDm1}
+\lim\limits_{{\mit \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit \Omega }_{ \varepsilon }\backslash{\mit D}_{ \varepsilon }}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}=
+{{({\pi - 4})( {\rf{\alpha}\!{}^2} - {\rf{\beta}\!{}^2})}\over 
+   {2\, \pi\,{\rf{\alpha}\!{}^2}}}
+   \left[\begin{array}{cccccccc} 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&\rf{\mu}&0&0&-{1\over 2}&0\\ 0&0&0&0&-\rf{\mu}&0&0&0\\
+   0&0&0&0&0&0&0&0\\ 0&0&0&-{1\over 2}&0&0&{1\over {4\,\rf{\mu}}}&0\\
+   0&0&0&0&0&0&0&0\end{array}\right]
+\end{equation}
+
+Using (\ref{intD}) and (\ref{intDm1}) in the right hand side of 
+(\ref{subint2}) recovers (\ref{subint1})
+with
+\begin{samepage}
+\begin{eqnarray}  \label{Gepsint}
+\lefteqn{
+\lim\limits_{{\mit \Omega }_{ \varepsilon }\ \rightarrow  \ 
+0}\int_{{\mit \Omega }_{ \varepsilon }}{\tilde{\bmi  P}_{r,s}}({\bf 
+0},{\bmi  r}){\rm d}{\bmi r}=}\\
+&&
+-  \left[\begin{array}{cccccccc} 
+   0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&\rf{\lambda}+2 \rf{\mu}&0&0&0&0\\ 0&0&0&0&\rf{\mu}&0&0&0\\
+   0&0&0&0&0&\rf{\mu}&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&0&0&0&0&0\end{array}\right]
++
+{{\left({\pi - 4}\right)( {\rf{\alpha}\!{}^2} - {\rf{\beta}\!{}^2} )}\over 
+   {2\,{\rf{\alpha}\!{}^2}\,\pi}}
+   \left[\begin{array}{cccccccc} 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\ 0&0&0&0&0&0&0&0\\
+   0&0&0&\rf{\mu}&0&0&-{1\over 2}&0\\ 0&0&0&0&-\rf{\mu}&0&0&0\\
+   0&0&0&0&0&0&0&0\\ 0&0&0&-{1\over 2}&0&0&{1\over {4\,\rf{\mu}}}&0\\
+   0&0&0&0&0&0&0&0\end{array}\right]\nonumber
+\end{eqnarray}
+\end{samepage}
+
+\subsection{Summing the multiple scattering series at a point}
+
+We now return to the {\em double scattering integral\/} of (\ref{Dscat1mat}), 
+and considering the limiting case where ${\mit 
+\Omega}_k\rightarrow{\mit \Omega}_j$, so that the two small subregions 
+coincide.  To within the {\em weak 
+Rayleigh approximation\/} of (\ref{Dscat1mat}) , we have 
+\begin{eqnarray} \label{Dscat2mat}
+{\rf{\bmi G}}{\mit \Delta} {\bmi A} {\rf{\bmi G}}
+{\mit \Delta} {\bmi A}{\rf{\bmi G}}&=&
+\left(-i\,|\re,k_y,{\bf 0}+\rangle {\bmi  P}({\bmi  R}_{R};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+)^{T}\right)\cdot\left({\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\,{\mit \Delta}^2  \right)
+\nonumber\\
+&&\times
+\int_{{\mit \Omega }_{j}}{\tilde{\bmi  
+G}}({\bmi 
+R}_j,{\bmi  R}_j+{\bmi  r}_j){\rm d}{\bmi r}_j \cdot{\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\nonumber\\
+&&\times
+\left( -i\,|\re,k_y,{\bf 0}+) {\bmi  P}({\bmi  R}_{i};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+\rangle^{T}\right){\bmi J}_{6}
+\end{eqnarray}
+
+Similarly, the {\em  order-$n$ multiple scattering interaction\/} 
+\[
+{\rf{\bmi G}}{\mit \Delta} {\bmi A} \left({\rf{\bmi G}}
+{\mit \Delta} {\bmi A}\right)^n {\rf{\bmi G}}
+\]
+at 
+${\mit \Omega}_j$, may be written as
+\begin{eqnarray} \label{Dscatnmat}
+\lefteqn{{\rf{\bmi G}}{\mit \Delta} {\bmi A} \left({\rf{\bmi G}}
+{\mit \Delta} {\bmi A}\right)^n {\rf{\bmi G}}=
+\left(-i\,|\re,k_y,{\bf 0}+\rangle {\bmi  P}({\bmi  R}_{R};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+)^{T}\right)}\nonumber\\
+&&	\times\left({\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\,{\mit \Delta}^2  \right)
+\left(\int_{{\mit \Omega }_{j}}{\tilde{\bmi  
+G}}({\bmi 
+R}_j,{\bmi  R}_j+{\bmi  r}_j){\rm d}{\bmi r}_j \cdot{\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\right)^n\nonumber\\
+&&\times
+\left( -i\,|\re,k_y,{\bf 0}+) {\bmi  P}({\bmi  R}_{i};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+\rangle^{T}\right){\bmi J}_{6}
+\end{eqnarray}
+If we sum all the multiple scattering interactions within ${ \mit \Omega }_{j}$  we get
+\begin{samepage}
+\begin{eqnarray} \label{msomegaj}
+\lefteqn{
+ \sum\limits_{ n\ =\ 0}^{ \infty } {\rf{\bmi G}}{\mit \Delta} {\bmi A} \left({\rf{\bmi G}}
+{\mit \Delta} {\bmi A}\right)^n {\rf{\bmi G}}=
+\left(-i\,|\re,k_y,{\bf 0}+\rangle {\bmi  P}({\bmi  R}_{R};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+)^{T}\right)}
+\nonumber\\
+&&
+\times \left({\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\,{\mit \Delta}^2  \right)
+\sum\limits_{ n\ =\ 0}^{ \infty }\left(\int_{{\mit \Omega }_{j}}{\tilde{\bmi  
+G}}({\bmi 
+R}_j,{\bmi  R}_j+{\bmi  r}_j){\rm d}{\bmi r}_j \cdot{\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\right)^n\nonumber\\
+&&\times
+\left( -i\,|\re,k_y,{\bf 0}+) {\bmi  P}({\bmi  R}_{i};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+\rangle^{T}\right){\bmi J}_{6}
+\end{eqnarray}
+\end{samepage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{table}
+\begin{tabular*}{136mm}{ccl}\hline\hline
+&&\\
+
+${{\mit \Delta} \tilde{\bmi C}}_{33}$&=&${\mit \Delta} \zeta\,{k_{y}^2}- 
+{\mit \Delta} \rho\,{\omega^2}+{{k_{y}^2} \over {\it D}}\left(
+       {{\mit \Delta}\chi^2}\,{\tilde{\zeta}} - 
+       4\,{\mit \Delta}\chi\,{\mit \Delta} \gamma\,{\tilde{\zeta}}\,\rf{\mu} + 
+       4\,{{\mit \Delta} \gamma^2}\,{\tilde{\zeta}}\,{\rf{\mu}\!{}^{2}}  
+        \right.$\\
+&&      $  \left. -{\rf{\alpha}\!{}^2}\,{\mit \Delta}a\,{{\mit \Delta}\chi^2}\,{\tilde{\zeta}}\,
+        \rf{\rho} -2\,{\rf{\alpha}\!{}^2}\,{\mit \Delta}\chi\,{{\mit \Delta} \gamma^2}\,{\tilde{\zeta}}\,
+        \rf{\rho} + 
+       {\rf{\alpha}\!{}^2}\,{{\mit \Delta} \gamma^2}\,
+       {\mit \Delta} \zeta\,{\tilde{\zeta}}\,
+        \rf{\rho} - 4\,{\rf{\alpha}\!{}^2}\,{{\mit \Delta} \gamma^2}\,
+        {\rf{\mu}\!{}^{2}}\,\rf{\rho}\right)$\\
+
+&&\\
+       
+${{\mit \Delta} \tilde{\bmi C}}_{43}$&$=$& $- {i\,k_{y}\over {\it D}} 
+{\left( -{\mit \Delta}\chi\,{\mit \Delta} \gamma\,{\tilde{\zeta}}   + 
+         {\mit \Delta} \gamma\,{\mit \Delta} \zeta\,{\tilde{\zeta}} - 
+         2\,{\mit \Delta}a\,{\mit \Delta}\chi\,{\tilde{\zeta}}\,\rf{\mu} - 
+         2\,{{\mit \Delta} \gamma^2}\,{\tilde{\zeta}}\,\rf{\mu} - 4\,{\mit \Delta} \gamma\,{\rf{\mu}\!{}^{2}} \
+         \right) }$\\
+
+&&\\
+
+
+${{\mit \Delta} \tilde{\bmi C}}_{73}$&$=$& $-{2\,i\,k_{y}\,\rf{\mu} \over  {\it D}}
+\left(
+ -{\mit \Delta}\chi\,{\mit \Delta} \gamma\,{\tilde{\zeta}} 
+      + {\mit \Delta} \gamma\,{\mit \Delta} \zeta\,{\tilde{\zeta}} - 2\,{\mit \Delta}\chi\,\rf{\mu} 
+      -  2\,{\mit \Delta}a\,{\mit \Delta}\chi\,{\tilde{\zeta}}\,\rf{\mu}  
+      \right.$\\
+&&        $\left.- 2\,{{\mit \Delta} \gamma^2}\,{\tilde{\zeta}}\,\rf{\mu} + 
+         2\,{\rf{\alpha}\!{}^2}\,{\mit \Delta}a\,{\mit \Delta}\chi\,\rf{\mu}\,\rf{\rho} + 
+         2\,{\rf{\alpha}\!{}^2}\,{{\mit \Delta} 
+         \gamma^2}\,\rf{\mu}\,\rf{\rho} \right) $\\
+
+&&\\
+
+         
+${{\mit \Delta} \tilde{\bmi C}}_{44}$&$=$& ${{{{\mit \Delta} \gamma^2}\,{\tilde{\zeta}}
+ + {\mit \Delta}a\,{\mit \Delta} \zeta\,{\tilde{\zeta}} - 4\,{\mit 
+\Delta}a\,{\rf{\mu}\!{}^{2}}}\over {{\it D}}} $\\
+
+&&\\
+
+${{\mit \Delta} \tilde{\bmi C}}_{74}$&$=$&${{2\,\rf{\mu}\,
+       \left( {{\mit \Delta} \gamma^2}\,{\tilde{\zeta}} + {\mit \Delta}a\,{\mit \Delta} \zeta\,{\tilde{\zeta}} + 
+         2\,{\mit \Delta} \gamma\,\rf{\mu} \right) }\over {{\it D}}}$\\
+
+&&\\
+
+${{\mit \Delta} \tilde{\bmi C}}_{55}$&$=$&${{{\mit \Delta}b}\over 
+     {{\mit \Delta}b\,{\tilde{\zeta}} + \rf{\mu}\,{\mit \Delta}b -1 }}$\\
+
+&&\\
+
+${{\mit \Delta} \tilde{\bmi C}}_{66}$&$=$&${{{\mit \Delta}b}\over 
+{\rf{\mu}\,{\mit \Delta}b  -1}}$\\
+
+&&\\
+
+${{\mit \Delta} \tilde{\bmi C}}_{77}$&$=$&${{4\,{\rf{\mu}\!{}^{2}}\,\left( {\mit \Delta} \zeta + {{\mit \Delta} \gamma^2}\,{\tilde{\zeta}} + 
+         {\mit \Delta}a\,{\mit \Delta} \zeta\,{\tilde{\zeta}} - 
+         {\rf{\alpha}\!{}^2}\,{{\mit \Delta} \gamma^2}\,\rf{\rho} - 
+         {\rf{\alpha}\!{}^2}\,{\mit \Delta}a\,{\mit \Delta} \zeta\,\rf{\rho} \right) }\over 
+         {{\it D}}}$\\
+
+&&\\
+
+$D$&$=$&$4\,{\mit \Delta} \gamma\,{\tilde{\zeta}}\,\rf{\mu} + 
+  4\,{\rf{\mu}\!{}^{2}} + 4\,{\mit \Delta}a\,{\tilde{\zeta}}\,{\rf{\mu}\!{}^{2}} + 
+  {\rf{\alpha}\!{}^2}\,{{\mit \Delta} 
+  \gamma^2}\,{\tilde{\zeta}}\,\rf{\rho} +$\\
+&& ${\rf{\alpha}\!{}^2}\,{\mit \Delta}a\,{\mit \Delta} \zeta\,{\tilde{\zeta}}\,\rf{\rho} - 
+  4\,{\rf{\alpha}\!{}^2}\,{\mit \Delta}a\,{\rf{\mu}\!{}^{2}}\,\rf{\rho}
+  -{\mit \Delta} \zeta\,{\tilde{\zeta}}  $\\
+
+&&\\
+
+$\tilde{\zeta}$&$=$&${{\left( \pi-4   \right) \,\rf{\zeta}}\over {8\,\pi 
+}}$\\ 
+
+&&\\ \hline\hline
+\end{tabular*}
+\caption{\label{CeffTable} 
+{ The elements of the effective coupling 
+matrix ${\mit \Delta}{\mbox{\mib C}_{eff}}$
+}}
+\end{table} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{The effective scattering parameters}
+By comparing the multiple scattering expression (\ref{msomegaj}) with the 
+single scattering expression (\ref{Sscat1mat}), we observe the correspondence
+\[
+{\mit \Delta}{\bmi C}({\bmi R}_j;k_y)
+\Leftrightarrow
+{\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)
+\sum\limits_{ n\ =\ 0}^{ \infty }\left(\int_{{\mit \Omega }_{j}}{\tilde{\bmi  
+G}}({\bmi 
+R}_j,{\bmi  R}_j+{\bmi  r}_j){\rm d}{\bmi r}_j \cdot{\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\right)^n
+\]
+We introduce an {\em effective coupling matrix\/} ${\mit \Delta}{\bmi 
+C}_{eff}$ defined by
+\begin{eqnarray} \label{dCeff0}
+\lefteqn{{\mit \Delta}{\bmi 
+	C}_{eff}({\bmi R}_j;k_y)\equiv}\nonumber\\
+	&&
+\lim\limits_{{ \mit \Omega }_{j} \rightarrow   0}\! 
+{\mit \Delta}{\bmi 	C}({\bmi R}_j;k_y)\!
+\sum\limits_{ n\ =\ 0}^{ \infty }\left(\int_{{\mit \Omega }_{j}}{\tilde{\bmi  
+G}}({\bmi 
+R}_j,{\bmi  R}_j+{\bmi  r}_j){\rm d}{\bmi r}_j \cdot{\mit \Delta}{\bmi 
+	C}({\bmi R}_j;k_y)\right)^n
+\end{eqnarray}
+and using ${\mit \Delta}{\bmi	C}_{eff}({\bmi R}_j;k_y)$ 
+in place of the coupling 
+matrix ${\mit \Delta}{\bmi C}({\bmi R}_j;k_y)$ in (\ref{Sscat1mat}),  
+the single scattering interaction
+\begin{eqnarray} \label{Sscat2mat}
+\lefteqn{{\rf{\bmi G}}{\mit \Delta} {\bmi A}_{eff} {\rf{\bmi G}}=
+\left(-i\,|\re,k_y,{\bmi r}_R\rangle {\bmi  P}({\bmi  R}_{R};{\bmi  R}_{j})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bf 0}+)^{T}\right)}\nonumber\\
+&&\times\left({\mit \Delta}\tilde{\bmi 
+	C}({\bmi R}_j;k_y)\,{\mit \Delta}^2  \right)
+\left( -i\,|\re,k_y,{\bf 0}+) {\bmi  P}({\bmi  R}_{j};{\bmi  R}_{S})
+	\tilde{\bmi \Pi}|\re,-k_y,{\bmi r}_S\rangle^{T}\right){\bmi J}_{6}
+\end{eqnarray}
+where ${\mit \Delta} {\bmi A}_{eff}$ is ${\mit \Delta} {\bmi A}$ from (\ref{dAdef}) but 
+constructed using the {\em effective parameter contrasts\/} from 
+Table \ref{CeffTable}.
+
+Eqn.(\ref{Sscat2mat}) {\em includes all multiple scattering interactions\/} within ${ \mit 
+\Omega }_{j}$ to within the {\em weak Rayleigh approximation\/}. This technique is 
+sometimes called {\em renormalization\/}. 
+The technique is sometimes 
+referred to as a {\em self avoiding renormalization\/} in quantum field 
+theory, and is also implicit in the {\em redefinition of a scalar potential as 
+an equivalent mass operator\/} in various applications of stochastic wave 
+theory [e.g. {\em Sobczyk\/}~(1985)]. The self avoiding renormalization has important implications 
+for the convergence of the {\em multiple scattering series\/}. This later 
+point has been noted in {\em Schuster\/}~(1985), where an 
+analogous strategy was employed to solve the {\em boundary integral 
+equations\/} for a multiple inclusion problem. 
+
+
+
+In practice the renormalization (\ref{dCeff0}) is 
+effected using the matrix inversion
+\begin{samepage}
+\begin{eqnarray}  \label{dCeff}
+\lefteqn{{\mit \Delta}{\bmi C}_{eff}({\bmi 
+R}_j;k_y)=
+}\\
+&&
+{\mit \Delta}{\bmi C}({\bmi 
+R}_j;k_y)\cdot\left[ {\bmi I}_8 - \left(\lim\limits_{{\mit \Omega }_{j} \rightarrow   
+0}\int_{{\mit \Omega }_{j}}{\tilde{\bmi  P}_{r,s}}
+({\bmi R}_j,{\bmi  R}_j+{\bmi  r}_j){\rm d}{\bmi r}_j\right) \cdot{\mit \Delta}{\bmi C}({\bmi 
+R}_j;k_y) \right]^{-1}\nonumber\\
+&&
+=\left[\begin{array}{cccccccc}
+ -{\mit \Delta \rho}\,{\omega^2} &0&0&0&0&0&0&0\\
+ 0&{\mit \Delta}\mu\,{k_{y}^2} - {\mit \Delta} \rho\,{\omega^2} &0&0&0&0&0&
+ -i\,{  k_y}\,{\mit \Delta \mu}\\
+ 0&0&{\mit \Delta}\tilde{\bmi C}_{33}&-{\mit \Delta}\tilde{\bmi C}_{43}&0&0&-{\mit \Delta}\tilde{\bmi C}_{73}&0\\
+ 0&0&{\mit \Delta}\tilde{\bmi C}_{43}&{\mit \Delta}\tilde{\bmi C}_{44}&0&0&{\mit \Delta}\tilde{\bmi C}_{74}&0\\
+ 0&0&0&0&{\mit \Delta}\tilde{\bmi C}_{55}&0&0&0\\
+ 0&0&0&0&0&{\mit \Delta}\tilde{\bmi C}_{66}&0&0\\
+ 0&0&{\mit \Delta}\tilde{\bmi C}_{73}&{\mit \Delta}\tilde{\bmi C}_{74}&0&0&{\mit \Delta}\tilde{\bmi C}_{77}&0\\
+ 0&i\,{  k_y}\,{\mit \Delta \mu}&0&0&0&0&0&{\mit \Delta \mu}
+  \end{array}\right]\nonumber
+\end{eqnarray}
+\end{samepage}
+with the components given in Table \ref{contrastTable} and 
+Table \ref{CeffTable}. All of the elements of ${\mit \Delta}{\bmi C}_{eff}({\bmi 
+R}_j;k_y)$ in (\ref{dCeff}) are evaluated at ${\bmi R}_j$. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The matrix Lippmann-Schwinger equation}
+In this final section, we will derive a matrix analogue of the augmented 
+Lippmann-Schwinger type integral equation (\ref{LSTrep4}). 
+To discretize (\ref{LSTrep4}) into a matrix equation, we replace the 
+integral term with a matrix multiplication.  
+ The matrix analogue translates directly into a computer code, provided the reference 
+medium is homogeneous. The more useful case where the reference medium is 
+a stratified half-space is considered at length in chapter \ref{stratG}.
+
+First, we will arrange the effective coupling matrix ${\mit \Delta}{\bmi C}{}_{eff}({\bmi 
+R}_j;k_y)$ of (\ref{dCeff}) into a larger matrix structure. This matrix 
+is block-diagonal because the coupling operator is {\em local\/} in the spatial 
+domain.  
+
+The second extension concerns the plane wave expansion of the propagators.
+We have already developed  matrix representations of the propagators 
+appropriate to a lattice of source and receiver points, in 
+\S\ref{latticeP}. However, these representations will require minor 
+modification because the partial wave states used in the construction of 
+the lattice propagators in \S\ref{latticeP} were $6-$component 
+displacement/traction vectors. In this chapter, we have augmented those 
+states by the  additional components $\partial_x u_x, \partial_x u_y$, 
+for the purposes expounded above. Consequently, we will need to augment 
+the plane wave lattice propagators of \S\ref{latticeP} in a similar way.
+It is important to note that the number of states, and the manner in 
+which they evolve over space remains unchanged. The only change is that 
+each state carries some extra information in the two additional 
+components. Consequently, it is straightforward to find the augmented 
+propagators, and we simply state the extensions. 
+
+
+
+\subsection{The lattice representation of the effective, weak-Rayleigh 
+coupling matrix}
+
+We recall the definition of the {\em secondary source field lattice\/} 
+introduced in \S\ref{latticeP} and depicted in Fig.\ref{lattice}. This lattice was 
+comprised of $L$ rows of lattice points, with $N_x$ lattice points per 
+row, to give a total of $L \times N_x$ points.
+
+We now define a {\em lattice expansion\/} of the {\em effective coupling array\/} 
+${\mit \Delta}{\bmi C}{}_{eff}({\bmi 
+R}_j;k_y)$ that was defined in (\ref{dCeff}). We recall from \S\ref{latticeP} that the 
+lattice points are numbered in the same order as words to be read on the 
+written page, i.e. top to bottom, left to right.
+Once again, we may also  label the lattice 
+points as if they were the elements of a $2-$D array. For this purpose we 
+re-introduce the matrix row index $1\le \rho \le L$ and the matrix column 
+index $1 \le \chi \le N_x$, so that the global index $i$ is related to 
+the matrix indices via
+\[
+i=(\rho -1) N_x + \chi, \quad 1 \le i \le L N_x, 
+\quad 1 \le \rho \le L, \quad 1 \le \chi \le N_x
+\] 
+The same {\em caveat\/} regarding the use of $\rho$ and $\chi$ to indicate the row and column 
+indices respectively applies here, i.e. the  $\rho$ and $\chi$ in this 
+section,  are not to confused with the material parameters given by the 
+same symbols.
+
+If we denote the coupling matrix for lattice points in 
+$\mbox{row}_{\rho}$, as
+${\mit \Delta}{\bmi C}{}^{\rho}_{eff}(k_y)$, this array may be defined explicitly as the $N_x$ element 
+block diagonal array
+\begin{eqnarray} \label{dCBCrho}
+\lefteqn{{\mit \Delta}{\CB C}{}^{\rho}_{eff}(k_y)
+={\mit \Delta}^{2}\times}\\
+&& \mbox{diag}\left[{\begin{array}{cccc}
+{\mit \Delta}{\bmi C}{}_{eff}({\bmi R}_{{N}_{x}( \rho 
+  -1)+1};{k}_{y})& {\mit \Delta}{\bmi C}{}_{eff}({\bmi R}_{{N}_{x}( \rho  
+ -1)+2};{k}_{y})&\cdots & {\mit \Delta}{\bmi C}{}_{eff}({\bmi R}_{ \rho {  
+N}_{  x}};{k}_{y})\end{array}}\right]\nonumber
+\end{eqnarray} 
+where ${\mit \Delta}^{2}$ is the area of the small square subregion,
+with the $8 \times 8$ diagonal block ${\mit \Delta}{\bmi C}{}_{eff}$ 
+given by (\ref{dCeff}) at the respective lattice point. 
+
+Finally, we assemble the block diagonal arrays ${\mit \Delta}{\bmi 
+C}{}^{\rho}_{eff}(k_y)$ from (\ref{dCBCrho}) for each row of the lattice 
+into the $L-$element, block diagonal array ${\mit \Delta}{\CB C}_{eff}(k_y)$ defined as
+\[
+\!\!\!\!\!\!\fbox{
+\begin{minipage} {146.0mm}
+\begin{equation} \label{dCBC}
+{\mit \Delta}{\CB C}_{eff}(k_y)
+=\mbox{diag}\left[{\begin{array}{cccc}
+{\mit \Delta}{\CB C}{}^{1}_{eff}(k_y)& 
+{\mit \Delta}{\CB C}{}^{1}_{eff}(k_y)&
+\cdots & 
+{\mit \Delta}{\CB C}{}^{1}_{eff}(k_y) 
+\end{array}}\right]
+\end{equation} 
+\vspace{2 mm}
+\end{minipage}
+}
+\]
+
+
+\subsection{The augmented propagators }
+In \S\ref{latticeP},  we wrote down explicit matrix representations for the 
+propagators appropriate for a regular lattice expansion of some virtual 
+or secondary source distribution. We assumed that this secondary source 
+was represented by a $6-$vector denoted by ${\bmi f}_j$ at each of the $L 
+\times N_x$ lattice points. However,  in \S\ref{secEffScat} of the present 
+chapter, we have employed integration by parts to derive the effective 
+coupling matrix ${\mit \Delta}{\bmi C}{}_{eff}({\bmi 
+R}_j;k_y)$ that was defined in (\ref{dCeff}). This later operation 
+entailed transferring the $\partial_x$ operators in ${{\mit \Delta} {\bmi A}}({\bmi x};{\partial 
+}_{x},{k}_{y})$ of (\ref{weakRay}) onto 
+the source and receiver coordinates of the propagator. Due to the {\em 
+bilinear nature\/} of the propagator, the integration by parts was 
+entirely equivalent to augmenting the propagator as well as the coupling 
+matrix. The augmented form was very convenient for numerical 
+applications, because the $6 \times 6 $ {\em differential\/} coupling operator 
+${{\mit \Delta} {\bmi A}}({\bmi x};{\partial 
+}_{x},{k}_{y})$ defined in (\ref{dAdef}) was replaced by the $8 \times 8$ 
+{\em multiplicative\/} coupling matrix ${\mit \Delta}{\bmi C}{}_{eff}({\bmi 
+R}_j;k_y)$ that was defined in (\ref{dCeff}). Mathematically, we are 
+approximating a singular integro/differential operator equation, by a 
+non-singular compact integral equation. 
+
+We now present an augmented version of the plane wave expansion of the
+{\em lattice propagator\/} from   (\ref{GGlattice}) of 
+\S\ref{latticeP}.
+ Certainly, we will not duplicate the manifold steps 
+that lead us to the original representation (\ref{GGlattice}). Instead, 
+we merely point out that  (\ref{GGlattice}) should be replaced by
+\[
+\!\!\!\!\!\!\fbox{
+\begin{minipage} {146.0mm}
+\begin{samepage}
+\begin{eqnarray}\label{CBPaug}
+\!\!\!\!\!\!\!\!\!
+\rf{\CB P}_{r,s} &\equiv&
+\rf{\CB P}\!{}_{r,s}^{z}\left[ \cdot \right]+ \rf{\CB  P}\!{}_{r,s}^{x}\nonumber\\
+&&\!\!\!\!\!\!= -i\hat{\bmi \Phi}{}^{-1}\left[  {\bmi I}_L \otimes\left\{\left({\bmi I}_{8}\otimes 
+{\bf DFT}({\bf k}_{x}) \right)\hat{\bmi  D}_{z}({\bf k}_{x},{k}_{y})\right\}
+ {\CB Q}^{z}\right.\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad
+\times \left.
+ {\bmi I}_L \otimes \left\{
+\hat{\bmi  D}^{T}_{z}(-{\bf k}_{x},-{k}_{y})\left({\bmi I}_{8}\otimes
+{\bf DFT}^{T}(-{\bf k}_{x})  \right)  \hat{\bmi \Phi}\left[ \cdot \right] \right\}\right]\nonumber\\
+&&
+ -{i}{\bmi I}_L \otimes\left( {\bmi I}_{N_x} \otimes
+\left\{\left({\bmi I}_{8}\otimes \overline{\bmi F}(0)  \right)
+ \hat{\bmi  D}_{x}({\bf k}_{z},{k}_{y})\right\}
+ {\CB Q}{}^{x}_{\rho \leftarrow \rho}
+\right.\nonumber\\
+&&\qquad\qquad\qquad\qquad\qquad
+\left.
+\times{\bmi I}_{N_x} \otimes \left\{\hat{\bmi  D}_{x}^{T}(-{\bf k}_{z},-{k}_{y})
+\,\left({\bmi I}_{8}\otimes \overline{\bmi F}^{T}(0)  \right)
+\right\} \right)
+\end{eqnarray}
+\end{samepage}
+\vspace{1 mm}
+\end{minipage}
+}
+\]
+where the $8 N_k \times 6 N_k$ array $\hat{\bmi  D}_{z}$  is an augmented version
+ of the $6 N_k \times 6 N_k$ array 
+${\bmi  D}_{z}$ (\ref{Dsuperdef}) and is given in {\sc Box } {\bf 4.5}.
+Similarly the $8 \bar{N}_k \times 6 \bar{N}_k$ array $\hat{\bmi  D}_{x}$  is an augmented version
+ of the $6 \bar{N}_k \times 6 \bar{N}_k$ array 
+${\bmi  D}_{x}$ (\ref{Dsuperdef}) and is given in {\sc Box } {\bf 4.6}. 
+The plane wave propagators ${\CB Q}^{z}$ and ${\CB Q}{}^{x}_{\rho \leftarrow \rho}$
+were given by (\ref{CBQdef}) and (\ref{CBQxdef}) respectively.
+The DFT matrix  ${\bf DFT}$  was given by (\ref{DFTdef}), and the 
+projection matrix $\overline{\bmi F}(0)$ was given by (\ref{Fbardef}).
+The augmented upsampling and downsampling transformations
+$\hat{\bmi \Phi}\left[ \cdot \right]$ and $\hat{\bmi \Phi}{}^{-1}\left[ \cdot \right]$
+respectively, are defined in Alg.4.1. By incorporating the upsampling and 
+down sampling operators within the definition of $\rf{\CB 
+P}\!\!{}_{r,s}^{z}\left[ \cdot \right]$ in (\ref{CBPaug}),  $\rf{\CB 
+P}\!\!{}_{r,s}$ operates directly on $8 L N_x-$vectors.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\fbox{
+\begin{minipage} {140.0mm}
+{\bf  Algorithm}~{\bf 4.1} {\sc The augmented analogues $\hat{\bmi \Phi}[\cdot]$ and 
+$\hat{\bmi \Phi}{}^{-1}[\cdot]$ of the sampling operators from {\bf  
+Algorithm}~{\bf 3.1} }
+\vspace{3mm}
+
+\begin{tt}
+
+Complex $\tilde{\CB F}_{\rho}(N_k,8), {\CB F}_{\rho}(8,N_x)$\newline
+C0=(0,0)
+
+
+\begin{itemize}
+\item Initialize  $\tilde{\CB F}_{\rho}$
+
+
+\begin{itemize}
+\item For j=1,8
+\begin{itemize}
+\item For k=1,$N_k$
+\begin{itemize}
+\item $\tilde{\CB F}_{\rho}$(k,j)=C0
+\end{itemize}
+\item End !k-loop
+\end{itemize}
+\item End !j-loop
+\end{itemize}
+
+\vspace{1 mm}
+
+\item The upsampling  mapping $\tilde{\CB F}_{\rho}=\hat{\bmi \Phi}[{\CB F}_{\rho}]$
+
+\begin{itemize}
+\item For j=1,8
+\begin{itemize}
+\item For k=1,$N_x$
+\begin{itemize}
+\item $\tilde{\CB F}_{\rho}$((k-1)$N_{\mit 
+\Delta}+$1,j)=${\CB F}_{\rho}$(j,k)
+\end{itemize}
+\item End !k-loop
+\end{itemize}
+\item End !j-loop
+\end{itemize}
+
+
+
+\end{itemize}
+
+\vspace{2 mm}
+
+\begin{itemize}
+\item The downsampling  mapping ${\CB F}_{\rho}=\hat{\bmi \Phi}{}^{-1}[\tilde{\CB F}_{\rho}]$
+\begin{itemize}
+\item For j=1,8
+\begin{itemize}
+\item For k=1,$N_x$
+\begin{itemize}
+\item ${\CB F}_{\rho}$(j,k)$=\tilde{\CB F}_{\rho}$((k-1)$N_{\mit 
+\Delta}+$1,j)
+\end{itemize}
+\item End !k-loop
+\end{itemize}
+\item End !j-loop
+\end{itemize}
+\end{itemize}
+
+\end{tt} 
+
+\vspace{2 mm}
+\end{minipage}
+}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{figure}
+\fbox{
+\begin{minipage} {140.0mm}
+{\sc  Box} ${\bf  4.5}$ {\sc The augmented up/down plane wave states\/}\newline
+
+\begin{samepage}
+\begin{eqnarray} \label{hatDsuperdef}
+\lefteqn{\hat{\bmi D}_{z}({\bf k}_{x},k_{y})=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[\begin{array}{cccccc}
+\left|+,P, {\bf k}_{x},k_{y}  \right)&\left|+,S, {\bf k}_{x},k_{y}  
+\right)&\left|+,H, {\bf k}_{x},k_{y}  \right)&
+\left|-,P, {\bf k}_{x},k_{y}  \right)&\left|-,S, {\bf k}_{x},k_{y}  
+\right)&\left|-,H, {\bf k}_{x},k_{y}  \right)
+\end{array}\right]\nonumber
+\end{eqnarray}
+\end{samepage}
+is defined in terms of the partial wave states
+\begin{itemize}
+\item the $\left|\pm,P, {\bf k}_x,k_y  \right)$ partial wave-vectors 
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small 
+upgoing}}}}$  $P-$waves 
+\begin{equation} \label{hatPeigen}
+\left|\pm,P, {\bf k}_x ,k_y \right)=
+\sqrt{\frac{{ \Delta} k_{x}}{{4 \pi {\rf{\rho}} {\omega 
+}^{  2}{\bf  k}_{  
+z, c }}}}\,
+\left[\begin{array}{c} \pm i\,{\bf k}_{z,P}\\i\,{\bf k}_{x}\\
+i\,k_{y}\,{\bmi I}\\
+  {\rf{\rho}} \,\left( 2\,{{\rf{\beta}}{}^{2}}\,{{\bf k}_{x}^2} + ( 2\,{{\rf{\beta}}{}^{2}}\,{k_{y}^2} - 
+     {\omega^2}){\bmi I} \right) \\ \mp 2\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,{\bf k}_{x}\,{\bf k}_{z,P} \\
+  \mp 2\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,k_{y}\,{\bf k}_{z,P}\\-{{\bf k}_{x}^2}\\-{k_{y}}\,{{\bf k}_{x}} \end{array}\right]
+\end{equation}
+
+\item the $\left|\pm,S, {\bf k}_x ,k_y \right)$ partial wave-vector 
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small 
+upgoing}}}}$  quasi-$SV-$waves 
+\begin{equation} \label{hatSVeigen}
+\left|\pm,S, {\bf k}_x ,k_y \right)=\frac{\omega }{\rf{\beta} \hat{K}_{S}}\,
+\sqrt{\frac{{ \Delta} k_{x}}{{4 \pi {\rf{\rho}} {\omega 
+}^{  2}{\bf  k}_{  
+z, c }}}}\,
+\left[\begin{array}{c} 
+i\,{\bf k}_{x}\\
+\mp i\,{\bf k}_{z,S}\\ {\bf 0} \\
+\mp 2\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,{\bf k}_{x}\,{\bf k}_{z,S} \\
+  {\rf{\rho}} \,\left(({\omega^2} - {{\rf{\beta}}{}^{2}}\,{k_{y}^2}) {\bmi I}-2\,{{\rf{\beta}}{}^{2}}\,{{\bf k}_{x}^2}   \right) \\
+  -{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,k_{y}\,{\bf k}_{x}\\ \pm {{\bf k}_{x}}\,{\bf 
+  k}_{z,S}\\{\bf 0} \end{array}\right]
+\end{equation}
+
+\item the $\left|\pm,H, {\bf k}_x ,k_y \right)$ partial wave-vectors 
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small 
+upgoing}}}}$  quasi-$SH-$waves 
+\begin{equation} \label{hatSHeigen}
+\left|\pm,H, {\bf k}_x ,k_y \right)=\frac{1 }{\hat{K}_{H}}\,
+\sqrt{\frac{{ \Delta} k_{x}}{{4 \pi {\rf{\rho}} {\omega 
+}^{  2}{\bf  k}_{  
+z, c }}}}\,
+\left[\begin{array}{c} 
+\mp k_{y}\,{\bf k}_{z,H} \\-k_{y}\,{\bf k}_{x} \\
+  \hat{K}_{H}^2 {\bmi I}\\
+-2\,i\,{\rf{\rho}} \,{{\rf{\beta}}{}^{2}}\,k_{y}\,{{\bf k}_{z,H}^2}\\
+  \mp 2\,i\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,k_{y}\,{\bf k}_{x}\,{\bf k}_{z,H} \\
+  \pm i\,{\rf{\rho}}\,\left(  {\omega^2} -2\,{{\rf{\beta}}{}^{2}}\,{k_{y}^2} 
+  \right)\,{\bf k}_{z,H} \\
+  -i\,{k}_{y}\,{\bf k}^{2}_{x}\\i\,\hat{K}{}^{2}_{H}\,{\bf k}_{x} \end{array}\right]
+\end{equation}
+\end{itemize}
+where  ${\bf  k}_{x}$ and ${\bf  k}_{z,c}$ were given in
+(\ref{gKx}) and (\ref{gKz}) respectively. 
+\vspace{2 mm}
+\end{minipage}
+}
+\end{figure}
+
+
+
+\begin{figure}
+\fbox{
+\begin{minipage} {140.0mm}
+{\sc  Box} ${\bf  4.6}$ {\sc The augmented left/right plane wave states\/}\newline
+
+\begin{eqnarray} \label{hatDxsuperdef}
+\lefteqn{\hat{\bmi D}_{x}({\bf k}_{z},k_{y})=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[\begin{array}{cccccc}
+\overline{\left|+,P, {\bf k}_{z},k_{y}  \right)}&\overline{\left|+,S, {\bf k}_{z},k_{y}  
+\right)}&\overline{\left|+,H, {\bf k}_{z},k_{y}  \right)}&
+\overline{\left|-,P, {\bf k}_{z},k_{y}  \right)}&\overline{\left|-,S, {\bf k}_{z},k_{y}  
+\right)}&\overline{\left|-,H, {\bf k}_{z},k_{y}  \right)}
+\end{array}\right]\nonumber
+\end{eqnarray}
+is defined in terms of the partial wave states
+\begin{itemize}
+\item the $8 \overline{N}_k \times \overline{N}_k$ $P$-wave partition
+\begin{equation} \label{hatPxeigenSuper}
+\overline{\left|\pm,P, {\bf k}_z,k_{y}  \right)}=
+\sqrt{\frac{{ \Delta} k_{z}}{{4 \pi {\rf{\rho}} {\omega 
+}^{  2}{\bf  k}_{  
+x, P }}}}
+\left[\begin{array}{c} i\,{\bf k}_{z}\\ \pm i\,{\bf k}_{x,P}\\
+i\,k_{y}\,{\bmi I}\\
+  {\rf{\rho}} \,\left( 2\,{{\rf{\beta}}{}^{2}}\,{{\bf k}_{x,P}^2} + ( 2\,{{\rf{\beta}}{}^{2}}\,{k_{y}^2} - 
+     {\omega^2}){\bmi I} \right) \\ \mp 2\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,{\bf k}_{x,P}\,{\bf k}_{z} \\
+  - 2\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,k_{y}\,{\bf k}_{z}
+  \\ -\,{\bf k}^{2}_{x,P}\\
+\mp \,k_{y}\,{\bf k}_{x,P} \end{array}\right]
+\end{equation}
+
+\item  the $8 \overline{N}_k \times \overline{N}_k$ $SV$-wave partition
+\begin{equation} \label{hatSVxeigenSuper}
+\overline{\left|\pm,S, {\bf k}_z,k_{y}  \right)}=
+\frac{\omega }{\rf{\beta} \hat{K}_{S}}\,\sqrt{\frac{{ \Delta} k_{z}}{{4 \pi {\rf{\rho}} {\omega 
+}^{  2}{\bf  k}_{  
+x, S }}}}\,\left[\begin{array}{c} 
+\pm i\,{\bf k}_{x,S}\\
+- i\,{\bf k}_{z}\\ {\bf 0} \\
+\mp 2\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,{\bf k}_{x,S}\,{\bf k}_{z} \\
+  {\rf{\rho}} \,\left(({\omega^2} - {{\rf{\beta}}{}^{2}}\,{k_{y}^2}) {\bmi 
+  I}-2\,{{\rf{\beta}}{}^{2}}\,{{\bf k}_{x,S}^2}   \right) \\
+ \mp {\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,k_{y}\,{\bf k}_{x,S}
+ \\
+\pm \,{\bf k}_{z} {\bf k}_{x,S}\\ {\bf 0} \end{array}\right]
+\end{equation}
+
+\item the $8 \overline{N}_k \times \overline{N}_k$ $SH$-wave partition
+\begin{equation} \label{hatSHxeigenSuper}
+\overline{\left|\pm,H, {\bf k}_z, k_{y}  \right)}=\frac{1 }{\hat{K}_{H}}\,
+\sqrt{\frac{{ \Delta} k_{z}}{{4 \pi {\rf{\rho}} {\omega 
+}^{  2}{\bf  k}_{  
+x, H }}}}\,\left[\begin{array}{c} 
+- k_{y}\,{\bf k}_{z} \\ \mp k_{y}\,{\bf k}_{x,H} \\
+  \hat{K}_{H}^2 {\bmi I}\\
+-2\,i\,{\rf{\rho}} \,{{\rf{\beta}}{}^{2}}\,k_{y}\,{{\bf k}_{z}^2}\\
+  \mp 2\,i\,{\rf{\rho}}\,{{\rf{\beta}}{}^{2}}\,k_{y}\,{\bf k}_{x,H}\,{\bf k}_{z} \\
+   i\,{\rf{\rho}}\,\left(  {\omega^2} -2\,{{\rf{\beta}}{}^{2}}\,{k_{y}^2} 
+  \right)\,{\bf k}_{z}
+  \\ -i\, k_{y}\,{\bf k}^{2}_{x,H} \\
+  \pm i\, \hat{K}_{H}^2 {\bf k}_{x,H}  \end{array}\right]
+\end{equation}
+
+\end{itemize}
+where  ${\bf  k}_{x}$ and ${\bf  k}_{z,c}$ were given in
+(\ref{gbarKx}) and (\ref{gbarKz}) respectively.
+\vspace{2 mm}
+\end{minipage}
+}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The matrix formulation of the governing equation }
+Using the propagator ${\rf{\CB P}}_{r,s}$ from (\ref{CBPaug}) and the coupling 
+matrix ${\mit \Delta} {\CB C}_{eff}$ from (\ref{dCBC}), 
+the matrix analogue of the governing equation (\ref{LSTrep4}) may be written as
+\begin{equation} \label{LSTrep5}
+{{\CB G}}_{r}={\rf{\CB G}}_{r}+{\rf{\CB P}}_{r,s}{\mit \Delta} {\CB C}_{eff} {\CB G}_{r}
+\end{equation} 
+where ${\rf{\CB G}}_{r}$ is the augmented reference Green's tensor whose 
+explicit form depends on the location and nature of the seismic source.
+
+
+
