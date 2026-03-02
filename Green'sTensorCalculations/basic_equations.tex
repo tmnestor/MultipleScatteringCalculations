@@ -1,0 +1,781 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{slantsc}
+
+\oddsidemargin=14.6mm
+\evensidemargin=14.6mm
+\textwidth=150mm
+
+% Macros from the thesis
+\newcommand{\CB}[1]{\mbox{\boldmath$\cal #1$\unboldmath}}
+\newcommand{\bmi}[1]{\mbox{\boldmath$\mit #1$\unboldmath}}
+\newcommand{\rf}[1]{\stackrel{\scriptscriptstyle _{\,\,\circ}}{ #1}}
+\newcommand{\gtlt}[0]{\stackrel{\scriptscriptstyle >}{\scriptscriptstyle _<}}
+
+\begin{document}
+
+\begin{center}
+{\Large Sections 2.1.2 \& 3.1: Governing Equations and\\
+The Free Space Green's Tensor}\\[1.5em]
+{\large T.M. Nestor}\\
+{\it Research School of Earth Sciences, Australian National University}
+\end{center}
+
+\vspace{1em}
+\noindent\rule{\textwidth}{0.4pt}\\[0.5em]
+Extracted from Chapter 2 of: {\it Seismic Wave Propagation in Complex Media: Summing the Multiple
+Scattering Series}, PhD Thesis, ANU (1996).\\[0.5em]
+\noindent\rule{\textwidth}{0.4pt}
+
+
+\subsection*{2.1.2\quad The Governing Equations}
+
+
+Assuming that the depth below the free surface is measured by the
+$z-$coordinate, the forced elastic displacement ${\bmi  u} = {({u}_{z},{u}_{x},{u}_{y})}^{T}$
+and traction vector ${\bmi  t} = {({\tau}_{zz},{\tau}_{xz},{\tau}_{yz})}^{T }$ on a
+fixed depth plane (i.e. $z=const.$) with unit
+normal ${\bmi  e}_{z}$,  are grouped into the $6$-vector
+\begin{eqnarray} \label{bdef}
+\lefteqn{{\bmi  b}  (z,x,y)= {  \left[ \begin{array}{cccccc}{ u}_{ z}
+(z,x,y),&{u}_{x}(z,x,y),&{u}_{y}(z,x,y),&{\tau}_{zz}(z,x,y),&{\tau}_{xz}(z,x,y),&
+{\tau}_{yz}(z,x,y)\end{array} \right]}^{  T }.}\nonumber\\
+&&
+\end{eqnarray}
+The governing equation for time harmonic elastic wave motion in an {\em isotropic  medium\/}
+is then a
+set of $6$ coupled partial differential equations (first order with respect
+to the depth coordinate) which may be written in the operator notation
+\begin{equation} \label{govEqn00}
+{\CB L}({\bmi x};{\partial }_{z},{\partial }_{x},{\partial }_{y})\cdot {\bmi  b }\equiv\left[\partial_{z}-{\CB A}({\bmi x};{\partial }_{x},{\partial }_{y})\right]\cdot {\bmi  b }=
+{\bmi  f}
+\end{equation}
+where ${\bmi  b}$ is given in (\ref{bdef})  and
+${\CB A}$ is defined as
+\begin{eqnarray} \label{Adef0}
+\lefteqn{{\CB A}({\bmi x};{\partial }_{x},{\partial }_{y})=}\nonumber\\
+&&\left[{\begin{array}{cccccc}
+0&- \gamma {\partial }_{  x}&  - \gamma {\partial }_{  y}&  a&0&0\\
+-{ \partial }_{x}&0&0&0&b&0\\
+-{\partial }_{y}&0&0&0&0&b\\
+- \rho {\omega }^{  2}&  0&0&0&-{ \partial }_{x}&-{ \partial }_{y}\\
+0&- \rho {\omega }^{  2}  -{\partial }_{x} \zeta {\partial }_{  x}  -{ \partial }_{y} \mu
+{\partial }_{  y}&  -{ \partial }_{x} \chi {\partial }_{  y}
+ -{ \partial }_{y} \mu {\partial }_{  x}&  -{ \partial }_{x} \gamma &  0&0\\
+ 0&-{ \partial }_{y} \chi {\partial }_{  x}  -{ \partial }_{x} \mu {\partial }_{  y}&
+   - \rho {\omega }^{  2}  -{ \partial }_{y} \zeta {\partial }_{  y}
+ -{ \partial }_{x} \mu {\partial }_{  x}&  -{ \partial }_{y} \gamma &  0&0\end{array}}
+ \right]
+\end{eqnarray}
+and the material parameters in (\ref{Adef0}) are defined in Table \ref{ATable}.
+
+\begin{table}[h]
+\begin{tabular*}{85mm}{ccc}\hline
+parameter & $(\rho, \alpha, \beta)$-definition & $(\rho, \lambda, \mu)$-definition\\ \hline
+$P$&$\alpha$&$\sqrt{{{\lambda + 2 \mu} \over {\rho}}}$\\
+$S$&$\beta$&$\sqrt{{{\mu} \over {\rho}}}$\\
+$H$&$\beta$&$\sqrt{{{\mu} \over {\rho}}}$\\
+$\gamma$&$\left(1- 2{{\beta^2}\over{\alpha^2}}\right)$&${{\lambda}\over{\lambda+2 \mu}}$\\
+$\zeta$&$4 \rho \beta^2 \left(1- {{\beta^2}\over{\alpha^2}} \right)$&${{4
+\mu (\lambda+ \mu)}\over{\lambda+2 \mu}}$\\
+$\chi$&$2 \rho \beta^2\left(1-
+2{{\beta^2}\over{\alpha^2}}\right)$&${{2 \lambda \mu}\over{\lambda+2
+\mu}}$\\ $a$&${{1}\over{\rho \alpha^2}}$&${{1}\over{\lambda+2 \mu}}$\\
+$b$&${{1}\over{\rho \beta^2}}$&${{1}\over{\mu}}$\\
+\hline
+\end{tabular*}
+\caption{\label{ATable} { The material parameter definitions}}
+\end{table}
+
+This thesis is concerned with finding solutions of (\ref{govEqn00}) when
+the material parameters in Table \ref{ATable} are functions of $(z,x)$ but are
+independent of  the $y-$coordinate. This problem is sometimes called the
+$2\,{1/2}-$D problem because the wavefield may spread in $3-$D,
+but the heterogeneity is confined to $2-$D.
+We exploit the translational invariance of the medium along the
+$y-$coordinate by assuming that the displacement/traction field ${\bmi
+b}(z,x,y)$ may be {\em synthesized\/} from its  $k_y$ plane wave components as
+\begin{equation} \label{kysyn}
+{\bmi b}(z,x,y)={\frac{1}{2\pi }}\int_{R} \, {\rm d}{k}_{y}\,{\bmi
+b}(z,x,{k}_{y})\, {\rm e}^{i{k}_{y}y}
+\end{equation}
+where ${\bmi b}(z,x,{k}_{y})$ is now governed by
+\begin{equation} \label{govEqn0}
+{\CB L}(z,x;{\partial }_{z},{\partial }_{x},i {k}_{y})\cdot {\bmi  b
+}(z,x,k_y; \omega)\equiv
+\left[\partial_{z}-{\CB A}(z,x;{\partial }_{x},i {k}_{y})\right]\cdot {\bmi  b }(z,x,k_y;
+\omega)=
+\tilde{\bmi  f}
+\end{equation}
+with
+\begin{eqnarray} \label{Adef}
+\lefteqn{{\CB A}(z,x;{\partial }_{x},i {k}_{y})
+=}\nonumber\\
+&&\left[{\begin{array}{cccccc}
+0&- \gamma {\partial }_{  x}&  -i \gamma {  k}_{  y}&  a&0&0\\ -{ \partial
+}_{x}&0&0&0&b&0\\ -i{k}_{y}&0&0&0&0&b\\ - \rho {\omega }^{
+2}&  0&0&0&-{ \partial }_{x}&-i{k}_{y}\\ 0&- \rho {\omega
+}^{  2}  -{ \partial }_{x} \zeta {\partial }_{
+x}  + \mu {  k}_{  y}^{  2}&
+-i{k}_{y}{ \partial }_{x} \chi   -i{k}_{y} \mu {\partial
+}_{  x}&  -{ \partial }_{x} \gamma &  0&0\\
+0&-i{k}_{y} \chi {\partial }_{  x}  -i{k}_{y}{ \partial
+}_{x} \mu &  - \rho {\omega }^{  2}  + \zeta
+{  k}_{  y}^{  2}  -{ \partial }_{x} \mu
+{\partial }_{  x}&  -i{k}_{y} \gamma &  0&0\end{array}}\right]
+\end{eqnarray}
+and
+\begin{equation} \label{kysynf}
+\tilde{\bmi f}=\int_{R} \, {\rm d}{k}_{y}\,{\bmi f}(z,x,y)
+\, {\rm e}^{-i{k}_{y}y}.
+\end{equation}
+In this work, we assume the the motion is driven by a point source in the
+$y=0$ plane, i.e. ${\bmi f}(z,x,y)= {\bmi F}(z,x) \delta(y)$, so that
+from (\ref{kysynf}) we have
+\begin{equation} \label{kysynf1}
+\tilde{\bmi f}=\int_{R} \, {\rm d}{k}_{y}\,{\bmi F}(z,x) \delta(y)
+\, {\rm e}^{-i{k}_{y}y} = {\bmi F}(z,x).
+\end{equation}
+Due to the translational invariance of the medium in the $y-$coordinate,
+if the source plane is translated to  $y=y_1$, then the spatial domain solution
+${\bmi  b }(z,x,y; \omega)$ is translated to  ${\bmi  b }(z,x,y-y_1;
+\omega)$. Consequently, it is straight forward to derive the solution
+appropriate to general source conditions, by translating the field
+for a point source in the $y=0$ plane, accordingly.
+
+In (\ref{govEqn0}) both $\omega$ and ${  k}_{  y}$ are {\em passive
+parameters\/}. The space/time solution is constructed from a
+superposition of solutions with different values of $\omega$ and ${  k}_{  y}$
+as prescribed by the {\em inverse Fourier transforms\/}
+on frequency and on $k_y$. The main task remaining, is the construction the
+transformed displacement/traction vector ${\bmi  b }(z,x,k_y; \omega)$ in (\ref{govEqn0}).
+Often, we will not indicate the explicit dependence of  ${\bmi  b }(z,x,k_y; \omega)$
+on $k_y$ and $\omega$ but write ${\bmi  b }(z,x)$ instead.
+
+The representation (\ref{govEqn0}) is most convenient when the
+dominant material variation is in the $z$ coordinate direction, as we have
+singled out this coordinate for special treatment, allowing easy application of
+boundary and interface conditions on fixed depth planes.  Also, the
+displacement ${\bmi  u}$ and depth plane traction ${\bmi  t}$ are accorded equal status.
+In the more traditional displacement formulation, the  offset $x$ and depth $z$
+coordinates appear within the equations in a symmetric form (due to isotropy)
+whereas the traction field must be derived from the displacement via the
+elastic analogue of {\em Hooke's law\/} which involves further spatial
+differentiations of $\bmi  u$.
+
+
+We note in passing that (\ref{govEqn0}) simplifies considerably in the
+special case where the motion is driven by a {\em line source\/}, along
+the $y-$axis so that we may set  $k_y\equiv 0$ in (\ref{Adef}) which then
+reduces to
+\[
+{\CB A}(z,x;{\partial }_{x},0)
+=\left[{\begin{array}{cccccc}
+0&- \gamma {\partial }_{  x}&  0&  a&0&0\\ -{ \partial
+}_{x}&0&0&0&b&0\\ 0&0&0&0&0&b\\ - \rho {\omega }^{
+2}&  0&0&0&-{ \partial }_{x}&0\\ 0&- \rho {\omega
+}^{  2}  -{ \partial }_{x} \zeta {\partial }_{
+x} &
+0&  -{ \partial }_{x} \gamma &  0&0\\
+0&0 &  - \rho {\omega }^{  2}
+ -{ \partial }_{x} \mu
+{\partial }_{  x}& 0 &  0&0\end{array}}\right].
+\]
+In this instance,  (\ref{govEqn0}) may be decomposed into its {\em in plane\/}
+equation
+\begin{equation} 	\label{PSVeqn}
+{\frac{ \partial }{\partial z}}\left[{\begin{array}{c}{u}_{z}\\
+{u}_{x}\\
+{\tau }_{zz}\\
+{\tau }_{xz}\end{array}}\right]
+=\left[{\begin{array}{cccc}
+0&- \gamma {\partial }_{  x}&  a&0\\
+-{ \partial }_{x}&0&0&b\\
+- \rho {\omega }^{  2}&  0&0&-{ \partial }_{x}\\
+0&- \rho {\omega }^{  2}  -{ \partial }_{x} \zeta {\partial }_{  x} &
+ -{ \partial }_{x} \gamma &  0
+\end{array}}\right]
+\left[{\begin{array}{c}{u}_{z}\\
+{u}_{x}\\
+{\tau }_{zz}\\
+{\tau }_{xz}\end{array}}\right]
+\end{equation}
+for the $P/SV$ field and {\em out of plane\/} equation
+\begin{equation} 	\label{SHeqn}
+	{\frac{\partial }{\partial z}}\left[{\begin{array}{c}{u}_{y}\\
+	{\rm \tau }_{yz}\end{array}}\right]
+	=\left[{\begin{array}{cc}
+	0&b\\
+	- \rho {\omega }^{  2}-{ \partial }_{x} \mu {\partial }_{  x}& 0
+	\end{array}}\right]
+	\left[{\begin{array}{c}{u}_{y}\\
+	{\rm \tau }_{yz}\end{array}}\right]
+\end{equation}
+for the $SH$ field.
+For the most part, we will concentrate on the solution of (\ref{govEqn0})
+because the source conditions needed for the applicability of (\ref{PSVeqn}) and (\ref{SHeqn})
+are too restrictive.
+
+Consistent with the decomposition of the material properties, we
+ {\em split\/} (\ref{Adef}) into
+\begin{equation} \label{Asplit}
+{\CB A}({\bmi x};{\partial }_{x},{\partial }_{y};k_y)=
+{\rf{\bmi A}}({\bmi x};{\partial }_{x},{\partial }_{y})
++{{\mit \Delta} {\bmi A}}({\bmi x};{\partial }_{x},{\partial }_{y})
+\end{equation}
+where
+\begin{eqnarray} \label{Adefref}
+\lefteqn{
+{\rf{\bmi A}}(z,x;{\partial }_{x},{k}_{y})
+=}\nonumber\\
+&&\left[{\begin{array}{cccccc}
+0&- {\rf \gamma} {\partial }_{  x}&  -i {\rf \gamma} {  k}_{  y}&  {\rf a}&0&0\\ -{ \partial
+}_{x}&0&0&0&{\rf b}&0\\ -i{k}_{y}&0&0&0&0&{\rf b}\\ - {\rf \rho} {\omega }^{
+2}&  0&0&0&-{ \partial }_{x}&-i{k}_{y}\\ 0&- {\rf \rho} {\omega
+}^{  2}  -{ \partial }_{x} {\rf \zeta} {\partial }_{
+x}  + {\rf \mu} {  k}_{  y}^{  2}&
+-i{k}_{y}{ \partial }_{x} {\rf \chi}   -i{k}_{y} {\rf \mu} {\partial
+}_{  x}&  -{ \partial }_{x} {\rf \gamma} &  0&0\\
+0&-i{k}_{y} {\rf \chi} {\partial }_{  x}  -i{k}_{y}{ \partial
+}_{x} {\rf \mu} &  - {\rf \rho} {\omega }^{  2}  + {\rf \zeta }
+{  k}_{  y}^{  2}  -{ \partial }_{x} {\rf \mu}
+{\partial }_{  x}&  -i{k}_{y} {\rf \gamma} &
+0&0\end{array}}\right]
+\end{eqnarray}
+where ${\rf \gamma}$ is the {\em reference medium\/} value of ${\gamma}$
+from Table \ref{ATable} and similar definitions hold for the remaining
+{\em reference\/} material parameters
+in (\ref{Adefref}). Also,
+\begin{eqnarray} \label{dAdef}
+\lefteqn{
+{{\mit \Delta} {\bmi A}}(z,x;{\partial }_{x},{k}_{y})
+=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[{\begin{array}{cccccc}
+0&- {{\mit \Delta} \gamma} {\partial }_{  x}&  -i {{\mit \Delta} \gamma} {  k}_{  y}&
+{{\mit \Delta} a}&0&0\\0&0&0&0&{{\mit \Delta} b}&0\\ 0&0&0&0&0&{{\mit \Delta} b}\\ - {{\mit \Delta} \rho} {\omega }^{
+2}&  0&0&0&0&0\\ 0&- {{\mit \Delta} \rho} {\omega
+}^{  2}  -{ \partial }_{x} {{\mit \Delta} \zeta} {\partial }_{
+x}  + {{\mit \Delta} \mu} {  k}_{  y}^{  2}&
+-i{k}_{y}{ \partial }_{x} {{\mit \Delta} \chi}   -i{k}_{y} {{\mit \Delta} \mu} {\partial
+}_{  x}&  -{ \partial }_{x} {{\mit \Delta} \gamma} &  0&0\\
+0&-i{k}_{y} {{\mit \Delta} \chi} {\partial }_{  x}  -i{k}_{y}{ \partial
+}_{x} {{\mit \Delta} \mu} &  - {{\mit \Delta} \rho} {\omega }^{  2}  + {{\mit \Delta} \zeta }
+{  k}_{  y}^{  2}  -{ \partial }_{x} {{\mit \Delta} \mu}
+{\partial }_{  x}&  -i{k}_{y} {{\mit \Delta} \gamma} &  0&0\end{array}}\right]\nonumber
+\end{eqnarray}
+with the material contrast parameters in (\ref{dAdef}) defined in Table \ref{contrastTable}.
+
+\begin{table}[h]
+\begin{tabular*}{100mm}{ll}\hline
+contrast & definition\\ \hline
+ $ \Delta \rho$ & $\rho - {\rf \rho}$\\
+ $ \Delta \mu$ & $\mu - {\rf \mu}$\\
+ $ \Delta \gamma$ & $2{\frac{{ \rf \beta }{}^{2}}{{ \rf \alpha }{}^{2}}}-
+ 2{\frac{{\beta}^{2}}{{\alpha}^{2}}}$\\
+$\Delta \zeta$ &$4 \rho{\beta
+}^{2}\left[{1-{\frac{{\beta  }^{2}}{{\alpha}^{2}}}}\right]-4{\rf \rho}
+{\rf \beta }{}^{  2}\left[{
+ 1-{\frac{{ \rf \beta }{}^{2}}{{\rf  \alpha }{}^{2}}}}\right]$\\
+$\Delta \chi$ &$2 \rho {\beta}^{2}\left[{1-2{\frac{{ \beta
+}^{2}}{{\alpha}^{2}}}}\right]-2{\rf \rho} {\rf \beta }{}^{  2}\left[{
+ 1-2{\frac{{\rf \beta }{}^{2}}{{\rf \alpha }{}^{2}}}}\right]$\\
+$\Delta  a$ & ${\frac{1}{\rho{\alpha}^{2}}}-
+ {\frac{1}{ {\rf \rho} {{\rf \alpha} }{}^{  2}}}$\\
+$\Delta  b$ & ${\frac{1}{\rho{\beta}^{2}}}-
+ {\frac{1}{ {\rf \rho} {{\rf \beta} }{}^{  2}}}$\\
+ \hline
+\end{tabular*}
+\caption{\label{contrastTable} { The material contrast parameters}}
+\end{table}
+
+Using the decomposition of (\ref{Asplit}) in the governing equation (\ref{govEqn0}) gives
+\begin{equation} \label{Leqn}
+{\bmi L}(z,x;{\partial }_{z},{\partial }_{x},{k}_{y})\cdot{\bmi b}(z,x,k_y; \omega) =
+\tilde{\bmi f} + {\mit \Delta} {\bmi A}(z,x;{\partial }_{x},{k}_{y})\cdot{\bmi b}(z,x,k_y; \omega)
+\end{equation}
+where the {\em reference medium\/} operator ${\bmi L}$ is defined as
+\begin{equation} \label{Lref}
+{\bmi L}(z,x;{\partial }_{z},{\partial }_{x},{k}_{y})\equiv
+\left[\partial_{z}-\rf{\bmi A}(z,x;{\partial }_{x},{k}_{y})\right]
+\end{equation}
+with $\rf{\bmi A}$ given in (\ref{Adefref}).
+Scrupulously indicating all the arguments of the various operators introduced in
+this thesis can be very cumbersome, so for example, we will often write
+${\bmi L}$ to mean ${\bmi
+L}(z,x;{\partial }_{z},{\partial }_{x},{k}_{y})$ when no misunderstanding
+is likely.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+
+\subsection*{Chapter 3: Representations of the time harmonic elastic wave Green's tensor}
+
+We recall from Chapter 2 that
+ the material
+properties of the propagation environment have been defined as
+the sum of a reference and residual component, i.e.
+$(\rho, \alpha, \beta)=(\rf{\rho}+{\mit \Delta}\rho,\rf{\alpha}+{\mit
+\Delta}\alpha,\rf{\beta}+{\mit \Delta}\beta)$. In this chapter, we will
+be concerned exclusively with uniform media so that
+residual properties $({\mit \Delta}\rho,{\mit
+\Delta}\alpha,{\mit \Delta}\beta)$ vanish and we have
+$(\rho, \alpha, \beta)=(\rf{\rho},\rf{\alpha},\rf{\beta})$. To simplify
+notation, we discontinue the practice of writing  $(\rf{\rho},\rf{\alpha},\rf{\beta})$
+to denote reference medium parameters and write
+$({\rho},{\alpha},{\beta})$ instead.
+
+This chapter is concerned with the construction of the time harmonic
+elastic wave motion driven by a {\em lattice of multipolar point forces\/}
+${\bmi f}$ {\em  superimposed on a homogeneous medium\/}.
+The homogeneous medium is
+characterized by the  elastic parameters $(\rho,\alpha,\beta)$, which
+denote the density, compressional and shear speeds respectively, in an
+isotropic medium.
+
+Each point force  ${\bmi f}$,  has an assumed time
+dependence of the form
+$\exp(\epsilon t -i 2 \pi \nu t)$ where
+$\nu $ is the  frequency and $\epsilon$ is a non-negative {\em
+growth\/} parameter. The {\em adiabatic growth term\/} ${\rm e}^{\epsilon
+t}$,
+evolves the wavefield from a state of quiescence in the infinite past, to
+its
+present value, following a path that ensures that the {\em wavefield is
+always in steady
+state equilibrium with the driving force\/} ${\bmi f}$. This device has been
+employed by
+{\em Lighthill} ~(1960) to enforce the {\em radiation
+boundary conditions\/}.
+For  convenience, we introduce the {\em complex angular frequency\/}
+\begin{equation} \label{w+}
+\omega\equiv 2 \pi \nu +i \epsilon.
+\end{equation}
+We can then synthesize {\em transient motion\/} from a discrete set of
+{\em
+forced motions\/}, sampled from the {\em Bromwich contour\/} in the
+complex frequency
+domain [e.g.\ {\em Chapman} ~(1978)] as
+\begin{equation}	\label{InvLaplace}
+	\left[{\cdot }\right](t)=2 \, {\rm e}^{\epsilon  t}\,
+	\Re \int_{ 0}^{\nu_{max}} {\rm d}\nu \ {\rm e}^{ -i
+	2 \pi \nu t}\left[{\cdot }\right] (2 \pi \nu +i \epsilon)
+\end{equation}
+where $\nu_{{max}}$ is the maximum frequency of the source field.
+Usually the growth parameter $\epsilon$ is chosen so that $5 \le \epsilon T
+\le 10$, where $T$ is the length of the required time series (which is
+usually determined by trial and error). Using the complex angular frequency $\omega$ smoothes the frequency domain
+response, which enhances the conditioning of the problem,
+causing the complex frequency multiple scattering series to converge
+faster than the real frequency version. However, we must be aware that the
+process is equivalent to an analytic continuation, and is inherently
+unstable. The instability, is manifested by the sensitivity of
+(\ref{InvLaplace}) to errors in the frequency domain response. This is a
+particularly troubling issue, as the multiple scattering series is
+usually only summed to a relative error of $10^{-6}$ and it remains an
+open question whether we have secured sufficient accuracy to avoid the
+deleterious effects of the numerical instability inherent in
+(\ref{InvLaplace}). An excellent survey of numerical methods for the
+numerical evaluation of (\ref{InvLaplace}) is presented in
+{\em Davies \& Martin\/}~(1979).
+
+\subsubsection*{3.1\quad The free space, time harmonic,  elastic wave Green's tensor}
+Given the 2-D vectors
+\[
+{\bmi  x}\equiv (z,x), \quad {\bmi  x}^{\prime}\equiv (z^{\prime},x^{\prime})
+\]
+a particularly useful solution $\rf{\bmi  G }({\bmi  x};{\bmi  x}^{\prime};k_y)$,
+satisfies (\ref{govEqn0}) 	when the the material properties in
+Table \ref{ATable} are homogeneous and the  {\em $y-$Fourier transformed body
+force\/} ${\bmi F}({\bmi x};{\bmi x}^{\prime})$ assumes the
+special form
+\[
+{\bmi F}({\bmi x};{\bmi x}^{\prime})=
+{\bmi  I}_6 \delta({\bmi x}-{\bmi x}^{\prime}),
+\]
+with ${\bmi  I}_6$ the $6 \times 6$ {\em identity matrix\/}, {\em viz\/}
+\begin{equation} \label{GreenDef}
+{{\CB L}}\cdot \rf{\bmi  G}({\bmi  x};{\bmi  x}^{\prime};k_y)={\bmi  I}_6
+\delta({z}-{z}^{\prime})\delta({x}-{x}^{\prime}).
+\end{equation}
+We can then use the linearity of (\ref{govEqn0}) to pose the {\em
+particular solution\/} ${\bmi  b}_{P}$ of (\ref{govEqn0}) as the {\em
+superposition integral\/}
+\begin{equation}	\label{superposition}
+	{\bmi  b}_{P}=\int {\rm d}{\bmi  x}^{\prime}\, \rf{\bmi  G}({\bmi  x};{\bmi
+x}^{\prime};k_y){\bmi
+	f}({\bmi  x}^{\prime})
+\end{equation}
+for an arbitrary body force $\bmi  f$.
+It will be  convenient for the purpose of subsequent constructions, to
+interpret
+$\rf{\bmi  G}({\bmi  x};{\bmi  x}^{\prime};k_y)$  of (\ref{superposition}), as the
+{\em integral kernel\/} of the formal inverse
+\begin{equation}	\label{invDef}
+	\left[{{\CB L}}^{-1} {\bmi  w}\right]({\bmi  x})\equiv \int {\rm d}{\bmi
+	x}^{\prime}\, \rf{\bmi  G }({\bmi  x};{\bmi  x}^{\prime};k_y)\cdot{\bmi  w}({\bmi
+x}^{\prime})
+\end{equation}
+for an arbitrary {\em test\/} vector-function $\bmi  w$, where ${{\CB L}}$ is the governing
+operator in (\ref{govEqn0}). Equation
+(\ref{invDef}) is strictly formal,  as the {\em null space\/} of
+${{\CB L}}$ is spanned by the set of {\em homogeneous\/} solutions and
+consequently,
+$\rf{\bmi  G}$ is not unique. To get a {\em well posed\/} inverse, we invoke
+the {\em radiation condition\/} that {\em there are no homogeneous
+solutions
+of\/} (\ref{govEqn0}) {\em due to sources at infinity\/}.
+
+
+To solve for $\rf{\bmi  G}$ in (\ref{GreenDef}), or equivalently, to construct
+the
+inverse  ${{\CB L}}^{-1}$ in (\ref{invDef}), we follow the
+classical {\em Fourier Transform\/} route. To begin, we transform the $x-$
+dependence via ${\cal F}_{x}\, [\cdot]({k}_{x})\equiv \frac{1}{\sqrt{2
+\pi}}\int_{-\infty }^{ \infty
+}dx\ \exp \left({-i\, {k}_{x} x}\right)\, [\cdot](x)$, where  ${k}_{x}$ is the
+horizontal
+component
+of the wavevector,
+so that the transverse {\em Fourier\/} transform of the governing equation
+(\ref{GreenDef})
+may be written as
+\begin{eqnarray}	\label{FLdef}
+\lefteqn{\langle { {k}_{x}} | {\CB L }| { {k}_{x}}^{\prime}\rangle
+\langle { {k}_{x}}^{\prime}| x\rangle\langle x| \,\rf{\bmi
+G}({\bmi x};{\bmi x}^{\prime};k_y)}\nonumber\\
+&&\equiv{\bmi  L}(z,{k}_{x},{k}_{y}) \,\rf{\bmi  G}(z,{k}_{x};z^{\prime},x^{\prime};k_y)\nonumber\\
+&& \equiv \left[\partial_z -{\bmi  A}({k}_{x},{k}_{y})\,  \right]\,\rf{\bmi
+G}(z,{k}_{x};z^{\prime},x^{\prime};k_y)={\bmi  I}_{6}
+	\delta(z-z^{\prime}) \, \frac{\exp(-i {k}_{x} x^{\prime})}{\sqrt{2 \pi}}
+\end{eqnarray}
+where the {\em Fourier domain system matrix\/} $\langle { {k}_{x}} | {\CB A }|
+{ {k}_{x}}^{\prime}\rangle= \delta({ {k}_{x}}-{ {k}_{x}}^{\prime}) {\bmi
+A}({k}_{x},{k}_{y})$ is defined
+\begin{equation}	\label{Akdef}
+	{\bmi  A}({k}_{x},{k}_{y})=\left[{\begin{array}{cccccc}
+0&-i \gamma {  k}_{  x}&
+ - \gamma   i\ {k}_{y}&a&0&0\\ -i{k}_{x}&0&0&0&b&0\\
+-i{k}_{y}&0&0&0&0&b\\ - \rho {\omega }^{  2}&
+0&0&0&-i{k}_{x}&-i{k}_{y}\\
+0&- \rho {\omega }^{  2}  +
+\zeta {  k}_{  x}^{  2}  + \mu {
+k}_{  y}^{  2}&{  k}_{  x}{  k}_{
+ y}\left({\chi   + \mu }\right)&  -i{k}_{x} \gamma
+&  0&0\\ 0&{k}_{x}{k}_{y}\left({ \chi   + \mu
+}\right)&- \rho {\omega }^{  2}  + \zeta {
+k}_{  y}^{  2}  + \mu {  k}_{
+x}^{  2}&  -i{k}_{y} \gamma &  0&0\end{array}}\right]
+\end{equation}
+due to the {\em translational invariance of\/} ${\CB A }$.
+The system operator ${\bmi  A}({k}_{x},{k}_{y})$ of
+(\ref{Akdef}) is {\em quasi-Hamiltonian\/} since
+\begin{equation} \label{ATdef}
+{\bmi  A}^{T}(-{k}_{x},-{k}_{y}){\bmi  J}_6 + {\bmi  J}_6 {\bmi
+A}({k}_{x},{k}_{y}) \equiv {\bf 0}_6
+\end{equation}
+where ${\bmi  J}_6$ is the {\em canonically symplectic\/} array.
+The {\em diagonal array\/} ${\bmi
+\Lambda}$ {\em of eigenvalues\/}  of ${\bmi  A}({k}_{x},{k}_{y})$ is defined as
+\begin{eqnarray}	\label{eigDef}
+\lefteqn{	{\bmi \Lambda}({k}_{x},{k}_{y}) =}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+i \ \mbox{diag} \left[{k}_{z,P
+	}({k}_{x},{k}_{y}),{k}_{z,S }({k}_{x},{k}_{y}),{k}_{z,H }({k}_{x},{k}_{y}),
+	-{k}_{z,P }({k}_{x},{k}_{y}),-{k}_{z,S }({k}_{x},{k}_{y}),
+	-{k}_{z,H }({k}_{x},{k}_{y}) \right] \nonumber
+\end{eqnarray}
+where
+\begin{equation}	\label{kzcDef}
+	{k}_{z,c}({k}_{x},{k}_{y}) = \left\{
+	\begin{array}{c}
+	\sqrt {\hat{ K}_{c}^{2}({k}_{y})\ -\ {k}_{x}^{2}}\ \ \ \ \ \ |{k}_{x}|\ <\
+	|\hat{K}_{c}({k}_{y})|\\
+	i\sqrt {{k}_{x}^{ 2}\ -\ \hat{ K}_{c}^{2}({k}_{y})} \ \ \ \ |{k}_{x}|\ \ge   \
+	|\hat{K}_{c}({k}_{y})|
+\end{array}
+\right. , \quad  c\in\{P,S,H\},
+\end{equation}
+with
+\begin{equation}	\label{Kdef}
+	\hat{K}_{c}({k}_{y}) = \left\{
+	\begin{array}{c}
+	\sqrt {(\omega/{c})^{2}\ -\ {k}_{y}^{2}}\ \ \ \ \ \ |{k}_{y}|\ <\
+	|\omega/{c}|\\
+	i\sqrt {{k}_{y}^{ 2}\ -\ (\omega/{c})^{2}} \ \ \ \ |{k}_{y}|\ \ge   \ |\omega/{c}|
+\end{array} \right. , \quad  c\in\{P,S,H\}.
+\end{equation}
+{\em We note that ${k}_{z,S }={k}_{z,H }$
+because $S=H=\beta$ from Table \ref{ATable}. We distinguish
+between ${k}_{z,S }$ and ${k}_{z,H }$,  only to maintain a self-consistent
+notational convention.\/}
+ The system matrix ${\bmi  A}({k}_{x},{k}_{y})$ of (\ref{Akdef}) has an equivalent {\em
+spectral representation\/}:
+\begin{equation}	\label{specA}
+	{\bmi  A}({k}_{x},{k}_{y}) \equiv {\bmi  D}_{z}({k}_{x},{k}_{y}){\bmi
+	\Lambda }({k}_{x},{k}_{y}){\bmi  D}_{z}^{ -1}({k}_{x},{k}_{y});
+\end{equation}
+where the {\em eigen matrix\/} ${\bmi  D}_{z}({k}_{x},{k}_{y})$ is  defined as
+\begin{eqnarray} \label{Ddef}
+\lefteqn{{\bmi D}_{z}(k_{x},k_{y})=}\\
+&&\!\!\!\!\!\!\!\!\!\!\!\!
+\left[\begin{array}{cccccc}
+\left|+,P, k_{x},k_{y}  \right\rangle&\left|+,S, k_{x},k_{y}
+\right\rangle&\left|+,H, k_{x},k_{y}  \right\rangle&
+\left|-,P, k_{x},k_{y}  \right\rangle&\left|-,S, k_{x},k_{y}
+\right\rangle&\left|-,H, k_{x},k_{y}  \right\rangle
+\end{array}\right]\nonumber
+\end{eqnarray}
+with:
+\begin{itemize}
+\item the $\left|\pm,P, k_{x},k_{y}  \right\rangle$ eigen-vectors
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small
+upgoing}}}}$  $P-$waves
+\begin{equation} \label{Peigen}
+\left|\pm,P, k_{x},k_{y}  \right\rangle=\left[\begin{array}{c} \pm
+i\,{k}_{z,P}(k_x,k_y)\\i\,k_{x}\\i\,k_{y}\\
+  \rho \,\left( 2\,{\beta^2}\,{k_{x}^2} + 2\,{\beta^2}\,{k_{y}^2} -
+     {\omega^2} \right) \\ \mp 2\,\rho\,{\beta^2}\,k_{x}\,{k}_{z,P}(k_x,k_y) \\
+  \mp 2\,\rho\,{\beta^2}\,k_{y}\,{k}_{z,P}(k_x,k_y) \end{array}\right]
+  \epsilon_{P}
+\end{equation}
+with the  normalization factor ${\epsilon}_{P}$
+
+\item the $\left|\pm,S, k_{x},k_{y}  \right\rangle$ eigen-vectors
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small
+upgoing}}}}$  quasi-$SV-$waves
+\begin{equation} \label{SVeigen}
+\left|\pm,S, k_{x},k_{y}  \right\rangle=\left[\begin{array}{c}
+i\,k_{x}\\
+\mp i\,{k}_{z,S}(k_x,k_y)\\0\\
+\mp 2\,\rho\,{\beta^2}\,k_{x}\,{k}_{z,S}(k_x,k_y) \\
+  \rho \,\left({\omega^2} -2\,{\beta^2}\,{k_{x}^2} - {\beta^2}\,{k_{y}^2}  \right) \\
+  -\rho\,{\beta^2}\,k_{x}\,k_{y} \end{array}\right]
+  \epsilon_{S}
+\end{equation}
+with the  normalization factor ${\epsilon}_{S}$
+
+\item the $\left|\pm,H, k_{x},k_{y}  \right\rangle$ eigen-vectors
+are the   ${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small
+upgoing}}}}$  quasi-$SH-$waves
+\begin{equation} \label{SHeigen}
+\left|\pm,H, k_{x},k_{y}  \right\rangle=\left[\begin{array}{c}
+\mp k_{y}\,{k}_{z,H}(k_x,k_y) \\-k_{x}\,k_{y} \\
+  \hat{K}_{H}^2\\
+2\,i\,k_{y}\,\rho \,\left({\beta^2}\,{k_{x}^2} +
+     {\beta^2}\,{k_{y}^2} - {\omega^2} \right) \\
+  \mp 2\,i\,\rho\,{\beta^2}\,k_{x}\,k_{y}\,{k}_{z,H}(k_x,k_y) \\
+  \pm i\,{k}_{z,H}(k_x,k_y)\,\rho \,\left(  {\omega^2} -2\,{\beta^2}\,{k_{y}^2} \right) \end{array}\right]
+  \epsilon_{H}
+\end{equation}
+with the  normalization factor ${\epsilon}_{H}$
+\end{itemize}
+We have called the eigen-vectors in (\ref{SVeigen}) and (\ref{SHeigen})
+{\em quasi-\/}$SV$ and {\em quasi-\/}$SH$ waves respectively, because the
+corresponding vector fields are {\em solenoidal\/} and are {\em in the
+$(z,x)$ plane\/}
+and {\em out of the $(z,x)$ plane\/} respectively, when $k_{y}=0$. However, our
+choice of the  shear wavefield decomposition into quasi-inplane and quasi-out
+of plane components
+differs from the choice commonly used in seismology [e.g.
+{\em Prange \& Toks\"oz}~(1990)]. Unlike the conventional decomposition,  the basis vectors
+(\ref{SVeigen}) and (\ref{SHeigen}) are {\em non-degenerate\/} when
+${k}_{x}=0$ and ${k}_{y}=0$.
+The normalization factors ${\epsilon}_{P},{\epsilon}_{S} $ and
+${\epsilon}_{H}$
+in Eqns.(\ref{Peigen})--(\ref{SHeigen}) are chosen so that ${\bmi
+D}_{z}^{-1}({k}_{x},{k}_{y})$
+takes a simple form.
+
+Using the standard result that eigenspaces of ${\bmi  A}^{T}({k}_{x},{k}_{y})$ annihilate
+eigenspaces of ${\bmi  A}({k}_{x},{k}_{y})$ (and vice versa), we can avoid constructing  ${\bmi  D}_{z}^{-1}({k}_{x},{k}_{y})$ in (\ref{specA}) by explicit
+matrix inversion, since we use the {\em Hamiltonian symmetry\/}
+(\ref{ATdef}), to relate ${\bmi  D}_{z}^{-1}({k}_{x},{k}_{y})$ to the eigen matrix of the
+{\em transposed\/} or {\em
+dual\/} system matrix ${\bmi  A}^{T}({k}_{x},{k}_{y})$ defined as
+\[
+{\bmi  A}^{T}({k}_{x},{k}_{y})\equiv {\bmi  J}_6 {\bmi  A}(-{k}_{x},-{k}_{y}) {\bmi  J}_6
+\]
+To begin, it follows from (\ref{eigDef}) and (\ref{kzcDef}) that ${\bmi
+\Lambda}(-{k}_{x},-{k}_{y})={\bmi \Lambda} ({k}_{x},{k}_{y})$,
+so that
+\begin{eqnarray*}
+{\bmi  D}_{z}(-{k}_{x},-{k}_{y}){\bmi \Lambda} ({k}_{x},{k}_{y})&=&
+{\bmi  A}(-{k}_{x},-{k}_{y}){\bmi  D}_{z}(-{k}_{x},-{k}_{y})\\
+&=&{\bmi  J}_{6}{\bmi
+A}^{T}({k}_{x},{k}_{y}){\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})
+\end{eqnarray*}
+which implies upon rearrangement that
+\[
+{\bmi  A}^{T}({k}_{x},{k}_{y}){\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})=-{\bmi  J}_{6}
+{\bmi  D}_{z}(-{k}_{x},-{k}_{y}){\bmi
+\Lambda} ({k}_{x},{k}_{y}).
+\]
+Consequently, ${\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})$ is an eigenbasis of the dual
+operator ${\bmi
+A}^{T}({k}_{x},{k}_{y})$, with $-{\bmi  \Lambda} ({k}_{x},{k}_{y})$ the corresponding eigenvalue array.
+From direct evaluation it follows that
+\begin{equation} \label{dinv1}
+{\left({{\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})}\right)}^{T}{\bmi
+D}_{z}({k}_{x},{k}_{y})= i\left[{\begin{array}{cc}{\bf 0}_{3}&{\bmi V}\\
+-{\bmi V}&{\bf 0}_{3}\end{array}}\right]
+\end{equation}
+where
+\[
+{\bmi V}=
+\mbox{diag}\left[\begin{array}{ccc}
+2 \rho {\omega }^{  2}{  k}_{  z, P }({k}_{x}){\epsilon
+}_{P}^{  2},\,&
+2 \mu {  k}_{  z, S }({k}_{x}) \hat{K}_{S }^{2}{\epsilon }_{S}^{
+2},\,&
+2 \rho {\omega }^{  2}{  k}_{  z, H }({k}_{x}) \hat{K}_{H }^{2}{\epsilon }_{H}^{  2}
+\end{array}\right]
+\]
+and  $\hat{K}_{c}, c\in\{P,S,H\}$ was given by (\ref{Kdef}),
+ so that if we choose the normalization factors ${\epsilon }_{P }$,
+${\epsilon }_{S}$ and ${\epsilon }_{H}$ in Eqns.(\ref{Peigen})--(\ref{SHeigen})
+according to
+ \begin{equation} \label{epsdef}
+{\epsilon }_{P }= \frac{1}{\sqrt{2 \rho {\omega }^{  2}{  k}_{
+z, P }}}, \quad
+{\epsilon }_{S }= \frac{\omega}{\beta\,\hat{K}_{S }\,\sqrt{2 \rho {\omega }^{  2}  {  k}_{
+z, S }}}
+, \quad \mbox{and} \quad
+{\epsilon }_{H }= \frac{1}{\hat{K}_{H }\, \sqrt{2 \rho {\omega }^{  2}  {  k}_{
+z, H }}}
+\end{equation}
+ then (\ref{dinv1}) simplifies to
+\begin{equation} \label{dinv2}
+{\left({{\bmi  J}_{6}{\bmi  D}_{z}(-{k}_{x},-{k}_{y})}\right)}^{T}{\bmi  D}_{z}({k}_{x},{k}_{y})
+=i {\bmi  J}_{6}
+\end{equation}
+so that upon rearrangement of (\ref{dinv2}) we get
+\begin{equation}	\label{D1def}
+{\bmi  D}_{z}^{-1}({k}_{x},{k}_{y})=-i\	{\bmi  J}_6{\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y}){\bmi  J}_6
+\end{equation}
+Equation (\ref{D1def}) for the inverse is reminiscent of the {\em
+symplectic\/} structures found in {\em Hamiltonian dynamical systems\/}
+[e.g. {\em Goldstein}~(1980)].
+
+
+We now transform the $z-$dependence of  (\ref{FLdef}) using
+the {\em  Fourier transform\/}
+\[
+{\cal F}_{z}\,
+[\cdot] ({k}_{z}) \equiv \frac{1}{\sqrt{2 \pi}}\int_{-\infty }^{ \infty }
+dz\ \exp \left({-i\ {k}_{z}\ z}\right)\, [\cdot] (z) ,\]
+ to get
+\begin{equation}	\label{FzLdef}
+	\tilde{\bmi  L}({\bmi k}) \,\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y) \equiv \left[i
+{\bmi  I}_6 {k}_{z} -{\bmi
+A}({k}_{x},{k}_{y})\,
+	\right]\,\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y)={\bmi  I}_{6}
+	\frac{\exp({-i {\bmi k}\cdot {\bmi x}^{\prime}})}{{2 \pi}},
+\end{equation}
+where ${\bmi x}^{\prime}=(z^{\prime},x^{\prime})$ and  ${\bmi
+k}=(k_{z},k_{x})$, so that
+\begin{equation}	\label{FzLdef1}
+	\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y) \equiv
+	\left[i {\bmi  I}_6 {k}_{z} -{\bmi  A}({k}_{x},{k}_{y}) \right]^{-1}
+	\frac{\exp({-i {\bmi k}\cdot {\bmi x}^{\prime}})}{{2 \pi}}.
+\end{equation}
+Using the spectral representation (\ref{specA}) in  (\ref{FzLdef1}),
+we get
+\begin{eqnarray} \label{InvLDef0}
+\rf{\bmi  G}({\bmi k};{\bmi x}^{\prime};k_y)
+&=&{\bmi  D}_{z}({k}_{x},{k}_{y})
+{\left[i\, {\bmi  I}_{6}\, {k}_{z}\, -\, i\,   {\bmi \Lambda} \right]}^{-1}
+{\bmi  D}_{z}^{-1}({k}_{x},{k}_{y}) \frac{\exp({-i {\bmi k}\cdot {\bmi x}^{\prime}})}{2 \pi}
+\nonumber\\
+&=&{\bmi  D}_{z}({k}_{x},{k}_{y})
+{\left[{\bmi  J}_{6}\, {k}_{z}\, - \,{\bmi  J}_{6}\, {\bmi \Lambda}
+\right]}^{-1}
+{\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})\,{\bmi  J}_6
+\frac{\exp(-i {\bmi k}\cdot {\bmi x}^{\prime})}{2 \pi}\nonumber\\
+&=&{\bmi  D}_{z}({k}_{x},{k}_{y})
+\left[{\begin{array}{cc}{\bf 0}_{3}&-{\bmi W}^{+}\\
+{\bmi W}^{-}&{\bf 0}_{3}\end{array}}\right]
+{\bmi
+D}_{z}^{T}(-{k}_{x},-{k}_{y})
+\,{\bmi  J}_6 \frac{\exp(-i {\bmi k}\cdot {\bmi x}^{\prime})}{{2 \pi}}
+\end{eqnarray}
+where
+\[
+{\bmi W}^{\pm}=\mbox{diag}
+\left[\begin{array}{ccc}
+\frac{1}{({k}_{z}\mp{k}_{z,P })},\,&\frac{1}{({k}_{z}\mp{k}_{z,S
+})},\,&\frac{1}{({k}_{z}\mp{k}_{z,S })}\end{array}\right]
+\]
+
+
+Applying the inverse Fourier transform
+${\CB F}^{-1}\, [\cdot]({\bmi x}) \equiv \frac{1}{{2 \pi}}
+\int_{R^2 } {\rm d}{\bmi k} \exp \left(i {\bmi k}\cdot {\bmi x}\right)\,
+[\cdot] ({\bmi k})$,
+it follows from (\ref{InvLDef0}),
+that $\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)$
+may be written
+\begin{eqnarray} \label{InvLDef}
+\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)&=&{\CB F}^{-1}\, \left[\rf{\bmi  G}({\bmi
+k};{\bmi x}^{\prime};k_y) \right]({\bmi x}) =\frac{1}{4 \pi^2}
+\int_{R^2 } {\rm d}{\bmi k} \exp \left[i {\bmi k}\cdot ({\bmi x}-{\bmi
+x}^{\prime})\right]\nonumber\\
+&&\times {\bmi  D}_{z}({k}_{x},{k}_{y})
+\left[{\begin{array}{cc}{\bf 0}_{3}&-{\bmi W}^{+}\\
+{\bmi W}^{-}&{\bf 0}_{3}\end{array}}\right]{\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})
+\,{\bmi  J}_6
+\end{eqnarray}
+
+\subsubsection*{3.1.1\quad The classical up/down, plane wave Green's tensor}
+We now evaluate the $k_{z}$ integral in (\ref{InvLDef}) using the calculus of
+residues [e.g. {\em Aki \& Richards\/}~(1980)], which is possible provided
+the $z$ component of  $({\bmi x}-{\bmi x}^{\prime})$ in  (\ref{InvLDef})
+is non-zero, i.e. $({z}-{z}^{\prime})\not=0 $.
+
+We  close the
+$k_z$ integration contour
+in the ${\stackrel{{\mbox{{\small upper }}}}{{}_{\mbox{{\small lower }}}}}$ half of the
+complex ${k}_{z}-$plane when
+$(z-{z}^{\prime})\gtlt0$, in so doing  we pick up the
+\[
+\Re(\partial \omega/\partial { k}_{z,c})\gtlt 0
+\]
+residue contributions, associated with
+${\stackrel{\mbox{\small downgoing}}{{}_{\mbox{\small upgoing}}}}$
+group velocity, to get
+%%% FIX: use multline to prevent the long equation from overflowing the page
+\begin{multline} \label{Gzres}
+\rf{\bmi  G}({\bmi x};{\bmi x}^{\prime};k_y)=\frac{- i}{2 \pi}
+\int_{R} {\rm d}{ k}_{x} \exp \left[i { k}_{x} ({ x}-{
+x}^{\prime})\right] \\
+\times\, {\bmi  D}_{z}({k}_{x},{k}_{y})
+{\bmi Q}^{z}(z;z^{\prime}){\bmi  D}_{z}^{T}(-{k}_{x},-{k}_{y})
+\,{\bmi  J}_6
+\end{multline}
+where
+${\bmi Q}^{z}(z;z^{\prime})$ in (\ref{Gzres}),
+is defined  as
+\begin{equation} \label{Qzdef}
+{\bmi Q}^{z}(z;z^{\prime})=
+\left[{\begin{array}{cc}{\bf 0}_{3}&H(z-{z}^{\prime}){\bmi E}(k_x;z;{z}^{\prime})\\
+H(z^{\prime}-{z}){\bmi E}(k_x;z;{z}^{\prime})&{\bf 0}_{3}\end{array}}\right]
+\end{equation}
+with
+\begin{equation} \label{Ek1def}
+{\bmi E}(k_x;z;{z}^{\prime})=\left[{\begin{array}{ccc}
+{\rm e}^{i{ k}_{z,P}(k_{x})|z-{z}^{\prime}|}&{ 0}&{ 0}\\
+{ 0}&{\rm e}^{
+i{ k}_{z,S}(k_{x})|z-{z}^{\prime}|}&{ 0}\\ { 0}&{ 0}&{\rm e}^{
+i{ k}_{z,H}(k_{x})|z-{z}^{\prime}|}\end{array}}\right] ,
+\end{equation}
+and $H(\cdot)$ is the {\em Heaviside step function\/}.
+The imposition of the {\em radiation boundary conditions\/} employed here,
+follows {\em Lighthill}~(1960). Alternatively,  we may
+ introduce {\em attenuation\/} to move the
+poles off the integration contour [e.g. {\em Aki \& Richards\/}~(1980)].
+
+\end{document}
