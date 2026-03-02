@@ -25,6 +25,9 @@ htmlcov/
 *.fdb_latexmk
 *.synctex.gz
 
+# Backup files
+*.broken
+
 # General
 .ipynb_checkpoints/
 .vscode/
