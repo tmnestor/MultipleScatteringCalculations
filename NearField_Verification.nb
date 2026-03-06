@@ -1,0 +1,811 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[         0,          0]
+NotebookOptionsPosition[         0,          0]
+NotebookOutlinePosition[         0,          0]
+CellTagsIndexPosition[         0,          0]
+WindowTitle->Near-Field Verification
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["\<\
+Verification of the Elastodynamic Near-Field Green\[CloseCurlyQuote]s Tensor\
+\>", "Title",ExpressionUUID->"a1b2c3d4-e5f6-7890-abcd-ef1234567890"],
+
+Cell[TextData[{
+ "This notebook verifies the near-field approximation of the elastodynamic \
+Green\[CloseCurlyQuote]s tensor derived in Wu & Ben-Menahem (1985), ",
+ StyleBox["Geophys. J. R. astr. Soc.",
+  FontSlant->"Italic"],
+ " ",
+ StyleBox["81",
+  FontWeight->"Bold"],
+ ", 609\[Dash]621.\n\nWe start from the Kupradze representation of the exact \
+Stokes tensor, perform a systematic Taylor expansion for ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    SubscriptBox["k", "\[Beta]"], "R", "\[LessLess]", "1"}],
+   TraditionalForm]]],
+ ", and show that the 1/",
+ Cell[BoxData[
+  FormBox[
+   SuperscriptBox["R", "3"], TraditionalForm]]],
+ " and 1/",
+ Cell[BoxData[
+  FormBox[
+   SuperscriptBox["R", "2"], TraditionalForm]]],
+ " terms cancel between P and S waves, leaving a 1/R residue."
+}], "Text",ExpressionUUID->"b1b2c3d4-e5f6-7890-abcd-ef1234567891"],
+
+Cell[CellGroupData[{
+
+Cell["1. Setup and Definitions", "Section",ExpressionUUID->"c1b2c3d4-e5f6-7890-abcd-ef1234567892"],
+
+Cell["\<\
+We define the scalar Helmholtz Green\[CloseCurlyQuote]s function \
+\[CapitalPhi](k,R) = exp(-ikR)/R and the elastic parameters. The \
+wavenumbers are k\[Alpha] = \[Omega]/\[Alpha] (P-wave) and k\[Beta] = \
+\[Omega]/\[Beta] (S-wave), with \[Alpha]\[Superscript]2 = \
+(\[Lambda]+2\[Mu])/\[Rho] and \[Beta]\[Superscript]2 = \[Mu]/\[Rho].\
+\>", "Text",ExpressionUUID->"d1b2c3d4-e5f6-7890-abcd-ef1234567893"],
+
+Cell[BoxData[{
+ RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], "\n",
+ RowBox[{
+  RowBox[{"$Assumptions", "=",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"R", ">", "0"}], ",",
+     RowBox[{"\[Rho]", ">", "0"}], ",",
+     RowBox[{"\[Mu]", ">", "0"}], ",",
+     RowBox[{"\[Lambda]", ">", "0"}], ",",
+     RowBox[{"\[Omega]", ">", "0"}], ",",
+     RowBox[{"k\[Alpha]", ">", "0"}], ",",
+     RowBox[{"k\[Beta]", ">", "0"}], ",",
+     RowBox[{"\[Alpha]", ">", "0"}], ",",
+     RowBox[{"\[Beta]", ">", "0"}], ",",
+     RowBox[{"\[Alpha]", ">", "\[Beta]"}]}], "}"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"\[Gamma]", "=",
+   RowBox[{"{",
+    RowBox[{"\[Gamma]1", ",", "\[Gamma]2", ",", "\[Gamma]3"}], "}"}]}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"I3", "=",
+   RowBox[{"IdentityMatrix", "[", "3", "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"\[Gamma]\[Gamma]", "=",
+   RowBox[{"Outer", "[",
+    RowBox[{"Times", ",", "\[Gamma]", ",", "\[Gamma]"}], "]"}]}],
+  ";"}]}], "Input",
+ CellLabel->"In[1]:=",ExpressionUUID->"e1b2c3d4-e5f6-7890-abcd-ef1234567894"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["2. Kupradze Representation of the Stokes Tensor", "Section",ExpressionUUID->"f1b2c3d4-e5f6-7890-abcd-ef1234567895"],
+
+Cell[TextData[{
+ "The exact frequency-domain elastodynamic Green\[CloseCurlyQuote]s tensor \
+has the Kupradze representation:\n\n",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    SubscriptBox["G", "ij"], "=",
+    RowBox[{
+     FractionBox["1",
+      RowBox[{"4", "\[Pi]", "\[Mu]"}]],
+     RowBox[{"[",
+      RowBox[{
+       RowBox[{
+        SubscriptBox["\[Delta]", "ij"],
+        SubscriptBox["\[CapitalPhi]", "\[Beta]"]}], "+",
+       RowBox[{
+        FractionBox["1",
+         SubsuperscriptBox["k", "\[Beta]", "2"]],
+        RowBox[{
+         SubscriptBox["\[PartialD]", "i"],
+         SubscriptBox["\[PartialD]", "j"],
+         RowBox[{"(",
+          RowBox[{
+           SubscriptBox["\[CapitalPhi]", "\[Beta]"], "-",
+           SubscriptBox["\[CapitalPhi]", "\[Alpha]"]}], ")"}]}]}]}],
+      "]"}]}]}], TraditionalForm]]],
+ "\n\nwhere ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    SubscriptBox["\[CapitalPhi]", "k"], "=",
+    RowBox[{
+     SuperscriptBox["e",
+      RowBox[{"-", "i", " ",
+       SubscriptBox["k", ""], "R"}]], "/", "R"}]}], TraditionalForm]]],
+ ". The second derivative of the scalar Green\[CloseCurlyQuote]s function \
+decomposes on the direction dyadic as:\n\n",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    RowBox[{
+     SubscriptBox["\[PartialD]", "i"],
+     SubscriptBox["\[PartialD]", "j"],
+     SubscriptBox["\[CapitalPhi]", "k"]}], "=",
+    RowBox[{
+     RowBox[{
+      SuperscriptBox["e",
+       RowBox[{"-", "ikR"}]],
+      RowBox[{"[",
+       RowBox[{
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{
+           FractionBox[
+            RowBox[{"-",
+             SuperscriptBox["k", "2"]}], "R"], "+",
+           FractionBox[
+            RowBox[{"3", "ik"}],
+            SuperscriptBox["R", "2"]], "+",
+           FractionBox["3",
+            SuperscriptBox["R", "3"]]}], ")"}],
+         SubscriptBox["\[Gamma]", "i"],
+         SubscriptBox["\[Gamma]", "j"]}], "+",
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{
+           FractionBox[
+            RowBox[{"-", "ik"}],
+            SuperscriptBox["R", "2"]], "-",
+           FractionBox["1",
+            SuperscriptBox["R", "3"]]}], ")"}],
+         SubscriptBox["\[Delta]", "ij"]}]}], "]"}]}]}]}], TraditionalForm]]]
+}], "Text",ExpressionUUID->"a2b2c3d4-e5f6-7890-abcd-ef1234567896"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Scalar", " ", "Helmholtz", " ", "Green", " ", "function"}], " ",
+   "*)"}], "\n",
+  RowBox[{
+   RowBox[{"\[CapitalPhi]", "[",
+    RowBox[{"k_", ",", "r_"}], "]"}], ":=",
+   RowBox[{
+    RowBox[{"Exp", "[",
+     RowBox[{
+      RowBox[{"-", "I"}], " ", "k", " ", "r"}], "]"}], "/",
+    "r"}]}]}], "\n",
+ RowBox[{"\n",
+  RowBox[{"(*", " ",
+   RowBox[{"Coefficients", " ", "of", " ",
+    RowBox[{"d_i", " ", "d_j", " ", "\[CapitalPhi]"}], " ", "on", " ",
+    RowBox[{"\[Gamma]_i", "\[Gamma]_j"}], " ", "and", " ",
+    SubscriptBox["\[Delta]", "ij"]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"coeffGG", "[",
+    RowBox[{"k_", ",", "r_"}], "]"}], ":=",
+   RowBox[{
+    RowBox[{"Exp", "[",
+     RowBox[{
+      RowBox[{"-", "I"}], " ", "k", " ", "r"}], "]"}],
+    RowBox[{"(",
+     RowBox[{
+      RowBox[{
+       RowBox[{"-",
+        SuperscriptBox["k", "2"]}], "/", "r"}], "+",
+      RowBox[{"3", " ", "I", " ",
+       RowBox[{"k", "/",
+        SuperscriptBox["r", "2"]}]}], "+",
+      RowBox[{"3", "/",
+       SuperscriptBox["r", "3"]}]}], ")"}]}]}]}], "\n",
+ RowBox[{
+  RowBox[{"coeffDelta", "[",
+   RowBox[{"k_", ",", "r_"}], "]"}], ":=",
+  RowBox[{
+   RowBox[{"Exp", "[",
+    RowBox[{
+     RowBox[{"-", "I"}], " ", "k", " ", "r"}], "]"}],
+   RowBox[{"(",
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "I"}], " ",
+      RowBox[{"k", "/",
+       SuperscriptBox["r", "2"]}]}], "-",
+     RowBox[{"1", "/",
+      SuperscriptBox["r", "3"]}]}], ")"}]}]}], "\n",
+ RowBox[{"\n",
+  RowBox[{"(*", " ",
+   RowBox[{"Full", " ", "Stokes", " ", "tensor", " ", "in", " ", "terms",
+    " ", "of", " ", "direction", " ", "cosines"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"Gexact", "=",
+    RowBox[{
+     RowBox[{"1", "/",
+      RowBox[{"(",
+       RowBox[{"4", "\[Pi]", " ", "\[Mu]"}], ")"}]}],
+     RowBox[{"(",
+      RowBox[{
+       RowBox[{
+        RowBox[{"\[CapitalPhi]", "[",
+         RowBox[{"k\[Beta]", ",", "R"}], "]"}], "I3"}], "+",
+       RowBox[{
+        RowBox[{"1", "/",
+         SuperscriptBox["k\[Beta]", "2"]}],
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{
+           RowBox[{"(",
+            RowBox[{
+             RowBox[{"coeffGG", "[",
+              RowBox[{"k\[Beta]", ",", "R"}], "]"}], "-",
+             RowBox[{"coeffGG", "[",
+              RowBox[{"k\[Alpha]", ",", "R"}], "]"}]}], ")"}],
+           "\[Gamma]\[Gamma]"}], "+",
+          RowBox[{
+           RowBox[{"(",
+            RowBox[{
+             RowBox[{"coeffDelta", "[",
+              RowBox[{"k\[Beta]", ",", "R"}], "]"}], "-",
+             RowBox[{"coeffDelta", "[",
+              RowBox[{"k\[Alpha]", ",", "R"}], "]"}]}], ")"}], "I3"}]}],
+         ")"}]}]}], ")"}]}]}], ";"}]}]}], "Input",
+ CellLabel->"In[6]:=",ExpressionUUID->"b2b2c3d4-e5f6-7890-abcd-ef1234567897"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["3. Taylor Expansion for kR \[LessLess] 1", "Section",ExpressionUUID->"c2b2c3d4-e5f6-7890-abcd-ef1234567898"],
+
+Cell[TextData[{
+ "We introduce the small parameter \[Epsilon] = ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    SubscriptBox["k", "\[Beta]"], "R"}], TraditionalForm]]],
+ " and expand each component of G to leading order. The key result is that \
+the 1/",
+ Cell[BoxData[
+  FormBox[
+   SuperscriptBox["R", "3"], TraditionalForm]]],
+ " and 1/",
+ Cell[BoxData[
+  FormBox[
+   SuperscriptBox["R", "2"], TraditionalForm]]],
+ " terms cancel between P and S waves."
+}], "Text",ExpressionUUID->"d2b2c3d4-e5f6-7890-abcd-ef1234567899"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Substitution", ":", " ",
+    RowBox[{"express", " ", "everything", " ", "via", " ",
+     RowBox[{"k\[Alpha]", "/", "k\[Beta]"}], " ", "ratio"}]}], " ", "*)"}],
+  "\n",
+  RowBox[{
+   RowBox[{"velRatio", "=",
+    RowBox[{"{",
+     RowBox[{
+      RowBox[{"k\[Alpha]", "->",
+       RowBox[{"k\[Beta]", " ",
+        RowBox[{"\[Beta]", "/", "\[Alpha]"}]}]}], ",",
+      RowBox[{
+       SuperscriptBox["k\[Alpha]", "2"], "->",
+       RowBox[{
+        SuperscriptBox["k\[Beta]", "2"],
+        RowBox[{
+         SuperscriptBox["\[Beta]", "2"], "/",
+         SuperscriptBox["\[Alpha]", "2"]}]}]}]}], "}"}]}], ";"}]}], "\n",
+ RowBox[{"\n",
+  RowBox[{"(*", " ",
+   RowBox[{"Taylor", " ", "expand", " ", "in", " ", "R", " ", "around", " ",
+    "R", "=", "0"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"GexactSeries", "=",
+    RowBox[{"FullSimplify", "[",
+     RowBox[{
+      RowBox[{"Normal", "[",
+       RowBox[{"Series", "[",
+        RowBox[{
+         RowBox[{"Gexact", "/.", "velRatio"}], ",",
+         RowBox[{"{",
+          RowBox[{"R", ",", "0", ",",
+           RowBox[{"-", "1"}]}], "}"}]}], "]"}], "]"}], ",",
+      RowBox[{"Assumptions", "->",
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{"\[Alpha]", ">", "\[Beta]", ">", "0"}], ",",
+         RowBox[{"\[Mu]", ">", "0"}]}], "}"}]}]}], "]"}]}],
+   ";"}]}], "\n",
+ RowBox[{"\n",
+  RowBox[{"(*", " ",
+   RowBox[{"Expected", " ", "Eq", " ",
+    RowBox[{"(", "6", ")"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"Geq6", "=",
+    RowBox[{
+     FractionBox["1",
+      RowBox[{"8", "\[Pi]", " ", "\[Mu]", " ", "R"}]],
+     RowBox[{"(",
+      RowBox[{
+       RowBox[{
+        RowBox[{"(",
+         RowBox[{"1", "+",
+          FractionBox[
+           SuperscriptBox["\[Beta]", "2"],
+           SuperscriptBox["\[Alpha]", "2"]]}], ")"}], "I3"}], "+",
+       RowBox[{
+        RowBox[{"(",
+         RowBox[{"1", "-",
+          FractionBox[
+           SuperscriptBox["\[Beta]", "2"],
+           SuperscriptBox["\[Alpha]", "2"]]}], ")"}],
+        "\[Gamma]\[Gamma]"}]}], ")"}]}]}], ";"}]}], "\n",
+ RowBox[{"\n",
+  RowBox[{"(*", " ",
+   RowBox[{"Expected", " ", "Eq", " ",
+    RowBox[{"(", "5", ")"}], " ",
+    RowBox[{"(",
+     RowBox[{"near", "-",
+      RowBox[{"field", " ", "term", " ", "only"}]}], ")"}]}], " ", "*)"}],
+  "\n",
+  RowBox[{
+   RowBox[{"Geq5", "=",
+    RowBox[{
+     FractionBox[
+      RowBox[{"-", "1"}],
+      RowBox[{"8", "\[Pi]", " ", "\[Mu]", " ", "R"}]],
+     RowBox[{"(",
+      RowBox[{"1", "-",
+       FractionBox[
+        SuperscriptBox["\[Beta]", "2"],
+        SuperscriptBox["\[Alpha]", "2"]]}], ")"}],
+     RowBox[{"(",
+      RowBox[{"I3", "-",
+       RowBox[{"3", "\[Gamma]\[Gamma]"}]}], ")"}]}]}],
+   ";"}]}]}], "Input",
+ CellLabel->"In[11]:=",ExpressionUUID->"e2b2c3d4-e5f6-7890-abcd-ef1234567900"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["4. Symbolic Verification", "Section",ExpressionUUID->"f2b2c3d4-e5f6-7890-abcd-ef1234567901"],
+
+Cell["\<\
+We now verify that the Taylor expansion of the exact Stokes tensor matches \
+Eq. (6), and decompose Eq. (6) into its \[OpenCurlyDoubleQuote]near-field \
+term\[CloseCurlyDoubleQuote] Eq. (5) and \[OpenCurlyDoubleQuote]far-field \
+term\[CloseCurlyDoubleQuote] contributions.\
+\>", "Text",ExpressionUUID->"a3b2c3d4-e5f6-7890-abcd-ef1234567902"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Test", " ", "1", ":", " ",
+    RowBox[{"Series", " ", "expansion", " ", "matches", " ", "Eq", " ",
+     RowBox[{"(", "6", ")"}]}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"test1", "=",
+    RowBox[{"FullSimplify", "[",
+     RowBox[{
+      RowBox[{"GexactSeries", "-", "Geq6"}], ",",
+      RowBox[{"Assumptions", "->",
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{"\[Alpha]", ">", "\[Beta]", ">", "0"}], ",",
+         RowBox[{"\[Mu]", ">", "0"}], ",",
+         RowBox[{"R", ">", "0"}]}], "}"}]}]}], "]"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"isZero1", "=",
+   RowBox[{"test1", "===",
+    RowBox[{"ConstantArray", "[",
+     RowBox[{"0", ",",
+      RowBox[{"{",
+       RowBox[{"3", ",", "3"}], "}"}]}], "]"}]}]}], ";"}], "\n",
+ RowBox[{"If", "[",
+  RowBox[{"isZero1", ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{
+    "\"\<[PASS] Taylor expansion of exact G matches Eq. (6)\>\"", ",", "Bold",
+      ",",
+     RowBox[{"Darker", "[", "Green", "]"}]}], "]"}], ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{
+    "\"\<[FAIL] Taylor expansion does NOT match Eq. (6)\>\"", ",", "Bold",
+     ",", "Red"}], "]"}]}], "]"}]}], "Input",
+ CellLabel->"In[15]:=",ExpressionUUID->"b3b2c3d4-e5f6-7890-abcd-ef1234567903"],
+
+Cell[BoxData[
+ StyleBox["\<\"[PASS] Taylor expansion of exact G matches Eq. (6)\"\>",
+  StripOnInput->False,
+  LineColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FrontFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  BackFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  GraphicsColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FontWeight->Bold,
+  FontColor->RGBColor[0,
+    Rational[2, 3], 0]]], "Output",
+ CellLabel->"Out[17]=",ExpressionUUID->"c3b2c3d4-e5f6-7890-abcd-ef1234567904"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Test", " ", "2", ":", " ",
+    RowBox[{"Eq", " ",
+     RowBox[{"(", "6", ")"}], " ", "decomposes", " ", "as", " ", "Eq", " ",
+     RowBox[{"(", "5", ")"}], " ", "plus", " ", "far", "-",
+     RowBox[{"field", " ", "leading", " ", "order"}]}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"Gfar", "=",
+    RowBox[{
+     FractionBox["1",
+      RowBox[{"4", "\[Pi]", " ", "\[Mu]", " ", "R"}]],
+     RowBox[{"(",
+      RowBox[{
+       RowBox[{"(",
+        RowBox[{"I3", "-", "\[Gamma]\[Gamma]"}], ")"}], "+",
+       RowBox[{
+        FractionBox[
+         SuperscriptBox["\[Beta]", "2"],
+         SuperscriptBox["\[Alpha]", "2"]], "\[Gamma]\[Gamma]"}]}],
+      ")"}]}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"test2", "=",
+   RowBox[{"FullSimplify", "[",
+    RowBox[{
+     RowBox[{"Geq6", "-", "Geq5", "-", "Gfar"}], ",",
+     RowBox[{"Assumptions", "->",
+      RowBox[{"{",
+       RowBox[{
+        RowBox[{"\[Alpha]", ">", "\[Beta]", ">", "0"}], ",",
+        RowBox[{"\[Mu]", ">", "0"}], ",",
+        RowBox[{"R", ">", "0"}]}], "}"}]}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"isZero2", "=",
+   RowBox[{"test2", "===",
+    RowBox[{"ConstantArray", "[",
+     RowBox[{"0", ",",
+      RowBox[{"{",
+       RowBox[{"3", ",", "3"}], "}"}]}], "]"}]}]}], ";"}], "\n",
+ RowBox[{"If", "[",
+  RowBox[{"isZero2", ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{
+    "\"\<[PASS] Eq. (6) = Eq. (5) + far-field leading order\>\"", ",",
+     "Bold", ",",
+     RowBox[{"Darker", "[", "Green", "]"}]}], "]"}], ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{
+    "\"\<[FAIL] Decomposition does not match\>\"", ",", "Bold", ",", "Red"}],
+    "]"}]}], "]"}]}], "Input",
+ CellLabel->"In[18]:=",ExpressionUUID->"d3b2c3d4-e5f6-7890-abcd-ef1234567905"],
+
+Cell[BoxData[
+ StyleBox["\<\"[PASS] Eq. (6) = Eq. (5) + far-field leading order\"\>",
+  StripOnInput->False,
+  LineColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FrontFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  BackFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  GraphicsColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FontWeight->Bold,
+  FontColor->RGBColor[0,
+    Rational[2, 3], 0]]], "Output",
+ CellLabel->"Out[21]=",ExpressionUUID->"e3b2c3d4-e5f6-7890-abcd-ef1234567906"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Test", " ", "3", ":", " ",
+    RowBox[{"Verify", " ", "the", " ", "velocity", " ", "contrast", " ",
+     "identity"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"test3", "=",
+    RowBox[{"FullSimplify", "[",
+     RowBox[{
+      RowBox[{
+       RowBox[{"(",
+        RowBox[{"1", "-",
+         FractionBox[
+          SuperscriptBox["\[Beta]", "2"],
+          SuperscriptBox["\[Alpha]", "2"]]}], ")"}], "/.",
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{
+          SuperscriptBox["\[Alpha]", "2"], "->",
+          RowBox[{
+           RowBox[{"(",
+            RowBox[{"\[Lambda]", "+",
+             RowBox[{"2", "\[Mu]"}]}], ")"}], "/", "\[Rho]"}]}], ",",
+         RowBox[{
+          SuperscriptBox["\[Beta]", "2"], "->",
+          RowBox[{"\[Mu]", "/", "\[Rho]"}]}]}], "}"}]}], "-",
+      FractionBox[
+       RowBox[{"\[Lambda]", "+", "\[Mu]"}],
+       RowBox[{"\[Lambda]", "+",
+        RowBox[{"2", "\[Mu]"}]}]]}], "]"}]}], ";"}]}], "\n",
+ RowBox[{"If", "[",
+  RowBox[{
+   RowBox[{"test3", "===", "0"}], ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{
+    "\"\<[PASS] 1 - \[Beta]\[Superscript]2/\[Alpha]\[Superscript]2 = \
+(\[Lambda]+\[Mu])/(\[Lambda]+2\[Mu])\>\"", ",", "Bold", ",",
+     RowBox[{"Darker", "[", "Green", "]"}]}], "]"}], ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{"\"\<[FAIL] Identity does not hold\>\"", ",", "Bold", ",",
+     "Red"}], "]"}]}], "]"}]}], "Input",
+ CellLabel->"In[22]:=",ExpressionUUID->"f3b2c3d4-e5f6-7890-abcd-ef1234567907"],
+
+Cell[BoxData[
+ StyleBox["\<\"[PASS] 1 - \[Beta]\[Superscript]2/\[Alpha]\[Superscript]2 = (\[Lambda]+\[Mu])/(\[Lambda]+2\[Mu])\"\>",
+  StripOnInput->False,
+  LineColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FrontFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  BackFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  GraphicsColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FontWeight->Bold,
+  FontColor->RGBColor[0,
+    Rational[2, 3], 0]]], "Output",
+ CellLabel->"Out[23]=",ExpressionUUID->"a4b2c3d4-e5f6-7890-abcd-ef1234567908"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Test", " ", "4", ":", " ",
+    RowBox[{"Verify", " ", "cancellation", " ", "of", " ", "1", "/",
+     SuperscriptBox["R", "3"], " ", "and", " ", "1", "/",
+     SuperscriptBox["R", "2"], " ", "terms"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"GexactR3", "=",
+    RowBox[{"FullSimplify", "[",
+     RowBox[{
+      RowBox[{"Normal", "[",
+       RowBox[{"Series", "[",
+        RowBox[{
+         RowBox[{"Gexact", "/.", "velRatio"}], ",",
+         RowBox[{"{",
+          RowBox[{"R", ",", "0", ",",
+           RowBox[{"-", "3"}]}], "}"}]}], "]"}], "]"}], ",",
+      RowBox[{"Assumptions", "->",
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{"\[Alpha]", ">", "\[Beta]", ">", "0"}], ",",
+         RowBox[{"\[Mu]", ">", "0"}]}], "}"}]}]}], "]"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"isZeroR3", "=",
+   RowBox[{"GexactR3", "===",
+    RowBox[{"ConstantArray", "[",
+     RowBox[{"0", ",",
+      RowBox[{"{",
+       RowBox[{"3", ",", "3"}], "}"}]}], "]"}]}]}], ";"}], "\n",
+ RowBox[{"If", "[",
+  RowBox[{"isZeroR3", ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{
+    "\"\<[PASS] 1/R\[Superscript]3 and 1/R\[Superscript]2 terms cancel \
+(P-S mutual cancellation)\>\"", ",", "Bold", ",",
+     RowBox[{"Darker", "[", "Green", "]"}]}], "]"}], ",", "\n",
+   RowBox[{"Style", "[",
+    RowBox[{
+    "\"\<[FAIL] 1/R\[Superscript]3 and 1/R\[Superscript]2 terms do NOT \
+cancel\>\"", ",", "Bold", ",", "Red"}], "]"}]}], "]"}]}], "Input",
+ CellLabel->"In[24]:=",ExpressionUUID->"b4b2c3d4-e5f6-7890-abcd-ef1234567909"],
+
+Cell[BoxData[
+ StyleBox["\<\"[PASS] 1/R\[Superscript]3 and 1/R\[Superscript]2 terms cancel (P-S mutual cancellation)\"\>",
+  StripOnInput->False,
+  LineColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FrontFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  BackFaceColor->RGBColor[0,
+    Rational[2, 3], 0],
+  GraphicsColor->RGBColor[0,
+    Rational[2, 3], 0],
+  FontWeight->Bold,
+  FontColor->RGBColor[0,
+    Rational[2, 3], 0]]], "Output",
+ CellLabel->"Out[26]=",ExpressionUUID->"c4b2c3d4-e5f6-7890-abcd-ef1234567910"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["5. Explicit Form of the Near-Field Term", "Section",ExpressionUUID->"d4b2c3d4-e5f6-7890-abcd-ef1234567911"],
+
+Cell["\<\
+We display the near-field term (Eq. 5) and the complete near-source \
+asymptotic (Eq. 6) in matrix form, using the constraint \
+\[Gamma]\[CenterDot]\[Gamma] = 1.\
+\>", "Text",ExpressionUUID->"e4b2c3d4-e5f6-7890-abcd-ef1234567912"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Display", " ", "Eq", " ",
+    RowBox[{"(", "5", ")"}]}], " ", "*)"}], "\n",
+  RowBox[{"Print", "[",
+   RowBox[{
+   "\"\<\\nEq. (5) \[LongDash] Near-field term only:\\n\>\""}], "]"}]}], "\n",
+ RowBox[{
+  RowBox[{"MatrixForm", "[", "Geq5", "]"}]}], "\n",
+ RowBox[{"\n",
+  RowBox[{"(*", " ",
+   RowBox[{"Display", " ", "Eq", " ",
+    RowBox[{"(", "6", ")"}]}], " ", "*)"}], "\n",
+  RowBox[{"Print", "[",
+   RowBox[{
+   "\"\<\\nEq. (6) \[LongDash] Complete near-source asymptotic:\\n\>\""}],
+   "]"}]}], "\n",
+ RowBox[{"MatrixForm", "[", "Geq6", "]"}]}], "Input",
+ CellLabel->"In[27]:=",ExpressionUUID->"f4b2c3d4-e5f6-7890-abcd-ef1234567913"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["6. LaTeX Export", "Section",ExpressionUUID->"a5b2c3d4-e5f6-7890-abcd-ef1234567914"],
+
+Cell["\<\
+Export key results in LaTeX format for the accompanying document.\
+\>", "Text",ExpressionUUID->"b5b2c3d4-e5f6-7890-abcd-ef1234567915"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"LaTeX", " ", "export", " ", "of", " ", "Eq", " ",
+    RowBox[{"(", "5", ")"}]}], " ", "*)"}], "\n",
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<Eq. (5) LaTeX:\\n\>\""}], "]"}]}], "\n",
+ RowBox[{"Print", "[",
+  RowBox[{"TeXForm", "[",
+   RowBox[{
+    FractionBox[
+     RowBox[{"-", "1"}],
+     RowBox[{"8", "\[Pi]", " ", "\[Mu]", " ", "R"}]],
+    RowBox[{"(",
+     RowBox[{"1", "-",
+      FractionBox[
+       SuperscriptBox["\[Beta]", "2"],
+       SuperscriptBox["\[Alpha]", "2"]]}], ")"}],
+    RowBox[{"(",
+     RowBox[{"I3", "-",
+      RowBox[{"3", "\[Gamma]\[Gamma]"}]}], ")"}]}], "]"}], "]"}], "\n",
+ RowBox[{"\n",
+  RowBox[{"(*", " ",
+   RowBox[{"LaTeX", " ", "export", " ", "of", " ", "Eq", " ",
+    RowBox[{"(", "6", ")"}]}], " ", "*)"}], "\n",
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<\\nEq. (6) LaTeX:\\n\>\""}], "]"}]}], "\n",
+ RowBox[{"Print", "[",
+  RowBox[{"TeXForm", "[",
+   RowBox[{
+    FractionBox["1",
+     RowBox[{"8", "\[Pi]", " ", "\[Mu]", " ", "R"}]],
+    RowBox[{"(",
+     RowBox[{
+      RowBox[{
+       RowBox[{"(",
+        RowBox[{"1", "+",
+         FractionBox[
+          SuperscriptBox["\[Beta]", "2"],
+          SuperscriptBox["\[Alpha]", "2"]]}], ")"}], "I3"}], "+",
+      RowBox[{
+       RowBox[{"(",
+        RowBox[{"1", "-",
+         FractionBox[
+          SuperscriptBox["\[Beta]", "2"],
+          SuperscriptBox["\[Alpha]", "2"]]}], ")"}],
+       "\[Gamma]\[Gamma]"}]}], ")"}]}], "]"}], "]"}]}], "Input",
+ CellLabel->"In[31]:=",ExpressionUUID->"c5b2c3d4-e5f6-7890-abcd-ef1234567916"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["7. Summary of Verifications", "Section",ExpressionUUID->"d5b2c3d4-e5f6-7890-abcd-ef1234567917"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"results", "=",
+   RowBox[{"{", "\n",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "\"\<Taylor[G_exact] = Eq.(6)\>\"", ",", "isZero1"}], "}"}], ",", "\n",
+     RowBox[{"{",
+      RowBox[{
+      "\"\<Eq.(6) = Eq.(5) + G_far\>\"", ",", "isZero2"}], "}"}], ",", "\n",
+     RowBox[{"{",
+      RowBox[{
+      "\"\<1-\[Beta]\[Superscript]2/\[Alpha]\[Superscript]2 = \
+(\[Lambda]+\[Mu])/(\[Lambda]+2\[Mu])\>\"", ",",
+       RowBox[{"test3", "===", "0"}]}], "}"}], ",", "\n",
+     RowBox[{"{",
+      RowBox[{
+      "\"\<1/R\[Superscript]3, 1/R\[Superscript]2 cancel\>\"", ",",
+       "isZeroR3"}], "}"}]}], "\n", "}"}]}], ";"}], "\n",
+ RowBox[{"Grid", "[",
+  RowBox[{
+   RowBox[{"Prepend", "[",
+    RowBox[{
+     RowBox[{"Map", "[",
+      RowBox[{
+       RowBox[{
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"#", "[",
+           RowBox[{"[", "1", "]"}], "]"}], ",",
+          RowBox[{"If", "[",
+           RowBox[{
+            RowBox[{"#", "[",
+             RowBox[{"[", "2", "]"}], "]"}], ",",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<PASS\>\"", ",", "Bold", ",",
+              RowBox[{"Darker", "[", "Green", "]"}]}], "]"}], ",",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<FAIL\>\"", ",", "Bold", ",", "Red"}], "]"}]}],
+           "]"}]}], "}"}], "&"}], ",", "results"}], "]"}], ",",
+     RowBox[{"{",
+      RowBox[{
+       RowBox[{"Style", "[",
+        RowBox[{"\"\<Verification\>\"", ",", "Bold"}], "]"}], ",",
+       RowBox[{"Style", "[",
+        RowBox[{"\"\<Result\>\"", ",", "Bold"}], "]"}]}], "}"}]}], "]"}],
+   ",", "\n",
+   RowBox[{"Frame", "->", "All"}], ",",
+   RowBox[{"Spacings", "->",
+    RowBox[{"{",
+     RowBox[{"2", ",", "1"}], "}"}]}], ",",
+   RowBox[{"Alignment", "->",
+    RowBox[{"{",
+     RowBox[{"Left", ",", "Center"}], "}"}]}]}], "]"}]}], "Input",
+ CellLabel->"In[35]:=",ExpressionUUID->"e5b2c3d4-e5f6-7890-abcd-ef1234567918"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1024, 768},
+WindowMargins->{{Automatic, 100}, {Automatic, 50}},
+WindowTitle->"Near-Field Verification",
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (January 18, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"f5b2c3d4-e5f6-7890-abcd-ef1234567919"
+]
+(* End of Notebook Content *)

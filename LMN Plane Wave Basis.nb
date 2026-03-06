@@ -1,0 +1,717 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[         0,          0]
+NotebookOptionsPosition[         0,          0]
+NotebookOutlinePosition[         0,          0]
+CellTagsIndexPosition[         0,          0]
+WindowTitle->L M N Plane Wave Basis
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["\<\
+L, M, N Vector Basis in Plane Waves\
+\>", "Title"],
+
+Cell["\<\
+Plane-wave expansion of the L, M, N vector Helmholtz solutions \
+(Ben-Menahem & Singh, 1981, \[Section]5.8) using the thesis coordinate \
+convention:
+  x1 = depth (down page)
+  x2 = horizontal (across page, right)
+  x3 = out of page
+so that e3 is the out-of-plane unit vector.
+
+Wavenumbers k\[Alpha] = \[Omega]/\[Alpha] and k\[Beta] = \[Omega]/\[Beta] are \
+kept symbolic throughout so that all verification identities simplify \
+cleanly to zero.\
+\>", "Text"],
+
+Cell[CellGroupData[{
+
+Cell["1. Setup and Definitions", "Section"],
+
+Cell["\<\
+Clear all symbols and define the coordinate system, wavenumbers \
+(symbolic), and plane-wave scalar potentials.\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Coordinate", " ", "labels"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"x", "=",
+    RowBox[{"{",
+     RowBox[{"x1", ",", "x2", ",", "x3"}], "}"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Wave", " ", "vector", " ",
+    RowBox[{"(",
+     RowBox[{"full", " ", "3", "D"}], ")"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"k", "=",
+    RowBox[{"{",
+     RowBox[{"k1", ",", "k2", ",", "k3"}], "}"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Unit", " ", "vector", " ", "e3", ":", " ",
+    RowBox[{"out", " ", "of", " ", "page"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"e3", "=",
+    RowBox[{"{",
+     RowBox[{"0", ",", "0", ",", "1"}], "}"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Wavenumbers", " ", "kept", " ", "symbolic"}], " ", "*)"}], "\n",
+  RowBox[{"(*", " ",
+   RowBox[{
+    RowBox[{"Physical", " ",
+     RowBox[{"relations", ":", " ",
+      RowBox[{"k\[Alpha]", " ", "=", " ",
+       RowBox[{"\[Omega]", "/", "\[Alpha]"}]}]}]}], ",", " ",
+    RowBox[{"k\[Beta]", " ", "=", " ",
+     RowBox[{"\[Omega]", "/", "\[Beta]"}]}]}], " ", "*)"}]}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Dispersion", " ", "relations"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"dispP", "=",
+    RowBox[{
+     RowBox[{
+      SuperscriptBox["k1", "2"], "+",
+      SuperscriptBox["k2", "2"], "+",
+      SuperscriptBox["k3", "2"]}], "\[Rule]",
+     SuperscriptBox["k\[Alpha]", "2"]}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"dispS", "=",
+   RowBox[{
+    RowBox[{
+     SuperscriptBox["k1", "2"], "+",
+     SuperscriptBox["k2", "2"], "+",
+     SuperscriptBox["k3", "2"]}], "\[Rule]",
+    SuperscriptBox["k\[Beta]", "2"]}]}], ";"}]}], "Input"],
+
+Cell["\<\
+Plane-wave scalar potentials satisfying the Helmholtz equations \
+\[Del]\[Superscript]2\[Psi] + K\[Superscript]2\[Psi] = 0:\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"\[Psi]\[Alpha]", "=",
+   RowBox[{"Exp", "[",
+    RowBox[{"\[ImaginaryI]", " ",
+     RowBox[{"k", ".", "x"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"\[Psi]\[Beta]", "=",
+   RowBox[{"Exp", "[",
+    RowBox[{"\[ImaginaryI]", " ",
+     RowBox[{"k", ".", "x"}]}], "]"}]}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["2. Gradient and Curl Operators", "Section"],
+
+Cell["\<\
+Symbolic differential operators for (x1, x2, x3).\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"grad", "[", "f_", "]"}], ":=",
+   RowBox[{"D", "[",
+    RowBox[{"f", ",",
+     RowBox[{"{", "x", "}"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"curl", "[", "v_", "]"}], ":=",
+   RowBox[{"{", "\n", "  ",
+    RowBox[{
+     RowBox[{
+      RowBox[{"D", "[",
+       RowBox[{
+        RowBox[{"v", "\[LeftDoubleBracket]", "3", "\[RightDoubleBracket]"}], ",", "x2"}], "]"}], "-",
+      RowBox[{"D", "[",
+       RowBox[{
+        RowBox[{"v", "\[LeftDoubleBracket]", "2", "\[RightDoubleBracket]"}], ",", "x3"}], "]"}]}], ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"D", "[",
+       RowBox[{
+        RowBox[{"v", "\[LeftDoubleBracket]", "1", "\[RightDoubleBracket]"}], ",", "x3"}], "]"}], "-",
+      RowBox[{"D", "[",
+       RowBox[{
+        RowBox[{"v", "\[LeftDoubleBracket]", "3", "\[RightDoubleBracket]"}], ",", "x1"}], "]"}]}], ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"D", "[",
+       RowBox[{
+        RowBox[{"v", "\[LeftDoubleBracket]", "2", "\[RightDoubleBracket]"}], ",", "x1"}], "]"}], "-",
+      RowBox[{"D", "[",
+       RowBox[{
+        RowBox[{"v", "\[LeftDoubleBracket]", "1", "\[RightDoubleBracket]"}], ",", "x2"}], "]"}]}]}], "\n",
+    "}"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"div", "[", "v_", "]"}], ":=",
+   RowBox[{"Sum", "[",
+    RowBox[{
+     RowBox[{"D", "[",
+      RowBox[{
+       RowBox[{"v", "\[LeftDoubleBracket]", "i", "\[RightDoubleBracket]"}], ",",
+       RowBox[{"x", "\[LeftDoubleBracket]", "i", "\[RightDoubleBracket]"}]}], "]"}], ",",
+     RowBox[{"{",
+      RowBox[{"i", ",", "3"}], "}"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"laplacian", "[", "f_", "]"}], ":=",
+   RowBox[{"Sum", "[",
+    RowBox[{
+     RowBox[{"D", "[",
+      RowBox[{"f", ",",
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{"x", "\[LeftDoubleBracket]", "i", "\[RightDoubleBracket]"}], ",", "2"}], "}"}]}], "]"}], ",",
+     RowBox[{"{",
+      RowBox[{"i", ",", "3"}], "}"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"vecLaplacian", "[", "v_", "]"}], ":=",
+   RowBox[{"Table", "[",
+    RowBox[{
+     RowBox[{"laplacian", "[",
+      RowBox[{"v", "\[LeftDoubleBracket]", "i", "\[RightDoubleBracket]"}], "]"}], ",",
+     RowBox[{"{",
+      RowBox[{"i", ",", "3"}], "}"}]}], "]"}]}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["3. L, M, N Vector Definitions", "Section"],
+
+Cell["\<\
+The three vector solutions to the vector Helmholtz equation \
+(Ben-Menahem & Singh, 1981, Eqns. 5.8.27\[Dash]5.8.29):
+  L = (1/k\[Alpha]) \[Del]\[Psi]\[Alpha]   (irrotational, P-wave)
+  M = \[Del] \[Times] (e3 \[Psi]\[Beta])     (solenoidal, SH-type)
+  N = (1/k\[Beta]) \[Del] \[Times] M       (solenoidal, SV-type)\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Lvec", "=",
+   RowBox[{
+    FractionBox["1", "k\[Alpha]"],
+    RowBox[{"grad", "[", "\[Psi]\[Alpha]", "]"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Mvec", "=",
+   RowBox[{"curl", "[",
+    RowBox[{"e3", " ", "\[Psi]\[Beta]"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Nvec", "=",
+   RowBox[{
+    FractionBox["1", "k\[Beta]"],
+    RowBox[{"curl", "[", "Mvec", "]"}]}]}], ";"}]}], "Input"],
+
+Cell["Display the explicit component forms:", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<L = \>\"", ",",
+    RowBox[{"Simplify", "[", "Lvec", "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<M = \>\"", ",",
+    RowBox[{"Simplify", "[", "Mvec", "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<N = \>\"", ",",
+    RowBox[{"Simplify", "[", "Nvec", "]"}]}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["4. Verification: Scalar Helmholtz Equations", "Section"],
+
+Cell["\<\
+Verify \[Del]\[Superscript]2\[Psi] + K\[Superscript]2\[Psi] = 0 \
+when the dispersion relation holds. With k\[Alpha], k\[Beta] symbolic, the \
+substitution simplifies cleanly to zero.\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"helmP", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{
+      RowBox[{"laplacian", "[", "\[Psi]\[Alpha]", "]"}], "+",
+      RowBox[{
+       SuperscriptBox["k\[Alpha]", "2"], "\[Psi]\[Alpha]"}]}], "/.",
+     "dispP"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{
+    "\"\<\[Del]\[Superscript]2\[Psi]\[Alpha] + k\[Alpha]\[Superscript]2 \[Psi]\[Alpha] = \>\"", ",",
+    "helmP"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"helmS", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{
+      RowBox[{"laplacian", "[", "\[Psi]\[Beta]", "]"}], "+",
+      RowBox[{
+       SuperscriptBox["k\[Beta]", "2"], "\[Psi]\[Beta]"}]}], "/.",
+     "dispS"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{
+    "\"\<\[Del]\[Superscript]2\[Psi]\[Beta] + k\[Beta]\[Superscript]2 \[Psi]\[Beta] = \>\"", ",",
+    "helmS"}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["5. Verification: Irrotational and Solenoidal Properties", "Section"],
+
+Cell["\<\
+L is irrotational (\[Del]\[Times]L = 0) and M, N are solenoidal \
+(\[Del]\[CenterDot]M = 0, \[Del]\[CenterDot]N = 0).\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<\[Del] \[Times] L = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{"curl", "[", "Lvec", "]"}], "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<\[Del] \[CenterDot] M = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{"div", "[", "Mvec", "]"}], "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<\[Del] \[CenterDot] N = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{"div", "[", "Nvec", "]"}], "]"}]}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["6. Verification: Vector Helmholtz Equations", "Section"],
+
+Cell["\<\
+Verify that L, M, N each satisfy their respective vector Helmholtz equations:
+  \[Del]\[Superscript]2 L + k\[Alpha]\[Superscript]2 L = 0
+  \[Del]\[Superscript]2 M + k\[Beta]\[Superscript]2 M = 0
+  \[Del]\[Superscript]2 N + k\[Beta]\[Superscript]2 N = 0\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"vhL", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{
+      RowBox[{"vecLaplacian", "[", "Lvec", "]"}], "+",
+      RowBox[{
+       SuperscriptBox["k\[Alpha]", "2"], "Lvec"}]}], "/.", "dispP"}],
+    "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{
+    "\"\<\[Del]\[Superscript]2 L + k\[Alpha]\[Superscript]2 L = \>\"", ",",
+    "vhL"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"vhM", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{
+      RowBox[{"vecLaplacian", "[", "Mvec", "]"}], "+",
+      RowBox[{
+       SuperscriptBox["k\[Beta]", "2"], "Mvec"}]}], "/.", "dispS"}],
+    "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{
+    "\"\<\[Del]\[Superscript]2 M + k\[Beta]\[Superscript]2 M = \>\"", ",",
+    "vhM"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"vhN", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{
+      RowBox[{"vecLaplacian", "[", "Nvec", "]"}], "+",
+      RowBox[{
+       SuperscriptBox["k\[Beta]", "2"], "Nvec"}]}], "/.", "dispS"}],
+    "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{
+    "\"\<\[Del]\[Superscript]2 N + k\[Beta]\[Superscript]2 N = \>\"", ",",
+    "vhN"}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["7. Orthogonality", "Section"],
+
+Cell["\<\
+Verify mutual orthogonality of L, M, N for a given plane wave.\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<L \[CenterDot] M = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{"Lvec", ".", "Mvec"}], "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<L \[CenterDot] N = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{
+      RowBox[{"Lvec", ".", "Nvec"}], "/.", "dispS"}], "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<M \[CenterDot] N = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{
+      RowBox[{"Mvec", ".", "Nvec"}], "/.", "dispS"}], "]"}]}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["8. Explicit Plane-Wave Amplitudes", "Section"],
+
+Cell["\<\
+Extract the amplitude vectors (coefficients of exp(i k\[CenterDot]x)).\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"pw", "=",
+   RowBox[{"Exp", "[",
+    RowBox[{"\[ImaginaryI]", " ",
+     RowBox[{"k", ".", "x"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Lamp", "=",
+   RowBox[{"Simplify", "[",
+    FractionBox["Lvec", "pw"], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Mamp", "=",
+   RowBox[{"Simplify", "[",
+    FractionBox["Mvec", "pw"], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Namp", "=",
+   RowBox[{"Simplify", "[",
+    FractionBox["Nvec", "pw"], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<L amplitude: \>\"", ",", "Lamp"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<M amplitude: \>\"", ",", "Mamp"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<N amplitude: \>\"", ",", "Namp"}], "]"}], ";"}]}], "Input"],
+
+Cell["\<\
+Expected plane-wave amplitudes (coefficient of exp(i k\[CenterDot]x)):
+  L: (i/k\[Alpha]) {k1, k2, k3}   \[Proportional] k\[Dash]hat  (longitudinal)
+  M: i {k2, -k1, 0}             \[Proportional] k \[Times] e3  (SH, \
+\[Perpendicular] sagittal plane)
+  N: (1/k\[Beta]) {-k1 k3, -k2 k3, k1\[Superscript]2+k2\[Superscript]2}   \
+\[Proportional] k \[Times] (e3 \[Times] k)  (SV, in sagittal plane)\
+\>", "Text"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["9. Connection to P-SV-SH Polarisations", "Section"],
+
+Cell["\<\
+In the thesis convention (x1 = depth, e3 = out of page):
+  L \[Proportional] k: P-wave polarisation (along propagation)
+  M \[Proportional] k \[Times] e3: SH polarisation (out of sagittal plane)
+  N \[Proportional] k \[Times] (e3 \[Times] k): SV polarisation (in sagittal \
+plane, \[Perpendicular] k)
+
+Note: \[Del] \[Times] (e3 \[Psi]) = (\[Del]\[Psi]) \[Times] e3 = i(k \
+\[Times] e3) exp(i k\[CenterDot]x).\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{
+    "L", " ", "\[Proportional]", " ", "k"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"Print", "[",
+    RowBox[{"\"\<L amp \[Times] (k\[Alpha]/i) = \>\"", ",",
+     RowBox[{"Simplify", "[",
+      RowBox[{"Lamp", " ",
+       FractionBox["k\[Alpha]", "\[ImaginaryI]"]}], "]"}]}], "]"}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{
+    "M", " ", "\[Proportional]", " ", "k", " ", "\[Times]", " ", "e3"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"kcrosse3", "=",
+    RowBox[{"Cross", "[",
+     RowBox[{"k", ",", "e3"}], "]"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<k \[Times] e3 = \>\"", ",", "kcrosse3"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<M amp / i  -  k\[Times]e3 = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{
+      FractionBox["Mamp", "\[ImaginaryI]"], "-", "kcrosse3"}], "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{
+    "N", " ", "\[Proportional]", " ", "k", " ", "\[Times]", " ",
+    RowBox[{"(",
+     RowBox[{"e3", " ", "\[Times]", " ", "k"}], ")"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"e3crossk", "=",
+    RowBox[{"Cross", "[",
+     RowBox[{"e3", ",", "k"}], "]"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"kcrosse3crossk", "=",
+   RowBox[{"Cross", "[",
+    RowBox[{"k", ",", "e3crossk"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<k \[Times] (e3 \[Times] k) = \>\"", ",", "kcrosse3crossk"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<N amp  -  (1/k\[Beta]) k\[Times](e3\[Times]k) = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{"Namp", "-",
+      FractionBox["kcrosse3crossk", "k\[Beta]"]}], "]"}]}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["10. Normalisation and Squared Magnitudes", "Section"],
+
+Cell["\<\
+Compute |L|\[Superscript]2, |M|\[Superscript]2, |N|\[Superscript]2 \
+for a plane wave, applying the dispersion relation.\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"assn", "=",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"k1", "\[Element]", "Reals"}], ",",
+     RowBox[{"k2", "\[Element]", "Reals"}], ",",
+     RowBox[{"k3", "\[Element]", "Reals"}], ",",
+     RowBox[{"k\[Alpha]", ">", "0"}], ",",
+     RowBox[{"k\[Beta]", ">", "0"}]}], "}"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"L2", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{
+      RowBox[{"ComplexExpand", "[",
+       RowBox[{
+        RowBox[{"Conjugate", "[", "Lamp", "]"}], ".", "Lamp"}], "]"}], "/.", "dispP"}], ",",
+     RowBox[{"Assumptions", "\[Rule]", "assn"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<|L|\[Superscript]2 = \>\"", ",", "L2"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"M2", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{"ComplexExpand", "[",
+      RowBox[{
+       RowBox[{"Conjugate", "[", "Mamp", "]"}], ".", "Mamp"}], "]"}], ",",
+     RowBox[{"Assumptions", "\[Rule]", "assn"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<|M|\[Superscript]2 = \>\"", ",", "M2"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"N2", "=",
+   RowBox[{"Simplify", "[",
+    RowBox[{
+     RowBox[{
+      RowBox[{"ComplexExpand", "[",
+       RowBox[{
+        RowBox[{"Conjugate", "[", "Namp", "]"}], ".", "Namp"}], "]"}], "/.", "dispS"}], ",",
+     RowBox[{"Assumptions", "\[Rule]", "assn"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<|N|\[Superscript]2 = \>\"", ",", "N2"}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["11. Matrix Form: Displacement Polarisation Vectors", "Section"],
+
+Cell["\<\
+Collect the plane-wave polarisation vectors into a 3\[Times]3 \
+matrix. Each column is the amplitude vector for L, M, N respectively \
+(excluding the common exponential).\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"polMatrix", "=",
+   RowBox[{"Transpose", "[",
+    RowBox[{"{",
+     RowBox[{"Lamp", ",", "Mamp", ",", "Namp"}], "}"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<Polarisation matrix [L | M | N] =\>\""}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"MatrixForm", "[", "polMatrix", "]"}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<det = \>\"", ",",
+    RowBox[{"Simplify", "[",
+     RowBox[{"Det", "[", "polMatrix", "]"}], "]"}]}], "]"}], ";"}]}], "Input"],
+
+Cell["\<\
+The determinant vanishes when k1 = k2 = 0 (propagation along e3), \
+because M and N both lie in the (x1, x2) plane and the e3 component of M is \
+identically zero. In this degenerate case a different pilot vector must be \
+chosen.\
+\>", "Text"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["12. Summary", "Section"],
+
+Cell["\<\
+For a plane wave with wavevector k = (k1, k2, k3) in the coordinate system
+  x1 = depth (down page), x2 = across page (right), x3 = out of page:
+
+L = (i/k\[Alpha]) k exp(i k\[CenterDot]x)
+  \[Rule] P-wave: polarised along k (longitudinal)
+  \[Rule] Components: (i/k\[Alpha]) {k1, k2, k3} exp(i k\[CenterDot]x)
+
+M = i (k \[Times] e3) exp(i k\[CenterDot]x)
+  \[Rule] SH-wave: polarised perpendicular to the sagittal plane
+  \[Rule] Components: i {k2, -k1, 0} exp(i k\[CenterDot]x)
+
+N = (1/k\[Beta]) k \[Times] (e3 \[Times] k) exp(i k\[CenterDot]x)
+  \[Rule] SV-wave: polarised in the sagittal plane, perpendicular to k
+  \[Rule] Components: (1/k\[Beta]) {-k1 k3, -k2 k3, k1\[Superscript]2+k2\[Superscript]2} exp(i k\[CenterDot]x)
+
+When k3 = 0 (propagation in the sagittal plane x1\[Dash]x2):
+  M \[Rule] pure out-of-plane (SH) motion: i {k2, -k1, 0}
+  N \[Rule] pure in-plane (SV) motion: (1/k\[Beta]) {0, 0, k1\[Superscript]2+k2\[Superscript]2}
+  These reduce to the standard SH and P\[Dash]SV decomposition for layered media.\
+\>", "Text"]
+
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["13. LaTeX Export", "Section"],
+
+Cell["\<\
+Export key results as LaTeX suitable for inclusion in the thesis \
+appendix. The TeXForm output uses Mathematica conventions; the hand-formatted \
+strings below use the thesis notation (\\bmi for bold italic vectors).\
+\>", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<\\n=== TeXForm of polarisation matrix ===\\n\>\""}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"TeXForm", "[", "polMatrix", "]"}], "]"}], ";"}]}], "Input"],
+
+Cell["Hand-formatted LaTeX for thesis (uses \\bmi macro for bold italic):", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"latexDefs", "=", "\"\<% === L, M, N definitions ===\n\\\\begin{align}\n  \\\\bmi{L} &= \\\\frac{1}{k_\\\\alpha}\\\\,\\\\nabla\\\\psi_\\\\alpha\n  = \\\\frac{i}{k_\\\\alpha}\\\\,\\\\bmi{k}\\\\,e^{i\\\\bmi{k}\\\\cdot\\\\bmi{x}},\n  \\\\label{eq:Ldef} \\\\\\\\\n  \\\\bmi{M} &= \\\\nabla \\\\times (\\\\bmi{e}_3\\\\,\\\\psi_\\\\beta)\n  = i\\\\,(\\\\bmi{k}\\\\times\\\\bmi{e}_3)\\\\,e^{i\\\\bmi{k}\\\\cdot\\\\bmi{x}},\n  \\\\label{eq:Mdef} \\\\\\\\\n  \\\\bmi{N} &= \\\\frac{1}{k_\\\\beta}\\\\,\\\\nabla\\\\times\\\\bmi{M}\n  = \\\\frac{1}{k_\\\\beta}\\\\,\\\\bmi{k}\\\\times(\\\\bmi{e}_3\\\\times\\\\bmi{k})\\\\,e^{i\\\\bmi{k}\\\\cdot\\\\bmi{x}}.\n  \\\\label{eq:Ndef}\n\\\\end{align}\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[", "latexDefs", "]"}], ";"}]}], "Input"],
+
+Cell["LaTeX for the polarisation matrix:", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"latexMatrix", "=", "\"\<% === Polarisation matrix ===\n\\\\begin{equation}\\\\label{eq:LMNmatrix}\n  \\\\bmi{P}(\\\\bmi{k}) =\n  \\\\begin{pmatrix}\n    \\\\dfrac{i\\\\,k_1}{k_\\\\alpha} & i\\\\,k_2 & -\\\\dfrac{k_1 k_3}{k_\\\\beta} \\\\\\\\[6pt]\n    \\\\dfrac{i\\\\,k_2}{k_\\\\alpha} & -i\\\\,k_1 & -\\\\dfrac{k_2 k_3}{k_\\\\beta} \\\\\\\\[6pt]\n    \\\\dfrac{i\\\\,k_3}{k_\\\\alpha} & 0 & \\\\dfrac{k_1^2+k_2^2}{k_\\\\beta}\n  \\\\end{pmatrix}\n\\\\end{equation}\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[", "latexMatrix", "]"}], ";"}]}], "Input"],
+
+Cell["Export to file:", "Text"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"dir", "=",
+   RowBox[{"NotebookDirectory", "[", "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"outfile", "=",
+   RowBox[{"FileNameJoin", "[",
+    RowBox[{"{",
+     RowBox[{"dir", ",", "\"\<LMN_latex_export.tex\>\""}], "}"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Export", "[",
+   RowBox[{"outfile", ",",
+    RowBox[{"StringJoin", "[",
+     RowBox[{
+      "\"\<% Auto-generated by \\\"LMN Plane Wave Basis.nb\\\"\\n\>\"", ",",
+      "\"\<% Coordinate convention: x1=depth, x2=horizontal, x3=out-of-page\\n\\n\>\"", ",",
+      RowBox[{"StringReplace", "[",
+       RowBox[{"latexDefs", ",",
+        RowBox[{"\"\<\\\\\\\\\>\"", "\[Rule]", "\"\<\\\\\>\""}]}], "]"}], ",",
+      "\"\<\\n\\n\>\"", ",",
+      RowBox[{"StringReplace", "[",
+       RowBox[{"latexMatrix", ",",
+        RowBox[{"\"\<\\\\\\\\\>\"", "\[Rule]", "\"\<\\\\\>\""}]}], "]"}]}], "]"}], ",",
+    "\"\<Text\>\""}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<LaTeX exported to: \>\"", ",", "outfile"}], "]"}], ";"}]}], "Input"]
+
+}, Open  ]]
+
+}, Open  ]]
+},
+WindowSize->{1024, 768},
+WindowTitle->"L M N Plane Wave Basis",
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (October 18, 2024)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)

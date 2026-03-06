@@ -1,0 +1,398 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{Latin Modern Math}
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Near-Field Green's Tensor Verification}
+\fancyhead[R]{\small\itshape Wu \& Ben-Menahem (1985)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+
+% --- Citations ---
+\usepackage[round,authoryear]{natbib}
+\bibliographystyle{plainnat}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\beR}{\hat{\mathbf{e}}_R}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\order}[1]{\mathcal{O}\!\left(#1\right)}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+\vspace*{1em}
+{\LARGE\bfseries Derivation and Verification of the\\[0.3em]
+Elastodynamic Near-Field Green's Tensor}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
+\end{center}
+
+\section{Introduction}
+
+The displacement field due to a point force in a homogeneous isotropic
+elastic medium is governed by the Stokes tensor, first derived by
+\citet{Stokes1849}. In the frequency domain, this tensor exhibits a
+rich structure with contributions at different powers of the
+source--receiver distance~$R$: a far-field term ($1/R$), and
+near-field terms ($1/R^2$ and~$1/R^3$).
+
+\citet{WuBenMenahem1985} showed that in the near-source region
+($k_\beta R \ll 1$), the $1/R^3$ and $1/R^2$ contributions from
+P-waves and S-waves cancel due to their mutual coupling through the
+equation of motion. The surviving residue at $\order{1/R}$ is a
+distinctive quadrupolar term proportional to
+$(\bI - 3\,\beR\beR^{\!\top})$, controlled by the velocity contrast
+factor $(1 - \beta^2/\alpha^2)$.
+
+This document presents a self-contained derivation of this result
+starting from the Kupradze representation
+\citep{Kupradze1963,Kausel2006} and provides both symbolic
+(Mathematica) and numerical (Python) verification.
+
+\section{The Kupradze Representation}
+
+The exact frequency-domain elastodynamic Green's tensor satisfies
+\citep{AkiRichards2002,BenMenahemSingh1981}:
+\begin{equation}
+  \mu\,\nabla^2 G_{ij}
+  + (\lambda + \mu)\,\partial_i\partial_k G_{kj}
+  + \rho\omega^2 G_{ij}
+  = -\delta_{ij}\,\delta(\bx).
+  \label{eq:pde}
+\end{equation}
+Its solution admits the Kupradze representation
+\citep{Kupradze1963}:
+\begin{equation}
+  \boxed{
+  G_{ij}(\bx,\omega)
+  = \frac{1}{4\pi\mu}
+    \biggl[
+      \delta_{ij}\,\Phi_\beta
+      + \frac{1}{k_\beta^2}\,
+        \partial_i\partial_j\!\left(\Phi_\beta - \Phi_\alpha\right)
+    \biggr],
+  }
+  \label{eq:kupradze}
+\end{equation}
+where
+$\Phi_k \equiv \Phi(k,R) = e^{-ikR}/R$
+is the outgoing scalar Helmholtz Green's function satisfying
+$(\nabla^2 + k^2)\Phi_k = -4\pi\,\delta(\bx)$, and
+\begin{equation}
+  k_\alpha = \frac{\omega}{\alpha}, \quad
+  k_\beta = \frac{\omega}{\beta}, \quad
+  \alpha^2 = \frac{\lambda + 2\mu}{\rho}, \quad
+  \beta^2 = \frac{\mu}{\rho}.
+  \label{eq:wavenumbers}
+\end{equation}
+
+\subsection{Verification of the Kupradze representation}
+
+We verify \eqref{eq:kupradze} by direct substitution into~\eqref{eq:pde}.
+Using $\nabla^2\Phi_k = -k^2\Phi_k - 4\pi\,\delta(\bx)$, each term evaluates as:
+\begin{align}
+  \mu\,\nabla^2 G_{ij}
+  &= \frac{1}{4\pi}\!\left[
+       -k_\beta^2\,\delta_{ij}\,\Phi_\beta - 4\pi\,\delta_{ij}\,\delta(\bx)
+       - \frac{1}{k_\beta^2}\,\partial_i\partial_j
+         \bigl(k_\beta^2\Phi_\beta - k_\alpha^2\Phi_\alpha\bigr)
+     \right], \label{eq:term1} \\[4pt]
+  (\lambda\!+\!\mu)\,\partial_i\partial_k G_{kj}
+  &= \frac{\lambda\!+\!\mu}{4\pi\mu}\,
+     \frac{k_\alpha^2}{k_\beta^2}\,\partial_i\partial_j\Phi_\alpha,
+     \label{eq:term2} \\[4pt]
+  \rho\omega^2 G_{ij}
+  &= \frac{k_\beta^2}{4\pi}\!\left[
+       \delta_{ij}\,\Phi_\beta
+       + \frac{1}{k_\beta^2}\,\partial_i\partial_j
+         \bigl(\Phi_\beta - \Phi_\alpha\bigr)
+     \right]. \label{eq:term3}
+\end{align}
+In the sum~\eqref{eq:term1}+\eqref{eq:term2}+\eqref{eq:term3}, the
+$\delta_{ij}\Phi_\beta$ terms cancel, the $\partial_i\partial_j\Phi_\beta$
+terms cancel, and the $\partial_i\partial_j\Phi_\alpha$ coefficient
+vanishes via
+$k_\alpha^2/k_\beta^2 = \mu/(\lambda+2\mu)$, yielding
+$-\delta_{ij}\,\delta(\bx)$ as required.~$\square$
+
+\section{Taylor Expansion in the Near-Source Limit}
+
+\subsection{Second derivatives of the scalar Green's function}
+
+The second spatial derivative of $\Phi_k = e^{-ikR}/R$ decomposes on
+the direction dyadic as:
+\begin{equation}
+  \partial_i\partial_j\Phi_k
+  = e^{-ikR}\!\left[
+      \left(\frac{-k^2}{R} + \frac{3ik}{R^2} + \frac{3}{R^3}\right)
+      \gamma_i\gamma_j
+      + \left(\frac{-ik}{R^2} - \frac{1}{R^3}\right)\delta_{ij}
+    \right],
+  \label{eq:d2phi}
+\end{equation}
+where $\gamma_i = x_i/R$ is the direction cosine.
+
+\subsection{Expansion of the second-derivative difference}
+
+Expanding the exponentials $e^{-ikR} = 1 - ikR - k^2R^2/2 + \cdots$
+and collecting terms order-by-order in~$R$:
+
+\paragraph{The \texorpdfstring{$1/R^3$}{1/R3} terms.}
+\begin{equation}
+  \frac{1}{R^3}\bigl[(3\gamma_i\gamma_j - \delta_{ij})(1-1)\bigr] = 0.
+\end{equation}
+The unit leading coefficients cancel identically between $\Phi_\beta$
+and~$\Phi_\alpha$, since both share the same $1/R^3$ structure.
+
+\paragraph{The \texorpdfstring{$1/R^2$}{1/R2} terms.}
+From the $(-ikR)$ part of the exponential hitting the $1/R^3$ piece,
+and the leading part of the $ik/R^2$ piece:
+\begin{equation}
+  \frac{1}{R^2}\bigl[
+    (3\gamma_i\gamma_j - \delta_{ij})
+    \bigl(-i(k_\beta - k_\alpha) + i(k_\beta - k_\alpha)\bigr)
+  \bigr] = 0.
+\end{equation}
+Again, exact cancellation between cross-terms.
+
+\paragraph{The surviving \texorpdfstring{$1/R$}{1/R} term.}
+The first non-vanishing contribution comes at $\order{1/R}$.
+Collecting all terms:
+\begin{equation}
+  \partial_i\partial_j(\Phi_\beta - \Phi_\alpha)
+  = -\frac{k_\beta^2 - k_\alpha^2}{2R}\,
+    (\delta_{ij} - \gamma_i\gamma_j)
+  + \order{R^0}.
+  \label{eq:d2diff_asymp}
+\end{equation}
+
+\subsection{Complete near-source asymptotic}
+
+Substituting~\eqref{eq:d2diff_asymp} and $\Phi_\beta \approx 1/R$
+into the Kupradze representation~\eqref{eq:kupradze}:
+\begin{align}
+  G_{ij}
+  &\approx \frac{1}{4\pi\mu R}\,\delta_{ij}
+    - \frac{k_\beta^2 - k_\alpha^2}{8\pi\mu\,k_\beta^2\,R}\,
+      (\delta_{ij} - \gamma_i\gamma_j) \notag\\[4pt]
+  &= \frac{1}{4\pi\mu R}
+     \biggl[\delta_{ij}
+       - \frac{1}{2}\!\left(1 - \frac{\beta^2}{\alpha^2}\right)
+         (\delta_{ij} - \gamma_i\gamma_j)
+     \biggr],
+  \label{eq:full_asymp}
+\end{align}
+using
+\begin{equation}
+  \frac{k_\beta^2 - k_\alpha^2}{k_\beta^2}
+  = 1 - \frac{k_\alpha^2}{k_\beta^2}
+  = 1 - \frac{\mu}{\lambda + 2\mu}
+  = 1 - \frac{\beta^2}{\alpha^2}
+  = \frac{\lambda + \mu}{\lambda + 2\mu}.
+  \label{eq:contrast}
+\end{equation}
+Expanding and simplifying~\eqref{eq:full_asymp} yields the compact form:
+
+\begin{equation}
+  \boxed{
+  \bG \;\underset{R\to 0}{\approx}\;
+  \frac{1}{8\pi\mu R}
+  \biggl[
+    \left(1 + \frac{\beta^2}{\alpha^2}\right)\bI
+    + \left(1 - \frac{\beta^2}{\alpha^2}\right)\beR\beR^{\!\top}
+  \biggr].
+  }
+  \label{eq:eq6}
+\end{equation}
+This is Eq.~(6) of \citet{WuBenMenahem1985}.
+
+\section{Decomposition into Near-Field and Far-Field Terms}
+
+Following \citet{WuBenMenahem1985}, the complete
+asymptotic~\eqref{eq:eq6} can be decomposed as:
+\begin{equation}
+  \bG \approx \underbrace{
+    \frac{-1}{8\pi\mu R}
+    \left(1 - \frac{\beta^2}{\alpha^2}\right)
+    (\bI - 3\,\beR\beR^{\!\top})
+  }_{\displaystyle (\bG)_\text{near} \;\text{[Eq.~(5)]}}
+  \;+\;
+  \underbrace{
+    \frac{1}{4\pi\mu R}
+    \left[
+      (\bI - \beR\beR^{\!\top})
+      + \frac{\beta^2}{\alpha^2}\,\beR\beR^{\!\top}
+    \right]
+  }_{\displaystyle (\bG)_\text{far} \;\text{[leading order]}}.
+  \label{eq:decomp}
+\end{equation}
+
+The first term is the ``near-field term'' of \citet{WuBenMenahem1985}
+--- the $\order{1/R}$ residue from the mutual cancellation of the
+P-wave and S-wave static-like ($1/R^2$, $1/R^3$) contributions. It has the
+distinctive \emph{quadrupolar} radiation pattern
+$(\bI - 3\,\beR\beR^{\!\top})$, which is traceless and vanishes
+when~$\alpha = \beta$.
+
+The second term represents the far-field ($1/R$ propagating) P and S
+contributions evaluated at their leading order in the near-source
+limit. It carries the standard transverse/longitudinal projector structure.
+
+\begin{quote}
+\textbf{Key point:} The ``near-field term'' alone, Eq.~(5) of
+\citet{WuBenMenahem1985},
+\begin{equation}
+  (\bG)_\text{near}
+  = \frac{-1}{8\pi\mu R}
+    \left(1 - \frac{\beta^2}{\alpha^2}\right)
+    (\bI - 3\,\beR\beR^{\!\top}),
+  \label{eq:eq5}
+\end{equation}
+is \emph{not} the complete near-source Green's tensor. The full
+$R \to 0$ limit also includes the leading-order far-field
+contribution. As confirmed numerically (Table~\ref{tab:convergence}),
+Eq.~\eqref{eq:eq5} alone produces ${\sim}105\%$ relative error, while
+the full asymptotic~\eqref{eq:eq6} converges as~$\order{k_\beta R}$.
+\end{quote}
+
+\section{Cancellation Mechanism}
+
+The cancellation of the $1/R^3$ and $1/R^2$ terms deserves further
+comment. From the Kupradze form~\eqref{eq:kupradze}, the near-source
+singularity of the Green's tensor is governed by the difference
+$\Phi_\beta - \Phi_\alpha$. Both P and S scalar Green's functions share
+the \emph{same} static singularity
+$\Phi_k \to 1/R$ as $kR \to 0$, so their difference
+\begin{equation}
+  \Phi_\beta - \Phi_\alpha
+  = \frac{e^{-ik_\beta R} - e^{-ik_\alpha R}}{R}
+  \;\xrightarrow{kR \to 0}\;
+  \frac{-i(k_\beta - k_\alpha)R}{R} + \order{R}
+  = -i(k_\beta - k_\alpha) + \order{R}
+  \label{eq:phi_diff}
+\end{equation}
+starts at $\order{R^0}$, \emph{not} $\order{1/R}$.  Consequently, the
+second derivative $\partial_i\partial_j(\Phi_\beta - \Phi_\alpha)$
+starts at $\order{1/R}$ rather than the naïve $\order{1/R^3}$.  This
+is the mathematical origin of the cancellation first noted by
+\citet{Pendse1948} and analysed in detail by \citet{MorseFeshbach1953}
+and \citet{WuBenMenahem1985}.
+
+Physically, in the static limit both P and S displacements must
+combine to satisfy the equilibrium equation $\nabla \cdot \symbf{\sigma}
+= 0$. The near-source singularity is fixed by the \emph{total}
+elastic response, not by P or S individually, forcing the static-like
+parts to be in exact balance \citep{BenMenahemSingh1981,Harkrider1976}.
+
+\section{Numerical Verification}
+
+Table~\ref{tab:convergence} compares the exact Stokes tensor
+(Kupradze representation, evaluated analytically) against the
+near-field term~\eqref{eq:eq5} and the full
+asymptotic~\eqref{eq:eq6}, for a granite-like medium with
+$\alpha = 5292$\,m/s, $\beta = 3162$\,m/s, $\rho = 2700$\,kg/m$^3$
+at 1\,Hz, along the observation direction
+$\hat{\bx} = (1,1,1)/\sqrt{3}$.
+
+\begin{table}[h!]
+\centering
+\caption{Relative error $\|\bG_\text{exact} - \bG_\text{approx}\|
+  / \|\bG_\text{exact}\|$ for the two approximations.
+  The Eq.~(6) error tracks the imaginary-to-real ratio,
+  confirming $\order{k_\beta R}$ convergence.}
+\label{tab:convergence}
+\begin{tabular}{@{}rrccc@{}}
+\toprule
+$R/\lambda_S$ & $k_\beta R$ &
+\multicolumn{1}{c}{Error, Eq.~(5)} &
+\multicolumn{1}{c}{Error, Eq.~(6)} &
+\multicolumn{1}{c}{$|\mathrm{Im}\,\bG|/|\mathrm{Re}\,\bG|$} \\
+\midrule
+$10^{-4}$ & 0.0006 & 105.2\% & 0.06\% & 0.06\% \\
+$10^{-3}$ & 0.006  & 105.2\% & 0.6\%  & 0.6\%  \\
+$5{\times}10^{-3}$ & 0.031 & 105.2\% & 2.9\% & 2.9\% \\
+$10^{-2}$ & 0.063  & 105.2\% & 5.8\%  & 5.8\%  \\
+$5{\times}10^{-2}$ & 0.31 & 104.9\% & 28.9\% & 29.8\% \\
+$10^{-1}$ & 0.63   & 104.0\% & 57.0\% & 64.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+Additionally, the following symbolic verifications were performed
+in Mathematica (see accompanying notebook
+\texttt{NearField\_Verification.nb}):
+\begin{enumerate}
+  \item Taylor expansion of the exact Kupradze tensor to
+        $\order{1/R}$ reproduces Eq.~\eqref{eq:eq6} identically.
+  \item The $1/R^3$ and $1/R^2$ terms vanish (P--S cancellation).
+  \item Eq.~\eqref{eq:eq6} decomposes as
+        $\text{Eq.~\eqref{eq:eq5}} + (\bG)_\text{far}$.
+  \item The identity
+        $1 - \beta^2/\alpha^2 = (\lambda+\mu)/(\lambda+2\mu)$ holds.
+\end{enumerate}
+All four tests pass.
+
+A numerical (finite-difference) implementation of the Kupradze
+representation confirms the analytic formulae to $\order{10^{-5}}$
+relative accuracy, providing an independent cross-check (see
+\texttt{verify\_nearfield.py}).
+
+\section{Connection to the T-Matrix Formulation}
+
+In the T-matrix approach to elastic wave scattering
+\citep{Nestor1996}, the Green's tensor enters the Lippmann--Schwinger
+integral equation. For scatterers whose dimensions are small compared
+to the wavelength ($ka \ll 1$, the Rayleigh regime), the
+near-field form of the Green's tensor governs the
+interaction between closely spaced inclusions. The
+velocity contrast factor $(1 - \beta^2/\alpha^2)$ controls the
+strength of the near-field coupling, vanishing in the acoustic limit.
+
+\bigskip
+
+\bibliography{nearfield_verification}
+
+\end{document}
