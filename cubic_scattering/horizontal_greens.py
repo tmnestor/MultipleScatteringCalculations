@@ -173,7 +173,7 @@ def horizontal_greens_fft(
 
     G_total = np.zeros((3, 3, Nky), dtype=complex)
 
-    for kz_idx, kz in enumerate(kz_arr):
+    for _kz_idx, kz in enumerate(kz_arr):
         # Post-kx-residue kernel for all ky at this kz
         # Shape: (3, 3, Nky)
         kernel = post_kx_residue_kernel_vec(ky_arr, kz, dx_abs, omega, rho, alpha, beta)

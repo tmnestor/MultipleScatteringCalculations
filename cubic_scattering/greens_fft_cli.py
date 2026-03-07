@@ -175,7 +175,7 @@ def truncation_error_bound(kmax, dz, omega, rho, alpha, beta):
 
     # Quadrature: ∫_0^∞ f(kmax + t/dz) exp(-t)/dz dt
     integral = 0.0
-    for node, weight in zip(nodes, weights):
+    for node, weight in zip(nodes, weights, strict=True):
         kH = kmax + node / dz
         integral += kernel_magnitude_radial(kH) * weight / dz * np.exp(node)
         # Note: laggauss weights include exp(-t), so we multiply by exp(t)
@@ -185,7 +185,7 @@ def truncation_error_bound(kmax, dz, omega, rho, alpha, beta):
     # We want ∫_{kmax}^∞ g(kH) dkH = ∫_0^∞ g(kmax+t/dz)/dz dt
     # = ∫_0^∞ [g(kmax+t/dz)/dz × exp(t)] exp(-t) dt
     integral_num = 0.0
-    for node, weight in zip(nodes, weights):
+    for node, weight in zip(nodes, weights, strict=True):
         kH = kmax + node / dz
         val = kernel_magnitude_radial(kH) / dz * np.exp(node)
         integral_num += weight * val

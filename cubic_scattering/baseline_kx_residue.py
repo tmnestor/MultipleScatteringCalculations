@@ -431,7 +431,7 @@ def numerical_kx_integral(
     dkx = kx_arr[1] - kx_arr[0]
 
     G = np.zeros((3, 3), dtype=complex)
-    for idx, kx in enumerate(kx_arr):
+    for _idx, kx in enumerate(kx_arr):
         Gspec = spectral_greens(kx, ky, kz, omega, rho, alpha, beta)
         phase = np.exp(1j * kx * dx)
         G += Gspec * phase * dkx

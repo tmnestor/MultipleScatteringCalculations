@@ -9,18 +9,16 @@ Tests:
   4. Cubic symmetry: verify I_{1111}=I_{2222}=I_{3333} etc.
   5. Numerical comparison with tmatrix_cube.py SymPy results
   6. Effective stiffness matrix symmetry
-  7. Small-sphere comparison (cube T3→0 as ωa→0)
+  7. Traction extraction
+  8. Small-sphere comparison (cube T3→0 as ωa→0)
+  9. Static Eshelby + dynamic: verify against CubicTMatrix_FullGreensTensor.nb
 """
 
-import os
 import sys
 
 import numpy as np
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from CubicTMatrix import (
+from cubic_scattering import (
     MaterialContrast,
     ReferenceMedium,
     compute_cube_tmatrix,
@@ -33,48 +31,55 @@ from CubicTMatrix import (
 
 def test_born_limit():
     """
-    Test 1: In the Born limit (a → 0), all amplification factors → 1
+    Test 1: In the Born limit (Δc → 0), all amplification factors → 1
     and effective contrasts → bare contrasts.
+
+    Note: The static Eshelby depolarization tensor means that T₁, T₂, T₃
+    are finite even for a → 0 (they scale as Δc/ρv², independent of a).
+    The true Born limit is weak scattering: Δc/ρv² << 1.
     """
-    print("Test 1: Born limit (a → 0)")
+    print("Test 1: Born limit (Δc → 0)")
 
     ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
-    contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    mu = ref.mu  # = 22.5e9
+
+    # Weak contrasts: 0.01% of background moduli
+    contrast = MaterialContrast(Dlambda=mu * 1e-4, Dmu=mu * 1e-4, Drho=ref.rho * 1e-4)
     omega = 2.0 * np.pi * 10.0
+    a = 10.0
 
-    # Very small cube
-    a_small = 0.01  # 1 cm half-width
-    result = compute_cube_tmatrix(omega, a_small, ref, contrast)
+    result = compute_cube_tmatrix(omega, a, ref, contrast)
 
-    # Check amplification factors ≈ 1
-    assert abs(result.amp_u - 1.0) < 1e-6, f"amp_u = {result.amp_u}, expected ≈ 1"
-    assert abs(result.amp_theta - 1.0) < 1e-6, (
+    # Check amplification factors ≈ 1  (T_i ∝ Δc → 0)
+    tol = 1e-4
+    assert abs(result.amp_u - 1.0) < tol, f"amp_u = {result.amp_u}, expected ≈ 1"
+    assert abs(result.amp_theta - 1.0) < tol, (
         f"amp_theta = {result.amp_theta}, expected ≈ 1"
     )
-    assert abs(result.amp_e_off - 1.0) < 1e-6, (
+    assert abs(result.amp_e_off - 1.0) < tol, (
         f"amp_e_off = {result.amp_e_off}, expected ≈ 1"
     )
-    assert abs(result.amp_e_diag - 1.0) < 1e-6, (
+    assert abs(result.amp_e_diag - 1.0) < tol, (
         f"amp_e_diag = {result.amp_e_diag}, expected ≈ 1"
     )
 
     # Check effective contrasts ≈ bare contrasts
-    assert abs(result.Drho_star - contrast.Drho) < 1e-3, (
-        f"Drho_star = {result.Drho_star}, expected ≈ {contrast.Drho}"
+    assert abs(result.Drho_star - contrast.Drho) / abs(contrast.Drho) < tol, (
+        "Drho_star relative error too large"
     )
-    assert abs(result.Dlambda_star - contrast.Dlambda) / abs(contrast.Dlambda) < 1e-6, (
+    assert abs(result.Dlambda_star - contrast.Dlambda) / abs(contrast.Dlambda) < tol, (
         "Dlambda_star relative error too large"
     )
-    assert abs(result.Dmu_star_off - contrast.Dmu) / abs(contrast.Dmu) < 1e-6, (
+    assert abs(result.Dmu_star_off - contrast.Dmu) / abs(contrast.Dmu) < tol, (
         "Dmu_star_off relative error too large"
     )
-    assert abs(result.Dmu_star_diag - contrast.Dmu) / abs(contrast.Dmu) < 1e-6, (
+    assert abs(result.Dmu_star_diag - contrast.Dmu) / abs(contrast.Dmu) < tol, (
         "Dmu_star_diag relative error too large"
     )
 
-    # Cubic anisotropy should vanish
-    assert abs(result.cubic_anisotropy) / abs(contrast.Dmu) < 1e-6, (
-        f"Cubic anisotropy = {result.cubic_anisotropy}, expected ≈ 0"
+    # Cubic anisotropy should be small relative to Δμ*
+    assert abs(result.cubic_anisotropy) / abs(result.Dmu_star_off) < 0.1, (
+        f"Cubic anisotropy = {result.cubic_anisotropy}, expected small relative to Dmu*"
     )
 
     print("  Born limit: all checks passed ✓")
@@ -256,17 +261,20 @@ def test_cubic_symmetry():
     print(f"  I_1212 = {I_1212}")
     print(f"  Cc = {result.Cc}")
 
-    # C^c should be real-valued to leading order and O(ωa)^7
-    # (the cubic anisotropy only appears at 7th order)
+    # C^c has both static (Eshelby) and dynamic parts.
+    # The static part arises from the cube's departure from spherical
+    # symmetry: C_stat ∝ b₀·(3j₂ - k₁) where the geometric factor
+    # (3j₂ - k₁) = -2(5√3 - 2π)/9 ≠ 0 for a cube.
     kPa = omega * a / ref.alpha
     kSa = omega * a / ref.beta
     print(f"  kP*a = {kPa:.4f}, kS*a = {kSa:.4f}")
 
-    # T3 should be small compared to T1, T2
+    # T3 should be the same order as T1, T2 (static Eshelby contributes)
+    # but less than 1 for the self-consistency to converge
     ratio = abs(result.T3c) / max(abs(result.T1c), abs(result.T2c))
     print(f"  |T3|/max(|T1|,|T2|) = {ratio:.6f}")
-    assert ratio < 0.1 * max(kPa, kSa) ** 4, (
-        f"T3 seems too large relative to T1,T2 (ratio = {ratio:.6f})"
+    assert ratio < 5.0, (
+        f"T3 seems anomalously large relative to T1,T2 (ratio = {ratio:.6f})"
     )
 
     print("  Cubic symmetry: all checks passed ✓")
@@ -383,39 +391,99 @@ def test_traction_extraction():
 
 def test_sphere_limit():
     """
-    Test 8: For very small ωa, T3→0 and the cube T-matrix reduces
-    to the sphere T-matrix (with appropriate volume scaling).
-    """
-    print("Test 8: Sphere limit (T3 → 0)")
+    Test 8: When α/β → 1 (Poisson ratio → −1), C_stat → 0 because
+    b₀ = (α²−β²)/(8πρα²β²) → 0.  In this limit, T3 → 0 and the
+    cube T-matrix reduces to the isotropic (sphere-like) form.
 
-    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    Note: The old test checked ωa → 0, but the static Eshelby C_stat
+    is independent of ω and a.  The sphere limit is really α → β.
+    """
+    print("Test 8: Sphere limit (α ≈ β → C_stat → 0)")
+
+    # Nearly incompressible: α/β only slightly > 1
+    beta = 3000.0
+    alpha = beta * 1.001  # α/β = 1.001
+    ref = ReferenceMedium(alpha=alpha, beta=beta, rho=2500.0)
     contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
 
-    # Small ωa regime
-    omega = 2.0 * np.pi * 1.0  # 1 Hz (low frequency)
-    a = 1.0  # 1 m cube half-width
+    omega = 2.0 * np.pi * 10.0
+    a = 10.0
 
     result = compute_cube_tmatrix(omega, a, ref, contrast)
 
-    kPa = omega * a / ref.alpha
-    kSa = omega * a / ref.beta
-    print(f"  kP*a = {kPa:.6f}, kS*a = {kSa:.6f}")
+    print(f"  α/β = {alpha / beta:.6f}")
 
-    # T3 should be much smaller than T1, T2
+    # T3 should be much smaller than T2 because C_stat ∝ (α²-β²)
     if abs(result.T2c) > 1e-30:
         ratio = abs(result.T3c) / abs(result.T2c)
         print(f"  |T3/T2| = {ratio:.6e}")
-        assert ratio < 0.01, f"|T3/T2| = {ratio} should be << 1"
+        assert ratio < 0.01, f"|T3/T2| = {ratio} should be << 1 when α ≈ β"
 
     # Dmu_star_diag ≈ Dmu_star_off
     if abs(result.Dmu_star_off) > 1e-30:
         aniso_ratio = abs(result.cubic_anisotropy) / abs(result.Dmu_star_off)
         print(f"  |cubic_aniso / Dmu_star_off| = {aniso_ratio:.6e}")
         assert aniso_ratio < 0.01, (
-            f"Cubic anisotropy ratio = {aniso_ratio} should be << 1"
+            f"Cubic anisotropy ratio = {aniso_ratio} should be << 1 when α ≈ β"
         )
 
     print("  Sphere limit: all checks passed ✓")
+
+
+def test_notebook_verification():
+    """
+    Test 9: Verify A, B, C and T1, T2, T3 against the analytic results
+    from CubicTMatrix_FullGreensTensor.nb (Mathematica notebook).
+
+    Parameters (seismological units: km/s, g/cm³):
+      α=5, β=3, ρ=2.5, ω=20π, a=0.01, Δλ=1.25, Δμ=0.75
+
+    The notebook computes the FULL integrals (static Eshelby + smooth
+    dynamic) symbolically, then evaluates numerically.
+    """
+    print("Test 9: Notebook verification (static + dynamic)")
+
+    ref = ReferenceMedium(alpha=5.0, beta=3.0, rho=2.5)
+    contrast = MaterialContrast(Dlambda=1.25, Dmu=0.75, Drho=0.0)
+    omega = 2.0 * np.pi * 10.0
+    a = 0.01
+
+    result = compute_cube_tmatrix(omega, a, ref, contrast)
+
+    # Reference values from CubicTMatrix_FullGreensTensor.nb Section 10
+    ref_A = -0.012201107458741135 - 0.00008607635386320063j
+    ref_B = 0.0026137073560736812 + 0.00003973958017869591j
+    ref_C = -0.003587055298886922 - 1.0444731153752018e-10j
+    ref_T1 = -0.002746105632556146 + 0.00015071169827338333j
+    ref_T2 = -0.007190550077000591 - 0.00003475258026337854j
+    ref_T3 = -0.005380582948330384 - 1.566709673062803e-10j
+
+    tol = 1e-8  # ~8 significant digits (limited by Taylor truncation at n=8)
+
+    for name, computed, expected in [
+        ("A", result.Ac, ref_A),
+        ("B", result.Bc, ref_B),
+        ("C", result.Cc, ref_C),
+        ("T1", result.T1c, ref_T1),
+        ("T2", result.T2c, ref_T2),
+        ("T3", result.T3c, ref_T3),
+    ]:
+        rel_err = abs(computed - expected) / abs(expected)
+        print(f"  {name}: rel_err = {rel_err:.2e}")
+        assert rel_err < tol, (
+            f"{name} mismatch: computed={computed}, expected={expected}, "
+            f"rel_err={rel_err:.2e}"
+        )
+
+    # Verify static Eshelby dominance: |Re(A)| >> |Im(A)|
+    assert abs(result.Ac.real) > 100 * abs(result.Ac.imag), (
+        "Static (real) part of A should dominate over dynamic (imaginary) part"
+    )
+    assert abs(result.Cc.real) > 1e6 * abs(result.Cc.imag), (
+        "C should be almost entirely real (static Eshelby)"
+    )
+
+    print("  Notebook verification: all checks passed ✓")
 
 
 # ================================================================
@@ -436,6 +504,7 @@ if __name__ == "__main__":
         test_effective_stiffness_symmetry,
         test_traction_extraction,
         test_sphere_limit,
+        test_notebook_verification,
     ]
 
     passed = 0

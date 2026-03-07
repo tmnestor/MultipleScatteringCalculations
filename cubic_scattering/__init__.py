@@ -1,18 +1,16 @@
 """
-CubicTMatrix — Self-consistent T-matrix for cubic elastic scatterers.
+cubic_scattering — Elastic multiple scattering from cubic heterogeneities.
 
-This package computes the cubic inclusion T-matrix from
-TMatrix_Derivation.pdf and expresses it in the displacement-traction
-basis (uz, ux, uy, tzz, txz, tyz) used by the Kennett propagator
-framework.
+This package provides:
+  T₀: Self-consistent T-matrix for cubic elastic scatterers
+  G₀: Lattice Green's tensor for inter-site coupling
 
 Coordinate system: z (down), x (right), y (out of page) — right-handed.
 
 Main entry points:
   compute_cube_tmatrix()  — full T-matrix computation
   voigt_tmatrix_6x6()     — 6×6 Voigt strain-space T-matrix
-  strain_from_displacement_traction()  — strain extraction from (u,t)
-  effective_stiffness_voigt()  — effective Δc* in Voigt form
+  LatticeGreens           — lattice Green's tensor (spatial, spectral, hybrid, FCC)
 """
 
 from .effective_contrasts import (
@@ -21,6 +19,7 @@ from .effective_contrasts import (
     ReferenceMedium,
     compute_cube_tmatrix,
 )
+from .lattice_greens import LatticeGreens
 from .voigt_tmatrix import (
     effective_stiffness_voigt,
     scattered_stress_voigt,
@@ -43,4 +42,5 @@ __all__ = [
     "traction_from_strain",
     "tmatrix_displacement_traction",
     "scattered_stress_voigt",
+    "LatticeGreens",
 ]

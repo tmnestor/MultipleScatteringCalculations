@@ -285,6 +285,43 @@ def _eval_poly_and_derivs_safe(u: np.ndarray, coeffs: np.ndarray):
     return P, Pp, Ppp
 
 
+def _static_eshelby_ABC(
+    alpha: float, beta: float, rho: float
+) -> Tuple[complex, complex, complex]:
+    """
+    Static Eshelby depolarization tensor for a cube: A_stat, B_stat, C_stat.
+
+    The Taylor expansion method captures only the smooth (radiation)
+    part of ∫G_{ij,kl} d³x.  The static 1/r³ singularity must be handled
+    separately via the divergence theorem, converting the PV volume
+    integral into a regular surface integral over the six cube faces.
+
+    Geometric constants (dimensionless surface integrals over [-1,1]²):
+      j₁ = ∫ du dv / (1+u²+v²)^{3/2}           = 2π/3
+      j₂ = ∫ u² du dv / (1+u²+v²)^{5/2}         = -2(√3 - π)/9
+      k₁ = ∫ du dv / (1+u²+v²)^{5/2}             = 2(2√3 + π)/9
+
+    Static Kelvin Green's tensor: G^K_{ij} = a₀/r δ_{ij} + b₀ x_i x_j/r³
+      a₀ = (α² + β²) / (8π ρ α² β²)
+      b₀ = (α² - β²) / (8π ρ α² β²)
+
+    Reference: CubicTMatrix_FullGreensTensor.nb, Section 5b.
+    """
+    a0 = (alpha**2 + beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
+    b0 = (alpha**2 - beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
+
+    sqrt3 = np.sqrt(3.0)
+    j1 = 2.0 * np.pi / 3.0
+    j2 = -2.0 * (sqrt3 - np.pi) / 9.0
+    k1 = 2.0 * (2.0 * sqrt3 + np.pi) / 9.0
+
+    A_stat = 2.0 * (-a0 * j1 - 3.0 * b0 * j2)
+    B_stat = 2.0 * b0 * (j1 - 3.0 * j2)
+    C_stat = 6.0 * b0 * (3.0 * j2 - k1)
+
+    return A_stat, B_stat, C_stat
+
+
 def _compute_ABC_polynomial(
     omega: float,
     a: float,
@@ -295,21 +332,25 @@ def _compute_ABC_polynomial(
     n_taylor: int = N_TAYLOR,
 ) -> Tuple[complex, complex, complex]:
     """
-    Compute A^c, B^c, C^c using the polynomial (Taylor expansion) method.
+    Compute A^c, B^c, C^c = static Eshelby + smooth radiation corrections.
 
-    The smooth part of the Green's tensor is:
-      G^s_{ij}(x) = δ_{ij} Φ(r²) + x_i x_j Ψ(r²)
+    The full second-derivative integral tensor decomposes as:
+      I_{ijkl} = I^stat_{ijkl} + I^smooth_{ijkl}
 
-    Its second spatial derivatives are polynomials in (x1, x2, x3), free
-    of singularities.  GL quadrature integrates these exactly (to Taylor
-    truncation order).
+    The static part comes from the 1/r Kelvin Green's tensor whose
+    second derivatives have a 1/r³ (Eshelby) singularity.  This is
+    evaluated analytically via surface integrals (divergence theorem).
+
+    The smooth part comes from the Taylor-expanded polynomial Green's
+    tensor G^s_{ij}(x) = δ_{ij} Φ(r²) + x_i x_j Ψ(r²), whose second
+    derivatives are regular polynomials integrated by GL quadrature.
 
     The three needed integrals are:
-      I_{1111} = ∫ G^s_{11,11} d³x = A + 2B + C
-      I_{1122} = ∫ G^s_{11,22} d³x = A
-      I_{1212} = ∫ G^s_{12,12} d³x = B
+      I_{1111} = ∫ G_{11,11} d³x = A + 2B + C
+      I_{1122} = ∫ G_{11,22} d³x = A
+      I_{1212} = ∫ G_{12,12} d³x = B
 
-    Formulae (derived from G^s_{ij,kl} = ∂²/∂x_k∂x_l [δ_{ij}Φ + x_ix_jΨ]):
+    Smooth-part formulae (G^s_{ij,kl} = ∂²/∂x_k∂x_l [δ_{ij}Φ + x_ix_jΨ]):
 
       G^s_{11,11} = 4x₁²Φ'' + 2Φ' + 2Ψ + 10x₁²Ψ' + 4x₁⁴Ψ''
       G^s_{11,22} = 4x₂²Φ'' + 2Φ' + 2x₁²Ψ' + 4x₁²x₂²Ψ''
@@ -317,6 +358,10 @@ def _compute_ABC_polynomial(
 
     where Φ', Φ'', Ψ', Ψ'' are derivatives w.r.t. u = r².
     """
+    # ── Static Eshelby depolarization (frequency-independent, real) ──
+    A_stat, B_stat, C_stat = _static_eshelby_ABC(alpha, beta, rho)
+
+    # ── Smooth radiation corrections (frequency-dependent, imaginary) ──
     phi, psi = _compute_taylor_coefficients(omega, alpha, beta, rho, n_taylor)
 
     # Set up quadrature
@@ -354,13 +399,18 @@ def _compute_ABC_polynomial(
     # G^s_{12,12}
     G_1212 = Psi + 2.0 * (x1sq + x2sq) * Psi_p + 4.0 * x1sq * x2sq * Psi_pp
 
-    I_1111 = np.sum(wt * G_1111)
-    I_1122 = np.sum(wt * G_1122)
-    I_1212 = np.sum(wt * G_1212)
+    I_1111_smooth = np.sum(wt * G_1111)
+    I_1122_smooth = np.sum(wt * G_1122)
+    I_1212_smooth = np.sum(wt * G_1212)
 
-    Ac = I_1122
-    Bc = I_1212
-    Cc = I_1111 - I_1122 - 2.0 * I_1212
+    A_smooth = I_1122_smooth
+    B_smooth = I_1212_smooth
+    C_smooth = I_1111_smooth - I_1122_smooth - 2.0 * I_1212_smooth
+
+    # ── Full = static + smooth ──
+    Ac = A_stat + A_smooth
+    Bc = B_stat + B_smooth
+    Cc = C_stat + C_smooth
 
     return Ac, Bc, Cc
 
