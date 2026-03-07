@@ -1,0 +1,4379 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[    175296,       4369]
+NotebookOptionsPosition[    156238,       4067]
+NotebookOutlinePosition[    156682,       4084]
+CellTagsIndexPosition[    156639,       4081]
+WindowTitle->Cubic T-Matrix: Full Green's Tensor
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Cubic T-Matrix with Full Elastodynamic Green\[CloseCurlyQuote]s \
+Tensor", "Title",ExpressionUUID->"6180f57d-26a5-49db-89f1-cc8ee60b9555"],
+
+Cell["T. M. Nestor \[Dash] Research School of Earth Sciences, ANU", "Subtitle",ExpressionUUID->"395d7f45-2488-4578-8de2-9d7caff81f46"],
+
+Cell[CellGroupData[{
+
+Cell["1. Setup and Green\[CloseCurlyQuote]s Tensor Definition", "Section",ExpressionUUID->"efb68b35-7d14-46ef-a7cd-7890f926b432"],
+
+Cell["\<\
+The elastodynamic Green\[CloseCurlyQuote]s tensor admits the radial \
+decomposition G_ij(x) = f(r) \[Delta]_ij + g(r)/r^2 x_i x_j, with near-field \
+(static 1/r), P-wave, and S-wave contributions.\
+\>", "Text",ExpressionUUID->"aa70d9c9-41da-4fd6-8e29-1c653319151c"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+ClearAll[\"Global`*\"]
+xx = {x1, x2, x3};
+rsq = x1^2 + x2^2 + x3^2;
+
+(* Near-field constant *)
+Cnf = (1 - \[Beta]^2/\[Alpha]^2)/(8 Pi \[Rho] \[Beta]^2);
+
+(* P-wave and S-wave radial functions *)
+Xr[r_] := Exp[I \[Omega] r/\[Alpha]]/(4 Pi \[Rho] \[Alpha]^2);
+Vr[r_] := Exp[I \[Omega] r/\[Beta]]/(4 Pi \[Rho] \[Beta]^2);
+
+(* f(r) and g(r) *)
+fr[r_] := (Vr[r] - Cnf)/r;
+gr[r_] := (3 Cnf + Xr[r] - Vr[r])/r;
+
+(* Full Green's tensor *)
+Gij[i_, j_] := fr[Sqrt[rsq]] KroneckerDelta[i, j] + gr[Sqrt[rsq]]/rsq xx[[i]] \
+xx[[j]];
+
+Print[\"Green's tensor defined.\"]\
+\>", "Input",
+ CellLabel->"In[1]:=",ExpressionUUID->"2419a869-e6d3-4fb6-9079-ccd0ef5765b1"],
+
+Cell[BoxData["\<\"Green's tensor defined.\"\>"], "Print",
+ CellChangeTimes->{3.981834421280196*^9},
+ CellLabel->
+  "During evaluation of \
+In[1]:=",ExpressionUUID->"0f4acf97-0077-437b-ab6c-c13c4162500c"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["2. Taylor Expansion and Smooth Decomposition", "Section",ExpressionUUID->"2043ce8e-2e13-474e-927d-8ae13895201d"],
+
+Cell["\<\
+We expand f*r and g*r as Taylor series. The odd powers of r give the smooth \
+polynomial part; the even powers give the singular (Eshelby) part.\
+\>", "Text",ExpressionUUID->"a73c73ff-0d1b-49e1-b8da-5f6ed99f7ad0"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Norder = 8;
+
+(* f*r and g*r *)
+frTimesR = Vr[r] - Cnf;
+grTimesR = 3 Cnf + Xr[r] - Vr[r];
+
+frSer = Series[frTimesR, {r, 0, Norder + 1}];
+grSer = Series[grTimesR, {r, 0, Norder + 1}];
+
+Print[\"f*r series:\"];
+frSer\
+\>", "Input",
+ CellLabel->"In[20]:=",ExpressionUUID->"8f546235-30d8-41fc-b3aa-957bcfa147f0"],
+
+Cell[BoxData["\<\"f*r series:\"\>"], "Print",
+ CellChangeTimes->{3.981834421522305*^9},
+ CellLabel->
+  "During evaluation of \
+In[20]:=",ExpressionUUID->"d79fc8f8-b8ca-471a-b29a-3136a5206ca8"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Alpha]", "2"], "+", 
+     SuperscriptBox["\[Beta]", "2"]}], 
+    RowBox[{"8", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "2"], " ", 
+     SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "+", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", "\[Omega]", " ", "r"}], 
+    RowBox[{"4", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "3"], " ", "\[Rho]"}]], "-", 
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Omega]", "2"], " ", 
+     SuperscriptBox["r", "2"]}], 
+    RowBox[{"8", " ", 
+     RowBox[{"(", 
+      RowBox[{"\[Pi]", " ", 
+       SuperscriptBox["\[Beta]", "4"], " ", "\[Rho]"}], ")"}]}]], "-", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     SuperscriptBox["\[Omega]", "3"], " ", 
+     SuperscriptBox["r", "3"]}], 
+    RowBox[{"24", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "5"], " ", "\[Rho]"}]], "+", 
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Omega]", "4"], " ", 
+     SuperscriptBox["r", "4"]}], 
+    RowBox[{"96", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "6"], " ", "\[Rho]"}]], "+", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     SuperscriptBox["\[Omega]", "5"], " ", 
+     SuperscriptBox["r", "5"]}], 
+    RowBox[{"480", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "7"], " ", "\[Rho]"}]], "-", 
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Omega]", "6"], " ", 
+     SuperscriptBox["r", "6"]}], 
+    RowBox[{"2880", " ", 
+     RowBox[{"(", 
+      RowBox[{"\[Pi]", " ", 
+       SuperscriptBox["\[Beta]", "8"], " ", "\[Rho]"}], ")"}]}]], "-", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     SuperscriptBox["\[Omega]", "7"], " ", 
+     SuperscriptBox["r", "7"]}], 
+    RowBox[{"20160", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "9"], " ", "\[Rho]"}]], "+", 
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Omega]", "8"], " ", 
+     SuperscriptBox["r", "8"]}], 
+    RowBox[{"161280", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "10"], " ", "\[Rho]"}]], "+", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     SuperscriptBox["\[Omega]", "9"], " ", 
+     SuperscriptBox["r", "9"]}], 
+    RowBox[{"1451520", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]], "+", 
+   InterpretationBox[
+    SuperscriptBox[
+     RowBox[{"O", "[", "r", "]"}], "10"],
+    SeriesData[$CellContext`r, 0, {}, 0, 10, 1],
+    Editable->False]}],
+  SeriesData[$CellContext`r, 0, {
+   Rational[1, 8] 
+    Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 + $CellContext`\[Beta]^2)/$CellContext`\[Rho], 
+    Complex[0, 
+      Rational[1, 4]] 
+    Pi^(-1) $CellContext`\[Beta]^(-3) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega], Rational[-1, 8] 
+    Pi^(-1) $CellContext`\[Beta]^(-4) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^2, Complex[0, 
+      Rational[-1, 24]] 
+    Pi^(-1) $CellContext`\[Beta]^(-5) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^3, Rational[1, 96] 
+    Pi^(-1) $CellContext`\[Beta]^(-6) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^4, Complex[0, 
+      Rational[1, 480]] 
+    Pi^(-1) $CellContext`\[Beta]^(-7) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^5, Rational[-1, 2880] 
+    Pi^(-1) $CellContext`\[Beta]^(-8) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^6, Complex[0, 
+      Rational[-1, 20160]] 
+    Pi^(-1) $CellContext`\[Beta]^(-9) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^7, Rational[1, 161280] 
+    Pi^(-1) $CellContext`\[Beta]^(-10) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^8, Complex[0, 
+      Rational[1, 1451520]] 
+    Pi^(-1) $CellContext`\[Beta]^(-11) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^9}, 0, 10, 1],
+  Editable->False]], "Output",
+ CellChangeTimes->{3.981834421582905*^9},
+ CellLabel->"Out[30]=",ExpressionUUID->"fa7590d4-5b74-40f5-9f5a-386a8a7d6578"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Print[\"g*r series:\"];
+grSer\
+\>", "Input",
+ CellLabel->"In[31]:=",ExpressionUUID->"e2f80462-07f9-4b7e-92fa-7b8388100cf4"],
+
+Cell[BoxData["\<\"g*r series:\"\>"], "Print",
+ CellChangeTimes->{3.981834421587051*^9},
+ CellLabel->
+  "During evaluation of \
+In[31]:=",ExpressionUUID->"69f8abe0-55cf-4940-b10e-2614f783aaa0"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Alpha]", "2"], "-", 
+     SuperscriptBox["\[Beta]", "2"]}], 
+    RowBox[{"8", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "2"], " ", 
+     SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "-", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       SuperscriptBox["\[Alpha]", "3"], "-", 
+       SuperscriptBox["\[Beta]", "3"]}], ")"}], " ", "\[Omega]", " ", "r"}], 
+    RowBox[{"4", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "3"], " ", 
+     SuperscriptBox["\[Beta]", "3"], " ", "\[Rho]"}]], "+", 
+   FractionBox[
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       SuperscriptBox["\[Alpha]", "4"], "-", 
+       SuperscriptBox["\[Beta]", "4"]}], ")"}], " ", 
+     SuperscriptBox["\[Omega]", "2"], " ", 
+     SuperscriptBox["r", "2"]}], 
+    RowBox[{"8", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "4"], " ", 
+     SuperscriptBox["\[Beta]", "4"], " ", "\[Rho]"}]], "+", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"-", 
+       FractionBox[
+        RowBox[{"\[ImaginaryI]", " ", 
+         SuperscriptBox["\[Omega]", "3"]}], 
+        RowBox[{"24", " ", "\[Pi]", " ", 
+         SuperscriptBox["\[Alpha]", "5"], " ", "\[Rho]"}]]}], "+", 
+      FractionBox[
+       RowBox[{"\[ImaginaryI]", " ", 
+        SuperscriptBox["\[Omega]", "3"]}], 
+       RowBox[{"24", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Beta]", "5"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    SuperscriptBox["r", "3"]}], "+", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      FractionBox[
+       SuperscriptBox["\[Omega]", "4"], 
+       RowBox[{"96", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Alpha]", "6"], " ", "\[Rho]"}]], "-", 
+      FractionBox[
+       SuperscriptBox["\[Omega]", "4"], 
+       RowBox[{"96", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Beta]", "6"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    SuperscriptBox["r", "4"]}], "+", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      FractionBox[
+       RowBox[{"\[ImaginaryI]", " ", 
+        SuperscriptBox["\[Omega]", "5"]}], 
+       RowBox[{"480", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Alpha]", "7"], " ", "\[Rho]"}]], "-", 
+      FractionBox[
+       RowBox[{"\[ImaginaryI]", " ", 
+        SuperscriptBox["\[Omega]", "5"]}], 
+       RowBox[{"480", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Beta]", "7"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    SuperscriptBox["r", "5"]}], "+", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"-", 
+       FractionBox[
+        SuperscriptBox["\[Omega]", "6"], 
+        RowBox[{"2880", " ", "\[Pi]", " ", 
+         SuperscriptBox["\[Alpha]", "8"], " ", "\[Rho]"}]]}], "+", 
+      FractionBox[
+       SuperscriptBox["\[Omega]", "6"], 
+       RowBox[{"2880", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Beta]", "8"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    SuperscriptBox["r", "6"]}], "+", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"-", 
+       FractionBox[
+        RowBox[{"\[ImaginaryI]", " ", 
+         SuperscriptBox["\[Omega]", "7"]}], 
+        RowBox[{"20160", " ", "\[Pi]", " ", 
+         SuperscriptBox["\[Alpha]", "9"], " ", "\[Rho]"}]]}], "+", 
+      FractionBox[
+       RowBox[{"\[ImaginaryI]", " ", 
+        SuperscriptBox["\[Omega]", "7"]}], 
+       RowBox[{"20160", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Beta]", "9"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    SuperscriptBox["r", "7"]}], "+", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      FractionBox[
+       SuperscriptBox["\[Omega]", "8"], 
+       RowBox[{"161280", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Alpha]", "10"], " ", "\[Rho]"}]], "-", 
+      FractionBox[
+       SuperscriptBox["\[Omega]", "8"], 
+       RowBox[{"161280", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Beta]", "10"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    SuperscriptBox["r", "8"]}], "+", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{
+      FractionBox[
+       RowBox[{"\[ImaginaryI]", " ", 
+        SuperscriptBox["\[Omega]", "9"]}], 
+       RowBox[{"1451520", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Alpha]", "11"], " ", "\[Rho]"}]], "-", 
+      FractionBox[
+       RowBox[{"\[ImaginaryI]", " ", 
+        SuperscriptBox["\[Omega]", "9"]}], 
+       RowBox[{"1451520", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    SuperscriptBox["r", "9"]}], "+", 
+   InterpretationBox[
+    SuperscriptBox[
+     RowBox[{"O", "[", "r", "]"}], "10"],
+    SeriesData[$CellContext`r, 0, {}, 0, 10, 1],
+    Editable->False]}],
+  SeriesData[$CellContext`r, 0, {
+   Rational[1, 8] 
+    Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho], 
+    Complex[0, 
+      Rational[-1, 4]] 
+    Pi^(-1) $CellContext`\[Alpha]^(-3) $CellContext`\[Beta]^(-3) \
+($CellContext`\[Alpha]^3 - $CellContext`\[Beta]^3) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega], Rational[1, 8] 
+    Pi^(-1) $CellContext`\[Alpha]^(-4) $CellContext`\[Beta]^(-4) \
+($CellContext`\[Alpha]^4 - $CellContext`\[Beta]^4) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^2, Complex[0, 
+       Rational[-1, 24]] 
+     Pi^(-1) $CellContext`\[Alpha]^(-5) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^3 + Complex[0, 
+       Rational[1, 24]] 
+     Pi^(-1) $CellContext`\[Beta]^(-5) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^3, 
+    Rational[1, 96] 
+     Pi^(-1) $CellContext`\[Alpha]^(-6) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^4 + 
+    Rational[-1, 96] 
+     Pi^(-1) $CellContext`\[Beta]^(-6) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^4, Complex[0, 
+       Rational[1, 480]] 
+     Pi^(-1) $CellContext`\[Alpha]^(-7) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^5 + Complex[0, 
+       Rational[-1, 480]] 
+     Pi^(-1) $CellContext`\[Beta]^(-7) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^5, 
+    Rational[-1, 2880] 
+     Pi^(-1) $CellContext`\[Alpha]^(-8) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^6 + 
+    Rational[1, 2880] 
+     Pi^(-1) $CellContext`\[Beta]^(-8) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^6, Complex[0, 
+       Rational[-1, 20160]] 
+     Pi^(-1) $CellContext`\[Alpha]^(-9) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^7 + Complex[0, 
+       Rational[1, 20160]] 
+     Pi^(-1) $CellContext`\[Beta]^(-9) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^7, 
+    Rational[1, 161280] 
+     Pi^(-1) $CellContext`\[Alpha]^(-10) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^8 + 
+    Rational[-1, 161280] 
+     Pi^(-1) $CellContext`\[Beta]^(-10) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^8, Complex[0, 
+       Rational[1, 1451520]] 
+     Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^9 + Complex[0, 
+       Rational[-1, 1451520]] 
+     Pi^(-1) $CellContext`\[Beta]^(-11) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^9}, 0, 10, 1],
+  Editable->False]], "Output",
+ CellChangeTimes->{3.981834421588213*^9},
+ CellLabel->"Out[32]=",ExpressionUUID->"88f7827b-f9c9-450d-bc11-123e4fc2f4b2"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Extract smooth polynomial coefficients *)
+(* \[Phi]_n = coeff of r^(2n+1) in f*r *)
+(* \[Psi]_n = coeff of r^(2n+3) in g*r *)
+nMax = Norder/2;
+
+\[Phi]Coeffs = Table[
+  Simplify[SeriesCoefficient[frSer, 2 n + 1]],
+  {n, 0, nMax - 1}];
+
+\[Psi]Coeffs = Table[
+  Simplify[SeriesCoefficient[grSer, 2 n + 3]],
+  {n, 0, nMax - 1}];
+
+Print[\"\\n\[Phi] coefficients (smooth part of f):\"];
+Do[Print[StringForm[\"\[Phi]_`` (r^``) = ``\", n, 2 n, \[Phi]Coeffs[[n + \
+1]]]], {n, 0, nMax - 1}];
+
+Print[\"\\n\[Psi] coefficients (smooth part of g/r^2):\"];
+Do[Print[StringForm[\"\[Psi]_`` (r^``) = ``\", n, 2 n, \[Psi]Coeffs[[n + \
+1]]]], {n, 0, nMax - 1}];\
+\>", "Input",
+ CellLabel->"In[33]:=",ExpressionUUID->"5fd6349f-268d-4a6f-8872-2839843c3a86"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\n\[Phi] coefficients (smooth part of f):\"\>"], "Print",
+ CellChangeTimes->{3.981834421599763*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"c8374362-43fb-4e3f-b02f-99fed27c09ab"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Phi]_\\!\\(\\*RowBox[{\\\"0\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"0\\\"}]\\)) = \\!\\(\\*FractionBox[RowBox[{\\\"\
+\[ImaginaryI]\\\", \\\" \\\", \\\"\[Omega]\\\"}], RowBox[{\\\"4\\\", \\\" \
+\\\", \\\"\[Pi]\\\", \\\" \\\", SuperscriptBox[\\\"\[Beta]\\\", \\\"3\\\"], \
+\\\" \\\", \\\"\[Rho]\\\"}]]\\)\"\>",
+  StringForm["\[Phi]_`` (r^``) = ``", 0, 0, Complex[0, 
+     Rational[1, 4]] 
+   Pi^(-1) $CellContext`\[Beta]^(-3) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421600493*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"53450965-e41c-4ecb-8ccd-8d22b5bb8875"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Phi]_\\!\\(\\*RowBox[{\\\"1\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"2\\\"}]\\)) = \\!\\(\\*RowBox[{\\\"-\\\", \
+FractionBox[RowBox[{\\\"\[ImaginaryI]\\\", \\\" \\\", SuperscriptBox[\\\"\
+\[Omega]\\\", \\\"3\\\"]}], RowBox[{\\\"24\\\", \\\" \\\", \\\"\[Pi]\\\", \
+\\\" \\\", SuperscriptBox[\\\"\[Beta]\\\", \\\"5\\\"], \\\" \\\", \
+\\\"\[Rho]\\\"}]]}]\\)\"\>",
+  StringForm["\[Phi]_`` (r^``) = ``", 1, 2, Complex[0, 
+     Rational[-1, 24]] 
+   Pi^(-1) $CellContext`\[Beta]^(-5) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^3],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421602481*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"2628031d-a414-4ab2-ad94-2585346cec09"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Phi]_\\!\\(\\*RowBox[{\\\"2\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"4\\\"}]\\)) = \\!\\(\\*FractionBox[RowBox[{\\\"\
+\[ImaginaryI]\\\", \\\" \\\", SuperscriptBox[\\\"\[Omega]\\\", \\\"5\\\"]}], \
+RowBox[{\\\"480\\\", \\\" \\\", \\\"\[Pi]\\\", \\\" \\\", SuperscriptBox[\\\"\
+\[Beta]\\\", \\\"7\\\"], \\\" \\\", \\\"\[Rho]\\\"}]]\\)\"\>",
+  StringForm["\[Phi]_`` (r^``) = ``", 2, 4, Complex[0, 
+     Rational[1, 480]] 
+   Pi^(-1) $CellContext`\[Beta]^(-7) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^5],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344216029778`*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"35fab946-eaf1-4411-aa68-f558be8639a0"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Phi]_\\!\\(\\*RowBox[{\\\"3\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"6\\\"}]\\)) = \\!\\(\\*RowBox[{\\\"-\\\", \
+FractionBox[RowBox[{\\\"\[ImaginaryI]\\\", \\\" \\\", SuperscriptBox[\\\"\
+\[Omega]\\\", \\\"7\\\"]}], RowBox[{\\\"20160\\\", \\\" \\\", \\\"\[Pi]\\\", \
+\\\" \\\", SuperscriptBox[\\\"\[Beta]\\\", \\\"9\\\"], \\\" \\\", \
+\\\"\[Rho]\\\"}]]}]\\)\"\>",
+  StringForm["\[Phi]_`` (r^``) = ``", 3, 6, Complex[0, 
+     Rational[-1, 20160]] 
+   Pi^(-1) $CellContext`\[Beta]^(-9) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]^7],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421603434*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"df7f75c0-5345-4acf-b3b8-dcb6f875530a"],
+
+Cell[BoxData["\<\"\\n\[Psi] coefficients (smooth part of g/r^2):\"\>"], \
+"Print",
+ CellChangeTimes->{3.9818344216038637`*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"98dcf560-b717-4bc3-af62-8a221274de2a"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Psi]_\\!\\(\\*RowBox[{\\\"0\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"0\\\"}]\\)) = \\!\\(\\*FractionBox[RowBox[{\\\"\
+\[ImaginaryI]\\\", \\\" \\\", RowBox[{\\\"(\\\", RowBox[{SuperscriptBox[\\\"\
+\[Alpha]\\\", \\\"5\\\"], \\\"-\\\", SuperscriptBox[\\\"\[Beta]\\\", \
+\\\"5\\\"]}], \\\")\\\"}], \\\" \\\", SuperscriptBox[\\\"\[Omega]\\\", \
+\\\"3\\\"]}], RowBox[{\\\"24\\\", \\\" \\\", \\\"\[Pi]\\\", \\\" \\\", \
+SuperscriptBox[\\\"\[Alpha]\\\", \\\"5\\\"], \\\" \\\", SuperscriptBox[\\\"\
+\[Beta]\\\", \\\"5\\\"], \\\" \\\", \\\"\[Rho]\\\"}]]\\)\"\>",
+  StringForm["\[Psi]_`` (r^``) = ``", 0, 0, Complex[0, 
+     Rational[1, 24]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-5) $CellContext`\[Beta]^(-5) \
+($CellContext`\[Alpha]^5 - $CellContext`\[Beta]^5) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^3],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421604227*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"ee3d13cf-40be-4d61-b70f-528d9d197f57"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Psi]_\\!\\(\\*RowBox[{\\\"1\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"2\\\"}]\\)) = \\!\\(\\*RowBox[{\\\"-\\\", \
+FractionBox[RowBox[{\\\"\[ImaginaryI]\\\", \\\" \\\", RowBox[{\\\"(\\\", \
+RowBox[{SuperscriptBox[\\\"\[Alpha]\\\", \\\"7\\\"], \\\"-\\\", \
+SuperscriptBox[\\\"\[Beta]\\\", \\\"7\\\"]}], \\\")\\\"}], \\\" \\\", \
+SuperscriptBox[\\\"\[Omega]\\\", \\\"5\\\"]}], RowBox[{\\\"480\\\", \\\" \
+\\\", \\\"\[Pi]\\\", \\\" \\\", SuperscriptBox[\\\"\[Alpha]\\\", \\\"7\\\"], \
+\\\" \\\", SuperscriptBox[\\\"\[Beta]\\\", \\\"7\\\"], \\\" \\\", \
+\\\"\[Rho]\\\"}]]}]\\)\"\>",
+  StringForm["\[Psi]_`` (r^``) = ``", 1, 2, Complex[0, 
+     Rational[-1, 480]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-7) $CellContext`\[Beta]^(-7) \
+($CellContext`\[Alpha]^7 - $CellContext`\[Beta]^7) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^5],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344216047688`*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"ecf7bbb1-e243-464a-a16a-14587d3dd5a2"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Psi]_\\!\\(\\*RowBox[{\\\"2\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"4\\\"}]\\)) = \\!\\(\\*FractionBox[RowBox[{\\\"\
+\[ImaginaryI]\\\", \\\" \\\", RowBox[{\\\"(\\\", RowBox[{SuperscriptBox[\\\"\
+\[Alpha]\\\", \\\"9\\\"], \\\"-\\\", SuperscriptBox[\\\"\[Beta]\\\", \
+\\\"9\\\"]}], \\\")\\\"}], \\\" \\\", SuperscriptBox[\\\"\[Omega]\\\", \
+\\\"7\\\"]}], RowBox[{\\\"20160\\\", \\\" \\\", \\\"\[Pi]\\\", \\\" \\\", \
+SuperscriptBox[\\\"\[Alpha]\\\", \\\"9\\\"], \\\" \\\", SuperscriptBox[\\\"\
+\[Beta]\\\", \\\"9\\\"], \\\" \\\", \\\"\[Rho]\\\"}]]\\)\"\>",
+  StringForm["\[Psi]_`` (r^``) = ``", 2, 4, Complex[0, 
+     Rational[1, 20160]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-9) $CellContext`\[Beta]^(-9) \
+($CellContext`\[Alpha]^9 - $CellContext`\[Beta]^9) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^7],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344216052923`*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"fe9b28cc-df09-4129-a774-11343c7e3b8a"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\[Psi]_\\!\\(\\*RowBox[{\\\"3\\\"}]\\) \
+(r^\\!\\(\\*RowBox[{\\\"6\\\"}]\\)) = \\!\\(\\*RowBox[{\\\"-\\\", \
+FractionBox[RowBox[{\\\"\[ImaginaryI]\\\", \\\" \\\", RowBox[{\\\"(\\\", \
+RowBox[{SuperscriptBox[\\\"\[Alpha]\\\", \\\"11\\\"], \\\"-\\\", \
+SuperscriptBox[\\\"\[Beta]\\\", \\\"11\\\"]}], \\\")\\\"}], \\\" \\\", \
+SuperscriptBox[\\\"\[Omega]\\\", \\\"9\\\"]}], RowBox[{\\\"1451520\\\", \\\" \
+\\\", \\\"\[Pi]\\\", \\\" \\\", SuperscriptBox[\\\"\[Alpha]\\\", \\\"11\\\"], \
+\\\" \\\", SuperscriptBox[\\\"\[Beta]\\\", \\\"11\\\"], \\\" \\\", \\\"\[Rho]\
+\\\"}]]}]\\)\"\>",
+  StringForm["\[Psi]_`` (r^``) = ``", 3, 6, Complex[0, 
+     Rational[-1, 1451520]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+($CellContext`\[Alpha]^11 - $CellContext`\[Beta]^11) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^9],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344216058187`*^9},
+ CellLabel->
+  "During evaluation of \
+In[33]:=",ExpressionUUID->"7c5d3a9a-7134-46fc-9f0b-d0f933558018"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Build polynomial representations *)
+\[CapitalPhi][u_] := Sum[\[Phi]Coeffs[[n + 1]] u^n, {n, 0, nMax - 1}];
+\[CapitalPsi][u_] := Sum[\[Psi]Coeffs[[n + 1]] u^n, {n, 0, nMax - 1}];
+
+(* Smooth Green's tensor *)
+Gs[i_, j_] := KroneckerDelta[i, j] \[CapitalPhi][rsq] + xx[[i]] xx[[j]] \
+\[CapitalPsi][rsq];
+
+Print[\"\\n\[CapitalPhi](u) = \", \[CapitalPhi][u]];
+Print[\"\\n\[CapitalPsi](u) = \", \[CapitalPsi][u]];\
+\>", "Input",
+ CellLabel->"In[47]:=",ExpressionUUID->"c1067351-045e-4ac8-ba6d-8b30db895dad"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\n\[CapitalPhi](u) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", "\[Omega]"}], 
+     RowBox[{"4", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Beta]", "3"], " ", "\[Rho]"}]], "-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", "u", " ", 
+      SuperscriptBox["\[Omega]", "3"]}], 
+     RowBox[{"24", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Beta]", "5"], " ", "\[Rho]"}]], "+", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["u", "2"], " ", 
+      SuperscriptBox["\[Omega]", "5"]}], 
+     RowBox[{"480", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Beta]", "7"], " ", "\[Rho]"}]], "-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["u", "3"], " ", 
+      SuperscriptBox["\[Omega]", "7"]}], 
+     RowBox[{"20160", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Beta]", "9"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["\n\[CapitalPhi](u) = ", Complex[0, 
+      Rational[1, 4]] 
+    Pi^(-1) $CellContext`\[Beta]^(-3) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega] + Complex[0, 
+      Rational[-1, 24]] 
+    Pi^(-1) $CellContext`u $CellContext`\[Beta]^(-5) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^3 + Complex[0, 
+      Rational[1, 480]] 
+    Pi^(-1) $CellContext`u^2 $CellContext`\[Beta]^(-7) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^5 + Complex[0, 
+      Rational[-1, 20160]] 
+    Pi^(-1) $CellContext`u^3 $CellContext`\[Beta]^(-9) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^7],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183442160884*^9},
+ CellLabel->
+  "During evaluation of \
+In[47]:=",ExpressionUUID->"d856d500-df92-4ae4-82e2-4bd893cc6b95"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\n\[CapitalPsi](u) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "5"], "-", 
+        SuperscriptBox["\[Beta]", "5"]}], ")"}], " ", 
+      SuperscriptBox["\[Omega]", "3"]}], 
+     RowBox[{"24", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "5"], " ", 
+      SuperscriptBox["\[Beta]", "5"], " ", "\[Rho]"}]], "-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", "u", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "7"], "-", 
+        SuperscriptBox["\[Beta]", "7"]}], ")"}], " ", 
+      SuperscriptBox["\[Omega]", "5"]}], 
+     RowBox[{"480", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "7"], " ", 
+      SuperscriptBox["\[Beta]", "7"], " ", "\[Rho]"}]], "+", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["u", "2"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "9"], "-", 
+        SuperscriptBox["\[Beta]", "9"]}], ")"}], " ", 
+      SuperscriptBox["\[Omega]", "7"]}], 
+     RowBox[{"20160", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "9"], " ", 
+      SuperscriptBox["\[Beta]", "9"], " ", "\[Rho]"}]], "-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["u", "3"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "11"], "-", 
+        SuperscriptBox["\[Beta]", "11"]}], ")"}], " ", 
+      SuperscriptBox["\[Omega]", "9"]}], 
+     RowBox[{"1451520", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["\n\[CapitalPsi](u) = ", Complex[0, 
+      Rational[1, 24]] 
+    Pi^(-1) $CellContext`\[Alpha]^(-5) $CellContext`\[Beta]^(-5) \
+($CellContext`\[Alpha]^5 - $CellContext`\[Beta]^5) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^3 + Complex[0, 
+      Rational[-1, 480]] 
+    Pi^(-1) $CellContext`u $CellContext`\[Alpha]^(-7) \
+$CellContext`\[Beta]^(-7) ($CellContext`\[Alpha]^7 - $CellContext`\[Beta]^7) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^5 + Complex[0, 
+      Rational[1, 20160]] 
+    Pi^(-1) $CellContext`u^2 $CellContext`\[Alpha]^(-9) \
+$CellContext`\[Beta]^(-9) ($CellContext`\[Alpha]^9 - $CellContext`\[Beta]^9) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^7 + Complex[0, 
+      Rational[-1, 1451520]] 
+    Pi^(-1) $CellContext`u^3 $CellContext`\[Alpha]^(-11) \
+$CellContext`\[Beta]^(-11) ($CellContext`\[Alpha]^11 - \
+$CellContext`\[Beta]^11) $CellContext`\[Rho]^(-1) $CellContext`\[Omega]^9],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421609543*^9},
+ CellLabel->
+  "During evaluation of \
+In[47]:=",ExpressionUUID->"a6d6d1f4-179a-4eee-a034-ea657e5d2d77"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["3. Cube Moments and Cubic Anisotropy", "Section",ExpressionUUID->"2189a682-d5c2-4c51-8941-c453e19919d8"],
+
+Cell["\<\
+The fourth-rank moment tensor of the cube introduces cubic anisotropy via \
+E_ijkl (=1 when all indices equal, 0 otherwise).\
+\>", "Text",ExpressionUUID->"c34e95c2-9d00-4e11-838c-d2aab90c116d"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Cube moment *)
+cubeMoment[p1_, p2_, p3_] := If[
+  OddQ[p1] || OddQ[p2] || OddQ[p3], 0,
+  (2 a^(p1 + 1)/(p1 + 1))(2 a^(p2 + 1)/(p2 + 1))(2 a^(p3 + 1)/(p3 + 1))];
+
+Vcube = cubeMoment[0, 0, 0];
+Print[\"Cube volume: \", Vcube];
+
+(* Fourth moments -- cubic anisotropy *)
+m4iiii = cubeMoment[4, 0, 0];
+m4iijj = cubeMoment[2, 2, 0];
+Print[\"\\nInt x1^4 = \", m4iiii];
+Print[\"Int x1^2 x2^2 = \", m4iijj];
+Print[\"\\nIsotropy ratio m4_iiii/(3 m4_iijj) = \", Simplify[m4iiii/(3 \
+m4iijj)], \" (=1 for sphere)\"];
+
+Pcoeff = m4iijj;
+Qcoeff = Simplify[m4iiii - 3 m4iijj];
+Print[\"\\nP (isotropic) = \", Pcoeff];
+Print[\"Q (cubic anisotropy) = \", Qcoeff];\
+\>", "Input",
+ CellLabel->"In[56]:=",ExpressionUUID->"30e03591-9589-4f81-b272-48347d11f3c2"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Cube volume: \"\>", "\[InvisibleSpace]", 
+   RowBox[{"8", " ", 
+    SuperscriptBox["a", "3"]}]}],
+  SequenceForm["Cube volume: ", 8 $CellContext`a^3],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421625815*^9},
+ CellLabel->
+  "During evaluation of \
+In[56]:=",ExpressionUUID->"ca32ff24-0f7d-4adc-8849-478b9cd8794f"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nInt x1^4 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"8", " ", 
+     SuperscriptBox["a", "7"]}], "5"]}],
+  SequenceForm["\nInt x1^4 = ", Rational[8, 5] $CellContext`a^7],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421626371*^9},
+ CellLabel->
+  "During evaluation of \
+In[56]:=",ExpressionUUID->"e2d67ae9-42b7-4e6a-91e1-42d46caa6955"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Int x1^2 x2^2 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"8", " ", 
+     SuperscriptBox["a", "7"]}], "9"]}],
+  SequenceForm["Int x1^2 x2^2 = ", Rational[8, 9] $CellContext`a^7],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183442162728*^9},
+ CellLabel->
+  "During evaluation of \
+In[56]:=",ExpressionUUID->"713eb3e1-e055-46b3-ba72-3420349ab41d"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nIsotropy ratio m4_iiii/(3 m4_iijj) = \"\>", "\[InvisibleSpace]", 
+   FractionBox["3", "5"], "\[InvisibleSpace]", "\<\" (=1 for sphere)\"\>"}],
+  SequenceForm["\nIsotropy ratio m4_iiii/(3 m4_iijj) = ", 
+   Rational[3, 5], " (=1 for sphere)"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344216275806`*^9},
+ CellLabel->
+  "During evaluation of \
+In[56]:=",ExpressionUUID->"e13bd515-343e-4d53-a9a3-d2a1ce9166bc"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nP (isotropic) = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"8", " ", 
+     SuperscriptBox["a", "7"]}], "9"]}],
+  SequenceForm["\nP (isotropic) = ", Rational[8, 9] $CellContext`a^7],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421627898*^9},
+ CellLabel->
+  "During evaluation of \
+In[56]:=",ExpressionUUID->"224475ad-fd0c-43d5-83b7-fa6cf769598f"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Q (cubic anisotropy) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"16", " ", 
+      SuperscriptBox["a", "7"]}], "15"]}]}],
+  SequenceForm["Q (cubic anisotropy) = ", Rational[-16, 15] $CellContext`a^7],
+  
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421628196*^9},
+ CellLabel->
+  "During evaluation of \
+In[56]:=",ExpressionUUID->"af4c3458-b23a-4b53-b7fc-9367434009f2"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["4. Integration of Polynomials over the Cube", "Section",ExpressionUUID->"b05746ed-6f79-42d1-b51e-2d6acf28dbb4"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Integrate polynomial over cube [-a,a]^3 *)
+integrateCube[expr_] := Module[{expanded = Expand[expr], terms, result},
+  If[expanded === 0, Return[0]];
+  terms = If[Head[expanded] === Plus, List @@ expanded, {expanded}];
+  result = Sum[
+    Module[{term, coeff, p1, p2, p3},
+      term = terms[[k]];
+      p1 = Exponent[term, x1];
+      p2 = Exponent[term, x2];
+      p3 = Exponent[term, x3];
+      coeff = term/(x1^p1 x2^p2 x3^p3);
+      coeff cubeMoment[p1, p2, p3]],
+    {k, 1, Length[terms]}];
+  Simplify[result]];
+
+Print[\"Test: Int 1 = \", integrateCube[1], \" (should be 8a^3)\"];
+Print[\"Test: Int x1^2 = \", integrateCube[x1^2], \" (should be 8a^5/3)\"];\
+\>", "Input",
+ CellLabel->"In[73]:=",ExpressionUUID->"73a7fef0-e428-4c51-949f-7facb882da72"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Test: Int 1 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"8", " ", 
+    SuperscriptBox["a", "3"]}], 
+   "\[InvisibleSpace]", "\<\" (should be 8a^3)\"\>"}],
+  SequenceForm["Test: Int 1 = ", 8 $CellContext`a^3, " (should be 8a^3)"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421633419*^9},
+ CellLabel->
+  "During evaluation of \
+In[73]:=",ExpressionUUID->"5385328d-6590-4a77-9c49-50f414b1aff3"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Test: Int x1^2 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"8", " ", 
+     SuperscriptBox["a", "5"]}], "3"], 
+   "\[InvisibleSpace]", "\<\" (should be 8a^5/3)\"\>"}],
+  SequenceForm[
+  "Test: Int x1^2 = ", Rational[8, 3] $CellContext`a^5, " (should be 8a^5/3)"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421633877*^9},
+ CellLabel->
+  "During evaluation of \
+In[73]:=",ExpressionUUID->"3bacde0c-bc4b-4b30-b018-a2ee3e36155a"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["5. Volume Integral of Green\[CloseCurlyQuote]s Tensor \
+(\[CapitalGamma]_0)", "Section",ExpressionUUID->"ab8d0ab0-7151-42e3-a788-\
+d71f63504546"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Gamma_0 from smooth polynomial *)
+\[CapitalGamma]0poly = integrateCube[Gs[1, 1]];
+Print[\"\[CapitalGamma]_0 (smooth polynomial) = \"];
+\[CapitalGamma]0poly\
+\>", "Input",
+ CellLabel->"In[78]:=",ExpressionUUID->"39e69f07-5f92-4f5d-a17b-d2179c617c27"],
+
+Cell[BoxData["\<\"\[CapitalGamma]_0 (smooth polynomial) = \"\>"], "Print",
+ CellChangeTimes->{3.981834421647677*^9},
+ CellLabel->
+  "During evaluation of \
+In[78]:=",ExpressionUUID->"17a92fae-08ac-4f7b-b580-67419e3b6271"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"\[ImaginaryI]", " ", 
+    SuperscriptBox["a", "3"], " ", "\[Omega]", " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"31752000", " ", 
+       SuperscriptBox["a", "2"], " ", 
+       SuperscriptBox["\[Alpha]", "6"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       SuperscriptBox["\[Omega]", "2"]}], "-", 
+      RowBox[{"2010960", " ", 
+       SuperscriptBox["a", "4"], " ", 
+       SuperscriptBox["\[Alpha]", "4"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       SuperscriptBox["\[Omega]", "4"]}], "+", 
+      RowBox[{"69960", " ", 
+       SuperscriptBox["a", "6"], " ", 
+       SuperscriptBox["\[Alpha]", "2"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       SuperscriptBox["\[Omega]", "6"]}], "-", 
+      RowBox[{"1573", " ", 
+       SuperscriptBox["a", "8"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       SuperscriptBox["\[Omega]", "8"]}], "+", 
+      RowBox[{
+       SuperscriptBox["\[Alpha]", "11"], " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"-", "571536000"}], " ", 
+          SuperscriptBox["\[Beta]", "8"]}], "+", 
+         RowBox[{"63504000", " ", 
+          SuperscriptBox["a", "2"], " ", 
+          SuperscriptBox["\[Beta]", "6"], " ", 
+          SuperscriptBox["\[Omega]", "2"]}], "-", 
+         RowBox[{"4021920", " ", 
+          SuperscriptBox["a", "4"], " ", 
+          SuperscriptBox["\[Beta]", "4"], " ", 
+          SuperscriptBox["\[Omega]", "4"]}], "+", 
+         RowBox[{"139920", " ", 
+          SuperscriptBox["a", "6"], " ", 
+          SuperscriptBox["\[Beta]", "2"], " ", 
+          SuperscriptBox["\[Omega]", "6"]}], "+", 
+         RowBox[{"1573", " ", 
+          SuperscriptBox["a", "8"], " ", 
+          SuperscriptBox["\[Omega]", "8"]}]}], ")"}]}]}], ")"}]}], 
+   RowBox[{"285768000", " ", "\[Pi]", " ", 
+    SuperscriptBox["\[Alpha]", "11"], " ", 
+    SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]], "Output",
+ CellChangeTimes->{3.981834421648332*^9},
+ CellLabel->"Out[81]=",ExpressionUUID->"ccf37043-2e45-43e1-baa0-f61281d6b564"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Verify isotropy *)
+\[CapitalGamma]022 = integrateCube[Gs[2, 2]];
+\[CapitalGamma]012 = integrateCube[Gs[1, 2]];
+Print[\"\\nIsotropy check: G_11 - G_22 = \", Simplify[\[CapitalGamma]0poly - \
+\[CapitalGamma]022]];
+Print[\"Off-diagonal: G_12 = \", \[CapitalGamma]012];\
+\>", "Input",
+ CellLabel->"In[82]:=",ExpressionUUID->"31c20712-3a8a-4565-94c8-443c41d97123"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nIsotropy check: G_11 - G_22 = \"\>", "\[InvisibleSpace]", 
+   "0"}],
+  SequenceForm["\nIsotropy check: G_11 - G_22 = ", 0],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344216523542`*^9},
+ CellLabel->
+  "During evaluation of \
+In[82]:=",ExpressionUUID->"a572cf18-8372-41d1-8d4a-3802de844627"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Off-diagonal: G_12 = \"\>", "\[InvisibleSpace]", "0"}],
+  SequenceForm["Off-diagonal: G_12 = ", 0],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421652775*^9},
+ CellLabel->
+  "During evaluation of \
+In[82]:=",ExpressionUUID->"695502a1-3727-40bc-a0b5-6340cd53e037"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["5b. Static Eshelby Depolarization Tensor", "Section",ExpressionUUID->"0d789514-e193-422f-9eec-468dabb12efa"],
+
+Cell["\<\
+The smooth polynomial misses the static (1/r) singular part. Via the \
+divergence theorem, the PV volume integral becomes a regular surface integral \
+over the cube faces: I^stat_{ijkl} = \[ContourIntegral] n_l \
+\[PartialD]G^Kelvin_{ij}/\[PartialD]x_k dS.\
+\>", "Text",ExpressionUUID->"aaee2bc9-974e-47e3-b8f7-1133a432cdf4"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Static Kelvin Green's tensor: G_{ij} = a0/r \[Delta]_{ij} + b0 x_i x_j/r^3 \
+*)
+a0stat = (\[Alpha]^2 + \[Beta]^2)/(8 Pi \[Rho] \[Alpha]^2 \[Beta]^2);
+b0stat = (\[Alpha]^2 - \[Beta]^2)/(8 Pi \[Rho] \[Alpha]^2 \[Beta]^2);
+
+Print[\"Static Green's tensor coefficients:\"];
+Print[\"a0 = \", a0stat];
+Print[\"b0 = \", b0stat];\
+\>", "Input",
+ CellLabel->"In[87]:=",ExpressionUUID->"1f3c343f-ff45-4599-8800-15a491edfc6a"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"Static Green's tensor coefficients:\"\>"], "Print",
+ CellChangeTimes->{3.98183442167032*^9},
+ CellLabel->
+  "During evaluation of \
+In[87]:=",ExpressionUUID->"401b8018-d7e8-4ac3-924e-c165d4fd4ec7"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"a0 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Alpha]", "2"], "+", 
+     SuperscriptBox["\[Beta]", "2"]}], 
+    RowBox[{"8", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "2"], " ", 
+     SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "a0 = ", Rational[1, 8] 
+   Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 + $CellContext`\[Beta]^2)/$CellContext`\[Rho]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834421670878*^9},
+ CellLabel->
+  "During evaluation of \
+In[87]:=",ExpressionUUID->"0efbca1b-29ff-4246-baa0-735c400b11a8"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"b0 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{
+     SuperscriptBox["\[Alpha]", "2"], "-", 
+     SuperscriptBox["\[Beta]", "2"]}], 
+    RowBox[{"8", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "2"], " ", 
+     SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "b0 = ", Rational[1, 8] 
+   Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183442167188*^9},
+ CellLabel->
+  "During evaluation of \
+In[87]:=",ExpressionUUID->"92f7ec30-d6fa-4d73-bc8a-20f3eec222a0"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Geometric constants for cube: dimensionless surface integrals *)
+(* On face x_l=a, after u=x/a substitution: *)
+(* j1 = \[Integral] du dv/(1+u^2+v^2)^(3/2) over [-1,1]^2 *)
+(* j2 = \[Integral] u^2 du dv/(1+u^2+v^2)^(5/2) *)
+(* k1 = \[Integral] du dv/(1+u^2+v^2)^(5/2) *)
+
+j1cube = Integrate[1/(1 + u^2 + v^2)^(3/2), {u, -1, 1}, {v, -1, 1}];
+j2cube = Integrate[u^2/(1 + u^2 + v^2)^(5/2), {u, -1, 1}, {v, -1, 1}];
+k1cube = Integrate[1/(1 + u^2 + v^2)^(5/2), {u, -1, 1}, {v, -1, 1}];
+
+Print[\"\\nGeometric constants (cube):\"];
+Print[\"j1 = \", j1cube, \"  (analytic: 2\[Pi]/3 = \", N[2 Pi/3], \")\"];
+Print[\"j2 = \", j2cube];
+Print[\"k1 = \", k1cube];
+Print[\"\\nTrace check: k1 + 2 j2 = \", Simplify[k1cube + 2 j2cube], \"  (should be 2\
+\[Pi]/3)\"];
+Print[\"Cubic anisotropy factor: 3 j2 - k1 = \", Simplify[3 j2cube - k1cube], \"  (=0 \
+for sphere)\"];\
+\>", "Input",
+ CellLabel->"In[94]:=",ExpressionUUID->"08bcfbf4-2f97-46be-9e01-9d799d381a55"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\nGeometric constants (cube):\"\>"], "Print",
+ CellChangeTimes->{3.981834425774296*^9},
+ CellLabel->
+  "During evaluation of \
+In[94]:=",ExpressionUUID->"ec20f2e8-be12-40e7-8821-53e27036c832"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"j1 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"2", " ", "\[Pi]"}], "3"], 
+   "\[InvisibleSpace]", "\<\"  (analytic: 2\[Pi]/3 = \"\>", "\[InvisibleSpace]",
+    "2.0943951023931953`", "\[InvisibleSpace]", "\<\")\"\>"}],
+  SequenceForm[
+  "j1 = ", Rational[2, 3] Pi, "  (analytic: 2\[Pi]/3 = ", 2.0943951023931953`,
+    ")"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183442577486*^9},
+ CellLabel->
+  "During evaluation of \
+In[94]:=",ExpressionUUID->"f6d6d9f2-49cd-4f2d-a46c-1de573705c5c"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"j2 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", 
+     FractionBox["2", "9"]}], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      SqrtBox["3"], "-", "\[Pi]"}], ")"}]}]}],
+  SequenceForm["j2 = ", Rational[-2, 9] (3^Rational[1, 2] - Pi)],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344257756767`*^9},
+ CellLabel->
+  "During evaluation of \
+In[94]:=",ExpressionUUID->"9252132d-b5e0-4cae-bd27-82b37febd5fc"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"k1 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    FractionBox["2", "9"], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"2", " ", 
+       SqrtBox["3"]}], "+", "\[Pi]"}], ")"}]}]}],
+  SequenceForm["k1 = ", Rational[2, 9] (2 3^Rational[1, 2] + Pi)],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344257764397`*^9},
+ CellLabel->
+  "During evaluation of \
+In[94]:=",ExpressionUUID->"700d4c9a-8ad0-4c61-8c87-8eb6f1d8248c"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nTrace check: k1 + 2 j2 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"-", 
+      FractionBox["4", "9"]}], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       SqrtBox["3"], "-", "\[Pi]"}], ")"}]}], "+", 
+    RowBox[{
+     FractionBox["2", "9"], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"2", " ", 
+        SqrtBox["3"]}], "+", "\[Pi]"}], ")"}]}]}], 
+   "\[InvisibleSpace]", "\<\"  (should be 2\[Pi]/3)\"\>"}],
+  SequenceForm[
+  "\nTrace check: k1 + 2 j2 = ", Rational[-4, 9] (3^Rational[1, 2] - Pi) + 
+   Rational[2, 9] (2 3^Rational[1, 2] + Pi), "  (should be 2\[Pi]/3)"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344257767773`*^9},
+ CellLabel->
+  "During evaluation of \
+In[94]:=",ExpressionUUID->"ec616f5e-1faa-4354-8582-556dee7d97f2"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Cubic anisotropy factor: 3 j2 - k1 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"-", 
+      FractionBox["2", "3"]}], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       SqrtBox["3"], "-", "\[Pi]"}], ")"}]}], "-", 
+    RowBox[{
+     FractionBox["2", "9"], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"2", " ", 
+        SqrtBox["3"]}], "+", "\[Pi]"}], ")"}]}]}], 
+   "\[InvisibleSpace]", "\<\"  (=0 for sphere)\"\>"}],
+  SequenceForm[
+  "Cubic anisotropy factor: 3 j2 - k1 = ", 
+   Rational[-2, 3] (3^Rational[1, 2] - Pi) + 
+   Rational[-2, 9] (2 3^Rational[1, 2] + Pi), "  (=0 for sphere)"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834425777151*^9},
+ CellLabel->
+  "During evaluation of \
+In[94]:=",ExpressionUUID->"732a07fb-ce69-47cb-9180-5e467f5f79c6"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Static A, B, C from surface integral derivation: *)
+(* I^stat_1111 = 2(-a0 j1 + b0(2 j1 - 3 k1)) *)
+(* I^stat_1122 = 2(-a0 j1 - 3 b0 j2) *)
+(* I^stat_1212 = 2 b0 (j1 - 3 j2) *)
+Astat = 2 (-a0stat j1cube - 3 b0stat j2cube);
+Bstat = 2 b0stat (j1cube - 3 j2cube);
+Cstat = 6 b0stat (3 j2cube - k1cube);
+
+Print[\"\\n========================================\"];
+Print[\"STATIC ESHELBY DEPOLARIZATION\"];
+Print[\"========================================\"];
+Print[\"A_stat = \", Simplify[Astat]];
+Print[\"B_stat = \", Simplify[Bstat]];
+Print[\"C_stat = \", Simplify[Cstat]];
+Print[\"\\nC_stat/B_stat = \", Simplify[Cstat/Bstat]];
+Print[\"(Nonzero \[DoubleRightArrow] cube \[NotEqual] sphere)\"];\
+\>", "Input",
+ CellLabel->
+  "In[110]:=",ExpressionUUID->"fa15cc3c-e24a-47cc-84a9-3ba06d86644a"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\n========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834425842437*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"1673b0b7-bf00-4a50-a985-95bdcae0cd3d"],
+
+Cell[BoxData["\<\"STATIC ESHELBY DEPOLARIZATION\"\>"], "Print",
+ CellChangeTimes->{3.981834425842908*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"45354b34-9546-4ef1-b894-fe85f84d00a8"],
+
+Cell[BoxData["\<\"========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834425843638*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"30fa233c-84e5-49df-8951-5a9fd388e3c2"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"A_stat = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"2", " ", 
+    RowBox[{"(", 
+     RowBox[{
+      FractionBox[
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{
+          SqrtBox["3"], "-", "\[Pi]"}], ")"}], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          SuperscriptBox["\[Alpha]", "2"], "-", 
+          SuperscriptBox["\[Beta]", "2"]}], ")"}]}], 
+       RowBox[{"12", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Alpha]", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "-", 
+      FractionBox[
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "2"], "+", 
+        SuperscriptBox["\[Beta]", "2"]}], 
+       RowBox[{"12", " ", 
+        SuperscriptBox["\[Alpha]", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}], ")"}]}]}],
+  SequenceForm[
+  "A_stat = ", 
+   2 (Rational[1, 12] (3^Rational[1, 2] - Pi) 
+     Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+    Rational[-1, 
+       12] $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 + $CellContext`\[Beta]^2)/$CellContext`\[Rho])],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344258440247`*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"d376cf3e-39fc-463d-aa6f-968466591925"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"B_stat = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{
+        FractionBox["2", "3"], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          SqrtBox["3"], "-", "\[Pi]"}], ")"}]}], "+", 
+       FractionBox[
+        RowBox[{"2", " ", "\[Pi]"}], "3"]}], ")"}], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       SuperscriptBox["\[Alpha]", "2"], "-", 
+       SuperscriptBox["\[Beta]", "2"]}], ")"}]}], 
+    RowBox[{"4", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "2"], " ", 
+     SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "B_stat = ", 
+   Rational[1, 4] (Rational[2, 3] (3^Rational[1, 2] - Pi) + Rational[2, 3] Pi)
+     Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834425844446*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"2fa2cf0d-5c49-4830-a66f-4bf36ec454ad"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"C_stat = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"3", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"-", 
+         FractionBox["2", "3"]}], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          SqrtBox["3"], "-", "\[Pi]"}], ")"}]}], "-", 
+       RowBox[{
+        FractionBox["2", "9"], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"2", " ", 
+           SqrtBox["3"]}], "+", "\[Pi]"}], ")"}]}]}], ")"}], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       SuperscriptBox["\[Alpha]", "2"], "-", 
+       SuperscriptBox["\[Beta]", "2"]}], ")"}]}], 
+    RowBox[{"4", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "2"], " ", 
+     SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "C_stat = ", Rational[3, 4] 
+   Pi^(-1) (Rational[-2, 3] (3^Rational[1, 2] - Pi) + 
+    Rational[-2, 9] (2 3^Rational[1, 2] + 
+      Pi)) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834425844871*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"f82c80b4-0225-4303-aa0a-9e1f8b356501"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nC_stat/B_stat = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", "5"}], "+", 
+    FractionBox[
+     RowBox[{"2", " ", "\[Pi]"}], 
+     SqrtBox["3"]]}]}],
+  SequenceForm["\nC_stat/B_stat = ", -5 + 2 3^Rational[-1, 2] Pi],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834425845211*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"8f24e7f2-db55-43ba-94a1-ebf2e0ac02fe"],
+
+Cell[BoxData["\<\"(Nonzero \[DoubleRightArrow] cube \[NotEqual] \
+sphere)\"\>"], "Print",
+ CellChangeTimes->{3.981834425845499*^9},
+ CellLabel->
+  "During evaluation of \
+In[110]:=",ExpressionUUID->"cb77166c-3a82-4b2e-831c-e5adda9ae049"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Static \[CapitalGamma]_0: volume integral of 1/r over cube *)
+(* g0 = \[Integral] du dv dw/\[Sqrt](u^2+v^2+w^2) over [-1,1]^3 *)
+g0cube = Integrate[1/Sqrt[u^2 + v^2 + w^2], {u, -1, 1}, {v, -1, 1}, {w, -1, \
+1}];
+
+(* \[CapitalGamma]_0^stat = a^2 (a0 + b0/3) g0 *)
+\[CapitalGamma]0stat = a^2 (a0stat + b0stat/3) g0cube;
+
+(* Combine with smooth polynomial *)
+\[CapitalGamma]0 = \[CapitalGamma]0stat + \[CapitalGamma]0poly;
+
+Print[\"\\nStatic \[CapitalGamma]_0:\"];
+Print[\"g0 (cube geometric constant) = \", g0cube];
+Print[\"\[CapitalGamma]_0^stat = \", \[CapitalGamma]0stat];
+Print[\"\[CapitalGamma]_0^smooth = \", \[CapitalGamma]0poly];
+Print[\"\[CapitalGamma]_0 (full) = \", \[CapitalGamma]0];\
+\>", "Input",
+ CellLabel->
+  "In[126]:=",ExpressionUUID->"1f172228-6a79-4265-832b-c8e4e756c331"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\nStatic \[CapitalGamma]_0:\"\>"], "Print",
+ CellChangeTimes->{3.981834453296802*^9},
+ CellLabel->
+  "During evaluation of \
+In[126]:=",ExpressionUUID->"af2e1101-ac2b-4100-94a1-731130ceb4da"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"g0 (cube geometric constant) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", 
+     FractionBox["2", "3"]}], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"3", " ", "\[Pi]"}], "+", 
+      RowBox[{"2", " ", 
+       RowBox[{"Log", "[", 
+        RowBox[{"70226", "-", 
+         RowBox[{"40545", " ", 
+          SqrtBox["3"]}]}], "]"}]}]}], ")"}]}]}],
+  SequenceForm[
+  "g0 (cube geometric constant) = ", 
+   Rational[-2, 3] (3 Pi + 2 Log[70226 - 40545 3^Rational[1, 2]])],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453297469*^9},
+ CellLabel->
+  "During evaluation of \
+In[126]:=",ExpressionUUID->"0f65eb1c-1abc-411b-ab87-69fcb258a27c"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\[CapitalGamma]_0^stat = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", 
+     FractionBox["2", "3"]}], " ", 
+    SuperscriptBox["a", "2"], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      FractionBox[
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "2"], "-", 
+        SuperscriptBox["\[Beta]", "2"]}], 
+       RowBox[{"24", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Alpha]", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "+", 
+      FractionBox[
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "2"], "+", 
+        SuperscriptBox["\[Beta]", "2"]}], 
+       RowBox[{"8", " ", "\[Pi]", " ", 
+        SuperscriptBox["\[Alpha]", "2"], " ", 
+        SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}], ")"}], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"3", " ", "\[Pi]"}], "+", 
+      RowBox[{"2", " ", 
+       RowBox[{"Log", "[", 
+        RowBox[{"70226", "-", 
+         RowBox[{"40545", " ", 
+          SqrtBox["3"]}]}], "]"}]}]}], ")"}]}]}],
+  SequenceForm[
+  "\[CapitalGamma]_0^stat = ", 
+   Rational[-2, 3] $CellContext`a^2 (
+    Rational[1, 24] 
+     Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+    Rational[1, 8] 
+     Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 + $CellContext`\[Beta]^2)/$CellContext`\[Rho]) (3 Pi + 
+    2 Log[70226 - 40545 3^Rational[1, 2]])],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453298284*^9},
+ CellLabel->
+  "During evaluation of \
+In[126]:=",ExpressionUUID->"91a993b0-8b0d-4b90-bc2e-097bcf5d1ec1"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\[CapitalGamma]_0^smooth = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "3"], " ", "\[Omega]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"31752000", " ", 
+         SuperscriptBox["a", "2"], " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "2"]}], "-", 
+        RowBox[{"2010960", " ", 
+         SuperscriptBox["a", "4"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "4"]}], "+", 
+        RowBox[{"69960", " ", 
+         SuperscriptBox["a", "6"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "6"]}], "-", 
+        RowBox[{"1573", " ", 
+         SuperscriptBox["a", "8"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "8"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "571536000"}], " ", 
+            SuperscriptBox["\[Beta]", "8"]}], "+", 
+           RowBox[{"63504000", " ", 
+            SuperscriptBox["a", "2"], " ", 
+            SuperscriptBox["\[Beta]", "6"], " ", 
+            SuperscriptBox["\[Omega]", "2"]}], "-", 
+           RowBox[{"4021920", " ", 
+            SuperscriptBox["a", "4"], " ", 
+            SuperscriptBox["\[Beta]", "4"], " ", 
+            SuperscriptBox["\[Omega]", "4"]}], "+", 
+           RowBox[{"139920", " ", 
+            SuperscriptBox["a", "6"], " ", 
+            SuperscriptBox["\[Beta]", "2"], " ", 
+            SuperscriptBox["\[Omega]", "6"]}], "+", 
+           RowBox[{"1573", " ", 
+            SuperscriptBox["a", "8"], " ", 
+            SuperscriptBox["\[Omega]", "8"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"285768000", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["\[CapitalGamma]_0^smooth = ", Complex[0, 
+     Rational[-1, 285768000]] $CellContext`a^3 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega] (
+    31752000 $CellContext`a^2 $CellContext`\[Alpha]^6 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^2 - 
+    2010960 $CellContext`a^4 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^4 + 
+    69960 $CellContext`a^6 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^6 - 
+    1573 $CellContext`a^8 $CellContext`\[Beta]^11 $CellContext`\[Omega]^8 + \
+$CellContext`\[Alpha]^11 ((-571536000) $CellContext`\[Beta]^8 + 
+      63504000 $CellContext`a^2 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^2 - 
+      4021920 $CellContext`a^4 $CellContext`\[Beta]^4 $CellContext`\[Omega]^4 + 
+      139920 $CellContext`a^6 $CellContext`\[Beta]^2 $CellContext`\[Omega]^6 + 
+      1573 $CellContext`a^8 $CellContext`\[Omega]^8))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453298901*^9},
+ CellLabel->
+  "During evaluation of \
+In[126]:=",ExpressionUUID->"7ed9bad1-3c3c-44a0-bf75-f8bfa9f58e4b"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\[CapitalGamma]_0 (full) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", 
+     FractionBox[
+      RowBox[{"\[ImaginaryI]", " ", 
+       SuperscriptBox["a", "3"], " ", "\[Omega]", " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"31752000", " ", 
+          SuperscriptBox["a", "2"], " ", 
+          SuperscriptBox["\[Alpha]", "6"], " ", 
+          SuperscriptBox["\[Beta]", "11"], " ", 
+          SuperscriptBox["\[Omega]", "2"]}], "-", 
+         RowBox[{"2010960", " ", 
+          SuperscriptBox["a", "4"], " ", 
+          SuperscriptBox["\[Alpha]", "4"], " ", 
+          SuperscriptBox["\[Beta]", "11"], " ", 
+          SuperscriptBox["\[Omega]", "4"]}], "+", 
+         RowBox[{"69960", " ", 
+          SuperscriptBox["a", "6"], " ", 
+          SuperscriptBox["\[Alpha]", "2"], " ", 
+          SuperscriptBox["\[Beta]", "11"], " ", 
+          SuperscriptBox["\[Omega]", "6"]}], "-", 
+         RowBox[{"1573", " ", 
+          SuperscriptBox["a", "8"], " ", 
+          SuperscriptBox["\[Beta]", "11"], " ", 
+          SuperscriptBox["\[Omega]", "8"]}], "+", 
+         RowBox[{
+          SuperscriptBox["\[Alpha]", "11"], " ", 
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{
+             RowBox[{"-", "571536000"}], " ", 
+             SuperscriptBox["\[Beta]", "8"]}], "+", 
+            RowBox[{"63504000", " ", 
+             SuperscriptBox["a", "2"], " ", 
+             SuperscriptBox["\[Beta]", "6"], " ", 
+             SuperscriptBox["\[Omega]", "2"]}], "-", 
+            RowBox[{"4021920", " ", 
+             SuperscriptBox["a", "4"], " ", 
+             SuperscriptBox["\[Beta]", "4"], " ", 
+             SuperscriptBox["\[Omega]", "4"]}], "+", 
+            RowBox[{"139920", " ", 
+             SuperscriptBox["a", "6"], " ", 
+             SuperscriptBox["\[Beta]", "2"], " ", 
+             SuperscriptBox["\[Omega]", "6"]}], "+", 
+            RowBox[{"1573", " ", 
+             SuperscriptBox["a", "8"], " ", 
+             SuperscriptBox["\[Omega]", "8"]}]}], ")"}]}]}], ")"}]}], 
+      RowBox[{"285768000", " ", "\[Pi]", " ", 
+       SuperscriptBox["\[Alpha]", "11"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}], "-", 
+    RowBox[{
+     FractionBox["2", "3"], " ", 
+     SuperscriptBox["a", "2"], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "2"], "-", 
+         SuperscriptBox["\[Beta]", "2"]}], 
+        RowBox[{"24", " ", "\[Pi]", " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "+", 
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "2"], "+", 
+         SuperscriptBox["\[Beta]", "2"]}], 
+        RowBox[{"8", " ", "\[Pi]", " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}], ")"}], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"3", " ", "\[Pi]"}], "+", 
+       RowBox[{"2", " ", 
+        RowBox[{"Log", "[", 
+         RowBox[{"70226", "-", 
+          RowBox[{"40545", " ", 
+           SqrtBox["3"]}]}], "]"}]}]}], ")"}]}]}]}],
+  SequenceForm["\[CapitalGamma]_0 (full) = ", Complex[0, 
+      Rational[-1, 285768000]] $CellContext`a^3 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega] (
+     31752000 $CellContext`a^2 $CellContext`\[Alpha]^6 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^2 - 
+     2010960 $CellContext`a^4 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^4 + 
+     69960 $CellContext`a^6 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^6 - 
+     1573 $CellContext`a^8 $CellContext`\[Beta]^11 $CellContext`\[Omega]^8 + \
+$CellContext`\[Alpha]^11 ((-571536000) $CellContext`\[Beta]^8 + 
+       63504000 $CellContext`a^2 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^2 - 
+       4021920 $CellContext`a^4 $CellContext`\[Beta]^4 \
+$CellContext`\[Omega]^4 + 
+       139920 $CellContext`a^6 $CellContext`\[Beta]^2 $CellContext`\[Omega]^6 + 
+       1573 $CellContext`a^8 $CellContext`\[Omega]^8)) + 
+   Rational[-2, 3] $CellContext`a^2 (
+     Rational[1, 24] 
+      Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+     Rational[1, 8] 
+      Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 + $CellContext`\[Beta]^2)/$CellContext`\[Rho]) (3 Pi + 
+     2 Log[70226 - 40545 3^Rational[1, 2]])],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453299636*^9},
+ CellLabel->
+  "During evaluation of \
+In[126]:=",ExpressionUUID->"aa46d067-01d0-4000-8a3b-2a0289ba70de"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["6. Second Derivative Integrals: A, B, C Decomposition", "Section",ExpressionUUID->"e8c970a9-eb61-451f-8282-a043b0c33a66"],
+
+Cell["\<\
+Smooth polynomial part: I^smooth_{ijkl} from \[CapitalPhi](r^2), \
+\[CapitalPsi](r^2). The FULL integral tensor is I = I^stat + I^smooth.\
+\>", "Text",ExpressionUUID->"0ba6b522-4e58-4be8-a212-c3aeb7709a98"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Second derivatives of smooth Green's tensor *)
+Gsijkl[i_, j_, k_, l_] := Expand[D[Gs[i, j], xx[[k]], xx[[l]]]];
+
+Print[\"Computing I_1111, I_1122, I_1212 ...\"];
+I1111 = integrateCube[Gsijkl[1, 1, 1, 1]];
+I1122 = integrateCube[Gsijkl[1, 1, 2, 2]];
+I1212 = integrateCube[Gsijkl[1, 2, 1, 2]];
+
+Print[\"I_1111 = \", I1111];
+Print[\"I_1122 = \", I1122];
+Print[\"I_1212 = \", I1212];\
+\>", "Input",
+ CellLabel->
+  "In[141]:=",ExpressionUUID->"2d4f8bac-5466-4b1b-9f3d-c24a439bc739"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"Computing I_1111, I_1122, I_1212 ...\"\>"], "Print",
+ CellChangeTimes->{3.981834453357582*^9},
+ CellLabel->
+  "During evaluation of \
+In[141]:=",ExpressionUUID->"62e30736-c3ed-4669-ac7f-f8f3aefe945f"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"I_1111 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"3175200", " ", 
+         SuperscriptBox["a", "3"], " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "3"]}], "-", 
+        RowBox[{"105840", " ", 
+         SuperscriptBox["a", "5"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "4"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SuperscriptBox["\[Alpha]", "7"], "+", 
+           RowBox[{"4", " ", 
+            SuperscriptBox["\[Beta]", "7"]}]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "5"]}], "+", 
+        RowBox[{"84", " ", 
+         SuperscriptBox["a", "7"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"116", " ", 
+            SuperscriptBox["\[Alpha]", "9"]}], "+", 
+           RowBox[{"283", " ", 
+            SuperscriptBox["\[Beta]", "9"]}]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "7"]}], "+", 
+        RowBox[{"757", " ", 
+         SuperscriptBox["a", "9"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SuperscriptBox["\[Alpha]", "11"], "-", 
+           SuperscriptBox["\[Beta]", "11"]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}], 
+     RowBox[{"4762800", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["I_1111 = ", Complex[0, 
+     Rational[-1, 4762800]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) (
+    3175200 $CellContext`a^3 $CellContext`\[Alpha]^6 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^3 - 
+    105840 $CellContext`a^5 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^4 \
+($CellContext`\[Alpha]^7 + 4 $CellContext`\[Beta]^7) $CellContext`\[Omega]^5 + 
+    84 $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^2 (
+      116 $CellContext`\[Alpha]^9 + 
+      283 $CellContext`\[Beta]^9) $CellContext`\[Omega]^7 + 
+    757 $CellContext`a^9 ($CellContext`\[Alpha]^11 - $CellContext`\[Beta]^11) \
+$CellContext`\[Omega]^9)],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453390176*^9},
+ CellLabel->
+  "During evaluation of \
+In[141]:=",ExpressionUUID->"49637a7b-1ebb-476f-9ebb-28cfd76e3abf"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"I_1122 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"6350400", " ", 
+         SuperscriptBox["a", "3"], " ", 
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         SuperscriptBox["\[Beta]", "6"], " ", 
+         SuperscriptBox["\[Omega]", "3"]}], "-", 
+        RowBox[{"105840", " ", 
+         SuperscriptBox["a", "5"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "4"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"9", " ", 
+            SuperscriptBox["\[Alpha]", "7"]}], "+", 
+           SuperscriptBox["\[Beta]", "7"]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "5"]}], "+", 
+        RowBox[{"168", " ", 
+         SuperscriptBox["a", "7"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"341", " ", 
+            SuperscriptBox["\[Alpha]", "9"]}], "+", 
+           RowBox[{"58", " ", 
+            SuperscriptBox["\[Beta]", "9"]}]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "7"]}], "+", 
+        RowBox[{"409", " ", 
+         SuperscriptBox["a", "9"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SuperscriptBox["\[Alpha]", "11"], "-", 
+           SuperscriptBox["\[Beta]", "11"]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}], 
+     RowBox[{"9525600", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["I_1122 = ", Complex[0, 
+     Rational[-1, 9525600]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) (
+    6350400 $CellContext`a^3 $CellContext`\[Alpha]^11 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^3 - 
+    105840 $CellContext`a^5 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^4 (
+     9 $CellContext`\[Alpha]^7 + $CellContext`\[Beta]^7) \
+$CellContext`\[Omega]^5 + 
+    168 $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^2 (
+      341 $CellContext`\[Alpha]^9 + 
+      58 $CellContext`\[Beta]^9) $CellContext`\[Omega]^7 + 
+    409 $CellContext`a^9 ($CellContext`\[Alpha]^11 - $CellContext`\[Beta]^11) \
+$CellContext`\[Omega]^9)],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453391349*^9},
+ CellLabel->
+  "During evaluation of \
+In[141]:=",ExpressionUUID->"577c78e1-a7a1-4646-8858-fdf84dada1ce"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"I_1212 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "3"], " ", 
+      SuperscriptBox["\[Omega]", "3"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"2116800", " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}], "-", 
+        RowBox[{"246960", " ", 
+         SuperscriptBox["a", "2"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "2"]}], "+", 
+        RowBox[{"13944", " ", 
+         SuperscriptBox["a", "4"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "4"]}], "-", 
+        RowBox[{"467", " ", 
+         SuperscriptBox["a", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "6"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "2116800"}], " ", 
+            SuperscriptBox["\[Beta]", "6"]}], "+", 
+           RowBox[{"246960", " ", 
+            SuperscriptBox["a", "2"], " ", 
+            SuperscriptBox["\[Beta]", "4"], " ", 
+            SuperscriptBox["\[Omega]", "2"]}], "-", 
+           RowBox[{"13944", " ", 
+            SuperscriptBox["a", "4"], " ", 
+            SuperscriptBox["\[Beta]", "2"], " ", 
+            SuperscriptBox["\[Omega]", "4"]}], "+", 
+           RowBox[{"467", " ", 
+            SuperscriptBox["a", "6"], " ", 
+            SuperscriptBox["\[Omega]", "6"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"6350400", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["I_1212 = ", Complex[0, 
+     Rational[-1, 6350400]] $CellContext`a^3 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^3 (
+    2116800 $CellContext`\[Alpha]^6 $CellContext`\[Beta]^11 - 
+    246960 $CellContext`a^2 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^2 + 
+    13944 $CellContext`a^4 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^4 - 
+    467 $CellContext`a^6 $CellContext`\[Beta]^11 $CellContext`\[Omega]^6 + \
+$CellContext`\[Alpha]^11 ((-2116800) $CellContext`\[Beta]^6 + 
+      246960 $CellContext`a^2 $CellContext`\[Beta]^4 $CellContext`\[Omega]^2 - 
+      13944 $CellContext`a^4 $CellContext`\[Beta]^2 $CellContext`\[Omega]^4 + 
+      467 $CellContext`a^6 $CellContext`\[Omega]^6))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183445339198*^9},
+ CellLabel->
+  "During evaluation of \
+In[141]:=",ExpressionUUID->"188ef787-c6c2-4d9e-a5c9-dfec095d4361"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Verify symmetries *)
+I2222 = integrateCube[Gsijkl[2, 2, 2, 2]];
+I1221 = integrateCube[Gsijkl[1, 2, 2, 1]];
+Print[\"\\nCubic symmetry: I_1111 - I_2222 = \", Simplify[I1111 - I2222]];
+Print[\"Minor symmetry: I_1212 - I_1221 = \", Simplify[I1212 - I1221]];
+
+(* Smooth polynomial part *)
+AcSmooth = I1122;
+BcSmooth = I1212;
+CcSmooth = Simplify[I1111 - I1122 - 2 I1212];
+
+Print[\"\\nSmooth polynomial (radiation) part:\"];
+Print[\"A_smooth = \", AcSmooth];
+Print[\"B_smooth = \", BcSmooth];
+Print[\"C_smooth = \", CcSmooth];
+
+(* FULL = static Eshelby + smooth polynomial *)
+Ac = Astat + AcSmooth;
+Bc = Bstat + BcSmooth;
+Cc = Cstat + CcSmooth;
+
+Print[\"\\n========================================\"];
+Print[\"FULL INTEGRAL TENSOR (static + dynamic)\"];
+Print[\"========================================\"];
+Print[\"A = A_stat + A_smooth = \", Ac];
+Print[\"B = B_stat + B_smooth = \", Bc];
+Print[\"C = C_stat + C_smooth = \", Cc];\
+\>", "Input",
+ CellLabel->
+  "In[152]:=",ExpressionUUID->"2bac994e-1e48-4cd1-935f-926acb0f5045"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nCubic symmetry: I_1111 - I_2222 = \"\>", "\[InvisibleSpace]",
+    "0"}],
+  SequenceForm["\nCubic symmetry: I_1111 - I_2222 = ", 0],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453403997*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"127b0273-496d-4112-930f-2d05f008aff2"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Minor symmetry: I_1212 - I_1221 = \"\>", "\[InvisibleSpace]", 
+   "0"}],
+  SequenceForm["Minor symmetry: I_1212 - I_1221 = ", 0],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453404674*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"a2b19570-8114-4fd6-a302-086360732a7f"],
+
+Cell[BoxData["\<\"\\nSmooth polynomial (radiation) part:\"\>"], "Print",
+ CellChangeTimes->{3.981834453405202*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"713b1c64-7882-4293-9c7c-2244c7d68e4c"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"A_smooth = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"6350400", " ", 
+         SuperscriptBox["a", "3"], " ", 
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         SuperscriptBox["\[Beta]", "6"], " ", 
+         SuperscriptBox["\[Omega]", "3"]}], "-", 
+        RowBox[{"105840", " ", 
+         SuperscriptBox["a", "5"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "4"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"9", " ", 
+            SuperscriptBox["\[Alpha]", "7"]}], "+", 
+           SuperscriptBox["\[Beta]", "7"]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "5"]}], "+", 
+        RowBox[{"168", " ", 
+         SuperscriptBox["a", "7"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"341", " ", 
+            SuperscriptBox["\[Alpha]", "9"]}], "+", 
+           RowBox[{"58", " ", 
+            SuperscriptBox["\[Beta]", "9"]}]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "7"]}], "+", 
+        RowBox[{"409", " ", 
+         SuperscriptBox["a", "9"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SuperscriptBox["\[Alpha]", "11"], "-", 
+           SuperscriptBox["\[Beta]", "11"]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}], 
+     RowBox[{"9525600", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["A_smooth = ", Complex[0, 
+     Rational[-1, 9525600]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) (
+    6350400 $CellContext`a^3 $CellContext`\[Alpha]^11 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^3 - 
+    105840 $CellContext`a^5 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^4 (
+     9 $CellContext`\[Alpha]^7 + $CellContext`\[Beta]^7) \
+$CellContext`\[Omega]^5 + 
+    168 $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^2 (
+      341 $CellContext`\[Alpha]^9 + 
+      58 $CellContext`\[Beta]^9) $CellContext`\[Omega]^7 + 
+    409 $CellContext`a^9 ($CellContext`\[Alpha]^11 - $CellContext`\[Beta]^11) \
+$CellContext`\[Omega]^9)],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453405719*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"cdaca31e-de0e-4811-b664-93aa9be77195"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"B_smooth = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "3"], " ", 
+      SuperscriptBox["\[Omega]", "3"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"2116800", " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}], "-", 
+        RowBox[{"246960", " ", 
+         SuperscriptBox["a", "2"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "2"]}], "+", 
+        RowBox[{"13944", " ", 
+         SuperscriptBox["a", "4"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "4"]}], "-", 
+        RowBox[{"467", " ", 
+         SuperscriptBox["a", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "6"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "2116800"}], " ", 
+            SuperscriptBox["\[Beta]", "6"]}], "+", 
+           RowBox[{"246960", " ", 
+            SuperscriptBox["a", "2"], " ", 
+            SuperscriptBox["\[Beta]", "4"], " ", 
+            SuperscriptBox["\[Omega]", "2"]}], "-", 
+           RowBox[{"13944", " ", 
+            SuperscriptBox["a", "4"], " ", 
+            SuperscriptBox["\[Beta]", "2"], " ", 
+            SuperscriptBox["\[Omega]", "4"]}], "+", 
+           RowBox[{"467", " ", 
+            SuperscriptBox["a", "6"], " ", 
+            SuperscriptBox["\[Omega]", "6"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"6350400", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm["B_smooth = ", Complex[0, 
+     Rational[-1, 6350400]] $CellContext`a^3 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^3 (
+    2116800 $CellContext`\[Alpha]^6 $CellContext`\[Beta]^11 - 
+    246960 $CellContext`a^2 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^2 + 
+    13944 $CellContext`a^4 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^4 - 
+    467 $CellContext`a^6 $CellContext`\[Beta]^11 $CellContext`\[Omega]^6 + \
+$CellContext`\[Alpha]^11 ((-2116800) $CellContext`\[Beta]^6 + 
+      246960 $CellContext`a^2 $CellContext`\[Beta]^4 $CellContext`\[Omega]^2 - 
+      13944 $CellContext`a^4 $CellContext`\[Beta]^2 $CellContext`\[Omega]^4 + 
+      467 $CellContext`a^6 $CellContext`\[Omega]^6))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344534063177`*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"9a016a32-be33-45e2-8b64-2d9633a974a0"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"C_smooth = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     SuperscriptBox["a", "7"], " ", 
+     SuperscriptBox["\[Omega]", "7"], " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"504", " ", 
+        SuperscriptBox["\[Alpha]", "2"], " ", 
+        SuperscriptBox["\[Beta]", "11"]}], "-", 
+       RowBox[{"37", " ", 
+        SuperscriptBox["a", "2"], " ", 
+        SuperscriptBox["\[Beta]", "11"], " ", 
+        SuperscriptBox["\[Omega]", "2"]}], "+", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "11"], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"-", "504"}], " ", 
+           SuperscriptBox["\[Beta]", "2"]}], "+", 
+          RowBox[{"37", " ", 
+           SuperscriptBox["a", "2"], " ", 
+           SuperscriptBox["\[Omega]", "2"]}]}], ")"}]}]}], ")"}]}], 
+    RowBox[{"1190700", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "11"], " ", 
+     SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}],
+  SequenceForm["C_smooth = ", Complex[0, 
+     Rational[1, 1190700]] $CellContext`a^7 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^7 (
+    504 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 - 
+    37 $CellContext`a^2 $CellContext`\[Beta]^11 $CellContext`\[Omega]^2 + \
+$CellContext`\[Alpha]^11 ((-504) $CellContext`\[Beta]^2 + 
+      37 $CellContext`a^2 $CellContext`\[Omega]^2))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453406849*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"85e2e0a9-ed49-4276-8bed-f01b1de7a15b"],
+
+Cell[BoxData["\<\"\\n========================================\"\>"], "Print",
+ CellChangeTimes->{3.9818344534072104`*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"d931e179-917c-4f2a-975b-73454dd31f4f"],
+
+Cell[BoxData["\<\"FULL INTEGRAL TENSOR (static + dynamic)\"\>"], "Print",
+ CellChangeTimes->{3.981834453407505*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"25337245-8b53-4df0-926b-ffe111809e49"],
+
+Cell[BoxData["\<\"========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834453407805*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"accce63d-bdf0-4439-bc35-4dd297b3cc8c"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"A = A_stat + A_smooth = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"2", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       FractionBox[
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{
+           SqrtBox["3"], "-", "\[Pi]"}], ")"}], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SuperscriptBox["\[Alpha]", "2"], "-", 
+           SuperscriptBox["\[Beta]", "2"]}], ")"}]}], 
+        RowBox[{"12", " ", "\[Pi]", " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "-", 
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "2"], "+", 
+         SuperscriptBox["\[Beta]", "2"]}], 
+        RowBox[{"12", " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]]}], ")"}]}], "-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"6350400", " ", 
+         SuperscriptBox["a", "3"], " ", 
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         SuperscriptBox["\[Beta]", "6"], " ", 
+         SuperscriptBox["\[Omega]", "3"]}], "-", 
+        RowBox[{"105840", " ", 
+         SuperscriptBox["a", "5"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "4"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"9", " ", 
+            SuperscriptBox["\[Alpha]", "7"]}], "+", 
+           SuperscriptBox["\[Beta]", "7"]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "5"]}], "+", 
+        RowBox[{"168", " ", 
+         SuperscriptBox["a", "7"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"341", " ", 
+            SuperscriptBox["\[Alpha]", "9"]}], "+", 
+           RowBox[{"58", " ", 
+            SuperscriptBox["\[Beta]", "9"]}]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "7"]}], "+", 
+        RowBox[{"409", " ", 
+         SuperscriptBox["a", "9"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SuperscriptBox["\[Alpha]", "11"], "-", 
+           SuperscriptBox["\[Beta]", "11"]}], ")"}], " ", 
+         SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}], 
+     RowBox[{"9525600", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm[
+  "A = A_stat + A_smooth = ", 
+   2 (Rational[1, 12] (3^Rational[1, 2] - Pi) 
+      Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+     Rational[-1, 
+        12] $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 + $CellContext`\[Beta]^2)/$CellContext`\[Rho]) + 
+   Complex[0, 
+      Rational[-1, 9525600]] 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) (
+     6350400 $CellContext`a^3 $CellContext`\[Alpha]^11 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^3 - 
+     105840 $CellContext`a^5 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^4 (
+      9 $CellContext`\[Alpha]^7 + $CellContext`\[Beta]^7) $CellContext`\
+\[Omega]^5 + 
+     168 $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^2 (
+       341 $CellContext`\[Alpha]^9 + 
+       58 $CellContext`\[Beta]^9) $CellContext`\[Omega]^7 + 
+     409 $CellContext`a^9 ($CellContext`\[Alpha]^11 - \
+$CellContext`\[Beta]^11) $CellContext`\[Omega]^9)],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453408333*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"609cbe61-f34c-4c7a-97c2-74b1e925e687"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"B = B_stat + B_smooth = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    FractionBox[
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         FractionBox["2", "3"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SqrtBox["3"], "-", "\[Pi]"}], ")"}]}], "+", 
+        FractionBox[
+         RowBox[{"2", " ", "\[Pi]"}], "3"]}], ")"}], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "2"], "-", 
+        SuperscriptBox["\[Beta]", "2"]}], ")"}]}], 
+     RowBox[{"4", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "2"], " ", 
+      SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "-", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "3"], " ", 
+      SuperscriptBox["\[Omega]", "3"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"2116800", " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}], "-", 
+        RowBox[{"246960", " ", 
+         SuperscriptBox["a", "2"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "2"]}], "+", 
+        RowBox[{"13944", " ", 
+         SuperscriptBox["a", "4"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "4"]}], "-", 
+        RowBox[{"467", " ", 
+         SuperscriptBox["a", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "6"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "2116800"}], " ", 
+            SuperscriptBox["\[Beta]", "6"]}], "+", 
+           RowBox[{"246960", " ", 
+            SuperscriptBox["a", "2"], " ", 
+            SuperscriptBox["\[Beta]", "4"], " ", 
+            SuperscriptBox["\[Omega]", "2"]}], "-", 
+           RowBox[{"13944", " ", 
+            SuperscriptBox["a", "4"], " ", 
+            SuperscriptBox["\[Beta]", "2"], " ", 
+            SuperscriptBox["\[Omega]", "4"]}], "+", 
+           RowBox[{"467", " ", 
+            SuperscriptBox["a", "6"], " ", 
+            SuperscriptBox["\[Omega]", "6"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"6350400", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm[
+  "B = B_stat + B_smooth = ", 
+   Rational[1, 4] (Rational[2, 3] (3^Rational[1, 2] - Pi) + Rational[2, 3] Pi)
+      Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+   Complex[0, 
+      Rational[-1, 6350400]] $CellContext`a^3 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^3 (
+     2116800 $CellContext`\[Alpha]^6 $CellContext`\[Beta]^11 - 
+     246960 $CellContext`a^2 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^2 + 
+     13944 $CellContext`a^4 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^4 - 
+     467 $CellContext`a^6 $CellContext`\[Beta]^11 $CellContext`\[Omega]^6 + \
+$CellContext`\[Alpha]^11 ((-2116800) $CellContext`\[Beta]^6 + 
+       246960 $CellContext`a^2 $CellContext`\[Beta]^4 $CellContext`\[Omega]^2 - 
+       13944 $CellContext`a^4 $CellContext`\[Beta]^2 $CellContext`\[Omega]^4 + 
+       467 $CellContext`a^6 $CellContext`\[Omega]^6))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453409018*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"e9e7c1e2-b3aa-4046-a1b1-2ce59b4161b6"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"C = C_stat + C_smooth = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    FractionBox[
+     RowBox[{"3", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", 
+          FractionBox["2", "3"]}], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SqrtBox["3"], "-", "\[Pi]"}], ")"}]}], "-", 
+        RowBox[{
+         FractionBox["2", "9"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"2", " ", 
+            SqrtBox["3"]}], "+", "\[Pi]"}], ")"}]}]}], ")"}], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "2"], "-", 
+        SuperscriptBox["\[Beta]", "2"]}], ")"}]}], 
+     RowBox[{"4", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "2"], " ", 
+      SuperscriptBox["\[Beta]", "2"], " ", "\[Rho]"}]], "+", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "7"], " ", 
+      SuperscriptBox["\[Omega]", "7"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"504", " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}], "-", 
+        RowBox[{"37", " ", 
+         SuperscriptBox["a", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "2"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "504"}], " ", 
+            SuperscriptBox["\[Beta]", "2"]}], "+", 
+           RowBox[{"37", " ", 
+            SuperscriptBox["a", "2"], " ", 
+            SuperscriptBox["\[Omega]", "2"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"1190700", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm[
+  "C = C_stat + C_smooth = ", 
+   Rational[3, 4] 
+    Pi^(-1) (Rational[-2, 3] (3^Rational[1, 2] - Pi) + 
+     Rational[-2, 9] (2 3^Rational[1, 2] + 
+       Pi)) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+   Complex[0, 
+      Rational[1, 1190700]] $CellContext`a^7 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^7 (
+     504 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 - 
+     37 $CellContext`a^2 $CellContext`\[Beta]^11 $CellContext`\[Omega]^2 + \
+$CellContext`\[Alpha]^11 ((-504) $CellContext`\[Beta]^2 + 
+       37 $CellContext`a^2 $CellContext`\[Omega]^2))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453409638*^9},
+ CellLabel->
+  "During evaluation of \
+In[152]:=",ExpressionUUID->"cdc4a4a9-c3d3-47cc-bb7b-1b5e97b0a207"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["7. T-Matrix Coupling Coefficients", "Section",ExpressionUUID->"3401a8e1-d5a7-4eaf-a1cc-102f3590d4a5"],
+
+Cell["\<\
+T_mnlp = Sum_jk S_mnjk Dc_jklp, where S is the symmetrised integral tensor \
+and Dc is the isotropic stiffness contrast.\
+\>", "Text",ExpressionUUID->"3306857f-4e39-4654-8a48-6db5beaa9732"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Integral tensor from A, B, C *)
+Itens[i_, j_, k_, l_] :=
+  Ac KroneckerDelta[i, j] KroneckerDelta[k, l] +
+  Bc (KroneckerDelta[i, k] KroneckerDelta[j, l] +
+      KroneckerDelta[i, l] KroneckerDelta[j, k]) +
+  Cc KroneckerDelta[i, j] KroneckerDelta[j, k] KroneckerDelta[k, l];
+
+(* Symmetrised tensor *)
+Stens[m_, n_, j_, k_] := (Itens[m, j, k, n] + Itens[n, j, k, m])/2;
+
+(* Stiffness contrast *)
+Dctens[j_, k_, l_, p_] :=
+  \[CapitalDelta]\[Lambda] KroneckerDelta[j, k] KroneckerDelta[l, p] +
+  \[CapitalDelta]\[Mu] (KroneckerDelta[j, l] KroneckerDelta[k, p] +
+                          KroneckerDelta[j, p] KroneckerDelta[k, l]);
+
+(* T tensor *)
+Ttens[m_, n_, l_, p_] := Sum[Stens[m, n, j, k] Dctens[j, k, l, p], {j, 1, 3}, \
+{k, 1, 3}];
+
+(* Independent components *)
+TT1111 = Simplify[Ttens[1, 1, 1, 1]];
+TT1122 = Simplify[Ttens[1, 1, 2, 2]];
+TT1212 = Simplify[Ttens[1, 2, 1, 2]];
+
+(* Decomposition *)
+T1 = TT1122;
+T2 = TT1212;
+T3 = Simplify[TT1111 - TT1122 - 2 TT1212];
+
+Print[\"\\n========================================\"];
+Print[\"T-MATRIX COEFFICIENTS\"];
+Print[\"========================================\"];
+Print[\"T_1 (volumetric) = \", T1];
+Print[\"T_2 (shear) = \", T2];
+Print[\"T_3 (cubic anisotropy) = \", T3];\
+\>", "Input",
+ CellLabel->
+  "In[179]:=",ExpressionUUID->"a874f462-0b3b-4a2d-b0b5-0185bffae3e0"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\n========================================\"\>"], "Print",
+ CellChangeTimes->{3.9818344535837297`*^9},
+ CellLabel->
+  "During evaluation of \
+In[179]:=",ExpressionUUID->"73a426d3-041e-4af8-98ca-ef7b8a61532f"],
+
+Cell[BoxData["\<\"T-MATRIX COEFFICIENTS\"\>"], "Print",
+ CellChangeTimes->{3.981834453584268*^9},
+ CellLabel->
+  "During evaluation of \
+In[179]:=",ExpressionUUID->"28e676a9-7147-487c-af1b-d90f9a1afd93"],
+
+Cell[BoxData["\<\"========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834453585297*^9},
+ CellLabel->
+  "During evaluation of \
+In[179]:=",ExpressionUUID->"16a0e2b0-da70-4134-b000-61fbf0670741"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T_1 (volumetric) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    FractionBox["1", 
+     RowBox[{"9525600", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]], 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", "3175200"}], " ", "\[Pi]", " ", 
+       SuperscriptBox["\[Alpha]", "9"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Lambda]"}], "-", 
+      RowBox[{"3175200", " ", 
+       SqrtBox["3"], " ", 
+       SuperscriptBox["\[Alpha]", "9"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Mu]"}], "-", 
+      RowBox[{"6350400", " ", "\[ImaginaryI]", " ", 
+       SuperscriptBox["a", "3"], " ", 
+       SuperscriptBox["\[Alpha]", "6"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"2", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+         "\[CapitalDelta]\[Mu]"}], ")"}], " ", 
+       SuperscriptBox["\[Omega]", "3"]}], "+", 
+      RowBox[{"105840", " ", "\[ImaginaryI]", " ", 
+       SuperscriptBox["a", "5"], " ", 
+       SuperscriptBox["\[Alpha]", "4"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"15", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+         RowBox[{"7", " ", "\[CapitalDelta]\[Mu]"}]}], ")"}], " ", 
+       SuperscriptBox["\[Omega]", "5"]}], "-", 
+      RowBox[{"168", " ", "\[ImaginaryI]", " ", 
+       SuperscriptBox["a", "7"], " ", 
+       SuperscriptBox["\[Alpha]", "2"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"532", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+         RowBox[{"249", " ", "\[CapitalDelta]\[Mu]"}]}], ")"}], " ", 
+       SuperscriptBox["\[Omega]", "7"]}], "+", 
+      RowBox[{"\[ImaginaryI]", " ", 
+       SuperscriptBox["a", "9"], " ", 
+       SuperscriptBox["\[Beta]", "11"], " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"2915", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+         RowBox[{"1401", " ", "\[CapitalDelta]\[Mu]"}]}], ")"}], " ", 
+       SuperscriptBox["\[Omega]", "9"]}], "+", 
+      RowBox[{
+       SuperscriptBox["\[Alpha]", "11"], " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"3175200", " ", 
+          SqrtBox["3"], " ", 
+          SuperscriptBox["\[Beta]", "9"], " ", "\[CapitalDelta]\[Mu]"}], "+", 
+         
+         RowBox[{"6350400", " ", "\[ImaginaryI]", " ", 
+          SuperscriptBox["a", "3"], " ", 
+          SuperscriptBox["\[Beta]", "6"], " ", 
+          RowBox[{"(", 
+           RowBox[{"\[CapitalDelta]\[Lambda]", "+", "\[CapitalDelta]\[Mu]"}], 
+           ")"}], " ", 
+          SuperscriptBox["\[Omega]", "3"]}], "-", 
+         RowBox[{"105840", " ", "\[ImaginaryI]", " ", 
+          SuperscriptBox["a", "5"], " ", 
+          SuperscriptBox["\[Beta]", "4"], " ", 
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"5", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+            RowBox[{"7", " ", "\[CapitalDelta]\[Mu]"}]}], ")"}], " ", 
+          SuperscriptBox["\[Omega]", "5"]}], "+", 
+         RowBox[{"168", " ", "\[ImaginaryI]", " ", 
+          SuperscriptBox["a", "7"], " ", 
+          SuperscriptBox["\[Beta]", "2"], " ", 
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"133", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+            RowBox[{"249", " ", "\[CapitalDelta]\[Mu]"}]}], ")"}], " ", 
+          SuperscriptBox["\[Omega]", "7"]}], "-", 
+         RowBox[{"\[ImaginaryI]", " ", 
+          SuperscriptBox["a", "9"], " ", 
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"2915", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+            RowBox[{"1401", " ", "\[CapitalDelta]\[Mu]"}]}], ")"}], " ", 
+          SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}]}], ")"}]}]}],
+  SequenceForm[
+  "T_1 (volumetric) = ", Rational[1, 9525600] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) ((-3175200) 
+     Pi $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Lambda] - 3175200 
+    3^Rational[
+      1, 2] $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Mu] + 
+    Complex[0, -6350400] $CellContext`a^3 $CellContext`\[Alpha]^6 \
+$CellContext`\[Beta]^11 (
+      2 $CellContext`\[CapitalDelta]\[Lambda] + $CellContext`\[CapitalDelta]\
+\[Mu]) $CellContext`\[Omega]^3 + 
+    Complex[0, 
+       105840] $CellContext`a^5 $CellContext`\[Alpha]^4 \
+$CellContext`\[Beta]^11 (15 $CellContext`\[CapitalDelta]\[Lambda] + 
+      7 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^5 + 
+    Complex[0, -168] $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\
+\[Beta]^11 (532 $CellContext`\[CapitalDelta]\[Lambda] + 
+      249 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^7 + 
+    Complex[0, 1] $CellContext`a^9 $CellContext`\[Beta]^11 (
+      2915 $CellContext`\[CapitalDelta]\[Lambda] + 
+      1401 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^9 + \
+$CellContext`\[Alpha]^11 (
+      3175200 3^
+        Rational[
+         1, 2] $CellContext`\[Beta]^9 $CellContext`\[CapitalDelta]\[Mu] + 
+      Complex[0, 
+         6350400] $CellContext`a^3 $CellContext`\[Beta]^6 ($CellContext`\
+\[CapitalDelta]\[Lambda] + $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\
+\[Omega]^3 + 
+      Complex[0, -105840] $CellContext`a^5 $CellContext`\[Beta]^4 (
+        5 $CellContext`\[CapitalDelta]\[Lambda] + 
+        7 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^5 + 
+      Complex[0, 168] $CellContext`a^7 $CellContext`\[Beta]^2 (
+        133 $CellContext`\[CapitalDelta]\[Lambda] + 
+        249 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^7 + 
+      Complex[0, -1] $CellContext`a^9 (
+        2915 $CellContext`\[CapitalDelta]\[Lambda] + 
+        1401 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^9))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453586097*^9},
+ CellLabel->
+  "During evaluation of \
+In[179]:=",ExpressionUUID->"1a078e99-8ed8-4b4a-b842-321850bcc2a3"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T_2 (shear) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{"\[CapitalDelta]\[Mu]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"907200", " ", 
+         SqrtBox["3"], " ", 
+         SuperscriptBox["\[Alpha]", "9"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}], "+", 
+        RowBox[{"907200", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "3"], " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "3"]}], "-", 
+        RowBox[{"136080", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "5"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "5"]}], "+", 
+        RowBox[{"8760", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "7"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "7"]}], "-", 
+        RowBox[{"317", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "9"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "9"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "907200"}], " ", 
+            RowBox[{"(", 
+             RowBox[{
+              SqrtBox["3"], "-", "\[Pi]"}], ")"}], " ", 
+            SuperscriptBox["\[Beta]", "9"]}], "+", 
+           RowBox[{"907200", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "3"], " ", 
+            SuperscriptBox["\[Beta]", "6"], " ", 
+            SuperscriptBox["\[Omega]", "3"]}], "-", 
+           RowBox[{"166320", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "5"], " ", 
+            SuperscriptBox["\[Beta]", "4"], " ", 
+            SuperscriptBox["\[Omega]", "5"]}], "+", 
+           RowBox[{"10392", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "7"], " ", 
+            SuperscriptBox["\[Beta]", "2"], " ", 
+            SuperscriptBox["\[Omega]", "7"]}], "+", 
+           RowBox[{"317", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "9"], " ", 
+            SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"2721600", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm[
+  "T_2 (shear) = ", Rational[-1, 2721600] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[CapitalDelta]\[Mu] $CellContext`\[Rho]^(-1) (
+    907200 3^Rational[1, 2] $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 + 
+    Complex[0, 
+       907200] $CellContext`a^3 $CellContext`\[Alpha]^6 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^3 + 
+    Complex[0, -136080] $CellContext`a^5 $CellContext`\[Alpha]^4 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^5 + 
+    Complex[0, 
+       8760] $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^7 + 
+    Complex[0, -317] $CellContext`a^9 $CellContext`\[Beta]^11 $CellContext`\
+\[Omega]^9 + $CellContext`\[Alpha]^11 ((-907200) (3^Rational[1, 2] - 
+        Pi) $CellContext`\[Beta]^9 + 
+      Complex[0, 
+         907200] $CellContext`a^3 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^3 + 
+      Complex[0, -166320] $CellContext`a^5 $CellContext`\[Beta]^4 \
+$CellContext`\[Omega]^5 + 
+      Complex[0, 
+         10392] $CellContext`a^7 $CellContext`\[Beta]^2 \
+$CellContext`\[Omega]^7 + 
+      Complex[0, 317] $CellContext`a^9 $CellContext`\[Omega]^9))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453587433*^9},
+ CellLabel->
+  "During evaluation of \
+In[179]:=",ExpressionUUID->"9591fbd1-b610-4dc0-a4f8-adf767586baf"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T_3 (cubic anisotropy) = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"\[CapitalDelta]\[Mu]", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"198450", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"5", " ", 
+           SqrtBox["3"]}], "-", 
+          RowBox[{"2", " ", "\[Pi]"}]}], ")"}], " ", 
+        SuperscriptBox["\[Alpha]", "9"], " ", 
+        SuperscriptBox["\[Beta]", "11"]}], "+", 
+       RowBox[{"504", " ", "\[ImaginaryI]", " ", 
+        SuperscriptBox["a", "7"], " ", 
+        SuperscriptBox["\[Alpha]", "2"], " ", 
+        SuperscriptBox["\[Beta]", "11"], " ", 
+        SuperscriptBox["\[Omega]", "7"]}], "-", 
+       RowBox[{"37", " ", "\[ImaginaryI]", " ", 
+        SuperscriptBox["a", "9"], " ", 
+        SuperscriptBox["\[Beta]", "11"], " ", 
+        SuperscriptBox["\[Omega]", "9"]}], "+", 
+       RowBox[{
+        SuperscriptBox["\[Alpha]", "11"], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"-", "198450"}], " ", 
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{"5", " ", 
+              SqrtBox["3"]}], "-", 
+             RowBox[{"2", " ", "\[Pi]"}]}], ")"}], " ", 
+           SuperscriptBox["\[Beta]", "9"]}], "-", 
+          RowBox[{"504", " ", "\[ImaginaryI]", " ", 
+           SuperscriptBox["a", "7"], " ", 
+           SuperscriptBox["\[Beta]", "2"], " ", 
+           SuperscriptBox["\[Omega]", "7"]}], "+", 
+          RowBox[{"37", " ", "\[ImaginaryI]", " ", 
+           SuperscriptBox["a", "9"], " ", 
+           SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}]}], ")"}]}], 
+    RowBox[{"595350", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "11"], " ", 
+     SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "T_3 (cubic anisotropy) = ", Rational[1, 595350] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[CapitalDelta]\[Mu] $CellContext`\[Rho]^(-1) (
+    198450 (5 3^Rational[1, 2] - 2 
+      Pi) $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 + 
+    Complex[0, 
+       504] $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^7 + 
+    Complex[0, -37] $CellContext`a^9 $CellContext`\[Beta]^11 $CellContext`\
+\[Omega]^9 + $CellContext`\[Alpha]^11 ((-198450) (5 3^Rational[1, 2] - 2 
+        Pi) $CellContext`\[Beta]^9 + 
+      Complex[0, -504] $CellContext`a^7 $CellContext`\[Beta]^2 $CellContext`\
+\[Omega]^7 + Complex[0, 37] $CellContext`a^9 $CellContext`\[Omega]^9))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453588069*^9},
+ CellLabel->
+  "During evaluation of \
+In[179]:=",ExpressionUUID->"0646c265-8f0f-437d-8886-6a714a6d4277"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["8. Self-Consistent Amplification Factors", "Section",ExpressionUUID->"b21d1fcf-27b9-4f2f-98f2-9fa7398a119d"],
+
+Cell["\<\
+The Voigt-notation T-matrix has block-diagonal structure, yielding four \
+scalar amplification factors.\
+\>", "Text",ExpressionUUID->"195bbec2-9010-4d61-8919-cc80a9546b59"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Print[\"\\n========================================\"];
+Print[\"SELF-CONSISTENT AMPLIFICATION FACTORS\"];
+Print[\"========================================\"];
+
+denomTheta = Simplify[1 - 3 T1 - 2 T2 - T3];
+denomEoff = Simplify[1 - 2 T2];
+denomEdiag = Simplify[1 - 2 T2 - T3];
+
+Print[\"A_u = 1/(1 - \[Omega]^2 \[CapitalDelta]\[Rho] \[CapitalGamma]_0)\"];
+Print[\"\\nA_\[Theta] denominator = \", denomTheta];
+Print[\"\\nA_e(off) denominator = \", denomEoff];
+Print[\"\\nA_e(diag) denominator = \", denomEdiag];
+Print[\"\\nNote: A_e(off) \[NotEqual] A_e(diag) because T_3 \[NotEqual] 0\"];\
+\
+\>", "Input",
+ CellLabel->
+  "In[207]:=",ExpressionUUID->"6c3a20ca-ae42-4a20-9780-a10f70581334"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\n========================================\"\>"], "Print",
+ CellChangeTimes->{3.9818344535907793`*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"f67b9795-9a73-462b-8a62-0b78030a6800"],
+
+Cell[BoxData["\<\"SELF-CONSISTENT AMPLIFICATION FACTORS\"\>"], "Print",
+ CellChangeTimes->{3.9818344535912523`*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"f7caa3cd-1b02-4911-8054-d7ba8434d7e8"],
+
+Cell[BoxData["\<\"========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834453592216*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"79722065-f602-440a-9577-1b632bf80590"],
+
+Cell[BoxData["\<\"A_u = 1/(1 - \[Omega]^2 \[CapitalDelta]\[Rho] \
+\[CapitalGamma]_0)\"\>"], "Print",
+ CellChangeTimes->{3.9818344536923523`*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"b7b79c72-4aa8-48c1-8b88-2e11fc2f9347"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nA_\[Theta] denominator = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    FractionBox[
+     RowBox[{
+      RowBox[{"3", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+      RowBox[{"2", " ", "\[CapitalDelta]\[Mu]"}], "+", 
+      RowBox[{"3", " ", 
+       SuperscriptBox["\[Alpha]", "2"], " ", "\[Rho]"}]}], 
+     RowBox[{"3", " ", 
+      SuperscriptBox["\[Alpha]", "2"], " ", "\[Rho]"}]], "+", 
+    FractionBox[
+     RowBox[{"\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "3"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"3", " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+        RowBox[{"2", " ", "\[CapitalDelta]\[Mu]"}]}], ")"}], " ", 
+      SuperscriptBox["\[Omega]", "3"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"12700800", " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}], "-", 
+        RowBox[{"1587600", " ", 
+         SuperscriptBox["a", "2"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "2"]}], "+", 
+        RowBox[{"89376", " ", 
+         SuperscriptBox["a", "4"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "4"]}], "-", 
+        RowBox[{"2915", " ", 
+         SuperscriptBox["a", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "6"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "6350400"}], " ", 
+            SuperscriptBox["\[Beta]", "6"]}], "+", 
+           RowBox[{"529200", " ", 
+            SuperscriptBox["a", "2"], " ", 
+            SuperscriptBox["\[Beta]", "4"], " ", 
+            SuperscriptBox["\[Omega]", "2"]}], "-", 
+           RowBox[{"22344", " ", 
+            SuperscriptBox["a", "4"], " ", 
+            SuperscriptBox["\[Beta]", "2"], " ", 
+            SuperscriptBox["\[Omega]", "4"]}], "+", 
+           RowBox[{"2915", " ", 
+            SuperscriptBox["a", "6"], " ", 
+            SuperscriptBox["\[Omega]", "6"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"9525600", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm[
+  "\nA_\[Theta] denominator = ", 
+   Rational[1, 3] $CellContext`\[Alpha]^(-2) $CellContext`\[Rho]^(-1) (
+     3 $CellContext`\[CapitalDelta]\[Lambda] + 
+     2 $CellContext`\[CapitalDelta]\[Mu] + 
+     3 $CellContext`\[Alpha]^2 $CellContext`\[Rho]) + Complex[0, 
+      Rational[1, 9525600]] $CellContext`a^3 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) (
+     3 $CellContext`\[CapitalDelta]\[Lambda] + 
+     2 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^3 (
+     12700800 $CellContext`\[Alpha]^6 $CellContext`\[Beta]^11 - 
+     1587600 $CellContext`a^2 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^2 + 
+     89376 $CellContext`a^4 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^4 - 
+     2915 $CellContext`a^6 $CellContext`\[Beta]^11 $CellContext`\[Omega]^6 + \
+$CellContext`\[Alpha]^11 ((-6350400) $CellContext`\[Beta]^6 + 
+       529200 $CellContext`a^2 $CellContext`\[Beta]^4 $CellContext`\[Omega]^2 - 
+       22344 $CellContext`a^4 $CellContext`\[Beta]^2 $CellContext`\[Omega]^4 + 
+       2915 $CellContext`a^6 $CellContext`\[Omega]^6))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453693221*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"3fdd88f1-4d28-4085-b9bc-821f7a5b985f"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nA_e(off) denominator = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"1", "+", 
+    FractionBox[
+     RowBox[{"\[CapitalDelta]\[Mu]", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"907200", " ", 
+         SqrtBox["3"], " ", 
+         SuperscriptBox["\[Alpha]", "9"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}], "+", 
+        RowBox[{"907200", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "3"], " ", 
+         SuperscriptBox["\[Alpha]", "6"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "3"]}], "-", 
+        RowBox[{"136080", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "5"], " ", 
+         SuperscriptBox["\[Alpha]", "4"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "5"]}], "+", 
+        RowBox[{"8760", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "7"], " ", 
+         SuperscriptBox["\[Alpha]", "2"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "7"]}], "-", 
+        RowBox[{"317", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "9"], " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", 
+         SuperscriptBox["\[Omega]", "9"]}], "+", 
+        RowBox[{
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"-", "907200"}], " ", 
+            RowBox[{"(", 
+             RowBox[{
+              SqrtBox["3"], "-", "\[Pi]"}], ")"}], " ", 
+            SuperscriptBox["\[Beta]", "9"]}], "+", 
+           RowBox[{"907200", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "3"], " ", 
+            SuperscriptBox["\[Beta]", "6"], " ", 
+            SuperscriptBox["\[Omega]", "3"]}], "-", 
+           RowBox[{"166320", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "5"], " ", 
+            SuperscriptBox["\[Beta]", "4"], " ", 
+            SuperscriptBox["\[Omega]", "5"]}], "+", 
+           RowBox[{"10392", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "7"], " ", 
+            SuperscriptBox["\[Beta]", "2"], " ", 
+            SuperscriptBox["\[Omega]", "7"]}], "+", 
+           RowBox[{"317", " ", "\[ImaginaryI]", " ", 
+            SuperscriptBox["a", "9"], " ", 
+            SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}]}], ")"}]}], 
+     RowBox[{"1360800", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm[
+  "\nA_e(off) denominator = ", 1 + 
+   Rational[1, 1360800] 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[CapitalDelta]\[Mu] $CellContext`\[Rho]^(-1) (
+     907200 3^Rational[1, 2] $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 + 
+     Complex[0, 
+        907200] $CellContext`a^3 $CellContext`\[Alpha]^6 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^3 + 
+     Complex[0, -136080] $CellContext`a^5 $CellContext`\[Alpha]^4 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^5 + 
+     Complex[0, 
+        8760] $CellContext`a^7 $CellContext`\[Alpha]^2 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^7 + 
+     Complex[0, -317] $CellContext`a^9 $CellContext`\[Beta]^11 $CellContext`\
+\[Omega]^9 + $CellContext`\[Alpha]^11 ((-907200) (3^Rational[1, 2] - 
+         Pi) $CellContext`\[Beta]^9 + 
+       Complex[0, 
+          907200] $CellContext`a^3 $CellContext`\[Beta]^6 $CellContext`\
+\[Omega]^3 + 
+       Complex[0, -166320] $CellContext`a^5 $CellContext`\[Beta]^4 \
+$CellContext`\[Omega]^5 + 
+       Complex[0, 
+          10392] $CellContext`a^7 $CellContext`\[Beta]^2 \
+$CellContext`\[Omega]^7 + 
+       Complex[0, 317] $CellContext`a^9 $CellContext`\[Omega]^9))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453693983*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"be2ddf63-757a-4aef-99ad-76e08268690f"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nA_e(diag) denominator = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "3175200"}], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"3", " ", 
+         SqrtBox["3"]}], "-", 
+        RowBox[{"2", " ", "\[Pi]"}]}], ")"}], " ", 
+      SuperscriptBox["\[Alpha]", "9"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Mu]"}], "+", 
+     RowBox[{"6350400", " ", "\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "3"], " ", 
+      SuperscriptBox["\[Alpha]", "6"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Mu]", " ", 
+      SuperscriptBox["\[Omega]", "3"]}], "-", 
+     RowBox[{"952560", " ", "\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "5"], " ", 
+      SuperscriptBox["\[Alpha]", "4"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Mu]", " ", 
+      SuperscriptBox["\[Omega]", "5"]}], "+", 
+     RowBox[{"53256", " ", "\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "7"], " ", 
+      SuperscriptBox["\[Alpha]", "2"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Mu]", " ", 
+      SuperscriptBox["\[Omega]", "7"]}], "-", 
+     RowBox[{"1627", " ", "\[ImaginaryI]", " ", 
+      SuperscriptBox["a", "9"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Mu]", " ", 
+      SuperscriptBox["\[Omega]", "9"]}], "+", 
+     RowBox[{
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"9525600", " ", 
+         SqrtBox["3"], " ", 
+         SuperscriptBox["\[Beta]", "9"], " ", "\[CapitalDelta]\[Mu]"}], "+", 
+        RowBox[{"9525600", " ", "\[Pi]", " ", 
+         SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}], "+", 
+        RowBox[{"6350400", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "3"], " ", 
+         SuperscriptBox["\[Beta]", "6"], " ", "\[CapitalDelta]\[Mu]", " ", 
+         SuperscriptBox["\[Omega]", "3"]}], "-", 
+        RowBox[{"1164240", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "5"], " ", 
+         SuperscriptBox["\[Beta]", "4"], " ", "\[CapitalDelta]\[Mu]", " ", 
+         SuperscriptBox["\[Omega]", "5"]}], "+", 
+        RowBox[{"80808", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "7"], " ", 
+         SuperscriptBox["\[Beta]", "2"], " ", "\[CapitalDelta]\[Mu]", " ", 
+         SuperscriptBox["\[Omega]", "7"]}], "+", 
+        RowBox[{"1627", " ", "\[ImaginaryI]", " ", 
+         SuperscriptBox["a", "9"], " ", "\[CapitalDelta]\[Mu]", " ", 
+         SuperscriptBox["\[Omega]", "9"]}]}], ")"}]}]}], 
+    RowBox[{"9525600", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "11"], " ", 
+     SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "\nA_e(diag) denominator = ", Rational[1, 9525600] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) ((-3175200) (3 3^Rational[1, 2] - 2 
+      Pi) $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Mu] + 
+    Complex[0, 
+       6350400] $CellContext`a^3 $CellContext`\[Alpha]^6 \
+$CellContext`\[Beta]^11 $CellContext`\[CapitalDelta]\[Mu] $CellContext`\
+\[Omega]^3 + 
+    Complex[0, -952560] $CellContext`a^5 $CellContext`\[Alpha]^4 \
+$CellContext`\[Beta]^11 $CellContext`\[CapitalDelta]\[Mu] $CellContext`\
+\[Omega]^5 + 
+    Complex[0, 
+       53256] $CellContext`a^7 $CellContext`\[Alpha]^2 \
+$CellContext`\[Beta]^11 $CellContext`\[CapitalDelta]\[Mu] $CellContext`\
+\[Omega]^7 + 
+    Complex[0, -1627] $CellContext`a^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Mu] $CellContext`\[Omega]^9 + $CellContext`\[Alpha]^11 (
+      9525600 3^
+        Rational[
+         1, 2] $CellContext`\[Beta]^9 $CellContext`\[CapitalDelta]\[Mu] + 
+      9525600 Pi $CellContext`\[Beta]^11 $CellContext`\[Rho] + 
+      Complex[0, 
+         6350400] $CellContext`a^3 $CellContext`\[Beta]^6 $CellContext`\
+\[CapitalDelta]\[Mu] $CellContext`\[Omega]^3 + 
+      Complex[0, -1164240] $CellContext`a^5 $CellContext`\[Beta]^4 \
+$CellContext`\[CapitalDelta]\[Mu] $CellContext`\[Omega]^5 + 
+      Complex[0, 
+         80808] $CellContext`a^7 $CellContext`\[Beta]^2 $CellContext`\
+\[CapitalDelta]\[Mu] $CellContext`\[Omega]^7 + 
+      Complex[0, 
+         1627] $CellContext`a^9 $CellContext`\[CapitalDelta]\[Mu] \
+$CellContext`\[Omega]^9))],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183445369475*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"939184ee-5218-4677-85da-08b32a85e0a3"],
+
+Cell[BoxData["\<\"\\nNote: A_e(off) \[NotEqual] A_e(diag) because T_3 \
+\[NotEqual] 0\"\>"], "Print",
+ CellChangeTimes->{3.981834453695242*^9},
+ CellLabel->
+  "During evaluation of \
+In[207]:=",ExpressionUUID->"6b66af2c-cd05-4cf2-a356-322b4c775787"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["9. Effective Material Contrasts", "Section",ExpressionUUID->"efaf31c2-e1dc-490f-a5f9-023f1b157139"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Print[\"\\n========================================\"];
+Print[\"EFFECTIVE MATERIAL CONTRASTS\"];
+Print[\"========================================\"];
+Print[\"\\n\[CapitalDelta]\[Rho]* = \[CapitalDelta]\[Rho] \[CenterDot] \
+A_u\"];
+Print[\"\[CapitalDelta]\[Mu]*_off = \[CapitalDelta]\[Mu] / (1 - 2T_2)\"];
+Print[\"\[CapitalDelta]\[Mu]*_diag = \[CapitalDelta]\[Mu] / (1 - 2T_2 - \
+T_3)\"];
+Print[\"\[CapitalDelta]\[Lambda]* = (\[CapitalDelta]\[Lambda] + 2\
+\[CapitalDelta]\[Mu]/3) A_\[Theta] - \[CapitalDelta]\[Mu]/3 (A_e(diag) + \
+A_e(off))\"];
+Print[\"\\nCubic anisotropy: \[CapitalDelta]\[Mu]*_diag - \
+\[CapitalDelta]\[Mu]*_off = \[CapitalDelta]\[Mu] T_3 / [(1-2T_2)(1-2T_2-T_3)]\
+\"];\
+\>", "Input",
+ CellLabel->
+  "In[220]:=",ExpressionUUID->"76a860c8-4704-413d-91b8-cc06d05bca89"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\n========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834453701829*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"9aea3fe7-ff36-4a1f-a703-f60ef00930c9"],
+
+Cell[BoxData["\<\"EFFECTIVE MATERIAL CONTRASTS\"\>"], "Print",
+ CellChangeTimes->{3.981834453702259*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"1bb0a48d-2fc9-435e-873d-6f1fcbb0dd9d"],
+
+Cell[BoxData["\<\"========================================\"\>"], "Print",
+ CellChangeTimes->{3.9818344537030687`*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"3897688a-7b05-41fe-a357-653b04071b6b"],
+
+Cell[BoxData["\<\"\\n\[CapitalDelta]\[Rho]* = \[CapitalDelta]\[Rho] \
+\[CenterDot] A_u\"\>"], "Print",
+ CellChangeTimes->{3.981834453703363*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"4ec18cb1-175a-45ef-b18b-01e63627d23c"],
+
+Cell[BoxData["\<\"\[CapitalDelta]\[Mu]*_off = \[CapitalDelta]\[Mu] / (1 - \
+2T_2)\"\>"], "Print",
+ CellChangeTimes->{3.981834453703672*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"bf69beb9-c5af-4065-a4c3-01a1f3f64a89"],
+
+Cell[BoxData["\<\"\[CapitalDelta]\[Mu]*_diag = \[CapitalDelta]\[Mu] / (1 - \
+2T_2 - T_3)\"\>"], "Print",
+ CellChangeTimes->{3.981834453703973*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"68187520-82ce-40d8-b72d-1f60c1cafb13"],
+
+Cell[BoxData["\<\"\[CapitalDelta]\[Lambda]* = (\[CapitalDelta]\[Lambda] + 2\
+\[CapitalDelta]\[Mu]/3) A_\[Theta] - \[CapitalDelta]\[Mu]/3 (A_e(diag) + \
+A_e(off))\"\>"], "Print",
+ CellChangeTimes->{3.9818344537042847`*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"730df862-b81d-4e81-a79b-0b8b21260efb"],
+
+Cell[BoxData["\<\"\\nCubic anisotropy: \[CapitalDelta]\[Mu]*_diag - \
+\[CapitalDelta]\[Mu]*_off = \[CapitalDelta]\[Mu] T_3 / [(1-2T_2)(1-2T_2-T_3)]\
+\"\>"], "Print",
+ CellChangeTimes->{3.981834453704596*^9},
+ CellLabel->
+  "During evaluation of \
+In[220]:=",ExpressionUUID->"71c17523-f8b4-40b6-bc21-7b2d582faf3e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["10. Numerical Verification", "Section",ExpressionUUID->"187ab46d-d555-4f69-83c0-493a15b47383"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Seismological units: km/s for velocities, g/cm^3 for density *)
+(* \[Mu] = \[Rho] \[Beta]^2, \[Lambda] = \[Rho](\[Alpha]^2 - 2\[Beta]^2) *)
+params = {
+  \[Alpha] -> 5.0, \[Beta] -> 3.0, \[Rho] -> 2.5,
+  \[Omega] -> 2 Pi 10.0, a -> 0.01,
+  \[CapitalDelta]\[Lambda] -> 1.25, \[CapitalDelta]\[Mu] -> 0.75};
+
+kSa = \[Omega] a/\[Beta] /. params;
+kPa = \[Omega] a/\[Alpha] /. params;
+\[Mu]bg = \[Rho] \[Beta]^2 /. params;
+\[Lambda]bg = \[Rho] (\[Alpha]^2 - 2 \[Beta]^2) /. params;
+Print[\"Seismological units: km/s, g/cm^3\"];
+Print[\"Background: \[Alpha]=\", \[Alpha] /. params, \" km/s, \[Beta]=\", \
+\[Beta] /. params, \" km/s, \[Rho]=\", \[Rho] /. params];
+Print[\"\[Mu] = \[Rho]\[Beta]^2 = \", \[Mu]bg, \", \[Lambda] = \
+\[Rho](\[Alpha]^2-2\[Beta]^2) = \", \[Lambda]bg];
+Print[\"k_S a = \", kSa, \", k_P a = \", kPa];
+
+AcNum = Ac /. params;
+BcNum = Bc /. params;
+CcNum = Cc /. params;
+T1Num = T1 /. params;
+T2Num = T2 /. params;
+T3Num = T3 /. params;
+
+Print[\"\\n========================================\"];
+Print[\"NUMERICAL RESULTS (static + dynamic)\"];
+Print[\"========================================\"];
+Print[\"A = \", AcNum];
+Print[\"B = \", BcNum];
+Print[\"C = \", CcNum];
+Print[\"\\nRe[A] = \", Re[AcNum], \", Im[A] = \", Im[AcNum]];
+Print[\"Re[C] = \", Re[CcNum], \", Im[C] = \", Im[CcNum]];
+Print[\"\\nT1 = \", T1Num];
+Print[\"T2 = \", T2Num];
+Print[\"T3 = \", T3Num];\
+\>", "Input",
+ CellLabel->
+  "In[228]:=",ExpressionUUID->"8defc834-70ee-42a8-a3c6-315a7f74d81f"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"Seismological units: km/s, g/cm^3\"\>"], "Print",
+ CellChangeTimes->{3.9818344537176743`*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"b6da772d-5051-43d6-936f-afcde7633d8d"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Background: \[Alpha]=\"\>", "\[InvisibleSpace]", "5.`", 
+   "\[InvisibleSpace]", "\<\" km/s, \[Beta]=\"\>", "\[InvisibleSpace]", "3.`",
+    "\[InvisibleSpace]", "\<\" km/s, \[Rho]=\"\>", "\[InvisibleSpace]", 
+   "2.5`"}],
+  SequenceForm[
+  "Background: \[Alpha]=", 5., " km/s, \[Beta]=", 3., " km/s, \[Rho]=", 2.5],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453718162*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"fc0ee49c-dc65-44c1-a38a-a2f3d8562be2"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\[Mu] = \[Rho]\[Beta]^2 = \"\>", "\[InvisibleSpace]", "22.5`", 
+   "\[InvisibleSpace]", "\<\", \[Lambda] = \[Rho](\[Alpha]^2-2\[Beta]^2) = \"\
+\>", "\[InvisibleSpace]", "17.5`"}],
+  SequenceForm[
+  "\[Mu] = \[Rho]\[Beta]^2 = ", 22.5, 
+   ", \[Lambda] = \[Rho](\[Alpha]^2-2\[Beta]^2) = ", 17.5],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183445371902*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"647e03ab-9d82-4a84-94d0-9e7893ec55ef"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"k_S a = \"\>", "\[InvisibleSpace]", "0.20943951023931953`", 
+   "\[InvisibleSpace]", "\<\", k_P a = \"\>", "\[InvisibleSpace]", 
+   "0.12566370614359174`"}],
+  SequenceForm[
+  "k_S a = ", 0.20943951023931953`, ", k_P a = ", 0.12566370614359174`],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344537193613`*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"e59eb763-cf96-424e-b03e-d90240357549"],
+
+Cell[BoxData["\<\"\\n========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834453719681*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"2bb4bfe8-f0a6-4dfa-bed4-83c4ec0ed1d9"],
+
+Cell[BoxData["\<\"NUMERICAL RESULTS (static + dynamic)\"\>"], "Print",
+ CellChangeTimes->{3.981834453719966*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"61264e28-af23-43cb-b5d1-ba83af0855ca"],
+
+Cell[BoxData["\<\"========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834453720251*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"022050da-380d-47ee-a65b-97f6a9c21404"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"A = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", "0.012201107458741135`"}], "-", 
+    RowBox[{"0.00008607635386320063`", " ", "\[ImaginaryI]"}]}]}],
+  SequenceForm["A = ", 
+   Complex[-0.012201107458741135`, -0.00008607635386320063]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344537205477`*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"34c92ae3-ad3e-437b-8c72-052ed01a89a8"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"\<\"B = \"\>", "\[InvisibleSpace]", "0.0026137073560736812`"}], 
+   "\[VeryThinSpace]", "+", 
+   RowBox[{"0.00003973958017869591`", " ", "\[ImaginaryI]"}]}],
+  SequenceForm["B = ", 
+   Complex[0.0026137073560736812`, 0.00003973958017869591]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183445372086*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"b2e4e803-9f90-44aa-9759-db7899fddeff"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"C = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", "0.003587055298886922`"}], "-", 
+    RowBox[{"1.0444731153752018`*^-10", " ", "\[ImaginaryI]"}]}]}],
+  SequenceForm["C = ", 
+   Complex[-0.003587055298886922, -1.0444731153752018`*^-10]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453721182*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"980896f3-99d6-4360-af57-cddec77a1e38"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nRe[A] = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", "0.012201107458741135`"}], 
+   "\[InvisibleSpace]", "\<\", Im[A] = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", "0.00008607635386320063`"}]}],
+  SequenceForm[
+  "\nRe[A] = ", -0.012201107458741135`, ", Im[A] = ", -0.00008607635386320063],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.98183445372153*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"fff6430c-e409-42f9-88e4-df1d456602bb"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Re[C] = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", "0.003587055298886922`"}], 
+   "\[InvisibleSpace]", "\<\", Im[C] = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", "1.0444731153752018`*^-10"}]}],
+  SequenceForm[
+  "Re[C] = ", -0.003587055298886922, ", Im[C] = ", -1.0444731153752018`*^-10],
+  
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453721856*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"106c72af-2d93-4b42-aa1b-4061eebcd7ca"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\\nT1 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", "0.002746105632556146`"}], "+", 
+    RowBox[{"0.00015071169827338333`", " ", "\[ImaginaryI]"}]}]}],
+  SequenceForm["\nT1 = ", 
+   Complex[-0.002746105632556146, 0.00015071169827338333`]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453722184*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"c1e81f08-d74e-4f9b-854d-fa1d42f7bde4"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T2 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", "0.007190550077000591`"}], "-", 
+    RowBox[{"0.00003475258026337854`", " ", "\[ImaginaryI]"}]}]}],
+  SequenceForm["T2 = ", 
+   Complex[-0.007190550077000591, -0.00003475258026337854]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453722494*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"9fc4b1a8-6cb7-4a0e-bd69-2f808360f1e1"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T3 = \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", "0.005380582948330384`"}], "-", 
+    RowBox[{"1.566709673062803`*^-10", " ", "\[ImaginaryI]"}]}]}],
+  SequenceForm["T3 = ", 
+   Complex[-0.005380582948330384, -1.566709673062803*^-10]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453722807*^9},
+ CellLabel->
+  "During evaluation of \
+In[228]:=",ExpressionUUID->"a33d7459-9d1d-40c9-94d1-94a88c469d8e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["11. Born Limit Verification", "Section",ExpressionUUID->"1828a518-14f6-497d-acbb-60cf952a14ae"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Print[\"\\nBorn limit verification (a -> 0):\"];
+Print[\"T_1(a->0) = \", Limit[T1, a -> 0]];
+Print[\"T_2(a->0) = \", Limit[T2, a -> 0]];
+Print[\"T_3(a->0) = \", Limit[T3, a -> 0]];\
+\>", "Input",
+ CellLabel->
+  "In[259]:=",ExpressionUUID->"18f16324-3a0d-401a-889c-4c60cc165572"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\nBorn limit verification (a -> 0):\"\>"], "Print",
+ CellChangeTimes->{3.981834453725581*^9},
+ CellLabel->
+  "During evaluation of \
+In[259]:=",ExpressionUUID->"0a5f598b-56e9-43d6-809e-60ca7f822e4e"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T_1(a->0) = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "3175200"}], " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "9"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Lambda]"}], "+", 
+     RowBox[{"3175200", " ", 
+      SqrtBox["3"], " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "9"], " ", "\[CapitalDelta]\[Mu]"}], "-", 
+     RowBox[{"3175200", " ", 
+      SqrtBox["3"], " ", 
+      SuperscriptBox["\[Alpha]", "9"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[CapitalDelta]\[Mu]"}]}], 
+    RowBox[{"9525600", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "11"], " ", 
+     SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "T_1(a->0) = ", Rational[1, 9525600] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) ((-3175200) 
+     Pi $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Lambda] + 
+    3175200 3^
+      Rational[1, 
+        2] $CellContext`\[Alpha]^11 $CellContext`\[Beta]^9 $CellContext`\
+\[CapitalDelta]\[Mu] - 3175200 
+    3^Rational[
+      1, 2] $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Mu])/$CellContext`\[Rho]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344537260942`*^9},
+ CellLabel->
+  "During evaluation of \
+In[259]:=",ExpressionUUID->"d8d06b33-a48b-4266-9549-71e3d820e8c9"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T_2(a->0) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"-", 
+    FractionBox[
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", "907200"}], " ", 
+         RowBox[{"(", 
+          RowBox[{
+           SqrtBox["3"], "-", "\[Pi]"}], ")"}], " ", 
+         SuperscriptBox["\[Alpha]", "11"], " ", 
+         SuperscriptBox["\[Beta]", "9"]}], "+", 
+        RowBox[{"907200", " ", 
+         SqrtBox["3"], " ", 
+         SuperscriptBox["\[Alpha]", "9"], " ", 
+         SuperscriptBox["\[Beta]", "11"]}]}], ")"}], " ", 
+      "\[CapitalDelta]\[Mu]"}], 
+     RowBox[{"2721600", " ", "\[Pi]", " ", 
+      SuperscriptBox["\[Alpha]", "11"], " ", 
+      SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}]}],
+  SequenceForm[
+  "T_2(a->0) = ", Rational[-1, 2721600] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) ((-907200) (
+      3^Rational[1, 2] - Pi) $CellContext`\[Alpha]^11 $CellContext`\[Beta]^9 + 
+    907200 3^Rational[
+       1, 2] $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11) $CellContext`\
+\[CapitalDelta]\[Mu]/$CellContext`\[Rho]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453727038*^9},
+ CellLabel->
+  "During evaluation of \
+In[259]:=",ExpressionUUID->"130751d3-9037-462a-ad55-1d0f5b4abd5c"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"T_3(a->0) = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"-", "198450"}], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"5", " ", 
+           SqrtBox["3"]}], "-", 
+          RowBox[{"2", " ", "\[Pi]"}]}], ")"}], " ", 
+        SuperscriptBox["\[Alpha]", "11"], " ", 
+        SuperscriptBox["\[Beta]", "9"]}], "+", 
+       RowBox[{"198450", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"5", " ", 
+           SqrtBox["3"]}], "-", 
+          RowBox[{"2", " ", "\[Pi]"}]}], ")"}], " ", 
+        SuperscriptBox["\[Alpha]", "9"], " ", 
+        SuperscriptBox["\[Beta]", "11"]}]}], ")"}], " ", 
+     "\[CapitalDelta]\[Mu]"}], 
+    RowBox[{"595350", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "11"], " ", 
+     SuperscriptBox["\[Beta]", "11"], " ", "\[Rho]"}]]}],
+  SequenceForm[
+  "T_3(a->0) = ", Rational[1, 595350] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) ((-198450) (
+      5 3^Rational[1, 2] - 2 
+      Pi) $CellContext`\[Alpha]^11 $CellContext`\[Beta]^9 + 
+    198450 (5 3^Rational[1, 2] - 2 
+      Pi) $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11) $CellContext`\
+\[CapitalDelta]\[Mu]/$CellContext`\[Rho]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9818344537274847`*^9},
+ CellLabel->
+  "During evaluation of \
+In[259]:=",ExpressionUUID->"11811bdc-1d38-4694-b5c4-77d736755d69"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["12. Static vs Dynamic Contributions", "Section",ExpressionUUID->"8d256002-1834-4985-8f7a-00fb2af6e06e"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* Leading-order Taylor coefficients *)
+\[Phi]0 = \[Phi]Coeffs[[1]];
+\[Psi]0 = \[Psi]Coeffs[[1]];
+
+Print[\"\\nLeading Taylor coefficients:\"];
+Print[\"\[Phi]_0 = \", \[Phi]0];
+Print[\"\[Psi]_0 = \", \[Psi]0];
+Print[\"\\n\[Phi]_0 is purely imaginary, proportional to I \[Omega]/\[Beta]^3\
+\"];
+Print[\"\[Psi]_0 is purely imaginary, proportional to (I \[Omega])^3 [1/\
+\[Alpha]^5 - 1/\[Beta]^5]\"];
+Print[\"\\nThese give the RADIATION CORRECTIONS to the static Eshelby result.\
+\"];\
+\>", "Input",
+ CellLabel->
+  "In[263]:=",ExpressionUUID->"a8337bc3-d7af-460e-82ad-629bc6ff163f"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\nLeading Taylor coefficients:\"\>"], "Print",
+ CellChangeTimes->{3.981834453742713*^9},
+ CellLabel->
+  "During evaluation of \
+In[263]:=",ExpressionUUID->"e53cc431-697c-4b94-b160-170986696936"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\[Phi]_0 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", "\[Omega]"}], 
+    RowBox[{"4", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Beta]", "3"], " ", "\[Rho]"}]]}],
+  SequenceForm["\[Phi]_0 = ", Complex[0, 
+     Rational[1, 4]] 
+   Pi^(-1) $CellContext`\[Beta]^(-3) $CellContext`\[Rho]^(-1) $CellContext`\
+\[Omega]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453743477*^9},
+ CellLabel->
+  "During evaluation of \
+In[263]:=",ExpressionUUID->"231b067a-9c0d-4260-a782-34abe06620de"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"\[Psi]_0 = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       SuperscriptBox["\[Alpha]", "5"], "-", 
+       SuperscriptBox["\[Beta]", "5"]}], ")"}], " ", 
+     SuperscriptBox["\[Omega]", "3"]}], 
+    RowBox[{"24", " ", "\[Pi]", " ", 
+     SuperscriptBox["\[Alpha]", "5"], " ", 
+     SuperscriptBox["\[Beta]", "5"], " ", "\[Rho]"}]]}],
+  SequenceForm["\[Psi]_0 = ", Complex[0, 
+     Rational[1, 24]] 
+   Pi^(-1) $CellContext`\[Alpha]^(-5) $CellContext`\[Beta]^(-5) \
+($CellContext`\[Alpha]^5 - $CellContext`\[Beta]^5) $CellContext`\[Rho]^(-1) \
+$CellContext`\[Omega]^3],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.981834453744424*^9},
+ CellLabel->
+  "During evaluation of \
+In[263]:=",ExpressionUUID->"a75f0bbd-e8f6-45fe-b21a-f440d193ae17"],
+
+Cell[BoxData["\<\"\\n\[Phi]_0 is purely imaginary, proportional to I \
+\[Omega]/\[Beta]^3\"\>"], "Print",
+ CellChangeTimes->{3.9818344537447777`*^9},
+ CellLabel->
+  "During evaluation of \
+In[263]:=",ExpressionUUID->"a1896e39-1b7c-47c4-a638-18e7dd4ecd3b"],
+
+Cell[BoxData["\<\"\[Psi]_0 is purely imaginary, proportional to (I \
+\[Omega])^3 [1/\[Alpha]^5 - 1/\[Beta]^5]\"\>"], "Print",
+ CellChangeTimes->{3.9818344537451067`*^9},
+ CellLabel->
+  "During evaluation of \
+In[263]:=",ExpressionUUID->"7e12b85d-7e4e-4609-b839-590941b395c3"],
+
+Cell[BoxData["\<\"\\nThese give the RADIATION CORRECTIONS to the static \
+Eshelby result.\"\>"], "Print",
+ CellChangeTimes->{3.981834453745431*^9},
+ CellLabel->
+  "During evaluation of \
+In[263]:=",ExpressionUUID->"513bfdda-d6be-4419-9000-f3659eddd71e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["13. LaTeX Export", "Section",ExpressionUUID->"2cf29907-fa62-4cd9-8f4d-e24daa307d33"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Print[\"\\n========================================\"];
+Print[\"LaTeX EXPRESSIONS\"];
+Print[\"========================================\"];
+Print[\"A =\"]; Print[TeXForm[Ac]];
+Print[\"B =\"]; Print[TeXForm[Bc]];
+Print[\"C =\"]; Print[TeXForm[Cc]];
+Print[\"T1 =\"]; Print[TeXForm[T1]];
+Print[\"T2 =\"]; Print[TeXForm[T2]];
+Print[\"T3 =\"]; Print[TeXForm[T3]];\
+\>", "Input",
+ CellLabel->
+  "In[273]:=",ExpressionUUID->"3d9679a3-3a7a-4aae-94ec-f4e0f69c99a7"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"\\n========================================\"\>"], "Print",
+ CellChangeTimes->{3.981834453751816*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"26ddfc55-1d65-443d-a742-818e1810e550"],
+
+Cell[BoxData["\<\"LaTeX EXPRESSIONS\"\>"], "Print",
+ CellChangeTimes->{3.981834453752306*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"add53621-8738-4a3c-a023-d72add85ec77"],
+
+Cell[BoxData["\<\"========================================\"\>"], "Print",
+ CellChangeTimes->{3.9818344537531776`*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"9b8bba23-3fa2-4c0e-9629-21f706516940"],
+
+Cell[BoxData["\<\"A =\"\>"], "Print",
+ CellChangeTimes->{3.981834453753481*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"3b703490-f4cb-46c5-adbb-d23b1ce88301"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"2 \\\\left(\\\\frac{\\\\left(\\\\sqrt{3}-\\\\pi \
+\\\\right) \\\\left(\\\\alpha ^2-\\\\beta ^2\\\\right)}{12 \\\\pi  \\\\alpha \
+^2 \\\\beta ^2 \\\\rho }-\\\\frac{\\\\alpha ^2+\\\\beta ^2}{12 \\\\alpha ^2 \
+\\\\beta ^2 \\\\rho }\\\\right)-\\\\frac{i \\\\left(409 a^9 \\\\omega ^9 \
+\\\\left(\\\\alpha ^{11}-\\\\beta ^{11}\\\\right)+168 a^7 \\\\alpha ^2 \
+\\\\beta ^2 \\\\omega ^7 \\\\left(341 \\\\alpha ^9+58 \\\\beta \
+^9\\\\right)-105840 a^5 \\\\alpha ^4 \\\\beta ^4 \\\\omega ^5 \\\\left(9 \
+\\\\alpha ^7+\\\\beta ^7\\\\right)+6350400 a^3 \\\\alpha ^{11} \\\\beta ^6 \\\
+\\omega ^3\\\\right)}{9525600 \\\\pi  \\\\alpha ^{11} \\\\beta ^{11} \\\\rho \
+}\"\>",
+  TeXForm[
+  2 (Rational[1, 12] (3^Rational[1, 2] - Pi) 
+      Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+     Rational[-1, 
+        12] $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 + $CellContext`\[Beta]^2)/$CellContext`\[Rho]) + 
+   Complex[0, 
+      Rational[-1, 9525600]] 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) (
+     6350400 $CellContext`a^3 $CellContext`\[Alpha]^11 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^3 - 
+     105840 $CellContext`a^5 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^4 (
+      9 $CellContext`\[Alpha]^7 + $CellContext`\[Beta]^7) $CellContext`\
+\[Omega]^5 + 
+     168 $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^2 (
+       341 $CellContext`\[Alpha]^9 + 
+       58 $CellContext`\[Beta]^9) $CellContext`\[Omega]^7 + 
+     409 $CellContext`a^9 ($CellContext`\[Alpha]^11 - \
+$CellContext`\[Beta]^11) $CellContext`\[Omega]^9)],
+  AutoDelete->True,
+  Editable->True]], "Print",
+ CellChangeTimes->{3.981834453820191*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"776b633a-47da-4acb-9a3e-7d7e11950d6c"],
+
+Cell[BoxData["\<\"B =\"\>"], "Print",
+ CellChangeTimes->{3.981834453821258*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"078240d5-d41d-4c8b-9137-f7090dc3188a"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\\\\frac{\\\\left(\\\\frac{2}{3} \
+\\\\left(\\\\sqrt{3}-\\\\pi \\\\right)+\\\\frac{2 \\\\pi }{3}\\\\right) \
+\\\\left(\\\\alpha ^2-\\\\beta ^2\\\\right)}{4 \\\\pi  \\\\alpha ^2 \\\\beta \
+^2 \\\\rho }-\\\\frac{i a^3 \\\\omega ^3 \\\\left(-467 a^6 \\\\beta ^{11} \
+\\\\omega ^6+2116800 \\\\alpha ^6 \\\\beta ^{11}+13944 a^4 \\\\alpha ^2 \
+\\\\beta ^{11} \\\\omega ^4-246960 a^2 \\\\alpha ^4 \\\\beta ^{11} \\\\omega \
+^2+\\\\alpha ^{11} \\\\left(467 a^6 \\\\omega ^6-13944 a^4 \\\\beta ^2 \
+\\\\omega ^4+246960 a^2 \\\\beta ^4 \\\\omega ^2-2116800 \\\\beta \
+^6\\\\right)\\\\right)}{6350400 \\\\pi  \\\\alpha ^{11} \\\\beta ^{11} \
+\\\\rho }\"\>",
+  TeXForm[
+  Rational[1, 4] (Rational[2, 3] (3^Rational[1, 2] - Pi) + Rational[2, 3] Pi) 
+    Pi^(-1) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+   Complex[0, 
+      Rational[-1, 6350400]] $CellContext`a^3 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^3 (
+     2116800 $CellContext`\[Alpha]^6 $CellContext`\[Beta]^11 - 
+     246960 $CellContext`a^2 $CellContext`\[Alpha]^4 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^2 + 
+     13944 $CellContext`a^4 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^4 - 
+     467 $CellContext`a^6 $CellContext`\[Beta]^11 $CellContext`\[Omega]^6 + \
+$CellContext`\[Alpha]^11 ((-2116800) $CellContext`\[Beta]^6 + 
+       246960 $CellContext`a^2 $CellContext`\[Beta]^4 $CellContext`\[Omega]^2 - 
+       13944 $CellContext`a^4 $CellContext`\[Beta]^2 $CellContext`\[Omega]^4 + 
+       467 $CellContext`a^6 $CellContext`\[Omega]^6))],
+  AutoDelete->True,
+  Editable->True]], "Print",
+ CellChangeTimes->{3.981834453821703*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"1885e768-0416-47e6-a30a-bd13a35ab56d"],
+
+Cell[BoxData["\<\"C =\"\>"], "Print",
+ CellChangeTimes->{3.98183445382224*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"937978df-ac8f-49ae-b4a9-fe9d517a7142"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\\\\frac{3 \\\\left(-\\\\frac{2}{3} \
+\\\\left(\\\\sqrt{3}-\\\\pi \\\\right)-\\\\frac{2}{9} \\\\left(2 \\\\sqrt{3}+\
+\\\\pi \\\\right)\\\\right) \\\\left(\\\\alpha ^2-\\\\beta ^2\\\\right)}{4 \\\
+\\pi  \\\\alpha ^2 \\\\beta ^2 \\\\rho }+\\\\frac{i a^7 \\\\omega ^7 \
+\\\\left(\\\\alpha ^{11} \\\\left(37 a^2 \\\\omega ^2-504 \\\\beta \
+^2\\\\right)-37 a^2 \\\\beta ^{11} \\\\omega ^2+504 \\\\alpha ^2 \\\\beta \
+^{11}\\\\right)}{1190700 \\\\pi  \\\\alpha ^{11} \\\\beta ^{11} \\\\rho }\"\>",
+  TeXForm[
+  Rational[3, 4] 
+    Pi^(-1) (Rational[-2, 3] (3^Rational[1, 2] - Pi) + 
+     Rational[-2, 9] (2 3^Rational[1, 2] + 
+       Pi)) $CellContext`\[Alpha]^(-2) $CellContext`\[Beta]^(-2) \
+($CellContext`\[Alpha]^2 - $CellContext`\[Beta]^2)/$CellContext`\[Rho] + 
+   Complex[0, 
+      Rational[1, 1190700]] $CellContext`a^7 
+    Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) $CellContext`\[Omega]^7 (
+     504 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 - 
+     37 $CellContext`a^2 $CellContext`\[Beta]^11 $CellContext`\[Omega]^2 + \
+$CellContext`\[Alpha]^11 ((-504) $CellContext`\[Beta]^2 + 
+       37 $CellContext`a^2 $CellContext`\[Omega]^2))],
+  AutoDelete->True,
+  Editable->True]], "Print",
+ CellChangeTimes->{3.981834453831931*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"5db6ee43-acbe-4904-9d3d-7c6095c3e22f"],
+
+Cell[BoxData["\<\"T1 =\"\>"], "Print",
+ CellChangeTimes->{3.981834453832594*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"1fbe55c0-8518-4e67-8823-bb72daca8b18"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\\\\frac{i a^9 \\\\beta ^{11} \\\\omega ^9 (2915 \
+\\\\Delta \\\\lambda +1401 \\\\Delta \\\\mu )-3175200 \\\\pi  \\\\alpha ^9 \\\
+\\beta ^{11} \\\\Delta \\\\lambda -3175200 \\\\sqrt{3} \\\\alpha ^9 \\\\beta \
+^{11} \\\\Delta \\\\mu -168 i a^7 \\\\alpha ^2 \\\\beta ^{11} \\\\omega ^7 \
+(532 \\\\Delta \\\\lambda +249 \\\\Delta \\\\mu )+105840 i a^5 \\\\alpha ^4 \
+\\\\beta ^{11} \\\\omega ^5 (15 \\\\Delta \\\\lambda +7 \\\\Delta \\\\mu \
+)-6350400 i a^3 \\\\alpha ^6 \\\\beta ^{11} \\\\omega ^3 (2 \\\\Delta \
+\\\\lambda +\\\\Delta \\\\mu )+\\\\alpha ^{11} \\\\left(-i a^9 \\\\omega ^9 \
+(2915 \\\\Delta \\\\lambda +1401 \\\\Delta \\\\mu )+168 i a^7 \\\\beta ^2 \
+\\\\omega ^7 (133 \\\\Delta \\\\lambda +249 \\\\Delta \\\\mu )-105840 i a^5 \
+\\\\beta ^4 \\\\omega ^5 (5 \\\\Delta \\\\lambda +7 \\\\Delta \\\\mu \
+)+6350400 i a^3 \\\\beta ^6 \\\\omega ^3 (\\\\Delta \\\\lambda +\\\\Delta \
+\\\\mu )+3175200 \\\\sqrt{3} \\\\beta ^9 \\\\Delta \\\\mu \\\\right)}{9525600 \
+\\\\pi  \\\\alpha ^{11} \\\\beta ^{11} \\\\rho }\"\>",
+  TeXForm[
+  Rational[1, 9525600] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[Rho]^(-1) ((-3175200) 
+     Pi $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Lambda] - 3175200 
+    3^Rational[
+      1, 2] $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 $CellContext`\
+\[CapitalDelta]\[Mu] + 
+    Complex[0, -6350400] $CellContext`a^3 $CellContext`\[Alpha]^6 \
+$CellContext`\[Beta]^11 (
+      2 $CellContext`\[CapitalDelta]\[Lambda] + $CellContext`\[CapitalDelta]\
+\[Mu]) $CellContext`\[Omega]^3 + 
+    Complex[0, 
+       105840] $CellContext`a^5 $CellContext`\[Alpha]^4 \
+$CellContext`\[Beta]^11 (15 $CellContext`\[CapitalDelta]\[Lambda] + 
+      7 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^5 + 
+    Complex[0, -168] $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\
+\[Beta]^11 (532 $CellContext`\[CapitalDelta]\[Lambda] + 
+      249 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^7 + 
+    Complex[0, 1] $CellContext`a^9 $CellContext`\[Beta]^11 (
+      2915 $CellContext`\[CapitalDelta]\[Lambda] + 
+      1401 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^9 + \
+$CellContext`\[Alpha]^11 (
+      3175200 3^
+        Rational[
+         1, 2] $CellContext`\[Beta]^9 $CellContext`\[CapitalDelta]\[Mu] + 
+      Complex[0, 
+         6350400] $CellContext`a^3 $CellContext`\[Beta]^6 ($CellContext`\
+\[CapitalDelta]\[Lambda] + $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\
+\[Omega]^3 + 
+      Complex[0, -105840] $CellContext`a^5 $CellContext`\[Beta]^4 (
+        5 $CellContext`\[CapitalDelta]\[Lambda] + 
+        7 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^5 + 
+      Complex[0, 168] $CellContext`a^7 $CellContext`\[Beta]^2 (
+        133 $CellContext`\[CapitalDelta]\[Lambda] + 
+        249 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^7 + 
+      Complex[0, -1] $CellContext`a^9 (
+        2915 $CellContext`\[CapitalDelta]\[Lambda] + 
+        1401 $CellContext`\[CapitalDelta]\[Mu]) $CellContext`\[Omega]^9))],
+  AutoDelete->True,
+  Editable->True]], "Print",
+ CellChangeTimes->{3.9818344538447523`*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"052ae4b4-8716-495a-bfd4-f41b9faa594b"],
+
+Cell[BoxData["\<\"T2 =\"\>"], "Print",
+ CellChangeTimes->{3.981834453845764*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"fbda3459-b0c8-4899-80bc-a7773b85558e"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"-\\\\frac{\\\\Delta \\\\mu  \\\\left(-317 i a^9 \
+\\\\beta ^{11} \\\\omega ^9+907200 \\\\sqrt{3} \\\\alpha ^9 \\\\beta \
+^{11}+8760 i a^7 \\\\alpha ^2 \\\\beta ^{11} \\\\omega ^7-136080 i a^5 \
+\\\\alpha ^4 \\\\beta ^{11} \\\\omega ^5+907200 i a^3 \\\\alpha ^6 \\\\beta \
+^{11} \\\\omega ^3+\\\\alpha ^{11} \\\\left(317 i a^9 \\\\omega ^9+10392 i \
+a^7 \\\\beta ^2 \\\\omega ^7-166320 i a^5 \\\\beta ^4 \\\\omega ^5+907200 i \
+a^3 \\\\beta ^6 \\\\omega ^3-907200 \\\\left(\\\\sqrt{3}-\\\\pi \\\\right) \\\
+\\beta ^9\\\\right)\\\\right)}{2721600 \\\\pi  \\\\alpha ^{11} \\\\beta ^{11} \
+\\\\rho }\"\>",
+  TeXForm[
+  Rational[-1, 2721600] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[CapitalDelta]\[Mu] $CellContext`\[Rho]^(-1) (
+    907200 3^Rational[1, 2] $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 + 
+    Complex[0, 
+       907200] $CellContext`a^3 $CellContext`\[Alpha]^6 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^3 + 
+    Complex[0, -136080] $CellContext`a^5 $CellContext`\[Alpha]^4 \
+$CellContext`\[Beta]^11 $CellContext`\[Omega]^5 + 
+    Complex[0, 
+       8760] $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^7 + 
+    Complex[0, -317] $CellContext`a^9 $CellContext`\[Beta]^11 $CellContext`\
+\[Omega]^9 + $CellContext`\[Alpha]^11 ((-907200) (3^Rational[1, 2] - 
+        Pi) $CellContext`\[Beta]^9 + 
+      Complex[0, 
+         907200] $CellContext`a^3 $CellContext`\[Beta]^6 \
+$CellContext`\[Omega]^3 + 
+      Complex[0, -166320] $CellContext`a^5 $CellContext`\[Beta]^4 \
+$CellContext`\[Omega]^5 + 
+      Complex[0, 
+         10392] $CellContext`a^7 $CellContext`\[Beta]^2 \
+$CellContext`\[Omega]^7 + 
+      Complex[0, 317] $CellContext`a^9 $CellContext`\[Omega]^9))],
+  AutoDelete->True,
+  Editable->True]], "Print",
+ CellChangeTimes->{3.981834453857359*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"ab63ae16-a81b-4079-a266-53a03979c3fa"],
+
+Cell[BoxData["\<\"T3 =\"\>"], "Print",
+ CellChangeTimes->{3.981834453858101*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"abeb9542-166a-4070-9bbd-6206a587ee5d"],
+
+Cell[BoxData[
+ InterpretationBox["\<\"\\\\frac{\\\\Delta \\\\mu  \\\\left(-37 i a^9 \
+\\\\beta ^{11} \\\\omega ^9+198450 \\\\left(5 \\\\sqrt{3}-2 \\\\pi \\\\right) \
+\\\\alpha ^9 \\\\beta ^{11}+504 i a^7 \\\\alpha ^2 \\\\beta ^{11} \\\\omega \
+^7+\\\\alpha ^{11} \\\\left(37 i a^9 \\\\omega ^9-504 i a^7 \\\\beta ^2 \
+\\\\omega ^7-198450 \\\\left(5 \\\\sqrt{3}-2 \\\\pi \\\\right) \\\\beta \
+^9\\\\right)\\\\right)}{595350 \\\\pi  \\\\alpha ^{11} \\\\beta ^{11} \\\\rho \
+}\"\>",
+  TeXForm[
+  Rational[1, 595350] 
+   Pi^(-1) $CellContext`\[Alpha]^(-11) $CellContext`\[Beta]^(-11) \
+$CellContext`\[CapitalDelta]\[Mu] $CellContext`\[Rho]^(-1) (
+    198450 (5 3^Rational[1, 2] - 2 
+      Pi) $CellContext`\[Alpha]^9 $CellContext`\[Beta]^11 + 
+    Complex[0, 
+       504] $CellContext`a^7 $CellContext`\[Alpha]^2 $CellContext`\[Beta]^11 \
+$CellContext`\[Omega]^7 + 
+    Complex[0, -37] $CellContext`a^9 $CellContext`\[Beta]^11 $CellContext`\
+\[Omega]^9 + $CellContext`\[Alpha]^11 ((-198450) (5 3^Rational[1, 2] - 2 
+        Pi) $CellContext`\[Beta]^9 + 
+      Complex[0, -504] $CellContext`a^7 $CellContext`\[Beta]^2 $CellContext`\
+\[Omega]^7 + Complex[0, 37] $CellContext`a^9 $CellContext`\[Omega]^9))],
+  AutoDelete->True,
+  Editable->True]], "Print",
+ CellChangeTimes->{3.981834453858459*^9},
+ CellLabel->
+  "During evaluation of \
+In[273]:=",ExpressionUUID->"ef9e2758-5358-4de9-81ae-de6c4fdc10cf"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["14. Summary", "Section",ExpressionUUID->"5d010cfd-8c1b-490f-a6ad-edfe5fff3097"],
+
+Cell["\<\
+This notebook derives the cubic T-matrix from the FULL elastodynamic Green\
+\[CloseCurlyQuote]s tensor (Kupradze representation), including both static \
+near-field and radiation terms.
+
+Key results:
+\[Bullet] Smooth polynomial: G^s_ij = \[CapitalPhi](r^2) \[Delta]_ij + \
+\[CapitalPsi](r^2) x_i x_j
+\[Bullet] \[CapitalPhi] and \[CapitalPsi] contain ALL frequency-dependent terms
+\[Bullet] I_ijkl = A \[Delta]_ij\[Delta]_kl + B(perm) + C E_ijkl has cubic \
+anisotropy (C \[NotEqual] 0)
+\[Bullet] Four amplification factors (vs three for sphere)
+\[Bullet] Cubic splitting \[CapitalDelta]\[Mu]*_diag \[Minus] \[CapitalDelta]\
+\[Mu]*_off \[Proportional] T_3
+\[Bullet] A, B, C are complex at finite \[Omega]: imaginary parts = radiation \
+damping
+\[Bullet] Born limit (a \[Rule] 0): all contrasts reduce to bare values\
+\>", "Text",ExpressionUUID->"962ebba7-333b-4040-8701-ff907fbe9ee5"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1728, 1056},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+WindowTitle->"Cubic T-Matrix: Full Green's Tensor",
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"b507329c-a439-4a5e-aa69-42cc4b8b2fc0"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[625, 23, 144, 1, 96, "Title",ExpressionUUID->"6180f57d-26a5-49db-89f1-cc8ee60b9555"],
+Cell[772, 26, 134, 0, 52, "Subtitle",ExpressionUUID->"395d7f45-2488-4578-8de2-9d7caff81f46"],
+Cell[CellGroupData[{
+Cell[931, 30, 129, 0, 66, "Section",ExpressionUUID->"efb68b35-7d14-46ef-a7cd-7890f926b432"],
+Cell[1063, 32, 275, 4, 33, "Text",ExpressionUUID->"aa70d9c9-41da-4fd6-8e29-1c653319151c"],
+Cell[CellGroupData[{
+Cell[1363, 40, 658, 22, 341, "Input",ExpressionUUID->"2419a869-e6d3-4fb6-9079-ccd0ef5765b1"],
+Cell[2024, 64, 203, 4, 23, "Print",ExpressionUUID->"0f4acf97-0077-437b-ab6c-c13c4162500c"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2276, 74, 118, 0, 66, "Section",ExpressionUUID->"2043ce8e-2e13-474e-927d-8ae13895201d"],
+Cell[2397, 76, 223, 3, 33, "Text",ExpressionUUID->"a73c73ff-0d1b-49e1-b8da-5f6ed99f7ad0"],
+Cell[CellGroupData[{
+Cell[2645, 83, 316, 13, 202, "Input",ExpressionUUID->"8f546235-30d8-41fc-b3aa-957bcfa147f0"],
+Cell[2964, 98, 192, 4, 23, "Print",ExpressionUUID->"d79fc8f8-b8ca-471a-b29a-3136a5206ca8"],
+Cell[3159, 104, 3907, 101, 54, "Output",ExpressionUUID->"fa7590d4-5b74-40f5-9f5a-386a8a7d6578"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[7103, 210, 133, 4, 46, "Input",ExpressionUUID->"e2f80462-07f9-4b7e-92fa-7b8388100cf4"],
+Cell[7239, 216, 192, 4, 23, "Print",ExpressionUUID->"69f8abe0-55cf-4940-b10e-2614f783aaa0"],
+Cell[7434, 222, 7094, 186, 98, "Output",ExpressionUUID->"88f7827b-f9c9-450d-bc11-123e4fc2f4b2"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[14565, 413, 749, 22, 324, "Input",ExpressionUUID->"5fd6349f-268d-4a6f-8872-2839843c3a86"],
+Cell[CellGroupData[{
+Cell[15339, 439, 223, 4, 41, "Print",ExpressionUUID->"c8374362-43fb-4e3f-b02f-99fed27c09ab"],
+Cell[15565, 445, 686, 14, 38, "Print",ExpressionUUID->"53450965-e41c-4ecb-8ccd-8d22b5bb8875"],
+Cell[16254, 461, 741, 15, 41, "Print",ExpressionUUID->"2628031d-a414-4ab2-ad94-2585346cec09"],
+Cell[16998, 478, 721, 14, 40, "Print",ExpressionUUID->"35fab946-eaf1-4411-aa68-f558be8639a0"],
+Cell[17722, 494, 747, 15, 41, "Print",ExpressionUUID->"df7f75c0-5345-4acf-b3b8-dcb6f875530a"],
+Cell[18472, 511, 231, 5, 41, "Print",ExpressionUUID->"98dcf560-b717-4bc3-af62-8a221274de2a"],
+Cell[18706, 518, 1012, 18, 42, "Print",ExpressionUUID->"ee3d13cf-40be-4d61-b70f-528d9d197f57"],
+Cell[19721, 538, 1040, 19, 42, "Print",ExpressionUUID->"ecf7bbb1-e243-464a-a16a-14587d3dd5a2"],
+Cell[20764, 559, 1020, 18, 42, "Print",ExpressionUUID->"fe9b28cc-df09-4129-a774-11343c7e3b8a"],
+Cell[21787, 579, 1056, 19, 42, "Print",ExpressionUUID->"7c5d3a9a-7134-46fc-9f0b-d0f933558018"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[22892, 604, 514, 12, 168, "Input",ExpressionUUID->"c1067351-045e-4ac8-ba6d-8b30db895dad"],
+Cell[CellGroupData[{
+Cell[23431, 620, 1730, 42, 62, "Print",ExpressionUUID->"d856d500-df92-4ae4-82e2-4bd893cc6b95"],
+Cell[25164, 664, 2833, 67, 64, "Print",ExpressionUUID->"a6d6d1f4-179a-4eee-a034-ea657e5d2d77"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[28058, 738, 110, 0, 66, "Section",ExpressionUUID->"2189a682-d5c2-4c51-8941-c453e19919d8"],
+Cell[28171, 740, 203, 3, 33, "Text",ExpressionUUID->"c34e95c2-9d00-4e11-838c-d2aab90c116d"],
+Cell[CellGroupData[{
+Cell[28399, 747, 750, 22, 341, "Input",ExpressionUUID->"30e03591-9589-4f81-b272-48347d11f3c2"],
+Cell[CellGroupData[{
+Cell[29174, 773, 376, 10, 23, "Print",ExpressionUUID->"ca32ff24-0f7d-4adc-8849-478b9cd8794f"],
+Cell[29553, 785, 414, 11, 59, "Print",ExpressionUUID->"e2d67ae9-42b7-4e6a-91e1-42d46caa6955"],
+Cell[29970, 798, 418, 11, 38, "Print",ExpressionUUID->"713eb3e1-e055-46b3-ba72-3420349ab41d"],
+Cell[30391, 811, 472, 10, 56, "Print",ExpressionUUID->"e13bd515-343e-4d53-a9a3-d2a1ce9166bc"],
+Cell[30866, 823, 424, 11, 59, "Print",ExpressionUUID->"224475ad-fd0c-43d5-83b7-fa6cf769598f"],
+Cell[31293, 836, 463, 13, 38, "Print",ExpressionUUID->"af4c3458-b23a-4b53-b7fc-9367434009f2"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[31817, 856, 117, 0, 66, "Section",ExpressionUUID->"b05746ed-6f79-42d1-b51e-2d6acf28dbb4"],
+Cell[CellGroupData[{
+Cell[31959, 860, 767, 19, 306, "Input",ExpressionUUID->"73a7fef0-e428-4c51-949f-7facb882da72"],
+Cell[CellGroupData[{
+Cell[32751, 883, 453, 11, 23, "Print",ExpressionUUID->"5385328d-6590-4a77-9c49-50f414b1aff3"],
+Cell[33207, 896, 503, 13, 38, "Print",ExpressionUUID->"3bacde0c-bc4b-4b30-b018-a2ee3e36155a"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[33771, 916, 151, 2, 66, "Section",ExpressionUUID->"ab8d0ab0-7151-42e3-a788-d71f63504546"],
+Cell[CellGroupData[{
+Cell[33947, 922, 262, 6, 81, "Input",ExpressionUUID->"39e69f07-5f92-4f5d-a17b-d2179c617c27"],
+Cell[34212, 930, 221, 4, 23, "Print",ExpressionUUID->"17a92fae-08ac-4f7b-b580-67419e3b6271"],
+Cell[34436, 936, 2107, 52, 53, "Output",ExpressionUUID->"ccf37043-2e45-43e1-baa0-f61281d6b564"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[36580, 993, 372, 8, 98, "Input",ExpressionUUID->"31c20712-3a8a-4565-94c8-443c41d97123"],
+Cell[CellGroupData[{
+Cell[36977, 1005, 354, 9, 41, "Print",ExpressionUUID->"a572cf18-8372-41d1-8d4a-3802de844627"],
+Cell[37334, 1016, 325, 8, 23, "Print",ExpressionUUID->"695502a1-3727-40bc-a0b5-6340cd53e037"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[37720, 1031, 114, 0, 66, "Section",ExpressionUUID->"0d789514-e193-422f-9eec-468dabb12efa"],
+Cell[37837, 1033, 335, 5, 33, "Text",ExpressionUUID->"aaee2bc9-974e-47e3-b8f7-1133a432cdf4"],
+Cell[CellGroupData[{
+Cell[38197, 1042, 427, 10, 133, "Input",ExpressionUUID->"1f3c343f-ff45-4599-8800-15a491edfc6a"],
+Cell[CellGroupData[{
+Cell[38649, 1056, 215, 4, 23, "Print",ExpressionUUID->"401b8018-d7e8-4ac3-924e-c165d4fd4ec7"],
+Cell[38867, 1062, 692, 18, 41, "Print",ExpressionUUID->"0efbca1b-29ff-4246-baa0-735c400b11a8"],
+Cell[39562, 1082, 691, 18, 41, "Print",ExpressionUUID->"92f7ec30-d6fa-4d73-bc8a-20f3eec222a0"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[40302, 1106, 941, 20, 291, "Input",ExpressionUUID->"08bcfbf4-2f97-46be-9e01-9d799d381a55"],
+Cell[CellGroupData[{
+Cell[41268, 1130, 211, 4, 41, "Print",ExpressionUUID->"ec20f2e8-be12-40e7-8821-53e27036c832"],
+Cell[41482, 1136, 563, 14, 36, "Print",ExpressionUUID->"f6d6d9f2-49cd-4f2d-a46c-1de573705c5c"],
+Cell[42048, 1152, 472, 14, 36, "Print",ExpressionUUID->"9252132d-b5e0-4cae-bd27-82b37febd5fc"],
+Cell[42523, 1168, 480, 14, 36, "Print",ExpressionUUID->"700d4c9a-8ad0-4c61-8c87-8eb6f1d8248c"],
+Cell[43006, 1184, 834, 24, 56, "Print",ExpressionUUID->"ec616f5e-1faa-4354-8582-556dee7d97f2"],
+Cell[43843, 1210, 846, 25, 36, "Print",ExpressionUUID->"732a07fb-ce69-47cb-9180-5e467f5f79c6"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[44738, 1241, 769, 19, 289, "Input",ExpressionUUID->"fa15cc3c-e24a-47cc-84a9-3ba06d86644a"],
+Cell[CellGroupData[{
+Cell[45532, 1264, 225, 4, 41, "Print",ExpressionUUID->"1673b0b7-bf00-4a50-a985-95bdcae0cd3d"],
+Cell[45760, 1270, 211, 4, 23, "Print",ExpressionUUID->"45354b34-9546-4ef1-b894-fe85f84d00a8"],
+Cell[45974, 1276, 222, 4, 23, "Print",ExpressionUUID->"30fa233c-84e5-49df-8951-5a9fd388e3c2"],
+Cell[46199, 1282, 1392, 37, 46, "Print",ExpressionUUID->"d376cf3e-39fc-463d-aa6f-968466591925"],
+Cell[47594, 1321, 1074, 30, 47, "Print",ExpressionUUID->"2fa2cf0d-5c49-4830-a66f-4bf36ec454ad"],
+Cell[48671, 1353, 1252, 36, 47, "Print",ExpressionUUID->"f82c80b4-0225-4303-aa0a-9e1f8b356501"],
+Cell[49926, 1391, 459, 13, 60, "Print",ExpressionUUID->"8f24e7f2-db55-43ba-94a1-ebf2e0ac02fe"],
+Cell[50388, 1406, 237, 5, 23, "Print",ExpressionUUID->"cb77166c-3a82-4b2e-831c-e5adda9ae049"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[50674, 1417, 804, 19, 279, "Input",ExpressionUUID->"1f172228-6a79-4265-832b-c8e4e756c331"],
+Cell[CellGroupData[{
+Cell[51503, 1440, 210, 4, 41, "Print",ExpressionUUID->"af2e1101-ac2b-4100-94a1-731130ceb4da"],
+Cell[51716, 1446, 713, 21, 36, "Print",ExpressionUUID->"0f65eb1c-1abc-411b-ab87-69fcb258a27c"],
+Cell[52432, 1469, 1678, 45, 41, "Print",ExpressionUUID->"91a993b0-8b0d-4b90-bc2e-097bcf5d1ec1"],
+Cell[54113, 1516, 3330, 74, 42, "Print",ExpressionUUID->"7ed9bad1-3c3c-44a0-bf75-f8bfa9f58e4b"],
+Cell[57446, 1592, 4772, 111, 64, "Print",ExpressionUUID->"aa46d067-01d0-4000-8a3b-2a0289ba70de"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[62279, 1710, 127, 0, 66, "Section",ExpressionUUID->"e8c970a9-eb61-451f-8282-a043b0c33a66"],
+Cell[62409, 1712, 216, 3, 33, "Text",ExpressionUUID->"0ba6b522-4e58-4be8-a212-c3aeb7709a98"],
+Cell[CellGroupData[{
+Cell[62650, 1719, 489, 14, 202, "Input",ExpressionUUID->"2d4f8bac-5466-4b1b-9f3d-c24a439bc739"],
+Cell[CellGroupData[{
+Cell[63164, 1737, 218, 4, 23, "Print",ExpressionUUID->"62e30736-c3ed-4669-ac7f-f8f3aefe945f"],
+Cell[63385, 1743, 2559, 61, 42, "Print",ExpressionUUID->"49637a7b-1ebb-476f-9ebb-28cfd76e3abf"],
+Cell[65947, 1806, 2565, 62, 42, "Print",ExpressionUUID->"577c78e1-a7a1-4646-8858-fdf84dada1ce"],
+Cell[68515, 1870, 2903, 66, 42, "Print",ExpressionUUID->"188ef787-c6c2-4d9e-a5c9-dfec095d4361"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[71467, 1942, 1033, 30, 480, "Input",ExpressionUUID->"2bac994e-1e48-4cd1-935f-926acb0f5045"],
+Cell[CellGroupData[{
+Cell[72525, 1976, 361, 9, 41, "Print",ExpressionUUID->"127b0273-496d-4112-930f-2d05f008aff2"],
+Cell[72889, 1987, 356, 9, 23, "Print",ExpressionUUID->"a2b19570-8114-4fd6-a302-086360732a7f"],
+Cell[73248, 1998, 220, 4, 41, "Print",ExpressionUUID->"713b1c64-7882-4293-9c7c-2244c7d68e4c"],
+Cell[73471, 2004, 2569, 62, 42, "Print",ExpressionUUID->"cdaca31e-de0e-4811-b664-93aa9be77195"],
+Cell[76043, 2068, 2910, 66, 42, "Print",ExpressionUUID->"9a016a32-be33-45e2-8b64-2d9633a974a0"],
+Cell[78956, 2136, 1674, 41, 42, "Print",ExpressionUUID->"85e2e0a9-ed49-4276-8bed-f01b1de7a15b"],
+Cell[80633, 2179, 227, 4, 41, "Print",ExpressionUUID->"d931e179-917c-4f2a-975b-73454dd31f4f"],
+Cell[80863, 2185, 221, 4, 23, "Print",ExpressionUUID->"25337245-8b53-4df0-926b-ffe111809e49"],
+Cell[81087, 2191, 222, 4, 23, "Print",ExpressionUUID->"accce63d-bdf0-4439-bc35-4dd297b3cc8c"],
+Cell[81312, 2197, 3730, 92, 46, "Print",ExpressionUUID->"609cbe61-f34c-4c7a-97c2-74b1e925e687"],
+Cell[85045, 2291, 3747, 89, 47, "Print",ExpressionUUID->"e9e7c1e2-b3aa-4046-a1b1-2ce59b4161b6"],
+Cell[88795, 2382, 2743, 72, 47, "Print",ExpressionUUID->"cdc4a4a9-c3d3-47cc-bb7b-1b5e97b0a207"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[91599, 2461, 107, 0, 66, "Section",ExpressionUUID->"3401a8e1-d5a7-4eaf-a1cc-102f3590d4a5"],
+Cell[91709, 2463, 199, 3, 33, "Text",ExpressionUUID->"3306857f-4e39-4654-8a48-6db5beaa9732"],
+Cell[CellGroupData[{
+Cell[91933, 2470, 1336, 39, 618, "Input",ExpressionUUID->"a874f462-0b3b-4a2d-b0b5-0185bffae3e0"],
+Cell[CellGroupData[{
+Cell[93294, 2513, 227, 4, 41, "Print",ExpressionUUID->"73a426d3-041e-4af8-98ca-ef7b8a61532f"],
+Cell[93524, 2519, 203, 4, 23, "Print",ExpressionUUID->"28e676a9-7147-487c-af1b-d90f9a1afd93"],
+Cell[93730, 2525, 222, 4, 23, "Print",ExpressionUUID->"16a0e2b0-da70-4134-b000-61fbf0670741"],
+Cell[93955, 2531, 6137, 135, 60, "Print",ExpressionUUID->"1a078e99-8ed8-4b4a-b842-321850bcc2a3"],
+Cell[100095, 2668, 3897, 88, 43, "Print",ExpressionUUID->"9591fbd1-b610-4dc0-a4f8-adf767586baf"],
+Cell[103995, 2758, 2721, 64, 43, "Print",ExpressionUUID->"0646c265-8f0f-437d-8886-6a714a6d4277"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[106777, 2829, 114, 0, 66, "Section",ExpressionUUID->"b21d1fcf-27b9-4f2f-98f2-9fa7398a119d"],
+Cell[106894, 2831, 182, 3, 33, "Text",ExpressionUUID->"195bbec2-9010-4d61-8919-cc80a9546b59"],
+Cell[CellGroupData[{
+Cell[107101, 2838, 695, 17, 237, "Input",ExpressionUUID->"6c3a20ca-ae42-4a20-9780-a10f70581334"],
+Cell[CellGroupData[{
+Cell[107821, 2859, 227, 4, 41, "Print",ExpressionUUID->"f67b9795-9a73-462b-8a62-0b78030a6800"],
+Cell[108051, 2865, 221, 4, 23, "Print",ExpressionUUID->"f7caa3cd-1b02-4911-8054-d7ba8434d7e8"],
+Cell[108275, 2871, 222, 4, 23, "Print",ExpressionUUID->"79722065-f602-440a-9577-1b632bf80590"],
+Cell[108500, 2877, 250, 5, 23, "Print",ExpressionUUID->"b7b79c72-4aa8-48c1-8b88-2e11fc2f9347"],
+Cell[108753, 2884, 3750, 85, 64, "Print",ExpressionUUID->"3fdd88f1-4d28-4085-b9bc-821f7a5b985f"],
+Cell[112506, 2971, 3947, 89, 65, "Print",ExpressionUUID->"be2ddf63-757a-4aef-99ad-76e08268690f"],
+Cell[116456, 3062, 4559, 98, 84, "Print",ExpressionUUID->"939184ee-5218-4677-85da-08b32a85e0a3"],
+Cell[121018, 3162, 249, 5, 41, "Print",ExpressionUUID->"6b66af2c-cd05-4cf2-a356-322b4c775787"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[121328, 3174, 105, 0, 66, "Section",ExpressionUUID->"efaf31c2-e1dc-490f-a5f9-023f1b157139"],
+Cell[CellGroupData[{
+Cell[121458, 3178, 795, 17, 150, "Input",ExpressionUUID->"76a860c8-4704-413d-91b8-cc06d05bca89"],
+Cell[CellGroupData[{
+Cell[122278, 3199, 225, 4, 41, "Print",ExpressionUUID->"9aea3fe7-ff36-4a1f-a703-f60ef00930c9"],
+Cell[122506, 3205, 210, 4, 23, "Print",ExpressionUUID->"1bb0a48d-2fc9-435e-873d-6f1fcbb0dd9d"],
+Cell[122719, 3211, 224, 4, 23, "Print",ExpressionUUID->"3897688a-7b05-41fe-a357-653b04071b6b"],
+Cell[122946, 3217, 250, 5, 41, "Print",ExpressionUUID->"4ec18cb1-175a-45ef-b18b-01e63627d23c"],
+Cell[123199, 3224, 245, 5, 23, "Print",ExpressionUUID->"bf69beb9-c5af-4065-a4c3-01a1f3f64a89"],
+Cell[123447, 3231, 252, 5, 23, "Print",ExpressionUUID->"68187520-82ce-40d8-b72d-1f60c1cafb13"],
+Cell[123702, 3238, 327, 6, 23, "Print",ExpressionUUID->"730df862-b81d-4e81-a79b-0b8b21260efb"],
+Cell[124032, 3246, 313, 6, 41, "Print",ExpressionUUID->"71c17523-f8b4-40b6-bc21-7b2d582faf3e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[124406, 3259, 100, 0, 66, "Section",ExpressionUUID->"187ab46d-d555-4f69-83c0-493a15b47383"],
+Cell[CellGroupData[{
+Cell[124531, 3263, 1490, 39, 601, "Input",ExpressionUUID->"8defc834-70ee-42a8-a3c6-315a7f74d81f"],
+Cell[CellGroupData[{
+Cell[126046, 3306, 217, 4, 23, "Print",ExpressionUUID->"b6da772d-5051-43d6-936f-afcde7633d8d"],
+Cell[126266, 3312, 542, 12, 23, "Print",ExpressionUUID->"fc0ee49c-dc65-44c1-a38a-a2f3d8562be2"],
+Cell[126811, 3326, 520, 12, 23, "Print",ExpressionUUID->"647e03ab-9d82-4a84-94d0-9e7893ec55ef"],
+Cell[127334, 3340, 475, 11, 23, "Print",ExpressionUUID->"e59eb763-cf96-424e-b03e-d90240357549"],
+Cell[127812, 3353, 225, 4, 41, "Print",ExpressionUUID->"2bb4bfe8-f0a6-4dfa-bed4-83c4ec0ed1d9"],
+Cell[128040, 3359, 218, 4, 23, "Print",ExpressionUUID->"61264e28-af23-43cb-b5d1-ba83af0855ca"],
+Cell[128261, 3365, 222, 4, 23, "Print",ExpressionUUID->"022050da-380d-47ee-a65b-97f6a9c21404"],
+Cell[128486, 3371, 476, 12, 23, "Print",ExpressionUUID->"34c92ae3-ad3e-437b-8c72-052ed01a89a8"],
+Cell[128965, 3385, 476, 12, 23, "Print",ExpressionUUID->"b2e4e803-9f90-44aa-9759-db7899fddeff"],
+Cell[129444, 3399, 476, 12, 23, "Print",ExpressionUUID->"980896f3-99d6-4360-af57-cddec77a1e38"],
+Cell[129923, 3413, 520, 12, 41, "Print",ExpressionUUID->"fff6430c-e409-42f9-88e4-df1d456602bb"],
+Cell[130446, 3427, 521, 13, 23, "Print",ExpressionUUID->"106c72af-2d93-4b42-aa1b-4061eebcd7ca"],
+Cell[130970, 3442, 480, 12, 41, "Print",ExpressionUUID->"c1e81f08-d74e-4f9b-854d-fa1d42f7bde4"],
+Cell[131453, 3456, 475, 12, 23, "Print",ExpressionUUID->"9fc4b1a8-6cb7-4a0e-bd69-2f808360f1e1"],
+Cell[131931, 3470, 475, 12, 23, "Print",ExpressionUUID->"a33d7459-9d1d-40c9-94d1-94a88c469d8e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[132467, 3489, 101, 0, 66, "Section",ExpressionUUID->"1828a518-14f6-497d-acbb-60cf952a14ae"],
+Cell[CellGroupData[{
+Cell[132593, 3493, 288, 7, 81, "Input",ExpressionUUID->"18f16324-3a0d-401a-889c-4c60cc165572"],
+Cell[CellGroupData[{
+Cell[132906, 3504, 218, 4, 41, "Print",ExpressionUUID->"0a5f598b-56e9-43d6-809e-60ca7f822e4e"],
+Cell[133127, 3510, 1495, 36, 42, "Print",ExpressionUUID->"d8d06b33-a48b-4266-9549-71e3d820e8c9"],
+Cell[134625, 3548, 1313, 34, 43, "Print",ExpressionUUID->"130751d3-9037-462a-ad55-1d0f5b4abd5c"],
+Cell[135941, 3584, 1486, 40, 43, "Print",ExpressionUUID->"11811bdc-1d38-4694-b5c4-77d736755d69"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[137488, 3631, 109, 0, 66, "Section",ExpressionUUID->"8d256002-1834-4985-8f7a-00fb2af6e06e"],
+Cell[CellGroupData[{
+Cell[137622, 3635, 588, 16, 185, "Input",ExpressionUUID->"a8337bc3-d7af-460e-82ad-629bc6ff163f"],
+Cell[CellGroupData[{
+Cell[138235, 3655, 213, 4, 41, "Print",ExpressionUUID->"e53cc431-697c-4b94-b160-170986696936"],
+Cell[138451, 3661, 577, 15, 38, "Print",ExpressionUUID->"231b067a-9c0d-4260-a782-34abe06620de"],
+Cell[139031, 3678, 866, 22, 42, "Print",ExpressionUUID->"a75f0bbd-e8f6-45fe-b21a-f440d193ae17"],
+Cell[139900, 3702, 255, 5, 41, "Print",ExpressionUUID->"a1896e39-1b7c-47c4-a638-18e7dd4ecd3b"],
+Cell[140158, 3709, 275, 5, 23, "Print",ExpressionUUID->"7e12b85d-7e4e-4609-b839-590941b395c3"],
+Cell[140436, 3716, 253, 5, 41, "Print",ExpressionUUID->"513bfdda-d6be-4419-9000-f3659eddd71e"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[140750, 3728, 90, 0, 66, "Section",ExpressionUUID->"2cf29907-fa62-4cd9-8f4d-e24daa307d33"],
+Cell[CellGroupData[{
+Cell[140865, 3732, 465, 12, 168, "Input",ExpressionUUID->"3d9679a3-3a7a-4aae-94ec-f4e0f69c99a7"],
+Cell[CellGroupData[{
+Cell[141355, 3748, 225, 4, 41, "Print",ExpressionUUID->"26ddfc55-1d65-443d-a742-818e1810e550"],
+Cell[141583, 3754, 199, 4, 23, "Print",ExpressionUUID->"add53621-8738-4a3c-a023-d72add85ec77"],
+Cell[141785, 3760, 224, 4, 23, "Print",ExpressionUUID->"9b8bba23-3fa2-4c0e-9629-21f706516940"],
+Cell[142012, 3766, 185, 4, 23, "Print",ExpressionUUID->"3b703490-f4cb-46c5-adbb-d23b1ce88301"],
+Cell[142200, 3772, 1951, 37, 60, "Print",ExpressionUUID->"776b633a-47da-4acb-9a3e-7d7e11950d6c"],
+Cell[144154, 3811, 185, 4, 23, "Print",ExpressionUUID->"078240d5-d41d-4c8b-9137-f7090dc3188a"],
+Cell[144342, 3817, 1927, 34, 60, "Print",ExpressionUUID->"1885e768-0416-47e6-a30a-bd13a35ab56d"],
+Cell[146272, 3853, 184, 4, 23, "Print",ExpressionUUID->"937978df-ac8f-49ae-b4a9-fe9d517a7142"],
+Cell[146459, 3859, 1428, 27, 41, "Print",ExpressionUUID->"5db6ee43-acbe-4904-9d3d-7c6095c3e22f"],
+Cell[147890, 3888, 186, 4, 23, "Print",ExpressionUUID->"1fbe55c0-8518-4e67-8823-bb72daca8b18"],
+Cell[148079, 3894, 3308, 60, 79, "Print",ExpressionUUID->"052ae4b4-8716-495a-bfd4-f41b9faa594b"],
+Cell[151390, 3956, 186, 4, 23, "Print",ExpressionUUID->"fbda3459-b0c8-4899-80bc-a7773b85558e"],
+Cell[151579, 3962, 2000, 40, 60, "Print",ExpressionUUID->"ab63ae16-a81b-4079-a266-53a03979c3fa"],
+Cell[153582, 4004, 186, 4, 23, "Print",ExpressionUUID->"abeb9542-166a-4070-9bbd-6206a587ee5d"],
+Cell[153771, 4010, 1397, 27, 41, "Print",ExpressionUUID->"ef9e2758-5358-4de9-81ae-de6c4fdc10cf"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[155229, 4044, 85, 0, 66, "Section",ExpressionUUID->"5d010cfd-8c1b-490f-a6ad-edfe5fff3097"],
+Cell[155317, 4046, 893, 17, 230, "Text",ExpressionUUID->"962ebba7-333b-4040-8701-ff907fbe9ee5"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+
