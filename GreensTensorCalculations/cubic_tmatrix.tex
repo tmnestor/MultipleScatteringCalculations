@@ -1,0 +1,796 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{Latin Modern Math}
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Cubic T-Matrix: Full Green's Tensor}
+\fancyhead[R]{\small\itshape Nestor (1996)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+
+% --- Citations ---
+\usepackage[round,authoryear]{natbib}
+\bibliographystyle{plainnat}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros (reused from nearfield_verification.tex) ---
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\beR}{\hat{\mathbf{e}}_R}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\order}[1]{\mathcal{O}\!\left(#1\right)}
+
+% --- New macros for this document ---
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\Dlam}{\Delta\lambda}
+\newcommand{\Dmu}{\Delta\mu}
+\newcommand{\Drho}{\Delta\rho}
+\newcommand{\PV}{\operatorname{P.V.}}
+\newcommand{\re}{\operatorname{Re}}
+\newcommand{\im}{\operatorname{Im}}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+\vspace*{1em}
+{\LARGE\bfseries Cubic T-Matrix with the Full\\[0.3em]
+Elastodynamic Green's Tensor}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
+\end{center}
+
+% =============================================================================
+\section{Introduction}
+% =============================================================================
+
+The T-matrix formulation of elastic wave scattering expresses the
+scattered field from an inclusion as a product of a scattering
+operator (the T-matrix) and the incident field
+\citep{GubernatisDomanyKrumhansl1977}. For inclusions whose
+dimensions are small compared to the wavelength ($ka \ll 1$, the
+Rayleigh regime), the T-matrix depends on the volume integral of
+the elastodynamic Green's tensor over the scatterer
+\citep{Nestor1996}.
+
+For spherical inclusions, this integral inherits full rotational
+symmetry: the depolarization tensor has only two independent
+components, and the T-matrix decomposes into volumetric and shear
+parts. For a \emph{cube}, however, the cubic point-group symmetry
+($O_h$) is lower than spherical, and a third independent component
+appears---the \emph{cubic anisotropy} term. This term is governed
+by the fourth-rank tensor
+\begin{equation}
+  E_{ijkl} = \sum_{m=1}^{3}
+    \delta_{im}\,\delta_{jm}\,\delta_{km}\,\delta_{lm},
+  \label{eq:Etensor}
+\end{equation}
+which is nonzero only when all four indices are equal.
+
+The complete derivation requires:
+\begin{enumerate}
+  \item The \emph{static} Eshelby depolarization tensor for the
+    cube \citep{Eshelby1957}, obtained from the Kelvin (static)
+    Green's tensor via surface integrals involving exact geometric
+    constants.
+  \item The \emph{dynamic} radiation corrections, obtained from the
+    smooth polynomial part of the full elastodynamic Green's tensor.
+\end{enumerate}
+Previous treatments \citep{Nestor1996,GubernatisDomanyKrumhansl1977b}
+often presented only the static (Born) limit. This document
+presents the complete analytic result, with the full
+frequency-dependent Green's tensor, verified symbolically in
+Mathematica (see accompanying notebook
+\texttt{CubicTMatrix\_FullGreensTensor.nb}).
+
+% =============================================================================
+\section{The Elastodynamic Green's Tensor}
+\label{sec:greens}
+% =============================================================================
+
+\subsection{Kupradze representation}
+
+The frequency-domain Green's tensor satisfies
+\begin{equation}
+  \mu\,\nabla^2 G_{ij}
+  + (\lambda + \mu)\,\partial_i\partial_k G_{kj}
+  + \rho\omega^2 G_{ij}
+  = -\delta_{ij}\,\delta(\bx),
+  \label{eq:pde}
+\end{equation}
+with the Kupradze representation \citep{Kupradze1963,Kausel2006}
+detailed in the companion document \citep[see][for
+derivation]{WuBenMenahem1985}.
+
+\subsection{Radial decomposition}
+
+For an isotropic homogeneous medium, the Green's tensor admits the
+radial decomposition
+\begin{equation}
+  \boxed{
+  G_{ij}(\bx) = f(r)\,\delta_{ij}
+    + \frac{g(r)}{r^2}\,x_i\,x_j,
+  }
+  \label{eq:radial}
+\end{equation}
+where $r = |\bx|$, and $f(r)$ and $g(r)$ encode the P-wave, S-wave,
+and near-field contributions.
+
+Define the near-field constant
+\begin{equation}
+  C_\text{nf}
+  = \frac{1 - \beta^2/\alpha^2}{8\pi\rho\beta^2}
+  = \frac{\lambda + \mu}{8\pi\mu(\lambda + 2\mu)},
+  \label{eq:Cnf}
+\end{equation}
+and the P-wave and S-wave radial functions
+\begin{equation}
+  X(r) = \frac{e^{i\omega r/\alpha}}{4\pi\rho\alpha^2},
+  \qquad
+  V(r) = \frac{e^{i\omega r/\beta}}{4\pi\rho\beta^2}.
+  \label{eq:XV}
+\end{equation}
+Then
+\begin{equation}
+  f(r) = \frac{V(r) - C_\text{nf}}{r},
+  \qquad
+  g(r) = \frac{3\,C_\text{nf} + X(r) - V(r)}{r}.
+  \label{eq:fg}
+\end{equation}
+
+The static ($\omega \to 0$) limit gives the Kelvin Green's tensor:
+\begin{equation}
+  G^0_{ij}(\bx) = \frac{1}{r}
+  \biggl[a_0\,\delta_{ij} + b_0\,\frac{x_i x_j}{r^2}\biggr],
+  \label{eq:kelvin}
+\end{equation}
+with
+\begin{equation}
+  \boxed{
+  a_0 = \frac{\alpha^2 + \beta^2}{8\pi\rho\alpha^2\beta^2},
+  \qquad
+  b_0 = \frac{\alpha^2 - \beta^2}{8\pi\rho\alpha^2\beta^2}.
+  }
+  \label{eq:a0b0}
+\end{equation}
+
+% =============================================================================
+\section{Smooth Polynomial Decomposition}
+\label{sec:smooth}
+% =============================================================================
+
+The key insight is that $f(r) \cdot r$ and $g(r) \cdot r$ are
+entire functions of~$r$, expandable in Taylor series. When
+decomposed by parity:
+\begin{itemize}
+  \item \textbf{Even powers} of $r$ (constant, $r^2$, $r^4$,
+    \ldots) contribute the static singular ($1/r$) part after
+    dividing by $r$---these yield the Eshelby depolarization.
+  \item \textbf{Odd powers} of $r$ ($r$, $r^3$, $r^5$,
+    \ldots) remain smooth polynomials after dividing by $r$---these
+    yield the radiation corrections.
+\end{itemize}
+
+\subsection{Taylor expansion}
+
+Expanding the exponentials to order~$N$:
+\begin{align}
+  f(r) \cdot r &= V(r) - C_\text{nf}
+  = \sum_{n=0}^{N} c_n^{(f)}\, r^n, \label{eq:fser} \\
+  g(r) \cdot r &= 3C_\text{nf} + X(r) - V(r)
+  = \sum_{n=0}^{N} c_n^{(g)}\, r^n. \label{eq:gser}
+\end{align}
+The even-order coefficients reproduce the static Green's tensor;
+the odd-order coefficients give the smooth (purely imaginary at
+leading order) corrections.
+
+\subsection{Smooth Green's tensor}
+
+The smooth part of the Green's tensor takes the form
+\begin{equation}
+  G^s_{ij}(\bx) = \Phi(r^2)\,\delta_{ij}
+    + \Psi(r^2)\,x_i\,x_j,
+  \label{eq:Gsmooth}
+\end{equation}
+where
+\begin{equation}
+  \Phi(u) = \sum_{n=0}^{N_\Phi} \Phi_n\, u^n,
+  \qquad
+  \Psi(u) = \sum_{n=0}^{N_\Psi} \Psi_n\, u^n,
+  \label{eq:PhiPsi}
+\end{equation}
+with $u = r^2 = x_1^2 + x_2^2 + x_3^2$.
+
+The leading coefficients, verified symbolically in Mathematica,
+are:
+
+\begin{table}[ht]
+\centering
+\caption{Leading Taylor coefficients $\Phi_n$ and $\Psi_n$ of the
+  smooth Green's tensor.}
+\label{tab:coeffs}
+\begin{tabular}{@{}cll@{}}
+\toprule
+$n$ & $\Phi_n$ & $\Psi_n$ \\
+\midrule
+0 & $\displaystyle\frac{i\omega}{4\pi\beta^3\rho}$
+  & $\displaystyle\frac{i(\alpha^5 - \beta^5)\omega^3}
+     {24\pi\alpha^5\beta^5\rho}$ \\[12pt]
+1 & $\displaystyle\frac{-i\omega^3}{24\pi\beta^5\rho}$
+  & $\displaystyle\frac{-i(\alpha^7 - \beta^7)\omega^5}
+     {480\pi\alpha^7\beta^7\rho}$ \\[12pt]
+2 & $\displaystyle\frac{i\omega^5}{480\pi\beta^7\rho}$
+  & $\displaystyle\frac{i(\alpha^9 - \beta^9)\omega^7}
+     {20160\pi\alpha^9\beta^9\rho}$ \\[12pt]
+3 & $\displaystyle\frac{-i\omega^7}{20160\pi\beta^9\rho}$
+  & $\displaystyle\frac{-i(\alpha^{11} - \beta^{11})\omega^9}
+     {1451520\pi\alpha^{11}\beta^{11}\rho}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+All $\Phi_n$ and $\Psi_n$ are purely imaginary, reflecting the
+radiative (energy-losing) character of the smooth contribution.
+
+% =============================================================================
+\section{Volume Integrals over the Cube}
+\label{sec:cube}
+% =============================================================================
+
+Consider a cube of half-side~$a$ centred at the origin:
+$V = [-a,a]^3$ with volume $|V| = 8a^3$.
+
+\subsection{Monomial moments}
+
+By symmetry, all odd-order moments vanish. The nonzero even moments
+relevant to the T-matrix are:
+\begin{equation}
+  \int_V x_i^2 \,\dd V = \frac{8a^5}{3},
+  \qquad
+  \int_V x_i^4 \,\dd V = \frac{8a^7}{5},
+  \qquad
+  \int_V x_i^2 x_j^2 \,\dd V = \frac{8a^7}{9}
+  \quad (i \neq j).
+  \label{eq:moments}
+\end{equation}
+
+\subsection{Fourth-rank moment tensor}
+
+The fourth-order moment
+$M_{ijkl} = \int_V x_i\,x_j\,x_k\,x_l\,\dd V$
+decomposes under cubic symmetry into isotropic and anisotropic
+parts:
+\begin{equation}
+  M_{ijkl} = P\,(\delta_{ij}\delta_{kl}
+    + \delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk})
+  + Q\,E_{ijkl},
+  \label{eq:moment4}
+\end{equation}
+where
+\begin{equation}
+  P = \frac{8a^7}{9},
+  \qquad
+  Q = 8a^7\!\left(\frac{1}{5} - \frac{3}{9}\right)
+    = -\frac{16a^7}{45}.
+  \label{eq:PQ}
+\end{equation}
+The \emph{isotropy ratio}
+$M_{iiii}/(3\,M_{iijj}) = 3/5$ (compared to $1$ for a sphere)
+quantifies the departure from spherical symmetry.
+
+\subsection{The cubic anisotropy tensor}
+
+The tensor~$E_{ijkl}$ defined in~\eqref{eq:Etensor} satisfies:
+\begin{itemize}
+  \item Full symmetry: $E_{ijkl}$ is invariant under any
+    permutation of indices.
+  \item Trace: $E_{iikl} = \delta_{kl}$.
+  \item Contraction with isotropic tensors:
+    $E_{ijkl}\,\delta_{kl} = \delta_{ij}$.
+\end{itemize}
+It is the unique fourth-rank tensor (up to scale) that distinguishes
+cubic from spherical symmetry in the decomposition of
+$I_{ijkl}$.
+
+% =============================================================================
+\section{The Integral Tensor \texorpdfstring{$I_{ijkl}$}{I\_ijkl}}
+\label{sec:integral}
+% =============================================================================
+
+The central quantity for the T-matrix is the volume integral of the
+symmetrised second derivatives of the Green's tensor:
+\begin{equation}
+  I_{ijkl} = \PV \int_V
+    \frac{\partial^2 G_{ij}(\bx)}{\partial x_k \,\partial x_l}
+    \,\dd V,
+  \label{eq:Idef}
+\end{equation}
+where the principal value excludes the origin singularity. By
+cubic symmetry, this decomposes as
+\begin{equation}
+  \boxed{
+  I_{ijkl} = A\,\delta_{ij}\delta_{kl}
+    + B\,(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk})
+    + C\,E_{ijkl}.
+  }
+  \label{eq:Idecomp}
+\end{equation}
+For a sphere, $C = 0$ and only two independent constants remain.
+For the cube, $C \neq 0$, and this is the origin of cubic anisotropy
+in the T-matrix.
+
+The three coefficients are determined from the independent
+components:
+\begin{equation}
+  A = I_{1122}, \qquad
+  B = I_{1212}, \qquad
+  C = I_{1111} - I_{1122} - 2\,I_{1212}.
+  \label{eq:ABC_from_I}
+\end{equation}
+
+Each coefficient receives a static (Eshelby) and smooth (radiation)
+contribution:
+\begin{equation}
+  A = A_\text{stat} + A_\text{smooth}, \qquad
+  B = B_\text{stat} + B_\text{smooth}, \qquad
+  C = C_\text{stat} + C_\text{smooth}.
+  \label{eq:split}
+\end{equation}
+
+% -----------------------------------------------------------------------------
+\subsection{Static Eshelby depolarization tensor}
+\label{sec:eshelby}
+% -----------------------------------------------------------------------------
+
+The static contribution comes from the Kelvin Green's
+tensor~\eqref{eq:kelvin} via the principal-value volume
+integral. Following \citet{Eshelby1957} and \citet{Mura1987},
+this integral is converted to a surface integral over the
+cube faces using the divergence theorem.
+
+\subsubsection{Geometric shape constants}
+
+On each face of the cube (e.g.\ $x_3 = a$, with $u = x_1/a$,
+$v = x_2/a$), the surface integrals reduce to dimensionless
+constants:
+\begin{align}
+  j_1 &= \int_{-1}^{1}\!\!\int_{-1}^{1}
+    \frac{\dd u\,\dd v}{(1 + u^2 + v^2)^{3/2}}
+  = \frac{2\pi}{3}, \label{eq:j1} \\[6pt]
+  j_2 &= \int_{-1}^{1}\!\!\int_{-1}^{1}
+    \frac{u^2\,\dd u\,\dd v}{(1 + u^2 + v^2)^{5/2}}
+  = -\frac{2(\sqrt{3} - \pi)}{9}, \label{eq:j2} \\[6pt]
+  k_1 &= \int_{-1}^{1}\!\!\int_{-1}^{1}
+    \frac{\dd u\,\dd v}{(1 + u^2 + v^2)^{5/2}}
+  = \frac{2(2\sqrt{3} + \pi)}{9}. \label{eq:k1}
+\end{align}
+These satisfy the trace constraint
+\begin{equation}
+  \boxed{k_1 + 2\,j_2 = \frac{2\pi}{3},}
+  \label{eq:trace}
+\end{equation}
+which ensures the correct isotropic trace of the depolarization
+tensor.
+
+The \emph{cubic anisotropy factor}
+\begin{equation}
+  3\,j_2 - k_1 = -\frac{2(5\sqrt{3} - 2\pi)}{9}
+  \neq 0,
+  \label{eq:aniso_factor}
+\end{equation}
+vanishes for a sphere but is nonzero for the cube, confirming the
+geometric origin of the cubic anisotropy.
+
+\subsubsection{Static \texorpdfstring{$A$, $B$, $C$}{A, B, C}
+  coefficients}
+
+From the surface integral reduction, the static Eshelby
+coefficients are:
+\begin{align}
+  A_\text{stat} &= -2(a_0\,j_1 + 3\,b_0\,j_2)
+  = \frac{(\sqrt{3} - 2\pi)\,\alpha^2 - \sqrt{3}\,\beta^2}
+         {6\pi\rho\alpha^2\beta^2},
+  \label{eq:Astat} \\[6pt]
+  B_\text{stat} &= 2\,b_0\,(j_1 - 3\,j_2)
+  = \frac{\alpha^2 - \beta^2}
+         {2\sqrt{3}\,\pi\rho\alpha^2\beta^2},
+  \label{eq:Bstat} \\[6pt]
+  C_\text{stat} &= 6\,b_0\,(3\,j_2 - k_1)
+  = \frac{(-5\sqrt{3} + 2\pi)(\alpha^2 - \beta^2)}
+         {6\pi\rho\alpha^2\beta^2}.
+  \label{eq:Cstat}
+\end{align}
+The ratio
+\begin{equation}
+  \boxed{
+  \frac{C_\text{stat}}{B_\text{stat}}
+  = -5 + \frac{2\pi}{\sqrt{3}}
+  \approx -1.372,
+  }
+  \label{eq:CoverB}
+\end{equation}
+is a \emph{pure geometric constant}, independent of all material
+parameters. It depends only on the shape of the inclusion
+(here, a cube) and quantifies the cubic anisotropy relative to the
+shear depolarization.
+
+% -----------------------------------------------------------------------------
+\subsection{Smooth polynomial contribution}
+\label{sec:smooth_contrib}
+% -----------------------------------------------------------------------------
+
+The smooth (radiation) contribution to the integral tensor comes
+from integrating the smooth Green's tensor~\eqref{eq:Gsmooth} and
+its second derivatives over the cube. Since $G^s_{ij}$ is a
+polynomial in $x_1$, $x_2$, $x_3$, these integrals reduce to
+monomial moments of the cube.
+
+At leading order in $ka$:
+\begin{align}
+  A_\text{smooth} &\approx
+    -\frac{2i a^3 \omega^3}{3\pi\beta^5\rho}
+  + \order{a^5\omega^5},
+  \label{eq:Asmooth} \\[6pt]
+  B_\text{smooth} &\approx
+    \frac{i a^3 \omega^3(\alpha^5 - \beta^5)}
+         {3\pi\alpha^5\beta^5\rho}
+  + \order{a^5\omega^5},
+  \label{eq:Bsmooth} \\[6pt]
+  C_\text{smooth} &\approx
+    \frac{2i a^7 \omega^7(\beta^9 - \alpha^9)}
+         {4725\pi\alpha^9\beta^9\rho}
+  + \order{a^9\omega^9}.
+  \label{eq:Csmooth}
+\end{align}
+
+\begin{quote}
+\textbf{Key observation:} $C_\text{smooth}$ first appears at
+$\order{(ka)^7}$, while $C_\text{stat}$ is independent of
+frequency. In the Rayleigh limit ($ka \ll 1$), the ratio
+$C_\text{smooth}/C_\text{stat} \sim (ka)^7$ is negligible. The
+cubic anisotropy is therefore entirely dominated by the
+\emph{static} Eshelby depolarization, and is a purely geometric
+(frequency-independent) effect.
+\end{quote}
+
+% -----------------------------------------------------------------------------
+\subsection{The scalar \texorpdfstring{$\Gamma_0$}{Gamma\_0}}
+\label{sec:gamma0}
+% -----------------------------------------------------------------------------
+
+The density renormalisation requires the scalar volume integral
+\begin{equation}
+  \Gamma_0 = \int_V G_{ii}(\bx)\,\dd V
+  = \Gamma_0^\text{stat} + \Gamma_0^\text{smooth},
+  \label{eq:Gamma0}
+\end{equation}
+where the trace $G_{ii} = 3\,f(r) + g(r)$.
+
+The static part involves the geometric constant
+\begin{equation}
+  g_0 = \int_{-1}^{1}\!\!\int_{-1}^{1}\!\!\int_{-1}^{1}
+    \frac{\dd u\,\dd v\,\dd w}{\sqrt{u^2 + v^2 + w^2}}
+  = -\frac{2}{3}\!\left(3\pi
+    + 2\ln\!\left(70226 - 40545\sqrt{3}\right)\right),
+  \label{eq:g0}
+\end{equation}
+an exact result from Mathematica's symbolic triple integration.
+Then
+\begin{equation}
+  \Gamma_0^\text{stat}
+  = a^2\!\left(a_0 + \frac{b_0}{3}\right) g_0
+  = \frac{a^2\,(2\alpha^2 + \beta^2)}{12\pi\rho\alpha^2\beta^2}
+    \,g_0.
+  \label{eq:G0stat}
+\end{equation}
+The smooth correction $\Gamma_0^\text{smooth}$ contributes at
+$\order{a^4\omega^2}$ and higher.
+
+% =============================================================================
+\section{T-Matrix Coefficients}
+\label{sec:tmatrix}
+% =============================================================================
+
+The T-matrix couples the incident strain to the scattered
+displacement through
+\begin{equation}
+  T_{mnlp} = \sum_{j,k}
+    S_{mnjk}\,\Delta c_{jklp},
+  \label{eq:Tcoupling}
+\end{equation}
+where $S_{mnjk} = \tfrac{1}{2}(I_{mjkn} + I_{njkm})$ is the
+symmetrised integral tensor and
+\begin{equation}
+  \Delta c_{jklp} = \Dlam\,\delta_{jk}\,\delta_{lp}
+    + \Dmu\,(\delta_{jl}\,\delta_{kp} + \delta_{jp}\,\delta_{kl})
+  \label{eq:Dc}
+\end{equation}
+is the isotropic stiffness contrast
+($\Dlam = \lambda' - \lambda$, $\Dmu = \mu' - \mu$).
+
+By cubic symmetry, the T-matrix has three independent components:
+\begin{equation}
+  T_{mnlp} = T_1\,\delta_{mn}\,\delta_{lp}
+    + T_2\,(\delta_{ml}\,\delta_{np} + \delta_{mp}\,\delta_{nl})
+    + T_3\,E_{mnlp}.
+  \label{eq:Tdecomp}
+\end{equation}
+Performing the contraction in~\eqref{eq:Tcoupling}:
+\begin{equation}
+  \boxed{
+  \begin{aligned}
+    T_1 &= (A + 4B + C)\,\Dlam + 2B\,\Dmu, \\[4pt]
+    T_2 &= (A + B)\,\Dmu, \\[4pt]
+    T_3 &= 2C\,\Dmu.
+  \end{aligned}
+  }
+  \label{eq:T123}
+\end{equation}
+
+\noindent
+\textbf{Physical interpretation:}
+\begin{itemize}
+  \item $T_1$ governs \emph{volumetric} (compression) scattering;
+    it depends on both $\Dlam$ and $\Dmu$.
+  \item $T_2$ governs \emph{shear} scattering (off-diagonal
+    components); it depends only on $\Dmu$.
+  \item $T_3$ is the \emph{cubic anisotropy} scattering; it
+    vanishes for a sphere ($C = 0$) and depends only on~$\Dmu$.
+\end{itemize}
+
+\subsection{Born limit}
+
+In the Born (static, $a \to 0$) limit, only the static Eshelby
+coefficients survive, and the T-matrix becomes frequency-independent:
+\begin{equation}
+  T_3^\text{Born}
+  = 2\,C_\text{stat}\,\Dmu
+  = \frac{(-5\sqrt{3} + 2\pi)(\alpha^2 - \beta^2)\,\Dmu}
+         {3\pi\rho\alpha^2\beta^2}.
+  \label{eq:T3Born}
+\end{equation}
+This is the leading-order cubic anisotropy scattering strength,
+proportional to the velocity anisotropy
+$(\alpha^2 - \beta^2)$ and the shear modulus contrast~$\Dmu$.
+
+% =============================================================================
+\section{Self-Consistent Effective Medium}
+\label{sec:scm}
+% =============================================================================
+
+For a random distribution of identical cubic inclusions at
+concentration $\phi$, the self-consistent method
+\citep{ZellerDederichs1973,Willis1981} determines the effective
+medium by requiring the average T-matrix to vanish.
+
+\subsection{Amplification factors}
+
+Because $T_3 \neq 0$, the effective medium has \emph{four}
+independent amplification factors (compared to three for the
+sphere):
+\begin{align}
+  A_u &= \frac{1}{1 - \omega^2\Drho\,\Gamma_0},
+  \label{eq:Au} \\[6pt]
+  A_\theta &= \frac{1}{1 - 3T_1 - 2T_2 - T_3},
+  \label{eq:Atheta} \\[6pt]
+  A_e^\text{off} &= \frac{1}{1 - 2T_2},
+  \label{eq:Aeoff} \\[6pt]
+  A_e^\text{diag} &= \frac{1}{1 - 2T_2 - T_3}.
+  \label{eq:Aediag}
+\end{align}
+The crucial distinction is that
+$A_e^\text{off} \neq A_e^\text{diag}$ because $T_3 \neq 0$.
+For a sphere, $T_3 = 0$ and both collapse to a single shear
+amplification factor.
+
+\subsection{Effective contrasts}
+
+The effective (renormalised) contrasts are:
+\begin{align}
+  \Drho^* &= \Drho\,A_u, \label{eq:Drhost} \\
+  \Dmu_\text{off}^* &= \frac{\Dmu}{1 - 2T_2},
+  \label{eq:Dmuoff} \\
+  \Dmu_\text{diag}^* &= \frac{\Dmu}{1 - 2T_2 - T_3}.
+  \label{eq:Dmudiag}
+\end{align}
+The \emph{cubic splitting} of the effective shear modulus is
+\begin{equation}
+  \boxed{
+  \Dmu_\text{diag}^* - \Dmu_\text{off}^*
+  = \frac{\Dmu\,T_3}{(1 - 2T_2)(1 - 2T_2 - T_3)}.
+  }
+  \label{eq:splitting}
+\end{equation}
+This splitting is the observable signature of cubic anisotropy
+in the effective medium: an aggregate of randomly oriented cubic
+inclusions will exhibit different effective shear moduli for
+diagonal and off-diagonal strain components.
+
+% =============================================================================
+\section{Numerical Verification}
+\label{sec:numerical}
+% =============================================================================
+
+We verify all analytic formulae using seismological parameters:
+\begin{equation*}
+  \alpha = 5.0\;\text{km/s}, \quad
+  \beta = 3.0\;\text{km/s}, \quad
+  \rho = 2.5\;\text{g/cm}^3, \quad
+  f = 10\;\text{Hz}, \quad
+  a = 0.01\;\text{km}.
+\end{equation*}
+The background moduli are
+$\mu = \rho\beta^2 = 22.5$\,GPa,
+$\lambda = \rho(\alpha^2 - 2\beta^2) = 17.5$\,GPa,
+and the dimensionless wavenumber products are
+$k_S a = \omega a/\beta = 0.2094$,
+$k_P a = \omega a/\alpha = 0.1257$.
+
+The stiffness contrasts are $\Dlam = 1.25$\,GPa,
+$\Dmu = 0.75$\,GPa.
+
+\subsection{Integral tensor coefficients}
+
+\begin{table}[ht]
+\centering
+\caption{Integral tensor coefficients $A$, $B$, $C$ (static + smooth).}
+\label{tab:ABC}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & $\re$ & $\im$ \\
+\midrule
+$A$ & $-0.01220$ & $-8.61 \times 10^{-5}$ \\
+$B$ & $+0.00261$ & $+3.97 \times 10^{-5}$ \\
+$C$ & $-0.00359$ & $-1.04 \times 10^{-10}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+The imaginary parts are smaller than the real parts by factors of
+$10^{-2}$ (for $A$ and $B$) and $10^{-8}$ (for $C$), confirming
+that the static Eshelby depolarization dominates. The
+essentially zero imaginary part of~$C$ reflects
+$C_\text{smooth} = \order{(ka)^7}$.
+
+\subsection{T-matrix coefficients}
+
+\begin{table}[ht]
+\centering
+\caption{T-matrix coefficients (static + smooth).}
+\label{tab:Tmatrix}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & $\re$ & $\im$ \\
+\midrule
+$T_1$ & $-0.00275$ & $+1.51 \times 10^{-4}$ \\
+$T_2$ & $-0.00719$ & $-3.48 \times 10^{-5}$ \\
+$T_3$ & $-0.00538$ & $-1.57 \times 10^{-10}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+Verification against the analytic formulae~\eqref{eq:T123}:
+\begin{align*}
+  T_1 &= (A + 4B + C)\,\Dlam + 2B\,\Dmu \\
+  &= (-0.01220 + 4 \times 0.00261 - 0.00359) \times 1.25
+     + 2 \times 0.00261 \times 0.75 = -0.00277 \;\checkmark \\
+  T_2 &= (A + B)\,\Dmu
+  = (-0.01220 + 0.00261) \times 0.75 = -0.00719 \;\checkmark \\
+  T_3 &= 2C\,\Dmu
+  = 2 \times (-0.00359) \times 0.75 = -0.00538 \;\checkmark
+\end{align*}
+
+\subsection{Born limit}
+
+Setting $a \to 0$ (equivalently, retaining only the static
+Eshelby terms), all dynamic corrections vanish and the
+T-matrix coefficients become purely real and frequency-independent.
+The Born-limit $T_3$ evaluates to
+\begin{equation*}
+  T_3^\text{Born}
+  = \frac{(-5\sqrt{3} + 2\pi)(5^2 - 3^2) \times 0.75}
+         {3\pi \times 2.5 \times 25 \times 9}
+  = -0.00539,
+\end{equation*}
+in excellent agreement with the full result
+$\re(T_3) = -0.00538$.
+
+% =============================================================================
+\section{Discussion}
+\label{sec:discussion}
+% =============================================================================
+
+\subsection{Geometric origin of cubic anisotropy}
+
+The central result of this analysis is that the cubic anisotropy
+coefficient $C$ is dominated by the \emph{static} Eshelby
+depolarization tensor, with the dynamic (radiation) correction
+entering only at $\order{(ka)^7}$. The ratio
+$C_\text{stat}/B_\text{stat} = -5 + 2\pi/\sqrt{3}$ is a pure
+geometric constant, depending only on the shape of the inclusion.
+
+This is in contrast to $A$ and~$B$, whose smooth corrections
+enter at $\order{(ka)^3}$ and contribute meaningfully at moderate
+frequencies. The physical reason is that the cubic anisotropy
+probes the \emph{fourth} moment of the inclusion shape, while
+$A$ and~$B$ probe lower moments. Higher-order shape moments
+require higher-order terms in the Taylor expansion, hence higher
+powers of $ka$.
+
+\subsection{Separation of scales}
+
+The clean separation
+\begin{equation*}
+  \underbrace{C_\text{stat}}_{\text{shape, real, exact}}
+  + \underbrace{C_\text{smooth}}_{\order{(ka)^7},\;\text{imaginary}}
+  \approx C_\text{stat}
+\end{equation*}
+means that in the Rayleigh limit, the cubic anisotropy
+is \emph{frequency-independent}---a geometric property of the
+cube that manifests identically at all frequencies for which the
+Born approximation is valid.
+
+\subsection{Implications for effective media}
+
+For aggregates of cubic inclusions, the cubic splitting
+$\Dmu_\text{diag}^* - \Dmu_\text{off}^*$~\eqref{eq:splitting}
+introduces seismic anisotropy that is absent for spherical
+scatterers. This provides a mechanism for apparent anisotropy in
+heterogeneous earth media containing blocky or crystalline
+inclusions, even when the host medium and inclusion material
+are individually isotropic.
+
+The four amplification factors~\eqref{eq:Au}--\eqref{eq:Aediag}
+generalise the three-factor scheme of the self-consistent method
+for spheres \citep{Korringa1973,Willis1981}. The additional degree
+of freedom ($T_3$) may be constrained by independent measurements
+of P and S velocity anisotropy in polycrystalline aggregates.
+
+\bigskip
+
+\bibliography{cubic_tmatrix}
+
+\end{document}
