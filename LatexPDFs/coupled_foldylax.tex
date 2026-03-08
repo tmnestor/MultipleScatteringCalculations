@@ -1,0 +1,806 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{Latin Modern Math}
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Coupled Foldy-Lax T-Matrix}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros (reused from cubic_tmatrix.tex) ---
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\beR}{\hat{\mathbf{e}}_R}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\order}[1]{\mathcal{O}\!\left(#1\right)}
+
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\Dlam}{\Delta\lambda}
+\newcommand{\Dmu}{\Delta\mu}
+\newcommand{\Drho}{\Delta\rho}
+\newcommand{\PV}{\operatorname{P.V.}}
+\newcommand{\re}{\operatorname{Re}}
+\newcommand{\im}{\operatorname{Im}}
+
+% --- New macros for this document ---
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bC}{\mathbf{C}}
+\newcommand{\bH}{\mathbf{H}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\bpsi}{\boldsymbol{\psi}}
+\newcommand{\beps}{\boldsymbol{\varepsilon}}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+\vspace*{1em}
+{\LARGE\bfseries Coupled Foldy-Lax T-Matrix:\\[0.3em]
+$(\Drho,\,\Dlam,\,\Dmu)$ Resonance Extension}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
+\end{center}
+
+% =============================================================================
+\section{Introduction}
+% =============================================================================
+
+The Rayleigh-regime T-matrix for a cubic scatterer (see companion
+document \emph{Cubic T-Matrix with the Full Elastodynamic Green's
+Tensor}) captures density, bulk modulus, and shear modulus contrasts
+through the self-consistent effective contrasts $\Drho^*$,
+$\Dlam^*$, and $\Dmu^*$.  However, the displacement-only Foldy-Lax
+formulation that extends this to the resonance regime ($ka \sim 1$)
+captures only density scattering:\ the $3 \times 3$ sub-cell T-matrix
+$\bT_\text{sub} = \omega^2 \Drho^* V_\text{sub}\,\bI_3$ has no
+mechanism to transmit stiffness contrasts between sub-cells, because
+stiffness scattering acts on the \emph{strain} field, not the
+displacement field.
+
+To include all three contrast types ($\Drho$, $\Dlam$, $\Dmu$) in
+the internal Foldy-Lax system, the state vector at each sub-cell must
+be enlarged from displacement alone (3~dof) to displacement plus Voigt
+strain (9~dof).  The resulting $9N \times 9N$ coupled system---where
+$N = n^3$ is the number of sub-cells---is the subject of this
+document.
+
+The coupled formulation:
+\begin{enumerate}
+  \item Subdivides the cube of half-width~$a$ into $n^3$ sub-cells,
+    each of half-width $a_\text{sub} = a/n$, in the Rayleigh regime.
+  \item Assigns a $9 \times 9$ local T-matrix to each sub-cell
+    (density block $+$ stiffness block).
+  \item Builds the $9 \times 9$ inter-sub-cell propagator from the
+    Green's tensor $G_{ij}$, its first derivative $G_{ij,k}$, and its
+    second derivative $G_{ij,kl}$.
+  \item Solves the $9N \times 9N$ Foldy-Lax system and extracts the
+    $9 \times 9$ composite T-matrix.
+  \item Converts to the physical $6 \times 6$ displacement-traction
+    T-matrix via the volume-integrated self-Green's tensor.
+\end{enumerate}
+The implementation is activated by passing \texttt{coupled=True} to
+\texttt{compute\_resonance\_tmatrix()}.
+
+% =============================================================================
+\section{Green's Tensor and Derivatives}
+\label{sec:greens}
+% =============================================================================
+
+\subsection{Kupradze representation}
+
+The elastodynamic Green's tensor for a homogeneous isotropic full
+space satisfies~\eqref{eq:pde_coupled} with the Kupradze solution
+\begin{equation}
+  G_{ij}(\bx)
+  = P\bigl[\varphi(r)\,\delta_{ij}
+    + \psi(r)\,\gamma_i\gamma_j\bigr],
+  \qquad
+  P = \frac{1}{4\pi\rho\omega^2},
+  \label{eq:Kupradze}
+\end{equation}
+where $r = |\bx|$, $\gamma_i = x_i / r$, and
+\begin{equation}
+  \mu\,\nabla^2 G_{ij}
+  + (\lambda + \mu)\,\partial_i\partial_k G_{kj}
+  + \rho\omega^2 G_{ij}
+  = -\delta_{ij}\,\delta(\bx).
+  \label{eq:pde_coupled}
+\end{equation}
+
+The radial functions $\varphi$ and $\psi$ are sums of terms of the
+form $c \cdot e^{ikr} \cdot r^p$ with $p \in \{-1,-2,-3\}$:
+\begin{align}
+  \varphi(r) &= k_S^2\,\frac{e^{ik_S r}}{r}
+    + ik_S\,\frac{e^{ik_S r}}{r^2}
+    - \frac{e^{ik_S r}}{r^3}
+    - ik_P\,\frac{e^{ik_P r}}{r^2}
+    + \frac{e^{ik_P r}}{r^3}, \label{eq:phi} \\[6pt]
+  \psi(r) &= -k_S^2\,\frac{e^{ik_S r}}{r}
+    - 3ik_S\,\frac{e^{ik_S r}}{r^2}
+    + 3\,\frac{e^{ik_S r}}{r^3}
+    + k_P^2\,\frac{e^{ik_P r}}{r}
+    + 3ik_P\,\frac{e^{ik_P r}}{r^2}
+    - 3\,\frac{e^{ik_P r}}{r^3}. \label{eq:psi}
+\end{align}
+
+\subsection{Derivative rules}
+
+For each term $c \cdot e^{ikr} \cdot r^p$, the radial derivatives
+follow from the chain rule on composite exponential-power
+functions:
+\begin{align}
+  \frac{\dd}{\dd r}\bigl[e^{ikr} r^p\bigr]
+  &= e^{ikr}\,r^{p-1}(ikr + p), \label{eq:d1} \\[4pt]
+  \frac{\dd^2}{\dd r^2}\bigl[e^{ikr} r^p\bigr]
+  &= e^{ikr}\,r^{p-2}\bigl[(ikr)^2 + 2p(ikr)
+    + p(p-1)\bigr]. \label{eq:d2}
+\end{align}
+These are applied term-by-term to $\varphi$ and $\psi$ to obtain
+$\varphi'$, $\psi'$, $\varphi''$, $\psi''$.
+
+\subsection{First derivative \texorpdfstring{$G_{ij,k}$}{G\_ij,k}}
+
+Using $\partial_k r = \gamma_k$ and
+$\partial_k \gamma_i = (\delta_{ik} - \gamma_i\gamma_k)/r$:
+\begin{equation}
+  G_{ij,k} = P\Bigl[
+    c_1\,\delta_{ij}\gamma_k
+    + c_2\,\gamma_i\gamma_j\gamma_k
+    + c_3\bigl(\delta_{ik}\gamma_j
+      + \delta_{jk}\gamma_i\bigr)
+  \Bigr],
+  \label{eq:Gd}
+\end{equation}
+with three scalar coefficients:
+\begin{equation}
+  c_1 = \varphi', \qquad
+  c_2 = \psi' - \frac{2\psi}{r}, \qquad
+  c_3 = \frac{\psi}{r}.
+  \label{eq:c123}
+\end{equation}
+
+\subsection{Second derivative \texorpdfstring{$G_{ij,kl}$}{G\_ij,kl}}
+
+The second spatial derivative involves seven independent tensor
+structures:
+\begin{equation}
+  \boxed{
+  \begin{aligned}
+    G_{ij,kl} = P\Bigl[
+    &\;t_1\,\delta_{ij}\delta_{kl}
+    + t_2\,\delta_{ij}\gamma_k\gamma_l
+    + t_3\,\gamma_i\gamma_j\delta_{kl} \\[4pt]
+    &+ t_4\bigl(\delta_{ik}\delta_{jl}
+      + \delta_{jk}\delta_{il}\bigr)
+    + t_3\bigl(\delta_{il}\gamma_j\gamma_k
+      + \delta_{jl}\gamma_i\gamma_k \\
+    &\quad + \delta_{ik}\gamma_j\gamma_l
+      + \delta_{jk}\gamma_i\gamma_l\bigr)
+    + t_7\,\gamma_i\gamma_j\gamma_k\gamma_l
+    \Bigr],
+  \end{aligned}
+  }
+  \label{eq:Gdd}
+\end{equation}
+with five independent scalar coefficients (note that $t_3$ appears
+in three of the seven structures):
+
+\begin{table}[ht]
+\centering
+\caption{Scalar coefficients for the seven tensor structures
+  in $G_{ij,kl}$.}
+\label{tab:Gdd_coeffs}
+\begin{tabular}{@{}clll@{}}
+\toprule
+Coeff.\ & Expression & Tensor structures \\
+\midrule
+$t_1$ & $\varphi'/r$
+  & $\delta_{ij}\delta_{kl}$ \\[4pt]
+$t_2$ & $\varphi'' - \varphi'/r$
+  & $\delta_{ij}\gamma_k\gamma_l$ \\[4pt]
+$t_3$ & $\psi'/r - 2\psi/r^2$
+  & $\gamma_i\gamma_j\delta_{kl}$, \;4 mixed terms \\[4pt]
+$t_4$ & $\psi/r^2$
+  & $\delta_{ik}\delta_{jl} + \delta_{jk}\delta_{il}$ \\[4pt]
+$t_7$ & $\psi'' - 5\psi'/r + 8\psi/r^2$
+  & $\gamma_i\gamma_j\gamma_k\gamma_l$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Voigt Contraction}
+\label{sec:voigt}
+% =============================================================================
+
+The coupled system requires contracting the Green's tensor derivatives
+into the 6-component Voigt strain space.
+
+\subsection{Voigt ordering}
+
+The Voigt ordering maps symmetric pairs of Cartesian indices to a
+single index $\alpha \in \{1,\ldots,6\}$:
+\begin{equation}
+  \alpha \;\longleftrightarrow\; (p,q):
+  \quad
+  1 = (0,0),\;
+  2 = (1,1),\;
+  3 = (2,2),\;
+  4 = (1,2),\;
+  5 = (0,2),\;
+  6 = (0,1),
+  \label{eq:voigt_map}
+\end{equation}
+corresponding to
+$(\varepsilon_{zz},\,\varepsilon_{xx},\,\varepsilon_{yy},\,
+  2\varepsilon_{xy},\,2\varepsilon_{zy},\,2\varepsilon_{zx})$
+in the $(z,x,y)$ coordinate convention (axis labelling
+$1 \to z$, $2 \to x$, $3 \to y$).
+
+\subsection{Voigt propagator blocks}
+
+From $G_{ij,k}$ and $G_{ij,kl}$, three Voigt-contracted matrices
+are formed:
+\begin{align}
+  C_{i\alpha} &= \begin{cases}
+    G_{ip,p} & \text{if } \alpha \leftrightarrow (p,p), \\
+    G_{ip,q} + G_{iq,p} & \text{if } \alpha \leftrightarrow (p,q),
+      \;p \neq q,
+  \end{cases}
+  \label{eq:Cblock} \\[8pt]
+  H_{\alpha j} &= \begin{cases}
+    G_{pj,p} & \text{if } \alpha \leftrightarrow (p,p), \\
+    G_{pj,q} + G_{qj,p} & \text{if } \alpha \leftrightarrow (p,q),
+      \;p \neq q,
+  \end{cases}
+  \label{eq:Hblock} \\[8pt]
+  S_{\alpha\beta} &= \text{double Voigt contraction of } G_{ij,kl},
+  \label{eq:Sblock}
+\end{align}
+with dimensions $\bC \in \mathbb{C}^{3 \times 6}$,
+$\bH \in \mathbb{C}^{6 \times 3}$,
+$\bS \in \mathbb{C}^{6 \times 6}$.
+
+The block $\bC$ maps a Voigt stress source to a displacement
+response; $\bH$ maps a force source to a Voigt strain response;
+$\bS$ maps a Voigt stress source to a Voigt strain response.
+
+\paragraph{Reciprocity.}
+By the symmetry $G_{ij,k} = G_{ji,k}$ of the Green's tensor, the
+relationship $\bH = \bC^\top$ holds.  This is verified numerically
+in the implementation.
+
+% =============================================================================
+\section{The 9\texorpdfstring{$\times$}{x}9 Coupled System}
+\label{sec:coupled}
+% =============================================================================
+
+\subsection{State vector}
+
+At each sub-cell~$n$, the state vector combines displacement and
+Voigt strain:
+\begin{equation}
+  \bpsi_n
+  = \bigl(u_1,\,u_2,\,u_3,\,
+    \varepsilon_{V1},\,\ldots,\,\varepsilon_{V6}\bigr)_n
+  \in \mathbb{C}^9.
+  \label{eq:state}
+\end{equation}
+
+\subsection{Local T-matrix (9\texorpdfstring{$\times$}{x}9)}
+
+Each sub-cell has a block-diagonal local T-matrix:
+\begin{equation}
+  \boxed{
+  \bT_\text{loc}
+  = \begin{pmatrix}
+      \omega^2 \Drho^* V_\text{sub}\,\bI_3 & \mathbf{0}_{3 \times 6} \\[4pt]
+      \mathbf{0}_{6 \times 3} & V_\text{sub}\,\Delta\mathbf{c}^*_V
+    \end{pmatrix},
+  }
+  \label{eq:Tloc}
+\end{equation}
+where $V_\text{sub} = (2a_\text{sub})^3$ is the sub-cell volume,
+$\Drho^* = \Drho \cdot A_u$ is the self-consistent effective density
+contrast, and $\Delta\mathbf{c}^*_V$ is the $6 \times 6$ effective
+stiffness contrast in Voigt form:
+\begin{equation}
+  \Delta\mathbf{c}^*_V
+  = \begin{pmatrix}
+      \mathbf{D}^* & \mathbf{0}_{3 \times 3} \\
+      \mathbf{0}_{3 \times 3} & \mathbf{S}^*
+    \end{pmatrix},
+  \qquad
+  D^*_{ij} = \begin{cases}
+    \Dlam^* + 2\Dmu^*_\text{diag} & i = j \\
+    \Dlam^* & i \neq j
+  \end{cases},
+  \qquad
+  S^*_{ij} = 2\Dmu^*_\text{off}\,\delta_{ij}.
+  \label{eq:Dcstar}
+\end{equation}
+
+The density block produces a scattered force proportional to
+displacement; the stiffness block produces a scattered stress
+perturbation proportional to strain.  Both use the self-consistent
+effective contrasts from the Rayleigh T-matrix computation
+(\texttt{effective\_contrasts.py}).
+
+\subsection{Inter-sub-cell propagator}
+
+The $9 \times 9$ propagator between sub-cells $m$ and $n$ ($m \neq n$)
+is:
+\begin{equation}
+  \boxed{
+  \bP_{mn}
+  = \begin{pmatrix}
+      G_{ij} & C_{i\alpha} \\[4pt]
+      H_{\alpha j} & S_{\alpha\beta}
+    \end{pmatrix}
+  \bigg|_{\bx = \bx_m - \bx_n},
+  }
+  \label{eq:Pmn}
+\end{equation}
+evaluated at the separation vector $\bx_m - \bx_n$.
+The diagonal blocks ($m = n$) are zero---the self-interaction is
+absorbed into $\bT_\text{loc}$ via the Rayleigh self-consistent
+amplification factors.
+
+\subsection{9\textit{N}\texorpdfstring{$\times$}{x}9\textit{N}
+  Foldy-Lax equation}
+
+Assembling the block-diagonal local T-matrix $\tilde{\bT}
+= \bI_N \otimes \bT_\text{loc}$ and the off-diagonal propagator
+$\tilde{\bP}$, the coupled Foldy-Lax system reads:
+\begin{equation}
+  \boxed{
+  \bigl(\bI_{9N} - \tilde{\bP}\,\tilde{\bT}\bigr)\,
+    \bpsi_\text{exc} = \bpsi_\text{inc},
+  }
+  \label{eq:FoldyLax}
+\end{equation}
+where $\bpsi_\text{inc}$ is the incident field and
+$\bpsi_\text{exc}$ is the exciting (self-consistent) field at all
+sub-cells.
+
+\subsection{Incident field construction}
+
+To extract the full $9 \times 9$ composite T-matrix, nine
+independent incident patterns are needed:
+\begin{itemize}
+  \item \textbf{Columns 0--2} (displacement inputs): uniform unit
+    displacement $u_i^\text{inc}(\bx_m) = \hat{e}_p$, zero incident
+    strain $\beps_V^\text{inc} = \mathbf{0}$.
+  \item \textbf{Columns 3--8} (strain inputs): linear displacement
+    variation $u_i^\text{inc}(\bx_m) = \varepsilon^0_{ij}
+    (x_{m,j} - \bar{x}_j)$ plus uniform Voigt strain
+    $\beps_V^\text{inc} = \hat{e}_\alpha$.
+\end{itemize}
+A phase factor $e^{i\mathbf{k} \cdot \bx_m}$ is applied to all
+patterns for resonance-regime accuracy.
+
+\subsection{Composite T-matrix extraction}
+
+The $9 \times 9$ composite T-matrix is obtained by summing the
+scattered contributions from all sub-cells:
+\begin{equation}
+  \bT_\text{comp}[:,\,q]
+  = \sum_{n=1}^{N} \bT_\text{loc} \cdot
+    \bpsi_\text{exc}[9n{:}9(n{+}1),\,q],
+  \label{eq:Tcomp}
+\end{equation}
+where $q \in \{1,\ldots,9\}$ indexes the nine independent incident
+patterns.  The result $\bT_\text{comp}$ maps incident
+$(u_i,\,\varepsilon_{V\alpha})$ to scattered
+$(F_i,\,\Delta\sigma^*_{V\alpha})$---force monopole and stress dipole
+amplitudes.
+
+% =============================================================================
+\section{Self-Interaction and Volume Integrals}
+\label{sec:self}
+% =============================================================================
+
+The self-interaction (diagonal blocks) of the Foldy-Lax propagator
+requires the volume integrals of $G_{ij}$, $G_{ij,k}$, and
+$G_{ij,kl}$ over the cube.  These are already computed for the
+Rayleigh T-matrix; here we collect the relevant results for the
+output conversion stage.
+
+\subsection{First-derivative integral}
+
+By the symmetry of the cube ($[-a,a]^3$) and the odd parity of
+$G_{ij,k}$ under inversion $\bx \to -\bx$:
+\begin{equation}
+  \int_{\text{cube}} G_{ij,k}\,\dd V = 0.
+  \label{eq:Gd_vanish}
+\end{equation}
+This means the displacement--strain and strain--displacement
+cross-coupling vanishes in the self-Green's tensor: $\bC_\text{self}
+= \mathbf{0}$, $\bH_\text{self} = \mathbf{0}$.
+
+\subsection{Second-derivative integral}
+
+The volume integral of $G_{ij,kl}$ decomposes under cubic symmetry
+exactly as the integral tensor from the companion document:
+\begin{equation}
+  \int_{\text{cube}} G_{ij,kl}\,\dd V
+  = A\,\delta_{ij}\delta_{kl}
+  + B\bigl(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}\bigr)
+  + C\,E_{ijkl},
+  \label{eq:Iself}
+\end{equation}
+where $E_{ijkl} = \delta_{ij}\delta_{kl}\delta_{ik}$ is the cubic
+tensor (nonzero only when $i=j=k=l$).
+
+Each coefficient receives a static (Eshelby) and smooth (radiation)
+contribution:
+\begin{equation}
+  A = A_\text{stat} + A_\text{smooth}, \qquad
+  B = B_\text{stat} + B_\text{smooth}, \qquad
+  C = C_\text{stat} + C_\text{smooth}.
+  \label{eq:ABC_split}
+\end{equation}
+
+\subsubsection*{Static Eshelby coefficients}
+
+The static contributions arise from the principal-value volume
+integral of the Kelvin Green's tensor, reduced to surface integrals
+over the cube faces via the divergence theorem:
+\begin{align}
+  A_\text{stat} &=
+  \frac{(\sqrt{3} - 2\pi)\,\alpha^2 - \sqrt{3}\,\beta^2}
+       {6\pi\rho\alpha^2\beta^2},
+  \label{eq:Astat} \\[6pt]
+  B_\text{stat} &=
+  \frac{\alpha^2 - \beta^2}
+       {2\sqrt{3}\,\pi\rho\alpha^2\beta^2},
+  \label{eq:Bstat} \\[6pt]
+  C_\text{stat} &=
+  \frac{(-5\sqrt{3} + 2\pi)(\alpha^2 - \beta^2)}
+       {6\pi\rho\alpha^2\beta^2}.
+  \label{eq:Cstat}
+\end{align}
+Note that $C_\text{stat}/B_\text{stat} = -5 + 2\pi/\sqrt{3}
+\approx -1.372$ is a pure geometric constant (shape-dependent,
+material-independent).  Both $B_\text{stat}$ and $C_\text{stat}$
+are proportional to $(\alpha^2 - \beta^2)$ and vanish in the
+mathematical limit $\alpha \to \beta$, where the T-matrix becomes
+isotropic (sphere-like).  For physical materials $\alpha > \beta$
+always holds (stability requires $K > 0$, so
+$\alpha/\beta = \sqrt{(\lambda + 2\mu)/\mu} > \sqrt{4/3}$).
+
+\subsubsection*{Smooth radiation corrections}
+
+The smooth (radiation) contributions come from integrating the
+regular part of the Green's tensor and its derivatives over the cube.
+At leading order in $ka$:
+\begin{align}
+  A_\text{smooth} &\approx
+    -\frac{2i\,a^3\omega^3}{3\pi\beta^5\rho}
+    + \order{a^5\omega^5},
+  \label{eq:Asmooth} \\[6pt]
+  B_\text{smooth} &\approx
+    \frac{i\,a^3\omega^3(\alpha^5 - \beta^5)}
+         {3\pi\alpha^5\beta^5\rho}
+    + \order{a^5\omega^5},
+  \label{eq:Bsmooth} \\[6pt]
+  C_\text{smooth} &\approx
+    \frac{2i\,a^7\omega^7(\beta^9 - \alpha^9)}
+         {4725\pi\alpha^9\beta^9\rho}
+    + \order{a^9\omega^9}.
+  \label{eq:Csmooth}
+\end{align}
+Since $C_\text{smooth}$ first appears at $\order{(ka)^7}$ while
+$C_\text{stat}$ is frequency-independent, the cubic anisotropy is
+dominated by the static Eshelby depolarization in the Rayleigh
+regime.
+
+\subsection{Voigt form of the self-integral}
+
+Contracting~\eqref{eq:Iself} into Voigt indices gives the
+$6 \times 6$ matrix $\bS_V$:
+\begin{equation}
+  \bS_V = \begin{pmatrix}
+    \mathbf{D}_S & \mathbf{0} \\
+    \mathbf{0} & \mathbf{S}_S
+  \end{pmatrix},
+  \label{eq:SV}
+\end{equation}
+with D-block entries
+\begin{equation}
+  (D_S)_{ii} = A + 2B + C, \qquad
+  (D_S)_{ij} = B \quad (i \neq j),
+  \label{eq:DS}
+\end{equation}
+and S-block entries
+\begin{equation}
+  (S_S)_{ii} = 2(A + B), \qquad
+  (S_S)_{ij} = 0 \quad (i \neq j).
+  \label{eq:SS}
+\end{equation}
+
+The block-diagonal structure of $\bS_V$ (vanishing D--S coupling)
+is a consequence of the cubic symmetry of the cube and the
+decomposition~\eqref{eq:Iself} involving only the three independent
+tensors $\delta_{ij}\delta_{kl}$,
+$\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}$, and $E_{ijkl}$.
+
+% =============================================================================
+\section{Near-Field Exact 6\texorpdfstring{$\times$}{x}6 T-Matrix}
+\label{sec:nearfield}
+% =============================================================================
+
+The composite T-matrix $\bT_\text{comp}$ operates in the 9-component
+$(u_i, \varepsilon_{V\alpha})$ space, but the physical observable is
+the $6 \times 6$ T-matrix in the displacement-traction basis
+$(u_z, u_x, u_y, t_{zz}, t_{xz}, t_{yz})$.  Converting between
+these requires careful treatment of the self-interaction Green's
+tensor.
+
+\subsection{Problem: far-field traction approximation}
+
+For the displacement-only ($3 \times 3$) formulation, the scattered
+traction is approximated using the far-field radiation pattern
+($t_i \approx ik c_{ijkl} G_{kl} \cdots$).  This fails for densely
+packed sub-cells where near-field interactions dominate, and it
+completely misses the stiffness scattering contribution to the
+traction.
+
+\subsection{Three-stage pipeline}
+
+The near-field exact $6 \times 6$ T-matrix is constructed via a
+three-stage pipeline:
+\begin{equation}
+  \boxed{
+  \bT_{6 \times 6}
+  = \bG_\text{self} \cdot \bT_\text{comp} \cdot \bM_\text{in},
+  }
+  \label{eq:T6x6}
+\end{equation}
+where:
+
+\paragraph{Stage 1: Input conversion $\bM_\text{in}$ (9$\times$6).}
+Maps the incident displacement-traction vector
+$(u_z, u_x, u_y, t_{zz}, t_{xz}, t_{yz})$ to the 9-component state
+$(u_i, \varepsilon_{V\alpha})$:
+\begin{equation}
+  \bM_\text{in}
+  = \begin{pmatrix}
+      \bI_3 & \mathbf{0}_{3 \times 3} \\[4pt]
+      \multicolumn{2}{c}{\bS(k_x, k_y)}
+    \end{pmatrix},
+  \label{eq:Min}
+\end{equation}
+where $\bS(k_x, k_y)$ is the $6 \times 6$ strain extraction matrix
+that maps $(u_z, u_x, u_y, t_{zz}, t_{xz}, t_{yz})$ to Voigt strain
+$(\varepsilon_{zz}, \varepsilon_{xx}, \varepsilon_{yy},
+  2\varepsilon_{xy}, 2\varepsilon_{zy}, 2\varepsilon_{zx})$.  The
+strain extraction follows from the constitutive relation on a
+$z = \text{const}$ surface:
+\begin{align}
+  \varepsilon_{zz}  &= \frac{t_{zz} - \lambda\,ik_x u_x
+    - \lambda\,ik_y u_y}{\lambda + 2\mu},
+  &\varepsilon_{xx}  &= ik_x\,u_x, \notag \\
+  \varepsilon_{yy}  &= ik_y\,u_y,
+  &2\varepsilon_{xy} &= ik_y\,u_x + ik_x\,u_y, \notag \\
+  2\varepsilon_{zy} &= t_{yz} / \mu,
+  &2\varepsilon_{zx} &= t_{xz} / \mu.
+  \label{eq:strain_extract}
+\end{align}
+
+\paragraph{Stage 2: Composite T-matrix $\bT_\text{comp}$
+  (9$\times$9).}
+The coupled Foldy-Lax output, mapping incident
+$(u_i, \varepsilon_{V\alpha})$ to scattered
+$(F_i, \Delta\sigma^*_{V\alpha})$.
+
+\paragraph{Stage 3: Output conversion $\bG_\text{self}$
+  (6$\times$9).}
+Converts the scattered source amplitudes
+$(F_i, \Delta\sigma^*_{V\alpha})$ to the scattered
+displacement-traction $(u_i, t_i)^\text{scat}$ via the
+volume-integrated self-Green's tensor:
+\begin{equation}
+  \bG_\text{self}
+  = \begin{pmatrix}
+      \Gamma_0\,\bI_3 & \mathbf{0}_{3 \times 6} \\[4pt]
+      \mathbf{0}_{3 \times 3} & \bC_\text{trac} \cdot \bS_V
+    \end{pmatrix},
+  \label{eq:Gself}
+\end{equation}
+where $\Gamma_0 = \int_\text{cube} G_{ii}\,\dd V / 3$ is the scalar
+volume integral of the Green's tensor, and $\bS_V$ is the Voigt form
+of the self-integral~\eqref{eq:SV}.
+
+The block-diagonal structure follows from the vanishing of the
+cross-coupling integrals ($\bC_\text{self} = \bH_\text{self}
+= \mathbf{0}$, \S\ref{sec:self}).
+
+\subsection{Traction extraction matrix}
+
+The $3 \times 6$ matrix $\bC_\text{trac}$ extracts the traction on a
+$z = \text{const}$ surface from the Voigt stress:
+\begin{equation}
+  \bC_\text{trac}
+  = \begin{pmatrix}
+      \lambda + 2\mu & \lambda & \lambda & 0 & 0 & 0 \\
+      0 & 0 & 0 & 0 & 0 & \mu \\
+      0 & 0 & 0 & 0 & \mu & 0
+    \end{pmatrix},
+  \label{eq:Ctrac}
+\end{equation}
+mapping $(\sigma_{zz}, \sigma_{xx}, \sigma_{yy}, \sigma_{xy},
+\sigma_{zy}, \sigma_{zx})_V$ to $(t_{zz}, t_{xz}, t_{yz})$.
+
+\subsection{Complete formula}
+
+Combining all three stages:
+\begin{equation}
+  \bT_{6 \times 6}(k_x, k_y)
+  = \begin{pmatrix}
+      \Gamma_0\,\bI_3 & \mathbf{0} \\
+      \mathbf{0} & \bC_\text{trac}\,\bS_V
+    \end{pmatrix}
+  \cdot \bT_\text{comp}
+  \cdot \begin{pmatrix}
+      \bI_3 & \mathbf{0} \\
+      \multicolumn{2}{c}{\bS(k_x, k_y)}
+    \end{pmatrix}.
+  \label{eq:T6x6_full}
+\end{equation}
+This is the near-field exact result, valid at all frequencies and for
+all contrast types.  The dependence on horizontal wavenumbers
+$(k_x, k_y)$ enters only through the strain extraction
+matrix~$\bS$.
+
+% =============================================================================
+\section{Implementation Notes}
+\label{sec:implementation}
+% =============================================================================
+
+\subsection{Function map}
+
+Table~\ref{tab:functions} maps the key functions in the
+implementation to the equations in this document.
+
+\begin{table}[ht]
+\centering
+\caption{Function-to-equation reference for the coupled Foldy-Lax
+  implementation.}
+\label{tab:functions}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Function & Equation & Size \\
+\midrule
+\texttt{elastodynamic\_greens\_deriv}
+  & \eqref{eq:Kupradze}, \eqref{eq:Gd}, \eqref{eq:Gdd}
+  & $3^2, 3^3, 3^4$ \\[2pt]
+\texttt{\_voigt\_contract}
+  & \eqref{eq:Cblock}--\eqref{eq:Sblock}
+  & $3{\times}6, 6{\times}3, 6{\times}6$ \\[2pt]
+\texttt{\_propagator\_block\_9x9}
+  & \eqref{eq:Pmn}
+  & $9{\times}9$ \\[2pt]
+\texttt{\_sub\_cell\_tmatrix\_9x9}
+  & \eqref{eq:Tloc}
+  & $9{\times}9$ \\[2pt]
+\texttt{\_build\_incident\_field\_coupled}
+  & \S\ref{sec:coupled}, \S4.5
+  & $9N{\times}9$ \\[2pt]
+\texttt{\_solve\_coupled}
+  & \eqref{eq:FoldyLax}, \eqref{eq:Tcomp}
+  & $9N{\times}9N$ \\[2pt]
+\texttt{\_volume\_integral\_voigt}
+  & \eqref{eq:SV}--\eqref{eq:SS}
+  & $6{\times}6$ \\[2pt]
+\texttt{\_traction\_from\_voigt\_strain}
+  & \eqref{eq:Ctrac}
+  & $3{\times}6$ \\[2pt]
+\texttt{\_voigt\_tmatrix\_near\_field}
+  & \eqref{eq:T6x6}
+  & $6{\times}6$ \\[2pt]
+\texttt{strain\_from\_displacement\_traction}
+  & \eqref{eq:strain_extract}
+  & $6{\times}6$ \\[2pt]
+\texttt{effective\_stiffness\_voigt}
+  & \eqref{eq:Dcstar}
+  & $6{\times}6$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Solver options}
+
+Two solvers are available:
+\begin{itemize}
+  \item \textbf{Direct (LU):} \texttt{neumann\_order = 0} (default).
+    Exact solution via $\texttt{np.linalg.solve}$.  Cost:
+    $\order{(9N)^3}$.
+  \item \textbf{Truncated Neumann series:}
+    \texttt{neumann\_order\;>\;0}.
+    Iterative:
+    $\bpsi_\text{exc} = \sum_{k=0}^{K}
+      (\tilde{\bP}\tilde{\bT})^k \bpsi_\text{inc}$.
+    Cost per iteration: $\order{(9N)^2}$; converges when
+    $\|\tilde{\bP}\tilde{\bT}\| < 1$.
+\end{itemize}
+
+\subsection{Computational cost}
+
+The coupled system has size $9N \times 9N$ compared to
+$3N \times 3N$ for the displacement-only formulation.  The direct
+solve cost scales as $(9N)^3 / (3N)^3 = 27$ times larger.
+Propagator assembly scales as $9^2 / 3^2 = 9$ times larger per
+sub-cell pair, with the additional cost of computing $G_{ij,k}$ and
+$G_{ij,kl}$ (five radial functions vs.\ two).
+
+For moderate $N$ (e.g.\ $n = 3$, $N = 27$, system size $243$), the
+direct solve remains tractable.  For larger $N$, the Neumann series
+or iterative Krylov solvers are recommended.
+
+\subsection{Backward compatibility}
+
+Setting \texttt{coupled=False} (default) recovers the
+displacement-only $3N \times 3N$ system.  When $\Dlam = \Dmu = 0$
+(density-only contrast), the coupled system produces the same
+$3 \times 3$ displacement T-matrix as the uncoupled system, since
+the stiffness block of $\bT_\text{loc}$ vanishes and the strain
+channels decouple.
+
+\subsection{Validation}
+
+Two key consistency checks are built into the test suite:
+\begin{enumerate}
+  \item \textbf{Rayleigh limit ($n = 1$, coupled):}  With a single
+    sub-cell ($N = 1$), no inter-sub-cell coupling exists and the
+    composite T-matrix must equal the single-cell Rayleigh result.
+  \item \textbf{Density-only limit ($\Dlam = \Dmu = 0$, coupled):}
+    With zero stiffness contrast, the coupled $9 \times 9$ system
+    must recover the displacement-only $3 \times 3$ T-matrix
+    identically.
+\end{enumerate}
+
+\end{document}

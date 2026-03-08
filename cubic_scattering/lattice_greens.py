@@ -30,7 +30,7 @@ import numpy as np
 import typer
 from scipy.special import jv
 
-from .horizontal_greens import exact_greens
+from .horizontal_greens import exact_greens, exact_propagator_9x9
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -492,56 +492,77 @@ def _hankel_transform_cc(
 # ═══════════════════════════════════════════════════════════════
 #  D4h symmetry helpers
 # ═══════════════════════════════════════════════════════════════
-
-# Sign table for reflection (n1, n2) -> (-n1, n2):
-#   G_ij(-x, y, 0) = R_i^a G_ab(x, y, 0) R_j^b
-#   where R = diag(-1, 1, 1) (reflection in x).
-#   So G_ij(-x,y) = (-1)^{delta_{i,0} + delta_{j,0}} G_ij(x,y)
+#
+# Legacy 3×3 sign tables (x=0, y=1, z=2 convention — used by exact_greens)
 _REFL_X_SIGN = np.array(
-    [
-        [1, -1, -1],
-        [-1, 1, 1],
-        [-1, 1, 1],
-    ],
+    [[1, -1, -1], [-1, 1, 1], [-1, 1, 1]],
     dtype=float,
 )
-
-# Sign table for reflection (n1, n2) -> (n1, -n2):
-#   R = diag(1, -1, 1)
 _REFL_Y_SIGN = np.array(
-    [
-        [1, -1, 1],
-        [-1, 1, -1],
-        [1, -1, 1],
-    ],
+    [[1, -1, 1], [-1, 1, -1], [1, -1, 1]],
     dtype=float,
 )
-
-# 90-degree rotation (n1, n2) -> (n2, n1):
-# G_ij(y, x, 0) = P_i^a G_ab(x, y, 0) P_j^b
-# where P swaps axes 0 and 1: P = [[0,1,0],[1,0,0],[0,0,1]]
 _PERM_90 = np.array(
-    [
-        [0, 1, 0],
-        [1, 0, 0],
-        [0, 0, 1],
-    ],
-    dtype=float,
+    [[0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
 )
 
+# ── 9×9 propagator D4h matrices ──────────────────────────────
+#
+# Seismological index convention: z=0, x=1, y=2
+# VOIGT_PAIRS: (0,0)=zz, (1,1)=xx, (2,2)=yy, (1,2)=xy, (0,2)=zy, (0,1)=zx
+#
+# The 9×9 propagator transforms under point operation R as:
+#   P'_9x9 = R_9x9 @ P_9x9 @ R_9x9^T
+# where R_9x9 = block_diag(R_3x3, V_R_6x6):
+#   R_3x3: Cartesian transformation (seismological ordering)
+#   V_R_6x6: Voigt transformation for same operation
 
-def _apply_refl_x(G: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
-    """G(-n1, n2) from G(n1, n2) via x-reflection."""
+# --- x-reflection: flips index 1 (x in z,x,y) ---
+# Voigt pairs with one x-index: (1,2)=xy and (0,1)=zx → flip
+_REFL_X_9x9 = np.zeros((9, 9))
+_REFL_X_9x9[:3, :3] = np.diag([1.0, -1.0, 1.0])
+_REFL_X_9x9[3:, 3:] = np.diag([1.0, 1.0, 1.0, -1.0, 1.0, -1.0])
+
+# --- y-reflection: flips index 2 (y in z,x,y) ---
+# Voigt pairs with one y-index: (1,2)=xy and (0,2)=zy → flip
+_REFL_Y_9x9 = np.zeros((9, 9))
+_REFL_Y_9x9[:3, :3] = np.diag([1.0, 1.0, -1.0])
+_REFL_Y_9x9[3:, 3:] = np.diag([1.0, 1.0, 1.0, -1.0, -1.0, 1.0])
+
+# --- x↔y swap: swaps indices 1↔2 (x↔y in z,x,y) ---
+# Voigt under x↔y: zz→zz, xx↔yy, xy→xy, zy↔zx
+_PERM_90_9x9 = np.zeros((9, 9))
+_PERM_90_9x9[:3, :3] = np.array(
+    [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
+)
+_perm6 = np.zeros((6, 6))
+_perm6[0, 0] = 1.0  # zz→zz
+_perm6[1, 2] = 1.0  # new xx = old yy
+_perm6[2, 1] = 1.0  # new yy = old xx
+_perm6[3, 3] = 1.0  # xy→xy
+_perm6[4, 5] = 1.0  # new zy = old zx
+_perm6[5, 4] = 1.0  # new zx = old zy
+_PERM_90_9x9[3:, 3:] = _perm6
+
+
+def _apply_refl_x(G: NDArray) -> NDArray:
+    """G(-n1, n2) from G(n1, n2) via x-reflection. Works for 3×3 or 9×9."""
+    if G.shape[0] == 9:
+        return _REFL_X_9x9 @ G @ _REFL_X_9x9.T
     return G * _REFL_X_SIGN
 
 
-def _apply_refl_y(G: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
-    """G(n1, -n2) from G(n1, n2) via y-reflection."""
+def _apply_refl_y(G: NDArray) -> NDArray:
+    """G(n1, -n2) from G(n1, n2) via y-reflection. Works for 3×3 or 9×9."""
+    if G.shape[0] == 9:
+        return _REFL_Y_9x9 @ G @ _REFL_Y_9x9.T
     return G * _REFL_Y_SIGN
 
 
-def _apply_rot90(G: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
-    """G(n2, n1) from G(n1, n2) via 90-degree rotation (swap x,y)."""
+def _apply_rot90(G: NDArray) -> NDArray:
+    """G(n2, n1) from G(n1, n2) via 90-degree rotation (swap x,y). 3×3 or 9×9."""
+    if G.shape[0] == 9:
+        return _PERM_90_9x9 @ G @ _PERM_90_9x9.T
     return _PERM_90 @ G @ _PERM_90.T
 
 
@@ -592,34 +613,50 @@ class LatticeGreens:
     # ───────────────────────────────────────────────────────
     #  1. Spatial evaluation (exact formula)
     # ───────────────────────────────────────────────────────
-    def compute_spatial(self) -> NDArray[np.complexfloating]:
-        """
-        Direct spatial evaluation at all lattice separations.
+    def compute_spatial(self, block_size: int = 9) -> NDArray[np.complexfloating]:
+        """Direct spatial evaluation at all lattice separations.
 
-        Uses the exact Ben-Menahem & Singh formula, exploiting D4h
+        Uses the exact Green's tensor formula, exploiting D4h
         symmetry to reduce unique evaluations by ~8x.
 
+        Args:
+            block_size: 3 for displacement-only G, 9 for full
+                propagator [[G, C], [H, S]]. Default 9.
+
         Returns:
-            G_arr of shape (2M-1, 2M-1, 3, 3) complex.
-            G_arr[n1 + M-1, n2 + M-1, i, j] = G_ij(n1*d, n2*d, 0).
+            G_arr of shape (2M-1, 2M-1, B, B) complex where B=block_size.
+            G_arr[n1 + M-1, n2 + M-1] = propagator at (n1*d, n2*d, 0).
             The (0,0) entry is zero (self-term excluded).
         """
+        from .effective_contrasts import ReferenceMedium
+
         M = self.M
         S = 2 * M - 1
-        G_arr = np.zeros((S, S, 3, 3), dtype=complex)
+        B = block_size
+        G_arr = np.zeros((S, S, B, B), dtype=complex)
+
+        ref = ReferenceMedium(alpha=self.alpha, beta=self.beta, rho=self.rho)
 
         for n1 in range(M):
             for n2 in range(n1 + 1):
                 if n1 == 0 and n2 == 0:
-                    continue  # skip self-term
+                    continue
 
                 x = n1 * self.d
                 y = n2 * self.d
-                G0 = exact_greens(
-                    x, y, 0.0, self.omega_c, self.rho, self.alpha, self.beta
-                )
+                if B == 9:
+                    G0 = exact_propagator_9x9(x, y, 0.0, self.omega_c, ref)
+                else:
+                    G0 = exact_greens(
+                        x,
+                        y,
+                        0.0,
+                        self.omega_c,
+                        rho=self.rho,
+                        alpha=self.alpha,
+                        beta=self.beta,
+                    )
 
-                # Place (n1, n2) and all symmetry-related images
                 pairs = self._d4h_orbit(n1, n2)
                 for sn1, sn2, G_sym in pairs:
                     i1 = sn1 + M - 1
@@ -678,6 +715,8 @@ class LatticeGreens:
         alias_nepers: float = 10.0,
         subtract: bool = True,
         kc_factor: float = 1.0,
+        block_size: int = 3,
+        **kwargs,
     ) -> NDArray[np.complexfloating]:
         """
         Spectral evaluation via 2D IFFT with screened-Coulomb subtraction.
@@ -702,8 +741,11 @@ class LatticeGreens:
             kc_factor: screening parameter kc = kc_factor * |kS|.
 
         Returns:
-            G_arr of shape (2M-1, 2M-1, 3, 3) complex.
+            G_arr of shape (2M-1, 2M-1, B, B) complex where B=block_size.
         """
+        if block_size == 9:
+            return self._compute_spectral_9x9(**kwargs)
+
         M = self.M
         S = 2 * M - 1
         d = self.d
@@ -791,6 +833,87 @@ class LatticeGreens:
         self._G_spectral = G_arr
         return G_arr
 
+    def _compute_spectral_9x9(
+        self,
+        Nky: int = 512,
+        Nkz: int = 512,
+        target_nepers: float = 14.0,
+    ) -> NDArray[np.complexfloating]:
+        """9x9 lattice Green's tensor via horizontal residues.
+
+        Uses kx-residue decomposition with ky-IFFT and kz-quadrature.
+        The Δx=0 column is obtained via D4h rotation of the (n, 0)
+        values. Adaptive kz_max and ky oversampling per separation
+        ensure convergence for all blocks including C, H, S.
+
+        Args:
+            Nky: number of ky grid points for 1D IFFT.
+            Nkz: number of kz quadrature points per separation.
+            target_nepers: target attenuation at ky/kz truncation
+                boundary. Controls adaptive kz_max and ky oversampling.
+
+        Returns:
+            G_arr of shape (2M-1, 2M-1, 9, 9) complex.
+        """
+        from .horizontal_greens import fft_grid_1d, post_kx_residue_kernel_9x9_vec
+
+        M = self.M
+        S = 2 * M - 1
+        d = self.d
+        kS_abs = abs(self.kS)
+        G_arr = np.zeros((S, S, 9, 9), dtype=complex)
+
+        for n1 in range(1, M):
+            dx_abs = n1 * d
+
+            # Adaptive truncation per separation
+            kz_max = max(4.0 * kS_abs, target_nepers / dx_abs)
+            p_ky = max(1, int(np.ceil(target_nepers / (dx_abs * np.pi / d))))
+            ky_max = np.pi * p_ky / d
+            Nky_eff = max(Nky, S * p_ky * 2)
+            if Nky_eff % 2:
+                Nky_eff += 1
+
+            # ky grid (lattice-commensurate with oversampling p_ky)
+            ky_arr, _y_grid, dky, _dy = fft_grid_1d(Nky_eff, ky_max)
+            kz_arr = np.linspace(-kz_max, kz_max, Nkz)
+            dkz = kz_arr[1] - kz_arr[0]
+            scale_ky = dky * Nky_eff / (2.0 * np.pi)
+            scale_kz = dkz / (2.0 * np.pi)
+
+            P_fft = np.zeros((9, 9, Nky_eff), dtype=complex)
+            for kz in kz_arr:
+                kernel = post_kx_residue_kernel_9x9_vec(
+                    ky_arr,
+                    kz,
+                    dx_abs,
+                    self.omega_c,
+                    self.rho,
+                    self.alpha,
+                    self.beta,
+                )
+                for a in range(9):
+                    for b in range(9):
+                        P_fft[a, b, :] += (
+                            np.fft.fftshift(
+                                np.fft.ifft(np.fft.ifftshift(kernel[a, b, :]))
+                            )
+                            * scale_ky
+                            * scale_kz
+                        )
+
+            # Extract first-octant points and fill via D4h symmetry
+            iy0 = Nky_eff // 2
+            for n2 in range(n1 + 1):
+                iy = iy0 + n2 * p_ky
+                G0 = P_fft[:, :, iy]
+                pairs = self._d4h_orbit(n1, n2)
+                for sn1, sn2, G_sym in pairs:
+                    G_arr[sn1 + M - 1, sn2 + M - 1, :, :] = G_sym(G0)
+
+        self._G_spectral = G_arr
+        return G_arr
+
     # ───────────────────────────────────────────────────────
     #  2b. Hybrid spatial/spectral evaluation
     # ───────────────────────────────────────────────────────
@@ -802,6 +925,8 @@ class LatticeGreens:
         alias_nepers: float = 10.0,
         subtract: bool = True,
         kc_factor: float = 1.0,
+        block_size: int = 3,
+        **kwargs,
     ) -> NDArray[np.complexfloating]:
         """
         Hybrid spatial/spectral evaluation for optimal accuracy.
@@ -822,8 +947,11 @@ class LatticeGreens:
             kc_factor: screening parameter (passed to compute_spectral).
 
         Returns:
-            G_arr of shape (2M-1, 2M-1, 3, 3) complex.
+            G_arr of shape (2M-1, 2M-1, B, B) complex where B=block_size.
         """
+        if block_size == 9:
+            return self._compute_hybrid_9x9(r_cut=r_cut, **kwargs)
+
         M = self.M
         S = 2 * M - 1
         d = self.d
@@ -854,11 +982,46 @@ class LatticeGreens:
                         n2 * d,
                         0.0,
                         self.omega_c,
-                        self.rho,
-                        self.alpha,
-                        self.beta,
+                        rho=self.rho,
+                        alpha=self.alpha,
+                        beta=self.beta,
                     )
                     n_spatial += 1
+
+        self._G_spectral = G_arr
+        return G_arr
+
+    def _compute_hybrid_9x9(
+        self,
+        r_cut: float | None = None,
+        **spectral_kwargs,
+    ) -> NDArray[np.complexfloating]:
+        """Hybrid spatial/spectral 9x9 evaluation.
+
+        Near-field (|R| <= r_cut) uses exact_propagator_9x9,
+        far-field uses _compute_spectral_9x9 (horizontal residues).
+        """
+        from .effective_contrasts import ReferenceMedium
+
+        M = self.M
+        d = self.d
+        if r_cut is None:
+            r_cut = 3.0 * d
+
+        G_arr = self._compute_spectral_9x9(**spectral_kwargs)
+
+        ref = ReferenceMedium(alpha=self.alpha, beta=self.beta, rho=self.rho)
+        for n1 in range(-(M - 1), M):
+            for n2 in range(-(M - 1), M):
+                if n1 == 0 and n2 == 0:
+                    continue
+                r = np.sqrt((n1 * d) ** 2 + (n2 * d) ** 2)
+                if r <= r_cut:
+                    i1 = n1 + M - 1
+                    i2 = n2 + M - 1
+                    G_arr[i1, i2, :, :] = exact_propagator_9x9(
+                        n1 * d, n2 * d, 0.0, self.omega_c, ref
+                    )
 
         self._G_spectral = G_arr
         return G_arr
@@ -871,6 +1034,8 @@ class LatticeGreens:
         N_per_seg: int = 128,
         K_max: float | None = None,
         kc_factor: float = 1.0,
+        block_size: int = 3,
+        **kwargs,
     ) -> NDArray[np.complexfloating]:
         """
         FCC Hankel transform evaluation of the lattice Green's tensor.
@@ -878,15 +1043,20 @@ class LatticeGreens:
         Reduces the 2D inverse FT to three 1D Hankel integrals (H0, H2, V0)
         by decomposing the spectral kernel into angular harmonics m=0 and m=2.
         Uses Filon-Clenshaw-Curtis quadrature with asymptotic subtraction.
+        For block_size=9, delegates to _compute_spectral_9x9 (no FCC Hankel
+        decomposition for derivative blocks).
 
         Args:
             N_per_seg: Clenshaw-Curtis nodes per integration segment.
             K_max: upper integration limit (default: 4*|kS|).
             kc_factor: screening parameter kc = kc_factor * |kS|.
+            block_size: 3 for displacement-only, 9 for full propagator.
 
         Returns:
-            G_arr of shape (2M-1, 2M-1, 3, 3) complex.
+            G_arr of shape (2M-1, 2M-1, B, B) complex where B=block_size.
         """
+        if block_size == 9:
+            return self._compute_spectral_9x9(**kwargs)
         M = self.M
         S = 2 * M - 1
         d = self.d
@@ -940,14 +1110,10 @@ class LatticeGreens:
     #  3. FFT-accelerated block-Toeplitz mat-vec
     # ───────────────────────────────────────────────────────
     def _precompute_circulant_fft(self) -> None:
-        """
-        Precompute the 2D FFT of the circulant embedding of G.
+        """Precompute the 2D FFT of the circulant embedding.
 
-        The Green's tensor G[n1, n2, i, j] for n1, n2 in [-(M-1), M-1]
-        forms a block-Toeplitz matrix. We embed it in a (2M-1) x (2M-1)
-        circulant and FFT each (i,j) component.
-
-        Stores self._G_hat of shape (2M-1, 2M-1, 3, 3).
+        Stores self._G_hat of shape (2M-1, 2M-1, B, B) where B is
+        the block size (3 or 9) determined from the stored array.
         """
         if self._G_spatial is not None:
             G_arr = self._G_spatial
@@ -957,29 +1123,22 @@ class LatticeGreens:
             G_arr = self.compute_spatial()
 
         S = 2 * self.M - 1
-        self._G_hat = np.zeros((S, S, 3, 3), dtype=complex)
-        for i in range(3):
-            for j in range(3):
+        B = G_arr.shape[2]  # 3 or 9
+        self._G_hat = np.zeros((S, S, B, B), dtype=complex)
+        for i in range(B):
+            for j in range(B):
                 self._G_hat[:, :, i, j] = np.fft.fft2(G_arr[:, :, i, j])
 
     def matvec(self, u: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
-        """
-        FFT-accelerated matrix-vector product for the multiple scattering equation.
+        """FFT-accelerated block-Toeplitz matrix-vector product.
 
-        Computes v_m = sum_{n != m} G(R_m - R_n) . u_n
-        using the block-Toeplitz structure of G.
-
-        The convolution is G * u where G has support on (2M-1) x (2M-1)
-        and u on M x M. Since G already lives on the (2M-1) x (2M-1)
-        grid (with the Toeplitz structure encoding both positive and
-        negative lags), we zero-pad u to (2M-1) x (2M-1) and convolve
-        via FFT, then extract the central M x M block.
+        Computes v_m = sum_{n != m} P(R_m - R_n) . u_n
 
         Args:
-            u: (M, M, 3) complex — field at each scatterer.
+            u: (M, M, B) complex — field at each scatterer (B=3 or 9).
 
         Returns:
-            v: (M, M, 3) complex — scattered field contribution.
+            v: (M, M, B) complex — scattered field contribution.
         """
         M = self.M
         S = 2 * M - 1
@@ -987,37 +1146,26 @@ class LatticeGreens:
         if self._G_hat is None:
             self._precompute_circulant_fft()
 
-        # Zero-pad u into (2M-1) x (2M-1) x 3
-        # Place M x M block at the centre of the (2M-1) x (2M-1) grid
-        # u at scatterer (m1, m2) goes to index (m1 + M-1-1, m2 + M-1-1)?
-        # Actually: G_arr[n1+M-1, n2+M-1] = G(n1*d, n2*d).
-        # The convolution sum is: v[m] = sum_n G[m-n] * u[n]
-        # With m, n in [0, M-1], the difference m-n ranges over [-(M-1), M-1].
-        # G is stored with index offset M-1, so G_arr[m-n+M-1] = G((m-n)*d).
-        # This is a standard Toeplitz convolution on the (2M-1)-point grid.
+        assert self._G_hat is not None
+        B = self._G_hat.shape[2]
 
-        u_pad = np.zeros((S, S, 3), dtype=complex)
+        u_pad = np.zeros((S, S, B), dtype=complex)
         u_pad[:M, :M, :] = u
 
-        # FFT each component of u, multiply by G_hat, sum over j, IFFT
-        u_hat = np.zeros((S, S, 3), dtype=complex)
-        for k in range(3):
+        u_hat = np.zeros((S, S, B), dtype=complex)
+        for k in range(B):
             u_hat[:, :, k] = np.fft.fft2(u_pad[:, :, k])
 
-        assert self._G_hat is not None
-        v_hat = np.zeros((S, S, 3), dtype=complex)
-        for i in range(3):
-            for j in range(3):
+        v_hat = np.zeros((S, S, B), dtype=complex)
+        for i in range(B):
+            for j in range(B):
                 v_hat[:, :, i] += self._G_hat[:, :, i, j] * u_hat[:, :, j]
 
-        v_full = np.zeros((S, S, 3), dtype=complex)
-        for i in range(3):
+        v_full = np.zeros((S, S, B), dtype=complex)
+        for i in range(B):
             v_full[:, :, i] = np.fft.ifft2(v_hat[:, :, i])
 
-        # Extract the M x M result: the valid convolution output for
-        # m in [0, M-1] is at indices [M-1, 2M-2] of the (2M-1)-point result
         v = v_full[M - 1 : S, M - 1 : S, :]
-
         return v
 
     # ───────────────────────────────────────────────────────

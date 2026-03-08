@@ -1,0 +1,764 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{Latin Modern Math}
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Spectral $9\times9$ Lattice Propagator}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\order}[1]{\mathcal{O}\!\left(#1\right)}
+\newcommand{\re}{\operatorname{Re}}
+\newcommand{\im}{\operatorname{Im}}
+\newcommand{\bk}{\mathbf{k}}
+\newcommand{\bR}{\mathbf{R}}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+  {\LARGE\bfseries Spectral Evaluation of the $9\times 9$ Lattice Propagator\\[4pt]
+  via Horizontal Residues}\\[12pt]
+  {\large T.\ Nestor}\\[4pt]
+  {\small March 2026}
+\end{center}
+
+\bigskip
+\noindent
+We describe the spectral evaluation of the full $9\times 9$ coupled
+propagator
+\[
+  \bP(\Delta x, \Delta y, 0) =
+  \begin{pmatrix}
+    G_{ik} & C_{i\alpha} \\
+    H_{\alpha k} & S_{\alpha\beta}
+  \end{pmatrix},
+  \qquad
+  i,k = 1,2,3, \qquad \alpha,\beta = 1,\dots,6,
+\]
+on a 2-D square lattice of spacing $d$, at $\Delta z = 0$.
+Here $G$ is the displacement Green's tensor, $C$ and $H$ are
+displacement--strain coupling blocks, and $S$ is the strain--strain
+coupling block (all in Voigt notation for the strain indices).
+We compare three spectral approaches---vertical ($k_z$)
+residues, horizontal ($k_x$ or $k_y$) residues, and the FCC
+Hankel transform---and show why only the horizontal-residue
+method extends naturally to the $9\times 9$ case.
+
+
+% ══════════════════════════════════════════════════════════════
+\section{The spectral representation}\label{sec:spectral}
+% ══════════════════════════════════════════════════════════════
+
+The elastodynamic Green's tensor in an unbounded isotropic
+medium admits the spectral (Fourier) representation
+\begin{equation}\label{eq:Gspec}
+  G_{ik}(\bR) = \frac{1}{(2\pi)^3}
+  \int \hat{G}_{ik}(\bk)\,e^{i\bk\cdot\bR}\,\dd^3 k,
+\end{equation}
+with the spectral kernel
+\begin{equation}\label{eq:Ghat}
+  \hat{G}_{ik}(\bk) = \frac{1}{\rho}\left[
+    \frac{\delta_{ik}}{k_S^2 - k^2}
+    + \frac{k_i\,k_k}{\left(k_P^2 - k^2\right)\left(k_S^2 - k^2\right)}
+  \right],
+\end{equation}
+where $k_P = \omega/\alpha$, $k_S = \omega/\beta$ are the P- and
+S-wavenumbers.
+The derivative blocks of the $9\times 9$ propagator are obtained by
+multiplying~\eqref{eq:Ghat} with wavenumber factors.
+In Voigt notation with pairs
+$\alpha \leftrightarrow (p,q)$:
+\begin{equation}\label{eq:blocks_spectral}
+\begin{aligned}
+  \hat{C}_{i\alpha}(\bk)
+    &= i k_q\,\hat{G}_{ip}
+       + i k_p\,\hat{G}_{iq}\,(1-\delta_{pq}),\\[4pt]
+  \hat{H}_{\alpha k}(\bk)
+    &= i k_q\,\hat{G}_{pk}
+       + i k_p\,\hat{G}_{qk}\,(1-\delta_{pq}),\\[4pt]
+  \hat{S}_{\alpha\beta}(\bk)
+    &= -k_q k_n\,\hat{G}_{pm}
+       -k_q k_m\,\hat{G}_{pn}\,(1-\delta_{mn})\\
+    &\quad -k_p k_n\,\hat{G}_{qm}\,(1-\delta_{pq})
+       -k_p k_m\,\hat{G}_{qn}\,(1-\delta_{pq})(1-\delta_{mn}),
+\end{aligned}
+\end{equation}
+where $\beta \leftrightarrow (m,n)$.
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Method 1: Vertical (\texorpdfstring{$k_z$}{kz}) residues}\label{sec:kz}
+% ══════════════════════════════════════════════════════════════
+
+For the $3\times 3$ displacement block $G_{ik}$ on the lattice
+(at $\Delta z = 0$), the standard approach evaluates the $k_z$
+integral by residues. Closing the contour in the upper half-plane
+picks up two poles at
+\[
+  k_{zP} = \sqrt{k_P^2 - k_x^2 - k_y^2}, \qquad
+  k_{zS} = \sqrt{k_S^2 - k_x^2 - k_y^2},
+\]
+with $\im(k_z) \ge 0$. At $\Delta z=0$ the exponentials
+$e^{ik_{z}|{\Delta z}|}$ reduce to unity, giving the 2-D kernel
+\begin{equation}\label{eq:kz_kernel}
+  \tilde{G}_{ik}(k_x,k_y) = \frac{i}{2\rho}\left[
+    \frac{\delta_{ik}}{\beta^2\,k_{zS}}
+    + \frac{k^P_i k^P_k}{\omega^2\,k_{zP}}
+    - \frac{k^S_i k^S_k}{\omega^2\,k_{zS}}
+  \right],
+\end{equation}
+where $\bk^P = (k_x, k_y, k_{zP})$, $\bk^S = (k_x, k_y, k_{zS})$.
+The lattice Green's tensor is then a 2-D inverse Fourier transform:
+\begin{equation}\label{eq:2DIFFT}
+  G_{ik}(\Delta x, \Delta y, 0)
+  = \frac{1}{(2\pi)^2}\iint
+    \tilde{G}_{ik}(k_x,k_y)\,
+    e^{i(k_x\Delta x + k_y\Delta y)}\,
+    \dd k_x\,\dd k_y.
+\end{equation}
+
+\subsection{Convergence of the 2-D IFFT}
+
+The asymptotic behaviour of the kernel for
+$k_H = \sqrt{k_x^2 + k_y^2} \to \infty$ determines the convergence
+of the inverse transform.
+Since $k_{zP}, k_{zS} \sim ik_H$ for large $k_H$, the diagonal
+components of~\eqref{eq:kz_kernel} decay as $\order{1/k_H}$.
+This is sufficient for convergence of the integral, but too
+slow for efficient FFT evaluation---the slowly-decaying tail
+causes aliasing.
+A screened-Coulomb subtraction accelerates convergence:
+subtract $c_{ii}/\sqrt{k_H^2 + k_c^2}$ (which matches
+$c_{ii}/k_H$ for large $k_H$ and is finite at $k_H=0$),
+compute the 2-D IFFT of the fast-decaying residual,
+and add back the known spatial transform
+$c_{ii}\,e^{-k_c r}/(2\pi r)$.
+
+\subsection{Why \texorpdfstring{$k_z$}{kz} residues fail for derivative blocks}
+
+The derivative blocks~\eqref{eq:blocks_spectral} introduce extra
+powers of the wavenumber.
+After the $k_z$ residue, the 2-D kernel inherits these powers
+with $k_z$ replaced by the pole value ($k_{zP}$ or $k_{zS}$).
+
+\begin{table}[ht]
+\centering
+\caption{Asymptotic decay of the post-$k_z$-residue kernel
+  (2-D, at $\Delta z=0$) for each block of the $9\times 9$ propagator.}
+\label{tab:kz_decay}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Block & Derivative factor & Kernel decay & Problem \\
+\midrule
+$G$ ($3\times 3$) & $1$ & $\order{1/k_H}$ & converges with subtraction \\
+$C$ ($3\times 6$) & $ik_k$ & $\order{1}$ & constant $\to$ $\delta$-function \\
+$H$ ($6\times 3$) & $ik_k$ & $\order{1}$ & constant $\to$ $\delta$-function \\
+$S$ ($6\times 6$) & $-k_k k_l$ & $\order{k_H}$ & growing $\to$ divergent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The $C$ and $H$ kernels tend to non-zero constants,
+producing $\delta$-function contributions in the IFFT.
+The $S$ kernel \emph{grows} linearly and the 2-D integral
+diverges outright. No amount of screened-Coulomb subtraction
+can rescue this---the divergence is structural.
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Method 2: FCC Hankel transform (\texorpdfstring{$3\times 3$}{3x3} only)}
+  \label{sec:fcc}
+% ══════════════════════════════════════════════════════════════
+
+For the $3\times 3$ block, the isotropy of the background medium
+allows a Fourier--angular decomposition.  Writing
+$k_x = k_H\cos\phi$, $k_y = k_H\sin\phi$ in~\eqref{eq:2DIFFT}
+and expanding $e^{ik_H r\cos(\phi-\theta)}$ in angular harmonics
+yields three 1-D Hankel integrals:
+\begin{equation}\label{eq:hankel}
+\begin{aligned}
+  H_0(r) &= \frac{1}{2\pi}\int_0^\infty
+    \bigl[A(k_H)+\tfrac{1}{2}B(k_H)\bigr]\,
+    J_0(k_H r)\,k_H\,\dd k_H,\\
+  H_2(r) &= \frac{1}{2\pi}\int_0^\infty
+    \tfrac{1}{2}B(k_H)\,
+    J_2(k_H r)\,k_H\,\dd k_H,\\
+  V_0(r) &= \frac{1}{2\pi}\int_0^\infty
+    \bigl[A(k_H)+C(k_H)\bigr]\,
+    J_0(k_H r)\,k_H\,\dd k_H,
+\end{aligned}
+\end{equation}
+where $A$, $B$, $C$ are the radial kernel functions obtained
+from the isotropic/deviatoric decomposition of~\eqref{eq:kz_kernel}.
+
+This approach reduces the 2-D integral to 1-D, with
+Filon--Clenshaw--Curtis quadrature and two-level asymptotic
+subtraction ($\order{1/k_H^5}$ residual).
+However, the angular-harmonic decomposition relies on
+the kernel having only $m=0$ and $m=2$ angular content.
+The derivative blocks in the $9\times 9$ propagator
+introduce higher harmonics and the radial-kernel
+structure breaks down.
+For this reason, the FCC Hankel method remains
+restricted to the $3\times 3$ displacement block.
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Method 3: Horizontal (\texorpdfstring{$k_x$}{kx}) residues}\label{sec:kx}
+% ══════════════════════════════════════════════════════════════
+
+\subsection{Closing in \texorpdfstring{$k_x$}{kx} instead of \texorpdfstring{$k_z$}{kz}}
+
+Rather than evaluating the $k_z$ integral first, we return
+to the full 3-D representation~\eqref{eq:Gspec} and evaluate the
+$k_x$ integral by residues.
+For $\Delta x > 0$, we close the contour in the upper
+$k_x$ half-plane, picking up poles at
+\begin{equation}\label{eq:kx_poles}
+  k_{xL} = \sqrt{k_P^2 - k_y^2 - k_z^2}, \qquad
+  k_{xT} = \sqrt{k_S^2 - k_y^2 - k_z^2},
+\end{equation}
+with $\im(k_x) \ge 0$ (right-going or evanescent waves).
+The residue gives a 2-D kernel in $(k_y, k_z)$:
+\begin{equation}\label{eq:kx_kernel}
+  \hat{G}_{ik}(k_y,k_z;\Delta x)
+  = \frac{i}{2\rho}\left[
+    \frac{\delta_{ik}\,e_T}{\beta^2\,k_{xT}}
+    + \frac{k^L_i k^L_k\,e_L}{\omega^2\,k_{xL}}
+    - \frac{k^T_i k^T_k\,e_T}{\omega^2\,k_{xT}}
+  \right],
+\end{equation}
+where $e_L = e^{ik_{xL}|\Delta x|}$,
+$e_T = e^{ik_{xT}|\Delta x|}$,
+$\bk^L = (k_{xL}, k_y, k_z)$,
+$\bk^T = (k_{xT}, k_y, k_z)$.
+
+The remaining double integral is
+\begin{equation}\label{eq:kx_double}
+  G_{ik}(\Delta x, \Delta y, 0)
+  = \frac{1}{(2\pi)^2}\iint
+    \hat{G}_{ik}(k_y, k_z;\Delta x)\,
+    e^{ik_y\Delta y}\,
+    \dd k_y\,\dd k_z.
+\end{equation}
+The factor $e^{ik_z\cdot 0}=1$ means the $k_z$ integrand has
+no oscillatory phase---only the exponential decay from
+$e_L$, $e_T$.
+
+\subsection{Convergence for all blocks}\label{sec:kx_convergence}
+
+The crucial difference from the $k_z$-residue approach is
+the phase factor.  For large $|k_y|$ or $|k_z|$
+(more precisely, $k_y^2 + k_z^2 > |k_S|^2$),
+the pole wavenumbers become imaginary:
+\[
+  k_{xL} \approx i\sqrt{k_y^2 + k_z^2 - k_P^2}, \qquad
+  k_{xT} \approx i\sqrt{k_y^2 + k_z^2 - k_S^2}.
+\]
+The phase factors then provide \emph{exponential} decay:
+\begin{equation}\label{eq:exp_decay}
+  e_L = e^{ik_{xL}|\Delta x|}
+  \;\longrightarrow\;
+  e^{-\sqrt{k_y^2+k_z^2-k_P^2}\;|\Delta x|},
+  \qquad
+  k_y^2+k_z^2 \gg |k_P|^2.
+\end{equation}
+This exponential factor overwhelms \emph{any} polynomial
+growth from derivatives:
+
+\begin{table}[ht]
+\centering
+\caption{Asymptotic decay of the post-$k_x$-residue kernel
+  for each block, as $k_y^2+k_z^2\to\infty$.
+  All blocks converge due to the exponential envelope from the
+  phase factor $e^{ik_{xL,T}|\Delta x|}$.}
+\label{tab:kx_decay}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Block & Factor & Kernel behaviour & Convergence \\
+\midrule
+$G$ ($3\times 3$) & $1$        & $\order{k^{-1}}\,e^{-k|\Delta x|}$ & exponential \\
+$C$ ($3\times 6$) & $ik_k$     & $\order{k^0}\,e^{-k|\Delta x|}$    & exponential \\
+$H$ ($6\times 3$) & $ik_k$     & $\order{k^0}\,e^{-k|\Delta x|}$    & exponential \\
+$S$ ($6\times 6$) & $-k_k k_l$ & $\order{k^1}\,e^{-k|\Delta x|}$    & exponential \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No screened-Coulomb subtraction or convergence acceleration
+is required.
+The price is that $\Delta x = 0$ must be handled
+separately (Section~\ref{sec:dx0}).
+
+\subsection{The \texorpdfstring{$9\times 9$}{9x9} post-\texorpdfstring{$k_x$}{kx}-residue kernel}
+
+The $9\times 9$ kernel decomposes naturally into contributions
+from the L-pole (at $k_x = k_{xL}$) and T-pole (at
+$k_x = k_{xT}$).
+For the $G$ block, each pole's contribution to $G_{ik}$ is
+\begin{equation}\label{eq:G_poles}
+\begin{aligned}
+  G^{\text{L}}_{ik} &= k^L_i\,k^L_k\;\frac{i\,e_L}{2\rho\,\omega^2\,k_{xL}},\\[2pt]
+  G^{\text{T,iso}}_{ik} &= \delta_{ik}\;\frac{i\,e_T}{2\rho\,\beta^2\,k_{xT}},\\[2pt]
+  G^{\text{T,pol}}_{ik} &= -k^T_i\,k^T_k\;\frac{i\,e_T}{2\rho\,\omega^2\,k_{xT}}.
+\end{aligned}
+\end{equation}
+The derivative blocks are then assembled by applying
+$ik_\ell$ factors \emph{using the correct pole wavevector}
+for each term---$\bk^L$ for the L-pole, $\bk^T$ for the
+T-poles:
+\begin{equation}\label{eq:C_from_poles}
+  \hat{C}_{i\alpha} = \sum_{\text{pole}\in\{L,T\}}
+  \bigl[ik^\text{pole}_q\,G^\text{pole}_{ip}
+  + ik^\text{pole}_p\,G^\text{pole}_{iq}\,(1-\delta_{pq})\bigr].
+\end{equation}
+The $H$ and $S$ blocks follow the same pattern.
+This pole-separated structure is essential: applying a
+single ``total'' $k_x$ to the combined kernel would be
+incorrect, since $k_x$ takes different values at the
+L- and T-poles.
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Numerical evaluation}\label{sec:evaluation}
+% ══════════════════════════════════════════════════════════════
+
+\subsection{Algorithm for \texorpdfstring{$\Delta x > 0$}{Δx > 0}}
+\label{sec:alg_dx_pos}
+
+For a fixed $\Delta x = n_1 d > 0$, the propagator at all
+lattice separations $\Delta y = n_2 d$ is obtained in three
+steps:
+
+\paragraph{Step 1: $k_z$ quadrature.}
+Choose a uniform grid $k_z^{(j)} \in [-k_z^{\max}, k_z^{\max}]$
+with $N_{kz}$ points and spacing
+$\Delta k_z = 2k_z^{\max}/N_{kz}$.
+For each $k_z^{(j)}$, evaluate the vectorised kernel
+$\hat{\bP}(k_y, k_z^{(j)}; \Delta x)$ at all $N_{ky}$ grid
+points simultaneously (Section~\ref{sec:kernel_eval}).
+
+\paragraph{Step 2: $k_y$ IFFT.}
+For each $k_z^{(j)}$ and each of the $9\times 9 = 81$
+component pairs $(a,b)$, compute the 1-D inverse FFT:
+\[
+  \bP_{ab}\bigl(\Delta x, y_m, 0; k_z^{(j)}\bigr)
+  = \text{fftshift}\!\Bigl(
+      \text{IFFT}\bigl[\text{ifftshift}
+      \bigl(\hat{P}_{ab}(k_y; k_z^{(j)})\bigr)
+    \bigr]\Bigr)
+  \;\times\;\frac{\Delta k_y\,N_{ky}}{2\pi},
+\]
+and accumulate the $k_z$ contribution with weight
+$\Delta k_z/(2\pi)$.
+
+\paragraph{Step 3: Lattice extraction.}
+The IFFT output lives on a spatial grid
+$y_m = (m - N_{ky}/2)\,\Delta y_{\text{grid}}$
+where $\Delta y_{\text{grid}} = \pi / k_y^{\max}$.
+With lattice-commensurate sampling (see
+Section~\ref{sec:commensurate}), the grid spacing
+$\Delta y_{\text{grid}} = d/p$ for integer oversampling
+factor $p$, so that lattice points $\Delta y = n_2 d$
+appear at indices $m = N_{ky}/2 + n_2\,p$.
+No interpolation is needed.
+
+\subsection{Lattice-commensurate \texorpdfstring{$k_y$}{ky} sampling}
+\label{sec:commensurate}
+
+To ensure exact sampling at lattice multiples of $d$, we set
+\begin{equation}\label{eq:ky_grid}
+  k_y^{\max} = \frac{\pi\,p}{d},
+  \qquad
+  \Delta k_y = \frac{2\pi}{N_{ky}\,d/p},
+  \qquad
+  \Delta y_{\text{grid}} = \frac{d}{p},
+\end{equation}
+where $p \ge 1$ is the oversampling factor.
+The minimum value $p=1$ gives $k_y^{\max} = \pi/d$
+(the Brillouin-zone boundary), but captures only the
+first Brillouin zone of the kernel.
+For near-field separations ($\Delta x = d$), the
+post-$k_x$-residue kernel retains significant spectral
+content beyond $k_y = \pi/d$, because the exponential
+decay $e^{-\kappa\,d}$ is only $e^{-\pi}\approx 0.043$
+at $k_y = \pi/d$.
+Higher $p$ extends the sampling range, capturing more
+of the evanescent tail.
+
+\subsection{Adaptive truncation}\label{sec:adaptive}
+
+The exponential decay $e^{-\kappa|\Delta x|}$ means that
+larger separations require smaller $k_y^{\max}$ and
+$k_z^{\max}$ for the same truncation error.
+We choose the parameters adaptively for each $n_1$:
+\begin{equation}\label{eq:adaptive}
+  k_z^{\max}(n_1) = \max\!\left(4|k_S|,\;\frac{A}{n_1 d}\right),
+  \qquad
+  p(n_1) = \max\!\left(1,\;\left\lceil\frac{A}{n_1\,\pi}\right\rceil\right),
+\end{equation}
+where $A$ is the target attenuation in nepers (default $A=14$,
+giving $e^{-14}\approx 8\times 10^{-7}$ truncation at the boundary).
+The $N_{ky}$ grid size is set to
+$N_{ky} = \max\bigl(N_{ky}^{\text{base}},\;2(2M-1)\,p\bigr)$
+to ensure adequate sampling.
+
+\begin{table}[ht]
+\centering
+\caption{Adaptive parameters for $d=0.1$, $|k_S|\approx 2.1$, $A=14$.}
+\label{tab:adaptive}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+$n_1$ & $\Delta x$ & $k_z^{\max}$ & $p$ & $k_y^{\max}$
+      & $e^{-k_y^{\max}\Delta x}$ \\
+\midrule
+1 & $0.1$ & $140$  & 5 & $157$ & $1.7\times 10^{-7}$ \\
+2 & $0.2$ & $70$   & 3 & $94$  & $5.6\times 10^{-9}$ \\
+3 & $0.3$ & $46.7$ & 2 & $63$  & $6.1\times 10^{-9}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{The \texorpdfstring{$\Delta x = 0$}{Δx = 0} column via \texorpdfstring{D$_{4h}$}{D4h} symmetry}
+\label{sec:dx0}
+
+The $k_x$-residue approach requires $\Delta x \ne 0$ (one needs a
+direction in which to close the contour).
+For the $\Delta x = 0$ separations on the lattice
+($\bP(0, n_2 d, 0)$ for $n_2 = 1, \dots, M-1$),
+we exploit the D$_{4h}$ point-group symmetry of the square lattice.
+
+The lattice has an $x\leftrightarrow y$ swap symmetry: the
+propagator at $(0, n_2 d)$ is related to that at $(n_2 d, 0)$ by
+\begin{equation}\label{eq:rot90}
+  \bP(0, n_2 d, 0) = R_{90}\;\bP(n_2 d, 0, 0)\;R_{90}^T,
+\end{equation}
+where $R_{90}$ is the $9\times 9$ block-diagonal matrix
+implementing the $x\leftrightarrow y$ coordinate swap on both
+displacement ($3\times 3$) and Voigt ($6\times 6$) indices.
+The value $\bP(n_2 d, 0, 0)$ is already available from the
+$k_x$-residue evaluation at $n_1 = n_2$, $n_2 = 0$.
+
+More generally, the full D$_{4h}$ orbit of a first-octant point
+$(n_1, n_2)$ with $n_1 \ge n_2 \ge 0$ generates up to 8 images:
+\begin{equation}\label{eq:d4h_orbit}
+\begin{aligned}
+  &(n_1,\, n_2),\quad (-n_1,\, n_2),\quad
+    (n_1,\, {-n_2}),\quad (-n_1,\, {-n_2}),\\
+  &(n_2,\, n_1),\quad (-n_2,\, n_1),\quad
+    (n_2,\, {-n_1}),\quad (-n_2,\, {-n_1}).
+\end{aligned}
+\end{equation}
+For $n_1 = n_2$ (diagonal), only four are distinct.
+The tensor at each image is obtained from the first-octant
+value via combinations of $x$-reflection, $y$-reflection,
+and the $x\leftrightarrow y$ swap.
+
+\subsection{Kernel evaluation}\label{sec:kernel_eval}
+
+The $9\times 9$ kernel at a given $(k_y, k_z)$ is
+built from three scalar coefficients (one per pole type)
+and two 3-vectors ($\bk^L$, $\bk^T$).
+The $G$-block uses 3 outer products ($3\times 3$ each);
+the $C$ and $H$ blocks contract one index with $ik^\text{pole}$;
+the $S$ block contracts both indices.
+All 81 entries share the same pole wavenumbers and
+exponentials, so the kernel evaluation for the full
+$9\times 9$ costs only a constant factor more than
+the $3\times 3$.
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Operations count}\label{sec:ops}
+% ══════════════════════════════════════════════════════════════
+
+Consider an $M \times M$ square lattice with spacing $d$.
+The array to fill has shape $(2M{-}1) \times (2M{-}1) \times
+9 \times 9$, representing $\bP(\Delta\bR)$ for all
+$\Delta\bR = (n_1 d, n_2 d)$ with $n_1, n_2 \in
+\{-(M{-}1), \dots, M{-}1\}$.
+
+\subsection{Spatial evaluation (baseline)}
+
+The exact formula (Ben-Menahem \& Singh / Kupradze) is evaluated
+at each unique separation in the first octant.  D$_{4h}$ symmetry
+reduces the count from $(2M{-}1)^2 - 1$ to approximately
+$M(M{+}1)/2 - 1$ unique evaluations.
+
+Each evaluation of the full $9\times 9$ propagator requires:
+\begin{enumerate}
+\item The Green's tensor $G_{ik}$ and its first and second spatial
+  derivatives $\partial_\ell G_{ik}$ and
+  $\partial_\ell\partial_m G_{ik}$ --- all via closed-form
+  expressions in terms of $r$, $\hat{r}_i$, and spherical Bessel-type
+  combinations.
+\item Voigt contraction to form $C$, $H$, $S$ from the derivatives.
+\end{enumerate}
+
+\begin{equation}\label{eq:spatial_cost}
+  \boxed{
+  \text{Spatial:}\quad
+  \order{\frac{M^2}{8} \times C_{\text{spatial}}}
+  }
+\end{equation}
+where $C_{\text{spatial}}$ is the per-point cost (dominated by
+the derivative computation, which involves $\sim$50 transcendental
+function evaluations per point).
+
+\subsection{Spectral evaluation (horizontal residues)}
+
+The spectral method evaluates the first octant
+($n_1 \ge n_2 \ge 0$, $n_1 \ge 1$) and fills the
+rest via D$_{4h}$.
+
+\paragraph{$\Delta x > 0$ path.}
+For each unique $n_1 = 1, \dots, M-1$:
+\begin{enumerate}
+\item \textbf{Kernel evaluation:}
+  $N_{kz}$ values of $k_z$, each requiring evaluation of the
+  $9\times 9$ kernel at $N_{ky}$ points.
+  Cost per $(k_y, k_z)$: $\sim$\,5 square roots + 2 exponentials
+  + 81 multiply-adds.
+  Total: $N_{kz} \times N_{ky} \times C_{\text{kernel}}$.
+
+\item \textbf{IFFT:}
+  For each $k_z$ and each of the 81 components, one 1-D FFT
+  of length $N_{ky}$.
+  Total: $N_{kz} \times 81 \times \order{N_{ky}\log N_{ky}}$.
+
+\item \textbf{Extraction + D$_{4h}$:}
+  Extract $n_1 + 1$ first-octant points from the FFT output,
+  then map each to its orbit (up to 8 images, each a $9\times 9$
+  matrix product).
+  Negligible compared to steps 1--2.
+\end{enumerate}
+
+Summing over $n_1 = 1, \dots, M-1$:
+\begin{equation}\label{eq:spectral_total}
+\boxed{
+\begin{aligned}
+  \text{Spectral:}\quad
+  &(M-1)\;\bigl[
+    N_{kz}\,N_{ky}\,C_{\text{kernel}}
+    + 81\,N_{kz}\,\order{N_{ky}\log N_{ky}}
+  \bigr]\\
+  &= \order{M\,N_{kz}\,N_{ky}\,\bigl(C_{\text{kernel}}
+     + 81\log N_{ky}\bigr)}.
+\end{aligned}
+}
+\end{equation}
+
+\subsection{Comparison}\label{sec:comparison}
+
+\begin{table}[ht]
+\centering
+\caption{Dominant cost scaling for an $M\times M$ lattice.
+  $N_k \equiv N_{kz} \approx N_{ky}$ is the spectral
+  grid size (typically 256--512).}
+\label{tab:scaling}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Method & Dominant cost & Scaling in $M$ \\
+\midrule
+Spatial (exact) & $\dfrac{M^2}{8}\,C_{\text{spatial}}$
+  & $\order{M^2}$ \\[8pt]
+Spectral ($k_x$ residue) &
+  $M\,N_k^2\,(C_{\text{kernel}} + 81\log N_k)$
+  & $\order{M}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The spectral method scales linearly in $M$ (one FFT-based
+evaluation per unique $\Delta x$), versus quadratically for
+the spatial method.
+For small $M$ (say $M \le 8$), the spatial method is
+competitive because $C_{\text{spatial}}$ involves only
+scalar closed-form expressions, while the spectral method
+requires $N_{kz}\times N_{ky}$ kernel evaluations.
+The crossover occurs around $M \sim 2 N_k^2 / (8\,r)$
+where $r = C_{\text{spatial}}/C_{\text{kernel}}$ is the
+ratio of per-point costs (typically $r \sim 5$--$10$).
+For $N_k = 512$ and $r = 7$, the crossover is
+$M \sim 2\times 512^2/(8\times 7) \approx 9400$.
+
+However, the spectral method's advantage is not primarily
+speed for small lattices.  Its value lies in:
+\begin{enumerate}
+\item Providing an \emph{independent verification}
+  of the spatial evaluation,
+\item Enabling the FFT-accelerated block-Toeplitz matvec
+  (Section~\ref{sec:matvec}) for iterative solvers, and
+\item The \emph{hybrid} approach (Section~\ref{sec:hybrid}),
+  which uses exact spatial for the near field and spectral
+  for the far field.
+\end{enumerate}
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Block-Toeplitz matvec}\label{sec:matvec}
+% ══════════════════════════════════════════════════════════════
+
+Regardless of how $\bP(\Delta\bR)$ is computed, the
+multiple-scattering equations require repeated evaluation of
+the matrix-vector product
+\begin{equation}\label{eq:matvec}
+  v_i^{(m)} = \sum_{n\ne m} P_{ij}(\bR_m - \bR_n)\,u_j^{(n)},
+  \qquad i,j = 1,\dots,9,
+\end{equation}
+where $u^{(n)}$ is the 9-component field (displacement +
+Voigt strain) at scatterer $n$.
+On the square lattice, the interaction matrix is
+block-Toeplitz with $9\times 9$ blocks, so the product
+can be computed via circulant embedding and 2-D FFT:
+
+\begin{enumerate}
+\item Precompute $\hat{P}_{ij}(q_1, q_2)$: the 2-D FFT of the
+  $(2M{-}1)\times(2M{-}1)$ propagator array, for each of the
+  81 component pairs.
+  Cost: $81 \times \order{S^2 \log S}$ where $S = 2M{-}1$.
+
+\item For each matvec call:
+  \begin{itemize}
+    \item Zero-pad $u$ from $M\times M\times 9$ to
+      $S\times S\times 9$.
+    \item Forward 2-D FFT of each of the 9 components:
+      $9\times\order{S^2\log S}$.
+    \item Pointwise $9\times 9$ matrix-vector multiply in
+      Fourier space at each of $S^2$ grid points:
+      $S^2 \times 81$ multiply-adds.
+    \item Inverse 2-D FFT of each of the 9 components:
+      $9\times\order{S^2\log S}$.
+    \item Extract the $M\times M$ physical domain.
+  \end{itemize}
+\end{enumerate}
+
+\begin{equation}\label{eq:matvec_cost}
+\boxed{
+  \text{Matvec:}\quad
+  18\,\order{S^2\log S} + 81\,S^2
+  = \order{M^2\log M}
+  \quad\text{per iteration}.
+}
+\end{equation}
+
+This is independent of how the propagator array was filled
+(spatial, spectral, or hybrid) and applies equally to the
+$3\times 3$ and $9\times 9$ cases (with the block size
+$B \in \{3, 9\}$ replacing 9 in the constants).
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Hybrid evaluation}\label{sec:hybrid}
+% ══════════════════════════════════════════════════════════════
+
+The spectral method achieves $\sim 10^{-3}$ relative accuracy
+due to the branch-point singularities in the $k_z$ integrand
+(the kernel has $1/k_{xL}$ and $1/k_{xT}$ factors that
+produce $1/\sqrt{\cdot}$ behaviour at the branch points
+$k_z^2 + k_y^2 = k_P^2$ or $k_S^2$).
+For applications requiring higher accuracy, the hybrid
+approach overwrites near-field entries with exact spatial
+values:
+\begin{equation}\label{eq:hybrid}
+  P_{ij}^{\text{hybrid}}(n_1, n_2) =
+  \begin{cases}
+    P_{ij}^{\text{spatial}} & \text{if } |n_1 d|\hat{e}_x + |n_2 d|\hat{e}_y| \le r_{\text{cut}},\\
+    P_{ij}^{\text{spectral}} & \text{otherwise}.
+  \end{cases}
+\end{equation}
+With $r_{\text{cut}} = 1.5\,d$ (covering the four nearest
+neighbours), the near-field entries are machine-precision
+exact and only the far-field entries carry the $10^{-3}$
+spectral error.
+
+The hybrid cost is
+\begin{equation}
+  C_{\text{hybrid}} = C_{\text{spectral}}
+  + N_{\text{near}}\,C_{\text{spatial}},
+\end{equation}
+where $N_{\text{near}} = \order{r_{\text{cut}}^2/d^2}$
+is the number of near-field pairs (independent of $M$).
+
+
+% ══════════════════════════════════════════════════════════════
+\section{Summary of operations}\label{sec:summary}
+% ══════════════════════════════════════════════════════════════
+
+\begin{table}[ht]
+\centering
+\caption{Complete operations summary for the $9\times 9$
+  propagator on an $M\times M$ lattice.
+  $S = 2M{-}1$, $B = 9$, $N_k$ is the spectral grid size.}
+\label{tab:summary}
+\begin{tabular}{@{}p{3.8cm}p{5.5cm}p{3cm}@{}}
+\toprule
+Operation & Cost & Scaling \\
+\midrule
+Spatial fill
+  & $\frac{M(M{+}1)}{2}\,C_{\text{spatial}}$
+  & $\order{M^2}$ \\[4pt]
+Spectral fill\newline (horizontal residue)
+  & $M\,N_k^2\,(C_{\text{kernel}}+B^2\log N_k)$
+  & $\order{M}$ \\[4pt]
+Hybrid fill
+  & spectral + $N_{\text{near}}\,C_{\text{spatial}}$
+  & $\order{M}$ \\[4pt]
+Circulant FFT\newline (precompute, once)
+  & $B^2\,\order{S^2\log S}$
+  & $\order{M^2\log M}$ \\[4pt]
+Matvec\newline (per iteration)
+  & $2B\,\order{S^2\log S} + B^2 S^2$
+  & $\order{M^2\log M}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\end{document}

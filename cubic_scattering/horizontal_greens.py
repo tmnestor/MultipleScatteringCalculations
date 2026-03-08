@@ -27,9 +27,19 @@ The remaining integral:
                                  ↑ 1D IFFT                     ↑ kz quadrature
 """
 
+from __future__ import annotations
+
 from time import time
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+from .resonance_tmatrix import VOIGT_PAIRS, _voigt_contract, elastodynamic_greens_deriv
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+    from .effective_contrasts import ReferenceMedium
 
 # ═══════════════════════════════════════════════════════════════
 #  Physics
@@ -44,8 +54,30 @@ KP = OMEGA / ALPHA
 KS = OMEGA / BETA
 
 
-def exact_greens(x, y, z, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
-    """Ben-Menahem & Singh exact spatial Green's tensor."""
+def exact_greens(
+    x,
+    y,
+    z,
+    omega=OMEGA,
+    *,
+    ref: ReferenceMedium | None = None,
+    rho=RHO,
+    alpha=ALPHA,
+    beta=BETA,
+):
+    """Ben-Menahem & Singh exact spatial Green's tensor.
+
+    Args:
+        x, y, z: Cartesian displacement components.
+        omega: Complex angular frequency.
+        ref: If given, extract rho/alpha/beta from ReferenceMedium.
+        rho, alpha, beta: Medium parameters (used when ref is None).
+
+    Returns:
+        G: shape (3, 3) complex — displacement Green's tensor.
+    """
+    if ref is not None:
+        rho, alpha, beta = ref.rho, ref.alpha, ref.beta
     r = np.sqrt(x**2 + y**2 + z**2 + 0j)
     gam = np.array([x, y, z], dtype=complex) / r
     kP = omega / alpha
@@ -69,6 +101,39 @@ def exact_greens(x, y, z, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
         for j in range(3):
             G[i, j] = f * (1 if i == j else 0) + g * gam[i] * gam[j]
     return G
+
+
+def exact_propagator_9x9(
+    x: float,
+    y: float,
+    z: float,
+    omega: complex,
+    ref: ReferenceMedium,
+) -> NDArray:
+    """Exact 9x9 propagator [[G, C], [H, S]] via Kupradze + derivatives.
+
+    Uses seismological index convention (z=0, x=1, y=2) for consistency
+    with VOIGT_PAIRS in resonance_tmatrix.py.
+
+    Args:
+        x, y, z: Cartesian displacement components.
+        omega: Complex angular frequency.
+        ref: Background medium (alpha, beta, rho).
+
+    Returns:
+        P: shape (9, 9) complex — propagator with displacement (3)
+           and Voigt strain (6) coupling blocks in seismological
+           index order (z=0, x=1, y=2).
+    """
+    r_vec = np.array([z, x, y], dtype=float)
+    G, Gd, Gdd = elastodynamic_greens_deriv(r_vec, omega, ref)  # type: ignore[arg-type]
+    C, H, S = _voigt_contract(Gd, Gdd)
+    P = np.zeros((9, 9), dtype=complex)
+    P[:3, :3] = G
+    P[:3, 3:] = C
+    P[3:, :3] = H
+    P[3:, 3:] = S
+    return P
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -130,6 +195,212 @@ def post_kx_residue_kernel_vec(
                 - kT_vec[i] * kT_vec[j] * eT / (omega**2 * kx_T)
             )
     return G
+
+
+# ═══════════════════════════════════════════════════════════════
+#  Vectorised post-kx-residue 9×9 kernel
+# ═══════════════════════════════════════════════════════════════
+def _pole_G_contributions(
+    kL_vec: list,
+    kT_vec: list,
+    coeff_T_iso,
+    coeff_L_pol,
+    coeff_T_pol,
+    Nky: int,
+) -> tuple[NDArray, NDArray, NDArray]:
+    """Separate L-pole and T-pole contributions to G_{ij}.
+
+    Returns:
+        (G_L, G_T_iso, G_T_pol): each shape (3, 3, Nky).
+
+        Total G_{ij} = G_T_iso + G_L + G_T_pol.
+        L-pole: G_L[i,j] = kL_i kL_j * coeff_L_pol
+        T-pole iso: G_T_iso[i,j] = delta_ij * coeff_T_iso
+        T-pole pol: G_T_pol[i,j] = kT_i kT_j * coeff_T_pol
+    """
+    G_L = np.zeros((3, 3, Nky), dtype=complex)
+    G_T_iso = np.zeros((3, 3, Nky), dtype=complex)
+    G_T_pol = np.zeros((3, 3, Nky), dtype=complex)
+    for i in range(3):
+        for j in range(3):
+            G_L[i, j, :] = kL_vec[i] * kL_vec[j] * coeff_L_pol
+            G_T_pol[i, j, :] = kT_vec[i] * kT_vec[j] * coeff_T_pol
+            if i == j:
+                G_T_iso[i, j, :] = coeff_T_iso
+    return G_L, G_T_iso, G_T_pol
+
+
+def post_kx_residue_kernel_9x9_vec(
+    ky_arr, kz, dx_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
+):
+    """Post-kx-residue 9×9 propagator kernel [[G, C], [H, S]].
+
+    Keeps L-pole and T-pole contributions separate so that x-derivatives
+    use the correct kx (kxL vs kxT).
+
+    Returns: P[a, b, ky_idx] — shape (9, 9, Nky) complex array.
+    """
+    kP = omega / alpha
+    kS = omega / beta
+    Nky = len(ky_arr)
+
+    kx_L = np.sqrt(kP**2 - ky_arr**2 - kz**2 + 0j)
+    kx_T = np.sqrt(kS**2 - ky_arr**2 - kz**2 + 0j)
+    kx_L = np.where(np.imag(kx_L) < 0, -kx_L, kx_L)
+    kx_T = np.where(np.imag(kx_T) < 0, -kx_T, kx_T)
+
+    eL = np.exp(1j * kx_L * dx_abs)
+    eT = np.exp(1j * kx_T * dx_abs)
+
+    kz_arr = np.full(Nky, kz, dtype=complex)
+    # Seismological ordering: z=0, x=1, y=2
+    kL_vec = [kz_arr, kx_L, ky_arr.astype(complex)]
+    kT_vec = [kz_arr, kx_T, ky_arr.astype(complex)]
+
+    # Three scalar coefficient arrays (Nky,)
+    coeff_T_iso = (1j / (2 * rho)) * eT / (beta**2 * kx_T)
+    coeff_L_pol = (1j / (2 * rho)) * eL / (omega**2 * kx_L)
+    coeff_T_pol = -(1j / (2 * rho)) * eT / (omega**2 * kx_T)
+
+    G_L, G_T_iso, G_T_pol = _pole_G_contributions(
+        kL_vec, kT_vec, coeff_T_iso, coeff_L_pol, coeff_T_pol, Nky
+    )
+
+    P = np.zeros((9, 9, Nky), dtype=complex)
+
+    # G block (3×3): sum of all three terms
+    P[:3, :3, :] = G_L + G_T_iso + G_T_pol
+
+    # C block (3×6): Voigt contraction of ik_k * G^pole_{ij}
+    # For Voigt pair alpha=(p,q):
+    #   diagonal (p==q): sum_poles ik_p * G^pole_{ip}
+    #   off-diag (p!=q): sum_poles [ik_q * G^pole_{ip} + ik_p * G^pole_{iq}]
+    for alpha, (p, q) in enumerate(VOIGT_PAIRS):
+        for i in range(3):
+            if p == q:
+                val = (
+                    1j * kL_vec[p] * G_L[i, p, :]
+                    + 1j * kT_vec[p] * G_T_iso[i, p, :]
+                    + 1j * kT_vec[p] * G_T_pol[i, p, :]
+                )
+            else:
+                val = (
+                    1j * kL_vec[q] * G_L[i, p, :]
+                    + 1j * kT_vec[q] * G_T_iso[i, p, :]
+                    + 1j * kT_vec[q] * G_T_pol[i, p, :]
+                    + 1j * kL_vec[p] * G_L[i, q, :]
+                    + 1j * kT_vec[p] * G_T_iso[i, q, :]
+                    + 1j * kT_vec[p] * G_T_pol[i, q, :]
+                )
+            P[i, 3 + alpha, :] = val
+
+    # H block (6×3): Voigt contraction on first index
+    for alpha, (p, q) in enumerate(VOIGT_PAIRS):
+        for j in range(3):
+            if p == q:
+                val = (
+                    1j * kL_vec[p] * G_L[p, j, :]
+                    + 1j * kT_vec[p] * G_T_iso[p, j, :]
+                    + 1j * kT_vec[p] * G_T_pol[p, j, :]
+                )
+            else:
+                val = (
+                    1j * kL_vec[q] * G_L[p, j, :]
+                    + 1j * kT_vec[q] * G_T_iso[p, j, :]
+                    + 1j * kT_vec[q] * G_T_pol[p, j, :]
+                    + 1j * kL_vec[p] * G_L[q, j, :]
+                    + 1j * kT_vec[p] * G_T_iso[q, j, :]
+                    + 1j * kT_vec[p] * G_T_pol[q, j, :]
+                )
+            P[3 + alpha, j, :] = val
+
+    # S block (6×6): double Voigt contraction of -k_k k_l * G^pole_{ij}
+    for alpha, (p, q) in enumerate(VOIGT_PAIRS):
+        for beta, (m, n) in enumerate(VOIGT_PAIRS):
+            # Sum contributions: for each pole, multiply G^pole_{ij}
+            # by (-1) * ik_p * ik_m (for diagonal alpha/beta),
+            # with symmetrisation for off-diagonal Voigt pairs
+            val = np.zeros(Nky, dtype=complex)
+            # L-pole contribution: G_L[i,j] = kL_i*kL_j * coeff_L_pol
+            # derivative factor for alpha=(p,q): ik_p (diag) or ik_p+ik_q (off)
+            # uses kL wavevector for L-pole
+            _add_S_block_pole(val, G_L, kL_vec, p, q, m, n)
+            # T-pole iso contribution
+            _add_S_block_pole(val, G_T_iso, kT_vec, p, q, m, n)
+            # T-pole pol contribution
+            _add_S_block_pole(val, G_T_pol, kT_vec, p, q, m, n)
+            P[3 + alpha, 3 + beta, :] = val
+
+    return P
+
+
+def _add_S_block_pole(
+    val: NDArray,
+    G_pole: NDArray,
+    k_vec: list,
+    p: int,
+    q: int,
+    m: int,
+    n: int,
+) -> None:
+    """Accumulate one pole's contribution to S[alpha, beta].
+
+    S[alpha,beta] = sum_poles (-k_a k_b) * G^pole_{ij}
+    with Voigt contraction on both pairs.
+    """
+    if p == q and m == n:
+        # (ik_p)(ik_m) G_{pm} → -k_p k_m G_{pm}
+        val += -k_vec[p] * k_vec[m] * G_pole[p, m, :]
+    elif p == q and m != n:
+        val += -k_vec[p] * k_vec[n] * G_pole[p, m, :]
+        val += -k_vec[p] * k_vec[m] * G_pole[p, n, :]
+    elif p != q and m == n:
+        val += -k_vec[q] * k_vec[m] * G_pole[p, m, :]
+        val += -k_vec[p] * k_vec[m] * G_pole[q, m, :]
+    else:
+        val += -k_vec[q] * k_vec[n] * G_pole[p, m, :]
+        val += -k_vec[q] * k_vec[m] * G_pole[p, n, :]
+        val += -k_vec[p] * k_vec[n] * G_pole[q, m, :]
+        val += -k_vec[p] * k_vec[m] * G_pole[q, n, :]
+
+
+# ═══════════════════════════════════════════════════════════════
+#  Horizontal 9×9 propagator: kx residue + ky IFFT + kz quadrature
+# ═══════════════════════════════════════════════════════════════
+def horizontal_greens_fft_9x9(
+    dx_abs, Nky, ky_max, kz_max, Nkz, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
+):
+    """Compute 9×9 propagator P(Δx, Δy_m, 0) for all Δy on the FFT grid.
+
+    Same algorithm as horizontal_greens_fft but returns the full 9×9
+    propagator [[G, C], [H, S]] at each grid point.
+
+    Returns:
+        P: (9, 9, Nky) complex — propagator at all Δy grid points
+        y_grid: (Nky,) float — the Δy values
+    """
+    ky_arr, y_grid, dky, dy = fft_grid_1d(Nky, ky_max)
+    kz_arr = np.linspace(-kz_max, kz_max, Nkz)
+    dkz = kz_arr[1] - kz_arr[0]
+
+    scale_ky = dky * Nky / (2 * np.pi)
+    scale_kz = dkz / (2 * np.pi)
+
+    P_total = np.zeros((9, 9, Nky), dtype=complex)
+
+    for kz in kz_arr:
+        kernel = post_kx_residue_kernel_9x9_vec(
+            ky_arr, kz, dx_abs, omega, rho, alpha, beta
+        )
+        for a in range(9):
+            for b in range(9):
+                P_total[a, b, :] += (
+                    np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(kernel[a, b, :])))
+                    * scale_ky
+                    * scale_kz
+                )
+
+    return P_total, y_grid
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -301,6 +572,121 @@ def horizontal_greens_ky_residue(
         G_total += np.sum(kernel, axis=2) * scale
 
     return G_total
+
+
+# ═══════════════════════════════════════════════════════════════
+#  Vectorised post-ky-residue 9×9 kernel (Δx=0 case)
+# ═══════════════════════════════════════════════════════════════
+def post_ky_residue_kernel_9x9_vec(
+    kx_arr, kz, dy_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
+):
+    """Post-ky-residue 9×9 propagator kernel for Δx=0 case.
+
+    Same structure as post_kx_residue_kernel_9x9_vec but with the
+    ky residue: pole wavenumbers are kyL, kyT instead of kxL, kxT.
+
+    Returns: P[a, b, kx_idx] — shape (9, 9, Nkx) complex array.
+    """
+    kP = omega / alpha
+    kS = omega / beta
+    Nkx = len(kx_arr)
+
+    ky_L = np.sqrt(kP**2 - kx_arr**2 - kz**2 + 0j)
+    ky_T = np.sqrt(kS**2 - kx_arr**2 - kz**2 + 0j)
+    ky_L = np.where(np.imag(ky_L) < 0, -ky_L, ky_L)
+    ky_T = np.where(np.imag(ky_T) < 0, -ky_T, ky_T)
+
+    eL = np.exp(1j * ky_L * dy_abs)
+    eT = np.exp(1j * ky_T * dy_abs)
+
+    kz_arr_full = np.full(Nkx, kz, dtype=complex)
+    # Seismological ordering: z=0, x=1, y=2
+    kL_vec = [kz_arr_full, kx_arr.astype(complex), ky_L]
+    kT_vec = [kz_arr_full, kx_arr.astype(complex), ky_T]
+
+    coeff_T_iso = (1j / (2 * rho)) * eT / (beta**2 * ky_T)
+    coeff_L_pol = (1j / (2 * rho)) * eL / (omega**2 * ky_L)
+    coeff_T_pol = -(1j / (2 * rho)) * eT / (omega**2 * ky_T)
+
+    G_L, G_T_iso, G_T_pol = _pole_G_contributions(
+        kL_vec, kT_vec, coeff_T_iso, coeff_L_pol, coeff_T_pol, Nkx
+    )
+
+    P = np.zeros((9, 9, Nkx), dtype=complex)
+    P[:3, :3, :] = G_L + G_T_iso + G_T_pol
+
+    for alpha, (p, q) in enumerate(VOIGT_PAIRS):
+        for i in range(3):
+            if p == q:
+                val = (
+                    1j * kL_vec[p] * G_L[i, p, :]
+                    + 1j * kT_vec[p] * G_T_iso[i, p, :]
+                    + 1j * kT_vec[p] * G_T_pol[i, p, :]
+                )
+            else:
+                val = (
+                    1j * kL_vec[q] * G_L[i, p, :]
+                    + 1j * kT_vec[q] * G_T_iso[i, p, :]
+                    + 1j * kT_vec[q] * G_T_pol[i, p, :]
+                    + 1j * kL_vec[p] * G_L[i, q, :]
+                    + 1j * kT_vec[p] * G_T_iso[i, q, :]
+                    + 1j * kT_vec[p] * G_T_pol[i, q, :]
+                )
+            P[i, 3 + alpha, :] = val
+
+    for alpha, (p, q) in enumerate(VOIGT_PAIRS):
+        for j in range(3):
+            if p == q:
+                val = (
+                    1j * kL_vec[p] * G_L[p, j, :]
+                    + 1j * kT_vec[p] * G_T_iso[p, j, :]
+                    + 1j * kT_vec[p] * G_T_pol[p, j, :]
+                )
+            else:
+                val = (
+                    1j * kL_vec[q] * G_L[p, j, :]
+                    + 1j * kT_vec[q] * G_T_iso[p, j, :]
+                    + 1j * kT_vec[q] * G_T_pol[p, j, :]
+                    + 1j * kL_vec[p] * G_L[q, j, :]
+                    + 1j * kT_vec[p] * G_T_iso[q, j, :]
+                    + 1j * kT_vec[p] * G_T_pol[q, j, :]
+                )
+            P[3 + alpha, j, :] = val
+
+    for alpha, (p, q) in enumerate(VOIGT_PAIRS):
+        for beta, (m, n) in enumerate(VOIGT_PAIRS):
+            val = np.zeros(Nkx, dtype=complex)
+            _add_S_block_pole(val, G_L, kL_vec, p, q, m, n)
+            _add_S_block_pole(val, G_T_iso, kT_vec, p, q, m, n)
+            _add_S_block_pole(val, G_T_pol, kT_vec, p, q, m, n)
+            P[3 + alpha, 3 + beta, :] = val
+
+    return P
+
+
+def horizontal_greens_ky_residue_9x9(
+    dy_abs, kx_max, Nkx, kz_max, Nkz, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
+):
+    """Compute 9×9 propagator P(0, Δy, 0) via ky residue decomposition.
+
+    Returns:
+        P: (9, 9) complex — propagator at (0, Δy, 0).
+    """
+    kx_arr = np.linspace(-kx_max, kx_max, Nkx)
+    dkx = kx_arr[1] - kx_arr[0]
+    kz_arr = np.linspace(-kz_max, kz_max, Nkz)
+    dkz = kz_arr[1] - kz_arr[0]
+
+    scale = dkx * dkz / (2 * np.pi) ** 2
+
+    P_total = np.zeros((9, 9), dtype=complex)
+    for kz in kz_arr:
+        kernel = post_ky_residue_kernel_9x9_vec(
+            kx_arr, kz, dy_abs, omega, rho, alpha, beta
+        )
+        P_total += np.sum(kernel, axis=2) * scale
+
+    return P_total
 
 
 # ═══════════════════════════════════════════════════════════════

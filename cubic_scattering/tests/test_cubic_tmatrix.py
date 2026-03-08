@@ -27,6 +27,15 @@ from cubic_scattering import (
     traction_from_strain,
     voigt_tmatrix_6x6,
 )
+from cubic_scattering.resonance_tmatrix import (
+    _build_incident_field_coupled,
+    _propagator_block_9x9,
+    compute_resonance_tmatrix,
+    elastodynamic_greens,
+    elastodynamic_greens_deriv,
+    sub_cell_centres,
+    voigt_tmatrix_from_resonance_result,
+)
 
 
 def test_born_limit():
@@ -487,6 +496,257 @@ def test_notebook_verification():
 
 
 # ================================================================
+# Tests for coupled (Drho, Dlambda, Dmu) Foldy-Lax
+# ================================================================
+
+
+def test_greens_deriv_finite_difference():
+    """Gd and Gdd vs finite differences of elastodynamic_greens."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    omega = 2.0 * np.pi * 50.0
+    r_vec = np.array([0.3, -0.2, 0.5])
+
+    G, Gd, Gdd = elastodynamic_greens_deriv(r_vec, omega, ref)
+
+    # Verify G matches existing function
+    G_ref = elastodynamic_greens(r_vec, omega, ref)
+    assert np.allclose(G, G_ref, rtol=1e-12), "G does not match elastodynamic_greens"
+
+    # Finite-difference check for Gd
+    h = 1e-7
+    for k in range(3):
+        r_plus = r_vec.copy()
+        r_minus = r_vec.copy()
+        r_plus[k] += h
+        r_minus[k] -= h
+        G_plus = elastodynamic_greens(r_plus, omega, ref)
+        G_minus = elastodynamic_greens(r_minus, omega, ref)
+        Gd_fd = (G_plus - G_minus) / (2.0 * h)
+        err = np.max(np.abs(Gd[:, :, k] - Gd_fd))
+        scale = max(np.max(np.abs(Gd[:, :, k])), 1e-30)
+        assert err / scale < 1e-5, f"Gd[:,:,{k}] finite diff error {err / scale:.2e}"
+
+    # Finite-difference check for Gdd
+    for k in range(3):
+        r_plus = r_vec.copy()
+        r_minus = r_vec.copy()
+        r_plus[k] += h
+        r_minus[k] -= h
+        _, Gd_plus, _ = elastodynamic_greens_deriv(r_plus, omega, ref)
+        _, Gd_minus, _ = elastodynamic_greens_deriv(r_minus, omega, ref)
+        Gdd_fd = (Gd_plus - Gd_minus) / (2.0 * h)
+        # Gdd[:, :, :, k] = ∂Gd/∂x_k
+        err = np.max(np.abs(Gdd[:, :, :, k] - Gdd_fd))
+        scale = max(np.max(np.abs(Gdd[:, :, :, k])), 1e-30)
+        assert err / scale < 1e-4, f"Gdd[:,:,:,{k}] finite diff error {err / scale:.2e}"
+
+
+def test_greens_deriv_symmetry():
+    """G_{ij,k} = G_{ji,k} (G is symmetric in i,j)."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    omega = 2.0 * np.pi * 50.0
+    r_vec = np.array([0.4, -0.1, 0.6])
+
+    _, Gd, Gdd = elastodynamic_greens_deriv(r_vec, omega, ref)
+
+    # Symmetry in first two indices
+    for k in range(3):
+        assert np.allclose(Gd[:, :, k], Gd[:, :, k].T, atol=1e-20), (
+            f"Gd[:,:,{k}] not symmetric"
+        )
+    for k in range(3):
+        for l_idx in range(3):
+            assert np.allclose(
+                Gdd[:, :, k, l_idx], Gdd[:, :, k, l_idx].T, atol=1e-20
+            ), f"Gdd[:,:,{k},{l_idx}] not symmetric"
+
+
+def test_propagator_9x9_rayleigh_limit():
+    """At large r, off-diagonal blocks (C, H, S) are small relative to G."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    omega = 2.0 * np.pi * 10.0
+    r_vec = np.array([0.0, 0.0, 100.0])  # far field
+
+    P = _propagator_block_9x9(r_vec, omega, ref)
+
+    G_block = P[:3, :3]
+    C_block = P[:3, 3:]
+    H_block = P[3:, :3]
+    S_block = P[3:, 3:]
+
+    norm_G = np.linalg.norm(G_block)
+    assert norm_G > 0, "G block should be nonzero"
+
+    # Off-diagonal blocks decay faster (1/r² vs 1/r for G in far field)
+    ratio_C = np.linalg.norm(C_block) / norm_G
+    ratio_H = np.linalg.norm(H_block) / norm_G
+    ratio_S = np.linalg.norm(S_block) / norm_G
+
+    assert ratio_C < 0.1, f"C/G ratio = {ratio_C:.4f}, expected << 1 at large r"
+    assert ratio_H < 0.1, f"H/G ratio = {ratio_H:.4f}, expected << 1 at large r"
+    assert ratio_S < 0.1, f"S/G ratio = {ratio_S:.4f}, expected << 1 at large r"
+
+
+def test_coupled_rayleigh_limit():
+    """At n_sub=1, coupled T3x3 matches Rayleigh density-only T-matrix."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    omega = 2.0 * np.pi * 10.0
+    a = 1.0
+
+    result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=1)
+
+    # Rayleigh reference: density-only T-matrix = ω² Δρ* V I₃
+    rayleigh = compute_cube_tmatrix(omega, a, ref, contrast)
+    V = (2.0 * a) ** 3
+    t_eff = V * omega**2 * complex(rayleigh.Drho_star)
+    T_ray = t_eff * np.eye(3, dtype=complex)
+
+    # At n_sub=1, no inter-cell coupling — T3x3 block must match density T-matrix
+    rel_err = np.linalg.norm(result.T3x3 - T_ray) / max(np.linalg.norm(T_ray), 1e-30)
+    assert rel_err < 1e-10, f"Coupled T3x3 vs Rayleigh at n=1: rel_err = {rel_err:.2e}"
+
+
+def test_coupled_density_only_isotropic():
+    """Dlambda=Dmu=0: T3x3 is isotropic, stress_dipole_voigt is zero."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=0.0, Dmu=0.0, Drho=200.0)
+    omega = 2.0 * np.pi * 10.0
+    a = 1.0
+
+    result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=2)
+
+    # T3x3 should be isotropic (proportional to I₃) for density-only contrast
+    T3x3 = result.T3x3
+    diag = np.diag(T3x3)
+    off_diag_max = np.max(np.abs(T3x3 - np.diag(diag)))
+    assert off_diag_max < 1e-10 * np.max(np.abs(diag)), (
+        f"T3x3 off-diagonal = {off_diag_max:.2e}, should be ~0 for density-only"
+    )
+    assert np.allclose(diag[0], diag[1], rtol=1e-10), "T3x3 diagonal not isotropic"
+    assert np.allclose(diag[0], diag[2], rtol=1e-10), "T3x3 diagonal not isotropic"
+
+    # No stiffness contrast → stress dipole block should be zero
+    assert np.linalg.norm(result.stress_dipole_voigt) < 1e-10 * np.linalg.norm(T3x3), (
+        "stress_dipole_voigt should be ~0 for density-only contrast"
+    )
+
+
+def test_coupled_stress_dipole_nonzero():
+    """Nonzero Dlambda/Dmu produces nonzero stress_dipole_voigt."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    omega = 2.0 * np.pi * 10.0
+    a = 1.0
+
+    result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=1)
+
+    assert result.stress_dipole_voigt is not None, "stress_dipole_voigt should exist"
+    assert np.linalg.norm(result.stress_dipole_voigt) > 0, (
+        "stress_dipole_voigt should be nonzero for nonzero stiffness contrast"
+    )
+
+
+def test_coupled_cubic_symmetry():
+    """force_monopole has Oh diagonal symmetry."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    omega = 2.0 * np.pi * 10.0
+    a = 1.0
+
+    result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=2)
+
+    T3x3 = result.force_monopole
+
+    # Oh symmetry: T3x3 should be diagonal with equal entries
+    diag = np.diag(T3x3)
+    off_diag_max = np.max(np.abs(T3x3 - np.diag(diag)))
+    assert off_diag_max < 1e-10 * np.max(np.abs(diag)), (
+        f"force_monopole off-diag = {off_diag_max:.2e}, should be ~0"
+    )
+    assert np.allclose(diag[0], diag[1], rtol=1e-10), (
+        f"T3x3[0,0]={diag[0]}, T3x3[1,1]={diag[1]} should be equal"
+    )
+    assert np.allclose(diag[0], diag[2], rtol=1e-10), (
+        f"T3x3[0,0]={diag[0]}, T3x3[2,2]={diag[2]} should be equal"
+    )
+
+
+def test_voigt_from_resonance_near_field():
+    """Near-field 6x6: displacement block and traction block vs analytic construction."""
+    from cubic_scattering.resonance_tmatrix import (
+        _traction_from_voigt_strain,
+        _volume_integral_voigt,
+    )
+
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    omega = 2.0 * np.pi * 1.0
+    a = 0.5
+    kx = 0.001
+    ky = 0.0
+
+    rayleigh = compute_cube_tmatrix(omega, a, ref, contrast)
+    V = (2.0 * a) ** 3
+
+    result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=1)
+    T6_res = voigt_tmatrix_from_resonance_result(result, kx=kx, ky=ky)
+
+    # 1. Displacement block = Gamma0 * omega^2 * Drho* * V * I3
+    expected_u = complex(rayleigh.Gamma0 * omega**2 * rayleigh.Drho_star * V)
+    for i in range(3):
+        rel_err = abs(T6_res[i, i] - expected_u) / max(abs(expected_u), 1e-30)
+        assert rel_err < 1e-10, f"u diag [{i}] rel_err = {rel_err:.2e}"
+
+    # 2. Oh symmetry: txz and tyz entries equal
+    assert np.allclose(T6_res[4, 4], T6_res[5, 5], rtol=1e-10), (
+        "txz and tyz traction entries should be equal"
+    )
+
+    # 3. Traction block matches analytic G_self @ T_loc @ input_conv
+    S_V = _volume_integral_voigt(rayleigh.Ac, rayleigh.Bc, rayleigh.Cc)
+    C_trac = _traction_from_voigt_strain(ref)
+    Dc_star = effective_stiffness_voigt(
+        rayleigh.Dlambda_star, rayleigh.Dmu_star_diag, rayleigh.Dmu_star_off
+    )
+    S = strain_from_displacement_traction(kx, ky, ref)
+    expected_trac = V * C_trac @ S_V @ Dc_star @ S
+    rel_err_t = np.linalg.norm(T6_res[3:, :] - expected_trac) / max(
+        np.linalg.norm(expected_trac), 1e-30
+    )
+    assert rel_err_t < 1e-10, f"Traction block vs analytic: rel_err = {rel_err_t:.2e}"
+
+
+def test_incident_strain_plane_wave():
+    """_build_incident_field_coupled gives correct Voigt strain."""
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    omega = 2.0 * np.pi * 10.0
+    a = 1.0
+    n = 2
+    centres = sub_cell_centres(a, n)
+
+    U0 = _build_incident_field_coupled(centres, omega, ref)
+    N = len(centres)
+
+    # Column 0 (displacement e_z): u=(1,0,0), strain=0 at centre
+    m_centre = N // 2
+    u_col0 = U0[9 * m_centre : 9 * m_centre + 3, 0]
+    eps_col0 = U0[9 * m_centre + 3 : 9 * m_centre + 9, 0]
+    # Phase is exp(ikz·z), displacement should be nonzero
+    assert np.abs(u_col0[0]) > 0, "u_z for col 0 should be nonzero"
+    assert np.allclose(eps_col0, 0.0), "strain for col 0 should be zero"
+
+    # Column 3 (strain ε_zz): strain should have e_0 Voigt
+    eps_col3 = U0[9 * m_centre + 3 : 9 * m_centre + 9, 3]
+    phase = U0[9 * m_centre + 3, 3]  # should be the phase value
+    expected_eps = np.zeros(6, dtype=complex)
+    expected_eps[0] = phase  # e_zz in Voigt
+    assert np.allclose(eps_col3, expected_eps, atol=1e-14), (
+        f"Strain col 3: {eps_col3} vs expected {expected_eps}"
+    )
+
+
+# ================================================================
 # Run all tests
 # ================================================================
 
@@ -505,6 +765,15 @@ if __name__ == "__main__":
         test_traction_extraction,
         test_sphere_limit,
         test_notebook_verification,
+        test_greens_deriv_finite_difference,
+        test_greens_deriv_symmetry,
+        test_propagator_9x9_rayleigh_limit,
+        test_coupled_rayleigh_limit,
+        test_coupled_density_only_isotropic,
+        test_coupled_stress_dipole_nonzero,
+        test_coupled_cubic_symmetry,
+        test_voigt_from_resonance_near_field,
+        test_incident_strain_plane_wave,
     ]
 
     passed = 0
