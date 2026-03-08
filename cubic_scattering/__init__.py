@@ -58,6 +58,21 @@ from .resonance_tmatrix import (
     validate_rayleigh_limit,
     voigt_tmatrix_from_resonance_result,
 )
+from .sphere_scattering import (
+    MieEffectiveContrasts,
+    MieResult,
+    SphereDecompositionResult,
+    SphereTMatrixResult,
+    compute_elastic_mie,
+    compute_sphere_foldy_lax,
+    compute_sphere_tmatrix,
+    foldy_lax_far_field,
+    mie_extract_effective_contrasts,
+    mie_far_field,
+    mie_scattered_displacement,
+    sphere_rayleigh_far_field,
+    sphere_sub_cell_centres,
+)
 from .voigt_tmatrix import (
     effective_stiffness_voigt,
     scattered_stress_voigt,
@@ -96,4 +111,18 @@ __all__ = [
     "exact_propagator_9x9",
     # ── Lattice ──────────────────────────────────────────────────────────
     "LatticeGreens",
+    # ── Sphere scattering (validation) ────────────────────────────────
+    "SphereTMatrixResult",
+    "SphereDecompositionResult",
+    "MieResult",
+    "MieEffectiveContrasts",
+    "mie_extract_effective_contrasts",
+    "compute_sphere_tmatrix",
+    "compute_sphere_foldy_lax",
+    "compute_elastic_mie",
+    "mie_far_field",
+    "mie_scattered_displacement",
+    "sphere_rayleigh_far_field",
+    "foldy_lax_far_field",
+    "sphere_sub_cell_centres",
 ]
