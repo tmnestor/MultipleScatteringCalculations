@@ -1,17 +1,15 @@
-"""Sphere vs cubic T-matrix validation module.
+"""Sphere validation module: Mie theory and Foldy-Lax voxelized sphere.
 
-Provides:
-  1. Rayleigh sphere T-matrix (analytical, isotropic C=0)
-  2. Sphere decomposition via Foldy-Lax (voxelized sphere)
-  3. Elastic Mie theory (partial wave expansion)
-  4. Far-field scattering amplitudes
+Validates the cubic T-matrix formalism by:
+  1. Voxelizing a sphere into small cubes (Foldy-Lax), each using
+     the analytical cubic T-matrix from effective_contrasts.py
+  2. Comparing the Foldy-Lax result against exact elastic Mie theory
 
-The sphere has isotropic symmetry (no cubic anisotropy), so comparison
-with the cubic T-matrix infrastructure provides an independent
-validation of the multiple scattering formalism.
+The sphere has isotropic symmetry (no cubic anisotropy), so agreement
+between Foldy-Lax (cubic sub-cells) and Mie (exact) validates the
+underlying cubic T-matrix computation.
 
 References:
-    Shekhar et al. (2023) - Small sphere self-consistent solution
     Pao & Mow (1973) - Elastic Mie scattering
     Korneev & Johnson (1993) - Elastic scattering from a sphere
 """
@@ -22,7 +20,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
-from scipy import integrate
 from scipy.special import hankel1, jv, lpmv
 
 if TYPE_CHECKING:
@@ -31,7 +28,6 @@ if TYPE_CHECKING:
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
-    _compute_T123,
     compute_cube_tmatrix,
 )
 from .resonance_tmatrix import (
@@ -44,45 +40,6 @@ from .resonance_tmatrix import (
 # =====================================================================
 # Result dataclasses
 # =====================================================================
-
-
-@dataclass
-class SphereTMatrixResult:
-    """Result from Rayleigh sphere T-matrix computation.
-
-    Attributes:
-        Gamma0: Volume integral of Green's tensor trace.
-        A: Second-derivative integral A (isotropic).
-        B: Second-derivative integral B (isotropic).
-        T1: T-matrix coupling coefficient T1.
-        T2: T-matrix coupling coefficient T2.
-        amp_u: Displacement amplification factor.
-        amp_theta: Dilatation amplification factor.
-        amp_dev: Deviatoric strain amplification factor.
-        Drho_star: Effective density contrast.
-        Dlambda_star: Effective bulk modulus contrast.
-        Dmu_star: Effective shear modulus contrast (single value, isotropic).
-        omega: Angular frequency (rad/s).
-        radius: Sphere radius (m).
-        ref: Background medium.
-        contrast: Material contrast.
-    """
-
-    Gamma0: complex
-    A: complex
-    B: complex
-    T1: complex
-    T2: complex
-    amp_u: complex
-    amp_theta: complex
-    amp_dev: complex
-    Drho_star: complex
-    Dlambda_star: complex
-    Dmu_star: complex
-    omega: float
-    radius: float
-    ref: ReferenceMedium
-    contrast: MaterialContrast
 
 
 @dataclass
@@ -151,284 +108,7 @@ class MieResult:
 
 
 # =====================================================================
-# Phase 1: Rayleigh Sphere T-Matrix
-# =====================================================================
-
-
-def _sphere_radial_fg(
-    r: float,
-    omega: float,
-    alpha: float,
-    beta: float,
-    rho: float,
-) -> tuple[complex, complex]:
-    """Radial Green's tensor functions f(r) and g(r).
-
-    The Green's tensor decomposes as G_{ij}(x) = f(r) delta_{ij} + g(r) n_i n_j
-    where n_i = x_i/r.
-
-    Args:
-        r: Radial distance (m), must be > 0.
-        omega: Angular frequency (rad/s).
-        alpha: P-wave velocity (m/s).
-        beta: S-wave velocity (m/s).
-        rho: Density (kg/m^3).
-
-    Returns:
-        (f, g) complex radial functions.
-    """
-    c_nf = (1.0 / (8.0 * np.pi * rho * beta**2)) * (1.0 - beta**2 / alpha**2)
-
-    exp_p = np.exp(1j * omega * r / alpha)
-    exp_s = np.exp(1j * omega * r / beta)
-
-    f = -c_nf / r + exp_s / (4.0 * np.pi * rho * beta**2 * r)
-    g = (
-        3.0 * c_nf / r
-        + exp_p / (4.0 * np.pi * rho * alpha**2 * r)
-        - exp_s / (4.0 * np.pi * rho * beta**2 * r)
-    )
-
-    return f, g
-
-
-def _sphere_Gamma0(
-    omega: float,
-    radius: float,
-    ref: ReferenceMedium,
-) -> complex:
-    """Volume integral of Green's tensor diagonal over sphere.
-
-    Gamma0 = integral_0^a r^2 [4*pi*f(r) + (4*pi/3)*g(r)] dr
-
-    where the angular integrals have been evaluated analytically using
-    spherical symmetry.
-
-    Args:
-        omega: Angular frequency (rad/s).
-        radius: Sphere radius (m).
-        ref: Background medium.
-
-    Returns:
-        Gamma0 (complex).
-    """
-    alpha, beta, rho = ref.alpha, ref.beta, ref.rho
-
-    def integrand_real(r: float) -> float:
-        f, g = _sphere_radial_fg(r, omega, alpha, beta, rho)
-        val = r**2 * (4.0 * np.pi * f + (4.0 * np.pi / 3.0) * g)
-        return float(np.real(val))
-
-    def integrand_imag(r: float) -> float:
-        f, g = _sphere_radial_fg(r, omega, alpha, beta, rho)
-        val = r**2 * (4.0 * np.pi * f + (4.0 * np.pi / 3.0) * g)
-        return float(np.imag(val))
-
-    re, _ = integrate.quad(integrand_real, 0, radius, limit=100)
-    im, _ = integrate.quad(integrand_imag, 0, radius, limit=100)
-
-    return complex(re, im)
-
-
-def _sphere_AB(
-    omega: float,
-    radius: float,
-    ref: ReferenceMedium,
-) -> tuple[complex, complex]:
-    """Green's tensor second-derivative integral A, B for a sphere.
-
-    For an isotropic sphere:
-        I_{ijkl} = A δ_{ij}δ_{kl} + B (δ_{ik}δ_{jl} + δ_{il}δ_{jk})
-
-    (No C term since sphere has full rotational symmetry.)
-
-    The volume integral ∫_V ∂²G_{ij}/∂x_k∂x_l dV has two contributions:
-
-    1. **Eshelby (static, singular)**: The Green's tensor 1/r singularity
-       produces a delta function under second differentiation. This gives
-       the exact Eshelby S-tensor for a sphere and is independent of ω:
-
-           A_E = -(9 - 10ν) / (30μ(1 - ν))
-           B_E = 1 / (30μ(1 - ν))
-
-       where ν is the background Poisson ratio.
-
-    2. **Dynamic (smooth, O(ω²))**: The oscillating exponentials
-       exp(iωr/α), exp(iωr/β) give frequency-dependent corrections
-       that vanish as ω → 0.
-
-    In the Rayleigh regime (ka ≪ 1), the dynamic correction is O(ka²)
-    relative to the Eshelby part and can be safely neglected.
-
-    The Eshelby result is **exact for all contrast levels** — the
-    amplification factors it produces match the exact Mie solution
-    in the ka → 0 limit regardless of material contrast magnitude.
-
-    Args:
-        omega: Angular frequency (rad/s).
-        radius: Sphere radius (m).
-        ref: Background medium.
-
-    Returns:
-        (A, B) complex, dominated by the Eshelby contribution.
-    """
-    # Analytical Eshelby S-tensor for a sphere in an isotropic matrix.
-    # Derived from S_A = (5ν-1)/(15(1-ν)), S_B = (4-5ν)/(15(1-ν))
-    # and the relation S^E = -S^code : C^0 which inverts to give:
-    #   A = -(9-10ν)/(30μ(1-ν))
-    #   B = 1/(30μ(1-ν))
-    nu = ref.lam / (2.0 * (ref.lam + ref.mu))
-    A_eshelby = -(9.0 - 10.0 * nu) / (30.0 * ref.mu * (1.0 - nu))
-    B_eshelby = 1.0 / (30.0 * ref.mu * (1.0 - nu))
-
-    # Dynamic correction: integrate the smooth (non-singular) part of
-    # the Green's tensor second derivative.  This is the difference
-    # between the full dynamic integrand and its static 1/r limit.
-    # At ka << 1 this correction is O(ka²) and negligible for the
-    # effective contrast extraction.
-    ka_S = omega * radius / ref.beta
-    if ka_S < 0.3:
-        # Deep Rayleigh: dynamic correction is negligible
-        return complex(A_eshelby), complex(B_eshelby)
-
-    # For larger ka: numerically integrate the dynamic correction
-    # by subtracting the static 1/r integrand (which integrates to zero
-    # by cancellation) from the full dynamic integrand.  This avoids
-    # the catastrophic cancellation that plagues the naive integration.
-    alpha, beta, rho = ref.alpha, ref.beta, ref.rho
-
-    # Static radial functions: f_s = F/r, g_s = G/r
-    F_static = (ref.lam + 3.0 * ref.mu) / (
-        8.0 * np.pi * ref.mu * (ref.lam + 2.0 * ref.mu)
-    )
-    G_static = (ref.lam + ref.mu) / (8.0 * np.pi * ref.mu * (ref.lam + 2.0 * ref.mu))
-
-    def _fg_dynamic(r: float) -> tuple[complex, complex]:
-        """Return (f_dyn, g_dyn) = f(r) - F/r, g(r) - G/r."""
-        f, g = _sphere_radial_fg(r, omega, alpha, beta, rho)
-        return f - F_static / r, g - G_static / r
-
-    dr = 1e-8 * radius
-
-    def _h_dyn_deriv(r: float) -> tuple[complex, complex]:
-        """(h_dyn', h_dyn'') for h_dyn = 3f_dyn + g_dyn."""
-
-        def hd(rr: float) -> complex:
-            fd, gd = _fg_dynamic(rr)
-            return 3.0 * fd + gd
-
-        hp = (hd(r + dr) - hd(r - dr)) / (2.0 * dr)
-        hpp = (hd(r + dr) - 2.0 * hd(r) + hd(r - dr)) / dr**2
-        return hp, hpp
-
-    def _q_dyn_and_deriv(r: float) -> tuple[complex, complex]:
-        """(q_dyn, q_dyn') for the dynamic correction to q = f'+g'+2g/r."""
-        fd_p, gd_p = _fg_dynamic(r + dr)
-        fd_m, gd_m = _fg_dynamic(r - dr)
-        fd_c, gd_c = _fg_dynamic(r)
-        fp = (fd_p - fd_m) / (2.0 * dr)
-        gp = (gd_p - gd_m) / (2.0 * dr)
-        q = fp + gp + 2.0 * gd_c / r
-        fd_pp, gd_pp = _fg_dynamic(r + 2.0 * dr)
-        fd_mm, gd_mm = _fg_dynamic(r - 2.0 * dr)
-        fp_p = (fd_pp - fd_c) / (2.0 * dr)
-        gp_p = (gd_pp - gd_c) / (2.0 * dr)
-        q_plus = fp_p + gp_p + 2.0 * gd_p / (r + dr)
-        fp_m = (fd_c - fd_mm) / (2.0 * dr)
-        gp_m = (gd_c - gd_mm) / (2.0 * dr)
-        q_minus = fp_m + gp_m + 2.0 * gd_m / (r - dr)
-        qp = (q_plus - q_minus) / (2.0 * dr)
-        return q, qp
-
-    def g1_re(r: float) -> float:
-        hp, hpp = _h_dyn_deriv(r)
-        return float(np.real(r**2 * ((4 * np.pi / 3) * hpp + (8 * np.pi / 3) * hp / r)))
-
-    def g1_im(r: float) -> float:
-        hp, hpp = _h_dyn_deriv(r)
-        return float(np.imag(r**2 * ((4 * np.pi / 3) * hpp + (8 * np.pi / 3) * hp / r)))
-
-    def g2_re(r: float) -> float:
-        q, qp = _q_dyn_and_deriv(r)
-        return float(np.real(r**2 * ((4 * np.pi / 3) * qp + (8 * np.pi / 3) * q / r)))
-
-    def g2_im(r: float) -> float:
-        q, qp = _q_dyn_and_deriv(r)
-        return float(np.imag(r**2 * ((4 * np.pi / 3) * qp + (8 * np.pi / 3) * q / r)))
-
-    r_min = 1e-6 * radius
-    Gamma1_re, _ = integrate.quad(g1_re, r_min, radius, limit=200)
-    Gamma1_im, _ = integrate.quad(g1_im, r_min, radius, limit=200)
-    Gamma1 = complex(Gamma1_re, Gamma1_im)
-    Gamma2_re, _ = integrate.quad(g2_re, r_min, radius, limit=200)
-    Gamma2_im, _ = integrate.quad(g2_im, r_min, radius, limit=200)
-    Gamma2 = complex(Gamma2_re, Gamma2_im)
-
-    A_dyn = (4.0 * Gamma1 - 2.0 * Gamma2) / 10.0
-    B_dyn = (3.0 * Gamma2 - Gamma1) / 10.0
-
-    return complex(A_eshelby + A_dyn), complex(B_eshelby + B_dyn)
-
-
-def compute_sphere_tmatrix(
-    omega: float,
-    radius: float,
-    ref: ReferenceMedium,
-    contrast: MaterialContrast,
-) -> SphereTMatrixResult:
-    """Compute the Rayleigh T-matrix for an isotropic sphere.
-
-    The sphere has isotropic symmetry (C=0, no cubic anisotropy).
-    Uses _compute_T123 with C=0 to get T1, T2 (T3=0).
-
-    Args:
-        omega: Angular frequency (rad/s).
-        radius: Sphere radius (m).
-        ref: Background medium.
-        contrast: Material contrasts.
-
-    Returns:
-        SphereTMatrixResult with all computed quantities.
-    """
-    Gamma0 = _sphere_Gamma0(omega, radius, ref)
-    A, B = _sphere_AB(omega, radius, ref)
-
-    # Isotropic sphere: C = 0
-    T1, T2, T3 = _compute_T123(A, B, 0.0, contrast.Dlambda, contrast.Dmu)
-
-    # Amplification factors (isotropic: amp_e_off = amp_e_diag = amp_dev)
-    amp_u = 1.0 / (1.0 - omega**2 * contrast.Drho * Gamma0)
-    amp_theta = 1.0 / (1.0 - 3.0 * T1 - 2.0 * T2)
-    amp_dev = 1.0 / (1.0 - 2.0 * T2)
-
-    # Effective contrasts (isotropic: single Dmu_star)
-    Drho_star = contrast.Drho * amp_u
-    Dmu_star = contrast.Dmu * amp_dev
-    Dlambda_star = (
-        contrast.Dlambda + 2.0 / 3.0 * contrast.Dmu
-    ) * amp_theta - contrast.Dmu / 3.0 * (amp_dev + amp_dev)
-
-    return SphereTMatrixResult(
-        Gamma0=Gamma0,
-        A=A,
-        B=B,
-        T1=T1,
-        T2=T2,
-        amp_u=amp_u,
-        amp_theta=amp_theta,
-        amp_dev=amp_dev,
-        Drho_star=Drho_star,
-        Dlambda_star=Dlambda_star,
-        Dmu_star=Dmu_star,
-        omega=omega,
-        radius=radius,
-        ref=ref,
-        contrast=contrast,
-    )
-
-
-# =====================================================================
-# Phase 2: Sphere Decomposition (Foldy-Lax)
+# Sphere Decomposition (Foldy-Lax with cubic sub-cells)
 # =====================================================================
 
 
@@ -1272,104 +952,6 @@ def mie_far_field(
     return f_P, f_S
 
 
-def sphere_rayleigh_far_field(
-    sphere_result: SphereTMatrixResult,
-    r_obs: NDArray[np.floating],
-    k_hat: NDArray[np.floating],
-    pol: NDArray[np.floating],
-    wave_type: str = "P",
-) -> NDArray[np.complexfloating]:
-    """Scattered field from Rayleigh sphere at an observation point.
-
-    u^scat(x) = V * {H_{ijk}(x) * Dc_{jklm} * eps_{lm}
-                      + omega^2 * G_{ij}(x) * Drho * u_j}
-
-    where V = (4/3) pi a^3 and eps, u are the self-consistent
-    interior values.
-
-    Args:
-        sphere_result: Output of compute_sphere_tmatrix.
-        r_obs: Observation point position (m), shape (3,).
-        k_hat: Unit incident propagation direction, shape (3,).
-        pol: Incident polarisation vector, shape (3,).
-        wave_type: 'P' or 'S' for incident wave type.
-
-    Returns:
-        Scattered displacement at r_obs, shape (3,).
-    """
-    omega = sphere_result.omega
-    radius = sphere_result.radius
-    ref = sphere_result.ref
-    contrast = sphere_result.contrast
-    V_sphere = (4.0 / 3.0) * np.pi * radius**3
-
-    k_hat = np.asarray(k_hat, dtype=float)
-    k_hat /= np.linalg.norm(k_hat)
-    pol = np.asarray(pol, dtype=float)
-    r_obs = np.asarray(r_obs, dtype=float)
-
-    # Incident field at sphere centre (origin)
-    u_inc = pol.copy()
-
-    # Incident strain at sphere centre
-    if wave_type == "P":
-        k_mag = omega / ref.alpha
-    else:
-        k_mag = omega / ref.beta
-    # eps_{lm}^(0) = (i k / 2) (k_hat_l * pol_m + k_hat_m * pol_l)
-    eps_inc = 0.5j * k_mag * (np.outer(k_hat, pol) + np.outer(pol, k_hat))
-
-    # Self-consistent interior fields
-    u_int = sphere_result.amp_u * u_inc
-    theta_int = sphere_result.amp_theta * np.trace(eps_inc)
-    eps_dev_inc = eps_inc - np.trace(eps_inc) / 3.0 * np.eye(3)
-    eps_dev_int = sphere_result.amp_dev * eps_dev_inc
-    eps_int = eps_dev_int + theta_int / 3.0 * np.eye(3)
-
-    # Stress perturbation: Dc_{jklm} eps_{lm}
-    Dc_eps = (
-        contrast.Dlambda * np.trace(eps_int) * np.eye(3) + 2.0 * contrast.Dmu * eps_int
-    )
-
-    # Green's tensor and its derivative at observation point
-    from .resonance_tmatrix import elastodynamic_greens_deriv as _egd
-
-    G, Gd, _ = _egd(r_obs, omega, ref)
-
-    # H_{ijk} = (1/2)(G_{ij,k} + G_{ik,j})  — strain Green's tensor
-    # Actually H_{ijk} = G_{ij,k} (derivative w.r.t. source, not field)
-    # For source at origin, observation at r_obs: G_{ij,k} is the derivative
-    # w.r.t. x'_k, which equals -G_{ij,k}^{(x)} for translation invariance.
-    # But the Lippmann-Schwinger uses G_{ij,k}^{source derivative}
-    # = -Gd[i,j,k] (negative of field-point derivative)
-
-    # u^scat_i = V * {-Gd[i,j,k] * Dc_eps[j,k] + omega^2 * G[i,j] * Drho_star * u_int[j]}
-    # Wait: the effective contrasts already include amplification
-    # The correct formula using effective contrasts:
-    # u^scat_i = V * {-Gd[i,j,k] * [Dlambda_star * theta * delta_jk + 2*Dmu_star * eps_jk]
-    #               + omega^2 * G[i,j] * Drho_star * u_inc_j}
-
-    Dc_star_eps = (
-        complex(sphere_result.Dlambda_star) * np.trace(eps_inc) * np.eye(3)
-        + 2.0 * complex(sphere_result.Dmu_star) * eps_inc
-    )
-
-    u_scat = np.zeros(3, dtype=complex)
-    for i in range(3):
-        # Stiffness term: H_{ijk} Dc*_{jk...} uses source-point derivative
-        stiff_term = 0.0j
-        for j in range(3):
-            for k in range(3):
-                stiff_term += -Gd[i, j, k] * Dc_star_eps[j, k]
-
-        # Density term
-        dens_term = omega**2 * complex(sphere_result.Drho_star) * (G[i, :] @ u_inc)
-
-        u_scat[i] = V_sphere * (stiff_term + dens_term)
-
-    return u_scat
-
-
 def _voigt_to_tensor(voigt_6: NDArray) -> NDArray:
     """Convert Voigt stress vector to 3x3 symmetric tensor.
 
@@ -1482,14 +1064,17 @@ def foldy_lax_far_field(
             sigma_r = sigma @ r_hat  # sigma . r_hat (vector)
             sigma_rr = np.dot(r_hat, sigma_r)  # r_hat . sigma . r_hat (scalar)
 
-            # P-wave: u_P = G_P r_hat [(r_hat.F) - ik_P (r_hat.sigma.r_hat)]
+            # P-wave: the T-matrix force convention (+Vω²Δρ*u) has the
+            # opposite sign from the Lippmann-Schwinger body force (-ω²δρ u),
+            # so an overall minus sign is needed in the far-field formula.
+            # Q_P = -(r_hat.F - ik_P sigma_RR) gives the physical scattered field.
             Q_P = np.dot(r_hat, force) - 1j * kP * sigma_rr
-            u_P[obs_idx] += G_far_P * Q_P * r_hat
+            u_P[obs_idx] -= G_far_P * Q_P * r_hat
 
-            # S-wave: u_S = G_S [(F - ik_S sigma.r_hat)_perp]
+            # S-wave: same sign convention applies
             Q_S = force - 1j * kS * sigma_r
             Q_S_perp = Q_S - np.dot(r_hat, Q_S) * r_hat
-            u_S[obs_idx] += G_far_S * Q_S_perp
+            u_S[obs_idx] -= G_far_S * Q_S_perp
 
     return u_P, u_S
 
