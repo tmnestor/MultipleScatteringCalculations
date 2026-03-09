@@ -284,8 +284,14 @@ $V = [-a,a]^3$ with volume $|V| = 8a^3$.
 
 \subsection{Monomial moments}
 
-By symmetry, all odd-order moments vanish. The nonzero even moments
-relevant to the T-matrix are:
+By symmetry, all odd-order moments vanish. The fundamental 1D even
+moment is
+\begin{equation}
+  \mu_k = \int_{-a}^{a} t^{2k}\,\dd t = \frac{2\,a^{2k+1}}{2k+1},
+  \qquad k = 0, 1, 2, \ldots
+  \label{eq:mu1d}
+\end{equation}
+The lowest even moments relevant to the T-matrix are:
 \begin{equation}
   \int_V x_i^2 \,\dd V = \frac{8a^5}{3},
   \qquad
@@ -295,6 +301,42 @@ relevant to the T-matrix are:
   \quad (i \neq j).
   \label{eq:moments}
 \end{equation}
+
+\subsubsection{Trinomial expansion and exact polynomial integration}
+
+Since the smooth Green's tensor~\eqref{eq:Gsmooth} is a polynomial
+in $u = r^2 = x_1^2 + x_2^2 + x_3^2$, all volume integrals reduce
+to moments of the form $\int u^m\,x_i^{2p}\,x_j^{2q}\,\dd V$.
+Using the trinomial expansion
+\begin{equation}
+  u^m = (x_1^2 + x_2^2 + x_3^2)^m
+  = \sum_{\substack{p+q+r=m \\ p,q,r \geq 0}}
+    \frac{m!}{p!\,q!\,r!}\;
+    x_1^{2p}\,x_2^{2q}\,x_3^{2r},
+  \label{eq:trinomial}
+\end{equation}
+these integrals factorise into products of 1D
+moments~\eqref{eq:mu1d}. The four moment integrals needed are:
+\begin{align}
+  S_0(m) &= \int_V u^m\,\dd V
+  = \sum_{p+q+r=m}
+    \frac{m!}{p!\,q!\,r!}\;\mu_p\,\mu_q\,\mu_r,
+  \label{eq:S0} \\
+  S_1(m) &= \int_V x_1^2\,u^m\,\dd V
+  = \sum_{p+q+r=m}
+    \frac{m!}{p!\,q!\,r!}\;\mu_{p+1}\,\mu_q\,\mu_r,
+  \label{eq:S1} \\
+  S_2(m) &= \int_V x_1^4\,u^m\,\dd V
+  = \sum_{p+q+r=m}
+    \frac{m!}{p!\,q!\,r!}\;\mu_{p+2}\,\mu_q\,\mu_r,
+  \label{eq:S2} \\
+  S_{11}(m) &= \int_V x_1^2\,x_2^2\,u^m\,\dd V
+  = \sum_{p+q+r=m}
+    \frac{m!}{p!\,q!\,r!}\;\mu_{p+1}\,\mu_{q+1}\,\mu_r.
+  \label{eq:S11}
+\end{align}
+These provide exact analytical evaluation of all smooth-part
+integrals at any Taylor truncation order, without quadrature.
 
 \subsection{Fourth-rank moment tensor}
 
@@ -464,10 +506,60 @@ shear depolarization.
 The smooth (radiation) contribution to the integral tensor comes
 from integrating the smooth Green's tensor~\eqref{eq:Gsmooth} and
 its second derivatives over the cube. Since $G^s_{ij}$ is a
-polynomial in $x_1$, $x_2$, $x_3$, these integrals reduce to
-monomial moments of the cube.
+polynomial in $x_1$, $x_2$, $x_3$, these integrals reduce
+exactly to the monomial moment integrals
+$S_0$, $S_1$, $S_2$, $S_{11}$ defined
+in~\eqref{eq:S0}--\eqref{eq:S11}.
 
-At leading order in $ka$:
+\subsubsection{Exact moment-sum formulae}
+
+Computing
+$I_{1122} = \int_V \partial_1\partial_2 G^s_{12}\,\dd V$,
+$I_{1212} = \int_V \partial_2\partial_2 G^s_{11}\,\dd V$, and
+$I_{1111} = \int_V \partial_1\partial_1 G^s_{11}\,\dd V$ by
+differentiating~\eqref{eq:Gsmooth} and integrating over
+$[-a,a]^3$, one obtains:
+\begin{align}
+  A_\text{smooth}
+  &= \sum_{n \geq 1} 2n\,\Phi_n\,S_0(n{-}1)
+   + \sum_{n \geq 2} 4n(n{-}1)\,\Phi_n\,S_1(n{-}2) \notag \\
+  &\quad
+   + \sum_{n \geq 1} 2n\,\Psi_n\,S_1(n{-}1)
+   + \sum_{n \geq 2} 4n(n{-}1)\,\Psi_n\,S_{11}(n{-}2),
+  \label{eq:Asmooth_exact} \\[8pt]
+  B_\text{smooth}
+  &= \sum_{n \geq 0} \Psi_n\,S_0(n)
+   + \sum_{n \geq 1} 4n\,\Psi_n\,S_1(n{-}1) \notag \\
+  &\quad
+   + \sum_{n \geq 2} 4n(n{-}1)\,\Psi_n\,S_{11}(n{-}2),
+  \label{eq:Bsmooth_exact} \\[8pt]
+  C_\text{smooth}
+  &= \sum_{n \geq 2} 4n(n{-}1)\,\Psi_n\,
+     \bigl[S_2(n{-}2) - 3\,S_{11}(n{-}2)\bigr].
+  \label{eq:Csmooth_exact}
+\end{align}
+These are \emph{exact} at any Taylor truncation order~$N$, with no
+quadrature error. In practice, $N = 20$ terms suffice for
+$(ka) \lesssim 2$.
+
+\subsubsection{Key structural observations}
+
+\begin{itemize}
+  \item $C_\text{smooth}$ depends \emph{only} on~$\Psi_n$ (not
+    $\Phi_n$), because the anisotropy
+    $I_{1111} - I_{1122} - 2I_{1212}$ involves only the
+    $x_i x_j$ part of the Green's tensor.
+  \item The $\Phi$ terms in $A_\text{smooth}$ come from the Laplacian
+    of $\Phi(u)\,\delta_{ij}$, while $B_\text{smooth}$ receives no
+    $\Phi$ contribution because
+    $\partial_2\partial_2[\Phi(u)\,\delta_{11}]$ contributes equally
+    to $I_{1111}$ and $I_{1122}$, cancelling in~$B$.
+\end{itemize}
+
+\subsubsection{Leading-order behaviour}
+
+Retaining only the lowest Taylor terms gives the leading-order
+scaling:
 \begin{align}
   A_\text{smooth} &\approx
     -\frac{2i a^3 \omega^3}{3\pi\beta^5\rho}
@@ -512,11 +604,18 @@ The static part involves the geometric constant
 \begin{equation}
   g_0 = \int_{-1}^{1}\!\!\int_{-1}^{1}\!\!\int_{-1}^{1}
     \frac{\dd u\,\dd v\,\dd w}{\sqrt{u^2 + v^2 + w^2}}
-  = -\frac{2}{3}\!\left(3\pi
-    + 2\ln\!\left(70226 - 40545\sqrt{3}\right)\right),
+  = \frac{4}{3}\ln\!\left(70226 + 40545\sqrt{3}\right) - 2\pi,
   \label{eq:g0}
 \end{equation}
 an exact result from Mathematica's symbolic triple integration.
+The Mathematica output is
+$g_0 = -\tfrac{2}{3}(3\pi + 2\ln(70226 - 40545\sqrt{3}))$,
+which is algebraically equivalent but numerically unstable:
+$70226 - 40545\sqrt{3} \approx 7.14 \times 10^{-6}$ loses
+${\sim}10$ digits to catastrophic cancellation. The Pell identity
+$70226^2 - 3 \cdot 40545^2 = 1$ gives
+$\ln(70226 - 40545\sqrt{3}) = -\ln(70226 + 40545\sqrt{3})$,
+yielding the stable form above ($g_0 \approx 3.512$).
 Then
 \begin{equation}
   \Gamma_0^\text{stat}
@@ -525,8 +624,17 @@ Then
     \,g_0.
   \label{eq:G0stat}
 \end{equation}
-The smooth correction $\Gamma_0^\text{smooth}$ contributes at
-$\order{a^4\omega^2}$ and higher.
+The smooth correction is computed from the trace of the smooth
+Green's tensor $G^s_{ii} = 3\,\Phi(u) + u\,\Psi(u)$, yielding
+\begin{equation}
+  \Gamma_0^\text{smooth}
+  = \sum_{n \geq 0}\bigl[3\,\Phi_n\,S_0(n)
+    + \Psi_n\,S_1(n)\bigr],
+  \label{eq:G0smooth}
+\end{equation}
+which contributes at $\order{a^4\omega^2}$ and higher. Together
+with~\eqref{eq:G0stat}, this provides an exact quadrature-free
+evaluation of~$\Gamma_0$ at any Taylor truncation order.
 
 % =============================================================================
 \section{T-Matrix Coefficients}

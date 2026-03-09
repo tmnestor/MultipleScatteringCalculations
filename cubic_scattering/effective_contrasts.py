@@ -2,19 +2,17 @@
 effective_contrasts.py
 Compute the self-consistent cubic T-matrix effective contrasts.
 
-Two computation methods are used:
+All integrals are computed analytically:
 
   Γ₀ (Green's tensor integral):
-    3D Gauss-Legendre quadrature of the FULL G_{ij}. The integral
-    ∫G_{ij} d³x converges (G ~ 1/r) and must include the static
-    contribution to get the correct real part.
+    Static part via geometric constant g₀ = ∫_{[-1,1]³} 1/|x| d³x
+    (computed analytically via divergence theorem).
+    Smooth part via cube monomial moments S₀, S₁.
 
   A^c, B^c, C^c (second-derivative integrals):
-    Polynomial (Taylor expansion) method.  The full integral
-    ∫G_{ij,kl} d³x has a DIVERGENT 1/r³ Eshelby singularity.
-    The polynomial approach extracts only the smooth (convergent)
-    part by expanding the Green's function in a Taylor series of r²
-    and integrating each polynomial term analytically via cube moments.
+    Static Eshelby part via surface integrals (divergence theorem).
+    Smooth radiation part via exact polynomial integration using
+    cube monomial moments and the trinomial expansion of u^m.
 
 Reference: TMatrix_Derivation.pdf (Part II, Sections 11-16).
 
@@ -29,11 +27,10 @@ from math import factorial
 from typing import Tuple
 
 import numpy as np
-from numpy.polynomial.legendre import leggauss
 
-# Default Taylor expansion order (number of phi/psi terms) and quadrature points
+# Default Taylor expansion order (number of phi/psi terms)
 N_TAYLOR = 8  # number of Taylor terms for phi and psi
-N_GAUSS = 32  # GL quadrature points per dimension
+N_GAUSS = 32  # kept for backward-compatible function signatures
 
 
 # ================================================================
@@ -103,71 +100,51 @@ class CubeTMatrixResult:
 
 
 # ================================================================
-# Γ₀ computation: numerical quadrature of the FULL Green's tensor
+# Γ₀ computation: analytical (static + smooth polynomial)
 # ================================================================
 
-
-def _green_f_g_vec(
-    r: np.ndarray, omega: float, alpha: float, beta: float, rho: float
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Evaluate f(r) and g(r) at an array of r values.
-
-    G_{ij}(x) = f(r) δ_{ij} + g(r) n_i n_j
-    """
-    C_nf = (1.0 - beta**2 / alpha**2) / (8.0 * np.pi * rho * beta**2)
-    X = np.exp(1j * omega * r / alpha) / (4.0 * np.pi * rho * alpha**2)
-    V = np.exp(1j * omega * r / beta) / (4.0 * np.pi * rho * beta**2)
-
-    rinv = 1.0 / r
-    f_val = (V - C_nf) * rinv
-    g_val = (3.0 * C_nf + X - V) * rinv
-    return f_val, g_val
+# Geometric constant: g₀ = ∫_{[-1,1]³} 1/|x| d³x  (PDF Eq 33)
+# Exact Mathematica result: g₀ = -(2/3)(3π + 2ln(70226 - 40545√3))
+# Using Pell identity 70226² − 3·40545² = 1 for numerical stability:
+G0_CUBE = (4.0 / 3.0) * np.log(70226 + 40545 * np.sqrt(3.0)) - 2.0 * np.pi
 
 
-def _setup_cube_quadrature(a: float, n_gauss: int = N_GAUSS):
-    """Set up 3D GL quadrature: returns (x1, x2, x3, r, wt, mask)."""
-    nodes, weights = leggauss(n_gauss)
-    x = a * nodes
-    w = a * weights
-
-    X1, X2, X3 = np.meshgrid(x, x, x, indexing="ij")
-    W1, W2, W3 = np.meshgrid(w, w, w, indexing="ij")
-
-    x1 = X1.ravel()
-    x2 = X2.ravel()
-    x3 = X3.ravel()
-    wt = (W1 * W2 * W3).ravel()
-
-    r = np.sqrt(x1**2 + x2**2 + x3**2)
-    mask = r > 1e-200
-    return x1, x2, x3, r, wt, mask
-
-
-def _compute_Gamma0_numerical(
+def _compute_Gamma0_analytical(
     omega: float,
     a: float,
     alpha: float,
     beta: float,
     rho: float,
-    n_gauss: int = N_GAUSS,
+    n_taylor: int = N_TAYLOR,
 ) -> complex:
     """
-    Compute Γ₀^cube = ∫_cube G_{11}(x) d³x using vectorised GL quadrature.
+    Compute Γ₀^cube = ∫_cube G_{11}(x) d³x analytically.
 
-    The integral converges (G ~ 1/r) and correctly captures both real
-    (static) and imaginary (frequency-dependent) contributions.
+    Splits into static + smooth parts (PDF Eqs 34-35):
+
+      Γ₀^stat = a²(2α² + β²)/(12πρα²β²) · g₀
+
+    where a₀, b₀ are static Kelvin coefficients and
+    g₀ = -(2/3)(3π + 2ln(70226 - 40545√3)) (PDF Eq 33).
+
+      Γ₀^smooth = Σ_n φ_n S₀(n) + Σ_n ψ_n S₁(n)
+
+    from the Taylor-expanded polynomial part G^s_{11} = Φ(u) + x₁²Ψ(u).
     """
-    x1, x2, x3, r, wt, mask = _setup_cube_quadrature(a, n_gauss)
+    # Static Kelvin coefficients
+    a0 = (alpha**2 + beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
+    b0 = (alpha**2 - beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
 
-    rm = r[mask]
-    f_val, g_val = _green_f_g_vec(rm, omega, alpha, beta, rho)
+    Gamma0_stat = a**2 * (a0 + b0 / 3.0) * G0_CUBE
 
-    # G_{11} = f(r) + g(r) · n_1² = f + g · x1²/r²
-    n1sq = x1[mask] ** 2 / (rm * rm)
-    G11 = f_val + g_val * n1sq
+    # Smooth part via cube moments
+    phi, psi = _compute_taylor_coefficients(omega, alpha, beta, rho, n_taylor)
+    S0, S1, S2, S11 = _compute_cube_moments(a, n_taylor - 1)
 
-    return np.sum(wt[mask] * G11)
+    N = n_taylor
+    Gamma0_smooth = complex(np.sum(phi[:N] * S0[:N]) + np.sum(psi[:N] * S1[:N]))
+
+    return Gamma0_stat + Gamma0_smooth
 
 
 # ================================================================
@@ -222,67 +199,43 @@ def _compute_taylor_coefficients(
     return phi, psi
 
 
-def _eval_poly_and_derivs(u: np.ndarray, coeffs: np.ndarray):
+def _compute_cube_moments(
+    a: float, n_max: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Evaluate a polynomial P(u) = Σ c_n u^n and its first two
-    derivatives P'(u) and P''(u) at array of u values.
+    Compute exact monomial moments of the cube [-a,a]³.
 
-    Returns (P, Pp, Ppp) — polynomial, first deriv, second deriv.
+    The 1D even moment is μ_k = ∫_{-a}^{a} t^{2k} dt = 2a^{2k+1}/(2k+1).
+    Using the trinomial expansion u^m = (x₁²+x₂²+x₃²)^m, we compute:
+
+        S₀(m) = ∫ u^m dV,    S₁(m) = ∫ x₁² u^m dV,
+        S₂(m) = ∫ x₁⁴ u^m dV,  S₁₁(m) = ∫ x₁²x₂² u^m dV
+
+    for m = 0, ..., n_max via trinomial sums over (p,q,r) with p+q+r = m.
+
+    Returns (S0, S1, S2, S11) each of length n_max + 1.
     """
-    N = len(coeffs)
-    P = np.zeros_like(u, dtype=complex)
-    Pp = np.zeros_like(u, dtype=complex)
-    Ppp = np.zeros_like(u, dtype=complex)
+    # 1D moments: μ_k = 2a^{2k+1}/(2k+1) for k = 0, ..., n_max+2
+    max_k = n_max + 2
+    mu = np.array([2.0 * a ** (2 * k + 1) / (2 * k + 1) for k in range(max_k + 1)])
 
-    un = np.ones_like(u, dtype=complex)  # u^0
-    for n in range(N):
-        P += coeffs[n] * un
-        if n >= 1:
-            # P'(u) has coefficient n*c_n for u^{n-1}
-            Pp += n * coeffs[n] * (un / u if n >= 1 else np.zeros_like(u))
-        if n >= 2:
-            Ppp += (
-                n * (n - 1) * coeffs[n] * (un / (u * u) if n >= 2 else np.zeros_like(u))
-            )
-        un = un * u
+    S0 = np.zeros(n_max + 1)
+    S1 = np.zeros(n_max + 1)
+    S2 = np.zeros(n_max + 1)
+    S11 = np.zeros(n_max + 1)
 
-    return P, Pp, Ppp
+    for m in range(n_max + 1):
+        for p in range(m + 1):
+            for q in range(m - p + 1):
+                r = m - p - q
+                coeff = factorial(m) / (factorial(p) * factorial(q) * factorial(r))
+                mu_p_q_r = mu[p] * mu[q] * mu[r]
+                S0[m] += coeff * mu_p_q_r
+                S1[m] += coeff * mu[p + 1] * mu[q] * mu[r]
+                S2[m] += coeff * mu[p + 2] * mu[q] * mu[r]
+                S11[m] += coeff * mu[p + 1] * mu[q + 1] * mu[r]
 
-
-def _eval_poly_and_derivs_safe(u: np.ndarray, coeffs: np.ndarray):
-    """
-    Evaluate P(u), P'(u), P''(u) safely (avoid division by zero at u=0).
-
-    Uses Horner-like evaluation for derivatives.
-    """
-    N = len(coeffs)
-
-    # P(u) = c_0 + c_1 u + c_2 u² + ...
-    # P'(u) = c_1 + 2c_2 u + 3c_3 u² + ...
-    # P''(u) = 2c_2 + 6c_3 u + 12c_4 u² + ...
-
-    # Build derivative coefficient arrays
-    c_p = np.zeros(N, dtype=complex)  # P' coefficients
-    c_pp = np.zeros(N, dtype=complex)  # P'' coefficients
-
-    for n in range(1, N):
-        c_p[n - 1] = n * coeffs[n]
-    for n in range(2, N):
-        c_pp[n - 2] = n * (n - 1) * coeffs[n]
-
-    # Evaluate using Horner's method
-    P = np.zeros_like(u, dtype=complex)
-    Pp = np.zeros_like(u, dtype=complex)
-    Ppp = np.zeros_like(u, dtype=complex)
-
-    for n in range(N - 1, -1, -1):
-        P = P * u + coeffs[n]
-    for n in range(N - 2, -1, -1):
-        Pp = Pp * u + c_p[n]
-    for n in range(N - 3, -1, -1):
-        Ppp = Ppp * u + c_pp[n]
-
-    return P, Pp, Ppp
+    return S0, S1, S2, S11
 
 
 def _static_eshelby_ABC(
@@ -341,78 +294,62 @@ def _compute_ABC_polynomial(
     second derivatives have a 1/r³ (Eshelby) singularity.  This is
     evaluated analytically via surface integrals (divergence theorem).
 
-    The smooth part comes from the Taylor-expanded polynomial Green's
-    tensor G^s_{ij}(x) = δ_{ij} Φ(r²) + x_i x_j Ψ(r²), whose second
-    derivatives are regular polynomials integrated by GL quadrature.
+    The smooth part uses exact analytical integration of polynomial
+    integrands via cube monomial moments. The Taylor-expanded smooth
+    Green's tensor G^s_{ij} = δ_{ij}Φ(u) + x_ix_jΨ(u) with u = r²
+    has polynomial second derivatives.  Each term u^m · x_i^{2p}
+    integrates exactly over [-a,a]³ via factorised 1D moments
+    μ_k = 2a^{2k+1}/(2k+1) and the trinomial expansion of u^m.
 
-    The three needed integrals are:
-      I_{1111} = ∫ G_{11,11} d³x = A + 2B + C
-      I_{1122} = ∫ G_{11,22} d³x = A
-      I_{1212} = ∫ G_{12,12} d³x = B
+    The three smooth integrals reduce to:
+      A_smooth = 4Σ n(n-1)φ_n S₁(n-2) + 2Σ nφ_n S₀(n-1)
+               + 2Σ nψ_n S₁(n-1) + 4Σ n(n-1)ψ_n S₁₁(n-2)
+      B_smooth = Σ ψ_n S₀(n) + 4Σ nψ_n S₁(n-1)
+               + 4Σ n(n-1)ψ_n S₁₁(n-2)
+      C_smooth = 4Σ n(n-1)ψ_n [S₂(n-2) − 3S₁₁(n-2)]
 
-    Smooth-part formulae (G^s_{ij,kl} = ∂²/∂x_k∂x_l [δ_{ij}Φ + x_ix_jΨ]):
-
-      G^s_{11,11} = 4x₁²Φ'' + 2Φ' + 2Ψ + 10x₁²Ψ' + 4x₁⁴Ψ''
-      G^s_{11,22} = 4x₂²Φ'' + 2Φ' + 2x₁²Ψ' + 4x₁²x₂²Ψ''
-      G^s_{12,12} = Ψ + 2(x₁²+x₂²)Ψ' + 4x₁²x₂²Ψ''
-
-    where Φ', Φ'', Ψ', Ψ'' are derivatives w.r.t. u = r².
+    Note: C_smooth depends only on ψ (not φ), confirming O((ka)⁷) scaling.
     """
     # ── Static Eshelby depolarization (frequency-independent, real) ──
     A_stat, B_stat, C_stat = _static_eshelby_ABC(alpha, beta, rho)
 
-    # ── Smooth radiation corrections (frequency-dependent, imaginary) ──
+    # ── Smooth radiation corrections (exact analytical moments) ──
     phi, psi = _compute_taylor_coefficients(omega, alpha, beta, rho, n_taylor)
+    S0, S1, S2, S11 = _compute_cube_moments(a, n_taylor - 1)
 
-    # Set up quadrature
-    x1, x2, x3, r, wt, mask = _setup_cube_quadrature(a, n_gauss)
+    N = n_taylor
+    n_idx = np.arange(N)
 
-    # u = r² at all points (including origin — polynomial is regular there)
-    u = x1**2 + x2**2 + x3**2
+    # A_smooth = I_{1122}
+    A_smooth = complex(0)
+    if N > 2:
+        nn = n_idx[2:]
+        A_smooth += np.sum(4 * nn * (nn - 1) * phi[2:] * S1[: N - 2])
+        A_smooth += np.sum(4 * nn * (nn - 1) * psi[2:] * S11[: N - 2])
+    if N > 1:
+        nn = n_idx[1:]
+        A_smooth += np.sum(2 * nn * phi[1:] * S0[: N - 1])
+        A_smooth += np.sum(2 * nn * psi[1:] * S1[: N - 1])
 
-    # Evaluate Φ and derivatives w.r.t. u
-    Phi, Phi_p, Phi_pp = _eval_poly_and_derivs_safe(u, phi)
+    # B_smooth = I_{1212}
+    B_smooth = complex(np.sum(psi * S0[:N]))
+    if N > 1:
+        nn = n_idx[1:]
+        B_smooth += np.sum(4 * nn * psi[1:] * S1[: N - 1])
+    if N > 2:
+        nn = n_idx[2:]
+        B_smooth += np.sum(4 * nn * (nn - 1) * psi[2:] * S11[: N - 2])
 
-    # Evaluate Ψ and derivatives w.r.t. u
-    Psi, Psi_p, Psi_pp = _eval_poly_and_derivs_safe(u, psi)
-
-    x1sq = x1**2
-    x2sq = x2**2
-
-    # G^s_{11,11}
-    G_1111 = (
-        4.0 * x1sq * Phi_pp
-        + 2.0 * Phi_p
-        + 2.0 * Psi
-        + 10.0 * x1sq * Psi_p
-        + 4.0 * x1sq**2 * Psi_pp
-    )
-
-    # G^s_{11,22}
-    G_1122 = (
-        4.0 * x2sq * Phi_pp
-        + 2.0 * Phi_p
-        + 2.0 * x1sq * Psi_p
-        + 4.0 * x1sq * x2sq * Psi_pp
-    )
-
-    # G^s_{12,12}
-    G_1212 = Psi + 2.0 * (x1sq + x2sq) * Psi_p + 4.0 * x1sq * x2sq * Psi_pp
-
-    I_1111_smooth = np.sum(wt * G_1111)
-    I_1122_smooth = np.sum(wt * G_1122)
-    I_1212_smooth = np.sum(wt * G_1212)
-
-    A_smooth = I_1122_smooth
-    B_smooth = I_1212_smooth
-    C_smooth = I_1111_smooth - I_1122_smooth - 2.0 * I_1212_smooth
+    # C_smooth = I_{1111} − I_{1122} − 2I_{1212}  (depends only on ψ)
+    C_smooth = complex(0)
+    if N > 2:
+        nn = n_idx[2:]
+        C_smooth += np.sum(
+            4 * nn * (nn - 1) * psi[2:] * (S2[: N - 2] - 3 * S11[: N - 2])
+        )
 
     # ── Full = static + smooth ──
-    Ac = A_stat + A_smooth
-    Bc = B_stat + B_smooth
-    Cc = C_stat + C_smooth
-
-    return Ac, Bc, Cc
+    return A_stat + A_smooth, B_stat + B_smooth, C_stat + C_smooth
 
 
 # ================================================================
@@ -498,14 +435,14 @@ def _compute_effective_contrasts(
     Δρ*      = Δρ · A_u
     Δμ*_off  = Δμ · A_e^off
     Δμ*_diag = Δμ · A_e^diag
-    Δλ*      = (Δλ + ⅔Δμ)·A_θ − ⅓Δμ(A_e^diag + A_e^off)
+    Δλ*      = (Δλ + ⅔Δμ)·A_θ − ⅔Δμ·A_e^diag
     """
     Drho_star = Drho * amp_u
     Dmu_star_off = Dmu * amp_e_off
     Dmu_star_diag = Dmu * amp_e_diag
-    Dlambda_star = (Dlambda + 2.0 / 3.0 * Dmu) * amp_theta - Dmu / 3.0 * (
-        amp_e_diag + amp_e_off
-    )
+    Dlambda_star = (
+        Dlambda + 2.0 / 3.0 * Dmu
+    ) * amp_theta - 2.0 / 3.0 * Dmu * amp_e_diag
     return Drho_star, Dlambda_star, Dmu_star_off, Dmu_star_diag
 
 
@@ -525,9 +462,9 @@ def compute_cube_tmatrix(
     """
     Compute the full self-consistent cubic T-matrix for a single scatterer.
 
-    Uses a hybrid approach:
-      - Γ₀: 3D GL quadrature of the full Green's tensor (convergent).
-      - A, B, C: polynomial Taylor expansion (smooth part, no Eshelby singularity).
+    All integrals computed analytically (no quadrature):
+      - Γ₀: static via g₀ geometric constant + smooth via S₀, S₁ moments.
+      - A, B, C: static Eshelby + smooth via S₀, S₁, S₂, S₁₁ moments.
 
     Parameters
     ----------
@@ -551,10 +488,10 @@ def compute_cube_tmatrix(
     """
     alpha, beta, rho = ref.alpha, ref.beta, ref.rho
 
-    # Step 1: Green's tensor volume integral (Γ₀) — full quadrature
-    Gamma0 = _compute_Gamma0_numerical(omega, a, alpha, beta, rho, n_gauss)
+    # Step 1: Green's tensor volume integral (Γ₀) — analytical
+    Gamma0 = _compute_Gamma0_analytical(omega, a, alpha, beta, rho, n_taylor)
 
-    # Step 2: Second-derivative integrals (A^c, B^c, C^c) — polynomial method
+    # Step 2: Second-derivative integrals (A^c, B^c, C^c) — analytical moments
     Ac, Bc, Cc = _compute_ABC_polynomial(omega, a, alpha, beta, rho, n_gauss, n_taylor)
 
     # Step 3: T-matrix coupling coefficients
