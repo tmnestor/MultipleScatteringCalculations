@@ -3988,40 +3988,14 @@ For a P-wave incident along +z: u^inc = \\[HAT]z exp(i k_P z), \
 \[Epsilon]^inc_zz = i k_P exp(i k_P z), all other \[Epsilon] = 0.\
 \>", "Text",ExpressionUUID->"a1b00008-0001-0001-0001-000000000002"],
 
-Cell[BoxData[{
- RowBox[{
-  RowBox[{"(*", " ",
-   RowBox[{"===", " ",
-    RowBox[{"FFT", "-",
-     RowBox[{"Accelerated", " ", "Lax", "-",
-      RowBox[{"Foldy", " ", "Solve"}]}]}], " ", "==="}], " ", "*)"}], "\n",
-  RowBox[{"(*", " ",
-   RowBox[{"Evaluate", " ", "this", " ", "cell", " ", "INSTEAD", " ", "of",
-    " ", "the", " ", "dense", " ", "assembly", " ", "below"}], " ", "*)"}],
-  "\n",
-  RowBox[{
-   RowBox[{"Get", "[",
-    RowBox[{
-     RowBox[{"NotebookDirectory", "[", "]"}], " ", "<>",
-     " ", "\"\<FFTLaxFoldy.wl\>\""}], "]"}], ";"}]}], "\n", "\n",
- RowBox[{
-  RowBox[{"excField", " ", "=", " ",
-   RowBox[{"fftSolveSystem", "[",
-    RowBox[{
-    "cubeCentres", ",", " ", "nPerDiam", ",", " ", "d", ",", " ",
-     "tMatrix9", ",", "\n", "    ", "omega", ",", " ", "alphaBg", ",", " ",
-     "betaBg", ",", " ", "rhoBg", ",", " ", "incidentState"}], "]"}]}],
-  ";"}]}], "Input",
-ExpressionUUID->"fft-section7-0001"],
-
 Cell[CellGroupData[{
 
 Cell[BoxData[
  RowBox[{
-  RowBox[{"(*", " ",
-   RowBox[{"===", " ",
+  RowBox[{"(*", " ", 
+   RowBox[{"===", " ", 
     RowBox[{
-     RowBox[{"Incident", " ", "P"}], "-",
+     RowBox[{"Incident", " ", "P"}], "-", 
      RowBox[{"wave", " ", "state", " ", 
       RowBox[{"vector", ":", " ", 
        RowBox[{
@@ -7951,31 +7925,12 @@ the voxel size decreases (more cubes per diameter). We measure the relative \
 error in the forward scattering amplitude (\[Theta] = 0).\
 \>", "Text",ExpressionUUID->"a1b00013-0001-0001-0001-000000000002"],
 
-Cell[BoxData[{
- RowBox[{
-  RowBox[{"(*", " ",
-   RowBox[{"===", " ",
-    RowBox[{"FFT", "-",
-     RowBox[{"Accelerated", " ", "Convergence", " ", "Study"}]}],
-    " ", "==="}], " ", "*)"}], "\n",
-  RowBox[{
-   RowBox[{"Get", "[",
-    RowBox[{
-     RowBox[{"NotebookDirectory", "[", "]"}], " ", "<>",
-     " ", "\"\<FFTLaxFoldy.wl\>\""}], "]"}], ";"}]}], "\n", "\n",
- RowBox[{"convergenceData", " ", "=", " ",
-  RowBox[{"convergenceStudyFFT", "[",
-   RowBox[{"{",
-    RowBox[{"3", ",", " ", "5", ",", " ", "7", ",", " ",
-     "9", ",", " ", "11"}], "}"}], "]"}]}]}], "Input",
-ExpressionUUID->"fft-section12-0001"],
-
 Cell[BoxData[
  RowBox[{
-  RowBox[{"(*", " ",
-   RowBox[{"Convergence", " ",
-    RowBox[{"study", ":", " ",
-     RowBox[{"forward", " ", "scattering", " ", "amplitude"}]}]}], " ",
+  RowBox[{"(*", " ", 
+   RowBox[{"Convergence", " ", 
+    RowBox[{"study", ":", " ", 
+     RowBox[{"forward", " ", "scattering", " ", "amplitude"}]}]}], " ", 
    "*)"}], "\n", 
   RowBox[{"(*", " ", 
    RowBox[{
@@ -15300,7 +15255,7 @@ WindowTitle->"Lax-Foldy Voxelized Sphere vs Mie",
 Magnification:>1.25 Inherited,
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"a1b00000-0001-0001-0001-000000000001"
+ExpressionUUID->"7ba20dfb-11ca-422f-9f7b-8fec332450a5"
 ]
 (* End of Notebook Content *)
 
