@@ -20,22 +20,31 @@ mieIncidentSV[n_, omega_, a_, alpha_, beta_, rho_, lam_, mu_] :=
 ];
 
 (* SH 2x2 boundary matrix (n >= 1) *)
+(* M-type (toroidal): u_phi ~ z_n(kS r), sigma_{r phi} ~ mu kS z_n' *)
 mieSHMatrix[n_, omega_, a_, betaOut_, muOut_, betaIn_, muIn_] :=
-  Module[{kSout, kSin, utS, srtS, utI, srtI, dummy},
+  Module[{kSout, kSin, zOut, zIn, hOut, hpOut, jIn, jpIn},
   kSout = omega/betaOut;
   kSin = omega/betaIn;
-  {dummy, utS, dummy, srtS} = sWaveFields[n, kSout, a, muOut, hn, hnp];
-  {dummy, utI, dummy, srtI} = sWaveFields[n, kSin, a, muIn, jn, jnp];
-  {{utS, -utI}, {srtS, -srtI}}
+  zOut = kSout a;
+  zIn = kSin a;
+  hOut = hn[n, zOut];
+  hpOut = hnp[n, zOut];
+  jIn = jn[n, zIn];
+  jpIn = jnp[n, zIn];
+  (* Row 1: u_phi continuity: h_n(kS_out a) = j_n(kS_in a) *)
+  (* Row 2: stress continuity: mu_out kS_out h_n' = mu_in kS_in j_n' *)
+  {{hOut, -jIn}, {muOut kSout hpOut, -muIn kSin jpIn}}
 ];
 
-(* SH incident RHS *)
+(* SH incident RHS — M-type: displacement j_n, stress mu kS j_n' *)
 mieIncidentSH[n_, omega_, a_, beta_, mu_] :=
-  Module[{kS, coeff, utInc, srtInc, dummy},
+  Module[{kS, coeff, z, jInc, jpInc},
   kS = omega/beta;
   coeff = (2 n + 1) I^n/(I kS);
-  {dummy, utInc, dummy, srtInc} = sWaveFields[n, kS, a, mu, jn, jnp];
-  -coeff {utInc, srtInc}
+  z = kS a;
+  jInc = jn[n, z];
+  jpInc = jnp[n, z];
+  -coeff {jInc, mu kS jpInc}
 ];
 
 Print["  Mie helper functions defined (mieIncidentSV, mieSHMatrix, mieIncidentSH)."];
@@ -133,9 +142,12 @@ dPn1dTheta[n_, theta_] :=
   ]];
 
 Pn1OverSinTheta[n_, theta_] :=
-  Module[{sinT = Sin[theta]},
+  Module[{cosT = Cos[theta], sinT = Sin[theta]},
   If[Abs[sinT] < 1.*^-12,
-    N[n (n + 1)/2],
+    (* Limit of -P'_n(cos theta) at poles *)
+    If[cosT > 0,
+      N[-n (n + 1)/2],              (* theta = 0: -P'_n(1) *)
+      N[(-1)^n n (n + 1)/2]],       (* theta = pi: -P'_n(-1) *)
     dPndTheta[n, theta]/sinT
   ]];
 

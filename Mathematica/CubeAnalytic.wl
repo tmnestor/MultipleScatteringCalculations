@@ -128,8 +128,9 @@ cubeFarFieldP[theta_, kP_, alpha_, rho_,
       fEff = sources[[kk, 1 ;; 3]];
       sigEff = sources[[kk, 4 ;; 9]];
       phase = Exp[-I kP (rhat . centres[[kk]])];
+      (* sigEff stores 2*sigma_ij for off-diagonal, so weight=1 for all *)
       sigRR = Sum[
-        voigtWeight[[J1]] rhat[[voigtPairs[[J1, 1]]]]
+        rhat[[voigtPairs[[J1, 1]]]]
           rhat[[voigtPairs[[J1, 2]]]] sigEff[[J1]],
         {J1, 6}];
       QP += phase (rhat . fEff - I kP sigRR),

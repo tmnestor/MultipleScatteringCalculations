@@ -577,7 +577,7 @@ def _mie_matrix_sh(
     M[0, 0] = h_out
     M[0, 1] = -j_in
 
-    # tau_r_phi continuity: mu_out * kS_out * h'_n = mu_in * kS_in * j'_n
+    # tau_r_phi continuity: mu * kS * z_n'(kS*a)
     M[1, 0] = mu_out * kS_out * hp_out
     M[1, 1] = -mu_in * kS_in * jp_in
 
@@ -961,13 +961,13 @@ def mie_far_field(
         f_SV(th) = Sum b_n_sv * renorm(n) * (-i)^n * dP_n^1/dth       [SV->SV]
         f_SH = 0
 
-    For SH-incidence (m=1, evaluated at phi=pi/2):
+    For SH-incidence (m=1, M-type at phi=0):
         f_P = 0
         f_SV = 0
-        f_SH(th) = Sum c_n * renorm(n) * (-i)^n * P_n^1/sin(th)      [SH->SH]
+        f_SH(th) = Sum c_n * renorm(n) * (-1)^n * (-ikS) * h_n * tau_n [SH->SH]
 
     The renorm factor converts from m=0 to m=1 plane-wave expansion
-    coefficients: renorm(n) = i / [n(n+1)].
+    coefficients: renorm(n) = -1 / [n(n+1)].
 
     Args:
         mie_result: Output of compute_elastic_mie.
@@ -1054,12 +1054,8 @@ def mie_far_field(
             f_SV[i] = u_theta * r_eval * np.exp(-1j * kS * r_eval)
 
     elif incident_type == "SH":
-        # SH incident wave y-hat exp(ikS z) expands into both M-type (toroidal)
-        # and N-type (poloidal) VSH.  At phi=0 (xz-plane), the N-type (b_n_sv)
-        # contribution dominates the u_phi component:
-        #   u_phi = sum_n b_n_sv * renorm_N * ut_S(kS,r) * pi_n(theta)
-        # where pi_n = P_n^1/sin(theta) and ut_S is the S-wave theta-displacement
-        # radial function from curl-curl potential.
+        # SH incident: the N-type (b_n_sv) contribution dominates u_phi
+        # at phi=0, while the true M-type (c_n) is O((ka)^4) and negligible.
         for i, theta in enumerate(theta_arr):
             u_phi = 0.0j
 
