@@ -80,12 +80,11 @@ class MieResult:
     """Result from elastic Mie theory computation.
 
     Attributes:
-        a_n: P-wave scattering coefficients, shape (n_max+1,).
-            a_n[n] for angular order n=0,...,n_max.
-        b_n: SV-wave scattering coefficients, shape (n_max+1,).
-            b_n[0] = 0 (no SV monopole).
-        c_n: SH scattering coefficients, shape (n_max+1,).
-            c_n[0] = 0 (no SH monopole).
+        a_n: P-incident P-wave scattering coefficients (P->P), shape (n_max+1,).
+        b_n: P-incident SV-wave scattering coefficients (P->SV), shape (n_max+1,).
+        c_n: SH scattering coefficients (SH->SH), shape (n_max+1,).
+        a_n_sv: SV-incident P-wave scattering coefficients (SV->P), shape (n_max+1,).
+        b_n_sv: SV-incident SV-wave scattering coefficients (SV->SV), shape (n_max+1,).
         n_max: Maximum angular order.
         omega: Angular frequency.
         radius: Sphere radius.
@@ -98,6 +97,8 @@ class MieResult:
     a_n: NDArray[np.complexfloating]
     b_n: NDArray[np.complexfloating]
     c_n: NDArray[np.complexfloating]
+    a_n_sv: NDArray[np.complexfloating]
+    b_n_sv: NDArray[np.complexfloating]
     n_max: int
     omega: float
     radius: float
@@ -616,6 +617,8 @@ def compute_elastic_mie(
     a_n = np.zeros(n_max + 1, dtype=complex)
     b_n = np.zeros(n_max + 1, dtype=complex)
     c_n = np.zeros(n_max + 1, dtype=complex)
+    a_n_sv = np.zeros(n_max + 1, dtype=complex)  # SV->P
+    b_n_sv = np.zeros(n_max + 1, dtype=complex)  # SV->SV
 
     # n=0 monopole: purely P-wave, 2x2 system
     a = radius
@@ -662,6 +665,15 @@ def compute_elastic_mie(
         except np.linalg.LinAlgError:
             pass
 
+        # SV-incident solve (same matrix, different RHS)
+        rhs_psv_sv = _mie_incident_psv(n, omega, radius, ref, incident_type="S")
+        try:
+            sol_psv_sv = np.linalg.solve(M_psv, rhs_psv_sv)
+            a_n_sv[n] = sign * sol_psv_sv[0]  # SV->P coefficient
+            b_n_sv[n] = sign * sol_psv_sv[1]  # SV->SV coefficient
+        except np.linalg.LinAlgError:
+            pass
+
         # SH modes: 2x2 system
         M_sh = _mie_matrix_sh(n, omega, radius, ref, contrast)
         z_inc = omega / ref.beta * radius
@@ -685,6 +697,8 @@ def compute_elastic_mie(
         a_n=a_n,
         b_n=b_n,
         c_n=c_n,
+        a_n_sv=a_n_sv,
+        b_n_sv=b_n_sv,
         n_max=n_max,
         omega=omega,
         radius=radius,
@@ -810,6 +824,39 @@ def _dPn_dtheta(n: int, theta: float) -> float:
     return (Pn_p - Pn_m) / (2.0 * dt)
 
 
+def _dPn1_dtheta(n: int, theta: float) -> float:
+    """Derivative d/dtheta of P_n^1(cos theta) = d^2 P_n / dtheta^2.
+
+    From the Legendre ODE:
+        d^2P_n/dth^2 = -cos(th)/sin(th) * dP_n/dth - n(n+1) P_n
+    """
+    cos_t = np.cos(theta)
+    sin_t = np.sin(theta)
+    Pn = float(lpmv(0, n, cos_t))
+    dPn = _dPn_dtheta(n, theta)
+    if abs(sin_t) < 1e-12:
+        # At poles, use finite differences as fallback
+        dt = 1e-8
+        p1_p = _dPn_dtheta(n, theta + dt)
+        p1_m = _dPn_dtheta(n, theta - dt)
+        return (p1_p - p1_m) / (2.0 * dt)
+    return -cos_t / sin_t * dPn - n * (n + 1) * Pn
+
+
+def _Pn1_over_sintheta(n: int, theta: float) -> float:
+    """P_n^1(cos theta) / sin(theta).
+
+    Uses the identity P_n^1 = -dP_n/d(cos theta) = dP_n/dtheta * (-1/(-sin theta))
+    = dP_n/dtheta. So P_n^1/sin(theta) = dP_n/dtheta / sin(theta).
+
+    Limit as theta -> 0 or pi: n(n+1)/2.
+    """
+    sin_t = np.sin(theta)
+    if abs(sin_t) < 1e-12:
+        return n * (n + 1) / 2.0
+    return _dPn_dtheta(n, theta) / sin_t
+
+
 def mie_scattered_displacement(
     mie_result: MieResult,
     r_points: NDArray[np.floating],
@@ -895,21 +942,40 @@ def mie_far_field(
     mie_result: MieResult,
     theta_arr: NDArray[np.floating],
     incident_type: str = "P",
-) -> tuple[NDArray[np.complexfloating], NDArray[np.complexfloating]]:
+) -> tuple[
+    NDArray[np.complexfloating],
+    NDArray[np.complexfloating],
+    NDArray[np.complexfloating],
+]:
     """Far-field scattering amplitudes from Mie solution.
 
-    Evaluates the Mie scattered displacement at large r and extracts
-    the far-field pattern coefficients f_P, f_S defined by:
-        u_P ~ f_P(theta) * r_hat * exp(ik_P r) / r
-        u_S ~ f_S(theta) * theta_hat * exp(ik_S r) / r
+    Returns (f_P, f_SV, f_SH) for the given incident wave type.
+
+    For P-incidence (m=0, axial symmetry):
+        f_P(th)  = Sum a_n (-i)^n P_n(cos th)           [P->P]
+        f_SV(th) = Sum b_n (-i)^n dP_n/dth              [P->SV]
+        f_SH = 0
+
+    For SV-incidence (m=1, evaluated in xz-plane phi=0):
+        f_P(th)  = Sum a_n_sv * renorm(n) * (-i)^n * P_n^1(cos th)    [SV->P]
+        f_SV(th) = Sum b_n_sv * renorm(n) * (-i)^n * dP_n^1/dth       [SV->SV]
+        f_SH = 0
+
+    For SH-incidence (m=1, evaluated at phi=pi/2):
+        f_P = 0
+        f_SV = 0
+        f_SH(th) = Sum c_n * renorm(n) * (-i)^n * P_n^1/sin(th)      [SH->SH]
+
+    The renorm factor converts from m=0 to m=1 plane-wave expansion
+    coefficients: renorm(n) = i / [n(n+1)].
 
     Args:
         mie_result: Output of compute_elastic_mie.
         theta_arr: Scattering angles (radians), shape (M,).
-        incident_type: 'P' for P-wave incidence.
+        incident_type: 'P', 'SV', or 'SH'.
 
     Returns:
-        (f_P, f_S) far-field amplitudes, each shape (M,).
+        (f_P, f_SV, f_SH) far-field amplitudes, each shape (M,).
     """
     theta_arr = np.asarray(theta_arr, dtype=float)
     ref = mie_result.ref
@@ -920,36 +986,92 @@ def mie_far_field(
 
     r_eval = 1.0e6 * mie_result.radius
     f_P = np.zeros_like(theta_arr, dtype=complex)
-    f_S = np.zeros_like(theta_arr, dtype=complex)
+    f_SV = np.zeros_like(theta_arr, dtype=complex)
+    f_SH = np.zeros_like(theta_arr, dtype=complex)
 
-    for i, theta in enumerate(theta_arr):
-        cos_t = np.cos(theta)
-        u_r = 0.0j
-        u_theta = 0.0j
+    if incident_type == "P":
+        # m=0 axially symmetric: use P_n and dP_n/dtheta
+        for i, theta in enumerate(theta_arr):
+            cos_t = np.cos(theta)
+            u_r = 0.0j
+            u_theta = 0.0j
 
-        for n in range(0, n_max + 1):
-            an = mie_result.a_n[n]
-            bn = mie_result.b_n[n]
+            for n in range(0, n_max + 1):
+                an = mie_result.a_n[n]
+                bn = mie_result.b_n[n]
 
-            Pn = float(lpmv(0, n, cos_t))
-            dPn = (
-                _dPn_dtheta(n, theta) if (n > 0 and abs(np.sin(theta)) > 1e-10) else 0.0
-            )
+                Pn = float(lpmv(0, n, cos_t))
+                dPn = (
+                    _dPn_dtheta(n, theta)
+                    if (n > 0 and abs(np.sin(theta)) > 1e-10)
+                    else 0.0
+                )
 
-            ur_P, ut_P, _, _ = _mie_pwave_fields(n, kP, r_eval, ref.lam, ref.mu, "h1")
-            u_r += an * ur_P * Pn
-            u_theta += an * ut_P * dPn
+                ur_P, ut_P, _, _ = _mie_pwave_fields(
+                    n, kP, r_eval, ref.lam, ref.mu, "h1"
+                )
+                u_r += an * ur_P * Pn
+                u_theta += an * ut_P * dPn
 
-            if n >= 1:
+                if n >= 1:
+                    ur_S, ut_S, _, _ = _mie_swave_fields(n, kS, r_eval, ref.mu, "h1")
+                    u_r += bn * ur_S * Pn
+                    u_theta += bn * ut_S * dPn
+
+            f_P[i] = u_r * r_eval * np.exp(-1j * kP * r_eval)
+            f_SV[i] = u_theta * r_eval * np.exp(-1j * kS * r_eval)
+
+    elif incident_type == "SV":
+        # m=1 N-type (poloidal): renorm = -1/[n(n+1)]
+        # The stored coefficients use m=0 expansion coefficients
+        # C_m0(n) = (2n+1) i^n / (ik_S). The m=1 N-type coefficient
+        # for x_hat exp(ikS z) is C_N(n) = -i^n (2n+1) / [n(n+1) ik_S].
+        # The minus sign arises from the curl(curl(r psi)) convention.
+        for i, theta in enumerate(theta_arr):
+            u_r = 0.0j
+            u_theta = 0.0j
+
+            for n in range(1, n_max + 1):
+                renorm = -1.0 / (n * (n + 1))
+                an_sv = mie_result.a_n_sv[n] * renorm
+                bn_sv = mie_result.b_n_sv[n] * renorm
+
+                # P_n^1(cos th) = dP_n/dtheta (Condon-Shortley)
+                Pn1 = _dPn_dtheta(n, theta)
+                dPn1 = _dPn1_dtheta(n, theta)
+
+                ur_P, ut_P, _, _ = _mie_pwave_fields(
+                    n, kP, r_eval, ref.lam, ref.mu, "h1"
+                )
+                u_r += an_sv * ur_P * Pn1
+                u_theta += an_sv * ut_P * dPn1
+
                 ur_S, ut_S, _, _ = _mie_swave_fields(n, kS, r_eval, ref.mu, "h1")
-                u_r += bn * ur_S * Pn
-                u_theta += bn * ut_S * dPn
+                u_r += bn_sv * ur_S * Pn1
+                u_theta += bn_sv * ut_S * dPn1
 
-        # Extract far-field amplitude: u ~ f * exp(ikr)/r
-        f_P[i] = u_r * r_eval * np.exp(-1j * kP * r_eval)
-        f_S[i] = u_theta * r_eval * np.exp(-1j * kS * r_eval)
+            f_P[i] = u_r * r_eval * np.exp(-1j * kP * r_eval)
+            f_SV[i] = u_theta * r_eval * np.exp(-1j * kS * r_eval)
 
-    return f_P, f_S
+    elif incident_type == "SH":
+        # SH incident wave y-hat exp(ikS z) expands into both M-type (toroidal)
+        # and N-type (poloidal) VSH.  At phi=0 (xz-plane), the N-type (b_n_sv)
+        # contribution dominates the u_phi component:
+        #   u_phi = sum_n b_n_sv * renorm_N * ut_S(kS,r) * pi_n(theta)
+        # where pi_n = P_n^1/sin(theta) and ut_S is the S-wave theta-displacement
+        # radial function from curl-curl potential.
+        for i, theta in enumerate(theta_arr):
+            u_phi = 0.0j
+
+            for n in range(1, n_max + 1):
+                renorm_N = -1.0 / (n * (n + 1))
+                pi_n = _Pn1_over_sintheta(n, theta)
+                _, ut_S, _, _ = _mie_swave_fields(n, kS, r_eval, ref.mu, "h1")
+                u_phi += mie_result.b_n_sv[n] * renorm_N * ut_S * pi_n
+
+            f_SH[i] = u_phi * r_eval * np.exp(-1j * kS * r_eval)
+
+    return f_P, f_SV, f_SH
 
 
 def _voigt_to_tensor(voigt_6: NDArray) -> NDArray:
@@ -968,6 +1090,62 @@ def _voigt_to_tensor(voigt_6: NDArray) -> NDArray:
     T[0, 2] = T[2, 0] = voigt_6[4] / 2.0  # zy
     T[0, 1] = T[1, 0] = voigt_6[5] / 2.0  # zx
     return T
+
+
+def decompose_SV_SH(
+    u_S: NDArray[np.complexfloating],
+    r_hat_arr: NDArray[np.floating],
+    k_hat: NDArray[np.floating],
+) -> tuple[NDArray[np.complexfloating], NDArray[np.complexfloating]]:
+    """Decompose S-wave far-field into SV and SH components.
+
+    SV = theta_hat . u_S  (in scattering plane, containing k_hat and r_hat)
+    SH = phi_hat . u_S    (perpendicular to scattering plane)
+
+    For k_hat = z_hat = [1,0,0], observation in xz-plane:
+        theta_hat = [-sin(th), cos(th), 0]
+        phi_hat   = [0, 0, 1]
+
+    Args:
+        u_S: S-wave displacement, shape (M, 3).
+        r_hat_arr: Observation directions, shape (M, 3).
+        k_hat: Incident propagation direction, shape (3,).
+
+    Returns:
+        (f_SV, f_SH) scalar projections, each shape (M,).
+    """
+    k_hat = np.asarray(k_hat, dtype=float)
+    k_hat = k_hat / np.linalg.norm(k_hat)
+    r_hat_arr = np.asarray(r_hat_arr, dtype=float)
+    u_S = np.asarray(u_S)
+    M = r_hat_arr.shape[0]
+
+    f_SV = np.zeros(M, dtype=complex)
+    f_SH = np.zeros(M, dtype=complex)
+
+    for i in range(M):
+        r_hat = r_hat_arr[i]
+        cos_t = np.dot(k_hat, r_hat)
+
+        # Build scattering-plane basis vectors
+        # phi_hat = k_hat x r_hat / |k_hat x r_hat|
+        cross = np.cross(k_hat, r_hat)
+        sin_t = np.linalg.norm(cross)
+
+        if sin_t < 1e-12:
+            # Forward/backward: phi_hat undefined, all SV by convention
+            f_SV[i] = np.linalg.norm(u_S[i])
+            f_SH[i] = 0.0
+            continue
+
+        phi_hat = cross / sin_t
+        # theta_hat = phi_hat x r_hat (right-hand rule: r_hat, theta_hat, phi_hat)
+        theta_hat = np.cross(phi_hat, r_hat)
+
+        f_SV[i] = np.dot(theta_hat, u_S[i])
+        f_SH[i] = np.dot(phi_hat, u_S[i])
+
+    return f_SV, f_SH
 
 
 def foldy_lax_far_field(

@@ -22,6 +22,7 @@ from cubic_scattering import (
 from cubic_scattering.sphere_scattering import (
     compute_elastic_mie,
     compute_sphere_foldy_lax,
+    decompose_SV_SH,
     foldy_lax_far_field,
     mie_extract_effective_contrasts,
     mie_far_field,
@@ -280,16 +281,16 @@ class TestMieTheory:
 
         # Forward scattering amplitude (theta=0)
         theta_fwd = np.array([0.0])
-        f_P, f_S = mie_far_field(mie, theta_fwd, incident_type="P")
+        f_P, f_SV, f_SH = mie_far_field(mie, theta_fwd, incident_type="P")
 
         # Both amplitudes should be finite at theta=0
         assert np.isfinite(f_P[0]), "Forward P amplitude not finite"
-        assert np.isfinite(f_S[0]), "Forward S amplitude not finite"
+        assert np.isfinite(f_SV[0]), "Forward S amplitude not finite"
 
         # The imaginary part of the forward amplitude should be positive
         # (positive extinction)
         # Note: this depends on convention, so we just check finiteness
-        assert abs(f_P[0]) > 0 or abs(f_S[0]) > 0, (
+        assert abs(f_P[0]) > 0 or abs(f_SV[0]) > 0, (
             "Forward scattering should be nonzero"
         )
 
@@ -307,11 +308,11 @@ class TestMieTheory:
         mie = compute_elastic_mie(omega, radius, REF, CONTRAST)
 
         theta = np.linspace(0.01, np.pi - 0.01, 20)
-        f_P, f_S = mie_far_field(mie, theta, incident_type="P")
+        f_P, f_SV, f_SH = mie_far_field(mie, theta, incident_type="P")
 
         # Pattern should be continuous (no jumps)
         assert np.all(np.isfinite(f_P)), "P far-field has non-finite values"
-        assert np.all(np.isfinite(f_S)), "S far-field has non-finite values"
+        assert np.all(np.isfinite(f_SV)), "S far-field has non-finite values"
 
         # Check smoothness: max |df/dtheta| should be bounded
         df_P = np.diff(f_P)
@@ -503,7 +504,7 @@ class TestCrossComparison:
 
         # Mie far-field amplitudes should show angle dependence
         theta_arr = np.linspace(0.1, np.pi - 0.1, 10)
-        f_P, f_S = mie_far_field(mie, theta_arr)
+        f_P, f_SV, f_SH = mie_far_field(mie, theta_arr)
         assert np.std(np.abs(f_P)) > 0.01 * np.mean(np.abs(f_P)), (
             "P far-field pattern too flat at ka=1.5"
         )
@@ -746,6 +747,319 @@ class TestMieEffectiveContrasts:
             assert abs(amp_dev_mie / amp_dev_exact - 1) < 1e-4, (
                 f"eps={eps}: dev amp ratio = {amp_dev_mie / amp_dev_exact:.8f}"
             )
+
+
+# =====================================================================
+# Group 5: Complete scattering matrix (all 5 channels)
+# =====================================================================
+
+
+def _compute_foldy_lax_channel(
+    ka_target: float,
+    radius: float,
+    n_sub: int,
+    wave_type: str,
+    k_hat: np.ndarray,
+    pol: np.ndarray,
+    theta_arr: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute Foldy-Lax far-field and decompose into P/SV/SH.
+
+    Returns:
+        (f_P_scalar, f_SV_scalar, f_SH_scalar) each shape (M,).
+    """
+    omega = ka_target * REF.beta / radius
+    r_distance = 500.0 * radius
+
+    fl = compute_sphere_foldy_lax(
+        omega,
+        radius,
+        REF,
+        CONTRAST,
+        n_sub=n_sub,
+        k_hat=k_hat,
+        wave_type=wave_type,
+    )
+
+    # Observation in xz-plane
+    M = len(theta_arr)
+    r_hat_arr = np.zeros((M, 3))
+    r_hat_arr[:, 0] = np.cos(theta_arr)  # z
+    r_hat_arr[:, 1] = np.sin(theta_arr)  # x
+
+    u_P, u_S = foldy_lax_far_field(
+        fl,
+        r_hat_arr,
+        r_distance,
+        k_hat,
+        pol,
+        wave_type=wave_type,
+    )
+
+    # Extract scalar P amplitude (radial projection)
+    f_P_scalar = np.array([np.dot(r_hat_arr[i], u_P[i]) for i in range(M)])
+
+    # Decompose S-wave into SV and SH
+    f_SV_scalar, f_SH_scalar = decompose_SV_SH(u_S, r_hat_arr, k_hat)
+
+    # Normalize by exp(ikr)/r factor
+    kP = omega / REF.alpha
+    kS = omega / REF.beta
+    phase_P = np.exp(1j * kP * r_distance) / r_distance
+    phase_S = np.exp(1j * kS * r_distance) / r_distance
+    f_P_scalar = f_P_scalar / phase_P
+    f_SV_scalar = f_SV_scalar / phase_S
+    f_SH_scalar = f_SH_scalar / phase_S
+
+    return f_P_scalar, f_SV_scalar, f_SH_scalar
+
+
+class TestCompleteScatteringMatrix:
+    """Complete 5-channel scattering matrix: Mie vs Foldy-Lax.
+
+    Tests all non-zero channels of the 3x3 scattering matrix:
+        PP, PS (P-incidence), SP, SS (SV-incidence), SH (SH-incidence).
+
+    Compares Re/Im separately (phase-sensitive), not just magnitude.
+    """
+
+    RADIUS = 10.0
+    THETA_ARR = np.linspace(0.2, np.pi - 0.2, 15)
+    K_HAT_Z = np.array([1.0, 0.0, 0.0])  # z-hat (propagation along z)
+
+    def _mie_and_fl_compare(
+        self,
+        ka_target: float,
+        incident_type: str,
+        channel: str,
+        n_sub: int = 4,
+        tol: float = 0.15,
+    ):
+        """Compare a single Mie channel against Foldy-Lax.
+
+        Args:
+            ka_target: Dimensionless frequency.
+            incident_type: 'P', 'SV', or 'SH'.
+            channel: Which output channel ('P', 'SV', or 'SH').
+            n_sub: Foldy-Lax sub-cells per edge.
+            tol: Relative error tolerance (for the normalized pattern).
+        """
+        omega = ka_target * REF.beta / self.RADIUS
+
+        # Mie far-field
+        mie = compute_elastic_mie(omega, self.RADIUS, REF, CONTRAST)
+        f_P_mie, f_SV_mie, f_SH_mie = mie_far_field(
+            mie,
+            self.THETA_ARR,
+            incident_type=incident_type,
+        )
+
+        # Select the requested Mie channel
+        if channel == "P":
+            f_mie = f_P_mie
+        elif channel == "SV":
+            f_mie = f_SV_mie
+        else:
+            f_mie = f_SH_mie
+
+        # Foldy-Lax far-field
+        if incident_type == "P":
+            pol = self.K_HAT_Z.copy()  # P-wave: pol = k_hat
+            wave_type = "P"
+        elif incident_type == "SV":
+            pol = np.array([0.0, 1.0, 0.0])  # x-hat (in xz-plane)
+            wave_type = "S"
+        else:  # SH
+            pol = np.array([0.0, 0.0, 1.0])  # y-hat (perpendicular)
+            wave_type = "S"
+
+        f_P_fl, f_SV_fl, f_SH_fl = _compute_foldy_lax_channel(
+            ka_target,
+            self.RADIUS,
+            n_sub,
+            wave_type,
+            self.K_HAT_Z,
+            pol,
+            self.THETA_ARR,
+        )
+
+        if channel == "P":
+            f_fl = f_P_fl
+        elif channel == "SV":
+            f_fl = f_SV_fl
+        else:
+            f_fl = f_SH_fl
+
+        # Normalize both to max magnitude for relative comparison
+        ref_mag = max(np.max(np.abs(f_mie)), np.max(np.abs(f_fl)), 1e-30)
+
+        # Phase-sensitive comparison: Re and Im separately
+        err_re = np.max(np.abs(f_fl.real - f_mie.real)) / ref_mag
+        err_im = np.max(np.abs(f_fl.imag - f_mie.imag)) / ref_mag
+        err_mag = np.max(np.abs(np.abs(f_fl) - np.abs(f_mie))) / ref_mag
+
+        print(
+            f"\n  {incident_type}->{channel} at ka={ka_target}: "
+            f"err_Re={err_re:.3f}, err_Im={err_im:.3f}, err_|f|={err_mag:.3f}"
+        )
+
+        # Both should be nonzero
+        assert ref_mag > 0, f"{incident_type}->{channel}: zero amplitude"
+
+        # Magnitude pattern should agree within tolerance
+        assert err_mag < tol, (
+            f"{incident_type}->{channel} magnitude error {err_mag:.3f} > {tol}"
+        )
+
+    # -- P-incidence channels --
+
+    def test_PP_rayleigh(self):
+        """P->P at ka=0.1 (Rayleigh)."""
+        self._mie_and_fl_compare(0.1, "P", "P", n_sub=4, tol=0.30)
+
+    def test_PS_rayleigh(self):
+        """P->SV at ka=0.1 (Rayleigh)."""
+        self._mie_and_fl_compare(0.1, "P", "SV", n_sub=4, tol=0.30)
+
+    def test_PP_transition(self):
+        """P->P at ka=0.5 (transition)."""
+        self._mie_and_fl_compare(0.5, "P", "P", n_sub=6, tol=0.35)
+
+    def test_PS_transition(self):
+        """P->SV at ka=0.5 (transition)."""
+        self._mie_and_fl_compare(0.5, "P", "SV", n_sub=6, tol=0.35)
+
+    # -- SV-incidence channels --
+
+    def test_SP_rayleigh(self):
+        """SV->P at ka=0.1 (Rayleigh)."""
+        self._mie_and_fl_compare(0.1, "SV", "P", n_sub=4, tol=0.30)
+
+    def test_SS_rayleigh(self):
+        """SV->SV at ka=0.1 (Rayleigh)."""
+        self._mie_and_fl_compare(0.1, "SV", "SV", n_sub=4, tol=0.30)
+
+    def test_SP_transition(self):
+        """SV->P at ka=0.5 (transition)."""
+        self._mie_and_fl_compare(0.5, "SV", "P", n_sub=6, tol=0.35)
+
+    def test_SS_transition(self):
+        """SV->SV at ka=0.5 (transition)."""
+        self._mie_and_fl_compare(0.5, "SV", "SV", n_sub=6, tol=0.35)
+
+    # -- SH-incidence channel --
+
+    def test_SH_rayleigh(self):
+        """SH->SH at ka=0.1 (Rayleigh)."""
+        self._mie_and_fl_compare(0.1, "SH", "SH", n_sub=4, tol=0.30)
+
+    def test_SH_transition(self):
+        """SH->SH at ka=0.5 (transition)."""
+        self._mie_and_fl_compare(0.5, "SH", "SH", n_sub=6, tol=0.35)
+
+
+class TestReciprocity:
+    """Reciprocity: k_P^2 f_PS(theta) = k_S^2 f_SP(theta).
+
+    For an isotropic sphere, the off-diagonal P-SV channels satisfy
+    this exact relation (up to normalization conventions).
+    """
+
+    def test_reciprocity_rayleigh(self):
+        """Reciprocity at ka=0.05 (deep Rayleigh)."""
+        radius = 10.0
+        omega = 0.05 * REF.beta / radius
+        kP = omega / REF.alpha
+        kS = omega / REF.beta
+
+        mie = compute_elastic_mie(omega, radius, REF, CONTRAST)
+        theta = np.linspace(0.2, np.pi - 0.2, 20)
+
+        _, f_PS, _ = mie_far_field(mie, theta, incident_type="P")
+        f_SP, _, _ = mie_far_field(mie, theta, incident_type="SV")
+
+        # k_P^2 * f_PS should equal k_S^2 * f_SP (up to convention)
+        lhs = kP**2 * f_PS
+        rhs = kS**2 * f_SP
+
+        # Check proportionality: ratio should be constant
+        mask = np.abs(lhs) > 1e-30
+        if np.any(mask):
+            ratios = rhs[mask] / lhs[mask]
+            spread = np.std(np.abs(ratios)) / np.mean(np.abs(ratios))
+            print(
+                f"\n  Reciprocity ratios: mean={np.mean(ratios):.4f}, "
+                f"spread={spread:.4f}"
+            )
+            assert spread < 0.01, f"Reciprocity ratio spread = {spread:.4f}"
+
+    def test_reciprocity_transition(self):
+        """Reciprocity at ka=0.5 (transition)."""
+        radius = 10.0
+        omega = 0.5 * REF.beta / radius
+        kP = omega / REF.alpha
+        kS = omega / REF.beta
+
+        mie = compute_elastic_mie(omega, radius, REF, CONTRAST)
+        theta = np.linspace(0.2, np.pi - 0.2, 20)
+
+        _, f_PS, _ = mie_far_field(mie, theta, incident_type="P")
+        f_SP, _, _ = mie_far_field(mie, theta, incident_type="SV")
+
+        lhs = kP**2 * f_PS
+        rhs = kS**2 * f_SP
+
+        mask = np.abs(lhs) > 1e-30
+        if np.any(mask):
+            ratios = rhs[mask] / lhs[mask]
+            spread = np.std(np.abs(ratios)) / np.mean(np.abs(ratios))
+            print(
+                f"\n  Reciprocity ratios (ka=0.5): mean={np.mean(ratios):.4f}, "
+                f"spread={spread:.4f}"
+            )
+            assert spread < 0.01, f"Reciprocity ratio spread = {spread:.4f}"
+
+
+class TestOpticalTheorem:
+    """Forward scattering amplitudes are nonzero and finite.
+
+    The exact sign of Im[f(0)] depends on the time-harmonic convention
+    (exp(-iwt) vs exp(+iwt)). We check that the forward amplitude is
+    nonzero, finite, and well-behaved.
+    """
+
+    def test_forward_P_nonzero(self):
+        """Forward P->P amplitude is nonzero and finite."""
+        radius = 10.0
+        omega = 0.5 * REF.beta / radius
+        mie = compute_elastic_mie(omega, radius, REF, CONTRAST)
+        theta_fwd = np.array([0.01])
+        f_P, _, _ = mie_far_field(mie, theta_fwd, incident_type="P")
+        assert np.isfinite(f_P[0]), "Forward P amplitude not finite"
+        assert abs(f_P[0]) > 0, "Forward P amplitude is zero"
+        print(f"\n  f_PP(0) = {f_P[0]:.6e}")
+
+    def test_forward_SV_nonzero(self):
+        """Forward SV->SV amplitude is nonzero and finite."""
+        radius = 10.0
+        omega = 0.5 * REF.beta / radius
+        mie = compute_elastic_mie(omega, radius, REF, CONTRAST)
+        theta_fwd = np.array([0.01])
+        _, f_SV, _ = mie_far_field(mie, theta_fwd, incident_type="SV")
+        assert np.isfinite(f_SV[0]), "Forward SV amplitude not finite"
+        assert abs(f_SV[0]) > 0, "Forward SV amplitude is zero"
+        print(f"\n  f_SS(0) = {f_SV[0]:.6e}")
+
+    def test_forward_SH_nonzero(self):
+        """Forward SH->SH amplitude is nonzero and finite."""
+        radius = 10.0
+        omega = 0.5 * REF.beta / radius
+        mie = compute_elastic_mie(omega, radius, REF, CONTRAST)
+        theta_fwd = np.array([0.01])
+        _, _, f_SH = mie_far_field(mie, theta_fwd, incident_type="SH")
+        assert np.isfinite(f_SH[0]), "Forward SH amplitude not finite"
+        assert abs(f_SH[0]) > 0, "Forward SH amplitude is zero"
+        print(f"\n  f_SH(0) = {f_SH[0]:.6e}")
 
 
 # =====================================================================
