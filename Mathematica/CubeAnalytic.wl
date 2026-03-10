@@ -137,4 +137,43 @@ cubeFarFieldP[theta_, kP_, alpha_, rho_,
     -QP / (4 Pi rho alpha^2)
   ];
 
-Print["CubeAnalytic.wl loaded: cubeGamma0, cubeABC, cubeMoments, cubeFarFieldP"];
+(* ============================================================ *)
+(* Far-field S-wave amplitude decomposed into SV and SH        *)
+(* Same sign convention as cubeFarFieldP (negate for T-matrix)  *)
+(* Q_S = F - ikS sigma.rhat  (3-vector)                        *)
+(* f_SV = -thetaHat.Q_S / (4 pi rho beta^2)                   *)
+(* f_SH = -phiHat.Q_S   / (4 pi rho beta^2)                   *)
+(* Observation in the z-x plane: phi=0                          *)
+(* Returns {f_SV, f_SH}                                        *)
+(* ============================================================ *)
+cubeFarFieldS[theta_, kS_, beta_, rho_,
+              centres_, sources_, voigtPairs_, voigtWeight_] :=
+  Module[{rhat, thetaHat, phiHat, qSV = 0. + 0. I, qSH = 0. + 0. I,
+          fEff, sigEff, phase, sigTen, sigR, QS, pp, qq, val},
+    rhat = {Cos[theta], Sin[theta], 0.};
+    thetaHat = {-Sin[theta], Cos[theta], 0.};
+    phiHat = {0., 0., 1.};
+    Do[
+      fEff = sources[[kk, 1 ;; 3]];
+      sigEff = sources[[kk, 4 ;; 9]];
+      phase = Exp[-I kS (rhat . centres[[kk]])];
+      (* Reconstruct 3x3 symmetric stress tensor from Voigt *)
+      sigTen = ConstantArray[0. + 0. I, {3, 3}];
+      Do[
+        {pp, qq} = voigtPairs[[J1]];
+        val = sigEff[[J1]];
+        If[pp == qq,
+          sigTen[[pp, qq]] += val,
+          sigTen[[pp, qq]] += val/2;
+          sigTen[[qq, pp]] += val/2
+        ],
+      {J1, 6}];
+      sigR = sigTen . rhat;
+      QS = fEff - I kS sigR;
+      qSV += phase (thetaHat . QS);
+      qSH += phase (phiHat . QS),
+    {kk, Length[centres]}];
+    {-qSV, -qSH} / (4 Pi rho beta^2)
+  ];
+
+Print["CubeAnalytic.wl loaded: cubeGamma0, cubeABC, cubeMoments, cubeFarFieldP, cubeFarFieldS"];

@@ -15021,7 +15021,40 @@ In[186]:=",ExpressionUUID->"670be3b8-6196-4556-a162-d665f2cb9022"]
 
 Cell[CellGroupData[{
 
-Cell["13. Summary", "Section",ExpressionUUID->"a1b00014-0001-0001-0001-000000000001"],
+Cell["13. Five-Channel Extension: SV and SH Incidence", "Section",ExpressionUUID->"a1b00015-0001-0001-0001-000000000001"],
+
+Cell["\<\
+Extend the P-wave-only comparison to all 5 non-zero scattering channels:\
+  P\[Rule]P, P\[Rule]SV, SV\[Rule]P, SV\[Rule]SV, SH\[Rule]SH.
+
+This loads FiveChannelExtension.wl which:
+1. Adds SV-incident and SH Mie solves (same 4\[Times]4 matrix, new RHS + 2\[Times]2 SH)
+2. Solves Lax\[Dash]Foldy for SV and SH incidence (reusing the system matrix)
+3. Computes far-field amplitudes via cubeFarFieldP/S for all 5 channels
+4. Generates Re/Im comparison plots
+
+Prerequisites: Evaluate sections 1\[Dash]8 first.\
+\>", "Text",ExpressionUUID->"a1b00015-0001-0001-0001-000000000002"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Load", " ", "the", " ", "five", "-",
+    RowBox[{"channel", " ", "extension"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{
+    RowBox[{"SetDirectory", "[",
+     RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ";"}], "\n",
+   RowBox[{
+    RowBox[{"Get", "[", "\"\<CubeAnalytic.wl\>\"", "]"}], ";"}], "\n",
+   RowBox[{
+    RowBox[{"Get", "[", "\"\<FiveChannelExtension.wl\>\"", "]"}],
+    ";"}]}]}]], "Input",ExpressionUUID->"a1b00015-0001-0001-0001-000000000003"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["14. Summary", "Section",ExpressionUUID->"a1b00014-0001-0001-0001-000000000001"],
 
 Cell["\<\
 The Lax\[Dash]Foldy multiple scattering solution from N voxel scatterers \
@@ -15043,6 +15076,9 @@ spatial derivatives.
 \[Bullet] Convergence to the exact Mie solution improves as d/a \[Rule] 0 \
 (more cubes per diameter), with the stiffness terms essential for the \
 monopole and quadrupole.
+\[Bullet] The five-channel extension (section 13) validates all non-zero \
+scattering channels: P\[Rule]P, P\[Rule]SV, SV\[Rule]P, SV\[Rule]SV, and \
+SH\[Rule]SH, using SV/SH incident states with the same system matrix.
 
 Coordinate system: z (down) = propagation direction, x (across), y (out of \
 plane). All velocities in km/s, densities in g/cm\\[ThreeSuperior].\

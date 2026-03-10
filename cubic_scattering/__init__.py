@@ -64,6 +64,7 @@ from .sphere_scattering import (
     SphereDecompositionResult,
     compute_elastic_mie,
     compute_sphere_foldy_lax,
+    decompose_SV_SH,
     foldy_lax_far_field,
     mie_extract_effective_contrasts,
     mie_far_field,
@@ -118,5 +119,6 @@ __all__ = [
     "mie_far_field",
     "mie_scattered_displacement",
     "foldy_lax_far_field",
+    "decompose_SV_SH",
     "sphere_sub_cell_centres",
 ]
