@@ -182,8 +182,10 @@ def test_propagator_9x9_symmetry(ref, omega):
         err_sym = np.linalg.norm(G_block - G_block.T) / np.linalg.norm(G_block)
         assert err_sym < 1e-14, f"G not symmetric at ({x},{y},{z}): {err_sym:.2e}"
 
-        err_recip = np.linalg.norm(H_block - C_block.T) / np.linalg.norm(H_block)
-        assert err_recip < 1e-14, f"H != C^T at ({x},{y},{z}): {err_recip:.2e}"
+        # Engineering convention: H_αj = W_αα C_jα  ⟹  H = W @ C^T
+        W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
+        err_recip = np.linalg.norm(H_block - W @ C_block.T) / np.linalg.norm(H_block)
+        assert err_recip < 1e-14, f"H != W@C^T at ({x},{y},{z}): {err_recip:.2e}"
 
 
 # ── Test 5: D4h 9×9 transformations ──────────────────────────────

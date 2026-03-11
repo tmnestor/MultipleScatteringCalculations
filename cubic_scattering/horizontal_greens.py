@@ -331,6 +331,11 @@ def post_kx_residue_kernel_9x9_vec(
             _add_S_block_pole(val, G_T_pol, kT_vec, p, q, m, n)
             P[3 + alpha, 3 + beta, :] = val
 
+    # Halve off-diagonal stress columns (same fix as _voigt_contract)
+    for beta in range(3, 6):
+        P[:3, 3 + beta, :] *= 0.5
+        P[3:, 3 + beta, :] *= 0.5
+
     return P
 
 
@@ -660,6 +665,11 @@ def post_ky_residue_kernel_9x9_vec(
             _add_S_block_pole(val, G_T_iso, kT_vec, p, q, m, n)
             _add_S_block_pole(val, G_T_pol, kT_vec, p, q, m, n)
             P[3 + alpha, 3 + beta, :] = val
+
+    # Halve off-diagonal stress columns (same fix as _voigt_contract)
+    for beta in range(3, 6):
+        P[:3, 3 + beta, :] *= 0.5
+        P[3:, 3 + beta, :] *= 0.5
 
     return P
 

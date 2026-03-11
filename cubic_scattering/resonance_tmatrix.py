@@ -399,6 +399,13 @@ def _voigt_contract(Gd: NDArray, Gdd: NDArray) -> tuple[NDArray, NDArray, NDArra
                     + Gdd[q, n, m, p]
                 )
 
+    # Correct for engineering stress input: off-diagonal Voigt
+    # components carry a factor of 2 (2*sigma), so the explicit
+    # symmetrization must be halved to avoid double-counting.
+    for beta in range(3, 6):
+        C[:, beta] *= 0.5
+        S[:, beta] *= 0.5
+
     return C, H, S
 
 

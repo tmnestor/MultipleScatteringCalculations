@@ -71,6 +71,7 @@ from .sphere_scattering import (
     mie_scattered_displacement,
     sphere_sub_cell_centres,
 )
+from .sphere_scattering_fft import compute_sphere_foldy_lax_fft
 from .voigt_tmatrix import (
     effective_stiffness_voigt,
     scattered_stress_voigt,
@@ -121,4 +122,6 @@ __all__ = [
     "foldy_lax_far_field",
     "decompose_SV_SH",
     "sphere_sub_cell_centres",
+    # ── Sphere scattering FFT (scalable) ────────────────────────────
+    "compute_sphere_foldy_lax_fft",
 ]
