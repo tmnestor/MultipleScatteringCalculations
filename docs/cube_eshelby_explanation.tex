@@ -1,0 +1,711 @@
+% LuaLaTeX document — compile with: lualatex cube_eshelby_explanation.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+\newcommand{\D}{\Delta}
+\newcommand{\order}{\mathcal{O}}
+\newcommand{\bG}{\bm{G}}
+\newcommand{\bT}{\bm{T}}
+\newcommand{\bI}{\bm{I}}
+\newcommand{\bC}{\bm{C}}
+\newcommand{\bs}{\bm{\sigma}}
+\newcommand{\be}{\bm{\varepsilon}}
+\newcommand{\bu}{\bm{u}}
+
+\title{Self-Consistent T-Matrix for Cubic Scatterers:\\
+Static Eshelby, Dynamic Coupling, and the Unified Theory}
+\author{Research Notes}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\vspace{1em}
+
+%======================================================================
+\section{The physical problem}
+%======================================================================
+
+We want to model seismic wave propagation through a medium filled with
+cubic heterogeneities---a space-filling lattice of cubes, each with
+different elastic properties than the background.  Every cube scatters
+the wavefield, and the scattered field from each cube modifies the
+field incident on every other cube.  The goal is an \emph{effective
+medium}: replace the heterogeneous lattice with a homogeneous medium
+that produces the same coherent wavefield.
+
+This requires a \textbf{T-matrix} for each cube that is
+\emph{self-consistent} in two senses simultaneously:
+\begin{enumerate}[nosep]
+  \item \textbf{Static self-consistency (Eshelby):} The internal field
+    inside each cube is modified by the cube's own stiffness contrast.
+    A stiff cube resists deformation; a soft cube amplifies it.  This
+    is the classical Eshelby concentration factor.
+  \item \textbf{Dynamic self-consistency (lattice coupling):} At finite
+    frequency, each cube's scattered field propagates to all other cubes,
+    modifying their incident fields.  The effective medium must account
+    for this inter-site coupling.
+\end{enumerate}
+
+The central question of this document: \emph{how do we combine both
+into a single self-consistent T-matrix for a cubic scatterer?}
+
+%======================================================================
+\section{What we have now: two separate pieces}
+%======================================================================
+
+\subsection{Piece 1: Static Eshelby amplification (the cube T-matrix)}
+
+The existing module \texttt{effective\_contrasts.py} computes the
+self-consistent T-matrix for a single cube embedded in a
+\emph{background} medium.  The key integral is over the Green's tensor
+second derivatives:
+\begin{equation}\label{eq:Iijkl}
+  I_{ijkl} = \int_{\text{cube}}
+    \frac{\partial^2 G_{ij}(\bm{x})}{\partial x_k \partial x_l}\,dV,
+\end{equation}
+which decomposes by cubic symmetry into three coefficients:
+\begin{equation}\label{eq:ABC}
+  I_{ijkl} = A^c\,\delta_{ij}\delta_{kl}
+            + B^c(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk})
+            + C^c\,E_{ijkl},
+\end{equation}
+where $E_{ijkl} = 1$ only when $i{=}j{=}k{=}l$.  The coefficient
+$C^c$ is specific to the cube---it vanishes for a sphere.
+
+These give rise to \textbf{four amplification factors}:
+\begin{align}
+  A_u &= \frac{1}{1 - \omega^2 \D\rho\,\Gamma_0}
+    & &\text{(displacement/density),} \label{eq:amp_u}\\[4pt]
+  A_\theta &= \frac{1}{1 - 3T_1^c - 2T_2^c - T_3^c}
+    & &\text{(volumetric strain),} \label{eq:amp_theta}\\[4pt]
+  A_e^{\text{off}} &= \frac{1}{1 - 2T_2^c}
+    & &\text{(off-diagonal shear),} \label{eq:amp_eoff}\\[4pt]
+  A_e^{\text{diag}} &= \frac{1}{1 - 2T_2^c - T_3^c}
+    & &\text{(diagonal deviatoric),} \label{eq:amp_ediag}
+\end{align}
+where $T_1^c$, $T_2^c$, $T_3^c$ are coupling coefficients that depend
+on $A^c$, $B^c$, $C^c$ and the material contrast $\D\lambda$, $\D\mu$.
+These amplification factors already include
+frequency dependence through the Taylor-expanded Green's tensor (the
+integral \eqref{eq:Iijkl} is computed analytically at finite $\omega$).
+
+For a sphere, $C^c = 0$ and the four reduce to three:
+$A_e^{\text{off}} = A_e^{\text{diag}}$.  For a cube, the two shear
+channels split, producing \textbf{cubic anisotropy} in the effective
+shear modulus even from an isotropic inclusion.
+
+\subsection{Piece 2: Dynamic lattice coupling (the lattice Green's tensor)}
+
+The module \texttt{lattice\_greens.py} computes the inter-site
+Green's tensor for a periodic lattice of scatterers.  The Foldy--Lax
+system for $N$ sites reads
+\begin{equation}\label{eq:foldylax}
+  \bu_m^{\text{exc}} = \bu_m^{\text{inc}}
+    + \sum_{n \neq m} \bG(\bm{x}_m - \bm{x}_n,\omega)\,
+      \bT_n\,\bu_n^{\text{exc}},
+\end{equation}
+where $\bG$ is the elastodynamic Green's tensor and $\bT_n$ is the
+T-matrix at site~$n$.
+
+\subsection{The gap: these two pieces are independent}
+
+Currently, the Eshelby amplification (Piece~1) is computed in the
+\emph{background} medium.  The lattice coupling (Piece~2) uses the
+\emph{background} Green's tensor.  Neither knows about the other:
+\begin{itemize}[nosep]
+  \item The Eshelby integral \eqref{eq:Iijkl} uses the background
+    Green's tensor $\bG_0$, not the effective medium $\bG^*$.
+  \item The lattice Foldy--Lax system \eqref{eq:foldylax} uses a
+    T-matrix computed in the background, not in the effective medium.
+\end{itemize}
+At low contrast this is fine (the effective medium $\approx$ background).
+At finite contrast, the two should be coupled: the effective medium
+modifies both the Eshelby concentration factor \emph{and} the
+inter-site propagation simultaneously.
+
+%======================================================================
+\section{What the literature says}
+\label{sec:literature}
+%======================================================================
+
+\subsection{The sphere solution (Sabina \& Willis, 1988--1993)}
+
+Sabina, Smyshlyaev \& Willis~\cite{sabina1993} solved the
+simultaneous static\,+\,dynamic self-consistency problem for
+\textbf{spherical} inclusions.  Their approach:
+\begin{enumerate}[nosep]
+  \item Embed a single sphere in an \emph{effective medium} with
+    unknown moduli $\bC^*$ and wavenumber $k^*$.
+  \item Solve the scattering problem for that sphere in the effective
+    medium, obtaining a T-matrix $\bT(\bC^*, k^*, \omega)$.
+  \item Demand self-consistency: the mean scattered field vanishes,
+    $\langle\bT\rangle = 0$ (the coherent potential approximation, CPA).
+  \item Iterate until $\bC^*$ converges.
+\end{enumerate}
+This \emph{automatically} produces the correct Eshelby factors in the
+static limit (because the sphere in the effective medium has the
+Eshelby concentration factor of the effective medium, not the
+background) \emph{and} the correct dynamic dispersion at finite
+frequency.  The two self-consistencies are not separate---they emerge
+from the same Green's tensor $\bG^*$ of the effective medium.
+
+\textbf{Limitation:} restricted to spherical (and later spheroidal)
+inclusions, because the Eshelby tensor is uniform inside only for
+ellipsoids.
+
+\subsection{Dynamic Eshelby tensor for cubes (Wang et al., 2005; Kanaun \& Levin, 2008)}
+
+Wang, Michelitsch, Gao \& Levin~\cite{wang2005} computed the
+\textbf{dynamic Eshelby tensor} $\bm{S}(\bm{x}, \omega)$ for cubic
+and prismatic inclusions using Helmholtz potentials.  Unlike the
+static case (where the Eshelby tensor is non-uniform inside
+non-ellipsoidal bodies), the dynamic Eshelby tensor is inherently
+position-dependent even for ellipsoids.  What matters for the
+T-matrix is the \emph{volume average}:
+\begin{equation}\label{eq:Savg}
+  \bar{\bm{S}}(\omega) = \frac{1}{V}\int_{\text{cube}}
+    \bm{S}(\bm{x}, \omega)\,dV.
+\end{equation}
+
+Kanaun \& Levin~\cite{kanaun2008} then developed the
+\textbf{effective field method} (EFM), a self-consistent scheme that
+works with the volume-averaged quantities.  Their key insight: even
+though $\bm{S}(\bm{x},\omega)$ varies inside the cube, the
+self-consistent condition only needs the volume-averaged T-matrix, and
+this can be computed for any shape.
+
+\textbf{Verdict:} This is the closest existing framework to what we
+need.  But nobody has applied it to a \emph{space-filling lattice}
+of cubes with the full Eshelby delta-function handling.
+
+\subsection{Willis (1981): the variational foundation}
+
+Willis~\cite{willis1981} proved that the self-consistent scheme is
+justified at all frequencies through a variational principle.  The
+effective constitutive relation is \emph{nonlocal} (Willis materials:
+stress depends on both strain and velocity), and the variational
+principle applies for \textbf{arbitrary microstructure}---not just
+spherical inclusions.  The self-consistent scheme is the saddle-point
+approximation to the variational bounds.
+
+\subsection{What nobody has done}
+
+No paper in the open literature computes a \emph{simultaneously
+static and dynamic self-consistent T-matrix for cubic (non-ellipsoidal)
+scatterers on a lattice}.  The pieces exist:
+\begin{itemize}[nosep]
+  \item Sabina \& Willis show how to do it for spheres
+  \item Kanaun \& Levin show how to compute the dynamic Eshelby
+    tensor for cubes
+  \item Willis's variational principle justifies the scheme for
+    arbitrary shapes
+\end{itemize}
+But the synthesis---applying the Sabina--Willis self-consistent
+iteration with the Kanaun--Levin cube Eshelby tensor on a periodic
+lattice---has not been done.
+
+%======================================================================
+\section{The unified theory: what needs to change}
+\label{sec:unified}
+%======================================================================
+
+\subsection{The key insight: one Green's tensor does everything}
+
+The Eshelby concentration factor and the dynamic inter-site coupling
+are \emph{not} two separate physics.  They are two regimes of the
+\emph{same} Green's tensor integral.
+
+The Green's tensor of the effective medium $G^*_{ij}(\bm{x}, \omega)$
+has three parts:
+\begin{equation}\label{eq:Gdecomp}
+  G^*_{ij}(\bm{x}) = \underbrace{G^{\text{Kelvin}}_{ij}(\bm{x})}_{1/r\text{ static}}
+    + \underbrace{G^{\text{smooth}}_{ij}(\bm{x}, \omega)}_{\text{dynamic radiation}}
+\end{equation}
+When we integrate $\partial^2 G^*/\partial x_k \partial x_l$ over the
+cube volume:
+\begin{itemize}[nosep]
+  \item The \textbf{Kelvin part} produces the $1/r^3$ Eshelby
+    singularity at $r=0$ --- this gives the static
+    depolarization tensor ($A^c$, $B^c$, $C^c$).
+  \item The \textbf{smooth part} produces $\order(ka)^2$ frequency
+    corrections --- this is the dynamic radiation coupling.
+\end{itemize}
+Both live in the integral \eqref{eq:Iijkl}.  Currently we compute
+this integral using the \emph{background} Green's tensor.  The
+correction is to use the \emph{effective medium} Green's tensor
+instead.
+
+\subsection{The self-consistent iteration}
+
+Following Sabina--Willis~\cite{sabina1993}, adapted to cubes:
+
+\begin{enumerate}
+  \item \textbf{Initialize} $\bC^* = \bC_0$ (background moduli),
+    $k^* = k_0$ (background wavenumber).
+
+  \item \textbf{Compute the cube T-matrix in the effective medium.}
+    Use $\bG^*(\bm{x}, \omega)$ (with moduli $\bC^*$ and wavenumber
+    $k^*$) in all integrals:
+    \begin{itemize}[nosep]
+      \item $\Gamma_0^* = \int_{\text{cube}} G^*_{ii}(\bm{x})\,dV$
+        \quad (displacement self-energy)
+      \item $A^{c*}, B^{c*}, C^{c*}$ from $\int_{\text{cube}}
+        \partial^2 G^*_{ij}/\partial x_k \partial x_l\,dV$
+      \item The Eshelby delta-function part comes from the static
+        Kelvin component of $\bG^*$ (with $\mu^*$, $\nu^*$).
+      \item The smooth part comes from the radiation component
+        of $\bG^*$ (with $k^*_P$, $k^*_S$).
+    \end{itemize}
+    This produces amplification factors
+    $A_u^*$, $A_\theta^*$, $A_e^{*\text{off}}$, $A_e^{*\text{diag}}$
+    and effective contrasts
+    $\D\rho^*$, $\D\lambda^*$, $\D\mu^*_{\text{off}}$,
+    $\D\mu^*_{\text{diag}}$ --- all relative to $\bC^*$, not $\bC_0$.
+
+  \item \textbf{Update the effective medium.}  The CPA condition
+    $\langle\bT\rangle = 0$ requires the effective medium to be the
+    one in which the average scattering vanishes.  For a two-phase
+    composite (volume fraction $\phi$ of inclusions in matrix):
+    \begin{equation}\label{eq:CPA}
+      \bC^*_{\text{new}} = \bC_0 + \phi\,\D\bC\,\bm{A}^*,
+    \end{equation}
+    where $\bm{A}^*$ is the concentration tensor built from
+    $A_\theta^*$, $A_e^{*\text{off}}$, $A_e^{*\text{diag}}$.
+    For a space-filling lattice ($\phi = 1$), this simplifies.
+
+    The effective wavenumber updates via the Foldy--Lax dispersion
+    relation:
+    \begin{equation}\label{eq:kstar}
+      (k^*)^2 = k_0^2 + n_0\,\bT_{\text{forward}}(\bC^*, k^*),
+    \end{equation}
+    where $n_0$ is the number density and $\bT_{\text{forward}}$ is
+    the forward-scattering amplitude.
+
+  \item \textbf{Iterate} Steps 2--3 until $\bC^*$ and $k^*$ converge.
+\end{enumerate}
+
+\subsection{What changes in the code}
+
+The existing function \texttt{compute\_cube\_tmatrix(omega, a, ref,
+contrast)} takes a \texttt{ReferenceMedium} (the background).  In the
+unified scheme:
+\begin{itemize}[nosep]
+  \item The \texttt{ref} argument becomes the \emph{effective medium}
+    $(\alpha^*, \beta^*, \rho^*)$, which changes at each iteration.
+  \item The \texttt{contrast} becomes $\D\bC = \bC_{\text{inclusion}}
+    - \bC^*$ (the contrast relative to the effective medium, not the
+    background).
+  \item The Eshelby integrals ($A^c$, $B^c$, $C^c$) and Green's
+    tensor integral ($\Gamma_0$) are computed using the effective
+    medium's velocities $\alpha^*$, $\beta^*$, not $\alpha_0$,
+    $\beta_0$.
+\end{itemize}
+The key point: \textbf{the existing code already does the right
+calculation}.  We just need to call it with the effective medium
+instead of the background, and wrap it in an iteration loop.
+
+%======================================================================
+\section{What the current module does (and its limitations)}
+\label{sec:current}
+%======================================================================
+
+The new module \texttt{cube\_eshelby.py} computes the four
+concentration factors by comparing the full self-consistent T-matrix
+against the Born (linearized) limit:
+\begin{equation}
+  E_{\text{channel}} = \frac{\D X^*_{\text{full}}}{\D X^*_{\text{Born}}},
+\end{equation}
+where $\D X^*$ is the effective contrast for each channel.
+
+\subsection{What it gets right}
+
+\begin{itemize}[nosep]
+  \item The four static amplification factors
+    (Eqs.~\ref{eq:amp_u}--\ref{eq:amp_ediag}) are exact in the
+    Rayleigh regime ($ka < 0.3$).
+  \item The Born limit is computed cleanly by epsilon-scaling the
+    full solver.
+  \item The concentration ratios $E$ correctly quantify the
+    departure from Born.
+  \item The cubic anisotropy
+    ($\D\mu^*_{\text{diag}} \neq \D\mu^*_{\text{off}}$) is captured.
+\end{itemize}
+
+\subsection{What it misses}
+
+\begin{itemize}[nosep]
+  \item \textbf{No effective-medium iteration.}  The Eshelby integrals
+    use the background medium, not the effective medium.  This means
+    the static self-consistency is relative to the background, not
+    the true effective medium of the lattice.
+  \item \textbf{No lattice dispersion.}  The amplification factors
+    don't know about the lattice structure or the effective wavenumber.
+  \item \textbf{Resonance extraction is approximate.}  At $ka > 0.3$,
+    the 9$\times$9 composite T-matrix from the Foldy--Lax sub-cell
+    solver does not decompose cleanly into 4~scalar concentration
+    factors (there are off-diagonal couplings).
+\end{itemize}
+
+\subsection{The path forward}
+
+The unified scheme (Section~\ref{sec:unified}) replaces the
+background with the effective medium in \texttt{compute\_cube\_tmatrix},
+adds the CPA iteration (Eq.~\ref{eq:CPA}), and couples to the
+lattice dispersion (Eq.~\ref{eq:kstar}).  The existing code is
+the inner kernel of this iteration---no new physics is needed,
+only the outer loop.
+
+%======================================================================
+\section{Numerical results (current module)}
+\label{sec:results}
+%======================================================================
+
+Using the standard test parameters ($\alpha_0 = 5000$~m/s,
+$\beta_0 = 3000$~m/s, $\rho_0 = 2500$~kg/m$^3$) at $ka = 0.01$
+(deep Rayleigh regime), with proportional contrast
+$\D\lambda = \lambda_0 f$, $\D\mu = \mu_0 f$, $\D\rho = \rho_0 f$:
+
+\begin{center}
+\begin{tabular}{rcccc}
+\toprule
+\textbf{Contrast} & $\bm{A_\theta}$ & $\bm{A_e^{\textbf{off}}}$
+  & $\bm{A_e^{\textbf{diag}}}$
+  & $\bm{\D\mu^*_{\textbf{diag}} - \D\mu^*_{\textbf{off}}}$ \\
+\midrule
+  1\% & 0.9948 & 0.9957 & 0.9941 & $-3.6 \times 10^5$~Pa\\
+  5\% & 0.9747 & 0.9789 & 0.9712 & $-8.6 \times 10^6$~Pa\\
+ 10\% & 0.9506 & 0.9586 & 0.9440 & $-3.3 \times 10^7$~Pa\\
+ 20\% & 0.9058 & 0.9206 & 0.8940 & $-1.2 \times 10^8$~Pa\\
+ 40\% & 0.8278 & 0.8528 & 0.8083 & $-4.0 \times 10^8$~Pa\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All factors are $< 1$ for stiff inclusions (the cube resists
+deformation).  The density channel $A_u \approx 1.000$ throughout
+(density has no static Eshelby correction; the deviation is
+$\order(\omega^2)$).
+
+\subsection{Key observations}
+
+\begin{enumerate}[label=(\roman*)]
+
+\item \textbf{Cube $A_\theta$ matches sphere $E_0$ exactly.}
+At the test contrast ($\D\lambda = 2$~GPa, $\D\mu = 1$~GPa):
+cube $A_\theta = 0.9591$, sphere
+$K_0/(K_0 + \alpha_E \D K) = 0.9591$.  This is because the
+volumetric part of the Eshelby tensor ($J_a$) is
+\emph{universal} for any convex body:
+$J_{a,kl} = -\tfrac{4\pi}{3}\,\delta_{kl}$
+(from $\nabla^2(1/r) = -4\pi\delta$).
+
+\item \textbf{Cube $A_e^{\text{off}}$ differs from sphere $E_2$.}
+Sphere: $E_2 = 0.978$.  Cube: $A_e^{\text{off}} = 0.981$.
+The difference arises from the geometry-specific surface integrals
+($j_1$, $j_2$, $k_1$).
+
+\item \textbf{Cubic anisotropy is real.}
+$A_e^{\text{diag}} < A_e^{\text{off}}$: the cube scatters
+diagonal deviatoric strain more strongly than off-diagonal shear.
+The anisotropy grows quadratically with contrast.
+
+\item \textbf{Scale-free.}
+$A_\theta(a{=}0.5) = A_\theta(a{=}2.0) = 0.959079$ to six digits.
+The factors depend on $ka$ and contrast ratios only.
+
+\item \textbf{Born recovered at weak contrast.}  At 0.01\% contrast,
+all factors are within $6 \times 10^{-5}$ of unity.
+
+\end{enumerate}
+
+%======================================================================
+\section{The big picture: where this fits}
+%======================================================================
+
+The full self-consistent effective medium for a lattice of cubes
+requires three nested calculations:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{llp{7.5cm}}
+\toprule
+\textbf{Level} & \textbf{What} & \textbf{Status} \\
+\midrule
+Inner &
+  Single-cube T-matrix in a given medium &
+  Done: \texttt{compute\_cube\_tmatrix}.
+  Takes any reference medium; computes $A^c$, $B^c$, $C^c$,
+  $\Gamma_0$, and all four amplification factors analytically. \\
+Middle &
+  CPA iteration for effective moduli $\bC^*$ &
+  Done: \texttt{cpa\_iteration.py}.  Calls the inner kernel
+  repeatedly with updated $\bC^*$ until $\langle\bT\rangle = 0$.
+  Converges in $\sim$5 iterations at moderate contrast. \\
+Outer &
+  Lattice dispersion $k^*(\omega)$ &
+  Partially done: \texttt{lattice\_greens.py} provides the
+  lattice Green's tensor.  Needs coupling to the CPA iteration
+  to get the self-consistent effective wavenumber. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The \texttt{cube\_eshelby.py} module characterises the
+\emph{inner} kernel.  The \texttt{cpa\_iteration.py} module
+implements the middle loop, described next.
+
+%======================================================================
+\section{The CPA iteration: implementation and subtlety}
+\label{sec:cpa}
+%======================================================================
+
+\subsection{Algorithm}
+
+The module \texttt{cpa\_iteration.py} implements the CPA
+self-consistent loop:
+
+\begin{enumerate}
+  \item \textbf{Input:} A list of material phases
+    $(\lambda_n, \mu_n, \rho_n, \phi_n)$ with $\sum_n \phi_n = 1$.
+  \item \textbf{Initialize:} $\bC^* = \bC_{\text{Voigt}}
+    = \sum_n \phi_n \bC_n$ (arithmetic average).
+  \item \textbf{Iterate:}
+    \begin{enumerate}[label=(\alph*)]
+      \item Convert $\bC^*$ to an isotropic \texttt{ReferenceMedium}
+        $(\alpha^*, \beta^*, \rho^*)$ using $\mu^* = \mu^*_{\text{off}}$.
+      \item For each phase $n$, compute the contrast
+        $\D\bC_n = \bC_n - \bC^*$ and run
+        \texttt{compute\_cube\_tmatrix} to get the T-matrix effective
+        contrasts $\D\rho^*_n$, $\D\lambda^*_n$, $\D\mu^{*\text{off}}_n$.
+      \item Update: $\bC^* \leftarrow \bC^* + \sum_n \phi_n \D\bC^*_n$.
+      \item Check convergence on the three isotropic channels.
+    \end{enumerate}
+  \item \textbf{Output:} Converged $\bC^*$ with cubic symmetry:
+    $\lambda^*$, $\mu^*_{\text{off}}$, $\mu^*_{\text{diag}}$, $\rho^*$.
+\end{enumerate}
+
+\subsection{The cubic anisotropy subtlety}
+
+The cube T-matrix produces \textbf{four} independent effective
+contrasts ($\D\lambda^*$, $\D\mu^*_{\text{off}}$,
+$\D\mu^*_{\text{diag}}$, $\D\rho^*$), but \texttt{compute\_cube\_tmatrix}
+takes an \emph{isotropic} reference medium with only
+\textbf{three} elastic parameters ($\lambda^*$, $\mu^*$, $\rho^*$).
+
+This means we can satisfy only three CPA equations:
+\begin{equation}
+  \langle \D\rho^* \rangle = 0, \quad
+  \langle \D\lambda^* \rangle = 0, \quad
+  \langle \D\mu^{*\text{off}} \rangle = 0.
+\end{equation}
+The fourth equation $\langle \D\mu^{*\text{diag}} \rangle = 0$
+cannot be independently enforced because the isotropic reference
+cannot represent the cubic anisotropy of $\bC^*$.
+
+The solution: iterate on the three isotropic channels, and derive
+$\mu^*_{\text{diag}}$ as a \emph{diagnostic} after convergence.
+The cubic anisotropy $\mu^*_{\text{diag}} - \mu^*_{\text{off}}$
+arises from the $C^c$ coefficient (the geometric cubic term in the
+Eshelby tensor) and is accumulated during the iteration.
+
+At moderate contrast ($\sim$10\%), the cubic anisotropy
+$|\mu^*_{\text{diag}} - \mu^*_{\text{off}}|$ is typically
+$\order(10^{-4})$ relative to $\mu^*$---small but nonzero.
+To achieve a fully self-consistent cubic effective medium
+would require generalising \texttt{compute\_cube\_tmatrix} to accept
+a cubic (not just isotropic) reference.
+
+\subsection{Convergence properties}
+
+\begin{itemize}[nosep]
+  \item \textbf{Weak contrast:} converges in 2--3 iterations to
+    tolerance $10^{-10}$; the result is close to the Voigt average.
+  \item \textbf{Moderate contrast ($\sim$10\%):} converges in 5--10
+    iterations.  Under-relaxation ($0 < \text{damping} < 1$)
+    available for stability at high contrast.
+  \item \textbf{Single-phase:} converges in 1 iteration to the
+    input (a sanity check: if the medium is homogeneous, $\langle\bT\rangle = 0$
+    trivially).
+  \item \textbf{Effective medium is physical:} all moduli remain
+    positive and bounded between the constituent phases.
+\end{itemize}
+
+%======================================================================
+\section{Kennett layer stacking: the outer layer}
+\label{sec:kennett}
+%======================================================================
+
+The module \texttt{kennett\_layers.py} implements the ``outer layer''
+in the three-level architecture: it propagates coherent plane waves
+vertically through a stack of CPA-homogenized layers using Kennett's
+recursive reflection/transmission algorithm~\cite{kennett1983}.
+
+\subsection{Algorithm}
+
+The medium is divided into $N$ horizontal layers, each one cube thick
+($d = 2a$).  Each layer is independently CPA-homogenized to obtain
+isotropic effective properties $(\alpha^*_n, \beta^*_n, \rho^*_n)$.
+The Kennett recursion then computes the cumulative downgoing
+reflection matrix $\bm{R}_D$ by sweeping upward from the half-space:
+
+\begin{enumerate}
+  \item \textbf{Initialize:} $\bm{R}^{(N)}_D = 0$ (radiation condition
+    at the half-space).
+  \item \textbf{At each interface} $n = N{-}1, \ldots, 1$:
+    \begin{enumerate}[label=(\alph*)]
+      \item Compute the phase-shifted cumulative reflection:
+        $\bm{M}_T = \bm{E}_n \bm{R}^{(n+1)}_D \bm{E}_n$,
+        where $\bm{E}_n = \text{diag}(e^{i\omega\eta_n h_n},\,
+        e^{i\omega\zeta_n h_n})$ is the one-way phase through layer~$n$.
+      \item Compute the reverberation operator:
+        $\bm{U} = (\bm{I} - \bm{R}_u \bm{M}_T)^{-1}$.
+      \item Update:
+        $\bm{R}^{(n)}_D = \bm{R}_d + \bm{T}_u \bm{M}_T \bm{U} \bm{T}_d$.
+    \end{enumerate}
+  \item \textbf{Output:} $\bm{R}^{(1)}_D(\omega, p)$, the $2 \times 2$
+    P-SV reflection matrix at the top of the stack.
+\end{enumerate}
+
+Here $\bm{R}_d$, $\bm{R}_u$, $\bm{T}_d$, $\bm{T}_u$ are the
+modified interfacial scattering coefficients (Aki \& Richards, 1980)
+with $\sqrt{\eta\rho}$ normalization that ensures $\bm{T}_u = \bm{T}_d^T$
+(reciprocity) and $\bm{R}_d^\dagger\bm{R}_d + \bm{T}_d^\dagger\bm{T}_d
+= \bm{I}$ (energy conservation).
+
+The SH system decouples into a scalar recursion with impedance
+$Z_{\text{SH}} = \rho\beta^2\zeta$.
+
+\subsection{CPA bridge}
+
+The function \texttt{cubic\_to\_isotropic\_layer} converts a
+\texttt{CubicEffectiveMedium} to an \texttt{IsotropicLayer} using
+$\mu^*_{\text{off}}$ for the isotropic shear modulus (consistent with
+\texttt{as\_reference\_medium}).  The cubic anisotropy
+$\mu^*_{\text{diag}} - \mu^*_{\text{off}}$ is $\order(10^{-4})$
+relative and is neglected in the isotropic Kennett propagation.
+
+The function \texttt{cpa\_stack\_from\_phases} automates the full
+pipeline: given per-layer phase lists, it runs \texttt{compute\_cpa}
+on each layer and assembles the resulting \texttt{LayerStack}.
+
+\subsection{Connection to the three-level architecture}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{llp{7.5cm}}
+\toprule
+\textbf{Level} & \textbf{Module} & \textbf{Role} \\
+\midrule
+Inner &
+  \texttt{effective\_contrasts.py} &
+  Single-cube T-matrix in a given reference medium. \\
+Middle &
+  \texttt{cpa\_iteration.py} &
+  Self-consistent effective moduli $\bC^*$ per layer
+  (CPA: $\langle\bT\rangle = 0$). \\
+Outer &
+  \texttt{kennett\_layers.py} &
+  Coherent plane-wave propagation through the
+  CPA-homogenized layer stack (Kennett recursion). \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%======================================================================
+\section{References}
+%======================================================================
+
+\begin{thebibliography}{99}
+
+\bibitem{sabina1993}
+F.J.\ Sabina, V.P.\ Smyshlyaev, J.R.\ Willis,
+``Self-consistent analysis of waves in a matrix-inclusion composite,''
+\emph{J.\ Mech.\ Phys.\ Solids} \textbf{41}, 1573--1588 (1993).
+
+\bibitem{sabina1988}
+F.J.\ Sabina, J.R.\ Willis,
+``A simple self-consistent analysis of wave propagation in particulate
+composites,''
+\emph{Wave Motion} \textbf{10}, 127--142 (1988).
+
+\bibitem{wang2005}
+J.\ Wang, T.M.\ Michelitsch, H.\ Gao, V.M.\ Levin,
+``On the solution of the dynamic Eshelby problem for inclusions of
+various shapes,''
+\emph{Int.\ J.\ Solids Struct.}\ \textbf{42}, 353--363 (2005).
+
+\bibitem{kanaun2008}
+S.\ Kanaun, V.\ Levin,
+\emph{Self-Consistent Methods for Composites: Vol.~2.\ Wave
+Propagation in Heterogeneous Materials},
+Springer (2008).
+
+\bibitem{willis1981}
+J.R.\ Willis,
+``Variational principles for dynamic problems for inhomogeneous
+elastic media,''
+\emph{Wave Motion} \textbf{3}, 1--11 (1981).
+
+\bibitem{willis1977}
+J.R.\ Willis,
+``Bounds and self-consistent estimates for the overall moduli of
+anisotropic composites,''
+\emph{J.\ Mech.\ Phys.\ Solids} \textbf{25}, 185--202 (1977).
+
+\bibitem{gubernatis1977}
+J.E.\ Gubernatis, E.\ Domany, J.A.\ Krumhansl, M.\ Huberman,
+``The Born approximation in the theory of the scattering of elastic
+waves by flaws,''
+\emph{J.\ Appl.\ Phys.}\ \textbf{48}, 2804--2811 (1977).
+
+\bibitem{stanke1984}
+F.E.\ Stanke, G.S.\ Kino,
+``A unified theory for elastic wave propagation in polycrystalline
+materials,''
+\emph{J.\ Acoust.\ Soc.\ Am.}\ \textbf{75}, 665--681 (1984).
+
+\bibitem{varadan1985}
+V.K.\ Varadan, V.V.\ Varadan,
+``Multiple scattering theory for wave propagation in discrete random
+media,''
+\emph{Int.\ J.\ Eng.\ Sci.}\ \textbf{22}, 1165--1176 (1985).
+
+\bibitem{kim2020}
+S.\ Kim, S.\ Torquato,
+``Effective elastic wave characteristics of composite media,''
+\emph{New J.\ Phys.}\ \textbf{22}, 123050 (2020).
+arXiv:2012.15214.
+
+\bibitem{parnell2008}
+W.J.\ Parnell, I.D.\ Abrahams,
+``A new integral equation approach to elastodynamic homogenization,''
+\emph{Proc.\ R.\ Soc.\ A} \textbf{464}, 1461--1482 (2008).
+
+\bibitem{buryachenko2001}
+V.A.\ Buryachenko,
+``Multiparticle effective field and related methods in micromechanics
+of random structure composites,''
+\emph{Appl.\ Mech.\ Rev.}\ \textbf{54}, 1--47 (2001).
+
+\bibitem{kennett1983}
+B.L.N.\ Kennett,
+\emph{Seismic Wave Propagation in Stratified Media},
+Cambridge University Press (1983).
+
+\end{thebibliography}
+
+\end{document}

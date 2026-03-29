@@ -1,0 +1,41 @@
+# Sphere Foldy-Lax FFT scattering configuration
+# Voxelized sphere with n_sub³ sub-cells
+
+device:
+  backend: auto          # auto | mps | cuda | cpu
+  dtype: auto            # auto | complex64 | complex128
+  memory_limit_gb: 8.0
+
+solver:
+  gmres_tol: 1.0e-8
+  max_iter: 200
+  initial_guess: born    # born | zero
+
+problem:
+  type: sphere
+
+  geometry:
+    M: 1                 # Not used for sphere (placeholder)
+    N_z: 1               # Not used for sphere (placeholder)
+    a: 0.5               # Not used for sphere (placeholder)
+
+  reference:
+    alpha: 5000.0        # P-wave velocity (m/s)
+    beta: 3000.0         # S-wave velocity (m/s)
+    rho: 2500.0          # Density (kg/m³)
+
+  contrast:
+    Dlambda: 2.0e9       # Lamé parameter contrast (Pa)
+    Dmu: 1.0e9           # Shear modulus contrast (Pa)
+    Drho: 100.0          # Density contrast (kg/m³)
+
+  frequency:
+    omega: 150.0         # Angular frequency (rad/s)
+
+  incident:
+    k_hat: [1.0, 0.0, 0.0]   # Propagation direction (z, x, y)
+    wave_type: P              # P or S
+
+  sphere:
+    radius: 0.5          # Sphere radius (m)
+    n_sub: 5             # Sub-cells per edge of bounding cube
