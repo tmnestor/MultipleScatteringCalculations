@@ -820,7 +820,9 @@ def kennett_reflectivity_batch(
     Tu_all = np.zeros((n_interfaces, np_slow, 2, 2), dtype=np.complex128)
     Td_all = np.zeros((n_interfaces, np_slow, 2, 2), dtype=np.complex128)
 
-    for il in range(n_interfaces):
+    from tqdm.auto import tqdm
+
+    for il in tqdm(range(n_interfaces), desc="Scattering matrices", leave=False):
         for jp in range(np_slow):
             p_val = float(p_samples[jp])
             if is_fluid_solid[il]:

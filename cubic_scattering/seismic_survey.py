@@ -273,10 +273,13 @@ def bessel_summation(
     W = R * weight  # (np_slow, nfreq)
 
     # Accumulate in chunks to manage memory
+    from tqdm.auto import tqdm
+
     U = np.zeros((nr, nfreq), dtype=np.complex128)
     chunk_size = min(np_slow, 256)
+    chunks = range(0, np_slow, chunk_size)
 
-    for j_start in range(0, np_slow, chunk_size):
+    for j_start in tqdm(chunks, desc="Bessel summation", leave=False):
         j_end = min(j_start + chunk_size, np_slow)
         W_chunk = W[j_start:j_end]  # (n_chunk, nfreq)
         p_chunk = p_samples[j_start:j_end]  # (n_chunk,)
@@ -340,13 +343,16 @@ def bessel_summation_gpu(
     )
     W = R * weight
 
+    from tqdm.auto import tqdm
+
     U = np.zeros((nr, nfreq), dtype=np.complex128)
     chunk_size = min(np_slow, 256)
+    chunks = range(0, np_slow, chunk_size)
 
     off_t = torch.from_numpy(offsets.astype(np.float32)).to(device)
     omega_t = torch.from_numpy(omega_real.astype(np.float32)).to(device)
 
-    for j_start in range(0, np_slow, chunk_size):
+    for j_start in tqdm(chunks, desc="Bessel summation (GPU)", leave=False):
         j_end = min(j_start + chunk_size, np_slow)
         W_chunk = W[j_start:j_end]
         W_re = torch.from_numpy(W_chunk.real.astype(np.float32)).to(device)
@@ -460,13 +466,19 @@ def compute_shot_gather(
         dp,
     )
 
+    from tqdm.auto import tqdm
+
+    pipeline = tqdm(total=5, desc="Shot gather pipeline", leave=True)
+
     # Step 1: Batched Kennett reflectivity (below water)
-    # Build sub-ocean stack (layers below water)
+    pipeline.set_postfix_str("Kennett reflectivity")
     sub_ocean_layers = stack.layers[1:]
     sub_ocean_stack = LayerStack(layers=sub_ocean_layers)
     RRd_PP = kennett_reflectivity_batch(sub_ocean_stack, p_samples, omega_damped)
+    pipeline.update(1)
 
-    # Step 2: Water column phase for free surface reverberations
+    # Step 2: Water column phase + free surface reverberations
+    pipeline.set_postfix_str("Free surface reverberations")
     water_layer = stack.layers[0]
     s_water = _complex_slowness(water_layer.alpha, water_layer.Q_alpha)
     eta_water = np.array([_vertical_slowness(s_water, float(pv)) for pv in p_samples])
@@ -478,13 +490,13 @@ def compute_shot_gather(
     )
 
     if gc.free_surface:
-        # Step 3: Free surface reverberations
         R = free_surface_reverberations(RRd_PP, eaea_water)
     else:
-        # Just propagate through water column (no multiples)
         R = eaea_water * RRd_PP
+    pipeline.update(1)
 
-    # Step 4: Source and receiver ghosts
+    # Step 3: Source and receiver ghosts
+    pipeline.set_postfix_str("Ghost operators")
     sg = source_ghost(omega_damped, p_samples, survey.source_depth, survey.water_alpha)
     rg = receiver_ghost(
         omega_damped,
@@ -494,16 +506,20 @@ def compute_shot_gather(
         survey.receiver_type,
     )
     R = R * sg * rg
+    pipeline.update(1)
 
-    # Step 5: Bessel summation (slowness -> offset)
+    # Step 4: Bessel summation (slowness -> offset)
+    pipeline.set_postfix_str("Bessel summation")
     bessel_func = bessel_summation_gpu if use_gpu else bessel_summation
     U = bessel_func(R, p_samples, omega_real, survey.offsets, dp)
 
-    # Step 6: Source spectrum
+    # Source spectrum
     S = ricker_source_spectrum(omega_real, gc.f_peak)
     U *= S[np.newaxis, :]
+    pipeline.update(1)
 
-    # Step 7: IFFT with damping compensation
+    # Step 5: IFFT with damping compensation
+    pipeline.set_postfix_str("IFFT")
     gather = np.zeros((len(survey.offsets), nt), dtype=np.float64)
     exp_decay = np.exp(-gamma * time)
 
@@ -514,6 +530,10 @@ def compute_shot_gather(
 
         seismogram_c = np.fft.fft(Uwk)
         gather[ir, :] = np.real(seismogram_c) * exp_decay
+
+    pipeline.update(1)
+    pipeline.set_postfix_str("Done")
+    pipeline.close()
 
     return ShotGatherResult(
         time=time,
