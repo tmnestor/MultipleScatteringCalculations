@@ -9,6 +9,7 @@ dependencies:
   - scipy
   - matplotlib
   - pytorch
+  - pyyaml
   - tqdm
   - pip
   - pip:

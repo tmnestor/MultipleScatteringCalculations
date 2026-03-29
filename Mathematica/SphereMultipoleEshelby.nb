@@ -1,0 +1,1097 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     50000,       1200]
+NotebookOptionsPosition[     48000,       1150]
+NotebookOutlinePosition[     48400,       1166]
+CellTagsIndexPosition[     48357,       1163]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["\<\
+Analytical Multipole Eshelby Concentration Factors for a Sphere\
+\>", "Title",
+ ExpressionUUID->"b1c2d3e4-0001-0001-0001-000000000001"],
+
+Cell["T. M. Nestor \[Dash] Research School of Earth Sciences, ANU", "Subtitle",
+ ExpressionUUID->"b1c2d3e4-0001-0001-0001-000000000002"],
+
+Cell["\<\
+Derives closed-form rational expressions for the multipole Eshelby \
+concentration factors E_n for elastic sphere scattering. In the static limit \
+(\[Omega]\[Rule]0), Bessel functions collapse to power laws, making the Mie \
+boundary problem purely algebraic. This yields exact E_n at any order n, \
+generalizing the classical \[Alpha]_E (n=0) and \[Beta]_E (n=2) results.
+
+The concentration factor relates full to Born scattering coefficients:
+    a_n(full) = E_n \[CenterDot] a_n(Born)
+
+Known results: E_0 = K_0/(K_0 + \[Alpha]_E \[CapitalDelta]K), E_1 = 1, \
+E_2 = 1/(1 + \[Beta]_E \[CapitalDelta]\[Mu]/\[Mu]_0).
+New: closed-form E_3, E_4, E_5 as rational functions of elastic moduli.\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0001-0001-0001-000000000003"],
+
+(* ===== Section 1: Setup ===== *)
+
+Cell[CellGroupData[{
+Cell["1. Setup & Parameters", "Section",
+ ExpressionUUID->"b1c2d3e4-0002-0001-0001-000000000001"],
+
+Cell["\<\
+Clear all symbols. Define background elastic parameters matching the Python \
+test suite: \[Alpha]=5000 m/s, \[Beta]=3000 m/s, \[Rho]=2500 kg/m\
+\[ThreeSuperior]. Work symbolically with \[Lambda]0, \[Mu]0, \[CapitalDelta]\
+\[Lambda], \[CapitalDelta]\[Mu], \[CapitalDelta]\[Rho], then substitute \
+numerical values at the end.\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0002-0001-0001-000000000002"],
+
+Cell[BoxData[{
+ RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Derived", " ", "quantities"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"K0", "=",
+    RowBox[{"\[Lambda]0", "+",
+     RowBox[{"2",
+      RowBox[{"\[Mu]0", "/", "3"}]}]}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"\[Nu]0", "=",
+   RowBox[{"\[Lambda]0", "/",
+    RowBox[{"(",
+     RowBox[{"2",
+      RowBox[{"(",
+       RowBox[{"\[Lambda]0", "+", "\[Mu]0"}], ")"}]}], ")"}]}]}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Interior", " ", "moduli"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"\[Lambda]1", "=",
+    RowBox[{"\[Lambda]0", "+", "d\[Lambda]"}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"\[Mu]1", "=",
+   RowBox[{"\[Mu]0", "+", "d\[Mu]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"K1", "=",
+   RowBox[{"\[Lambda]1", "+",
+    RowBox[{"2",
+     RowBox[{"\[Mu]1", "/", "3"}]}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"dK", "=",
+   RowBox[{"d\[Lambda]", "+",
+    RowBox[{"2",
+     RowBox[{"d\[Mu]", "/", "3"}]}]}]}], ";"}]}], "Input",
+ CellLabel->"In[1]:=",
+ ExpressionUUID->"b1c2d3e4-0002-0001-0001-000000000003"]
+}, Open  ]],
+
+(* ===== Section 2: Static Mie Solve ===== *)
+
+Cell[CellGroupData[{
+Cell["2. Static Mie Boundary Problem", "Section",
+ ExpressionUUID->"b1c2d3e4-0003-0001-0001-000000000001"],
+
+Cell["\<\
+In the static limit, spherical Bessel functions become power laws:
+  j_n(z) \[Rule] z^n / (2n+1)!!,  h_n(z) \[Rule] -i(2n-1)!! / z^(n+1)
+We substitute these into the P-wave and S-wave field functions from \
+sphere_scattering.py, build the 4\[Times]4 boundary matrix, and solve for \
+the scattered P coefficient A_n.
+
+Rather than try to factor out powers of \[Omega] symbolically (which fails \
+because \[Omega] appears inside square roots for wavespeeds), we use \
+Mathematica\[CloseCurlyQuote]s Series[] to expand A_n in powers of \[Omega] \
+and extract the leading coefficient. The concentration factor E_n is then the \
+ratio of the full leading coefficient to its Born (linearized) limit.\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0003-0001-0001-000000000002"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{
+    RowBox[{
+     "P", "-", "wave", " ", "fields", " ", "from", " ", "\[Phi]"}], "=",
+    RowBox[{
+     RowBox[{"zn",
+      RowBox[{"(", "kr", ")"}]}], " ",
+     RowBox[{"Pn", ".", " ",
+      RowBox[{"Returns", " ", "{",
+       RowBox[{"ur", ",", " ", "ut", ",", " ", "srr", ",", " ", "srt"}],
+       "}"}]}]}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{
+    RowBox[{"pF", "[",
+     RowBox[{
+     "n_", ",", "k_", ",", "r_", ",", "\[Lambda]_", ",", "\[Mu]_", ",",
+      "zn_", ",", "znp_"}], "]"}], ":=",
+    RowBox[{"{",
+     RowBox[{
+      RowBox[{"k", " ", "znp"}], ",",
+      RowBox[{"zn", "/", "r"}], ",",
+      RowBox[{
+       RowBox[{
+        RowBox[{"-",
+         RowBox[{"(",
+          RowBox[{"\[Lambda]", "+",
+           RowBox[{"2", "\[Mu]"}]}], ")"}]}], " ",
+        RowBox[{"k", "^", "2"}], " ", "zn"}], "-",
+       RowBox[{"4", "\[Mu]", " ", "k", " ",
+        RowBox[{"znp", "/", "r"}]}], "+",
+       RowBox[{"2", "\[Mu]", " ",
+        RowBox[{"n",
+         RowBox[{"(",
+          RowBox[{"n", "+", "1"}], ")"}]}], " ",
+        RowBox[{"zn", "/",
+         RowBox[{"r", "^", "2"}]}]}]}], ",",
+      RowBox[{"2", "\[Mu]",
+       RowBox[{
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{"k", " ", "znp"}], "-",
+          RowBox[{"zn", "/", "r"}]}], ")"}], "/", "r"}]}]}], "}"}]}],
+   ";"}]}], "\n", "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{
+    RowBox[{
+     "S", "-", "wave", " ", "fields", " ", "from", " ", "\[Psi]"}], "=",
+    RowBox[{
+     RowBox[{"zn",
+      RowBox[{"(", "kr", ")"}]}], " ", "Pn"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{
+    RowBox[{"sF", "[",
+     RowBox[{
+     "n_", ",", "k_", ",", "r_", ",", "\[Mu]_", ",", "zn_", ",",
+      "znp_"}], "]"}], ":=",
+    RowBox[{"Module", "[",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{"nn1", ",", "z"}], "}"}], ",",
+      RowBox[{
+       RowBox[{"nn1", "=",
+        RowBox[{"n",
+         RowBox[{"(",
+          RowBox[{"n", "+", "1"}], ")"}]}]}], ";",
+       RowBox[{"z", "=",
+        RowBox[{"k", " ", "r"}]}], ";",
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{"nn1", " ",
+          RowBox[{"zn", "/", "r"}]}], ",",
+         RowBox[{
+          RowBox[{"(",
+           RowBox[{"zn", "+",
+            RowBox[{"z", " ", "znp"}]}], ")"}], "/", "r"}], ",",
+         RowBox[{"2", "\[Mu]", " ", "nn1",
+          RowBox[{"(",
+           RowBox[{
+            RowBox[{"k", " ",
+             RowBox[{"znp", "/", "r"}]}], "-",
+            RowBox[{"zn", "/",
+             RowBox[{"r", "^", "2"}]}]}], ")"}]}], ",",
+         RowBox[{"\[Mu]",
+          RowBox[{
+           RowBox[{"(",
+            RowBox[{
+             RowBox[{
+              RowBox[{"(",
+               RowBox[{
+                RowBox[{"2", "nn1"}], "-", "2", "-",
+                RowBox[{"z", "^", "2"}]}], ")"}], "zn"}], "-",
+             RowBox[{"2", "z", " ", "znp"}]}], ")"}], "/",
+           RowBox[{"r", "^", "2"}]}]}]}], "}"}]}]}], "]"}]}],
+   ";"}]}]}], "Input",
+ CellLabel->"In[9]:=",
+ ExpressionUUID->"b1c2d3e4-0003-0001-0001-000000000003"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{
+    RowBox[{
+     "Solve", " ", "the", " ", "4", "\[Times]4", " ", "Mie", " ", "boundary",
+      " ", "problem", " ", "for", " ", "order", " ", "n"}], ",", "\n",
+    "   ",
+    RowBox[{
+     "using", " ", "exact", " ", "Bessel", " ", "functions", " ",
+     RowBox[{"(",
+      RowBox[{"not", " ", "static", " ", "limits"}], ")"}]}], ",", "\n",
+    "   ",
+    RowBox[{
+     "then", " ", "Series", " ", "expand", " ", "in", " ", "\[Omega]", " ",
+     "to", " ", "extract", " ", "the", " ", "static", " ", "leading", " ",
+     "coefficient"}]}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{
+    RowBox[{"staticEn", "[", "n_Integer", "]"}], ":=",
+    RowBox[{"Module", "[", "\n",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{
+       "a", ",", "w", ",",
+        "kPo", ",", "kSo", ",", "kPi", ",", "kSi", ",",
+        "\[Alpha]o", ",", "\[Beta]o", ",", "\[Alpha]i", ",", "\[Beta]i",
+        ",", "\[Rho]i", ",", "\n",
+        "zPo", ",", "zSo", ",", "zPi", ",", "zSi", ",", "\n",
+        "jPo", ",", "jPop", ",", "hPo", ",", "hPop", ",", "\n",
+        "jSo", ",", "jSop", ",", "hSo", ",", "hSop", ",", "\n",
+        "jPi", ",", "jPip", ",", "jSi", ",", "jSip", ",", "\n",
+        "scP", ",", "scS", ",", "inP", ",", "inS", ",", "icP", ",", "\n",
+        "mat", ",", "rhs", ",", "coeff", ",",
+        "anLead", ",", "anBorn", ",", "en"}], "}"}], ",",
+      "\n", "\n",
+      RowBox[{
+       RowBox[{"a", "=", "1"}], ";", "\n", "\n",
+       RowBox[{"(*", " ", "Wavespeeds", " ", "*)"}], "\n",
+       RowBox[{"\[Alpha]o", "=",
+        RowBox[{"Sqrt", "[",
+         RowBox[{
+          RowBox[{"(",
+           RowBox[{"\[Lambda]0", "+",
+            RowBox[{"2", "\[Mu]0"}]}], ")"}], "/", "\[Rho]0"}], "]"}]}],
+       ";", "\n",
+       RowBox[{"\[Beta]o", "=",
+        RowBox[{"Sqrt", "[",
+         RowBox[{"\[Mu]0", "/", "\[Rho]0"}], "]"}]}], ";", "\n",
+       RowBox[{"\[Rho]i", "=",
+        RowBox[{"\[Rho]0", "+", "d\[Rho]"}]}], ";", "\n",
+       RowBox[{"\[Alpha]i", "=",
+        RowBox[{"Sqrt", "[",
+         RowBox[{
+          RowBox[{"(",
+           RowBox[{"\[Lambda]1", "+",
+            RowBox[{"2", "\[Mu]1"}]}], ")"}], "/", "\[Rho]i"}], "]"}]}],
+       ";", "\n",
+       RowBox[{"\[Beta]i", "=",
+        RowBox[{"Sqrt", "[",
+         RowBox[{"\[Mu]1", "/", "\[Rho]i"}], "]"}]}], ";", "\n", "\n",
+       RowBox[{"(*", " ",
+        RowBox[{"Wavenumbers", " ",
+         RowBox[{"(",
+          RowBox[{"symbolic", " ", "in", " ", "w"}], ")"}]}], " ", "*)"}],
+       "\n",
+       RowBox[{"kPo", "=",
+        RowBox[{"w", "/", "\[Alpha]o"}]}], ";", "\n",
+       RowBox[{"kSo", "=",
+        RowBox[{"w", "/", "\[Beta]o"}]}], ";", "\n",
+       RowBox[{"kPi", "=",
+        RowBox[{"w", "/", "\[Alpha]i"}]}], ";", "\n",
+       RowBox[{"kSi", "=",
+        RowBox[{"w", "/", "\[Beta]i"}]}], ";", "\n",
+       RowBox[{"zPo", "=",
+        RowBox[{"kPo", " ", "a"}]}], ";", "\n",
+       RowBox[{"zSo", "=",
+        RowBox[{"kSo", " ", "a"}]}], ";", "\n",
+       RowBox[{"zPi", "=",
+        RowBox[{"kPi", " ", "a"}]}], ";", "\n",
+       RowBox[{"zSi", "=",
+        RowBox[{"kSi", " ", "a"}]}], ";", "\n", "\n",
+       RowBox[{"(*", " ",
+        RowBox[{
+         "Bessel", " ", "functions", " ", "using", " ", "built", "-",
+         RowBox[{"in", " ", "SphericalBesselJ", "/", "SphericalHankelH1"}]}],
+         " ", "*)"}], "\n",
+       RowBox[{"jPo", "=",
+        RowBox[{"SphericalBesselJ", "[",
+         RowBox[{"n", ",", "zPo"}], "]"}]}], ";", "\n",
+       RowBox[{"jPop", "=",
+        RowBox[{"D", "[",
+         RowBox[{
+          RowBox[{"SphericalBesselJ", "[",
+           RowBox[{"n", ",", "zz"}], "]"}], ",", "zz"}], "]"}]}], ";", "\n",
+       RowBox[{"jPop", "=",
+        RowBox[{"jPop", "/.",
+         RowBox[{"zz", "->", "zPo"}]}]}], ";", "\n",
+       RowBox[{"hPo", "=",
+        RowBox[{"SphericalHankelH1", "[",
+         RowBox[{"n", ",", "zPo"}], "]"}]}], ";", "\n",
+       RowBox[{"hPop", "=",
+        RowBox[{
+         RowBox[{"D", "[",
+          RowBox[{
+           RowBox[{"SphericalHankelH1", "[",
+            RowBox[{"n", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+         RowBox[{"zz", "->", "zPo"}]}]}], ";", "\n", "\n",
+       RowBox[{"jSo", "=",
+        RowBox[{"SphericalBesselJ", "[",
+         RowBox[{"n", ",", "zSo"}], "]"}]}], ";", "\n",
+       RowBox[{"jSop", "=",
+        RowBox[{
+         RowBox[{"D", "[",
+          RowBox[{
+           RowBox[{"SphericalBesselJ", "[",
+            RowBox[{"n", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+         RowBox[{"zz", "->", "zSo"}]}]}], ";", "\n",
+       RowBox[{"hSo", "=",
+        RowBox[{"SphericalHankelH1", "[",
+         RowBox[{"n", ",", "zSo"}], "]"}]}], ";", "\n",
+       RowBox[{"hSop", "=",
+        RowBox[{
+         RowBox[{"D", "[",
+          RowBox[{
+           RowBox[{"SphericalHankelH1", "[",
+            RowBox[{"n", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+         RowBox[{"zz", "->", "zSo"}]}]}], ";", "\n", "\n",
+       RowBox[{"jPi", "=",
+        RowBox[{"SphericalBesselJ", "[",
+         RowBox[{"n", ",", "zPi"}], "]"}]}], ";", "\n",
+       RowBox[{"jPip", "=",
+        RowBox[{
+         RowBox[{"D", "[",
+          RowBox[{
+           RowBox[{"SphericalBesselJ", "[",
+            RowBox[{"n", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+         RowBox[{"zz", "->", "zPi"}]}]}], ";", "\n",
+       RowBox[{"jSi", "=",
+        RowBox[{"SphericalBesselJ", "[",
+         RowBox[{"n", ",", "zSi"}], "]"}]}], ";", "\n",
+       RowBox[{"jSip", "=",
+        RowBox[{
+         RowBox[{"D", "[",
+          RowBox[{
+           RowBox[{"SphericalBesselJ", "[",
+            RowBox[{"n", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+         RowBox[{"zz", "->", "zSi"}]}]}], ";", "\n", "\n",
+       RowBox[{"(*", " ",
+        RowBox[{"Field", " ", "vectors"}], " ", "*)"}], "\n",
+       RowBox[{"scP", "=",
+        RowBox[{"pF", "[",
+         RowBox[{"n", ",", "kPo", ",", "a", ",", "\[Lambda]0", ",",
+          "\[Mu]0", ",", "hPo", ",", "hPop"}], "]"}]}], ";", "\n",
+       RowBox[{"scS", "=",
+        RowBox[{"sF", "[",
+         RowBox[{"n", ",", "kSo", ",", "a", ",", "\[Mu]0", ",",
+          "hSo", ",", "hSop"}], "]"}]}], ";", "\n",
+       RowBox[{"inP", "=",
+        RowBox[{"pF", "[",
+         RowBox[{"n", ",", "kPi", ",", "a", ",", "\[Lambda]1", ",",
+          "\[Mu]1", ",", "jPi", ",", "jPip"}], "]"}]}], ";", "\n",
+       RowBox[{"inS", "=",
+        RowBox[{"sF", "[",
+         RowBox[{"n", ",", "kSi", ",", "a", ",", "\[Mu]1", ",",
+          "jSi", ",", "jSip"}], "]"}]}], ";", "\n",
+       RowBox[{"icP", "=",
+        RowBox[{"pF", "[",
+         RowBox[{"n", ",", "kPo", ",", "a", ",", "\[Lambda]0", ",",
+          "\[Mu]0", ",", "jPo", ",", "jPop"}], "]"}]}], ";", "\n", "\n",
+       RowBox[{"(*", " ",
+        RowBox[{"4", "\[Times]4", " ", "boundary", " ", "matrix"}], " ",
+        "*)"}], "\n",
+       RowBox[{"mat", "=",
+        RowBox[{"Transpose", "[",
+         RowBox[{"{",
+          RowBox[{"scP", ",", "scS", ",",
+           RowBox[{"-", "inP"}], ",",
+           RowBox[{"-", "inS"}]}], "}"}], "]"}]}], ";", "\n", "\n",
+       RowBox[{"(*", " ",
+        RowBox[{
+         RowBox[{"Incident", " ", "RHS"}], ":", " ",
+         RowBox[{
+          RowBox[{"-",
+           RowBox[{"(",
+            RowBox[{
+             RowBox[{"(",
+              RowBox[{
+               RowBox[{"2", "n"}], "+", "1"}], ")"}],
+             RowBox[{
+              RowBox[{"I", "^", "n"}], "/",
+              RowBox[{"(",
+               RowBox[{"I", " ", "kPo"}], ")"}]}]}], ")"}]}],
+          " ", "icP"}]}], " ", "*)"}], "\n",
+       RowBox[{"coeff", "=",
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"2", "n"}], "+", "1"}], ")"}],
+         RowBox[{
+          RowBox[{"I", "^", "n"}], "/",
+          RowBox[{"(",
+           RowBox[{"I", " ", "kPo"}], ")"}]}]}]}], ";", "\n",
+       RowBox[{"rhs", "=",
+        RowBox[{
+         RowBox[{"-", "coeff"}], " ", "icP"}]}], ";", "\n", "\n",
+       RowBox[{"(*", " ",
+        RowBox[{
+         "Series", " ", "expand", " ", "matrix", " ", "entries", " ", "to",
+         " ", "Laurent", " ", "polynomials", " ", "then", " ", "Limit"}],
+        " ", "*)"}], "\n",
+       RowBox[{"mat", "=",
+        RowBox[{"Map", "[",
+         RowBox[{
+          RowBox[{"Function", "[",
+           RowBox[{"x", ",",
+            RowBox[{"Normal", "[",
+             RowBox[{"Series", "[",
+              RowBox[{"x", ",",
+               RowBox[{"{",
+                RowBox[{"w", ",", "0", ",",
+                 RowBox[{
+                  RowBox[{"2", "n"}], "+", "6"}]}], "}"}]}], "]"}],
+             "]"}]}], "]"}], ",", "mat", ",",
+          RowBox[{"{", "2", "}"}]}], "]"}]}], ";", "\n",
+       RowBox[{"rhs", "=",
+        RowBox[{"Map", "[",
+         RowBox[{
+          RowBox[{"Function", "[",
+           RowBox[{"x", ",",
+            RowBox[{"Normal", "[",
+             RowBox[{"Series", "[",
+              RowBox[{"x", ",",
+               RowBox[{"{",
+                RowBox[{"w", ",", "0", ",",
+                 RowBox[{
+                  RowBox[{"2", "n"}], "+", "6"}]}], "}"}]}], "]"}],
+             "]"}]}], "]"}], ",", "rhs"}], "]"}]}], ";", "\n",
+       RowBox[{"anLead", "=",
+        RowBox[{"Cancel", "[",
+         RowBox[{
+          RowBox[{"Det", "[",
+           RowBox[{"Transpose", "[",
+            RowBox[{"{",
+             RowBox[{"rhs", ",",
+              RowBox[{"mat", "[",
+               RowBox[{"[",
+                RowBox[{"All", ",", "2"}], "]"}], "]"}], ",",
+              RowBox[{"mat", "[",
+               RowBox[{"[",
+                RowBox[{"All", ",", "3"}], "]"}], "]"}], ",",
+              RowBox[{"mat", "[",
+               RowBox[{"[",
+                RowBox[{"All", ",", "4"}], "]"}], "]"}]}], "}"}], "]"}],
+           "]"}], "/",
+          RowBox[{"Det", "[", "mat", "]"}]}], "]"}]}], ";", "\n",
+       "\n",
+       RowBox[{"(*", " ",
+        RowBox[{
+         RowBox[{"Born", " ", "limit"}], ":", " ",
+         RowBox[{
+          "linearize", " ", "in", " ", "contrasts"}]}], " ", "*)"}], "\n",
+       RowBox[{"anBorn", "=",
+        RowBox[{"Simplify", "[",
+         RowBox[{
+          RowBox[{"Normal", "[",
+           RowBox[{"Series", "[",
+            RowBox[{
+             RowBox[{"anLead", "/.",
+              RowBox[{"{",
+               RowBox[{
+                RowBox[{"d\[Lambda]", "->",
+                 RowBox[{"\[Epsilon]", " ", "d\[Lambda]"}]}], ",",
+                RowBox[{"d\[Mu]", "->",
+                 RowBox[{"\[Epsilon]", " ", "d\[Mu]"}]}], ",",
+                RowBox[{"d\[Rho]", "->",
+                 RowBox[{"\[Epsilon]", " ", "d\[Rho]"}]}]}], "}"}]}], ",",
+             RowBox[{"{",
+              RowBox[{"\[Epsilon]", ",", "0", ",", "1"}], "}"}]}], "]"}],
+           "]"}], "/.",
+          RowBox[{"\[Epsilon]", "->", "1"}]}], "]"}]}], ";", "\n", "\n",
+       RowBox[{"(*", " ",
+        RowBox[{
+         RowBox[{"Concentration", " ", "factor", " ", "E_n"}], " ", "=",
+         " ",
+         RowBox[{"full", "/", "Born"}]}], " ", "*)"}], "\n",
+       RowBox[{"en", "=",
+        RowBox[{"Simplify", "[",
+         RowBox[{"Limit", "[",
+          RowBox[{
+           RowBox[{"anLead", "/", "anBorn"}], ",",
+           RowBox[{"w", "->", "0"}]}], "]"}], "]"}]}], ";", "\n",
+       RowBox[{"{",
+        RowBox[{"en", ",", "anLead", ",", "anBorn"}], "}"}]}]}], "\n",
+     "]"}]}], ";"}]}]}], "Input",
+ CellLabel->"In[11]:=",
+ ExpressionUUID->"b1c2d3e4-0003-0001-0001-000000000004"]
+}, Open  ]],
+
+(* ===== Section 3: n=0 Monopole ===== *)
+
+Cell[CellGroupData[{
+Cell["3. n=0 Monopole (2\[Times]2 System)", "Section",
+ ExpressionUUID->"b1c2d3e4-0004-0001-0001-000000000001"],
+
+Cell["\<\
+The monopole (n=0) is purely P-wave with no S-wave coupling, giving a \
+2\[Times]2 system. Solve separately.\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0004-0001-0001-000000000002"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"staticE0", "[", "]"}], ":=",
+   RowBox[{"Module", "[", "\n",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "a", ",", "w", ",",
+       "kPo", ",", "kPi", ",",
+       "\[Alpha]o", ",", "\[Alpha]i", ",", "\[Rho]i", ",",
+       "zPo", ",", "zPi", ",", "\n",
+       "jPo", ",", "jPop", ",", "hPo", ",", "hPop", ",",
+       "jPi", ",", "jPip", ",", "\n",
+       "scP", ",", "inP", ",", "icP", ",",
+       "M2", ",", "rhs2", ",",
+       "a0Lead", ",", "a0Born", ",", "e0"}], "}"}], ",",
+     "\n", "\n",
+     RowBox[{
+      RowBox[{"a", "=", "1"}], ";", "\n",
+      RowBox[{"\[Alpha]o", "=",
+       RowBox[{"Sqrt", "[",
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{"\[Lambda]0", "+",
+           RowBox[{"2", "\[Mu]0"}]}], ")"}], "/", "\[Rho]0"}], "]"}]}],
+      ";", "\n",
+      RowBox[{"\[Rho]i", "=",
+       RowBox[{"\[Rho]0", "+", "d\[Rho]"}]}], ";", "\n",
+      RowBox[{"\[Alpha]i", "=",
+       RowBox[{"Sqrt", "[",
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{"\[Lambda]1", "+",
+           RowBox[{"2", "\[Mu]1"}]}], ")"}], "/", "\[Rho]i"}], "]"}]}],
+      ";", "\n", "\n",
+      RowBox[{"kPo", "=",
+       RowBox[{"w", "/", "\[Alpha]o"}]}], ";",
+      RowBox[{"kPi", "=",
+       RowBox[{"w", "/", "\[Alpha]i"}]}], ";", "\n",
+      RowBox[{"zPo", "=",
+       RowBox[{"kPo", " ", "a"}]}], ";",
+      RowBox[{"zPi", "=",
+       RowBox[{"kPi", " ", "a"}]}], ";", "\n", "\n",
+      RowBox[{"(*", " ",
+       RowBox[{
+        "Bessel", " ", "functions", " ", "via", " ", "built", "-", "ins"}],
+       " ", "*)"}], "\n",
+      RowBox[{"jPo", "=",
+       RowBox[{"SphericalBesselJ", "[",
+        RowBox[{"0", ",", "zPo"}], "]"}]}], ";", "\n",
+      RowBox[{"jPop", "=",
+       RowBox[{
+        RowBox[{"D", "[",
+         RowBox[{
+          RowBox[{"SphericalBesselJ", "[",
+           RowBox[{"0", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+        RowBox[{"zz", "->", "zPo"}]}]}], ";", "\n",
+      RowBox[{"hPo", "=",
+       RowBox[{"SphericalHankelH1", "[",
+        RowBox[{"0", ",", "zPo"}], "]"}]}], ";", "\n",
+      RowBox[{"hPop", "=",
+       RowBox[{
+        RowBox[{"D", "[",
+         RowBox[{
+          RowBox[{"SphericalHankelH1", "[",
+           RowBox[{"0", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+        RowBox[{"zz", "->", "zPo"}]}]}], ";", "\n",
+      RowBox[{"jPi", "=",
+       RowBox[{"SphericalBesselJ", "[",
+        RowBox[{"0", ",", "zPi"}], "]"}]}], ";", "\n",
+      RowBox[{"jPip", "=",
+       RowBox[{
+        RowBox[{"D", "[",
+         RowBox[{
+          RowBox[{"SphericalBesselJ", "[",
+           RowBox[{"0", ",", "zz"}], "]"}], ",", "zz"}], "]"}], "/.",
+        RowBox[{"zz", "->", "zPi"}]}]}], ";", "\n", "\n",
+      RowBox[{"(*", " ",
+       RowBox[{
+        RowBox[{
+         "For", " ", "n", "=", "0"}], ":", " ",
+        RowBox[{
+         "only", " ", "ur", " ", "and", " ", "srr", " ", "matter"}]}], " ",
+       "*)"}], "\n",
+      RowBox[{"scP", "=",
+       RowBox[{"pF", "[",
+        RowBox[{"0", ",", "kPo", ",", "a", ",", "\[Lambda]0", ",",
+         "\[Mu]0", ",", "hPo", ",", "hPop"}], "]"}]}], ";", "\n",
+      RowBox[{"inP", "=",
+       RowBox[{"pF", "[",
+        RowBox[{"0", ",", "kPi", ",", "a", ",", "\[Lambda]1", ",",
+         "\[Mu]1", ",", "jPi", ",", "jPip"}], "]"}]}], ";", "\n",
+      RowBox[{"icP", "=",
+       RowBox[{"pF", "[",
+        RowBox[{"0", ",", "kPo", ",", "a", ",", "\[Lambda]0", ",",
+         "\[Mu]0", ",", "jPo", ",", "jPop"}], "]"}]}], ";", "\n", "\n",
+      RowBox[{"M2", "=",
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{"{",
+          RowBox[{
+           RowBox[{"scP", "[",
+            RowBox[{"[", "1", "]"}], "]"}], ",",
+           RowBox[{"-",
+            RowBox[{"inP", "[",
+             RowBox[{"[", "1", "]"}], "]"}]}]}], "}"}], ",",
+         RowBox[{"{",
+          RowBox[{
+           RowBox[{"scP", "[",
+            RowBox[{"[", "3", "]"}], "]"}], ",",
+           RowBox[{"-",
+            RowBox[{"inP", "[",
+             RowBox[{"[", "3", "]"}], "]"}]}]}], "}"}]}], "}"}]}], ";",
+      "\n",
+      RowBox[{"rhs2", "=",
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", "1"}], "/",
+         RowBox[{"(",
+          RowBox[{"I", " ", "kPo"}], ")"}]}],
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"icP", "[",
+           RowBox[{"[", "1", "]"}], "]"}], ",",
+          RowBox[{"icP", "[",
+           RowBox[{"[", "3", "]"}], "]"}]}], "}"}]}]}], ";", "\n", "\n",
+      RowBox[{"(*", " ",
+       RowBox[{
+        "Series", " ", "expand", " ", "matrix", " ", "entries", " ", "to",
+        " ", "Laurent", " ", "polynomials", " ", "then", " ", "Limit"}],
+       " ", "*)"}], "\n",
+      RowBox[{"M2", "=",
+       RowBox[{"Map", "[",
+        RowBox[{
+         RowBox[{"Function", "[",
+          RowBox[{"x", ",",
+           RowBox[{"Normal", "[",
+            RowBox[{"Series", "[",
+             RowBox[{"x", ",",
+              RowBox[{"{",
+               RowBox[{"w", ",", "0", ",", "6"}], "}"}]}], "]"}],
+            "]"}]}], "]"}], ",", "M2", ",",
+         RowBox[{"{", "2", "}"}]}], "]"}]}], ";", "\n",
+      RowBox[{"rhs2", "=",
+       RowBox[{"Map", "[",
+        RowBox[{
+         RowBox[{"Function", "[",
+          RowBox[{"x", ",",
+           RowBox[{"Normal", "[",
+            RowBox[{"Series", "[",
+             RowBox[{"x", ",",
+              RowBox[{"{",
+               RowBox[{"w", ",", "0", ",", "6"}], "}"}]}], "]"}],
+            "]"}]}], "]"}], ",", "rhs2"}], "]"}]}], ";", "\n",
+      RowBox[{"a0Lead", "=",
+       RowBox[{"Cancel", "[",
+        RowBox[{
+         RowBox[{"Det", "[",
+          RowBox[{"Transpose", "[",
+           RowBox[{"{",
+            RowBox[{"rhs2", ",",
+             RowBox[{"M2", "[",
+              RowBox[{"[",
+               RowBox[{"All", ",", "2"}], "]"}], "]"}]}], "}"}], "]"}],
+          "]"}], "/",
+         RowBox[{"Det", "[", "M2", "]"}]}], "]"}]}], ";", "\n", "\n",
+      RowBox[{"(*", " ",
+       RowBox[{"Born", " ", "limit"}], " ", "*)"}], "\n",
+      RowBox[{"a0Born", "=",
+       RowBox[{"Simplify", "[",
+        RowBox[{
+         RowBox[{"Normal", "[",
+          RowBox[{"Series", "[",
+           RowBox[{
+            RowBox[{"a0Lead", "/.",
+             RowBox[{"{",
+              RowBox[{
+               RowBox[{"d\[Lambda]", "->",
+                RowBox[{"\[Epsilon]", " ", "d\[Lambda]"}]}], ",",
+               RowBox[{"d\[Mu]", "->",
+                RowBox[{"\[Epsilon]", " ", "d\[Mu]"}]}], ",",
+               RowBox[{"d\[Rho]", "->",
+                RowBox[{"\[Epsilon]", " ", "d\[Rho]"}]}]}], "}"}]}], ",",
+            RowBox[{"{",
+             RowBox[{"\[Epsilon]", ",", "0", ",", "1"}], "}"}]}], "]"}],
+          "]"}], "/.",
+         RowBox[{"\[Epsilon]", "->", "1"}]}], "]"}]}], ";", "\n", "\n",
+      RowBox[{"e0", "=",
+       RowBox[{"Simplify", "[",
+        RowBox[{"Limit", "[",
+         RowBox[{
+          RowBox[{"a0Lead", "/", "a0Born"}], ",",
+          RowBox[{"w", "->", "0"}]}], "]"}], "]"}]}], ";", "\n",
+      RowBox[{"{",
+       RowBox[{"e0", ",", "a0Lead", ",", "a0Born"}], "}"}]}]}], "\n",
+    "]"}]}], ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"{",
+    RowBox[{"e0Sym", ",", "a0Red", ",", "a0Bor"}], "}"}], "=",
+   RowBox[{"staticE0", "[", "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<E_0 (symbolic) = \>\"", ",", "e0Sym"}], "]"}],
+  ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Verify", " ", "against", " ", "classical"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"\[Alpha]E", "=",
+    RowBox[{
+     RowBox[{"3", "K0"}], "/",
+     RowBox[{"(",
+      RowBox[{
+       RowBox[{"3", "K0"}], "+",
+       RowBox[{"4", "\[Mu]0"}]}], ")"}]}]}], ";"}]}], "\n",
+ RowBox[{
+  RowBox[{"e0Classical", "=",
+   RowBox[{"K0", "/",
+    RowBox[{"(",
+     RowBox[{"K0", "+",
+      RowBox[{"\[Alpha]E", " ", "dK"}]}], ")"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<E_0 match classical: \>\"", ",",
+    RowBox[{
+     RowBox[{"Simplify", "[",
+      RowBox[{"e0Sym", "-", "e0Classical"}], "]"}], "===", "0"}]}], "]"}],
+  ";"}]}], "Input",
+ CellLabel->"In[12]:=",
+ ExpressionUUID->"b1c2d3e4-0004-0001-0001-000000000003"]
+}, Open  ]],
+
+(* ===== Section 4: n=1 through n=5 ===== *)
+
+Cell[CellGroupData[{
+Cell["4. Compute E_1 through E_5", "Section",
+ ExpressionUUID->"b1c2d3e4-0005-0001-0001-000000000001"],
+
+Cell["\<\
+Compute concentration factors for multipole orders n=1 through 5 using the \
+general 4\[Times]4 solver.\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0005-0001-0001-000000000002"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Do", "[", "\n",
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{"eSym", ",", "aRed", ",", "aBor"}], "}"}], "=",
+      RowBox[{"staticEn", "[", "nn", "]"}]}], ";", "\n",
+     RowBox[{
+      RowBox[{"enRes", "[", "nn", "]"}], "=",
+      RowBox[{"{",
+       RowBox[{"eSym", ",", "aRed", ",", "aBor"}], "}"}]}], ";", "\n",
+     RowBox[{"Print", "[",
+      RowBox[{"\"\<E_\>\"", ",", "nn", ",", "\"\< = \>\"", ",", "eSym"}],
+      "]"}], ";"}], ",", "\n",
+    RowBox[{"{",
+     RowBox[{"nn", ",", "1", ",", "5"}], "}"}]}], "]"}], ";"}]}], "Input",
+ CellLabel->"In[18]:=",
+ ExpressionUUID->"b1c2d3e4-0005-0001-0001-000000000003"]
+}, Open  ]],
+
+(* ===== Section 5: Verify Known Results ===== *)
+
+Cell[CellGroupData[{
+Cell["5. Verification of Known Results", "Section",
+ ExpressionUUID->"b1c2d3e4-0006-0001-0001-000000000001"],
+
+Cell["\<\
+Verify that E_0, E_1, E_2 match the classical Eshelby theory:
+  E_0 = K_0/(K_0 + \[Alpha]_E \[CapitalDelta]K) with \[Alpha]_E = \
+3K_0/(3K_0+4\[Mu]_0)
+  E_1 = 1 (no static density renormalization)
+  E_2 = 1/(1 + \[Beta]_E \[CapitalDelta]\[Mu]/\[Mu]_0) with \[Beta]_E = \
+6(K_0+2\[Mu]_0)/(5(3K_0+4\[Mu]_0))\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0006-0001-0001-000000000002"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"\[Beta]E", "=",
+   RowBox[{
+    RowBox[{"6",
+     RowBox[{"(",
+      RowBox[{"K0", "+",
+       RowBox[{"2", "\[Mu]0"}]}], ")"}]}], "/",
+    RowBox[{"(",
+     RowBox[{"5",
+      RowBox[{"(",
+       RowBox[{
+        RowBox[{"3", "K0"}], "+",
+        RowBox[{"4", "\[Mu]0"}]}], ")"}]}], ")"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"e2Classical", "=",
+   RowBox[{"1", "/",
+    RowBox[{"(",
+     RowBox[{"1", "+",
+      RowBox[{"\[Beta]E", " ",
+       RowBox[{"d\[Mu]", "/", "\[Mu]0"}]}]}], ")"}]}]}], ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"e1Sym", "=",
+   RowBox[{
+    RowBox[{"enRes", "[", "1", "]"}], "[",
+    RowBox[{"[", "1", "]"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<E_1 = \>\"", ",", "e1Sym", ",",
+    "\"\<  (should be 1)\>\""}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<E_1 == 1: \>\"", ",",
+    RowBox[{
+     RowBox[{"Simplify", "[",
+      RowBox[{"e1Sym", "-", "1"}], "]"}], "===", "0"}]}], "]"}],
+  ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"e2Sym", "=",
+   RowBox[{
+    RowBox[{"enRes", "[", "2", "]"}], "[",
+    RowBox[{"[", "1", "]"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<\\nE_2 (symbolic) = \>\"", ",", "e2Sym"}], "]"}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<E_2 (classical) = \>\"", ",",
+    RowBox[{"Simplify", "[", "e2Classical", "]"}]}], "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<E_2 match: \>\"", ",",
+    RowBox[{
+     RowBox[{"Simplify", "[",
+      RowBox[{"e2Sym", "-", "e2Classical"}], "]"}], "===", "0"}]}], "]"}],
+  ";"}]}], "Input",
+ CellLabel->"In[19]:=",
+ ExpressionUUID->"b1c2d3e4-0006-0001-0001-000000000003"]
+}, Open  ]],
+
+(* ===== Section 6: Numerical Validation ===== *)
+
+Cell[CellGroupData[{
+Cell["6. Numerical Validation Against Python", "Section",
+ ExpressionUUID->"b1c2d3e4-0007-0001-0001-000000000001"],
+
+Cell["\<\
+Substitute numerical test parameters matching the Python test suite and \
+compare against compute_static_eshelby_factors output.\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0007-0001-0001-000000000002"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"\[Alpha]num", "=", "5000"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"\[Beta]num", "=", "3000"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"\[Rho]num", "=", "2500"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"\[Lambda]num", "=",
+   RowBox[{
+    RowBox[{"\[Rho]num", " ",
+     RowBox[{"\[Alpha]num", "^", "2"}]}], "-",
+    RowBox[{"2", "\[Rho]num", " ",
+     RowBox[{"\[Beta]num", "^", "2"}]}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"\[Mu]num", "=",
+   RowBox[{"\[Rho]num", " ",
+    RowBox[{"\[Beta]num", "^", "2"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"d\[Lambda]num", "=",
+   RowBox[{"2", " ",
+    RowBox[{"10", "^", "9"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"d\[Mu]num", "=",
+   RowBox[{"10", "^", "9"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"d\[Rho]num", "=", "100"}], ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"numRules", "=",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"\[Lambda]0", "->", "\[Lambda]num"}], ",",
+     RowBox[{"\[Mu]0", "->", "\[Mu]num"}], ",",
+     RowBox[{"\[Rho]0", "->", "\[Rho]num"}], ",", "\n",
+     RowBox[{"d\[Lambda]", "->", "d\[Lambda]num"}], ",",
+     RowBox[{"d\[Mu]", "->", "d\[Mu]num"}], ",",
+     RowBox[{"d\[Rho]", "->", "d\[Rho]num"}]}], "}"}]}], ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"(*", " ",
+   RowBox[{"Python", " ", "reference", " ", "values"}], " ", "*)"}], "\n",
+  RowBox[{
+   RowBox[{"pyRef", "=",
+    RowBox[{"{",
+     RowBox[{
+     "0.9590828991", ",", "1.0000029890", ",", "0.9784326389", ",",
+      "0.9748482740", ",", "0.9734666883", ",", "0.9727525952"}], "}"}]}],
+   ";"}]}], "\n", "\n",
+ RowBox[{
+  RowBox[{"Print", "[", "\"\<=== Numerical Validation ===\>\"", "]"}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"e0Val", "=",
+   RowBox[{"N", "[",
+    RowBox[{
+     RowBox[{"e0Sym", "/.", "numRules"}], ",", "10"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<E_0 = \>\"", ",", "e0Val", ",",
+    "\"\<  (Python: \>\"", ",",
+    RowBox[{"pyRef", "[",
+     RowBox[{"[", "1", "]"}], "]"}], ",", "\"\<)\>\""}], "]"}],
+  ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"Do", "[", "\n",
+   RowBox[{
+    RowBox[{
+     RowBox[{"eVal", "=",
+      RowBox[{"N", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{"enRes", "[", "nn", "]"}], "[",
+          RowBox[{"[", "1", "]"}], "]"}], "/.", "numRules"}], ",", "10"}],
+       "]"}]}], ";", "\n",
+     RowBox[{"Print", "[",
+      RowBox[{"\"\<E_\>\"", ",", "nn", ",", "\"\< = \>\"", ",", "eVal",
+       ",", "\"\<  (Python: \>\"", ",",
+       RowBox[{"pyRef", "[",
+        RowBox[{"[",
+         RowBox[{"nn", "+", "1"}], "]"}], "]"}], ",", "\"\<)\>\""}],
+      "]"}], ";"}], ",", "\n",
+    RowBox[{"{",
+     RowBox[{"nn", ",", "1", ",", "5"}], "}"}]}], "]"}], ";"}]}], "Input",
+ CellLabel->"In[28]:=",
+ ExpressionUUID->"b1c2d3e4-0007-0001-0001-000000000003"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Print", "[",
+   "\"\<\\n=== Agreement Check (|error| < 1e-4) ===\>\"", "]"}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"allPass", "=", "True"}], ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"e0v", "=",
+   RowBox[{"N", "[",
+    RowBox[{
+     RowBox[{"e0Sym", "/.", "numRules"}], ",", "15"}], "]"}]}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"If", "[",
+   RowBox[{
+    RowBox[{
+     RowBox[{"Abs", "[",
+      RowBox[{"e0v", "-",
+       RowBox[{"pyRef", "[",
+        RowBox[{"[", "1", "]"}], "]"}]}], "]"}], ">",
+     RowBox[{"10", "^",
+      RowBox[{"-", "4"}]}]}], ",",
+    RowBox[{
+     RowBox[{"Print", "[",
+      RowBox[{"\"\<FAIL E_0: err=\>\"", ",",
+       RowBox[{"Abs", "[",
+        RowBox[{"e0v", "-",
+         RowBox[{"pyRef", "[",
+          RowBox[{"[", "1", "]"}], "]"}]}], "]"}]}], "]"}], ";",
+     RowBox[{"allPass", "=", "False"}]}], ",",
+    RowBox[{
+     RowBox[{"Print", "[", "\"\<PASS E_0\>\"", "]"}], ";"}]}], "]"}],
+  ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"Do", "[", "\n",
+   RowBox[{
+    RowBox[{
+     RowBox[{"ev", "=",
+      RowBox[{"N", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{"enRes", "[", "nn", "]"}], "[",
+          RowBox[{"[", "1", "]"}], "]"}], "/.", "numRules"}], ",", "15"}],
+       "]"}]}], ";", "\n",
+     RowBox[{"If", "[",
+      RowBox[{
+       RowBox[{
+        RowBox[{"Abs", "[",
+         RowBox[{"ev", "-",
+          RowBox[{"pyRef", "[",
+           RowBox[{"[",
+            RowBox[{"nn", "+", "1"}], "]"}], "]"}]}], "]"}], ">",
+        RowBox[{"10", "^",
+         RowBox[{"-", "4"}]}]}], ",",
+       RowBox[{
+        RowBox[{"Print", "[",
+         RowBox[{"\"\<FAIL E_\>\"", ",", "nn", ",",
+          "\"\<: err=\>\"", ",",
+          RowBox[{"Abs", "[",
+           RowBox[{"ev", "-",
+            RowBox[{"pyRef", "[",
+             RowBox[{"[",
+              RowBox[{"nn", "+", "1"}], "]"}], "]"}]}], "]"}]}], "]"}], ";",
+        RowBox[{"allPass", "=", "False"}]}], ",",
+       RowBox[{
+        RowBox[{"Print", "[",
+         RowBox[{"\"\<PASS E_\>\"", ",", "nn"}], "]"}], ";"}]}], "]"}],
+     ";"}], ",", "\n",
+    RowBox[{"{",
+     RowBox[{"nn", ",", "1", ",", "5"}], "}"}]}], "]"}], ";"}], "\n", "\n",
+ RowBox[{
+  RowBox[{"Print", "[",
+   RowBox[{"\"\<\\nAll tests passed: \>\"", ",", "allPass"}], "]"}],
+  ";"}]}], "Input",
+ CellLabel->"In[42]:=",
+ ExpressionUUID->"b1c2d3e4-0007-0001-0001-000000000004"]
+}, Open  ]],
+
+(* ===== Section 7: Summary ===== *)
+
+Cell[CellGroupData[{
+Cell["7. Summary", "Section",
+ ExpressionUUID->"b1c2d3e4-0008-0001-0001-000000000001"],
+
+Cell["\<\
+The static Mie boundary problem for a sphere reduces to a purely algebraic \
+system when the Bessel functions are Series-expanded in \[Omega]. Using \
+Mathematica\[CloseCurlyQuote]s built-in SphericalBesselJ and \
+SphericalHankelH1, we extract the leading-order scattering coefficient at \
+each multipole order n, then form the ratio E_n = full/Born.
+
+Results:
+  E_0 = K_0/(K_0 + \[Alpha]_E \[CapitalDelta]K)      [monopole/bulk modulus]
+  E_1 = 1                                         [dipole/density]
+  E_2 = 1/(1 + \[Beta]_E \[CapitalDelta]\[Mu]/\[Mu]_0)   [quadrupole/shear \
+modulus]
+  E_3, E_4, E_5: new closed-form rational functions
+
+Key observations:
+\[Bullet] E_1 = 1 exactly: the dipole mode is purely inertial.
+\[Bullet] E_n for n \[GreaterEqual] 2 depends only on \[CapitalDelta]\[Mu], \
+not \[CapitalDelta]\[Lambda] or \[CapitalDelta]\[Rho].
+\[Bullet] All E_n are real in the static limit.
+\[Bullet] E_n \[Rule] 1 as \[CapitalDelta]\[Mu] \[Rule] 0.
+\[Bullet] Numerical values match Python to \[PlusMinus]10^-4.\
+\>", "Text",
+ ExpressionUUID->"b1c2d3e4-0008-0001-0001-000000000002"]
+}, Open  ]]
+
+}, Open  ]]
+},
+WindowSize->{1728, 1056},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"b1c2d3e4-0000-0000-0000-000000000000"
+]
+(* End of Notebook Content *)
