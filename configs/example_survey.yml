@@ -1,0 +1,33 @@
+survey:
+  source_depth: 5.0        # m below free surface
+  receiver_depth: 8.0      # m (towed streamer)
+  receiver_type: hydrophone
+  water_depth: 70.0        # m (Bass Strait, shallow water)
+  water_alpha: 1500.0      # m/s
+  water_rho: 1025.0        # kg/m^3
+  offsets:
+    min: 100.0             # m
+    max: 3000.0            # m
+    spacing: 12.5          # m
+
+gather:
+  f_min: 5.0               # Hz
+  f_max: 80.0              # Hz
+  T: 4.0                   # s record length
+  nw: 4096                 # positive frequencies
+  np_slow: 8192            # slowness samples
+  free_surface: true
+  source:
+    type: ricker
+    f_peak: 30.0           # Hz
+
+earth_model:
+  type: direct
+  layers:
+    - {alpha: 1600, beta: 300, rho: 1800, thickness: 50}
+    - {alpha: 2200, beta: 800, rho: 2100, thickness: 200}
+    - {alpha: 3500, beta: 1800, rho: 2400, thickness: 300}
+    - {alpha: 5000, beta: 3000, rho: 2700, thickness: inf}
+
+device:
+  backend: auto
