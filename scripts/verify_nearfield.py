@@ -98,9 +98,7 @@ def stokes_tensor_numerical(
     return G / (4 * np.pi * mu)
 
 
-def near_field_eq5(
-    x: np.ndarray, mu: float, alpha: float, beta: float
-) -> np.ndarray:
+def near_field_eq5(x: np.ndarray, mu: float, alpha: float, beta: float) -> np.ndarray:
     """Wu & Ben-Menahem Eq. (5): leading near-field term only.
 
     (G)_near ~ -1/(8*pi*mu) * (1/R) * (1 - beta^2/alpha^2) * (I - 3*eR*eR^T)
@@ -112,9 +110,7 @@ def near_field_eq5(
     return (-1.0 / (8 * np.pi * mu * r)) * (1 - (beta / alpha) ** 2) * (I3 - 3 * eReR)
 
 
-def asymptotic_eq6(
-    x: np.ndarray, mu: float, alpha: float, beta: float
-) -> np.ndarray:
+def asymptotic_eq6(x: np.ndarray, mu: float, alpha: float, beta: float) -> np.ndarray:
     """Wu & Ben-Menahem Eq. (6): complete R->0 asymptotic with both 1/R terms.
 
     G ~ -1/(8*pi*mu*R) * (1 - b2/a2)(I - 3 eR eR)
@@ -146,10 +142,14 @@ def main() -> None:
     k_beta = omega / beta
     wavelength_S = 2 * np.pi / k_beta
 
-    print(f"alpha = {alpha:.1f} m/s, beta = {beta:.1f} m/s, alpha/beta = {alpha / beta:.4f}")
+    print(
+        f"alpha = {alpha:.1f} m/s, beta = {beta:.1f} m/s, alpha/beta = {alpha / beta:.4f}"
+    )
     print(f"beta^2/alpha^2 = {(beta / alpha) ** 2:.6f}")
     print(f"1 - beta^2/alpha^2 = {1 - (beta / alpha) ** 2:.6f}")
-    print(f"wavelength_S = {wavelength_S:.1f} m, wavelength_P = {2 * np.pi / k_alpha:.1f} m")
+    print(
+        f"wavelength_S = {wavelength_S:.1f} m, wavelength_P = {2 * np.pi / k_alpha:.1f} m"
+    )
 
     # --- Test 0: Verify two exact implementations agree ---
     print("\n" + "=" * 75)
@@ -167,7 +167,9 @@ def main() -> None:
     print("\n" + "=" * 75)
     print("TEST 1: Exact G vs Eq.(5) [NF only] vs Eq.(6) [full asymptotic]")
     print("=" * 75)
-    print(f"{'R/lam_S':>10} {'k_b*R':>10} {'err(Eq5)':>12} {'err(Eq6)':>12} {'Im/Re':>10}")
+    print(
+        f"{'R/lam_S':>10} {'k_b*R':>10} {'err(Eq5)':>12} {'err(Eq6)':>12} {'Im/Re':>10}"
+    )
 
     for R_over_lam in [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]:
         R = R_over_lam * wavelength_S
@@ -223,7 +225,9 @@ def main() -> None:
     print("TEST 4: Algebraic identity check")
     print("=" * 75)
     b2_a2 = (beta / alpha) ** 2
-    print(f"1 - beta^2/alpha^2 = (lambda+mu)/(lambda+2mu) = {(lam + mu) / (lam + 2 * mu):.6f}")
+    print(
+        f"1 - beta^2/alpha^2 = (lambda+mu)/(lambda+2mu) = {(lam + mu) / (lam + 2 * mu):.6f}"
+    )
     print(f"Direct: {1 - b2_a2:.6f}")
 
     # Eq. (6) second line: should equal (1/(8*pi*mu*R)) * [(1+b2/a2) I + (1-b2/a2) eReR]
