@@ -1,0 +1,463 @@
+(* ::Package:: *)
+(* CubeT6OvernightHighPrec.wl -- self-contained overnight high-precision
+   recomputation of the 14 nonzero orbit representatives of the cube
+   T_27 quad-quad body bilinear block.
+
+   PURPOSE
+   =======
+   Produces high-precision (~25-30 digit) numerical values for the
+   3 distinct A-scalars and 10 distinct B-scalars that completely
+   determine the 18x18 quad-quad block B27quad, as documented in
+   cube_galerkin27_results.tex.  Each orbit is represented by a single
+   canonical pair (i,j) with 10 <= i,j <= 27 (global basisT27 indices).
+
+   Output scalars at high precision are the input for PSLQ-style
+   closed-form reconstruction against the building blocks of the
+   9-component closure (iA, iB11, iB12, K1[2,0,0], K3[2,0,0], etc.).
+
+   RUNTIME
+   =======
+   Expected: a few hours at WP=30 thanks to memoization (each master
+   integral is computed exactly once, then reused across orbits).
+   The heaviest step is the initial population of the Mp and K3 caches
+   at high WP; after that, each orbit evaluation is nearly instant.
+   Conservatively plan for overnight (8-12h) to be safe.
+
+   HOW TO RUN
+   ==========
+     /Applications/Wolfram.app/Contents/MacOS/WolframKernel -noprompt \
+        -script Mathematica/CubeT6OvernightHighPrec.wl \
+        > cube_t6_overnight.log 2>&1 &
+     disown
+
+   Checkpoint file 'CubeT6ScalarValues_HighPrec_checkpoint.wl' is
+   written after each orbit completes, so partial progress is
+   recoverable if the job is interrupted.  The final output is
+   'CubeT6ScalarValues_HighPrec.wl'.
+
+   NO HUMAN INTERVENTION IS REQUIRED after starting the script.
+*)
+
+Print["==================================================================="];
+Print["CubeT6OvernightHighPrec.wl : high-precision scalar recomputation"];
+Print["==================================================================="];
+Print["Start time: ", DateString[]];
+Print[];
+
+$here = DirectoryName[$InputFileName];
+
+(* ==================================================================== *)
+(* 0. CONFIGURATION                                                      *)
+(* ==================================================================== *)
+
+(* The single knob that controls speed vs. precision.  WP=30 should
+   give 25+ digits in the final scalars.  WP=40 gives 35+ digits but
+   will take proportionally longer.  DO NOT change this lower than
+   WP=25 or you may lose digits in the bbBodyAB coefficient assembly. *)
+highWP = 30;
+
+(* NIntegrate precision goals relative to WP. *)
+mpPrecisionGoal = highWP - 5;
+mpAccuracyGoal  = highWP - 5;
+mpMaxRecursion  = 40;
+
+k3PrecisionGoal = highWP - 8;
+k3AccuracyGoal  = highWP - 8;
+k3MaxRecursion  = 40;
+
+checkpointPath = FileNameJoin[{$here, "CubeT6ScalarValues_HighPrec_checkpoint.wl"}];
+finalPath      = FileNameJoin[{$here, "CubeT6ScalarValues_HighPrec.wl"}];
+
+Print["Configuration:"];
+Print["  WorkingPrecision    : ", highWP];
+Print["  Mp  PrecisionGoal   : ", mpPrecisionGoal];
+Print["  K3  PrecisionGoal   : ", k3PrecisionGoal];
+Print["  Checkpoint file     : ", checkpointPath];
+Print["  Final output file   : ", finalPath];
+Print[];
+
+(* ==================================================================== *)
+(* 1. LOAD CACHED TIER-6 MASTER INTEGRALS (if available)                *)
+(* ==================================================================== *)
+(* CubeT6Masters.wl holds seven exact symbolic closed forms for the     *)
+(* rank-6/8 all-even high-degree Mp values.  These are primed into the  *)
+(* Mp cache so the downstream NIntegrate never sees them.  If the file  *)
+(* is missing, we fall back to NIntegrate for those too (slower but     *)
+(* still correct).                                                       *)
+
+mastersPath = FileNameJoin[{$here, "CubeT6Masters.wl"}];
+If[FileExistsQ[mastersPath],
+  Print["Loading CubeT6Masters.wl (7 exact symbolic masters) ..."];
+  Get[mastersPath],
+  Print["WARNING: CubeT6Masters.wl not found; will use NIntegrate for all Mp."];
+];
+
+(* ==================================================================== *)
+(* 2. HIGH-PRECISION Mp AND K3 DEFINITIONS                              *)
+(* ==================================================================== *)
+
+ClearAll[Mp, K1at, K3diag, K3off, K3kernel];
+
+(* Cubic symmetry: canonicalize argument order to ASCENDING. *)
+Mp[p_Integer, q_Integer, r_Integer] /; ! OrderedQ[{p, q, r}] :=
+  Mp @@ Sort[{p, q, r}];
+
+(* Prime high-degree masters from CubeT6Masters.wl if loaded.           *)
+(* (If symbolic names undefined, these assignments are effectively      *)
+(* no-ops and the fallback NIntegrate will handle them.)                *)
+If[ValueQ[mp222], Mp[2, 2, 2] = mp222];
+If[ValueQ[mp420], Mp[0, 2, 4] = mp420];
+If[ValueQ[mp600], Mp[0, 0, 6] = mp600];
+If[ValueQ[mp422], Mp[2, 2, 4] = mp422];
+If[ValueQ[mp440], Mp[0, 4, 4] = mp440];
+If[ValueQ[mp620], Mp[0, 2, 6] = mp620];
+If[ValueQ[mp800], Mp[0, 0, 8] = mp800];
+
+(* Fallback: NIntegrate at high WP with DuffyCoordinates on the corner. *)
+Mp[p_Integer, q_Integer, r_Integer] := Mp[p, q, r] =
+  NIntegrate[
+    x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],
+    {x, 0, 1}, {y, 0, 1}, {z, 0, 1},
+    WorkingPrecision -> highWP,
+    PrecisionGoal    -> mpPrecisionGoal,
+    AccuracyGoal     -> mpAccuracyGoal,
+    MaxRecursion     -> mpMaxRecursion,
+    Method -> {"GlobalAdaptive",
+      "SingularityHandler" -> "DuffyCoordinates"}
+  ];
+
+(* K1at via linearity on the tent factor (closed form via Mp masters). *)
+K1at[p_Integer, q_Integer, r_Integer] := K1at[p, q, r] = Sum[
+  (-1)^(a + b + c) Mp[p + a, q + b, r + c],
+  {a, 0, 1}, {b, 0, 1}, {c, 0, 1}
+];
+
+(* K3diag / K3off : 1/|u|^3 kernel with DuffyCoordinates corner handler. *)
+K3diag[p_Integer, q_Integer, r_Integer] := K3diag[p, q, r] =
+  NIntegrate[
+    (1 - u1) (1 - u2) (1 - u3) u1^(p + 2) u2^q u3^r /
+      (u1^2 + u2^2 + u3^2)^(3/2),
+    {u1, 0, 1}, {u2, 0, 1}, {u3, 0, 1},
+    WorkingPrecision -> highWP,
+    PrecisionGoal    -> k3PrecisionGoal,
+    AccuracyGoal     -> k3AccuracyGoal,
+    MaxRecursion     -> k3MaxRecursion,
+    Method -> {"GlobalAdaptive",
+      "SingularityHandler" -> "DuffyCoordinates"}
+  ];
+
+K3off[p_Integer, q_Integer, r_Integer] := K3off[p, q, r] =
+  NIntegrate[
+    (1 - u1) (1 - u2) (1 - u3) u1^(p + 1) u2^(q + 1) u3^r /
+      (u1^2 + u2^2 + u3^2)^(3/2),
+    {u1, 0, 1}, {u2, 0, 1}, {u3, 0, 1},
+    WorkingPrecision -> highWP,
+    PrecisionGoal    -> k3PrecisionGoal,
+    AccuracyGoal     -> k3AccuracyGoal,
+    MaxRecursion     -> k3MaxRecursion,
+    Method -> {"GlobalAdaptive",
+      "SingularityHandler" -> "DuffyCoordinates"}
+  ];
+
+(* Dispatch by (i,j) using cubic symmetry. *)
+K3kernel[{p_, q_, r_}, i_, j_] := K3kernel[{p, q, r}, i, j] = Which[
+  i == 1 && j == 1, K3diag[p, q, r],
+  i == 2 && j == 2, K3diag[q, p, r],
+  i == 3 && j == 3, K3diag[r, q, p],
+  (i == 1 && j == 2) || (i == 2 && j == 1), K3off[p, q, r],
+  (i == 1 && j == 3) || (i == 3 && j == 1), K3off[p, r, q],
+  (i == 2 && j == 3) || (i == 3 && j == 2), K3off[q, r, p],
+  True, $Failed
+];
+
+(* ==================================================================== *)
+(* 3. T_27 BASIS (9 T_9 modes + 18 quadratic modes)                      *)
+(* ==================================================================== *)
+
+basisT9 = {
+  {1, 0, 0}, {0, 1, 0}, {0, 0, 1},                    (* constants    *)
+  {r1, 0, 0}, {0, r2, 0}, {0, 0, r3},                 (* axial strain *)
+  {0, r3/2, r2/2}, {r3/2, 0, r1/2}, {r2/2, r1/2, 0}   (* shear strain *)
+};
+
+quadMonomials = {r1^2, r2^2, r3^2, r2*r3, r1*r3, r1*r2};
+unitVec[1] = {1, 0, 0};
+unitVec[2] = {0, 1, 0};
+unitVec[3] = {0, 0, 1};
+basisT27quad = Flatten[
+  Table[q * unitVec[k], {k, 1, 3}, {q, quadMonomials}],
+  1
+];
+basisT27 = Join[basisT9, basisT27quad];
+
+(* ==================================================================== *)
+(* 4. BODY-BILINEAR ASSEMBLY (bbBodyAB, b27entry)                        *)
+(* ==================================================================== *)
+
+kernelParity[pIdx_Integer, qIdx_Integer] :=
+  Mod[
+    {KroneckerDelta[pIdx, 1] + KroneckerDelta[qIdx, 1],
+     KroneckerDelta[pIdx, 2] + KroneckerDelta[qIdx, 2],
+     KroneckerDelta[pIdx, 3] + KroneckerDelta[qIdx, 3]},
+    2
+  ];
+
+parityOK[exps_List, kp_List] :=
+  AllTrue[Range[3], EvenQ[exps[[#]] + kp[[#]]] &];
+
+ClearAll[u1, u2, u3, bbBodyAB];
+
+bbBodyAB[poly_, pIdx_Integer, qIdx_Integer] :=
+  Module[{coeffs, aPiece, bPiece, kpA = {0, 0, 0}, kpB},
+    kpB = kernelParity[pIdx, qIdx];
+    coeffs = CoefficientRules[Expand[poly], {u1, u2, u3}];
+    aPiece = Sum[
+      If[parityOK[pair[[1]], kpA],
+        pair[[2]] K1at @@ pair[[1]],
+        0],
+      {pair, coeffs}
+    ];
+    bPiece = Sum[
+      If[parityOK[pair[[1]], kpB],
+        pair[[2]] K3kernel[pair[[1]], pIdx, qIdx],
+        0],
+      {pair, coeffs}
+    ];
+    {aPiece, bPiece}
+  ];
+
+ClearAll[xiMonInt, intXiThenSub, basisAtR, basisAtRprime, polyToTentResidual];
+
+xiMonInt[k1_Integer, k2_Integer, k3_Integer] :=
+  If[OddQ[k1] || OddQ[k2] || OddQ[k3],
+    0,
+    Times @@ MapThread[
+      (2 (1 - #1)^(#2 + 1) / (#2 + 1)) &,
+      {{u1, u2, u3}, {k1, k2, k3}}
+    ]
+  ];
+
+intXiThenSub[expr_] := Module[{e, coeffs},
+  e = Expand[expr];
+  coeffs = CoefficientRules[e, {xi[1], xi[2], xi[3]}];
+  Expand[
+    Sum[pair[[2]] xiMonInt @@ pair[[1]], {pair, coeffs}] /.
+      {s[1] -> 2 u1, s[2] -> 2 u2, s[3] -> 2 u3}
+  ]
+];
+
+basisAtR[v_] := v /. {r1 -> xi[1] + s[1]/2, r2 -> xi[2] + s[2]/2,
+   r3 -> xi[3] + s[3]/2};
+basisAtRprime[v_] := v /. {r1 -> xi[1] - s[1]/2, r2 -> xi[2] - s[2]/2,
+   r3 -> xi[3] - s[3]/2};
+
+polyToTentResidual[poly_] := Expand[Cancel[
+  poly / ((1 - u1) (1 - u2) (1 - u3))
+]];
+
+ClearAll[b27pairContribution, b27entry];
+
+b27pairContribution[i_Integer, j_Integer, p_Integer, q_Integer] :=
+  Module[{phiI, phiJ, productPQ, weight, residual},
+    phiI = basisAtR[basisT27[[i]]][[p]];
+    phiJ = basisAtRprime[basisT27[[j]]][[q]];
+    productPQ = Expand[phiI phiJ];
+    If[productPQ === 0, Return[{0, 0}]];
+    weight = intXiThenSub[productPQ];
+    residual = polyToTentResidual[weight];
+    bbBodyAB[residual, p, q]
+  ];
+
+b27entry[i_Integer, j_Integer] := Module[{a = 0, b = 0, contr},
+  Do[
+    contr = b27pairContribution[i, j, p, q];
+    If[p == q, a = a + contr[[1]]];
+    b = b + contr[[2]],
+    {p, 3}, {q, 3}
+  ];
+  32 (Aelas a + Belas b)
+];
+
+(* ==================================================================== *)
+(* 5. THE 14 NONZERO ORBIT REPRESENTATIVES                               *)
+(* ==================================================================== *)
+(* Global indices 10..27 of basisT27 are the 18 quadratic modes:        *)
+(*   i = 10,11,12,13,14,15 -> k=1 (e_x), m=1..6                          *)
+(*   i = 16,17,18,19,20,21 -> k=2 (e_y), m=1..6                          *)
+(*   i = 22,23,24,25,26,27 -> k=3 (e_z), m=1..6                          *)
+(* where m=1,2,3 => S-type (r_m^2) and m=4,5,6 => X-type (cross).       *)
+(*                                                                        *)
+(* Each orbit label is (tag, i, j).  The "mult" column is the number   *)
+(* of pairs in the O_h orbit (not needed for the computation, but      *)
+(* included here as a sanity label).                                    *)
+
+orbits = {
+  (* Within-direction (k_i = k_j) nonzero orbits *)
+  {"SSdiag_matched",    10, 10,  3, "alpha1_beta1"},
+  {"SSdiag_unmatched",  11, 11,  6, "alpha1_beta2"},
+  {"SSoff_onematch",    10, 11, 12, "alpha2_beta3"},
+  {"SSoff_nomatches",   11, 12,  6, "alpha2_beta4"},
+  {"XXdiag_typeI",      13, 13,  3, "alpha3_beta5"},
+  {"XXdiag_typeII",     14, 14,  6, "alpha3_beta6"},
+  (* Cross-direction (k_i != k_j) nonzero orbits (A = 0 for all) *)
+  {"SXcross_typeI",     11, 17, 12, "zero_beta7"},
+  {"SScross_typeIa",    10, 17,  6, "zero_beta8a"},
+  {"SScross_typeIb",    11, 16,  6, "zero_beta8b"},
+  {"XXcross_typeI",     14, 26,  6, "zero_beta8c"},
+  {"XXcross_typeII",    13, 20,  6, "zero_beta9a"},
+  {"XXcross_typeIII",   14, 19,  6, "zero_beta9b"},
+  {"SXcross_typeII",    10, 21, 12, "zero_beta10a"},
+  {"SXcross_typeIII",   11, 21, 12, "zero_beta10b"}
+};
+
+Print["Orbit list loaded: ", Length[orbits], " representative pairs."];
+Print[];
+
+(* ==================================================================== *)
+(* 6. SMOKE TEST: b27entry[1,1] against closed-form reference            *)
+(* ==================================================================== *)
+(* This primes the caches for Mp[0,0,0], Mp[1,0,0], Mp[1,1,0], Mp[1,1,1] *)
+(* and K3diag[0,0,0] at high precision, and confirms the assembly agrees *)
+(* with the exact displacement diagonal 256*(A*iA + B*iB11).             *)
+
+Print["Smoke test: b27entry[1,1] vs 256*(A*iA + B*iB11) ..."];
+t0 = AbsoluteTime[];
+iA         = Mp[0, 0, 0] - 3 Mp[1, 0, 0] + 3 Mp[1, 1, 0] - Mp[1, 1, 1];
+iB11val    = K3diag[0, 0, 0];
+expect11   = 256 (Aelas iA + Belas iB11val);
+got11      = b27entry[1, 1];
+smokeA     = N[(got11 - expect11) /. {Aelas -> 1, Belas -> 0}, highWP];
+smokeB     = N[(got11 - expect11) /. {Aelas -> 0, Belas -> 1}, highWP];
+smokeTime  = AbsoluteTime[] - t0;
+Print["  smoke test completed in ", Round[smokeTime, 0.01], " s"];
+Print["  A-channel residual: ", smokeA];
+Print["  B-channel residual: ", smokeB];
+Print["  (both should be < 10^-", highWP - 5, ")"];
+Print["  Mp[0,0,0]    = ", N[Mp[0, 0, 0],    highWP]];
+Print["  K3diag[0,0,0]= ", N[K3diag[0, 0, 0], highWP]];
+Print[];
+
+(* ==================================================================== *)
+(* 7. MAIN LOOP: compute each orbit, log, checkpoint                     *)
+(* ==================================================================== *)
+
+Print["================================================================"];
+Print["BEGIN main loop : ", Length[orbits], " orbits at WP=", highWP];
+Print["================================================================"];
+Print[];
+
+results = <||>;
+
+writeCheckpoint[results_] := Module[{keys, lines},
+  keys = Keys[results];
+  lines = Map[
+    Function[k,
+      Module[{r = results[k]},
+        ToString[k] <> " -> <|" <>
+        "\"i\" -> "    <> ToString[r["i"]]  <> ", " <>
+        "\"j\" -> "    <> ToString[r["j"]]  <> ", " <>
+        "\"tag\" -> \""<> r["tag"] <> "\", " <>
+        "\"mult\" -> " <> ToString[r["mult"]] <> ", " <>
+        "\"aVal\" -> " <> ToString[FullForm[r["aVal"]]] <> ", " <>
+        "\"bVal\" -> " <> ToString[FullForm[r["bVal"]]] <> ", " <>
+        "\"timeSec\" -> " <> ToString[N[r["timeSec"]]] <>
+        "|>"
+      ]
+    ],
+    keys
+  ];
+  Export[
+    checkpointPath,
+    "(* CubeT6ScalarValues_HighPrec_checkpoint.wl -- partial progress. *)\n" <>
+    "(* Auto-generated; do not edit by hand.                          *)\n" <>
+    "(* Completed orbits: " <> ToString[Length[keys]] <> "/" <>
+      ToString[Length[orbits]] <> "                                 *)\n" <>
+    "(* Last update: " <> DateString[] <> "                         *)\n\n" <>
+    "cubeT6HighPrecResults = <|\n  " <>
+    StringRiffle[lines, ",\n  "] <> "\n|>;\n",
+    "Text"
+  ];
+];
+
+Do[
+  Module[{tag, i, j, mult, label, t0orb, raw, aVal, bVal, tElapsed},
+    {tag, i, j, mult, label} = orb;
+    Print["----------------------------------------------------------------"];
+    Print["Orbit ", tag, "  (", label, ")  i=", i, ", j=", j,
+          "  mult=", mult];
+    Print["  start: ", DateString[]];
+    t0orb = AbsoluteTime[];
+    raw   = b27entry[i, j];
+    aVal  = N[raw /. {Aelas -> 1, Belas -> 0}, highWP];
+    bVal  = N[raw /. {Aelas -> 0, Belas -> 1}, highWP];
+    tElapsed = AbsoluteTime[] - t0orb;
+    Print["  A = ", aVal];
+    Print["  B = ", bVal];
+    Print["  done in ", Round[tElapsed, 0.01], " s"];
+    results[tag] = <|
+      "i" -> i, "j" -> j, "tag" -> label, "mult" -> mult,
+      "aVal" -> aVal, "bVal" -> bVal, "timeSec" -> tElapsed
+    |>;
+    writeCheckpoint[results];
+    Print["  checkpoint written (", Length[results], "/",
+      Length[orbits], " orbits complete)"];
+  ],
+  {orb, orbits}
+];
+
+Print[];
+Print["================================================================"];
+Print["ALL ORBITS COMPLETE"];
+Print["================================================================"];
+
+(* ==================================================================== *)
+(* 8. EXTRACT UNIQUE A AND B SCALARS                                     *)
+(* ==================================================================== *)
+
+allAvals = Values[results][[All, Key["aVal"]]];
+allBvals = Values[results][[All, Key["bVal"]]];
+
+uniqueA = DeleteDuplicates[
+  Select[allAvals, Abs[#] > 10^(-highWP + 5) &],
+  Abs[#1 - #2] < 10^(-highWP + 5) &
+];
+uniqueB = DeleteDuplicates[
+  Select[allBvals, Abs[#] > 10^(-highWP + 5) &],
+  Abs[#1 - #2] < 10^(-highWP + 5) &
+];
+
+uniqueA = SortBy[uniqueA, -# &];
+uniqueB = SortBy[uniqueB, -# &];
+
+Print[];
+Print["Unique nonzero A-scalars (", Length[uniqueA], "):"];
+Do[Print["  alpha[", i, "] = ", uniqueA[[i]]], {i, Length[uniqueA]}];
+Print[];
+Print["Unique nonzero B-scalars (", Length[uniqueB], "):"];
+Do[Print["  beta[", i, "]  = ", uniqueB[[i]]], {i, Length[uniqueB]}];
+
+(* ==================================================================== *)
+(* 9. FINAL EXPORT                                                       *)
+(* ==================================================================== *)
+
+Export[
+  finalPath,
+  "(* CubeT6ScalarValues_HighPrec.wl -- high-precision scalar values *)\n" <>
+  "(* Auto-generated by CubeT6OvernightHighPrec.wl.                   *)\n" <>
+  "(* Completed: " <> DateString[] <> "                           *)\n" <>
+  "(* WorkingPrecision used: " <> ToString[highWP] <> "                                 *)\n\n" <>
+  "cubeT6HighPrecResults = " <>
+    ToString[FullForm[Normal[results]]] <> ";\n\n" <>
+  "cubeT6HighPrecAlphas = " <>
+    ToString[FullForm[uniqueA]] <> ";\n\n" <>
+  "cubeT6HighPrecBetas  = " <>
+    ToString[FullForm[uniqueB]] <> ";\n",
+  "Text"
+];
+
+Print[];
+Print["Final output written to ", finalPath];
+Print["Finish time: ", DateString[]];
+Print["==================================================================="];
+Print["DONE"];
+Print["==================================================================="];
