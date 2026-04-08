@@ -141,18 +141,39 @@ If[ValueQ[mp440], Mp[0, 4, 4] = mp440];
 If[ValueQ[mp620], Mp[0, 2, 6] = mp620];
 If[ValueQ[mp800], Mp[0, 0, 8] = mp800];
 
-(* Fallback: NIntegrate at high WP with DuffyCoordinates on the corner. *)
-Mp[p_Integer, q_Integer, r_Integer] := Mp[p, q, r] =
-  NIntegrate[
-    x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],
-    {x, 0, 1}, {y, 0, 1}, {z, 0, 1},
-    WorkingPrecision -> highWP,
-    PrecisionGoal    -> mpPrecisionGoal,
-    AccuracyGoal     -> mpAccuracyGoal,
-    MaxRecursion     -> mpMaxRecursion,
-    Method -> {\"GlobalAdaptive\",
-      \"SingularityHandler\" -> \"DuffyCoordinates\"}
+(* Mp[p,q,r]: try symbolic Integrate[] first (returns exact closed
+   form for all low-degree cases -- same approach CubeGalerkin27.wl
+   uses successfully).  Fall back to NIntegrate only if Integrate
+   fails or times out (120s budget per integral).                   *)
+Mp[p_Integer, q_Integer, r_Integer] := Mp[p, q, r] = Module[
+  {sym, real},
+  Print[\"  Mp[\", p, \",\", q, \",\", r, \"] symbolic Integrate ...\"];
+  sym = TimeConstrained[
+    Integrate[
+      x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],
+      {x, 0, 1}, {y, 0, 1}, {z, 0, 1}
+    ],
+    120,
+    $Failed
   ];
+  If[sym =!= $Failed && FreeQ[sym, Integrate],
+    real = FullSimplify[Re[ComplexExpand[sym]]];
+    Print[\"    -> exact closed form\"];
+    real,
+    Print[\"    -> NIntegrate fallback at WP=\", highWP];
+    NIntegrate[
+      x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],
+      {x, 0, 1}, {y, 0, 1}, {z, 0, 1},
+      WorkingPrecision -> highWP,
+      PrecisionGoal    -> mpPrecisionGoal,
+      AccuracyGoal     -> mpAccuracyGoal,
+      MaxRecursion     -> mpMaxRecursion,
+      Method -> {\"GlobalAdaptive\",
+        \"SingularityHandler\" -> \"DuffyCoordinates\",
+        \"MaxErrorIncreases\" -> 20000}
+    ]
+  ]
+];
 
 (* K1at via linearity on the tent factor. *)
 K1at[p_Integer, q_Integer, r_Integer] := K1at[p, q, r] = Sum[
@@ -160,31 +181,48 @@ K1at[p_Integer, q_Integer, r_Integer] := K1at[p, q, r] = Sum[
   {a, 0, 1}, {b, 0, 1}, {c, 0, 1}
 ];
 
-(* K3diag / K3off : 1/|u|^3 kernel with DuffyCoordinates corner handler. *)
-K3diag[p_Integer, q_Integer, r_Integer] := K3diag[p, q, r] =
-  NIntegrate[
-    (1 - u1) (1 - u2) (1 - u3) u1^(p + 2) u2^q u3^r /
-      (u1^2 + u2^2 + u3^2)^(3/2),
-    {u1, 0, 1}, {u2, 0, 1}, {u3, 0, 1},
-    WorkingPrecision -> highWP,
-    PrecisionGoal    -> k3PrecisionGoal,
-    AccuracyGoal     -> k3AccuracyGoal,
-    MaxRecursion     -> k3MaxRecursion,
-    Method -> {\"GlobalAdaptive\",
-      \"SingularityHandler\" -> \"DuffyCoordinates\"}
+(* K3 via IBP reduction to 2D symbolic integrals (same scheme as
+   CubeGalerkin27.wl Section 4 -- proven to give exact closed forms).
+   IBP on u_1 with box weight (1-u_1):
+     K3diag[p,q,r] = (p+1) K1at[p,q,r] - residual2D[p+1,q,r]
+     K3off[p,q,r]  = p K1at[p-1,q+1,r] + K3offRes2D[p,q+1,r]  (p>=1)
+     K3off[0,q,r]  = K3offRes2D[0,q+1,r]
+   where u1RadInt[k] is the 1D integral of u1^k/|u| du1 and
+   residual2D / K3offRes2D are the 2D integrals over (u2,u3).    *)
+
+ClearAll[u1RadInt, residual2D, K3offRes2D];
+
+u1RadInt[k_Integer] := u1RadInt[k] = Integrate[
+  u1^k / Sqrt[u1^2 + u2^2 + u3^2], {u1, 0, 1},
+  Assumptions -> u2 > 0 && u2 < 1 && u3 > 0 && u3 < 1
+];
+
+residual2D[k_Integer, q_Integer, r_Integer] :=
+  residual2D[k, q, r] = Integrate[
+    (1 - u2) (1 - u3) u2^q u3^r u1RadInt[k],
+    {u2, 0, 1}, {u3, 0, 1}
   ];
 
-K3off[p_Integer, q_Integer, r_Integer] := K3off[p, q, r] =
-  NIntegrate[
-    (1 - u1) (1 - u2) (1 - u3) u1^(p + 1) u2^(q + 1) u3^r /
-      (u1^2 + u2^2 + u3^2)^(3/2),
-    {u1, 0, 1}, {u2, 0, 1}, {u3, 0, 1},
-    WorkingPrecision -> highWP,
-    PrecisionGoal    -> k3PrecisionGoal,
-    AccuracyGoal     -> k3AccuracyGoal,
-    MaxRecursion     -> k3MaxRecursion,
-    Method -> {\"GlobalAdaptive\",
-      \"SingularityHandler\" -> \"DuffyCoordinates\"}
+K3diag[p_Integer, q_Integer, r_Integer] :=
+  K3diag[p, q, r] = (p + 1) K1at[p, q, r] - residual2D[p + 1, q, r];
+
+K3offRes2D[0, Q_Integer, r_Integer] :=
+  K3offRes2D[0, Q, r] = Integrate[
+    (1 - u2) (1 - u3) u2^Q u3^r (1/Sqrt[u2^2 + u3^2] -
+       ArcSinh[1/Sqrt[u2^2 + u3^2]]),
+    {u2, 0, 1}, {u3, 0, 1}
+  ];
+
+K3offRes2D[p_Integer, Q_Integer, r_Integer] /; p >= 1 :=
+  K3offRes2D[p, Q, r] = -Integrate[
+    (1 - u2) (1 - u3) u2^Q u3^r u1RadInt[p],
+    {u2, 0, 1}, {u3, 0, 1}
+  ];
+
+K3off[p_Integer, q_Integer, r_Integer] :=
+  K3off[p, q, r] = If[p == 0,
+    K3offRes2D[0, q + 1, r],
+    p K1at[p - 1, q + 1, r] + K3offRes2D[p, q + 1, r]
   ];
 
 (* Dispatch by (i,j) using cubic symmetry. *)
