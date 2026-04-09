@@ -397,7 +397,7 @@ For the stiffness channel, $\mathcal{B} = \mathcal{B}_{\mathrm{el}}$ and \eqref{
      \mathcal{B}_{\mathrm{el}}^{\,T_9}\bigl[\,1{:}9,\,1{:}9\,\bigr].
   \label{eq:T9-eff-stiffness-schur}
 \end{equation}
-In particular, the entire $T_{27}^{\mathrm{quad}}$ sub-block of $\mathcal{B}_{\mathrm{el}}$ drops out of the $T_9$ reduction at leading order, and the cubic-anisotropy scalar $T_{3c}$ of the Path-A effective $T$-matrix \emph{cannot} originate in the elastic Galerkin channel on the quadratic sub-basis.  Combined with the parallel observation of Section~\ref{sec:results-body9} that the body-channel $T_9^{\mathrm{eff}}$ acts as a pure scalar on the $6$-dim strain sector (Schur-complemented diagonals \texttt{const = -47.1737...}, \texttt{strain = 5.7647...}, off-diagonals exactly $0$ at machine precision), this pins down the origin of $T_{3c}$ unambiguously: the cubic-anisotropy contribution to the cube effective $T$-matrix must arise from the \emph{cross-channel product} $\mathcal{M}_{\bullet}^{-1}\,\mathcal{B}_{\mathrm{body}}\,\mathcal{M}_{\bullet}^{-1}\,\mathcal{B}_{\mathrm{el}}$ coupling body and stiffness through the $T_{27}^{\mathrm{quad}}$ mass coupling, not from either single-channel Schur reduction in isolation.  This is the ``massively important'' structural finding of the Section~11 symbolic derivation: $\mathcal{B}_{\mathrm{el}}$ is Galerkin-block-diagonal, and therefore the $T_{3c}$ anisotropy must be hunted in the mixed body--stiffness cross term of the full $27$-dimensional closure, not in the stiffness matrix alone.
+In particular, the entire $T_{27}^{\mathrm{quad}}$ sub-block of $\mathcal{B}_{\mathrm{el}}$ drops out of the $T_9$ reduction at leading order, and the cubic-anisotropy scalar $T_{3c}$ of the Path-A effective $T$-matrix \emph{cannot} originate in the elastic Galerkin channel on the quadratic sub-basis.  The parallel observation of Section~\ref{sec:results-body9} was that the body-channel $T_9^{\mathrm{eff}}$ acts as a pure scalar on the $6$-dim strain sector in the numerical $A$-polarization probe of Section~12 (Schur-complemented diagonals \texttt{const = -47.1737...}, \texttt{strain = 5.7647...}, off-diagonals exactly $0$ at machine precision).  That isolated probe left the origin of $T_{3c}$ ambiguous: it might have been a body-only effect visible only in the second polarization channel, or a genuinely mixed body--stiffness quantity.  The symbolic computation in Section~12b below resolves this ambiguity by keeping both polarization channels explicit, and shows that $T_{3c}$ arises from the $B$-polarization of the body operator alone (see \eqref{eq:T3c-signature}); the stiffness channel contributes only isotropic corrections.
 
 \subsubsection*{Symbolic verification (Section 11b)}
 \label{sec:results-bel-schur-11b}
@@ -444,5 +444,60 @@ The crucial observation is the equality
   \;=\; 6\,\Delta\mu,
   \label{eq:Eg-T2g-degeneracy}
 \end{equation}
-which holds \emph{symbolically} in $\Delta\lambda, \Delta\mu$ with no residual.  Cubic anisotropy, by definition, requires $\lambda_{E_g} \neq \lambda_{T_{2g}}$ on the five-dimensional deviatoric strain sector (the $E_g \oplus T_{2g}$ splitting); the fact that they are \emph{exactly equal} in $T_9^{\mathrm{eff,\,el}}$ therefore rules out any cubic-anisotropic component from the stiffness channel in isolation.  Equivalently, $T_9^{\mathrm{eff,\,el}}$ is strictly proportional to the isotropic Kelvin contraction, and its Path-A decomposition acquires no contribution to $T_{3c}$.  This numerical confirmation closes the loop on the structural prediction above: the cube's $T_{3c}$ anisotropy is an intrinsically \emph{mixed} body--stiffness quantity and cannot be extracted from $\mathcal{B}_{\mathrm{el}}$ alone at any order.
+which holds \emph{symbolically} in $\Delta\lambda, \Delta\mu$ with no residual.  Cubic anisotropy, by definition, requires $\lambda_{E_g} \neq \lambda_{T_{2g}}$ on the five-dimensional deviatoric strain sector (the $E_g \oplus T_{2g}$ splitting); the fact that they are \emph{exactly equal} in $T_9^{\mathrm{eff,\,el}}$ therefore rules out any cubic-anisotropic component from the stiffness channel in isolation.  Equivalently, $T_9^{\mathrm{eff,\,el}}$ is strictly proportional to the isotropic Kelvin contraction, and its Path-A decomposition acquires no contribution to $T_{3c}$.  The complementary question -- whether the body channel by itself already produces a nonzero $T_{3c}$, or whether cross-coupling to $\mathcal{B}_{\mathrm{el}}$ is required -- is answered symbolically in Section~12b below.
+
+\subsubsection*{Origin of $T_{3c}$: combined body+stiffness Schur (Section 12b)}
+\label{sec:results-body-stiffness-12b}
+
+With the stiffness channel definitively isotropic \eqref{eq:Eg-T2g-degeneracy}, the origin of the cube's $T_{3c}$ cubic-anisotropy scalar must lie in the body channel.  Section~12b of \texttt{CubeT27Assemble.wl} completes this identification by symbolically constructing the combined body+stiffness Schur-complemented effective operator
+\begin{equation}
+  T_9^{\mathrm{eff,\,tot}}
+  \;=\; \bigl(\mathcal{M}_{11}
+     - \mathcal{M}_{12}\mathcal{M}_{22}^{-1}\mathcal{M}_{21}\bigr)^{-1}
+     \Bigl[\eta_{\mathrm{body}}\,\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}
+       + \mathcal{B}_{\mathrm{el}}^{\mathrm{Schur}}\Bigr],
+  \label{eq:T9-eff-total-schur}
+\end{equation}
+where $\eta_{\mathrm{body}}$ is a free body-coupling coefficient (physically $\propto \omega^{2}\Delta\rho$) and $\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}$ is the $9{\times}9$ Schur complement of the full $27{\times}27$ body bilinear form.  The key technical step is to keep $\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}$ symbolic in the two independent polarization channels $(A_{\mathrm{elas}}, B_{\mathrm{elas}})$ of the underlying elastic Green's tensor:
+\begin{itemize}
+  \item The $A$-channel (coefficient $A_{\mathrm{elas}}$) collects the isotropic $\delta_{ij}$ piece of the Green's tensor, weighted by the $K_{1}$ kernel (weak $1/|r|$ integrals over the Mp masters of Tier-6).
+  \item The $B$-channel (coefficient $B_{\mathrm{elas}}$) collects the tensorial anisotropic piece, i.e.\ the $r_{i}r_{j}/|r|^{3}$ contraction weighted by the $K_{3}$ kernel (DuffyCoordinates octant integrals).
+\end{itemize}
+These correspond to the two independent building blocks $(\mathsf{aPiece},\mathsf{bPiece})$ returned by \texttt{bbBodyAB} in \texttt{CubeT6Block.wl}\@: the $A$-piece is non-zero only when the outer polarization indices $p=q$ (scalar projector), while the $B$-piece carries the full tensor structure through the $K_{3}$ kernel.
+
+Substituting the Pell-simplified atomic scalars (\texttt{atomRules}) while holding $(A_{\mathrm{elas}}, B_{\mathrm{elas}})$ symbolic, Mathematica returns for $\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}$ restricted to the strain sector (rows/cols $4\dots 9$) the irrep eigenvalues
+\begin{equation}
+\begin{aligned}
+  \lambda_{A_{1g}}\bigl(\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}\bigr) &= 15.3725\,A_{\mathrm{elas}} + 1.0059\,B_{\mathrm{elas}}, \\
+  \lambda_{E_{g}}\bigl(\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}\bigr) &= 15.3725\,A_{\mathrm{elas}} + 5.4217\,B_{\mathrm{elas}}, \\
+  \lambda_{T_{2g}}\bigl(\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}\bigr) &= \phantom{0}7.6863\,A_{\mathrm{elas}} + 2.1197\,B_{\mathrm{elas}},
+\end{aligned}
+\label{eq:Bbody-Schur-eigs}
+\end{equation}
+all to $\sim\!16$-digit MachinePrecision.  Both channels exhibit $\lambda_{E_g} \neq \lambda_{T_{2g}}$ at this raw Schur-complement stage, so a naive cubic-anisotropy test on $\mathcal{B}_{\mathrm{body}}^{\mathrm{Schur}}$ alone would (misleadingly) flag both channels.  However, the physically relevant operator is the full effective $T_9^{\mathrm{eff,\,tot}}$ obtained after pre-multiplying by the mass Schur inverse.  The symbolic simplification gives
+\begin{equation}
+\begin{aligned}
+  \lambda_{A_{1g}}\bigl(T_9^{\mathrm{eff,\,tot}}\bigr) &= 9\,\Delta\lambda + 6\,\Delta\mu + \bigl(5.7647\,A_{\mathrm{elas}} + 0.3772\,B_{\mathrm{elas}}\bigr)\,\eta_{\mathrm{body}}, \\
+  \lambda_{E_{g}}\bigl(T_9^{\mathrm{eff,\,tot}}\bigr) &= \phantom{9\,\Delta\lambda + {}}6\,\Delta\mu + \bigl(5.7647\,A_{\mathrm{elas}} + 2.0331\,B_{\mathrm{elas}}\bigr)\,\eta_{\mathrm{body}}, \\
+  \lambda_{T_{2g}}\bigl(T_9^{\mathrm{eff,\,tot}}\bigr) &= \phantom{9\,\Delta\lambda + {}}6\,\Delta\mu + \bigl(5.7647\,A_{\mathrm{elas}} + 1.5898\,B_{\mathrm{elas}}\bigr)\,\eta_{\mathrm{body}}.
+\end{aligned}
+\label{eq:T9-eff-total-eigs}
+\end{equation}
+The $A$-channel coefficients on $\eta_{\mathrm{body}}$ are now \emph{all equal} to $5.7647$: the anisotropy visible in \eqref{eq:Bbody-Schur-eigs} in the $A$-polarization cancels exactly against the equivariant mass-Schur inverse, reproducing isotropy.  In the $B$-channel the coefficients split as $(0.3772,\,2.0331,\,1.5898)$, yielding the cubic-anisotropy signature
+\begin{equation}
+  \lambda_{E_{g}}\bigl(T_9^{\mathrm{eff,\,tot}}\bigr) - \lambda_{T_{2g}}\bigl(T_9^{\mathrm{eff,\,tot}}\bigr)
+  \;=\; 0.4433\,B_{\mathrm{elas}}\,\eta_{\mathrm{body}}
+  \;\neq\; 0,
+  \label{eq:T3c-signature}
+\end{equation}
+which is \emph{independent} of both the stiffness contrasts $(\Delta\lambda, \Delta\mu)$ and the $A$-polarization of the body operator.
+
+Equation \eqref{eq:T3c-signature} is the positive identification of the cube's $T_{3c}$ anisotropy at leading order in the $T_{27}$ Galerkin closure.  Three consequences deserve emphasis:
+\begin{enumerate}
+  \item The ``stiffness-only'' probe $\eta_{\mathrm{body}} = 0$ gives $\lambda_{E_g} - \lambda_{T_{2g}} = 0$ (Section~11b result), confirming no cubic-anisotropy component from $\mathcal{B}_{\mathrm{el}}$ alone.
+  \item The ``$A$-only body'' probe $B_{\mathrm{elas}} = 0$ also gives $\lambda_{E_g} - \lambda_{T_{2g}} = 0$: the trace/isotropic piece $\delta_{ij}$ of the elastic Green's tensor (K$_{1}$ kernel) is insufficient, even when fully Galerkin-coupled through $T_{27}^{\mathrm{quad}}$.
+  \item The $B$-channel $r_{i}r_{j}/|r|^{3}$ tensor piece of the elastic Green's tensor (K$_{3}$ kernel) is the sole source of the leading-order $T_{3c}$ signature in the tier-$27$ closure.
+\end{enumerate}
+
+This refines the preliminary expectation (preceding subsection) that $T_{3c}$ was an intrinsically mixed body--stiffness quantity: Section~12b establishes that the $B$-polarization of the body channel alone already breaks the $E_{g} / T_{2g}$ degeneracy, and the stiffness channel contributes only isotropic corrections.  The numerical coefficient $0.4433\,B_{\mathrm{elas}}\,\eta_{\mathrm{body}}$ is a closed form awaiting PSLQ/Pell simplification against the same basis of elementary constants used for the Tier-6 scalars $\{\alpha_{i}\}_{i=1}^{3}$ and $\{\beta_{j}\}_{j=1}^{9}$ of \texttt{CubeT6ScalarValues\_HighPrec\_Pell.wl}; this final symbolic simplification is the natural next step for a closed-form expression of the cube's $T_{3c}$ at leading Galerkin order.
 

@@ -1112,6 +1112,96 @@ Print["    E_g  = ", Simplify[
 Print["    T_2g = ", Simplify[T9effElStrain[[4, 4]]]];
 
 (* ================================================================== *)
+(* Section 12b. Combined body + stiffness Schur complement on T_9       *)
+(* ================================================================== *)
+(* Section 11b showed the stiffness Schur collapses to Bel11 with       *)
+(* strain-sector irrep eigenvalues E_g = T_2g = 6 Dmu (isotropic).      *)
+(* Section 12 (density-only, A polarization) numerically confirmed the  *)
+(* body-channel Schur is also a scalar on the strain sector.  Here we   *)
+(* carry out the symbolic extension:                                    *)
+(*   (i)   Schur-complement B_body SYMBOLICALLY, keeping Aelas/Belas    *)
+(*         as free parameters, and extract the strain-sector E_g and    *)
+(*         T_2g eigenvalues as polynomials in the atoms.                *)
+(*   (ii)  Test whether (E_g - T_2g) vanishes identically for BOTH      *)
+(*         polarizations (a single test over free Aelas/Belas).         *)
+(*   (iii) Assemble the full combined-channel T_9 effective operator    *)
+(*         T9effTotal = (M11schur)^(-1) . (etaBody * B_body_Schur       *)
+(*                                          + B_el_Schur)               *)
+(*         with etaBody a free body-coupling parameter (~ omega^2 Drho) *)
+(*         and check E_g vs T_2g on the strain sector.                  *)
+(* A nonzero (E_g - T_2g) at any stage would prove the tier-27 Galerkin *)
+(* closure produces a cubic-anisotropy T_3c component at leading order. *)
+(* ------------------------------------------------------------------ *)
+Print[];
+Print["---- Section 12b: combined body+stiffness Schur on T_9 ----"];
+
+BbodySubst = BbodySym /. atomRules;
+Bbody11Sym = BbodySubst[[1 ;; 9, 1 ;; 9]];
+Bbody12Sym = BbodySubst[[1 ;; 9, 10 ;; 27]];
+Bbody21Sym = BbodySubst[[10 ;; 27, 1 ;; 9]];
+BbodySchurSym = Simplify[
+  Bbody11Sym - M12b . M22binv . Bbody21Sym - Bbody12Sym . M22binv . M21b];
+BbodySchurStrain = BbodySchurSym[[4 ;; 9, 4 ;; 9]];
+
+Print[];
+Print["  Body-channel Schur strain 6x6 irrep eigenvalues (symbolic):"];
+Print["    A_1g (trace) = ", Simplify[
+  BbodySchurStrain[[1, 1]] + 2 BbodySchurStrain[[1, 2]]]];
+Print["    E_g  (dev)   = ", Simplify[
+  BbodySchurStrain[[1, 1]] - BbodySchurStrain[[1, 2]]]];
+Print["    T_2g (shear) = ", Simplify[BbodySchurStrain[[4, 4]]]];
+
+BbodyEgMinusT2g = Simplify[
+  (BbodySchurStrain[[1, 1]] - BbodySchurStrain[[1, 2]]) -
+  BbodySchurStrain[[4, 4]]];
+Print[];
+Print["  Cubic-anisotropy test on body-channel Schur:"];
+Print["    (E_g - T_2g) symbolic = ", BbodyEgMinusT2g];
+Print["    A-channel value       = ", Simplify[
+  BbodyEgMinusT2g /. {Aelas -> 1, Belas -> 0}]];
+Print["    B-channel value       = ", Simplify[
+  BbodyEgMinusT2g /. {Aelas -> 0, Belas -> 1}]];
+
+(* Also probe strain off-diagonals (4..9 block) for any cubic mixing.    *)
+BbodyStrainOffDiag = BbodySchurStrain -
+  DiagonalMatrix[Diagonal[BbodySchurStrain]];
+Print["    strain off-diag max   = ",
+  Max[Abs[Flatten[BbodyStrainOffDiag]]]];
+
+(* ----------------------------------------------------------------- *)
+(* Combined total Schur with dummy body-coupling prefactor etaBody.    *)
+(* Since BelSchurSym = Bel11 (Section 11b), the total becomes           *)
+(*    B_total_Schur = etaBody * B_body_Schur + Bel11.                  *)
+(* ----------------------------------------------------------------- *)
+Clear[etaBody];
+BtotalSchurSym = Simplify[etaBody * BbodySchurSym + Bel11];
+T9effTotal = Simplify[Inverse[M11schurSym] . BtotalSchurSym];
+T9effTotalStrain = T9effTotal[[4 ;; 9, 4 ;; 9]];
+
+Print[];
+Print["  Full T9effTotal = (M11schur)^-1 . (etaBody * B_body_Schur + Bel11)"];
+Print["  strain 6x6 irrep eigenvalues (symbolic in etaBody, Aelas,"];
+Print["  Belas, Dlam, Dmu):"];
+Print["    A_1g = ", Simplify[
+  T9effTotalStrain[[1, 1]] + 2 T9effTotalStrain[[1, 2]]]];
+Print["    E_g  = ", Simplify[
+  T9effTotalStrain[[1, 1]] - T9effTotalStrain[[1, 2]]]];
+Print["    T_2g = ", Simplify[T9effTotalStrain[[4, 4]]]];
+
+TotalEgMinusT2g = Simplify[
+  (T9effTotalStrain[[1, 1]] - T9effTotalStrain[[1, 2]]) -
+  T9effTotalStrain[[4, 4]]];
+Print[];
+Print["  Cubic-anisotropy test on T9effTotal strain sector:"];
+Print["    (E_g - T_2g) symbolic  = ", TotalEgMinusT2g];
+Print["    A-channel (Aelas=1)    = ", Simplify[
+  TotalEgMinusT2g /. {Aelas -> 1, Belas -> 0}]];
+Print["    B-channel (Belas=1)    = ", Simplify[
+  TotalEgMinusT2g /. {Aelas -> 0, Belas -> 1}]];
+Print["    stiffness-only (eta=0) = ", Simplify[
+  TotalEgMinusT2g /. {etaBody -> 0}]];
+
+(* ================================================================== *)
 (* Section 12. Sample numerical T_eff and Path-A cross-check            *)
 (* ================================================================== *)
 Print[];
