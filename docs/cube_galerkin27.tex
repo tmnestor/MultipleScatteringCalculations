@@ -14,6 +14,7 @@
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage{mathtools}
+\usepackage{graphicx}  % \resizebox for long closed-form expressions
 
 \newcommand{\D}{\Delta}
 \newcommand{\order}{\mathcal{O}}
@@ -53,8 +54,9 @@ Volume Integral Equation on a Cube\\
 \section{Motivation: differentiating under the integral fails}
 %======================================================================
 
+{\sloppy
 The classical moment-method closure for the cube T-matrix begins from the
-Lippmann--Schwinger (LS) equation
+Lippmann--Schwinger (LS) equation\par}
 \begin{equation}
   u_i(\br) \;=\; u_i^{0}(\br)
    + \omega^2 \!\int_V G_{ij}(\br - \br')\,\delta\rho(\br')\, u_j(\br')\,dV'
@@ -182,6 +184,7 @@ For $\mathcal{B}_{\text{el}}$, we use integration by parts on $\bu$
 -\int_{V}\!\!\int_V\!\varphi_i\,G_{in}\,\partial'_k\partial'_l u_j\,dV'\,dV
 + \int_{V}\!\!\oint_{\partial V}\!\varphi_i\,G_{in}\,\partial'_l u_j\,n_k\,dS'\,dV.
 \end{equation}
+{\sloppy
 Both integrands now contain only $G_{in}(\br-\br') \sim 1/|\br-\br'|$ multiplied
 by polynomials/smooth functions.  The 6-fold integral
 $\int\!\!\int_{V\times V}1/|\br-\br'|\,dV\,dV'$ converges by the
@@ -189,7 +192,7 @@ Hardy--Littlewood--Sobolev inequality (or directly: in
 $\R^{6}$ the singular set $\{\br = \br'\}$ has codimension $3$ and
 $1/|\br-\br'|$ has order-1 singularity, hence is locally
 $L^{1}$ in $\R^{6}$).  The 5-fold boundary integral is similar.
-The body form is even simpler since no integration by parts is needed.
+The body form is even simpler since no integration by parts is needed.\par}
 \qed
 \end{proof}
 
@@ -292,9 +295,9 @@ test for the framework presented here, we will:
       linear polynomials.
 \item Solve the resulting $9\times 9$ generalized eigenproblem for the
       effective contrasts $\Delta\rho^{*}, \Delta\lambda^{*}, \Delta\mu^{*}$.
-\item Compare to the Path-A values produced by
-      \texttt{compute\_cube\_tmatrix} in
-      \texttt{cubic\_scattering/effective\_contrasts.py}.
+\item {\sloppy Compare to the Path-A values produced by
+      \texttt{compute\_\allowbreak cube\_\allowbreak tmatrix} in
+      \texttt{cubic\_\allowbreak scattering/\allowbreak effective\_\allowbreak contrasts.py}.\par}
 \end{enumerate}
 Path A and Path B do not need to give identical matrix entries (they
 correspond to different finite-dimensional projections of the same
