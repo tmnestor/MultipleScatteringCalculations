@@ -1,0 +1,1025 @@
+%======================================================================
+\section{Closed-form T-matrix via irrep decomposition}
+\label{sec:closedform-tmatrix}
+%======================================================================
+
+The Lippmann--Schwinger Galerkin equation on $T_{27}$ contains two
+channels:
+\begin{itemize}
+\item a \emph{body} bilinear form $B_{\text{body}}$
+  (Sections~5--7, linear in the Kelvin coefficients $a_0, b_0$),
+  from the $\omega^2\D\rho$ body-force term; and
+\item an \emph{elastic-contrast} bilinear form from the $\D\mathbf{c}$
+  stiffness perturbation, which enters through the \emph{Eshelby
+  tensor}~$\mathbf{S}$---the volume integral of the second derivative
+  of the Green's tensor $\int\partial^2 G_{ij}/\partial x_k\partial x_l\,dV$.
+\end{itemize}
+
+Under $O_h$ symmetry, the two parity sectors decouple: the
+\emph{gerade} (German ``even''; subscript~$g$) irreps have basis
+functions that are symmetric under spatial inversion
+$\mathbf{x} \to -\mathbf{x}$, while the \emph{ungerade} (``odd'';
+subscript~$u$) irreps are antisymmetric.  Physically, the gerade
+irreps carry the strain modes and the ungerade irreps carry the
+displacement and quadratic modes.  Each sector sees only one channel
+at leading order:
+\begin{itemize}
+\item \textbf{Ungerade}: the body bilinear form
+  $\varepsilon\,B_{\text{body}}$ with $\varepsilon = \omega^2\D\rho$.
+\item \textbf{Gerade}: the LS-convolved stiffness
+  $b^{\text{LS}}_\rho = \langle\boldsymbol{\varepsilon}_\rho
+  \,|\,\mathbf{S}:\D\mathbf{c}\,|\,\boldsymbol{\varepsilon}_\rho\rangle$,
+  obtained from the Eshelby integral $A^c, B^c, C^c$.
+\end{itemize}
+
+\paragraph{Dimensional consistency.}
+The mass matrix $M_\rho$ and the LS-convolved bilinear forms
+$\varepsilon b_\rho$ (body) and $b^{\text{LS}}_\rho$ (stiffness) are
+all dimensionless and $O(1)$ in natural units, because the Green's
+tensor carries the factor $1/(\rho v^2)$ that non-dimensionalizes
+the contrast.  The \emph{direct} strain-energy integral
+$\beta_\rho = \int\boldsymbol{\varepsilon}:\D\mathbf{c}:\boldsymbol{\varepsilon}\,dV$
+has dimensions of~Pa and is $O(\D\mu)$, making it incompatible with~$M_\rho$
+in the per-irrep formula.  Only the LS-convolved form may be combined
+with the mass matrix.
+
+\subsection{Cubic symmetry decomposition}
+
+Under the cubic group $O_h$, the representation on $T_{27}$ decomposes as
+\begin{equation}
+  T_{27} = 4\,T_{1u} \oplus 2\,T_{2u} \oplus A_{2u} \oplus E_u
+           \oplus A_{1g} \oplus E_g \oplus T_{2g}.
+  \label{eq:Oh-decomp}
+\end{equation}
+All bilinear forms are $O_h$-equivariant, so Schur's lemma guarantees
+block-diagonalization in the symmetry-adapted basis $U_\rho$
+(Section~9c).  Each irrep $\rho$ with multiplicity $m_\rho$ contributes
+an independent $m_\rho \times m_\rho$ block.
+
+The ungerade and gerade sectors have different leading-order structure:
+\begin{itemize}
+\item \textbf{Ungerade} ($T_{1u}$, $T_{2u}$, $A_{2u}$, $E_u$):
+  T-matrix dominated by the body bilinear form.
+  $T_\rho = \varepsilon\,B_{\text{body},\rho}\,
+  (M_\rho - \varepsilon\,B_{\text{body},\rho})^{-1}$.
+\item \textbf{Gerade} ($A_{1g}$, $E_g$, $T_{2g}$):
+  T-matrix determined by the LS-convolved stiffness with
+  self-consistent amplification (Section~\ref{sec:strain-sector}).
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccl}
+\toprule
+Irrep & $d_\rho$ & $m_\rho$ & Block size & Physical content \\
+\midrule
+$T_{1u}$ & 3 & 4 & $4\times 4$ & displacement $+$ 3 quadratic modes \\
+$T_{2u}$ & 3 & 2 & $2\times 2$ & 2 quadratic modes \\
+$A_{2u}$ & 1 & 1 & $1\times 1$ & quadratic (pure) \\
+$E_u$    & 2 & 1 & $1\times 1$ & quadratic (pure) \\
+$A_{1g}$ & 1 & 1 & $1\times 1$ & volumetric strain \\
+$E_g$    & 2 & 1 & $1\times 1$ & deviatoric axial strain \\
+$T_{2g}$ & 3 & 1 & $1\times 1$ & off-diagonal shear strain \\
+\bottomrule
+\end{tabular}
+\caption{The seven irrep blocks of the $27\times 27$ T-matrix.
+The total dimension is $\sum d_\rho m_\rho = 12 + 6 + 1 + 2 + 1 + 2 + 3 = 27$.}
+\label{tab:irrep-blocks}
+\end{table}
+
+\subsection{Strain-sector scalars (gerade irreps)}
+\label{sec:strain-sector}
+
+The three gerade irreps ($A_{1g}$, $E_g$, $T_{2g}$) are all
+$m_\rho = 1$, yielding scalar T-matrix blocks.  Only the
+LS-convolved stiffness contributes (the body force couples to
+ungerade modes, not strain modes).  Self-consistent amplification
+(Gubernatis et al.\ 1977) accounts for the scatterer modifying its
+own internal field, coupling the bulk ($A_{1g}$) and deviatoric
+($E_g$) channels through the effective~$\D\lambda^*$ formula.
+
+\paragraph{Step 1: Born-level Eshelby contraction.}
+The Eshelby integrals $A^c$, $B^c$, $C^c$ contracted with the
+\emph{bare} stiffness contrast $\D\mathbf{c}$ yield Born-level
+scalars $T_1^{c,0}$, $T_2^{c,0}$, $T_3^{c,0}$ and Born-level
+per-irrep eigenvalues:
+\begin{equation}
+  \sigma_{A_{1g}}^0 = 3T_1^{c,0} + 2T_2^{c,0} + T_3^{c,0}, \quad
+  \sigma_{E_g}^0 = 2T_2^{c,0} + T_3^{c,0}, \quad
+  \sigma_{T_{2g}}^0 = 2T_2^{c,0}.
+  \label{eq:born-sigma-irrep}
+\end{equation}
+
+\paragraph{Step 2: Amplification factors.}
+Each irrep yields a self-consistent amplification factor:
+\begin{align}
+  A_\theta     &= (1 - \sigma_{A_{1g}}^0)^{-1}  &&\text{(volumetric)}, \\
+  A_e^{\text{diag}} &= (1 - \sigma_{E_g}^0)^{-1} &&\text{(deviatoric diagonal)}, \\
+  A_e^{\text{off}}  &= (1 - \sigma_{T_{2g}}^0)^{-1} &&\text{(off-diagonal shear)}.
+\end{align}
+
+\paragraph{Step 3: Effective contrasts.}
+The amplified stiffness has \emph{cubic symmetry} even when the bare
+contrast is isotropic, because $A_e^{\text{off}} \neq A_e^{\text{diag}}$
+whenever $T_3^c \neq 0$ (i.e.\ whenever the scatterer is not a sphere):
+\begin{align}
+  \D\lambda^* &= \big(\D\lambda + \tfrac{2}{3}\D\mu\big)\,A_\theta
+    - \tfrac{2}{3}\D\mu\,A_e^{\text{diag}},
+    \label{eq:Dlambda-star} \\
+  \D\mu^*_{\text{off}}  &= \D\mu \cdot A_e^{\text{off}}, \\
+  \D\mu^*_{\text{diag}} &= \D\mu \cdot A_e^{\text{diag}}.
+\end{align}
+The cross-term in~\eqref{eq:Dlambda-star} couples the volumetric
+and deviatoric amplification factors---this is the $\kappa$--$\mu$
+coupling that a na\"ive per-irrep resummation would miss.
+
+\paragraph{Step 4: Amplified T-matrix.}
+The effective stiffness $\D\mathbf{c}^*$ decomposes into an
+isotropic part $(\D\lambda^*, \D\mu^*_{\text{off}})$ plus a cubic
+correction $2(\D\mu^*_{\text{diag}} - \D\mu^*_{\text{off}})\,E_{ijkl}$:
+\begin{align}
+  T_1^c &= T_1^{c,\text{iso}} + 2\delta\mu^*\, B^c, \label{eq:T1c-amp} \\
+  T_2^c &= T_2^{c,\text{iso}}, \label{eq:T2c-amp} \\
+  T_3^c &= T_3^{c,\text{iso}} + 2\delta\mu^*\,(A^c + B^c + C^c),
+  \label{eq:T3c-amp}
+\end{align}
+where $T^{c,\text{iso}} = \mathbf{S}:(\D\lambda^*, \D\mu^*_{\text{off}})$
+is the isotropic Eshelby contraction and
+$\delta\mu^* = \D\mu^*_{\text{diag}} - \D\mu^*_{\text{off}}$.
+The off-diagonal shear $T_2^c$ receives no cubic correction because
+$E_{ijkl}$ vanishes for $i \neq j$.  These amplified values are
+the final physical T-matrix---no additional denominator correction
+is applied.
+
+\subsection{Physical T-matrix mapping}
+\label{sec:physical-mapping}
+
+The per-irrep scalars map to the physical T-matrix coefficients via:
+\begin{align}
+  T_1^c &= \tfrac{1}{3}\big(\sigma_{A_{1g}} - \sigma_{E_g}\big), \label{eq:T1c-map} \\
+  T_2^c &= \tfrac{1}{2}\,\sigma_{T_{2g}}, \label{eq:T2c-map} \\
+  T_3^c &= \sigma_{E_g} - \sigma_{T_{2g}}. \label{eq:T3c-map}
+\end{align}
+The inverse relations are
+\begin{align}
+  \sigma_{A_{1g}} &= 3T_1^c + 2T_2^c + T_3^c, \\
+  \sigma_{E_g}    &= 2T_2^c + T_3^c, \\
+  \sigma_{T_{2g}} &= 2T_2^c.
+\end{align}
+
+\subsection{Born limit}
+\label{sec:born-limit}
+
+At Born level (first order in contrasts), all amplification
+factors reduce to unity ($A = 1$), and the amplified
+T-matrix~\eqref{eq:T1c-amp}--\eqref{eq:T3c-amp} reduces to
+the bare Eshelby contraction:
+\begin{equation}
+  T_i^{c,\text{Born}} = T_i^{c,0}
+  = \mathbf{S}:(\D\lambda, \D\mu) + C^c\text{-correction}.
+  \label{eq:born-T}
+\end{equation}
+The density-contrast body force enters only in the ungerade sector
+and does not affect $T_1^c$, $T_2^c$, $T_3^c$.
+The cubic anisotropy $T_3^c$ arises from the $C^c$ component
+of the Eshelby integral.
+
+\subsection{Cubic anisotropy coefficient}
+
+The cubic anisotropy $T_3^c = \sigma_{E_g} - \sigma_{T_{2g}}$ arises
+from the $C^c$ component of the Eshelby integral, which captures the
+non-spherical geometry of the cube.  At Born level:
+\begin{equation}
+  T_3^{c,\text{Born}}
+  = (2T_2^c + T_3^c) - 2T_2^c
+  = T_3^c,
+\end{equation}
+which is determined entirely by the cubic Eshelby integral~$C^c$.
+For a sphere, $C^c = 0$ and $T_3^c$ vanishes identically.
+In the Galerkin framework, this anisotropy enters through the
+$B$-channel of the body bilinear form (for ungerade modes) and
+through $C^c$ in the Eshelby tensor (for gerade modes).
+
+\subsection{Displacement and quadratic sector (ungerade irreps)}
+\label{sec:ungerade-sector}
+
+The four ungerade irreps ($T_{1u}$, $T_{2u}$, $A_{2u}$, $E_u$) carry
+the displacement and quadratic modes.  The $T_{1u}$ block is physically
+the most important: its leading eigenvalue is the \emph{dipole mode},
+which encodes the density-contrast scattering.
+
+\paragraph{Per-irrep T-matrix formula.}
+For an ungerade irrep $\rho$ with multiplicity $m_\rho$, the
+$m_\rho \times m_\rho$ T-matrix block is
+\begin{equation}
+  T_\rho
+  = \big(M_\rho + B^{\text{LS}}_\rho - \varepsilon\,B_{\text{body},\rho}\big)^{-1}
+    \big(\varepsilon\,B_{\text{body},\rho} - B^{\text{LS}}_\rho\big),
+  \label{eq:ungerade-T}
+\end{equation}
+where $\varepsilon = \omega^2 \D\rho$ is the density coupling,
+$M_\rho$ is the mass matrix, $B_{\text{body},\rho}$ the body bilinear
+form, and $B^{\text{LS}}_\rho$ the LS-convolved stiffness.  All three
+matrices are real, symmetric, and dimensionless.  For the scalar
+irreps ($m_\rho = 1$), this reduces to
+\begin{equation}
+  \sigma_\rho
+  = \frac{\varepsilon\,b_\rho - b^{\text{LS}}_\rho}
+         {M_\rho + b^{\text{LS}}_\rho - \varepsilon\,b_\rho}.
+\end{equation}
+
+\paragraph{Body bilinear form.}
+The body bilinear separates into isotropic ($A$) and anisotropic ($B$)
+channels via the Kelvin decomposition of the Green's tensor:
+\begin{equation}
+  B_{\text{body},\rho}
+  = a_0\,B^{(A)}_\rho + b_0\,B^{(B)}_\rho,
+  \qquad
+  a_0 = \frac{\alpha^2 + \beta^2}{8\pi\rho_0\alpha^2\beta^2},\quad
+  b_0 = \frac{\alpha^2 - \beta^2}{8\pi\rho_0\alpha^2\beta^2}.
+  \label{eq:kelvin-ab}
+\end{equation}
+The matrices $B^{(A)}_\rho$ and $B^{(B)}_\rho$ are numerical constants
+determined by the cube geometry, computed from the
+Pell-number closed forms of the body integrals (Sections~5--8).
+
+\paragraph{LS-convolved stiffness.}
+The stiffness contribution is \emph{not} the direct strain energy
+$\int\boldsymbol{\varepsilon}:\D\mathbf{c}:\boldsymbol{\varepsilon}\,dV$
+(which has dimensions of~Pa), but the LS-convolved form
+\begin{equation}
+  B^{\text{LS}}_{\alpha\beta}
+  = \big\langle\bphi_\alpha
+      \,\big|\, \bG \ast
+      \big[\nabla\!\cdot\!(\D\mathbf{c}:\be(\bphi_\beta))\big]
+    \big\rangle,
+  \label{eq:bstiff-ls}
+\end{equation}
+which is dimensionless.  Here $\bG$ is the static Green's tensor and
+$\be(\bphi_\beta) = \tfrac{1}{2}(\nabla\bphi_\beta + \nabla\bphi_\beta^T)$
+is the strain of the trial function.
+
+For a quadratic mode $\bphi_\beta$ on the cube $\Omega = [-1,1]^3$,
+the divergence of the stress perturbation splits into a volume force
+and a surface traction:
+\begin{equation}
+  \nabla\!\cdot\!(\D\mathbf{c}:\be(\bphi_\beta))
+  = \mathbf{f}_{\text{vol}}^{(\beta)}\,\chi_\Omega
+  + \mathbf{t}^{(\beta)}\,\delta_{\partial\Omega},
+  \label{eq:vol-surf-split}
+\end{equation}
+where $\chi_\Omega$ is the indicator function and
+$\delta_{\partial\Omega}$ the surface delta.  The volume force is
+constant inside $\Omega$:
+\begin{equation}
+  \mathbf{f}_{\text{vol}} = (\D\lambda + \D\mu)\,\nabla(\nabla\!\cdot\!\bphi_\beta)
+  + \D\mu\,\nabla^2\bphi_\beta.
+\end{equation}
+For S-type quadratic modes $r_a^2\,\mathbf{e}_p$:
+\begin{equation}
+  \mathbf{f}_{\text{vol}} = \begin{cases}
+    2(\D\lambda + 2\D\mu)\,\mathbf{e}_p & \text{if } a = p, \\
+    2\D\mu\,\mathbf{e}_p                & \text{if } a \neq p,
+  \end{cases}
+\end{equation}
+and for X-type modes $r_b r_c\,\mathbf{e}_p$ (with $b \neq c$),
+$\mathbf{f}_{\text{vol}} = 0$.  The surface traction
+$\mathbf{t}^{(\beta)} = (\D\mathbf{c}:\be(\bphi_\beta))\cdot\hat{\mathbf{n}}$
+is at most linear in the face coordinates.
+
+This decomposition is computationally advantageous.  The volume part of
+the LS convolution reduces to existing body integrals:
+\begin{equation}
+  B^{\text{LS,vol}}_{\alpha\beta}
+  = \sum_{j=1}^{3} f^{(\beta)}_j \, B_{\text{body}}[\alpha,\,\mathbf{e}_j],
+  \label{eq:bstiff-vol}
+\end{equation}
+where $B_{\text{body}}[\alpha,\,\mathbf{e}_j]$ is the body bilinear
+between $\bphi_\alpha$ and constant displacement $\mathbf{e}_j$---the
+first three columns of the body matrix already computed in Sections~5--8.
+The surface part~$B^{\text{LS,surf}}$ is a five-dimensional integral
+(3D from $\mathbf{r} \in \Omega$, 2D from $\mathbf{r}'$ on a cube
+face), with a $1/|\mathbf{r}-\mathbf{r}'|$ singularity that is
+weaker than the 6D body bilinear.  A key result of this work
+(Section~\ref{sec:analytical-reduction}) is that this integral,
+like the body bilinear, reduces analytically to the same family of 3D
+master integrals $\mathcal{M}^+_{p,q,r}$ and $\mathcal{M}^{B+}_{p,q,r}$
+via the $(\sigma,\xi,v)$ substitution, requiring no numerical quadrature.
+
+\paragraph{Four-channel decomposition.}
+The LS-convolved stiffness is bilinear in
+$(a_0, b_0) \times (\D\lambda, \D\mu)$, giving a decomposition into
+four independent numerical matrices:
+\begin{equation}
+  B^{\text{LS}}_\rho
+  = a_0 \D\lambda\,S^{(A\lambda)}_\rho
+  + a_0 \D\mu\,S^{(A\mu)}_\rho
+  + b_0 \D\lambda\,S^{(B\lambda)}_\rho
+  + b_0 \D\mu\,S^{(B\mu)}_\rho.
+  \label{eq:four-channel}
+\end{equation}
+These four matrices per irrep are geometry-dependent constants of the
+cube, analogous to the $A$- and $B$-channel body matrices.  They are
+computed by \texttt{CubeT27Stiffness\_LS.wl}.
+
+\paragraph{Physical content of the $T_{1u}$ block.}
+The $T_{1u}$ irrep appears with multiplicity $m = 4$: one constant
+displacement mode and three quadratic modes (two S-type, one X-type).
+Its leading eigenvalue is the \emph{dipole mode}, which at low
+frequency ($ka \ll 1$) dominates all other ungerade eigenvalues
+by a factor $\gtrsim 3$.  This mode encodes the rigid-body response
+of the scatterer to density contrast and is the elastic analogue of
+the acoustic monopole.  The three subdominant eigenvalues are
+quadratic corrections that become significant only at $ka \gtrsim 0.3$.
+
+The $T_{2u}$ ($2 \times 2$) block carries two pure quadratic modes,
+while $A_{2u}$ and $E_u$ are $1 \times 1$ pure quadratic scalars.
+For a sphere, all quadratic eigenvalues would be degenerate within
+each parity class; the cubic geometry of the cube lifts this degeneracy
+through the $B$-channel.
+
+\subsection{Unified analytical reduction: all integrals reduce to
+master integrals}
+\label{sec:analytical-reduction}
+
+The central computational result of this work is that \emph{every}
+entry of the $27 \times 27$ Galerkin closure---both the six-dimensional
+body bilinear forms and the five-dimensional surface stiffness
+integrals---reduces analytically to finite linear combinations of two
+families of three-dimensional master integrals over the unit cube
+$[0,1]^3$:
+\begin{align}
+  \mathcal{M}^+_{p,q,r}
+    &:= \int_{[0,1]^3}\!\frac{x^p\,y^q\,z^r}
+         {\sqrt{x^2+y^2+z^2}}\,dx\,dy\,dz
+    &&\text{($A$-channel)},
+    \label{eq:Mp-def} \\
+  \mathcal{M}^{B+}_{p,q,r}
+    &:= \int_{[0,1]^3}\!\frac{x^p\,y^q\,z^r}
+         {(x^2+y^2+z^2)^{3/2}}\,dx\,dy\,dz
+    &&\text{($B$-channel)}.
+    \label{eq:MpB-def}
+\end{align}
+No numerical quadrature is required at any stage: the entire Galerkin
+matrix is determined by exact arithmetic once the master integrals are
+evaluated (Tables~\ref{tab:tier1-masters}--\ref{tab:tier2-masters}).
+Mathematica's symbolic \texttt{Integrate} returns closed forms for all
+needed instances in terms of algebraic numbers, $\pi$, logarithms, and
+inverse trigonometric functions.
+
+\subsubsection*{Body bilinear form}
+
+The reduction of the body bilinear form to master integrals was
+described in
+Sections~\ref{sec:cm-relative}--\ref{sec:results-tier3}.  In summary:
+the centre-of-mass/relative coordinate substitution
+$(\bm{\sigma},\bm{s})$ (eq.~\eqref{eq:cm-relative}) collapses the
+six-dimensional double integral to a three-dimensional integral against
+a polynomial weight.  After the octant-symmetry restriction
+$\bm{u} \in [0,1]^3$, every entry of
+$\mathcal{B}_{\mathrm{body}}$ is a signed linear combination of
+$\mathcal{M}^+_{p,q,r}$ values (for the isotropic $A$-channel,
+kernel $\delta_{ij}/|\bm{u}|$) and of $B$-channel integrals involving
+$u_i u_j / |\bm{u}|^3$ (reducible to $\mathcal{M}^{B+}_{p,q,r}$).
+The maximum monomial degree is $p+q+r \le 3$ for the $9{\times}9$
+linear sub-block and $p+q+r \le 7$ for the full $27{\times}27$ body
+matrix.  This reduction extends the classical Eshelby
+integrals~\cite{mura1987} from a single polynomial weight (the cube
+autocorrelation) to arbitrary polynomial trial-function pairs, and is
+the basis for the closed-form results in
+Tables~\ref{tab:tier1-masters}--\ref{tab:high-prec-scalars}.
+
+\subsubsection*{Surface stiffness integrals: the
+$(\sigma,\xi,v)$ substitution}
+
+The surface part of the LS-convolved stiffness,
+\begin{equation}
+  B^{\text{LS,surf}}_{\alpha\beta}
+  = \int_V\!\!\oint_{\partial V}\!\varphi_{\alpha,i}(\br)\,
+    G_{in}(\br-\br')\,t^{(\beta)}_n(\br')\,dS'\,dV,
+  \label{eq:bstiff-surf-def}
+\end{equation}
+involves a five-dimensional integral: three from $\br \in V = [-1,1]^3$
+and two from $\br'$ on a face of~$V$.  The crucial observation is that
+this integral admits the \emph{same} centre-of-mass/relative change of
+variables used for the body bilinear, supplemented by a normal-distance
+coordinate.
+
+Treating each face separately, the integral on the face
+$r_k = +1$ (the opposite face follows by reflection) uses
+\begin{equation}
+\begin{aligned}
+  \sigma_a &= \tfrac{1}{2}(r_a + s_a), &
+  \xi_a &= \tfrac{1}{2}(r_a - s_a), &
+  &\text{for each shared axis } a \neq k,\\
+  v &= \tfrac{1}{2}(1 - r_k), & & &
+  &\text{(distance from face, $v \in [0,1]$).}
+\end{aligned}
+\label{eq:sigma-xi-v}
+\end{equation}
+Here $s_a$ denotes the face coordinates of $\br'$, and the field point
+has $r_k = 1 - 2v$.  In these coordinates the separation vector and
+its norm become
+\begin{equation}
+  \br - \br'
+  = \bigl(\ldots,\,2\xi_a,\,\ldots,\,-2v,\,\ldots\bigr),
+  \qquad
+  |\br-\br'| = 2\rho,
+  \qquad
+  \rho := \sqrt{v^2 + \xi_1^2 + \xi_2^2},
+  \label{eq:face-separation}
+\end{equation}
+where the $2\xi_a$ entries occupy the shared-axis positions and $-2v$
+the normal-axis position.  The Jacobian of the substitution
+\eqref{eq:sigma-xi-v} is a constant ($= 8$), and the integrand of
+\eqref{eq:bstiff-surf-def} factorises as
+\begin{equation}
+  \underbrace{P(\sigma, \xi, v)}_{\text{polynomial}}
+  \;\times\;
+  \begin{cases}
+    \dfrac{1}{2\rho} &\text{($A$-channel)},\\[6pt]
+    \dfrac{x_i\,x_j}{(2\rho)^3} &\text{($B$-channel)}.
+  \end{cases}
+  \label{eq:face-factorisation}
+\end{equation}
+Because the polynomial part is at most quadratic in $\sigma_a$ and the
+integration domain in $\sigma_a$ is the symmetric interval
+$[-(1-|\xi_a|),\,1-|\xi_a|]$, the $\sigma$-integration is elementary:
+odd powers of $\sigma_a$ vanish by parity, and even powers yield
+\begin{equation}
+  \int_{-(1-|\xi_a|)}^{1-|\xi_a|}\! \sigma_a^{2j}\,d\sigma_a
+  \;=\; \frac{2\,(1-|\xi_a|)^{2j+1}}{2j+1}.
+  \label{eq:sigma-int}
+\end{equation}
+After this step, the $\sigma$-variables are eliminated and the integral
+over each face reduces to a three-dimensional integral over
+$(\xi_1,\xi_2,v) \in [0,1]^3$ (using octant symmetry
+$|\xi_a| \to \xi_a$).  Expanding the polynomial in monomials
+$\xi_1^p\,\xi_2^q\,v^r$ and reading off the coefficients gives,
+for each face and channel,
+\begin{equation}
+  B^{\text{LS,surf}}_{\alpha\beta}\big|_{\text{face}}
+  \;=\; 64\!\!\sum_{p,q,r}\! c^{(A)}_{pqr}\,\mathcal{M}^+_{p,q,r}
+  \;+\; 16\!\!\sum_{p,q,r}\!c^{(B)}_{pqr}\,\mathcal{M}^{B+}_{p,q,r},
+  \label{eq:surf-master-expansion}
+\end{equation}
+where the coefficients $c^{(A,B)}_{pqr}$ are rational numbers
+determined by the mode polynomials $\bphi_\alpha$, the traction
+$\mathbf{t}^{(\beta)}$, and the face orientation.
+The prefactor $64 = 8 \times 4 \times 2$ absorbs the Jacobian ($8$),
+the octant symmetry in $(\xi_1,\xi_2)$ ($4$), and the two paired faces
+per axis ($2$); the $B$-channel prefactor $16$ reflects the additional
+$1/(2\rho)^2$ relative to the $A$ kernel.  The maximum monomial degree
+required is $p+q+r \le 4$ for the surface integrals on $T_{27}$.
+Summing over the three coordinate axes gives the full surface
+stiffness.
+
+\subsubsection*{Completeness of the reduction}
+
+Combining the body and surface results, the full LS-convolved
+stiffness \eqref{eq:bstiff-ls} on the $T_{27}$ trial space is
+\begin{equation}
+  B^{\text{LS}}_{\alpha\beta}
+  = B^{\text{LS,vol}}_{\alpha\beta}
+  + B^{\text{LS,surf}}_{\alpha\beta}
+  = \text{(linear combination of $\mathcal{M}^+$ and
+    $\mathcal{M}^{B+}$ values)}.
+  \label{eq:bstiff-full-analytical}
+\end{equation}
+Together with the body bilinear form and the mass matrix (which is a
+polynomial integral and hence trivially exact), the \emph{entire}
+$27 \times 27$ Galerkin closure is determined by the master integrals
+$\mathcal{M}^+_{p,q,r}$ and $\mathcal{M}^{B+}_{p,q,r}$.  The two
+families are moreover linked by the trace identity
+\begin{equation}
+  \mathcal{M}^{B+}_{p+2,q,r} + \mathcal{M}^{B+}_{p,q+2,r}
+  + \mathcal{M}^{B+}_{p,q,r+2}
+  = \mathcal{M}^+_{p,q,r},
+  \label{eq:MpB-trace-identity}
+\end{equation}
+which follows from $|x|^2 / |x|^3 = 1/|x|$ and reduces the number
+of independent $B$-channel evaluations.  The total number of distinct
+master integrals needed is $\sim\!30$ (after cubic-symmetry
+permutations and the trace identity); Mathematica's
+\texttt{Integrate} evaluates each one in closed form in $5$--$30$ s,
+with a total computation time of $\sim\!12$ minutes for the complete
+analytical evaluation of all $27 \times 27$ stiffness entries.  This
+is a $\sim\!300{\times}$ speedup over the previous $5$D
+\texttt{NIntegrate} approach ($\sim\!60$ min), and---critically---the
+analytical values are exact rather than approximate.
+
+\begin{remark}[Catastrophic failure of direct numerical quadrature]
+\label{rem:ninteg-failure}
+{\sloppy
+The analytical reduction was motivated by the discovery that
+Mathematica's five-dimensional \texttt{NIntegrate} with
+\texttt{DuffyCoordinates} singularity handling gave
+\emph{catastrophically wrong} results for the surface stiffness
+integrals involving quadratic mode pairs.  The error mechanism is
+severe cancellation: after the $(\sigma,\xi,v)$ substitution, the
+$\sigma$-integrated polynomial\par}
+\begin{equation*}
+  \operatorname{sigIntA}(\xi_1,\xi_2,v)
+  = \tfrac{4}{3}(1-2v)(1-\xi_1)(1-\xi_2)
+    (1-\xi_1-\xi_2-\xi_1^2-\xi_2^2)
+\end{equation*}
+(shown here for the $E_u$ entry, $A$-channel) is the product of a
+tent-like envelope and a polynomial that changes sign.  The resulting
+integral is $\sim\!3.02$, but the individual monomial contributions
+involve $\mathcal{M}^+$ values of order $\sim\!100$ with alternating
+signs.  Adaptive quadrature in five dimensions resolves the singularity
+but not the cancellation: the \texttt{NIntegrate} result was $136.0$,
+a factor-of-$45$ error.  The linear--linear sub-block had smaller
+errors ($0.2$--$3\%$), and the linear--quadratic cross terms $1$--$3\%$.
+
+Independent verification of the analytical values was carried out by
+three methods:
+\begin{enumerate}[label=(\roman*)]
+  \item Monte Carlo integration ($5 \times 10^7$ samples) on the
+    original 5D integral, giving $3.017 \pm 0.007$;
+  \item \texttt{scipy.integrate.tplquad} on the reduced 3D integral,
+    giving $64 \times 0.04715 = 3.018$;
+  \item direct summation $64\sum c_{pqr}\,\mathcal{M}^+_{p,q,r}$ using
+    independently computed master integrals, giving $3.018$.
+\end{enumerate}
+All three agree; the \texttt{NIntegrate} result of $136.0$ is
+definitively incorrect.
+\end{remark}
+
+%======================================================================
+\subsection{Plane-wave scattering from the \texorpdfstring{$T_{27}$}{T27}
+closure}
+\label{sec:plane-wave}
+%======================================================================
+
+With all $27 \times 27$ Galerkin matrices determined analytically, we now
+derive the complete plane-wave scattering framework for a single cube in
+a homogeneous elastic background.  The result is a frequency-dependent
+$27 \times 27$ T-matrix that maps an incident plane-wave field to scattered
+multipole sources, with exact P--SV--SH decomposition in the far field.
+
+\subsubsection{Assembly of the full
+\texorpdfstring{$27 \times 27$}{27x27} T-matrix}
+\label{sec:T27-assembly}
+
+The symmetry-adapted basis change $U_{\mathrm{sym}}$ of Section~9c
+block-diagonalises all three Galerkin matrices ($M_{27}$,
+$B_{\mathrm{body}}$, $B_{\mathrm{el}}$) simultaneously.  The full
+T-matrix in the physical (polynomial) basis is
+\begin{equation}
+  \boxed{\;T_{27}
+  \;=\; U_{\mathrm{sym}}^{\top}\;
+  \mathcal{T}_{\mathrm{diag}}\;
+  U_{\mathrm{sym}}\;}
+  \label{eq:T27-assembly}
+\end{equation}
+where $\mathcal{T}_{\mathrm{diag}}$ is the $27 \times 27$
+block-diagonal matrix in the irrep-adapted basis.  The parity
+decomposition $T_{27} = T_9 \oplus T_{27}^{\mathrm{quad}}$
+(constant+linear $\oplus$ quadratic) splits further by O$_h$ irrep
+into an ungerade sector (21 dimensions: displacement $+$ quadratic
+modes) and a gerade sector (6 dimensions: strain modes):
+\begin{equation}
+  \mathcal{T}_{\mathrm{diag}}
+  \;=\;
+  \begin{pmatrix}
+    \mathcal{T}_u & 0 \\[2pt]
+    0 & \mathcal{T}_g
+  \end{pmatrix}_{\!27\times 27}.
+  \label{eq:T-parity-split}
+\end{equation}
+
+\paragraph{Ungerade sector ($21 \times 21$).}
+The ungerade block decomposes into four irreps.  By Schur's lemma,
+each irrep~$\rho$ of dimension~$d_\rho$ and multiplicity~$m_\rho$
+contributes $d_\rho$ \emph{identical} copies of the $m_\rho \times
+m_\rho$ per-irrep T-matrix:
+\begin{equation}
+  \mathcal{T}_u
+  \;=\;
+  \begin{pmatrix}
+    \mathcal{T}_{T_{1u}} & & & \\
+    & \mathcal{T}_{T_{2u}} & & \\
+    & & \sigma_{A_{2u}} & \\
+    & & & \mathcal{T}_{E_u}
+  \end{pmatrix}_{\!21\times 21},
+  \label{eq:Tu-block}
+\end{equation}
+where the sub-blocks are
+\begin{equation}
+  \mathcal{T}_{T_{1u}}
+  =
+  \begin{pmatrix}
+    T^{(T_{1u})} & & \\
+    & T^{(T_{1u})} & \\
+    & & T^{(T_{1u})}
+  \end{pmatrix}_{\!12\times 12}
+  \!\!\!,\qquad
+  \mathcal{T}_{T_{2u}}
+  =
+  \begin{pmatrix}
+    T^{(T_{2u})} & & \\
+    & T^{(T_{2u})} & \\
+    & & T^{(T_{2u})}
+  \end{pmatrix}_{\!6\times 6}
+  \!\!\!,
+  \label{eq:Tu-subblocks}
+\end{equation}
+\begin{equation}
+  \mathcal{T}_{E_u}
+  = \sigma_{E_u}\,I_2\,.
+  \label{eq:TEu-scalar}
+\end{equation}
+The three copies within each triplet ($T_{1u}$, $T_{2u}$) correspond
+to the three Cartesian components of the irreducible triplet; the two
+copies in $E_u$ correspond to the doublet.  The single $A_{2u}$ scalar
+$\sigma_{A_{2u}}$ stands alone.
+
+The per-irrep T-matrix $T^{(\rho)}$ for each ungerade irrep is an
+$m_\rho \times m_\rho$ matrix given by
+\begin{equation}
+  \boxed{\;T^{(\rho)}
+  \;=\; \bigl(M_\rho + B^{\mathrm{LS}}_\rho
+    - \varepsilon\,B_{\mathrm{body},\rho}\bigr)^{-1}
+    \bigl(\varepsilon\,B_{\mathrm{body},\rho}
+    - B^{\mathrm{LS}}_\rho\bigr),\;}
+  \label{eq:T-ungerade}
+\end{equation}
+where $\varepsilon = \omega^2\D\rho$ is the inertial coupling and the
+three matrices appearing in \eqref{eq:T-ungerade} are:
+\begin{itemize}
+\item $M_\rho$: the $m_\rho \times m_\rho$ mass matrix (rational,
+  exact);
+\item $B_{\mathrm{body},\rho} = a_0\,B^{(A)}_\rho + b_0\,B^{(B)}_\rho$:
+  the body bilinear form, with Kelvin coefficients $a_0$, $b_0$
+  from~\eqref{eq:kelvin-ab} and numerical matrices $B^{(A,B)}_\rho$
+  determined by the master integrals of
+  Section~\ref{sec:analytical-reduction};
+\item $B^{\mathrm{LS}}_\rho$: the LS-convolved stiffness, decomposing
+  into four channels (eq.~\eqref{eq:four-channel}):
+  \begin{equation}
+    B^{\mathrm{LS}}_\rho
+    = a_0\D\lambda\,S^{(A\lambda)}_\rho
+    + a_0\D\mu\,S^{(A\mu)}_\rho
+    + b_0\D\lambda\,S^{(B\lambda)}_\rho
+    + b_0\D\mu\,S^{(B\mu)}_\rho.
+    \label{eq:BLS-four-channel}
+  \end{equation}
+\end{itemize}
+For $T_{1u}$ ($m = 4$), the matrices $M$, $B^{(A,B)}$, and
+$S^{(A\lambda,A\mu,B\lambda,B\mu)}$ are each $4 \times 4$, all
+computed analytically from the master integrals.  For $T_{2u}$
+($m = 2$), they are $2 \times 2$.  For $A_{2u}$ and $E_u$ ($m = 1$),
+the formula~\eqref{eq:T-ungerade} reduces to the scalar
+\begin{equation}
+  \sigma_\rho
+  = \frac{\varepsilon\,b_\rho - b^{\mathrm{LS}}_\rho}
+         {M_\rho + b^{\mathrm{LS}}_\rho - \varepsilon\,b_\rho}\,,
+  \qquad \rho \in \{A_{2u},\,E_u\}.
+  \label{eq:T-ungerade-scalar}
+\end{equation}
+
+\paragraph{Gerade sector ($6 \times 6$).}
+The three gerade irreps are all $m_\rho = 1$ (scalar blocks),
+determined by the self-consistent Eshelby amplification of
+eqs.~\eqref{eq:T1c-amp}--\eqref{eq:T3c-amp}:
+\begin{equation}
+  \mathcal{T}_g
+  \;=\;
+  \begin{pmatrix}
+    \sigma_{A_{1g}} & & \\[2pt]
+    & \sigma_{E_g}\,I_2 & \\[2pt]
+    & & \sigma_{T_{2g}}\,I_3
+  \end{pmatrix}_{\!6\times 6},
+  \label{eq:Tg-block}
+\end{equation}
+where $I_n$ is the $n \times n$ identity and the per-irrep
+scalars are
+\begin{equation}
+  \boxed{\;\sigma_\rho
+  = \frac{\lambda_\rho(\D\mathbf{c}^*)}
+         {1 - \lambda_\rho(\D\mathbf{c}^*)},
+  \qquad
+  \rho \in \{A_{1g},\,E_g,\,T_{2g}\},\;}
+  \label{eq:T-gerade}
+\end{equation}
+with $\lambda_\rho$ the per-irrep eigenvalue of the amplified
+Eshelby contraction and $\D\mathbf{c}^*$ the self-consistent
+stiffness contrast.  Explicitly (from
+eqs.~\eqref{eq:born-sigma-irrep}--\eqref{eq:Dlambda-star}):
+\begin{align}
+  \lambda_{A_{1g}} &= 3T_1^c + 2T_2^c + T_3^c
+    &&\text{(volumetric)}, \label{eq:lam-A1g}\\
+  \lambda_{E_g}    &= 2T_2^c + T_3^c
+    &&\text{(deviatoric diagonal)}, \label{eq:lam-Eg}\\
+  \lambda_{T_{2g}} &= 2T_2^c
+    &&\text{(off-diagonal shear)}, \label{eq:lam-T2g}
+\end{align}
+where $T_1^c$, $T_2^c$, $T_3^c$ are the amplified coupling
+coefficients.  The cubic anisotropy of the cube enters through
+$T_3^c \neq 0$, splitting $\sigma_{E_g}$ from $\sigma_{T_{2g}}$
+(cf.\ eq.~\eqref{eq:T3c-signature}).
+
+\paragraph{Dimension count.}
+\begin{equation}
+  \underbrace{3 \times 4}_{T_{1u}} \;+\;
+  \underbrace{3 \times 2}_{T_{2u}} \;+\;
+  \underbrace{1}_{A_{2u}} \;+\;
+  \underbrace{2}_{E_u} \;+\;
+  \underbrace{1}_{A_{1g}} \;+\;
+  \underbrace{2}_{E_g} \;+\;
+  \underbrace{3}_{T_{2g}}
+  \;=\; 12 + 6 + 1 + 2 + 1 + 2 + 3
+  \;=\; 27.
+  \label{eq:dim-count}
+\end{equation}
+
+\paragraph{Consistency check.}
+The leading $9 \times 9$ sub-block of $T_{27}$ (rows/columns~$1$--$9$,
+corresponding to the constant and linear basis functions of~$T_9$)
+is the Schur-complemented T-matrix on~$T_9$: it incorporates the
+effect of the quadratic modes through the body-channel Schur
+complement of Section~12b.  This sub-block must agree with the Path-A
+T-matrix from \texttt{compute\_cube\_tmatrix()} to the Galerkin
+truncation error ($\lesssim 1\%$ at $ka = 0.3$).
+
+\subsubsection{Incident plane-wave projection}
+\label{sec:incident-projection}
+
+An elastic plane wave in the background medium has the form
+\begin{equation}
+  \bu^0(\br) = \hat{\bm{d}}\,\exp\!\bigl(i\,\bm{k}\cdot\br\bigr),
+  \qquad
+  \bm{k} = \frac{\omega}{c}\,\hat{\bm{k}},
+  \label{eq:plane-wave}
+\end{equation}
+where $\hat{\bm{d}}$ is the polarisation, $\hat{\bm{k}}$ the
+propagation direction, and $c = \alpha$ for a P-wave ($\hat{\bm{d}} = \hat{\bm{k}}$),
+$c = \beta$ for an S-wave ($\hat{\bm{d}} \perp \hat{\bm{k}}$).
+Projecting onto the Galerkin basis $\{\bphi_\alpha\}$ of $T_{27}$
+centred at the origin gives the incident-field coefficient vector
+\begin{equation}
+  c^0_\alpha
+  = \bigl[M_{27}^{-1}\bigr]_{\alpha\beta}\!
+    \int_{V}\!\bphi_\beta(\br)\cdot\bu^0(\br)\,dV.
+  \label{eq:c0-projection}
+\end{equation}
+Because every $\bphi_\beta$ is a monomial $r_1^{n_1}r_2^{n_2}r_3^{n_3}\be_i$,
+the overlap integral factorises over the three axes of the cube
+$V = [-a,a]^3$:
+\begin{equation}
+  \int_{V}\!r_1^{n_1}r_2^{n_2}r_3^{n_3}\,e^{i\bm{k}\cdot\br}\,dV
+  = \prod_{j=1}^{3}\mathcal{I}_{n_j}(k_j,a),
+  \label{eq:overlap-factorise}
+\end{equation}
+where the one-dimensional overlap integrals satisfy the recursion
+\begin{equation}
+  \mathcal{I}_{n}(k,a)
+  := \int_{-a}^{a}\!x^n\,e^{ikx}\,dx
+  = \frac{a^n\bigl(e^{ika} - (-1)^n e^{-ika}\bigr)}{ik}
+    - \frac{n}{ik}\,\mathcal{I}_{n-1}(k,a),
+  \label{eq:overlap-recursion}
+\end{equation}
+with $\mathcal{I}_{0}(k,a) = 2a\operatorname{sinc}(ka)$.  The first
+few are
+\begin{align}
+  \mathcal{I}_0 &= 2a\operatorname{sinc}(ka), \label{eq:I0}\\
+  \mathcal{I}_1 &= \frac{2i\bigl[\sin(ka) - ka\cos(ka)\bigr]}{k^2},
+  \label{eq:I1}\\
+  \mathcal{I}_2 &= \frac{2\bigl[(2-k^2a^2)\sin(ka) - 2ka\cos(ka)\bigr]}{k^3}.
+  \label{eq:I2}
+\end{align}
+
+\paragraph{Low-frequency expansion.}
+For $ka \ll 1$ the overlaps simplify to the polynomial moments of the
+cube:
+\begin{align}
+  \mathcal{I}_0 &\approx 2a, &
+  \mathcal{I}_1 &\approx \tfrac{2i}{3}\,k a^3, &
+  \mathcal{I}_2 &\approx \tfrac{2}{3}\,a^3.
+  \label{eq:overlap-lowfreq}
+\end{align}
+The incident-field vector then has the physical interpretation:
+\begin{equation}
+  c^0_\alpha \;\xrightarrow{ka\to 0}\;
+  \begin{cases}
+    d_i                               & \alpha = i \in \{1,2,3\}
+      \quad\text{(displacement at origin)},\\[4pt]
+    \varepsilon^0_{ij}(\mathbf{0})    & \alpha \leftrightarrow (i,j) \in \{4,\ldots,9\}
+      \quad\text{(incident strain)},\\[4pt]
+    \tfrac{1}{2}\partial_a\partial_b\,u^0_i(\mathbf{0})
+                                      & \alpha \in \{10,\ldots,27\}
+      \quad\text{(strain gradient)},
+  \end{cases}
+  \label{eq:c0-lowfreq}
+\end{equation}
+so that the constant modes carry the displacement monopole at
+$O(1)$, the linear modes the strain at $O(ka)$, and the
+quadratic modes the strain gradient at $O((ka)^2)$.  This
+hierarchy is the basis for the Born-order multipole expansion
+of the scattered field.
+
+\paragraph{The three wave types.}
+For a propagation direction $\hat{\bm{k}}$, the three independent
+polarisations are:
+\begin{align}
+  \text{P:}\quad  &\hat{\bm{d}} = \hat{\bm{k}},
+    &&c = \alpha, \label{eq:P-wave}\\
+  \text{SV:}\quad &\hat{\bm{d}} = \hat{\bm{\theta}}
+    \;\;\text{(in the $\hat{\bm{k}}$--$\hat{\bm{z}}$ plane,
+    $\perp\hat{\bm{k}}$)},
+    &&c = \beta, \label{eq:SV-wave}\\
+  \text{SH:}\quad &\hat{\bm{d}} = \hat{\bm{\phi}}
+    \;\;\text{(perpendicular to the $\hat{\bm{k}}$--$\hat{\bm{z}}$ plane)},
+    &&c = \beta. \label{eq:SH-wave}
+\end{align}
+In the coordinate system of this paper ($z = $ axis~0, down;
+$x = $ axis~1, right; $y = $ axis~2, out), a wave propagating
+vertically downward has $\hat{\bm{k}} = \hat{\bm{z}}$,
+$\hat{\bm{\theta}} = \hat{\bm{x}}$,
+$\hat{\bm{\phi}} = \hat{\bm{y}}$.
+
+\subsubsection{Scattered source: multipole decomposition}
+\label{sec:multipole}
+
+The T-matrix maps the incident-field vector to scattered-source
+coefficients:
+\begin{equation}
+  \bm{c}^{\mathrm{sc}} = T_{27}\,\bm{c}^0.
+  \label{eq:csc-def}
+\end{equation}
+The 27 scattered coefficients decompose into three physical multipole
+orders, each of which radiates with a distinct angular pattern:
+\begin{equation}
+\renewcommand{\arraystretch}{1.4}
+\begin{array}{lcll}
+\toprule
+\text{Coefficients} & \text{Dim} & \text{Multipole source}
+  & \text{Radiation order} \\
+\midrule
+c^{\mathrm{sc}}_{1\text{--}3}
+  & 3 & \text{Force monopole } F_i
+  & \text{Dipole, } \ell = 1 \\
+c^{\mathrm{sc}}_{4\text{--}9}
+  & 6 & \text{Stress dipole } D_{ij}
+  & \text{Quadrupole, } \ell = 2 \\
+c^{\mathrm{sc}}_{10\text{--}27}
+  & 18 & \text{Force quadrupole } Q_{ijk}
+  & \text{Octupole, } \ell = 3 \\
+\bottomrule
+\end{array}
+\label{eq:multipole-table}
+\end{equation}
+
+The physical source amplitudes are obtained by contracting the scattered
+coefficients with the material contrasts and cube volume $V = (2a)^3$:
+\begin{align}
+  F_i &= \omega^2\D\rho\,V\,c^{\mathrm{sc}}_i
+    + \D c_{ijkl}\!\oint_{\partial V}\!
+    \varepsilon_{kl}(\bu^{\mathrm{sc}})\,n_j\,dS,
+    \label{eq:force-monopole}\\[3pt]
+  D_{ij} &= \int_V\!\bigl[
+    \omega^2\D\rho\,u^{\mathrm{sc}}_i\,r_j
+    + \sigma^{\mathrm{sc}}_{ij}\bigr]\,dV,
+    \label{eq:stress-dipole}
+\end{align}
+where $\sigma^{\mathrm{sc}}_{ij} = \D c_{ijkl}\,\varepsilon_{kl}(\bu^{\mathrm{sc}})$
+is the stress perturbation.  For the constant and linear modes of $T_9$,
+these reduce to the standard force--stress-dipole pair used in the
+existing Foldy--Lax framework~\cite{mura1987}.  The quadratic modes
+generate a force-quadrupole correction $Q_{ijk}$ that contributes at
+$O((ka)^3)$.
+
+\subsubsection{Far-field scattering amplitudes}
+\label{sec:far-field}
+
+In the radiation zone ($|\br| \gg a$), the scattered displacement
+from the multipole sources separates into P and S contributions.
+Using the asymptotic expansion of the Green's tensor,
+\begin{equation}
+  G_{ij}(\br) \;\xrightarrow{r\to\infty}\;
+  G^P_{ij}(\hat{\br})\,\frac{e^{ik_P r}}{r}
+  \;+\; G^S_{ij}(\hat{\br})\,\frac{e^{ik_S r}}{r},
+  \label{eq:G-farfield}
+\end{equation}
+where $G^P_{ij} = \hat{r}_i\hat{r}_j/(4\pi\rho\alpha^2)$ and
+$G^S_{ij} = (\delta_{ij} - \hat{r}_i\hat{r}_j)/(4\pi\rho\beta^2)$
+are the P- and S-wave far-field projection tensors, the scattered
+P-wave amplitude in the direction $\hat{\br}$ is
+\begin{equation}
+  f^P_i(\hat{\br})
+  = -\frac{\hat{r}_i}{4\pi\rho\alpha^2}\,
+    \Bigl[\hat{r}_j F_j
+    \;-\; ik_P\,\hat{r}_j\hat{r}_k\,D_{jk}
+    \;-\; \tfrac{1}{2}k_P^2\,\hat{r}_j\hat{r}_k\hat{r}_l\,Q_{jkl}
+    \;+\; \cdots
+    \Bigr],
+  \label{eq:fP}
+\end{equation}
+and the S-wave amplitude is
+\begin{equation}
+  f^S_i(\hat{\br})
+  = -\frac{\delta_{ij} - \hat{r}_i\hat{r}_j}{4\pi\rho\beta^2}\,
+    \Bigl[F_j
+    \;-\; ik_S\,\hat{r}_k\,D_{jk}
+    \;-\; \tfrac{1}{2}k_S^2\,\hat{r}_k\hat{r}_l\,Q_{jkl}
+    \;+\; \cdots
+    \Bigr].
+  \label{eq:fS}
+\end{equation}
+The S-wave amplitude decomposes into SV and SH components via
+\begin{align}
+  f^{SV}(\hat{\br}) &= \hat{\bm{\theta}} \cdot \bm{f}^S(\hat{\br}),
+  \label{eq:fSV}\\
+  f^{SH}(\hat{\br}) &= \hat{\bm{\phi}} \cdot \bm{f}^S(\hat{\br}),
+  \label{eq:fSH}
+\end{align}
+where $(\hat{\br},\hat{\bm{\theta}},\hat{\bm{\phi}})$ form the
+spherical coordinate triad.
+
+\paragraph{Scattering cross sections.}
+The differential scattering cross section per unit solid angle is
+\begin{equation}
+  \frac{d\sigma}{d\Omega}\bigg|_{\mathrm{P}\to X}
+  = \frac{c_X}{c_{\mathrm{inc}}}\,
+    \bigl|f^X(\hat{\br})\bigr|^2,
+  \qquad X \in \{\mathrm{P},\,\mathrm{SV},\,\mathrm{SH}\},
+  \label{eq:dsigma}
+\end{equation}
+where $c_{\mathrm{inc}}$ and $c_X$ are the incident and scattered wave
+speeds, and $f^X$ is the scalar amplitude in channel~$X$.
+The total scattering cross section is obtained by integrating
+\eqref{eq:dsigma} over all directions, and the extinction cross section
+follows from the optical theorem:
+\begin{equation}
+  \sigma_{\mathrm{ext}}
+  = -\frac{4\pi}{k_{\mathrm{inc}}}\,
+    \operatorname{Im}\!\bigl[f(\hat{\bm{k}})\bigr],
+  \label{eq:optical-theorem}
+\end{equation}
+where $f(\hat{\bm{k}})$ is the forward scattering amplitude in the
+incident-wave channel.  At low frequency the three multipole orders
+contribute with distinct frequency scalings:
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+Force monopole (dipole): & $\sigma_{\mathrm{sc}} \sim k^4 a^6$
+  & (Rayleigh) \\
+Stress dipole (quadrupole): & $\sigma_{\mathrm{sc}} \sim k^4 a^6$
+  & (stiffness contrast) \\
+Force quadrupole (octupole): & $\sigma_{\mathrm{sc}} \sim k^6 a^8$
+  & (new from $T_{27}$)
+\end{tabular}
+\end{center}
+The dipole and quadrupole terms both scale as $k^4 a^6$ (the classic
+Rayleigh scattering law) but with different angular patterns and
+different sensitivity to $\D\rho$ vs.\ $\D\mu$; the octupole term from
+the quadratic modes is two orders higher in $ka$, becoming significant
+only in the transition regime $ka \gtrsim 0.3$.
+
+\paragraph{Connection to the Mie limit.}
+For a sphere of equivalent volume, the T-matrix partial-wave
+coefficients $(a_0, a_1, a_2, \ldots)$ correspond to multipole
+orders $(\ell = 0, 1, 2, \ldots)$.  The $T_{27}$ cube closure captures:
+\begin{itemize}
+  \item $a_0$ (monopole, $\ell = 0$): from the $A_{1g}$ irrep
+    (volumetric strain),
+  \item $a_1$ (dipole, $\ell = 1$): from the $T_{1u}$ irrep
+    (displacement),
+  \item $a_2$ (quadrupole, $\ell = 2$): from the $E_g + T_{2g}$
+    irreps (deviatoric strain), split into $a_{2,E}$ and $a_{2,T}$ by
+    cubic anisotropy,
+  \item $a_3$ (octupole, $\ell = 3$): partially, from the quadratic
+    modes ($T_{2u}$, $A_{2u}$, $E_u$, and subdominant $T_{1u}$
+    eigenvalues).
+\end{itemize}
+In the sphere limit ($C^c \to 0$), the $E_g$ and $T_{2g}$ eigenvalues
+coalesce and reproduce the isotropic $a_2$; the quadratic-mode
+eigenvalues coalesce into the degenerate $\ell = 3$ channel.  The cube's
+cubic anisotropy lifts these degeneracies, generating mode conversions
+(P$\to$SV, SV$\to$SH) that are absent for a sphere.
+
+\subsubsection{Validation targets for Phase~1}
+\label{sec:validation-targets}
+
+\begin{enumerate}[label=(V\arabic*)]
+\item \textbf{Sphere limit.}  For the standard test parameters
+  ($\alpha = 5000$, $\beta = 3000$, $\rho = 2500$; moderate contrast)
+  at $ka = 0.05$, the $T_{27}$ far-field
+  amplitudes must reproduce the Mie coefficients $a_0$, $a_1$, $a_2$ to
+  $\sim\!1\%$ (the $O((ka)^2)$ Galerkin truncation error).
+\item \textbf{Optical theorem.}  The extinction and total scattering
+  cross sections computed from \eqref{eq:optical-theorem} and the
+  angular integral of \eqref{eq:dsigma} must agree to $\sim\!10^{-6}$
+  (numerical integration precision).
+\item \textbf{$T_9$ consistency.}  The leading $9 \times 9$ sub-block
+  of $T_{27}$ must reproduce the Path-A T-matrix from
+  \texttt{compute\_cube\_tmatrix()} to the Galerkin truncation error
+  ($\lesssim 1\%$ at $ka = 0.3$, $\lesssim 10\%$ at $ka = 0.5$).
+\item \textbf{P--SV--SH power balance.}  For an incident P-wave, the
+  scattered power $\sigma^{\mathrm{P\to P}} + \sigma^{\mathrm{P\to SV}}
+  + \sigma^{\mathrm{P\to SH}} = \sigma_{\mathrm{ext}}^P$ must hold.
+\item \textbf{Cubic symmetry.}  For incidence along $[100]$, $[010]$,
+  $[001]$, the three total cross sections must be identical.  For $[110]$
+  incidence, the SH cross section must vanish by mirror symmetry.
+\end{enumerate}

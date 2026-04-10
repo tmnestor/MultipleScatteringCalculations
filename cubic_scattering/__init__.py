@@ -57,9 +57,11 @@ from .cube_eshelby import (
 )
 from .effective_contrasts import (
     CubeTMatrixResult,
+    GalerkinTMatrixResult,
     MaterialContrast,
     ReferenceMedium,
     compute_cube_tmatrix,
+    compute_cube_tmatrix_galerkin,
 )
 from .horizontal_greens import exact_propagator_9x9
 from .kennett_layers import (
@@ -158,6 +160,8 @@ __all__ = [
     "MaterialContrast",
     "CubeTMatrixResult",
     "compute_cube_tmatrix",
+    "GalerkinTMatrixResult",
+    "compute_cube_tmatrix_galerkin",
     "voigt_tmatrix_6x6",
     "voigt_tmatrix_from_result",
     "effective_stiffness_voigt",

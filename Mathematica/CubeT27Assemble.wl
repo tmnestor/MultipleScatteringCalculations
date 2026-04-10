@@ -1373,10 +1373,275 @@ If[NumericQ[specDiff] && specDiff < 10^-8,
   Print["    [!!] per-irrep decomposition mismatch -- review generators."]];
 
 (* ================================================================== *)
-(* Section 13. Export symbolic 27x27 matrices to disk                   *)
+(* Section 13a. Project B_el into irrep basis                           *)
+(* ================================================================== *)
+(* BelSym (27x27, symbolic in Dlam/Dmu) is computed in Section 11.     *)
+(* Project it into each irrep block via Usym^T . BelSym . Usym, and   *)
+(* store as irrepData[irrep, "BelBlock"].                               *)
+Print[];
+Print["---- Section 13a: project B_el into irrep basis ----"];
+
+Do[
+  Module[{Usym, BelBlk},
+    Usym = irrepData[irrep, "Usym"];
+    BelBlk = Simplify[Transpose[Usym] . BelSym . Usym];
+    irrepData[irrep] = Append[irrepData[irrep], "BelBlock" -> BelBlk];
+    Print["    ", StringPadRight[irrep, 4],
+      ": BelBlock ", Dimensions[BelBlk],
+      "  LeafCount = ", LeafCount[BelBlk]];
+  ],
+  {irrep, irrepsNonzero}];
+
+(* Sanity: strain-sector irreps should reproduce the known eigenvalues *)
+(* from Section 11: A_1g = 8(3 Dlam + 2 Dmu), E_g = 16 Dmu,          *)
+(* T_2g = 8 Dmu.                                                        *)
+Print[];
+Print["  Strain-sector BelBlock check:"];
+Print["    A1g = ", Simplify[irrepData["A1g", "BelBlock"][[1, 1]]],
+  "  (expected 8(3 Dlam + 2 Dmu) = ", 24 Dlam + 16 Dmu, ")"];
+Print["    Eg  = ", Simplify[irrepData["Eg", "BelBlock"][[1, 1]]],
+  "  (expected 16 Dmu)"];
+Print["    T2g = ", Simplify[irrepData["T2g", "BelBlock"][[1, 1]]],
+  "  (expected 8 Dmu)"];
+
+(* ================================================================== *)
+(* Section 13b. Full per-irrep T-matrix (body + stiffness)              *)
+(* ================================================================== *)
+(* For each irrep, the reduced T-matrix is                              *)
+(*   T_rho = (M_rho + Bel_rho - eps * Bbody_rho)^{-1}                  *)
+(*         . (eps * Bbody_rho - Bel_rho)                                *)
+(* with eps = omega^2 * Drho.  Keep (eps, Aelas, Belas, Dlam, Dmu)    *)
+(* as free symbolic parameters.                                         *)
+Print[];
+Print["---- Section 13b: full per-irrep T-matrix (body + stiffness) ----"];
+
+Clear[eps];
+Print["  inverting each m_rho x m_rho block symbolically..."];
+Do[
+  Module[{m, Mb, Bb, BelBlk, Dred, Vred, Tfull, t0local},
+    m = irrepData[irrep, "m"];
+    Mb = irrepData[irrep, "Mblock"];
+    Bb = irrepData[irrep, "Bblock"];
+    BelBlk = irrepData[irrep, "BelBlock"];
+    Dred = Mb + BelBlk - eps * Bb;
+    Vred = eps * Bb - BelBlk;
+    t0local = AbsoluteTime[];
+    Tfull = Inverse[Dred] . Vred;
+    (* Use Together (not Simplify) to avoid runtime blowup on 4x4 T1u *)
+    Tfull = Together[Tfull];
+    irrepData[irrep] = Append[irrepData[irrep], "TfullBlock" -> Tfull];
+    Print["    ", StringPadRight[irrep, 4],
+      "  (", m, "x", m, ")   T_full computed in ",
+      Round[AbsoluteTime[] - t0local, 0.01], " s",
+      "  LeafCount = ", LeafCount[Tfull]];
+  ],
+  {irrep, irrepsNonzero}];
+
+(* ================================================================== *)
+(* Section 13c. Substitute numerical atom values                        *)
+(* ================================================================== *)
+(* Replace opaque atom symbols with their numerical values from         *)
+(* atomRules (Section 8).  The Pell closed forms are in                 *)
+(* CubeT6ScalarValues_HighPrec_Pell.wl — here we substitute the        *)
+(* numerical values for practical evaluation.                           *)
+Print[];
+Print["---- Section 13c: substitute numerical atom values ----"];
+
+Do[
+  Module[{Tfull, TfullNum},
+    Tfull = irrepData[irrep, "TfullBlock"];
+    TfullNum = Tfull /. atomRules;
+    irrepData[irrep] = Append[irrepData[irrep], "TfullNumBlock" -> TfullNum];
+    Print["    ", StringPadRight[irrep, 4],
+      "  LeafCount(num) = ", LeafCount[TfullNum]];
+  ],
+  {irrep, irrepsNonzero}];
+
+(* ================================================================== *)
+(* Section 13d. Extract physical T-matrix scalars (strain sector)       *)
+(* ================================================================== *)
+(* The strain-sector irreps (A1g, Eg, T2g) are 1x1 blocks.  Their     *)
+(* scalar T-matrix values map to the physical T1c, T2c, T3c via:       *)
+(*   sigma_{A1g} = 3*T1c + 2*T2c + T3c   (volumetric)                  *)
+(*   sigma_{Eg}  = 2*T2c + T3c            (deviatoric axial)           *)
+(*   sigma_{T2g} = 2*T2c                  (shear)                       *)
+(* Inverting:                                                            *)
+(*   T2c = sigma_{T2g} / 2                                              *)
+(*   T3c = sigma_{Eg} - sigma_{T2g}                                     *)
+(*   T1c = (sigma_{A1g} - sigma_{Eg}) / 3                               *)
+Print[];
+Print["---- Section 13d: physical T-matrix scalars (T1c, T2c, T3c) ----"];
+
+sigmaA1g = irrepData["A1g", "TfullNumBlock"][[1, 1]];
+sigmaEg  = irrepData["Eg",  "TfullNumBlock"][[1, 1]];
+sigmaT2g = irrepData["T2g", "TfullNumBlock"][[1, 1]];
+
+Print["  sigma_{A1g} = ", sigmaA1g];
+Print["  sigma_{Eg}  = ", sigmaEg];
+Print["  sigma_{T2g} = ", sigmaT2g];
+
+T2cGalerkin = Together[sigmaT2g / 2];
+T3cGalerkin = Together[sigmaEg - sigmaT2g];
+T1cGalerkin = Together[(sigmaA1g - sigmaEg) / 3];
+
+Print[];
+Print["  T1c(Galerkin) = ", T1cGalerkin];
+Print["  T2c(Galerkin) = ", T2cGalerkin];
+Print["  T3c(Galerkin) = ", T3cGalerkin];
+
+(* ================================================================== *)
+(* Section 13e. Born-limit coefficients                                  *)
+(* ================================================================== *)
+(* At Born level (first order in contrasts), the T-matrix linearizes:   *)
+(*   sigma_rho ~ eps * bbody_rho - bel_rho                              *)
+(* where eps = omega^2 * Drho is the body coupling and                  *)
+(* bel_rho = BelBlock / MblockInverse is the stiffness coupling.        *)
+(*                                                                      *)
+(* For Born limit, set eps -> 0 for stiffness-only, or Dlam=Dmu=0 for  *)
+(* body-only, and extract the leading coefficients.                     *)
+Print[];
+Print["---- Section 13e: Born-limit coefficients ----"];
+
+(* Body-channel Born: T ~ eps * M^{-1} . Bbody at Dlam=Dmu=0.          *)
+(* For 1x1 blocks: sigma_rho^Born_body = eps * Bbody_rho / M_rho.      *)
+bornBodyA1g = Together[
+  (irrepData["A1g", "Bblock"][[1, 1]] /. atomRules) /
+  irrepData["A1g", "Mblock"][[1, 1]]];
+bornBodyEg = Together[
+  (irrepData["Eg", "Bblock"][[1, 1]] /. atomRules) /
+  irrepData["Eg", "Mblock"][[1, 1]]];
+bornBodyT2g = Together[
+  (irrepData["T2g", "Bblock"][[1, 1]] /. atomRules) /
+  irrepData["T2g", "Mblock"][[1, 1]]];
+
+Print["  Born body-channel (per eps):"];
+Print["    sigma_{A1g}/eps (A) = ",
+  N[bornBodyA1g /. {Aelas -> 1, Belas -> 0}, 16]];
+Print["    sigma_{A1g}/eps (B) = ",
+  N[bornBodyA1g /. {Aelas -> 0, Belas -> 1}, 16]];
+Print["    sigma_{Eg}/eps  (A) = ",
+  N[bornBodyEg /. {Aelas -> 1, Belas -> 0}, 16]];
+Print["    sigma_{Eg}/eps  (B) = ",
+  N[bornBodyEg /. {Aelas -> 0, Belas -> 1}, 16]];
+Print["    sigma_{T2g}/eps (A) = ",
+  N[bornBodyT2g /. {Aelas -> 1, Belas -> 0}, 16]];
+Print["    sigma_{T2g}/eps (B) = ",
+  N[bornBodyT2g /. {Aelas -> 0, Belas -> 1}, 16]];
+
+(* Stiffness-channel Born: T ~ -M^{-1} . Bel at eps=0.                 *)
+bornElA1g = Together[
+  -irrepData["A1g", "BelBlock"][[1, 1]] /
+  irrepData["A1g", "Mblock"][[1, 1]]];
+bornElEg = Together[
+  -irrepData["Eg", "BelBlock"][[1, 1]] /
+  irrepData["Eg", "Mblock"][[1, 1]]];
+bornElT2g = Together[
+  -irrepData["T2g", "BelBlock"][[1, 1]] /
+  irrepData["T2g", "Mblock"][[1, 1]]];
+
+Print[];
+Print["  Born stiffness-channel:"];
+Print["    sigma_{A1g}^el = ", Simplify[bornElA1g]];
+Print["    sigma_{Eg}^el  = ", Simplify[bornElEg]];
+Print["    sigma_{T2g}^el = ", Simplify[bornElT2g]];
+
+(* Born T1c, T2c, T3c from body + stiffness channels.                  *)
+Print[];
+Print["  Born-limit T1c, T2c, T3c (extracting A and B coefficients):"];
+bornT2c = Together[(bornBodyT2g * eps + bornElT2g) / 2];
+bornT3c = Together[(bornBodyEg * eps + bornElEg) -
+  (bornBodyT2g * eps + bornElT2g)];
+bornT1c = Together[((bornBodyA1g * eps + bornElA1g) -
+  (bornBodyEg * eps + bornElEg)) / 3];
+Print["  T1c^Born = ", bornT1c];
+Print["  T2c^Born = ", bornT2c];
+Print["  T3c^Born = ", bornT3c];
+
+(* Cubic anisotropy coefficient at Born level: T3c.                     *)
+Print[];
+Print["  T3c^Born (cubic anisotropy) at (A=1,B=1):"];
+Print["    T3c^Born(A-only) = ",
+  Simplify[bornT3c /. {Aelas -> 1, Belas -> 0}]];
+Print["    T3c^Born(B-only) = ",
+  Simplify[bornT3c /. {Aelas -> 0, Belas -> 1}]];
+
+(* ================================================================== *)
+(* Section 13f. Numerical verification against Path-A                    *)
 (* ================================================================== *)
 Print[];
-Print["---- Section 13: export symbolic matrices ----"];
+Print["---- Section 13f: numerical verification vs Path-A ----"];
+
+(* Standard test parameters from MEMORY.md:                             *)
+(*   alpha=5000, beta=3000, rho=2500                                    *)
+(*   Moderate contrast: Dlam=+2e9, Dmu=+1e9, Drho=+100                 *)
+(*   ka target: 0.05 (Rayleigh limit)                                   *)
+refAlpha = 5000; refBeta = 3000; refRho = 2500;
+refLam = refRho (refAlpha^2 - 2 refBeta^2);
+refMu  = refRho refBeta^2;
+testDlam = 2*10^9; testDmu = 1*10^9; testDrho = 100;
+
+(* ka = 0.05 -> omega = 0.05 * beta / a, with a = 1 (unit cube). *)
+testA = 1;
+kS = 0.05 / testA;
+testOmega = kS * refBeta;
+
+(* eps = omega^2 * Drho *)
+testEps = testOmega^2 * testDrho;
+
+Print["  Test parameters:"];
+Print["    alpha=", refAlpha, " beta=", refBeta, " rho=", refRho];
+Print["    Dlam=", testDlam, " Dmu=", testDmu, " Drho=", testDrho];
+Print["    ka=0.05, omega=", testOmega, " eps=", testEps];
+
+(* Evaluate the Galerkin T-matrix scalars numerically.                  *)
+numRules = {eps -> testEps, Dlam -> testDlam, Dmu -> testDmu,
+  Aelas -> 1/(8 Pi refRho refAlpha^2 refBeta^2),
+  Belas -> 1/(8 Pi refRho refAlpha^2 refBeta^2)};
+(* NOTE: Aelas and Belas are the Green's tensor Kelvin coefficients.    *)
+(* The body bilinear form was computed with abstract Aelas, Belas:      *)
+(*   Aelas = (alpha^2 + beta^2) / (8 pi rho alpha^2 beta^2)  = a0     *)
+(*   Belas = (alpha^2 - beta^2) / (8 pi rho alpha^2 beta^2)  = b0     *)
+numRulesPhys = {eps -> testEps, Dlam -> testDlam, Dmu -> testDmu,
+  Aelas -> (refAlpha^2 + refBeta^2) / (8 Pi refRho refAlpha^2 refBeta^2),
+  Belas -> (refAlpha^2 - refBeta^2) / (8 Pi refRho refAlpha^2 refBeta^2)};
+
+sigA1gNum = N[sigmaA1g /. numRulesPhys, 20];
+sigEgNum  = N[sigmaEg  /. numRulesPhys, 20];
+sigT2gNum = N[sigmaT2g /. numRulesPhys, 20];
+
+T1cNum = (sigA1gNum - sigEgNum) / 3;
+T2cNum = sigT2gNum / 2;
+T3cNum = sigEgNum - sigT2gNum;
+
+Print[];
+Print["  Galerkin per-irrep T-matrix (numerical):"];
+Print["    sigma_{A1g} = ", sigA1gNum];
+Print["    sigma_{Eg}  = ", sigEgNum];
+Print["    sigma_{T2g} = ", sigT2gNum];
+Print[];
+Print["  Physical T-matrix scalars (Galerkin):"];
+Print["    T1c = ", T1cNum];
+Print["    T2c = ", T2cNum];
+Print["    T3c = ", T3cNum];
+
+(* Also evaluate T1u and T2u blocks numerically for spectrum check.     *)
+Print[];
+Print["  All per-irrep T-matrix spectra (numerical):"];
+Do[
+  Module[{Tfull, TfullPhys, evals},
+    Tfull = irrepData[irrep, "TfullNumBlock"];
+    TfullPhys = N[Tfull /. numRulesPhys, 20];
+    evals = Eigenvalues[TfullPhys];
+    Print["    ", StringPadRight[irrep, 4],
+      ": eigenvalues = ", Sort[Re[evals]]];
+  ],
+  {irrep, irrepsNonzero}];
+
+(* ================================================================== *)
+(* Section 14. Export symbolic 27x27 matrices to disk                   *)
+(* ================================================================== *)
+Print[];
+Print["---- Section 14: export symbolic matrices ----"];
 
 outPath = FileNameJoin[{$here, "CubeT27AssembleResults.wl"}];
 (* Strip out the large matrix Uiso/Usym from irrepData for export.     *)
