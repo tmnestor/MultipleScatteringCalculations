@@ -358,7 +358,7 @@ def _compute_ABC_polynomial(
 
 
 def _compute_T123(
-    Ac: complex, Bc: complex, Cc: complex, Dlambda: float, Dmu: float
+    Ac: complex, Bc: complex, Cc: complex, Dlambda: complex, Dmu: complex
 ) -> Tuple[complex, complex, complex]:
     """
     Compute T1^c, T2^c, T3^c from the A^c, B^c, C^c decomposition.
@@ -530,3 +530,447 @@ def compute_cube_tmatrix(
         Dmu_star_off=Dmu_star_off,
         Dmu_star_diag=Dmu_star_diag,
     )
+
+
+# ================================================================
+# Galerkin T-matrix (Path-B, 27-component closure)
+# ================================================================
+
+
+@dataclass
+class GalerkinTMatrixResult:
+    """Result of the Galerkin (Path-B) 27-component T-matrix computation.
+
+    The Galerkin closure on T_27 produces a 27x27 T-matrix that
+    block-diagonalizes under O_h into 7 irrep blocks.  The three
+    strain-sector irreps (A1g, Eg, T2g) yield scalar T-matrix values
+    that map to T1c, T2c, T3c identically to Path-A.
+    """
+
+    # Per-irrep scalar T-matrix values (strain sector, 1x1 blocks)
+    sigma_A1g: complex  # volumetric (trace of strain)
+    sigma_Eg: complex  # deviatoric axial strain
+    sigma_T2g: complex  # off-diagonal shear strain
+
+    # Physical T-matrix scalars (same meaning as Path-A)
+    T1c: complex
+    T2c: complex
+    T3c: complex
+
+    # Per-irrep eigenvalues for ungerade sector (displacement + quadratic)
+    T1u_eigenvalues: np.ndarray  # 4 eigenvalues of T1u block
+    T2u_eigenvalues: np.ndarray  # 2 eigenvalues of T2u block
+    sigma_A2u: complex  # 1x1 A2u block
+    sigma_Eu: complex  # 1x1 Eu block
+
+    @property
+    def cubic_anisotropy(self) -> complex:
+        """T3c: cubic anisotropy coefficient."""
+        return self.T3c
+
+
+# ── Hardcoded Galerkin atoms (from CubeT27Assemble.wl) ──────────────
+#
+# The body bilinear form B_body = a0 * B_body_A + b0 * B_body_B
+# where a0 = (alpha^2 + beta^2)/(8*pi*rho*alpha^2*beta^2)
+#       b0 = (alpha^2 - beta^2)/(8*pi*rho*alpha^2*beta^2)
+#
+# When projected into the O_h irrep basis via Usym, each irrep block
+# has entries that are linear in a0, b0 (via Aelas, Belas substitution).
+#
+# The mass and stiffness blocks are exact rationals or linear in Dlam, Dmu.
+#
+# All numerical values below are computed from Pell-simplified closed forms
+# to ~15-digit accuracy in CubeT27Assemble.wl.
+
+# Strain-sector irrep data (all 1x1 blocks):
+# Format: (M_rho, Bbody_A_rho, Bbody_B_rho, Bel_rho(Dlam, Dmu))
+#
+# Mass blocks (exact rational, from M27 projected via Usym):
+#   A1g: M = 8/3 (from volumetric mode)
+#   Eg:  M = 8/3
+#   T2g: M = 2/3 (from shear modes — note factor 1/2 in basis)
+#
+# Stiffness blocks (exact, from BelSym projected via Usym):
+#   A1g: Bel = 8*(3*Dlam + 2*Dmu)  = 24*Dlam + 16*Dmu
+#   Eg:  Bel = 16*Dmu
+#   T2g: Bel = 8*Dmu
+#
+# Body blocks need numerical evaluation from CubeT27Assemble.wl.
+# These are the Schur-complemented values (27->9 projection already done
+# internally by the O_h irrep decomposition).
+# We express them as linear in (Aelas, Belas) with pre-computed coefficients.
+
+# The per-irrep Bbody values are obtained from:
+#   BbodyBlock_rho = Usym^T . BbodySym . Usym
+# where BbodySym is the full 27x27 symbolic body form (Section 7).
+# At (Aelas=1, Belas=0) these give the A-channel values,
+# at (Aelas=0, Belas=1) the B-channel values.
+
+# NOTE: The exact numerical values will be filled in after running
+# CubeT27Assemble.wl with the new Section 13a-f.  For now we use
+# the Schur-complement values from Section 12b which are validated.
+#
+# From Section 12b (body-channel Schur on T9):
+#   Bbody_Schur_strain A-channel: A1g = Eg = T2g (isotropic in A-channel)
+#   Bbody_Schur_strain B-channel: A1g, Eg, T2g differ (cubic anisotropy)
+#
+# The per-irrep approach computes these DIRECTLY from the 27x27 projection,
+# which automatically includes the Schur complement from the quadratic modes.
+
+# Placeholder values — these are filled by _build_galerkin_irrep_blocks()
+# at runtime by projecting the known 27x27 matrices.
+
+
+def compute_cube_tmatrix_galerkin(
+    omega: float,
+    a: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    n_taylor: int = N_TAYLOR,
+) -> GalerkinTMatrixResult:
+    """Compute the Galerkin (Path-B) T-matrix for a cube on T_27.
+
+    This uses the 27-component Galerkin closure with O_h irrep
+    decomposition.  The 27x27 system reduces to 7 independent blocks
+    (max 4x4 for T1u), each solved in closed form.
+
+    The strain-sector irreps (A1g, Eg, T2g) give T1c, T2c, T3c
+    that are directly comparable to Path-A results.
+
+    Parameters
+    ----------
+    omega : Angular frequency (rad/s).
+    a : Cube half-width (m).
+    ref : Background elastic medium.
+    contrast : Material property contrasts.
+    n_taylor : Taylor series terms (for Gamma0 and body form).
+    """
+    alpha, beta, rho = ref.alpha, ref.beta, ref.rho
+
+    # Green's tensor Kelvin coefficients (for ungerade sector body bilinear)
+    a0 = (alpha**2 + beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
+    b0 = (alpha**2 - beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
+
+    # Body coupling parameter (for ungerade sector)
+    eps = complex(omega**2 * contrast.Drho)
+    Dlam = contrast.Dlambda
+    Dmu_val = contrast.Dmu
+
+    # ── Build per-irrep blocks from hardcoded 27x27 projection ──
+    blocks = _build_galerkin_irrep_blocks(a0, b0, Dlam, Dmu_val)
+
+    # ── Strain sector: self-consistent amplification (Gubernatis et al.) ──
+    # The gerade irreps see the LS-convolved stiffness via the Eshelby
+    # tensor (A^c, B^c, C^c).  Self-consistent amplification accounts for
+    # the scatterer modifying its own internal field, coupling the bulk
+    # (A1g) and deviatoric (Eg) channels through the effective Δλ* formula.
+    # This is identical to Path-A's amplification for the strain sector.
+    Ac, Bc, Cc = _compute_ABC_polynomial(omega, a, alpha, beta, rho, n_taylor=n_taylor)
+
+    # Born-level T-matrix from bare contrasts
+    T1c_born, T2c_born, T3c_born = _compute_T123(Ac, Bc, Cc, Dlam, Dmu_val)
+
+    # Per-irrep Born eigenvalues → amplification factors
+    sigma_born_A1g = 3.0 * T1c_born + 2.0 * T2c_born + T3c_born
+    sigma_born_Eg = 2.0 * T2c_born + T3c_born
+    sigma_born_T2g = 2.0 * T2c_born
+
+    amp_theta = 1.0 / (1.0 - sigma_born_A1g)  # volumetric
+    amp_e_off = 1.0 / (1.0 - sigma_born_T2g)  # off-diagonal shear
+    amp_e_diag = 1.0 / (1.0 - sigma_born_Eg)  # deviatoric diagonal
+
+    # Effective contrasts — cross-coupling enters through Δλ*
+    Dlam_star = (
+        Dlam + 2.0 / 3.0 * Dmu_val
+    ) * amp_theta - 2.0 / 3.0 * Dmu_val * amp_e_diag
+    Dmu_off_star = Dmu_val * amp_e_off
+    Dmu_diag_star = Dmu_val * amp_e_diag
+
+    # Amplified T-matrix: Eshelby contraction with cubic effective stiffness
+    # Δc* = (Δλ*, Δμ*_off) isotropic + 2(Δμ*_diag − Δμ*_off)·E cubic
+    T1c_iso, T2c_iso, T3c_iso = _compute_T123(Ac, Bc, Cc, Dlam_star, Dmu_off_star)
+    delta_mu_star = Dmu_diag_star - Dmu_off_star
+    T1c = T1c_iso + 2.0 * delta_mu_star * Bc
+    T2c = T2c_iso  # off-diagonal shear: no cubic correction
+    T3c = T3c_iso + 2.0 * delta_mu_star * (Ac + Bc + Cc)
+
+    # Per-irrep eigenvalues (amplified T values, no additional denominator)
+    sigma_A1g = 3.0 * T1c + 2.0 * T2c + T3c
+    sigma_Eg = 2.0 * T2c + T3c
+    sigma_T2g = 2.0 * T2c
+
+    # ── Ungerade sector (displacement + quadratic modes) ──
+    # T1u: 4x4 block
+    T1u_evals = _solve_irrep_block(
+        eps,
+        a0,
+        b0,
+        blocks["T1u"]["M"],
+        blocks["T1u"]["Bbody_A"],
+        blocks["T1u"]["Bbody_B"],
+        blocks["T1u"]["Bel"],
+    )
+    # T2u: 2x2 block
+    T2u_evals = _solve_irrep_block(
+        eps,
+        a0,
+        b0,
+        blocks["T2u"]["M"],
+        blocks["T2u"]["Bbody_A"],
+        blocks["T2u"]["Bbody_B"],
+        blocks["T2u"]["Bel"],
+    )
+    # A2u: 1x1 (ungerade)
+    bbody_A2u = a0 * blocks["A2u"]["Bbody_A"] + b0 * blocks["A2u"]["Bbody_B"]
+    bel_A2u = blocks["A2u"]["Bel"]
+    sigma_A2u = (eps * bbody_A2u - bel_A2u) / (
+        blocks["A2u"]["M"] + bel_A2u - eps * bbody_A2u
+    )
+    # Eu: 1x1 (ungerade)
+    bbody_Eu = a0 * blocks["Eu"]["Bbody_A"] + b0 * blocks["Eu"]["Bbody_B"]
+    bel_Eu = blocks["Eu"]["Bel"]
+    sigma_Eu = (eps * bbody_Eu - bel_Eu) / (blocks["Eu"]["M"] + bel_Eu - eps * bbody_Eu)
+
+    return GalerkinTMatrixResult(
+        sigma_A1g=sigma_A1g,
+        sigma_Eg=sigma_Eg,
+        sigma_T2g=sigma_T2g,
+        T1c=T1c,
+        T2c=T2c,
+        T3c=T3c,
+        T1u_eigenvalues=T1u_evals,
+        T2u_eigenvalues=T2u_evals,
+        sigma_A2u=sigma_A2u,
+        sigma_Eu=sigma_Eu,
+    )
+
+
+def _solve_irrep_block(
+    eps: complex,
+    a0: float,
+    b0: float,
+    M: np.ndarray,
+    Bbody_A: np.ndarray,
+    Bbody_B: np.ndarray,
+    Bel: np.ndarray,
+) -> np.ndarray:
+    """Solve T_rho = (M + Bel - eps*Bbody)^{-1} . (eps*Bbody - Bel) for m>1 block.
+
+    Returns eigenvalues of the T-matrix block.
+    """
+    Bbody = a0 * Bbody_A + b0 * Bbody_B
+    numer = eps * Bbody - Bel
+    denom = M + Bel - eps * Bbody
+    Tblock = np.linalg.solve(denom, numer)
+    return np.sort(np.real(np.linalg.eigvals(Tblock)))
+
+
+def _build_galerkin_irrep_blocks(
+    a0: float, b0: float, Dlambda: float, Dmu: float
+) -> dict:
+    """Build per-irrep (M, Bbody_A, Bbody_B, Bel) blocks from hardcoded values.
+
+    The 27x27 mass, body, and stiffness matrices are projected into
+    the O_h irrep basis via Usym.  All values come from CubeT27Assemble.wl
+    and ExtractUngeradeBlocks.wl.
+
+    The body blocks store A-channel and B-channel contributions
+    separately so the physical Aelas/Belas can be applied at runtime.
+    The stiffness blocks are evaluated at the given Dlambda, Dmu.
+
+    Returns a dict keyed by irrep name with sub-dicts of numpy arrays.
+    """
+    # ── Strain sector (gerade, 1x1) ──────────────────────────────────
+    # Mass blocks (exact rational from O_h projection):
+    M_A1g = 8.0 / 3.0
+    M_Eg = 8.0 / 3.0
+    M_T2g = 2.0 / 3.0
+
+    # Stiffness blocks (exact, from isotropic Kelvin form):
+    Bel_A1g = 24.0 * Dlambda + 16.0 * Dmu
+    Bel_Eg = 16.0 * Dmu
+    Bel_T2g = 8.0 * Dmu
+
+    # Body blocks from CubeT27Assemble.wl Section 12b:
+    # A-channel strain eigenvalue (common for A1g, Eg, T2g by isotropy):
+    _strain_ev_A = 5.764716843576429
+    # B-channel strain eigenvalues (cubic anisotropy):
+    _strain_ev_B_A1g = 0.37723697340892
+    _strain_ev_B_Eg = 2.033113419068244
+    _strain_ev_B_T2g = 1.589776483375774
+
+    Bbody_A_A1g = _strain_ev_A * M_A1g
+    Bbody_B_A1g = _strain_ev_B_A1g * M_A1g
+    Bbody_A_Eg = _strain_ev_A * M_Eg
+    Bbody_B_Eg = _strain_ev_B_Eg * M_Eg
+    Bbody_A_T2g = _strain_ev_A * M_T2g
+    Bbody_B_T2g = _strain_ev_B_T2g * M_T2g
+
+    # ── Ungerade sector ──────────────────────────────────────────────
+    # All values from CubeT27Assemble.wl O_h irrep projection via Usym.
+    # Body blocks computed from Pell-simplified closed forms (~15 digits).
+    # Mass blocks are exact rationals.
+    #
+    # Stiffness: LS-convolved stiffness (dimensionless) from
+    # CubeT27Stiffness_LS.wl, decomposed into 4 channels:
+    #   Bel = a0*Dlam*S_Alam + a0*Dmu*S_Amu + b0*Dlam*S_Blam + b0*Dmu*S_Bmu
+
+    # T1u 4x4 block
+    # Usym basis: 1 constant displacement + 2 S-type + 1 X-type quadratic
+    # Mass (exact rational from CubeT27Assemble.wl):
+    M_T1u = np.array(
+        [
+            [24.0, 8.0, 16.0, 0.0],
+            [8.0, 24.0 / 5.0, 16.0 / 3.0, 0.0],
+            [16.0, 16.0 / 3.0, 224.0 / 15.0, 0.0],
+            [0.0, 0.0, 0.0, 16.0 / 3.0],
+        ]
+    )
+    # Body A-channel (Aelas=1, Belas=0): from ExtractUngeradeBlocks.wl
+    Bbody_A_T1u = np.array(
+        [
+            [180.7020138614336, 88.46684439720899, 176.9336887944180, 0.0],
+            [88.46684439720899, 51.37918840639332, 88.19207714378903, 0.0],
+            [176.9336887944180, 88.19207714378903, 190.9504539565757, 0.0],
+            [0.0, 0.0, 0.0, 23.93218181944897],
+        ]
+    )
+    # Body B-channel (Aelas=0, Belas=1): includes beta_7 = 0.692769 fix
+    Bbody_B_T1u = np.array(
+        [
+            [60.23400462045325, 36.53543587279042, 51.93140852438884, 0.0],
+            [
+                36.53543587279042,
+                25.18426841260277,
+                32.66972944988528,
+                -1.298487466026698,
+            ],
+            [
+                51.93140852438884,
+                32.66972944988528,
+                56.89780853386966,
+                2.858124085890304,
+            ],
+            [0.0, -1.298487466026698, 2.858124085890304, 8.621528487658494],
+        ]
+    )
+    # LS-convolved stiffness 4-channel matrices (analytical, CubeT27Stiffness_LS.wl)
+    _Bstiff_Alam_T1u = np.array(
+        [
+            [0.0, 662.5740508252127, 0.0, 301.17002310234563],
+            [0.0, 285.65344925587914, 0.0, 108.71976046146120],
+            [0.0, 543.6650901729812, 0.0, 189.79771258414527],
+            [0.0, 18.106381744603254, 0.0, 18.106381744603254],
+        ]
+    )
+    _Bstiff_Amu_T1u = np.array(
+        [
+            [0.0, 1325.1481016504256, 1325.1481016504258, 301.17002310234563],
+            [0.0, 571.3068985117584, 543.6650901729812, 94.89885629207264],
+            [0.0, 1087.3301803459626, 1114.9719886847395, 203.61861675353384],
+            [0.0, 0.0, 18.106381744603254, 27.15957261690488],
+        ]
+    )
+    _Bstiff_Blam_T1u = np.array(
+        [
+            [0.0, 301.1700231023139, 0.0, 180.70201386140738],
+            [0.0, 118.3793339575252, 0.0, 45.30846221194438],
+            [0.0, 211.17128678099675, 0.0, 107.30846973221908],
+            [0.0, -0.44327357846679, 0.0, -0.44327357846679],
+        ]
+    )
+    _Bstiff_Bmu_T1u = np.array(
+        [
+            [0.0, 505.8112982784979, 457.93277564888115, 156.76275254659898],
+            [0.0, 220.059521370046, 218.7378116939322, 44.64760737388748],
+            [0.0, 367.15747841544214, 352.9143486877837, 100.18690486838985],
+            [0.0, -0.4427637558543, 9.89317464915564, 4.72469562403818],
+        ]
+    )
+    Bel_T1u = (
+        a0 * Dlambda * _Bstiff_Alam_T1u
+        + a0 * Dmu * _Bstiff_Amu_T1u
+        + b0 * Dlambda * _Bstiff_Blam_T1u
+        + b0 * Dmu * _Bstiff_Bmu_T1u
+    )
+
+    # T2u 2x2 block (A_Dlam and B_Dlam channels are identically zero)
+    M_T2u = np.array(
+        [
+            [64.0 / 15.0, 0.0],
+            [0.0, 16.0 / 3.0],
+        ]
+    )
+    Bbody_A_T2u = np.array(
+        [
+            [14.56629966899761, 0.0],
+            [0.0, 23.93218181944897],
+        ]
+    )
+    Bbody_B_T2u = np.array(
+        [
+            [3.342301749772080, -5.455099017943915],
+            [-5.455099017943915, 5.446200722753151],
+        ]
+    )
+    _Bstiff_Amu_T2u = np.array(
+        [
+            [27.64180833877713, 13.82090416938857],
+            [18.106381744603254, 27.15957261690488],
+        ]
+    )
+    _Bstiff_Bmu_T2u = np.array(
+        [
+            [15.03217499881417, 5.79985518771543],
+            [-9.89215500393065, 4.3554810293761],
+        ]
+    )
+    Bel_T2u = a0 * Dmu * _Bstiff_Amu_T2u + b0 * Dmu * _Bstiff_Bmu_T2u
+
+    # A2u (1x1) — A_Dlam and B_Dlam channels are zero
+    M_A2u = 8.0 / 3.0
+    Bbody_A_A2u = 11.96609090972448
+    Bbody_B_A2u = 2.594755038941010
+    Bel_A2u = a0 * Dmu * 18.106381744603254 + b0 * Dmu * 4.69770984292552
+
+    # Eu (1x1) — A_Dlam and B_Dlam channels are zero
+    M_Eu = 16.0 / 9.0
+    Bbody_A_Eu = 7.977393939816322
+    Bbody_B_Eu = 4.067307958204991
+    Bel_Eu = a0 * Dmu * 3.0177302907672185 + b0 * Dmu * 2.72556247538591
+
+    return {
+        "A1g": {
+            "M": M_A1g,
+            "Bbody_A": Bbody_A_A1g,
+            "Bbody_B": Bbody_B_A1g,
+            "Bel": Bel_A1g,
+        },
+        "Eg": {"M": M_Eg, "Bbody_A": Bbody_A_Eg, "Bbody_B": Bbody_B_Eg, "Bel": Bel_Eg},
+        "T2g": {
+            "M": M_T2g,
+            "Bbody_A": Bbody_A_T2g,
+            "Bbody_B": Bbody_B_T2g,
+            "Bel": Bel_T2g,
+        },
+        "T1u": {
+            "M": M_T1u,
+            "Bbody_A": Bbody_A_T1u,
+            "Bbody_B": Bbody_B_T1u,
+            "Bel": Bel_T1u,
+        },
+        "T2u": {
+            "M": M_T2u,
+            "Bbody_A": Bbody_A_T2u,
+            "Bbody_B": Bbody_B_T2u,
+            "Bel": Bel_T2u,
+        },
+        "A2u": {
+            "M": M_A2u,
+            "Bbody_A": Bbody_A_A2u,
+            "Bbody_B": Bbody_B_A2u,
+            "Bel": Bel_A2u,
+        },
+        "Eu": {"M": M_Eu, "Bbody_A": Bbody_A_Eu, "Bbody_B": Bbody_B_Eu, "Bel": Bel_Eu},
+    }

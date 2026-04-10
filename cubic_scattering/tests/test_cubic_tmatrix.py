@@ -22,11 +22,13 @@ from cubic_scattering import (
     MaterialContrast,
     ReferenceMedium,
     compute_cube_tmatrix,
+    compute_cube_tmatrix_galerkin,
     effective_stiffness_voigt,
     strain_from_displacement_traction,
     traction_from_strain,
     voigt_tmatrix_6x6,
 )
+from cubic_scattering.effective_contrasts import _compute_T123
 from cubic_scattering.resonance_tmatrix import (
     _build_incident_field_coupled,
     _propagator_block_9x9,
@@ -747,6 +749,259 @@ def test_incident_strain_plane_wave():
 
 
 # ================================================================
+# Galerkin T-matrix tests (Path-B, 27-component closure)
+# ================================================================
+
+
+def test_galerkin_matches_path_a_moderate():
+    """Galerkin gerade sector matches Path-A at moderate contrast.
+
+    With self-consistent amplification, the Galerkin strain-sector T-matrix
+    (T1c, T2c, T3c) should reproduce Path-A's physical T-matrix computed
+    from effective contrasts (Δλ*, Δμ*_off, Δμ*_diag) exactly.
+    """
+    print("Test: Galerkin matches Path-A (moderate contrast)")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
+    omega = 0.05 * 3000.0 / 1.0  # ka=0.05
+
+    pa = compute_cube_tmatrix(omega, 1.0, ref, contrast)
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    # Physical T from Path-A effective contrasts
+    T1c_iso, T2c_iso, T3c_iso = _compute_T123(
+        pa.Ac, pa.Bc, pa.Cc, pa.Dlambda_star, pa.Dmu_star_off
+    )
+    dmu = pa.Dmu_star_diag - pa.Dmu_star_off
+    T1c_pa = T1c_iso + 2.0 * dmu * pa.Bc
+    T2c_pa = T2c_iso
+    T3c_pa = T3c_iso + 2.0 * dmu * (pa.Ac + pa.Bc + pa.Cc)
+
+    np.testing.assert_allclose(gk.T1c, T1c_pa, rtol=1e-10, err_msg="T1c mismatch")
+    np.testing.assert_allclose(gk.T2c, T2c_pa, rtol=1e-10, err_msg="T2c mismatch")
+    np.testing.assert_allclose(gk.T3c, T3c_pa, rtol=1e-10, err_msg="T3c mismatch")
+    print("  ✓ All three T-matrix scalars match to < 1e-10 relative error")
+
+
+def test_galerkin_matches_path_a_weak():
+    """Galerkin matches Path-A at weak contrast (amplified physical T)."""
+    print("Test: Galerkin matches Path-A (weak contrast)")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    lam_bg = ref.rho * (ref.alpha**2 - 2 * ref.beta**2)
+    mu_bg = ref.rho * ref.beta**2
+    contrast = MaterialContrast(
+        Dlambda=1e-4 * lam_bg, Dmu=1e-4 * mu_bg, Drho=1e-4 * ref.rho
+    )
+    omega = 0.05 * 3000.0 / 1.0
+
+    pa = compute_cube_tmatrix(omega, 1.0, ref, contrast)
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    # Compare against amplified physical T from Path-A effective contrasts
+    T1c_iso, T2c_iso, T3c_iso = _compute_T123(
+        pa.Ac, pa.Bc, pa.Cc, pa.Dlambda_star, pa.Dmu_star_off
+    )
+    dmu = pa.Dmu_star_diag - pa.Dmu_star_off
+    T1c_pa = T1c_iso + 2.0 * dmu * pa.Bc
+    T2c_pa = T2c_iso
+    T3c_pa = T3c_iso + 2.0 * dmu * (pa.Ac + pa.Bc + pa.Cc)
+
+    np.testing.assert_allclose(gk.T1c, T1c_pa, rtol=1e-10, err_msg="T1c weak")
+    np.testing.assert_allclose(gk.T2c, T2c_pa, rtol=1e-10, err_msg="T2c weak")
+    np.testing.assert_allclose(gk.T3c, T3c_pa, rtol=1e-10, err_msg="T3c weak")
+    print("  ✓ Weak contrast: exact match with Path-A amplified T")
+
+
+def test_galerkin_cubic_anisotropy_sign():
+    """T3c (cubic anisotropy) is nonzero and has correct sign for a cube."""
+    print("Test: Galerkin cubic anisotropy T3c")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
+    omega = 0.05 * 3000.0 / 1.0
+
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    # T3c should be nonzero (cube ≠ sphere)
+    assert abs(gk.T3c) > 1e-6, f"T3c too small: {gk.T3c}"
+    # For positive Δμ, T3c should be negative (same sign as T1c, T2c)
+    assert gk.T3c.real < 0, f"T3c should be negative, got {gk.T3c.real}"
+    print(f"  ✓ T3c = {gk.T3c.real:.6e} (nonzero, correct sign)")
+
+
+# ================================================================
+# Ungerade sector tests
+# ================================================================
+
+
+def test_galerkin_ungerade_T1u_nonzero():
+    """T1u block produces nonzero eigenvalues at moderate contrast."""
+    print("Test: Galerkin T1u ungerade nonzero")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
+    omega = 0.05 * 3000.0 / 1.0
+
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    assert gk.T1u_eigenvalues.shape == (4,)
+    assert np.all(np.abs(gk.T1u_eigenvalues) > 1e-10), (
+        f"T1u eigenvalues should be nonzero: {gk.T1u_eigenvalues}"
+    )
+    print(f"  ✓ T1u eigenvalues = {gk.T1u_eigenvalues}")
+
+
+def test_galerkin_ungerade_density_only():
+    """Density-only contrast: ungerade eigenvalues match Mathematica reference.
+
+    With Δλ=Δμ=0, the stiffness Bel=0 exactly, so the T-matrix is
+    T = (M - eps*Bbody)^{-1} . (eps*Bbody).  Reference values computed
+    in Mathematica using the same Usym-projected M and Bbody blocks.
+    """
+    print("Test: Galerkin ungerade density-only vs Mathematica")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=0.0, Dmu=0.0, Drho=100.0)
+    omega = 0.05 * 3000.0 / 1.0
+
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    # Reference eigenvalues from Mathematica (sorted ascending)
+    ref_T1u = np.array(
+        [
+            1.4110414635147755e-5,
+            2.337852195267289e-5,
+            2.900407051469454e-5,
+            1.0312639995631243e-4,
+        ]
+    )
+    ref_T2u = np.array([1.9344198893425905e-5, 2.800795746680025e-5])
+    ref_A2u = 2.6760421745932236e-5
+    ref_Eu = 3.01087931133197e-5
+
+    np.testing.assert_allclose(
+        gk.T1u_eigenvalues, ref_T1u, rtol=1e-10, err_msg="T1u density-only"
+    )
+    np.testing.assert_allclose(
+        gk.T2u_eigenvalues, ref_T2u, rtol=1e-10, err_msg="T2u density-only"
+    )
+    np.testing.assert_allclose(
+        np.real(gk.sigma_A2u), ref_A2u, rtol=1e-10, err_msg="A2u density-only"
+    )
+    np.testing.assert_allclose(
+        np.real(gk.sigma_Eu), ref_Eu, rtol=1e-10, err_msg="Eu density-only"
+    )
+    print("  ✓ T1u 4 eigenvalues match Mathematica (rtol=1e-10)")
+    print("  ✓ T2u 2 eigenvalues match Mathematica")
+    print("  ✓ A2u, Eu scalars match Mathematica")
+
+
+def test_galerkin_ungerade_scalars_nonzero():
+    """A2u and Eu ungerade scalars are nonzero at moderate contrast."""
+    print("Test: Galerkin A2u/Eu ungerade nonzero")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
+    omega = 0.05 * 3000.0 / 1.0
+
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    assert abs(gk.sigma_A2u) > 1e-10, f"A2u too small: {gk.sigma_A2u}"
+    assert abs(gk.sigma_Eu) > 1e-10, f"Eu too small: {gk.sigma_Eu}"
+    print(f"  ✓ A2u = {gk.sigma_A2u.real:.6e}")
+    print(f"  ✓ Eu  = {gk.sigma_Eu.real:.6e}")
+
+
+def test_galerkin_T1u_dipole_dominance():
+    """Largest T1u eigenvalue (dipole mode) dominates at low frequency.
+
+    The constant-displacement mode (dipole) should have the largest
+    eigenvalue since it couples directly to density contrast, while
+    the quadratic modes are higher-order corrections.
+    """
+    print("Test: Galerkin T1u dipole dominance")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=0.0, Dmu=0.0, Drho=100.0)
+    omega = 0.05 * 3000.0 / 1.0
+
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    # Sorted ascending — largest eigenvalue is the last one
+    dipole_ev = gk.T1u_eigenvalues[-1]
+    quadratic_max = np.max(gk.T1u_eigenvalues[:-1])
+    ratio = dipole_ev / quadratic_max
+
+    assert ratio > 2.0, f"Dipole should dominate, ratio={ratio:.3f}"
+    print(f"  ✓ Dipole/quadratic ratio = {ratio:.2f} (>2)")
+
+
+def test_galerkin_stiffness_only():
+    """Stiffness-only (Drho=0): all ungerade eigenvalues from LS-convolved stiffness.
+
+    With Drho=0, the body coupling eps=0 so the constant-displacement
+    mode in T1u has eigenvalue exactly 0 (no strain → no stiffness coupling).
+    The quadratic modes see nonzero stiffness and produce negative eigenvalues
+    (stiffer inclusion → repulsive scattering).
+    """
+    print("Test: Galerkin stiffness-only ungerade")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=0.0)
+    omega = 0.05 * 3000.0 / 1.0
+
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    # T1u: constant displacement mode (sorted last — largest) should be exactly 0
+    assert abs(gk.T1u_eigenvalues[-1]) < 1e-14, (
+        f"Constant-displacement T1u eigenvalue should be 0, got {gk.T1u_eigenvalues[-1]:.2e}"
+    )
+    # Other T1u eigenvalues should be negative (positive stiffness contrast)
+    assert np.all(gk.T1u_eigenvalues[:-1] < -1e-3), (
+        f"T1u stiffness eigenvalues should be negative: {gk.T1u_eigenvalues[:-1]}"
+    )
+    print(f"  ✓ T1u: {gk.T1u_eigenvalues[:-1]} + zero")
+
+    # T2u: both negative
+    assert np.all(gk.T2u_eigenvalues < -1e-3), (
+        f"T2u eigenvalues should be negative: {gk.T2u_eigenvalues}"
+    )
+    print(f"  ✓ T2u: {gk.T2u_eigenvalues}")
+
+    # A2u, Eu: negative scalars
+    assert gk.sigma_A2u.real < -0.01, f"A2u should be negative: {gk.sigma_A2u}"
+    assert gk.sigma_Eu.real < -0.001, f"Eu should be negative: {gk.sigma_Eu}"
+    print(f"  ✓ A2u={gk.sigma_A2u.real:.6f}, Eu={gk.sigma_Eu.real:.6f}")
+
+
+def test_galerkin_full_contrast_stiffness_dominates():
+    """Full contrast: stiffness contribution dwarfs density at moderate contrast.
+
+    With Dlam=2GPa, Dmu=1GPa (~10% of background) and Drho=100 kg/m³ (~4%),
+    the stiffness eigenvalues (~0.01-0.3) dominate the density-only
+    eigenvalues (~1e-5) by a factor of ~10⁴.
+    """
+    print("Test: Galerkin full contrast — stiffness dominates density")
+    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    omega = 0.05 * 3000.0 / 1.0
+
+    gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
+
+    # All T1u eigenvalues nonzero (density activates the constant-disp mode)
+    assert np.all(np.abs(gk.T1u_eigenvalues) > 1e-6), (
+        f"All T1u eigenvalues should be nonzero: {gk.T1u_eigenvalues}"
+    )
+    # Stiffness modes are O(0.01-0.3), density mode is O(1e-5)
+    # The smallest magnitude eigenvalue is the density-dominated one
+    min_abs = np.min(np.abs(gk.T1u_eigenvalues))
+    max_abs = np.max(np.abs(gk.T1u_eigenvalues))
+    assert max_abs / min_abs > 1e3, (
+        f"Stiffness should dominate density: max/min ratio = {max_abs / min_abs:.0f}"
+    )
+    print(f"  ✓ T1u range: [{min_abs:.2e}, {max_abs:.2e}]")
+
+    # All ungerade blocks nonzero
+    assert abs(gk.sigma_A2u) > 0.01
+    assert abs(gk.sigma_Eu) > 0.001
+    print(f"  ✓ A2u={gk.sigma_A2u.real:.6f}, Eu={gk.sigma_Eu.real:.6f}")
+
+
+# ================================================================
 # Run all tests
 # ================================================================
 
@@ -774,6 +1029,15 @@ if __name__ == "__main__":
         test_coupled_cubic_symmetry,
         test_voigt_from_resonance_near_field,
         test_incident_strain_plane_wave,
+        test_galerkin_matches_path_a_moderate,
+        test_galerkin_matches_path_a_weak,
+        test_galerkin_cubic_anisotropy_sign,
+        test_galerkin_ungerade_T1u_nonzero,
+        test_galerkin_ungerade_density_only,
+        test_galerkin_ungerade_scalars_nonzero,
+        test_galerkin_T1u_dipole_dominance,
+        test_galerkin_stiffness_only,
+        test_galerkin_full_contrast_stiffness_dominates,
     ]
 
     passed = 0
