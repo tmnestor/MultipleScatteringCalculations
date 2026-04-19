@@ -1,0 +1,484 @@
+% LuaLaTeX document — compile with: lualatex mie_finite_contrast_validation.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black}
+\usepackage{xcolor}
+\usepackage{mathtools}
+\usepackage{siunitx}
+\usepackage{enumitem}
+
+\newcommand{\D}{\Delta}
+\newcommand{\order}{\mathcal{O}}
+\newcommand{\Eshelby}{\mathrm{Eshelby}}
+\newcommand{\Mie}{\mathrm{Mie}}
+\newcommand{\bare}{\mathrm{bare}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{Finite-Contrast Validation of the Cubic 27-Component T-Matrix\\
+\large Closed-Form Mie Asymptotics, Eshelby Concentration, and the Cube--Sphere Geometric Error}
+\author{T.~M.~Nestor}
+\date{April 2026}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+We close the loop on the cubic 27-component T-matrix used by the
+\code{cubic\_scattering} package by constructing an exact, finite-contrast
+asymptotic reference from elastic Mie theory and demonstrating numerically
+that the cube T-matrix recovers the spherical Eshelby concentration to
+better than 1\% at material contrasts up to 50\%.  The finite-contrast
+test is the critical one: a naive bare-Born point scatterer
+(amplitude $\propto \D\mu$) overestimates the shear quadrupole
+scattering by exactly $1+\beta_E\D\mu$ at finite contrast, whereas the
+cube T-matrix --- via its analytic Galerkin closure --- captures this
+factor and matches the spherical Mie reference to a residual
+$\order{(ka)^2}$ plus a small geometric (cube versus sphere)
+discrepancy.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+\section{Motivation}
+% =====================================================================
+
+For a single elastic inclusion the relationship between the bare contrast
+$\D\mu$ in the constitutive law and the \emph{effective} contrast $\D\mu^*$
+seen by long-wavelength scattering is non-linear at finite contrast.  The
+static Eshelby (1957) result for a spherical inclusion gives
+\begin{equation}
+\D\mu^* \;=\; \frac{\D\mu}{1+\beta_E\,\D\mu/\mu_0},
+\qquad
+\beta_E \;=\; \frac{2(8+3\lambda_0/\mu_0)}{15(\lambda_0/\mu_0+2)}
+            \;=\; \frac{2(4-5\nu)}{15(1-\nu)}.
+\label{eq:beta-E}
+\end{equation}
+A point-scatterer approximation that uses $\D\mu$ \emph{bare} therefore
+overpredicts the shear quadrupole scattering by the factor $1+\beta_E\D\mu$.
+At $\D\mu/\mu_0=0.5$ in a Poisson-solid background ($\lambda_0=\mu_0$,
+$\nu=0.25$) this is a 25\% error.  A correct point scatterer must apply
+the Eshelby concentration --- either explicitly through
+Eq.~\eqref{eq:beta-E}, or implicitly through a sufficiently rich
+T-matrix derived from the volume integral equation.
+
+The cubic 27-component T-matrix in
+\code{cubic\_scattering/effective\_contrasts.py} obtains its concentration
+through the analytic Galerkin closure of the Lippmann--Schwinger volume
+integral equation (developed in the companion document
+\code{cube\_galerkin27.tex}).  The natural validation question is:
+
+\begin{quote}
+\itshape
+At a fixed long wavelength and over a sweep of finite contrasts, does the
+cube T-matrix's effective shear modulus $\D\mu^*$ track the
+Eshelby-corrected sphere result that exact elastic Mie theory recovers?
+\end{quote}
+
+This document supplies the answer in the affirmative, with closed-form
+references throughout.
+
+% =====================================================================
+\section{Closed-Form Mie Asymptotic Reference}
+\label{sec:mie-asymptotic}
+% =====================================================================
+
+The Mie partial-wave coefficients $a_n$, $b_n$ for a sphere of radius $a$
+in an isotropic background satisfy a $4\times4$ boundary-condition system
+($2\times2$ for $n=0$).  We solved this system analytically as a series
+in $w \equiv ka_S = \omega a/\beta$, keeping the contrasts
+$(\D\lambda,\D\mu,\D\rho)$ exact.  The derivation lives in
+\code{Mathematica/MieAsymptotic.wl}; the validation script
+\code{Mathematica/MieAsymptoticVerify.wl} confirms every Eshelby
+identity holds symbolically.  All non-dimensionalisation uses
+$a=\mu_0=\rho_0=1$ and $\lambda_0=\lambda_{\mathrm{bg}}/\mu_0$.
+
+\subsection{Scattered partial-wave amplitudes (leading order in $w$)}
+
+The leading-$w$ coefficients are pure rational functions in
+$(\D\lambda,\D\mu,\D\rho,\lambda_0)$ with integer coefficients:
+\begin{align}
+a_0 &= \frac{w^2 \, (-3\D\lambda - 2\D\mu)}
+            {3(\lambda_0+2)\,(6+3\D\lambda+2\D\mu+3\lambda_0)}, \\[4pt]
+a_1 &= \frac{i\,w^2 \, \D\rho}{3(\lambda_0+2)}, \\[4pt]
+a_2 &= \frac{20\,w^2\,\D\mu}
+            {3(\lambda_0+2)\,\bigl[15(\lambda_0+2)+2\D\mu(8+3\lambda_0)\bigr]}, \\[4pt]
+b_1 &= \frac{i\,w^2\,\D\rho}{3}, \qquad
+b_2 \;=\; \frac{10\,w^2\,\D\mu\,\sqrt{\lambda_0+2}}
+              {3\,\bigl[15(\lambda_0+2)+2\D\mu(8+3\lambda_0)\bigr]}.
+\end{align}
+The structure of $a_2$ and $b_2$ is striking: the denominator
+$15(\lambda_0+2)+2\D\mu(8+3\lambda_0)$ factors as
+$15(\lambda_0+2)\,(1+\beta_E\D\mu)$, exposing the Eshelby concentration
+factor $1/(1+\beta_E\D\mu)$ as a denominator of every leading shear
+amplitude.  The full table of the four scattered (and four interior)
+partial-wave amplitudes is in
+\code{Mathematica/MieAsymptoticLeading.wl}.
+
+\subsection{Eshelby concentration factors $E_n$}
+
+Defining $E_n = a_n^{\mathrm{full}} / a_n^{\mathrm{Born}}$ in the $w\to 0$
+limit, one obtains
+\begin{equation}
+E_0 = \frac{\lambda_0+2}{\lambda_0+2+\D K},
+\qquad
+E_1 = 1,
+\qquad
+E_2 = \frac{1}{1+\beta_E\D\mu},
+\end{equation}
+with $\D K = \D\lambda + \tfrac{2}{3}\D\mu$.  These are the standard
+sphere bulk-, density-, and shear-Eshelby concentration factors.  The
+\code{Mathematica/MieAsymptoticVerify.wl} script verifies all three
+identities to symbolic equality (\code{difference $\equiv 0$}); see
+Tab.~\ref{tab:verify}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+Check & Identity & Status \\
+\midrule
+V1 & $E_0 = (\lambda_0+2)/(\lambda_0+2+\D K)$ & PASS \\
+V2 & $E_1 \equiv 1$ for all contrasts & PASS \\
+V3 & $E_2 = 1/(1+\beta_E\D\mu)$ & PASS \\
+   & $\beta_E$: two equivalent forms agree & PASS \\
+V4 & Interior $u_r^{(2)}$ ratio = $E_2$ & PASS \\
+V5 & Interior $u_\theta^{(2)}$ ratio = $E_2$ & PASS \\
+\bottomrule
+\end{tabular}
+\caption{Symbolic verification of Eshelby identities, performed by
+\code{Mathematica/MieAsymptoticVerify.wl}.}
+\label{tab:verify}
+\end{table}
+
+% =====================================================================
+\section{Python Implementation and Cross-Check}
+\label{sec:python-impl}
+% =====================================================================
+
+The closed forms of \S\ref{sec:mie-asymptotic} are transcribed into
+\code{cubic\_scattering/mie\_asymptotic\_analytic.py} and exposed as
+plain Python functions of the non-dimensional contrasts
+$(\D\lambda/\mu_0,\D\mu/\mu_0,\D\rho/\rho_0,\lambda_0)$ and the small
+parameter $w=ka_S$.  The test suite
+\code{cubic\_scattering/tests/test\_mie\_asymptotic\_analytic.py}
+locks down two convention bridges between the analytic and numerical
+references:
+\begin{enumerate}[leftmargin=*]
+\item\emph{Radius scaling.}  The Python $a_n$ from
+\code{compute\_elastic\_mie} carries units of length (the radius $a$ in
+metres).  The analytic forms use $a=1$, so we compare
+$a_n^{\mathrm{Python}}/a$ against $a_n^{\mathrm{analytic}}$.
+
+\item\emph{Sign convention.}  The Python implementation applies a
+post-solve $(-1)^n$ factor on $a_n$, $b_n$ to fix the polar-axis
+convention to forward scattering.  The analytic derivation does not.
+The two conventions are reconciled by negating analytic odd-$n$
+coefficients before comparison.
+\end{enumerate}
+After these two bridges, the analytic and numerical Mie agree to
+$\order{(ka_S)^2}\!\sim\!2.5\times 10^{-3}$ across $\D\mu/\mu_0\in
+[10^{-4},0.3]$.  All 43 tests in this module pass.
+
+% =====================================================================
+\section{Bare-Born versus Eshelby-Corrected Point Scatterer}
+\label{sec:bare-vs-eshelby}
+% =====================================================================
+
+We define two single-scatterer models built from the same Born
+amplitude but with different contrasts:
+\begin{align}
+a_2^{\bare} &\;=\; \frac{4\,w^2\,\D\mu}{9(\lambda_0+2)^2}, &&
+\text{(Born; bare $\D\mu$)} \\
+a_2^{\Eshelby} &\;=\; \frac{4\,w^2\,\D\mu}{9(\lambda_0+2)^2(1+\beta_E\D\mu)}, &&
+\text{(Born; Eshelby-corrected $\D\mu$)}
+\end{align}
+The first is what every naive point-scatterer prediction gives.  The
+second is what a sphere T-matrix that absorbs the Eshelby concentration
+\emph{must} give --- and is identical to the leading $a_2$ from
+\S\ref{sec:mie-asymptotic} by construction.  At the Python test
+parameters ($\alpha=\SI{5000}{m/s}$, $\beta=\SI{3000}{m/s}$,
+$\rho=\SI{2500}{kg/m^3}$, $a=\SI{10}{m}$, $ka_S=0.05$,
+$\beta_E\approx 0.4960$):
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+$\D\mu/\mu_0$ & $a_2^{\bare}$ & $a_2^{\Eshelby}$ & $a_2^{\Mie}$ &
+$a_2^{\bare}/a_2^{\Mie}$ & $1+\beta_E\D\mu$ \\
+\midrule
+0.010 & $1.440\times10^{-6}$ & $1.433\times10^{-6}$ & $1.433\times10^{-6}$ & 1.0051 & 1.0050 \\
+0.050 & $7.200\times10^{-6}$ & $7.026\times10^{-6}$ & $7.024\times10^{-6}$ & 1.0250 & 1.0248 \\
+0.100 & $1.440\times10^{-5}$ & $1.372\times10^{-5}$ & $1.372\times10^{-5}$ & 1.0498 & 1.0496 \\
+0.200 & $2.880\times10^{-5}$ & $2.620\times10^{-5}$ & $2.619\times10^{-5}$ & 1.0995 & 1.0992 \\
+0.300 & $4.320\times10^{-5}$ & $3.760\times10^{-5}$ & $3.759\times10^{-5}$ & 1.1491 & 1.1488 \\
+0.500 & $7.200\times10^{-5}$ & $5.769\times10^{-5}$ & $5.767\times10^{-5}$ & 1.2484 & 1.2480 \\
+\bottomrule
+\end{tabular}
+\caption{Bare-Born $a_2$ overestimates exact Mie by exactly the inverse
+Eshelby factor $1+\beta_E\D\mu$.  The Eshelby-corrected $a_2$ tracks
+Mie to a residual $\order{(ka_S)^2}\approx 3.5\times 10^{-4}$.  Test:
+\code{tests/test\_mie\_near\_field.py::TestPointScattererVsMie}.}
+\label{tab:bare-vs-eshelby}
+\end{table}
+
+The agreement between the rightmost two columns of
+Tab.~\ref{tab:bare-vs-eshelby} is to four decimal places across the
+entire $\D\mu$ sweep.  This isolates the pure finite-contrast effect
+with no other systematic.  At 50\% contrast the bare prediction is too
+large by 25\%; the Eshelby correction reduces this to $0.04\%$ residual.
+
+% =====================================================================
+\section{Cube 27-Component T-Matrix versus Sphere Mie}
+\label{sec:cube-vs-mie}
+% =====================================================================
+
+The headline test of this document.  We compare the project's actual
+scattering object --- the $27\times 27$ analytic cubic T-matrix from
+\code{compute\_cube\_tmatrix} --- to the sphere Mie reference, both
+evaluated at \emph{equal volume}: cube half-width
+$a_{\mathrm{cube}} = R_{\mathrm{sphere}}\cdot(\pi/6)^{1/3}\approx 0.806\,R$.
+
+The cube T-matrix returns two distinct shear concentrations,
+$\D\mu^*_{\mathrm{off}}$ for the three off-diagonal pure-shear modes and
+$\D\mu^*_{\mathrm{diag}}$ for the diagonal trace-free shear, reflecting
+the cubic anisotropy of the inclusion shape.  For comparison with the
+isotropic sphere we form the volume-weighted average over the three
+cubic shear modes (two off-diagonal, one diagonal):
+\begin{equation}
+\bigl\langle \D\mu^*\bigr\rangle_{\mathrm{cube}}
+  \;=\; \tfrac{1}{3}\bigl(2\,\D\mu^*_{\mathrm{off}} + \D\mu^*_{\mathrm{diag}}\bigr).
+\label{eq:cube-avg}
+\end{equation}
+
+\begin{table}[h]
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{rrrrrrr}
+\toprule
+$\D\mu/\mu_0$ & bare & sphere-Eshelby & Mie sphere &
+cube-avg & cube-off & cube-diag \\
+\midrule
+0.010 & $1.000\times10^{-2}$ & $9.951\times10^{-3}$ & $9.949\times10^{-3}$ & $9.952\times10^{-3}$ & $9.957\times10^{-3}$ & $9.941\times10^{-3}$ \\
+0.050 & $5.000\times10^{-2}$ & $4.879\times10^{-2}$ & $4.878\times10^{-2}$ & $4.882\times10^{-2}$ & $4.894\times10^{-2}$ & $4.856\times10^{-2}$ \\
+0.100 & $1.000\times10^{-1}$ & $9.527\times10^{-2}$ & $9.525\times10^{-2}$ & $9.538\times10^{-2}$ & $9.586\times10^{-2}$ & $9.440\times10^{-2}$ \\
+0.200 & $2.000\times10^{-1}$ & $1.819\times10^{-1}$ & $1.819\times10^{-1}$ & $1.823\times10^{-1}$ & $1.841\times10^{-1}$ & $1.788\times10^{-1}$ \\
+0.300 & $3.000\times10^{-1}$ & $2.611\times10^{-1}$ & $2.611\times10^{-1}$ & $2.620\times10^{-1}$ & $2.656\times10^{-1}$ & $2.547\times10^{-1}$ \\
+0.500 & $5.000\times10^{-1}$ & $4.006\times10^{-1}$ & $4.005\times10^{-1}$ & $4.027\times10^{-1}$ & $4.113\times10^{-1}$ & $3.857\times10^{-1}$ \\
+\bottomrule
+\end{tabular}
+\caption{Effective shear contrast $\D\mu^*/\mu_0$ extracted from each
+model.  Test:
+\code{tests/test\_mie\_near\_field.py::TestCubeTMatrixVsMieSphere}.
+At equal volume, the cube-averaged $\D\mu^*$ tracks the sphere Mie to
+$0.56\%$ at $\D\mu/\mu_0=0.5$, while the bare prediction is off by
+$24.8\%$.}
+\label{tab:cube-vs-mie}
+\end{table}
+
+\subsection{Quantitative summary}
+
+Three observations follow directly from Tab.~\ref{tab:cube-vs-mie}:
+
+\begin{enumerate}[leftmargin=*]
+\item\emph{The cube T-matrix captures the Eshelby concentration.}  The
+volume-averaged cube $\D\mu^*$ tracks the Eshelby-corrected sphere
+value to better than $1\%$ across the full $\D\mu/\mu_0\in[0.01,0.5]$
+range.  The Galerkin closure that defines the cube T-matrix encodes the
+finite-contrast self-consistency without any Eshelby formula being
+written explicitly.
+
+\item\emph{The geometric cube--sphere error is small.}  At equal volume,
+the residual $|\langle\D\mu^*\rangle_{\mathrm{cube}} -
+\D\mu^*_{\Mie}|/\D\mu^*_{\Mie}$ grows linearly with $\D\mu$ from
+$0.03\%$ at $\D\mu/\mu_0=0.01$ to $0.56\%$ at $\D\mu/\mu_0=0.5$.  This
+should be compared with the bare-Born error, which at $\D\mu/\mu_0=0.5$
+is $24.8\%$ --- two orders of magnitude larger.  The cube T-matrix is
+\emph{$\sim 44\times$ more accurate than naive Born} for spherical
+inclusions at strong contrast.
+
+\item\emph{The cubic anisotropy is visible but average-able.}  The
+split between $\D\mu^*_{\mathrm{off}}$ and $\D\mu^*_{\mathrm{diag}}$
+widens from $\sim 0.16\%$ at $\D\mu/\mu_0=0.01$ to $\sim 6\%$ at
+$\D\mu/\mu_0=0.5$.  The volume-weighted average over the three cubic
+shear modes \eqref{eq:cube-avg} converges nicely to the isotropic
+sphere result: anisotropy and Eshelby concentration are independent
+sources of error, and only one of them (anisotropy) survives in the
+weighted average.
+\end{enumerate}
+
+% =====================================================================
+\section{Relation to the Volume-Averaged T-Matrix}
+\label{sec:vol-avg}
+% =====================================================================
+
+The 27-component Galerkin formulation is naturally read as the
+volume-averaged T-matrix \emph{promoted} to capture two further
+projections of the incident field --- projections that the volume
+average alone cannot see.
+
+\subsection{Three nested projections}
+
+Let $\hat{T}_0(\mathbf{r})$ denote the local (Born) T-matrix density
+inside the inclusion, defined by the Lippmann--Schwinger volume integral
+equation.  Asking ``what does the inclusion do to an incident field
+$\mathbf{u}^{\rm inc}$?'' admits three increasingly rich answers,
+distinguished by which trial functions the polarization is projected
+onto.
+
+\paragraph{(a) Volume average --- $3\times 3$ block.}
+Project the polarization onto the \emph{constant} trial function in the
+cube:
+\begin{equation}
+\bigl\langle \mathbf{P}\bigr\rangle_V
+  \;=\; T_0^{(3\times 3)} \cdot \mathbf{u}^{\rm inc}(0).
+\end{equation}
+This is the ``smear the inclusion to a point'' picture and is what a
+naive volume average gives.  It captures the \emph{monopole} ($E_0$,
+bulk) and \emph{dipole} ($E_1$, density) Eshelby concentrations,
+because both Legendre orders project onto a constant field inside $V$.
+In the project's notation this corresponds to the amplification factors
+$A_\theta$ (volumetric trace) and $A_u$ (rigid translation).
+
+\paragraph{(b) + Strain projection --- $9\times 9$ block.}
+Adjoin the six \emph{linear-gradient} trial functions corresponding to
+the symmetric strain tensor $\boldsymbol{\varepsilon}^{\rm inc}_{ij}(0)$
+at the cube center.  The operator becomes a $9\times 9$ block on
+$\mathcal{T}_9 = 3_{\rm disp}\oplus 6_{\rm strain}$.  Crucially, the
+\emph{shear} Eshelby concentration $E_2 = 1/(1+\beta_E\D\mu)$ lives
+\textbf{entirely} in this sector --- it couples to a \emph{linear}
+spatial variation of the incident displacement, never to a constant
+field.
+\textbf{A volume-averaged $3\times 3$ model cannot see $\beta_E$ at
+all.}  This is the precise origin of the bare-Born point-scatterer error
+of \S\ref{sec:bare-vs-eshelby}: a model built from the constant
+projection alone, with $\D\mu$ inserted naively, omits the entire shear
+sector and overshoots Mie by exactly $1+\beta_E\D\mu$.
+
+\paragraph{(c) + Quadratic curvature --- $27\times 27$ block.}
+Add the eighteen quadratic trial functions $r_a r_b \,\hat{e}_k$ for
+$a,b,k\in\{1,2,3\}$ (six independent quadratic monomials times three
+displacement directions).  These pick up the \emph{curvature} of the
+incident field across the inclusion --- the leading $(ka)^2$ corrections
+to the constant + linear approximation.  For $ka\ll 1$ the quadratic
+sector is small but non-zero; it becomes essential when the wavelength
+is only modestly larger than the inclusion ($ka \gtrsim 0.3$).
+
+\subsection{Self-consistent amplification per sector}
+
+{\sloppy
+Each block carries its own Eshelby-like amplification factor.
+The Galerkin closure of \code{effective\_contrasts.py} computes them
+analytically as:\par}
+\begin{align}
+A_u        &\;=\; \frac{1}{1-\omega^2 \D\rho \,\Gamma_0}
+                  &&\text{dipole / density (sphere $E_1$)} \\
+A_\theta   &\;=\; \frac{1}{1-3 T_1^c - 2 T_2^c - T_3^c}
+                  &&\text{volumetric trace (sphere $E_0$)} \\
+A_e^{\rm off},\, A_e^{\rm diag}
+           &\;=\; \frac{1}{1-2 T_2^c},\; \frac{1}{1-2 T_2^c-T_3^c}
+                  &&\text{shear quadrupole (sphere $E_2$, split by cubic anisotropy)}
+\end{align}
+These are the cube analogues of $E_0$, $E_1$, $E_2$ from
+Eq.~\eqref{eq:beta-E}.  They arise from inverting $(I-G_0 T_0)$
+projected onto each sector --- the same geometric series the static
+Eshelby problem inverts, but on the cube's \emph{polynomial} basis
+($\mathcal{T}_{27}$) rather than a sphere's spherical-harmonic basis.
+The Galerkin closure makes this exact within the polynomial space:
+every bilinear form $\langle T_0 u, v\rangle_V$ for $u, v\in
+\mathcal{T}_{27}$ reduces to a closed-form combination of the master
+integrals $\mathcal{M}_{p,q,r}$ and $\mathcal{M}^{B+}_{p,q,r}$
+tabulated in \code{cube\_galerkin27\_results.tex}.  No quadrature
+error.
+
+\subsection{What is gained by going beyond the volume average}
+
+If one tried to reproduce the project's results from a strict volume
+average --- projecting both polarization and incident field onto
+constants only --- one would
+\begin{enumerate}[leftmargin=*,nosep]
+\item recover $E_0$ (bulk) and $E_1$ (density) correctly, because both
+sit in the constant sector;
+\item \textbf{miss $E_2$ entirely}.  The 25\% bare-Born shear error of
+Tab.~\ref{tab:bare-vs-eshelby} is exactly the price of this missing
+sector;
+\item lose the cubic anisotropy split $A_e^{\rm off} \neq A_e^{\rm diag}$,
+because that signature lives in the strain sector and requires the
+$6\times 6$ block to resolve.
+\end{enumerate}
+The $27\times 27$ Galerkin formulation is therefore the volume-averaged
+T-matrix promoted to include the next two polynomial layers of the
+cube basis, with self-consistent Schur-style closure between sectors.
+The volume average is the rank-3 projection of this richer object;
+the value of going to $9\times 9$ (and further to $27\times 27$) is
+precisely the Eshelby shear concentration --- and, beyond that, the
+$(ka)^2$ curvature corrections needed at higher frequencies.
+
+% =====================================================================
+\section{Conclusions}
+% =====================================================================
+
+\begin{enumerate}[leftmargin=*]
+\item The closed-form Mie asymptotic in $ka_S$ with finite contrast is
+sufficient ground truth for validating any single-inclusion T-matrix.
+The closed forms reduce \emph{exactly} to the static Eshelby
+concentration factors at all three Legendre orders ($n=0,1,2$).
+
+\item A bare-Born point scatterer that uses the unperturbed contrast
+$\D\mu$ overestimates the sphere shear quadrupole scattering by exactly
+$1+\beta_E\D\mu$.  At $\D\mu/\mu_0=0.5$ in a Poisson background this is
+a 25\% error.  No naive point-scatterer model can be trusted at finite
+contrast.
+
+\item The $27\times 27$ cubic T-matrix from
+\code{cubic\_scattering/effective\_contrasts.py} captures the static
+Eshelby concentration through its analytic Galerkin closure, despite
+being constructed for a cube rather than a sphere.  The residual
+geometric (cube vs.~sphere) discrepancy at equal volume is $0.56\%$ at
+$\D\mu/\mu_0=0.5$ and scales linearly with contrast --- an order of
+magnitude better than the bare-Born error at every contrast level.
+
+\item For applications where the inclusion shape is genuinely
+spherical, the cube T-matrix is therefore a quantitatively reasonable
+proxy in the long-wavelength regime, and a vastly better proxy than any
+bare-Born approximation.  For irregularly shaped inclusions
+(rectangular voxels in the seismic context), the cube T-matrix is by
+construction the more appropriate tool.
+\end{enumerate}
+
+% =====================================================================
+\section*{Reproducing this document}
+% =====================================================================
+\addcontentsline{toc}{section}{Reproducing this document}
+
+The numerical tables in \S\ref{sec:bare-vs-eshelby}--\ref{sec:cube-vs-mie}
+are emitted by:
+\begin{verbatim}
+conda run -n seismic python -m pytest \
+    cubic_scattering/tests/test_mie_near_field.py -s
+\end{verbatim}
+The symbolic verification in Tab.~\ref{tab:verify}:
+\begin{verbatim}
+/usr/local/bin/wolframscript -file Mathematica/MieAsymptoticVerify.wl
+\end{verbatim}
+The closed-form Mathematica derivation:
+\begin{verbatim}
+/usr/local/bin/wolframscript -file Mathematica/MieAsymptotic.wl
+\end{verbatim}
+
+To compile this document:
+\begin{verbatim}
+cd docs && /usr/local/bin/lualatex \
+    -interaction=nonstopmode mie_finite_contrast_validation.tex
+\end{verbatim}
+
+\end{document}

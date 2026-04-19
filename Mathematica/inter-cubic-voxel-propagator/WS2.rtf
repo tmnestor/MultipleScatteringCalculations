@@ -1,0 +1,526 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 #!/usr/bin/env wolframscript\
+(* ================================================================\
+   Part 2: THREE-TERM DECOMPOSITION \'97 CONVERGENT PROPAGATOR\
+\
+   Decompose:\
+     \uc0\u915 \u771 (k) = \u915 \u771 ^\u8734 (\u107 \u770 )  +  [\u915 \u771 ^K(k) - \u915 \u771 ^\u8734 (\u107 \u770 )]  +  [\u915 \u771 (k,\u969 ) - \u915 \u771 ^K(k)]\
+              Term 1          Term 2                   Term 3\
+              O(1)            O(1/k\'b2)                  O(1/k\uc0\u8308 )\
+\
+   Term 1 (Eshelby): differentiate biharmonic potential \uc0\u936 \
+   Term 2 (regularized static): involves Newton potential \uc0\u934 \
+   Term 3 (dynamic correction): NIntegrate, well convergent\
+\
+   Key identity for Term 1:\
+     \uc0\u8747  d\'b3k \u70 \u771 *\u70 \u771  \u915 \u771 ^\u8734 (\u107 \u770 ) exp(ik\'b7R) / (2\u960 )\'b3\
+     = differential operator acting on\
+       \uc0\u936 (R) = \u8747 _A \u8747 _B |s - s' + R| d\'b3s d\'b3s'  (biharmonic potential)\
+   ================================================================ *)\
+\
+Print["================================================================"];\
+Print["  INTER-VOXEL ELASTIC STRAIN PROPAGATOR"];\
+Print["  Part 2: Three-Term Decomposition"];\
+Print["================================================================\\n"];\
+\
+(* \uc0\u9472 \u9472  Parameters \u9472 \u9472  *)\
+\uc0\u956  = 1;\
+\uc0\u957  = 1/4;\
+\uc0\u951  = 1/(2(1-\u957 ));  (* = 2/3 *)\
+a = 1;\
+h = a/2;\
+\
+Print["Parameters: \uc0\u956 =", \u956 , ", \u957 =", \u957 , ", \u951 =", \u951  // N, "\\n"];\
+\
+(* ================================================================\
+   STEP 1: 1D MONOMIAL CROSS-CORRELATIONS\
+\
+   M_\{pq\}(d) = \uc0\u8747 _\{overlap\} v^p (v-d)^q dv\
+   where overlap = [max(-h, d-h), min(h, d+h)]\
+\
+   For l=0: only need M_\{00\} (tent function)\
+   ================================================================ *)\
+\
+Print["\uc0\u9472 \u9472  Step 1: 1D Cross-Correlations \u9472 \u9472 "];\
+\
+(* Symbolic computation of M_\{pq\} as piecewise polynomials *)\
+MonCorr1D[p_, q_, hval_] := Module[\{d, v, pos, neg\},\
+  pos = Integrate[v^p (v - d)^q, \{v, d - hval, hval\},\
+          Assumptions -> \{0 < d < 2 hval\}] // Expand;\
+  neg = Integrate[v^p (v - d)^q, \{v, -hval, d + hval\},\
+          Assumptions -> \{-2 hval < d < 0\}] // Expand;\
+  Function[dd, Piecewise[\{\
+    \{pos /. d -> dd, 0 <= dd <= 2 hval\},\
+    \{neg /. d -> dd, -2 hval <= dd < 0\}\
+  \}, 0]]\
+]\
+\
+(* Pre-compute the correlations we need *)\
+M00 = MonCorr1D[0, 0, h];\
+\
+(* Verify: M00(0) = 2h = 1, M00(\'b12h) = 0 *)\
+Print["  M\uc0\u8320 \u8320 (0) = ", M00[0], " (expect ", 2h, ")"];\
+Print["  M\uc0\u8320 \u8320 (a) = ", M00[a], " (expect 0)"];\
+Print["  M\uc0\u8320 \u8320 (h) = ", M00[h], " (expect ", h, ")\\n"];\
+\
+(* ================================================================\
+   STEP 2: NEWTON POTENTIAL \uc0\u934  (integral of 1/|u|)\
+\
+   \uc0\u934 \u8320 \u8320 (R) = \u8747 _A \u8747 _B 1/|s-s'+R| d\'b3s d\'b3s'\
+           = \uc0\u8747  M\u8320 \u8320 (w\u8321 -R\u8321 ) M\u8320 \u8320 (w\u8322 -R\u8322 ) M\u8320 \u8320 (w\u8323 -R\u8323 ) / |w| d\'b3w\
+\
+   This is the mutual Newtonian potential of two uniform cubes.\
+   Computed numerically; singularity at w=0 is integrable.\
+   ================================================================ *)\
+\
+Print["\uc0\u9472 \u9472  Step 2: Newton Potential \u934 \u8320 \u8320  \u9472 \u9472 "];\
+\
+\uc0\u934 00[\{Rx_?NumericQ, Ry_?NumericQ, Rz_?NumericQ\}] :=\
+  NIntegrate[\
+    M00[w1 - Rx] M00[w2 - Ry] M00[w3 - Rz] /\
+      Sqrt[w1^2 + w2^2 + w3^2],\
+    \{w1, Rx - 2h, Rx + 2h\},\
+    \{w2, Ry - 2h, Ry + 2h\},\
+    \{w3, Rz - 2h, Rz + 2h\},\
+    Method -> \{"GlobalAdaptive",\
+      "SingularityHandler" -> "DuffyCoordinates"\},\
+    WorkingPrecision -> 16,\
+    MaxRecursion -> 15,\
+    PrecisionGoal -> 10\
+  ]\
+\
+(* Face-adjacent *)\
+Print["  Computing \uc0\u934 \u8320 \u8320  for face-adjacent R=\{a,0,0\} ..."];\
+t1 = AbsoluteTiming[phi100 = \uc0\u934 00[\{1.0, 0.0, 0.0\}];];\
+Print["  \uc0\u934 \u8320 \u8320 (\{a,0,0\}) = ", phi100];\
+Print["  Time: ", t1[[1]], " s\\n"];\
+\
+(* ================================================================\
+   STEP 3: BIHARMONIC POTENTIAL \uc0\u936  (integral of |u|)\
+\
+   \uc0\u936 \u8320 \u8320 (R) = \u8747  M\u8320 \u8320 (w\u8321 -R\u8321 ) M\u8320 \u8320 (w\u8322 -R\u8322 ) M\u8320 \u8320 (w\u8323 -R\u8323 ) |w| d\'b3w\
+\
+   No singularity \'97 straightforward NIntegrate.\
+   ================================================================ *)\
+\
+Print["\uc0\u9472 \u9472  Step 3: Biharmonic Potential \u936 \u8320 \u8320  \u9472 \u9472 "];\
+\
+\uc0\u936 00[\{Rx_?NumericQ, Ry_?NumericQ, Rz_?NumericQ\}] :=\
+  NIntegrate[\
+    M00[w1 - Rx] M00[w2 - Ry] M00[w3 - Rz] *\
+      Sqrt[w1^2 + w2^2 + w3^2],\
+    \{w1, Rx - 2h, Rx + 2h\},\
+    \{w2, Ry - 2h, Ry + 2h\},\
+    \{w3, Rz - 2h, Rz + 2h\},\
+    WorkingPrecision -> 16,\
+    MaxRecursion -> 12,\
+    PrecisionGoal -> 10\
+  ]\
+\
+Print["  Computing \uc0\u936 \u8320 \u8320  for face-adjacent R=\{a,0,0\} ..."];\
+t2 = AbsoluteTiming[psi100 = \uc0\u936 00[\{1.0, 0.0, 0.0\}];];\
+Print["  \uc0\u936 \u8320 \u8320 (\{a,0,0\}) = ", psi100];\
+Print["  Time: ", t2[[1]], " s\\n"];\
+\
+(* ================================================================\
+   STEP 4: TERM 1 \'97 ESHELBY (HIGH-k LIMIT)\
+\
+   \uc0\u915 \u771 ^\u8734 _ijkl(\u107 \u770 ) = -1/(2\u956 ) [\u107 \u770 _j\u107 \u770 _l \u948 _ik + \u107 \u770 _i\u107 \u770 _l \u948 _jk - 2\u951  \u107 \u770 _i\u107 \u770 _j\u107 \u770 _k\u107 \u770 _l]\
+\
+   This is a degree-4 polynomial in \uc0\u107 \u770 , which means:\
+\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 \u70 \u771 *\u70 \u771  \u915 \u771 ^\u8734 (\u107 \u770 ) exp(ik\'b7R)\
+   = -1/(2\uc0\u956 ) [\u948 _ik \u8706 \u8308 \u936 \u771 /\u8706 R_j\u8706 R_l + \u948 _jk \u8706 \u8308 \u936 \u771 /\u8706 R_i\u8706 R_l\
+              - 2\uc0\u951  \u8706 \u8308 \u936 \u771 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l ] \'d7 (normalization)\
+\
+   Wait \'97 more precisely, \uc0\u107 \u770 _i\u107 \u770 _j... = k_ik_j.../k^4, so we need\
+   the potential with 1/k\uc0\u8308  in Fourier space, which is |u|/(8\u960 )\
+   in real space (biharmonic Green's function in 3D).\
+\
+   So Term 1 = differential operator on \uc0\u936 \u8320 \u8320 (R).\
+\
+   The relation: \uc0\u8747  d\'b3k/(2\u960 )\'b3 (\u107 \u770 _i\u107 \u770 _j/k^n) exp(ik\'b7r) is related\
+   to the n-th order Riesz potential.  For n=0 (our case since\
+   \uc0\u915 \u771 ^\u8734  has no k-dependence), we need:\
+\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 \u107 \u770 _i\u107 \u770 _j \u70 \u771 *\u70 \u771  exp(ik\'b7R)\
+   = -\uc0\u8706 \'b2/\u8706 R_i\u8706 R_j \u8747  d\'b3k/(2\u960 )\'b3 \u70 \u771 *\u70 \u771  exp(ik\'b7R) / k\'b2\
+\
+   But \uc0\u8747  \u70 \u771 *\u70 \u771  exp(ik\'b7R)/k\'b2 d\'b3k/(2\u960 )\'b3 is just the Newton\
+   potential \uc0\u934 \u8320 \u8320 (R) (up to a factor of 4\u960 ).\
+\
+   So:\
+   \uc0\u107 \u770 _j\u107 \u770 _l \u8594  -\u8706 \'b2/\u8706 R_j\u8706 R_l applied to (\u934 \u8320 \u8320 /(4\u960 ))\
+   \uc0\u107 \u770 _i\u107 \u770 _j\u107 \u770 _k\u107 \u770 _l \u8594  \u8706 \u8308 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l applied to (\u936 \u8320 \u8320 \'b7C)\
+\
+   More carefully:\
+\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 exp(ik\'b7R) \u107 \u770 _j\u107 \u770 _l\
+   = \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 exp(ik\'b7R) k_jk_l/k\'b2\
+   = (-i)\'b2 \uc0\u8706 \'b2/\u8706 R_j\u8706 R_l \u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2/k\'b2 exp(ik\'b7R)\
+   = -\uc0\u8706 \'b2/\u8706 R_j\u8706 R_l [\u934 \u8320 \u8320 (R)/(4\u960 )]\
+\
+   And:\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 exp(ik\'b7R) \u107 \u770 _i\u107 \u770 _j\u107 \u770 _k\u107 \u770 _l\
+   = \uc0\u8706 \u8308 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l \u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2/k\u8308  exp(ik\'b7R)\
+   = \uc0\u8706 \u8308 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l [\u936 \u8320 \u8320 (R)/(8\u960 )]\
+\
+   (using FT of 1/k\'b2 = 4\uc0\u960 /r \u8594  r, and 1/k\u8308  = ... \u8594  8\u960 |r|/... )\
+\
+   Actually let me be precise about the FT conventions:\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 exp(ik\'b7r)/k\'b2 = 1/(4\u960 |r|)   [Newton kernel]\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 exp(ik\'b7r)/k\u8308  = |r|/(8\u960 )     [biharmonic]\
+\
+   So:\
+   \uc0\u934 \u8320 \u8320 (R) = \u8747 \u8747 _cubes 1/|s-s'+R| d\'b3sd\'b3s'\
+           = 4\uc0\u960  \u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2/k\'b2 exp(ik\'b7R)\
+\
+   and:\
+   \uc0\u936 \u8320 \u8320 (R) = \u8747 \u8747 _cubes |s-s'+R| d\'b3sd\'b3s'\
+           = -8\uc0\u960  \u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2/k\u8308  exp(ik\'b7R)\
+\
+   (the sign needs checking \'97 |r| = -\uc0\u8711 \'b2(r\'b3/6) and FT gives...)\
+\
+   Let's just check numerically and use finite differences.\
+   ================================================================ *)\
+\
+Print["\uc0\u9472 \u9472  Step 4: Term 1 (Eshelby) via Finite Differences \u9472 \u9472 "];\
+\
+(* Numerical derivatives of \uc0\u934 \u8320 \u8320  and \u936 \u8320 \u8320  *)\
+\uc0\u948  = 0.0005;  (* finite difference step *)\
+\
+(* Centered second derivative *)\
+D2[f_, R0_, i_, j_] := Module[\{ei, ej\},\
+  ei = \uc0\u948  UnitVector[3, i];\
+  ej = \uc0\u948  UnitVector[3, j];\
+  If[i == j,\
+    (f[R0 + ei] - 2 f[R0] + f[R0 - ei]) / \uc0\u948 ^2,\
+    (f[R0+ei+ej] - f[R0+ei-ej] - f[R0-ei+ej] + f[R0-ei-ej])/(4 \uc0\u948 ^2)\
+  ]\
+]\
+\
+(* Centered fourth derivative via nested second derivatives *)\
+(* \uc0\u8706 \u8308 f/\u8706 Ri\u8706 Rj\u8706 Rk\u8706 Rl = \u8706 \'b2/\u8706 Rk\u8706 Rl [\u8706 \'b2f/\u8706 Ri\u8706 Rj] *)\
+D4[f_, R0_, i_, j_, k_, l_] := Module[\{ek, el, g\},\
+  ek = \uc0\u948  UnitVector[3, k];\
+  el = \uc0\u948  UnitVector[3, l];\
+  g[RR_] := D2[f, RR, i, j];\
+  If[k == l,\
+    (g[R0 + ek] - 2 g[R0] + g[R0 - ek]) / \uc0\u948 ^2,\
+    (g[R0+ek+el] - g[R0+ek-el] - g[R0-ek+el] + g[R0-ek-el]) / (4 \uc0\u948 ^2)\
+  ]\
+]\
+\
+R0 = \{1.0, 0.0, 0.0\};\
+\
+(* Term 1 for the 1111 component:\
+   \uc0\u915 \u771 ^\u8734 _1111 = -1/(2\u956 )[2\u107 \u770 \u8321 \'b2 - 2\u951  \u107 \u770 \u8321 \u8308 ]\
+\
+   \uc0\u8747  \u915 \u771 ^\u8734 _1111 |\u70 \u771 |\'b2 exp(ik\'b7R) d\'b3k/(2\u960 )\'b3\
+   = -1/(2\uc0\u956 ) [2 \'d7 (-\u8706 \'b2\u934 /(4\u960 \u8706 R\u8321 \'b2)) - 2\u951  \'d7 (\u8706 \u8308 \u936 \u771 /(\'b7\'b7\'b7))]\
+\
+   Let's compute all pieces numerically:                        *)\
+\
+Print["  Computing \uc0\u8706 \'b2\u934 \u8320 \u8320 /\u8706 R\u8321 \'b2 at R=\{a,0,0\} ..."];\
+t3 = AbsoluteTiming[d2Phi11 = D2[\uc0\u934 00, R0, 1, 1];];\
+Print["  \uc0\u8706 \'b2\u934 /\u8706 R\u8321 \'b2 = ", d2Phi11, " (", t3[[1]], " s)"];\
+\
+Print["  Computing \uc0\u8706 \'b2\u934 \u8320 \u8320 /\u8706 R\u8322 \'b2 at R=\{a,0,0\} ..."];\
+t4 = AbsoluteTiming[d2Phi22 = D2[\uc0\u934 00, R0, 2, 2];];\
+Print["  \uc0\u8706 \'b2\u934 /\u8706 R\u8322 \'b2 = ", d2Phi22, " (", t4[[1]], " s)"];\
+\
+Print["  Computing \uc0\u8706 \u8308 \u936 \u8320 \u8320 /\u8706 R\u8321 \u8308  at R=\{a,0,0\} ..."];\
+t5 = AbsoluteTiming[d4Psi1111 = D4[\uc0\u936 00, R0, 1, 1, 1, 1];];\
+Print["  \uc0\u8706 \u8308 \u936 /\u8706 R\u8321 \u8308  = ", d4Psi1111, " (", t5[[1]], " s)"];\
+\
+Print["  Computing \uc0\u8706 \u8308 \u936 \u8320 \u8320 /\u8706 R\u8321 \'b2\u8706 R\u8322 \'b2 at R=\{a,0,0\} ..."];\
+t6 = AbsoluteTiming[d4Psi1122 = D4[\uc0\u936 00, R0, 1, 1, 2, 2];];\
+Print["  \uc0\u8706 \u8308 \u936 /\u8706 R\u8321 \'b2\u8706 R\u8322 \'b2 = ", d4Psi1122, " (", t6[[1]], " s)\\n"];\
+\
+(* ================================================================\
+   STEP 5: TERM 2 \'97 REGULARIZED STATIC\
+\
+   [\uc0\u915 \u771 ^K(k) - \u915 \u771 ^\u8734 (\u107 \u770 )] decays as O(1/k\'b2).\
+\
+   This means its contribution has the same convergence as the\
+   DISPLACEMENT propagator (not strain) \'97 the static subtraction\
+   fixed it.\
+\
+   Compute by Fourier integral with cutoff \'97 should converge.\
+   ================================================================ *)\
+\
+Print["\uc0\u9472 \u9472  Step 5: Term 2 (Regularized Static) via Fourier \u9472 \u9472 "];\
+Print["  Integrand: [\uc0\u915 \u771 ^K(k) - \u915 \u771 ^\u8734 (\u107 \u770 )] |\u70 \u771 |\'b2 exp(ik\'b7R)"];\
+Print["  This should CONVERGE (the O(1) piece was subtracted).\\n"];\
+\
+(* \uc0\u915 \u771 ^K - \u915 \u771 ^\u8734  for the 1111 component *)\
+GammaK1111[kx_, ky_, kz_] := Module[\{k2, kh\},\
+  k2 = kx^2 + ky^2 + kz^2;\
+  kh = \{kx, ky, kz\}/Sqrt[k2];\
+  -1/(2\uc0\u956 ) (2 kh[[1]]^2 - 2 \u951  kh[[1]]^4)\
+]\
+\
+(* The full static \uc0\u915 \u771 ^K_1111 = -k\u8321 \'b2(\u71 \u771 ^K_11 + \u71 \u771 ^K_11)/2\
+   = -k\uc0\u8321 \'b2 \u71 \u771 ^K_11 *)\
+GammaKFull1111[kx_, ky_, kz_] := Module[\{k2, kh\},\
+  k2 = kx^2 + ky^2 + kz^2;\
+  kh = \{kx, ky, kz\}/Sqrt[k2];\
+  -(kx^2/k2) (1 - \uc0\u951  kh[[1]]^2) / (\u956  k2) * k2\
+  (* = -(1 - \uc0\u951  kh1\'b2) kh1\'b2 / \u956  ...\
+     wait, let me be more careful *)\
+]\
+\
+(* More carefully:\
+   \uc0\u71 \u771 ^K_11(k) = [1 - \u951  \u107 \u770 \u8321 \'b2] / (\u956  k\'b2)\
+   \uc0\u915 \u771 ^K_1,1,1,1 = -1/2(k\u8321 k\u8321  \u71 \u771 _11 + k\u8321 k\u8321  \u71 \u771 _11) = -k\u8321 \'b2 \u71 \u771 _11\
+   = -k\uc0\u8321 \'b2(1 - \u951  \u107 \u770 \u8321 \'b2)/(\u956  k\'b2)\
+   = -(1 - \uc0\u951  \u107 \u770 \u8321 \'b2) \u107 \u770 \u8321 \'b2 / \u956 \
+\
+   And \uc0\u915 \u771 ^\u8734 _1111 = lim_\{k\u8594 \u8734 \} \u915 \u771 ^K_1111 = same thing!\
+\
+   Wait \'97 \uc0\u915 \u771 ^K_1111 is ALREADY independent of |k|!\
+   That means \uc0\u915 \u771 ^K - \u915 \u771 ^\u8734  = 0 for the static case.\
+\
+   The O(1/k\'b2) piece only appears for the DYNAMIC case.\
+\
+   Let me reconsider the decomposition...\
+\
+   For the DYNAMIC Green's tensor:\
+   \uc0\u71 \u771 _ij(k,\u969 ) = \u107 \u770 _i\u107 \u770 _j/[\u961 (\u969 \'b2-cp\'b2k\'b2)] + (\u948 _ij-\u107 \u770 _i\u107 \u770 _j)/[\u961 (\u969 \'b2-cs\'b2k\'b2)]\
+\
+   For large k:\
+   1/(\uc0\u969 \'b2-cp\'b2k\'b2) = -1/(cp\'b2k\'b2) - \u969 \'b2/(cp\u8308 k\u8308 ) + O(1/k\u8310 )\
+\
+   So:\
+   \uc0\u71 \u771 _ij = -[\u107 \u770 _i\u107 \u770 _j/(\u961 cp\'b2) + (\u948 _ij-\u107 \u770 _i\u107 \u770 _j)/(\u961 cs\'b2)]/k\'b2\
+           -[\uc0\u107 \u770 _i\u107 \u770 _j/(\u961 cp\u8308 ) + (\u948 _ij-\u107 \u770 _i\u107 \u770 _j)/(\u961 cs\u8308 )]\u969 \'b2/k\u8308  + ...\
+\
+   The leading 1/k\'b2 term IS the static Kelvin \uc0\u71 \u771 ^K.\
+   The strain \uc0\u915 \u771  = -k_jk_l \u71 \u771 _il gives:\
+\
+   \uc0\u915 \u771 _ijkl = \u915 \u771 ^\u8734 _ijkl(\u107 \u770 ) [O(1), from 1/k\'b2 \'d7 k\'b2]\
+           + \uc0\u915 \u771 ^(2)_ijkl(\u107 \u770 ) \u969 \'b2/k\'b2 [O(1/k\'b2), from 1/k\u8308  \'d7 k\'b2]\
+           + O(1/k\uc0\u8308 )\
+\
+   So the THREE terms are:\
+   Term 1: \uc0\u915 \u771 ^\u8734 (\u107 \u770 )           \'97 O(1), from static\
+   Term 2: \uc0\u969 \'b2 \u915 \u771 ^(2)(\u107 \u770 )/k\'b2  \'97 O(1/k\'b2), first dynamic correction\
+   Term 3: remainder          \'97 O(1/k\uc0\u8308 )\
+\
+   For the STATIC-ONLY case, there is NO Term 2 or 3.\
+   The entire propagator is Term 1 (the Eshelby piece).\
+\
+   This is actually simpler than I thought!\
+*)\
+\
+Print["  IMPORTANT REALIZATION:"];\
+Print["  For the static Kelvin kernel, \uc0\u915 \u771 ^K_ijkl(k) depends"];\
+Print["  ONLY on direction \uc0\u107 \u770 , not on |k|."];\
+Print["  Therefore \uc0\u915 \u771 ^K = \u915 \u771 ^\u8734  exactly."];\
+Print["  The regularized static term (Term 2) is ZERO."];\
+Print["  Terms 2 and 3 only appear in the dynamic (\uc0\u969 \u8800 0) case.\\n"];\
+Print["  The static strain propagator = Term 1 alone."];\
+Print["  This is the inter-voxel Eshelby tensor.\\n"];\
+\
+(* ================================================================\
+   STEP 6: ASSEMBLE THE STATIC STRAIN PROPAGATOR\
+\
+   Since \uc0\u915 \u771 ^K(k) = \u915 \u771 ^\u8734 (\u107 \u770 ), the static propagator is:\
+\
+   P^K_\{ijkl\}(R) = \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 \u915 \u771 ^\u8734 _ijkl(\u107 \u770 ) exp(ik\'b7R)\
+\
+   Using the identities:\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 (\u107 \u770 _j\u107 \u770 _l/k\'b2)\'d7k\'b2 exp(ik\'b7R)\
+   = -\uc0\u8706 \'b2/\u8706 R_j\u8706 R_l [\u934 \u8320 \u8320 (R)/(4\u960 )]\
+\
+   Wait \'97 we need to be precise.  The integrand has |\uc0\u70 \u771 |\'b2 \'d7 \u107 \u770 _j\u107 \u770 _l\
+   with NO power of k in the denominator.  This is NOT the same\
+   as the Newton potential.\
+\
+   Let me reconsider.  We have:\
+\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 \u8320 (k)|\'b2 \u107 \u770 _j\u107 \u770 _l exp(ik\'b7R)\
+   = \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 \u8320 (k)|\'b2 k_jk_l/k\'b2 exp(ik\'b7R)\
+   = -\uc0\u8706 \'b2/\u8706 R_j\u8706 R_l \u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 \u8320 (k)|\'b2/k\'b2 exp(ik\'b7R)\
+\
+   And \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 \u8320 (k)|\'b2/k\'b2 exp(ik\'b7R) = \u934 \u8320 \u8320 (R)/(4\u960 )\
+   (since 4\uc0\u960 /k\'b2 \u8596  1/|r|)\
+\
+   So: \uc0\u8747  |\u70 \u771 |\'b2 \u107 \u770 _j\u107 \u770 _l exp(ik\'b7R) d\'b3k/(2\u960 )\'b3 = -\u8706 \'b2[\u934 \u8320 \u8320 /(4\u960 )]/\u8706 R_j\u8706 R_l\
+\
+   Similarly:\
+   \uc0\u8747  |\u70 \u771 |\'b2 \u107 \u770 _i\u107 \u770 _j\u107 \u770 _k\u107 \u770 _l exp(ik\'b7R) d\'b3k/(2\u960 )\'b3\
+   = \uc0\u8706 \u8308 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l \u8747  |\u70 \u771 |\'b2/k\u8308  exp(ik\'b7R) d\'b3k/(2\u960 )\'b3\
+   = \uc0\u8706 \u8308 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l [-\u936 \u8320 \u8320 (R)/(8\u960 )]\
+\
+   (using 8\uc0\u960 /k\u8308  \u8596  -|r|, i.e. FT of 1/k\u8308  = -|r|/(8\u960 ) ...\
+    let me verify the sign)\
+\
+   Therefore:\
+   P^K_\{ijkl\}(R) = -1/(2\uc0\u956 ) \{\
+     \uc0\u948 _ik [-\u8706 \'b2(\u934 /(4\u960 ))/\u8706 R_j\u8706 R_l] + \u948 _jk [-\u8706 \'b2(\u934 /(4\u960 ))/\u8706 R_i\u8706 R_l]\
+     - 2\uc0\u951  \u8706 \u8308 (-\u936 /(8\u960 ))/\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l\
+   \}\
+\
+   = 1/(8\uc0\u960 \u956 ) \{\
+     \uc0\u948 _ik \u8706 \'b2\u934 /\u8706 R_j\u8706 R_l + \u948 _jk \u8706 \'b2\u934 /\u8706 R_i\u8706 R_l\
+     - \uc0\u951 /(2\u960 ) \u8706 \u8308 \u936 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l    <-- need to check sign\
+   \}\
+\
+   The signs need numerical verification.  Let's just compute\
+   everything numerically.\
+   ================================================================ *)\
+\
+Print["\uc0\u9472 \u9472  Step 6: Assemble Static Propagator \u9472 \u9472 "];\
+\
+(* The propagator components via the potential derivatives *)\
+(* P^K_1111 = -1/(2\uc0\u956 ) [2(-\u8706 \'b2\u934 /(4\u960 \u8706 R\u8321 \'b2)) - 2\u951 (-\u8706 \u8308 \u936 /(8\u960 \u8706 R\u8321 \u8308 ))] *)\
+\
+Print["  Using pre-computed derivatives of \uc0\u934  and \u936 :"];\
+Print["  \uc0\u8706 \'b2\u934 /\u8706 R\u8321 \'b2 = ", d2Phi11];\
+Print["  \uc0\u8706 \'b2\u934 /\u8706 R\u8322 \'b2 = ", d2Phi22];\
+Print["  \uc0\u8706 \u8308 \u936 /\u8706 R\u8321 \u8308  = ", d4Psi1111];\
+Print["  \uc0\u8706 \u8308 \u936 /\u8706 R\u8321 \'b2\u8706 R\u8322 \'b2 = ", d4Psi1122, "\\n"];\
+\
+(* Assemble: *)\
+P1111term1 = -1/(2\uc0\u956 ) (2 (-d2Phi11/(4 Pi)) - 2 \u951  (d4Psi1111/(8 Pi)));\
+P1122term1 = -1/(2\uc0\u956 ) (0 - 2 \u951  (d4Psi1122/(8 Pi)));\
+\
+(* Wait, let me reconsider the formula.  For ijkl = 1122:\
+   \uc0\u915 \u771 ^\u8734 _1122 = -1/(2\u956 )[\u107 \u770 \u8321 \u107 \u770 \u8322  \u948 _12 + \u107 \u770 _1\u107 \u770 _2 \u948 _12 - 2\u951  \u107 \u770 \u8321 \u107 \u770 \u8321 \u107 \u770 \u8322 \u107 \u770 \u8322 ]\
+\
+   \uc0\u948 _12 = 0 if i\u8800 k, so:\
+   \uc0\u915 \u771 ^\u8734 _1122 = -1/(2\u956 )[0 + 0 - 2\u951  \u107 \u770 \u8321 \'b2\u107 \u770 \u8322 \'b2]\
+            = \uc0\u951  \u107 \u770 \u8321 \'b2\u107 \u770 \u8322 \'b2 / \u956 \
+\
+   And:\
+   P_1122 = (\uc0\u951 /\u956 ) \u8706 \u8308 (-\u936 /(8\u960 ))/\u8706 R\u8321 \'b2\u8706 R\u8322 \'b2\
+          = -\uc0\u951 /(8\u960 \u956 ) \u8706 \u8308 \u936 /\u8706 R\u8321 \'b2\u8706 R\u8322 \'b2\
+*)\
+\
+P1122term1v2 = -\uc0\u951 /(8 Pi \u956 ) d4Psi1122;\
+\
+(* For 1111:\
+   \uc0\u915 \u771 ^\u8734 _1111 = -1/(2\u956 )[\u107 \u770 \u8321 \'b2 + \u107 \u770 \u8321 \'b2 - 2\u951  \u107 \u770 \u8321 \u8308 ] = -(1-\u951 )\u107 \u770 \u8321 \'b2/\u956  - ...\
+   wait:\
+   = -1/(2\uc0\u956 )[2\u107 \u770 \u8321 \'b2 - 2\u951  \u107 \u770 \u8321 \u8308 ]\
+   = -\uc0\u107 \u770 \u8321 \'b2(1 - \u951  \u107 \u770 \u8321 \'b2)/\u956 \
+\
+   So P_1111 = -1/\uc0\u956  \'d7 [(-\u8706 \'b2/(4\u960 )\u8706 R\u8321 \'b2)\u934  + \u951  \u8706 \u8308 \u936 /(8\u960 \u8706 R\u8321 \u8308 )]\
+   Hmm, I keep getting the algebra tangled.  Let me just\
+   separate out the two contributions cleanly.\
+*)\
+\
+(* Clean derivation:\
+   P_ijkl = \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 \u915 \u771 ^\u8734 _ijkl exp(ik\'b7R)\
+\
+   \uc0\u915 \u771 ^\u8734 _ijkl = -1/(2\u956 )[\u107 \u770 _j\u107 \u770 _l \u948 _ik + \u107 \u770 _i\u107 \u770 _l \u948 _jk - 2\u951  \u107 \u770 _i\u107 \u770 _j\u107 \u770 _k\u107 \u770 _l]\
+\
+   Define:\
+   A_jl(R) = \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 \u107 \u770 _j\u107 \u770 _l exp(ik\'b7R)\
+            = -\uc0\u8706 \'b2[\u934 /(4\u960 )]/\u8706 R_j\u8706 R_l\
+\
+   B_ijkl(R) = \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 |\'b2 \u107 \u770 _i\u107 \u770 _j\u107 \u770 _k\u107 \u770 _l exp(ik\'b7R)\
+              = \uc0\u8706 \u8308 [\u936 *C]/\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l\
+              where C is to be determined from FT convention\
+\
+   Then:\
+   P_ijkl = -1/(2\uc0\u956 )[\u948 _ik A_jl + \u948 _jk A_il - 2\u951  B_ijkl]\
+*)\
+\
+(* Compute A_jl numerically *)\
+Ajl = Table[D2[\uc0\u934 00, R0, j, l] / (-4 Pi), \{j, 3\}, \{l, 3\}];\
+Print["  A matrix (\uc0\u8747  |\u70 \u771 |\'b2 \u107 \u770 _j\u107 \u770 _l exp(ik\'b7R)):"];\
+Print["  A = ", MatrixForm[Ajl // Chop], "\\n"];\
+\
+(* For B_ijkl, we need the 1/k\uc0\u8308  potential.\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 exp(ik\'b7r)/k\u8308  = |r|/(8\u960 )\
+   so \uc0\u8747  |\u70 \u771 |\'b2/k\u8308  exp(ik\'b7R) d\'b3k/(2\u960 )\'b3 = \u936 \u8320 \u8320 (R)/(8\u960 )  ...\
+   but wait, need to check: the convolution of |\uc0\u70 \u771 |\'b2 with exp(ik\'b7R)/k\u8308 \
+   gives the convolution of the cross-correlation with |r|/(8\uc0\u960 )\
+\
+   Actually, by the convolution theorem:\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 \u8320 |\'b2/k\'b2 exp(ik\'b7R) = \u8747  [\u8747 _A d\'b3s][\u8747 _B d\'b3s'] 1/(4\u960 |s-s'+R|)\
+   = \uc0\u934 \u8320 \u8320 (R)/(4\u960 )  \u10003 \
+\
+   \uc0\u8747  d\'b3k/(2\u960 )\'b3 |\u70 \u771 \u8320 |\'b2/k\u8308  exp(ik\'b7R) = \u8747 \u8747  |s-s'+R|/(8\u960 ) d\'b3sd\'b3s'\
+                                       ... or -|s-s'+R|/(8\uc0\u960 )?\
+   Need to check sign.\
+\
+   FT of 1/k\'b2 = 4\uc0\u960 /|r|  \u8594   \u8747 (1/k\'b2)exp(ik\'b7r) d\'b3k/(2\u960 )\'b3 = 1/(4\u960 |r|)  \u10003 \
+   FT of 1/k\uc0\u8308 :  \u8711 \'b2(1/k\u8308 ) = -1/k\'b2  in FT space\
+   In real space: \uc0\u8711 \'b2[FT(1/k\u8308 )] = -1/(4\u960 |r|)\
+   We know \uc0\u8711 \'b2|r| = 2/|r|, so FT(1/k\u8308 ) = -|r|/(8\u960 )\
+\
+   So: \uc0\u8747  |\u70 \u771 |\'b2/k\u8308  exp(ik\'b7R) d\'b3k/(2\u960 )\'b3 = -\u936 \u8320 \u8320 (R)/(8\u960 )   \u8592  NOTE MINUS\
+*)\
+\
+(* Therefore:\
+   B_ijkl = \uc0\u8706 \u8308 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l [-\u936 \u8320 \u8320 /(8\u960 )]\
+          = -1/(8\uc0\u960 ) \u8706 \u8308 \u936 \u8320 \u8320 /\u8706 R_i\u8706 R_j\u8706 R_k\u8706 R_l\
+*)\
+\
+Print["  Computing \uc0\u8706 \u8308 \u936  derivatives (this takes a while) ..."];\
+B1111 = -1/(8 Pi) d4Psi1111;\
+B1122 = -1/(8 Pi) d4Psi1122;\
+Print["  B_1111 = ", B1111];\
+Print["  B_1122 = ", B1122, "\\n"];\
+\
+(* Final assembly *)\
+(* P_ijkl = -1/(2\uc0\u956 )[\u948 _ik A_jl + \u948 _jk A_il - 2\u951  B_ijkl] *)\
+\
+P1111 = -1/(2 \uc0\u956 ) (Ajl[[1,1]] + Ajl[[1,1]] - 2 \u951  B1111);\
+P1122 = -1/(2 \uc0\u956 ) (0 + 0 - 2 \u951  B1122);\
+P1212 = -1/(2 \uc0\u956 ) (Ajl[[2,2]] + 0 - 2 \u951  * 0);\
+(* For 1212: \uc0\u948 _12=0, \u948 _22=1, so P_1212 = -1/(2\u956 )[0 + A_12 - 2\u951  B_1212]\
+   B_1212 needs \uc0\u8706 \u8308 \u936 /\u8706 R\u8321 \u8706 R\u8322 \u8706 R\u8321 \u8706 R\u8322  = \u8706 \u8308 \u936 /\u8706 R\u8321 \'b2\u8706 R\u8322 \'b2 *)\
+P1212v2 = -1/(2 \uc0\u956 ) (0 + Ajl[[1,1]] - 2 \u951  B1122);\
+(* wait, 1212: i=1,j=2,k=1,l=2.\
+   \uc0\u948 _\{ik\}=\u948 _\{11\}=1, so first term = A_\{jl\} = A_\{22\}\
+   \uc0\u948 _\{jk\}=\u948 _\{21\}=0, so second term = 0\
+   B_\{1212\} = -1/(8\uc0\u960 ) \u8706 \u8308 \u936 /\u8706 R\u8321 \u8706 R\u8322 \u8706 R\u8321 \u8706 R\u8322  = B_1122 (by symmetry of mixed partials)\
+\
+   P_1212 = -1/(2\uc0\u956 )[A_22 + 0 - 2\u951  B_1122]\
+*)\
+P1212 = -1/(2 \uc0\u956 ) (Ajl[[2,2]] - 2 \u951  B1122);\
+\
+Print["\uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 "];\
+Print["  STATIC STRAIN PROPAGATOR (l=0, face-adjacent)"];\
+Print["  R = \{a, 0, 0\}"];\
+Print["\uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 "];\
+Print["  P_1111 = ", P1111];\
+Print["  P_1122 = ", P1122];\
+Print["  P_1212 = ", P1212];\
+Print["\uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \\n"];\
+\
+(* \uc0\u9472 \u9472  Verification: these should satisfy the symmetry\
+   P_1111 + P_1122 + P_1133 = ... (trace relations from\
+   the divergence condition)\
+   For a cube with R along [100]: P_1122 = P_1133 by C\uc0\u8324 \u7525  symmetry *)\
+Print["  Symmetry check: P_1122 should equal P_1133"];\
+Print["  (C\uc0\u8324 \u7525  symmetry of R along [100])"];\
+Print["  Computing P_1133 ..."];\
+\
+(* P_1133: i=1,j=1,k=3,l=3\
+   \uc0\u948 _\{ik\}=\u948 _13=0, \u948 _\{jk\}=\u948 _13=0\
+   P_1133 = -1/(2\uc0\u956 )[0 + 0 - 2\u951  B_1133]\
+   B_1133 = -1/(8\uc0\u960 ) \u8706 \u8308 \u936 /\u8706 R\u8321 \'b2\u8706 R\u8323 \'b2 *)\
+t7 = AbsoluteTiming[d4Psi1133 = D4[\uc0\u936 00, R0, 1, 1, 3, 3];];\
+B1133 = -1/(8 Pi) d4Psi1133;\
+P1133 = -1/(2 \uc0\u956 ) (-2 \u951  B1133);\
+Print["  P_1133 = ", P1133];\
+Print["  P_1122 = ", P1122];\
+Print["  Match: ", Abs[P1133 - P1122] < 0.01 Abs[P1122], "\\n"];\
+\
+Print["================================================================"];\
+Print["  Part 2 complete."];\
+Print["  The static strain propagator is computable from the"];\
+Print["  Newton potential \uc0\u934  and biharmonic potential \u936 ,"];\
+Print["  avoiding the divergent Fourier integral entirely."];\
+Print["================================================================"];}

@@ -58,12 +58,19 @@ from .cube_eshelby import (
 from .effective_contrasts import (
     CubeTMatrixResult,
     GalerkinTMatrixResult,
+    GalerkinTMatrixResult57,
     MaterialContrast,
     ReferenceMedium,
     compute_cube_tmatrix,
     compute_cube_tmatrix_galerkin,
+    compute_cube_tmatrix_galerkin_57,
 )
 from .horizontal_greens import exact_propagator_9x9
+from .incident_field import (
+    cube_overlap_integrals,
+    cube_overlap_integrals_57,
+    plane_wave_PSV_SH,
+)
 from .kennett_layers import (
     FluidLayer,
     IsotropicLayer,
@@ -96,6 +103,12 @@ from .resonance_tmatrix import (
     suggest_n_subcells,
     validate_rayleigh_limit,
     voigt_tmatrix_from_resonance_result,
+)
+from .scattered_field import (
+    cube_far_field,
+    optical_theorem_check,
+    resonance_far_field,
+    scattering_cross_section,
 )
 from .seismic_survey import (
     GatherConfig,
@@ -143,6 +156,12 @@ from .sphere_scattering import (
 )
 from .sphere_scattering_fft import compute_sphere_foldy_lax_fft
 from .sphere_scattering_fft_gpu import compute_sphere_foldy_lax_fft_gpu
+from .tmatrix_assembly import (
+    assemble_tmatrix_27,
+    assemble_tmatrix_57,
+    tmatrix_27_to_voigt_6x6,
+    tmatrix_57_to_voigt_6x6,
+)
 from .torch_gmres import get_device, select_dtype, torch_gmres
 from .voigt_tmatrix import (
     effective_stiffness_voigt,
@@ -161,7 +180,9 @@ __all__ = [
     "CubeTMatrixResult",
     "compute_cube_tmatrix",
     "GalerkinTMatrixResult",
+    "GalerkinTMatrixResult57",
     "compute_cube_tmatrix_galerkin",
+    "compute_cube_tmatrix_galerkin_57",
     "voigt_tmatrix_6x6",
     "voigt_tmatrix_from_result",
     "effective_stiffness_voigt",
@@ -169,6 +190,18 @@ __all__ = [
     "traction_from_strain",
     "tmatrix_displacement_traction",
     "scattered_stress_voigt",
+    # ── T27 assembly and far-field ──────────────────────────────────────
+    "assemble_tmatrix_27",
+    "assemble_tmatrix_57",
+    "tmatrix_27_to_voigt_6x6",
+    "tmatrix_57_to_voigt_6x6",
+    "cube_overlap_integrals",
+    "cube_overlap_integrals_57",
+    "plane_wave_PSV_SH",
+    "cube_far_field",
+    "resonance_far_field",
+    "scattering_cross_section",
+    "optical_theorem_check",
     # ── Resonance regime ─────────────────────────────────────────────────
     "ResonanceTmatrixResult",
     "compute_resonance_tmatrix",
