@@ -54,3 +54,14 @@ Mathematica/CubeT27Assemble.wl
 Mathematica/CubeT6OvernightHighPrec.nb
 Mathematica/CubeT6OvernightHighPrec.wl
 Mathematica/CubeT27Assemble.wl
+notebooks/sinc_filter_test.ipynb
+notebooks/shifted_masters_full.ipynb
+notebooks/standard_masters.ipynb
+.gitignore
+notebooks/wl_test.ipynb
+plans/AI_Architecture_Enables_VIE.md
+plans/Complete_Verfication.md
+.gitignore
+.gitignore
+plans/inter_voxel_propagator.md
+plans/dynamic_body_bilinear.md
