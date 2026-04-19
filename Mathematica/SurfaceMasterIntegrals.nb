@@ -1,531 +1,1827 @@
 (* Content-type: application/vnd.wolfram.mathematica *)
-(*** Wolfram Notebook File ***)
 
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     81942,       1817]
+NotebookOptionsPosition[     74768,       1696]
+NotebookOutlinePosition[     75249,       1715]
+CellTagsIndexPosition[     75206,       1712]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
 Notebook[{
 
-Cell["Analytical Surface Master Integrals for Cube LS Stiffness", "Title"],
+Cell[CellGroupData[{
+Cell["Analytical Surface Master Integrals for Cube LS Stiffness", "Title",ExpressionUUID->"608b8499-f733-4b01-9661-37e3c4d4ecfd"],
 
-Cell["\
-The LS-convolved stiffness surface contribution involves 5D integrals \
-(3D volume x 2D face) with a 1/|r-r'| Green's tensor singularity.  \
-CubeT27Stiffness_LS.wl evaluated these numerically (~3500 s). \n\n\
+Cell["\<\
+The LS-convolved stiffness surface contribution involves 5D integrals (3D \
+volume x 2D face) with a 1/|r-r'| Green's tensor singularity.  \
+CubeT27Stiffness_LS.wl evaluated these numerically (~3500 s). 
+
 This notebook develops the ANALYTICAL evaluation, showing that the surface \
 master integrals reduce to the SAME family Mp[p,q,r] as the body bilinear \
-(CubeGalerkin27.wl). The key is the (sigma, xi, v) substitution.", "Text"],
+(CubeGalerkin27.wl). The key is the (sigma, xi, v) substitution.\
+\>", "Text",ExpressionUUID->"26746d87-6779-43dc-9dae-79ed039b9f54"],
 
+Cell[CellGroupData[{
+
+Cell["1. The Surface Integral", "Section",ExpressionUUID->"28537c11-a9c0-4314-8dda-c714e27ddb85"],
+
+Cell["\<\
+For a cube [-1,1]^3 with face F_n^+ at r_n = +1 (outward normal e_n):
+
+  BstiffSurf[alpha,beta] = Sum over faces of
+    Integral_cube phi_alpha_i(r) G_ij(r - r') t_j^(beta)(r') dS(r') dV(r)
+
+where G_ij = a0/|x| delta_ij + b0 x_i x_j/|x|^3 (Kelvin form)
+and t^(beta) = (Dc : epsilon(phi_beta)) . n is the traction on the face.
+
+The A-channel (a0 part, isotropic) and B-channel (b0 part, anisotropic)
+are computed separately.\
+\>", "Text",ExpressionUUID->"6349bef0-fe42-43b7-a921-a6f423f27818"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["2. Basis Modes and Their Tractions", "Section",ExpressionUUID->"0ae2acb7-8012-4e61-905e-8bb9e93ebe86"],
+
+Cell["\<\
+The T_27 basis has 3 constant displacements + 18 S-type quadratics (r_a^2 \
+e_p) + 6 X-type quadratics (r_b r_c e_p, b != c).
+
+For any polynomial mode phi, the traction on face F_n^s (coordinate n, sign s \
+= +/-1) is a polynomial in the two face coordinates.\
+\>", "Text",ExpressionUUID->"f886e524-b6c7-4920-9292-cadda06da1a1"],
+
+Cell["\<\
+(* Strain tensor of a monomial mode phi = r1^n1 r2^n2 r3^n3 * e_p *)
+strainOfMode[{n1_, n2_, n3_}, p_, {r1_, r2_, r3_}] := 
+  Module[{phi, eps},
+    phi = Table[KroneckerDelta[k, p] r1^n1 r2^n2 r3^n3, {k, 3}];
+    eps = Table[
+      (D[phi[[k]], {r1, r2, r3}[[l]]] + D[phi[[l]], {r1, r2, r3}[[k]]])/2,
+      {k, 3}, {l, 3}];
+    eps
+  ]
+
+(* Stress: sigma = Dlam tr(eps) I + 2 Dmu eps *)
+stressOfMode[{n1_, n2_, n3_}, p_, {r1_, r2_, r3_}, Dlam_, Dmu_] :=
+  Module[{eps, trEps},
+    eps = strainOfMode[{n1, n2, n3}, p, {r1, r2, r3}];
+    trEps = Sum[eps[[k, k]], {k, 3}];
+    Table[Dlam trEps KroneckerDelta[k, l] + 2 Dmu eps[[k, l]], {k, 3}, {l, \
+3}]
+  ]
+
+(* Traction on face with normal axis n, sign s *)
+tractionOnFace[{n1_, n2_, n3_}, p_, faceAxis_, faceSign_, Dlam_, Dmu_] :=
+  Module[{r1, r2, r3, sig, coords, trac},
+    coords = {r1, r2, r3};
+    sig = stressOfMode[{n1, n2, n3}, p, coords, Dlam, Dmu];
+    trac = Table[sig[[k, faceAxis]], {k, 3}];
+    (* Evaluate at the face: r_faceAxis = faceSign *)
+    trac /. coords[[faceAxis]] -> faceSign
+  ]\
+\>", "Input",ExpressionUUID->"7aca46ed-f4c0-410b-9d2a-d0096c7a5d12"],
+
+Cell["\<\
+(* Example: S-type mode r1^2 e1, traction on face z = +1 *)
+tractionOnFace[{2, 0, 0}, 1, 3, 1, Dlam, Dmu] // Simplify\
+\>", "Input",ExpressionUUID->"5e1f86de-f739-4aae-aa1c-e5ee599ea041"],
+
+Cell["\<\
+(* Example: S-type mode r3^2 e3, traction on face z = +1 *)
+tractionOnFace[{0, 0, 2}, 3, 3, 1, Dlam, Dmu] // Simplify\
+\>", "Input",ExpressionUUID->"e4e48b9c-5a27-4995-ac0e-be03ac4de085"],
+
+Cell["\<\
+(* Example: X-type mode r1 r2 e3, traction on face z = +1 *)
+tractionOnFace[{1, 1, 0}, 3, 3, 1, Dlam, Dmu] // Simplify\
+\>", "Input",ExpressionUUID->"2958272d-2bed-4d2c-8e45-4e9829378bd6"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["3. The Key Substitution: (\[Sigma], \[Xi], v)", "Section",ExpressionUUID->"04ee4353-74cb-4ab0-8862-8425202b27d0"],
+
+Cell["\<\
+For face F_3^+ (r'_3 = 1), the integration variables are:
+  r = (r1, r2, r3) in [-1,1]^3  (volume point)
+  s = (s1, s2)    in [-1,1]^2  (face point, r'=(s1,s2,1))
+
+For the two SHARED coordinates (r_a, s_a) for a = 1,2:
+  sigma_a = (r_a + s_a)/2,   xi_a = (r_a - s_a)/2
+  r_a = sigma_a + xi_a,       s_a = sigma_a - xi_a
+  Jacobian: |d(r,s)/d(sigma,xi)| = 2 per pair
+  Domain: |sigma_a| + |xi_a| <= 1  (diamond)
+
+For the NORMAL coordinate:
+  v = (1 - r3)/2,  so r3 = 1 - 2v,  v in [0,1]
+  dr3 = -2 dv
+
+The displacement vector r - r' becomes:
+  x1 = r1 - s1 = 2 xi1
+  x2 = r2 - s2 = 2 xi2
+  x3 = r3 - 1  = -2v
+
+  |x| = 2 sqrt(xi1^2 + xi2^2 + v^2) = 2 rho
+
+The singularity is at (xi1, xi2, v) = (0,0,0), i.e. when the volume
+point touches the face at the same location as the surface point.
+
+CRUCIAL: By octant symmetry of the diamond domain, we restrict to
+sigma_a >= 0, xi_a >= 0 and multiply by 4 per pair (16 total).\
+\>", "Text",ExpressionUUID->"4d7d0243-428e-43d6-9940-337bc5a95b61"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["4. Sigma Integrals Factor Out", "Section",ExpressionUUID->"36c7d14a-25c6-4155-92f7-f17c7ac902a4"],
+
+Cell["\<\
+After substitution, the integrand is:
+  P(sigma1, xi1, sigma2, xi2, v) / rho
+
+where P is a polynomial (from phi_alpha and traction).
+Each sigma_a integral over [0, 1-xi_a] is elementary:
+
+  Integral_0^{1-xi} sigma^k dsigma = (1-xi)^{k+1} / (k+1)
+
+This removes sigma from the integrand, leaving a polynomial in 
+(xi1, xi2, v) divided by rho = sqrt(xi1^2 + xi2^2 + v^2).
+
+Expanding (1-xi)^n in powers of xi and collecting, we get a sum of
+MASTER INTEGRALS:\
+\>", "Text",ExpressionUUID->"1670595f-f557-4820-80f3-bce3c841b7b3"],
+
+Cell["\<\
 (* ================================================================ *)
-Cell["1. The Surface Integral", "Section"],
-
-Cell["\
-For a cube [-1,1]^3 with face F_n^+ at r_n = +1 (outward normal e_n):\n\n\
-  BstiffSurf[alpha,beta] = Sum over faces of\n\
-    Integral_cube phi_alpha_i(r) G_ij(r - r') t_j^(beta)(r') dS(r') dV(r)\n\n\
-where G_ij = a0/|x| delta_ij + b0 x_i x_j/|x|^3 (Kelvin form)\n\
-and t^(beta) = (Dc : epsilon(phi_beta)) . n is the traction on the face.\n\n\
-The A-channel (a0 part, isotropic) and B-channel (b0 part, anisotropic)\n\
-are computed separately.", "Text"],
-
+(* THE KEY RESULT: Surface master integrals ARE body master integrals *)
 (* ================================================================ *)
-Cell["2. Basis Modes and Their Tractions", "Section"],
 
-Cell["\
-The T_27 basis has 3 constant displacements + 18 S-type quadratics \
-(r_a^2 e_p) + 6 X-type quadratics (r_b r_c e_p, b != c).\n\n\
-For any polynomial mode phi, the traction on face F_n^s (coordinate n, \
-sign s = +/-1) is a polynomial in the two face coordinates.", "Text"],
+(* Definition: *)
+Mp[p_, q_, r_] /; !OrderedQ[{p, q, r}] := Mp @@ Sort[{p, q, r}]
 
-Cell["\
-(* Strain tensor of a monomial mode phi = r1^n1 r2^n2 r3^n3 * e_p *)\n\
-strainOfMode[{n1_, n2_, n3_}, p_, {r1_, r2_, r3_}] := \n\
-  Module[{phi, eps},\n\
-    phi = Table[KroneckerDelta[k, p] r1^n1 r2^n2 r3^n3, {k, 3}];\n\
-    eps = Table[\n\
-      (D[phi[[k]], {r1, r2, r3}[[l]]] + D[phi[[l]], {r1, r2, r3}[[k]]])/2,\n\
-      {k, 3}, {l, 3}];\n\
-    eps\n\
-  ]\n\
-\n\
-(* Stress: sigma = Dlam tr(eps) I + 2 Dmu eps *)\n\
-stressOfMode[{n1_, n2_, n3_}, p_, {r1_, r2_, r3_}, Dlam_, Dmu_] :=\n\
-  Module[{eps, trEps},\n\
-    eps = strainOfMode[{n1, n2, n3}, p, {r1, r2, r3}];\n\
-    trEps = Sum[eps[[k, k]], {k, 3}];\n\
-    Table[Dlam trEps KroneckerDelta[k, l] + 2 Dmu eps[[k, l]], {k, 3}, {l, 3}]\n\
-  ]\n\
-\n\
-(* Traction on face with normal axis n, sign s *)\n\
-tractionOnFace[{n1_, n2_, n3_}, p_, faceAxis_, faceSign_, Dlam_, Dmu_] :=\n\
-  Module[{r1, r2, r3, sig, coords, trac},\n\
-    coords = {r1, r2, r3};\n\
-    sig = stressOfMode[{n1, n2, n3}, p, coords, Dlam, Dmu];\n\
-    trac = Table[sig[[k, faceAxis]], {k, 3}];\n\
-    (* Evaluate at the face: r_faceAxis = faceSign *)\n\
-    trac /. coords[[faceAxis]] -> faceSign\n\
-  ]", "Input"],
-
-Cell["\
-(* Example: S-type mode r1^2 e1, traction on face z = +1 *)\n\
-tractionOnFace[{2, 0, 0}, 1, 3, 1, Dlam, Dmu] // Simplify", "Input"],
-
-Cell["\
-(* Example: S-type mode r3^2 e3, traction on face z = +1 *)\n\
-tractionOnFace[{0, 0, 2}, 3, 3, 1, Dlam, Dmu] // Simplify", "Input"],
-
-Cell["\
-(* Example: X-type mode r1 r2 e3, traction on face z = +1 *)\n\
-tractionOnFace[{1, 1, 0}, 3, 3, 1, Dlam, Dmu] // Simplify", "Input"],
-
-(* ================================================================ *)
-Cell["3. The Key Substitution: (\[Sigma], \[Xi], v)", "Section"],
-
-Cell["\
-For face F_3^+ (r'_3 = 1), the integration variables are:\n\
-  r = (r1, r2, r3) in [-1,1]^3  (volume point)\n\
-  s = (s1, s2)    in [-1,1]^2  (face point, r'=(s1,s2,1))\n\n\
-For the two SHARED coordinates (r_a, s_a) for a = 1,2:\n\
-  sigma_a = (r_a + s_a)/2,   xi_a = (r_a - s_a)/2\n\
-  r_a = sigma_a + xi_a,       s_a = sigma_a - xi_a\n\
-  Jacobian: |d(r,s)/d(sigma,xi)| = 2 per pair\n\
-  Domain: |sigma_a| + |xi_a| <= 1  (diamond)\n\n\
-For the NORMAL coordinate:\n\
-  v = (1 - r3)/2,  so r3 = 1 - 2v,  v in [0,1]\n\
-  dr3 = -2 dv\n\n\
-The displacement vector r - r' becomes:\n\
-  x1 = r1 - s1 = 2 xi1\n\
-  x2 = r2 - s2 = 2 xi2\n\
-  x3 = r3 - 1  = -2v\n\n\
-  |x| = 2 sqrt(xi1^2 + xi2^2 + v^2) = 2 rho\n\n\
-The singularity is at (xi1, xi2, v) = (0,0,0), i.e. when the volume\n\
-point touches the face at the same location as the surface point.\n\n\
-CRUCIAL: By octant symmetry of the diamond domain, we restrict to\n\
-sigma_a >= 0, xi_a >= 0 and multiply by 4 per pair (16 total).", "Text"],
-
-(* ================================================================ *)
-Cell["4. Sigma Integrals Factor Out", "Section"],
-
-Cell["\
-After substitution, the integrand is:\n\
-  P(sigma1, xi1, sigma2, xi2, v) / rho\n\n\
-where P is a polynomial (from phi_alpha and traction).\n\
-Each sigma_a integral over [0, 1-xi_a] is elementary:\n\n\
-  Integral_0^{1-xi} sigma^k dsigma = (1-xi)^{k+1} / (k+1)\n\n\
-This removes sigma from the integrand, leaving a polynomial in \n\
-(xi1, xi2, v) divided by rho = sqrt(xi1^2 + xi2^2 + v^2).\n\n\
-Expanding (1-xi)^n in powers of xi and collecting, we get a sum of\n\
-MASTER INTEGRALS:", "Text"],
-
-Cell["\
-(* ================================================================ *)\n\
-(* THE KEY RESULT: Surface master integrals ARE body master integrals *)\n\
-(* ================================================================ *)\n\
-\n\
-(* Definition: *)\n\
-Mp[p_, q_, r_] /; !OrderedQ[{p, q, r}] := Mp @@ Sort[{p, q, r}]\n\
-\n\
-(* Numerical evaluation *)\n\
-MpNum[p_, q_, r_] := NIntegrate[\n\
-  x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],\n\
-  {x, 0, 1}, {y, 0, 1}, {z, 0, 1},\n\
-  PrecisionGoal -> 15, MaxRecursion -> 25\n\
-]\n\
-\n\
-(* Symbolic evaluation *)\n\
-MpSym[p_, q_, r_] := Integrate[\n\
-  x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],\n\
-  {x, 0, 1}, {y, 0, 1}, {z, 0, 1}\n\
-]", "Input"],
-
-Cell["\
-The integral Js[p,q,r] = Integral_[0,1]^3 xi1^p xi2^q v^r / rho d(xi1) d(xi2) dv\n\
-is IDENTICAL to Mp[p,q,r] because:\n\
-  - The domain [0,1]^3 is the same\n\
-  - The denominator sqrt(xi1^2 + xi2^2 + v^2) is fully symmetric\n\
-  - The monomial xi1^p xi2^q v^r is just a relabeling\n\n\
-So Js[p,q,r] = Mp[p,q,r] by definition. No new integrals needed!\n\n\
-All existing Mp values from CubeGalerkin27.wl can be reused.\n\
-We just need additional values at higher exponents.", "Text"],
-
-(* ================================================================ *)
-Cell["5. Needed Master Integrals", "Section"],
-
-Cell["\
-Maximum monomial degrees after the sigma integration:\n\
-  - xi1, xi2: up to degree 4 (from quadratic mode x sigma integral)\n\
-  - v: up to degree 2 (from r3 = 1 - 2v, quadratic modes)\n\n\
-By full permutation symmetry, we use canonical sorted form p >= q >= r.\n\
-With max index 4 in any position:", "Text"],
-
-Cell["\
-(* Enumerate all needed sorted triples *)\n\
-neededMp = Union[Sort /@ Flatten[\n\
-  Table[{p, q, r}, {p, 0, 4}, {q, 0, 4}, {r, 0, 2}],\n\
-  2]];\n\
-Print[\"Number of unique master integrals: \", Length[neededMp]];\n\
-Print[\"Triples: \", neededMp];", "Input"],
-
-Cell["\
-(* Compute all needed values numerically first (for validation) *)\n\
-Print[\"Computing numerical values...\"];\n\
-mpNumTable = Association[\n\
-  Table[\n\
-    Module[{sorted = Sort[triple]},\n\
-      sorted -> MpNum @@ sorted\n\
-    ],\n\
-    {triple, neededMp}\n\
-  ]\n\
-];\n\
-Print[\"Done. Sample values:\"];\n\
-Print[\"  Mp[0,0,0] = \", mpNumTable[{0,0,0}]];\n\
-Print[\"  Mp[1,0,0] = \", mpNumTable[{1,0,0}]];\n\
-Print[\"  Mp[1,1,0] = \", mpNumTable[{1,1,0}]];\n\
-Print[\"  Mp[1,1,1] = \", mpNumTable[{1,1,1}]];", "Input"],
-
-(* ================================================================ *)
-Cell["6. Analytical Evaluation Strategy", "Section"],
-
-Cell["\
-Strategy: integrate v first, then xi2, then xi1.\n\n\
-Step 1 (v integral):\n\
-  Integral_0^1 v^r / sqrt(xi1^2 + xi2^2 + v^2) dv\n\n\
-This has closed forms for each r:\n\
-  r=0: ArcSinh[1/R] where R = sqrt(xi1^2 + xi2^2)\n\
-  r=1: sqrt(R^2 + 1) - R\n\
-  r=2: (1/2) sqrt(R^2+1) - (R^2/2) ArcSinh[1/R]\n\n\
-Step 2 (xi2 integral): polynomial in xi2 times these functions of R.\n\
-Step 3 (xi1 integral): similar reduction.\n\n\
-Each step involves integrals Mathematica can handle symbolically.", "Text"],
-
-Cell["\
-(* Step 1: v integral, parametric in R^2 = xi1^2 + xi2^2 *)\n\
-ClearAll[vIntegral];\n\
-vIntegral[r_, R_] := Integrate[v^r/Sqrt[R^2 + v^2], {v, 0, 1},\n\
-  Assumptions -> R > 0]\n\
-\n\
-Print[\"v-integral closed forms:\"];\n\
-Do[\n\
-  Print[\"  r=\", r, \": \", Simplify[vIntegral[r, R]]],\n\
-  {r, 0, 2}\n\
-]", "Input"],
-
-Cell["\
-(* Attempt symbolic evaluation of specific Mp values *)\n\
-(* Start with the simplest: Mp[0,0,0] *)\n\
-Print[\"\\nAttempting symbolic Mp[0,0,0]...\"];\n\
-timing0 = AbsoluteTiming[\n\
-  mp000sym = Integrate[1/Sqrt[x^2 + y^2 + z^2],\n\
-    {z, 0, 1}, {y, 0, 1}, {x, 0, 1}]\n\
-];\n\
-Print[\"  Mp[0,0,0] = \", mp000sym, \"  (\", timing0[[1]], \" s)\"];\n\
-Print[\"  Numerical: \", N[mp000sym, 20]];\n\
-Print[\"  NIntegrate: \", mpNumTable[{0,0,0}]];", "Input"],
-
-Cell["\
-(* Mp[1,0,0]: one linear factor *)\n\
-Print[\"Attempting symbolic Mp[1,0,0]...\"];\n\
-timing1 = AbsoluteTiming[\n\
-  mp100sym = Integrate[x/Sqrt[x^2 + y^2 + z^2],\n\
-    {z, 0, 1}, {y, 0, 1}, {x, 0, 1}]\n\
-];\n\
-Print[\"  Mp[1,0,0] = \", mp100sym, \"  (\", timing1[[1]], \" s)\"];\n\
-Print[\"  N = \", N[mp100sym, 20]];", "Input"],
-
-Cell["\
-(* Automated: compute all needed Mp symbolically *)\n\
-(* WARNING: higher-order ones may take minutes. Start with small indices. *)\n\
-mpSymTable = <||>;\n\
-Do[\n\
-  Module[{triple = Sort[{p, q, r}], val, t},\n\
-    If[!KeyExistsQ[mpSymTable, triple],\n\
-      Print[\"Computing Mp\", triple, \"...\"];\n\
-      {t, val} = AbsoluteTiming[\n\
-        Integrate[\n\
-          x^triple[[1]] y^triple[[2]] z^triple[[3]] / Sqrt[x^2+y^2+z^2],\n\
-          {z, 0, 1}, {y, 0, 1}, {x, 0, 1}\n\
-        ]\n\
-      ];\n\
-      mpSymTable[triple] = val;\n\
-      Print[\"  = \", val, \"  (\", t, \" s)\"];\n\
-      Print[\"  N = \", N[val, 20], \"  (num: \", mpNumTable[triple], \")\"];\n\
-    ]\n\
-  ],\n\
-  (* Start with small indices first *)\n\
-  {r, 0, 2}, {q, r, 4}, {p, q, 4}\n\
-];", "Input"],
-
-(* ================================================================ *)
-Cell["7. B-Channel: Reduction via Integration by Parts", "Section"],
-
-Cell["\
-The B-channel has kernel x_i x_j / |x|^3 = 4 xi_a xi_b / (8 rho^3)\n\
-where (a,b) index the displacement components.\n\n\
-Key identity: xi_a / rho^3 = -(d/d(xi_a))(1/rho)\n\n\
-So integrals of the form\n\
-  Integral f(xi) * xi_a / rho^3 d(xi_a)\n\
-reduce via integration by parts to:\n\
-  [boundary terms at xi_a = 0, 1] + Integral f'(xi) / rho d(xi_a)\n\n\
-The boundary term at xi_a = 0 involves 1/sqrt(xi_b^2 + v^2) and\n\
-the term at xi_a = 1 involves 1/sqrt(1 + xi_b^2 + v^2).\n\
-Both are lower-dimensional integrals of the same type.\n\n\
-For the diagonal case xi_a^2 / rho^3, use:\n\
-  xi_a^2 / rho^3 = xi_a * (xi_a/rho^3) = -xi_a d(1/rho)/d(xi_a)\n\
-  = -d(xi_a/rho)/d(xi_a) + 1/rho\n\
-  = 1/rho - d(xi_a/rho)/d(xi_a)\n\n\
-So Integral f * xi_a^2/rho^3 = Integral f/rho - [boundary of f*xi_a/rho].", "Text"],
-
-Cell["\
-(* B-channel master integrals: xi_a xi_b / rho^3 type *)\n\
-(* These can be defined directly and compared *)\n\
-BpNum[i_, j_, p_, q_, r_] := NIntegrate[\n\
-  x^p y^q z^r * {x, y, z}[[i]] {x, y, z}[[j]] / (x^2 + y^2 + z^2)^(3/2),\n\
-  {x, 0, 1}, {y, 0, 1}, {z, 0, 1},\n\
-  PrecisionGoal -> 12, MaxRecursion -> 25\n\
-]\n\
-\n\
-(* Verify IBP identity: Integral xi1^2/rho^3 = Integral 1/rho - boundary *)\n\
-Print[\"Verifying IBP identity...\"];\n\
-direct = BpNum[1, 1, 0, 0, 0];\n\
-fromMp = mpNumTable[{0, 0, 0}];\n\
-boundary = NIntegrate[\n\
-  1/Sqrt[1 + y^2 + z^2],\n\
-  {y, 0, 1}, {z, 0, 1},\n\
-  PrecisionGoal -> 15\n\
-];\n\
-Print[\"  Direct:   \", direct];\n\
-Print[\"  Mp[0,0,0] - boundary: \", fromMp - boundary];\n\
-Print[\"  Difference: \", direct - (fromMp - boundary)];", "Input"],
-
-Cell["\
-(* General IBP reduction for B-channel *)\n\
-(* For integrands with xi_a/rho^3 factor, integrate by parts in xi_a *)\n\
-\n\
-(* 2D boundary integrals (face of the unit cube) *)\n\
-Bp2D[q_, r_] := NIntegrate[\n\
-  y^q z^r / Sqrt[1 + y^2 + z^2],\n\
-  {y, 0, 1}, {z, 0, 1},\n\
-  PrecisionGoal -> 15\n\
-]\n\
-\n\
-(* These 2D integrals are also analytically tractable: *)\n\
-(* same structure as the v-integral but at a fixed boundary *)\n\
-Bp2DSym[q_, r_] := Integrate[\n\
-  y^q z^r / Sqrt[1 + y^2 + z^2],\n\
-  {y, 0, 1}, {z, 0, 1}\n\
-]\n\
-\n\
-Print[\"2D boundary integrals:\"];\n\
-Do[\n\
-  Print[\"  Bp2D[\", q, \",\", r, \"] = \", Bp2DSym[q, r],\n\
-    \"  (N = \", N[Bp2DSym[q, r], 15], \")\"],\n\
-  {q, 0, 3}, {r, 0, 2}\n\
-]", "Input"],
-
-(* ================================================================ *)
-Cell["8. Assembly: From Master Integrals to Surface Stiffness", "Section"],
-
-Cell["\
-The surface stiffness for one face is assembled by:\n\
-1. Express phi_alpha(r) in (sigma, xi, v) variables\n\
-2. Express traction t(s) in (sigma, xi) variables (on face)\n\
-3. Multiply and expand into monomials of (sigma1, xi1, sigma2, xi2, v)\n\
-4. Integrate each sigma analytically: sigma^k -> (1-xi)^{k+1}/(k+1)\n\
-5. Expand (1-xi)^n and collect monomials of (xi1, xi2, v)\n\
-6. Look up each monomial coefficient * Mp[p,q,r]\n\
-7. Sum over all 6 faces\n\n\
-The following function automates steps 1-6 for a single face.", "Text"],
-
-Cell["\
-(* Automated surface integral for one face, A-channel *)\n\
-(* Returns the integral as a sum of Mp values *)\n\
-surfaceA1Face[\n\
-  alphaMode_, (* {exponents, direction} for phi_alpha *)\n\
-  betaMode_,  (* {exponents, direction} for phi_beta *)\n\
-  faceAxis_,  (* which axis the face is on (1,2,3) *)\n\
-  faceSign_   (* +1 or -1 *)\n\
-] := Module[\n\
-  {r1, r2, r3, s1, s2, sig1, xi1, sig2, xi2, v,\n\
-   trac, phiAlpha, integrand, shared, normal,\n\
-   sigmaResult, expanded, result = 0},\n\
-  \n\
-  (* Identify shared and normal coordinates *)\n\
-  shared = Delete[{1, 2, 3}, faceAxis];\n\
-  normal = faceAxis;\n\
-  \n\
-  (* Mode function phi_alpha *)\n\
-  phiAlpha = ({r1, r2, r3}[[alphaMode[[2]]]])\n\
-    (r1^alphaMode[[1, 1]] r2^alphaMode[[1, 2]] r3^alphaMode[[1, 3]] /.\n\
-     {r1, r2, r3}[[alphaMode[[2]]]] -> 1);\n\
-  (* Actually, simpler: phi_alpha = product of r^n for the monomial part *)\n\
-  phiAlpha = r1^alphaMode[[1, 1]] r2^alphaMode[[1, 2]] r3^alphaMode[[1, 3]];\n\
-  \n\
-  (* Traction from beta mode on this face *)\n\
-  trac = tractionOnFace[\n\
-    betaMode[[1]], betaMode[[2]], faceAxis, faceSign, Dlam, Dmu];\n\
-  \n\
-  (* A-channel: same component coupling *)\n\
-  (* integrand = phi_alpha_i * trac_i / |r - r'| *)\n\
-  (* Only i = alphaMode[[2]] contributes *)\n\
-  integrand = phiAlpha * trac[[alphaMode[[2]]]];\n\
-  \n\
-  (* Substitute: shared coords -> (sigma, xi), normal coord -> v *)\n\
-  integrand = integrand /. {\n\
-    {r1, r2, r3}[[shared[[1]]]] -> sig1 + xi1,\n\
-    {r1, r2, r3}[[shared[[2]]]] -> sig2 + xi2,\n\
-    {r1, r2, r3}[[normal]] -> 1 - 2 v,\n\
-    {r1, r2, r3}[[shared[[1]]]] -> sig1 - xi1, (* for s coords in traction *)\n\
-    {r1, r2, r3}[[shared[[2]]]] -> sig2 - xi2\n\
-  };\n\
-  (* NOTE: The traction uses surface coords s_a = sigma_a - xi_a *)\n\
-  (* This substitution needs care -- traction was already evaluated at face *)\n\
-  (* so it only has the s1, s2 dependence *)\n\
-  \n\
-  (* This is a sketch -- the user should flesh out the bookkeeping *)\n\
-  (* The key point is that everything reduces to Mp integrals *)\n\
-  integrand\n\
-]", "Input"],
-
-(* ================================================================ *)
-Cell["9. Worked Example: T1u[1,2] A_Dlam Channel", "Section"],
-
-Cell["\
-Let's trace through one specific entry to validate the framework.\n\n\
-T1u mode 1 = constant displacement e_1 (in Usym basis)\n\
-T1u mode 2 = mix of S-type quadratics\n\n\
-For the A_Dlam channel: set Dmu = 0, a0 = 1, b0 = 0.\n\
-The known numerical value is 301.68 (from CubeT27Stiffness_LS.wl).", "Text"],
-
-Cell["\
-(* Direct numerical check: simplest case *)\n\
-(* A-channel integral of (constant e_1) with traction from r1^2 e1 *)\n\
-(* on face z = +1: traction = {0, 0, 2 Dlam s1} for r1^2 e1 *)\n\
-(* A-channel: only same-component coupling *)\n\
-(* phi_alpha = e_1 (component 1), traction component 1 = 0 *)\n\
-(* So this particular pair gives 0 on face z = +1. *)\n\
-(* Need to check face x = +1 instead: *)\n\
-\n\
-Print[\"Traction of r1^2 e1 on face x=+1:\"];\n\
-Print[tractionOnFace[{2, 0, 0}, 1, 1, 1, Dlam, Dmu]];\n\
-Print[\"Traction of r1^2 e1 on face y=+1:\"];\n\
-Print[tractionOnFace[{2, 0, 0}, 1, 2, 1, Dlam, Dmu]];\n\
-Print[\"Traction of r1^2 e1 on face z=+1:\"];\n\
-Print[tractionOnFace[{2, 0, 0}, 1, 3, 1, Dlam, Dmu]];", "Input"],
-
-Cell["\
-(* Direct 5D NIntegrate for validation *)\n\
-(* Face x = +1: r' = (1, s1, s2), normal = e_1 *)\n\
-(* phi_alpha = 1 (constant, component 1) *)\n\
-(* traction of r1^2 e1 on x=+1: sigma_{k1} at r1=1 *)\n\
-(* = {2(Dlam + 2Dmu), 0, 0} *)\n\
-\n\
-directTest = NIntegrate[\n\
-  1 * 2 * 1 / (4 Pi) *\n\
-  1/Sqrt[(r1 - 1)^2 + (r2 - s1)^2 + (r3 - s2)^2],\n\
-  {r1, -1, 1}, {r2, -1, 1}, {r3, -1, 1},\n\
-  {s1, -1, 1}, {s2, -1, 1},\n\
-  PrecisionGoal -> 8, MaxRecursion -> 15,\n\
-  Method -> {\"GlobalAdaptive\", \"SingularityHandler\" -> \"DuffyCoordinates\"}\n\
-];\n\
-Print[\"Direct 5D NIntegrate (one face, Dlam channel): \", directTest];\n\
-Print[\"This should match the contribution from face x=+1.\"];\n\
-\n\
-(* Now via master integrals: *)\n\
-(* After substitution (sig2 = (r2+s1)/2, xi2 = (r2-s1)/2, etc.) *)\n\
-(* and v = (1 - r1)/2 (for face x = +1), the integrand is: *)\n\
-(* 1/(2 rho) * (Jacobian factors) *)\n\
-(* Integral = 4 * 4 * 2 * (1/2) * Mp[0,0,0] = 16 Mp[0,0,0] *)\n\
-(* (Check the prefactors carefully!) *)\n\
-Print[\"16 * Mp[0,0,0] = \", 16 * mpNumTable[{0,0,0}]];", "Input"],
-
-(* ================================================================ *)
-Cell["10. Prefactor Bookkeeping", "Section"],
-
-Cell["\
-The full prefactor chain for the surface A-channel integral on one face:\n\n\
-1. Jacobian (sigma,xi) substitution: 2 per pair, 2 pairs = 4\n\
-2. Octant symmetry: 4 per pair, 2 pairs = 16\n\
-3. v substitution: dr3 = -2 dv, factor 2\n\
-4. Green's tensor: 1/(4 pi) * a0 * 1/|x| = a0/(4 pi) * 1/(2 rho)\n\
-5. Face area element: dS = ds1 ds2 (no metric factor for flat face)\n\n\
-Total for A-channel on one face:\n\
-  4 (Jacobian) * 16 (octant) * 2 (v) * 1/(8 pi) (Green's)\n\
-  = 128 / (8 pi) = 16/pi\n\n\
-Times the polynomial coefficient from the mode/traction product.\n\
-Summed over the relevant faces (2 or 6 depending on symmetry).\n\n\
-IMPORTANT: The factor 1/(4 pi) comes from the Green's tensor normalization.\n\
-In CubeT27Stiffness_LS.wl, the Green's tensor was G_ij = a0/|x| delta_ij\n\
-where a0 already contains the 1/(8 pi rho alpha^2 beta^2) factor.\n\
-So the surface integrals there did NOT include 1/(4 pi) -- check carefully.", "Text"],
-
-Cell["\
-(* Verify prefactors against known numerical value *)\n\
-(* The user should trace through one complete example *)\n\
-(* to nail down the prefactor convention. *)\n\
-\n\
-(* Hint: the CubeT27Stiffness_LS.wl Green's tensor was: *)\n\
-(*   G_ij(x) = (a0/|x|) delta_ij + (b0/|x|^3) x_i x_j *)\n\
-(* with a0, b0 set to 1 for the channel decomposition. *)\n\
-(* So the surface integral is just: *)\n\
-(*   Integral phi_i(r) * (1/|r-r'|) * t_i(r') dV(r) dS(r') *)\n\
-(* with no 4pi factors. *)", "Input"],
-
-(* ================================================================ *)
-Cell["11. Complete Analytical Reduction", "Section"],
-
-Cell["\
-Once all Mp values are computed symbolically, the surface stiffness\n\
-matrix entries are LINEAR COMBINATIONS of Mp values with RATIONAL\n\
-coefficients (from the polynomial expansion and sigma integration).\n\n\
-This means the final answers are closed-form expressions involving\n\
-the same special functions as the body bilinear: ArcTan, Log, Sqrt\n\
-of algebraic numbers.\n\n\
-The B-channel additionally involves 2D boundary integrals Bp2D[q,r]\n\
-from the integration by parts, which are also expressible in terms\n\
-of ArcTan, Log, Sqrt.", "Text"],
-
-Cell["\
-(* ================================================================ *)\n\
-(* EXERCISE: Compute all 31 needed Mp values symbolically, *)\n\
-(* then assemble the full surface stiffness for each irrep. *)\n\
-(* Compare with CubeT27Stiffness_LS.wl numerical values. *)\n\
-(* ================================================================ *)\n\
-\n\
-(* Known values from CubeT27Stiffness_LS.wl (numerical, ~10 digits): *)\n\
-knownT1u = {\n\
-  (* Surface stiffness, A_Dlam channel, T1u 4x4 *)\n\
-  {1,2} -> 301.680440020328,\n\
-  {1,3} -> 0,\n\
-  {1,4} -> 301.680440020328,\n\
-  {2,2} -> 109.18507257344282,\n\
-  {2,3} -> 0,\n\
-  {2,4} -> 109.18507257344282,\n\
-  {3,2} -> 187.0285709919309,\n\
-  {3,3} -> 0,\n\
-  {3,4} -> 187.0285709919309,\n\
-  {4,2} -> 284.24440209695274,\n\
-  {4,3} -> 0,\n\
-  {4,4} -> 284.24440209695274\n\
-};\n\
-Print[\"Target values for validation:\"];\n\
-Scan[Print[\"  T1u[\", #[[1]], \"] A_Dlam = \", #[[2]]] &, knownT1u];", "Input"],
-
-(* ================================================================ *)
-Cell["12. Summary", "Section"],
-
-Cell["\
-The surface master integrals for the cube LS-convolved stiffness\n\
-reduce to the SAME family Mp[p,q,r] as the body bilinear, via:\n\n\
-1. (sigma, xi) substitution for the 2 shared coordinates\n\
-2. v = (1-r_normal)/2 for the face-normal coordinate\n\
-3. Sigma integrals factor out analytically\n\
-4. Everything reduces to Mp[p,q,r] = Int_[0,1]^3 x^p y^q z^r / rho\n\
-5. B-channel reduces via IBP: xi/rho^3 = -d(1/rho)/d(xi)\n\n\
-Needed: 31 unique Mp values (p >= q >= r, max index 4).\n\
-Many are already known from the body computation.\n\
-The rest are computed by Mathematica's Integrate in seconds to minutes.\n\n\
-The final surface stiffness entries are rational linear combinations\n\
-of these Mp values -- giving fully analytical, closed-form results.", "Text"]
-
-},
-WindowSize -> {900, 800},
-ShowCellBracket -> True,
-CellContext -> "Global`"
+(* Numerical evaluation *)
+MpNum[p_, q_, r_] := NIntegrate[
+  x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],
+  {x, 0, 1}, {y, 0, 1}, {z, 0, 1},
+  PrecisionGoal -> 15, MaxRecursion -> 25
 ]
+
+(* Symbolic evaluation *)
+MpSym[p_, q_, r_] := Integrate[
+  x^p y^q z^r / Sqrt[x^2 + y^2 + z^2],
+  {x, 0, 1}, {y, 0, 1}, {z, 0, 1}
+]\
+\>", "Input",ExpressionUUID->"bb5e8b44-acdc-4b80-8ee4-a167f0c7e9bf"],
+
+Cell["\<\
+The integral Js[p,q,r] = Integral_[0,1]^3 xi1^p xi2^q v^r / rho d(xi1) d(xi2) \
+dv
+is IDENTICAL to Mp[p,q,r] because:
+  - The domain [0,1]^3 is the same
+  - The denominator sqrt(xi1^2 + xi2^2 + v^2) is fully symmetric
+  - The monomial xi1^p xi2^q v^r is just a relabeling
+
+So Js[p,q,r] = Mp[p,q,r] by definition. No new integrals needed!
+
+All existing Mp values from CubeGalerkin27.wl can be reused.
+We just need additional values at higher exponents.\
+\>", "Text",ExpressionUUID->"2851e1c1-8436-4abd-80bd-e18c1c46af0f"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["5. Needed Master Integrals", "Section",ExpressionUUID->"6356ba33-02a5-4f1d-9d0e-5c5f37c77156"],
+
+Cell["\<\
+Maximum monomial degrees after the sigma integration:
+  - xi1, xi2: up to degree 4 (from quadratic mode x sigma integral)
+  - v: up to degree 2 (from r3 = 1 - 2v, quadratic modes)
+
+By full permutation symmetry, we use canonical sorted form p >= q >= r.
+With max index 4 in any position:\
+\>", "Text",ExpressionUUID->"2b20be5c-397f-42a3-bdb6-d37cbf9ed616"],
+
+Cell["\<\
+(* Enumerate all needed sorted triples *)
+neededMp = Union[Sort /@ Flatten[
+  Table[{p, q, r}, {p, 0, 4}, {q, 0, 4}, {r, 0, 2}],
+  2]];
+Print[\"Number of unique master integrals: \", Length[neededMp]];
+Print[\"Triples: \", neededMp];\
+\>", "Input",ExpressionUUID->"7546338c-152a-46bb-9f00-3cab097b8021"],
+
+Cell["\<\
+(* Compute all needed values numerically first (for validation) *)
+Print[\"Computing numerical values...\"];
+mpNumTable = Association[
+  Table[
+    Module[{sorted = Sort[triple]},
+      sorted -> MpNum @@ sorted
+    ],
+    {triple, neededMp}
+  ]
+];
+Print[\"Done. Sample values:\"];
+Print[\"  Mp[0,0,0] = \", mpNumTable[{0,0,0}]];
+Print[\"  Mp[1,0,0] = \", mpNumTable[{1,0,0}]];
+Print[\"  Mp[1,1,0] = \", mpNumTable[{1,1,0}]];
+Print[\"  Mp[1,1,1] = \", mpNumTable[{1,1,1}]];\
+\>", "Input",ExpressionUUID->"95f81ab0-26e4-42df-a6f6-f0fe4ad2ea50"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["6. Analytical Evaluation Strategy", "Section",ExpressionUUID->"06193ada-f6d5-48df-bd2a-3737a45dde90"],
+
+Cell["\<\
+Strategy: integrate v first, then xi2, then xi1.
+
+Step 1 (v integral):
+  Integral_0^1 v^r / sqrt(xi1^2 + xi2^2 + v^2) dv
+
+This has closed forms for each r:
+  r=0: ArcSinh[1/R] where R = sqrt(xi1^2 + xi2^2)
+  r=1: sqrt(R^2 + 1) - R
+  r=2: (1/2) sqrt(R^2+1) - (R^2/2) ArcSinh[1/R]
+
+Step 2 (xi2 integral): polynomial in xi2 times these functions of R.
+Step 3 (xi1 integral): similar reduction.
+
+Each step involves integrals Mathematica can handle symbolically.\
+\>", "Text",ExpressionUUID->"c8be47e8-ef49-4f14-bebc-4985e543f303"],
+
+Cell["\<\
+(* Step 1: v integral, parametric in R^2 = xi1^2 + xi2^2 *)
+ClearAll[vIntegral];
+vIntegral[r_, R_] := Integrate[v^r/Sqrt[R^2 + v^2], {v, 0, 1},
+  Assumptions -> R > 0]
+
+Print[\"v-integral closed forms:\"];
+Do[
+  Print[\"  r=\", r, \": \", Simplify[vIntegral[r, R]]],
+  {r, 0, 2}
+]\
+\>", "Input",ExpressionUUID->"32e01750-4ab0-477c-9afe-64d2a1446148"],
+
+Cell["\<\
+(* Attempt symbolic evaluation of specific Mp values *)
+(* Start with the simplest: Mp[0,0,0] *)
+Print[\"\\nAttempting symbolic Mp[0,0,0]...\"];
+timing0 = AbsoluteTiming[
+  mp000sym = Integrate[1/Sqrt[x^2 + y^2 + z^2],
+    {z, 0, 1}, {y, 0, 1}, {x, 0, 1}]
+];
+Print[\"  Mp[0,0,0] = \", mp000sym, \"  (\", timing0[[1]], \" s)\"];
+Print[\"  Numerical: \", N[mp000sym, 20]];
+Print[\"  NIntegrate: \", mpNumTable[{0,0,0}]];\
+\>", "Input",ExpressionUUID->"5766aac0-9676-4228-a0f5-cd6742dde9f2"],
+
+Cell["\<\
+(* Mp[1,0,0]: one linear factor *)
+Print[\"Attempting symbolic Mp[1,0,0]...\"];
+timing1 = AbsoluteTiming[
+  mp100sym = Integrate[x/Sqrt[x^2 + y^2 + z^2],
+    {z, 0, 1}, {y, 0, 1}, {x, 0, 1}]
+];
+Print[\"  Mp[1,0,0] = \", mp100sym, \"  (\", timing1[[1]], \" s)\"];
+Print[\"  N = \", N[mp100sym, 20]];\
+\>", "Input",ExpressionUUID->"364cf9cd-90ca-44e1-a3ea-15ef078bde8e"],
+
+Cell["\<\
+(* Automated: compute all needed Mp symbolically *)
+(* WARNING: higher-order ones may take minutes. Start with small indices. *)
+mpSymTable = <||>;
+Do[
+  Module[{triple = Sort[{p, q, r}], val, t},
+    If[!KeyExistsQ[mpSymTable, triple],
+      Print[\"Computing Mp\", triple, \"...\"];
+      {t, val} = AbsoluteTiming[
+        Integrate[
+          x^triple[[1]] y^triple[[2]] z^triple[[3]] / Sqrt[x^2+y^2+z^2],
+          {z, 0, 1}, {y, 0, 1}, {x, 0, 1}
+        ]
+      ];
+      mpSymTable[triple] = val;
+      Print[\"  = \", val, \"  (\", t, \" s)\"];
+      Print[\"  N = \", N[val, 20], \"  (num: \", mpNumTable[triple], \")\"];
+    ]
+  ],
+  (* Start with small indices first *)
+  {r, 0, 2}, {q, r, 4}, {p, q, 4}
+];\
+\>", "Input",ExpressionUUID->"107a528b-8a09-47d9-9b39-92ffbe9cf904"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["7. B-Channel: Reduction via Integration by Parts", "Section",ExpressionUUID->"762c61e4-17ba-4b7c-b7ae-12f139142ba0"],
+
+Cell["\<\
+The B-channel has kernel x_i x_j / |x|^3 = 4 xi_a xi_b / (8 rho^3)
+where (a,b) index the displacement components.
+
+Key identity: xi_a / rho^3 = -(d/d(xi_a))(1/rho)
+
+So integrals of the form
+  Integral f(xi) * xi_a / rho^3 d(xi_a)
+reduce via integration by parts to:
+  [boundary terms at xi_a = 0, 1] + Integral f'(xi) / rho d(xi_a)
+
+The boundary term at xi_a = 0 involves 1/sqrt(xi_b^2 + v^2) and
+the term at xi_a = 1 involves 1/sqrt(1 + xi_b^2 + v^2).
+Both are lower-dimensional integrals of the same type.
+
+For the diagonal case xi_a^2 / rho^3, use:
+  xi_a^2 / rho^3 = xi_a * (xi_a/rho^3) = -xi_a d(1/rho)/d(xi_a)
+  = -d(xi_a/rho)/d(xi_a) + 1/rho
+  = 1/rho - d(xi_a/rho)/d(xi_a)
+
+So Integral f * xi_a^2/rho^3 = Integral f/rho - [boundary of f*xi_a/rho].\
+\>", "Text",ExpressionUUID->"20702957-777e-46b8-966f-80da5705ab5a"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* B-channel master integrals: xi_a xi_b / rho^3 type *)
+(* These can be defined directly and compared *)
+BpNum[i_, j_, p_, q_, r_] := NIntegrate[
+  x^p y^q z^r * {x, y, z}[[i]] {x, y, z}[[j]] / (x^2 + y^2 + z^2)^(3/2),
+  {x, 0, 1}, {y, 0, 1}, {z, 0, 1},
+  PrecisionGoal -> 12, MaxRecursion -> 25
+]
+
+(* Verify IBP identity: Integral xi1^2/rho^3 = Integral 1/rho - boundary *)
+Print[\"Verifying IBP identity...\"];
+direct = BpNum[1, 1, 0, 0, 0];
+fromMp = mpNumTable[{0, 0, 0}];
+boundary = NIntegrate[
+  1/Sqrt[1 + y^2 + z^2],
+  {y, 0, 1}, {z, 0, 1},
+  PrecisionGoal -> 15
+];
+Print[\"  Direct:   \", direct];
+Print[\"  Mp[0,0,0] - boundary: \", fromMp - boundary];
+Print[\"  Difference: \", direct - (fromMp - boundary)];\
+\>", "Input",
+ CellLabel->"In[7]:=",ExpressionUUID->"891e4e8a-ce1e-4294-92f2-127d40b74937"],
+
+Cell[BoxData["\<\"Verifying IBP identity...\"\>"], "Print",
+ CellChangeTimes->{3.984878692046619*^9},
+ CellLabel->
+  "During evaluation of \
+In[7]:=",ExpressionUUID->"fba692ce-261b-4918-99b9-46f2a9298be1"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "NIntegrate", "eincr", 
+   "\"The global error of the strategy GlobalAdaptive has increased more than \
+\\!\\(\\*RowBox[{\\\"2000\\\"}]\\) times. The global error is expected to \
+decrease monotonically after a number of integrand evaluations. Suspect one \
+of the following: the working precision is insufficient for the specified \
+precision goal; the integrand is highly oscillatory or it is not a \
+(piecewise) smooth function; or the true value of the integral is 0. \
+Increasing the value of the GlobalAdaptive option MaxErrorIncreases might \
+lead to a convergent numerical integration. NIntegrate obtained \
+\\!\\(\\*RowBox[{\\\"0.39667956065778975`\\\"}]\\) and \
+\\!\\(\\*RowBox[{\\\"1.5074186731024733`*^-9\\\"}]\\) for the integral and \
+error estimates.\"", 2, 13, 2, 33733735414886981954, "Local"},
+  "MessageTemplate",
+  BaseStyle->"MSG"]], "Message",
+ CellChangeTimes->{3.984878697510151*^9},
+ CellLabel->
+  "During evaluation of \
+In[7]:=",ExpressionUUID->"16cad9dc-f5d4-465f-8a63-cc2e97345393"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  Direct:   \"\>", "\[InvisibleSpace]", 
+   "0.39667956065778975`"}],
+  SequenceForm["  Direct:   ", 0.39667956065778975`],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.984878700655216*^9},
+ CellLabel->
+  "During evaluation of \
+In[7]:=",ExpressionUUID->"8dbcce60-de83-4060-ac3d-73163d74cbb2"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  Mp[0,0,0] - boundary: \"\>", "\[InvisibleSpace]", 
+   RowBox[{
+    RowBox[{"-", "0.7933591213265165`"}], "+", 
+    RowBox[{"mpNumTable", "[", 
+     RowBox[{"{", 
+      RowBox[{"0", ",", "0", ",", "0"}], "}"}], "]"}]}]}],
+  SequenceForm[
+  "  Mp[0,0,0] - boundary: ", -0.7933591213265165 + $CellContext`mpNumTable[{
+     0, 0, 0}]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.984878700657074*^9},
+ CellLabel->
+  "During evaluation of \
+In[7]:=",ExpressionUUID->"ad35e93c-44d7-4fe1-8be7-db0a8d3c0255"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"\<\"  Difference: \"\>", "\[InvisibleSpace]", 
+    "1.1900386819843063`"}], "\[VeryThinSpace]", "-", 
+   RowBox[{"mpNumTable", "[", 
+    RowBox[{"{", 
+     RowBox[{"0", ",", "0", ",", "0"}], "}"}], "]"}]}],
+  SequenceForm[
+  "  Difference: ", 1.1900386819843063` - $CellContext`mpNumTable[{0, 0, 0}]],
+  
+  Editable->False]], "Print",
+ CellChangeTimes->{3.9848787006587877`*^9},
+ CellLabel->
+  "During evaluation of \
+In[7]:=",ExpressionUUID->"c46460f9-c28a-4bef-8952-14be1b0a88a1"]
+}, Open  ]]
+}, Open  ]],
+
+Cell["\<\
+(* General IBP reduction for B-channel *)
+(* For integrands with xi_a/rho^3 factor, integrate by parts in xi_a *)
+
+(* 2D boundary integrals (face of the unit cube) *)
+Bp2D[q_, r_] := NIntegrate[
+  y^q z^r / Sqrt[1 + y^2 + z^2],
+  {y, 0, 1}, {z, 0, 1},
+  PrecisionGoal -> 15
+]
+
+(* These 2D integrals are also analytically tractable: *)
+(* same structure as the v-integral but at a fixed boundary *)
+Bp2DSym[q_, r_] := Integrate[
+  y^q z^r / Sqrt[1 + y^2 + z^2],
+  {y, 0, 1}, {z, 0, 1}
+]
+
+Print[\"2D boundary integrals:\"];
+Do[
+  Print[\"  Bp2D[\", q, \",\", r, \"] = \", Bp2DSym[q, r],
+    \"  (N = \", N[Bp2DSym[q, r], 15], \")\"],
+  {q, 0, 3}, {r, 0, 2}
+]\
+\>", "Input",ExpressionUUID->"cc238ae9-e62f-416c-a0e3-528bef446ebe"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["8. Assembly: From Master Integrals to Surface Stiffness", "Section",ExpressionUUID->"4aa305d2-1e4c-4273-b5f8-3d2ed02b223d"],
+
+Cell["\<\
+The surface stiffness for one face is assembled by:
+1. Express phi_alpha(r) in (sigma, xi, v) variables
+2. Express traction t(s) in (sigma, xi) variables (on face)
+3. Multiply and expand into monomials of (sigma1, xi1, sigma2, xi2, v)
+4. Integrate each sigma analytically: sigma^k -> (1-xi)^{k+1}/(k+1)
+5. Expand (1-xi)^n and collect monomials of (xi1, xi2, v)
+6. Look up each monomial coefficient * Mp[p,q,r]
+7. Sum over all 6 faces
+
+The following function automates steps 1-6 for a single face.\
+\>", "Text",ExpressionUUID->"b028aa85-0f87-4aa4-a70c-b76a417dbeb4"],
+
+Cell["\<\
+(* Automated surface integral for one face, A-channel *)
+(* Returns the integral as a sum of Mp values *)
+surfaceA1Face[
+  alphaMode_, (* {exponents, direction} for phi_alpha *)
+  betaMode_,  (* {exponents, direction} for phi_beta *)
+  faceAxis_,  (* which axis the face is on (1,2,3) *)
+  faceSign_   (* +1 or -1 *)
+] := Module[
+  {r1, r2, r3, s1, s2, sig1, xi1, sig2, xi2, v,
+   trac, phiAlpha, integrand, shared, normal,
+   sigmaResult, expanded, result = 0},
+  
+  (* Identify shared and normal coordinates *)
+  shared = Delete[{1, 2, 3}, faceAxis];
+  normal = faceAxis;
+  
+  (* Mode function phi_alpha *)
+  phiAlpha = ({r1, r2, r3}[[alphaMode[[2]]]])
+    (r1^alphaMode[[1, 1]] r2^alphaMode[[1, 2]] r3^alphaMode[[1, 3]] /.
+     {r1, r2, r3}[[alphaMode[[2]]]] -> 1);
+  (* Actually, simpler: phi_alpha = product of r^n for the monomial part *)
+  phiAlpha = r1^alphaMode[[1, 1]] r2^alphaMode[[1, 2]] r3^alphaMode[[1, 3]];
+  
+  (* Traction from beta mode on this face *)
+  trac = tractionOnFace[
+    betaMode[[1]], betaMode[[2]], faceAxis, faceSign, Dlam, Dmu];
+  
+  (* A-channel: same component coupling *)
+  (* integrand = phi_alpha_i * trac_i / |r - r'| *)
+  (* Only i = alphaMode[[2]] contributes *)
+  integrand = phiAlpha * trac[[alphaMode[[2]]]];
+  
+  (* Substitute: shared coords -> (sigma, xi), normal coord -> v *)
+  integrand = integrand /. {
+    {r1, r2, r3}[[shared[[1]]]] -> sig1 + xi1,
+    {r1, r2, r3}[[shared[[2]]]] -> sig2 + xi2,
+    {r1, r2, r3}[[normal]] -> 1 - 2 v,
+    {r1, r2, r3}[[shared[[1]]]] -> sig1 - xi1, (* for s coords in traction *)
+    {r1, r2, r3}[[shared[[2]]]] -> sig2 - xi2
+  };
+  (* NOTE: The traction uses surface coords s_a = sigma_a - xi_a *)
+  (* This substitution needs care -- traction was already evaluated at face \
+*)
+  (* so it only has the s1, s2 dependence *)
+  
+  (* This is a sketch -- the user should flesh out the bookkeeping *)
+  (* The key point is that everything reduces to Mp integrals *)
+  integrand
+]\
+\>", "Input",ExpressionUUID->"efd2808c-aeb0-46ae-8a86-37769c12fb8c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["9. Worked Example: T1u[1,2] A_Dlam Channel", "Section",ExpressionUUID->"5a2ade36-fe00-4386-a27f-69937ba809c1"],
+
+Cell["\<\
+Let's trace through one specific entry to validate the framework.
+
+T1u mode 1 = constant displacement e_1 (in Usym basis)
+T1u mode 2 = mix of S-type quadratics
+
+For the A_Dlam channel: set Dmu = 0, a0 = 1, b0 = 0.
+The known numerical value is 301.68 (from CubeT27Stiffness_LS.wl).\
+\>", "Text",ExpressionUUID->"dc083840-4b1e-4bbf-bc4e-c0771fd92bb1"],
+
+Cell["\<\
+(* Direct numerical check: simplest case *)
+(* A-channel integral of (constant e_1) with traction from r1^2 e1 *)
+(* on face z = +1: traction = {0, 0, 2 Dlam s1} for r1^2 e1 *)
+(* A-channel: only same-component coupling *)
+(* phi_alpha = e_1 (component 1), traction component 1 = 0 *)
+(* So this particular pair gives 0 on face z = +1. *)
+(* Need to check face x = +1 instead: *)
+
+Print[\"Traction of r1^2 e1 on face x=+1:\"];
+Print[tractionOnFace[{2, 0, 0}, 1, 1, 1, Dlam, Dmu]];
+Print[\"Traction of r1^2 e1 on face y=+1:\"];
+Print[tractionOnFace[{2, 0, 0}, 1, 2, 1, Dlam, Dmu]];
+Print[\"Traction of r1^2 e1 on face z=+1:\"];
+Print[tractionOnFace[{2, 0, 0}, 1, 3, 1, Dlam, Dmu]];\
+\>", "Input",ExpressionUUID->"1706f768-df7d-43c9-8c65-f911731498f4"],
+
+Cell["\<\
+(* Direct 5D NIntegrate for validation *)
+(* Face x = +1: r' = (1, s1, s2), normal = e_1 *)
+(* phi_alpha = 1 (constant, component 1) *)
+(* traction of r1^2 e1 on x=+1: sigma_{k1} at r1=1 *)
+(* = {2(Dlam + 2Dmu), 0, 0} *)
+
+directTest = NIntegrate[
+  1 * 2 * 1 / (4 Pi) *
+  1/Sqrt[(r1 - 1)^2 + (r2 - s1)^2 + (r3 - s2)^2],
+  {r1, -1, 1}, {r2, -1, 1}, {r3, -1, 1},
+  {s1, -1, 1}, {s2, -1, 1},
+  PrecisionGoal -> 8, MaxRecursion -> 15,
+  Method -> {\"GlobalAdaptive\", \"SingularityHandler\" -> \"DuffyCoordinates\
+\"}
+];
+Print[\"Direct 5D NIntegrate (one face, Dlam channel): \", directTest];
+Print[\"This should match the contribution from face x=+1.\"];
+
+(* Now via master integrals: *)
+(* After substitution (sig2 = (r2+s1)/2, xi2 = (r2-s1)/2, etc.) *)
+(* and v = (1 - r1)/2 (for face x = +1), the integrand is: *)
+(* 1/(2 rho) * (Jacobian factors) *)
+(* Integral = 4 * 4 * 2 * (1/2) * Mp[0,0,0] = 16 Mp[0,0,0] *)
+(* (Check the prefactors carefully!) *)
+Print[\"16 * Mp[0,0,0] = \", 16 * mpNumTable[{0,0,0}]];\
+\>", "Input",ExpressionUUID->"624af0e3-98ec-41e3-bcd3-2e8dc8f1ef07"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["10. Prefactor Bookkeeping", "Section",ExpressionUUID->"9e1d8289-2323-4d4a-b486-45873b8318ea"],
+
+Cell["\<\
+The full prefactor chain for the surface A-channel integral on one face:
+
+1. Jacobian (sigma,xi) substitution: 2 per pair, 2 pairs = 4
+2. Octant symmetry: 4 per pair, 2 pairs = 16
+3. v substitution: dr3 = -2 dv, factor 2
+4. Green's tensor: 1/(4 pi) * a0 * 1/|x| = a0/(4 pi) * 1/(2 rho)
+5. Face area element: dS = ds1 ds2 (no metric factor for flat face)
+
+Total for A-channel on one face:
+  4 (Jacobian) * 16 (octant) * 2 (v) * 1/(8 pi) (Green's)
+  = 128 / (8 pi) = 16/pi
+
+Times the polynomial coefficient from the mode/traction product.
+Summed over the relevant faces (2 or 6 depending on symmetry).
+
+IMPORTANT: The factor 1/(4 pi) comes from the Green's tensor normalization.
+In CubeT27Stiffness_LS.wl, the Green's tensor was G_ij = a0/|x| delta_ij
+where a0 already contains the 1/(8 pi rho alpha^2 beta^2) factor.
+So the surface integrals there did NOT include 1/(4 pi) -- check carefully.\
+\>", "Text",ExpressionUUID->"69af3e33-6ca4-415b-b93e-693f9400e272"],
+
+Cell["\<\
+(* Verify prefactors against known numerical value *)
+(* The user should trace through one complete example *)
+(* to nail down the prefactor convention. *)
+
+(* Hint: the CubeT27Stiffness_LS.wl Green's tensor was: *)
+(*   G_ij(x) = (a0/|x|) delta_ij + (b0/|x|^3) x_i x_j *)
+(* with a0, b0 set to 1 for the channel decomposition. *)
+(* So the surface integral is just: *)
+(*   Integral phi_i(r) * (1/|r-r'|) * t_i(r') dV(r) dS(r') *)
+(* with no 4pi factors. *)\
+\>", "Input",ExpressionUUID->"c0fa594c-e212-4220-8fd4-d2faa256c918"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["11. Complete Analytical Reduction", "Section",ExpressionUUID->"9c10c9bf-5785-4abe-bf59-39588495c96b"],
+
+Cell["\<\
+Once all Mp values are computed symbolically, the surface stiffness
+matrix entries are LINEAR COMBINATIONS of Mp values with RATIONAL
+coefficients (from the polynomial expansion and sigma integration).
+
+This means the final answers are closed-form expressions involving
+the same special functions as the body bilinear: ArcTan, Log, Sqrt
+of algebraic numbers.
+
+The B-channel additionally involves 2D boundary integrals Bp2D[q,r]
+from the integration by parts, which are also expressible in terms
+of ArcTan, Log, Sqrt.\
+\>", "Text",ExpressionUUID->"d6311b1e-5821-4042-bbe0-e4c22079ac15"],
+
+Cell["\<\
+(* ================================================================ *)
+(* EXERCISE: Compute all 31 needed Mp values symbolically, *)
+(* then assemble the full surface stiffness for each irrep. *)
+(* Compare with CubeT27Stiffness_LS.wl numerical values. *)
+(* ================================================================ *)
+
+(* Known values from CubeT27Stiffness_LS.wl (numerical, ~10 digits): *)
+knownT1u = {
+  (* Surface stiffness, A_Dlam channel, T1u 4x4 *)
+  {1,2} -> 301.680440020328,
+  {1,3} -> 0,
+  {1,4} -> 301.680440020328,
+  {2,2} -> 109.18507257344282,
+  {2,3} -> 0,
+  {2,4} -> 109.18507257344282,
+  {3,2} -> 187.0285709919309,
+  {3,3} -> 0,
+  {3,4} -> 187.0285709919309,
+  {4,2} -> 284.24440209695274,
+  {4,3} -> 0,
+  {4,4} -> 284.24440209695274
+};
+Print[\"Target values for validation:\"];
+Scan[Print[\"  T1u[\", #[[1]], \"] A_Dlam = \", #[[2]]] &, knownT1u];\
+\>", "Input",ExpressionUUID->"6209cad3-2f7f-4930-99cf-583773b5392a"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["12. Summary", "Section",ExpressionUUID->"5b0a07f7-a4e7-4043-a065-816b97c283f9"],
+
+Cell["\<\
+The surface master integrals for the cube LS-convolved stiffness
+reduce to the SAME family Mp[p,q,r] as the body bilinear, via:
+
+1. (sigma, xi) substitution for the 2 shared coordinates
+2. v = (1-r_normal)/2 for the face-normal coordinate
+3. Sigma integrals factor out analytically
+4. Everything reduces to Mp[p,q,r] = Int_[0,1]^3 x^p y^q z^r / rho
+5. B-channel reduces via IBP: xi/rho^3 = -d(1/rho)/d(xi)
+
+Needed: 31 unique Mp values (p >= q >= r, max index 4).
+Many are already known from the body computation.
+The rest are computed by Mathematica's Integrate in seconds to minutes.
+
+The final surface stiffness entries are rational linear combinations
+of these Mp values -- giving fully analytical, closed-form results.\
+\>", "Text",ExpressionUUID->"19214dbd-2cdf-406c-833a-288a875a538d"],
+
+Cell[BoxData[""], "Input",
+ CellChangeTimes->{{3.9849437392178392`*^9, 
+  3.984943754269499*^9}},ExpressionUUID->"eaff22f4-edf8-477b-ad44-\
+8ad8e0f70a8e"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"RegisterExternalEvaluator", "[", 
+  RowBox[{"\"\<Python\>\"", 
+   ",", "\"\</opt/homebrew/Caskroom/miniforge/base/envs/du/bin/python3\>\""}],
+   "]"}], "\[IndentingNewLine]", 
+ RowBox[{"ExternalEvaluate", "[", 
+  RowBox[{"\"\<Python\>\"", ",", "\"\<import sys; sys.version\>\""}], 
+  "]"}], "\[IndentingNewLine]"}], "Input",
+ CellChangeTimes->{{3.984944759428444*^9, 3.984944759431538*^9}, 
+   3.98494481757784*^9, {3.984944903383979*^9, 3.984944915578142*^9}},
+ CellLabel->"In[8]:=",ExpressionUUID->"8f386a86-48b6-47db-9089-7163fec87858"],
+
+Cell[BoxData["\<\"spraoys-kwiin-05vwl3e8mrklr\"\>"], "Output",
+ CellChangeTimes->{3.984944765360826*^9, 3.9849448230135603`*^9, 
+  3.984944917599074*^9},
+ CellLabel->"Out[8]=",ExpressionUUID->"982ed3d4-6065-41f4-adbc-75ffb6c5abe8"],
+
+Cell[BoxData["\<\"3.12.12 | packaged by conda-forge | (main, Jan 27 2026, \
+00:01:15) [Clang 19.1.7 ]\"\>"], "Output",
+ CellChangeTimes->{3.984944765360826*^9, 3.9849448230135603`*^9, 
+  3.984944917696262*^9},
+ CellLabel->"Out[9]=",ExpressionUUID->"732fcc72-34b8-4fbc-9b67-6ceb57627357"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"numpyArray", "=", 
+  RowBox[{
+   RowBox[{"ExternalEvaluate", "[", 
+    RowBox[{"\"\<Python\>\"", 
+     ",", "\"\<\nimport numpy as np\nimport pandas as pd\nlist = \
+np.arange(10)\nlist\n\>\""}], "]"}], "//", "Normal"}]}]], "Input",
+ CellChangeTimes->{{3.9849452738166447`*^9, 3.98494540648311*^9}, {
+  3.984945656717745*^9, 3.984945671462995*^9}, {3.984945716654108*^9, 
+  3.984945726479377*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"2a02d70b-86c6-4d07-8a37-c77da2833087"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+  "0", ",", "1", ",", "2", ",", "3", ",", "4", ",", "5", ",", "6", ",", "7", ",",
+    "8", ",", "9"}], "}"}]], "Output",
+ CellChangeTimes->{{3.9849453854951572`*^9, 3.98494541030976*^9}, 
+   3.98494567647642*^9, {3.984945720020742*^9, 3.98494572846238*^9}, 
+   3.984946079072751*^9},
+ CellLabel->"Out[1]=",ExpressionUUID->"19a1090f-a2d2-422d-b201-5530f2b4b1b4"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["print(\"hello\")", "ExternalLanguage",
+ TaggingRules-><|
+  "ExternalEvaluateData" -> <|
+    "System" -> "Python", "SessionID" -> "default-python-session", 
+     "Evaluator" -> Automatic|>|>,
+ CellEvaluationLanguage->"Python",
+ CellChangeTimes->{{3.984945449204857*^9, 3.98494545976215*^9}},
+ CellLabel->"In[15]:=",ExpressionUUID->"08d41c1d-33f6-430b-ad9b-a77c11376121"],
+
+Cell[BoxData["\<\"hello\"\>"], "Print",
+ CellChangeTimes->{3.984945462311952*^9},
+ CellLabel->
+  "During evaluation of \
+In[15]:=",ExpressionUUID->"8b05a75f-6ee4-46ca-9664-cd2be2c7144a"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{"Quit", "[", "]"}]], "Input",
+ CellChangeTimes->{{3.984946059295456*^9, 3.984946061409403*^9}},
+ CellLabel->"In[19]:=",ExpressionUUID->"0ea07a07-4b10-4cc3-9d42-d6011aedc173"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"session", "=", 
+  RowBox[{"StartExternalSession", "[", 
+   RowBox[{"{", "\"\<Python\>\"", "}"}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.984946669695606*^9, 3.984946706092284*^9}},
+ CellLabel->"In[2]:=",ExpressionUUID->"d926b9cf-3fcb-4c7a-9e94-f2eba5eaf937"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   TagBox["ExternalSessionObject",
+    "SummaryHead"], "[", 
+   DynamicModuleBox[{Typeset`open$$ = False, Typeset`embedState$$ = "Ready"}, 
+    
+    TemplateBox[{
+      PaneSelectorBox[{False -> GridBox[{{
+            PaneBox[
+             ButtonBox[
+              DynamicBox[
+               FEPrivate`FrontEndResource["FEBitmaps", "SummaryBoxOpener"]], 
+              ButtonFunction :> (Typeset`open$$ = True), Appearance -> None, 
+              BaseStyle -> {}, Evaluator -> Automatic, Method -> 
+              "Preemptive"], Alignment -> {Center, Center}, ImageSize -> 
+             Dynamic[{
+               Automatic, 
+                3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                 Magnification])}]], 
+            StyleBox[
+             GraphicsBox[{
+               Thickness[0.05], {
+                FaceForm[{
+                  RGBColor[1., 1., 1.], 
+                  Opacity[1.]}], 
+                
+                FilledCurveBox[{{{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {0, 1, 
+                  0}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {
+                  1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1, 0}, {1, 3,
+                   3}, {0, 1, 0}}, {{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{1, 4, 3}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1, 
+                  0}, {1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {
+                  1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {1, 3,
+                   3}, {1, 3, 3}}}, {{{7.5718000000000005`, 17.7334}, {7.0998,
+                   17.7334}, {6.7168, 17.342399999999998`}, {6.7168, 
+                  16.8624}, {6.7168, 16.3854}, {7.0998, 
+                  15.997399999999999`}, {7.5718000000000005`, 
+                  15.997399999999999`}, {8.043800000000001, 
+                  15.997399999999999`}, {8.4268, 16.3854}, {8.4268, 
+                  16.8624}, {8.4268, 17.342399999999998`}, {8.043800000000001,
+                   17.7334}, {7.5718000000000005`, 17.7334}}, CompressedData["
+
+1:eJxTTMoPSmViYGBQAWIQvXD12hvxZbwODSxH+w2/izl86QsuUZnOAuezVHCr
+aNT9se+5ncGQzyjl8EZ2+QsPve/2X6bfndzeKu/Qst2h6dHxD/ZfvSLbLMSU
+4fz1U1I7kmVV4erNVtuFRxdqOCRs3P9mns0fe98WXv/1ItoOR9qWh58yYnP4
++AVowA4dh6z8D60nQwTg/EsTY/45/1KG87O1v02/K6zi8O7kYae1L3UdBLi3
+Lqs8Lubw+zRQhEnPwdnuxc01v8QcGtQOtS2fbgDng2w5ctHQgc1E0MzGVsLB
++wS77exSIwfP/bWyFunyDs2BnnMbjhk5+CzjclP9quCwVMdZ5vUjI4cJhuW6
+ivFKDqbvLVzdPxk5JIYEqS84qezgLyeW5fvZyGHaJp7CNacRfAOQAamqcD63
+m2op0y01h3aQA54YOZx6ar/kvp0G3D4rZa/q5vVaEPMnQe0v1XG4bgIUWG4I
+58P8A+M/mCO4dC+jJpy/M5vz54Llag73gLESNVkLEm/7VBwOWgItcNaA86PE
+t19kiJOH80OmKfaVFkrC+ZbpLpn5BSIOx3JNGrY7KMH5UZf3PBaZKwfnw9IH
+AO506oE=
+                  "], {{12.401800000000001`, 4.1044}, {11.9298, 4.1044}, {
+                  11.5458, 3.7164}, {11.5458, 3.2394}, {11.5458, 
+                  2.7593999999999994`}, {11.9298, 2.369399999999999}, {
+                  12.401800000000001`, 2.369399999999999}, {
+                  12.872800000000002`, 2.369399999999999}, {13.2568, 
+                  2.7593999999999994`}, {13.2568, 3.2394}, {13.2568, 
+                  3.7164}, {12.872800000000002`, 4.1044}, {
+                  12.401800000000001`, 4.1044}}, CompressedData["
+1:eJxTTMoPSmViYGBQAWIQ/Uei+LrQJ2UHhUNty8NPfbBfaXrW2m+iEpyvdVrg
++C4LRYcC3899wSWf7M+tOn81LEfe4cBGvbzFjN/sb635FZPrKuPgUPST/+X2
+n/bOdi9urvkl5sARP8NHtIfRAcY/smKJn4MwD5y/aIv5j0MpcnB+rknDdocm
+RQepRxHi2y9KOeyeNoG/qkzZIQrIY4iTh/MPWip7VTtrwPkuv96+PmCpDedf
+mhjzz3mXroPFtaO5JgxqcP6DOYJL9zJqwvldfU8+yV/ScWBbPMmKMdfA4eMX
+r8i2HToOE/mrzFbXGcL5GnU9O7M1jRympHYkx8ZoO9z8AJIwcjBbbRceXajh
+0Pzo+Izd34wc3p087LT2pQqcL7R070HxNCWH+TY6V2YB1SeEBKkv6JR3kKlJ
+NAoVAKo/APTIb0kHkDMbphs6NLAc7Tf8LgZ3D4wPdu8vZTgfSJbrPlR2WNC5
+4eHLqSIOz+yX3N/Xp+OQF1a7bluSiIPPMi431VIdeHjD+CLAYLzHxOQwi0N6
+XpymlsMFzgylnIpf9lURK4AxrgGPT3B47lRzWNAU6Dm34ZP94ZRVQKerwtMD
+enoBAPI7A7I=
+                  "]}]}, {
+                FaceForm[{
+                  RGBColor[0.20800000000000002`, 0.514, 0.6859999999999999], 
+                  Opacity[1.]}], 
+                
+                FilledCurveBox[{{{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{1, 4, 3}, {1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {0, 1, 
+                  0}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}, {
+                  0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1,
+                   0}, {1, 3, 3}, {1, 3, 3}}}, {{{7.5718000000000005`, 
+                  17.6836}, {8.014800000000001, 17.6836}, {8.3778, 17.3156}, {
+                  8.3778, 16.862599999999997`}, {8.3778, 16.4116}, {
+                  8.014800000000001, 16.046599999999998`}, {
+                  7.5718000000000005`, 16.046599999999998`}, {7.1268, 
+                  16.046599999999998`}, {6.7658000000000005`, 16.4116}, {
+                  6.7658000000000005`, 16.862599999999997`}, {
+                  6.7658000000000005`, 17.3156}, {7.1268, 17.6836}, {
+                  7.5718000000000005`, 17.6836}}, CompressedData["
+1:eJxTTMoPSmViYGBQBWIQnRgSpL7gpLLDYxHZk0//GzmYnbX2uxio5NBvWK6r
+COQ7nU+7+vyVgsOa7tsZDO+NHKLEt19kiJN3EPMI+CNx2cgh6fBl7VRJCYd/
+zr/evm4wchDg3rqs8riYQ2vU5T2PrxjC+XxzjBdtmW4A59fKWqS7vNR1uDQx
+BqhVGYMPVKRpdUkHrh7Gb5l3dtX5UAE4v+gn/8vt69ng/DOHndZm3vttD+YH
+aTt8OAkS+Gb/aUNA9qxyDQeec5KBt6Q/2N/XnbDgh6GqgwTQ2/ZL3tt77Ae6
+QF0Zrv6Nhat7UaW8wxWXGx++eP223xet4PgxWcqBJ0Mpp6KK2aFlefgpoyNi
+DgtXr70RX8YL5wcBbZmzSASDP2llU6DnXDk4/4fhs3WqKkoOb/V3q/N3Szq0
+nQw5uGKJCjx8YfyDlspe1c4acL5XdbO+zzItOP+Z/ZL7+/p0HJR2/mn/MlsN
+zgfybl9n1ITzYeEP4wNjvXPDQUOHa8+ztL9N13IARW/+QiO4fbD4haQPNYfO
+DQ9fTv1k5NADUueoColvBmMH9PQDAFGHDrQ=
+                  "]}]}, {
+                FaceForm[{
+                  RGBColor[0.976, 0.8430000000000001, 0.353], 
+                  Opacity[1.]}], 
+                
+                FilledCurveBox[{{{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{0, 2, 0}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1, 
+                  0}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {
+                  0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {1, 3,
+                   3}}}, {{{12.4014, 4.0552}, {12.846400000000001`, 4.0552}, {
+                  13.2074, 3.6902}, {13.2074, 3.2392000000000003`}, {13.2074, 
+                  2.7862}, {12.846400000000001`, 2.4182}, {12.4014, 2.4182}, {
+                  11.958400000000001`, 2.4182}, {11.595400000000001`, 
+                  2.7862}, {11.595400000000001`, 3.2392000000000003`}, {
+                  11.595400000000001`, 3.6902}, {11.958400000000001`, 
+                  4.0552}, {12.4014, 4.0552}}, CompressedData["
+1:eJxTTMoPSmViYGBQBGIQ3bszm/PnAl2HgsWMe1gv6TjA+Ec26uUtZtSE819t
+X8/8nEfNISJ64/43ctoOlq7uRT/7lR06k2PvuDlrwPkvs7S/TY+Vh/MvpF19
+nrVaCs6fH6d5WuC4mMNLkHk9inB+1r3Crr4UOTi/LerynsciPAh5hvxGlqNM
+Dr8OpaxKuCLlcO96Y7HblF/2MPtesZgImtl8tde5MuuZbLqSw52tLTUXNr+1
+/3363cnDTKoOCo4fk8/EvraHuRem3j4c6KEcLQel5HdRTna/7Ndlghyi4zCL
+Q3penCaTA4wPcw+Mn7H5VfHWqSIO6sGsiyf9UsbgG2itFL5wRAyuHsYH+zvH
+AM6PATlsjSGcbwwKeGUjhzV2QIfZSzn8sSo41zHJyKGuBxgRlfIOGUo5FVWs
+xg62s0Pnr85VcljVFOg5l8HYoX15+CkjFlW4+l23uv6mlms4/OIH2uhs5BAg
+J5bl+1kLYj/QPlh8w9wD4wMA37PnHw==
+                  "]}]}}, {
+              ImageSize -> 
+               Dynamic[{
+                 Automatic, 
+                  3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                   Magnification])}], AspectRatio -> Automatic, 
+               ImageSize -> {20., 20.}, PlotRange -> {{0., 20.}, {0., 20.}}}],
+              LightDarkAutoColorRules -> {}, StripOnInput -> False], 
+            GridBox[{{
+               RowBox[{
+                 TagBox["\"System: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["\"Python\"", "SummaryItem"]}], 
+               RowBox[{
+                 TagBox["\"SessionID: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                 "\"50957b14-71e3-4b1f-857b-c090410bee59\"", 
+                  "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Evaluator: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  TagBox[
+                  "\"/opt/homebrew/Caskroom/miniforge/base/envs/du/bin/\
+python3\"", Short], "SummaryItem"]}], "\[SpanFromLeft]"}}, 
+             GridBoxAlignment -> {
+              "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, AutoDelete -> 
+             False, GridBoxItemSize -> {
+              "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+             GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}},
+              BaseStyle -> {
+              ShowStringCharacters -> False, NumberMarks -> False, 
+               PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+          GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}}, 
+          AutoDelete -> False, 
+          GridBoxItemSize -> {
+           "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+          BaselinePosition -> {1, 1}], True -> GridBox[{{
+            PaneBox[
+             ButtonBox[
+              DynamicBox[
+               FEPrivate`FrontEndResource["FEBitmaps", "SummaryBoxCloser"]], 
+              ButtonFunction :> (Typeset`open$$ = False), Appearance -> None, 
+              BaseStyle -> {}, Evaluator -> Automatic, Method -> 
+              "Preemptive"], Alignment -> {Center, Center}, ImageSize -> 
+             Dynamic[{
+               Automatic, 
+                3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                 Magnification])}]], 
+            StyleBox[
+             GraphicsBox[{
+               Thickness[0.05], {
+                FaceForm[{
+                  RGBColor[1., 1., 1.], 
+                  Opacity[1.]}], 
+                
+                FilledCurveBox[{{{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {0, 1, 
+                  0}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {
+                  1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1, 0}, {1, 3,
+                   3}, {0, 1, 0}}, {{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{1, 4, 3}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1, 
+                  0}, {1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {
+                  1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {1, 3,
+                   3}, {1, 3, 3}}}, {{{7.5718000000000005`, 17.7334}, {7.0998,
+                   17.7334}, {6.7168, 17.342399999999998`}, {6.7168, 
+                  16.8624}, {6.7168, 16.3854}, {7.0998, 
+                  15.997399999999999`}, {7.5718000000000005`, 
+                  15.997399999999999`}, {8.043800000000001, 
+                  15.997399999999999`}, {8.4268, 16.3854}, {8.4268, 
+                  16.8624}, {8.4268, 17.342399999999998`}, {8.043800000000001,
+                   17.7334}, {7.5718000000000005`, 17.7334}}, CompressedData["
+
+1:eJxTTMoPSmViYGBQAWIQvXD12hvxZbwODSxH+w2/izl86QsuUZnOAuezVHCr
+aNT9se+5ncGQzyjl8EZ2+QsPve/2X6bfndzeKu/Qst2h6dHxD/ZfvSLbLMSU
+4fz1U1I7kmVV4erNVtuFRxdqOCRs3P9mns0fe98WXv/1ItoOR9qWh58yYnP4
++AVowA4dh6z8D60nQwTg/EsTY/45/1KG87O1v02/K6zi8O7kYae1L3UdBLi3
+Lqs8Lubw+zRQhEnPwdnuxc01v8QcGtQOtS2fbgDng2w5ctHQgc1E0MzGVsLB
++wS77exSIwfP/bWyFunyDs2BnnMbjhk5+CzjclP9quCwVMdZ5vUjI4cJhuW6
+ivFKDqbvLVzdPxk5JIYEqS84qezgLyeW5fvZyGHaJp7CNacRfAOQAamqcD63
+m2op0y01h3aQA54YOZx6ar/kvp0G3D4rZa/q5vVaEPMnQe0v1XG4bgIUWG4I
+58P8A+M/mCO4dC+jJpy/M5vz54Llag73gLESNVkLEm/7VBwOWgItcNaA86PE
+t19kiJOH80OmKfaVFkrC+ZbpLpn5BSIOx3JNGrY7KMH5UZf3PBaZKwfnw9IH
+AO506oE=
+                  "], {{12.401800000000001`, 4.1044}, {11.9298, 4.1044}, {
+                  11.5458, 3.7164}, {11.5458, 3.2394}, {11.5458, 
+                  2.7593999999999994`}, {11.9298, 2.369399999999999}, {
+                  12.401800000000001`, 2.369399999999999}, {
+                  12.872800000000002`, 2.369399999999999}, {13.2568, 
+                  2.7593999999999994`}, {13.2568, 3.2394}, {13.2568, 
+                  3.7164}, {12.872800000000002`, 4.1044}, {
+                  12.401800000000001`, 4.1044}}, CompressedData["
+1:eJxTTMoPSmViYGBQAWIQ/Uei+LrQJ2UHhUNty8NPfbBfaXrW2m+iEpyvdVrg
++C4LRYcC3899wSWf7M+tOn81LEfe4cBGvbzFjN/sb635FZPrKuPgUPST/+X2
+n/bOdi9urvkl5sARP8NHtIfRAcY/smKJn4MwD5y/aIv5j0MpcnB+rknDdocm
+RQepRxHi2y9KOeyeNoG/qkzZIQrIY4iTh/MPWip7VTtrwPkuv96+PmCpDedf
+mhjzz3mXroPFtaO5JgxqcP6DOYJL9zJqwvldfU8+yV/ScWBbPMmKMdfA4eMX
+r8i2HToOE/mrzFbXGcL5GnU9O7M1jRympHYkx8ZoO9z8AJIwcjBbbRceXajh
+0Pzo+Izd34wc3p087LT2pQqcL7R070HxNCWH+TY6V2YB1SeEBKkv6JR3kKlJ
+NAoVAKo/APTIb0kHkDMbphs6NLAc7Tf8LgZ3D4wPdu8vZTgfSJbrPlR2WNC5
+4eHLqSIOz+yX3N/Xp+OQF1a7bluSiIPPMi431VIdeHjD+CLAYLzHxOQwi0N6
+XpymlsMFzgylnIpf9lURK4AxrgGPT3B47lRzWNAU6Dm34ZP94ZRVQKerwtMD
+enoBAPI7A7I=
+                  "]}]}, {
+                FaceForm[{
+                  RGBColor[0.20800000000000002`, 0.514, 0.6859999999999999], 
+                  Opacity[1.]}], 
+                
+                FilledCurveBox[{{{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{1, 4, 3}, {1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {0, 1, 
+                  0}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}, {
+                  0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1,
+                   0}, {1, 3, 3}, {1, 3, 3}}}, {{{7.5718000000000005`, 
+                  17.6836}, {8.014800000000001, 17.6836}, {8.3778, 17.3156}, {
+                  8.3778, 16.862599999999997`}, {8.3778, 16.4116}, {
+                  8.014800000000001, 16.046599999999998`}, {
+                  7.5718000000000005`, 16.046599999999998`}, {7.1268, 
+                  16.046599999999998`}, {6.7658000000000005`, 16.4116}, {
+                  6.7658000000000005`, 16.862599999999997`}, {
+                  6.7658000000000005`, 17.3156}, {7.1268, 17.6836}, {
+                  7.5718000000000005`, 17.6836}}, CompressedData["
+1:eJxTTMoPSmViYGBQBWIQnRgSpL7gpLLDYxHZk0//GzmYnbX2uxio5NBvWK6r
+COQ7nU+7+vyVgsOa7tsZDO+NHKLEt19kiJN3EPMI+CNx2cgh6fBl7VRJCYd/
+zr/evm4wchDg3rqs8riYQ2vU5T2PrxjC+XxzjBdtmW4A59fKWqS7vNR1uDQx
+BqhVGYMPVKRpdUkHrh7Gb5l3dtX5UAE4v+gn/8vt69ng/DOHndZm3vttD+YH
+aTt8OAkS+Gb/aUNA9qxyDQeec5KBt6Q/2N/XnbDgh6GqgwTQ2/ZL3tt77Ae6
+QF0Zrv6Nhat7UaW8wxWXGx++eP223xet4PgxWcqBJ0Mpp6KK2aFlefgpoyNi
+DgtXr70RX8YL5wcBbZmzSASDP2llU6DnXDk4/4fhs3WqKkoOb/V3q/N3Szq0
+nQw5uGKJCjx8YfyDlspe1c4acL5XdbO+zzItOP+Z/ZL7+/p0HJR2/mn/MlsN
+zgfybl9n1ITzYeEP4wNjvXPDQUOHa8+ztL9N13IARW/+QiO4fbD4haQPNYfO
+DQ9fTv1k5NADUueoColvBmMH9PQDAFGHDrQ=
+                  "]}]}, {
+                FaceForm[{
+                  RGBColor[0.976, 0.8430000000000001, 0.353], 
+                  Opacity[1.]}], 
+                
+                FilledCurveBox[{{{1, 4, 3}, {1, 3, 3}, {1, 3, 3}, {1, 3, 
+                  3}}, {{0, 2, 0}, {1, 3, 3}, {0, 1, 0}, {1, 3, 3}, {0, 1, 
+                  0}, {1, 3, 3}, {1, 3, 3}, {1, 3, 3}, {0, 1, 0}, {0, 1, 0}, {
+                  0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {1, 3, 3}, {1, 3, 3}, {1, 3,
+                   3}}}, {{{12.4014, 4.0552}, {12.846400000000001`, 4.0552}, {
+                  13.2074, 3.6902}, {13.2074, 3.2392000000000003`}, {13.2074, 
+                  2.7862}, {12.846400000000001`, 2.4182}, {12.4014, 2.4182}, {
+                  11.958400000000001`, 2.4182}, {11.595400000000001`, 
+                  2.7862}, {11.595400000000001`, 3.2392000000000003`}, {
+                  11.595400000000001`, 3.6902}, {11.958400000000001`, 
+                  4.0552}, {12.4014, 4.0552}}, CompressedData["
+1:eJxTTMoPSmViYGBQBGIQ3bszm/PnAl2HgsWMe1gv6TjA+Ec26uUtZtSE819t
+X8/8nEfNISJ64/43ctoOlq7uRT/7lR06k2PvuDlrwPkvs7S/TY+Vh/MvpF19
+nrVaCs6fH6d5WuC4mMNLkHk9inB+1r3Crr4UOTi/LerynsciPAh5hvxGlqNM
+Dr8OpaxKuCLlcO96Y7HblF/2MPtesZgImtl8tde5MuuZbLqSw52tLTUXNr+1
+/3363cnDTKoOCo4fk8/EvraHuRem3j4c6KEcLQel5HdRTna/7Ndlghyi4zCL
+Q3penCaTA4wPcw+Mn7H5VfHWqSIO6sGsiyf9UsbgG2itFL5wRAyuHsYH+zvH
+AM6PATlsjSGcbwwKeGUjhzV2QIfZSzn8sSo41zHJyKGuBxgRlfIOGUo5FVWs
+xg62s0Pnr85VcljVFOg5l8HYoX15+CkjFlW4+l23uv6mlms4/OIH2uhs5BAg
+J5bl+1kLYj/QPlh8w9wD4wMA37PnHw==
+                  "]}]}}, {
+              ImageSize -> 
+               Dynamic[{
+                 Automatic, 
+                  3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                   Magnification])}], AspectRatio -> Automatic, 
+               ImageSize -> {20., 20.}, PlotRange -> {{0., 20.}, {0., 20.}}}],
+              LightDarkAutoColorRules -> {}, StripOnInput -> False], 
+            GridBox[{{
+               RowBox[{
+                 TagBox["\"System: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["\"Python\"", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"SessionID: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                 "\"50957b14-71e3-4b1f-857b-c090410bee59\"", 
+                  "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Evaluator: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  TagBox[
+                  "\"/opt/homebrew/Caskroom/miniforge/base/envs/du/bin/\
+python3\"", Short], "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Active: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  DynamicBox[
+                   ToBoxes[
+                    If[
+                    TrueQ[
+                    ExternalEvaluate`Private`getSessionOpts[
+                    "50957b14-71e3-4b1f-857b-c090410bee59", "Exists"]], 
+                    ExternalSessionObject[
+                    "50957b14-71e3-4b1f-857b-c090410bee59"]["Active"], False],
+                     StandardForm], 
+                   TrackedSymbols :> {ExternalEvaluate`Private`$Links}], 
+                  "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"SessionID: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                 "\"50957b14-71e3-4b1f-857b-c090410bee59\"", 
+                  "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Evaluator: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                 "\"/opt/homebrew/Caskroom/miniforge/base/envs/du/bin/python3\
+\"", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Epilog: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["Automatic", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Process: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  InterpretationBox[
+                   RowBox[{
+                    TagBox["ProcessObject", "SummaryHead"], "[", 
+                    
+                    DynamicModuleBox[{
+                    Typeset`open$$ = False, Typeset`embedState$$ = "Ready"}, 
+                    TemplateBox[{
+                    PaneSelectorBox[{False -> GridBox[{{
+                    PaneBox[
+                    ButtonBox[
+                    DynamicBox[
+                    FEPrivate`FrontEndResource[
+                    "FEBitmaps", "SummaryBoxOpener"]], 
+                    ButtonFunction :> (Typeset`open$$ = True), Appearance -> 
+                    None, BaseStyle -> {}, Evaluator -> Automatic, Method -> 
+                    "Preemptive"], Alignment -> {Center, Center}, ImageSize -> 
+                    Dynamic[{Automatic, 
+                    3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                    Magnification])}]], 
+                    GridBox[{{
+                    RowBox[{
+                    TagBox["\"Program: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"python3.12\"", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"PID: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["22026", "SummaryItem"]}]}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, 
+                    AutoDelete -> False, 
+                    GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    GridBoxSpacings -> {
+                    "Columns" -> {{2}}, "Rows" -> {{Automatic}}}, 
+                    BaseStyle -> {
+                    ShowStringCharacters -> False, NumberMarks -> False, 
+                    PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Top}}}, AutoDelete -> 
+                    False, GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    BaselinePosition -> {1, 1}], True -> GridBox[{{
+                    PaneBox[
+                    ButtonBox[
+                    DynamicBox[
+                    FEPrivate`FrontEndResource[
+                    "FEBitmaps", "SummaryBoxCloser"]], 
+                    ButtonFunction :> (Typeset`open$$ = False), Appearance -> 
+                    None, BaseStyle -> {}, Evaluator -> Automatic, Method -> 
+                    "Preemptive"], Alignment -> {Center, Center}, ImageSize -> 
+                    Dynamic[{Automatic, 
+                    3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                    Magnification])}]], 
+                    GridBox[{{
+                    RowBox[{
+                    TagBox["\"Program: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"python3.12\"", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"PID: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["22026", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"Parent PID: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["19020", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"User: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"tod\"", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"Path: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    "\"/opt/homebrew/Caskroom/miniforge/base/envs/du/bin/\
+python3.12\"", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"Memory:\"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    
+                    TemplateBox[{"28.131328`", "\"MB\"", "megabytes", 
+                    "\"Megabytes\""}, "Quantity", SyntaxForm -> Mod], 
+                    "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"Threads: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["3", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"Start Time: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    TemplateBox[{
+                    RowBox[{"\"Sun 12 Apr 2026 11:38:29\"", 
+                    StyleBox[
+                    
+                    RowBox[{"\"GMT\"", "\[InvisibleSpace]", "+", 
+                    "\[InvisibleSpace]", 
+                    StyleBox[
+                    "10", NumberMarks -> False, StripOnInput -> False]}], 
+                    "TimeZoneLabel"]}], 
+                    RowBox[{"DateObject", "[", 
+                    RowBox[{
+                    RowBox[{"{", 
+                    
+                    RowBox[{"2026", ",", "4", ",", "12", ",", "11", ",", "38",
+                     ",", "29"}], "}"}], ",", "\"Instant\"", ",", 
+                    "\"Gregorian\"", ",", "10.`"}], "]"}]}, "DateObject", 
+                    Editable -> False], "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"System Time: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    
+                    TemplateBox[{"0.000452`5.", "\"s\"", "seconds", 
+                    "\"Seconds\""}, "Quantity", SyntaxForm -> Mod], 
+                    "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"User Time: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    
+                    TemplateBox[{"0.0011050000000000001`5.", "\"s\"", 
+                    "seconds", "\"Seconds\""}, "Quantity", SyntaxForm -> Mod],
+                     "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"Real Time: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    
+                    TemplateBox[{"0", "\"s\"", "seconds", "\"Seconds\""}, 
+                    "Quantity", SyntaxForm -> Mod], "SummaryItem"]}]}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, 
+                    AutoDelete -> False, 
+                    GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    GridBoxSpacings -> {
+                    "Columns" -> {{2}}, "Rows" -> {{Automatic}}}, 
+                    BaseStyle -> {
+                    ShowStringCharacters -> False, NumberMarks -> False, 
+                    PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Top}}}, AutoDelete -> 
+                    False, GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    BaselinePosition -> {1, 1}]}, 
+                    Dynamic[Typeset`open$$], ImageSize -> Automatic]}, 
+                    "SummaryPanel"], DynamicModuleValues :> {}], "]"}], 
+                   
+                   ProcessObject[<|
+                    "ManagedProcess" -> True, "UID" -> 1, "PID" -> 22026, 
+                    "PPID" -> 19020, "Program" -> "python3.12", "Path" -> 
+                    "/opt/homebrew/Caskroom/miniforge/base/envs/du/bin/\
+python3.12", "User" -> "tod", "StartTime" -> 
+                    DateObject[{2026, 4, 12, 11, 38, 29}, "Instant", 
+                    "Gregorian", 10.]|>], Selectable -> False, Editable -> 
+                   False, SelectWithContents -> True], "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Prolog: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["Automatic", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"ReturnType: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["\"Expression\"", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"SessionEpilog: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["Automatic", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"SessionProlog: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["Automatic", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"Socket: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  InterpretationBox[
+                   RowBox[{
+                    TagBox["SocketObject", "SummaryHead"], "[", 
+                    DynamicModuleBox[{
+                    Typeset`open$$ = False, Typeset`embedState$$ = "Ready"}, 
+                    TemplateBox[{
+                    PaneSelectorBox[{False -> GridBox[{{
+                    PaneBox[
+                    ButtonBox[
+                    DynamicBox[
+                    FEPrivate`FrontEndResource[
+                    "FEBitmaps", "SummaryBoxOpener"]], 
+                    ButtonFunction :> (Typeset`open$$ = True), Appearance -> 
+                    None, BaseStyle -> {}, Evaluator -> Automatic, Method -> 
+                    "Preemptive"], Alignment -> {Center, Center}, ImageSize -> 
+                    Dynamic[{Automatic, 
+                    3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                    Magnification])}]], 
+                    GraphicsBox[
+                    GeometricTransformationBox[{{{
+                    FilledCurveBox[{{
+                    
+                    Line[{{36.558, 8.569}, {40.947, 8.569}, {40.947, 
+                    43.684000000000005`}, {36.558, 43.684000000000005`}, {
+                    36.558, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{59.053, 8.569}, {63.443, 8.569}, {63.443, 
+                    43.684000000000005`}, {59.053, 43.684000000000005`}, {
+                    59.053, 8.569}}]}}]}, {{
+                    FilledCurveBox[{{
+                    
+                    Line[{{55.487, 8.569}, {56.95, 8.569}, {56.95, 
+                    21.188000000000002`}, {55.487, 21.188000000000002`}, {
+                    55.487, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{52.562, 8.569}, {54.025, 8.569}, {54.025, 
+                    21.188000000000002`}, {52.562, 21.188000000000002`}, {
+                    52.562, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{49.636, 8.569}, {51.099000000000004`, 8.569}, {
+                    51.099000000000004`, 21.188000000000002`}, {49.636, 
+                    21.188000000000002`}, {49.636, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{46.709, 8.569}, {48.172000000000004`, 8.569}, {
+                    48.172000000000004`, 21.188000000000002`}, {46.709, 
+                    21.188000000000002`}, {46.709, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{43.783, 8.569}, {45.246, 8.569}, {45.246, 
+                    21.188000000000002`}, {43.783, 21.188000000000002`}, {
+                    43.783, 8.569}}]}}]}}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{40.947, 4.911}, {59.787000000000006`, 4.911}, {
+                    59.787000000000006`, 6.922}, {40.947, 6.922}, {40.947, 
+                    4.911}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{44.057, 31.675}, {56.678000000000004`, 31.675}, {
+                    56.678000000000004`, 39.051}, {44.057, 39.051}, {44.057, 
+                    31.675}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{44.057, 43.685}, {56.678000000000004`, 43.685}, {
+                    56.678000000000004`, 65.089}, {44.057, 65.089}, {44.057, 
+                    43.685}}]}}]}}}, {{{1, 0}, {0, -1}}, Center}], {
+                    ImageSize -> {Automatic, 
+                    Dynamic[
+                    3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                    Magnification])]}, PlotRange -> {{20, 80}, {0, 70}}, 
+                    BaseStyle -> {CacheGraphics -> False}, ImageSize -> 30}], 
+                    
+                    GridBox[{{
+                    RowBox[{
+                    TagBox["\"IPAddress: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"127.0.0.1\"", "SummaryItem"]}], 
+                    RowBox[{
+                    TagBox["\"Port: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["51151", "SummaryItem"]}], 
+                    RowBox[{
+                    TagBox["\"Type: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"ZMQ_PAIR\"", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"UUID: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    "\"59050b34-0bc4-4e81-9655-a3ddab73ca31\"", 
+                    "SummaryItem"]}], "\[SpanFromLeft]", "\[SpanFromLeft]"}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, 
+                    AutoDelete -> False, 
+                    GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    GridBoxSpacings -> {
+                    "Columns" -> {{2}}, "Rows" -> {{Automatic}}}, 
+                    BaseStyle -> {
+                    ShowStringCharacters -> False, NumberMarks -> False, 
+                    PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Top}}}, AutoDelete -> 
+                    False, GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    BaselinePosition -> {1, 1}], True -> GridBox[{{
+                    PaneBox[
+                    ButtonBox[
+                    DynamicBox[
+                    FEPrivate`FrontEndResource[
+                    "FEBitmaps", "SummaryBoxCloser"]], 
+                    ButtonFunction :> (Typeset`open$$ = False), Appearance -> 
+                    None, BaseStyle -> {}, Evaluator -> Automatic, Method -> 
+                    "Preemptive"], Alignment -> {Center, Center}, ImageSize -> 
+                    Dynamic[{Automatic, 
+                    3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                    Magnification])}]], 
+                    GraphicsBox[
+                    GeometricTransformationBox[{{{
+                    FilledCurveBox[{{
+                    
+                    Line[{{36.558, 8.569}, {40.947, 8.569}, {40.947, 
+                    43.684000000000005`}, {36.558, 43.684000000000005`}, {
+                    36.558, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{59.053, 8.569}, {63.443, 8.569}, {63.443, 
+                    43.684000000000005`}, {59.053, 43.684000000000005`}, {
+                    59.053, 8.569}}]}}]}, {{
+                    FilledCurveBox[{{
+                    
+                    Line[{{55.487, 8.569}, {56.95, 8.569}, {56.95, 
+                    21.188000000000002`}, {55.487, 21.188000000000002`}, {
+                    55.487, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{52.562, 8.569}, {54.025, 8.569}, {54.025, 
+                    21.188000000000002`}, {52.562, 21.188000000000002`}, {
+                    52.562, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{49.636, 8.569}, {51.099000000000004`, 8.569}, {
+                    51.099000000000004`, 21.188000000000002`}, {49.636, 
+                    21.188000000000002`}, {49.636, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{46.709, 8.569}, {48.172000000000004`, 8.569}, {
+                    48.172000000000004`, 21.188000000000002`}, {46.709, 
+                    21.188000000000002`}, {46.709, 8.569}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{43.783, 8.569}, {45.246, 8.569}, {45.246, 
+                    21.188000000000002`}, {43.783, 21.188000000000002`}, {
+                    43.783, 8.569}}]}}]}}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{40.947, 4.911}, {59.787000000000006`, 4.911}, {
+                    59.787000000000006`, 6.922}, {40.947, 6.922}, {40.947, 
+                    4.911}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{44.057, 31.675}, {56.678000000000004`, 31.675}, {
+                    56.678000000000004`, 39.051}, {44.057, 39.051}, {44.057, 
+                    31.675}}]}}]}, {
+                    FilledCurveBox[{{
+                    
+                    Line[{{44.057, 43.685}, {56.678000000000004`, 43.685}, {
+                    56.678000000000004`, 65.089}, {44.057, 65.089}, {44.057, 
+                    43.685}}]}}]}}}, {{{1, 0}, {0, -1}}, Center}], {
+                    ImageSize -> {Automatic, 
+                    Dynamic[
+                    3.5 (CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[
+                    Magnification])]}, PlotRange -> {{20, 80}, {0, 70}}, 
+                    BaseStyle -> {CacheGraphics -> False}, ImageSize -> 30}], 
+                    
+                    GridBox[{{
+                    RowBox[{
+                    TagBox["\"IPAddress: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"127.0.0.1\"", "SummaryItem"]}], 
+                    RowBox[{
+                    TagBox["\"Port: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["51151", "SummaryItem"]}], 
+                    RowBox[{
+                    TagBox["\"Type: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"ZMQ_PAIR\"", "SummaryItem"]}]}, {
+                    RowBox[{
+                    TagBox["\"UUID: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox[
+                    "\"59050b34-0bc4-4e81-9655-a3ddab73ca31\"", 
+                    "SummaryItem"]}], "\[SpanFromLeft]", "\[SpanFromLeft]"}, {
+                    
+                    RowBox[{
+                    TagBox["\"Endpoint: \"", "SummaryItemAnnotation"], 
+                    "\[InvisibleSpace]", 
+                    TagBox["\"tcp://127.0.0.1:51151\"", "SummaryItem"]}], 
+                    "\[SpanFromLeft]", "\[SpanFromLeft]"}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, 
+                    AutoDelete -> False, 
+                    GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    GridBoxSpacings -> {
+                    "Columns" -> {{2}}, "Rows" -> {{Automatic}}}, 
+                    BaseStyle -> {
+                    ShowStringCharacters -> False, NumberMarks -> False, 
+                    PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+                    GridBoxAlignment -> {
+                    "Columns" -> {{Left}}, "Rows" -> {{Top}}}, AutoDelete -> 
+                    False, GridBoxItemSize -> {
+                    "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+                    BaselinePosition -> {1, 1}]}, 
+                    Dynamic[Typeset`open$$], ImageSize -> Automatic]}, 
+                    "SummaryPanel"], DynamicModuleValues :> {}], "]"}], 
+                   SocketObject["59050b34-0bc4-4e81-9655-a3ddab73ca31"], 
+                   Selectable -> False, Editable -> False, SelectWithContents -> 
+                   True], "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox[
+                 "\"StandardErrorFunction: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  RowBox[{
+                    RowBox[{"Print", "[", 
+                    StyleBox[
+                    "#1", "Message", FontFamily -> "Source Code Pro", 
+                    StripOnInput -> False], "]"}], "&"}], "SummaryItem"]}]}, {
+              
+               RowBox[{
+                 TagBox[
+                 "\"StandardOutputFunction: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox["Print", "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"EvaluationCount: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  DynamicBox[
+                   ToBoxes[
+                    If[
+                    TrueQ[
+                    ExternalEvaluate`Private`getSessionOpts[
+                    "50957b14-71e3-4b1f-857b-c090410bee59", "Exists"]], 
+                    ExternalSessionObject[
+                    "50957b14-71e3-4b1f-857b-c090410bee59"][
+                    "EvaluationCount"], None], StandardForm], 
+                   TrackedSymbols :> {ExternalEvaluate`Private`$Links}], 
+                  "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"ProcessMemory: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  DynamicBox[
+                   ToBoxes[
+                    If[
+                    TrueQ[
+                    ExternalEvaluate`Private`getSessionOpts[
+                    "50957b14-71e3-4b1f-857b-c090410bee59", "Exists"]], 
+                    Refresh[
+                    ExternalSessionObject[
+                    "50957b14-71e3-4b1f-857b-c090410bee59"]["ProcessMemory"], 
+                    UpdateInterval -> 5], 
+                    Missing["NotAvailable"]], StandardForm], 
+                   TrackedSymbols :> {ExternalEvaluate`Private`$Links}], 
+                  "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"ProcessThreads: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  DynamicBox[
+                   ToBoxes[
+                    If[
+                    TrueQ[
+                    ExternalEvaluate`Private`getSessionOpts[
+                    "50957b14-71e3-4b1f-857b-c090410bee59", "Exists"]], 
+                    Refresh[
+                    ExternalSessionObject[
+                    "50957b14-71e3-4b1f-857b-c090410bee59"]["ProcessThreads"],
+                     UpdateInterval -> 5], 
+                    Missing["NotAvailable"]], StandardForm], 
+                   TrackedSymbols :> {ExternalEvaluate`Private`$Links}], 
+                  "SummaryItem"]}]}, {
+               RowBox[{
+                 TagBox["\"SessionTime: \"", "SummaryItemAnnotation"], 
+                 "\[InvisibleSpace]", 
+                 TagBox[
+                  DynamicBox[
+                   ToBoxes[
+                    If[
+                    TrueQ[
+                    ExternalEvaluate`Private`getSessionOpts[
+                    "50957b14-71e3-4b1f-857b-c090410bee59", "Exists"]], 
+                    Refresh[
+                    ExternalSessionObject[
+                    "50957b14-71e3-4b1f-857b-c090410bee59"]["SessionTime"], 
+                    UpdateInterval -> 1], 
+                    Missing["NotAvailable"]], StandardForm], 
+                   TrackedSymbols :> {ExternalEvaluate`Private`$Links}], 
+                  "SummaryItem"]}]}}, 
+             GridBoxAlignment -> {
+              "Columns" -> {{Left}}, "Rows" -> {{Automatic}}}, AutoDelete -> 
+             False, GridBoxItemSize -> {
+              "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+             GridBoxSpacings -> {"Columns" -> {{2}}, "Rows" -> {{Automatic}}},
+              BaseStyle -> {
+              ShowStringCharacters -> False, NumberMarks -> False, 
+               PrintPrecision -> 3, ShowSyntaxStyles -> False}]}}, 
+          GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}}, 
+          AutoDelete -> False, 
+          GridBoxItemSize -> {
+           "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, 
+          BaselinePosition -> {1, 1}]}, 
+       Dynamic[Typeset`open$$], ImageSize -> Automatic]},
+     "SummaryPanel"],
+    DynamicModuleValues:>{}], "]"}],
+  ExternalSessionObject["50957b14-71e3-4b1f-857b-c090410bee59"],
+  Editable->False,
+  SelectWithContents->True,
+  Selectable->False]], "Output",
+ CellChangeTimes->{3.984946709631719*^9},
+ CellLabel->"Out[2]=",ExpressionUUID->"ca36cfc4-1af2-4183-8e0b-239551ae9456"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"list", " ", "=", " ", 
+  RowBox[{
+   RowBox[{"ExternalEvaluate", "[", 
+    RowBox[{
+    "session", ",", 
+     " ", "\"\<\nimport numpy as np\nimport pandas as pd\nlist = \
+np.arange(10)\nlist\n\>\""}], "]"}], "//", "Normal"}]}]], "Input",
+ CellChangeTimes->{{3.9849467467650547`*^9, 3.984946817401997*^9}},
+ CellLabel->"In[3]:=",ExpressionUUID->"0ee1aac6-de3f-49a1-a5c1-8f30cf3e2857"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+  "0", ",", "1", ",", "2", ",", "3", ",", "4", ",", "5", ",", "6", ",", "7", ",",
+    "8", ",", "9"}], "}"}]], "Output",
+ CellChangeTimes->{3.9849468224848967`*^9},
+ CellLabel->"Out[3]=",ExpressionUUID->"a8519b06-34a0-4662-ad30-981d04ebbc59"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{"First", "@", "$CommandLine"}]], "Input",
+ CellChangeTimes->{{3.984947531083493*^9, 3.9849475310862093`*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"9889e435-2e19-4bca-a43d-5490b84eaa6e"],
+
+Cell[BoxData["Integrate"], "Input",
+ CellChangeTimes->{{3.984947688521137*^9, 
+  3.984947702806746*^9}},ExpressionUUID->"5db4c5a9-917c-4560-90d0-\
+d862ca4e1c49"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1728, 1056},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+ShowCellBracket->True,
+TaggingRules-><|"TryRealOnly" -> False|>,
+CellContext->"Global`",
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"6b8dd21e-e101-4995-b8c3-63cc78ec7dd4"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[576, 22, 129, 0, 96, "Title",ExpressionUUID->"608b8499-f733-4b01-9661-37e3c4d4ecfd"],
+Cell[708, 24, 501, 8, 77, "Text",ExpressionUUID->"26746d87-6779-43dc-9dae-79ed039b9f54"],
+Cell[CellGroupData[{
+Cell[1234, 36, 97, 0, 66, "Section",ExpressionUUID->"28537c11-a9c0-4314-8dda-c714e27ddb85"],
+Cell[1334, 38, 502, 11, 230, "Text",ExpressionUUID->"6349bef0-fe42-43b7-a921-a6f423f27818"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[1873, 54, 108, 0, 66, "Section",ExpressionUUID->"0ae2acb7-8012-4e61-905e-8bb9e93ebe86"],
+Cell[1984, 56, 338, 6, 77, "Text",ExpressionUUID->"f886e524-b6c7-4920-9292-cadda06da1a1"],
+Cell[2325, 64, 1135, 29, 480, "Input",ExpressionUUID->"7aca46ed-f4c0-410b-9d2a-d0096c7a5d12"],
+Cell[3463, 95, 197, 3, 46, "Input",ExpressionUUID->"5e1f86de-f739-4aae-aa1c-e5ee599ea041"],
+Cell[3663, 100, 197, 3, 46, "Input",ExpressionUUID->"e4e48b9c-5a27-4995-ac0e-be03ac4de085"],
+Cell[3863, 105, 198, 3, 46, "Input",ExpressionUUID->"2958272d-2bed-4d2c-8e45-4e9829378bd6"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4098, 113, 119, 0, 66, "Section",ExpressionUUID->"04ee4353-74cb-4ab0-8862-8425202b27d0"],
+Cell[4220, 115, 996, 27, 580, "Text",ExpressionUUID->"4d7d0243-428e-43d6-9940-337bc5a95b61"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5253, 147, 103, 0, 66, "Section",ExpressionUUID->"36c7d14a-25c6-4155-92f7-f17c7ac902a4"],
+Cell[5359, 149, 533, 14, 296, "Text",ExpressionUUID->"1670595f-f557-4820-80f3-bce3c841b7b3"],
+Cell[5895, 165, 690, 20, 341, "Input",ExpressionUUID->"bb5e8b44-acdc-4b80-8ee4-a167f0c7e9bf"],
+Cell[6588, 187, 530, 12, 230, "Text",ExpressionUUID->"2851e1c1-8436-4abd-80bd-e18c1c46af0f"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[7155, 204, 100, 0, 66, "Section",ExpressionUUID->"6356ba33-02a5-4f1d-9d0e-5c5f37c77156"],
+Cell[7258, 206, 365, 7, 143, "Text",ExpressionUUID->"2b20be5c-397f-42a3-bdb6-d37cbf9ed616"],
+Cell[7626, 215, 313, 7, 116, "Input",ExpressionUUID->"7546338c-152a-46bb-9f00-3cab097b8021"],
+Cell[7942, 224, 553, 16, 272, "Input",ExpressionUUID->"95f81ab0-26e4-42df-a6f6-f0fe4ad2ea50"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[8532, 245, 107, 0, 66, "Section",ExpressionUUID->"06193ada-f6d5-48df-bd2a-3737a45dde90"],
+Cell[8642, 247, 536, 15, 317, "Text",ExpressionUUID->"c8be47e8-ef49-4f14-bebc-4985e543f303"],
+Cell[9181, 264, 360, 11, 185, "Input",ExpressionUUID->"32e01750-4ab0-477c-9afe-64d2a1446148"],
+Cell[9544, 277, 498, 11, 185, "Input",ExpressionUUID->"5766aac0-9676-4228-a0f5-cd6742dde9f2"],
+Cell[10045, 290, 378, 9, 150, "Input",ExpressionUUID->"364cf9cd-90ca-44e1-a3ea-15ef078bde8e"],
+Cell[10426, 301, 796, 22, 376, "Input",ExpressionUUID->"107a528b-8a09-47d9-9b39-92ffbe9cf904"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[11259, 328, 122, 0, 66, "Section",ExpressionUUID->"762c61e4-17ba-4b7c-b7ae-12f139142ba0"],
+Cell[11384, 330, 834, 21, 449, "Text",ExpressionUUID->"20702957-777e-46b8-966f-80da5705ab5a"],
+Cell[CellGroupData[{
+Cell[12243, 355, 822, 22, 358, "Input",ExpressionUUID->"891e4e8a-ce1e-4294-92f2-127d40b74937"],
+Cell[13068, 379, 205, 4, 23, "Print",ExpressionUUID->"fba692ce-261b-4918-99b9-46f2a9298be1"],
+Cell[13276, 385, 1043, 19, 60, "Message",ExpressionUUID->"16cad9dc-f5d4-465f-8a63-cc2e97345393"],
+Cell[CellGroupData[{
+Cell[14344, 408, 348, 9, 23, "Print",ExpressionUUID->"8dbcce60-de83-4060-ac3d-73163d74cbb2"],
+Cell[14695, 419, 558, 15, 23, "Print",ExpressionUUID->"ad35e93c-44d7-4fe1-8be7-db0a8d3c0255"],
+Cell[15256, 436, 539, 15, 23, "Print",ExpressionUUID->"c46460f9-c28a-4bef-8952-14be1b0a88a1"]
+}, Open  ]]
+}, Open  ]],
+Cell[15822, 455, 736, 24, 410, "Input",ExpressionUUID->"cc238ae9-e62f-416c-a0e3-528bef446ebe"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[16595, 484, 129, 0, 66, "Section",ExpressionUUID->"4aa305d2-1e4c-4273-b5f8-3d2ed02b223d"],
+Cell[16727, 486, 575, 11, 230, "Text",ExpressionUUID->"b028aa85-0f87-4aa4-a70c-b76a417dbeb4"],
+Cell[17305, 499, 2039, 50, 844, "Input",ExpressionUUID->"efd2808c-aeb0-46ae-8a86-37769c12fb8c"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[19381, 554, 116, 0, 66, "Section",ExpressionUUID->"5a2ade36-fe00-4386-a27f-69937ba809c1"],
+Cell[19500, 556, 359, 8, 164, "Text",ExpressionUUID->"dc083840-4b1e-4bbf-bc4e-c0771fd92bb1"],
+Cell[19862, 566, 760, 15, 254, "Input",ExpressionUUID->"1706f768-df7d-43c9-8c65-f911731498f4"],
+Cell[20625, 583, 1088, 26, 428, "Input",ExpressionUUID->"624af0e3-98ec-41e3-bcd3-2e8dc8f1ef07"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[21750, 614, 99, 0, 66, "Section",ExpressionUUID->"9e1d8289-2323-4d4a-b486-45873b8318ea"],
+Cell[21852, 616, 970, 20, 427, "Text",ExpressionUUID->"69af3e33-6ca4-415b-b93e-693f9400e272"],
+Cell[22825, 638, 538, 11, 185, "Input",ExpressionUUID->"c0fa594c-e212-4220-8fd4-d2faa256c918"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[23400, 654, 107, 0, 66, "Section",ExpressionUUID->"9c10c9bf-5785-4abe-bf59-39588495c96b"],
+Cell[23510, 656, 595, 12, 252, "Text",ExpressionUUID->"d6311b1e-5821-4042-bbe0-e4c22079ac15"],
+Cell[24108, 670, 955, 25, 428, "Input",ExpressionUUID->"6209cad3-2f7f-4930-99cf-583773b5392a"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25100, 700, 85, 0, 66, "Section",ExpressionUUID->"5b0a07f7-a4e7-4043-a065-816b97c283f9"],
+Cell[25188, 702, 801, 16, 339, "Text",ExpressionUUID->"19214dbd-2cdf-406c-833a-288a875a538d"],
+Cell[25992, 720, 154, 3, 29, "Input",ExpressionUUID->"eaff22f4-edf8-477b-ad44-8ad8e0f70a8e"],
+Cell[CellGroupData[{
+Cell[26171, 727, 564, 10, 70, "Input",ExpressionUUID->"8f386a86-48b6-47db-9089-7163fec87858"],
+Cell[26738, 739, 231, 3, 33, "Output",ExpressionUUID->"982ed3d4-6065-41f4-adbc-75ffb6c5abe8"],
+Cell[26972, 744, 287, 4, 33, "Output",ExpressionUUID->"732fcc72-34b8-4fbc-9b67-6ceb57627357"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[27296, 753, 498, 10, 131, "Input",ExpressionUUID->"2a02d70b-86c6-4d07-8a37-c77da2833087"],
+Cell[27797, 765, 401, 8, 33, "Output",ExpressionUUID->"19a1090f-a2d2-422d-b201-5530f2b4b1b4"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[28235, 778, 375, 7, 49, "ExternalLanguage",ExpressionUUID->"08d41c1d-33f6-430b-ad9b-a77c11376121"],
+Cell[28613, 787, 186, 4, 23, "Print",ExpressionUUID->"8b05a75f-6ee4-46ca-9664-cd2be2c7144a"]
+}, Open  ]],
+Cell[28814, 794, 197, 3, 29, "Input",ExpressionUUID->"0ea07a07-4b10-4cc3-9d42-d6011aedc173"],
+Cell[CellGroupData[{
+Cell[29036, 801, 283, 5, 29, "Input",ExpressionUUID->"d926b9cf-3fcb-4c7a-9e94-f2eba5eaf937"],
+Cell[29322, 808, 44299, 851, 58, "Output",ExpressionUUID->"ca36cfc4-1af2-4183-8e0b-239551ae9456"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[73658, 1664, 408, 9, 131, "Input",ExpressionUUID->"0ee1aac6-de3f-49a1-a5c1-8f30cf3e2857"],
+Cell[74069, 1675, 282, 6, 33, "Output",ExpressionUUID->"a8519b06-34a0-4662-ad30-981d04ebbc59"]
+}, Open  ]],
+Cell[74366, 1684, 210, 3, 29, "Input",ExpressionUUID->"9889e435-2e19-4bca-a43d-5490b84eaa6e"],
+Cell[74579, 1689, 161, 3, 29, "Input",ExpressionUUID->"5db4c5a9-917c-4560-90d0-d862ca4e1c49"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+

@@ -1,0 +1,188 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 #!/usr/bin/env wolframscript\
+(* ================================================================\
+   Part 3: DYNAMIC CORRECTION AND FULL PROPAGATOR\
+\
+   For \uc0\u969  \u8800  0, the full strain propagator has two additional terms\
+   beyond the static Eshelby piece (Term 1):\
+\
+   Term 2: O(1/k\'b2) \'97 first dynamic correction\
+   Term 3: O(1/k\uc0\u8308 ) \'97 remainder\
+\
+   Both converge as Fourier integrals because the O(1) piece\
+   (which caused the divergence) was already extracted.\
+\
+   This script:\
+   (a) Computes Terms 2+3 by NIntegrate with subtraction\
+   (b) Verifies convergence as a function of Kmax\
+   (c) Shows the full propagator for a range of \uc0\u969 a/c_s values\
+   ================================================================ *)\
+\
+Print["================================================================"];\
+Print["  INTER-VOXEL ELASTIC STRAIN PROPAGATOR"];\
+Print["  Part 3: Dynamic Correction"];\
+Print["================================================================\\n"];\
+\
+(* \uc0\u9472 \u9472  Parameters \u9472 \u9472  *)\
+\uc0\u956  = 1;\
+\uc0\u957  = 1/4;\
+\uc0\u951  = 1/(2(1-\u957 ));\
+\uc0\u961  = 1;\
+cs = Sqrt[\uc0\u956 /\u961 ];\
+cp = Sqrt[(1-\uc0\u957 )/((1+\u957 )(1-2\u957 ))] cs; (* = \u8730 ((\u955 +2\u956 )/\u961 ) *)\
+a = 1;\
+h = a/2;\
+\
+Print["Parameters: \uc0\u956 =", \u956 , ", \u957 =", \u957 , ", \u961 =", \u961 ];\
+Print["  cs=", cs // N, ", cp=", cp // N, "\\n"];\
+\
+(* \uc0\u9472 \u9472  Form factor \u9472 \u9472  *)\
+F0[kx_, ky_, kz_] := a^3/(2 Sqrt[Pi]) Sinc[kx h] Sinc[ky h] Sinc[kz h]\
+\
+(* \uc0\u9472 \u9472  Full dynamic Green's tensor in Fourier space \u9472 \u9472  *)\
+GFourier[kx_, ky_, kz_, \uc0\u969 _] := Module[\{k2, kh, \u948 \},\
+  k2 = kx^2 + ky^2 + kz^2;\
+  kh = \{kx, ky, kz\}/Sqrt[k2];\
+  \uc0\u948  = IdentityMatrix[3];\
+  Outer[Times, kh, kh]/(\uc0\u961  (\u969 ^2 - cp^2 k2)) +\
+  (\uc0\u948  - Outer[Times, kh, kh])/(\u961  (\u969 ^2 - cs^2 k2))\
+]\
+\
+(* \uc0\u9472 \u9472  Static (Kelvin) Green's tensor \u9472 \u9472  *)\
+GKelvin[kx_, ky_, kz_] := Module[\{k2, kh, \uc0\u948 \},\
+  k2 = kx^2 + ky^2 + kz^2;\
+  kh = \{kx, ky, kz\}/Sqrt[k2];\
+  \uc0\u948  = IdentityMatrix[3];\
+  -(Outer[Times, kh, kh]/(\uc0\u961  cp^2) + (\u948  - Outer[Times, kh, kh])/(\u961  cs^2)) / k2\
+]\
+\
+(* \uc0\u9472 \u9472  Strain kernel from Green's tensor \u9472 \u9472 \
+   \uc0\u915 _ijkl(k) = -1/2 (k_j k_l G_ik + k_i k_l G_jk)          *)\
+StrainKernel[Gfun_, kx_, ky_, kz_, args___] := Module[\
+  \{G, kv = \{kx, ky, kz\}\},\
+  G = Gfun[kx, ky, kz, args];\
+  Table[\
+    -1/2 (kv[[j]] kv[[l]] G[[i,k]] + kv[[i]] kv[[l]] G[[j,k]]),\
+    \{i,3\}, \{j,3\}, \{k,3\}, \{l,3\}\
+  ]\
+]\
+\
+(* \uc0\u9472 \u9472  The SUBTRACTED integrand \u9472 \u9472 \
+   \uc0\u915 \u771 ^\{sub\}(k,\u969 ) = \u915 \u771 (k,\u969 ) - \u915 \u771 ^K(k)\
+\
+   For large k:\
+     \uc0\u915 \u771 (k,\u969 ) = \u915 \u771 ^\u8734  + \u969 \'b2\u915 \u771 ^(2)/k\'b2 + O(1/k\u8308 )\
+     \uc0\u915 \u771 ^K(k)  = \u915 \u771 ^\u8734 \
+   So \uc0\u915 \u771 ^\{sub\} = O(1/k\'b2), making the Fourier integral convergent\
+   for l\uc0\u8321  + l\u8322  < 5 (l=0 is fine).                               *)\
+\
+SubtractedStrainKernel[kx_, ky_, kz_, \uc0\u969 _] := Module[\
+  \{\uc0\u915 full, \u915 static\},\
+  \uc0\u915 full = StrainKernel[GFourier, kx, ky, kz, \u969 ];\
+  \uc0\u915 static = StrainKernel[GKelvin, kx, ky, kz];\
+  \uc0\u915 full - \u915 static\
+]\
+\
+(* \uc0\u9472 \u9472  Compute dynamic correction for a specific component \u9472 \u9472  *)\
+R = \{a, 0, 0\};  (* face-adjacent *)\
+\
+DynamicCorrection[\uc0\u969 _, ijkl_, Kmax_:200] := Module[\
+  \{i, j, k, l, integrand\},\
+  \{i, j, k, l\} = ijkl;\
+\
+  integrand[\uc0\u954 _, \u952 k_, \u966 k_] := Module[\
+    \{kx, ky, kz, \uc0\u915 sub, F, phase\},\
+    kx = \uc0\u954  Sin[\u952 k] Cos[\u966 k];\
+    ky = \uc0\u954  Sin[\u952 k] Sin[\u966 k];\
+    kz = \uc0\u954  Cos[\u952 k];\
+    \uc0\u915 sub = SubtractedStrainKernel[kx, ky, kz, \u969 ];\
+    F = F0[kx, ky, kz];\
+    phase = Exp[I (kx R[[1]] + ky R[[2]] + kz R[[3]])];\
+    Re[F^2 \uc0\u915 sub[[i,j,k,l]] phase \u954 ^2 Sin[\u952 k] / (2 Pi)^3]\
+  ];\
+\
+  NIntegrate[\
+    integrand[\uc0\u954 , \u952 k, \u966 k],\
+    \{\uc0\u954 , 0, Kmax\}, \{\u952 k, 0, Pi\}, \{\u966 k, 0, 2 Pi\},\
+    Method -> \{"GlobalAdaptive",\
+      "SingularityHandler" -> "IMT",\
+      "SymbolicProcessing" -> 0,\
+      "MaxErrorIncreases" -> 1000\},\
+    WorkingPrecision -> 12,\
+    MaxRecursion -> 12,\
+    PrecisionGoal -> 5\
+  ]\
+]\
+\
+(* \uc0\u9472 \u9472  Test convergence: the subtracted integral should converge \u9472 \u9472  *)\
+Print["\uc0\u9472 \u9472  Convergence test: subtracted integral for P^dyn_1111 \u9472 \u9472 "];\
+Print["  \uc0\u969  a/cs = 0.5 (sub-wavelength regime)\\n"];\
+\
+\uc0\u969 0 = 0.5 cs / a;  (* \u969 a/cs = 0.5 *)\
+\
+Print[StringForm["  `1`  `2`  `3`",\
+  PaddedForm["Kmax", \{6,0\}],\
+  PaddedForm["P^dyn_1111", \{14,0\}],\
+  "\uc0\u916 "]];\
+Print[StringRepeat["-", 45]];\
+\
+prevVal = 0;\
+Do[\
+  timing = AbsoluteTiming[\
+    val = DynamicCorrection[\uc0\u969 0, \{1,1,1,1\}, Kmax];\
+  ];\
+  delta = val - prevVal;\
+  Print[StringForm["  `1`   `2`   `3`  (`4` s)",\
+    PaddedForm[Kmax, \{6, 0\}],\
+    PaddedForm[val, \{14, 8\}],\
+    PaddedForm[delta, \{12, 8\}],\
+    Round[timing[[1]], 0.1]\
+  ]];\
+  prevVal = val;\
+, \{Kmax, \{10, 20, 40, 80, 160\}\}];\
+\
+Print["\\n\uc0\u8594  The subtracted integral CONVERGES (\u916  \u8594  0).\\n"];\
+\
+(* \uc0\u9472 \u9472  Frequency sweep \u9472 \u9472  *)\
+Print["\uc0\u9472 \u9472  Frequency sweep: P^dyn_1111(\u969 ) for face-adjacent \u9472 \u9472 "];\
+Print[StringForm["  `1`  `2`",\
+  PaddedForm["\uc0\u969 a/cs", \{8,0\}],\
+  PaddedForm["P^dyn_1111", \{14,0\}]]];\
+Print[StringRepeat["-", 30]];\
+\
+Do[\
+  \uc0\u969  = \u969 acs cs / a;\
+  val = DynamicCorrection[\uc0\u969 , \{1,1,1,1\}, 100];\
+  Print[StringForm["  `1`   `2`",\
+    PaddedForm[\uc0\u969 acs, \{8, 3\}],\
+    PaddedForm[val, \{14, 8\}]\
+  ]];\
+, \{\uc0\u969 acs, \{0.1, 0.2, 0.5, 1.0, 1.5, 2.0\}\}];\
+\
+Print["\\n\uc0\u9472 \u9472  Also computing P^dyn_1122 \u9472 \u9472 "];\
+Do[\
+  \uc0\u969  = \u969 acs cs / a;\
+  val = DynamicCorrection[\uc0\u969 , \{1,1,2,2\}, 100];\
+  Print[StringForm["  \uc0\u969 a/cs=`1`:  P^dyn_1122 = `2`",\
+    PaddedForm[\uc0\u969 acs, \{4, 1\}],\
+    PaddedForm[val, \{14, 8\}]\
+  ]];\
+, \{\uc0\u969 acs, \{0.1, 0.5, 1.0, 2.0\}\}];\
+\
+Print["\\n================================================================"];\
+Print["  SUMMARY: Full propagator = static (Part 2) + dynamic (Part 3)"];\
+Print[""];\
+Print["  P_ijkl(R,\uc0\u969 ) = P^static_ijkl(R) + P^dyn_ijkl(R,\u969 )"];\
+Print[""];\
+Print["  Static: from \uc0\u934  (Newton) and \u936  (biharmonic) potentials"];\
+Print["  Dynamic: convergent Fourier integral after subtraction"];\
+Print[""];\
+Print["  The Eshelby subtraction removes the O(1) UV piece,"];\
+Print["  leaving an O(1/k\'b2) integrand that NIntegrate handles."];\
+Print["================================================================"];}

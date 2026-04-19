@@ -1,0 +1,392 @@
+% LuaLaTeX document — compile with: lualatex mie_multipole_derivation.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black}
+\usepackage{xcolor}
+\usepackage{mathtools}
+\usepackage{enumitem}
+
+\newcommand{\D}{\Delta}
+\newcommand{\order}{\mathcal{O}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\br}{\mathbf{r}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bnabla}{\boldsymbol{\nabla}}
+\newcommand{\bpsi}{\boldsymbol{\psi}}
+\newcommand{\bphi}{\boldsymbol{\varphi}}
+\newcommand{\hatphi}{\hat{\mathbf{e}}_\varphi}
+
+\title{Direct Derivation of the Elastic Mie Multipole Series\\
+\large From Helmholtz potentials to closed-form scattering amplitudes}
+\author{T.~M.~Nestor}
+\date{April 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We give a self-contained derivation of the elastic Mie partial-wave
+series for a spherical inclusion in an isotropic background, ending at
+the closed-form scattering amplitudes $a_n,b_n,c_n,d_n$ used by
+\code{Mathematica/MieAsymptotic.wl}.  The derivation is organised in
+eight steps: Helmholtz decomposition, Rayleigh expansion of the incident
+plane wave, three-region partial-wave ansatz, field-from-potential
+operators, boundary conditions at $r=a$, Cramer's rule, series expansion
+in $ka$, and the appearance of the static Eshelby concentration as a
+denominator factor.  The Eshelby concentration falls out of the
+determinant arithmetic --- it is never inserted by hand.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+\section{Setting and Helmholtz decomposition}
+% =====================================================================
+
+In an isotropic linearly elastic medium with Lam\'e parameters
+$(\lambda,\mu)$ and density $\rho$, the displacement $\bu(\br)$ at
+angular frequency $\omega$ obeys the Navier equation
+\begin{equation}
+(\lambda+\mu)\,\bnabla(\bnabla\!\cdot\!\bu) + \mu\,\nabla^2\bu + \rho\omega^2\bu \;=\; 0.
+\label{eq:navier}
+\end{equation}
+The two characteristic wavespeeds are
+$\alpha=\sqrt{(\lambda+2\mu)/\rho}$ and $\beta=\sqrt{\mu/\rho}$, with
+wavenumbers $k_P=\omega/\alpha$ and $k_S=\omega/\beta$.
+
+Any solution of \eqref{eq:navier} can be written as the sum of a
+curl-free (compressional) and a divergence-free (shear) part:
+\begin{equation}
+\bu \;=\; \bnabla\phi \;+\; \bnabla\!\times\!\bpsi.
+\label{eq:helmholtz-decomp}
+\end{equation}
+For a $P$-wave incident along $\hat{\mathbf z}$, the problem is
+axisymmetric ($\partial_\varphi\equiv 0$) and the vector potential
+reduces to a single component, $\bpsi=\psi(r,\theta)\,\hatphi$.  The
+scalar $\phi$ and the scalar $\psi$ each satisfy a scalar Helmholtz
+equation:
+\begin{equation}
+(\nabla^2 + k_P^2)\,\phi = 0, \qquad
+(\nabla^2 + k_S^2 - r^{-2}\sin^{-2}\theta)\,\psi = 0,
+\label{eq:helmholtz-scalar}
+\end{equation}
+the second arising from the vector Laplacian acting on
+$\psi\,\hatphi$.  Substituting back into \eqref{eq:helmholtz-decomp}
+gives the explicit components
+\begin{equation}
+u_r = \partial_r\phi + \frac{1}{r\sin\theta}\,\partial_\theta(\sin\theta\,\psi),
+\qquad
+u_\theta = \frac{1}{r}\partial_\theta\phi - \frac{1}{r}\partial_r(r\,\psi).
+\label{eq:u-from-pot}
+\end{equation}
+
+% =====================================================================
+\section{Rayleigh expansion of the incident plane wave}
+\label{sec:rayleigh}
+% =====================================================================
+
+The incident $P$-wave $\bu^{\rm inc}=\bnabla\phi^{\rm inc}$ with unit
+amplitude scalar potential
+$\phi^{\rm inc}(\br)=e^{ik_P z}/(ik_P)$ admits the
+Gegenbauer/Rayleigh expansion in spherical harmonics:
+\begin{equation}
+\phi^{\rm inc}(r,\theta) \;=\; \frac{1}{ik_P}
+\sum_{n=0}^{\infty}(2n+1)\,i^n\,j_n(k_P r)\,P_n(\cos\theta),
+\label{eq:rayleigh-exp}
+\end{equation}
+where $j_n$ is the spherical Bessel function of the first kind.  The
+factor $1/(ik_P)$ in front is conventional: it makes
+$\partial_z e^{ik_P z}/(ik_P) = e^{ik_P z}$, so the displacement
+amplitude has unit normalisation along the axis.  Equation
+\eqref{eq:rayleigh-exp} decouples the problem into a direct sum over
+Legendre orders $n$: each $n$ propagates independently through the
+spherically symmetric inclusion.
+
+The companion expansion for an incident $SV$-wave uses the associated
+Legendre polynomials $P_n^1(\cos\theta)$ with the vector-potential
+form; we restrict here to $P$-incidence.
+
+% =====================================================================
+\section{Three-region partial-wave ansatz}
+\label{sec:ansatz}
+% =====================================================================
+
+Inside the inclusion ($r<a$) the wavenumbers are primed:
+$k_P'=\omega/\alpha'$, $k_S'=\omega/\beta'$ with
+$\alpha'=\sqrt{(\lambda+\D\lambda+2(\mu+\D\mu))/(\rho+\D\rho)}$ etc.
+Outside ($r>a$) the wavenumbers are unprimed.  At each Legendre order
+$n$ the potentials take the form
+\begin{equation}
+\begin{aligned}
+\phi^{\rm inc}_n &= \frac{(2n+1)i^n}{ik_P}\,j_n(k_P r)\,P_n(\cos\theta), \\[4pt]
+\phi^{\rm sc}_n &= a_n\,h_n^{(1)}(k_P r)\,P_n, &
+\psi^{\rm sc}_n &= b_n\,h_n^{(1)}(k_S r)\,P_n^1, \\[4pt]
+\phi^{\rm int}_n &= c_n\,j_n(k_P' r)\,P_n, &
+\psi^{\rm int}_n &= d_n\,j_n(k_S' r)\,P_n^1,
+\end{aligned}
+\label{eq:ansatz}
+\end{equation}
+where:
+\begin{itemize}[leftmargin=*,nosep]
+\item $j_n$ (regular at the origin) is the only physically admissible
+radial function inside the inclusion;
+\item $h_n^{(1)}=j_n+iy_n$ (Hankel, outgoing at infinity) is the only
+physically admissible scattered radial function outside.
+\end{itemize}
+For $n=0$ the associated Legendre $P_0^1\equiv 0$, so the
+$\psi$-channel is empty: only $a_0$ and $c_0$ remain, and the
+boundary system is $2\times 2$.  For $n\ge 1$ all four amplitudes
+$(a_n,b_n,c_n,d_n)$ are non-trivial.
+
+% =====================================================================
+\section{Displacement and stress from a partial-wave potential}
+\label{sec:fields}
+% =====================================================================
+
+Write $z_n(\xi)$ for a generic spherical Bessel/Hankel of order $n$
+($z_n\in\{j_n,h_n^{(1)}\}$).  Substituting a single partial-wave
+potential
+$\phi=z_n(kr)\,P_n(\cos\theta)$ or $\psi=z_n(kr)\,P_n^1(\cos\theta)$
+into Eq.~\eqref{eq:u-from-pot} and applying Hooke's law
+\begin{equation}
+\sigma_{ij} = \lambda\,\delta_{ij}\,\varepsilon_{kk} + 2\mu\,\varepsilon_{ij},
+\qquad
+\varepsilon_{ij} = \tfrac{1}{2}(\partial_i u_j + \partial_j u_i),
+\label{eq:hooke}
+\end{equation}
+gives the four boundary quantities $u_r$, $u_\theta$, $\sigma_{rr}$,
+$\sigma_{r\theta}$ in compact form.  With shorthand $\xi\equiv kr$:
+
+\paragraph{P-channel ($\phi$-potential).}
+\begin{equation}
+\begin{aligned}
+u_r &= k\,z_n'(\xi)\,P_n, \\
+u_\theta &= \frac{z_n(\xi)}{r}\,\partial_\theta P_n, \\
+\sigma_{rr} &= -(\lambda+2\mu)\,k^2\,z_n(\xi)\,P_n
+              \;-\;\tfrac{4\mu k}{r}z_n'(\xi)\,P_n
+              \;+\;\tfrac{2\mu n(n{+}1)}{r^2}\,z_n(\xi)\,P_n, \\
+\sigma_{r\theta} &= \tfrac{2\mu}{r}\Bigl[k\,z_n'(\xi) - \tfrac{z_n(\xi)}{r}\Bigr]\,\partial_\theta P_n.
+\end{aligned}
+\label{eq:p-fields}
+\end{equation}
+
+\paragraph{S-channel ($\psi$-potential).}
+\begin{equation}
+\begin{aligned}
+u_r &= \frac{n(n{+}1)\,z_n(\xi)}{r}\,P_n, \\
+u_\theta &= \frac{z_n(\xi) + \xi z_n'(\xi)}{r}\,\partial_\theta P_n, \\
+\sigma_{rr} &= \tfrac{2\mu n(n{+}1)}{r}\Bigl[k\,z_n'(\xi) - \tfrac{z_n(\xi)}{r}\Bigr]\,P_n, \\
+\sigma_{r\theta} &= \tfrac{\mu}{r^2}\bigl[(2n(n{+}1)-2-\xi^2)\,z_n(\xi) - 2\xi\,z_n'(\xi)\bigr]\,\partial_\theta P_n.
+\end{aligned}
+\label{eq:s-fields}
+\end{equation}
+These four-vectors are exactly the columns assembled by the
+\code{pField} and \code{sField} functions in
+\code{Mathematica/MieAsymptotic.wl}.
+
+% =====================================================================
+\section{Boundary conditions: the $4\times 4$ system}
+\label{sec:bc}
+% =====================================================================
+
+At the spherical interface $r=a$ the elastic boundary conditions are
+continuity of (i) the displacement vector and (ii) the traction vector
+$t_i=\sigma_{ij}\hat n_j$.  Since $\hat n=\hat r$, this means
+continuity of the four scalar quantities
+$\{u_r,u_\theta,\sigma_{rr},\sigma_{r\theta}\}$.  Imposing these on
+the sum (incident + scattered) outside and the interior expansion
+inside gives, per partial wave $n\ge 1$,
+\begin{equation}
+\bM_n(w;\,\D\lambda,\D\mu,\D\rho)\,
+\begin{pmatrix} a_n \\ b_n \\ c_n \\ d_n \end{pmatrix}
+\;=\; -\,\frac{(2n+1)\,i^n}{ik_P}\,\mathbf{f}^{(P,j)}_n(a),
+\label{eq:bc-system}
+\end{equation}
+where $w\equiv k_S a$ is the dimensionless small parameter and the
+$4\times 4$ matrix has columns
+\begin{equation}
+\bM_n \;=\; \bigl[\;\mathbf{f}^{(P,h)}_n(a)\;\;\;\mathbf{f}^{(S,h)}_n(a)\;\;\;
+                 -\mathbf{f}^{(P,j')}_n(a)\;\;\;-\mathbf{f}^{(S,j')}_n(a)\;\bigr].
+\label{eq:bc-matrix}
+\end{equation}
+Here $\mathbf{f}^{(\bullet)}_n(a)\in\mathbb{C}^4$ collects the four
+boundary quantities of \eqref{eq:p-fields}--\eqref{eq:s-fields} at
+$r=a$, evaluated with the appropriate radial function ($j_n$ or
+$h_n^{(1)}$) and the appropriate moduli (background or interior).
+The right-hand side is the contribution of the incident wave evaluated
+at $r=a$ with $z_n=j_n$ and the background moduli.  For $n=0$ the
+matrix is $2\times 2$ (only $a_0,c_0$ unknown, only $u_r,\sigma_{rr}$
+constraints).
+
+\subsection*{Why this is a closed problem}
+We have four unknowns $(a_n,b_n,c_n,d_n)$ and four equations from
+\eqref{eq:bc-system}.  All matrix entries are exact functions of the
+contrasts $(\D\lambda,\D\mu,\D\rho)$ and of $w$; no approximation has
+been made.
+
+% =====================================================================
+\section{Cramer's rule}
+\label{sec:cramer}
+% =====================================================================
+
+Each amplitude is a ratio of $4\times 4$ determinants:
+\begin{equation}
+a_n \;=\; \frac{\det \bM_n^{[1\to\mathbf{r}]}}{\det \bM_n},
+\qquad
+b_n \;=\; \frac{\det \bM_n^{[2\to\mathbf{r}]}}{\det \bM_n},
+\qquad \dots
+\label{eq:cramer}
+\end{equation}
+where $\bM_n^{[i\to\mathbf{r}]}$ denotes $\bM_n$ with column $i$
+replaced by the right-hand side of \eqref{eq:bc-system}.  This is the
+\emph{exact} closed form: at this stage every amplitude is a rational
+function of $w$ and the contrasts.  No series expansion has been taken.
+
+A practical complication is that $\det\bM_n$ has a non-trivial leading
+order in $w$ (it scales as $w^{4n+2}$ for the $4\times 4$ block, modulo
+the convention factor in the RHS), and $\det\bM_n^{[1\to\mathbf{r}]}$
+scales differently --- so the ratio is a genuine \emph{Laurent}
+expansion in $w$, not a pure Taylor series.  Both numerator and
+denominator must therefore be expanded together and the leading
+\emph{ratio} extracted.
+
+% =====================================================================
+\section{Series expansion in $ka$}
+\label{sec:series}
+% =====================================================================
+
+The Bessel and Hankel functions admit known power-series expansions
+near $\xi=0$:
+\begin{equation}
+j_n(\xi) \;=\; \frac{\xi^n}{(2n+1)!!}\biggl[1-\frac{\xi^2}{2(2n+3)}+\order(\xi^4)\biggr],
+\qquad
+y_n(\xi) \;=\; -\frac{(2n-1)!!}{\xi^{n+1}}\bigl[1+\order(\xi^2)\bigr].
+\label{eq:bessel-series}
+\end{equation}
+Substituting into \eqref{eq:cramer} via the Sin/Cos recurrence
+implementation of \code{MieAsymptotic.wl} (lines defining
+\code{jn}, \code{yn}, \code{hn}) makes both numerator and denominator
+of $a_n$ Laurent polynomials in $w$ with coefficients that are
+\emph{exact rational functions in $(\D\lambda,\D\mu,\D\rho,\lambda_0)$}.
+Series-dividing the ratio (Mathematica's \code{Series[\dots,\{w,0,\text{ord}\}]}
+applied to \code{Det[col]/dM}) collapses the Laurent expansion and
+extracts the leading coefficient.
+
+Carrying out this procedure analytically for $n=0,1,2$ produces
+\begin{align}
+a_0 &= \frac{w^2(-3\D\lambda-2\D\mu)}{3(\lambda_0+2)(6+3\D\lambda+2\D\mu+3\lambda_0)}, \\[4pt]
+a_1 &= \frac{i\,w^2\,\D\rho}{3(\lambda_0+2)}, \qquad
+b_1 \;=\; \frac{i\,w^2\,\D\rho}{3}, \\[4pt]
+a_2 &= \frac{20\,w^2\,\D\mu}{3(\lambda_0+2)\bigl[15(\lambda_0+2)+2\D\mu(8+3\lambda_0)\bigr]},
+\label{eq:a2-leading}\\[4pt]
+b_2 &= \frac{10\,w^2\,\D\mu\,\sqrt{\lambda_0+2}}{3\bigl[15(\lambda_0+2)+2\D\mu(8+3\lambda_0)\bigr]}.
+\end{align}
+These are the closed forms tabulated in
+\code{Mathematica/MieAsymptoticLeading.wl} and exposed to Python via
+\code{cubic\_scattering/mie\_asymptotic\_analytic.py}.
+
+\subsection*{Higher-order corrections}
+Continuing the series expansion to order $w^{2n+3}$ produces
+$\order((ka)^2)$ corrections to each leading amplitude; these encode
+the dynamic (radiative) corrections to the static-Eshelby leading
+behaviour.  At $ka_S=0.05$ the relative size of the first correction
+is $\sim 2.5\times 10^{-3}$, consistent with the Eshelby-vs-Mie
+agreement in the validation document.
+
+% =====================================================================
+\section{Where the Eshelby concentration comes from}
+\label{sec:eshelby-emerges}
+% =====================================================================
+
+The denominator factor in $a_2$ of Eq.~\eqref{eq:a2-leading} can be
+rewritten as
+\begin{equation}
+15(\lambda_0+2)+2\D\mu(8+3\lambda_0) \;=\; 15(\lambda_0+2)\,(1+\beta_E\D\mu),
+\qquad
+\beta_E \;=\; \frac{2(8+3\lambda_0)}{15(\lambda_0+2)}.
+\label{eq:eshelby-emerges}
+\end{equation}
+Comparing with $\beta_E = 2(4-5\nu)/(15(1-\nu))$ via $\nu=\lambda_0/(2(\lambda_0+1))$
+shows this is exactly the static Eshelby shear concentration
+coefficient for a sphere.  In other words,
+\begin{equation}
+a_2 \;=\; \frac{4\,w^2\,\D\mu}{9(\lambda_0+2)^2}\;\cdot\;\underbrace{\frac{1}{1+\beta_E\D\mu}}_{E_2,\;\text{Eshelby}}.
+\label{eq:a2-factored}
+\end{equation}
+The Eshelby concentration emerges \emph{automatically} from the
+determinant arithmetic of \eqref{eq:cramer}.  Two observations
+illuminate why:
+
+\begin{enumerate}[leftmargin=*]
+\item\emph{The Cramer ratio is the inverse of an operator equation.}
+The Lippmann--Schwinger volume integral equation reads
+$\bu^{\rm tot} = \bu^{\rm inc} + (\hat G_0 \hat T_0)\,\bu^{\rm tot}$,
+so the polarisation satisfies
+$\bP = (I-\hat G_0\hat T_0)^{-1}\,\hat T_0\,\bu^{\rm inc}$.  Inverting
+$(I-\hat G_0\hat T_0)$ generates a geometric series in
+$\hat G_0\hat T_0$ whose projection onto each angular sector is
+exactly the geometric series $1 + \beta_E\D\mu + (\beta_E\D\mu)^2+\dots$
+for the shear sector.  The $4\times 4$ Mie BC matrix $\bM_n$ is the
+spherical-harmonic projection of this same operator $(I-\hat G_0\hat T_0)$;
+its determinant ratio reproduces the geometric series sum
+$1/(1+\beta_E\D\mu)$.
+
+\item\emph{The spherical harmonic basis is the diagonal basis of the
+Eshelby operator for a sphere.}  Each $n$ is a separate eigenvector of
+the static Eshelby tensor.  The Mie BC system thus diagonalises the
+Lippmann--Schwinger inversion exactly --- one $4\times 4$ block per
+$n$, no coupling between Legendre orders.  This is why the closed-form
+$a_n,b_n$ encode finite-contrast Eshelby \emph{without any
+approximation}: the polynomial-Galerkin closure on the cube
+(\code{cube\_galerkin27.tex}) does the analogous inversion on a
+non-diagonal but finite-dimensional basis ($\mathcal{T}_{27}$).
+\end{enumerate}
+
+% =====================================================================
+\section*{Summary}
+\addcontentsline{toc}{section}{Summary}
+% =====================================================================
+
+The eight-step recipe --- Helmholtz decomposition, Rayleigh expansion,
+three-region ansatz, field operators, BC system, Cramer's rule, series
+expansion, Eshelby identification --- is mechanised verbatim in
+\code{Mathematica/MieAsymptotic.wl}.  The pieces map as follows:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Mathematical step & Implementation \\
+\midrule
+Helmholtz potentials & implicit (the $\phi/\psi$ ansatz of \S\ref{sec:ansatz}) \\
+Rayleigh expansion of incident & \code{coeff = (2n+1) I\^{}n/(I kPo)} \\
+P-channel field operators
+   \eqref{eq:p-fields} & \code{pField[n,k,r,lam,mu,zfn]} \\
+S-channel field operators
+   \eqref{eq:s-fields} & \code{sField[n,k,r,mu,zfn]} \\
+BC matrix \eqref{eq:bc-matrix} & \code{mat = Transpose[\{scP,scS,-inP,-inS\}]} \\
+Cramer ratio \eqref{eq:cramer} & \code{Det[col]/dM} per column \\
+Series in $w$ \eqref{eq:bessel-series} & \code{Normal[Series[\dots,\{w,0,ord\}]]} \\
+Eshelby identification \eqref{eq:eshelby-emerges} &
+   automatic --- see \code{MieAsymptoticVerify.wl} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent For the validation that the closed forms above reproduce the
+spherical Eshelby concentration factors and match the project's
+$27\times 27$ cubic T-matrix at finite contrast, see the companion
+document \code{mie\_finite\_contrast\_validation.tex}.
+
+\end{document}
