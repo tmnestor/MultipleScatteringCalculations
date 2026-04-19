@@ -1,0 +1,165 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 #!/usr/bin/env wolframscript\
+(* ================================================================\
+   Part 1: DEMONSTRATE THE UV DIVERGENCE\
+\
+   Show that the naive Fourier integral for the inter-voxel\
+   strain propagator diverges as a function of cutoff Kmax.\
+\
+   Integral:\
+     P_\{ijlm\}(R) = \uc0\u8747 _\{|k|<Kmax\} d\'b3k/(2\u960 )\'b3 \u70 \u771 \u8320 *(k) \u915 \u771 _ijlm(k) \u70 \u771 \u8320 (k) exp(ik\'b7R)\
+\
+   where:\
+     \uc0\u70 \u771 \u8320 (k) = a\'b3 sinc(kx a/2) sinc(ky a/2) sinc(kz a/2) / (2\u8730 \u960 )\
+     \uc0\u915 \u771 _ijlm(k) = strain kernel (static Kelvin in Fourier space)\
+\
+   For the strain kernel, \uc0\u915 \u771  \u8594  O(1) as |k|\u8594 \u8734 , so the integral\
+   diverges logarithmically for l=0.\
+   ================================================================ *)\
+\
+Print["================================================================"];\
+Print["  INTER-VOXEL ELASTIC STRAIN PROPAGATOR"];\
+Print["  Part 1: UV Divergence of Naive Fourier Integral"];\
+Print["================================================================\\n"];\
+\
+(* \uc0\u9472 \u9472  Material parameters (normalized) \u9472 \u9472  *)\
+\uc0\u956  = 1;\
+\uc0\u957  = 1/4;   (* Poisson's ratio *)\
+\uc0\u951  = 1/(2(1-\u957 ));  (* = (\u955 +\u956 )/(\u955 +2\u956 ) = 2/3 for \u957 =1/4 *)\
+a = 1;  (* voxel side length *)\
+h = a/2;\
+\
+Print["Parameters: \uc0\u956 =", \u956 , ", \u957 =", \u957 , ", \u951 =", \u951 , ", a=", a, "\\n"];\
+\
+(* \uc0\u9472 \u9472  Kelvin Green's tensor in Fourier space \u9472 \u9472 \
+   \uc0\u71 \u771 ^K_ij(k) = [\u948 _ij - \u951  \u107 \u770 _i \u107 \u770 _j] / (\u956  k\'b2)              *)\
+\
+GKFourier[kx_, ky_, kz_] := Module[\{k2, khat\},\
+  k2 = kx^2 + ky^2 + kz^2;\
+  khat = \{kx, ky, kz\}/Sqrt[k2];\
+  (IdentityMatrix[3] - \uc0\u951  Outer[Times, khat, khat]) / (\u956  k2)\
+]\
+\
+(* \uc0\u9472 \u9472  Static strain kernel in Fourier space \u9472 \u9472 \
+   \uc0\u915 \u771 ^K_ijkl(k) = -1/(2\u956 ) [\u107 \u770 _j \u107 \u770 _l \u948 _ik + \u107 \u770 _i \u107 \u770 _l \u948 _jk - 2\u951  \u107 \u770 _i \u107 \u770 _j \u107 \u770 _k \u107 \u770 _l]\
+\
+   This is O(1) for large |k| \'97 the source of divergence.     *)\
+\
+GammaKFourier[kx_, ky_, kz_] := Module[\{k2, kh, \uc0\u948 \},\
+  k2 = kx^2 + ky^2 + kz^2;\
+  kh = \{kx, ky, kz\}/Sqrt[k2];\
+  \uc0\u948  = KroneckerDelta;\
+  Table[\
+    -1/(2\uc0\u956 ) (kh[[j]] kh[[l]] \u948 [i,k] + kh[[i]] kh[[l]] \u948 [j,k]\
+             - 2 \uc0\u951  kh[[i]] kh[[j]] kh[[k]] kh[[l]]),\
+    \{i,3\}, \{j,3\}, \{k,3\}, \{l,3\}\
+  ]\
+]\
+\
+(* \uc0\u9472 \u9472  Form factor: FT of constant \'d7 box \u9472 \u9472 \
+   \uc0\u70 \u771 \u8320 (k) = (1/(2\u8730 \u960 )) \u8747 _\{cube\} exp(-ik\'b7r) d\'b3r\
+          = a\'b3/(2\uc0\u8730 \u960 ) sinc(kx h) sinc(ky h) sinc(kz h)       *)\
+\
+F0[kx_, ky_, kz_] := a^3 / (2 Sqrt[Pi]) *\
+  Sinc[kx h] Sinc[ky h] Sinc[kz h]\
+\
+(* \uc0\u9472 \u9472  The integrand for the strain propagator \u9472 \u9472 \
+   I_ijkl(k) = \uc0\u70 \u771 \u8320 (-k) \u915 \u771 _ijkl(k) \u70 \u771 \u8320 (k) exp(ik\'b7R) / (2\u960 )\'b3\
+\
+   For l=0 basis: \uc0\u70 \u771 \u8320 (-k) = \u70 \u771 \u8320 (k)* = \u70 \u771 \u8320 (k) (real function)  *)\
+\
+(* \uc0\u9472 \u9472  Compute the integral with increasing cutoff Kmax \u9472 \u9472 \
+   Use the 1111 component (longitudinal-longitudinal coupling)\
+   for face-adjacent voxels R = \{a, 0, 0\}.                    *)\
+\
+R = \{a, 0, 0\};\
+Print["Voxel separation: R = ", R, " (face-adjacent)\\n"];\
+\
+(* Spherical k-coordinates: k = \uc0\u954 (sin\u952  cos\u966 , sin\u952  sin\u966 , cos\u952 ) *)\
+integrand1111[\uc0\u954 _, \u952 k_, \u966 k_] := Module[\
+  \{kx, ky, kz, \uc0\u915 , F, phase\},\
+  kx = \uc0\u954  Sin[\u952 k] Cos[\u966 k];\
+  ky = \uc0\u954  Sin[\u952 k] Sin[\u966 k];\
+  kz = \uc0\u954  Cos[\u952 k];\
+  \uc0\u915  = GammaKFourier[kx, ky, kz];\
+  F = F0[kx, ky, kz];\
+  phase = Exp[I (kx R[[1]] + ky R[[2]] + kz R[[3]])];\
+  (* Return real part of integrand for the 1111 component *)\
+  Re[F^2 * \uc0\u915 [[1,1,1,1]] * phase * \u954 ^2 Sin[\u952 k] / (2 Pi)^3]\
+]\
+\
+Print["Computing P\uc0\u8321 \u8321 \u8321 \u8321 (R) with increasing cutoff Kmax..."];\
+Print[StringForm["  `1`  `2`  `3`",\
+  PaddedForm["Kmax", \{6,0\}],\
+  PaddedForm["Integral", \{14,0\}],\
+  "\uc0\u916 P (increment)"]];\
+Print[StringRepeat["-", 55]];\
+\
+prevVal = 0;\
+results = \{\};\
+Do[\
+  val = NIntegrate[\
+    integrand1111[\uc0\u954 , \u952 k, \u966 k],\
+    \{\uc0\u954 , 0, Kmax\}, \{\u952 k, 0, Pi\}, \{\u966 k, 0, 2 Pi\},\
+    Method -> \{"GlobalAdaptive", "MaxErrorIncreases" -> 500\},\
+    WorkingPrecision -> 12,\
+    MaxRecursion -> 12,\
+    PrecisionGoal -> 6\
+  ];\
+  delta = val - prevVal;\
+  Print[StringForm["  `1`   `2`   `3`",\
+    PaddedForm[Kmax, \{6, 1\}],\
+    PaddedForm[val, \{14, 8\}],\
+    PaddedForm[delta, \{14, 8\}]\
+  ]];\
+  AppendTo[results, \{Kmax, val, delta\}];\
+  prevVal = val;\
+, \{Kmax, \{5, 10, 20, 40, 80, 160\}\}];\
+\
+Print["\\n\uc0\u8594  The integral does NOT converge as Kmax \u8594  \u8734 "];\
+Print["  The increments \uc0\u916 P do not decay to zero."];\
+Print["  This is because \uc0\u915 \u771 (k) \u8594  O(1) for large |k|.\\n"];\
+\
+(* \uc0\u9472 \u9472  Also show the 1122 (Poisson coupling) component \u9472 \u9472  *)\
+integrand1122[\uc0\u954 _, \u952 k_, \u966 k_] := Module[\
+  \{kx, ky, kz, \uc0\u915 , F, phase\},\
+  kx = \uc0\u954  Sin[\u952 k] Cos[\u966 k];\
+  ky = \uc0\u954  Sin[\u952 k] Sin[\u966 k];\
+  kz = \uc0\u954  Cos[\u952 k];\
+  \uc0\u915  = GammaKFourier[kx, ky, kz];\
+  F = F0[kx, ky, kz];\
+  phase = Exp[I (kx R[[1]] + ky R[[2]] + kz R[[3]])];\
+  Re[F^2 * \uc0\u915 [[1,1,2,2]] * phase * \u954 ^2 Sin[\u952 k] / (2 Pi)^3]\
+]\
+\
+Print["Same divergence for P\uc0\u8321 \u8321 \u8322 \u8322  (Poisson coupling):"];\
+Print[StringForm["  `1`  `2`",\
+  PaddedForm["Kmax", \{6,0\}],\
+  PaddedForm["Integral", \{14,0\}]]];\
+Print[StringRepeat["-", 30]];\
+\
+Do[\
+  val = NIntegrate[\
+    integrand1122[\uc0\u954 , \u952 k, \u966 k],\
+    \{\uc0\u954 , 0, Kmax\}, \{\u952 k, 0, Pi\}, \{\u966 k, 0, 2 Pi\},\
+    Method -> \{"GlobalAdaptive", "MaxErrorIncreases" -> 500\},\
+    WorkingPrecision -> 12,\
+    MaxRecursion -> 12,\
+    PrecisionGoal -> 6\
+  ];\
+  Print[StringForm["  `1`   `2`",\
+    PaddedForm[Kmax, \{6, 1\}],\
+    PaddedForm[val, \{14, 8\}]\
+  ]];\
+, \{Kmax, \{5, 10, 20, 40, 80\}\}];\
+\
+Print["\\n================================================================"];\
+Print["  Conclusion: naive Fourier integral DIVERGES for the strain"];\
+Print["  kernel.  Need the three-term subtraction \uc0\u8594  Part 2."];\
+Print["================================================================"];}

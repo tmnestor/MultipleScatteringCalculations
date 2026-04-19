@@ -612,6 +612,12 @@ class ResonanceTmatrixResult:
             Values > 1e10 indicate near-resonance or solver instability.
         rayleigh_result: Full-cube Rayleigh T-matrix (n_sub=1 reference),
             used for Rayleigh-limit validation.
+        psi_exc: Exciting field coefficients per sub-cell,
+            shape (9*N, 9), complex.  ``psi_exc[9*n:9*n+9, :]``
+            gives the 9×9 exciting-field block for sub-cell *n*.
+        centres: Sub-cell centre positions, shape (N, 3).
+        T_loc_9x9: Local (per-sub-cell) 9×9 T-matrix, shape (9, 9),
+            complex.  Same for all sub-cells.
         n_iterations_converged: If a Neumann-series solve was used
             (``neumann_order > 0``), the order at which the series
             converged.  ``None`` for direct solve.
@@ -630,6 +636,9 @@ class ResonanceTmatrixResult:
     T_comp_9x9: NDArray
     force_monopole: Complex3x3
     stress_dipole_voigt: NDArray
+    psi_exc: NDArray
+    centres: NDArray
+    T_loc_9x9: NDArray
     n_iterations_converged: int | None = None
 
 
@@ -835,6 +844,9 @@ def _solve_coupled(
         T_comp_9x9=T_comp,
         force_monopole=T_comp[:3, :3].copy(),
         stress_dipole_voigt=T_comp[3:, 3:].copy(),
+        psi_exc=psi_exc,
+        centres=centres,
+        T_loc_9x9=T_loc,
     )
 
 

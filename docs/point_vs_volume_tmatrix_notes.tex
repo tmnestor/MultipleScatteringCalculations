@@ -1,0 +1,526 @@
+\documentclass[11pt,a4paper]{article}
+
+% -------- packages --------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{bm}
+\usepackage{mathtools}
+\usepackage{physics}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{microtype}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    citecolor=blue!60!black,
+    urlcolor=blue!60!black
+}
+
+% -------- code listing style --------
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codebg}{rgb}{0.97,0.97,0.97}
+\definecolor{codekw}{rgb}{0.13,0.29,0.53}
+\definecolor{codestr}{rgb}{0.58,0.0,0.0}
+\definecolor{codecom}{rgb}{0.25,0.50,0.35}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{codekw}\bfseries,
+    commentstyle=\color{codecom}\itshape,
+    stringstyle=\color{codestr},
+    numberstyle=\tiny\color{codegray},
+    numbers=left,
+    numbersep=8pt,
+    frame=single,
+    framesep=5pt,
+    rulecolor=\color{codegray!40},
+    breaklines=true,
+    showstringspaces=false,
+    language=Python,
+    tabsize=4,
+    captionpos=b
+}
+\lstset{style=pythonstyle}
+
+% -------- macros --------
+\newcommand{\G}{\bm{G}}
+\newcommand{\T}{\bm{T}}
+\newcommand{\Gam}{\bm{\Gamma}}
+\newcommand{\dL}{\delta\bm{L}}
+\newcommand{\uinc}{\bm{u}^{\text{inc}}}
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+\newcommand{\Oh}{O_h}
+\DeclareMathOperator{\Im}{Im}
+\DeclareMathOperator{\Re}{Re}
+
+% -------- title --------
+\title{Point-Scattering vs.\ Volume-Averaged Self-Consistent T-Matrix \\
+       for Cubic-Voxel Elastodynamic Scattering \\
+       \large Research notes and implementation roadmap}
+\author{Tod Nestor}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Notes on the comparison between point-scatterer and volume-averaged
+self-consistent T-matrix formulations for cubic voxels superimposed
+on a homogeneous elastic medium, and a concrete roadmap for producing
+the comparison within the existing \texttt{Thesis\_Version2} codebase.
+The volumetric (mean-field) form is already implemented in
+\texttt{effective\_contrasts.py}; the point-scatterer limit requires
+only a minor modification that reuses the existing Gauss--Legendre
+self-Green's tensor machinery. The definitive published reference is
+Leroy, Chastanet \& Derode~\cite{LeroyChastanetDerode2010}; the
+closest convergence-analysis precedent is the EM discrete-dipole
+approximation literature (Yurkin \& Hoekstra~\cite{YurkinHoekstra2006a,
+YurkinHoekstra2006b}), which has no published elastodynamic
+counterpart.
+\end{abstract}
+
+\tableofcontents
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+% =====================================================
+\section{The direct elastodynamic match}
+% =====================================================
+
+The closest published comparison is Leroy, Chastanet \&
+Derode~\cite{LeroyChastanetDerode2010}, \emph{``Mean-field T-matrix
+approach to elastic wave scattering by small and point-like objects''}
+(\emph{Waves in Random and Complex Media} \textbf{20}(4), 591--613,
+2010). They derive the vector-elastic T-matrix under a volumetric
+average of stress and momentum inside the inclusion (precisely the
+mean-field / Eshelby-style dressing used in \texttt{effective\_contrasts.py}),
+explicitly work out the point-scatterer limit of that same T-matrix,
+and benchmark both against the exact Mie solution for elastic spheres.
+Both forms satisfy the elastodynamic optical theorem, and the paper
+comments specifically on low-frequency resonances being captured only
+by the volumetric version for high-contrast inclusions --- the point
+limit misses them. The EM precursor is
+Pellegrini, Stout \& Thibaudeau~\cite{PellegriniStoutThibaudeau1997},
+\emph{``Off-shell mean-field electromagnetic T-matrix of finite-size
+spheres and fuzzy scatterers''}, on which Leroy et al.\ build the
+off-shell formalism.
+
+The canonical reference on the pathologies of the point-scatterer side
+(radiative correction, renormalization, divergences) is
+\emph{``Point scatterers for classical waves''}
+by de Vries, van Coevorden \& Lagendijk~\cite{deVries1998}. The paper
+is scalar/EM rather than elastic, but the regularization machinery
+maps over directly and it is the standard reference for why naive
+point scatterers violate the optical theorem without the imaginary
+self-term.
+
+% =====================================================
+\section{The convergence story lives in the EM-DDA literature}
+% =====================================================
+
+No elastodynamic paper appears to exist that performs the full
+Yurkin-style convergence study on cubic voxels. The EM-DDA work maps
+onto the problem almost term-for-term, because the question
+``how does the intervoxel propagator converge as $d \to 0$ under
+different single-site dressings?'' is exactly the DDA polarizability
+question.
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Yurkin \& Hoekstra (2006)~\cite{YurkinHoekstra2006a,YurkinHoekstra2006b}
+        --- rigorous convergence analysis (theory + extrapolation) in
+        two parts. The key practical result: for cubically shaped
+        scatterers (i.e.\ targets that exactly tile with cubic
+        subvolumes, which is precisely the lattice-of-cubes situation),
+        the linear-in-$d$ error term is strongly suppressed, and
+        extrapolation gives $\sim\!10^2\times$ error reduction.
+  \item Collinge \& Draine (2004)~\cite{CollingeDraine2004} ---
+        \emph{``DDA with polarizabilities that account for both finite
+        wavelength and target geometry''}. The FCD (filtered coupled
+        dipole) prescription: the single-site dressing includes a
+        finite-volume correction, and convergence is dominated by
+        that choice, not the lattice.
+  \item Piller (1998)~\cite{Piller1998} --- coupled-dipole for
+        high-permittivity (equivalent to the high-contrast regime);
+        a filtered Green's tensor regularizes the intervoxel coupling
+        specifically to handle slow convergence for large contrast.
+        This is the paper most relevant to the ``poor convergence if
+        calculated the wrong way'' observation.
+  \item Yurkin, Maltsev \& Hoekstra~\cite{YurkinReview2007} ---
+        \emph{``The discrete dipole approximation: an overview and
+        recent developments''}. Reviews LDR / CM / FCD / IGT
+        polarizability options side-by-side with convergence curves;
+        the single best starting point for seeing the trade-offs in
+        one place.
+\end{itemize}
+
+\noindent
+The IGT (Integrated Green Tensor) option is the EM analogue of the
+Gauss--Legendre regularization currently in use --- so the Yurkin
+papers directly assess the chosen method against alternatives.
+
+% =====================================================
+\section{Elastodynamic volume-integral papers worth citing}
+% =====================================================
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Gubernatis, Domany, Krumhansl \& Huberman
+        (1977)~\cite{Gubernatis1977} --- Born approximation for
+        elastic flaws, benchmarked against Mie for spheres. The
+        companion paper~\cite{Gubernatis1977a} is the integral-equation
+        foundation.
+  \item Yvonnet (2011)~\cite{Yvonnet2011} --- ``A fast numerical
+        strategy for computing the elastic properties of heterogeneous
+        media based on voxel-based digital images: a
+        space-Lippmann--Schwinger scheme''. Elastostatic voxel LS
+        with per-voxel eigenstrain integration of the Green's tensor
+        (not FFT). Directly relevant methodology for the self-term,
+        awaiting a frequency-domain extension.
+  \item Bonnet (2016)~\cite{Bonnet2016} --- ``Solvability of a volume
+        integral equation formulation for anisotropic elastodynamic
+        scattering''. Rigorous functional-analytic foundation.
+  \item Korneev \& Johnson (1993, 1996)~\cite{KorneevJohnson1993,
+        KorneevJohnson1996} --- exact P/S scattering from an elastic
+        sphere. Standard validation target for any self-consistent
+        T-matrix code. Useful as a regression test for cubic results
+        in the sphere-like limit ($n_{\text{subcell}} \to \infty$
+        on a spherical mask).
+\end{itemize}
+
+% =====================================================
+\section{What does not appear to exist}
+% =====================================================
+
+A direct elastodynamic analogue of Yurkin--Hoekstra --- i.e.\ a
+published convergence study for a cubic-voxel Lippmann--Schwinger /
+Foldy--Lax elastic solver that sweeps point-scatterer vs.\
+volume-averaged self-term across frequency and contrast, with error
+bounds against an exact reference (sphere Mie via Korneev--Johnson).
+The \texttt{Thesis\_Version2} infrastructure is arguably closer to
+producing this result than anything currently in the literature. A
+clean figure of ``relative error vs.\ $ka$ for (point / volumetric /
+IGT-equivalent) self-terms, benchmarked against Korneev--Johnson for
+a spherical inclusion tiled by cubes'' would be a genuine contribution
+to the seismic-scattering literature. Leroy et al.\ did it only for
+spheres, not for cubic voxels.
+
+% =====================================================
+\section{The mean-field T-matrix in code-matching form}
+% =====================================================
+
+Start from the elastodynamic Lippmann--Schwinger equation for a
+single inclusion of volume $V$ and constant contrast $\dL$ (encoding
+$\delta\rho$, $\delta\lambda$, $\delta\mu$), embedded in a homogeneous
+background with Green's tensor $\G_0$:
+\begin{equation}
+  \bm{u}(\bm{x}) = \uinc(\bm{x})
+    + \int_V \G_0(\bm{x} - \bm{x}') \, \dL \, \bm{u}(\bm{x}') \, dV'.
+  \label{eq:LS}
+\end{equation}
+
+The mean-field approximation replaces the internal field
+$\bm{u}(\bm{x}')$ inside $V$ by its volume average $\avg{\bm{u}}_V$
+(plus, in the full vector version, the volume averages of strain and
+rotation separately --- this is exactly the split that produces the
+four amplification factors in the current implementation). Applying
+$(1/V)\int_V \,dV$ to both sides of \cref{eq:LS} yields the closed
+algebraic relation
+\begin{equation}
+  \avg{\bm{u}}_V = \avg{\uinc}_V + \Gam_0 \, \dL \, \avg{\bm{u}}_V,
+\end{equation}
+where the \emph{self-tensor} is the Green's tensor integrated twice
+over the inclusion:
+\begin{equation}
+  \Gam_0 = \frac{1}{V} \int_V \int_V \G_0(\bm{x} - \bm{x}') \, dV' \, dV.
+  \label{eq:Gamma0}
+\end{equation}
+Solving for $\avg{\bm{u}}_V$ and pushing back through the radiated
+field gives the mean-field T-matrix:
+\begin{equation}
+  \boxed{
+    \T_{\text{vol}}
+    = V \, \dL \, \big[\, \bm{I} - \Gam_0 \, \dL \,\big]^{-1}.
+  }
+  \label{eq:Tvol}
+\end{equation}
+
+This is precisely the structure implemented in
+\texttt{effective\_contrasts.py}. The four distinct amplification
+factors (displacement, rotation, off-diagonal strain, diagonal strain)
+come from decomposing $\avg{\bm{u}}_V$ and $\avg{\bm{\varepsilon}}_V$
+into irreducible representations of the cube's $\Oh$ symmetry group.
+A sphere supports two amplification factors
+($\text{scalar} + \text{traceless-symmetric}$); on a cube the
+traceless-symmetric representation further splits into diagonal
+($E_g$) and off-diagonal ($T_{2g}$) pieces, giving
+$T_1^c,\, T_2^c,\, T_3^c$. The implementation therefore has ``more
+structure'' than the sphere version of Leroy--Derode --- it is the
+correct generalization for $\Oh$ rather than $SO(3)$.
+
+% =====================================================
+\section{The point limit}
+% =====================================================
+
+The point-scatterer T-matrix is obtained by taking $V \to 0$ while
+keeping a \emph{renormalized} strength $\bm{\tau} = V\,\dL$ finite. In
+this limit the real part of $\Gam_0$ diverges --- the Green's tensor
+is $O(1/r)$ in 3D, so $\int\!\!\int \G_0 \sim V^{2/3}$ times a
+logarithmic-like correction that requires regularization --- and the
+paper performs the renormalization by keeping only the imaginary part
+of $\Gam_0$, which is finite and equals the radiative reaction
+required by the optical theorem:
+\begin{equation}
+  \T_{\text{point}} = \bm{\tau}
+    \, \big[\, \bm{I} - i\,\Im\{\Gam_0^{\text{point}}\} \, \bm{\tau} \,\big]^{-1}.
+  \label{eq:Tpoint}
+\end{equation}
+Here $\Im\{\Gam_0^{\text{point}}\}$ is the combined P-wave and S-wave
+radiation-damping tensor, schematically
+\begin{equation}
+  \Im\!\left\{\Gamma_{0,ij}^{\text{point}}\right\}
+    = \frac{1}{6\pi \rho_0 \omega^2} \left(
+        \frac{k_P^3}{3}\,\delta_{ij}
+      + \frac{2 k_S^3}{3}\,\delta_{ij}^{(\text{pol-weighted})}
+    \right),
+\end{equation}
+with the full tensor decomposition in eqs.\ (12)--(14) of
+\cite{LeroyChastanetDerode2010}; the de~Vries--van
+Coevorden--Lagendijk derivation~\cite{deVries1998}
+(eqs.\ 3.5--3.11) makes clear why this structure is forced by the
+optical theorem.
+
+% =====================================================
+\section{A minimal modification to \texttt{effective\_contrasts.py}}
+% =====================================================
+
+The existing $\Gam_0$ routine (Gauss--Legendre over the cube) returns
+a complex tensor whose real part comes from the principal-value
+integral of the singular piece of $\G_0$, and whose imaginary part
+comes from the radiating piece $\sim e^{ikr}/r$. The point-limit
+version zeros the real part and replaces $V\dL$ with the renormalized
+$\bm{\tau}$:
+
+\begin{lstlisting}[caption={Point-scatterer limit: drop-in companion to \texttt{compute\_cube\_tmatrix}.}]
+def compute_cube_tmatrix_point_limit(omega, rho0, lam0, mu0,
+                                      dlam, dmu, drho, a,
+                                      renormalize="leroy"):
+    """Point-scatterer limit of the mean-field cube T-matrix.
+
+    Matches compute_cube_tmatrix signature; returns the same
+    dataclass, with amplification factors computed in the
+    V -> 0, tau = V * dL finite limit.
+    """
+    V  = (2.0 * a) ** 3
+    dL = build_contrast_operator(dlam, dmu, drho, omega)
+
+    # Full (volumetric) version would use Gamma0 = Re + i*Im.
+    # Point limit drops the Re part (principal-value),
+    # keeping only the radiation term.
+    Gamma0_full  = gauss_legendre_self_greens(omega, rho0, lam0, mu0, a)
+    Gamma0_point = 1j * Gamma0_full.imag                 # radiation only
+
+    tau = V * dL                                         # renormalized strength
+    I   = np.eye(tau.shape[0])
+    T_point = tau @ np.linalg.inv(I - Gamma0_point @ tau)
+
+    return package_as_cube_tmatrix_result(T_point, kind="point_limit")
+\end{lstlisting}
+
+\subsection{Two subtleties worth flagging}
+
+\paragraph{Which \texorpdfstring{$\Im$}{Im} to keep.}
+In Leroy--Derode, the radiation reaction in $\Gam_0$ has separate P-
+and S-wave contributions with different $k^3$ scalings. The existing
+Gauss--Legendre integrator computes these automatically as the
+imaginary part of the integrand, so the one-liner
+\texttt{1j * Gamma0.imag} is correct --- but only if
+\texttt{gauss\_legendre\_self\_greens} integrates the \emph{radiating}
+Green's tensor $e^{ikr}/(4\pi r)\cdot(\ldots)$ and not just the static
+$1/r$ piece. Worth a unit test: in the limit $\omega \to 0$,
+\texttt{Gamma0\_point} should vanish, while \texttt{Gamma0\_full}
+should approach the Eshelby tensor for a cube (times $1/\mu_0$ with
+the standard combinations).
+
+\paragraph{The renormalization choice.}
+``Point limit'' is not unique. Leroy--Derode regularize by retaining
+the cube's volume in $\bm{\tau} = V\dL$, but other papers
+renormalize through a scattering length $f_s$. Matching the Foldy
+point-scatterer convention exactly requires $\bm{\tau}$ to be
+replaced by $-4\pi f_s / k^2$ with $f_s$ extracted from the Rayleigh
+limit of the full cube T-matrix. The two conventions give identical
+far-field scattering but different interpretations of the
+``strength'' parameter --- which matters when comparing resonance
+frequencies.
+
+% =====================================================
+\section{The comparison plot}
+% =====================================================
+
+With both variants exposed, the definitive figure is:
+\begin{quote}
+\textbf{Relative error of the coherent P-wave far-field amplitude, as
+a function of $k_P a$, for:}
+\begin{itemize}[leftmargin=1.5em,nosep]
+  \item Volumetric T-matrix (existing \texttt{compute\_cube\_tmatrix})
+  \item Point-limit T-matrix (the version above)
+  \item Born approximation (trivial limit, $\T = V\dL$)
+        --- as a sanity floor
+  \item \textbf{Reference:} Korneev--Johnson Mie for a sphere of
+        equivalent volume $V_{\text{sphere}} = V_{\text{cube}}$
+\end{itemize}
+\end{quote}
+
+Three sweeps across contrast regimes:
+\begin{center}
+\begin{tabular}{lc}
+  \toprule
+  Regime    & $|\delta\mu/\mu_0|$ \\
+  \midrule
+  Weak      & $\sim 0.1$ \\
+  Moderate  & $\sim 1$   \\
+  Strong    & $\sim 10$ (resonances appear) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Expected qualitative result}
+
+From the Leroy--Derode paper, on a sphere benchmark: the point limit
+is accurate for weak contrast at all $ka < 0.3$, but fails
+catastrophically at strong contrast where the volumetric version
+captures the monopole resonance correctly. The cube case should
+show the same split --- with the additional diagnostic that the
+cube's $T_1^c / T_2^c / T_3^c$ decomposition reveals the
+$\Oh$-point-group-induced resonance splitting that a sphere cannot
+exhibit. Once this figure is produced, the thesis has both
+\begin{enumerate}[nosep]
+  \item validation of the volumetric approach on a known reference,
+  \item a novel result --- the cube-vs-sphere resonance structure ---
+        that is not in the literature.
+\end{enumerate}
+
+% =====================================================
+\section{Implementation checklist}
+% =====================================================
+
+\begin{enumerate}[leftmargin=1.8em]
+  \item Add \texttt{compute\_cube\_tmatrix\_point\_limit} as a
+        drop-in companion in \texttt{effective\_contrasts.py}.
+  \item Unit test: $\omega \to 0$ limit of the point version
+        $\to 0$; volumetric version $\to$ cube Eshelby tensor
+        (compare with known closed-form Eshelby for a cube if using
+        one; otherwise converge against a fine FEM static reference).
+  \item Unit test: optical theorem for both variants at a sweep of
+        $ka$ values. Both should satisfy it to quadrature precision.
+  \item Benchmark: spherical-mask cube lattice of volume
+        $V_{\text{sphere}}$, compare against
+        Korneev--Johnson~\cite{KorneevJohnson1993}.
+  \item Produce error-vs-$ka$ plot at three contrast regimes.
+  \item Reuse \texttt{scattering\_order\_decomposition} to generate
+        Neumann-series convergence curves for both T-matrix variants
+        --- these expose the difference in coupling strength between
+        the two formulations.
+\end{enumerate}
+
+% =====================================================
+\begin{thebibliography}{99}
+
+\bibitem{LeroyChastanetDerode2010}
+V.~Leroy, A.~Chastanet, and A.~Derode,
+\emph{Mean-field T-matrix approach to elastic wave scattering by
+small and point-like objects},
+Waves in Random and Complex Media \textbf{20}(4), 591--613 (2010).
+
+\bibitem{PellegriniStoutThibaudeau1997}
+Y.~Pellegrini, D.~Stout, and P.~Thibaudeau,
+\emph{Off-shell mean-field electromagnetic T-matrix of finite-size
+spheres and fuzzy scatterers},
+J. Phys.: Condens. Matter \textbf{9}, 177--191 (1997).
+
+\bibitem{deVries1998}
+P.~de Vries, D.~V.~van Coevorden, and A.~Lagendijk,
+\emph{Point scatterers for classical waves},
+Rev. Mod. Phys. \textbf{70}, 447--466 (1998).
+
+\bibitem{YurkinHoekstra2006a}
+M.~A.~Yurkin and A.~G.~Hoekstra,
+\emph{Convergence of the discrete dipole approximation. I.\
+Theoretical analysis},
+J. Opt. Soc. Am. A \textbf{23}(10), 2578--2591 (2006);
+\href{https://arxiv.org/abs/0704.0033}{arXiv:0704.0033}.
+
+\bibitem{YurkinHoekstra2006b}
+M.~A.~Yurkin, V.~P.~Maltsev, and A.~G.~Hoekstra,
+\emph{Convergence of the discrete dipole approximation. II.\
+An extrapolation technique to increase the accuracy},
+J. Opt. Soc. Am. A \textbf{23}(10), 2592--2601 (2006);
+\href{https://arxiv.org/abs/0704.0035}{arXiv:0704.0035}.
+
+\bibitem{YurkinReview2007}
+M.~A.~Yurkin and A.~G.~Hoekstra,
+\emph{The discrete dipole approximation: an overview and recent
+developments},
+J. Quant. Spectrosc. Radiat. Transf. \textbf{106}, 558--589 (2007);
+\href{https://arxiv.org/abs/0704.0038}{arXiv:0704.0038}.
+
+\bibitem{CollingeDraine2004}
+M.~J.~Collinge and B.~T.~Draine,
+\emph{Discrete-dipole approximation with polarizabilities that account
+for both finite wavelength and target geometry},
+J. Opt. Soc. Am. A \textbf{21}, 2023--2028 (2004).
+
+\bibitem{Piller1998}
+N.~B.~Piller,
+\emph{Coupled-dipole approximation for high permittivity materials},
+Opt. Commun. \textbf{160}, 10--14 (1998).
+
+\bibitem{Gubernatis1977}
+J.~E.~Gubernatis, E.~Domany, J.~A.~Krumhansl, and M.~Huberman,
+\emph{The Born approximation in the theory of the scattering of
+elastic waves by flaws},
+J. Appl. Phys. \textbf{48}, 2812--2819 (1977).
+
+\bibitem{Gubernatis1977a}
+J.~E.~Gubernatis, E.~Domany, and J.~A.~Krumhansl,
+\emph{Formal aspects of the theory of the scattering of ultrasound
+by flaws in elastic materials},
+J. Appl. Phys. \textbf{48}, 2804--2811 (1977).
+
+\bibitem{Yvonnet2011}
+J.~Yvonnet,
+\emph{A fast numerical strategy for computing the elastic properties
+of heterogeneous media based on voxel-based digital images: a
+space-Lippmann--Schwinger scheme},
+Int. J. Numer. Methods Eng. \textbf{86}, 1--12 (2011).
+
+\bibitem{Bonnet2016}
+M.~Bonnet,
+\emph{Solvability of a volume integral equation formulation for
+anisotropic elastodynamic scattering},
+J. Integral Equ. Appl. \textbf{28}(2), 169--203 (2016).
+
+\bibitem{KorneevJohnson1993}
+V.~A.~Korneev and L.~R.~Johnson,
+\emph{Scattering of elastic waves by a spherical inclusion --- I.\
+Theory and numerical results},
+Geophys. J. Int. \textbf{115}, 230--250 (1993).
+
+\bibitem{KorneevJohnson1996}
+V.~A.~Korneev and L.~R.~Johnson,
+\emph{Scattering of P and S waves by a spherically symmetric inclusion},
+Pure Appl. Geophys. \textbf{147}, 675--718 (1996).
+
+\end{thebibliography}
+
+\end{document}

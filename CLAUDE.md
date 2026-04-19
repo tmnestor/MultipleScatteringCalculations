@@ -106,6 +106,6 @@ TinyTeX distribution. Install missing packages: `tlmgr install <pkg>`.
 
 ## Test Parameters (validated reference values)
 
-- **Background**: α=5000 m/s, β=3000 m/s, ρ=2500 kg/m³
-- **Moderate contrast**: Δλ=+2 GPa, Δμ=+1 GPa, Δρ=+100 kg/m³
-- **ka targets**: 0.05 (Rayleigh), 0.1, 0.3, 0.5 (transition), 1.5 (resonance)
+- **Background**: α=5 km/s, β=3 km/s, ρ=2.5 g/cm³
+- **Moderate contrast**: Δλ=+2 GPa, Δμ=+1 GPa, Δρ=+0.1 g/cm³
+- **ka targets**: 0.05 (Rayleigh), 0.1, 0.3 (transition), 1.5 (resonance)
