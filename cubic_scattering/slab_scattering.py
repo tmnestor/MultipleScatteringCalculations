@@ -20,6 +20,7 @@ from .effective_contrasts import (
     ReferenceMedium,
     compute_cube_tmatrix,
 )
+from .inter_voxel_propagator import inter_voxel_propagator_9x9
 from .lattice_greens import _apply_refl_x, _apply_refl_y, _apply_rot90
 from .resonance_tmatrix import _propagator_block_9x9, _sub_cell_tmatrix_9x9
 from .sphere_scattering import _plane_wave_strain_voigt
@@ -259,6 +260,9 @@ def _build_slab_kernels(
     geometry: SlabGeometry,
     omega: float,
     ref: ReferenceMedium,
+    *,
+    volume_averaged: bool = False,
+    n_orders: int = 2,
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -269,6 +273,10 @@ def _build_slab_kernels(
         geometry: Slab lattice geometry.
         omega: Angular frequency (rad/s).
         ref: Background elastic medium.
+        volume_averaged: If True, use volume-averaged inter-voxel propagator
+            for nearest-neighbour separations (26 cubes with max offset ≤ 1).
+        n_orders: Dynamic correction orders for volume-averaged propagator
+            (0=static, 1=+ω², 2=+ω⁴). Only used when volume_averaged=True.
 
     Returns:
         FFT'd kernels, shape (2*N_z-1, 2*M-1, 2*M-1, 9, 9), complex.
@@ -279,7 +287,8 @@ def _build_slab_kernels(
     kernel_hat = np.zeros((n_dz, S, S, 9, 9), dtype=complex)
 
     for k in range(n_dz):
-        dz = (k - (N_z - 1)) * d
+        dz_vox = k - (N_z - 1)
+        dz = dz_vox * d
         kernel_spatial = np.zeros((S, S, 9, 9), dtype=complex)
 
         # Fundamental domain: 0 ≤ dy ≤ dx, dx ∈ [0, M-1]
@@ -288,11 +297,28 @@ def _build_slab_kernels(
                 if dx == 0 and dy == 0 and abs(dz) < 1e-15 * max(d, 1.0):
                     continue  # self-term zeroed
 
-                r_vec = np.array([dz, dx * d, dy * d])
-                G0 = _propagator_block_9x9(r_vec, omega, ref)
+                is_nn = max(abs(dz_vox), dx, dy) <= 1
 
-                for sdx, sdy, transform in _d4h_orbit(dx, dy):
-                    kernel_spatial[sdx + M - 1, sdy + M - 1] = transform(G0)
+                if volume_averaged and is_nn:
+                    # Call inter_voxel_propagator_9x9 for each orbit point
+                    # (it has its own O_h rotation, so pass signed offsets)
+                    for sdx, sdy, _transform in _d4h_orbit(dx, dy):
+                        R_lattice = (dz_vox, sdx, sdy)
+                        G0 = inter_voxel_propagator_9x9(
+                            R_lattice,
+                            ref.alpha,
+                            ref.beta,
+                            ref.rho,
+                            omega,
+                            n_orders,
+                        )
+                        kernel_spatial[sdx + M - 1, sdy + M - 1] = G0
+                else:
+                    r_vec = np.array([dz, dx * d, dy * d])
+                    G0 = _propagator_block_9x9(r_vec, omega, ref)
+
+                    for sdx, sdy, transform in _d4h_orbit(dx, dy):
+                        kernel_spatial[sdx + M - 1, sdy + M - 1] = transform(G0)
 
         # FFT over spatial dimensions for all 9×9 components
         kernel_hat[k] = np.fft.fft2(kernel_spatial, axes=(0, 1))
@@ -423,6 +449,9 @@ def compute_slab_scattering(
     wave_type: str = "P",
     gmres_tol: float = 1e-6,
     max_iter: int = 500,
+    *,
+    volume_averaged: bool = False,
+    n_orders: int = 2,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GMRES.
 
@@ -437,12 +466,21 @@ def compute_slab_scattering(
         wave_type: 'P' or 'S'.
         gmres_tol: GMRES relative tolerance.
         max_iter: Maximum GMRES iterations.
+        volume_averaged: If True, use volume-averaged inter-voxel propagator
+            for nearest-neighbour separations.
+        n_orders: Dynamic correction orders for volume-averaged propagator.
 
     Returns:
         SlabResult with exciting and incident fields.
     """
     T_local = compute_slab_tmatrices(geometry, material, omega)
-    kernel_hat = _build_slab_kernels(geometry, omega, material.ref)
+    kernel_hat = _build_slab_kernels(
+        geometry,
+        omega,
+        material.ref,
+        volume_averaged=volume_averaged,
+        n_orders=n_orders,
+    )
     psi0 = _build_slab_incident_field(geometry, omega, material.ref, k_hat, wave_type)
 
     n = geometry.N_z * geometry.M * geometry.M * 9

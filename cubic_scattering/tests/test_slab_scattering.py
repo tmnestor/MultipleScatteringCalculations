@@ -503,3 +503,140 @@ class TestRandomSlab:
         R_PP, R_PS, R_SP = slab_reflected_field(result, T_local)
         # Reflection amplitude should be physically bounded
         assert abs(R_PP) < 1.0
+
+
+# ── 14. TestVolumeAveragedPropagator ─────────────────────────────
+
+
+class TestVolumeAveragedPropagator:
+    """Integration tests for the volume-averaged NN propagator in Foldy-Lax."""
+
+    def test_volume_averaged_kernel_shape(self):
+        """Volume-averaged kernels have the same shape as point-scatterer kernels."""
+        geom = SlabGeometry(M=3, N_z=2, a=A)
+        k_pt = _build_slab_kernels(geom, OMEGA, REF)
+        k_va = _build_slab_kernels(geom, OMEGA, REF, volume_averaged=True)
+        assert k_va.shape == k_pt.shape
+
+    def test_volume_averaged_self_term_zero(self):
+        """Self-term (R=0) remains zero with volume_averaged=True."""
+        geom = SlabGeometry(M=3, N_z=2, a=A)
+        kernel_hat = _build_slab_kernels(geom, OMEGA, REF, volume_averaged=True)
+        # dz=0 → k = N_z-1 = 1; self at (M-1, M-1)
+        kernel_spatial = np.fft.ifft2(kernel_hat[1], axes=(0, 1))
+        assert_allclose(kernel_spatial[2, 2], 0.0, atol=1e-20)
+
+    def test_nn_propagator_differs_from_point(self):
+        """At face-adjacent separation, volume-averaged != point-scatterer."""
+        geom = SlabGeometry(M=3, N_z=2, a=A)
+        k_pt = _build_slab_kernels(geom, OMEGA, REF)
+        k_va = _build_slab_kernels(geom, OMEGA, REF, volume_averaged=True)
+        # dz=d (k=2), dx=0, dy=0 → spatial index (0+2, 0+2) = (2, 2)
+        # Use dz≠0 face-adjacent for non-trivial propagator values
+        sp_pt = np.fft.ifft2(k_pt[2], axes=(0, 1))
+        sp_va = np.fft.ifft2(k_va[2], axes=(0, 1))
+        G_pt = sp_pt[2, 2]
+        G_va = sp_va[2, 2]
+        # They should differ — volume averaging modifies the NN propagator
+        scale = max(np.max(np.abs(G_pt)), np.max(np.abs(G_va)), 1e-30)
+        diff = np.max(np.abs(G_pt - G_va)) / scale
+        assert diff > 1e-6, f"Expected difference, got relative diff={diff:.2e}"
+
+    def test_far_field_unchanged(self):
+        """At dx=2 (beyond NN), both modes give identical results."""
+        geom = SlabGeometry(M=4, N_z=2, a=A)
+        k_pt = _build_slab_kernels(geom, OMEGA, REF)
+        k_va = _build_slab_kernels(geom, OMEGA, REF, volume_averaged=True)
+        # dz=d (k=2), dx=2, dy=0 → spatial index (2+3, 0+3) = (5, 3)
+        sp_pt = np.fft.ifft2(k_pt[2], axes=(0, 1))
+        sp_va = np.fft.ifft2(k_va[2], axes=(0, 1))
+        scale = max(np.max(np.abs(sp_pt[5, 3])), 1e-30)
+        assert_allclose(sp_va[5, 3], sp_pt[5, 3], atol=scale * 1e-10)
+
+    def test_zero_contrast_identity_volume_averaged(self):
+        """(I - G·0)ψ = ψ still works with volume_averaged=True."""
+        geom = SlabGeometry(M=2, N_z=2, a=A)
+        zero = MaterialContrast(0.0, 0.0, 0.0)
+        mat = uniform_slab_material(geom, REF, zero)
+        result = compute_slab_scattering(
+            geom,
+            mat,
+            OMEGA,
+            K_HAT,
+            volume_averaged=True,
+        )
+        assert_allclose(result.psi, result.psi0, atol=1e-10)
+
+    def test_single_cube_volume_averaged(self):
+        """Single scatterer with volume_averaged gives physical result."""
+        geom = SlabGeometry(M=3, N_z=1, a=A)
+        shape = (1, 3, 3)
+        Dlambda = np.zeros(shape)
+        Dmu = np.zeros(shape)
+        Drho = np.zeros(shape)
+        Dlambda[0, 1, 1] = CONTRAST.Dlambda
+        Dmu[0, 1, 1] = CONTRAST.Dmu
+        Drho[0, 1, 1] = CONTRAST.Drho
+        mat = SlabMaterial(Dlambda=Dlambda, Dmu=Dmu, Drho=Drho, ref=REF)
+
+        result = compute_slab_scattering(
+            geom,
+            mat,
+            OMEGA,
+            K_HAT,
+            volume_averaged=True,
+        )
+        # Centre cube ψ ≈ ψ⁰ (transparent neighbours, no back-coupling)
+        assert_allclose(result.psi[0, 1, 1], result.psi0[0, 1, 1], atol=1e-10)
+
+    def test_born_limit_volume_averaged(self):
+        """Weak contrast: doubling contrast ~doubles reflection with volume_averaged."""
+        geom = SlabGeometry(M=2, N_z=2, a=A)
+
+        mat1 = uniform_slab_material(geom, REF, WEAK_CONTRAST)
+        res1 = compute_slab_scattering(
+            geom,
+            mat1,
+            OMEGA,
+            K_HAT,
+            volume_averaged=True,
+        )
+        T1 = compute_slab_tmatrices(geom, mat1, OMEGA)
+        R1, _, _ = slab_reflected_field(res1, T1)
+
+        double_contrast = MaterialContrast(
+            Dlambda=2 * WEAK_CONTRAST.Dlambda,
+            Dmu=2 * WEAK_CONTRAST.Dmu,
+            Drho=2 * WEAK_CONTRAST.Drho,
+        )
+        mat2 = uniform_slab_material(geom, REF, double_contrast)
+        res2 = compute_slab_scattering(
+            geom,
+            mat2,
+            OMEGA,
+            K_HAT,
+            volume_averaged=True,
+        )
+        T2 = compute_slab_tmatrices(geom, mat2, OMEGA)
+        R2, _, _ = slab_reflected_field(res2, T2)
+
+        if abs(R1) > 1e-30:
+            ratio = abs(R2) / abs(R1)
+            assert_allclose(ratio, 2.0, rtol=0.05)
+
+    def test_volume_averaged_vs_point_convergence(self):
+        """Both modes give close results at low ka; volume-averaged kernel is smoother."""
+        geom = SlabGeometry(M=2, N_z=2, a=A)
+        mat = uniform_slab_material(geom, REF, WEAK_CONTRAST)
+
+        res_pt = compute_slab_scattering(geom, mat, OMEGA, K_HAT)
+        res_va = compute_slab_scattering(
+            geom,
+            mat,
+            OMEGA,
+            K_HAT,
+            volume_averaged=True,
+        )
+
+        # At low ka (0.05), both should give similar exciting fields
+        assert_allclose(res_va.psi, res_pt.psi, rtol=0.1)
