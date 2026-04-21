@@ -20,9 +20,19 @@ from cubic_scattering.inter_voxel_propagator import (
     CORNER_B1112,
     CORNER_B1122,
     CORNER_B1123,
+    CORNER_D3H_000,
+    CORNER_D3H_001,
+    CORNER_D3OM_000,
+    CORNER_D3OM_001,
     CORNER_D3PSI_000,
     CORNER_D3PSI_001,
+    CORNER_D3X_000,
+    CORNER_D3X_001,
+    CORNER_D3X_012,
+    CORNER_DOM_0,
     CORNER_DPHI_0,
+    CORNER_DPSI_0,
+    CORNER_DX_0,
     DYN1_CORNER_A11,
     DYN1_CORNER_A12,
     DYN1_CORNER_B1111,
@@ -65,6 +75,27 @@ from cubic_scattering.inter_voxel_propagator import (
     DYN2_FACE_B1122,
     DYN2_FACE_B2222,
     DYN2_FACE_B2233,
+    DYN3_CORNER_A11,
+    DYN3_CORNER_A12,
+    DYN3_CORNER_B1111,
+    DYN3_CORNER_B1112,
+    DYN3_CORNER_B1122,
+    DYN3_CORNER_B1123,
+    DYN3_EDGE_A11,
+    DYN3_EDGE_A12,
+    DYN3_EDGE_A33,
+    DYN3_EDGE_B1111,
+    DYN3_EDGE_B1112,
+    DYN3_EDGE_B1122,
+    DYN3_EDGE_B1133,
+    DYN3_EDGE_B1233,
+    DYN3_EDGE_B3333,
+    DYN3_FACE_A11,
+    DYN3_FACE_A22,
+    DYN3_FACE_B1111,
+    DYN3_FACE_B1122,
+    DYN3_FACE_B2222,
+    DYN3_FACE_B2233,
     EDGE_A11,
     EDGE_A12,
     EDGE_A33,
@@ -74,22 +105,45 @@ from cubic_scattering.inter_voxel_propagator import (
     EDGE_B1133,
     EDGE_B1233,
     EDGE_B3333,
+    EDGE_D3H_000,
+    EDGE_D3H_001,
+    EDGE_D3H_022,
+    EDGE_D3OM_000,
+    EDGE_D3OM_001,
+    EDGE_D3OM_022,
     EDGE_D3PSI_000,
     EDGE_D3PSI_001,
     EDGE_D3PSI_022,
+    EDGE_D3X_000,
+    EDGE_D3X_001,
+    EDGE_D3X_022,
+    EDGE_DOM_0,
     EDGE_DPHI_0,
+    EDGE_DPSI_0,
+    EDGE_DX_0,
     FACE_A11,
     FACE_A22,
     FACE_B1111,
     FACE_B1122,
     FACE_B2222,
     FACE_B2233,
+    FACE_D3H_000,
+    FACE_D3H_011,
+    FACE_D3OM_000,
+    FACE_D3OM_011,
     FACE_D3PSI_000,
     FACE_D3PSI_011,
+    FACE_D3X_000,
+    FACE_D3X_011,
+    FACE_DOM_0,
     FACE_DPHI_0,
+    FACE_DPSI_0,
+    FACE_DX_0,
+    _build_D3_tensor,
     _build_D3Psi_tensor,
     _build_dG_rank3_canonical,
     _build_dPhi_vector,
+    _build_dW_vector,
     _dG_to_C_block,
     _P_to_voigt_S,
     corner_propagator,
@@ -1053,14 +1107,33 @@ class TestCBlockStructure:
         assert C_x[0, 1] == pytest.approx(C_y[1, 0], abs=1e-13)
 
     def test_c_static_frequency_independent(self):
-        """C/H blocks should be frequency-independent (static only)."""
+        """C/H blocks at n_orders=0 are static (frequency-independent)."""
         P9_0 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0)
         P9_w = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 500.0, n_orders=1
+            (1, 0, 0), ALPHA, BETA, RHO, 500.0, n_orders=0
         )
-        # C/H are static, should be the same regardless of ω
-        np.testing.assert_allclose(P9_0[:3, 3:], P9_w[:3, 3:], atol=1e-15)
-        np.testing.assert_allclose(P9_0[3:, :3], P9_w[3:, :3], atol=1e-15)
+        # At n_orders=0, C/H are static — same regardless of ω
+        # Values are O(1e-12) so use relative tolerance
+        np.testing.assert_allclose(P9_0[:3, 3:], P9_w[:3, 3:], rtol=1e-10, atol=1e-15)
+        np.testing.assert_allclose(P9_0[3:, :3], P9_w[3:, :3], rtol=1e-10, atol=1e-15)
+
+    def test_c_dynamic_omega_scaling(self):
+        """C/H blocks at n_orders≥1 have ω² frequency dependence."""
+        omega = 500.0
+        P9_static = inter_voxel_propagator_9x9(
+            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0
+        )
+        P9_dyn = inter_voxel_propagator_9x9(
+            (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=1
+        )
+        # Dynamic C/H should differ from static by O(ω²) correction
+        C_static = P9_static[:3, 3:]
+        C_dyn = P9_dyn[:3, 3:]
+        diff = C_dyn - C_static
+        # At ω=500, ω²=2.5e5, the correction should be nonzero
+        assert np.max(np.abs(diff)) > 0.0, "C block should have ω² correction"
+        # H = Cᵀ should also hold for dynamic C/H
+        np.testing.assert_allclose(P9_dyn[3:, :3], P9_dyn[:3, 3:].T, atol=1e-15)
 
     def test_fd_validation_face(self):
         """Cross-check C block against finite-difference of G block."""
@@ -1093,3 +1166,584 @@ class TestCBlockStructure:
             np.testing.assert_allclose(
                 S_from_9x9, S_standalone, atol=1e-15, err_msg=f"S mismatch for R={R}"
             )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Phase 4B: Dynamic completion tests (DYN3, G ω⁴, C/H dynamic)
+# ══════════════════════════════════════════════════════════════════════
+
+
+class TestDynamic3LaplacianIdentity:
+    """Verify Σ_k B³_{ijkk} = A³_{ij} for order-3 (ω⁶) S-block constants.
+
+    These correspond to d²Ω/dR² (A) and d⁴H/dR⁴ (B) at the ρ⁵/ρ⁷ level.
+    """
+
+    def test_face_order3_11(self):
+        assert DYN3_FACE_B1111 + 2 * DYN3_FACE_B1122 == pytest.approx(
+            DYN3_FACE_A11, rel=1e-11
+        )
+
+    def test_face_order3_22(self):
+        assert DYN3_FACE_B1122 + DYN3_FACE_B2222 + DYN3_FACE_B2233 == pytest.approx(
+            DYN3_FACE_A22, rel=1e-11
+        )
+
+    def test_edge_order3_11(self):
+        assert DYN3_EDGE_B1111 + DYN3_EDGE_B1122 + DYN3_EDGE_B1133 == pytest.approx(
+            DYN3_EDGE_A11, rel=1e-11
+        )
+
+    def test_edge_order3_33(self):
+        assert 2 * DYN3_EDGE_B1133 + DYN3_EDGE_B3333 == pytest.approx(
+            DYN3_EDGE_A33, rel=1e-11
+        )
+
+    def test_edge_order3_12(self):
+        assert 2 * DYN3_EDGE_B1112 + DYN3_EDGE_B1233 == pytest.approx(
+            DYN3_EDGE_A12, rel=1e-11
+        )
+
+    def test_corner_order3_11(self):
+        assert DYN3_CORNER_B1111 + 2 * DYN3_CORNER_B1122 == pytest.approx(
+            DYN3_CORNER_A11, rel=1e-11
+        )
+
+    def test_corner_order3_12(self):
+        assert 2 * DYN3_CORNER_B1112 + DYN3_CORNER_B1123 == pytest.approx(
+            DYN3_CORNER_A12, rel=1e-11
+        )
+
+
+class TestD3XLaplacian:
+    """Verify Laplacian identities for triharmonic (d³X) and pentaharmonic (d³Ω).
+
+    d³X: Σ_j D_{jjk} = 12·dΨ_k  (since ∇²ρ³ = 12ρ → ∇²X = 12Ψ)
+    d³Ω: Σ_j D_{jjk} = 30·dX_k  (since ∇²ρ⁵ = 30ρ³ → ∇²Ω = 30X)
+    """
+
+    # ── d³X/dR³ Laplacian ──
+
+    def test_face_d3x_laplacian(self):
+        lhs = FACE_D3X_000 + 2 * FACE_D3X_011
+        assert lhs == pytest.approx(12 * FACE_DPSI_0, abs=1e-10)
+
+    def test_edge_d3x_laplacian(self):
+        lhs = EDGE_D3X_000 + EDGE_D3X_001 + EDGE_D3X_022
+        assert lhs == pytest.approx(12 * EDGE_DPSI_0, abs=1e-10)
+
+    def test_corner_d3x_laplacian(self):
+        lhs = CORNER_D3X_000 + 2 * CORNER_D3X_001
+        assert lhs == pytest.approx(12 * CORNER_DPSI_0, abs=1e-10)
+
+    # ── d³Ω/dR³ Laplacian ──
+
+    def test_face_d3om_laplacian(self):
+        lhs = FACE_D3OM_000 + 2 * FACE_D3OM_011
+        assert lhs == pytest.approx(30 * FACE_DX_0, abs=1e-10)
+
+    def test_edge_d3om_laplacian(self):
+        lhs = EDGE_D3OM_000 + EDGE_D3OM_001 + EDGE_D3OM_022
+        assert lhs == pytest.approx(30 * EDGE_DX_0, abs=1e-10)
+
+    def test_corner_d3om_laplacian(self):
+        lhs = CORNER_D3OM_000 + 2 * CORNER_D3OM_001
+        assert lhs == pytest.approx(30 * CORNER_DX_0, abs=1e-10)
+
+    # ── Tensor form via builder ──
+
+    def test_d3x_tensor_laplacian(self):
+        """Σ_j D_{jjk} = 12·dΨ_k for all types via tensor builder."""
+        for ntype in ("face", "edge", "corner"):
+            D = _build_D3_tensor(ntype, order=1)
+            dPsi = _build_dW_vector(ntype, order=1)
+            for k in range(3):
+                trace_k = sum(D[j, j, k] for j in range(3))
+                assert trace_k == pytest.approx(12 * dPsi[k], abs=1e-10), (
+                    f"D3X Laplacian failed for {ntype}, k={k}"
+                )
+
+    def test_d3om_tensor_laplacian(self):
+        """Σ_j D_{jjk} = 30·dX_k for all types via tensor builder."""
+        for ntype in ("face", "edge", "corner"):
+            D = _build_D3_tensor(ntype, order=2)
+            dX = _build_dW_vector(ntype, order=2)
+            for k in range(3):
+                trace_k = sum(D[j, j, k] for j in range(3))
+                assert trace_k == pytest.approx(30 * dX[k], abs=1e-10), (
+                    f"D3Ω Laplacian failed for {ntype}, k={k}"
+                )
+
+
+class TestD3XSymmetry:
+    """D3X and D3Ω tensors should be fully symmetric in all 3 indices."""
+
+    @pytest.fixture(params=[1, 2], ids=["d3X", "d3Omega"])
+    def order(self, request):
+        return request.param
+
+    def test_full_symmetry(self, order):
+        for ntype in ("face", "edge", "corner"):
+            D = _build_D3_tensor(ntype, order=order)
+            for i in range(3):
+                for j in range(3):
+                    for k in range(3):
+                        assert D[i, j, k] == pytest.approx(D[j, i, k], abs=1e-15), (
+                            f"order={order} {ntype}: D[{i},{j},{k}] ≠ D[{j},{i},{k}]"
+                        )
+                        assert D[i, j, k] == pytest.approx(D[i, k, j], abs=1e-15), (
+                            f"order={order} {ntype}: D[{i},{j},{k}] ≠ D[{i},{k},{j}]"
+                        )
+
+
+class TestGBlockOmega4:
+    """G block ω⁴ correction (n_orders=2) properties."""
+
+    def test_g_block_symmetric_at_omega4(self):
+        """G block should remain symmetric with ω⁴ correction."""
+        omega = 0.3 * ALPHA
+        for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
+            P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+            G = P9[:3, :3].real
+            np.testing.assert_allclose(
+                G, G.T, atol=1e-15, err_msg=f"G not symmetric for {R}"
+            )
+
+    def test_g_omega4_correction_scales(self):
+        """ω⁴ G correction should be smaller than ω² correction at ka=0.3.
+
+        With correct factorial suppression (1/2!, 1/4! from Taylor expansion
+        of exp(ikr)/r), the G block converges well even at ka=0.3.
+        """
+        ka = 0.3
+        omega = ka * ALPHA
+        R = (1, 0, 0)
+        P9_0 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=0)
+        P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1)
+        P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+
+        G_corr1 = np.max(np.abs(P9_1[:3, :3] - P9_0[:3, :3]))
+        G_corr2 = np.max(np.abs(P9_2[:3, :3] - P9_1[:3, :3]))
+        assert G_corr2 < G_corr1, "ω⁴ G correction should be smaller than ω² at ka=0.3"
+
+    def test_g_omega4_ka_scaling(self):
+        """G ω⁴ correction ratio between ka=0.1 and ka=0.3 should scale as ~(ka)²."""
+        R = (1, 0, 0)
+        ka1, ka2 = 0.1, 0.3
+
+        def g_corr_at_ka(ka):
+            omega = ka * ALPHA
+            P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1)
+            P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+            return np.max(np.abs(P9_2[:3, :3] - P9_1[:3, :3]))
+
+        ratio = g_corr_at_ka(ka2) / g_corr_at_ka(ka1)
+        # Expected ~(ka2/ka1)⁴ = 81 for the ω⁴ term evaluated at two ka values
+        # But since we're taking difference P9(n=2)-P9(n=1), the dominant term is ω⁴
+        # so the ratio should be (0.3/0.1)⁴ = 81
+        assert 30 < ratio < 200, f"Expected ~81× scaling, got {ratio:.1f}×"
+
+
+class TestCHBlockDynamic:
+    """C/H block dynamic correction properties (ω² and ω⁴)."""
+
+    def test_ch_omega2_scales_as_ka2(self):
+        """C/H ω² correction ratio between ka=0.1 and ka=0.3 should scale as ~(ka)²."""
+        R = (1, 0, 0)
+        ka1, ka2 = 0.1, 0.3
+
+        def ch_corr_at_ka(ka):
+            omega = ka * ALPHA
+            P9_0 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=0)
+            P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1)
+            return np.max(np.abs(P9_1[:3, 3:] - P9_0[:3, 3:]))
+
+        ratio = ch_corr_at_ka(ka2) / ch_corr_at_ka(ka1)
+        # Dominant term is ω², so ratio ≈ (0.3/0.1)² = 9
+        assert 5 < ratio < 15, f"Expected ~9× scaling, got {ratio:.1f}×"
+
+    def test_ch_omega4_smaller_than_omega2(self):
+        """ω⁴ C/H correction should be smaller than ω² at ka=0.3.
+
+        With correct factorial suppression from Taylor expansion of
+        exp(ikr)/r, the C/H blocks converge well at ka=0.3.
+        """
+        ka = 0.3
+        omega = ka * ALPHA
+        R = (1, 0, 0)
+        P9_0 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=0)
+        P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1)
+        P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+
+        C_corr1 = np.max(np.abs(P9_1[:3, 3:] - P9_0[:3, 3:]))
+        C_corr2 = np.max(np.abs(P9_2[:3, 3:] - P9_1[:3, 3:]))
+        assert C_corr2 < C_corr1, "ω⁴ C correction should be smaller than ω² at ka=0.3"
+
+    def test_h_equals_c_transpose_all_orders(self):
+        """H = Cᵀ at n_orders=0,1,2 for all neighbour types."""
+        omega = 0.3 * ALPHA
+        for n_ord in (0, 1, 2):
+            for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1), (-1, 0, 0), (0, -1, 1)]:
+                P9 = inter_voxel_propagator_9x9(
+                    R, ALPHA, BETA, RHO, omega, n_orders=n_ord
+                )
+                np.testing.assert_allclose(
+                    P9[3:, :3],
+                    P9[:3, 3:].T,
+                    atol=1e-15,
+                    err_msg=f"H≠Cᵀ for R={R}, n_orders={n_ord}",
+                )
+
+    def test_inversion_symmetry_all_orders(self):
+        """G,S even and C,H odd under R→−R at all dynamic orders."""
+        omega = 0.3 * ALPHA
+        for n_ord in (0, 1, 2):
+            for R_p, R_m in [
+                ((1, 0, 0), (-1, 0, 0)),
+                ((1, 1, 0), (-1, -1, 0)),
+                ((1, 1, 1), (-1, -1, -1)),
+            ]:
+                Pp = inter_voxel_propagator_9x9(R_p, ALPHA, BETA, RHO, omega, n_ord)
+                Pm = inter_voxel_propagator_9x9(R_m, ALPHA, BETA, RHO, omega, n_ord)
+                np.testing.assert_allclose(
+                    Pp[:3, :3],
+                    Pm[:3, :3],
+                    atol=1e-14,
+                    err_msg=f"G not even, R={R_p}, n={n_ord}",
+                )
+                np.testing.assert_allclose(
+                    Pp[3:, 3:],
+                    Pm[3:, 3:],
+                    atol=1e-14,
+                    err_msg=f"S not even, R={R_p}, n={n_ord}",
+                )
+                np.testing.assert_allclose(
+                    Pp[:3, 3:],
+                    -Pm[:3, 3:],
+                    atol=1e-14,
+                    err_msg=f"C not odd, R={R_p}, n={n_ord}",
+                )
+                np.testing.assert_allclose(
+                    Pp[3:, :3],
+                    -Pm[3:, :3],
+                    atol=1e-14,
+                    err_msg=f"H not odd, R={R_p}, n={n_ord}",
+                )
+
+
+class TestConsistentTruncation:
+    """All blocks at n_orders=2 for all 26 neighbours."""
+
+    def test_all_26_finite_norders2(self):
+        """9×9 propagator at n_orders=2 should be finite for all 26 neighbours."""
+        omega = 0.3 * ALPHA
+        for n1 in (-1, 0, 1):
+            for n2 in (-1, 0, 1):
+                for n3 in (-1, 0, 1):
+                    if n1 == n2 == n3 == 0:
+                        continue
+                    R = (n1, n2, n3)
+                    P9 = inter_voxel_propagator_9x9(
+                        R, ALPHA, BETA, RHO, omega, n_orders=2
+                    )
+                    assert np.isfinite(P9).all(), (
+                        f"Non-finite P9 at n_orders=2 for R={R}"
+                    )
+
+    def test_g_block_symmetric_all_26(self):
+        """G block should be symmetric for all 26 neighbours at n_orders=2."""
+        omega = 0.3 * ALPHA
+        for n1 in (-1, 0, 1):
+            for n2 in (-1, 0, 1):
+                for n3 in (-1, 0, 1):
+                    if n1 == n2 == n3 == 0:
+                        continue
+                    R = (n1, n2, n3)
+                    P9 = inter_voxel_propagator_9x9(
+                        R, ALPHA, BETA, RHO, omega, n_orders=2
+                    )
+                    G = P9[:3, :3].real
+                    np.testing.assert_allclose(
+                        G, G.T, atol=1e-14, err_msg=f"G not sym for R={R}"
+                    )
+
+
+class TestMathematicaReferenceCH:
+    """Cross-validate C/H dynamic constants against Mathematica output.
+
+    These are the raw values from InterVoxelPropagatorCHDynamic.wl,
+    validated by direct 3D NIntegrate cross-check to 10⁻¹² precision.
+    """
+
+    # d³X/dR³ (triharmonic third derivatives)
+    def test_face_d3x_000(self):
+        assert FACE_D3X_000 == pytest.approx(5.59066550438255537, rel=1e-14)
+
+    def test_face_d3x_011(self):
+        assert FACE_D3X_011 == pytest.approx(2.22178066763092212, rel=1e-14)
+
+    def test_edge_d3x_000(self):
+        assert EDGE_D3X_000 == pytest.approx(4.79793940592048508, rel=1e-14)
+
+    def test_edge_d3x_001(self):
+        assert EDGE_D3X_001 == pytest.approx(1.17783327456444731, rel=1e-14)
+
+    def test_edge_d3x_022(self):
+        assert EDGE_D3X_022 == pytest.approx(1.80511344407289295, rel=1e-14)
+
+    def test_corner_d3x_000(self):
+        assert CORNER_D3X_000 == pytest.approx(4.25436485917712435, rel=1e-14)
+
+    def test_corner_d3x_001(self):
+        assert CORNER_D3X_001 == pytest.approx(1.14631500401061554, rel=1e-14)
+
+    def test_corner_d3x_012(self):
+        assert CORNER_D3X_012 == pytest.approx(-0.41087473026598235, rel=1e-14)
+
+    # d³Ω/dR³ (pentaharmonic third derivatives)
+    def test_face_d3om_000(self):
+        assert FACE_D3OM_000 == pytest.approx(74.7028469944845582, rel=1e-14)
+
+    def test_face_d3om_011(self):
+        assert FACE_D3OM_011 == pytest.approx(21.5319534595037667, rel=1e-14)
+
+    def test_edge_d3om_000(self):
+        assert EDGE_D3OM_000 == pytest.approx(86.9352238951433639, rel=1e-14)
+
+    def test_corner_d3om_000(self):
+        assert CORNER_D3OM_000 == pytest.approx(97.7452814064066722, rel=1e-14)
+
+    # dΨ/dR_k (biharmonic first derivatives)
+    def test_face_dpsi_0(self):
+        assert FACE_DPSI_0 == pytest.approx(0.83618556997036663, rel=1e-14)
+
+    def test_edge_dpsi_0(self):
+        assert EDGE_DPSI_0 == pytest.approx(0.64840717704648545, rel=1e-14)
+
+    def test_corner_dpsi_0(self):
+        assert CORNER_DPSI_0 == pytest.approx(0.54558290559986295, rel=1e-14)
+
+    # dX/dR_k (triharmonic first derivatives)
+    def test_face_dx_0(self):
+        assert FACE_DX_0 == pytest.approx(3.92555846378306972, rel=1e-14)
+
+    def test_edge_dx_0(self):
+        assert EDGE_DX_0 == pytest.approx(4.92386047202461274, rel=1e-14)
+
+    def test_corner_dx_0(self):
+        assert CORNER_DX_0 == pytest.approx(5.75937899450666245, rel=1e-14)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Phase 5: ω⁶ extension tests (G and C/H blocks at n_orders=3)
+# ══════════════════════════════════════════════════════════════════════
+
+
+class TestD3HLaplacian:
+    """Verify Laplacian identity for heptaharmonic d³H/dR³.
+
+    Since nabla^2(rho^7) = 56*rho^5, the Laplacian trace gives:
+        sum_j D3H_{jjk} = 56 * dOmega_k
+    """
+
+    def test_face_d3h_laplacian(self):
+        lhs = FACE_D3H_000 + 2 * FACE_D3H_011
+        assert lhs == pytest.approx(56 * FACE_DOM_0, abs=1e-8)
+
+    def test_edge_d3h_laplacian(self):
+        lhs = EDGE_D3H_000 + EDGE_D3H_001 + EDGE_D3H_022
+        assert lhs == pytest.approx(56 * EDGE_DOM_0, abs=1e-8)
+
+    def test_corner_d3h_laplacian(self):
+        lhs = CORNER_D3H_000 + 2 * CORNER_D3H_001
+        assert lhs == pytest.approx(56 * CORNER_DOM_0, abs=1e-8)
+
+    def test_d3h_tensor_laplacian(self):
+        """sum_j D_{jjk} = 56*dOmega_k for all types via tensor builder."""
+        for ntype in ("face", "edge", "corner"):
+            D = _build_D3_tensor(ntype, order=3)
+            dOm = _build_dW_vector(ntype, order=3)
+            for k in range(3):
+                trace_k = sum(D[j, j, k] for j in range(3))
+                assert trace_k == pytest.approx(56 * dOm[k], abs=1e-8), (
+                    f"D3H Laplacian failed for {ntype}, k={k}"
+                )
+
+
+class TestD3HSymmetry:
+    """D3H tensors should be fully symmetric in all 3 indices."""
+
+    def test_full_symmetry(self):
+        for ntype in ("face", "edge", "corner"):
+            D = _build_D3_tensor(ntype, order=3)
+            for i in range(3):
+                for j in range(3):
+                    for k in range(3):
+                        assert D[i, j, k] == pytest.approx(D[j, i, k], abs=1e-15), (
+                            f"D3H {ntype}: D[{i},{j},{k}] != D[{j},{i},{k}]"
+                        )
+                        assert D[i, j, k] == pytest.approx(D[i, k, j], abs=1e-15), (
+                            f"D3H {ntype}: D[{i},{j},{k}] != D[{i},{k},{j}]"
+                        )
+
+
+class TestGBlockOmega6:
+    """G block omega^6 correction (n_orders=3) properties."""
+
+    def test_g_block_symmetric_at_omega6(self):
+        """G block should remain symmetric with omega^6 correction."""
+        omega = 0.3 * ALPHA
+        for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
+            P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3)
+            G = P9[:3, :3].real
+            np.testing.assert_allclose(
+                G, G.T, atol=1e-15, err_msg=f"G not symmetric for {R}"
+            )
+
+    def test_g_omega6_correction_smaller_than_omega4(self):
+        """omega^6 G correction should be smaller than omega^4 at ka=0.3."""
+        ka = 0.3
+        omega = ka * ALPHA
+        R = (1, 0, 0)
+        P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+        P9_3 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3)
+        P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1)
+
+        G_corr2 = np.max(np.abs(P9_2[:3, :3] - P9_1[:3, :3]))
+        G_corr3 = np.max(np.abs(P9_3[:3, :3] - P9_2[:3, :3]))
+        assert G_corr3 < G_corr2, (
+            f"omega^6 G correction ({G_corr3:.3e}) should be < omega^4 ({G_corr2:.3e})"
+        )
+
+    def test_g_omega6_ka_scaling(self):
+        """G omega^6 correction ratio between ka=0.1 and ka=0.3 should scale as ~(ka)^2."""
+        R = (1, 0, 0)
+        ka1, ka2 = 0.1, 0.3
+
+        def g_corr_at_ka(ka):
+            omega = ka * ALPHA
+            P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+            P9_3 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3)
+            return np.max(np.abs(P9_3[:3, :3] - P9_2[:3, :3]))
+
+        ratio = g_corr_at_ka(ka2) / g_corr_at_ka(ka1)
+        # Dominant term is omega^6, so ratio ~ (0.3/0.1)^6 = 729
+        assert 200 < ratio < 2000, f"Expected ~729x scaling, got {ratio:.1f}x"
+
+
+class TestCHBlockOmega6:
+    """C/H block omega^6 correction (n_orders=3) properties."""
+
+    def test_ch_omega6_smaller_than_omega4(self):
+        """omega^6 C/H correction should be smaller than omega^4 at ka=0.3."""
+        ka = 0.3
+        omega = ka * ALPHA
+        R = (1, 0, 0)
+        P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1)
+        P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+        P9_3 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3)
+
+        C_corr2 = np.max(np.abs(P9_2[:3, 3:] - P9_1[:3, 3:]))
+        C_corr3 = np.max(np.abs(P9_3[:3, 3:] - P9_2[:3, 3:]))
+        assert C_corr3 < C_corr2, (
+            f"omega^6 C correction ({C_corr3:.3e}) should be < omega^4 ({C_corr2:.3e})"
+        )
+
+    def test_ch_omega6_ka_scaling(self):
+        """C/H omega^6 correction ratio should scale as ~(ka)^2 between orders."""
+        R = (1, 0, 0)
+        ka1, ka2 = 0.1, 0.3
+
+        def ch_corr_at_ka(ka):
+            omega = ka * ALPHA
+            P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2)
+            P9_3 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3)
+            return np.max(np.abs(P9_3[:3, 3:] - P9_2[:3, 3:]))
+
+        ratio = ch_corr_at_ka(ka2) / ch_corr_at_ka(ka1)
+        # Dominant term is omega^6, so ratio ~ (0.3/0.1)^6 = 729
+        assert 200 < ratio < 2000, f"Expected ~729x scaling, got {ratio:.1f}x"
+
+    def test_h_equals_c_transpose_omega6(self):
+        """H = C^T at n_orders=3 for all neighbour types."""
+        omega = 0.3 * ALPHA
+        for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1), (-1, 0, 0), (0, -1, 1)]:
+            P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3)
+            np.testing.assert_allclose(
+                P9[3:, :3],
+                P9[:3, 3:].T,
+                atol=1e-15,
+                err_msg=f"H!=C^T for R={R}, n_orders=3",
+            )
+
+    def test_inversion_symmetry_omega6(self):
+        """G,S even and C,H odd under R -> -R at n_orders=3."""
+        omega = 0.3 * ALPHA
+        for R_p, R_m in [
+            ((1, 0, 0), (-1, 0, 0)),
+            ((1, 1, 0), (-1, -1, 0)),
+            ((1, 1, 1), (-1, -1, -1)),
+        ]:
+            Pp = inter_voxel_propagator_9x9(R_p, ALPHA, BETA, RHO, omega, 3)
+            Pm = inter_voxel_propagator_9x9(R_m, ALPHA, BETA, RHO, omega, 3)
+            np.testing.assert_allclose(
+                Pp[:3, :3],
+                Pm[:3, :3],
+                atol=1e-14,
+                err_msg=f"G not even, R={R_p}, n=3",
+            )
+            np.testing.assert_allclose(
+                Pp[3:, 3:],
+                Pm[3:, 3:],
+                atol=1e-14,
+                err_msg=f"S not even, R={R_p}, n=3",
+            )
+            np.testing.assert_allclose(
+                Pp[:3, 3:],
+                -Pm[:3, 3:],
+                atol=1e-14,
+                err_msg=f"C not odd, R={R_p}, n=3",
+            )
+            np.testing.assert_allclose(
+                Pp[3:, :3],
+                -Pm[3:, :3],
+                atol=1e-14,
+                err_msg=f"H not odd, R={R_p}, n=3",
+            )
+
+
+class TestConsistentTruncationOmega6:
+    """All blocks at n_orders=3 for all 26 neighbours."""
+
+    def test_all_26_finite_norders3(self):
+        """9x9 propagator at n_orders=3 should be finite for all 26 neighbours."""
+        omega = 0.3 * ALPHA
+        for n1 in (-1, 0, 1):
+            for n2 in (-1, 0, 1):
+                for n3 in (-1, 0, 1):
+                    if n1 == n2 == n3 == 0:
+                        continue
+                    R = (n1, n2, n3)
+                    P9 = inter_voxel_propagator_9x9(
+                        R, ALPHA, BETA, RHO, omega, n_orders=3
+                    )
+                    assert np.isfinite(P9).all(), (
+                        f"Non-finite P9 at n_orders=3 for R={R}"
+                    )
+
+    def test_g_block_symmetric_all_26_omega6(self):
+        """G block should be symmetric for all 26 neighbours at n_orders=3."""
+        omega = 0.3 * ALPHA
+        for n1 in (-1, 0, 1):
+            for n2 in (-1, 0, 1):
+                for n3 in (-1, 0, 1):
+                    if n1 == n2 == n3 == 0:
+                        continue
+                    R = (n1, n2, n3)
+                    P9 = inter_voxel_propagator_9x9(
+                        R, ALPHA, BETA, RHO, omega, n_orders=3
+                    )
+                    G = P9[:3, :3].real
+                    np.testing.assert_allclose(
+                        G, G.T, atol=1e-14, err_msg=f"G not sym for R={R}"
+                    )

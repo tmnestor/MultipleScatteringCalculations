@@ -219,7 +219,8 @@ def _edge_mp(p: int, q: int, r: int) -> float:
 
 def _corner_mp(p: int, q: int, r: int) -> float:
     """Corner-adjacent Mp, with full permutation symmetry."""
-    key = tuple(sorted([p, q, r]))
+    sp, sq, sr = sorted([p, q, r])
+    key = (sp, sq, sr)
     if key in CORNER_MP_VALUES:
         return CORNER_MP_VALUES[key]
     raise KeyError(f"CORNER_MP_VALUES missing ({p}, {q}, {r})")
