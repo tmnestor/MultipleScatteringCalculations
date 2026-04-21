@@ -37,6 +37,9 @@ def _build_slab_kernels_gpu(
     ref: ReferenceMedium,
     device: torch.device,
     dtype: torch.dtype,
+    *,
+    volume_averaged: bool = False,
+    n_orders: int = 2,
 ) -> torch.Tensor:
     """Build 3D FFT kernel on GPU from CPU kernel.
 
@@ -52,6 +55,9 @@ def _build_slab_kernels_gpu(
         ref: Background elastic medium.
         device: Target torch device.
         dtype: Target complex dtype.
+        volume_averaged: If True, use volume-averaged inter-voxel propagator
+            for nearest-neighbour separations.
+        n_orders: Dynamic correction orders for volume-averaged propagator.
 
     Returns:
         kernel_hat_3d: shape (9, 9, n_dz, S, S), complex, on device.
@@ -62,7 +68,13 @@ def _build_slab_kernels_gpu(
     n_dz = 2 * N_z - 1
 
     # Build kernel on CPU — returns shape (n_dz, S, S, 9, 9) already xy-FFT'd
-    kernel_hat_xy = _build_slab_kernels(geometry, omega, ref)
+    kernel_hat_xy = _build_slab_kernels(
+        geometry,
+        omega,
+        ref,
+        volume_averaged=volume_averaged,
+        n_orders=n_orders,
+    )
 
     # IFFT in xy to recover spatial domain
     kernel_spatial = np.fft.ifft2(kernel_hat_xy, axes=(1, 2))
@@ -141,6 +153,9 @@ def compute_slab_scattering_gpu(
     initial_guess: str = "born",
     device: torch.device | None = None,
     dtype: torch.dtype | None = None,
+    *,
+    volume_averaged: bool = False,
+    n_orders: int = 2,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GPU GMRES.
 
@@ -158,6 +173,9 @@ def compute_slab_scattering_gpu(
         initial_guess: "born" or "zero".
         device: PyTorch device (default: auto-detect).
         dtype: PyTorch complex dtype (default: auto-select).
+        volume_averaged: If True, use volume-averaged inter-voxel propagator
+            for nearest-neighbour separations.
+        n_orders: Dynamic correction orders for volume-averaged propagator.
 
     Returns:
         SlabResult with exciting and incident fields.
@@ -177,7 +195,13 @@ def compute_slab_scattering_gpu(
 
     # Build 3D FFT kernel on GPU
     kernel_hat_3d = _build_slab_kernels_gpu(
-        geometry, omega, material.ref, device, dtype
+        geometry,
+        omega,
+        material.ref,
+        device,
+        dtype,
+        volume_averaged=volume_averaged,
+        n_orders=n_orders,
     )
 
     # Transfer T-matrices and incident field to GPU

@@ -102,6 +102,82 @@ EDGE_DPHI_0 = -0.35790311876299858  # = dΦ_1 by C₂ᵥ; dΦ_2 = 0
 CORNER_DPHI_0 = -0.19511287062629469  # = dΦ_1 = dΦ_2 by S₃
 
 # ──────────────────────────────────────────────────────────────────────
+# TRIHARMONIC THIRD DERIVATIVES d³X/dR_i dR_j dR_k  (kernel ρ³)
+# For ω² correction to C/H blocks (Phase 2E).
+# Computed via delta-prime/delta/step collapse in
+# InterVoxelPropagatorCHDynamic.wl. Validated by direct NIntegrate.
+# ──────────────────────────────────────────────────────────────────────
+
+# === FACE  R = (a,0,0) ===
+FACE_D3X_000 = 5.59066550438255537  # d³X/dR₀³
+FACE_D3X_011 = 2.22178066763092212  # d³X/(dR₀ dR₁²) = d³X/(dR₀ dR₂²)
+
+# === EDGE  R = (a,a,0) ===
+EDGE_D3X_000 = 4.79793940592048508  # = D₁₁₁ by C₂ᵥ
+EDGE_D3X_001 = 1.17783327456444731  # = D₀₁₁ by C₂ᵥ
+EDGE_D3X_022 = 1.80511344407289295  # = D₁₂₂ by C₂ᵥ
+
+# === CORNER  R = (a,a,a) ===
+CORNER_D3X_000 = 4.25436485917712435  # = D₁₁₁ = D₂₂₂ by S₃
+CORNER_D3X_001 = 1.14631500401061554  # all mixed-pair by S₃
+CORNER_D3X_012 = -0.41087473026598235  # all-different
+
+# dΨ/dR_k (biharmonic first derivative, from Laplacian: dΨ_k = (1/12) Σ_j d³X_{jjk})
+FACE_DPSI_0 = 0.83618556997036663  # dΨ_1 = dΨ_2 = 0 by mirror symmetry
+EDGE_DPSI_0 = 0.64840717704648545  # = dΨ_1 by C₂ᵥ; dΨ_2 = 0
+CORNER_DPSI_0 = 0.54558290559986295  # = dΨ_1 = dΨ_2 by S₃
+
+# ──────────────────────────────────────────────────────────────────────
+# PENTAHARMONIC THIRD DERIVATIVES d³Ω/dR_i dR_j dR_k  (kernel ρ⁵)
+# For ω⁴ correction to C/H blocks (Phase 2E).
+# ──────────────────────────────────────────────────────────────────────
+
+# === FACE  R = (a,0,0) ===
+FACE_D3OM_000 = 74.7028469944845582  # d³Ω/dR₀³
+FACE_D3OM_011 = 21.5319534595037667  # d³Ω/(dR₀ dR₁²) = d³Ω/(dR₀ dR₂²)
+
+# === EDGE  R = (a,a,0) ===
+EDGE_D3OM_000 = 86.9352238951433639  # = D₁₁₁ by C₂ᵥ
+EDGE_D3OM_001 = 34.6277658601723239  # = D₀₁₁ by C₂ᵥ
+EDGE_D3OM_022 = 26.1528244054226945  # = D₁₂₂ by C₂ᵥ
+
+# === CORNER  R = (a,a,a) ===
+CORNER_D3OM_000 = 97.7452814064066722  # = D₁₁₁ = D₂₂₂ by S₃
+CORNER_D3OM_001 = 37.5180442143966006  # all mixed-pair by S₃
+CORNER_D3OM_012 = 7.42106273126978393  # all-different
+
+# dX/dR_k (triharmonic first derivative, from Laplacian: dX_k = (1/30) Σ_j d³Ω_{jjk})
+FACE_DX_0 = 3.92555846378306972  # dX_1 = dX_2 = 0 by mirror symmetry
+EDGE_DX_0 = 4.92386047202461274  # = dX_1 by C₂ᵥ; dX_2 = 0
+CORNER_DX_0 = 5.75937899450666245  # = dX_1 = dX_2 by S₃
+
+# ──────────────────────────────────────────────────────────────────────
+# HEPTAHARMONIC THIRD DERIVATIVES d³H/dR_i dR_j dR_k  (kernel ρ⁷)
+# For ω⁶ correction to C/H blocks (Phase 5).
+# Computed via delta-prime/delta/step collapse in
+# InterVoxelPropagatorOmega6.wl. Validated by Laplacian identity.
+# ──────────────────────────────────────────────────────────────────────
+
+# === FACE  R = (a,0,0) ===
+FACE_D3H_000 = 520.366848816268754  # d³H/dR₀³
+FACE_D3H_011 = 119.391877525300900  # d³H/(dR₀ dR₁²) = d³H/(dR₀ dR₂²)
+
+# === EDGE  R = (a,a,0) ===
+EDGE_D3H_000 = 818.181285566568028  # = D₁₁₁ by C₂ᵥ
+EDGE_D3H_001 = 401.751494351498964  # = D₀₁₁ by C₂ᵥ
+EDGE_D3H_022 = 208.558979721460787  # = D₁₂₂ by C₂ᵥ
+
+# === CORNER  R = (a,a,a) ===
+CORNER_D3H_000 = 1154.46537928822656  # = D₁₁₁ = D₂₂₂ by S₃
+CORNER_D3H_001 = 531.429829090769075  # all mixed-pair by S₃
+CORNER_D3H_012 = 219.478429989378284  # all-different
+
+# dΩ/dR_k (pentaharmonic first derivative, from Laplacian: dΩ_k = (1/56) Σ_j d³H_{jjk})
+FACE_DOM_0 = 13.5562607833369742  # dΩ_1 = dΩ_2 = 0 by mirror symmetry
+EDGE_DOM_0 = 25.5087814221344246  # = dΩ_1 by C₂ᵥ; dΩ_2 = 0
+CORNER_DOM_0 = 39.5950899548172270  # = dΩ_1 = dΩ_2 by S₃
+
+# ──────────────────────────────────────────────────────────────────────
 # DYNAMIC CORRECTIONS: P(ω) = P⁽⁰⁾ + ω²P⁽¹⁾ + ω⁴P⁽²⁾
 #
 # From the Fourier expansion of the elastodynamic Green's tensor
@@ -124,6 +200,11 @@ _NORM_A1 = 1.0 / (8.0 * np.pi)  # 1/(8π) for order 1 A
 _NORM_B1 = 1.0 / (96.0 * np.pi)  # 1/(96π) for order 1 B
 _NORM_A2 = -1.0 / (96.0 * np.pi)  # -1/(96π) for order 2 A
 _NORM_B2 = -1.0 / (2880.0 * np.pi)  # -1/(2880π) for order 2 B
+_NORM_A3 = 1.0 / (2880.0 * np.pi)  # 1/(2880π) for order 3 A
+_NORM_B3 = 1.0 / (161280.0 * np.pi)  # 1/(161280π) for order 3 B  [= NORM_A3/56]
+_NORM_A4 = -1.0 / (
+    161280.0 * np.pi
+)  # -1/(161280π) for order 4 A (H kernel) [= -NORM_B3]
 
 # === FACE DYN ORDER 1: Ψ(ρ)→A, X(ρ³)→B  ===
 DYN1_FACE_A11 = 0.30434003593387251229 * _NORM_A1
@@ -178,6 +259,56 @@ DYN2_CORNER_B1111 = 133.00383894991481736747 * _NORM_B2  # = B₂₂₂₂ = B�
 DYN2_CORNER_B1122 = 43.17046089978055708110 * _NORM_B2  # = B₁₁₃₃ = B₂₂₃₃
 DYN2_CORNER_B1112 = 20.48871726047062015519 * _NORM_B2  # 6 equiv by S₃
 DYN2_CORNER_B1123 = 5.65100277308925185145 * _NORM_B2
+
+# === DYN ORDER 3: Ω(ρ⁵)→A, H(ρ⁷)→B  ===
+# From Mathematica/InterVoxelPropagatorOmegaHessian.wl
+# d²Ω/dR² → A⁽³⁾,  d⁴H/dR⁴ → B⁽³⁾
+# Laplacian identity verified: Σ_k B_{jjkk} = 56·A_{jj} (10⁻¹² precision)
+
+# === FACE DYN ORDER 3 ===
+DYN3_FACE_A11 = 35.09972390156100239 * _NORM_A3
+DYN3_FACE_A22 = 13.54175081054303704 * _NORM_A3  # = A₃₃
+DYN3_FACE_B1111 = 1401.02708938036651 * _NORM_B3
+DYN3_FACE_B1122 = 282.27872455352481 * _NORM_B3  # = B₁₁₃₃
+DYN3_FACE_B2222 = 356.74707004533833 * _NORM_B3  # = B₃₃₃₃
+DYN3_FACE_B2233 = 119.31225079154694 * _NORM_B3
+
+# === EDGE DYN ORDER 3 ===
+DYN3_EDGE_A11 = 51.67064499234048322 * _NORM_A3  # = A₂₂
+DYN3_EDGE_A33 = 25.50019876734907121 * _NORM_A3
+DYN3_EDGE_A12 = 26.14480437842729518 * _NORM_A3
+DYN3_EDGE_B1111 = 1840.74246384076366 * _NORM_B3  # = B₂₂₂₂
+DYN3_EDGE_B1122 = 651.07099896048098 * _NORM_B3
+DYN3_EDGE_B1133 = 401.74265676982242 * _NORM_B3  # = B₂₂₃₃
+DYN3_EDGE_B3333 = 624.52581743190315 * _NORM_B3
+DYN3_EDGE_B1112 = 635.51239625893890 * _NORM_B3  # = B₁₂₂₂
+DYN3_EDGE_B1233 = 193.08425267405073 * _NORM_B3
+
+# === CORNER DYN ORDER 3 ===
+DYN3_CORNER_A11 = 69.71171346052524425 * _NORM_A3  # = A₂₂ = A₃₃
+DYN3_CORNER_A12 = 30.10535779745780000 * _NORM_A3  # = A₁₃ = A₂₃
+DYN3_CORNER_B1111 = 2302.44036080125068 * _NORM_B3  # = B₂₂₂₂ = B₃₃₃₃
+DYN3_CORNER_B1122 = 800.70779649408150 * _NORM_B3  # = B₁₁₃₃ = B₂₂₃₃
+DYN3_CORNER_B1112 = 708.32238983951127 * _NORM_B3  # 6 equiv by S₃
+DYN3_CORNER_B1123 = 269.25525697861426 * _NORM_B3
+
+# === DYN ORDER 4: H(ρ⁷)→A  (A-channel only, for G block ω⁶) ===
+# From Mathematica/InterVoxelPropagatorOmega6.wl
+# d²H/dR² → A⁽⁴⁾  (no B-tensor needed — S block already has ω⁶)
+# Laplacian trace validated: Tr(d²H) = 56×Ω₀₀ to 10⁻⁹ precision
+
+# === FACE DYN ORDER 4 ===
+DYN4_FACE_A11 = 166.040235936049047 * _NORM_A4
+DYN4_FACE_A22 = 47.1604212749853438 * _NORM_A4  # = A₃₃
+
+# === EDGE DYN ORDER 4 ===
+DYN4_EDGE_A11 = 336.612687195747214 * _NORM_A4  # = A₂₂
+DYN4_EDGE_A33 = 128.501096007485975 * _NORM_A4
+DYN4_EDGE_A12 = 208.609329750912862 * _NORM_A4
+
+# === CORNER DYN ORDER 4 ===
+DYN4_CORNER_A11 = 569.489574041776214 * _NORM_A4  # = A₂₂ = A₃₃
+DYN4_CORNER_A12 = 311.882584477024042 * _NORM_A4  # = A₁₃ = A₂₃
 
 
 def _build_A_matrix(
@@ -344,8 +475,21 @@ def _face_propagator_dyn(order: int, rho: float, alpha: float, beta: float) -> N
             (2, 2, 2, 2): DYN2_FACE_B2222,
             (1, 1, 2, 2): DYN2_FACE_B2233,
         }
+    elif order == 3:
+        A = _build_A_matrix(
+            a_diag=(DYN3_FACE_A11, DYN3_FACE_A22, DYN3_FACE_A22),
+            a_offdiag=(0.0, 0.0, 0.0),
+        )
+        b_dict = {
+            (0, 0, 0, 0): DYN3_FACE_B1111,
+            (0, 0, 1, 1): DYN3_FACE_B1122,
+            (0, 0, 2, 2): DYN3_FACE_B1122,
+            (1, 1, 1, 1): DYN3_FACE_B2222,
+            (2, 2, 2, 2): DYN3_FACE_B2222,
+            (1, 1, 2, 2): DYN3_FACE_B2233,
+        }
     else:
-        msg = f"Dynamic order {order} not implemented (only 1 and 2)"
+        msg = f"Dynamic order {order} not implemented (only 1, 2, and 3)"
         raise ValueError(msg)
     return _assemble_P(A, _build_B_tensor(b_dict), mu_eff, nu_eff)
 
@@ -389,8 +533,24 @@ def _edge_propagator_dyn(order: int, rho: float, alpha: float, beta: float) -> N
             (0, 1, 1, 1): DYN2_EDGE_B1112,
             (0, 1, 2, 2): DYN2_EDGE_B1233,
         }
+    elif order == 3:
+        A = _build_A_matrix(
+            a_diag=(DYN3_EDGE_A11, DYN3_EDGE_A11, DYN3_EDGE_A33),
+            a_offdiag=(DYN3_EDGE_A12, 0.0, 0.0),
+        )
+        b_dict = {
+            (0, 0, 0, 0): DYN3_EDGE_B1111,
+            (1, 1, 1, 1): DYN3_EDGE_B1111,
+            (0, 0, 1, 1): DYN3_EDGE_B1122,
+            (0, 0, 2, 2): DYN3_EDGE_B1133,
+            (1, 1, 2, 2): DYN3_EDGE_B1133,
+            (2, 2, 2, 2): DYN3_EDGE_B3333,
+            (0, 0, 0, 1): DYN3_EDGE_B1112,
+            (0, 1, 1, 1): DYN3_EDGE_B1112,
+            (0, 1, 2, 2): DYN3_EDGE_B1233,
+        }
     else:
-        msg = f"Dynamic order {order} not implemented (only 1 and 2)"
+        msg = f"Dynamic order {order} not implemented (only 1, 2, and 3)"
         raise ValueError(msg)
     return _assemble_P(A, _build_B_tensor(b_dict), mu_eff, nu_eff)
 
@@ -448,8 +608,30 @@ def _corner_propagator_dyn(
             (0, 1, 0, 2): DYN2_CORNER_B1123,
             (0, 1, 2, 2): DYN2_CORNER_B1123,
         }
+    elif order == 3:
+        A = _build_A_matrix(
+            a_diag=(DYN3_CORNER_A11, DYN3_CORNER_A11, DYN3_CORNER_A11),
+            a_offdiag=(DYN3_CORNER_A12, DYN3_CORNER_A12, DYN3_CORNER_A12),
+        )
+        b_dict = {
+            (0, 0, 0, 0): DYN3_CORNER_B1111,
+            (1, 1, 1, 1): DYN3_CORNER_B1111,
+            (2, 2, 2, 2): DYN3_CORNER_B1111,
+            (0, 0, 1, 1): DYN3_CORNER_B1122,
+            (0, 0, 2, 2): DYN3_CORNER_B1122,
+            (1, 1, 2, 2): DYN3_CORNER_B1122,
+            (0, 0, 0, 1): DYN3_CORNER_B1112,
+            (0, 0, 0, 2): DYN3_CORNER_B1112,
+            (0, 1, 1, 1): DYN3_CORNER_B1112,
+            (1, 1, 1, 2): DYN3_CORNER_B1112,
+            (0, 2, 2, 2): DYN3_CORNER_B1112,
+            (1, 2, 2, 2): DYN3_CORNER_B1112,
+            (0, 0, 1, 2): DYN3_CORNER_B1123,
+            (0, 1, 0, 2): DYN3_CORNER_B1123,
+            (0, 1, 2, 2): DYN3_CORNER_B1123,
+        }
     else:
-        msg = f"Dynamic order {order} not implemented (only 1 and 2)"
+        msg = f"Dynamic order {order} not implemented (only 1, 2, and 3)"
         raise ValueError(msg)
     return _assemble_P(A, _build_B_tensor(b_dict), mu_eff, nu_eff)
 
@@ -612,7 +794,7 @@ def dynamic_inter_voxel_propagator(
     beta: float,
     rho: float,
     omega: float,
-    n_orders: int = 2,
+    n_orders: int = 3,
 ) -> NDArray:
     """Frequency-dependent inter-voxel propagator P(ω) = Σₙ ω²ⁿ P⁽ⁿ⁾.
 
@@ -625,7 +807,7 @@ def dynamic_inter_voxel_propagator(
         beta: S-wave velocity of reference medium (m/s).
         rho: density of reference medium (kg/m³).
         omega: angular frequency (rad/s).
-        n_orders: dynamic correction orders (0=static, 1=+ω², 2=+ω⁴).
+        n_orders: dynamic correction orders (0=static, 1=+ω², 2=+ω⁴, 3=+ω⁶).
 
     Returns:
         P: shape (3,3,3,3) propagator tensor P_{ijkl}(R, ω).
@@ -747,6 +929,8 @@ def _get_raw_d2W(
 
     order=0: d²Ψ/dR² from DYN1_A (raw = stored / _NORM_A1)
     order=1: d²X/dR² from DYN2_A (raw = stored / _NORM_A2)
+    order=2: d²Ω/dR² from DYN3_A (raw = stored / _NORM_A3)
+    order=3: d²H/dR² from DYN4_A (raw = stored / _NORM_A4)
     """
     if order == 0:
         norm = _NORM_A1
@@ -770,8 +954,30 @@ def _get_raw_d2W(
         else:
             diag = (DYN2_CORNER_A11 / norm,) * 3
             offdiag = (DYN2_CORNER_A12 / norm,) * 3
+    elif order == 2:
+        norm = _NORM_A3
+        if neighbour_type == "face":
+            diag = (DYN3_FACE_A11 / norm, DYN3_FACE_A22 / norm, DYN3_FACE_A22 / norm)
+            offdiag = (0.0, 0.0, 0.0)
+        elif neighbour_type == "edge":
+            diag = (DYN3_EDGE_A11 / norm, DYN3_EDGE_A11 / norm, DYN3_EDGE_A33 / norm)
+            offdiag = (DYN3_EDGE_A12 / norm, 0.0, 0.0)
+        else:
+            diag = (DYN3_CORNER_A11 / norm,) * 3
+            offdiag = (DYN3_CORNER_A12 / norm,) * 3
+    elif order == 3:
+        norm = _NORM_A4
+        if neighbour_type == "face":
+            diag = (DYN4_FACE_A11 / norm, DYN4_FACE_A22 / norm, DYN4_FACE_A22 / norm)
+            offdiag = (0.0, 0.0, 0.0)
+        elif neighbour_type == "edge":
+            diag = (DYN4_EDGE_A11 / norm, DYN4_EDGE_A11 / norm, DYN4_EDGE_A33 / norm)
+            offdiag = (DYN4_EDGE_A12 / norm, 0.0, 0.0)
+        else:
+            diag = (DYN4_CORNER_A11 / norm,) * 3
+            offdiag = (DYN4_CORNER_A12 / norm,) * 3
     else:
-        msg = f"Potential order {order} not available (only 0 and 1)"
+        msg = f"Potential order {order} not available (only 0, 1, 2, and 3)"
         raise ValueError(msg)
     return diag, offdiag
 
@@ -815,14 +1021,38 @@ def _build_G_block_canonical(
         d2X = _build_A_matrix(d2X_diag, d2X_offdiag)
         Psi_val = (1.0 / 12.0) * np.trace(d2X)  # Ψ = (1/12) ∇²X
 
-        # Coefficient: 1/(4π ρ c_s⁴) for the isotropic part
-        # Anisotropic: η₁ = 1 - (c_s/c_p)⁴
+        # Coefficient from Taylor expansion of exp(ik_S r)/r:
+        #   G^(1) = (-1)^1 ω² / (2! × 4πρc_S⁴) × [δΨ - η₁/12 × d²X]
+        # where η₁/12 = η₁/((2·1+1)(2·1+2)) is the deviatoric suppression
         eta_1 = 1.0 - (cs / cp) ** 4
-        coeff_1 = omega**2 / (4.0 * np.pi * rho * cs**4)
-        G += coeff_1 * (delta * Psi_val - (eta_1 / 4.0) * d2X)
+        coeff_1 = -(omega**2) / (8.0 * np.pi * rho * cs**4)
+        G += coeff_1 * (delta * Psi_val - (eta_1 / 12.0) * d2X)
 
-    # n=2 (ω⁴) would need d²Ω/dR² which is not yet available.
-    # The plan notes this explicitly as requiring new Mathematica data.
+    if n_orders >= 2:
+        # ω⁴ correction (n=2): uses d²Ω/dR² from DYN3_A (order=2)
+        d2Omega_diag, d2Omega_offdiag = _get_raw_d2W(neighbour_type, order=2)
+        d2Omega = _build_A_matrix(d2Omega_diag, d2Omega_offdiag)
+        X_val = (1.0 / 30.0) * np.trace(d2Omega)  # X = (1/30) ∇²Ω
+
+        # Coefficient from Taylor expansion:
+        #   G^(2) = (-1)^2 ω⁴ / (4! × 4πρc_S⁶) × [δX - η₂/30 × d²Ω]
+        # where η₂/30 = η₂/((2·2+1)(2·2+2)) is the deviatoric suppression
+        eta_2 = 1.0 - (cs / cp) ** 6
+        coeff_2 = omega**4 / (96.0 * np.pi * rho * cs**6)
+        G += coeff_2 * (delta * X_val - (eta_2 / 30.0) * d2Omega)
+
+    if n_orders >= 3:
+        # ω⁶ correction (n=3): uses d²H/dR² from DYN4_A (order=3)
+        d2H_diag, d2H_offdiag = _get_raw_d2W(neighbour_type, order=3)
+        d2H = _build_A_matrix(d2H_diag, d2H_offdiag)
+        Omega_val = (1.0 / 56.0) * np.trace(d2H)  # Ω = (1/56) ∇²H
+
+        # Coefficient from Taylor expansion:
+        #   G^(3) = (-1)^3 ω⁶ / (6! × 4πρc_S⁸) × [δΩ - η₃/56 × d²H]
+        # where η₃/56 = η₃/((2·3+1)(2·3+2)) is the deviatoric suppression
+        eta_3 = 1.0 - (cs / cp) ** 8
+        coeff_3 = -(omega**6) / (2880.0 * np.pi * rho * cs**8)
+        G += coeff_3 * (delta * Omega_val - (eta_3 / 56.0) * d2H)
 
     return G
 
@@ -858,42 +1088,65 @@ def _get_oh_perm(R_lattice: tuple[int, int, int]) -> NDArray:
     return _rotation_to_align(R_target)
 
 
-def _build_D3Psi_tensor(neighbour_type: str) -> NDArray:
-    """Build (3,3,3) fully symmetric tensor d³Ψ/(dR_i dR_j dR_k).
+def _build_D3_tensor(neighbour_type: str, order: int = 0) -> NDArray:
+    """Build (3,3,3) fully symmetric third-derivative tensor.
 
-    The biharmonic third derivative is fully symmetric because it is the
-    third derivative of a scalar potential.
+    order=0: d³Ψ/dR³ (biharmonic, kernel ρ)   — static
+    order=1: d³X/dR³  (triharmonic, kernel ρ³) — ω² correction
+    order=2: d³Ω/dR³  (pentaharmonic, kernel ρ⁵) — ω⁴ correction
+    order=3: d³H/dR³  (heptaharmonic, kernel ρ⁷) — ω⁶ correction
     """
     from itertools import permutations
+
+    # Select constants by order
+    if order == 0:
+        f000, f011 = FACE_D3PSI_000, FACE_D3PSI_011
+        e000, e001, e022 = EDGE_D3PSI_000, EDGE_D3PSI_001, EDGE_D3PSI_022
+        c000, c001, c012 = CORNER_D3PSI_000, CORNER_D3PSI_001, CORNER_D3PSI_012
+    elif order == 1:
+        f000, f011 = FACE_D3X_000, FACE_D3X_011
+        e000, e001, e022 = EDGE_D3X_000, EDGE_D3X_001, EDGE_D3X_022
+        c000, c001, c012 = CORNER_D3X_000, CORNER_D3X_001, CORNER_D3X_012
+    elif order == 2:
+        f000, f011 = FACE_D3OM_000, FACE_D3OM_011
+        e000, e001, e022 = EDGE_D3OM_000, EDGE_D3OM_001, EDGE_D3OM_022
+        c000, c001, c012 = CORNER_D3OM_000, CORNER_D3OM_001, CORNER_D3OM_012
+    elif order == 3:
+        f000, f011 = FACE_D3H_000, FACE_D3H_011
+        e000, e001, e022 = EDGE_D3H_000, EDGE_D3H_001, EDGE_D3H_022
+        c000, c001, c012 = CORNER_D3H_000, CORNER_D3H_001, CORNER_D3H_012
+    else:
+        msg = f"D3 tensor order {order} not available (only 0, 1, 2, and 3)"
+        raise ValueError(msg)
 
     D = np.zeros((3, 3, 3))
     if neighbour_type == "face":
         entries: dict[tuple[int, int, int], float] = {
-            (0, 0, 0): FACE_D3PSI_000,
-            (0, 1, 1): FACE_D3PSI_011,
-            (0, 2, 2): FACE_D3PSI_011,
+            (0, 0, 0): f000,
+            (0, 1, 1): f011,
+            (0, 2, 2): f011,
         }
     elif neighbour_type == "edge":
         entries = {
-            (0, 0, 0): EDGE_D3PSI_000,
-            (1, 1, 1): EDGE_D3PSI_000,
-            (0, 0, 1): EDGE_D3PSI_001,
-            (0, 1, 1): EDGE_D3PSI_001,
-            (0, 2, 2): EDGE_D3PSI_022,
-            (1, 2, 2): EDGE_D3PSI_022,
+            (0, 0, 0): e000,
+            (1, 1, 1): e000,
+            (0, 0, 1): e001,
+            (0, 1, 1): e001,
+            (0, 2, 2): e022,
+            (1, 2, 2): e022,
         }
     else:  # corner
         entries = {
-            (0, 0, 0): CORNER_D3PSI_000,
-            (1, 1, 1): CORNER_D3PSI_000,
-            (2, 2, 2): CORNER_D3PSI_000,
-            (0, 0, 1): CORNER_D3PSI_001,
-            (0, 0, 2): CORNER_D3PSI_001,
-            (0, 1, 1): CORNER_D3PSI_001,
-            (0, 2, 2): CORNER_D3PSI_001,
-            (1, 1, 2): CORNER_D3PSI_001,
-            (1, 2, 2): CORNER_D3PSI_001,
-            (0, 1, 2): CORNER_D3PSI_012,
+            (0, 0, 0): c000,
+            (1, 1, 1): c000,
+            (2, 2, 2): c000,
+            (0, 0, 1): c001,
+            (0, 0, 2): c001,
+            (0, 1, 1): c001,
+            (0, 2, 2): c001,
+            (1, 1, 2): c001,
+            (1, 2, 2): c001,
+            (0, 1, 2): c012,
         }
     for (i, j, k), val in entries.items():
         for perm in set(permutations((i, j, k))):
@@ -901,26 +1154,69 @@ def _build_D3Psi_tensor(neighbour_type: str) -> NDArray:
     return D
 
 
-def _build_dPhi_vector(neighbour_type: str) -> NDArray:
-    """Build (3,) Newton first derivative vector dΦ/dR_k for canonical direction."""
+# Keep old name as alias for backward compatibility in tests
+_build_D3Psi_tensor = _build_D3_tensor
+
+
+def _build_dW_vector(neighbour_type: str, order: int = 0) -> NDArray:
+    """Build (3,) first-derivative vector for the isotropic piece.
+
+    order=0: dΦ/dR_k  (Newton, from Laplacian of d³Ψ)
+    order=1: dΨ/dR_k  (biharmonic, from Laplacian of d³X)
+    order=2: dX/dR_k  (triharmonic, from Laplacian of d³Ω)
+    order=3: dΩ/dR_k  (pentaharmonic, from Laplacian of d³H)
+    """
+    if order == 0:
+        f0, e0, c0 = FACE_DPHI_0, EDGE_DPHI_0, CORNER_DPHI_0
+    elif order == 1:
+        f0, e0, c0 = FACE_DPSI_0, EDGE_DPSI_0, CORNER_DPSI_0
+    elif order == 2:
+        f0, e0, c0 = FACE_DX_0, EDGE_DX_0, CORNER_DX_0
+    elif order == 3:
+        f0, e0, c0 = FACE_DOM_0, EDGE_DOM_0, CORNER_DOM_0
+    else:
+        msg = f"dW vector order {order} not available (only 0, 1, 2, and 3)"
+        raise ValueError(msg)
+
     if neighbour_type == "face":
-        return np.array([FACE_DPHI_0, 0.0, 0.0])
+        return np.array([f0, 0.0, 0.0])
     if neighbour_type == "edge":
-        return np.array([EDGE_DPHI_0, EDGE_DPHI_0, 0.0])
-    # corner
-    return np.array([CORNER_DPHI_0, CORNER_DPHI_0, CORNER_DPHI_0])
+        return np.array([e0, e0, 0.0])
+    return np.array([c0, c0, c0])
 
 
-def _build_dG_rank3_canonical(neighbour_type: str, mu: float, nu: float) -> NDArray:
+# Keep old name as alias
+_build_dPhi_vector = _build_dW_vector
+
+
+def _build_dG_rank3_canonical(
+    neighbour_type: str,
+    mu: float,
+    nu: float,
+    rho: float = 0.0,
+    alpha: float = 0.0,
+    beta: float = 0.0,
+    omega: float = 0.0,
+    n_orders: int = 0,
+) -> NDArray:
     """Build rank-3 tensor dG_{ijk} = d<G_ij>/dR_k for canonical direction.
 
-    dG_{ijk} = (1/(4πμ)) [δ_{ij} dΦ_k − η_s d³Ψ/(dR_i dR_j dR_k)]
+    Static (n=0):
+      dG^(0)_{ijk} = (1/(4πμ)) [δ_{ij} dΦ_k − η_s d³Ψ_{ijk}]
+      where η_s = 1/(4(1−ν))
 
-    where η_s = 1/(4(1−ν)).
+    Dynamic (n=1, ω²):
+      dG^(1)_{ijk} = ω²/(4πρc_s⁴) [δ_{ij} dΨ_k − (η₁/4) d³X_{ijk}]
+      where η₁ = 1 − (c_s/c_p)⁴
+
+    Dynamic (n=2, ω⁴):
+      dG^(2)_{ijk} = ω⁴/(4πρc_s⁶) [δ_{ij} dX_k − (η₂/4) d³Ω_{ijk}]
+      where η₂ = 1 − (c_s/c_p)⁶
     """
+    cs, cp = beta, alpha
     eta_s = 1.0 / (4.0 * (1.0 - nu))
-    D3Psi = _build_D3Psi_tensor(neighbour_type)
-    dPhi = _build_dPhi_vector(neighbour_type)
+    D3Psi = _build_D3_tensor(neighbour_type, order=0)
+    dPhi = _build_dW_vector(neighbour_type, order=0)
 
     delta = np.eye(3)
     dG = np.zeros((3, 3, 3))
@@ -930,6 +1226,46 @@ def _build_dG_rank3_canonical(neighbour_type: str, mu: float, nu: float) -> NDAr
                 dG[i, j, k] = (1.0 / (4.0 * np.pi * mu)) * (
                     delta[i, j] * dPhi[k] - eta_s * D3Psi[i, j, k]
                 )
+
+    if n_orders >= 1 and omega != 0.0:
+        # ω² correction: d³X/dR³ (triharmonic) + dΨ/dR (biharmonic)
+        D3X = _build_D3_tensor(neighbour_type, order=1)
+        dPsi = _build_dW_vector(neighbour_type, order=1)
+        eta_1 = 1.0 - (cs / cp) ** 4
+        coeff_1 = -(omega**2) / (8.0 * np.pi * rho * cs**4)
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    dG[i, j, k] += coeff_1 * (
+                        delta[i, j] * dPsi[k] - (eta_1 / 12.0) * D3X[i, j, k]
+                    )
+
+    if n_orders >= 2 and omega != 0.0:
+        # ω⁴ correction: d³Ω/dR³ (pentaharmonic) + dX/dR (triharmonic)
+        D3Om = _build_D3_tensor(neighbour_type, order=2)
+        dX = _build_dW_vector(neighbour_type, order=2)
+        eta_2 = 1.0 - (cs / cp) ** 6
+        coeff_2 = omega**4 / (96.0 * np.pi * rho * cs**6)
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    dG[i, j, k] += coeff_2 * (
+                        delta[i, j] * dX[k] - (eta_2 / 30.0) * D3Om[i, j, k]
+                    )
+
+    if n_orders >= 3 and omega != 0.0:
+        # ω⁶ correction: d³H/dR³ (heptaharmonic) + dΩ/dR (pentaharmonic)
+        D3H = _build_D3_tensor(neighbour_type, order=3)
+        dOm = _build_dW_vector(neighbour_type, order=3)
+        eta_3 = 1.0 - (cs / cp) ** 8
+        coeff_3 = -(omega**6) / (2880.0 * np.pi * rho * cs**8)
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    dG[i, j, k] += coeff_3 * (
+                        delta[i, j] * dOm[k] - (eta_3 / 56.0) * D3H[i, j, k]
+                    )
+
     return dG
 
 
@@ -941,7 +1277,7 @@ def _dG_to_C_block(dG: NDArray) -> NDArray:
 
     Maps strain source at B to displacement response at A.
     """
-    C = np.zeros((3, 6))
+    C = np.zeros((3, 6), dtype=dG.dtype)
     for alpha, (m, n) in enumerate(_VOIGT_PAIRS):
         for i in range(3):
             if m == n:
@@ -962,7 +1298,7 @@ def inter_voxel_propagator_9x9(
     beta: float,
     rho: float,
     omega: float,
-    n_orders: int = 1,
+    n_orders: int = 2,
 ) -> NDArray:
     """9×9 inter-voxel propagator coupling displacement + Voigt strain.
 
@@ -978,8 +1314,9 @@ def inter_voxel_propagator_9x9(
         beta: S-wave velocity of reference medium (m/s).
         rho: density of reference medium (kg/m³).
         omega: angular frequency (rad/s).
-        n_orders: dynamic correction orders (0=static, 1=+ω²).
-            G block supports n_orders ≤ 1; S block supports n_orders ≤ 2.
+        n_orders: dynamic correction orders (0=static, 1=+ω², 2=+ω⁴, 3=+ω⁶).
+            All blocks (G, S, C/H) support n_orders ≤ 3.
+
 
     Returns:
         P9: shape (9, 9) complex array.
@@ -990,19 +1327,22 @@ def inter_voxel_propagator_9x9(
     perm = _get_oh_perm(R_lattice)
 
     # S block: Voigt contraction of the (3,3,3,3) dynamic propagator
-    s_orders = min(n_orders, 2)
+    s_orders = min(n_orders, 3)
     P_ijkl = dynamic_inter_voxel_propagator(
         R_lattice, alpha, beta, rho, omega, s_orders
     )
     S = _P_to_voigt_S(P_ijkl)
 
     # G block: volume-averaged Green's tensor (canonical then rotate)
-    g_orders = min(n_orders, 1)
+    g_orders = min(n_orders, 3)
     G_canon = _build_G_block_canonical(ntype, mu, nu, rho, alpha, beta, omega, g_orders)
     G = _rotate_matrix3(G_canon, perm)
 
-    # C, H blocks: displacement-strain coupling from dG/dR
-    dG_canon = _build_dG_rank3_canonical(ntype, mu, nu)
+    # C, H blocks: displacement-strain coupling from dG/dR (dynamic)
+    ch_orders = min(n_orders, 3)
+    dG_canon = _build_dG_rank3_canonical(
+        ntype, mu, nu, rho, alpha, beta, omega, ch_orders
+    )
     dG_rot = _rotate_tensor3(dG_canon, perm)
     C = _dG_to_C_block(dG_rot)
     H = C.T  # H = Cᵀ (verified analytically, no sign flip)
