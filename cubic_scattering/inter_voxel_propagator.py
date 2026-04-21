@@ -181,7 +181,7 @@ CORNER_DOM_0 = 39.5950899548172270  # = dΩ_1 = dΩ_2 by S₃
 # DYNAMIC CORRECTIONS: P(ω) = P⁽⁰⁾ + ω²P⁽¹⁾ + ω⁴P⁽²⁾
 #
 # From the Fourier expansion of the elastodynamic Green's tensor
-# (docs/inter_voxel_propagator_plan.tex §3), each order has the SAME
+# (docs/inter_voxel_propagator.tex §5), each order has the SAME
 # tensorial structure as the static propagator:
 #
 #   P⁽ⁿ⁾ = -1/(2ρcₛ²ⁿ⁺²) [δ_{ik}A⁽ⁿ⁾_{jl} + δ_{jk}A⁽ⁿ⁾_{il} - 2ηₙ B⁽ⁿ⁾]
