@@ -1,10 +1,10 @@
 # CubicTmatrix: Elastic Multiple Scattering from Cubic Heterogeneities
 
-T-matrix approach for seismic wave scattering from Rayleigh-regime cubic
-inclusions in layered elastic media. The global T-matrix equation
-`T = T₀ (I − G₀ T₀)⁻¹` couples single-site scattering matrices `T₀` through
-inter-site Green's tensors `G₀`, solved via Krylov iteration. Originates from
-Nestor (1996) PhD thesis, Australian National University.
+T-matrix approach for seismic wave scattering from cubic inclusions in layered
+elastic media. The global T-matrix equation `T = T₀ (I - G₀ T₀)⁻¹` couples
+single-site scattering matrices `T₀` through inter-site Green's tensors `G₀`,
+solved via FFT-accelerated GMRES. Originates from Nestor (1996) PhD thesis,
+Australian National University.
 
 ## Physics overview
 
@@ -12,140 +12,149 @@ Three computational pillars underpin the multiple-scattering formulation:
 
 | Pillar | Symbol | Role |
 |--------|--------|------|
-| Single-site T-matrix | `T₀` | Lippmann–Schwinger integral for each cube (analytic, Taylor-expanded Green's tensor) |
-| Inter-site Green's tensor | `G₀` | Elastodynamic coupling between cube centres (spatial, spectral, or hybrid evaluation) |
+| Single-site T-matrix | `T₀` | Lippmann-Schwinger integral for each cube |
+| Inter-site Green's tensor | `G₀` | Elastodynamic coupling between cube centres |
 | Multiple-scattering solve | `T` | Block-Toeplitz system solved by FFT-accelerated GMRES |
+
+### Scattering regimes
+
+| ka range | Module | Method |
+|----------|--------|--------|
+| ka < 0.3 | `effective_contrasts.py` | Analytical Rayleigh (fast, 27-component Galerkin with O_h symmetry) |
+| 0.3-1.0 | `resonance_tmatrix.py` | Internal Foldy-Lax subdivision (n=2-4 sub-cells) |
+| ka >= 1.0 | `resonance_tmatrix.py` | Full resonance (n >= 4 sub-cells) |
+
+### Coordinate system
+
+z = axis 0 (down), x = axis 1 (right), y = axis 2 (out) — right-handed.
 
 ## Repository structure
 
 ```
 CubicTmatrix/
-├── cubic_scattering/                # Main Python package (T₀ + G₀)
-│   ├── effective_contrasts.py       #   T₀: Lippmann–Schwinger, Eshelby, amplification
-│   ├── voigt_tmatrix.py             #   T₀: 6×6 Voigt in (uz,ux,uy,tzz,txz,tyz) basis
-│   ├── lattice_greens.py            #   G₀: spatial, spectral, hybrid, FCC, matvec
-│   ├── horizontal_greens.py         #   G₀: exact Green's tensor at Δz=0
-│   ├── greens_fft_cli.py            #   G₀: 2D FFT verification CLI
-│   ├── baseline_kx_residue.py       #   Research: kx residue exploration
-│   ├── baseline_kz_residue.py       #   Research: kz residue exploration
-│   ├── baseline_fft_final.py        #   Research: FFT baseline
-│   ├── tests/
-│   │   └── test_cubic_tmatrix.py    #   T₀ tests (9 tests)
-│   └── derivations/
-│       ├── elastic_greens.py        #   SymPy: symbolic Green's tensor
-│       ├── tmatrix_analytic.py      #   SymPy: analytical sphere T-matrix
-│       └── tmatrix_cube.py          #   SymPy: analytical cube T-matrix
+├── cubic_scattering/                 # Main Python package
+│   │
+│   │  # ── Single-site T-matrix (T₀) ─────────────────────────
+│   ├── effective_contrasts.py        #   Rayleigh T₀: 9×9 and 27×27 Galerkin
+│   ├── tmatrix_assembly.py           #   T27/T57 assembly from irrep blocks
+│   ├── voigt_tmatrix.py              #   6×6 Voigt displacement-traction basis
+│   ├── incident_field.py             #   Plane-wave overlap integrals
+│   ├── cube_eshelby.py               #   Cube Eshelby concentration factors
+│   ├── multipole_eshelby.py          #   Multipole Eshelby (sphere reference)
+│   │
+│   │  # ── Resonance regime ───────────────────────────────────
+│   ├── resonance_tmatrix.py          #   Internal Foldy-Lax for ka ~ O(1)
+│   ├── scattered_field.py            #   Far-field amplitudes, optical theorem
+│   │
+│   │  # ── Sphere scattering (validation) ─────────────────────
+│   ├── sphere_scattering.py          #   Elastic Mie series + Foldy-Lax
+│   ├── sphere_scattering_fft.py      #   FFT-accelerated sphere Foldy-Lax
+│   ├── sphere_scattering_fft_gpu.py  #   GPU version (PyTorch)
+│   ├── mie_asymptotic_analytic.py    #   Analytical Mie asymptotics
+│   │
+│   │  # ── Inter-site coupling (G₀) ──────────────────────────
+│   ├── lattice_greens.py             #   Spatial, spectral, hybrid, FCC
+│   ├── horizontal_greens.py          #   Exact Green's tensor at Δz=0
+│   ├── inter_voxel_propagator.py     #   9×9 volume-averaged propagator
+│   │
+│   │  # ── Slab Foldy-Lax solver ─────────────────────────────
+│   ├── slab_scattering.py            #   CPU solver + periodic R_PP + Kennett ref
+│   ├── slab_scattering_gpu.py        #   GPU solver (PyTorch)
+│   │
+│   │  # ── Layered-medium embedding ──────────────────────────
+│   ├── kennett_layers.py             #   Kennett reflectivity (PSV + SH + fluid)
+│   ├── cpa_iteration.py              #   CPA effective medium (⟨T⟩ = 0)
+│   │
+│   │  # ── Applications ──────────────────────────────────────
+│   ├── ocean_bottom.py               #   Ocean-bottom reflection (water|slab|halfspace)
+│   ├── seismic_survey.py             #   Shot-gather simulation
+│   ├── solver_config.py              #   YAML configuration loader
+│   │
+│   │  # ── GPU utilities ─────────────────────────────────────
+│   ├── torch_gmres.py                #   PyTorch GMRES + device selection
+│   │
+│   └── tests/                        #   pytest test suite (25 test files)
+│       ├── test_cubic_tmatrix.py
+│       ├── test_tmatrix_assembly.py
+│       ├── test_tmatrix_57.py
+│       ├── test_incident_field.py
+│       ├── test_cube_eshelby.py
+│       ├── test_multipole_eshelby.py
+│       ├── test_scattered_field.py
+│       ├── test_resonance_far_field.py
+│       ├── test_sphere_scattering.py
+│       ├── test_sphere_scattering_fft.py
+│       ├── test_sphere_scattering_fft_gpu.py
+│       ├── test_mie_asymptotic_analytic.py
+│       ├── test_mie_near_field.py
+│       ├── test_horizontal_greens.py
+│       ├── test_inter_voxel_propagator.py
+│       ├── test_slab_scattering.py
+│       ├── test_slab_scattering_gpu.py
+│       ├── test_slab_convergence.py
+│       ├── test_kennett_layers.py
+│       ├── test_cpa_iteration.py
+│       ├── test_ocean_bottom.py
+│       ├── test_seismic_survey.py
+│       ├── test_solver_config.py
+│       └── test_torch_gmres.py
 │
-├── GreensTensorCalculations/        # LaTeX documents & Mathematica notebooks
-│   ├── basic_equations.tex          #   LaTeX: fundamental equations
-│   ├── cubic_tmatrix.tex            #   LaTeX: cubic T-matrix with full Green's tensor
-│   └── nearfield_verification.tex   #   LaTeX: near-field verification
+├── ocean_bottom/                     # Ocean-bottom reflection study
+│   ├── README.md                     #   Physics, YAML reference, CLI docs
+│   ├── run_study.py                  #   CLI script (YAML config + overrides)
+│   ├── example_config.yml            #   Moderate: random, oblique, φ=0.3
+│   ├── example_config_weak.yml       #   Weak: uniform, normal incidence (Born)
+│   └── example_config_strong.yml     #   Strong: random, oblique, free-surface
 │
-├── FFTProp.py/                      # 2.5D spectral scattering (Python port of FFTPROP.F)
-│   ├── fftprop_driver.py            #   Orchestrator: compute_wavefield()
-│   ├── propagation.py               #   Four-directional propagation sweeps
-│   ├── spectral_arrays.py           #   Wavenumber grids, free-surface Rayleigh reflection
-│   └── README.md                    #   Detailed documentation
+├── configs/                          # YAML configuration files
+│   ├── example_slab.yml
+│   ├── example_sphere.yml
+│   └── example_survey.yml
 │
-├── PhD_fortran_code/                # Original Fortran 77 from Nestor (1996)
-│   ├── FFTPROP.F                    #   FFT propagation (source of FFTProp.py port)
-│   ├── GMRES_P.F, GMRESP.F         #   GMRES Krylov solvers
-│   ├── BORN.F                       #   Born approximation
-│   ├── Kennett_Reflectivity/        #   Python Kennett reflectivity package
-│   └── ...                          #   ~30 Fortran source files
+├── scripts/                          # Standalone analysis scripts
+│   ├── slab_convergence_study.py     #   Slab R_PP convergence vs Kennett
+│   └── ...                           #   Eshelby, Green's tensor scripts
 │
-├── Mathematica/                     # Symbolic computation packages
-│   ├── ElasticGreensFunction.m      #   Elastic Green's function
-│   ├── SmallSphereScattering.m      #   Small sphere scattering
-│   └── TMatrixAnalytic.m            #   Analytical T-matrix
+├── docs/                             # LaTeX documentation (lualatex)
+│   ├── cube_galerkin27.tex           #   Main document
+│   ├── cube_tmatrix_closedform.tex   #   T-matrix physics and derivations
+│   ├── inter_voxel_propagator.tex    #   Volume-averaged propagator
+│   ├── slab_scattering_explanation.tex
+│   ├── marine_survey_explanation.tex
+│   └── ...                           #   Results tables, Mie derivations
 │
-├── envs/
-│   └── seismic.yml                  # Conda environment specification
+├── Mathematica/                      # Symbolic computation (.wl scripts)
+│   ├── CubeGalerkin27.wl             #   Body bilinear forms
+│   ├── CubeT27Stiffness_LS.wl       #   Surface stiffness integrals
+│   ├── CubeT6Block.wl               #   Quad-quad block
+│   ├── InterVoxelPropagator*.wl      #   Volume-averaged propagator masters
+│   ├── MieAsymptotic*.wl             #   Mie series asymptotics
+│   └── ...                           #   ~50 Mathematica scripts
 │
-├── verify_nearfield.py              # Near-field verification (Wu & Ben-Menahem)
-├── create_global_tmatrix_svg.py     # SVG schematic generator
-└── global_tmatrix_schematic.svg     # Generated schematic figure
+├── FFTProp.py/                       # 2.5D spectral scattering (Fortran port)
+│   └── README.md
+│
+├── PhD_fortran_code/                 # Original Fortran 77 (Nestor 1996)
+│   └── Kennett_Reflectivity/         #   Python Kennett reflectivity package
+│
+└── envs/
+    └── seismic.yml                   # Conda environment specification
 ```
-
-## Method implementation
-
-### Cubic T-matrix (`cubic_scattering/effective_contrasts.py`, `voigt_tmatrix.py`)
-
-Computes the single-site T-matrix for a cube of half-width `a` centred at the
-origin via the Lippmann–Schwinger integral with the Green's tensor
-Taylor-expanded about the scatterer centre.
-
-**Key ideas:**
-
-- The fourth-rank cube moment introduces **cubic point-group (Oₕ) symmetry**
-  through the anisotropy tensor `E_{ijkl} = Σ_m δ_{im} δ_{jm} δ_{km} δ_{lm}`,
-  yielding three independent coupling coefficients `T₁`, `T₂`, `T₃` instead
-  of the two (`T₁`, `T₂`) for a sphere.
-
-- **Four amplification factors** (displacement, rotation, off-diagonal strain,
-  diagonal strain) dress the bare material contrasts into self-consistent
-  effective contrasts `Δρ*`, `Δλ*`, `Δμ*_off`, `Δμ*_diag`.
-
-- The result is expressed as a **6×6 Voigt matrix** in the displacement-traction
-  basis `(uz, ux, uy, tzz, txz, tyz)` used by the Kennett propagator framework.
-
-**Computation pipeline** (`compute_cube_tmatrix`):
-1. `Γ₀` via 3D Gauss–Legendre quadrature of the full Green's tensor
-2. `Aᶜ`, `Bᶜ`, `Cᶜ` via polynomial Taylor expansion (avoids divergent Eshelby singularity)
-3. `T₁ᶜ`, `T₂ᶜ`, `T₃ᶜ` coupling coefficients from integral decomposition
-4. Four amplification factors from self-consistent equations
-5. Five effective contrasts
-
-### Lattice Green's tensor (`cubic_scattering/lattice_greens.py`)
-
-Evaluates `G_{ij}(Rₘ − Rₙ)` between all pairs of scatterer centres on a 2D
-square lattice at `z = 0`. Four methods are implemented:
-
-| Method | Description |
-|--------|-------------|
-| **Spatial** | Exact Ben-Menahem & Singh formula with D₄ₕ symmetry exploitation (~8× reduction) |
-| **Spectral** | 2D IFFT of the post-kz-residue kernel with screened-Coulomb subtraction for convergence |
-| **Hybrid** | Spatial near-field + spectral far-field, sweeps cutoff radius `r_cut` |
-| **FCC** | Filon–Clenshaw–Curtis Hankel transform with angular harmonic decomposition |
-
-**Spectral kernel at z = 0:**
-
-```
-G_ij(kx, ky) = (i / 2ρ) [ δ_ij / (β² kzS) + kP_i kP_j / (ω² kzP) − kS_i kS_j / (ω² kzS) ]
-```
-
-**Screened-Coulomb subtraction** improves spectral convergence from O(1/kH) to
-O(1/kH³) by subtracting `c / √(kH² + kc²)`, FFT-ing the fast-decaying
-residual, then adding back `c·exp(−kc·r) / (2πr)` analytically.
-
-**FFT-accelerated block-Toeplitz mat-vec** exploits the translational invariance
-of the lattice to perform `G₀ · u` in O(M² log M) via 2D FFT convolution.
-
-### FFTProp (`FFTProp.py/`)
-
-2.5D spectral scattering code — faithful Python 3.12 port of the original
-Fortran `FFTPROP.F`. Features 4096-point FFT, cylindrical harmonic expansion
-(m = −2 … +2), free-surface Rayleigh reflection, four-directional propagation
-sweeps, and constant-Q attenuation. See [`FFTProp.py/README.md`](FFTProp.py/README.md)
-for full documentation.
 
 ## Installation
 
 ```bash
-# Create the conda environment
 conda env create -f envs/seismic.yml
-
-# Activate
 conda activate seismic
 ```
 
 ### Dependencies
 
-Python 3.12, NumPy, SciPy, Matplotlib, ObsPy, PyTorch, tqdm, typer, devito.
+Python 3.12, NumPy, SciPy, Matplotlib, PyTorch, tqdm, typer, PyYAML.
 
 ## Usage
 
-### Cubic T-matrix
+### Cubic T-matrix (Rayleigh regime)
 
 ```python
 from cubic_scattering import (
@@ -153,56 +162,142 @@ from cubic_scattering import (
     compute_cube_tmatrix, voigt_tmatrix_from_result,
 )
 
-ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2700.0)
-contrast = MaterialContrast(Dlambda=1e9, Dmu=0.5e9, Drho=200.0)
+ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+contrast = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
 
-result = compute_cube_tmatrix(omega=2*3.14159, a=0.05, ref=ref, contrast=contrast)
-
-print(f"T₁ᶜ = {result.T1c:.6e}")
-print(f"T₂ᶜ = {result.T2c:.6e}")
-print(f"T₃ᶜ = {result.T3c:.6e}")
-print(f"Cubic anisotropy = {result.cubic_anisotropy:.6e}")
+result = compute_cube_tmatrix(omega=150.0, a=1.0, ref=ref, contrast=contrast)
+T_voigt = voigt_tmatrix_from_result(result)
 ```
 
-### Lattice Green's tensor
+### Slab Foldy-Lax scattering
+
+```python
+from cubic_scattering import (
+    SlabGeometry, compute_slab_scattering,
+    uniform_slab_material, slab_rpp_periodic,
+    compute_slab_tmatrices,
+)
+
+geom = SlabGeometry(M=8, N_z=2, a=1.0)
+mat = uniform_slab_material(geom, ref, contrast)
+result = compute_slab_scattering(geom, mat, omega=150.0, k_hat=[1,0,0], periodic=True)
+
+T_local = compute_slab_tmatrices(geom, mat, omega=150.0)
+R_PP = slab_rpp_periodic(result, T_local, p=0.0)
+```
+
+### Ocean-bottom reflection
 
 ```bash
-# Run all verification methods (spatial, spectral, hybrid, FCC)
-python -m cubic_scattering.lattice_greens --method all
+# Run with YAML config (seismic units: km/s, g/cm3, GPa, km, s/km)
+python ocean_bottom/run_study.py ocean_bottom/example_config.yml
 
-# Spatial evaluation only, 16×16 lattice
-python -m cubic_scattering.lattice_greens --method spatial -M 16
-
-# Spectral with custom parameters
-python -m cubic_scattering.lattice_greens --method spectral \
-    --d 0.1 --omega 6.28 --alpha 5.0 --beta 3.0 --rho 3.0
+# With CLI overrides
+python ocean_bottom/run_study.py ocean_bottom/example_config.yml --p 0.25 --free-surface
 ```
 
-**CLI parameters:**
+```python
+from cubic_scattering import (
+    load_ocean_bottom_config, compute_ocean_bottom_reflection, write_log,
+)
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--d` | 0.1 | Lattice spacing (m) |
-| `-M` | 8 | Lattice dimension (M×M scatterers) |
-| `--omega` | 2π | Angular frequency (rad/s) |
-| `--rho` | 3.0 | Density (kg/m³) |
-| `--alpha` | 5.0 | P-wave speed (km/s) |
-| `--beta` | 3.0 | S-wave speed (km/s) |
-| `--eta` | 0.03 | Attenuation ratio |
-| `--method` | all | `spatial`, `spectral`, `hybrid`, `fcc`, or `all` |
+cfg = load_ocean_bottom_config("ocean_bottom/example_config.yml")
+result = compute_ocean_bottom_reflection(cfg, progress=True)
+write_log(result, "output.log")
+```
+
+See [`ocean_bottom/README.md`](ocean_bottom/README.md) for full YAML reference
+and heterogeneity parameterisation details.
+
+### Seismic survey simulation
+
+```bash
+python -m cubic_scattering.seismic_survey configs/example_survey.yml
+```
+
+### Kennett reflectivity
+
+```python
+from cubic_scattering import (
+    IsotropicLayer, LayerStack, kennett_layers,
+)
+import numpy as np
+
+stack = LayerStack(layers=[
+    IsotropicLayer(alpha=2000.0, beta=800.0, rho=1800.0, thickness=50.0),
+    IsotropicLayer(alpha=3000.0, beta=1700.0, rho=2200.0, thickness=np.inf),
+])
+result = kennett_layers(stack, p=0.0, omega=np.linspace(10, 300, 100))
+```
+
+### CPA effective medium
+
+```python
+from cubic_scattering import compute_cpa_two_phase, phases_from_two_phase
+
+phases = phases_from_two_phase(ref, contrast, phi=0.3, a=1.0, omega=150.0)
+cpa_result = compute_cpa_two_phase(ref, contrast, phi=0.3, a=1.0, omega=150.0)
+```
 
 ### Tests
 
 ```bash
-# Cubic T-matrix tests (9 tests)
-python -m pytest cubic_scattering/tests/ -v
+# Full test suite
+conda run -n seismic python -m pytest cubic_scattering/tests/ -v
 
-# FFTProp tests (8 tests)
-pytest FFTProp.py/test_package.py -v
+# Single test file
+conda run -n seismic python -m pytest cubic_scattering/tests/test_ocean_bottom.py -v
 
-# Kennett Reflectivity tests
-pytest PhD_fortran_code/Kennett_Reflectivity/test_package.py -v
+# FFTProp and Kennett legacy tests
+conda run -n seismic pytest FFTProp.py/test_package.py -v
+conda run -n seismic pytest PhD_fortran_code/Kennett_Reflectivity/test_package.py -v
 ```
+
+### LaTeX documentation
+
+```bash
+# Must use lualatex (fontspec requires it)
+cd docs && /usr/local/bin/lualatex -interaction=nonstopmode cube_galerkin27.tex
+cd docs && /usr/local/bin/lualatex -interaction=nonstopmode cube_galerkin27.tex  # twice for xrefs
+```
+
+## Method summary
+
+### 27-component Galerkin T-matrix
+
+The T₂₇ uses a basis of 27 trial functions (3 displacement + 6 strain + 18
+quadratic) and decomposes under O_h symmetry into 7 irreducible representations.
+All body and surface integrals reduce analytically to 3D master integrals over
+the unit cube with 1/r and 1/r^3 kernels.
+
+### Resonance regime
+
+Subdivides the cube into n^3 Rayleigh sub-cells and solves the internal
+Foldy-Lax system with the full elastodynamic Green's tensor (near- +
+intermediate- + far-field coupling). Reduces to the Rayleigh result at n=1.
+
+### Slab scattering
+
+The slab solver handles M x M x N_z grids of cubes with:
+- **Linear convolution** (finite slab) or **circular convolution** (infinite periodic slab)
+- **Volume-averaged propagator** for nearest-neighbour coupling (strong contrast)
+- **Oblique incidence** via horizontal slowness p
+- **GPU acceleration** via PyTorch (3D FFT convolution + GMRES)
+
+### Ocean-bottom reflection
+
+Three-layer model: water (acoustic) | heterogeneous sediment slab | elastic
+halfspace. Features:
+- Oblique incidence with fluid-solid coupling (Zoeppritz via Kennett recursion)
+- Free-surface water-column reverberations
+- Random binary heterogeneity with configurable statistical moments
+- YAML configuration with seismic units
+
+### Kennett reflectivity
+
+Full PSV + SH propagator-matrix recursion for layered elastic media with
+optional fluid layers. Supports batch frequency computation, CPA effective
+medium embedding, and random velocity stack generation.
 
 ## References
 
@@ -210,15 +305,11 @@ pytest PhD_fortran_code/Kennett_Reflectivity/test_package.py -v
   the T-matrix approach.* PhD thesis, Australian National University.
 - **Gubernatis, J.E., Domany, E. & Krumhansl, J.A.** (1977). Formal aspects of
   the theory of the scattering of ultrasound by flaws in elastic materials.
-  *J. Appl. Phys.*, 48(7), 2804–2811.
+  *J. Appl. Phys.*, 48(7), 2804-2811.
 - **Eshelby, J.D.** (1957). The determination of the elastic field of an
   ellipsoidal inclusion, and related problems. *Proc. R. Soc. Lond. A*, 241,
-  376–396.
-- **Ben-Menahem, A. & Singh, S.J.** (1981). *Seismic Waves and Sources.*
-  Springer-Verlag.
-- **Wu, R.-S. & Ben-Menahem, A.** (1985). The elastodynamic near field.
-  *Geophys. J. R. Astr. Soc.*, 81, 609–621.
-- **Aki, K. & Richards, P.G.** (2002). *Quantitative Seismology.* 2nd edition,
-  University Science Books.
+  376-396.
 - **Kennett, B.L.N.** (1983). *Seismic Wave Propagation in Stratified Media.*
   Cambridge University Press.
+- **Aki, K. & Richards, P.G.** (2002). *Quantitative Seismology.* 2nd edition,
+  University Science Books.
