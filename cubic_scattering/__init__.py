@@ -93,6 +93,13 @@ from .multipole_eshelby import (
     compute_multipole_eshelby,
     convergence_study,
 )
+from .ocean_bottom import (
+    OceanBottomConfig,
+    OceanBottomResult,
+    compute_ocean_bottom_reflection,
+    load_ocean_bottom_config,
+    write_log,
+)
 from .resonance_tmatrix import (
     ResonanceTmatrixResult,
     compute_resonance_tmatrix,
@@ -130,8 +137,10 @@ from .slab_scattering import (
     SlabResult,
     compute_slab_scattering,
     compute_slab_tmatrices,
+    kennett_reference_rpp,
     random_slab_material,
     slab_reflected_field,
+    slab_rpp_periodic,
     uniform_slab_material,
 )
 from .slab_scattering_gpu import compute_slab_scattering_gpu
@@ -277,6 +286,12 @@ __all__ = [
     "build_survey_stack",
     "compute_shot_gather",
     "load_survey_config",
+    # ── Ocean-bottom reflection ────────────────────────────────────────
+    "OceanBottomConfig",
+    "OceanBottomResult",
+    "compute_ocean_bottom_reflection",
+    "load_ocean_bottom_config",
+    "write_log",
     # ── Slab Foldy-Lax multiple scattering ───────────────────────────
     "SlabGeometry",
     "SlabMaterial",
@@ -284,6 +299,8 @@ __all__ = [
     "compute_slab_scattering",
     "compute_slab_tmatrices",
     "slab_reflected_field",
+    "slab_rpp_periodic",
+    "kennett_reference_rpp",
     "random_slab_material",
     "uniform_slab_material",
     # ── GPU-accelerated solvers ─────────────────────────────────────

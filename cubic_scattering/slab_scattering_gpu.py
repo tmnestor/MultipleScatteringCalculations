@@ -40,14 +40,15 @@ def _build_slab_kernels_gpu(
     *,
     volume_averaged: bool = False,
     n_orders: int = 2,
+    periodic: bool = False,
 ) -> torch.Tensor:
     """Build 3D FFT kernel on GPU from CPU kernel.
 
-    The CPU kernel is xy-FFT'd with shape (n_dz, S, S, 9, 9).
+    The CPU kernel is xy-FFT'd with shape (n_dz, H_xy, H_xy, 9, 9).
     We IFFT in xy to get spatial, then do full 3D FFT on GPU.
 
     The kernel is Toeplitz in z — index by dz = m - n + (N_z - 1).
-    We rearrange to (9, 9, n_dz, S, S) for batched 3D FFT.
+    We rearrange to (9, 9, n_dz, H_xy, H_xy) for batched 3D FFT.
 
     Args:
         geometry: Slab lattice geometry.
@@ -58,28 +59,30 @@ def _build_slab_kernels_gpu(
         volume_averaged: If True, use volume-averaged inter-voxel propagator
             for nearest-neighbour separations.
         n_orders: Dynamic correction orders for volume-averaged propagator.
+        periodic: If True, use circular convolution in xy (M×M kernel).
 
     Returns:
-        kernel_hat_3d: shape (9, 9, n_dz, S, S), complex, on device.
+        kernel_hat_3d: shape (9, 9, n_dz, H_xy, H_xy), complex, on device.
             3D FFT of the full convolution kernel.
     """
     M, N_z = geometry.M, geometry.N_z
-    S = 2 * M - 1
+    H_xy = M if periodic else 2 * M - 1
     n_dz = 2 * N_z - 1
 
-    # Build kernel on CPU — returns shape (n_dz, S, S, 9, 9) already xy-FFT'd
+    # Build kernel on CPU — returns shape (n_dz, H_xy, H_xy, 9, 9) already xy-FFT'd
     kernel_hat_xy = _build_slab_kernels(
         geometry,
         omega,
         ref,
         volume_averaged=volume_averaged,
         n_orders=n_orders,
+        periodic=periodic,
     )
 
     # IFFT in xy to recover spatial domain
     kernel_spatial = np.fft.ifft2(kernel_hat_xy, axes=(1, 2))
 
-    # Rearrange to (9, 9, n_dz, S, S) for batched 3D FFT
+    # Rearrange to (9, 9, n_dz, H_xy, H_xy) for batched 3D FFT
     kernel_rearranged = kernel_spatial.transpose(3, 4, 0, 1, 2).copy()
 
     # Transfer to GPU and do 3D FFT
@@ -95,20 +98,23 @@ def _slab_matvec_gpu(
     kernel_hat_3d: torch.Tensor,
     M: int,
     N_z: int,
+    *,
+    periodic: bool = False,
 ) -> torch.Tensor:
     """Compute (I - G*T)*psi using full 3D FFT convolution on GPU.
 
     Args:
         psi_flat: Exciting field, flat tensor of length N_z * M * M * 9.
         T_local: Per-cube T-matrices, shape (N_z, M, M, 9, 9).
-        kernel_hat_3d: 3D FFT of kernel, shape (9, 9, n_dz, S, S).
+        kernel_hat_3d: 3D FFT of kernel, shape (9, 9, n_dz, H_xy, H_xy).
         M: Horizontal grid size.
         N_z: Number of vertical layers.
+        periodic: If True, use circular convolution in xy (no zero-padding).
 
     Returns:
         Result of (I - G*T)*psi, flat tensor.
     """
-    S = 2 * M - 1
+    H_xy = M if periodic else 2 * M - 1
     n_dz = 2 * N_z - 1
 
     psi = psi_flat.reshape(N_z, M, M, 9)
@@ -116,10 +122,12 @@ def _slab_matvec_gpu(
     # T-multiply: tau[l,i,j,:] = T[l,i,j,:,:] @ psi[l,i,j,:]
     tau = torch.einsum("lmnab,lmnb->lmna", T_local, psi)
 
-    # Rearrange to (9, N_z, M, M) and zero-pad to (9, n_dz, S, S)
+    # Rearrange to (9, N_z, M, M) and zero-pad to (9, n_dz, H_xy, H_xy)
     tau_perm = tau.permute(3, 0, 1, 2)  # (9, N_z, M, M)
 
-    tau_pad = torch.zeros(9, n_dz, S, S, device=psi_flat.device, dtype=psi_flat.dtype)
+    tau_pad = torch.zeros(
+        9, n_dz, H_xy, H_xy, device=psi_flat.device, dtype=psi_flat.dtype
+    )
     tau_pad[:, :N_z, :M, :M] = tau_perm
 
     # 3D FFT
@@ -131,10 +139,15 @@ def _slab_matvec_gpu(
     # 3D IFFT
     acc_full = torch.fft.ifftn(acc_hat, dim=(1, 2, 3))
 
-    # Extract valid (alias-free) region
-    # z: linear convolution of N_z with n_dz kernel, valid at [N_z-1 : 2*N_z-1]
-    # xy: circular convolution valid at [M-1 : S]
-    acc_valid = acc_full[:, N_z - 1 : 2 * N_z - 1, M - 1 : S, M - 1 : S]
+    # Extract valid region
+    # z: always linear convolution, valid at [N_z-1 : 2*N_z-1]
+    if periodic:
+        # xy: circular convolution — full M×M is valid
+        acc_valid = acc_full[:, N_z - 1 : 2 * N_z - 1, :M, :M]
+    else:
+        # xy: linear convolution — extract alias-free region [M-1 : S]
+        S = H_xy
+        acc_valid = acc_full[:, N_z - 1 : 2 * N_z - 1, M - 1 : S, M - 1 : S]
 
     # Rearrange back to (N_z, M, M, 9)
     acc_out = acc_valid.permute(1, 2, 3, 0)
@@ -156,6 +169,7 @@ def compute_slab_scattering_gpu(
     *,
     volume_averaged: bool = False,
     n_orders: int = 2,
+    periodic: bool = False,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GPU GMRES.
 
@@ -176,6 +190,8 @@ def compute_slab_scattering_gpu(
         volume_averaged: If True, use volume-averaged inter-voxel propagator
             for nearest-neighbour separations.
         n_orders: Dynamic correction orders for volume-averaged propagator.
+        periodic: If True, use circular convolution in xy for an infinite
+            periodic slab. Default False gives linear convolution (finite slab).
 
     Returns:
         SlabResult with exciting and incident fields.
@@ -202,6 +218,7 @@ def compute_slab_scattering_gpu(
         dtype,
         volume_averaged=volume_averaged,
         n_orders=n_orders,
+        periodic=periodic,
     )
 
     # Transfer T-matrices and incident field to GPU
@@ -210,7 +227,9 @@ def compute_slab_scattering_gpu(
 
     # Step 2: Set up matvec
     def matvec(psi: torch.Tensor) -> torch.Tensor:
-        return _slab_matvec_gpu(psi, T_local_gpu, kernel_hat_3d, M, N_z)
+        return _slab_matvec_gpu(
+            psi, T_local_gpu, kernel_hat_3d, M, N_z, periodic=periodic
+        )
 
     # Step 3: Initial guess
     if initial_guess == "born":
@@ -243,4 +262,5 @@ def compute_slab_scattering_gpu(
         wave_type=wave_type,
         n_gmres_iter=n_iter,
         gmres_residual=rel_res,
+        periodic=periodic,
     )

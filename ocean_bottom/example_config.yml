@@ -1,0 +1,55 @@
+# Moderate heterogeneity, oblique incidence, random binary slab
+# Δα/α ≈ 10%, Δβ/β ≈ 10%, Δρ/ρ ≈ 5% (inclusion values).
+# Binary Bernoulli: φ = 0.3, σ/μ = 1.53 (strongly fluctuating).
+#
+# First moments (ensemble mean):
+#   ⟨Δλ⟩ = 0.397 GPa,  ⟨Δμ⟩ = 0.094 GPa,  ⟨Δρ⟩ = 0.027 g/cm³
+# Second moments (variance):
+#   Var(Δλ) = 0.368 GPa²,  Var(Δμ) = 0.020 GPa²,  Var(Δρ) = 0.0017 (g/cm³)²
+
+ocean:
+  water_alpha: 1.5         # km/s
+  water_rho: 1.025         # g/cm³
+  water_depth: 0.07        # km
+  free_surface: false
+
+sediment:
+  alpha: 2.0               # km/s
+  beta: 0.8                # km/s
+  rho: 1.8                 # g/cm³
+
+halfspace:
+  alpha: 3.0               # km/s
+  beta: 1.7                # km/s
+  rho: 2.2                 # g/cm³
+
+slab:
+  M: 8
+  N_z: 2
+  a: 0.001                 # km, voxel half-width (voxel side d = 2a = 2 m)
+  material: random
+  phi: 0.3                 # volume fraction → σ/μ = √((1-φ)/φ) = 1.53
+  seed: 42
+  mean:                    # ensemble-mean contrast (inclusion = mean/φ)
+    Dlambda: 0.397         # GPa
+    Dmu: 0.0935            # GPa
+    Drho: 0.027            # g/cm³
+
+recording:
+  f_peak: 30.0             # Hz
+  T: 2.0                   # s
+  nw: 2048
+  f_min: 5.0               # Hz
+  f_max: 100.0             # Hz
+
+slowness:
+  p: 0.15                  # s/km — ~13° in water
+
+solver:
+  volume_averaged: false
+  n_orders: 2              # dynamic correction orders for volume-averaged propagator
+  gmres_tol: 1.0e-6
+
+output:
+  save: null
+  plot: true
