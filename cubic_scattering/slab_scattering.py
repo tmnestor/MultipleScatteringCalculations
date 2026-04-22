@@ -21,6 +21,13 @@ from .effective_contrasts import (
     compute_cube_tmatrix,
 )
 from .inter_voxel_propagator import inter_voxel_propagator_9x9
+from .kennett_layers import (
+    IsotropicLayer,
+    LayerStack,
+    _complex_slowness,
+    _vertical_slowness,
+    kennett_layers,
+)
 from .lattice_greens import _apply_refl_x, _apply_refl_y, _apply_rot90
 from .resonance_tmatrix import _propagator_block_9x9, _sub_cell_tmatrix_9x9
 from .sphere_scattering import _plane_wave_strain_voigt
@@ -151,6 +158,7 @@ class SlabResult:
     wave_type: str
     n_gmres_iter: int
     gmres_residual: float
+    periodic: bool = False
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -263,6 +271,7 @@ def _build_slab_kernels(
     *,
     volume_averaged: bool = False,
     n_orders: int = 2,
+    periodic: bool = False,
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -277,14 +286,19 @@ def _build_slab_kernels(
             for nearest-neighbour separations (26 cubes with max offset ≤ 1).
         n_orders: Dynamic correction orders for volume-averaged propagator
             (0=static, 1=+ω², 2=+ω⁴). Only used when volume_averaged=True.
+        periodic: If True, fold kernel to M×M for circular convolution
+            (infinite periodic slab). Default False gives (2M-1)×(2M-1)
+            linear convolution (finite slab).
 
     Returns:
-        FFT'd kernels, shape (2*N_z-1, 2*M-1, 2*M-1, 9, 9), complex.
+        FFT'd kernels, shape (2*N_z-1, H_xy, H_xy, 9, 9), complex,
+        where H_xy = M if periodic else 2*M-1.
     """
     M, N_z, d = geometry.M, geometry.N_z, geometry.d
     S = 2 * M - 1
     n_dz = 2 * N_z - 1
-    kernel_hat = np.zeros((n_dz, S, S, 9, 9), dtype=complex)
+    H_xy = M if periodic else S
+    kernel_hat = np.zeros((n_dz, H_xy, H_xy, 9, 9), dtype=complex)
 
     for k in range(n_dz):
         dz_vox = k - (N_z - 1)
@@ -320,8 +334,19 @@ def _build_slab_kernels(
                     for sdx, sdy, transform in _d4h_orbit(dx, dy):
                         kernel_spatial[sdx + M - 1, sdy + M - 1] = transform(G0)
 
-        # FFT over spatial dimensions for all 9×9 components
-        kernel_hat[k] = np.fft.fft2(kernel_spatial, axes=(0, 1))
+        if periodic:
+            # Fold (2M-1)×(2M-1) spatial kernel into M×M for circular convolution
+            kernel_circ = np.zeros((M, M, 9, 9), dtype=complex)
+            for ix in range(S):
+                for iy in range(S):
+                    # dx ranges from -(M-1) to +(M-1), stored at ix = dx + M-1
+                    dx_val = ix - (M - 1)
+                    dy_val = iy - (M - 1)
+                    kernel_circ[dx_val % M, dy_val % M] += kernel_spatial[ix, iy]
+            kernel_hat[k] = np.fft.fft2(kernel_circ, axes=(0, 1))
+        else:
+            # FFT over spatial dimensions for all 9×9 components
+            kernel_hat[k] = np.fft.fft2(kernel_spatial, axes=(0, 1))
 
     return kernel_hat
 
@@ -336,6 +361,8 @@ def _slab_matvec(
     T_local: NDArray,
     kernel_hat: NDArray,
     geometry: SlabGeometry,
+    *,
+    periodic: bool = False,
 ) -> NDArray:
     """Compute (I − G·T)ψ using FFT convolution.
 
@@ -344,34 +371,49 @@ def _slab_matvec(
         T_local: Per-cube T-matrices, shape (N_z, M, M, 9, 9).
         kernel_hat: FFT'd kernels from ``_build_slab_kernels``.
         geometry: Slab lattice geometry.
+        periodic: If True, use circular convolution on M×M grid
+            (kernel_hat has shape (n_dz, M, M, 9, 9)). Default False
+            uses zero-padded linear convolution on (2M-1)×(2M-1).
 
     Returns:
         Result of (I − G·T)ψ, flat array of same length.
     """
     M, N_z = geometry.M, geometry.N_z
-    S = 2 * M - 1
 
     psi = psi_flat.reshape(N_z, M, M, 9)
 
     # T-multiply: τ[l,i,j,:] = T[l,i,j,:,:] @ ψ[l,i,j,:]
     tau = np.einsum("lmnab,lmnb->lmna", T_local, psi)
 
-    # Zero-pad and FFT each layer
-    tau_pad = np.zeros((N_z, S, S, 9), dtype=complex)
-    tau_pad[:, :M, :M, :] = tau
-    tau_hat = np.fft.fft2(tau_pad, axes=(1, 2))
+    if periodic:
+        # Circular convolution: FFT tau directly on M×M
+        H_xy = M
+        tau_hat = np.fft.fft2(tau, axes=(1, 2))
+    else:
+        # Linear convolution: zero-pad to (2M-1)×(2M-1)
+        H_xy = 2 * M - 1
+        tau_pad = np.zeros((N_z, H_xy, H_xy, 9), dtype=complex)
+        tau_pad[:, :M, :M, :] = tau
+        tau_hat = np.fft.fft2(tau_pad, axes=(1, 2))
 
     # Accumulate in Fourier domain: double loop over layer pairs
-    acc_hat = np.zeros((N_z, S, S, 9), dtype=complex)
+    acc_hat = np.zeros((N_z, H_xy, H_xy, 9), dtype=complex)
     for m in range(N_z):
         for n in range(N_z):
             dz_idx = (m - n) + (N_z - 1)
             # 9×9 matrix-vector product at each (kx, ky) point
             acc_hat[m] += np.einsum("xyij,xyj->xyi", kernel_hat[dz_idx], tau_hat[n])
 
-    # IFFT and extract valid (alias-free) region
+    # IFFT and extract valid region
     acc = np.fft.ifft2(acc_hat, axes=(1, 2))
-    acc_valid = acc[:, M - 1 : S, M - 1 : S, :]
+
+    if periodic:
+        # Full M×M output is valid (circular convolution)
+        acc_valid = acc
+    else:
+        # Extract alias-free region from linear convolution
+        S = H_xy
+        acc_valid = acc[:, M - 1 : S, M - 1 : S, :]
 
     return (psi - acc_valid).ravel()
 
@@ -452,6 +494,7 @@ def compute_slab_scattering(
     *,
     volume_averaged: bool = False,
     n_orders: int = 2,
+    periodic: bool = False,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GMRES.
 
@@ -469,6 +512,8 @@ def compute_slab_scattering(
         volume_averaged: If True, use volume-averaged inter-voxel propagator
             for nearest-neighbour separations.
         n_orders: Dynamic correction orders for volume-averaged propagator.
+        periodic: If True, use circular convolution for an infinite periodic
+            slab. Default False gives linear convolution (finite slab).
 
     Returns:
         SlabResult with exciting and incident fields.
@@ -480,6 +525,7 @@ def compute_slab_scattering(
         material.ref,
         volume_averaged=volume_averaged,
         n_orders=n_orders,
+        periodic=periodic,
     )
     psi0 = _build_slab_incident_field(geometry, omega, material.ref, k_hat, wave_type)
 
@@ -488,7 +534,7 @@ def compute_slab_scattering(
 
     def matvec(x: NDArray) -> NDArray:
         n_matvec[0] += 1
-        return _slab_matvec(x, T_local, kernel_hat, geometry)
+        return _slab_matvec(x, T_local, kernel_hat, geometry, periodic=periodic)
 
     A = LinearOperator(shape=(n, n), matvec=matvec, dtype=complex)
 
@@ -515,6 +561,7 @@ def compute_slab_scattering(
         wave_type=wave_type,
         n_gmres_iter=n_matvec[0],
         gmres_residual=float(residual),
+        periodic=periodic,
     )
 
 
@@ -620,6 +667,120 @@ def slab_reflected_field(
     R_SP = R_PP  # same P-projection, meaningful for S-wave incidence
 
     return R_PP, R_PS, R_SP
+
+
+def slab_rpp_periodic(
+    result: SlabResult, T_local: NDArray, *, p: float = 0.0
+) -> complex:
+    """Specular P→P reflection coefficient for a periodic slab.
+
+    Uses the Weyl representation: the 2D lattice sum replaces
+    exp(ikr)/(4πr) with i/(2k_z d²)·exp(ik_z|z|), giving:
+
+        R_PP = -(i / (2k_z d² ρα²)) × Σ_l Q_P,l × exp(ik_z z_l)
+
+    where k_z = ω·η_P is the vertical P-wavenumber, η_P = √(1/α² - p²),
+    and Q_P,l = r̂·f_l − ik_z(r̂·σ_l·r̂) is the far-field P-source scalar
+    for layer l, averaged over the M² horizontal cubes.
+
+    For Kennett comparison, use ``periodic=True`` in ``compute_slab_scattering``
+    so that the solver's circular convolution matches the infinite-medium
+    assumption of the Kennett reflectivity.
+
+    Args:
+        result: Solved slab scattering result.
+        T_local: Per-cube T-matrices, shape (N_z, M, M, 9, 9).
+        p: Horizontal slowness (s/m). Default 0.0 (normal incidence).
+
+    Returns:
+        Complex specular P→P reflection coefficient (dimensionless).
+    """
+    geom = result.geometry
+    ref = result.material.ref
+    omega = result.omega
+    d = geom.d
+
+    # Vertical slowness and wavenumber
+    s_P = _complex_slowness(ref.alpha, np.inf)
+    eta_P = _vertical_slowness(s_P, p)
+    k_z = omega * eta_P
+
+    # Reflected (upgoing) direction: r_hat = [-η_P·α, p·α, 0] in (z,x,y)
+    r_hat = np.array([-eta_P * ref.alpha, p * ref.alpha, 0.0])
+
+    # Sources: τ = T·ψ at each cube
+    source = np.einsum("lmnab,lmnb->lmna", T_local, result.psi)
+    centres = geom.all_centres()
+
+    total = 0.0 + 0j
+    for lz in range(geom.N_z):
+        # Average source over horizontal cubes in this layer
+        force_avg = np.mean(source[lz, :, :, :3], axis=(0, 1))
+        sigma_voigt_avg = np.mean(source[lz, :, :, 3:], axis=(0, 1))
+        sigma_avg = _voigt_to_tensor(sigma_voigt_avg)
+
+        # Far-field P-source scalar: Q_P = −r̂·f − ik_z(r̂·σ·r̂)
+        # The force sign is negated because the T-matrix convention uses
+        # +ω²Δρ V u (opposite to the Lippmann-Schwinger body force −ω²δρ u).
+        sigma_rr = np.dot(r_hat, sigma_avg @ r_hat)
+        Q_P = -np.dot(r_hat, force_avg) - 1j * k_z * sigma_rr
+
+        # Weyl propagation phase to surface
+        z_l = centres[lz, 0, 0, 0]
+        phase = np.exp(1j * k_z * z_l)
+
+        total += Q_P * phase
+
+    # Weyl prefactor: −i/(2k_z d² ρα²)
+    return complex(-1j / (2.0 * k_z * d**2 * ref.rho * ref.alpha**2) * total)
+
+
+def kennett_reference_rpp(
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    H: float,
+    omega: float,
+) -> complex:
+    """Kennett R_PP for a uniform layer of thickness H at normal incidence.
+
+    Builds a 3-layer stack: background(dummy) | perturbed(H) | background(halfspace),
+    then runs the Kennett recursion at p=0.
+
+    Args:
+        ref: Background elastic medium.
+        contrast: Material contrast defining the perturbed layer.
+        H: Layer thickness (m).
+        omega: Angular frequency (rad/s).
+
+    Returns:
+        Complex PP reflection coefficient at normal incidence.
+    """
+    # Background moduli
+    lam_bg = ref.rho * (ref.alpha**2 - 2.0 * ref.beta**2)
+    mu_bg = ref.rho * ref.beta**2
+
+    # Perturbed layer velocities
+    lam_p = lam_bg + contrast.Dlambda
+    mu_p = mu_bg + contrast.Dmu
+    rho_p = ref.rho + contrast.Drho
+    alpha_p = float(np.sqrt((lam_p + 2.0 * mu_p) / rho_p))
+    beta_p = float(np.sqrt(mu_p / rho_p))
+
+    # 3-layer stack: background(dummy) | perturbed(H) | background(halfspace)
+    stack = LayerStack(
+        layers=[
+            IsotropicLayer(
+                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=100.0
+            ),
+            IsotropicLayer(alpha=alpha_p, beta=beta_p, rho=rho_p, thickness=H),
+            IsotropicLayer(
+                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=np.inf
+            ),
+        ]
+    )
+
+    result = kennett_layers(stack, p=0.0, omega=np.array([omega]))
+    return complex(result.RPP[0])
 
 
 # ═══════════════════════════════════════════════════════════════

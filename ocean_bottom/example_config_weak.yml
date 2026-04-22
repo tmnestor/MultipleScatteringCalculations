@@ -1,0 +1,49 @@
+# Weak heterogeneity, normal incidence
+# Uniform slab — every cube has the mean contrast.
+# Born limit baseline: Δα/α ≈ 3%, Δβ/β ≈ 3%, Δρ/ρ ≈ 2%.
+# Variance = 0 (uniform).
+
+ocean:
+  water_alpha: 1.5         # km/s
+  water_rho: 1.025         # g/cm³
+  water_depth: 0.07        # km
+  free_surface: false
+
+sediment:
+  alpha: 2.0               # km/s
+  beta: 0.8                # km/s
+  rho: 1.8                 # g/cm³
+
+halfspace:
+  alpha: 3.0               # km/s
+  beta: 1.7                # km/s
+  rho: 2.2                 # g/cm³
+
+slab:
+  M: 4
+  N_z: 1
+  a: 0.001                 # km, voxel half-width (voxel side d = 2a = 2 m)
+  material: uniform
+  mean:
+    Dlambda: 0.402         # GPa
+    Dmu: 0.0946            # GPa
+    Drho: 0.036            # g/cm³
+
+recording:
+  f_peak: 30.0             # Hz
+  T: 2.0                   # s
+  nw: 2048
+  f_min: 5.0               # Hz
+  f_max: 100.0             # Hz
+
+slowness:
+  p: 0.0                   # s/km — normal incidence
+
+solver:
+  volume_averaged: false
+  n_orders: 2              # dynamic correction orders for volume-averaged propagator
+  gmres_tol: 1.0e-6
+
+output:
+  save: null
+  plot: true

@@ -640,3 +640,108 @@ class TestVolumeAveragedPropagator:
 
         # At low ka (0.05), both should give similar exciting fields
         assert_allclose(res_va.psi, res_pt.psi, rtol=0.1)
+
+
+# ── 15. TestPeriodicConvolution ────────────────────────────────
+
+
+class TestPeriodicConvolution:
+    """Tests for the periodic (circular convolution) mode."""
+
+    def test_periodic_kernel_shape(self):
+        """Periodic kernel is (n_dz, M, M, 9, 9)."""
+        geom = SlabGeometry(M=4, N_z=3, a=A)
+        kernel_hat = _build_slab_kernels(geom, OMEGA, REF, periodic=True)
+        assert kernel_hat.shape == (5, 4, 4, 9, 9)
+
+    def test_aperiodic_kernel_shape_unchanged(self):
+        """Default (aperiodic) kernel shape is unchanged."""
+        geom = SlabGeometry(M=4, N_z=3, a=A)
+        kernel_hat = _build_slab_kernels(geom, OMEGA, REF)
+        assert kernel_hat.shape == (5, 7, 7, 9, 9)
+
+    def test_periodic_matches_direct_circular(self):
+        """FFT periodic matvec matches explicit circular convolution with folded kernel."""
+        geom = SlabGeometry(M=3, N_z=1, a=A)
+        mat = uniform_slab_material(geom, REF, CONTRAST)
+        T_local = compute_slab_tmatrices(geom, mat, OMEGA)
+
+        # Build both periodic and aperiodic kernels
+        kernel_hat_p = _build_slab_kernels(geom, OMEGA, REF, periodic=True)
+        kernel_hat_ap = _build_slab_kernels(geom, OMEGA, REF)
+
+        # Recover spatial folded kernel via IFFT
+        M, N_z = geom.M, geom.N_z
+        n_dz = 2 * N_z - 1
+        kernel_circ = np.fft.ifft2(kernel_hat_p, axes=(1, 2))  # (n_dz, M, M, 9, 9)
+
+        rng = np.random.default_rng(42)
+        psi = rng.standard_normal(geom.n_cubes * 9) + 1j * rng.standard_normal(
+            geom.n_cubes * 9
+        )
+
+        fft_result = _slab_matvec(psi, T_local, kernel_hat_p, geom, periodic=True)
+
+        # Direct circular convolution using folded kernel
+        psi_arr = psi.reshape(N_z, M, M, 9)
+        tau = np.einsum("lmnab,lmnb->lmna", T_local, psi_arr)
+        acc = np.zeros_like(psi_arr)
+
+        for m in range(N_z):
+            for i1 in range(M):
+                for j1 in range(M):
+                    for n in range(N_z):
+                        for i2 in range(M):
+                            for j2 in range(M):
+                                dz_idx = (m - n) + (N_z - 1)
+                                dx_idx = (i1 - i2) % M
+                                dy_idx = (j1 - j2) % M
+                                G = kernel_circ[dz_idx, dx_idx, dy_idx]
+                                acc[m, i1, j1] += G @ tau[n, i2, j2]
+
+        direct_result = (psi_arr - acc).ravel()
+        assert_allclose(fft_result, direct_result, rtol=1e-10)
+
+        # Also verify the folded kernel is correct: sum of aperiodic spatial kernel
+        # folded mod M should equal periodic kernel
+        kernel_spatial_ap = np.fft.ifft2(kernel_hat_ap, axes=(1, 2))
+        S = 2 * M - 1
+        kernel_folded_check = np.zeros((n_dz, M, M, 9, 9), dtype=complex)
+        for k in range(n_dz):
+            for ix in range(S):
+                for iy in range(S):
+                    dx_val = ix - (M - 1)
+                    dy_val = iy - (M - 1)
+                    kernel_folded_check[k, dx_val % M, dy_val % M] += kernel_spatial_ap[
+                        k, ix, iy
+                    ]
+        assert_allclose(kernel_circ, kernel_folded_check, atol=1e-12)
+
+    def test_identity_when_T_zero_periodic(self):
+        """T=0 → identity in periodic mode."""
+        geom = SlabGeometry(M=3, N_z=2, a=A)
+        T_zero = np.zeros((2, 3, 3, 9, 9), dtype=complex)
+        kernel_hat = _build_slab_kernels(geom, OMEGA, REF, periodic=True)
+        psi = np.random.default_rng(42).standard_normal(2 * 3 * 3 * 9) + 0j
+        result = _slab_matvec(psi, T_zero, kernel_hat, geom, periodic=True)
+        assert_allclose(result, psi, atol=1e-12)
+
+    def test_periodic_solver_zero_contrast(self):
+        """Zero contrast → ψ = ψ₀ in periodic mode."""
+        geom = SlabGeometry(M=2, N_z=2, a=A)
+        zero = MaterialContrast(0.0, 0.0, 0.0)
+        mat = uniform_slab_material(geom, REF, zero)
+        result = compute_slab_scattering(geom, mat, OMEGA, K_HAT, periodic=True)
+        assert_allclose(result.psi, result.psi0, atol=1e-10)
+
+    def test_periodic_flag_stored_in_result(self):
+        """SlabResult.periodic is stored correctly."""
+        geom = SlabGeometry(M=2, N_z=1, a=A)
+        zero = MaterialContrast(0.0, 0.0, 0.0)
+        mat = uniform_slab_material(geom, REF, zero)
+
+        res_ap = compute_slab_scattering(geom, mat, OMEGA, K_HAT)
+        assert res_ap.periodic is False
+
+        res_p = compute_slab_scattering(geom, mat, OMEGA, K_HAT, periodic=True)
+        assert res_p.periodic is True
