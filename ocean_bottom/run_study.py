@@ -34,6 +34,192 @@ from cubic_scattering.ocean_bottom import (
     write_log,
 )
 
+# ── Publication-quality plotting ──────────────────────────────────────────
+
+_RCPARAMS: dict[str, object] = {
+    "font.family": "serif",
+    "font.serif": ["CMU Serif", "Computer Modern Roman", "DejaVu Serif"],
+    "mathtext.fontset": "cm",
+    "font.size": 11,
+    "axes.labelsize": 12,
+    "axes.titlesize": 13,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
+    "legend.fontsize": 10,
+    "legend.framealpha": 0.9,
+    "grid.alpha": 0.3,
+    "lines.linewidth": 1.5,
+}
+
+
+def _plot_ocean_bottom(result, cfg, output: str | Path) -> None:
+    """Three-panel publication figure: wiggle traces + |R(f)| + phase.
+
+    Top: variable-area wiggle traces (homogeneous black, total red).
+    Middle: reflection coefficient amplitudes on log scale.
+    Bottom: phase difference between total and homogeneous response.
+    """
+    import matplotlib.pyplot as plt
+
+    out_path = Path(output)
+
+    freq_hz = result.omega_real / (2.0 * np.pi)
+    t_max = min(cfg.T, 0.5)
+    tmask = result.time <= t_max
+    t_plot = result.time[tmask]
+
+    # Subtitle with config summary
+    p_skm = cfg.p * 1e3
+    if cfg.p > 0:
+        angle_deg = np.degrees(np.arcsin(cfg.p * cfg.water_alpha))
+        subtitle = rf"$p = {p_skm:.2f}$ s/km ($\theta_w = {angle_deg:.1f}°$)"
+    else:
+        subtitle = "Normal incidence"
+    H = cfg.geometry.N_z * cfg.geometry.d
+    subtitle += (
+        f",  {cfg.geometry.M}$\\times${cfg.geometry.M}$\\times${cfg.geometry.N_z} slab"
+        f",  $H = {H:.1f}$ m"
+    )
+    if cfg.free_surface:
+        subtitle += ",  free surface"
+
+    with plt.rc_context(_RCPARAMS):
+        fig, axes = plt.subplots(3, 1, figsize=(10, 12))
+        fig.suptitle("Ocean-Bottom Reflection", fontsize=14, fontweight="bold", y=0.98)
+        fig.text(0.5, 0.955, subtitle, ha="center", fontsize=11, style="italic")
+
+        # ── Panel 1: Variable-area wiggle traces ─────────────────────
+        ax = axes[0]
+        tr_hom = result.trace_homogeneous[tmask].copy()
+        tr_tot = result.trace_total[tmask].copy()
+
+        global_peak = max(np.max(np.abs(tr_hom)), np.max(np.abs(tr_tot)))
+        if global_peak > 0:
+            tr_hom_n = tr_hom / global_peak
+            tr_tot_n = tr_tot / global_peak
+        else:
+            tr_hom_n = tr_hom
+            tr_tot_n = tr_tot
+
+        clip = 0.8
+        # Homogeneous trace at x=0
+        x_hom = 0.0
+        ax.plot(x_hom + clip * tr_hom_n, t_plot, "k-", linewidth=0.4)
+        ax.fill_betweenx(
+            t_plot,
+            x_hom,
+            x_hom + clip * tr_hom_n,
+            where=(tr_hom_n > 0),
+            interpolate=True,
+            color="black",
+            alpha=0.9,
+        )
+
+        # Total trace at x=2.5
+        x_tot = 2.5
+        ax.plot(x_tot + clip * tr_tot_n, t_plot, color="#c0392b", linewidth=0.4)
+        ax.fill_betweenx(
+            t_plot,
+            x_tot,
+            x_tot + clip * tr_tot_n,
+            where=(tr_tot_n > 0),
+            interpolate=True,
+            color="#c0392b",
+            alpha=0.9,
+        )
+
+        # Difference trace at x=5.0
+        tr_diff_n = tr_tot_n - tr_hom_n
+        x_diff = 5.0
+        ax.plot(x_diff + clip * tr_diff_n, t_plot, color="#2980b9", linewidth=0.4)
+        ax.fill_betweenx(
+            t_plot,
+            x_diff,
+            x_diff + clip * tr_diff_n,
+            where=(tr_diff_n > 0),
+            interpolate=True,
+            color="#2980b9",
+            alpha=0.6,
+        )
+        ax.fill_betweenx(
+            t_plot,
+            x_diff,
+            x_diff + clip * tr_diff_n,
+            where=(tr_diff_n < 0),
+            interpolate=True,
+            color="#2980b9",
+            alpha=0.3,
+        )
+
+        ax.set_ylim(t_plot.max(), t_plot.min())  # time downward
+        ax.set_xlim(-1.5, 7.0)
+        ax.set_ylabel("Time (s)")
+        ax.set_xticks([x_hom, x_tot, x_diff])
+        ax.set_xticklabels(["Homogeneous", "Total", "Difference"])
+        ax.set_title("Seismogram traces")
+        ax.grid(True, alpha=0.3)
+
+        # ── Panel 2: |R(f)| on log scale ─────────────────────────────
+        ax = axes[1]
+        active = freq_hz > 0
+        ax.semilogy(
+            freq_hz[active],
+            np.abs(result.R_bg[active]),
+            "k-",
+            linewidth=0.8,
+            label=r"$|R_\mathrm{bg}|$ (Kennett)",
+        )
+        ax.semilogy(
+            freq_hz[active],
+            np.abs(result.R_slab[active]),
+            color="#27ae60",
+            linewidth=0.8,
+            label=r"$|R_\mathrm{slab}|$ (scattering)",
+        )
+        ax.semilogy(
+            freq_hz[active],
+            np.abs(result.R_total[active]),
+            color="#c0392b",
+            linewidth=0.8,
+            label=r"$|R_\mathrm{total}|$",
+        )
+        ax.set_xlabel("Frequency (Hz)")
+        ax.set_ylabel(r"$|R_{PP}|$")
+        ax.set_title("Reflection coefficient amplitude")
+        ax.set_xlim(cfg.f_min, cfg.f_max)
+        ax.legend(fontsize=9)
+        ax.grid(True, alpha=0.3)
+
+        # ── Panel 3: Phase of R_total vs R_bg ────────────────────────
+        ax = axes[2]
+        phase_bg = np.angle(result.R_bg, deg=True)
+        phase_total = np.angle(result.R_total, deg=True)
+        ax.plot(
+            freq_hz[active],
+            phase_bg[active],
+            "k-",
+            linewidth=0.8,
+            label=r"$\angle R_\mathrm{bg}$",
+        )
+        ax.plot(
+            freq_hz[active],
+            phase_total[active],
+            color="#c0392b",
+            linewidth=0.8,
+            label=r"$\angle R_\mathrm{total}$",
+        )
+        ax.set_xlabel("Frequency (Hz)")
+        ax.set_ylabel("Phase (degrees)")
+        ax.set_title("Reflection coefficient phase")
+        ax.set_xlim(cfg.f_min, cfg.f_max)
+        ax.set_ylim(-180, 180)
+        ax.legend(fontsize=9)
+        ax.grid(True, alpha=0.3)
+
+        fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.94))
+        fig.savefig(str(out_path), dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -44,22 +230,45 @@ def main() -> None:
     parser.add_argument("config", type=str, help="Path to YAML config file")
 
     # CLI overrides (seismic units: km/s, g/cm³, GPa, km, s/km)
-    parser.add_argument("--M", type=int, default=None, help="Override horizontal grid size (M×M)")
-    parser.add_argument("--a", type=float, default=None, help="Override cube half-width (km)")
-    parser.add_argument("--p", type=float, default=None, help="Override horizontal slowness (s/km)")
     parser.add_argument(
-        "--free-surface", action="store_true", default=None, help="Enable free-surface reverberations"
+        "--M", type=int, default=None, help="Override horizontal grid size (M×M)"
     )
     parser.add_argument(
-        "--no-free-surface", action="store_true", default=None, help="Disable free-surface reverberations"
+        "--a", type=float, default=None, help="Override cube half-width (km)"
     )
     parser.add_argument(
-        "--volume-averaged", action="store_true", default=None, help="Use volume-averaged propagator"
+        "--p", type=float, default=None, help="Override horizontal slowness (s/km)"
     )
-    parser.add_argument("--f-peak", type=float, default=None, help="Override Ricker peak frequency (Hz)")
-    parser.add_argument("--f-min", type=float, default=None, help="Override minimum frequency (Hz)")
-    parser.add_argument("--f-max", type=float, default=None, help="Override maximum frequency (Hz)")
-    parser.add_argument("--save", type=str, default=None, help="Save results to .npz file")
+    parser.add_argument(
+        "--free-surface",
+        action="store_true",
+        default=None,
+        help="Enable free-surface reverberations",
+    )
+    parser.add_argument(
+        "--no-free-surface",
+        action="store_true",
+        default=None,
+        help="Disable free-surface reverberations",
+    )
+    parser.add_argument(
+        "--volume-averaged",
+        action="store_true",
+        default=None,
+        help="Use volume-averaged propagator",
+    )
+    parser.add_argument(
+        "--f-peak", type=float, default=None, help="Override Ricker peak frequency (Hz)"
+    )
+    parser.add_argument(
+        "--f-min", type=float, default=None, help="Override minimum frequency (Hz)"
+    )
+    parser.add_argument(
+        "--f-max", type=float, default=None, help="Override maximum frequency (Hz)"
+    )
+    parser.add_argument(
+        "--save", type=str, default=None, help="Save results to .npz file"
+    )
     parser.add_argument("--no-plot", action="store_true", help="Skip plotting")
 
     args = parser.parse_args()
@@ -144,9 +353,7 @@ def main() -> None:
         angle_deg = np.degrees(np.arcsin(cfg.p * cfg.water_alpha))
         print(f"             θ_water ≈ {angle_deg:.2f}°")
     print(f"Wavelet:     Ricker f_peak={cfg.f_peak} Hz")
-    print(
-        f"Recording:   T={cfg.T} s, nw={cfg.nw}, f=[{cfg.f_min}-{cfg.f_max}] Hz"
-    )
+    print(f"Recording:   T={cfg.T} s, nw={cfg.nw}, f=[{cfg.f_min}-{cfg.f_max}] Hz")
     print(f"Free surf:   {cfg.free_surface}")
 
     # ── Coupling info ─────────────────────────────────────────────────
@@ -214,49 +421,11 @@ def main() -> None:
     # ── Plot (if matplotlib available) ───────────────────────────────────
     if do_plot:
         try:
-            import matplotlib.pyplot as plt
+            import matplotlib  # noqa: F401 — availability check
 
-            fig, axes = plt.subplots(2, 1, figsize=(10, 8))
-
-            # Time domain
-            ax = axes[0]
-            ax.plot(
-                result.time, result.trace_homogeneous, "b-", label="Homogeneous", alpha=0.7
-            )
-            ax.plot(
-                result.time, result.trace_total, "r-", label="Total (hom + slab)", alpha=0.7
-            )
-            ax.set_xlabel("Time (s)")
-            ax.set_ylabel("Amplitude")
-            title = "Ocean-Bottom Reflection"
-            if cfg.p > 0:
-                title += f" (p={cfg.p:.4e} s/m)"
-            else:
-                title += " (normal incidence)"
-            ax.set_title(title)
-            ax.legend()
-            ax.set_xlim(0, min(cfg.T, 0.5))
-
-            # Frequency domain
-            ax = axes[1]
-            freq_hz = result.omega_real / (2.0 * np.pi)
-            ax.semilogy(freq_hz, np.abs(result.R_bg), "b-", label="|R_bg|", alpha=0.7)
-            ax.semilogy(
-                freq_hz, np.abs(result.R_slab), "g-", label="|R_slab|", alpha=0.7
-            )
-            ax.semilogy(
-                freq_hz, np.abs(result.R_total), "r-", label="|R_total|", alpha=0.7
-            )
-            ax.set_xlabel("Frequency (Hz)")
-            ax.set_ylabel("|R|")
-            ax.set_title("Reflection Coefficients")
-            ax.legend()
-            ax.set_xlim(cfg.f_min, cfg.f_max)
-
-            plt.tight_layout()
-            plt.savefig("ocean_bottom_study.png", dpi=150)
-            print("Plot saved to ocean_bottom_study.png")
-            plt.show()
+            plot_path = Path(args.config).stem + ".png"
+            _plot_ocean_bottom(result, cfg, plot_path)
+            print(f"Plot:        {plot_path}")
         except ImportError:
             print("(matplotlib not available — skipping plot)")
 
