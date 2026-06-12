@@ -1,5 +1,40 @@
 # Plan: Full Multiple Scattering Simulation with the 27-Component Galerkin T-Matrix
 
+## Status: CORE SUPERSEDED BY MEASUREMENT (2026-06-12)
+
+Verify-then-execute outcome (`scripts/t27_coupling_study.py`, commits
+d0a73a0/f2458b3 on main):
+
+- **Phase 1 (single-scatterer)**: COMPLETE — `tmatrix_assembly.py` (T27+T57),
+  `incident_field.py` (incl. 57-basis overlaps), `scattered_field.py`.
+- **Phases 2-3 core question MEASURED**: inter-voxel quadratic-mode coupling
+  contributes ≤ 0.03% (ka ≤ 0.3) / ≤ 0.07% (ka = 0.5) to a touching-pair
+  response. **The 27-component lattice solver build is not justified.**
+  Single-site quadratic effects (already in T27, no lattice work needed) are
+  10-100× larger (up to 1.7% at SV ka = 0.5).
+- **What actually matters at touching separations**: volume averaging of the
+  9×9 propagator (12-60% vs the point propagator at face contact). The
+  existing `inter_voxel_propagator.py` solves the G block exactly but the
+  study found defects in it: H shear rows exactly 0.5× (missing engineering
+  factor — FIXED, c509529), corner-S symmetry-breaking entries (FIXED,
+  8c412c9), dynamic series real-only (no radiation part: 25-100% of
+  G-block scale missing at ka 0.1-0.5), and hardcoded unit pitch (FIXED,
+  992b51e).  The reported "face-S ~3× low with a shear-shear sign flip"
+  was OVERTURNED on rederivation (2026-06-13,
+  `scripts/face_s_rederivation.py`): the committed face constants are
+  exact to 13+ digits against three bias-free routes; the study's
+  face-contact S arbiter carries an O(1) tensor-Gauss diagonal bias on
+  the 1/w³ kernel (see `avg_point_propagator_fd`'s validity caveat and
+  `TestFaceSBlockArbiter`).  `test_t27_coupling_calibration.py` now pins
+  the resolved state.
+- Side-finding to verify separately: T27 displacement-channel normalization
+  scales as 1/a² at fixed ka (invisible to scale-invariant eigenvalue tests).
+
+Recommended successor workstream: fix the volume-averaged 9×9 propagator
+(H factor, corner/face S, radiation series, pitch threading) — not this
+plan's Phases 2-5 as written. Phases 4-5 observables largely exist at
+9 components.
+
 ## 1. Goal
 
 Simulate plane-wave (P, SV, SH) scattering through a 3D lattice of

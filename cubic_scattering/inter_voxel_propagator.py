@@ -43,6 +43,21 @@ if TYPE_CHECKING:
 # ──��────────────────────────────────��──────────────────────────────────
 
 # === FACE-ADJACENT  R = (a, 0, 0)  C₄ᵥ symmetry ===
+#
+# PROVENANCE (re-validated 2026-06-13, scripts/face_s_rederivation.py):
+# scripts/t27_coupling_study.py step 2b had reported these constants as
+# inconsistent with its FD volume-averaged point-propagator arbiter at
+# face contact (S[0,0] "3x low", shear-shear "sign flip").  That report
+# was a quadrature artifact of the arbiter (tensor-product double-cube
+# Gauss diagonal bias on the 1/w^3 kernel — O(1), not removed by
+# n-refinement; FD at h=0.005, n=8-10 sits in the invalid h ≲ 1/n²
+# regime and reproduces the same bias).  The constants are CORRECT for
+# the defining object ∫∫ ∂²G_ik/∂x_j∂x_l (docs eq. Pijkl-def):
+#   - delta-collapse defining integrals (scipy):     agree to ~1e-16
+#   - subdivision fixed point (no singular quad):    agree to ~1e-13
+#   - dyadic-shell 3D correlation quadrature:        agree to ~1e-8
+# Regression-pinned by TestFaceSBlockArbiter.
+#
 # A: A₁₁, A₂₂=A₃₃.  Off-diag A₁₂=A₁₃=A₂₃=0.
 FACE_A11 = -0.13501718054449527
 FACE_A22 = +0.06750859027224763  # = A₃₃
@@ -816,6 +831,9 @@ def dynamic_inter_voxel_propagator(
 
     Computes the analytical power series for the volume-averaged strain
     propagator between nearest-neighbour cubic voxels, valid for ka < π.
+
+    Unit-pitch object; for physical cube size use
+    inter_voxel_propagator_9x9(..., d=...).
 
     Args:
         R_lattice: integer lattice vector (face/edge/corner neighbour).
