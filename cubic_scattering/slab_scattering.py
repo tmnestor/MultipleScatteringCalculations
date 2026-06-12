@@ -485,6 +485,46 @@ def _build_slab_incident_field(
     return inc_vec[np.newaxis, np.newaxis, np.newaxis, :] * phase[..., np.newaxis]
 
 
+def _build_slab_incident_field_slowness(
+    geometry: SlabGeometry,
+    omega: float,
+    s_vec: NDArray[np.complexfloating],
+    pol: NDArray[np.complexfloating],
+) -> NDArray:
+    """Incident plane-wave field from a (possibly complex) slowness vector.
+
+    Supports inhomogeneous (evanescent) incidence: u = pol·exp(iω s⃗·r)
+    with complex s⃗ and pol. For Im(s_z) > 0 the field decays with depth,
+    which is the physical post-critical incident wave (the
+    ``_vertical_slowness`` branch enforces Im η ≥ 0, so e^{iωηz} with
+    z positive downward gives e^{−ω|η|z} decay). Unit displacement
+    amplitude at the z = 0 datum.
+
+    The strain uses the general complex-slowness plane-wave formula
+    ε_ij = (iω/2)(s_i pol_j + s_j pol_i): passing s⃗ (unnormalized,
+    complex) and ω to ``_plane_wave_strain_voigt`` as (k_hat, k_mag)
+    gives exactly this — its internals are outer products, with no
+    real-input or unit-norm assumption.
+
+    Args:
+        geometry: Slab lattice geometry.
+        omega: Angular frequency (rad/s).
+        s_vec: Slowness vector (s_z, s_x, s_y), possibly complex (s/m).
+        pol: Polarisation vector, possibly complex (complex-unit
+            normalization: pol·pol = 1, no conjugation).
+
+    Returns:
+        Incident field, shape (N_z, M, M, 9).
+    """
+    eps_voigt = _plane_wave_strain_voigt(s_vec, pol, omega)
+    inc_vec = np.zeros(9, dtype=complex)
+    inc_vec[:3] = pol
+    inc_vec[3:] = eps_voigt
+    centres = geometry.all_centres()
+    phase = np.exp(1j * omega * np.einsum("k,lmnk->lmn", s_vec, centres))
+    return inc_vec[np.newaxis, np.newaxis, np.newaxis, :] * phase[..., np.newaxis]
+
+
 # ═══════════════════════════════════════════════════════════════
 #  6. Main solver
 # ═══════════════════════════════════════════════════════════════
@@ -502,6 +542,7 @@ def compute_slab_scattering(
     volume_averaged: bool = False,
     n_orders: int = 2,
     periodic: bool = False,
+    psi0: NDArray | None = None,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GMRES.
 
@@ -512,7 +553,9 @@ def compute_slab_scattering(
         geometry: Slab lattice geometry.
         material: Per-cube material contrasts.
         omega: Angular frequency (rad/s).
-        k_hat: Unit incident propagation direction (z, x, y).
+        k_hat: Unit incident propagation direction (z, x, y). When
+            ``psi0`` is given this is metadata only (stored on the
+            result, not used to build the incident field).
         wave_type: 'P', 'S' (SV), or 'SH'.
         gmres_tol: GMRES relative tolerance.
         max_iter: Maximum GMRES iterations.
@@ -521,6 +564,11 @@ def compute_slab_scattering(
         n_orders: Dynamic correction orders for volume-averaged propagator.
         periodic: If True, use circular convolution for an infinite periodic
             slab. Default False gives linear convolution (finite slab).
+        psi0: Optional prebuilt incident field, shape (N_z, M, M, 9).
+            When provided, the homogeneous-plane-wave construction from
+            (k_hat, wave_type) is skipped — use
+            ``_build_slab_incident_field_slowness`` to build evanescent
+            (complex-slowness) incident fields.
 
     Returns:
         SlabResult with exciting and incident fields.
@@ -534,7 +582,10 @@ def compute_slab_scattering(
         n_orders=n_orders,
         periodic=periodic,
     )
-    psi0 = _build_slab_incident_field(geometry, omega, material.ref, k_hat, wave_type)
+    if psi0 is None:
+        psi0 = _build_slab_incident_field(
+            geometry, omega, material.ref, k_hat, wave_type
+        )
 
     n = geometry.N_z * geometry.M * geometry.M * 9
     n_matvec = [0]
@@ -879,19 +930,24 @@ def slab_reflection_matrix(
     """Full specular reflection matrix via three periodic Foldy-Lax solves.
 
     Runs P-, SV-, and SH-incident solves at the same horizontal slowness p
-    (incident direction per mode: k̂_m = (η_m c_m, p c_m, 0)) and assembles
-    the 2×2 P-SV matrix plus the SH coefficient from the shared Weyl
-    extractor. SH decouples from P-SV in the horizontally averaged
-    (specular) response; the SH-incident solve only populates R_sh.
+    (downgoing slowness vector per mode: s⃗_m = (η_m, p, 0), possibly
+    complex past critical) and assembles the 2×2 P-SV matrix plus the SH
+    coefficient from the shared Weyl extractor. SH decouples from P-SV in
+    the horizontally averaged (specular) response; the SH-incident solve
+    only populates R_sh.
+
+    Incident fields are built from complex slowness vectors
+    (``_build_slab_incident_field_slowness``): past the corresponding
+    critical slowness (p > 1/α for P, p > 1/β for SV) the incident wave
+    is the physical inhomogeneous (evanescent) field
+    u = pol·exp(iω(px + η z)) with η purely imaginary (Im η > 0),
+    decaying with depth. Sub-critically this reduces to the homogeneous
+    plane wave used previously.
 
     Validity:
-        P channels (the P-incident column and R_PP/R_PS) require p < 1/α:
-        past the P-critical slowness the P-incident solve uses a
-        horizontally-propagating homogeneous wave instead of the physical
-        evanescent field, so that column is unphysical (a UserWarning is
-        emitted). SV/SH channels require p < 1/β. Grazing values
-        p = 1/α or p = 1/β are singular (η_m = 0 in the Weyl prefactor
-        and in to_modified).
+        All channels are defined for all p except the exact grazing
+        singularities p = 1/α or p = 1/β, where η_m = 0 makes the Weyl
+        prefactor (and to_modified) singular.
 
     Args:
         geometry: Slab lattice geometry.
@@ -911,29 +967,39 @@ def slab_reflection_matrix(
         for Kennett comparison and recursion mixing).
     """
     ref = material.ref
-    if p >= 1.0 / ref.alpha:
-        import warnings
-
-        warnings.warn(
-            f"p={p:.3e} s/m >= 1/alpha={1.0 / ref.alpha:.3e}: P-incident "
-            f"column of R_psv is unphysical (homogeneous-wave approximation "
-            f"of an evanescent incident field); only SV/SH channels are valid",
-            stacklevel=2,
-        )
     eta_P = _vertical_slowness(_complex_slowness(ref.alpha, np.inf), p)
     eta_S = _vertical_slowness(_complex_slowness(ref.beta, np.inf), p)
+
+    # Downgoing complex slowness vectors and complex-unit polarisations
+    # (analytic continuation of the real-vector conventions; pol·pol = 1,
+    # no conjugation). Im η > 0 past critical ⇒ depth-decaying incidence.
+    s_vec_P = np.array([eta_P, p, 0.0], dtype=complex)
+    s_vec_S = np.array([eta_S, p, 0.0], dtype=complex)
+    pol_P = np.asarray(ref.alpha * s_vec_P, dtype=complex)
+    pol_SV = np.asarray(ref.beta * np.array([p, -eta_S, 0.0]), dtype=complex)
+    pol_SH = np.array([0.0, 0.0, 1.0], dtype=complex)
+
+    # Real parts of the propagation directions — result metadata only
     k_hat_P = np.array([float(np.real(eta_P * ref.alpha)), p * ref.alpha, 0.0])
     k_hat_S = np.array([float(np.real(eta_S * ref.beta)), p * ref.beta, 0.0])
 
     T_local = compute_slab_tmatrices(geometry, material, omega)
 
-    incidences = [("P", k_hat_P), ("S", k_hat_S)]
+    incidences: list[
+        tuple[
+            str,
+            NDArray[np.floating],
+            NDArray[np.complexfloating],
+            NDArray[np.complexfloating],
+        ]
+    ] = [("P", k_hat_P, s_vec_P, pol_P), ("S", k_hat_S, s_vec_S, pol_SV)]
     if include_sh:
-        incidences.append(("SH", k_hat_S))
+        incidences.append(("SH", k_hat_S, s_vec_S, pol_SH))
 
     amps: dict[str, WeylAmplitudes] = {}
     iters: dict[str, int] = {"P": 0, "S": 0, "SH": 0}
-    for wave_type, k_hat in incidences:
+    for wave_type, k_hat, s_vec, pol in incidences:
+        psi0 = _build_slab_incident_field_slowness(geometry, omega, s_vec, pol)
         result = compute_slab_scattering(
             geometry,
             material,
@@ -945,6 +1011,7 @@ def slab_reflection_matrix(
             periodic=True,
             volume_averaged=volume_averaged,
             n_orders=n_orders,
+            psi0=psi0,
         )
         amps[wave_type] = slab_weyl_amplitudes(result, T_local, p=p)
         iters[wave_type] = result.n_gmres_iter

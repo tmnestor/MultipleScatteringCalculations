@@ -1254,8 +1254,8 @@ def foldy_lax_far_field(
 
 
 def _plane_wave_strain_voigt(
-    k_hat: NDArray[np.floating],
-    pol: NDArray[np.floating],
+    k_hat: NDArray[np.floating] | NDArray[np.complexfloating],
+    pol: NDArray[np.floating] | NDArray[np.complexfloating],
     k_mag: float,
 ) -> NDArray[np.complexfloating]:
     """Compute Voigt strain vector for a plane wave.
@@ -1265,10 +1265,16 @@ def _plane_wave_strain_voigt(
     Voigt ordering: (zz, xx, yy, xy, zy, zx) with indices (0,0), (1,1), (2,2),
     (1,2), (0,2), (0,1).
 
+    Also valid for inhomogeneous (evanescent) plane waves: passing the
+    complex slowness vector s⃗ as k_hat (unnormalized) and ω as k_mag
+    gives ε_lm = (iω/2)(s_l pol_m + s_m pol_l) — the internals are pure
+    outer products with no real-input or unit-norm assumption.
+
     Args:
-        k_hat: Unit propagation direction, shape (3,).
-        pol: Polarisation vector, shape (3,).
-        k_mag: Wavenumber magnitude.
+        k_hat: Unit propagation direction, shape (3,) — or a complex
+            slowness vector s⃗ paired with k_mag = ω.
+        pol: Polarisation vector, shape (3,), possibly complex.
+        k_mag: Wavenumber magnitude (or ω when k_hat is a slowness).
 
     Returns:
         Voigt strain vector, shape (6,).
