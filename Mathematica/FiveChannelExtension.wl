@@ -2,7 +2,9 @@
 (* FiveChannelExtension.wl -- SV/SH Mie + Lax-Foldy five-channel comparison *)
 (* Requires sections 1-8 of LaxFoldy_VoxelSphere_vs_Mie.nb to be evaluated *)
 (* first (defines: pWaveFields, sWaveFields, miePSVMatrix, mieIncidentPSV, *)
-(* systemMatrix, cubeCentres, tMatrix9, excField, etc.)                     *)
+(* cubeCentres, nPerDiam, d, tMatrix9, sourcesList, thetaGrid, nAngles,    *)
+(* and loads CubeAnalytic.wl + FFTLaxFoldy.wl).                            *)
+(* Standalone headless run: wolframscript -file FiveChannelDriver.wl       *)
 
 Print["=== Five-Channel Extension: SV and SH Incidence ==="];
 
@@ -95,24 +97,30 @@ computeMieCoefficientsAll[omega_, a_,
       alphaOut, betaOut, rhoOut, lamOut, muOut,
       alphaIn, betaIn, rhoIn, lamIn, muIn]];
 
+    (* At high order n with small ka, h_n(ka) diverges and the 4x4 *)
+    (* boundary matrices become badly conditioned. The resulting *)
+    (* coefficients are tiny and contribute negligibly to the far *)
+    (* field, so LinearSolve::luc is suppressed (the Python solver *)
+    (* handles the same case with try/except LinAlgError). *)
+
     (* P-incident *)
     rhsPsv = N[mieIncidentPSV[n, omega, a,
       alphaOut, betaOut, rhoOut, lamOut, muOut]];
-    solPsv = LinearSolve[Mpsv, rhsPsv];
+    solPsv = Quiet[LinearSolve[Mpsv, rhsPsv], LinearSolve::luc];
     anArr[[n + 1]] = sign solPsv[[1]];
     bnArr[[n + 1]] = sign solPsv[[2]];
 
     (* SV-incident *)
     rhsSV = N[mieIncidentSV[n, omega, a,
       alphaOut, betaOut, rhoOut, lamOut, muOut]];
-    solSV = LinearSolve[Mpsv, rhsSV];
+    solSV = Quiet[LinearSolve[Mpsv, rhsSV], LinearSolve::luc];
     anSVArr[[n + 1]] = sign solSV[[1]];
     bnSVArr[[n + 1]] = sign solSV[[2]];
 
     (* SH *)
     Msh = N[mieSHMatrix[n, omega, a, betaOut, muOut, betaIn, muIn]];
     rhsSH = N[mieIncidentSH[n, omega, a, betaOut, muOut]];
-    solSH = LinearSolve[Msh, rhsSH];
+    solSH = Quiet[LinearSolve[Msh, rhsSH], LinearSolve::luc];
     cnArr[[n + 1]] = sign solSH[[1]],
   {n, 1, nMaxIn}];
 
@@ -278,35 +286,17 @@ Print["  c_n (SH->SH):   ", mieAll["c"][[1 ;; Min[4, nMax + 1]]]];
 
 (* ============================================================ *)
 (* 6. Lax-Foldy solves for SV and SH incidence                  *)
-(*    Reuse the system matrix from section 7 of the notebook     *)
+(*    Same FFT-accelerated solver as the P-incident solve        *)
+(*    (fftSolveSystem from FFTLaxFoldy.wl); the convolution      *)
+(*    kernel is identical, only the incident RHS changes.        *)
 (* ============================================================ *)
 
-Print["\nBuilding SV and SH RHS vectors..."];
-
-(* SV-incident RHS *)
-rhsVectorSV = ConstantArray[0. + 0. I, 9 nCubes];
-Do[
-  Module[{winc, idx},
-    idx = 9 (j - 1);
-    winc = incidentStateSV[cubeCentres[[j]]];
-    Do[rhsVectorSV[[idx + ii]] = winc[[ii]], {ii, 9}];
-  ],
-{j, nCubes}];
-
-(* SH-incident RHS *)
-rhsVectorSH = ConstantArray[0. + 0. I, 9 nCubes];
-Do[
-  Module[{winc, idx},
-    idx = 9 (j - 1);
-    winc = incidentStateSH[cubeCentres[[j]]];
-    Do[rhsVectorSH[[idx + ii]] = winc[[ii]], {ii, 9}];
-  ],
-{j, nCubes}];
-
-Print["Solving Lax-Foldy for SV incidence..."];
-excFieldSV = LinearSolve[systemMatrix, rhsVectorSV];
-Print["Solving Lax-Foldy for SH incidence..."];
-excFieldSH = LinearSolve[systemMatrix, rhsVectorSH];
+Print["Solving Lax-Foldy for SV incidence (FFT)..."];
+excFieldSV = fftSolveSystem[cubeCentres, nPerDiam, d, tMatrix9,
+  omega, alphaBg, betaBg, rhoBg, incidentStateSV];
+Print["Solving Lax-Foldy for SH incidence (FFT)..."];
+excFieldSH = fftSolveSystem[cubeCentres, nPerDiam, d, tMatrix9,
+  omega, alphaBg, betaBg, rhoBg, incidentStateSH];
 Print["Both solves complete."];
 
 (* Compute effective sources for each incidence *)
@@ -386,9 +376,10 @@ fiveChannelCompare[label_, lfData_, mieData_] :=
   errRe = Max[Abs[Re[lfData] - Re[mieData]]]/refMag;
   errIm = Max[Abs[Im[lfData] - Im[mieData]]]/refMag;
   errMag = Max[Abs[Abs[lfData] - Abs[mieData]]]/refMag;
-  Print["  ", label, ":  err_Re=", NumberForm[errRe, {4, 3}],
-    "  err_Im=", NumberForm[errIm, {4, 3}],
-    "  err_|f|=", NumberForm[errMag, {4, 3}]];
+  (* ToString so the formatted numbers render under wolframscript *)
+  Print["  ", label, ":  err_Re=", ToString[NumberForm[errRe, {4, 3}]],
+    "  err_Im=", ToString[NumberForm[errIm, {4, 3}]],
+    "  err_|f|=", ToString[NumberForm[errMag, {4, 3}]]];
 ];
 
 Print["\n=== Five-Channel Error Summary ==="];
@@ -512,7 +503,10 @@ Module[{channelSpecs, grid, legend, mieLine, lfLine, dashboardFig, exportPath},
   (* Export to global variable for interactive tweaking *)
   dashboardFigure = dashboardFig;
 
-  exportPath = FileNameJoin[{NotebookDirectory[], "FiveChannel_Dashboard.pdf"}];
+  (* NotebookDirectory[] is unavailable under wolframscript *)
+  exportPath = FileNameJoin[
+    {If[$Notebooks, NotebookDirectory[], Directory[]],
+     "FiveChannel_Dashboard.pdf"}];
   Export[exportPath, dashboardFig, "PDF"];
   Print["  Dashboard exported to: ", exportPath];
 ];
