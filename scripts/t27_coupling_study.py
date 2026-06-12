@@ -615,9 +615,20 @@ def avg_point_propagator_fd(
 
     The FD step must be much smaller than the closest quadrature node-pair
     gap across a touching face (~0.04 at n = 8, a = 0.5); h = 0.005 matches
-    direct quadrature of the derivative kernels to ~1% there.  The S block
-    at face contact retains a slow (log-type) n-convergence shared with the
-    direct integral; the study cross-checks by direct n-refinement.
+    direct quadrature of the derivative kernels to ~1% there.
+
+    VALIDITY CAVEAT (measured 2026-06-13, scripts/face_s_rederivation.py):
+    the S block of this arbiter is INVALID at face contact.  Both this FD
+    route and direct tensor-product quadrature of the 1/w^3 derivative
+    kernel share one lateral node set between the two cubes, so they
+    sample the singular ray w_perp = 0 with O(1) cumulative spurious
+    weight that n-refinement does not remove (direct S00 drifts 8.45e-12
+    at n = 4 to 1.02e-11 at n = 16; FD2 at h = 0.005 drifts 9.2e-12 to
+    11.1e-12 as n grows — h ≲ 1/n² regime; the true value is 3.0089e-12
+    by three bias-free routes).  The G/C/H kernels (1/w .. 1/w^2) and all
+    edge/corner blocks (weight vanishing quadratically/cubically at w = 0)
+    are unaffected.  For face-contact S truth use the subdivision or
+    dyadic routes in scripts/face_s_rederivation.py.
 
     Args:
         Rax: Separation in axis order (z, x, y).
@@ -751,15 +762,20 @@ def run_propagator_comparison() -> None:
         f"  [corner S bug] S3-symmetry partners unequal: S[1,4]={Sc[1, 4]:.3e} vs "
         f"S[0,3]={Sc[0, 3]:.3e}; S[3,5]={Sc[3, 5]:.3e} vs S[3,4]={Sc[3, 4]:.3e}"
     )
-    # Face S magnitude/sign vs n-refined volume average
+    # Face S vs the FD-avg arbiter — HISTORICAL finding, since overturned.
+    # The rederivation (scripts/face_s_rederivation.py, 2026-06-13) showed
+    # the analytic face S is exact (3 bias-free routes, 1e-8..1e-16) and
+    # this arbiter's face-contact S is the biased quantity (see the
+    # avg_point_propagator_fd docstring caveat).  Printed for transparency.
     P9f = inter_voxel_propagator_9x9(
         (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
     )
     Dfd_f = avg_point_propagator_fd(np.array([1.0, 0.0, 0.0]), omega_static, a, n=10)
     print(
-        f"  [face S] analytic S[0,0]={np.real(P9f[3, 3]):.3e} vs volume-avg truth "
-        f"~{np.real(Dfd_f[3, 3]):.3e} (n-refinement trends to ~1.0e-11: 3x+ low); "
-        f"S[4,4]={np.real(P9f[7, 7]):.3e} vs ~{np.real(Dfd_f[7, 7]):.3e} (sign flip)"
+        f"  [face S] analytic S[0,0]={np.real(P9f[3, 3]):.3e} (= bias-free truth) vs "
+        f"FD-avg arbiter {np.real(Dfd_f[3, 3]):.3e} (BIASED at face contact: "
+        "tensor-Gauss diagonal artifact on the 1/w^3 kernel; see "
+        "scripts/face_s_rederivation.py)"
     )
 
     # 4. Dynamic corrections at edge/corner (clean statics) vs FD-avg reference.
