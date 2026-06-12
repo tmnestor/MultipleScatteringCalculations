@@ -911,6 +911,12 @@ class TestCompleteScatteringMatrix:
             f"{incident_type}->{channel} magnitude error {err_mag:.3f} > {tol}"
         )
 
+        # Phase-sensitive: Re and Im must each agree within the same
+        # tolerance (relative to the pattern peak). A sign or phase
+        # convention error passes the magnitude check but fails here.
+        assert err_re < tol, f"{incident_type}->{channel} Re error {err_re:.3f} > {tol}"
+        assert err_im < tol, f"{incident_type}->{channel} Im error {err_im:.3f} > {tol}"
+
     # -- P-incidence channels --
 
     def test_PP_rayleigh(self):
@@ -957,6 +963,39 @@ class TestCompleteScatteringMatrix:
         """SH->SH at ka=0.5 (transition)."""
         self._mie_and_fl_compare(0.5, "SH", "SH", n_sub=6, tol=0.35)
 
+    # -- Resonance regime (ka=1.5) --
+    #
+    # Voxelization error scales ~O(ka) (T-matrix truncation at finite
+    # contrast), so the tolerances are necessarily loose: measured errors
+    # at n_sub=8 are 0.32 (P->P) to 0.57 (SH->SH), falling consistently
+    # from n_sub=6 (0.41-0.63). A sign or m=1 normalisation error would
+    # produce errors ~2.0, which these tolerances still catch.
+
+    @pytest.mark.slow
+    def test_PP_resonance(self):
+        """P->P at ka=1.5 (resonance)."""
+        self._mie_and_fl_compare(1.5, "P", "P", n_sub=8, tol=0.45)
+
+    @pytest.mark.slow
+    def test_PS_resonance(self):
+        """P->SV at ka=1.5 (resonance)."""
+        self._mie_and_fl_compare(1.5, "P", "SV", n_sub=8, tol=0.50)
+
+    @pytest.mark.slow
+    def test_SP_resonance(self):
+        """SV->P at ka=1.5 (resonance)."""
+        self._mie_and_fl_compare(1.5, "SV", "P", n_sub=8, tol=0.50)
+
+    @pytest.mark.slow
+    def test_SS_resonance(self):
+        """SV->SV at ka=1.5 (resonance)."""
+        self._mie_and_fl_compare(1.5, "SV", "SV", n_sub=8, tol=0.65)
+
+    @pytest.mark.slow
+    def test_SH_resonance(self):
+        """SH->SH at ka=1.5 (resonance)."""
+        self._mie_and_fl_compare(1.5, "SH", "SH", n_sub=8, tol=0.65)
+
 
 class TestReciprocity:
     """Reciprocity: k_P^2 f_PS(theta) = k_S^2 f_SP(theta).
@@ -992,6 +1031,11 @@ class TestReciprocity:
                 f"spread={spread:.4f}"
             )
             assert spread < 0.01, f"Reciprocity ratio spread = {spread:.4f}"
+            # The convention factor is exactly -1: k_P^2 f_PS = -k_S^2 f_SP
+            mean_ratio = np.mean(ratios)
+            assert abs(mean_ratio + 1.0) < 0.01, (
+                f"Reciprocity ratio {mean_ratio:.4f} != -1"
+            )
 
     def test_reciprocity_transition(self):
         """Reciprocity at ka=0.5 (transition)."""
@@ -1018,6 +1062,11 @@ class TestReciprocity:
                 f"spread={spread:.4f}"
             )
             assert spread < 0.01, f"Reciprocity ratio spread = {spread:.4f}"
+            # The convention factor is exactly -1: k_P^2 f_PS = -k_S^2 f_SP
+            mean_ratio = np.mean(ratios)
+            assert abs(mean_ratio + 1.0) < 0.01, (
+                f"Reciprocity ratio {mean_ratio:.4f} != -1"
+            )
 
 
 class TestOpticalTheorem:
