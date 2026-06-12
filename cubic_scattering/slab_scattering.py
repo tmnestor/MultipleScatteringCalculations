@@ -437,7 +437,7 @@ def _build_slab_incident_field(
         omega: Angular frequency (rad/s).
         ref: Background elastic medium.
         k_hat: Unit propagation direction (z, x, y).
-        wave_type: 'P' or 'S'.
+        wave_type: 'P', 'S' (SV), or 'SH'.
 
     Returns:
         Incident field, shape (N_z, M, M, 9).
@@ -459,8 +459,12 @@ def _build_slab_incident_field(
         else:
             pol = np.cross(cross, k_hat)
             pol = pol / np.linalg.norm(pol)
+    elif wave_type == "SH":
+        k_mag = omega / ref.beta
+        # SH polarisation: horizontal, perpendicular to the sagittal plane
+        pol = np.array([0.0, 0.0, 1.0])
     else:
-        msg = f"wave_type must be 'P' or 'S', got '{wave_type}'"
+        msg = f"wave_type must be 'P', 'S', or 'SH', got '{wave_type}'"
         raise ValueError(msg)
 
     eps_voigt = _plane_wave_strain_voigt(k_hat, pol, k_mag)
@@ -506,7 +510,7 @@ def compute_slab_scattering(
         material: Per-cube material contrasts.
         omega: Angular frequency (rad/s).
         k_hat: Unit incident propagation direction (z, x, y).
-        wave_type: 'P' or 'S'.
+        wave_type: 'P', 'S' (SV), or 'SH'.
         gmres_tol: GMRES relative tolerance.
         max_iter: Maximum GMRES iterations.
         volume_averaged: If True, use volume-averaged inter-voxel propagator
