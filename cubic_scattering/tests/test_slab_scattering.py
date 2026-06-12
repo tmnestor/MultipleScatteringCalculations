@@ -852,6 +852,9 @@ class TestSlabReflectionMatrix:
         np.testing.assert_allclose(slab.R_sh, kref.R_SH, rtol=0.05)
         # SV sign convention under reflection: K_SS(0) = -K_SH(0)
         # (same physics, opposite sign bookkeeping)
+        # machine-level agreement expected: on the square lattice the SV and
+        # SH systems at p=0 are exact 90-degree rotations of each other
+        # (same GMRES system up to permutation)
         np.testing.assert_allclose(slab.R_sh, -R_mod[1, 1], rtol=1e-6)
         assert abs(R_mod[0, 1]) < 0.01 * abs(R_mod[0, 0])
         assert abs(R_mod[1, 0]) < 0.01 * abs(R_mod[1, 1])
@@ -899,7 +902,8 @@ class TestSlabReflectionMatrix:
     def test_post_critical_smoke(self):
         """p past the P-critical slowness: finite, branch-consistent R_SS."""
         p = 2.5e-4  # > 1/alpha = 2e-4 (P evanescent), < 1/beta (SV propagating)
-        slab = self._slab_matrix(p)
+        with pytest.warns(UserWarning, match="unphysical"):
+            slab = self._slab_matrix(p)
         kref = kennett_reference_matrix(
             self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
         )
