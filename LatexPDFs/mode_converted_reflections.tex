@@ -1,0 +1,463 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Mode-Converted Reflections and Evanescent Incidence}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros (house set) ---
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\order}[1]{\mathcal{O}\!\left(#1\right)}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\Dlam}{\Delta\lambda}
+\newcommand{\Dmu}{\Delta\mu}
+\newcommand{\Drho}{\Delta\rho}
+\newcommand{\re}{\operatorname{Re}}
+\newcommand{\im}{\operatorname{Im}}
+
+% --- New macros for this document ---
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bfv}{\mathbf{f}}
+\newcommand{\bsv}{\mathbf{s}}
+\newcommand{\bd}{\hat{\mathbf{d}}}
+\newcommand{\bsig}{\boldsymbol{\sigma}}
+\newcommand{\rhat}{\hat{\mathbf{r}}}
+\newcommand{\svhat}{\hat{\mathbf{e}}_{\mathrm{SV}}}
+\newcommand{\shhat}{\hat{\mathbf{e}}_{\mathrm{SH}}}
+\newcommand{\etaP}{\eta_{P}}
+\newcommand{\etaS}{\eta_{S}}
+\newcommand{\Rpsv}{\mathbf{R}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+\vspace*{1em}
+{\LARGE\bfseries Mode-Converted Specular Reflections\\[0.3em]
+and Evanescent Incidence in the Periodic Slab Solver}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
+\end{center}
+
+% =============================================================================
+\section{Introduction and scope}
+\label{sec:intro}
+% =============================================================================
+
+This document records three connected developments, each validated
+against an independent exact reference.
+
+\begin{enumerate}
+\item \textbf{Five-channel Mie verification (sphere).}  The elastic Mie
+  solution and the Foldy--Lax voxelised sphere were compared
+  phase-sensitively (real and imaginary parts separately) across all
+  five non-zero channels of the $3\times 3$ scattering matrix
+  ($P{\to}P$, $P{\to}SV$, $SV{\to}P$, $SV{\to}SV$, $SH{\to}SH$) at
+  $ka = 0.1$, $0.5$, and $1.5$.
+\item \textbf{Full specular reflection matrix of the periodic
+  heterogeneous slab.}  The Weyl lattice-sum extraction, previously
+  limited to $R_{PP}$, was generalised to the $2\times 2$ P--SV matrix
+  plus the scalar SH channel at arbitrary horizontal slowness~$p$, and
+  validated channel-by-channel against Kennett reflectivity.  The
+  ocean-bottom study now propagates the full $2\times 2$ sub-ocean
+  reflectivity, so that internal $P{\to}S{\to}P$ conversion contributes
+  to the observable water-column $R_{PP}$.
+\item \textbf{Physical evanescent incidence.}  Incident fields are
+  constructed from complex slowness vectors, so post-critical incidence
+  ($p > 1/\alpha$) is represented by the true exponentially decaying
+  inhomogeneous wave rather than a homogeneous-wave surrogate.
+\end{enumerate}
+
+Two pre-existing defects were found and repaired along the way
+(Section~\ref{sec:bugs}), and two normalisation conventions were pinned
+by measurement rather than assumption
+(Sections~\ref{sec:sphere-renorm} and~\ref{sec:convention}).  All
+numerical values quoted below are reproduced by the committed test
+suite (641 tests at the time of writing).
+
+Throughout, coordinates follow the package convention: $z$ is axis~0
+(positive down), $x$ is axis~1, $y$ is axis~2; the sagittal plane is
+$z$--$x$.  Vertical slownesses are
+$\eta_m = \sqrt{1/c_m^2 - p^2}$ with the branch $\im\eta_m \ge 0$, and
+all complex polarisation algebra uses analytic continuation (no
+conjugation).
+
+% =============================================================================
+\section{Five-channel Mie verification for the sphere}
+\label{sec:sphere}
+% =============================================================================
+
+For an isotropic sphere the P--SV and SH problems decouple at each
+partial-wave order, leaving five non-zero channels of the scattering
+matrix.  $P$-wave incidence is axially symmetric ($m=0$); $SV$ and $SH$
+plane-wave incidence carry azimuthal order $m=1$, with far-field angular
+functions $P_n^1(\cos\theta) = \dd P_n/\dd\theta$ (Condon--Shortley),
+$\dd P_n^1/\dd\theta$, and $P_n^1/\sin\theta$ respectively.
+
+\subsection{The $m{=}1$ renormalisation}
+\label{sec:sphere-renorm}
+
+The scattering coefficients are stored in the $m{=}0$ plane-wave
+expansion normalisation.  Evaluating $SV$/$SH$ far fields requires the
+$m{=}1$ expansion coefficient of $\hat{\mathbf{x}}\,e^{ik_S z}$, which
+differs by the measured factor
+\begin{equation}
+  \mathrm{renorm}(n) \;=\; -\,\frac{1}{n(n+1)},
+  \label{eq:renorm}
+\end{equation}
+the minus sign arising from the
+$\nabla\times\nabla\times(\mathbf{r}\,\psi)$ convention.  (The planning
+estimate $+i/n(n+1)$ was wrong; the correct factor was pinned by the
+Rayleigh-limit comparison and confirmed by reciprocity.)  A further
+empirical subtlety: the $SH{\to}SH$ far field at $\varphi = 0$ is
+carried by the N-type (poloidal, $b_n^{SV}$) coefficients; the true
+M-type ($c_n$) contribution is $\order{(ka)^4}$ and negligible.
+
+\subsection{Reciprocity and results}
+
+The off-diagonal channels obey
+\begin{equation}
+  k_P^2\, f_{PS}(\theta) \;=\; -\,k_S^2\, f_{SP}(\theta),
+  \label{eq:sphere-recip}
+\end{equation}
+with the conversion constant exactly $-1$ (measured ratio
+$-1.0002 + 0.0002i$ at $ka = 0.05$, $-1.0000$ at $ka = 0.5$; asserted in
+\code{TestReciprocity}).  Phase-sensitive errors between Mie and the
+voxelised Foldy--Lax sphere (relative to the pattern peak; $\im$ errors
+were ${\approx}\,0$ in every case):
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Channel & $ka=0.1$ ($n_{\rm sub}{=}4$) & $ka=0.5$ ($n_{\rm sub}{=}6$)
+        & $ka=1.5$ ($n_{\rm sub}{=}8$) \\
+\midrule
+$P{\to}P$   & 0.041 & 0.200 & 0.316 \\
+$P{\to}SV$  & 0.038 & 0.202 & 0.393 \\
+$SV{\to}P$  & 0.048 & 0.186 & 0.368 \\
+$SV{\to}SV$ & 0.047 & 0.228 & 0.565 \\
+$SH{\to}SH$ & 0.047 & 0.229 & 0.573 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The errors scale as $\order{ka}$ (voxelisation and T-matrix truncation
+at finite contrast), falling consistently under mesh refinement.  The
+identical Mathematica pipeline (\code{FiveChannelExtension.wl}, run
+headlessly by \code{FiveChannelDriver.wl}) reproduces all five channels
+to better than 10\% at $k_S a = 0.52$ with $9$ voxels per diameter, with
+the $SV$/$SH$ channel errors agreeing to ten digits --- a free
+symmetry check of the two independent solves.
+
+% =============================================================================
+\section{Specular reflection matrix of the periodic slab}
+\label{sec:slab}
+% =============================================================================
+
+\subsection{Generalised Weyl extraction}
+
+For the infinite periodic slab the 2D lattice sum replaces the
+spherical-wave kernel by its specular Weyl term,
+$e^{ikr}/4\pi r \to i\,e^{i\omega\eta_m |z|}/(2\,\omega\eta_m d^2)$ per
+mode.  With horizontally layer-averaged Foldy--Lax sources
+$(\bfv_\ell, \bsig_\ell)$ and the upgoing slowness vector
+$\bsv_m = (-\eta_m,\, p,\, 0)$, complex-unit direction
+$\bd_m = c_m \bsv_m$, the outgoing amplitudes are
+\begin{align}
+  Q_{P,\ell} &= -\,\bd_P\!\cdot\!\bfv_\ell
+               \;-\; i\omega\,\bsv_P\!\cdot\!\bsig_\ell\!\cdot\!\bd_P,
+  &
+  R_P &= \frac{-i}{2\,\omega\etaP\, d^2 \rho\,\alpha^2}
+         \sum_\ell Q_{P,\ell}\; e^{\,i\omega\etaP z_\ell},
+  \label{eq:weylP}\\
+  \mathbf{Q}_{S,\ell} &= -\,\bfv_\ell
+               \;-\; i\omega\,\bsig_\ell\!\cdot\!\bsv_S,
+  &
+  R_{SV,SH} &= \frac{-i}{2\,\omega\etaS\, d^2 \rho\,\beta^2}
+         \sum_\ell
+         \bigl(\svhat,\shhat\bigr)\!\cdot\!\mathbf{Q}_{S,\ell}\;
+         e^{\,i\omega\etaS z_\ell},
+  \label{eq:weylS}
+\end{align}
+with $\svhat = \beta\,(p,\,\etaS,\,0)$ and
+$\shhat = (0,\,0,\,1)$.  Only the force term is negated (the T-matrix
+convention $+V\omega^2\Drho^* \bu$ is opposite to the
+Lippmann--Schwinger body force).  The full reflection matrix is
+assembled from three periodic solves (incident $P$, $SV$, $SH$ at the
+same slowness), sharing the local T-matrices.
+
+\subsection{Two pre-existing defects}
+\label{sec:bugs}
+
+\textbf{Oblique stress coupling.}  The original $R_{PP}$ extraction used
+the vertical wavenumber in the stress term,
+$-i k_z\,(\bd\!\cdot\!\bsig\!\cdot\!\bd)$ with $k_z = \omega\etaP$.  The
+correct coupling is the full wave vector,
+$-i\omega\,(\bsv\!\cdot\!\bsig\!\cdot\!\bd) =
+ -i k_P\,(\bd\!\cdot\!\bsig\!\cdot\!\bd)$.  The two coincide only at
+$p=0$ --- and no oblique slab-versus-Kennett test existed, so the defect
+had never been observed.  Equation~\eqref{eq:weylP} is the corrected
+form; the oblique validation of Table~\ref{tab:channels} is its proof.
+
+\textbf{$p\to 0$ polarisation discontinuity.}  The incident-field
+builder's vertical-incidence special case selected the $SV$ polarisation
+$+\hat{\mathbf{x}}$, whereas the $p\to 0^{+}$ limit of its own generic
+branch is $-\hat{\mathbf{x}}$.  The discontinuity inverted the sign of
+$R_{SS}$ at exactly $p=0$, made observable by Kennett's convention
+$K_{SS}(0) = -K_{SH}(0)$ (the $SV$ sign flips under reflection; same
+physics, opposite bookkeeping to $SH$).  The special case now takes the
+continuous limit.
+
+\subsection{The convention bridge to Kennett}
+\label{sec:convention}
+
+The slab extraction produces displacement-amplitude ratios; the package's
+Kennett implementation stores reflection matrices in its modified
+(eigenvector-normalised) convention, in which they are symmetric.  The
+planned conversion $\tilde{R}_{ij} = \sqrt{\eta_i/\eta_j}\,R_{ij}$
+proved wrong by measurement.  The correct bridge is the diagonal
+similarity
+\begin{equation}
+  \tilde{\Rpsv} \;=\; \mathbf{D}\,\Rpsv\,\mathbf{D}^{-1},
+  \qquad
+  \mathbf{D} = \operatorname{diag}\!\bigl(
+     \alpha\sqrt{\etaP},\;\; i\,\beta\sqrt{\etaS}\bigr),
+  \label{eq:similarity}
+\end{equation}
+the velocity factors and the factor $i$ on $SV$ reflecting Kennett's
+eigenvector normalisation (the $-2i$ factor in the off-diagonal
+construction of \code{psv\_solid\_solid}).  The decisive,
+convention-independent check is the reciprocity invariant: the product
+of the two off-diagonal slab/Kennett ratios is invariant under
+\emph{any} diagonal similarity and measured $0.987 \approx 1$, proving
+the physics correct before the bookkeeping was; the per-channel ratios
+under~\eqref{eq:similarity} are then real and within 1\% of unity.
+Diagonal entries are unchanged by any diagonal similarity, so the
+historical $R_{PP}$ results are unaffected.
+
+\subsection{Channel validation}
+
+\begin{table}[ht]
+\centering
+\caption{Uniform slab versus Kennett (modified convention).  Background
+$\alpha = 5000$, $\beta = 3000$\,m/s, $\rho = 2500$\,kg/m$^3$; contrast
+$\Dlam = 2$, $\Dmu = 1$\,GPa, $\Drho = 100$\,kg/m$^3$; $\omega = 150$
+rad/s; $H = 4$\,m, mesh $a = 2$\,m, $N_z = 1$ unless stated.  Relative
+errors.}
+\label{tab:channels}
+\begin{tabular}{lccc}
+\toprule
+Channel & $p = 0$ & $p = 1{\times}10^{-4}$\,s/m
+        & $p = 2.5{\times}10^{-4}$\,s/m (post-critical) \\
+\midrule
+$R_{PP}$ & 0.0045 & 0.0048 & 0.054 \quad(0.0009 at $a{=}0.5$, $N_z{=}4$) \\
+$R_{PS}$ & (vanishes; $<10^{-2}$ rel.) & 0.0066 & 0.033 \\
+$R_{SP}$ & (vanishes) & 0.0066 & 0.033 \\
+$R_{SS}$ & 0.0032 & 0.0110 & 0.043 \\
+$R_{SH}$ & 0.0032 & 0.0057 & 0.044 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The modified matrix is symmetric to $1.3\times 10^{-5}$ at oblique
+incidence (independent solves: $R_{SV}$ from $P$ incidence versus $R_P$
+from $SV$ incidence), the conversion channel is Born-linear at weak
+contrast (doubling ratio $2.0$, rtol $0.05$), and at $p = 0$ the
+degeneracy $R_{SH} = -\tilde{R}_{SS}$ holds at machine level (the $SV$
+and $SH$ systems on the square lattice are exact $90^\circ$ rotations of
+one another).
+
+% =============================================================================
+\section{Ocean-bottom embedding: the
+  \texorpdfstring{$2\times 2$}{2x2} sub-ocean recursion}
+\label{sec:ocean}
+% =============================================================================
+
+The ocean-bottom study (water $|$ heterogeneous sediment slab $|$
+elastic halfspace) previously injected only the scalar $R_{PP}$ of the
+slab into a scalar water-step recursion.  Internal mode conversion ---
+$P$ converting to $SV$ inside the sediment package, reverberating, and
+converting back --- was absent from the observable.  The sub-ocean
+reflectivity is now the full matrix
+\begin{equation}
+  \mathbf{M}(\omega)
+  \;=\;
+  \mathbf{E}\,\mathbf{R}^{\rm sed|hs}\,\mathbf{E}
+  \;+\;
+  \tilde{\Rpsv}^{\rm slab}(\omega),
+  \qquad
+  \mathbf{E} = \operatorname{diag}\!\bigl(e^{i\omega\etaP^{\rm sed}H},\,
+                                          e^{i\omega\etaS^{\rm sed}H}\bigr),
+\end{equation}
+so a conversion path acquires the mode-correct two-way phase
+$E_i E_j$, and the water-side observable is
+\begin{equation}
+  R_{PP}^{\rm obs}
+  \;=\;
+  \Bigl[\mathbf{R}_d + \mathbf{T}_u\,\mathbf{M}\,
+        \bigl(\bI - \mathbf{R}_u\mathbf{M}\bigr)^{-1}\mathbf{T}_d
+  \Bigr]_{00},
+\end{equation}
+with the fluid--solid coefficients of \code{psv\_fluid\_solid}.  $SH$
+cannot couple through the fluid and is omitted (the slab-level $R_{SH}$
+remains available directly).  Per-frequency cost is two Foldy--Lax
+solves ($P$- and $SV$-incident).
+
+\textbf{Anchors.}  At zero contrast the decomposed path reproduces the
+full-stack Kennett $R_{PP}$ to relative error $2\times 10^{-16}$ at both
+$p = 0$ and $p = 2\times 10^{-4}$\,s/m (asserted at rtol $10^{-10}$).
+The oblique case is the load-bearing anchor: at $p=0$ every quantity
+introduced by the matrix upgrade is invisible, and a deliberately
+injected phase error of the $E_iE_j$ type produces a 133\% error that
+only the oblique anchor detects.
+
+\textbf{Magnitude of the restored physics.}  At moderate contrast and
+oblique incidence, suppressing the off-diagonal entries of $\mathbf{M}$
+shifts the observable $R_{PP}$ at the $\sim$10\% level --- dominated by
+the background sediment/halfspace interface conversion, which the old
+scalar recursion also lacked.  The slab's own conversion contribution is
+second order in the contrast, isolated by subtracting only
+$\tilde{\Rpsv}^{\rm slab}$ off-diagonals: $1.2\times 10^{-5}$ relative
+at weak contrast.  (An instructive trap: zeroing the off-diagonals of
+the \emph{total} $\mathbf{M}$ measures the contrast-independent
+background conversion, not the slab's --- the committed tests separate
+the two.)
+
+% =============================================================================
+\section{Evanescent incidence}
+\label{sec:evanescent}
+% =============================================================================
+
+Past the critical slowness ($p > 1/\alpha$ for $P$) the incident field
+is an inhomogeneous wave: with $\etaP = i|\etaP|$,
+\begin{equation}
+  \bu^{\rm inc}(\bx)
+  \;=\;
+  \mathbf{p}\; e^{\,i\omega\,\bsv\cdot\bx}
+  \;=\;
+  \mathbf{p}\; e^{\,i\omega p x}\, e^{-\omega|\etaP| z},
+  \qquad
+  \bsv = (\etaP,\, p,\, 0),\quad \mathbf{p} = \alpha\,\bsv ,
+\end{equation}
+decaying with depth.  The incident-field builder originally degenerated
+to a horizontally propagating homogeneous wave there (constant amplitude
+at all depths), and the $P$-incident column of the reflection matrix
+carried a documented warning.  The builder now constructs fields
+directly from complex slowness vectors and polarisations
+($\mathbf{p}\cdot\mathbf{p} = 1$ by analytic continuation --- the same
+convention as Kennett, though the Euclidean amplitude exceeds unity
+post-critically); strains follow as
+$\varepsilon_{ij} = \tfrac{i\omega}{2}(s_i p_j + s_j p_i)$.  The
+per-layer decay ratio matches $e^{-\omega|\etaP|\,\Delta z}$ to
+$10^{-10}$, and the sub-critical path reproduces the previous builder to
+$2.6\times 10^{-16}$.
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Channel ($p = 2.5\times 10^{-4}$\,s/m) & homogeneous surrogate & evanescent field \\
+\midrule
+$R_{PP}$ & 0.637 & 0.054 \\
+$R_{PS}$ & 0.965 & 0.033 \\
+$R_{SP}$ & 0.033 & 0.033 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Accuracy is now symmetric across the critical slowness (errors 0.025 at
+$p = 1.9\times 10^{-4}$ versus 0.031 at $2.1\times 10^{-4}$), and the
+residual post-critical error is pure vertical discretisation: a
+monotonic exponential sampled by one-point quadrature biases the layer
+average (unlike oscillatory sub-critical phase, which self-cancels), and
+the error collapses $0.054 \to 0.009 \to 0.0009$ under refinement
+$(a, N_z) = (2,1) \to (1,2) \to (0.5,4)$ at fixed $H$ --- pinned by a
+committed convergence test.  The conversion channels floor near 2\%,
+the known Rayleigh T-matrix truncation scale at this contrast.  The only
+remaining special points are the exact grazing slownesses
+$p = 1/\alpha,\, 1/\beta$, where the Weyl prefactor $1/\eta$ is
+genuinely singular.
+
+% =============================================================================
+\section{Code artifacts}
+\label{sec:code}
+% =============================================================================
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+\toprule
+Artifact & Role \\
+\midrule
+\code{sphere\_scattering.py} &
+  five-channel Mie far fields, $SV$/$SH$ decomposition \\
+\code{FiveChannelExtension.wl}, \code{FiveChannelDriver.wl} &
+  Mathematica five-channel comparison (headless) \\
+\code{slab\_weyl\_amplitudes} &
+  shared $P$/$SV$/$SH$ Weyl extractor, eqs.~\eqref{eq:weylP}--\eqref{eq:weylS} \\
+\code{SlabReflectionMatrix.to\_modified} &
+  convention bridge, eq.~\eqref{eq:similarity} \\
+\code{slab\_reflection\_matrix} &
+  three-solve matrix assembly at slowness $p$ \\
+\code{kennett\_reference\_matrix} &
+  five-channel Kennett reference for a uniform layer \\
+\code{\_build\_slab\_incident\_field\_slowness} &
+  complex-slowness (evanescent) incident fields \\
+\code{\_kennett\_water\_step} ($2\times 2$), \code{MT\_psv} &
+  ocean-bottom sub-ocean matrix recursion \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All quoted measurements are asserted by the test suite
+(\code{TestCompleteScatteringMatrix}, \code{TestSlabReflectionMatrix},
+\code{TestEvanescentIncidence}, \code{TestModeConvertedOceanBottom},
+and the oblique zero-contrast anchors), 641 tests passing at the time of
+writing.
+
+\end{document}
