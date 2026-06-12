@@ -798,3 +798,23 @@ class TestWeylAmplitudes:
         amps = slab_weyl_amplitudes(result, T_local, p=0.0)
         assert abs(amps.R_SV) < 1e-10 * max(abs(amps.R_P), 1e-30)
         assert abs(amps.R_SH) < 1e-10 * max(abs(amps.R_P), 1e-30)
+
+
+class TestSHIncidence:
+    """SH plane-wave incidence (polarisation ŷ)."""
+
+    def test_sh_polarisation_is_y(self):
+        ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+        geom = SlabGeometry(M=4, N_z=1, a=2.0)
+        k_hat = np.array([0.8, 0.6, 0.0])
+        psi0 = _build_slab_incident_field(geom, 150.0, ref, k_hat, "SH")
+        # Displacement components: only u_y nonzero
+        assert np.max(np.abs(psi0[..., 0])) < 1e-14
+        assert np.max(np.abs(psi0[..., 1])) < 1e-14
+        assert np.max(np.abs(psi0[..., 2])) > 0.99
+
+    def test_unknown_wave_type_fails_fast(self):
+        ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+        geom = SlabGeometry(M=4, N_z=1, a=2.0)
+        with pytest.raises(ValueError, match="wave_type"):
+            _build_slab_incident_field(geom, 150.0, ref, np.array([1.0, 0.0, 0.0]), "X")
