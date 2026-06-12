@@ -681,8 +681,9 @@ class WeylAmplitudes:
     """Specular Weyl amplitudes from one periodic-slab solve.
 
     Displacement-amplitude convention (unit-displacement incident wave).
-    Convert to the Kennett modified convention with sqrt(eta_out/eta_in)
-    before comparing off-diagonal channels (see SlabReflectionMatrix).
+    Convert to the Kennett modified convention via SlabReflectionMatrix.to_modified()
+    (a measured diagonal similarity — see its docstring) before comparing off-diagonal
+    channels.
 
     Attributes:
         R_P: Outgoing specular P amplitude.

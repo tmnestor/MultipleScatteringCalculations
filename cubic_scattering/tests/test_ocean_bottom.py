@@ -600,7 +600,14 @@ class TestModeConvertedOceanBottom:
 
     def test_moderate_contrast_conversion_changes_rpp(self):
         """Moderate contrast at oblique p: the 2×2 recursion shifts R_total
-        relative to a PP-only recursion (the restored physics)."""
+        relative to a PP-only recursion (the restored physics).
+
+        The measured difference is the TOTAL restored conversion physics
+        relative to the old scalar recursion — dominated by the background
+        sed/hs interface conversion, with the slab contribution on top.
+        (The old scalar path had neither, so this is a legitimate
+        physics-gain regression; the weak-contrast test below isolates
+        the slab part.)"""
         contrast = MaterialContrast(Dlambda=0.5e9, Dmu=0.3e9, Drho=200.0)
         cfg = self._config(contrast, p=2.0e-4)
         result = compute_ocean_bottom_reflection(cfg, progress=False)
@@ -617,6 +624,35 @@ class TestModeConvertedOceanBottom:
         scale = np.max(np.abs(R_full))
         assert diff > 1e-6 * scale, "conversion had no effect — physics missing"
         assert diff < 0.5 * scale, "conversion implausibly large"
+
+    def test_weak_contrast_slab_conversion_is_second_order(self, weak_oblique_result):
+        """Weak contrast: zeroing only the SLAB's off-diagonal contribution
+        barely moves R_PP (slab conversion enters the observable at second
+        order).
+
+        This isolates the SLAB's conversion contribution from the background
+        sed/hs interface conversion, which is O(1) and contrast-independent
+        at oblique p: MT = E·R_bg·E + R_slab, and zeroing the off-diagonals
+        of the full MT would mostly remove background conversion, telling us
+        nothing about the slab. Instead, subtract only R_slab_psv's
+        off-diagonals, keeping the background conversion intact."""
+        result = weak_oblique_result
+        cfg = result.config
+        from cubic_scattering.ocean_bottom import _kennett_water_step
+
+        active = np.where(np.abs(result.R_total) > 0)[0]
+        MT_full = result.MT_psv[active]
+        MT_slab_pp_only = MT_full.copy()
+        MT_slab_pp_only[:, 0, 1] -= result.R_slab_psv[active][:, 0, 1]
+        MT_slab_pp_only[:, 1, 0] -= result.R_slab_psv[active][:, 1, 0]
+        R_full = _kennett_water_step(MT_full, cfg)
+        R_slab_pp_only = _kennett_water_step(MT_slab_pp_only, cfg)
+        diff = np.max(np.abs(R_full - R_slab_pp_only))
+        scale = np.max(np.abs(R_full))
+        # Measured ratio: 1.18e-5; threshold one order of magnitude above.
+        assert diff < 1.2e-4 * scale, (
+            f"weak-contrast slab conversion effect {diff / scale:.2e} not second-order"
+        )
 
     def test_write_log_includes_mode_conversion_columns(
         self, weak_oblique_result, tmp_path: Path

@@ -99,6 +99,11 @@ observable water-column R_PP.
    relative error at the established R_PP scale (~1% at moderate contrast
    with the convergence-study mesh). At p = 0 the conversion channels vanish
    (both slab and Kennett must agree they are ~0).
+   **NARROWED (Task 4):** the oblique post-critical case is past the P-critical
+   slowness (p = 2.5e-4 > 1/α) asserting the propagating SV/SH channels only;
+   past 1/β the incident SV wave hits the same homogeneous-wave limitation as
+   evanescent P, so an S-critical case would assert nothing new. Documented in
+   the test comment and the slab_reflection_matrix Validity note.
 2. **Born scaling** at weak contrast (1e-4): each channel doubles when the
    contrast doubles (rtol 0.05, existing pattern).
 3. **Reciprocity**: R_PS and R_SP related through the η_P/η_S normalization
@@ -111,6 +116,10 @@ observable water-column R_PP.
    scalar result (conversion is second order); moderate contrast at oblique
    p → documented difference (test asserts the difference is nonzero and
    bounded, capturing the restored physics).
+   **AMENDED (Task 5):** the weak-contrast premise (conversion ≤ PP) was
+   disproved against Kennett (|R_PS|/|R_PP| ≈ 1.4 at p = 2e-4); replaced by
+   structure/reciprocity assertions plus a weak-contrast full-vs-PP-only
+   water-step comparison.
 
 ## Risks
 
