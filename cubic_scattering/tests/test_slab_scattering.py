@@ -17,6 +17,7 @@ from cubic_scattering.slab_scattering import (
     SlabGeometry,
     SlabMaterial,
     _build_slab_incident_field,
+    _build_slab_incident_field_slowness,
     _build_slab_kernels,
     _slab_matvec,
     compute_slab_scattering,
@@ -896,14 +897,12 @@ class TestSlabReflectionMatrix:
         r2 = self._slab_matrix(p, contrast=weak2).to_modified()[1, 0]
         np.testing.assert_allclose(r2 / r1, 2.0, rtol=0.05)
 
-    # Evanescent-P channels (PP, PS, SP past 1/alpha) are not asserted:
-    # the Weyl extractor's evanescent-P branch is untested against Kennett
-    # and deviates; propagating channels (SS, SH) are asserted.
+    # All five channels (including the evanescent-P column past 1/alpha)
+    # are validated against Kennett in TestEvanescentIncidence below.
     def test_post_critical_smoke(self):
         """p past the P-critical slowness: finite, branch-consistent R_SS."""
         p = 2.5e-4  # > 1/alpha = 2e-4 (P evanescent), < 1/beta (SV propagating)
-        with pytest.warns(UserWarning, match="unphysical"):
-            slab = self._slab_matrix(p)
+        slab = self._slab_matrix(p)
         kref = kennett_reference_matrix(
             self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
         )
@@ -911,3 +910,84 @@ class TestSlabReflectionMatrix:
         assert np.isfinite(R_mod).all()
         np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.15)
         np.testing.assert_allclose(slab.R_sh, kref.R_SH, rtol=0.15)
+
+
+# ── 16. TestEvanescentIncidence ──────────────────────────────────
+
+# Tolerances measured against Kennett (H=4 m, omega=150 rad/s, moderate
+# contrast, M=8/N_z=1/a=2 mesh), then set one notch above the measured
+# error. Measured at p=2.5e-4: R_PP 0.054, R_PS 0.033, R_SP 0.033,
+# R_SS 0.043, R_SH 0.044; continuity p=1.9e-4/2.1e-4: 0.025/0.031.
+TOL_PP = 0.10  # measured 0.054
+TOL_CONV = 0.07  # measured 0.033
+TOL_NEAR_CRIT = 0.07  # measured 0.031
+
+
+class TestEvanescentIncidence:
+    """Physical evanescent P incidence past the critical slowness."""
+
+    REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    CONTRAST = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    OMEGA = 150.0
+
+    def _slab_matrix(self, p, M=8, N_z=1, a=2.0):
+        geom = SlabGeometry(M=M, N_z=N_z, a=a)
+        mat = uniform_slab_material(geom, self.REF, self.CONTRAST)
+        return slab_reflection_matrix(geom, mat, self.OMEGA, p=p)
+
+    def test_subcritical_regression(self):
+        """New slowness-vector path reproduces the old result sub-critically."""
+        # Pin against the committed oblique validation values via Kennett
+        p = 1.0e-4
+        slab = self._slab_matrix(p)
+        kref = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
+        )
+        R_mod = slab.to_modified()
+        np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=0.07)
+        np.testing.assert_allclose(R_mod[1, 0], kref.R_PS, rtol=0.10)
+
+    def test_post_critical_full_matrix(self):
+        """p past 1/alpha: ALL channels match Kennett with evanescent incidence."""
+        p = 2.5e-4
+        slab = self._slab_matrix(p)
+        kref = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
+        )
+        R_mod = slab.to_modified()
+        np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=TOL_PP)
+        np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.15)
+        np.testing.assert_allclose(slab.R_sh, kref.R_SH, rtol=0.15)
+        np.testing.assert_allclose(R_mod[1, 0], kref.R_PS, rtol=TOL_CONV)
+        np.testing.assert_allclose(R_mod[0, 1], kref.R_SP, rtol=TOL_CONV)
+
+    def test_continuity_across_critical(self):
+        """R_PP is continuous through the critical slowness (away from grazing)."""
+        kref_lo = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=1.9e-4
+        )
+        kref_hi = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=2.1e-4
+        )
+        slab_lo = self._slab_matrix(1.9e-4).to_modified()[0, 0]
+        slab_hi = self._slab_matrix(2.1e-4).to_modified()[0, 0]
+        # Same relative accuracy on both sides of critical
+        err_lo = abs(slab_lo - kref_lo.R_PP) / abs(kref_lo.R_PP)
+        err_hi = abs(slab_hi - kref_hi.R_PP) / abs(kref_hi.R_PP)
+        assert err_lo < TOL_NEAR_CRIT and err_hi < TOL_NEAR_CRIT
+
+    def test_incident_field_decays_with_depth(self):
+        """Direct check: post-critical P incident field decays exponentially."""
+        geom = SlabGeometry(M=4, N_z=4, a=2.0)
+        p = 2.5e-4
+        eta_P = np.sqrt(1.0 / self.REF.alpha**2 - p**2 + 0j)
+        assert eta_P.imag > 0 and abs(eta_P.real) < 1e-15
+        s_vec = np.array([eta_P, p, 0.0], dtype=complex)
+        pol = self.REF.alpha * s_vec
+        psi0 = _build_slab_incident_field_slowness(geom, self.OMEGA, s_vec, pol)
+        amp = np.abs(psi0[:, 0, 0, 1])  # u_x amplitude vs layer depth
+        assert np.all(np.diff(amp) < 0), "field must decay monotonically with depth"
+        # Decay rate matches exp(-omega*|eta|*dz)
+        dz = geom.d
+        expected = np.exp(-self.OMEGA * eta_P.imag * dz)
+        np.testing.assert_allclose(amp[1:] / amp[:-1], expected, rtol=1e-10)
