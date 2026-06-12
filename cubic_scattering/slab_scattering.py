@@ -669,6 +669,106 @@ def slab_reflected_field(
     return R_PP, R_PS, R_SP
 
 
+@dataclass
+class WeylAmplitudes:
+    """Specular Weyl amplitudes from one periodic-slab solve.
+
+    Displacement-amplitude convention (unit-displacement incident wave).
+    Convert to the Kennett modified convention with sqrt(eta_out/eta_in)
+    before comparing off-diagonal channels (see SlabReflectionMatrix).
+
+    Attributes:
+        R_P: Outgoing specular P amplitude.
+        R_SV: Outgoing specular SV amplitude (sagittal polarisation).
+        R_SH: Outgoing specular SH amplitude (y polarisation).
+        p: Horizontal slowness used (s/m).
+        eta_P: Vertical P slowness (complex past critical).
+        eta_S: Vertical S slowness (complex past critical).
+    """
+
+    R_P: complex
+    R_SV: complex
+    R_SH: complex
+    p: float
+    eta_P: complex
+    eta_S: complex
+
+
+def slab_weyl_amplitudes(
+    result: SlabResult, T_local: NDArray, *, p: float = 0.0
+) -> WeylAmplitudes:
+    """Extract all specular outgoing amplitudes (P, SV, SH) via Weyl sums.
+
+    The 2D lattice sum replaces exp(ikr)/(4πr) with i/(2k_z d²)·exp(ik_z|z|)
+    per mode. The source coupling uses the full reflected wave vector
+    ω·s⃗_m = k_m·d̂_m (NOT the vertical wavenumber — they differ at p>0):
+
+        Q_P  = −d̂_P·f − iω (s⃗_P·σ·d̂_P)            (scalar)
+        Q⃗_S  = −f − iω (σ·s⃗_S)                      (vector)
+        R_m  = −i/(2 ω η_m d² ρ c_m²) Σ_l Q_m,l exp(iω η_m z_l)
+
+    with the SV/SH amplitudes the ŝv/ŝh projections of Q⃗_S. The force term
+    is negated (T-matrix +ω²Δρ V u convention, opposite to the
+    Lippmann-Schwinger body force). Sources are averaged over the M²
+    horizontal cubes per layer (specular/coherent response).
+
+    Args:
+        result: Solved slab scattering result (use periodic=True).
+        T_local: Per-cube T-matrices, shape (N_z, M, M, 9, 9).
+        p: Horizontal slowness (s/m).
+
+    Returns:
+        WeylAmplitudes in the displacement convention.
+    """
+    geom = result.geometry
+    ref = result.material.ref
+    omega = result.omega
+    d = geom.d
+
+    eta_P = _vertical_slowness(_complex_slowness(ref.alpha, np.inf), p)
+    eta_S = _vertical_slowness(_complex_slowness(ref.beta, np.inf), p)
+    kz_P = omega * eta_P
+    kz_S = omega * eta_S
+
+    # Upgoing slowness vectors, complex-unit directions, S polarisations
+    s_vec_P = np.array([-eta_P, p, 0.0], dtype=complex)
+    s_vec_S = np.array([-eta_S, p, 0.0], dtype=complex)
+    d_P = ref.alpha * s_vec_P
+    sv_hat = ref.beta * np.array([p, eta_S, 0.0], dtype=complex)
+    sh_hat = np.array([0.0, 0.0, 1.0])
+
+    source = np.einsum("lmnab,lmnb->lmna", T_local, result.psi)
+    centres = geom.all_centres()
+
+    tot_P = 0.0 + 0.0j
+    tot_SV = 0.0 + 0.0j
+    tot_SH = 0.0 + 0.0j
+    for lz in range(geom.N_z):
+        f_avg = np.mean(source[lz, :, :, :3], axis=(0, 1))
+        sig_avg = _voigt_to_tensor(np.mean(source[lz, :, :, 3:], axis=(0, 1)))
+        z_l = centres[lz, 0, 0, 0]
+
+        Q_P = -np.dot(d_P, f_avg) - 1j * omega * np.dot(s_vec_P, sig_avg @ d_P)
+        tot_P += Q_P * np.exp(1j * kz_P * z_l)
+
+        Q_S = -f_avg - 1j * omega * (sig_avg @ s_vec_S)
+        phase_S = np.exp(1j * kz_S * z_l)
+        tot_SV += np.dot(sv_hat, Q_S) * phase_S
+        tot_SH += np.dot(sh_hat, Q_S) * phase_S
+
+    pref_P = -1j / (2.0 * kz_P * d**2 * ref.rho * ref.alpha**2)
+    pref_S = -1j / (2.0 * kz_S * d**2 * ref.rho * ref.beta**2)
+
+    return WeylAmplitudes(
+        R_P=complex(pref_P * tot_P),
+        R_SV=complex(pref_S * tot_SV),
+        R_SH=complex(pref_S * tot_SH),
+        p=p,
+        eta_P=complex(eta_P),
+        eta_S=complex(eta_S),
+    )
+
+
 def slab_rpp_periodic(
     result: SlabResult, T_local: NDArray, *, p: float = 0.0
 ) -> complex:
@@ -680,8 +780,8 @@ def slab_rpp_periodic(
         R_PP = -(i / (2k_z d² ρα²)) × Σ_l Q_P,l × exp(ik_z z_l)
 
     where k_z = ω·η_P is the vertical P-wavenumber, η_P = √(1/α² - p²),
-    and Q_P,l = r̂·f_l − ik_z(r̂·σ_l·r̂) is the far-field P-source scalar
-    for layer l, averaged over the M² horizontal cubes.
+    and Q_P,l is the far-field P-source scalar for layer l, averaged over
+    the M² horizontal cubes.
 
     For Kennett comparison, use ``periodic=True`` in ``compute_slab_scattering``
     so that the solver's circular convolution matches the infinite-medium
@@ -694,45 +794,13 @@ def slab_rpp_periodic(
 
     Returns:
         Complex specular P→P reflection coefficient (dimensionless).
+
+    Note:
+        Delegates to slab_weyl_amplitudes. The oblique stress coupling now
+        uses the full wave vector (−iω s⃗·σ·d̂); the previous −i k_z σ_rr form
+        was correct only at p=0.
     """
-    geom = result.geometry
-    ref = result.material.ref
-    omega = result.omega
-    d = geom.d
-
-    # Vertical slowness and wavenumber
-    s_P = _complex_slowness(ref.alpha, np.inf)
-    eta_P = _vertical_slowness(s_P, p)
-    k_z = omega * eta_P
-
-    # Reflected (upgoing) direction: r_hat = [-η_P·α, p·α, 0] in (z,x,y)
-    r_hat = np.array([-eta_P * ref.alpha, p * ref.alpha, 0.0])
-
-    # Sources: τ = T·ψ at each cube
-    source = np.einsum("lmnab,lmnb->lmna", T_local, result.psi)
-    centres = geom.all_centres()
-
-    total = 0.0 + 0j
-    for lz in range(geom.N_z):
-        # Average source over horizontal cubes in this layer
-        force_avg = np.mean(source[lz, :, :, :3], axis=(0, 1))
-        sigma_voigt_avg = np.mean(source[lz, :, :, 3:], axis=(0, 1))
-        sigma_avg = _voigt_to_tensor(sigma_voigt_avg)
-
-        # Far-field P-source scalar: Q_P = −r̂·f − ik_z(r̂·σ·r̂)
-        # The force sign is negated because the T-matrix convention uses
-        # +ω²Δρ V u (opposite to the Lippmann-Schwinger body force −ω²δρ u).
-        sigma_rr = np.dot(r_hat, sigma_avg @ r_hat)
-        Q_P = -np.dot(r_hat, force_avg) - 1j * k_z * sigma_rr
-
-        # Weyl propagation phase to surface
-        z_l = centres[lz, 0, 0, 0]
-        phase = np.exp(1j * k_z * z_l)
-
-        total += Q_P * phase
-
-    # Weyl prefactor: −i/(2k_z d² ρα²)
-    return complex(-1j / (2.0 * k_z * d**2 * ref.rho * ref.alpha**2) * total)
+    return slab_weyl_amplitudes(result, T_local, p=p).R_P
 
 
 def kennett_reference_rpp(
