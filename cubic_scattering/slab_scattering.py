@@ -712,6 +712,9 @@ def slab_weyl_amplitudes(
     Lippmann-Schwinger body force). Sources are averaged over the M²
     horizontal cubes per layer (specular/coherent response).
 
+    Undefined at grazing incidence p = 1/α (P) or p = 1/β (S), where the
+    corresponding η_m = 0 makes the Weyl prefactor singular.
+
     Args:
         result: Solved slab scattering result (use periodic=True).
         T_local: Per-cube T-matrices, shape (N_z, M, M, 9, 9).
