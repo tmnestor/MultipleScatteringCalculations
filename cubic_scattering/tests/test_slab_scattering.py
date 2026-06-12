@@ -937,7 +937,9 @@ class TestEvanescentIncidence:
 
     def test_subcritical_regression(self):
         """New slowness-vector path reproduces the old result sub-critically."""
-        # Pin against the committed oblique validation values via Kennett
+        # Same Kennett comparison as
+        # TestSlabReflectionMatrix.test_oblique_all_channels; guards the
+        # new slowness-vector incident path at sub-critical p.
         p = 1.0e-4
         slab = self._slab_matrix(p)
         kref = kennett_reference_matrix(
