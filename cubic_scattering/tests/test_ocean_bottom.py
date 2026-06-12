@@ -567,11 +567,16 @@ class TestModeConvertedOceanBottom:
             p=p,
         )
 
-    def test_weak_contrast_slab_matrix_structure(self):
-        """Weak contrast at oblique p: R_slab_psv exists with sane structure."""
+    @pytest.fixture(scope="class")
+    def weak_oblique_result(self):
+        """One weak-contrast oblique solve shared by the tests in this class."""
         weak = MaterialContrast(Dlambda=1e5, Dmu=1e5, Drho=0.1)
         cfg = self._config(weak, p=2.0e-4)  # oblique, sub-critical in water
-        result = compute_ocean_bottom_reflection(cfg, progress=False)
+        return compute_ocean_bottom_reflection(cfg, progress=False)
+
+    def test_weak_contrast_slab_matrix_structure(self, weak_oblique_result):
+        """Weak contrast at oblique p: R_slab_psv exists with sane structure."""
+        result = weak_oblique_result
         assert result.R_slab_psv.shape[1:] == (2, 2)
         R_pp_slab = result.R_slab_psv[:, 0, 0]
         active = np.abs(R_pp_slab) > 0
@@ -613,13 +618,12 @@ class TestModeConvertedOceanBottom:
         assert diff > 1e-6 * scale, "conversion had no effect — physics missing"
         assert diff < 0.5 * scale, "conversion implausibly large"
 
-    def test_write_log_includes_mode_conversion_columns(self, tmp_path: Path):
+    def test_write_log_includes_mode_conversion_columns(
+        self, weak_oblique_result, tmp_path: Path
+    ):
         """write_log table contains |R_PS| and |R_SS| columns."""
-        weak = MaterialContrast(Dlambda=1e5, Dmu=1e5, Drho=0.1)
-        cfg = self._config(weak, p=2.0e-4)
-        result = compute_ocean_bottom_reflection(cfg, progress=False)
         log_path = tmp_path / "test_log.txt"
-        write_log(result, log_path)
+        write_log(weak_oblique_result, log_path)
         text = log_path.read_text()
         assert "|R_PS|" in text
         assert "|R_SS|" in text
