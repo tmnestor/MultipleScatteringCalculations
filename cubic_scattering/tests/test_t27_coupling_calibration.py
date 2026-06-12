@@ -16,8 +16,12 @@ Calibration facts asserted (measured in the study):
   5. Step 2b outcome vs the existing analytic volume-averaged propagator
      (inter_voxel_propagator_9x9, unit pitch): its G block matches the
      quadrature truth at face separation to ~1%, while its S block does NOT
-     (measured ~0.5 of block scale: S[0,0] ~3x low, shear-shear sign flip),
-     and H = C^T drops the engineering 2x on shear rows.
+     (measured ~0.5 of block scale: S[0,0] ~3x low, shear-shear sign flip).
+     The H bug the study measured (H = C^T dropped the engineering 2x on
+     shear rows, exactly 0.5x) has since been FIXED in
+     inter_voxel_propagator_9x9 (H = W C^T with W = diag(1,1,1,2,2,2));
+     the fix is regression-tested by TestHEngineeringConvention in
+     tests/test_inter_voxel_propagator.py.
 """
 
 import importlib.util

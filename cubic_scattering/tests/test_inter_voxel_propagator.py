@@ -944,8 +944,15 @@ class TestPropagator9x9:
         assert np.max(np.abs(H)) > 0.1 * scale, "H block should be nonzero"
 
     def test_h_equals_c_transpose(self):
-        """H = Cᵀ for all 26 neighbours."""
+        """H = W Cᵀ (engineering-Voigt transpose) for all 26 neighbours.
+
+        Updated for the H shear-row fix: the field-side strain rows carry
+        the engineering factor 2 (W = diag(1,1,1,2,2,2)). The old pin
+        H = Cᵀ was the tensor transpose, measured at exactly 0.5x on the
+        shear rows by scripts/t27_coupling_study.py.
+        """
         omega = 2 * np.pi * 50
+        W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
         for n1 in (-1, 0, 1):
             for n2 in (-1, 0, 1):
                 for n3 in (-1, 0, 1):
@@ -956,7 +963,7 @@ class TestPropagator9x9:
                     C = P9[:3, 3:].real
                     H = P9[3:, :3].real
                     np.testing.assert_allclose(
-                        H, C.T, atol=1e-15, err_msg=f"H ≠ Cᵀ for R={R}"
+                        H, W @ C.T, atol=1e-15, err_msg=f"H ≠ W Cᵀ for R={R}"
                     )
 
     def test_all_26_neighbours_finite(self):
@@ -1132,8 +1139,12 @@ class TestCBlockStructure:
         diff = C_dyn - C_static
         # At ω=500, ω²=2.5e5, the correction should be nonzero
         assert np.max(np.abs(diff)) > 0.0, "C block should have ω² correction"
-        # H = Cᵀ should also hold for dynamic C/H
-        np.testing.assert_allclose(P9_dyn[3:, :3], P9_dyn[:3, 3:].T, atol=1e-15)
+        # H = W Cᵀ (engineering-Voigt transpose) should also hold for
+        # dynamic C/H. (Updated for the H shear-row fix: shear rows carry
+        # the engineering factor 2; plain Cᵀ was measured at 0.5x by
+        # scripts/t27_coupling_study.py.)
+        W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
+        np.testing.assert_allclose(P9_dyn[3:, :3], W @ P9_dyn[:3, 3:].T, atol=1e-15)
 
     def test_fd_validation_face(self):
         """Cross-check C block against finite-difference of G block."""
@@ -1380,8 +1391,13 @@ class TestCHBlockDynamic:
         assert C_corr2 < C_corr1, "ω⁴ C correction should be smaller than ω² at ka=0.3"
 
     def test_h_equals_c_transpose_all_orders(self):
-        """H = Cᵀ at n_orders=0,1,2 for all neighbour types."""
+        """H = W Cᵀ (engineering transpose) at n_orders=0,1,2 for all types.
+
+        Updated for the H shear-row fix: W = diag(1,1,1,2,2,2); plain Cᵀ
+        was measured at 0.5x on shear rows by scripts/t27_coupling_study.py.
+        """
         omega = 0.3 * ALPHA
+        W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
         for n_ord in (0, 1, 2):
             for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1), (-1, 0, 0), (0, -1, 1)]:
                 P9 = inter_voxel_propagator_9x9(
@@ -1389,9 +1405,9 @@ class TestCHBlockDynamic:
                 )
                 np.testing.assert_allclose(
                     P9[3:, :3],
-                    P9[:3, 3:].T,
+                    W @ P9[:3, 3:].T,
                     atol=1e-15,
-                    err_msg=f"H≠Cᵀ for R={R}, n_orders={n_ord}",
+                    err_msg=f"H≠W Cᵀ for R={R}, n_orders={n_ord}",
                 )
 
     def test_inversion_symmetry_all_orders(self):
@@ -1665,15 +1681,20 @@ class TestCHBlockOmega6:
         assert 200 < ratio < 2000, f"Expected ~729x scaling, got {ratio:.1f}x"
 
     def test_h_equals_c_transpose_omega6(self):
-        """H = C^T at n_orders=3 for all neighbour types."""
+        """H = W C^T (engineering transpose) at n_orders=3 for all types.
+
+        Updated for the H shear-row fix: W = diag(1,1,1,2,2,2); plain C^T
+        was measured at 0.5x on shear rows by scripts/t27_coupling_study.py.
+        """
         omega = 0.3 * ALPHA
+        W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
         for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1), (-1, 0, 0), (0, -1, 1)]:
             P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3)
             np.testing.assert_allclose(
                 P9[3:, :3],
-                P9[:3, 3:].T,
+                W @ P9[:3, 3:].T,
                 atol=1e-15,
-                err_msg=f"H!=C^T for R={R}, n_orders=3",
+                err_msg=f"H!=W C^T for R={R}, n_orders=3",
             )
 
     def test_inversion_symmetry_omega6(self):
@@ -1747,3 +1768,129 @@ class TestConsistentTruncationOmega6:
                     np.testing.assert_allclose(
                         G, G.T, atol=1e-14, err_msg=f"G not sym for R={R}"
                     )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# H block engineering-Voigt convention (fix for the 0.5x shear rows
+# measured by scripts/t27_coupling_study.py)
+# ══════════════════════════════════════════════════════════════════════
+
+
+def _load_t27_study():
+    """Load scripts/t27_coupling_study.py as a module (quadrature arbiter).
+
+    Same import mechanism as tests/test_t27_coupling_calibration.py.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parents[2] / "scripts" / "t27_coupling_study.py"
+    spec = importlib.util.spec_from_file_location("t27_coupling_study", script)
+    assert spec is not None and spec.loader is not None
+    study = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(study)
+    return study
+
+
+class TestHEngineeringConvention:
+    """H block must use the engineering-Voigt transpose of C.
+
+    The 9-component state is [u(3), engineering strain(6)]: shear rows of
+    the strain response carry the engineering factor 2, exactly as
+    _P_to_voigt_S applies to the S block (mult_pq=2) and as the point
+    propagator's _voigt_contract builds its H rows (full sum
+    Gd[p,j,q] + Gd[q,j,p], no 1/2). Ground truth: the committed quadrature
+    study (scripts/t27_coupling_study.py), which measured the old
+    H = C.T shear rows at exactly 0.5x the quadrature arbiter at edge and
+    corner separations (patched-H deviation 5.4e-4 at edge, block scale).
+    """
+
+    @pytest.mark.parametrize(
+        "r_lattice",
+        [(1, 1, 0), (1, 1, 1)],
+        ids=["edge", "corner"],
+    )
+    def test_h_rows_match_quadrature_arbiter(self, r_lattice):
+        """H rows of the static volume-averaged propagator match the
+        quadrature arbiters from the study at unit pitch.
+
+        Recipe from run_propagator_comparison: a = 0.5 (the analytic module
+        is hardcoded to unit pitch), quasi-static omega for the quadrature,
+        module evaluated at omega = 0, n_orders = 0. Two arbiters:
+
+        - avg_point_propagator_fd: the volume-averaged point propagator,
+          i.e. the object the analytic module defines. Study measured the
+          engineering-corrected H at 5.4e-4 (edge) / 5e-6 (corner) of block
+          scale against this reference -> tolerance 1%.
+        - galerkin_9_block: the Galerkin-projected quadrature truth. It
+          differs from the volume-averaged point propagator by a converged
+          ~2-3.5% on H (axial and shear rows alike, stable for n = 6..10:
+          a genuine projection difference, not a convention error)
+          -> tolerance 5%.
+
+        The uncorrected H = C.T shear rows sit at ~0.5x against BOTH
+        arbiters, failing each tolerance by more than an order of
+        magnitude.
+        """
+        study = _load_t27_study()
+        a = 0.5
+        omega_static = 1e-3 * study.REF.beta / a
+        r_phys = np.array(r_lattice, dtype=float)
+
+        P9 = inter_voxel_propagator_9x9(
+            r_lattice, study.REF.alpha, study.REF.beta, study.REF.rho, 0.0, n_orders=0
+        )
+        H_mod = np.real(P9[3:9, 0:3])
+
+        arbiters = {
+            "FD-avg": (
+                study.avg_point_propagator_fd(r_phys, omega_static, a, n=8),
+                0.01,
+            ),
+            "Galerkin": (
+                study.galerkin_9_block(r_phys, omega_static, a, n=6),
+                0.05,
+            ),
+        }
+        for name, (D, tol) in arbiters.items():
+            H_true = np.real(D[3:9, 0:3])
+            scale = np.max(np.abs(H_true))
+
+            # Shear rows (Voigt 3-5 = 9x9 rows 6-8): the rows the old
+            # H = C.T halved. This assertion fails before the fix (~0.5).
+            err_shear = np.max(np.abs(H_mod[3:, :] - H_true[3:, :])) / scale
+            assert err_shear < tol, (
+                f"H shear rows deviate from {name} arbiter at {r_lattice}: "
+                f"{err_shear:.2e} (old H = C.T gives ~0.5x on these rows)"
+            )
+
+            # Axial rows (Voigt 0-2) were already correct — guard against
+            # over-correcting the wrong rows.
+            err_axial = np.max(np.abs(H_mod[:3, :] - H_true[:3, :])) / scale
+            assert err_axial < tol, (
+                f"H axial rows deviate from {name} arbiter at {r_lattice}: "
+                f"{err_axial:.2e} (these rows must NOT carry the factor 2)"
+            )
+
+    def test_h_is_engineering_transpose_of_c(self):
+        """H = W @ C.T with W = diag(1,1,1,2,2,2) for all 26 neighbours
+        and all dynamic orders (same invariant test_horizontal_greens
+        asserts for the point propagator exact_propagator_9x9)."""
+        omega = 0.3 * ALPHA
+        W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
+        for n_ord in (0, 1, 2, 3):
+            for n1 in (-1, 0, 1):
+                for n2 in (-1, 0, 1):
+                    for n3 in (-1, 0, 1):
+                        if n1 == n2 == n3 == 0:
+                            continue
+                        R = (n1, n2, n3)
+                        P9 = inter_voxel_propagator_9x9(
+                            R, ALPHA, BETA, RHO, omega, n_orders=n_ord
+                        )
+                        np.testing.assert_allclose(
+                            P9[3:, :3],
+                            W @ P9[:3, 3:].T,
+                            atol=1e-15,
+                            err_msg=f"H != W@C.T for R={R}, n_orders={n_ord}",
+                        )
