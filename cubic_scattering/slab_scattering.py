@@ -497,8 +497,13 @@ def _build_slab_incident_field_slowness(
     with complex s⃗ and pol. For Im(s_z) > 0 the field decays with depth,
     which is the physical post-critical incident wave (the
     ``_vertical_slowness`` branch enforces Im η ≥ 0, so e^{iωηz} with
-    z positive downward gives e^{−ω|η|z} decay). Unit displacement
-    amplitude at the z = 0 datum.
+    z positive downward gives e^{−ω|η|z} decay). Unit complex amplitude
+    (pol·pol = 1, analytic continuation) at the z = 0 datum;
+    sub-critically this equals unit displacement amplitude. The amplitude
+    convention is the caller's responsibility — this builder applies
+    whatever pol it is given. Kennett's coefficients use the same
+    analytic-continuation convention, so comparisons remain
+    convention-consistent post-critically.
 
     The strain uses the general complex-slowness plane-wave formula
     ε_ij = (iω/2)(s_i pol_j + s_j pol_i): passing s⃗ (unnormalized,
@@ -568,7 +573,11 @@ def compute_slab_scattering(
             When provided, the homogeneous-plane-wave construction from
             (k_hat, wave_type) is skipped — use
             ``_build_slab_incident_field_slowness`` to build evanescent
-            (complex-slowness) incident fields.
+            (complex-slowness) incident fields. Note: result.k_hat is
+            consumed by slab_reflected_field (r_hat = -k_hat); for a
+            post-critical P solve built via psi0, k_hat is degenerate
+            (horizontal) and slab_reflected_field output would be
+            meaningless — use slab_weyl_amplitudes for extraction.
 
     Returns:
         SlabResult with exciting and incident fields.
