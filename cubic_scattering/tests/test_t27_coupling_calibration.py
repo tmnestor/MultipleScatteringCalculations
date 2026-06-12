@@ -13,6 +13,11 @@ Calibration facts asserted (measured in the study):
      point propagator is a genuine O((a/R)^2) volume-averaging effect with
      measured envelopes: G ~ 12%, C/H ~ 34%, S ~ 60%.  A normalisation bug
      (sign or factor-2) would blow well past these envelopes.
+  5. Step 2b outcome vs the existing analytic volume-averaged propagator
+     (inter_voxel_propagator_9x9, unit pitch): its G block matches the
+     quadrature truth at face separation to ~1%, while its S block does NOT
+     (measured ~0.5 of block scale: S[0,0] ~3x low, shear-shear sign flip),
+     and H = C^T drops the engineering 2x on shear rows.
 """
 
 import importlib.util
@@ -85,3 +90,28 @@ def test_face_separation_volume_averaging_envelope():
         )
     # And the deviation is genuinely nonzero (volume averaging is real):
     assert dev["S"] > 0.3, "S-block deviation unexpectedly small — check setup"
+
+
+def test_analytic_volume_averaged_propagator_face_outcome():
+    """Step-2b measured outcome vs inter_voxel_propagator_9x9 at face contact.
+
+    At unit pitch (a = 0.5, R = (1,0,0)), quasi-static: the analytic module's
+    G block IS the volume-averaged Green's tensor (matches the quadrature
+    truth to ~1%), while its S block does not match the volume-averaged
+    object (measured deviation ~0.48 of block scale at n = 6: S[0,0] ~3x
+    low and shear-shear entries sign-flipped).  If the S block is ever
+    fixed, the second assertion should fail — update it then.
+    """
+    from cubic_scattering.inter_voxel_propagator import inter_voxel_propagator_9x9
+
+    a = 0.5
+    omega = 1e-3 * REF.beta / a  # quasi-static (analytic evaluated at omega=0)
+    R = np.array([1.0, 0.0, 0.0])
+    D = study.galerkin_9_block(R, omega, a, n=6)
+    P9 = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    dev = study.block_devs(np.real(P9), np.real(D))
+    assert dev["G"] < 0.02, f"Analytic G no longer matches quadrature: {dev['G']:.3e}"
+    assert dev["S"] > 0.3, (
+        f"Analytic S unexpectedly matches now ({dev['S']:.3e}) — the face S "
+        "mismatch documented in the study may have been fixed; update this test"
+    )
