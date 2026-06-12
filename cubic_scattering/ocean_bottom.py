@@ -465,17 +465,21 @@ def write_log(result: OceanBottomResult, path: str | Path) -> None:
 
         # Per-frequency table
         f.write("## Per-frequency diagnostics\n\n")
-        f.write(f"{'freq_Hz':>10s}  {'|R_slab|':>10s}  {'|R_total|':>10s}  ")
+        f.write(f"{'freq_Hz':>10s}  {'|R_PP|':>10s}  {'|R_PS|':>10s}  ")
+        f.write(f"{'|R_SS|':>10s}  {'|R_total|':>10s}  ")
         f.write(f"{'GMRES_iter':>10s}  {'elapsed_ms':>10s}\n")
-        f.write("-" * 58 + "\n")
+        f.write("-" * 80 + "\n")
 
         for i, iw in enumerate(active_indices):
             fhz = freq_hz[iw]
-            r_slab = abs(result.R_slab[iw])
+            r_pp = abs(result.R_slab_psv[iw, 0, 0])
+            r_ps = abs(result.R_slab_psv[iw, 1, 0])
+            r_ss = abs(result.R_slab_psv[iw, 1, 1])
             r_total = abs(result.R_total[iw])
             gm = result.n_gmres_iters[i] if i < len(result.n_gmres_iters) else -1
             dt = result.freq_elapsed[i] * 1e3 if i < len(result.freq_elapsed) else -1
-            f.write(f"{fhz:10.2f}  {r_slab:10.2e}  {r_total:10.2e}  ")
+            f.write(f"{fhz:10.2f}  {r_pp:10.2e}  {r_ps:10.2e}  ")
+            f.write(f"{r_ss:10.2e}  {r_total:10.2e}  ")
             f.write(f"{gm:10d}  {dt:10.2f}\n")
         f.write("\n")
 
@@ -497,6 +501,8 @@ def write_log(result: OceanBottomResult, path: str | Path) -> None:
         f.write(f"Peak |R_bg|:   {np.max(np.abs(result.R_bg)):.6f}\n")
         f.write(f"Peak |R_slab|: {np.max(np.abs(result.R_slab)):.6f}\n")
         f.write(f"Peak |R_total|: {np.max(np.abs(result.R_total)):.6f}\n")
+        f.write(f"Peak |R_PS|:   {np.max(np.abs(result.R_slab_psv[:, 1, 0])):.6f}\n")
+        f.write(f"Peak |R_SS|:   {np.max(np.abs(result.R_slab_psv[:, 1, 1])):.6f}\n")
 
 
 def load_ocean_bottom_config(path: str | Path) -> OceanBottomConfig:
