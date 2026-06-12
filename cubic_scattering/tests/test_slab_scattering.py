@@ -21,9 +21,11 @@ from cubic_scattering.slab_scattering import (
     _slab_matvec,
     compute_slab_scattering,
     compute_slab_tmatrices,
+    kennett_reference_matrix,
     kennett_reference_rpp,
     random_slab_material,
     slab_reflected_field,
+    slab_reflection_matrix,
     slab_rpp_periodic,
     slab_weyl_amplitudes,
     uniform_slab_material,
@@ -818,3 +820,90 @@ class TestSHIncidence:
         geom = SlabGeometry(M=4, N_z=1, a=2.0)
         with pytest.raises(ValueError, match="wave_type"):
             _build_slab_incident_field(geom, 150.0, ref, np.array([1.0, 0.0, 0.0]), "X")
+
+
+class TestSlabReflectionMatrix:
+    """Full specular matrix vs Kennett for a uniform slab.
+
+    Modified (energy-normalized) convention throughout — the convention
+    in which the Kennett matrix is symmetric (TestModifiedConventionSymmetry).
+    """
+
+    REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    CONTRAST = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    OMEGA = 150.0
+
+    def _slab_matrix(self, p, M=8, N_z=1, a=2.0, contrast=None):
+        contrast = contrast or self.CONTRAST
+        geom = SlabGeometry(M=M, N_z=N_z, a=a)
+        mat = uniform_slab_material(geom, self.REF, contrast)
+        return slab_reflection_matrix(geom, mat, self.OMEGA, p=p)
+
+    def test_normal_incidence_diagonal(self):
+        """p=0: R_PP and R_SS match Kennett; conversions vanish; R_SS == R_SH."""
+        p = 0.0
+        slab = self._slab_matrix(p)
+        kref = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
+        )
+        R_mod = slab.to_modified()
+        np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=0.05)
+        np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.05)
+        np.testing.assert_allclose(slab.R_sh, kref.R_SH, rtol=0.05)
+        # SV sign convention under reflection: K_SS(0) = -K_SH(0)
+        # (same physics, opposite sign bookkeeping)
+        np.testing.assert_allclose(slab.R_sh, -R_mod[1, 1], rtol=1e-6)
+        assert abs(R_mod[0, 1]) < 0.01 * abs(R_mod[0, 0])
+        assert abs(R_mod[1, 0]) < 0.01 * abs(R_mod[1, 1])
+
+    def test_oblique_all_channels(self):
+        """Sub-critical oblique p: all five channels vs Kennett."""
+        p = 1.0e-4  # sin(theta_P) = 0.5
+        slab = self._slab_matrix(p)
+        kref = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
+        )
+        R_mod = slab.to_modified()
+        np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=0.07)
+        np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.07)
+        np.testing.assert_allclose(slab.R_sh, kref.R_SH, rtol=0.07)
+        # Off-diagonals: nonzero and matching (Kennett symmetric, so either index)
+        assert abs(kref.R_PS) > 1e-4
+        np.testing.assert_allclose(R_mod[1, 0], kref.R_PS, rtol=0.10)
+        np.testing.assert_allclose(R_mod[0, 1], kref.R_SP, rtol=0.10)
+
+    def test_modified_matrix_symmetric(self):
+        """Reciprocity: the slab's modified matrix is symmetric like Kennett's."""
+        slab = self._slab_matrix(p=1.0e-4)
+        R_mod = slab.to_modified()
+        np.testing.assert_allclose(R_mod[0, 1], R_mod[1, 0], rtol=0.05)
+
+    def test_born_scaling_conversion_channel(self):
+        """Weak contrast: doubling the contrast doubles R_PS (Born linearity)."""
+        weak = MaterialContrast(
+            Dlambda=self.REF.mu * 1e-4,
+            Dmu=self.REF.mu * 1e-4,
+            Drho=self.REF.rho * 1e-4,
+        )
+        weak2 = MaterialContrast(
+            Dlambda=2 * weak.Dlambda, Dmu=2 * weak.Dmu, Drho=2 * weak.Drho
+        )
+        p = 1.0e-4
+        r1 = self._slab_matrix(p, contrast=weak).to_modified()[1, 0]
+        r2 = self._slab_matrix(p, contrast=weak2).to_modified()[1, 0]
+        np.testing.assert_allclose(r2 / r1, 2.0, rtol=0.05)
+
+    # Evanescent-P channels (PP, PS, SP past 1/alpha) are not asserted:
+    # the Weyl extractor's evanescent-P branch is untested against Kennett
+    # and deviates; propagating channels (SS, SH) are asserted.
+    def test_post_critical_smoke(self):
+        """p past the P-critical slowness: finite, branch-consistent R_SS."""
+        p = 2.5e-4  # > 1/alpha = 2e-4 (P evanescent), < 1/beta (SV propagating)
+        slab = self._slab_matrix(p)
+        kref = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
+        )
+        R_mod = slab.to_modified()
+        assert np.isfinite(R_mod).all()
+        np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.15)
+        np.testing.assert_allclose(slab.R_sh, kref.R_SH, rtol=0.15)
