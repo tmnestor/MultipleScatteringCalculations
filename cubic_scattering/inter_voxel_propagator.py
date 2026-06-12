@@ -1315,6 +1315,8 @@ def inter_voxel_propagator_9x9(
     rho: float,
     omega: float,
     n_orders: int = 2,
+    *,
+    d: float,
 ) -> NDArray:
     """9×9 inter-voxel propagator coupling displacement + Voigt strain.
 
@@ -1334,34 +1336,72 @@ def inter_voxel_propagator_9x9(
         omega: angular frequency (rad/s).
         n_orders: dynamic correction orders (0=static, 1=+ω², 2=+ω⁴, 3=+ω⁶).
             All blocks (G, S, C/H) support n_orders ≤ 3.
-
+        d: physical cube side = lattice pitch (same length unit as the
+            velocities' length unit; e.g. metres for m/s).  REQUIRED —
+            every caller must state its pitch; d=1.0 reproduces the
+            historical unit-pitch tables bit-for-bit.
 
     Returns:
         P9: shape (9, 9) complex array.
+
+    Pitch scaling:
+        All tables are derived on the unit-pitch lattice (cube side 1,
+        half-width 0.5).  The elastodynamic Green's tensor is homogeneous,
+        G(d·r, ω) = d⁻¹ G(r, ω·d), so the double volume average over
+        side-d cubes at separation d·R satisfies EXACTLY
+
+            <G>(d·R, ω; d) = d⁻¹ <G>(R, ω·d; 1)
+
+        and each R-gradient adds one factor d⁻¹: C/H scale as d⁻², S as
+        d⁻³.  Measured against the FD volume-averaged point-propagator
+        arbiter (scripts/t27_coupling_study.py avg_point_propagator_fd,
+        d=2 vs d=1, face and corner): static block ratios 0.500000 /
+        0.250000 / 0.250000 / 0.125000 (G/C/H/S), order-1 dynamic
+        coefficient ratios 1.95-1.97 / 0.94-0.96 / 0.42-0.47 (= d^{s+2}
+        with ω⁴ contamination), and the full-block identity above is
+        bit-exact at ka=0.3.  Since ω enters every builder ONLY through
+        the per-order factors ω²ⁿ, passing ω·d supplies the per-order
+        d²ⁿ exactly; the static power d^{s_X} is applied per block below.
+        This is the single seam — no internal builder needs a length.
     """
+    if d <= 0.0:
+        msg = (
+            f"d={d} is invalid: the physical cube side (lattice pitch) "
+            "must be > 0.  Pass d in the same length unit as the medium "
+            "velocities (e.g. d=2*a for SlabGeometry half-width a); "
+            "d=1.0 reproduces the historical unit-pitch behaviour."
+        )
+        raise ValueError(msg)
+
     mu = rho * beta**2
     nu = (alpha**2 - 2.0 * beta**2) / (2.0 * (alpha**2 - beta**2))
     ntype = _classify_neighbour(R_lattice)
     perm = _get_oh_perm(R_lattice)
 
+    # Dimensionless dynamic expansion parameter is ω·d/c: evaluating the
+    # unit-pitch builders at ω·d yields the per-order d^{2n} factors.
+    omega_d = omega * d
+
     # S block: Voigt contraction of the (3,3,3,3) dynamic propagator
     s_orders = min(n_orders, 3)
     P_ijkl = dynamic_inter_voxel_propagator(
-        R_lattice, alpha, beta, rho, omega, s_orders
+        R_lattice, alpha, beta, rho, omega_d, s_orders
     )
-    S = _P_to_voigt_S(P_ijkl)
+    S = _P_to_voigt_S(P_ijkl) / d**3  # two R-gradients of <G>: s_S = -3
 
     # G block: volume-averaged Green's tensor (canonical then rotate)
     g_orders = min(n_orders, 3)
-    G_canon = _build_G_block_canonical(ntype, mu, nu, rho, alpha, beta, omega, g_orders)
-    G = _rotate_matrix3(G_canon, perm)
+    G_canon = _build_G_block_canonical(
+        ntype, mu, nu, rho, alpha, beta, omega_d, g_orders
+    )
+    G = _rotate_matrix3(G_canon, perm) / d  # volume-avg of 1/r: s_G = -1
 
     # C, H blocks: displacement-strain coupling from dG/dR (dynamic)
     ch_orders = min(n_orders, 3)
     dG_canon = _build_dG_rank3_canonical(
-        ntype, mu, nu, rho, alpha, beta, omega, ch_orders
+        ntype, mu, nu, rho, alpha, beta, omega_d, ch_orders
     )
-    dG_rot = _rotate_tensor3(dG_canon, perm)
+    dG_rot = _rotate_tensor3(dG_canon, perm) / d**2  # one gradient: s_C = -2
     C = _dG_to_C_block(dG_rot)
     # H = engineering-Voigt transpose of C: the field-side strain rows are
     # engineering strain (shear doubled), matching _P_to_voigt_S's mult_pq=2.
