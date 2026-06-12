@@ -113,7 +113,9 @@ def test_analytic_volume_averaged_propagator_face_outcome():
     omega = 1e-3 * REF.beta / a  # quasi-static (analytic evaluated at omega=0)
     R = np.array([1.0, 0.0, 0.0])
     D = study.galerkin_9_block(R, omega, a, n=6)
-    P9 = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    P9 = inter_voxel_propagator_9x9(
+        (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
+    )
     dev = study.block_devs(np.real(P9), np.real(D))
     assert dev["G"] < 0.02, f"Analytic G no longer matches quadrature: {dev['G']:.3e}"
     assert dev["S"] > 0.3, (

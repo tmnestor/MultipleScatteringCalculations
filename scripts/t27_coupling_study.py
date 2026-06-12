@@ -676,16 +676,22 @@ def run_propagator_comparison() -> None:
     print("=" * 78)
     print("STEP 2b — EXISTING ANALYTIC VOLUME-AVERAGED 9x9 PROPAGATOR vs QUADRATURE")
     print("=" * 78)
-    a = 0.5  # the analytic module is hardcoded to UNIT PITCH (cube side 1)
+    a = 0.5  # unit pitch (cube side 1); all module calls here pass d=1.0
     omega_static = 1e-3 * REF.beta / a
 
-    # 1. Scale convention: analytic G vs quadrature <G> at two half-widths
-    print("\nScale convention (analytic module has no length argument):")
+    # 1. Scale convention: analytic G vs quadrature <G> at two half-widths.
+    # HISTORICAL: at the time of the study the module had no length
+    # argument; it now takes a required pitch d and rescales internally
+    # (G/C/H/S by d^-1/-2/-2/-3).  Calls here pass d=1.0 to reproduce the
+    # original unit-pitch tables.
+    print("\nScale convention (module evaluated at unit pitch, d=1.0):")
     for a_try in (0.5, 1.0):
         Rphys = np.array([2.0 * a_try, 0.0, 0.0])
         om = 1e-3 * REF.beta / a_try
         G_q = avg_greens(Rphys, om, a_try, n=8)
-        P9 = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+        P9 = inter_voxel_propagator_9x9(
+            (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
+        )
         ratio = np.real(P9[0, 0] / G_q[0, 0])
         print(
             f"  half-width a={a_try}: analytic G[0,0] / quadrature <G>[0,0] = {ratio:.4f}"
@@ -706,7 +712,9 @@ def run_propagator_comparison() -> None:
         "corner": ((1, 1, 1), np.array([1.0, 1.0, 1.0])),
     }
     for name, (Rlat, Rphys) in seps.items():
-        P9 = inter_voxel_propagator_9x9(Rlat, REF.alpha, REF.beta, REF.rho, 0.0, 0)
+        P9 = inter_voxel_propagator_9x9(
+            Rlat, REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
+        )
         P9p = patch_h_engineering(P9)
         for ref_name, ref_mat in (
             ("FD-avg", avg_point_propagator_fd(Rphys, omega_static, a, n=8)),
@@ -723,7 +731,9 @@ def run_propagator_comparison() -> None:
     # 3. Specific structural findings (static, evidence entries)
     print("\nStructural findings (static, unit pitch):")
     # H = C^T misses engineering factor 2 on shear rows
-    P9e = inter_voxel_propagator_9x9((1, 1, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    P9e = inter_voxel_propagator_9x9(
+        (1, 1, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
+    )
     Dfd = avg_point_propagator_fd(np.array([1.0, 1.0, 0.0]), omega_static, a, n=8)
     mask = np.abs(Dfd[6:9, 0:3]) > 0.05 * np.max(np.abs(Dfd[6:9, 0:3]))
     h_ratio = np.real(P9e[6:9, 0:3][mask] / Dfd[6:9, 0:3][mask])
@@ -733,14 +743,18 @@ def run_propagator_comparison() -> None:
         f"[{h_ratio.min():.4f}, {h_ratio.max():.4f}] (should be 1)"
     )
     # Corner S breaks its own S3 symmetry
-    P9c = inter_voxel_propagator_9x9((1, 1, 1), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    P9c = inter_voxel_propagator_9x9(
+        (1, 1, 1), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
+    )
     Sc = np.real(P9c[3:, 3:])
     print(
         f"  [corner S bug] S3-symmetry partners unequal: S[1,4]={Sc[1, 4]:.3e} vs "
         f"S[0,3]={Sc[0, 3]:.3e}; S[3,5]={Sc[3, 5]:.3e} vs S[3,4]={Sc[3, 4]:.3e}"
     )
     # Face S magnitude/sign vs n-refined volume average
-    P9f = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    P9f = inter_voxel_propagator_9x9(
+        (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
+    )
     Dfd_f = avg_point_propagator_fd(np.array([1.0, 0.0, 0.0]), omega_static, a, n=10)
     print(
         f"  [face S] analytic S[0,0]={np.real(P9f[3, 3]):.3e} vs volume-avg truth "
@@ -768,7 +782,7 @@ def run_propagator_comparison() -> None:
             for n_ord in (2, 3):
                 P9 = patch_h_engineering(
                     inter_voxel_propagator_9x9(
-                        Rlat, REF.alpha, REF.beta, REF.rho, om, n_ord
+                        Rlat, REF.alpha, REF.beta, REF.rho, om, n_ord, d=1.0
                     )
                 )
                 dev_re = block_devs(np.real(P9), np.real(ref_mat))

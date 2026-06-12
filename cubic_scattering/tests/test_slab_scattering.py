@@ -647,6 +647,44 @@ class TestVolumeAveragedPropagator:
         # At low ka (0.05), both should give similar exciting fields
         assert_allclose(res_va.psi, res_pt.psi, rtol=0.1)
 
+    def test_volume_averaged_kernel_uses_physical_pitch(self):
+        """The NN kernel block equals inter_voxel_propagator_9x9 evaluated
+        at the slab's PHYSICAL pitch d = geometry.d (wiring test).
+
+        Before the pitch fix, _build_slab_kernels called the unit-pitch
+        propagator with no length rescaling, so volume_averaged=True at
+        a = 1.0 (d = 2.0) was dimensionally wrong (G 2x, C/H 4x, S 8x —
+        measured by scripts/t27_coupling_study.py).
+        """
+        from cubic_scattering.inter_voxel_propagator import (
+            inter_voxel_propagator_9x9,
+        )
+
+        geom = SlabGeometry(M=3, N_z=2, a=A)  # d = 2.0
+        kernel_hat = _build_slab_kernels(geom, OMEGA, REF, volume_averaged=True)
+        # dz = +d plane: k = N_z = 2; dx = dy = 0 -> spatial index (2, 2)
+        kernel_spatial = np.fft.ifft2(kernel_hat[2], axes=(0, 1))
+        block = kernel_spatial[2, 2]
+
+        expected = inter_voxel_propagator_9x9(
+            (1, 0, 0), REF.alpha, REF.beta, REF.rho, OMEGA, 2, d=geom.d
+        )
+        # atol floor: FFT round-trip leaves ~1e-16 x scale noise on the
+        # exact zeros of the propagator block.
+        assert_allclose(
+            block, expected, rtol=1e-12, atol=1e-14 * np.max(np.abs(expected))
+        )
+
+        # And it must NOT be the unit-pitch value (the old bug)
+        bugged = inter_voxel_propagator_9x9(
+            (1, 0, 0), REF.alpha, REF.beta, REF.rho, OMEGA, 2, d=1.0
+        )
+        scale = np.max(np.abs(bugged))
+        assert np.max(np.abs(block - bugged)) > 0.4 * scale, (
+            "kernel block still matches the unit-pitch propagator "
+            "(physical pitch not threaded through)"
+        )
+
 
 # ── 15. TestPeriodicConvolution ────────────────────────────────
 

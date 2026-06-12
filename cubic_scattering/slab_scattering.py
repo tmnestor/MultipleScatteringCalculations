@@ -315,7 +315,10 @@ def _build_slab_kernels(
 
                 if volume_averaged and is_nn:
                     # Call inter_voxel_propagator_9x9 for each orbit point
-                    # (it has its own O_h rotation, so pass signed offsets)
+                    # (it has its own O_h rotation, so pass signed offsets).
+                    # d = geometry.d is the PHYSICAL cube side = lattice
+                    # pitch — the propagator tables are unit-pitch and
+                    # rescale internally (G/C/H/S by d^-1/-2/-2/-3).
                     for sdx, sdy, _transform in _d4h_orbit(dx, dy):
                         R_lattice = (dz_vox, sdx, sdy)
                         G0 = inter_voxel_propagator_9x9(
@@ -325,6 +328,7 @@ def _build_slab_kernels(
                             ref.rho,
                             omega,
                             n_orders,
+                            d=d,
                         )
                         kernel_spatial[sdx + M - 1, sdy + M - 1] = G0
                 else:
