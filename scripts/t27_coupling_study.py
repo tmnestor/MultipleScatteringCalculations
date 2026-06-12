@@ -45,6 +45,14 @@ the strain channels is the codebase T-matrix force/moment sign convention
 volume-averaged propagator genuinely deviates from the point propagator by
 O((a/R)^2) — a real finite-size effect, not a normalisation failure.
 
+Step 2b: the analytic nearest-neighbour propagator in
+``inter_voxel_propagator.py`` (``inter_voxel_propagator_9x9``, used by
+``slab_scattering`` when ``volume_averaged=True``) is compared against two
+quadrature references: (i) the FD volume-averaged point propagator (the
+analytic module's own definition: uniform multipole source, volume-averaged
+field, ``_voigt_contract`` conventions) and (ii) this study's Galerkin object.
+The analytic module is hardcoded to unit pitch (cube side 1, half-width 0.5).
+
 Quadratic-channel isolation: the raw monomial squares r_p^2 carry net-force
 (monopole) content (M couples them to the constant modes), so zeroing raw
 P rows/cols 9-26 breaks a monopole cancellation and produces artifacts.  The
@@ -74,8 +82,12 @@ from cubic_scattering.effective_contrasts import (  # noqa: E402
 )
 from cubic_scattering.horizontal_greens import exact_propagator_9x9  # noqa: E402
 from cubic_scattering.incident_field import cube_overlap_integrals  # noqa: E402
+from cubic_scattering.inter_voxel_propagator import (  # noqa: E402
+    inter_voxel_propagator_9x9,
+)
 from cubic_scattering.resonance_tmatrix import (  # noqa: E402
     _sub_cell_tmatrix_9x9,
+    _voigt_contract,
     elastodynamic_greens,
 )
 from cubic_scattering.tmatrix_assembly import assemble_tmatrix_27  # noqa: E402
@@ -450,6 +462,33 @@ def weight_matrix(a: float) -> NDArray:
     return np.diag([V] * 3 + [-V * a**2 / 3.0] * 6)
 
 
+def galerkin_9_block(Rax: NDArray, omega: float, a: float, n: int = N_GAUSS) -> NDArray:
+    """Quadrature truth in the point-propagator convention: M9^-1 Pq[0:9,0:9] W^-1.
+
+    Args:
+        Rax: Separation in axis order (z, x, y).
+        omega: Angular frequency.
+        a: Cube half-width.
+        n: Gauss points per axis.
+
+    Returns:
+        D: shape (9, 9) complex — directly comparable to exact_propagator_9x9
+        (and to inter_voxel_propagator_9x9 at unit pitch, a = 0.5).
+    """
+    Pq = quad_propagator_27(Rax, omega, REF, a, n=n)
+    M9 = mass_matrix(a)[:9, :9]
+    return np.linalg.solve(M9, Pq[:9, :9]) @ np.linalg.inv(weight_matrix(a))
+
+
+def block_devs(X: NDArray, ref_mat: NDArray) -> dict[str, float]:
+    """Per-block max deviation of X from ref_mat, normalised by block scale."""
+    out = {}
+    for bn, (r_, c_) in _BLOCKS.items():
+        scale = np.max(np.abs(ref_mat[r_, c_]))
+        out[bn] = float(np.max(np.abs(X[r_, c_] - ref_mat[r_, c_])) / scale)
+    return out
+
+
 def nine_block_deviation(
     Rax: NDArray, omega: float, a: float, n: int = N_GAUSS
 ) -> dict[str, float]:
@@ -464,16 +503,10 @@ def nine_block_deviation(
     Returns:
         Per-block max deviation normalised by the block's max magnitude.
     """
-    Pq = quad_propagator_27(Rax, omega, REF, a, n=n)
-    M9 = mass_matrix(a)[:9, :9]
-    D = np.linalg.solve(M9, Pq[:9, :9]) @ np.linalg.inv(weight_matrix(a))
+    D = galerkin_9_block(Rax, omega, a, n=n)
     # exact_propagator_9x9 signature is (x, y, z); axis order here is (z, x, y)
     Pp = exact_propagator_9x9(Rax[1], Rax[2], Rax[0], omega, REF)
-    out = {}
-    for bn, (r_, c_) in _BLOCKS.items():
-        scale = np.max(np.abs(Pp[r_, c_]))
-        out[bn] = float(np.max(np.abs(D[r_, c_] - Pp[r_, c_])) / scale)
-    return out
+    return block_devs(D, Pp)
 
 
 def run_calibration() -> None:
@@ -557,6 +590,193 @@ def run_calibration() -> None:
     )
 
 
+# ── Step 2b: existing analytic volume-averaged propagator vs quadrature ──────
+
+
+def avg_greens(Rax: NDArray, omega: float, a: float, n: int = N_GAUSS) -> NDArray:
+    """Double volume average <G>(R) = (1/V^2) intint G(R + r - r') dV dV'."""
+    pts, w = gauss_grid(n, a)
+    V = (2.0 * a) ** 3
+    sep = Rax[None, None, :] + pts[:, None, :] - pts[None, :, :]
+    G = greens_tensor(sep, omega, REF)
+    return np.einsum("m,q,mqij->ij", w, w, G) / V**2
+
+
+def avg_point_propagator_fd(
+    Rax: NDArray, omega: float, a: float, h: float = 0.005, n: int = N_GAUSS
+) -> NDArray:
+    """Volume average of the point 9x9 propagator via FD derivatives of <G>.
+
+    This is the object the analytic inter_voxel_propagator_9x9 documents:
+    uniform unit-strength multipole source over the source voxel, field
+    averaged over the field voxel, with the _voigt_contract conventions.
+    All derivative blocks are R-derivatives of <G>(R), evaluated by
+    second-order central differences.
+
+    The FD step must be much smaller than the closest quadrature node-pair
+    gap across a touching face (~0.04 at n = 8, a = 0.5); h = 0.005 matches
+    direct quadrature of the derivative kernels to ~1% there.  The S block
+    at face contact retains a slow (log-type) n-convergence shared with the
+    direct integral; the study cross-checks by direct n-refinement.
+
+    Args:
+        Rax: Separation in axis order (z, x, y).
+        omega: Angular frequency.
+        a: Cube half-width.
+        h: FD step (same length units as Rax).
+        n: Gauss points per axis for each <G> evaluation.
+
+    Returns:
+        P: shape (9, 9) complex — [[<G>, C], [H, S]].
+    """
+    e = np.eye(3)
+    A0 = avg_greens(Rax, omega, a, n)
+    Ap = [avg_greens(Rax + h * e[k], omega, a, n) for k in range(3)]
+    Am = [avg_greens(Rax - h * e[k], omega, a, n) for k in range(3)]
+    Gd = np.zeros((3, 3, 3), dtype=complex)
+    Gdd = np.zeros((3, 3, 3, 3), dtype=complex)
+    for k in range(3):
+        Gd[:, :, k] = (Ap[k] - Am[k]) / (2.0 * h)
+        Gdd[:, :, k, k] = (Ap[k] - 2.0 * A0 + Am[k]) / h**2
+    for k in range(3):
+        for ll in range(k + 1, 3):
+            App = avg_greens(Rax + h * e[k] + h * e[ll], omega, a, n)
+            Apm = avg_greens(Rax + h * e[k] - h * e[ll], omega, a, n)
+            Amp = avg_greens(Rax - h * e[k] + h * e[ll], omega, a, n)
+            Amm = avg_greens(Rax - h * e[k] - h * e[ll], omega, a, n)
+            Gdd[:, :, k, ll] = Gdd[:, :, ll, k] = (App - Apm - Amp + Amm) / (4.0 * h**2)
+    C, H, S = _voigt_contract(Gd, Gdd)
+    P = np.zeros((9, 9), dtype=complex)
+    P[:3, :3] = A0
+    P[:3, 3:] = C
+    P[3:, :3] = H
+    P[3:, 3:] = S
+    return P
+
+
+def patch_h_engineering(P9: NDArray) -> NDArray:
+    """Double the shear (engineering Voigt) rows of the H block.
+
+    inter_voxel_propagator_9x9 sets H = C^T, which drops the factor 2 that
+    the engineering shear-strain rows carry in the validated convention
+    (its own S block applies it via mult_pq = 2).  This patch restores it.
+    """
+    out = P9.copy()
+    out[6:9, 0:3] *= 2.0
+    return out
+
+
+def run_propagator_comparison() -> None:
+    """Step 2b: arbitrate inter_voxel_propagator_9x9 against quadrature truth."""
+    print()
+    print("=" * 78)
+    print("STEP 2b — EXISTING ANALYTIC VOLUME-AVERAGED 9x9 PROPAGATOR vs QUADRATURE")
+    print("=" * 78)
+    a = 0.5  # the analytic module is hardcoded to UNIT PITCH (cube side 1)
+    omega_static = 1e-3 * REF.beta / a
+
+    # 1. Scale convention: analytic G vs quadrature <G> at two half-widths
+    print("\nScale convention (analytic module has no length argument):")
+    for a_try in (0.5, 1.0):
+        Rphys = np.array([2.0 * a_try, 0.0, 0.0])
+        om = 1e-3 * REF.beta / a_try
+        G_q = avg_greens(Rphys, om, a_try, n=8)
+        P9 = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+        ratio = np.real(P9[0, 0] / G_q[0, 0])
+        print(
+            f"  half-width a={a_try}: analytic G[0,0] / quadrature <G>[0,0] = {ratio:.4f}"
+        )
+    print("  -> matches at a = 0.5 only: hardcoded to pitch d = 1 (slab usage with")
+    print("     d != 1, e.g. tests at a = 1, scales G/C/S wrongly by d, d^2, d^3).")
+
+    # 2. Static per-block comparison vs both references
+    print("\nStatic comparison (ka -> 0), per-block max deviation / block scale.")
+    print("  ref FD-avg = volume-averaged point propagator (the analytic module's")
+    print("  own definition); ref Galerkin = this study's M9^-1 P_quad W^-1.")
+    print(
+        f"  {'sep':>6} {'ref':>9}  {'G':>9}  {'C':>9}  {'H':>9}  {'S':>9}   (H-patched: H')"
+    )
+    seps = {
+        "face": ((1, 0, 0), np.array([1.0, 0.0, 0.0])),
+        "edge": ((1, 1, 0), np.array([1.0, 1.0, 0.0])),
+        "corner": ((1, 1, 1), np.array([1.0, 1.0, 1.0])),
+    }
+    for name, (Rlat, Rphys) in seps.items():
+        P9 = inter_voxel_propagator_9x9(Rlat, REF.alpha, REF.beta, REF.rho, 0.0, 0)
+        P9p = patch_h_engineering(P9)
+        for ref_name, ref_mat in (
+            ("FD-avg", avg_point_propagator_fd(Rphys, omega_static, a, n=8)),
+            ("Galerkin", galerkin_9_block(Rphys, omega_static, a, n=8)),
+        ):
+            dev = block_devs(P9, ref_mat)
+            dev_p = block_devs(P9p, ref_mat)
+            print(
+                f"  {name:>6} {ref_name:>9}  "
+                + "  ".join(f"{dev[b]:>9.2e}" for b in "GCHS")
+                + f"   (H'={dev_p['H']:.2e})"
+            )
+
+    # 3. Specific structural findings (static, evidence entries)
+    print("\nStructural findings (static, unit pitch):")
+    # H = C^T misses engineering factor 2 on shear rows
+    P9e = inter_voxel_propagator_9x9((1, 1, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    Dfd = avg_point_propagator_fd(np.array([1.0, 1.0, 0.0]), omega_static, a, n=8)
+    mask = np.abs(Dfd[6:9, 0:3]) > 0.05 * np.max(np.abs(Dfd[6:9, 0:3]))
+    h_ratio = np.real(P9e[6:9, 0:3][mask] / Dfd[6:9, 0:3][mask])
+    print(
+        f"  [H bug] H = C^T drops engineering 2x on shear rows: measured "
+        f"H_analytic/H_true on edge shear rows = "
+        f"[{h_ratio.min():.4f}, {h_ratio.max():.4f}] (should be 1)"
+    )
+    # Corner S breaks its own S3 symmetry
+    P9c = inter_voxel_propagator_9x9((1, 1, 1), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    Sc = np.real(P9c[3:, 3:])
+    print(
+        f"  [corner S bug] S3-symmetry partners unequal: S[1,4]={Sc[1, 4]:.3e} vs "
+        f"S[0,3]={Sc[0, 3]:.3e}; S[3,5]={Sc[3, 5]:.3e} vs S[3,4]={Sc[3, 4]:.3e}"
+    )
+    # Face S magnitude/sign vs n-refined volume average
+    P9f = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0)
+    Dfd_f = avg_point_propagator_fd(np.array([1.0, 0.0, 0.0]), omega_static, a, n=10)
+    print(
+        f"  [face S] analytic S[0,0]={np.real(P9f[3, 3]):.3e} vs volume-avg truth "
+        f"~{np.real(Dfd_f[3, 3]):.3e} (n-refinement trends to ~1.0e-11: 3x+ low); "
+        f"S[4,4]={np.real(P9f[7, 7]):.3e} vs ~{np.real(Dfd_f[7, 7]):.3e} (sign flip)"
+    )
+
+    # 4. Dynamic corrections at edge/corner (clean statics) vs FD-avg reference.
+    # The analytic omega^(2n) series is identically REAL: it can represent the
+    # near-field dispersion but not the imaginary (radiation) part of the
+    # propagator.  Report the real-part residual and the missing Im fraction.
+    print("\nDynamic residual (edge/corner, where statics are clean; H patched x2):")
+    print("  dev(Re) = real-part deviation; Im/scale = imaginary part of the truth,")
+    print("  which the (real) omega^2n series omits entirely.")
+    print(
+        f"  {'sep':>6} {'ka':>5} {'n_ord':>5}  "
+        f"{'G dev(Re)':>10} {'C dev(Re)':>10} {'S dev(Re)':>10}  "
+        f"{'G Im/sc':>8} {'S Im/sc':>8}"
+    )
+    for name in ("edge", "corner"):
+        Rlat, Rphys = seps[name]
+        for ka in (0.1, 0.5):
+            om = ka * REF.beta / a
+            ref_mat = avg_point_propagator_fd(Rphys, om, a, n=8)
+            for n_ord in (2, 3):
+                P9 = patch_h_engineering(
+                    inter_voxel_propagator_9x9(
+                        Rlat, REF.alpha, REF.beta, REF.rho, om, n_ord
+                    )
+                )
+                dev_re = block_devs(np.real(P9), np.real(ref_mat))
+                row = f"  {name:>6} {ka:>5.1f} {n_ord:>5}  "
+                row += "".join(f"{dev_re[b]:>10.2e} " for b in "GCS")
+                for b in "GS":
+                    r_, c_ = _BLOCKS[b]
+                    scale = np.max(np.abs(ref_mat[r_, c_]))
+                    row += f" {np.max(np.abs(np.imag(ref_mat[r_, c_]))) / scale:>8.2e}"
+                print(row)
+
+
 # ── Decision table ───────────────────────────────────────────────────────────
 
 
@@ -638,6 +858,7 @@ def main() -> None:
         f"Drho={CONTRAST.Drho}"
     )
     run_calibration()
+    run_propagator_comparison()
     run_decision_table()
 
 
