@@ -826,6 +826,9 @@ class SlabReflectionMatrix:
         eta_P: Vertical P slowness in the background.
         eta_S: Vertical S slowness in the background.
         n_gmres_iters: GMRES iterations for the (P, SV, SH) solves.
+            Each slot stores SlabResult.n_gmres_iter, the matvec count
+            including the final residual-check matvec; the SH slot is 0
+            when include_sh=False.
     """
 
     R_psv: NDArray[np.complexfloating]
@@ -849,7 +852,8 @@ class SlabReflectionMatrix:
         invariant — the product of the two off-diagonal ratios, which is
         invariant under any diagonal similarity — equal to 1 as the
         convention-independent check. Diagonal entries are unchanged; the
-        modified matrix is symmetric by reciprocity.
+        modified matrix is symmetric by reciprocity. Singular at grazing
+        incidence (η_P = 0 or η_S = 0 makes D non-invertible).
         """
         # Background velocities recovered from 1/c_m² = η_m² + p²
         # (exact for evanescent modes too, where η_m is imaginary).
@@ -879,6 +883,15 @@ def slab_reflection_matrix(
     extractor. SH decouples from P-SV in the horizontally averaged
     (specular) response; the SH-incident solve only populates R_sh.
 
+    Validity:
+        P channels (the P-incident column and R_PP/R_PS) require p < 1/α:
+        past the P-critical slowness the P-incident solve uses a
+        horizontally-propagating homogeneous wave instead of the physical
+        evanescent field, so that column is unphysical (a UserWarning is
+        emitted). SV/SH channels require p < 1/β. Grazing values
+        p = 1/α or p = 1/β are singular (η_m = 0 in the Weyl prefactor
+        and in to_modified).
+
     Args:
         geometry: Slab lattice geometry.
         material: Per-cube material contrasts.
@@ -888,15 +901,24 @@ def slab_reflection_matrix(
         max_iter: Maximum GMRES iterations.
         volume_averaged: Use volume-averaged inter-voxel propagator.
         n_orders: Dynamic correction orders for the volume-averaged propagator.
-        include_sh: If False, skip the SH-incident solve (R_sh = 0). The
-            ocean-bottom embedding uses this — SH cannot couple through a
-            fluid.
+        include_sh: If False, skip the SH-incident solve (R_sh = 0).
+            Intended for embeddings where SH cannot couple (e.g. through
+            a fluid).
 
     Returns:
         SlabReflectionMatrix (displacement convention; use .to_modified()
         for Kennett comparison and recursion mixing).
     """
     ref = material.ref
+    if p >= 1.0 / ref.alpha:
+        import warnings
+
+        warnings.warn(
+            f"p={p:.3e} s/m >= 1/alpha={1.0 / ref.alpha:.3e}: P-incident "
+            f"column of R_psv is unphysical (homogeneous-wave approximation "
+            f"of an evanescent incident field); only SV/SH channels are valid",
+            stacklevel=2,
+        )
     eta_P = _vertical_slowness(_complex_slowness(ref.alpha, np.inf), p)
     eta_S = _vertical_slowness(_complex_slowness(ref.beta, np.inf), p)
     k_hat_P = np.array([float(np.real(eta_P * ref.alpha)), p * ref.alpha, 0.0])
@@ -949,6 +971,9 @@ class KennettChannelReference:
     """All five Kennett reflection channels for a uniform 3-layer stack.
 
     Modified (energy-normalized) convention, as stored by kennett_layers.
+    Channel naming follows KennettResult: R_PS = RD_psv[0, 1]. For
+    reflection matrices in the modified convention the matrix is symmetric,
+    so the in/out index order is immaterial here.
     """
 
     R_PP: complex
