@@ -4,10 +4,13 @@ Simulates ocean-bottom reflection from a Ricker wavelet through a 3-layer model:
 water (acoustic) | heterogeneous sediment (M×M×N_z slab) | elastic halfspace.
 
 Uses the existing Kennett recursion (kennett_layers) for the complete homogeneous
-background response. For the heterogeneous slab, R_slab is injected into the
-sub-ocean reflectivity and dressed by the water-sed interface via a single
-Kennett recursion step. At p>0, P-S conversion exists in the solid but the
-fluid-solid interface PP path remains well-defined as coeff.Rd[0,0].
+background response. For the heterogeneous slab, the full 2×2 P-SV reflection
+matrix R_slab_psv (modified convention) is injected into the sub-ocean
+reflectivity and dressed by the water-sed interface via a single 2×2 Kennett
+recursion step. Although the fluid carries only P, internal P→SV→P mode
+conversion inside the sediment package enters the reverberation operator
+(I − Ru·MT)⁻¹ and feeds the observable water-column R_PP = R[0, 0]. SH cannot
+couple through the fluid and is excluded.
 """
 
 import time
@@ -31,10 +34,8 @@ from .seismic_survey import ricker_source_spectrum
 from .slab_scattering import (
     SlabGeometry,
     SlabMaterial,
-    compute_slab_scattering,
-    compute_slab_tmatrices,
     random_slab_material,
-    slab_rpp_periodic,
+    slab_reflection_matrix,
     uniform_slab_material,
 )
 
@@ -91,7 +92,13 @@ class OceanBottomResult:
         trace_total: Total seismogram (homogeneous + slab), shape (nt,).
         trace_homogeneous: Homogeneous layered seismogram, shape (nt,).
         R_bg: Background Kennett R_PP (from kennett_layers), shape (nw-1,), complex.
-        R_slab: Raw slab scattering R_PP (before coupling), shape (nw-1,), complex.
+        R_slab: PP entry of R_slab_psv, kept for plotting compatibility,
+            shape (nw-1,), complex.
+        R_slab_psv: Raw slab P-SV reflection matrix (modified convention,
+            before interface coupling), shape (nw-1, 2, 2), complex.
+            Rows = outgoing mode (0=P, 1=SV); columns = incident mode.
+        MT_psv: Phase-shifted sub-ocean P-SV reflectivity (modified
+            convention) including the slab, shape (nw-1, 2, 2), complex.
         R_total: Total R_PP with slab dressed by interface coupling, shape (nw-1,), complex.
         omega_real: Real frequency axis (rad/s), shape (nw-1,).
         config: Configuration used.
@@ -105,6 +112,8 @@ class OceanBottomResult:
     trace_homogeneous: NDArray[np.floating]
     R_bg: NDArray[np.complexfloating]
     R_slab: NDArray[np.complexfloating]
+    R_slab_psv: NDArray[np.complexfloating]
+    MT_psv: NDArray[np.complexfloating]
     R_total: NDArray[np.complexfloating]
     omega_real: NDArray[np.floating]
     config: OceanBottomConfig
@@ -114,26 +123,26 @@ class OceanBottomResult:
 
 
 def _kennett_water_step(
-    MT_pp: NDArray,
+    MT_psv: NDArray,
     cfg: OceanBottomConfig,
 ) -> NDArray:
-    """Kennett recursion at the water-sediment interface for PP.
+    """Kennett recursion at the water-sediment interface (2×2 P-SV).
 
-    Computes R_surface_PP = Rd + Tu · MT · (1 − Ru · MT)⁻¹ · Td
-    using modified fluid-solid scattering coefficients. At p>0, P-S
-    conversion exists but the PP path through the fluid-solid interface
-    is still well-defined as coeff.Rd[0,0].
+    Computes R = Rd + Tu · MT · (I − Ru · MT)⁻¹ · Td with the fluid-solid
+    coefficients (modified convention) and returns the water-side PP
+    observable R[0, 0]. The full 2×2 MT keeps P↔SV conversion inside the
+    sediment package in the reverberation operator (I − Ru·MT)⁻¹.
 
     Args:
-        MT_pp: Phase-shifted sub-ocean PP reflectivity, shape (nfreq,).
-        cfg: Ocean-bottom configuration (provides water and sediment properties).
+        MT_psv: Phase-shifted sub-ocean P-SV reflectivity (modified
+            convention), shape (nfreq, 2, 2).
+        cfg: Ocean-bottom configuration.
 
     Returns:
-        PP reflection coefficient at the water-sed interface, shape (nfreq,).
+        Water-side PP reflection coefficient, shape (nfreq,).
     """
     p = cfg.p
 
-    # Complex slownesses at given p
     s_water = _complex_slowness(cfg.water_alpha, np.inf)
     eta_water = _vertical_slowness(s_water, p)
     s_sed_p = _complex_slowness(cfg.sed_ref.alpha, np.inf)
@@ -142,18 +151,17 @@ def _kennett_water_step(
     neta_sed = _vertical_slowness(s_sed_s, p)
     beta_sed = 1.0 / s_sed_s
 
-    # Fluid-solid interface R/T coefficients (modified form)
     coeff = psv_fluid_solid(
         p, eta_water, cfg.water_rho, eta_sed, neta_sed, cfg.sed_ref.rho, beta_sed
     )
-    Rd = coeff.Rd[0, 0]
-    Ru = coeff.Ru[0, 0]
-    Td = coeff.Td[0, 0]
-    Tu = coeff.Tu[0, 0]
 
-    # Scalar Kennett recursion: PP path through fluid-solid interface
-    U = 1.0 / (1.0 - Ru * MT_pp)
-    return Rd + Tu * MT_pp * U * Td
+    eye = np.eye(2, dtype=complex)
+    out = np.zeros(MT_psv.shape[0], dtype=complex)
+    for i in range(MT_psv.shape[0]):
+        U = np.linalg.inv(eye - coeff.Ru @ MT_psv[i])
+        R = coeff.Rd + coeff.Tu @ MT_psv[i] @ U @ coeff.Td
+        out[i] = R[0, 0]
+    return out
 
 
 def compute_ocean_bottom_reflection(
@@ -168,9 +176,11 @@ def compute_ocean_bottom_reflection(
 
     The homogeneous background is computed via the existing kennett_layers
     recursion for the full [water|sed|hs] stack. For the heterogeneous total,
-    R_slab is injected into the sub-ocean reflectivity and dressed by the
-    water-sed interface via a single Kennett step (Td·Tu coupling +
-    sediment-internal reverberations).
+    the 2×2 P-SV slab reflection matrix (modified convention) is injected
+    into the sub-ocean reflectivity and dressed by the water-sed interface
+    via a single 2×2 Kennett step (Td·Tu coupling + sediment-internal
+    reverberations, including internal P↔SV conversion). SH is excluded
+    (cannot couple through the fluid).
 
     Optionally includes free-surface reverberations (water-column multiples).
 
@@ -220,6 +230,8 @@ def compute_ocean_bottom_reflection(
     eta_water = _vertical_slowness(s_water, p)
     s_sed_p = _complex_slowness(cfg.sed_ref.alpha, np.inf)
     eta_sed = _vertical_slowness(s_sed_p, p)
+    s_sed_s = _complex_slowness(cfg.sed_ref.beta, np.inf)
+    neta_sed_s = _vertical_slowness(s_sed_s, p)
 
     # ── Kennett background R_PP (full 3-layer recursion) ──────────────
     H = cfg.geometry.N_z * cfg.geometry.d
@@ -266,17 +278,19 @@ def compute_ocean_bottom_reflection(
         ]
     )
     sub_result = kennett_layers(sub_stack, p=p, omega=omega_kennett)
-    R_sed_hs = sub_result.RPP[0]
+    # Frequency-independent for the 2-layer [sed|hs] stack (interface Rd
+    # only — the explicit phase below carries all frequency dependence)
+    R_sed_hs_psv = sub_result.RD_psv[0]
 
-    # ── Sediment two-way phase ────────────────────────────────────────
-    E2_sed = np.exp(2j * omega_damped * eta_sed * H)
+    # ── Sediment one-way phases ───────────────────────────────────────
+    # Per-mode one-way phases through the sediment package;
+    # two-way conversion path phase is E_i · E_j (down as j, up as i)
+    E_P = np.exp(1j * omega_damped * eta_sed * H)
+    E_S = np.exp(1j * omega_damped * neta_sed_s * H)
+    E_diag = np.stack([E_P, E_S], axis=-1)  # (nwm, 2)
 
-    # ── Slab scattering R_PP ─────────────────────────────────────────
-    R_slab = np.zeros(nwm, dtype=complex)
-    # k_hat from slowness: [η_P·α, p·α, 0] in (z,x,y) — downgoing
-    k_hat = np.array(
-        [float(np.real(eta_sed * cfg.sed_ref.alpha)), float(p * cfg.sed_ref.alpha), 0.0]
-    )
+    # ── Slab P-SV reflection matrix (modified convention) ─────────────
+    R_slab_psv = np.zeros((nwm, 2, 2), dtype=complex)
     n_gmres_iters: list[int] = []
     freq_elapsed: list[float] = []
 
@@ -290,29 +304,30 @@ def compute_ocean_bottom_reflection(
     for iw in iterator:
         t_freq = time.perf_counter()
         w = float(omega_real[iw])
-        result = compute_slab_scattering(
+        slab = slab_reflection_matrix(
             cfg.geometry,
             cfg.material,
             w,
-            k_hat,
-            wave_type="P",
+            p=p,
             gmres_tol=gmres_tol,
-            periodic=True,
             volume_averaged=volume_averaged,
             n_orders=n_orders,
+            include_sh=False,
         )
-        T_local = compute_slab_tmatrices(cfg.geometry, cfg.material, w)
-        R_slab[iw] = slab_rpp_periodic(result, T_local, p=p)
-        n_gmres_iters.append(result.n_gmres_iter)
+        R_slab_psv[iw] = slab.to_modified()
+        n_gmres_iters.append(max(slab.n_gmres_iters))
         freq_elapsed.append(time.perf_counter() - t_freq)
 
     # ── Total R_PP with slab injection into Kennett recursion ─────────
-    # MT = E²_sed · R_sed_hs + R_slab: sub-ocean reflectivity with slab
-    MT_total = E2_sed * R_sed_hs + R_slab
-    # Single Kennett step at water-sed interface dresses R_slab with
-    # Td·Tu coupling and includes sediment-internal reverberations
+    # MT_ij = E_i · R_sed_hs_ij · E_j + R_slab_ij  (modified convention)
+    MT_psv = (
+        E_diag[:, :, None] * R_sed_hs_psv[None, :, :] * E_diag[:, None, :] + R_slab_psv
+    )
+    # Single 2×2 Kennett step at the water-sed interface dresses the
+    # sub-ocean reflectivity with Td·Tu coupling and keeps internal
+    # P↔SV conversion in the reverberation operator
     R_total = np.zeros(nwm, dtype=complex)
-    R_total[active_indices] = _kennett_water_step(MT_total[active_indices], cfg)
+    R_total[active_indices] = _kennett_water_step(MT_psv[active_indices], cfg)
 
     # ── Water column two-way phase ────────────────────────────────────
     water_phase = np.exp(2j * omega_damped * eta_water * cfg.water_depth)
@@ -358,7 +373,9 @@ def compute_ocean_bottom_reflection(
         trace_total=trace_total,
         trace_homogeneous=trace_homogeneous,
         R_bg=R_bg,
-        R_slab=R_slab,
+        R_slab=R_slab_psv[:, 0, 0],
+        R_slab_psv=R_slab_psv,
+        MT_psv=MT_psv,
         R_total=R_total,
         omega_real=omega_real,
         config=config,
