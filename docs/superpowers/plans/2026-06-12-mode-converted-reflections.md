@@ -41,14 +41,24 @@ Read these once; every task below depends on them.
    never caught. Task 2 fixes it via the generalized extractor; Task 4's oblique R_PP
    test is the proof.
 
-4. **Modified (energy-normalized) convention:** `kennett_layers` coefficients use the
-   `sqrt(η ρ)` normalization (see `PSVCoefficients` docstring) which makes reflection
-   matrices SYMMETRIC. The slab extractor produces displacement-amplitude ratios.
-   Conversion (incident and reflected in the same sediment medium, ρ cancels):
-   `R̃_ij = sqrt(η_i / η_j) · R_ij` with i = outgoing mode row, j = incident mode column.
-   Diagonal entries are identical in both conventions. ALL comparisons against Kennett
-   and ALL matrix mixing in the ocean-bottom recursion happen in the modified
-   convention.
+4. **Modified (energy-normalized) convention:** `kennett_layers` coefficients use a
+   normalization (see `PSVCoefficients` docstring) which makes reflection matrices
+   SYMMETRIC. The slab extractor produces displacement-amplitude ratios.
+
+   > **CORRECTED during Task 4 (measurement against Kennett):** the originally
+   > planned conversion `R̃_ij = sqrt(η_i/η_j)·R_ij` was wrong — this codebase's
+   > Kennett eigenvector normalization carries velocity factors and a factor i on
+   > SV (the `m2ci = −2i` factor in `psv_solid_solid`). The correct conversion is
+   > the diagonal similarity `R̃ = D R D⁻¹` with `D = diag(α·√η_P, i·β·√η_S)`.
+   > Pinned by the convention-independent reciprocity invariant: the product of
+   > the two off-diagonal slab/Kennett ratios equals 1 (measured 0.987 at the
+   > test discretization). Diagonal entries are unchanged by any diagonal
+   > similarity. Additionally, `K_SS(0) = −K_SH(0)` (SV sign convention under
+   > reflection), and the incident-field builder had a p=0 SV polarisation
+   > discontinuity (special case +x̂ vs continuous limit −x̂) fixed in Task 4.
+
+   ALL comparisons against Kennett and ALL matrix mixing in the ocean-bottom
+   recursion happen in the modified convention.
 
 5. **Test parameters** (validated set): background α=5000 m/s, β=3000 m/s, ρ=2500 kg/m³;
    moderate contrast Δλ=+2 GPa, Δμ=+1 GPa, Δρ=+100 kg/m³; weak contrast = 1e-4 ×
