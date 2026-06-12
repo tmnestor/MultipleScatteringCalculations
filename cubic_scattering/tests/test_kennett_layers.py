@@ -820,3 +820,29 @@ class TestCrossValidationPhD:
         np.testing.assert_allclose(
             _batch_matmul2x2(A3, B3), phd_mul(A3, B3), atol=1e-12
         )
+
+
+# ── 16. Modified-convention symmetry ────────────────────────────────────
+
+
+class TestModifiedConventionSymmetry:
+    """The modified (sqrt(eta*rho)-normalized) reflection matrix is symmetric.
+
+    This is the property that makes the off-diagonal channel comparison
+    index-order-proof: RD_psv[0, 1] == RD_psv[1, 0] in the modified
+    convention, regardless of which slot means P-in vs P-out.
+    """
+
+    def test_rd_psv_symmetric_oblique(self):
+        """Two-halfspace contrast at oblique p: RD_psv must be symmetric."""
+        stack = LayerStack(
+            layers=[
+                IsotropicLayer(alpha=5000.0, beta=3000.0, rho=2500.0, thickness=50.0),
+                IsotropicLayer(alpha=5400.0, beta=3200.0, rho=2600.0, thickness=np.inf),
+            ]
+        )
+        p = 1.0e-4  # oblique, sub-critical (1/alpha = 2e-4)
+        result = kennett_layers(stack, p=p, omega=np.array([150.0]))
+        RD = result.RD_psv[0]
+        assert abs(RD[0, 1]) > 1e-6, "expected nonzero conversion at oblique p"
+        np.testing.assert_allclose(RD[0, 1], RD[1, 0], rtol=1e-8)
