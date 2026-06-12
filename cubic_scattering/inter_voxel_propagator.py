@@ -416,6 +416,18 @@ def corner_propagator(mu: float, nu: float) -> NDArray:
         a_diag=(CORNER_A11, CORNER_A11, CORNER_A11),
         a_offdiag=(CORNER_A12, CORNER_A12, CORNER_A12),
     )
+    # B1123 covers the full S₃ orbit of multisets {0,0,1,2}, {0,1,1,2},
+    # {0,1,2,2} (InterVoxelPropagatorCorner.wl: "P_{1123} (S_3 orbit,
+    # 3 equiv)").  The {0,1,1,2} entry was previously a duplicate
+    # (0,1,0,2) key — same multiset as (0,0,1,2) — which zeroed 24 tensor
+    # components and broke the C3(111) site symmetry of the S block
+    # (S[1,4] = 0 vs partner S[0,3]; measured by
+    # scripts/t27_coupling_study.py and arbitrated entry-wise by its
+    # avg_point_propagator_fd: implied B1123 = 2.4705e-3 at the zeroed
+    # components, matching CORNER_B1123 to 1.1e-4 relative).  The same
+    # arbiter confirmed both C3 orbits of the B1112 family
+    # ({0,0,0,1}-type and {0,0,0,2}-type) carry the SAME constant
+    # (implied -9.2664e-3 on all six entries).
     b_components = {
         (0, 0, 0, 0): CORNER_B1111,
         (1, 1, 1, 1): CORNER_B1111,
@@ -430,7 +442,7 @@ def corner_propagator(mu: float, nu: float) -> NDArray:
         (0, 2, 2, 2): CORNER_B1112,
         (1, 2, 2, 2): CORNER_B1112,
         (0, 0, 1, 2): CORNER_B1123,
-        (0, 1, 0, 2): CORNER_B1123,
+        (0, 1, 1, 2): CORNER_B1123,
         (0, 1, 2, 2): CORNER_B1123,
     }
     B = _build_B_tensor(b_components)
@@ -582,8 +594,10 @@ def _corner_propagator_dyn(
             (1, 1, 1, 2): DYN1_CORNER_B1112,
             (0, 2, 2, 2): DYN1_CORNER_B1112,
             (1, 2, 2, 2): DYN1_CORNER_B1112,
+            # Full B1123 S₃ orbit {0,0,1,2}/{0,1,1,2}/{0,1,2,2} — same
+            # missing-multiset fix as the static corner_propagator table.
             (0, 0, 1, 2): DYN1_CORNER_B1123,
-            (0, 1, 0, 2): DYN1_CORNER_B1123,
+            (0, 1, 1, 2): DYN1_CORNER_B1123,
             (0, 1, 2, 2): DYN1_CORNER_B1123,
         }
     elif order == 2:
@@ -604,8 +618,9 @@ def _corner_propagator_dyn(
             (1, 1, 1, 2): DYN2_CORNER_B1112,
             (0, 2, 2, 2): DYN2_CORNER_B1112,
             (1, 2, 2, 2): DYN2_CORNER_B1112,
+            # Full B1123 S₃ orbit — same fix as the static table.
             (0, 0, 1, 2): DYN2_CORNER_B1123,
-            (0, 1, 0, 2): DYN2_CORNER_B1123,
+            (0, 1, 1, 2): DYN2_CORNER_B1123,
             (0, 1, 2, 2): DYN2_CORNER_B1123,
         }
     elif order == 3:
@@ -626,8 +641,9 @@ def _corner_propagator_dyn(
             (1, 1, 1, 2): DYN3_CORNER_B1112,
             (0, 2, 2, 2): DYN3_CORNER_B1112,
             (1, 2, 2, 2): DYN3_CORNER_B1112,
+            # Full B1123 S₃ orbit — same fix as the static table.
             (0, 0, 1, 2): DYN3_CORNER_B1123,
-            (0, 1, 0, 2): DYN3_CORNER_B1123,
+            (0, 1, 1, 2): DYN3_CORNER_B1123,
             (0, 1, 2, 2): DYN3_CORNER_B1123,
         }
     else:

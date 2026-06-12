@@ -144,8 +144,10 @@ from cubic_scattering.inter_voxel_propagator import (
     _build_dG_rank3_canonical,
     _build_dPhi_vector,
     _build_dW_vector,
+    _corner_propagator_dyn,
     _dG_to_C_block,
     _P_to_voigt_S,
+    _rotate_tensor4,
     corner_propagator,
     dynamic_inter_voxel_propagator,
     edge_propagator,
@@ -1831,6 +1833,11 @@ class TestHEngineeringConvention:
         The uncorrected H = C.T shear rows sit at ~0.5x against BOTH
         arbiters, failing each tolerance by more than an order of
         magnitude.
+
+        Note on frequencies: the module is evaluated at omega = 0, where
+        its static H block is exact; the arbiters use omega_static (ka ~
+        1e-3), whose quasi-static correction is sub-0.1% — well within
+        both tolerances.
         """
         study = _load_t27_study()
         a = 0.5
@@ -1894,3 +1901,232 @@ class TestHEngineeringConvention:
                             atol=1e-15,
                             err_msg=f"H != W@C.T for R={R}, n_orders={n_ord}",
                         )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Corner S-block C3(111) site symmetry (fix for the missing {0,1,1,2}
+# B1123 multiset measured by scripts/t27_coupling_study.py)
+# ══════════════════════════════════════════════════════════════════════
+
+
+def _c3_111_matrix():
+    """Rotation by 120° about (1,1,1): axis cycle e0 -> e1 -> e2 -> e0."""
+    R = np.zeros((3, 3))
+    R[1, 0] = R[2, 1] = R[0, 2] = 1.0
+    return R
+
+
+def _reflection_01_matrix():
+    """C3v reflection fixing (1,1,1): swap axes 0 <-> 1."""
+    return np.eye(3)[[1, 0, 2]]
+
+
+# Voigt index permutation induced by the C3 axis cycle 0->1->2:
+# pairs (00),(11),(22),(12),(02),(01) map to (11),(22),(00),(20),(10),(12).
+_C3_VOIGT_PERM = [1, 2, 0, 4, 5, 3]
+
+
+class TestCornerC3SiteSymmetry:
+    """Corner-separation propagator must be invariant under the C3v(111)
+    site group (the .wl derivation's S3: full permutation of the axes).
+
+    Measured defect (scripts/t27_coupling_study.py, static, unit pitch):
+    the corner b-dict omitted the index multiset {0,1,1,2} of the B1123
+    orbit ({0,0,1,2}, {0,1,1,2}, {0,1,2,2} — one C3 orbit, see
+    Mathematica/InterVoxelPropagatorCorner.wl "P_{1123} (S_3 orbit,
+    3 equiv)"), zeroing 24 tensor components: S[1,4] = 0 exactly while
+    its C3 partner S[0,3] = 7.03e-14, and S[3,5] = 3.57e-13 vs partner
+    S[3,4] = 4.97e-13.  The FD-avg quadrature arbiter confirmed the
+    zeroed components must carry CORNER_B1123 (implied value 2.4705e-3
+    vs the constant 2.4702e-3) and that BOTH C3 orbits of the B1112
+    family ({0,0,0,1}-type and {0,0,0,2}-type) carry the SAME constant
+    (implied -9.2664e-3 on all six entries vs -9.2662e-3).
+
+    Why the constant-level Laplacian tests (TestLaplacianIdentity,
+    TestDynamicLaplacianIdentity) did NOT catch this: they assert
+    2*B1112 + B1123 = A12 on the scalar constants, which corresponds to
+    the (i,j) = (0,1) row of the tensor-level identity
+    Σ_k B[i,j,k,k] = A[i,j].  The missing multiset {0,1,1,2} only enters
+    the (0,2) row (via B[0,2,1,1]), which no constant-level test probes;
+    the built tensor gave Σ_k B[0,2,k,k] = 2*B1112 instead of
+    2*B1112 + B1123.
+    """
+
+    def test_static_tensor_c3_invariant(self):
+        """P_{ijkl} equals its image under the C3(111) axis cycle."""
+        P = corner_propagator(MU, NU)
+        P_c3 = _rotate_tensor4(P, _c3_111_matrix())
+        scale = np.max(np.abs(P))
+        np.testing.assert_allclose(
+            P,
+            P_c3,
+            atol=1e-13 * scale,
+            err_msg="corner P violates C3(111) site symmetry",
+        )
+
+    def test_static_tensor_reflection_invariant(self):
+        """P_{ijkl} equals its image under the C3v reflection (0 <-> 1)."""
+        P = corner_propagator(MU, NU)
+        P_ref = _rotate_tensor4(P, _reflection_01_matrix())
+        scale = np.max(np.abs(P))
+        np.testing.assert_allclose(
+            P,
+            P_ref,
+            atol=1e-13 * scale,
+            err_msg="corner P violates C3v(111) reflection symmetry",
+        )
+
+    def test_static_voigt_s_c3_partner_equalities(self):
+        """Voigt S block: S = S[perm, perm] under the induced C3 map,
+        including the originally measured partners S[1,4] = S[0,3] and
+        S[3,5] = S[3,4]."""
+        S = _P_to_voigt_S(corner_propagator(MU, NU))
+        scale = np.max(np.abs(S))
+        # The two specific measured violations, asserted by name:
+        assert S[1, 4] == pytest.approx(S[0, 3], abs=1e-13 * scale), (
+            "S[1,4] must equal its C3 partner S[0,3] "
+            "(was 0 exactly before the {0,1,1,2} multiset fix)"
+        )
+        assert S[3, 5] == pytest.approx(S[3, 4], abs=1e-13 * scale), (
+            "S[3,5] must equal its C3 partner S[3,4] (was 0.72x before fix)"
+        )
+        # And the full induced equality set:
+        S_c3 = S[np.ix_(_C3_VOIGT_PERM, _C3_VOIGT_PERM)]
+        np.testing.assert_allclose(S, S_c3, atol=1e-13 * scale)
+
+    def test_static_tensor_level_laplacian_all_ij(self):
+        """Tensor-level Laplacian: Σ_l P[i,j,l,l] = -(1-η) A_ij / μ for
+        ALL (i,j) — not just the (0,1) row the constant-level test
+        checks.  Fails at (0,2)/(2,0) when B[0,2,1,1] is missing."""
+        P = corner_propagator(MU, NU)
+        A = np.full((3, 3), CORNER_A12)
+        np.fill_diagonal(A, CORNER_A11)
+        expected = -(1.0 - ETA) * A / MU
+        traced = np.einsum("ijll->ij", P)
+        np.testing.assert_allclose(
+            traced,
+            expected,
+            atol=1e-13 * np.max(np.abs(expected)),
+            err_msg="tensor-level Laplacian identity violated",
+        )
+
+    @pytest.mark.parametrize("order", [1, 2, 3])
+    def test_dynamic_tensor_c3_invariant(self, order):
+        """The dynamic corner tables have the same b-dict key structure
+        as the static one, so the same C3 invariance must hold at every
+        order (the study only measured statics; symmetry + the Laplacian
+        identity are the dynamic truth standard)."""
+        P = _corner_propagator_dyn(order, RHO, ALPHA, BETA)
+        P_c3 = _rotate_tensor4(P, _c3_111_matrix())
+        scale = np.max(np.abs(P))
+        np.testing.assert_allclose(
+            P,
+            P_c3,
+            atol=1e-13 * scale,
+            err_msg=f"corner P^({order}) violates C3(111) site symmetry",
+        )
+
+    @pytest.mark.parametrize(
+        ("order", "a11", "a12"),
+        [
+            (1, DYN1_CORNER_A11, DYN1_CORNER_A12),
+            (2, DYN2_CORNER_A11, DYN2_CORNER_A12),
+            (3, DYN3_CORNER_A11, DYN3_CORNER_A12),
+        ],
+    )
+    def test_dynamic_tensor_level_laplacian_all_ij(self, order, a11, a12):
+        """Σ_l P^(n)[i,j,l,l] = -(1-η_n) A^(n)_ij / μ_eff for all (i,j)."""
+        P = _corner_propagator_dyn(order, RHO, ALPHA, BETA)
+        eta_n = 1.0 - (BETA / ALPHA) ** (2 * order + 2)
+        mu_eff = RHO * BETA ** (2 * order + 2)
+        A = np.full((3, 3), a12)
+        np.fill_diagonal(A, a11)
+        expected = -(1.0 - eta_n) * A / mu_eff
+        traced = np.einsum("ijll->ij", P)
+        np.testing.assert_allclose(
+            traced,
+            expected,
+            atol=1e-12 * np.max(np.abs(expected)),
+            err_msg=f"tensor-level Laplacian violated at dynamic order {order}",
+        )
+
+
+class TestCornerSBlockArbiter:
+    """Corner S entries vs the quadrature arbiters from the committed
+    study (dual-arbiter pattern of TestHEngineeringConvention).
+
+    Note on frequencies: the module is evaluated at omega = 0, where its
+    static S block is exact; the arbiters use omega_static (ka ~ 1e-3),
+    whose quasi-static correction is sub-0.1% — within all tolerances.
+    """
+
+    def test_corner_s_matches_fd_avg_arbiter(self):
+        """Static corner S block matches the FD volume-averaged point
+        propagator (the module's own definition) entry-wise.
+
+        Measured (a = 0.5, omega_static = 6 rad/s, n = 8): with the
+        {0,1,1,2} multiset present the full-block max deviation is
+        5.6e-5 of block scale; with it missing, 0.28.  Tolerance 1e-3
+        gives ~18x margin while failing the broken table by ~300x.
+        """
+        study = _load_t27_study()
+        a = 0.5
+        omega_static = 1e-3 * study.REF.beta / a
+        r_phys = np.array([1.0, 1.0, 1.0])
+
+        P9 = inter_voxel_propagator_9x9(
+            (1, 1, 1), study.REF.alpha, study.REF.beta, study.REF.rho, 0.0, n_orders=0
+        )
+        S_mod = np.real(P9[3:, 3:])
+
+        D_fd = study.avg_point_propagator_fd(r_phys, omega_static, a, n=8)
+        S_fd = np.real(D_fd[3:, 3:])
+        scale = np.max(np.abs(S_fd))
+
+        err = np.max(np.abs(S_mod - S_fd)) / scale
+        assert err < 1e-3, (
+            f"corner S deviates from FD-avg arbiter by {err:.2e} of block "
+            "scale (measured 5.6e-5 with the {0,1,1,2} B1123 multiset "
+            "present, 0.28 with it missing)"
+        )
+
+    def test_corner_s_violated_entries_match_galerkin_arbiter(self):
+        """The eight previously C3-violated Voigt entries also agree with
+        the independent Galerkin-projected quadrature truth.
+
+        The Galerkin object differs from the volume-averaged point
+        propagator by a genuine converged projection difference (up to
+        ~8% on these entries, analogous to the 2-3.5% on H), so the
+        tolerance is 0.15 of block scale: measured max 0.075 after the
+        fix vs 0.34 before.
+        """
+        study = _load_t27_study()
+        a = 0.5
+        omega_static = 1e-3 * study.REF.beta / a
+        r_phys = np.array([1.0, 1.0, 1.0])
+
+        P9 = inter_voxel_propagator_9x9(
+            (1, 1, 1), study.REF.alpha, study.REF.beta, study.REF.rho, 0.0, n_orders=0
+        )
+        S_mod = np.real(P9[3:, 3:])
+
+        D_gal = study.galerkin_9_block(r_phys, omega_static, a, n=8)
+        S_gal = np.real(D_gal[3:, 3:])
+        scale = np.max(np.abs(S_gal))
+
+        violated = [
+            (1, 4),
+            (2, 5),
+            (4, 1),
+            (5, 2),
+            (3, 4),
+            (3, 5),
+            (4, 3),
+            (5, 3),
+        ]
+        for i, j in violated:
+            err = abs(S_mod[i, j] - S_gal[i, j]) / scale
+            assert err < 0.15, (
+                f"S[{i},{j}] deviates from Galerkin arbiter by {err:.2e} "
+                "of block scale (fixed table measured <= 0.075)"
+            )
