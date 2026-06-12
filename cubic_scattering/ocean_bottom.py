@@ -102,7 +102,8 @@ class OceanBottomResult:
         R_total: Total R_PP with slab dressed by interface coupling, shape (nw-1,), complex.
         omega_real: Real frequency axis (rad/s), shape (nw-1,).
         config: Configuration used.
-        n_gmres_iters: GMRES iterations per active frequency.
+        n_gmres_iters: GMRES iterations per active frequency — the max
+            over the P- and SV-incident slab solves at that frequency.
         freq_elapsed: Per-frequency wall-clock time (s), one per active frequency.
         elapsed_seconds: Total wall-clock time (s).
     """

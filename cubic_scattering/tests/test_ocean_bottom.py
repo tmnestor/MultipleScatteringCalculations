@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 import yaml
 
 from cubic_scattering.effective_contrasts import MaterialContrast, ReferenceMedium
@@ -208,18 +209,22 @@ class TestOceanBottom:
 
     # ── New tests: Kennett embedding + free surface ──────────────────────
 
-    def test_homogeneous_matches_kennett(self) -> None:
+    @pytest.mark.parametrize("p", [0.0, 2.0e-4])
+    def test_homogeneous_matches_kennett(self, p: float) -> None:
         """R_total (decomposed path) matches R_bg (kennett_layers) at zero contrast.
 
         R_bg comes from the full kennett_layers([water|sed|hs]) recursion.
         R_total comes from the decomposed path: kennett_layers([sed|hs]) +
         sediment phase + _kennett_water_step. With zero slab contrast these
-        must agree, validating the decomposition.
+        must agree, validating the decomposition. The oblique case
+        (p=2e-4, sub-critical in water) anchors the per-mode phases
+        E_P/E_S, the conversion-path phase E_i·E_j, and the 2×2 mixing —
+        all invisible at p=0 where the off-diagonals vanish.
         """
         geom = SlabGeometry(M=2, N_z=1, a=1.0)
         zero_contrast = MaterialContrast(Dlambda=0.0, Dmu=0.0, Drho=0.0)
         mat = uniform_slab_material(geom, SED_REF, zero_contrast)
-        cfg = _make_config(geom, mat)
+        cfg = _make_config(geom, mat, p=p)
 
         result = compute_ocean_bottom_reflection(cfg, progress=False)
 
