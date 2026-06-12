@@ -121,6 +121,12 @@ observable water-column R_PP.
   strong-contrast comparison; the reciprocity test is an independent check.
   Precedent: the sphere five-channel work resolved the analogous m=1
   renormalization (−1/(n(n+1))) the same way.
+  **RESOLVED (Task 4):** measured conversion is the diagonal similarity
+  `D = diag(α·√η_P, i·β·√η_S)` (Kennett eigenvector normalization with
+  velocity factors and i on SV); pinned by the reciprocity invariant
+  (off-diagonal ratio product = 1). A pre-existing p=0 SV polarisation
+  discontinuity in the slab incident-field builder was found and fixed in
+  the same step (K_SS(0) = −K_SH(0) made it observable).
 - **SV sign conventions at reflection** (Aki & Richards and Kennett
   differ): decided by the p→0 limit and the Kennett comparison, not chosen
   a priori.
