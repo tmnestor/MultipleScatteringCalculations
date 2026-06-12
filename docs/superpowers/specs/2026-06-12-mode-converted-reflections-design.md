@@ -104,6 +104,8 @@ observable water-column R_PP.
    past 1/β the incident SV wave hits the same homogeneous-wave limitation as
    evanescent P, so an S-critical case would assert nothing new. Documented in
    the test comment and the slab_reflection_matrix Validity note.
+   **RESOLVED (follow-up):** evanescent incident fields implemented via complex
+   slowness vectors; all five channels validated post-critical; warning removed.
 2. **Born scaling** at weak contrast (1e-4): each channel doubles when the
    contrast doubles (rtol 0.05, existing pattern).
 3. **Reciprocity**: R_PS and R_SP related through the η_P/η_S normalization
