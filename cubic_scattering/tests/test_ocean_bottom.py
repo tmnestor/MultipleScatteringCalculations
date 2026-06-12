@@ -534,3 +534,75 @@ class TestYAMLConfig:
 
         with pytest.raises(ValueError, match="exactly one of"):
             load_ocean_bottom_config(yml_path)
+
+
+class TestModeConvertedOceanBottom:
+    """2×2 sub-ocean recursion: internal P→S→P feeds the observable R_PP."""
+
+    def _config(self, contrast, p, M=4, N_z=1):
+        sed_ref = ReferenceMedium(alpha=2000.0, beta=800.0, rho=1800.0)
+        geom = SlabGeometry(M=M, N_z=N_z, a=1.0)
+        mat = uniform_slab_material(geom, sed_ref, contrast)
+        return OceanBottomConfig(
+            water_alpha=1500.0,
+            water_rho=1000.0,
+            water_depth=100.0,
+            sed_ref=sed_ref,
+            hs_alpha=3000.0,
+            hs_beta=1700.0,
+            hs_rho=2200.0,
+            geometry=geom,
+            material=mat,
+            f_peak=25.0,
+            T=0.5,
+            nw=32,
+            f_min=10.0,
+            f_max=60.0,
+            p=p,
+        )
+
+    def test_weak_contrast_slab_matrix_structure(self):
+        """Weak contrast at oblique p: R_slab_psv exists with sane structure."""
+        weak = MaterialContrast(Dlambda=1e5, Dmu=1e5, Drho=0.1)
+        cfg = self._config(weak, p=2.0e-4)  # oblique, sub-critical in water
+        result = compute_ocean_bottom_reflection(cfg, progress=False)
+        assert result.R_slab_psv.shape[1:] == (2, 2)
+        R_pp_slab = result.R_slab_psv[:, 0, 0]
+        active = np.abs(R_pp_slab) > 0
+        assert np.any(active), "no active frequencies computed"
+        off = np.abs(result.R_slab_psv[active][:, 1, 0])
+        diag = np.abs(R_pp_slab[active])
+        # Conversion is active at oblique p (sin θ_P = p·α = 0.4) and
+        # bounded: Kennett ground truth for this uniform weak slab gives
+        # |R_PS|/|R_PP| ≈ 1.4, so PP does NOT dominate — assert same
+        # order of magnitude instead.
+        assert np.all(off > 0), "conversion entries missing at oblique p"
+        assert np.all(off <= 3.0 * diag), "conversion implausibly large vs PP"
+        # Reciprocity: modified-convention matrix is symmetric
+        np.testing.assert_allclose(
+            result.R_slab_psv[active][:, 0, 1],
+            result.R_slab_psv[active][:, 1, 0],
+            rtol=1e-8,
+        )
+        # Legacy scalar field stays populated as the PP entry
+        np.testing.assert_allclose(result.R_slab, result.R_slab_psv[:, 0, 0])
+
+    def test_moderate_contrast_conversion_changes_rpp(self):
+        """Moderate contrast at oblique p: the 2×2 recursion shifts R_total
+        relative to a PP-only recursion (the restored physics)."""
+        contrast = MaterialContrast(Dlambda=0.5e9, Dmu=0.3e9, Drho=200.0)
+        cfg = self._config(contrast, p=2.0e-4)
+        result = compute_ocean_bottom_reflection(cfg, progress=False)
+        from cubic_scattering.ocean_bottom import _kennett_water_step
+
+        active = np.where(np.abs(result.R_total) > 0)[0]
+        MT_full = result.MT_psv[active]
+        MT_pp_only = MT_full.copy()
+        MT_pp_only[:, 0, 1] = 0.0
+        MT_pp_only[:, 1, 0] = 0.0
+        R_full = _kennett_water_step(MT_full, cfg)
+        R_pp_only = _kennett_water_step(MT_pp_only, cfg)
+        diff = np.max(np.abs(R_full - R_pp_only))
+        scale = np.max(np.abs(R_full))
+        assert diff > 1e-6 * scale, "conversion had no effect — physics missing"
+        assert diff < 0.5 * scale, "conversion implausibly large"
