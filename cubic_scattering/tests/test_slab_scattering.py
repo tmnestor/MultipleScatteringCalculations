@@ -993,3 +993,32 @@ class TestEvanescentIncidence:
         dz = geom.d
         expected = np.exp(-self.OMEGA * eta_P.imag * dz)
         np.testing.assert_allclose(amp[1:] / amp[:-1], expected, rtol=1e-10)
+
+    @pytest.mark.slow
+    def test_post_critical_mesh_convergence(self):
+        """Post-critical R_PP converges onto Kennett under vertical refinement.
+
+        Distinguishes mesh error from physics error. With N_z=1 the layer's
+        vertical structure is one-point quadrature; the monotonic evanescent
+        decay (unlike oscillatory sub-critical phase, which self-cancels)
+        produces a systematic bias that must vanish under refinement at
+        fixed H. Measured errors: 0.054 -> 0.009 -> 0.0009 for
+        (a, N_z) = (2.0, 1) -> (1.0, 2) -> (0.5, 4).
+        """
+        p = 2.5e-4  # past 1/alpha = 2e-4
+        kref = kennett_reference_matrix(
+            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
+        )
+        errs = []
+        for a, n_z in ((2.0, 1), (1.0, 2), (0.5, 4)):
+            geom = SlabGeometry(M=8, N_z=n_z, a=a)
+            mat = uniform_slab_material(geom, self.REF, self.CONTRAST)
+            slab = slab_reflection_matrix(geom, mat, self.OMEGA, p=p, include_sh=False)
+            R_mod = slab.to_modified()
+            errs.append(abs(R_mod[0, 0] - kref.R_PP) / abs(kref.R_PP))
+        assert errs[0] > errs[1] > errs[2], (
+            f"no monotonic convergence to Kennett: {errs}"
+        )
+        assert errs[2] < 0.005, (
+            f"finest-mesh post-critical error {errs[2]:.4f} not converged"
+        )
