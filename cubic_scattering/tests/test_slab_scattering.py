@@ -23,6 +23,8 @@ from cubic_scattering.slab_scattering import (
     compute_slab_tmatrices,
     random_slab_material,
     slab_reflected_field,
+    slab_rpp_periodic,
+    slab_weyl_amplitudes,
     uniform_slab_material,
 )
 from cubic_scattering.sphere_scattering import _plane_wave_strain_voigt
@@ -745,3 +747,39 @@ class TestPeriodicConvolution:
 
         res_p = compute_slab_scattering(geom, mat, OMEGA, K_HAT, periodic=True)
         assert res_p.periodic is True
+
+
+# ── TestWeylAmplitudes ───────────────────────────────────────────
+
+
+class TestWeylAmplitudes:
+    """slab_weyl_amplitudes: shared specular extractor for P/SV/SH."""
+
+    def _solve_uniform(self, p, wave_type="P"):
+        ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+        contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+        geom = SlabGeometry(M=8, N_z=1, a=2.0)
+        mat = uniform_slab_material(geom, ref, contrast)
+        omega = 150.0
+        c = ref.alpha if wave_type == "P" else ref.beta
+        eta = np.sqrt(1.0 / c**2 - p**2 + 0j)
+        k_hat = np.array([float(np.real(eta * c)), p * c, 0.0])
+        result = compute_slab_scattering(
+            geom, mat, omega, k_hat, wave_type=wave_type, periodic=True
+        )
+        T_local = compute_slab_tmatrices(geom, mat, omega)
+        return result, T_local
+
+    def test_rp_matches_rpp_periodic_normal_incidence(self):
+        """At p=0 the new extractor reproduces slab_rpp_periodic exactly."""
+        result, T_local = self._solve_uniform(p=0.0)
+        amps = slab_weyl_amplitudes(result, T_local, p=0.0)
+        legacy = slab_rpp_periodic(result, T_local, p=0.0)
+        np.testing.assert_allclose(amps.R_P, legacy, rtol=1e-12)
+
+    def test_conversions_vanish_at_normal_incidence(self):
+        """P incidence at p=0: no SV or SH specular conversion."""
+        result, T_local = self._solve_uniform(p=0.0)
+        amps = slab_weyl_amplitudes(result, T_local, p=0.0)
+        assert abs(amps.R_SV) < 1e-10 * max(abs(amps.R_P), 1e-30)
+        assert abs(amps.R_SH) < 1e-10 * max(abs(amps.R_P), 1e-30)
