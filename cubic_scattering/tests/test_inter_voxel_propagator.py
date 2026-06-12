@@ -2368,10 +2368,11 @@ class TestPhysicalPitchArbiter:
               corner: G 9.3e-5, C 4.6e-4, H 2.3e-4, S 8.6e-4
 
     The face C/H/S deviations are the PRE-EXISTING module-vs-arbiter
-    face-contact discrepancy (slow log-type n-convergence of the S
-    block across the touching face — see avg_point_propagator_fd
-    docstring), not a pitch error: a missing d^-3 on S at d = 2 would
-    show as dev ~ 7, far above the 0.85 guard.
+    face-contact discrepancy — since diagnosed as the ARBITER's bias
+    (tensor-Gauss diagonal artifact on the face-contact S kernel; see
+    avg_point_propagator_fd's validity caveat and TestFaceSBlockArbiter)
+    — not a pitch error: a missing d^-3 on S at d = 2 would show as
+    dev ~ 7, far above the 0.85 guard.
     """
 
     @staticmethod
@@ -2446,3 +2447,228 @@ class TestPhysicalPitchArbiter:
                 assert dev[bn] < tol, (
                     f"{name} {bn} ka=0.3 dev {dev[bn]:.2e} >= {tol} at d=2"
                 )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# Face-separation S block vs BIAS-FREE volume-averaged arbiters
+# (rederivation 2026-06-13, scripts/face_s_rederivation.py)
+#
+# scripts/t27_coupling_study.py step 2b reported the face S block as
+# defective (S[0,0] "3x low", shear-shear "sign flip") against its FD
+# volume-averaged point-propagator arbiter.  The rederivation measured
+# that report to be a quadrature artifact: tensor-product double-cube
+# Gauss shares one lateral node set between the cubes, so at face
+# contact it samples the singular ray w_perp = 0 of the 1/w^3 S kernel
+# exactly, with O(1) cumulative spurious weight that n-refinement never
+# removes (S00 drifts 8.45e-12 (n=4) -> 1.02e-11 (n=16), true value
+# 3.0089e-12); the FD arbiter at h = 0.005, n = 8-10 operates in the
+# invalid regime h <~ 1/n^2 and reproduces the same biased values.
+# Three independent bias-free routes (delta-collapse defining
+# integrals, subdivision fixed point, dyadic-shell 3D quadrature)
+# agree with the committed constants to 1e-16 / 1e-13 / 1e-8.
+# ══════════════════════════════════════════════════════════════════════
+
+
+def _load_face_rederivation():
+    """Load scripts/face_s_rederivation.py (bias-free face arbiters)."""
+    import importlib.util
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parents[2] / "scripts" / "face_s_rederivation.py"
+    spec = importlib.util.spec_from_file_location("face_s_rederivation", script)
+    assert spec is not None and spec.loader is not None
+    red = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(red)
+    return red
+
+
+# Dyadic-shell 3D reference values for the face contact table (Gdd index
+# order: d2<G>_ij/dR_k dR_l, study medium alpha=5000, beta=3000, rho=2500,
+# unit pitch, R = (1,0,0)).  Computed 2026-06-13 by
+# scripts/face_s_rederivation.py dyadic_contact_table(ng=12) — absolutely
+# convergent 3D correlation integral, kink-split L-inf dyadic shells; agrees
+# with the subdivision fixed point to ~1.5e-8 relative.
+_FACE_GDD_DYADIC = {
+    (0, 0, 0, 0): +3.0089307689e-12,
+    (1, 1, 1, 1): -1.2292204061e-12,
+    (0, 0, 1, 1): -3.4247097000e-12,
+    (1, 1, 0, 0): +5.5764355289e-12,
+    (1, 1, 2, 2): -2.4269708073e-12,
+    (0, 1, 0, 1): -4.2432795700e-13,
+    (1, 2, 1, 2): +5.7341093567e-13,
+}
+
+_MU_STUDY = 2500.0 * 3000.0**2
+_NU_STUDY = (5000.0**2 - 2 * 3000.0**2) / (2 * (5000.0**2 - 3000.0**2))
+_ETA_STUDY = 1.0 / (2.0 * (1.0 - _NU_STUDY))
+
+
+def _face_gdd_from_constants() -> np.ndarray:
+    """Module-constants prediction of the face Gdd tensor.
+
+    Gdd[i,j,k,l] = d2<G>_ij/dR_k dR_l = -(delta_ij A_kl - eta B_ijkl)/mu
+    with A, B the committed face tables (study medium).
+    """
+    from cubic_scattering.inter_voxel_propagator import (
+        _build_A_matrix,
+        _build_B_tensor,
+    )
+
+    A = _build_A_matrix((FACE_A11, FACE_A22, FACE_A22), (0.0, 0.0, 0.0))
+    B = _build_B_tensor(
+        {
+            (0, 0, 0, 0): FACE_B1111,
+            (0, 0, 1, 1): FACE_B1122,
+            (0, 0, 2, 2): FACE_B1122,
+            (1, 1, 1, 1): FACE_B2222,
+            (2, 2, 2, 2): FACE_B2222,
+            (1, 1, 2, 2): FACE_B2233,
+        }
+    )
+    delta = np.eye(3)
+    return -(np.einsum("ij,kl->ijkl", delta, A) - _ETA_STUDY * B) / _MU_STUDY
+
+
+class TestFaceSBlockArbiter:
+    """Face S block vs the bias-free volume-averaged truth (see banner)."""
+
+    @pytest.fixture(scope="class")
+    def subdivision_tables(self):
+        """Subdivision fixed-point tables (ng=6: ~6 s, ~1e-8 accurate)."""
+        red = _load_face_rederivation()
+        return red.subdivision_tables(ng=6)
+
+    def test_face_full_tensor_matches_subdivision_arbiter(self, subdivision_tables):
+        """All 81 Gdd components match the subdivision fixed point.
+
+        The fixed point uses ONLY smooth separated-pair quadratures
+        (machine precision) plus exact homogeneity — no contact
+        quadrature.  Measured agreement at ng=6: <= 1.2e-8 relative per
+        constant; tolerance 1e-6 of block scale gives ~100x margin while
+        the study's biased values fail it by ~5 orders of magnitude.
+        """
+        F_pred = _face_gdd_from_constants()
+        F_sub = subdivision_tables["face"]
+        scale = np.max(np.abs(F_sub))
+        np.testing.assert_allclose(
+            F_pred,
+            F_sub,
+            atol=1e-6 * scale,
+            err_msg="face Gdd tensor deviates from the subdivision arbiter",
+        )
+
+    def test_edge_corner_cross_validated_by_subdivision(self, subdivision_tables):
+        """The same fixed point reproduces the edge/corner module tables
+        (diagonal entries, where the P and Gdd index conventions agree),
+        tying all three touching tables to one bias-free system."""
+        for kind, mod in (
+            ("edge", edge_propagator(_MU_STUDY, _NU_STUDY)),
+            ("corner", corner_propagator(_MU_STUDY, _NU_STUDY)),
+        ):
+            scale = np.max(np.abs(mod))
+            for i in range(3):
+                got = subdivision_tables[kind][i, i, i, i]
+                want = mod[i, i, i, i]
+                assert got == pytest.approx(want, abs=1e-6 * scale), (
+                    f"{kind} [{i},{i},{i},{i}] subdivision {got:.6e} vs "
+                    f"module {want:.6e}"
+                )
+
+    def test_face_gdd_entries_match_dyadic_reference(self):
+        """Pinned dyadic-shell reference entries (independent 3D route).
+
+        Fast standalone check (no fixture): the seven independent Gdd
+        entries match the pinned dyadic values to 1e-6 relative.
+        """
+        F_pred = _face_gdd_from_constants()
+        for idx, ref in _FACE_GDD_DYADIC.items():
+            assert F_pred[idx] == pytest.approx(ref, rel=1e-6), (
+                f"face Gdd{list(idx)} = {F_pred[idx]:.6e} vs dyadic reference {ref:.6e}"
+            )
+
+    def test_face_shear_shear_sign(self):
+        """The shear-shear Voigt entry S[4,4] is POSITIVE, matching the
+        bias-free arbiters.
+
+        The study's biased face arbiter reported ~-2.1e-12 to -2.35e-12
+        (a "sign flip" vs the module's +6.5e-13); the dyadic/subdivision
+        truth is +6.515e-13: the MODULE sign is correct.  Guards the most
+        physical regression risk: anyone "fixing" the constants toward
+        the biased arbiter flips this sign.
+        """
+        P9 = inter_voxel_propagator_9x9(
+            (1, 0, 0), 5000.0, 3000.0, 2500.0, 0.0, n_orders=0, d=1.0
+        )
+        S44 = float(np.real(P9[7, 7]))
+        # S[4,4] = -(A11 + A22 - 4 eta B1122)/(2 mu) — equals the (0,2)
+        # shear combination of the dyadic reference entries:
+        ref = 0.5 * (
+            _FACE_GDD_DYADIC[(0, 0, 1, 1)]  # = Gdd[0,0,2,2] by C4v
+            + _FACE_GDD_DYADIC[(1, 1, 0, 0)]  # = Gdd[2,2,0,0] by C4v
+            + 2.0 * _FACE_GDD_DYADIC[(0, 1, 0, 1)]  # = Gdd[0,2,0,2] by C4v
+        )
+        assert S44 > 0.0, "face shear-shear S[4,4] must be positive"
+        assert S44 == pytest.approx(ref, rel=1e-6), (
+            f"S[4,4] = {S44:.6e} vs bias-free reference {ref:.6e} "
+            "(the study's biased arbiter gave ~-2.1e-12)"
+        )
+
+    def test_face_tensor_level_laplacian_all_ij(self):
+        """Tensor-level Laplacian: Σ_k B[i,j,k,k] = A[i,j] for ALL (i,j)
+        (the corner {0,1,1,2} bug showed constant-level rows can pass
+        while tensor rows fail)."""
+        from cubic_scattering.inter_voxel_propagator import (
+            _build_A_matrix,
+            _build_B_tensor,
+        )
+
+        A = _build_A_matrix((FACE_A11, FACE_A22, FACE_A22), (0.0, 0.0, 0.0))
+        B = _build_B_tensor(
+            {
+                (0, 0, 0, 0): FACE_B1111,
+                (0, 0, 1, 1): FACE_B1122,
+                (0, 0, 2, 2): FACE_B1122,
+                (1, 1, 1, 1): FACE_B2222,
+                (2, 2, 2, 2): FACE_B2222,
+                (1, 1, 2, 2): FACE_B2233,
+            }
+        )
+        lap = np.einsum("ijkk->ij", B)
+        np.testing.assert_allclose(
+            lap,
+            A,
+            atol=1e-15,
+            err_msg="face tensor-level Laplacian Σ_k B[i,j,k,k] != A[i,j]",
+        )
+
+    def test_face_c4v_site_symmetry_tensor_level(self):
+        """Face P tensor invariant under the full C4v(100) site group:
+        90-degree rotation about axis 0 and both mirror planes."""
+        P = face_propagator(_MU_STUDY, _NU_STUDY)
+        scale = np.max(np.abs(P))
+        c4 = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+        m2 = np.diag([1.0, -1.0, 1.0])
+        m3 = np.diag([1.0, 1.0, -1.0])
+        for name, R in (("C4(100)", c4), ("mirror w2", m2), ("mirror w3", m3)):
+            P_rot = _rotate_tensor4(P, R)
+            np.testing.assert_allclose(
+                P,
+                P_rot,
+                atol=1e-13 * scale,
+                err_msg=f"face P violates C4v generator {name}",
+            )
+
+    def test_face_voigt_c4v_partner_equalities(self):
+        """Voigt S block C4v partners (axes 1 and 2 equivalent)."""
+        S = _P_to_voigt_S(face_propagator(_MU_STUDY, _NU_STUDY))
+        scale = np.max(np.abs(S))
+        for (i1, j1), (i2, j2) in (
+            ((1, 1), (2, 2)),
+            ((0, 1), (0, 2)),
+            ((1, 0), (2, 0)),
+            ((1, 2), (2, 1)),
+            ((4, 4), (5, 5)),
+        ):
+            assert S[i1, j1] == pytest.approx(S[i2, j2], abs=1e-14 * scale), (
+                f"S[{i1},{j1}] != C4v partner S[{i2},{j2}]"
+            )
