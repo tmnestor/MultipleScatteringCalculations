@@ -837,12 +837,13 @@ class TestModifiedConventionSymmetry:
         """Two-halfspace contrast at oblique p: RD_psv must be symmetric."""
         stack = LayerStack(
             layers=[
-                IsotropicLayer(alpha=5000.0, beta=3000.0, rho=2500.0, thickness=50.0),
-                IsotropicLayer(alpha=5400.0, beta=3200.0, rho=2600.0, thickness=np.inf),
+                IsotropicLayer(ALPHA_REF, BETA_REF, RHO_REF, thickness=50.0),
+                IsotropicLayer(ALPHA2, BETA2, RHO2, thickness=np.inf),
             ]
         )
         p = 1.0e-4  # oblique, sub-critical (1/alpha = 2e-4)
-        result = kennett_layers(stack, p=p, omega=np.array([150.0]))
+        # single frequency — symmetry is per-frequency
+        result = kennett_layers(stack, p, np.array([150.0]))
         RD = result.RD_psv[0]
         assert abs(RD[0, 1]) > 1e-6, "expected nonzero conversion at oblique p"
         np.testing.assert_allclose(RD[0, 1], RD[1, 0], rtol=1e-8)
