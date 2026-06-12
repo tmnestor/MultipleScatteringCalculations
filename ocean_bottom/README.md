@@ -42,7 +42,7 @@ conda run -n seismic python ocean_bottom/run_study.py ocean_bottom/example_confi
 | `example_config.yml` | YAML configuration template (seismic units) |
 | `run_study.py` | CLI script: loads YAML, runs simulation, plots results |
 | `cubic_scattering/ocean_bottom.py` | Core module: config, solver, YAML loader |
-| `cubic_scattering/tests/test_ocean_bottom.py` | 18 tests: physics, oblique incidence, YAML loading |
+| `cubic_scattering/tests/test_ocean_bottom.py` | 26 tests: physics, oblique incidence, YAML loading, mode conversion |
 
 ## Physics
 
@@ -258,15 +258,16 @@ print(f"Elapsed: {result.elapsed_seconds:.1f} s")
 ## Tests
 
 ```bash
-# Run all 18 ocean-bottom tests
+# Run all 26 ocean-bottom tests
 conda run -n seismic python -m pytest cubic_scattering/tests/test_ocean_bottom.py -v
 ```
 
 | Test class | Tests | What it validates |
 |------------|-------|-------------------|
-| `TestOceanBottom` | 10 | Zero contrast, Born scaling, causality, energy bounds, Kennett embedding, coupling, free-surface multiples |
+| `TestOceanBottom` | 11 | Zero contrast, Born scaling, causality, energy bounds, Kennett embedding, coupling, free-surface multiples |
 | `TestObliqueIncidence` | 4 | p=0 regression, small-p continuity, critical angle bound, oblique energy bound |
-| `TestYAMLConfig` | 4 | Round-trip load, unit conversion (s/km→s/m), missing section diagnostics, file-not-found |
+| `TestYAMLConfig` | 8 | Round-trip load, unit conversion (s/km→s/m), missing section diagnostics, file-not-found, mean/contrast parameterization |
+| `TestModeConvertedOceanBottom` | 3 | 2×2 R_slab_psv structure and reciprocity, conversion feeds R_total, log mode-conversion columns |
 
 ## Example configurations
 

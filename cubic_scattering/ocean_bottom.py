@@ -468,12 +468,14 @@ def write_log(result: OceanBottomResult, path: str | Path) -> None:
         f.write(f"{'freq_Hz':>10s}  {'|R_PP|':>10s}  {'|R_PS|':>10s}  ")
         f.write(f"{'|R_SS|':>10s}  {'|R_total|':>10s}  ")
         f.write(f"{'GMRES_iter':>10s}  {'elapsed_ms':>10s}\n")
-        f.write("-" * 80 + "\n")
+        f.write("-" * 82 + "\n")
 
         for i, iw in enumerate(active_indices):
             fhz = freq_hz[iw]
             r_pp = abs(result.R_slab_psv[iw, 0, 0])
-            r_ps = abs(result.R_slab_psv[iw, 1, 0])
+            # R_PS = R_SP by modified-convention symmetry; log the [0,1]
+            # entry to match the label
+            r_ps = abs(result.R_slab_psv[iw, 0, 1])
             r_ss = abs(result.R_slab_psv[iw, 1, 1])
             r_total = abs(result.R_total[iw])
             gm = result.n_gmres_iters[i] if i < len(result.n_gmres_iters) else -1
@@ -499,9 +501,11 @@ def write_log(result: OceanBottomResult, path: str | Path) -> None:
             f.write(f"Slab total:   {sum(freq_times):.2f} s\n")
         f.write(f"Total elapsed: {result.elapsed_seconds:.2f} s\n")
         f.write(f"Peak |R_bg|:   {np.max(np.abs(result.R_bg)):.6f}\n")
-        f.write(f"Peak |R_slab|: {np.max(np.abs(result.R_slab)):.6f}\n")
+        f.write(f"Peak |R_PP| (slab): {np.max(np.abs(result.R_slab)):.6f}\n")
         f.write(f"Peak |R_total|: {np.max(np.abs(result.R_total)):.6f}\n")
-        f.write(f"Peak |R_PS|:   {np.max(np.abs(result.R_slab_psv[:, 1, 0])):.6f}\n")
+        # R_PS = R_SP by modified-convention symmetry; log the [0,1]
+        # entry to match the label
+        f.write(f"Peak |R_PS|:   {np.max(np.abs(result.R_slab_psv[:, 0, 1])):.6f}\n")
         f.write(f"Peak |R_SS|:   {np.max(np.abs(result.R_slab_psv[:, 1, 1])):.6f}\n")
 
 
