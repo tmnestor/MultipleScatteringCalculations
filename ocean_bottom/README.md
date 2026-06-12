@@ -67,7 +67,18 @@ are the fluid-solid interface reflection/transmission coefficients.
 
 ### Slab scattering
 
-R_slab is computed via the periodic Weyl lattice sum:
+The slab Foldy-Lax solve is run for both P- and SV-incident waves,
+producing the full 2×2 P-SV reflection matrix (modified convention,
+rows = outgoing P/SV, cols = incident P/SV):
+
+```
+R_slab_psv[iω] = [[R_PP, R_PS],
+                   [R_SP, R_SS]]
+```
+
+The PP entry drives the observable PP reflectivity. The off-diagonal
+P→SV conversion entries feed back into R_total through the 2×2 Kennett
+step. The PP Weyl lattice-sum formula is:
 
 ```
 R_PP(p) = -i / (2 k_z d² ρα²) × Σ_l Q_{P,l} × exp(i k_z z_l)
@@ -76,6 +87,15 @@ R_PP(p) = -i / (2 k_z d² ρα²) × Σ_l Q_{P,l} × exp(i k_z z_l)
 where k_z = ω η_P is the vertical P-wavenumber (η_P = √(1/α² - p²)),
 d is the cube spacing, and Q_{P,l} is the far-field P-source scalar for
 layer l, averaged over the M² horizontal cubes.
+
+**Caveats and scope:**
+
+- The sub-ocean recursion is the full 2×2 P-SV matrix: P→S→P conversion inside
+  the heterogeneous slab and sediment package contributes to the observed R_PP.
+  The slab-level channels (R_PS, R_SP, R_SS in the modified convention) are
+  reported in the log file. SH cannot couple through the water column and is
+  not computed in this study (use `slab_reflection_matrix` directly for SH).
+- Per-frequency cost is 2 Foldy-Lax solves (P- and SV-incident).
 
 ### Oblique incidence (p > 0)
 

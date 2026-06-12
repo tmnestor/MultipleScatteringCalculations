@@ -11,6 +11,7 @@ from cubic_scattering.ocean_bottom import (
     OceanBottomConfig,
     compute_ocean_bottom_reflection,
     load_ocean_bottom_config,
+    write_log,
 )
 from cubic_scattering.slab_scattering import (
     SlabGeometry,
@@ -611,3 +612,14 @@ class TestModeConvertedOceanBottom:
         scale = np.max(np.abs(R_full))
         assert diff > 1e-6 * scale, "conversion had no effect — physics missing"
         assert diff < 0.5 * scale, "conversion implausibly large"
+
+    def test_write_log_includes_mode_conversion_columns(self, tmp_path: Path):
+        """write_log table contains |R_PS| and |R_SS| columns."""
+        weak = MaterialContrast(Dlambda=1e5, Dmu=1e5, Drho=0.1)
+        cfg = self._config(weak, p=2.0e-4)
+        result = compute_ocean_bottom_reflection(cfg, progress=False)
+        log_path = tmp_path / "test_log.txt"
+        write_log(result, log_path)
+        text = log_path.read_text()
+        assert "|R_PS|" in text
+        assert "|R_SS|" in text
