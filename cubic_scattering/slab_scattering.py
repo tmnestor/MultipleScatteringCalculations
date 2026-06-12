@@ -454,8 +454,11 @@ def _build_slab_incident_field(
         z_hat = np.array([1.0, 0.0, 0.0])
         cross = np.cross(k_hat, z_hat)
         if np.linalg.norm(cross) < 1e-10:
-            # Vertical incidence — pick x-direction
-            pol = np.array([0.0, 1.0, 0.0])
+            # Vertical incidence — continuous p→0⁺ limit of the generic
+            # branch below, which is −x̂. The previous +x̂ choice was
+            # discontinuous against that limit and broke the R_SS sign
+            # (vs Kennett) at exactly p = 0.
+            pol = np.array([0.0, -1.0, 0.0])
         else:
             pol = np.cross(cross, k_hat)
             pol = pol / np.linalg.norm(pol)
@@ -810,6 +813,203 @@ def slab_rpp_periodic(
     return slab_weyl_amplitudes(result, T_local, p=p).R_P
 
 
+@dataclass
+class SlabReflectionMatrix:
+    """Specular reflection matrix of the periodic heterogeneous slab.
+
+    Attributes:
+        R_psv: 2×2 P-SV matrix, displacement convention.
+            Rows = outgoing mode (0=P, 1=SV); columns = incident mode.
+        R_sh: SH→SH coefficient.
+        p: Horizontal slowness (s/m).
+        omega: Angular frequency (rad/s).
+        eta_P: Vertical P slowness in the background.
+        eta_S: Vertical S slowness in the background.
+        n_gmres_iters: GMRES iterations for the (P, SV, SH) solves.
+    """
+
+    R_psv: NDArray[np.complexfloating]
+    R_sh: complex
+    p: float
+    omega: float
+    eta_P: complex
+    eta_S: complex
+    n_gmres_iters: tuple[int, int, int] = (0, 0, 0)
+
+    def to_modified(self) -> NDArray[np.complexfloating]:
+        """Convert to the Kennett modified convention of kennett_layers.
+
+        Diagonal similarity R̃ = D R D⁻¹ with D = diag(α·√η_P, i·β·√η_S).
+        A naive sqrt(η_i/η_j) form would assume pure energy-normalized
+        displacement amplitudes; the Kennett implementation in this codebase
+        normalizes via its eigenvector convention, which carries velocity
+        factors and a factor i on SV (visible as the m2ci = −2i factor in
+        psv_solid_solid, kennett_layers.py ~line 358). The conversion was
+        pinned by measurement against Kennett, with the reciprocity
+        invariant — the product of the two off-diagonal ratios, which is
+        invariant under any diagonal similarity — equal to 1 as the
+        convention-independent check. Diagonal entries are unchanged; the
+        modified matrix is symmetric by reciprocity.
+        """
+        # Background velocities recovered from 1/c_m² = η_m² + p²
+        # (exact for evanescent modes too, where η_m is imaginary).
+        alpha = 1.0 / np.sqrt(self.eta_P**2 + self.p**2)
+        beta = 1.0 / np.sqrt(self.eta_S**2 + self.p**2)
+        d = np.array([alpha * np.sqrt(self.eta_P), 1j * beta * np.sqrt(self.eta_S)])
+        return self.R_psv * np.outer(d, 1.0 / d)
+
+
+def slab_reflection_matrix(
+    geometry: SlabGeometry,
+    material: SlabMaterial,
+    omega: float,
+    *,
+    p: float = 0.0,
+    gmres_tol: float = 1e-6,
+    max_iter: int = 500,
+    volume_averaged: bool = False,
+    n_orders: int = 2,
+    include_sh: bool = True,
+) -> SlabReflectionMatrix:
+    """Full specular reflection matrix via three periodic Foldy-Lax solves.
+
+    Runs P-, SV-, and SH-incident solves at the same horizontal slowness p
+    (incident direction per mode: k̂_m = (η_m c_m, p c_m, 0)) and assembles
+    the 2×2 P-SV matrix plus the SH coefficient from the shared Weyl
+    extractor. SH decouples from P-SV in the horizontally averaged
+    (specular) response; the SH-incident solve only populates R_sh.
+
+    Args:
+        geometry: Slab lattice geometry.
+        material: Per-cube material contrasts.
+        omega: Angular frequency (rad/s).
+        p: Horizontal slowness (s/m).
+        gmres_tol: GMRES relative tolerance.
+        max_iter: Maximum GMRES iterations.
+        volume_averaged: Use volume-averaged inter-voxel propagator.
+        n_orders: Dynamic correction orders for the volume-averaged propagator.
+        include_sh: If False, skip the SH-incident solve (R_sh = 0). The
+            ocean-bottom embedding uses this — SH cannot couple through a
+            fluid.
+
+    Returns:
+        SlabReflectionMatrix (displacement convention; use .to_modified()
+        for Kennett comparison and recursion mixing).
+    """
+    ref = material.ref
+    eta_P = _vertical_slowness(_complex_slowness(ref.alpha, np.inf), p)
+    eta_S = _vertical_slowness(_complex_slowness(ref.beta, np.inf), p)
+    k_hat_P = np.array([float(np.real(eta_P * ref.alpha)), p * ref.alpha, 0.0])
+    k_hat_S = np.array([float(np.real(eta_S * ref.beta)), p * ref.beta, 0.0])
+
+    T_local = compute_slab_tmatrices(geometry, material, omega)
+
+    incidences = [("P", k_hat_P), ("S", k_hat_S)]
+    if include_sh:
+        incidences.append(("SH", k_hat_S))
+
+    amps: dict[str, WeylAmplitudes] = {}
+    iters: dict[str, int] = {"P": 0, "S": 0, "SH": 0}
+    for wave_type, k_hat in incidences:
+        result = compute_slab_scattering(
+            geometry,
+            material,
+            omega,
+            k_hat,
+            wave_type=wave_type,
+            gmres_tol=gmres_tol,
+            max_iter=max_iter,
+            periodic=True,
+            volume_averaged=volume_averaged,
+            n_orders=n_orders,
+        )
+        amps[wave_type] = slab_weyl_amplitudes(result, T_local, p=p)
+        iters[wave_type] = result.n_gmres_iter
+
+    R_psv = np.array(
+        [
+            [amps["P"].R_P, amps["S"].R_P],
+            [amps["P"].R_SV, amps["S"].R_SV],
+        ],
+        dtype=complex,
+    )
+    return SlabReflectionMatrix(
+        R_psv=R_psv,
+        R_sh=amps["SH"].R_SH if include_sh else 0.0j,
+        p=p,
+        omega=omega,
+        eta_P=complex(eta_P),
+        eta_S=complex(eta_S),
+        n_gmres_iters=(iters["P"], iters["S"], iters["SH"]),
+    )
+
+
+@dataclass
+class KennettChannelReference:
+    """All five Kennett reflection channels for a uniform 3-layer stack.
+
+    Modified (energy-normalized) convention, as stored by kennett_layers.
+    """
+
+    R_PP: complex
+    R_PS: complex
+    R_SP: complex
+    R_SS: complex
+    R_SH: complex
+
+
+def kennett_reference_matrix(
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    H: float,
+    omega: float,
+    *,
+    p: float = 0.0,
+) -> KennettChannelReference:
+    """Kennett reference for all five channels of a uniform layer.
+
+    Same 3-layer stack as kennett_reference_rpp:
+    background(dummy) | perturbed(H) | background(halfspace), at slowness p.
+
+    Args:
+        ref: Background elastic medium.
+        contrast: Material contrast defining the perturbed layer.
+        H: Layer thickness (m).
+        omega: Angular frequency (rad/s).
+        p: Horizontal slowness (s/m).
+
+    Returns:
+        KennettChannelReference with complex coefficients.
+    """
+    lam_bg = ref.rho * (ref.alpha**2 - 2.0 * ref.beta**2)
+    mu_bg = ref.rho * ref.beta**2
+    lam_p = lam_bg + contrast.Dlambda
+    mu_p = mu_bg + contrast.Dmu
+    rho_p = ref.rho + contrast.Drho
+    alpha_p = float(np.sqrt((lam_p + 2.0 * mu_p) / rho_p))
+    beta_p = float(np.sqrt(mu_p / rho_p))
+
+    stack = LayerStack(
+        layers=[
+            IsotropicLayer(
+                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=100.0
+            ),
+            IsotropicLayer(alpha=alpha_p, beta=beta_p, rho=rho_p, thickness=H),
+            IsotropicLayer(
+                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=np.inf
+            ),
+        ]
+    )
+    result = kennett_layers(stack, p=p, omega=np.array([omega]))
+    return KennettChannelReference(
+        R_PP=complex(result.RPP[0]),
+        R_PS=complex(result.RPS[0]),
+        R_SP=complex(result.RSP[0]),
+        R_SS=complex(result.RSS[0]),
+        R_SH=complex(result.RSH[0]),
+    )
+
+
 def kennett_reference_rpp(
     ref: ReferenceMedium,
     contrast: MaterialContrast,
@@ -830,32 +1030,7 @@ def kennett_reference_rpp(
     Returns:
         Complex PP reflection coefficient at normal incidence.
     """
-    # Background moduli
-    lam_bg = ref.rho * (ref.alpha**2 - 2.0 * ref.beta**2)
-    mu_bg = ref.rho * ref.beta**2
-
-    # Perturbed layer velocities
-    lam_p = lam_bg + contrast.Dlambda
-    mu_p = mu_bg + contrast.Dmu
-    rho_p = ref.rho + contrast.Drho
-    alpha_p = float(np.sqrt((lam_p + 2.0 * mu_p) / rho_p))
-    beta_p = float(np.sqrt(mu_p / rho_p))
-
-    # 3-layer stack: background(dummy) | perturbed(H) | background(halfspace)
-    stack = LayerStack(
-        layers=[
-            IsotropicLayer(
-                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=100.0
-            ),
-            IsotropicLayer(alpha=alpha_p, beta=beta_p, rho=rho_p, thickness=H),
-            IsotropicLayer(
-                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=np.inf
-            ),
-        ]
-    )
-
-    result = kennett_layers(stack, p=0.0, omega=np.array([omega]))
-    return complex(result.RPP[0])
+    return kennett_reference_matrix(ref, contrast, H, omega, p=0.0).R_PP
 
 
 # ═══════════════════════════════════════════════════════════════
