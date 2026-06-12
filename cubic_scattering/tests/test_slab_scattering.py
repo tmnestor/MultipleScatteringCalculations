@@ -21,6 +21,7 @@ from cubic_scattering.slab_scattering import (
     _slab_matvec,
     compute_slab_scattering,
     compute_slab_tmatrices,
+    kennett_reference_rpp,
     random_slab_material,
     slab_reflected_field,
     slab_rpp_periodic,
@@ -771,11 +772,25 @@ class TestWeylAmplitudes:
         return result, T_local
 
     def test_rp_matches_rpp_periodic_normal_incidence(self):
-        """At p=0 the new extractor reproduces slab_rpp_periodic exactly."""
+        """At p=0: wrapper delegation is exact AND R_P anchors to Kennett.
+
+        The delegation assertion documents the wiring (slab_rpp_periodic is
+        a thin wrapper over the extractor); the Kennett comparison is the
+        independent value-level anchor that pins the p=0 physics.
+        """
         result, T_local = self._solve_uniform(p=0.0)
         amps = slab_weyl_amplitudes(result, T_local, p=0.0)
         legacy = slab_rpp_periodic(result, T_local, p=0.0)
         np.testing.assert_allclose(amps.R_P, legacy, rtol=1e-12)
+
+        # Independent anchor: exact Kennett R_PP for the uniform layer.
+        # H = N_z * d = 1 * (2 * 2.0) = 4.0 m for the _solve_uniform slab.
+        ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+        contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+        geom = result.geometry
+        H = geom.N_z * geom.d
+        R_K = kennett_reference_rpp(ref, contrast, H=H, omega=result.omega)
+        np.testing.assert_allclose(amps.R_P, R_K, rtol=0.05)
 
     def test_conversions_vanish_at_normal_incidence(self):
         """P incidence at p=0: no SV or SH specular conversion."""
