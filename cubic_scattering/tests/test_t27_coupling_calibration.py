@@ -60,7 +60,8 @@ def test_propagator_reciprocity():
 def test_point_limit_normalisation():
     """M9^-1 P W^-1 matches exact_propagator_9x9 to <1% at a/R = 0.025.
 
-    Measured deviation at a = 0.05, R = 2 (n=8): max 2.6e-3 (S block scale).
+    Measured deviation at a = 0.05, R = 2 (n=6, as run here): max 2.6e-3
+    (S block scale; n=8 gives the same value to two digits).
     Tolerance 1e-2 gives ~4x margin; any sign or factor error in W fails.
     """
     omega = KA * REF.beta / 1.0  # fixed omega -> fixed point propagator
