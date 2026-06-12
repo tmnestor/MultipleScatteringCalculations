@@ -1306,7 +1306,9 @@ def inter_voxel_propagator_9x9(
     - G (3×3): volume-averaged Green's tensor <G_ij>
     - S (6×6): Voigt contraction of the strain propagator P_{ijkl}
     - C (3×6): displacement-strain coupling (d<G_ij>/dR_k Voigt-contracted)
-    - H (6×3): strain-displacement coupling (H = Cᵀ)
+    - H (6×3): strain-displacement coupling — engineering-Voigt transpose
+      of C (H = W Cᵀ with W = diag(1,1,1,2,2,2): the field-side strain is
+      engineering strain, so shear rows carry the factor 2)
 
     Args:
         R_lattice: integer lattice vector (face/edge/corner neighbour).
@@ -1345,7 +1347,12 @@ def inter_voxel_propagator_9x9(
     )
     dG_rot = _rotate_tensor3(dG_canon, perm)
     C = _dG_to_C_block(dG_rot)
-    H = C.T  # H = Cᵀ (verified analytically, no sign flip)
+    # H = engineering-Voigt transpose of C: the field-side strain rows are
+    # engineering strain (shear doubled), matching _P_to_voigt_S's mult_pq=2.
+    # Plain C.T is the tensor transpose and halves the shear rows
+    # (measured exactly 0.5x by scripts/t27_coupling_study.py).
+    H = C.T.copy()
+    H[3:, :] *= 2.0
 
     P9 = np.zeros((9, 9), dtype=complex)
     P9[:3, :3] = G

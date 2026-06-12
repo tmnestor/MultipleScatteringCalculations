@@ -657,9 +657,13 @@ def avg_point_propagator_fd(
 def patch_h_engineering(P9: NDArray) -> NDArray:
     """Double the shear (engineering Voigt) rows of the H block.
 
-    inter_voxel_propagator_9x9 sets H = C^T, which drops the factor 2 that
-    the engineering shear-strain rows carry in the validated convention
-    (its own S block applies it via mult_pq = 2).  This patch restores it.
+    HISTORICAL: at the time of the study, inter_voxel_propagator_9x9 set
+    H = C^T, which dropped the factor 2 that the engineering shear-strain
+    rows carry in the validated convention (its own S block applies it via
+    mult_pq = 2), and this patch restored it.  The module has since been
+    FIXED (H = W C^T with W = diag(1,1,1,2,2,2)), so applying this patch
+    to current output double-counts the factor; it is kept only to
+    reproduce the pre-fix study tables.
     """
     out = P9.copy()
     out[6:9, 0:3] *= 2.0
