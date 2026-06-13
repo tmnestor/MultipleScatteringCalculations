@@ -2243,11 +2243,14 @@ class TestPhysicalPitch:
             inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, 0, d=0.0)
 
     def test_unit_pitch_regression(self):
-        """d=1.0 reproduces the pre-change outputs bit-for-bit.
+        """d=1.0 reproduces the pre-change REAL part bit-for-bit.
 
-        Reference values captured from the module at commit 8c412c9,
+        Reference REAL values captured from the module at commit 8c412c9,
         immediately before the d keyword existed, with the standard
-        test medium (5000/3000/2500).
+        test medium (5000/3000/2500).  Fix 5 added the radiation
+        (imaginary) part; the REAL (even-ω) part is untouched and these
+        pins still hold bit-for-bit.  At ω=0 the imaginary part is exactly
+        zero (radiation vanishes in statics).
         """
         P = inter_voxel_propagator_9x9(
             (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
@@ -2262,7 +2265,7 @@ class TestPhysicalPitch:
         }
         for idx, val in pinned_face.items():
             assert P[idx].real == val, f"face static P[{idx}] changed at d=1"
-            assert P[idx].imag == 0.0
+            assert P[idx].imag == 0.0  # statics: no radiation
 
         P = inter_voxel_propagator_9x9(
             (1, 1, 1), ALPHA, BETA, RHO, 900.0, n_orders=3, d=1.0
@@ -2278,16 +2281,19 @@ class TestPhysicalPitch:
         for idx, val in pinned_corner_dyn.items():
             assert P[idx].real == val, f"corner dynamic P[{idx}] changed at d=1"
 
-        # Whole-matrix pins (Frobenius norms, same capture)
-        pinned_fro = [
+        # The element-wise `.real == val` pins above are the bit-exact
+        # guarantee that the even-ω series is untouched by Fix 5.  Full
+        # complex Frobenius pins INCLUDING the Fix-5 radiation part
+        # (recaptured after Fix 5; ω=0 is identical to the real-only pin).
+        pinned_fro_complex = [
             ((1, 0, 0), 0.0, 0, 7.989575682057374e-12),
-            ((1, 1, 0), 450.0, 2, 5.057472673586382e-12),
-            ((1, 1, 1), 900.0, 3, 3.6173906793733703e-12),
+            ((1, 1, 0), 450.0, 2, 5.102036004711902e-12),
+            ((1, 1, 1), 900.0, 3, 3.841979741004868e-12),
         ]
-        for R, om, n, fro in pinned_fro:
+        for R, om, n, fro in pinned_fro_complex:
             P = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, om, n_orders=n, d=1.0)
             assert np.linalg.norm(P) == fro, (
-                f"Frobenius norm changed at d=1 for R={R}, om={om}, n={n}"
+                f"complex Frobenius norm changed at d=1 for R={R}, om={om}, n={n}"
             )
 
     def test_pitch_scaling_laws(self):
@@ -2316,11 +2322,13 @@ class TestPhysicalPitch:
                     )
 
     def test_pitch_dynamic_order_scaling(self):
-        """Order-n dynamic term of block X scales as d^(s_X + 2n): the
-        per-order increment at pitch d equals d^(s_X+2n) times the
-        unit-pitch increment (measured d^(s+2) on the arbiter at order
-        1; exact algebra in the module since the expansion parameter is
-        omega*d/c)."""
+        """Order-n dynamic term of block X scales as a pure power of d, but
+        the REAL (even-ω, d^(s_X+2n)) and IMAGINARY (radiation, odd-ω,
+        d^(s_X+2n+1)) parts scale by DIFFERENT powers [Fix 5].  Each
+        per-order increment, split into real and imaginary parts, scales as
+        its own pure power; the full complex increment does not (the two
+        powers differ by one).  Exact algebra in the module: d enters only
+        through omega->omega*d and the static d^(s_X)."""
         blocks = {
             "G": (slice(0, 3), slice(0, 3), -1),
             "C": (slice(0, 3), slice(3, 9), -2),
@@ -2340,15 +2348,25 @@ class TestPhysicalPitch:
             for bn, (r_, c_, s) in blocks.items():
                 # atol floor: the increments are differences of full
                 # matrices, so they carry cancellation noise at the ulp
-                # scale of the FULL block magnitude (G order-3 increments
-                # are ~1e-4 of the block and sit near that noise).
+                # scale of the FULL block magnitude.
                 noise = 1e-13 * np.max(np.abs(cur_d[r_, c_]))
+                # REAL (even-ω) part: d^(s + 2n)
                 np.testing.assert_allclose(
-                    inc_d[r_, c_],
-                    d ** (s + 2 * n) * inc_1[r_, c_],
+                    inc_d[r_, c_].real,
+                    d ** (s + 2 * n) * inc_1[r_, c_].real,
                     rtol=1e-12,
                     atol=noise,
-                    err_msg=f"{bn} order-{n} term must scale as d^{s + 2 * n}",
+                    err_msg=f"{bn} order-{n} REAL term must scale as d^{s + 2 * n}",
+                )
+                # IMAGINARY (radiation) part: d^(s + 2n + 1)
+                np.testing.assert_allclose(
+                    inc_d[r_, c_].imag,
+                    d ** (s + 2 * n + 1) * inc_1[r_, c_].imag,
+                    rtol=1e-12,
+                    atol=noise,
+                    err_msg=(
+                        f"{bn} order-{n} IMAG term must scale as d^{s + 2 * n + 1}"
+                    ),
                 )
             prev_1, prev_d = cur_1, cur_d
 
@@ -2672,3 +2690,239 @@ class TestFaceSBlockArbiter:
             assert S[i1, j1] == pytest.approx(S[i2, j2], abs=1e-14 * scale), (
                 f"S[{i1},{j1}] != C4v partner S[{i2},{j2}]"
             )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  Fix 5: radiation (imaginary) part of the volume-averaged propagator
+#
+#  The elastodynamic Green's tensor's imaginary part (sin k r / r) is ENTIRE,
+#  so Im<G> and its R-derivatives are exact polynomial moments of the cube
+#  pair.  Arbiter: the COMPLEX volume-averaged Kupradze G by Gauss-Legendre
+#  quadrature (the same machinery as scripts/test_radiation_part_need.py).
+# ══════════════════════════════════════════════════════════════════════════
+from numpy.polynomial.legendre import leggauss  # noqa: E402
+
+from cubic_scattering.resonance_tmatrix import _voigt_contract  # noqa: E402
+
+_FIX5_SEPS = {
+    "face": (1, 0, 0),
+    "edge": (1, 1, 0),
+    "corner": (1, 1, 1),
+}
+
+
+def _fix5_gauss_grid(n, a):
+    x, w = leggauss(n)
+    x = x * a
+    w = w * a
+    pts = np.stack(np.meshgrid(x, x, x, indexing="ij"), axis=-1).reshape(-1, 3)
+    wts = (w[:, None, None] * w[None, :, None] * w[None, None, :]).reshape(-1)
+    return pts, wts
+
+
+def _fix5_greens(rvecs, omega):
+    r = np.linalg.norm(rvecs, axis=-1)
+    g = rvecs / r[..., None]
+    kP, kS = omega / ALPHA, omega / BETA
+    eP, eS = np.exp(1j * kP * r), np.exp(1j * kS * r)
+    nfP = (1 - 1j * kP * r) * eP / r**3
+    nfS = (1 - 1j * kS * r) * eS / r**3
+    phi = kS**2 * eS / r - nfS + nfP
+    psi = 3 * nfS - 3 * nfP + kP**2 * eP / r - kS**2 * eS / r
+    pref = 1 / (4 * np.pi * RHO * omega**2)
+    return pref * (
+        phi[..., None, None] * np.eye(3)
+        + psi[..., None, None] * g[..., :, None] * g[..., None, :]
+    )
+
+
+def _fix5_avg_greens(Rax, omega, a, n=10):
+    pts, w = _fix5_gauss_grid(n, a)
+    V = (2 * a) ** 3
+    sep = Rax[None, None, :] + pts[:, None, :] - pts[None, :, :]
+    return np.einsum("m,q,mqij->ij", w, w, _fix5_greens(sep, omega)) / V**2
+
+
+def _fix5_arbiter(Rax, omega, a, h=0.01, n=10):
+    """Complex volume-averaged 9x9 propagator via FD R-derivatives of <G>."""
+    e = np.eye(3)
+    A0 = _fix5_avg_greens(Rax, omega, a, n)
+    Ap = [_fix5_avg_greens(Rax + h * e[k], omega, a, n) for k in range(3)]
+    Am = [_fix5_avg_greens(Rax - h * e[k], omega, a, n) for k in range(3)]
+    Gd = np.zeros((3, 3, 3), complex)
+    Gdd = np.zeros((3, 3, 3, 3), complex)
+    for k in range(3):
+        Gd[:, :, k] = (Ap[k] - Am[k]) / (2 * h)
+        Gdd[:, :, k, k] = (Ap[k] - 2 * A0 + Am[k]) / h**2
+    for k in range(3):
+        for ll in range(k + 1, 3):
+            App = _fix5_avg_greens(Rax + h * e[k] + h * e[ll], omega, a, n)
+            Apm = _fix5_avg_greens(Rax + h * e[k] - h * e[ll], omega, a, n)
+            Amp = _fix5_avg_greens(Rax - h * e[k] + h * e[ll], omega, a, n)
+            Amm = _fix5_avg_greens(Rax - h * e[k] - h * e[ll], omega, a, n)
+            Gdd[:, :, k, ll] = Gdd[:, :, ll, k] = (App - Apm - Amp + Amm) / (4 * h**2)
+    C, H, S = _voigt_contract(Gd, Gdd)
+    P = np.zeros((9, 9), complex)
+    P[:3, :3] = A0
+    P[:3, 3:] = C
+    P[3:, :3] = H
+    P[3:, 3:] = S
+    return P
+
+
+_FIX5_BLOCKS = {
+    "G": (slice(0, 3), slice(0, 3)),
+    "C": (slice(0, 3), slice(3, 9)),
+    "H": (slice(3, 9), slice(0, 3)),
+    "S": (slice(3, 9), slice(3, 9)),
+}
+
+
+class TestRadiationImaginaryPart:
+    """Fix 5: the imaginary (radiation) part of the volume-averaged propagator."""
+
+    @pytest.mark.parametrize("ka", [0.1, 0.3, 0.5])
+    @pytest.mark.parametrize("name", ["face", "edge", "corner"])
+    @pytest.mark.parametrize("block", ["G", "C", "S"])
+    def test_imag_part_vs_quadrature_arbiter(self, block, name, ka):
+        """Module Im block matches the complex volume-averaged arbiter.
+
+        FAILS before Fix 5 (the module Im part was identically zero).
+        """
+        a = 0.5
+        omega = ka * BETA / a
+        R = _FIX5_SEPS[name]
+        Pm = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
+        Pa = _fix5_arbiter(np.array(R, float), omega, a)
+        r_, c_ = _FIX5_BLOCKS[block]
+        im_m = Pm[r_, c_].imag
+        im_a = Pa[r_, c_].imag
+        den = np.max(np.abs(im_a))
+        assert den > 0.0, "arbiter Im block must be non-zero (radiation present)"
+        rel = np.max(np.abs(im_m - im_a)) / den
+        tol = {0.1: 1e-3, 0.3: 5e-3, 0.5: 5e-2}[ka]
+        assert rel < tol, f"{block} {name} ka={ka}: Im rel err {rel:.3e} >= {tol:.0e}"
+
+    def test_imag_part_nonzero(self):
+        """Sanity: the module now carries a non-zero imaginary part."""
+        P = inter_voxel_propagator_9x9(
+            (1, 0, 0), ALPHA, BETA, RHO, 600.0, n_orders=2, d=1.0
+        )
+        assert np.max(np.abs(P.imag)) > 0.0
+
+    def test_imag_pitch_scaling(self):
+        """Im part obeys the seam: P(R, w; d) = d^{s_X} P(R, wd; 1), per block,
+        at machine precision (exact homogeneous algebra of the moment avg).
+        d enters ONLY through omega->omega*d and the static d^{s_X}, so the
+        odd-power radiation terms scale as d^{s_X+2n+1} automatically."""
+        omega = 0.3 * BETA / 1.0
+        for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
+            for d in (2.0, 2.5):
+                Pd = inter_voxel_propagator_9x9(
+                    R, ALPHA, BETA, RHO, omega, n_orders=3, d=d
+                )
+                P_scaled = inter_voxel_propagator_9x9(
+                    R, ALPHA, BETA, RHO, omega * d, n_orders=3, d=1.0
+                )
+                for bn, (r_, c_) in _FIX5_BLOCKS.items():
+                    s = {"G": -1, "C": -2, "H": -2, "S": -3}[bn]
+                    lhs = Pd[r_, c_].imag
+                    rhs = d**s * P_scaled[r_, c_].imag
+                    scale = np.max(np.abs(rhs)) + 1e-300
+                    np.testing.assert_allclose(
+                        lhs,
+                        rhs,
+                        atol=1e-12 * scale,
+                        rtol=1e-10,
+                        err_msg=f"Im pitch seam broken: {bn} R={R} d={d}",
+                    )
+
+    def test_imag_static_limit_zero(self):
+        """Radiation vanishes in statics: Im part -> 0 as w -> 0 (every term
+        is proportional to w^{2n+1})."""
+        P_small = inter_voxel_propagator_9x9(
+            (1, 0, 0), ALPHA, BETA, RHO, 1e-6, n_orders=2, d=1.0
+        )
+        assert np.max(np.abs(P_small.imag)) < 1e-20
+
+    def test_imag_leading_order_analytic(self):
+        """n=0 leading radiation term, verified analytically (not vs quadrature):
+        Im<G>_ij -> delta_ij * pref*(kP^3/3 + 2 kS^3/3), independent of R."""
+        omega = 1e-4 * BETA
+        P = inter_voxel_propagator_9x9(
+            (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=0, d=1.0
+        )
+        imG = P[:3, :3].imag
+        kP, kS = omega / ALPHA, omega / BETA
+        pref = 1.0 / (4.0 * np.pi * RHO * omega**2)
+        leading = pref * (kP**3 / 3.0 + 2.0 * kS**3 / 3.0)
+        np.testing.assert_allclose(imG, leading * np.eye(3), rtol=1e-6, atol=0.0)
+        assert abs(imG[0, 1]) < 1e-12 * abs(imG[0, 0])
+
+    def test_imag_face_c4v_symmetry(self):
+        """Radiation S block respects C4v(100) (Voigt partners equal)."""
+        omega = 0.3 * BETA / 1.0
+        P = inter_voxel_propagator_9x9(
+            (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
+        )
+        S = P[3:, 3:].imag
+        scale = np.max(np.abs(S)) + 1e-300
+        for (i1, j1), (i2, j2) in (
+            ((1, 1), (2, 2)),
+            ((0, 1), (0, 2)),
+            ((4, 4), (5, 5)),
+        ):
+            assert S[i1, j1] == pytest.approx(S[i2, j2], abs=1e-12 * scale)
+
+    def test_imag_corner_c3_symmetry(self):
+        """Corner radiation G block respects C3(111) site symmetry."""
+        omega = 0.3 * BETA / 1.0
+        P = inter_voxel_propagator_9x9(
+            (1, 1, 1), ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
+        )
+        G = P[:3, :3].imag
+        scale = np.max(np.abs(G))
+        assert G[0, 0] == pytest.approx(G[1, 1], abs=1e-12 * scale)
+        assert G[1, 1] == pytest.approx(G[2, 2], abs=1e-12 * scale)
+        assert G[0, 1] == pytest.approx(G[1, 2], abs=1e-12 * scale)
+        assert G[0, 1] == pytest.approx(G[0, 2], abs=1e-12 * scale)
+
+    def test_imag_H_equals_engineering_transpose_of_C(self):
+        """Radiation H = W C^T with W = diag(1,1,1,2,2,2) (same as real part)."""
+        omega = 0.3 * BETA / 1.0
+        for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
+            P = inter_voxel_propagator_9x9(
+                R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
+            )
+            C = P[:3, 3:].imag
+            H = P[3:, :3].imag
+            W = np.diag([1.0, 1, 1, 2, 2, 2])
+            np.testing.assert_allclose(
+                H, W @ C.T, atol=1e-14 * (np.max(np.abs(H)) + 1e-300)
+            )
+
+    def test_real_parts_unchanged_regression(self):
+        """Fix 5 must NOT touch the real (even-w) part: bit-exact vs pins."""
+        P = inter_voxel_propagator_9x9(
+            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
+        )
+        pinned_face = {
+            (0, 0): 3.124729218306932e-12,
+            (1, 1): 2.5312579726092557e-12,
+            (0, 3): -2.3747367242634794e-12,
+            (3, 3): 3.0089307944789324e-12,
+            (7, 7): 6.515349891718279e-13,
+        }
+        for idx, val in pinned_face.items():
+            assert P[idx].real == val, f"REAL part changed at {idx} (seam bug!)"
+        P = inter_voxel_propagator_9x9(
+            (1, 1, 1), ALPHA, BETA, RHO, 900.0, n_orders=3, d=1.0
+        )
+        pinned_corner_dyn = {
+            (0, 0): 1.409458741477061e-12,
+            (0, 1): 1.9927484469509047e-13,
+            (3, 3): -2.065237269735879e-13,
+            (8, 8): 1.4603323667204697e-13,
+        }
+        for idx, val in pinned_corner_dyn.items():
+            assert P[idx].real == val, f"REAL part changed at {idx} (seam bug!)"
