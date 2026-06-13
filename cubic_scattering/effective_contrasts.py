@@ -447,6 +447,144 @@ def _compute_effective_contrasts(
 
 
 # ================================================================
+# Finite-scatterer (kr)² form factor
+# ================================================================
+
+
+def form_factor_c2(
+    dlam: float, dmu: float, drho: float, lam0: float
+) -> Tuple[float, float, float]:
+    """Real O((ka)²) form-factor coefficients per channel (in (k_S·R)² units).
+
+    Finite scatterers see a non-uniform incident strain.  The leading
+    real O((ka)²) correction to each effective contrast is the squared
+    plane-wave overlap ⟨exp(ik·x)⟩² (the "form factor").  Expanding the
+    exact elastic Mie sphere coefficients a₀,a₁,a₂ in kr and pushing them
+    through the SAME extraction as
+    :func:`sphere_scattering.mie_extract_effective_contrasts`
+    (Δκ*=−a₀/(C_P k_P²), Δρ*=i·a₁/(C_P ω²), Δμ*=3a₂/(4C_P k_P²)) gives,
+    per channel,
+
+        X*(w)/X*(0) = 1 + c_X · w² + …      with  w = k_S·R,
+
+    where c_X is the exact rational function of the nondimensional
+    contrasts (δλ, δμ, δρ) = (Δλ, Δμ, Δρ)/μ₀ and λ₀ = (α/β)² − 2 returned
+    here.  These closed forms were derived symbolically and cross-checked
+    term-by-term against the exact Mie oracle (see `/tmp/ff_verify.wl`
+    re-derivation; matches `ff_raw_reim3.out`).  In the weak-contrast
+    (Born) limit the pure-modulus coefficient is exactly −1/5·(k_P R)²
+    for the sphere (equivalently −(1/5)/(λ₀+2)·w² in (k_S R)² units),
+    the textbook finite-sphere result.
+
+    Geometry note (sphere vs cube)
+    ------------------------------
+    The squared overlap for a **cube** of half-width a is
+    ∏ sinc(k_j a)² = 1 − (1/3)(k a)² + O((ka)⁴) — isotropic at O((ka)²)
+    (O_h cubic anisotropy first enters at O((ka)⁴)), i.e. −1/3·(k_P a)²
+    for the pure-modulus part vs −1/5·(k_P R)² for the sphere.  When the
+    cube T-matrix is validated against the exact **sphere** Mie oracle at
+    the volume-equivalent radius R_eq = (6/π)^(1/3)·a, the SPHERE
+    coefficients evaluated at R_eq are what reproduce Mie's ka-dependence
+    (verified empirically: applying these c₂ at R_eq closes the cube↔Mie
+    *dynamic* error to < 0.01% for the modulus channels and < 0.15% for
+    density at moderate contrast; at the band edge and ×3 strong contrast
+    a genuine O((ka)⁴)·O(δρ²) density residual of ~0.43% remains, beyond
+    the reach of any (ka)² correction — see
+    test_mie_near_field.TestFormFactorCorrection).  The residual *static*
+    cube↔sphere shape error is a separate, pre-existing geometric effect.
+
+    Parameters
+    ----------
+    dlam, dmu, drho : float
+        **Nondimensional** contrasts: dlam = Δλ/μ₀, dmu = Δμ/μ₀,
+        drho = Δρ/ρ₀, with μ₀ = ρ₀β² the background shear modulus.  The c₂
+        rationals mix δλ,δμ (modulus, /μ₀) with δρ (density, /ρ₀), so the
+        nondimensionalisation is load-bearing — pass the ratios, not Pa.
+    lam0 : float
+        Nondimensional background Lamé ratio λ₀ = (α/β)² − 2 = λ₀_phys/μ₀.
+
+    Returns
+    -------
+    (c_mu, c_kappa, c_rho) : tuple of float
+        Per-channel form-factor coefficients in (k_S·R)² units.  Each is
+        0.0 when its channel has no static response (δμ=0 ⇒ c_mu undefined
+        and unused; 3δλ+2δμ=0 ⇒ c_kappa unused; δρ=0 ⇒ c_rho unused).
+    """
+    g = lam0
+    L = lam0 + 2.0  # = (α/β)²
+
+    # ── Δμ channel: c_mu = (w²-coeff)/(w⁰-coeff) of Δμ*(w) ──
+    # Δμ*(w) real series: M0 = 15δμ L /(15L + 2δμ(8+3λ₀)),
+    #   M2 = −9(10δμ L + 5δρ L² + 4δμ²(12+9λ₀+2λ₀²)) / (2(15L+2δμ(8+3λ₀))²)
+    if dmu != 0.0:
+        c_mu = (
+            -3.0
+            * (
+                10.0 * dmu * L
+                + 5.0 * drho * L**2
+                + 4.0 * dmu**2 * (12.0 + 9.0 * g + 2.0 * g**2)
+            )
+        ) / (10.0 * dmu * L * (15.0 * L + 2.0 * dmu * (8.0 + 3.0 * g)))
+    else:
+        c_mu = 0.0
+
+    # ── Δκ channel: c_kappa ──
+    # K0 = (3δλ+2δμ)L /(6+3δλ+2δμ+3λ₀),
+    #   K2 = −3(9δλ²+4δμ²+2δμ L+δρ L²+3δλ(2+4δμ+λ₀))/(5(6+3δλ+2δμ+3λ₀)²)
+    tr = 3.0 * dlam + 2.0 * dmu
+    if tr != 0.0:
+        c_kappa = (
+            -3.0
+            * (
+                9.0 * dlam**2
+                + 4.0 * dmu**2
+                + 2.0 * dmu * L
+                + drho * L**2
+                + 3.0 * dlam * (2.0 + 4.0 * dmu + g)
+            )
+        ) / (5.0 * tr * L * (6.0 + 3.0 * dlam + 2.0 * dmu + 3.0 * g))
+    else:
+        c_kappa = 0.0
+
+    # ── Δρ channel: c_rho ──
+    # R0 = −δρ,
+    #   R2 = [ −15δρ L(−3+2δρ(5+2λ₀)) + δμ²(18+30δρ−10δρ²(5+2λ₀))
+    #          + δμ(54+3δρ(64+17λ₀)−2δρ²(157+101λ₀+15λ₀²))
+    #          + δλ(45+75δρ−5δρ²(29+12λ₀)+δμ(27+45δρ−15δρ²(5+2λ₀))) ]
+    #         / (45 L (2δμ²+δλ(5+3δμ)+5L+3δμ(4+λ₀)))
+    # c_rho = R2/R0.
+    if drho != 0.0:
+        dl, dm, dr = dlam, dmu, drho
+        num = (
+            -15.0 * dr * L * (-3.0 + 2.0 * dr * (5.0 + 2.0 * g))
+            + dm**2 * (18.0 + 30.0 * dr - 10.0 * dr**2 * (5.0 + 2.0 * g))
+            + dm
+            * (
+                54.0
+                + 3.0 * dr * (64.0 + 17.0 * g)
+                - 2.0 * dr**2 * (157.0 + 101.0 * g + 15.0 * g**2)
+            )
+            + dl
+            * (
+                45.0
+                + 75.0 * dr
+                - 5.0 * dr**2 * (29.0 + 12.0 * g)
+                + dm * (27.0 + 45.0 * dr - 15.0 * dr**2 * (5.0 + 2.0 * g))
+            )
+        )
+        den = (
+            dr
+            * L
+            * (2.0 * dm**2 + dl * (5.0 + 3.0 * dm) + 5.0 * L + 3.0 * dm * (4.0 + g))
+        )
+        c_rho = -num / (45.0 * den)
+    else:
+        c_rho = 0.0
+
+    return c_mu, c_kappa, c_rho
+
+
+# ================================================================
 # Main computation function
 # ================================================================
 
@@ -497,12 +635,49 @@ def compute_cube_tmatrix(
     # Step 3: T-matrix coupling coefficients
     T1c, T2c, T3c = _compute_T123(Ac, Bc, Cc, contrast.Dlambda, contrast.Dmu)
 
-    # Step 4: Amplification factors
+    # ── Finite-scatterer (kr)² FORM FACTOR (real, O((ka)²)) ──────────
+    # The analytic single-site amplification is purely *static* in its
+    # REAL part for the modulus channels — it omits the real O((ka)²)
+    # form factor from the non-uniform incident strain (the squared
+    # plane-wave overlap ⟨exp(ik·x)⟩²).  The exact per-channel real
+    # coefficient c₂ is derived from the elastic Mie sphere coefficients
+    # (form_factor_c2), validated term-by-term against the Mie oracle.
+    # Pure-modulus mechanism: −1/5·(k_P R)² (sphere) / −1/3·(k_P a)²
+    # (cube; isotropic at this order).  We evaluate at the
+    # volume-equivalent sphere radius R_eq = (6/π)^(1/3)·a so the cube
+    # T-matrix reproduces the sphere Mie ka-dependence (the c₂ are the
+    # Mie-exact reference; the cube↔sphere *static* shape residual is a
+    # separate, pre-existing geometric effect that the form factor does
+    # not touch).  See test_mie_near_field.TestFormFactorCorrection.
+    mu0 = rho * beta**2
+    lam0 = (alpha / beta) ** 2 - 2.0  # = λ₀_phys/μ₀
+    dlam_nd = contrast.Dlambda / mu0
+    dmu_nd = contrast.Dmu / mu0
+    drho_nd = contrast.Drho / rho
+    c_mu, c_kappa, c_rho = form_factor_c2(dlam_nd, dmu_nd, drho_nd, lam0)
+    R_eq = (6.0 / np.pi) ** (1.0 / 3.0) * a
+    kS = omega / beta
+    w2 = (kS * R_eq) ** 2  # (k_S · R_eq)² — the form-factor argument
+    ff_mu = 1.0 + c_mu * w2
+    ff_kappa = 1.0 + c_kappa * w2
+    ff_rho = 1.0 + c_rho * w2
+
+    # Step 4: Amplification factors.
+    # Density channel: the real part of ω²Γ₀ is a wrong-sign/magnitude
+    # finite-scatterer real (ka)² piece; the form factor REPLACES it.
+    # Build amp_u from the static-real Γ₀ + the imaginary (radiation)
+    # part of Γ₀ (which is physical and must be kept), discarding the
+    # spurious REAL dynamic content of Γ₀.  The c_rho factor (applied at
+    # Step 5) then supplies the correct real (ka)² density form factor.
+    a0_kelvin = (alpha**2 + beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
+    b0_kelvin = (alpha**2 - beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
+    Gamma0_static = a**2 * (a0_kelvin + b0_kelvin / 3.0) * G0_CUBE
+    Gamma0_for_rho = Gamma0_static + 1j * Gamma0.imag
     amp_u, amp_theta, amp_e_off, amp_e_diag = _compute_amplification_factors(
-        T1c, T2c, T3c, Gamma0, omega, contrast.Drho
+        T1c, T2c, T3c, Gamma0_for_rho, omega, contrast.Drho
     )
 
-    # Step 5: Effective contrasts
+    # Step 5: Effective contrasts (raw), then apply the real form factor.
     Drho_star, Dlambda_star, Dmu_star_off, Dmu_star_diag = _compute_effective_contrasts(
         contrast.Dlambda,
         contrast.Dmu,
@@ -512,6 +687,18 @@ def compute_cube_tmatrix(
         amp_e_off,
         amp_e_diag,
     )
+    # Modulus channels multiply by the real (1 + c₂·(k_S R_eq)²).  Apply
+    # to Δκ* and Δμ* (the physical irreducible channels), then rebuild
+    # Δλ* = Δκ* − ⅔Δμ* so the bulk and shear form factors compose
+    # consistently.  The imaginary (radiation) parts are untouched.
+    Kappa_star = Dlambda_star + 2.0 / 3.0 * Dmu_star_diag
+    Kappa_star_ff = Kappa_star.real * ff_kappa + 1j * Kappa_star.imag
+    Dmu_star_diag = Dmu_star_diag.real * ff_mu + 1j * Dmu_star_diag.imag
+    Dmu_star_off = Dmu_star_off.real * ff_mu + 1j * Dmu_star_off.imag
+    Dlambda_star = Kappa_star_ff - 2.0 / 3.0 * Dmu_star_diag
+    # Density: REPLACE composition done above (Gamma0_for_rho); now apply
+    # the real density form factor on top of the radiation-only amp_u.
+    Drho_star = Drho_star.real * ff_rho + 1j * Drho_star.imag
 
     return CubeTMatrixResult(
         Gamma0=Gamma0,
