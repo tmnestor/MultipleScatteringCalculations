@@ -212,10 +212,12 @@ def test_periodic_uniform_slab_closer_to_kennett():
 # WITH the finite-scatterer (kr)² FORM-FACTOR correction in the single-site
 # cube T-matrix — the CUBE form factor (−1/3·(k_P a)², the real O((ka)²)
 # ∏ sinc(k_j a)² squared overlap; see effective_contrasts.form_factor_c2 and
-# test_mie_near_field.TestFormFactorCorrection).  This slab→Kennett check is
-# the BINDING, cube-appropriate validation that selected the cube coefficient
-# over the sphere one (a cubic lattice tiles a uniform layer; matching sphere
-# Mie would be circular for a cube voxel):
+# test_mie_near_field.TestFormFactorCorrection).  The CUBE coefficient is
+# chosen on physical first-principles grounds (correct form factor for a cube
+# voxel — matching sphere Mie would be circular).  This slab→Kennett check (a
+# cubic lattice tiling a uniform layer) CONFIRMS the cube is not worse than the
+# sphere; it does NOT by itself resolve cube vs sphere (the differences are
+# within coarse-mesh discretization noise):
 #
 #   ka    |R_K|        err pt(VA=F)   err VA n=2   err VA n=3
 #   0.10  1.7646e-02   1.2064e-02     7.5795e-03   7.5795e-03
@@ -234,11 +236,13 @@ def test_periodic_uniform_slab_closer_to_kennett():
 #   0.50   3.32%  →  1.82%  →  2.25%
 #
 # The CUBE form factor matches Kennett as well as the sphere one through
-# ka ≤ 0.3 (the targeted band); at the band edge ka=0.5 the omitted O((ka)⁴)
-# O_h anisotropy makes the isotropic cube (ka)² coefficient slightly
-# over-correct (2.25% vs the sphere 1.82%), still far below the no-FF 3.32%.
-# The decisive cube-vs-sphere advantage is in the OBLIQUE R_SS shear floor
-# (see test_oblique_vol_avg_matches_kennett).
+# ka ≤ 0.3 (the targeted band) — the two agree within slab discretization
+# noise; at the band edge ka=0.5 the omitted O((ka)⁴) O_h anisotropy makes the
+# isotropic cube (ka)² coefficient slightly over-correct (2.25% vs sphere
+# 1.82%), still far below the no-FF 3.32%.  The robust end-to-end result is the
+# OBLIQUE R_SS shear-floor improvement (6.61% → 4.65%; see
+# test_oblique_vol_avg_matches_kennett), where the missing real (ka)² content
+# was the dominant error.
 
 _KA_KENNETT = (0.1, 0.2, 0.3, 0.5)
 # Measured VA-vs-Kennett errors (n=2) above, with margin (CUBE form factor).
@@ -294,28 +298,31 @@ class TestVolumeAveragedKennettAccuracy:
             f"ka={ka}: vol-avg vs Kennett rel-err {rel_err:.4e} exceeds {tol}"
         )
 
-    # The vol-avg "beats point" margin shrank once the single-site
-    # form-factor correction was added: the real (ka)² content it supplies
-    # benefits BOTH propagator modes, and toward the top of the band it helps
-    # the point mode slightly more.  Measured 2026-06-13 (CUBE form factor):
-    #   ka    err VA n=2   err PT n=2
-    #   0.10  0.76%        1.21%   (VA beats point)
-    #   0.20  1.12%        1.40%   (VA beats point)
-    #   0.30  1.59%        1.57%   (point beats VA by 0.02% — marginal)
-    #   0.50  2.25%        1.81%   (point beats VA — both far below no-FF)
-    # The guarantee is therefore pinned for ka ≤ 0.2; at ka ≥ 0.3 we require
-    # vol-avg to stay within a measured envelope of point.
+    # Honest scope: vol-avg STRICTLY beats point only at low ka (≤ 0.2).
+    # The single-site form-factor correction supplies real (ka)² content to
+    # BOTH propagator modes, and toward the top of the band it helps the point
+    # mode slightly more, so the "beats point" property is FALSE at ka ≥ 0.3
+    # (point is marginally better there).  Measured 2026-06-13 (CUBE FF):
+    #   ka    err VA n=2   err PT n=2   verdict
+    #   0.10  0.76%        1.21%        VA beats point (strict)
+    #   0.20  1.12%        1.40%        VA beats point (strict)
+    #   0.30  1.59%        1.57%        point beats VA by 0.02% (within envelope)
+    #   0.50  2.25%        1.81%        point beats VA by 0.44% (within envelope)
+    # The test is split accordingly: a STRICT beats-point assertion for
+    # ka ≤ 0.2, and a documented within-envelope-of-point assertion for
+    # ka ≥ 0.3 (NOT a strict guarantee — both modes are far below the no-FF
+    # baseline; the small VA deficit at high ka is a coarse-mesh effect).
     @pytest.mark.parametrize("ka", _KA_KENNETT)
-    def test_vol_avg_at_least_as_accurate_as_point(self, ka):
-        """Volume averaging does not materially HURT vs the point propagator.
+    def test_vol_avg_beats_point_low_ka_else_within_envelope(self, ka):
+        """Vol-avg beats point STRICTLY for ka ≤ 0.2; within-envelope for ka ≥ 0.3.
 
-        For ka ≤ 0.2 the volume-averaged propagator is at least as accurate
-        as the point propagator against Kennett.  At ka ≥ 0.3 the CUBE
-        form-factor correction (which improved BOTH modes vs the no-FF
-        baseline) helps the point mode slightly more, so we require only that
-        vol-avg stay within a measured envelope of point (~0.05% at ka=0.3,
-        ~0.5% at ka=0.5).  In all cases both modes are far closer to Kennett
-        than before the form-factor fix.
+        The named guarantee — volume averaging is at least as accurate as the
+        point propagator against Kennett — holds STRICTLY only at low ka.  At
+        ka ≥ 0.3 the form factor (which improved both modes vs no-FF) helps the
+        point mode marginally more, so vol-avg is NOT strictly better there; we
+        assert only that it stays within a measured envelope of point
+        (~0.05% at ka=0.3, ~0.5% at ka=0.5).  This split keeps the assertion
+        honest: the strict claim is made only where it is true.
         """
         geom, mat = self._geom_mat()
         omega = ka * REF.beta / self.A
@@ -325,12 +332,21 @@ class TestVolumeAveragedKennettAccuracy:
         R_pt = _rpp_vol_avg(geom, mat, omega, volume_averaged=False, n_orders=2)
         err_va = abs(R_va - R_K) / abs(R_K)
         err_pt = abs(R_pt - R_K) / abs(R_K)
-        # ka ≤ 0.2: strict; ka = 0.3: ~0.05% envelope; ka = 0.5: ~0.5%.
-        margin = {0.1: 1e-4, 0.2: 1e-4, 0.3: 5e-4, 0.5: 5e-3}[ka]
-        assert err_va <= err_pt + margin, (
-            f"ka={ka}: vol-avg error {err_va:.4e} should be ≤ point error "
-            f"{err_pt:.4e} + {margin} (volume averaging must not materially hurt)"
-        )
+        if ka <= 0.2:
+            # STRICT: vol-avg is genuinely at least as accurate as point.
+            assert err_va <= err_pt + 1e-4, (
+                f"ka={ka}: vol-avg error {err_va:.4e} should STRICTLY beat point "
+                f"{err_pt:.4e} (low-ka beats-point guarantee)"
+            )
+        else:
+            # WITHIN-ENVELOPE (documented, not strict): point is marginally
+            # better; vol-avg must not fall outside the measured envelope.
+            envelope = {0.3: 5e-4, 0.5: 5e-3}[ka]
+            assert err_va <= err_pt + envelope, (
+                f"ka={ka}: vol-avg error {err_va:.4e} exceeds point {err_pt:.4e} "
+                f"by more than the documented envelope {envelope} "
+                f"(point marginally beats VA at high ka — coarse-mesh effect)"
+            )
 
     @pytest.mark.parametrize("ka", _KA_KENNETT)
     def test_n_orders_convergence(self, ka):
@@ -371,21 +387,26 @@ class TestVolumeAveragedKennettAccuracy:
             R_SS      6.607e-02  →  4.782e-02  →  4.649e-02        2.567e-02
 
         FINDING (R_SS): the form factor IMPROVES the shear floor by ~2 pts
-        (6.61% → 4.65%), and the CUBE coefficient beats the sphere one here
-        (4.65% < 4.78%) — the cube is the correct voxel shape.  This is the
-        end-to-end confirmation that the missing real (ka)² form factor drove
-        the R_SS floor, and the decisive cube-vs-sphere evidence (the cube
-        coefficient was SELECTED on this slab→Kennett arbiter, not sphere Mie).
+        (6.61% → 4.65%).  The cube and sphere R_SS (4.65% vs 4.78%) agree
+        within slab discretization noise on this coarse M=4 mesh, so this does
+        NOT by itself decide cube vs sphere — the cube is chosen on physical
+        first-principles grounds (correct voxel shape) and Kennett merely
+        CONFIRMS it is not worse.  The clear, robust result is that the missing
+        real (ka)² form factor drove the R_SS floor and the correction removes
+        most of it.
 
-        FINDING (R_PP, oblique): the R_PP crossover at this COARSE mesh
-        (M=4, pd≈1 rad per cell at p=1e-4) shifts the opposite way — making
-        the single-site response more correct exposes a residual that the
-        point propagator's coupling error had been partly cancelling (the
-        2026-06-13 block-isolation root-cause).  This is a per-voxel /
-        in-plane-Bloch-phase artifact that mesh refinement (pd→0) closes, not
-        a defect in the now-more-accurate core T-matrix; the normal-incidence
-        R_PP improves at every ka ≤ 0.3 (see _VA_KENNETT_TOL).  We therefore
-        assert only that the oblique channels stay within a measured envelope.
+        FINDING (R_PP, oblique) — DOCUMENTED REGRESSION, asserted explicitly:
+        the R_PP crossover at this COARSE mesh (M=4, pd≈1 rad per cell at
+        p=1e-4) shifts the OTHER way: no-FF 2.03% → cube-FF 3.37%.  Making the
+        single-site response more correct exposes a residual that the point
+        propagator's coupling error had been partly cancelling (the 2026-06-13
+        block-isolation root-cause) — an in-plane-Bloch-phase / per-voxel
+        artifact that mesh refinement (pd→0) closes, not a core-T-matrix defect
+        (the normal-incidence R_PP improves at every ka ≤ 0.3, _VA_KENNETT_TOL).
+        We do NOT loosen a threshold to hide this: the assertions below pin the
+        R_PP regression in a tight band (3.3–3.7%) and assert it is ABOVE the
+        no-FF baseline, so the regression is visible and any further drift —
+        or its closing — is caught.
         """
         geom, mat = self._geom_mat()
         ka = 0.3
@@ -399,7 +420,25 @@ class TestVolumeAveragedKennettAccuracy:
         kref = kennett_reference_matrix(REF, CONTRAST, H=H, omega=omega, p=p)
         err_pp = abs(R_mod[0, 0] - kref.R_PP) / abs(kref.R_PP)
         err_ss = abs(R_mod[1, 1] - kref.R_SS) / abs(kref.R_SS)
-        # Measured (cube form factor): R_PP 3.37%, R_SS 4.65% (R_SS improved
-        # from 6.61% no-FF, and below the sphere-FF 4.78%); envelopes w/ margin.
-        assert err_pp < 0.04, f"oblique R_PP vol-avg vs Kennett {err_pp:.4e} > 4%"
-        assert err_ss < 0.052, f"oblique R_SS vol-avg vs Kennett {err_ss:.4e} > 5.2%"
+        # R_SS: form factor IMPROVED the floor; assert the improvement explicitly
+        # (must be well below the no-FF 6.61%).  Measured cube 4.65%.
+        assert err_ss < 0.050, (
+            f"oblique R_SS vol-avg vs Kennett {err_ss:.4e} > 5.0% "
+            f"(form factor must keep R_SS below the no-FF 6.61% floor; "
+            f"measured cube 4.65%, sphere 4.78%)"
+        )
+        # R_PP: this is a KNOWN, DOCUMENTED REGRESSION at this coarse mesh, not
+        # absorbed silently.  No-FF 2.03% → cube-FF 3.37% (the in-plane-Bloch-
+        # phase / per-voxel artifact described above; closes with mesh
+        # refinement).  We pin the measured value tightly (3.37% ± 0.3%) so any
+        # FURTHER drift is caught, rather than loosening to hide it.
+        R_PP_NO_FF = 0.0203  # measured baseline before the form factor
+        assert err_pp > R_PP_NO_FF, (
+            f"oblique R_PP {err_pp:.4e}: expected the documented coarse-mesh "
+            f"regression above the no-FF baseline {R_PP_NO_FF} — if this now "
+            f"PASSES below baseline, the artifact closed and the comment is stale"
+        )
+        assert 0.033 < err_pp < 0.037, (
+            f"oblique R_PP vol-avg vs Kennett {err_pp:.4e} outside the pinned "
+            f"documented-regression band 3.3–3.7% (measured 3.37%); investigate drift"
+        )
