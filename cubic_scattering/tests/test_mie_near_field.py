@@ -385,19 +385,31 @@ class TestFormFactorCorrection:
     symbolically from the elastic Mie sphere coefficients a₀,a₁,a₂
     expanded in kr and run through the SAME extraction as
     `mie_extract_effective_contrasts` — is implemented in
-    `effective_contrasts.form_factor_c2`.  Cross-checked term-by-term
-    against the exact Mie oracle (see the module docstring there).
+    `effective_contrasts.form_factor_c2`.  The voxel is a CUBE, so the
+    implementation rescales these sphere coefficients by the cube/sphere
+    phase-variance ratio (1/3)/(1/5) = 5/3 and applies them at the cube
+    half-width a (−1/3·(k_P a)² pure-modulus).
 
-    What these tests pin
-    --------------------
-    1. **Dynamic-error closure**: the form factor must remove the
-       ka-GROWTH of the cube-vs-Mie error.  We measure the normalised
-       dynamic ratio  X*(ka)/X*(0) − 1  and require the corrected cube to
-       track sphere Mie to < 0.3% of the static value across
-       ka ∈ {0.05, 0.1, 0.3} and contrast × {0.1, 1, 3}.  (The residual
-       *static* cube↔sphere shape error is a separate, pre-existing
-       geometric effect that the form factor does not touch — see
-       TestCubeTMatrixVsMieSphere.)
+    BINDING validation = slab→Kennett.  Because the voxel is a cube,
+    matching the SPHERE Mie oracle would be circular for picking the
+    geometric coefficient.  The cube-appropriate arbiter is slab→Kennett
+    (a cubic lattice tiling a uniform layer); see
+    test_slab_convergence.TestVolumeAveragedKennettAccuracy, where the cube
+    form factor improves the normal R_PP across the band and the oblique
+    R_SS shear floor (6.61% → 4.65% at ka=0.3).
+
+    What these tests pin (sphere-Mie here is a SANITY bound, not the arbiter)
+    -----------------------------------------------------------------------
+    1. **Dynamic-error sanity vs volume-equivalent sphere Mie**: the cube
+       form factor must remove the ka-GROWTH of the cube-vs-Mie error and
+       track the equal-volume sphere Mie to within a loose envelope
+       (< 0.5%) across ka ∈ {0.05, 0.1, 0.3} and contrast × {0.1, 1, 3}.
+       The cube is intentionally ~8% "stronger" than the sphere at O((ka)²)
+       (⟨(k·x)²⟩: cube a²/3 vs sphere R²/5 ⇒ 5/3 vs the R_eq² conversion),
+       so a small residual vs sphere Mie is CORRECT and expected — a cube
+       is not a sphere.  Pre-correction the modulus dynamic ratio is ≈0
+       while Mie grows as −0.17·(ka)² (≈1.5% at ka=0.3); the form factor
+       closes the bulk of it.
     2. **Static limit**: at ka→0 the corrected result equals the
        uncorrected static value bit-for-bit ( (1 + c₂(ka)²) → 1 ).
     3. **Imaginary part untouched**: the radiation (imaginary) series is
@@ -438,14 +450,22 @@ class TestFormFactorCorrection:
 
     @pytest.mark.parametrize("scale", SCALES)
     @pytest.mark.parametrize("ka", KA_LIST)
-    def test_dynamic_error_closes_below_0p3pct(self, ka, scale):
-        """Corrected cube tracks sphere Mie's ka-dependence to < 0.3%.
+    def test_dynamic_error_sanity_vs_equal_volume_sphere(self, ka, scale):
+        """CUBE form factor tracks the equal-volume sphere Mie to < 0.5%.
 
-        We compare the *dynamic* ratio (X*(ka)/X*(0) − 1) of the corrected
-        cube against sphere Mie.  This isolates the form factor from the
-        static cube↔sphere geometric residual (which cancels in the
-        ratio).  Pre-correction the modulus dynamic ratio is ≈0 while Mie
-        grows as −0.17·(ka)² (≈1.5% at ka=0.3); the form factor closes it.
+        SANITY bound, not the arbiter.  We compare the *dynamic* ratio
+        (X*(ka)/X*(0) − 1) of the corrected cube against the equal-volume
+        sphere Mie.  This isolates the form factor from the static
+        cube↔sphere geometric residual (which cancels in the ratio).
+        Pre-correction the modulus dynamic ratio is ≈0 while Mie grows as
+        −0.17·(ka)² (≈1.5% at ka=0.3); the cube form factor closes the bulk
+        of it but, being the CUBE (−1/3·(k_P a)²) rather than the sphere
+        (−1/5·(k_P R)²) coefficient, intentionally over/under-shoots the
+        sphere reference by ~8% of the form-factor magnitude (the cube
+        phase variance a²/3 exceeds the sphere R_eq²/5 conversion).  That
+        residual is CORRECT — a cube is not a sphere at O((ka)²) — so the
+        envelope here is loose (0.5%); the BINDING cube validation is
+        slab→Kennett (test_slab_convergence).
         """
         contrast = self._scaled(scale)
         beta = self.REF.beta
@@ -477,15 +497,12 @@ class TestFormFactorCorrection:
             cube_dyn = cv / c0v - 1.0
             mie_dyn = mv / m0v - 1.0
             gap = abs(cube_dyn - mie_dyn)
-            # The c₂ form factor is the EXACT O((ka)²) Mie coefficient.  For
-            # the density channel at strong contrast (×3 ⇒ δρ=0.12) and the
-            # top of the band (ka=0.3) a genuine O((ka)⁴)·O(δρ²) residual
-            # remains — measured 0.42% — beyond what any (ka)² correction can
-            # reach.  Every other (channel, ka, contrast) combination closes
-            # to < 0.3%.  Tolerance is regime-aware to pin that distinction.
-            tol = 3e-3
-            if name == "rho" and scale >= 3.0 and ka >= 0.3:
-                tol = 5e-3  # measured 4.24e-3; O((ka)⁴)·δρ² density residual
+            # Loose envelope: the CUBE coefficient deliberately differs from
+            # the sphere reference by ~8% of the form-factor magnitude
+            # (cube ≠ sphere at O((ka)²)).  Measured worst case 3.3e-3
+            # (rho ×3 ka=0.3); 5e-3 envelope with margin.  The binding
+            # accuracy check is slab→Kennett, not this sphere-Mie sanity.
+            tol = 5e-3
             assert gap < tol, (
                 f"{name} ka={ka} ×{scale}: dynamic-ratio gap {gap:.4e} "
                 f"exceeds {tol} (cube_dyn={cube_dyn:.4e}, mie_dyn={mie_dyn:.4e})"
