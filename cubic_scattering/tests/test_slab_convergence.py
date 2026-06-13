@@ -336,15 +336,22 @@ class TestVolumeAveragedKennettAccuracy:
             R_PP      1.571e-02    2.028e-02     3.096e-02
             R_SS      5.010e-02    6.607e-02     2.567e-02
 
-        FINDING: unlike the normal-incidence P response, volume averaging does
-        NOT beat the point propagator off normal incidence here — the R_PP
-        point/vol-avg curves cross near p≈1e-4 and R_SS vol-avg is ~1–1.5%
-        worse than point across sub-critical p.  The headline beats-point
-        guarantee is therefore pinned only for the normal-incidence P channel
-        (where volume averaging of the vertical coupling is the dominant
-        correction); off normal we assert only that vol-avg still matches
-        Kennett within a loose measured envelope, not that it beats the point
-        propagator.
+        FINDING: volume averaging does NOT beat the point propagator here.
+        Root-caused (2026-06-13 block-isolation study) as a COMPENSATING-ERROR
+        effect, not a propagator inaccuracy: the vol-avg propagator is ~2-3x
+        CLOSER to the quadrature truth than point on every block, but the point
+        propagator's coupling error was partly cancelling an opposite-sign error
+        in the per-voxel shear (SV) representation (the single polynomial
+        T-matrix basis). Making the coupling more correct exposes that residual.
+        Block-isolation shows the strain (S) block drives both: the same
+        substitution helps R_PP and hurts R_SS. The R_PP off-normal crossover
+        scales with the in-plane Bloch phase per cell (pd≈1 rad at p=1e-4;
+        mesh refinement pd->0 restores vol-avg's advantage); R_SS is worse at
+        ALL p including normal incidence. This is a per-voxel representation
+        limit (needs sub-voxel resolution to close), not a coupling defect. The
+        beats-point guarantee is therefore pinned only for the normal-incidence
+        P channel; off normal / for R_SS we assert only that vol-avg matches
+        Kennett within a measured envelope.
         """
         geom, mat = self._geom_mat()
         ka = 0.3
