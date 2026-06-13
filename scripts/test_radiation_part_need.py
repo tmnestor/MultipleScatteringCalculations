@@ -3,14 +3,15 @@
 (imaginary) part produce a measurable error in the slab Foldy-Lax solve?
 
 MOTIVATED FIX 5 (radiation/imaginary part of the volume-averaged inter-voxel
-propagator).  This script is the validation BASIS for that fix: its complex
-volume-averaged Kupradze quadrature (``avg_point_propagator_fd`` / ``avg_greens``
-/ ``greens_tensor``) is the arbiter against which the analytic imaginary-part
-moment series in ``cubic_scattering.inter_voxel_propagator`` is checked
-(see ``TestRadiationImaginaryPart`` in
-``cubic_scattering/tests/test_inter_voxel_propagator.py``).  Measurement A
-quantifies the omitted |Im|/|Re| per block/separation/ka; after Fix 5 the
-module reproduces that imaginary part to the tolerances pinned in the tests.
+propagator).  This script does NOT itself compare the module against the
+arbiter — it prints only the MAGNITUDE of the omitted imaginary part
+(Measurement A) and its slab-solve impact (Measurement B), which is what
+motivated the fix.  The actual module-vs-arbiter validation lives in
+``TestRadiationImaginaryPart`` in
+``cubic_scattering/tests/test_inter_voxel_propagator.py``, which checks the
+analytic imaginary-part moment series in
+``cubic_scattering.inter_voxel_propagator`` against the same kind of complex
+volume-averaged Kupradze quadrature used here.
 
 Two measurements are printed:
 

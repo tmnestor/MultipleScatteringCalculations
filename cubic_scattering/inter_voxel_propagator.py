@@ -1593,7 +1593,7 @@ def inter_voxel_propagator_9x9(
 ) -> NDArray:
     """9×9 inter-voxel propagator coupling displacement + Voigt strain.
 
-    Returns the block matrix [[G, C], [H, S]] where:
+    Returns the COMPLEX block matrix [[G, C], [H, S]] where:
     - G (3×3): volume-averaged Green's tensor <G_ij>
     - S (6×6): Voigt contraction of the strain propagator P_{ijkl}
     - C (3×6): displacement-strain coupling (d<G_ij>/dR_k Voigt-contracted)
@@ -1601,14 +1601,26 @@ def inter_voxel_propagator_9x9(
       of C (H = W Cᵀ with W = diag(1,1,1,2,2,2): the field-side strain is
       engineering strain, so shear rows carry the factor 2)
 
+    Each block is complex: the REAL part is the reactive (near-field +
+    even-power-ω²ⁿ) series; the IMAGINARY part is the radiation (odd-power
+    ω^{2m+1}) series from sin(kr)/r [Fix 5]. The imaginary part vanishes at
+    ω=0 and is sub-percent of the real part for the G block at ka≲0.1,
+    growing to O(1) by ka≈0.5 (it dominates the distant-coupling/far-field
+    physics; the near-field reactive part is insensitive to it).
+
     Args:
         R_lattice: integer lattice vector (face/edge/corner neighbour).
         alpha: P-wave velocity of reference medium (m/s).
         beta: S-wave velocity of reference medium (m/s).
         rho: density of reference medium (kg/m³).
         omega: angular frequency (rad/s).
-        n_orders: dynamic correction orders (0=static, 1=+ω², 2=+ω⁴, 3=+ω⁶).
-            All blocks (G, S, C/H) support n_orders ≤ 3.
+        n_orders: dynamic truncation order, applied to BOTH series: the real
+            even-power part (0=static, 1=+ω², 2=+ω⁴, 3=+ω⁶) and the imaginary
+            odd-power radiation part (ω¹, ω³, ω⁵, ω⁷). Both are entire/analytic
+            so the truncation converges geometrically in ka; n_orders=3 is
+            accurate to ≲1% for the imaginary part through ka≈0.5 and degrades
+            beyond, like the real series. All blocks (G, S, C/H) support
+            n_orders ≤ 3.
         d: physical cube side = lattice pitch (same length unit as the
             velocities' length unit; e.g. metres for m/s).  REQUIRED —
             every caller must state its pitch; d=1.0 reproduces the
