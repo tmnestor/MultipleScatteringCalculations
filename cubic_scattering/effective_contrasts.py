@@ -484,13 +484,21 @@ def form_factor_c2(
     at the cube half-width a:  ff = 1 + (5/3)·c₂·(k_S a)².  This converts the
     sphere pure-modulus −1/5·(k_P R)² into the cube −1/3·(k_P a)² (the
     ∏ sinc(k_j a)² squared overlap, isotropic at O((ka)²); O_h cubic
-    anisotropy first enters at O((ka)⁴) and is omitted).  The cube
-    prescription is validated against slab→Kennett (the cube-appropriate
-    arbiter — a cubic lattice tiling a uniform layer), where it matches
-    Kennett at least as well as the sphere value on the normal-R_PP and the
-    targeted R_SS channels through ka ≤ 0.3 (R_SS strictly better).  Against
-    the volume-equivalent SPHERE Mie the cube is slightly worse than the
-    sphere value at O((ka)²) — correct and expected, since a cube ≠ sphere.
+    anisotropy first enters at O((ka)⁴) and is omitted).
+
+    The cube pure-modulus −1/3 is chosen on physical first-principles grounds
+    (it is the correct form factor for a cube voxel), not by fitting a
+    reference — matching sphere Mie to pick the scale would be circular for a
+    cube.  The slab→Kennett check (a cubic lattice tiling a uniform layer)
+    CONFIRMS the cube is not worse: cube and sphere agree with Kennett within
+    slab discretization noise at ka ≤ 0.3 on the binding channels (it does not,
+    by itself, resolve cube vs sphere).  HEURISTIC: applying the same 5/3
+    scalar to the δρ/δμ² CHANNEL-COUPLING terms is NOT derived — the squared
+    overlap is contrast-independent and cannot produce coupling terms, so their
+    shape dependence is unknown without a cube-Mie oracle (absent); the
+    heuristic is bounded, not resolved, by the slab→Kennett check.  Against the
+    volume-equivalent SPHERE Mie the cube differs slightly at O((ka)²) —
+    correct and expected, since a cube ≠ sphere.
 
     Parameters
     ----------
@@ -645,29 +653,34 @@ def compute_cube_tmatrix(
     # CUBE geometry.  The voxel is a CUBE, so we use the cube form factor,
     # not the sphere one.  The leading O((ka)²) form factor is the variance
     # of the phase k·x over the body — a single geometric scalar
-    # ⟨(k·x)²⟩_body that multiplies the whole static internal-field
-    # response (modulus channels and the δρ/δμ² coupling terms alike):
+    # ⟨(k·x)²⟩_body that multiplies the static modulus response:
     #     sphere (ball R): ⟨(k·x)²⟩/k² = R²/5  → −1/5·(k_P R)²
     #     cube  (half a):  ⟨x_j²⟩=a²/3 each, isotropic
     #                      → ⟨(k·x)²⟩/k² = a²/3 → −1/3·(k_P a)²
     # In (k_S·len)² units the cube/sphere variance ratio is (1/3)/(1/5)=5/3,
-    # so the entire c₂ (including coupling terms) scales uniformly by 5/3
     # and the length argument is the cube half-width a.  (O_h cubic
     # anisotropy first enters at O((ka)⁴) and is omitted here.)
     #
     # WHY CUBE not sphere: the squared-overlap form factor is shape-specific.
-    # Picking the sphere value by matching sphere Mie would be circular for a
-    # cubic voxel.  The cube-appropriate arbiter is slab→Kennett (a cubic
-    # lattice tiling a uniform layer): the cube c₂ matches Kennett at least
-    # as well as the sphere c₂ on the normal-R_PP and (the targeted) R_SS
-    # shear channels through ka ≤ 0.3, with R_SS strictly better.  See
-    # test_slab_convergence and test_mie_near_field.TestFormFactorCorrection.
+    # The CUBE −1/3 is chosen on physical first-principles grounds — it IS the
+    # correct pure-modulus form factor for a cube voxel (⟨x_j²⟩=a²/3).  Matching
+    # sphere Mie to pick the geometric scale would be circular for a cube.  The
+    # slab→Kennett check (a cubic lattice tiling a uniform layer) CONFIRMS the
+    # cube is not worse than the sphere: cube and sphere agree with Kennett
+    # within slab discretization noise at ka ≤ 0.3 on the binding channels (it
+    # does NOT, by itself, resolve cube vs sphere — the differences are within
+    # coarse-mesh noise).  See test_slab_convergence and
+    # test_mie_near_field.TestFormFactorCorrection.
     #
-    # Coupling-term shape dependence: scaling the *whole* c₂ prefactor 5/3
-    # is exact for the leading (ka)² variance scalar; the coupling terms'
-    # sub-leading shape dependence is not separately resolved without a
-    # cube-Mie oracle, and is bounded by the slab→Kennett check above
-    # (cube ≤ sphere error on the binding channels).
+    # HEURISTIC for the coupling terms.  The pure-modulus −1/3 is EXACT.  The
+    # 5/3 scalar is applied to the WHOLE c₂ — including the δρ/δμ² CHANNEL-
+    # COUPLING terms — but that is a HEURISTIC, not a derivation: the squared
+    # plane-wave overlap is contrast-independent and cannot itself produce
+    # coupling terms, so the geometric shape dependence of those terms is not
+    # known from the overlap argument.  Resolving it would require a cube-Mie
+    # oracle (absent — no closed-form elastic Mie for a cube).  The heuristic
+    # is bounded, not resolved, by the slab→Kennett check (cube not worse than
+    # sphere on the binding channels through ka ≤ 0.3).
     CUBE_OVER_SPHERE_FF = 5.0 / 3.0  # ⟨(k·x)²⟩ ratio cube(a²/3)/sphere(R²/5)
     mu0 = rho * beta**2
     lam0 = (alpha / beta) ** 2 - 2.0  # = λ₀_phys/μ₀
@@ -685,18 +698,15 @@ def compute_cube_tmatrix(
     ff_rho = 1.0 + c_rho * w2
 
     # Step 4: Amplification factors.
-    # Density channel: the real part of ω²Γ₀ is a wrong-sign/magnitude
-    # finite-scatterer real (ka)² piece; the form factor REPLACES it.
-    # Build amp_u from the static-real Γ₀ + the imaginary (radiation)
-    # part of Γ₀ (which is physical and must be kept), discarding the
-    # spurious REAL dynamic content of Γ₀.  The c_rho factor (applied at
-    # Step 5) then supplies the correct real (ka)² density form factor.
-    a0_kelvin = (alpha**2 + beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
-    b0_kelvin = (alpha**2 - beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
-    Gamma0_static = a**2 * (a0_kelvin + b0_kelvin / 3.0) * G0_CUBE
-    Gamma0_for_rho = Gamma0_static + 1j * Gamma0.imag
+    # Density channel: amp_u's REAL part is already frozen at its static
+    # value — Γ₀'s smooth/Taylor (dynamic) part is purely IMAGINARY, so
+    # Re(Γ₀) ≡ Γ₀_static at every ω (verified bit-for-bit), i.e. ω²·Re(Γ₀)
+    # contributes no real (ka)² piece to amp_u.  There is therefore nothing
+    # to "replace": the real (ka)² density form factor is supplied solely by
+    # the ff_rho multiplier at Step 5 (applied exactly once).  The imaginary
+    # (radiation) part of Γ₀ is the physical dynamic content and is kept as-is.
     amp_u, amp_theta, amp_e_off, amp_e_diag = _compute_amplification_factors(
-        T1c, T2c, T3c, Gamma0_for_rho, omega, contrast.Drho
+        T1c, T2c, T3c, Gamma0, omega, contrast.Drho
     )
 
     # Step 5: Effective contrasts (raw), then apply the real form factor.
@@ -709,8 +719,8 @@ def compute_cube_tmatrix(
         amp_e_off,
         amp_e_diag,
     )
-    # Modulus channels multiply by the real (1 + c₂·(k_S R_eq)²).  Apply
-    # to Δκ* and Δμ* (the physical irreducible channels), then rebuild
+    # Modulus channels multiply by the real (1 + c₂·(k_S a)²).  Apply to Δκ*
+    # and Δμ* (the physical irreducible channels), then rebuild
     # Δλ* = Δκ* − ⅔Δμ* so the bulk and shear form factors compose
     # consistently.  The imaginary (radiation) parts are untouched.
     Kappa_star = Dlambda_star + 2.0 / 3.0 * Dmu_star_diag
@@ -718,8 +728,8 @@ def compute_cube_tmatrix(
     Dmu_star_diag = Dmu_star_diag.real * ff_mu + 1j * Dmu_star_diag.imag
     Dmu_star_off = Dmu_star_off.real * ff_mu + 1j * Dmu_star_off.imag
     Dlambda_star = Kappa_star_ff - 2.0 / 3.0 * Dmu_star_diag
-    # Density: REPLACE composition done above (Gamma0_for_rho); now apply
-    # the real density form factor on top of the radiation-only amp_u.
+    # Density form factor: applied exactly ONCE here via ff_rho (amp_u's real
+    # part was already static; see Step 4).  Imaginary radiation part untouched.
     Drho_star = Drho_star.real * ff_rho + 1j * Drho_star.imag
 
     return CubeTMatrixResult(

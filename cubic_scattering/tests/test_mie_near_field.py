@@ -390,13 +390,15 @@ class TestFormFactorCorrection:
     phase-variance ratio (1/3)/(1/5) = 5/3 and applies them at the cube
     half-width a (−1/3·(k_P a)² pure-modulus).
 
-    BINDING validation = slab→Kennett.  Because the voxel is a cube,
-    matching the SPHERE Mie oracle would be circular for picking the
-    geometric coefficient.  The cube-appropriate arbiter is slab→Kennett
-    (a cubic lattice tiling a uniform layer); see
-    test_slab_convergence.TestVolumeAveragedKennettAccuracy, where the cube
-    form factor improves the normal R_PP across the band and the oblique
-    R_SS shear floor (6.61% → 4.65% at ka=0.3).
+    Coefficient chosen on first principles, CONFIRMED by slab→Kennett.
+    The cube −1/3 is the correct pure-modulus form factor for a cube voxel;
+    matching the SPHERE Mie oracle to pick the geometric scale would be
+    circular for a cube.  The slab→Kennett check (a cubic lattice tiling a
+    uniform layer; see test_slab_convergence.TestVolumeAveragedKennettAccuracy)
+    CONFIRMS the cube is not worse than the sphere — the two agree with Kennett
+    within slab discretization noise at ka ≤ 0.3 — and shows the form factor
+    improves the normal R_PP across the band and the oblique R_SS shear floor
+    (6.61% → 4.65% at ka=0.3).  It does not, by itself, resolve cube vs sphere.
 
     What these tests pin (sphere-Mie here is a SANITY bound, not the arbiter)
     -----------------------------------------------------------------------
@@ -556,13 +558,16 @@ class TestFormFactorCorrection:
     @pytest.mark.parametrize("scale", SCALES)
     @pytest.mark.parametrize("ka", KA_LIST)
     def test_imaginary_part_untouched(self, ka, scale):
-        """The radiation (imaginary) series is unchanged by the form factor.
+        """The radiation (imaginary) series is BIT-FOR-BIT unchanged.
 
-        The form factor is purely real; the imaginary parts of the
-        effective contrasts (the dynamic radiation series carried by
-        Γ₀ and the A/B/C smooth integrals) must be identical with and
-        without the correction.  We pin them against an independent
-        recomputation of the imaginary parts from the raw pipeline.
+        The form factor is purely real and is applied as
+        ``X.real * ff + 1j * X.imag``, so every imaginary part (the dynamic
+        radiation series carried by Γ₀ and the A/B/C smooth integrals) must
+        equal the raw uncorrected pipeline EXACTLY — not merely to a
+        tolerance.  We recompute the raw imaginary parts from the same
+        building blocks the production path uses (Γ₀ passed straight through;
+        amp_u's real part is already static because Re(Γ₀) ≡ Γ₀_static) and
+        assert exact equality (rtol=0, atol=0).
         """
         from cubic_scattering.effective_contrasts import (
             _compute_ABC_polynomial,
@@ -577,7 +582,7 @@ class TestFormFactorCorrection:
         omega = ka * beta / self.A
         c = self._cube(omega, contrast)
 
-        # Raw (uncorrected) pipeline imaginary parts
+        # Raw (uncorrected) pipeline — identical building blocks to production.
         G0 = _compute_Gamma0_analytical(omega, self.A, alpha, beta, rho, 8)
         Ac, Bc, Cc = _compute_ABC_polynomial(omega, self.A, alpha, beta, rho, 32, 8)
         T1c, T2c, T3c = _compute_T123(Ac, Bc, Cc, contrast.Dlambda, contrast.Dmu)
@@ -588,17 +593,9 @@ class TestFormFactorCorrection:
             contrast.Dlambda, contrast.Dmu, contrast.Drho, au, ath, aoff, adiag
         )
 
-        # The modulus imaginary parts are untouched by the real form factor.
-        assert np.isclose(c.Dmu_star_diag.imag, ddiag.imag, rtol=1e-9, atol=1e-6)
-        assert np.isclose(c.Dmu_star_off.imag, doff.imag, rtol=1e-9, atol=1e-6)
-        assert np.isclose(c.Dlambda_star.imag, dl.imag, rtol=1e-9, atol=1e-6)
-        # Density: the REAL dynamic Γ₀ is replaced but the IMAGINARY
-        # radiation part is preserved — pin amp_u's imaginary content.
-        au_kept = 1.0 / (
-            1.0 - omega**2 * contrast.Drho * (G0_imag_only := 1j * G0.imag)
-        )
-        # the corrected Drho* imaginary must equal Drho·Im{1/(1−ω²Δρ·(static+iIm G0))};
-        # we only assert the radiation imaginary part is non-zero and preserved sign:
-        assert np.sign(c.Drho_star.imag) == np.sign((contrast.Drho * au_kept).imag) or (
-            abs(c.Drho_star.imag) < 1e-12
-        )
+        # EXACT equality (rtol=0, atol=0): the real-only form factor must not
+        # perturb any imaginary part by a single ULP.
+        np.testing.assert_array_equal(c.Dmu_star_diag.imag, ddiag.imag)
+        np.testing.assert_array_equal(c.Dmu_star_off.imag, doff.imag)
+        np.testing.assert_array_equal(c.Dlambda_star.imag, dl.imag)
+        np.testing.assert_array_equal(c.Drho_star.imag, dr.imag)
