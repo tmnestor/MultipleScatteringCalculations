@@ -417,8 +417,7 @@ medium embedding, and random velocity stack generation.
 
 ## References
 
-- **Nestor, D.P.** (1996). *Seismic wave scattering from heterogeneities using
-  the T-matrix approach.* PhD thesis, Australian National University.
+- **Nestor, T.M.** (1996). *Seismic Wave Propagation in Heterogeneous Media: Summing the Multiple Scattering Series.* PhD thesis, Australian National University.
 - **Gubernatis, J.E., Domany, E. & Krumhansl, J.A.** (1977). Formal aspects of
   the theory of the scattering of ultrasound by flaws in elastic materials.
   *J. Appl. Phys.*, 48(7), 2804-2811.
