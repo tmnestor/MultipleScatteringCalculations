@@ -47,6 +47,17 @@ def test_born_limit():
     Note: The static Eshelby depolarization tensor means that T₁, T₂, T₃
     are finite even for a → 0 (they scale as Δc/ρv², independent of a).
     The true Born limit is weak scattering: Δc/ρv² << 1.
+
+    The "effective contrasts → bare contrasts" check requires BOTH weak
+    contrast AND ka → 0: the finite-scatterer (kr)² form factor (the real
+    O((ka)²) squared plane-wave overlap, added to the single-site
+    T-matrix) is a frequency effect that survives the weak-contrast limit.
+    At ka_S ≈ 0.26 it shifts Δρ* by ~0.2% even at 0.01% contrast — correct
+    physics, not a bug.  We therefore probe the limit at a low frequency
+    (ka_S ≈ 2.6e-3 ⇒ form factor ≈ 1e-5) so the form factor → 1 and the
+    bare-contrast equality holds to the 1e-4 tolerance.  The form factor's
+    finite-ka behaviour is validated separately in
+    test_mie_near_field.TestFormFactorCorrection.
     """
     print("Test 1: Born limit (Δc → 0)")
 
@@ -55,7 +66,8 @@ def test_born_limit():
 
     # Weak contrasts: 0.01% of background moduli
     contrast = MaterialContrast(Dlambda=mu * 1e-4, Dmu=mu * 1e-4, Drho=ref.rho * 1e-4)
-    omega = 2.0 * np.pi * 10.0
+    # Low frequency: ka_S = ω·a/β ≈ 2.6e-3 so the (ka)² form factor → 1.
+    omega = 2.0 * np.pi * 0.1
     a = 10.0
 
     result = compute_cube_tmatrix(omega, a, ref, contrast)
