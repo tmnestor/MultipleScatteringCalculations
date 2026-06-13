@@ -6,6 +6,13 @@ single-site scattering matrices `T₀` through inter-site Green's tensors `G₀`
 solved via FFT-accelerated GMRES. Originates from Nestor (1996) PhD thesis,
 Australian National University.
 
+The slab solver produces the full specular reflection matrix — all mode-converted
+channels (R_PP, R_PS, R_SP, R_SS, and SH) at arbitrary horizontal slowness,
+including post-critical evanescent incidence — validated channel-by-channel
+against exact Kennett reflectivity. Single-site scattering is cross-checked
+against elastic Mie theory across all five non-zero channels of the sphere
+scattering matrix.
+
 ## Physics overview
 
 Three computational pillars underpin the multiple-scattering formulation:
@@ -55,10 +62,12 @@ CubicTmatrix/
 │   │  # ── Inter-site coupling (G₀) ──────────────────────────
 │   ├── lattice_greens.py             #   Spatial, spectral, hybrid, FCC
 │   ├── horizontal_greens.py          #   Exact Green's tensor at Δz=0
-│   ├── inter_voxel_propagator.py     #   9×9 volume-averaged propagator
+│   ├── inter_voxel_propagator.py     #   9×9 volume-averaged propagator (complex:
+│   │                                 #   reactive + radiation, physical pitch)
 │   │
 │   │  # ── Slab Foldy-Lax solver ─────────────────────────────
-│   ├── slab_scattering.py            #   CPU solver + periodic R_PP + Kennett ref
+│   ├── slab_scattering.py            #   CPU solver: full reflection matrix
+│   │                                 #   (R_PP/PS/SP/SS/SH) + Weyl + Kennett ref
 │   ├── slab_scattering_gpu.py        #   GPU solver (PyTorch)
 │   │
 │   │  # ── Layered-medium embedding ──────────────────────────
@@ -73,7 +82,7 @@ CubicTmatrix/
 │   │  # ── GPU utilities ─────────────────────────────────────
 │   ├── torch_gmres.py                #   PyTorch GMRES + device selection
 │   │
-│   └── tests/                        #   pytest test suite (25 test files)
+│   └── tests/                        #   pytest test suite (25 files, 724 tests)
 │       ├── test_cubic_tmatrix.py
 │       ├── test_tmatrix_assembly.py
 │       ├── test_tmatrix_57.py
@@ -82,19 +91,20 @@ CubicTmatrix/
 │       ├── test_multipole_eshelby.py
 │       ├── test_scattered_field.py
 │       ├── test_resonance_far_field.py
-│       ├── test_sphere_scattering.py
+│       ├── test_sphere_scattering.py        # incl. 5-channel Mie vs Foldy-Lax
 │       ├── test_sphere_scattering_fft.py
 │       ├── test_sphere_scattering_fft_gpu.py
 │       ├── test_mie_asymptotic_analytic.py
 │       ├── test_mie_near_field.py
 │       ├── test_horizontal_greens.py
-│       ├── test_inter_voxel_propagator.py
-│       ├── test_slab_scattering.py
+│       ├── test_inter_voxel_propagator.py   # incl. radiation part, pitch, symmetry
+│       ├── test_t27_coupling_calibration.py # quadrature-arbiter calibration
+│       ├── test_slab_scattering.py          # incl. reflection matrix, evanescent
 │       ├── test_slab_scattering_gpu.py
-│       ├── test_slab_convergence.py
+│       ├── test_slab_convergence.py         # incl. volume-averaged vs Kennett
 │       ├── test_kennett_layers.py
 │       ├── test_cpa_iteration.py
-│       ├── test_ocean_bottom.py
+│       ├── test_ocean_bottom.py             # incl. 2×2 mode-converted recursion
 │       ├── test_seismic_survey.py
 │       ├── test_solver_config.py
 │       └── test_torch_gmres.py
@@ -113,21 +123,32 @@ CubicTmatrix/
 │
 ├── scripts/                          # Standalone analysis scripts
 │   ├── slab_convergence_study.py     #   Slab R_PP convergence vs Kennett
+│   ├── t27_coupling_study.py         #   Quadrature-truth inter-voxel coupling study
+│   ├── face_s_rederivation.py        #   Face-S constants vs bias-free arbiters
+│   ├── test_radiation_part_need.py   #   Radiation-part necessity measurement
 │   └── ...                           #   Eshelby, Green's tensor scripts
 │
 ├── docs/                             # LaTeX documentation (lualatex)
 │   ├── cube_galerkin27.tex           #   Main document
 │   ├── cube_tmatrix_closedform.tex   #   T-matrix physics and derivations
 │   ├── inter_voxel_propagator.tex    #   Volume-averaged propagator
+│   ├── point_vs_volume_tmatrix_notes.tex  # Point vs volume-averaged coupling
 │   ├── slab_scattering_explanation.tex
 │   ├── marine_survey_explanation.tex
 │   └── ...                           #   Results tables, Mie derivations
+│
+├── LatexPDFs/                        # Standalone write-ups (lualatex, compiled)
+│   ├── mode_converted_reflections.tex #  5-channel Mie, slab matrix, evanescent
+│   ├── multipolar_mie.tex            #   Multipolar effective sources / Mie
+│   └── ...                           #   Spectral, near-field, coupled Foldy-Lax
 │
 ├── Mathematica/                      # Symbolic computation (.wl scripts)
 │   ├── CubeGalerkin27.wl             #   Body bilinear forms
 │   ├── CubeT27Stiffness_LS.wl       #   Surface stiffness integrals
 │   ├── CubeT6Block.wl               #   Quad-quad block
 │   ├── InterVoxelPropagator*.wl      #   Volume-averaged propagator masters
+│   ├── CubeAnalytic.wl               #   Cube far-field P/S (Foldy-Lax)
+│   ├── FiveChannelExtension.wl       #   5-channel Mie vs Foldy-Lax (+ Driver)
 │   ├── MieAsymptotic*.wl             #   Mie series asymptotics
 │   └── ...                           #   ~50 Mathematica scripts
 │
@@ -186,6 +207,31 @@ T_local = compute_slab_tmatrices(geom, mat, omega=150.0)
 R_PP = slab_rpp_periodic(result, T_local, p=0.0)
 ```
 
+### Full specular reflection matrix (mode conversion)
+
+The slab returns the complete 2×2 P-SV reflection matrix plus the SH channel at
+arbitrary horizontal slowness `p` — including post-critical evanescent incidence.
+`to_modified()` maps it to the energy-normalised Kennett convention for comparison.
+
+```python
+from cubic_scattering import (
+    SlabGeometry, uniform_slab_material,
+    slab_reflection_matrix, kennett_reference_matrix,
+)
+
+geom = SlabGeometry(M=8, N_z=1, a=2.0)
+mat = uniform_slab_material(geom, ref, contrast)
+
+slab = slab_reflection_matrix(geom, mat, omega=150.0, p=1.0e-4)  # oblique
+R = slab.to_modified()          # 2×2: rows = outgoing P/SV, cols = incident
+R_PP, R_PS, R_SP, R_SS = R[0, 0], R[0, 1], R[1, 0], R[1, 1]
+R_SH = slab.R_sh
+
+# Exact reference (all five channels)
+kref = kennett_reference_matrix(ref, contrast, H=geom.d, omega=150.0, p=1.0e-4)
+# kref.R_PP, kref.R_PS, kref.R_SP, kref.R_SS, kref.R_SH
+```
+
 ### Ocean-bottom reflection
 
 ```bash
@@ -239,6 +285,21 @@ phases = phases_from_two_phase(ref, contrast, phi=0.3, a=1.0, omega=150.0)
 cpa_result = compute_cpa_two_phase(ref, contrast, phi=0.3, a=1.0, omega=150.0)
 ```
 
+### Elastic Mie far field (five channels)
+
+```python
+import numpy as np
+from cubic_scattering import compute_elastic_mie, mie_far_field
+
+mie = compute_elastic_mie(omega=150.0, radius=10.0, ref=ref, contrast=contrast)
+theta = np.linspace(0.2, np.pi - 0.2, 40)
+
+# incident_type selects the column of the 3×3 scattering matrix
+f_P, f_SV, f_SH = mie_far_field(mie, theta, incident_type="P")    # P→P, P→SV
+f_P, f_SV, f_SH = mie_far_field(mie, theta, incident_type="SV")   # SV→P, SV→SV
+f_P, f_SV, f_SH = mie_far_field(mie, theta, incident_type="SH")   # SH→SH
+```
+
 ### Tests
 
 ```bash
@@ -280,15 +341,59 @@ intermediate- + far-field coupling). Reduces to the Rayleigh result at n=1.
 
 The slab solver handles M x M x N_z grids of cubes with:
 - **Linear convolution** (finite slab) or **circular convolution** (infinite periodic slab)
+- **Full specular reflection matrix** — R_PP, R_PS, R_SP, R_SS, and SH — from
+  P-, SV-, and SH-incident solves, extracted by a shared Weyl lattice sum and
+  validated channel-by-channel against Kennett (~0.5–1% at moderate contrast)
+- **Evanescent incidence** — post-critical (p > 1/α) incident fields are the
+  true exponentially decaying inhomogeneous waves, via complex slowness vectors
 - **Volume-averaged propagator** for nearest-neighbour coupling (strong contrast)
 - **Oblique incidence** via horizontal slowness p
 - **GPU acceleration** via PyTorch (3D FFT convolution + GMRES)
+
+### Single-site validation: five-channel Mie
+
+The cubic/sphere T₀ is cross-checked against exact elastic Mie theory across all
+five non-zero channels of the sphere scattering matrix (P→P, P→SV, SV→P, SV→SV,
+SH→SH), phase-sensitively (Re and Im separately) at ka = 0.1, 0.5, 1.5. The
+off-diagonal channels satisfy the reciprocity relation k_P² f_PS = −k_S² f_SP.
+The same comparison is reproduced symbolically in `Mathematica/FiveChannelExtension.wl`
+(headless via `FiveChannelDriver.wl`).
+
+### Inter-voxel coupling: point vs volume-averaged
+
+Two ways to couple the Green's tensor between cube sources:
+
+- **Point coupling** (`volume_averaged=False`): the Green's tensor is evaluated
+  at the cube *centres* (point-to-point). Correct when the separation greatly
+  exceeds the cube size; degrades for touching neighbours — at face contact the
+  point value departs from the true cube-averaged coupling by ~12–60% per block,
+  because the 1/r near field varies sharply across the shared face.
+- **Volume-averaged coupling** (`volume_averaged=True`): the propagator is the
+  Green's tensor averaged over *both* cube volumes (and its derivatives for the
+  strain blocks), the physically correct object for face/edge/corner neighbours.
+  Implemented in closed form via O_h-symmetric master integrals, with dynamic
+  ω-corrections to ω⁶. The block is **complex**: the real part is the reactive
+  (near-field + even-power-ω) series; the imaginary part is the radiation
+  (odd-power-ω) series from sin(kr)/r — sub-percent of the real part for the G
+  block at ka ≲ 0.1, growing to O(1) by ka ≈ 0.5. The near field is insensitive
+  to the radiation term; distant coupling and the far field require it. The
+  propagator is correctly scaled by the physical cube pitch.
+
+Validation against Kennett (uniform multi-layer slab): volume-averaging **beats**
+point coupling at normal incidence (~0.4–0.5% tighter across ka ≤ 0.5). Off
+normal incidence both match Kennett within envelope, but volume averaging does
+not strictly beat point coupling there — it corrects the vertical inter-voxel
+coupling, not the horizontal phase structure (~1 rad per cell at oblique p). See
+`docs/point_vs_volume_tmatrix_notes.tex`.
 
 ### Ocean-bottom reflection
 
 Three-layer model: water (acoustic) | heterogeneous sediment slab | elastic
 halfspace. Features:
 - Oblique incidence with fluid-solid coupling (Zoeppritz via Kennett recursion)
+- **2×2 P-SV sub-ocean recursion** — internal P→S→P mode conversion inside the
+  sediment package feeds the observable water-column R_PP (SH cannot couple
+  through the fluid and is omitted)
 - Free-surface water-column reverberations
 - Random binary heterogeneity with configurable statistical moments
 - YAML configuration with seismic units
