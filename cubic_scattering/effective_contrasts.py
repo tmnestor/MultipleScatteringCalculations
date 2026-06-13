@@ -478,20 +478,19 @@ def form_factor_c2(
 
     Geometry note (sphere vs cube)
     ------------------------------
-    The squared overlap for a **cube** of half-width a is
-    ∏ sinc(k_j a)² = 1 − (1/3)(k a)² + O((ka)⁴) — isotropic at O((ka)²)
-    (O_h cubic anisotropy first enters at O((ka)⁴)), i.e. −1/3·(k_P a)²
-    for the pure-modulus part vs −1/5·(k_P R)² for the sphere.  When the
-    cube T-matrix is validated against the exact **sphere** Mie oracle at
-    the volume-equivalent radius R_eq = (6/π)^(1/3)·a, the SPHERE
-    coefficients evaluated at R_eq are what reproduce Mie's ka-dependence
-    (verified empirically: applying these c₂ at R_eq closes the cube↔Mie
-    *dynamic* error to < 0.01% for the modulus channels and < 0.15% for
-    density at moderate contrast; at the band edge and ×3 strong contrast
-    a genuine O((ka)⁴)·O(δρ²) density residual of ~0.43% remains, beyond
-    the reach of any (ka)² correction — see
-    test_mie_near_field.TestFormFactorCorrection).  The residual *static*
-    cube↔sphere shape error is a separate, pre-existing geometric effect.
+    These c₂ are the SPHERE coefficients (in (k_S·R)² units).  The voxel is
+    a **cube**, so the caller (`compute_cube_tmatrix`) rescales the whole c₂
+    by the cube/sphere phase-variance ratio (1/3)/(1/5) = 5/3 and applies it
+    at the cube half-width a:  ff = 1 + (5/3)·c₂·(k_S a)².  This converts the
+    sphere pure-modulus −1/5·(k_P R)² into the cube −1/3·(k_P a)² (the
+    ∏ sinc(k_j a)² squared overlap, isotropic at O((ka)²); O_h cubic
+    anisotropy first enters at O((ka)⁴) and is omitted).  The cube
+    prescription is validated against slab→Kennett (the cube-appropriate
+    arbiter — a cubic lattice tiling a uniform layer), where it matches
+    Kennett at least as well as the sphere value on the normal-R_PP and the
+    targeted R_SS channels through ka ≤ 0.3 (R_SS strictly better).  Against
+    the volume-equivalent SPHERE Mie the cube is slightly worse than the
+    sphere value at O((ka)²) — correct and expected, since a cube ≠ sphere.
 
     Parameters
     ----------
@@ -642,22 +641,45 @@ def compute_cube_tmatrix(
     # plane-wave overlap ⟨exp(ik·x)⟩²).  The exact per-channel real
     # coefficient c₂ is derived from the elastic Mie sphere coefficients
     # (form_factor_c2), validated term-by-term against the Mie oracle.
-    # Pure-modulus mechanism: −1/5·(k_P R)² (sphere) / −1/3·(k_P a)²
-    # (cube; isotropic at this order).  We evaluate at the
-    # volume-equivalent sphere radius R_eq = (6/π)^(1/3)·a so the cube
-    # T-matrix reproduces the sphere Mie ka-dependence (the c₂ are the
-    # Mie-exact reference; the cube↔sphere *static* shape residual is a
-    # separate, pre-existing geometric effect that the form factor does
-    # not touch).  See test_mie_near_field.TestFormFactorCorrection.
+    #
+    # CUBE geometry.  The voxel is a CUBE, so we use the cube form factor,
+    # not the sphere one.  The leading O((ka)²) form factor is the variance
+    # of the phase k·x over the body — a single geometric scalar
+    # ⟨(k·x)²⟩_body that multiplies the whole static internal-field
+    # response (modulus channels and the δρ/δμ² coupling terms alike):
+    #     sphere (ball R): ⟨(k·x)²⟩/k² = R²/5  → −1/5·(k_P R)²
+    #     cube  (half a):  ⟨x_j²⟩=a²/3 each, isotropic
+    #                      → ⟨(k·x)²⟩/k² = a²/3 → −1/3·(k_P a)²
+    # In (k_S·len)² units the cube/sphere variance ratio is (1/3)/(1/5)=5/3,
+    # so the entire c₂ (including coupling terms) scales uniformly by 5/3
+    # and the length argument is the cube half-width a.  (O_h cubic
+    # anisotropy first enters at O((ka)⁴) and is omitted here.)
+    #
+    # WHY CUBE not sphere: the squared-overlap form factor is shape-specific.
+    # Picking the sphere value by matching sphere Mie would be circular for a
+    # cubic voxel.  The cube-appropriate arbiter is slab→Kennett (a cubic
+    # lattice tiling a uniform layer): the cube c₂ matches Kennett at least
+    # as well as the sphere c₂ on the normal-R_PP and (the targeted) R_SS
+    # shear channels through ka ≤ 0.3, with R_SS strictly better.  See
+    # test_slab_convergence and test_mie_near_field.TestFormFactorCorrection.
+    #
+    # Coupling-term shape dependence: scaling the *whole* c₂ prefactor 5/3
+    # is exact for the leading (ka)² variance scalar; the coupling terms'
+    # sub-leading shape dependence is not separately resolved without a
+    # cube-Mie oracle, and is bounded by the slab→Kennett check above
+    # (cube ≤ sphere error on the binding channels).
+    CUBE_OVER_SPHERE_FF = 5.0 / 3.0  # ⟨(k·x)²⟩ ratio cube(a²/3)/sphere(R²/5)
     mu0 = rho * beta**2
     lam0 = (alpha / beta) ** 2 - 2.0  # = λ₀_phys/μ₀
     dlam_nd = contrast.Dlambda / mu0
     dmu_nd = contrast.Dmu / mu0
     drho_nd = contrast.Drho / rho
-    c_mu, c_kappa, c_rho = form_factor_c2(dlam_nd, dmu_nd, drho_nd, lam0)
-    R_eq = (6.0 / np.pi) ** (1.0 / 3.0) * a
+    c_mu_s, c_kappa_s, c_rho_s = form_factor_c2(dlam_nd, dmu_nd, drho_nd, lam0)
+    c_mu = CUBE_OVER_SPHERE_FF * c_mu_s
+    c_kappa = CUBE_OVER_SPHERE_FF * c_kappa_s
+    c_rho = CUBE_OVER_SPHERE_FF * c_rho_s
     kS = omega / beta
-    w2 = (kS * R_eq) ** 2  # (k_S · R_eq)² — the form-factor argument
+    w2 = (kS * a) ** 2  # (k_S · a)² — cube half-width is the length scale
     ff_mu = 1.0 + c_mu * w2
     ff_kappa = 1.0 + c_kappa * w2
     ff_rho = 1.0 + c_rho * w2
