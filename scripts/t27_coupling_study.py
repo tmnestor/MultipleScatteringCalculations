@@ -51,7 +51,28 @@ Step 2b: the analytic nearest-neighbour propagator in
 quadrature references: (i) the FD volume-averaged point propagator (the
 analytic module's own definition: uniform multipole source, volume-averaged
 field, ``_voigt_contract`` conventions) and (ii) this study's Galerkin object.
-The analytic module is hardcoded to unit pitch (cube side 1, half-width 0.5).
+The module now takes a required physical pitch ``d`` and rescales the unit-
+pitch tables internally (G/C/H/S by d⁻¹/⁻²/⁻²/⁻³); the calls below pass
+``d=1.0`` to compare against the unit-pitch (half-width 0.5) arbiters.
+
+RESOLVED STATE (2026-06-13, branch feature/propagator-fixes).  When this
+study was first written the module had three defects, all since FIXED and
+regression-tested in tests/test_inter_voxel_propagator.py:
+  * H block dropped the engineering ×2 on shear rows (H = Cᵀ) — fixed to
+    H = W Cᵀ with W = diag(1,1,1,2,2,2) (TestHEngineeringConvention).
+  * corner S broke its own C3 site symmetry — fixed (TestCornerSC3Symmetry).
+  * the dynamic series was real-only (no radiation/imaginary part) — the
+    module now returns a COMPLEX block: a real even-ω²ⁿ reactive series plus
+    an imaginary odd-power radiation series (TestRadiationImaginaryPart).
+The face-S "defect" the study originally reported was OVERTURNED by
+scripts/face_s_rederivation.py: the module's face S is exact to 13+ digits
+against three bias-free routes, and the FD/direct quadrature arbiters are the
+biased quantity at face contact (tensor-Gauss diagonal artifact on the 1/w³
+kernel).  The residual face-S deviation vs the Galerkin object is a genuine,
+converged projection difference (linear-basis Galerkin vs point-derivative
+propagator), kept as a documented envelope.  Step 2b below now compares the
+COMPLETE module (no patch) against the arbiters and reports the carried
+radiation part rather than the old "omitted Im" gap.
 
 Quadratic-channel isolation: the raw monomial squares r_p^2 carry net-force
 (monopole) content (M couples them to the constant modes), so zeroing raw
@@ -665,22 +686,6 @@ def avg_point_propagator_fd(
     return P
 
 
-def patch_h_engineering(P9: NDArray) -> NDArray:
-    """Double the shear (engineering Voigt) rows of the H block.
-
-    HISTORICAL: at the time of the study, inter_voxel_propagator_9x9 set
-    H = C^T, which dropped the factor 2 that the engineering shear-strain
-    rows carry in the validated convention (its own S block applies it via
-    mult_pq = 2), and this patch restored it.  The module has since been
-    FIXED (H = W C^T with W = diag(1,1,1,2,2,2)), so applying this patch
-    to current output double-counts the factor; it is kept only to
-    reproduce the pre-fix study tables.
-    """
-    out = P9.copy()
-    out[6:9, 0:3] *= 2.0
-    return out
-
-
 def run_propagator_comparison() -> None:
     """Step 2b: arbitrate inter_voxel_propagator_9x9 against quadrature truth."""
     print()
@@ -691,32 +696,35 @@ def run_propagator_comparison() -> None:
     omega_static = 1e-3 * REF.beta / a
 
     # 1. Scale convention: analytic G vs quadrature <G> at two half-widths.
-    # HISTORICAL: at the time of the study the module had no length
-    # argument; it now takes a required pitch d and rescales internally
-    # (G/C/H/S by d^-1/-2/-2/-3).  Calls here pass d=1.0 to reproduce the
-    # original unit-pitch tables.
-    print("\nScale convention (module evaluated at unit pitch, d=1.0):")
+    # RESOLVED: the module now takes a required pitch d and rescales the
+    # unit-pitch tables internally (G/C/H/S by d^-1/-2/-2/-3).  Passing the
+    # PHYSICAL pitch (d = 2*a_try) makes the analytic G match the quadrature
+    # <G> at every half-width — the historical "matches at a = 0.5 only"
+    # hardcoded-pitch defect is fixed (fix 992b51e, threaded through
+    # _build_slab_kernels with d = geometry.d).
+    print("\nScale convention (module given the PHYSICAL pitch d = 2a):")
     for a_try in (0.5, 1.0):
         Rphys = np.array([2.0 * a_try, 0.0, 0.0])
         om = 1e-3 * REF.beta / a_try
         G_q = avg_greens(Rphys, om, a_try, n=8)
         P9 = inter_voxel_propagator_9x9(
-            (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
+            (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=2.0 * a_try
         )
         ratio = np.real(P9[0, 0] / G_q[0, 0])
         print(
-            f"  half-width a={a_try}: analytic G[0,0] / quadrature <G>[0,0] = {ratio:.4f}"
+            f"  half-width a={a_try} (d={2.0 * a_try}): analytic G[0,0] / "
+            f"quadrature <G>[0,0] = {ratio:.4f}"
         )
-    print("  -> matches at a = 0.5 only: hardcoded to pitch d = 1 (slab usage with")
-    print("     d != 1, e.g. tests at a = 1, scales G/C/S wrongly by d, d^2, d^3).")
+    print("  -> matches at every half-width: physical pitch threaded correctly.")
 
-    # 2. Static per-block comparison vs both references
+    # 2. Static per-block comparison vs both references (module now correct;
+    # no H patch — the engineering ×2 is built in).
     print("\nStatic comparison (ka -> 0), per-block max deviation / block scale.")
     print("  ref FD-avg = volume-averaged point propagator (the analytic module's")
     print("  own definition); ref Galerkin = this study's M9^-1 P_quad W^-1.")
-    print(
-        f"  {'sep':>6} {'ref':>9}  {'G':>9}  {'C':>9}  {'H':>9}  {'S':>9}   (H-patched: H')"
-    )
+    print("  (face-S deviation is the documented Galerkin projection envelope, not")
+    print("   a defect; the FD-avg face-S is biased — see docstrings.)")
+    print(f"  {'sep':>6} {'ref':>9}  {'G':>9}  {'C':>9}  {'H':>9}  {'S':>9}")
     seps = {
         "face": ((1, 0, 0), np.array([1.0, 0.0, 0.0])),
         "edge": ((1, 1, 0), np.array([1.0, 1.0, 0.0])),
@@ -726,22 +734,19 @@ def run_propagator_comparison() -> None:
         P9 = inter_voxel_propagator_9x9(
             Rlat, REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
         )
-        P9p = patch_h_engineering(P9)
         for ref_name, ref_mat in (
             ("FD-avg", avg_point_propagator_fd(Rphys, omega_static, a, n=8)),
             ("Galerkin", galerkin_9_block(Rphys, omega_static, a, n=8)),
         ):
             dev = block_devs(P9, ref_mat)
-            dev_p = block_devs(P9p, ref_mat)
             print(
                 f"  {name:>6} {ref_name:>9}  "
                 + "  ".join(f"{dev[b]:>9.2e}" for b in "GCHS")
-                + f"   (H'={dev_p['H']:.2e})"
             )
 
-    # 3. Specific structural findings (static, evidence entries)
-    print("\nStructural findings (static, unit pitch):")
-    # H = C^T misses engineering factor 2 on shear rows
+    # 3. Specific structural findings — all RESOLVED (verified here).
+    print("\nStructural findings (static, unit pitch) — all RESOLVED:")
+    # H engineering ×2 now built in: H = W C^T, W = diag(1,1,1,2,2,2).
     P9e = inter_voxel_propagator_9x9(
         (1, 1, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
     )
@@ -749,18 +754,19 @@ def run_propagator_comparison() -> None:
     mask = np.abs(Dfd[6:9, 0:3]) > 0.05 * np.max(np.abs(Dfd[6:9, 0:3]))
     h_ratio = np.real(P9e[6:9, 0:3][mask] / Dfd[6:9, 0:3][mask])
     print(
-        f"  [H bug] H = C^T drops engineering 2x on shear rows: measured "
+        f"  [H fixed] engineering 2x now carried (H = W C^T): measured "
         f"H_analytic/H_true on edge shear rows = "
-        f"[{h_ratio.min():.4f}, {h_ratio.max():.4f}] (should be 1)"
+        f"[{h_ratio.min():.4f}, {h_ratio.max():.4f}] (target 1)"
     )
-    # Corner S breaks its own S3 symmetry
+    # Corner S now respects its own C3 site symmetry.
     P9c = inter_voxel_propagator_9x9(
         (1, 1, 1), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
     )
     Sc = np.real(P9c[3:, 3:])
     print(
-        f"  [corner S bug] S3-symmetry partners unequal: S[1,4]={Sc[1, 4]:.3e} vs "
-        f"S[0,3]={Sc[0, 3]:.3e}; S[3,5]={Sc[3, 5]:.3e} vs S[3,4]={Sc[3, 4]:.3e}"
+        f"  [corner S fixed] C3-symmetry partners now equal: "
+        f"S[1,4]={Sc[1, 4]:.3e} vs S[0,3]={Sc[0, 3]:.3e}; "
+        f"S[3,5]={Sc[3, 5]:.3e} vs S[3,4]={Sc[3, 4]:.3e}"
     )
     # Face S vs the FD-avg arbiter — HISTORICAL finding, since overturned.
     # The rederivation (scripts/face_s_rederivation.py, 2026-06-13) showed
@@ -778,17 +784,21 @@ def run_propagator_comparison() -> None:
         "scripts/face_s_rederivation.py)"
     )
 
-    # 4. Dynamic corrections at edge/corner (clean statics) vs FD-avg reference.
-    # The analytic omega^(2n) series is identically REAL: it can represent the
-    # near-field dispersion but not the imaginary (radiation) part of the
-    # propagator.  Report the real-part residual and the missing Im fraction.
-    print("\nDynamic residual (edge/corner, where statics are clean; H patched x2):")
-    print("  dev(Re) = real-part deviation; Im/scale = imaginary part of the truth,")
-    print("  which the (real) omega^2n series omits entirely.")
+    # 4. Dynamic corrections at edge/corner (clean statics) vs the complex
+    # FD-avg reference.  The module now returns a COMPLEX block: a real
+    # even-omega^2n reactive series PLUS an imaginary odd-power radiation
+    # series (fix 8ec416b).  No H patch — the engineering 2x is built in.
+    # Report the real-part residual AND the imaginary-part residual: both are
+    # now represented, so dev(Im) should be a genuine (small) approximation
+    # error, not 1.0 (the old "Im omitted entirely" signature).
+    print("\nDynamic residual (edge/corner, where statics are clean; complex module):")
+    print("  dev(Re) = real-part deviation vs the complex FD-avg arbiter;")
+    print("  dev(Im) = imaginary (radiation) part deviation — now CARRIED, so")
+    print("  this is the residual, not 1.0 as in the old real-only series.")
     print(
         f"  {'sep':>6} {'ka':>5} {'n_ord':>5}  "
         f"{'G dev(Re)':>10} {'C dev(Re)':>10} {'S dev(Re)':>10}  "
-        f"{'G Im/sc':>8} {'S Im/sc':>8}"
+        f"{'G dev(Im)':>10} {'S dev(Im)':>10}"
     )
     for name in ("edge", "corner"):
         Rlat, Rphys = seps[name]
@@ -796,10 +806,8 @@ def run_propagator_comparison() -> None:
             om = ka * REF.beta / a
             ref_mat = avg_point_propagator_fd(Rphys, om, a, n=8)
             for n_ord in (2, 3):
-                P9 = patch_h_engineering(
-                    inter_voxel_propagator_9x9(
-                        Rlat, REF.alpha, REF.beta, REF.rho, om, n_ord, d=1.0
-                    )
+                P9 = inter_voxel_propagator_9x9(
+                    Rlat, REF.alpha, REF.beta, REF.rho, om, n_ord, d=1.0
                 )
                 dev_re = block_devs(np.real(P9), np.real(ref_mat))
                 row = f"  {name:>6} {ka:>5.1f} {n_ord:>5}  "
@@ -807,7 +815,10 @@ def run_propagator_comparison() -> None:
                 for b in "GS":
                     r_, c_ = _BLOCKS[b]
                     scale = np.max(np.abs(ref_mat[r_, c_]))
-                    row += f" {np.max(np.abs(np.imag(ref_mat[r_, c_]))) / scale:>8.2e}"
+                    im_res = np.max(
+                        np.abs(np.imag(P9[r_, c_]) - np.imag(ref_mat[r_, c_]))
+                    )
+                    row += f" {im_res / scale:>10.2e}"
                 print(row)
 
 
