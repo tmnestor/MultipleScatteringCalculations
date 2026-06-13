@@ -379,12 +379,23 @@ Two ways to couple the Green's tensor between cube sources:
   to the radiation term; distant coupling and the far field require it. The
   propagator is correctly scaled by the physical cube pitch.
 
-Validation against Kennett (uniform multi-layer slab): volume-averaging **beats**
-point coupling at normal incidence (~0.4–0.5% tighter across ka ≤ 0.5). Off
-normal incidence both match Kennett within envelope, but volume averaging does
-not strictly beat point coupling there — it corrects the vertical inter-voxel
-coupling, not the horizontal phase structure (~1 rad per cell at oblique p). See
-`docs/point_vs_volume_tmatrix_notes.tex`.
+Validation against Kennett (uniform multi-layer slab): volume-averaging is the
+more physically faithful propagator — verified ~2–3× closer to the quadrature
+truth than point coupling on every block — and it **beats** point coupling on
+R_PP at normal incidence (~0.4–0.5% tighter across ka ≤ 0.5). It does **not**
+uniformly beat point coupling, however: R_PP off normal incidence, and R_SS at
+*all* angles (including normal), come out modestly worse. This is **not** a
+propagator inaccuracy — it is a *compensating-error* effect. The point
+propagator's coupling error was partly cancelling other approximation errors in
+the per-voxel representation (the single polynomial T-matrix basis per voxel);
+making the coupling more correct exposes them. Block-isolation pins the strain
+(S) block as the driver, with opposite-sign effects on R_PP and R_SS, and the
+off-normal R_PP crossover scales with the in-plane Bloch phase per cell
+(restored by mesh refinement). The residual is therefore a per-voxel
+*representation* limit, not a coupling defect: closing it needs a richer
+per-voxel basis (sub-voxel resolution), not a more accurate propagator. The
+"beats-point" guarantee is consequently pinned only for R_PP at normal
+incidence. See `docs/point_vs_volume_tmatrix_notes.tex`.
 
 ### Ocean-bottom reflection
 
