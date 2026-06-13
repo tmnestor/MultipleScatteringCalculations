@@ -1326,6 +1326,261 @@ def _rotate_tensor3(T: NDArray, R: NDArray) -> NDArray:
     return np.einsum("ia,jb,kc,abc->ijk", R, R, R, T)
 
 
+# ──────────────────────────────────────────────────────────────────────
+# RADIATION (imaginary) part of the volume-averaged propagator  [Fix 5]
+#
+# The elastodynamic Green's tensor splits into a real part (the 1/r
+# near-field singularity plus a real even-power-ω² series — handled by the
+# static .wl tables and the _dynamic_correction ω²ⁿ machinery above) and an
+# IMAGINARY part from sin(k r)/r.  Because sin(k r)/r is ENTIRE (finite at
+# r=0, no singularity), Im G_ij is an exact POLYNOMIAL in the separation
+# vector s = R + (r − r'):
+#
+#   Im G_ij(s) = 1/(4πρω²) [ Im φ(s) δ_ij + (Im ψ(s)/s²) s_i s_j ]
+#
+# with the entire even-power series (k_P = ω/α, k_S = ω/β)
+#
+#   Im φ(s) = Σ_{m≥0} c^φ_m s^{2m},   c^φ_m = p^φ_m k_P^{2m+3} + q^φ_m k_S^{2m+3}
+#   Im ψ(s) = Σ_{m≥1} c^ψ_m s^{2m},   c^ψ_m = p^ψ_m k_P^{2m+3} + q^ψ_m k_S^{2m+3}
+#
+# The rational coefficients p, q follow exactly from the Taylor series of
+#
+#   Im φ = [k_S² s² sin(k_S s) + s(−k_P cos k_P s + k_S cos k_S s)
+#           + sin(k_P s) − sin(k_S s)] / s³
+#   Im ψ = [s²(k_P² sin k_P s − k_S² sin k_S s)
+#           + 3 s(k_P cos k_P s − k_S cos k_S s) − 3 sin k_P s + 3 sin k_S s] / s³
+#
+# Each Im-φ/Im-ψ order m contributes ω^{2m+3}; after the 1/ω² prefactor the
+# block carries ω^{2m+1} → the odd-power radiation seam ω¹, ω³, ω⁵, …  This
+# is exactly the `1j·ω^{2n+1}` companion to the real ω^{2n} series, so the
+# Fix-3 pitch threading (ω → ω·d) supplies the correct d^{2n+1} automatically.
+#
+# Because the kernel is entire, the double volume average over the two
+# non-overlapping cubes (and its R-derivatives for the C/H and S blocks) is
+# an EXACT polynomial-moment integral — no singular quadrature, no
+# delta-function correction, no Mathematica .wl table.  This mirrors the
+# `dynamic_body_bilinear` smooth-part treatment.
+#
+# Validation arbiter: scripts/test_radiation_part_need.py (the complex
+# volume-averaged Kupradze G by Gauss-Legendre quadrature).
+# ──────────────────────────────────────────────────────────────────────
+
+from fractions import Fraction  # noqa: E402
+from functools import lru_cache  # noqa: E402
+from math import comb, factorial  # noqa: E402
+
+
+@lru_cache(maxsize=None)
+def _sin_coeff(j: int) -> Fraction:
+    """Coefficient of x^(2j+1) in the Taylor series of sin x."""
+    return Fraction((-1) ** j, factorial(2 * j + 1))
+
+
+@lru_cache(maxsize=None)
+def _cos_coeff(j: int) -> Fraction:
+    """Coefficient of x^(2j) in the Taylor series of cos x."""
+    return Fraction((-1) ** j, factorial(2 * j))
+
+
+@lru_cache(maxsize=None)
+def _im_phi_coeffs(nmax: int) -> tuple[tuple[float, float], ...]:
+    """Rational (p, q) per order m of Im φ: c^φ_m = p·k_P^(2m+3) + q·k_S^(2m+3).
+
+    Derived term-by-term from the closed form of Im φ (see module header).
+    """
+    out: list[tuple[float, float]] = []
+    for m in range(nmax + 1):
+        # k_S² s² sin(k_S s): contributes k_S^(2m+3) via j=m
+        q1 = _sin_coeff(m)
+        # s(−k_P cos k_P s + k_S cos k_S s): exponent 2m+3 needs j=m+1
+        p2 = -_cos_coeff(m + 1)
+        q2 = _cos_coeff(m + 1)
+        # sin(k_P s) − sin(k_S s): j=m+1
+        p3 = _sin_coeff(m + 1)
+        q3 = -_sin_coeff(m + 1)
+        out.append((float(p2 + p3), float(q1 + q2 + q3)))
+    return tuple(out)
+
+
+@lru_cache(maxsize=None)
+def _im_psi_coeffs(nmax: int) -> tuple[tuple[float, float], ...]:
+    """Rational (p, q) per order m of Im ψ: c^ψ_m = p·k_P^(2m+3) + q·k_S^(2m+3).
+
+    The m=0 entry is identically zero (Im ψ starts at s²).
+    """
+    out: list[tuple[float, float]] = []
+    for m in range(nmax + 1):
+        # s²(k_P² sin k_P s − k_S² sin k_S s): j=m
+        p1 = _sin_coeff(m)
+        q1 = -_sin_coeff(m)
+        # 3 s(k_P cos k_P s − k_S cos k_S s): j=m+1
+        p2 = 3 * _cos_coeff(m + 1)
+        q2 = -3 * _cos_coeff(m + 1)
+        # −3 sin k_P s + 3 sin k_S s: j=m+1
+        p3 = -3 * _sin_coeff(m + 1)
+        q3 = 3 * _sin_coeff(m + 1)
+        out.append((float(p1 + p2 + p3), float(q1 + q2 + q3)))
+    return tuple(out)
+
+
+@lru_cache(maxsize=None)
+def _u_moment(n: int, a: float) -> float:
+    """Exact moment <u^n> for u = x − x', x, x' uniform on [−a, a].
+
+    <x^m> = a^m/(m+1) for even m, else 0; <u^n> = Σ_k C(n,k)<x^k><x'^{n-k}>(−1)^{n-k}.
+    """
+    total = 0.0
+    for k in range(n + 1):
+        ek = 0.0 if k % 2 else a**k / (k + 1)
+        em = 0.0 if (n - k) % 2 else a ** (n - k) / (n - k + 1)
+        total += comb(n, k) * ek * em * (-1) ** (n - k)
+    return total
+
+
+def _avg_monomial_grad(
+    R: NDArray, powers: tuple[int, ...], a: float, deriv: tuple[int, ...]
+) -> float:
+    """⟨∂^deriv ∏_k (R_k + u_k)^powers_k / ∂R^deriv⟩ over the cube pair.
+
+    Each axis factorises; the average of (R_k + u_k)^p is the polynomial
+    Σ_j C(p,j) R_k^{p−j} <u_k^j>, differentiated `deriv[k]` times in R_k.
+    """
+    val = 1.0
+    for k in range(3):
+        p = powers[k]
+        dk = deriv[k]
+        acc = 0.0
+        # average polynomial in R_k: Σ_j C(p,j) R_k^{p-j} <u^j>, then d^dk/dR_k^dk
+        for j in range(p + 1):
+            e = p - j  # exponent of R_k before differentiation
+            if e < dk:
+                continue
+            coeff = comb(p, j) * _u_moment(j, a)
+            # d^dk/dR^dk R^e = e!/(e-dk)! R^(e-dk)
+            falling = 1
+            for t in range(dk):
+                falling *= e - t
+            acc += coeff * falling * R[k] ** (e - dk)
+        val *= acc
+    return val
+
+
+def _im_greens_avg_deriv(
+    R_canon: NDArray,
+    rho: float,
+    alpha: float,
+    beta: float,
+    omega: float,
+    n_orders: int,
+) -> tuple[NDArray, NDArray, NDArray]:
+    """Volume-averaged radiation part: Im⟨G⟩, ∂Im⟨G⟩/∂R, ∂²Im⟨G⟩/∂R∂R.
+
+    Computed as EXACT polynomial moments (and exact analytic R-derivatives)
+    of the entire kernel Im G_ij, on the unit-pitch lattice (cube side 1,
+    half-width a=0.5).  Orders m = 0 .. n_orders (ω¹, ω³, …, ω^{2·n_orders+1}).
+
+    Returns:
+        (G, dG, ddG) with shapes (3,3), (3,3,3), (3,3,3,3), all real (these
+        are the imaginary PART of the complex propagator; the caller multiplies
+        by 1j).
+    """
+    a = 0.5  # unit-pitch half-width
+    eye = np.eye(3)
+    G = np.zeros((3, 3))
+    dG = np.zeros((3, 3, 3))
+    ddG = np.zeros((3, 3, 3, 3))
+    if omega == 0.0:
+        # Radiation vanishes identically in statics (every term ∝ ω^{2m+1}).
+        return G, dG, ddG
+
+    phi_c = _im_phi_coeffs(n_orders)
+    psi_c = _im_psi_coeffs(n_orders)
+    R = np.asarray(R_canon, dtype=float)
+
+    # Per-order coefficient: pref·(p·k_P^{2m+3} + q·k_S^{2m+3}) with
+    # pref = 1/(4πρω²) and k = ω/c factorises EXACTLY to
+    #   ω^{2m+1}/(4πρ)·(p/α^{2m+3} + q/β^{2m+3})
+    # — the odd-power radiation seam, with no 1/ω² singularity at ω→0.
+    base = 1.0 / (4.0 * np.pi * rho)
+
+    # ── isotropic piece  Im φ(s) δ_ij = Σ_m c^φ_m (s²)^m δ_ij ──
+    for m in range(n_orders + 1):
+        p, q = phi_c[m]
+        coeff = (
+            base
+            * omega ** (2 * m + 1)
+            * (p / alpha ** (2 * m + 3) + q / beta ** (2 * m + 3))
+        )
+        if coeff == 0.0:
+            continue
+        # (s²)^m = Σ multinomial over sx^{2a} sy^{2b} sz^{2c}
+        for ea, eb, ec, mult in _s2_pow_terms(m):
+            pw: tuple[int, ...] = (2 * ea, 2 * eb, 2 * ec)
+            G += coeff * mult * _avg_monomial_grad(R, pw, a, (0, 0, 0)) * eye
+            for k in range(3):
+                dv = [0, 0, 0]
+                dv[k] = 1
+                dG[:, :, k] += (
+                    coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv)) * eye
+                )
+            for k in range(3):
+                for ll in range(3):
+                    dv = [0, 0, 0]
+                    dv[k] += 1
+                    dv[ll] += 1
+                    ddG[:, :, k, ll] += (
+                        coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv)) * eye
+                    )
+
+    # ── deviatoric piece  (Im ψ(s)/s²) s_i s_j = Σ_{m≥1} c^ψ_m (s²)^{m-1} s_i s_j ──
+    for m in range(1, n_orders + 1):
+        p, q = psi_c[m]
+        coeff = (
+            base
+            * omega ** (2 * m + 1)
+            * (p / alpha ** (2 * m + 3) + q / beta ** (2 * m + 3))
+        )
+        if coeff == 0.0:
+            continue
+        for i in range(3):
+            for j in range(3):
+                for ea, eb, ec, mult in _s2_pow_terms(m - 1):
+                    powers = [2 * ea, 2 * eb, 2 * ec]
+                    powers[i] += 1
+                    powers[j] += 1
+                    pw = tuple(powers)
+                    G[i, j] += coeff * mult * _avg_monomial_grad(R, pw, a, (0, 0, 0))
+                    for k in range(3):
+                        dv = [0, 0, 0]
+                        dv[k] = 1
+                        dG[i, j, k] += (
+                            coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv))
+                        )
+                    for k in range(3):
+                        for ll in range(3):
+                            dv = [0, 0, 0]
+                            dv[k] += 1
+                            dv[ll] += 1
+                            ddG[i, j, k, ll] += (
+                                coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv))
+                            )
+    return G, dG, ddG
+
+
+@lru_cache(maxsize=None)
+def _s2_pow_terms(m: int) -> tuple[tuple[int, int, int, int], ...]:
+    """Multinomial expansion of (sx²+sy²+sz²)^m → (a, b, c, coeff) with a+b+c=m."""
+    if m == 0:
+        return ((0, 0, 0, 1),)
+    terms: list[tuple[int, int, int, int]] = []
+    for ea in range(m + 1):
+        for eb in range(m - ea + 1):
+            ec = m - ea - eb
+            mult = factorial(m) // (factorial(ea) * factorial(eb) * factorial(ec))
+            terms.append((ea, eb, ec, mult))
+    return tuple(terms)
+
+
 def inter_voxel_propagator_9x9(
     R_lattice: tuple[int, int, int],
     alpha: float,
@@ -1433,4 +1688,42 @@ def inter_voxel_propagator_9x9(
     P9[:3, 3:] = C
     P9[3:, :3] = H
     P9[3:, 3:] = S
+
+    # ── Radiation (imaginary) part [Fix 5] ──
+    # Im⟨G⟩, ∂Im⟨G⟩/∂R, ∂²Im⟨G⟩/∂R∂R as exact polynomial moments on the
+    # unit-pitch lattice in the canonical direction; rotate (the moment
+    # average is a true tensor in δ_ij, s_i s_j → rotation-covariant) and
+    # contract with the SAME Voigt convention the arbiter uses
+    # (resonance_tmatrix._voigt_contract).  The moment engine carries the
+    # ω^{2n+1} powers internally, so omega_d supplies the pitch d^{2n+1}
+    # exactly; the per-block static d-power (1/d, 1/d², 1/d³) is applied below.
+    im_orders = min(n_orders, 3)
+    R_canon = _canonical_direction(R_lattice)
+    imG_c, imdG_c, imddG_c = _im_greens_avg_deriv(
+        R_canon, rho, alpha, beta, omega_d, im_orders
+    )
+    imG = _rotate_matrix3(imG_c, perm) / d
+    imdG = _rotate_tensor3(imdG_c, perm) / d**2
+    imddG = _rotate_tensor4(imddG_c, perm) / d**3
+    from cubic_scattering.resonance_tmatrix import _voigt_contract
+
+    imC, imH, imS = _voigt_contract(imdG.astype(complex), imddG.astype(complex))
+
+    P9[:3, :3] += 1j * imG
+    P9[:3, 3:] += 1j * imC.real
+    P9[3:, :3] += 1j * imH.real
+    P9[3:, 3:] += 1j * imS.real
     return P9
+
+
+def _canonical_direction(R_lattice: tuple[int, int, int]) -> NDArray:
+    """Canonical lattice direction (face (1,0,0), edge (1,1,0), corner (1,1,1))."""
+    n_abs = np.sort(np.abs(R_lattice))[::-1]
+    return np.array(
+        [1.0, 0.0, 0.0]
+        if np.array_equal(n_abs, [1, 0, 0])
+        else [1.0, 1.0, 0.0]
+        if np.array_equal(n_abs, [1, 1, 0])
+        else [1.0, 1.0, 1.0],
+        dtype=float,
+    )
