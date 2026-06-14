@@ -2,7 +2,15 @@
 
 **Design spec — PhD chapter, Research Questions 2 & 3**
 **Date:** 2026-06-14
-**Status:** approved (design) — pending implementation plan
+**Status:** approved (design) — implementation plan written
+
+**Amendment 2026-06-14 (apples-to-apples radiation):** T9 and T27 are radiated
+through the **same** finite-size full-field operator (bare physical ΔC, reconstructed
+total interior field, identical finite-size phase), differing ONLY in which scattered
+modes `c_sc` populates (9 vs 27). This makes the T9↔T27 far-field gap purely the
+richer scattered basis — the clean RQ2 attribution. The existing `cube_far_field`
+(effective Δc*×incident-strain point dipole) is retained only as a k→0 cross-check, NOT
+as the study's T9. See plan §Task 6/10.
 
 ---
 
