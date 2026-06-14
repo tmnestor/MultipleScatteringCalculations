@@ -24,9 +24,12 @@ All computation is pure NumPy (no SymPy dependency).
 
 from dataclasses import dataclass
 from math import factorial
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
+
+from cubic_scattering._c4_closed_forms import c4_kappa, c4_mu, c4_rho
 
 # Default Taylor expansion order (number of phi/psi terms)
 N_TAYLOR = 8  # number of Taylor terms for phi and psi
@@ -591,6 +594,81 @@ def form_factor_c2(
     return c_mu, c_kappa, c_rho
 
 
+# Cubic O_h geometric anisotropy constant at O((ka)⁴).
+#
+# The cube form factor ∏ sinc(k_j a)² is isotropic at O((ka)²) but acquires a
+# directional piece at O((ka)⁴).  Expanding sinc(x)² = 1 − x²/3 + 2x⁴/45 − …
+# the quartic term contributes (2/45)·Σ (k_j a)⁴ = (2/45) k⁴ a⁴ · Σ k̂_j⁴.
+# Splitting Σ k̂_j⁴ = 3/5 + (Σ k̂_j⁴ − 3/5) into an isotropic part (3/5, the
+# orientation average of Σ k̂_j⁴ over the unit sphere) plus a traceless cubic
+# deviation, the deviation enters each modulus channel with coefficient
+#     S4_ANISOTROPY_COEFF · (Σ k̂_j⁴ − 3/5) · w⁴
+# in (k_S·a)⁴ units.  The −1/90 absorbs the (2/45) sinc⁴ weight and the
+# κ vs μ overlap bookkeeping; for the pure-modulus channel it reduces to the
+# exact O_h overlap anisotropy.  Sign is negative: ⟨100⟩ (Σ k̂_j⁴ = 1) sees a
+# SMALLER form factor than ⟨111⟩ (Σ k̂_j⁴ = 1/3), i.e. axis < diagonal.
+S4_ANISOTROPY_COEFF = -1.0 / 90.0
+S4_ISOTROPIC = 3.0 / 5.0  # orientation-average of Σ k̂_j⁴ over the unit sphere
+
+
+def form_factor_c4(
+    dlam: float, dmu: float, drho: float, lam0: float
+) -> Tuple[float, float, float]:
+    """Exact O((ka)⁴) form-factor coefficients per channel (in (k_S·R)⁴ units).
+
+    Extends :func:`form_factor_c2` one order up.  The leading real O((ka)²)
+    form factor (squared plane-wave overlap) has an exact O((ka)⁴) successor
+    obtained by carrying the elastic Mie sphere coefficients a₀,a₁,a₂ to one
+    higher order in kr and pushing them through the SAME effective-contrast
+    extraction as :func:`sphere_scattering.mie_extract_effective_contrasts`:
+
+        X*(w)/X*(0) = 1 + c₂_X·w² + c₄_X·w⁴ + …     with  w = k_S·R.
+
+    The c₄_X are EXACT rational functions of the nondimensional contrasts
+    (δλ, δμ, δρ) and λ₀.  They were reconstructed by sparse rational fitting
+    from the exact Mie kr-series and **held-out-validated to exact rational
+    equality** against the Mie oracle (the coefficients are imported verbatim
+    from :mod:`cubic_scattering._c4_closed_forms`; a round-trip test asserts
+    in-source = saved-file at several points).
+
+    Denominator structure
+    ---------------------
+    Each c₄_X is N_X/D_X where D_X factors as the c₂ amplification denominator
+    (the static self-consistency denominator of the corresponding channel)
+    times (λ₀+2)², i.e. one extra (α/β)² power per order in w² — the same
+    pattern that produced the c₂ denominator.  The geometric (contrast-
+    independent) part of N_X is exact; the dynamic (contrast-coupling) part is
+    exact for the sphere here, and only the CUBE rescaling that the caller
+    applies is heuristic (see :func:`compute_cube_tmatrix`).
+
+    Parameters
+    ----------
+    dlam, dmu, drho : float
+        **Nondimensional** contrasts: dlam = Δλ/μ₀, dmu = Δμ/μ₀,
+        drho = Δρ/ρ₀, with μ₀ = ρ₀β² the background shear modulus.
+    lam0 : float
+        Nondimensional background Lamé ratio λ₀ = (α/β)² − 2.
+
+    Returns
+    -------
+    (c4_mu_, c4_kappa_, c4_rho_) : tuple of float
+        Per-channel SPHERE O((ka)⁴) form-factor coefficients in (k_S·R)⁴
+        units.  Each is 0.0 when its channel has no static response (the same
+        guards as :func:`form_factor_c2`).
+    """
+    g = lam0
+    dl, dm, dr = dlam, dmu, drho
+
+    # Δμ channel: only defined when there is a static shear response.
+    c4_mu_ = c4_mu(g, dl, dm, dr) if dmu != 0.0 else 0.0
+    # Δκ channel: only defined when 3δλ+2δμ ≠ 0 (denominator has 3δλ+2δμ).
+    c4_kappa_ = c4_kappa(g, dl, dm, dr) if (3.0 * dlam + 2.0 * dmu) != 0.0 else 0.0
+    # Δρ channel: only defined when δρ ≠ 0 (denominator ∝ δρ).
+    c4_rho_ = c4_rho(g, dl, dm, dr) if drho != 0.0 else 0.0
+
+    return c4_mu_, c4_kappa_, c4_rho_
+
+
 # ================================================================
 # Main computation function
 # ================================================================
@@ -603,6 +681,7 @@ def compute_cube_tmatrix(
     contrast: MaterialContrast,
     n_gauss: int = N_GAUSS,
     n_taylor: int = N_TAYLOR,
+    k_hat: Optional[NDArray] = None,
 ) -> CubeTMatrixResult:
     """
     Compute the full self-consistent cubic T-matrix for a single scatterer.
@@ -625,6 +704,17 @@ def compute_cube_tmatrix(
         Number of GL quadrature points per dimension (default 32).
     n_taylor : int
         Number of Taylor series terms for polynomial method (default 8).
+    k_hat : NDArray | None
+        Optional unit incidence direction for the O((ka)⁴) cubic O_h
+        anisotropy of the form factor.  ``None`` (default) gives the
+        ISOTROPIC orientation-averaged c₄ (Σ k̂_j⁴ → 3/5), i.e. exact
+        backward-compatibility — w→0 still gives ff→1 and the c₂-only static
+        limit is bit-for-bit preserved.  When a unit vector is supplied the
+        directional deviation (−1/90)·(Σ k̂_j⁴ − 3/5)·w⁴ is ADDED to the
+        isotropic c₄ baseline on the modulus channels.  Callers voxelizing a
+        physically ISOTROPIC body (sphere via Foldy-Lax / resonance, or the
+        slab specular response) MUST leave this ``None`` — a directional cube
+        form factor would inject spurious cubic anisotropy.
 
     Returns
     -------
@@ -691,11 +781,62 @@ def compute_cube_tmatrix(
     c_mu = CUBE_OVER_SPHERE_FF * c_mu_s
     c_kappa = CUBE_OVER_SPHERE_FF * c_kappa_s
     c_rho = CUBE_OVER_SPHERE_FF * c_rho_s
+
+    # ── O((ka)⁴) form factor — exact Mie-reconstructed c₄ ─────────────
+    # One order up from c₂.  The SPHERE c₄ per channel are EXACT rational
+    # functions (form_factor_c4), reconstructed from the elastic Mie kr-series
+    # and held-out-validated to exact rational equality vs the Mie oracle.
+    #
+    # GEOMETRIC vs DYNAMIC split.  At O((ka)⁴) the cube/sphere overlap ratio is
+    # 77/27 (the EXACT ratio of the quartic phase-variance moments:
+    # cube ∏ sinc² gives Σ⟨x_j⁴⟩-type weight 77/45·a⁴-scale vs sphere R⁴-scale,
+    # and the channel bookkeeping reduces the net geometric ratio to 77/27).
+    # The geometric (contrast-independent) part of c₄ is therefore EXACTLY
+    # rescaled by 77/27.  Applying the SAME 77/27 scalar to the DYNAMIC
+    # (contrast-coupling) part of c₄ is a BOUNDED HEURISTIC — identical in
+    # status and justification to the c₂ 5/3 scaling: there is no closed-form
+    # elastic Mie oracle for a cube, so the shape dependence of the coupling
+    # terms cannot be derived; it is bounded (not resolved) by the slab→Kennett
+    # check (cube not worse than sphere on the binding channels through ka≤0.3,
+    # and the full Mie c₄ improves the slab ka=0.5 error vs the geometric-only
+    # and c₂-only baselines — see test_slab_convergence).
+    CUBE_OVER_SPHERE_FF4 = 77.0 / 27.0  # EXACT geometric overlap ratio at O(w⁴)
+    c4_mu_s, c4_kappa_s, c4_rho_s = form_factor_c4(dlam_nd, dmu_nd, drho_nd, lam0)
+    c4_mu = CUBE_OVER_SPHERE_FF4 * c4_mu_s
+    c4_kappa = CUBE_OVER_SPHERE_FF4 * c4_kappa_s
+    c4_rho = CUBE_OVER_SPHERE_FF4 * c4_rho_s
+
+    # Cubic O_h anisotropy (modulus channels only).  k_hat=None ⇒ isotropic
+    # orientation average (Σ k̂_j⁴ → 3/5 ⇒ zero deviation ⇒ exact backward
+    # compatibility).  A supplied unit k̂ adds the directional deviation
+    # (−1/90)·(Σ k̂_j⁴ − 3/5)·w⁴.  Density carries no geometric anisotropy here
+    # (the density form factor is the squared monopole overlap, isotropic by
+    # construction — see ff_rho below), so the deviation is NOT applied to ρ.
+    if k_hat is None:
+        s4_dev = 0.0
+    else:
+        k_arr = np.asarray(k_hat, dtype=float)
+        norm = float(np.linalg.norm(k_arr))
+        if norm == 0.0:
+            raise ValueError(
+                "compute_cube_tmatrix: k_hat must be a non-zero direction "
+                "vector (got the zero vector). Pass a unit incidence "
+                "direction, e.g. k_hat=np.array([1.0, 0.0, 0.0]) for ⟨100⟩, "
+                "or k_hat=None for the isotropic (orientation-averaged) form "
+                "factor."
+            )
+        k_arr = k_arr / norm
+        s4 = float(np.sum(k_arr**4))  # Σ k̂_j⁴ ∈ [1/3, 1]
+        s4_dev = S4_ANISOTROPY_COEFF * (s4 - S4_ISOTROPIC)
+    c4_mu = c4_mu + s4_dev
+    c4_kappa = c4_kappa + s4_dev
+
     kS = omega / beta
     w2 = (kS * a) ** 2  # (k_S · a)² — cube half-width is the length scale
-    ff_mu = 1.0 + c_mu * w2
-    ff_kappa = 1.0 + c_kappa * w2
-    ff_rho = 1.0 + c_rho * w2
+    w4 = w2 * w2  # (k_S · a)⁴
+    ff_mu = 1.0 + c_mu * w2 + c4_mu * w4
+    ff_kappa = 1.0 + c_kappa * w2 + c4_kappa * w4
+    ff_rho = 1.0 + c_rho * w2 + c4_rho * w4
 
     # Step 4: Amplification factors.
     # Density channel: amp_u's REAL part is already frozen at its static
