@@ -170,6 +170,7 @@ def compute_slab_tmatrices(
     geometry: SlabGeometry,
     material: SlabMaterial,
     omega: float,
+    k_hat: NDArray | None = None,
 ) -> NDArray:
     """Build 9×9 T-matrix for each cube in the slab.
 
@@ -180,6 +181,12 @@ def compute_slab_tmatrices(
         geometry: Slab lattice geometry.
         material: Per-cube material contrasts.
         omega: Angular frequency (rad/s).
+        k_hat: Optional unit incidence direction for the O((ka)⁴) cubic
+            anisotropy of the single-site form factor.  Defaults to ``None``
+            (ISOTROPIC) — the slab specular response orientation-averages the
+            cubic anisotropy out, so the isotropic c₄ is the correct choice and
+            the per-contrast cache stays direction-independent.  Threaded to
+            :func:`compute_cube_tmatrix` for completeness; leave ``None``.
 
     Returns:
         T-matrices, shape (N_z, M, M, 9, 9), complex.
@@ -198,7 +205,7 @@ def compute_slab_tmatrices(
                 key = (dl, dm, dr)
                 if key not in cache:
                     contrast = MaterialContrast(dl, dm, dr)
-                    result = compute_cube_tmatrix(omega, a, ref, contrast)
+                    result = compute_cube_tmatrix(omega, a, ref, contrast, k_hat=k_hat)
                     cache[key] = _sub_cell_tmatrix_9x9(result, omega, a)
                 T_all[lz, i, j] = cache[key]
 

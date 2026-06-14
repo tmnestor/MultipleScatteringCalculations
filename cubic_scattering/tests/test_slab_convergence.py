@@ -208,45 +208,43 @@ def test_periodic_uniform_slab_closer_to_kennett():
 # nearest-neighbour separations the volume-averaged propagator replaces — is
 # exercised.  The slab voxels themselves stay sub-resonant (ka ≤ 0.5).
 #
-# Measured 2026-06-13 (M=4, N_z=3, a=1, H=6, normal P, periodic, gmres 1e-9),
-# WITH the finite-scatterer (kr)² FORM-FACTOR correction in the single-site
-# cube T-matrix — the CUBE form factor (−1/3·(k_P a)², the real O((ka)²)
-# ∏ sinc(k_j a)² squared overlap; see effective_contrasts.form_factor_c2 and
-# test_mie_near_field.TestFormFactorCorrection).  The CUBE coefficient is
-# chosen on physical first-principles grounds (correct form factor for a cube
-# voxel — matching sphere Mie would be circular).  This slab→Kennett check (a
-# cubic lattice tiling a uniform layer) CONFIRMS the cube is not worse than the
-# sphere; it does NOT by itself resolve cube vs sphere (the differences are
-# within coarse-mesh discretization noise):
+# Measured 2026-06-14 (M=4, N_z=3, a=1, H=6, normal P, periodic, gmres 1e-9),
+# WITH the finite-scatterer FORM-FACTOR correction in the single-site cube
+# T-matrix carried to O((ka)⁴): the CUBE O((ka)² form factor (−1/3·(k_P a)²,
+# the real ∏ sinc(k_j a)² squared overlap; effective_contrasts.form_factor_c2)
+# PLUS the exact Mie-reconstructed O((ka)⁴) coefficient (form_factor_c4) with
+# the cube 77/27 geometric scaling.  The slab specular response is orientation-
+# averaged, so the ISOTROPIC c₄ is used (k_hat=None — the cubic O_h anisotropy
+# averages out and does not enter the normal-incidence specular R_PP).  This
+# slab→Kennett check (a cubic lattice tiling a uniform layer) CONFIRMS the cube
+# is not worse than the sphere; it does NOT by itself resolve cube vs sphere
+# (the differences are within coarse-mesh discretization noise):
 #
 #   ka    |R_K|        err pt(VA=F)   err VA n=2   err VA n=3
-#   0.10  1.7646e-02   1.2064e-02     7.5795e-03   7.5795e-03
-#   0.20  3.3067e-02   1.3976e-02     1.1204e-02   1.1202e-02
-#   0.30  4.4331e-02   1.5718e-02     1.5943e-02   1.5941e-02
-#   0.50  4.9489e-02   1.8111e-02     2.2488e-02   2.4425e-02
+#   0.10  1.7646e-02   1.2065e-02     7.5810e-03   7.5810e-03
+#   0.20  3.3067e-02   1.3993e-02     1.1215e-02   1.1212e-02
+#   0.30  4.4331e-02   1.5735e-02     1.5919e-02   1.5917e-02
+#   0.50  4.9489e-02   1.7022e-02     2.1426e-02   2.3373e-02
 #
-# i.e. vol-avg matches Kennett to 0.76% / 1.12% / 1.59% / 2.25%.  The form
-# factor supplies the real (ka)² content the single-site T-matrix previously
-# omitted, sharply improving accuracy across the band:
+# i.e. vol-avg matches Kennett to 0.76% / 1.12% / 1.59% / 2.14%.  The O((ka)²)
+# form factor supplied the dominant real (ka)² content; the new O((ka)⁴) term
+# improves the band edge (ka=0.5: 2.25% c₂-only → 2.14% c₂+c₄, toward the
+# geometric-only 1.94%) while leaving ka ≤ 0.3 undisturbed:
 #
-#   ka    err VA n=2  (no-FF → sphere-FF → CUBE-FF)
-#   0.10   0.95%  →  0.77%  →  0.76%
-#   0.20   1.71%  →  1.15%  →  1.12%
-#   0.30   2.38%  →  1.58%  →  1.59%
-#   0.50   3.32%  →  1.82%  →  2.25%
+#   ka    err VA n=2  (no-FF → sphere-c₂ → cube-c₂ → cube-c₂+c₄)
+#   0.10   0.95%  →  0.77%  →  0.76%  →  0.76%
+#   0.20   1.71%  →  1.15%  →  1.12%  →  1.12%
+#   0.30   2.38%  →  1.58%  →  1.59%  →  1.59%
+#   0.50   3.32%  →  1.82%  →  2.25%  →  2.14%
 #
-# The CUBE form factor matches Kennett as well as the sphere one through
-# ka ≤ 0.3 (the targeted band) — the two agree within slab discretization
-# noise; at the band edge ka=0.5 the omitted O((ka)⁴) O_h anisotropy makes the
-# isotropic cube (ka)² coefficient slightly over-correct (2.25% vs sphere
-# 1.82%), still far below the no-FF 3.32%.  The robust end-to-end result is the
-# OBLIQUE R_SS shear-floor improvement (6.61% → 4.65%; see
-# test_oblique_vol_avg_matches_kennett), where the missing real (ka)² content
-# was the dominant error.
+# The full Mie c₄ (Poisson-dynamic content, not geometric-only) beats the
+# c₂-only baseline at ka=0.5 and is far below the no-FF 3.32%.  The robust
+# end-to-end result remains the OBLIQUE R_SS shear-floor improvement (6.61% →
+# 4.65%; see test_oblique_vol_avg_matches_kennett).
 
 _KA_KENNETT = (0.1, 0.2, 0.3, 0.5)
-# Measured VA-vs-Kennett errors (n=2) above, with margin (CUBE form factor).
-_VA_KENNETT_TOL = {0.1: 0.010, 0.2: 0.014, 0.3: 0.018, 0.5: 0.026}
+# Measured VA-vs-Kennett errors (n=2) above, with margin (cube c₂+c₄ form factor).
+_VA_KENNETT_TOL = {0.1: 0.010, 0.2: 0.014, 0.3: 0.018, 0.5: 0.024}
 
 
 def _rpp_vol_avg(geom, mat, omega, *, volume_averaged, n_orders=2):
@@ -302,12 +300,12 @@ class TestVolumeAveragedKennettAccuracy:
     # The single-site form-factor correction supplies real (ka)² content to
     # BOTH propagator modes, and toward the top of the band it helps the point
     # mode slightly more, so the "beats point" property is FALSE at ka ≥ 0.3
-    # (point is marginally better there).  Measured 2026-06-13 (CUBE FF):
+    # (point is marginally better there).  Measured 2026-06-14 (cube c₂+c₄ FF):
     #   ka    err VA n=2   err PT n=2   verdict
     #   0.10  0.76%        1.21%        VA beats point (strict)
     #   0.20  1.12%        1.40%        VA beats point (strict)
     #   0.30  1.59%        1.57%        point beats VA by 0.02% (within envelope)
-    #   0.50  2.25%        1.81%        point beats VA by 0.44% (within envelope)
+    #   0.50  2.14%        1.70%        point beats VA by 0.44% (within envelope)
     # The test is split accordingly: a STRICT beats-point assertion for
     # ka ≤ 0.2, and a documented within-envelope-of-point assertion for
     # ka ≥ 0.3 (NOT a strict guarantee — both modes are far below the no-FF
@@ -357,7 +355,7 @@ class TestVolumeAveragedKennettAccuracy:
         identical to ≲1e-4).  Once the single-site CUBE form-factor correction
         supplies the dominant real (ka)² content, the marginal n=3 real
         higher-order term is no longer monotonically helpful at the very top
-        of the band (ka=0.5: n=2 2.25%, n=3 2.44%); both remain far below the
+        of the band (ka=0.5: n=2 2.14%, n=3 2.34%); both remain far below the
         no-form-factor n=2/n=3 errors (3.32% / 3.10%).  We therefore pin
         convergence for ka ≤ 0.3 and bound the n=3 excursion at ka=0.5.
         """
