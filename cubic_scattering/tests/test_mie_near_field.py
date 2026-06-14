@@ -46,7 +46,11 @@ import numpy as np
 import pytest
 
 from cubic_scattering import MaterialContrast, ReferenceMedium
-from cubic_scattering.effective_contrasts import compute_cube_tmatrix
+from cubic_scattering.effective_contrasts import (
+    compute_cube_tmatrix,
+    form_factor_c2,
+    form_factor_c4,
+)
 from cubic_scattering.mie_asymptotic_analytic import (
     NondimContrast,
     a_2_analytic,
@@ -594,8 +598,146 @@ class TestFormFactorCorrection:
         )
 
         # EXACT equality (rtol=0, atol=0): the real-only form factor must not
-        # perturb any imaginary part by a single ULP.
+        # perturb any imaginary part by a single ULP.  (Covers the c₂+c₄
+        # combined form factor — the X.real*ff + 1j*X.imag structure preserves
+        # the imaginary radiation series for ANY real ff.)
         np.testing.assert_array_equal(c.Dmu_star_diag.imag, ddiag.imag)
         np.testing.assert_array_equal(c.Dmu_star_off.imag, doff.imag)
         np.testing.assert_array_equal(c.Dlambda_star.imag, dl.imag)
         np.testing.assert_array_equal(c.Drho_star.imag, dr.imag)
+
+    # ── O((ka)⁴) c₄ extension ─────────────────────────────────────────
+    def test_c4_round_trip_matches_saved_closed_forms(self):
+        """In-source c₄ reproduces the validated saved closed forms EXACTLY.
+
+        The exact Mie-reconstructed c₄ (held-out-validated to exact rational
+        equality vs the Mie kr-series) is transcribed VERBATIM into
+        :mod:`cubic_scattering._c4_closed_forms`.  This asserts the in-source
+        copy equals the external saved-file closed forms to EXACT RATIONAL
+        equality (Fraction arithmetic, not float), so any accidental edit to
+        the 209-term ρ numerator is caught to the last digit.
+
+        The saved closed forms live outside the repo (the validated source of
+        truth); if they are not present (e.g. on PROD/CI) the round-trip is
+        skipped — the float-level c₄ behaviour is still covered by the other
+        c₄ tests in this class.
+        """
+        import importlib.util
+        from fractions import Fraction as F
+        from pathlib import Path
+
+        saved_dir = Path.home() / (
+            ".claude/projects/-Users-tod-Desktop-MultipleScatteringCalculations/"
+            "memory/c4_closed_forms"
+        )
+        if not (saved_dir / "c4_kappa.py").exists():
+            pytest.skip("saved c₄ closed-form files not present (local-only oracle)")
+
+        def _load(path, name):
+            spec = importlib.util.spec_from_file_location(path.stem, path)
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            return getattr(m, name)
+
+        saved_kappa = _load(saved_dir / "c4_kappa.py", "c4_kappa")
+        saved_mu = _load(saved_dir / "c4_mu_rho_final.py", "c4_mu")
+        saved_rho = _load(saved_dir / "c4_mu_rho_final.py", "c4_rho")
+
+        from cubic_scattering._c4_closed_forms import c4_kappa, c4_mu, c4_rho
+
+        # Held-out (g, dl, dm, dr) points — exact rationals.
+        pts = [
+            (F(7, 9), F(2, 25), F(1, 25), F(1, 25)),  # lam0=7/9 background
+            (F(13, 10), F(3), F(-1, 2), F(1, 4)),
+            (F(7, 3), F(-2, 5), F(2), F(-3, 10)),
+            (F(5), F(-1, 2), F(3, 2), F(1, 3)),
+        ]
+        for g, dl, dm, dr in pts:
+            assert c4_mu(g, dl, dm, dr) == saved_mu(g, dl, dm, dr)
+            assert c4_kappa(g, dl, dm, dr) == saved_kappa(g, dl, dm, dr)
+            assert c4_rho(g, dl, dm, dr) == saved_rho(g, dl, dm, dr)
+
+    @pytest.mark.parametrize("scale", SCALES)
+    def test_c4_beats_c2_only_vs_sphere_mie_at_ka_05(self, scale):
+        """SPHERE c₂+c₄ ratio beats c₂-only vs exact Mie at ka=0.5.
+
+        The exact Mie-reconstructed c₄ is a true higher-order term: at the
+        band edge ka=0.5 the per-channel ratio X*(w)/X*(0) predicted by
+        1 + c₂w² + c₄w⁴ is closer to the exact Mie ratio than the c₂-only
+        prediction (the Poisson-dynamic gain).  Compared at the SPHERE level
+        (no cube rescaling) so the comparison is exact-against-exact; the cube
+        rescaling is validated separately by slab→Kennett.
+        """
+        ref = self.REF
+        mu0 = ref.rho * ref.beta**2
+        lam0 = (ref.alpha / ref.beta) ** 2 - 2.0
+        contrast = self._scaled(scale)
+        dl, dm, dr = contrast.Dlambda / mu0, contrast.Dmu / mu0, contrast.Drho / ref.rho
+        c2m, c2k, c2r = form_factor_c2(dl, dm, dr, lam0)
+        c4m, c4k, c4r = form_factor_c4(dl, dm, dr, lam0)
+
+        R = self.R_EQ
+        ka = 0.5
+        omega = ka * ref.beta / R
+        omega0 = 1e-3 * ref.beta / R
+        e = self._mie_ec(omega, contrast)
+        e0 = self._mie_ec(omega0, contrast)
+        kS = omega / ref.beta
+        w2 = (kS * R) ** 2
+        w4 = w2 * w2
+
+        for name, ev, e0v, c2, c4 in [
+            ("kappa", e.Dkappa_star.real, e0.Dkappa_star.real, c2k, c4k),
+            ("mu", e.Dmu_star.real, e0.Dmu_star.real, c2m, c4m),
+            ("rho", e.Drho_star.real, e0.Drho_star.real, c2r, c4r),
+        ]:
+            mie_ratio = ev / e0v
+            err_c2 = abs((1.0 + c2 * w2) - mie_ratio)
+            err_c4 = abs((1.0 + c2 * w2 + c4 * w4) - mie_ratio)
+            assert err_c4 < err_c2, (
+                f"{name} ×{scale} ka=0.5: c₂+c₄ err {err_c4:.3e} should beat "
+                f"c₂-only err {err_c2:.3e} (exact Mie c₄ higher-order gain)"
+            )
+
+    def test_cube_anisotropy_100_vs_111_sign_and_scaling(self):
+        """Directional cube form factor: ⟨100⟩ < ⟨111⟩ with O((ka)⁴) scaling.
+
+        Supplying k_hat activates the cubic O_h anisotropy deviation
+        (−1/90)·(Σ k̂_j⁴ − 3/5)·w⁴ on the modulus channels.  ⟨100⟩ has
+        Σ k̂_j⁴ = 1 > 3/5 (deviation negative) and ⟨111⟩ has Σ k̂_j⁴ = 1/3
+        < 3/5, so the ⟨100⟩ modulus form factor is SMALLER than ⟨111⟩
+        (Dmu*(100) < Dmu*(111) since Dmu* > 0 here): the difference is
+        negative.  The isotropic (k_hat=None) baseline lies strictly between
+        them, and the difference scales as (k_S a)⁴.
+        """
+        contrast = self._scaled(1.0)
+        k100 = np.array([1.0, 0.0, 0.0])
+        k111 = np.array([1.0, 1.0, 1.0]) / np.sqrt(3.0)
+
+        # Sign + isotropic-between at one frequency.
+        omega = 4.0 * self.REF.beta / self.A  # kSa = 4 — exaggerate the (ka)⁴ term
+        r100 = compute_cube_tmatrix(omega, self.A, self.REF, contrast, k_hat=k100)
+        r111 = compute_cube_tmatrix(omega, self.A, self.REF, contrast, k_hat=k111)
+        riso = compute_cube_tmatrix(omega, self.A, self.REF, contrast)
+        d = r100.Dmu_star_diag.real - r111.Dmu_star_diag.real
+        assert d < 0.0, (
+            f"⟨100⟩−⟨111⟩ Dmu must be negative (axis < diagonal); got {d:.4e}"
+        )
+        lo = min(r100.Dmu_star_diag.real, r111.Dmu_star_diag.real)
+        hi = max(r100.Dmu_star_diag.real, r111.Dmu_star_diag.real)
+        assert lo <= riso.Dmu_star_diag.real <= hi, (
+            "isotropic baseline not between 100/111"
+        )
+
+        # (k_S a)⁴ scaling: d / w⁴ ~ constant across a frequency octave.
+        ratios = []
+        for om in (1.0 * self.REF.beta / self.A, 2.0 * self.REF.beta / self.A):
+            r1 = compute_cube_tmatrix(om, self.A, self.REF, contrast, k_hat=k100)
+            r2 = compute_cube_tmatrix(om, self.A, self.REF, contrast, k_hat=k111)
+            w4 = (om / self.REF.beta * self.A) ** 4
+            ratios.append((r1.Dmu_star_diag.real - r2.Dmu_star_diag.real) / w4)
+        # The two d/w⁴ values agree to a few percent (pure (ka)⁴ behaviour;
+        # tiny drift from the static amp factors becoming slightly dynamic).
+        assert abs(ratios[0] - ratios[1]) < 0.02 * abs(ratios[0]), (
+            f"anisotropy not (ka)⁴-scaling: d/w⁴ = {ratios[0]:.4e} vs {ratios[1]:.4e}"
+        )
