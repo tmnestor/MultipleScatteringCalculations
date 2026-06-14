@@ -4,6 +4,20 @@
 **Date:** 2026-06-14
 **Status:** approved (design) — implementation plan written
 
+**OUTCOME 2026-06-14 (chapter pivoted — see memory `single-site-far-field-density-dipole`):**
+Building the far-field operator revealed, via exact Mie validation, that **T27 gives no
+far-field advantage over T9** (the 18 quadratic modes carry displacement moments with no
+Mie-consistent far-field gain; stress multipoles are unrecoverable from the displacement-moment
+basis). The real single-site accuracy wall is a **density-modulus coupling in the displacement
+dipole (T1u)**: `cube_far_field`'s density force monopole was contaminated by modulus content
+in `c_sc[:3]`, giving a wrong-signed P1 (coupled-moderate L2 vs Mie ≈2.16). FIXED with
+`F = ω²Δρ·amp_u·c_inc[:3]` (commit 93640a9, → 0.005; adversarially reviewed). The moment-
+expansion operator (the original Task-4–6 build) was abandoned/removed; `radiation_I1d`/
+`radiation_monomial` primitives retained. The chapter's contribution is the density-dipole fix.
+Follow-up: the slab and `resonance_far_field` carry the same unfixed defect.
+
+---
+
 **Amendment 2026-06-14 (apples-to-apples radiation):** T9 and T27 are radiated
 through the **same** finite-size full-field operator (bare physical ΔC, reconstructed
 total interior field, identical finite-size phase), differing ONLY in which scattered

@@ -7,11 +7,20 @@ Physics:
     s_j(r) = ω²Δρ u_total_j(r) + ∂_k(Δc_jklm ε_total_lm(r))
 
   In the Rayleigh limit (ka << 1), the far-field integral factorizes into:
-    Force monopole: F_i = ω²Δρ ∫ u_total_i d³r  (→ dipole l=1 pattern)
+    Force monopole: F_i = ω²Δρ A_u ∫ u_inc_i d³r  (→ dipole l=1 pattern)
     Stress dipole: Δσ = self-consistent effective stress (→ monopole l=0 + quadrupole l=2)
 
-  The TOTAL field volume integral ∫u_total d³r = c_total[0:3] = c_inc[0:3] + c_sc[0:3],
-  where c = T27 @ c_inc gives the scattered overlap.
+  Density force monopole (the radiated P-dipole):
+    The physical leading dipole is PURELY density (the exact Mie sphere gives
+    a₁ = i·ω²·Δρ/(3(λ₀+2μ₀)·…)).  The correct monopole is the density-only
+    amplified INCIDENT displacement moment:
+        F_i = ω²·Δρ·A_u·c_inc[i],   A_u = 1/(1 − ω²·Δρ·Γ₀)
+    where Γ₀ is the density Eshelby self-interaction (first-principles object
+    from `_compute_Gamma0_analytical`, identical to `_compute_amplification_factors`).
+    The TOTAL scattered moment c_sc[0:3] is NOT used: it is contaminated by
+    modulus content through the T1u displacement↔quadratic coupling, which at
+    coupled (density×modulus) contrast wrong-signs the radiated dipole vs the
+    exact Mie sphere.  The correction is exactly a no-op when Δρ=0.
 
   The stress dipole uses the Voigt T-matrix (T1c,T2c,T3c) applied to the
   incident strain, which already includes self-consistent amplification.
@@ -29,6 +38,7 @@ from .effective_contrasts import (
     GalerkinTMatrixResult,
     MaterialContrast,
     ReferenceMedium,
+    _compute_Gamma0_analytical,
 )
 from .voigt_tmatrix import effective_stiffness_voigt
 
@@ -90,8 +100,13 @@ def cube_far_field(
       f_P = -[r̂·F - ikP V(r̂·Δσ·r̂)] / (4πρα²)
 
     where:
-      F = ω²Δρ (c_inc[0:3] + c_sc[0:3])  — force monopole from total displacement
+      F = ω²Δρ A_u c_inc[0:3]  — density-only amplified force monopole
       Δσ = T_Voigt @ ε_inc  — self-consistent stress dipole
+
+    A_u = 1/(1 − ω²Δρ Γ₀) is the density displacement amplification (the same
+    first-principles Eshelby self-interaction used in the effective contrasts).
+    The contaminated total moment c_sc[0:3] is deliberately NOT used; see the
+    module docstring.  The c_sc argument is retained for API compatibility.
 
     Parameters
     ----------
@@ -125,9 +140,16 @@ def cube_far_field(
     k_hat = k_vec / np.linalg.norm(k_vec)
 
     # ── Force monopole from density contrast ──
-    # F_i = ω²Δρ × ∫ u_total_i d³r = ω²Δρ × (c_inc[i] + c_sc[i])
-    c_total = c_inc + c_sc
-    F = omega**2 * contrast.Drho * c_total[:3]
+    # F_i = ω²Δρ·A_u·c_inc[i] — density-only amplified INCIDENT moment.
+    # A_u = 1/(1 − ω²Δρ Γ₀) is the density Eshelby self-interaction
+    # amplification (identical to _compute_amplification_factors).  We do NOT
+    # use the total moment c_inc[:3] + c_sc[:3]: c_sc[:3] is contaminated by
+    # modulus content via the T1u displacement↔quadratic coupling, which
+    # wrong-signs the radiated dipole at coupled contrast vs the exact Mie
+    # sphere.  Exactly a no-op when Δρ=0 (A_u → 1 and the ω²Δρ prefactor → 0).
+    Gamma0 = _compute_Gamma0_analytical(omega, a, ref.alpha, ref.beta, ref.rho)
+    amp_u = 1.0 / (1.0 - omega**2 * contrast.Drho * Gamma0)
+    F = omega**2 * contrast.Drho * amp_u * c_inc[:3]
 
     # ── Stress dipole from stiffness contrast ──
     # Δσ = Δc* @ ε_inc where Δc* is the PHYSICAL effective stiffness (Pa)
