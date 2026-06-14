@@ -194,6 +194,9 @@ def compute_slab_tmatrices(
     M, N_z, a = geometry.M, geometry.N_z, geometry.a
     ref = material.ref
     T_all = np.zeros((N_z, M, M, 9, 9), dtype=complex)
+    # Function-local cache, rebuilt per call. The key omits k_hat because k_hat
+    # is constant across all cubes within one call. If this cache is ever lifted
+    # to cross-call memoization, k_hat MUST be added to the key.
     cache: dict[tuple[float, float, float], NDArray] = {}
 
     for lz in range(N_z):
