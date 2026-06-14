@@ -114,8 +114,10 @@ from .resonance_tmatrix import (
 from .scattered_field import (
     cube_far_field,
     optical_theorem_check,
+    optical_theorem_from_amplitudes,
     resonance_far_field,
     scattering_cross_section,
+    total_cross_section_from_amplitudes,
 )
 from .seismic_survey import (
     GatherConfig,
@@ -216,7 +218,9 @@ __all__ = [
     "cube_far_field",
     "resonance_far_field",
     "scattering_cross_section",
+    "total_cross_section_from_amplitudes",
     "optical_theorem_check",
+    "optical_theorem_from_amplitudes",
     # ── Resonance regime ─────────────────────────────────────────────────
     "ResonanceTmatrixResult",
     "compute_resonance_tmatrix",

@@ -320,6 +320,52 @@ def resonance_far_field(
 # ================================================================
 
 
+def total_cross_section_from_amplitudes(
+    theta: np.ndarray,
+    f_P: np.ndarray,
+    f_SV: np.ndarray,
+    f_SH: np.ndarray,
+    c_inc: float,
+    c_P: float,
+    c_S: float,
+) -> float:
+    """Total scattering cross-section from far-field displacement amplitudes.
+
+    Implements the documented differential cross-section
+    ``dσ/dΩ|_{inc→X} = (c_X / c_inc) |f^X|²`` (``cube_tmatrix_closedform.tex``
+    eq:dsigma), integrated over the sphere:
+
+        σ_sc = 2π ∫₀^π [ (c_P/c_inc)|f_P|²
+                       + (c_S/c_inc)(|f_SV|² + |f_SH|²) ] sin θ dθ
+
+    The per-channel factor is the *wave speed* of the scattered mode over the
+    incident speed.  For an incident P-wave (``c_inc = c_P = α``) the P channel
+    carries factor 1 and each S channel carries ``β/α = k_P/k_S`` — the ratio of
+    radial energy flux ``½ρcω²|u|²`` of a unit-amplitude scattered S-wave to the
+    incident P flux.  This is the energy-conserving normalization; using the
+    inverse ``k_S/k_P = α/β`` over-weights the (dominant) S channel and makes the
+    extinction/scattering ratio frequency-dependent for the exact Mie sphere
+    (see ``optical_theorem_check``).
+
+    Args:
+        theta: Scattering angles (rad), monotone on [0, π], shape (M,).
+        f_P: P→P displacement amplitudes, shape (M,).
+        f_SV: P→SV displacement amplitudes, shape (M,).
+        f_SH: P→SH displacement amplitudes, shape (M,).
+        c_inc: Incident wave speed (m/s).
+        c_P: Scattered P-wave speed (m/s).
+        c_S: Scattered S-wave speed (m/s).
+
+    Returns:
+        Total scattering cross-section (m²).
+    """
+    integrand = (
+        (c_P / c_inc) * np.abs(f_P) ** 2
+        + (c_S / c_inc) * (np.abs(f_SV) ** 2 + np.abs(f_SH) ** 2)
+    ) * np.sin(theta)
+    return float(2.0 * np.pi * np.trapezoid(integrand, theta))
+
+
 def scattering_cross_section(
     c_inc: np.ndarray,
     c_sc: np.ndarray,
@@ -334,7 +380,12 @@ def scattering_cross_section(
 ) -> float:
     """Compute total scattering cross-section by angular integration.
 
-    σ_sc = 2π ∫₀^π (kP/kI |f_P|² + kS/kI (|f_SV|² + |f_SH|²)) sin(θ) dθ
+    σ_sc = 2π ∫₀^π [ (α/c_inc)|f_P|² + (β/c_inc)(|f_SV|²+|f_SH|²) ] sin θ dθ
+
+    The S-channel weight is the scattered-S speed over the incident speed
+    (``β/c_inc``), per ``cube_tmatrix_closedform.tex`` eq:dsigma — NOT its
+    inverse.  Delegates the quadrature to
+    :func:`total_cross_section_from_amplitudes`.
     """
     kP = omega / ref.alpha
     kS = omega / ref.beta
@@ -344,26 +395,72 @@ def scattering_cross_section(
     if pol is None:
         pol = k_vec / np.linalg.norm(k_vec)
 
-    # Determine incident wavenumber
+    # Determine the incident wave speed (P if pol ∥ k̂, otherwise S).
     k_hat = k_vec / np.linalg.norm(k_vec)
     dot = abs(np.dot(pol, k_hat))
-    kI = kP if dot > 0.5 else kS
+    c_inc_speed = ref.alpha if dot > 0.5 else ref.beta
 
     theta = np.linspace(0, np.pi, n_theta)
     f_P, f_SV, f_SH = cube_far_field(
         c_inc, c_sc, theta, ref, galerkin, contrast, omega, a, k_vec, pol
     )
 
-    integrand = (
-        kP / kI * np.abs(f_P) ** 2 + kS / kI * (np.abs(f_SV) ** 2 + np.abs(f_SH) ** 2)
-    ) * np.sin(theta)
-
-    return float(2.0 * np.pi * np.trapezoid(integrand, theta))
+    return total_cross_section_from_amplitudes(
+        theta, f_P, f_SV, f_SH, c_inc_speed, ref.alpha, ref.beta
+    )
 
 
 # ================================================================
 # Optical theorem check
 # ================================================================
+
+
+def optical_theorem_from_amplitudes(
+    f_P_forward: complex,
+    theta: np.ndarray,
+    f_P: np.ndarray,
+    f_SV: np.ndarray,
+    f_SH: np.ndarray,
+    k_inc: float,
+    c_inc: float,
+    c_P: float,
+    c_S: float,
+) -> tuple[float, float]:
+    """Optical theorem from far-field displacement amplitudes (any scatterer).
+
+    Convention-agnostic checker shared by the exact Mie sphere and the cube
+    T-matrix.  The displacement far-field is ``u_sc = f exp(ik r)/r`` in each
+    channel, with ``f`` evaluated by the caller's own far-field routine, so the
+    forward amplitude and the differential amplitudes are in the same units.
+
+    Extinction (``cube_tmatrix_closedform.tex`` eq:optical-theorem):
+
+        σ_ext = -(4π / k_inc) Im[ f_P(forward) ]
+
+    Total scattering (eq:dsigma), via
+    :func:`total_cross_section_from_amplitudes`:
+
+        σ_sc = 2π ∫ [ (c_P/c_inc)|f_P|² + (c_S/c_inc)(|f_SV|²+|f_SH|²) ] sinθ dθ
+
+    Args:
+        f_P_forward: Forward (θ=0) P→P amplitude in the incident channel.
+        theta: Scattering angles (rad), shape (M,).
+        f_P: P→P amplitudes over ``theta``, shape (M,).
+        f_SV: P→SV amplitudes over ``theta``, shape (M,).
+        f_SH: P→SH amplitudes over ``theta``, shape (M,).
+        k_inc: Incident wavenumber (rad/m).
+        c_inc: Incident wave speed (m/s).
+        c_P: Scattered P-wave speed (m/s).
+        c_S: Scattered S-wave speed (m/s).
+
+    Returns:
+        (sigma_ext, sigma_sc) in m².
+    """
+    sigma_ext = -4.0 * np.pi / k_inc * float(np.imag(f_P_forward))
+    sigma_sc = total_cross_section_from_amplitudes(
+        theta, f_P, f_SV, f_SH, c_inc, c_P, c_S
+    )
+    return sigma_ext, sigma_sc
 
 
 def optical_theorem_check(
