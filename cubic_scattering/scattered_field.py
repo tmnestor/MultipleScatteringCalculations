@@ -152,9 +152,20 @@ def cube_far_field(
     F = omega**2 * contrast.Drho * amp_u * c_inc[:3]
 
     # ── Stress dipole from stiffness contrast ──
-    # Δσ = Δc* @ ε_inc where Δc* is the PHYSICAL effective stiffness (Pa)
+    # Δσ = Δc* @ ε_inc where Δc* is the PHYSICAL effective stiffness (Pa).
+    # Use the REAL (elastic) modulus response only.  The imaginary modulus part
+    # is the radiation reaction Im[Δc*] (``_modulus_radiation_reaction``), a
+    # SECOND-order self-energy whose physical role is multiple-scattering
+    # attenuation (the Foldy-Lax solve), not a new first-order radiating source.
+    # This single-site linearized far field maps Im(Δσ)→Re(f_P) (see the module
+    # docstring), so feeding Im[Δc*] here would add to σ_sc without the matching
+    # forward extinction in Im[f_P(0)] — corrupting the optical-theorem ratio.
+    # The radiation reaction is retained in the effective contrasts
+    # (``galerkin.Dlambda_star`` etc.) for the lattice/Foldy-Lax attenuation.
     Dc_star = effective_stiffness_voigt(
-        galerkin.Dlambda_star, galerkin.Dmu_star_diag, galerkin.Dmu_star_off
+        galerkin.Dlambda_star.real,
+        galerkin.Dmu_star_diag.real,
+        galerkin.Dmu_star_off.real,
     )
     eps_inc_V = _incident_voigt_strain(k_vec, pol)
     dsigma_V = Dc_star @ eps_inc_V  # 6-component Voigt stress perturbation (Pa)
