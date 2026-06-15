@@ -232,7 +232,7 @@ def test_optical_theorem_cube():
     """Cube T27 σ_ext/σ_sc through the corrected (β/α) checker.
 
     With the energy-conserving β/α S-flux weight the cube ratio is finite,
-    positive and frequency-stable (≈0.82, drifting only with ka²).
+    positive and frequency-stable (≈0.61, drifting only with ka²).
 
     Unlike the Mie sphere, the cube far-field (``cube_far_field``) does NOT use
     the Mie ``(-1)^n`` coefficient rotation — its forward amplitude obeys the
@@ -246,16 +246,24 @@ def test_optical_theorem_cube():
     independently validated.  The cube sits below 1.0 because of the FORWARD
     amplitude, not the checker:
 
-      * the cube's density radiation damping is correct — the dipole forward Im
-        is well captured;
-      * the cube's modulus forward damping is a structural 2nd-order optical
+      * the cube's DENSITY radiation damping is now CORRECT — the corrected
+        Im[Γ₀] = (1/3)P + (2/3)S diagonal radiation reaction closes the
+        density-only optical theorem to 1.0 to ~0.02 across ka (see
+        ``test_gamma0_radiation_reaction.test_density_optical_theorem_closes_to_one``);
+      * the cube's MODULUS forward damping is a structural 2nd-order optical
         term: the linearized Galerkin far-field maps Im(Δσ) → Re(f_P), so the
         modulus contribution to Im[f_P(0)] is absent at first order.
 
-    The ≈0.82 deficit is precisely this missing modulus extinction in the linear
+    The ≈0.61 deficit is precisely this missing MODULUS extinction in the linear
     forward amplitude (a known T-matrix limitation, NOT a normalization bug).
-    We pin the achieved, frequency-stable cube band and label the residual
-    honestly; the textbook 1.0 would require the 2nd-order forward term.
+    NOTE: the previous ≈0.82 pin (and its "density radiation damping is correct"
+    claim) was an artifact of the OLD Im[Γ₀] overshooting the density channel by
+    ~1.354×: the inflated density σ_ext partially masked the absent modulus
+    extinction.  Fixing Im[Γ₀] (density σ_ext/σ_sc 1.354→1.0) drops the FULL-cube
+    ratio to ≈0.61, exposing the modulus deficit honestly; the modulus channel
+    is still STRUCTURALLY absent from the linear forward amplitude.  The textbook
+    1.0 would require both the corrected density damping (done) AND the 2nd-order
+    modulus forward term (not built).
     """
     ratios = []
     for ka in (0.05, 0.1, 0.3):
@@ -271,12 +279,14 @@ def test_optical_theorem_cube():
         ratios.append(sigma_ext / sigma_sc)
 
     ratios = np.array(ratios)
-    # Achieved with the corrected β/α weight; frequency-stable ≈0.82.
-    # Residual = missing modulus forward damping (2nd-order optical term that the
-    # linearized forward amplitude omits); NOT a checker normalization bug.
-    assert np.all((ratios > 0.78) & (ratios < 0.85)), (
-        f"cube σ_ext/σ_sc = {ratios}; expected ≈0.82 (frequency-stable). "
-        "Residual from absent modulus forward damping (2nd-order optical term)."
+    # Achieved with the corrected β/α weight AND the corrected density Im[Γ₀]
+    # (radiation reaction); frequency-stable ≈0.61.  Residual = missing MODULUS
+    # forward damping (2nd-order optical term the linearized forward amplitude
+    # omits); NOT a checker normalization bug and NOT a density-damping error.
+    assert np.all((ratios > 0.58) & (ratios < 0.64)), (
+        f"cube σ_ext/σ_sc = {ratios}; expected ≈0.61 (frequency-stable). "
+        "Residual from absent modulus forward damping (2nd-order optical term); "
+        "density radiation damping is now correct (Im[Γ₀] fix)."
     )
 
 
