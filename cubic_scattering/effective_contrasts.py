@@ -130,9 +130,21 @@ def _compute_Gamma0_analytical(
     where a₀, b₀ are static Kelvin coefficients and
     g₀ = -(2/3)(3π + 2ln(70226 - 40545√3)) (PDF Eq 33).
 
-      Γ₀^smooth = Σ_n φ_n S₀(n) + Σ_n ψ_n S₁(n)
+      Γ₀^smooth = Σ_n φ_n^diag S₀(n) + Σ_n ψ_n S₁(n)
 
     from the Taylor-expanded polynomial part G^s_{11} = Φ(u) + x₁²Ψ(u).
+
+    DENSITY RADIATION REACTION.  The diagonal coefficient φ^diag used HERE is the
+    (1/3) P-wave + (2/3) S-wave projection of the radiating Green tensor (see
+    :func:`_compute_phi_diagonal`), so that Φ(0) = φ_0^diag equals the exact
+    radiation reaction Im[G_11(0)] = ω/(12πρ)(1/α³ + 2/β³).  This makes
+    Im[Γ₀] the correct density radiation damping (the density-only optical
+    theorem closes to 1.0; see ``test_gamma0_radiation_reaction.py``).  The
+    pure-S φ from :func:`_compute_taylor_coefficients` (used by the A^c/B^c/C^c
+    modulus integrals) overshoots the diagonal by ~1.354× — it omits the P pole
+    and uses S weight 1 instead of the diagonal-projected 2/3.  Re[Γ₀] is
+    UNCHANGED (φ is pure imaginary): the real part is the static Eshelby
+    self-interaction ``Gamma0_stat``.
     """
     # Static Kelvin coefficients
     a0 = (alpha**2 + beta**2) / (8.0 * np.pi * rho * alpha**2 * beta**2)
@@ -140,14 +152,62 @@ def _compute_Gamma0_analytical(
 
     Gamma0_stat = a**2 * (a0 + b0 / 3.0) * G0_CUBE
 
-    # Smooth part via cube moments
-    phi, psi = _compute_taylor_coefficients(omega, alpha, beta, rho, n_taylor)
+    # Smooth part via cube moments.  φ^diag = (1/3)P + (2/3)S diagonal projection
+    # (density radiation reaction); ψ is the trace-free quadratic coefficient.
+    phi = _compute_phi_diagonal(omega, alpha, beta, rho, n_taylor)
+    _, psi = _compute_taylor_coefficients(omega, alpha, beta, rho, n_taylor)
     S0, S1, S2, S11 = _compute_cube_moments(a, n_taylor - 1)
 
     N = n_taylor
     Gamma0_smooth = complex(np.sum(phi[:N] * S0[:N]) + np.sum(psi[:N] * S1[:N]))
 
     return Gamma0_stat + Gamma0_smooth
+
+
+def _compute_phi_diagonal(
+    omega: float, alpha: float, beta: float, rho: float, n_taylor: int = N_TAYLOR
+) -> np.ndarray:
+    """Diagonal radiating-Green-tensor coefficients φ_n^diag (density channel).
+
+    The diagonal of the smooth (radiating) isotropic elastodynamic Green tensor
+    is the (1/3) P-wave + (2/3) S-wave projection of the two scalar potentials::
+
+        φ_n^diag = (1/3)·(iω/α)^{2n+1}/((2n+1)!·4πρα²)
+                 + (2/3)·(iω/β)^{2n+1}/((2n+1)!·4πρβ²)
+
+    so that at the origin Φ(0) = φ_0^diag equals the exact diagonal radiation
+    reaction Im[G_11(0)] = ω/(12πρ)(1/α³ + 2/β³).  This is the physically
+    correct density radiation reaction in Γ₀ (the pure-S φ of
+    :func:`_compute_taylor_coefficients` overshoots it by ~1.354×: it omits the
+    P pole e^{ik_α r}/r and uses the full-S weight 1 instead of the
+    diagonal-projected 2/3).
+
+    Derivation and non-circular validation (spectral Weyl angular average of the
+    plane-wave Green tensor, plus the Mie-validated density optical theorem) are
+    in ``test_gamma0_radiation_reaction.py``; cf. Leroy--Chastanet--Derode 2010
+    eqs. 12--14.
+
+    Args:
+        omega: Angular frequency (rad/s).
+        alpha: P-wave speed (m/s).
+        beta: S-wave speed (m/s).
+        rho: Background density (kg/m³).
+        n_taylor: Number of Taylor terms.
+
+    Returns:
+        Complex array of length ``n_taylor`` with the φ_n^diag coefficients.
+    """
+    phi = np.zeros(n_taylor, dtype=complex)
+    ik_beta = 1j * omega / beta
+    ik_alpha = 1j * omega / alpha
+    coeff_f_beta = 1.0 / (4.0 * np.pi * rho * beta**2)
+    coeff_f_alpha = 1.0 / (4.0 * np.pi * rho * alpha**2)
+    for n in range(n_taylor):
+        m = 2 * n + 1
+        s_beta = ik_beta**m / factorial(m) * coeff_f_beta
+        s_alpha = ik_alpha**m / factorial(m) * coeff_f_alpha
+        phi[n] = (1.0 / 3.0) * s_alpha + (2.0 / 3.0) * s_beta
+    return phi
 
 
 # ================================================================
@@ -173,6 +233,15 @@ def _compute_taylor_coefficients(
     φ_n = (iω/β)^{2n+1} / ((2n+1)! · 4πρβ²)
 
     ψ_n = (iω)^{2n+3} · [1/α^{2n+5} - 1/β^{2n+5}] / ((2n+3)! · 4πρ)
+
+    NOTE on the diagonal Φ: this φ is the pure-S (β) scalar.  For the DENSITY
+    radiation reaction (the diagonal Green tensor value at the origin) the
+    physically correct Φ is the (1/3) P-wave + (2/3) S-wave projection — see
+    ``_compute_phi_diagonal`` and ``_compute_Gamma0_analytical``.  The pure-S
+    φ here is retained for the A^c/B^c/C^c modulus integrals, whose imaginary
+    radiation parts are pinned bit-for-bit to ``CubicTMatrix_FullGreensTensor.nb``
+    and whose full (Φ + Ψ) imaginary correction is OUT OF SCOPE for the density
+    radiation-reaction fix (it additionally needs the trace-free Ψ refinement).
     """
     phi = np.zeros(n_taylor, dtype=complex)
     psi = np.zeros(n_taylor, dtype=complex)
