@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniforge/base/envs/seismic/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/tod/Desktop/MultipleScatteringCalculations
+configfile: pytest.ini
+collecting ... collected 10 items / 8 deselected / 2 selected
+
+cubic_scattering/tests/test_scattered_field.py::test_optical_theorem_mie_gate PASSED [ 50%]
+cubic_scattering/tests/test_scattered_field.py::test_optical_theorem_cube PASSED [100%]
+
+======================= 2 passed, 8 deselected in 2.95s ========================

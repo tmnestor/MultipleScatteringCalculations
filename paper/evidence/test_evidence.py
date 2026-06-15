@@ -1,6 +1,11 @@
 import csv as _csv
 
-from run_evidence import capture, evidence_formfactor, evidence_radiation_reaction  # noqa: E402
+from run_evidence import (  # noqa: E402
+    capture,
+    evidence_formfactor,
+    evidence_optical_theorem,
+    evidence_radiation_reaction,
+)
 
 
 def test_capture_writes_log(tmp_path):
@@ -31,3 +36,9 @@ def test_radiation_reaction_gates_pass():
     csv_path = evidence_radiation_reaction()
     rows = list(_csv.DictReader(csv_path.open()))
     assert all(r["passed"] == "True" for r in rows), "a radiation-reaction Mie gate failed"
+
+
+def test_optical_theorem_gate_passes():
+    csv_path = evidence_optical_theorem()
+    rows = list(_csv.DictReader(csv_path.open()))
+    assert all(r["passed"] == "True" for r in rows), "optical-theorem gate failed"
