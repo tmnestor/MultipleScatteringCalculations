@@ -34,6 +34,41 @@ def _floats(line: str) -> list[float]:
     return [float(x) for x in re.findall(r"[-+]?\d+\.\d+(?:[eE][-+]?\d+)?", line)]
 
 
+def evidence_radiation_reaction() -> Path:
+    """Re-run the density Im[Γ₀] and modulus Im[Δc*] (strain LDOS) Mie gates.
+
+    Executes both radiation-reaction pytest suites:
+    - test_gamma0_radiation_reaction.py: density Im[Γ₀] LDOS gate
+    - test_modulus_radiation_reaction.py: modulus strain-LDOS Mie a₀/a₂ gate
+
+    Returns:
+        Path to the written CSV file.
+    """
+    rc, out = capture(
+        [
+            "conda",
+            "run",
+            "-n",
+            "seismic",
+            "python",
+            "-m",
+            "pytest",
+            "cubic_scattering/tests/test_gamma0_radiation_reaction.py",
+            "cubic_scattering/tests/test_modulus_radiation_reaction.py",
+            "-v",
+        ],
+        LOGS / "radiation_reaction.log",
+    )
+    passed = "failed" not in out.lower() and rc == 0
+    csv_path = EV / "radiation_reaction.csv"
+    with csv_path.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["gate", "passed"])
+        w.writerow(["density_Gamma0_LDOS", passed])
+        w.writerow(["modulus_strain_LDOS_mie_a0_a2", passed])
+    return csv_path
+
+
 def evidence_formfactor() -> Path:
     """Re-run the single-layer slab convergence study; tabulate ka vs rel-err vs Kennett.
 

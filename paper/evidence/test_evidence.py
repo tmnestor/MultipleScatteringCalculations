@@ -1,6 +1,6 @@
 import csv as _csv
 
-from run_evidence import capture, evidence_formfactor  # noqa: E402
+from run_evidence import capture, evidence_formfactor, evidence_radiation_reaction  # noqa: E402
 
 
 def test_capture_writes_log(tmp_path):
@@ -25,3 +25,9 @@ def test_formfactor_evidence_anchor():
     errs = [float(r["rel_err"]) for r in rows]
     assert all(e < 0.05 for e in errs), f"rel-err exceeded 5%: {errs}"
     assert min(errs) < 0.01, f"best rel-err not sub-1%: {min(errs)}"
+
+
+def test_radiation_reaction_gates_pass():
+    csv_path = evidence_radiation_reaction()
+    rows = list(_csv.DictReader(csv_path.open()))
+    assert all(r["passed"] == "True" for r in rows), "a radiation-reaction Mie gate failed"
