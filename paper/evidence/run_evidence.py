@@ -34,6 +34,40 @@ def _floats(line: str) -> list[float]:
     return [float(x) for x in re.findall(r"[-+]?\d+\.\d+(?:[eE][-+]?\d+)?", line)]
 
 
+def evidence_optical_theorem() -> Path:
+    """Re-run the energy-conservation optical-theorem gate (exact Mie σ_ext/σ_sc → 1.0).
+
+    Runs the two optical-theorem tests in test_scattered_field.py:
+    - test_optical_theorem_mie_gate: exact-Mie sphere σ_ext/σ_sc = 1.0 to <2% across ka
+    - test_optical_theorem_cube: cube optical-theorem ratio (structural 2nd-order deviation)
+
+    Returns:
+        Path to the written CSV file.
+    """
+    rc, out = capture(
+        [
+            "conda",
+            "run",
+            "-n",
+            "seismic",
+            "python",
+            "-m",
+            "pytest",
+            "cubic_scattering/tests/test_scattered_field.py",
+            "-v",
+            "-k",
+            "optical",
+        ],
+        LOGS / "optical_theorem.log",
+    )
+    csv_path = EV / "optical_theorem.csv"
+    with csv_path.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["check", "passed"])
+        w.writerow(["mie_sigma_ext_over_sigma_sc_eq_1", "failed" not in out.lower() and rc == 0])
+    return csv_path
+
+
 def evidence_radiation_reaction() -> Path:
     """Re-run the density Im[Γ₀] and modulus Im[Δc*] (strain LDOS) Mie gates.
 
