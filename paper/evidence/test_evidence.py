@@ -5,6 +5,7 @@ from run_evidence import (  # noqa: E402
     evidence_formfactor,
     evidence_optical_theorem,
     evidence_radiation_reaction,
+    evidence_t27_intervoxel,
 )
 
 
@@ -35,10 +36,25 @@ def test_formfactor_evidence_anchor():
 def test_radiation_reaction_gates_pass():
     csv_path = evidence_radiation_reaction()
     rows = list(_csv.DictReader(csv_path.open()))
-    assert all(r["passed"] == "True" for r in rows), "a radiation-reaction Mie gate failed"
+    assert all(r["passed"] == "True" for r in rows), (
+        "a radiation-reaction Mie gate failed"
+    )
 
 
 def test_optical_theorem_gate_passes():
     csv_path = evidence_optical_theorem()
     rows = list(_csv.DictReader(csv_path.open()))
     assert all(r["passed"] == "True" for r in rows), "optical-theorem gate failed"
+
+
+def test_t27_intervoxel_negligible():
+    """Smoke test: T₂₇ quadratic inter-voxel coupling stays ≤0.1% across all cases.
+
+    The d(i,ii) column (PRIMARY: quadratic channels OFF in P, M-orthogonalised)
+    measures the fractional observable change from zeroing the 18 quadratic
+    coupling channels.  Historically max ~0.07% (SV edge ka=0.5).
+    """
+    csv_path = evidence_t27_intervoxel()
+    rows = list(_csv.DictReader(csv_path.open()))
+    val = float(rows[0]["value_percent"])
+    assert val <= 0.1, f"inter-voxel coupling not negligible: {val:.4f}%"

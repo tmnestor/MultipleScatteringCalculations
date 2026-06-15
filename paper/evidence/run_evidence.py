@@ -64,7 +64,12 @@ def evidence_optical_theorem() -> Path:
     with csv_path.open("w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["check", "passed"])
-        w.writerow(["mie_sigma_ext_over_sigma_sc_eq_1", "failed" not in out.lower() and rc == 0])
+        w.writerow(
+            [
+                "mie_sigma_ext_over_sigma_sc_eq_1",
+                "failed" not in out.lower() and rc == 0,
+            ]
+        )
     return csv_path
 
 
@@ -100,6 +105,47 @@ def evidence_radiation_reaction() -> Path:
         w.writerow(["gate", "passed"])
         w.writerow(["density_Gamma0_LDOS", passed])
         w.writerow(["modulus_strain_LDOS_mie_a0_a2", passed])
+    return csv_path
+
+
+def evidence_t27_intervoxel() -> Path:
+    """Re-run the T₂₇ inter-voxel coupling study (the excluded-rung evidence: ≤0.07%).
+
+    The script prints a decision table whose PRIMARY column ``d(i,ii)`` is the
+    fractional change in the two-voxel observable when the 18 quadratic
+    inter-voxel coupling channels are zeroed — i.e., how much T₂₇ extra
+    coupling matters beyond the validated 9-component chain.  Values are
+    dimensionless ratios; the maximum across all separations, ka, and wave
+    types is recorded here as a percentage.
+
+    Table row format (space-separated):
+        wave  sep  ka  d(i,ii)  d(i,ii_raw)  d(i,ii_K)  d(i,iii)
+    Only rows whose first token is "P" or "SV" are data rows.
+
+    Returns:
+        Path to the written CSV file.
+    """
+    rc, out = capture(
+        ["conda", "run", "-n", "seismic", "python", "scripts/t27_coupling_study.py"],
+        LOGS / "t27_intervoxel.log",
+    )
+    assert rc == 0, f"t27_coupling_study failed:\n{out[-2000:]}"
+    # Parse the d(i,ii) column (index 3, 0-based) from decision-table data rows.
+    # Rows start with "P" or "SV" and contain 4 scientific-notation values.
+    dii_values: list[float] = []
+    for line in out.splitlines():
+        tokens = line.split()
+        if not tokens or tokens[0] not in ("P", "SV"):
+            continue
+        # tokens: [wave, sep, ka, d(i,ii), d(i,ii_raw), d(i,ii_K), d(i,iii)]
+        if len(tokens) >= 4:
+            dii_values.append(float(tokens[3]))
+    max_pct = max(dii_values) * 100.0 if dii_values else float("nan")
+    csv_path = EV / "t27_intervoxel.csv"
+    with csv_path.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["metric", "value_percent"])
+        w.writerow(["max_intervoxel_coupling", max_pct])
     return csv_path
 
 
