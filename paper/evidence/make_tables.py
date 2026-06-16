@@ -9,6 +9,24 @@ EV = Path(__file__).resolve().parent
 TAB = EV / "tables"
 
 
+def _tex_escape(s: str) -> str:
+    """Escape LaTeX-special characters in a cell string.
+
+    Args:
+        s: Raw cell value string.
+
+    Returns:
+        String safe for use in LaTeX text mode.
+    """
+    return (
+        s.replace("\\", r"\textbackslash{}")
+        .replace("_", r"\_")
+        .replace("%", r"\%")
+        .replace("&", r"\&")
+        .replace("#", r"\#")
+    )
+
+
 def _table(
     csv_name: str,
     cols: list[str],
@@ -50,7 +68,10 @@ def _table(
         r"\midrule",
     ]
     for r in rows:
-        fmt_values = [col_formats.get(c, str)(r[c]) for c in cols]
+        fmt_values = [
+            _tex_escape(col_formats[c](r[c])) if c in col_formats else _tex_escape(r[c])
+            for c in cols
+        ]
         lines.append(" & ".join(fmt_values) + r" \\")
     lines += [r"\bottomrule", r"\end{tabular}"]
 
