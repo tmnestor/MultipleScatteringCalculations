@@ -66,6 +66,145 @@ Elastic Cubic Scatterer:\\ a Mie- and Kennett-Validated Hierarchy}
 
 \section{Background theory}\label{sec:background}
 
+\subsection{Volume integral equation and the Lippmann--Schwinger formulation}
+\label{sec:ls}
+
+Consider an isotropic, homogeneous elastic background with Lam\'{e}
+parameters $(\lambda_0,\mu_0)$, density $\rho_0$, and corresponding
+Green's tensor $G_{ij}(\br)$ (the full elastodynamic propagator at
+angular frequency $\omega$).  A finite inclusion $V\subset\mathbb{R}^3$
+introduces contrasts $\D c_{nklj}$ in the stiffness tensor and $\D\rho$
+in the density relative to the background.  The total displacement
+$u_i(\br)$ satisfies the Lippmann--Schwinger (LS) volume integral
+equation \cite{mura1987}:
+\begin{equation}
+  u_i(\br) \;=\; u_i^{0}(\br)
+    + \omega^2\!\int_V G_{ij}(\br - \br')\,\D\rho\, u_j(\br')\,dV'
+    - \int_V \partial'_k G_{in}(\br - \br')\,\D c_{nklj}\,
+      \partial'_l u_j(\br')\,dV',
+  \label{eq:LS}
+\end{equation}
+where $u_i^0$ is the incident displacement and the primed derivative
+$\partial'_k$ acts on the source variable $\br'$.  The first integral
+represents the body-force coupling through density contrast; the second
+represents the elastic stiffness contrast through a double-gradient of
+the Green's tensor.
+
+The elastodynamic Green's tensor has the near-field singularity
+structure
+\begin{equation}
+  G_{ij}(\bs) \sim |\bs|^{-1}, \qquad
+  \partial G \sim |\bs|^{-2}, \qquad
+  \partial\partial G \sim |\bs|^{-3},
+  \label{eq:singularities}
+\end{equation}
+so the body-force kernel $G_{ij}$ is locally integrable, but taking
+field-point derivatives of the stiffness-contrast term introduces
+increasingly singular kernels.  Evaluating the stiffness integral at
+the field point inside $V$ requires either a Cauchy principal-value
+regularization or, for quadratic and higher trial functions, Eshelby-type
+delta-function corrections \cite{eshelby1957}.  This singular structure
+is the central technical constraint that shapes the hierarchy of
+approximations discussed in Section~\ref{sec:t9}.
+
+The far-field amplitude radiated by an inclusion is compactly encoded in
+the single-site T-matrix $T_0$, which maps the incident wave onto the
+scattered field:
+\begin{equation}
+  u_i^{\rm sc}(\br) \;\sim\; G_{ij}(\br - \br_0)\,T_{0,jk}\,u_k^{\rm inc}(\br_0)
+  \qquad (|\br - \br_0| \to \infty).
+\end{equation}
+When multiple inclusions are present, the coupled system is governed by
+the Foldy--Lax equations \cite{foldy1945,lax1951}, in which $T_0$ feeds
+the inter-site propagator $G_0(\br_{ij})$ (Figure~\ref{fig:single-vs-inter}).
+
+\subsection{Exact reference solutions}
+\label{sec:oracles}
+
+All representations examined in this paper are validated against two
+exact reference solutions, treated as oracles.
+
+\paragraph{Elastic Mie sphere.}
+For a spherical inclusion of radius $a$ and contrast
+$(\D\lambda, \D\mu, \D\rho)$, the scattered displacement admits an
+exact partial-wave (Mie) expansion \cite{yingtruell1956}.  An incident
+$P$-wave along $\hat{\bm{z}}$ is decomposed into Legendre orders $n$;
+at each order the Helmholtz decomposition yields a $4\times4$ boundary
+system (displacement and traction continuity for $P$- and $SV$-channels)
+whose Cramer-rule solution gives the scattered-field amplitudes
+$a_n$ ($P$-to-$P$) and $b_n$ ($P$-to-$S$).  At finite contrast the
+series converges for all $ka$; no linearization is invoked.
+
+Effective contrasts are extracted from the partial-wave coefficients
+by Legendre projection: the monopole $a_0$ yields the bulk-modulus
+contrast, the dipole $a_1$ yields the density contrast, and the
+quadrupole $a_2$ yields the shear-modulus contrast.  These
+Mie-reconstructed values serve as the ground-truth targets against
+which point and Galerkin representations are compared in
+Sections~\ref{sec:single}--\ref{sec:evidence}.
+
+\paragraph{Kennett layered reflectivity.}
+For the periodic-slab geometry, the exact specular P-to-P reflection
+coefficient $R_{PP}$ is computed via the Kennett recursion \cite{kennett1983},
+which assembles the full reflection matrix of a stratified medium using
+propagator matrices and a generalized Bremmer series.  At normal
+incidence with a single embedded layer of thickness $H$ and contrast
+$(\D\lambda,\D\mu,\D\rho)$, the Kennett formula provides a
+frequency-dependent $R_{PP}(\omega)$ valid at all contrasts.  This
+serves as the slab oracle in Section~\ref{sec:evidence}.
+
+Both references are free of any T-matrix approximation and are therefore
+well-suited as error baselines: any discrepancy between a representation
+and an oracle is a measure of that representation's truncation error.
+
+\subsection{The single-site hierarchy}
+\label{sec:hierarchy}
+
+The paper compares three increasingly refined single-site representations
+of a cubic scatterer (Figure~\ref{fig:ladder}):
+
+\begin{enumerate}[leftmargin=2em,label=\arabic*.]
+  \item \textbf{Born / point-source.}  The simplest approximation
+    replaces the internal field by the incident field,
+    $u_j(\br') \approx u_j^0(\br')$, and integrates directly.  This
+    gives a strength proportional to $V\D c$ or $V\omega^2\D\rho$,
+    with no self-interaction.  The result is the leading-order Born
+    scattering amplitude: a point source with volume-weighted contrast
+    but no radiation-reaction damping.
+
+  \item \textbf{Eshelby-corrected point scatterer.}  The Born strength
+    is renormalized by the on-site radiation reaction $\operatorname{Im}\Gamma_0$,
+    where $\Gamma_0$ is the imaginary part of the volume-averaged
+    background Green's tensor evaluated at zero separation.  This
+    correction, which follows from the elastodynamic optical theorem,
+    accounts for the energy radiated by the scatterer and is essential
+    for the point representation to satisfy energy conservation at
+    finite frequency.  The real part of $\Gamma_0$ encodes the static
+    Eshelby concentration tensor \cite{eshelby1957}, which dresses the
+    incident strain inside the inclusion.
+
+  \item \textbf{Body-force Galerkin $T_9$.}  The LS equation
+    \eqref{eq:LS} is projected onto the nine-dimensional trial space
+    spanned by the three uniform displacement modes and the six
+    independent strain modes.  Because the trial functions are
+    polynomials of degree $\le 1$, the bilinear forms involve only the
+    body-force integral $\int\!\!\int G_{ij}\,dV\,dV'$ (kernel
+    $|\bs|^{-1}$, absolutely convergent) and the stiffness integral
+    with one derivative $\int\!\!\int \partial'_k G_{in}\,dV\,dV'$
+    (kernel $|\bs|^{-2}$, conditionally convergent via integration by
+    parts to the surface).  No Eshelby delta correction is required:
+    the Galerkin projection absorbs the singularity into well-posed
+    five-dimensional surface integrals.  This is the lowest-order
+    closure that correctly captures both displacement and strain
+    amplification inside the cube, giving an $\order(ka)^2$ accurate
+    T-matrix across the Rayleigh regime.
+\end{enumerate}
+
+A natural further rung---the 27-component Galerkin extension with
+quadratic trial functions---is excluded here: it yields no
+Mie-consistent single-site far-field gain and contributes
+$\le 0.07\,\%$ inter-voxel coupling (Section~\ref{sec:inter}).
+
 \begin{figure}[h]
 \centering
 \input{figures/fig_ladder.tex}
