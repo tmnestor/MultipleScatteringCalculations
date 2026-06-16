@@ -1,5 +1,6 @@
 import csv as _csv
 
+import numpy as np
 from run_evidence import (  # noqa: E402
     capture,
     evidence_formfactor,
@@ -7,6 +8,7 @@ from run_evidence import (  # noqa: E402
     evidence_radiation_need,
     evidence_radiation_reaction,
     evidence_t27_intervoxel,
+    far_field_amplitudes,
 )
 
 
@@ -70,3 +72,37 @@ def test_radiation_need_runs():
     """
     csv_path = evidence_radiation_need()
     assert csv_path.exists() and csv_path.stat().st_size > 0
+
+
+def test_t9_matches_mie_moderate_low_ka():
+    """Smoke test: the validated t9 far-field reproduces exact Mie at low ka.
+
+    P-channel L2 vs the equal-volume elastic Mie sphere is ≈0.005 at ka=0.05,
+    moderate contrast (validated density-dipole history).  Gates the dispatcher
+    wiring of rep="t9", not the physics bound.
+    """
+    import sys
+
+    from run_evidence import ROOT
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from cubic_scattering import (
+        MaterialContrast,
+        ReferenceMedium,
+        compute_elastic_mie,
+        mie_far_field,
+    )
+
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    con = MaterialContrast(2e9, 1e9, 100.0)
+    a = 10.0
+    ka = 0.05
+    omega = ka * ref.beta / a
+    theta = np.linspace(0.0, np.pi, 64)
+    fP, _, _ = far_field_amplitudes("t9", omega, a, ref, con, theta)
+    R = a * (6.0 / np.pi) ** (1.0 / 3.0)  # equal-volume sphere radius
+    mie = compute_elastic_mie(omega, R, ref, con)
+    mP, _, _ = mie_far_field(mie, theta, "P")
+    l2 = np.linalg.norm(fP - mP) / np.linalg.norm(mP)
+    assert l2 < 0.05, f"t9 P-channel L2 vs Mie too large at ka=0.05: {l2}"
