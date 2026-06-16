@@ -1,6 +1,7 @@
 import csv as _csv
 
 import numpy as np
+import pytest
 from run_evidence import (  # noqa: E402
     capture,
     evidence_formfactor,
@@ -145,18 +146,22 @@ def test_eshelby_returns_finite():
     assert np.all(np.isfinite(fP)), f"eshelby f_P not finite: {fP}"
 
 
-def test_born_is_worst_at_moderate_lowka():
+@pytest.fixture(scope="module")
+def sweep_rows():
+    """Run the full cost-accuracy sweep once per module; return the parsed CSV rows."""
+    from cost_accuracy_sweep import run
+
+    with run().open() as fh:
+        return list(_csv.DictReader(fh))
+
+
+def test_born_is_worst_at_moderate_lowka(sweep_rows):
     """At moderate contrast, ka=0.05, P-incidence: bare Born is worse than both
     the Eshelby-corrected point rep and the finite-size T9 (measured-correct
     invariant; the eshelby-vs-t9 order is itself ka-dependent)."""
-    import csv as c
-
-    from cost_accuracy_sweep import run
-
-    rows = list(c.DictReader(run().open()))
     sel = {
         r["rep"]: float(r["l2"])
-        for r in rows
+        for r in sweep_rows
         if r["contrast"] == "moderate"
         and r["pol"] == "P"
         and abs(float(r["ka"]) - 0.05) < 1e-9
@@ -166,15 +171,10 @@ def test_born_is_worst_at_moderate_lowka():
     assert sel["born"] > sel["t9"], sel  # finite-size T9 also beats bare Born
 
 
-def test_cost_accuracy_coverage_and_status():
+def test_cost_accuracy_coverage_and_status(sweep_rows):
     """The sweep emits exactly 3 contrasts × 4 ka × 3 pols × 3 reps = 108 rows,
     each carrying a recognised status flag (no silent caps)."""
-    import csv as c
-
-    from cost_accuracy_sweep import run
-
-    rows = list(c.DictReader(run().open()))
-    assert len(rows) == 3 * 4 * 3 * 3 == 108, len(rows)
+    assert len(sweep_rows) == 3 * 4 * 3 * 3 == 108, len(sweep_rows)
     allowed = {"ok", "undefined_for_incidence", "ref_near_zero"}
-    bad = [r for r in rows if r["status"] not in allowed]
+    bad = [r for r in sweep_rows if r["status"] not in allowed]
     assert not bad, bad
