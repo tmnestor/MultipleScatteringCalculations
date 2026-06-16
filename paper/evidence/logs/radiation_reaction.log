@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniforge/base/envs/seismic/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/tod/Desktop/MultipleScatteringCalculations
+configfile: pytest.ini
+collecting ... collected 14 items
+
+cubic_scattering/tests/test_gamma0_radiation_reaction.py::test_phi0_equals_exact_radiation_reaction PASSED [  7%]
+cubic_scattering/tests/test_gamma0_radiation_reaction.py::test_imGamma0_matches_point_dipole_reaction PASSED [ 14%]
+cubic_scattering/tests/test_gamma0_radiation_reaction.py::test_reGamma0_is_static_and_imag_vanishes_at_zero_omega PASSED [ 21%]
+cubic_scattering/tests/test_gamma0_radiation_reaction.py::test_density_optical_theorem_closes_to_one PASSED [ 28%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_pure_bulk_matches_mie_kappa_no_shear_leak PASSED [ 35%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_pure_shear_matches_mie_mu_and_kappa_leak PASSED [ 42%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_pure_shear_lambda_sign_matches_mie PASSED [ 50%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_mixed_contrast_matches_mie PASSED [ 57%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_all_radiation_reactions_are_damping PASSED [ 64%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_pure_bulk_has_no_shear_reaction PASSED [ 71%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_radiation_reaction_scales_as_omega_cubed PASSED [ 78%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_static_limit_imag_vanishes PASSED [ 85%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_galerkin_path_carries_radiation_reaction PASSED [ 92%]
+cubic_scattering/tests/test_modulus_radiation_reaction.py::test_galerkin_real_part_unchanged_by_reaction PASSED [100%]
+
+============================== 14 passed in 1.80s ==============================
