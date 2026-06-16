@@ -160,8 +160,11 @@ and an oracle is a measure of that representation's truncation error.
 \subsection{The single-site hierarchy}
 \label{sec:hierarchy}
 
-The paper compares three increasingly refined single-site representations
-of a cubic scatterer (Figure~\ref{fig:ladder}):
+The paper compares three single-site representations of a cubic scatterer,
+ordered below by increasing model complexity and computational cost
+(Figure~\ref{fig:ladder}).  Whether this added complexity reduces the
+observable far-field error is the central question, answered in
+Section~\ref{sec:evidence}.
 
 \begin{enumerate}[leftmargin=2em,label=\arabic*.]
   \item \textbf{Born / point-source.}  The simplest approximation
@@ -213,7 +216,10 @@ $\le 0.07\,\%$ inter-voxel coupling (Section~\ref{sec:inter}).
   finite-size Galerkin closure $T_9$.  The $T_{27}$ rung is shown greyed and
   struck out because measurements show it contributes $\le 0.07\,\%$ gain over
   $T_9$ at all validated frequencies, making the added cost unjustified.
-  Error decreases bottom to top; computational cost increases correspondingly.%
+  Rungs are ordered by increasing model complexity and computational cost
+  (Born $<$ Eshelby-point $<$ $T_9$).  Whether far-field accuracy follows
+  this ordering is the question settled empirically in
+  Section~\ref{sec:evidence}; it does not, for the single-site far field.%
 }
 \label{fig:ladder}
 \end{figure}
