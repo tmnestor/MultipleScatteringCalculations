@@ -4,6 +4,7 @@ from run_evidence import (  # noqa: E402
     capture,
     evidence_formfactor,
     evidence_optical_theorem,
+    evidence_radiation_need,
     evidence_radiation_reaction,
     evidence_t27_intervoxel,
 )
@@ -58,3 +59,14 @@ def test_t27_intervoxel_negligible():
     rows = list(_csv.DictReader(csv_path.open()))
     val = float(rows[0]["value_percent"])
     assert val <= 0.1, f"inter-voxel coupling not negligible: {val:.4f}%"
+
+
+def test_radiation_need_runs():
+    """Smoke test: radiation-part-need probe runs and produces data rows.
+
+    The script measures |Im/Re| of the inter-voxel propagator G/C/S blocks
+    (Measurement A) and the slab-R_PP propagator contribution (Measurement B).
+    The CSV captures all lines with >=3 floats — must be non-empty.
+    """
+    csv_path = evidence_radiation_need()
+    assert csv_path.exists() and csv_path.stat().st_size > 0
