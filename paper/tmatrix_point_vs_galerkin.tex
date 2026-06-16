@@ -1,0 +1,84 @@
+% LuaLaTeX document — compile with: lualatex tmatrix_point_vs_galerkin.tex
+% Then: biber tmatrix_point_vs_galerkin && lualatex tmatrix_point_vs_galerkin.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
+\addbibresource{references.bib}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,decorations.pathmorphing,shapes.geometric,positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\pgfplotsset{table/search path={evidence/tables}}
+
+% --- Macros (copied verbatim from docs/cube_galerkin27.tex) ---
+\newcommand{\D}{\Delta}
+\newcommand{\order}{\mathcal{O}}
+\newcommand{\bG}{\bm{G}}
+\newcommand{\bs}{\bm{s}}
+\newcommand{\br}{\bm{r}}
+\newcommand{\bxi}{\bm{\xi}}
+\newcommand{\be}{\bm{\varepsilon}}
+\newcommand{\bu}{\bm{u}}
+\newcommand{\bphi}{\bm{\varphi}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\PV}{\mathrm{p.v.}}
+\newcommand{\indV}{\chi_V}
+\newcommand{\Lspace}{L^1_{\mathrm{loc}}}
+
+% --- Theorem environments ---
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{Point-Source versus Body-Force Galerkin Representations of an
+Elastic Cubic Scatterer:\\ a Mie- and Kennett-Validated Hierarchy}
+\author{T.\,M.\ Nestor}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduction}\label{sec:intro}
+
+\section{Background theory}\label{sec:background}
+
+\section{The body-force Galerkin closure (\texorpdfstring{$T_9$}{T9})}\label{sec:t9}
+
+\section{Single-site self-energy corrections}\label{sec:single}
+
+\section{Inter-site coupling}\label{sec:inter}
+
+\section{Evidence synthesis and cost--accuracy}\label{sec:evidence}
+
+\section{Discussion and conclusion}\label{sec:conclusion}
+
+\appendix
+\section{Master integrals (\texorpdfstring{$T_9$}{T9} subset)}\label{app:masters}
+
+\printbibliography
+
+\end{document}
