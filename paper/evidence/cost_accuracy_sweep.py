@@ -4,7 +4,8 @@
 For each (contrast, ka, pol, rep) cell this compares the single-site far-field of a
 representation ("born", "eshelby", "t9") against the exact elastic Mie sphere of equal
 volume (radius R = a·(6/π)^(1/3)) on the channel matching the incident polarization,
-recording per-cell relative L²/L∞ error and a wall-time cost proxy.
+recording per-cell relative L²/L∞ error (both normalized by ‖m‖) and a wall-time
+cost proxy.
 
 The born/eshelby point representations are only derived for axial P-incidence (Task-8
 limitation): SV/SH cells for them — and any cell the dispatcher rejects — are recorded
@@ -70,6 +71,8 @@ def run() -> Path:
     Returns:
         Path to the written CSV file.
     """
+    # 128 angles oversample the low-order multipoles dominant at ka ≤ 0.5 so the
+    # relative L²/L∞ norms are quadrature-converged, not grid-limited.
     theta = np.linspace(0.0, np.pi, 128)
     rows: list[dict[str, object]] = []
     n_ok = 0
@@ -96,19 +99,23 @@ def run() -> Path:
                         "cost_s": "",
                         "status": "",
                     }
-                    t0 = time.perf_counter()
                     try:
+                        t0 = time.perf_counter()
                         f_tuple = far_field_amplitudes(
                             rep, omega, A, REF, contrast, theta, incident=pol
                         )
-                    except (ValueError, NotImplementedError):
-                        # Documented incidence limitation (born/eshelby P-only; the
-                        # dispatcher may also reject t9 SV/SH). Log it, do not crash.
+                        cost_s = time.perf_counter() - t0
+                    except (ValueError, NotImplementedError) as exc:
+                        # Only the documented incidence limitation (born/eshelby P-only;
+                        # the dispatcher also rejects t9 SV/SH) is treated as undefined —
+                        # a bad-rep typo or any other ValueError must still propagate.
+                        msg = str(exc).lower()
+                        if "incident" not in msg and "supported" not in msg:
+                            raise
                         row["status"] = "undefined_for_incidence"
                         n_undefined += 1
                         rows.append(row)
                         continue
-                    cost_s = time.perf_counter() - t0
                     row["cost_s"] = f"{cost_s:.6f}"
 
                     if ref_norm <= 1e-300 or not np.isfinite(ref_norm):
@@ -121,8 +128,9 @@ def run() -> Path:
 
                     f = f_tuple[idx]
                     diff = f - mref
+                    # Both metrics are RELATIVE (normalized by ‖m‖) for table consistency.
                     l2 = float(np.linalg.norm(diff) / ref_norm)
-                    linf = float(np.max(np.abs(diff)))
+                    linf = float(np.max(np.abs(diff)) / ref_norm)
                     row["l2"] = f"{l2:.8e}"
                     row["linf"] = f"{linf:.8e}"
                     row["status"] = "ok"
