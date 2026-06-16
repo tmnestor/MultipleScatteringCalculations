@@ -106,3 +106,40 @@ def test_t9_matches_mie_moderate_low_ka():
     mP, _, _ = mie_far_field(mie, theta, "P")
     l2 = np.linalg.norm(fP - mP) / np.linalg.norm(mP)
     assert l2 < 0.05, f"t9 P-channel L2 vs Mie too large at ka=0.05: {l2}"
+
+
+def _moderate_point_setup():
+    """Shared (ref, contrast, omega, a) for the born/eshelby point-rep smokes."""
+    import sys
+
+    from run_evidence import ROOT
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from cubic_scattering import MaterialContrast, ReferenceMedium
+
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    con = MaterialContrast(2e9, 1e9, 100.0)
+    a = 10.0
+    omega = 0.05 * ref.beta / a  # ka = 0.05
+    return ref, con, omega, a
+
+
+def test_born_returns_finite():
+    """Smoke test: rep='born' returns three theta-shaped arrays with finite f_P."""
+    ref, con, omega, a = _moderate_point_setup()
+    theta = np.linspace(0.0, np.pi, 8)
+    fP, fSV, fSH = far_field_amplitudes("born", omega, a, ref, con, theta)
+    for f in (fP, fSV, fSH):
+        assert f.shape == theta.shape
+    assert np.all(np.isfinite(fP)), f"born f_P not finite: {fP}"
+
+
+def test_eshelby_returns_finite():
+    """Smoke test: rep='eshelby' returns three theta-shaped arrays with finite f_P."""
+    ref, con, omega, a = _moderate_point_setup()
+    theta = np.linspace(0.0, np.pi, 8)
+    fP, fSV, fSH = far_field_amplitudes("eshelby", omega, a, ref, con, theta)
+    for f in (fP, fSV, fSH):
+        assert f.shape == theta.shape
+    assert np.all(np.isfinite(fP)), f"eshelby f_P not finite: {fP}"
