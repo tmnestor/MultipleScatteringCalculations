@@ -1,0 +1,195 @@
+import csv as _csv
+
+import numpy as np
+import pytest
+from run_evidence import (  # noqa: E402
+    capture,
+    evidence_formfactor,
+    evidence_optical_theorem,
+    evidence_radiation_need,
+    evidence_radiation_reaction,
+    evidence_t27_intervoxel,
+    far_field_amplitudes,
+)
+
+
+def test_capture_writes_log(tmp_path):
+    log = tmp_path / "echo.log"
+    rc, out = capture(["python", "-c", "print('hello-evidence')"], log)
+    assert rc == 0
+    assert "hello-evidence" in out
+    assert log.read_text().strip() == "hello-evidence"
+
+
+def test_formfactor_evidence_anchor():
+    """Smoke test: single-layer Foldy-Lax vs Kennett rel-err stays below 5%; min < 1%.
+
+    Validated values (omega=150 rad/s, moderate contrast, a in [2.0, 0.25]):
+        rel_err ~ 8.8e-3 → 3.1e-3  (0.88% → 0.31% as cell size shrinks)
+    History note: the originally expected range was ~1.1% → 0.31%; measured values are
+    slightly lower at the coarsest mesh (0.88% vs 1.1%) — physics unchanged, just a
+    different omega/contrast point in the script.
+    """
+    csv_path = evidence_formfactor()
+    rows = list(_csv.DictReader(csv_path.open()))
+    errs = [float(r["rel_err"]) for r in rows]
+    assert all(e < 0.05 for e in errs), f"rel-err exceeded 5%: {errs}"
+    assert min(errs) < 0.01, f"best rel-err not sub-1%: {min(errs)}"
+
+
+def test_radiation_reaction_gates_pass():
+    csv_path = evidence_radiation_reaction()
+    rows = list(_csv.DictReader(csv_path.open()))
+    assert all(r["passed"] == "True" for r in rows), (
+        "a radiation-reaction Mie gate failed"
+    )
+
+
+def test_optical_theorem_gate_passes():
+    csv_path = evidence_optical_theorem()
+    rows = list(_csv.DictReader(csv_path.open()))
+    assert all(r["passed"] == "True" for r in rows), "optical-theorem gate failed"
+
+
+def test_t27_intervoxel_negligible():
+    """Smoke test: T₂₇ quadratic inter-voxel coupling stays ≤0.1% across all cases.
+
+    The d(i,ii) column (PRIMARY: quadratic channels OFF in P, M-orthogonalised)
+    measures the fractional observable change from zeroing the 18 quadratic
+    coupling channels.  Historically max ~0.07% (SV edge ka=0.5).
+    """
+    csv_path = evidence_t27_intervoxel()
+    rows = list(_csv.DictReader(csv_path.open()))
+    val = float(rows[0]["value_percent"])
+    assert val <= 0.1, f"inter-voxel coupling not negligible: {val:.4f}%"
+
+
+def test_radiation_need_runs():
+    """Smoke test: radiation-part-need probe runs and produces data rows.
+
+    The script measures |Im/Re| of the inter-voxel propagator G/C/S blocks
+    (Measurement A) and the slab-R_PP propagator contribution (Measurement B).
+    The CSV captures all lines with >=3 floats — must be non-empty.
+    """
+    csv_path = evidence_radiation_need()
+    assert csv_path.exists() and csv_path.stat().st_size > 0
+
+
+def test_t9_matches_mie_moderate_low_ka():
+    """Smoke test: the validated t9 far-field reproduces exact Mie at low ka.
+
+    P-channel L2 vs the equal-volume elastic Mie sphere is ≈0.005 at ka=0.05,
+    moderate contrast (validated density-dipole history).  Gates the dispatcher
+    wiring of rep="t9", not the physics bound.
+    """
+    import sys
+
+    from run_evidence import ROOT
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from cubic_scattering import (
+        MaterialContrast,
+        ReferenceMedium,
+        compute_elastic_mie,
+        mie_far_field,
+    )
+
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    con = MaterialContrast(2e9, 1e9, 100.0)
+    a = 10.0
+    ka = 0.05
+    omega = ka * ref.beta / a
+    theta = np.linspace(0.0, np.pi, 64)
+    fP, _, _ = far_field_amplitudes("t9", omega, a, ref, con, theta)
+    R = a * (6.0 / np.pi) ** (1.0 / 3.0)  # equal-volume sphere radius
+    mie = compute_elastic_mie(omega, R, ref, con)
+    mP, _, _ = mie_far_field(mie, theta, "P")
+    l2 = np.linalg.norm(fP - mP) / np.linalg.norm(mP)
+    assert l2 < 0.05, f"t9 P-channel L2 vs Mie too large at ka=0.05: {l2}"
+
+
+def _moderate_point_setup():
+    """Shared (ref, contrast, omega, a) for the born/eshelby point-rep smokes."""
+    import sys
+
+    from run_evidence import ROOT
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from cubic_scattering import MaterialContrast, ReferenceMedium
+
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    con = MaterialContrast(2e9, 1e9, 100.0)
+    a = 10.0
+    omega = 0.05 * ref.beta / a  # ka = 0.05
+    return ref, con, omega, a
+
+
+def test_born_returns_finite():
+    """Smoke test: rep='born' returns three theta-shaped arrays with finite f_P."""
+    ref, con, omega, a = _moderate_point_setup()
+    theta = np.linspace(0.0, np.pi, 8)
+    fP, fSV, fSH = far_field_amplitudes("born", omega, a, ref, con, theta)
+    for f in (fP, fSV, fSH):
+        assert f.shape == theta.shape
+    assert np.all(np.isfinite(fP)), f"born f_P not finite: {fP}"
+
+
+def test_eshelby_returns_finite():
+    """Smoke test: rep='eshelby' returns three theta-shaped arrays with finite f_P."""
+    ref, con, omega, a = _moderate_point_setup()
+    theta = np.linspace(0.0, np.pi, 8)
+    fP, fSV, fSH = far_field_amplitudes("eshelby", omega, a, ref, con, theta)
+    for f in (fP, fSV, fSH):
+        assert f.shape == theta.shape
+    assert np.all(np.isfinite(fP)), f"eshelby f_P not finite: {fP}"
+
+
+@pytest.fixture(scope="module")
+def sweep_rows():
+    """Run the full cost-accuracy sweep once per module; return the parsed CSV rows."""
+    from cost_accuracy_sweep import run
+
+    with run().open() as fh:
+        return list(_csv.DictReader(fh))
+
+
+def test_born_is_worst_at_moderate_lowka(sweep_rows):
+    """At moderate contrast, ka=0.05, P-incidence: bare Born is worse than both
+    the Eshelby-corrected point rep and the finite-size T9 (measured-correct
+    invariant; the eshelby-vs-t9 order is itself ka-dependent)."""
+    sel = {
+        r["rep"]: float(r["l2"])
+        for r in sweep_rows
+        if r["contrast"] == "moderate"
+        and r["pol"] == "P"
+        and abs(float(r["ka"]) - 0.05) < 1e-9
+        and r["status"] == "ok"
+    }
+    assert sel["born"] > sel["eshelby"], sel  # Eshelby correction helps
+    assert sel["born"] > sel["t9"], sel  # finite-size T9 also beats bare Born
+
+
+def test_cost_accuracy_coverage_and_status(sweep_rows):
+    """The sweep emits exactly 3 contrasts × 4 ka × 3 pols × 3 reps = 108 rows,
+    each carrying a recognised status flag (no silent caps)."""
+    assert len(sweep_rows) == 3 * 4 * 3 * 3 == 108, len(sweep_rows)
+    allowed = {"ok", "undefined_for_incidence", "ref_near_zero"}
+    bad = [r for r in sweep_rows if r["status"] not in allowed]
+    assert not bad, bad
+
+
+def test_make_tables_emits_fragments():
+    from pathlib import Path as _Path
+
+    from make_tables import main
+
+    main()
+    t = (
+        _Path(__file__).resolve().parent / "tables" / "tab_cost_accuracy.tex"
+    ).read_text()
+    assert r"\toprule" in t and r"\bottomrule" in t
+    # the cost-accuracy table must contain only ok (P-incidence) data rows — no blank cells
+    assert "undefined_for_incidence" not in t
+    assert " &  &" not in t  # no empty l2/linf cells leaked in
