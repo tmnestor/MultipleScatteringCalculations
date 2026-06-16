@@ -65,6 +65,39 @@ def _fmt_sci(v: str) -> str:
     return f"{float(v):.2e}"
 
 
+def dump_pgfplots() -> None:
+    """Write per-representation pgfplots .dat files from ``cost_accuracy.csv``.
+
+    Filters to ``contrast == "moderate"``, ``pol == "P"``, ``status == "ok"``
+    and writes one whitespace-separated file per representation into
+    ``paper/evidence/tables/``:
+
+    - ``error_vs_ka_born.dat``
+    - ``error_vs_ka_eshelby.dat``
+    - ``error_vs_ka_t9.dat``
+
+    Each file has a header line ``ka l2`` followed by rows sorted by ka ascending.
+    """
+    rows = list(csv.DictReader((EV / "cost_accuracy.csv").open()))
+    filtered = [
+        r
+        for r in rows
+        if r["contrast"] == "moderate" and r["pol"] == "P" and r["status"] == "ok"
+    ]
+
+    reps = ("born", "eshelby", "t9")
+    TAB.mkdir(parents=True, exist_ok=True)
+    for rep in reps:
+        rep_rows = sorted(
+            [r for r in filtered if r["rep"] == rep], key=lambda r: float(r["ka"])
+        )
+        out = TAB / f"error_vs_ka_{rep}.dat"
+        lines = ["ka l2"]
+        for r in rep_rows:
+            lines.append(f"{r['ka']} {r['l2']}")
+        out.write_text("\n".join(lines) + "\n")
+
+
 def main() -> None:
     """Generate all LaTeX booktabs table fragments into ``paper/evidence/tables/``."""
     # 1. Cost-accuracy table — P-incidence only (SV/SH far field undefined)
@@ -90,6 +123,9 @@ def main() -> None:
         caption="Volume-averaged T9 slab vs.\\ Kennett reflectivity: relative error.",
         label="tab_formfactor",
     )
+
+    # 3. pgfplots .dat files for F6 (error vs ka per representation)
+    dump_pgfplots()
 
 
 if __name__ == "__main__":
