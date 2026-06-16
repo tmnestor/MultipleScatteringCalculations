@@ -178,3 +178,18 @@ def test_cost_accuracy_coverage_and_status(sweep_rows):
     allowed = {"ok", "undefined_for_incidence", "ref_near_zero"}
     bad = [r for r in sweep_rows if r["status"] not in allowed]
     assert not bad, bad
+
+
+def test_make_tables_emits_fragments():
+    from pathlib import Path as _Path
+
+    from make_tables import main
+
+    main()
+    t = (
+        _Path(__file__).resolve().parent / "tables" / "tab_cost_accuracy.tex"
+    ).read_text()
+    assert r"\toprule" in t and r"\bottomrule" in t
+    # the cost-accuracy table must contain only ok (P-incidence) data rows — no blank cells
+    assert "undefined_for_incidence" not in t
+    assert " &  &" not in t  # no empty l2/linf cells leaked in
