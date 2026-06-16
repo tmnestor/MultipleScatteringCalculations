@@ -24,6 +24,11 @@ htmlcov/
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*.bcf
+*.run.xml
+
+# LaTeX build output (paper)
+paper/*.pdf
 
 # Backup files
 *.broken
