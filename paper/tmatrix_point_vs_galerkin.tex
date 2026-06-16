@@ -457,6 +457,218 @@ forms are given there.
 
 \section{Single-site self-energy corrections}\label{sec:single}
 
+The Born approximation treats the incident field as the internal field,
+giving a scattering amplitude linear in the contrast.  At finite frequency
+and finite contrast three distinct corrections enter: a finite-size
+\emph{form-factor} correction from the spatial extent of the cube
+(\S\ref{sec:formfactor}), a static \emph{Eshelby amplification} of the
+internal field (\S\ref{sec:eshelby-amp}), and a dynamic
+\emph{radiation-reaction} correction tied to the local density of states
+(\S\ref{sec:ldos}).  All three are contributions of this work; the
+last---the strain-channel radiation reaction expressed as the strain
+LDOS---is the central new result.
+
+\subsection{Finite-size form factor and Kennett validation}
+\label{sec:formfactor}
+
+A finite cube of half-width $a$ introduces a geometric correction to the
+point-source amplitude through the spatial average of the incident strain
+over the inclusion volume.  At leading order in $ka$ this produces the
+\emph{cube form-factor correction} $c_2 = -1/3$ to the effective modulus
+contrast (relative to the point-scatterer value):
+\begin{equation}
+  \D c^{*} \;=\; \D c\bigl(1 + c_2\,(ka)^2 + \order{(ka)^4}\bigr),
+  \qquad c_2 = -\tfrac{1}{3},
+  \label{eq:formfactor}
+\end{equation}
+where $k$ is the relevant wavenumber.  This $-1/3$ coefficient arises from
+the volume average of $e^{i\bm{k}\cdot\br}$ over the cube: the cosine
+integral $\langle\cos(k_z z)\rangle_V = \operatorname{sinc}(ka)$ has
+leading correction $-(ka)^2/6$ per axis, and three axes contribute
+$-3\times(ka)^2/6 = -(ka)^2/2$; the symmetrised two-index strain projection
+recovers $c_2 = -1/3$.  The form factor is a genuine finite-size correction
+absent from any strict point-source model; it is a contribution of this work
+within the $T_9$ Galerkin framework.
+
+\paragraph{Kennett slab validation.}
+The form-factor correction is validated against the exact Kennett
+reflectivity \cite{kennett1983} in the periodic-slab geometry.
+Table~\ref{tab:formfactor} shows the relative error between the
+volume-averaged $T_9$ slab reflection coefficient $R_{PP}$ and the Kennett
+reference at normal incidence, as a function of the cube half-width $a$
+(equivalently $ka_S$).  The error decreases monotonically as $a$ is reduced,
+confirming that the $T_9$ closure converges to the exact layered-medium
+result as $ka \to 0$, with the residual set by the leading $(ka)^2$
+form-factor truncation.
+
+\begin{table}[h]
+\centering
+\input{evidence/tables/tab_formfactor.tex}
+\caption{Volume-averaged $T_9$ slab vs.\ Kennett reflectivity: relative
+  error in $R_{PP}$ at normal incidence as a function of cell half-width
+  $a$ (background $\alpha = 5000$~m/s, $\beta = 3000$~m/s,
+  $\rho_0 = 2500$~kg/m$^3$, moderate contrast
+  $\D\lambda = 2$~GPa, $\D\mu = 1$~GPa, $\D\rho = 100$~kg/m$^3$).
+  Provenance: \texttt{paper/evidence/formfactor\_kennett.csv}.}
+\label{tab:formfactor}
+\end{table}
+
+\subsection{Self-consistent Eshelby amplification}
+\label{sec:eshelby-amp}
+
+The density sector of the $T_9$ closure dresses the incident displacement
+amplitude by the self-consistent factor
+\begin{equation}
+  A_u \;=\; \frac{1}{1 - \omega^2\D\rho\,\Gamma_0},
+  \label{eq:Au}
+\end{equation}
+where $\Gamma_0$ is the volume-averaged on-site background Green's tensor
+(eq.~\eqref{eq:Gamma0}).  The effective density contrast is then
+$\D\rho^* = A_u\,\D\rho$.
+
+The real part of $\Gamma_0$ encodes the static Eshelby self-interaction
+\cite{eshelby1957}: it is the volume average of the static part of the
+background Green's tensor over the cubic inclusion, and governs how the
+inclusion polarizes in response to an applied uniform displacement.
+Physically, $A_u$ is the self-consistent internal-field amplification in
+the density (inertial) channel: the incident wave drives the inclusion, the
+inclusion re-radiates, the re-radiated field adds to the local drive, and the
+geometric series $(1 - \omega^2\D\rho\,\Gamma_0)^{-1}$ sums it.
+
+The strain sector carries analogous amplification factors $A_\theta$ and
+$A_e$ (volumetric and deviatoric, eqs.~\eqref{eq:Dlambda-star-T9}--\eqref{eq:Dmu-star-T9}),
+whose denominators are the static Eshelby concentration tensor entries for
+the cube.  In the static limit $\omega \to 0$ the density amplification
+$A_u \to 1$, while the strain amplification factors approach the Eshelby
+concentration values for the cube \cite{eshelby1957,mura1987}.
+
+\subsection{Radiation reaction = local density of states (LDOS)}
+\label{sec:ldos}
+
+Energy conservation requires that the imaginary part of every effective
+contrast equal the radiation power delivered to the background medium.
+This imaginary part is determined by the background Green's function
+evaluated at zero separation---the \emph{local density of states} (LDOS),
+the spectrum of modes available to radiate into.  Two independent channels
+arise, one for each source type the scatterer can excite.
+
+\paragraph{Density channel: displacement LDOS.}
+The density contrast $\D\rho$ couples to the displacement field and
+acts as a \emph{body-force monopole} of strength $f_i = \omega^2\D\rho\,u_i V$.
+The radiation reaction for such a source is given by the imaginary part of
+the on-site Green's tensor:
+\begin{equation}
+  \operatorname{Im}\bigl[G_{ii}(\mathbf{0})\bigr]
+  \;=\; \frac{\omega}{12\pi\rho}\!\left(\frac{1}{\alpha^3} + \frac{2}{\beta^3}\right)
+  \;=\; \tfrac{1}{3}\,S_\alpha + \tfrac{2}{3}\,S_\beta,
+  \label{eq:Im-Gamma0}
+\end{equation}
+where $S_\alpha = \omega/(4\pi\rho\alpha^3)$ and $S_\beta = \omega/(4\pi\rho\beta^3)$
+are the P- and S-wave modal densities.  The $(1/3,\,2/3)$ weights count
+one longitudinal P polarization and two transverse S polarizations---the
+full isotropic LDOS for an elastic body force.
+
+This is the correct density radiation reaction.  An earlier form
+$i\omega/(4\pi\rho\beta^3)$ (pure-S weight $2/3$ only) was incorrect:
+it omitted the P pole and applied the wrong S weight, overdamping by a
+factor of $1.354\times$ relative to the correct result.  The
+$(1/3)P+(2/3)S$ LDOS formula \eqref{eq:Im-Gamma0} is a contribution of
+this work (provenance: \texttt{paper/evidence/radiation\_reaction.csv},
+gate \texttt{density\_Gamma0\_LDOS}: passed).
+
+\paragraph{Modulus channel: strain LDOS (new result).}
+An inclusion of volume $V$ with modulus contrast $\D c_{ijkl}$ in an
+incident strain $\varepsilon_{kl}$ carries the stress-dipole (moment-tensor)
+\begin{equation}
+  M_{ij} \;=\; V\,\D c_{ijkl}\,\varepsilon_{kl}.
+  \label{eq:moment-tensor}
+\end{equation}
+This moment tensor radiates elastic energy into the background.  Using the
+Aki--Richards formula for the radiated power of an elastic moment tensor
+\cite{akirichards2002}:
+\begin{equation}
+  P_{\mathrm{rad}}
+  \;=\; \frac{\omega^4}{8\pi\rho\alpha^5}
+        \bigl\langle({\hat{r}}\cdot M\cdot{\hat{r}})^2\bigr\rangle_{\Omega}
+    + \frac{\omega^4}{8\pi\rho\beta^5}
+        \bigl\langle|(M\cdot{\hat{r}})_{\perp}|^2\bigr\rangle_{\Omega},
+  \label{eq:Prad-moment}
+\end{equation}
+where the unit-sphere averages are
+\begin{align}
+  \bigl\langle(\hat{r}\cdot M\cdot\hat{r})^2\bigr\rangle_\Omega
+    &= \tfrac{1}{15}\bigl(\operatorname{tr}(M)^2 + 2\,M\!:\!M\bigr),
+  \label{eq:sphere-avg-P}\\
+  \bigl\langle|(M\cdot\hat{r})_\perp|^2\bigr\rangle_\Omega
+    &= \tfrac{1}{15}\bigl(3\,M\!:\!M - \operatorname{tr}(M)^2\bigr).
+  \label{eq:sphere-avg-S}
+\end{align}
+Energy conservation then demands
+\begin{equation}
+  \operatorname{Im}[\varepsilon\!:\!\D c^{*}\!:\!\varepsilon]
+  \;=\; -\frac{2}{\omega V}\,P_{\mathrm{rad}}.
+  \label{eq:energy-conservation}
+\end{equation}
+Polarizing in $\varepsilon$ for an isotropic contrast $(\D\lambda, \D\mu)$
+and identifying the two scalar channels yields the closed-form
+strain-LDOS radiation reactions:
+\begin{align}
+  \operatorname{Im}[\D\lambda^*]
+    &= -\frac{2V}{\omega}\biggl[
+        \frac{c_P}{15}\bigl(15\D\lambda^2 + 20\D\lambda\D\mu + 4\D\mu^2\bigr)
+        - \frac{c_S}{15}\cdot 4\D\mu^2
+      \biggr],
+  \label{eq:ImDlambda}\\
+  \operatorname{Im}[\D\mu^*]
+    &= -\frac{V}{\omega}\biggl[
+        \frac{c_P}{15}\cdot 8\D\mu^2
+        + \frac{c_S}{15}\cdot 12\D\mu^2
+      \biggr],
+  \label{eq:ImDmu}
+\end{align}
+where $c_P = \omega^4/(8\pi\rho\alpha^5)$ and $c_S = \omega^4/(8\pi\rho\beta^5)$
+are the P- and S-wave radiation-density factors, and $V = (2a)^3$.
+
+\paragraph{Methodological note.}
+The imaginary parts \eqref{eq:ImDlambda}--\eqref{eq:ImDmu} are
+\emph{derived} from the background Green's function radiation reaction
+via the moment-tensor power formula~\eqref{eq:Prad-moment}.  They are
+\emph{not} imposed by requiring the optical theorem $\sigma_\mathrm{ext} =
+\sigma_\mathrm{sc}$.  An earlier attempt that imposed $\sigma_\mathrm{ext} =
+\sigma_\mathrm{sc}$ directly was circular: it failed the Mie $a_0/a_2$ sign
+test because the constraint does not uniquely determine the two independent
+imaginary parts $\operatorname{Im}[\D\lambda^*]$ and
+$\operatorname{Im}[\D\mu^*]$.  Deriving both independently from
+eq.~\eqref{eq:Prad-moment}, the optical theorem then closes to
+$\sigma_\mathrm{ext}/\sigma_\mathrm{sc} = 1.0$ as a \emph{consequence},
+not a constraint.
+
+\paragraph{Validation.}
+Two independent gates have been passed (see Figure~\ref{fig:ldos} for the
+LDOS radiation patterns entering both channels):
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Mie $a_0/a_2$ reproduction.}  The modulus strain-LDOS
+    $\operatorname{Im}[\D c^*]$ from
+    eqs.~\eqref{eq:ImDlambda}--\eqref{eq:ImDmu} reproduces the exact Mie
+    partial-wave coefficients $a_0$ (monopole, bulk channel) and $a_2$
+    (quadrupole, shear channel) with correct sign and zero cross-channel
+    leakage (provenance: \texttt{paper/evidence/radiation\_reaction.csv},
+    gate \texttt{modulus\_strain\_LDOS\_mie\_a0\_a2}: passed).
+  \item \textbf{Optical theorem closure.}  With both the density
+    $\operatorname{Im}[\Gamma_0]$ and the modulus
+    $\operatorname{Im}[\D c^*]$ corrections in place, the exact Mie sphere
+    satisfies $\sigma_\mathrm{ext}/\sigma_\mathrm{sc} = 1.0$ to numerical
+    precision (provenance: \texttt{paper/evidence/optical\_theorem.csv},
+    gate \texttt{mie\_sigma\_ext\_over\_sigma\_sc\_eq\_1}: passed).
+\end{enumerate}
+
+The Aki--Richards moment-radiation formula \eqref{eq:Prad-moment} is
+standard \cite{akirichards2002}.  The identification of
+$\operatorname{Im}[\D c^*]$ as the strain-channel LDOS (the elastic analog
+of the density displacement LDOS), the derivation of the closed forms
+\eqref{eq:ImDlambda}--\eqref{eq:ImDmu} from it, and the corrected density
+LDOS \eqref{eq:Im-Gamma0} are contributions of this work.
+
 \begin{figure}[h]
 \centering
 \input{figures/fig_ldos.tex}
