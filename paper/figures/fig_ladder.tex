@@ -1,0 +1,38 @@
+% fig_ladder.tex — Ladder of approximations (bottom=worst, top=excluded)
+% No \usetikzlibrary — relies on arrows.meta,calc,positioning loaded by main doc
+\begin{tikzpicture}[
+  rung/.style={draw, fill=white, minimum width=5cm, minimum height=0.8cm,
+               font=\small, align=center},
+  excluded/.style={draw=gray!60, fill=gray!15, minimum width=5cm,
+                   minimum height=0.8cm, font=\small\color{gray!70}, align=center,
+                   text=gray!60},
+  >=Stealth
+]
+
+% Rungs bottom to top
+\node[rung] (born)    at (0,0)   {Born approximation (point source)};
+\node[rung] (eshelby) at (0,1.4) {Eshelby / polarisability (point source)};
+\node[rung] (t9)      at (0,2.8) {$T_9$ Galerkin closure (finite-size body)};
+\node[excluded] (t27) at (0,4.2) {$T_{27}$ Galerkin (finite-size body) \\
+                                   \textit{excluded} ($\le 0.07\%$ gain)};
+
+% Strikethrough on excluded rung
+\draw[gray!60, line width=0.8pt]
+  ($(t27.west)+(0.1,0)$) -- ($(t27.east)+(-0.1,0)$);
+
+% Vertical bracket / connecting lines between rungs
+\foreach \bot/\top in {born/eshelby, eshelby/t9, t9/t27}{
+  \draw[gray!40] (\bot.north) -- (\top.south);
+}
+
+% "Error decreasing" annotation on the left
+\draw[->, line width=1pt]
+  (-3.2,0.2) -- (-3.2,3.4)
+  node[midway, left, font=\footnotesize, align=center] {error\\decreasing};
+
+% "Complexity increasing" annotation on the right (optional, light)
+\draw[->, line width=0.6pt, gray]
+  (3.2,0.2) -- (3.2,3.4)
+  node[midway, right, font=\footnotesize\color{gray}, align=center] {cost\\increasing};
+
+\end{tikzpicture}

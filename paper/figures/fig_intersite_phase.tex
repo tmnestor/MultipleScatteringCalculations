@@ -1,0 +1,37 @@
+% fig_intersite_phase.tex — Two stacked cells, vertical coupling arrow +
+%                            horizontal phase ramp / wavy arrow
+% Libraries: arrows.meta, calc, decorations.pathmorphing
+\begin{tikzpicture}[>=Stealth, font=\small]
+
+% ---- Two stacked cells (vertical) ----
+\node[draw, fill=orange!10, minimum width=2.2cm, minimum height=1.0cm,
+      label=center:cell $j$] (cellB) at (0, 0)   {};
+\node[draw, fill=orange!10, minimum width=2.2cm, minimum height=1.0cm,
+      label=center:cell $i$] (cellA) at (0, -2.0) {};
+
+% ---- Vertical coupling arrow (left side) ----
+\draw[->, thick, blue!70!black]
+  ($(cellA.north west)+(-0.5, 0)$) -- ($(cellB.south west)+(-0.5, 0)$)
+  node[midway, left, font=\footnotesize, blue!70!black, align=center]
+  {vertical coupling\\(volume-avg corrected)};
+
+% ---- Wavy horizontal arrow (right side) — transverse phase ----
+\draw[->, thick, red!60!black,
+      decoration={snake, amplitude=3pt, segment length=8pt, post length=4pt},
+      decorate]
+  ($(cellA.east)+(0.3, 0)$) -- ($(cellA.east)+(2.8, 0)$);
+\node[right, font=\footnotesize, red!60!black, align=left]
+  at ($(cellA.east)+(2.85, 0)$) {$\sim\!1$ rad/cell\\transverse phase\\(uncorrected)};
+
+% Also show the wavy arrow for the upper cell at same horizontal offset
+\draw[->, thick, red!60!black,
+      decoration={snake, amplitude=3pt, segment length=8pt, post length=4pt},
+      decorate]
+  ($(cellB.east)+(0.3, 0)$) -- ($(cellB.east)+(2.8, 0)$);
+
+% ---- Lattice pitch label ----
+\draw[<->, gray!70]
+  ($(cellA.south west)+(-1.5, 0)$) -- ($(cellB.north west)+(-1.5, 0)$)
+  node[midway, left, font=\footnotesize, gray!70] {$a$};
+
+\end{tikzpicture}
