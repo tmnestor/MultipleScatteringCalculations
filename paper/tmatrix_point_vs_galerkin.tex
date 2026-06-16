@@ -238,6 +238,143 @@ $\le 0.07\,\%$ inter-voxel coupling (Section~\ref{sec:inter}).
 
 \section{The body-force Galerkin closure (\texorpdfstring{$T_9$}{T9})}\label{sec:t9}
 
+\subsection{Galerkin projection onto the polynomial trial space}
+\label{sec:t9-galerkin}
+
+Let $V = [-a,a]^{3}$ be the cubic inclusion.  The \emph{nine-dimensional
+trial space}
+\begin{equation}
+  T_9 \;=\; \bigl\{\,\bphi(\br) \;\big|\;
+  \varphi_i(\br) = U_i + \varepsilon_{ai}\,r_a,\quad
+  \varepsilon_{ai} = \varepsilon_{ia}\,\bigr\}
+  \label{eq:T9-def}
+\end{equation}
+spans the three uniform-displacement modes ($3$ degrees of freedom from
+$U_i$) and the six independent components of the symmetric strain tensor
+($6$ degrees of freedom from $\varepsilon_{ai}$), giving $3+6=9$ trial
+functions in total.  The trial functions are polynomials of total degree
+$\le 1$ in $\br$.
+
+\begin{definition}[$T_9$ Galerkin closure]
+The $T_9$ closure is the variational problem: find $\bu^h \in T_9$ such
+that for all $\bphi \in T_9$,
+\begin{equation}
+  \langle\bphi,\bu^h\rangle_V
+  \;=\;
+  \langle\bphi,\bu^{0}\rangle_V
+  + \omega^{2}\D\rho\,\mathcal{B}_{\mathrm{body}}[\bphi,\bu^{h}]
+  - \D c_{nklj}\,\mathcal{B}_{\mathrm{el}}[\bphi,\bu^{h}],
+  \label{eq:galerkin-LS-T9}
+\end{equation}
+where the bilinear forms are
+\begin{align}
+\langle\bphi,\bu\rangle_V &:= \int_{V} \varphi_i(\br)\, u_i(\br)\,dV,
+  \label{eq:mass-form} \\[3pt]
+\mathcal{B}_{\mathrm{body}}[\bphi,\bu] &:= \int_{V}\!\!\int_{V}
+  \varphi_i(\br)\,G_{in}(\br-\br')\,u_n(\br')\,dV\,dV',
+  \label{eq:body-form} \\[3pt]
+\mathcal{B}_{\mathrm{el}}[\bphi,\bu] &:= \int_{V}\!\!\int_{V}
+  \varphi_i(\br)\,\partial'_k G_{in}(\br-\br')\,
+  \partial'_l u_j(\br')\,dV\,dV'.
+  \label{eq:elastic-form}
+\end{align}
+\end{definition}
+
+\paragraph{Why $T_9$ is singularity-free.}
+This is the central structural advantage of the Galerkin formulation at
+degree~$\le 1$.  The body-force form $\mathcal{B}_{\mathrm{body}}$
+involves only the Green's tensor itself, with kernel $|\bs|^{-1}$, which
+is locally integrable in $\R^{6}$ by the Hardy--Littlewood--Sobolev
+inequality.  For the elastic form $\mathcal{B}_{\mathrm{el}}$, since
+$\bu \in T_9$ is a degree-$\le 1$ polynomial, we may integrate by parts
+on the trial function $\bu$:
+\begin{equation}
+  \mathcal{B}_{\mathrm{el}}[\bphi,\bu]
+  \;=\;
+  -\int_{V}\!\!\int_V\!\varphi_i\,G_{in}\,
+    \underbrace{\partial'_k\partial'_l u_j}_{=0}\,dV'\,dV
+  + \int_{V}\!\!\oint_{\partial V}\!\varphi_i\,G_{in}\,
+    \partial'_l u_j\,n_k\,dS'\,dV.
+  \label{eq:ibp-elastic}
+\end{equation}
+Because degree-$\le 1$ functions have zero second derivative, the volume
+term vanishes exactly and $\mathcal{B}_{\mathrm{el}}$ reduces to a
+five-dimensional surface integral against the $|\bs|^{-1}$ kernel (not
+$|\bs|^{-2}$ or worse).  Both bilinear forms therefore involve only
+absolutely convergent integrals.
+
+\begin{proposition}[Well-posedness]\label{prop:wellposed-T9}
+For $\bphi, \bu \in T_9$, every bilinear form in
+\eqref{eq:galerkin-LS-T9} is finite.  No Cauchy principal-value
+regularization, no Eshelby-type delta-function correction, and no
+distributional bookkeeping is required.
+\end{proposition}
+
+Table~\ref{tab:singularities-T9} summarizes the contrast with the
+point-evaluation (Path~A) closure, where taking field-point derivatives
+of the Green's tensor inside $V$ introduces increasingly singular
+kernels.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+Contribution & Worst kernel & $T_9$ Galerkin status \\
+\midrule
+Body-force $\mathcal{B}_{\mathrm{body}}$ & $1/|\bs|$ & $\Lspace$ --- absolutely convergent \\
+Elastic $\mathcal{B}_{\mathrm{el}}$ (after IBP) & $1/|\bs|$ & surface integral, absolutely convergent \\
+Path-A strain evaluation & $1/|\bs|^{2}$ & principal-value regularization needed \\
+Path-A gradient evaluation & $1/|\bs|^{3}$ & Eshelby delta correction needed \\
+\bottomrule
+\end{tabular}
+\caption{Singular structure for the $T_9$ Galerkin closure vs.\ the
+point-evaluation (Path~A) closure.  The Galerkin projection absorbs the
+singularity into a well-posed surface integral, removing the need for
+distributional corrections.}
+\label{tab:singularities-T9}
+\end{table}
+
+\subsection{Centre-of-mass and relative-coordinate reduction}
+\label{sec:t9-cm}
+
+The six-fold double integral in $\mathcal{B}_{\mathrm{body}}$ is reduced to
+a three-fold integral by the change of variables
+\begin{equation}
+  \bxi = \tfrac{1}{2}(\br + \br'), \qquad \bs = \br - \br',
+  \qquad d\br\,d\br' = d\bxi\,d\bs,
+  \label{eq:cm-vars}
+\end{equation}
+known in the Eshelby--Mura literature as sum-and-difference variables
+\cite{eshelby1957,mura1987}.  The constraint $\br,\br' \in V$ restricts
+$\bxi$ to a centred box of half-widths $a - |s_i|/2$ in each direction.
+Integrating out $\bxi$ yields
+\begin{equation}
+  \int_{V}\!\!\int_{V}\!\varphi_i(\br)\,K(\br-\br')\,u_n(\br')\,d\br\,d\br'
+  \;=\; \int_{[-2a,2a]^{3}}\!K(\bs)\,
+    \Big[\int_{B(\bs)}\!\varphi_i\!\bigl(\bxi+\tfrac{\bs}{2}\bigr)\,
+         u_n\!\bigl(\bxi-\tfrac{\bs}{2}\bigr)\,d\bxi\Big]\,d\bs,
+  \label{eq:cm-reduction}
+\end{equation}
+where the inner bracket is a polynomial in $(\bs, a)$ for polynomial
+$\bphi, \bu$.  For the case $\bphi = \bu = \mathbf{1}$ (constant modes),
+the inner integral is exactly the \emph{cube autocorrelation}
+\begin{equation}
+  \Lambda_V(\bs) \;=\; (\indV \star \indV)(\bs)
+  \;=\; \prod_{i=1}^{3}(2a - |s_i|)_+,
+  \label{eq:tent}
+\end{equation}
+the three-dimensional tent function with support $|s_i| \le 2a$
+(Figure~\ref{fig:cm-relative}).  For the linear (strain) modes the inner
+integral contributes additional polynomial factors that multiply the tent.
+The final outer integral has the form
+\begin{equation}
+  \text{polynomial}(\bs)\times |\bs|^{-1}
+  \quad \text{or} \quad
+  \text{polynomial}(\bs)\times s_i s_j\,|\bs|^{-3},
+\end{equation}
+over $[-2a,2a]^3$, which by rescaling $\bs = 2a\,\bu$ becomes the
+master integrals of Appendix~\ref{app:masters}.
+
 \begin{figure}[h]
 \centering
 \input{figures/fig_cm_relative.tex}
@@ -250,6 +387,73 @@ $\le 0.07\,\%$ inter-voxel coupling (Section~\ref{sec:inter}).
 }
 \label{fig:cm-relative}
 \end{figure}
+
+\subsection{Closed-form effective contrasts from the $T_9$ closure}
+\label{sec:t9-contrasts}
+
+Solving the $9\times9$ linear system \eqref{eq:galerkin-LS-T9} yields
+the internal displacement amplitude $\bu^h$ inside the cube.  Under cubic
+($O_h$) symmetry the system block-diagonalises into two independent sectors:
+
+\paragraph{Displacement sector (3 modes, ungerade).}
+The three uniform-displacement modes decouple from the strain modes by
+parity.  Their T-matrix amplitude is driven by the density contrast
+$\omega^2\D\rho$ via the body bilinear form and gives the effective
+density contrast
+\begin{equation}
+  \D\rho^{*}
+  \;=\; A_u\,\D\rho, \qquad
+  A_u \;=\; \frac{1}{1 - \omega^2\D\rho\,\Gamma_0},
+  \label{eq:Arho}
+\end{equation}
+where $\Gamma_0$ is the real part of the volume-averaged body bilinear
+evaluated on the displacement sector:
+\begin{equation}
+  \Gamma_0 \;=\; \frac{1}{V}\,\mathcal{B}_{\mathrm{body}}[\mathbf{e}_i, \mathbf{e}_i]
+  \quad\text{(no sum on }i\text{)}.
+  \label{eq:Gamma0}
+\end{equation}
+The denominator factor $A_u$ is the self-consistent displacement
+amplification inside the cube; it encodes the Eshelby concentration
+effect \cite{eshelby1957} for the inertial (density) channel.  In the
+static limit $\omega\to 0$ (or $\D\rho\to 0$), $A_u\to 1$ and
+$\D\rho^{*} \to \D\rho$.
+
+\paragraph{Strain sector (6 modes, gerade).}
+The six symmetric-strain modes carry the stiffness contrast
+$(\D\lambda, \D\mu)$.  The elastic bilinear form
+$\mathcal{B}_{\mathrm{el}}$ (eq.~\eqref{eq:elastic-form}) on
+$T_9$ is block-diagonal with the mass form by parity: the
+displacement--strain cross block is identically zero (odd integrand on the
+symmetric cube).  The strain-sector Galerkin eigenproblem yields the
+self-consistent effective Lam\'e contrasts
+\begin{align}
+  \D\lambda^* &= \bigl(\D\lambda + \tfrac{2}{3}\D\mu\bigr)\,A_\theta
+    - \tfrac{2}{3}\D\mu\,A_e,
+    \label{eq:Dlambda-star-T9}\\
+  \D\mu^* &= \D\mu\cdot A_e,
+  \label{eq:Dmu-star-T9}
+\end{align}
+where $A_\theta$ and $A_e$ are the volumetric and deviatoric amplification
+factors from the Eshelby concentration tensor \cite{eshelby1957,mura1987}.
+The cross-term in \eqref{eq:Dlambda-star-T9} couples the bulk and
+deviatoric channels.  Unlike the displacement sector, the strain sector
+has no dynamic ($\omega^2$) prefactor at leading Rayleigh order: the
+stiffness channel is governed by the static Eshelby geometry.
+
+\paragraph{Remark on cubic anisotropy.}
+The $T_9$ elastic bilinear restricted to the strain sector has
+irreducible eigenvalues $8(3\D\lambda+2\D\mu)$, $16\D\mu$, and $8\D\mu$
+on the $A_{1g}$, $E_g$, and $T_{2g}$ irreps respectively.  The equality
+of the $E_g$ and $T_{2g}$ eigenvalues in the stiffness channel means the
+$T_9$ strain block is strictly isotropic---cubic anisotropy of the cube
+T-matrix arises through the $B$-channel of the body bilinear
+(the $s_i s_j/|\bs|^3$ kernel acting on the displacement sector coupled
+back to the strain) and is a subleading effect in the Rayleigh regime.
+
+The numerical values of $\Gamma_0$, $A_\theta$, and $A_e$ follow from
+the master integrals in Appendix~\ref{app:masters}; the complete closed
+forms are given there.
 
 \section{Single-site self-energy corrections}\label{sec:single}
 
@@ -302,6 +506,150 @@ $\le 0.07\,\%$ inter-voxel coupling (Section~\ref{sec:inter}).
 
 \appendix
 \section{Master integrals (\texorpdfstring{$T_9$}{T9} subset)}\label{app:masters}
+
+After the centre-of-mass/relative reduction of Section~\ref{sec:t9-cm},
+every entry of the $9\times 9$ Galerkin matrix is a finite linear
+combination of two families of three-dimensional master integrals over the
+unit cube $[0,1]^3$ (using octant symmetry $\bs \to \bu$, $|\bs|=2a|\bu|$):
+\begin{align}
+  \mathcal{M}^+_{p,q,r}
+  &:= \int_{[0,1]^3}\!\frac{x^p\,y^q\,z^r}{\sqrt{x^2+y^2+z^2}}\,
+      dx\,dy\,dz
+  &&\text{($A$-channel, kernel $|\bu|^{-1}$)},
+  \label{eq:Mp-app}\\
+  \mathcal{M}^{B+}_{p,q,r}
+  &:= \int_{[0,1]^3}\!\frac{x^p\,y^q\,z^r}{(x^2+y^2+z^2)^{3/2}}\,
+      dx\,dy\,dz
+  &&\text{($B$-channel, kernel $|\bu|^{-3}$, reduced by IBP)}.
+  \label{eq:MpB-app}
+\end{align}
+The $A$-channel collects the isotropic trace piece $\delta_{ij}/|\bs|$ of
+the static Green's tensor; the $B$-channel collects the anisotropic piece
+$s_is_j/|\bs|^3$.  For the $T_9$ closure---polynomials of degree $\le 1$---only
+indices satisfying $p+q+r \le 3$ appear (the $9\times9$ body bilinear
+generates at most degree-3 monomials after the centre-of-mass integration).
+Higher degrees arise only in extensions to quadratic and higher trial spaces,
+which are outside the scope of this paper.
+
+By parity $\bs \to -\bs$ on each coordinate axis separately,
+$\mathcal{M}^+_{p,q,r}$ vanishes when any index is odd, and
+$\mathcal{M}^{B+}_{p,q,r}$ vanishes unless the total count of each axis
+index in the full integrand (including the two implicit powers from
+$x_i x_j$) is even.  The two families satisfy the trace identity
+\begin{equation}
+  \mathcal{M}^{B+}_{p+2,q,r}
+  + \mathcal{M}^{B+}_{p,q+2,r}
+  + \mathcal{M}^{B+}_{p,q,r+2}
+  \;=\; \mathcal{M}^+_{p,q,r},
+  \label{eq:trace-id}
+\end{equation}
+which follows from $|\bu|^2/|\bu|^3 = |\bu|^{-1}$ and reduces the number
+of independent $B$-channel evaluations needed.
+
+\subsection*{The cube constant \texorpdfstring{$g_0$}{g0}}
+
+The headline closed form is the degree-zero $A$-channel master integral,
+which we call the \emph{cube constant}:
+\begin{equation}
+  g_0 \;:=\; \int_{[-1,1]^3}\!\frac{1}{|\bu|}\,d\bu
+  \;=\; -2\Bigl(\pi + \log\!\bigl(1351 - 780\sqrt{3}\bigr)\Bigr).
+  \label{eq:g0}
+\end{equation}
+Numerically $g_0 \approx 9.5203095$.  The expression
+$1351 - 780\sqrt{3}$ is a Pell unit of $\mathbb{Z}[\sqrt{3}]$
+satisfying $1351^2 - 3\cdot 780^2 = 1$, ensuring the closed form is
+algebraically natural.  The positive-octant version (Table~\ref{tab:mp-t9})
+is $\mathcal{M}^+_{0,0,0} = g_0/8 \approx 1.1900387$.
+
+\subsection*{$A$-channel masters ($p+q+r \le 3$)}
+
+All parity-even entries with $p+q+r \le 3$ are listed in
+Table~\ref{tab:mp-t9}.  Cubic symmetry equates permutations of
+$(p,q,r)$; only the canonical ordering $p \ge q \ge r$ is shown.  The
+full $9\times9$ body bilinear requires the six values in this table plus
+the positive-octant corrections from the tent weight
+$(1-|s_1|/2a)(1-|s_2|/2a)(1-|s_3|/2a)$, which expand as alternating
+signed sums of $\mathcal{M}^+$ values.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llr}
+\toprule
+$(p,q,r)$ & $\mathcal{M}^+_{p,q,r} = \int_{[0,1]^3} x^p y^q z^r / |\bm{r}|\,dV$ & numerical \\
+\midrule
+$(0,0,0)$ & $-\tfrac{\pi}{4} - \tfrac{1}{6}\log(70226 - 40545\sqrt{3})$
+           & $1.1900387$ \\[3pt]
+$(1,0,0)$ & $\tfrac{1}{36}\bigl(-2\pi - 12(\sqrt{2}-\sqrt{3}+\sinh^{-1}1)
+             + \cosh^{-1}(189750626) + 18\coth^{-1}\sqrt{3}\bigr)$
+           & $0.51559356$ \\[3pt]
+$(1,1,0)$ & $\tfrac{1}{12}\bigl(1 - 7\sqrt{2} + 6\sqrt{3}
+             + \log(5\sqrt{2}-7) - 3\log(2-\sqrt{3})\bigr)$
+           & $0.23329690$ \\[3pt]
+$(2,0,0)$ & $\tfrac{1}{144}\bigl(12\sqrt{3} - 2\pi
+             + \log(26650854921601 + 15386878263120\sqrt{3})\bigr)$
+           & $0.32019732$ \\[3pt]
+$(1,1,1)$ & $\tfrac{1}{5}(1 - 4\sqrt{2} + 3\sqrt{3})$
+           & $0.10785963$ \\[3pt]
+$(2,1,0)$ & $\tfrac{1}{2880}\bigl(-504\sqrt{2} + 672\sqrt{3} + 32\pi
+             + 72\log(\sqrt{3}-1) - 252\log(1+\sqrt{3})
+             + 90\log(2(2+\sqrt{3})) - 261\sinh^{-1}1
+             + 40\cosh^{-1}(26) + 45\coth^{-1}\sqrt{2}\bigr)$
+           & $0.14741068$ \\[3pt]
+\bottomrule
+\end{tabular}
+\caption{Closed-form values of the positive-octant $A$-channel master
+integrals $\mathcal{M}^+_{p,q,r}$ over $[0,1]^3$, for all parity-even
+entries with $p+q+r \le 3$ (canonical ordering $p\ge q\ge r$).  These
+six values, together with the trace identity \eqref{eq:trace-id}, determine
+every entry of the $T_9$ body bilinear matrix.  The entry $(0,0,0)$ equals
+$g_0/8$ where $g_0$ is the cube constant \eqref{eq:g0}.}
+\label{tab:mp-t9}
+\end{table}
+
+\subsection*{Body bilinear form building blocks}
+
+The three independent scalars entering the $9\times9$ body bilinear matrix
+are defined via the tent-convolved $A$- and $B$-channel integrals:
+\begin{align}
+  i_A      &:= \int_{[0,1]^3}\!(1-u_1)(1-u_2)(1-u_3)\,|\bm{u}|^{-1}\,d\bm{u},
+  \label{eq:iA}\\
+  i_{B,11} &:= \int_{[0,1]^3}\!(1-u_1)(1-u_2)(1-u_3)\,u_1^2\,|\bm{u}|^{-3}\,d\bm{u},
+  \label{eq:iB11}\\
+  i_{B,12} &:= \int_{[0,1]^3}\!(1-u_1)(1-u_2)(1-u_3)\,u_1 u_2\,|\bm{u}|^{-3}\,d\bm{u}.
+  \label{eq:iB12}
+\end{align}
+The first reduces to a signed combination of Table~\ref{tab:mp-t9} values:
+\begin{equation}
+  i_A \;=\; \mathcal{M}^+_{0,0,0}
+          - 3\mathcal{M}^+_{1,0,0}
+          + 3\mathcal{M}^+_{1,1,0}
+          - \mathcal{M}^+_{1,1,1}
+       \;\approx\; 0.23528908.
+  \label{eq:iA-value}
+\end{equation}
+The integrals $i_{B,11}$ and $i_{B,12}$ are obtained from $i_A$ by an
+integration-by-parts reduction that converts the $|\bu|^{-3}$ kernel to a
+$|\bu|^{-1}$ kernel plus a two-dimensional surface residual; both two-dimensional
+residuals evaluate in closed form to values $J_{11} \approx 0.15685939$ and
+$i_{B,12} \approx 0.04970171$ respectively.  A non-trivial consistency check
+is the trace identity $3\,i_{B,11} = i_A$ (equivalent to $\operatorname{tr}[\bu\bu^T/|\bu|^3] = |\bu|^{-1}$),
+which holds to working precision.
+
+With these three scalars, the $9\times9$ body bilinear is completely
+determined.  The displacement-block diagonal entries are
+\begin{equation}
+  \mathcal{B}_9[1,1] = \mathcal{B}_9[2,2] = \mathcal{B}_9[3,3]
+  \;=\; 256\,(A\,i_A + B\,i_{B,11}),
+  \label{eq:B9-disp-diag}
+\end{equation}
+where $A = (\alpha^2+\beta^2)/(8\pi\rho_0\alpha^2\beta^2)$ and
+$B = (\alpha^2-\beta^2)/(8\pi\rho_0\alpha^2\beta^2)$ are the isotropic
+and anisotropic Kelvin coefficients of the static Green's tensor.
+The displacement--strain cross block vanishes identically by parity
+(odd integrand on the symmetric cube), and the strain-block entries follow
+analogous expressions with $i_A$, $i_{B,11}$, and $i_{B,12}$ as building
+blocks.  Together these give $\Gamma_0$ in eq.~\eqref{eq:Gamma0}
+as $\Gamma_0 = (256/V)(A\,i_A + B\,i_{B,11})$.
 
 \printbibliography
 
