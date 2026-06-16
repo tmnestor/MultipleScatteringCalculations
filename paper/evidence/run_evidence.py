@@ -276,12 +276,18 @@ def evidence_radiation_need() -> Path:
 #            size cube form factor        .Dmu_star_off);
 #                                         POINT source (no form factor)
 #
-# "t9"       ω²·Δρ·A_u·c_inc[:3]         T_Voigt @ ε_inc           result.amp_u
-#            (cube_far_field): finite-     (cube_far_field): finite- (internal)
-#            size form factor enters       size form factor +
-#            via c_inc overlap integrals   radiation reaction; full
-#            + radiation reaction          T₉ Galerkin path
+# "t9"       ω²·Δρ·A_u·c_inc[:3]         T_Voigt @ ε_inc           recomputed
+#            (cube_far_field): finite-     (cube_far_field): finite- inside
+#            size form factor enters       size form factor +        cube_far_field
+#            via c_inc overlap integrals   radiation reaction; full   (NOT read off
+#            + radiation reaction          T₉ Galerkin path           galerkin)
 # ─────────────────────────────────────────────────────────────────────
+#
+# NOTE on the t9 A_u: ``cube_far_field`` does NOT read an amplification field
+# off the ``GalerkinTMatrixResult`` (no such field exists).  It recomputes
+# A_u = 1/(1 − ω²Δρ Γ₀) internally via ``_compute_Gamma0_analytical`` — the
+# same self-consistent density Eshelby self-interaction used by the effective
+# contrasts.  Only the "eshelby" rep here reads ``compute_cube_tmatrix(...).amp_u``.
 #
 # Self-consistent contrast / amplification attribute names (read VERBATIM
 # from the codebase, do NOT guess):
@@ -337,6 +343,10 @@ def far_field_amplitudes(
 
     Returns:
         Tuple ``(f_P, f_SV, f_SH)`` of complex numpy arrays over ``theta``.
+        These are complex *scattering amplitudes* (not intensities), dimensioned
+        identically to ``cube_far_field`` (units of length, the far-field
+        coefficient f in u_sc ≈ f·e^{ikr}/r), so the reps are directly comparable
+        and L2-differenced against ``mie_far_field``.
 
     Raises:
         ValueError: If ``rep`` is not in ``REPRESENTATIONS`` or ``incident``
@@ -411,8 +421,11 @@ def far_field_amplitudes(
     F = omega**2 * contrast.Drho * amp_u * V * u_inc
     dsigma = _voigt_to_tensor(Dc @ eps_inc_V)
 
-    # Scattering-plane basis (same construction as cube_far_field).
-    ref_vec = np.array([0.0, 1.0, 0.0])  # k̂ = x̂ ⇒ |k̂[0]| ≥ 0.9
+    # Scattering-plane basis (cube_far_field's own branch, verbatim).
+    if abs(k_hat[0]) < 0.9:
+        ref_vec = np.array([1.0, 0.0, 0.0])
+    else:
+        ref_vec = np.array([0.0, 1.0, 0.0])
     perp1 = ref_vec - np.dot(ref_vec, k_hat) * k_hat
     perp1 = perp1 / np.linalg.norm(perp1)
     perp2 = np.cross(k_hat, perp1)
@@ -422,6 +435,8 @@ def far_field_amplitudes(
     f_SH = np.zeros_like(theta, dtype=complex)
     for idx, th in enumerate(theta):
         r_hat = np.sin(th) * perp1 + np.cos(th) * k_hat
+        sv_hat = np.cos(th) * perp1 - np.sin(th) * k_hat
+        sh_hat = perp2
         rF = np.dot(r_hat, F)
         Sr = (V * dsigma) @ r_hat
         rSr = r_hat @ Sr
@@ -433,7 +448,7 @@ def far_field_amplitudes(
         S_perp = Sr - rSr * r_hat
         Q_S = F_perp - 1j * kS * S_perp
         u_S = -Q_S / (4.0 * np.pi * rho * ref.beta**2)
-        f_SV[idx] = np.dot(np.cos(th) * perp1 - np.sin(th) * k_hat, u_S)
-        f_SH[idx] = np.dot(perp2, u_S)
+        f_SV[idx] = np.dot(sv_hat, u_S)
+        f_SH[idx] = np.dot(sh_hat, u_S)
 
     return f_P, f_SV, f_SH
