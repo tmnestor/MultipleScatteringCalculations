@@ -1,0 +1,38 @@
+% fig_single_vs_inter.tex — Self-energy (single-site) vs inter-site coupling
+% Libraries used: arrows.meta, calc, decorations.pathmorphing (for wavy loop)
+\begin{tikzpicture}[>=Stealth, font=\small]
+
+% ---- Left panel: single cube with self-loop ----
+\node[draw, fill=blue!10, minimum size=1.0cm] (cube1) at (-3,0) {};
+\node[above=0.1cm of cube1, font=\footnotesize] {cube $i$};
+
+% Self-loop arrow above the cube
+\draw[->, thick, blue!70!black,
+      decoration={snake, amplitude=1.5pt, segment length=5pt},
+      decorate]
+  ($(cube1.north west)+(0.1,0)$)
+  .. controls (-3.8,1.2) and (-2.2,1.2) ..
+  ($(cube1.north east)+(-0.1,0)$);
+\node[above, yshift=1.2cm, font=\footnotesize, blue!70!black, align=center]
+  at (cube1) {self-energy\\(single-site $T_0$)};
+
+% ---- Right panel: two cubes with inter-site arrow ----
+\node[draw, fill=red!10, minimum size=1.0cm] (cubeA) at (1.0,0) {};
+\node[draw, fill=red!10, minimum size=1.0cm] (cubeB) at (3.2,0) {};
+\node[above=0.1cm of cubeA, font=\footnotesize] {cube $i$};
+\node[above=0.1cm of cubeB, font=\footnotesize] {cube $j$};
+
+% Inter-site coupling arrow
+\draw[->, thick, red!70!black]
+  ($(cubeA.east)+(0,0.05)$) -- ($(cubeB.west)+(0,0.05)$)
+  node[midway, above, font=\footnotesize, red!70!black] {$G_0(\br_{ij})$};
+\draw[->, thick, red!60!black, dashed]
+  ($(cubeB.west)+(0,-0.05)$) -- ($(cubeA.east)+(0,-0.05)$);
+
+\node[below=0.5cm, font=\footnotesize, red!70!black, align=center]
+  at ($(cubeA)!0.5!(cubeB)$) {coupling (inter-site)};
+
+% Vertical divider
+\draw[gray!50, dashed] (-0.5,-1.0) -- (-0.5,2.0);
+
+\end{tikzpicture}
