@@ -687,6 +687,98 @@ LDOS \eqref{eq:Im-Gamma0} are contributions of this work.
 
 \section{Inter-site coupling}\label{sec:inter}
 
+The inter-site half of the verdict is: for the Foldy--Lax coupling between
+scatterers, a \emph{local point propagator} (the bare elastodynamic Green's
+tensor evaluated between scatterer centres) is sufficient at the accuracy
+levels demonstrated in this paper.  The volume-averaged refinement corrects
+vertical coupling but not the dominant transverse phase accumulation, and
+extending the per-site basis from nine to twenty-seven components adds
+$\le 0.07\,\%$ to the two-scatterer observable.
+
+\subsection{Point vs.\ volume-averaged inter-site propagator}
+\label{sec:inter-point-vs-va}
+
+The Foldy--Lax equation \cite{foldy1945,lax1951}
+\begin{equation}
+  \mathbf{T} = \mathbf{T}_0(\mathbf{I} - \mathbf{G}_0\,\mathbf{T}_0)^{-1}
+  \label{eq:fl-inter}
+\end{equation}
+requires the inter-site propagator $\mathbf{G}_0(\mathbf{r}_{ij},\omega)$
+connecting two scatterers at positions $\mathbf{r}_i$ and $\mathbf{r}_j$.
+Two representations are available.
+
+\paragraph{Point propagator.}
+The simplest choice evaluates the elastodynamic Green's tensor
+$G_{ij}(\mathbf{r}_i - \mathbf{r}_j, \omega)$ at the separation
+between scatterer centres.  This is exact in the limit $|\mathbf{r}_{ij}|
+\gg a$ and becomes the standard Foldy--Lax point approximation.  For the
+$9\times9$ field vector (three displacement + six Voigt strain components),
+the point propagator supplies the Green's tensor $G_{ij}$, its first
+derivative $\partial_k G_{ij}$ (displacement--strain coupling), and the
+second derivative $\partial_k\partial_l G_{ij}$ (strain--strain coupling).
+
+\paragraph{Volume-averaged propagator.}
+A more careful treatment replaces the point evaluation by the double
+volume average over the two scatterer volumes $V_A$, $V_B$:
+\begin{equation}
+  P_{ijkl}(\mathbf{R},\omega)
+  \;=\;
+  \int_{V_A}\!\int_{V_B}
+  \frac{\partial^2 G_{ik}(\mathbf{s} - \mathbf{s}' + \mathbf{R},\,\omega)}%
+       {\partial x_j\,\partial x_l}
+  \,d^3s\,d^3s'.
+  \label{eq:va-prop}
+\end{equation}
+This removes the $|\mathbf{r}|^{-3}$ near-field singularity of the
+strain--strain block by averaging over the source and receiver volumes,
+and at touching separation ($|\mathbf{R}| = 2a$) it regularises the
+otherwise divergent coupling.  The static part of the volume-averaged
+propagator is computed analytically via the Newton and biharmonic
+potentials (derived from the cube form factor); dynamic corrections
+are carried as a power series in $\omega^2$ through order $\omega^6$
+\cite{mura1987}.
+
+The key structural difference between the two representations is a
+correction of order $\mathcal{O}((a/|\mathbf{R}|)^2)$ in the coupling
+strength, with the largest fractional correction at touching separation
+(face neighbours, $|\mathbf{R}| = 2a$): the G block (displacement--displacement)
+deviates from the point propagator by $\sim\!12\%$, and the S block
+(strain--strain) by up to $60\%$ at face contact (see the calibration
+study in the evidence log, consistent with the near-field $1/r^3$ dominance).
+
+\subsection{Volume averaging corrects vertical coupling, not transverse phase}
+\label{sec:inter-vertical-vs-transverse}
+
+Despite the regularisation of the touching-face coupling, the volume-averaged
+propagator does \emph{not} close the dominant accuracy gap for off-normal
+incidence.  The reason is the \emph{transverse phase} accumulated between
+horizontally adjacent scatterers: for cell spacing $d = 2a$ and horizontal
+wavenumber $k_x$, the inter-cell phase shift is $k_x d \approx ka \cdot
+(d/a)$.  At $ka = 0.3$ this is already $\sim\!0.6$ rad per cell, comparable
+to unity; the plane-wave structure of the coupling is therefore not
+well-approximated by a quasi-static (slowly varying) expansion.  Volume
+averaging corrects the \emph{amplitude} of the coupling kernel but leaves
+the oscillatory $e^{i\mathbf{k}\cdot\mathbf{R}}$ phase untouched.
+
+The imaginary (radiation) part of the propagator quantifies the frequency
+at which this gap opens.  The \textsc{Measurement A} study (provenance:
+\texttt{paper/evidence/radiation\_need.csv}) measured the ratio
+$|\operatorname{Im}[\mathbf{G}_0]|/|\operatorname{Re}[\mathbf{G}_0]|$
+(Frobenius norm, G block) for the full complex volume-averaged propagator
+at face-, edge-, and corner-adjacent separations:
+\begin{equation}
+  \left.\frac{|\operatorname{Im}\,G|_F}{|\operatorname{Re}\,G|_F}\right|_{\text{face}}
+  \;=\; 0.19\ (ka=0.1),\quad 0.64\ (ka=0.3),\quad 1.37\ (ka=0.5),
+  \label{eq:imre-ratio}
+\end{equation}
+where the analytic module carries only the real (quasi-static) part.
+The ratio exceeds unity at $ka \approx 0.5$, confirming that the
+omitted radiation part of the propagator is an order-one correction in
+the transition regime.  For the C and S blocks the corresponding ratios
+grow more slowly ($|$Im/Re$| \approx 0.05$ and $0.03$ at $ka = 0.3$
+for the face case), reflecting the weaker radiation coupling in the
+higher-derivative blocks (see Figure~\ref{fig:intersite-phase}).
+
 \begin{figure}[h]
 \centering
 \input{figures/fig_intersite_phase.tex}
@@ -701,6 +793,46 @@ LDOS \eqref{eq:Im-Gamma0} are contributions of this work.
 }
 \label{fig:intersite-phase}
 \end{figure}
+
+\subsection{The excluded rung: 27-component inter-voxel coupling}
+\label{sec:inter-t27-excluded}
+
+A natural extension of the $9\times9$ Foldy--Lax system is to retain
+the quadratic (27-component) degrees of freedom in the inter-site
+coupling operator, coupling the strain-quadrupole modes of one scatterer
+to those of its neighbours.  The two-voxel coupled solve was carried out
+with the quadratic channels either included or projected out (provenance:
+\texttt{paper/evidence/t27\_intervoxel.csv}, study
+\texttt{scripts/t27\_coupling\_study.py}).  The observable is the net
+force-plus-stress-dipole content of the pair's polynomial source.
+
+The result is unambiguous: enabling the quadratic inter-voxel coupling
+channels changes the two-voxel observable by at most $0.0682\,\%$ (the
+maximum over all tested separations, $ka$ values, and wave types at
+$ka \le 0.5$; moderate contrast $\Delta\lambda = 2$~GPa,
+$\Delta\mu = 1$~GPa, $\Delta\rho = 100$~kg/m$^3$).  This is the
+quantitative justification for excluding the 27-component extension
+from the Foldy--Lax coupling: the extra rung contributes negligibly
+to the inter-site observable, and the single-site far-field shows no
+Mie-consistent gain from it either (Section~\ref{sec:t9}).
+
+\subsection{Slab Foldy--Lax convergence to Kennett}
+\label{sec:inter-slab-kennett}
+
+The complete slab Foldy--Lax solver (point propagator, $T_9$ T-matrix,
+GMRES solve) is validated against the Kennett recursion
+\cite{kennett1983} for the specular P-to-P reflection coefficient at
+normal incidence from a uniform embedded layer.  The volume-averaged
+slab reproduces $R_{PP}$ with a relative error floor of approximately
+$1\,\%$ across the Rayleigh regime, consistent with the leading
+$(ka)^2$ form-factor truncation documented in Section~\ref{sec:formfactor}
+(Table~\ref{tab:formfactor}).  The error does not decrease substantially
+when switching from the point propagator to the volume-averaged
+propagator (\textsc{Measurement B}, provenance:
+\texttt{paper/evidence/logs/radiation\_need.log}): the volume-averaging
+effect on the slab $R_{PP}$ is of order $0.5\,\%$, comparable to the
+shared point-propagator floor, confirming that the inter-site propagator
+is not the limiting factor in the slab-vs-Kennett comparison.
 
 \section{Evidence synthesis and cost--accuracy}\label{sec:evidence}
 
