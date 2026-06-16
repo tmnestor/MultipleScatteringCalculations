@@ -195,3 +195,42 @@ def evidence_formfactor() -> Path:
         w.writeheader()
         w.writerows(rows)
     return csv_path
+
+
+def evidence_radiation_need() -> Path:
+    """Re-run the near-field radiation-part-need probe.
+
+    Quantifies how large the imaginary (radiation) part of the inter-voxel
+    propagator is (~0.5% slab-R_PP effect at normal incidence; |Im/Re| G grows
+    to O(1) by ka≈0.5 for face/edge/corner separations).
+
+    Measurement A rows: separation × ka → |Im/Re| G, C, S blocks.
+    Measurement B rows: ka → |R_K|, err pt, err VA n=2, err VA n=3,
+        |VAn2-pt|/|R_K| (the propagator's own slab-solve contribution).
+
+    The CSV captures raw text of every data line (>=3 floats) so the paper
+    §6 table can be assembled by hand-checked parse of the log.  The log is
+    the authoritative record; the CSV is a quick-scan summary.
+
+    Returns:
+        Path to the written CSV file.
+    """
+    rc, out = capture(
+        ["conda", "run", "-n", "seismic", "python", "scripts/test_radiation_part_need.py"],
+        LOGS / "radiation_need.log",
+    )
+    assert rc == 0, f"test_radiation_part_need failed:\n{out[-2000:]}"
+    csv_path = EV / "radiation_need.csv"
+    # Capture every line that carries at least 3 floats — this selects all
+    # Measurement-A separation rows (12) and Measurement-B ka rows (5) plus
+    # the background parameter line, while skipping headers and prose.
+    rows = []
+    for line in out.splitlines():
+        nums = _floats(line)
+        if len(nums) >= 3:
+            rows.append({"raw": line.strip()})
+    with csv_path.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["raw"])
+        w.writeheader()
+        w.writerows(rows)
+    return csv_path
