@@ -1,0 +1,10 @@
+\begin{tikzpicture}
+\begin{axis}[
+  xlabel={$ka_S$}, ylabel={relative $L^2$ error vs.\ Mie},
+  ymode=log, legend pos=north west, width=0.8\linewidth,
+  grid=both, mark size=2pt]
+  \addplot table[x=ka,y=l2]{error_vs_ka_born.dat};    \addlegendentry{Born (point)}
+  \addplot table[x=ka,y=l2]{error_vs_ka_eshelby.dat};  \addlegendentry{Eshelby (point)}
+  \addplot table[x=ka,y=l2]{error_vs_ka_t9.dat};       \addlegendentry{$T_9$ Galerkin}
+\end{axis}
+\end{tikzpicture}
