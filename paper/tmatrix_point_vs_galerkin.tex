@@ -66,11 +66,80 @@ Elastic Cubic Scatterer:\\ a Mie- and Kennett-Validated Hierarchy}
 
 \section{Background theory}\label{sec:background}
 
+\begin{figure}[h]
+\centering
+\input{figures/fig_ladder.tex}
+\caption{%
+  Ladder of approximations from lowest (Born, point source) to the
+  finite-size Galerkin closure $T_9$.  The $T_{27}$ rung is shown greyed and
+  struck out because measurements show it contributes $\le 0.07\,\%$ gain over
+  $T_9$ at all validated frequencies, making the added cost unjustified.
+  Error decreases bottom to top; computational cost increases correspondingly.%
+}
+\label{fig:ladder}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\input{figures/fig_single_vs_inter.tex}
+\caption{%
+  Single-site self-energy (left: scatterer $i$ radiates back into itself,
+  captured by $T_0$) versus inter-site coupling (right: wave field propagates
+  from scatterer $i$ to $j$ via the background Green tensor $G_0(\br_{ij})$
+  and back).  The Foldy-Lax system couples both contributions.%
+}
+\label{fig:single-vs-inter}
+\end{figure}
+
 \section{The body-force Galerkin closure (\texorpdfstring{$T_9$}{T9})}\label{sec:t9}
+
+\begin{figure}[h]
+\centering
+\input{figures/fig_cm_relative.tex}
+\caption{%
+  Centre-of-mass coordinate $\bxi = \tfrac{1}{2}(\br_i + \br_j)$ and
+  relative coordinate $\bs = \br_j - \br_i$ for a pair of overlapping unit
+  cells $V_i$, $V_j$.  Inset: the tent (triangular) overlap kernel
+  $\Lambda_V(s) = (2a - |s|)_+$ that emerges from the volume convolution,
+  with support $|s| \le 2a$.%
+}
+\label{fig:cm-relative}
+\end{figure}
 
 \section{Single-site self-energy corrections}\label{sec:single}
 
+\begin{figure}[h]
+\centering
+\input{figures/fig_ldos.tex}
+\caption{%
+  Schematic radiation patterns entering the local density of states (LDOS).
+  Left: a point \emph{force} source radiates into a dipolar P lobe
+  ($\cos^2\!\theta$) and two transverse S lobes ($\sin^2\!\theta$),
+  proportional to $\operatorname{Im} G_{ii}(\mathbf{0})$.
+  Right: a \emph{moment-tensor} (dipole) source produces quadrupolar P and S
+  patterns, proportional to $\operatorname{Im} \partial_j G_{ij}(\mathbf{0})$.
+  The imaginary parts of these on-site Green tensor components determine
+  the radiation-reaction correction to the effective single-site T-matrix.%
+}
+\label{fig:ldos}
+\end{figure}
+
 \section{Inter-site coupling}\label{sec:inter}
+
+\begin{figure}[h]
+\centering
+\input{figures/fig_intersite_phase.tex}
+\caption{%
+  Two vertically adjacent unit cells illustrating the two dominant
+  inter-site coupling effects.  The vertical (out-of-plane) coupling arrow
+  (blue, left) is corrected by the volume-average of the Green tensor over
+  the cell pair, removing the $1/r$ singularity.  The horizontal wavy arrow
+  (red, right) represents $\sim\!1$ rad/cell transverse phase accumulation
+  that is \emph{not} corrected by the volume average and drives the
+  convergence criterion $ka \ll 1$ for the quasi-static Galerkin scheme.%
+}
+\label{fig:intersite-phase}
+\end{figure}
 
 \section{Evidence synthesis and cost--accuracy}\label{sec:evidence}
 
