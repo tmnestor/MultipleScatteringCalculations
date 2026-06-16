@@ -1,0 +1,294 @@
+% !TEX program = lualatex
+%==============================================================================
+%  Directional Partial-Wave Sweeps and the Krylov Solve.
+%  The propagator matvec for elastic multiple scattering on a depth-stratified
+%  voxel grid.
+%
+%  Self-contained LuaLaTeX source. Compile with:
+%      latexmk -lualatex DirectionalSweepSolver.tex
+%==============================================================================
+\documentclass[11pt,a4paper]{article}
+
+% --- LuaLaTeX font handling -------------------------------------------------
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+
+% --- Mathematics ------------------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
+% --- Layout and typography --------------------------------------------------
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{booktabs}
+
+% --- Graphics ---------------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+
+% --- Hyperlinks -------------------------------------------------------------
+\usepackage[colorlinks=true,
+            linkcolor=blue!55!black,
+            citecolor=blue!55!black,
+            urlcolor=blue!55!black]{hyperref}
+\hypersetup{
+  pdftitle={Directional Partial-Wave Sweeps and the Krylov Solve},
+  pdfauthor={Tod Nestor}
+}
+
+% --- Macros -----------------------------------------------------------------
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\rd}{\mathrm{d}}
+\newcommand{\Tz}{T_0}
+\newcommand{\Gz}{G_0}
+\newcommand{\kpar}{\mathbf{k}_{\parallel}}
+
+\title{\bfseries Directional Partial-Wave Sweeps and the Krylov Solve\\[4pt]
+\large The propagator matvec for elastic multiple scattering on a
+depth-stratified voxel grid}
+\author{Tod Nestor}
+\date{16 June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The multiple scattering of elastic waves by voxels superimposed on a depth-stratified
+background is a Foldy--Lax / volume integral equation, $T=\Tz(I-\Gz\Tz)^{-1}$, solved by a
+Krylov method whose only nontrivial operation is the application of the background propagator
+$\Gz$. This note describes that application as an alternating-direction partial-wave summation:
+the lateral coupling is summed by constant-$z$ left-right ($k_x$) and constant-$(z,x)$ in-out
+($k_y$) cumulative-phase sweeps, and the coupling between depth planes by the up-down Kennett
+reflectivity recursion ($k_z$). Choosing the lateral directions for the in-plane coupling sums
+the propagator along axes in which the voxels are separated, so the $k_z$ partial-wave sum that
+diverges at zero depth separation is never evaluated. The sweeps are a pure forward matvec; all
+multiple scattering, to every order, is resolved by the Krylov iterations.
+\end{abstract}
+
+\bigskip
+\noindent\textbf{Companion series.}\enspace{\small\itshape One of a companion series on elastic
+multiple scattering from cubic heterogeneities on a depth-stratified background, the T-matrix
+programme $T=T_0(I-G_0T_0)^{-1}$: \textbf{(I)}~the stratified inter-site propagator, the
+same-depth convergence theory, the SH and P/SV traction kernels, interplane side scattering and
+the first-shell near stencil (\texttt{EwaldIntraPlanePropagator}); \textbf{(II)}~the
+contrast-source volume integral equation and the CG-FFT / seismic grid T-matrix lineage
+(\texttt{ContrastSourceVIE}); \textbf{(III)}~the directional partial-wave sweep matvec and the
+Krylov multiple-scattering solve (\texttt{DirectionalSweepSolver}); with the empirical companion
+\texttt{RQ1\_Planar\_Decomposition\_Proposal}. This is note~(III).}
+
+\tableofcontents
+\bigskip
+
+%==============================================================================
+\section{The system, and where the cost lives}
+%==============================================================================
+
+Voxels (cubic cells) are superimposed on a background that carries the lateral average of the
+medium at each depth: laterally homogeneous within a constant-$z$ plane, layered in $z$. Each
+voxel has an on-site T-matrix $\Tz$, the single-cell scatterer (Eshelby with the $r=0$
+delta-function correction up to the 27-component Galerkin form, the self-term already closed),
+and the voxels are coupled by the background propagator $\Gz$. The multiple scattering is the
+Foldy--Lax system \cite{Foldy1945,Lax1951,GubernatisDomanyKrumhansl1977}
+\begin{equation}
+\label{eq:foldylax}
+(I-\Gz\Tz)\,\psi=\psi^{\mathrm{inc}},\qquad T=\Tz\,(I-\Gz\Tz)^{-1},
+\end{equation}
+where $\psi$ collects the exciting (incoming) fields at the voxels. The operator $\Tz$ is
+block-diagonal and local. The whole cost is the off-diagonal $\Gz$: the inter-voxel
+communication. The strategy is to solve \eqref{eq:foldylax} by a Krylov method whose
+matrix-vector product is one application of $\Gz$, and to make that application fast.
+
+The essential point is the division of labour. The application of $\Gz$ is a \emph{forward}
+operation, a summation of partial waves that carries the radiation of every voxel to every
+other. It contains no inversion and no embedding. All of the multiple scattering, the
+reverberations to every order, is built and resummed by the Krylov iterations, not by the
+propagator.
+
+%==============================================================================
+\section{The matvec is a partial-wave summation}
+%==============================================================================
+
+Given source amplitudes $b=\Tz\psi$ at the voxels, the matvec returns the field they radiate,
+$\psi'=\Gz\,b$. For the homogeneous part of the background the propagator is a sum of partial
+waves, and a partial wave's phase accumulates linearly in space: $e^{\ii k x}$ at the next
+voxel is the current one times $e^{\ii k p}$, with $p$ the pitch. The sum is therefore built by
+carrying that running phase along a line, one term added per voxel. This is the sweep. The only
+freedom is which axis to sum along, and the choice is dictated by where the voxels are
+separated.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[>=stealth, line width=0.7pt]
+  \foreach \r in {0,1,2}{
+    \foreach \c in {0,1,2,3}{ \draw[gray!35] (\c,-\r) rectangle (\c+1,-\r+1); }
+  }
+  \node[gray!70, anchor=east] at (-0.15,0.5) {\footnotesize $z_1$};
+  \node[gray!70, anchor=east] at (-0.15,-0.5) {\footnotesize $z_2$};
+  \node[gray!70, anchor=east] at (-0.15,-1.5) {\footnotesize $z_3$};
+  % left-right (k_x) on top row
+  \draw[<->, red!70!black, line width=1pt] (0.3,0.5)--(3.7,0.5);
+  \node[red!70!black, anchor=south] at (2,0.6)
+        {\footnotesize constant $z$: left $\leftrightarrow$ right ($k_x$)};
+  % up-down Kennett (k_z)
+  \draw[<->, blue!65!black, line width=1pt] (4.55,0.75)--(4.55,-2.75);
+  \node[blue!65!black, anchor=west, align=left] at (4.7,-1.0)
+        {\footnotesize up $\updownarrow$ down\\[-1pt]\footnotesize Kennett ($k_z$)\\[-1pt]\footnotesize between planes};
+  % in-out (k_y) perspective at a voxel
+  \draw[<->, teal!55!black, line width=1pt] (1.55,-1.75)--(2.45,-1.05);
+  \node[teal!50!black, anchor=north, align=center] at (1.45,-2.0)
+        {\footnotesize constant $(z,x)$:\\[-1pt]\footnotesize in $\leftrightarrow$ out ($k_y$)};
+\end{tikzpicture}
+\caption{The $\Gz$ matvec as three directional partial-wave sweeps over the voxel grid
+(cross-section; the third axis $y$ runs into the page). Within each depth plane the lateral
+coupling is summed by constant-$z$ left-right ($k_x$) and constant-$(z,x)$ in-out ($k_y$)
+cumulative-phase sweeps; the coupling between depth planes is the up-down Kennett reflectivity
+recursion ($k_z$). The lateral directions carry the in-plane coupling along axes of nonzero
+separation, so the $k_z$ sum is never evaluated at $\Delta z=0$.}
+\label{fig:sweeps}
+\end{figure}
+
+\subsection{Lateral sweeps: constant-$z$ left-right and constant-$(z,x)$ in-out}
+
+Within a depth plane the background is homogeneous, so the lateral propagation is pure phase,
+with no background reflections to sum. Split the in-plane propagator on the $k_x$ pole into a
+right-going and a left-going partial wave and sum each by a sweep in its own direction. With
+$a^+$ the right-going accumulated field, $s_n$ the source radiated at voxel $n$, and
+$\Phi_x=e^{\ii k_x p}$ the one-pitch lateral propagator,
+\begin{equation}
+\label{eq:sweep}
+a^+_{n+1}=\big(a^+_n+s_n\big)\,\Phi_x \quad(\text{left to right}),
+\qquad
+a^-_{n-1}=\big(a^-_n+s_n\big)\,\Phi_x \quad(\text{right to left}).
+\end{equation}
+Each partial wave is carried along the direction in which it decays: the right-going evanescent
+branch $e^{-\kappa_{x\perp}x}$ is swept to the right, the left-going branch to the left, so the
+growing exponential is never formed and no reflection/transmission bookkeeping is needed for
+stability. The in-out sweep in $y$ is identical, run along each constant-$(z,x)$ line on the
+$k_y$ pole. The two together sum the full in-plane partial-wave series as nested
+one-dimensional phase accumulations.
+
+\subsection{Vertical sweep: up-down Kennett between depth planes}
+
+In $z$ the background is not homogeneous: the lateral average changes from plane to plane, so
+the depth-average layering has its own reflections and transmissions. The coupling between
+depth planes is therefore the up-down Kennett reflectivity recursion \cite{Kennett1983} on the
+$k_z$ pole, propagating the source amplitudes through the layered background and summing its
+internal up/down multiples. This is the one sweep that carries reflection and transmission
+coefficients, and it does so for the \emph{background} layering, not for the heterogeneity; it
+is the standard invariant-embedding recursion, stable by construction, and its coefficients
+depend only on the background and are formed once. The heterogeneity scattering remains entirely
+in $\Tz$ and the Krylov loop.
+
+\subsection{Why these directions}
+
+The conventional construction sums the in-plane coupling on the $k_z$ pole, the up/down
+decomposition, whose surviving $(k_x,k_y)$ integral loses its convergence factor
+$e^{-\kappa_\perp|\Delta z|}$ at $\Delta z=0$ and diverges at equal depth. The lateral split
+avoids it outright: the in-plane coupling is summed on the $k_x$ and $k_y$ poles, along which
+distinct in-plane voxels are separated, so the divergent same-depth $k_z$ sum is never the one
+evaluated. The $k_z$ sweep is used only between planes, where $\Delta z\neq 0$ and the Kennett
+recursion is exact and stable. Every sweep marches along an axis of nonzero separation.
+
+%==============================================================================
+\section{Alternating-direction composition}
+%==============================================================================
+
+The three sweep pairs compose by alternating direction, in the spirit of the
+alternating-direction methods of Peaceman and Rachford \cite{PeacemanRachford1955}: the
+two-dimensional in-plane sum factors into an $x$ pass and a $y$ pass, and the full
+three-dimensional propagator into those plus the $z$ recursion. Each pass is a
+one-dimensional, $O(N)$ accumulation, and the matvec is their ordered application:
+\begin{enumerate}\setlength{\itemsep}{1pt}
+\item \textbf{up-down ($k_z$, Kennett):} propagate the source amplitudes between depth planes
+through the layered background;
+\item \textbf{left-right ($k_x$):} along each constant-$z$ row, sweep left to right for the
+right-going field and right to left for the left-going field;
+\item \textbf{in-out ($k_y$):} along each constant-$(z,x)$ line, sweep in and out the same way.
+\end{enumerate}
+The result is $\psi'=\Gz\,b$, the field every voxel radiates onto every other, summed along
+directions of nonzero separation throughout. Six direction-pure sweeps in all, none of which
+ever forms the $\Delta z=0$ sum.
+
+%==============================================================================
+\section{The Krylov solve}
+%==============================================================================
+
+The matvec of Section~3 is a pure forward application of $\Gz$. The multiple scattering is
+solved around it by a Krylov method (GMRES \cite{SaadSchultz1986}) applied to
+\eqref{eq:foldylax}. One iteration is
+\begin{equation}
+v \;\longmapsto\; v-\Gz\,\Tz\,v,
+\end{equation}
+that is, one block-diagonal $\Tz$ (local, the cube T-matrix) followed by one $\Gz$ (the three
+sweeps). The Krylov subspace builds the scattering series and resums it, reaching the solution
+in far fewer applications than the bare Neumann (Born) series and remaining stable at strong
+contrast where that series would diverge. The reverberations and back-and-forth that the
+forward sweep deliberately does \emph{not} contain are produced here, across the iterations.
+
+For strong contrast the iteration is preconditioned, the role played by the renormalised
+scattering series of Jakobsen and Wu \cite{JakobsenWu2016} and the convergent Born series of
+Osnabrugge, Leedumrongwatthanakun and Vellekoop \cite{Osnabrugge2016}: a preconditioner on the
+Krylov solve, transparent to the sweep, which never needs to know the contrast level.
+
+\paragraph{The stack, end to end.}
+\begin{enumerate}\setlength{\itemsep}{1pt}
+\item \textbf{Setup.} Form $\Tz$ per voxel (self-term closed) and the background Kennett
+reflectivity coefficients (once).
+\item \textbf{Matvec $\Gz b$.} Up-down Kennett between planes, then left-right ($k_x$) and
+in-out ($k_y$) cumulative-phase sweeps within planes.
+\item \textbf{Solve.} GMRES on $(I-\Gz\Tz)\psi=\psi^{\mathrm{inc}}$, preconditioned at strong
+contrast, each step one $\Tz$ and one matvec.
+\item \textbf{Output.} The exciting fields $\psi$, hence the global $T$ and any observable
+(reflection matrix, shot gather) by one more radiation of $b=\Tz\psi$.
+\end{enumerate}
+
+%==============================================================================
+\section{What is distinctive}
+%==============================================================================
+
+Two choices set this apart from a standard FFT-accelerated volume integral equation. First, the
+forward operator is a directional partial-wave summation rather than a circular-convolution FFT,
+so the in-plane coupling is summed along the separated axes and the $\Delta z=0$ divergence is
+structurally absent rather than regularised. Second, the depth structure is carried exactly by
+the up-down Kennett recursion on the true layered background, not approximated on a homogeneous
+whole-space kernel. The multiple scattering is left where it belongs, in a Krylov solve that
+calls the sweep as its matvec, so the propagator stays a clean, stable, forward summation and
+the solver carries the contrast.
+
+%==============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{Foldy1945} L.~L. Foldy, \emph{The multiple scattering of waves}, Phys. Rev.
+\textbf{67}, 107 (1945).
+
+\bibitem{Lax1951} M. Lax, \emph{Multiple scattering of waves}, Rev. Mod. Phys. \textbf{23}, 287
+(1951).
+
+\bibitem{GubernatisDomanyKrumhansl1977} J.~E. Gubernatis, E. Domany and J.~A. Krumhansl,
+\emph{Formal aspects of the theory of the scattering of ultrasound by flaws in elastic
+materials}, J. Appl. Phys. \textbf{48}(7), 2804 (1977).
+
+\bibitem{Kennett1983} B.~L.~N. Kennett, \emph{Seismic Wave Propagation in Stratified Media},
+Cambridge University Press (1983).
+
+\bibitem{PeacemanRachford1955} D.~W. Peaceman and H.~H. Rachford, \emph{The numerical solution
+of parabolic and elliptic differential equations}, J. Soc. Indust. Appl. Math. \textbf{3}, 28
+(1955).
+
+\bibitem{SaadSchultz1986} Y. Saad and M.~H. Schultz, \emph{GMRES: a generalized minimal residual
+algorithm for solving nonsymmetric linear systems}, SIAM J. Sci. Stat. Comput. \textbf{7}, 856
+(1986).
+
+\bibitem{JakobsenWu2016} M. Jakobsen and R.-S. Wu, \emph{Renormalized scattering series for
+frequency-domain waveform modelling of strong velocity contrasts}, Geophys. J. Int.
+\textbf{206}(2), 880 (2016).
+
+\bibitem{Osnabrugge2016} G. Osnabrugge, S. Leedumrongwatthanakun and I.~M. Vellekoop, \emph{A
+convergent Born series for solving the inhomogeneous Helmholtz equation in arbitrarily large
+media}, J. Comput. Phys. \textbf{322}, 113 (2016).
+
+\end{thebibliography}
+
+\end{document}
