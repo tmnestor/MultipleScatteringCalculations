@@ -1,0 +1,425 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     18243,        416]
+NotebookOptionsPosition[     16933,        393]
+NotebookOutlinePosition[     17250,        407]
+CellTagsIndexPosition[     17207,        404]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["Phase 0 : Intra-Plane Elastic Translation-Addition Operator", "Title",ExpressionUUID->"e4ed297a-2432-4ee6-8933-8f0569f0d02b"],
+
+Cell["\<\
+Cruzan/Stein vector-spherical-wave translation for horizontal (Delta z = 0) \
+separations. Built on a single scalar separation matrix beta^c(d) at k_P and \
+k_S, dressed by the translation-commuting operators L=(1/k)grad, M=curl((r-c) \
+.), N=(1/k)curl. Self-verifying: scalar addition theorem (vs projection \
+integral and field reconstruction), vector field reconstruction (L, M, N), \
+and reciprocity. Executable twin: IntraPlaneTranslation.wl. Independently \
+validated against Python in \
+cubic_scattering/tests/test_intraplane_translation.py.\
+\>", "Text",ExpressionUUID->"40510432-57ea-43b4-91f6-e60a6e0ae068"],
+
+Cell["\<\
+IntraPlaneTranslation.wl  --  Phase 0 of the Intra-Plane Foldy-Lax program:
+   the elastic vector-spherical-wave translation-addition operator \
+(Cruzan/Stein).
+
+   Outgoing L/M/N multipoles centred at A  ->  regular L/M/N multipoles \
+centred at B,
+   for a horizontal (Delta z = 0) separation.  The vector operator is built \
+on a
+   single SCALAR separation matrix beta^c_{nm,nu mu}(d) at c = P (k_P) and c \
+= S (k_S),
+   dressed by the fixed operators  L=(1/k)grad,  M=curl((r-c) .),  \
+N=(1/k)curl  (plain Hansen).
+
+   Conventions (inherited verbatim from CartesianT0.wl, reciprocity-verified \
+1e-18):
+     time e^{+i w t}; outgoing h_n^(1); orthonormal SphericalHarmonicY.
+     Direction triples are (x,y,z) with z = polar axis = 3rd component
+     (ang[d] reads d[[3]] as the polar component).  The VSH polar axis is \
+aligned
+     with the physical depth z, so an intra-plane separation is d = (d_x, \
+d_y, 0).
+
+   TDD: each accept-criterion is a numeric residual printed at the bottom \
+with PASS/FAIL.
+   Status VERIFIED: scalar separation matrix vs independent projection \
+integral 2.8e-11 and
+   field reconstruction 6.7e-11; vector L/M/N reconstruction PASS (L 6.7e-9, \
+M 9.9e-10,
+   N 6.0e-8) with the naive no-cross-term M shown to FAIL; reciprocity exact \
+at k_P and k_S.
+   Cross-validated in Python: \
+cubic_scattering/tests/test_intraplane_translation.py.\
+\>", "Text",ExpressionUUID->"e5eb733f-08c4-4cf8-b649-d622e37b5123"],
+
+Cell["\<\
+(* ---- spherical Bessel / Hankel (matching CartesianT0.wl) ---- *)
+sj[n_, x_] := SphericalBesselJ[n, x];
+sh[n_, x_] := SphericalBesselJ[n, x] + I SphericalBesselY[n, x];
+zfn[n_, x_, \"j\"] := sj[n, x];
+zfn[n_, x_, \"h\"] := sh[n, x];
+
+(* ---- direction -> (theta, phi); copied verbatim from CartesianT0.wl ---- \
+*)
+ang[d_] := {ArcCos[d[[3]]/Sqrt[d . d]], ArcTan[d[[1]], d[[2]]]};
+Yfun[n_, m_, d_] := SphericalHarmonicY[n, m, ang[d][[1]], ang[d][[2]]];
+
+(* ---- scalar Helmholtz multipole field, centred at c, evaluated at field \
+point r ---- *)
+(* t = \"j\" regular (j_n) or \"h\" outgoing (h_n^(1)); wavenumber k. *)
+psiScalar[n_, m_, k_, t_, c_, r_] :=
+  Module[{rel = r - c, rr},
+   rr = Sqrt[rel . rel];
+   zfn[n, k rr, t] Yfun[n, m, rel]];\
+\>", "Input",ExpressionUUID->"5325f0fd-99b7-4051-b74e-23e13e9aefcc"],
+
+Cell["\<\
+SCALAR SEPARATION MATRIX  beta^c_{nm, nu mu}(d)   (closed form: \
+Gegenbauer/Gaunt)
+   Defined by:  h_n(k|r-a|) Y_n^m(^(r-a)) = Sum_{nu mu} beta[n,m,nu,mu,d,k]
+                                            j_nu(k|r-b|) Y_nu^mu(^(r-b)),
+   with d = a - b and valid for |r-b| < |d|.\
+\>", "Section",ExpressionUUID->"a405511a-e606-4fb3-abac-457df7e091fb"],
+
+Cell["\<\
+(* Gaunt integral  G(l1,m1;l2,m2;l3,m3) = Integral Y_l1^m1 Y_l2^m2 Y_l3^m3 \
+dOmega *)
+gaunt[l1_, m1_, l2_, m2_, l3_, m3_] :=
+  If[m1 + m2 + m3 != 0 || Abs[m1] > l1 || Abs[m2] > l2 || Abs[m3] > l3, 0,
+   Sqrt[(2 l1 + 1) (2 l2 + 1) (2 l3 + 1)/(4 Pi)]
+     ThreeJSymbol[{l1, 0}, {l2, 0}, {l3, 0}] ThreeJSymbol[{l1, m1}, {l2, m2}, \
+{l3, m3}]];
+
+(* Closed-form singular->regular separation matrix (Rayleigh/Gegenbauer route).
+   Derived: beta_{00,nu mu} = sqrt(4Pi) h_nu(kd) conj(Y_nu^mu(^d)), \
+generalised via Gaunt.
+   The q-sum is automatically parity-restricted by the {l,0} 3j (n+nu+q \
+even). *)
+betaSep[n_, m_, nu_, mu_, dvec_, k_] :=
+  Module[{dl = Sqrt[dvec . dvec]},
+   4 Pi (-1)^m Sum[
+     I^(nu + q - n) (-1)^q sh[q, k dl] Yfun[q, m - mu, dvec] gaunt[n, m, nu, \
+-mu, q, mu - m],
+     {q, Abs[n - nu], n + nu}]];
+
+(* Independent ground-truth coefficient by spherical-harmonic projection on a \
+sphere
+   of radius rho < |d| about B (origin); exact and phase-unambiguous, beta \
+indep. of rho.
+   Deterministic Gauss-Legendre(u=cos th) x uniform-phi quadrature: \
+spectrally accurate
+   for the smooth shifted-multipole integrand, no adaptive-NIntegrate \
+fragility. *)
+Needs[\"NumericalDifferentialEquationAnalysis`\"];
+glNodes = GaussianQuadratureWeights[48, -1, 1];   (* {{u_i, w_i}} over \
+cos(theta) in [-1,1] *)
+nPhiQuad = 96;
+betaProj[n_, m_, nu_, mu_, dvec_, k_, rho_] :=
+  Module[{acc = 0., u, w, th, ph, shat},
+   Do[
+    u = glNodes[[i, 1]]; w = glNodes[[i, 2]]; th = ArcCos[u];
+    Do[
+     ph = 2 Pi (j - 1)/nPhiQuad;
+     shat = {Sin[th] Cos[ph], Sin[th] Sin[ph], u};
+     acc += w (2 Pi/nPhiQuad)
+        psiScalar[n, m, k, \"h\", dvec, rho shat] \
+Conjugate[SphericalHarmonicY[nu, mu, th, ph]],
+     {j, nPhiQuad}],
+    {i, Length[glNodes]}];
+   acc/sj[nu, k rho]];
+
+(* ---- reconstruction residual: max over sources (n,m) and field points ---- \
+*)
+(* a = b + dvec; we put B at the origin, A at dvec.  betaFn supplies the \
+coeffs. *)
+scalarReconResidual[betaFn_, k_, dvec_, NmaxNu_, sources_, fieldPts_] :=
+  Module[{bcen = {0, 0, 0}, acen = dvec, lhs, rhs},
+   Max[Table[
+     lhs = psiScalar[src[[1]], src[[2]], k, \"h\", acen, pt];
+     rhs = Sum[
+        betaFn[src[[1]], src[[2]], nu, mu, dvec, k]
+          psiScalar[nu, mu, k, \"j\", bcen, pt],
+        {nu, 0, NmaxNu}, {mu, -nu, nu}];
+     Abs[lhs - rhs],
+     {src, sources}, {pt, fieldPts}]]];
+
+(* ---- test fixture ---- *)
+kTest = 0.9;                                  (* P-wavenumber test value (a=1 \
+units) *)
+dTest = {1.3, 0.7, 0.0};                      (* horizontal separation, Delta \
+z = 0 *)
+dLen = Sqrt[dTest . dTest];                   (* ~1.476, k*d ~ 1.33 *)
+NmaxNuTest = 18;                              (* truncation of the regular \
+re-expansion *)
+sourcesTest = Flatten[Table[{n, m}, {n, 0, 3}, {m, -n, n}], 1];
+
+(* deterministic cloud of field points near B, with |r-B| = rho < |d| (rho/d \
+= 0.3) *)
+SeedRandom[20260618];
+rhoTest = 0.20 dLen;
+fieldPtsTest = Table[
+   Module[{u = RandomReal[{-1, 1}], ph = RandomReal[{0, 2 Pi}], st},
+    st = Sqrt[1 - u^2];
+    rhoTest {st Cos[ph], st Sin[ph], u}],
+   {15}];
+
+Print[\"==== Phase 0 :: SCALAR addition theorem ====\"];
+Print[\"  k*d = \", kTest dLen, \",  rho/d = \", rhoTest/dLen,
+   \",  Nmax(nu) = \", NmaxNuTest, \",  #sources = \", Length[sourcesTest],
+   \",  #fieldpts = \", Length[fieldPtsTest]];
+
+(* (a) closed form vs independent projection-integral ground truth *)
+tolScalar = 1*^-7;
+coefTests = {{0, 0, 2, 1}, {1, -1, 3, 2}, {2, 0, 2, -1}, {3, 1, 1, 0}, {2, 2, \
+4, -2}, {1, 1, 5, 3}};
+coefDiff = Max[Table[
+    Abs[betaSep[t[[1]], t[[2]], t[[3]], t[[4]], dTest, kTest]
+        - betaProj[t[[1]], t[[2]], t[[3]], t[[4]], dTest, kTest, 0.3 dLen]],
+    {t, coefTests}]];
+Print[\"  [a] max |betaSep(closed) - betaProj(integral)| over \", \
+Length[coefTests],
+   \" indices = \", coefDiff, \"  -> \", If[coefDiff < tolScalar, \"PASS\", \
+\"FAIL\"]];
+
+(* (b) full field reconstruction over the point cloud *)
+resScalar = scalarReconResidual[betaSep, kTest, dTest, NmaxNuTest, \
+sourcesTest, fieldPtsTest];
+Print[\"  [b] field reconstruction residual (max over \", \
+Length[sourcesTest], \" sources x \",
+   Length[fieldPtsTest], \" pts) = \", resScalar, \"  -> \", If[resScalar < \
+tolScalar, \"PASS\", \"FAIL\"]];\
+\>", "Input",ExpressionUUID->"b59cdb00-e85c-46fe-bbdd-e5100a0c5171"],
+
+Cell["\<\
+VECTOR elastic translation.  Plain Hansen multipoles:
+     Lw = (1/k_P) grad psiP        (P-wave; L-block decouples)
+     Mw = curl((r-c) psiS)         (S-wave toroidal)
+     Nw = (1/k_S) curl Mw          (S-wave poloidal)
+   Operators commute with translation, so applying them to the scalar \
+addition
+   theorem gives (derived):
+     Lw^A_nm = Sum_{nu mu} beta^P_{nm,nu mu}(d) Lw^B_{nu mu}
+     Mw^A_nm = Sum_{nu mu} beta^S_{nm,nu mu}(d) [ Mw^B_{nu mu} - (grad \
+psiS^B_{nu mu}) x d ]
+     Nw^A_nm = Sum_{nu mu} beta^S_{nm,nu mu}(d) [ Nw^B_{nu mu} - (1/k_S) \
+curl((grad psiS^B) x d) ]
+   with curl((grad psi) x d) = (d.grad) grad psi + k_S^2 psi d   (d \
+constant).
+   The naive scalar-style M translation (NO cross-term) must FAIL: that is \
+the RED
+   that proves the vector cross-term is physically necessary.\
+\>", "Section",ExpressionUUID->"bf629789-9da5-4d1a-820c-c54583ec97a3"],
+
+Cell["\<\
+kPval = 0.9; kSval = 1.5;
+
+(* d/dx of spherical Bessel / Hankel (from CartesianT0.wl) *)
+zfp[n_, x_, \"j\"] := n/x sj[n, x] - sj[n + 1, x];
+zfp[n_, x_, \"h\"] := n/x sh[n, x] - sh[n + 1, x];
+
+(* vector spherical harmonics on a direction (from CartesianT0.wl); the \
+symbolic
+   theta-derivative of Y is memoised per (n,m) so the multipole sweep stays \
+fast. *)
+RMrot[t_, p_] := {{Sin[t] Cos[p], Cos[t] Cos[p], -Sin[p]},
+   {Sin[t] Sin[p], Cos[t] Sin[p], Cos[p]}, {Cos[t], -Sin[t], 0}};
+dthY[n_, m_] := dthY[n, m] = Module[{tt, pp, ex},
+   ex = D[SphericalHarmonicY[n, m, tt, pp], tt]; Function[{a, b}, Evaluate[ex \
+/. {tt -> a, pp -> b}]]];
+Bvec[n_, m_, d_] := Module[{t = ang[d][[1]], p = ang[d][[2]]},
+   RMrot[t, p] . {0, dthY[n, m][t, p], (I m/Sin[t]) SphericalHarmonicY[n, m, \
+t, p]}];
+Cvec[n_, m_, d_] := Cross[d/Sqrt[d . d], Bvec[n, m, d]];
+
+(* field-point helpers *)
+rhoOf[c_, r_] := Sqrt[(r - c) . (r - c)];
+rhatOf[c_, r_] := (r - c)/Sqrt[(r - c) . (r - c)];
+
+(* grad of the scalar multipole psi = z_n(k|r-c|) Y_n^m, centred at c *)
+gradPsi[n_, m_, k_, type_, c_, r_] := Module[{rho = rhoOf[c, r]},
+   k zfp[n, k rho, type] Yfun[n, m, r - c] rhatOf[c, r] + (zfn[n, k rho, \
+type]/rho) Bvec[n, m, r - c]];
+
+Lw[n_, m_, type_, c_, r_] := Module[{x = kPval rhoOf[c, r]},
+   zfp[n, x, type] Yfun[n, m, r - c] rhatOf[c, r] + (zfn[n, x, type]/x) \
+Bvec[n, m, r - c]];
+Mw[n_, m_, type_, c_, r_] := -zfn[n, kSval rhoOf[c, r], type] Cvec[n, m, r - \
+c];
+Nw[n_, m_, type_, c_, r_] := Module[{x = kSval rhoOf[c, r]},
+   (n (n + 1)/x) zfn[n, x, type] Yfun[n, m, r - c] rhatOf[c, r]
+     + ((zfn[n, x, type] + x zfp[n, x, type])/x) Bvec[n, m, r - c]];
+
+(* ---- reconstruction (B at origin, A at d); beta tables memoised per source \
+---- *)
+bcen0 = {0, 0, 0}; acen0 = dTest; dvec0 = dTest; epsFD = 1.*^-5; tolVec = \
+1*^-6;
+coefsP[n_, m_] := coefsP[n, m] =
+   Flatten[Table[{nu, mu, betaSep[n, m, nu, mu, dvec0, kPval]}, {nu, 0, \
+NmaxNuTest}, {mu, -nu, nu}], 1];
+(* nu starts at 0: the monopole's scalar term feeds M,N through the \
+cross-term
+   (grad psiS_{00}) x d even though Mw_{00}=Nw_{00}=0. *)
+coefsS[n_, m_] := coefsS[n, m] =
+   Flatten[Table[{nu, mu, betaSep[n, m, nu, mu, dvec0, kSval]}, {nu, 0, \
+NmaxNuTest}, {mu, -nu, nu}], 1];
+
+reconL[n_, m_, r_] := Sum[c[[3]] Lw[c[[1]], c[[2]], \"j\", bcen0, r], {c, \
+coefsP[n, m]}];
+reconMnaive[n_, m_, r_] := Sum[c[[3]] Mw[c[[1]], c[[2]], \"j\", bcen0, r], \
+{c, coefsS[n, m]}];
+reconMfull[n_, m_, r_] := Sum[
+   c[[3]] (Mw[c[[1]], c[[2]], \"j\", bcen0, r] - Cross[gradPsi[c[[1]], \
+c[[2]], kSval, \"j\", bcen0, r], dvec0]),
+   {c, coefsS[n, m]}];
+dPsiDirD[nu_, mu_, r_] :=
+   (gradPsi[nu, mu, kSval, \"j\", bcen0, r + epsFD dvec0] - gradPsi[nu, mu, \
+kSval, \"j\", bcen0, r - epsFD dvec0])/(2 epsFD);
+Ncross[nu_, mu_, r_] := (1/kSval) (dPsiDirD[nu, mu, r] + kSval^2 \
+psiScalar[nu, mu, kSval, \"j\", bcen0, r] dvec0);
+reconNfull[n_, m_, r_] := Sum[
+   c[[3]] (Nw[c[[1]], c[[2]], \"j\", bcen0, r] - Ncross[c[[1]], c[[2]], r]), \
+{c, coefsS[n, m]}];
+
+vSrcL = Flatten[Table[{n, m}, {n, 0, 3}, {m, -n, n}], 1];
+vSrcMN = Flatten[Table[{n, m}, {n, 1, 3}, {m, -n, n}], 1];
+vFieldPts = Take[fieldPtsTest, 6];
+vmax[lhs_, rhs_, srcs_] := Max[Table[Norm[lhs[s[[1]], s[[2]], pt] - \
+rhs[s[[1]], s[[2]], pt]], {s, srcs}, {pt, vFieldPts}]];
+
+(* internal consistency: confirm Mw = curl((r)psiS) and Nw = (1/k_S) curl Mw \
+(finite diff) *)
+curlFD[F_, r_, h_] := Module[{e1 = {1, 0, 0}, e2 = {0, 1, 0}, e3 = {0, 0, 1}, \
+dd},
+   dd[j_] := (F[r + h j] - F[r - h j])/(2 h);
+   {dd[e2][[3]] - dd[e3][[2]], dd[e3][[1]] - dd[e1][[3]], dd[e1][[2]] - \
+dd[e2][[1]]}];
+rChk = {0.31, 0.22, 0.18};
+selfChkSrc = {{1, 0}, {1, 1}, {2, -1}, {2, 2}, {3, 1}};
+chkM = Max[Table[Norm[Mw[s[[1]], s[[2]], \"j\", {0, 0, 0}, rChk]
+      - curlFD[(# psiScalar[s[[1]], s[[2]], kSval, \"j\", {0, 0, 0}, #]) &, \
+rChk, 1.*^-5]], {s, selfChkSrc}]];
+chkN = Max[Table[Norm[Nw[s[[1]], s[[2]], \"j\", {0, 0, 0}, rChk]
+      - (1/kSval) curlFD[Mw[s[[1]], s[[2]], \"j\", {0, 0, 0}, #] &, rChk, \
+1.*^-5]], {s, selfChkSrc}]];
+Print[\"==== Phase 0 :: VECTOR field-definition self-check (finite diff) ====\
+\"];
+Print[\"  max |Mw - curl((r) psiS)|      = \", chkM, \"  -> \", If[chkM < \
+1*^-5, \"PASS\", \"FAIL\"]];
+Print[\"  max |Nw - (1/k_S) curl Mw|     = \", chkN, \"  -> \", If[chkN < \
+1*^-5, \"PASS\", \"FAIL\"]];
+
+Print[\"==== Phase 0 :: VECTOR elastic translation  (k_P=\", kPval, \", \
+k_S=\", kSval, \") ====\"];
+resVL = vmax[Lw[#1, #2, \"h\", acen0, #3] &, reconL, vSrcL];
+Print[\"  L (P-wave) recon, beta^P  [criterion iii: L = scalar]   = \", \
+resVL,
+   \"  -> \", If[resVL < tolVec, \"PASS\", \"FAIL\"]];
+resVMn = vmax[Mw[#1, #2, \"h\", acen0, #3] &, reconMnaive, vSrcMN];
+Print[\"  M (S toroidal) recon, NAIVE beta^S only (no cross-term) = \", resVMn,
+   \"  -> \", If[resVMn < tolVec, \"PASS\", \"FAIL (expected: cross-term \
+needed)\"]];
+resVMf = vmax[Mw[#1, #2, \"h\", acen0, #3] &, reconMfull, vSrcMN];
+Print[\"  M (S toroidal) recon, FULL (beta^S + (grad psi) x d)    = \", resVMf,
+   \"  -> \", If[resVMf < tolVec, \"PASS\", \"FAIL\"]];
+resVNf = vmax[Nw[#1, #2, \"h\", acen0, #3] &, reconNfull, vSrcMN];
+Print[\"  N (S poloidal) recon, FULL (beta^S + curl cross-term)   = \", resVNf,
+   \"  -> \", If[resVNf < tolVec, \"PASS\", \"FAIL\"]];\
+\>", "Input",ExpressionUUID->"c97aabed-1cff-440c-8504-e698a06e68c2"],
+
+Cell["\<\
+RECIPROCITY of the translation operator (closed-form symmetry, derived from
+   the Gaunt form; the per-term i^(nu+q-n)/i^(n+q-nu) ratio collapses to \
+(-1)^(nu-n)):
+     beta_{nm,nu mu}(d) = (-1)^(n+nu+m+mu) beta_{nu,-mu, n,-m}(d).
+   Verified analytically against the n=0 row; here checked numerically.\
+\>", "Section",ExpressionUUID->"add1dfb4-aeb1-401b-8ea3-6589f811f0cc"],
+
+Cell["\<\
+recipPairs = {{1, 0, 2, 1}, {2, -1, 3, 2}, {3, 1, 1, -1}, {2, 2, 4, -2}, {0, \
+0, 3, 0}, {1, 1, 2, -2}};
+recipResid[k_] := Max[Table[
+    Abs[betaSep[p[[1]], p[[2]], p[[3]], p[[4]], dTest, k]
+       - (-1)^(p[[1]] + p[[3]] + p[[2]] + p[[4]]) betaSep[p[[3]], -p[[4]], \
+p[[1]], -p[[2]], dTest, k]],
+    {p, recipPairs}]];
+tolRecip = 1*^-11;
+Print[\"==== Phase 0 :: RECIPROCITY (translation-operator symmetry) ====\"];
+Print[\"  max |beta_{nm,nu mu}(d) - (-1)^(n+nu+m+mu) beta_{nu,-mu,n,-m}(d)|,  \
+k_P = \",
+   recipResid[kPval], \"  -> \", If[recipResid[kPval] < tolRecip, \"PASS\", \
+\"FAIL\"]];
+Print[\"  same at k_S = \", recipResid[kSval], \"  -> \", \
+If[recipResid[kSval] < tolRecip, \"PASS\", \"FAIL\"]];\
+\>", "Input",ExpressionUUID->"d344625e-f9b8-457f-9436-e4b1e6a65efa"],
+
+Cell["\<\
+Dump closed-form beta to JSON for the INDEPENDENT Python cross-check
+   (Python recomputes beta by spherical-harmonic projection: different \
+method,
+   different language).  Mirrors the ElasticMie_reference.json pattern.\
+\>", "Section",ExpressionUUID->"6265896b-11f5-4586-8a84-b0399b498459"],
+
+Cell["\<\
+mkDump[k_] := Flatten[Table[
+    <|\"n\" -> n, \"m\" -> m, \"nu\" -> nu, \"mu\" -> mu,
+      \"re\" -> Re[N[betaSep[n, m, nu, mu, dTest, k]]],
+      \"im\" -> Im[N[betaSep[n, m, nu, mu, dTest, k]]]|>,
+    {n, 0, 3}, {m, -n, n}, {nu, 0, 3}, {mu, -nu, nu}], 3];
+refData = <|\"dvec\" -> dTest, \"kP\" -> kPval, \"kS\" -> kSval,
+   \"betaP\" -> mkDump[kPval], \"betaS\" -> mkDump[kSval]|>;
+Export[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
+IntraPlaneTranslation_reference.json\",
+   refData];
+Print[\"==== Phase 0 :: reference dump ====\"];
+Print[\"  wrote IntraPlaneTranslation_reference.json: \",
+   Length[refData[\"betaP\"]], \" betaP + \", Length[refData[\"betaS\"]], \" \
+betaS entries\"];
+Print[\"Phase 0 (IntraPlaneTranslation.wl) loaded + verified.\"];\
+\>", "Input",ExpressionUUID->"4e30eb59-8f5f-4159-a009-1620f2682019"]
+},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"8f6fdcca-0c61-4c6c-802d-75c69cfc4bd0"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 131, 0, 70, "Title",ExpressionUUID->"e4ed297a-2432-4ee6-8933-8f0569f0d02b"],
+Cell[688, 22, 627, 9, 70, "Text",ExpressionUUID->"40510432-57ea-43b4-91f6-e60a6e0ae068"],
+Cell[1318, 33, 1458, 33, 70, "Text",ExpressionUUID->"e5eb733f-08c4-4cf8-b649-d622e37b5123"],
+Cell[2779, 68, 827, 19, 70, "Input",ExpressionUUID->"5325f0fd-99b7-4051-b74e-23e13e9aefcc"],
+Cell[3609, 89, 360, 6, 70, "Section",ExpressionUUID->"a405511a-e606-4fb3-abac-457df7e091fb"],
+Cell[3972, 97, 4359, 107, 70, "Input",ExpressionUUID->"b59cdb00-e85c-46fe-bbdd-e5100a0c5171"],
+Cell[8334, 206, 898, 18, 70, "Section",ExpressionUUID->"bf629789-9da5-4d1a-820c-c54583ec97a3"],
+Cell[9235, 226, 5343, 114, 70, "Input",ExpressionUUID->"c97aabed-1cff-440c-8504-e698a06e68c2"],
+Cell[14581, 342, 385, 6, 70, "Section",ExpressionUUID->"add1dfb4-aeb1-401b-8ea3-6589f811f0cc"],
+Cell[14969, 350, 791, 16, 70, "Input",ExpressionUUID->"d344625e-f9b8-457f-9436-e4b1e6a65efa"],
+Cell[15763, 368, 303, 5, 70, "Section",ExpressionUUID->"6265896b-11f5-4586-8a84-b0399b498459"],
+Cell[16069, 375, 860, 16, 70, "Input",ExpressionUUID->"4e30eb59-8f5f-4159-a009-1620f2682019"]
+}
+]
+*)
+
+(* End of internal cache information *)
