@@ -1112,6 +1112,55 @@ class TestOpticalTheorem:
 
 
 # =====================================================================
+# Group 6: SH (toroidal) boundary traction regression
+# =====================================================================
+
+
+class TestSHTractionFiniteContrast:
+    """Regression test for the toroidal (SH) traction term.
+
+    The radial traction of the toroidal field is
+        sigma_rphi = mu (kS z_n'(kS a) - z_n(kS a)/a),
+    i.e. mu(d u_phi/dr - u_phi/r). Dropping the -z_n/a curvilinear term makes
+    the SH scattering coefficient c_n wrong at finite contrast (it cancels only
+    at zero contrast, where matrix and RHS would share the omission).
+
+    Reference values were computed independently in the Hansen L/M/N basis
+    (Mathematica/ElasticMieTmatrix.nb) and by a from-scratch corrected Python
+    solve; see Mathematica/ElasticMie_reference.json key "c_n_corrected".
+    Test case: REF background, CONTRAST, radius=1, omega=4500 (ka_P=0.9, ka_S=1.5).
+    """
+
+    def test_sh_coefficient_finite_contrast(self):
+        """c_n (SH) matches the independently verified finite-contrast values."""
+        omega = 4500.0
+        radius = 1.0
+        mie = compute_elastic_mie(omega, radius, REF, CONTRAST, n_max=4)
+        c_ref = np.array(
+            [
+                0.0,
+                4.1210580877748076e-05 - 0.0090785165882717j,
+                0.0025064027424763335 - 1.884617477782357e-06j,
+                -4.07980036429831e-08 - 0.00043633780721250075j,
+                -2.5894618942196937e-05 + 1.117552150251524e-10j,
+            ]
+        )
+        assert np.allclose(mie.c_n[:5], c_ref, rtol=1e-6, atol=1e-12), (
+            f"SH c_n mismatch (is the -z_n/a traction term present?):\n"
+            f"  got      {mie.c_n[:5]}\n  expected {c_ref}"
+        )
+
+    def test_sh_zero_contrast_no_scattering(self):
+        """At zero contrast the sphere is the host: SH scattering must vanish."""
+        omega = 4500.0
+        zero = MaterialContrast(Dlambda=0.0, Dmu=0.0, Drho=0.0)
+        mie = compute_elastic_mie(omega, 1.0, REF, zero, n_max=4)
+        assert np.allclose(mie.c_n, 0.0, atol=1e-12), (
+            f"SH c_n should vanish at zero contrast, got {mie.c_n}"
+        )
+
+
+# =====================================================================
 # Run all tests
 # =====================================================================
 
