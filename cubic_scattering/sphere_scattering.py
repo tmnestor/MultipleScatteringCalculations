@@ -577,9 +577,12 @@ def _mie_matrix_sh(
     M[0, 0] = h_out
     M[0, 1] = -j_in
 
-    # tau_r_phi continuity: mu * kS * z_n'(kS*a)
-    M[1, 0] = mu_out * kS_out * hp_out
-    M[1, 1] = -mu_in * kS_in * jp_in
+    # tau_r_phi continuity: sigma_rphi = mu (kS z_n'(kS a) - z_n(kS a)/a)
+    # The -z_n/a term is the curvilinear part of sigma_rphi = mu(d u_phi/dr - u_phi/r);
+    # omitting it makes the SH coefficient c_n wrong at finite contrast (it cancels
+    # only at zero contrast, since matrix and RHS would share the omission).
+    M[1, 0] = mu_out * (kS_out * hp_out - h_out / a)
+    M[1, 1] = -mu_in * (kS_in * jp_in - j_in / a)
 
     return M
 
@@ -682,7 +685,9 @@ def compute_elastic_mie(
         rhs_sh = np.array(
             [
                 -coeff_sh * j_inc,
-                -coeff_sh * ref.mu * omega / ref.beta * _spherical_jn_deriv(n, z_inc),
+                -coeff_sh
+                * ref.mu
+                * (omega / ref.beta * _spherical_jn_deriv(n, z_inc) - j_inc / radius),
             ],
             dtype=complex,
         )
