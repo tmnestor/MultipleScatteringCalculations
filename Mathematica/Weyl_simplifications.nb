@@ -1,0 +1,458 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     23430,        449]
+NotebookOptionsPosition[     18406,        386]
+NotebookOutlinePosition[     18748,        401]
+CellTagsIndexPosition[     18705,        398]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["\<\
+Weyl / Sommerfeld Green's Function Reductions and an Elastodynamic Scattering \
+Scaffold\
+\>", "Title",ExpressionUUID->"066812fc-5b6e-4eeb-995f-811854591790"],
+
+Cell["\<\
+Self-contained experiment notebook. Evaluate top to bottom (Evaluation > \
+Evaluate Notebook). Every computational cell was checked under wolframscript; \
+expected results are noted in comments. Names are ASCII (kP, kS, rho, om, \
+den, lam, mu) so the notebook also runs headless. Conventions: time \
+dependence e^{-i om t}, outgoing wave e^{+i k r}; 3D scalar Green's function \
+g = e^{i k r}/(4 Pi r) solving (Lap + k^2) g = -delta(r); vertical wavenumber \
+branch kz = Sqrt[k^2 - kr^2] with Im[kz] >= 0 (Mathematica's Sqrt already \
+returns this branch, so evanescent waves decay and no manual branch fix is \
+needed).\
+\>", "Text",ExpressionUUID->"c4cfd1f6-9e92-4d41-85ad-3f963389041d"],
+
+Cell["0. Setup", "Section",ExpressionUUID->"57a3cae8-1f31-4df6-97ec-72bea37650f0"],
+
+Cell["\<\
+ClearAll[\"Global`*\"];
+coords = {x, y, z};
+rr = Sqrt[x^2 + y^2 + z^2];\
+\>", "Input",ExpressionUUID->"caebadb4-c728-4516-a1e5-c34d7aaf46ea"],
+
+Cell["1. Scalar Green's function reductions", "Section",ExpressionUUID->"fe707994-fb8c-4824-a40a-3437b4a19858"],
+
+Cell["1a. Helmholtz Green's function and PDE residual", "Subsection",ExpressionUUID->"0380b207-b8b3-40a3-b725-8e82f4ff9221"],
+
+Cell["\<\
+g3D[r_] := Exp[I k r]/(4 Pi r);
+(* Away from the source the residual (Lap + k^2) g must vanish. Expect 0. *)
+FullSimplify[Laplacian[g3D[rr], coords] + k^2 g3D[rr],
+  Assumptions -> {x > 0, y > 0, z > 0, k > 0}]\
+\>", "Input",ExpressionUUID->"c7d97724-2d8d-4e50-939c-13ece8c12bb4"],
+
+Cell["1b. On-axis (x=y=0) Weyl collapse", "Subsection",ExpressionUUID->"a3db3172-144d-4d11-b405-53d848087ef8"],
+
+Cell["\<\
+On the z-axis the transverse phase drops out and the 2D Weyl integral \
+collapses to a single radial integral, g(0,0,z) = (i/4Pi) Integrate[(kr/kz) \
+e^{i kz |z|}, {kr,0,Inf}]. This is the one case that reduces to an elementary \
+closed form.\
+\>", "Text",ExpressionUUID->"f9a0cd57-1163-47a1-a354-f6587f30d279"],
+
+Cell["\<\
+(* Direct evaluation. Expect -I e^{I k z}/z. *)
+onAxis = Integrate[(kr/Sqrt[k^2 - kr^2]) Exp[I Sqrt[k^2 - kr^2] z],
+   {kr, 0, Infinity}, Assumptions -> k > 0 && z > 0]\
+\>", "Input",ExpressionUUID->"531c58b3-a7d8-4293-a3d4-4ffabf01358b"],
+
+Cell["\<\
+(* Hence g(0,0,z) equals e^{I k z}/(4 Pi z). Expect 0. *)
+Simplify[(I/(4 Pi)) onAxis - Exp[I k z]/(4 Pi z)]\
+\>", "Input",ExpressionUUID->"14e8b294-c509-4d17-a1e4-fc5d0e97ff31"],
+
+Cell["\<\
+(* Same result split into propagating (kr<k) and evanescent (kr>k) parts,
+   showing where the closed form comes from term by term. *)
+prop = Integrate[(kr/Sqrt[k^2 - kr^2]) Exp[I Sqrt[k^2 - kr^2] z], {kr, 0, k},
+   Assumptions -> k > 0 && z > 0];
+evan = Integrate[(kr/Sqrt[k^2 - kr^2]) Exp[I Sqrt[k^2 - kr^2] z], {kr, k, \
+Infinity},
+   Assumptions -> k > 0 && z > 0];
+(* prop = -I(e^{Ikz}-1)/z, evan = -I/z, third entry = 0 (they sum to -I \
+e^{Ikz}/z). *)
+{prop, evan, Simplify[prop + evan + I Exp[I k z]/z]}\
+\>", "Input",ExpressionUUID->"43401938-2bdc-410a-87c7-c1505e9adfd4"],
+
+Cell["1c. Sommerfeld identity (numeric)", "Subsection",ExpressionUUID->"cb48c488-6dd2-40b6-a02d-5f1b8e4dc359"],
+
+Cell["\<\
+The cylindrical form e^{i k r}/r = i Integrate[(kr/kz) BesselJ[0, kr rho] \
+e^{i kz |z|}, {kr,0,Inf}], with r = Sqrt[rho^2 + z^2]. A tiny loss k -> k(1 + \
+i eps) pushes the kr = k branch point off the real axis so the numerical \
+integral is clean.\
+\>", "Text",ExpressionUUID->"5fb60ad0-391d-427b-b964-745e8c6c99e9"],
+
+Cell["\<\
+sommNum[kk_, rho_, zz_] := I*NIntegrate[
+    (kr/Sqrt[kk^2 - kr^2]) BesselJ[0, kr rho] Exp[I Sqrt[kk^2 - kr^2] Abs[zz]],
+    {kr, 0, Re[kk], 2 Re[kk], Infinity}];
+(* The two entries should agree to ~1e-6. *)
+With[{kk = 1 + I 10.^-6, rho = 0.7, zz = 0.5},
+  {sommNum[kk, rho, zz], Exp[I kk Sqrt[rho^2 + zz^2]]/Sqrt[rho^2 + zz^2]}]\
+\>", "Input",ExpressionUUID->"55c4c8fa-737c-4c54-b3a8-7a34dcf5605a"],
+
+Cell["\<\
+1d. 2D Weyl identity (one transverse integral) gives a Hankel function\
+\>", "Subsection",ExpressionUUID->"20ecfa1b-2353-4513-8eab-0eba601b828d"],
+
+Cell["\<\
+(* Integrate[(1/kz) e^{i(kx x + kz|z|)}, {kx,-Inf,Inf}] = Pi HankelH1[0, k \
+Sqrt[x^2+z^2]],
+   kz = Sqrt[k^2 - kx^2]. This is the 2D line-source Green's function (i/4) \
+H0^(1). *)
+weyl2D[kk_, xx_, zz_] := NIntegrate[
+    (1/Sqrt[kk^2 - kx^2]) Exp[I (kx xx + Sqrt[kk^2 - kx^2] Abs[zz])],
+    {kx, -Infinity, -Re[kk], Re[kk], Infinity}];
+With[{kk = 1 + I 10.^-6, xx = 0.8, zz = 0.6},
+  {weyl2D[kk, xx, zz], Pi HankelH1[0, kk Sqrt[xx^2 + zz^2]]}]\
+\>", "Input",ExpressionUUID->"67a1ec0e-d53a-4e54-bc20-e92de0c84a76"],
+
+Cell["1e. The y=0 field point is not special", "Subsection",ExpressionUUID->"5f530fd9-306a-4f62-893c-4ab0ffbf2aa5"],
+
+Cell["\<\
+The integrand sees the transverse coordinates only through rho = Sqrt[x^2 + \
+y^2], so setting y = 0 merely makes rho = |x|, still nonzero. The double Weyl \
+integral is just the Sommerfeld integral at rho = |x|, returning e^{i k r}/(4 \
+Pi r) with r = Sqrt[x^2 + z^2]. Only x = y = 0 (rho = 0) collapses to the \
+elementary 1b form.\
+\>", "Text",ExpressionUUID->"896e1f08-64e0-4d60-9a1e-463892e3a64d"],
+
+Cell["\<\
+(* sommNum already includes the leading i, i.e. sommNum = e^{ikr}/r, so g = \
+sommNum/(4 Pi). *)
+With[{kk = 1 + I 10.^-6, xval = 0.9, zz = 0.4},
+  {sommNum[kk, Abs[xval], zz]/(4 Pi),
+   Exp[I kk Sqrt[xval^2 + zz^2]]/(4 Pi Sqrt[xval^2 + zz^2])}]\
+\>", "Input",ExpressionUUID->"e3608c1d-58a6-42f9-8871-5860e41444aa"],
+
+Cell["2. Elastodynamic dyadic and P/S Sommerfeld integrals", "Section",ExpressionUUID->"7b6ad7a9-3d98-40e2-a453-99e739c204f6"],
+
+Cell["\<\
+2a. Whole-space dyadic Green's tensor (isotropic, homogeneous)\
+\>", "Subsection",ExpressionUUID->"1b4e85c9-da68-4a97-9543-b7712fbc99f4"],
+
+Cell["\<\
+Operator form (frequency domain, point force source): G = (1/(den om^2)) [ \
+(gradgrad + kS^2 I) gS - gradgrad gP ], with gX = e^{i kX r}/(4 Pi r), kP = \
+om/cP, kS = om/cS.\
+\>", "Text",ExpressionUUID->"bc30cf9f-b513-4999-ad5b-fca4d56a89d9"],
+
+Cell["\<\
+kP = om/cP; kS = om/cS;
+gP[r_] := Exp[I kP r]/(4 Pi r);
+gS[r_] := Exp[I kS r]/(4 Pi r);
+gradgrad[f_] := Table[D[f, coords[[i]], coords[[j]]], {i, 3}, {j, 3}];
+Gsym = (1/(den om^2)) (gradgrad[gS[rr]] + kS^2 IdentityMatrix[3] gS[rr] - \
+gradgrad[gP[rr]]);
+Dimensions[Gsym]\
+\>", "Input",ExpressionUUID->"8e816b64-99a4-4d5c-932a-54f109d16694"],
+
+Cell["2b. Correctness proof: zero Navier residual", "Subsection",ExpressionUUID->"c807f51d-befc-4dd6-9d68-0bea4f3f1399"],
+
+Cell["\<\
+Each column of G must satisfy the homogeneous Navier (elastodynamic) operator \
+away from the source: mu Lap u + (lam+mu) grad(div u) + den om^2 u = 0, with \
+mu = den cS^2, lam = den(cP^2 - 2 cS^2). This is the strong check that the \
+operator form above is the right Green's tensor.\
+\>", "Text",ExpressionUUID->"724b490a-d553-4d80-bfb3-edc44137c44b"],
+
+Cell["\<\
+lam = den (cP^2 - 2 cS^2); mu = den cS^2;
+navierRes[col_] := (lam + mu) Grad[Div[col, coords], coords] + mu \
+Laplacian[col, coords] + den om^2 col;
+(* Expect {0,0,0}. Columns 2 and 3 vanish too; change the index to check. *)
+FullSimplify[navierRes[Gsym[[All, 1]]],
+  Assumptions -> {x > 0, y > 0, z > 0, cP > 0, cS > 0, den > 0, om > 0, cP > \
+cS}]\
+\>", "Input",ExpressionUUID->"14071423-1c1c-47dd-8d94-286184474eb5"],
+
+Cell["2c. Far-field P/S decomposition (numeric)", "Subsection",ExpressionUUID->"a9d65fe2-bcb2-4d66-8355-8901a42e67d6"],
+
+Cell["\<\
+G(R nhat) ~ (1/(4 Pi R)) [ (1/(lam+2mu)) e^{i kP R} (nhat nhat) + (1/mu) e^{i \
+kS R} (I - nhat nhat) ] + O(1/R^2). The P part is longitudinal (nhat nhat), \
+the S part transverse (I - nhat nhat).\
+\>", "Text",ExpressionUUID->"1f773eb3-ceee-49cf-b7e1-7831caf3671a"],
+
+Cell["\<\
+With[{cPv = 2., cSv = 1., denv = 1., omv = 3., th = 0.7, ph = 0.9, R = \
+5000.},
+ Module[{kPv = omv/cPv, kSv = omv/cSv, lamv, muv, nhat, Gnum, Gff, pp},
+  lamv = denv (cPv^2 - 2 cSv^2); muv = denv cSv^2;
+  nhat = {Sin[th] Cos[ph], Sin[th] Sin[ph], Cos[th]};
+  Gnum = Gsym /. {x -> R nhat[[1]], y -> R nhat[[2]], z -> R nhat[[3]],
+     cP -> cPv, cS -> cSv, den -> denv, om -> omv};
+  pp = Outer[Times, nhat, nhat];
+  Gff = (1/(4 Pi R)) ((1/(lamv + 2 muv)) Exp[I kPv R] pp
+       + (1/muv) Exp[I kSv R] (IdentityMatrix[3] - pp));
+  {\"relative far-field error (expect ~1e-4)\",
+   Max[Abs[Flatten[Gnum - Gff]]]/Max[Abs[Flatten[Gff]]]}]]\
+\>", "Input",ExpressionUUID->"49e2e2b5-f97f-4169-b656-6196b8e9f0ce"],
+
+Cell["2d. Angular-spectrum (Weyl) form of the dyadic", "Subsection",ExpressionUUID->"8f4e9b19-24db-481d-879c-e83197e3145c"],
+
+Cell["\<\
+For observation half-space z>0: G(r) = (1/(den om^2)) (i/8Pi^2) Integrate \
+over dkx dky of { (1/kzS)(kS^2 I - KS KS^T) e^{i(kx x + ky y + kzS z)} + \
+(1/kzP)(KP KP^T) e^{i(kx x + ky y + kzP z)} }, where kzX = Sqrt[kX^2 - kx^2 - \
+ky^2] and KX = {kx, ky, kzX}. For z<0 use KX = {kx, ky, -kzX} and |z|. The S \
+projector kS^2 I - KS KS^T equals kS^2 (I - KShat KShat) (transverse to KS); \
+the P term KP KP^T is longitudinal. This decomposition is what diagonalizes a \
+planar interface, since each plane wave reflects through its own P/S \
+reflection and transmission coefficients.\
+\>", "Text",ExpressionUUID->"7fb9a499-21f2-406d-9c70-93ec483dd33b"],
+
+Cell["\<\
+specDyadic[r0_, kPv_, kSv_, denv_, omv_, R_: 30] := Module[{gComp},
+  gComp[a_, b_][kx_?NumericQ, ky_?NumericQ] := Block[{pz, sz, kpv, ksv},
+    pz = Sqrt[kPv^2 - kx^2 - ky^2]; sz = Sqrt[kSv^2 - kx^2 - ky^2];
+    kpv = {kx, ky, pz}; ksv = {kx, ky, sz};
+    (1/sz) (kSv^2 KroneckerDelta[a, b] - ksv[[a]] ksv[[b]]) Exp[I (kx r0[[1]] \
++ ky r0[[2]] + sz r0[[3]])] +
+    (1/pz) kpv[[a]] kpv[[b]] Exp[I (kx r0[[1]] + ky r0[[2]] + pz r0[[3]])]];
+  (1/(denv omv^2)) (I/(8 Pi^2)) Table[
+    Quiet[NIntegrate[gComp[a, b][kx, ky], {kx, -R, R}, {ky, -R, R},
+       PrecisionGoal -> 4, MaxRecursion -> 30], NIntegrate::slwcon],
+    {a, 3}, {b, 3}]];
+(* Numeric check vs the closed-form dyadic at a point with z>0 (tiny loss in \
+om).
+   The slow-convergence warning on this oscillatory spectral integral is \
+expected;
+   accuracy is confirmed by the diff. Expect a few 1e-8. *)
+With[{r0 = {0.3, 0.2, 0.6}, cPv = 1., cSv = 0.5, denv = 1., omv = 1 + I \
+10.^-3},
+ Module[{Gx},
+  Gx = Gsym /. {x -> r0[[1]], y -> r0[[2]], z -> r0[[3]],
+     cP -> cPv, cS -> cSv, den -> denv, om -> omv};
+  {\"max abs diff\", Max[Abs[Flatten[Gx - specDyadic[r0, omv/cPv, omv/cSv, \
+denv, omv]]]]}]]\
+\>", "Input",ExpressionUUID->"1d73150a-c61d-4d52-ba6e-a4e717fd87c7"],
+
+Cell["2e. Cylindrical P/S Sommerfeld building blocks", "Subsection",ExpressionUUID->"5c216022-f313-4510-b1dd-8b9a3e7c55dc"],
+
+Cell["\<\
+Each scalar potential has the Sommerfeld form gX = (i/4Pi) Integrate[(kr/kzX) \
+BesselJ[0, kr rho] e^{i kzX |z|}, {kr,0,Inf}]. These are the kernels you \
+Hankel-transform and then dress with P/S reflection coefficients for a planar \
+interface. Reuse sommNum from 1c with kP or kS.\
+\>", "Text",ExpressionUUID->"469ba991-e0a9-42eb-bfd3-24a48cf845c2"],
+
+Cell["\<\
+(* gX = sommNum[kX]/(4 Pi), since sommNum already carries the leading i. *)
+With[{kPv = 1 + I 10.^-6, kSv = 2 + I 10.^-6, rho = 0.5, zz = 0.4},
+ {{\"P\", sommNum[kPv, rho, zz]/(4 Pi), Exp[I kPv Sqrt[rho^2 + zz^2]]/(4 Pi \
+Sqrt[rho^2 + zz^2])},
+  {\"S\", sommNum[kSv, rho, zz]/(4 Pi), Exp[I kSv Sqrt[rho^2 + zz^2]]/(4 Pi \
+Sqrt[rho^2 + zz^2])}}]\
+\>", "Input",ExpressionUUID->"6995223c-fb2b-46b6-a05b-d7d83946b475"],
+
+Cell["3. T-matrix and Foldy-Lax scaffold", "Section",ExpressionUUID->"2f018598-91ed-45aa-bd56-5d85b8c81dd7"],
+
+Cell["3a. T-matrix template: acoustic sound-soft sphere (verified)", \
+"Subsection",ExpressionUUID->"31667cd6-3b21-45b2-b19b-7bf77db198db"],
+
+Cell["\<\
+The partial-wave (Mie) T-matrix of a sphere is diagonal: scattered \
+coefficient = T_l * incident coefficient, with outgoing radial function \
+h_l^(1). For a pressure-release (Dirichlet) sphere of radius a, p = 0 at r = \
+a gives T_l = -j_l(ka)/h_l(ka). Energy check: for a lossless scatterer the \
+partial-wave S-matrix S_l = 1 + 2 T_l is unitary, |S_l| = 1, for any real ka.\
+\
+\>", "Text",ExpressionUUID->"74e373e5-a345-46b0-9ecb-b7d716cd6916"],
+
+Cell["\<\
+sj[l_, x_] := SphericalBesselJ[l, x];
+sy[l_, x_] := SphericalBesselY[l, x];
+shank1[l_, x_] := sj[l, x] + I sy[l, x];          (* spherical Hankel h_l^(1) \
+*)
+Tsoft[l_, ka_] := -sj[l, ka]/shank1[l, ka];
+(* Second column should be all 1 (unitarity). *)
+Table[{l, Abs[1 + 2 Tsoft[l, 3.0]]}, {l, 0, 5}]\
+\>", "Input",ExpressionUUID->"d6f6bcad-661e-408e-b55c-2518d1da1aa1"],
+
+Cell["3b. Penetrable sphere, and the elastic generalization", "Subsection",ExpressionUUID->"e3398c60-ed38-4b40-a53a-3867c1ade783"],
+
+Cell["\<\
+For a penetrable sphere with exterior (k0, rho0) and interior (k1, rho1), \
+continuity of pressure and of (1/rho) d/dr pressure at r = a gives the \
+T-matrix below. The lossless unitarity check still applies. For the elastic \
+problem you replace the scalar wavefunctions by the vector Hansen functions \
+L, M, N (P couples to L with kP; S couples to M, N with kS), and the scalar \
+normal derivative by the surface traction operator; the single-scatterer T \
+then becomes block-structured and mixes P and S.\
+\>", "Text",ExpressionUUID->"3cc219e3-1222-4d52-b123-4250938fff19"],
+
+Cell["\<\
+sjp[l_, x_] := D[SphericalBesselJ[l, t], t] /. t -> x;
+syp[l_, x_] := D[SphericalBesselY[l, t], t] /. t -> x;
+shp1[l_, x_] := sjp[l, x] + I syp[l, x];
+Tpen[l_, k0_, k1_, rho0_, rho1_, a_] := With[{A = k0/rho0, B = k1/rho1},
+   (B sjp[l, k1 a] sj[l, k0 a] - A sjp[l, k0 a] sj[l, k1 a]) /
+    (A shp1[l, k0 a] sj[l, k1 a] - B sjp[l, k1 a] shank1[l, k0 a])];
+(* Lossless unitarity check, second column should be all 1. *)
+Table[{l, Abs[1 + 2 Tpen[l, 2., 3., 1., 2., 1.]]}, {l, 0, 4}]\
+\>", "Input",ExpressionUUID->"35858419-f19d-4fc2-b30e-e29ed303e868"],
+
+Cell["3c. Foldy-Lax multiple scattering (verified)", "Subsection",ExpressionUUID->"6b9cdb0f-e269-4dc7-bae2-b5b8d64858c5"],
+
+Cell["\<\
+Exciting field at scatterer i: psi_i = phi_inc(r_i) + Sum over j!=i of G(r_i, \
+r_j) F_j psi_j. In matrix form (I - M) psi = b with M_ij = (1 - delta_ij) F_j \
+G(r_i, r_j) and b_i = phi_inc(r_i). Total field anywhere: phi(r) = phi_inc(r) \
++ Sum_j G(r, r_j) F_j psi_j. For extended scatterers replace each scalar \
+strength F_j by its T-matrix (3a/3b) and G by the vector spherical-wave \
+translation (addition) operator.\
+\>", "Text",ExpressionUUID->"0d37a378-d3b5-45f4-b05a-333b5099b0d3"],
+
+Cell["\<\
+foldyLax[k_, sites_, F_, phiInc_] := Module[{n = Length[sites], Gf, M, b},
+   Gf[p_, q_] := With[{d = Norm[p - q]}, Exp[I k d]/(4 Pi d)];
+   M = Table[If[i == j, 0, F[[j]] Gf[sites[[i]], sites[[j]]]], {i, n}, {j, n}];
+   b = phiInc /@ sites;
+   LinearSolve[IdentityMatrix[n] - M, b]];
+(* Self-consistency: exact solve vs truncated Neumann (Born) series. Expect \
+~1e-16. *)
+With[{k = 1.2, sites = {{0, 0, 0}, {1.5, 0, 0}, {0.4, 1.1, -0.3}}, F = {0.05, \
+0.04, 0.06}},
+ Module[{psi, M, b, Gf, series},
+  Gf[p_, q_] := With[{d = Norm[p - q]}, Exp[I k d]/(4 Pi d)];
+  psi = foldyLax[k, sites, F, Function[r, Exp[I k r[[1]]]]];
+  M = Table[If[i == j, 0, F[[j]] Gf[sites[[i]], sites[[j]]]], {i, 3}, {j, \
+3}];
+  b = Table[Exp[I k sites[[i, 1]]], {i, 3}];
+  series = Sum[MatrixPower[M, p], {p, 0, 25}] . b;
+  {\"max abs solve - series\", Max[Abs[psi - series]]}]]\
+\>", "Input",ExpressionUUID->"6af9ffc0-186f-482f-a2d0-6b7e07139ad2"],
+
+Cell["\<\
+3d. Cube T-matrix via the null-field (EBCM) method (framework)\
+\>", "Subsection",ExpressionUUID->"7fb1eff7-f241-4f5f-be80-a2a4e2a812f5"],
+
+Cell["\<\
+Acoustic scalar version, time e^{-i om t}. Expand incident = Sum a_lm psiReg, \
+scattered = Sum f_lm psiOut, with f = T a. The null-field equations give T = \
+-RgQ . Inverse[Q], where Q and RgQ are surface integrals over the scatterer \
+boundary S (the 6 faces of the cube): Q_{nu,n} = Integral_S [ psiOut_nu \
+dn(psiReg_n) - dn(psiOut_nu) psiReg_n ] dS, and RgQ has psiReg in place of \
+psiOut. Here dn is the outward normal derivative. For a sphere these are \
+diagonal and reproduce the Mie T_l of 3a (the standard validation). For a \
+cube the face integrals have no closed form: evaluate each face with \
+NIntegrate (the cube point group only reduces the count, it does not remove \
+the integrals). Elastic cube: use the vector Hansen functions (kP for L, kS \
+for M and N) and the traction operator t(u) = lam (div u) n + 2 mu (n.grad) u \
++ mu n x curl u; the resulting T is block-structured and couples P and S \
+across the faces.\
+\>", "Text",ExpressionUUID->"2df0a24a-fec3-4f87-8997-8baa32e57f48"],
+
+Cell["\<\
+(* Building blocks (runnable); the face-integration routine is the piece to \
+implement. *)
+psiReg[l_, m_, k_, r_, th_, ph_] := SphericalBesselJ[l, k r] \
+SphericalHarmonicY[l, m, th, ph];
+psiOut[l_, m_, k_, r_, th_, ph_] := (SphericalBesselJ[l, k r] + I \
+SphericalBesselY[l, k r]) SphericalHarmonicY[l, m, th, ph];
+(* Sanity: the regular wave is finite at the origin (j_0(0) Y00 = 1/(2 \
+Sqrt[Pi])). *)
+psiReg[0, 0, 1, 0, 0, 0]\
+\>", "Input",ExpressionUUID->"0fd07c95-68af-459d-b33c-376d36d4f072"],
+
+Cell["4. Summary of checks", "Section",ExpressionUUID->"60a514fe-1ed2-4c9e-aed2-882df2dd683b"],
+
+Cell["\<\
+Verified under wolframscript: (1a) Helmholtz residual 0; (1b) on-axis \
+integral = -i e^{ikz}/z, direct and split; (1c) Sommerfeld numeric matches \
+closed form; (1d) 2D Weyl = Pi H0^(1); (1e) y=0 reduces to Sommerfeld at \
+rho=|x|; (2b) Navier residual {0,0,0}, proving the dyadic operator form; (2c) \
+far-field P/S split; (2d) angular-spectrum dyadic matches the closed form to \
+~1e-8; (2e) P/S Sommerfeld kernels; (3a) sound-soft Mie unitarity |1+2T_l|=1; \
+(3b) penetrable-sphere unitarity; (3c) Foldy-Lax solve = Neumann series. \
+Section 3d is a framework for the cube (the boundary integrals are numerical \
+and left to implement).\
+\>", "Text",ExpressionUUID->"59de4e3a-1210-4fcd-bf2a-f230d782766b"]
+},
+WindowSize->{900, 1000},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"6d2f9646-0bf6-4b36-b30b-520d051cabe5"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 168, 3, 70, "Title",ExpressionUUID->"066812fc-5b6e-4eeb-995f-811854591790"],
+Cell[725, 25, 700, 10, 70, "Text",ExpressionUUID->"c4cfd1f6-9e92-4d41-85ad-3f963389041d"],
+Cell[1428, 37, 82, 0, 70, "Section",ExpressionUUID->"57a3cae8-1f31-4df6-97ec-72bea37650f0"],
+Cell[1513, 39, 151, 4, 70, "Input",ExpressionUUID->"caebadb4-c728-4516-a1e5-c34d7aaf46ea"],
+Cell[1667, 45, 111, 0, 70, "Section",ExpressionUUID->"fe707994-fb8c-4824-a40a-3437b4a19858"],
+Cell[1781, 47, 124, 0, 70, "Subsection",ExpressionUUID->"0380b207-b8b3-40a3-b725-8e82f4ff9221"],
+Cell[1908, 49, 290, 5, 70, "Input",ExpressionUUID->"c7d97724-2d8d-4e50-939c-13ece8c12bb4"],
+Cell[2201, 56, 110, 0, 70, "Subsection",ExpressionUUID->"a3db3172-144d-4d11-b405-53d848087ef8"],
+Cell[2314, 58, 321, 5, 70, "Text",ExpressionUUID->"f9a0cd57-1163-47a1-a354-f6587f30d279"],
+Cell[2638, 65, 248, 4, 70, "Input",ExpressionUUID->"531c58b3-a7d8-4293-a3d4-4ffabf01358b"],
+Cell[2889, 71, 187, 3, 70, "Input",ExpressionUUID->"14e8b294-c509-4d17-a1e4-fc5d0e97ff31"],
+Cell[3079, 76, 591, 11, 70, "Input",ExpressionUUID->"43401938-2bdc-410a-87c7-c1505e9adfd4"],
+Cell[3673, 89, 110, 0, 70, "Subsection",ExpressionUUID->"cb48c488-6dd2-40b6-a02d-5f1b8e4dc359"],
+Cell[3786, 91, 328, 5, 70, "Text",ExpressionUUID->"5fb60ad0-391d-427b-b964-745e8c6c99e9"],
+Cell[4117, 98, 409, 7, 70, "Input",ExpressionUUID->"55c4c8fa-737c-4c54-b3a8-7a34dcf5605a"],
+Cell[4529, 107, 155, 2, 70, "Subsection",ExpressionUUID->"20ecfa1b-2353-4513-8eab-0eba601b828d"],
+Cell[4687, 111, 525, 10, 70, "Input",ExpressionUUID->"67a1ec0e-d53a-4e54-bc20-e92de0c84a76"],
+Cell[5215, 123, 115, 0, 70, "Subsection",ExpressionUUID->"5f530fd9-306a-4f62-893c-4ab0ffbf2aa5"],
+Cell[5333, 125, 412, 6, 70, "Text",ExpressionUUID->"896e1f08-64e0-4d60-9a1e-463892e3a64d"],
+Cell[5748, 133, 324, 6, 70, "Input",ExpressionUUID->"e3608c1d-58a6-42f9-8871-5860e41444aa"],
+Cell[6075, 141, 126, 0, 70, "Section",ExpressionUUID->"7b6ad7a9-3d98-40e2-a453-99e739c204f6"],
+Cell[6204, 143, 147, 2, 70, "Subsection",ExpressionUUID->"1b4e85c9-da68-4a97-9543-b7712fbc99f4"],
+Cell[6354, 147, 252, 4, 70, "Text",ExpressionUUID->"bc30cf9f-b513-4999-ad5b-fca4d56a89d9"],
+Cell[6609, 153, 350, 8, 70, "Input",ExpressionUUID->"8e816b64-99a4-4d5c-932a-54f109d16694"],
+Cell[6962, 163, 120, 0, 70, "Subsection",ExpressionUUID->"c807f51d-befc-4dd6-9d68-0bea4f3f1399"],
+Cell[7085, 165, 363, 5, 70, "Text",ExpressionUUID->"724b490a-d553-4d80-bfb3-edc44137c44b"],
+Cell[7451, 172, 429, 8, 70, "Input",ExpressionUUID->"14071423-1c1c-47dd-8d94-286184474eb5"],
+Cell[7883, 182, 118, 0, 70, "Subsection",ExpressionUUID->"a9d65fe2-bcb2-4d66-8355-8901a42e67d6"],
+Cell[8004, 184, 275, 4, 70, "Text",ExpressionUUID->"1f773eb3-ceee-49cf-b7e1-7831caf3671a"],
+Cell[8282, 190, 715, 13, 70, "Input",ExpressionUUID->"49e2e2b5-f97f-4169-b656-6196b8e9f0ce"],
+Cell[9000, 205, 123, 0, 70, "Subsection",ExpressionUUID->"8f4e9b19-24db-481d-879c-e83197e3145c"],
+Cell[9126, 207, 660, 9, 70, "Text",ExpressionUUID->"7fb9a499-21f2-406d-9c70-93ec483dd33b"],
+Cell[9789, 218, 1247, 24, 70, "Input",ExpressionUUID->"1d73150a-c61d-4d52-ba6e-a4e717fd87c7"],
+Cell[11039, 244, 123, 0, 70, "Subsection",ExpressionUUID->"5c216022-f313-4510-b1dd-8b9a3e7c55dc"],
+Cell[11165, 246, 361, 5, 70, "Text",ExpressionUUID->"469ba991-e0a9-42eb-bfd3-24a48cf845c2"],
+Cell[11529, 253, 424, 7, 70, "Input",ExpressionUUID->"6995223c-fb2b-46b6-a05b-d7d83946b475"],
+Cell[11956, 262, 108, 0, 70, "Section",ExpressionUUID->"2f018598-91ed-45aa-bd56-5d85b8c81dd7"],
+Cell[12067, 264, 139, 1, 70, "Subsection",ExpressionUUID->"31667cd6-3b21-45b2-b19b-7bf77db198db"],
+Cell[12209, 267, 457, 7, 70, "Text",ExpressionUUID->"74e373e5-a345-46b0-9ecb-b7d716cd6916"],
+Cell[12669, 276, 379, 8, 70, "Input",ExpressionUUID->"d6f6bcad-661e-408e-b55c-2518d1da1aa1"],
+Cell[13051, 286, 130, 0, 70, "Subsection",ExpressionUUID->"e3398c60-ed38-4b40-a53a-3867c1ade783"],
+Cell[13184, 288, 587, 8, 70, "Text",ExpressionUUID->"3cc219e3-1222-4d52-b123-4250938fff19"],
+Cell[13774, 298, 560, 9, 70, "Input",ExpressionUUID->"35858419-f19d-4fc2-b30e-e29ed303e868"],
+Cell[14337, 309, 121, 0, 70, "Subsection",ExpressionUUID->"6b9cdb0f-e269-4dc7-bae2-b5b8d64858c5"],
+Cell[14461, 311, 500, 7, 70, "Text",ExpressionUUID->"0d37a378-d3b5-45f4-b05a-333b5099b0d3"],
+Cell[14964, 320, 937, 18, 70, "Input",ExpressionUUID->"6af9ffc0-186f-482f-a2d0-6b7e07139ad2"],
+Cell[15904, 340, 147, 2, 70, "Subsection",ExpressionUUID->"7fb1eff7-f241-4f5f-be80-a2a4e2a812f5"],
+Cell[16054, 344, 1017, 14, 70, "Text",ExpressionUUID->"2df0a24a-fec3-4f87-8997-8baa32e57f48"],
+Cell[17074, 360, 509, 10, 70, "Input",ExpressionUUID->"0fd07c95-68af-459d-b33c-376d36d4f072"],
+Cell[17586, 372, 94, 0, 70, "Section",ExpressionUUID->"60a514fe-1ed2-4c9e-aed2-882df2dd683b"],
+Cell[17683, 374, 719, 10, 70, "Text",ExpressionUUID->"59de4e3a-1210-4fcd-bf2a-f230d782766b"]
+}
+]
+*)
+
+(* End of internal cache information *)
