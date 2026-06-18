@@ -62,4 +62,14 @@ makeTwin["IntraPlaneCollectiveReciprocity.wl", "Phase 2 (d) : Collective Recipro
    <> "and G0 sigma-symmetric, so T_coll is reciprocal.  Executable twin: "
    <> "IntraPlaneCollectiveReciprocity.wl.  Cross-checked in Python."];
 
+makeTwin["IntraPlaneConvergence.wl", "Phase 2 (c) : Convergence in Multipole Order + Packing Density",
+   "Convergence of the planar collective Foldy-Lax solve T_coll = T0 (I - G0 T0)^{-1} in (i) multipole "
+   <> "order n and (ii) packing density.  [A] the single-site Mie spectrum ||T0(n)||_F decays "
+   <> "super-exponentially (why n-truncation converges); [B] the closed-form P-channel collective "
+   <> "monopole converges to <1e-5 relative at every density, while the coupling, spectral radius and "
+   <> "conditioning grow as the spheres approach touching (aL -> 2 aa) -- the translation-theorem "
+   <> "region-of-validity boundary; [C] one full-vector build confirms the elastic L/M/N collective "
+   <> "tracks the same convergence above the lattice floor.  Executable twin: IntraPlaneConvergence.wl.  "
+   <> "Independently cross-checked in Python (cubic_scattering/tests/test_intraplane_convergence.py)."];
+
 Print["Phase-2 notebook twins generated."];
