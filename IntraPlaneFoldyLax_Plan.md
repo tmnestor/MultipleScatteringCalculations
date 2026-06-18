@@ -1,6 +1,6 @@
 # Intra-Plane Foldy-Lax: Planar Multiple Scattering of Spherical Voxels into Layer R/T
 
-**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; Phase 2 items (a),(b),(d),(f) DONE, (c),(e) remain. Date: 2026-06-18.
+**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; Phase 2 items (a),(b),(c),(d),(f) DONE, (e) remains (reframed -> sphere-packing discretisation error). Date: 2026-06-18.
 **Representation: full spherical-multipole (Cruzan/Stein), all `n` (option B, DECIDED).**
 
 > **Progress log (2026-06-18, branch `phase0-intraplane-translation`).** Each phase below
@@ -8,10 +8,11 @@
 > residuals are fresh-run.
 > - **Phase 0 DONE** `212f84b` — elastic translation-addition operator.
 > - **Phase 1 DONE** `e582c39` `470cb11` `ef10221` — Ewald planar lattice sum `G0(k_par)`.
-> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` `090ed5c` `78716e0` `6c52a7e` — single-site
+> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` `090ed5c` `78716e0` `6c52a7e` `81887c1` — single-site
 >   `T0` + Foldy-Lax scaffold + monopole collective; vector translation as an explicit `L/M/N` matrix `W(d)`;
 >   two-voxel direct Foldy-Lax (a); lattice-summed multi-channel vector `G0(k_par)` (b); collective reciprocity
->   via the symplectic-J metric reconciliation (d); Python cross-check + `.nb` twins (f). Remaining: (c), (e).
+>   via the symplectic-J metric reconciliation (d); Python cross-check + `.nb` twins (f); multipole-order +
+>   packing-density convergence study (c). Remaining: (e) (reframed -> sphere-packing discretisation error).
 > - **Phases 3-5 not started.**
 >
 > See the per-phase *Status* notes in Section 6 for residuals and the remaining Phase-2 items.
@@ -30,7 +31,7 @@ stratified background. **No CPA / effective-medium homogenisation is used.**
 | Pillar | Object | Status |
 |---|---|---|
 | 1 | Single-site `T0` (full-wave sphere scattering operator) | **DONE** `Mathematica/CartesianT0.nb`, reciprocity-verified 1e-18 |
-| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **IN PROGRESS** — Phases 0-1 done; Phase 2 (a),(b),(d),(f) done, (c),(e) remain (see Progress log) |
+| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **IN PROGRESS** — Phases 0-1 done; Phase 2 (a),(b),(c),(d),(f) done, (e) remains/reframed (see Progress log) |
 | 3 | Kennett vertical recursion on the stratified background | EXISTS `cubic_scattering/kennett_layers.py` |
 
 ```mermaid
@@ -162,14 +163,37 @@ cross-check benchmark from Section 4).
   (scipy/sympy) independently confirms the symplectic-J reciprocity of the dumped `G0^vec` (**6.2e-13** with the
   metric, 2.3 without) and recomputes the L-block values from the scalar structure constants (**1.7e-13**).
   `makeIntraPlaneNotebooks.wl` writes faithful `.nb` twins for the Phase-2 scripts (round-trip spot-verified).
-- **Remaining:** (c) `n`-convergence + packing-density study; (e) Rayleigh / `n<=2` cross-check vs
-  `slab_scattering.slab_reflection_matrix`.
+- **(c) DONE** `81887c1` (`Mathematica/IntraPlaneConvergence.wl`): convergence in multipole order `n` +
+  packing density. [A] the single-site Mie spectrum decays super-exponentially (`||T0(n)||_F`: n=1
+  `2.0e-2` -> n=6 `1.5e-7` -> n=8 `3.0e-11`) -- why `n`-truncation converges. [B] the closed-form
+  P-channel collective monopole converges to **<1e-5 relative at every density** (rel conv `1.2e-10` at
+  `aL=6` -> `3.9e-7` at `aL=2.2`; truncation floor `4.0e-10`), while coupling, spectral radius and
+  conditioning **grow as spheres approach touching** (specrad `9.8e-4` -> `5.8e-2`, cond@N5 `1.0` ->
+  `6.8` over `aL=6..2.2`) -- the quantified region-of-validity boundary (see Risk §8). [C] one full-vector
+  build (Nmax=3, aL=2.5) confirms the L/M/N collective is finite, isolated-exact, and converged in `n`
+  (shared-block Cauchy `~1e-6`, `1.2e-4` rel) above the Lrad=8 lattice floor. Stable `h_n^(1)` via
+  `SphericalHankelH1`. Python cross-check `cubic_scattering/tests/test_intraplane_convergence.py`:
+  independent closed-form recompute matches the monopole to **8.7e-18**, plus the packing-density trend
+  and the vector convergence. `.nb` twin via `makeIntraPlaneNotebooks.wl`.
+- **Remaining:** (e) **sphere-packing discretisation error** vs the space-filling cube slab.
+  *Reframed (2026-06-18, per Tod):* spheres cannot fill space (planar packing fraction `phi < ~0.52`
+  even at touching), so an exact match to `slab_scattering` is impossible (sphere != cube) and the R/T
+  projection is Phase 3. The research deliverable is to **quantify the irreducible geometric
+  discretisation error** of the sphere packing against the cube tiling (`slab_scattering`, `phi=1`,
+  space-filling) as ground truth: Rayleigh limit first, layer response vs `phi` and contrast, with a
+  volume-renormalised-sphere correction. See [[project_sphere_packing_discretisation]].
 
 **Phase 3 - layer R/T(p).**
 Project the planar collective scattering onto Kennett's flux-normalized up/down P-SV-SH at
 slowness `p` (`Rd, Ru, Td, Tu`, SH scalar), via the Weyl/far-field bridge.
 *Accept:* `Tu = Td^T` and `Rd` symmetric (Kennett reciprocity); for a lossless plane the
 flux-normalized `|R|^2 + |T|^2 = 1`.
+*Up-down truncation (2026-06-18, per Tod).* Reflection surveys observe the specular up/down R/T, fed
+by the monopole + low-order channels (the fastest-converging, best-conditioned ones per item (c)); the
+numerically hard high-`n` near-field in-plane (side) coupling is subdominant for specular R/T. **Verify**
+the specular R/T is converged at a low `n_max` even where the full operator is not, and quantify
+`n_max(p)` (the order needed grows with slowness `p` and for P-SV-SH conversions). Keep the LOW-order
+in-plane coupling (the layer-forming mechanism, not droppable). See [[project_sphere_packing_discretisation]].
 
 **Phase 4 - Kennett coupling.**
 Insert the planar R/T as a scattering layer in `kennett_layers` over the stratified background.
@@ -197,9 +221,23 @@ single-voxel ground truth; the existing Cartesian cube-slab is the Rayleigh-limi
   verified `eta`-independent to 2e-16 for the undamped sum, matching the direct sum 2.4e-11
   (`IntraPlaneLatticeSum.wl`, Python-cross-checked). The remaining sub-item is the strictly-undamped
   *multipole* structure constants (full Kambe), deferred — not needed for the damped Foldy-Lax.
-- **Translation-theorem region of validity:** the addition theorem re-expansion converges for
-  non-overlapping spheres; dense packing (near-touching) needs **high `n`** and possibly the
-  near-neighbour terms handled separately. Phase 2's `n`-convergence study quantifies this.
+- **Translation-theorem region of validity. [Quantified, item (c) `IntraPlaneConvergence.wl`]:** the
+  addition-theorem re-expansion converges for non-overlapping spheres. Item (c) shows the collective
+  monopole converges to <1e-5 relative at every tested density, while coupling, spectral radius and
+  conditioning grow as spheres approach touching (`aa/aL -> 1/2`): `cond(I - G0 T0) ~ 1` at `aL>=3`,
+  `~7` at `aL=2.2` (n_max=5), blowing up only at the physically-negligible high-`n` shells
+  (`||T0(6)|| ~ 1.5e-7`). **Rule: conditioning-gated `n_max`** (stop when `||T0(n)||` < tol OR cond
+  crosses a threshold). The huge structure constants (`g0LL ~ 1e6`) are an un-normalised "clean L/M/N"
+  basis artifact, not physics; **escape hatches** for near-touching are extended precision
+  (~`log10(cond)` guard digits) or an energy/flux-normalised vector-spherical basis (entries O(1)).
+  *Numerical note:* evaluate `h_n^(1)` via `SphericalHankelH1`, never `j_n + i y_n` (which cancels
+  catastrophically in the damped far field, where each piece ~ `e^{Im}` but the sum ~ `e^{-Im}`).
+- **Sphere-packing discretisation error (research goal, 2026-06-18, per Tod).** Spheres cannot fill
+  space, so there is an **irreducible geometric error independent of multipole convergence**: the
+  sphere packing is a diluted (`phi < ~0.52`) representation of the target heterogeneity. Quantify it
+  against the **space-filling cube slab** (`slab_scattering`, cubes tile at `phi=1`) as ground truth
+  (Rayleigh limit first; error vs `phi` and contrast; volume-renormalised-sphere correction). This is
+  the reframed item (e). See [[project_sphere_packing_discretisation]].
 - **Multipole order** is a convergence parameter (not a truncation fork): track `n_max` vs
   packing density and frequency.
 - **RQ1 sub-fork:** fixed-depth-planes + Kennett-between (this plan) versus full 3-D near-field.
