@@ -1,0 +1,105 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[      2873,         97]
+NotebookOptionsPosition[      2401,         80]
+NotebookOutlinePosition[      2791,         96]
+CellTagsIndexPosition[      2748,         93]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[{
+ RowBox[{"Integrate", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{"k\[Rho]", "/", 
+      RowBox[{"Sqrt", "[", 
+       RowBox[{
+        RowBox[{"k", "^", "2"}], "-", 
+        RowBox[{"k\[Rho]", "^", "2"}]}], "]"}]}], ")"}], " ", 
+    RowBox[{"Exp", "[", 
+     RowBox[{"I", " ", 
+      RowBox[{"Sqrt", "[", 
+       RowBox[{
+        RowBox[{"k", "^", "2"}], "-", 
+        RowBox[{"k\[Rho]", "^", "2"}]}], "]"}], " ", "z"}], "]"}]}], ",", 
+   RowBox[{"{", 
+    RowBox[{"k\[Rho]", ",", "0", ",", "Infinity"}], "}"}], ",", 
+   RowBox[{"Assumptions", "->", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"k", ">", "0"}], ",", 
+      RowBox[{"z", ">", "0"}]}], "}"}]}]}], "]"}], "\n", 
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"expect", "-", 
+     RowBox[{"I", " ", 
+      RowBox[{
+       RowBox[{"E", "^", 
+        RowBox[{"(", 
+         RowBox[{"I", " ", "k", " ", "z"}], ")"}]}], "/", "z"}]}]}], ",", 
+    RowBox[{
+     RowBox[{"so", " ", "g"}], "=", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"i", "/", "4"}], "\[Pi]"}], ")"}], "*", "that"}], "=", 
+      RowBox[{
+       RowBox[{"E", "^", 
+        RowBox[{"(", 
+         RowBox[{"I", " ", "k", " ", "z"}], ")"}]}], "/", 
+       RowBox[{"(", 
+        RowBox[{"4", "\[Pi]", " ", "z"}], ")"}]}]}]}]}], "*)"}]}]}], "Input",
+ CellChangeTimes->{{3.9906391191395884`*^9, 3.990639119142104*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"988b3d49-e69f-4721-8ca1-3995f01198eb"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"\[ImaginaryI]", " ", 
+    SuperscriptBox["\[ExponentialE]", 
+     RowBox[{"\[ImaginaryI]", " ", "k", " ", "z"}]]}], "z"]}]], "Output",
+ CellChangeTimes->{3.9906391836067877`*^9},
+ CellLabel->"Out[1]=",ExpressionUUID->"61b389c8-8417-493a-992f-0f7ae003c30e"]
+}, Open  ]]
+},
+WindowSize->{808, 911},
+WindowMargins->{{4, Automatic}, {Automatic, 4}},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"c461778d-52cf-4485-83f8-e11b3313fd79"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[576, 22, 1494, 46, 90, "Input",ExpressionUUID->"988b3d49-e69f-4721-8ca1-3995f01198eb"],
+Cell[2073, 70, 312, 7, 68, "Output",ExpressionUUID->"61b389c8-8417-493a-992f-0f7ae003c30e"]
+}, Open  ]]
+}
+]
+*)
+
