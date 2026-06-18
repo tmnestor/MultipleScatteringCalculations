@@ -8,10 +8,10 @@
 > residuals are fresh-run.
 > - **Phase 0 DONE** `212f84b` — elastic translation-addition operator.
 > - **Phase 1 DONE** `e582c39` `470cb11` `ef10221` — Ewald planar lattice sum `G0(k_par)`.
-> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` `090ed5c` — single-site `T0` +
->   Foldy-Lax scaffold + monopole collective; vector translation as an explicit `L/M/N` matrix `W(d)`;
->   two-voxel direct Foldy-Lax (a); lattice-summed multi-channel vector `G0(k_par)` (b); collective
->   reciprocity via the symplectic-J metric reconciliation (d). Remaining: (c), (e), (f).
+> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` `090ed5c` `78716e0` `6c52a7e` — single-site
+>   `T0` + Foldy-Lax scaffold + monopole collective; vector translation as an explicit `L/M/N` matrix `W(d)`;
+>   two-voxel direct Foldy-Lax (a); lattice-summed multi-channel vector `G0(k_par)` (b); collective reciprocity
+>   via the symplectic-J metric reconciliation (d); Python cross-check + `.nb` twins (f). Remaining: (c), (e).
 > - **Phases 3-5 not started.**
 >
 > See the per-phase *Status* notes in Section 6 for residuals and the remaining Phase-2 items.
@@ -158,8 +158,12 @@ cross-check benchmark from Section 4).
   `d_M=I sqrt(n(n+1))` (the SH/SV I-phase; pinned by G0's M-N). Verified: D-conj T0 **4.3e-17**, D-conj G0
   **6.2e-13**, D-conj `T_coll` **4.4e-17** (coupling 1.6%). *Energy/flux* `|R|^2+|T|^2=1` deferred to Phase 3
   (needs the undamped G0 + Kennett flux norm; damping is artificial loss). See [[project_intraplane_reciprocity_metric]].
+- **(f) DONE** `78716e0` `6c52a7e`: Python cross-check + `.nb` twins. `cubic_scattering/tests/test_intraplane_collective.py`
+  (scipy/sympy) independently confirms the symplectic-J reciprocity of the dumped `G0^vec` (**6.2e-13** with the
+  metric, 2.3 without) and recomputes the L-block values from the scalar structure constants (**1.7e-13**).
+  `makeIntraPlaneNotebooks.wl` writes faithful `.nb` twins for the Phase-2 scripts (round-trip spot-verified).
 - **Remaining:** (c) `n`-convergence + packing-density study; (e) Rayleigh / `n<=2` cross-check vs
-  `slab_scattering.slab_reflection_matrix`; (f) Phase-2 `.nb` twins + Python cross-check.
+  `slab_scattering.slab_reflection_matrix`.
 
 **Phase 3 - layer R/T(p).**
 Project the planar collective scattering onto Kennett's flux-normalized up/down P-SV-SH at
