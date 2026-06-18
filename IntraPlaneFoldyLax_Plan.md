@@ -8,9 +8,10 @@
 > residuals are fresh-run.
 > - **Phase 0 DONE** `212f84b` — elastic translation-addition operator.
 > - **Phase 1 DONE** `e582c39` `470cb11` `ef10221` — Ewald planar lattice sum `G0(k_par)`.
-> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` — single-site `T0` + Foldy-Lax
->   scaffold + monopole collective; vector translation as an explicit `L/M/N` matrix `W(d)`;
->   two-voxel direct Foldy-Lax (items a); lattice-summed multi-channel vector `G0(k_par)` (item b).
+> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` `090ed5c` — single-site `T0` +
+>   Foldy-Lax scaffold + monopole collective; vector translation as an explicit `L/M/N` matrix `W(d)`;
+>   two-voxel direct Foldy-Lax (a); lattice-summed multi-channel vector `G0(k_par)` (b); collective
+>   reciprocity via the symplectic-J metric reconciliation (d). Remaining: (c), (e), (f).
 > - **Phases 3-5 not started.**
 >
 > See the per-phase *Status* notes in Section 6 for residuals and the remaining Phase-2 items.
@@ -149,8 +150,15 @@ cross-check benchmark from Section 4).
   L-block reciprocity **0**. Dumps `IntraPlaneVectorLattice_reference.json`. *Deferred (cf. Phase 1):* the
   deep/undamped fast vector `G0` via the Ewald-accelerated Cruzan/Gaunt contraction of the structure
   constants; M/N strict reciprocity + energy are item (d) (need the flux metric).
-- **Remaining:** (c) `n`-convergence + packing-density study; (d) collective reciprocity + energy (via the
-  reciprocity-verified `CartesianT0` far-field bridge / flux metric); (e) Rayleigh / `n<=2` cross-check vs
+- **(d) DONE** `090ed5c` (`Mathematica/IntraPlaneCollectiveReciprocity.wl`, `IntraPlaneSymplecticMetric.wl`):
+  collective **reciprocity** via the **symplectic-J reconciliation**. A naive arbitrary-direction far-field
+  test was the wrong statement for a lattice; the correct one is the σ-metric operator symmetry
+  `J0 (D A D^{-1}) J0 = (D A D^{-1})^T`. A SINGLE symplectic channel metric makes BOTH T0 and G0 σ-symmetric
+  (not a fit): `d_L=(kS/kP)^{3/2}`, `d_N=sqrt(n(n+1))` (Jspher weight; pinned by T0's L-N: `tLN/tNL=(kP/kS)^3 n(n+1)`),
+  `d_M=I sqrt(n(n+1))` (the SH/SV I-phase; pinned by G0's M-N). Verified: D-conj T0 **4.3e-17**, D-conj G0
+  **6.2e-13**, D-conj `T_coll` **4.4e-17** (coupling 1.6%). *Energy/flux* `|R|^2+|T|^2=1` deferred to Phase 3
+  (needs the undamped G0 + Kennett flux norm; damping is artificial loss). See [[project_intraplane_reciprocity_metric]].
+- **Remaining:** (c) `n`-convergence + packing-density study; (e) Rayleigh / `n<=2` cross-check vs
   `slab_scattering.slab_reflection_matrix`; (f) Phase-2 `.nb` twins + Python cross-check.
 
 **Phase 3 - layer R/T(p).**
