@@ -8,8 +8,9 @@
 > residuals are fresh-run.
 > - **Phase 0 DONE** `212f84b` — elastic translation-addition operator.
 > - **Phase 1 DONE** `e582c39` `470cb11` `ef10221` — Ewald planar lattice sum `G0(k_par)`.
-> - **Phase 2 IN PROGRESS** `41557d1` `9044141` — single-site `T0` + Foldy-Lax scaffold + monopole
->   collective; vector translation extracted as an explicit `L/M/N` matrix `W(d)`.
+> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` — single-site `T0` + Foldy-Lax
+>   scaffold + monopole collective; vector translation as an explicit `L/M/N` matrix `W(d)`;
+>   two-voxel direct Foldy-Lax (items a); lattice-summed multi-channel vector `G0(k_par)` (item b).
 > - **Phases 3-5 not started.**
 >
 > See the per-phase *Status* notes in Section 6 for residuals and the remaining Phase-2 items.
@@ -134,11 +135,23 @@ cross-check benchmark from Section 4).
   as an explicit `L/M/N` matrix `W^{c'c}_{nu mu,n m}(d)` — `L->L` via `beta^P`; `M,N->M,N` by sign-safe
   projection onto the orthogonal P/B/C vector spherical harmonics (each coefficient normalised by the
   basis field's own projection). Extracted matrix reconstructs the translated field **6e-7**.
-- **Remaining:** (a) two-voxel direct Foldy-Lax check using the pairwise `W(d)`; (b) the lattice-summed
-  multi-channel vector `G0` (lattice sum of `W`, or its closed-form Cruzan/Gaunt contraction of the
-  Phase-1 structure constants); (c) `n`-convergence + packing-density study; (d) collective reciprocity
-  + energy; (e) Rayleigh / `n<=2` cross-check vs `slab_scattering.slab_reflection_matrix`; (f) Phase-2
-  `.nb` twin + Python cross-check.
+- **(a) DONE** `49dfb9c` (`Mathematica/IntraPlaneTwoBody.wl`): two-voxel direct Foldy-Lax. The pairwise
+  `W(d)` is assembled (`L->L` closed-form `beta^P`, `M,N->M,N` by fast precomputed-quadrature projection)
+  and the collective `T = T0blk (I - G T0blk)^{-1}` solved. Verified: W reconstructs the translated field
+  **1.4e-9**; isolated limit `G=0 => T=diag(T0,T0)` **0**; the DIRECT Neumann/Born multiple-scattering
+  series equals the matrix inverse **6.9e-18**; monopole 2-body matrix solve = closed-form geometric
+  series **6.8e-21**; fixed-point residual **7.7e-18** (W-coupling active 0.79%).
+- **(b) DONE** `bfbc6a6` (`Mathematica/IntraPlaneVectorLattice.wl`): lattice-summed multi-channel vector
+  `G0^vec(k_par) = Sum_{R!=0} W(R) e^{i k_par.R}`. `L->L` closed form = Phase-1 scalar `G0` at `kappa_P`;
+  `M,N` by damped direct Bloch sum (field built once at the quadrature nodes, then projected). Verified:
+  L-block closed-form vs direct **1.4e-15**; vector field reconstruction (direct Bloch = multipole recon)
+  **1.85e-6**; geometric Bloch-sum convergence (ratio 0.25); collective solve isolated-exact + finite +
+  L-block reciprocity **0**. Dumps `IntraPlaneVectorLattice_reference.json`. *Deferred (cf. Phase 1):* the
+  deep/undamped fast vector `G0` via the Ewald-accelerated Cruzan/Gaunt contraction of the structure
+  constants; M/N strict reciprocity + energy are item (d) (need the flux metric).
+- **Remaining:** (c) `n`-convergence + packing-density study; (d) collective reciprocity + energy (via the
+  reciprocity-verified `CartesianT0` far-field bridge / flux metric); (e) Rayleigh / `n<=2` cross-check vs
+  `slab_scattering.slab_reflection_matrix`; (f) Phase-2 `.nb` twins + Python cross-check.
 
 **Phase 3 - layer R/T(p).**
 Project the planar collective scattering onto Kennett's flux-normalized up/down P-SV-SH at
