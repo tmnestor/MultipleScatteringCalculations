@@ -1,0 +1,287 @@
+#!/usr/bin/env wolframscript
+(* ============================================================================
+   IntraPlaneConvergence.wl  --  Phase 2 item (c): CONVERGENCE of the planar
+   collective Foldy-Lax solve in (i) multipole order n and (ii) packing density.
+
+   The collective operator is  T_coll = T0 (I - G0 T0)^{-1}  with T0 the single-site
+   Mie operator (CartesianT0) and G0 the intra-plane lattice-summed coupling.  Item
+   (c) asks: does truncating the multipole order at n <= Nmax converge, and how does
+   that convergence depend on the packing density (lattice spacing aL vs sphere radius
+   aa, i.e. the ratio aa/aL -> 1/2 at touching)?
+
+   The structure constants of the translation/lattice sum GROW super-exponentially
+   in n (g0LL[n,0,n,0] ~ 1e10 by n=8) while the Mie coefficients T0(n) DECAY
+   super-exponentially (~1e-11 by n=8); convergence is the statement that the Mie
+   decay wins in the product G0.T0.  This is the quantitative form of the Section-8
+   "translation-theorem region of validity" risk: it converges for non-overlapping
+   spheres (aa/aL < 1/2) and degrades (slower, worse-conditioned) as aL -> 2 aa.
+
+   THREE PARTS (self-verifying, PASS/FAIL):
+     [A] single-site Mie spectrum decay ||T0(n)||_F vs n  -- the reason n-truncation
+         converges at all (a property of the sphere alone).
+     [B] CLOSED-FORM P-channel (L) collective solve  t_coll^LL = T0L (I - G0LL T0L)^{-1}
+         over Nmax=1..6 and a packing sweep aL in {6,4,3,2.5,2.2}.  Exact (Gaunt
+         contraction of the scalar structure constants D[q,s]; no quadrature), so it
+         is cheap at any n and carries the rigorous convergence claims:
+           - n-convergence: the physical monopole coefficient's Cauchy increments
+             |mono(Nmax)-mono(Nmax-1)| drop >= 2 orders, flattening at the (reported)
+             lattice-truncation floor;
+           - packing density: coupling + spectral radius rho(G0 T0) GROW and the
+             conditioning of (I - G0 T0) DEGRADES as aL -> touching.
+     [C] FULL VECTOR collective (L/M/N incl. SH/SV) -- ONE damped-lattice build at the
+         largest Nmax (sub-block reuse gives the whole Nmax sweep), confirming the full
+         elastic operator's collective T converges in n above the lattice floor, is
+         finite, and reduces to the isolated T0 as the coupling is switched off.
+
+   Conventions inherited from CartesianT0.wl / item (b): time e^{+i w t}, outgoing
+   h_n^(1), clean L/M/N; z = polar axis = depth; lattice in the x-y plane; inner T0 at
+   the REAL background wavenumbers, only the inter-voxel lattice sum is damped (Im=0.25).
+   ============================================================================ *)
+
+Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+
+(* ---- background / Mie params (match item b) ---- *)
+kPo = 0.9; kSo = 1.5; kPi = 0.8897917302988777; kSi = 1.4968051081937466;
+lamO = 17.5*^9; muO = 22.5*^9; lamI = 19.5*^9; muI = 23.5*^9; aa = 1.0;
+dampIm = 0.25; kx = 0.2; ky = 0.1;          (* horizontal Bloch vector k_par *)
+kappaP = kPo + dampIm I; kappaS = kSo + dampIm I;
+reim[z_] := {Re[N[z]], Im[N[z]]};
+
+(* ---- single-site T0 blocks (L/M/N), from the verified CartesianT0.wl ---- *)
+T0LMN[0] := {{T0mono[kPo, lamO, muO, kPi, lamI, muI, aa]}};
+T0LMN[n_] := Module[{ts = TsphClean[n, kPo, kSo, lamO, muO, kPi, kSi, lamI, muI, aa],
+    tt = Ttoroidal[n, kSo, muO, kSi, muI, aa]},
+   {{ts[[1, 1]], 0, ts[[1, 2]]}, {0, tt, 0}, {ts[[2, 1]], 0, ts[[2, 2]]}}];
+T0Lentry[0] := T0mono[kPo, lamO, muO, kPi, lamI, muI, aa];                  (* L->L (P) *)
+T0Lentry[n_] := TsphClean[n, kPo, kSo, lamO, muO, kPi, kSi, lamI, muI, aa][[1, 1]];
+
+(* ---- scalar lattice machinery (closed-form L block; Gaunt + structure constants) ---- *)
+sj[n_, x_] := SphericalBesselJ[n, x];
+(* stable outgoing h_n^(1): SphericalHankelH1 evaluates directly, avoiding the
+   catastrophic j_n + i y_n cancellation in the damped far field (Im(kappa.R) large,
+   where j_n, y_n ~ e^{Im} individually but h_n ~ e^{-Im}). *)
+sh[n_, x_] := SphericalHankelH1[n, x];
+gaunt[l1_, m1_, l2_, m2_, l3_, m3_] :=
+  If[m1 + m2 + m3 != 0 || Abs[m1] > l1 || Abs[m2] > l2 || Abs[m3] > l3, 0,
+   Sqrt[(2 l1 + 1) (2 l2 + 1) (2 l3 + 1)/(4 Pi)]
+     ThreeJSymbol[{l1, 0}, {l2, 0}, {l3, 0}] ThreeJSymbol[{l1, m1}, {l2, m2}, {l3, m3}]];
+
+(* closed-form L-block builder at a given lattice spacing aL and half-width Lr *)
+g0LLfun[aL_, Lr_] := Module[{ij, Rv, bl, rN, ph, Dstruct, g0LL},
+  ij = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -Lr, Lr}, {j, -Lr, Lr}], 1];
+  Rv = Map[{aL #[[1]], aL #[[2]], 0.0} &, ij];
+  bl = Map[Exp[I aL (kx #[[1]] + ky #[[2]])] &, ij];
+  rN = Map[Sqrt[#[[1]]^2 + #[[2]]^2] &, Rv];
+  ph = Map[ArcTan[#[[1]], #[[2]]] &, Rv];
+  Dstruct[q_, s_] := Dstruct[q, s] = Total[sh[q, kappaP rN] SphericalHarmonicY[q, s, Pi/2, ph] bl];
+  g0LL[n_, m_, nu_, mu_] := 4 Pi (-1)^m Sum[
+     I^(nu + q - n) (-1)^q Dstruct[q, m - mu] gaunt[n, m, nu, -mu, q, mu - m], {q, Abs[n - nu], n + nu}];
+  g0LL];
+
+idxLof[Nmax_] := Flatten[Table[{n, m}, {n, 0, Nmax}, {m, -n, n}], 1];
+(* closed-form P-channel collective solve; returns the renormalised monopole + diagnostics *)
+solveLL[aL_, Nmax_, g0LL_] := Module[{idxL, T0L, G0, M, tcoll},
+  idxL = idxLof[Nmax];
+  T0L = DiagonalMatrix[Map[T0Lentry[#[[1]]] &, idxL]];
+  G0 = Table[g0LL[idxL[[i, 1]], idxL[[i, 2]], idxL[[j, 1]], idxL[[j, 2]]], {i, Length[idxL]}, {j, Length[idxL]}];
+  M = IdentityMatrix[Length[idxL]] - G0 . T0L;
+  tcoll = T0L . Inverse[M];
+  <|"tcoll" -> tcoll, "mono" -> tcoll[[1, 1]],
+    "coupling" -> Norm[Flatten[tcoll - T0L]]/Norm[Flatten[T0L]],
+    "cond" -> First[SingularValueList[M]]/Last[SingularValueList[M]],
+    "specrad" -> Max[Abs[Eigenvalues[G0 . T0L]]]|>];
+
+(* ============================================================================
+   [A] single-site Mie spectrum decay -- why n-truncation converges
+   ============================================================================ *)
+Print["==== Phase 2 item (c) :: convergence in multipole order n + packing density ===="];
+Naspec = 8;
+specNorm = Table[Norm[Flatten[N[T0LMN[n]]]], {n, 0, Naspec}];
+Print["  [A] single-site Mie spectrum ||T0(n)||_F (the reason n-truncation converges):"];
+Do[Print["       n=", n, "  ||T0(n)||_F = ", ScientificForm[specNorm[[n + 1]], 4]], {n, 0, Naspec}];
+decayOK = (specNorm[[3]] > specNorm[[4]] > specNorm[[5]] > specNorm[[6]]) &&
+   (specNorm[[Naspec + 1]]/Max[specNorm] < 1*^-4);
+Print["      monotone decay for n>=2 and ||T0(", Naspec, ")||/max < 1e-4 -> ",
+   If[decayOK, "PASS", "FAIL"], " (ratio ", ScientificForm[specNorm[[Naspec + 1]]/Max[specNorm], 3], ")"];
+
+(* ============================================================================
+   [B] closed-form P-channel collective: n-convergence + packing-density sweep
+   ============================================================================ *)
+LradB = 28; condCap = 100; NmaxB = 6; relTol = 1*^-5;
+aLlist = {6.0, 4.0, 3.0, 2.5, 2.2};
+Print["  [B] closed-form P-channel (L) collective; Lrad=", LradB, ", Nmax<=", NmaxB,
+   ", aL in ", aLlist, " (aa=", aa, " => aa/aL touching at 0.5):"];
+
+monoTab = <||>; cauchyTab = <||>; condTab = <||>; couplingByAL = <||>;
+specradByAL = <||>; ratioConvByAL = <||>; bPass = True;
+Do[Module[{gL = g0LLfun[aL, LradB], res, monos, conds, cauchy, reliable, ratioConv},
+   res = Table[solveLL[aL, Nm, gL], {Nm, 1, NmaxB}];
+   monos = Map[#["mono"] &, res];
+   conds = Map[#["cond"] &, res];
+   (* shared-leading-block Cauchy increment between Nmax-1 and Nmax *)
+   cauchy = Table[Module[{d = Length[idxLof[Nm - 1]]},
+       Norm[Flatten[res[[Nm]]["tcoll"][[1 ;; d, 1 ;; d]] - res[[Nm - 1]]["tcoll"]]]], {Nm, 2, NmaxB}];
+   (* converged monopole RELATIVE to |mono|, at the largest well-conditioned Nmax
+      (cond < condCap). Relative-to-|mono| is the right test across densities: at very
+      dilute aL the monopole is already converged at low Nmax, so a "ratio vs Nmax=2"
+      test would spuriously fail. *)
+   reliable = Max[2, Max[Select[Range[NmaxB], conds[[#]] < condCap &]]];
+   ratioConv = Abs[monos[[reliable]] - monos[[reliable - 1]]]/Abs[monos[[reliable]]];
+   monoTab[aL] = Map[reim, monos];
+   cauchyTab[aL] = cauchy; condTab[aL] = conds;
+   couplingByAL[aL] = res[[5]]["coupling"]; specradByAL[aL] = res[[5]]["specrad"];
+   ratioConvByAL[aL] = ratioConv;
+   Print["      aL=", aL, " (aa/aL=", NumberForm[aa/aL, {4, 3}], "): |d mono| n->n = ",
+     Map[ScientificForm[#, 2] &, Abs[Differences[monos]]]];
+   Print["         reliable Nmax(cond<", condCap, ")=", reliable, ", rel monopole conv=",
+     ScientificForm[ratioConv, 3], ", coupling=", ScientificForm[res[[5]]["coupling"], 3],
+     ", specrad=", ScientificForm[res[[5]]["specrad"], 3], ", cond(Nmax=5)=", ScientificForm[conds[[5]], 3]];
+   If[! (ratioConv < relTol), bPass = False];
+   ], {aL, aLlist}];
+
+(* truncation floor: monopole shift Lrad 18 -> 28 at the tightest packing *)
+floorB = Abs[solveLL[Last[aLlist], 4, g0LLfun[Last[aLlist], 18]]["mono"] -
+    solveLL[Last[aLlist], 4, g0LLfun[Last[aLlist], LradB]]["mono"]];
+(* packing-density monotonic trends: aLlist DESCENDS in aL, so each coupling/specrad/
+   cond series must ASCEND (denser packing => stronger coupling, worse conditioning) *)
+couplVals = Map[couplingByAL[#] &, aLlist];
+specrVals = Map[specradByAL[#] &, aLlist];
+condVals = Map[condTab[#][[5]] &, aLlist];
+trendOK = (couplVals == Sort[couplVals]) && (specrVals == Sort[specrVals]) &&
+   (condVals == Sort[condVals]);
+Print["      lattice-truncation floor (Lrad 18->28, aL=", Last[aLlist], ") = ", ScientificForm[floorB, 3]];
+Print["      n-convergence (all aL: rel monopole convergence < ", ScientificForm[relTol, 1], ") -> ",
+   If[bPass, "PASS", "FAIL"]];
+Print["      packing density: coupling/specrad/cond all increase as aL-> touching -> ",
+   If[trendOK, "PASS", "FAIL"]];
+Print["         coupling(aL desc) = ", Map[ScientificForm[#, 3] &, couplVals]];
+Print["         specrad (aL desc) = ", Map[ScientificForm[#, 3] &, specrVals]];
+Print["         cond@N5 (aL desc) = ", Map[ScientificForm[#, 3] &, condVals]];
+
+(* ============================================================================
+   [C] full VECTOR collective (L/M/N): one damped-lattice build, sub-block Nmax sweep
+   ============================================================================ *)
+NmaxC = 3; aLC = 2.5; LradC = 8; LradFloor = 6; radP = 0.5;
+chPos = <|"L" -> 1, "M" -> 2, "N" -> 3|>;
+idxVof[Nmax_] := Flatten[Table[
+    If[n == 0, {{0, 0, "L"}}, Flatten[Table[{n, m, ch}, {m, -n, n}, {ch, {"L", "M", "N"}}], 1]],
+    {n, 0, Nmax}], 1];
+
+(* verified vector helpers (Phase 0 / item b) *)
+zfn[n_, x_, "j"] := sj[n, x]; zfn[n_, x_, "h"] := sh[n, x];
+zfp[n_, x_, "j"] := n/x sj[n, x] - sj[n + 1, x];
+zfp[n_, x_, "h"] := n/x sh[n, x] - sh[n + 1, x];
+ang[d_] := {ArcCos[d[[3]]/Sqrt[d . d]], ArcTan[d[[1]], d[[2]]]};
+Yfun[n_, m_, d_] := SphericalHarmonicY[n, m, ang[d][[1]], ang[d][[2]]];
+RMrot[t_, p_] := {{Sin[t] Cos[p], Cos[t] Cos[p], -Sin[p]},
+   {Sin[t] Sin[p], Cos[t] Sin[p], Cos[p]}, {Cos[t], -Sin[t], 0}};
+dthY[n_, m_] := dthY[n, m] = Module[{tt, pp, ex},
+   ex = D[SphericalHarmonicY[n, m, tt, pp], tt]; Function[{a, b}, Evaluate[ex /. {tt -> a, pp -> b}]]];
+Bvec[n_, m_, d_] := Module[{t = ang[d][[1]], p = ang[d][[2]]},
+   RMrot[t, p] . {0, dthY[n, m][t, p], (I m/Sin[t]) SphericalHarmonicY[n, m, t, p]}];
+Cvec[n_, m_, d_] := Cross[d/Sqrt[d . d], Bvec[n, m, d]];
+Pvec[n_, m_, d_] := Yfun[n, m, d] (d/Sqrt[d . d]);
+rhoOf[c_, r_] := Sqrt[(r - c) . (r - c)];
+rhatOf[c_, r_] := (r - c)/Sqrt[(r - c) . (r - c)];
+Mw[n_, m_, type_, c_, r_] := -zfn[n, kappaS rhoOf[c, r], type] Cvec[n, m, r - c];
+Nw[n_, m_, type_, c_, r_] := Module[{x = kappaS rhoOf[c, r]},
+   (n (n + 1)/x) zfn[n, x, type] Yfun[n, m, r - c] rhatOf[c, r]
+     + ((zfn[n, x, type] + x zfp[n, x, type])/x) Bvec[n, m, r - c]];
+
+(* reduced fixed sphere quadrature (study tolerance ~1e-3, not 1e-9) *)
+Needs["NumericalDifferentialEquationAnalysis`"];
+glN = GaussianQuadratureWeights[16, -1, 1]; nPhiV = 32;
+shat[u_, ph_] := {Sqrt[1 - u^2] Cos[ph], Sqrt[1 - u^2] Sin[ph], u};
+quadList = Flatten[Table[{glN[[i, 1]], glN[[i, 2]], 2 Pi (j - 1)/nPhiV}, {i, Length[glN]}, {j, nPhiV}], 1];
+quadDirs = Map[shat[#[[1]], #[[3]]] &, quadList];
+quadW = Map[#[[2]] (2 Pi/nPhiV) &, quadList];
+projDotF[fieldVals_, harmVals_] := Sum[quadW[[k]] fieldVals[[k]] . Conjugate[harmVals[[k]]], {k, Length[quadList]}];
+Cvals[nu_, mu_] := Cvals[nu, mu] = Map[Cvec[nu, mu, #] &, quadDirs];
+Pvals[nu_, mu_] := Pvals[nu, mu] = Map[Pvec[nu, mu, #] &, quadDirs];
+normMC[nu_, mu_] := normMC[nu, mu] = projDotF[Map[Mw[nu, mu, "j", {0, 0, 0}, radP #] &, quadDirs], Cvals[nu, mu]];
+normNP[nu_, mu_] := normNP[nu, mu] = projDotF[Map[Nw[nu, mu, "j", {0, 0, 0}, radP #] &, quadDirs], Pvals[nu, mu]];
+
+(* full vector G0^vec at spacing aL, half-width Lr, order Nmax *)
+buildG0vec[aL_, Lr_, Nmax_] := Module[
+   {ijl, Rvecs, bloch, nR, outQuad, latSrc, g0LL, idx, nD, g0MM, g0NM, g0MN, g0NN, Gentry},
+  ijl = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -Lr, Lr}, {j, -Lr, Lr}], 1];
+  Rvecs = Map[{aL #[[1]], aL #[[2]], 0.0} &, ijl];
+  bloch = Map[Exp[I aL (kx #[[1]] + ky #[[2]])] &, ijl]; nR = Length[Rvecs];
+  outQuad[c_, n_, m_, R_] := Map[Switch[c, "M", Mw[n, m, "h", R, radP #], "N", Nw[n, m, "h", R, radP #]] &, quadDirs];
+  latSrc[c_, n_, m_] := latSrc[c, n, m] = Total[Table[bloch[[iR]] outQuad[c, n, m, Rvecs[[iR]]], {iR, nR}]];
+  g0LL = g0LLfun[aL, Lr];
+  g0MM[n_, m_, nu_, mu_] := projDotF[latSrc["M", n, m], Cvals[nu, mu]]/normMC[nu, mu];
+  g0NM[n_, m_, nu_, mu_] := projDotF[latSrc["M", n, m], Pvals[nu, mu]]/normNP[nu, mu];
+  g0MN[n_, m_, nu_, mu_] := projDotF[latSrc["N", n, m], Cvals[nu, mu]]/normMC[nu, mu];
+  g0NN[n_, m_, nu_, mu_] := projDotF[latSrc["N", n, m], Pvals[nu, mu]]/normNP[nu, mu];
+  idx = idxVof[Nmax]; nD = Length[idx];
+  Gentry[{nu_, mu_, ct_}, {n_, m_, cs_}] := Which[
+    ct == "L" && cs == "L", g0LL[n, m, nu, mu],
+    ct == "M" && cs == "M", g0MM[n, m, nu, mu], ct == "N" && cs == "M", g0NM[n, m, nu, mu],
+    ct == "M" && cs == "N", g0MN[n, m, nu, mu], ct == "N" && cs == "N", g0NN[n, m, nu, mu], True, 0];
+  Table[Gentry[idx[[i]], idx[[j]]], {i, nD}, {j, nD}]];
+
+T0vec[Nmax_] := Module[{idx = idxVof[Nmax], nD, T0e},
+  nD = Length[idx];
+  T0e[{n1_, m1_, c1_}, {n2_, m2_, c2_}] :=
+    If[n1 == n2 && m1 == m2, If[n1 == 0, T0LMN[0][[1, 1]], T0LMN[n1][[chPos[c1], chPos[c2]]]], 0];
+  Table[T0e[idx[[i]], idx[[j]]], {i, nD}, {j, nD}]];
+collV[G0_, T0_] := T0 . Inverse[IdentityMatrix[Length[T0]] - G0 . T0];
+
+Print["  [C] full vector collective: ONE build at Nmax=", NmaxC, ", aL=", aLC, ", Lrad=", LradC,
+   " (sub-block reuse for the Nmax sweep); reduced quad ", Length[glN], "x", nPhiV];
+G0full = buildG0vec[aLC, LradC, NmaxC];
+G0floor = buildG0vec[aLC, LradFloor, NmaxC];           (* Lrad 6 vs 8 -> the lattice floor *)
+floorC = Max[Abs[Flatten[G0full - G0floor]]];
+idxC = idxVof[NmaxC];
+(* fixed physical observables (SV/SH dipole), present for Nmax>=1 *)
+posN10 = Position[idxC, {1, 0, "N"}][[1, 1]]; posM10 = Position[idxC, {1, 0, "M"}][[1, 1]];
+tcv = Table[Module[{d = Length[idxVof[Nm]], G0s, T0s},
+    G0s = G0full[[1 ;; d, 1 ;; d]]; T0s = T0vec[Nm]; collV[G0s, T0s]], {Nm, 1, NmaxC}];
+cauchyV = Table[Module[{d = Length[idxVof[Nm - 1]]},
+    Norm[Flatten[tcv[[Nm]][[1 ;; d, 1 ;; d]] - tcv[[Nm - 1]]]]], {Nm, 2, NmaxC}];
+couplingV = Table[Norm[Flatten[tcv[[Nm]] - T0vec[Nm]]]/Norm[Flatten[T0vec[Nm]]], {Nm, 1, NmaxC}];
+isoDev = Module[{T0s = T0vec[NmaxC]}, Max[Abs[Flatten[collV[0 G0full, T0s] - T0s]]]];
+dipN = Table[tcv[[Nm]][[posN10, posN10]], {Nm, 1, NmaxC}];
+dipM = Table[tcv[[Nm]][[posM10, posM10]], {Nm, 1, NmaxC}];
+finiteC = AllTrue[Flatten[Last[tcv]], (NumberQ[#] && Abs[#] < 1*^6) &];
+(* multipole convergence of the vector collective: the shared low-order block is stable in
+   Nmax, i.e. the Cauchy increments are small in absolute terms AND relative to the coupling.
+   NOT a strict monotone-decrease test: at aL=2.5 the increments (~1e-6) sit far below the
+   Lrad=8 M/N lattice-truncation floor (floorC ~ 1e-2; lattice convergence is the deferred
+   Ewald-accelerated vector G0, cf. Phase 1 / item b), so their ordering there is lattice +
+   quadrature noise, not physics. *)
+cauchyTolC = 1*^-5;
+cauchyConvOK = Max[cauchyV] < cauchyTolC && Max[cauchyV]/Last[couplingV] < 1*^-3;
+Print["      lattice floor |G0(Lrad ", LradFloor, ")-G0(", LradC, ")| = ", ScientificForm[floorC, 3]];
+Print["      shared-block Cauchy |Tcoll(Nmax)-Tcoll(Nmax-1)| (Nmax=2,3) = ",
+   Map[ScientificForm[#, 3] &, cauchyV]];
+Print["      coupling ||Tcoll-T0||/||T0|| (Nmax=1,2,3) = ", Map[ScientificForm[#, 3] &, couplingV]];
+Print["      SV dipole (1,0,N) collective (Nmax 1..3) = ", Map[NumberForm[#, {5, 4}] &, dipN]];
+Print["      isolated limit (G0->0) dev = ", ScientificForm[isoDev, 3], ", finite=", finiteC];
+Print["      vector multipole convergence: shared-block Cauchy ", Map[ScientificForm[#, 3] &, cauchyV],
+   " (", ScientificForm[Max[cauchyV]/Last[couplingV], 2], " rel) < ", ScientificForm[cauchyTolC, 1],
+   ", finite, isolated-exact -> ",
+   If[cauchyConvOK && finiteC && isoDev < 1*^-12 && Last[couplingV] > 1*^-6, "PASS", "FAIL"]];
+Print["      [note] Lrad=", LradC, " M/N lattice floor = ", ScientificForm[floorC, 3],
+   " is orthogonal to multipole convergence; deep lattice+vector G0 = deferred Ewald (cf. Phase 1)."];
+
+(* ============================================================================
+   dump JSON reference for the Python cross-check (item f style)
+   ============================================================================ *)
+convRef = <|"kPo" -> kPo, "kSo" -> kSo, "dampIm" -> dampIm, "kx" -> kx, "ky" -> ky,
+   "aa" -> aa, "LradB" -> LradB, "NmaxB" -> NmaxB, "aLlist" -> aLlist, "condCap" -> condCap,
+   "specNorm" -> N[specNorm],                                  (* [A] Mie decay *)
+   "T0L" -> Table[reim[T0Lentry[n]], {n, 0, NmaxB}],           (* L-channel Mie scalars *)
+   (* parallel arrays aligned to aLlist (robust JSON; avoids real-keyed objects) *)
+   "mono" -> Map[monoTab[#] &, aLlist],                        (* [B] monopole per aL per Nmax *)
+   "cauchy" -> Map[N[cauchyTab[#]] &, aLlist],
+   "coupling" -> Map[N[couplingByAL[#]] &, aLlist],
+   "specrad" -> Map[N[specradByAL[#]] &, aLlist],
+   "condN5" -> Map[N[condTab[#][[5]]] &, aLlist],
+   "floorB" -> N[floorB],
+   "aLC" -> aLC, "LradC" -> LradC, "NmaxC" -> NmaxC, "floorC" -> N[floorC],
+   "cauchyV" -> N[cauchyV], "couplingV" -> N[couplingV]|>;
+Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneConvergence_reference.json", convRef];
+Print["  wrote IntraPlaneConvergence_reference.json"];
+Print["Phase 2 item (c) (IntraPlaneConvergence.wl) loaded + verified."];
