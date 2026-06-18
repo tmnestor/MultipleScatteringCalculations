@@ -100,3 +100,62 @@ Print["  [c] G0 reciprocity (kappaP) = ", recipResid[kappaP], "  -> ", If[recipR
 Print["      G0 reciprocity (kappaS) = ", recipResid[kappaS], "  -> ", If[recipResid[kappaS] < 1*^-10, "PASS", "FAIL"]];
 Print["  sample G0[1,0,2,1; kappaS] = ", G0[1, 0, 2, 1, kappaS]];
 Print["Phase 1 TB1 (IntraPlaneLatticeSum.wl) loaded + verified."];
+
+(* ============================================================================
+   TRACER BULLET 2: Ewald acceleration of the scalar intra-plane sum at z=0
+   (EwaldIntraPlanePropagator.tex, Eqs. real + recip).  Splits the conditionally
+   convergent sum into a Gaussian-fast real-space half and a Gaussian-fast
+   reciprocal-lattice half; the total is independent of the split parameter eta.
+
+   Real:  G1(rho) = (1/8pi) Sum_R [e^{i kpar.R}/|rho-R|]
+                      Sum_{s=+-1} e^{s i kappa |rho-R|} erfc(|rho-R| eta + s i kappa/(2 eta))
+   Recip: G2(rho) = (i/2A) Sum_G [e^{i(kpar+G).rho}/kzG] erfc(kzG/(2 i eta)),
+                      kzG = sqrt(kappa^2 - |kpar+G|^2), Im kzG >= 0,  A = aL^2.
+
+   RED: the real half alone is eta-dependent and disagrees with the direct sum;
+   GREEN: real + recip is eta-independent and matches the damped direct sum.
+   ============================================================================ *)
+Aarea = aL^2; recipB = 2 Pi/aL; kpar2 = {kx, ky};
+
+ewaldReal[kappa_, rho_, eta_, Rc_] :=
+  (1/(8 Pi)) Total[Flatten[Table[
+      With[{R = aL {i, j}, d = Sqrt[(rho - aL {i, j}) . (rho - aL {i, j})]},
+       (Exp[I aL (kx i + ky j)]/d) Sum[Exp[s I kappa d] Erfc[d eta + s I kappa/(2 eta)], {s, {-1, 1}}]],
+      {i, -Rc, Rc}, {j, -Rc, Rc}], 1]];
+
+ewaldRecip[kappa_, rho_, eta_, Gc_] :=
+  (I/(2 Aarea)) Total[Flatten[Table[
+      With[{kpg = kpar2 + recipB {m, n}},
+       With[{kz = Sqrt[kappa^2 - kpg . kpg]},
+        (Exp[I kpg . rho]/kz) Erfc[kz/(2 I eta)]]],
+      {m, -Gc, Gc}, {n, -Gc, Gc}], 1]];
+
+ewaldTotal[kappa_, rho_, eta_, Rc_, Gc_] := ewaldReal[kappa, rho, eta, Rc] + ewaldRecip[kappa, rho, eta, Gc];
+
+ewaldDirect[kappa_, rho_, Lbig_] := Total[Flatten[Table[
+     With[{d = Sqrt[(rho - aL {i, j}) . (rho - aL {i, j})]},
+      Exp[I kappa d]/(4 Pi d) Exp[I aL (kx i + ky j)]],
+     {i, -Lbig, Lbig}, {j, -Lbig, Lbig}], 1]];
+
+(* z=0 field points (2-vectors), not on lattice nodes *)
+rhoPts = {{0.6, 0.4}, {0.3, -0.7}, {-0.5, 0.55}, {0.85, -0.2}};
+eta1 = 0.7; eta2 = 1.15; RcE = 6; GcE = 6; LbigE = 40;
+kReal = 1.5; kDamp = 1.5 + 0.25 I;
+
+Print["==== Phase 1 :: TB2 Ewald scalar intra-plane sum ===="];
+(* RED: real half alone is eta-dependent (undamped kappa) *)
+redEta = Max[Table[Abs[ewaldReal[kReal, rho, eta1, RcE] - ewaldReal[kReal, rho, eta2, RcE]], {rho, rhoPts}]];
+Print["  [RED] real-half-only eta-dependence (kappa real) = ", redEta,
+   "  -> ", If[redEta < 1*^-8, "PASS", "FAIL (expected: recip half needed)"]];
+(* GREEN: full Ewald eta-independence, undamped and damped *)
+grnEtaReal = Max[Table[Abs[ewaldTotal[kReal, rho, eta1, RcE, GcE] - ewaldTotal[kReal, rho, eta2, RcE, GcE]], {rho, rhoPts}]];
+grnEtaDamp = Max[Table[Abs[ewaldTotal[kDamp, rho, eta1, RcE, GcE] - ewaldTotal[kDamp, rho, eta2, RcE, GcE]], {rho, rhoPts}]];
+Print["  [a] full Ewald eta-independence (kappa real)  |G(eta1)-G(eta2)| = ", grnEtaReal,
+   "  -> ", If[grnEtaReal < 1*^-9, "PASS", "FAIL"]];
+Print["  [b] full Ewald eta-independence (kappa damped) = ", grnEtaDamp,
+   "  -> ", If[grnEtaDamp < 1*^-9, "PASS", "FAIL"]];
+(* GREEN: agreement with the damped direct sum (where it converges) *)
+agree = Max[Table[Abs[ewaldTotal[kDamp, rho, eta1, RcE, GcE] - ewaldDirect[kDamp, rho, LbigE]], {rho, rhoPts}]];
+Print["  [c] Ewald vs damped direct sum |G_ewald - G_direct| = ", agree,
+   "  -> ", If[agree < 1*^-6, "PASS", "FAIL"]];
+Print["Phase 1 TB2 (Ewald) loaded + verified."];
