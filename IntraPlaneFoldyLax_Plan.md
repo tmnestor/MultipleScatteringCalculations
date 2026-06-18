@@ -1,7 +1,18 @@
 # Intra-Plane Foldy-Lax: Planar Multiple Scattering of Spherical Voxels into Layer R/T
 
-**Pillar 2 of the lateral-heterogeneity program.** Status: planning. Date: 2026-06-18.
+**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE, Phase 2 in progress. Date: 2026-06-18.
 **Representation: full spherical-multipole (Cruzan/Stein), all `n` (option B, DECIDED).**
+
+> **Progress log (2026-06-18, branch `phase0-intraplane-translation`, 6 commits).** Each phase below
+> is a self-verifying Mathematica `.wl` (with `.nb` twin) cross-checked against Python where possible;
+> residuals are fresh-run.
+> - **Phase 0 DONE** `212f84b` — elastic translation-addition operator.
+> - **Phase 1 DONE** `e582c39` `470cb11` `ef10221` — Ewald planar lattice sum `G0(k_par)`.
+> - **Phase 2 IN PROGRESS** `41557d1` `9044141` — single-site `T0` + Foldy-Lax scaffold + monopole
+>   collective; vector translation extracted as an explicit `L/M/N` matrix `W(d)`.
+> - **Phases 3-5 not started.**
+>
+> See the per-phase *Status* notes in Section 6 for residuals and the remaining Phase-2 items.
 
 ## 1. Purpose
 
@@ -17,7 +28,7 @@ stratified background. **No CPA / effective-medium homogenisation is used.**
 | Pillar | Object | Status |
 |---|---|---|
 | 1 | Single-site `T0` (full-wave sphere scattering operator) | **DONE** `Mathematica/CartesianT0.nb`, reciprocity-verified 1e-18 |
-| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **THIS PLAN** |
+| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **IN PROGRESS** — Phases 0-1 done, Phase 2 underway (see Progress log) |
 | 3 | Kennett vertical recursion on the stratified background | EXISTS `cubic_scattering/kennett_layers.py` |
 
 ```mermaid
@@ -81,6 +92,14 @@ parts. Most cleanly seeded from the Weyl/angular-spectrum representation already
 *Accept:* re-expansion reconstructs the translated field (an outgoing multipole about A,
 evaluated near B, equals the regular-multipole sum about B) to set tolerance; the translation is
 reciprocal; reduces to the scalar Gegenbauer addition theorem on the L (P) part.
+*Status:* **DONE** `212f84b`. `Mathematica/IntraPlaneTranslation.wl` + `.nb`; Python cross-check
+`cubic_scattering/tests/test_intraplane_translation.py`. Built on the closed-form Gegenbauer/Gaunt
+scalar separation matrix `beta^c(d)` (P at `k_P`, S at `k_S`), dressed by the translation-commuting
+operators `L=(1/k)grad`, `M=curl((r-c).)`, `N=(1/k)curl` (plain Hansen). Residuals: scalar closed-form
+vs projection integral **2.8e-11**, field reconstruction **6.7e-11**; vector L/M/N reconstruction
+**6.7e-9 / 9.9e-10 / 6.0e-8** (the naive no-cross-term M FAILs by design, proving the cross-term);
+reciprocity `beta_{nm,nu mu}(d) = (-1)^(n+nu+m+mu) beta_{nu,-mu,n,-m}(d)` **exact**. Python: projection
+**9.6e-11**, Gaunt closed form **6.8e-13**.
 
 **Phase 1 - planar lattice sum of the translation operator.**
 Sum the pairwise translation over the dense planar packing at fixed slowness `p` (Bloch vector),
@@ -88,6 +107,16 @@ via the Weyl / reciprocal-lattice angular spectrum, Ewald-split for convergence.
 *Accept:* convergence of the real + reciprocal-space split; reciprocity; agreement with a direct
 real-space sum in regimes where the latter converges; the scalar limit matches a known planar
 lattice Green's function.
+*Status:* **DONE** `e582c39` `470cb11` `ef10221`. `Mathematica/IntraPlaneLatticeSum.wl` + `.nb`;
+Python cross-check `cubic_scattering/tests/test_intraplane_lattice.py`. TB1: damped direct
+`G0_{nm,nu mu}(k_par) = Sum_{R!=0} beta(R) e^{i k_par.R}` as a Gaunt contraction of the scalar
+structure constants `D[q,s] = Sum_R h_q(kappa|R|) Y_q^s(^R) e^{i k_par.R}` — reciprocity **exact**,
+structure constants reconstruct the lattice field **1.6e-10**. TB2: Ewald real+reciprocal split
+(`EwaldIntraPlanePropagator.tex` Eqs.) — real-half-only is `eta`-dependent (RED), full split is
+`eta`-independent to **2e-16** for the *undamped* conditionally-convergent sum and matches the damped
+direct sum **2.4e-11**. TB3: Ewald <-> multipole-`G0` connection **1.4e-8**. Python: Ewald vs Mathematica
+**1.6e-16**, `eta`-independence **1.4e-16**. **Deferred:** the strictly-undamped multipole structure
+constants (full Kambe layer-KKR), not needed for the damped Foldy-Lax of Phase 2.
 
 **Phase 2 - planar Foldy-Lax in the spherical basis.**
 Solve `(I - G0 . T0) b = a` with the full `T_n` (`CartesianT0.nb`) and the lattice-summed `G0`.
@@ -95,6 +124,21 @@ Solve `(I - G0 . T0) b = a` with the full `T_n` (`CartesianT0.nb`) and the latti
 **convergence in multipole order `n`** and in packing density; reciprocity + energy of the
 collective operator; reduces to the Cartesian 9x9 slab in the Rayleigh / `n <= 2` limit (the
 cross-check benchmark from Section 4).
+*Status:* **IN PROGRESS**.
+- TB1 **DONE** `41557d1` (`Mathematica/IntraPlaneFoldyLax.wl`): single-site `T0` assembled in the
+  `L/M/N` basis from the verified `CartesianT0.wl` (spheroidal L-N 2x2, toroidal M, n=0 monopole) —
+  blocks reproduce `T_n` exactly; collective `T_coll = T0 (I - G0 T0)^{-1}`; single-voxel limit
+  (`G0=0` => `T_coll = T0`) **exact**; closed monopole-channel collective solve with the Phase-1
+  scalar `G0` (reduces to isolated as `G0->0`, shifts under coupling).
+- TB2 **DONE** `9044141` (`Mathematica/IntraPlaneVectorTranslation.wl`): the Phase-0 vector translation
+  as an explicit `L/M/N` matrix `W^{c'c}_{nu mu,n m}(d)` — `L->L` via `beta^P`; `M,N->M,N` by sign-safe
+  projection onto the orthogonal P/B/C vector spherical harmonics (each coefficient normalised by the
+  basis field's own projection). Extracted matrix reconstructs the translated field **6e-7**.
+- **Remaining:** (a) two-voxel direct Foldy-Lax check using the pairwise `W(d)`; (b) the lattice-summed
+  multi-channel vector `G0` (lattice sum of `W`, or its closed-form Cruzan/Gaunt contraction of the
+  Phase-1 structure constants); (c) `n`-convergence + packing-density study; (d) collective reciprocity
+  + energy; (e) Rayleigh / `n<=2` cross-check vs `slab_scattering.slab_reflection_matrix`; (f) Phase-2
+  `.nb` twin + Python cross-check.
 
 **Phase 3 - layer R/T(p).**
 Project the planar collective scattering onto Kennett's flux-normalized up/down P-SV-SH at
@@ -121,10 +165,13 @@ single-voxel ground truth; the existing Cartesian cube-slab is the Rayleigh-limi
 
 ## 8. Risks and open questions
 
-- **Lattice-sum convergence** is now the central numerical risk: the planar sum of the
+- **Lattice-sum convergence** was the central numerical risk: the planar sum of the
   translation operator is conditionally convergent; the Ewald / reciprocal-lattice split (Phase 1)
   must be done carefully. The `EwaldIntraPlanePropagator` note and `lattice_greens` Hankel/Ewald
-  code are the starting points.
+  code are the starting points. **[Resolved, Phase 1]:** the scalar Ewald split is implemented and
+  verified `eta`-independent to 2e-16 for the undamped sum, matching the direct sum 2.4e-11
+  (`IntraPlaneLatticeSum.wl`, Python-cross-checked). The remaining sub-item is the strictly-undamped
+  *multipole* structure constants (full Kambe), deferred — not needed for the damped Foldy-Lax.
 - **Translation-theorem region of validity:** the addition theorem re-expansion converges for
   non-overlapping spheres; dense packing (near-touching) needs **high `n`** and possibly the
   near-neighbour terms handled separately. Phase 2's `n`-convergence study quantifies this.
