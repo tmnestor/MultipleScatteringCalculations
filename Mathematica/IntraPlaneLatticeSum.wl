@@ -158,4 +158,39 @@ Print["  [b] full Ewald eta-independence (kappa damped) = ", grnEtaDamp,
 agree = Max[Table[Abs[ewaldTotal[kDamp, rho, eta1, RcE, GcE] - ewaldDirect[kDamp, rho, LbigE]], {rho, rhoPts}]];
 Print["  [c] Ewald vs damped direct sum |G_ewald - G_direct| = ", agree,
    "  -> ", If[agree < 1*^-6, "PASS", "FAIL"]];
-Print["Phase 1 TB2 (Ewald) loaded + verified."];
+(* ============================================================================
+   TRACER BULLET 3: Ewald <-> multipole-G0 connection (z=0, damped).
+   The exact Ewald field minus its R=0 self term must equal the regular-multipole
+   reconstruction built from the lattice structure constants:
+     G_kappa^{R!=0}(rho,0) = i kappa Sum_{q,p} Dbar[q,p] j_q(kappa|rho|) Y_q^p(rho_hat).
+   This ties the Ewald sum (TB2) to the multipole G0 (TB1).  At damped kappa the
+   structure constants converge; the strictly-undamped multipole structure
+   constants (full Kambe layer-KKR) are a deferred refinement, not needed for the
+   damped Foldy-Lax of Phase 2.
+   ============================================================================ *)
+gK[kappa_, s_] := Exp[I kappa s]/(4 Pi s);
+DbarAt[q_, p_, kappa_, Lr_] := DbarAt[q, p, kappa, Lr] = Module[{ij, iv, jv, rn, ph, bl},
+   ij = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -Lr, Lr}, {j, -Lr, Lr}], 1];
+   iv = ij[[All, 1]]; jv = ij[[All, 2]];
+   rn = aL Sqrt[iv^2 + jv^2]; ph = ArcTan[iv, jv]; bl = Exp[I aL (kx iv + ky jv)];
+   Total[sh[q, kappa rn] Conjugate[SphericalHarmonicY[q, p, Pi/2, ph]] bl]];
+
+connRho = {{0.4, 0.3}, {-0.3, 0.35}, {0.45, -0.15}}; connQmax = 14; connLr = 26;
+connResid = Max[Table[
+    Module[{rr = Sqrt[rho . rho], pha = ArcTan[rho[[1]], rho[[2]]], ewa, rec},
+     ewa = ewaldTotal[kDamp, rho, eta1, RcE, GcE] - gK[kDamp, Sqrt[rho . rho]];
+     rec = I kDamp Sum[DbarAt[q, p, kDamp, connLr] sj[q, kDamp rr] SphericalHarmonicY[q, p, Pi/2, pha],
+        {q, 0, connQmax}, {p, -q, q}];
+     Abs[ewa - rec]], {rho, connRho}]];
+Print["  [TB3] Ewald^{R!=0} vs multipole reconstruction (z=0, damped) = ", connResid,
+   "  -> ", If[connResid < 1*^-5, "PASS", "FAIL"]];
+(* ---- dump Ewald reference for the independent Python cross-check ---- *)
+reim[z_] := {Re[N[z]], Im[N[z]]};
+ewaldRef = <|"aL" -> aL, "kx" -> kx, "ky" -> ky,
+   "kReal" -> kReal, "kDampRe" -> Re[kDamp], "kDampIm" -> Im[kDamp],
+   "eta1" -> eta1, "RcE" -> RcE, "GcE" -> GcE, "rhoPts" -> rhoPts,
+   "ewaldDamp" -> Table[reim[ewaldTotal[kDamp, rho, eta1, RcE, GcE]], {rho, rhoPts}],
+   "ewaldReal" -> Table[reim[ewaldTotal[kReal, rho, eta1, RcE, GcE]], {rho, rhoPts}]|>;
+Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneLatticeSum_reference.json", ewaldRef];
+Print["  wrote IntraPlaneLatticeSum_reference.json (", Length[rhoPts], " rho points x 2 kappa)"];
+Print["Phase 1 TB2+TB3 (Ewald + multipole connection) loaded + verified."];

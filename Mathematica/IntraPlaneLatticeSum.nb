@@ -1,0 +1,323 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     14770,        314]
+NotebookOptionsPosition[     13650,        293]
+NotebookOutlinePosition[     13967,        307]
+CellTagsIndexPosition[     13924,        304]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["Phase 1 : Ewald-Accelerated Intra-Plane Lattice Sum", "Title",ExpressionUUID->"1a1f2053-fc05-4543-aacb-2864b3f84aeb"],
+
+Cell["\<\
+Planar lattice sum of the Phase-0 translation operator at fixed Bloch vector \
+k_par, giving the intra-plane coupling G0(k_par) = Sum_{R!=0} beta(R) e^{i \
+k_par.R}. TB1: damped direct sum, structure constants, reciprocity. TB2: \
+Ewald acceleration (real + reciprocal split, EwaldIntraPlanePropagator.tex), \
+eta-independent to machine precision for the conditionally-convergent \
+(undamped) sum. TB3: Ewald <-> multipole-G0 connection. Executable twin: \
+IntraPlaneLatticeSum.wl. Independently validated against Python in \
+cubic_scattering/tests/test_intraplane_lattice.py.\
+\>", "Text",ExpressionUUID->"fc14849c-9015-4446-af7d-5806d3b4b1bf"],
+
+Cell["\<\
+IntraPlaneLatticeSum.wl  --  Phase 1 of the Intra-Plane Foldy-Lax program:
+   the planar lattice sum of the Phase-0 translation operator at fixed Bloch
+   vector k_par, giving the intra-plane coupling G0(k_par).
+
+   G0_{nm,nu mu}(k_par) = Sum_{R != 0} beta_{nm,nu mu}(R) e^{i k_par . R}
+     = 4 Pi (-1)^m Sum_q i^(nu+q-n) (-1)^q D[q, m-mu] gaunt(n,m,nu,-mu,q,mu-m),
+   where the scalar STRUCTURE CONSTANTS carry the lattice sum:
+     D[q,s]  = Sum_{R != 0} h_q(kappa|R|) Y_q^s(^R) e^{i k_par . R}.
+   The same constants reconstruct the lattice-summed scalar field (conjugate \
+index):
+     G_kappa^{R!=0}(r) = Sum_{R!=0} g_kappa(r-R) e^{i k_par.R}
+                       = i kappa Sum_{q,p} Dbar[q,p] j_q(kappa r) Y_q^p(^r),
+     Dbar[q,p] = Sum_{R!=0} h_q(kappa|R|) conj(Y_q^p(^R)) e^{i k_par.R},
+     g_kappa(s) = e^{i kappa |s|}/(4 Pi |s|).
+
+   Conventions inherited from Phase 0 / CartesianT0.wl: time e^{+i w t}, \
+outgoing
+   h_n^(1), orthonormal SphericalHarmonicY, (x,y,z) with z = polar axis = \
+depth.
+   The lattice lies in the x-y plane (R has zero 3rd component, theta_R = \
+Pi/2).
+   A small Im(kappa) damping makes the conditionally-convergent sum converge \
+(the
+   Ewald acceleration for the undamped sum is Phase 1 tracer bullet 2).
+
+   TDD RED: the structure constants are stubbed to 0, so the multipole
+   reconstruction of the lattice-summed field is 0 and MUST FAIL.\
+\>", "Text",ExpressionUUID->"b6ff8c8e-3b13-4f01-84f6-8b2fe36b546b"],
+
+Cell["\<\
+(* ---- helpers reused from Phase 0 (IntraPlaneTranslation.wl) ---- *)
+sj[n_, x_] := SphericalBesselJ[n, x];
+sh[n_, x_] := SphericalBesselJ[n, x] + I SphericalBesselY[n, x];
+ang[d_] := {ArcCos[d[[3]]/Sqrt[d . d]], ArcTan[d[[1]], d[[2]]]};
+Yfun[n_, m_, d_] := SphericalHarmonicY[n, m, ang[d][[1]], ang[d][[2]]];
+gaunt[l1_, m1_, l2_, m2_, l3_, m3_] :=
+  If[m1 + m2 + m3 != 0 || Abs[m1] > l1 || Abs[m2] > l2 || Abs[m3] > l3, 0,
+   Sqrt[(2 l1 + 1) (2 l2 + 1) (2 l3 + 1)/(4 Pi)]
+     ThreeJSymbol[{l1, 0}, {l2, 0}, {l3, 0}] ThreeJSymbol[{l1, m1}, {l2, m2}, \
+{l3, m3}]];
+
+(* ---- planar square lattice + Bloch phase (precomputed flat lists) ---- *)
+aL = 2.0;                                  (* lattice constant *)
+kappaP = 0.9 + 0.25 I; kappaS = 1.5 + 0.25 I;   (* damped P,S wavenumbers, \
+Im>0 *)
+kx = 0.2; ky = 0.1;                        (* horizontal Bloch vector \
+k_par=(kx,ky,0) *)
+Lrad = 18;                                 (* lattice half-width (shells) *)
+
+ijList = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -Lrad, \
+Lrad}, {j, -Lrad, Lrad}], 1];
+iVals = ijList[[All, 1]]; jVals = ijList[[All, 2]];
+rNorms = aL Sqrt[iVals^2 + jVals^2];       (* |R| *)
+phiList = ArcTan[iVals, jVals];            (* azimuth of R; theta_R = Pi/2 *)
+blochList = Exp[I aL (kx iVals + ky jVals)];   (* e^{i k_par . R} *)\
+\>", "Input",ExpressionUUID->"6408b7b5-559f-4f53-addc-652f0b17f8aa"],
+
+Cell["SCALAR STRUCTURE CONSTANTS  [ STUB -- RED stage ]", "Section",ExpressionUUID->"1de01e43-dc78-4aea-834f-0b69093028cc"],
+
+Cell["\<\
+(* memoised: each is a Total over the precomputed lattice lists (theta_R = \
+Pi/2) *)
+Dstruct[q_, s_, kappa_] := Dstruct[q, s, kappa] =
+   Total[sh[q, kappa rNorms] SphericalHarmonicY[q, s, Pi/2, phiList] \
+blochList];
+Dbar[q_, p_, kappa_] := Dbar[q, p, kappa] =
+   Total[sh[q, kappa rNorms] Conjugate[SphericalHarmonicY[q, p, Pi/2, \
+phiList]] blochList];
+
+(* ---- lattice-summed scalar field (direct, the ground truth) ---- *)
+gLatField[kappa_, r_] :=
+  Module[{nn = Sqrt[(r[[1]] - aL iVals)^2 + (r[[2]] - aL jVals)^2 + r[[3]]^2]},
+   Total[Exp[I kappa nn]/(4 Pi nn) blochList]];
+
+(* ---- multipole reconstruction of the same field from the structure \
+constants ---- *)
+gLatRecon[kappa_, r_, Qmax_] :=
+  Module[{rr = Sqrt[r . r]},
+   I kappa Sum[Dbar[q, p, kappa] sj[q, kappa rr] Yfun[q, p, r], {q, 0, Qmax}, \
+{p, -q, q}]];
+
+(* ---- test fixture: field points near the origin, |r| < aL ---- *)
+kTest = kappaS; QmaxTest = 12;
+SeedRandom[20260618];
+fieldPts = Table[
+   Module[{u = RandomReal[{-1, 1}], ph = RandomReal[{0, 2 Pi}], st},
+    st = Sqrt[1 - u^2]; 0.5 {st Cos[ph], st Sin[ph], u}], {6}];
+
+tolField = 1*^-6;
+resField = Max[Table[Abs[gLatField[kTest, pt] - gLatRecon[kTest, pt, \
+QmaxTest]], {pt, fieldPts}]];
+Print[\"==== Phase 1 :: planar lattice sum (damped, direct) ====\"];
+Print[\"  aL=\", aL, \", kappa=\", kTest, \", k_par=(\", kx, \",\", ky, \"), \
+Lrad=\", Lrad, \", Qmax=\", QmaxTest];
+Print[\"  [a] |G_lat(direct field) - multipole reconstruction| (\", \
+Length[fieldPts], \" pts) = \",
+   resField, \"  -> \", If[resField < tolField, \"PASS\", \"FAIL\"]];
+
+(* [b] convergence of the damped lattice sum in lattice radius *)
+DstructAt[q_, s_, kappa_, Lr_] := Module[{ij, iv, jv, rn, ph, bl},
+   ij = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -Lr, Lr}, \
+{j, -Lr, Lr}], 1];
+   iv = ij[[All, 1]]; jv = ij[[All, 2]];
+   rn = aL Sqrt[iv^2 + jv^2]; ph = ArcTan[iv, jv]; bl = Exp[I aL (kx iv + ky \
+jv)];
+   Total[sh[q, kappa rn] SphericalHarmonicY[q, s, Pi/2, ph] bl]];
+convResid = Max[Table[Abs[DstructAt[q, s, kTest, Lrad] - DstructAt[q, s, \
+kTest, Lrad + 8]], {q, 0, 4}, {s, -q, q}]];
+Print[\"  [b] structure-constant convergence |D(Lrad) - D(Lrad+8)| (damped) = \
+\", convResid,
+   \"  -> \", If[convResid < 1*^-3, \"PASS\", \"FAIL\"]];
+
+(* [c] G0 = Gaunt-contracted structure constants (= Sum_R beta(R) e^{i \
+k_par.R}); reciprocity *)
+G0[n_, m_, nu_, mu_, kappa_] := 4 Pi (-1)^m Sum[
+   I^(nu + q - n) (-1)^q Dstruct[q, m - mu, kappa] gaunt[n, m, nu, -mu, q, mu \
+- m], {q, Abs[n - nu], n + nu}];
+recipPairs = {{1, 0, 2, 1}, {2, -1, 3, 2}, {0, 0, 3, 0}, {2, 2, 4, -2}, {1, \
+1, 3, -1}};
+recipResid[kappa_] := Max[Table[
+    Abs[G0[p[[1]], p[[2]], p[[3]], p[[4]], kappa]
+       - (-1)^(p[[1]] + p[[3]] + p[[2]] + p[[4]]) G0[p[[3]], -p[[4]], p[[1]], \
+-p[[2]], kappa]], {p, recipPairs}]];
+Print[\"  [c] G0 reciprocity (kappaP) = \", recipResid[kappaP], \"  -> \", \
+If[recipResid[kappaP] < 1*^-10, \"PASS\", \"FAIL\"]];
+Print[\"      G0 reciprocity (kappaS) = \", recipResid[kappaS], \"  -> \", \
+If[recipResid[kappaS] < 1*^-10, \"PASS\", \"FAIL\"]];
+Print[\"  sample G0[1,0,2,1; kappaS] = \", G0[1, 0, 2, 1, kappaS]];
+Print[\"Phase 1 TB1 (IntraPlaneLatticeSum.wl) loaded + verified.\"];\
+\>", "Input",ExpressionUUID->"c0b0dc0c-0232-417a-8f6b-1b78849abd65"],
+
+Cell["\<\
+TRACER BULLET 2: Ewald acceleration of the scalar intra-plane sum at z=0
+   (EwaldIntraPlanePropagator.tex, Eqs. real + recip).  Splits the \
+conditionally
+   convergent sum into a Gaussian-fast real-space half and a Gaussian-fast
+   reciprocal-lattice half; the total is independent of the split parameter \
+eta.
+
+   Real:  G1(rho) = (1/8pi) Sum_R [e^{i kpar.R}/|rho-R|]
+                      Sum_{s=+-1} e^{s i kappa |rho-R|} erfc(|rho-R| eta + s \
+i kappa/(2 eta))
+   Recip: G2(rho) = (i/2A) Sum_G [e^{i(kpar+G).rho}/kzG] erfc(kzG/(2 i eta)),
+                      kzG = sqrt(kappa^2 - |kpar+G|^2), Im kzG >= 0,  A = aL^2.
+
+   RED: the real half alone is eta-dependent and disagrees with the direct sum;
+   GREEN: real + recip is eta-independent and matches the damped direct sum.\
+\>", "Section",ExpressionUUID->"c7a34703-3e5b-4c18-957e-cbfb896beb33"],
+
+Cell["\<\
+Aarea = aL^2; recipB = 2 Pi/aL; kpar2 = {kx, ky};
+
+ewaldReal[kappa_, rho_, eta_, Rc_] :=
+  (1/(8 Pi)) Total[Flatten[Table[
+      With[{R = aL {i, j}, d = Sqrt[(rho - aL {i, j}) . (rho - aL {i, j})]},
+       (Exp[I aL (kx i + ky j)]/d) Sum[Exp[s I kappa d] Erfc[d eta + s I \
+kappa/(2 eta)], {s, {-1, 1}}]],
+      {i, -Rc, Rc}, {j, -Rc, Rc}], 1]];
+
+ewaldRecip[kappa_, rho_, eta_, Gc_] :=
+  (I/(2 Aarea)) Total[Flatten[Table[
+      With[{kpg = kpar2 + recipB {m, n}},
+       With[{kz = Sqrt[kappa^2 - kpg . kpg]},
+        (Exp[I kpg . rho]/kz) Erfc[kz/(2 I eta)]]],
+      {m, -Gc, Gc}, {n, -Gc, Gc}], 1]];
+
+ewaldTotal[kappa_, rho_, eta_, Rc_, Gc_] := ewaldReal[kappa, rho, eta, Rc] + \
+ewaldRecip[kappa, rho, eta, Gc];
+
+ewaldDirect[kappa_, rho_, Lbig_] := Total[Flatten[Table[
+     With[{d = Sqrt[(rho - aL {i, j}) . (rho - aL {i, j})]},
+      Exp[I kappa d]/(4 Pi d) Exp[I aL (kx i + ky j)]],
+     {i, -Lbig, Lbig}, {j, -Lbig, Lbig}], 1]];
+
+(* z=0 field points (2-vectors), not on lattice nodes *)
+rhoPts = {{0.6, 0.4}, {0.3, -0.7}, {-0.5, 0.55}, {0.85, -0.2}};
+eta1 = 0.7; eta2 = 1.15; RcE = 6; GcE = 6; LbigE = 40;
+kReal = 1.5; kDamp = 1.5 + 0.25 I;
+
+Print[\"==== Phase 1 :: TB2 Ewald scalar intra-plane sum ====\"];
+(* RED: real half alone is eta-dependent (undamped kappa) *)
+redEta = Max[Table[Abs[ewaldReal[kReal, rho, eta1, RcE] - ewaldReal[kReal, \
+rho, eta2, RcE]], {rho, rhoPts}]];
+Print[\"  [RED] real-half-only eta-dependence (kappa real) = \", redEta,
+   \"  -> \", If[redEta < 1*^-8, \"PASS\", \"FAIL (expected: recip half \
+needed)\"]];
+(* GREEN: full Ewald eta-independence, undamped and damped *)
+grnEtaReal = Max[Table[Abs[ewaldTotal[kReal, rho, eta1, RcE, GcE] - \
+ewaldTotal[kReal, rho, eta2, RcE, GcE]], {rho, rhoPts}]];
+grnEtaDamp = Max[Table[Abs[ewaldTotal[kDamp, rho, eta1, RcE, GcE] - \
+ewaldTotal[kDamp, rho, eta2, RcE, GcE]], {rho, rhoPts}]];
+Print[\"  [a] full Ewald eta-independence (kappa real)  |G(eta1)-G(eta2)| = \
+\", grnEtaReal,
+   \"  -> \", If[grnEtaReal < 1*^-9, \"PASS\", \"FAIL\"]];
+Print[\"  [b] full Ewald eta-independence (kappa damped) = \", grnEtaDamp,
+   \"  -> \", If[grnEtaDamp < 1*^-9, \"PASS\", \"FAIL\"]];
+(* GREEN: agreement with the damped direct sum (where it converges) *)
+agree = Max[Table[Abs[ewaldTotal[kDamp, rho, eta1, RcE, GcE] - \
+ewaldDirect[kDamp, rho, LbigE]], {rho, rhoPts}]];
+Print[\"  [c] Ewald vs damped direct sum |G_ewald - G_direct| = \", agree,
+   \"  -> \", If[agree < 1*^-6, \"PASS\", \"FAIL\"]];\
+\>", "Input",ExpressionUUID->"eac4cdbd-f375-492f-943c-48d10ba6ceef"],
+
+Cell["\<\
+TRACER BULLET 3: Ewald <-> multipole-G0 connection (z=0, damped).
+   The exact Ewald field minus its R=0 self term must equal the \
+regular-multipole
+   reconstruction built from the lattice structure constants:
+     G_kappa^{R!=0}(rho,0) = i kappa Sum_{q,p} Dbar[q,p] j_q(kappa|rho|) \
+Y_q^p(rho_hat).
+   This ties the Ewald sum (TB2) to the multipole G0 (TB1).  At damped kappa \
+the
+   structure constants converge; the strictly-undamped multipole structure
+   constants (full Kambe layer-KKR) are a deferred refinement, not needed for \
+the
+   damped Foldy-Lax of Phase 2.\
+\>", "Section",ExpressionUUID->"fd30e940-9f1f-487d-966e-3b9cc25096b2"],
+
+Cell["\<\
+gK[kappa_, s_] := Exp[I kappa s]/(4 Pi s);
+DbarAt[q_, p_, kappa_, Lr_] := DbarAt[q, p, kappa, Lr] = Module[{ij, iv, jv, \
+rn, ph, bl},
+   ij = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -Lr, Lr}, \
+{j, -Lr, Lr}], 1];
+   iv = ij[[All, 1]]; jv = ij[[All, 2]];
+   rn = aL Sqrt[iv^2 + jv^2]; ph = ArcTan[iv, jv]; bl = Exp[I aL (kx iv + ky \
+jv)];
+   Total[sh[q, kappa rn] Conjugate[SphericalHarmonicY[q, p, Pi/2, ph]] bl]];
+
+connRho = {{0.4, 0.3}, {-0.3, 0.35}, {0.45, -0.15}}; connQmax = 14; connLr = \
+26;
+connResid = Max[Table[
+    Module[{rr = Sqrt[rho . rho], pha = ArcTan[rho[[1]], rho[[2]]], ewa, \
+rec},
+     ewa = ewaldTotal[kDamp, rho, eta1, RcE, GcE] - gK[kDamp, Sqrt[rho . rho]];
+     rec = I kDamp Sum[DbarAt[q, p, kDamp, connLr] sj[q, kDamp rr] \
+SphericalHarmonicY[q, p, Pi/2, pha],
+        {q, 0, connQmax}, {p, -q, q}];
+     Abs[ewa - rec]], {rho, connRho}]];
+Print[\"  [TB3] Ewald^{R!=0} vs multipole reconstruction (z=0, damped) = \", \
+connResid,
+   \"  -> \", If[connResid < 1*^-5, \"PASS\", \"FAIL\"]];
+(* ---- dump Ewald reference for the independent Python cross-check ---- *)
+reim[z_] := {Re[N[z]], Im[N[z]]};
+ewaldRef = <|\"aL\" -> aL, \"kx\" -> kx, \"ky\" -> ky,
+   \"kReal\" -> kReal, \"kDampRe\" -> Re[kDamp], \"kDampIm\" -> Im[kDamp],
+   \"eta1\" -> eta1, \"RcE\" -> RcE, \"GcE\" -> GcE, \"rhoPts\" -> rhoPts,
+   \"ewaldDamp\" -> Table[reim[ewaldTotal[kDamp, rho, eta1, RcE, GcE]], {rho, \
+rhoPts}],
+   \"ewaldReal\" -> Table[reim[ewaldTotal[kReal, rho, eta1, RcE, GcE]], {rho, \
+rhoPts}]|>;
+Export[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
+IntraPlaneLatticeSum_reference.json\", ewaldRef];
+Print[\"  wrote IntraPlaneLatticeSum_reference.json (\", Length[rhoPts], \" \
+rho points x 2 kappa)\"];
+Print[\"Phase 1 TB2+TB3 (Ewald + multipole connection) loaded + verified.\"];\
+\
+\>", "Input",ExpressionUUID->"3d745473-8457-4416-8bdb-925dd328955f"]
+},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"99fc0079-9977-4f13-b258-031afdedaf04"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 123, 0, 70, "Title",ExpressionUUID->"1a1f2053-fc05-4543-aacb-2864b3f84aeb"],
+Cell[680, 22, 655, 9, 70, "Text",ExpressionUUID->"fc14849c-9015-4446-af7d-5806d3b4b1bf"],
+Cell[1338, 33, 1468, 28, 70, "Text",ExpressionUUID->"b6ff8c8e-3b13-4f01-84f6-8b2fe36b546b"],
+Cell[2809, 63, 1400, 26, 70, "Input",ExpressionUUID->"6408b7b5-559f-4f53-addc-652f0b17f8aa"],
+Cell[4212, 91, 123, 0, 70, "Section",ExpressionUUID->"1de01e43-dc78-4aea-834f-0b69093028cc"],
+Cell[4338, 93, 3305, 70, 70, "Input",ExpressionUUID->"c0b0dc0c-0232-417a-8f6b-1b78849abd65"],
+Cell[7646, 165, 865, 16, 70, "Section",ExpressionUUID->"c7a34703-3e5b-4c18-957e-cbfb896beb33"],
+Cell[8514, 183, 2550, 52, 70, "Input",ExpressionUUID->"eac4cdbd-f375-492f-943c-48d10ba6ceef"],
+Cell[11067, 237, 658, 13, 70, "Section",ExpressionUUID->"fd30e940-9f1f-487d-966e-3b9cc25096b2"],
+Cell[11728, 252, 1918, 39, 70, "Input",ExpressionUUID->"3d745473-8457-4416-8bdb-925dd328955f"]
+}
+]
+*)
+
+(* End of internal cache information *)
