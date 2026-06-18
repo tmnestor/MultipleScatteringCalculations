@@ -1,9 +1,9 @@
 # Intra-Plane Foldy-Lax: Planar Multiple Scattering of Spherical Voxels into Layer R/T
 
-**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE, Phase 2 in progress. Date: 2026-06-18.
+**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; Phase 2 items (a),(b),(d),(f) DONE, (c),(e) remain. Date: 2026-06-18.
 **Representation: full spherical-multipole (Cruzan/Stein), all `n` (option B, DECIDED).**
 
-> **Progress log (2026-06-18, branch `phase0-intraplane-translation`, 6 commits).** Each phase below
+> **Progress log (2026-06-18, branch `phase0-intraplane-translation`).** Each phase below
 > is a self-verifying Mathematica `.wl` (with `.nb` twin) cross-checked against Python where possible;
 > residuals are fresh-run.
 > - **Phase 0 DONE** `212f84b` — elastic translation-addition operator.
@@ -30,7 +30,7 @@ stratified background. **No CPA / effective-medium homogenisation is used.**
 | Pillar | Object | Status |
 |---|---|---|
 | 1 | Single-site `T0` (full-wave sphere scattering operator) | **DONE** `Mathematica/CartesianT0.nb`, reciprocity-verified 1e-18 |
-| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **IN PROGRESS** — Phases 0-1 done, Phase 2 underway (see Progress log) |
+| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **IN PROGRESS** — Phases 0-1 done; Phase 2 (a),(b),(d),(f) done, (c),(e) remain (see Progress log) |
 | 3 | Kennett vertical recursion on the stratified background | EXISTS `cubic_scattering/kennett_layers.py` |
 
 ```mermaid
@@ -206,7 +206,13 @@ single-voxel ground truth; the existing Cartesian cube-slab is the Rayleigh-limi
   This plan commits to fixed-depth-planes.
 - **Self / near term:** the `r = 0` and nearest-neighbour translation terms (the `G0` diagonal /
   the Eshelby delta analogue); reuse the verified cube treatment where applicable.
-- **Flux-normalisation match to Kennett** (`sqrt(eta rho)`): Phase 3 reciprocity/energy validates.
+- **Flux-normalisation / reciprocity metric.** **[Resolved for the multipole basis, item (d)]:** T0
+  (CartesianT0 clean `L/M/N`) and `G0` (Phase-0/1) were reciprocal in *different* metrics, so the naive
+  collective reciprocity failed. A single **symplectic channel metric** `D = diag((kS/kP)^{3/2}, I sqrt(n(n+1)),
+  sqrt(n(n+1)))` makes BOTH σ-symmetric, so `T_coll` is reciprocal (`090ed5c`, Python-cross-checked `78716e0`);
+  see [[project_intraplane_reciprocity_metric]]. The lesson: an arbitrary-direction far-field test is the wrong
+  reciprocity statement for a lattice at fixed `k_par`. **Still open:** the Kennett `sqrt(eta rho)` flux-normalisation
+  match and the energy balance `|R|^2+|T|^2=1` (needs the *undamped* `G0`; the damping is artificial loss) -> Phase 3.
 
 ## 9. Conventions and repo notes
 
