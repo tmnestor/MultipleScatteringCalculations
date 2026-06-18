@@ -1,0 +1,611 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     31478,        602]
+NotebookOptionsPosition[     27020,        545]
+NotebookOutlinePosition[     27363,        560]
+CellTagsIndexPosition[     27320,        557]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["\<\
+Elastic Mie Sphere T-matrix in the Hansen L/M/N Basis (finite contrast, \
+P-SV-SH)\
+\>", "Title",ExpressionUUID->"8d6048ce-dee3-40f9-84dc-6c24c9f4d253"],
+
+Cell["\<\
+Exact, finite-contrast elastic scattering of P, SV, SH partial waves by an \
+isotropic elastic sphere of radius a in an isotropic elastic host. Primary \
+basis: Hansen vector spherical wavefunctions L (P), N (SV), M (SH). Per \
+degree n the T-matrix is a 2x2 spheroidal block coupling L (P) and N (SV), \
+plus a 1x1 toroidal block for M (SH); no SH<->(P,SV) coupling. Conventions \
+match cubic_scattering: time e^{+i w t}, outgoing e^{+ikr} (h_n^(1)); \
+materials (alpha,beta,rho) with lam=rho(alpha^2-2 beta^2), mu=rho beta^2; \
+sphere primed. Verified cell by cell under wolframscript; the P-SV pipeline \
+is cross-checked to ~1e-14 (relative) against compute_elastic_mie (conda \
+seismic). NOTE: this notebook uses the CORRECT toroidal traction sigma_rphi = \
+mu(k_S z_n' - z_n/r); the repo's _mie_matrix_sh drops the -z_n/r term (see \
+Section 6).\
+\>", "Text",ExpressionUUID->"255e0837-625f-4957-9d0b-cec40cb99d4a"],
+
+Cell["0. Conventions and operators", "Section",ExpressionUUID->"301576f2-18cf-4a7c-9496-7fce2f3f62a0"],
+
+Cell["\<\
+ClearAll[\"Global`*\"];
+(* spherical Bessel j_n, y_n, h_n^(1); argument-derivative by the same \
+recurrence as the Python reference *)
+sj[n_, x_] := SphericalBesselJ[n, x];
+sy[n_, x_] := SphericalBesselY[n, x];
+shank[n_, x_] := SphericalBesselJ[n, x] + I SphericalBesselY[n, x];
+zfn[n_, x_, \"j\"] := sj[n, x];
+zfn[n_, x_, \"h\"] := shank[n, x];
+zfp[n_, x_, \"j\"] := n/x sj[n, x] - sj[n + 1, x];
+zfp[n_, x_, \"h\"] := n/x shank[n, x] - shank[n + 1, x];
+
+(* axisymmetric (m=0) spherical vector operators on {V_r, V_theta, \
+V_phi}(r,theta) *)
+gradS[S_] := {D[S, r], (1/r) D[S, \\[Theta]], 0};
+divV[V_] := (1/r^2) D[r^2 V[[1]], r] + (1/(r Sin[\\[Theta]])) \
+D[Sin[\\[Theta]] V[[2]], \\[Theta]];
+curlV[V_] := {(1/(r Sin[\\[Theta]])) D[Sin[\\[Theta]] V[[3]], \\[Theta]],
+   -(1/r) D[r V[[3]], r], (1/r) (D[r V[[2]], r] - D[V[[1]], \\[Theta]])};
+
+(* reductions: fP=z_n(kP r), fS=z_n(kS r) obey the spherical Bessel ODE; \
+g=P_n(cos theta) obeys Legendre *)
+odeRules = {
+   Derivative[2][fP][r] -> -(2/r) fP'[r] - (kP^2 - n (n + 1)/r^2) fP[r],
+   Derivative[2][fS][r] -> -(2/r) fS'[r] - (kS^2 - n (n + 1)/r^2) fS[r],
+   Derivative[2][g][\\[Theta]] -> -Cot[\\[Theta]] g'[\\[Theta]] - n (n + 1) \
+g[\\[Theta]]};
+\"setup done\"\
+\>", "Input",ExpressionUUID->"bdb87da3-1b38-4b22-8475-3585e779d95b"],
+
+Cell["1. Hansen vector wavefunctions L, M, N", "Section",ExpressionUUID->"ea952987-397b-4cd6-85b7-e1f0de2086a6"],
+
+Cell["\<\
+Scalar generators psiP = z_n(kP r) P_n, psiS = z_n(kS r) P_n. Definitions: L \
+= (1/kP) grad psiP (P, irrotational); M = (1/sqrt(n(n+1))) curl(r psiS) (SH, \
+toroidal, no radial part); N = (1/kS) curl M (SV, poloidal). Here r is the \
+position vector and z_n is j_n (regular, interior) or h_n^(1) (outgoing, \
+scattered).\
+\>", "Text",ExpressionUUID->"9996c254-e443-4ce6-9f3d-178bef73cb66"],
+
+Cell["\<\
+psiP = fP[r] g[\\[Theta]];
+psiS = fS[r] g[\\[Theta]];
+Lvec = gradS[psiP]/kP;
+Mvec = curlV[{r psiS, 0, 0}]/Sqrt[n (n + 1)];
+Nvec = curlV[Mvec]/kS;
+(* reduce (so u_r of N has no leftover P_n'' ) *)
+LvecR = Simplify[Lvec /. odeRules];
+MvecR = Simplify[Mvec /. odeRules];
+NvecR = Simplify[Nvec /. odeRules];
+Column[{Row[{\"L = \", LvecR}], Row[{\"M = \", MvecR}], Row[{\"N = \", \
+NvecR}]}]\
+\>", "Input",ExpressionUUID->"e77f5343-bee0-4d64-b4f6-5a41a36a1b33"],
+
+Cell["1a. Tractions t = sigma . rhat", "Subsection",ExpressionUUID->"144278f4-6534-4f60-85d0-a7cfe95faf55"],
+
+Cell["\<\
+Traction components on the r-face: sigma_rr = lam div u + 2 mu d u_r/dr; \
+sigma_rtheta = mu[(1/r) d u_r/dtheta + d u_theta/dr - u_theta/r]; sigma_rphi \
+= mu[d u_phi/dr - u_phi/r] (m=0). lam, mu are the medium's Lame parameters.\
+\>", "Text",ExpressionUUID->"7106ef2a-8d20-40cc-9c4f-20931c3c6bb3"],
+
+Cell["\<\
+srr[u_] := lam divV[u] + 2 mu D[u[[1]], r];
+srt[u_] := mu ((1/r) D[u[[1]], \\[Theta]] + D[u[[2]], r] - u[[2]]/r);
+srp[u_] := mu (D[u[[3]], r] - u[[3]]/r);
+tracL = Simplify[{srr[LvecR], srt[LvecR]} /. odeRules];
+tracN = Simplify[{srr[NvecR], srt[NvecR]} /. odeRules];
+tracM = Simplify[srp[MvecR] /. odeRules];
+Column[{Row[{\"L: {sigma_rr, sigma_rt} = \", tracL}],
+   Row[{\"N: {sigma_rr, sigma_rt} = \", tracN}],
+   Row[{\"M: sigma_rp = \", tracM}]}]\
+\>", "Input",ExpressionUUID->"b3abaa13-e02f-4083-a476-0df2ee3e487b"],
+
+Cell["1b. Navier-equation residual (numeric)", "Subsection",ExpressionUUID->"0e5f8004-b8f3-4f9c-a428-bc2b2fdc4e51"],
+
+Cell["\<\
+Each of L, M, N must solve the homogeneous Navier equation. In the scaled \
+form R(u) = (1/kP^2) grad(div u) - (1/kS^2) curl(curl u) + u this is the zero \
+vector. Checked numerically with real spherical Bessel functions.\
+\>", "Text",ExpressionUUID->"102b9b86-14ce-4060-9e0f-e3642d9c1007"],
+
+Cell["\<\
+navierR[u_, kp_, ks_] := (1/kp^2) gradS[divV[u]] - (1/ks^2) curlV[curlV[u]] + \
+u;
+toConcrete[u_, nv_, kPv_, kSv_] := u /. {fP -> Function[rr, \
+SphericalBesselJ[nv, kPv rr]],
+     fS -> Function[rr, SphericalBesselJ[nv, kSv rr]], g -> Function[th, \
+LegendreP[nv, Cos[th]]],
+     n -> nv, kP -> kPv, kS -> kSv};
+With[{nv = 2, kPv = 0.9, kSv = 1.5, rv = 1.3, thv = 0.7},
+ {\"max|R(L)|, R(M), R(N)| at n=2 (expect ~0):\",
+  Max[Abs[navierR[toConcrete[Lvec, nv, kPv, kSv], kPv, kSv] /. {r -> rv, \
+\\[Theta] -> thv}]],
+  Max[Abs[navierR[toConcrete[Mvec, nv, kPv, kSv], kPv, kSv] /. {r -> rv, \
+\\[Theta] -> thv}]],
+  Max[Abs[navierR[toConcrete[Nvec, nv, kPv, kSv], kPv, kSv] /. {r -> rv, \
+\\[Theta] -> thv}]]}]\
+\>", "Input",ExpressionUUID->"e659e4aa-2788-4686-b9e1-48a7b1e3b2db"],
+
+Cell["2. Dictionary to the phi/psi/chi potential convention", "Section",ExpressionUUID->"b2592055-14e4-4854-9d9b-ec62456766c7"],
+
+Cell["\<\
+The repo uses scalar potentials phi (P), psi (SV), chi (SH) with displacement \
+u = grad phi + curl curl(rhat r psi) + curl(rhat r chi). The \
+displacement-and-traction operators of those potentials equal the Hansen \
+fields times a diagonal factor: P-field = kP * L, SV-field = sqrt(n(n+1)) kS \
+* N, SH-field = -sqrt(n(n+1)) * M. Because each is a single diagonal \
+rescaling, the T-matrix is identical up to that diagonal similarity. We use \
+the relation to bridge to the Python reference in Section 5.\
+\>", "Text",ExpressionUUID->"fb812957-5633-4c74-88eb-0e2cdb826393"],
+
+Cell["\<\
+(* strip the angular functions to get radial coefficients *)
+stripAng[e_] := e /. {g[\\[Theta]] -> 1, Derivative[1][g][\\[Theta]] -> 1};
+{urL, utL} = stripAng /@ {LvecR[[1]], LvecR[[2]]};
+{srrL, srtL} = stripAng /@ tracL;
+{urN, utN} = stripAng /@ {NvecR[[1]], NvecR[[2]]};
+{srrN, srtN} = stripAng /@ tracN;
+{uphiM, srpM} = stripAng /@ {MvecR[[3]], tracM};
+(* concrete numeric Hansen columns; column = \
+{u_r,u_theta,sigma_rr,sigma_rtheta} (L,N) or {u_phi,sigma_rphi} (M) *)
+numL[nv_, kv_, lamm_, mum_, rv_, t_] := {urL, utL, srrL, srtL} /.
+    {fP[r] -> zfn[nv, kP r, t], Derivative[1][fP][r] -> kP zfp[nv, kP r, t]} /.
+   {n -> nv, lam -> lamm, mu -> mum, kP -> kv, r -> rv};
+numN[nv_, kv_, mum_, rv_, t_] := {urN, utN, srrN, srtN} /.
+    {fS[r] -> zfn[nv, kS r, t], Derivative[1][fS][r] -> kS zfp[nv, kS r, t]} /.
+   {n -> nv, mu -> mum, kS -> kv, r -> rv};
+numM[nv_, kv_, mum_, rv_, t_] := {uphiM, srpM} /.
+    {fS[r] -> zfn[nv, kS r, t], Derivative[1][fS][r] -> kS zfp[nv, kS r, t]} /.
+   {n -> nv, mu -> mum, kS -> kv, r -> rv};
+\"Hansen column functions numL, numN, numM defined\"\
+\>", "Input",ExpressionUUID->"6c6a9dd2-43c2-4639-83a5-5c9df0cb2a37"],
+
+Cell["3. Boundary-condition systems and the T-matrix", "Section",ExpressionUUID->"ca4ac9c1-a630-44c0-8060-1c6780284925"],
+
+Cell["\<\
+Continuity of displacement and traction at r=a. Spheroidal (P-SV), n>=1: 4 \
+unknowns {scattered L, scattered N, interior L, interior N}, rows \
+{u_r,u_theta,sigma_rr,sigma_rtheta}. Toroidal (SH), n>=1: 2 unknowns \
+{scattered M, interior M}, rows {u_phi,sigma_rphi}. n=0: P-only 2x2. The \
+intrinsic T-matrix maps incident regular partial-wave amplitudes to scattered \
+outgoing amplitudes: solve with a unit regular incident wave of each type. \
+Stress rows are scaled by 1/mu_host for conditioning (a row scaling that \
+leaves the solution unchanged).\
+\>", "Text",ExpressionUUID->"8803614b-f973-4324-8a34-6629ec4265f6"],
+
+Cell["\<\
+(* host (no prime) and sphere (primed) wavenumbers/moduli are passed in *)
+Tspheroidal[nv_, kPo_, kSo_, lamO_, muO_, kPi_, kSi_, lamI_, muI_, a_] :=
+  Module[{sc = {1, 1, 1/muO, 1/muO}, M, incL, incN, X},
+   M = Transpose[{sc numL[nv, kPo, lamO, muO, a, \"h\"], sc numN[nv, kSo, \
+muO, a, \"h\"],
+      -sc numL[nv, kPi, lamI, muI, a, \"j\"], -sc numN[nv, kSi, muI, a, \
+\"j\"]}];
+   incL = sc numL[nv, kPo, lamO, muO, a, \"j\"];
+   incN = sc numN[nv, kSo, muO, a, \"j\"];
+   X = -Inverse[M] . Transpose[{incL, incN}];
+   X[[1 ;; 2]]];   (* 2x2: rows {scattered L, scattered N}, cols {incident L, \
+incident N} *)
+Ttoroidal[nv_, kSo_, muO_, kSi_, muI_, a_] :=
+  Module[{sc = {1, 1/muO}, M, incM},
+   M = Transpose[{sc numM[nv, kSo, muO, a, \"h\"], -sc numM[nv, kSi, muI, a, \
+\"j\"]}];
+   incM = sc numM[nv, kSo, muO, a, \"j\"];
+   (-Inverse[M] . incM)[[1]]];   (* scalar T_MM *)
+T0mono[kPo_, lamO_, muO_, kPi_, lamI_, muI_, a_] :=
+  Module[{sc = {1, 1/muO}, cs, ci, inc, M},
+   cs = numL[0, kPo, lamO, muO, a, \"h\"]; ci = numL[0, kPi, lamI, muI, a, \
+\"j\"];
+   inc = numL[0, kPo, lamO, muO, a, \"j\"];
+   M = Transpose[{sc {cs[[1]], cs[[3]]}, -sc {ci[[1]], ci[[3]]}}];
+   (-Inverse[M] . (sc {inc[[1]], inc[[3]]}))[[1]]];
+\"T-matrix builders defined: Tspheroidal (2x2), Ttoroidal (1x1), T0mono\"\
+\>", "Input",ExpressionUUID->"27394d85-49c6-40fb-a1a5-a817ed897fa4"],
+
+Cell["3a. Toroidal (SH) closed form", "Subsection",ExpressionUUID->"0cfd1627-b7a8-4298-b4c6-1aaaf37c47e5"],
+
+Cell["\<\
+The SH block is a ratio of 2x2 determinants. With u_phi ~ z_n and the CORRECT \
+traction sigma_rphi ~ mu(k z_n' - z_n/r), the scattered-per-incident \
+amplitude is the closed form below (symbolic in the boundary values).\
+\>", "Text",ExpressionUUID->"0a93b8bf-29a5-4efb-9be1-39280a3bccda"],
+
+Cell["\<\
+(* symbolic boundary values: hb=h_n(kSo a), hpb=h_n'(kSo a) [host outgoing];
+   jbo=j_n(kSo a), jpbo=j_n'(kSo a) [host regular]; jb=j_n(kSi a), \
+jpb=j_n'(kSi a) [sphere];
+   traction operator trc[z,zp,k,m] = m (k zp - z/aB) carries the CORRECT \
+-z/aB term *)
+trc[z_, zp_, k_, m_] := m (k zp - z/aB);
+MtorSym = {{hb, -jb}, {trc[hb, hpb, kob, mob], -trc[jb, jpb, kib, mib]}};
+incTorSym = {jbo, trc[jbo, jpbo, kob, mob]};
+TMMsym = Simplify[(-Inverse[MtorSym] . incTorSym)[[1]]];
+Row[{\"T_MM = \", TMMsym}]\
+\>", "Input",ExpressionUUID->"fb3aa5a6-7ef5-42da-bcd7-04e4c3d5a2c8"],
+
+Cell["4. Cross-check against compute_elastic_mie (conda seismic)", "Section",ExpressionUUID->"17a71d97-bf68-4ec8-8d0f-17147630652f"],
+
+Cell["\<\
+Reference values were produced by \
+cubic_scattering.sphere_scattering.compute_elastic_mie (Section: \
+ElasticMie_reference.json / _dump.py) at background \
+alpha=5000,beta=3000,rho=2500; contrast dlam=2e9,dmu=1e9,drho=100; a=1, \
+omega=4500 (ka_P=0.9, ka_S=1.5). We rebuild the repo's plane-wave \
+coefficients in the potential convention from the Hansen columns (dictionary \
+of Section 2) with the repo's incident normalization (2n+1) i^n/(i k) and \
+sign (-1)^n, and compare. P-SV agree to relative ~1e-14. For SH we compare \
+against the corrected value (Section 6).\
+\>", "Text",ExpressionUUID->"a5a5b823-79ca-428c-86b0-890d9c7b9724"],
+
+Cell["\<\
+pyA = 1.0; pyOmega = 4500.0;
+pyKPo = 0.9; pyKSo = 1.5; pyKPi = 0.8897917302988777; pyKSi = \
+1.4968051081937466;
+pyLamO = 17500000000.0; pyMuO = 22500000000.0; pyLamI = 19500000000.0; pyMuI \
+= 23500000000.0;
+pyAn = {-0.008840553211568285 + 7.034429646597678*^-5*I, \
+0.00016355534542565332 - 0.007298304750898649*I, 0.003847771544935823 - \
+3.888189309325391*^-5*I, -1.0201058603736079*^-6 - 0.00044946633308591994*I, \
+-1.5822668337029754*^-5 + 2.658225586492738*^-9*I};
+pyBn = {0.0 + 0.0*I, 0.00036761198529924654 - 0.020242906491700567*I, \
+0.007475557476351266 - 7.710927494519919*^-5*I, -2.3602988206057053*^-6 - \
+0.0010362925071920263*I, -4.6843621301446236*^-5 + 7.878666280170509*^-9*I};
+pyCn = {0.0 + 0.0*I, 6.957794881667441*^-5 + 0.011796230607376015*I, \
+0.006013553895542191 - 1.084888444586649*^-5*I, -9.851090451483041*^-8 - \
+0.0006780247375270359*I, -3.491797364316013*^-5 + 2.032108138924254*^-10*I};
+pyAnSV = {0.0 + 0.0*I, 0.00026468062941547785 - 0.014574892674024462*I, \
+0.016147204148918827 - 0.00016655603388157834*I, -1.0196490905025023*^-5 - \
+0.004476783631069479*I, -0.00033727407337041715 + 5.672639721729796*^-8*I};
+pyBnSV = {0.0 + 0.0*I, 0.0005984325671412106 - 0.031928446864291346*I, \
+0.032070531907576555 - 0.00033031843335895166*I, -2.3592427252633487*^-5 - \
+0.010359240725217935*I, -0.0009996511882016425 + 1.6813033499812682*^-7*I};
+pyCnCorr = {0.0 + 0.0*I, 4.1210580877748076*^-5 - 0.0090785165882717*I, \
+0.0025064027424763335 - 1.884617477782357*^-6*I, -4.07980036429831*^-8 - \
+0.00043633780721250075*I, -2.5894618942196937*^-5 + \
+1.117552150251524*^-10*I};
+\"reference loaded\"\
+\>", "Input",ExpressionUUID->"fead1a64-e787-4f39-aa1f-18072ffccfd2"],
+
+Cell["\<\
+(* potential-convention columns via the dictionary: P = kP L, SV = \
+sqrt(n(n+1)) kS N *)
+potP[nv_, kv_, lamm_, mum_, rv_, t_] := kv numL[nv, kv, lamm, mum, rv, t];
+potS[nv_, kv_, mum_, rv_, t_] := Sqrt[nv (nv + 1)] kv numN[nv, kv, mum, rv, t];
+coeffN[nv_] := Module[
+   {sc = {1, 1, 1/pyMuO, 1/pyMuO}, scSH = {1, 1/pyMuO}, Mp, sgn = (-1)^nv, \
+cfP, cfS, solP, solS, Msh, cSH, incc},
+   Mp = Transpose[{sc potP[nv, pyKPo, pyLamO, pyMuO, pyA, \"h\"], sc potS[nv, \
+pyKSo, pyMuO, pyA, \"h\"],
+      -sc potP[nv, pyKPi, pyLamI, pyMuI, pyA, \"j\"], -sc potS[nv, pyKSi, \
+pyMuI, pyA, \"j\"]}];
+   cfP = (2 nv + 1) I^nv/(I pyKPo); cfS = (2 nv + 1) I^nv/(I pyKSo);
+   solP = LinearSolve[Mp, -cfP sc potP[nv, pyKPo, pyLamO, pyMuO, pyA, \
+\"j\"]];
+   solS = LinearSolve[Mp, -cfS sc potS[nv, pyKSo, pyMuO, pyA, \"j\"]];
+   (* SH with CORRECT traction sigma_rphi = mu(kS z' - z/a) *)
+   incc = numM[nv, pyKSo, pyMuO, pyA, \"j\"];
+   Msh = Transpose[{scSH numM[nv, pyKSo, pyMuO, pyA, \"h\"], -scSH numM[nv, \
+pyKSi, pyMuI, pyA, \"j\"]}];
+   cSH = LinearSolve[Msh, -cfS scSH incc][[1]];
+   {sgn solP[[1]], sgn solP[[2]], sgn solS[[1]], sgn solS[[2]], sgn cSH}];
+res = Table[coeffN[nv], {nv, 1, 4}];
+myAn = Prepend[res[[All, 1]], First[Module[{sc = {1, 1/pyMuO}, cs, ci, inc, \
+M, sol},
+      cs = potP[0, pyKPo, pyLamO, pyMuO, pyA, \"h\"]; ci = potP[0, pyKPi, \
+pyLamI, pyMuI, pyA, \"j\"];
+      inc = potP[0, pyKPo, pyLamO, pyMuO, pyA, \"j\"];
+      M = Transpose[{sc {cs[[1]], cs[[3]]}, -sc {ci[[1]], ci[[3]]}}];
+      sol = LinearSolve[M, -(1/(I pyKPo)) sc {inc[[1]], inc[[3]]}]; \
+{sol[[1]]}]]];
+myBn = Prepend[res[[All, 2]], 0]; myAnSV = Prepend[res[[All, 3]], 0];
+myBnSV = Prepend[res[[All, 4]], 0]; myCn = Prepend[res[[All, 5]], 0];
+Column[{
+  Row[{\"max|a_n - py|    = \", Max[Abs[myAn - pyAn]]}],
+  Row[{\"max|b_n - py|    = \", Max[Abs[myBn - pyBn]]}],
+  Row[{\"max|a_n_sv - py| = \", Max[Abs[myAnSV - pyAnSV]]}],
+  Row[{\"max|b_n_sv - py| = \", Max[Abs[myBnSV - pyBnSV]]}],
+  Row[{\"max|c_n - corrected| = \", Max[Abs[myCn - pyCnCorr]]}],
+  Row[{\"max|c_n - repo(buggy)| = \", Max[Abs[myCn - pyCn]]}]}]\
+\>", "Input",ExpressionUUID->"faeadcc6-be2f-407d-a10e-f7b607afa236"],
+
+Cell["5. Hansen T-matrix values", "Section",ExpressionUUID->"9eaf74f2-bbf6-4bdd-bc34-bb4bbe31a37a"],
+
+Cell["\<\
+The intrinsic Hansen T-matrix blocks at the test case (scattered-per-incident \
+amplitude). Tspheroidal is 2x2 over {L(P), N(SV)}; Ttoroidal is the scalar \
+M(SH) block; T0mono is the n=0 P monopole.\
+\>", "Text",ExpressionUUID->"c0dee2bc-1af5-4f3a-ac39-9350bbb1a1b5"],
+
+Cell["\<\
+Column[{
+  Row[{\"T0 (n=0, P)      = \", T0mono[pyKPo, pyLamO, pyMuO, pyKPi, pyLamI, \
+pyMuI, pyA]}],
+  Row[{\"T_spheroidal n=1 = \", MatrixForm[Chop@Tspheroidal[1, pyKPo, pyKSo, \
+pyLamO, pyMuO, pyKPi, pyKSi, pyLamI, pyMuI, pyA]]}],
+  Row[{\"T_spheroidal n=2 = \", MatrixForm[Chop@Tspheroidal[2, pyKPo, pyKSo, \
+pyLamO, pyMuO, pyKPi, pyKSi, pyLamI, pyMuI, pyA]]}],
+  Row[{\"T_toroidal  n=1  = \", Ttoroidal[1, pyKSo, pyMuO, pyKSi, pyMuI, \
+pyA]}],
+  Row[{\"T_toroidal  n=2  = \", Ttoroidal[2, pyKSo, pyMuO, pyKSi, pyMuI, \
+pyA]}]}]\
+\>", "Input",ExpressionUUID->"25b5a603-5515-4c6c-9b30-a4cabc28a2c3"],
+
+Cell["6. Summary and the SH boundary-term finding", "Section",ExpressionUUID->"a5c72892-2253-48a4-9e0b-c319b0dde660"],
+
+Cell["\<\
+Verified: L, M, N solve the Navier equation; the Hansen-to-potential \
+dictionary holds; and the rebuilt plane-wave coefficients a_n, b_n, a_n_sv, \
+b_n_sv reproduce compute_elastic_mie to relative ~1e-14. The Hansen T-matrix \
+is the per-degree 2x2 spheroidal {L,N} block plus the 1x1 toroidal {M} block, \
+ready as the single-scatterer T0 for a vector-spherical-translation \
+(Cruzan/Stein) multiple-scattering solve.
+FINDING (SH bug in the repo): \
+cubic_scattering/sphere_scattering.py:_mie_matrix_sh row 1 sets sigma_rphi = \
+mu k_S z_n', omitting the -z_n/r term of sigma_rphi = mu(k_S z_n' - z_n/r) \
+(and the same omission in the SH incident RHS in compute_elastic_mie). This \
+makes the repo c_n wrong at finite contrast: at the test case the corrected \
+c_1 = 4.1e-5 - 9.1e-3 i, but the repo returns 7.0e-5 + 1.2e-2 i. The fix is \
+to replace mu kS z_n'(kS a) by mu(kS z_n'(kS a) - z_n(kS a)/a) in both M[1,*] \
+of _mie_matrix_sh and the SH rhs. P-SV results are unaffected (SH decouples), \
+so R_PP/PS/SP/SS validations stand; only R_SH at finite contrast is impacted.\
+\
+\>", "Text",ExpressionUUID->"e24e3f7a-a1bd-4ddf-9b31-c84b7266f9a1"],
+
+Cell["7. ANALYTICAL Rayleigh (low-ka) expansion in the contrasts", "Section",ExpressionUUID->"71b78db1-0cf5-4c00-ab44-7408c1ee9e50"],
+
+Cell["\<\
+This section gives the T-matrix as SYMBOLIC closed forms in the material \
+contrasts Dlam, Dmu, Drho (background lam, mu, rho; sphere lam+Dlam, mu+Dmu, \
+rho+Drho), in the leading Rayleigh limit ka -> 0. The 2x2 channels (P \
+monopole, SH) close in GENERAL background at full contrast. The P-SV \
+spheroidal blocks couple P and S and carry the irrational ratio alpha/beta = \
+Sqrt((lam+2mu)/mu), so there is no compact general-background form; they are \
+given at a fixed nondimensional reference host (lam=2, mu=1, rho=1) with the \
+contrasts kept symbolic. Run top to bottom; n=2 spheroidal takes ~1 minute \
+(its leading order hides behind several cancelling orders).\
+\>", "Text",ExpressionUUID->"b9895f45-83b2-45bf-a7be-e6a1b4e5a85e"],
+
+Cell["7a. Monopole (P) and SH: general background, full contrast", \
+"Subsection",ExpressionUUID->"70271ca4-7323-473b-bbfa-748a9685503b"],
+
+Cell["\<\
+ClearAll[zJ, zH, leadT];
+zJ[nu_, k_] := SphericalBesselJ[nu, k r];
+zH[nu_, k_] := SphericalBesselJ[nu, k r] + I SphericalBesselY[nu, k r];
+(* leading term of a 2x2 Cramer ratio (no cancellation issue for these) *)
+leadT[e_] := Module[{s = Series[e, {om, 0, 8}]}, Simplify[s[[3, 1]]] \
+om^(s[[4]]/s[[6]])];
+aBg = Sqrt[(lam + 2 mu)/rho]; bBg = Sqrt[mu/rho];
+aSp = Sqrt[(lam + dl + 2 (mu + dm))/(rho + dr)]; bSp = Sqrt[(mu + dm)/(rho + \
+dr)];
+kPo = om/aBg; kSo = om/bBg; kPi = om/aSp; kSi = om/bSp;
+\"k_P a = om a/alpha, k_S a = om a/beta; contrasts dl=Dlam, dm=Dmu, dr=Drho\"\
+\
+\>", "Input",ExpressionUUID->"c553331a-9ee0-4cb3-821e-4deac94acc0d"],
+
+Cell["\<\
+(* monopole n=0 (P), rows {u_r, sigma_rr}: scattered h, interior j, incident \
+j *)
+uR[Z_] := D[Z, r];
+sRR[Z_, k_, lm_, mm_, nv_] := -(lm + 2 mm) k^2 Z - 4 mm D[Z, r]/r + 2 mm nv \
+(nv + 1) Z/r^2;
+M0 = {{uR[zH[0, kPo]], -uR[zJ[0, kPi]]},
+   {sRR[zH[0, kPo], kPo, lam, mu, 0], -sRR[zJ[0, kPi], kPi, lam + dl, mu + \
+dm, 0]}} /. r -> a;
+inc0 = {uR[zJ[0, kPo]], sRR[zJ[0, kPo], kPo, lam, mu, 0]} /. r -> a;
+TLLmono = leadT[(-Inverse[M0] . inc0)[[1]]];
+Row[{\"T_LL(n=0) = \", TLLmono}]\
+\>", "Input",ExpressionUUID->"0bae0f6e-33c3-4ad2-99a2-13ceb04f68e7"],
+
+Cell["\<\
+The numerator carries 3 Dlam + 2 Dmu = 3 Dkappa: the monopole is the \
+bulk-modulus response, with an Eshelby-type concentration denominator. It \
+scales as (k_P a)^3.\
+\>", "Text",ExpressionUUID->"3b5485ea-4b4d-4144-94e3-28b3e01009b0"],
+
+Cell["\<\
+(* SH (toroidal), general n, rows {u_phi, sigma_rphi = mu (d/dr - 1/r)} ; \
+CORRECT traction *)
+sRP[Z_, mm_] := mm (D[Z, r] - Z/r);
+TMM[nv_] := Module[{Msh, incM},
+   Msh = {{zH[nv, kSo], -zJ[nv, kSi]}, {sRP[zH[nv, kSo], mu], -sRP[zJ[nv, \
+kSi], mu + dm]}} /. r -> a;
+   incM = {zJ[nv, kSo], sRP[zJ[nv, kSo], mu]} /. r -> a;
+   leadT[(-Inverse[Msh] . incM)[[1]]]];
+Column[{Row[{\"T_MM(n=1) = \", TMM[1]}], Row[{\"T_MM(n=2) = \", TMM[2]}]}]\
+\>", "Input",ExpressionUUID->"9e958bdb-68b4-47e2-8006-1d078f1734b5"],
+
+Cell["\<\
+SH n=1 is the density response (proportional to Drho/rho); n=2 the shear \
+response (proportional to Dmu/(Dmu+5mu)). Both scale as (k_S a)^5. \
+(Substituting k_S = om/beta turns the om powers into (k_S a) powers.)\
+\>", "Text",ExpressionUUID->"805896f6-8d43-4f26-b7a2-fe6bfaf793f4"],
+
+Cell["\<\
+7b. Spheroidal P-SV blocks: reference host lam=2, mu=1, rho=1\
+\>", "Subsection",ExpressionUUID->"2916a780-1896-408e-91c9-6d2c55c01e31"],
+
+Cell["\<\
+Intrinsic Hansen T 2x2 over {L=P, N=SV}, rows = scattered {L,N}, columns = \
+incident {L,N}. Contrasts Dlam,Dmu,Drho symbolic; host fixed numerically. n=1 \
+(density dipole) is fast and every element is proportional to Drho; n=2 \
+(shear quadrupole) is proportional to Dmu and takes about a minute.\
+\>", "Text",ExpressionUUID->"37e1b09b-d2bd-4105-96de-f90c509f78e8"],
+
+Cell["\<\
+ClearAll[rayleighSpheroidal];
+rayleighSpheroidal[nv_] := Module[
+   {laB = 2, muB = 1, roB = 1, laS = 2 + dl, muS = 1 + dm, roS = 1 + dr,
+    aA, bA, aP, bP, kpO, ksO, kpI, ksI, KKt = 2 nv + 9, jt, ht, pP, pS, hLc, \
+hNc,
+    cL, cN, ciL, ciN, iL, iN, MM, dM, lr},
+   aA = Sqrt[(laB + 2 muB)/roB]; bA = Sqrt[muB/roB];
+   aP = Sqrt[(laS + 2 muS)/roS]; bP = Sqrt[muS/roS];
+   kpO = om/aA; ksO = om/bA; kpI = om/aP; ksI = om/bP;
+   jt[k_] := Normal[Series[SphericalBesselJ[nv, k r], {om, 0, KKt}]];
+   ht[k_] := Normal[Series[SphericalBesselJ[nv, k r] + I SphericalBesselY[nv, \
+k r], {om, 0, KKt}]];
+   pP[Z_, k_, lm_, mm_] := {D[Z, r], Z/r, -(lm + 2 mm) k^2 Z - 4 mm D[Z, r]/r \
++ 2 mm nv (nv + 1) Z/r^2, 2 mm (D[Z, r] - Z/r)/r};
+   pS[Z_, k_, mm_] := {nv (nv + 1) Z/r, (Z + r D[Z, r])/r, 2 mm nv (nv + 1) \
+(D[Z, r]/r - Z/r^2), mm ((2 nv (nv + 1) - 2 - (k r)^2) Z - 2 r D[Z, r])/r^2};
+   hLc[Z_, k_, lm_, mm_] := pP[Z, k, lm, mm]/k; hNc[Z_, k_, mm_] := pS[Z, k, \
+mm]/(Sqrt[nv (nv + 1)] k);
+   cL = hLc[ht[kpO], kpO, laB, muB] /. r -> 1; cN = hNc[ht[ksO], ksO, muB] /. \
+r -> 1;
+   ciL = hLc[jt[kpI], kpI, laS, muS] /. r -> 1; ciN = hNc[jt[ksI], ksI, muS] \
+/. r -> 1;
+   iL = hLc[jt[kpO], kpO, laB, muB] /. r -> 1; iN = hNc[jt[ksO], ksO, muB] /. \
+r -> 1;
+   MM = Transpose[{cL, cN, -ciL, -ciN}]; dM = Det[MM];
+   (* fast: ratio of leading determinant terms (valid where leading terms do \
+not cancel, e.g. n=1) *)
+   ltcL[e_] := Module[{s = Series[e, {om, 0, 2 nv + 6}]}, If[s === 0, \
+{Infinity, 0}, {s[[4]]/s[[6]], s[[3, 1]]}]];
+   lr[num_] := Module[{a1 = ltcL[num], a2 = ltcL[dM]}, \
+Simplify[a1[[2]]/a2[[2]]] om^(a1[[1]] - a2[[1]])];
+   {{lr[Det[Transpose[{-iL, cN, -ciL, -ciN}]]], lr[Det[Transpose[{-iN, cN, \
+-ciL, -ciN}]]]},
+    {lr[Det[Transpose[{cL, -iL, -ciL, -ciN}]]], lr[Det[Transpose[{cL, -iN, \
+-ciL, -ciN}]]]}}];
+\"rayleighSpheroidal[1] -> 2x2 leading T over {L,N} (proportional to Drho); \
+om = k_S a (beta=1,a=1)\"\
+\>", "Input",ExpressionUUID->"08e46dc2-2547-4501-8409-9a339cba5544"],
+
+Cell["\<\
+(* dipole n=1: every element proportional to Drho (=dr). Fast. *)
+MatrixForm[rayleighSpheroidal[1]]\
+\>", "Input",ExpressionUUID->"483593ba-0901-4c99-a4f1-459afef0e77c"],
+
+Cell["\<\
+Quadrupole n=2 (P-SV): the leading order is O((k_S a)^5) and proportional to \
+Dmu (shear), vanishing as Dmu -> 0. Its exact symbolic coefficient carries \
+both an Eshelby-type concentration denominator and the irrational P/S \
+velocity ratio Sqrt((lam+2mu)/mu), and does not reduce to a compact closed \
+form (FullSimplify aborts). The clean Dmu quadrupole closed form is the SH \
+block T_MM(n=2) in 7a. If a value is needed, evaluate rayleighSpheroidal[2] \
+with numeric dl, dm, dr (the cell below is the numeric leading coefficient; \
+it scales linearly with Dmu).\
+\>", "Text",ExpressionUUID->"4f5aaf75-7a27-4589-b417-38330618e091"],
+
+Cell["\<\
+(* numeric n=2 spheroidal leading coefficient: fast, shows the linear-in-Dmu \
+scaling *)
+spheroidalLeadNum[nv_, dlv_, dmv_, drv_] := Module[
+   {laB = 2., muB = 1., roB = 1., laS, muS, roS, aA, bA, aP, bP, kpO, ksO, \
+kpI, ksI, KKt = 2 nv + 9,
+    jt, ht, pP, pS, hLc, hNc, cL, cN, ciL, ciN, iL, iN, MM, dM, lrn},
+   laS = 2. + dlv; muS = 1. + dmv; roS = 1. + drv;
+   aA = Sqrt[(laB + 2 muB)/roB]; bA = Sqrt[muB/roB]; aP = Sqrt[(laS + 2 \
+muS)/roS]; bP = Sqrt[muS/roS];
+   kpO = om/aA; ksO = om/bA; kpI = om/aP; ksI = om/bP;
+   jt[k_] := Normal[Series[SphericalBesselJ[nv, k r], {om, 0, KKt}]];
+   ht[k_] := Normal[Series[SphericalBesselJ[nv, k r] + I SphericalBesselY[nv, \
+k r], {om, 0, KKt}]];
+   pP[Z_, k_, lm_, mm_] := {D[Z, r], Z/r, -(lm + 2 mm) k^2 Z - 4 mm D[Z, r]/r \
++ 2 mm nv (nv + 1) Z/r^2, 2 mm (D[Z, r] - Z/r)/r};
+   pS[Z_, k_, mm_] := {nv (nv + 1) Z/r, (Z + r D[Z, r])/r, 2 mm nv (nv + 1) \
+(D[Z, r]/r - Z/r^2), mm ((2 nv (nv + 1) - 2 - (k r)^2) Z - 2 r D[Z, r])/r^2};
+   hLc[Z_, k_, lm_, mm_] := pP[Z, k, lm, mm]/k; hNc[Z_, k_, mm_] := pS[Z, k, \
+mm]/(Sqrt[nv (nv + 1)] k);
+   cL = hLc[ht[kpO], kpO, laB, muB] /. r -> 1; cN = hNc[ht[ksO], ksO, muB] /. \
+r -> 1;
+   ciL = hLc[jt[kpI], kpI, laS, muS] /. r -> 1; ciN = hNc[jt[ksI], ksI, muS] \
+/. r -> 1;
+   iL = hLc[jt[kpO], kpO, laB, muB] /. r -> 1; iN = hNc[jt[ksO], ksO, muB] /. \
+r -> 1;
+   MM = Transpose[{cL, cN, -ciL, -ciN}]; dM = Det[MM];
+   lrn[num_] := Module[{s = Series[num/dM, {om, 0, 10}], cs, k0},
+      cs = s[[3]]; k0 = LengthWhile[cs, Abs[N[#]] < 10^-12 &] + 1;
+      If[k0 > Length[cs], 0, cs[[k0]]]];
+   {{lrn[Det[Transpose[{-iL, cN, -ciL, -ciN}]]], lrn[Det[Transpose[{-iN, cN, \
+-ciL, -ciN}]]]},
+    {lrn[Det[Transpose[{cL, -iL, -ciL, -ciN}]]], lrn[Det[Transpose[{cL, -iN, \
+-ciL, -ciN}]]]}}];
+(* leading (k_S a)^5 coefficient of T_NN(n=2) for three shear contrasts \
+(Dlam=Drho=0): linear in Dmu *)
+Grid[Prepend[Table[{dmv, Chop[spheroidalLeadNum[2, 0., dmv, 0.][[2, 2]]]}, \
+{dmv, {0.05, 0.10, 0.20}}],
+   {\"Dmu\", \"T_NN coeff of (k_S a)^5\"}], Frame -> All]\
+\>", "Input",ExpressionUUID->"3acc3508-f1f1-47a7-9853-e41b191971ff"]
+},
+WindowSize->{1000, 1100},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"bfffe073-e96b-468d-89bf-229ec6d17678"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 162, 3, 70, "Title",ExpressionUUID->"8d6048ce-dee3-40f9-84dc-6c24c9f4d253"],
+Cell[719, 25, 930, 13, 70, "Text",ExpressionUUID->"255e0837-625f-4957-9d0b-cec40cb99d4a"],
+Cell[1652, 40, 102, 0, 70, "Section",ExpressionUUID->"301576f2-18cf-4a7c-9496-7fce2f3f62a0"],
+Cell[1757, 42, 1299, 28, 70, "Input",ExpressionUUID->"bdb87da3-1b38-4b22-8475-3585e779d95b"],
+Cell[3059, 72, 112, 0, 70, "Section",ExpressionUUID->"ea952987-397b-4cd6-85b7-e1f0de2086a6"],
+Cell[3174, 74, 400, 6, 70, "Text",ExpressionUUID->"9996c254-e443-4ce6-9f3d-178bef73cb66"],
+Cell[3577, 82, 466, 12, 70, "Input",ExpressionUUID->"e77f5343-bee0-4d64-b4f6-5a41a36a1b33"],
+Cell[4046, 96, 107, 0, 70, "Subsection",ExpressionUUID->"144278f4-6534-4f60-85d0-a7cfe95faf55"],
+Cell[4156, 98, 308, 4, 70, "Text",ExpressionUUID->"7106ef2a-8d20-40cc-9c4f-20931c3c6bb3"],
+Cell[4467, 104, 529, 10, 70, "Input",ExpressionUUID->"b3abaa13-e02f-4083-a476-0df2ee3e487b"],
+Cell[4999, 116, 115, 0, 70, "Subsection",ExpressionUUID->"0e5f8004-b8f3-4f9c-a428-bc2b2fdc4e51"],
+Cell[5117, 118, 300, 4, 70, "Text",ExpressionUUID->"102b9b86-14ce-4060-9e0f-e3642d9c1007"],
+Cell[5420, 124, 789, 16, 70, "Input",ExpressionUUID->"e659e4aa-2788-4686-b9e1-48a7b1e3b2db"],
+Cell[6212, 142, 127, 0, 70, "Section",ExpressionUUID->"b2592055-14e4-4854-9d9b-ec62456766c7"],
+Cell[6342, 144, 585, 8, 70, "Text",ExpressionUUID->"fb812957-5633-4c74-88eb-0e2cdb826393"],
+Cell[6930, 154, 1166, 20, 70, "Input",ExpressionUUID->"6c6a9dd2-43c2-4639-83a5-5c9df0cb2a37"],
+Cell[8099, 176, 120, 0, 70, "Section",ExpressionUUID->"ca4ac9c1-a630-44c0-8060-1c6780284925"],
+Cell[8222, 178, 633, 9, 70, "Text",ExpressionUUID->"8803614b-f973-4324-8a34-6629ec4265f6"],
+Cell[8858, 189, 1377, 27, 70, "Input",ExpressionUUID->"27394d85-49c6-40fb-a1a5-a817ed897fa4"],
+Cell[10238, 218, 106, 0, 70, "Subsection",ExpressionUUID->"0cfd1627-b7a8-4298-b4c6-1aaaf37c47e5"],
+Cell[10347, 220, 299, 4, 70, "Text",ExpressionUUID->"0a93b8bf-29a5-4efb-9be1-39280a3bccda"],
+Cell[10649, 226, 584, 11, 70, "Input",ExpressionUUID->"fb3aa5a6-7ef5-42da-bcd7-04e4c3d5a2c8"],
+Cell[11236, 239, 132, 0, 70, "Section",ExpressionUUID->"17a71d97-bf68-4ec8-8d0f-17147630652f"],
+Cell[11371, 241, 650, 10, 70, "Text",ExpressionUUID->"a5a5b823-79ca-428c-86b0-890d9c7b9724"],
+Cell[12024, 253, 1704, 27, 70, "Input",ExpressionUUID->"fead1a64-e787-4f39-aa1f-18072ffccfd2"],
+Cell[13731, 282, 2180, 40, 70, "Input",ExpressionUUID->"faeadcc6-be2f-407d-a10e-f7b607afa236"],
+Cell[15914, 324, 99, 0, 70, "Section",ExpressionUUID->"9eaf74f2-bbf6-4bdd-bc34-bb4bbe31a37a"],
+Cell[16016, 326, 278, 4, 70, "Text",ExpressionUUID->"c0dee2bc-1af5-4f3a-ac39-9350bbb1a1b5"],
+Cell[16297, 332, 612, 12, 70, "Input",ExpressionUUID->"25b5a603-5515-4c6c-9b30-a4cabc28a2c3"],
+Cell[16912, 346, 117, 0, 70, "Section",ExpressionUUID->"a5c72892-2253-48a4-9e0b-c319b0dde660"],
+Cell[17032, 348, 1160, 17, 70, "Text",ExpressionUUID->"e24e3f7a-a1bd-4ddf-9b31-c84b7266f9a1"],
+Cell[18195, 367, 132, 0, 70, "Section",ExpressionUUID->"71b78db1-0cf5-4c00-ab44-7408c1ee9e50"],
+Cell[18330, 369, 749, 10, 70, "Text",ExpressionUUID->"b9895f45-83b2-45bf-a7be-e6a1b4e5a85e"],
+Cell[19082, 381, 137, 1, 70, "Subsection",ExpressionUUID->"70271ca4-7323-473b-bbfa-748a9685503b"],
+Cell[19222, 384, 656, 13, 70, "Input",ExpressionUUID->"c553331a-9ee0-4cb3-821e-4deac94acc0d"],
+Cell[19881, 399, 561, 12, 70, "Input",ExpressionUUID->"0bae0f6e-33c3-4ad2-99a2-13ceb04f68e7"],
+Cell[20445, 413, 246, 4, 70, "Text",ExpressionUUID->"3b5485ea-4b4d-4144-94e3-28b3e01009b0"],
+Cell[20694, 419, 519, 10, 70, "Input",ExpressionUUID->"9e958bdb-68b4-47e2-8006-1d078f1734b5"],
+Cell[21216, 431, 292, 4, 70, "Text",ExpressionUUID->"805896f6-8d43-4f26-b7a2-fe6bfaf793f4"],
+Cell[21511, 437, 146, 2, 70, "Subsection",ExpressionUUID->"2916a780-1896-408e-91c9-6d2c55c01e31"],
+Cell[21660, 441, 377, 5, 70, "Text",ExpressionUUID->"37e1b09b-d2bd-4105-96de-f90c509f78e8"],
+Cell[22040, 448, 2014, 38, 70, "Input",ExpressionUUID->"08e46dc2-2547-4501-8409-9a339cba5544"],
+Cell[24057, 488, 179, 3, 70, "Input",ExpressionUUID->"483593ba-0901-4c99-a4f1-459afef0e77c"],
+Cell[24239, 493, 646, 9, 70, "Text",ExpressionUUID->"4f5aaf75-7a27-4589-b417-38330618e091"],
+Cell[24888, 504, 2128, 39, 70, "Input",ExpressionUUID->"3acc3508-f1f1-47a7-9853-e41b191971ff"]
+}
+]
+*)
+
+(* End of internal cache information *)

@@ -1,0 +1,149 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+Notebook[{Cell["Cartesian T0 -- full-wave elastic sphere scattering operator \
+(Hansen bracket + elastic Weyl)", "Title"], Cell["Single-site Cartesian \
+scattering operator for an isotropic elastic sphere, full wave. Pipeline: \
+spherical symplectic-bracket Mie T-matrix (Hansen L/M/N) -> incident bridge \
+(Cartesian plane wave -> regular multipoles) -> elastic Weyl angular-spectrum \
+scattered bridge -> far-field amplitude f(k_s,k_i). Conventions: time e^{+i w \
+t}, outgoing h_n^(1), z(down)/x/y. Self-contained: evaluate top to bottom. \
+Verified: bracket==inversion 1e-17, vs compute_elastic_mie 1e-14, incident \
+reconstruction 1.9e-13 (P), scattered Weyl 1e-5..1e-7, full-operator \
+reciprocity 1e-18 (final cell). This is the single-site T0; the planar \
+intra-plane lattice sum (RQ1) and Kennett vertical recursion sit on top.", 
+   "Text"], Cell["0. Setup: operators, Hansen wavefunctions, tractions, \
+motion-stress columns", "Section"], Cell["ClearAll[\"Global`*\"];\n(* \
+spherical Bessel j_n, y_n, h_n^(1); argument-derivative by the same \
+recurrence as the Python reference *)\nsj[n_, x_] := SphericalBesselJ[n, \
+x];\nsy[n_, x_] := SphericalBesselY[n, x];\nshank[n_, x_] := \
+SphericalBesselJ[n, x] + I SphericalBesselY[n, x];\nzfn[n_, x_, \"j\"] := \
+sj[n, x];\nzfn[n_, x_, \"h\"] := shank[n, x];\nzfp[n_, x_, \"j\"] := n/x \
+sj[n, x] - sj[n + 1, x];\nzfp[n_, x_, \"h\"] := n/x shank[n, x] - shank[n + \
+1, x];\n\n(* axisymmetric (m=0) spherical vector operators on {V_r, V_theta, \
+V_phi}(r,theta) *)\ngradS[S_] := {D[S, r], (1/r) D[S, \\[Theta]], \
+0};\ndivV[V_] := (1/r^2) D[r^2 V[[1]], r] + (1/(r Sin[\\[Theta]])) \
+D[Sin[\\[Theta]] V[[2]], \\[Theta]];\ncurlV[V_] := {(1/(r Sin[\\[Theta]])) \
+D[Sin[\\[Theta]] V[[3]], \\[Theta]],\n   -(1/r) D[r V[[3]], r], (1/r) (D[r \
+V[[2]], r] - D[V[[1]], \\[Theta]])};\n\n(* reductions: fP=z_n(kP r), \
+fS=z_n(kS r) obey the spherical Bessel ODE; g=P_n(cos theta) obeys Legendre \
+*)\nodeRules = {\n   Derivative[2][fP][r] -> -(2/r) fP'[r] - (kP^2 - n (n + \
+1)/r^2) fP[r],\n   Derivative[2][fS][r] -> -(2/r) fS'[r] - (kS^2 - n (n + \
+1)/r^2) fS[r],\n   Derivative[2][g][\\[Theta]] -> -Cot[\\[Theta]] \
+g'[\\[Theta]] - n (n + 1) g[\\[Theta]]};\n\"setup done\"", "Input"], 
+  Cell["psiP = fP[r] g[\\[Theta]];\npsiS = fS[r] g[\\[Theta]];\nLvec = \
+gradS[psiP]/kP;\nMvec = curlV[{r psiS, 0, 0}]/Sqrt[n (n + 1)];\nNvec = \
+curlV[Mvec]/kS;\n(* reduce (so u_r of N has no leftover P_n'' ) *)\nLvecR = \
+Simplify[Lvec /. odeRules];\nMvecR = Simplify[Mvec /. odeRules];\nNvecR = \
+Simplify[Nvec /. odeRules];\nColumn[{Row[{\"L = \", LvecR}], Row[{\"M = \", \
+MvecR}], Row[{\"N = \", NvecR}]}]", "Input"], Cell["srr[u_] := lam divV[u] + \
+2 mu D[u[[1]], r];\nsrt[u_] := mu ((1/r) D[u[[1]], \\[Theta]] + D[u[[2]], r] \
+- u[[2]]/r);\nsrp[u_] := mu (D[u[[3]], r] - u[[3]]/r);\ntracL = \
+Simplify[{srr[LvecR], srt[LvecR]} /. odeRules];\ntracN = \
+Simplify[{srr[NvecR], srt[NvecR]} /. odeRules];\ntracM = Simplify[srp[MvecR] \
+/. odeRules];\nColumn[{Row[{\"L: {sigma_rr, sigma_rt} = \", tracL}],\n   \
+Row[{\"N: {sigma_rr, sigma_rt} = \", tracN}],\n   Row[{\"M: sigma_rp = \", \
+tracM}]}]", "Input"], Cell["(* strip the angular functions to get radial \
+coefficients *)\nstripAng[e_] := e /. {g[\\[Theta]] -> 1, \
+Derivative[1][g][\\[Theta]] -> 1};\n{urL, utL} = stripAng /@ {LvecR[[1]], \
+LvecR[[2]]};\n{srrL, srtL} = stripAng /@ tracL;\n{urN, utN} = stripAng /@ \
+{NvecR[[1]], NvecR[[2]]};\n{srrN, srtN} = stripAng /@ tracN;\n{uphiM, srpM} = \
+stripAng /@ {MvecR[[3]], tracM};\n(* concrete numeric Hansen columns; column \
+= {u_r,u_theta,sigma_rr,sigma_rtheta} (L,N) or {u_phi,sigma_rphi} (M) \
+*)\nnumL[nv_, kv_, lamm_, mum_, rv_, t_] := {urL, utL, srrL, srtL} /.\n    \
+{fP[r] -> zfn[nv, kP r, t], Derivative[1][fP][r] -> kP zfp[nv, kP r, t]} /.\n \
+  {n -> nv, lam -> lamm, mu -> mum, kP -> kv, r -> rv};\nnumN[nv_, kv_, mum_, \
+rv_, t_] := {urN, utN, srrN, srtN} /.\n    {fS[r] -> zfn[nv, kS r, t], \
+Derivative[1][fS][r] -> kS zfp[nv, kS r, t]} /.\n   {n -> nv, mu -> mum, kS \
+-> kv, r -> rv};\nnumM[nv_, kv_, mum_, rv_, t_] := {uphiM, srpM} /.\n    \
+{fS[r] -> zfn[nv, kS r, t], Derivative[1][fS][r] -> kS zfp[nv, kS r, t]} /.\n \
+  {n -> nv, mu -> mum, kS -> kv, r -> rv};\n\"Hansen column functions numL, \
+numN, numM defined\"", "Input"], 
+  Cell["1. Spherical bracket T_n (clean L/M/N normalization)", "Section"], 
+  Cell["Spherical bracket T_n via T = -(Bre2^T J Bre2)^-1 ... built in the \
+Hansen L/M/N basis, then converted to the clean normalization L=(1/k)grad \
+psi, M=curl(r psi), N=(1/k)curl M (psi=z_n(k r)Y_n^m) used by the plane-wave \
+bridges: the spheroidal L<->N off-diagonals carry Sqrt[n(n+1)].", "Text"], 
+  Cell["Jspher[nv_] := {{0, 0, 1, 0}, {0, 0, 0, nv (nv + 1)}, {-1, 0, 0, 0}, \
+{0, -nv (nv + 1), 0, 0}};\nJsca = {{0, 1}, {-1, 0}};\nTbracket[B1_, Bo_, B2_, \
+J_] := -Inverse[Transpose[B2] . J . Bo] . (Transpose[B2] . J . \
+B1);\nTspheroidal[nv_, kPo_, kSo_, lamO_, muO_, kPi_, kSi_, lamI_, muI_, a_] \
+:= Tbracket[\n   Transpose[{numL[nv, kPo, lamO, muO, a, \"j\"], numN[nv, kSo, \
+muO, a, \"j\"]}],\n   Transpose[{numL[nv, kPo, lamO, muO, a, \"h\"], numN[nv, \
+kSo, muO, a, \"h\"]}],\n   Transpose[{numL[nv, kPi, lamI, muI, a, \"j\"], \
+numN[nv, kSi, muI, a, \"j\"]}], Jspher[nv]];\nTtoroidal[nv_, kSo_, muO_, \
+kSi_, muI_, a_] := Tbracket[\n    Transpose[{numM[nv, kSo, muO, a, \"j\"]}], \
+Transpose[{numM[nv, kSo, muO, a, \"h\"]}],\n    Transpose[{numM[nv, kSi, muI, \
+a, \"j\"]}], Jsca][[1, 1]];\nT0mono[kPo_, lamO_, muO_, kPi_, lamI_, muI_, a_] \
+:= Tbracket[\n    Transpose[{numL[0, kPo, lamO, muO, a, \"j\"][[{1, 3}]]}],\n \
+   Transpose[{numL[0, kPo, lamO, muO, a, \"h\"][[{1, 3}]]}],\n    \
+Transpose[{numL[0, kPi, lamI, muI, a, \"j\"][[{1, 3}]]}], Jsca][[1, \
+1]];\n\"bracket T-matrix builders defined: Tspheroidal (2x2 over L,N), \
+Ttoroidal (1x1 M), T0mono (n=0 P)\"", "Input"], 
+  Cell["(* clean-normalization per-degree T_n: spheroidal L<->N off-diagonals \
+carry Sqrt[n(n+1)]\n   (diagonals + toroidal are normalization-independent) \
+*)\nTsphClean[n_, kPo_, kSo_, lamO_, muO_, kPi_, kSi_, lamI_, muI_, a_] :=\n  \
+Module[{t = Tspheroidal[n, kPo, kSo, lamO, muO, kPi, kSi, lamI, muI, a], s = \
+Sqrt[n (n + 1)]},\n   {{t[[1, 1]], s t[[1, 2]]}, {t[[2, 1]]/s, t[[2, \
+2]]}}];\n\n(* vector spherical harmonics on a (possibly complex) direction d \
+*)\nang[d_] := {ArcCos[d[[3]]/Sqrt[d . d]], ArcTan[d[[1]], d[[2]]]};\nRM[t_, \
+p_] := {{Sin[t] Cos[p], Cos[t] Cos[p], -Sin[p]},\n   {Sin[t] Sin[p], Cos[t] \
+Sin[p], Cos[p]}, {Cos[t], -Sin[t], 0}};\nYv[n_, m_, d_] := \
+SphericalHarmonicY[n, m, ang[d][[1]], ang[d][[2]]];\nBv[n_, m_, d_] := \
+Module[{t = ang[d][[1]], p = ang[d][[2]]},     (* grad_Omega Y (poloidal -> \
+N/SV) *)\n   RM[t, p] . {0, (D[SphericalHarmonicY[n, m, x, p], x] /. x -> \
+t),\n     (I m/Sin[t]) SphericalHarmonicY[n, m, t, p]}];\nCv[n_, m_, d_] := \
+Cross[d, Bv[n, m, d]];                          (* k x grad_Omega Y (toroidal \
+-> M/SH) *)\n\"clean T_n converter + vector spherical harmonics defined\"", 
+   "Input"], Cell["2. Incident bridge: plane wave -> regular multipoles", 
+   "Section"], Cell["Incident bridge: a Cartesian plane wave (P / SV / SH, \
+direction k_i, polarization e_i) expands in regular (j_n) multipoles. \
+Coefficients verified by reconstruction.", "Text"], 
+  Cell["(* INCIDENT BRIDGE: Cartesian plane wave -> regular multipole \
+amplitudes a_{nm}.\n   Verified by reconstruction: P to 1.9e-13, SV/SH by \
+per-n fit (8e-6, truncation-limited). *)\nincP[n_, m_, ki_] := 4 Pi I^(n - 1) \
+Conjugate[Yv[n, m, ki]];                    (* a^L  (P) *)\nincN[n_, m_, ki_, \
+ei_] := -4 Pi I^(n + 1)/(n (n + 1)) Conjugate[ei . Bv[n, m, ki]]; (* a^N  \
+(SV) *)\nincM[n_, m_, ki_, ei_] := -4 Pi I^n/(n (n + 1)) Conjugate[ei . Cv[n, \
+m, ki]];       (* a^M  (SH) *)\n\"incident-bridge coefficients incP, incN, \
+incM defined\"", "Input"], 
+  Cell["3. Scattered Weyl bridge + far-field amplitude f(k_s,k_i)", 
+   "Section"], Cell["Scattered bridge + far field: scattered multipoles b = \
+T_n a radiate as outgoing (h_n) waves; their plane-wave content is the \
+elastic Weyl angular spectrum (the generalization of the scalar Weyl/ \
+Sommerfeld monopole to the vector L/M/N case). f(k_s,k_i) is the resulting \
+far-field amplitude.", "Text"], Cell["(* SCATTERED (elastic Weyl) BRIDGE + \
+FAR-FIELD AMPLITUDE.\n   f(k_s, k_i) = {f_P (longitudinal, along k_s), f_S \
+(transverse)} for incident (type, k_i, e_i).\n   b_{nm} = T_n . a_{nm}; \
+outgoing multipoles -> plane-wave content via the verified\n   \
+angular-spectrum weights  L->Y k_hat,  N->grad_Omega Y,  M->k_hat x \
+grad_Omega Y. *)\nfarField[type_, ki_, ei_, ks_, Nmax_, kP_, kS_, lamO_, \
+muO_, kPi_, kSi_, lamI_, muI_, a_] :=\n  Module[{fP = {0, 0, 0}, fS = {0, 0, \
+0}, aL, aN, aM, bL, bN, bM, t},\n   Do[\n    Switch[type, \"P\", aL = incP[n, \
+m, ki]; aN = 0; aM = 0,\n                 _,   aL = 0; aN = incN[n, m, ki, \
+ei]; aM = incM[n, m, ki, ei]];\n    t = TsphClean[n, kP, kS, lamO, muO, kPi, \
+kSi, lamI, muI, a];\n    bL = t[[1, 1]] aL + t[[1, 2]] aN; bN = t[[2, 1]] aL \
++ t[[2, 2]] aN;\n    bM = Ttoroidal[n, kS, muO, kSi, muI, a] aM;\n    fP += \
+bL ((-I)^n/kP) Yv[n, m, ks] ks;\n    fS += bN ((-I)^n/kS) Bv[n, m, ks] - bM \
+((-I)^(n + 1)/kS) Cv[n, m, ks],\n    {n, 1, Nmax}, {m, -n, n}];\n   fP += \
+(T0mono[kP, lamO, muO, kPi, lamI, muI, a] 4 Pi/I Conjugate[Yv[0, 0, ki]]) \
+(1/kP) Yv[0, 0, ks] ks;\n   {fP, fS}];\n\"far-field amplitude farField[type, \
+ki, ei, ks, Nmax, host+sphere params, a] defined\"", "Input"], 
+  Cell["4. Verification: reciprocity", "Section"], 
+  Cell["Reciprocity is the global check: it must hold to machine precision \
+and fails at O(1) for any inconsistent prefactor.", "Text"], 
+  Cell["(* VERIFICATION -- reciprocity f(k_s,k_i) = f(-k_i,-k_s).\n   \
+Normalization-free; fails at O(1) if any incident / T_n / scattered prefactor \
+is inconsistent. *)\nWith[{kPo = 0.9, kSo = 1.5, kPi = 0.8897917302988777, \
+kSi = 1.4968051081937466,\n   lamO = 17.5*^9, muO = 22.5*^9, lamI = 19.5*^9, \
+muI = 23.5*^9, aa = 1.0, NM = 7},\n Module[{ki1, ks1, thp, ampPP, ampSS},\n  \
+ki1 = {Sin[0.7] Cos[0.5], Sin[0.7] Sin[0.5], Cos[0.7]};\n  ks1 = {Sin[1.2] \
+Cos[2.0], Sin[1.2] Sin[2.0], Cos[1.2]};\n  thp[d_] := RM[ang[d][[1]], \
+ang[d][[2]]][[All, 2]];   (* theta_hat (an S polarization) *)\n  ampPP[ks_, \
+ki_] := ks . First[farField[\"P\", ki, ks, ks, NM, kPo, kSo, lamO, muO, kPi, \
+kSi, lamI, muI, aa]];\n  ampSS[ks_, ki_] := thp[ks] . Last[farField[\"SV\", \
+ki, thp[ki], ks, NM, kPo, kSo, lamO, muO, kPi, kSi, lamI, muI, aa]];\n  \
+Column[{\n    Row[{\"PP reciprocity  |f(ks,ki) - f(-ki,-ks)| = \", \
+Abs[ampPP[ks1, ki1] - ampPP[-ki1, -ks1]]}],\n    Row[{\"SS reciprocity  \
+|f(ks,ki) - f(-ki,-ks)| = \", Abs[ampSS[ks1, ki1] - ampSS[-ki1, -ks1]]}]}]]]"\
+, "Input"]}, WindowSize -> {1000, 1100}, StyleDefinitions -> "Default.nb", 
+ FrontEndVersion -> "14.3 for Mac OS X ARM (64-bit) (July 8, 2025)"]
