@@ -1,15 +1,23 @@
-import sys, json
+import json
+import sys
+
 sys.path.insert(0, "/Users/tod/Desktop/MultipleScatteringCalculations")
 import numpy as np
-import cubic_scattering.sphere_scattering as S
-from cubic_scattering.sphere_scattering import (
-    _mie_pwave_fields, _mie_swave_fields, _mie_matrix_psv, _mie_matrix_sh,
-    _spherical_jn_complex, _spherical_h1_complex, _spherical_jn_deriv, _spherical_h1_deriv,
-    compute_elastic_mie,
-)
 
 # --- find the ReferenceMedium / MaterialContrast dataclasses ---
 from cubic_scattering.effective_contrasts import ReferenceMedium
+from cubic_scattering.sphere_scattering import (
+    _mie_matrix_psv,
+    _mie_matrix_sh,
+    _mie_pwave_fields,
+    _mie_swave_fields,
+    _spherical_h1_complex,
+    _spherical_h1_deriv,
+    _spherical_jn_complex,
+    _spherical_jn_deriv,
+    compute_elastic_mie,
+)
+
 # MaterialContrast location:
 try:
     from cubic_scattering.sphere_scattering import MaterialContrast
