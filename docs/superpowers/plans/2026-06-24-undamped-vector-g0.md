@@ -273,7 +273,7 @@ g0dir[cP_, nu_, mu_, c_, n_, m_, kS_] := Switch[cP,
 - [ ] **Step 2: Damped-limit method gate (gate 2) — contraction == direct damped sum**
 
 ```mathematica
-kSd = 1.5 + 0.25 I; kPd = 0.9 + 0.25 I; Ldir = 18;
+kSd = 1.5 + 0.25 I; kPd = 0.9 + 0.25 I; Ldir = LradB;  (* matched radius: the gate is a term-by-term identity *)
 DdirS[q_, s_] := DstructDirect[q, s, kSd, Ldir];
 DdirP[q_, s_] := DstructDirect[q, s, kPd, Ldir];
 (* M/N: contraction at damped kS vs direct damped sum *)
@@ -341,9 +341,10 @@ G0vec = Table[G0vecEntry[idx[[i]], idx[[j]]], {i, nDim}, {j, nDim}];
 - [ ] **Step 2: Collective solve + sanity + L-reciprocity + undamped η-independence (gates)**
 
 ```mathematica
-T0LMN[0] := {{T0mono[0.9, lamO, muO, 0.8897917302988777, lamI, muI, 1.0]}};
-T0LMN[n_] := Module[{ts = TsphClean[n, 0.9, 1.5, lamO, muO, 1.4968051081937466, lamI, muI, 1.0],
-    tt = Ttoroidal[n, 1.5, muO, 1.4968051081937466, muI, 1.0]},
+(* use the CartesianT0.wl globals in the canonical TsphClean/Ttoroidal arg order *)
+T0LMN[0] := {{T0mono[kPo, lamO, muO, kPi, lamI, muI, aa]}};
+T0LMN[n_] := Module[{ts = TsphClean[n, kPo, kSo, lamO, muO, kPi, kSi, lamI, muI, aa],
+    tt = Ttoroidal[n, kSo, muO, kSi, muI, aa]},
    {{ts[[1, 1]], 0, ts[[1, 2]]}, {0, tt, 0}, {ts[[2, 1]], 0, ts[[2, 2]]}}];
 chPos = <|"L" -> 1, "M" -> 2, "N" -> 3|>;
 T0entry[{n1_, m1_, c1_}, {n2_, m2_, c2_}] :=
