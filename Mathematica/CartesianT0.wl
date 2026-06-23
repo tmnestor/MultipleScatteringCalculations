@@ -24,7 +24,10 @@ nb = Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ElasticM
 mcells = Cases[nb, Cell[c_String, "Input", ___] :> c, Infinity];
 cln[s_] := StringReplace[s, "ClearAll[\"Global`*\"]" -> "Null"];
 Do[ToExpression[cln[mcells[[i]]]], {i, {1, 2, 3, 5}}];
-ToExpression[Import["/tmp/cell_sec3_builders.m", "Text"]];   (* Tspheroidal/Ttoroidal/T0mono (bracket) *)
+(* cell 6 of ElasticMieTmatrix.nb defines the bracket builders Tspheroidal/Ttoroidal/T0mono.
+   Loaded directly from the notebook (self-contained); previously routed through a transient
+   /tmp/cell_sec3_builders.m extraction that did not survive across sessions. *)
+ToExpression[cln[mcells[[6]]]];
 
 (* clean conversion: spheroidal L<->N off-diagonals carry sqrt(n(n+1)) *)
 TsphClean[n_, kPo_, kSo_, lamO_, muO_, kPi_, kSi_, lamI_, muI_, a_] :=
