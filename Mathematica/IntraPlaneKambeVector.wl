@@ -62,3 +62,80 @@ Print["  [1] scalar D eta-independence (kappa_P=0.9) = ", ScientificForm[undEtaP
    " -> ", If[undEtaP < 1.*^-6, "PASS", "FAIL"]];
 Print["  [2] scalar D eta-independence (kappa_S=1.5) = ", ScientificForm[undEtaS, 3],
    " -> ", If[undEtaS < 1.*^-6, "PASS", "FAIL"]];
+
+(* ============================================================================
+   Task 2: vector wavefunctions + quadrature (wavenumber-parameterized)
+   ============================================================================ *)
+gaunt[l1_, m1_, l2_, m2_, l3_, m3_] :=
+  If[m1 + m2 + m3 != 0 || Abs[m1] > l1 || Abs[m2] > l2 || Abs[m3] > l3, 0,
+   Sqrt[(2 l1 + 1) (2 l2 + 1) (2 l3 + 1)/(4 Pi)]
+     ThreeJSymbol[{l1, 0}, {l2, 0}, {l3, 0}] ThreeJSymbol[{l1, m1}, {l2, m2}, {l3, m3}]];
+zfn[n_, x_, "j"] := sj[n, x]; zfn[n_, x_, "h"] := sh[n, x];
+zfp[n_, x_, "j"] := n/x sj[n, x] - sj[n + 1, x];
+zfp[n_, x_, "h"] := n/x sh[n, x] - sh[n + 1, x];
+ang[d_] := {ArcCos[d[[3]]/Sqrt[d . d]], ArcTan[d[[1]], d[[2]]]};
+Yfun[n_, m_, d_] := SphericalHarmonicY[n, m, ang[d][[1]], ang[d][[2]]];
+RMrot[t_, p_] := {{Sin[t] Cos[p], Cos[t] Cos[p], -Sin[p]},
+   {Sin[t] Sin[p], Cos[t] Sin[p], Cos[p]}, {Cos[t], -Sin[t], 0}};
+dthY[n_, m_] := dthY[n, m] = Module[{tt, pp, ex},
+   ex = D[SphericalHarmonicY[n, m, tt, pp], tt]; Function[{a, b}, Evaluate[ex /. {tt -> a, pp -> b}]]];
+Bvec[n_, m_, d_] := Module[{t = ang[d][[1]], p = ang[d][[2]]},
+   RMrot[t, p] . {0, dthY[n, m][t, p], (I m/Sin[t]) SphericalHarmonicY[n, m, t, p]}];
+Cvec[n_, m_, d_] := Cross[d/Sqrt[d . d], Bvec[n, m, d]];
+Pvec[n_, m_, d_] := Yfun[n, m, d] (d/Sqrt[d . d]);
+rhoOf[c_, r_] := Sqrt[(r - c) . (r - c)];
+rhatOf[c_, r_] := (r - c)/Sqrt[(r - c) . (r - c)];
+Mw[n_, m_, type_, c_, r_, kS_] := -zfn[n, kS rhoOf[c, r], type] Cvec[n, m, r - c];
+Nw[n_, m_, type_, c_, r_, kS_] := Module[{x = kS rhoOf[c, r]},
+   (n (n + 1)/x) zfn[n, x, type] Yfun[n, m, r - c] rhatOf[c, r]
+     + ((zfn[n, x, type] + x zfp[n, x, type])/x) Bvec[n, m, r - c]];
+
+glV = GaussianQuadratureWeights[12, -1, 1]; nPhiV = 24; radP = 0.5;
+shat[u_, ph_] := {Sqrt[1 - u^2] Cos[ph], Sqrt[1 - u^2] Sin[ph], u};
+quadList = Flatten[Table[{glV[[i, 1]], glV[[i, 2]], 2 Pi (j - 1)/nPhiV}, {i, Length[glV]}, {j, nPhiV}], 1];
+quadDirs = Map[shat[#[[1]], #[[3]]] &, quadList];
+quadW = Map[#[[2]] (2 Pi/nPhiV) &, quadList];
+projDotF[fieldVals_, harmVals_] := Sum[quadW[[k]] fieldVals[[k]] . Conjugate[harmVals[[k]]], {k, Length[quadList]}];
+Cvals[nu_, mu_] := Cvals[nu, mu] = Map[Cvec[nu, mu, #] &, quadDirs];
+Pvals[nu_, mu_] := Pvals[nu, mu] = Map[Pvec[nu, mu, #] &, quadDirs];
+normMC[nu_, mu_, kS_] := normMC[nu, mu, kS] = projDotF[Map[Mw[nu, mu, "j", {0, 0, 0}, radP #, kS] &, quadDirs], Cvals[nu, mu]];
+normNP[nu_, mu_, kS_] := normNP[nu, mu, kS] = projDotF[Map[Nw[nu, mu, "j", {0, 0, 0}, radP #, kS] &, quadDirs], Pvals[nu, mu]];
+
+(* ============================================================================
+   Task 2: single-pair Wel + coefficient extraction coeffq
+   ============================================================================ *)
+(* outgoing source field (c,n,m) centered at d, sampled at radP*quadDirs around the origin *)
+srcQuad[c_, n_, m_, d_, kS_] := srcQuad[c, n, m, d, kS] =
+   Map[Switch[c, "M", Mw[n, m, "h", d, radP #, kS], "N", Nw[n, m, "h", d, radP #, kS]] &, quadDirs];
+(* single-pair vector translation matrix element: regular (cP,nu,mu) content of the source field *)
+Wel[cP_, nu_, mu_, c_, n_, m_, d_, kS_] := Module[{f = srcQuad[c, n, m, d, kS]},
+   Switch[cP, "M", projDotF[f, Cvals[nu, mu]]/normMC[nu, mu, kS],
+              "N", projDotF[f, Pvals[nu, mu]]/normNP[nu, mu, kS]]];
+(* source-direction quadrature for the angular projection that isolates coeff_q *)
+glS = GaussianQuadratureWeights[8, -1, 1]; nPhiS = 16; dext = 2.0;
+srcW = Flatten[Table[{shat[glS[[i, 1]], 2 Pi (j - 1)/nPhiS], glS[[i, 2]] (2 Pi/nPhiS)},
+     {i, Length[glS]}, {j, nPhiS}], 1];
+qset[n_, nu_] := Range[Abs[n - nu], n + nu];
+(* W(d) = Sum_q coeff_q h_q(kS|d|) Y_q(m-mu, dhat); orthogonal projection over dhat isolates coeff_q.
+   coeff_q is d-independent (pure Wigner), so the fixed |d|=dext is arbitrary (any dext>0). *)
+coeffq[cP_, nu_, mu_, c_, n_, m_, kS_] := coeffq[cP, nu, mu, c, n, m, kS] = Association[Table[
+    q -> Total[Map[#[[2]] Wel[cP, nu, mu, c, n, m, dext #[[1]], kS]
+          Conjugate[SphericalHarmonicY[q, m - mu, ang[#[[1]]][[1]], ang[#[[1]]][[2]]]] &, srcW]]
+       / sh[q, kS dext],
+    {q, qset[n, nu]}]];
+
+(* ============================================================================
+   Task 2 gate [3]: reconstruction self-check (Sum_q coeff_q h_q Y_q == Wel)
+   ============================================================================ *)
+kS = 1.5;
+reconW[cP_, nu_, mu_, c_, n_, m_, d_, kSv_] := Module[{cf = coeffq[cP, nu, mu, c, n, m, kSv]},
+   Total[KeyValueMap[#2 sh[#1, kSv Sqrt[d . d]] SphericalHarmonicY[#1, m - mu, ang[d][[1]], ang[d][[2]]] &, cf]]];
+SeedRandom[20260624];
+wTestSrc = {{"M", 1, 0, "M", 1, 0}, {"N", 1, 1, "M", 2, -1}, {"M", 2, 0, "N", 1, 1},
+   {"N", 2, 2, "N", 2, -1}, {"M", 1, -1, "N", 2, 0}};
+wTestPts = Table[Module[{u = RandomReal[{-1, 1}], ph = RandomReal[{0, 2 Pi}]},
+    RandomReal[{1.3, 3.0}] shat[u, ph]], {4}];
+recW = Max[Table[Abs[reconW[t[[1]], t[[2]], t[[3]], t[[4]], t[[5]], t[[6]], pt, kS]
+     - Wel[t[[1]], t[[2]], t[[3]], t[[4]], t[[5]], t[[6]], pt, kS]], {t, wTestSrc}, {pt, wTestPts}]];
+Print["  [3] coeff_q reconstruction (Sum_q coeff_q h_q Y_q == W) = ", ScientificForm[recW, 3],
+   " -> ", If[recW < 1.*^-6, "PASS", "FAIL"]];
