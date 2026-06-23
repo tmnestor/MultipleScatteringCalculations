@@ -192,3 +192,65 @@ Print["  [4] M/N contraction == direct damped sum (", Length[mnPairs], " entries
    " -> ", If[resMN < 1.*^-4, "PASS", "FAIL"]];
 Print["  [5] L-block contraction == direct beta^P sum (", Length[llPairs], " entries) = ", ScientificForm[resLL, 3],
    " -> ", If[resLL < 1.*^-4, "PASS", "FAIL"]];
+
+(* ============================================================================
+   Task 4 Step 1: Undamped G0^vec assembly (kappa_P for L, kappa_S for M/N)
+   ============================================================================ *)
+kSr = 1.5; etaU = 0.7;
+DuS[q_, s_] := DstructU[q, s, 1.5, etaU];   (* undamped, kappa_S *)
+DuP[q_, s_] := DstructU[q, s, 0.9, etaU];   (* undamped, kappa_P *)
+Nmax = 2;
+idx = Flatten[Table[
+    If[n == 0, {{0, 0, "L"}}, Flatten[Table[{n, m, ch}, {m, -n, n}, {ch, {"L", "M", "N"}}], 1]],
+    {n, 0, Nmax}], 1];
+nDim = Length[idx];
+G0vecEntry[{nu_, mu_, ct_}, {n_, m_, cs_}] := Which[
+   ct == "L" && cs == "L", g0LLk[n, m, nu, mu, DuP],
+   (ct == "M" || ct == "N") && (cs == "M" || cs == "N"), g0MNblock[ct, nu, mu, cs, n, m, kSr, DuS],
+   True, 0];
+G0vec = Table[G0vecEntry[idx[[i]], idx[[j]]], {i, nDim}, {j, nDim}];
+
+(* ============================================================================
+   Task 4 Step 2: Collective solve + gates [6],[7],[8]
+   ============================================================================ *)
+T0LMN[0] := {{T0mono[kPo, lamO, muO, kPi, lamI, muI, aa]}};
+T0LMN[n_] := Module[{ts = TsphClean[n, kPo, kSo, lamO, muO, kPi, kSi, lamI, muI, aa],
+    tt = Ttoroidal[n, kSo, muO, kSi, muI, aa]},
+   {{ts[[1, 1]], 0, ts[[1, 2]]}, {0, tt, 0}, {ts[[2, 1]], 0, ts[[2, 2]]}}];
+chPos = <|"L" -> 1, "M" -> 2, "N" -> 3|>;
+T0entry[{n1_, m1_, c1_}, {n2_, m2_, c2_}] :=
+  If[n1 == n2 && m1 == m2, If[n1 == 0, T0LMN[0][[1, 1]], T0LMN[n1][[chPos[c1], chPos[c2]]]], 0];
+T0mat = Table[T0entry[idx[[i]], idx[[j]]], {i, nDim}, {j, nDim}];
+Imat = IdentityMatrix[nDim];
+Tcoll = T0mat . Inverse[Imat - G0vec . T0mat];
+isoDev = Max[Abs[Flatten[(T0mat . Inverse[Imat - (0 G0vec) . T0mat]) - T0mat]]];
+finite = AllTrue[Flatten[Tcoll], (NumberQ[#] && Abs[#] < 1.*^6) &];
+coupling = Norm[Flatten[Tcoll - T0mat]]/Norm[Flatten[T0mat]];
+sig[{n_, m_, c_}] := (-1)^(n + m); conjIdx[{n_, m_, c_}] := {n, -m, c};
+J0 = Table[If[idx[[i]] == conjIdx[idx[[k]]], sig[idx[[k]]], 0], {i, nDim}, {k, nDim}];
+Lpos = Flatten[Position[idx, {_, _, "L"}]];
+recLL = Max[Abs[Flatten[J0[[Lpos, Lpos]] . G0vec[[Lpos, Lpos]] . J0[[Lpos, Lpos]] - Transpose[G0vec[[Lpos, Lpos]]]]]];
+(* undamped eta-independence of a few G0^vec entries *)
+G0e[eta_, p_] := Switch[p[[1]],
+   "L", g0LLk[p[[4]], p[[5]], p[[2]], p[[3]], Function[{q, s}, DstructU[q, s, 0.9, eta]]],
+   _, g0MNblock[p[[1]], p[[2]], p[[3]], p[[4]], p[[5]], p[[6]], kSr, Function[{q, s}, DstructU[q, s, 1.5, eta]]]];
+g0EtaPairs = {{"L", 1, 0, 1, 0, 0}, {"M", 1, 0, "M", 1, 0}, {"N", 1, 1, "M", 2, -1}, {"N", 2, 0, "N", 1, 0}};
+g0Eta = Max[Table[Abs[G0e[0.7, p] - G0e[1.15, p]], {p, g0EtaPairs}]];
+Print["  [6] collective: iso-limit dev = ", ScientificForm[isoDev, 3], ", finite = ", finite,
+   ", coupling = ", ScientificForm[coupling, 3], " -> ",
+   If[isoDev < 1.*^-12 && finite && coupling > 1.*^-6, "PASS", "FAIL"]];
+Print["  [7] undamped L-block reciprocity = ", ScientificForm[recLL, 3],
+   " -> ", If[recLL < 1.*^-9, "PASS", "FAIL"]];
+Print["  [8] undamped G0^vec eta-independence = ", ScientificForm[g0Eta, 3],
+   " -> ", If[g0Eta < 1.*^-6, "PASS", "FAIL"]];
+
+(* ============================================================================
+   Task 4 Step 3: Dump JSON reference
+   ============================================================================ *)
+Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneKambeVector_reference.json",
+  <|"params" -> <|"aL" -> aL, "kx" -> kx, "ky" -> ky, "kappaP" -> 0.9, "kappaS" -> 1.5,
+      "eta" -> etaU, "rho0" -> rho0, "radP" -> radP, "dext" -> dext, "Nmax" -> Nmax, "LradB" -> LradB|>,
+    "idx" -> Map[{#[[1]], #[[2]], #[[3]]} &, idx],
+    "G0vec" -> Map[reim, G0vec, {2}],
+    "recip_resid" -> N[recLL], "coupling" -> N[coupling], "iso_dev" -> N[isoDev]|>];
+Print["  wrote IntraPlaneKambeVector_reference.json (G0^vec ", nDim, "x", nDim, ")"];
