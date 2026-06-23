@@ -4,6 +4,14 @@
 **Plan:** `IntraPlaneFoldyLax_Plan.md` — Phase 3b (undamped G0 + energy balance), **cycle 1 of 3**.
 **Status:** design approved; spec for implementation.
 
+**Strategic framing (2026-06-23, per Tod).** Route A is the *standard* Kambe / layer-KKR multipole
+structure constant — textbook-established, hence trustworthy as an **independent ground-truth reference**.
+It is built now so that a LATER investigation can validate the thesis's own **non-standard `z/x/y`-split
+spectral lattice propagator (§3.3)** against it: the thesis method is expected to be much faster, and Route
+A is the rigorous yardstick to certify it. Source of the `D[q,s]` formulas: **Kambe (1967) / layer-KKR
+literature (Pendry/Modinos/Williams), NOT thesis §3.3** (§3.3 implements the spectral `D_z Q^z D_z^T`
+propagator, which is the future target, not the multipole structure constants).
+
 ## 1. Goal & framing
 
 Compute the **undamped** (`κ` real, no artificial absorption) planar lattice **structure constants**
@@ -53,11 +61,12 @@ in `|R|` (`~ e^{-η²|R|²}`). Reduces, for `q=0`, to TB2's `ewaldReal`.
 The `q=s=0` self/forward contribution from the `R→0` regularisation of the split (the
 `erfc`-complementary constant of the scalar Ewald). Nonzero only for `q=s=0`.
 
-The exact closed forms come from the Kambe (1967) layer-KKR formulas and the thesis §3.3
-(`GRepresentations.tex`, "Lattice propagator representations") / the focused note
-`LatexPDFs/EwaldIntraPlanePropagator/EwaldIntraPlanePropagator.tex`; the `q=0` case is pinned by the
-already-validated `ewaldTotal`. The implementer derives the per-`q` `Y_q` factors and incomplete-Γ
-arguments from those sources and validates against the gates below.
+The exact closed forms are the **standard layer-KKR structure constants** (Kambe 1967; Pendry,
+*Low Energy Electron Diffraction*; Modinos; Williams & Maradudin) — NOT from thesis §3.3, which gives the
+spectral propagator instead. The `q=0` scalar case is pinned by the already-validated `ewaldTotal` (TB2).
+The plan transcribes the specific layer-KKR `D^recip`/`D^real`/`D^(0)` expressions (the `Y_q` factor of the
+order direction, the incomplete-Γ arguments, the prefactors) and the gates below verify the transcription;
+η-independence in particular cannot be satisfied by a mis-transcribed formula.
 
 ## 3. Deliverables
 
