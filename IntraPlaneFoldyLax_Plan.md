@@ -31,7 +31,7 @@ stratified background. **No CPA / effective-medium homogenisation is used.**
 | Pillar | Object | Status |
 |---|---|---|
 | 1 | Single-site `T0` (full-wave sphere scattering operator) | **DONE** `Mathematica/CartesianT0.nb`, reciprocity-verified 1e-18 |
-| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **Phase 2 COMPLETE** — Phases 0-1 done; Phase 2 (a)-(f) done (see Progress log); Phase 3 (R/T projection) next |
+| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **Phases 0-1, 2(a)-(f), 3a, 3b(1-2) DONE**; **resume at Phase 3b cycle 3** (energy balance `\|R\|²+\|T\|²=1` on the undamped `G0^vec`) |
 | 3 | Kennett vertical recursion on the stratified background | EXISTS `cubic_scattering/kennett_layers.py` |
 
 ```mermaid
@@ -206,9 +206,10 @@ Project the planar collective scattering onto the up/down P-SV-SH plane waves at
   incident-bridge **analytic continuation** for evanescent `k` (`Conjugate[Yv[n,m,k]] -> (-1)^m Yv[n,-m,k]`,
   the post-critical bug), the project-frame `(z,x,y)` + `toSph` permutation into the bridge, the `latSrc`
   memoisation, and `p=1e-6` for "normal" (polar-axis azimuth singularity). See [[project-intraplane-layer-rt]].
-- **Phase 3b (next):** the lossless energy balance `|R|^2+|T|^2=1` — needs the **undamped** vector `G0`
-  (Ewald/Kambe; the Phase-2 damping `Im κ=0.25` is artificial loss that preserves reciprocity but breaks
-  energy). Symplectic reciprocity already holds; energy is the remaining acceptance criterion. Three cycles:
+- **Phase 3b (cycles 1–2 DONE; cycle 3 is the resume point):** the lossless energy balance `|R|^2+|T|^2=1`
+  — needs the **undamped** vector `G0` (Ewald/Kambe; the Phase-2 damping `Im κ=0.25` is artificial loss that
+  preserves reciprocity but breaks energy). Symplectic reciprocity already holds; energy is the remaining
+  acceptance criterion. Three cycles:
   - **cycle 1 DONE** 2026-06-23 (`Mathematica/IntraPlaneKambe.wl` + `.nb`,
     `cubic_scattering/tests/test_intraplane_kambe.py`): the undamped **scalar** multipole structure
     constants `D[q,s]` (`q=0..6`) via **multipole projection of the validated scalar Ewald field** —
@@ -236,10 +237,15 @@ Project the planar collective scattering onto the up/down P-SV-SH plane waves at
     residual); (b) `T0LMN` must call `TsphClean[n,kPo,kSo,lamO,muO,kPi,kSi,lamI,muI,aa]` /
     `Ttoroidal[n,kSo,muO,kSi,muI,aa]` with the `CartesianT0.wl` globals (the plan had a short arg list).
     See [[project-undamped-vector-g0]], [[project-undamped-kambe-structure-constants]].
-  - **cycle 3** (now unblocked): the lossless **energy balance** `|R|²+|T|²=1` for the Phase-3a layer R/T(p)
-    built on the undamped `G0^vec` (with the thesis ε / Kennett flux normalisation). Requires replacing the
-    Phase-2 damped `G0` with the cycle-2 undamped `G0^vec` in the RT projection (`IntraPlaneRT.wl`) and
-    verifying `|R|²+|T|²=1` across normal / sub-critical / post-critical `p`.
+  - **cycle 3 — ◀ RESUME HERE** (unblocked by cycle 2): the lossless **energy balance** `|R|²+|T|²=1` for the
+    Phase-3a layer R/T(p) built on the undamped `G0^vec` (with the thesis ε / Kennett flux normalisation).
+    Requires replacing the Phase-2 damped `G0` with the cycle-2 undamped `G0^vec` (`Mathematica/IntraPlaneKambeVector.wl`
+    / `IntraPlaneKambeVector_reference.json`) in the RT projection (`Mathematica/IntraPlaneRT.wl`) and verifying
+    `|R|²+|T|²=1` across normal / sub-critical / post-critical `p`. Inputs ready: undamped scalar `D[q,s]`
+    (cycle 1) and undamped vector `G0^vec` 25×25 at `Nmax=2` (cycle 2); thesis ε-eigenvector R/T(p) projection
+    (Phase 3a, [[project-intraplane-layer-rt]]). Suggested entry: brainstorm → spec → plan → subagent-driven,
+    same as cycles 1–2. **Open question to settle first:** whether energy balance holds at `Nmax=2` or needs a
+    higher multipole truncation / more `p`-samples (cf. the Phase 3a up-down truncation note below).
 
 *Original accept (revised):* reflection reciprocity in the thesis symplectic form (above) — the plain
 `Tu=Td^T`/`Rd` symmetric is the codebase-Kennett (velocity-weighted) convention, which differs from the
