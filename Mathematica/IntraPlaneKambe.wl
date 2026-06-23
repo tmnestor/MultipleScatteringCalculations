@@ -22,10 +22,16 @@ ewReal3[kappa_, r_, eta_, Rc_] := (1/(8 Pi)) Total[Flatten[Table[
       (Exp[I aL (kx i + ky j)]/d) Sum[Exp[s I kappa d] Erfc[d eta + s I kappa/(2 eta)], {s, {-1, 1}}]],
      {i, -Rc, Rc}, {j, -Rc, Rc}], 1]];
 
-(* damped direct 3D lattice GF (ground truth for the projection-method gate) *)
+(* bare scalar GF self-term g(r) = e^{i kappa |r|}/(4 Pi |r|) — the R=0 site, EXCLUDED from
+   the structure-constant sum (Sum_{R!=0}); it is the singular h_0 self-field, not regular-
+   multipole expandable, so it must be removed before the j_q projection (cf. TB2 gLatField/gK). *)
+gK[kappa_, rn_] := Exp[I kappa rn]/(4 Pi rn);
+
+(* damped direct 3D lattice GF over R!=0 (ground truth for the projection-method gate) *)
 ewDirect3[kappa_, r_, Lbig_] := Total[Flatten[Table[
-     With[{d = Sqrt[(r[[1]] - aL i)^2 + (r[[2]] - aL j)^2 + r[[3]]^2]},
-      Exp[I kappa d]/(4 Pi d) Exp[I aL (kx i + ky j)]], {i, -Lbig, Lbig}, {j, -Lbig, Lbig}], 1]];
+     If[i == 0 && j == 0, 0,
+      With[{d = Sqrt[(r[[1]] - aL i)^2 + (r[[2]] - aL j)^2 + r[[3]]^2]},
+       Exp[I kappa d]/(4 Pi d) Exp[I aL (kx i + ky j)]]], {i, -Lbig, Lbig}, {j, -Lbig, Lbig}], 1]];
 
 (* K_n = k_par + G ; kz = sqrt(kappa^2 - |K_n|^2) (Im kz >= 0); z-dependent erfc pair.
    At z=0 this reduces to TB2 ewaldRecip: (I/(2 Aarea)) (Exp[I kpg.rho]/kz) Erfc[kz/(2 I eta)]. *)
@@ -40,7 +46,10 @@ ewRecip3[kappa_, r_, eta_, Gc_] := (I/(4 Aarea)) Total[Flatten[Table[
           Exp[-I kz Abs[z]] Erfc[ Abs[z] eta + kz/(2 I eta)]
         + Exp[ I kz Abs[z]] Erfc[-Abs[z] eta + kz/(2 I eta)])]],
      {m, -Gc, Gc}, {n, -Gc, Gc}], 1]];
-ewTot3[kappa_, r_, eta_, Rc_, Gc_] := ewReal3[kappa, r, eta, Rc] + ewRecip3[kappa, r, eta, Gc];
+(* ewReal3 + ewRecip3 = Sum_{all R} g(r-R); subtract the R=0 self-term gK to get Sum_{R!=0},
+   the regular field projected for the structure constants (matches TB2 ewaldTotal - gK). *)
+ewTot3[kappa_, r_, eta_, Rc_, Gc_] :=
+  ewReal3[kappa, r, eta, Rc] + ewRecip3[kappa, r, eta, Gc] - gK[kappa, Sqrt[r . r]];
 
 (* ---- self-verify: eta-independence (kappa real), damped-direct agreement ---- *)
 SeedRandom[20260623];
@@ -54,3 +63,35 @@ Print["  [1] eta-independence (kappa real, z!=0) = ", ScientificForm[etaIndep, 3
    " -> ", If[etaIndep < 1.*^-8, "PASS", "FAIL"]];
 Print["  [2] Ewald vs damped direct 3D sum = ", ScientificForm[agree, 3],
    " -> ", If[agree < 1.*^-6, "PASS", "FAIL"]];
+
+(* ============================================================================ *)
+(* Task 2: multipole projection -> undamped D[q,s]                               *)
+(* ============================================================================ *)
+
+Needs["NumericalDifferentialEquationAnalysis`"];
+glN = GaussianQuadratureWeights[16, -1, 1]; nPhi = 32; rho0 = 0.5;
+sphPts = Flatten[Table[Module[{u = glN[[i, 1]], ph = 2 Pi (j - 1)/nPhi, st = Sqrt[1 - glN[[i, 1]]^2]},
+     {rho0 {st Cos[ph], st Sin[ph], u}, glN[[i, 2]] (2 Pi/nPhi)}], {i, Length[glN]}, {j, nPhi}], 1];
+Yf[q_, s_, d_] := SphericalHarmonicY[q, s, ArcCos[d[[3]]/Sqrt[d . d]], ArcTan[d[[1]], d[[2]]]];
+(* G(r) = i kappa Sum D̄[q,s] j_q(kappa r) Y_q^s ; project: D̄[q,s] = (1/(i kappa j_q)) ∮ G conj(Y_q^s);
+   then D_struct[q,s] = (-1)^s D̄[q,-s]. *)
+Dproj[fieldFn_, q_, s_, kappa_] := Module[{integ},
+  integ = Total[Map[#[[2]] fieldFn[#[[1]]] Conjugate[Yf[q, -s, #[[1]]]] &, sphPts]];
+  (-1)^s integ/(I kappa sj[q, kappa rho0])];
+
+DstructUndamped[q_, s_, eta_] := Dproj[Function[r, ewTot3[1.5, r, eta, 6, 6]], q, s, 1.5];
+DstructDirect[q_, s_, kappa_, Lr_] := Module[{ij, iv, jv, rn, ph, bl},
+   ij = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -Lr, Lr}, {j, -Lr, Lr}], 1];
+   iv = ij[[All, 1]]; jv = ij[[All, 2]]; rn = aL Sqrt[iv^2 + jv^2]; ph = ArcTan[iv, jv];
+   bl = Exp[I aL (kx iv + ky jv)];
+   Total[sh[q, kappa rn] SphericalHarmonicY[q, s, Pi/2, ph] bl]];
+Nq = 6;
+(* method gate: at DAMPED kappa, projected == direct structure constant *)
+methResid = Max[Table[Abs[Dproj[Function[r, ewDirect3[1.5 + 0.25 I, r, 40]], q, s, 1.5 + 0.25 I]
+     - DstructDirect[q, s, 1.5 + 0.25 I, 18]], {q, 0, Nq}, {s, -q, q}]];
+(* undamped eta-independence *)
+undEta = Max[Table[Abs[DstructUndamped[q, s, 0.7] - DstructUndamped[q, s, 1.15]], {q, 0, Nq}, {s, -q, q}]];
+Print["  [3] projection method (damped: projected == direct D) = ", ScientificForm[methResid, 3],
+   " -> ", If[methResid < 1.*^-4, "PASS", "FAIL"]];
+Print["  [4] undamped D[q,s] eta-independence = ", ScientificForm[undEta, 3],
+   " -> ", If[undEta < 1.*^-6, "PASS", "FAIL"]];
