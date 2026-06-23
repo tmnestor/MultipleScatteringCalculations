@@ -149,6 +149,27 @@ def test_L_block_matches(dump):
 
 
 def test_dump_invariants(dump):
-    assert dump["iso_dev"] < 1e-12
-    assert dump["recip_resid"] < 1e-9
-    assert dump["coupling"] > 1e-6
+    """Structural-presence and magnitude-bound checks on the dump's reported invariants.
+
+    Verifies that each key is present, is a finite real number, and falls within
+    physics-meaningful bounds.  The substantive cross-language L-block validation
+    lives in ``test_L_block_matches``; these checks guard the dump's summary
+    statistics only.
+    """
+    for key in ("iso_dev", "recip_resid", "coupling"):
+        assert key in dump, f"dump missing key '{key}'"
+        assert math.isfinite(dump[key]), f"dump['{key}'] = {dump[key]!r} is not finite"
+
+    iso_dev = dump["iso_dev"]
+    assert iso_dev >= 0.0, f"iso_dev must be non-negative, got {iso_dev}"
+    assert iso_dev < 1e-12, f"iso_dev = {iso_dev} exceeds threshold 1e-12"
+
+    recip_resid = dump["recip_resid"]
+    assert recip_resid >= 0.0, f"recip_resid must be non-negative, got {recip_resid}"
+    assert recip_resid < 1e-9, f"recip_resid = {recip_resid} exceeds threshold 1e-9"
+
+    coupling = dump["coupling"]
+    assert 0.001 < coupling < 1.0, (
+        f"coupling = {coupling} outside expected band (0.001, 1.0); "
+        "actual collective effect should be ~0.02"
+    )
