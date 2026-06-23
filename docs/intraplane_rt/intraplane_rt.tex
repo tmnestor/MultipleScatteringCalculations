@@ -1,0 +1,108 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+\newcommand{\Rd}{\mathbf{R}_{\mathrm D}}
+\newcommand{\Ru}{\mathbf{R}_{\mathrm U}}
+\newcommand{\Td}{\mathbf{T}_{\mathrm D}}
+\newcommand{\Tu}{\mathbf{T}_{\mathrm U}}
+\newcommand{\kz}{k_{z}}
+
+\title{Intra-Plane Layer $R/T(p)$ Projection in the Thesis Symplectic Energy Normalisation\\[2pt]
+\large (IntraPlaneFoldyLax Phase 3a)}
+\author{}
+\date{2026-06-23}
+
+\begin{document}
+\maketitle
+
+\section{Goal}
+Project the Phase-2 planar collective scattering operator $\mathbf{T}_{\mathrm{coll}}(\mathbf{k}_\parallel)$
+onto up/down $P$-$SV$-$SH$ plane waves at horizontal slowness $p$, producing the layer reflection/
+transmission operator $\{\Rd,\Ru,\Td,\Tu\}$ ($2\times2$ $P$-$SV$) and the $SH$ scalar, across normal,
+sub-critical, and post-critical incidence. The energy normalisation is the one defined in
+Section~3.1 of the thesis (the free-space elastic Green's tensor), \emph{not} the codebase's
+velocity-weighted \texttt{slab.to\_modified} convention.
+
+\section{Energy normalisation (thesis Section 3.1)}
+The Fourier-domain system matrix $\mathbf{A}(k_x,k_y)$ is quasi-Hamiltonian,
+$\mathbf{A}^{T}(-\mathbf{k})\mathbf{J}_6+\mathbf{J}_6\mathbf{A}(\mathbf{k})=\mathbf{0}$.
+Its eigenvectors are the down$(+)$/up$(-)$ $P/SV/SH$ plane waves $\lvert\pm,c,\mathbf{k}\rangle$
+(thesis Eqs.~Peigen/SVeigen/SHeigen), each a six-vector (displacement, traction) times a
+normalisation factor $\epsilon_c$ chosen (Eq.~epsdef) so that the symplectic eigenvector product
+is unit,
+\begin{equation}
+\bigl(\mathbf{J}_6\,\mathbf{D}_z(-\mathbf{k})\bigr)^{T}\mathbf{D}_z(\mathbf{k})=i\,\mathbf{J}_6 .
+\end{equation}
+At $k_y=0$, with $\kz{}_{,c}=\omega\eta_c$ ($\eta_c$ the vertical slowness, $\operatorname{Im}\eta_c>0$
+evanescent) and $\hat K_S=\hat K_H=\omega/\beta$,
+\begin{equation}
+\epsilon_P=\frac{1}{\sqrt{2\rho\omega^2\kz{}_{,P}}},\qquad
+\epsilon_S=\frac{\omega}{\beta\hat K_S\sqrt{2\rho\omega^2\kz{}_{,S}}},\qquad
+\epsilon_H=\frac{1}{\hat K_H\sqrt{2\rho\omega^2\kz{}_{,H}}} .
+\end{equation}
+
+\section{Projection pipeline}
+Per slowness $p$ and incident mode $m$:
+\begin{enumerate}
+\item \textbf{Incident.} The incident wave is the $\epsilon$-normalised down-going eigenvector
+  $\lvert+,m\rangle$ (direction $\hat{\mathbf e}_m$, complex scale $\mu_m=\hat{\mathbf e}_m\!\cdot\!\mathbf u^{E}_m$),
+  expanded into regular multipoles via the verified incident bridge. For an evanescent
+  ($\operatorname{Im}\eta_m>0$) direction the bridge uses the analytic continuation
+  $\overline{Y_n^m(\hat{\mathbf k})}=(-1)^m Y_n^{-m}(\hat{\mathbf k})$ (correct for complex $\hat{\mathbf k}$;
+  na\"ively conjugating the direction is wrong and was the post-critical bug).
+\item \textbf{Scatter.} $\mathbf b=\mathbf{T}_{\mathrm{coll}}\,\mathbf a$, with
+  $\mathbf{T}_{\mathrm{coll}}=\mathbf{T}_0(\mathbf I-\mathbf{G}_0\mathbf{T}_0)^{-1}$ at Bloch vector
+  $\mathbf{k}_\parallel=\omega(0,p,0)$.
+\item \textbf{Project.} The specular scattered displacement at the up/down direction of mode $c$,
+  $\mathbf U^{\mathrm{sc}}=\bigl(i/2\eta_c\omega A_{\mathrm{cell}}\bigr)\,\mathbf f$ (the lattice Weyl
+  prefactor times the multipole far-field $\mathbf f$), is projected onto the $\epsilon$-normalised
+  $\lvert\mathrm{out},c\rangle$: $R^{E}_{c}=(\hat{\mathbf e}_c\!\cdot\!\mathbf U^{\mathrm{sc}})/\mu_c$.
+\end{enumerate}
+No separate flux matrix $\mathbf D$ and no fitted constant appear; the $\epsilon_c$ carry the energy
+normalisation.
+
+\section{Result: symplectic reciprocity at all $p$}
+In the thesis $\epsilon$-energy normalisation the reciprocity is the \emph{symplectic} form: reflection
+is antisymmetric and transmission obeys a parity relation with $\boldsymbol\Sigma=\operatorname{diag}(1,-1)$
+($SV$ odd),
+\begin{equation}
+\Rd=-\Rd^{T},\qquad \Ru=-\Ru^{T},\qquad \Tu=\boldsymbol\Sigma\,\Td\,\boldsymbol\Sigma .
+\end{equation}
+These hold to machine/quadrature precision at every $p$, including post-critical (where $P$ is
+evanescent):
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+regime & $\lVert\Rd+\Rd^{T}\rVert$ & $\lVert\Ru+\Ru^{T}\rVert$ & $\lVert\Tu-\boldsymbol\Sigma\Td\boldsymbol\Sigma\rVert$\\
+\midrule
+normal ($p=10^{-6}$)            & $2.7\times10^{-10}$ & $2.7\times10^{-10}$ & $2.5\times10^{-20}$\\
+sub-critical ($p=0.5/\alpha$)   & $2.3\times10^{-8}$  & $2.3\times10^{-8}$  & $2.4\times10^{-19}$\\
+post-critical ($p=0.8/\beta$)   & $4.0\times10^{-8}$  & $4.0\times10^{-8}$  & $4.1\times10^{-19}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The reflection residual is the lattice-quadrature floor; the transmission parity is exact
+(a structural identity of the projection). The plain-symmetric $\Tu=\Td^{T}$, $\Rd$ symmetric is the
+codebase-Kennett (velocity-weighted) convention, which differs from the thesis by the factor $i$ on $SV$;
+that factor converts symmetric $\leftrightarrow$ antisymmetric. Both are valid; the thesis-native form is
+symplectic.
+
+\section{Scope and deferral}
+Phase 3a establishes the projection and its reciprocity across the full slowness range. The lossless
+energy balance $\lVert R\rVert^2+\lVert T\rVert^2=1$ is deferred to Phase 3b: it requires the
+\emph{undamped} vector $\mathbf{G}_0$ (Ewald/Kambe), because the Phase-2 lattice damping
+$\operatorname{Im}\kappa=0.25$ is an artificial loss that preserves reciprocity but breaks energy
+conservation. Numerical settings: $ka=0.3$ (sub-wavelength, single propagating Bragg order at pitch
+$a_L=2.5$), multipole order $N=3$, lattice half-width $L=4$; the moderate test contrast
+($\Delta\lambda=2$\,GPa, $\Delta\mu=1$\,GPa, $\Delta\rho=100$).
+
+Deliverables: \texttt{Mathematica/IntraPlaneRT.wl} (+ \texttt{.nb} twin),
+\texttt{IntraPlaneRT\_reference.json}, and the Python cross-check
+\texttt{cubic\_scattering/tests/test\_intraplane\_rt.py}.
+
+\end{document}

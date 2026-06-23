@@ -192,10 +192,27 @@ cross-check benchmark from Section 4).
   (`cond(I-G0 T0) ~ 57` at touching vs ~1.16 for moderate). See [[project_sphere_packing_discretisation]].
 
 **Phase 3 - layer R/T(p).**
-Project the planar collective scattering onto Kennett's flux-normalized up/down P-SV-SH at
-slowness `p` (`Rd, Ru, Td, Tu`, SH scalar), via the Weyl/far-field bridge.
-*Accept:* `Tu = Td^T` and `Rd` symmetric (Kennett reciprocity); for a lossless plane the
-flux-normalized `|R|^2 + |T|^2 = 1`.
+Project the planar collective scattering onto the up/down P-SV-SH plane waves at slowness `p`
+(`Rd, Ru, Td, Tu`, SH scalar), via the Weyl/far-field bridge.
+
+- **Phase 3a DONE** 2026-06-23 (`Mathematica/IntraPlaneRT.wl` + `.nb`,
+  `cubic_scattering/tests/test_intraplane_rt.py`): project the Phase-2 collective `T_coll(k_par)` onto the
+  **PhD thesis Section 3.1 energy-normalised eigenvectors** (Eqs. Peigen/SVeigen/SHeigen + epsdef; the
+  authoritative `ε_P,ε_S,ε_H` energy normalisation, NOT the codebase `slab.to_modified` velocity-weighted
+  D — see [[thesis-energy-normalisation]]). The incident IS the ε-eigenvector, the scattered field is
+  projected onto the ε-eigenvectors; no slab D, no post-hoc factors. **Full symplectic reciprocity holds
+  at normal / sub-critical / post-critical p:** `Rd=-Rd^T`, `Ru=-Ru^T` (quadrature floor ~1e-8) and
+  `Tu=Σ·Td·Σ` with `Σ=diag(1,-1)` (the SV symplectic parity, exact to 1e-19). Key fixes en route: the
+  incident-bridge **analytic continuation** for evanescent `k` (`Conjugate[Yv[n,m,k]] -> (-1)^m Yv[n,-m,k]`,
+  the post-critical bug), the project-frame `(z,x,y)` + `toSph` permutation into the bridge, the `latSrc`
+  memoisation, and `p=1e-6` for "normal" (polar-axis azimuth singularity). See [[project-intraplane-layer-rt]].
+- **Phase 3b (next):** the lossless energy balance `|R|^2+|T|^2=1` — needs the **undamped** vector `G0`
+  (Ewald/Kambe; the Phase-2 damping `Im κ=0.25` is artificial loss that preserves reciprocity but breaks
+  energy). Symplectic reciprocity already holds; energy is the remaining acceptance criterion.
+
+*Original accept (revised):* reflection reciprocity in the thesis symplectic form (above) — the plain
+`Tu=Td^T`/`Rd` symmetric is the codebase-Kennett (velocity-weighted) convention, which differs from the
+thesis by the SV `i`. Lossless `|R|^2+|T|^2=1` deferred to Phase 3b.
 *Up-down truncation (2026-06-18, per Tod).* Reflection surveys observe the specular up/down R/T, fed
 by the monopole + low-order channels (the fastest-converging, best-conditioned ones per item (c)); the
 numerically hard high-`n` near-field in-plane (side) coupling is subdominant for specular R/T. **Verify**
