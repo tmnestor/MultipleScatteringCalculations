@@ -1,6 +1,6 @@
 # Intra-Plane Foldy-Lax: Planar Multiple Scattering of Spherical Voxels into Layer R/T
 
-**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; Phase 2 items (a),(b),(c),(d),(f) DONE, (e) remains (reframed -> sphere-packing discretisation error). Date: 2026-06-18.
+**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; **Phase 2 COMPLETE** items (a)-(f) DONE (item (e) closed 2026-06-23, sphere-packing discretisation error). Phases 3-5 not started. Date: 2026-06-23.
 **Representation: full spherical-multipole (Cruzan/Stein), all `n` (option B, DECIDED).**
 
 > **Progress log (2026-06-18, branch `phase0-intraplane-translation`).** Each phase below
@@ -8,11 +8,11 @@
 > residuals are fresh-run.
 > - **Phase 0 DONE** `212f84b` — elastic translation-addition operator.
 > - **Phase 1 DONE** `e582c39` `470cb11` `ef10221` — Ewald planar lattice sum `G0(k_par)`.
-> - **Phase 2 IN PROGRESS** `41557d1` `9044141` `49dfb9c` `bfbc6a6` `090ed5c` `78716e0` `6c52a7e` `81887c1` — single-site
+> - **Phase 2 COMPLETE** `41557d1` `9044141` `49dfb9c` `bfbc6a6` `090ed5c` `78716e0` `6c52a7e` `81887c1` — single-site
 >   `T0` + Foldy-Lax scaffold + monopole collective; vector translation as an explicit `L/M/N` matrix `W(d)`;
 >   two-voxel direct Foldy-Lax (a); lattice-summed multi-channel vector `G0(k_par)` (b); collective reciprocity
 >   via the symplectic-J metric reconciliation (d); Python cross-check + `.nb` twins (f); multipole-order +
->   packing-density convergence study (c). Remaining: (e) (reframed -> sphere-packing discretisation error).
+>   packing-density convergence study (c); **sphere-packing discretisation error (e), closed 2026-06-23**.
 > - **Phases 3-5 not started.**
 >
 > See the per-phase *Status* notes in Section 6 for residuals and the remaining Phase-2 items.
@@ -31,7 +31,7 @@ stratified background. **No CPA / effective-medium homogenisation is used.**
 | Pillar | Object | Status |
 |---|---|---|
 | 1 | Single-site `T0` (full-wave sphere scattering operator) | **DONE** `Mathematica/CartesianT0.nb`, reciprocity-verified 1e-18 |
-| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **IN PROGRESS** — Phases 0-1 done; Phase 2 (a),(b),(c),(d),(f) done, (e) remains/reframed (see Progress log) |
+| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **Phase 2 COMPLETE** — Phases 0-1 done; Phase 2 (a)-(f) done (see Progress log); Phase 3 (R/T projection) next |
 | 3 | Kennett vertical recursion on the stratified background | EXISTS `cubic_scattering/kennett_layers.py` |
 
 ```mermaid
@@ -175,13 +175,21 @@ cross-check benchmark from Section 4).
   `SphericalHankelH1`. Python cross-check `cubic_scattering/tests/test_intraplane_convergence.py`:
   independent closed-form recompute matches the monopole to **8.7e-18**, plus the packing-density trend
   and the vector convergence. `.nb` twin via `makeIntraPlaneNotebooks.wl`.
-- **Remaining:** (e) **sphere-packing discretisation error** vs the space-filling cube slab.
-  *Reframed (2026-06-18, per Tod):* spheres cannot fill space (planar packing fraction `phi < ~0.52`
-  even at touching), so an exact match to `slab_scattering` is impossible (sphere != cube) and the R/T
-  projection is Phase 3. The research deliverable is to **quantify the irreducible geometric
-  discretisation error** of the sphere packing against the cube tiling (`slab_scattering`, `phi=1`,
-  space-filling) as ground truth: Rayleigh limit first, layer response vs `phi` and contrast, with a
-  volume-renormalised-sphere correction. See [[project_sphere_packing_discretisation]].
+- **(e) DONE** 2026-06-23 (`Mathematica/IntraPlaneDiscretisation.wl` + `.nb`,
+  `cubic_scattering/tests/test_intraplane_discretisation.py`): **sphere-packing discretisation error**
+  vs the space-filling cube slab, Rayleigh limit. Two stages. **Stage A (single-site shape factor):** a
+  diluted sphere and a space-filling cube of the *same* contrast scatter nearly identically per unit
+  volume (the effective-contrast extraction normalises by volume) -- the irreducible shape error is
+  <=0.4% (moderate) to ~3.5% (negative -60%), growing with `ka` and contrast. **Stage B (layer R_PP):**
+  the `Delta->Delta/phi` renormalisation is a *layer-level* correction (`layer ~ phi*single_site(Delta/phi)`);
+  it collapses the raw ~48% dilution error (`1-phi`, phi=pi/6) to the irreducible shape + nonlinear-mixing
+  residual -- **0.38% (weak), 3.95% (moderate)** vs `kennett_reference_rpp` for the cube layer. **The
+  collective multiple-scattering correction is NEGLIGIBLE at Rayleigh** (`r_ms-1` <= 2e-4 for moderate
+  even at touching; the renormalised error is aL-independent) -- the discretisation error is shape +
+  dilution, NOT inter-sphere multiple scattering (cf. [[t27-lattice-verdict]]). **Renorm validity floor:**
+  `Delta->Delta/phi` requires `|Delta| < phi*background`; the **-60% contrast is beyond it** (`Delta/phi ~ -115%`
+  pushes the inner moduli/density negative, flagged unphysical in the dump) and is also ill-conditioned
+  (`cond(I-G0 T0) ~ 57` at touching vs ~1.16 for moderate). See [[project_sphere_packing_discretisation]].
 
 **Phase 3 - layer R/T(p).**
 Project the planar collective scattering onto Kennett's flux-normalized up/down P-SV-SH at
@@ -232,12 +240,14 @@ single-voxel ground truth; the existing Cartesian cube-slab is the Rayleigh-limi
   (~`log10(cond)` guard digits) or an energy/flux-normalised vector-spherical basis (entries O(1)).
   *Numerical note:* evaluate `h_n^(1)` via `SphericalHankelH1`, never `j_n + i y_n` (which cancels
   catastrophically in the damped far field, where each piece ~ `e^{Im}` but the sum ~ `e^{-Im}`).
-- **Sphere-packing discretisation error (research goal, 2026-06-18, per Tod).** Spheres cannot fill
-  space, so there is an **irreducible geometric error independent of multipole convergence**: the
-  sphere packing is a diluted (`phi < ~0.52`) representation of the target heterogeneity. Quantify it
-  against the **space-filling cube slab** (`slab_scattering`, cubes tile at `phi=1`) as ground truth
-  (Rayleigh limit first; error vs `phi` and contrast; volume-renormalised-sphere correction). This is
-  the reframed item (e). See [[project_sphere_packing_discretisation]].
+- **Sphere-packing discretisation error. [Quantified, item (e) `IntraPlaneDiscretisation.wl`].** The
+  irreducible geometric error of the diluted (`phi = pi/6`) sphere packing vs the space-filling cube
+  slab, Rayleigh limit. Single-site shape factor <=0.4%-3.5% (volume-normalised, so small); the
+  `Delta->Delta/phi` renormalisation recovers the cube-layer `R_PP` to **0.38% (weak) / 3.95% (moderate)**
+  from the raw ~48% dilution. The collective multiple-scattering term is **negligible at Rayleigh**
+  (`r_ms-1` <= 2e-4), so the error is shape + dilution, not multiple scattering. **Validity floor:** the
+  renorm needs `|Delta| < phi*background`; the -60% case exceeds it (unphysical + ill-conditioned).
+  See [[project_sphere_packing_discretisation]].
 - **Multipole order** is a convergence parameter (not a truncation fork): track `n_max` vs
   packing density and frequency.
 - **RQ1 sub-fork:** fixed-depth-planes + Kennett-between (this plan) versus full 3-D near-field.
