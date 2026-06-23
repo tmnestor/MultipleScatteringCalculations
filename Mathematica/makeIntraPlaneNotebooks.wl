@@ -93,4 +93,15 @@ makeTwin["IntraPlaneRT.wl", "Phase 3a : Layer R/T(p) Projection (thesis symplect
    <> "Energy balance |R|^2+|T|^2=1 is deferred to Phase 3b (needs the undamped G0).  Executable twin: "
    <> "IntraPlaneRT.wl.  Python cross-check: cubic_scattering/tests/test_intraplane_rt.py."];
 
+makeTwin["IntraPlaneKambe.wl", "Phase 3b cycle 1 : Undamped Multipole Structure Constants D[q,s]",
+   "Computes the undamped (kappa real) planar lattice multipole structure constants D[q,s] by "
+   <> "multipole-projecting the validated undamped scalar Ewald field onto regular multipoles on a "
+   <> "small sphere, instead of per-q analytic Kambe forms.  Extends the Phase-1 TB2 scalar Ewald to a "
+   <> "general-z field point (general-z reciprocal half by Poisson summation, reducing to the TB2 z=0 "
+   <> "form), subtracts the R=0 self-term, and projects the regular field G = i kappa Sum Dbar[q,s] "
+   <> "j_q(kappa r) Y_q^s.  Gates: eta-independence (kappa real), agreement with the damped direct 3D "
+   <> "sum, the projection method anchored to the damped direct structure constant, undamped "
+   <> "eta-independence, and undamped G0 reciprocity (exact).  Executable twin: IntraPlaneKambe.wl.  "
+   <> "Python cross-check: cubic_scattering/tests/test_intraplane_kambe.py."];
+
 Print["Phase-2/3 notebook twins generated."];
