@@ -83,4 +83,14 @@ makeTwin["IntraPlaneDiscretisation.wl", "Phase 2 (e) : Sphere-Packing Discretisa
    <> "residual (0.4%/4% weak/moderate); the collective is negligible at Rayleigh; the -60% contrast "
    <> "lies beyond the renorm validity floor.  Executable twin: IntraPlaneDiscretisation.wl."];
 
-Print["Phase-2 notebook twins generated."];
+makeTwin["IntraPlaneRT.wl", "Phase 3a : Layer R/T(p) Projection (thesis symplectic energy normalisation)",
+   "Projects the Phase-2 spherical collective T_coll(k_par) onto the PhD thesis Section 3.1 "
+   <> "eps-normalised P/SV/SH plane-wave eigenvectors (Eqs. Peigen/SVeigen/SHeigen + epsdef), giving the "
+   <> "layer R/T(p) operator (Rd, Ru, Td, Tu 2x2 P-SV + SH scalar) across normal / sub-critical / "
+   <> "post-critical slowness.  The incident IS the eps-eigenvector; the scattered field is projected onto "
+   <> "the eps-eigenvectors (no slab D, no post-hoc factors).  The full symplectic reciprocity holds at "
+   <> "every p: Rd=-Rd^T, Ru=-Ru^T (quadrature ~1e-8) and Tu=Sig.Td.Sig, Sig=diag(1,-1) (exact 1e-19).  "
+   <> "Energy balance |R|^2+|T|^2=1 is deferred to Phase 3b (needs the undamped G0).  Executable twin: "
+   <> "IntraPlaneRT.wl.  Python cross-check: cubic_scattering/tests/test_intraplane_rt.py."];
+
+Print["Phase-2/3 notebook twins generated."];
