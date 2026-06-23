@@ -72,4 +72,15 @@ makeTwin["IntraPlaneConvergence.wl", "Phase 2 (c) : Convergence in Multipole Ord
    <> "tracks the same convergence above the lattice floor.  Executable twin: IntraPlaneConvergence.wl.  "
    <> "Independently cross-checked in Python (cubic_scattering/tests/test_intraplane_convergence.py)."];
 
+makeTwin["IntraPlaneDiscretisation.wl", "Phase 2 (e) : Sphere-Packing Discretisation Error",
+   "The sphere-packing collective monopole in the Rayleigh limit: a re-parametrisation of the item (c) "
+   <> "closed-form collective to Rayleigh ka and the three test contrasts, each Delta->Delta/phi "
+   <> "renormalised (phi = pi/6).  Dumps the dimensionless collective renormalisation "
+   <> "r_ms = mono_coll/mono_single, the spectral radius and the conditioning over (contrast x ka x aL). "
+   <> "Python (cubic_scattering/tests/test_intraplane_discretisation.py) maps r_ms onto the layer "
+   <> "effective contrast and compares the sphere-layer R_PP against the space-filling cube slab: "
+   <> "Delta->Delta/phi collapses the ~48% dilution error to the irreducible shape + nonlinear-mixing "
+   <> "residual (0.4%/4% weak/moderate); the collective is negligible at Rayleigh; the -60% contrast "
+   <> "lies beyond the renorm validity floor.  Executable twin: IntraPlaneDiscretisation.wl."];
+
 Print["Phase-2 notebook twins generated."];

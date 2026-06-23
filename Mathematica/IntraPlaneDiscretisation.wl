@@ -106,6 +106,9 @@ recordFor[c_, ka_, aL_, g0_] := Module[
     "r_ms" -> reim[rms], "coupling" -> N[res["coupling"]],
     "specrad" -> N[res["specrad"]], "cond" -> N[res["cond"]]|>];
 
+(* ============================================================================
+   collective sweep over (contrast x ka x aL): build g0 once per (ka, aL)
+   ============================================================================ *)
 Print["==== Phase 2 item (e) :: sphere-packing collective (Rayleigh) ===="];
 stageB = {};
 Do[
@@ -116,7 +119,9 @@ Do[
   {ka, kaList}, {aL, aLlist}];
 Print["  built ", Length[stageB], " (contrast x ka x aL) collective records"];
 
-(* ---- self-verifying PASS/FAIL on the dumped trends ---- *)
+(* ============================================================================
+   self-verifying PASS/FAIL on the dumped collective trends
+   ============================================================================ *)
 (* [1] collective -> isolated as aL grows (r_ms -> 1 dilute): |r_ms-1| smallest at aL=6 *)
 modKa = Select[stageB, #["name"] == "moderate" && #["ka"] == 0.1 &];
 rmsDev = Map[Abs[(#["r_ms"][[1]] + I #["r_ms"][[2]]) - 1] &, modKa];   (* aL desc: 6..2.2 *)
@@ -129,7 +134,9 @@ specOK = specSeq == Sort[specSeq];
 Print["  [2] specrad (moderate, ka=0.1, aL desc) = ", Map[ScientificForm[#, 3] &, specSeq]];
 Print["      multiple-scattering strength grows toward touching -> ", If[specOK, "PASS", "FAIL"]];
 
-(* ---- dump JSON (item-f style; complex as [re,im]) ---- *)
+(* ============================================================================
+   dump JSON reference for the Python cross-check (item-f style; complex as [re,im])
+   ============================================================================ *)
 discRef = <|"params" -> <|"alpha" -> alpha0, "beta" -> beta0, "rho0" -> rho0,
      "lam0" -> lam0, "mu0" -> mu0, "dampIm" -> dampIm, "kx" -> kx, "ky" -> ky,
      "phi_touch" -> phiTouch, "ka_list" -> kaList, "aL_list" -> aLlist,

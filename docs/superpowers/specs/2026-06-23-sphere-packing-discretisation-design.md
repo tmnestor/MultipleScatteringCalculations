@@ -54,10 +54,17 @@ involved.
 - **Sphere:** closed-form Mie / Eshelby-sphere effective contrast
   (`Δκ*, Δμ*, Δρ*`) per the validated Mie extraction
   (`Δκ* = -a₀/(C_P k²)`, `Δρ* = i·a₁/(C_P ω²)`, `Δμ* = 3·a₂/(4 C_P k²)`),
-  with contrast pre-scaled `Δ → Δ/φ`.
+  at the **same material contrast `Δ`** (no renormalisation).
 - **Metric:** relative error in each of `(Δκ*, Δμ*, Δρ*)`, per contrast regime.
-  Report both raw (uncorrected, `φ`-diluted) and renormalised, so the spec
-  shows the correction's effect at the single-site level.
+
+  > **Correction (during implementation, 2026-06-23):** `Δ→Δ/φ` is a
+  > **layer-level** correction, not a single-site one — the effective-contrast
+  > extraction already normalises by volume (`C_P = V/4πρα²`), so per unit
+  > volume a sphere and cube of the *same* `Δ` scatter almost identically (that
+  > small residual *is* the shape factor). Applying `Δ→Δ/φ` at a single site
+  > just makes it `1/φ ≈ 1.9×` too strong. The renormalisation therefore lives
+  > in Stage B (`layer ~ φ·single_site(Δ/φ)`), where the `φ` cancels to recover
+  > the cube. Stage A reports the raw shape factor only.
 
 ### Stage B — collective layer R_PP (Mathematica sphere-packing vs Python cube)
 
