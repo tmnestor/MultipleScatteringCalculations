@@ -139,3 +139,56 @@ recW = Max[Table[Abs[reconW[t[[1]], t[[2]], t[[3]], t[[4]], t[[5]], t[[6]], pt, 
      - Wel[t[[1]], t[[2]], t[[3]], t[[4]], t[[5]], t[[6]], pt, kS]], {t, wTestSrc}, {pt, wTestPts}]];
 Print["  [3] coeff_q reconstruction (Sum_q coeff_q h_q Y_q == W) = ", ScientificForm[recW, 3],
    " -> ", If[recW < 1.*^-6, "PASS", "FAIL"]];
+
+(* ============================================================================
+   Task 3: G0^vec block builders + damped-limit method gate
+   ============================================================================ *)
+(* L block: scalar-Gaunt contraction of the scalar structure constant Dfun *)
+g0LLk[n_, m_, nu_, mu_, Dfun_] := 4 Pi (-1)^m Sum[
+   I^(nu + q - n) (-1)^q Dfun[q, m - mu] gaunt[n, m, nu, -mu, q, mu - m], {q, Abs[n - nu], n + nu}];
+(* M/N block: Sum_q coeff_q(kS) * Dfun[q, m-mu] *)
+g0MNblock[cP_, nu_, mu_, c_, n_, m_, kS_, Dfun_] := Module[{cf = coeffq[cP, nu, mu, c, n, m, kS]},
+   Total[KeyValueMap[#2 Dfun[#1, m - mu] &, cf]]];
+
+(* ---- direct damped lattice sum (Phase-2(b) ground truth, wavenumber-parameterized) ----
+   NOTE: the structure-constant radius Ldir (below) MUST equal this direct-sum lattice
+   radius LradB.  g0MNblock/g0LLk contract DstructDirect[..,Ldir]; the ground-truth
+   g0dir/g0LLdir sum srcQuad/betaSep over Rvecs/blochL (radius LradB).  These are two
+   truncations of the SAME damped (Im kappa = 0.25) conditionally-convergent lattice sum,
+   so the damped-limit gate is a term-by-term algebraic identity ONLY when both truncate
+   at the identical radius (verified: matched radius -> ~4e-11; radius 8 vs 18 -> ~1e-2
+   residual truncation gap, which previously failed gates [4]/[5]). *)
+LradB = 8;
+ijLat = Flatten[Table[If[i == 0 && j == 0, Nothing, {i, j}], {i, -LradB, LradB}, {j, -LradB, LradB}], 1];
+Rvecs = Map[{aL #[[1]], aL #[[2]], 0.0} &, ijLat];
+blochL = Map[Exp[I aL (kx #[[1]] + ky #[[2]])] &, ijLat];
+latSrcQuad[c_, n_, m_, kS_] := latSrcQuad[c, n, m, kS] =
+   Total[Table[blochL[[iR]] srcQuad[c, n, m, Rvecs[[iR]], kS], {iR, Length[Rvecs]}]];
+g0dir[cP_, nu_, mu_, c_, n_, m_, kS_] := Switch[cP,
+   "M", projDotF[latSrcQuad[c, n, m, kS], Cvals[nu, mu]]/normMC[nu, mu, kS],
+   "N", projDotF[latSrcQuad[c, n, m, kS], Pvals[nu, mu]]/normNP[nu, mu, kS]];
+
+(* ============================================================================
+   Task 3 gate [4]: M/N contraction == direct damped sum
+   Task 3 gate [5]: L-block contraction == direct beta^P sum
+   ============================================================================ *)
+kSd = 1.5 + 0.25 I; kPd = 0.9 + 0.25 I; Ldir = LradB;  (* MUST match direct-sum radius *)
+DdirS[q_, s_] := DstructDirect[q, s, kSd, Ldir];
+DdirP[q_, s_] := DstructDirect[q, s, kPd, Ldir];
+(* M/N: contraction at damped kS vs direct damped sum *)
+mnPairs = {{"M", 1, 0, "M", 1, 0}, {"N", 1, 1, "M", 2, -1}, {"M", 2, 0, "N", 1, 1},
+   {"N", 2, -1, "N", 2, 1}, {"M", 1, -1, "N", 2, 0}, {"N", 1, 0, "M", 1, 0}};
+resMN = Max[Table[Abs[g0MNblock[p[[1]], p[[2]], p[[3]], p[[4]], p[[5]], p[[6]], kSd, DdirS]
+     - g0dir[p[[1]], p[[2]], p[[3]], p[[4]], p[[5]], p[[6]], kSd]], {p, mnPairs}]];
+(* L: scalar-Gaunt contraction at damped kP vs direct beta^P sum *)
+betaSep[n_, m_, nu_, mu_, dvec_, k_] := Module[{dl = Sqrt[dvec . dvec]},
+   4 Pi (-1)^m Sum[I^(nu + q - n) (-1)^q sh[q, k dl] Yfun[q, m - mu, dvec] gaunt[n, m, nu, -mu, q, mu - m],
+     {q, Abs[n - nu], n + nu}]];
+g0LLdir[n_, m_, nu_, mu_, k_] := Total[Table[betaSep[n, m, nu, mu, Rvecs[[iR]], k] blochL[[iR]], {iR, Length[Rvecs]}]];
+llPairs = {{0, 0, 0, 0}, {1, 0, 1, 0}, {1, -1, 2, 1}, {2, 0, 1, 1}, {2, 2, 2, -1}};
+resLL = Max[Table[Abs[g0LLk[p[[1]], p[[2]], p[[3]], p[[4]], DdirP]
+     - g0LLdir[p[[1]], p[[2]], p[[3]], p[[4]], kPd]], {p, llPairs}]];
+Print["  [4] M/N contraction == direct damped sum (", Length[mnPairs], " entries) = ", ScientificForm[resMN, 3],
+   " -> ", If[resMN < 1.*^-4, "PASS", "FAIL"]];
+Print["  [5] L-block contraction == direct beta^P sum (", Length[llPairs], " entries) = ", ScientificForm[resLL, 3],
+   " -> ", If[resLL < 1.*^-4, "PASS", "FAIL"]];
