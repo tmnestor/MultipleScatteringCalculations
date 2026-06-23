@@ -27,8 +27,10 @@ ewReal3[kappa_, r_, eta_, Rc_] := (1/(8 Pi)) Total[Flatten[Table[
    multipole expandable, so it must be removed before the j_q projection (cf. TB2 gLatField/gK). *)
 gK[kappa_, rn_] := Exp[I kappa rn]/(4 Pi rn);
 
-(* damped direct 3D lattice GF over R!=0 (ground truth for the projection-method gate) *)
-ewDirect3[kappa_, r_, Lbig_] := Total[Flatten[Table[
+(* damped direct 3D lattice GF over R!=0 (ground truth for the projection-method gate).
+   Memoised on (kappa,r,Lbig): the projection re-evaluates the field at the SAME sphere points
+   across all (q,s) pairs, so caching gives a ~Nq^2-fold speedup with identical values. *)
+ewDirect3[kappa_, r_, Lbig_] := ewDirect3[kappa, r, Lbig] = Total[Flatten[Table[
      If[i == 0 && j == 0, 0,
       With[{d = Sqrt[(r[[1]] - aL i)^2 + (r[[2]] - aL j)^2 + r[[3]]^2]},
        Exp[I kappa d]/(4 Pi d) Exp[I aL (kx i + ky j)]]], {i, -Lbig, Lbig}, {j, -Lbig, Lbig}], 1]];
@@ -48,7 +50,7 @@ ewRecip3[kappa_, r_, eta_, Gc_] := (I/(4 Aarea)) Total[Flatten[Table[
      {m, -Gc, Gc}, {n, -Gc, Gc}], 1]];
 (* ewReal3 + ewRecip3 = Sum_{all R} g(r-R); subtract the R=0 self-term gK to get Sum_{R!=0},
    the regular field projected for the structure constants (matches TB2 ewaldTotal - gK). *)
-ewTot3[kappa_, r_, eta_, Rc_, Gc_] :=
+ewTot3[kappa_, r_, eta_, Rc_, Gc_] := ewTot3[kappa, r, eta, Rc, Gc] =
   ewReal3[kappa, r, eta, Rc] + ewRecip3[kappa, r, eta, Gc] - gK[kappa, Sqrt[r . r]];
 
 (* ---- self-verify: eta-independence (kappa real), damped-direct agreement ---- *)
@@ -95,3 +97,28 @@ Print["  [3] projection method (damped: projected == direct D) = ", ScientificFo
    " -> ", If[methResid < 1.*^-4, "PASS", "FAIL"]];
 Print["  [4] undamped D[q,s] eta-independence = ", ScientificForm[undEta, 3],
    " -> ", If[undEta < 1.*^-6, "PASS", "FAIL"]];
+
+(* ============================================================================ *)
+(* Task 3: G0 from undamped D[q,s] + reciprocity; dump JSON                      *)
+(* ============================================================================ *)
+
+gaunt[l1_, m1_, l2_, m2_, l3_, m3_] :=
+  If[m1 + m2 + m3 != 0 || Abs[m1] > l1 || Abs[m2] > l2 || Abs[m3] > l3, 0,
+   Sqrt[(2 l1 + 1) (2 l2 + 1) (2 l3 + 1)/(4 Pi)]
+     ThreeJSymbol[{l1, 0}, {l2, 0}, {l3, 0}] ThreeJSymbol[{l1, m1}, {l2, m2}, {l3, m3}]];
+DU[q_, s_] := DU[q, s] = DstructUndamped[q, s, 0.7];   (* memoise the undamped structure constants *)
+G0[n_, m_, nu_, mu_] := 4 Pi (-1)^m Sum[
+   I^(nu + q - n) (-1)^q DU[q, m - mu] gaunt[n, m, nu, -mu, q, mu - m], {q, Abs[n - nu], n + nu}];
+recipPairs = {{1, 0, 2, 1}, {2, -1, 3, 2}, {0, 0, 3, 0}, {2, 2, 4, -2}, {1, 1, 3, -1}};
+recipResid = Max[Table[Abs[G0[p[[1]], p[[2]], p[[3]], p[[4]]]
+   - (-1)^(p[[1]] + p[[3]] + p[[2]] + p[[4]]) G0[p[[3]], -p[[4]], p[[1]], -p[[2]]]], {p, recipPairs}]];
+Print["  [5] undamped G0 reciprocity = ", ScientificForm[recipResid, 3],
+   " -> ", If[recipResid < 1.*^-6, "PASS", "FAIL"]];
+
+(* ---- dump reference JSON ---- *)
+Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneKambe_reference.json",
+  <|"params" -> <|"aL" -> aL, "kx" -> kx, "ky" -> ky, "kappa" -> 1.5, "eta1" -> 0.7, "eta2" -> 1.15,
+      "rho0" -> rho0, "Rc" -> 6, "Gc" -> 6, "Nq" -> Nq|>,
+    "Dstruct" -> Flatten[Table[<|"q" -> q, "s" -> s, "val" -> reim[DU[q, s]]|>, {q, 0, Nq}, {s, -q, q}], 1],
+    "recip_resid" -> N[recipResid]|>];
+Print["  wrote IntraPlaneKambe_reference.json"];
