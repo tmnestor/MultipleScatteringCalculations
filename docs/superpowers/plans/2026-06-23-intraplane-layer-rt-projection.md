@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Conda env `seismic`; Python tooling via `conda run -n seismic <cmd>`.
-- Coordinate system: `z` (down, axis 0), `x` (axis 1), `y` (axis 2); lattice in x–y; horizontal slowness `p` along `y` (slowness vector `s_m = (η_m, p, 0)`, vertical-first).
+- Coordinate system: PROJECT frame `(z, x, y)` = (component 1, 2, 3): vertical/depth `z` = comp 1, horizontal slowness `p` along `x` = comp 2, SH polarisation = `y` = comp 3 = `{0,0,1}`. Slowness vector `s_m = (±η_m, p, 0)` (vertical-first), matching `slab_scattering`. The verified CartesianT0/Phase-2 spherical bridge is hardwired to polar axis = comp 3, so a single permutation `toSph[{z,x,y}] = {x,y,z}` maps the project frame into the bridge frame at every bridge call; the bridge/Phase-2 code is UNTOUCHED (decided 2026-06-23).
 - Time `e^{+iωt}`, outgoing `h_n^(1)` via `SphericalHankelH1` — NEVER `j_n + i y_n`.
 - Complex slowness past critical: `η_m = √(1/c_m² − p²)` with `Im η_m > 0`; polarisations analytically continued with `pol·pol = 1` and **NO conjugation** (the `slab_reflection_matrix` convention).
 - Incident UNIT direction for mode `m` at slowness `p`: `k̂ = c_m·(±η_m, p, 0)` (`+` down, `−` up; `c_P=α`, `c_S=β`).
