@@ -208,7 +208,23 @@ Project the planar collective scattering onto the up/down P-SV-SH plane waves at
   memoisation, and `p=1e-6` for "normal" (polar-axis azimuth singularity). See [[project-intraplane-layer-rt]].
 - **Phase 3b (next):** the lossless energy balance `|R|^2+|T|^2=1` — needs the **undamped** vector `G0`
   (Ewald/Kambe; the Phase-2 damping `Im κ=0.25` is artificial loss that preserves reciprocity but breaks
-  energy). Symplectic reciprocity already holds; energy is the remaining acceptance criterion.
+  energy). Symplectic reciprocity already holds; energy is the remaining acceptance criterion. Three cycles:
+  - **cycle 1 DONE** 2026-06-23 (`Mathematica/IntraPlaneKambe.wl` + `.nb`,
+    `cubic_scattering/tests/test_intraplane_kambe.py`): the undamped **scalar** multipole structure
+    constants `D[q,s]` (`q=0..6`) via **multipole projection of the validated scalar Ewald field** —
+    extend the Phase-1 TB2 Ewald to a general-`z` field point (general-`z` reciprocal half by Poisson
+    summation, reducing to the TB2 `z=0` form), subtract the `R=0` self-term, and project the regular
+    field `G = iκ Σ D̄[q,s] j_q(κr) Y_q^s` on a small sphere (`ρ₀=0.5`). Gates all PASS: `η`-independence
+    (κ real) 1.4e-16, vs damped direct 2.1e-11, projection method (vs damped direct structure constant)
+    5.8e-6, undamped `η`-independence 7.2e-11, undamped `G0` reciprocity exact (0). Reuses the Phase-1
+    Gaunt `G0` contraction. Root-cause fix vs the spec code: the general-`z` reciprocal `erfc` pairing
+    (the growing evanescent `e^{γ|z|}` term must pair with `erfc(+|z|η+·)`; the `z=0` reduction cannot
+    detect this — only `η`-independence does) and the `R=0` self-term exclusion. See
+    [[project-undamped-kambe-structure-constants]], [[kambe-validates-thesis-spectral]].
+  - **cycle 2:** lift the undamped scalar `D[q,s]` into the **undamped vector `G0`** (L/M/N, Cruzan/Gaunt
+    contraction) and feed the Phase-2 collective `T_coll = T0 (I − G0 T0)^{-1}`.
+  - **cycle 3:** the lossless **energy balance** `|R|²+|T|²=1` for the Phase-3a layer R/T(p) built on the
+    undamped `G0` (with the thesis ε / Kennett flux normalisation).
 
 *Original accept (revised):* reflection reciprocity in the thesis symplectic form (above) — the plain
 `Tu=Td^T`/`Rd` symmetric is the codebase-Kennett (velocity-weighted) convention, which differs from the
