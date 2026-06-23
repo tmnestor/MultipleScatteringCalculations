@@ -125,6 +125,9 @@ collV[G0_, T0_] := T0 . Inverse[IdentityMatrix[Length[T0]] - G0 . T0];
 toSph[v_] := {v[[2]], v[[3]], v[[1]]};          (* project (z,x,y) -> bridge (x,y,z): vertical z -> polar comp3 *)
 etaOf[c_, p_] := Module[{e = Sqrt[1./c^2 - p^2]}, If[Im[e] < 0, -e, e]];
 khatPhys[m_, p_, sign_] := Module[{c = If[m == "P", alpha0, beta0]}, c {sign etaOf[c, p], p, 0.}]; (* (z,x,y) *)
+(* ============================================================================
+   thesis (PhD Section 3.1) plane-wave ENERGY normalisation + R/T projection
+   ============================================================================ *)
 (* ---- thesis (PhD Section 3.1, Eqs. Peigen/SVeigen/SHeigen + epsdef) plane-wave ENERGY
    normalisation.  k_{z,c} = omega eta_c; KhatS = KhatH = omega/beta0 (k_y = 0).  The eps-normalised
    eigenvector displacement is u^E = eps_c * (thesis displacement vector); its unit direction ehatTh
