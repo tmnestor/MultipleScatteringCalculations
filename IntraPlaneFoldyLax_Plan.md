@@ -1,6 +1,6 @@
 # Intra-Plane Foldy-Lax: Planar Multiple Scattering of Spherical Voxels into Layer R/T
 
-**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; **Phase 2 COMPLETE** items (a)-(f) DONE (item (e) closed 2026-06-23, sphere-packing discretisation error). Phases 3-5 not started. Date: 2026-06-23.
+**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; **Phase 2 COMPLETE** items (a)-(f) DONE; **Phase 3a DONE**; **Phase 3b cycles 1-2 DONE** (undamped scalar D[q,s] + undamped vector G0^vec); Phase 3b cycle 3 (energy balance) next. Date: 2026-06-24.
 **Representation: full spherical-multipole (Cruzan/Stein), all `n` (option B, DECIDED).**
 
 > **Progress log (2026-06-18, branch `phase0-intraplane-translation`).** Each phase below
@@ -221,10 +221,25 @@ Project the planar collective scattering onto the up/down P-SV-SH plane waves at
     (the growing evanescent `e^{γ|z|}` term must pair with `erfc(+|z|η+·)`; the `z=0` reduction cannot
     detect this — only `η`-independence does) and the `R=0` self-term exclusion. See
     [[project-undamped-kambe-structure-constants]], [[kambe-validates-thesis-spectral]].
-  - **cycle 2:** lift the undamped scalar `D[q,s]` into the **undamped vector `G0`** (L/M/N, Cruzan/Gaunt
-    contraction) and feed the Phase-2 collective `T_coll = T0 (I − G0 T0)^{-1}`.
-  - **cycle 3:** the lossless **energy balance** `|R|²+|T|²=1` for the Phase-3a layer R/T(p) built on the
-    undamped `G0` (with the thesis ε / Kennett flux normalisation).
+  - **cycle 2 DONE** 2026-06-24 (`Mathematica/IntraPlaneKambeVector.wl` + `.nb`,
+    `Mathematica/IntraPlaneKambeVector_reference.json`,
+    `cubic_scattering/tests/test_intraplane_kambe_vector.py`): the undamped **vector** `G0^vec(k_par)` in
+    the `L/M/N` basis by **contracting the cycle-1 scalar `D[q,s]`**: `L->L` via scalar-Gaunt · `D(κ_P=0.9)`;
+    `M,N` via `Σ_q coeff_q · D[q,m−μ](κ_S=1.5)`, where `coeff_q` are extracted numerically from the validated
+    single-pair vector translation `W^{c'c}(d)` by angular projection over source directions (no literature
+    transcription needed). `nDim=25` (`Nmax=2`). Gates all PASS: coeff reconstruction ~1e-8 `[3]`; M/N
+    contraction == direct damped sum 1.6e-12 `[4]`; L-block == direct β^P sum 5.5e-15 `[5]`; collective
+    iso-limit=0 / coupling=0.021 / finite `[6]`; undamped L-block reciprocity = 0 (exact) `[7]`; undamped
+    `G0^vec` η-independence ~1.2e-14 `[8]`. Python cross-check: 2 tests PASS (independent L-block recompute +
+    dump invariants). Two plan-code bugs fixed: (a) the damped-limit gate needs matched lattice radii
+    `Ldir=LradB` (term-by-term algebraic identity requires identical truncation; mismatched radii → ~1e-2
+    residual); (b) `T0LMN` must call `TsphClean[n,kPo,kSo,lamO,muO,kPi,kSi,lamI,muI,aa]` /
+    `Ttoroidal[n,kSo,muO,kSi,muI,aa]` with the `CartesianT0.wl` globals (the plan had a short arg list).
+    See [[project-undamped-vector-g0]], [[project-undamped-kambe-structure-constants]].
+  - **cycle 3** (now unblocked): the lossless **energy balance** `|R|²+|T|²=1` for the Phase-3a layer R/T(p)
+    built on the undamped `G0^vec` (with the thesis ε / Kennett flux normalisation). Requires replacing the
+    Phase-2 damped `G0` with the cycle-2 undamped `G0^vec` in the RT projection (`IntraPlaneRT.wl`) and
+    verifying `|R|²+|T|²=1` across normal / sub-critical / post-critical `p`.
 
 *Original accept (revised):* reflection reciprocity in the thesis symplectic form (above) — the plain
 `Tu=Td^T`/`Rd` symmetric is the codebase-Kennett (velocity-weighted) convention, which differs from the

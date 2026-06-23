@@ -104,4 +104,16 @@ makeTwin["IntraPlaneKambe.wl", "Phase 3b cycle 1 : Undamped Multipole Structure 
    <> "eta-independence, and undamped G0 reciprocity (exact).  Executable twin: IntraPlaneKambe.wl.  "
    <> "Python cross-check: cubic_scattering/tests/test_intraplane_kambe.py."];
 
+makeTwin["IntraPlaneKambeVector.wl", "Phase 3b cycle 2 : Undamped Vector G0(k_par)",
+   "Builds the undamped (kappa real) planar vector coupling G0^vec(k_par) in the L/M/N basis by "
+   <> "contracting the cycle-1 scalar structure constants D[q,s]: L->L via scalar-Gaunt . D(kappa_P), "
+   <> "and M,N via Sum_q coeff_q . D[q,m-mu](kappa_S), where coeff_q are extracted numerically from "
+   <> "the validated single-pair vector translation W^{c'c}(d) by angular projection over source "
+   <> "directions (no literature transcription).  All gates PASS: coeff reconstruction ~1e-8, M/N "
+   <> "contraction == direct damped sum 1.6e-12, L-block == direct beta^P sum 5.5e-15, collective "
+   <> "iso-limit=0 / coupling=0.021 / finite, undamped L-block reciprocity = 0 (exact), undamped "
+   <> "G0^vec eta-independence ~1.2e-14.  nDim = 25 (Nmax=2).  Executable twin: "
+   <> "IntraPlaneKambeVector.wl.  Python cross-check: "
+   <> "cubic_scattering/tests/test_intraplane_kambe_vector.py."];
+
 Print["Phase-2/3 notebook twins generated."];
