@@ -120,20 +120,21 @@ Print["  [2] traction == Hooke(displacement) : HS1 = ", ScientificForm[hookeResi
    If[Max[hookeResid[a1, b1, r1], hookeResid[a2, b2v, r2]] < 1.*^-7, "PASS", "FAIL"]];
 
 (* ============================================================================
-   5. INTERFACE R/T SCAFFOLD (worked demonstration; drive your own rederivation
-      from here).  Continuity of the full 6-vector b across z = 0:
+   5. INTERFACE R/T via the SYMPLECTIC INVERSE: one 3x3 inverse, no 6x6 solve.
+      Continuity of the full 6-vector b across z = 0:
         D1 . {a_inc(down); a_refl(up)} = D2 . {a_trans(down); 0(up)}.
-      Unknowns a_refl(3), a_trans(3); incident a_inc(3) given.  Rearranged:
-        [ D1[:,4:6]  -D2[:,1:3] ] . {a_refl; a_trans} = -D1[:,1:3] . a_inc.
-      Feed the 3 unit incidents (P,S,H) to get R (3x3, down-in -> up-out) and
-      T (3x3, down-in -> down-out), columns indexed by incident mode.
+      Form the interface map  Q = D1^{-1} D2  with D1^{-1} from the symplectic
+      identity D1def (Q = -i J6 D1^T(-k) J6 . D2 -- NO 6x6 elimination), then
+      partition Q into 3x3 blocks [[Q11,Q12],[Q21,Q22]].  Since a2 has no upgoing
+      part, (a_inc; a_refl) = Q.(a_trans; 0) gives
+        a_inc  = Q11 . a_trans      a_refl = Q21 . a_trans
+      =>  T = Q11^{-1}   (the ONLY inverse, 3x3),   R = Q21 . T.
+      R (down-in -> up-out), T (down-in -> down-out); columns = incident mode P,S,H.
    ============================================================================ *)
-D1 = Dz[a1, b1, r1, om0, kx0, ky0];
-D2 = Dz[a2, b2v, r2, om0, kx0, ky0];
-Mmat = Join[D1[[All, 4 ;; 6]], -D2[[All, 1 ;; 3]], 2];   (* 6x6: columns (a_refl | a_trans) *)
-Xsol = LinearSolve[Mmat, -D1[[All, 1 ;; 3]]];            (* 6x3: rows (a_refl; a_trans), cols = incident mode *)
-Rmat = Xsol[[1 ;; 3]];                                    (* reflection 3x3 (rows: refl mode P,S,H) *)
-Tmat = Xsol[[4 ;; 6]];                                    (* transmission 3x3 (rows: trans mode P,S,H) *)
+Qmat = DzInv[a1, b1, r1, om0, kx0, ky0] . Dz[a2, b2v, r2, om0, kx0, ky0];  (* D1^{-1} via J, no solve *)
+Q11 = Qmat[[1 ;; 3, 1 ;; 3]]; Q21 = Qmat[[4 ;; 6, 1 ;; 3]];
+Tmat = Inverse[Q11];          (* 3x3 inverse -- the only one *)
+Rmat = Q21 . Tmat;
 Print["  --- interface R/T (energy-normalised eigenbasis, mode order P,S,H) ---"];
 Print["  R (down-in -> up-out) ="]; Print["    ", MatrixForm[chop[Rmat]]];
 Print["  T (down-in -> down-out) ="]; Print["    ", MatrixForm[chop[Tmat]]];
@@ -144,5 +145,12 @@ colPower = Table[Sum[Abs[Rmat[[r, inc]]]^2, {r, 3}] + Sum[Abs[Tmat[[t, inc]]]^2,
 Print["  [3] per-incident power |R|^2+|T|^2 (P,S,H) = ", chop[colPower],
    "  max|.-1| = ", ScientificForm[Max[Abs[colPower - 1.]], 3], " -> ",
    If[Max[Abs[colPower - 1.]] < 1.*^-7, "PASS", "FAIL"]];
+
+(* --- [3b] regression: the 3x3-via-J R/T equals the old 6x6 linear solve --- *)
+Mref = Join[Dz[a1, b1, r1, om0, kx0, ky0][[All, 4 ;; 6]], -Dz[a2, b2v, r2, om0, kx0, ky0][[All, 1 ;; 3]], 2];
+Xref = LinearSolve[Mref, -Dz[a1, b1, r1, om0, kx0, ky0][[All, 1 ;; 3]]];
+rtDev = Max[Abs[Flatten[{Rmat - Xref[[1 ;; 3]], Tmat - Xref[[4 ;; 6]]}]]];
+Print["  [3b] 3x3-via-J R/T == 6x6 solve : ", ScientificForm[rtDev, 3],
+   " -> ", If[rtDev < 1.*^-7, "PASS", "FAIL"]];
 
 Print["ThesisInterfaceRT.wl loaded."];

@@ -48,9 +48,12 @@ artifact of stacking displacement (length) over traction (stress); in nondimensi
 
 ## 5. Interface R/T scaffold (worked demonstration)
 
-Continuity of `b` at `z=0`: `D₁·[a_inc; a_refl] = D₂·[a_trans; 0]` →
-`[D₁[:,4:6]  −D₂[:,1:3]]·[a_refl; a_trans] = −D₁[:,1:3]·a_inc`. Feeding the three unit
-incidents gives `R` (3×3, down-in→up-out) and `T` (3×3, down-in→down-out). The energy-normalised
+Continuity of `b` at `z=0`: `D₁·[a_inc; a_refl] = D₂·[a_trans; 0]`. Rather than a 6×6 solve, use
+the **symplectic inverse** to reduce to a single 3×3 inverse: form `Q = D₁⁻¹·D₂` with
+`D₁⁻¹ = −i J₆ D₁ᵀ(−k) J₆` (`D1def`, no elimination); partition `Q` into 3×3 blocks
+`[[Q11,Q12],[Q21,Q22]]`; since `a₂` has no upgoing part, `a_inc = Q11·a_trans`,
+`a_refl = Q21·a_trans`, so **`T = Q11⁻¹`** (the only inverse, 3×3) and **`R = Q21·T`**. Verified
+identical to the 6×6 `LinearSolve` (`4e-16`). The energy-normalised
 `R` exhibits the thesis symplectic structure (P-SV off-diagonal antisymmetry; P-SH purely
 imaginary), and the full `T` carries the ballistic through-wave automatically from `b`-continuity
 (`T ≈ I` at weak contrast).
