@@ -116,4 +116,12 @@ makeTwin["IntraPlaneKambeVector.wl", "Phase 3b cycle 2 : Undamped Vector G0(k_pa
    <> "IntraPlaneKambeVector.wl.  Python cross-check: "
    <> "cubic_scattering/tests/test_intraplane_kambe_vector.py."];
 
+makeTwin["IntraPlaneEnergyBalance.wl", "Phase 3b cycle 3 : Layer Energy Balance (undamped G0^vec, S-matrix unitarity)",
+   "Builds the cycle-2 undamped vector G0^vec at physical parameters, runs the thesis-eps "
+   <> "R/T projection, assembles the propagating-channel scattering matrix S = [[Rd,Tu],[Td,Ru]] "
+   <> "(+ SH 2x2), and gates unitarity S^dag S = I across normal / sub-critical / post-critical p.  "
+   <> "Sub-wavelength precondition (no open diffraction orders) makes the specular statement well-posed.  "
+   <> "Executable twin: IntraPlaneEnergyBalance.wl.  Python cross-check: "
+   <> "cubic_scattering/tests/test_intraplane_energy.py."];
+
 Print["Phase-2/3 notebook twins generated."];
