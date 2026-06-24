@@ -31,12 +31,17 @@ project's core aim: **validating (or refuting) the thesis**.
 - General `(k_x, k_y)` (full 6×6 `J₆`; P-SV and SH couple when `k_y ≠ 0`, decoupling only at
   `k_y = 0`).
 
-## 4. Self-checks (all PASS at 40-digit precision)
+## 4. Self-checks (all PASS at MACHINE precision in seismic units)
+
+Instantiated in **seismic units** (km/s, g/cm³ → moduli in GPa), where `cond(D_z) ~ ρωv ~ 1.9e4`
+and every check holds at machine precision. (In SI the same `cond` is ~1.9e10 — a pure UNITS
+artifact of stacking displacement (length) over traction (stress); in nondimensional units
+`cond(D_z) = 1.66`. NOT a defect: the thesis never inverts `D_z` naively — it uses the symplectic
+`D1def` — and the symplectic identity below holds at 1e-16 in every unit system.)
 
 1. **Symplectic / energy-normalisation identity** `(J₆ D_z(−k))ᵀ D_z(k) == i J₆` (`dinv2`),
-   both half-spaces — `= 0`. The authoritative proof the eigenvectors + `ε` are correct.
-2. **Inverse consistency** `D_z · D_z⁻¹ == I₆` — `= 0` (needs extended precision: `D_z` is
-   intrinsically ill-conditioned, ~11-order displacement/traction magnitude spread).
+   both half-spaces — `3e-16`. The authoritative proof the eigenvectors + `ε` are correct.
+2. **Inverse consistency** `D_z · D_z⁻¹ == I₆` — `2e-12` (machine precision, seismic units).
 3. **Traction = Hooke(displacement)** — traction rows reproduced from displacement rows via
    Hooke's law (A-matrix-free physical check) — `= 0`.
 4. **Interface energy balance** `Σ|R|² + Σ|T|² = 1` per incident column (P,S,H) — `max|·−1| = 0`.

@@ -10,15 +10,15 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     12013,        264]
-NotebookOptionsPosition[     10616,        240]
-NotebookOutlinePosition[     10933,        254]
-CellTagsIndexPosition[     10890,        251]
+NotebookDataLength[     12307,        269]
+NotebookOptionsPosition[     10910,        245]
+NotebookOutlinePosition[     11227,        259]
+CellTagsIndexPosition[     11184,        256]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Thesis Section 3.1 : Energy-Normalised Interface R/T", "Title",ExpressionUUID->"07fee923-dd1f-4bda-9691-34b41d71d8ff"],
+Cell["Thesis Section 3.1 : Energy-Normalised Interface R/T", "Title",ExpressionUUID->"582bd177-605e-4221-b99e-21053b5351a4"],
 
 Cell["\<\
 Thesis Section 3.1 energy-normalised displacement-traction eigenbasis D_z and \
@@ -29,7 +29,7 @@ scaffold.  Faithful to GRepresentations.tex (Peigen/SVeigen/SHeigen + epsdef \
 convention, NOT the project's e^{+i w t}).  Self-checks: symplectic identity, \
 D_z.D_z^{-1}=I, traction=Hooke(displacement), and interface |R|^2+|T|^2=1.  \
 Executable twin: ThesisInterfaceRT.wl.\
-\>", "Text",ExpressionUUID->"67c68650-7615-4514-a639-2d8a45f7aa90"],
+\>", "Text",ExpressionUUID->"0236564f-de99-4451-b6c7-139b27117c8d"],
 
 Cell["\<\
 ThesisInterfaceRT.wl  --  PhD thesis Section 3.1 energy-normalised
@@ -50,12 +50,12 @@ l.29 -
      - traction = physical stress on the +z plane (sigma_zz, sigma_zx, \
 sigma_zy);
        lambda = rho(alpha^2 - 2 beta^2), mu = rho beta^2.\
-\>", "Text",ExpressionUUID->"241a4a30-b407-4f03-9a65-b350284f9563"],
+\>", "Text",ExpressionUUID->"5cf8f99b-00fa-4d2d-8745-5f4da8af10e0"],
 
 Cell["\<\
 1. Kinematics: velocity per mode, K-hat, vertical wavenumber, energy-norm eps\
 \
-\>", "Section",ExpressionUUID->"9c5da649-5302-434e-af1b-fce30e58a23a"],
+\>", "Section",ExpressionUUID->"c2ba5c88-3eae-4b76-b090-07db1d53e78e"],
 
 Cell["\<\
 vel[c_, alpha_, beta_] := Switch[c, \"P\", alpha, \"S\", beta, \"H\", beta];
@@ -67,14 +67,14 @@ epsP[rho_, om_, kzP_] := 1/Sqrt[2 rho om^2 kzP];                              \
        (* epsdef  *)
 epsS[beta_, rho_, om_, KS_, kzS_] := om/(beta KS Sqrt[2 rho om^2 kzS]);
 epsH[rho_, om_, KH_, kzH_] := 1/(KH Sqrt[2 rho om^2 kzH]);\
-\>", "Input",ExpressionUUID->"617b1dfa-14c5-4dc0-8504-2392c95dc0db"],
+\>", "Input",ExpressionUUID->"1b3a1d6f-f4ce-44aa-9a07-2fced1f2fe96"],
 
 Cell["\<\
 2. The three energy-normalised eigenvectors (s = +1 down, s = -1 up).
       Transcribed from Peigen / SVeigen / SHeigen; the thesis \"+-/-+\" \
 reduce to
       the factor (-s) and \"+/-\" to (+s) with the downgoing (+) top sign.\
-\>", "Section",ExpressionUUID->"d7b28013-334d-4868-aa7a-daffe4c85a15"],
+\>", "Section",ExpressionUUID->"511f729a-ad70-471b-90ee-65d12d22e633"],
 
 Cell["\<\
 eigP[s_, alpha_, beta_, rho_, om_, kx_, ky_] := Module[
@@ -102,11 +102,11 @@ alpha, beta, om, kx, ky], eH},
       2 I ky rho (b2 kx^2 + b2 ky^2 - om^2),
       -s 2 I rho b2 kx ky kzc,
       s I kzc rho (om^2 - 2 b2 ky^2)}];\
-\>", "Input",ExpressionUUID->"94ae869e-a1d1-416b-bcbe-cbfd50e3d92a"],
+\>", "Input",ExpressionUUID->"dd21c0e8-c458-4365-bd42-7c39bd119df3"],
 
 Cell["\<\
 3. Eigen-matrix D_z = [ +P +S +H  -P -S -H ] (columns) and symplectic J6\
-\>", "Section",ExpressionUUID->"e8a2f633-49ce-45fd-840c-be1d38983d76"],
+\>", "Section",ExpressionUUID->"4721640d-4ef8-4d9d-8ed6-a12a28380eba"],
 
 Cell["\<\
 Dz[alpha_, beta_, rho_, om_, kx_, ky_] := Transpose[{
@@ -122,28 +122,33 @@ J6 = ArrayFlatten[{{Zero3, Id3}, {-Id3, Zero3}}];                             \
 (* symplectic inverse, Eq. D1def:  D_z^{-1}(k) = -i J6 D_z^T(-k) J6 *)
 DzInv[alpha_, beta_, rho_, om_, kx_, ky_] :=
   -I J6 . Transpose[Dz[alpha, beta, rho, om, -kx, -ky]] . J6;\
-\>", "Input",ExpressionUUID->"e561c340-c167-4718-9834-bb964e6aa1d9"],
+\>", "Input",ExpressionUUID->"a25a4cfa-77ef-483e-9e4f-16946d7c1a6e"],
 
 Cell["\<\
 4. SELF-CHECKS.  Numeric instantiation: two propagating half-spaces, all six
       modes real (sub-critical) in BOTH media so every column is a true plane \
 wave.\
-\>", "Section",ExpressionUUID->"5cebbe5e-4361-461f-9691-832436dcb9f8"],
+\>", "Section",ExpressionUUID->"aa31edda-4534-462a-9724-c8d8fed9e50c"],
 
 Cell["\<\
-chop[x_] := Chop[x, 1.*^-12];
-(* High working precision (wp digits): displacement entries are O(1e-6) and \
-traction
-   entries O(1e5) -- an ~11-order spread that loses ~11 digits in machine \
-arithmetic
-   (D_z is intrinsically ill-conditioned), so we instantiate at extended \
-precision. *)
-wp = 40;
+chop[x_] := Chop[x, 1.*^-9];
+(* SEISMIC UNITS: velocity km/s, density g/cm^3 -> moduli rho v^2 in GPa.  In \
+these units D_z is
+   well-conditioned (cond(D_z) = rho*omega*v ~ 1.9e4) and every check below \
+holds at MACHINE
+   precision.  In SI (m/s, kg/m^3, Pa) the SAME cond is ~1.9e10 -- a pure \
+UNITS artifact of
+   stacking displacement (length) over traction (stress), NOT a defect of the \
+representation
+   (in nondimensional units cond = 1.66).  The thesis never inverts D_z \
+naively anyway: it uses
+   the symplectic inverse D1def, and the symplectic identity holds at 1e-16 \
+in every unit system. *)
 (* half-space 1 (above) and half-space 2 (below) *)
-a1 = N[5000, wp]; b1 = N[3000, wp]; r1 = N[2500, wp];
-a2 = N[5500, wp]; b2v = N[3300, wp]; r2 = N[2700, wp];
-om0 = N[1500, wp]; kx0 = N[1/10, wp]; ky0 = N[1/20, wp];   (* kx,ky < \
-om/alpha=0.3 -> all modes propagate *)
+a1 = 5.; b1 = 3.; r1 = 2.5;            (* km/s, km/s, g/cm^3 *)
+a2 = 5.5; b2v = 3.3; r2 = 2.7;
+om0 = 1500.; kx0 = 100.; ky0 = 50.;    (* rad/s, rad/km; kx,ky < om/alpha = \
+300 -> all modes propagate *)
 
 Print[\"==== ThesisInterfaceRT :: half-space (u,t) eigenbasis + J6 ====\"];
 Print[\"  media: HS1 {a,b,r}=\", {a1, b1, r1}, \"  HS2=\", {a2, b2v, r2}, \"  \
@@ -196,7 +201,7 @@ ScientificForm[hookeResid[a1, b1, r1], 3],
    \", HS2 = \", ScientificForm[hookeResid[a2, b2v, r2], 3], \" -> \",
    If[Max[hookeResid[a1, b1, r1], hookeResid[a2, b2v, r2]] < 1.*^-7, \
 \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"69569932-4051-4ba0-87cc-20d400e6b3be"],
+\>", "Input",ExpressionUUID->"db6c1388-7328-4c94-b759-2d1bbcb63577"],
 
 Cell["\<\
 5. INTERFACE R/T SCAFFOLD (worked demonstration; drive your own rederivation
@@ -206,7 +211,7 @@ Cell["\<\
         [ D1[:,4:6]  -D2[:,1:3] ] . {a_refl; a_trans} = -D1[:,1:3] . a_inc.
       Feed the 3 unit incidents (P,S,H) to get R (3x3, down-in -> up-out) and
       T (3x3, down-in -> down-out), columns indexed by incident mode.\
-\>", "Section",ExpressionUUID->"bb466ad3-cf7e-4431-817c-cb9b8ffcaf67"],
+\>", "Section",ExpressionUUID->"5c620f50-6c99-475d-8954-bbfeac3568b7"],
 
 Cell["\<\
 D1 = Dz[a1, b1, r1, om0, kx0, ky0];
@@ -236,11 +241,11 @@ Print[\"  [3] per-incident power |R|^2+|T|^2 (P,S,H) = \", chop[colPower],
    If[Max[Abs[colPower - 1.]] < 1.*^-7, \"PASS\", \"FAIL\"]];
 
 Print[\"ThesisInterfaceRT.wl loaded.\"];\
-\>", "Input",ExpressionUUID->"679f62ec-5ec1-4c6d-81ff-85f27617a5ea"]
+\>", "Input",ExpressionUUID->"7e588b1d-5e50-4e35-9d62-cd040fb58e22"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"2d389298-a5f8-48b6-ae9d-434209afccae"
+ExpressionUUID->"ef4f1039-28a4-4d23-8fe4-2b6d487785a7"
 ]
 (* End of Notebook Content *)
 
@@ -253,19 +258,19 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 124, 0, 70, "Title",ExpressionUUID->"07fee923-dd1f-4bda-9691-34b41d71d8ff"],
-Cell[681, 22, 662, 9, 70, "Text",ExpressionUUID->"67c68650-7615-4514-a639-2d8a45f7aa90"],
-Cell[1346, 33, 986, 19, 70, "Text",ExpressionUUID->"241a4a30-b407-4f03-9a65-b350284f9563"],
-Cell[2335, 54, 161, 3, 70, "Section",ExpressionUUID->"9c5da649-5302-434e-af1b-fce30e58a23a"],
-Cell[2499, 59, 588, 10, 70, "Input",ExpressionUUID->"617b1dfa-14c5-4dc0-8504-2392c95dc0db"],
-Cell[3090, 71, 310, 5, 70, "Section",ExpressionUUID->"d7b28013-334d-4868-aa7a-daffe4c85a15"],
-Cell[3403, 78, 1008, 26, 70, "Input",ExpressionUUID->"94ae869e-a1d1-416b-bcbe-cbfd50e3d92a"],
-Cell[4414, 106, 154, 2, 70, "Section",ExpressionUUID->"e8a2f633-49ce-45fd-840c-be1d38983d76"],
-Cell[4571, 110, 723, 14, 70, "Input",ExpressionUUID->"e561c340-c167-4718-9834-bb964e6aa1d9"],
-Cell[5297, 126, 244, 4, 70, "Section",ExpressionUUID->"5cebbe5e-4361-461f-9691-832436dcb9f8"],
-Cell[5544, 132, 3118, 66, 70, "Input",ExpressionUUID->"69569932-4051-4ba0-87cc-20d400e6b3be"],
-Cell[8665, 200, 595, 8, 70, "Section",ExpressionUUID->"bb466ad3-cf7e-4431-817c-cb9b8ffcaf67"],
-Cell[9263, 210, 1349, 28, 70, "Input",ExpressionUUID->"679f62ec-5ec1-4c6d-81ff-85f27617a5ea"]
+Cell[554, 20, 124, 0, 70, "Title",ExpressionUUID->"582bd177-605e-4221-b99e-21053b5351a4"],
+Cell[681, 22, 662, 9, 70, "Text",ExpressionUUID->"0236564f-de99-4451-b6c7-139b27117c8d"],
+Cell[1346, 33, 986, 19, 70, "Text",ExpressionUUID->"5cf8f99b-00fa-4d2d-8745-5f4da8af10e0"],
+Cell[2335, 54, 161, 3, 70, "Section",ExpressionUUID->"c2ba5c88-3eae-4b76-b090-07db1d53e78e"],
+Cell[2499, 59, 588, 10, 70, "Input",ExpressionUUID->"1b3a1d6f-f4ce-44aa-9a07-2fced1f2fe96"],
+Cell[3090, 71, 310, 5, 70, "Section",ExpressionUUID->"511f729a-ad70-471b-90ee-65d12d22e633"],
+Cell[3403, 78, 1008, 26, 70, "Input",ExpressionUUID->"dd21c0e8-c458-4365-bd42-7c39bd119df3"],
+Cell[4414, 106, 154, 2, 70, "Section",ExpressionUUID->"4721640d-4ef8-4d9d-8ed6-a12a28380eba"],
+Cell[4571, 110, 723, 14, 70, "Input",ExpressionUUID->"a25a4cfa-77ef-483e-9e4f-16946d7c1a6e"],
+Cell[5297, 126, 244, 4, 70, "Section",ExpressionUUID->"aa31edda-4534-462a-9724-c8d8fed9e50c"],
+Cell[5544, 132, 3412, 71, 70, "Input",ExpressionUUID->"db6c1388-7328-4c94-b759-2d1bbcb63577"],
+Cell[8959, 205, 595, 8, 70, "Section",ExpressionUUID->"5c620f50-6c99-475d-8954-bbfeac3568b7"],
+Cell[9557, 215, 1349, 28, 70, "Input",ExpressionUUID->"7e588b1d-5e50-4e35-9d62-cd040fb58e22"]
 }
 ]
 *)

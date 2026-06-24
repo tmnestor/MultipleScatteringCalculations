@@ -74,15 +74,17 @@ DzInv[alpha_, beta_, rho_, om_, kx_, ky_] :=
    4. SELF-CHECKS.  Numeric instantiation: two propagating half-spaces, all six
       modes real (sub-critical) in BOTH media so every column is a true plane wave.
    ============================================================================ *)
-chop[x_] := Chop[x, 1.*^-12];
-(* High working precision (wp digits): displacement entries are O(1e-6) and traction
-   entries O(1e5) -- an ~11-order spread that loses ~11 digits in machine arithmetic
-   (D_z is intrinsically ill-conditioned), so we instantiate at extended precision. *)
-wp = 40;
+chop[x_] := Chop[x, 1.*^-9];
+(* SEISMIC UNITS: velocity km/s, density g/cm^3 -> moduli rho v^2 in GPa.  In these units D_z is
+   well-conditioned (cond(D_z) = rho*omega*v ~ 1.9e4) and every check below holds at MACHINE
+   precision.  In SI (m/s, kg/m^3, Pa) the SAME cond is ~1.9e10 -- a pure UNITS artifact of
+   stacking displacement (length) over traction (stress), NOT a defect of the representation
+   (in nondimensional units cond = 1.66).  The thesis never inverts D_z naively anyway: it uses
+   the symplectic inverse D1def, and the symplectic identity holds at 1e-16 in every unit system. *)
 (* half-space 1 (above) and half-space 2 (below) *)
-a1 = N[5000, wp]; b1 = N[3000, wp]; r1 = N[2500, wp];
-a2 = N[5500, wp]; b2v = N[3300, wp]; r2 = N[2700, wp];
-om0 = N[1500, wp]; kx0 = N[1/10, wp]; ky0 = N[1/20, wp];   (* kx,ky < om/alpha=0.3 -> all modes propagate *)
+a1 = 5.; b1 = 3.; r1 = 2.5;            (* km/s, km/s, g/cm^3 *)
+a2 = 5.5; b2v = 3.3; r2 = 2.7;
+om0 = 1500.; kx0 = 100.; ky0 = 50.;    (* rad/s, rad/km; kx,ky < om/alpha = 300 -> all modes propagate *)
 
 Print["==== ThesisInterfaceRT :: half-space (u,t) eigenbasis + J6 ===="];
 Print["  media: HS1 {a,b,r}=", {a1, b1, r1}, "  HS2=", {a2, b2v, r2}, "  (om,kx,ky)=", {om0, kx0, ky0}];
