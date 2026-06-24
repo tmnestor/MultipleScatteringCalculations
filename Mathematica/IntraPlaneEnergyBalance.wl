@@ -259,3 +259,59 @@ Print["  R1 metric @pNormal: |S^dag S - I| = ", ScientificForm[residPlain, 3],
    ", |S^dag Sig S - Sig| = ", ScientificForm[residSigma, 3],
    " -> energyMetric = ", energyMetric];
 Print["  SH @pNormal: |Rsh|^2+|Tsh|^2-1 = ", ScientificForm[residSH, 3]];
+
+(* ============================================================================
+   Task 3 Step 1: p-sweep -- energy gate [3] + reciprocity gate [4]
+   ============================================================================ *)
+Sig2 = DiagonalMatrix[{1., -1.}];
+stageEB = {}; energyResids = {}; recipResids = {};
+Do[Module[{G0, Tc, e, modes, Spsv, eR, shResid, antiRd, antiRu, tparity},
+   G0 = buildG0undamped[p, Nm]; Tc = collV[G0, T0vec[Nm]];
+   e = rtBlocksE[Tc, p, Nm]; modes = propModes[p];
+   Spsv = assembleS[e, modes];
+   eR = energyResid[e, modes, energyMetric];
+   shResid = shEnergyResid[e];
+   (* reciprocity (Phase-3a symplectic): only on the propagating P-SV sub-block *)
+   antiRd = If[Length[modes] == 2, Max[Abs[e["Rd"][[1, 2]] + e["Rd"][[2, 1]]]], 0.];
+   antiRu = If[Length[modes] == 2, Max[Abs[e["Ru"][[1, 2]] + e["Ru"][[2, 1]]]], 0.];
+   tparity = If[Length[modes] == 2, Max[Abs[Flatten[e["Tu"] - Sig2 . e["Td"] . Sig2]]], 0.];
+   AppendTo[energyResids, eR]; AppendTo[recipResids, Max[antiRd, antiRu, tparity]];
+   AppendTo[stageEB, <|"p" -> p, "regime" -> regimeOf[p], "propModes" -> modes,
+     "etaP" -> reim[etaOf[alpha0, p]], "etaS" -> reim[etaOf[beta0, p]],
+     "S_psv" -> Map[reim, Spsv, {2}], "S_sh" -> Map[reim, shS[e], {2}],
+     "energy_resid" -> N[eR], "sh_energy_resid" -> N[shResid],
+     "recip_Rd_anti" -> N[antiRd], "recip_Ru_anti" -> N[antiRu], "recip_T_parity" -> N[tparity]|>];
+   Print["  p=", ScientificForm[p, 3], " (", regimeOf[p], ", modes=", modes, "): energy(",
+     energyMetric, ")=", ScientificForm[eR, 3], ", SH=", ScientificForm[shResid, 3],
+     ", recip=", ScientificForm[Max[antiRd, antiRu, tparity], 3]]],
+   {p, pList}];
+enTol = 1.*^-3;   (* gate-[3] tolerance: set from the Task-2 observed floor (R3) *)
+energyOK = Max[energyResids] < enTol;
+recipOK = Max[recipResids] < 1.*^-6;
+Print["  [3] energy unitarity (", energyMetric, ", restricted) max = ",
+   ScientificForm[Max[energyResids], 3], " -> ", If[energyOK, "PASS", "FAIL"]];
+Print["  [4] reciprocity preserved (undamped) max = ", ScientificForm[Max[recipResids], 3],
+   " -> ", If[recipOK, "PASS", "FAIL"]];
+
+(* ============================================================================
+   Task 3 Step 2: Nmax convergence sub-study -- gate [5]
+   ============================================================================ *)
+pStudy = 0.5 pcritP;
+nmaxStudy = Table[Module[{G0, Tc, e, modes},
+    G0 = buildG0undamped[pStudy, nmx]; Tc = collV[G0, T0vec[nmx]];
+    e = rtBlocksE[Tc, pStudy, nmx]; modes = propModes[pStudy];
+    {nmx, N[energyResid[e, modes, energyMetric]]}], {nmx, 1, 3}];
+Print["  [5] Nmax convergence (energy resid @subcritical): ", nmaxStudy];
+
+(* ============================================================================
+   Task 3 Step 3: JSON dump
+   ============================================================================ *)
+Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneEnergyBalance_reference.json",
+  <|"params" -> <|"alpha" -> alpha0, "beta" -> beta0, "rho0" -> rho0Bg, "aa" -> aa,
+      "aLpitch" -> aLpitch, "kPo" -> kPo, "kSo" -> kSo, "Nmax" -> Nm, "etaU" -> etaU,
+      "energyMetric" -> energyMetric, "enTol" -> enTol,
+      "contrast" -> <|"Dlambda" -> 2.*^9, "Dmu" -> 1.*^9, "Drho" -> 100.|>|>,
+    "diffMargin" -> N[diffMargin], "etaIndep" -> N[etaIndep],
+    "stageEB" -> stageEB, "nmaxStudy" -> nmaxStudy|>];
+Print["  wrote IntraPlaneEnergyBalance_reference.json"];
+Print["Phase 3b cycle 3 (IntraPlaneEnergyBalance.wl) loaded."];
