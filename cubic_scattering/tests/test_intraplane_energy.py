@@ -65,12 +65,32 @@ def test_sh_energy_each_p(dump):
         assert abs(abs(rsh_d) ** 2 + abs(tsh_d) ** 2 - 1.0) < tol
 
 
-def test_reciprocity_preserved(dump):
-    """Undamped build keeps Phase-3a symplectic reciprocity (Rd,Ru antisym; reported residuals)."""
+def test_reciprocity_independent(dump):
+    """Recompute symplectic reciprocity from the dumped S_psv (2-mode stages) and cross-check.
+
+    Rd, Ru off-diagonal antisymmetry and the SV parity Tu = Σ·Td·Σ (Σ=diag(1,−1)) are
+    recomputed in Python from S_psv = [[Rd, Tu], [Td, Ru]] rather than trusting the dumped
+    scalars; the ballistic identity on Td,Tu cancels in the parity difference.
+    """
+    sig = np.diag([1.0, -1.0]).astype(complex)
     for st in dump["stageEB"]:
-        assert st["recip_Rd_anti"] < 1e-6
-        assert st["recip_Ru_anti"] < 1e-6
-        assert st["recip_T_parity"] < 1e-6
+        if len(st["propModes"]) != 2:
+            # post-critical SV-only: reciprocity is single-mode trivial; dump records 0
+            assert st["recip_Rd_anti"] == 0.0
+            continue
+        s = _cplx(st["S_psv"])  # 4x4
+        rd, tu = s[0:2, 0:2], s[0:2, 2:4]
+        td, ru = s[2:4, 0:2], s[2:4, 2:4]
+        rd_anti = abs(rd[0, 1] + rd[1, 0])
+        ru_anti = abs(ru[0, 1] + ru[1, 0])
+        t_parity = float(np.max(np.abs(tu - sig @ td @ sig)))
+        assert rd_anti < 1e-6, f"Rd not antisymmetric: {rd_anti:.3e}"
+        assert ru_anti < 1e-6, f"Ru not antisymmetric: {ru_anti:.3e}"
+        assert t_parity < 1e-6, f"T parity violated: {t_parity:.3e}"
+        # cross-check the independent recompute matches the dumped residuals
+        assert abs(rd_anti - st["recip_Rd_anti"]) < 1e-6
+        assert abs(ru_anti - st["recip_Ru_anti"]) < 1e-6
+        assert abs(t_parity - st["recip_T_parity"]) < 1e-6
 
 
 def test_no_open_diffraction_orders(dump):
@@ -96,4 +116,6 @@ def test_no_open_diffraction_orders(dump):
 def test_nmax_does_not_diverge(dump):
     """Energy residual must not blow up with Nmax (convergence, not divergence)."""
     study = {int(nmx): r for nmx, r in dump["nmaxStudy"]}
-    assert study[3] <= 10.0 * study[2], "energy residual diverges with Nmax"
+    assert study[3] <= 1.5 * study[2], (
+        "energy residual diverges with Nmax (ratio > 1.5)"
+    )
