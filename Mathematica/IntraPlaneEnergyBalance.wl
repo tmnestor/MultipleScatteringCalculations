@@ -170,3 +170,92 @@ etaIndepS = Max[Table[Abs[DfieldU[kSo, 0.7, q, s] - DfieldU[kSo, 1.15, q, s]], {
 etaIndep = Max[etaIndepP, etaIndepS];
 Print["  [2] undamped eta-independence (kP=", kPo, ", kS=", kSo, ") = ", ScientificForm[etaIndep, 3],
    " -> ", If[etaIndep < 1.*^-6, "PASS", "FAIL"]];
+
+(* ============================================================================
+   Task 2 Step 1: Phase-3a slowness geometry + thesis-eps R/T projection
+   (verbatim from IntraPlaneRT.wl lines 124-186; rho0 -> rho0Bg for this file)
+   ============================================================================ *)
+toSph[v_] := {v[[2]], v[[3]], v[[1]]};
+etaOf[c_, p_] := Module[{e = Sqrt[1./c^2 - p^2]}, If[Im[e] < 0, -e, e]];
+khatPhys[m_, p_, sign_] := Module[{c = If[m == "P", alpha0, beta0]}, c {sign etaOf[c, p], p, 0.}];
+KhatSf := omegaOf/beta0;
+epsP[p_] := 1/Sqrt[2 rho0Bg omegaOf^2 (omegaOf etaOf[alpha0, p])];
+epsS[p_] := omegaOf/(beta0 KhatSf Sqrt[2 rho0Bg omegaOf^2 (omegaOf etaOf[beta0, p])]);
+epsH[p_] := 1/(KhatSf Sqrt[2 rho0Bg omegaOf^2 (omegaOf etaOf[beta0, p])]);
+ehatTh[m_, p_, sgn_] := Switch[m,
+   "P", alpha0 {sgn etaOf[alpha0, p], p, 0.},
+   "SV", beta0 {p, -sgn etaOf[beta0, p], 0.},
+   "SH", {0., 0., 1.}];
+muTh[m_, p_, sgn_] := Switch[m,
+   "P", epsP[p] I omegaOf/alpha0,
+   "SV", epsS[p] I omegaOf/beta0,
+   "SH", epsH[p] KhatSf^2];
+incPac[n_, m_, k_] := 4 Pi I^(n - 1) (-1)^m Yv[n, -m, k];
+incNac[n_, m_, k_, e_] := -4 Pi I^(n + 1)/(n (n + 1)) (-1)^m (e . Bv[n, -m, k]);
+incMac[n_, m_, k_, e_] := -4 Pi I^n/(n (n + 1)) (-1)^m (e . Cv[n, -m, k]);
+incVec[mode_, khatSph_, ehatSph_, Nmax_] := Map[
+   Function[idx, Module[{n = idx[[1]], m = idx[[2]], ch = idx[[3]]},
+     Switch[{mode, ch}, {"P", "L"}, incPac[n, m, khatSph], {"SV", "N"}, incNac[n, m, khatSph, ehatSph],
+       {"SH", "M"}, incMac[n, m, khatSph, ehatSph], _, 0]]], idxVof[Nmax]];
+projPW[bvec_, ksSph_, Nmax_] := Module[{fP = {0, 0, 0}, fS = {0, 0, 0}, idx = idxVof[Nmax]},
+  Do[With[{n = idx[[i, 1]], m = idx[[i, 2]], ch = idx[[i, 3]], b = bvec[[i]]},
+    Switch[ch,
+      "L", fP += b ((-I)^n/kPo) Yv[n, m, ksSph] ksSph,
+      "N", fS += b ((-I)^n/kSo) Bv[n, m, ksSph],
+      "M", fS += -b ((-I)^(n + 1)/kSo) Cv[n, m, ksSph]]], {i, Length[idx]}];
+  {fP, fS}];
+rtAmpE[Tcoll_, inMode_, p_, inSign_, outMode_, outSign_, Nmax_] := Module[
+   {kin = toSph[khatPhys[inMode, p, inSign]], kout = toSph[khatPhys[outMode, p, outSign]],
+    ein = toSph[ehatTh[inMode, p, inSign]], eout = toSph[ehatTh[outMode, p, outSign]],
+    avec, bvec, f, etaOut = etaOf[If[outMode == "P", alpha0, beta0], p]},
+  avec = incVec[inMode, kin, ein, Nmax];
+  bvec = Tcoll . avec;
+  f = projPW[bvec, kout, Nmax];
+  (I/(2 etaOut omegaOf Acell)) (muTh[inMode, p, inSign]/muTh[outMode, p, outSign]) *
+    (eout . If[outMode == "P", First[f], Last[f]])];
+
+(* ============================================================================
+   Task 2 Step 2: rtBlocksE extended with up-incident SH (full SH 2x2)
+   ============================================================================ *)
+rtBlocksE[Tcoll_, p_, Nmax_] := Module[{modes = {"P", "SV"}, blk},
+  blk[inSign_, outSign_] := Table[rtAmpE[Tcoll, im, p, inSign, om, outSign, Nmax], {om, modes}, {im, modes}];
+  <|"Rd" -> blk[1., -1.], "Td" -> blk[1., 1.], "Ru" -> blk[-1., 1.], "Tu" -> blk[-1., -1.],
+    "Rsh" -> rtAmpE[Tcoll, "SH", p, 1., "SH", -1., Nmax],   (* down-in, up-out  *)
+    "Tsh" -> rtAmpE[Tcoll, "SH", p, 1., "SH", 1., Nmax],    (* down-in, down-out *)
+    "Rsh_u" -> rtAmpE[Tcoll, "SH", p, -1., "SH", 1., Nmax], (* up-in, down-out *)
+    "Tsh_u" -> rtAmpE[Tcoll, "SH", p, -1., "SH", -1., Nmax]|>]; (* up-in, up-out *)
+
+(* ============================================================================
+   Task 2 Step 3: Propagating-mode selection, S assembly, both energy metrics
+   ============================================================================ *)
+modePos = <|"P" -> 1, "SV" -> 2|>;
+propModes[p_] := Select[{"P", "SV"}, Abs[Im[etaOf[If[# == "P", alpha0, beta0], p]]] < 1.*^-9 &];
+(* P-SV S-matrix over a mode subset: rows=(up-modes, down-modes), cols=(down-modes, up-modes) *)
+assembleS[e_, modes_] := Module[{mi = modePos /@ modes, idm, Rd, Td, Ru, Tu},
+  idm = IdentityMatrix[Length[modes]];
+  Rd = e["Rd"][[mi, mi]]; Td = e["Td"][[mi, mi]] + idm;
+  Ru = e["Ru"][[mi, mi]]; Tu = e["Tu"][[mi, mi]] + idm;
+  ArrayFlatten[{{Rd, Tu}, {Td, Ru}}]];
+(* Sig metric: +1 on P channels, -1 on SV channels, repeated for up/down *)
+sigMetric[modes_] := DiagonalMatrix[Flatten[Table[Map[If[# == "SV", -1., 1.] &, modes], {2}]]];
+unitResid[S_] := Max[Abs[Flatten[ConjugateTranspose[S] . S - IdentityMatrix[Length[S]]]]];
+sigResid[S_, M_] := Max[Abs[Flatten[ConjugateTranspose[S] . M . S - M]]];
+energyResid[e_, modes_, metric_] := Module[{S = assembleS[e, modes]},
+  If[metric === "sigma", sigResid[S, sigMetric[modes]], unitResid[S]]];
+shS[e_] := {{e["Rsh"], e["Tsh_u"] + 1.}, {e["Tsh"] + 1., e["Rsh_u"]}};
+shEnergyResid[e_] := Module[{s = shS[e]}, Abs[Abs[s[[1, 1]]]^2 + Abs[s[[2, 1]]]^2 - 1.]];
+
+(* ============================================================================
+   Task 2 Step 4: Resolve the energy metric (R1) at pNormal
+   ============================================================================ *)
+Nm = 2;
+G0n = buildG0undamped[1.*^-6, Nm]; Tcn = collV[G0n, T0vec[Nm]];
+en = rtBlocksE[Tcn, 1.*^-6, Nm]; mds = propModes[1.*^-6];
+Sn = assembleS[en, mds];
+residPlain = unitResid[Sn]; residSigma = sigResid[Sn, sigMetric[mds]];
+residSH = shEnergyResid[en];
+energyMetric = If[residPlain <= residSigma, "plain", "sigma"];
+Print["  R1 metric @pNormal: |S^dag S - I| = ", ScientificForm[residPlain, 3],
+   ", |S^dag Sig S - Sig| = ", ScientificForm[residSigma, 3],
+   " -> energyMetric = ", energyMetric];
+Print["  SH @pNormal: |Rsh|^2+|Tsh|^2-1 = ", ScientificForm[residSH, 3]];
