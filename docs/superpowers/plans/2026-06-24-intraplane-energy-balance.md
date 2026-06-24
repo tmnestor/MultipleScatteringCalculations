@@ -332,13 +332,17 @@ rtBlocksE[Tcoll_, p_, Nmax_] := Module[{modes = {"P", "SV"}, blk},
 
 Append:
 
+**BALLISTIC IDENTITY (correction, 2026-06-24).** `rtAmpE` returns only the *scattered* plane-wave amplitude. The physical transmission also carries the **unscattered (ballistic) incident wave**, which in the ε-normalised flux basis is the identity: `T_full = I_mode + T_scattered` on the forward-transmission blocks (`Td`, `Tu`, and the SH transmission entries); reflections have no ballistic term. Without this, `S ≈ 0` for a weak scatterer and `‖S†S − I‖ ≈ 1`. The identity preserves Phase-3a reciprocity (`Σ·I·Σ = I`, so `Tu = Σ·Td·Σ` still holds, and it never enters `Rd,Ru`).
+
 ```mathematica
 modePos = <|"P" -> 1, "SV" -> 2|>;
 propModes[p_] := Select[{"P", "SV"}, Abs[Im[etaOf[If[# == "P", alpha0, beta0], p]]] < 1.*^-9 &];
-(* P-SV S-matrix over a mode subset: rows=(up-modes, down-modes), cols=(down-modes, up-modes) *)
-assembleS[e_, modes_] := Module[{mi = modePos /@ modes, Rd, Td, Ru, Tu},
-  Rd = e["Rd"][[mi, mi]]; Td = e["Td"][[mi, mi]];
-  Ru = e["Ru"][[mi, mi]]; Tu = e["Tu"][[mi, mi]];
+(* P-SV S-matrix over a mode subset: rows=(up-modes, down-modes), cols=(down-modes, up-modes).
+   Forward-transmission blocks Td,Tu carry the ballistic identity (unscattered incident wave). *)
+assembleS[e_, modes_] := Module[{mi = modePos /@ modes, idm, Rd, Td, Ru, Tu},
+  idm = IdentityMatrix[Length[modes]];
+  Rd = e["Rd"][[mi, mi]]; Td = e["Td"][[mi, mi]] + idm;
+  Ru = e["Ru"][[mi, mi]]; Tu = e["Tu"][[mi, mi]] + idm;
   ArrayFlatten[{{Rd, Tu}, {Td, Ru}}]];
 (* Sig metric: +1 on P channels, -1 on SV channels, repeated for up/down *)
 sigMetric[modes_] := DiagonalMatrix[Flatten[Table[Map[If[# == "SV", -1., 1.] &, modes], {2}]]];
@@ -346,7 +350,9 @@ unitResid[S_] := Max[Abs[Flatten[ConjugateTranspose[S] . S - IdentityMatrix[Leng
 sigResid[S_, M_] := Max[Abs[Flatten[ConjugateTranspose[S] . M . S - M]]];
 energyResid[e_, modes_, metric_] := Module[{S = assembleS[e, modes]},
   If[metric === "sigma", sigResid[S, sigMetric[modes]], unitResid[S]]];
-shS[e_] := {{e["Rsh"], e["Tsh_u"]}, {e["Tsh"], e["Rsh_u"]}};   (* SH 2x2 *)
+(* SH 2x2 with ballistic identity on the transmission entries [1,2]=Tsh_u, [2,1]=Tsh_d *)
+shS[e_] := {{e["Rsh"], e["Tsh_u"] + 1.}, {e["Tsh"] + 1., e["Rsh_u"]}};
+shEnergyResid[e_] := Module[{s = shS[e]}, Abs[Abs[s[[1, 1]]]^2 + Abs[s[[2, 1]]]^2 - 1.]];
 ```
 
 - [ ] **Step 4: Resolve the energy metric (R1) at `pNormal`**
@@ -359,7 +365,7 @@ G0n = buildG0undamped[1.*^-6, Nm]; Tcn = collV[G0n, T0vec[Nm]];
 en = rtBlocksE[Tcn, 1.*^-6, Nm]; mds = propModes[1.*^-6];
 Sn = assembleS[en, mds];
 residPlain = unitResid[Sn]; residSigma = sigResid[Sn, sigMetric[mds]];
-residSH = Abs[Abs[en["Rsh"]]^2 + Abs[en["Tsh"]]^2 - 1.];
+residSH = shEnergyResid[en];
 energyMetric = If[residPlain <= residSigma, "plain", "sigma"];
 Print["  R1 metric @pNormal: |S^dag S - I| = ", ScientificForm[residPlain, 3],
    ", |S^dag Sig S - Sig| = ", ScientificForm[residSigma, 3],
@@ -405,7 +411,7 @@ Do[Module[{G0, Tc, e, modes, Spsv, eR, shResid, antiRd, antiRu, tparity},
    e = rtBlocksE[Tc, p, Nm]; modes = propModes[p];
    Spsv = assembleS[e, modes];
    eR = energyResid[e, modes, energyMetric];
-   shResid = Abs[Abs[e["Rsh"]]^2 + Abs[e["Tsh"]]^2 - 1.];
+   shResid = shEnergyResid[e];
    (* reciprocity (Phase-3a symplectic): only on the propagating P-SV sub-block *)
    antiRd = If[Length[modes] == 2, Max[Abs[e["Rd"][[1, 2]] + e["Rd"][[2, 1]]]], 0.];
    antiRu = If[Length[modes] == 2, Max[Abs[e["Ru"][[1, 2]] + e["Ru"][[2, 1]]]], 0.];
