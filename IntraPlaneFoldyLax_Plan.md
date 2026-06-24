@@ -1,6 +1,6 @@
 # Intra-Plane Foldy-Lax: Planar Multiple Scattering of Spherical Voxels into Layer R/T
 
-**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; **Phase 2 COMPLETE** items (a)-(f) DONE; **Phase 3a DONE**; **Phase 3b cycles 1-2 DONE** (undamped scalar D[q,s] + undamped vector G0^vec); Phase 3b cycle 3 (energy balance) next. Date: 2026-06-24.
+**Pillar 2 of the lateral-heterogeneity program.** Status: Phases 0-1 DONE; **Phase 2 COMPLETE** items (a)-(f) DONE; **Phase 3a DONE**; **Phase 3b DONE** (cycles 1-3: undamped scalar D[q,s] + undamped vector G0^vec + layer energy balance S†S=I). Date: 2026-06-25.
 **Representation: full spherical-multipole (Cruzan/Stein), all `n` (option B, DECIDED).**
 
 > **Progress log (2026-06-18, branch `phase0-intraplane-translation`).** Each phase below
@@ -31,7 +31,7 @@ stratified background. **No CPA / effective-medium homogenisation is used.**
 | Pillar | Object | Status |
 |---|---|---|
 | 1 | Single-site `T0` (full-wave sphere scattering operator) | **DONE** `Mathematica/CartesianT0.nb`, reciprocity-verified 1e-18 |
-| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **Phases 0-1, 2(a)-(f), 3a, 3b(1-2) DONE**; **resume at Phase 3b cycle 3** (energy balance `\|R\|²+\|T\|²=1` on the undamped `G0^vec`) |
+| **2** | **Intra-plane `G0` + planar Foldy-Lax -> layer R/T(p)** | **Phase 3b DONE** — Phases 0-1, 2(a)-(f), 3a, Phase 3b cycles 1-3 DONE; energy balance `\|R\|²+\|T\|²=1` verified on undamped `G0^vec` |
 | 3 | Kennett vertical recursion on the stratified background | EXISTS `cubic_scattering/kennett_layers.py` |
 
 ```mermaid
@@ -237,15 +237,28 @@ Project the planar collective scattering onto the up/down P-SV-SH plane waves at
     residual); (b) `T0LMN` must call `TsphClean[n,kPo,kSo,lamO,muO,kPi,kSi,lamI,muI,aa]` /
     `Ttoroidal[n,kSo,muO,kSi,muI,aa]` with the `CartesianT0.wl` globals (the plan had a short arg list).
     See [[project-undamped-vector-g0]], [[project-undamped-kambe-structure-constants]].
-  - **cycle 3 — ◀ RESUME HERE** (unblocked by cycle 2): the lossless **energy balance** `|R|²+|T|²=1` for the
-    Phase-3a layer R/T(p) built on the undamped `G0^vec` (with the thesis ε / Kennett flux normalisation).
-    Requires replacing the Phase-2 damped `G0` with the cycle-2 undamped `G0^vec` (`Mathematica/IntraPlaneKambeVector.wl`
-    / `IntraPlaneKambeVector_reference.json`) in the RT projection (`Mathematica/IntraPlaneRT.wl`) and verifying
-    `|R|²+|T|²=1` across normal / sub-critical / post-critical `p`. Inputs ready: undamped scalar `D[q,s]`
-    (cycle 1) and undamped vector `G0^vec` 25×25 at `Nmax=2` (cycle 2); thesis ε-eigenvector R/T(p) projection
-    (Phase 3a, [[project-intraplane-layer-rt]]). Suggested entry: brainstorm → spec → plan → subagent-driven,
-    same as cycles 1–2. **Open question to settle first:** whether energy balance holds at `Nmax=2` or needs a
-    higher multipole truncation / more `p`-samples (cf. the Phase 3a up-down truncation note below).
+  - **cycle 3 DONE** 2026-06-25 (`Mathematica/IntraPlaneEnergyBalance.wl` + `.nb`,
+    `Mathematica/IntraPlaneEnergyBalance_reference.json`,
+    `cubic_scattering/tests/test_intraplane_energy.py`): lossless **energy balance** `|R|²+|T|²=1` for the
+    Phase-3a layer R/T(p) built on the cycle-2 undamped `G0^vec` at physical parameters (`aL=2.5`,
+    `κ_P=0.3`, `κ_S=0.5`). Lifts the Phase-2 damped `G0` to the Ewald/Kambe undamped `G0^vec`, runs the
+    thesis ε-eigenvector R/T projection, assembles the propagating-channel scattering matrix
+    `S = [[Rd,Tu],[Td,Ru]]` (+ SH 2×2 block), and gates plain `S†S=I` (energyMetric="plain", enTol=1e-3)
+    across normal / sub-critical / post-critical `p`. Key fix en route: the **ballistic (unscattered)
+    transmission identity** (`T = I + forward-scattered`) — without it `S≈0` and `‖S†S−I‖≈1`. Gates all
+    PASS (fresh-run):
+    - **[1] no open diffraction orders:** diffraction margin = 1.613 > 0 — sub-wavelength precondition
+      holds (every reciprocal `G≠0` evanescent), specular statement well-posed; script Aborts if a
+      diffraction order ever opens.
+    - **[2] undamped η-independence at physical κ** (`κ_P=0.3`, `κ_S=0.5`): 4.66e-10 → PASS.
+    - **[3] energy unitarity (plain S†S=I, propagating-restricted):** max 1.22e-5 → PASS.
+      Normal `{P,SV}` 1.22e-5; sub-critical `{P,SV}` 8.46e-6; post-critical `{SV}`-only 1.16e-5; SH
+      energy `|Rsh|²+|Tsh|²` ~2.2e-7.
+    - **[4] reciprocity preserved (undamped):** max 4.10e-8 → PASS; undamping fixes energy without
+      breaking Phase-3a symplectic reciprocity.
+    - **[5] Nmax study (energy resid @ sub-critical):** `{Nmax=1→6.58e-6, 2→8.46e-6, 3→8.47e-6}` —
+      **plateaus at Nmax=2** (quadrature-floor-limited). **Open question answered:** Nmax=2 is sufficient
+      for specular R/T; higher truncation gives no further gain.
 
 *Original accept (revised):* reflection reciprocity in the thesis symplectic form (above) — the plain
 `Tu=Td^T`/`Rd` symmetric is the codebase-Kennett (velocity-weighted) convention, which differs from the
