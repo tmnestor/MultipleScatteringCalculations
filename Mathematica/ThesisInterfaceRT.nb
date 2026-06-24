@@ -10,15 +10,15 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     12307,        269]
-NotebookOptionsPosition[     10910,        245]
-NotebookOutlinePosition[     11227,        259]
-CellTagsIndexPosition[     11184,        256]
+NotebookDataLength[     12723,        279]
+NotebookOptionsPosition[     11325,        255]
+NotebookOutlinePosition[     11642,        269]
+CellTagsIndexPosition[     11599,        266]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Thesis Section 3.1 : Energy-Normalised Interface R/T", "Title",ExpressionUUID->"582bd177-605e-4221-b99e-21053b5351a4"],
+Cell["Thesis Section 3.1 : Energy-Normalised Interface R/T", "Title",ExpressionUUID->"a6039f72-1d3a-42c0-b110-7c04ceeac130"],
 
 Cell["\<\
 Thesis Section 3.1 energy-normalised displacement-traction eigenbasis D_z and \
@@ -29,7 +29,7 @@ scaffold.  Faithful to GRepresentations.tex (Peigen/SVeigen/SHeigen + epsdef \
 convention, NOT the project's e^{+i w t}).  Self-checks: symplectic identity, \
 D_z.D_z^{-1}=I, traction=Hooke(displacement), and interface |R|^2+|T|^2=1.  \
 Executable twin: ThesisInterfaceRT.wl.\
-\>", "Text",ExpressionUUID->"0236564f-de99-4451-b6c7-139b27117c8d"],
+\>", "Text",ExpressionUUID->"6b2d84ab-92ae-48d6-a581-adafdc58ca4f"],
 
 Cell["\<\
 ThesisInterfaceRT.wl  --  PhD thesis Section 3.1 energy-normalised
@@ -50,12 +50,12 @@ l.29 -
      - traction = physical stress on the +z plane (sigma_zz, sigma_zx, \
 sigma_zy);
        lambda = rho(alpha^2 - 2 beta^2), mu = rho beta^2.\
-\>", "Text",ExpressionUUID->"5cf8f99b-00fa-4d2d-8745-5f4da8af10e0"],
+\>", "Text",ExpressionUUID->"9aca9235-94ac-46f3-98e3-49de3777463c"],
 
 Cell["\<\
 1. Kinematics: velocity per mode, K-hat, vertical wavenumber, energy-norm eps\
 \
-\>", "Section",ExpressionUUID->"c2ba5c88-3eae-4b76-b090-07db1d53e78e"],
+\>", "Section",ExpressionUUID->"2dd13953-57f8-49b7-8251-6bfa32a34e5c"],
 
 Cell["\<\
 vel[c_, alpha_, beta_] := Switch[c, \"P\", alpha, \"S\", beta, \"H\", beta];
@@ -67,14 +67,14 @@ epsP[rho_, om_, kzP_] := 1/Sqrt[2 rho om^2 kzP];                              \
        (* epsdef  *)
 epsS[beta_, rho_, om_, KS_, kzS_] := om/(beta KS Sqrt[2 rho om^2 kzS]);
 epsH[rho_, om_, KH_, kzH_] := 1/(KH Sqrt[2 rho om^2 kzH]);\
-\>", "Input",ExpressionUUID->"1b3a1d6f-f4ce-44aa-9a07-2fced1f2fe96"],
+\>", "Input",ExpressionUUID->"a349cc81-2d4f-4695-8924-7885cff4d5d4"],
 
 Cell["\<\
 2. The three energy-normalised eigenvectors (s = +1 down, s = -1 up).
       Transcribed from Peigen / SVeigen / SHeigen; the thesis \"+-/-+\" \
 reduce to
       the factor (-s) and \"+/-\" to (+s) with the downgoing (+) top sign.\
-\>", "Section",ExpressionUUID->"511f729a-ad70-471b-90ee-65d12d22e633"],
+\>", "Section",ExpressionUUID->"3c53d6ce-1e45-4ded-896e-2312b02d4433"],
 
 Cell["\<\
 eigP[s_, alpha_, beta_, rho_, om_, kx_, ky_] := Module[
@@ -102,11 +102,11 @@ alpha, beta, om, kx, ky], eH},
       2 I ky rho (b2 kx^2 + b2 ky^2 - om^2),
       -s 2 I rho b2 kx ky kzc,
       s I kzc rho (om^2 - 2 b2 ky^2)}];\
-\>", "Input",ExpressionUUID->"dd21c0e8-c458-4365-bd42-7c39bd119df3"],
+\>", "Input",ExpressionUUID->"a90e0321-4818-4556-a331-1cddd12274d5"],
 
 Cell["\<\
 3. Eigen-matrix D_z = [ +P +S +H  -P -S -H ] (columns) and symplectic J6\
-\>", "Section",ExpressionUUID->"4721640d-4ef8-4d9d-8ed6-a12a28380eba"],
+\>", "Section",ExpressionUUID->"2ec0cfba-732c-4802-9646-84b31b0b257b"],
 
 Cell["\<\
 Dz[alpha_, beta_, rho_, om_, kx_, ky_] := Transpose[{
@@ -122,13 +122,13 @@ J6 = ArrayFlatten[{{Zero3, Id3}, {-Id3, Zero3}}];                             \
 (* symplectic inverse, Eq. D1def:  D_z^{-1}(k) = -i J6 D_z^T(-k) J6 *)
 DzInv[alpha_, beta_, rho_, om_, kx_, ky_] :=
   -I J6 . Transpose[Dz[alpha, beta, rho, om, -kx, -ky]] . J6;\
-\>", "Input",ExpressionUUID->"a25a4cfa-77ef-483e-9e4f-16946d7c1a6e"],
+\>", "Input",ExpressionUUID->"43dd63d8-fa3e-44d5-9662-1c44ee73ff4c"],
 
 Cell["\<\
 4. SELF-CHECKS.  Numeric instantiation: two propagating half-spaces, all six
       modes real (sub-critical) in BOTH media so every column is a true plane \
 wave.\
-\>", "Section",ExpressionUUID->"aa31edda-4534-462a-9724-c8d8fed9e50c"],
+\>", "Section",ExpressionUUID->"7bf88509-7507-47f4-bd4f-8efb661ce75c"],
 
 Cell["\<\
 chop[x_] := Chop[x, 1.*^-9];
@@ -201,29 +201,30 @@ ScientificForm[hookeResid[a1, b1, r1], 3],
    \", HS2 = \", ScientificForm[hookeResid[a2, b2v, r2], 3], \" -> \",
    If[Max[hookeResid[a1, b1, r1], hookeResid[a2, b2v, r2]] < 1.*^-7, \
 \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"db6c1388-7328-4c94-b759-2d1bbcb63577"],
+\>", "Input",ExpressionUUID->"a188b1ca-82a0-4dc8-9681-5bb0ec189355"],
 
 Cell["\<\
-5. INTERFACE R/T SCAFFOLD (worked demonstration; drive your own rederivation
-      from here).  Continuity of the full 6-vector b across z = 0:
+5. INTERFACE R/T via the SYMPLECTIC INVERSE: one 3x3 inverse, no 6x6 solve.
+      Continuity of the full 6-vector b across z = 0:
         D1 . {a_inc(down); a_refl(up)} = D2 . {a_trans(down); 0(up)}.
-      Unknowns a_refl(3), a_trans(3); incident a_inc(3) given.  Rearranged:
-        [ D1[:,4:6]  -D2[:,1:3] ] . {a_refl; a_trans} = -D1[:,1:3] . a_inc.
-      Feed the 3 unit incidents (P,S,H) to get R (3x3, down-in -> up-out) and
-      T (3x3, down-in -> down-out), columns indexed by incident mode.\
-\>", "Section",ExpressionUUID->"5c620f50-6c99-475d-8954-bbfeac3568b7"],
+      Form the interface map  Q = D1^{-1} D2  with D1^{-1} from the \
+symplectic
+      identity D1def (Q = -i J6 D1^T(-k) J6 . D2 -- NO 6x6 elimination), then
+      partition Q into 3x3 blocks [[Q11,Q12],[Q21,Q22]].  Since a2 has no \
+upgoing
+      part, (a_inc; a_refl) = Q.(a_trans; 0) gives
+        a_inc  = Q11 . a_trans      a_refl = Q21 . a_trans
+      =>  T = Q11^{-1}   (the ONLY inverse, 3x3),   R = Q21 . T.
+      R (down-in -> up-out), T (down-in -> down-out); columns = incident mode \
+P,S,H.\
+\>", "Section",ExpressionUUID->"94405da2-3c53-42af-9643-54b97a0d66b6"],
 
 Cell["\<\
-D1 = Dz[a1, b1, r1, om0, kx0, ky0];
-D2 = Dz[a2, b2v, r2, om0, kx0, ky0];
-Mmat = Join[D1[[All, 4 ;; 6]], -D2[[All, 1 ;; 3]], 2];   (* 6x6: columns \
-(a_refl | a_trans) *)
-Xsol = LinearSolve[Mmat, -D1[[All, 1 ;; 3]]];            (* 6x3: rows \
-(a_refl; a_trans), cols = incident mode *)
-Rmat = Xsol[[1 ;; 3]];                                    (* reflection 3x3 \
-(rows: refl mode P,S,H) *)
-Tmat = Xsol[[4 ;; 6]];                                    (* transmission 3x3 \
-(rows: trans mode P,S,H) *)
+Qmat = DzInv[a1, b1, r1, om0, kx0, ky0] . Dz[a2, b2v, r2, om0, kx0, ky0];  (* \
+D1^{-1} via J, no solve *)
+Q11 = Qmat[[1 ;; 3, 1 ;; 3]]; Q21 = Qmat[[4 ;; 6, 1 ;; 3]];
+Tmat = Inverse[Q11];          (* 3x3 inverse -- the only one *)
+Rmat = Q21 . Tmat;
 Print[\"  --- interface R/T (energy-normalised eigenbasis, mode order P,S,H) \
 ---\"];
 Print[\"  R (down-in -> up-out) =\"]; Print[\"    \", \
@@ -240,12 +241,21 @@ Print[\"  [3] per-incident power |R|^2+|T|^2 (P,S,H) = \", chop[colPower],
    \"  max|.-1| = \", ScientificForm[Max[Abs[colPower - 1.]], 3], \" -> \",
    If[Max[Abs[colPower - 1.]] < 1.*^-7, \"PASS\", \"FAIL\"]];
 
+(* --- [3b] regression: the 3x3-via-J R/T equals the old 6x6 linear solve --- \
+*)
+Mref = Join[Dz[a1, b1, r1, om0, kx0, ky0][[All, 4 ;; 6]], -Dz[a2, b2v, r2, \
+om0, kx0, ky0][[All, 1 ;; 3]], 2];
+Xref = LinearSolve[Mref, -Dz[a1, b1, r1, om0, kx0, ky0][[All, 1 ;; 3]]];
+rtDev = Max[Abs[Flatten[{Rmat - Xref[[1 ;; 3]], Tmat - Xref[[4 ;; 6]]}]]];
+Print[\"  [3b] 3x3-via-J R/T == 6x6 solve : \", ScientificForm[rtDev, 3],
+   \" -> \", If[rtDev < 1.*^-7, \"PASS\", \"FAIL\"]];
+
 Print[\"ThesisInterfaceRT.wl loaded.\"];\
-\>", "Input",ExpressionUUID->"7e588b1d-5e50-4e35-9d62-cd040fb58e22"]
+\>", "Input",ExpressionUUID->"3d3b126c-32d2-4e0c-83fa-88cb9dbe0992"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"ef4f1039-28a4-4d23-8fe4-2b6d487785a7"
+ExpressionUUID->"84a98d1d-01d9-4dbd-a04d-ed623120be1e"
 ]
 (* End of Notebook Content *)
 
@@ -258,19 +268,19 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 124, 0, 70, "Title",ExpressionUUID->"582bd177-605e-4221-b99e-21053b5351a4"],
-Cell[681, 22, 662, 9, 70, "Text",ExpressionUUID->"0236564f-de99-4451-b6c7-139b27117c8d"],
-Cell[1346, 33, 986, 19, 70, "Text",ExpressionUUID->"5cf8f99b-00fa-4d2d-8745-5f4da8af10e0"],
-Cell[2335, 54, 161, 3, 70, "Section",ExpressionUUID->"c2ba5c88-3eae-4b76-b090-07db1d53e78e"],
-Cell[2499, 59, 588, 10, 70, "Input",ExpressionUUID->"1b3a1d6f-f4ce-44aa-9a07-2fced1f2fe96"],
-Cell[3090, 71, 310, 5, 70, "Section",ExpressionUUID->"511f729a-ad70-471b-90ee-65d12d22e633"],
-Cell[3403, 78, 1008, 26, 70, "Input",ExpressionUUID->"dd21c0e8-c458-4365-bd42-7c39bd119df3"],
-Cell[4414, 106, 154, 2, 70, "Section",ExpressionUUID->"4721640d-4ef8-4d9d-8ed6-a12a28380eba"],
-Cell[4571, 110, 723, 14, 70, "Input",ExpressionUUID->"a25a4cfa-77ef-483e-9e4f-16946d7c1a6e"],
-Cell[5297, 126, 244, 4, 70, "Section",ExpressionUUID->"aa31edda-4534-462a-9724-c8d8fed9e50c"],
-Cell[5544, 132, 3412, 71, 70, "Input",ExpressionUUID->"db6c1388-7328-4c94-b759-2d1bbcb63577"],
-Cell[8959, 205, 595, 8, 70, "Section",ExpressionUUID->"5c620f50-6c99-475d-8954-bbfeac3568b7"],
-Cell[9557, 215, 1349, 28, 70, "Input",ExpressionUUID->"7e588b1d-5e50-4e35-9d62-cd040fb58e22"]
+Cell[554, 20, 124, 0, 70, "Title",ExpressionUUID->"a6039f72-1d3a-42c0-b110-7c04ceeac130"],
+Cell[681, 22, 662, 9, 70, "Text",ExpressionUUID->"6b2d84ab-92ae-48d6-a581-adafdc58ca4f"],
+Cell[1346, 33, 986, 19, 70, "Text",ExpressionUUID->"9aca9235-94ac-46f3-98e3-49de3777463c"],
+Cell[2335, 54, 161, 3, 70, "Section",ExpressionUUID->"2dd13953-57f8-49b7-8251-6bfa32a34e5c"],
+Cell[2499, 59, 588, 10, 70, "Input",ExpressionUUID->"a349cc81-2d4f-4695-8924-7885cff4d5d4"],
+Cell[3090, 71, 310, 5, 70, "Section",ExpressionUUID->"3c53d6ce-1e45-4ded-896e-2312b02d4433"],
+Cell[3403, 78, 1008, 26, 70, "Input",ExpressionUUID->"a90e0321-4818-4556-a331-1cddd12274d5"],
+Cell[4414, 106, 154, 2, 70, "Section",ExpressionUUID->"2ec0cfba-732c-4802-9646-84b31b0b257b"],
+Cell[4571, 110, 723, 14, 70, "Input",ExpressionUUID->"43dd63d8-fa3e-44d5-9662-1c44ee73ff4c"],
+Cell[5297, 126, 244, 4, 70, "Section",ExpressionUUID->"7bf88509-7507-47f4-bd4f-8efb661ce75c"],
+Cell[5544, 132, 3412, 71, 70, "Input",ExpressionUUID->"a188b1ca-82a0-4dc8-9681-5bb0ec189355"],
+Cell[8959, 205, 786, 14, 70, "Section",ExpressionUUID->"94405da2-3c53-42af-9643-54b97a0d66b6"],
+Cell[9748, 221, 1573, 32, 70, "Input",ExpressionUUID->"3d3b126c-32d2-4e0c-83fa-88cb9dbe0992"]
 }
 ]
 *)
