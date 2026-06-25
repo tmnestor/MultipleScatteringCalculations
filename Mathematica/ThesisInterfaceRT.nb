@@ -10,14 +10,16 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     12723,        279]
-NotebookOptionsPosition[     11325,        255]
-NotebookOutlinePosition[     11642,        269]
-CellTagsIndexPosition[     11599,        266]
+NotebookDataLength[     26180,        650]
+NotebookOptionsPosition[     23131,        591]
+NotebookOutlinePosition[     23523,        607]
+CellTagsIndexPosition[     23480,        604]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
+
+Cell[CellGroupData[{
 Cell["Thesis Section 3.1 : Energy-Normalised Interface R/T", "Title",ExpressionUUID->"a6039f72-1d3a-42c0-b110-7c04ceeac130"],
 
 Cell["\<\
@@ -26,10 +28,13 @@ canonical symplectic J6 for two half-spaces, plus the plane-interface R/T \
 scaffold.  Faithful to GRepresentations.tex (Peigen/SVeigen/SHeigen + epsdef \
 + the symplectic identity dinv2).  Conventions: b=(u_z,u_x,u_y,t_z,t_x,t_y); \
 +=downgoing; column order (+P,+S,+H,-P,-S,-H); TIME e^{-i w t} (thesis \
-convention, NOT the project's e^{+i w t}).  Self-checks: symplectic identity, \
+convention; the project's 'e^{+i w t}' comments are a mislabel -- it is also e^{-i w t}).  Self-checks: symplectic identity, \
 D_z.D_z^{-1}=I, traction=Hooke(displacement), and interface |R|^2+|T|^2=1.  \
 Executable twin: ThesisInterfaceRT.wl.\
-\>", "Text",ExpressionUUID->"6b2d84ab-92ae-48d6-a581-adafdc58ca4f"],
+\>", "Text",
+ CellChangeTimes->{
+  3.991336976567505*^9},ExpressionUUID->"6b2d84ab-92ae-48d6-a581-\
+adafdc58ca4f"],
 
 Cell["\<\
 ThesisInterfaceRT.wl  --  PhD thesis Section 3.1 energy-normalised
@@ -46,11 +51,13 @@ ThesisInterfaceRT.wl  --  PhD thesis Section 3.1 energy-normalised
 -P,-S,-H).
      - TIME convention  e^{-i w t}  (the THESIS convention, GRepresentations \
 l.29 -
-       NOT the project's e^{+i w t} used by CartesianT0 / the Phase-3 code).
+       the SAME convention CartesianT0 / the Phase-3 code actually use; their 'e^{+i w t}' comments are a mislabel (outgoing h_n^(1) IS e^{-i w t}).
      - traction = physical stress on the +z plane (sigma_zz, sigma_zx, \
 sigma_zy);
        lambda = rho(alpha^2 - 2 beta^2), mu = rho beta^2.\
 \>", "Text",ExpressionUUID->"9aca9235-94ac-46f3-98e3-49de3777463c"],
+
+Cell[CellGroupData[{
 
 Cell["\<\
 1. Kinematics: velocity per mode, K-hat, vertical wavenumber, energy-norm eps\
@@ -67,7 +74,11 @@ epsP[rho_, om_, kzP_] := 1/Sqrt[2 rho om^2 kzP];                              \
        (* epsdef  *)
 epsS[beta_, rho_, om_, KS_, kzS_] := om/(beta KS Sqrt[2 rho om^2 kzS]);
 epsH[rho_, om_, KH_, kzH_] := 1/(KH Sqrt[2 rho om^2 kzH]);\
-\>", "Input",ExpressionUUID->"a349cc81-2d4f-4695-8924-7885cff4d5d4"],
+\>", "Input",
+ CellLabel->"In[60]:=",ExpressionUUID->"a349cc81-2d4f-4695-8924-7885cff4d5d4"]
+}, Open  ]],
+
+Cell[CellGroupData[{
 
 Cell["\<\
 2. The three energy-normalised eigenvectors (s = +1 down, s = -1 up).
@@ -102,7 +113,11 @@ alpha, beta, om, kx, ky], eH},
       2 I ky rho (b2 kx^2 + b2 ky^2 - om^2),
       -s 2 I rho b2 kx ky kzc,
       s I kzc rho (om^2 - 2 b2 ky^2)}];\
-\>", "Input",ExpressionUUID->"a90e0321-4818-4556-a331-1cddd12274d5"],
+\>", "Input",
+ CellLabel->"In[66]:=",ExpressionUUID->"a90e0321-4818-4556-a331-1cddd12274d5"]
+}, Open  ]],
+
+Cell[CellGroupData[{
 
 Cell["\<\
 3. Eigen-matrix D_z = [ +P +S +H  -P -S -H ] (columns) and symplectic J6\
@@ -122,13 +137,19 @@ J6 = ArrayFlatten[{{Zero3, Id3}, {-Id3, Zero3}}];                             \
 (* symplectic inverse, Eq. D1def:  D_z^{-1}(k) = -i J6 D_z^T(-k) J6 *)
 DzInv[alpha_, beta_, rho_, om_, kx_, ky_] :=
   -I J6 . Transpose[Dz[alpha, beta, rho, om, -kx, -ky]] . J6;\
-\>", "Input",ExpressionUUID->"43dd63d8-fa3e-44d5-9662-1c44ee73ff4c"],
+\>", "Input",
+ CellLabel->"In[71]:=",ExpressionUUID->"43dd63d8-fa3e-44d5-9662-1c44ee73ff4c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
 
 Cell["\<\
 4. SELF-CHECKS.  Numeric instantiation: two propagating half-spaces, all six
       modes real (sub-critical) in BOTH media so every column is a true plane \
 wave.\
 \>", "Section",ExpressionUUID->"7bf88509-7507-47f4-bd4f-8efb661ce75c"],
+
+Cell[CellGroupData[{
 
 Cell["\<\
 chop[x_] := Chop[x, 1.*^-9];
@@ -144,11 +165,14 @@ representation
 naively anyway: it uses
    the symplectic inverse D1def, and the symplectic identity holds at 1e-16 \
 in every unit system. *)
+ 
+
 (* half-space 1 (above) and half-space 2 (below) *)
 a1 = 5.; b1 = 3.; r1 = 2.5;            (* km/s, km/s, g/cm^3 *)
 a2 = 5.5; b2v = 3.3; r2 = 2.7;
 om0 = 1500.; kx0 = 100.; ky0 = 50.;    (* rad/s, rad/km; kx,ky < om/alpha = \
 300 -> all modes propagate *)
+
 
 Print[\"==== ThesisInterfaceRT :: half-space (u,t) eigenbasis + J6 ====\"];
 Print[\"  media: HS1 {a,b,r}=\", {a1, b1, r1}, \"  HS2=\", {a2, b2v, r2}, \"  \
@@ -201,7 +225,144 @@ ScientificForm[hookeResid[a1, b1, r1], 3],
    \", HS2 = \", ScientificForm[hookeResid[a2, b2v, r2], 3], \" -> \",
    If[Max[hookeResid[a1, b1, r1], hookeResid[a2, b2v, r2]] < 1.*^-7, \
 \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"a188b1ca-82a0-4dc8-9681-5bb0ec189355"],
+\>", "Input",
+ CellChangeTimes->{
+  3.991336995478467*^9, {3.991345876915008*^9, 3.991345895512723*^9}, {
+   3.991348387752018*^9, 3.9913483915669203`*^9}},
+ CellLabel->"In[78]:=",ExpressionUUID->"a188b1ca-82a0-4dc8-9681-5bb0ec189355"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"==== ThesisInterfaceRT :: half-space (u,t) eigenbasis + J6 \
+====\"\>"], "Print",
+ CellChangeTimes->{3.991345960671803*^9, 3.991345996395318*^9, 
+  3.9913484260715*^9},
+ CellLabel->
+  "During evaluation of \
+In[78]:=",ExpressionUUID->"723218df-c9b8-4435-bca4-b966612b7945"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  media: HS1 {a,b,r}=\"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{"5.`", ",", "3.`", ",", "2.5`"}], "}"}], 
+   "\[InvisibleSpace]", "\<\"  HS2=\"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{"5.5`", ",", "3.3`", ",", "2.7`"}], "}"}], 
+   "\[InvisibleSpace]", "\<\"  (om,kx,ky)=\"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{"1500.`", ",", "100.`", ",", "50.`"}], "}"}]}],
+  SequenceForm[
+  "  media: HS1 {a,b,r}=", {5., 3., 2.5}, "  HS2=", {5.5, 3.3, 2.7}, 
+   "  (om,kx,ky)=", {1500., 100., 50.}],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960671803*^9, 3.991345996395318*^9, 
+  3.9913484260721283`*^9},
+ CellLabel->
+  "During evaluation of \
+In[78]:=",ExpressionUUID->"15fadc84-d454-4476-bedd-c9dd468bb836"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  [1] symplectic identity (J6 D(-k))^T D(k)=i J6 : HS1 = \"\>",
+    "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"3.33\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-16\"\>"]}],
+      ShowStringCharacters->False],
+     3.3306690738754696`*^-16,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\", HS2 = \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"2.22\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-16\"\>"]}],
+      ShowStringCharacters->False],
+     2.220446049250313*^-16,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\" -> \"\>", 
+   "\[InvisibleSpace]", "\<\"PASS\"\>"}],
+  SequenceForm["  [1] symplectic identity (J6 D(-k))^T D(k)=i J6 : HS1 = ", 
+   ScientificForm[3.3306690738754696`*^-16, 3], ", HS2 = ", 
+   ScientificForm[2.220446049250313*^-16, 3], " -> ", "PASS"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960671803*^9, 3.991345996395318*^9, 
+  3.991348426072783*^9},
+ CellLabel->
+  "During evaluation of \
+In[78]:=",ExpressionUUID->"f051d55e-8fa6-4d59-adff-8500fc416927"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  [1b] D_z . D_z^{-1} == I6 : HS1 = \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"2.4\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-12\"\>"]}],
+      ShowStringCharacters->False],
+     2.4004745032075814`*^-12,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\", HS2 = \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"1.86\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-12\"\>"]}],
+      ShowStringCharacters->False],
+     1.859411500751727*^-12,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\" -> \"\>", 
+   "\[InvisibleSpace]", "\<\"PASS\"\>"}],
+  SequenceForm["  [1b] D_z . D_z^{-1} == I6 : HS1 = ", 
+   ScientificForm[2.4004745032075814`*^-12, 3], ", HS2 = ", 
+   ScientificForm[1.859411500751727*^-12, 3], " -> ", "PASS"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960671803*^9, 3.991345996395318*^9, 
+  3.9913484260733*^9},
+ CellLabel->
+  "During evaluation of \
+In[78]:=",ExpressionUUID->"2587f5b0-38dc-4ff2-a050-c2818ce62347"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  [2] traction == Hooke(displacement) : HS1 = \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"1.42\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-14\"\>"]}],
+      ShowStringCharacters->False],
+     1.4210854715202004`*^-14,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\", HS2 = \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"4.26\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-14\"\>"]}],
+      ShowStringCharacters->False],
+     4.263256414560601*^-14,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\" -> \"\>", 
+   "\[InvisibleSpace]", "\<\"PASS\"\>"}],
+  SequenceForm["  [2] traction == Hooke(displacement) : HS1 = ", 
+   ScientificForm[1.4210854715202004`*^-14, 3], ", HS2 = ", 
+   ScientificForm[4.263256414560601*^-14, 3], " -> ", "PASS"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960671803*^9, 3.991345996395318*^9, 
+  3.991348426073704*^9},
+ CellLabel->
+  "During evaluation of \
+In[78]:=",ExpressionUUID->"bbbca973-3006-4195-a035-4b2c0632c3f1"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
 
 Cell["\<\
 5. INTERFACE R/T via the SYMPLECTIC INVERSE: one 3x3 inverse, no 6x6 solve.
@@ -218,6 +379,8 @@ upgoing
       R (down-in -> up-out), T (down-in -> down-out); columns = incident mode \
 P,S,H.\
 \>", "Section",ExpressionUUID->"94405da2-3c53-42af-9643-54b97a0d66b6"],
+
+Cell[CellGroupData[{
 
 Cell["\<\
 Qmat = DzInv[a1, b1, r1, om0, kx0, ky0] . Dz[a2, b2v, r2, om0, kx0, ky0];  (* \
@@ -251,8 +414,183 @@ Print[\"  [3b] 3x3-via-J R/T == 6x6 solve : \", ScientificForm[rtDev, 3],
    \" -> \", If[rtDev < 1.*^-7, \"PASS\", \"FAIL\"]];
 
 Print[\"ThesisInterfaceRT.wl loaded.\"];\
-\>", "Input",ExpressionUUID->"3d3b126c-32d2-4e0c-83fa-88cb9dbe0992"]
+\>", "Input",
+ CellLabel->
+  "In[105]:=",ExpressionUUID->"3d3b126c-32d2-4e0c-83fa-88cb9dbe0992"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"  --- interface R/T (energy-normalised eigenbasis, mode \
+order P,S,H) ---\"\>"], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.991348427132387*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"7d060655-2eec-4145-af29-149f802ff59e"],
+
+Cell[BoxData["\<\"  R (down-in -> up-out) =\"\>"], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.991348427133542*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"1aad54e1-54c9-4e66-9cbc-3f0051dbdd84"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"    \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    RowBox[{"(", "\[NoBreak]", GridBox[{
+       {"0.0670928159437837`", "0.04592924131304487`", 
+        RowBox[{"0.`", "\[VeryThinSpace]", "+", 
+         RowBox[{"0.022383143474567605`", " ", "\[ImaginaryI]"}]}]},
+       {
+        RowBox[{"-", "0.04592924131304489`"}], "0.06549314434882116`", 
+        RowBox[{"0.`", "\[VeryThinSpace]", "-", 
+         RowBox[{"0.008611971993767713`", " ", "\[ImaginaryI]"}]}]},
+       {
+        RowBox[{"0.`", "\[VeryThinSpace]", "-", 
+         RowBox[{"0.022383143474567598`", " ", "\[ImaginaryI]"}]}], 
+        RowBox[{"0.`", "\[VeryThinSpace]", "-", 
+         RowBox[{"0.008611971993767719`", " ", "\[ImaginaryI]"}]}], 
+        RowBox[{"-", "0.07896758202123444`"}]}
+      },
+      GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+      GridBoxSpacings->{"Columns" -> {
+          Offset[0.27999999999999997`], {
+           Offset[0.7]}, 
+          Offset[0.27999999999999997`]}, "Rows" -> {
+          Offset[0.2], {
+           Offset[0.4]}, 
+          Offset[0.2]}}], "\[NoBreak]", ")"}],
+    Function[BoxForm`e$, 
+     MatrixForm[BoxForm`e$]]]}],
+  SequenceForm["    ", 
+   MatrixForm[{{0.0670928159437837, 0.04592924131304487, 
+      Complex[0., 0.022383143474567605`]}, {-0.04592924131304489, 
+      0.06549314434882116, 
+      Complex[0., -0.008611971993767713]}, {
+      Complex[0., -0.022383143474567598`], 
+      Complex[0., -0.008611971993767719], -0.07896758202123444}}]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.991348427134446*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"d612a389-5459-45d5-a48f-3ca98be69bcb"],
+
+Cell[BoxData["\<\"  T (down-in -> down-out) =\"\>"], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.9913484271349497`*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"41513eb1-c93a-4cf6-996c-ee5c19ea0cd2"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"    \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    RowBox[{"(", "\[NoBreak]", GridBox[{
+       {"0.9957093741982673`", 
+        RowBox[{"-", "0.03452074729370429`"}], 
+        RowBox[{"0.`", "\[VeryThinSpace]", "-", 
+         RowBox[{"0.016823331225042783`", " ", "\[ImaginaryI]"}]}]},
+       {"0.03427730129951613`", "0.9961574867358161`", 
+        RowBox[{"0.`", "\[VeryThinSpace]", "+", 
+         RowBox[{"0.001993892373810862`", " ", "\[ImaginaryI]"}]}]},
+       {
+        RowBox[{"0.`", "\[VeryThinSpace]", "-", 
+         RowBox[{"0.016612118427694226`", " ", "\[ImaginaryI]"}]}], 
+        RowBox[{"0.`", "\[VeryThinSpace]", "+", 
+         RowBox[{"0.002359322054814292`", " ", "\[ImaginaryI]"}]}], 
+        "0.9964446546276364`"}
+      },
+      GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+      GridBoxSpacings->{"Columns" -> {
+          Offset[0.27999999999999997`], {
+           Offset[0.7]}, 
+          Offset[0.27999999999999997`]}, "Rows" -> {
+          Offset[0.2], {
+           Offset[0.4]}, 
+          Offset[0.2]}}], "\[NoBreak]", ")"}],
+    Function[BoxForm`e$, 
+     MatrixForm[BoxForm`e$]]]}],
+  SequenceForm["    ", 
+   MatrixForm[{{0.9957093741982673, -0.03452074729370429, 
+      Complex[0., -0.016823331225042783`]}, {
+     0.03427730129951613, 0.9961574867358161, 
+      Complex[0., 0.001993892373810862]}, {
+      Complex[0., -0.016612118427694226`], 
+      Complex[0., 0.002359322054814292], 0.9964446546276364}}]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.991348427135365*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"e626c468-242c-44bc-8540-ea407c8ed1ba"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  [3] per-incident power |R|^2+|T|^2 (P,S,H) = \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{"1.`", ",", "1.0000000000000004`", ",", "1.0000000000000004`"}], 
+    "}"}], "\[InvisibleSpace]", "\<\"  max|.-1| = \"\>", "\[InvisibleSpace]", 
+   
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"4.44\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-16\"\>"]}],
+      ShowStringCharacters->False],
+     4.440892098500626*^-16,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\" -> \"\>", 
+   "\[InvisibleSpace]", "\<\"PASS\"\>"}],
+  SequenceForm[
+  "  [3] per-incident power |R|^2+|T|^2 (P,S,H) = ", {1., 1.0000000000000004`,
+    1.0000000000000004`}, "  max|.-1| = ", 
+   ScientificForm[4.440892098500626*^-16, 3], " -> ", "PASS"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.9913484271358767`*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"7d321ebd-cabe-4afb-a4f6-f103f46ca14e"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"  [3b] 3x3-via-J R/T == 6x6 solve : \"\>", "\[InvisibleSpace]", 
+   TagBox[
+    InterpretationBox[
+     StyleBox[
+      RowBox[{"\<\"4.44\"\>", "\[Times]", 
+       SuperscriptBox["10", "\<\"-16\"\>"]}],
+      ShowStringCharacters->False],
+     4.440892098500626*^-16,
+     AutoDelete->True],
+    ScientificForm[#, 3]& ], "\[InvisibleSpace]", "\<\" -> \"\>", 
+   "\[InvisibleSpace]", "\<\"PASS\"\>"}],
+  SequenceForm["  [3b] 3x3-via-J R/T == 6x6 solve : ", 
+   ScientificForm[4.440892098500626*^-16, 3], " -> ", "PASS"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.991348427136635*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"44993ef7-1f50-4062-adc9-326911a53196"],
+
+Cell[BoxData["\<\"ThesisInterfaceRT.wl loaded.\"\>"], "Print",
+ CellChangeTimes->{3.991345960692765*^9, 3.991345996775056*^9, 
+  3.991348427137004*^9},
+ CellLabel->
+  "During evaluation of \
+In[105]:=",ExpressionUUID->"1bdf5d01-7efe-4ea9-b673-5d6a44d52aee"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
 },
+WindowSize->{1728, 1056},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
 ExpressionUUID->"84a98d1d-01d9-4dbd-a04d-ed623120be1e"
@@ -268,21 +606,53 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 124, 0, 70, "Title",ExpressionUUID->"a6039f72-1d3a-42c0-b110-7c04ceeac130"],
-Cell[681, 22, 662, 9, 70, "Text",ExpressionUUID->"6b2d84ab-92ae-48d6-a581-adafdc58ca4f"],
-Cell[1346, 33, 986, 19, 70, "Text",ExpressionUUID->"9aca9235-94ac-46f3-98e3-49de3777463c"],
-Cell[2335, 54, 161, 3, 70, "Section",ExpressionUUID->"2dd13953-57f8-49b7-8251-6bfa32a34e5c"],
-Cell[2499, 59, 588, 10, 70, "Input",ExpressionUUID->"a349cc81-2d4f-4695-8924-7885cff4d5d4"],
-Cell[3090, 71, 310, 5, 70, "Section",ExpressionUUID->"3c53d6ce-1e45-4ded-896e-2312b02d4433"],
-Cell[3403, 78, 1008, 26, 70, "Input",ExpressionUUID->"a90e0321-4818-4556-a331-1cddd12274d5"],
-Cell[4414, 106, 154, 2, 70, "Section",ExpressionUUID->"2ec0cfba-732c-4802-9646-84b31b0b257b"],
-Cell[4571, 110, 723, 14, 70, "Input",ExpressionUUID->"43dd63d8-fa3e-44d5-9662-1c44ee73ff4c"],
-Cell[5297, 126, 244, 4, 70, "Section",ExpressionUUID->"7bf88509-7507-47f4-bd4f-8efb661ce75c"],
-Cell[5544, 132, 3412, 71, 70, "Input",ExpressionUUID->"a188b1ca-82a0-4dc8-9681-5bb0ec189355"],
-Cell[8959, 205, 786, 14, 70, "Section",ExpressionUUID->"94405da2-3c53-42af-9643-54b97a0d66b6"],
-Cell[9748, 221, 1573, 32, 70, "Input",ExpressionUUID->"3d3b126c-32d2-4e0c-83fa-88cb9dbe0992"]
+Cell[CellGroupData[{
+Cell[576, 22, 124, 0, 96, "Title",ExpressionUUID->"a6039f72-1d3a-42c0-b110-7c04ceeac130"],
+Cell[703, 24, 709, 12, 77, "Text",ExpressionUUID->"6b2d84ab-92ae-48d6-a581-adafdc58ca4f"],
+Cell[1415, 38, 986, 19, 339, "Text",ExpressionUUID->"9aca9235-94ac-46f3-98e3-49de3777463c"],
+Cell[CellGroupData[{
+Cell[2426, 61, 161, 3, 66, "Section",ExpressionUUID->"2dd13953-57f8-49b7-8251-6bfa32a34e5c"],
+Cell[2590, 66, 612, 11, 116, "Input",ExpressionUUID->"a349cc81-2d4f-4695-8924-7885cff4d5d4"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3239, 82, 310, 5, 140, "Section",ExpressionUUID->"3c53d6ce-1e45-4ded-896e-2312b02d4433"],
+Cell[3552, 89, 1032, 27, 410, "Input",ExpressionUUID->"a90e0321-4818-4556-a331-1cddd12274d5"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4621, 121, 154, 2, 66, "Section",ExpressionUUID->"2ec0cfba-732c-4802-9646-84b31b0b257b"],
+Cell[4778, 125, 747, 15, 185, "Input",ExpressionUUID->"43dd63d8-fa3e-44d5-9662-1c44ee73ff4c"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5562, 145, 244, 4, 103, "Section",ExpressionUUID->"7bf88509-7507-47f4-bd4f-8efb661ce75c"],
+Cell[CellGroupData[{
+Cell[5831, 153, 3583, 78, 827, "Input",ExpressionUUID->"a188b1ca-82a0-4dc8-9681-5bb0ec189355"],
+Cell[CellGroupData[{
+Cell[9439, 235, 291, 6, 23, "Print",ExpressionUUID->"723218df-c9b8-4435-bca4-b966612b7945"],
+Cell[9733, 243, 807, 19, 23, "Print",ExpressionUUID->"15fadc84-d454-4476-bedd-c9dd468bb836"],
+Cell[10543, 264, 1220, 31, 23, "Print",ExpressionUUID->"f051d55e-8fa6-4d59-adff-8500fc416927"],
+Cell[11766, 297, 1171, 30, 23, "Print",ExpressionUUID->"2587f5b0-38dc-4ff2-a050-c2818ce62347"],
+Cell[12940, 329, 1194, 30, 23, "Print",ExpressionUUID->"bbbca973-3006-4195-a035-4b2c0632c3f1"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[14195, 366, 786, 14, 400, "Section",ExpressionUUID->"94405da2-3c53-42af-9643-54b97a0d66b6"],
+Cell[CellGroupData[{
+Cell[15006, 384, 1601, 34, 410, "Input",ExpressionUUID->"3d3b126c-32d2-4e0c-83fa-88cb9dbe0992"],
+Cell[CellGroupData[{
+Cell[16632, 422, 303, 6, 23, "Print",ExpressionUUID->"7d060655-2eec-4145-af29-149f802ff59e"],
+Cell[16938, 430, 254, 5, 23, "Print",ExpressionUUID->"1aad54e1-54c9-4e66-9cbc-3f0051dbdd84"],
+Cell[17195, 437, 1758, 41, 50, "Print",ExpressionUUID->"d612a389-5459-45d5-a48f-3ca98be69bcb"],
+Cell[18956, 480, 258, 5, 23, "Print",ExpressionUUID->"41513eb1-c93a-4cf6-996c-ee5c19ea0cd2"],
+Cell[19217, 487, 1736, 41, 50, "Print",ExpressionUUID->"e626c468-242c-44bc-8540-ea407c8ed1ba"],
+Cell[20956, 530, 1067, 26, 23, "Print",ExpressionUUID->"7d321ebd-cabe-4afb-a4f6-f103f46ca14e"],
+Cell[22026, 558, 793, 20, 23, "Print",ExpressionUUID->"44993ef7-1f50-4062-adc9-326911a53196"],
+Cell[22822, 580, 257, 5, 23, "Print",ExpressionUUID->"1bdf5d01-7efe-4ea9-b673-5d6a44d52aee"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
 }
 ]
 *)
 
-(* End of internal cache information *)
