@@ -63,5 +63,7 @@ imaginary), and the full `T` carries the ballistic through-wave automatically fr
 - `Mathematica/ThesisInterfaceRT.wl` — executable source (self-contained, no `Get[]`).
 - `Mathematica/ThesisInterfaceRT.nb` — notebook twin (sectioned cells) for interactive rederivation.
 - `Mathematica/makeThesisNotebook.wl` — standalone `.nb` generator for thesis-validation scripts.
+- `scripts/thesis_interface_rt.py` — self-contained NumPy twin (same conventions, seismic units,
+  3×3-via-J reduction, and self-checks); float64 reproduces the Mathematica R/T and all gates.
 
 See [[thesis-energy-normalisation]], [[project-intraplane-layer-rt]].
