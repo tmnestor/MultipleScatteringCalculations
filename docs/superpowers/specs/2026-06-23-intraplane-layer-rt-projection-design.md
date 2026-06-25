@@ -128,7 +128,7 @@ is the only machine-precision gate.
 ## 7. Conventions
 
 Coordinate system `z` (down, axis 0), `x` (axis 1), `y` (axis 2); horizontal slowness `p`; conda env
-`seismic`; time `e^{+iωt}`, outgoing `h_n^(1)` via `SphericalHankelH1` (never `j_n + i y_n`); complex
+`seismic`; time `e^{−iωt}`, outgoing `h_n^(1)` via `SphericalHankelH1` (never `j_n + i y_n`); complex
 slowness `Im η > 0`, `pol·pol = 1` (no conjugation) past critical. Mathematica via
 `/Applications/Wolfram.app/Contents/MacOS/wolframscript`. LaTeX: self-contained `lualatex`, compiled
 in-place per `docs/` subdir, run twice. Background α=5000, β=3000, ρ=2500; moderate contrast Δλ=+2 GPa,

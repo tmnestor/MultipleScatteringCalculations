@@ -28,7 +28,7 @@
          L-block of G0^vec is reciprocal (the M/N strict reciprocity + energy is
          plan item (d), needing the flux metric).
 
-   Conventions: time e^{+i w t}, outgoing h_n^(1); z = polar axis = depth; the lattice
+   Conventions: time e^{-i w t}, outgoing h_n^(1); z = polar axis = depth; the lattice
    lies in the x-y plane (R_z = 0, theta_R = Pi/2).  Inner T0 uses the REAL background
    wavenumbers; only the inter-voxel lattice sum is damped.
    ============================================================================ *)

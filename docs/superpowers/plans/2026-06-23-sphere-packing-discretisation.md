@@ -12,7 +12,7 @@
 
 - Conda env `seismic`; run Python tooling via `conda run -n seismic <cmd>`.
 - Coordinate system: `z` (down, axis 0), `x` (axis 1), `y` (axis 2); lattice in the x–y plane.
-- Time convention `e^{+iωt}`, outgoing `h_n^(1)` via `SphericalHankelH1` — NEVER `j_n + i y_n` (catastrophic cancellation in the damped far field).
+- Time convention `e^{−iωt}`, outgoing `h_n^(1)` via `SphericalHankelH1` — NEVER `j_n + i y_n` (catastrophic cancellation in the damped far field).
 - Rayleigh limit only: `ka ∈ {0.05, 0.1}`. No finite-ka, no oblique incidence (Phase 3).
 - Contrast renorm keeps spheres NON-overlapping: sphere radius `a = L/2` (the cube half-width), φ = π/6 at touching, sphere contrast = `Δ/φ`. The cube is at φ=1 (no renorm).
 - Test params (`CLAUDE.md`): background α=5000 m/s, β=3000 m/s, ρ=2500 kg/m³; moderate contrast Δλ=+2 GPa (2e9), Δμ=+1 GPa (1e9), Δρ=+100 kg/m³; weak = `1e-4 ×` background moduli/density; negative/strong = −60% of background moduli & density.
@@ -60,7 +60,7 @@ In `Mathematica/IntraPlaneDiscretisation.wl`, open with a docstring block (purpo
 (* IntraPlaneDiscretisation.wl — Phase 2 item (e): sphere-packing discretisation error.
    Stage A: single-site shape factor (sphere vs cube effective contrast, raw + Δ→Δ/φ).
    Stage B: sphere-packing collective effective contrast → normal-incidence R_PP inputs.
-   Conventions: e^{+i w t}, outgoing h_n^(1) (SphericalHankelH1), z=depth, lattice in x-y. *)
+   Conventions: e^{-i w t}, outgoing h_n^(1) (SphericalHankelH1), z=depth, lattice in x-y. *)
 Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
 reim[z_] := {Re[N[z]], Im[N[z]]};
 phiTouch = N[Pi/6];                                  (* sphere-in-cube volume fraction *)

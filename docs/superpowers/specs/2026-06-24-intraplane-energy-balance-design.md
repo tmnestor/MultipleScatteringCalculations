@@ -165,7 +165,7 @@ sub-critical / post-critical), `pcritP = 1/α0`, `pcritS = 1/β0`.
 
 Coordinate frame `z` (down, axis 0), `x` (axis 1), `y` (axis 2); horizontal slowness `p` along `x`;
 project-frame `(z,x,y)` permuted into the bridge frame by `toSph` at every bridge call; time
-`e^{+iωt}`, outgoing `h_n^(1)` (`SphericalHankelH1`); inner `T0` at **real** background wavenumbers;
+`e^{−iωt}`, outgoing `h_n^(1)` (`SphericalHankelH1`); inner `T0` at **real** background wavenumbers;
 conda env `seismic`; Mathematica via `/Applications/Wolfram.app/Contents/MacOS/wolframscript`.
 Related: [[project-undamped-vector-g0]], [[project-undamped-kambe-structure-constants]],
 [[project-intraplane-layer-rt]], [[thesis-energy-normalisation]],

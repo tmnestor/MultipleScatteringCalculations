@@ -24,9 +24,9 @@ project's core aim: **validating (or refuting) the thesis**.
 ## 3. Conventions
 
 - `+` = downgoing, `−` = upgoing; column order `(+P,+S,+H, −P,−S,−H)`.
-- **Time `e^{−iωt}`** — the THESIS convention (`GRepresentations` l.29), *not* the project's
-  `e^{+iωt}` (CartesianT0 / Phase-3 code). Stated in the notebook header so the two are not
-  confused.
+- **Time `e^{−iωt}`** — the THESIS convention (`GRepresentations` l.29). The project code
+  (CartesianT0 / Phase-3) is **also** `e^{−iωt}` in its math; its old `e^{+iωt}` comments were a
+  mislabel (outgoing `h_n^(1)` / `e^{+ikr}` IS `e^{−iωt}`).
 - Traction = physical stress on the +z plane `(σ_zz, σ_zx, σ_zy)`; `λ = ρ(α²−2β²)`, `μ = ρβ²`.
 - General `(k_x, k_y)` (full 6×6 `J₆`; P-SV and SH couple when `k_y ≠ 0`, decoupling only at
   `k_y = 0`).

@@ -34,6 +34,6 @@ makeTwin["ThesisInterfaceRT.wl", "Thesis Section 3.1 : Energy-Normalised Interfa
    <> "symplectic J6 for two half-spaces, plus the plane-interface R/T scaffold.  Faithful to "
    <> "GRepresentations.tex (Peigen/SVeigen/SHeigen + epsdef + the symplectic identity dinv2).  "
    <> "Conventions: b=(u_z,u_x,u_y,t_z,t_x,t_y); +=downgoing; column order (+P,+S,+H,-P,-S,-H); "
-   <> "TIME e^{-i w t} (thesis convention, NOT the project's e^{+i w t}).  Self-checks: symplectic "
+   <> "TIME e^{-i w t} (thesis convention; the project's 'e^{+i w t}' comments are a mislabel -- it is also e^{-i w t}).  Self-checks: symplectic "
    <> "identity, D_z.D_z^{-1}=I, traction=Hooke(displacement), and interface |R|^2+|T|^2=1.  "
    <> "Executable twin: ThesisInterfaceRT.wl."];

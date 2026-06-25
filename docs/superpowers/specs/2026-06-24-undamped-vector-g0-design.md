@@ -102,7 +102,7 @@ direct-sum ground truth line up directly.
 
 ## 6. Conventions & Constraints
 
-- Time `e^{+iωt}`, outgoing `h_q^{(1)}` via `SphericalHankelH1`; regular `j_q` via
+- Time `e^{−iωt}`, outgoing `h_q^{(1)}` via `SphericalHankelH1`; regular `j_q` via
   `SphericalBesselJ`; `Y_q^s` via `SphericalHarmonicY`. Lattice in x–y (`θ_R = π/2`); z = polar
   = depth.
 - Conda env `seismic`; Python tooling via `conda run -n seismic`. Line length ≤ 108; ruff

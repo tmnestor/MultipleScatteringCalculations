@@ -9,7 +9,7 @@
    dressed by the fixed operators  L=(1/k)grad,  M=curl((r-c) .),  N=(1/k)curl  (plain Hansen).
 
    Conventions (inherited verbatim from CartesianT0.wl, reciprocity-verified 1e-18):
-     time e^{+i w t}; outgoing h_n^(1); orthonormal SphericalHarmonicY.
+     time e^{-i w t}; outgoing h_n^(1); orthonormal SphericalHarmonicY.
      Direction triples are (x,y,z) with z = polar axis = 3rd component
      (ang[d] reads d[[3]] as the polar component).  The VSH polar axis is aligned
      with the physical depth z, so an intra-plane separation is d = (d_x, d_y, 0).

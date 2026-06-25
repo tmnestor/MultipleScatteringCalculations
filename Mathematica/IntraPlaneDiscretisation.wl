@@ -24,7 +24,7 @@
    phi * sphere_eff(Delta/phi) and forms R_PP via kennett_reference_rpp.  Using the
    RATIO sidesteps the fragile absolute monopole->Dkappa* normalisation.
 
-   Conventions inherited from CartesianT0.wl / item (c): time e^{+i w t}, outgoing
+   Conventions inherited from CartesianT0.wl / item (c): time e^{-i w t}, outgoing
    h_n^(1) (SphericalHankelH1 -- never j_n + i y_n), clean L/M/N; z = depth; lattice
    in x-y; inner T0 at REAL background wavenumbers, only the lattice sum is damped.
    ============================================================================ *)

@@ -9,7 +9,7 @@
    orders) makes the p->p specular statement well-posed.
    Self-contained: copies the cycle-2 undamped builders (IntraPlaneKambeVector.wl)
    and the Phase-3a projection (IntraPlaneRT.wl); Gets only CartesianT0.wl.
-   Time e^{+i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).
+   Time e^{-i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).
    ============================================================================ *)
 Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
 

@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Conda env `seismic`; Python tooling via `conda run -n seismic <cmd>`.
-- Time `e^{+iωt}`, outgoing `h_q^(1)` via `SphericalBesselJ + I SphericalBesselY`; regular `j_q` via `SphericalBesselJ`; `Y_q^s` via `SphericalHarmonicY`. Lattice in x–y (`θ_R = π/2`); z = polar = depth (axis 0).
+- Time `e^{−iωt}`, outgoing `h_q^(1)` via `SphericalBesselJ + I SphericalBesselY`; regular `j_q` via `SphericalBesselJ`; `Y_q^s` via `SphericalHarmonicY`. Lattice in x–y (`θ_R = π/2`); z = polar = depth (axis 0).
 - **Physical params** (moderate contrast, match Phase-3a `IntraPlaneRT.wl`): background `α0 = 5000`, `β0 = 3000`, `ρ0 = 2500`; `aa = 1.0`; pitch `aLpitch = 2.5`, `A_cell = aLpitch²`; `kaTest = 0.3` ⇒ after `setMie`: `kPo = 0.3`, `kSo = 0.5`, `ω = ωOf = kPo·α0/aa = 1500`; contrast `Δλ = 2e9`, `Δμ = 1e9`, `Δρ = 100`.
 - **Undamped κ** (the cycle-3 change vs Phase-3a's `+0.25 I`): `κ_P = kPo`, `κ_S = kSo`, both real. Ewald split `η ∈ {0.7, 1.15}`, lattice/recip half-widths `Rc = Gc = 6` (bump to 8 only if gate [2] η-independence fails); scalar projection radius `ρ0 = 0.5`; vector projection radius `radP = 0.5`; coeff-extraction `dext = 2.0`.
 - **Sweep:** `pcritP = 1/α0 = 2e-4`, `pcritS = 1/β0 = 3.333e-4`; `pList = {pNormal = 1e-6, 0.5·pcritP, 0.8·pcritS}` (normal / sub-critical / post-critical-P-evanescent).
@@ -63,7 +63,7 @@ Create `Mathematica/IntraPlaneEnergyBalance.wl` starting with:
    orders) makes the p->p specular statement well-posed.
    Self-contained: copies the cycle-2 undamped builders (IntraPlaneKambeVector.wl)
    and the Phase-3a projection (IntraPlaneRT.wl); Gets only CartesianT0.wl.
-   Time e^{+i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).
+   Time e^{-i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).
    ============================================================================ *)
 Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
 
