@@ -10,7 +10,7 @@ assert they match Mathematica:
   1. spherical-harmonic PROJECTION quadrature (scipy only) -- a different method,
   2. the Gaunt / Wigner-3j CLOSED FORM (sympy) -- a cross-language check of the formula.
 
-Conventions match CartesianT0.wl exactly: time e^{+i w t}, outgoing h_n^(1), orthonormal
+Conventions match CartesianT0.wl exactly: time e^{-i w t}, outgoing h_n^(1), orthonormal
 spherical harmonics with Condon-Shortley phase, direction triples (x,y,z) with z the
 polar (3rd) component; ang[d] = (arccos(d3/|d|), atan2(d2, d1)).
 

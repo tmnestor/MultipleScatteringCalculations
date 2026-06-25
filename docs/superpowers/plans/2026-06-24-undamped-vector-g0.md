@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Conda env `seismic`; Python tooling via `conda run -n seismic <cmd>`.
-- Time `e^{+iωt}`, outgoing `h_q^(1)` via `SphericalHankelH1` (or `SphericalBesselJ + I SphericalBesselY`); regular `j_q` via `SphericalBesselJ`; `Y_q^s` via `SphericalHarmonicY`. Lattice in x–y (`θ_R = π/2`); z = polar = depth.
+- Time `e^{−iωt}`, outgoing `h_q^(1)` via `SphericalHankelH1` (or `SphericalBesselJ + I SphericalBesselY`); regular `j_q` via `SphericalBesselJ`; `Y_q^s` via `SphericalHarmonicY`. Lattice in x–y (`θ_R = π/2`); z = polar = depth.
 - Params (match Phase-1/Phase-2(b) so cycle-1 `D` + the direct-sum ground truth line up): `aL = 2.0`, `k_par = (kx,ky) = (0.2, 0.1)`, `Nmax = 2`, undamped `κ_P = 0.9`, `κ_S = 1.5`; damped check `κ_P,κ_S + 0.25 I`; Ewald `η ∈ {0.7, 1.15}`, `Rc = Gc = 6`; scalar projection radius `ρ0 = 0.5`; vector lattice half-width `LradB = 8`, vector projection radius `radP = 0.5`.
 - `coeff_q` are **wavenumber-matched to their contraction**: extract at real `κ_S` for the undamped G0; extract at damped `κ_S` for the damped-limit gate. Each is self-consistent; gate 2 then tests only the contraction structure.
 - Reference JSON in `Mathematica/`; complex numbers serialised as `[re, im]` via `reim[z_] := {Re[N[z]], Im[N[z]]}`.
@@ -57,7 +57,7 @@ Create the self-contained file with the cycle-1 scalar Ewald + multipole project
               coeff_q extracted from the validated single-pair vector translation.
    Self-contained: copies the cycle-1 scalar Ewald/projection (IntraPlaneKambe.wl)
    and the Phase-2(b) vector helpers (IntraPlaneVectorLattice.wl); Gets only
-   CartesianT0.wl for T0LMN.  Time e^{+i w t}, outgoing h^(1); lattice in x-y.
+   CartesianT0.wl for T0LMN.  Time e^{-i w t}, outgoing h^(1); lattice in x-y.
    ============================================================================ *)
 Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
 

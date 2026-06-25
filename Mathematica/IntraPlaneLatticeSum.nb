@@ -47,7 +47,7 @@ index):
      Dbar[q,p] = Sum_{R!=0} h_q(kappa|R|) conj(Y_q^p(^R)) e^{i k_par.R},
      g_kappa(s) = e^{i kappa |s|}/(4 Pi |s|).
 
-   Conventions inherited from Phase 0 / CartesianT0.wl: time e^{+i w t}, \
+   Conventions inherited from Phase 0 / CartesianT0.wl: time e^{-i w t}, \
 outgoing
    h_n^(1), orthonormal SphericalHarmonicY, (x,y,z) with z = polar axis = \
 depth.

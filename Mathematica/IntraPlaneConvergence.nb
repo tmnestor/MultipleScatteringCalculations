@@ -91,7 +91,7 @@ floor, is
          finite, and reduces to the isolated T0 as the coupling is switched \
 off.
 
-   Conventions inherited from CartesianT0.wl / item (b): time e^{+i w t}, \
+   Conventions inherited from CartesianT0.wl / item (b): time e^{-i w t}, \
 outgoing
    h_n^(1), clean L/M/N; z = polar axis = depth; lattice in the x-y plane; \
 inner T0 at

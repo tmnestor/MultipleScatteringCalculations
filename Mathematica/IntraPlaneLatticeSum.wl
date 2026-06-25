@@ -14,7 +14,7 @@
      Dbar[q,p] = Sum_{R!=0} h_q(kappa|R|) conj(Y_q^p(^R)) e^{i k_par.R},
      g_kappa(s) = e^{i kappa |s|}/(4 Pi |s|).
 
-   Conventions inherited from Phase 0 / CartesianT0.wl: time e^{+i w t}, outgoing
+   Conventions inherited from Phase 0 / CartesianT0.wl: time e^{-i w t}, outgoing
    h_n^(1), orthonormal SphericalHarmonicY, (x,y,z) with z = polar axis = depth.
    The lattice lies in the x-y plane (R has zero 3rd component, theta_R = Pi/2).
    A small Im(kappa) damping makes the conditionally-convergent sum converge (the

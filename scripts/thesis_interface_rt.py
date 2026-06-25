@@ -9,8 +9,9 @@ symplectic inverse (one 3x3 inverse, no 6x6 solve). Self-contained; run directly
 Conventions (thesis Section 3.1):
     - state vector b = (u_z, u_x, u_y, t_z, t_x, t_y): 3 displacement, 3 traction-on-z-plane.
     - "+" = downgoing, "-" = upgoing; column order of D_z is (+P,+S,+H, -P,-S,-H).
-    - TIME convention e^{-i w t} (the THESIS convention, GRepresentations l.29 -- NOT the
-      project's e^{+i w t} used by CartesianT0 / the Phase-3 code).
+    - TIME convention e^{-i w t} (the THESIS convention, GRepresentations l.29) -- the SAME
+      convention CartesianT0 / the Phase-3 code actually use; their "e^{+i w t}" comments are a
+      mislabel, since an outgoing h_n^(1) / e^{+ikr} IS e^{-i w t}.
     - traction = physical stress on the +z plane (sigma_zz, sigma_zx, sigma_zy);
       lambda = rho(alpha^2 - 2 beta^2), mu = rho beta^2.
     - SEISMIC UNITS (km/s, g/cm^3 -> moduli in GPa): in these units D_z is well-conditioned

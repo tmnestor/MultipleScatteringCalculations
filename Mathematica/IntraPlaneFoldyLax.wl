@@ -12,7 +12,7 @@
    with the Phase-1 scalar G0.  The full multi-channel vector G0 coupling needs the
    Phase-0 vector translation as an explicit L/M/N matrix (next tracer bullet).
 
-   Conventions inherited from CartesianT0.wl: time e^{+i w t}, outgoing h_n^(1),
+   Conventions inherited from CartesianT0.wl: time e^{-i w t}, outgoing h_n^(1),
    clean L/M/N normalization, (x,y,z) with z = polar axis = depth.
    ============================================================================ *)
 

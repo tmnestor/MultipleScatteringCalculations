@@ -33,7 +33,7 @@
          elastic operator's collective T converges in n above the lattice floor, is
          finite, and reduces to the isolated T0 as the coupling is switched off.
 
-   Conventions inherited from CartesianT0.wl / item (b): time e^{+i w t}, outgoing
+   Conventions inherited from CartesianT0.wl / item (b): time e^{-i w t}, outgoing
    h_n^(1), clean L/M/N; z = polar axis = depth; lattice in the x-y plane; inner T0 at
    the REAL background wavenumbers, only the inter-voxel lattice sum is damped (Im=0.25).
    ============================================================================ *)

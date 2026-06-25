@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Conda env `seismic`; Python tooling via `conda run -n seismic <cmd>`.
-- Time `e^{+iωt}`, outgoing `h_q^(1)` via `SphericalHankelH1` (never `j_q + i y_q`); regular `j_q` via `SphericalBesselJ`; `Y_q^s` via `SphericalHarmonicY`.
+- Time `e^{−iωt}`, outgoing `h_q^(1)` via `SphericalHankelH1` (never `j_q + i y_q`); regular `j_q` via `SphericalBesselJ`; `Y_q^s` via `SphericalHarmonicY`.
 - Lattice in the x–y plane, constant `a_L = 2.0`, Bloch vector `k_par = (kx, ky) = (0.2, 0.1)` (Phase-1 TB2 values, so the `q=0` anchor matches directly). Undamped wavenumber `κ` REAL (e.g. `κ = 1.5`, TB2's `kReal`); damped `κ_d = 1.5 + 0.25 I` for the projection-method gate.
 - Ewald split parameter `η` (two values `η₁=0.7, η₂=1.15` for η-independence), real-space half-width `Rc`, reciprocal half-width `Gc` (Phase-1 TB2 values `RcE=GcE=6`).
 - Sphere-projection radius `ρ₀ = 0.5` (`< a_L`, inside the node-free region); sphere quadrature Gauss-Legendre `n_u × n_φ` (start `16 × 32`).
@@ -50,7 +50,7 @@ Extend the TB2 scalar Ewald (z=0) to a general 3D field point `r=(x,y,z)`, so th
 (* IntraPlaneKambe.wl — Phase 3b cycle 1: undamped multipole structure constants D[q,s]
    via multipole projection of the undamped scalar Ewald field. Standard Kambe/layer-KKR
    OBJECT, built by projection of the validated TB2 scalar Ewald (NOT per-q analytic forms).
-   Time e^{+i w t}, outgoing h_q^(1); lattice in x-y, a_L=2, k_par=(kx,ky). *)
+   Time e^{-i w t}, outgoing h_q^(1); lattice in x-y, a_L=2, k_par=(kx,ky). *)
 reim[z_] := {Re[N[z]], Im[N[z]]};
 aL = 2.0; kx = 0.2; ky = 0.1; kpar2 = {kx, ky};
 Aarea = aL^2; recipB = 2 Pi/aL;

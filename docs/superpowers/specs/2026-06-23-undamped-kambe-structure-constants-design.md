@@ -78,7 +78,7 @@ order direction, the incomplete-Γ arguments, the prefactors) and the gates belo
 
 `IntraPlaneKambe.wl` reuses the lattice geometry and the damped direct `D[q,s]` (for the agreement
 gate) from the `IntraPlaneLatticeSum.wl` / Phase-2 conventions, but is a **new self-contained file**
-(it does not run the Phase-1 study on load). Conventions inherited: time `e^{+iωt}`, outgoing `h_q^(1)`
+(it does not run the Phase-1 study on load). Conventions inherited: time `e^{−iωt}`, outgoing `h_q^(1)`
 via `SphericalHankelH1`; lattice in x–y, `θ_R = π/2`; Bloch vector `k_par`.
 
 ## 4. Validation (tight gates; the TB2 pattern extended to all `q`)
@@ -115,7 +115,7 @@ via `SphericalHankelH1`; lattice in x–y, `θ_R = π/2`; Bloch vector `k_par`.
 
 ## 7. Conventions
 
-Time `e^{+iωt}`, outgoing `h_q^(1)` via `SphericalHankelH1` (never `j_q + i y_q`); lattice in the x–y
+Time `e^{−iωt}`, outgoing `h_q^(1)` via `SphericalHankelH1` (never `j_q + i y_q`); lattice in the x–y
 plane (`θ_R = π/2`), Bloch vector `k_par = ω(0,p,0)` (project frame; p along x); conda env `seismic`;
 Mathematica via `/Applications/Wolfram.app/Contents/MacOS/wolframscript`. Reference JSON in
 `Mathematica/`; complex numbers serialised as `[re, im]`. Background α=5000, β=3000, ρ=2500;

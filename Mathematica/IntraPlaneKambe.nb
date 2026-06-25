@@ -41,7 +41,7 @@ IntraPlaneKambe.wl \[LongDash] Phase 3b cycle 1: undamped multipole structure \
 constants 
  D[q,s] via multipole projection of the undamped scalar Ewald field. Standard  
  Kambe/layer-KKR OBJECT, built by projection of the validated TB2 scalar Ewald 
- (NOT per-q analytic forms). Time e^{+i w t}, outgoing h_q^(1); lattice in \
+ (NOT per-q analytic forms). Time e^{-i w t}, outgoing h_q^(1); lattice in \
 x-y, 
  a_L=2, k_par=(kx,ky). Self-contained: copies the small TB2 pieces it needs    
  (does NOT Get IntraPlaneLatticeSum.wl, which runs the Phase-1 study on load).\
