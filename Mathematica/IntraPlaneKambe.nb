@@ -20,7 +20,7 @@ WindowFrame->Normal*)
 Notebook[{
 Cell["\<\
 Phase 3b cycle 1 : Undamped Multipole Structure Constants D[q,s]\
-\>", "Title",ExpressionUUID->"440e66b1-a8df-44d3-a8e5-178801c45239"],
+\>", "Title",ExpressionUUID->"c70ec449-ab10-4842-a06c-a983468b219a"],
 
 Cell["\<\
 Computes the undamped (kappa real) planar lattice multipole structure \
@@ -34,7 +34,7 @@ real), agreement with the damped direct 3D sum, the projection method \
 anchored to the damped direct structure constant, undamped eta-independence, \
 and undamped G0 reciprocity (exact).  Executable twin: IntraPlaneKambe.wl.  \
 Python cross-check: cubic_scattering/tests/test_intraplane_kambe.py.\
-\>", "Text",ExpressionUUID->"58125d12-1a35-49b9-8f14-4ba1f48407c3"],
+\>", "Text",ExpressionUUID->"fd417b36-7493-4bbc-95ff-5513ac5ca5ac"],
 
 Cell["\<\
 IntraPlaneKambe.wl \[LongDash] Phase 3b cycle 1: undamped multipole structure \
@@ -45,18 +45,18 @@ constants
 x-y, 
  a_L=2, k_par=(kx,ky). Self-contained: copies the small TB2 pieces it needs    
  (does NOT Get IntraPlaneLatticeSum.wl, which runs the Phase-1 study on load).\
-\>", "Text",ExpressionUUID->"8f088a76-b5ae-41d8-9211-f35b0e4e2016"],
+\>", "Text",ExpressionUUID->"c1c94f3d-345c-4be0-9827-a3229202abe6"],
 
 Cell["\<\
 reim[z_] := {Re[N[z]], Im[N[z]]};
 aL = 2.0; kx = 0.2; ky = 0.1; kpar2 = {kx, ky};
 Aarea = aL^2; recipB = 2 Pi/aL;
 sh[n_, x_] := SphericalHankelH1[n, x]; sj[n_, x_] := SphericalBesselJ[n, x];\
-\>", "Input",ExpressionUUID->"b239c5ce-a318-417b-923e-f124c0c57f6f"],
+\>", "Input",ExpressionUUID->"d0d6986a-fc10-43f4-8416-424465e8496a"],
 
 Cell["\<\
 Task 1: general-z scalar Ewald field (real + reciprocal halves) + direct sum\
-\>", "Section",ExpressionUUID->"d8ff141f-dcab-4a6e-be2a-f276b9f26402"],
+\>", "Section",ExpressionUUID->"4f5ae624-8683-49e7-a607-ba956ae314bb"],
 
 Cell["\<\
 (* real-space half, general z: 3D distance d = |r - (aL i, aL j, 0)| *)
@@ -131,9 +131,9 @@ ScientificForm[etaIndep, 3],
    \" -> \", If[etaIndep < 1.*^-8, \"PASS\", \"FAIL\"]];
 Print[\"  [2] Ewald vs damped direct 3D sum = \", ScientificForm[agree, 3],
    \" -> \", If[agree < 1.*^-6, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"eeec1c27-9eb2-4624-940c-e52f0daec6e0"],
+\>", "Input",ExpressionUUID->"e17c4597-3b63-45cf-b731-efb9f5ac0727"],
 
-Cell["Task 2: multipole projection -> undamped D[q,s]", "Section",ExpressionUUID->"97b4d8f3-f27b-4af4-8e18-579b81cde053"],
+Cell["Task 2: multipole projection -> undamped D[q,s]", "Section",ExpressionUUID->"73fda764-562f-43dd-85cf-c3b13ccd7231"],
 
 Cell["\<\
 Needs[\"NumericalDifferentialEquationAnalysis`\"];
@@ -174,9 +174,9 @@ ScientificForm[methResid, 3],
    \" -> \", If[methResid < 1.*^-4, \"PASS\", \"FAIL\"]];
 Print[\"  [4] undamped D[q,s] eta-independence = \", ScientificForm[undEta, 3],
    \" -> \", If[undEta < 1.*^-6, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"91dd1014-39cd-4933-bca7-54b5c4f062a3"],
+\>", "Input",ExpressionUUID->"a1f4dda6-d757-4a2e-a041-7a609f56e62b"],
 
-Cell["Task 3: G0 from undamped D[q,s] + reciprocity; dump JSON", "Section",ExpressionUUID->"2bcfbbd2-b5bc-492e-b583-998c738ce30c"],
+Cell["Task 3: G0 from undamped D[q,s] + reciprocity; dump JSON", "Section",ExpressionUUID->"5a60c4cc-2803-4044-a3cf-7ee8c7efbae5"],
 
 Cell["\<\
 gaunt[l1_, m1_, l2_, m2_, l3_, m3_] :=
@@ -207,11 +207,11 @@ IntraPlaneKambe_reference.json\",
 reim[DU[q, s]]|>, {q, 0, Nq}, {s, -q, q}], 1],
     \"recip_resid\" -> N[recipResid]|>];
 Print[\"  wrote IntraPlaneKambe_reference.json\"];\
-\>", "Input",ExpressionUUID->"4c7c345e-c098-4262-96a8-3f363ff552d0"]
+\>", "Input",ExpressionUUID->"f7c88229-9836-467a-9542-0f9c52a2f294"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"ec62d907-216a-44a3-9f68-36e8686e442d"
+ExpressionUUID->"0db32eeb-0287-4def-a038-f74eaf6463b2"
 ]
 (* End of Notebook Content *)
 
@@ -224,16 +224,16 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 144, 2, 70, "Title",ExpressionUUID->"440e66b1-a8df-44d3-a8e5-178801c45239"],
-Cell[701, 24, 908, 12, 70, "Text",ExpressionUUID->"58125d12-1a35-49b9-8f14-4ba1f48407c3"],
-Cell[1612, 38, 571, 9, 70, "Text",ExpressionUUID->"8f088a76-b5ae-41d8-9211-f35b0e4e2016"],
-Cell[2186, 49, 270, 5, 70, "Input",ExpressionUUID->"b239c5ce-a318-417b-923e-f124c0c57f6f"],
-Cell[2459, 56, 158, 2, 70, "Section",ExpressionUUID->"d8ff141f-dcab-4a6e-be2a-f276b9f26402"],
-Cell[2620, 60, 3545, 73, 70, "Input",ExpressionUUID->"eeec1c27-9eb2-4624-940c-e52f0daec6e0"],
-Cell[6168, 135, 121, 0, 70, "Section",ExpressionUUID->"97b4d8f3-f27b-4af4-8e18-579b81cde053"],
-Cell[6292, 137, 2014, 39, 70, "Input",ExpressionUUID->"91dd1014-39cd-4933-bca7-54b5c4f062a3"],
-Cell[8309, 178, 130, 0, 70, "Section",ExpressionUUID->"2bcfbbd2-b5bc-492e-b583-998c738ce30c"],
-Cell[8442, 180, 1510, 29, 70, "Input",ExpressionUUID->"4c7c345e-c098-4262-96a8-3f363ff552d0"]
+Cell[554, 20, 144, 2, 70, "Title",ExpressionUUID->"c70ec449-ab10-4842-a06c-a983468b219a"],
+Cell[701, 24, 908, 12, 70, "Text",ExpressionUUID->"fd417b36-7493-4bbc-95ff-5513ac5ca5ac"],
+Cell[1612, 38, 571, 9, 70, "Text",ExpressionUUID->"c1c94f3d-345c-4be0-9827-a3229202abe6"],
+Cell[2186, 49, 270, 5, 70, "Input",ExpressionUUID->"d0d6986a-fc10-43f4-8416-424465e8496a"],
+Cell[2459, 56, 158, 2, 70, "Section",ExpressionUUID->"4f5ae624-8683-49e7-a607-ba956ae314bb"],
+Cell[2620, 60, 3545, 73, 70, "Input",ExpressionUUID->"e17c4597-3b63-45cf-b731-efb9f5ac0727"],
+Cell[6168, 135, 121, 0, 70, "Section",ExpressionUUID->"73fda764-562f-43dd-85cf-c3b13ccd7231"],
+Cell[6292, 137, 2014, 39, 70, "Input",ExpressionUUID->"a1f4dda6-d757-4a2e-a041-7a609f56e62b"],
+Cell[8309, 178, 130, 0, 70, "Section",ExpressionUUID->"5a60c4cc-2803-4044-a3cf-7ee8c7efbae5"],
+Cell[8442, 180, 1510, 29, 70, "Input",ExpressionUUID->"f7c88229-9836-467a-9542-0f9c52a2f294"]
 }
 ]
 *)

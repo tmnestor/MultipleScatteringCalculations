@@ -18,7 +18,7 @@ WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Phase 2 (e) : Sphere-Packing Discretisation Error", "Title",ExpressionUUID->"c73eecc6-46e4-493d-932e-f70530544af8"],
+Cell["Phase 2 (e) : Sphere-Packing Discretisation Error", "Title",ExpressionUUID->"7335b5fa-76f9-42e1-b054-4a7d23d5a367"],
 
 Cell["\<\
 The sphere-packing collective monopole in the Rayleigh limit: a \
@@ -33,7 +33,7 @@ space-filling cube slab: Delta->Delta/phi collapses the ~48% dilution error \
 to the irreducible shape + nonlinear-mixing residual (0.4%/4% weak/moderate); \
 the collective is negligible at Rayleigh; the -60% contrast lies beyond the \
 renorm validity floor.  Executable twin: IntraPlaneDiscretisation.wl.\
-\>", "Text",ExpressionUUID->"3860cfa7-b38f-4a00-9be8-fd0f456e1cf0"],
+\>", "Text",ExpressionUUID->"ec15a254-d100-4857-bc40-bddb90982736"],
 
 Cell["\<\
 IntraPlaneDiscretisation.wl  --  Phase 2 item (e): SPHERE-PACKING \
@@ -79,7 +79,7 @@ outgoing
 lattice
    in x-y; inner T0 at REAL background wavenumbers, only the lattice sum is \
 damped.\
-\>", "Text",ExpressionUUID->"c5a5dbd1-6cbe-4702-8ff7-0509cc41ee99"],
+\>", "Text",ExpressionUUID->"8dcc731c-5f77-4b1b-9905-bf59d0769961"],
 
 Cell["\<\
 Get[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -179,11 +179,11 @@ recordFor[c_, ka_, aL_, g0_] := Module[
 reim[res[\"single\"]],
     \"r_ms\" -> reim[rms], \"coupling\" -> N[res[\"coupling\"]],
     \"specrad\" -> N[res[\"specrad\"]], \"cond\" -> N[res[\"cond\"]]|>];\
-\>", "Input",ExpressionUUID->"b9e0a469-7d27-4d47-819d-c6adcd5c9eef"],
+\>", "Input",ExpressionUUID->"ce630b51-c9ef-4234-81f3-8f3cd28406f3"],
 
 Cell["\<\
 collective sweep over (contrast x ka x aL): build g0 once per (ka, aL)\
-\>", "Section",ExpressionUUID->"d0a5f96a-aa19-47cc-b04d-b49571cb6fa5"],
+\>", "Section",ExpressionUUID->"87fed59a-4ce0-42cb-a9b8-5f2c268ae681"],
 
 Cell["\<\
 Print[\"==== Phase 2 item (e) :: sphere-packing collective (Rayleigh) \
@@ -200,9 +200,9 @@ records)\"],
   {ka, kaList}, {aL, aLlist}];
 Print[\"  built \", Length[stageB], \" (contrast x ka x aL) collective \
 records\"];\
-\>", "Input",ExpressionUUID->"19465d88-7fa1-4ad4-9db9-e65150ad8f97"],
+\>", "Input",ExpressionUUID->"7726736e-f3bc-4d80-8624-0f36db83a135"],
 
-Cell["self-verifying PASS/FAIL on the dumped collective trends", "Section",ExpressionUUID->"f666e5da-7f96-48c8-8c92-c43dfcba8ecd"],
+Cell["self-verifying PASS/FAIL on the dumped collective trends", "Section",ExpressionUUID->"f8730edf-f02d-4f7e-a156-58d43380b4be"],
 
 Cell["\<\
 (* [1] collective -> isolated as aL grows (r_ms -> 1 dilute): |r_ms-1| \
@@ -224,12 +224,12 @@ Print[\"  [2] specrad (moderate, ka=0.1, aL desc) = \", Map[ScientificForm[#, \
 3] &, specSeq]];
 Print[\"      multiple-scattering strength grows toward touching -> \", \
 If[specOK, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"47927dd9-5fbe-42db-b46e-dc2c0ade785e"],
+\>", "Input",ExpressionUUID->"250482fe-20a9-43b7-95db-2f64d503ffe3"],
 
 Cell["\<\
 dump JSON reference for the Python cross-check (item-f style; complex as \
 [re,im])\
-\>", "Section",ExpressionUUID->"67b50d14-e4c8-4eee-8b56-00adb2c77a25"],
+\>", "Section",ExpressionUUID->"a165e4a7-42be-40fb-aa45-8a4f28301cf2"],
 
 Cell["\<\
 discRef = <|\"params\" -> <|\"alpha\" -> alpha0, \"beta\" -> beta0, \"rho0\" \
@@ -246,11 +246,11 @@ IntraPlaneDiscretisation_reference.json\", discRef];
 Print[\"  wrote IntraPlaneDiscretisation_reference.json\"];
 Print[\"Phase 2 item (e) (IntraPlaneDiscretisation.wl) loaded + verified.\"];\
 \
-\>", "Input",ExpressionUUID->"35ef9175-e717-4617-a610-99f5b6ec5fc3"]
+\>", "Input",ExpressionUUID->"44e20236-fa1e-401d-b39f-a5b3b2c52c8c"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"58d1e340-4b66-4170-8398-022de32614b7"
+ExpressionUUID->"0db32eeb-0287-4def-a038-f74eaf6463b2"
 ]
 (* End of Notebook Content *)
 
@@ -263,16 +263,16 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 121, 0, 70, "Title",ExpressionUUID->"c73eecc6-46e4-493d-932e-f70530544af8"],
-Cell[678, 22, 923, 13, 70, "Text",ExpressionUUID->"3860cfa7-b38f-4a00-9be8-fd0f456e1cf0"],
-Cell[1604, 37, 1967, 44, 70, "Text",ExpressionUUID->"c5a5dbd1-6cbe-4702-8ff7-0509cc41ee99"],
-Cell[3574, 83, 4394, 98, 70, "Input",ExpressionUUID->"b9e0a469-7d27-4d47-819d-c6adcd5c9eef"],
-Cell[7971, 183, 152, 2, 70, "Section",ExpressionUUID->"d0a5f96a-aa19-47cc-b04d-b49571cb6fa5"],
-Cell[8126, 187, 642, 15, 70, "Input",ExpressionUUID->"19465d88-7fa1-4ad4-9db9-e65150ad8f97"],
-Cell[8771, 204, 130, 0, 70, "Section",ExpressionUUID->"f666e5da-7f96-48c8-8c92-c43dfcba8ecd"],
-Cell[8904, 206, 992, 20, 70, "Input",ExpressionUUID->"47927dd9-5fbe-42db-b46e-dc2c0ade785e"],
-Cell[9899, 228, 165, 3, 70, "Section",ExpressionUUID->"67b50d14-e4c8-4eee-8b56-00adb2c77a25"],
-Cell[10067, 233, 799, 15, 70, "Input",ExpressionUUID->"35ef9175-e717-4617-a610-99f5b6ec5fc3"]
+Cell[554, 20, 121, 0, 70, "Title",ExpressionUUID->"7335b5fa-76f9-42e1-b054-4a7d23d5a367"],
+Cell[678, 22, 923, 13, 70, "Text",ExpressionUUID->"ec15a254-d100-4857-bc40-bddb90982736"],
+Cell[1604, 37, 1967, 44, 70, "Text",ExpressionUUID->"8dcc731c-5f77-4b1b-9905-bf59d0769961"],
+Cell[3574, 83, 4394, 98, 70, "Input",ExpressionUUID->"ce630b51-c9ef-4234-81f3-8f3cd28406f3"],
+Cell[7971, 183, 152, 2, 70, "Section",ExpressionUUID->"87fed59a-4ce0-42cb-a9b8-5f2c268ae681"],
+Cell[8126, 187, 642, 15, 70, "Input",ExpressionUUID->"7726736e-f3bc-4d80-8624-0f36db83a135"],
+Cell[8771, 204, 130, 0, 70, "Section",ExpressionUUID->"f8730edf-f02d-4f7e-a156-58d43380b4be"],
+Cell[8904, 206, 992, 20, 70, "Input",ExpressionUUID->"250482fe-20a9-43b7-95db-2f64d503ffe3"],
+Cell[9899, 228, 165, 3, 70, "Section",ExpressionUUID->"a165e4a7-42be-40fb-aa45-8a4f28301cf2"],
+Cell[10067, 233, 799, 15, 70, "Input",ExpressionUUID->"44e20236-fa1e-401d-b39f-a5b3b2c52c8c"]
 }
 ]
 *)

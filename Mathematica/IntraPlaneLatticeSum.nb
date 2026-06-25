@@ -18,7 +18,7 @@ WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Phase 1 : Ewald-Accelerated Intra-Plane Lattice Sum", "Title",ExpressionUUID->"1a1f2053-fc05-4543-aacb-2864b3f84aeb"],
+Cell["Phase 1 : Ewald-Accelerated Intra-Plane Lattice Sum", "Title",ExpressionUUID->"0e71c1c9-4362-4af1-8dfa-bd5a1d256f19"],
 
 Cell["\<\
 Planar lattice sum of the Phase-0 translation operator at fixed Bloch vector \
@@ -29,7 +29,7 @@ eta-independent to machine precision for the conditionally-convergent \
 (undamped) sum. TB3: Ewald <-> multipole-G0 connection. Executable twin: \
 IntraPlaneLatticeSum.wl. Independently validated against Python in \
 cubic_scattering/tests/test_intraplane_lattice.py.\
-\>", "Text",ExpressionUUID->"fc14849c-9015-4446-af7d-5806d3b4b1bf"],
+\>", "Text",ExpressionUUID->"71b64449-19ad-4bc2-bf0f-6d81e05c0dd2"],
 
 Cell["\<\
 IntraPlaneLatticeSum.wl  --  Phase 1 of the Intra-Plane Foldy-Lax program:
@@ -59,7 +59,7 @@ Pi/2).
 
    TDD RED: the structure constants are stubbed to 0, so the multipole
    reconstruction of the lattice-summed field is 0 and MUST FAIL.\
-\>", "Text",ExpressionUUID->"b6ff8c8e-3b13-4f01-84f6-8b2fe36b546b"],
+\>", "Text",ExpressionUUID->"a50205c0-a566-47d9-b1ae-e239d3948039"],
 
 Cell["\<\
 (* ---- helpers reused from Phase 0 (IntraPlaneTranslation.wl) ---- *)
@@ -87,9 +87,9 @@ iVals = ijList[[All, 1]]; jVals = ijList[[All, 2]];
 rNorms = aL Sqrt[iVals^2 + jVals^2];       (* |R| *)
 phiList = ArcTan[iVals, jVals];            (* azimuth of R; theta_R = Pi/2 *)
 blochList = Exp[I aL (kx iVals + ky jVals)];   (* e^{i k_par . R} *)\
-\>", "Input",ExpressionUUID->"6408b7b5-559f-4f53-addc-652f0b17f8aa"],
+\>", "Input",ExpressionUUID->"03bc53e2-4e24-4c4f-acde-1b3e87049d62"],
 
-Cell["SCALAR STRUCTURE CONSTANTS  [ STUB -- RED stage ]", "Section",ExpressionUUID->"1de01e43-dc78-4aea-834f-0b69093028cc"],
+Cell["SCALAR STRUCTURE CONSTANTS  [ STUB -- RED stage ]", "Section",ExpressionUUID->"6264d3f3-19b1-41bd-b334-d78fd50f0400"],
 
 Cell["\<\
 (* memoised: each is a Total over the precomputed lattice lists (theta_R = \
@@ -161,7 +161,7 @@ Print[\"      G0 reciprocity (kappaS) = \", recipResid[kappaS], \"  -> \", \
 If[recipResid[kappaS] < 1*^-10, \"PASS\", \"FAIL\"]];
 Print[\"  sample G0[1,0,2,1; kappaS] = \", G0[1, 0, 2, 1, kappaS]];
 Print[\"Phase 1 TB1 (IntraPlaneLatticeSum.wl) loaded + verified.\"];\
-\>", "Input",ExpressionUUID->"c0b0dc0c-0232-417a-8f6b-1b78849abd65"],
+\>", "Input",ExpressionUUID->"b696dc0e-a37f-4abf-93eb-baef74b9e05f"],
 
 Cell["\<\
 TRACER BULLET 2: Ewald acceleration of the scalar intra-plane sum at z=0
@@ -179,7 +179,7 @@ i kappa/(2 eta))
 
    RED: the real half alone is eta-dependent and disagrees with the direct sum;
    GREEN: real + recip is eta-independent and matches the damped direct sum.\
-\>", "Section",ExpressionUUID->"c7a34703-3e5b-4c18-957e-cbfb896beb33"],
+\>", "Section",ExpressionUUID->"f5eaa466-0d6c-4f1e-a392-6afe6385a8ec"],
 
 Cell["\<\
 Aarea = aL^2; recipB = 2 Pi/aL; kpar2 = {kx, ky};
@@ -233,7 +233,7 @@ agree = Max[Table[Abs[ewaldTotal[kDamp, rho, eta1, RcE, GcE] - \
 ewaldDirect[kDamp, rho, LbigE]], {rho, rhoPts}]];
 Print[\"  [c] Ewald vs damped direct sum |G_ewald - G_direct| = \", agree,
    \"  -> \", If[agree < 1*^-6, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"eac4cdbd-f375-492f-943c-48d10ba6ceef"],
+\>", "Input",ExpressionUUID->"f7d5588d-bd97-4ccc-bf6b-a4f4bf664f95"],
 
 Cell["\<\
 TRACER BULLET 3: Ewald <-> multipole-G0 connection (z=0, damped).
@@ -248,7 +248,7 @@ the
    constants (full Kambe layer-KKR) are a deferred refinement, not needed for \
 the
    damped Foldy-Lax of Phase 2.\
-\>", "Section",ExpressionUUID->"fd30e940-9f1f-487d-966e-3b9cc25096b2"],
+\>", "Section",ExpressionUUID->"76674e8b-8d5e-4df7-8928-02f2f74a406a"],
 
 Cell["\<\
 gK[kappa_, s_] := Exp[I kappa s]/(4 Pi s);
@@ -289,11 +289,11 @@ Print[\"  wrote IntraPlaneLatticeSum_reference.json (\", Length[rhoPts], \" \
 rho points x 2 kappa)\"];
 Print[\"Phase 1 TB2+TB3 (Ewald + multipole connection) loaded + verified.\"];\
 \
-\>", "Input",ExpressionUUID->"3d745473-8457-4416-8bdb-925dd328955f"]
+\>", "Input",ExpressionUUID->"e1bb4c70-61de-4a25-a813-6fdcc93ce3d5"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"99fc0079-9977-4f13-b258-031afdedaf04"
+ExpressionUUID->"27cafe51-d4b0-4901-92cd-f1294ade18f5"
 ]
 (* End of Notebook Content *)
 
@@ -306,16 +306,16 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 123, 0, 70, "Title",ExpressionUUID->"1a1f2053-fc05-4543-aacb-2864b3f84aeb"],
-Cell[680, 22, 655, 9, 70, "Text",ExpressionUUID->"fc14849c-9015-4446-af7d-5806d3b4b1bf"],
-Cell[1338, 33, 1468, 28, 70, "Text",ExpressionUUID->"b6ff8c8e-3b13-4f01-84f6-8b2fe36b546b"],
-Cell[2809, 63, 1400, 26, 70, "Input",ExpressionUUID->"6408b7b5-559f-4f53-addc-652f0b17f8aa"],
-Cell[4212, 91, 123, 0, 70, "Section",ExpressionUUID->"1de01e43-dc78-4aea-834f-0b69093028cc"],
-Cell[4338, 93, 3305, 70, 70, "Input",ExpressionUUID->"c0b0dc0c-0232-417a-8f6b-1b78849abd65"],
-Cell[7646, 165, 865, 16, 70, "Section",ExpressionUUID->"c7a34703-3e5b-4c18-957e-cbfb896beb33"],
-Cell[8514, 183, 2550, 52, 70, "Input",ExpressionUUID->"eac4cdbd-f375-492f-943c-48d10ba6ceef"],
-Cell[11067, 237, 658, 13, 70, "Section",ExpressionUUID->"fd30e940-9f1f-487d-966e-3b9cc25096b2"],
-Cell[11728, 252, 1918, 39, 70, "Input",ExpressionUUID->"3d745473-8457-4416-8bdb-925dd328955f"]
+Cell[554, 20, 123, 0, 70, "Title",ExpressionUUID->"0e71c1c9-4362-4af1-8dfa-bd5a1d256f19"],
+Cell[680, 22, 655, 9, 70, "Text",ExpressionUUID->"71b64449-19ad-4bc2-bf0f-6d81e05c0dd2"],
+Cell[1338, 33, 1468, 28, 70, "Text",ExpressionUUID->"a50205c0-a566-47d9-b1ae-e239d3948039"],
+Cell[2809, 63, 1400, 26, 70, "Input",ExpressionUUID->"03bc53e2-4e24-4c4f-acde-1b3e87049d62"],
+Cell[4212, 91, 123, 0, 70, "Section",ExpressionUUID->"6264d3f3-19b1-41bd-b334-d78fd50f0400"],
+Cell[4338, 93, 3305, 70, 70, "Input",ExpressionUUID->"b696dc0e-a37f-4abf-93eb-baef74b9e05f"],
+Cell[7646, 165, 865, 16, 70, "Section",ExpressionUUID->"f5eaa466-0d6c-4f1e-a392-6afe6385a8ec"],
+Cell[8514, 183, 2550, 52, 70, "Input",ExpressionUUID->"f7d5588d-bd97-4ccc-bf6b-a4f4bf664f95"],
+Cell[11067, 237, 658, 13, 70, "Section",ExpressionUUID->"76674e8b-8d5e-4df7-8928-02f2f74a406a"],
+Cell[11728, 252, 1918, 39, 70, "Input",ExpressionUUID->"e1bb4c70-61de-4a25-a813-6fdcc93ce3d5"]
 }
 ]
 *)

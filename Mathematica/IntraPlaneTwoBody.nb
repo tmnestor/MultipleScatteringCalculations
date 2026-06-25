@@ -18,7 +18,7 @@ WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Phase 2 (a) : Two-Voxel Direct Foldy-Lax", "Title",ExpressionUUID->"68fc2f7f-52f2-45cb-9110-c0f34c2eb2e1"],
+Cell["Phase 2 (a) : Two-Voxel Direct Foldy-Lax", "Title",ExpressionUUID->"c63001a9-f364-4d38-b4dd-ce8bccef9a80"],
 
 Cell["\<\
 Two-voxel direct Foldy-Lax with the pairwise vector translation W(d).  \
@@ -26,7 +26,7 @@ Verifies the field reconstruction of W, the isolated limit, the direct \
 Neumann/Born multiple-scattering series against the matrix inverse, the \
 closed-form monopole two-body solve, and the fixed point.  Executable twin: \
 IntraPlaneTwoBody.wl.\
-\>", "Text",ExpressionUUID->"6d9fbe51-5f37-45eb-99f8-02d342582802"],
+\>", "Text",ExpressionUUID->"07f64a6f-bbdd-41fd-a8e1-77c4e0e50f60"],
 
 Cell["\<\
 IntraPlaneTwoBody.wl  --  Phase 2 item (a):
@@ -72,7 +72,7 @@ here.
    Conventions inherited from CartesianT0.wl / Phase 0: time e^{-i w t}, \
 outgoing
    h_n^(1), background wavenumbers kP=0.9, kS=1.5, z = polar axis = depth.\
-\>", "Text",ExpressionUUID->"9097d120-8b95-4ff0-af40-012ffad22fdc"],
+\>", "Text",ExpressionUUID->"05a9f694-db06-4706-be74-2cdc635bc9cd"],
 
 Cell["\<\
 Get[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -188,12 +188,12 @@ Wentry[{nu_, mu_, ct_}, {n_, m_, cs_}, dv_, rad_] := Which[
    True, 0];
 Wmat[dv_] := Module[{rad = 0.3 Sqrt[dv . dv]},
    Table[Wentry[idx[[i]], idx[[j]], dv, rad], {i, nDim}, {j, nDim}]];\
-\>", "Input",ExpressionUUID->"c7801601-9deb-4968-b022-8bef4eb682fe"],
+\>", "Input",ExpressionUUID->"ab53484d-35bf-4aa1-819d-9937f7dd3573"],
 
 Cell["\<\
 geometry: two voxels at r1, r2; separation d = r2 - r1 (Delta z = 0, \
 intra-plane)\
-\>", "Section",ExpressionUUID->"d754767e-d19f-41a6-b03a-65804ade83bd"],
+\>", "Section",ExpressionUUID->"a6caa160-bd41-4ada-8626-aa47f9f3b9d0"],
 
 Cell["\<\
 dsep = {2.2, 1.1, 0.0}; dLen = Sqrt[dsep . dsep];
@@ -202,13 +202,13 @@ Print[\"  separation d = \", dsep, \", |d| = \", dLen, \", kP|d| = \", kPval \
 dLen, \", kS|d| = \", kSval dLen];
 Print[\"  basis: n=0..\", Nmax, \" -> \", nDim, \" channels/voxel, \", 2 \
 nDim, \" total\"];\
-\>", "Input",ExpressionUUID->"8a3fd296-38a2-4559-a73f-b6ef392c16ae"],
+\>", "Input",ExpressionUUID->"c190a085-e7e6-448a-b436-633894569e70"],
 
 Cell["\<\
 [a] W reconstructs the translated vector field (independent of the FL solve).
    Regular re-expansion to nu = Qrec (> Nmax; the FL truncation itself is \
 item c).\
-\>", "Section",ExpressionUUID->"ab22a96b-f471-4a43-ac5b-29fa8b99523d"],
+\>", "Section",ExpressionUUID->"3bcf6890-4cbe-4143-9d8a-e00b8d694d22"],
 
 Cell["\<\
 Qrec = 14; radA = 0.3 dLen;
@@ -239,22 +239,22 @@ Wd = Wmat[dsep]; Wmd = Wmat[-dsep];
 Gblk = ArrayFlatten[{{zero, Wd}, {Wmd, zero}}];
 Imat = IdentityMatrix[2 nDim];
 Tcoll = T0blk . Inverse[Imat - Gblk . T0blk];\
-\>", "Input",ExpressionUUID->"7c8c3bfc-8c3d-4ea9-b9ff-6892876a5bad"],
+\>", "Input",ExpressionUUID->"701f9862-046f-4051-8376-69959955aebb"],
 
-Cell["[b] isolated limit: G -> 0  =>  T_coll = blockdiag(T0, T0)", "Section",ExpressionUUID->"d2de854e-8a56-4347-9541-0afb15404a5a"],
+Cell["[b] isolated limit: G -> 0  =>  T_coll = blockdiag(T0, T0)", "Section",ExpressionUUID->"3cfaf702-cbce-4158-8613-5916fab2a55c"],
 
 Cell["\<\
 TcollIso = T0blk . Inverse[Imat - (0 Gblk) . T0blk];
 resB = Max[Abs[Flatten[TcollIso - T0blk]]];
 Print[\"  [b] isolated limit (G=0) T_coll = diag(T0,T0): max dev = \", resB,
    \"  -> \", If[resB < 1*^-12, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"e4a58392-30d3-459c-9610-f5f87a122bd6"],
+\>", "Input",ExpressionUUID->"71febf4f-26b7-49f8-bddd-67c6a48c744a"],
 
 Cell["\<\
 [c] DIRECT two-body solve via the Neumann/Born series of multiple scattering:
        T_coll = T0blk Sum_{k=0}^{K} (G T0blk)^k   (converges iff spec.rad < 1).
    The iterated-scattering \"direct\" solve, independent of Inverse[].\
-\>", "Section",ExpressionUUID->"450c4afe-69c5-438f-90fc-cbc337105f0c"],
+\>", "Section",ExpressionUUID->"73d80405-c891-493c-aa47-612fb47ebecf"],
 
 Cell["\<\
 GT = Gblk . T0blk;
@@ -265,13 +265,13 @@ resC = Max[Abs[Flatten[TcollNeu - Tcoll]]];
 Print[\"  [c] Neumann/Born series (K=\", Kneu, \", spectral radius \", specR, \
 \") vs inverse = \",
    resC, \"  -> \", If[resC < 1*^-10, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"9d699bf0-7740-470f-928b-5b9e4fa5a443"],
+\>", "Input",ExpressionUUID->"820e3645-e8d2-4e02-91b2-518bd1743ea9"],
 
 Cell["\<\
 [d] monopole channel closed form: a clean 2x2 two-body geometric series.
        b1 = t(a1 + w12 b2), b2 = t(a2 + w21 b1)  =>
        b1 = (t a1 + t^2 w12 a2)/(1 - t^2 w12 w21).\
-\>", "Section",ExpressionUUID->"f2cab191-96b1-45da-a033-272ceee82382"],
+\>", "Section",ExpressionUUID->"6104eab4-113f-43e4-bc5c-09f1b4e4855c"],
 
 Cell["\<\
 tm = T0mono[kPo, lamO, muO, kPi, lamI, muI, aa];
@@ -286,13 +286,13 @@ bMonoCF = {(tm amono[[1]] + tm^2 w12 amono[[2]])/(1 - tm^2 w12 w21),
 resD = Max[Abs[bMonoMat - bMonoCF]];
 Print[\"  [d] monopole 2-body matrix solve vs closed form = \", resD,
    \"  -> \", If[resD < 1*^-12, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"316756b6-fc22-4e0b-86b7-662eff54b354"],
+\>", "Input",ExpressionUUID->"48249f11-4f43-410d-8ef5-f49760e4b7de"],
 
 Cell["\<\
 [e] full-system self-consistency: the solved b = Tcoll a^inc must satisfy
        (I - T0blk G) b = T0blk a^inc;  and the W coupling is measurably \
 active.\
-\>", "Section",ExpressionUUID->"6064ee9e-a9f7-4d9b-88af-949a1a1a9c5f"],
+\>", "Section",ExpressionUUID->"15fe0e47-c235-4d89-91f2-b817012aacd8"],
 
 Cell["\<\
 SeedRandom[7];
@@ -307,11 +307,11 @@ Print[\"      W-coupling active: ||T_coll - diag(T0,T0)|| / ||diag(T0,T0)|| = \
    \"  -> \", If[1*^-6 < couple < 10, \"PASS\", \"FAIL\"]];
 
 Print[\"Phase 2 item (a) (IntraPlaneTwoBody.wl) loaded + verified.\"];\
-\>", "Input",ExpressionUUID->"4b817e8c-0c7a-4422-83f7-0c5d76f06da7"]
+\>", "Input",ExpressionUUID->"21acb0e4-88d9-4c5f-b6f9-7b74c5b012c5"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"c2e32471-a034-4c23-aea9-81cfeb4fe3f6"
+ExpressionUUID->"0db32eeb-0287-4def-a038-f74eaf6463b2"
 ]
 (* End of Notebook Content *)
 
@@ -324,22 +324,22 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 112, 0, 70, "Title",ExpressionUUID->"68fc2f7f-52f2-45cb-9110-c0f34c2eb2e1"],
-Cell[669, 22, 398, 6, 70, "Text",ExpressionUUID->"6d9fbe51-5f37-45eb-99f8-02d342582802"],
-Cell[1070, 30, 2004, 44, 70, "Text",ExpressionUUID->"9097d120-8b95-4ff0-af40-012ffad22fdc"],
-Cell[3077, 76, 5746, 114, 70, "Input",ExpressionUUID->"c7801601-9deb-4968-b022-8bef4eb682fe"],
-Cell[8826, 192, 165, 3, 70, "Section",ExpressionUUID->"d754767e-d19f-41a6-b03a-65804ade83bd"],
-Cell[8994, 197, 406, 7, 70, "Input",ExpressionUUID->"8a3fd296-38a2-4559-a73f-b6ef392c16ae"],
-Cell[9403, 206, 244, 4, 70, "Section",ExpressionUUID->"ab22a96b-f471-4a43-ac5b-29fa8b99523d"],
-Cell[9650, 212, 1434, 29, 70, "Input",ExpressionUUID->"7c8c3bfc-8c3d-4ea9-b9ff-6892876a5bad"],
-Cell[11087, 243, 132, 0, 70, "Section",ExpressionUUID->"d2de854e-8a56-4347-9541-0afb15404a5a"],
-Cell[11222, 245, 307, 5, 70, "Input",ExpressionUUID->"e4a58392-30d3-459c-9610-f5f87a122bd6"],
-Cell[11532, 252, 310, 4, 70, "Section",ExpressionUUID->"450c4afe-69c5-438f-90fc-cbc337105f0c"],
-Cell[11845, 258, 407, 9, 70, "Input",ExpressionUUID->"9d699bf0-7740-470f-928b-5b9e4fa5a443"],
-Cell[12255, 269, 257, 4, 70, "Section",ExpressionUUID->"f2cab191-96b1-45da-a033-272ceee82382"],
-Cell[12515, 275, 672, 13, 70, "Input",ExpressionUUID->"316756b6-fc22-4e0b-86b7-662eff54b354"],
-Cell[13190, 290, 237, 4, 70, "Section",ExpressionUUID->"6064ee9e-a9f7-4d9b-88af-949a1a1a9c5f"],
-Cell[13430, 296, 656, 13, 70, "Input",ExpressionUUID->"4b817e8c-0c7a-4422-83f7-0c5d76f06da7"]
+Cell[554, 20, 112, 0, 70, "Title",ExpressionUUID->"c63001a9-f364-4d38-b4dd-ce8bccef9a80"],
+Cell[669, 22, 398, 6, 70, "Text",ExpressionUUID->"07f64a6f-bbdd-41fd-a8e1-77c4e0e50f60"],
+Cell[1070, 30, 2004, 44, 70, "Text",ExpressionUUID->"05a9f694-db06-4706-be74-2cdc635bc9cd"],
+Cell[3077, 76, 5746, 114, 70, "Input",ExpressionUUID->"ab53484d-35bf-4aa1-819d-9937f7dd3573"],
+Cell[8826, 192, 165, 3, 70, "Section",ExpressionUUID->"a6caa160-bd41-4ada-8626-aa47f9f3b9d0"],
+Cell[8994, 197, 406, 7, 70, "Input",ExpressionUUID->"c190a085-e7e6-448a-b436-633894569e70"],
+Cell[9403, 206, 244, 4, 70, "Section",ExpressionUUID->"3bcf6890-4cbe-4143-9d8a-e00b8d694d22"],
+Cell[9650, 212, 1434, 29, 70, "Input",ExpressionUUID->"701f9862-046f-4051-8376-69959955aebb"],
+Cell[11087, 243, 132, 0, 70, "Section",ExpressionUUID->"3cfaf702-cbce-4158-8613-5916fab2a55c"],
+Cell[11222, 245, 307, 5, 70, "Input",ExpressionUUID->"71febf4f-26b7-49f8-bddd-67c6a48c744a"],
+Cell[11532, 252, 310, 4, 70, "Section",ExpressionUUID->"73d80405-c891-493c-aa47-612fb47ebecf"],
+Cell[11845, 258, 407, 9, 70, "Input",ExpressionUUID->"820e3645-e8d2-4e02-91b2-518bd1743ea9"],
+Cell[12255, 269, 257, 4, 70, "Section",ExpressionUUID->"6104eab4-113f-43e4-bc5c-09f1b4e4855c"],
+Cell[12515, 275, 672, 13, 70, "Input",ExpressionUUID->"48249f11-4f43-410d-8ef5-f49760e4b7de"],
+Cell[13190, 290, 237, 4, 70, "Section",ExpressionUUID->"15fe0e47-c235-4d89-91f2-b817012aacd8"],
+Cell[13430, 296, 656, 13, 70, "Input",ExpressionUUID->"21acb0e4-88d9-4c5f-b6f9-7b74c5b012c5"]
 }
 ]
 *)
