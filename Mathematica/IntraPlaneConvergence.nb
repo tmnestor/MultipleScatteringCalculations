@@ -20,7 +20,7 @@ WindowFrame->Normal*)
 Notebook[{
 Cell["\<\
 Phase 2 (c) : Convergence in Multipole Order + Packing Density\
-\>", "Title",ExpressionUUID->"b4d3888f-2b28-44c5-b564-751033df79d7"],
+\>", "Title",ExpressionUUID->"602ba464-2c9f-4ab5-9dfd-0803e45635fc"],
 
 Cell["\<\
 Convergence of the planar collective Foldy-Lax solve T_coll = T0 (I - G0 \
@@ -34,7 +34,7 @@ build confirms the elastic L/M/N collective tracks the same convergence above \
 the lattice floor.  Executable twin: IntraPlaneConvergence.wl.  Independently \
 cross-checked in Python \
 (cubic_scattering/tests/test_intraplane_convergence.py).\
-\>", "Text",ExpressionUUID->"3704c52b-81c6-4507-9def-4589b0c236db"],
+\>", "Text",ExpressionUUID->"e9487341-4c00-4b7e-8500-50ff48dc36b3"],
 
 Cell["\<\
 IntraPlaneConvergence.wl  --  Phase 2 item (c): CONVERGENCE of the planar
@@ -97,7 +97,7 @@ outgoing
 inner T0 at
    the REAL background wavenumbers, only the inter-voxel lattice sum is \
 damped (Im=0.25).\
-\>", "Text",ExpressionUUID->"494e8396-cb54-4ee2-b669-3f516dc0a910"],
+\>", "Text",ExpressionUUID->"a489280e-d1f5-44db-816c-0777b49b88f4"],
 
 Cell["\<\
 Get[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -166,11 +166,11 @@ solveLL[aL_, Nmax_, g0LL_] := Module[{idxL, T0L, G0, M, tcoll},
     \"coupling\" -> Norm[Flatten[tcoll - T0L]]/Norm[Flatten[T0L]],
     \"cond\" -> First[SingularValueList[M]]/Last[SingularValueList[M]],
     \"specrad\" -> Max[Abs[Eigenvalues[G0 . T0L]]]|>];\
-\>", "Input",ExpressionUUID->"f9b8d466-1a39-4fe0-905b-2e39b628b67e"],
+\>", "Input",ExpressionUUID->"72886837-af88-4166-9487-2cf86e3e5ccf"],
 
 Cell["\<\
 [A] single-site Mie spectrum decay -- why n-truncation converges\
-\>", "Section",ExpressionUUID->"38486f41-25ef-457b-a995-c35ddf7f9d8d"],
+\>", "Section",ExpressionUUID->"56d544cb-6bdf-4afa-8579-83d162a55244"],
 
 Cell["\<\
 Print[\"==== Phase 2 item (c) :: convergence in multipole order n + packing \
@@ -187,11 +187,11 @@ Print[\"      monotone decay for n>=2 and ||T0(\", Naspec, \")||/max < 1e-4 \
 -> \",
    If[decayOK, \"PASS\", \"FAIL\"], \" (ratio \", \
 ScientificForm[specNorm[[Naspec + 1]]/Max[specNorm], 3], \")\"];\
-\>", "Input",ExpressionUUID->"c96a08e7-e7ba-4236-b14b-918f9c2d28be"],
+\>", "Input",ExpressionUUID->"a0baeef9-f8e8-44fd-93d7-fea3588416a5"],
 
 Cell["\<\
 [B] closed-form P-channel collective: n-convergence + packing-density sweep\
-\>", "Section",ExpressionUUID->"c92bb21d-e595-4753-bca2-0e2955b371a7"],
+\>", "Section",ExpressionUUID->"136c1816-745d-4db3-9331-d692922354c4"],
 
 Cell["\<\
 LradB = 28; condCap = 100; NmaxB = 6; relTol = 1*^-5;
@@ -264,12 +264,12 @@ Print[\"         specrad (aL desc) = \", Map[ScientificForm[#, 3] &, \
 specrVals]];
 Print[\"         cond@N5 (aL desc) = \", Map[ScientificForm[#, 3] &, \
 condVals]];\
-\>", "Input",ExpressionUUID->"7100c254-95b1-4f69-955c-1f8a79a9f42b"],
+\>", "Input",ExpressionUUID->"48c5f137-e4ff-4819-86ea-0c9c4f128d14"],
 
 Cell["\<\
 [C] full VECTOR collective (L/M/N): one damped-lattice build, sub-block Nmax \
 sweep\
-\>", "Section",ExpressionUUID->"6a7217b5-0c46-45c7-89da-57770dbc7f2f"],
+\>", "Section",ExpressionUUID->"ccfcaa13-e45f-438d-a88a-e198894afd55"],
 
 Cell["\<\
 NmaxC = 3; aLC = 2.5; LradC = 8; LradFloor = 6; radP = 0.5;
@@ -419,11 +419,11 @@ Print[\"      [note] Lrad=\", LradC, \" M/N lattice floor = \", \
 ScientificForm[floorC, 3],
    \" is orthogonal to multipole convergence; deep lattice+vector G0 = \
 deferred Ewald (cf. Phase 1).\"];\
-\>", "Input",ExpressionUUID->"066b808f-f868-417d-b7fc-d18b2751b5e2"],
+\>", "Input",ExpressionUUID->"1515ddae-1376-4ed2-905f-2c4ce447c2a7"],
 
 Cell["\<\
 dump JSON reference for the Python cross-check (item f style)\
-\>", "Section",ExpressionUUID->"047eb9cc-547f-4be1-a6ef-402fefd07957"],
+\>", "Section",ExpressionUUID->"48f8cfba-a8a5-4f5e-b150-9cee218beff2"],
 
 Cell["\<\
 convRef = <|\"kPo\" -> kPo, \"kSo\" -> kSo, \"dampIm\" -> dampIm, \"kx\" -> \
@@ -450,11 +450,11 @@ Export[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
 IntraPlaneConvergence_reference.json\", convRef];
 Print[\"  wrote IntraPlaneConvergence_reference.json\"];
 Print[\"Phase 2 item (c) (IntraPlaneConvergence.wl) loaded + verified.\"];\
-\>", "Input",ExpressionUUID->"5edd2a86-ec02-484b-8859-a49e5fc361b4"]
+\>", "Input",ExpressionUUID->"a4d1e50d-a6fb-432c-a9dc-5ebbe6608eb1"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"431c7d05-cd11-427d-9eaa-7ddf0d8f1b50"
+ExpressionUUID->"0db32eeb-0287-4def-a038-f74eaf6463b2"
 ]
 (* End of Notebook Content *)
 
@@ -467,18 +467,18 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 142, 2, 70, "Title",ExpressionUUID->"b4d3888f-2b28-44c5-b564-751033df79d7"],
-Cell[699, 24, 847, 12, 70, "Text",ExpressionUUID->"3704c52b-81c6-4507-9def-4589b0c236db"],
-Cell[1549, 38, 2640, 61, 70, "Text",ExpressionUUID->"494e8396-cb54-4ee2-b669-3f516dc0a910"],
-Cell[4192, 101, 3165, 67, 70, "Input",ExpressionUUID->"f9b8d466-1a39-4fe0-905b-2e39b628b67e"],
-Cell[7360, 170, 146, 2, 70, "Section",ExpressionUUID->"38486f41-25ef-457b-a995-c35ddf7f9d8d"],
-Cell[7509, 174, 779, 15, 70, "Input",ExpressionUUID->"c96a08e7-e7ba-4236-b14b-918f9c2d28be"],
-Cell[8291, 191, 157, 2, 70, "Section",ExpressionUUID->"c92bb21d-e595-4753-bca2-0e2955b371a7"],
-Cell[8451, 195, 3394, 71, 70, "Input",ExpressionUUID->"7100c254-95b1-4f69-955c-1f8a79a9f42b"],
-Cell[11848, 268, 166, 3, 70, "Section",ExpressionUUID->"6a7217b5-0c46-45c7-89da-57770dbc7f2f"],
-Cell[12017, 273, 7304, 148, 70, "Input",ExpressionUUID->"066b808f-f868-417d-b7fc-d18b2751b5e2"],
-Cell[19324, 423, 143, 2, 70, "Section",ExpressionUUID->"047eb9cc-547f-4be1-a6ef-402fefd07957"],
-Cell[19470, 427, 1289, 25, 70, "Input",ExpressionUUID->"5edd2a86-ec02-484b-8859-a49e5fc361b4"]
+Cell[554, 20, 142, 2, 70, "Title",ExpressionUUID->"602ba464-2c9f-4ab5-9dfd-0803e45635fc"],
+Cell[699, 24, 847, 12, 70, "Text",ExpressionUUID->"e9487341-4c00-4b7e-8500-50ff48dc36b3"],
+Cell[1549, 38, 2640, 61, 70, "Text",ExpressionUUID->"a489280e-d1f5-44db-816c-0777b49b88f4"],
+Cell[4192, 101, 3165, 67, 70, "Input",ExpressionUUID->"72886837-af88-4166-9487-2cf86e3e5ccf"],
+Cell[7360, 170, 146, 2, 70, "Section",ExpressionUUID->"56d544cb-6bdf-4afa-8579-83d162a55244"],
+Cell[7509, 174, 779, 15, 70, "Input",ExpressionUUID->"a0baeef9-f8e8-44fd-93d7-fea3588416a5"],
+Cell[8291, 191, 157, 2, 70, "Section",ExpressionUUID->"136c1816-745d-4db3-9331-d692922354c4"],
+Cell[8451, 195, 3394, 71, 70, "Input",ExpressionUUID->"48c5f137-e4ff-4819-86ea-0c9c4f128d14"],
+Cell[11848, 268, 166, 3, 70, "Section",ExpressionUUID->"ccfcaa13-e45f-438d-a88a-e198894afd55"],
+Cell[12017, 273, 7304, 148, 70, "Input",ExpressionUUID->"1515ddae-1376-4ed2-905f-2c4ce447c2a7"],
+Cell[19324, 423, 143, 2, 70, "Section",ExpressionUUID->"48f8cfba-a8a5-4f5e-b150-9cee218beff2"],
+Cell[19470, 427, 1289, 25, 70, "Input",ExpressionUUID->"a4d1e50d-a6fb-432c-a9dc-5ebbe6608eb1"]
 }
 ]
 *)

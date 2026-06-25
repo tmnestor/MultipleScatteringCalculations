@@ -18,7 +18,7 @@ WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Phase 0 : Intra-Plane Elastic Translation-Addition Operator", "Title",ExpressionUUID->"e4ed297a-2432-4ee6-8933-8f0569f0d02b"],
+Cell["Phase 0 : Intra-Plane Elastic Translation-Addition Operator", "Title",ExpressionUUID->"9d2b9148-9e6e-482b-8c7c-b7364c32ce4f"],
 
 Cell["\<\
 Cruzan/Stein vector-spherical-wave translation for horizontal (Delta z = 0) \
@@ -29,7 +29,7 @@ integral and field reconstruction), vector field reconstruction (L, M, N), \
 and reciprocity. Executable twin: IntraPlaneTranslation.wl. Independently \
 validated against Python in \
 cubic_scattering/tests/test_intraplane_translation.py.\
-\>", "Text",ExpressionUUID->"40510432-57ea-43b4-91f6-e60a6e0ae068"],
+\>", "Text",ExpressionUUID->"2b119987-ad3a-4285-b22e-3cf84b96a3fc"],
 
 Cell["\<\
 IntraPlaneTranslation.wl  --  Phase 0 of the Intra-Plane Foldy-Lax program:
@@ -64,7 +64,7 @@ M 9.9e-10,
 at k_P and k_S.
    Cross-validated in Python: \
 cubic_scattering/tests/test_intraplane_translation.py.\
-\>", "Text",ExpressionUUID->"e5eb733f-08c4-4cf8-b649-d622e37b5123"],
+\>", "Text",ExpressionUUID->"02caebca-6cbc-4e0c-9fba-7926bef5e1a2"],
 
 Cell["\<\
 (* ---- spherical Bessel / Hankel (matching CartesianT0.wl) ---- *)
@@ -85,7 +85,7 @@ psiScalar[n_, m_, k_, t_, c_, r_] :=
   Module[{rel = r - c, rr},
    rr = Sqrt[rel . rel];
    zfn[n, k rr, t] Yfun[n, m, rel]];\
-\>", "Input",ExpressionUUID->"5325f0fd-99b7-4051-b74e-23e13e9aefcc"],
+\>", "Input",ExpressionUUID->"a4873caa-333c-4add-a456-b3391456813c"],
 
 Cell["\<\
 SCALAR SEPARATION MATRIX  beta^c_{nm, nu mu}(d)   (closed form: \
@@ -93,7 +93,7 @@ Gegenbauer/Gaunt)
    Defined by:  h_n(k|r-a|) Y_n^m(^(r-a)) = Sum_{nu mu} beta[n,m,nu,mu,d,k]
                                             j_nu(k|r-b|) Y_nu^mu(^(r-b)),
    with d = a - b and valid for |r-b| < |d|.\
-\>", "Section",ExpressionUUID->"a405511a-e606-4fb3-abac-457df7e091fb"],
+\>", "Section",ExpressionUUID->"414276cd-907a-4555-8b38-2718893c77a0"],
 
 Cell["\<\
 (* Gaunt integral  G(l1,m1;l2,m2;l3,m3) = Integral Y_l1^m1 Y_l2^m2 Y_l3^m3 \
@@ -202,7 +202,7 @@ Print[\"  [b] field reconstruction residual (max over \", \
 Length[sourcesTest], \" sources x \",
    Length[fieldPtsTest], \" pts) = \", resScalar, \"  -> \", If[resScalar < \
 tolScalar, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"b59cdb00-e85c-46fe-bbdd-e5100a0c5171"],
+\>", "Input",ExpressionUUID->"4d12800d-8bed-4878-96ea-462f287a79f3"],
 
 Cell["\<\
 VECTOR elastic translation.  Plain Hansen multipoles:
@@ -222,7 +222,7 @@ constant).
    The naive scalar-style M translation (NO cross-term) must FAIL: that is \
 the RED
    that proves the vector cross-term is physically necessary.\
-\>", "Section",ExpressionUUID->"bf629789-9da5-4d1a-820c-c54583ec97a3"],
+\>", "Section",ExpressionUUID->"8e19276b-810e-4c67-bdd1-e8016a02eb22"],
 
 Cell["\<\
 kPval = 0.9; kSval = 1.5;
@@ -338,7 +338,7 @@ Print[\"  M (S toroidal) recon, FULL (beta^S + (grad psi) x d)    = \", resVMf,
 resVNf = vmax[Nw[#1, #2, \"h\", acen0, #3] &, reconNfull, vSrcMN];
 Print[\"  N (S poloidal) recon, FULL (beta^S + curl cross-term)   = \", resVNf,
    \"  -> \", If[resVNf < tolVec, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"c97aabed-1cff-440c-8504-e698a06e68c2"],
+\>", "Input",ExpressionUUID->"953a5ae4-e41a-46cb-8527-41c34ed42d95"],
 
 Cell["\<\
 RECIPROCITY of the translation operator (closed-form symmetry, derived from
@@ -346,7 +346,7 @@ RECIPROCITY of the translation operator (closed-form symmetry, derived from
 (-1)^(nu-n)):
      beta_{nm,nu mu}(d) = (-1)^(n+nu+m+mu) beta_{nu,-mu, n,-m}(d).
    Verified analytically against the n=0 row; here checked numerically.\
-\>", "Section",ExpressionUUID->"add1dfb4-aeb1-401b-8ea3-6589f811f0cc"],
+\>", "Section",ExpressionUUID->"450f2a70-c74a-4944-91c6-b77b548d4d00"],
 
 Cell["\<\
 recipPairs = {{1, 0, 2, 1}, {2, -1, 3, 2}, {3, 1, 1, -1}, {2, 2, 4, -2}, {0, \
@@ -364,14 +364,14 @@ k_P = \",
 \"FAIL\"]];
 Print[\"  same at k_S = \", recipResid[kSval], \"  -> \", \
 If[recipResid[kSval] < tolRecip, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"d344625e-f9b8-457f-9436-e4b1e6a65efa"],
+\>", "Input",ExpressionUUID->"4b236f9c-c283-4940-8a56-655bf7fcb335"],
 
 Cell["\<\
 Dump closed-form beta to JSON for the INDEPENDENT Python cross-check
    (Python recomputes beta by spherical-harmonic projection: different \
 method,
    different language).  Mirrors the ElasticMie_reference.json pattern.\
-\>", "Section",ExpressionUUID->"6265896b-11f5-4586-8a84-b0399b498459"],
+\>", "Section",ExpressionUUID->"71244023-fe0e-4843-8edf-0c7fe4666d8f"],
 
 Cell["\<\
 mkDump[k_] := Flatten[Table[
@@ -389,11 +389,11 @@ Print[\"  wrote IntraPlaneTranslation_reference.json: \",
    Length[refData[\"betaP\"]], \" betaP + \", Length[refData[\"betaS\"]], \" \
 betaS entries\"];
 Print[\"Phase 0 (IntraPlaneTranslation.wl) loaded + verified.\"];\
-\>", "Input",ExpressionUUID->"4e30eb59-8f5f-4159-a009-1620f2682019"]
+\>", "Input",ExpressionUUID->"b38b7452-8ede-4788-bc2a-756631f4eebb"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"8f6fdcca-0c61-4c6c-802d-75c69cfc4bd0"
+ExpressionUUID->"5e75e367-e694-4882-9f1e-b3514ed8836a"
 ]
 (* End of Notebook Content *)
 
@@ -406,18 +406,18 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 131, 0, 70, "Title",ExpressionUUID->"e4ed297a-2432-4ee6-8933-8f0569f0d02b"],
-Cell[688, 22, 627, 9, 70, "Text",ExpressionUUID->"40510432-57ea-43b4-91f6-e60a6e0ae068"],
-Cell[1318, 33, 1458, 33, 70, "Text",ExpressionUUID->"e5eb733f-08c4-4cf8-b649-d622e37b5123"],
-Cell[2779, 68, 827, 19, 70, "Input",ExpressionUUID->"5325f0fd-99b7-4051-b74e-23e13e9aefcc"],
-Cell[3609, 89, 360, 6, 70, "Section",ExpressionUUID->"a405511a-e606-4fb3-abac-457df7e091fb"],
-Cell[3972, 97, 4359, 107, 70, "Input",ExpressionUUID->"b59cdb00-e85c-46fe-bbdd-e5100a0c5171"],
-Cell[8334, 206, 898, 18, 70, "Section",ExpressionUUID->"bf629789-9da5-4d1a-820c-c54583ec97a3"],
-Cell[9235, 226, 5343, 114, 70, "Input",ExpressionUUID->"c97aabed-1cff-440c-8504-e698a06e68c2"],
-Cell[14581, 342, 385, 6, 70, "Section",ExpressionUUID->"add1dfb4-aeb1-401b-8ea3-6589f811f0cc"],
-Cell[14969, 350, 791, 16, 70, "Input",ExpressionUUID->"d344625e-f9b8-457f-9436-e4b1e6a65efa"],
-Cell[15763, 368, 303, 5, 70, "Section",ExpressionUUID->"6265896b-11f5-4586-8a84-b0399b498459"],
-Cell[16069, 375, 860, 16, 70, "Input",ExpressionUUID->"4e30eb59-8f5f-4159-a009-1620f2682019"]
+Cell[554, 20, 131, 0, 70, "Title",ExpressionUUID->"9d2b9148-9e6e-482b-8c7c-b7364c32ce4f"],
+Cell[688, 22, 627, 9, 70, "Text",ExpressionUUID->"2b119987-ad3a-4285-b22e-3cf84b96a3fc"],
+Cell[1318, 33, 1458, 33, 70, "Text",ExpressionUUID->"02caebca-6cbc-4e0c-9fba-7926bef5e1a2"],
+Cell[2779, 68, 827, 19, 70, "Input",ExpressionUUID->"a4873caa-333c-4add-a456-b3391456813c"],
+Cell[3609, 89, 360, 6, 70, "Section",ExpressionUUID->"414276cd-907a-4555-8b38-2718893c77a0"],
+Cell[3972, 97, 4359, 107, 70, "Input",ExpressionUUID->"4d12800d-8bed-4878-96ea-462f287a79f3"],
+Cell[8334, 206, 898, 18, 70, "Section",ExpressionUUID->"8e19276b-810e-4c67-bdd1-e8016a02eb22"],
+Cell[9235, 226, 5343, 114, 70, "Input",ExpressionUUID->"953a5ae4-e41a-46cb-8527-41c34ed42d95"],
+Cell[14581, 342, 385, 6, 70, "Section",ExpressionUUID->"450f2a70-c74a-4944-91c6-b77b548d4d00"],
+Cell[14969, 350, 791, 16, 70, "Input",ExpressionUUID->"4b236f9c-c283-4940-8a56-655bf7fcb335"],
+Cell[15763, 368, 303, 5, 70, "Section",ExpressionUUID->"71244023-fe0e-4843-8edf-0c7fe4666d8f"],
+Cell[16069, 375, 860, 16, 70, "Input",ExpressionUUID->"b38b7452-8ede-4788-bc2a-756631f4eebb"]
 }
 ]
 *)

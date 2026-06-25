@@ -20,7 +20,7 @@ WindowFrame->Normal*)
 Notebook[{
 Cell["\<\
 Phase 3a : Layer R/T(p) Projection (thesis symplectic energy normalisation)\
-\>", "Title",ExpressionUUID->"62e6183c-263f-4231-abf6-7825caefb6d2"],
+\>", "Title",ExpressionUUID->"747d0180-b1f1-4be8-bddc-201030d07b60"],
 
 Cell["\<\
 Projects the Phase-2 spherical collective T_coll(k_par) onto the PhD thesis \
@@ -34,7 +34,7 @@ full symplectic reciprocity holds at every p: Rd=-Rd^T, Ru=-Ru^T (quadrature \
 |R|^2+|T|^2=1 is deferred to Phase 3b (needs the undamped G0).  Executable \
 twin: IntraPlaneRT.wl.  Python cross-check: \
 cubic_scattering/tests/test_intraplane_rt.py.\
-\>", "Text",ExpressionUUID->"770b2a6e-fed3-437a-9af9-51e1cee58ada"],
+\>", "Text",ExpressionUUID->"81b3b4a9-2977-4722-84dc-76294f33ca36"],
 
 Cell["\<\
 IntraPlaneRT.wl  --  Phase 3a: planar layer R/T(p) PROJECTION.
@@ -65,7 +65,7 @@ bridge's
 h_n^(1)
    (SphericalHankelH1).  Inner T0 at REAL background wavenumbers; lattice \
 damped.\
-\>", "Text",ExpressionUUID->"c8cb3a67-12c1-4bc7-8be7-25692a8b3aa6"],
+\>", "Text",ExpressionUUID->"26c24f23-938b-443b-ae2c-3a981205e4ba"],
 
 Cell["\<\
 Get[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -200,11 +200,11 @@ toSph[v_] := {v[[2]], v[[3]], v[[1]]};          (* project (z,x,y) -> bridge \
 etaOf[c_, p_] := Module[{e = Sqrt[1./c^2 - p^2]}, If[Im[e] < 0, -e, e]];
 khatPhys[m_, p_, sign_] := Module[{c = If[m == \"P\", alpha0, beta0]}, c \
 {sign etaOf[c, p], p, 0.}]; (* (z,x,y) *)\
-\>", "Input",ExpressionUUID->"15b75da2-61ad-4e38-a1ce-3a3bef3d4e8f"],
+\>", "Input",ExpressionUUID->"fc21b251-cdc1-49db-b309-99be96197144"],
 
 Cell["\<\
 thesis (PhD Section 3.1) plane-wave ENERGY normalisation + R/T projection\
-\>", "Section",ExpressionUUID->"7852ef35-c325-4552-8b85-66bf853e6cad"],
+\>", "Section",ExpressionUUID->"d0c964ec-355f-4bc9-aa94-f7988371d9c9"],
 
 Cell["\<\
 (* ---- thesis (PhD Section 3.1, Eqs. Peigen/SVeigen/SHeigen + epsdef) \
@@ -302,12 +302,12 @@ Nmax], {om, modes}, {im, modes}];
 \"Tu\" -> blk[-1., -1.],
     \"Rsh\" -> rtAmpE[Tcoll, \"SH\", p, 1., \"SH\", -1., Nmax],
     \"Tsh\" -> rtAmpE[Tcoll, \"SH\", p, 1., \"SH\", 1., Nmax]|>];\
-\>", "Input",ExpressionUUID->"9b98cdbd-7b83-4552-b6eb-0a3ce0931cd0"],
+\>", "Input",ExpressionUUID->"b28d65d4-68e8-400f-b66b-02d4a8b1021c"],
 
 Cell["\<\
 sweep over (normal / sub-critical / post-critical) p, build collective \
 T_coll(p)\
-\>", "Section",ExpressionUUID->"615e60ba-0eb0-4a6c-ab97-ce1ef69a5da3"],
+\>", "Section",ExpressionUUID->"edf3cb28-183f-45b4-9b31-3af52460304c"],
 
 Cell["\<\
 Print[\"==== Phase 3a :: layer R/T(p) projection (thesis energy \
@@ -377,11 +377,11 @@ IntraPlaneRT_reference.json\",
     \"stageRT\" -> stageRT|>];
 Print[\"  wrote IntraPlaneRT_reference.json\"];
 Print[\"Phase 3a (IntraPlaneRT.wl) loaded.\"];\
-\>", "Input",ExpressionUUID->"ed08caee-c108-4991-8065-45a5e514361e"]
+\>", "Input",ExpressionUUID->"f36e1549-26a1-45b0-ba88-b8c6f580ad6d"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"e8a14fc2-ba4e-464d-94a1-ad321ea42d1e"
+ExpressionUUID->"0db32eeb-0287-4def-a038-f74eaf6463b2"
 ]
 (* End of Notebook Content *)
 
@@ -394,14 +394,14 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 155, 2, 70, "Title",ExpressionUUID->"62e6183c-263f-4231-abf6-7825caefb6d2"],
-Cell[712, 24, 849, 12, 70, "Text",ExpressionUUID->"770b2a6e-fed3-437a-9af9-51e1cee58ada"],
-Cell[1564, 38, 1588, 29, 70, "Text",ExpressionUUID->"c8cb3a67-12c1-4bc7-8be7-25692a8b3aa6"],
-Cell[3155, 69, 6673, 133, 70, "Input",ExpressionUUID->"15b75da2-61ad-4e38-a1ce-3a3bef3d4e8f"],
-Cell[9831, 204, 155, 2, 70, "Section",ExpressionUUID->"7852ef35-c325-4552-8b85-66bf853e6cad"],
-Cell[9989, 208, 4652, 96, 70, "Input",ExpressionUUID->"9b98cdbd-7b83-4552-b6eb-0a3ce0931cd0"],
-Cell[14644, 306, 164, 3, 70, "Section",ExpressionUUID->"615e60ba-0eb0-4a6c-ab97-ce1ef69a5da3"],
-Cell[14811, 311, 3175, 68, 70, "Input",ExpressionUUID->"ed08caee-c108-4991-8065-45a5e514361e"]
+Cell[554, 20, 155, 2, 70, "Title",ExpressionUUID->"747d0180-b1f1-4be8-bddc-201030d07b60"],
+Cell[712, 24, 849, 12, 70, "Text",ExpressionUUID->"81b3b4a9-2977-4722-84dc-76294f33ca36"],
+Cell[1564, 38, 1588, 29, 70, "Text",ExpressionUUID->"26c24f23-938b-443b-ae2c-3a981205e4ba"],
+Cell[3155, 69, 6673, 133, 70, "Input",ExpressionUUID->"fc21b251-cdc1-49db-b309-99be96197144"],
+Cell[9831, 204, 155, 2, 70, "Section",ExpressionUUID->"d0c964ec-355f-4bc9-aa94-f7988371d9c9"],
+Cell[9989, 208, 4652, 96, 70, "Input",ExpressionUUID->"b28d65d4-68e8-400f-b66b-02d4a8b1021c"],
+Cell[14644, 306, 164, 3, 70, "Section",ExpressionUUID->"edf3cb28-183f-45b4-9b31-3af52460304c"],
+Cell[14811, 311, 3175, 68, 70, "Input",ExpressionUUID->"f36e1549-26a1-45b0-ba88-b8c6f580ad6d"]
 }
 ]
 *)
