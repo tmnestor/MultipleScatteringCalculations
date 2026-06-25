@@ -8,7 +8,7 @@
               coeff_q extracted from the validated single-pair vector translation.
    Self-contained: copies the cycle-1 scalar Ewald/projection (IntraPlaneKambe.wl)
    and the Phase-2(b) vector helpers (IntraPlaneVectorLattice.wl); Gets only
-   CartesianT0.wl for T0LMN.  Time e^{+i w t}, outgoing h^(1); lattice in x-y.
+   CartesianT0.wl for T0LMN.  Time e^{-i w t}, outgoing h^(1); lattice in x-y.
    ============================================================================ *)
 Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
 

@@ -47,7 +47,7 @@ translation.
    Self-contained: copies the cycle-1 scalar Ewald/projection \
 (IntraPlaneKambe.wl)
    and the Phase-2(b) vector helpers (IntraPlaneVectorLattice.wl); Gets only
-   CartesianT0.wl for T0LMN.  Time e^{+i w t}, outgoing h^(1); lattice in x-y.\
+   CartesianT0.wl for T0LMN.  Time e^{-i w t}, outgoing h^(1); lattice in x-y.\
 \>", "Text",ExpressionUUID->"25c7f054-7513-4007-bbc0-4dc7b9ec661a"],
 
 Cell["\<\

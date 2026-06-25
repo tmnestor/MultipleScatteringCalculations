@@ -44,7 +44,7 @@ solve
 needs the
    Phase-0 vector translation as an explicit L/M/N matrix (next tracer bullet).
 
-   Conventions inherited from CartesianT0.wl: time e^{+i w t}, outgoing \
+   Conventions inherited from CartesianT0.wl: time e^{-i w t}, outgoing \
 h_n^(1),
    clean L/M/N normalization, (x,y,z) with z = polar axis = depth.\
 \>", "Text",ExpressionUUID->"9890ca8d-6bda-44a9-b158-614350a6a57f"],

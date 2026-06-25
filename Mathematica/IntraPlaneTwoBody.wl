@@ -29,7 +29,7 @@
    NB collective reciprocity + energy is plan item (d): it needs the flux metric
    (the raw L/N Hansen block is not literally symmetric), handled there, not here.
 
-   Conventions inherited from CartesianT0.wl / Phase 0: time e^{+i w t}, outgoing
+   Conventions inherited from CartesianT0.wl / Phase 0: time e^{-i w t}, outgoing
    h_n^(1), background wavenumbers kP=0.9, kS=1.5, z = polar axis = depth.
    ============================================================================ *)
 

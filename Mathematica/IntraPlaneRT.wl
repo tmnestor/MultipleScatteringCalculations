@@ -20,7 +20,7 @@
    to polar axis = component 3 (its ang[d] = ArcCos[d[[3]]/|d|]); a single
    permutation toSph[{z,x,y}] = {x,y,z} maps the project frame into the bridge's
    internal frame at every bridge call (so vertical z -> polar comp 3).  The
-   bridge / Phase-2 lattice code is UNTOUCHED.  Time e^{+i w t}, outgoing h_n^(1)
+   bridge / Phase-2 lattice code is UNTOUCHED.  Time e^{-i w t}, outgoing h_n^(1)
    (SphericalHankelH1).  Inner T0 at REAL background wavenumbers; lattice damped.
    ============================================================================ *)
 

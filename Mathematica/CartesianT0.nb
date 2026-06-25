@@ -5,7 +5,7 @@ Notebook[{Cell["Cartesian T0 -- full-wave elastic sphere scattering operator \
 scattering operator for an isotropic elastic sphere, full wave. Pipeline: \
 spherical symplectic-bracket Mie T-matrix (Hansen L/M/N) -> incident bridge \
 (Cartesian plane wave -> regular multipoles) -> elastic Weyl angular-spectrum \
-scattered bridge -> far-field amplitude f(k_s,k_i). Conventions: time e^{+i w \
+scattered bridge -> far-field amplitude f(k_s,k_i). Conventions: time e^{-i w \
 t}, outgoing h_n^(1), z(down)/x/y. Self-contained: evaluate top to bottom. \
 Verified: bracket==inversion 1e-17, vs compute_elastic_mie 1e-14, incident \
 reconstruction 1.9e-13 (P), scattered Weyl 1e-5..1e-7, full-operator \

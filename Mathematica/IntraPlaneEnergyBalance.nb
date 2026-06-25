@@ -46,7 +46,7 @@ diffraction
    Self-contained: copies the cycle-2 undamped builders \
 (IntraPlaneKambeVector.wl)
    and the Phase-3a projection (IntraPlaneRT.wl); Gets only CartesianT0.wl.
-   Time e^{+i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).\
+   Time e^{-i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).\
 \>", "Text",ExpressionUUID->"cc21ce42-10ca-468c-bc5e-8cf43079bdf9"],
 
 Cell["\<\

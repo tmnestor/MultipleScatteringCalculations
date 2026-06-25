@@ -29,7 +29,7 @@ isotropic elastic sphere of radius a in an isotropic elastic host. Primary \
 basis: Hansen vector spherical wavefunctions L (P), N (SV), M (SH). Per \
 degree n the T-matrix is a 2x2 spheroidal block coupling L (P) and N (SV), \
 plus a 1x1 toroidal block for M (SH); no SH<->(P,SV) coupling. Conventions \
-match cubic_scattering: time e^{+i w t}, outgoing e^{+ikr} (h_n^(1)); \
+match cubic_scattering: time e^{-i w t}, outgoing e^{+ikr} (h_n^(1)); \
 materials (alpha,beta,rho) with lam=rho(alpha^2-2 beta^2), mu=rho beta^2; \
 sphere primed. Verified cell by cell under wolframscript; the P-SV pipeline \
 is cross-checked to ~1e-14 (relative) against compute_elastic_mie (conda \

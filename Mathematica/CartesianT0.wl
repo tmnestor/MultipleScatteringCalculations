@@ -14,7 +14,7 @@
      5. The (u,t)(kx,ky) 6x6 / Kennett R-T projection is the final layer:
         evaluate f at the up/down P,SV,SH directions at fixed (kx,ky).
 
-   Conventions: time e^{+i w t}, outgoing h_n^(1), z(down)/x/y as in the repo.
+   Conventions: time e^{-i w t}, outgoing h_n^(1), z(down)/x/y as in the repo.
    Clean normalization: L=(1/k)grad psi, M=curl(r psi), N=(1/k)curl M,
    psi = z_n(k r) Y_n^m;  z_n = j_n (regular) or h_n^(1) (outgoing).
    ============================================================================ *)
