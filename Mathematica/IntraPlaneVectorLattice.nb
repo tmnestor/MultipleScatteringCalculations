@@ -18,7 +18,7 @@ WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Phase 2 (b) : Lattice-Summed Multi-Channel Vector G0(k_par)", "Title",ExpressionUUID->"279f041e-ef73-4f14-8af3-816cc852ddf3"],
+Cell["Phase 2 (b) : Lattice-Summed Multi-Channel Vector G0(k_par)", "Title",ExpressionUUID->"a98854f1-fd2d-4350-945e-ba5657c5a744"],
 
 Cell["\<\
 The planar Bloch sum of the pairwise vector translation: L->L closed form \
@@ -27,7 +27,7 @@ by vector field reconstruction against a direct damped Bloch sum, geometric \
 convergence, and the collective solve.  Executable twin: \
 IntraPlaneVectorLattice.wl.  Independently cross-checked in Python \
 (cubic_scattering/tests/test_intraplane_collective.py).\
-\>", "Text",ExpressionUUID->"a892e7a2-0c63-426b-b12e-7982bb5fcc2d"],
+\>", "Text",ExpressionUUID->"81e5df15-6bfb-4c13-bffc-777136fa4711"],
 
 Cell["\<\
 IntraPlaneVectorLattice.wl  --  Phase 2 item (b):
@@ -78,7 +78,7 @@ the lattice
    lies in the x-y plane (R_z = 0, theta_R = Pi/2).  Inner T0 uses the REAL \
 background
    wavenumbers; only the inter-voxel lattice sum is damped.\
-\>", "Text",ExpressionUUID->"7b1b2a69-fde5-461a-b414-a53f80199620"],
+\>", "Text",ExpressionUUID->"6d9ff287-658b-4984-93a6-c7fa88dcdad0"],
 
 Cell["\<\
 Get[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -194,11 +194,11 @@ Print[\"==== Phase 2 item (b) :: lattice-summed vector G0(k_par) ====\"];
 Print[\"  aL=\", aL, \", kappaP=\", kappaP, \", kappaS=\", kappaS, \", \
 k_par=(\", kx, \",\", ky, \"), Lrad=\", LradB,
    \", #R=\", nR, \", radP=\", radP];\
-\>", "Input",ExpressionUUID->"dbea361e-0da6-47b6-89af-024d3f2d136d"],
+\>", "Input",ExpressionUUID->"a54e64fd-fc5d-4e8e-a819-4f358712500f"],
 
 Cell["\<\
 [a] L-block closed form = direct damped lattice sum of beta^P(R)\
-\>", "Section",ExpressionUUID->"e874b304-b020-4901-bdc9-fadfec109888"],
+\>", "Section",ExpressionUUID->"86a71da4-52fa-4a26-b3c9-48063936cbed"],
 
 Cell["\<\
 llTests = {{0, 0, 0, 0}, {1, 0, 1, 0}, {1, -1, 2, 1}, {2, 0, 1, 1}, {2, 2, 2, \
@@ -210,7 +210,7 @@ g0LLdirect[t[[1]], t[[2]], t[[3]], t[[4]]]], {t, llTests}]];
 Print[\"  [a] L-block closed-form vs direct damped sum (\", Length[llTests], \
 \" entries) = \", resLL,
    \"  -> \", If[resLL < 1*^-9, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"a24bebcd-1317-4831-aa70-18822dd6f3fa"],
+\>", "Input",ExpressionUUID->"9d28bc4c-2719-4fca-b9d2-3a7226935817"],
 
 Cell["\<\
 [b] VECTOR field reconstruction: direct damped Bloch field sum = G0^vec \
@@ -218,7 +218,7 @@ recon.
    directF(r) = Sum_{R!=0} e^{ik.R} (M or N)^out[n,m,R](r),  |r| < aL;
    reconF(r)  = Sum_{nu mu<=Qrec} [ G0^{M<-c}_{nu mu} M^reg + G0^{N<-c}_{nu \
 mu} N^reg ](r).\
-\>", "Section",ExpressionUUID->"ecf951ad-46f8-48c9-b102-640aa2792a07"],
+\>", "Section",ExpressionUUID->"4f60802b-e104-4804-8e04-7b6732d6432f"],
 
 Cell["\<\
 Qrec = 10;
@@ -239,7 +239,7 @@ s[[2]], s[[3]], pt]], {s, recSrc}, {pt, recPts}]];
 Print[\"  [b] vector field reconstruction (Qrec=\", Qrec, \", \", \
 Length[recSrc], \" srcs x \", Length[recPts],
    \" pts) = \", resB, \"  -> \", If[resB < 1*^-5, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"54665f02-63f1-48c9-a97a-44d23080b943"],
+\>", "Input",ExpressionUUID->"2d48b752-0cdf-4eb6-abfd-014fd1771618"],
 
 Cell["\<\
 [c] convergence of the damped Bloch sum in lattice radius.  The direct damped
@@ -251,7 +251,7 @@ from the
 structure
    constants (the L-block already uses exactly that) -- deferred, as in Phase \
 1.\
-\>", "Section",ExpressionUUID->"97a59f97-58e7-41e7-b153-a373585df46e"],
+\>", "Section",ExpressionUUID->"12decc9c-16dc-4243-896a-9aa1e8ef1494"],
 
 Cell["\<\
 latAt[c_, n_, m_, Lr_] := Module[{ij, rv, bl},
@@ -271,12 +271,12 @@ Print[\"  [c] damped Bloch-sum convergence of G0^{MM}_{10,10}: |G0(8)-G0(4)| \
 Print[\"      -> \", If[dFine < 0.5 dCoarse, \"PASS (geometric)\", \"FAIL\"],
    \"   [deep/undamped vector G0: deferred Ewald-accelerated Cruzan-Gaunt, \
 cf. Phase 1]\"];\
-\>", "Input",ExpressionUUID->"5efe2eb1-f6fe-48eb-89c0-3df868342437"],
+\>", "Input",ExpressionUUID->"98102861-2f70-446d-a95a-e0828730f4e1"],
 
 Cell["\<\
 [d] assemble full G0^vec, collective Foldy-Lax solve, sanity + L-block \
 reciprocity\
-\>", "Section",ExpressionUUID->"10176c90-2c1a-45fb-814d-dbdf949157dd"],
+\>", "Section",ExpressionUUID->"f3367f5b-3610-4b3e-9377-862b1fe008f7"],
 
 Cell["\<\
 T0LMN[0] := {{T0mono[kPo, lamO, muO, kPi, lamI, muI, aa]}};
@@ -344,11 +344,11 @@ IntraPlaneVectorLattice_reference.json\", g0Ref];
 Print[\"  wrote IntraPlaneVectorLattice_reference.json (G0^vec \", nDim, \
 \"x\", nDim, \")\"];
 Print[\"Phase 2 item (b) (IntraPlaneVectorLattice.wl) loaded + verified.\"];\
-\>", "Input",ExpressionUUID->"97ec9f7c-b7ed-4aaa-a7c9-e675160ea541"]
+\>", "Input",ExpressionUUID->"21d24078-b7b1-4077-8db2-43ae264dd69a"]
 },
 FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"c2e32471-a034-4c23-aea9-81cfeb4fe3f6"
+ExpressionUUID->"0db32eeb-0287-4def-a038-f74eaf6463b2"
 ]
 (* End of Notebook Content *)
 
@@ -361,18 +361,18 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 131, 0, 70, "Title",ExpressionUUID->"279f041e-ef73-4f14-8af3-816cc852ddf3"],
-Cell[688, 22, 494, 7, 70, "Text",ExpressionUUID->"a892e7a2-0c63-426b-b12e-7982bb5fcc2d"],
-Cell[1185, 31, 2199, 49, 70, "Text",ExpressionUUID->"7b1b2a69-fde5-461a-b414-a53f80199620"],
-Cell[3387, 82, 5600, 114, 70, "Input",ExpressionUUID->"dbea361e-0da6-47b6-89af-024d3f2d136d"],
-Cell[8990, 198, 146, 2, 70, "Section",ExpressionUUID->"e874b304-b020-4901-bdc9-fadfec109888"],
-Cell[9139, 202, 561, 10, 70, "Input",ExpressionUUID->"a24bebcd-1317-4831-aa70-18822dd6f3fa"],
-Cell[9703, 214, 327, 6, 70, "Section",ExpressionUUID->"ecf951ad-46f8-48c9-b102-640aa2792a07"],
-Cell[10033, 222, 1017, 19, 70, "Input",ExpressionUUID->"54665f02-63f1-48c9-a97a-44d23080b943"],
-Cell[11053, 243, 500, 10, 70, "Section",ExpressionUUID->"97a59f97-58e7-41e7-b153-a373585df46e"],
-Cell[11556, 255, 982, 18, 70, "Input",ExpressionUUID->"5efe2eb1-f6fe-48eb-89c0-3df868342437"],
-Cell[12541, 275, 166, 3, 70, "Section",ExpressionUUID->"10176c90-2c1a-45fb-814d-dbdf949157dd"],
-Cell[12710, 280, 3117, 66, 70, "Input",ExpressionUUID->"97ec9f7c-b7ed-4aaa-a7c9-e675160ea541"]
+Cell[554, 20, 131, 0, 70, "Title",ExpressionUUID->"a98854f1-fd2d-4350-945e-ba5657c5a744"],
+Cell[688, 22, 494, 7, 70, "Text",ExpressionUUID->"81e5df15-6bfb-4c13-bffc-777136fa4711"],
+Cell[1185, 31, 2199, 49, 70, "Text",ExpressionUUID->"6d9ff287-658b-4984-93a6-c7fa88dcdad0"],
+Cell[3387, 82, 5600, 114, 70, "Input",ExpressionUUID->"a54e64fd-fc5d-4e8e-a819-4f358712500f"],
+Cell[8990, 198, 146, 2, 70, "Section",ExpressionUUID->"86a71da4-52fa-4a26-b3c9-48063936cbed"],
+Cell[9139, 202, 561, 10, 70, "Input",ExpressionUUID->"9d28bc4c-2719-4fca-b9d2-3a7226935817"],
+Cell[9703, 214, 327, 6, 70, "Section",ExpressionUUID->"4f60802b-e104-4804-8e04-7b6732d6432f"],
+Cell[10033, 222, 1017, 19, 70, "Input",ExpressionUUID->"2d48b752-0cdf-4eb6-abfd-014fd1771618"],
+Cell[11053, 243, 500, 10, 70, "Section",ExpressionUUID->"12decc9c-16dc-4243-896a-9aa1e8ef1494"],
+Cell[11556, 255, 982, 18, 70, "Input",ExpressionUUID->"98102861-2f70-446d-a95a-e0828730f4e1"],
+Cell[12541, 275, 166, 3, 70, "Section",ExpressionUUID->"f3367f5b-3610-4b3e-9377-862b1fe008f7"],
+Cell[12710, 280, 3117, 66, 70, "Input",ExpressionUUID->"21d24078-b7b1-4077-8db2-43ae264dd69a"]
 }
 ]
 *)
