@@ -52,25 +52,26 @@ A marine 3-region stack, depth-dominant:
 
 Contrasts are referenced to the crust mean so they stay small — keeping GMRES well-conditioned and respecting the renormalisation validity floor $|\Delta|<\varphi\cdot\text{background}$ established in the sphere-packing study.
 
-## 4. Architecture — port/extend `GlobalMatrix`
+## 4. Architecture — cherry-pick into a new self-contained repo
 
-The vertical operator and Foldy–Lax/ocean machinery already exist in `~/Desktop/SeismicInversion/GlobalMatrix/` (shares conda env `seismic`). The new 3-D solver **lives in `GlobalMatrix`** and imports `cubic_scattering` for $T_0$ and the horizontal sweep.
+**No mixing across repos.** The 3-D solver gets its own brand-new repo, **`~/Desktop/Marine3D`**, into which we **cherry-pick only the required modules** (the minimal import closure) from the three source repos. After extraction the source repos are reference-only; Marine3D imports nothing from them. Conda env `seismic`.
 
-| Piece | Source | Action |
+**Phase 0 (the first part of the plan) is the cherry-pick:** bootstrap Marine3D; trace the dependency closure from the entry points below; copy only those modules, rewriting imports repo-local; bring each source module's own tests to verify parity in isolation. The **duplicate Kennett is resolved by keeping `cubic_scattering/kennett_layers.py`** (with its `FluidLayer`/`ocean_bottom`/`seismic_survey` marine stack) and dropping `Kennett_Reflectivity`'s; the cherry-picked GMM is **adapted to consume `cubic_scattering`'s `LayerStack`/`IsotropicLayer`/`FluidLayer`** (it originally used `Kennett_Reflectivity.LayerModel`), validated by a parity test GMM ≡ `kennett_layers` reflectivity.
+
+| Piece | Cherry-picked from | Into `Marine3D/` |
 |---|---|---|
-| $\mathbf{P}^z$ up/down Riccati sweep (numpy + differentiable torch) | `GlobalMatrix/riccati_solver.py` | reuse |
-| modal eigenvectors (P-SV-SH, ocean acoustic), batched over $k_H$ | `GlobalMatrix/layer_matrix.py` | reuse |
-| differentiable global-matrix solve, Foldy–Lax, ocean extraction | `gmm_torch.py`, `interlayer_ms.py` (`ScattererSlab9x9` already uses 9×9 $(u,\varepsilon)$ T-matrices) | reuse |
-| $\Delta\mathcal{C}_{eff}$ screens (9×9 $(u,\varepsilon)$ $T_0$) | `cubic_scattering` effective contrasts | port in |
-| $\mathbf{P}^x$ intra-plane $(x,y)$ horizontal coupling | `horizontal_greens.py` / spectral sweep | port + extend to $(x,y)$ |
-| 3-D matvec $(\mathbf{I}-[\mathbf{P}^z+\mathbf{P}^x]\Delta\mathcal{C}_{eff})$ + GMRES driver | `torch_gmres` | new (thin) |
-| earth-model builder; marine shot-gather driver | `ocean_bottom.py`, `seismic_survey.py` | reuse + new builder |
+| $\mathbf{P}^z$ up/down Riccati sweep (numpy + torch) | `GlobalMatrix/riccati_solver.py` | `marine3d/gmm/riccati_solver.py` |
+| modal eigenvectors (P-SV-SH, ocean), batched over $k_H$ | `GlobalMatrix/layer_matrix.py` | `marine3d/gmm/layer_matrix.py` |
+| GMM solve, Foldy–Lax, ocean extraction, torch path | `GlobalMatrix/{global_matrix,gmm_torch,interlayer_ms,layered_greens,config}.py` | `marine3d/gmm/…` |
+| Kennett reference + marine dressing | `cubic_scattering/{kennett_layers,ocean_bottom,seismic_survey}.py` | `marine3d/kennett/…` |
+| $\Delta\mathcal{C}_{eff}$ screens (9×9 $(u,\varepsilon)$ $T_0$) | `cubic_scattering/{effective_contrasts,voigt_tmatrix,…}.py` | `marine3d/tmatrix/…` |
+| $\mathbf{P}^x$ intra-plane horizontal coupling | `cubic_scattering/horizontal_greens.py` + `torch_gmres.py` | `marine3d/…` |
 
-New focused modules (each one clear purpose, testable in isolation):
-- `earth_model.py` — build the 3-region marine model: ocean (fluid), crust (homogeneous reference + per-voxel $T_0$ screens over $N_z\times N_x\times N_y$, transparent internal interfaces), stiff half-space; emit reference interface operators (only the 3 real ones non-trivial) and the screen array.
-- `interlayer_ms_3d.py` — extend `ScattererSlab9x9` from interface scatterers to laterally-heterogeneous planes; add the intra-plane $\mathbf{P}^x$ coupling (currently "interlayer-only" / side-scattering neglected → add side scattering).
-- `matvec_3d.py` — assemble $(\mathbf{I}-[\mathbf{P}^z+\mathbf{P}^x]\Delta\mathcal{C}_{eff})$; the GMRES driver wrapping `torch_gmres`.
-- `marine_survey_3d.py` — loop over frequency and source conditions; assemble $\mathcal{G}$ (eq. `LSstrat`) at receivers; hand to `ocean_bottom`/`seismic_survey` for ghosts, wavelet, IFFT → shot gather.
+New focused modules built in Marine3D after the cherry-pick (each one clear purpose, testable in isolation):
+- `marine3d/earth_model.py` — the 3-region marine model: ocean (fluid), crust (homogeneous reference + per-voxel $T_0$ screens over $N_z\times N_x\times N_y$, transparent internal interfaces), stiff half-space.
+- `marine3d/interlayer_ms_3d.py` — extend the cherry-picked `ScattererSlab9x9` from interface scatterers to laterally-heterogeneous planes; add the intra-plane $\mathbf{P}^x$ coupling (the source code is "interlayer-only" / side-scattering neglected → add side scattering).
+- `marine3d/matvec_3d.py` — assemble $(\mathbf{I}-[\mathbf{P}^z+\mathbf{P}^x]\Delta\mathcal{C}_{eff})$; GMRES driver.
+- `marine3d/marine_survey_3d.py` — loop over frequency and source; assemble $\mathcal{G}$ (eq. `LSstrat`) at receivers; ghosts, wavelet, IFFT → shot gather.
 
 ## 5. The 3-D extension (what actually changes vs the thesis)
 
