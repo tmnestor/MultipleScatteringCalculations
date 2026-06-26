@@ -13,6 +13,28 @@
 - `~/Desktop/MultipleScatteringCalculations/cubic_scattering/` — `kennett_layers`, `ocean_bottom`, `seismic_survey`, `effective_contrasts`, `voigt_tmatrix`, `horizontal_greens`, `torch_gmres`.
 - `~/Desktop/SeismicInversion/Kennett_Reflectivity/` — reference only; its Kennett is **dropped** in favour of `cubic_scattering`'s.
 
+## Status — Phase 0 + Phase 1 COMPLETE (2026-06-26); resume at Phase 2
+
+**Work repo:** `~/Desktop/Marine3D` (self-contained; `main` `41a8724..56f0b3e`). Spec/plan/ledger live in `MultipleScatteringCalculations` on branch `spec/disorder-resolved-3d-marine`; SDD ledger at `.superpowers/sdd/progress.md`.
+
+**Phase 0 (cherry-pick) — DONE.** Marine3D bootstrapped; minimal closure cherry-picked into `marine3d/{kennett(5),tmatrix(12),gmm(7)}` + `layer_model_adapter` + `kennett_torch_utils`; **zero cross-repo imports**; GMM adapted to `cubic_scattering` `LayerStack` (parity GMM≡kennett_layers **4.42e-15**). Dropped `block_riccati_cluster`/`dressed_tmatrix` (not in required closure). **668 relocated parity tests pass.**
+- 0.1 bootstrap `41a8724` · 0.2 manifest+trim `f06189a`,`42baab3` · 0.3 cubic clusters `44e047f` · 0.4 GMM+adapter `692413b` · 0.5 self-contained smoke (inline).
+
+**Phase 1 (reference forward model) — DONE.** `earth_model.build_marine_reference_model` (transparent-crust subdivision invariance **1.24e-15**) → `marine_survey_3d.marine_reference_gather` (full ocean-multiple series, seabed datum) → `config.load_marine_reference` (strict fail-fast YAML). **12 Phase-1 tests pass.**
+- 1.1 earth model `17125dc` · 1.2 gather + fix `24628cb`,`3adbb6b` · 1.3 config + fix `2f00dd0`,`56f0b3e`.
+
+**Final whole-branch review: READY** — no Critical/Important findings; datum fix + adapter verified correct.
+
+**KEY DECISION (user, 2026-06-26):** all ocean multiples are required → the **seabed-datum correction** in `compute_shot_gather` is KEPT (a deliberate divergence from the byte-faithful port); the reference gather applies the full closed-form water-column reverberation series `E²RRd/(1+E²RRd)`.
+
+**⚠ RESUME POINT — settle before Phase 2 builds on the gather:** `compute_shot_gather` builds `RRd` over `stack.layers[1:]` (crust + half-space), so the water→crust **fluid–solid seabed PRIMARY** is not in `RRd_PP` (only the crust–half-space event + free-surface reverberation). This is inherited from the ported `cubic_scattering` code; verify/incorporate it (cf. `ocean_bottom._kennett_water_step` / `psv_fluid_solid`) before trusting the gather as a physical baseline.
+
+**Deferred Minors:** M-0.3a deselected `test_resonance_far_field` (needs un-ported `incident_field`/`scattered_field`); M-0.3b gitignored `test_inter_voxel_propagator` reaches sibling `MultipleScatteringCalculations/scripts/`; 3 provenance docstrings in `marine3d/gmm/`; nits (`config.py:200` unused crust-thickness `.get`; `complex_slowness_torch` no `Q=inf` case; `marine_survey_3d.py:86` docstring "raw").
+
+**Next session:** (1) seabed-primary spike, then (2) **Phase 2** = per-voxel $T_0$ screens + 2½-D matvec → reproduce the thesis 2½-D limit (its own spec→plan cycle). Phases 3–4 follow per the roadmap below.
+
+---
+
 ## Global Constraints
 
 - **Self-contained:** Marine3D has zero imports from the source repos after Phase 0. Verify with `grep -rE "GlobalMatrix|Kennett_Reflectivity|cubic_scattering" marine3d/` → no hits.
