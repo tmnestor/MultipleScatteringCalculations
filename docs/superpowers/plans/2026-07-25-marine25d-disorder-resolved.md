@@ -1029,6 +1029,63 @@ By Poisson summation the lattice-summed real-space kernel and the spectral Green
 
 ---
 
+## Task 2c: Volume-averaged nearest-neighbour coupling in $\mathbf{P}^x$
+
+**Added 2026-07-25 after measurement.** $\mathbf{P}^x$ evaluates the Green's tensor between cube **centres** (point coupling). Its dominant term is the nearest neighbour at $\Delta x = \text{pitch}$ — *touching* cubes — which is exactly where point coupling is least valid.
+
+### Measured at Phase 2 parameters
+
+Crust mean $(\alpha,\beta,\rho) = (3.0, 1.5, 2.6)$, pitch $0.02$ km, $\omega = 2\pi\cdot 5$, so $k_S a = 0.209$:
+
+| Block | point | volume-averaged | rel diff |
+|---|---|---|---|
+| G (3×3 displacement) | 6.78e-1 | 5.83e-1 | **17.1%** |
+| C (3×6) | 3.55e+1 | 2.25e+1 | **58.2%** |
+| H (6×3) | 3.55e+1 | 2.25e+1 | **58.2%** |
+| S (6×6 strain) | 3.41e+3 | 1.18e+3 | **189.8%** |
+
+**The error is not diluted.** The nearest neighbour carries **84.9%** of the kernel sum ($m = \pm 1$ at 42.4% each), and the S block is also the largest in magnitude. So $\mathbf{P}^x$ is dominated by a term whose biggest block is off by a factor of ~2.9.
+
+For scale: this dwarfs the 10–15% periodic-image effect that Task 2b addresses. The two are **orthogonal** — 2b fixes the far images, 2c fixes the near term — and neither substitutes for the other.
+
+### This is not a convention artifact — settled, do not re-litigate
+
+The difference is a **genuine converged projection difference**: the Galerkin (volume-averaged) object and the point-propagator object are different objects at touching faces. Face S differs by ~0.5 of block scale and S44's sign genuinely differs; corner ~8%. The committed `FACE_*` constants are pinned by three independent arbiters — delta-collapse re-evaluation to 1e-16, subdivision fixed point to 1e-13, dyadic-shell 3D quadrature to 1e-8 — and regression-guarded by `TestFaceSBlockArbiter`.
+
+**⚠ Do not use `avg_point_propagator_fd` as the arbiter here.** FD-of-⟨G⟩ at h=0.005, n=8–10 sits in the invalid $h \lesssim 1/n^2$ regime and *reproduces the face-S quadrature bias*, yielding a spurious "FD/direct cross-agreement". The bias is specific to face S: tensor-product double-cube Gauss shares one lateral node set and so samples the singular ray $w_\perp = 0$ of the $1/w^3$ kernel with O(1) cumulative weight. The gold-standard touching-pair arbiter is the **subdivision identity** (split each cube into 8 half-cubes; homogeneity gives `table(n) = (1/8)·Σ mult(m)·table(m)`).
+
+The volume-averaged propagator is also the **consistent** partner for this solver: `sub_cell_tmatrix_9x9` produces a volume-integrated $T_0$ ($V\cdot\Delta c^*$), so it must be coupled by a volume-integrated propagator.
+
+### Design
+
+**Files:** modify `marine3d/intraplane_px.py`; test `tests/test_intraplane_px.py`.
+
+**The rule:** any voxel pair at separation **exactly one pitch** uses `inter_voxel_propagator_9x9`; every other separation uses `exact_propagator_9x9`. On a 1-D $x$-lattice the only nearest-neighbour type that arises is the **face** neighbour `R_lattice = (0, 1, 0)` in the $(z,x,y)$ convention — no edge or corner cases, which is a real simplification over the 3-D problem.
+
+This composes with Task 2b: inside the Bloch lattice sum, a pair at offset $m$ and image $n$ sits at separation $(m + n\,n_x)\cdot\text{pitch}$, so the volume-averaged treatment applies precisely to the terms where that product is $\pm 1$.
+
+```python
+inter_voxel_propagator_9x9(
+    (0, 1, 0), field.reference.alpha, field.reference.beta, field.reference.rho,
+    omega, n_orders=3, d=field.pitch,
+)
+```
+
+`d` is **required** and must be the physical pitch — the tables are derived on a unit-pitch lattice and scale as $d^{-1}$ (G), $d^{-2}$ (C/H), $d^{-3}$ (S). `n_orders=3` is right at $k_S a = 0.209$: the face dynamic tables' truncation residual is 0.097% at ka=0.3 and 0.85% at ka=0.5.
+
+### Gates
+
+- [ ] **Magnitude.** Reproduce the table above: the nearest-neighbour block must change by 17.1% / 58.2% / 58.2% / 189.8% (G/C/H/S) at these parameters. If the kernel does not change, the volume-averaged branch is not being taken.
+- [ ] **Pitch scaling.** Doubling `d` must scale the blocks by $1/2$, $1/4$, $1/4$, $1/8$ (G/C/H/S) exactly — this is the homogeneity identity and it catches a mis-passed pitch, which is otherwise silent.
+- [ ] **Only the nearest neighbour changes.** Every $|m| \ge 2$ entry must be bit-identical to the Task 2 kernel.
+- [ ] **Static limit.** As $\omega \to 0$ the volume-averaged block must approach the static `face_propagator(mu, nu)` tables.
+
+### Known gap — state it, do not paper over it
+
+`inter_voxel_propagator_9x9` supports **nearest neighbours only**; `R_lattice = (0, 2, 0)` raises "not a nearest neighbour". So the $|m| = 2$ error is **unmeasured**: separation there is only 2× the cube side, where "separation greatly exceeds cube size" does not yet hold. Given the $|m|=1$ errors above, a residual at $|m|=2$ is plausible. It carries 10.8% of the kernel sum (5.4% each side), so a 10% error there would be ~1% of $\mathbf{P}^x$ — an order below the effect this task fixes, but not zero. Record it as a known limit in the LaTeX note rather than implying the coupling is exact beyond the first neighbour.
+
+---
+
 # Stage B — Matvec and solver
 
 ## Task 4: The matvec, GMRES, and Born
