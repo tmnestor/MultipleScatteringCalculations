@@ -988,6 +988,47 @@ git commit -m "✨ vertical_pz: inter-plane P^z with restored self-plane reverbe
 
 ---
 
+## Task 2b: Bloch lattice sum for $\mathbf{P}^x$
+
+**Added 2026-07-25 after review of Task 2.** Task 2 ships a **nearest-image** kernel: `apply_px` is circulant, i.e. it assumes the $x$-lattice tiles periodically, but the kernel retains only the closest image of each voxel pair. For a genuinely periodic lattice the coupling is the sum over all images. Neglected images fall off as `pitch/L = 1/n_x`, so at `n_x = 8` this is a **10–15%** error — not rounding, and it would propagate uncontrolled into the rung-5 Wolfram comparison and the rung-8 energy balance.
+
+**Files:**
+- Modify: `marine3d/intraplane_px.py`
+- Test: `tests/test_intraplane_px.py`
+- Reference: `MultipleScatteringCalculations/Mathematica/IntraPlaneLatticeSum.wl`, `IntraPlaneVectorLattice.wl`, `IntraPlaneKambeVector.wl` and their `_reference.json` fixtures (validated in the Phase 3b intra-plane work: 8 gates pass, S-matrix unitary, reciprocity 4.1e-8).
+
+**Interfaces:**
+- `build_px_kernel(field: CrustField, omega: float, k_bloch: float) -> NDArray` — **breaking signature change**, see below.
+
+### The Bloch phase makes the kernel incidence-dependent
+
+The correct coupling carries the Bloch phase of the incident wave:
+
+$$\mathbf{P}^x_{ij} \;=\; \sum_{n} \mathbf{G}\!\left(\Delta x_{ij} + nL\right) e^{\,i k_{\text{bloch}} nL}, \qquad k_{\text{bloch}} = \omega p .$$
+
+So $\mathbf{P}^x$ **depends on the incident slowness $p$** and can no longer be built once per frequency. Consequences that ripple outward:
+
+- `build_px_kernel` gains a `k_bloch` argument.
+- Task 4's `build_matvec` must build the kernel **inside** the per-$p$ loop, not hoist it.
+- Task 5's outer loop pays one kernel build per $(p, \omega)$ pair. The closed-form route is microseconds per offset, so this is affordable — it would **not** have been on the deleted quadrature route, which is a second reason that decision was right.
+
+### Two routes, and why the naive one is not enough
+
+Direct summation of $\sum_n \mathbf{G}(\Delta x + nL)$ is at best **conditionally convergent**: the whole-space Green's tensor decays as $1/r$, so the terms fall off like $1/n$. Truncating it is not a convergence question but an ordering question. Use **Ewald acceleration**, which is exactly what the existing `IntraPlaneLatticeSum.wl` / `IntraPlaneKambeVector.wl` machinery implements and validates.
+
+By Poisson summation the lattice-summed real-space kernel and the spectral Green's function sampled at the Bloch-shifted harmonics $k_x^{(n)} = k_{\text{bloch}} + 2\pi n/L$ are the same object. Either representation is acceptable; the Ewald route is preferred because the spectral route needs the $(k_y, k_z)$ quadrature that Task 2 removed for accuracy and cost reasons.
+
+**Port target: 1-D lattice, Cartesian 9×9.** The existing machinery is a 2-D planar lattice in a spherical multipole basis. This task needs the 1-D $x$-lattice in the Cartesian 9×9 $(u,\varepsilon)$ basis. Read `IntraPlaneLatticeSum.wl` for the Ewald splitting and convergence treatment; do not transcribe its multipole algebra.
+
+### Gates
+
+- [ ] **Convergence:** the Ewald sum must be independent of the splitting parameter $\eta$ over at least a decade. This is the standard Ewald self-check and it is load-bearing — an $\eta$-dependent result means the real-space and reciprocal-space halves are not paired correctly. Precedent: in Phase 3b the reciprocal `erfc` **pairing** bug was invisible at $z = 0$ and *only* an $\eta$-independence check could detect it.
+- [ ] **Reduction:** as $L \to \infty$ at fixed pitch (i.e. $n_x \to \infty$), the lattice sum must approach the nearest-image kernel Task 2 already ships. That is the sense in which the current kernel is the leading term.
+- [ ] **Magnitude:** at `n_x = 8` the lattice sum must differ from the nearest-image kernel by the predicted 10–15%. If the difference is negligible, the image sum is not actually being performed.
+- [ ] **Cross-check:** against the stored `IntraPlaneLatticeSum_reference.json` values where the geometries correspond. Consume these as **numbers copied into the Marine3D fixtures directory** — do not import across repos.
+
+---
+
 # Stage B — Matvec and solver
 
 ## Task 4: The matvec, GMRES, and Born
