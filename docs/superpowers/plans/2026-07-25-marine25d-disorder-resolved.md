@@ -851,6 +851,36 @@ Expected: 2 passed.
 
 This is what stops the contract from being circular: the spectral `whole_space_gii` and the real-space `build_px_kernel` must be the same operator.
 
+**⚠ The independent source changed when Task 2 dropped the spectral route.** This test was originally designed with `horizontal_greens_fft_9x9` supplying an independent spectral whole-space Green's function. That code path is gone. **Do not implement `whole_space_gii` as the DFT of `build_px_kernel`** — that would make this test compare an object to itself and the whole $G_{ii}$ contract would certify nothing.
+
+Use the **GMM machinery** as the independent source instead. `layered_greens_9x9` computes the stratified Green's function through an entirely separate implementation (modal eigenvectors + Riccati sweeps). Hand it a **degenerate stack whose layers all carry the crust-mean properties**: with no impedance contrast anywhere there are no interfaces to reflect from, so its same-plane Green's function *is* the whole-space one. That gives a genuine second implementation of the same physics:
+
+```python
+def _homogeneous_model(field, n_layers=4, thickness=0.5):
+    """LayerModel with crust-mean properties in EVERY layer — no interfaces.
+
+    A stack with no impedance contrast has nothing to reflect from, so
+    layered_greens_9x9(i, i) on it returns the whole-space same-plane
+    Green's function, computed through the GMM/Riccati path rather than
+    through the Kupradze closed form. That independence is the point.
+    """
+    from marine3d.gmm.layer_model_adapter import LayerModel
+
+    ref = field.reference
+    thick = np.full(n_layers, thickness)
+    thick[-1] = np.inf
+    return LayerModel(
+        alpha=np.full(n_layers, ref.alpha),
+        beta=np.full(n_layers, ref.beta),
+        rho=np.full(n_layers, ref.rho),
+        thickness=thick,
+        Q_alpha=np.full(n_layers, np.inf),
+        Q_beta=np.full(n_layers, np.inf),
+    )
+```
+
+If this test fails, that is a real finding about the two implementations disagreeing — escalate it rather than reconciling by redefining one in terms of the other.
+
 ```python
 from marine3d.intraplane_px import build_px_kernel
 
@@ -863,7 +893,7 @@ class TestPxSpectralRealSpaceEquivalence:
         field = _field(n_x=n_x)
         omega_real = 2.0 * np.pi * 5.0
 
-        K = build_px_kernel(field, omega_real, n_kz=512, kz_max=40.0)  # (n_x, 9, 9)
+        K = build_px_kernel(field, omega_real)                          # (n_x, 9, 9)
         k_lattice = 2.0 * np.pi * np.fft.fftfreq(n_x, d=field.pitch)   # rad/km
 
         g_spec = whole_space_gii(field, omega_real, k_lattice)          # (n_x, 9, 9)
