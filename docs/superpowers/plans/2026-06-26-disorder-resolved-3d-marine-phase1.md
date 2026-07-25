@@ -13,7 +13,7 @@
 - `~/Desktop/MultipleScatteringCalculations/cubic_scattering/` — `kennett_layers`, `ocean_bottom`, `seismic_survey`, `effective_contrasts`, `voigt_tmatrix`, `horizontal_greens`, `torch_gmres`.
 - `~/Desktop/SeismicInversion/Kennett_Reflectivity/` — reference only; its Kennett is **dropped** in favour of `cubic_scattering`'s.
 
-## Status — Phase 0 + Phase 1 COMPLETE (2026-06-26); resume at Phase 2
+## Status — Phase 0 + Phase 1 COMPLETE (2026-06-26); seabed primary FIXED (2026-07-25); resume at Phase 2
 
 **Work repo:** `~/Desktop/Marine3D` (self-contained; `main` `41a8724..56f0b3e`). Spec/plan/ledger live in `MultipleScatteringCalculations` on branch `spec/disorder-resolved-3d-marine`; SDD ledger at `.superpowers/sdd/progress.md`.
 
@@ -25,13 +25,23 @@
 
 **Final whole-branch review: READY** — no Critical/Important findings; datum fix + adapter verified correct.
 
-**KEY DECISION (user, 2026-06-26):** all ocean multiples are required → the **seabed-datum correction** in `compute_shot_gather` is KEPT (a deliberate divergence from the byte-faithful port); the reference gather applies the full closed-form water-column reverberation series `E²RRd/(1+E²RRd)`.
+**KEY DECISION (user, 2026-06-26):** all ocean multiples are required → the reference gather applies the full closed-form water-column reverberation series `E²RRd/(1+E²RRd)`.
 
-**⚠ RESUME POINT — settle before Phase 2 builds on the gather:** `compute_shot_gather` builds `RRd` over `stack.layers[1:]` (crust + half-space), so the water→crust **fluid–solid seabed PRIMARY** is not in `RRd_PP` (only the crust–half-space event + free-surface reverberation). This is inherited from the ported `cubic_scattering` code; verify/incorporate it (cf. `ocean_bottom._kennett_water_step` / `psv_fluid_solid`) before trusting the gather as a physical baseline.
+**✅ SEABED PRIMARY — FIXED (2026-07-25).** The former resume point is closed.
 
-**Deferred Minors:** M-0.3a deselected `test_resonance_far_field` (needs un-ported `incident_field`/`scattered_field`); M-0.3b gitignored `test_inter_voxel_propagator` reaches sibling `MultipleScatteringCalculations/scripts/`; 3 provenance docstrings in `marine3d/gmm/`; nits (`config.py:200` unused crust-thickness `.get`; `complex_slowness_torch` no `Q=inf` case; `marine_survey_3d.py:86` docstring "raw").
+*Root cause:* `compute_shot_gather` ran the Kennett recursion on `stack.layers[1:]`, dropping the water layer, so the water–crust interface was never constructed and `psv_fluid_solid` was never called. The returned `RRd` carried no seabed `Rd` and no `Tu`/`Td`/`Ru` dressing; the hand-rolled `eaea_first` "datum correction" was a partial substitute that supplied only the phase. Measured symptom: **water over a half-space returned an identically zero gather**, and for the reference model `|RRd|` was 0.17 where it should be 0.76 (≈100% error) at near-normal incidence.
 
-**Next session:** (1) seabed-primary spike, then (2) **Phase 2** = per-voxel $T_0$ screens + 2½-D matvec → reproduce the thesis 2½-D limit (its own spec→plan cycle). Phases 3–4 follow per the roadmap below.
+*Fix:* run `kennett_reflectivity_batch` on the **full stack** (water included) and delete the manual datum shift. The sweep's final step is then `RRd = Rd_seabed + Tu·MT·(I − Ru·MT)⁻¹·Td` — the same construction `ocean_bottom._kennett_water_step` uses. The recursion applies the phase of the layer *below* each interface, so the water thickness is still applied once, by `eaea_water`; the datum lands at the seabed automatically, and transparent-crust subdivision invariance follows from `Rd=0, Td=Tu=I` rather than from the hand correction.
+
+*Evidence:* transparent crust ⇒ reflectivity == analytic `psv_fluid_solid` `Rd_PP` to **<1e-12**; full model == independent non-batched-recursion + explicit fluid–solid water-step arbiter to **<1e-10** at 4 slownesses; **|RRd| ≤ 1 on every propagating slowness** (0.982→0.999 under grid refinement — the energy-normalised bound); multiple-difference now peaks at 2× the two-way water time. **468 passed, 7 skipped**; ruff + mypy clean.
+
+*Test-config correction:* the shared test survey used `T=3.0 s`, shorter than the 2.67 s two-way water time, so gathers were wrap-around dominated (peak of `g_off` at `t=0.000 s`) and the 5.33 s first multiple was outside the record. Raised to `T=8.0 s, nw=128`, which contains the seabed primary (2.67 s), crust-base primary (3.33 s), and first multiple (5.33 s). `test_ocean_multiples_present` now also asserts the multiple arrives at the *right time*, not merely that some bulk difference exists.
+
+**⚠ OPEN (separate, pre-existing):** in the modified (√ηρ) convention `|RRd|` grows in the evanescent tail beyond the water's critical slowness — 1230 at the outermost grid point `p=p_max=0.8` (pre-fix it was 3.0 at the same place; the seabed interface amplifies it). It is frequency-independent, so damping does not tame it, but its weight is `dp ∝ 1/np_slow` and the gather **converges** under p-refinement (rel-diff 3.7e-2 → 1.5e-2 → 3.6e-3 for `np_slow` 128→1024). Harmless at the default grid; revisit if the slowness integral is ever pushed to high accuracy. Also pre-existing: exactly-critical slowness (`η=0` on both sides of an interface) gives NaN — never hit by the `p = k·dp` grid in practice.
+
+**Deferred Minors:** M-0.3a deselected `test_resonance_far_field` (needs un-ported `incident_field`/`scattered_field`); M-0.3b gitignored `test_inter_voxel_propagator` reaches sibling `MultipleScatteringCalculations/scripts/`; 3 provenance docstrings in `marine3d/gmm/`; nits (`config.py:200` unused crust-thickness `.get`; `complex_slowness_torch` no `Q=inf` case). ~~`marine_survey_3d.py:86` docstring "raw"~~ — fixed with the seabed work. Note `pyproject.toml` has no `--ignore` for M-0.3a/b, so a bare `pytest tests/` still errors at collection; run with `--ignore=tests/test_resonance_far_field.py --ignore=tests/test_inter_voxel_propagator.py`.
+
+**Next session:** **Phase 2** = per-voxel $T_0$ screens + 2½-D matvec → reproduce the thesis 2½-D limit (its own spec→plan cycle). Phases 3–4 follow per the roadmap below. The reference gather is now trustworthy as a physical baseline.
 
 ---
 

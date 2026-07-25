@@ -6,6 +6,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Elastic multiple scattering from cubic heterogeneities — T-matrix approach for seismic waves. Originates from Nestor (1996) PhD thesis (ANU). Three pillars: single-site T-matrix `T₀`, inter-site Green's tensor `G₀`, and Foldy-Lax multiple-scattering solve `T = T₀(I − G₀T₀)⁻¹`.
 
+## Research Methodology (READ FIRST)
+
+**The deliverable is the LaTeX, not the code.** The principal product of this research is the set of `.tex` documents (`docs/`, `LatexPDFs/`) stating the physics and its mathematical formulation. Python and Mathematica exist to **validate** that formulation — they are the test harness, not the product. Every formulation anchors to a specific thesis §/equation.
+
+### Formulations are developed test-first
+
+TDD applies to the mathematics, not just to the software:
+
+1. State the claim as a check with a knowable answer — a limit (Born, Rayleigh, static), a symmetry (O_h irrep, reciprocity), a conservation law (energy balance, optical theorem), or an independent derivation.
+2. Run it and **watch it fail**.
+3. Derive/implement until it passes in **both** Wolfram Mathematica (symbolic, high-precision) *and* Python (numerical), each cross-checking the other.
+4. **Only then** write the result into the `.tex`.
+
+Two independent implementations agreeing is the evidence standard. One implementation agreeing with itself is not. A formula that appears only in a `.tex` with no Mathematica or Python check behind it is **unvalidated** — say so explicitly rather than presenting it as established.
+
+### ⚠ The `.tex` files lag the development
+
+This is the standing failure mode of this repo. **When a document and a validated script disagree, the validated script wins** — assume the `.tex` is stale, not the code. Consequences:
+
+- Never quote a `.tex` equation as ground truth without re-running the check that produced it.
+- Read the Mathematica `.wl` and Python source **before** proposing work based on a document.
+- When a validation changes a result, updating the affected `.tex` is **part of the same task**, not a follow-up. Leaving the document behind is how the drift accumulates.
+- Auto-generated fragments (`cube_galerkin27_results.tex`, `cube_galerkin27_closedforms.tex`) are regenerated from their `.wl` scripts — never hand-edited.
+- If you cannot update the `.tex` in the same pass, state plainly which document is now out of date and in what respect.
+
+### Division of labour
+
+| Layer | Role |
+|-------|------|
+| Wolfram Mathematica (`Mathematica/*.wl`) | Symbolic derivation, exact/high-precision closed forms, auto-generated LaTeX fragments |
+| Python (`cubic_scattering/`, `scripts/`) | Numerical implementation, regression tests, independent cross-check of the symbolic result |
+| LaTeX (`docs/`, `LatexPDFs/`) | **The product** — physics narrative plus the validated formulation |
+
 ## Environment & Commands
 
 ```bash
