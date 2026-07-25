@@ -431,8 +431,23 @@ git commit -m "✨ crust_field: per-voxel contrast field and 9x9 T0 screens"
 **Interfaces:**
 - Consumes: `marine3d.tmatrix.horizontal_greens.horizontal_greens_ky_residue_9x9` (or `horizontal_greens_fft_9x9`), `marine3d.crust_field.CrustField`.
 - Produces:
-  - `build_px_kernel(field: CrustField, omega: float, *, n_kz: int, kz_max: float) -> NDArray` — the intra-plane 9×9 Green's tensor on the lattice offsets, shape `(n_x, 9, 9)`, with the **self-term `[0]` identically zero**.
+  - `build_px_kernel(field: CrustField, omega: float, *, cutoff_ratio: float = 25.0, n_per_rad: float = 6.0) -> NDArray` — the intra-plane 9×9 Green's tensor on the lattice offsets, shape `(n_x, 9, 9)`, with the **self-term `[0]` identically zero**.
   - `apply_px(kernel: NDArray, psi: NDArray) -> NDArray` — circulant apply along $x$; `psi` and the return value both shape `(n_z, n_x, 9)`.
+
+**Quadrature cutoffs are derived from the pitch, not hardcoded (measured 2026-07-25).** The transverse cutoffs must resolve the voxel scale: `k_cut = cutoff_ratio / field.pitch`, applied to **both** `ky_max` and `kz_max`, with `n_ky = n_kz = ceil(n_per_rad · k_cut)`. Measured against the module's own quadrature-free closed form `exact_propagator_9x9` at `pitch = 0.02 km` (so `1/pitch = 50 rad/km`), `omega = 2π·5`, crust mean `(3.0, 1.5, 2.6)`:
+
+| cutoff (rad/km) | rel err vs closed form |
+|---|---|
+| 40 | 9.99e-1 |
+| 100 | 8.41e-1 |
+| 250 | 2.13e-1 |
+| 500 | 6.09e-3 |
+
+Three facts this table encodes, each of which cost a wrong turn to establish:
+
+- **Both cutoffs must move together.** Sweeping `kz_max` alone with `ky_max` pinned at 40 stalls the error at ~84% regardless of `kz_max` — an artifact of the *other* truncation, not a convergence wall.
+- **Sampling is not the problem.** At fixed `kz_max = 40`, refining `n_kz` from 256 to 2048 moves the error from 9.9882e-1 to 9.9886e-1. Any test that refines sampling at fixed cutoff is blind to the dominant error.
+- **Damping is irrelevant.** Undamped 6.0946e-3 vs 3%-damped 6.0919e-3 at cutoff 500. Do **not** add an imaginary part to `omega` to make quadrature behave; undamped is the project convention and the rung-8 energy balance depends on it.
 
 **Note on the kernel source.** `horizontal_greens.py` was cherry-picked as a script-style module with module-level `OMEGA/RHO/ALPHA/BETA` defaults. Read its signatures before wiring; pass the crust reference explicitly rather than relying on those defaults. The kernel is the **homogeneous whole-space** intra-plane Green's tensor for the crust mean at $\Delta z = 0$, $\Delta y = 0$ — it must contain no stratification, because the stratified part belongs to Task 3.
 
@@ -613,13 +628,46 @@ class TestKernelPhysics:
         far = np.max(np.abs(K[8]))
         assert far < near, f"kernel grew with distance: |K[1]|={near:.3e}, |K[8]|={far:.3e}"
 
-    def test_kernel_converges_in_kz_quadrature(self):
-        """Doubling the kz quadrature must not move the kernel materially."""
-        f = _field()
-        K1 = build_px_kernel(f, OMEGA, n_kz=256, kz_max=40.0)
-        K2 = build_px_kernel(f, OMEGA, n_kz=512, kz_max=40.0)
-        rel = np.max(np.abs(K2 - K1)) / max(np.max(np.abs(K1)), 1e-30)
-        assert rel < 1e-3, f"kz quadrature not converged: rel diff {rel:.3e}"
+    def test_kernel_matches_closed_form(self):
+        """The kernel must match the module's quadrature-free closed form.
+
+        `exact_propagator_9x9` is the Kupradze closed form — no quadrature at
+        all — so this tests ACCURACY, not merely self-consistency under
+        refinement. A self-convergence test cannot do this: at fixed cutoff,
+        refining the sampling moves the error from 9.9882e-1 to 9.9886e-1,
+        i.e. it would happily "converge" while 99.9% wrong.
+        """
+        from marine3d.tmatrix.horizontal_greens import exact_propagator_9x9
+
+        field = _field(n_x=8, pitch=0.02)
+        K = build_px_kernel(field, OMEGA)
+
+        for m in (1, 2, 3):
+            dx = m * field.pitch
+            exact = exact_propagator_9x9(dx, 0.0, 0.0, complex(OMEGA), REF)
+            rel = np.max(np.abs(K[m] - exact)) / np.max(np.abs(exact))
+            assert rel < 1e-2, (
+                f"P^x kernel disagrees with the closed form at offset m={m} "
+                f"(dx={dx} km): rel err {rel:.3e}. Cutoffs derive from pitch as "
+                f"cutoff_ratio/pitch and must be raised together in ky and kz."
+            )
+
+    def test_accuracy_improves_with_cutoff_ratio(self):
+        """Raising the pitch-scaled cutoff must reduce the closed-form error."""
+        from marine3d.tmatrix.horizontal_greens import exact_propagator_9x9
+
+        field = _field(n_x=8, pitch=0.02)
+        exact = exact_propagator_9x9(field.pitch, 0.0, 0.0, complex(OMEGA), REF)
+        scale = np.max(np.abs(exact))
+
+        errs = []
+        for ratio in (5.0, 12.5, 25.0):
+            K = build_px_kernel(field, OMEGA, cutoff_ratio=ratio)
+            errs.append(np.max(np.abs(K[1] - exact)) / scale)
+
+        assert errs[0] > errs[1] > errs[2], (
+            f"error did not fall monotonically with cutoff_ratio: {errs}"
+        )
 ```
 
 - [ ] **Step 6: Run to verify failure**
@@ -1234,8 +1282,13 @@ crust_heterogeneity:
 solver:
   gmres_tol: 1.0e-10
   gmres_maxiter: 500
-  n_kz: 512               # kz quadrature points for the P^x kernel
-  kz_max: 40.0            # rad/km
+  px_cutoff_ratio: 25.0   # transverse cutoff = ratio / pitch (rad/km).
+                          # Measured: 25/0.02 = 1250 rad/km. At ratio 12.5
+                          # (=500 rad/km) the kernel is 6.1e-3 from the closed
+                          # form; at ratio 1 (=40 rad/km) it is 99.9% wrong.
+                          # Applies to BOTH ky_max and kz_max — raising one
+                          # alone stalls the error at ~84%.
+  px_n_per_rad: 6.0       # quadrature points per rad/km of cutoff
 ```
 
 Extend `marine3d/config.py` with a loader that fails fast on any missing key, using the same 4-element diagnostic as `check_validity_floor`. Add a test asserting a missing key raises with all four elements present.
