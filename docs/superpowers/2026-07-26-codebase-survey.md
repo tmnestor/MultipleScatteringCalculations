@@ -92,7 +92,41 @@ So Phase 0 *knew* an existing Foldy-Lax solver was being carried and explicitly 
 
 ---
 
-## 6. Recommendations
+## 6. Standing rule — validate spectral propagators against closed-form Kupradze
+
+**Every spectral propagator must be validated against the closed-form Kupradze propagator where the comparison is appropriate.** Spectral forms carry quadrature, truncation and branch-cut choices that are invisible in self-convergence tests; the closed form has none of these and is the only local ground truth available.
+
+This is **already instantiated** in `lattice_greens.py` and should be the template:
+
+- `compute_spatial()` — exact Ben-Menahem & Singh / Kupradze evaluation at each separation.
+- `compute_spectral()` — 2-D IFFT of the post-$k_z$-residue kernel.
+- `verify(n_test)` — compares the two at lattice pairs, reporting max and mean relative error.
+- `_matvec_direct()` — validates the FFT block-Toeplitz matvec against direct summation.
+
+**Measured at Phase 2 parameters** (d = 0.02 km, M = 5, crust mean (3.0, 1.5, 2.6), $\omega = 2\pi\cdot 5$, `eta = 0.03`), 12 lattice pairs, 9×9 blocks:
+
+| quantity | value |
+|---|---|
+| max relative error, spectral vs closed form | **7.71e-04** |
+| mean relative error | **5.27e-04** |
+
+Consistent with the independent figure recorded during Phase 2 Task 2 (converged spectral vs closed form, **2.52e-04**, falling monotonically with cutoff).
+
+### Where the comparison is *not* appropriate — three traps
+
+1. **Lattice-summed vs single-pair.** A spectral lattice kernel contains *all* periodic images; the closed form is one pair. They agree only against a truncated image sum of the closed form, and that sum needs complex $\omega$ to converge ($1/r$ decay gives $1/n$ terms).
+2. **Touching pairs.** At face contact the volume-averaged (Galerkin) object and the point-propagator value **genuinely differ** — face S by ~0.5 of block scale, S44's sign included. Recorded verdict: a converged projection difference, *not* a bug. Do not run a spectral-vs-Kupradze check at contact expecting agreement, and do not "fix" the disagreement.
+3. **`avg_point_propagator_fd` is not a valid arbiter at face S.** FD-of-$\langle G\rangle$ at h=0.005, n=8–10 sits in the invalid $h \lesssim 1/n^2$ regime and reproduces the very quadrature bias it is meant to detect, yielding a spurious cross-agreement. The gold standard for touching pairs is the subdivision identity.
+
+### Where it still needs applying
+
+- The GMM/Riccati stratified Green's function (`layered_greens_9x9`) against the closed form on a **no-contrast stack**, where the stratified result must reduce to the whole-space one. This was designed as the Task 3 $G_{ii}$ independence gate and has never been run.
+- `FFTProp.py`'s spectral sweeps against the closed form in the homogeneous limit, before it is trusted as the 2½-D arbiter.
+- `horizontal_greens.py`'s $k_x$-residue route — measured at 101% error at the originally chosen cutoffs, which a closed-form check catches immediately and a self-convergence check does not.
+
+---
+
+## 7. Recommendations
 
 1. **Do not resume Phase 2 on the current $\mathbf{P}^x$.** Tasks 2b and 2c should be dropped, not implemented; both are repairs to the wrong foundation.
 2. **Answer the question Phase 0 deferred**, with evidence: does `slab_scattering.py` (+ `lattice_greens` spectral matvec) supply the 2½-D crust response directly? If so, most of the Phase 2 plan dissolves.
@@ -102,7 +136,7 @@ So Phase 0 *knew* an existing Foldy-Lax solver was being carried and explicitly 
 
 ---
 
-## 7. Process note
+## 8. Process note
 
 Project memory already carried this lesson before the work started:
 
