@@ -255,6 +255,86 @@ def gate_e() -> float:
     return worst
 
 
+def gate_f() -> float:
+    """GATE F - WITHIN-MATRIX block structure, in the homogeneous limit.
+
+    GATE E compares M(i<-j)(+k) against M(j<-i)(-k) -- two DIFFERENT matrices.
+    It therefore constrains neither the overall scale (the invariant is
+    homogeneous of degree one) nor the relation between the G, C, H, S blocks
+    INSIDE one matrix.  Both blind spots are real: an absolute comparison
+    against the closed form showed ratios varying 3.9 -> 16.2 with offset and
+    differing per block (G 15.3, C 4.5, H 2.6, S 3.9).
+
+    The missing invariant is GATE A's own, applied to the layered propagator:
+
+        W . M(i<-j)(kx,ky)   must be SYMMETRIC
+
+    Justification.  For the closed form, W P(r) is symmetric at EVERY
+    separation r individually (GATE A, four separations including non-zero dz,
+    residuals 0 to 4e-18).  The 2-D transverse transform acts only on (x,y)
+    while W acts on components, so the property carries into the (kx,ky)
+    domain unchanged.
+
+    RESTRICTION: this is licensed only in the HOMOGENEOUS limit, where the
+    source<->receiver swap is equivalent to the identity on the medium.  For a
+    genuinely stratified reference M(i<-j) and M(j<-i) see different media and
+    no within-matrix symmetry should be expected.  The gate therefore builds a
+    uniform crust and damps it, and is a statement about the A/B wrapper only.
+    """
+    print()
+    print("=" * 74)
+    print("GATE F - within-matrix block structure (homogeneous limit)")
+    print("=" * 74)
+
+    al, be, rh, Q = 4.0, 2.22, 2.6, 20.0
+    n_lay, dz = 16, 1.0
+    model = LayerModel.from_arrays(
+        alpha=[1.5, *([al] * n_lay), al],
+        beta=[0.0, *([be] * n_lay), be],
+        rho=[1.03, *([rh] * n_lay), rh],
+        thickness=[3.0, *([dz] * n_lay), np.inf],
+        Q_alpha=[Q, *([Q] * n_lay), Q],
+        Q_beta=[1e10, *([Q] * n_lay), Q],
+    )
+
+    worst = 0.0
+    for f in (6.0, 12.0):
+        w = 2.0 * np.pi * f
+        for p in (0.05, 0.12):
+            kx = np.array([w * p * 0.6])
+            ky = np.array([w * p * 0.8])
+            # deep pair: ocean and free surface ~8 km away and attenuated
+            M9 = corrected_9x9_grid(model, w, kx, ky, j=9, i=8)[0]
+            A = W @ M9
+            rel = np.linalg.norm(A - A.T) / np.linalg.norm(A)
+            worst = np.inf if not np.isfinite(rel) else max(float(worst), float(rel))
+            print(f"  f={f:5.1f} Hz  p={p:.2f}:  ||WM-(WM)^T||/||WM|| = {rel:.3e}")
+
+    print(f"\n  GATE F: {'PASS' if worst < 1e-6 else 'FAIL'}  (worst {worst:.3e})")
+    return worst
+
+
+def corrected_9x9_grid(model, w, kx, ky, j, i):
+    """Corrected stratified 9x9 over a (kx,ky) grid (same as GATE E's build)."""
+    shape = kx.shape
+    kxf, kyf = kx.ravel(), ky.ravel()
+
+    J6 = np.zeros((6, 6))
+    J6[:3, 3:], J6[3:, :3] = np.eye(3), -np.eye(3)
+
+    G = layered_greens_6x6(model, w, kxf, kyf, source_iface=j, receiver_iface=i)
+    Q = np.diag(np.array([1, -1, -1, 1j / w, -1j / w, -1j / w], dtype=complex))
+    G = G @ Q
+
+    rho_r, al_r, be_r = _interface_elastic_properties(model, i)
+    A = strain_from_displacement_traction(kxf, kyf, rho_r, al_r, be_r)
+    rho_s, al_s, be_s = _interface_elastic_properties(model, j)
+    Am = strain_from_displacement_traction(-kxf, -kyf, rho_s, al_s, be_s)
+    B = -np.einsum("ab,xcb,cd->xad", J6, Am, W)
+
+    return np.einsum("xab,xbc,xcd->xad", A, G, B).reshape(*shape, 9, 9)
+
+
 def gate_c() -> None:
     """Localise: is the defect in the A/B wrapper, or already in the 6x6?"""
     print()
@@ -311,6 +391,7 @@ if __name__ == "__main__":
         gate_c()
     d = gate_d()
     e = gate_e()
+    fblk = gate_f()
 
     print()
     print("=" * 74)
@@ -328,17 +409,22 @@ if __name__ == "__main__":
     print(
         f"  E  CORRECTED 9x9 obeys the invariant      : {'PASS' if e < TOL_B else 'FAIL'}"
     )
+    print(
+        f"  F  within-matrix block structure          : {'PASS' if fblk < TOL_B else 'FAIL'}"
+    )
     print()
-    if a < TOL_A and e < TOL_B:
-        print("  Conventions RECONCILED. Use corrected_9x9() -- the stock")
-        print("  layered_greens_9x9 fails GATE B -- and P^z may then be composed")
-        print("  with P^x in a single resolvent.")
-    elif d < 1e-9:
-        print("  The 6x6 is SOUND but in a mixed basis, and its exact reciprocity")
-        print("  law is now known (GATE D). The remaining work is to propagate the")
-        print("  sigma/(-i w) rescaling through A and B in layered_greens_9x9, then")
-        print("  GATE B should pass. Do NOT compose until it does.")
+    if a < TOL_A and e < TOL_B and fblk < TOL_B:
+        print("  Conventions RECONCILED. Use corrected_9x9() and compose.")
+    elif e < TOL_B and fblk >= TOL_B:
+        print("  NOT SAFE TO COMPOSE.  E passes but F fails: the corrections fix")
+        print("  the behaviour under source<->receiver SWAP while leaving the")
+        print("  WITHIN-MATRIX block structure wrong.  E cannot see this -- it")
+        print("  compares two different matrices -- which is why an earlier run")
+        print("  of this script wrongly reported the conventions reconciled.")
+        print("  Symptom: against the closed form the ratio varies 3.9 -> 16.2")
+        print("  with offset and differs per block (G 15.3, C 4.5, H 2.6, S 3.9).")
+        print("  Fix the A/B wrapper until F passes; only then compose.")
     else:
         print("  NOT SAFE to compose. Resolve the source convention first.")
     print("=" * 74)
-    sys.exit(0 if (a < TOL_A and e < TOL_B) else 1)
+    sys.exit(0 if (a < TOL_A and e < TOL_B and fblk < TOL_B) else 1)
