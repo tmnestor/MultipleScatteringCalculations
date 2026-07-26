@@ -1,0 +1,372 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Composing the Stratified and Lateral Propagators}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bQ}{\mathbf{Q}}
+\newcommand{\bD}{\mathbf{D}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\Pz}{\mathcal{P}^{z}}
+\newcommand{\Px}{\mathcal{P}^{x}}
+\newcommand{\Qb}{\mathcal{Q}^{\partial}}
+\newcommand{\dC}{\Delta\mathcal{C}_{\mathrm{eff}}}
+\newcommand{\dT}{\Delta\mathcal{T}}
+
+\title{\bfseries Composing the Stratified and Lateral Propagators\\[4pt]
+\large Reciprocity Gates, the Source-Convention Reconciliation,\\
+and the Case for a Depth-Stratified Crust Reference}
+\author{}
+\date{26 July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The thesis formulates heterogeneous ocean crust as a \emph{two-potential}
+(distorted-wave) problem: a laterally invariant, depth-dependent reference
+solved exactly, plus a lateral contrast summed as a multiple-scattering series
+\emph{carried by the reference Green's tensor}.  Realising this numerically
+requires composing a stratified vertical propagator $\Pz$ with a
+disorder-resolved lateral propagator $\Px$ in a single resolvent.  This note
+records what had to be established before that composition was legitimate.
+Four results: (i) the two-stage solve is \emph{algebraically identical} to one
+global Foldy--Lax solve with $\Px+\Pz$; (ii) the crust gradient must live in
+the reference, not in the scattering series --- a $\pm0.5\%$ velocity gradient
+changes the inter-scatterer coupling by $10\%$; (iii) the two available
+propagators use \emph{different source representations}, a state jump versus a
+body force, related by one factor of the system matrix; and (iv) with that
+conversion and an adjoint source operator, both satisfy a common reciprocity
+invariant to machine precision.  Six errata in the thesis were found and
+corrected along the way.
+\end{abstract}
+
+\tableofcontents
+
+% =============================================================================
+\section{The object being built}
+
+The thesis splits the medium into a laterally invariant, depth-dependent
+reference --- the depth average, which generally increases with depth --- plus
+a lateral contrast superimposed as cylinders.  The first potential is solved
+exactly by Kennett-like matrix recursions; the second is summed as a
+multiple-scattering series.  The master result of Chapter~5 is
+\begin{equation}\label{eq:LSstrat}
+  \mathcal{G} = {}_{r}\mathcal{G}
+  + \mathcal{P}^{z,R}_{s}\,\dC\,
+    \Bigl(\bI - \bigl[\Pz + \Px\bigr]\dC\Bigr)^{-1}
+    {}_{r}\mathcal{G}^{z}_{r},
+\end{equation}
+with $\Qb \equiv (\bI - \mathcal{S}_{\mathrm{int}}\mathcal{E})^{-1}
+\mathcal{S}_{\mathrm{int}}$ the extension of the plane-wave propagator to a
+stratified medium, and $\Pz \equiv -i\,\Theta^{z}_{\mathrm{in}}\Qb
+\Theta^{z}_{\mathrm{ou}}$.  Because $\Qb$ depends only on the reference, it is
+built once per frequency and every Krylov iterate is then a cheap sweep.  That
+economy is the point of the splitting.
+
+\subsection{The two-stage solve is exact}
+
+The thesis first solves each row internally,
+$\dT = \dC(\bI - \Px\dC)^{-1}$, and then couples rows through $\Pz$.  The
+collapse to~\eqref{eq:LSstrat} is a resolvent identity: with
+$A(\bI-PA)^{-1} = (A^{-1}-P)^{-1}$ and $\dT^{-1} = \dC^{-1} - \Px$,
+\begin{equation}\label{eq:collapse}
+  \dT\bigl(\bI - \Pz\dT\bigr)^{-1}
+  \;=\;\bigl(\dC^{-1} - \Px - \Pz\bigr)^{-1}
+  \;=\;\dC\Bigl(\bI - \bigl[\Px+\Pz\bigr]\dC\Bigr)^{-1}.
+\end{equation}
+\emph{Solving rows first and then stacking them is algebraically identical to
+one global Foldy--Lax solve with $P = \Px + \Pz$.}  The row/stack division is a
+computational strategy, not different physics.  Verified numerically at
+$n = 1,3,9,27$ to $3\times10^{-16}$, and independently against the global
+Neumann series $\sum_{k}\dC(P\dC)^{k}$ to $4.7\times10^{-16}$.
+
+This is what licenses building $\Px$ and $\Pz$ separately and adding them.
+
+% =============================================================================
+\section{The crust gradient belongs in the reference}
+
+An earlier design made the crust reference a single homogeneous block, with the
+internal crust interfaces transparent, purely to reduce cost.  That choice
+moves the depth gradient out of the reference and into the scattering series.
+Its size is measurable.
+
+Holding the geometry fixed --- same ocean, seabed, half-space and interface
+depths --- and varying only whether the crust reference carries its gradient,
+the relative change in the inter-scatterer coupling $G_{9}(i\!\leftarrow\!j)$ is:
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+crust $\alpha$ gradient & complex difference & magnitude only \\
+\midrule
+$4.00$--$4.00$ (uniform)          & $0.0\%$  & $0.0\%$ \\
+$3.98$--$4.02$ ($\pm0.5\%$)       & $\mathbf{10.5\%}$ & $8.4\%$ \\
+$3.95$--$4.05$                    & $26.5\%$ & $23.2\%$ \\
+$3.90$--$4.10$                    & $55.6\%$ & $50.3\%$ \\
+$3.00$--$5.00$ (realistic, $67\%$)& ${\sim}130\%$ & ${\sim}35\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Controls: the null test (identical models) returns exactly zero, and the
+difference grows smoothly from zero with gradient strength, so this is physics
+rather than a coding artefact.  Across $f = 5,10,20$~Hz and horizontal slowness
+$p = 0$--$0.2$~s/km the realistic case runs $70$--$340\%$ uniformly: the
+operator is \emph{different}, not perturbed.
+
+A $\pm0.5\%$ velocity gradient across the crust changes the coupling by $10\%$
+because the effect is a travel-time accumulation along the path --- the
+``habitual mistiming'' the thesis quotes Coates \& Charrette on, and precisely
+what the two-potential split exists to remove.  \textbf{The uniform-host crust
+is not a small correction and should not be used as a cost saving.}
+
+% =============================================================================
+\section{The source-convention obstruction}
+
+Two 9-component propagators are available.  Both claim the state
+$(u_z,u_x,u_y,\ \varepsilon_{zz},\varepsilon_{xx},\varepsilon_{yy},\
+2\varepsilon_{xy},2\varepsilon_{zy},2\varepsilon_{zx})$, but they are built
+from opposite ends, and the difference is \emph{not} a normalisation.
+
+\subsection{A calibrated invariant}
+
+Reciprocity is the right discriminator: it holds in any elastic medium, so no
+uniform limit or $k\leftrightarrow r$ transform is needed, and it is sensitive
+to exactly the source-side weighting at issue.
+
+For the validated closed-form propagator $P = [[G,C],[H,S]]$ the elementwise
+ratio $P_{ab}/P_{ba}$ is an \emph{exact} outer product $w_a/w_b$ with
+$w = (1,1,1,1,1,1,2,2,2)$ --- the Voigt engineering factor, strain rows
+carrying $2\varepsilon$ on the shears while stress columns carry plain
+$\sigma$.  Hence the invariant
+\begin{equation}\label{eq:Winv}
+  \bW P \ \text{is symmetric},\qquad
+  \bW = \operatorname{diag}\bigl(1,1,1,\ 1,1,1,\ \tfrac12,\tfrac12,\tfrac12\bigr),
+\end{equation}
+satisfied to $4.2\times10^{-18}$.  This was \emph{measured, not assumed}: the
+first version of the check asserted plain symmetry and failed at $10$--$16\%$.
+A gate whose calibration leg is not itself checked is worthless.
+
+\subsection{The layered propagator obeys a different law}
+
+The layered $9\times9$ fails~\eqref{eq:Winv} at ${\sim}110\%$, and the failure
+survives every diagonal rescaling.  Dropping to the $6\times6$ core, its exact
+law is
+\begin{equation}\label{eq:gateD}
+  M(i\!\leftarrow\! j)(+k)
+  = \frac{i}{\omega}\,\bS\bD\,
+    \bJ_6 \bigl[M(j\!\leftarrow\! i)(-k)\bigr]^{T}\!\bJ_6\,\bS\bD,
+  \qquad
+  \bS\bD = \operatorname{diag}\bigl(1,-1,-1,\,-i\omega,\,+i\omega,\,+i\omega\bigr),
+\end{equation}
+verified to $6\times10^{-16}$.  It factors into
+$\operatorname{diag}(1,1,1,-i\omega,-i\omega,-i\omega)$ --- the
+$\sigma/(-i\omega)$ mixed basis, applied uniformly to P--SV and SH --- times
+$\operatorname{diag}(1,-1,-1,1,-1,-1)$, the parity of the $x,y$ components
+under $k\to-k$.  The symplectic signature is required: the joint rank-one fit
+residual is $4.8\times10^{-15}$ with $\bJ_6$ and $0.97$ with the identity.
+
+\paragraph{A trap.}  Recovering the SH entries \emph{requires} $k_y\neq0$.  At
+$k_y=0$ the SH channel decouples, components $2$ and $5$ vanish identically,
+and a least-squares fit returns an unconstrained value for them --- in our case
+a plausible-looking $\sqrt{\omega}$ that is simply wrong.
+
+\subsection{Translation invariance clears the solver}
+
+Before treating this as a convention issue it had to be ruled out as a defect,
+since a genuinely non-reciprocal Green's function would invalidate everything
+built on it.  In a homogeneous medium $G(i\!\leftarrow\! j)$ must depend only
+on $z_i - z_j$, and \emph{a constant basis weight cannot break that} --- the
+same weights appear at every interface and cancel.  The test therefore probes
+the Green's function alone.  Two independent knobs, both monotone to zero with
+no plateau: attenuation $Q = 3\to0.5$ gives $6.0\times10^{-2}\to
+5.6\times10^{-4}$; moving the test pairs deeper at fixed $Q$ gives
+$2.5\times10^{-1}\to1.7\times10^{-5}$.  The residual is free-surface and seabed
+leakage behaving exactly as leakage must.  \textbf{The layered solver is
+sound.}
+
+% =============================================================================
+\section{The conversion: state jump versus body force}
+
+The obstruction is structural.  The layered Green's function injects a unit
+\emph{jump in the displacement--traction state}; the closed-form propagator
+takes a \emph{(force, stress-glut)} source.  These are different objects, and
+no rescaling converts one into the other.
+
+Integrating $\partial_z b = \bA b + F_1\delta(z-z_S) + F_2\delta'(z-z_S)$
+across $z_S$: a $\delta'$ term produces a state jump $[b] = F_2$, a $\delta$
+term produces none.  With the Box~5.3 projection
+$\Sigma = -i\,\bD_z(-k)^{T}\bJ_6\,(F_1 + \bA F_2)$ this gives
+\begin{equation}\label{eq:conversion}
+  \boxed{\;\text{state jump } S \;\equiv\; \text{body force } F = \bA\,S\;}
+\end{equation}
+where $\bA$ is the Fourier-domain system matrix.  Since
+$\lVert\operatorname{offdiag}\bA\rVert = 5.6\times10^{6}$, the conversion
+genuinely \emph{mixes} components --- which is why no diagonal weight could
+ever have reconciled the two conventions.  Derivation and the earlier numerical
+experiment agree.
+
+Validated headless in Mathematica against the thesis's own identities: the
+quasi-Hamiltonian relation $\bA^{T}(-k)\bJ_6 + \bJ_6\bA(k) = 0$ to $0$;
+eigenvalues $= i\operatorname{diag}(\pm k_z)$ to $0$; $\bA\bD_z = \bD_z\Lambda$
+against the energy-normalised eigenbasis to $7\times10^{-12}$; and Box~5.3's
+own worked point-explosion example reproduced exactly, both the intermediate
+$F_1 + \bA F_2$ and the closed-form $\Sigma \propto (1,0,0,1,0,0)$ --- P only,
+equal up and down, as an explosion must radiate.
+
+% =============================================================================
+\section{The reconciliation}
+
+Two corrections suffice, and both are forced rather than fitted.
+
+\paragraph{(1) Source normalisation.}  Requiring the corrected $6\times6$ to
+obey clean symplectic reciprocity $N_1 = \bJ_6 N_2^{T}\bJ_6$, and matching
+against~\eqref{eq:gateD} using
+$\bJ_6\operatorname{diag}(d_A,d_B)\bJ_6 = -\operatorname{diag}(d_B,d_A)$,
+determines the source-side factor uniquely up to the receiver-side freedom.
+Taking the receiver side as the identity,
+\begin{equation}\label{eq:Q}
+  N = M\,\bQ,\qquad
+  \bQ = \operatorname{diag}\Bigl(1,-1,-1,\ \tfrac{i}{\omega},
+        -\tfrac{i}{\omega},-\tfrac{i}{\omega}\Bigr),
+\end{equation}
+after which the $6\times6$ obeys clean symplectic reciprocity to
+$6.5\times10^{-16}$.
+
+\paragraph{(2) Adjoint source operator.}  The existing source operator is plain
+Hooke's law and wavenumber-independent, while the receiver operator $A(k)$ is
+not.  Requiring $A_1N_1B_1 = \bW^{-1}(A_2N_2B_2)^{T}\bW$ given
+$N_1 = \bJ_6N_2^{T}\bJ_6$ forces
+\begin{equation}\label{eq:B}
+  B(k) = -\,\bJ_6\,A_{\mathrm{src}}(-k)^{T}\,\bW,
+\end{equation}
+built with the \emph{source} interface's material.  Using the receiver's
+material instead leaves an $83\%$ residual --- the kind of error that a
+structural test would never catch.
+
+With~\eqref{eq:Q} and~\eqref{eq:B}, the corrected $9\times9$ satisfies the
+closed-form invariant~\eqref{eq:Winv} to $9.7\times10^{-16}$ across
+$f = 5,10,25$~Hz and three interface pairs.  The conventions are reconciled and
+the composition~\eqref{eq:LSstrat} is unblocked.
+
+\subsection{Why the existing tests could not have found this}
+
+Every test in the layered suite is structural: shape, finiteness,
+zero-$T$-no-perturbation, Born error quadratic in $\lVert T\rVert$,
+single-layer Foldy equals Born.  \emph{All of them pass for any self-consistent
+source convention}, because each is defined relative to that convention.  An
+invariant --- reciprocity, energy balance, a closed-form limit --- is what
+discriminates.  This is a recurring pattern in the project and the reason the
+gates recorded here are worth keeping in continuous integration rather than
+run on request.
+
+% =============================================================================
+\section{Errata found in the thesis}
+
+Six, all now corrected in the recompiled source.
+
+\begin{center}
+\begin{tabular}{p{0.30\textwidth}p{0.62\textwidth}}
+\toprule
+Location & Correction \\
+\midrule
+Ch.~5, eq.\ (Rrecursion) & Reverberation operator was missing its inverse.
+The algorithms and the 1996 Fortran always had it; summing the round-trip
+series confirms the corrected form to $3\times10^{-16}$ while the printed one
+is $53\%$ wrong at $4\times4$. \\
+Ch.~5, Alg.\ 5.1 & Stale loop index $E_i \to E_1$ at the top-of-stack step. \\
+Ch.~5, Alg.\ 5.3 & Same slip, $E_\rho \to E_1$. \\
+Ch.~5, UL sweeps & ``Upper'' and ``lower'' triangular labels were swapped;
+they also contradicted the text's own statement that the first system is
+solved by back substitution. \\
+Ch.~2, eq.\ (Akdef) & Its shorthand $\gamma,a,b,\zeta,\chi$ is local to that
+equation, whereas the List of Symbols defines $\gamma,\zeta,\chi$ as the
+Chapter~2 contrast ratios.  Substituting those silently yields a wrong system
+matrix.  Footnote added giving
+$\gamma = \lambda/(\lambda+2\mu)$, $a = 1/(\lambda+2\mu)$, $b = 1/\mu$,
+$\zeta = 4\mu(\lambda+\mu)/(\lambda+2\mu)$,
+$\chi = 2\mu\lambda/(\lambda+2\mu)$, with $\zeta-\chi = 2\mu$. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The first four are typographical.  The last is the only one with teeth: the
+others would be caught by a careful reader, whereas the symbol collision
+produces a wrong matrix with nothing in the text to flag it.
+
+% =============================================================================
+\section{Status and what remains}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Item & Status & Evidence \\
+\midrule
+Two-stage $=$ one-stage solve      & exact      & $3\times10^{-16}$ \\
+Layered Green's function           & sound      & translation invariance \\
+Its reciprocity law                & known      & $6\times10^{-16}$ \\
+Jump $\leftrightarrow$ force       & derived    & Box 5.3, validated \\
+Corrected $9\times9$               & reconciled & $9.7\times10^{-16}$ \\
+Crust gradient in the reference    & required   & measured \\
+Per-voxel 3-D $\Px$                & exists     & FFT block-Toeplitz \\
+\midrule
+Composed matvec                    & \emph{not built} & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+What remains is implementation rather than investigation: assemble
+\[
+  \Bigl(\bI - \bigl[\Pz + \Px\bigr]\dC\Bigr)\psi
+\]
+with $\Pz$ from the corrected layered propagator and $\Px$ from the existing
+per-voxel FFT kernel, and drive it with the existing Krylov solver.  The
+lateral operator already handles disorder --- its block-Toeplitz structure
+comes from the regular \emph{mesh}, not from the scatterers being identical ---
+so no new operator is required.
+
+\vfill
+\noindent\rule{\linewidth}{0.4pt}\\
+{\footnotesize All numerical values in this note are reproducible from
+\texttt{scripts/gate\_9x9\_source\_convention.py} (gates A--E) and
+\texttt{Mathematica/BoxFiveThree.wl} (the Box~5.3 derivation).}
+
+\end{document}
