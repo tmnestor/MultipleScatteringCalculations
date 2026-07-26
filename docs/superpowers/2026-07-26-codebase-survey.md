@@ -126,7 +126,50 @@ Consistent with the independent figure recorded during Phase 2 Task 2 (converged
 
 ---
 
-## 7. Recommendations
+## 7. What `slab_scattering` + `lattice_greens` actually give us
+
+Read in full 2026-07-26. **They supply almost the entire Phase 2 solver.**
+
+### Phase 2 tasks that were reimplementations
+
+| Phase 2 task | Already provided by |
+|---|---|
+| Task 1 `crust_field.py` | `SlabMaterial(Dlambda, Dmu, Drho, ref)` — per-voxel contrast arrays, shape `(N_z, M, M)` |
+| Task 4 `matvec_25d.py` | `compute_slab_scattering` — solves $(\mathbf{I}-\mathbf{G}\mathbf{T})\psi=\psi^0$ by FFT-accelerated GMRES |
+| Task 2b Bloch/periodic images | `periodic=True` — circular vs linear convolution. **A flag.** |
+| Task 2c volume-averaging | `volume_averaged=True, n_orders=…`. **A flag.** |
+| Task 5 dressed reflectivity | `slab_reflection_matrix(…, p=…)` — full P/SV/SH specular matrix at horizontal slowness, post-critical evanescent incidence via complex slowness vectors, Weyl extraction, `.to_modified()` for the Kennett convention |
+
+`slab_reflection_matrix` even takes `include_sh=False`, documented as *"Intended for embeddings where SH cannot couple (e.g. through a fluid)"* — written for the marine case.
+
+`lattice_greens.py` supplies the coupling underneath: spectral / spatial / hybrid / FCC 9×9 kernels, D4h-reduced, FFT block-Toeplitz `matvec`, `_matvec_direct` for validation, and `verify()` cross-checking spectral against the closed form.
+
+`ocean_bottom.py` closes the chain: `slab_reflection_matrix` per frequency → `.to_modified()` → `MT_psv = E·R_sed_hs·E + R_slab_psv` → `_kennett_water_step` through the fluid–solid seabed → water phase + free-surface series → Ricker → IFFT. **A complete, validated heterogeneous marine forward model.**
+
+### What genuinely does not exist — the real Phase 2
+
+1. **Shot gathers over a heterogeneous crust.** `ocean_bottom` yields a single trace at one slowness; `seismic_survey` yields gathers but only for homogeneous layers. Joining them means evaluating `slab_reflection_matrix` across the slowness grid and feeding the Bessel summation. Real work, modest.
+
+2. **Scatterers embedded in the *stratified* background — the substantive question.** `slab_scattering` runs its multiple scattering in a **homogeneous** medium and dresses the result through the interfaces afterwards. The thesis $\mathcal{Q}^\partial$ formulation puts the scatterers *in* the stratified medium, so free-surface and seabed reverberation **participate in** the multiple scattering rather than being applied to its output. This is the genuine physical difference, and it is what thesis Chapter 5 is actually about.
+
+3. **Cost at survey scale.** `slab_reflection_matrix` runs three Foldy-Lax solves per frequency *per slowness*. A gather at 256 slownesses × 128 frequencies is ~98k solves. This is precisely the scaling problem the thesis splitting exists to solve: $\mathcal{Q}^\partial$ depends only on the reference, so it is built once per frequency and each iterate is then cheap sweeps.
+
+**Items 2 and 3 are the whole of Phase 2's legitimate content.** The operators are not.
+
+### Two measurements to make before any re-plan
+
+Both are measurable rather than arguable, and both could collapse the remaining work:
+
+- **How large is the difference in (2)** at marine contrasts? If interface reverberation feeding back into the multiple scattering is a small correction, the existing chain plus gather machinery is the entire job.
+- **Is (3) prohibitive in practice, or merely inelegant?** Measure an actual `slab_reflection_matrix` solve at representative $M$, $N_z$ and extrapolate to the gather grid.
+
+### Note on dimensionality
+
+`SlabGeometry` is `M×M` — square, with no separate $M_x$, $M_y$ — so a $y$-invariant 2½-D restriction is not directly expressible. The existing solver is 3-D, i.e. **more general** than what Phase 2 scoped.
+
+---
+
+## 8. Recommendations
 
 1. **Do not resume Phase 2 on the current $\mathbf{P}^x$.** Tasks 2b and 2c should be dropped, not implemented; both are repairs to the wrong foundation.
 2. **Answer the question Phase 0 deferred**, with evidence: does `slab_scattering.py` (+ `lattice_greens` spectral matvec) supply the 2½-D crust response directly? If so, most of the Phase 2 plan dissolves.
@@ -136,7 +179,7 @@ Consistent with the independent figure recorded during Phase 2 Task 2 (converged
 
 ---
 
-## 8. Process note
+## 9. Process note
 
 Project memory already carried this lesson before the work started:
 
