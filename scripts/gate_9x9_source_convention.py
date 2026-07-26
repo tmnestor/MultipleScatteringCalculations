@@ -33,6 +33,68 @@ GATE B (the gate)  requires the same weighted relation of the layered
 GATE C (localisation)  if B fails, drop to the 6x6 core to decide whether the
     defect is in the A/B wrapper or upstream of it.
 
+GATE D  the solved closed-form reciprocity law of the 6x6.
+
+GATE E  the corrected 9x9 under source<->receiver SWAP.
+
+GATE F  the WITHIN-MATRIX block structure, which E cannot see.
+
+
+================================================================================
+STATE OF THE WRAPPER PROBLEM  (2026-07-27) -- read before attempting a fix
+================================================================================
+
+GATE F IS VALID, not an artefact.  Verified on two legs: W P(r) is symmetric at
+EVERY separation (1e-16 over 12 random ones, so an identity rather than four
+lucky points), and after a numerical 2-D transform W Ptilde(kx,ky) is symmetric
+to 6.4e-16 across 20 wavenumbers.  So corrected_9x9 failing F at 0.4-0.8 is a
+real defect, and the composition is correctly blocked.
+
+THE SEARCH OVER B IS UNNECESSARY.  With B = A^T W the wrapper becomes
+
+    W M = (W A) G (W A)^T          which is symmetric  IFF  G is symmetric.
+
+So GATE F is not a question about B at all -- it is a question about the 6x6.
+Get G right and B follows.  (Consistent with the measured fact that NO choice of
+B satisfies E and F together: E is exact at 5e-16 for the current B while F
+fails, and every B improving F destroys E.)
+
+VERIFIED-CORRECT COMPONENTS -- do not re-investigate these:
+    A = strain_from_displacement_traction   exact vs Hooke's law, 2e-16
+    G6 corrected                            GATE D, 6.3e-16
+    closed-form 9x9                         GATE A, 4.2e-18
+    _build_slab_kernels                     IS the closed form on the lattice
+    inverse-FT pipeline                     Weyl identity, ratio 0.98-1.03
+
+REFUTED: A_sys.  Box 5.3 gives the state-jump <-> body-force conversion as
+multiplication by the system matrix, so G_force = G_jump . A_sys^-1 looked
+compelling.  It is not the answer: every grouping involving A_sys
+(G.Q.A_sys^-1, G.Q.A_sys, A_sys^-1.G.Q) leaves the symmetry residual at 1.4,
+no better than the raw propagator.
+
+THE LEAD: J6.  The combination  J6 . G . Q  is symmetric to 4e-3 - 8e-3, three
+orders of magnitude better than anything else tried.  With B = A^T W that would
+give GATE F directly.
+
+THE RESIDUAL IS PURE 1/omega.  It is INDEPENDENT of attenuation, layer count
+and pair depth, and halves exactly as frequency doubles:
+
+    Q   n_lay    pair      f=6        f=12       f=24       f=48
+    20     16   (9,8)   8.04e-03   3.84e-03   1.87e-03   9.38e-04
+    10     24  (13,12)  7.53e-03   3.82e-03   1.87e-03   9.42e-04
+     5     32  (17,16)  7.48e-03   3.79e-03   1.88e-03   9.39e-04
+     3     40  (21,20)  7.39e-03   3.74e-03   1.86e-03   9.32e-04
+
+So it is NOT surface leakage (that would track Q and depth).  Something is
+missing from the source correction Q = diag(1,-1,-1, i/w, -i/w, -i/w) at
+relative order 1/omega -- one order lower in frequency than the terms already
+there.  That is the target: find the 1/omega term, and F should close.
+
+METHOD NOTE.  Nine mechanisms have been proposed on this problem and nine were
+wrong, while every component verified in isolation held up.  Prefer eliminating
+with controls over proposing mechanisms; the useful results above are all
+eliminations.
+
 Run:  conda run -n seismic python scripts/gate_9x9_source_convention.py
 """
 
