@@ -1,6 +1,34 @@
 # Marine3D Phase 2 — 2½-D Disorder-Resolved Crust — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> # ⛔ SUPERSEDED — DO NOT EXECUTE (2026-07-26)
+>
+> **Most of this plan reimplements machinery that already exists.** Halted by the
+> user after the intra-plane operator $\mathbf{P}^x$ was rebuilt four times, each
+> repair exposing a new defect. Read
+> [`../2026-07-26-codebase-survey.md`](../2026-07-26-codebase-survey.md) **first**.
+>
+> | This plan's task | Already provided by |
+> |---|---|
+> | Task 1 `crust_field.py` | `SlabMaterial` — per-voxel `(N_z, M, M)` contrast arrays |
+> | Task 2 / 2b / 2c $\mathbf{P}^x$ | `lattice_greens` spectral kernel + FFT matvec; `periodic=` and `volume_averaged=` are **flags** on `compute_slab_scattering` |
+> | Task 4 matvec + GMRES | `compute_slab_scattering` — $(\mathbf{I}-\mathbf{G}\mathbf{T})\psi=\psi^0$, FFT-accelerated GMRES |
+> | Task 5 dressed reflectivity | `slab_reflection_matrix(p=…)` + `ocean_bottom`'s `_kennett_water_step` chain |
+> | Task 6 Wolfram 2½-D arbiter | `FFTProp.py` — a faithful port of the thesis Fortran `FFTPROP.F`, with the four-directional sweeps of Alg 5.2/5.3 |
+>
+> **Only three items here are real work**, and none of them is an operator:
+> shot gathers over a heterogeneous crust; scatterers embedded in the
+> *stratified* background rather than a homogeneous one (the actual subject of
+> thesis Ch 5); and cost at survey scale (~98k Foldy-Lax solves for one gather).
+>
+> **Also do not trust this plan's test code.** Three tests written into it could
+> not fail: one restated its own construction, one passed on a 101%-wrong
+> kernel, one was structurally zero for any input.
+>
+> Tasks 1 and 2 were implemented and are committed in Marine3D
+> (`c3bb6c4`…`63cd3ba`); Task 2b was implemented and **reverted** (`3631b6b`).
+> Any successor plan must be written against the survey, not patched from this.
+
+> **For agentic workers:** ~~REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development~~ — **do not**. The user's standing instruction (2026-07-26, validated over months of experience) is that agent-driven development produces more bugs and takes longer than in-place work on this project. Execute in place.
 
 **Goal:** Put a per-voxel contrast field on the Marine3D crust planes and resolve the resulting multiple scattering with a matrix-free GMRES matvec, validated against an independently re-derived Wolfram reference and recorded in a LaTeX companion note.
 
