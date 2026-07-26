@@ -1,0 +1,418 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=24mm, top=28mm, bottom=28mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape The 9$\times$9 Wrapper Problem}
+\fancyhead[R]{\small\itshape 27 July 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.12}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bQ}{\mathbf{Q}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bB}{\mathbf{B}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bD}{\mathbf{D}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\Asys}{\mathbf{A}_{\text{sys}}}
+
+\title{\bfseries The $9\times9$ Wrapper Problem\\[4pt]
+\large A Self-Contained Statement: Definitions, Gates, Results,\\
+and What Remains Open}
+\author{}
+\date{27 July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Composing the stratified vertical propagator with the disorder-resolved lateral
+propagator in a single resolvent requires both to speak the same
+$9$-component language.  They do not.  This note defines every object
+involved, states every test applied to them and its exact outcome, and
+isolates what remains unknown.  It is written to be recoverable without
+reference to any prior discussion: every symbol is defined where it first
+appears, every numerical claim names the script that produced it.
+\end{abstract}
+
+\tableofcontents
+
+% =============================================================================
+\section{Conventions and objects}
+
+\subsection{Indices and ordering}
+
+Cartesian indices use the seismological convention of this project:
+\begin{equation}
+  z = 0 \ (\text{down}), \qquad x = 1 \ (\text{right}), \qquad y = 2 \ (\text{out}),
+\end{equation}
+right-handed.  Voigt pairs are ordered
+\begin{equation}\label{eq:voigt}
+  \alpha = 1,\dots,6 \ \longleftrightarrow\ (p,q) =
+  (0,0),\ (1,1),\ (2,2),\ (1,2),\ (0,2),\ (0,1),
+\end{equation}
+i.e.\ $(zz,\ xx,\ yy,\ xy,\ zy,\ zx)$.  Shear components carry the
+\emph{engineering} factor: the strain vector holds $2\varepsilon$ on the last
+three slots, while the stress vector holds plain $\sigma$.  This asymmetry is
+the origin of the weight $\bW$ below and is not optional --- it is how the
+existing code is written.
+
+Time convention is $e^{-i\omega t}$ throughout.  Units are seismic: km/s,
+g/cm$^3$, GPa, km.
+
+\subsection{The two state vectors}
+
+The \emph{displacement--traction $6$-vector} is
+\begin{equation}\label{eq:b6}
+  \mathbf{b} \;=\; \bigl(u_z,\ u_x,\ u_y,\ \tau_{zz},\ \tau_{xz},\ \tau_{yz}\bigr)^{T},
+\end{equation}
+the natural state for a layered medium, since these six quantities are
+continuous across horizontal interfaces.
+
+The \emph{displacement--strain $9$-vector} is
+\begin{equation}\label{eq:v9}
+  \boldsymbol{\psi} \;=\;
+  \bigl(u_z,\ u_x,\ u_y,\
+        \varepsilon_{zz},\ \varepsilon_{xx},\ \varepsilon_{yy},\
+        2\varepsilon_{xy},\ 2\varepsilon_{zy},\ 2\varepsilon_{zx}\bigr)^{T},
+\end{equation}
+the natural state for a scatterer, since the single-site $T$-matrix acts on
+displacement and strain.
+
+\subsection{The two weights}
+
+\begin{equation}\label{eq:W}
+  \bW \;=\; \operatorname{diag}\bigl(1,1,1,\ 1,1,1,\ \tfrac12,\tfrac12,\tfrac12\bigr)
+  \qquad (9\times9),
+\end{equation}
+\begin{equation}\label{eq:J6}
+  \bJ_6 \;=\;
+  \begin{pmatrix} \mathbf{0}_3 & \bI_3 \\ -\bI_3 & \mathbf{0}_3 \end{pmatrix}
+  \qquad (6\times6),
+\end{equation}
+the canonical symplectic array of the thesis (its Eq.~\textsc{Jdef}).  Note
+$\bJ_6^{T} = -\bJ_6$ and $\bJ_6^2 = -\bI_6$.
+
+% =============================================================================
+\section{The three propagators}
+
+\subsection{$\bP^{\text{cf}}$ --- the closed-form whole-space propagator}
+
+\texttt{cubic\_scattering.horizontal\_greens.exact\_propagator\_9x9}$(x,y,z,\omega,\text{ref})$
+returns the $9\times9$
+\begin{equation}\label{eq:Pcf}
+  \bP^{\text{cf}}(\mathbf{r}) =
+  \begin{pmatrix} G & C \\ H & S \end{pmatrix},
+\end{equation}
+built from the Kupradze whole-space Green's tensor and its derivatives, where
+$G$ is $3\times3$ (force $\to$ displacement), $C$ is $3\times6$ (Voigt stress
+source $\to$ displacement), $H$ is $6\times3$ (force $\to$ Voigt strain), and
+$S$ is $6\times6$ (Voigt stress source $\to$ Voigt strain).  Its \emph{source}
+is a pair $(F_i,\ \Delta\sigma^{*}_{V\alpha})$ --- a body force and a
+stress-glut --- and its \emph{output} is $\boldsymbol{\psi}$ of~\eqref{eq:v9}.
+This object is treated here as ground truth; \S\ref{sec:gateA} states the
+evidence.
+
+\subsection{$\bG_6$ --- the layered displacement--traction Green's function}
+
+\texttt{GlobalMatrix.layered\_greens.layered\_greens\_6x6}$(\text{model},\omega,k_x,k_y,j,i)$
+returns a $6\times6$ mapping a source at interface $j$ to the state
+$\mathbf{b}$ at interface $i$, at horizontal wavenumber $(k_x,k_y)$, for a
+plane-layered model.  Two properties matter and are easy to miss:
+
+\begin{enumerate}
+\item Its \textbf{source is a state jump}, not a body force.  Internally
+      (\texttt{riccati\_greens\_psv}) a unit discontinuity is injected into the
+      state vector, \texttt{rhs\_p += I4}.
+\item Its \textbf{basis is mixed}.  The docstring of
+      \texttt{riccati\_greens\_psv} gives it as
+      $[u_x,\ u_z,\ \sigma_{zz}/(-i\omega),\ \sigma_{xz}/(-i\omega)]$: the
+      traction half is scaled by $1/(-i\omega)$ relative to physical traction.
+\end{enumerate}
+
+\subsection{$\Asys$ --- the Fourier-domain system matrix}
+
+The layered problem marches as $\partial_z \mathbf{b} = \Asys \mathbf{b}$ with
+(thesis Eq.~\textsc{Akdef})
+\begin{equation}\label{eq:Asys}
+  \Asys(k_x,k_y) =
+  \begin{pmatrix}
+    0 & -i\gamma k_x & -i\gamma k_y & a & 0 & 0\\
+    -ik_x & 0&0&0& b & 0\\
+    -ik_y & 0&0&0&0& b\\
+    -\rho\omega^2 & 0&0&0& -ik_x & -ik_y\\
+    0 & -\rho\omega^2 + \zeta k_x^2 + \mu k_y^2 & k_xk_y(\chi+\mu) & -ik_x\gamma & 0&0\\
+    0 & k_xk_y(\chi+\mu) & -\rho\omega^2 + \zeta k_y^2 + \mu k_x^2 & -ik_y\gamma & 0&0
+  \end{pmatrix}
+\end{equation}
+where, and this is a genuine trap in the thesis,
+\begin{equation}\label{eq:shorthand}
+  \gamma = \frac{\lambda}{\lambda+2\mu},\quad
+  a = \frac{1}{\lambda+2\mu},\quad
+  b = \frac{1}{\mu},\quad
+  \zeta = \frac{4\mu(\lambda+\mu)}{\lambda+2\mu},\quad
+  \chi = \frac{2\mu\lambda}{\lambda+2\mu},
+\end{equation}
+with $\zeta-\chi = 2\mu$.  These are \emph{local} to~\eqref{eq:Asys}; the
+thesis List of Symbols defines $\gamma,\zeta,\chi$ as Chapter~2 contrast
+ratios, which do \emph{not} apply.  A footnote to this effect has been added to
+the recompiled thesis.
+
+% =============================================================================
+\section{The wrapper under test}
+
+\subsection{Its two operators}
+
+\texttt{layered\_greens\_9x9} constructs a $9\times9$ from $\bG_6$ by
+sandwiching it:
+\begin{equation}\label{eq:wrapper}
+  \bM \;=\; \bA(\mathbf{k})\;\bG_6\;\bB .
+\end{equation}
+
+The \textbf{receiver-side operator} $\bA$ is
+\texttt{strain\_from\_displacement\_traction}, a $9\times6$ mapping
+$\mathbf{b}\mapsto\boldsymbol{\psi}$, i.e.\ $(u,t)\to(u,\varepsilon)$:
+\begin{equation}\label{eq:A}
+\begin{aligned}
+  \varepsilon_{zz} &= \frac{\sigma_{zz} - \lambda(ik_x u_x + ik_y u_y)}{\lambda+2\mu},
+  &\quad \varepsilon_{xx} &= ik_x u_x, &\quad \varepsilon_{yy} &= ik_y u_y,\\
+  2\varepsilon_{xy} &= ik_y u_x + ik_x u_y,
+  &\quad 2\varepsilon_{zy} &= \sigma_{yz}/\mu, &\quad 2\varepsilon_{zx} &= \sigma_{xz}/\mu,
+\end{aligned}
+\end{equation}
+with the displacements passed through unchanged.  Note $\bA$ depends on
+$\mathbf{k}$ and never sees $k_z$: it recovers $\varepsilon_{zz}$ from
+$\sigma_{zz}$ and the in-plane strains.
+
+The \textbf{source-side operator} $\bB$ is, in the shipped code,
+\texttt{traction\_from\_strain}: a $6\times9$, wavenumber-\emph{independent},
+equal to $\bigl[\begin{smallmatrix} \bI_3 & 0\\ 0 & PC\end{smallmatrix}\bigr]$
+with $C$ the isotropic Voigt stiffness and $P$ the traction-extraction.
+
+\subsection{The corrections applied}
+
+Two modifications were derived and applied, giving what is called
+$\bM^{\text{corr}}$ below:
+\begin{equation}\label{eq:corr}
+  \bM^{\text{corr}} = \bA(\mathbf{k})\ \bigl[\bG_6\,\bQ\bigr]\ \bB^{\dagger},
+  \qquad
+  \bQ = \operatorname{diag}\Bigl(1,-1,-1,\ \tfrac{i}{\omega},-\tfrac{i}{\omega},-\tfrac{i}{\omega}\Bigr),
+  \qquad
+  \bB^{\dagger} = -\bJ_6\,\bA_{\text{src}}(-\mathbf{k})^{T}\,\bW .
+\end{equation}
+$\bQ$ undoes the mixed basis on the source index; $\bB^{\dagger}$ was derived by
+requiring the swap relation~\eqref{eq:gateE} below.  $\bA_{\text{src}}$ means
+$\bA$ evaluated with the \emph{source} interface's elastic properties (using
+the receiver's leaves an $83\%$ residual).
+
+% =============================================================================
+\section{The gates: exact statements and outcomes}
+
+Each gate is a necessary condition.  Scripts named are in
+\texttt{scripts/} of \texttt{MultipleScatteringCalculations}.
+
+\subsection{GATE A --- the invariant of the closed form}\label{sec:gateA}
+
+\textbf{Statement.}  $\bW\,\bP^{\text{cf}}(\mathbf{r})$ is symmetric.
+
+\textbf{Origin.}  Measured, not assumed: the elementwise ratio
+$P_{ab}/P_{ba}$ is an exact outer product $w_a/w_b$ with
+$w = (1,1,1,1,1,1,2,2,2)$ --- the Voigt engineering factor
+of~\eqref{eq:voigt}.
+
+\textbf{Outcome.}  \textbf{PASS}, $4.2\times10^{-18}$ at four separations;
+and $1.0\times10^{-16}$ over twelve further random separations, so it is an
+identity rather than a coincidence.
+
+\subsection{GATE F --- the same invariant, for the wrapper}
+
+\textbf{Statement.}  In the homogeneous limit,
+\begin{equation}\label{eq:gateF}
+  \bW\,\bM(k_x,k_y) \ \text{is symmetric.}
+\end{equation}
+
+\textbf{Why this follows.}  $\bW\bP^{\text{cf}}(x,y,\Delta z)$ is symmetric at
+every $(x,y)$; the $2$-D transform over $(x,y)$ is a linear combination with
+\emph{scalar} coefficients; a linear combination of symmetric matrices is
+symmetric.  Verified numerically as well: after transforming
+$\bP^{\text{cf}}$ on a grid, $\bW\tilde{\bP}$ is symmetric to
+$6.4\times10^{-16}$ across twenty wavenumbers.
+
+\textbf{Restriction.}  Licensed only in the homogeneous limit, where swapping
+source and receiver leaves the medium unchanged.  For a genuinely stratified
+reference no within-matrix symmetry should be expected.
+
+\textbf{Outcome.}  $\bM^{\text{corr}}$ \textbf{FAILS}, residual $0.40$--$0.81$
+across two frequencies and two slownesses.
+
+\subsection{GATE E --- the swap relation}
+
+\textbf{Statement.}
+\begin{equation}\label{eq:gateE}
+  \bM(i\!\leftarrow\! j)(+\mathbf{k})
+  \;=\; \bW^{-1}\,\bigl[\bM(j\!\leftarrow\! i)(-\mathbf{k})\bigr]^{T}\,\bW .
+\end{equation}
+
+\textbf{Outcome.}  $\bM^{\text{corr}}$ \textbf{PASSES} at
+$9.7\times10^{-16}$.
+
+\textbf{What it cannot see.}  \eqref{eq:gateE} relates two \emph{different}
+matrices and is homogeneous of degree one in $\bM$.  It therefore constrains
+neither the overall scale (any constant multiplies both sides equally) nor the
+relation between the $G,C,H,S$ blocks \emph{within} one matrix.  Both blind
+spots proved to be live.
+
+\subsection{GATE D --- the reciprocity law of $\bG_6$ itself}
+
+\textbf{Statement.}  With
+$\bS\bD = \operatorname{diag}(1,-1,-1,-i\omega,+i\omega,+i\omega)$,
+\begin{equation}\label{eq:gateD}
+  \bG_6(i\!\leftarrow\! j)(+\mathbf{k})
+  = \frac{i}{\omega}\,\bS\bD\ \bJ_6\bigl[\bG_6(j\!\leftarrow\! i)(-\mathbf{k})\bigr]^{T}\bJ_6\ \bS\bD .
+\end{equation}
+Here $\operatorname{diag}(1,1,1,-i\omega,-i\omega,-i\omega)$ is the
+$\sigma/(-i\omega)$ mixed basis applied uniformly to P--SV and SH, and
+$\operatorname{diag}(1,-1,-1,1,-1,-1)$ is the parity of the $x,y$ components
+under $\mathbf{k}\to-\mathbf{k}$.
+
+\textbf{Outcome.}  \textbf{PASS}, $6.3\times10^{-16}$.  Obtained by solving for
+the weight, not guessing: a joint rank-one fit over interface pairs,
+slownesses and frequencies has residual $4.8\times10^{-15}$ with $\bJ_6$ and
+$0.97$ with the identity, so the symplectic signature is required.
+
+\paragraph{Trap.}  Recovering the SH entries requires $k_y\neq0$.  At $k_y=0$
+the SH channel decouples, components $2$ and $5$ vanish identically, and a fit
+returns an unconstrained value for them.
+
+% =============================================================================
+\section{Components verified in isolation}
+
+Each of these was checked against an independent known answer.  None is the
+defect.
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Object & Check & Residual \\
+\midrule
+$\bA$, Eq.~\eqref{eq:A} & Hooke's law on random plane waves & $2\times10^{-16}$ \\
+$\bG_6\bQ$ & GATE D, Eq.~\eqref{eq:gateD} & $6.3\times10^{-16}$ \\
+$\bP^{\text{cf}}$ & GATE A & $4.2\times10^{-18}$ \\
+\texttt{\_build\_slab\_kernels} & equals $\bP^{\text{cf}}$ on the lattice & ratio $1.006$, $1.001$ \\
+inverse-FT pipeline & Weyl identity & ratio $0.98$--$1.03$ \\
+$\bG_6$ solver & translation invariance, homogeneous & $\to 1.7\times10^{-5}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For $\bA$: an arbitrary plane wave $u_i = U_i e^{i(k_zz+k_xx+k_yy)}$ gives
+$\varepsilon$ and $\sigma$ exactly from their definitions; forming $\mathbf{b}$
+and applying~\eqref{eq:A} reproduces $\boldsymbol{\psi}$ to $2\times10^{-16}$
+over six random trials, including the non-trivial $\varepsilon_{zz}$ row.
+
+For the Weyl check: $\tilde{G} = (i/2k_z)e^{ik_z|\Delta z|}$ transformed by the
+same pipeline reproduces $e^{ikr}/(4\pi r)$, so the transform normalisation
+$\bigl(\text{ifft2}\times N^2\Delta k^2/(2\pi)^2\bigr)$ is correct and no
+stray $4\pi$ exists.
+
+% =============================================================================
+\section{The negative results}
+
+These close off regions of the search space and are the substantive output.
+
+\paragraph{N1. No $\bB$ in the adjoint family satisfies E and F together.}
+For $\bB \in \{-\bJ_6\bA_{\text{src}}(-\mathbf{k})^{T}\bW,\
+\bS\bJ_6\bA_{\text{src}}(+\mathbf{k})^{T}\bW,\ \bJ_6\bA^{T}\bW,\ \dots\}$ the
+shipped choice gives E $=5.3\times10^{-16}$ with F $=0.81$, and every variant
+improving F destroys E (best F $=0.26$ at E $=0.74$).
+
+\paragraph{N2. GATE F reduces to a property of $\bG_6$ alone.}
+If $\bB = \bA^{T}\bW$ then
+\begin{equation}\label{eq:reduction}
+  \bW\bM = (\bW\bA)\,\bG\,(\bW\bA)^{T},
+\end{equation}
+which is symmetric \emph{if and only if} $\bG$ is symmetric.  So under that
+ansatz the question is not about $\bB$ at all.
+
+\paragraph{N3. No diagonal source correction makes $\bG_6$ symmetric.}
+Requiring $\bG_6\operatorname{diag}(q)$ symmetric gives $15$ homogeneous
+equations in $6$ unknowns.  The null space does \emph{not} exist: the smallest
+singular value ratio stalls at $4.9\times10^{-3}\to1.8\times10^{-3}$ over
+$f=6\to48$~Hz, the achieved symmetry is only $3$--$7\times10^{-2}$, and the
+fitted $q$ drifts with frequency ($0.48, 0.53, 0.56, 0.74$).  The system is
+inconsistent.
+
+\paragraph{N4. $\Asys$ is not the conversion needed here.}
+Box~5.3 of the thesis gives the state-jump $\leftrightarrow$ body-force
+equivalence as $F = \Asys S$ (derived and validated in
+\texttt{Mathematica/BoxFiveThree.wl}: quasi-Hamiltonian identity, eigenvalues,
+eigenbasis consistency, and the worked point-explosion example all reproduced).
+Nevertheless every grouping
+$\bG\bQ\Asys^{-1}$, $\bG\bQ\Asys$, $\Asys^{-1}\bG\bQ$ leaves the symmetry
+residual at $1.4$, no better than raw $\bG$.
+
+\paragraph{N5. The lateral and stratified propagators are not commensurable
+as built.}  In the homogeneous limit the ratio of the stratified spectral
+kernel to the verified lattice kernel varies by $10$--$14\times$ across
+wavenumber and \emph{grows} under damping, so it is not surface leakage.
+Discretising the stratified propagator onto the lattice improves this
+$3.8\times$ (spread $9.8\to2.55$) but does not close it; the residual is a
+roughly constant factor near $12$ with $\sim200\%$ scatter.
+
+% =============================================================================
+\section{What is open}
+
+Precisely one question, and it is small:
+
+\begin{quote}
+Given a $6\times6$ Green's function whose source index is a \emph{state jump}
+in the mixed basis of \S2.2, what is the correct $6\times9$ source-side
+operator $\bB$ such that $\bA\bG_6\bB$ reproduces the whole-space
+$\bigl[\begin{smallmatrix}G&C\\H&S\end{smallmatrix}\bigr]$
+of~\eqref{eq:Pcf}?
+\end{quote}
+
+By N2 the ansatz $\bB = \bA^{T}\bW$ turns this into ``is $\bG_6\bQ$
+symmetric'', and by N3 no diagonal $\bQ$ makes it so.  Hence either
+$\bB \neq \bA^{T}\bW$, or the source correction is not diagonal.  Both remain
+open.  The author of the underlying theory is better placed to answer this than
+further numerical search, which is why it is stated rather than pursued.
+
+\paragraph{How to test any candidate.}  Run
+\texttt{scripts/gate\_9x9\_source\_convention.py}.  It executes gates A--F and
+exits non-zero unless A, E and F all pass.  GATE F is proven valid
+(\S4.2), so it will accept or reject a candidate immediately.
+
+\paragraph{Reproducibility.}  Every number above comes from
+\texttt{scripts/gate\_9x9\_source\_convention.py} (gates A--F),
+\texttt{scripts/composed\_matvec.py} (N5, spectral),
+\texttt{scripts/discrete\_pz\_kernel.py} (N5, discrete),
+\texttt{scripts/gate\_lateral\_sweep\_alg52.py} (lateral propagator), and
+\texttt{Mathematica/BoxFiveThree.wl} (N4).
+
+\end{document}
