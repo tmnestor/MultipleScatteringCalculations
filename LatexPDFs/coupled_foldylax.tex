@@ -34,6 +34,10 @@
 \usepackage{booktabs}
 \usepackage{array}
 
+% --- Diagrams ---
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+
 % --- Captions ---
 \usepackage[font=small, labelfont=bf, labelsep=period]{caption}
 
@@ -695,7 +699,51 @@ Combining all three stages:
 This is the near-field exact result, valid at all frequencies and for
 all contrast types.  The dependence on horizontal wavenumbers
 $(k_x, k_y)$ enters only through the strain extraction
-matrix~$\bS$.
+matrix~$\bS$.  Figure~\ref{fig:pipeline} summarises the full data
+flow, from Kennett partial-wave amplitudes, through the
+$9$-component composite state of the scatterer, and back.
+
+% --- Pipeline schematic ---
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  node distance = 8mm and 0mm,
+  box/.style = {rectangle, rounded corners=2pt, draw=black!55, thick,
+                fill=#1, align=center, text width=52mm, inner sep=5pt,
+                font=\small},
+  box/.default = NavyBlue!7,
+  arr/.style  = {-{Stealth[length=2.6mm]}, thick, draw=black!70},
+  lbl/.style  = {font=\scriptsize\itshape, anchor=west, inner sep=3pt,
+                 xshift=4mm}
+]
+  \node[box=Goldenrod!22]              (pw)   {Kennett partial-wave amps\\[1pt]
+                                                $(6,\ \text{P}/\text{SV}/\text{SH}\times\text{up}/\text{down})$};
+  \node[box, below=of pw]              (ut6)  {displacement--traction\\[1pt]
+                                                $(u_z,u_x,u_y,t_{zz},t_{xz},t_{yz})$\quad(6)};
+  \node[box=ForestGreen!10, below=of ut6]  (nine) {composite state\\[1pt]
+                                                $(u_i,\ \varepsilon_{V\alpha})$\quad(9)};
+  \node[box=ForestGreen!10, below=of nine] (src)  {scattered source\\[1pt]
+                                                $(F_i,\ \Delta\sigma^*_{V\alpha})$\quad(9)};
+  \node[box, below=of src]             (ut6b) {scattered displacement--traction\quad(6)};
+  \node[box=Goldenrod!22, below=of ut6b] (pwb) {scattered partial-wave amps\quad(6)};
+
+  \draw[arr] (pw)   -- node[lbl] {$\mathbf{D}$\quad($6\times6$ eigenvectors)}              (ut6);
+  \draw[arr] (ut6)  -- node[lbl] {$\bM_\text{in}$ ($9\times6$) $=[\,\bI_3;\ \bS(k_x,k_y)\,]$} (nine);
+  \draw[arr] (nine) -- node[lbl] {$\bT_\text{comp}$ ($9\times9$)}                           (src);
+  \draw[arr] (src)  -- node[lbl] {$\bG_\text{self}$ ($6\times9$), two $3\times9$ blocks}    (ut6b);
+  \draw[arr] (ut6b) -- node[lbl] {$\mathbf{D}^{-1}$\quad($6\times6$)}                       (pwb);
+\end{tikzpicture}
+\caption{Data flow of the three-stage pipeline~\eqref{eq:T6x6}.  The
+  $6$-component displacement--traction vector
+  $(u_z,u_x,u_y,t_{zz},t_{xz},t_{yz})$ is the bridge between the
+  Kennett partial-wave basis (decomposed by the $6\times6$ eigenvector
+  matrix $\mathbf{D}$, two $3\times6$ blocks) and the $9$-component
+  composite state $(u_i,\varepsilon_{V\alpha})$ of the scatterer.  The
+  three in-plane Voigt stresses dropped on the Kennett side are
+  restored by the strain-extraction matrix $\bS$ inside
+  $\bM_\text{in}$.}
+\label{fig:pipeline}
+\end{figure}
 
 % =============================================================================
 \section{Implementation Notes}
