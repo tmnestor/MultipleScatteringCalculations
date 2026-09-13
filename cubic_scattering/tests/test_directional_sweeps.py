@@ -3,7 +3,12 @@
 import numpy as np
 import pytest
 
-from cubic_scattering.directional_sweeps import make_sweep_grid, sweep_x
+from cubic_scattering.directional_sweeps import (
+    build_vertical_stack,
+    make_sweep_grid,
+    sweep_x,
+    sweep_z,
+)
 from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.sweep_kernels import lateral_split_9x9
 
@@ -142,6 +147,92 @@ def test_lateral_coupling_decays_with_separation() -> None:
     out = np.abs(sweep_x(sources, grid, right, left)[0]).max(axis=1)
     assert out[4] > out[5] > out[6]
     assert out[2] > out[1] > out[0]
+
+
+def _vertical_block(grid, vertical, lz, mz, d_index):
+    """K_{lz,mz}(d_index * pitch) as a 9x9, by explicit k_x quadrature."""
+    ph = np.exp(1j * grid.kx_nodes * d_index * grid.pitch)
+    return np.einsum("k,abk->ab", grid.kx_weights * ph, vertical[lz, mz])
+
+
+def _pairwise_vertical_same_kernel(sources, grid, vertical):
+    """O(N^2) reference: a double loop over inter-plane pairs.
+
+    Uses the SAME kernel as sweep_z but a different algorithm -- pairwise rather
+    than an accumulation in the k_x domain -- so agreement tests the transform
+    bookkeeping, not the physics. The physics is rung 3, in the gate script.
+    """
+    n_z, n_x, _ = sources.shape
+    out = np.zeros_like(sources)
+    for lz in range(n_z):
+        for mz in range(n_z):
+            if lz == mz:
+                continue
+            for i in range(n_x):
+                for j in range(n_x):
+                    block = _vertical_block(grid, vertical, lz, mz, i - j)
+                    out[lz, i, :] += block @ sources[mz, j, :]
+    return out
+
+
+def test_sweep_z_equals_the_pairwise_inter_plane_sum() -> None:
+    """The k_x-domain accumulation resums the pairwise inter-plane sum."""
+    rng = np.random.default_rng(4242)
+    n_z, n_x = 3, 6
+    grid = make_sweep_grid(n_z, n_x, PITCH, ky=0.6, n_kz=64, n_kx=256)
+    vertical = build_vertical_stack(grid, REF, OMEGA)
+
+    sources = rng.standard_normal((n_z, n_x, 9)) + 1j * rng.standard_normal((n_z, n_x, 9))
+    got = sweep_z(sources, grid, vertical)
+    want = _pairwise_vertical_same_kernel(sources, grid, vertical)
+    assert np.abs(got - want).max() / np.abs(want).max() < 1e-12
+
+
+def test_sweep_z_does_not_wrap_around_the_lattice() -> None:
+    """RUNG 3b: the lateral coupling must NOT be periodic.
+
+    The real Earth is not horizontally periodic. A circular convolution -- which
+    is what an unpadded FFT along x would give -- would couple site 0 to site
+    n_x-1 as though they were ONE pitch apart rather than n_x-1 pitches. This
+    test puts a lone source at site 0 and checks the field at the far edge
+    against the kernel at the true separation, and separately confirms it is
+    nowhere near the wrapped value.
+    """
+    n_z, n_x = 2, 8
+    grid = make_sweep_grid(n_z, n_x, PITCH, ky=0.6, n_kz=64, n_kx=512)
+    vertical = build_vertical_stack(grid, REF, OMEGA)
+
+    sources = np.zeros((n_z, n_x, 9), dtype=complex)
+    sources[0, 0, 0] = 1.0
+    out = sweep_z(sources, grid, vertical)
+
+    far = out[1, n_x - 1, :]
+    true_sep = _vertical_block(grid, vertical, 1, 0, n_x - 1) @ sources[0, 0, :]
+    wrapped = _vertical_block(grid, vertical, 1, 0, -1) @ sources[0, 0, :]
+
+    assert np.abs(far - true_sep).max() / np.abs(true_sep).max() < 1e-12
+    # And the two are genuinely different, so the test above is not vacuous.
+    assert np.abs(true_sep - wrapped).max() / np.abs(wrapped).max() > 1e-1
+
+
+def test_sweep_z_excludes_the_same_plane() -> None:
+    """Same-depth coupling belongs to sweep_x; sweep_z must not double-count it."""
+    n_z, n_x = 2, 4
+    grid = make_sweep_grid(n_z, n_x, PITCH, ky=0.6, n_kz=64, n_kx=256)
+    vertical = build_vertical_stack(grid, REF, OMEGA)
+    sources = np.zeros((n_z, n_x, 9), dtype=complex)
+    sources[0, :, :] = 1.0
+    out = sweep_z(sources, grid, vertical)
+    assert np.abs(out[0]).max() == 0.0
+    assert np.abs(out[1]).max() > 0.0
+
+
+def test_sweep_z_rejects_a_stack_from_another_grid() -> None:
+    grid = make_sweep_grid(2, 4, PITCH, ky=0.6, n_kz=64, n_kx=256)
+    other = make_sweep_grid(2, 4, PITCH, ky=0.6, n_kz=64, n_kx=128)
+    vertical = build_vertical_stack(other, REF, OMEGA)
+    with pytest.raises(ValueError, match="vertical"):
+        sweep_z(np.zeros((2, 4, 9), dtype=complex), grid, vertical)
 
 
 def test_grid_rejects_single_site_row() -> None:

@@ -251,3 +251,73 @@ def lateral_split_9x9(
         pitch=float(pitch),
         direction=direction,
     )
+
+
+def vertical_kernel_9x9(
+    kx_arr: NDArray, ky: float, dz: float, omega: complex, ref: ReferenceMedium
+) -> NDArray:
+    """Whole-space 9x9 plane-to-plane kernel, k_z integral done by residue.
+
+    Between planes dz != 0, so the surviving (kx, ky) integral keeps its
+    e^{-kappa |dz|} convergence factor. This is the construction that is
+    UNUSABLE at equal depth and perfectly well behaved away from it -- which is
+    why same-depth coupling is the lateral sweep's job and this one is used only
+    between planes.
+
+    The sign of dz enters the k-vector's z component, not merely the
+    exponential: every odd z-derivative in the C and H blocks flips with it,
+    exactly as the x component does in lateral_split_9x9.
+
+    Args:
+        kx_arr: Lateral wavenumber nodes along x, shape (n_kx,), 1/km.
+        ky: The 2.5-D lateral parameter, 1/km.
+        dz: Signed depth separation, km. Must be non-zero.
+        omega: Complex angular frequency.
+        ref: Background medium.
+
+    Returns:
+        P of shape (9, 9, n_kx).
+
+    Raises:
+        ValueError: if dz is zero.
+    """
+    if dz == 0.0:
+        msg = (
+            "dz must be non-zero: at equal depth the (kx, ky) integral loses its\n"
+            "  e^{-kappa|dz|} convergence factor and diverges.\n"
+            "  Where: cubic_scattering/sweep_kernels.py, vertical_kernel_9x9(dz=...)\n"
+            "  Valid: a signed plane separation in km, e.g. dz=0.25 or dz=-0.5\n"
+            "  Fix:   same-depth coupling is the LATERAL sweep's job -- call\n"
+            "         directional_sweeps.sweep_x for it, not sweep_z."
+        )
+        raise ValueError(msg) from None
+
+    kx = np.asarray(kx_arr, dtype=float)
+    n = kx.size
+    rho, alpha, beta = ref.rho, ref.alpha, ref.beta
+    kh2 = kx**2 + ky**2
+    kz_p = _branch((omega / alpha) ** 2 - kh2)
+    kz_s = _branch((omega / beta) ** 2 - kh2)
+
+    sign = 1.0 if dz > 0 else -1.0
+    e_p = np.exp(1j * kz_p * abs(dz))
+    e_s = np.exp(1j * kz_s * abs(dz))
+
+    kvec_p = [sign * kz_p, kx.astype(complex), np.full(n, ky, dtype=complex)]
+    kvec_s = [sign * kz_s, kx.astype(complex), np.full(n, ky, dtype=complex)]
+
+    c_s_iso = (1j / (2 * rho)) * e_s / (beta**2 * kz_s)
+    c_p_pol = (1j / (2 * rho)) * e_p / (omega**2 * kz_p)
+    c_s_pol = -(1j / (2 * rho)) * e_s / (omega**2 * kz_s)
+
+    g_p = np.zeros((3, 3, n), dtype=complex)
+    g_s_iso = np.zeros((3, 3, n), dtype=complex)
+    g_s_pol = np.zeros((3, 3, n), dtype=complex)
+    for i in range(3):
+        g_s_iso[i, i, :] = c_s_iso
+        for j in range(3):
+            g_p[i, j, :] = kvec_p[i] * kvec_p[j] * c_p_pol
+            g_s_pol[i, j, :] = kvec_s[i] * kvec_s[j] * c_s_pol
+
+    total = g_p + g_s_iso + g_s_pol
+    return _assemble_9x9(total, [g_p, g_s_iso, g_s_pol], [kvec_p, kvec_s, kvec_s])

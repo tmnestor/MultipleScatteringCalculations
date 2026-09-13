@@ -19,7 +19,8 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
-from .sweep_kernels import LateralSplit
+from .effective_contrasts import ReferenceMedium
+from .sweep_kernels import LateralSplit, vertical_kernel_9x9
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,8 @@ class SweepGrid:
         ky: The 2.5-D lateral parameter, 1/km.
         kz_nodes: k_z quadrature nodes, shape (n_kz,).
         kz_weights: k_z quadrature weights INCLUDING the 1/(2 pi), shape (n_kz,).
+        kx_nodes: k_x quadrature nodes for the inter-plane sweep, shape (n_kx,).
+        kx_weights: k_x quadrature weights INCLUDING the 1/(2 pi), shape (n_kx,).
     """
 
     n_z: int
@@ -41,6 +44,8 @@ class SweepGrid:
     ky: float
     kz_nodes: NDArray
     kz_weights: NDArray
+    kx_nodes: NDArray
+    kx_weights: NDArray
 
 
 def make_sweep_grid(
@@ -51,21 +56,36 @@ def make_sweep_grid(
     *,
     kz_max: float | None = None,
     n_kz: int = 2048,
+    kx_max: float | None = None,
+    n_kx: int = 2048,
 ) -> SweepGrid:
-    """Build the lattice and the k_z quadrature.
+    """Build the lattice and both quadratures.
 
     The k_z integrand decays as e^{-|kz| pitch} at the nearest-neighbour
     separation, so the default cutoff is 30/pitch -- about thirteen e-foldings.
+    The k_x integrand for the inter-plane sweep decays as e^{-|kx| |dz|} with
+    |dz| >= pitch, so the same cutoff serves.
+
     Always confirm by refinement: an undersized k-grid is this project's most
     expensive recurring numerical error.
+
+    The k_x quadrature is a plain wide grid, NOT an FFT grid, and that is
+    deliberate. An FFT along x would sample k_x only on the Nyquist window
+    +-pi/pitch -- where the integrand is still ~4% of its peak at |dz| = pitch,
+    so the tail is not negligible -- and would periodize the real-space kernel
+    at the domain width, which is precisely the horizontal periodicity the real
+    Earth does not have. A direct quadrature has neither defect. An aliased-FFT
+    accelerator can be added later and gated against this; correctness first.
 
     Args:
         n_z: Number of depth planes (>= 1).
         n_x: Sites along x (>= 2).
         pitch: Voxel pitch in km (> 0).
         ky: The 2.5-D lateral wavenumber, 1/km.
-        kz_max: Quadrature cutoff. Defaults to 30/pitch.
-        n_kz: Number of nodes.
+        kz_max: k_z quadrature cutoff. Defaults to 30/pitch.
+        n_kz: Number of k_z nodes.
+        kx_max: k_x quadrature cutoff. Defaults to 30/pitch.
+        n_kx: Number of k_x nodes.
 
     Returns:
         A SweepGrid.
@@ -99,20 +119,28 @@ def make_sweep_grid(
         )
         raise ValueError(msg) from None
 
-    cutoff = 30.0 / pitch if kz_max is None else float(kz_max)
-    nodes = np.linspace(-cutoff, cutoff, n_kz)
-    dk = nodes[1] - nodes[0]
-    weights = np.full(n_kz, dk / (2.0 * np.pi))
-    weights[0] *= 0.5
-    weights[-1] *= 0.5
+    def _trapezoid(cutoff: float, count: int) -> tuple[NDArray, NDArray]:
+        nodes = np.linspace(-cutoff, cutoff, count)
+        dk = nodes[1] - nodes[0]
+        weights = np.full(count, dk / (2.0 * np.pi))
+        weights[0] *= 0.5
+        weights[-1] *= 0.5
+        return nodes, weights
+
+    kz_cut = 30.0 / pitch if kz_max is None else float(kz_max)
+    kx_cut = 30.0 / pitch if kx_max is None else float(kx_max)
+    kz_nodes, kz_weights = _trapezoid(kz_cut, n_kz)
+    kx_nodes, kx_weights = _trapezoid(kx_cut, n_kx)
 
     return SweepGrid(
         n_z=n_z,
         n_x=n_x,
         pitch=float(pitch),
         ky=float(ky),
-        kz_nodes=nodes,
-        kz_weights=weights,
+        kz_nodes=kz_nodes,
+        kz_weights=kz_weights,
+        kx_nodes=kx_nodes,
+        kx_weights=kx_weights,
     )
 
 
@@ -208,3 +236,79 @@ def sweep_x(
             acc_s = (acc_s + sources[:, i, None, :]) * split.phase_s[None, :, None]
 
     return out
+
+
+def build_vertical_stack(grid: SweepGrid, ref: ReferenceMedium, omega: complex) -> NDArray:
+    """Precompute the plane-to-plane kernels once, outside the Krylov loop.
+
+    Args:
+        grid: The lattice and both quadratures.
+        ref: Background medium.
+        omega: Complex angular frequency.
+
+    Returns:
+        Array of shape (n_z, n_z, 9, 9, n_kx). The diagonal [lz, lz] is left
+        zero: same-plane coupling belongs to sweep_x, and the kernel is not even
+        defined at dz = 0.
+    """
+    n_kx = grid.kx_nodes.size
+    out = np.zeros((grid.n_z, grid.n_z, 9, 9, n_kx), dtype=complex)
+    for lz in range(grid.n_z):
+        for mz in range(grid.n_z):
+            if lz == mz:
+                continue
+            out[lz, mz] = vertical_kernel_9x9(grid.kx_nodes, grid.ky, (lz - mz) * grid.pitch, omega, ref)
+    return out
+
+
+def sweep_z(sources: NDArray, grid: SweepGrid, vertical: NDArray) -> NDArray:
+    """Accumulate inter-plane coupling through the lateral wavenumber domain.
+
+    For every ordered pair of DISTINCT planes, sums
+
+        out[lz, i] = sum_{mz != lz} sum_j K_{lz,mz}((i - j) pitch) s[mz, j]
+
+    with K the inverse k_x transform of the plane-to-plane kernel. The sum over
+    j is carried in the k_x domain, so the cost is O(n_z^2 n_kx + n_z n_x n_kx)
+    rather than O(n_z^2 n_x^2), while remaining an exact quadrature of the
+    continuum integral -- there is no transform of finite period anywhere, hence
+    no lateral periodicity.
+
+    Args:
+        sources: Source 9-vectors, shape (n_z, n_x, 9).
+        grid: The lattice and both quadratures.
+        vertical: Kernels from build_vertical_stack, (n_z, n_z, 9, 9, n_kx).
+
+    Returns:
+        The accumulated field, shape (n_z, n_x, 9).
+
+    Raises:
+        ValueError: on a wrong source shape or a grid/kernel mismatch.
+    """
+    _check_state(sources, grid, "sweep_z")
+    n_kx = grid.kx_nodes.size
+    if vertical.shape != (grid.n_z, grid.n_z, 9, 9, n_kx):
+        msg = (
+            f"vertical has shape {vertical.shape}, expected "
+            f"{(grid.n_z, grid.n_z, 9, 9, n_kx)}.\n"
+            "  Where: cubic_scattering/directional_sweeps.py, sweep_z(vertical=...)\n"
+            "  Valid: the array returned by build_vertical_stack(grid, ref, omega)\n"
+            "  Fix:   rebuild the stack from the SAME grid you are sweeping."
+        )
+        raise ValueError(msg) from None
+
+    # Forward phase e^{-i kx x_j} and its conjugate for the readout.
+    x = np.arange(grid.n_x) * grid.pitch
+    phase = np.exp(-1j * np.outer(grid.kx_nodes, x))  # (n_kx, n_x)
+
+    # Source spectra, one per plane: (n_z, n_kx, 9)
+    spec = np.einsum("kj,zjb->zkb", phase, sources)
+
+    acc = np.zeros((grid.n_z, n_kx, 9), dtype=complex)
+    for lz in range(grid.n_z):
+        for mz in range(grid.n_z):
+            if lz == mz:
+                continue
+            acc[lz] += np.einsum("abk,kb->ka", vertical[lz, mz], spec[mz])
+
+    return np.einsum("k,kj,zka->zja", grid.kx_weights, np.conj(phase), acc)
