@@ -4,9 +4,12 @@ import numpy as np
 import pytest
 
 from cubic_scattering.directional_sweeps import (
+    apply_g0,
+    build_g0_cache,
     build_vertical_stack,
     make_sweep_grid,
     sweep_x,
+    sweep_y,
     sweep_z,
 )
 from cubic_scattering.effective_contrasts import ReferenceMedium
@@ -233,6 +236,67 @@ def test_sweep_z_rejects_a_stack_from_another_grid() -> None:
     vertical = build_vertical_stack(other, REF, OMEGA)
     with pytest.raises(ValueError, match="vertical"):
         sweep_z(np.zeros((2, 4, 9), dtype=complex), grid, vertical)
+
+
+def test_g0_covers_every_off_diagonal_pair_exactly_once() -> None:
+    """RUNG 4: the partition.
+
+    Asserted on the SUPPORT of the operator -- which pairs light up -- not on
+    magnitudes. It is the one rung in the ladder that an overall scale error
+    cannot pass, because it does not look at values at all.
+    """
+    n_z, n_x = 3, 5
+    grid = make_sweep_grid(n_z, n_x, PITCH, ky=0.6, n_kz=64, n_kx=128)
+    cache = build_g0_cache(grid, REF, OMEGA)
+
+    for mz in range(n_z):
+        for j in range(n_x):
+            src = np.zeros((n_z, n_x, 9), dtype=complex)
+            src[mz, j, 0] = 1.0
+            out = apply_g0(src, cache)
+            lit = np.abs(out).max(axis=2) > 0.0
+            assert not lit[mz, j], f"self-term leaked at ({mz}, {j})"
+            expected = np.ones((n_z, n_x), dtype=bool)
+            expected[mz, j] = False
+            np.testing.assert_array_equal(lit, expected)
+
+
+def test_g0_is_exactly_the_sum_of_its_two_sweeps() -> None:
+    """No double counting: sweep_x is same-plane only, sweep_z different-plane."""
+    rng = np.random.default_rng(11)
+    n_z, n_x = 2, 6
+    grid = make_sweep_grid(n_z, n_x, PITCH, ky=0.6, n_kz=64, n_kx=128)
+    cache = build_g0_cache(grid, REF, OMEGA)
+    src = rng.standard_normal((n_z, n_x, 9)) + 1j * rng.standard_normal((n_z, n_x, 9))
+
+    want = sweep_x(src, grid, cache.split_right, cache.split_left) + sweep_z(src, grid, cache.vertical)
+    assert np.abs(apply_g0(src, cache) - want).max() == 0.0
+
+
+def test_g0_is_linear() -> None:
+    """G0 is a pure forward summation: no inversion, no state carried between calls."""
+    rng = np.random.default_rng(13)
+    n_z, n_x = 2, 5
+    grid = make_sweep_grid(n_z, n_x, PITCH, ky=0.6, n_kz=64, n_kx=128)
+    cache = build_g0_cache(grid, REF, OMEGA)
+    a = rng.standard_normal((n_z, n_x, 9)) + 1j * rng.standard_normal((n_z, n_x, 9))
+    b = rng.standard_normal((n_z, n_x, 9)) + 1j * rng.standard_normal((n_z, n_x, 9))
+
+    lhs = apply_g0(3.0 * a - 2.0j * b, cache)
+    rhs = 3.0 * apply_g0(a, cache) - 2.0j * apply_g0(b, cache)
+    # Algebraically exact; numerically ~250 ULP, because both quadratures sum
+    # summands much larger than their total (the 1/kx pole factors), so the sum
+    # is ill-conditioned even though the result is not. Same 1e-12 floor as the
+    # other sweep identities.
+    assert np.abs(lhs - rhs).max() / np.abs(lhs).max() < 1e-12
+
+
+def test_sweep_y_is_an_explicit_stage_two_refusal() -> None:
+    """Omitting the in-out coupling silently would be far worse than failing."""
+    grid = make_sweep_grid(2, 4, PITCH, ky=0.6, n_kz=64, n_kx=128)
+    cache = build_g0_cache(grid, REF, OMEGA)
+    with pytest.raises(NotImplementedError, match="stage 2"):
+        sweep_y(np.zeros((2, 4, 9), dtype=complex), grid, cache)
 
 
 def test_grid_rejects_single_site_row() -> None:
