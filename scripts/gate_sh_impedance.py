@@ -102,33 +102,41 @@ def model(scale: float, q: float = 20.0) -> LayerModel:
 
 
 def install(variant: str) -> None:
-    """Patch the SH eigenvector and/or the K operator's perpendicular factor."""
+    """Restore the PRE-FIX behaviour, to keep this gate discriminating.
 
-    def eig_fixed(neta, rho, beta_c):
-        mu = rho * beta_c**2
-        one = np.ones_like(neta)
-        e_d = np.stack([one, -mu * neta], axis=-1).astype(np.complex128)[:, :, None]
-        e_u = np.stack([one, mu * neta], axis=-1).astype(np.complex128)[:, :, None]
+    The fix is applied in the source now, so the controls have to reinstate the
+    old halves rather than the new ones. ``''`` is the shipped code.
+    """
+
+    def eig_old(neta, rho, beta_c):
+        """The pre-fix SH eigenvector: impedance mu, an eta short."""
+        mu_neta = rho * beta_c**2 * neta
+        e_d = np.stack([-neta, mu_neta], axis=-1).astype(np.complex128)[:, :, None]
+        e_u = np.stack([neta, mu_neta], axis=-1).astype(np.complex128)[:, :, None]
         return e_d, e_u
 
-    def k_no_eta(s_s, kx, ky, omega):
+    def k_old(s_s, kx, ky, omega):
+        """The pre-fix K, whose perpendicular component carried eta_S."""
         kpar = float(np.hypot(kx, ky))
         if kpar == 0.0:
             raise ValueError("k_operator undefined at kx = ky = 0") from None
         khat = np.array([kx, ky]) / kpar
         par = np.outer(khat, khat)
+        eta = np.sqrt(s_s**2 - (kpar / complex(omega)) ** 2 + 0j)
+        if np.imag(eta) < 0:
+            eta = -eta
         out = np.eye(3, dtype=complex)
-        out[1:, 1:] = -par + (np.eye(2) - par)  # perpendicular factor 1, not eta_S
+        out[1:, 1:] = -par + complex(eta) * (np.eye(2) - par)
         return out
 
     LM.layer_eigenvectors_sh_batched = _ORIG_EIG
     LG.layer_eigenvectors_sh_batched = _ORIG_EIG
     LC.k_operator = _ORIG_K
     if "eig" in variant:
-        LM.layer_eigenvectors_sh_batched = eig_fixed
-        LG.layer_eigenvectors_sh_batched = eig_fixed
+        LM.layer_eigenvectors_sh_batched = eig_old
+        LG.layer_eigenvectors_sh_batched = eig_old
     if "k" in variant:
-        LC.k_operator = k_no_eta
+        LC.k_operator = k_old
 
 
 def c1_uniform_reduction() -> float:
@@ -174,7 +182,7 @@ def report(variant: str) -> bool:
     install(variant)
     c1 = c1_uniform_reduction()
     mod = model(0.01)
-    print(f"\n  variant: {variant or 'as-is'}")
+    print(f"\n  variant: {variant and ('OLD ' + variant) or 'SHIPPED (fixed)'}")
     print(f"    [C1] uniform reduction            : {c1:.3e}   {'PASS' if c1 < 1e-13 else 'FAIL'}")
     print(f"    [C2/C3] {'kh':>5} {'P':>9} {'SV':>9} {'SH meas':>11} {'SH A&R':>11} {'SH ratio':>9}")
     sh_ok, psv_ok, varies = True, True, []
@@ -220,17 +228,18 @@ def main() -> int:
     print("=" * 78)
 
     results = {}
-    for variant in ("", "eig", "k", "eig+k"):
+    for variant in ("", "eig", "k", "eig+k"):  # "" = shipped; others reinstate old halves
         try:
-            results[variant or "as-is"] = report(variant)
+            results[variant and ("OLD " + variant) or "SHIPPED"] = report(variant)
         except Exception as exc:  # noqa: BLE001
             print(f"    variant {variant!r} raised: {type(exc).__name__}: {exc}")
-            results[variant or "as-is"] = False
+            results[variant and ("OLD " + variant) or "SHIPPED"] = False
     install("")
 
     print("\n" + "=" * 78)
     winner = [k for k, v in results.items() if v]
-    if winner:
+    expected = ["SHIPPED"]
+    if winner == expected:
         print(f"SATISFIES BOTH CONSTRAINTS: {', '.join(winner)}")
     else:
         print("NO variant satisfies both constraints yet.")
