@@ -1,0 +1,188 @@
+# Codebase Survey — what already exists
+
+- **Date:** 2026-07-26
+- **Why this exists:** Phase 2 (Marine3D 2½-D disorder-resolved crust) was halted after the intra-plane operator $\mathbf{P}^x$ was rebuilt four times in succession, each repair exposing a new defect. Root cause was **not** the physics: it was that the work started without an overview of the codebase, so machinery that already exists was reimplemented badly. This document is the overview that should have preceded the work.
+- **Scope:** `cubic_scattering/` (35 modules, 25 test files, ~724 tests), `FFTProp.py/`, `PhD_fortran_code/`, `Mathematica/` (~50 scripts), and what `~/Desktop/Marine3D` cherry-picked from them.
+
+---
+
+## 1. The finding that matters most
+
+**Four independent representations of the intra-plane / inter-site Green's tensor already exist.** Phase 2 built a fifth, by hand, from the least suitable of the four.
+
+| Module | Representation | Periodicity | Touching pairs | Matvec |
+|---|---|---|---|---|
+| `lattice_greens.py` | **Spectral** kernel at z=0, 2-D IFFT; also spatial, hybrid, FCC | **Built in** — lattice sum is implicit in the spectral form | — | **FFT block-Toeplitz `matvec()`** |
+| `horizontal_greens.py` | Real-space $G(\Delta x, \Delta y, 0)$ by $k_x$-residue + $k_y$ IFFT + $k_z$ quadrature | None — pairwise | Point value only | none |
+| `inter_voxel_propagator.py` | **Volume-averaged** 9×9 $[[G,C],[H,S]]$, closed form via $O_h$ master integrals | None | **Correct** (face/edge/corner) | none |
+| `Mathematica/IntraPlane*.wl` | Kambe/layer-KKR multipole $D[q,s]$, Ewald-accelerated | Bloch lattice sum | — | — |
+
+`lattice_greens.LatticeGreens` provides `compute_spatial`, `compute_spectral`, `compute_hybrid`, `compute_fcc`, `_compute_spectral_9x9`, `_precompute_circulant_fft`, `matvec`, `verify`, and D4h orbit reduction. **It was cherry-picked into Marine3D as `marine3d/tmatrix/lattice_greens.py` and never used.**
+
+Phase 2 instead built $\mathbf{P}^x$ as a pairwise real-space sum from `horizontal_greens.py` — the one representation with neither periodicity nor correct touching-pair behaviour — and then spent four rounds trying to add both back:
+
+1. quadrature cutoffs 10× too small → 101% error;
+2. replaced by the Kupradze closed form;
+3. discovered periodic images were missing (10–15%) → planned an Ewald sum;
+4. discovered the touching-neighbour term was wrong by 190% → planned volume-averaging.
+
+Items 3 and 4 are *properties the spectral form and the volume-averaged form already have*.
+
+**Caveat, stated so this document does not repeat the original error:** `LatticeGreens` is a 2-D $M\times M$ lattice with a default damping `eta=0.03`. Phase 2 is 2½-D — a 1-D $x$-lattice, $y$-invariant — and the validation ladder needs undamped operation. So it is **not** a drop-in. It is the right foundation, not a finished answer.
+
+---
+
+## 2. Existing solvers
+
+| Module | Solves | Status |
+|---|---|---|
+| `slab_scattering.py` | $(\mathbf{I} - \mathbf{G}\mathbf{T})\psi = \psi^0$ for an $M\times M\times N_z$ cube lattice, FFT convolution in the horizontal plane, $O(N_z^2 M^2 \log M)$ matvec | Validated channel-by-channel vs Kennett (~0.5–1% at moderate contrast); full reflection matrix R_PP/PS/SP/SS/SH; evanescent incidence; volume-averaged propagator option; GPU twin |
+| `FFTProp.py/` | **2.5-D** scattering: 2-D heterogeneity in $(x,z)$ inside a 3-D plane-layer reference — *the thesis geometry* | Faithful Python conversion of the thesis Fortran `FFTPROP.F`. **Four-directional propagation sweeps (up/down/left/right)** = thesis Alg 5.2/5.3. Free-surface Rayleigh reflection with P-SV coupling; constant-Q |
+| `sphere_scattering_fft.py` | FFT-accelerated GMRES Foldy-Lax on a voxelised sphere | Cross-checked against elastic Mie, 5 channels |
+| `cpa_iteration.py` | Self-consistent effective medium $\langle T\rangle = 0$ | — |
+| GMM (`GlobalMatrix`, in Marine3D) | Block-Riccati up/down sweeps for the stratified propagator $\mathcal{Q}^\partial$ | Parity vs `kennett_layers` 4.42e-15 |
+
+**`FFTProp.py` is the single most important omission.** Phase 2's stated goal is "reproduce the thesis 2½-D limit". A faithful port of the thesis's own 2½-D solver — including the directional sweeps that Phase 2's plan listed as a *deferred future option* ("Task C — thesis directional x-sweep (Alg 5.2)") — already exists. It is the natural arbiter for the 2½-D validation rung, and possibly the natural basis for the solver itself.
+
+---
+
+## 3. The two marine paths
+
+Both are marine; they differ in completeness, and the difference explains the seabed episode.
+
+**`seismic_survey.py` — "Towed hydrophone marine seismic reflection survey simulation".** Full shot gather. Pipeline: `build_survey_stack() → kennett_reflectivity_batch() → free_surface_reverberations() → ghosts → bessel_summation() → source spectrum → IFFT`.
+
+Crucially, `compute_shot_gather` calls the Kennett recursion on `stack.layers[1:]` — **water excluded, by design**. The original's own test names the object `sub_ocean` and the test class `TestHalfSpaceBelowWater` ("below water"), building it from two *solid* layers. There is no fluid–solid step anywhere in the pipeline. The water column enters only as a two-way phase plus the free-surface series $E^2R/(1+E^2R)$.
+
+**`ocean_bottom.py` — "Ocean-bottom reflection with heterogeneous sediment".** Single-point reflection coefficient for water | heterogeneous slab | half-space. Computes the **background from the full stack** via `kennett_layers` (so the fluid–solid seabed *is* included), and uses `_kennett_water_step` — $R = R_d + T_u M T (I - R_u M T)^{-1} T_d$ with `psv_fluid_solid` — to dress the *slab perturbation* through the seabed.
+
+So `ocean_bottom.py` is the physically complete marine model; `seismic_survey.py` is a sub-ocean-reflectivity simplification wrapped in gather machinery.
+
+---
+
+## 4. Assessment of the two changes already shipped
+
+### 4.1 The seabed primary (`dfde898`)
+
+**What I claimed:** a defect — the water–crust fluid–solid primary was missing from `RRd_PP`, so water over a half-space returned an identically zero gather.
+
+**What the survey shows:** excluding water from `kennett_reflectivity_batch` is the original's *deliberate design*, asserted in its own tests. The datum correction I removed was a Marine3D Phase-1 addition, not part of the ported design. And `ocean_bottom.py` already implements the complete treatment.
+
+**Assessment — partially right, wrongly framed.** The zero-gather symptom is real and reproducible, and after the change the structure matches `ocean_bottom`'s (`E²R/(1+E²R)` applied to a seabed-referenced total). But I diagnosed it as a bug in `compute_shot_gather` when the actual question is architectural: **should `marine_reference_gather` have been built on `compute_shot_gather` at all, rather than on `ocean_bottom`'s machinery?** That is a Phase-1 decision my change silently entrenched instead of surfacing.
+
+Open question, not resolved by this survey: whether the change should stand, be reverted in favour of building the marine gather on `ocean_bottom`, or whether `compute_shot_gather` should be left byte-faithful to its origin with the marine path moved elsewhere.
+
+### 4.2 Phase 2 $\mathbf{P}^x$ (`c3f562d`…`63cd3ba`)
+
+**Assessment — wrong foundation.** Built from `horizontal_greens.py` pairwise real-space values, when `lattice_greens.py` (spectral, periodic, FFT matvec) and `inter_voxel_propagator.py` (volume-averaged, correct at contact) were both already in the package. The four repair rounds were reconstructing properties those modules already have.
+
+The committed code is *correct for what it is* — the closed-form kernel is exact to 1e-14 and its tests pass — but "a correct nearest-image pairwise kernel" is not the object the solver needs.
+
+---
+
+## 5. What Marine3D took, and what it built anyway
+
+Phase 0 cherry-picked `lattice_greens.py`, `inter_voxel_propagator.py`, `slab_scattering.py`, `horizontal_greens.py`, `sphere_scattering*.py` into `marine3d/tmatrix/` and `marine3d/kennett/`. The `PORT_MANIFEST.md` even flags the question directly:
+
+> revisit cutting `slab_scattering.py` when `marine_survey_3d.py` is built (Phase 2), if marine3d's own solver supplies the reflectivity instead.
+
+So Phase 0 *knew* an existing Foldy-Lax solver was being carried and explicitly deferred to Phase 2 the decision of whether to reuse or replace it. Phase 2 never asked the question.
+
+`FFTProp.py` was **not** ported and is not in the manifest.
+
+---
+
+## 6. Standing rule — validate spectral propagators against closed-form Kupradze
+
+**Every spectral propagator must be validated against the closed-form Kupradze propagator where the comparison is appropriate.** Spectral forms carry quadrature, truncation and branch-cut choices that are invisible in self-convergence tests; the closed form has none of these and is the only local ground truth available.
+
+This is **already instantiated** in `lattice_greens.py` and should be the template:
+
+- `compute_spatial()` — exact Ben-Menahem & Singh / Kupradze evaluation at each separation.
+- `compute_spectral()` — 2-D IFFT of the post-$k_z$-residue kernel.
+- `verify(n_test)` — compares the two at lattice pairs, reporting max and mean relative error.
+- `_matvec_direct()` — validates the FFT block-Toeplitz matvec against direct summation.
+
+**Measured at Phase 2 parameters** (d = 0.02 km, M = 5, crust mean (3.0, 1.5, 2.6), $\omega = 2\pi\cdot 5$, `eta = 0.03`), 12 lattice pairs, 9×9 blocks:
+
+| quantity | value |
+|---|---|
+| max relative error, spectral vs closed form | **7.71e-04** |
+| mean relative error | **5.27e-04** |
+
+Consistent with the independent figure recorded during Phase 2 Task 2 (converged spectral vs closed form, **2.52e-04**, falling monotonically with cutoff).
+
+### Where the comparison is *not* appropriate — three traps
+
+1. **Lattice-summed vs single-pair.** A spectral lattice kernel contains *all* periodic images; the closed form is one pair. They agree only against a truncated image sum of the closed form, and that sum needs complex $\omega$ to converge ($1/r$ decay gives $1/n$ terms).
+2. **Touching pairs.** At face contact the volume-averaged (Galerkin) object and the point-propagator value **genuinely differ** — face S by ~0.5 of block scale, S44's sign included. Recorded verdict: a converged projection difference, *not* a bug. Do not run a spectral-vs-Kupradze check at contact expecting agreement, and do not "fix" the disagreement.
+3. **`avg_point_propagator_fd` is not a valid arbiter at face S.** FD-of-$\langle G\rangle$ at h=0.005, n=8–10 sits in the invalid $h \lesssim 1/n^2$ regime and reproduces the very quadrature bias it is meant to detect, yielding a spurious cross-agreement. The gold standard for touching pairs is the subdivision identity.
+
+### Where it still needs applying
+
+- The GMM/Riccati stratified Green's function (`layered_greens_9x9`) against the closed form on a **no-contrast stack**, where the stratified result must reduce to the whole-space one. This was designed as the Task 3 $G_{ii}$ independence gate and has never been run.
+- `FFTProp.py`'s spectral sweeps against the closed form in the homogeneous limit, before it is trusted as the 2½-D arbiter.
+- `horizontal_greens.py`'s $k_x$-residue route — measured at 101% error at the originally chosen cutoffs, which a closed-form check catches immediately and a self-convergence check does not.
+
+---
+
+## 7. What `slab_scattering` + `lattice_greens` actually give us
+
+Read in full 2026-07-26. **They supply almost the entire Phase 2 solver.**
+
+### Phase 2 tasks that were reimplementations
+
+| Phase 2 task | Already provided by |
+|---|---|
+| Task 1 `crust_field.py` | `SlabMaterial(Dlambda, Dmu, Drho, ref)` — per-voxel contrast arrays, shape `(N_z, M, M)` |
+| Task 4 `matvec_25d.py` | `compute_slab_scattering` — solves $(\mathbf{I}-\mathbf{G}\mathbf{T})\psi=\psi^0$ by FFT-accelerated GMRES |
+| Task 2b Bloch/periodic images | `periodic=True` — circular vs linear convolution. **A flag.** |
+| Task 2c volume-averaging | `volume_averaged=True, n_orders=…`. **A flag.** |
+| Task 5 dressed reflectivity | `slab_reflection_matrix(…, p=…)` — full P/SV/SH specular matrix at horizontal slowness, post-critical evanescent incidence via complex slowness vectors, Weyl extraction, `.to_modified()` for the Kennett convention |
+
+`slab_reflection_matrix` even takes `include_sh=False`, documented as *"Intended for embeddings where SH cannot couple (e.g. through a fluid)"* — written for the marine case.
+
+`lattice_greens.py` supplies the coupling underneath: spectral / spatial / hybrid / FCC 9×9 kernels, D4h-reduced, FFT block-Toeplitz `matvec`, `_matvec_direct` for validation, and `verify()` cross-checking spectral against the closed form.
+
+`ocean_bottom.py` closes the chain: `slab_reflection_matrix` per frequency → `.to_modified()` → `MT_psv = E·R_sed_hs·E + R_slab_psv` → `_kennett_water_step` through the fluid–solid seabed → water phase + free-surface series → Ricker → IFFT. **A complete, validated heterogeneous marine forward model.**
+
+### What genuinely does not exist — the real Phase 2
+
+1. **Shot gathers over a heterogeneous crust.** `ocean_bottom` yields a single trace at one slowness; `seismic_survey` yields gathers but only for homogeneous layers. Joining them means evaluating `slab_reflection_matrix` across the slowness grid and feeding the Bessel summation. Real work, modest.
+
+2. **Scatterers embedded in the *stratified* background — the substantive question.** `slab_scattering` runs its multiple scattering in a **homogeneous** medium and dresses the result through the interfaces afterwards. The thesis $\mathcal{Q}^\partial$ formulation puts the scatterers *in* the stratified medium, so free-surface and seabed reverberation **participate in** the multiple scattering rather than being applied to its output. This is the genuine physical difference, and it is what thesis Chapter 5 is actually about.
+
+3. **Cost at survey scale.** `slab_reflection_matrix` runs three Foldy-Lax solves per frequency *per slowness*. A gather at 256 slownesses × 128 frequencies is ~98k solves. This is precisely the scaling problem the thesis splitting exists to solve: $\mathcal{Q}^\partial$ depends only on the reference, so it is built once per frequency and each iterate is then cheap sweeps.
+
+**Items 2 and 3 are the whole of Phase 2's legitimate content.** The operators are not.
+
+### Two measurements to make before any re-plan
+
+Both are measurable rather than arguable, and both could collapse the remaining work:
+
+- **How large is the difference in (2)** at marine contrasts? If interface reverberation feeding back into the multiple scattering is a small correction, the existing chain plus gather machinery is the entire job.
+- **Is (3) prohibitive in practice, or merely inelegant?** Measure an actual `slab_reflection_matrix` solve at representative $M$, $N_z$ and extrapolate to the gather grid.
+
+### Note on dimensionality
+
+`SlabGeometry` is `M×M` — square, with no separate $M_x$, $M_y$ — so a $y$-invariant 2½-D restriction is not directly expressible. The existing solver is 3-D, i.e. **more general** than what Phase 2 scoped.
+
+---
+
+## 8. Recommendations
+
+1. **Do not resume Phase 2 on the current $\mathbf{P}^x$.** Tasks 2b and 2c should be dropped, not implemented; both are repairs to the wrong foundation.
+2. **Answer the question Phase 0 deferred**, with evidence: does `slab_scattering.py` (+ `lattice_greens` spectral matvec) supply the 2½-D crust response directly? If so, most of the Phase 2 plan dissolves.
+3. **Evaluate `FFTProp.py` as the 2½-D arbiter** before building a Wolfram reference from scratch. A faithful port of the thesis's own solver is a stronger and cheaper arbiter than a re-derivation, and it is what "reproduce the thesis 2½-D limit" literally means.
+4. **Resolve the marine-path architecture** — `seismic_survey` vs `ocean_bottom` as the base for `marine_reference_gather` — before any further gather work. The seabed change stands or falls on that decision.
+5. **Rewrite the Phase 2 spec and plan** against this map. The existing ones assume everything is built from scratch.
+
+---
+
+## 9. Process note
+
+Project memory already carried this lesson before the work started:
+
+> **read-source-before-proposing** — read existing Mathematica+Python source AND thesis-chapter maths BEFORE sketching any verification/build; the sweep was already coded and I proposed designs 3× before reading it.
+
+The same failure recurred, at larger scale: the sweep was already coded (`FFTProp.py`), the lattice Green's tensor was already coded (`lattice_greens.py`), the volume-averaged contact propagator was already coded (`inter_voxel_propagator.py`), and a spec, an 8-task plan, and four rounds of repair were produced without reading any of them.

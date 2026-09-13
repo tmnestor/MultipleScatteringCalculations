@@ -24,7 +24,6 @@ All computation is pure NumPy (no SymPy dependency).
 
 from dataclasses import dataclass
 from math import factorial
-from typing import Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -218,7 +217,7 @@ def _modulus_radiation_reaction(
     alpha: float,
     beta: float,
     rho: float,
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """Imaginary (radiation-reaction) part of the modulus effective contrasts.
 
     MODULUS RADIATION REACTION (strain-channel analog of the density ``Im[Γ₀]``).
@@ -291,7 +290,7 @@ def _modulus_radiation_reaction(
 
 def _compute_taylor_coefficients(
     omega: float, alpha: float, beta: float, rho: float, n_taylor: int = N_TAYLOR
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute the Taylor coefficients φ_n and ψ_n.
 
@@ -347,7 +346,7 @@ def _compute_taylor_coefficients(
 
 def _compute_cube_moments(
     a: float, n_max: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute exact monomial moments of the cube [-a,a]³.
 
@@ -386,7 +385,7 @@ def _compute_cube_moments(
 
 def _static_eshelby_ABC(
     alpha: float, beta: float, rho: float
-) -> Tuple[complex, complex, complex]:
+) -> tuple[complex, complex, complex]:
     """
     Static Eshelby depolarization tensor for a cube: A_stat, B_stat, C_stat.
 
@@ -429,7 +428,7 @@ def _compute_ABC_polynomial(
     rho: float,
     n_gauss: int = N_GAUSS,
     n_taylor: int = N_TAYLOR,
-) -> Tuple[complex, complex, complex]:
+) -> tuple[complex, complex, complex]:
     """
     Compute A^c, B^c, C^c = static Eshelby + smooth radiation corrections.
 
@@ -505,7 +504,7 @@ def _compute_ABC_polynomial(
 
 def _compute_T123(
     Ac: complex, Bc: complex, Cc: complex, Dlambda: complex, Dmu: complex
-) -> Tuple[complex, complex, complex]:
+) -> tuple[complex, complex, complex]:
     """
     Compute T1^c, T2^c, T3^c from the A^c, B^c, C^c decomposition.
 
@@ -550,7 +549,7 @@ def _compute_T123(
 
 def _compute_amplification_factors(
     T1c: complex, T2c: complex, T3c: complex, Gamma0: complex, omega: float, Drho: float
-) -> Tuple[complex, complex, complex, complex]:
+) -> tuple[complex, complex, complex, complex]:
     """
     Four self-consistent amplification factors (Eqs 42-45).
 
@@ -574,7 +573,7 @@ def _compute_effective_contrasts(
     amp_theta: complex,
     amp_e_off: complex,
     amp_e_diag: complex,
-) -> Tuple[complex, complex, complex, complex]:
+) -> tuple[complex, complex, complex, complex]:
     """
     Effective contrasts (Eqs 47-50).
 
@@ -599,7 +598,7 @@ def _compute_effective_contrasts(
 
 def form_factor_c2(
     dlam: float, dmu: float, drho: float, lam0: float
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """Real O((ka)²) form-factor coefficients per channel (in (k_S·R)² units).
 
     Finite scatterers see a non-uniform incident strain.  The leading
@@ -756,7 +755,7 @@ S4_ISOTROPIC = 3.0 / 5.0  # orientation-average of Σ k̂_j⁴ over the unit sph
 
 def form_factor_c4(
     dlam: float, dmu: float, drho: float, lam0: float
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """Exact O((ka)⁴) form-factor coefficients per channel (in (k_S·R)⁴ units).
 
     Extends :func:`form_factor_c2` one order up.  The leading real O((ka)²)
@@ -824,7 +823,7 @@ def compute_cube_tmatrix(
     contrast: MaterialContrast,
     n_gauss: int = N_GAUSS,
     n_taylor: int = N_TAYLOR,
-    k_hat: Optional[NDArray] = None,
+    k_hat: NDArray | None = None,
 ) -> CubeTMatrixResult:
     """
     Compute the full self-consistent cubic T-matrix for a single scatterer.
