@@ -549,6 +549,44 @@ def _build_slab_incident_field_slowness(
 # ═══════════════════════════════════════════════════════════════
 
 
+def build_slab_kernels(
+    geometry: SlabGeometry,
+    omega: float,
+    ref: ReferenceMedium,
+    *,
+    volume_averaged: bool = False,
+    n_orders: int = 2,
+    periodic: bool = False,
+) -> NDArray:
+    """Build the FFT propagator kernel, for reuse across right-hand sides.
+
+    The kernel depends only on the lattice, the frequency and the background
+    medium — not on the incident field — so one build serves every incidence
+    angle and wave type. Pass the result to ``compute_slab_scattering`` as
+    ``kernel_hat``.
+
+    Args:
+        geometry: Slab lattice geometry.
+        omega: Angular frequency (rad/s).
+        ref: Background elastic medium.
+        volume_averaged: Use the volume-averaged inter-voxel propagator for
+            nearest-neighbour separations.
+        n_orders: Dynamic correction orders when volume_averaged is True.
+        periodic: Fold to M x M for circular convolution.
+
+    Returns:
+        The FFT kernel; pass it straight back as ``kernel_hat``.
+    """
+    return _build_slab_kernels(
+        geometry,
+        omega,
+        ref,
+        volume_averaged=volume_averaged,
+        n_orders=n_orders,
+        periodic=periodic,
+    )
+
+
 def compute_slab_scattering(
     geometry: SlabGeometry,
     material: SlabMaterial,
@@ -562,6 +600,7 @@ def compute_slab_scattering(
     n_orders: int = 2,
     periodic: bool = False,
     psi0: NDArray | None = None,
+    kernel_hat: NDArray | None = None,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GMRES.
 
@@ -592,19 +631,28 @@ def compute_slab_scattering(
             post-critical P solve built via psi0, k_hat is degenerate
             (horizontal) and slab_reflected_field output would be
             meaningless — use slab_weyl_amplitudes for extraction.
+        kernel_hat: Optional prebuilt FFT kernel from ``build_slab_kernels``.
+            The kernel depends only on (geometry, omega, ref) and the
+            volume_averaged/n_orders/periodic flags — NOT on the incident
+            field — so one build serves every incidence angle and wave type
+            at that geometry and frequency. Building it costs 87–215 matvecs
+            (measured 2026-09-13), so reusing it across an angle sweep is
+            worth roughly a hundredfold. When given, the flags above must
+            match those the kernel was built with; they are not re-checked.
 
     Returns:
         SlabResult with exciting and incident fields.
     """
     T_local = compute_slab_tmatrices(geometry, material, omega)
-    kernel_hat = _build_slab_kernels(
-        geometry,
-        omega,
-        material.ref,
-        volume_averaged=volume_averaged,
-        n_orders=n_orders,
-        periodic=periodic,
-    )
+    if kernel_hat is None:
+        kernel_hat = _build_slab_kernels(
+            geometry,
+            omega,
+            material.ref,
+            volume_averaged=volume_averaged,
+            n_orders=n_orders,
+            periodic=periodic,
+        )
     if psi0 is None:
         psi0 = _build_slab_incident_field(
             geometry, omega, material.ref, k_hat, wave_type
