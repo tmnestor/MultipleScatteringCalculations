@@ -1,6 +1,6 @@
 # Disorder-Resolved 3-D Marine Scattering — Implementation Plan (Phase 0 + Phase 1)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a new **self-contained** repo `~/Desktop/Marine3D` for the deterministic 3-D marine scattering solver — first by **cherry-picking only the required modules** from the three source repos (Phase 0), then standing up the reference marine model + shot gather (Phase 1).
 
@@ -15,7 +15,7 @@
 
 ## Status — Phase 0 + Phase 1 COMPLETE (2026-06-26); seabed primary FIXED (2026-07-25); resume at Phase 2
 
-**Work repo:** `~/Desktop/Marine3D` (self-contained; `main` `41a8724..56f0b3e`). Spec/plan/ledger live in `MultipleScatteringCalculations` on branch `spec/disorder-resolved-3d-marine`; SDD ledger at `.superpowers/sdd/progress.md`.
+**Work repo:** `~/Desktop/Marine3D` (self-contained; `main` `41a8724..56f0b3e`). Spec/plan/ledger live in `MultipleScatteringCalculations` on branch `spec/disorder-resolved-3d-marine`; the progress ledger is kept outside the repository.
 
 **Phase 0 (cherry-pick) — DONE.** Marine3D bootstrapped; minimal closure cherry-picked into `marine3d/{kennett(5),tmatrix(12),gmm(7)}` + `layer_model_adapter` + `kennett_torch_utils`; **zero cross-repo imports**; GMM adapted to `cubic_scattering` `LayerStack` (parity GMM≡kennett_layers **4.42e-15**). Dropped `block_riccati_cluster`/`dressed_tmatrix` (not in required closure). **668 relocated parity tests pass.**
 - 0.1 bootstrap `41a8724` · 0.2 manifest+trim `f06189a`,`42baab3` · 0.3 cubic clusters `44e047f` · 0.4 GMM+adapter `692413b` · 0.5 self-contained smoke (inline).
@@ -53,7 +53,7 @@
 - **YAML single source of truth**; fail-fast with the 4-element diagnostic (what / where: abs path + dotted key / valid example / recovery).
 - **B904** exception chaining; `ruff check --fix --ignore ARG001,ARG002,F841,E741`, `ruff format`, `mypy --ignore-missing-imports`; line length ≤ 108.
 - **Tests** are local-only (`Marine3D/tests/` gitignored, mirror source), run via `conda run -n seismic`.
-- **No Claude attribution** in commits; gitmoji conventional style.
+- **No tool attribution** in commits; gitmoji conventional style.
 - Run everything from the Marine3D repo root unless noted.
 
 ---

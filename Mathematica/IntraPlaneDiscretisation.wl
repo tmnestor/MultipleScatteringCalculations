@@ -39,7 +39,7 @@ lam0 = rho0 (alpha0^2 - 2 beta0^2); mu0 = rho0 beta0^2;   (* 1.75e10, 2.25e10 *)
 dampIm = 0.25; kx = 0.2; ky = 0.1;                        (* horizontal Bloch vector *)
 phiTouch = N[Pi/6];                                        (* sphere-in-cube volume fraction *)
 
-(* ---- contrasts (SI; CLAUDE.md test params), as RAW Delta (renorm applied below) ---- *)
+(* ---- contrasts (SI; the project's engineering standards test params), as RAW Delta (renorm applied below) ---- *)
 contrasts = {
   <|"name" -> "weak",     "Dl" -> 1.*^-4 lam0, "Dm" -> 1.*^-4 mu0, "Dr" -> 1.*^-4 rho0|>,
   <|"name" -> "moderate", "Dl" -> 2.*^9,       "Dm" -> 1.*^9,      "Dr" -> 100.|>,

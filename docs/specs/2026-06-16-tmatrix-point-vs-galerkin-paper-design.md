@@ -76,7 +76,7 @@ paper/                                   ← NEW top-level directory (approved)
   (run twice for cross-references; bibtex/biber pass for references.bib).
 - Reuse the preamble conventions from `docs/cube_galerkin27.tex` (Latin Modern, amsmath, tikz,
   pgfplots compat=1.18, hyperref, the `\D`, `\br`, `\be` etc. macros).
-- Coordinate system per CLAUDE.md: z = axis 0 (down), x = axis 1, y = axis 2; Voigt order
+- Coordinate system per the project's engineering standards: z = axis 0 (down), x = axis 1, y = axis 2; Voigt order
   (ε11, ε22, ε33, 2ε23, 2ε13, 2ε12).
 
 ---

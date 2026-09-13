@@ -1,6 +1,6 @@
 # Point-Source vs Body-Force Galerkin T-Matrix Paper — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Also invoke `superpowers:verification-before-completion` before any "done"/PASS claim — read the actual command output before checking a box.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking. Also invoke an explicit verification step before any "done"/PASS claim — read the actual command output before checking a box.
 
 **Goal:** Build a self-contained lualatex research paper in a new `paper/` directory that derives, from a reproducible re-run evidence base, whether the body-force Galerkin T₉ closure beats a local point-source representation of an elastic cubic scatterer — with T₂₇ excluded entirely.
 
@@ -8,9 +8,9 @@
 
 **Tech Stack:** Python 3 (numpy, scipy), conda env `seismic`, pytest, ruff, mypy; lualatex (TinyTeX) with fontspec/tikz/pgfplots; existing `cubic_scattering` public API.
 
-**Spec:** `docs/superpowers/specs/2026-06-16-tmatrix-point-vs-galerkin-paper-design.md`
+**Spec:** `docs/specs/2026-06-16-tmatrix-point-vs-galerkin-paper-design.md`
 
-**Conventions (CLAUDE.md):** conda env `seismic` (`conda run -n seismic <cmd>`); coordinate system z=axis 0 (down), x=axis 1, y=axis 2; Voigt order (ε11, ε22, ε33, 2ε23, 2ε13, 2ε12); line length ≤108; commits via gitmoji, **no Claude attribution**, never `--no-verify`; lualatex compiled **in-place** in `paper/`. **T₂₇ is excluded** from all paper content (see spec §1 hard rule).
+**Conventions (the project's engineering standards):** conda env `seismic` (`conda run -n seismic <cmd>`); coordinate system z=axis 0 (down), x=axis 1, y=axis 2; Voigt order (ε11, ε22, ε33, 2ε23, 2ε13, 2ε12); line length ≤108; commits via gitmoji, **no tool attribution**, never `--no-verify`; lualatex compiled **in-place** in `paper/`. **T₂₇ is excluded** from all paper content (see spec §1 hard rule).
 
 **Verified public API (for the sweep in Task 9):**
 ```python
@@ -854,7 +854,7 @@ Expected: the grep returns nothing; `tmatrix_point_vs_galerkin.pdf` exists.
 
 - [ ] **Step 3: Originals-untouched gate**
 ```bash
-git diff --name-only main -- docs/ LatexPDFs/ | grep -vE "docs/superpowers/(specs|plans)/" || echo "OK: no original docs modified"
+git diff --name-only main -- docs/ LatexPDFs/ | grep -vE "docs/(specs|plans)/" || echo "OK: no original docs modified"
 ```
 Expected: `OK: no original docs modified`.
 

@@ -167,4 +167,4 @@ the length scale tracks the wavelength, and the thesis's symplectic machinery si
 ---
 
 *Numerics reproduced by `Mathematica/ThesisInterfaceRT.wl` (seismic units; all self-checks pass at
-machine precision). See also `docs/superpowers/specs/2026-06-25-thesis-interface-rt-design.md`.*
+machine precision). See also `docs/specs/2026-06-25-thesis-interface-rt-design.md`.*

@@ -149,7 +149,7 @@ cube_multipole_far_field(
   pin).
 - **T₂₇ path** = all 27 modes (adds quadrupole/octupole-order content + finite-size
   phase).
-- Coordinate system per CLAUDE.md: z = axis 0 (down), x = axis 1, y = axis 2.
+- Coordinate system per the project's engineering standards: z = axis 0 (down), x = axis 1, y = axis 2.
 
 ### 4.2 Mathematica derivation (`Mathematica/CubeMultipoleRadiation.wl`)
 
@@ -246,9 +246,9 @@ consumes this one's outputs.
 
 - Conda env `seismic`; `conda run -n seismic` for all tooling.
 - Coordinate system z=0(down)/x=1/y=2; Voigt and Fourier conventions follow it.
-- Lint/format/type per CLAUDE.md (`ruff … --ignore ARG001,ARG002,F841,E741`, `ruff
+- Lint/format/type per the project's engineering standards (`ruff … --ignore ARG001,ARG002,F841,E741`, `ruff
   format`, `mypy --ignore-missing-imports`); line length ≤108.
 - Tests committed under `cubic_scattering/tests/`.
 - No silent fallbacks; fail-fast with diagnostics where config/inputs are validated.
-- NO commit attribution / NO Co-Authored-By, ever.
+- NO commit attribution trailers, ever.
 - LaTeX (downstream): `lualatex`, compiled in-place in `docs/`.

@@ -164,5 +164,5 @@ Coordinate system `z` (down, axis 0), `x` (axis 1), `y` (axis 2); conda env
 `seismic`; time `e^{−iωt}`, outgoing `h_n^(1)` via `SphericalHankelH1` (never
 `j_n + i y_n`); Mathematica via
 `/Applications/Wolfram.app/Contents/MacOS/wolframscript`. Test params per
-`CLAUDE.md`: background α=5000, β=3000, ρ=2500; moderate contrast Δλ=+2 GPa,
+the project's engineering standards: background α=5000, β=3000, ρ=2500; moderate contrast Δλ=+2 GPa,
 Δμ=+1 GPa, Δρ=+100; weak `1e-4 ×` background.

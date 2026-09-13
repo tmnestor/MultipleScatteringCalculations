@@ -2,7 +2,7 @@
 
 - **Date:** 2026-07-25
 - **Status:** Draft for review
-- **Author:** Tod Nestor (with Claude Code)
+- **Author:** Tod Nestor
 - **Topic:** Per-voxel $T_0$ screens and intra-plane coupling on a 2½-D crust, solved by a matrix-free GMRES matvec, validated against an independently re-derived Wolfram reference, and recorded in LaTeX.
 - **Parent:** [`2026-06-26-disorder-resolved-3d-marine-scattering-design.md`](2026-06-26-disorder-resolved-3d-marine-scattering-design.md) (Phase 2 of its roadmap)
 - **Predecessor:** Phase 0 + Phase 1 complete; seabed primary fixed 2026-07-25 (Marine3D `dfde898`)
@@ -17,7 +17,7 @@ The Phase-1 crust is a stack of identical transparent planes — a homogeneous b
 
 Scope is deliberately **2½-D**: heterogeneity varies in $(z,x)$ and is invariant in $y$. This is not a code limitation — `horizontal_greens.py` is already 3-D — but a validation choice. The 2½-D restriction is the only regime where the thesis provides an independent formulation to check against. Full 3-D $\mathbf{P}^x(x,y)$ remains Phase 3.
 
-**Three deliverables, not one.** Per the project methodology (`CLAUDE.md`, *Research Methodology*), the LaTeX note is the product; the Wolfram reference and the Python solver are what license it to be written.
+**Three deliverables, not one.** Per the project methodology (the project's engineering standards, *Research Methodology*), the LaTeX note is the product; the Wolfram reference and the Python solver are what license it to be written.
 
 ## 2. Anchor: thesis Chapter 5
 
@@ -135,7 +135,7 @@ Records:
 - the diffraction-order gate as an explicit inequality in $L$, $p$, $\omega$;
 - a validation table.
 
-**The validation table is written last, carrying measured residuals from Tracks W and P — not projected ones.** If a gate fails, the table records the failure. Per `CLAUDE.md`, a formula reaching the `.tex` without a passing check behind it is unvalidated and must be labelled as such.
+**The validation table is written last, carrying measured residuals from Tracks W and P — not projected ones.** If a gate fails, the table records the failure. Per the project's engineering standards, a formula reaching the `.tex` without a passing check behind it is unvalidated and must be labelled as such.
 
 ### Track W — Wolfram (the arbiter)
 

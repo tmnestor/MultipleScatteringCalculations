@@ -1,6 +1,6 @@
 # Mode-Converted Reflections Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Full specular reflection matrix (R_PP, R_PS, R_SP, R_SS + scalar R_SH) for the
 periodic slab Foldy-Lax solver, validated against Kennett, and a 2×2 P-SV sub-ocean
@@ -15,7 +15,7 @@ recursion with the existing `psv_fluid_solid` coefficients.
 **Tech Stack:** Python 3.12, NumPy/SciPy (GMRES), pytest. Conda env `seismic`
 (`conda run -n seismic <cmd>`). Repo: `/Users/tod/Desktop/MultipleScatteringCalculations`.
 
-**Spec:** `docs/superpowers/specs/2026-06-12-mode-converted-reflections-design.md`
+**Spec:** `docs/specs/2026-06-12-mode-converted-reflections-design.md`
 
 ---
 

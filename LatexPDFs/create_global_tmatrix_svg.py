@@ -22,7 +22,7 @@ Usage:
     python create_global_tmatrix_svg.py            # writes SVG to default path
     python create_global_tmatrix_svg.py -o fig.svg  # custom output path
 
-Author: T.M. Nestor / Claude (2026)
+Author: T.M. Nestor (2026)
 """
 
 from __future__ import annotations

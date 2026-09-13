@@ -110,7 +110,7 @@ direct-sum ground truth line up directly.
   Python change. B904 in except; `pathlib.Path`; Google docstrings. scipy 1.17: `sph_harm_y`
   (not `sph_harm`); complex `erfc` via Faddeeva `wofz` (`erfc(z)=exp(−z²)·w(iz)`) — both per
   [[project-undamped-kambe-structure-constants]].
-- NO Claude attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash
+- NO tool attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash
   tool — write commit messages to a file and `git commit -F`. Long `wolframscript` runs
   auto-background; wait via a bounded waiter; ONE kernel at a time.
 - Memoise the field/projection helpers (the projection re-hits the same quadrature nodes across

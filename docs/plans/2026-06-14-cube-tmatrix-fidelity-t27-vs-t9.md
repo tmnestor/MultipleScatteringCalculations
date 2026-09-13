@@ -1,12 +1,12 @@
 # Cube Multipole Far-Field — T₂₇ vs T₉ Fidelity Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL — invoke `superpowers:test-driven-development` (red-green-refactor) for every Task below, and `superpowers:verification-before-completion` before any "done"/PASS claim. Every implementation step is preceded by a failing test and followed by a verification command whose output you must read before proceeding.
+> **Execution:** use strict test-driven development (red-green-refactor) for every Task below, and an explicit verification step before any "done"/PASS claim. Every implementation step is preceded by a failing test and followed by a verification command whose output you must read before proceeding.
 
 **Goal:** Build one finite-size, higher-multipole far-field radiation operator `cube_multipole_far_field` for the single-site cube T-matrix, and radiate **both** representations through it **apples-to-apples** — same bare physical ΔC, same finite-size phase, same full-field equivalent-source formula — differing **only** in the scattered interior field's basis: T9 populates the 9 displacement+strain modes (from the existing 9×9 sub-cell T-matrix), T27 populates all 27 Galerkin modes (3 displacement + 6 strain + 18 quadratic), radiated via closed-form polynomial×plane-wave cube integrals. The T9↔T27 far-field difference is therefore purely the richer basis (clean RQ2 attribution). The existing `cube_far_field` is retained **only** as a point/k→0-limit cross-check, NOT as the study's T9. Then drive a fidelity study comparing T₉ and T₂₇ against the exact elastic Mie sphere across contrast × ka × polarization × angle, emitting CSV/JSON cost-accuracy datasets. No plotting.
 
 **Architecture:** The scattered far-field source is the polarization body force `f_eq(r') = ω²Δρ·u(r') + ∇'·(ΔC:ε(r'))`. The interior field `u(r') = Σ_α c_sc[α] φ_α(r')` is reconstructed from the T-matrix mode amplitudes `c_sc = assemble_tmatrix_27(galerkin) @ c_inc`. Each trial function `φ_α` is a polynomial (const/linear/quadratic monomial × Cartesian direction) over the cube `[-a,a]³`. Its far-field radiation integral `∫_cube φ_α(r') e^{-ik_sc·r'} d³r'` **separates into a product of three 1D integrals** `I_p(k_j) = ∫_{-a}^{a} t^p e^{-i k_j t} dt`, p∈{0,1,2}, closed-form with removable k→0 limits. The far-field amplitude projects the Fourier-transformed source onto P/SV/SH using the **same `r_hat`/`sv_hat`/`sh_hat` basis and the same `-Q/(4πρc²)` convention** as the existing `cube_far_field`. Each layer is pinned against a Gauss-quadrature arbiter before the next is built. A Mathematica script cross-checks the closed forms symbolically.
 
-**Tech Stack:** Python 3 (numpy, scipy for quadrature arbiter only), conda env `seismic`, pytest, ruff, mypy. Wolfram Language (`wolframscript`) for symbolic cross-check. Coordinate system per CLAUDE.md: **z = axis 0 (down), x = axis 1, y = axis 2**; Voigt order `(ε11, ε22, ε33, 2ε23, 2ε13, 2ε12)`.
+**Tech Stack:** Python 3 (numpy, scipy for quadrature arbiter only), conda env `seismic`, pytest, ruff, mypy. Wolfram Language (`wolframscript`) for symbolic cross-check. Coordinate system per the project's engineering standards: **z = axis 0 (down), x = axis 1, y = axis 2**; Voigt order `(ε11, ε22, ε33, 2ε23, 2ε13, 2ε12)`.
 
 ---
 
@@ -57,7 +57,7 @@ Steps:
 
   with removable k -> 0 limits.
 
-  Coordinate system (CLAUDE.md): z = axis 0 (down), x = axis 1, y = axis 2.
+  Coordinate system (the project's engineering standards): z = axis 0 (down), x = axis 1, y = axis 2.
   Voigt order: (e11, e22, e33, 2 e23, 2 e13, 2 e12).
   """
 
@@ -104,7 +104,7 @@ Steps:
       c_sc = T27 @ c_inc
       return omega, g, k_vec, pol, c_inc, c_sc
   ```
-  > NOTE: this `_setup` uses **z = axis 0** as the propagation axis (CLAUDE.md), unlike the legacy `test_scattered_field.py` which used axis 2. Both are valid because the operator is rotationally consistent; we standardize on axis 0 here. The arbiter and k→0 cross-check tests (Task 6) compare operators *under the same `k_vec`/`pol`*, so the choice of axis does not affect those pins.
+  > NOTE: this `_setup` uses **z = axis 0** as the propagation axis (the project's engineering standards), unlike the legacy `test_scattered_field.py` which used axis 2. Both are valid because the operator is rotationally consistent; we standardize on axis 0 here. The arbiter and k→0 cross-check tests (Task 6) compare operators *under the same `k_vec`/`pol`*, so the choice of axis does not affect those pins.
 - [ ] Lint/format/type the new files:
   ```bash
   conda run -n seismic ruff check cubic_scattering/ --fix --ignore ARG001,ARG002,F841,E741
@@ -239,7 +239,7 @@ Steps:
 
 ## Task 3 — 3D monomial radiation `radiation_monomial(exp, k_sc, a)`
 
-For a monomial `r0^e1 · r1^e2 · r2^e3` (with `r0=z, r1=x, r2=y` per CLAUDE.md), the cube radiation integral factorizes:
+For a monomial `r0^e1 · r1^e2 · r2^e3` (with `r0=z, r1=x, r2=y` per the project's engineering standards), the cube radiation integral factorizes:
 `∫_cube r0^e1 r1^e2 r2^e3 e^{-ik_sc·r'} d³r' = I_{e1}(k_sc[0]) · I_{e2}(k_sc[1]) · I_{e3}(k_sc[2])`.
 
 **Files:**
@@ -552,7 +552,7 @@ Steps:
   Expected: FAIL (function body missing / NotImplemented).
 - [ ] Implement `cube_multipole_far_field`:
   - `c_sc = np.asarray(c_sc, complex)`; require `c_sc.shape == (27,)` and `c_inc.shape == (27,)`, else fail-fast `ValueError` naming the bad shape (no silent pad — the caller pads T9 explicitly, per guardrails).
-  - `theta = np.atleast_1d(...)`; `kP=omega/ref.alpha`, `kS=omega/ref.beta`; default `k_vec=[kP,0,0]`, `pol=k_vec/|k_vec|` (axis 0 = z, CLAUDE.md).
+  - `theta = np.atleast_1d(...)`; `kP=omega/ref.alpha`, `kS=omega/ref.beta`; default `k_vec=[kP,0,0]`, `pol=k_vec/|k_vec|` (axis 0 = z, the project's engineering standards).
   - `c_total = c_inc + c_sc` (the radiated interior field is the TOTAL field).
   - Build `perp1/perp2` exactly as `cube_far_field`. For each θ: `r_hat,sv_hat,sh_hat`; compute `F̃_P,S̃_P = mode_source_radiation(c_total, kP*r_hat, contrast, omega, a)` for the P projection and `F̃_S,S̃_S = mode_source_radiation(c_total, kS*r_hat, contrast, omega, a)` for the S projection (source radiated with the receiving channel's wavenumber, mirroring `cube_far_field`'s `-ikP`/`-ikS` split). Assemble `Q_P = r̂·(F̃_P + S̃_P)`, `f_P=-Q_P/(4πρα²)`; `Q_S_perp = (F̃_S+S̃_S) - (r̂·(F̃_S+S̃_S))r̂`, `u_S=-Q_S_perp/(4πρβ²)`, `f_SV=sv̂·u_S`, `f_SH=sĥ·u_S`.
 
@@ -673,7 +673,7 @@ Steps:
   ```bash
   conda run -n seismic python -m pytest cubic_scattering/tests/test_cube_multipole_far_field.py -k "resonance_agreement or mie_rayleigh or reciprocity" -v
   ```
-  Expected initially: may FAIL if a sign/normalisation in Task 6 is off — if so, invoke `superpowers:systematic-debugging`, fix in `cube_radiation.py`, re-run. Do NOT loosen tolerances to pass.
+  Expected initially: may FAIL if a sign/normalisation in Task 6 is off — if so, invoke systematic debugging, fix in `cube_radiation.py`, re-run. Do NOT loosen tolerances to pass.
 - [ ] Once green (expected `3 passed`), lint/format/type. Expected: clean.
 - [ ] Commit:
   ```bash
@@ -808,7 +808,7 @@ Steps:
   Print["Wrote CubeMultipoleRadiation_results.tex"];
   Print["DONE"];
   ```
-  > Per CLAUDE.md, run with `/Applications/Wolfram.app/Contents/MacOS/wolframscript`. The three `diff` lines must each print `0`. (No `Mathematica/CubeMultipoleRadiation_results.tex` is committed unless the controller wants the LaTeX fragment tracked; the `.wl` is the deliverable here.)
+  > Per the project's engineering standards, run with `/Applications/Wolfram.app/Contents/MacOS/wolframscript`. The three `diff` lines must each print `0`. (No `Mathematica/CubeMultipoleRadiation_results.tex` is committed unless the controller wants the LaTeX fragment tracked; the `.wl` is the deliverable here.)
 - [ ] Run it and confirm zero diffs:
   ```bash
   /Applications/Wolfram.app/Contents/MacOS/wolframscript -file Mathematica/CubeMultipoleRadiation.wl
@@ -842,7 +842,7 @@ Steps:
   dimension, assembly wall-time, number of radiated multipole terms).  Writes
   CSV + JSON + a compact text summary.  NO plotting (figures live downstream).
 
-  Coordinate system (CLAUDE.md): z = axis 0 (down), x = axis 1, y = axis 2.
+  Coordinate system (the project's engineering standards): z = axis 0 (down), x = axis 1, y = axis 2.
 
   Usage:
       conda run -n seismic python scripts/cube_tmatrix_fidelity_study.py \
@@ -998,7 +998,7 @@ Steps:
   git log --oneline main..HEAD
   ```
   Expected: the Task 1–10 commits in order.
-- [ ] Invoke `superpowers:finishing-a-development-branch` to choose merge/PR/cleanup. Do not push or merge unless the user asks.
+- [ ] Invoke the branch-finishing checklist to choose merge/PR/cleanup. Do not push or merge unless the user asks.
 
 ---
 
@@ -1026,6 +1026,6 @@ Steps:
 
 ## Execution Handoff (two options)
 
-**Option A — Subagent-driven (recommended).** Execute with `superpowers:subagent-driven-development`: dispatch each Task (2–10) to a fresh subagent with the Task's exact steps, requiring it to paste the FAIL output, the PASS output, and the lint/type output before reporting back. Tasks are sequential (each builds on the prior module function), so run them in order, not in parallel — but Task 9 (Mathematica) and Task 10 (driver) can run in parallel after Task 8 is green, since they only consume the finished operator. Use `superpowers:requesting-code-review` after Task 8 (operator complete) and again after Task 10.
+**Option A — Parallel (recommended).** Work each Task (2–10) from a clean slate against the Task's exact steps, pasting the FAIL output, the PASS output, and the lint/type output before moving on. Tasks are sequential (each builds on the prior module function), so run them in order, not in parallel — but Task 9 (Mathematica) and Task 10 (driver) can run in parallel after Task 8 is green, since they only consume the finished operator. Take a code review after Task 8 (operator complete) and again after Task 10.
 
-**Option B — Inline.** Execute Tasks 1–11 directly in this session using `superpowers:executing-plans`, pausing at the review checkpoints after Task 6 (operator + arbiter pin) and Task 8 (all cross-checks green) for the user to inspect before building the Mathematica script and study driver. Prefer this if the user wants to watch the red-green transitions live.
+**Option B — Inline.** Execute Tasks 1–11 directly in this session using inline execution, pausing at the review checkpoints after Task 6 (operator + arbiter pin) and Task 8 (all cross-checks green) for the user to inspect before building the Mathematica script and study driver. Prefer this if the user wants to watch the red-green transitions live.
