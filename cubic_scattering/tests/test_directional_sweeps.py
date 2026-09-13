@@ -15,7 +15,7 @@ from cubic_scattering.directional_sweeps import (
     sweep_z,
 )
 from cubic_scattering.effective_contrasts import ReferenceMedium
-from cubic_scattering.sweep_kernels import lateral_split_9x9
+from cubic_scattering.sweep_kernels import lateral_split_9x9, same_depth_kernel_9x9
 
 REF = ReferenceMedium(alpha=5.0, beta=3.0, rho=2.5)
 OMEGA = 2 * np.pi * (1.0 + 0.03j)
@@ -263,6 +263,97 @@ def test_g0_covers_every_off_diagonal_pair_exactly_once() -> None:
             np.testing.assert_array_equal(lit, expected)
 
 
+def test_layered_g0_lights_the_self_site_but_whole_space_does_not() -> None:
+    """The self-term is background-dependent, and that is physics, not a leak.
+
+    In a whole space, T0 already closes the self-interaction, so G0 must not
+    touch the source site -- that is the partition gate above. In a LAYERED
+    background a wave can leave a voxel, reflect off a layer boundary and return
+    to that same voxel; T0 is the whole-space T-matrix and does not contain that
+    path, so G0 must supply it. A solver that zeroed the diagonal here would
+    silently drop every layer-return-to-self.
+    """
+    grid = make_sweep_grid(1, 3, 1.0, ky=0.3, n_kz=32, n_kx=64, kx_max=24.0)
+    omega = 2 * np.pi * 6.0
+    lay = _uniform_layer_model(contrast_layers=(10, 11))
+    s_p, s_s = lay.complex_slowness_p(), lay.complex_slowness_s()
+    ref = ReferenceMedium(1.0 / s_p[1], 1.0 / s_s[1], lay.rho[1])
+
+    src = np.zeros((1, 3, 9), dtype=complex)
+    src[0, 1, 0] = 1.0
+
+    cache_w = build_g0_cache(grid, ref, omega)
+    cache_l = build_g0_cache(grid, ref, omega, background=LayeredBackground(model=lay, plane_ifaces=(8,)))
+    assert np.abs(apply_g0(src, cache_w)[0, 1, :]).max() == 0.0
+    assert np.abs(apply_g0(src, cache_l)[0, 1, :]).max() > 1e-9
+
+
+def test_self_energy_is_equivalent_to_a_dressed_tmatrix() -> None:
+    """The diagonal behaves as a genuine self-energy, checked by moving it.
+
+    With G0 = G_off + D and D block-diagonal, the sources b must be identical
+    whether the self-energy sits in the propagator or is absorbed into T:
+
+        A:  b = T0 psi,   (I - (G_off + D) T0) psi = psi_inc
+        B:  b = Td psi',  (I - G_off Td) psi' = psi_inc,  Td = T0 (I - D T0)^-1
+
+    Compare b, NOT psi: the two fields differ by exactly the self-return. This
+    is an exact identity, so it catches a self-energy applied on the wrong side,
+    double-counted, or sign-flipped -- though it cannot confirm D's value.
+    """
+    grid = make_sweep_grid(1, 3, 1.0, ky=0.3, n_kz=32, n_kx=64, kx_max=24.0)
+    omega = 2 * np.pi * 6.0
+    lay = _uniform_layer_model(contrast_layers=(10, 11))
+    s_p, s_s = lay.complex_slowness_p(), lay.complex_slowness_s()
+    ref = ReferenceMedium(1.0 / s_p[1], 1.0 / s_s[1], lay.rho[1])
+    cache = build_g0_cache(grid, ref, omega, background=LayeredBackground(model=lay, plane_ifaces=(8,)))
+
+    size = 1 * 3 * 9
+    g0 = np.zeros((size, size), dtype=complex)
+    for c in range(size):
+        e = np.zeros(size, dtype=complex)
+        e[c] = 1.0
+        g0[:, c] = apply_g0(e.reshape(1, 3, 9), cache).ravel()
+
+    d_self = np.zeros_like(g0)
+    for s in range(3):
+        sl = slice(9 * s, 9 * s + 9)
+        d_self[sl, sl] = g0[sl, sl]
+    g_off = g0 - d_self
+
+    rng = np.random.default_rng(20260913)
+    t0 = np.zeros((size, size), dtype=complex)
+    for s in range(3):
+        sl = slice(9 * s, 9 * s + 9)
+        t0[sl, sl] = rng.standard_normal((9, 9)) + 1j * rng.standard_normal((9, 9))
+    psi_inc = rng.standard_normal(size) + 0j
+    eye = np.eye(size)
+
+    b_direct = t0 @ np.linalg.solve(eye - g0 @ t0, psi_inc)
+    t_d = t0 @ np.linalg.inv(eye - d_self @ t0)
+    b_dressed = t_d @ np.linalg.solve(eye - g_off @ t_d, psi_inc)
+    rel_eq = np.abs(b_direct - b_dressed).max() / np.abs(b_direct).max()
+    assert rel_eq < 1e-12
+
+    # ...and the control: the identity must beat the term it moves, by a lot.
+    b_dropped = t0 @ np.linalg.solve(eye - g_off @ t0, psi_inc)
+    rel_drop = np.abs(b_direct - b_dropped).max() / np.abs(b_direct).max()
+    assert rel_drop / max(rel_eq, 1e-300) > 1e6
+
+
+def test_self_energy_vanishes_as_the_reflector_recedes() -> None:
+    """A magnitude statement at solve level, not just on the kernel."""
+    grid = make_sweep_grid(1, 3, 1.0, ky=0.3, n_kz=32, n_kx=64, kx_max=24.0)
+    omega = 2 * np.pi * 6.0
+    mags = []
+    for layers in ((10, 11), (12, 13), (14, 15)):
+        lay = _uniform_layer_model(contrast_layers=layers)
+        stack = build_vertical_stack_layered(grid, LayeredBackground(model=lay, plane_ifaces=(8,)), omega)
+        mags.append(float(np.abs(stack[0, 0]).max()))
+    assert mags == sorted(mags, reverse=True), f"not receding: {mags}"
+    assert mags[-1] < mags[0] * 1e-6
+
+
 def test_g0_is_exactly_the_sum_of_its_two_sweeps() -> None:
     """No double counting: sweep_x is same-plane only, sweep_z different-plane."""
     rng = np.random.default_rng(11)
@@ -301,7 +392,12 @@ def test_sweep_y_is_an_explicit_stage_two_refusal() -> None:
         sweep_y(np.zeros((2, 4, 9), dtype=complex), grid, cache)
 
 
-def _uniform_layer_model(n_lay: int = 16, pitch: float = 1.0, q: float = 2.0):
+def _uniform_layer_model(
+    n_lay: int = 16,
+    pitch: float = 1.0,
+    q: float = 2.0,
+    contrast_layers: tuple[int, ...] = (),
+):
     """Ocean over n_lay identical crust layers; interface k at the bottom of layer k.
 
     Matches the model the wrapper resolution was validated on. n_lay must be
@@ -317,10 +413,18 @@ def _uniform_layer_model(n_lay: int = 16, pitch: float = 1.0, q: float = 2.0):
     pytest.importorskip("GlobalMatrix.layered_greens")
     lm = pytest.importorskip("Kennett_Reflectivity.layer_model")
     al, be, rh = 4.0, 2.22, 2.6
+    alpha = [1.5, *([al] * n_lay), al]
+    beta = [0.0, *([be] * n_lay), be]
+    rho = [1.03, *([rh] * n_lay), rh]
+    # A fast slab, placed so it is NOT adjacent to the plane used in the tests
+    # (interface 8) -- a material jump on the plane itself makes the correction
+    # operator K two-valued and is rightly refused.
+    for lay in contrast_layers:
+        alpha[lay], beta[lay], rho[lay] = 6.5, 3.7, 3.3
     return lm.LayerModel.from_arrays(
-        alpha=[1.5, *([al] * n_lay), al],
-        beta=[0.0, *([be] * n_lay), be],
-        rho=[1.03, *([rh] * n_lay), rh],
+        alpha=alpha,
+        beta=beta,
+        rho=rho,
         thickness=[3.0, *([pitch] * n_lay), np.inf],
         Q_alpha=[q] * (n_lay + 2),
         Q_beta=[1e10, *([q] * n_lay), q],
@@ -348,10 +452,66 @@ def test_layered_vertical_stack_reduces_to_the_whole_space_stack() -> None:
     ref = ReferenceMedium(1.0 / s_p[1], 1.0 / s_s[1], model.rho[1])
     want = build_vertical_stack(grid, ref, omega)
 
-    assert np.abs(got - want).max() / np.abs(want).max() < 1e-13
-    # ...and the diagonal stays empty: same-plane coupling is sweep_x's job.
-    assert np.abs(got[0, 0]).max() == 0.0
-    assert np.abs(got[1, 1]).max() == 0.0
+    # Off-diagonal blocks reduce to the whole-space stack.
+    scale = np.abs(want).max()
+    for lz in range(2):
+        for mz in range(2):
+            if lz != mz:
+                assert np.abs(got[lz, mz] - want[lz, mz]).max() / scale < 1e-13
+    # The DIAGONAL now carries the same-plane layer reverberation. With a
+    # uniform background there is nothing to reverberate off, so it must vanish.
+    # Normalise against the SAME-DEPTH kernel, not the off-diagonal block: the
+    # claim is that two O(1) quantities cancel, and measuring that against an
+    # unrelated 0.011 scale would overstate the residual by two orders.
+    s_p2, s_s2 = model.complex_slowness_p(), model.complex_slowness_s()
+    ref2 = ReferenceMedium(1.0 / s_p2[1], 1.0 / s_s2[1], model.rho[1])
+    direct = same_depth_kernel_9x9(grid.kx_nodes, grid.ky, omega, ref2)
+    cancelled = np.abs(direct).max()
+    assert cancelled > 0.1, "the cancelled term should be O(1), else this is vacuous"
+    assert np.abs(got[0, 0]).max() / cancelled < 1e-14
+    assert np.abs(got[1, 1]).max() / cancelled < 1e-14
+
+
+def test_same_plane_reverberation_appears_only_with_layering() -> None:
+    """The intra-plane gap: same-depth coupling must see the background.
+
+    The lateral sweep supplies the direct whole-space term. What it cannot
+    supply is the wave that leaves a voxel, reflects off a layer boundary and
+    returns to the same plane. That is the diagonal of the vertical stack, and
+    it must be zero without layering and non-zero with it.
+    """
+    pitch = 1.0
+    grid = make_sweep_grid(1, 3, pitch, ky=0.3, n_kz=32, n_kx=64, kx_max=24.0)
+    omega = 2 * np.pi * 6.0
+
+    uni = _uniform_layer_model()
+    flat = build_vertical_stack_layered(grid, LayeredBackground(model=uni, plane_ifaces=(8,)), omega)
+
+    lay = _uniform_layer_model(contrast_layers=(10, 11))
+    bumpy = build_vertical_stack_layered(grid, LayeredBackground(model=lay, plane_ifaces=(8,)), omega)
+
+    assert np.abs(flat[0, 0]).max() < 1e-12
+    assert np.abs(bumpy[0, 0]).max() > 1e-6
+
+
+def test_same_plane_reverberation_decays_in_kx() -> None:
+    """It must decay, or the k_x quadrature would not converge.
+
+    Every reverberation path travels at least twice the distance to the nearest
+    interface, so it carries e^{-kappa 2H}. Neither the layered kernel nor the
+    whole-space one is integrable on its own -- both grow like |k_x| -- so this
+    decay is what makes the split usable rather than merely tidy.
+    """
+    grid = make_sweep_grid(1, 3, 1.0, ky=0.3, n_kz=32, n_kx=256, kx_max=40.0)
+    lay = _uniform_layer_model(contrast_layers=(10, 11))
+    stack = build_vertical_stack_layered(
+        grid, LayeredBackground(model=lay, plane_ifaces=(8,)), 2 * np.pi * 6.0
+    )
+    mag = np.abs(stack[0, 0]).max(axis=(0, 1))
+    low = mag[np.abs(grid.kx_nodes) < 2.0].max()
+    high = mag[np.abs(grid.kx_nodes) > 25.0].max()
+    assert low > 1e-6
+    assert high < low * 1e-6, f"not decaying: low={low:.3e} high={high:.3e}"
 
 
 def test_layered_stack_rejects_a_wrong_length_plane_map() -> None:

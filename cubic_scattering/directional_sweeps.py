@@ -291,14 +291,18 @@ def build_vertical_stack_layered(grid: SweepGrid, background: LayeredBackground,
         raise ValueError(msg) from None
 
     from .layered_correction import corrected_layered_9x9
+    from .sweep_kernels import same_depth_kernel_9x9
 
     n_kx = grid.kx_nodes.size
     ky_arr = np.full(n_kx, grid.ky)
     out = np.zeros((grid.n_z, grid.n_z, 9, 9, n_kx), dtype=complex)
+
+    s_p = background.model.complex_slowness_p()  # type: ignore[attr-defined]
+    s_s = background.model.complex_slowness_s()  # type: ignore[attr-defined]
+    rho = background.model.rho  # type: ignore[attr-defined]
+
     for lz in range(grid.n_z):
         for mz in range(grid.n_z):
-            if lz == mz:
-                continue
             g9 = corrected_layered_9x9(
                 background.model,
                 omega,
@@ -307,7 +311,18 @@ def build_vertical_stack_layered(grid: SweepGrid, background: LayeredBackground,
                 source_iface=background.plane_ifaces[mz],
                 receiver_iface=background.plane_ifaces[lz],
             )
-            out[lz, mz] = np.moveaxis(g9, 0, -1)
+            block = np.moveaxis(g9, 0, -1)
+            if lz == mz:
+                # SAME PLANE: keep only the layer REVERBERATION. The direct
+                # whole-space term is the lateral sweep's job and is summed there
+                # by k_x residue, exactly; here it would be the divergent piece.
+                # Subtracting it leaves a kernel that decays like e^{-kappa 2H}
+                # and integrates without trouble.
+                lay = background.plane_ifaces[lz]
+                j = max(int(lay), 1)
+                ref_local = ReferenceMedium(1.0 / s_p[j], 1.0 / s_s[j], rho[j])
+                block = block - same_depth_kernel_9x9(grid.kx_nodes, grid.ky, omega, ref_local)
+            out[lz, mz] = block
     return out
 
 
@@ -382,11 +397,16 @@ def sweep_z(sources: NDArray, grid: SweepGrid, vertical: NDArray) -> NDArray:
     # Source spectra, one per plane: (n_z, n_kx, 9)
     spec = np.einsum("kj,zjb->zkb", phase, sources)
 
+    # The diagonal is INCLUDED. For a whole-space background it is zero and this
+    # is a no-op. For a stratified one it carries the same-plane layer
+    # REVERBERATION, which is physical and which nothing else supplies: the
+    # lateral sweep carries only the direct whole-space term, and T0 is the
+    # single-site T-matrix of the WHOLE SPACE, so its self-term does not include
+    # the wave that leaves a voxel, reflects off a layer boundary and returns to
+    # that same voxel. That path is real and belongs here.
     acc = np.zeros((grid.n_z, n_kx, 9), dtype=complex)
     for lz in range(grid.n_z):
         for mz in range(grid.n_z):
-            if lz == mz:
-                continue
             acc[lz] += np.einsum("abk,kb->ka", vertical[lz, mz], spec[mz])
 
     return np.einsum("k,kj,zka->zja", grid.kx_weights, np.conj(phase), acc)
@@ -429,11 +449,12 @@ def build_g0_cache(
         A G0Cache.
 
     Note:
-        Stage 1 dresses only the VERTICAL sweep with the layering. Same-depth
-        lateral coupling still goes through the whole-space kernel, so layer
-        reverberations between two voxels in one plane are missing. That is
-        small for a plane well inside a layer and NOT small next to a strong
-        interface. ``layered_correction`` holds the machinery to close it.
+        With a ``background``, the layering reaches BOTH sweeps. The vertical
+        sweep carries the full stratified propagator between planes; the lateral
+        sweep carries the direct whole-space term by k_x residue, and the layer
+        reverberation that it cannot carry -- including the path that returns to
+        the source voxel itself -- is supplied by the DIAGONAL of the vertical
+        stack. See build_vertical_stack_layered.
     """
     vertical = (
         build_vertical_stack(grid, ref, omega)

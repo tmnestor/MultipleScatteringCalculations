@@ -123,7 +123,46 @@ returns nothing of this kind.
 
 ## Deferred, with the gap stated
 
-**The intra-plane stratified correction is out of stage 1.** Tasks 1–6 use the
+> **THE INTRA-PLANE GAP IS CLOSED as of 2026-09-13.** It was deferred here to
+> stage 1c; it is now implemented and gated. The paragraph below is kept because
+> the reasoning it records is still the reasoning behind the fix.
+>
+> **Why it is not simply "call the stratified propagator at `Δz = 0`".** That is
+> the very divergence the lateral sweep exists to avoid, and it is present in the
+> stratified kernel exactly as in the whole-space one — the strain–strain block
+> grows like `|k_x|`. The resolution is to *subtract* it:
+>
+> ```
+> G_layered(Δz=0)  =  G_wholespace(Δz=0)   +   ΔG
+>                     └ lateral sweep,          └ reverberation only
+>                       exact by k_x residue
+> ```
+>
+> Neither term is integrable alone; the difference is. Every path in `ΔG` travels
+> at least twice the distance `H` to the nearest interface, so it carries
+> `e^{i k_z 2H}` and decays exponentially in `k_x`. **Measured:** identically zero
+> for a uniform background (1e-16 at every `k_x`); for a contrast two layers away,
+> 4.2e-4 → 3.5e-8 by `k_x = 16`, machine zero by 24.
+>
+> **`ΔG` is retained at `Δx = 0`, and that is physics, not a leak.** A voxel does
+> interact with itself through the layering, and `T₀` is the whole-space
+> single-site T-matrix, so its self-term does not contain that path. Dropping the
+> `Δx = 0` entry — the natural move, since the whole-space self-term is excluded
+> everywhere else — would silently discard every layer-return-to-self.
+>
+> **One convention it turns on.** The field is discontinuous across the source
+> plane, so the two one-sided limits of the whole-space same-depth kernel differ
+> by a factor approaching 2 at large `k_x` — not by a small amount.
+> `corrected_layered_9x9(j, j)` returns the limit from ABOVE; subtracting the
+> other side leaves the whole jump behind instead of cancelling it.
+>
+> Implementation: `sweep_kernels.same_depth_kernel_9x9` (exists only to be
+> subtracted), the diagonal of `directional_sweeps.build_vertical_stack_layered`,
+> and `sweep_z` no longer skipping that diagonal. Gate:
+> `scripts/gate_sweep_rung3_layered.py` §3L-d. Written up in
+> `LatexPDFs/DirectionalSweepSolver/DirectionalSweepSolver.tex` §2.4.
+
+*(Original statement, retained for the record.)* Tasks 1–6 use the
 *whole-space* lateral kernel for same-depth coupling; the background layering
 enters only through the vertical sweep (Task 7). The gap is physical and must be
 stated whenever a stage-1 result is quoted: same-depth voxels separated laterally

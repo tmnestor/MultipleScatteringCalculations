@@ -253,6 +253,65 @@ def lateral_split_9x9(
     )
 
 
+def same_depth_kernel_9x9(kx_arr: NDArray, ky: float, omega: complex, ref: ReferenceMedium) -> NDArray:
+    """Whole-space 9x9 at EQUAL depth, as the limit from ABOVE (dz -> 0-).
+
+    Used only to be SUBTRACTED. On its own this kernel is not integrable over
+    k_x: its strain-strain block grows like |k_x|, which is the divergence at
+    equal depth that the lateral sweep exists to avoid. It becomes useful in the
+    difference
+
+        DeltaG(k_x) = G_layered(j <- j) - same_depth_kernel_9x9(k_x)
+
+    where the divergent direct part cancels exactly and only the layer
+    reverberations survive -- and those decay like e^{-kappa 2H}, H the distance
+    to the nearest interface. Measured: identically zero for a uniform model at
+    every k_x, and falling from 4e-4 to machine zero by k_x = 24 for a model
+    with a contrast two layers away.
+
+    THE SIDE MATTERS. The field is discontinuous across the source plane, so the
+    two one-sided limits differ -- by a factor approaching 2 at large k_x, not by
+    a small amount. ``corrected_layered_9x9`` with source_iface == receiver_iface
+    returns the limit from ABOVE, so that is what this reproduces; subtracting
+    the other side leaves the whole jump behind instead of cancelling it.
+
+    Args:
+        kx_arr: Lateral wavenumber nodes along x, shape (n_kx,), 1/km.
+        ky: The 2.5-D lateral parameter, 1/km.
+        omega: Complex angular frequency.
+        ref: Background medium.
+
+    Returns:
+        P of shape (9, 9, n_kx).
+    """
+    kx = np.asarray(kx_arr, dtype=float)
+    n = kx.size
+    rho, alpha, beta = ref.rho, ref.alpha, ref.beta
+    kh2 = kx**2 + ky**2
+    kz_p = _branch((omega / alpha) ** 2 - kh2)
+    kz_s = _branch((omega / beta) ** 2 - kh2)
+
+    # sgn = -1: the limit from above. No exponential -- dz is zero.
+    kvec_p = [-kz_p, kx.astype(complex), np.full(n, ky, dtype=complex)]
+    kvec_s = [-kz_s, kx.astype(complex), np.full(n, ky, dtype=complex)]
+
+    c_s_iso = (1j / (2 * rho)) / (beta**2 * kz_s)
+    c_p_pol = (1j / (2 * rho)) / (omega**2 * kz_p)
+    c_s_pol = -(1j / (2 * rho)) / (omega**2 * kz_s)
+
+    g_p = np.zeros((3, 3, n), dtype=complex)
+    g_s_iso = np.zeros((3, 3, n), dtype=complex)
+    g_s_pol = np.zeros((3, 3, n), dtype=complex)
+    for i in range(3):
+        g_s_iso[i, i, :] = c_s_iso
+        for j in range(3):
+            g_p[i, j, :] = kvec_p[i] * kvec_p[j] * c_p_pol
+            g_s_pol[i, j, :] = kvec_s[i] * kvec_s[j] * c_s_pol
+
+    total = g_p + g_s_iso + g_s_pol
+    return _assemble_9x9(total, [g_p, g_s_iso, g_s_pol], [kvec_p, kvec_s, kvec_s])
+
+
 def vertical_kernel_9x9(
     kx_arr: NDArray, ky: float, dz: float, omega: complex, ref: ReferenceMedium
 ) -> NDArray:
