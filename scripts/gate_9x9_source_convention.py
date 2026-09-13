@@ -41,7 +41,34 @@ GATE F  the WITHIN-MATRIX block structure, which E cannot see.
 
 
 ================================================================================
-STATE OF THE WRAPPER PROBLEM  (2026-07-27) -- read before attempting a fix
+SUPERSEDED (2026-09-13).  GATE E IS A FALSE GATE -- DO NOT TRUST ITS VERDICT.
+================================================================================
+The wrapper problem is resolved; see scripts/gate_wrapper_resolution.py and
+docs/wrapper_problem_state_2026-09-13.md.  Everything measured below stands.  Two
+things about THIS script do not:
+
+1. GATE E and GATE F are MUTUALLY EXCLUSIVE, so this script's exit criterion
+   ("non-zero unless A, E and F all pass") can never be met.  GATE F gives
+   M1 = W^-1 M1^T W and GATE E gives M1 = W^-1 M2^T W; together they force
+   M1 = M2, i.e. P(r) = P(-r).  But C and H are FIRST derivatives of the Green's
+   tensor and are therefore ODD in r, so that holds only if C vanishes.
+
+2. GATE E is FALSE for the correct propagator.  The EXACT whole-space reference
+   -- no implementation in it at all -- fails GATE E by 1.4e-1, exactly as the
+   corrected 6x6 does, and passes at 7e-17 only when the source sign defect D3
+   is REINTRODUCED.  GATE E was passing at 9.7e-16 BECAUSE of a defect, and its
+   passing was read as evidence the construction was sound.
+
+   GATE A is the arbiter: W P(r) symmetric was measured directly on the
+   validated closed form at twelve random separations, so GATE F inherits it and
+   GATE E does not.
+
+This is the whole of negative result N1.  "Every variant improving F destroys E"
+was not a clue about B -- it was two incompatible gates pulling in opposite
+directions.
+
+================================================================================
+STATE OF THE WRAPPER PROBLEM  (2026-07-27) -- historical record below
 ================================================================================
 
 GATE F IS VALID, not an artefact.  Verified on two legs: W P(r) is symmetric at
