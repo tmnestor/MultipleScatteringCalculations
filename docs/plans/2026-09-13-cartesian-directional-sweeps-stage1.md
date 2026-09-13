@@ -1,5 +1,47 @@
 # Cartesian Directional Sweeps, Stage 1 — Implementation Plan
 
+> **REWORKED 2026-09-13, after the plan's central premise was found false.**
+>
+> This plan asserted that the stratified vertical operator did not exist and had
+> to be built — first as `kennett_layers` dressing (Task 4), then as a Kennett
+> source-in-stack construction (Task 7). **It already existed, validated.**
+>
+> | Object | Where |
+> |---|---|
+> | stratified plane-to-plane 9×9, in the sweep's exact basis | `GlobalMatrix/layered_greens.py:838` |
+> | the three wrapper corrections D1/D2/D3 | `cubic_scattering/layered_correction.py` |
+> | `Q^∂ = (I − S_int E)⁻¹ S_int`, source-in-stack `V_inc` | thesis Ch.5 `GstratRep.tex`, Eq. `PstratDef`, `incdown`/`incup` |
+>
+> The root error was the spec's "no external-repository dependency" claim, since
+> retracted. The whole 9×9 wrapper arc that preceded this plan existed to make
+> that object usable for exactly this composition.
+>
+> **What changed:**
+> - **Task 4's `vertical_kernel_9x9` is demoted** from production operator to
+>   *homogeneous-limit arbiter* — a role it fills well, being an independent
+>   construction gated against the closed-form Kupradze propagator.
+> - **The production vertical operator** is
+>   `directional_sweeps.build_vertical_stack_layered`, fed by the new
+>   `layered_correction.corrected_layered_9x9`. Gated by
+>   `scripts/gate_sweep_rung3_layered.py`: homogeneous reduction **1.1e-15**.
+> - **Task 7b (Kennett dressing) is cancelled** — it was rebuilding `Q^∂`.
+> - **Task 7a (`sweep_modes.py`) has no consumer.** It was built only to feed the
+>   cancelled dressing. Retained for now; the rank-3 factorisation result in it
+>   is sound and may serve stage 2.
+> - **Task 8 (`FFTProp`) is unblocked**: its free surface is part of the layered
+>   background, which the solver now carries.
+>
+> **A defect found during the rework.** `layered_greens_9x9` and
+> `scripts/composed_matvec.resolved_9x9_grid` build their `(u,T)↔(u,ε)` operators
+> from `_interface_elastic_properties`, which returns `float(model.alpha[j])` —
+> the *undamped* velocity — while `G6` uses the complex attenuative slowness. At
+> field Q (600–1000) that is ~0.1% and invisible; at the Q = 2 used to isolate
+> the whole-space limit it is 100%, and the homogeneous reduction fails outright
+> (measured 1.009). Symmetry gates cannot see it, being homogeneous of degree
+> one. `corrected_layered_9x9` takes both media from `complex_slowness_p/s`;
+> gate 3L-b keeps the old behaviour as an explicit failing control.
+
+
 **Goal:** Build the Cartesian 2½-D directional-sweep `G₀` matvec and the GMRES
 Foldy–Lax solve around it, validated at every rung against machinery that already
 exists in this repository.
