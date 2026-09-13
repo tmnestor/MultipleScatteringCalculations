@@ -20,7 +20,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .effective_contrasts import ReferenceMedium
-from .sweep_kernels import LateralSplit, vertical_kernel_9x9
+from .sweep_kernels import LateralSplit, lateral_split_9x9, vertical_kernel_9x9
 
 
 @dataclass(frozen=True)
@@ -312,3 +312,82 @@ def sweep_z(sources: NDArray, grid: SweepGrid, vertical: NDArray) -> NDArray:
             acc[lz] += np.einsum("abk,kb->ka", vertical[lz, mz], spec[mz])
 
     return np.einsum("k,kj,zka->zja", grid.kx_weights, np.conj(phase), acc)
+
+
+@dataclass(frozen=True)
+class G0Cache:
+    """Everything G0 needs that does not change across Krylov iterations.
+
+    Attributes:
+        grid: The lattice and both quadratures.
+        split_right: Lateral amplitude/phase split, +x.
+        split_left: Lateral amplitude/phase split, -x.
+        vertical: Plane-to-plane kernels, shape (n_z, n_z, 9, 9, n_kx).
+    """
+
+    grid: SweepGrid
+    split_right: LateralSplit
+    split_left: LateralSplit
+    vertical: NDArray
+
+
+def build_g0_cache(grid: SweepGrid, ref: ReferenceMedium, omega: complex) -> G0Cache:
+    """Build every direction's kernels once, outside the Krylov loop.
+
+    Args:
+        grid: The lattice and both quadratures.
+        ref: Background medium.
+        omega: Complex angular frequency.
+
+    Returns:
+        A G0Cache.
+    """
+    return G0Cache(
+        grid=grid,
+        split_right=lateral_split_9x9(grid.ky, grid.kz_nodes, grid.pitch, omega, ref, direction="right"),
+        split_left=lateral_split_9x9(grid.ky, grid.kz_nodes, grid.pitch, omega, ref, direction="left"),
+        vertical=build_vertical_stack(grid, ref, omega),
+    )
+
+
+def apply_g0(sources: NDArray, cache: G0Cache) -> NDArray:
+    """Apply the full G0: intra-plane lateral plus inter-plane vertical.
+
+    A pure forward summation -- no inversion, no embedding, no reverberation.
+    Every order of multiple scattering is built by the Krylov iterations, not by
+    the propagator.
+
+    The two sweeps partition the off-diagonal pairs exactly: sweep_x reaches
+    same-plane pairs only, sweep_z different-plane pairs only, and neither
+    reaches the site itself (its self-term is closed inside T0).
+
+    Args:
+        sources: Source 9-vectors, shape (n_z, n_x, 9).
+        cache: Precomputed kernels from build_g0_cache.
+
+    Returns:
+        The field at every site, shape (n_z, n_x, 9), excluding the self-term.
+    """
+    return sweep_x(sources, cache.grid, cache.split_right, cache.split_left) + sweep_z(
+        sources, cache.grid, cache.vertical
+    )
+
+
+def sweep_y(sources: NDArray, grid: SweepGrid, cache: G0Cache) -> NDArray:
+    """In-out (k_y) sweep. Stage 2 -- not implemented in stage 1.
+
+    Raises:
+        NotImplementedError: always, naming the stage. Silently omitting the
+            in-out coupling would discard every out-of-plane path while still
+            returning a plausible field, which is far worse than failing.
+    """
+    msg = (
+        "sweep_y is stage 2 of the directional-sweep design and is not implemented.\n"
+        "  Where: cubic_scattering/directional_sweeps.py, sweep_y\n"
+        "  Valid: stage 1 is 2.5-D -- heterogeneity in (z, x), y invariant, with k_y\n"
+        "         held fixed on the SweepGrid and integrated over afterwards.\n"
+        "  Fix:   solve once per k_y with solve_sweep_foldy_lax and integrate, or\n"
+        "         implement the in-out pair (spec section 6, stage 2). Do NOT drop\n"
+        "         the term: omitting it silently discards all out-of-plane coupling."
+    )
+    raise NotImplementedError(msg) from None
