@@ -61,6 +61,33 @@ correct construction and it reuses the existing kernel machinery; it is not a
 rescaling.  Adding the spectral P^z to the lattice P^x directly would be wrong
 by a k-dependent factor of order ten.
 
+RE-TAKEN 13 September 2026, THROUGH THE CORRECTED WRAPPER
+---------------------------------------------------------
+The numbers above were measured with the July source convention.  With the
+three defects fixed (`resolved_9x9_grid`, second column of GATE 1 below) the
+spread roughly HALVES but does NOT close:
+
+    Q            1e5     10      3       1
+    1->0  July   9.8    10.7    11.5    21.5
+          now    ~8     ~8       8.3    12.2
+    2->0  July  14.1    15.6    34.9    42.9
+          now    ~6     ~5       5.9     8.7
+
+and it still does not fall with Q.  So the wrapper defects were a real part of
+N5 but not the whole of it, and the aliasing diagnosis above stands as the
+explanation of what remains.  The CONSEQUENCE is unchanged: lattice-sum P^z
+into the discrete representation before adding it to P^x.
+
+An attempt to confirm that by comparing `resolved_9x9_grid` directly against a
+freshly written continuum 9x9 was WITHDRAWN, not reported: it showed a uniform
+20% offset at every wavenumber (all propagating; not contamination, flat in
+frequency), whereas the SAME construction agrees with the validated whole-space
+reference in scripts/gate_wrapper_resolution.py to 5e-15.  The fresh reference
+was therefore the suspect, not the kernel.  Anyone retrying this should reuse
+`gate_wrapper_resolution.whole_space_jump_response` -- promoting it to take the
+medium as an argument -- rather than writing a second copy, and should use a
+deep, well-separated geometry rather than planes buried 1-3 km under the seabed.
+
 Run: conda run -n seismic python scripts/composed_matvec.py
 """
 
@@ -73,6 +100,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
 from cubic_scattering import ReferenceMedium, SlabGeometry
+from cubic_scattering.layered_correction import (
+    correct_6x6,
+    source_jump_operator,
+    strain_from_state,
+)
 from cubic_scattering.slab_scattering import _build_slab_kernels
 
 from Kennett_Reflectivity.layer_model import LayerModel  # isort: skip
@@ -110,6 +142,32 @@ def corrected_9x9_grid(model, w, kx, ky, j, i):
     B = -np.einsum("ab,xcb,cd->xad", J6, Am, W9)
 
     out = np.einsum("xab,xbc,xcd->xad", A, G, B)
+    return out.reshape(*shape, 9, 9)
+
+
+def resolved_9x9_grid(model, w, kx, ky, j, i):
+    """Stratified 9x9 with the RESOLVED correction (D1, D2, D3).
+
+    Supersedes ``corrected_9x9_grid``, whose Q and B were the July guesses.  See
+    cubic_scattering.layered_correction and
+    docs/wrapper_problem_state_2026-09-13.md.  K depends on the direction of k,
+    so the correction is applied per wavenumber rather than as one matrix.
+    """
+    shape = kx.shape
+    kxf, kyf = kx.ravel(), ky.ravel()
+    g = layered_greens_6x6(model, w, kxf, kyf, source_iface=j, receiver_iface=i)
+
+    s_s = model.complex_slowness_s()
+    ss_src, ss_rcv = s_s[max(j, 1)], s_s[max(i, 1)]
+    rho_r, al_r, be_r = _interface_elastic_properties(model, i)
+    rho_s, al_s, be_s = _interface_elastic_properties(model, j)
+
+    out = np.empty(g.shape[:-2] + (9, 9), dtype=complex)
+    for t in range(g.shape[0]):
+        gc = correct_6x6(g[t], w, ss_src, ss_rcv, kxf[t], kyf[t])
+        a = strain_from_state(kxf[t], kyf[t], rho_r, al_r, be_r)
+        b = source_jump_operator(kxf[t], kyf[t], rho_s, al_s, be_s)
+        out[t] = a @ gc @ b
     return out.reshape(*shape, 9, 9)
 
 
@@ -151,21 +209,25 @@ def gate_homogeneous_limit(M=8, N_z=3, a=0.5, freq=6.0, Q=1e5):
     print("         homogeneous inter-plane kernel")
     print(f"  M={M}, N_z={N_z}, a={a} km, f={freq} Hz, d={d} km")
     print()
-    print(f"  {'pair':>8} {'|ratio| median':>16} {'ratio spread':>14}")
+    print(f"  {'pair':>8}   {'JULY median':>13} {'spread':>10}   {'RESOLVED median':>15} {'spread':>10}")
 
     for m in range(N_z):
         for n in range(N_z):
             if m == n:
                 continue
-            strat = corrected_9x9_grid(model, omega, KX, KY, j=n + 1, i=m + 1)
             homo = kern[(m - n) + (N_z - 1)]
             msk = np.abs(homo) > 1e-9 * np.abs(homo).max()
             if msk.sum() < 20:
                 continue
-            r = strat[msk] / homo[msk]
-            med = np.median(np.abs(r))
-            spread = np.std(np.abs(r)) / med if med > 0 else np.inf
-            print(f"  {f'{n}->{m}':>8} {med:16.4e} {spread:14.3e}")
+            cells = []
+            for build in (corrected_9x9_grid, resolved_9x9_grid):
+                r = build(model, omega, KX, KY, j=n + 1, i=m + 1)[msk] / homo[msk]
+                med = np.median(np.abs(r))
+                cells.append((med, np.std(np.abs(r)) / med if med > 0 else np.inf))
+            print(
+                f"  {f'{n}->{m}':>8}   {cells[0][0]:13.4e} {cells[0][1]:10.3e}   "
+                f"{cells[1][0]:15.4e} {cells[1][1]:10.3e}"
+            )
 
     print()
     print("  A single constant ratio would be a pure normalisation. A varying")
