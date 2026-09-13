@@ -150,6 +150,7 @@ separation, so the $k_z$ sum is never evaluated at $\Delta z=0$.}
 \end{figure}
 
 \subsection{Lateral sweeps: constant-$z$ left-right and constant-$(z,x)$ in-out}
+\label{sec:lateral}
 
 Within a depth plane the background is homogeneous, so the lateral propagation is pure phase,
 with no background reflections to sum. Split the in-plane propagator on the $k_x$ pole into a
@@ -182,6 +183,7 @@ depend only on the background and are formed once. The heterogeneity scattering 
 in $\Tz$ and the Krylov loop.
 
 \subsection{Why these directions}
+\label{sec:why}
 
 The conventional construction sums the in-plane coupling on the $k_z$ pole, the up/down
 decomposition, whose surviving $(k_x,k_y)$ integral loses its convergence factor
@@ -190,6 +192,39 @@ avoids it outright: the in-plane coupling is summed on the $k_x$ and $k_y$ poles
 distinct in-plane voxels are separated, so the divergent same-depth $k_z$ sum is never the one
 evaluated. The $k_z$ sweep is used only between planes, where $\Delta z\neq 0$ and the Kennett
 recursion is exact and stable. Every sweep marches along an axis of nonzero separation.
+
+\subsection{The same-depth term in a stratified background}
+\label{sec:intraplane}
+
+The lateral sweep of \S\ref{sec:lateral} sums the same-depth coupling of the \emph{whole space}.
+That is not the whole of it. When the background is stratified, two voxels at the same depth are
+also coupled by paths that leave one voxel, reflect from a layer boundary above or below, and
+return to the plane. Those paths are absent from the lateral sweep by construction, because the
+$k_x$ residue carries only the direct term.
+
+They cannot simply be added by evaluating the stratified propagator at $\Delta z=0$ and
+integrating: that is the divergence of \S\ref{sec:why}, and it is present in the stratified
+kernel exactly as in the whole-space one, its strain--strain block growing like $|k_x|$. The
+resolution is to subtract it. Writing $\Gz^{\mathrm{lay}}$ for the stratified propagator between
+a plane and itself and $\Gz^{\infty}$ for the whole-space kernel at equal depth,
+\begin{equation}
+\label{eq:intrasplit}
+\Gz^{\mathrm{lay}}(\Delta z = 0) \;=\; \underbrace{\Gz^{\infty}(\Delta z = 0)}_{\text{lateral sweep, by }k_x\text{ residue}}
+\;+\; \underbrace{\Delta\Gz}_{\text{reverberation only}} ,
+\end{equation}
+and the two terms on the right are individually non-integrable while their difference is not.
+Every path contributing to $\Delta\Gz$ travels at least twice the distance $H$ to the nearest
+interface, so it carries $e^{\ii k_z 2H}$ and $\Delta\Gz$ decays exponentially in $k_x$. Its
+$k_x$ integral therefore converges, and the divergence cancels between the two terms rather than
+being regularised in either.
+
+Two consequences are worth stating plainly. First, $\Delta\Gz$ vanishes identically when the
+background is uniform, so the construction reduces to the whole-space sweep with nothing left
+over. Second, $\Delta\Gz$ is retained at $\Delta x = 0$: a voxel \emph{does} interact with
+itself through the layering, and since $\Tz$ is the single-site $T$-matrix of the whole space,
+its self-term does not contain that path. Dropping the $\Delta x=0$ entry --- the natural thing
+to do, since the whole-space self-term is excluded everywhere else --- would silently discard
+every layer-return-to-self.
 
 %==============================================================================
 \section{Alternating-direction composition}
@@ -245,15 +280,82 @@ contrast, each step one $\Tz$ and one matvec.
 \end{enumerate}
 
 %==============================================================================
+\section{Validation status}
+%==============================================================================
+
+The 2\textonehalf-D case (heterogeneity in $(z,x)$, $y$ invariant, $k_y$ a parameter) is
+implemented and gated. Each claim below is the same physics through two independent code paths,
+so the residual measures defect, not discretisation, except where noted.
+
+\begin{center}
+\begin{tabular}{llr}
+\toprule
+Claim & Arbiter & Residual \\
+\midrule
+amplitude $\times$ phase$^n$ reproduces the bundled kernel & post-$k_x$-residue kernel & $1.5\times10^{-15}$ \\
+\quad and the residual is \emph{flat} in separation $n=1\ldots32$ & --- & --- \\
+left-going amplitude is the $x$-reflection of the right & parity identity & $1\times10^{-15}$ \\
+lateral sweep $=$ pairwise double sum, distinct sources & $O(N^2)$ sum & $1.5\times10^{-13}$ \\
+\quad and the residual is \emph{flat} in lattice size & --- & --- \\
+$k_y$-integrated kernel $=$ closed-form propagator & Kupradze closed form & falls to $2\times10^{-5}$ \\
+inter-plane sweep $=$ exact real-space pairwise sum & Kupradze closed form & falls to $8\times10^{-4}$ \\
+lateral coupling does not wrap (no periodicity) & kernel at true separation & $0$ \\
+stratified operator reduces to whole space & independent $k_z$-residue kernel & $1.1\times10^{-15}$ \\
+same-depth reverberation vanishes for a uniform background & --- & $<10^{-15}$ \\
+self-energy $\equiv$ dressed T-matrix, $T_d=\Tz(I-D\Tz)^{-1}$ & direct vs dressed solve & $4\times10^{-16}$ \\
+reverberation obeys symplectic reciprocity & $J_6$ law, $\pm k$ & $8\times10^{-14}$ \\
+self-energy recedes with the reflector & --- & monotone, $10^{-4}\!\to\!10^{-12}$ \\
+partition: every pair once, self-term per background & support count & exact \\
+GMRES $=$ dense LU and Neumann series, $\rho(\Gz\Tz)=0.92$ & two direct methods & $1.2\times10^{-12}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Three points of method are worth recording because each cost time to learn. Symmetry and
+reciprocity invariants are homogeneous of degree one and therefore blind to an overall scale
+error; every such gate here is paired with one absolute comparison. Where a tolerance had to be
+loosened it was loosened only after measuring why, and the accompanying test asserts the
+property that actually discriminates --- that the residual is flat in separation, or flat in
+lattice size --- since the dangerous failure is a factor that accumulates along the sweep.
+Finally, a residual that does \emph{not} fall under refinement is a convention error, not a
+quadrature error: two of the discrepancies met here were exactly that, one an index ordering and
+one an attenuation mismatch between an operator and the Green's function it multiplied.
+
+\medskip\noindent
+\textbf{On the self-energy, and which invariant applies to it.} The same-depth reverberation
+$\Delta\Gz$ does \emph{not} satisfy the whole-space symmetry $W M = (W M)^{\mathsf T}$: measured
+$0.33$ to $1.06$ across $k_x$, at every separation. That is not a defect but a
+misapplied invariant. At coincident planes the \emph{full} layered kernel fails the symplectic
+reciprocity law at $9.5\times10^{-3}$ while $\Delta\Gz$ satisfies it at $8\times10^{-14}$: the
+non-reciprocal part is the one-sided jump carried by the direct term, and removing that term is
+precisely what \eqref{eq:intrasplit} does. The reverberation is the clean reciprocal object; the
+whole-space symmetry is the wrong thing to demand of it. This is recorded because the same
+pattern --- a plausible invariant that the exact reference also fails --- has already cost this
+programme one false gate.
+
+\medskip\noindent
+\textbf{Not yet done.} Two things. The in-out $k_y$ pair, and with it the full three-dimensional
+Cartesian case, is the remaining piece; until it lands, the solver is 2\textonehalf-D and a
+comparison against a three-dimensional solver measures the geometry rather than the sweeps.
+And the \emph{absolute magnitude} of $\Delta\Gz$ is not yet checked against an independent
+physical reference: what is established is that it is reciprocal, that it vanishes without
+layering, that it recedes with the reflector, and that it behaves as a self-energy under the
+dressed-T identity. The route to closing it is the single-bounce limit --- as the contrast
+weakens, $\Delta\Gz$ must approach the interface reflection coefficient times the whole-space
+propagator over twice the standoff --- which is checkable in isolation.
+
+%==============================================================================
 \section{What is distinctive}
 %==============================================================================
 
 Two choices set this apart from a standard FFT-accelerated volume integral equation. First, the
 forward operator is a directional partial-wave summation rather than a circular-convolution FFT,
 so the in-plane coupling is summed along the separated axes and the $\Delta z=0$ divergence is
-structurally absent rather than regularised. Second, the depth structure is carried exactly by
-the up-down Kennett recursion on the true layered background, not approximated on a homogeneous
-whole-space kernel. The multiple scattering is left where it belongs, in a Krylov solve that
+structurally absent rather than regularised --- and where the stratified background does
+contribute at equal depth, \S\ref{sec:intraplane}, it enters as a difference in which the
+divergence cancels rather than as a term requiring regularisation. Second, the depth structure
+is carried exactly by the stratified propagator on the true layered background, not approximated
+on a homogeneous whole-space kernel. The multiple scattering is left where it belongs, in a Krylov solve that
 calls the sweep as its matvec, so the propagator stays a clean, stable, forward summation and
 the solver carries the contrast.
 

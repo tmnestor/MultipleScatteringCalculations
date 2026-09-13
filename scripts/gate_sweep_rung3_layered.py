@@ -46,7 +46,10 @@ from cubic_scattering.layered_correction import (  # noqa: E402
     source_jump_operator,
     strain_from_state,
 )
-from cubic_scattering.sweep_kernels import vertical_kernel_9x9  # noqa: E402
+from cubic_scattering.sweep_kernels import (  # noqa: E402
+    same_depth_kernel_9x9,
+    vertical_kernel_9x9,
+)
 from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
 
 ALPHA, BETA, RHO = 4.0, 2.22, 2.6
@@ -104,6 +107,29 @@ def contrast_model(q: float = Q_LIMIT) -> LayerModel:
     )
 
 
+def contrast_below(q: float = Q_LIMIT) -> LayerModel:
+    """Fast slab at layers 10-11, two layers BELOW the single plane at interface 8.
+
+    3L-d uses one plane, not a pair, so the slab must be moved clear of it:
+    interface 8 needs layers 8 and 9 to match, which rules out contrast_model's
+    layers 9-10. Placing a jump on the plane makes the correction operator K
+    two-valued and assert_interface_continuous refuses it -- correctly.
+    """
+    al = [1.5, *([ALPHA] * N_LAY), ALPHA]
+    be = [0.0, *([BETA] * N_LAY), BETA]
+    rh = [1.03, *([RHO] * N_LAY), RHO]
+    for lay in (10, 11):
+        al[lay], be[lay], rh[lay] = 6.5, 3.7, 3.3
+    return LayerModel.from_arrays(
+        alpha=al,
+        beta=be,
+        rho=rh,
+        thickness=[3.0, *([PITCH] * N_LAY), np.inf],
+        Q_alpha=[q] * (N_LAY + 2),
+        Q_beta=[1e10, *([q] * N_LAY), q],
+    )
+
+
 def whole_space_stack(model: LayerModel, omega: complex, dz: float) -> np.ndarray:
     """The independent whole-space kernel, in the model's own complex medium."""
     s_p, s_s = model.complex_slowness_p(), model.complex_slowness_s()
@@ -135,6 +161,7 @@ def main() -> int:
     print("=" * 76)
 
     uni = uniform_model()
+    con = contrast_model()
     ok = True
 
     print("\n[3L-a] HOMOGENEOUS REDUCTION vs the independent whole-space kernel")
@@ -170,6 +197,36 @@ def main() -> int:
     print(f"      change vs the uniform model: {rel_c:.3e}")
     print(f"      the operator sees the model  ->  {'PASS' if okl else 'FAIL'}")
     ok = ok and okl
+
+    print("\n[3L-d] INTRA-PLANE CLOSURE -- same-depth coupling must see the layering")
+    print("      The lateral sweep supplies the direct whole-space term by k_x")
+    print("      residue. What it cannot supply is the wave that leaves a voxel,")
+    print("      reflects off a layer boundary and returns to the SAME plane.")
+    print("      DeltaG = G_layered(j<-j) - same_depth_kernel_9x9 isolates exactly")
+    print("      that: the divergent direct part cancels, the reverberation stays.")
+    kx_wide = np.array([0.2, 1.0, 4.0, 8.0, 16.0, 24.0, 32.0])
+    ky_wide = np.full_like(kx_wide, KY[0])
+    s_p, s_s = uni.complex_slowness_p(), uni.complex_slowness_s()
+    ref_u = ReferenceMedium(1.0 / s_p[1], 1.0 / s_s[1], uni.rho[1])
+    direct = np.moveaxis(same_depth_kernel_9x9(kx_wide, KY[0], omega, ref_u), -1, 0)
+    d_uni = corrected_layered_9x9(uni, omega, kx_wide, ky_wide, 8, 8) - direct
+    d_con = corrected_layered_9x9(contrast_below(), omega, kx_wide, ky_wide, 8, 8) - direct
+
+    print(f"\n      {'k_x':>6} {'|direct|':>11} {'|dG| uniform':>13} {'|dG| layered':>13}")
+    for t, k in enumerate(kx_wide):
+        print(
+            f"      {k:6.1f} {np.abs(direct[t]).max():11.3e} "
+            f"{np.abs(d_uni[t]).max():13.3e} {np.abs(d_con[t]).max():13.3e}"
+        )
+    flat_ok = np.abs(d_uni).max() / np.abs(direct).max() < 1e-13
+    lives = np.abs(d_con[0]).max() > 1e-6
+    decays = np.abs(d_con[-1]).max() < 1e-6 * np.abs(d_con[0]).max()
+    print(f"\n      uniform background -> no reverberation at all: {'PASS' if flat_ok else 'FAIL'}")
+    print(f"      layered background -> reverberation present:    {'PASS' if lives else 'FAIL'}")
+    print(f"      and it DECAYS in k_x, so the quadrature converges: {'PASS' if decays else 'FAIL'}")
+    print("      Neither term is integrable alone -- both grow like |k_x| -- so")
+    print("      the decay of the difference is what makes the split usable.")
+    ok = ok and flat_ok and lives and decays
 
     print("\n" + "=" * 76)
     print(f"GATE rung 3L: {'PASS' if ok else 'FAIL'}")
