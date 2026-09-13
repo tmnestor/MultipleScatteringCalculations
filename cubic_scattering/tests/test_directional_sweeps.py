@@ -4,9 +4,11 @@ import numpy as np
 import pytest
 
 from cubic_scattering.directional_sweeps import (
+    LayeredBackground,
     apply_g0,
     build_g0_cache,
     build_vertical_stack,
+    build_vertical_stack_layered,
     make_sweep_grid,
     sweep_x,
     sweep_y,
@@ -297,6 +299,67 @@ def test_sweep_y_is_an_explicit_stage_two_refusal() -> None:
     cache = build_g0_cache(grid, REF, OMEGA)
     with pytest.raises(NotImplementedError, match="stage 2"):
         sweep_y(np.zeros((2, 4, 9), dtype=complex), grid, cache)
+
+
+def _uniform_layer_model(n_lay: int = 16, pitch: float = 1.0, q: float = 2.0):
+    """Ocean over n_lay identical crust layers; interface k at the bottom of layer k.
+
+    Matches the model the wrapper resolution was validated on. n_lay must be
+    large enough that the plane pair is not the half-space boundary -- there
+    layered_greens_6x6 returns zeros, which reads as a 1.000 residual rather
+    than as an error.
+    """
+    import sys
+
+    sibling = "/Users/tod/Desktop/SeismicInversion"
+    if sibling not in sys.path:
+        sys.path.insert(0, sibling)
+    pytest.importorskip("GlobalMatrix.layered_greens")
+    lm = pytest.importorskip("Kennett_Reflectivity.layer_model")
+    al, be, rh = 4.0, 2.22, 2.6
+    return lm.LayerModel.from_arrays(
+        alpha=[1.5, *([al] * n_lay), al],
+        beta=[0.0, *([be] * n_lay), be],
+        rho=[1.03, *([rh] * n_lay), rh],
+        thickness=[3.0, *([pitch] * n_lay), np.inf],
+        Q_alpha=[q] * (n_lay + 2),
+        Q_beta=[1e10, *([q] * n_lay), q],
+    )
+
+
+def test_layered_vertical_stack_reduces_to_the_whole_space_stack() -> None:
+    """RUNG 3L: the production vertical operator reduces to the arbiter.
+
+    build_vertical_stack_layered is the thesis Ch.5 stratified propagator;
+    build_vertical_stack is an INDEPENDENT construction (k_z residue of the
+    whole-space Green's tensor, gated against the closed-form Kupradze
+    propagator). On a uniform model with the planes deep enough that the free
+    surface is attenuated, they must agree.
+    """
+    model = _uniform_layer_model()
+    pitch = 1.0
+    grid = make_sweep_grid(2, 3, pitch, ky=0.3, n_kz=32, n_kx=64, kx_max=3.0)
+    omega = 2 * np.pi * 6.0
+
+    background = LayeredBackground(model=model, plane_ifaces=(8, 9))
+    got = build_vertical_stack_layered(grid, background, omega)
+
+    s_p, s_s = model.complex_slowness_p(), model.complex_slowness_s()
+    ref = ReferenceMedium(1.0 / s_p[1], 1.0 / s_s[1], model.rho[1])
+    want = build_vertical_stack(grid, ref, omega)
+
+    assert np.abs(got - want).max() / np.abs(want).max() < 1e-13
+    # ...and the diagonal stays empty: same-plane coupling is sweep_x's job.
+    assert np.abs(got[0, 0]).max() == 0.0
+    assert np.abs(got[1, 1]).max() == 0.0
+
+
+def test_layered_stack_rejects_a_wrong_length_plane_map() -> None:
+    model = _uniform_layer_model()
+    grid = make_sweep_grid(3, 3, 1.0, ky=0.3, n_kz=32, n_kx=32, kx_max=3.0)
+    background = LayeredBackground(model=model, plane_ifaces=(8, 9))
+    with pytest.raises(ValueError, match="plane_ifaces"):
+        build_vertical_stack_layered(grid, background, 2 * np.pi * 6.0)
 
 
 def test_grid_rejects_single_site_row() -> None:
