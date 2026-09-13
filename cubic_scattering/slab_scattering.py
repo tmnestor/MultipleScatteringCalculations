@@ -8,8 +8,8 @@ Coordinate system: z=0 (down), x=1 (right), y=2 (out) — seismological.
 Voigt ordering: (zz, xx, yy, xy, zy, zx) with engineering halving.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import numpy as np
 from numpy.typing import NDArray
