@@ -2,7 +2,7 @@
 
 - **Date:** 2026-06-26
 - **Status:** Draft for review
-- **Author:** Tod Nestor (with Claude Code)
+- **Author:** Tod Nestor
 - **Topic:** A full 3-D, deterministic forward solver for surface shot gathers over a marine ocean / heterogeneous-crust / half-space model, built as the 3-D extension of Nestor (1996) thesis Chapter 5.
 
 ---

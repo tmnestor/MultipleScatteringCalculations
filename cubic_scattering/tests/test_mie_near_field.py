@@ -623,13 +623,17 @@ class TestFormFactorCorrection:
         c₄ tests in this class.
         """
         import importlib.util
+        import os
         from fractions import Fraction as F
         from pathlib import Path
 
-        saved_dir = Path.home() / (
-            ".claude/projects/-Users-tod-Desktop-MultipleScatteringCalculations/"
-            "memory/c4_closed_forms"
-        )
+        # Location of the local-only oracle, supplied by the environment rather
+        # than hard-coded: the files live outside the repository and the path is
+        # machine-specific.  Export C4_CLOSED_FORMS_DIR to enable this test.
+        oracle = os.environ.get("C4_CLOSED_FORMS_DIR")
+        if not oracle:
+            pytest.skip("C4_CLOSED_FORMS_DIR not set (local-only oracle)")
+        saved_dir = Path(oracle)
         if not (saved_dir / "c4_kappa.py").exists():
             pytest.skip("saved c₄ closed-form files not present (local-only oracle)")
 

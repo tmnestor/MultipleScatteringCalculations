@@ -16,7 +16,7 @@ equivalent-source radiation and its Gauss-quadrature arbiter) was abandoned — 
 validation showed it gave no advantage over ``scattered_field.cube_far_field`` — so
 only these primitives are retained for potential future multipole work.
 
-Coordinate system (CLAUDE.md): z = axis 0 (down), x = axis 1, y = axis 2.
+Coordinate system (the project's engineering standards): z = axis 0 (down), x = axis 1, y = axis 2.
 Voigt order: (e11, e22, e33, 2 e23, 2 e13, 2 e12).
 """
 

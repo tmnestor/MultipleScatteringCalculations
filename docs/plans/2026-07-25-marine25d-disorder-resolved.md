@@ -28,7 +28,7 @@
 > (`c3bb6c4`…`63cd3ba`); Task 2b was implemented and **reverted** (`3631b6b`).
 > Any successor plan must be written against the survey, not patched from this.
 
-> **For agentic workers:** ~~REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development~~ — **do not**. The user's standing instruction (2026-07-26, validated over months of experience) is that agent-driven development produces more bugs and takes longer than in-place work on this project. Execute in place.
+> **Execution:** ~~parallel task execution~~ — **do not**. The user's standing instruction (2026-07-26, validated over months of experience) is that agent-driven development produces more bugs and takes longer than in-place work on this project. Execute in place.
 
 **Goal:** Put a per-voxel contrast field on the Marine3D crust planes and resolve the resulting multiple scattering with a matrix-free GMRES matvec, validated against an independently re-derived Wolfram reference and recorded in a LaTeX companion note.
 
@@ -51,7 +51,7 @@
 - **B904:** `raise ... from None` or `from err` inside `except` blocks.
 - **Lint/type:** `ruff check --fix --ignore ARG001,ARG002,F841,E741`, `ruff format`, `mypy --ignore-missing-imports`. Line length ≤ 108.
 - **Tests** are local-only (`Marine3D/tests/` is gitignored), mirror source layout, run via `conda run -n seismic`.
-- **Commits:** gitmoji conventional style, **no Claude attribution**, never `--no-verify`.
+- **Commits:** gitmoji conventional style, **no tool attribution**, never `--no-verify`.
 - **Full suite** (two modules need un-ported deps): `conda run -n seismic python -m pytest tests/ -q --ignore=tests/test_resonance_far_field.py --ignore=tests/test_inter_voxel_propagator.py` → expect `468 passed, 7 skipped` before any Phase-2 tests are added.
 
 ---
@@ -1602,7 +1602,7 @@ Sections:
 | 8 | Reciprocity; energy | *(from Task 7)* |
 | 9 | Convergence signature | *(from Task 7)* |
 
-**Actual measured residuals only.** Any rung that did not pass is recorded as failed, with the measured value — per `CLAUDE.md`, a formula in a `.tex` without a passing check behind it is unvalidated and must be labelled so.
+**Actual measured residuals only.** Any rung that did not pass is recorded as failed, with the measured value — per the project's engineering standards, a formula in a `.tex` without a passing check behind it is unvalidated and must be labelled so.
 
 - [ ] **Step 3: Compile twice**
 

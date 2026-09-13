@@ -1,6 +1,6 @@
 # Sphere-Packing Discretisation Error Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Quantify the irreducible geometric discretisation error of a diluted planar sphere packing versus the space-filling cube slab (Rayleigh limit), and test the `Δ→Δ/φ` contrast renormalisation as the correction.
 
@@ -15,12 +15,12 @@
 - Time convention `e^{−iωt}`, outgoing `h_n^(1)` via `SphericalHankelH1` — NEVER `j_n + i y_n` (catastrophic cancellation in the damped far field).
 - Rayleigh limit only: `ka ∈ {0.05, 0.1}`. No finite-ka, no oblique incidence (Phase 3).
 - Contrast renorm keeps spheres NON-overlapping: sphere radius `a = L/2` (the cube half-width), φ = π/6 at touching, sphere contrast = `Δ/φ`. The cube is at φ=1 (no renorm).
-- Test params (`CLAUDE.md`): background α=5000 m/s, β=3000 m/s, ρ=2500 kg/m³; moderate contrast Δλ=+2 GPa (2e9), Δμ=+1 GPa (1e9), Δρ=+100 kg/m³; weak = `1e-4 ×` background moduli/density; negative/strong = −60% of background moduli & density.
+- Test params (the project's engineering standards): background α=5000 m/s, β=3000 m/s, ρ=2500 kg/m³; moderate contrast Δλ=+2 GPa (2e9), Δμ=+1 GPa (1e9), Δρ=+100 kg/m³; weak = `1e-4 ×` background moduli/density; negative/strong = −60% of background moduli & density.
 - Packing sweep `aL ∈ {6, 4, 3, 2.5, 2.2, 2.0}` (lattice pitch / sphere half-width ratio; aL=2.0 ⇒ touching, φ=π/6). Reuse item (c)'s `aL` semantics.
 - Line length ≤ 108. Ruff `--ignore ARG001,ARG002,F841,E741`, ruff format, mypy `--ignore-missing-imports`. B904 in except blocks. `pathlib.Path` for paths. Google docstrings.
 - Lint/format/type after every Python change:
   `conda run -n seismic ruff check cubic_scattering/ --fix --ignore ARG001,ARG002,F841,E741 && conda run -n seismic ruff format cubic_scattering/ && conda run -n seismic mypy cubic_scattering/ --ignore-missing-imports`
-- NO Claude attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and use `git commit -F`.
+- NO tool attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and use `git commit -F`.
 
 ## File Structure
 
@@ -65,7 +65,7 @@ Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.w
 reim[z_] := {Re[N[z]], Im[N[z]]};
 phiTouch = N[Pi/6];                                  (* sphere-in-cube volume fraction *)
 
-(* background + contrasts (SI; CLAUDE.md test params) *)
+(* background + contrasts (SI; the project's engineering standards test params) *)
 alpha0 = 5000.; beta0 = 3000.; rho0 = 2500.;
 lam0 = rho0 (alpha0^2 - 2 beta0^2); mu0 = rho0 beta0^2;
 contrasts = {

@@ -1,6 +1,6 @@
 # Intra-Plane Layer Energy Balance Implementation Plan (Phase 3b cycle 3)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Verify the lossless energy balance of the Phase-3a layer R/T(p) — `S_p† S_p = I` on the propagating channels — built on the cycle-2 **undamped** vector coupling `G0^vec` (Im κ = 0), across normal / sub-critical / post-critical `p`.
 
@@ -21,7 +21,7 @@
 - Lint/format/type after every Python change:
   `conda run -n seismic ruff check cubic_scattering/ --fix --ignore ARG001,ARG002,F841,E741 && conda run -n seismic ruff format cubic_scattering/ && conda run -n seismic mypy cubic_scattering/ --ignore-missing-imports`
 - scipy 1.17: use `sph_harm_y(n,m,θ_polar,φ_azimuth)` (NOT `sph_harm`); complex `erfc` via Faddeeva `wofz` (`erfc(z)=exp(−z²)·wofz(iz)`).
-- NO Claude attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and `git commit -F /tmp/msg.txt`. Long `wolframscript` runs auto-background; wait via a bounded waiter; ONE kernel at a time.
+- NO tool attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and `git commit -F /tmp/msg.txt`. Long `wolframscript` runs auto-background; wait via a bounded waiter; ONE kernel at a time.
 - `IntraPlaneEnergyBalance.wl` is a NEW self-contained file: it copies the cycle-2 builders and the Phase-3a projection block, and `Get`s only `CartesianT0.wl` (for `T0mono`/`TsphClean`/`Ttoroidal`/`Yv`/`Bv`/`Cv`). `IntraPlaneRT.wl` and `IntraPlaneKambeVector.wl` are UNTOUCHED.
 - **Cache hygiene (critical):** the Ewald field depends on the per-`p` globals `kx, ky`. Do NOT self-memoise the structure constant on `(q,s,κ,η)` alone — build a fresh `Dtab` Association per `p`. `coeff_q` is `(kx,ky)`-independent (pure Wigner; `κ_S` fixed across the sweep) → memoise it globally once.
 
@@ -624,8 +624,8 @@ Add the deliverable notebook entry, mark the plan done, and record the memory.
 **Files:**
 - Modify: `Mathematica/makeIntraPlaneNotebooks.wl`
 - Modify: `IntraPlaneFoldyLax_Plan.md`
-- Create: `/Users/tod/.claude/projects/-Users-tod-Desktop-MultipleScatteringCalculations/memory/project-intraplane-energy-balance.md`
-- Modify: `/Users/tod/.claude/projects/-Users-tod-Desktop-MultipleScatteringCalculations/memory/MEMORY.md`
+- Create: `<project memory directory, outside the repo>/project-intraplane-energy-balance.md`
+- Modify: `<project memory directory, outside the repo>/MEMORY.md`
 
 **Interfaces:**
 - Consumes: the committed `IntraPlaneEnergyBalance.wl`.
@@ -660,7 +660,7 @@ Mark Phase 3b cycle 3 DONE and Phase 3b closed. Edit the cycle-3 bullet (around 
 
 - [ ] **Step 4: Write the memory note**
 
-Create `/Users/tod/.claude/projects/-Users-tod-Desktop-MultipleScatteringCalculations/memory/project-intraplane-energy-balance.md`:
+Create `<project memory directory, outside the repo>/project-intraplane-energy-balance.md`:
 
 ```markdown
 ---

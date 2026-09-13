@@ -96,7 +96,7 @@ vector *)
 phiTouch = N[Pi/6];                                        (* sphere-in-cube \
 volume fraction *)
 
-(* ---- contrasts (SI; CLAUDE.md test params), as RAW Delta (renorm applied \
+(* ---- contrasts (SI; the project's engineering standards test params), as RAW Delta (renorm applied \
 below) ---- *)
 contrasts = {
   <|\"name\" -> \"weak\",     \"Dl\" -> 1.*^-4 lam0, \"Dm\" -> 1.*^-4 mu0, \

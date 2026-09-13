@@ -427,7 +427,7 @@ class TestOhRotation:
 
 # ── Dynamic propagator tests ──
 
-# Reference medium parameters (same as CLAUDE.md)
+# Reference medium parameters (same as the project's engineering standards)
 ALPHA = 5000.0  # m/s
 BETA = 3000.0  # m/s
 RHO = 2500.0  # kg/m³

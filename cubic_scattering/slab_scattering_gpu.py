@@ -8,7 +8,7 @@ CPU code builds the T-matrices, kernels, and incident field.
 GPU handles the GMRES iterations via 3D FFT convolution.
 Mode-converted channels (SV/SH incidence, slab_reflection_matrix) are CPU-only
 for now; GPU parity is deferred (see
-docs/superpowers/specs/2026-06-12-mode-converted-reflections-design.md).
+docs/specs/2026-06-12-mode-converted-reflections-design.md).
 """
 
 from __future__ import annotations

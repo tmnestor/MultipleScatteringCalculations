@@ -4,7 +4,7 @@ Quantifies the irreducible geometric error of representing a heterogeneity as a
 diluted planar sphere packing (planar volume fraction ``phi = pi/6`` at touching)
 versus the space-filling cube slab (``phi = 1``), in the Rayleigh limit.
 
-Two stages (see ``docs/superpowers/specs/2026-06-23-sphere-packing-discretisation-design.md``):
+Two stages (see ``docs/specs/2026-06-23-sphere-packing-discretisation-design.md``):
 
 - **Stage A — single-site shape factor.** Compare a sphere's Rayleigh effective
   contrast against a cube's at the *same* material contrast (no renormalisation).

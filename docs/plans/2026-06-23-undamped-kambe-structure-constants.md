@@ -1,6 +1,6 @@
 # Undamped Multipole Structure Constants `D[q,s]` Implementation Plan (Phase 3b cycle 1)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Compute the undamped (`κ` real) planar lattice multipole structure constants `D[q,s] = Σ_{R≠0} h_q(κ|R|) Y_q^s(R̂) e^{ik_par·R}` for `q = 0…2·Nmax`, by **multipole-projecting the validated undamped scalar Ewald field** onto regular multipoles — reliable (reuses Phase-1 TB2, stable quadrature, no per-`q` Kambe transcription, no high-order derivatives), η-independent, landing in the existing L/M/N `G0` basis.
 
@@ -20,7 +20,7 @@
 - Line length ≤ 108. Ruff `--ignore ARG001,ARG002,F841,E741`, ruff format, mypy `--ignore-missing-imports`. B904 in except; `pathlib.Path`; Google docstrings.
 - Lint/format/type after every Python change:
   `conda run -n seismic ruff check cubic_scattering/ --fix --ignore ARG001,ARG002,F841,E741 && conda run -n seismic ruff format cubic_scattering/ && conda run -n seismic mypy cubic_scattering/ --ignore-missing-imports`
-- NO Claude attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and `git commit -F`. Long `wolframscript` runs auto-background; wait via a bounded waiter; ONE kernel at a time (concurrent kernels thrash).
+- NO tool attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and `git commit -F`. Long `wolframscript` runs auto-background; wait via a bounded waiter; ONE kernel at a time (concurrent kernels thrash).
 - `IntraPlaneKambe.wl` is a NEW self-contained file (does NOT `Get` `IntraPlaneLatticeSum.wl`, which runs the Phase-1 study on load); it copies the small TB2 pieces it needs.
 
 ## File Structure

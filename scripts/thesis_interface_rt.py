@@ -19,7 +19,7 @@ Conventions (thesis Section 3.1):
       "ill-conditioning" (~1.9e10) is a pure units artifact, not a defect; see
       docs/Dz_conditioning_and_nondimensionalisation.md.
 
-Reference: docs/superpowers/specs/2026-06-25-thesis-interface-rt-design.md.
+Reference: docs/specs/2026-06-25-thesis-interface-rt-design.md.
 """
 
 import cmath

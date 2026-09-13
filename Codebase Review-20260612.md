@@ -11,8 +11,8 @@ wrong here:
 except fallbacks that exist (singular Mie matrix → physically-zero coefficient; PyTorch missing → logged CPU
 fallback) are documented and legitimate.
 - No god objects — the biggest modules (effective_contrasts.py at ~1900 lines, lattice_greens.py at ~1500) are
-large because the physics is, not because of tangling. Dependency flow is acyclic and matches the CLAUDE.md
-architecture diagram.
+large because the physics is, not because of tangling. Dependency flow is acyclic and matches the
+architecture diagram in the project's engineering standards.
 - Validation culture — Mie sphere as an independent check on the cube machinery, Kennett as the reference for
 slab R_PP, Rayleigh-limit regression for the resonance solver.
 
@@ -75,7 +75,7 @@ Hygiene (do alongside, not instead)
 - Add direct unit tests for effective_contrasts.py, voigt_tmatrix.py, and lattice_greens.py.
 
 
-RESOLVE why Claude heredocs hang in this shell setup - fix the zsh setup if necessary
+RESOLVE why heredocs hang in this shell setup - fix the zsh setup if necessary
 
 
 

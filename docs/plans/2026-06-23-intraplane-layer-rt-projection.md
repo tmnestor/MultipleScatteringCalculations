@@ -1,6 +1,6 @@
 # Phase 3a — Intra-Plane Layer R/T(p) Projection Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Project the Phase-2 spherical collective `T_coll(k_par)` onto Kennett flux-normalised up/down P-SV-SH plane waves at horizontal slowness `p`, producing the layer R/T(p) operator (`Rd, Ru, Td, Tu` 2×2 P-SV + SH scalar) across normal / sub-critical / post-critical `p`, validated by reciprocity (tight) and the Cartesian/Kennett ground truth (loose).
 
@@ -22,7 +22,7 @@
 - Lint/format/type after every Python change:
   `conda run -n seismic ruff check cubic_scattering/ --fix --ignore ARG001,ARG002,F841,E741 && conda run -n seismic ruff format cubic_scattering/ && conda run -n seismic mypy cubic_scattering/ --ignore-missing-imports`
 - LaTeX: self-contained `lualatex`, compiled IN-PLACE in its `docs/` subdir, run twice.
-- NO Claude attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and use `git commit -F`. Long `wolframscript` runs auto-background; wait via a bounded waiter, don't chain sleeps.
+- NO tool attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and use `git commit -F`. Long `wolframscript` runs auto-background; wait via a bounded waiter, don't chain sleeps.
 
 ## File Structure
 

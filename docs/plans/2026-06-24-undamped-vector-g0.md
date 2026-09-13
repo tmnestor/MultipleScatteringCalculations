@@ -1,6 +1,6 @@
 # Undamped Vector `G0^vec` Implementation Plan (Phase 3b cycle 2)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** implement this plan task-by-task, with a review checkpoint between tasks. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the undamped (Im κ = 0) planar lattice vector coupling `G0^vec_{(νμc'),(nmc)}(k_par)` in the L/M/N basis by contracting the cycle-1 undamped scalar structure constants `D[q,s]`, and feed it to the Phase-2 collective `T_coll = T0 (I − G0^vec T0)^{-1}`.
 
@@ -19,7 +19,7 @@
 - Lint/format/type after every Python change:
   `conda run -n seismic ruff check cubic_scattering/ --fix --ignore ARG001,ARG002,F841,E741 && conda run -n seismic ruff format cubic_scattering/ && conda run -n seismic mypy cubic_scattering/ --ignore-missing-imports`
 - scipy 1.17: use `sph_harm_y(n,m,θ_polar,φ_azimuth)` (NOT `sph_harm`); complex `erfc` via Faddeeva `wofz` (`erfc(z)=exp(−z²)·wofz(iz)`).
-- NO Claude attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and `git commit -F`. Long `wolframscript` runs auto-background; wait via a bounded waiter; ONE kernel at a time.
+- NO tool attribution in commits. NEVER write "ATO" (use "PROD"). No heredocs in the Bash tool — write commit messages to a file and `git commit -F`. Long `wolframscript` runs auto-background; wait via a bounded waiter; ONE kernel at a time.
 - `IntraPlaneKambeVector.wl` is a NEW self-contained file: it copies the small cycle-1 scalar pieces and the Phase-2(b) vector helpers it needs; it `Get`s only `CartesianT0.wl` (for `T0LMN`), exactly as `IntraPlaneVectorLattice.wl` does.
 - Memoise the field/projection helpers (the projection re-hits the same quadrature nodes) — cf. the cycle-1 ~20 min → few min speedup.
 
