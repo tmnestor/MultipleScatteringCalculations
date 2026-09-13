@@ -44,6 +44,7 @@ __all__ = [
     "assert_interface_continuous",
     "correct_6x6",
     "corrected_layered_6x6",
+    "corrected_layered_9x9",
     "k_operator",
     "source_jump_operator",
     "strain_from_state",
@@ -87,7 +88,7 @@ def strain_from_state(kx: float, ky: float, rho: float, alpha: complex, beta: co
     return a
 
 
-def k_operator(s_s: complex, kx: float, ky: float, omega: float) -> NDArray:
+def k_operator(s_s: complex, kx: float, ky: float, omega: complex) -> NDArray:
     """The traction-half normalisation operator (defect D2), in (z, x, y).
 
     ``K = 1 (+) (-P_par + eta_S P_perp)`` acting on
@@ -125,7 +126,7 @@ def k_operator(s_s: complex, kx: float, ky: float, omega: float) -> NDArray:
 
     khat = np.array([kx, ky]) / kpar
     par = np.outer(khat, khat)
-    eta = np.sqrt(s_s**2 - (kpar / omega) ** 2 + 0j)
+    eta = np.sqrt(s_s**2 - (kpar / complex(omega)) ** 2 + 0j)
     if np.imag(eta) < 0:
         eta = -eta
 
@@ -136,7 +137,7 @@ def k_operator(s_s: complex, kx: float, ky: float, omega: float) -> NDArray:
 
 def correct_6x6(
     g6: NDArray,
-    omega: float,
+    omega: complex,
     s_s_source: complex,
     s_s_receiver: complex,
     kx: float,
@@ -278,3 +279,74 @@ def corrected_layered_6x6(
         kx,
         ky,
     )
+
+
+def corrected_layered_9x9(
+    model: object,
+    omega: complex,
+    kx: NDArray,
+    ky: NDArray,
+    source_iface: int,
+    receiver_iface: int,
+) -> NDArray:
+    """Corrected stratified 9x9 in the ``(u, eps)`` basis, over a wavenumber grid.
+
+    ``G9 = A(receiver) . correct_6x6(G6) . B(source)``. This is the stratified
+    plane-to-plane propagator the directional-sweep solver uses as its vertical
+    operator; ``sweep_kernels.vertical_kernel_9x9`` is its homogeneous limit, and
+    the two agree to ~1e-15 (see ``scripts/gate_sweep_rung3_layered.py``).
+
+    ATTENUATION CONSISTENCY -- the reason this exists rather than
+    ``GlobalMatrix.layered_greens.layered_greens_9x9`` or
+    ``scripts/composed_matvec.resolved_9x9_grid``. Both of those build ``A`` and
+    ``B`` from ``_interface_elastic_properties``, which returns
+    ``float(model.alpha[j])`` -- the UNDAMPED real velocity -- while ``G6``
+    itself is computed from the complex, attenuative slowness. The operators and
+    the Green's function then describe different media. At field Q (600-1000)
+    the discrepancy is ~0.1% and invisible; at the Q = 2 used to isolate the
+    whole-space limit it is 100%, and the homogeneous reduction fails outright
+    (measured 1.009 relative). Symmetry gates cannot see it either, being
+    homogeneous of degree one. This function takes both media from
+    ``complex_slowness_p/s``, and the reduction then holds at 1e-15.
+
+    Args:
+        model: Stratified model accepted by ``layered_greens_6x6``.
+        omega: Angular frequency (rad/s).
+        kx: Horizontal wavenumber x-components, any shape.
+        ky: Horizontal wavenumber y-components, same shape as ``kx``.
+        source_iface: Source interface index.
+        receiver_iface: Receiver interface index.
+
+    Returns:
+        Shape ``(*kx.shape, 9, 9)`` complex, basis
+        ``(u_z, u_x, u_y, e_zz, e_xx, e_yy, 2e_xy, 2e_zy, 2e_zx)``.
+    """
+    from GlobalMatrix.layered_greens import layered_greens_6x6
+
+    assert_interface_continuous(model, source_iface, "source")
+    assert_interface_continuous(model, receiver_iface, "receiver")
+
+    shape = np.shape(kx)
+    kxf = np.ravel(np.asarray(kx, dtype=float))
+    kyf = np.ravel(np.asarray(ky, dtype=float))
+
+    raw = layered_greens_6x6(
+        model, omega, kxf, kyf, source_iface=source_iface, receiver_iface=receiver_iface
+    )
+
+    s_p = model.complex_slowness_p()  # type: ignore[attr-defined]
+    s_s = model.complex_slowness_s()  # type: ignore[attr-defined]
+    rho = model.rho  # type: ignore[attr-defined]
+    j_s = max(int(source_iface), 1)
+    j_r = max(int(receiver_iface), 1)
+    al_s, be_s = 1.0 / s_p[j_s], 1.0 / s_s[j_s]
+    al_r, be_r = 1.0 / s_p[j_r], 1.0 / s_s[j_r]
+
+    out = np.empty((kxf.size, 9, 9), dtype=complex)
+    for t in range(kxf.size):
+        g_c = correct_6x6(raw[t], omega, s_s[j_s], s_s[j_r], kxf[t], kyf[t])
+        a = strain_from_state(kxf[t], kyf[t], rho[j_r], al_r, be_r)
+        b = source_jump_operator(kxf[t], kyf[t], rho[j_s], al_s, be_s)
+        out[t] = a @ g_c @ b
+
+    return out.reshape(*shape, 9, 9)

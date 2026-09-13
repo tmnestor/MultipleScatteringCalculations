@@ -3,7 +3,12 @@
 import numpy as np
 import pytest
 
-from cubic_scattering.directional_sweeps import apply_g0, build_g0_cache, make_sweep_grid
+from cubic_scattering.directional_sweeps import (
+    LayeredBackground,
+    apply_g0,
+    build_g0_cache,
+    make_sweep_grid,
+)
 from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.sweep_solver import SweepSolveResult, solve_sweep_foldy_lax
 
@@ -60,6 +65,59 @@ def test_solution_satisfies_its_own_equation() -> None:
     lhs = res.psi - apply_g0(np.einsum("zxab,zxb->zxa", t0, res.psi), cache)
     assert np.abs(lhs - psi_inc).max() / np.abs(psi_inc).max() < 1e-9
     assert res.n_matvec > 0
+
+
+def test_solves_on_a_stratified_background() -> None:
+    """End to end with the production vertical operator (thesis Ch.5 Q^d).
+
+    The layered solve must differ from the whole-space one -- otherwise the
+    background is being ignored -- while still satisfying its own equation.
+    """
+    import sys
+
+    sibling = "/Users/tod/Desktop/SeismicInversion"
+    if sibling not in sys.path:
+        sys.path.insert(0, sibling)
+    pytest.importorskip("GlobalMatrix.layered_greens")
+    lm = pytest.importorskip("Kennett_Reflectivity.layer_model")
+
+    n_lay, pitch, q = 16, 1.0, 2.0
+    al, be, rh = 4.0, 2.22, 2.6
+    fast = [1.5, *([al] * n_lay), al]
+    fast_b = [0.0, *([be] * n_lay), be]
+    fast_r = [1.03, *([rh] * n_lay), rh]
+    for lay in (9, 10):
+        fast[lay], fast_b[lay], fast_r[lay] = 6.5, 3.7, 3.3
+    model = lm.LayerModel.from_arrays(
+        alpha=fast,
+        beta=fast_b,
+        rho=fast_r,
+        thickness=[3.0, *([pitch] * n_lay), np.inf],
+        Q_alpha=[q] * (n_lay + 2),
+        Q_beta=[1e10, *([q] * n_lay), q],
+    )
+
+    grid = make_sweep_grid(2, 4, pitch, ky=0.3, n_kz=32, n_kx=64, kx_max=3.0)
+    omega = 2 * np.pi * 6.0
+    s_p, s_s = model.complex_slowness_p(), model.complex_slowness_s()
+    ref = ReferenceMedium(1.0 / s_p[1], 1.0 / s_s[1], model.rho[1])
+
+    background = LayeredBackground(model=model, plane_ifaces=(7, 11))
+    cache_l = build_g0_cache(grid, ref, omega, background=background)
+    cache_w = build_g0_cache(grid, ref, omega)
+
+    rng = np.random.default_rng(31)
+    psi_inc = rng.standard_normal((2, 4, 9)) + 0j
+    t0 = 1e-3 * (rng.standard_normal((2, 4, 9, 9)) + 0j)
+
+    res_l = solve_sweep_foldy_lax(cache_l, t0, psi_inc, tol=1e-10)
+    res_w = solve_sweep_foldy_lax(cache_w, t0, psi_inc, tol=1e-10)
+
+    # It satisfies its own equation...
+    lhs = res_l.psi - apply_g0(np.einsum("zxab,zxb->zxa", t0, res_l.psi), cache_l)
+    assert np.abs(lhs - psi_inc).max() / np.abs(psi_inc).max() < 1e-9
+    # ...and the layering actually changed the answer.
+    assert np.abs(res_l.psi - res_w.psi).max() / np.abs(res_w.psi).max() > 1e-6
 
 
 def test_rejects_mismatched_t0_shape() -> None:

@@ -238,8 +238,86 @@ def sweep_x(
     return out
 
 
+@dataclass(frozen=True)
+class LayeredBackground:
+    """A stratified background for the vertical sweep.
+
+    Attributes:
+        model: A ``LayerModel`` whose layer boundaries include one interface per
+            depth plane. Layers between consecutive planes are one pitch thick.
+        plane_ifaces: Interface index of each depth plane, in order, length n_z.
+            Planes must lie in layer INTERIORS (a pseudo-interface with no
+            material contrast counts as interior); ``corrected_layered_9x9``
+            enforces that, because the correction operator K is built from the
+            local vertical S slowness and is two-valued on a material jump.
+    """
+
+    model: object
+    plane_ifaces: tuple[int, ...]
+
+
+def build_vertical_stack_layered(grid: SweepGrid, background: LayeredBackground, omega: complex) -> NDArray:
+    """Plane-to-plane kernels for a STRATIFIED background.
+
+    This is the production vertical operator. It is the thesis Chapter 5
+    stratified propagator ``Q^d = (I - S_int E)^-1 S_int`` (Eq. PstratDef),
+    reached through the already-validated route: the Riccati layered Green's
+    function, plus the three wrapper corrections D1/D2/D3.
+
+    ``build_vertical_stack`` is the whole-space special case, retained as the
+    homogeneous-limit arbiter: with a uniform model and the plane pair taken
+    deep enough that the free surface is attenuated, the two agree to ~1e-15.
+
+    Args:
+        grid: The lattice and both quadratures.
+        background: The stratified model and the plane-to-interface map.
+        omega: Angular frequency (rad/s).
+
+    Returns:
+        Array of shape (n_z, n_z, 9, 9, n_kx); the diagonal is zero.
+
+    Raises:
+        ValueError: if the plane map does not have one entry per depth plane.
+    """
+    if len(background.plane_ifaces) != grid.n_z:
+        msg = (
+            f"plane_ifaces has {len(background.plane_ifaces)} entries but the grid has "
+            f"n_z={grid.n_z} depth planes.\n"
+            "  Where: cubic_scattering/directional_sweeps.py, build_vertical_stack_layered\n"
+            "  Valid: one interface index per plane, e.g. plane_ifaces=(1, 2, 3, 4)\n"
+            "  Fix:   build the LayerModel with one layer per inter-plane gap, each of\n"
+            "         thickness grid.pitch, and list the interface at each plane."
+        )
+        raise ValueError(msg) from None
+
+    from .layered_correction import corrected_layered_9x9
+
+    n_kx = grid.kx_nodes.size
+    ky_arr = np.full(n_kx, grid.ky)
+    out = np.zeros((grid.n_z, grid.n_z, 9, 9, n_kx), dtype=complex)
+    for lz in range(grid.n_z):
+        for mz in range(grid.n_z):
+            if lz == mz:
+                continue
+            g9 = corrected_layered_9x9(
+                background.model,
+                omega,
+                grid.kx_nodes,
+                ky_arr,
+                source_iface=background.plane_ifaces[mz],
+                receiver_iface=background.plane_ifaces[lz],
+            )
+            out[lz, mz] = np.moveaxis(g9, 0, -1)
+    return out
+
+
 def build_vertical_stack(grid: SweepGrid, ref: ReferenceMedium, omega: complex) -> NDArray:
-    """Precompute the plane-to-plane kernels once, outside the Krylov loop.
+    """Whole-space plane-to-plane kernels -- the HOMOGENEOUS-LIMIT case.
+
+    For a stratified background use ``build_vertical_stack_layered``. This
+    function is retained because it is an independent construction (k_z residue
+    of the whole-space Green's tensor, gated against the closed-form Kupradze
+    propagator) and therefore arbitrates the stratified one in the limit.
 
     Args:
         grid: The lattice and both quadratures.
@@ -331,22 +409,42 @@ class G0Cache:
     vertical: NDArray
 
 
-def build_g0_cache(grid: SweepGrid, ref: ReferenceMedium, omega: complex) -> G0Cache:
+def build_g0_cache(
+    grid: SweepGrid,
+    ref: ReferenceMedium,
+    omega: complex,
+    *,
+    background: LayeredBackground | None = None,
+) -> G0Cache:
     """Build every direction's kernels once, outside the Krylov loop.
 
     Args:
         grid: The lattice and both quadratures.
-        ref: Background medium.
+        ref: Background medium for the LATERAL sweep.
         omega: Complex angular frequency.
+        background: Stratified background for the vertical sweep. When omitted,
+            the vertical sweep uses the whole-space kernel built from ``ref``.
 
     Returns:
         A G0Cache.
+
+    Note:
+        Stage 1 dresses only the VERTICAL sweep with the layering. Same-depth
+        lateral coupling still goes through the whole-space kernel, so layer
+        reverberations between two voxels in one plane are missing. That is
+        small for a plane well inside a layer and NOT small next to a strong
+        interface. ``layered_correction`` holds the machinery to close it.
     """
+    vertical = (
+        build_vertical_stack(grid, ref, omega)
+        if background is None
+        else build_vertical_stack_layered(grid, background, omega)
+    )
     return G0Cache(
         grid=grid,
         split_right=lateral_split_9x9(grid.ky, grid.kz_nodes, grid.pitch, omega, ref, direction="right"),
         split_left=lateral_split_9x9(grid.ky, grid.kz_nodes, grid.pitch, omega, ref, direction="left"),
-        vertical=build_vertical_stack(grid, ref, omega),
+        vertical=vertical,
     )
 
 
