@@ -44,6 +44,21 @@ THE TWO CONSTRAINTS, which any candidate fix must satisfy simultaneously:
   [C3] CONTROL. P and SV must stay at 1.000000 throughout -- they are correct
        today, and a fix that disturbs them has traded one defect for another.
 
+  [C4] MULTI-INTERFACE. A single interface cannot exercise internal
+       reverberation, and the single-bounce extraction of [C2] assumes one bounce
+       dominates. Here a fast/slow/fast stack sits below the plane and the TOTAL
+       downward reflection, every internal multiple included, is compared against
+       `kennett_layers` on that sub-stack. All three modes to 1e-4.
+
+       A REFERENCE-DEPTH TRAP worth recording: `kennett_layers` references RD at
+       the first INTERFACE, not at the top of the stack -- its recursion phases
+       the layer BELOW each interface, so the leading layer's own two-way delay
+       is excluded. Feeding it the layers below the plane directly gives an RD
+       short by exactly |e^{2 i kz PIT}| (0.428 here), and because that shifts P,
+       SV and SH alike it reads as a physics failure rather than a bookkeeping
+       one. A two-layer test with a 1e-9 top layer cannot see it. The sub-stack
+       therefore prepends a zero-thickness layer of the plane's own medium.
+
 Run:  conda run -n seismic python scripts/gate_sh_impedance.py
 Seismic units (km/s, g/cm3), time convention e^{-i omega t}.
 """
@@ -178,6 +193,115 @@ def analytic_r(mod: LayerModel, p: float) -> tuple[complex, complex]:
     return (z1 - z2) / (z1 + z2), (mu1 - mu2) / (mu1 + mu2)
 
 
+def multilayer_model(q: float = 20.0) -> LayerModel:
+    """Several contrasting layers below the plane: SH multiples compound.
+
+    A single interface cannot exercise internal reverberation. Here the stack
+    below interface PLANE alternates fast and slow, so the total reflection
+    contains every order of interbed multiple, not just one bounce.
+    """
+    al = [1.5] + [A] * (NL + 1)
+    be = [0.0] + [B] * (NL + 1)
+    rh = [1.03] + [RH] * (NL + 1)
+    fast = (6.5, 3.7, 3.3)
+    slow = (3.2, 1.8, 2.3)
+    for lay in (53, 54):
+        al[lay], be[lay], rh[lay] = fast
+    for lay in (56, 57):
+        al[lay], be[lay], rh[lay] = slow
+    for lay in range(59, NL + 2):
+        al[lay], be[lay], rh[lay] = fast
+    return LayerModel.from_arrays(
+        alpha=al,
+        beta=be,
+        rho=rh,
+        thickness=[3.0, *([PIT] * NL), np.inf],
+        Q_alpha=[q] * (NL + 2),
+        Q_beta=[1e10, *([q] * NL), q],
+    )
+
+
+def substack_below_plane(mod: LayerModel):
+    """The layers strictly below the plane, as a stack whose RD sits AT the plane.
+
+    kennett_layers references RD at the first INTERFACE, not at the top of the
+    stack: its recursion phases the layer BELOW each interface, so the leading
+    layer's own two-way delay is excluded. Measured, not assumed -- feeding the
+    layers below the plane directly gives an RD short by exactly
+    |e^{2 i kz * PIT}| = 0.428 here. A two-layer test with a 1e-9 top layer
+    cannot see this, which is how it slipped past the first time.
+
+    So a zero-thickness layer of the PLANE's own medium is prepended, and RD then
+    refers to the plane depth -- the quantity the reverberation actually carries.
+    """
+    from cubic_scattering.kennett_layers import IsotropicLayer, LayerStack
+
+    layers = [
+        IsotropicLayer(
+            float(mod.alpha[PLANE]),
+            float(mod.beta[PLANE]),
+            float(mod.rho[PLANE]),
+            1e-9,
+            float(mod.Q_alpha[PLANE]),
+            float(mod.Q_beta[PLANE]),
+        )
+    ]
+    for j in range(PLANE + 1, mod.n_layers):
+        thick = float(mod.thickness[j])
+        layers.append(
+            IsotropicLayer(
+                float(mod.alpha[j]),
+                float(mod.beta[j]),
+                float(mod.rho[j]),
+                thick,
+                float(mod.Q_alpha[j]),
+                float(mod.Q_beta[j]),
+            )
+        )
+    return LayerStack(layers)
+
+
+def c4_multi_interface() -> bool:
+    """[C4] Total reflection through a MULTI-interface stack, all multiples."""
+    from cubic_scattering.kennett_layers import kennett_layers
+
+    mod = multilayer_model()
+    stack = substack_below_plane(mod)
+    print("\n    [C4] MULTI-INTERFACE -- total RD at the plane, internal multiples included")
+    print("         arbiter: kennett_layers on the sub-stack below the plane")
+    print(
+        f"         {'kh':>6} {'SH meas':>12} {'SH kennett':>12} {'ratio':>9} {'P ratio':>9} {'SV ratio':>9}"
+    )
+    ok = True
+    for kh in (0.05, 0.5, 1.5):
+        kx, ky = kh * 0.8, kh * 0.6
+        p = kh / OM
+        s_p, s_s = mod.complex_slowness_p(), mod.complex_slowness_s()
+        ref_p = ReferenceMedium(1 / s_p[PLANE], 1 / s_s[PLANE], mod.rho[PLANE])
+        ref1 = ReferenceMedium(1 / s_p[1], 1 / s_s[1], mod.rho[1])
+        lay = LC.corrected_layered_9x9(mod, OM, np.array([kx]), np.array([ky]), PLANE, PLANE)[0]
+        d_g = lay - same_depth_kernel_9x9(np.array([kx]), ky, OM, ref1)[:, :, 0]
+        fac = vertical_factorisation(kx, ky, +PIT, OM, ref_p)
+        # No explicit phase: RD is referenced at the plane, so it already carries
+        # the propagation down to every interface and back.
+        r_tot = np.linalg.pinv(fac.receiver[:, 3:6]) @ d_g @ np.linalg.pinv(fac.source[0:3, :])
+        ken = kennett_layers(stack, p, np.array([OM]))
+        sh_ratio = r_tot[2, 2] / ken.RD_sh[0]
+        p_ratio = r_tot[0, 0] / ken.RD_psv[0, 0, 0]
+        sv_ratio = r_tot[1, 1] / ken.RD_psv[0, 1, 1]
+        good = abs(sh_ratio - 1) < 1e-4 and abs(p_ratio - 1) < 1e-4 and abs(sv_ratio - 1) < 1e-4
+        ok = ok and good
+        print(
+            f"         {kh:6.2f} {r_tot[2, 2].real:12.6f} {ken.RD_sh[0].real:12.6f} "
+            f"{sh_ratio.real:9.5f} {p_ratio.real:9.5f} {sv_ratio.real:9.5f}"
+        )
+    print(
+        f"         all three modes within 1e-4 of the full multi-layer reflectivity -> "
+        f"{'PASS' if ok else 'FAIL'}"
+    )
+    return ok
+
+
 def report(variant: str) -> bool:
     install(variant)
     c1 = c1_uniform_reduction()
@@ -235,6 +359,7 @@ def main() -> int:
             print(f"    variant {variant!r} raised: {type(exc).__name__}: {exc}")
             results[variant and ("OLD " + variant) or "SHIPPED"] = False
     install("")
+    c4 = c4_multi_interface()
 
     print("\n" + "=" * 78)
     winner = [k for k, v in results.items() if v]
