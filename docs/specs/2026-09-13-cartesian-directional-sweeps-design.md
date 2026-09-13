@@ -130,10 +130,32 @@ Three small focused files rather than growing `slab_scattering.py`, which is
 already ~1200 lines and implements the *different* architecture this supersedes.
 Keeping them apart leaves that solver intact as a cross-check.
 
-**No external-repository dependency.** The vertical sweep uses
+**RETRACTED 2026-09-13.** This paragraph previously read: *"No
+external-repository dependency. The vertical sweep uses
 `cubic_scattering.kennett_layers`, which is in-package. The stratified spectral
 Green's function from `layered_correction` — and hence the sibling
-`GlobalMatrix` repo — is not needed by this architecture at all.
+`GlobalMatrix` repo — is not needed by this architecture at all."*
+
+**That was wrong, and it was the root error of this spec.** The stratified
+plane-to-plane propagator already exists, in the *identical* 9-component basis
+this architecture uses:
+
+| Object | Where | Validated to |
+|---|---|---|
+| `layered_greens_9x9(model, omega, kx, ky, source_iface, receiver_iface)` | `GlobalMatrix/layered_greens.py:838` | returns `(u_z,u_x,u_y,ε_zz,ε_xx,ε_yy,2ε_xy,2ε_zy,2ε_zx)` — component-for-component the sweep state |
+| `corrected_layered_6x6(...)` | `cubic_scattering/layered_correction.py` | the three wrapper defects corrected; GATE D 5.1e-16, interior planes 1.7e-15 |
+| `Q^∂ = (I − S_int E)⁻¹ S_int`, source-in-stack `V_inc` | thesis Ch.5 `GstratRep.tex`, Eq. `PstratDef`, `incdown`/`incup` | the derivation |
+
+The vertical sweep therefore takes its plane-to-plane kernel from
+`corrected_layered_6x6`, with zero-contrast pseudo-interfaces inserted at each
+scattering-plane depth — the layer-interior case that
+`assert_interface_continuous` is written to permit. The in-package whole-space
+`sweep_kernels.vertical_kernel_9x9` is retained as the **homogeneous-limit
+arbiter**, not as the production operator.
+
+The entire 9×9 wrapper arc that preceded this spec existed to make that object
+usable for exactly this composition. A design that deletes a dependency the
+recent work was built to create is a signal to re-survey, not to proceed.
 
 ### 5.1 The amplitude/phase split
 
