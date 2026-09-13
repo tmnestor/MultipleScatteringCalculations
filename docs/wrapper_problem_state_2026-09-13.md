@@ -9,6 +9,47 @@ transform pair `exp(+i(k_x x + k_y y))`, index order z = 0 (down), x = 1, y = 2.
 
 ---
 
+> ## ⚠ D2 CORRECTED, 14 September 2026 — `K` no longer carries `η_S`
+>
+> Everything below about D2 describes
+> `K = 1 ⊕ (−P∥ + η_S P⊥)`. **That `η_S` was not physics.** It compensated a
+> missing `η` in the sibling solver's SH layer eigenvector
+> (`GlobalMatrix/layer_matrix.py:layer_eigenvectors_sh_batched`), whose
+> traction/displacement ratio was `μ` where an SH wave requires `μη`.
+>
+> The two errors cancel **exactly** in a uniform medium — there every
+> eigenvector comes from one layer — which is why every gate in this document
+> passes at 1e-15 and **none of them could see it**. What they could not see: the
+> *layered* SH reflection came out **angle-independent**,
+> `(μ₁−μ₂)/(μ₁+μ₂)`, instead of Aki & Richards
+> `(μ₁η₁−μ₂η₂)/(μ₁η₁+μ₂η₂)`. A reflection coefficient that does not vary with
+> the ray parameter is the tell.
+>
+> **Corrected form:** `K = 1 ⊕ (I₂ − 2k̂k̂ᵀ)` — a Householder reflection,
+> involutive, independent of medium and frequency.
+>
+> **The two halves are lethal apart.** Correcting either alone takes the
+> uniform-limit reduction from 1e-15 to ~3e-1, silently.
+> `layered_correction.assert_sh_impedance_paired` checks the sibling's declared
+> convention on every layered call, and `scripts/gate_sh_impedance.py` holds the
+> uniform limit and the interface reflection at the same time.
+>
+> **P and SV were correct throughout** and are unchanged — 1.000000 against
+> Kennett at every angle. Only SH moved.
+>
+> How it was found: the single-bounce validation of the intra-plane
+> reverberation (`docs/plans/2026-09-13-cartesian-directional-sweeps-stage1.md`)
+> predicts `ΔG` from independent physics — mode factorisation × interface
+> reflection — rather than checking an invariant. P and SV reconciled at
+> 1.000000; SH did not. **No symmetry, reciprocity or whole-space gate can find
+> this class of defect**; only a construction that predicts the *value* can.
+>
+> Not a thesis error: the thesis uses a 6-component quasi-SH eigenvector with
+> energy normalisation (`GRepresentations.tex`, Eq. `SHeigen`/`epsdef`), a
+> different and more general formulation.
+
+---
+
 > **RESOLVED IN THE HOMOGENEOUS LIMIT.** GATE F passes at **1.1e-15** (was
 > 0.40–0.81) and GATE D at **5.1e-16** with *no weight at all*, at several
 > frequencies and slownesses, for both the corrected 6×6 and an exact

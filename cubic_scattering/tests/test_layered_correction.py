@@ -69,12 +69,49 @@ def test_strain_operator_matches_hooke():
 
 
 def test_k_operator_is_projector_form():
-    """K = 1 (+) (-P_par + eta_S P_perp); symmetric, unit on the zz slot."""
+    """K = 1 (+) (-P_par + P_perp) = 1 (+) (I2 - 2 khat khat^T).
+
+    Symmetric, unit on the zz slot, and a Householder reflection in plane.
+    """
     w, p, c, s = 2 * np.pi * 48.0, 0.12, 0.6, 0.8
-    k = k_operator(S_S, w * p * c, w * p * s, w)
+    kx, ky = w * p * c, w * p * s
+    k = k_operator(S_S, kx, ky, w)
     assert abs(k[0, 0] - 1.0) < 1e-14
     assert np.allclose(k[0, 1:], 0.0) and np.allclose(k[1:, 0], 0.0)
     assert abs(k[1, 2] - k[2, 1]) < 1e-14
+
+    khat = np.array([kx, ky]) / np.hypot(kx, ky)
+    assert np.allclose(k[1:, 1:], np.eye(2) - 2.0 * np.outer(khat, khat))
+
+
+def test_k_operator_is_involutive():
+    """A reflection applied twice is the identity. The eta_S form was not."""
+    w, p = 2 * np.pi * 48.0, 0.12
+    k = k_operator(S_S, w * p * 0.6, w * p * 0.8, w)
+    assert np.allclose(k @ k, np.eye(3), atol=1e-13)
+
+
+def test_k_operator_does_not_depend_on_the_medium_or_frequency():
+    """REGRESSION GUARD for the SH impedance fix (2026-09-14).
+
+    K's in-plane block is purely geometric. It previously carried a factor
+    eta_S = sqrt(s_s^2 - p^2) on the perpendicular component, which is the SH
+    direction -- and that factor was not physics: it compensated a missing eta
+    in the sibling repository's SH layer eigenvector. The two errors cancelled
+    in uniform media, so every whole-space gate passed at 1e-15 while the
+    layered SH reflection was angle-INDEPENDENT and wrong.
+
+    If K ever depends on s_s or omega again, that compensation has been
+    reintroduced. See scripts/gate_sh_impedance.py, which holds the uniform
+    limit and the interface reflection at the same time.
+    """
+    kx, ky = 2 * np.pi * 48.0 * 0.12 * 0.6, 2 * np.pi * 48.0 * 0.12 * 0.8
+    base = k_operator(S_S, kx, ky, 2 * np.pi * 48.0)
+    for s_s in (S_S, 2.0 * S_S, 0.3 * S_S, complex(0.5, -0.2)):
+        for w in (2 * np.pi * 6.0, 2 * np.pi * 48.0, 2 * np.pi * 200.0):
+            assert np.allclose(k_operator(s_s, kx, ky, w), base, atol=1e-14), (
+                f"K varied with the medium/frequency (s_s={s_s}, w={w})"
+            )
 
 
 def test_k_operator_is_not_diagonal_off_axis():

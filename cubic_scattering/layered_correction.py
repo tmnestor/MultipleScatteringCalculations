@@ -12,7 +12,8 @@ D1  ``assemble_greens_6x6`` rescales the stress SOURCE columns on the
 
 D2  The traction half of BOTH indices carries the operator ``K`` below: as ``K``
     on the rows, as ``(-i w)^2 K`` on the source columns, with ``-1`` on the
-    displacement source columns.
+    displacement source columns.  ``K`` is a HOUSEHOLDER REFLECTION in the
+    horizontal plane, ``1 (+) (I2 - 2 khat khat^T)`` -- purely geometric.
 
 D3  The source operator must carry the body force and the stress glut with
     OPPOSITE relative sign.  Equivalently, this package's ``Dsigma*`` is minus
@@ -22,11 +23,32 @@ With all three applied, ``W . A G B`` is symmetric to ~1e-15 (it was 0.40-0.81)
 and the corrected 6x6 obeys the bare symplectic reciprocity law
 ``G(i<-j)(+k) = J6 [G(j<-i)(-k)]^T J6`` with no weight at all.
 
-THE ONE RESTRICTION.  ``K`` is built from the local vertical S slowness
-``eta_S``, which is two-valued on a material interface.  Source and receiver
-planes must therefore lie in the INTERIOR of a layer; there the correction is
-exact even with strong contrasts between them (measured 1.7e-15 with a fast slab
-crossed twice).  ``assert_interface_continuous`` enforces this.
+THE ONE RESTRICTION.  Source and receiver planes must lie in the INTERIOR of a
+layer; there the correction is exact even with strong contrasts between them
+(measured 1.7e-15 with a fast slab crossed twice).
+``assert_interface_continuous`` enforces this.  The restriction originally came
+from ``K`` being built on the local ``eta_S``, which is two-valued at a material
+jump; ``K`` no longer uses ``eta_S`` (see below), but the rest of the
+construction still reads a single local medium per plane, so the restriction
+stands.
+
+THE SH IMPEDANCE FIX, 2026-09-14.  ``K``'s perpendicular component previously
+carried ``eta_S``.  That was not physics.  It compensated a missing ``eta`` in
+``GlobalMatrix.layer_matrix.layer_eigenvectors_sh_batched``, whose SH
+eigenvectors had traction/displacement ratio ``mu`` where an SH wave requires
+``mu*eta``.  The pair cancelled exactly in UNIFORM media -- which is why GATE D,
+GATE F, the symplectic law and the whole-space reduction all passed at 1e-15 and
+none of them could see it -- while the LAYERED SH reflection came out
+angle-independent, ``(mu1-mu2)/(mu1+mu2)`` instead of the Aki & Richards
+``(mu1 eta1 - mu2 eta2)/(mu1 eta1 + mu2 eta2)``.  A reflection coefficient that
+does not vary with the ray parameter is the tell.
+
+Both halves are now corrected, and they are LETHAL APART: either alone takes the
+uniform-limit reduction from 1e-15 to ~3e-1.  ``assert_sh_impedance_paired``
+checks the sibling's declared convention at every layered call, and
+``scripts/gate_sh_impedance.py`` holds the uniform limit and the interface
+reflection simultaneously.  P and SV were correct throughout and are unchanged
+(1.000000 against Kennett at every angle).
 
 Conventions: seismic units (km/s, g/cm^3, GPa, km), time ``e^{-iwt}``, transform
 ``exp(+i(kx x + ky y))``, index order z = 0 (down), x = 1, y = 2.  State vectors
@@ -42,6 +64,7 @@ __all__ = [
     "J6",
     "W9",
     "assert_interface_continuous",
+    "assert_sh_impedance_paired",
     "correct_6x6",
     "corrected_layered_6x6",
     "corrected_layered_9x9",
@@ -89,21 +112,44 @@ def strain_from_state(kx: float, ky: float, rho: float, alpha: complex, beta: co
 
 
 def k_operator(s_s: complex, kx: float, ky: float, omega: complex) -> NDArray:
-    """The traction-half normalisation operator (defect D2), in (z, x, y).
+    """The traction-half basis operator (defect D2), in (z, x, y).
 
-    ``K = 1 (+) (-P_par + eta_S P_perp)`` acting on
-    ``(sigma_zz, sigma_xz, sigma_yz)``, with ``P_par = khat khat^T``,
-    ``P_perp = I2 - P_par`` and ``eta_S = sqrt(s_s^2 - p^2)``.
+    ``K = 1 (+) (-P_par + P_perp) = 1 (+) (I2 - 2 khat khat^T)`` acting on
+    ``(sigma_zz, sigma_xz, sigma_yz)``, with ``P_par = khat khat^T`` and
+    ``P_perp = I2 - P_par``.
 
-    It is diagonal in (z, x, y) only when ``kx ky = 0``; elsewhere roughly two
-    thirds of its weight is off-diagonal, which is why no diagonal source
-    correction exists.  It is even in ``k``.
+    The in-plane block is a HOUSEHOLDER REFLECTION about the plane perpendicular
+    to the horizontal propagation direction: purely geometric, independent of the
+    medium and of frequency.  It is diagonal in (z, x, y) only when ``kx ky = 0``;
+    elsewhere roughly two thirds of its weight is off-diagonal, which is why no
+    diagonal source correction exists.  It is even in ``k`` and involutive
+    (``K K = I``).
+
+    SIMPLIFIED 2026-09-14, AND THE CHANGE IS COUPLED.  The perpendicular
+    component previously carried a factor ``eta_S = sqrt(s_s^2 - p^2)``.  That
+    factor was not physics: it compensated a missing ``eta`` in the SH impedance
+    of ``GlobalMatrix.layer_matrix.layer_eigenvectors_sh_batched``, whose
+    eigenvectors had traction/displacement ratio ``mu`` where the SH wave
+    requires ``mu*eta``.  Together the two errors cancelled in UNIFORM media --
+    which is why GATE D, GATE F and the whole-space reduction all passed at
+    1e-15 and none of them could see it -- while leaving the layered SH
+    reflection angle-INDEPENDENT and wrong.
+
+    ``s_s`` and ``omega`` are therefore no longer used.  They are retained in the
+    signature because every caller passes them and because the *next* reader will
+    want to see, right here, that the medium dependence was removed deliberately.
+
+    **Requires the matching change in
+    ``GlobalMatrix/layer_matrix.py:layer_eigenvectors_sh_batched``.**  Applying
+    either alone takes the uniform-limit reduction from 1e-15 to ~3e-1.  The pair
+    is gated by ``scripts/gate_sh_impedance.py`` and checked at import time by
+    ``assert_sh_impedance_paired`` below.
 
     Args:
-        s_s: Complex S slowness of the LOCAL medium (s/km).
+        s_s: Complex S slowness of the LOCAL medium (s/km).  Unused; see above.
         kx: Horizontal wavenumber, x component (rad/km).
         ky: Horizontal wavenumber, y component (rad/km).
-        omega: Angular frequency (rad/s).
+        omega: Angular frequency (rad/s).  Unused; see above.
 
     Returns:
         Shape (3, 3) complex.
@@ -126,13 +172,45 @@ def k_operator(s_s: complex, kx: float, ky: float, omega: complex) -> NDArray:
 
     khat = np.array([kx, ky]) / kpar
     par = np.outer(khat, khat)
-    eta = np.sqrt(s_s**2 - (kpar / complex(omega)) ** 2 + 0j)
-    if np.imag(eta) < 0:
-        eta = -eta
 
     out = np.eye(3, dtype=complex)
-    out[1:, 1:] = -par + complex(eta) * (np.eye(2) - par)
+    out[1:, 1:] = np.eye(2) - 2.0 * par
     return out
+
+
+def assert_sh_impedance_paired() -> None:
+    """Fail loudly if the sibling repository's SH convention does not match.
+
+    The SH fix spans two repositories and the halves are lethal apart: either
+    alone takes the uniform-limit reduction from 1e-15 to ~3e-1, silently, with
+    no exception and no obviously wrong number.  Pulling one repository without
+    the other is therefore the realistic failure, and this turns it into a
+    diagnostic at the moment of use.
+
+    Raises:
+        RuntimeError: if the sibling declares a different SH impedance
+            convention from the one this correction assumes.
+    """
+    try:
+        from GlobalMatrix.layer_matrix import SH_IMPEDANCE_CONVENTION
+    except ImportError:
+        return  # sibling absent: nothing layered can run anyway
+
+    if SH_IMPEDANCE_CONVENTION != "mu*neta":
+        msg = (
+            f"SH impedance convention mismatch: the sibling GlobalMatrix declares "
+            f"{SH_IMPEDANCE_CONVENTION!r}, this correction assumes 'mu*neta'.\n"
+            "  What: k_operator's in-plane block is a pure Householder reflection,\n"
+            "        which is correct ONLY when the layered SH eigenvector carries\n"
+            "        impedance mu*neta. An older sibling carries impedance mu and a\n"
+            "        compensating eta_S belongs in K.\n"
+            "  Where: GlobalMatrix/layer_matrix.py:layer_eigenvectors_sh_batched and\n"
+            "         cubic_scattering/layered_correction.py:k_operator.\n"
+            "  Expected: both at the 'mu*neta' convention.\n"
+            "  Fix: update the sibling repository to the paired version, then run\n"
+            "       scripts/gate_sh_impedance.py, which holds both constraints."
+        )
+        raise RuntimeError(msg) from None
 
 
 def correct_6x6(
@@ -259,6 +337,8 @@ def corrected_layered_6x6(
     """
     from GlobalMatrix.layered_greens import layered_greens_6x6
 
+    assert_sh_impedance_paired()
+
     assert_interface_continuous(model, source_iface, "source")
     assert_interface_continuous(model, receiver_iface, "receiver")
 
@@ -323,6 +403,7 @@ def corrected_layered_9x9(
     """
     from GlobalMatrix.layered_greens import layered_greens_6x6
 
+    assert_sh_impedance_paired()
     assert_interface_continuous(model, source_iface, "source")
     assert_interface_continuous(model, receiver_iface, "receiver")
 

@@ -497,13 +497,33 @@ years apart agreeing exactly.
 \subsection{Three defects}
 
 Let $\hat{\mathbf{k}} = (k_x,k_y)/|\mathbf{k}_\parallel|$,
-$P^{\parallel}_{ab} = \hat{k}_a\hat{k}_b$,
-$P^{\perp} = \bI_2 - P^{\parallel}$, and let $\eta_S$ be the vertical
-$S$ slowness.  Define, in the $(z,x,y)$ frame of \S2.1, acting on
-$(\sigma_{zz},\sigma_{xz},\sigma_{yz})$,
+$P^{\parallel}_{ab} = \hat{k}_a\hat{k}_b$ and
+$P^{\perp} = \bI_2 - P^{\parallel}$.  Define, in the $(z,x,y)$ frame of \S2.1,
+acting on $(\sigma_{zz},\sigma_{xz},\sigma_{yz})$,
 \begin{equation}\label{eq:K}
-  \bK \;=\; 1 \,\oplus\, \bigl(-P^{\parallel} + \eta_S P^{\perp}\bigr).
+  \bK \;=\; 1 \,\oplus\, \bigl(-P^{\parallel} + P^{\perp}\bigr)
+      \;=\; 1 \,\oplus\, \bigl(\bI_2 - 2\hat{\mathbf{k}}\hat{\mathbf{k}}^{\mathsf T}\bigr),
 \end{equation}
+a \emph{Householder reflection} about the plane perpendicular to the horizontal
+propagation direction: purely geometric, involutive, and independent of the
+medium and of frequency.
+
+\begin{quote}\small
+\textbf{Corrected 14 September 2026.}  Equation \eqref{eq:K} previously carried a
+factor $\eta_S$, the vertical $S$ slowness, on the perpendicular component.  That
+factor was not physics.  It compensated a missing $\eta$ in the layered $SH$
+eigenvector of the stratified solver, whose traction/displacement ratio was $\mu$
+where an $SH$ wave requires $\mu\eta$.  The two errors cancel \emph{exactly} in a
+uniform medium --- there every eigenvector comes from one layer --- so every gate
+in this document passed at $10^{-15}$ while the \emph{layered} $SH$ reflection was
+angle-independent, $(\mu_1-\mu_2)/(\mu_1+\mu_2)$, instead of the Aki \& Richards
+form $(\mu_1\eta_1-\mu_2\eta_2)/(\mu_1\eta_1+\mu_2\eta_2)$.  A reflection
+coefficient that does not depend on the ray parameter is the tell.  The two
+halves are lethal apart: correcting either alone takes the uniform-limit
+reduction from $10^{-15}$ to $\sim\!3\times10^{-1}$.  $P$ and $SV$ were correct
+throughout.  See \texttt{scripts/gate\_sh\_impedance.py}, which holds the uniform
+limit and the interface reflection simultaneously.
+\end{quote}
 
 \begin{description}
 \item[D1.] \texttt{assemble\_greens\_6x6} rescales the stress source columns on
@@ -540,12 +560,13 @@ stratified, interior planes & slab crossed twice, $Q=1000$ & $1.7\times10^{-15}$
 \end{center}
 
 \paragraph{Why the search could not have succeeded.}  $\bK$ carries
-$K_{xy} = K_{yx} = -(k_xk_y/|\mathbf{k}_\parallel|^2)(1+\eta_S)$, two thirds of
-its weight off-diagonal whenever $k_xk_y\neq0$.  A diagonal ansatz in
-$(z,x,y)$ is inconsistent by construction --- which is exactly N3's ``$15$
-equations, $6$ unknowns, no null space'' --- and $\eta_S$ depends on horizontal
-slowness, so no constant could fit it either.  $\bK$ is diagonal only on the
-two axes $k_y=0$ and $k_x=0$.
+$K_{xy} = K_{yx} = -2k_xk_y/|\mathbf{k}_\parallel|^2$, two thirds of its weight
+off-diagonal whenever $k_xk_y\neq0$.  A diagonal ansatz in $(z,x,y)$ is
+inconsistent by construction --- which is exactly N3's ``$15$ equations, $6$
+unknowns, no null space''.  $\bK$ is diagonal only on the two axes $k_y=0$ and
+$k_x=0$.  (In the superseded $\eta_S$ form the off-diagonal entry was
+$-(k_xk_y/|\mathbf{k}_\parallel|^2)(1+\eta_S)$, and the additional
+slowness dependence made a constant fit hopeless as well.)
 
 \paragraph{The $1/\omega$ residual was a mirage.}  With $\bG_6$ exact, GATE~F
 still failed at a clean $1/\omega$ ($0.148$, $0.0403$, $0.0101$ at $f=12,48,192$
@@ -570,11 +591,14 @@ along; the implementation departed from it.
 \section{What remains open}
 
 \paragraph{The stratified extension --- CLOSED.}  $\bK$ needs no stratified
-generalisation.  It is built from the local $\eta_S$, and that is well defined
-wherever the medium is continuous.  The apparent stratified failure
+generalisation; it is purely geometric.  The apparent stratified failure
 ($0.009$--$0.398$ on the marine model) was a \emph{placement} artefact: every
 interface of that model separates different materials and the test pairs sat
-\emph{on} them, where $\eta_S$ is two-valued and $\bK$ is simply not defined.
+\emph{on} them, where the local medium is two-valued and the construction reads
+a single one per plane.  (At the time $\bK$ itself was built on the local
+$\eta_S$, which sharpened the same objection; the restriction survives the
+removal of $\eta_S$ because the rest of the construction still reads one medium
+per plane.)
 With the planes in a layer interior and a fast slab crossed twice between them
 at $Q=1000$ --- transmission, reflection, conversion and interbed multiples all
 present --- the clean law holds to $1.7\times10^{-15}$ over nine geometries.
