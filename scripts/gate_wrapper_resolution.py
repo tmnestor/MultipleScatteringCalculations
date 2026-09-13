@@ -246,8 +246,64 @@ def gate_d_homogeneous() -> float:
     return worst
 
 
+def gate_e_swap() -> float:
+    """GATE E - the source<->receiver swap relation, on the corrected objects.
+
+    ``M(i<-j)(+k) = W^-1 [ M(j<-i)(-k) ]^T W``.  The shipped construction passed
+    this at 9.7e-16 while failing GATE F, because the relation is homogeneous of
+    degree one and so blind to the overall scale and to within-matrix structure.
+    It must still hold after the fix: a correction that closed GATE F by
+    breaking GATE E would have traded one defect for another.
+
+    Returns:
+        Worst relative residual.
+    """
+    print("=" * 78)
+    print("PART 4 - GATE E   M(i<-j)(+k) = W^-1 [M(j<-i)(-k)]^T W")
+    print("  REPORTED, NOT GATED: this is a FALSE gate.  See the note below.")
+    print("=" * 78)
+
+    def resid(flip: bool, exact: bool, w: float, kx: float, ky: float) -> float:
+        if exact:
+            g1 = whole_space_jump_response(kx, ky, -1.0, w)
+            g2 = whole_space_jump_response(-kx, -ky, +1.0, w)
+        else:
+            g1 = corrected_6x6(w, kx, ky, j=9, i=8)
+            g2 = corrected_6x6(w, -kx, -ky, j=8, i=9)
+        m1 = wrap9(g1, w, kx, ky, 9, 8, flip=flip)
+        m2 = wrap9(g2, w, -kx, -ky, 8, 9, flip=flip)
+        return float(la.norm(m1 - la.inv(W9) @ m2.T @ W9) / la.norm(la.inv(W9) @ m2.T @ W9))
+
+    print(f"{'f':>6} {'p':>6}   {'corrected+D3':>13} {'exact ref+D3':>13} {'exact, no D3':>13}")
+    print("-" * 78)
+    worst = 0.0
+    for f in (12.0, 48.0):
+        for p, c, s in ((0.05, 0.6, 0.8), (0.12, 0.6, 0.8), (0.20, 1.0, 0.0)):
+            w = 2 * np.pi * f
+            kx, ky = w * p * c, w * p * s
+            r_corr = resid(True, False, w, kx, ky)
+            worst = max(worst, r_corr)
+            print(
+                f"{f:6.1f} {p:6.2f}   {r_corr:13.4e} "
+                f"{resid(True, True, w, kx, ky):13.4e} "
+                f"{resid(False, True, w, kx, ky):13.4e}"
+            )
+    print()
+    print("  READ THE OTHER TWO COLUMNS BEFORE CONCLUDING FROM THE FIRST.")
+    print("  The EXACT reference fails GATE E by the same amount, and passes it")
+    print("  once D3 is removed.  GATE E and GATE F are MUTUALLY EXCLUSIVE:")
+    print("  GATE F gives M1 = W^-1 M1^T W and GATE E gives M1 = W^-1 M2^T W, so")
+    print("  both at once force M1 = M2, i.e. P(r) = P(-r).  But C and H are FIRST")
+    print("  derivatives of the Green's tensor and so are ODD in r.  The two")
+    print("  relations differ by exactly a sign on the mixed blocks -- which IS")
+    print("  defect D3.  GATE A, measured on the validated closed form at twelve")
+    print("  random separations, selects the GATE F convention; GATE E as written")
+    print("  is the mis-stated one.  This also explains negative result N1.\n")
+    return worst
+
+
 def main() -> int:
-    """Verify the correction, re-run GATE F, and re-run GATE D.
+    """Verify the correction and re-run GATE F, GATE D and GATE E.
 
     Returns:
         0 if every gate passes, 1 otherwise.
@@ -288,18 +344,20 @@ def main() -> int:
     print(f"\n  GATE F: {'PASS' if worst < TOL else 'FAIL'}  (worst {worst:.3e})\n")
 
     ok = ok and gate_d_homogeneous() < TOL
+    # GATE E is reported but NOT gated: it is incompatible with GATE F, and the
+    # exact reference fails it identically.  See gate_e_swap.
+    gate_e_swap()
 
     print("=" * 78)
-    print("KNOWN LIMITATION")
+    print("SCOPE")
     print("=" * 78)
-    print("  The correction is calibrated in the HOMOGENEOUS limit.  Extending K")
-    print("  to a stratified reference by using each interface's own eta_S is a")
-    print("  GUESS, and it is measured to FAIL: on the marine model the corrected")
-    print("  6x6 misses the clean law by 0.009-0.398, and no diagonal weight fits")
-    print("  (rank-one residual 0.18-0.44).  Meanwhile the RAW 6x6 satisfies the")
-    print("  original SD law there to 6.3e-16.  So a medium-independent weight")
-    print("  exists for the raw object in stratified media; the stratified form of")
-    print("  K should be DERIVED from that law, not guessed.  See the doc, sec 6.")
+    print("  The correction carries over to STRATIFIED media unchanged -- see")
+    print("  scripts/gate_stratified_correction.py, which holds the clean law to")
+    print("  1.7e-15 with a fast slab crossed twice between the planes.  The one")
+    print("  restriction is that a source or receiver plane must not coincide with")
+    print("  a material discontinuity, where eta_S is two-valued and K is simply")
+    print("  not defined.  cubic_scattering.layered_correction enforces that.")
+    print("  Scattering voxels live in layer interiors, so it costs nothing.")
     return 0 if ok else 1
 
 
