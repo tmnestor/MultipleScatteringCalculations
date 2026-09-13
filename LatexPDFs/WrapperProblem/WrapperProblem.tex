@@ -14,7 +14,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\small\itshape The 9$\times$9 Wrapper Problem}
-\fancyhead[R]{\small\itshape 27 July 2026}
+\fancyhead[R]{\small\itshape 13 September 2026}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
@@ -39,12 +39,16 @@
 \newcommand{\bD}{\mathbf{D}}
 \newcommand{\bP}{\mathbf{P}}
 \newcommand{\Asys}{\mathbf{A}_{\text{sys}}}
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bN}{\mathbf{N}}
 
 \title{\bfseries The $9\times9$ Wrapper Problem\\[4pt]
 \large A Self-Contained Statement: Definitions, Gates, Results,\\
-and What Remains Open}
+and the Resolution}
 \author{}
-\date{27 July 2026}
+\date{13 September 2026\\[2pt]
+\small\normalfont(gates and negative results, 27 July 2026;
+resolution, 13 September 2026)}
 
 \begin{document}
 \maketitle
@@ -53,11 +57,21 @@ and What Remains Open}
 \noindent
 Composing the stratified vertical propagator with the disorder-resolved lateral
 propagator in a single resolvent requires both to speak the same
-$9$-component language.  They do not.  This note defines every object
-involved, states every test applied to them and its exact outcome, and
-isolates what remains unknown.  It is written to be recoverable without
-reference to any prior discussion: every symbol is defined where it first
-appears, every numerical claim names the script that produced it.
+$9$-component language.  They did not.  This note defines every object
+involved, states every test applied to them and its exact outcome, and then
+resolves the discrepancy: three defects, two of them inside the stratified
+$6\times6$ and one a sign in the source operator.  GATE~F goes from
+$0.40$--$0.81$ to $1.1\times10^{-15}$ and GATE~D to $5\times10^{-16}$ with no
+weight at all.  The source operator, long suspected, was never the defect: it
+follows in closed form from the governing equation and agrees with the thesis's
+own worked example to $0.000\times10^{0}$.  The correction carries over to
+stratified media unchanged.  GATE~E turns out to be a \emph{false} gate --- the
+exact reference fails it too, and it was passing because of a defect --- which
+accounts for negative result N1 entirely.  What remains is to lattice-sum
+$\bP^{z}$ into the discrete representation, a construction rather than a search.
+It is written to be recoverable without reference to any prior discussion:
+every symbol is defined where it first appears, every numerical claim names the
+script that produced it.
 \end{abstract}
 
 \tableofcontents
@@ -270,7 +284,7 @@ reference no within-matrix symmetry should be expected.
 \textbf{Outcome.}  $\bM^{\text{corr}}$ \textbf{FAILS}, residual $0.40$--$0.81$
 across two frequencies and two slownesses.
 
-\subsection{GATE E --- the swap relation}
+\subsection{GATE E --- the swap relation}\label{sec:gateE}
 
 \textbf{Statement.}
 \begin{equation}\label{eq:gateE}
@@ -286,6 +300,24 @@ matrices and is homogeneous of degree one in $\bM$.  It therefore constrains
 neither the overall scale (any constant multiplies both sides equally) nor the
 relation between the $G,C,H,S$ blocks \emph{within} one matrix.  Both blind
 spots proved to be live.
+
+\begin{quote}\small
+\textbf{Correction (13 September 2026): GATE~E is a \emph{false} gate.}  It is
+not merely blind --- it is false for the correct propagator, and it was passing
+\emph{because} of a defect.  GATE~F gives $\bM_1 = \bW^{-1}\bM_1^{T}\bW$ and
+GATE~E gives $\bM_1 = \bW^{-1}\bM_2^{T}\bW$; together they force
+$\bM_1 = \bM_2$, i.e.\ $\bP(\mathbf{r}) = \bP(-\mathbf{r})$.  But $C$ and $H$
+are \emph{first} derivatives of the Green's tensor and are therefore \emph{odd}
+in $\mathbf{r}$, so that can hold only if $C$ vanishes.  The two relations
+differ by exactly a sign on the mixed blocks --- which is defect~D3.  Measured:
+the \emph{exact} whole-space reference, with no implementation in it at all,
+fails GATE~E by $1.4348\times10^{-1}$, identical to five figures to the
+corrected $6\times6$, and passes at $7\times10^{-17}$ only when D3 is
+reintroduced.  GATE~A is the arbiter, having been measured directly on the
+validated closed form at twelve random separations.  Consequently the exit
+criterion of \texttt{gate\_9x9\_source\_convention.py} (``non-zero unless A, E
+and F all pass'') can never be met.
+\end{quote}
 
 \subsection{GATE D --- the reciprocity law of $\bG_6$ itself}
 
@@ -350,6 +382,10 @@ For $\bB \in \{-\bJ_6\bA_{\text{src}}(-\mathbf{k})^{T}\bW,\
 \bS\bJ_6\bA_{\text{src}}(+\mathbf{k})^{T}\bW,\ \bJ_6\bA^{T}\bW,\ \dots\}$ the
 shipped choice gives E $=5.3\times10^{-16}$ with F $=0.81$, and every variant
 improving F destroys E (best F $=0.26$ at E $=0.74$).
+\emph{No $\bB$ ever could}: E and F are mutually exclusive (\S\ref{sec:gateE}).
+``Every variant improving F destroys E'' was never a clue about $\bB$ --- it was
+two incompatible gates pulling in opposite directions.  The family also
+contained the right answer all along (\S\ref{sec:resolution}).
 
 \paragraph{N2. GATE F reduces to a property of $\bG_6$ alone.}
 If $\bB = \bA^{T}\bW$ then
@@ -368,13 +404,28 @@ fitted $q$ drifts with frequency ($0.48, 0.53, 0.56, 0.74$).  The system is
 inconsistent.
 
 \paragraph{N4. $\Asys$ is not the conversion needed here.}
-Box~5.3 of the thesis gives the state-jump $\leftrightarrow$ body-force
-equivalence as $F = \Asys S$ (derived and validated in
-\texttt{Mathematica/BoxFiveThree.wl}: quasi-Hamiltonian identity, eigenvalues,
-eigenbasis consistency, and the worked point-explosion example all reproduced).
-Nevertheless every grouping
-$\bG\bQ\Asys^{-1}$, $\bG\bQ\Asys$, $\Asys^{-1}\bG\bQ$ leaves the symmetry
-residual at $1.4$, no better than raw $\bG$.
+Every grouping $\bG\bQ\Asys^{-1}$, $\bG\bQ\Asys$, $\Asys^{-1}\bG\bQ$ leaves the
+symmetry residual at $1.4$, no better than raw $\bG$.
+
+\begin{quote}\small
+\textbf{Correction (13 September 2026).}  The version of this paragraph dated
+27~July justified the $\Asys$ lead by asserting that Box~5.3 of the thesis
+gives the state-jump $\leftrightarrow$ body-force equivalence as
+$F = \Asys S$.  \emph{It does not.}  Box~5.3 assumes a source carrying both a
+$\delta$ and a $\delta'$ part,
+$\partial_z \mathbf{b} = \Asys\mathbf{b} + F_1\delta(z-z_S) + F_2\delta'(z-z_S)$
+(the form of \emph{Kennett}~1983, Eq.~2.78), and gives the \emph{effective}
+$\delta$ coefficient as $F_1 + \Asys F_2$.  So $\Asys$ multiplies the
+$\delta'$ coefficient, and the object is a source vector, not a conversion
+applied to a finished Green's function.  Writing
+$\mathbf{b} = \mathbf{b}_{\text{reg}} + F_2\delta$ gives
+$\partial_z\mathbf{b}_{\text{reg}} - \Asys\mathbf{b}_{\text{reg}}
+= (F_1 + \Asys F_2)\delta$: the $\delta$ part passes straight through to the
+jump, and the $\delta'$ part enters multiplied by $\Asys$.  The measurement
+above is sound; the mechanism it refuted was never the thesis's.  The thesis is
+correct and its Box~5.3 in fact \emph{validates} the operator $\bB$ derived in
+\S\ref{sec:resolution} --- see~\eqref{eq:box53}.
+\end{quote}
 
 \paragraph{N5. The lateral and stratified propagators are not commensurable
 as built.}  In the homogeneous limit the ratio of the stratified spectral
@@ -385,9 +436,9 @@ $3.8\times$ (spread $9.8\to2.55$) but does not close it; the residual is a
 roughly constant factor near $12$ with $\sim200\%$ scatter.
 
 % =============================================================================
-\section{What is open}
+\section{The question, as it stood}
 
-Precisely one question, and it is small:
+Precisely one question, and it was thought to be small:
 
 \begin{quote}
 Given a $6\times6$ Green's function whose source index is a \emph{state jump}
@@ -397,22 +448,190 @@ $\bigl[\begin{smallmatrix}G&C\\H&S\end{smallmatrix}\bigr]$
 of~\eqref{eq:Pcf}?
 \end{quote}
 
-By N2 the ansatz $\bB = \bA^{T}\bW$ turns this into ``is $\bG_6\bQ$
-symmetric'', and by N3 no diagonal $\bQ$ makes it so.  Hence either
-$\bB \neq \bA^{T}\bW$, or the source correction is not diagonal.  Both remain
-open.  The author of the underlying theory is better placed to answer this than
-further numerical search, which is why it is stated rather than pursued.
+It was the wrong question.  $\bB$ was never the defect.  N2 was the true
+signal and it was under-used: \emph{GATE~F is a question about $\bG_6$}.
 
-\paragraph{How to test any candidate.}  Run
-\texttt{scripts/gate\_9x9\_source\_convention.py}.  It executes gates A--F and
-exits non-zero unless A, E and F all pass.  GATE F is proven valid
-(\S4.2), so it will accept or reject a candidate immediately.
+% =============================================================================
+\section{The resolution}\label{sec:resolution}
 
-\paragraph{Reproducibility.}  Every number above comes from
-\texttt{scripts/gate\_9x9\_source\_convention.py} (gates A--F),
-\texttt{scripts/composed\_matvec.py} (N5, spectral),
-\texttt{scripts/discrete\_pz\_kernel.py} (N5, discrete),
-\texttt{scripts/gate\_lateral\_sweep\_alg52.py} (lateral propagator), and
-\texttt{Mathematica/BoxFiveThree.wl} (N4).
+\subsection{$\bB$, from the governing equation}
+
+Write the true traction as $T_{ij} = c_{ijkl}\varepsilon_{kl} - m_{ij}$ with
+$m$ the stress glut and $f$ the body force.  Setting
+$f_i = F_i\delta(z-z_S)$ and $m_{ij} = M_{ij}\delta(z-z_S)$ in the first-order
+system and integrating across $z_S$ gives the classical source discontinuity
+vector, $[\mathbf{b}] \equiv \mathbf{b}(z_S^+)-\mathbf{b}(z_S^-)$:
+\begin{equation}\label{eq:jump}
+\begin{aligned}
+  {[u_z]} &= a M_{zz}, &\quad [T_{zz}] &= -F_z,\\
+  {[u_x]} &= b M_{xz}, &\quad [T_{xz}] &= -F_x + ik_x(M_{xx}-\gamma M_{zz}) + ik_y M_{xy},\\
+  {[u_y]} &= b M_{yz}, &\quad [T_{yz}] &= -F_y + ik_y(M_{yy}-\gamma M_{zz}) + ik_x M_{xy},
+\end{aligned}
+\end{equation}
+with $a,b,\gamma$ as in~\eqref{eq:shorthand}.  Two features of this kill the
+search that was actually run: it is \emph{wavenumber-dependent}, and it mixes
+the glut into \emph{both} halves of the state, so it can never be a diagonal
+rescaling of anything.  In the slot convention the code actually uses
+(engineering doubling on the shear stress slots), \eqref{eq:jump} is, entry for
+entry,
+\begin{equation}\label{eq:Bclosed}
+  \bB \;=\; \bJ_6\,\bA_{\text{src}}(-\mathbf{k})^{T}\,\bW,
+\end{equation}
+which is the shipped $\bB^{\dagger}$ of~\eqref{eq:corr} \emph{up to a global
+sign} --- and both GATE~E and GATE~F are blind to a global sign.  Hence N1.
+
+\paragraph{The thesis validates this exactly.}  Box~5.3 works a point explosion
+through its own machinery and obtains the effective source coefficient
+\begin{equation}\label{eq:box53}
+  F_1 + \mathbf{A}_{S} F_2 = M(\omega)e^{-ik_x x_S}\delta(z-z_S)
+  \left[\tfrac{1}{\rho\alpha^{2}},\,0,\,0,\,0,\,
+  \tfrac{2ik_x\beta^{2}}{\alpha^{2}},\,
+  \tfrac{2ik_y\beta^{2}}{\alpha^{2}}\right]^{T}.
+\end{equation}
+Equation~\eqref{eq:jump} with $M_{ij}=M\delta_{ij}$ gives
+$[u_z] = aM = M/(\rho\alpha^2)$ and
+$[T_{xz}] = ik_xM(1-\gamma) = 2ik_xM\beta^2/\alpha^2$.  Relative difference:
+$\mathbf{0.000\times10^{0}}$, on all six components.  Two derivations thirty
+years apart agreeing exactly.
+
+\subsection{Three defects}
+
+Let $\hat{\mathbf{k}} = (k_x,k_y)/|\mathbf{k}_\parallel|$,
+$P^{\parallel}_{ab} = \hat{k}_a\hat{k}_b$,
+$P^{\perp} = \bI_2 - P^{\parallel}$, and let $\eta_S$ be the vertical
+$S$ slowness.  Define, in the $(z,x,y)$ frame of \S2.1, acting on
+$(\sigma_{zz},\sigma_{xz},\sigma_{yz})$,
+\begin{equation}\label{eq:K}
+  \bK \;=\; 1 \,\oplus\, \bigl(-P^{\parallel} + \eta_S P^{\perp}\bigr).
+\end{equation}
+
+\begin{description}
+\item[D1.] \texttt{assemble\_greens\_6x6} rescales the stress source columns on
+  the displacement rows only, so the stress-row $\times$ stress-column block
+  carries \emph{one} factor of $(-i\omega)$ where a consistent change of basis
+  $\bD_{\text{row}}\bG\bD_{\text{col}}$ requires two.  Fix:
+  $\bG_6[3\!:\!6,3\!:\!6] \times (-i\omega)$.
+\item[D2.] The traction half of \emph{both} indices carries $\bK$: as $\bK$ on
+  the rows, as $(-i\omega)^2\bK$ on the source columns, with $-1$ on the
+  displacement source columns.
+\item[D3.] $\bB$ must carry the force and the stress glut with \emph{opposite}
+  relative sign: $\bB \to \bB\operatorname{diag}(-\bI_3,\bI_6)$.
+\end{description}
+
+\subsection{Evidence}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Object & Check & Residual \\
+\midrule
+$\tilde{G}_{uu}$ reference & inverse transform vs \texttt{exact\_greens} & $9.2\times10^{-6}$ \\
+traction source columns & vs $\bK$, five $(p,\text{azimuth})$ & $1.8\times10^{-14}$ \\
+moment source columns & $=-\bI$ exactly & $\sim10^{-15}$ \\
+traction rows, D1 applied & inside the displacement row space & $3\times10^{-16}$ \\
+residual row operator & $=\bK$ again & $3\times10^{-13}$ \\
+corrected $\bG_6$ & $=$ exact whole-space jump response & $5\times10^{-15}$ \\
+\textbf{GATE F} & was $0.40$--$0.81$ & $\mathbf{1.1\times10^{-15}}$ \\
+\textbf{GATE D} & bare $\bG_1 = \bJ_6\bG_2^{T}\bJ_6$, no weight & $\mathbf{5.1\times10^{-16}}$ \\
+GATE E & false gate; exact ref fails identically & $1.4\times10^{-1}$ \\
+stratified, interior planes & slab crossed twice, $Q=1000$ & $1.7\times10^{-15}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Why the search could not have succeeded.}  $\bK$ carries
+$K_{xy} = K_{yx} = -(k_xk_y/|\mathbf{k}_\parallel|^2)(1+\eta_S)$, two thirds of
+its weight off-diagonal whenever $k_xk_y\neq0$.  A diagonal ansatz in
+$(z,x,y)$ is inconsistent by construction --- which is exactly N3's ``$15$
+equations, $6$ unknowns, no null space'' --- and $\eta_S$ depends on horizontal
+slowness, so no constant could fit it either.  $\bK$ is diagonal only on the
+two axes $k_y=0$ and $k_x=0$.
+
+\paragraph{The $1/\omega$ residual was a mirage.}  With $\bG_6$ exact, GATE~F
+still failed at a clean $1/\omega$ ($0.148$, $0.0403$, $0.0101$ at $f=12,48,192$
+Hz).  Decomposing the antisymmetric part by block gives $0$ on $G$, $10^{-16}$
+on $S$, and \emph{exactly} $2.0000$ on $C$ and on $H$ --- meaning $C = -H^{T}$.
+That is a sign, not a $1/\omega$ term.  It presents as $1/\omega$ only because
+$\|C\|,\|H\|$ are $1/\omega$-sized against $\|S\|$, which dominates the
+normalising denominator.  Searching for a missing $1/\omega$ term in $\bQ$ could
+not have worked.
+
+\paragraph{GATE D, and the thesis.}  The corrected $\bG_6$ obeys
+$\bG(i\!\leftarrow\!j)(+\mathbf{k}) =
+\bJ_6[\bG(j\!\leftarrow\!i)(-\mathbf{k})]^{T}\bJ_6$ with \emph{no weight
+whatsoever} --- not the $(\mp i\omega)^{\pm1}$ factors of~\eqref{eq:gateD}, and
+not even the parity.  This is the law implied by the thesis's own construction
+$\bG = \bD_z(\mathbf{k})\bQ^{z}\bD_z^{T}(-\mathbf{k})\bJ_6$ together with
+$\bD_z^{-1} = -i\bJ_6\bD_z^{T}(-\mathbf{k})\bJ_6$, and it is Wapenaar's
+unified $\bG = \bN\bG^{T}\bN$ verbatim.  The thesis had the clean law all
+along; the implementation departed from it.
+
+% =============================================================================
+\section{What remains open}
+
+\paragraph{The stratified extension --- CLOSED.}  $\bK$ needs no stratified
+generalisation.  It is built from the local $\eta_S$, and that is well defined
+wherever the medium is continuous.  The apparent stratified failure
+($0.009$--$0.398$ on the marine model) was a \emph{placement} artefact: every
+interface of that model separates different materials and the test pairs sat
+\emph{on} them, where $\eta_S$ is two-valued and $\bK$ is simply not defined.
+With the planes in a layer interior and a fast slab crossed twice between them
+at $Q=1000$ --- transmission, reflection, conversion and interbed multiples all
+present --- the clean law holds to $1.7\times10^{-15}$ over nine geometries.
+The control is included: on a discontinuity, no choice of side does better than
+$3.9\times10^{-3}$.  The restriction costs the application nothing, since
+scattering voxels live in layer interiors; it is enforced with a diagnostic in
+\texttt{cubic\_scattering.layered\_correction}.
+
+\paragraph{Upstream or here? --- SETTLED by experiment.}  Applying D1 in-process
+and running the sibling repository's own suite gives $119$ passed at baseline
+and $118$ passed / $1$ failed with the fix.  The single failure is not a
+physical check: it asserts that the $9\times9$ solver agrees with the $4\times4$
+solver, where the two sides are $(\bA\bG_6\bB)$ driven by $T_{9}$ and
+$\bG_{4}$ driven by $\bB T_{9}\bA$.  Both wrap the \emph{same} raw Green's
+function with the \emph{same} $\bA$ and $\bB$, so it is an algebraic identity
+that holds for \emph{any} $\bG$ and cannot see a common-mode error --- it would
+fail just as readily for a correct change.  Verdict: carry the correction here,
+for a sharper reason than the original one.  Not ``the error cancels in $R$ and
+$T$'', but \emph{no upstream test compares the $9\times9$ path to anything
+outside itself}.  Raise a note, not a patch.
+
+\paragraph{N5 --- improved, not closed.}  Re-taken through the corrected
+wrapper, the kernel-ratio spread roughly halves (pair $2\!\to\!0$ at $Q=3$:
+$34.9 \to 5.9$) and still does not fall with $Q$.  So the wrapper defects were a
+real part of N5 but not the whole of it.  The remainder is the discrete-versus-
+continuum aliasing already diagnosed: \texttt{\_build\_slab\_kernels} sums the
+continuum propagator over discrete voxel positions and transforms, so by Poisson
+summation its spectral kernel is the continuum kernel \emph{aliased} over
+reciprocal lattice vectors, while \texttt{layered\_greens} returns the un-aliased
+kernel at a single $\mathbf{k}$.  The consequence is unchanged and is the next
+piece of real work: \textbf{lattice-sum $\bP^{z}$ into the discrete
+representation before adding it to $\bP^{x}$}.  That is a construction, not a
+rescaling.
+
+\paragraph{A withdrawn result, recorded.}  An attempt to confirm the aliasing
+account by comparing the corrected kernel against a \emph{freshly written}
+continuum $9\times9$ showed a uniform $20\%$ offset at every propagating
+wavenumber, flat in frequency --- while the same construction agrees with the
+\emph{validated} whole-space reference to $5\times10^{-15}$.  The fresh
+reference was therefore the suspect, and the comparison was withdrawn rather
+than reported.  This is the second time in this work that an unvalidated
+reference nearly produced a false result; the first was a wavenumber grid that
+did not contain the $S$ pole ($k_S = \omega/\beta$), which made the absolute
+reference of \S\ref{sec:resolution} look broken at $O(1)$ until the grid was
+widened.  Validate the reference before believing the comparison.
+
+\paragraph{Reproducibility.}  Gates A--F and the negative results:
+\texttt{scripts/gate\_9x9\_source\_convention.py};
+N5: \texttt{scripts/composed\_matvec.py} and
+\texttt{scripts/discrete\_pz\_kernel.py};
+lateral propagator: \texttt{scripts/gate\_lateral\_sweep\_alg52.py}.
+The resolution: \texttt{scripts/gate\_displacement\_only\_calibration.py}
+(the absolute reference and $\bK$),
+\texttt{scripts/gate\_wrapper\_resolution.py} (the three defects, GATE~F,
+GATE~D), and \texttt{scripts/audit\_thesis\_ch3\_box53.py}
+(\eqref{eq:box53} and the Chapter~3 self-consistency checks).  A fuller
+narrative, including the eliminations made and retracted along the way, is in
+\texttt{docs/wrapper\_problem\_state\_2026-09-13.md}.
 
 \end{document}
