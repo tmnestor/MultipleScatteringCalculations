@@ -10,9 +10,17 @@ import numpy as np
 import pytest
 
 from cubic_scattering.effective_contrasts import ReferenceMedium
-from cubic_scattering.horizontal_greens import post_kx_residue_kernel_9x9_vec
+from cubic_scattering.horizontal_greens import (
+    exact_propagator_9x9,
+    post_kx_residue_kernel_9x9_vec,
+)
 from cubic_scattering.resonance_tmatrix import VOIGT_PAIRS
-from cubic_scattering.sweep_kernels import R9, LateralSplit, lateral_split_9x9
+from cubic_scattering.sweep_kernels import (
+    R9,
+    LateralSplit,
+    lateral_split_9x9,
+    vertical_kernel_9x9,
+)
 
 # Seismic units: km/s, g/cm3. Slight damping keeps the branch unambiguous.
 REF = ReferenceMedium(alpha=5.0, beta=3.0, rho=2.5)
@@ -148,6 +156,57 @@ def test_left_and_right_amplitudes_actually_differ() -> None:
     left = lateral_split_9x9(0.9, kz_arr, PITCH, OMEGA, REF, direction="left")
     diff = np.abs(left.amp_p - right.amp_p).max() / np.abs(right.amp_p).max()
     assert diff > 1e-2
+
+
+@pytest.mark.parametrize("dz", [0.25, -0.5])
+def test_vertical_kernel_integrates_to_the_exact_propagator(dz: float) -> None:
+    """RUNG 3: the k_z-residue kernel, integrated over (kx, ky), is the
+    real-space propagator.
+
+    Quadrature-limited, not exact -- the gate script shows it converging. This
+    test pins the construction; the gate pins the convergence.
+    """
+    # The residual is governed by dk alone, not by kmax: (kmax=120, nk=512) and
+    # (kmax=240, nk=1024) share dk and give identical errors, and halving dk
+    # divides the residual by ~5.4 -- O(dk^2), the trapezoid rate. dk = 0.23 here.
+    kmax, nk = 120.0, 1024
+    k1d = np.linspace(-kmax, kmax, nk)
+    dk = k1d[1] - k1d[0]
+
+    total = np.zeros((9, 9), dtype=complex)
+    for ky in k1d:
+        kern = vertical_kernel_9x9(k1d, ky, dz, OMEGA, REF)
+        total += np.einsum("abk->ab", kern) * dk**2 / (2 * np.pi) ** 2
+
+    want = exact_propagator_9x9(x=0.0, y=0.0, z=dz, omega=OMEGA, ref=REF)
+    assert np.abs(total - want).max() / np.abs(want).max() < 1e-2
+
+
+def test_vertical_kernel_z_sign_flips_the_odd_z_components() -> None:
+    """The dz sign must enter the k-vector, not just the exponential.
+
+    Under z -> -z the C and H blocks flip on every odd z index, exactly as the
+    lateral kernel does under x -> -x. Same identity, different axis.
+    """
+    kx = np.array([0.0, 0.8, 2.5])
+    ky = 0.4
+    up = vertical_kernel_9x9(kx, ky, -0.3, OMEGA, REF)
+    down = vertical_kernel_9x9(kx, ky, 0.3, OMEGA, REF)
+
+    # Parity under z -> -z: u_z, e_zy and e_zx are odd; e_zz carries two z
+    # indices and is even.
+    r3 = np.array([-1.0, 1.0, 1.0])  # (z, x, y)
+    rz = np.concatenate([r3, [r3[p] * r3[q] for (p, q) in VOIGT_PAIRS]])
+    refl = np.outer(rz, rz)
+    for m in range(kx.size):
+        want = refl * down[:, :, m]
+        assert np.abs(up[:, :, m] - want).max() / np.abs(want).max() < 1e-14
+
+
+def test_vertical_kernel_rejects_zero_dz() -> None:
+    """dz = 0 genuinely diverges -- it must raise, not return a big number."""
+    with pytest.raises(ValueError, match="dz"):
+        vertical_kernel_9x9(np.array([0.0]), 0.0, 0.0, OMEGA, REF)
 
 
 def test_rejects_zero_pitch() -> None:
