@@ -215,6 +215,48 @@ def compute_slab_tmatrices(
 # ═══════════════════════════════════════════════════════════════
 
 
+def _add_supercell_images(
+    kernel_circ: NDArray,
+    M: int,
+    d: float,
+    dz: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_img: int,
+) -> None:
+    """Add the periodic images the (2M-1)^2 patch leaves out, in place.
+
+    For a medium periodic with supercell L = M d, the kernel entry at in-cell
+    offset (cx, cy) must be the sum over EVERY image,
+
+        K(cx, cy) = sum_{nx, ny} G(dz, (cx + nx M) d, (cy + ny M) d)
+
+    The existing fold supplies the terms with (cx + nx M) and (cy + ny M) inside
+    [-(M-1), M-1]; this adds the rest out to |nx|, |ny| <= n_img.
+
+    Convergence is the point of the exercise and is NOT assumed: the 1/r^3
+    strain block falls off fast enough for a direct sum, while the 1/r
+    displacement block converges only conditionally in two dimensions, so the
+    residual after truncation is what decides whether an Ewald split is needed.
+    `scripts/gate_lateral_sum_invariance.py` measures it against the exact
+    supercell-invariance requirement rather than inspecting the terms.
+    """
+    for cx in range(M):
+        for cy in range(M):
+            acc = np.zeros((9, 9), dtype=complex)
+            for nx in range(-n_img, n_img + 1):
+                for ny in range(-n_img, n_img + 1):
+                    gx, gy = cx + nx * M, cy + ny * M
+                    # Skip what the (2M-1)^2 patch already contributed, and the
+                    # self term, which belongs to T0 and not to the propagator.
+                    if abs(gx) <= M - 1 and abs(gy) <= M - 1:
+                        continue
+                    if gx == 0 and gy == 0 and abs(dz) < 1e-15 * max(d, 1.0):
+                        continue
+                    acc += _propagator_block_9x9(np.array([dz, gx * d, gy * d]), omega, ref)
+            kernel_circ[cx, cy] += acc
+
+
 def _cell_averaged_propagator(
     r_vec: NDArray,
     d: float,
@@ -333,6 +375,7 @@ def _build_slab_kernels(
     va_radius: int = 1,
     va_all: bool = False,
     va_gauss: int = 4,
+    lattice_images: int = 0,
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -429,6 +472,19 @@ def _build_slab_kernels(
                     dx_val = ix - (M - 1)
                     dy_val = iy - (M - 1)
                     kernel_circ[dx_val % M, dy_val % M] += kernel_spatial[ix, iy]
+            if lattice_images:
+                # THE SUM ABOVE IS NOT A LATTICE SUM. It covers only
+                # dx, dy in [-(M-1), M-1] -- one (2M-1)^2 patch -- and then wraps.
+                # A periodic medium needs every image of the supercell. The
+                # omitted tail of the 1/r^3 strain block beyond radius ~M d falls
+                # as 1/(M d), which shows up as an error ~ A + B/M and, since a
+                # laterally uniform medium cannot depend on M at all, is provably
+                # an artifact (scripts/measure_single_plane_core.py).
+                #
+                # Here the missing images are added explicitly. The nearest
+                # image is M cells away, far outside the contact shell, so the
+                # point propagator is the right object for every term added.
+                _add_supercell_images(kernel_circ, M, d, dz, omega, ref, lattice_images)
             kernel_hat[k] = np.fft.fft2(kernel_circ, axes=(0, 1))
         else:
             # FFT over spatial dimensions for all 9×9 components
@@ -632,6 +688,7 @@ def build_slab_kernels(
     va_radius: int = 1,
     va_all: bool = False,
     va_gauss: int = 4,
+    lattice_images: int = 0,
 ) -> NDArray:
     """Build the FFT propagator kernel, for reuse across right-hand sides.
 
@@ -655,6 +712,9 @@ def build_slab_kernels(
             otherwise uses the midpoint value G(r) in place of the continuum
             integral V<G>, a scale-invariant bias that refinement cannot remove.
         va_gauss: Gauss points per axis for that quadrature (default 4).
+        lattice_images: Supercell images added to the periodic lateral sum.
+            0 (default) reproduces the historical truncated-and-wrapped sum,
+            which is NOT a lattice sum and carries an O(1/M) artifact.
 
     Returns:
         The FFT kernel; pass it straight back as ``kernel_hat``.
@@ -669,6 +729,7 @@ def build_slab_kernels(
         va_radius=va_radius,
         va_all=va_all,
         va_gauss=va_gauss,
+        lattice_images=lattice_images,
     )
 
 
