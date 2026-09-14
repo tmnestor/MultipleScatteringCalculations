@@ -1,5 +1,19 @@
 """MEASUREMENT: does the omitted coupling COMPOUND as scattering strengthens?
 
+================================================================================
+RETRACTED 2026-09-14 -- ka = 0.94 HERE, OUTSIDE THE T-MATRIX'S VALIDATED RANGE.
+================================================================================
+PITCH = 0.25 km, a = 0.125 km, omega = 2 pi 6, alpha = 5 give ka = 0.94, against
+the analytic cube T-matrix's validated ceiling of 0.3. The "error reaches 70-90%
+of the field at rho > 2.5" result is WITHDRAWN: those T-matrices were outside
+their range, so the error may be the T-matrix rather than the ordering.
+
+Inside the Rayleigh regime the ordering effect is 1-3% and indistinguishable
+from the discretisation error -- `scripts/gate_thesis_formulation.py`. The
+method, the spectral-radius axis and the validity-floor column are all worth
+keeping; the regime was not.
+================================================================================
+
 `measure_ordering_difference` found the dress-after omission to be first-order
 in the weak regime: the Born estimate tracked the measured difference within
 ~10% and the difference was linear in T. That is the regime where dress-after

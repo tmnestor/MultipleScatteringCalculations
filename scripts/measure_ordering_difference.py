@@ -1,6 +1,28 @@
 #!/usr/bin/env python3
 """MEASUREMENT: what the dress-after ordering omits.
 
+================================================================================
+RETRACTED 2026-09-14 -- THE NUMBERS BELOW WERE TAKEN OUTSIDE THE T-MATRIX'S
+VALIDATED REGIME. DO NOT QUOTE THEM.
+================================================================================
+This script runs at PITCH = 0.25 km, a = 0.125 km, omega = 2 pi 6, alpha = 5,
+so ka = 7.54 * 0.125 = 0.94. `compute_slab_tmatrices` uses the ANALYTIC cube
+T-matrix, which this project's regime table validates only for ka < 0.3; 0.3-1.0
+requires the subdivided resonance treatment. Every T-matrix here was therefore
+outside its range, and the error attributed to the ORDERING may be the T-matrix.
+
+What it reported and what is withdrawn:
+  * "the dress-after error reaches 70-110% of the field"  -- WITHDRAWN
+  * "DeltaG0 is O(1) relative to G0"                      -- WITHDRAWN as a
+    statement about a physical configuration
+
+Re-run inside the Rayleigh regime (0.6 Hz gives ka = 0.094) the ordering effect
+is 1-3% and indistinguishable from the discretisation error -- see
+`scripts/gate_thesis_formulation.py`, which measures both and refuses to
+conclude. The METHOD below is sound and worth keeping; only the regime was
+wrong. Fix ka before reading any number from it.
+================================================================================
+
 THE THESIS'S CENTRAL CLAIM, and the one idea in this programme that has never
 been tested. The thesis solves the stratified depth-average reference EXACTLY
 and carries the lateral contrast as a multiple-scattering series on that

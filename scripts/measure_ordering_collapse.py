@@ -1,5 +1,19 @@
 """MEASUREMENT: is the dress-after error a function of rho alone?
 
+================================================================================
+RETRACTED 2026-09-14 -- ka = 0.94 HERE, OUTSIDE THE T-MATRIX'S VALIDATED RANGE.
+================================================================================
+Same configuration as its two predecessors: ka = 7.54 * 0.125 = 0.94, against a
+validated ceiling of 0.3 for the analytic cube T-matrix. Every error magnitude
+below is therefore untrustworthy.
+
+ONE RESULT HERE SURVIVES, because it is a statement about what does NOT organise
+the data rather than about magnitudes: the collapse onto rho is refuted, and rho
+was a confound in the two earlier scripts. That conclusion rests on points at
+similar rho disagreeing by 5-6x, which a common T-matrix error does not produce.
+Read the refutation; do not quote the magnitudes.
+================================================================================
+
 `measure_ordering_strong_scattering` established the robust part -- the error
 grows from ~10% of the field at rho < 1 to 70-90% at rho > 2.5 -- but over only
 six points, and reported it as a RANGE. A range is what you write when you do
