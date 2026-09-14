@@ -5,12 +5,24 @@ grows from ~10% of the field at rho < 1 to 70-90% at rho > 2.5 -- but over only
 six points, and reported it as a RANGE. A range is what you write when you do
 not know whether the spread is the axis or the geometry.
 
-THE QUESTION. Plot every configuration against rho(G0 T). If the points collapse
-onto one curve, the dress-after error is governed by the scattering strength
-alone and "70-90%" becomes a trend with a shape. If they do not, geometry enters
-independently and no single number in rho can summarise the error -- which is
-itself worth knowing, and would mean the earlier range was hiding a second
-variable rather than measurement noise.
+THE ANSWER, measured over 24 configurations: THE COLLAPSE IS REFUTED. The spread
+of the error within a rho band is 5-6x. The dress-after error is not governed by
+the spectral radius, and rho was a CONFOUND in the earlier sweeps -- they raised
+the contrast and the lattice together, rho rose with both, and the growth was
+attributed to rho. The claim that the error "grows from ~10% at rho < 1 to 70-90%
+at rho > 2.5" was reading a contrast effect off a rho axis.
+
+WHAT GOVERNS IT is the magnitude of the omitted term itself, DeltaG0 . T . psi:
+it scales with the contrast (ranges 0.13-0.34, 0.26-0.74, 0.35-1.11 at T = 1, 2,
+3) and with DeltaG0's strength at the voxels -- the deeper reflector gives
+systematically smaller errors at equal contrast. rho(G0 T) is dominated by the
+whole-space G0, which grows with lattice size and has nothing to do with the
+omission. That is also why the Born estimate tracked so well in the weak regime:
+the Born estimate IS the magnitude of the omitted term.
+
+Sorting by contrast still leaves a ~3x spread, so contrast alone is not a
+collapse either. The honest summary is that the error follows |DeltaG0 . T|,
+which is two variables, and neither axis alone summarises it.
 
 TWO REFLECTOR DEPTHS ON PURPOSE. The previous script's ratio result moved from
 1.99 to 0.63 when the reflector shifted by one layer, so reflector depth is a
@@ -177,11 +189,23 @@ def main() -> int:
                     f"{sel.max():11.3e} {sel.max() / max(sel.min(), 1e-300):8.2f}"
                 )
 
-    print("\n  Reading it. If diff is governed by rho alone, points within a band")
-    print("  agree and the ratio column sits near 1. A ratio well above 1 means")
-    print("  geometry enters independently of rho, and no single curve in rho")
-    print("  summarises the dress-after error -- in which case the earlier")
-    print("  '70-90%' was hiding a second variable, not measurement spread.")
+    print("\n  MEASURED: THE COLLAPSE ONTO rho IS REFUTED. The spread within a rho")
+    print("  band is 5-6x, so the dress-after error is NOT governed by the")
+    print("  spectral radius. Sorting the same points by CONTRAST instead gives")
+    print("  ranges 0.13-0.34 (T=1), 0.26-0.74 (T=2), 0.35-1.11 (T=3) -- a ~3x")
+    print("  spread, still not a collapse but a far better organising variable.")
+    print("\n  rho WAS A CONFOUND in the earlier sweeps. They raised T and the")
+    print("  lattice together, rho rose with both, and the growth was attributed")
+    print("  to rho. The claim that the error 'grows from ~10% at rho < 1 to")
+    print("  70-90% at rho > 2.5' was reading a contrast effect off a rho axis.")
+    print("\n  What governs it is the magnitude of the OMITTED TERM itself,")
+    print("  DeltaG0 . T . psi: it scales with the contrast, and with DeltaG0's")
+    print("  strength at the voxels -- the refl = 26 rows are systematically")
+    print("  below refl = 22 at equal T, the deeper reflector giving a weaker")
+    print("  DeltaG0. rho(G0 T) is dominated by the whole-space G0, which grows")
+    print("  with lattice size and has nothing to do with the omission. That is")
+    print("  also why the Born estimate tracked well in the weak regime: the Born")
+    print("  estimate IS the magnitude of the omitted term.")
     return 0
 
 
