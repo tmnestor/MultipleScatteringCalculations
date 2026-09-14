@@ -1,5 +1,46 @@
 # Cartesian Directional Sweeps, Stage 1 — Implementation Plan
 
+> ## ✅ STAGE 1 COMPLETE — 14 September 2026
+>
+> Pushed at `0ca7ad2`. Suite 934 passed / 1 skipped; every gate exits 0. The task
+> bodies below are the plan *as written beforehand*; execution diverged from them
+> in three material ways, recorded here so the gap is visible rather than buried.
+>
+> | Task | Outcome |
+> |---|---|
+> | 1, 2 lateral split | done, 1.5e-15, residual **flat** in separation |
+> | 3 `sweep_x` | done, 1.5e-13, **flat** in lattice size, vacuity control included |
+> | 4 `sweep_z` | done — but **not** the planned zero-padded FFT; see below |
+> | 5 `apply_g0` | done, support-level partition gate |
+> | 6 `sweep_solver` | done, 1.2e-12 vs dense LU and Neumann at ρ = 0.92 |
+> | 7a `sweep_modes` | done — and **not** dead: it drove the single-bounce validation |
+> | 7b Kennett dressing | **cancelled** — it was rebuilding `Q^∂` |
+> | 8 `FFTProp` study | **deferred to stage 2** — see below |
+>
+> **Three divergences.**
+>
+> 1. **`sweep_z` uses a direct wide-grid `k_x` quadrature, not an FFT.** An FFT
+>    samples `k_x` only on the Nyquist window `±π/pitch`, where the integrand is
+>    still ~4% of peak at `dz = pitch`, and periodizes the kernel at the domain
+>    width. Padding fixes the second, not the first. See `make_sweep_grid`.
+> 2. **The vertical operator is the existing stratified propagator**, not a
+>    rebuild. The spec's "no external dependency" claim was wrong and is
+>    retracted in the spec. `vertical_kernel_9x9` survives as the
+>    homogeneous-limit *arbiter*.
+> 3. **Rung 5's arbiter changed.** `slab_scattering` is 3-D on a finite `M×M`
+>    footprint and cannot represent a y-invariant medium, so it cannot arbitrate
+>    a 2½-D solver. Replaced by a dense LU and an explicit Neumann series; the
+>    cross-architecture check is deferred to stage 2.
+>
+> **Next:** stage 2, the in-out `k_y` sweep. It makes the solver 3-D and unblocks
+> both deferred checks (Task 8 / rung 7, and rung 5c). `sweep_y` currently raises
+> `NotImplementedError` naming the stage.
+>
+> **Beyond the plan.** Two defects were found by work this plan did not
+> anticipate: an index-convention split in `horizontal_greens`, and an SH
+> impedance error in the stratified solver that was invisible to four gates
+> passing at 1e-15. Both are fixed; see `scripts/gate_sh_impedance.py`.
+
 > **REWORKED 2026-09-13, after the plan's central premise was found false.**
 >
 > This plan asserted that the stratified vertical operator did not exist and had
