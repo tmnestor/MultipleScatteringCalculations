@@ -77,6 +77,31 @@ the contrast.
 
 Six direction-pure passes in all.
 
+**RETRACTED 2026-09-14, for the three-dimensional case only.** Item 3 and the
+"six passes" count above hold in 2½-D and are what stage 1 built. **They do not
+survive in three dimensions, and the reason is quantitative.**
+
+A sweep carries a running accumulator indexed by its transverse quadrature
+nodes. In 2½-D that is `(n_z, n_kz, 9)` — a few megabytes — because `y` is
+invariant and `k_y` is a single parameter. In 3-D, `y` becomes a lattice axis
+*and* the transverse rule becomes two-dimensional, so the accumulator is
+`(n_z, n_x, n_k, 9)`. At the converged transverse rule (`kr·pitch = 30`,
+`Δk = 0.156`, reaching 3.2e-7 against the closed form) that is **68 GB** on a
+16³ lattice with two live at once, and the inter-plane stack stored spectrally
+is **615 GB**. Measured, not estimated — `scripts/measure_sweep3d_cost.py`.
+
+The same operators tabulated in real space are **1.2 MB** and **149 MB**. So in
+3-D the coupling is split by *depth separation* rather than by direction: the
+whole-space part is the closed-form propagator at every separation, and only the
+layer reverberation is transformed from `(k_x, k_y)`. See
+`cubic_scattering/pair_propagators.py` and §"The three-dimensional case" in
+`LatexPDFs/DirectionalSweepSolver/`.
+
+The 2½-D and 3-D forms meet exactly through the `y`-integral: for a `y`-invariant
+model the 2½-D propagator is the `k_y` component of the `y`-transform of the 3-D
+one, so there is no separate 2½-D closed form, only a slice of the 3-D one.
+Gated two independent ways at 4e-13 — `scripts/gate_y_integral_2p5d.py`.
+
 ### 3.2 Why these directions
 
 The conventional construction sums in-plane coupling on the `k_z` pole — the
@@ -122,7 +147,8 @@ memory is worth the class of bug it removes.
 | File | Responsibility |
 |---|---|
 | `cubic_scattering/sweep_kernels.py` *(new)* | The amplitude/phase split: per pole, the distance-independent 9×9 amplitude and the scalar one-pitch phase. Pure NumPy, no solver dependencies. |
-| `cubic_scattering/directional_sweeps.py` *(new)* | `sweep_x`, `sweep_z`, and `apply_g0` (the ordered composition). `sweep_y` added at stage 2. |
+| `cubic_scattering/directional_sweeps.py` *(new)* | `sweep_x`, `sweep_z`, and `apply_g0` (the ordered composition). ~~`sweep_y` added at stage 2~~ — stage 2 added `apply_g0_3d` instead; see the §3.1 retraction. |
+| `cubic_scattering/pair_propagators.py` *(new, stage 2)* | Real-space propagator tables: `same_depth_table` (closed form) and `layered_stack_table` (whole-space subtracted spectrally, reverberation transformed, closed form added back in real space). |
 | `cubic_scattering/sweep_solver.py` *(new)* | GMRES around `apply_g0`, with `T₀` from the existing cube machinery. |
 | `cubic_scattering/horizontal_greens.py` *(modify)* | Expose the split. Existing bundled entry points unchanged, so current callers and gates are untouched. |
 
@@ -182,6 +208,36 @@ against the `horizontal_greens` pairwise sum in three dimensions.
 Stage 1 first because every one of its parts has a validated antecedent, so a
 failure localises immediately. Stage 2 then introduces exactly one new thing.
 
+**RETRACTED 2026-09-14.** The stage-2 paragraph and the "exactly one new thing"
+claim above are both wrong, and they were wrong in two separate ways.
+
+**First, the scope.** `SweepGrid.ky` is a *scalar* — the 2½-D parameter — so
+both existing sweeps are built at one fixed `k_y`. Making `y` a real-space axis
+changes the state from `(n_z, n_x, 9)` to `(n_z, n_x, n_y, 9)` and leaves the
+stage-1 pair partition with no home for a pair separated along all three axes at
+once. That is three functions changed, not one added. The claim was made from
+the design rather than from the code, and reading `directional_sweeps.py:44`
+would have refuted it in a minute.
+
+**Second, the architecture.** Even granting the scope, the extension does not
+fit in memory — see the retraction in §3.1. Stage 2 as built is not six sweeps:
+it is four sweeps in 2½-D, and in 3-D a real-space split by depth separation.
+`sweep_y` was never implemented and its stub now redirects to `apply_g0_3d`.
+
+**What stands.** Stages 1 and 2 as *sequencing* was right, and for the reason
+given: stage 1's parts each had a validated antecedent, so when stage 2's
+premise failed it failed visibly and at the measurement rather than after a
+build. The error was in predicting stage 2's content, not in doing stage 1 first.
+
+**Arbiter changed.** Rung 6 was to be arbitrated against the `horizontal_greens`
+pairwise sum. It is instead arbitrated against `exact_propagator_9x9`, the
+closed-form Kupradze propagator: it carries no quadrature error of its own and
+is already in the `(z,x,y)` convention the operator uses, whereas
+`horizontal_greens` is known to hold two different index conventions internally
+— `horizontal_greens_direct` is `(x,y,z)` while the 9×9 kernel and
+`exact_propagator_9x9` are seismological, and unpermuted they differ by a fixed
+3.6e-1 that does *not* fall under refinement.
+
 ## 7. Validation ladder
 
 Each rung states a claim with a knowable answer and names an arbiter that
@@ -194,7 +250,10 @@ already exists.
 | 3 | vertical sweep == Kennett between the same planes | `kennett_layers` | 1e-14 |
 | 4 | full 2½-D `G₀` matvec | `FFTProp` | see below |
 | 5 | GMRES solve, homogeneous background | `slab_scattering` (validated vs Kennett) | ≤1% |
-| 6 *(stage 2)* | in-out `k_y` sweep, 3-D lateral coupling | `horizontal_greens` pairwise, 3-D | 1e-15 |
+| 6 *(stage 2)* | ~~in-out `k_y` sweep~~ → 3-D `G₀`, composed | `exact_propagator_9x9` pairwise, 3-D | 1e-13 |
+| 6b *(stage 2)* | 3-D partition, every pair counted once | integer support count | exact |
+| 6c *(stage 2)* | uniform layered 3-D reduces to whole space | the closed-form table | 1e-11 |
+| 6d *(stage 2)* | `y`-integral of 3-D form = 2½-D propagator | `k_z` residue vs Kupradze | 1e-9 |
 
 **Rungs 1–3 and 6 are exact**: the same physics through two code paths, so
 anything above ~1e-13 is a defect, not a discretisation difference.
@@ -228,8 +287,13 @@ where to fix it, what a valid value looks like, how to recover):
 - a sweep asked to run on a lattice of fewer than two sites along its axis;
 - a pitch that is zero or negative;
 - a frequency of zero, where the partial-wave decomposition is undefined;
-- a request for `sweep_y` before stage 2 lands — an explicit `NotImplementedError`
-  naming the stage, never a silent omission of a coupling term.
+- a request for `sweep_y` — an explicit `NotImplementedError`, never a silent
+  omission of a coupling term. It no longer names a pending stage: there is no
+  spectral in-out sweep and there will not be one, so the message names the two
+  real options instead — integrate over `k_y` for a `y`-invariant model, or use
+  `apply_g0_3d` for one that varies in `y`;
+- a source array whose shape is not `(n_z, n_x, n_y, 9)` at the 3-D operator;
+- a stratified model passed without a matching plane map and transverse rule.
 
 No silent fallbacks and no defaulting: a missing input raises rather than being
 inferred.
