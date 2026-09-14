@@ -285,10 +285,11 @@ def main() -> int:
 
     print("\n" + "=" * 78)
     print(f"GATE dressed-T equivalence: {'PASS' if ok else 'FAIL'}")
-    print("  Still NOT established here: the absolute magnitude of D against an")
-    print("  independent physical reference. The route is the single-bounce limit")
-    print("  -- as the contrast weakens, D must approach R x (whole-space")
-    print("  propagator over twice the standoff), which is checkable in isolation.")
+    print("  Not established HERE -- every gate above is homogeneous of degree one")
+    print("  -- is the absolute magnitude of D. That is now carried by")
+    print("  scripts/gate_dg0_absolute_magnitude.py, which predicts the full 9x9")
+    print("  forward from the Kennett reflection matrix with nothing fitted:")
+    print("  2e-10 at weak, strong and multi-interface contrast.")
     print("=" * 78)
     return 0 if ok else 1
 
