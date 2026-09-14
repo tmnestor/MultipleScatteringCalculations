@@ -266,6 +266,9 @@ def _bloch_contact_correction(
     ref: ReferenceMedium,
     n_orders: int,
     va_radius: int,
+    va_all: bool = False,
+    va_gauss: int = 4,
+    va_all_reach: int = 4,
 ) -> NDArray:
     """Bloch transform of [Galerkin - point] over the contact shell.
 
@@ -288,18 +291,31 @@ def _bloch_contact_correction(
     Returns:
         Shape (M, M, 9, 9), to be added to the point-propagator Bloch kernel.
     """
+    reach = max(va_radius, va_all_reach) if va_all else va_radius
     offsets: list[tuple[int, int]] = []
     deltas: list[NDArray] = []
-    for dx in range(-va_radius, va_radius + 1):
-        for dy in range(-va_radius, va_radius + 1):
-            if max(abs(dz_vox), abs(dx), abs(dy)) > va_radius:
+    for dx in range(-reach, reach + 1):
+        for dy in range(-reach, reach + 1):
+            cheb = max(abs(dz_vox), abs(dx), abs(dy))
+            if cheb > reach:
                 continue
             if dz_vox == 0 and dx == 0 and dy == 0:
                 continue  # self-term lives in the local T-matrix
-            g_avg = inter_voxel_propagator_9x9(
-                (dz_vox, dx, dy), ref.alpha, ref.beta, ref.rho, omega, n_orders, d=d
-            )
-            g_pt = _propagator_block_9x9(np.array([dz_vox * d, dx * d, dy * d]), omega, ref)
+            r_vec = np.array([dz_vox * d, dx * d, dy * d])
+            g_pt = _propagator_block_9x9(r_vec, omega, ref)
+            if cheb <= va_radius:
+                # Contact shell: the analytic O_h tables, exact at face, edge and
+                # corner contact where no quadrature converges.
+                g_avg = inter_voxel_propagator_9x9(
+                    (dz_vox, dx, dy), ref.alpha, ref.beta, ref.rho, omega, n_orders, d=d
+                )
+            elif va_all:
+                # Beyond contact the kernel is smooth over the cell, so plain
+                # Gauss quadrature is the source-cell average. Without this
+                # branch va_all would be silently dropped on the Ewald path.
+                g_avg = _cell_averaged_propagator(r_vec, d, omega, ref, va_gauss)
+            else:
+                continue
             offsets.append((dx, dy))
             deltas.append(g_avg - g_pt)
 
@@ -499,7 +515,9 @@ def _build_slab_kernels(
                 # SHORT-RANGED correction that can be added exactly, as a finite
                 # Bloch sum over the contact shell. Without this the Ewald route
                 # would silently ignore volume_averaged.
-                kernel_hat[k] += _bloch_contact_correction(M, d, dz_vox, omega, ref, n_orders, va_radius)
+                kernel_hat[k] += _bloch_contact_correction(
+                    M, d, dz_vox, omega, ref, n_orders, va_radius, va_all, va_gauss
+                )
         return kernel_hat
 
     for k in range(n_dz):
