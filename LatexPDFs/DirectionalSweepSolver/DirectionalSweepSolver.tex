@@ -361,6 +361,9 @@ $\Delta\Gz$ lies in the rank-3 one-way span & pseudo-inverse residual & $4\times
 $\Delta\Gz$ magnitude, full $9\times9$ forward & Kennett reflectivity & $2\times10^{-10}$ \\
 \quad weak, strong and multi-interface, $k_\parallel h \le 3$ & --- & --- \\
 P/S flux factor, predicted not fitted & $i\beta\sqrt{\eta_S}/\alpha\sqrt{\eta_P}$ & $8$ s.f. \\
+$y$-integral of 3-D form $=$ 2\textonehalf-D propagator & $k_z$ residue vs Kupradze & $4\times10^{-13}$ \\
+layered table reduces, uniform background & closed form & $1.3\times10^{-14}$ \\
+\quad residual \emph{flat} in the transverse rule & --- & --- \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -428,10 +431,71 @@ the recursion itself. This same similarity already appears in this package, conv
 solver's reflection matrix to the Kennett convention --- the sweep solver needed a reconciliation
 the slab solver had already made, and the two agreeing is corroboration rather than coincidence.
 
+%==============================================================================
+\section{The three-dimensional case, and why it is not six sweeps}\label{sec:threed}
+%==============================================================================
+
+The architecture above is a 2\textonehalf-D result. Extending it to three dimensions by giving
+each sweep a transverse-wavenumber quadrature --- the obvious reading, and the one this
+programme's design note originally took --- does not work, and the reason is worth stating
+because it is quantitative rather than aesthetic.
+
+A sweep carries a running accumulator indexed by its transverse quadrature nodes. In
+2\textonehalf-D that accumulator is $(n_z, n_{k_z}, 9)$, a few megabytes, because $y$ is
+invariant and $k_y$ is a single parameter. In three dimensions $y$ becomes a lattice axis
+\emph{and} the transverse rule becomes two-dimensional, so the accumulator is
+$(n_z, n_x, n_k, 9)$. At the converged transverse rule --- $k_r p = 30$, $\Delta k = 0.156$,
+reaching $3.2\times10^{-7}$ against the closed form --- that is $68$~GB on a $16^3$ lattice with
+two live at once, and the inter-plane stack stored spectrally is $615$~GB. Both were measured,
+not estimated.
+
+The same operators \emph{tabulated in real space} are $1.2$~MB and $149$~MB. So in three
+dimensions the coupling is split by depth separation rather than by direction:
+\begin{equation}
+\Gz \;=\;
+\underbrace{\mathsf{P}(\Delta x, \Delta y, 0)}_{\text{closed form, exact}}
+\;+\;
+\underbrace{\mathsf{P}(\Delta x, \Delta y, \Delta z)}_{\text{closed form}}
+\;+\;
+\underbrace{\Delta\Gz(\Delta x, \Delta y, \Delta z)}_{\text{spectral, transformed once}} ,
+\label{eq:threedsplit}
+\end{equation}
+with the whole-space part taken from the closed-form propagator at every separation and
+\emph{only} the layer reverberation transformed from $(k_x,k_y)$. That subtraction is the
+economy of the scheme and not a convenience: the full layered kernel inherits the whole-space
+kernel's slow spectral decay and needs some $2.4\times10^6$ transverse nodes, whereas the
+reverberation converges at $k_r p = 10$ on about $6.6\times10^4$ --- a factor of 36. The
+resulting build costs $2.1$~h at $16^3$, once, outside the Krylov loop.
+
 \medskip\noindent
-\textbf{Not yet done.} The in-out $k_y$ pair, and with it the full three-dimensional Cartesian
-case, is the remaining piece; until it lands, the solver is 2\textonehalf-D and a comparison
-against a three-dimensional solver measures the geometry rather than the sweeps.
+\textbf{The $(z,x)$ closed-form $y$-integral.} The two architectures meet exactly, through the
+$y$-integral, and it is worth being precise because it is often stated as though 2\textonehalf-D
+required a propagator of its own. It does not. For a $y$-invariant model every voxel is a line of
+identical voxels along $y$, so the coupling between two $(z,x)$ columns is the three-dimensional
+propagator summed along that line,
+\begin{equation}
+\mathsf{P}_{2\frac12}(\Delta x, \Delta z; k_y)
+\;=\;
+\int_{-\infty}^{\infty} \mathsf{P}(\Delta x, y, \Delta z)\, e^{-i k_y y}\, \mathrm{d}y ,
+\label{eq:yint}
+\end{equation}
+so the 2\textonehalf-D propagator is the $k_y$ component of the $y$-transform of the
+three-dimensional one, and at $k_y = 0$ it is literally its $y$-integral. There is no separate
+2\textonehalf-D closed form --- only a slice of the three-dimensional one. Equation
+\eqref{eq:yint} is what licenses using the same closed-form table for both geometries, and it is
+the reason the $\Delta z = 0$ divergence discussed in \S\ref{sec:intraplane} is a property of the
+$k_z$-pole construction rather than of the propagator itself.
+
+This is measured, not asserted. Evaluating the left side by the $k_z$-residue kernel at $k_y=0$
+and inverse-transforming over $k_x$, against the right side by direct $y$-quadrature of the
+Kupradze closed form --- two constructions with no derivation in common --- agrees to
+$4\times10^{-13}$ at $\Delta x = 0$ and $1.5\times10^{-11}$ at two pitches
+(\texttt{gate\_y\_integral\_2p5d}). The damping matters: at real $\omega$ both integrands decay
+only algebraically and neither route is clean.
+
+\medskip\noindent
+\textbf{Not yet done.} The composed three-dimensional operator and its partition gate, and with
+them the cross-architecture comparisons that a 2\textonehalf-D solver cannot support.
 
 %==============================================================================
 \section{What is distinctive}
@@ -442,7 +506,12 @@ forward operator is a directional partial-wave summation rather than a circular-
 so the in-plane coupling is summed along the separated axes and the $\Delta z=0$ divergence is
 structurally absent rather than regularised --- and where the stratified background does
 contribute at equal depth, \S\ref{sec:intraplane}, it enters as a difference in which the
-divergence cancels rather than as a term requiring regularisation. Second, the depth structure
+divergence cancels rather than as a term requiring regularisation. \emph{In three dimensions the
+first of these changes character}: by \S\ref{sec:threed} the same-depth coupling is a direct
+real-space sum of the closed form rather than a directional summation, and what survives of the
+partial-wave structure is the depth direction and the reverberation. The absence of any
+periodicity assumption survives intact, and by a stronger route --- a real-space table assumes
+none at all, where a transverse quadrature merely avoids introducing one. Second, the depth structure
 is carried exactly by the stratified propagator on the true layered background, not approximated
 on a homogeneous whole-space kernel. The multiple scattering is left where it belongs, in a Krylov solve that
 calls the sweep as its matvec, so the propagator stays a clean, stable, forward summation and
