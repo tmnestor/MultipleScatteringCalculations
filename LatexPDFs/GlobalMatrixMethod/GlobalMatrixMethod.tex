@@ -50,6 +50,9 @@
 \newcommand{\bb}{\mathbf{b}}
 \newcommand{\bv}{\mathbf{v}}
 \newcommand{\bS}{\boldsymbol{\Sigma}}
+\newcommand{\bR}{\mathbf{R}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bC}{\mathbf{C}}
 \newcommand{\kpar}{\mathbf{k}_{\parallel}}
 
 \title{\bfseries The Global Matrix Method and the Source Jump\\[4pt]
@@ -90,7 +93,7 @@ directional partial-wave sweep matvec.}
 \bigskip
 
 %==============================================================================
-\section{The stratified system}
+\section{The stratified system}\label{sec:strat}
 %==============================================================================
 
 Work at fixed angular frequency $\omega$ and fixed horizontal wavenumber
@@ -362,6 +365,106 @@ with $h$ the layer thickness and $f$ the fractional depth of the source within
 it. The sign on $\bS_{\downarrow}$ is the side of \eqref{eq:jumpdef} it appears
 on. Both propagations run in the decaying direction, so \eqref{eq:place}
 inherits the stability of the sweep.
+
+%==============================================================================
+\section{The marine stack: free surface, ocean, layers, half-space}\label{sec:marine}
+%==============================================================================
+
+The stack that matters in practice is not welded throughout. It is bounded above
+by a \emph{free surface}, below that a \emph{fluid} ocean layer of finite
+thickness, then the elastic layers, and finally a radiating half-space. Two of
+those four differ structurally from \S\ref{sec:strat}, and both change the
+boundary conditions rather than merely the coefficients.
+
+\paragraph{The fluid layer carries two modes, not six.} A fluid supports no
+shear, so $\beta=0$ and the $SV$ and $SH$ columns of $\bD_z$ are absent: the
+state reduces to $(u_z,\tau_{zz})$ and the layer propagates a single up-going
+and a single down-going $P$ amplitude. At the seabed the welded condition of
+\eqref{eq:state} is therefore the wrong one. Only $u_z$ and $\tau_{zz}$ are
+continuous; the tangential traction $\tau_{xz}$ must \emph{vanish} on the fluid
+side, and the tangential displacement $u_x$ is free to slip. The interface is an
+acoustic-elastic one, with a reflection matrix whose $\bR_d$ has a single
+non-zero entry and whose transmission operators are rank-deficient --- the fluid
+cannot receive an $SV$ wave, so one column of $\bT_d$ and one row of $\bT_u$ are
+identically zero.
+
+\paragraph{The free surface is a pressure release.} At the top of the water
+column the traction vanishes identically, so the up-going amplitude is reflected
+with $\bR_{\mathrm{fs}}=-1$. The reverberation it closes is a geometric series
+in the two-way water delay: writing $\bR$ for the response referenced at the top
+of the water, already carrying one down-and-up passage of the ocean,
+\begin{equation}\label{eq:fsclose}
+  \bR_{\text{total}}
+  \;=\;\bR+\bR(-1)\bR+\bR(-1)\bR(-1)\bR+\cdots
+  \;=\;\frac{\bR}{1+\bR}.
+\end{equation}
+The delay is \emph{inside} $\bR$, not beside it. Written with the sub-ocean
+reflectivity $\bR_{\text{sub}}$ made explicit, $\bR=E^{2}\bR_{\text{sub}}$ with
+$E^{2}=\mathrm{e}^{2\ii\omega\eta_w h_w}$ the two-way water phase, and
+\eqref{eq:fsclose} becomes $E^{2}\bR_{\text{sub}}/(1+E^{2}\bR_{\text{sub}})$. A
+closure written as $\bR_{\text{sub}}/(1+\bR_{\text{sub}})$, with the phase
+dropped, is correct only when the free surface rests directly on the solid ---
+the water thickness then leaves the answer untouched, which is exactly the
+symptom to test for.
+
+\paragraph{Reconciliation against the Kennett recursion.} The global-matrix
+construction and the Kennett reflectivity recursion are independent routes to
+the same $\bR(p,\omega)$, so their agreement is evidence and their disagreement
+localises. For the stack above --- free surface, ocean, \emph{two} elastic
+layers and a half-space --- the two agree to
+\begin{center}
+\begin{tabular}{llr}
+\toprule
+Claim & Arbiter & Residual \\
+\midrule
+$\bR$ at the top of the water, surface open & Kennett $+$ fluid-solid step & $8.8\times10^{-16}$ \\
+$\bR$ at the free surface, \eqref{eq:fsclose} applied & as above $+$ closure & $1.5\times10^{-15}$ \\
+response moves with the water thickness & both sides & $1.5$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+(\texttt{gate\_gmm\_marine\_stack}). Four points of method are worth recording.
+
+\emph{Two elastic layers, not one.} A single interface cannot exercise interbed
+multiples, so a recursion that handles one interface correctly and compounds
+them wrongly would pass a one-layer test.
+
+\emph{The $PP$ component only, and that is not a dodge.} The two constructions
+normalise their mode amplitudes differently --- the Kennett route by the flux
+convention $\sqrt{\eta\rho}$, the global matrix by its own eigenvectors. Those
+differ by a \emph{diagonal} similarity $\bR\mapsto\bC^{-1}\bR\bC$, which leaves
+every diagonal entry exactly invariant. Comparing $PP$ is therefore
+convention-free; comparing the $P\!\leftrightarrow\!SV$ conversions would first
+require that factor, measured elsewhere in this programme to be
+$\ii\beta\sqrt{\eta_S}\,/\,\alpha\sqrt{\eta_P}$.
+
+\emph{The reference depth is a trap.} The Kennett recursion references its
+cumulative reflection at the first \emph{interface}, not at the top of the
+stack: it phases the layer below each interface, so the leading layer's own
+two-way delay is excluded. Handing it the sub-ocean layers directly gives a
+reflectivity short by one layer's delay, and because that shifts $P$ and $SV$
+alike it reads as a physics failure rather than a bookkeeping one. A
+zero-thickness layer of the first solid's own medium is prepended so that the
+reflectivity refers to the seabed.
+
+\emph{Both sides must attenuate the water identically.} Building the water's
+vertical slowness from the real velocity while the other side uses the complex
+attenuative slowness leaves a residual $\omega h_w\eta_w/2Q$ --- proportional to
+frequency and to water thickness, and nearly independent of the ray parameter.
+That signature identifies a phase error in the water leg rather than an error in
+the physics, and was measured at $10^{-5}$ for $Q=10^{6}$ before the two were
+brought into line.
+
+\paragraph{What this does not yet reach.} The reconciliation above is for the
+plane-wave \emph{reflectivity}. The Green's-function path of the same
+construction --- the one that supplies the stratified propagator to the
+scattering solver --- does \emph{not} carry the ocean as a finite layer: its
+response is independent of the water thickness to six significant figures, which
+by the argument under \eqref{eq:fsclose} means the ocean is being treated as a
+half-space and there is no free surface in it at all. The seabed interface
+itself is present and correctly parameterised. Closing that gap is a matter of
+carrying the water phase and the pressure-release closure into the
+Green's-function sweep, and it is not done here.
 
 %==============================================================================
 \section{Implementation and validation}
