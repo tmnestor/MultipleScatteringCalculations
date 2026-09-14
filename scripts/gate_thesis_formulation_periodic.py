@@ -104,7 +104,12 @@ REFL_JUMP = (2000.0, 1200.0, 600.0)
 
 
 def _model(
-    with_contrast: bool, *, uniform: bool, refl_jump: tuple = REFL_JUMP, refl_layer: int = REFL_LAYER
+    with_contrast: bool,
+    *,
+    uniform: bool,
+    refl_jump: tuple = REFL_JUMP,
+    refl_layer: int = REFL_LAYER,
+    contrast: float = 1.0,
 ):
     """Half-pitch layers; the voxel plane at SCAT_IFACE spans two of them."""
     import Kennett_Reflectivity.layer_model as lm
@@ -121,10 +126,11 @@ def _model(
             al[j], be[j], rh[j] = A0 + d_al, B0 + d_be, R0 + d_rh
     if with_contrast:
         lam0, mu0 = R0 * (A0**2 - 2 * B0**2), R0 * B0**2
-        r1 = R0 + D_RHO
+        d_lam, d_mu, d_rho = D_LAM * contrast, D_MU * contrast, D_RHO * contrast
+        r1 = R0 + d_rho
         for j in SCAT_LAYERS:
-            al[j] = float(np.sqrt((lam0 + D_LAM + 2 * (mu0 + D_MU)) / r1))
-            be[j] = float(np.sqrt((mu0 + D_MU) / r1))
+            al[j] = float(np.sqrt((lam0 + d_lam + 2 * (mu0 + d_mu)) / r1))
+            be[j] = float(np.sqrt((mu0 + d_mu) / r1))
             rh[j] = r1
     return lm.LayerModel.from_arrays(
         alpha=al,
@@ -181,6 +187,7 @@ def _run(
     refl_jump: tuple = REFL_JUMP,
     refl_layer: int = REFL_LAYER,
     omega: float = OM,
+    contrast: float = 1.0,
 ) -> tuple[float, float]:
     """(relative error against the exact layered answer, |exact|).
 
@@ -190,7 +197,7 @@ def _run(
     the amplitude is reported rather than assumed constant.
     """
     m_ref = _model(False, uniform=uniform, refl_jump=refl_jump, refl_layer=refl_layer)
-    m_full = _model(True, uniform=uniform, refl_jump=refl_jump, refl_layer=refl_layer)
+    m_full = _model(True, uniform=uniform, refl_jump=refl_jump, refl_layer=refl_layer, contrast=contrast)
     s_p, s_s = m_ref.complex_slowness_p(), m_ref.complex_slowness_s()
     # TWO REFERENCES, and the split is forced rather than chosen.
     # `inter_voxel_propagator` -- the volume-averaged nearest-neighbour object
@@ -208,7 +215,15 @@ def _run(
 
     geom = SlabGeometry(M=M, N_z=N_Z + 1, a=A_HALF)  # +1 for the observation plane
     ones = np.ones((N_Z + 1, M, M))
-    material = SlabMaterial(Dlambda=D_LAM * ones, Dmu=D_MU * ones, Drho=D_RHO * ones, ref=ref)
+    # The lattice contrast and the exact model's contrast MUST scale together --
+    # they are two descriptions of one medium, and the whole correctness
+    # condition is that they agree.
+    material = SlabMaterial(
+        Dlambda=D_LAM * contrast * ones,
+        Dmu=D_MU * contrast * ones,
+        Drho=D_RHO * contrast * ones,
+        ref=ref,
+    )
     t0 = compute_slab_tmatrices(geom, material, omega)
     t0[0] = 0.0  # the observation plane scatters nothing
 
