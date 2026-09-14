@@ -326,9 +326,36 @@ Two of them are now wrong in ways a reader would act on.
   > modules. The gate now leads with a `[5c-0]` guard asserting
   > `|G₀ψ|/|ψ| > 1e-3` before any other number is believed.
 
-- [ ] **Step 2: Rung 7 — the `FFTProp` convergence study.**
+- [x] **Step 2: Rung 7 — DROPPED 2026-09-14, not deferred.**
 
-  > **It is already specified.** `docs/plans/2026-09-13-cartesian-directional-sweeps-stage1.md`,
+  The decision and its four measured reasons are recorded in the design spec's
+  §7 retraction; the short form:
+
+  1. `FFTProp` has **no `T₀` and no solve** — it propagates given sources. The
+     "cylinder Mie `T₀` vs cube `T₀` shape difference" this rung was built
+     around does not exist.
+  2. Its **free surface does not match** the free-surface reflection — two
+     independent arbiters agree to six decimals and disagree with it
+     (`scripts/gate_fftprop_free_surface.py`).
+  3. Its **cylindrical-harmonic basis is the scaffolding this architecture
+     replaced** — the harmonics are the shape of its cylinders entering the
+     state vector, not a coordinate choice. We are Cartesian voxels throughout.
+  4. **Four better arbiters already pass**: Kennett (1e-15), closed-form
+     Kupradze (2.9e-16), `slab_scattering`'s FFT architecture (5.1e-16), dense
+     LU and Neumann (2.4e-12).
+
+  The rung's case was provenance. A fifth arbiter reached through a lossy basis
+  conversion, against a code with a different discretisation and a suspect free
+  surface, would principally measure the difference between two discretisations
+  — a real quantity, but not validation of the sweeps.
+
+  **Do not reinstate it without reading the spec retraction**, and note that the
+  prerequisites built while investigating it are all keepers:
+  `gate_free_surface_reverberation`, `gate_free_surface_magnitude`,
+  `gate_gmm_marine_stack`, `gate_fftprop_free_surface`, and the free-surface
+  flag itself.
+
+  > **The original method, for reference only.** `docs/plans/2026-09-13-cartesian-directional-sweeps-stage1.md`,
   > Task 8, gives the whole method in five steps: the `importlib` loader (the
   > package directory is literally named `FFTProp.py`, so `import FFTProp`
   > cannot reach it — copy the loader from `gate_lateral_sweep_alg52.py` rather
