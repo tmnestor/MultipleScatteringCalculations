@@ -103,7 +103,9 @@ PLANE_IFACES = (OBS_IFACE, SCAT_IFACE)
 REFL_JUMP = (2000.0, 1200.0, 600.0)
 
 
-def _model(with_contrast: bool, *, uniform: bool, refl_jump: tuple = REFL_JUMP):
+def _model(
+    with_contrast: bool, *, uniform: bool, refl_jump: tuple = REFL_JUMP, refl_layer: int = REFL_LAYER
+):
     """Half-pitch layers; the voxel plane at SCAT_IFACE spans two of them."""
     import Kennett_Reflectivity.layer_model as lm
 
@@ -115,7 +117,7 @@ def _model(with_contrast: bool, *, uniform: bool, refl_jump: tuple = REFL_JUMP):
         al[0], rh[0] = A0, R0
     else:
         d_al, d_be, d_rh = refl_jump
-        for j in range(REFL_LAYER, N_LAY + 2):
+        for j in range(refl_layer, N_LAY + 2):
             al[j], be[j], rh[j] = A0 + d_al, B0 + d_be, R0 + d_rh
     if with_contrast:
         lam0, mu0 = R0 * (A0**2 - 2 * B0**2), R0 * B0**2
@@ -134,12 +136,18 @@ def _model(with_contrast: bool, *, uniform: bool, refl_jump: tuple = REFL_JUMP):
     )
 
 
-def _p_tilde(model, src: int, rcv: int) -> np.ndarray:
+def _p_tilde(model, src: int, rcv: int, omega: float = OM) -> np.ndarray:
     """The layered propagator at k_par -> 0, one 9x9."""
-    return LC.corrected_layered_9x9(model, OM, np.array([EPS]), np.array([0.0]), src, rcv)[0]
+    return LC.corrected_layered_9x9(model, omega, np.array([EPS]), np.array([0.0]), src, rcv)[0]
 
 
-def _dressed_kernel(model, ref: ReferenceMedium, ref_c: ReferenceMedium, geom: SlabGeometry) -> np.ndarray:
+def _dressed_kernel(
+    model,
+    ref: ReferenceMedium,
+    ref_c: ReferenceMedium,
+    geom: SlabGeometry,
+    omega: float = OM,
+) -> np.ndarray:
     """The periodic volume-averaged kernel, plus the layer reverberation at k = 0.
 
     kernel_hat[dz][0, 0] is the sum over every spatial entry, i.e. the k = 0
@@ -147,26 +155,33 @@ def _dressed_kernel(model, ref: ReferenceMedium, ref_c: ReferenceMedium, geom: S
     DeltaG0(k_par -> 0)/d^2 there dresses the specular channel, which for a
     laterally uniform medium is the only one that acts.
     """
-    kh = build_slab_kernels(geom, OM, ref, volume_averaged=True, periodic=True).copy()
+    kh = build_slab_kernels(geom, omega, ref, volume_averaged=True, periodic=True).copy()
     n_z = geom.N_z
     for k in range(2 * n_z - 1):
         dz_vox = k - (n_z - 1)
         # Plane lz is at PLANE_IFACES[lz]; index 0 is the observation plane.
         lz, mz = (dz_vox, 0) if dz_vox >= 0 else (0, -dz_vox)
         rcv, src = PLANE_IFACES[lz], PLANE_IFACES[mz]
-        lay = _p_tilde(model, src, rcv)
+        lay = _p_tilde(model, src, rcv, omega)
         # The whole-space SUBTRACTION must use the COMPLEX medium, to match the
         # layered propagator it is subtracted from; only the kernel builder
         # needs the real one.
         if dz_vox == 0:
-            ws = same_depth_kernel_9x9(np.array([EPS]), 0.0, OM, ref_c)[:, :, 0]
+            ws = same_depth_kernel_9x9(np.array([EPS]), 0.0, omega, ref_c)[:, :, 0]
         else:
-            ws = vertical_kernel_9x9(np.array([EPS]), 0.0, dz_vox * D, OM, ref_c)[:, :, 0]
+            ws = vertical_kernel_9x9(np.array([EPS]), 0.0, dz_vox * D, omega, ref_c)[:, :, 0]
         kh[k, 0, 0] += (lay - ws) / D**2
     return kh
 
 
-def _run(*, dressed: bool, uniform: bool, refl_jump: tuple = REFL_JUMP) -> tuple[float, float]:
+def _run(
+    *,
+    dressed: bool,
+    uniform: bool,
+    refl_jump: tuple = REFL_JUMP,
+    refl_layer: int = REFL_LAYER,
+    omega: float = OM,
+) -> tuple[float, float]:
     """(relative error against the exact layered answer, |exact|).
 
     |exact| travels with the error because the three arms normalise by their
@@ -174,8 +189,8 @@ def _run(*, dressed: bool, uniform: bool, refl_jump: tuple = REFL_JUMP) -> tuple
     shift the ratios for a reason that has nothing to do with the orderings, so
     the amplitude is reported rather than assumed constant.
     """
-    m_ref = _model(False, uniform=uniform, refl_jump=refl_jump)
-    m_full = _model(True, uniform=uniform, refl_jump=refl_jump)
+    m_ref = _model(False, uniform=uniform, refl_jump=refl_jump, refl_layer=refl_layer)
+    m_full = _model(True, uniform=uniform, refl_jump=refl_jump, refl_layer=refl_layer)
     s_p, s_s = m_ref.complex_slowness_p(), m_ref.complex_slowness_s()
     # TWO REFERENCES, and the split is forced rather than chosen.
     # `inter_voxel_propagator` -- the volume-averaged nearest-neighbour object
@@ -194,7 +209,7 @@ def _run(*, dressed: bool, uniform: bool, refl_jump: tuple = REFL_JUMP) -> tuple
     geom = SlabGeometry(M=M, N_z=N_Z + 1, a=A_HALF)  # +1 for the observation plane
     ones = np.ones((N_Z + 1, M, M))
     material = SlabMaterial(Dlambda=D_LAM * ones, Dmu=D_MU * ones, Drho=D_RHO * ones, ref=ref)
-    t0 = compute_slab_tmatrices(geom, material, OM)
+    t0 = compute_slab_tmatrices(geom, material, omega)
     t0[0] = 0.0  # the observation plane scatters nothing
 
     src_vec = np.zeros(9, dtype=complex)
@@ -203,18 +218,18 @@ def _run(*, dressed: bool, uniform: bool, refl_jump: tuple = REFL_JUMP) -> tuple
     psi0 = np.zeros((N_Z + 1, M, M, 9), dtype=complex)
     exact = np.zeros(9, dtype=complex)
     for lz, iface in enumerate(planes):
-        psi0[lz, :, :, :] = _p_tilde(m_ref, SRC_IFACE, iface) @ src_vec
-    exact = _p_tilde(m_full, SRC_IFACE, planes[0]) @ src_vec
+        psi0[lz, :, :, :] = _p_tilde(m_ref, SRC_IFACE, iface, omega) @ src_vec
+    exact = _p_tilde(m_full, SRC_IFACE, planes[0], omega) @ src_vec
 
     kh = (
-        _dressed_kernel(m_ref, ref, ref_c, geom)
+        _dressed_kernel(m_ref, ref, ref_c, geom, omega)
         if dressed
-        else build_slab_kernels(geom, OM, ref, volume_averaged=True, periodic=True)
+        else build_slab_kernels(geom, omega, ref, volume_averaged=True, periodic=True)
     )
     res = compute_slab_scattering(
         geom,
         material,
-        OM,
+        omega,
         np.array([1.0, 0.0, 0.0]),
         "P",
         periodic=True,
