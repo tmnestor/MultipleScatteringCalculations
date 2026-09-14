@@ -22,6 +22,7 @@ from cubic_scattering.lattice_kupradze import (
     ladder_from_plain,
     lattice_block_9x9,
     lattice_scalar_tensors,
+    origin_scalar_tensors,
 )
 from cubic_scattering.planar_ewald import ewald_total
 
@@ -122,6 +123,62 @@ def test_z_parity_holds_at_the_same_plane_point() -> None:
         for idx in np.ndindex(*((3,) * order)):
             if idx.count(0) % 2 == 1:
                 assert abs(complex(t[idx])) / scale < 1e-12
+
+
+@pytest.mark.parametrize("order", [0, 1, 2, 3, 4])
+def test_origin_value_is_eta_independent(order: int) -> None:
+    """The diagonal term, where both singular pieces cancel analytically."""
+    a = origin_scalar_tensors(KAPPA, ETA1, RC, GC, A_L, K_PAR, order)[order]
+    b = origin_scalar_tensors(KAPPA, ETA2, RC, GC, A_L, K_PAR, order)[order]
+    assert np.abs(a - b).max() / np.abs(a).max() < 1e-11
+
+
+@pytest.mark.parametrize("order", [0, 2, 4])
+def test_r_to_zero_approaches_the_origin_value_first_order(order: int) -> None:
+    """The gap must HALVE as |r| halves -- being close is not enough.
+
+    A wrong constant plus cancellation noise also looks 'close'; only the rate
+    shows the analytic limit is the right one.
+    """
+    origin = origin_scalar_tensors(KAPPA, ETA1, RC, GC, A_L, K_PAR)[order]
+    scale = np.abs(origin).max()
+    gaps = []
+    for frac in (0.05, 0.025, 0.0125):
+        near = lattice_scalar_tensors(np.array([0.0, frac * A_L, 0.0]), KAPPA, ETA1, RC, GC, A_L, K_PAR)[
+            order
+        ]
+        gaps.append(np.abs(near - origin).max() / scale)
+    for i in range(len(gaps) - 1):
+        assert 1.7 < gaps[i] / gaps[i + 1] < 2.3
+
+
+def test_origin_z_parity_and_bloch_phase_signature() -> None:
+    """z-parity holds always; odd ORDERS vanish only at k_par = 0.
+
+    The contrast matters: a check run at k_par = 0 alone would also pass with
+    the Bloch phase sign reversed, which is a defect already on this project's
+    record.
+    """
+    origin = origin_scalar_tensors(KAPPA, ETA1, RC, GC, A_L, K_PAR)
+    for order in range(1, 5):
+        t = origin[order]
+        scale = np.abs(t).max()
+        for idx in np.ndindex(*((3,) * order)):
+            if idx.count(0) % 2 == 1:
+                assert abs(complex(t[idx])) / scale < 1e-12
+
+    at_gamma = origin_scalar_tensors(KAPPA, ETA1, RC, GC, A_L, np.zeros(2))
+    for order in (1, 3):
+        assert np.abs(at_gamma[order]).max() / np.abs(at_gamma[order - 1]).max() < 1e-12
+        assert np.abs(origin[order]).max() / np.abs(origin[order - 1]).max() > 1e-3
+
+
+def test_block_9x9_dispatches_to_the_origin_limit_at_zero() -> None:
+    """r = 0 must be finite -- the un-regularised path would divide by zero."""
+    blk = lattice_block_9x9(np.zeros(3), OMEGA, REF, ETA1, RC, GC, A_L, K_PAR)
+    assert np.all(np.isfinite(blk))
+    other = lattice_block_9x9(np.zeros(3), OMEGA, REF, ETA2, RC, GC, A_L, K_PAR)
+    assert np.abs(blk - other).max() / np.abs(blk).max() < 1e-10
 
 
 def test_same_plane_9x9_is_finite_and_eta_independent() -> None:
