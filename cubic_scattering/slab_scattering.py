@@ -215,6 +215,59 @@ def compute_slab_tmatrices(
 # ═══════════════════════════════════════════════════════════════
 
 
+def _cell_averaged_propagator(
+    r_vec: NDArray,
+    d: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_gauss: int = 4,
+    *,
+    double: bool = True,
+) -> NDArray:
+    """<G> over the SOURCE cell, and the FIELD cell too when ``double``.
+
+    (1/V) ∫_cell G(r_vec - u) du for a cube of side d.
+
+    The Foldy-Lax sum approximates the continuum integral over each source cell
+    by its midpoint value, V·G(r). The correct object is V·<G>. The difference
+    is O((d/r)^2) relative, which for a space-filling lattice is scale-invariant
+    -- refining the cells shrinks d and r together -- so it is a bias that
+    refinement cannot remove.
+
+    Valid only where G is SMOOTH over the cell, i.e. beyond the contact shell.
+    At contact the kernel is singular and the analytic tables in
+    inter_voxel_propagator must be used instead; this routine is never called
+    there.
+    """
+    x, w = np.polynomial.legendre.leggauss(n_gauss)
+    if double:
+        # THE DOUBLE (GALERKIN) AVERAGE, over the source cell AND the field cell.
+        # Averaging only the source still collocates the field at the receiving
+        # cell centre, but the T-matrix responds to the field over its OWN
+        # volume. The double average over two cubes is a single integral against
+        # the convolution of their indicators -- a product of tent functions of
+        # half-width d -- so it costs no more than the single average. The tent
+        # has a kink at 0, so each axis is integrated on [-d,0] and [0,d]
+        # separately rather than straddling it.
+        nodes, wts = [], []
+        for lo, hi in ((-d, 0.0), (0.0, d)):
+            mid, half = 0.5 * (lo + hi), 0.5 * (hi - lo)
+            for xi, wi in zip(x, w, strict=True):
+                t = mid + half * xi
+                nodes.append(t)
+                wts.append(wi * half * (1.0 - abs(t) / d) / d)
+    else:
+        nodes = list(0.5 * d * x)
+        wts = list(0.5 * w)
+    acc = np.zeros((9, 9), dtype=complex)
+    for i, ui in enumerate(nodes):
+        for j, uj in enumerate(nodes):
+            for k, uk in enumerate(nodes):
+                off = np.array([ui, uj, uk])
+                acc += (wts[i] * wts[j] * wts[k]) * _propagator_block_9x9(r_vec - off, omega, ref)
+    return acc
+
+
 def _identity(G: NDArray) -> NDArray:
     return G.copy()
 
@@ -278,6 +331,8 @@ def _build_slab_kernels(
     n_orders: int = 2,
     periodic: bool = False,
     va_radius: int = 1,
+    va_all: bool = False,
+    va_gauss: int = 4,
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -348,7 +403,19 @@ def _build_slab_kernels(
                         kernel_spatial[sdx + M - 1, sdy + M - 1] = G0
                 else:
                     r_vec = np.array([dz, dx * d, dy * d])
-                    G0 = _propagator_block_9x9(r_vec, omega, ref)
+                    # THE CONTINUUM INTEGRAL OVER THE SOURCE CELL IS V<G>, NOT
+                    # V G(r). Collocating at the cell centre is a midpoint rule,
+                    # and its error is scale-invariant -- <G> - G ~ (d/r)^2 G, so
+                    # summed over r = d*n it is a pure number that refinement
+                    # cannot dilute. That is the measured non-convergence.
+                    # Beyond the contact shell the kernel is SMOOTH over the
+                    # cell, so the average is plain Gauss quadrature; only
+                    # contact needs the analytic tables above.
+                    G0 = (
+                        _cell_averaged_propagator(r_vec, d, omega, ref, va_gauss)
+                        if volume_averaged and va_all
+                        else _propagator_block_9x9(r_vec, omega, ref)
+                    )
 
                     for sdx, sdy, transform in _d4h_orbit(dx, dy):
                         kernel_spatial[sdx + M - 1, sdy + M - 1] = transform(G0)
@@ -563,6 +630,8 @@ def build_slab_kernels(
     n_orders: int = 2,
     periodic: bool = False,
     va_radius: int = 1,
+    va_all: bool = False,
+    va_gauss: int = 4,
 ) -> NDArray:
     """Build the FFT propagator kernel, for reuse across right-hand sides.
 
@@ -581,6 +650,11 @@ def build_slab_kernels(
         periodic: Fold to M x M for circular convolution.
         va_radius: Chebyshev cell radius out to which the volume-averaged
             propagator is used. 1 (default) is the nearest-neighbour shell.
+        va_all: Average the propagator over the source cell at EVERY separation,
+            by Gauss quadrature beyond the contact shell. The Foldy-Lax sum
+            otherwise uses the midpoint value G(r) in place of the continuum
+            integral V<G>, a scale-invariant bias that refinement cannot remove.
+        va_gauss: Gauss points per axis for that quadrature (default 4).
 
     Returns:
         The FFT kernel; pass it straight back as ``kernel_hat``.
@@ -593,6 +667,8 @@ def build_slab_kernels(
         n_orders=n_orders,
         periodic=periodic,
         va_radius=va_radius,
+        va_all=va_all,
+        va_gauss=va_gauss,
     )
 
 
