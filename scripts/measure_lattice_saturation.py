@@ -67,7 +67,7 @@ M = 4
 LADDER = (1, 2, 4, 8, 16, 32, 64)
 
 
-def _signed_error(n_z: int, kappa: float = 0.0) -> tuple[complex, complex, float]:
+def _signed_error(n_z: int, kappa: float = 0.0, *, va_all: bool = False) -> tuple[complex, complex, float]:
     """(R_lattice, R_kennett, ka) with the T-matrix rescaled by (1 + kappa).
 
     The error is returned SIGNED (as the two complex reflection coefficients)
@@ -79,7 +79,7 @@ def _signed_error(n_z: int, kappa: float = 0.0) -> tuple[complex, complex, float
     ones = np.ones((n_z, M, M))
     mat = SlabMaterial(Dlambda=D_LAM * ones, Dmu=D_MU * ones, Drho=D_RHO * ones, ref=REF)
     t0 = compute_slab_tmatrices(geom, mat, OMEGA) * (1.0 + kappa)
-    kh = build_slab_kernels(geom, OMEGA, REF, periodic=True)
+    kh = build_slab_kernels(geom, OMEGA, REF, periodic=True, volume_averaged=va_all, va_all=va_all)
     res = compute_slab_scattering(
         geom,
         mat,
@@ -165,6 +165,23 @@ def main() -> int:
     print(f"       kappa fitted at n_z = {LADDER[-1]}: {kappa_64:+.6f}   drift {drift:.1%}")
     frac = errs[-1] / plateau if plateau else float("nan")
     print(f"       the ladder has reached {frac:.0%} of the estimated plateau")
+
+    # [S5] THE DERIVED FIX, with nothing fitted. kappa was only ever a proxy for
+    # the real defect: the Foldy-Lax sum uses the MIDPOINT value G(r) where the
+    # continuum integral over the source cell is V<G>. Replacing G by <G> at
+    # every separation -- analytic tables at contact, Gauss quadrature beyond,
+    # where the kernel is smooth -- removes the bias at source instead of
+    # cancelling it after the fact. NO FITTED CONSTANT APPEARS HERE.
+    print("\n  [S5] DERIVED FIX: <G> at every separation, nothing fitted")
+    print(f"       {'n_z':>4} {'midpoint G':>11} {'cell-avg <G>':>13} {'ratio':>7}")
+    prev_va = None
+    for n_z in LADDER[:-1]:  # n_z = 64 with full quadrature is the expensive one
+        r0, rk, _ = _signed_error(n_z)
+        r1, _, _ = _signed_error(n_z, va_all=True)
+        e0, e1 = abs(r0 - rk) / abs(rk), abs(r1 - rk) / abs(rk)
+        rat = "" if prev_va is None else f"{e1 / prev_va:7.2f}"
+        print(f"       {n_z:4d} {e0:11.4e} {e1:13.4e} {rat:>7}")
+        prev_va = e1
 
     print("\n" + "=" * 86)
     if plateau is not None and ok == len(LADDER):
