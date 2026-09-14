@@ -298,17 +298,61 @@ Two of them are now wrong in ways a reader would act on.
 
 ### Task 7: The two deferred rungs, now unblocked
 
-- [ ] **Step 1: Rung 5c** — GMRES against `slab_scattering`, which stage 1 could
-  not use because it is 3-D on a finite `M×M` footprint and cannot represent a
-  y-invariant medium. That restriction is what this stage removes.
-- [ ] **Step 2: Rung 7 — the `FFTProp` convergence study. Not an exact rung and
-  must not be written as one.** `FFTProp` uses cylinders with a cylinder Mie
-  `T₀`; this solver uses cubic voxels with the cube `T₀`, so the two disagree by
-  a genuine shape difference even when both are correct. The rung passes by
-  demonstrating **convergence of the difference under refinement** toward the
-  known equal-volume shape difference — not by hitting a fixed tolerance. A
-  single run at one pitch proves nothing.
-- [ ] **Step 3:** Commit `"✅ test: close rungs 5c and 7 on the 3-D solver"`.
+- [x] **Step 1: Rung 5c — DONE, PASSES at 5e-16.**
+  `scripts/gate_rung5c_cross_architecture.py`. Compared at the operator level
+  with distinct sources, and localised three ways: slab's kernel against the
+  real-space table (6.6e-16), slab's FFT path against a brute-force convolution
+  of its own kernel (4.1e-16), the composed operators (5.1e-16).
+
+  > **A wrong finding, recorded rather than deleted.** The first run of this
+  > gate reported a 4e-4 defect inside `_slab_matvec`, and it was committed and
+  > pushed as such. That was wrong, and the accusation is withdrawn. The cause
+  > was **catastrophic cancellation in the gate itself**: `_slab_matvec` returns
+  > `(I − G₀T)ψ`, so the gate recovered `G₀ψ` as `ψ − matvec(ψ)`, which loses
+  > everything when `|G₀ψ| ≪ |ψ|` — the intermediate is stored to a relative
+  > 2e-16 of `|ψ|`, so `G₀ψ` returns with an *absolute* error of `eps·|ψ|`. In
+  > SI units this propagator is ~1e-13 against `ψ` ~1, which is exactly the 4e-4
+  > observed. In seismic units the same quantities are ~1e+3 against ~1 and
+  > everything agrees at machine precision.
+  >
+  > The tell was a linearity violation: superposing the FFT path's own delta
+  > responses reproduced brute force at 3e-29 while differing from its direct
+  > random run by 1.2e-16. A linear operator cannot fail linearity, so it was
+  > round-off — and round-off that large against 1e-13 values means cancellation
+  > upstream.
+  >
+  > **Generalises past this gate:** extracting a small quantity from
+  > `(I − small)` is unsafe, and this package mixes SI and seismic units across
+  > modules. The gate now leads with a `[5c-0]` guard asserting
+  > `|G₀ψ|/|ψ| > 1e-3` before any other number is believed.
+
+- [ ] **Step 2: Rung 7 — the `FFTProp` convergence study. NOT a step. Scoped
+  2026-09-14 and found to be a project.**
+
+  The stage-1 plan and the resume note both record rung 7 as deferred *because
+  the arbiter is 3-D and the comparison would measure geometry rather than
+  sweeps*. **Surveyed, that reason is wrong.** `FFTProp` is 2½-D — its own
+  README says so, heterogeneity in `(x,z)` with a 3-D reference medium — so
+  stage 1's 2½-D solver was always its natural counterpart and stage 2 was never
+  the blocker. The real blockers are three, none of them dimensionality:
+
+  1. **A representation conversion sits at its heart.** `FFTProp` carries state
+     as cylindrical harmonics `m = −2..+2` for P and SV (`PC` of shape
+     `(Nk, 5, 2, Nscatz)`); this solver carries the 9-component `(u, ε)` state.
+     Bridging them is exactly the class of work spec §4 avoids on purpose —
+     *"conversions between representations are where this project's defects have
+     actually lived"*, all three wrapper defects being conversion errors, one
+     surviving months behind a passing symmetry gate.
+  2. **`FFTProp` has a free surface** (`free_surface_reflect`, Rayleigh with
+     P-SV coupling) built into its sweep. The 3-D operator has none. Either the
+     free surface comes out of `FFTProp` or it goes into the operator, and
+     neither is a small change.
+  3. **Cylinders against cubes**, which is the *known* difference the rung is
+     supposed to measure — infinite along `y` against a finite `n_y`, so
+     convergence in `n_y` compounds with convergence in pitch.
+
+  Treat rung 7 as its own spec and plan. Do not start it as a task inside this
+  one, and do not report it as nearly done because the other rungs closed.
 
 ---
 
