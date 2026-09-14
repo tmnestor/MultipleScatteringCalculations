@@ -90,7 +90,8 @@ def main() -> int:
     print("  Weyl lattice sum = an INFINITE layer; compared against exact Kennett")
     print("=" * 78)
     print(
-        f"\n  {'a (m)':>7} {'N_z':>4} {'M':>3} {'f (Hz)':>7} {'ka':>7} {'|R| per':>11} {'|R| ken':>11} {'rel err':>10}"
+        f"\n  {'a (m)':>7} {'N_z':>4} {'M':>3} {'f (Hz)':>7} {'ka':>7} "
+        f"{'|R| per':>11} {'|R| ken':>11} {'rel err':>10}"
     )
 
     best = 1.0
