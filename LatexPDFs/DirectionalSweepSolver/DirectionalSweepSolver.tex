@@ -23,6 +23,8 @@
 \usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 % --- Graphics ---------------------------------------------------------------
 \usepackage{tikz}
@@ -44,6 +46,22 @@
 \newcommand{\Tz}{T_0}
 \newcommand{\Gz}{G_0}
 \newcommand{\kpar}{\mathbf{k}_{\parallel}}
+
+% Evidence files cited in the validation table of Sec. "Validation status".
+% Plain names, for searching:  gate_sweep_rung2_lateral  gate_sweep_rung3_vertical
+% gate_sweep_rung3_layered  gate_sweep_dressed_equivalence  gate_sweep_rung5_gmres
+% gate_dg0_absolute_magnitude  gate_y_integral_2p5d  test_sweep_kernels
+% test_directional_sweeps  test_layered_stack_table
+\newcommand{\gtwo}{\texttt{g:sweep\_rung2\_lateral}}
+\newcommand{\gthree}{\texttt{g:sweep\_rung3\_vertical}}
+\newcommand{\glay}{\texttt{g:sweep\_rung3\_layered}}
+\newcommand{\gdress}{\texttt{g:sweep\_dressed\_equivalence}}
+\newcommand{\gfive}{\texttt{g:sweep\_rung5\_gmres}}
+\newcommand{\gdgz}{\texttt{g:dg0\_absolute\_magnitude}}
+\newcommand{\gyint}{\texttt{g:y\_integral\_2p5d}}
+\newcommand{\tsw}{\texttt{t:sweep\_kernels}}
+\newcommand{\tds}{\texttt{t:directional\_sweeps}}
+\newcommand{\tlst}{\texttt{t:layered\_stack\_table}}
 
 \title{\bfseries Directional Partial-Wave Sweeps and the Krylov Solve\\[4pt]
 \large The propagator matvec for elastic multiple scattering on a
@@ -337,35 +355,47 @@ The 2\textonehalf-D case (heterogeneity in $(z,x)$, $y$ invariant, $k_y$ a param
 implemented and gated. Each claim below is the same physics through two independent code paths,
 so the residual measures defect, not discretisation, except where noted.
 
-\begin{center}\small
-\begin{tabular}{llr}
+\begin{center}
+\begin{minipage}{\textwidth}
+\centering\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}L{0.33\textwidth}L{0.15\textwidth}rl@{}}
 \toprule
-Claim & Arbiter & Residual \\
+Claim & Arbiter & Residual & Evidence \\
 \midrule
-amp $\times$ phase$^n$ $=$ bundled kernel & $k_x$-residue kernel & $1.5\times10^{-15}$ \\
-\quad residual \emph{flat} in separation $n=1\ldots32$ & --- & --- \\
-left amplitude $=$ $x$-reflection of right & parity identity & $1\times10^{-15}$ \\
-lateral sweep $=$ pairwise sum, distinct sources & $O(N^2)$ sum & $1.5\times10^{-13}$ \\
-\quad residual \emph{flat} in lattice size & --- & --- \\
-$k_y$-integrated kernel $=$ closed form & Kupradze & falls to $2\times10^{-5}$ \\
-inter-plane sweep $=$ pairwise sum & Kupradze & falls to $8\times10^{-4}$ \\
-lateral coupling does not wrap & kernel at true sep. & $0$ \\
-stratified operator reduces to whole space & $k_z$-residue kernel & $1.1\times10^{-15}$ \\
-reverberation vanishes, uniform background & --- & $<10^{-15}$ \\
-self-energy $\equiv$ dressed $T_d=\Tz(I-D\Tz)^{-1}$ & direct vs dressed & $4\times10^{-16}$ \\
-reverberation obeys symplectic reciprocity & $J_6$ law, $\pm k$ & $8\times10^{-14}$ \\
-self-energy recedes with the reflector & --- & $10^{-4}\!\to\!10^{-12}$ \\
-partition: every pair once, self-term & support count & exact \\
-GMRES $=$ dense LU $=$ Neumann, $\rho(\Gz\Tz)=0.92$ & two direct methods & $1.2\times10^{-12}$ \\
-$\Delta\Gz$ lies in the rank-3 one-way span & pseudo-inverse residual & $4\times10^{-9}$ \\
-$\Delta\Gz$ magnitude, full $9\times9$ forward & Kennett reflectivity & $2\times10^{-10}$ \\
-\quad weak, strong and multi-interface, $k_\parallel h \le 3$ & --- & --- \\
-P/S flux factor, predicted not fitted & $i\beta\sqrt{\eta_S}/\alpha\sqrt{\eta_P}$ & $8$ s.f. \\
-$y$-integral of 3-D form $=$ 2\textonehalf-D propagator & $k_z$ residue vs Kupradze & $4\times10^{-13}$ \\
-layered table reduces, uniform background & closed form & $1.3\times10^{-14}$ \\
-\quad residual \emph{flat} in the transverse rule & --- & --- \\
+amp $\times$ phase$^n$ $=$ bundled kernel & $k_x$-residue kernel & $1.5\times10^{-15}$ & \tsw \\
+\quad residual \emph{flat} in separation $n=1\ldots32$ & --- & --- & \tsw \\
+left amplitude $=$ $x$-reflection of right & parity identity & $1\times10^{-15}$ & \tsw \\
+lateral sweep $=$ pairwise sum, distinct sources & $O(N^2)$ sum & $1.5\times10^{-13}$ & \gtwo\,[2] \\
+\quad residual \emph{flat} in lattice size & --- & --- & \tds \\
+$k_y$-integrated kernel $=$ closed form & Kupradze & falls to $2\times10^{-5}$ & \gtwo\,[2b] \\
+inter-plane sweep $=$ pairwise sum & Kupradze & falls to $8\times10^{-4}$ & \gthree\,[3] \\
+lateral coupling does not wrap & kernel at true sep. & $0$ & \gthree\,[3b] \\
+stratified operator reduces to whole space & $k_z$-residue kernel & $1.1\times10^{-15}$ & \glay\,[3L-a] \\
+reverberation vanishes, uniform background & --- & $<10^{-15}$ & \tds \\
+self-energy $\equiv$ dressed $T_d=\Tz(I-D\Tz)^{-1}$ & direct vs dressed & $4\times10^{-16}$ & \gdress\,[D1] \\
+reverberation obeys symplectic reciprocity & $J_6$ law, $\pm k$ & $8\times10^{-14}$ & \gdress\,[D3] \\
+self-energy recedes with the reflector & --- & $10^{-4}\!\to\!10^{-12}$ & \gdress\,[D2] \\
+partition: every pair once, self-term & support count & exact & \tds \\
+GMRES $=$ dense LU $=$ Neumann, $\rho(\Gz\Tz)=0.92$ & two direct methods & $1.2\times10^{-12}$ & \gfive \\
+$\Delta\Gz$ lies in the rank-3 one-way span & pseudo-inverse residual & $4\times10^{-9}$ & \gdgz\,[M1] \\
+$\Delta\Gz$ magnitude, full $9\times9$ forward & Kennett reflectivity & $2\times10^{-10}$ & \gdgz\,[M2] \\
+\quad weak, strong and multi-interface, $k_\parallel h \le 3$ & --- & --- & \gdgz\,[M2] \\
+P/S flux factor, predicted not fitted & $i\beta\sqrt{\eta_S}/\alpha\sqrt{\eta_P}$ & $8$ s.f. & \gdgz\,[M3] \\
+$y$-integral of 3-D form $=$ 2\textonehalf-D propagator & $k_z$ residue vs Kupradze & $4\times10^{-13}$ & \gyint \\
+layered table reduces, uniform background & closed form & $1.3\times10^{-14}$ & \tlst \\
+\quad residual \emph{flat} in the transverse rule & --- & --- & \tlst \\
 \bottomrule
 \end{tabular}
+
+\medskip
+\raggedright
+Evidence column, abbreviated to fit: \texttt{g:}\textit{name} is the standalone script
+\texttt{scripts/gate\_}\textit{name}\texttt{.py}, run directly, and \texttt{t:}\textit{name} is
+the module \texttt{cubic\_scattering/tests/test\_}\textit{name}\texttt{.py}, run under
+\texttt{pytest}. A bracketed tag is the check's label within that file, printed verbatim in its
+output.
+\end{minipage}
 \end{center}
 
 Three points of method are worth recording because each cost time to learn. Symmetry and
