@@ -330,7 +330,7 @@ contrast, each step one $\Tz$ and one matvec.
 \end{enumerate}
 
 %==============================================================================
-\section{Validation status}
+\section{Validation status}\label{sec:validation}
 %==============================================================================
 
 The 2\textonehalf-D case (heterogeneity in $(z,x)$, $y$ invariant, $k_y$ a parameter) is
@@ -492,6 +492,36 @@ Kupradze closed form --- two constructions with no derivation in common --- agre
 $4\times10^{-13}$ at $\Delta x = 0$ and $1.5\times10^{-11}$ at two pitches
 (\texttt{gate\_y\_integral\_2p5d}). The damping matters: at real $\omega$ both integrands decay
 only algebraically and neither route is clean.
+
+\medskip\noindent
+\textbf{Rebuilding three dimensions: the $k_y$ quadrature.} Equation \eqref{eq:yint} runs one
+way, from three dimensions to a slice. The step in the other direction is the one the solver
+actually performs, and it is the inverse transform,
+\begin{equation}
+\mathsf{P}(\Delta x, y, \Delta z)
+\;=\;
+\frac{1}{2\pi}\int_{-\infty}^{\infty}
+\mathsf{P}_{2\frac12}(\Delta x, \Delta z; k_y)\, e^{\,i k_y y}\, \mathrm{d}k_y ,
+\label{eq:kyint}
+\end{equation}
+so a three-dimensional response is assembled by running the 2\textonehalf-D construction once per
+$k_y$ node and summing. Every sweep of \S\ref{sec:lateral} and every Kennett recursion is
+unchanged inside the integrand; $k_y$ enters only as the parameter it already was. In practice
+\eqref{eq:kyint} is a trapezoid on a uniform grid symmetric about $k_y=0$, endpoints
+half-weighted, with the $1/2\pi$ carried on the quadrature weight.
+
+Unlike the sweeps themselves, this step is quadrature-limited rather than exact, which is why the
+two rows it governs in \S\ref{sec:validation} are reported as convergence and not as tolerances.
+Refining the rule from $(k_{y\max}, n_{k_y}) = (60, 1201)$ to $(120, 3201)$ takes the
+$k_y$-integrated same-depth kernel from $2.3\times10^{-4}$ to $2.3\times10^{-5}$ against the
+Kupradze closed form (\texttt{gate\_sweep\_rung2\_lateral}), and refining from $(60, 801)$ to
+$(120, 2401)$ takes the $k_y$-integrated inter-plane sweep from $5.2\times10^{-3}$ to
+$8.0\times10^{-4}$ against the real-space pairwise sum
+(\texttt{gate\_sweep\_rung3\_vertical}). Both refinements raise the truncation $k_{y\max}$ and
+the node density together, so what is demonstrated is that the quadrature converges, not which of
+the two limits it; the cause of the slow convergence is the same algebraic decay of the
+whole-space kernel costed in the accumulator argument above, and it is the reason
+\eqref{eq:threedsplit} sends only the reverberation through a transverse rule.
 
 \medskip\noindent
 \textbf{On the arbiter that was dropped.} The validation ladder originally carried one further
