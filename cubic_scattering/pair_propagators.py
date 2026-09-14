@@ -208,6 +208,7 @@ def layered_stack_table(
     model: object | None = None,
     plane_ifaces: tuple[int, ...] | None = None,
     transverse: TransverseRule | None = None,
+    free_surface: bool = False,
 ) -> NDArray:
     """Plane-to-plane propagator at every separation, in real space.
 
@@ -239,6 +240,13 @@ def layered_stack_table(
             with ``model``.
         transverse: Quadrature for the spectral-to-real transform. Required
             with ``model``.
+        free_surface: Close the ocean above with a pressure-release surface, so
+            the water column is a FINITE layer that reverberates. Default False
+            leaves the ocean as a half-space above the seabed: the seabed
+            fluid-solid interface is still present and still reflects, but the
+            water thickness does not reach the answer at all. Turn it on for any
+            comparison against a solver that carries a free surface -- ``FFTProp``
+            does. See ``scripts/gate_free_surface_reverberation.py``.
 
     Returns:
         Shape (n_z, n_z, 2 n_x - 1, 2 n_y - 1, 9, 9).
@@ -306,6 +314,7 @@ def layered_stack_table(
                 ky,
                 source_iface=plane_ifaces[mz],
                 receiver_iface=plane_ifaces[lz],
+                free_surface=free_surface,
             )
             # SUBTRACT THE WHOLE-SPACE PART IN SPECTRAL SPACE, ALWAYS -- not
             # only on the diagonal. Only the REVERBERATION is ever transformed.
