@@ -494,8 +494,30 @@ $4\times10^{-13}$ at $\Delta x = 0$ and $1.5\times10^{-11}$ at two pitches
 only algebraically and neither route is clean.
 
 \medskip\noindent
-\textbf{Not yet done.} The composed three-dimensional operator and its partition gate, and with
-them the cross-architecture comparisons that a 2\textonehalf-D solver cannot support.
+\textbf{On the arbiter that was dropped.} The validation ladder originally carried one further
+rung: the composed operator against \texttt{FFTProp}, the faithful port of the thesis's own
+Fortran, as a convergence study rather than a tolerance. That rung is \emph{dropped}, and the
+reasoning is worth stating because it is about what an arbiter is for.
+
+\texttt{FFTProp} carries no $\Tz$ and performs no multiple-scattering solve --- it propagates
+given scattering sources --- so the ``cylinder Mie $\Tz$ against cube $\Tz$'' shape difference
+the rung was built around does not arise. Its free surface does not reproduce the free-surface
+reflection: two independent constructions, the Aki \& Richards displacement formula and the
+traction-free condition applied to the stratified eigenvectors, agree with each other to six
+decimal places and disagree with it, its $|R_{PP}|$ staying within 1\% of unity across the whole
+propagating range where the true surface dips to $0.15$, and its $P$--$SV$ conversion reaching
+$10^{-3}$ where the true one reaches $0.63$. And its state vector is carried in cylindrical
+harmonics --- which are not a coordinate choice but the shape of its \emph{cylinders} entering
+the representation, where this construction discretises into cubic voxels and carries the
+Cartesian nine-component state throughout.
+
+The rung's case was provenance. Set against four arbiters that already pass --- Kennett
+reflectivity at $10^{-15}$ on the marine stack, the closed-form Kupradze propagator at
+$3\times10^{-16}$, the entirely different FFT-convolution architecture at $5\times10^{-16}$, and
+a dense LU with an explicit Neumann series at $10^{-12}$ --- a fifth reached through a lossy
+change of representation, against a code with a different discretisation and a free surface that
+does not convert, would principally measure the difference between two discretisations. That is
+a real quantity, and it is not validation of the sweeps.
 
 %==============================================================================
 \section{What is distinctive}

@@ -248,7 +248,7 @@ already exists.
 | 1 | amplitude × phaseⁿ reproduces the bundled kernel at separation `n·p` | `horizontal_greens` itself | 1e-15 |
 | 2 | lateral sweep == direct pairwise sum, **distinct source at every site** | `horizontal_greens_direct` | 1e-15 |
 | 3 | vertical sweep == Kennett between the same planes | `kennett_layers` | 1e-14 |
-| 4 | full 2½-D `G₀` matvec | `FFTProp` | see below |
+| 4 | ~~full 2½-D `G₀` matvec~~ **DROPPED 2026-09-14** | ~~`FFTProp`~~ | see the retraction below |
 | 5 | GMRES solve, homogeneous background | `slab_scattering` (validated vs Kennett) | ≤1% |
 | 6 *(stage 2)* | ~~in-out `k_y` sweep~~ → 3-D `G₀`, composed | `exact_propagator_9x9` pairwise, 3-D | 1e-13 |
 | 6b *(stage 2)* | 3-D partition, every pair counted once | integer support count | exact |
@@ -268,6 +268,46 @@ contrast, the discrepancy must fall toward the known equal-volume shape
 difference rather than plateauing at an arbitrary level or growing. A single
 run at one pitch proves nothing here. If that refinement behaviour cannot be
 demonstrated, the rung fails and the cause is the sweeps, not the shape.
+
+**RETRACTED 2026-09-14 — rung 4 is DROPPED, not deferred.** Four findings, each
+measured, and together they say this rung would not validate the sweeps.
+
+1. **`FFTProp` has no `T₀` at all.** It carries no T-matrix and performs no
+   Foldy-Lax solve — it propagates given scattering sources. So the paragraph
+   above is wrong about the premise: there is no "cylinder Mie `T₀`" to differ
+   from the cube `T₀`, and the rung was never a solver comparison.
+2. **Its free surface does not match the free-surface reflection.** Two
+   independent arbiters — the Aki & Richards displacement formula and the
+   traction-free condition on the Global Matrix eigenvectors — agree to six
+   decimal places and disagree with it: `|R_PP|` within 1% of unity across the
+   whole propagating range where the true surface dips to 0.15, and P-SV
+   conversion of ~1e-3 where the true one reaches 0.63.
+   `scripts/gate_fftprop_free_surface.py`.
+3. **Its scatterer basis is the scaffolding this architecture replaced.** The
+   cylindrical harmonics are not a coordinate choice — they are the shape of
+   `FFTProp`'s *cylinders* entering its state vector. This solver discretises
+   into cubic voxels and carries the Cartesian 9-component `(u, ε)` state, which
+   needs no local angular expansion. Comparing the two requires a
+   harmonic ↔ 9-component conversion, and §4 above avoids that class of work on
+   purpose.
+4. **Four better arbiters already pass.** Kennett reflectivity (1e-15 on the
+   marine stack), the closed-form Kupradze propagator (2.9e-16), the entirely
+   different FFT-convolution architecture of `slab_scattering` (5.1e-16), and
+   dense LU plus an explicit Neumann series (2.4e-12).
+
+The rung's case was **provenance** — showing the architecture reproduces the
+thesis's own Fortran. But a fifth arbiter reached through a lossy basis
+conversion, against a code with a different discretisation and a suspect free
+surface, would principally measure the difference between two discretisations.
+That is a real quantity and it is not validation of the sweeps.
+
+**If the provenance check is ever wanted**, the cheap form is the one that
+avoids all of the above: compare the DIRECT source-to-receiver response through
+the layered background with no scatterers in play. `Svec` and `Rvec` are
+projections of a physical source and receiver, so a contraction summing the
+harmonic index is basis-free, and with no scatterer between them neither
+discretisation nor `T₀` enters. That tests whether the two codes agree on the
+background and nothing else — which is all the provenance argument needs.
 
 **Rung 2 carries a mandatory control.** The source must differ at every site —
 that is the disorder-resolved property being claimed — and the gate must also
