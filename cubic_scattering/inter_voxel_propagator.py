@@ -217,9 +217,7 @@ _NORM_A2 = -1.0 / (96.0 * np.pi)  # -1/(96π) for order 2 A
 _NORM_B2 = -1.0 / (2880.0 * np.pi)  # -1/(2880π) for order 2 B
 _NORM_A3 = 1.0 / (2880.0 * np.pi)  # 1/(2880π) for order 3 A
 _NORM_B3 = 1.0 / (161280.0 * np.pi)  # 1/(161280π) for order 3 B  [= NORM_A3/56]
-_NORM_A4 = -1.0 / (
-    161280.0 * np.pi
-)  # -1/(161280π) for order 4 A (H kernel) [= -NORM_B3]
+_NORM_A4 = -1.0 / (161280.0 * np.pi)  # -1/(161280π) for order 4 A (H kernel) [= -NORM_B3]
 
 # === FACE DYN ORDER 1: Ψ(ρ)→A, X(ρ³)→B  ===
 DYN1_FACE_A11 = 0.30434003593387251229 * _NORM_A1
@@ -326,9 +324,7 @@ DYN4_CORNER_A11 = 569.489574041776214 * _NORM_A4  # = A₂₂ = A₃₃
 DYN4_CORNER_A12 = 311.882584477024042 * _NORM_A4  # = A₁₃ = A₂₃
 
 
-def _build_A_matrix(
-    a_diag: tuple[float, float, float], a_offdiag: tuple[float, float, float]
-) -> NDArray:
+def _build_A_matrix(a_diag: tuple[float, float, float], a_offdiag: tuple[float, float, float]) -> NDArray:
     """Build 3x3 symmetric A_{jl} matrix."""
     A = np.zeros((3, 3))
     A[0, 0], A[1, 1], A[2, 2] = a_diag
@@ -357,7 +353,11 @@ def _assemble_P(A: NDArray, B: NDArray, mu: float, nu: float) -> NDArray:
     """Assemble propagator P_{ijkl} = -1/(2μ)[δ_{ik}A_{jl} + δ_{jk}A_{il} - 2η B_{ijkl}]."""
     eta = 1.0 / (2.0 * (1.0 - nu))
     delta = np.eye(3)
-    P = np.zeros((3, 3, 3, 3))
+    # DTYPE FOLLOWS THE MEDIUM. A real medium still allocates float64, so the
+    # result is bit-identical; an ATTENUATIVE medium carries complex mu, nu and
+    # previously raised "Cannot cast ufunc 'add' output from complex128 to
+    # float64". Real Earth has Q, so the propagator has to accept it.
+    P = np.zeros((3, 3, 3, 3), dtype=np.result_type(A.dtype, B.dtype, mu, nu, float))
     for i in range(3):
         for j in range(3):
             for k in range(3):
@@ -365,11 +365,7 @@ def _assemble_P(A: NDArray, B: NDArray, mu: float, nu: float) -> NDArray:
                     P[i, j, k, ll] = (
                         -1.0
                         / (2.0 * mu)
-                        * (
-                            delta[i, k] * A[j, ll]
-                            + delta[j, k] * A[i, ll]
-                            - 2.0 * eta * B[i, j, k, ll]
-                        )
+                        * (delta[i, k] * A[j, ll] + delta[j, k] * A[i, ll] - 2.0 * eta * B[i, j, k, ll])
                     )
     return P
 
@@ -582,9 +578,7 @@ def _edge_propagator_dyn(order: int, rho: float, alpha: float, beta: float) -> N
     return _assemble_P(A, _build_B_tensor(b_dict), mu_eff, nu_eff)
 
 
-def _corner_propagator_dyn(
-    order: int, rho: float, alpha: float, beta: float
-) -> NDArray:
+def _corner_propagator_dyn(order: int, rho: float, alpha: float, beta: float) -> NDArray:
     """Dynamic correction P⁽ⁿ⁾ for corner-adjacent cubes R=(a,a,a)."""
     cs, cp = beta, alpha
     mu_eff = rho * cs ** (2 * order + 2)
@@ -692,9 +686,7 @@ def _rotation_to_align(target: NDArray) -> NDArray:
     return np.column_stack([e0, e1, e2])  # columns = new basis
 
 
-def inter_voxel_propagator(
-    R_lattice: tuple[int, int, int], mu: float, nu: float
-) -> NDArray:
+def inter_voxel_propagator(R_lattice: tuple[int, int, int], mu: float, nu: float) -> NDArray:
     """Static inter-voxel strain propagator for nearest-neighbour cubes.
 
     Args:
@@ -1040,7 +1032,9 @@ def _build_G_block_canonical(
     """
     cs, cp = beta, alpha
     delta = np.eye(3)
-    G = np.zeros((3, 3))
+    # Dtype follows the medium — real stays float64 (bit-identical), complex
+    # (attenuative) media are accepted rather than raising.
+    G = np.zeros((3, 3), dtype=np.result_type(mu, nu, rho, alpha, beta, omega, float))
 
     # Static term (n=0): uses d²Ψ/dR² from DYN1_A (order=0)
     d2Psi_diag, d2Psi_offdiag = _get_raw_d2W(neighbour_type, order=0)
@@ -1253,13 +1247,12 @@ def _build_dG_rank3_canonical(
     dPhi = _build_dW_vector(neighbour_type, order=0)
 
     delta = np.eye(3)
-    dG = np.zeros((3, 3, 3))
+    # Dtype follows the medium — see _assemble_P.
+    dG = np.zeros((3, 3, 3), dtype=np.result_type(mu, nu, rho, alpha, beta, omega, float))
     for i in range(3):
         for j in range(3):
             for k in range(3):
-                dG[i, j, k] = (1.0 / (4.0 * np.pi * mu)) * (
-                    delta[i, j] * dPhi[k] - eta_s * D3Psi[i, j, k]
-                )
+                dG[i, j, k] = (1.0 / (4.0 * np.pi * mu)) * (delta[i, j] * dPhi[k] - eta_s * D3Psi[i, j, k])
 
     if n_orders >= 1 and omega != 0.0:
         # ω² correction: d³X/dR³ (triharmonic) + dΨ/dR (biharmonic)
@@ -1270,9 +1263,7 @@ def _build_dG_rank3_canonical(
         for i in range(3):
             for j in range(3):
                 for k in range(3):
-                    dG[i, j, k] += coeff_1 * (
-                        delta[i, j] * dPsi[k] - (eta_1 / 12.0) * D3X[i, j, k]
-                    )
+                    dG[i, j, k] += coeff_1 * (delta[i, j] * dPsi[k] - (eta_1 / 12.0) * D3X[i, j, k])
 
     if n_orders >= 2 and omega != 0.0:
         # ω⁴ correction: d³Ω/dR³ (pentaharmonic) + dX/dR (triharmonic)
@@ -1283,9 +1274,7 @@ def _build_dG_rank3_canonical(
         for i in range(3):
             for j in range(3):
                 for k in range(3):
-                    dG[i, j, k] += coeff_2 * (
-                        delta[i, j] * dX[k] - (eta_2 / 30.0) * D3Om[i, j, k]
-                    )
+                    dG[i, j, k] += coeff_2 * (delta[i, j] * dX[k] - (eta_2 / 30.0) * D3Om[i, j, k])
 
     if n_orders >= 3 and omega != 0.0:
         # ω⁶ correction: d³H/dR³ (heptaharmonic) + dΩ/dR (pentaharmonic)
@@ -1296,9 +1285,7 @@ def _build_dG_rank3_canonical(
         for i in range(3):
             for j in range(3):
                 for k in range(3):
-                    dG[i, j, k] += coeff_3 * (
-                        delta[i, j] * dOm[k] - (eta_3 / 56.0) * D3H[i, j, k]
-                    )
+                    dG[i, j, k] += coeff_3 * (delta[i, j] * dOm[k] - (eta_3 / 56.0) * D3H[i, j, k])
 
     return dG
 
@@ -1366,23 +1353,23 @@ def _rotate_tensor3(T: NDArray, R: NDArray) -> NDArray:
 # ──────────────────────────────────────────────────────────────────────
 
 from fractions import Fraction  # noqa: E402
-from functools import lru_cache  # noqa: E402
+from functools import cache  # noqa: E402
 from math import comb, factorial  # noqa: E402
 
 
-@lru_cache(maxsize=None)
+@cache
 def _sin_coeff(j: int) -> Fraction:
     """Coefficient of x^(2j+1) in the Taylor series of sin x."""
     return Fraction((-1) ** j, factorial(2 * j + 1))
 
 
-@lru_cache(maxsize=None)
+@cache
 def _cos_coeff(j: int) -> Fraction:
     """Coefficient of x^(2j) in the Taylor series of cos x."""
     return Fraction((-1) ** j, factorial(2 * j))
 
 
-@lru_cache(maxsize=None)
+@cache
 def _im_phi_coeffs(nmax: int) -> tuple[tuple[float, float], ...]:
     """Rational (p, q) per order m of Im φ: c^φ_m = p·k_P^(2m+3) + q·k_S^(2m+3).
 
@@ -1402,7 +1389,7 @@ def _im_phi_coeffs(nmax: int) -> tuple[tuple[float, float], ...]:
     return tuple(out)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _im_psi_coeffs(nmax: int) -> tuple[tuple[float, float], ...]:
     """Rational (p, q) per order m of Im ψ: c^ψ_m = p·k_P^(2m+3) + q·k_S^(2m+3).
 
@@ -1423,7 +1410,7 @@ def _im_psi_coeffs(nmax: int) -> tuple[tuple[float, float], ...]:
     return tuple(out)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _u_moment(n: int, a: float) -> float:
     """Exact moment <u^n> for u = x − x', x, x' uniform on [−a, a].
 
@@ -1437,9 +1424,7 @@ def _u_moment(n: int, a: float) -> float:
     return total
 
 
-def _avg_monomial_grad(
-    R: NDArray, powers: tuple[int, ...], a: float, deriv: tuple[int, ...]
-) -> float:
+def _avg_monomial_grad(R: NDArray, powers: tuple[int, ...], a: float, deriv: tuple[int, ...]) -> float:
     """⟨∂^deriv ∏_k (R_k + u_k)^powers_k / ∂R^deriv⟩ over the cube pair.
 
     Each axis factorises; the average of (R_k + u_k)^p is the polynomial
@@ -1486,9 +1471,13 @@ def _im_greens_avg_deriv(
     """
     a = 0.5  # unit-pitch half-width
     eye = np.eye(3)
-    G = np.zeros((3, 3))
-    dG = np.zeros((3, 3, 3))
-    ddG = np.zeros((3, 3, 3, 3))
+    # Dtype follows the medium. THIS is the allocation that raised on an
+    # attenuative medium: the per-order coefficients carry k_P^{2m+3} and
+    # k_S^{2m+3}, which are complex as soon as Q is finite.
+    _dt = np.result_type(rho, alpha, beta, omega, float)
+    G = np.zeros((3, 3), dtype=_dt)
+    dG = np.zeros((3, 3, 3), dtype=_dt)
+    ddG = np.zeros((3, 3, 3, 3), dtype=_dt)
     if omega == 0.0:
         # Radiation vanishes identically in statics (every term ∝ ω^{2m+1}).
         return G, dG, ddG
@@ -1506,11 +1495,7 @@ def _im_greens_avg_deriv(
     # ── isotropic piece  Im φ(s) δ_ij = Σ_m c^φ_m (s²)^m δ_ij ──
     for m in range(n_orders + 1):
         p, q = phi_c[m]
-        coeff = (
-            base
-            * omega ** (2 * m + 1)
-            * (p / alpha ** (2 * m + 3) + q / beta ** (2 * m + 3))
-        )
+        coeff = base * omega ** (2 * m + 1) * (p / alpha ** (2 * m + 3) + q / beta ** (2 * m + 3))
         if coeff == 0.0:
             continue
         # (s²)^m = Σ multinomial over sx^{2a} sy^{2b} sz^{2c}
@@ -1520,26 +1505,18 @@ def _im_greens_avg_deriv(
             for k in range(3):
                 dv = [0, 0, 0]
                 dv[k] = 1
-                dG[:, :, k] += (
-                    coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv)) * eye
-                )
+                dG[:, :, k] += coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv)) * eye
             for k in range(3):
                 for ll in range(3):
                     dv = [0, 0, 0]
                     dv[k] += 1
                     dv[ll] += 1
-                    ddG[:, :, k, ll] += (
-                        coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv)) * eye
-                    )
+                    ddG[:, :, k, ll] += coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv)) * eye
 
     # ── deviatoric piece  (Im ψ(s)/s²) s_i s_j = Σ_{m≥1} c^ψ_m (s²)^{m-1} s_i s_j ──
     for m in range(1, n_orders + 1):
         p, q = psi_c[m]
-        coeff = (
-            base
-            * omega ** (2 * m + 1)
-            * (p / alpha ** (2 * m + 3) + q / beta ** (2 * m + 3))
-        )
+        coeff = base * omega ** (2 * m + 1) * (p / alpha ** (2 * m + 3) + q / beta ** (2 * m + 3))
         if coeff == 0.0:
             continue
         for i in range(3):
@@ -1553,21 +1530,17 @@ def _im_greens_avg_deriv(
                     for k in range(3):
                         dv = [0, 0, 0]
                         dv[k] = 1
-                        dG[i, j, k] += (
-                            coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv))
-                        )
+                        dG[i, j, k] += coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv))
                     for k in range(3):
                         for ll in range(3):
                             dv = [0, 0, 0]
                             dv[k] += 1
                             dv[ll] += 1
-                            ddG[i, j, k, ll] += (
-                                coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv))
-                            )
+                            ddG[i, j, k, ll] += coeff * mult * _avg_monomial_grad(R, pw, a, tuple(dv))
     return G, dG, ddG
 
 
-@lru_cache(maxsize=None)
+@cache
 def _s2_pow_terms(m: int) -> tuple[tuple[int, int, int, int], ...]:
     """Multinomial expansion of (sx²+sy²+sz²)^m → (a, b, c, coeff) with a+b+c=m."""
     if m == 0:
@@ -1669,23 +1642,17 @@ def inter_voxel_propagator_9x9(
 
     # S block: Voigt contraction of the (3,3,3,3) dynamic propagator
     s_orders = min(n_orders, 3)
-    P_ijkl = dynamic_inter_voxel_propagator(
-        R_lattice, alpha, beta, rho, omega_d, s_orders
-    )
+    P_ijkl = dynamic_inter_voxel_propagator(R_lattice, alpha, beta, rho, omega_d, s_orders)
     S = _P_to_voigt_S(P_ijkl) / d**3  # two R-gradients of <G>: s_S = -3
 
     # G block: volume-averaged Green's tensor (canonical then rotate)
     g_orders = min(n_orders, 3)
-    G_canon = _build_G_block_canonical(
-        ntype, mu, nu, rho, alpha, beta, omega_d, g_orders
-    )
+    G_canon = _build_G_block_canonical(ntype, mu, nu, rho, alpha, beta, omega_d, g_orders)
     G = _rotate_matrix3(G_canon, perm) / d  # volume-avg of 1/r: s_G = -1
 
     # C, H blocks: displacement-strain coupling from dG/dR (dynamic)
     ch_orders = min(n_orders, 3)
-    dG_canon = _build_dG_rank3_canonical(
-        ntype, mu, nu, rho, alpha, beta, omega_d, ch_orders
-    )
+    dG_canon = _build_dG_rank3_canonical(ntype, mu, nu, rho, alpha, beta, omega_d, ch_orders)
     dG_rot = _rotate_tensor3(dG_canon, perm) / d**2  # one gradient: s_C = -2
     C = _dG_to_C_block(dG_rot)
     # H = engineering-Voigt transpose of C: the field-side strain rows are
@@ -1711,9 +1678,7 @@ def inter_voxel_propagator_9x9(
     # exactly; the per-block static d-power (1/d, 1/d², 1/d³) is applied below.
     im_orders = min(n_orders, 3)
     R_canon = _canonical_direction(R_lattice)
-    imG_c, imdG_c, imddG_c = _im_greens_avg_deriv(
-        R_canon, rho, alpha, beta, omega_d, im_orders
-    )
+    imG_c, imdG_c, imddG_c = _im_greens_avg_deriv(R_canon, rho, alpha, beta, omega_d, im_orders)
     imG = _rotate_matrix3(imG_c, perm) / d
     imdG = _rotate_tensor3(imdG_c, perm) / d**2
     imddG = _rotate_tensor4(imddG_c, perm) / d**3
@@ -1721,10 +1686,14 @@ def inter_voxel_propagator_9x9(
 
     imC, imH, imS = _voigt_contract(imdG.astype(complex), imddG.astype(complex))
 
+    # No .real truncation here. For a REAL medium imC/imH/imS are real-valued
+    # (merely complex-TYPED by the astype above), so dropping .real is
+    # bit-identical. For an ATTENUATIVE medium they are genuinely complex and
+    # .real silently discarded the part that carries the attenuation.
     P9[:3, :3] += 1j * imG
-    P9[:3, 3:] += 1j * imC.real
-    P9[3:, :3] += 1j * imH.real
-    P9[3:, 3:] += 1j * imS.real
+    P9[:3, 3:] += 1j * imC
+    P9[3:, :3] += 1j * imH
+    P9[3:, 3:] += 1j * imS
     return P9
 
 
