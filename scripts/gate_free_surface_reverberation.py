@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""GATE: what the layered table's TOP reflector actually is.
+"""GATE: what the layered table's TOP reflector is, with and without a free surface.
 
-Rung 7's prerequisite, and it overturns the premise rung 7 was resting on.
+Rung 7's prerequisite. It overturned the premise rung 7 was resting on, and the
+fix that followed is gated here too.
 
 The stage-1 plan records rung 7 as unblocked because "its free surface is part
 of the layered background, which the solver now carries". Every gate written
 before this one damps the top away on purpose (`q = 2`, so the uniform-background
 reduction holds at machine precision), so that claim had never been exercised.
 
-MEASURED, the claim is WRONG. There IS a top reflector and it is alive, but it
-is the OCEAN-BOTTOM (fluid-solid) interface, not a free surface. The water
-column above it does not reverberate at all -- it is a half-space.
+MEASURED, the claim was WRONG. The default background has a live top reflector,
+but it is the OCEAN-BOTTOM (fluid-solid) interface: the water column above it
+does not reverberate at all, being a half-space. `free_surface=True` now closes
+the ocean with a pressure release and makes it finite; the default is unchanged,
+bit for bit.
 
 The model has NO internal contrast: ocean over a uniform elastic half-space, so
 the same-plane diagonal of the layered table isolates the top reflector exactly.
@@ -34,17 +37,28 @@ the same-plane diagonal of the layered table isolates the top reflector exactly.
        the two-way water path, and hence the phase and amplitude, depend on that
        thickness. The ocean is a half-space.
 
-WHY IT MATTERS. `FFTProp` carries a genuine free surface with Rayleigh
-reflection and P-SV coupling (`free_surface_reflect`). This background does not.
-Rung 7 therefore cannot simply be run: either a free surface is added here or
-`FFTProp`'s is disabled, and that is a decision, not a detail.
+  [F5] WITH `free_surface=True` THE WATER REVERBERATES -- and periodically, at
+       FIXED (kx, ky), returning to itself after exactly one round-trip cycle of
+       the two-way phase. Periodicity is the discriminating property: a response
+       that merely drifted with thickness could be a leak.
 
-ALSO NOT ESTABLISHED: the absolute magnitude of the interface reverberation.
-[F1]-[F3] pin existence, attenuation and parameterisation, all of which a
-wrongly scaled interface satisfies too. The route is the one that closed the
-layered case -- extract the upward reflection from the diagonal and compare it
-against `ocean_bottom.py`, which already builds water | slab | half-space with
-`psv_fluid_solid` and the `_kennett_water_step` series.
+  [F6] THE FLAG REACHES THE 3-D TABLE, through `corrected_layered_9x9` and
+       `layered_stack_table`.
+
+WHY IT MATTERS. `FFTProp` carries a genuine free surface with Rayleigh
+reflection and P-SV coupling (`free_surface_reflect`). The default background
+here does not, so any comparison against it must set `free_surface=True`.
+
+ALSO NOT ESTABLISHED: the absolute MAGNITUDE of either the interface
+reverberation or the surface one. [F1]-[F6] pin existence, attenuation,
+parameterisation, periodicity and plumbing -- all of which a wrongly scaled
+surface satisfies too. The route is the one that closed the layered case:
+extract the upward reflection from the diagonal and compare it against
+`ocean_bottom.py`, which already builds water | slab | half-space with
+`psv_fluid_solid` and the `_kennett_water_step` series. The plane-wave
+reflectivity version of exactly this stack is already reconciled against Kennett
+at 1e-15 in `gate_gmm_marine_stack`, which gives that comparison a validated
+target.
 
 Run:  conda run -n seismic python scripts/gate_free_surface_reverberation.py
 Seismic units (km, km/s, g/cm3), time convention e^{-i omega t}.
@@ -60,6 +74,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
+import cubic_scattering.layered_correction as LC  # noqa: E402
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.pair_propagators import TransverseRule, layered_stack_table  # noqa: E402
 
@@ -88,6 +103,27 @@ def model(
         Q_alpha=[q] * (n_lay + 2),
         Q_beta=[1e10, *([q] * n_lay), q],
     )
+
+
+def diagonal_vec(planes: tuple[int, int], *, free_surface: bool = False, **kw) -> np.ndarray:
+    """The same-plane reverberation block itself, for phase-sensitive tests."""
+    mod = model(**kw)
+    s_p, s_s = mod.complex_slowness_p(), mod.complex_slowness_s()
+    j = max(planes[0], 1)
+    ref = ReferenceMedium(1.0 / s_p[j], 1.0 / s_s[j], mod.rho[j])
+    tab = layered_stack_table(
+        2,
+        2,
+        2,
+        PITCH,
+        OM,
+        ref,
+        model=mod,
+        plane_ifaces=planes,
+        transverse=RULE,
+        free_surface=free_surface,
+    )
+    return tab[0, 0]
 
 
 def diagonal_ratio(planes: tuple[int, int], **kw) -> float:
@@ -143,15 +179,63 @@ def main() -> int:
     print("       no water-column reverberation. Reported, not gated: it is a")
     print("       structural fact about the background, not a tolerance.")
 
-    ok = present and dies and responds
+    print("\n  [F5] with free_surface=True the water column REVERBERATES")
+    print("       AT FIXED (kx, ky), stepping the thickness by quarter-cycles.")
+    print("       Fixed k is essential: the two-way phase is 2 w eta_w h_w and")
+    print("       eta_w varies across the transverse grid, so the INTEGRATED")
+    print("       table has no single period and cannot be periodic in h_w. An")
+    print("       earlier draft tested the integrated table and read its")
+    print("       aperiodicity as a failure; it is a property of the integral.")
+    kx, ky = np.array([0.4]), np.array([0.3])
+    p_ray = float(np.hypot(0.4, 0.3) / OM)
+    eta_w = float(np.sqrt(1.0 / 1.5**2 - p_ray**2))
+    step = float((np.pi / 2) / (2 * OM * eta_w))
+
+    def spectral(wt: float) -> np.ndarray:
+        return LC.corrected_layered_9x9(model(water_thick=wt), OM, kx, ky, 3, 2, free_surface=True)[0]
+
+    base = spectral(1.0)
+    print(f"    quarter-cycle step {step:.5f} km")
+    print(f"    {'water km':>10} {'phase (rad)':>13} {'change vs base':>16}")
+    changes = []
+    for k in range(5):
+        wt = 1.0 + k * step
+        ch = float(np.abs(spectral(wt) - base).max() / np.abs(base).max())
+        changes.append(ch)
+        print(f"    {wt:10.5f} {2 * OM * eta_w * wt:13.2f} {ch:16.3e}")
+    # PERIODICITY is the discriminating property, not mere sensitivity. A
+    # response that merely drifted with thickness could be a leak; one that
+    # returns to itself after exactly one round-trip cycle is a reverberation.
+    swings = max(changes) > 0.1
+    returns = changes[4] < max(changes) / 1e4
+    print(f"    [F5] swings within the cycle (> 0.1)      : {'PASS' if swings else 'FAIL'}")
+    print(f"    [F5] returns after a FULL cycle (< 1e-4x) : {'PASS' if returns else 'FAIL'}")
+
+    print("\n  [F6] the INTEGRATED table moves too (sensitivity, not periodicity)")
+    a = diagonal_vec((8, 9), water_thick=1.0, free_surface=True)
+    b = diagonal_vec((8, 9), water_thick=1.0 + 2 * step, free_surface=True)
+    moved = float(np.abs(a - b).max() / np.abs(a).max())
+    off = diagonal_vec((8, 9), water_thick=1.0, free_surface=False)
+    flag_bites = float(np.abs(a - off).max() / np.abs(off).max())
+    print(f"    thickness change, flag on  : {moved:.3e}")
+    print(f"    flag on vs flag off        : {flag_bites:.3e}")
+    integ = moved > 1e-3 and flag_bites > 1e-2
+    print(f"    [F6] the flag reaches the 3-D table       : {'PASS' if integ else 'FAIL'}")
+
+    ok = present and dies and responds and swings and returns and integ
     print("\n" + "=" * 78)
     print(f"GATE top reflector: {'PASS' if ok else 'FAIL'}")
-    print("  ESTABLISHED: an ocean-bottom fluid-solid interface, alive,")
-    print("  attenuating, and parameterised by the water properties.")
-    print("  OVERTURNED: the stage-1 claim that the free surface is part of this")
-    print("  background. It is not. Rung 7 must either add one here or disable")
-    print("  FFTProp's -- a decision, not a detail.")
-    print("  STILL OPEN: the absolute magnitude, via ocean_bottom.py.")
+    print("  DEFAULT (free_surface=False): an ocean-bottom fluid-solid interface,")
+    print("  alive, attenuating, parameterised by the water properties -- but the")
+    print("  ocean above it is a HALF-SPACE. The stage-1 claim that the free")
+    print("  surface came for free with the layered background was wrong.")
+    print("  WITH free_surface=True: the water column is finite and reverberates,")
+    print("  periodically in the round-trip phase at fixed k, and the flag reaches")
+    print("  the 3-D table. Use it for any comparison against a solver that")
+    print("  carries a free surface -- FFTProp does.")
+    print("  STILL OPEN: the absolute magnitude of either. Existence, attenuation,")
+    print("  parameterisation and periodicity are all satisfied by a wrongly")
+    print("  scaled surface too. Arbiter: ocean_bottom.py.")
     print("=" * 78)
     return 0 if ok else 1
 

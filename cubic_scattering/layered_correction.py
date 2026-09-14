@@ -368,6 +368,8 @@ def corrected_layered_9x9(
     ky: NDArray,
     source_iface: int,
     receiver_iface: int,
+    *,
+    free_surface: bool = False,
 ) -> NDArray:
     """Corrected stratified 9x9 in the ``(u, eps)`` basis, over a wavenumber grid.
 
@@ -396,6 +398,14 @@ def corrected_layered_9x9(
         ky: Horizontal wavenumber y-components, same shape as ``kx``.
         source_iface: Source interface index.
         receiver_iface: Receiver interface index.
+        free_surface: Close the ocean above with a pressure-release surface, so
+            the water column is a FINITE layer that reverberates. Default False
+            leaves the ocean radiating upward as a half-space, in which case the
+            water thickness does not reach the answer at all -- measured
+            identical to six significant figures over a 100x thickness change
+            (``scripts/gate_free_surface_reverberation.py`` [F4]). With the flag
+            on, the response is PERIODIC in the two-way water phase, returning
+            to itself after one full cycle.
 
     Returns:
         Shape ``(*kx.shape, 9, 9)`` complex, basis
@@ -412,7 +422,13 @@ def corrected_layered_9x9(
     kyf = np.ravel(np.asarray(ky, dtype=float))
 
     raw = layered_greens_6x6(
-        model, omega, kxf, kyf, source_iface=source_iface, receiver_iface=receiver_iface
+        model,
+        omega,
+        kxf,
+        kyf,
+        source_iface=source_iface,
+        receiver_iface=receiver_iface,
+        free_surface=free_surface,
     )
 
     s_p = model.complex_slowness_p()  # type: ignore[attr-defined]
