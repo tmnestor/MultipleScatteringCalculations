@@ -47,7 +47,7 @@ takes them, so the output feeds `_voigt_contract` unchanged.
 """
 
 import math
-from functools import reduce
+from functools import cache, reduce
 
 import numpy as np
 from numpy.typing import NDArray
@@ -82,6 +82,21 @@ def _pairings(items: list[int], m: int) -> list[tuple[list[tuple[int, int]], lis
     return out
 
 
+@cache
+def _pairing_positions(n: int, m: int) -> tuple[tuple[int, ...], ...]:
+    """Axis destinations for each pairing of S_{n,m}, cached.
+
+    The enumeration is combinatorial and depends only on (n, m), while the
+    lattice sum calls it once per term per order -- tens of thousands of times
+    for one kernel. Caching the index bookkeeping keeps the sum practical
+    without changing what is computed.
+    """
+    return tuple(
+        tuple([a for pair in pairs for a in pair] + singles)
+        for pairs, singles in _pairings(list(range(n)), m)
+    )
+
+
 def _delta_x_structure(n: int, m: int, x: NDArray) -> NDArray:
     """S_{n,m}: sum over distinct pairings of m deltas and n-2m copies of x.
 
@@ -90,13 +105,13 @@ def _delta_x_structure(n: int, m: int, x: NDArray) -> NDArray:
     written out by hand.
     """
     delta = np.eye(3)
+    factors = [delta] * m + [x] * (n - 2 * m)
+    core = reduce(np.multiply.outer, factors)
+    axes = list(range(n))
     total = np.zeros((3,) * n, dtype=x.dtype)
-    for pairs, singles in _pairings(list(range(n)), m):
-        factors = [delta] * m + [x] * (n - 2 * m)
-        core = reduce(np.multiply.outer, factors)
-        # Canonical axis j of `core` belongs at output index `positions[j]`.
-        positions = [a for pair in pairs for a in pair] + singles
-        total = total + np.moveaxis(core, list(range(n)), positions)
+    # Canonical axis j of `core` belongs at output index `positions[j]`.
+    for positions in _pairing_positions(n, m):
+        total = total + np.moveaxis(core, axes, list(positions))
     return total
 
 

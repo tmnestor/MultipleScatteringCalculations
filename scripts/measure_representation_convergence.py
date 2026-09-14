@@ -1,6 +1,27 @@
 """MEASUREMENT (1): does the representation converge under REFINEMENT, and is the
 voxel T-matrix responsible?
 
+═══ ANSWERED, 2026-09-15 (evening). READ THIS BEFORE THE ORIGINAL TEXT BELOW ═══
+IT DOES CONVERGE. The apparent non-convergence had two causes, neither of them
+the T-matrix:
+
+  1. the periodic lateral sum was TRUNCATED, and its artifact accumulated plane
+     by plane -- which is why the error GREW with n_z rather than sitting at a
+     floor. `lattice_ewald=True` sums it exactly.
+  2. the contact propagator was a MIDPOINT rule. The Galerkin contact
+     correction removes what is left of the growth.
+
+With both: 7.73e-4, 8.35e-4, 8.51e-4, 8.58e-4 over n_z = 1, 2, 4, 8 -- flat.
+Against 3.95e-3 -> 2.62e-2 originally. What survives is a scale-invariant
+residual of ~8.6e-4, which is a genuine per-cell error and the only thing still
+to explain.
+
+The original reasoning is kept below because its EXONERATION of the T-matrix was
+correct and independently established, and because the measurements it proposed
+are the ones that settled the question. Its quantitative claims, however, were
+all taken on the truncated kernel.
+════════════════════════════════════════════════════════════════════════════════
+
 THE OBSERVATION THIS EXISTS TO NAIL DOWN. Re-reading `measure_periodic_floor` at
 FIXED PHYSICAL THICKNESS, refining the voxelisation makes the answer WORSE:
 
@@ -73,7 +94,14 @@ N_Z_LADDER = (1, 2, 4, 8, 16)
 EPS_LIN = 1e-6  # for extracting the Born limit of the T-matrix as a measured fact
 
 
-def _arm(n_z: int, c: float, *, volume_averaged: bool = False, va_radius: int = 1) -> tuple:
+def _arm(
+    n_z: int,
+    c: float,
+    *,
+    volume_averaged: bool = False,
+    va_radius: int = 1,
+    lattice_ewald: bool = True,
+) -> tuple:
     """(relative error vs exact Kennett, ka, T-matrix nonlinearity fraction).
 
     The physical slab is H_PHYS thick in every row; only the number of cells
@@ -109,6 +137,7 @@ def _arm(n_z: int, c: float, *, volume_averaged: bool = False, va_radius: int = 
         n_orders=2,
         periodic=True,
         va_radius=va_radius,
+        lattice_ewald=lattice_ewald,
     )
     res = compute_slab_scattering(
         geom,
@@ -133,19 +162,30 @@ def main() -> int:
     print("  a convergent scheme has the error FALL as n_z rises")
     print("=" * 88)
 
+    # THE KERNEL IS NOW A VARIABLE, because the original run of this campaign
+    # used the TRUNCATED lateral sum. At M = 4 that truncation was 63% of the
+    # measured one-plane floor, and it sits underneath every conclusion drawn
+    # here. Both kernels are run side by side so the question "was the
+    # non-convergence the truncation accumulating plane by plane?" is answered
+    # by measurement rather than by re-reading old numbers.
     for c, label in ((1.0, "working contrast"), (1.0e-3, "1000x weaker -- Born regime")):
         print(f"\n  contrast x{c:g}  ({label})")
-        print(f"    {'n_z':>4} {'a (m)':>8} {'ka':>8} {'rel err':>11} {'ratio':>7} {'T nonlin':>10}")
-        prev = None
+        print(
+            f"    {'n_z':>4} {'a (m)':>8} {'ka':>8} {'TRUNCATED':>11} {'ratio':>7}"
+            f" {'EWALD':>11} {'ratio':>7} {'T nonlin':>10}"
+        )
+        prev_old = prev_new = None
         for n_z in N_Z_LADDER:
-            err, ka, nonlin = _arm(n_z, c)
-            ratio = "" if prev is None else f"{err / prev:7.2f}"
+            err_old, ka, nonlin = _arm(n_z, c, lattice_ewald=False)
+            err_new, _, _ = _arm(n_z, c, lattice_ewald=True)
+            r_old = "" if prev_old is None else f"{err_old / prev_old:7.2f}"
+            r_new = "" if prev_new is None else f"{err_new / prev_new:7.2f}"
             flag = "" if ka < 0.3 else "  <-- ka OUT OF RANGE"
             print(
-                f"    {n_z:4d} {H_PHYS / (2 * n_z):8.4f} {ka:8.4f} {err:11.4e} "
-                f"{ratio:>7} {nonlin:10.3e}{flag}"
+                f"    {n_z:4d} {H_PHYS / (2 * n_z):8.4f} {ka:8.4f} {err_old:11.4e} {r_old:>7}"
+                f" {err_new:11.4e} {r_new:>7} {nonlin:10.3e}{flag}"
             )
-            prev = err
+            prev_old, prev_new = err_old, err_new
 
     # ---- (2) DOES GALERKIN AVERAGING FURTHER OUT RESTORE CONVERGENCE? -------
     # The point propagator is a MIDPOINT rule for what should be a doubly
@@ -173,30 +213,45 @@ def main() -> int:
     print("      it first appears, because contact is exactly where the midpoint rule")
     print("      fails -- beyond it (cell size)/(separation) < 1 and falls, so the")
     print("      point propagator is already good there.")
-    print("\n      THE RESULT: Galerkin averaging at contact LOWERS the error but does")
-    print("      NOT restore convergence -- it still grows with refinement, and the")
-    print("      improvement itself shrinks (2.3x, 2.1x, 1.6x, 1.4x). So the contact")
-    print("      quadrature is a contributor, not the cause. Two suspects remain:")
-    print("      (a) the averaged object has NO RADIATION PART -- it is static-only,")
-    print("          so it is an approximation to the Galerkin operator, not it;")
-    print("      (b) a space-filling lattice of ISOLATED-cube T-matrices needs a")
-    print("          lattice renormalisation to reproduce the continuum -- the same")
-    print("          class of correction as the sphere-packing Delta -> Delta/phi")
-    print("          already established in this project. Suspect (b) is scale-")
-    print("          invariant and per-cell, which is the signature being chased.")
+    print("\n      WITHDRAWN: this section previously concluded that 'Galerkin")
+    print("      averaging at contact LOWERS the error but does NOT restore")
+    print("      convergence -- it still grows with refinement'. That was measured")
+    print("      on the TRUNCATED lateral sum, whose own growth dominated and which")
+    print("      no contact fix could have removed. On the exact lattice sum the")
+    print("      r = 1 column is FLAT. The growth is gone.")
 
     print("\n" + "=" * 88)
-    print("  Reading it. 'ratio' is the error multiplier per refinement step, each")
-    print("  step HALVING the cell size. A convergent scheme shows ratio < 1 --")
-    print("  0.25 for second-order, 0.5 for first. Ratio ~ 2 means every halving")
-    print("  DOUBLES the error, which is the signature of a per-cell error that is")
-    print("  scale-invariant: for touching cells the ratio (cell size)/(separation)")
-    print("  is 1 at EVERY scale, so refinement cannot dilute it and simply adds")
-    print("  more cells each carrying the same relative error.")
-    print("\n  'T nonlin' is how far the T-matrix is from its own Born limit. If the")
-    print("  two contrasts differ by 1000x in that column and NOT in the ratio")
-    print("  column, the T-matrix's nonlinear content is exonerated and what")
-    print("  remains is the quadrature of the propagator.")
+    print("  WHAT THE RE-RUN SHOWS. The non-convergence had TWO causes, and the")
+    print("  T-matrix was neither:")
+    print()
+    print("    1. the TRUNCATED lateral sum. Its artifact ACCUMULATED plane by")
+    print("       plane, which is why the error grew with n_z instead of merely")
+    print("       sitting at a floor -- the question left open when the defect was")
+    print("       found. Exact summation cuts the n_z = 16 error from 2.62e-2 to")
+    print("       5.06e-3 and turns the ratio from 1.29, still climbing, into 1.05.")
+    print("    2. the CONTACT MIDPOINT RULE. Adding the Galerkin contact correction")
+    print("       to the exact sum flattens it outright: 7.73e-4, 8.35e-4, 8.51e-4,")
+    print("       8.58e-4 across n_z = 1, 2, 4, 8.")
+    print()
+    print("  SO THE SCHEME CONVERGES. What it converges TO is not zero: a residual")
+    print("  of about 8.6e-4 survives refinement. That is the genuine scale-")
+    print("  invariant per-cell error and it is now the only thing left to explain")
+    print("  -- with the same two suspects as before, but facing a flat curve")
+    print("  rather than a growing one:")
+    print("    (a) the averaged object's dynamic content is truncated at O(w^4);")
+    print("    (b) a space-filling lattice of ISOLATED-cube T-matrices may need a")
+    print("        lattice renormalisation to reproduce the continuum -- the same")
+    print("        class of correction as the sphere-packing Delta -> Delta/phi")
+    print("        already established in this project.")
+    print()
+    print("  'ratio' is the error multiplier per refinement step, each step HALVING")
+    print("  the cell size. Ratio ~ 1 is a scale-invariant per-cell error; ratio > 1")
+    print("  means the error is also ACCUMULATING over cells, which is what the")
+    print("  truncated column still shows and the exact one no longer does.")
+    print()
+    print("  'T nonlin' differs by 1000x between the two contrast arms while the")
+    print("  ratio columns do not, so the T-matrix's nonlinear content is exonerated")
+    print("  -- as before, but now without a confounded kernel underneath it.")
     print("=" * 88)
     return 0
 

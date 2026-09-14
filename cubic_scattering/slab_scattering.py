@@ -29,6 +29,7 @@ from .kennett_layers import (
     kennett_layers,
 )
 from .lattice_greens import _apply_refl_x, _apply_refl_y, _apply_rot90
+from .lattice_kupradze import bloch_kernel_hat_9x9
 from .resonance_tmatrix import _propagator_block_9x9, _sub_cell_tmatrix_9x9
 from .sphere_scattering import _plane_wave_strain_voigt
 
@@ -257,6 +258,64 @@ def _add_supercell_images(
             kernel_circ[cx, cy] += acc
 
 
+def _bloch_contact_correction(
+    M: int,
+    d: float,
+    dz_vox: int,
+    omega: float,
+    ref: ReferenceMedium,
+    n_orders: int,
+    va_radius: int,
+) -> NDArray:
+    """Bloch transform of [Galerkin - point] over the contact shell.
+
+    The exact lattice sum is assembled from point propagators, which are a
+    MIDPOINT rule for what should be the doubly volume-averaged operator between
+    cells. That approximation is scale-invariant at contact -- (cell size) /
+    (separation) is 1 at every refinement -- and negligible beyond it, where the
+    ratio falls. So the correction is short-ranged by construction and its Bloch
+    transform is a finite sum over a handful of cells, exact and cheap.
+
+    Args:
+        M: Supercell size.
+        d: Lattice pitch.
+        dz_vox: Vertical separation in CELLS (not metres).
+        omega: Angular frequency.
+        ref: Background medium.
+        n_orders: Dynamic correction orders for the volume-averaged propagator.
+        va_radius: Chebyshev cell radius of the correction shell.
+
+    Returns:
+        Shape (M, M, 9, 9), to be added to the point-propagator Bloch kernel.
+    """
+    offsets: list[tuple[int, int]] = []
+    deltas: list[NDArray] = []
+    for dx in range(-va_radius, va_radius + 1):
+        for dy in range(-va_radius, va_radius + 1):
+            if max(abs(dz_vox), abs(dx), abs(dy)) > va_radius:
+                continue
+            if dz_vox == 0 and dx == 0 and dy == 0:
+                continue  # self-term lives in the local T-matrix
+            g_avg = inter_voxel_propagator_9x9(
+                (dz_vox, dx, dy), ref.alpha, ref.beta, ref.rho, omega, n_orders, d=d
+            )
+            g_pt = _propagator_block_9x9(np.array([dz_vox * d, dx * d, dy * d]), omega, ref)
+            offsets.append((dx, dy))
+            deltas.append(g_avg - g_pt)
+
+    out = np.zeros((M, M, 9, 9), dtype=complex)
+    if not offsets:
+        return out
+    for n1 in range(M):
+        for n2 in range(M):
+            # Same convention as the kernel it corrects: sum_R f(R) exp(-i k.R).
+            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (M * d)
+            for (dx, dy), delta in zip(offsets, deltas, strict=True):
+                phase = np.exp(-1j * (k_par[0] * dx * d + k_par[1] * dy * d))
+                out[n1, n2] += delta * phase
+    return out
+
+
 def _cell_averaged_propagator(
     r_vec: NDArray,
     d: float,
@@ -376,6 +435,9 @@ def _build_slab_kernels(
     va_all: bool = False,
     va_gauss: int = 4,
     lattice_images: int = 0,
+    lattice_ewald: bool = False,
+    ewald_eta: float | None = None,
+    ewald_cutoff: int = 4,
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -403,6 +465,42 @@ def _build_slab_kernels(
     n_dz = 2 * N_z - 1
     H_xy = M if periodic else S
     kernel_hat = np.zeros((n_dz, H_xy, H_xy, 9, 9), dtype=complex)
+
+    if lattice_ewald:
+        if not periodic:
+            raise ValueError(
+                "build_slab_kernels: lattice_ewald=True requires periodic=True. "
+                "The Ewald route constructs the kernel at the M^2 Bloch points of a "
+                "PERIODIC supercell; a finite slab has no lattice to sum over. "
+                "Either set periodic=True, or drop lattice_ewald for the finite case. "
+                "Example: build_slab_kernels(geom, omega, ref, periodic=True, "
+                "lattice_ewald=True)."
+            )
+        # THE TRUNCATION IS BYPASSED ENTIRELY, not patched. fft2(kernel_circ) IS
+        # the Bloch sum at k_n = 2 pi n / (M d); the defect was that only one
+        # (2M-1)^2 patch of that sum was ever formed. So write the answer at
+        # those M^2 points directly and never build the real-space array.
+        for k in range(n_dz):
+            dz_vox = k - (N_z - 1)
+            kernel_hat[k] = bloch_kernel_hat_9x9(
+                M,
+                d,
+                dz_vox * d,
+                omega,
+                ref,
+                eta=ewald_eta,
+                cutoff=ewald_cutoff,
+            )
+            if volume_averaged:
+                # The lattice sum is built from POINT propagators. The Galerkin
+                # (doubly volume-averaged) object differs from the point value
+                # only at contact -- beyond it (cell size)/(separation) falls and
+                # the midpoint rule is already good -- so the difference is a
+                # SHORT-RANGED correction that can be added exactly, as a finite
+                # Bloch sum over the contact shell. Without this the Ewald route
+                # would silently ignore volume_averaged.
+                kernel_hat[k] += _bloch_contact_correction(M, d, dz_vox, omega, ref, n_orders, va_radius)
+        return kernel_hat
 
     for k in range(n_dz):
         dz_vox = k - (N_z - 1)
@@ -689,6 +787,9 @@ def build_slab_kernels(
     va_all: bool = False,
     va_gauss: int = 4,
     lattice_images: int = 0,
+    lattice_ewald: bool = False,
+    ewald_eta: float | None = None,
+    ewald_cutoff: int = 4,
 ) -> NDArray:
     """Build the FFT propagator kernel, for reuse across right-hand sides.
 
@@ -715,6 +816,14 @@ def build_slab_kernels(
         lattice_images: Supercell images added to the periodic lateral sum.
             0 (default) reproduces the historical truncated-and-wrapped sum,
             which is NOT a lattice sum and carries an O(1/M) artifact.
+        lattice_ewald: Build the periodic kernel as an EXACT Bloch lattice sum by
+            Ewald summation, bypassing the real-space assembly and its
+            truncation entirely. Requires periodic=True. This is the correct
+            route; ``lattice_images`` is the partial fix it supersedes, kept
+            because its 1/n_img stall is what showed Ewald to be necessary.
+        ewald_eta: Ewald splitting parameter; None uses sqrt(pi)/d. The result is
+            independent of it, which is how the sum is gated.
+        ewald_cutoff: Half-width of both Ewald sums (default 4, ~1e-12).
 
     Returns:
         The FFT kernel; pass it straight back as ``kernel_hat``.
@@ -730,6 +839,9 @@ def build_slab_kernels(
         va_all=va_all,
         va_gauss=va_gauss,
         lattice_images=lattice_images,
+        lattice_ewald=lattice_ewald,
+        ewald_eta=ewald_eta,
+        ewald_cutoff=ewald_cutoff,
     )
 
 
