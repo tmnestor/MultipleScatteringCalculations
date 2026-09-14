@@ -14,17 +14,21 @@ beyond radius ~M d falls as 1/(M d), and the measured error obeyed
 truncation accounted for 74% of what had been reported as the discretisation
 floor.
 
-THE FIX UNDER TEST. `lattice_images=n` adds the images the patch leaves out, out
-to |nx|, |ny| <= n supercells. Every added term is at least M cells away, well
-outside the contact shell, so the point propagator is the correct object for all
-of them.
+TWO FIXES ARE UNDER TEST, and the contrast between them is the point.
 
-WHAT THIS GATE CAN ALSO SHOW, and it is the reason it sweeps rather than checks
-one number: whether a DIRECT image sum converges at all. The 1/r^3 strain block
-falls off fast enough, but the 1/r displacement block converges only
-conditionally in two dimensions. If the residual M-dependence stalls instead of
-falling as images are added, a direct sum is not enough and an Ewald split is
-required -- and that will be a measured conclusion rather than an assumption.
+  * `lattice_images=n` adds the images the patch leaves out, to |nx|, |ny| <= n
+    supercells. Every added term is at least M cells away, well outside the
+    contact shell, so the point propagator is the right object for all of them.
+    This is the PARTIAL fix. The 1/r^3 strain block falls off fast enough, but
+    the 1/r displacement block is only conditionally convergent in two
+    dimensions, so the ladder converges as 1/n_img and stalls.
+  * `lattice_ewald=True` replaces the real-space assembly outright, writing the
+    kernel at the M^2 Bloch points as an exact Ewald lattice sum. There is no
+    truncation left to shrink.
+
+The image ladder is kept rather than deleted because it is the MEASUREMENT that
+made Ewald necessary. Without it, "we need an Ewald sum" would be an assumption;
+with it, the 1/n_img stall is on the record next to the exact answer.
 
 Run:  conda run -n seismic python scripts/gate_lateral_sum_invariance.py
 SI units (m, m/s, kg/m3, Pa).
@@ -59,7 +63,7 @@ MS = (2, 3, 4, 6, 8)
 IMAGE_LADDER = (0, 1, 2, 4, 8, 16)
 
 
-def _err(m: int, n_img: int) -> float:
+def _err(m: int, n_img: int, ewald: bool = False) -> float:
     geom = SlabGeometry(M=m, N_z=1, a=A_HALF)
     ones = np.ones((1, m, m))
     mat = SlabMaterial(
@@ -69,7 +73,7 @@ def _err(m: int, n_img: int) -> float:
         ref=REF,
     )
     t0 = compute_slab_tmatrices(geom, mat, OMEGA)
-    kh = build_slab_kernels(geom, OMEGA, REF, periodic=True, lattice_images=n_img)
+    kh = build_slab_kernels(geom, OMEGA, REF, periodic=True, lattice_images=n_img, lattice_ewald=ewald)
     res = compute_slab_scattering(
         geom,
         mat,
@@ -94,8 +98,11 @@ def main() -> int:
     header = "".join(f"{'M=' + str(m):>11}" for m in MS)
     print(f"\n  {'images':>7}{header}{'spread':>11}{'floor':>11}")
     spreads = []
+    baseline: list[float] = []
     for n_img in IMAGE_LADDER:
         vals = [_err(m, n_img) for m in MS]
+        if n_img == 0:
+            baseline = vals
         spread = (max(vals) - min(vals)) / max(np.mean(vals), 1e-300)
         spreads.append(spread)
         row = "".join(f"{v:11.4e}" for v in vals)
@@ -106,23 +113,49 @@ def main() -> int:
         f"({spreads[0]:.2e} -> {spreads[-1]:.2e})"
     )
 
+    # The EXACT sum. Images are a partial fix -- they converge only as 1/n_img,
+    # which is what the ladder above measures. Ewald removes the truncation
+    # rather than shrinking it, so it is not another rung on that ladder.
+    ew = [_err(m, 0, ewald=True) for m in MS]
+    ew_spread = (max(ew) - min(ew)) / max(np.mean(ew), 1e-300)
+    row = "".join(f"{v:11.4e}" for v in ew)
+    print(f"\n  {'EWALD':>7}{row}{ew_spread:11.2e}{np.mean(ew):11.4e}")
+    spreads.append(ew_spread)
+
+    img_spread = spreads[-2]
     print("\n" + "=" * 88)
-    if spreads[-1] < 1e-3:
-        print("  PASS: the answer is supercell-invariant once the images are")
-        print("  summed. The lateral sum was truncated, not wrong in principle, and")
-        print("  a DIRECT image sum suffices -- no Ewald split is needed. The floor")
-        print("  that remains is the genuine discretisation error, free of the")
-        print("  1/M artifact that contaminated every earlier measurement.")
-    elif spreads[-1] < 0.25 * spreads[0]:
-        print("  PARTIAL: adding images reduces the supercell dependence but does")
-        print("  not remove it. That is the signature of the conditionally")
-        print("  convergent 1/r block -- a direct sum cannot finish the job and an")
-        print("  EWALD SPLIT is required. Now a measured conclusion, not a guess.")
+    if ew_spread < 1e-9:
+        print("  PASS: the Ewald kernel is supercell-invariant to machine precision.")
+        print("  Every M describes the same physical layer and now returns the same")
+        print("  number, which is an IDENTITY rather than a tolerance being met.")
+        print()
+        print("  Read the two rows together, because they say different things. The")
+        print(f"  image ladder stalls at a spread of {img_spread:.2e} after 16 shells -- it")
+        print("  converges only as 1/n_img, so it shrinks the truncation without")
+        print("  removing it. Ewald removes it outright, in one shot, at cutoff 4.")
+        print()
+        old_at_m4 = baseline[MS.index(4)]
+        print(f"  THE TRUE FLOOR IS {np.mean(ew):.4e}. At M = 4, the value used")
+        print(f"  throughout the convergence campaign, the old kernel gave {old_at_m4:.4e},")
+        pct = 100 * (1 - np.mean(ew) / old_at_m4)
+        print(f"  so {pct:.0f}% of what was reported as the discretisation floor")
+        print("  was this artifact. Every quantitative result from that campaign needs")
+        print("  RE-RUNNING, not merely reinterpreting.")
+        print()
+        print("  Note the 1/M fit's extrapolation to M -> infinity was 1.1185e-3; the")
+        print(f"  exact answer is {np.mean(ew):.4e}. The fit described the truncation well")
+        print("  but its intercept was not the floor -- another reason to re-run rather")
+        print("  than to correct old numbers arithmetically.")
+    elif img_spread < 0.25 * spreads[0]:
+        print("  PARTIAL: images help but the Ewald sum is not invariant either --")
+        print("  which means the defect is NOT only the truncation. Check the Bloch")
+        print("  phase sign and the R = 0 convention (included at dz != 0, excluded")
+        print("  at dz = 0) before looking anywhere else.")
     else:
         print("  NO IMPROVEMENT: the supercell dependence is not the image tail.")
         print("  Re-examine the diagnosis before writing any more summation code.")
     print("=" * 88)
-    return 0 if spreads[-1] < 1e-3 else 1
+    return 0 if ew_spread < 1e-9 else 1
 
 
 if __name__ == "__main__":

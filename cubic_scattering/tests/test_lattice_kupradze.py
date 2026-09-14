@@ -18,6 +18,8 @@ import pytest
 from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.kupradze_derivatives import radial_ladder
 from cubic_scattering.lattice_kupradze import (
+    bloch_block_ewald_9x9,
+    bloch_kernel_hat_9x9,
     direct_scalar_tensors,
     ladder_from_plain,
     lattice_block_9x9,
@@ -25,6 +27,7 @@ from cubic_scattering.lattice_kupradze import (
     origin_scalar_tensors,
 )
 from cubic_scattering.planar_ewald import ewald_total
+from cubic_scattering.slab_scattering import SlabGeometry, build_slab_kernels
 
 A_L = 2.0
 K_PAR = np.array([0.2, 0.1])
@@ -179,6 +182,50 @@ def test_block_9x9_dispatches_to_the_origin_limit_at_zero() -> None:
     assert np.all(np.isfinite(blk))
     other = lattice_block_9x9(np.zeros(3), OMEGA, REF, ETA2, RC, GC, A_L, K_PAR)
     assert np.abs(blk - other).max() / np.abs(blk).max() < 1e-10
+
+
+def test_bloch_kernel_matches_the_ewald_route_away_from_gamma() -> None:
+    """The two routes are independent constructions and must agree.
+
+    `bloch_kernel_hat_9x9` uses the SPECTRAL sum at dz != 0; `bloch_block_ewald_9x9`
+    uses real-space Ewald with Kupradze derivatives. They share no code. Compared
+    away from k_par = 0, where the Ewald route is well conditioned -- at k_par = 0
+    it loses (eta/kappa)^4 in the strain block, which is precisely why the
+    spectral route is the one wired in.
+    """
+    d, m_cells, omega = 0.5, 4, 60.0
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    ker = bloch_kernel_hat_9x9(m_cells, d, d, omega, ref)
+    for n1, n2 in ((1, 0), (2, 3)):
+        k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (m_cells * d)
+        ewald = bloch_block_ewald_9x9(k_par, d, d, omega, ref)
+        assert np.abs(ker[n1, n2] - ewald).max() / np.abs(ewald).max() < 1e-6
+
+
+def test_bloch_kernel_is_finite_and_has_the_kernel_hat_shape() -> None:
+    """It is written straight into kernel_hat, so the shape is load-bearing."""
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    for dz in (0.0, 0.5):
+        ker = bloch_kernel_hat_9x9(4, 0.5, dz, 60.0, ref)
+        assert ker.shape == (4, 4, 9, 9)
+        assert np.all(np.isfinite(ker))
+
+
+def test_ewald_kernel_requires_periodic_with_a_diagnostic() -> None:
+    """A finite slab has no lattice to sum over; say so rather than guessing."""
+    geom = SlabGeometry(M=3, N_z=1, a=0.25)
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    with pytest.raises(ValueError, match="requires periodic=True"):
+        build_slab_kernels(geom, 60.0, ref, periodic=False, lattice_ewald=True)
+
+
+def test_ewald_kernel_differs_from_the_truncated_one() -> None:
+    """Guard against the flag silently doing nothing."""
+    geom = SlabGeometry(M=4, N_z=1, a=0.25)
+    ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
+    old = build_slab_kernels(geom, 60.0, ref, periodic=True)
+    new = build_slab_kernels(geom, 60.0, ref, periodic=True, lattice_ewald=True)
+    assert np.abs(old - new).max() / np.abs(new).max() > 1e-6
 
 
 def test_same_plane_9x9_is_finite_and_eta_independent() -> None:

@@ -61,6 +61,7 @@ from .kupradze_derivatives import (
     scalar_derivative_tensors,
 )
 from .resonance_tmatrix import _voigt_contract
+from .sweep_kernels import vertical_kernel_9x9
 
 _SQRT_PI = math.sqrt(math.pi)
 
@@ -274,6 +275,28 @@ def lattice_scalar_tensors(
     return [a + b - c for a, b, c in zip(real_half, recip_half, self_term, strict=True)]
 
 
+def full_plane_scalar_tensors(
+    r_vec: NDArray,
+    kappa: complex,
+    eta: float,
+    n_real: int,
+    n_recip: int,
+    a_l: float,
+    k_par: NDArray,
+    order: int = MAX_ORDER,
+) -> list[NDArray]:
+    """Bloch sum INCLUDING R = 0, for use at non-zero vertical separation.
+
+    At dz != 0 the lattice site directly above or below is a legitimate term --
+    the two cubes are distinct -- so the self-term must NOT be removed. That is
+    the only difference from `lattice_scalar_tensors`, and getting it wrong drops
+    the single largest contribution to the inter-plane kernel.
+    """
+    real_half = ewald_real_tensors(r_vec, kappa, eta, n_real, a_l, k_par, order)
+    recip_half = ewald_recip_tensors(r_vec, kappa, eta, n_recip, a_l, k_par, order)
+    return [a + b for a, b in zip(real_half, recip_half, strict=True)]
+
+
 def _regularised_self_ladder(kappa: complex, eta: float, order: int) -> list[complex]:
     """Ladder at d = 0 of [screened R = 0 term] - [free-space self-term].
 
@@ -417,6 +440,168 @@ def lattice_block_9x9(
     return P
 
 
+def bloch_kernel_hat_9x9(
+    m_cells: int,
+    d: float,
+    dz: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    *,
+    eta: float | None = None,
+    cutoff: int = 4,
+) -> NDArray:
+    """The periodic 9x9 kernel in Bloch space, exactly -- no truncation, no FFT.
+
+    WHAT THIS REPLACES AND WHY IT IS SIMPLER, NOT HARDER. `_build_slab_kernels`
+    assembles a real-space kernel over dx, dy in [-(M-1), M-1], wraps it into
+    M x M, and FFTs. The FFT output IS the Bloch sum at k_n = 2 pi n / (M d):
+
+        fft2(kernel_circ)[n] = sum_{R in (d Z)^2}  G(dz, R) e^{-i k_n . R},
+
+    because wrapping mod M and transforming is the same as summing every image.
+    The defect was never the transform -- it was that only one (2M-1)^2 patch of
+    the sum was ever formed. So the fix is to write the ANSWER at those M^2 Bloch
+    points directly and skip the real-space array altogether.
+
+    THE PHASE SIGN, which is where this goes wrong. `origin_scalar_tensors` and
+    `full_plane_scalar_tensors` evaluate sum_{R} f(r - R) e^{+i k_par . R}. At
+    r = 0 the substitution R -> -R turns that into sum_{R} f(R) e^{-i k_par . R},
+    which is the FFT convention above with k_par = k_n. Passing k_n straight
+    through is therefore correct -- and a sign slip here agrees exactly at
+    k_n = 0, i.e. in the n1 = n2 = 0 entry, which is also the largest one.
+
+    R = 0 IS INCLUDED AT dz != 0 AND EXCLUDED AT dz = 0. Two cubes in different
+    planes at the same lateral position are distinct scatterers; a cube and
+    itself are not.
+
+    ═══ TWO ROUTES, AND WHY dz != 0 DOES NOT USE EWALD ════════════════════════
+    Ewald is needed ONLY at dz = 0. For dz != 0 the spectral kernel keeps its
+    exp(-kappa |dz|) factor, so the plain reciprocal sum converges
+    exponentially and is exact -- which `gate_interplane_bloch_sum` established
+    independently. Using Ewald there as well is not merely redundant, it is
+    WORSE CONDITIONED, and measurably so:
+
+      the reciprocal half's out-of-plane derivatives carry powers of eta while
+      the answer carries powers of k_z. At the |G| = 0 order k_z = kappa, so
+      when kappa d << 1 the fourth-derivative strain term cancels by roughly
+      (eta/kappa)^4. Measured at kappa_P d = 0.006: the S block lost 3e-4 at
+      dz = d and 6e-3 at dz = 2d, all of it concentrated at k_par = 0, while
+      every other Bloch point stayed at 1e-9. The error GROWS with dz, which is
+      exactly the direction a refinement ladder runs.
+
+    So dz = 0 uses the Ewald sum (it has no alternative -- the plain reciprocal
+    sum diverges there) and dz != 0 uses the spectral sum (it has no need of
+    one). `bloch_block_ewald_9x9` keeps the Ewald route available at dz != 0 so
+    the two can be gated against each other where both are well conditioned.
+    ═══════════════════════════════════════════════════════════════════════════
+
+    Args:
+        m_cells: Supercell size M (cells per side).
+        d: Lattice pitch = cube side, in metres.
+        dz: Vertical separation, in metres.
+        omega: Angular frequency.
+        ref: Background medium.
+        eta: Ewald splitting parameter. Defaults to sqrt(pi)/d, the standard
+            2-D optimum, which balances the two halves so both decay like
+            exp(-pi n^2) and `cutoff` = 4 already gives ~1e-12. The answer is
+            independent of it; only the cost is not.
+        cutoff: Half-width of both the real and reciprocal sums.
+
+    Returns:
+        Shape (M, M, 9, 9), complex -- directly usable as one `kernel_hat` slice.
+    """
+    eta_val = float(np.sqrt(np.pi) / d) if eta is None else float(eta)
+    k_p = omega / ref.alpha
+    k_s = omega / ref.beta
+    on_plane = abs(dz) < 1.0e-15 * max(d, 1.0)
+    r_vec = np.array([dz, 0.0, 0.0])
+
+    out = np.zeros((m_cells, m_cells, 9, 9), dtype=complex)
+    for n1 in range(m_cells):
+        for n2 in range(m_cells):
+            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (m_cells * d)
+            if on_plane:
+                d_p = origin_scalar_tensors(k_p, eta_val, cutoff, cutoff, d, k_par)
+                d_s = origin_scalar_tensors(k_s, eta_val, cutoff, cutoff, d, k_par)
+                g, gd, gdd = greens_from_scalars(d_p, d_s, omega, ref)
+                c, h, s = _voigt_contract(gd, gdd)
+                out[n1, n2, :3, :3] = g
+                out[n1, n2, :3, 3:] = c
+                out[n1, n2, 3:, :3] = h
+                out[n1, n2, 3:, 3:] = s
+            else:
+                out[n1, n2] = _spectral_bloch_block(k_par, dz, d, omega, ref, cutoff)
+    return out
+
+
+def _spectral_bloch_block(
+    k_par: NDArray,
+    dz: float,
+    d: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    n_g: int,
+) -> NDArray:
+    """(1/d^2) sum_G Ghat(k_par + G, dz) -- exact and exponentially convergent.
+
+    Valid only for dz != 0, where the spectral kernel retains exp(-kappa |dz|).
+    At dz = 0 the strain-strain block grows like |k| and this sum diverges; that
+    is the case Ewald exists for.
+
+    The convergence rate is exp(-q |dz|) with q = 2 pi m / d, so the WORST case
+    is adjacent planes, dz = d, where each order costs a factor exp(-2 pi) and
+    six orders already reach 1e-16. A floor of 6 is imposed for that reason: the
+    sum is cheap and its cutoff has nothing to do with the Ewald cutoff that the
+    caller is choosing for the dz = 0 branch.
+    """
+    n_g = max(n_g, 6)
+    b = 2.0 * np.pi / d
+    acc = np.zeros((9, 9), dtype=complex)
+    for m in range(-n_g, n_g + 1):
+        for n in range(-n_g, n_g + 1):
+            kx = k_par[0] + b * m
+            ky = k_par[1] + b * n
+            acc += vertical_kernel_9x9(np.array([kx]), ky, dz, omega, ref)[:, :, 0]
+    return acc / d**2
+
+
+def bloch_block_ewald_9x9(
+    k_par: NDArray,
+    dz: float,
+    d: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    *,
+    eta: float | None = None,
+    cutoff: int = 4,
+) -> NDArray:
+    """One Bloch block by the EWALD route, at any dz -- kept for cross-gating.
+
+    `bloch_kernel_hat_9x9` uses this only at dz = 0, because at dz != 0 the
+    spectral sum is both exact and better conditioned. Retaining the Ewald route
+    at dz != 0 lets the two independent constructions be compared where both are
+    well conditioned (away from k_par = 0), which is how the Bloch phase sign and
+    the R = 0 convention are confirmed against something other than themselves.
+    """
+    eta_val = float(np.sqrt(np.pi) / d) if eta is None else float(eta)
+    k_p, k_s = omega / ref.alpha, omega / ref.beta
+    r_vec = np.array([dz, 0.0, 0.0])
+    if abs(dz) < 1.0e-15 * max(d, 1.0):
+        d_p = origin_scalar_tensors(k_p, eta_val, cutoff, cutoff, d, k_par)
+        d_s = origin_scalar_tensors(k_s, eta_val, cutoff, cutoff, d, k_par)
+    else:
+        d_p = full_plane_scalar_tensors(r_vec, k_p, eta_val, cutoff, cutoff, d, k_par)
+        d_s = full_plane_scalar_tensors(r_vec, k_s, eta_val, cutoff, cutoff, d, k_par)
+    g, gd, gdd = greens_from_scalars(d_p, d_s, omega, ref)
+    c, h, s = _voigt_contract(gd, gdd)
+    out = np.zeros((9, 9), dtype=complex)
+    out[:3, :3] = g
+    out[:3, 3:] = c
+    out[3:, :3] = h
+    out[3:, 3:] = s
+    return out
+
+
 def direct_scalar_tensors(
     r_vec: NDArray,
     kappa: complex,
@@ -444,7 +629,10 @@ def direct_scalar_tensors(
 
 
 __all__ = [
+    "bloch_block_ewald_9x9",
+    "bloch_kernel_hat_9x9",
     "direct_scalar_tensors",
+    "full_plane_scalar_tensors",
     "ewald_real_tensors",
     "ewald_recip_tensors",
     "ladder_from_plain",
