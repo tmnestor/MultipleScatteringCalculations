@@ -21,11 +21,18 @@ seabed the water column is closed by a pressure release, so an up-going fluid
 wave returns as M = -e0^2 with e0 = exp(i w eta_w h_w). Adding that stack onto
 the seabed interface by the Kennett rule gives
 
-    R_up = Ru + Tu . M . (I - Rd . M)^-1 . Td,
+    R_up = Ru + Td . M . (I - Rd . M)^-1 . Tu,
 
 with (Rd, Ru, Td, Tu) the fluid-solid coefficients of `psv_fluid_solid` and M
 carrying the fluid's single mode. Nothing in that expression comes from the
 Green's function, so agreement is evidence rather than bookkeeping.
+
+Note which transmission stands on the left. An up-going SOLID wave goes UP
+through Tu and returns DOWN through Td, so Td leads. The reversed order is
+INVISIBLE to PP -- the two P-to-P factors commute as scalars -- and collapses
+every conversion entry to zero, because Tu's fluid-SV row and Td's fluid-SV
+column both vanish identically. That error was made here and caught only by the
+SV diagonal; see the comment at the return statement.
 
 DIAGONALS ONLY, and that is not a dodge. `psv_fluid_solid` uses the flux
 convention `sqrt(eta rho)`; the mode bridge uses unit displacement. Those differ
@@ -83,7 +90,7 @@ def model(n_lay: int = 18):
 
 
 def arbiter_r_up(p: float, *, free_surface: bool) -> np.ndarray:
-    """R_up = Ru + Tu M (I - Rd M)^-1 Td, from the interface coefficients alone."""
+    """R_up = Ru + Td M (I - Rd M)^-1 Tu, from the interface coefficients alone."""
     mod = model()
     s_p, s_s = mod.complex_slowness_p(), mod.complex_slowness_s()
     eta_w = _vertical_slowness(s_p[0], p)
