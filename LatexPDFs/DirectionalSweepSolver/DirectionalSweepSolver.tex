@@ -357,6 +357,10 @@ reverberation obeys symplectic reciprocity & $J_6$ law, $\pm k$ & $8\times10^{-1
 self-energy recedes with the reflector & --- & $10^{-4}\!\to\!10^{-12}$ \\
 partition: every pair once, self-term & support count & exact \\
 GMRES $=$ dense LU $=$ Neumann, $\rho(\Gz\Tz)=0.92$ & two direct methods & $1.2\times10^{-12}$ \\
+$\Delta\Gz$ lies in the rank-3 one-way span & pseudo-inverse residual & $4\times10^{-9}$ \\
+$\Delta\Gz$ magnitude, full $9\times9$ forward & Kennett reflectivity & $2\times10^{-10}$ \\
+\quad weak, strong and multi-interface, $k_\parallel h \le 3$ & --- & --- \\
+P/S flux factor, predicted not fitted & $i\beta\sqrt{\eta_S}/\alpha\sqrt{\eta_P}$ & $8$ s.f. \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -384,15 +388,50 @@ pattern --- a plausible invariant that the exact reference also fails --- has al
 programme one false gate.
 
 \medskip\noindent
-\textbf{Not yet done.} Two things. The in-out $k_y$ pair, and with it the full three-dimensional
-Cartesian case, is the remaining piece; until it lands, the solver is 2\textonehalf-D and a
-comparison against a three-dimensional solver measures the geometry rather than the sweeps.
-And the \emph{absolute magnitude} of $\Delta\Gz$ is not yet checked against an independent
-physical reference: what is established is that it is reciprocal, that it vanishes without
-layering, that it recedes with the reflector, and that it behaves as a self-energy under the
-dressed-T identity. The route to closing it is the single-bounce limit --- as the contrast
-weakens, $\Delta\Gz$ must approach the interface reflection coefficient times the whole-space
-propagator over twice the standoff --- which is checkable in isolation.
+\textbf{The absolute magnitude of $\Delta\Gz$, now closed.} Reciprocity, the vanishing without
+layering, the recession with the reflector and the dressed-$T$ identity are all homogeneous of
+degree one and therefore say nothing about scale. The magnitude is settled instead by a
+\emph{forward} comparison carrying no fitted quantity. At a plane over a layered half-space the
+reverberation must factor through the one-way mode maps of \S\ref{sec:intraplane},
+\begin{equation}
+\Delta\Gz \;=\; \mathsf{D}_\uparrow\, \mathsf{R}_D\, \mathsf{S}_\downarrow ,
+\label{eq:dgfactor}
+\end{equation}
+with $\mathsf{R}_D$ the total downward reflection matrix referenced at the plane --- built by
+the Kennett reflectivity recursion alone, every internal multiple included. Predicting the full
+$9\times9$ from \eqref{eq:dgfactor} and differencing it against the measured $\Delta\Gz$ leaves
+a relative residual of $2\times10^{-10}$, at weak contrast, at strong contrast, and on a
+fast/slow/fast stack, out to $k_\parallel h = 3$ in the evanescent regime.
+
+Two things had to be measured rather than assumed for that comparison to mean anything. First,
+the part of $\Delta\Gz$ lying \emph{outside} the rank-three one-way span of
+\eqref{eq:dgfactor} is $4\times10^{-9}$ or smaller, so the pseudo-inverse extractions used
+elsewhere in this programme are reading the operator and not a projection of it. Second, the
+mode-\emph{conversion} channels $\mathrm{P}\!\leftrightarrow\!\mathrm{SV}$ are invisible to any
+per-mode ratio test, since a similarity $\mathsf{R}\mapsto \mathsf{C}^{-1}\mathsf{R}\mathsf{C}$
+by a diagonal $\mathsf{C}$ leaves every diagonal entry exactly fixed. Compared directly they
+disagree --- and the disagreement is precisely the Kennett P/S flux normalisation,
+$c = i\beta\sqrt{\eta_S}\,/\,\alpha\sqrt{\eta_P}$, which the mode bridge does not carry and the
+reflectivity recursion does. Written down \emph{a priori} it reproduces the measured factor to
+eight significant figures, identically across all three models, and collapses the forward
+residual from $0.76$ to the in-span floor. That is a convention reconciled, not a constant
+tuned.
+
+The difference is not cosmetic. The mode bridge normalises polarisations to unit
+\emph{displacement}, and bilinearly, so that they continue analytically into the evanescent
+regime. The reflectivity recursion normalises to unit \emph{energy flux}, because that is what
+makes the interface matrices symmetric and unitary --- $\mathsf{T}_u = \mathsf{T}_d^{\mathsf T}$
+--- and without those identities the recursion is not valid. Vertical flux goes as
+$\rho v^2 \eta |A|^2$, so unit-flux amplitude goes as $1/(v\sqrt{\rho\eta})$, which is where the
+velocity and the $\sqrt{\eta}$ come from; the factor $i$ on SV is the eigenvector convention of
+the recursion itself. This same similarity already appears in this package, converting the slab
+solver's reflection matrix to the Kennett convention --- the sweep solver needed a reconciliation
+the slab solver had already made, and the two agreeing is corroboration rather than coincidence.
+
+\medskip\noindent
+\textbf{Not yet done.} The in-out $k_y$ pair, and with it the full three-dimensional Cartesian
+case, is the remaining piece; until it lands, the solver is 2\textonehalf-D and a comparison
+against a three-dimensional solver measures the geometry rather than the sweeps.
 
 %==============================================================================
 \section{What is distinctive}
