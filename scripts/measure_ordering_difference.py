@@ -71,9 +71,11 @@ SRC_VEC = np.array([1.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0], dtype=complex)
 def model(contrast_scale: float, n_lay: int = 24, q: float = 1e4):
     """Ocean over elastic layers, with a contrast BELOW the scattering planes.
 
-    The contrast is what makes DeltaG0 non-zero: without a reflector under the
-    voxels there is no layer path for them to couple through, and the two
-    orderings coincide trivially.
+    The deep contrast ADDS to DeltaG0; it does not create it. Setting
+    `contrast_scale = 0` leaves the SEABED, whose reverberation is already
+    O(0.1) of the whole-space scale (gate_free_surface_reverberation), so there
+    is no reflector-free configuration here and the null must come from
+    attenuation instead. `q` is therefore the control knob, not the contrast.
     """
     import Kennett_Reflectivity.layer_model as lm
 
