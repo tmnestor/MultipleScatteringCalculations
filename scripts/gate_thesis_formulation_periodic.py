@@ -92,9 +92,18 @@ SCAT_LAYERS = (20, 21)  # the single voxel plane spans two half-pitch layers
 # planes are at 14 and 20.
 REFL_LAYER = 22
 PLANE_IFACES = (OBS_IFACE, SCAT_IFACE)
+# THE SIGNAL HAS TWO INDEPENDENT FACTORS, and only one of them drives the floor.
+# The ordering effect is |DeltaG0 . T|: DeltaG0 is set by the REFLECTIVITY OF
+# THE BACKGROUND, T by the CUBE CONTRAST. [T3] is measured on a uniform
+# background, so it cannot see the reflector at all. Strengthening the reflector
+# therefore raises [T2] while leaving the floor fixed -- which is how this test
+# gets its separation without the cube contrast that would raise the floor with
+# it. `scripts/measure_reflector_lever.py` measures that claim rather than
+# assuming it.
+REFL_JUMP = (2000.0, 1200.0, 600.0)
 
 
-def _model(with_contrast: bool, *, uniform: bool):
+def _model(with_contrast: bool, *, uniform: bool, refl_jump: tuple = REFL_JUMP):
     """Half-pitch layers; the voxel plane at SCAT_IFACE spans two of them."""
     import Kennett_Reflectivity.layer_model as lm
 
@@ -105,8 +114,9 @@ def _model(with_contrast: bool, *, uniform: bool):
     if uniform:
         al[0], rh[0] = A0, R0
     else:
+        d_al, d_be, d_rh = refl_jump
         for j in range(REFL_LAYER, N_LAY + 2):
-            al[j], be[j], rh[j] = A0 + 2000.0, B0 + 1200.0, R0 + 600.0
+            al[j], be[j], rh[j] = A0 + d_al, B0 + d_be, R0 + d_rh
     if with_contrast:
         lam0, mu0 = R0 * (A0**2 - 2 * B0**2), R0 * B0**2
         r1 = R0 + D_RHO
@@ -156,8 +166,16 @@ def _dressed_kernel(model, ref: ReferenceMedium, ref_c: ReferenceMedium, geom: S
     return kh
 
 
-def _run(*, dressed: bool, uniform: bool) -> float:
-    m_ref, m_full = _model(False, uniform=uniform), _model(True, uniform=uniform)
+def _run(*, dressed: bool, uniform: bool, refl_jump: tuple = REFL_JUMP) -> tuple[float, float]:
+    """(relative error against the exact layered answer, |exact|).
+
+    |exact| travels with the error because the three arms normalise by their
+    OWN exact field. A reflector strong enough to move that amplitude could
+    shift the ratios for a reason that has nothing to do with the orderings, so
+    the amplitude is reported rather than assumed constant.
+    """
+    m_ref = _model(False, uniform=uniform, refl_jump=refl_jump)
+    m_full = _model(True, uniform=uniform, refl_jump=refl_jump)
     s_p, s_s = m_ref.complex_slowness_p(), m_ref.complex_slowness_s()
     # TWO REFERENCES, and the split is forced rather than chosen.
     # `inter_voxel_propagator` -- the volume-averaged nearest-neighbour object
@@ -205,7 +223,8 @@ def _run(*, dressed: bool, uniform: bool) -> float:
         kernel_hat=kh,
     )
     got = res.psi[0, M // 2, M // 2]
-    return float(np.abs(got - exact).max() / np.abs(exact).max())
+    scale = float(np.abs(exact).max())
+    return float(np.abs(got - exact).max() / scale), scale
 
 
 def main() -> int:
@@ -217,17 +236,29 @@ def main() -> int:
     print("  floor measured at 1.8e-3 by scripts/measure_periodic_floor.py")
     print("=" * 78)
 
-    t1 = _run(dressed=True, uniform=False)
-    t2 = _run(dressed=False, uniform=False)
-    t3 = _run(dressed=True, uniform=True)
+    t1, s1 = _run(dressed=True, uniform=False)
+    t2, _ = _run(dressed=False, uniform=False)
+    t3, s3 = _run(dressed=True, uniform=True)
 
-    print(f"\n  [T1] thesis ordering (kernel dressed with DeltaG0) : {t1:.4e}")
-    print(f"  [T2] dress-after     (kernel left whole-space)    : {t2:.4e}")
-    print(f"  [T3] discretisation control (uniform background)  : {t3:.4e}")
+    # THE VERDICT IS TAKEN ON ABSOLUTE ERRORS, and that is not a formality.
+    # [T1] and [T2] normalise by the STRATIFIED exact field; [T3] by the
+    # UNIFORM one. Those amplitudes are not equal -- they differ by ~9% here --
+    # so a ratio of the relative errors silently divides by two different
+    # denominators. `measure_reflector_lever` found a configuration where that
+    # mismatch alone manufactured an apparent 5.4x, which is why the comparison
+    # is now made in absolute terms, where the normalisation cancels.
+    a1, a2, a3 = t1 * s1, t2 * s1, t3 * s3
+    print(f"\n  |exact| stratified {s1:.4e}   uniform {s3:.4e}   ratio {s1 / s3:.3f}")
+    print(f"\n  {'':52} {'relative':>10} {'absolute':>11}")
+    print(f"  [T1] thesis ordering (kernel dressed with DeltaG0) : {t1:10.4e} {a1:11.4e}")
+    print(f"  [T2] dress-after     (kernel left whole-space)    : {t2:10.4e} {a2:11.4e}")
+    print(f"  [T3] discretisation control (uniform background)  : {t3:10.4e} {a3:11.4e}")
+    print(f"\n  separation [T2]/[T3] = {a2 / a3:.2f}x (needs 5x)")
+    print(f"  thesis arm [T1]/[T3] = {a1 / a3:.2f}x (needs < 2x)")
 
-    conclusive = t2 > 5.0 * t3
-    confirmed = conclusive and t1 < 2.0 * t3
-    refuted = conclusive and t1 > 5.0 * t3
+    conclusive = a2 > 5.0 * a3
+    confirmed = conclusive and a1 < 2.0 * a3
+    refuted = conclusive and a1 > 5.0 * a3
 
     print("\n" + "=" * 78)
     if not conclusive:
