@@ -116,10 +116,7 @@ class SlabMaterial:
     ref: ReferenceMedium
 
     def __post_init__(self) -> None:
-        if (
-            self.Dlambda.shape != self.Dmu.shape
-            or self.Dlambda.shape != self.Drho.shape
-        ):
+        if self.Dlambda.shape != self.Dmu.shape or self.Dlambda.shape != self.Drho.shape:
             msg = (
                 f"Contrast array shapes must match: "
                 f"Dlambda={self.Dlambda.shape}, Dmu={self.Dmu.shape}, "
@@ -127,9 +124,7 @@ class SlabMaterial:
             )
             raise ValueError(msg)
         if self.Dlambda.ndim != 3:
-            msg = (
-                f"Contrast arrays must be 3D (N_z, M, M), got ndim={self.Dlambda.ndim}"
-            )
+            msg = f"Contrast arrays must be 3D (N_z, M, M), got ndim={self.Dlambda.ndim}"
             raise ValueError(msg)
 
 
@@ -282,6 +277,7 @@ def _build_slab_kernels(
     volume_averaged: bool = False,
     n_orders: int = 2,
     periodic: bool = False,
+    va_radius: int = 1,
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -321,7 +317,16 @@ def _build_slab_kernels(
                 if dx == 0 and dy == 0 and abs(dz) < 1e-15 * max(d, 1.0):
                     continue  # self-term zeroed
 
-                is_nn = max(abs(dz_vox), dx, dy) <= 1
+                # The volume-averaged (Galerkin) propagator is applied out to
+                # va_radius cells in the Chebyshev sense. The default of 1 is
+                # the nearest-neighbour shell and reproduces the historical
+                # behaviour bit for bit. It is a parameter because the point
+                # propagator is a MIDPOINT rule for what should be a doubly
+                # volume-averaged operator, and its error does not fall with the
+                # cell size at contact -- (cell size)/(separation) is 1 at every
+                # scale -- so how far out the averaging must reach before the
+                # scheme converges is a question to be measured, not assumed.
+                is_nn = max(abs(dz_vox), dx, dy) <= va_radius
 
                 if volume_averaged and is_nn:
                     # Call inter_voxel_propagator_9x9 for each orbit point
@@ -557,6 +562,7 @@ def build_slab_kernels(
     volume_averaged: bool = False,
     n_orders: int = 2,
     periodic: bool = False,
+    va_radius: int = 1,
 ) -> NDArray:
     """Build the FFT propagator kernel, for reuse across right-hand sides.
 
@@ -573,6 +579,8 @@ def build_slab_kernels(
             nearest-neighbour separations.
         n_orders: Dynamic correction orders when volume_averaged is True.
         periodic: Fold to M x M for circular convolution.
+        va_radius: Chebyshev cell radius out to which the volume-averaged
+            propagator is used. 1 (default) is the nearest-neighbour shell.
 
     Returns:
         The FFT kernel; pass it straight back as ``kernel_hat``.
@@ -584,6 +592,7 @@ def build_slab_kernels(
         volume_averaged=volume_averaged,
         n_orders=n_orders,
         periodic=periodic,
+        va_radius=va_radius,
     )
 
 
@@ -654,9 +663,7 @@ def compute_slab_scattering(
             periodic=periodic,
         )
     if psi0 is None:
-        psi0 = _build_slab_incident_field(
-            geometry, omega, material.ref, k_hat, wave_type
-        )
+        psi0 = _build_slab_incident_field(geometry, omega, material.ref, k_hat, wave_type)
 
     n = geometry.N_z * geometry.M * geometry.M * 9
     n_matvec = [0]
@@ -824,9 +831,7 @@ class WeylAmplitudes:
     eta_S: complex
 
 
-def slab_weyl_amplitudes(
-    result: SlabResult, T_local: NDArray, *, p: float = 0.0
-) -> WeylAmplitudes:
+def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0) -> WeylAmplitudes:
     """Extract all specular outgoing amplitudes (P, SV, SH) via Weyl sums.
 
     The 2D lattice sum replaces exp(ikr)/(4πr) with i/(2k_z d²)·exp(ik_z|z|)
@@ -902,9 +907,7 @@ def slab_weyl_amplitudes(
     )
 
 
-def slab_rpp_periodic(
-    result: SlabResult, T_local: NDArray, *, p: float = 0.0
-) -> complex:
+def slab_rpp_periodic(result: SlabResult, T_local: NDArray, *, p: float = 0.0) -> complex:
     """Specular P→P reflection coefficient for a periodic slab.
 
     Uses the Weyl representation: the 2D lattice sum replaces
@@ -1155,13 +1158,9 @@ def kennett_reference_matrix(
 
     stack = LayerStack(
         layers=[
-            IsotropicLayer(
-                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=100.0
-            ),
+            IsotropicLayer(alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=100.0),
             IsotropicLayer(alpha=alpha_p, beta=beta_p, rho=rho_p, thickness=H),
-            IsotropicLayer(
-                alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=np.inf
-            ),
+            IsotropicLayer(alpha=ref.alpha, beta=ref.beta, rho=ref.rho, thickness=np.inf),
         ]
     )
     result = kennett_layers(stack, p=p, omega=np.array([omega]))
