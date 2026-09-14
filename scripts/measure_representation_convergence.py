@@ -57,6 +57,7 @@ from cubic_scattering.effective_contrasts import (  # noqa: E402
 from cubic_scattering.slab_scattering import (  # noqa: E402
     SlabGeometry,
     SlabMaterial,
+    build_slab_kernels,
     compute_slab_scattering,
     compute_slab_tmatrices,
     kennett_reference_rpp,
@@ -72,7 +73,7 @@ N_Z_LADDER = (1, 2, 4, 8, 16)
 EPS_LIN = 1e-6  # for extracting the Born limit of the T-matrix as a measured fact
 
 
-def _arm(n_z: int, c: float, *, volume_averaged: bool = False) -> tuple:
+def _arm(n_z: int, c: float, *, volume_averaged: bool = False, va_radius: int = 1) -> tuple:
     """(relative error vs exact Kennett, ka, T-matrix nonlinearity fraction).
 
     The physical slab is H_PHYS thick in every row; only the number of cells
@@ -98,6 +99,17 @@ def _arm(n_z: int, c: float, *, volume_averaged: bool = False) -> tuple:
     t_born = compute_slab_tmatrices(geom, mat_lin, OMEGA) / EPS_LIN
     nonlin = float(np.abs(t0 - t_born).max() / np.abs(t_born).max())
 
+    # The kernel is built explicitly so va_radius can be swept; passing it in
+    # bypasses the solver's own build, which fixes the radius at 1.
+    kh = build_slab_kernels(
+        geom,
+        OMEGA,
+        REF,
+        volume_averaged=volume_averaged,
+        n_orders=2,
+        periodic=True,
+        va_radius=va_radius,
+    )
     res = compute_slab_scattering(
         geom,
         mat,
@@ -106,8 +118,7 @@ def _arm(n_z: int, c: float, *, volume_averaged: bool = False) -> tuple:
         "P",
         periodic=True,
         gmres_tol=1e-12,
-        volume_averaged=volume_averaged,
-        n_orders=2,
+        kernel_hat=kh,
     )
     r_lat = slab_rpp_periodic(res, t0)
     r_ken = kennett_reference_rpp(REF, MaterialContrast(c * D_LAM, c * D_MU, c * D_RHO), H_PHYS, OMEGA)
@@ -135,6 +146,44 @@ def main() -> int:
                 f"{ratio:>7} {nonlin:10.3e}{flag}"
             )
             prev = err
+
+    # ---- (2) DOES GALERKIN AVERAGING FURTHER OUT RESTORE CONVERGENCE? -------
+    # The point propagator is a MIDPOINT rule for what should be a doubly
+    # volume-averaged (Galerkin) operator between cells. `build_slab_kernels`
+    # applies the averaged object only on the nearest-neighbour shell; va_radius
+    # extends it. If the non-convergence is the contact quadrature, pushing the
+    # averaging outwards should bend the curve down.
+    print("\n\n  (2) VOLUME-AVERAGED (GALERKIN) PROPAGATOR, radius swept")
+    print("      point = midpoint rule; radius r = averaged out to Chebyshev r cells")
+    print(f"    {'n_z':>4} {'point':>11} {'r = 1':>11} {'r = 2':>11} {'r = 3':>11}")
+    for n_z in (1, 2, 4, 8):
+        row = [f"    {n_z:4d}"]
+        for va_r in (0, 1, 2, 3):
+            try:
+                err, _, _ = _arm(n_z, 1.0, volume_averaged=(va_r > 0), va_radius=max(va_r, 1))
+                row.append(f" {err:11.4e}")
+            except (RuntimeError, ValueError, TypeError):
+                # inter_voxel_propagator_9x9 raises "is not a nearest neighbour":
+                # the volume-averaged object EXISTS only on the contact shell.
+                # Extending it is a new set of tables, not a parameter.
+                row.append(f" {'n/a':>11}")
+        print("".join(row))
+    print("\n      r >= 2 is 'n/a' BY CONSTRUCTION, not by cost: the volume-averaged")
+    print("      object exists only on the contact shell. That is not the limitation")
+    print("      it first appears, because contact is exactly where the midpoint rule")
+    print("      fails -- beyond it (cell size)/(separation) < 1 and falls, so the")
+    print("      point propagator is already good there.")
+    print("\n      THE RESULT: Galerkin averaging at contact LOWERS the error but does")
+    print("      NOT restore convergence -- it still grows with refinement, and the")
+    print("      improvement itself shrinks (2.3x, 2.1x, 1.6x, 1.4x). So the contact")
+    print("      quadrature is a contributor, not the cause. Two suspects remain:")
+    print("      (a) the averaged object has NO RADIATION PART -- it is static-only,")
+    print("          so it is an approximation to the Galerkin operator, not it;")
+    print("      (b) a space-filling lattice of ISOLATED-cube T-matrices needs a")
+    print("          lattice renormalisation to reproduce the continuum -- the same")
+    print("          class of correction as the sphere-packing Delta -> Delta/phi")
+    print("          already established in this project. Suspect (b) is scale-")
+    print("          invariant and per-cell, which is the signature being chased.")
 
     print("\n" + "=" * 88)
     print("  Reading it. 'ratio' is the error multiplier per refinement step, each")
