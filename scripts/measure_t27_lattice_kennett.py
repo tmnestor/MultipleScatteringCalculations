@@ -72,7 +72,7 @@ def _t9_from_galerkin(a: float) -> np.ndarray:
     return t
 
 
-def _err(n_z: int, *, use_t27: bool) -> float:
+def _err(n_z: int, *, use_t27: bool, exact_kernel: bool = True) -> float:
     a_half = H_PHYS / (2.0 * n_z)
     geom = SlabGeometry(M=M, N_z=n_z, a=a_half)
     ones = np.ones((n_z, M, M))
@@ -87,7 +87,20 @@ def _err(n_z: int, *, use_t27: bool) -> float:
         t_local = np.broadcast_to(cell, (n_z, M, M, 9, 9)).copy()
     else:
         t_local = compute_slab_tmatrices(geom, mat, OMEGA)
-    kh = build_slab_kernels(geom, OMEGA, REF, periodic=True)
+    # THE KERNEL THIS WAS ORIGINALLY MEASURED ON WAS THE TRUNCATED ONE, whose
+    # own 1/M artifact was 63% of the floor at this M and GREW with n_z. Any
+    # verdict on the single-site response taken against it was reading the
+    # lateral sum's defect, not the T-matrix. Both kernels are run here so the
+    # old conclusion can be compared with what it should have been.
+    kh = build_slab_kernels(
+        geom,
+        OMEGA,
+        REF,
+        periodic=True,
+        lattice_ewald=exact_kernel,
+        volume_averaged=exact_kernel,
+        n_orders=2,
+    )
     res = compute_slab_scattering(
         geom,
         mat,
@@ -109,7 +122,15 @@ def main() -> int:
     print("MEASUREMENT -- does the single-site T27 strain sector remove the bias?")
     print(f"  physical slab fixed at H = {H_PHYS} m; only the cell size changes")
     print("=" * 84)
-    print(f"\n  {'n_z':>4} {'T9':>12} {'ratio':>7} {'T27':>12} {'ratio':>7}")
+    print("\n  OLD (truncated kernel -- the conditions the first verdict was taken in)")
+    print(f"  {'n_z':>4} {'T9':>12} {'ratio':>7} {'T27':>12} {'ratio':>7}")
+    for n_z in LADDER:
+        o9 = _err(n_z, use_t27=False, exact_kernel=False)
+        o27 = _err(n_z, use_t27=True, exact_kernel=False)
+        print(f"  {n_z:4d} {o9:12.4e} {'':>7} {o27:12.4e} {'':>7}")
+
+    print("\n  EXACT lateral sum + Galerkin contact")
+    print(f"  {'n_z':>4} {'T9':>12} {'ratio':>7} {'T27':>12} {'ratio':>7}")
 
     e9s, e27s, p9, p27 = [], [], None, None
     for n_z in LADDER:
