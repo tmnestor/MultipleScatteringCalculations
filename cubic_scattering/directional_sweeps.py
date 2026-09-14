@@ -505,8 +505,181 @@ def sweep_y(sources: NDArray, grid: SweepGrid, cache: G0Cache) -> NDArray:
         "  Where: cubic_scattering/directional_sweeps.py, sweep_y\n"
         "  Valid: stage 1 is 2.5-D -- heterogeneity in (z, x), y invariant, with k_y\n"
         "         held fixed on the SweepGrid and integrated over afterwards.\n"
-        "  Fix:   solve once per k_y with solve_sweep_foldy_lax and integrate, or\n"
-        "         implement the in-out pair (spec section 6, stage 2). Do NOT drop\n"
-        "         the term: omitting it silently discards all out-of-plane coupling."
+        "  Fix:   for a y-invariant model, solve once per k_y with\n"
+        "         solve_sweep_foldy_lax and integrate. For a model that VARIES in y,\n"
+        "         use the three-dimensional operator instead: build_g0_cache_3d and\n"
+        "         apply_g0_3d, below. There is no spectral in-out sweep and there\n"
+        "         will not be one -- see the note on that function for the measured\n"
+        "         reason. Do NOT simply drop this term: omitting it silently\n"
+        "         discards all out-of-plane coupling."
     )
     raise NotImplementedError(msg) from None
+
+
+# =============================================================================
+#  Three-dimensional operator
+#
+#  NOT a third sweep. The stage-2 design originally called for an in-out k_y
+#  sweep completing six direction-pure passes; that was measured and abandoned.
+#  A sweep carries a running accumulator indexed by its transverse quadrature
+#  nodes, which in 3-D is (n_z, n_x, n_k, 9): 68 GB on a 16^3 lattice at the
+#  converged rule, two live at once, and 615 GB for the inter-plane stack
+#  (scripts/measure_sweep3d_cost.py). The same operators tabulated in real
+#  space are 1.2 MB and 149 MB.
+#
+#  So in 3-D the coupling is split by DEPTH SEPARATION rather than by
+#  direction: the whole-space part comes from the closed-form propagator at
+#  every separation, and only the layer reverberation is ever transformed from
+#  (k_x, k_y). See cubic_scattering/pair_propagators.py.
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class SweepGrid3D:
+    """Lattice for the three-dimensional operator.
+
+    No quadrature fields: the transverse rule belongs to the table build, not to
+    the lattice, because only the reverberation is transformed and it is
+    transformed once.
+
+    Attributes:
+        n_z: Number of depth planes (>= 1).
+        n_x: Sites along x (>= 2).
+        n_y: Sites along y (>= 2).
+        pitch: Voxel pitch, km.
+    """
+
+    n_z: int
+    n_x: int
+    n_y: int
+    pitch: float
+
+
+@dataclass(frozen=True)
+class G0Cache3D:
+    """Everything the 3-D G0 needs that does not change across Krylov iterations.
+
+    Attributes:
+        grid: The lattice.
+        same_depth: Whole-space propagator per same-depth separation, shape
+            (2 n_x - 1, 2 n_y - 1, 9, 9), with the zero separation NaN.
+        layered: Plane-to-plane propagator per separation, shape
+            (n_z, n_z, 2 n_x - 1, 2 n_y - 1, 9, 9). Off-diagonal blocks carry the
+            full propagator; diagonal blocks carry the reverberation only, and
+            DO include the zero separation.
+    """
+
+    grid: SweepGrid3D
+    same_depth: NDArray
+    layered: NDArray
+
+
+def build_g0_cache_3d(
+    grid: SweepGrid3D,
+    ref: ReferenceMedium,
+    omega: complex,
+    *,
+    model: object | None = None,
+    plane_ifaces: tuple[int, ...] | None = None,
+    transverse: object | None = None,
+) -> G0Cache3D:
+    """Build both real-space tables once, outside the Krylov loop.
+
+    Args:
+        grid: The lattice.
+        ref: Background medium for the whole-space parts.
+        omega: Complex angular frequency, rad/s.
+        model: A ``LayerModel`` for the stratified background. Omit for the
+            whole-space case, where the layered tables reduce to the closed form
+            and the diagonal is zero.
+        plane_ifaces: Interface index of each depth plane, length n_z. Required
+            with ``model``.
+        transverse: ``pair_propagators.TransverseRule`` for the reverberation
+            transform. Required with ``model``.
+
+    Returns:
+        A G0Cache3D.
+    """
+    from .pair_propagators import layered_stack_table, same_depth_table
+
+    return G0Cache3D(
+        grid=grid,
+        same_depth=same_depth_table(grid.n_x, grid.n_y, grid.pitch, omega, ref),
+        layered=layered_stack_table(
+            grid.n_z,
+            grid.n_x,
+            grid.n_y,
+            grid.pitch,
+            omega,
+            ref,
+            model=model,
+            plane_ifaces=plane_ifaces,
+            transverse=transverse,  # type: ignore[arg-type]
+        ),
+    )
+
+
+def _shift_slices(d: int, n: int) -> tuple[slice, slice]:
+    """Target and source slices for a separation of d sites along an axis."""
+    if d >= 0:
+        return slice(d, n), slice(0, n - d)
+    return slice(0, n + d), slice(-d, n)
+
+
+def apply_g0_3d(sources: NDArray, cache: G0Cache3D) -> NDArray:
+    """Apply the full three-dimensional G0.
+
+    A pure forward summation: no inversion, no embedding. Every order of
+    multiple scattering is built by the Krylov iterations, not by the propagator.
+
+    The partition is exact and is gated as an integer support count, not a
+    tolerance. Same-depth pairs take the whole-space closed form, with the zero
+    separation SKIPPED -- its entry is NaN, so forgetting to skip it poisons the
+    output rather than quietly adding a wrong term. Every plane pair, the
+    diagonal included, takes its layered block, and the diagonal's zero
+    separation is kept because the self-return off a layer boundary is not
+    inside T0.
+
+    Args:
+        sources: Source 9-vectors, shape (n_z, n_x, n_y, 9).
+        cache: Precomputed tables from build_g0_cache_3d.
+
+    Returns:
+        The field at every site, shape (n_z, n_x, n_y, 9).
+
+    Raises:
+        ValueError: on a source array of the wrong shape.
+    """
+    g = cache.grid
+    want = (g.n_z, g.n_x, g.n_y, 9)
+    if sources.shape != want:
+        msg = (
+            f"sources has shape {sources.shape}, expected {want}.\n"
+            "  Where: cubic_scattering/directional_sweeps.py, apply_g0_3d\n"
+            f"  Valid: an array of shape (n_z, n_x, n_y, 9) = {want}\n"
+            "  Fix:   the last axis is the 9-component state\n"
+            "         (u_z, u_x, u_y, e_zz, e_xx, e_yy, 2e_xy, 2e_zy, 2e_zx); a\n"
+            "         6-component Voigt state or a flattened lattice will not do."
+        )
+        raise ValueError(msg) from None
+
+    out = np.zeros_like(sources, dtype=complex)
+    for dx in range(-(g.n_x - 1), g.n_x):
+        tx, sx = _shift_slices(dx, g.n_x)
+        for dy in range(-(g.n_y - 1), g.n_y):
+            ty, sy = _shift_slices(dy, g.n_y)
+            i, j = dx + g.n_x - 1, dy + g.n_y - 1
+
+            if not (dx == 0 and dy == 0):
+                # Same depth, whole space. The zero separation is the poisoned
+                # entry and belongs to T0.
+                out[:, tx, ty, :] += np.einsum(
+                    "ab,zxyb->zxya", cache.same_depth[i, j], sources[:, sx, sy, :]
+                )
+
+            for lz in range(g.n_z):
+                for mz in range(g.n_z):
+                    out[lz, tx, ty, :] += np.einsum(
+                        "ab,xyb->xya", cache.layered[lz, mz, i, j], sources[mz, sx, sy, :]
+                    )
+    return out
