@@ -54,7 +54,13 @@ from numpy.typing import NDArray
 from .effective_contrasts import ReferenceMedium
 from .horizontal_greens import exact_propagator_9x9
 
-__all__ = ["TransverseRule", "layered_stack_table", "same_depth_table", "separation_index"]
+__all__ = [
+    "TransverseRule",
+    "layered_incident_field",
+    "layered_stack_table",
+    "same_depth_table",
+    "separation_index",
+]
 
 
 @dataclass(frozen=True)
@@ -358,3 +364,167 @@ def layered_stack_table(
                             exact_propagator_9x9(dx * pitch, dy * pitch, d_z, omega, ref_local)
                         )
     return tab
+
+
+def layered_incident_field(
+    n_z: int,
+    n_x: int,
+    n_y: int,
+    pitch: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    *,
+    source_xy: tuple[int, int],
+    source_vec: NDArray,
+    dz_planes: tuple[float, ...],
+    model: object | None = None,
+    plane_ifaces: tuple[int, ...] | None = None,
+    source_iface: int | None = None,
+    transverse: TransverseRule | None = None,
+    free_surface: bool = False,
+) -> NDArray:
+    """The field at every voxel due to a source in the stratified background.
+
+    NOT NEW PHYSICS. This is one ROW of the layered propagator -- the same
+    object ``layered_stack_table`` tabulates, with the source fixed at one plane
+    instead of running over the scattering planes -- reached by the same
+    subtract-transform-add route, so the whole-space part stays exact and only
+    the layer reverberation is ever integrated.
+
+    WHY A LAYERED ILLUMINATION IS NEEDED AT ALL. The 3-D solver carries the
+    stratified background inside G0. Driving it with a plane wave computed in a
+    HOMOGENEOUS medium would half-dress the problem: the propagator would know
+    about the layering and the illumination would not. Any comparison against a
+    dress-after architecture would then be measuring that inconsistency rather
+    than the two orderings.
+
+    The source is a point source in the 9-component convention, not a plane-wave
+    boundary condition. That is deliberate: a point source is what
+    ``corrected_layered_9x9`` already delivers and what is already gated (the
+    whole-space reduction at 1.1e-15, the reverberation magnitude at 2e-10),
+    whereas a plane-wave boundary condition would need the internal mode
+    amplitudes of the stack, which no existing function returns.
+
+    Args:
+        n_z: Number of depth planes.
+        n_x: Sites along x (>= 2).
+        n_y: Sites along y (>= 2).
+        pitch: Voxel pitch, km.
+        omega: Complex angular frequency, rad/s.
+        ref: Background medium for the whole-space part.
+        source_xy: Source lateral position as (ix, iy) LATTICE indices; the
+            source need not sit on a voxel, but this keeps the separations on
+            the lattice so the same table machinery applies.
+        source_vec: The 9-component source.
+        dz_planes: Signed depth of each plane BELOW the source, km, length n_z.
+            Passed explicitly rather than inferred: plane spacing and the
+            source's depth are properties of the model, and guessing them from
+            interface indices assumes every layer is one pitch thick.
+        model: A ``LayerModel`` for the stratified background. Omit for the
+            whole-space case.
+        plane_ifaces: Interface index of each depth plane, length n_z. Required
+            with ``model``.
+        source_iface: Interface index of the source. Required with ``model``.
+        transverse: Quadrature for the reverberation transform. Required with
+            ``model``.
+        free_surface: Close the ocean with a pressure release. See
+            ``layered_stack_table``.
+
+    Returns:
+        Shape ``(n_z, n_x, n_y, 9)``.
+
+    Raises:
+        ValueError: on a bad lattice or pitch, a wrong-length ``dz_planes``, or
+            a model supplied without its companions.
+    """
+    _check_lattice(n_x, n_y)
+    if pitch <= 0.0:
+        msg = (
+            f"pitch must be > 0, got {pitch!r}.\n"
+            "  Where: cubic_scattering/pair_propagators.py, layered_incident_field(pitch=...)\n"
+            "  Valid: a positive voxel pitch in km, e.g. pitch=0.25\n"
+            "  Fix:   use the cube side length d = 2a, not the half-width a."
+        )
+        raise ValueError(msg) from None
+    if len(dz_planes) != n_z:
+        msg = (
+            f"dz_planes has {len(dz_planes)} entries but n_z={n_z}.\n"
+            "  Where: cubic_scattering/pair_propagators.py, layered_incident_field\n"
+            "  Valid: one signed depth per plane, e.g. dz_planes=(3.0, 4.0) for n_z=2\n"
+            "  Fix:   give the depth of each plane BELOW the source, in km. It is\n"
+            "         not inferred from the interface indices, because that would\n"
+            "         assume every layer is exactly one pitch thick."
+        )
+        raise ValueError(msg) from None
+
+    sx, sy = source_xy
+    out = np.zeros((n_z, n_x, n_y, 9), dtype=complex)
+
+    if model is None:
+        for lz in range(n_z):
+            for ix in range(n_x):
+                for iy in range(n_y):
+                    p9 = exact_propagator_9x9(
+                        (ix - sx) * pitch, (iy - sy) * pitch, dz_planes[lz], omega, ref
+                    )
+                    out[lz, ix, iy] = p9 @ source_vec
+        return out
+
+    if plane_ifaces is None or len(plane_ifaces) != n_z or transverse is None or source_iface is None:
+        got = "None" if plane_ifaces is None else str(len(plane_ifaces))
+        msg = (
+            f"a stratified model needs a plane map of length n_z={n_z}, a source "
+            f"interface and a transverse rule; got plane_ifaces length {got}, "
+            f"source_iface={source_iface!r}, "
+            f"transverse={'None' if transverse is None else 'set'}.\n"
+            "  Where: cubic_scattering/pair_propagators.py, layered_incident_field\n"
+            "  Valid: plane_ifaces=(8, 9), source_iface=5, and\n"
+            "         transverse=TransverseRule(kr_max=10.0/pitch, n_axis=256)\n"
+            "  Fix:   list the interface at each scattering plane and the one the\n"
+            "         source sits at, and pass the rule measured by\n"
+            "         scripts/measure_dg0_transverse_rule.py."
+        )
+        raise ValueError(msg) from None
+
+    from .layered_correction import corrected_layered_9x9
+    from .sweep_kernels import vertical_kernel_9x9
+
+    k, dk = transverse.nodes()
+    kxg, kyg = np.meshgrid(k, k, indexing="ij")
+    kx, ky = kxg.ravel(), kyg.ravel()
+    n_k = k.size
+    s_p = model.complex_slowness_p()  # type: ignore[attr-defined]
+    s_s = model.complex_slowness_s()  # type: ignore[attr-defined]
+    rho_m = model.rho  # type: ignore[attr-defined]
+
+    for lz in range(n_z):
+        g9 = corrected_layered_9x9(
+            model,
+            omega,
+            kx,
+            ky,
+            source_iface=source_iface,
+            receiver_iface=plane_ifaces[lz],
+            free_surface=free_surface,
+        )
+
+        # Subtract the whole-space part spectrally and add it back in real space
+        # from the closed form, exactly as layered_stack_table does and for the
+        # same reason: the full layered kernel inherits the whole-space kernel's
+        # slow spectral decay, the reverberation does not.
+        j_lay = max(int(plane_ifaces[lz]), 1)
+        ref_local = ReferenceMedium(1.0 / s_p[j_lay], 1.0 / s_s[j_lay], rho_m[j_lay])
+        d_z = float(dz_planes[lz])
+        for j in range(n_k):
+            ws = vertical_kernel_9x9(k, float(k[j]), d_z, omega, ref_local)
+            g9[j::n_k] -= np.moveaxis(ws, -1, 0)
+
+        rev = _transform_separable(g9.reshape(n_k, n_k, 9, 9), k, dk, n_x, n_y, pitch)
+        for ix in range(n_x):
+            for iy in range(n_y):
+                blk = rev[separation_index(ix - sx, n_x), separation_index(iy - sy, n_y)]
+                blk = blk + exact_propagator_9x9(
+                    (ix - sx) * pitch, (iy - sy) * pitch, d_z, omega, ref_local
+                )
+                out[lz, ix, iy] = blk @ source_vec
+    return out
