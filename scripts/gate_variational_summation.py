@@ -82,10 +82,18 @@ from cubic_scattering.slab_scattering import (  # noqa: E402
 )
 
 REF = ReferenceMedium(5000.0, 3000.0, 2500.0)
+# THE REGIME MUST BE HARD OR THE TEST IS VACUOUS, and the knob is the CONTRAST,
+# not the frequency. At 5% the spectral radius is 0.057 and the Born series
+# converges on its own, so every scheme "wins" in one iteration and the claim is
+# never exercised. Raising omega 4x barely moved it (0.0574 -> 0.0573), because
+# the coupling that dominates the spectral radius is the NEAR-FIELD strain block,
+# which is static and carries no omega. Measured: rho tracks the contrast, so the
+# contrast is what is raised -- staying under the ~52% renormalisation validity
+# floor the project has established for |Delta| against the background.
 OMEGA = 60.0
-A_HALF = 1.0  # ka = 0.012, inside the validated ka < 0.3 for the cube T-matrix
+A_HALF = 1.0  # ka = 0.012, deep inside the validated ka < 0.3 for the cube T0
 M, N_Z = 6, 6  # 216 sites x 9 components = 1944 unknowns
-PCT = 0.05  # the thesis's 5% heterogeneity figure
+PCT = 0.45  # see note above; the thesis's 5% heterogeneity figure
 THESIS_ITERATIONS = 8  # the claim: a single transition in 8 iterations
 TOL = 1e-6  # relative accuracy demanded of the transition
 
@@ -116,11 +124,18 @@ def _build_operator() -> tuple:
         h[:, j] = _slab_matvec(e, t0, kh, geom)
         e[j] = 0.0
 
-    # The weight of the bilinear form is DeltaC_eff, block-diagonal in the sites.
+    # The weight of the bilinear form is DeltaC_eff, block-diagonal in the sites,
+    # CARRIED IN THE RIGHT METRIC. See gate_nine_component_convention: the
+    # 9-component pairing is M = Sigma J = diag(1,1,1, -1,-1,-1, -.5,-.5,-.5) --
+    # J undoes the factor 2 of engineering shear, Sigma carries the parity of the
+    # odd (single-derivative) blocks, and both are needed. With M in place,
+    # M G0 is symmetric to 3.5e-16 and (M T0) H to 3.5e-18. Without it the
+    # operator is asymmetric at 1.4e-3 and BiCG stalls there.
     w = np.zeros((n, n), dtype=complex)
     t_flat = t0.reshape(-1, 9, 9)
+    mj = np.diag(np.array([1, 1, 1, -1, -1, -1, -0.5, -0.5, -0.5], dtype=float))
     for s in range(t_flat.shape[0]):
-        w[s * 9 : (s + 1) * 9, s * 9 : (s + 1) * 9] = t_flat[s]
+        w[s * 9 : (s + 1) * 9, s * 9 : (s + 1) * 9] = mj @ t_flat[s]
 
     b = _build_slab_incident_field(geom, OMEGA, REF, np.array([1.0, 0.0, 0.0]), "P").ravel()
     # The dual source is the receiver-side illumination -- a DIFFERENT direction,
@@ -301,6 +316,12 @@ def main() -> int:
     print(f"\n  [V0] Alg 6.2 leading term vs Eq. (BCGscat) closed form : {lead_err:.3e}")
 
     print(f"\n  iterations to {TOL:g}:  BCGVAR {hit_var}   BiCG plain {hit_plain}")
+    # BCGVAR AND "BiCG plain" AGREE TO ALL DIGITS, and that is not redundancy --
+    # it is a check. Sum_j alpha_j rho_j IS <b~, x_n> identically in exact
+    # arithmetic, so agreement confirms the recursion; disagreement would mean
+    # the accumulation is wrong. The variational form's advantage is COST, not a
+    # different number: it delivers the transition without ever forming or
+    # storing the solution vector x, which is the whole point at N = 57600.
     print("=" * 84)
     ok_lead = lead_err < 1e-10
     ok_iter = hit_var is not None and hit_var <= THESIS_ITERATIONS
