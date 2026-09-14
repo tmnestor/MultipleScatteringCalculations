@@ -4,41 +4,46 @@
 Deferred from stage 1 for a stated reason -- `slab_scattering` is 3-D on a
 finite M x M footprint and cannot represent a y-invariant medium, so it could
 not arbitrate a 2.5-D solver. Stage 2 removes that restriction, so the
-comparison is finally meaningful.
+comparison is finally meaningful. The two architectures agree to 7e-16.
 
 WHY THE COMPARISON IS VALID, checked rather than assumed:
 
-  * `slab_scattering` defaults to `periodic=False`, which is a ZERO-PADDED
-    LINEAR convolution on (2M-1) x (2M-1) -- not a circular one. Both
-    architectures are therefore non-periodic and the comparison does not
-    measure horizontal periodicity.
-  * It defaults to `volume_averaged=False`, the POINT propagator, which is the
-    object the real-space tables hold. With volume averaging on, the two
-    compute genuinely different objects at touching faces -- a converged
-    projection difference, not a bug -- and the comparison would be invalid.
-  * Both index the lattice (n_z, n_x, n_y) in seismological (z, x, y) order,
-    and both take separations from voxel centres on the same pitch, so no
-    reindexing is involved.
+  * `slab_scattering` defaults to `periodic=False`, a ZERO-PADDED LINEAR
+    convolution on (2M-1) x (2M-1), not a circular one. Both architectures are
+    non-periodic, so this does not measure horizontal periodicity.
+  * It defaults to `volume_averaged=False`, the POINT propagator, which is what
+    the real-space tables hold. With volume averaging on, the two compute
+    genuinely different objects at touching faces -- a converged projection
+    difference, not a bug -- and the comparison would be invalid.
+  * Both index the lattice (n_z, n_x, n_y) in seismological (z, x, y) order and
+    take separations from centres on the same pitch, so no reindexing occurs.
 
-WHAT IS COMPARED, and why it is G0 rather than a reflection coefficient. The
-two architectures are compared at the OPERATOR level: G0 applied to a random
-field with a distinct source at every site. Comparing reflection coefficients
-instead would drag in the far-field projection and the flux normalisation, both
-of which are separately gated objects with their own convention traps, and a
-disagreement would not localise. G0 is the thing the two architectures actually
-implement differently -- FFT convolution against a real-space table -- so it is
-the thing to compare.
+THE CANCELLATION TRAP, which cost a wrong accusation before it was understood.
+`_slab_matvec` returns (I - G0 T) psi, so G0 psi is recovered as
+psi - matvec(psi) with T = I. That subtraction is CATASTROPHIC whenever
+|G0 psi| << |psi|: the intermediate (psi - G0 psi) is stored to a relative
+2e-16 of |psi|, so G0 psi comes back with an ABSOLUTE error of eps*|psi|
+regardless of how small it is.
 
-`_slab_matvec` computes (I - G T), so with T = I the operator gives
-G psi = psi - matvec(psi). That private function is used deliberately: it is
-what isolates G0 from the solve.
+In SI units (metres) this propagator is ~1e-13 while psi is ~1, and the
+recovered G0 psi is then wrong in its fourth digit -- 4e-4 -- purely from the
+cancellation. Run in seismic units (km) the same quantities are ~1e+3 against
+~1, there is no cancellation, and the two architectures agree at 7e-16.
 
-UNITS. `slab_scattering` works in SI (metres, m/s, kg/m^3) and so does this
-gate, throughout, for both sides. The real-space tables are unit-agnostic
-formulas; mixing seismic and SI here would be a silent scale error of the exact
-kind this programme has paid for before.
+This was misdiagnosed once as a defect inside `_slab_matvec`'s FFT convolution.
+It is not. The FFT path reproduces a brute-force convolution of its own kernel
+to 3e-29 when the comparison is made without the cancellation -- see the
+linearity check in [5c-3]. The guard below asserts the magnitudes are
+comparable so the trap cannot recur silently.
+
+WHAT IS COMPARED, and why G0 rather than a reflection coefficient: the two
+architectures are compared at the OPERATOR level, with a distinct source at
+every site. Comparing reflection coefficients would drag in the far-field
+projection and the flux normalisation, each a separately gated object with its
+own conventions, and a disagreement would not localise.
 
 Run:  conda run -n seismic python scripts/gate_rung5c_cross_architecture.py
+Seismic units (km, km/s, g/cm3) -- see the cancellation trap above.
 """
 
 import sys
@@ -61,8 +66,8 @@ from cubic_scattering.slab_scattering import (  # noqa: E402
     build_slab_kernels,
 )
 
-# SI throughout, matching slab_scattering's own convention.
-REF = ReferenceMedium(5000.0, 3000.0, 2500.0)
+# Seismic units throughout, for BOTH sides. See the cancellation trap.
+REF = ReferenceMedium(5.0, 3.0, 2.5)
 OM = 150.0
 
 
@@ -75,14 +80,14 @@ def slab_g0(psi: np.ndarray, geom: SlabGeometry, kernel) -> np.ndarray:
 
 
 def main() -> int:
-    m, n_z, a = 4, 3, 25.0
+    m, n_z, a = 4, 3, 0.025
     geom = SlabGeometry(M=m, N_z=n_z, a=a)
     pitch = geom.d
 
     print("=" * 78)
     print("GATE rung 5c -- 3-D real-space operator vs FFT convolution")
-    print(f"  lattice N_z={n_z}, M={m}, cube side d={pitch} m, omega={OM} rad/s")
-    print(f"  background a={REF.alpha} b={REF.beta} rho={REF.rho} (SI)")
+    print(f"  lattice N_z={n_z}, M={m}, cube side d={pitch} km, omega={OM} rad/s")
+    print(f"  background a={REF.alpha} b={REF.beta} rho={REF.rho} (seismic)")
     print("  slab: periodic=False (linear conv), volume_averaged=False (point)")
     print("=" * 78)
 
@@ -96,34 +101,36 @@ def main() -> int:
 
     a_side = slab_g0(distinct, geom, kernel)
     b_side = apply_g0_3d(distinct, cache)
+    scale = float(np.abs(b_side).max())
 
-    scale = float(np.abs(a_side).max())
+    # [5c-0] THE GUARD. Without it the whole gate is meaningless: a cancelling
+    # extraction returns eps*|psi| of noise and no amount of agreement or
+    # disagreement downstream means anything.
+    ratio = scale / float(np.abs(distinct).max())
+    guard_ok = ratio > 1e-3
+    print(f"\n  [5c-0] cancellation guard |G0 psi| / |psi| : {ratio:.3e}")
+    print("         must exceed 1e-3, else psi - (psi - G0 psi) is noise")
+    if not guard_ok:
+        print("         FAILED -- the units make G0 negligible beside psi. Nothing")
+        print("         below this line can be trusted; fix the units first.")
+
     rel = float(np.abs(a_side - b_side).max() / scale)
     print(f"\n  [5c-1] G0 psi, distinct sources : rel diff {rel:.3e}")
-    print(f"         |G0 psi| (slab)          : {scale:.5e}")
-    print(f"         |G0 psi| (real space)    : {np.abs(b_side).max():.5e}")
+    print(f"         |G0 psi| (slab)          : {float(np.abs(a_side).max()):.5e}")
+    print(f"         |G0 psi| (real space)    : {scale:.5e}")
 
-    # Localise any disagreement rather than reporting one number: a self-term
-    # convention mismatch shows up on the diagonal alone, a propagator error
-    # everywhere.
-    worst = np.unravel_index(np.abs(a_side - b_side).argmax(), a_side.shape)
-    print(f"         worst entry              : {worst}")
-
-    # Vacuity control. A uniform source would pass for an implementation that
-    # silently averaged the sites, so demonstrate that it cannot discriminate.
-    # RELATIVE, not absolute: in SI the fields here are ~1e-13, and an absolute
-    # threshold would fail a correct implementation on the unit system alone.
+    # Vacuity control, RELATIVE -- an absolute bound would depend on the unit
+    # system rather than on the physics.
     uni = np.ones(shape, dtype=complex)
     avg = np.broadcast_to(distinct.mean(axis=(0, 1, 2)), shape).copy()
-    spread = float(np.abs(b_side - apply_g0_3d(avg, cache)).max() / np.abs(b_side).max())
+    spread = float(np.abs(b_side - apply_g0_3d(avg, cache)).max() / scale)
     blind = float(np.abs(uni - np.broadcast_to(uni.mean(axis=(0, 1, 2)), shape)).max())
     print(f"  [5c-2] vacuity: distinct vs site-averaged : {spread:.3e} (must be LARGE)")
     print(f"         uniform source is its own average  : {blind:.3e} (hence blind)")
 
-    # LOCALISATION. A single cross-architecture number says nothing about which
-    # side is wrong, so the gate localises before it judges. Each step compares
-    # one link in the chain against something already gated independently.
-    print("\n  [5c-3] localisation -- which side, and which link")
+    # [5c-3] Localisation, kept even though the gate passes: it is what
+    # distinguishes a real defect from a comparison artefact next time.
+    print("\n  [5c-3] localisation -- each link against something independent")
     ks = np.fft.ifft2(kernel, axes=(1, 2))
     brute = np.zeros_like(distinct)
     for lz in range(n_z):
@@ -141,33 +148,18 @@ def main() -> int:
     print(f"         slab kernel, brute-convolved, vs real-space table : {k_vs_t:.3e}")
     print(f"         slab FFT path vs brute force on its OWN kernel    : {fft_vs_brute:.3e}")
 
-    kernels_agree = k_vs_t < 1e-10
-    fft_exact = fft_vs_brute < 1e-10
-    ok = rel < 1e-10 and spread > 1e-6 and blind < 1e-14
+    ok = guard_ok and rel < 1e-12 and spread > 1e-6 and blind < 1e-14
+    ok = ok and k_vs_t < 1e-12 and fft_vs_brute < 1e-12
 
     print("\n" + "=" * 78)
     print(f"GATE rung 5c: {'PASS' if ok else 'FAIL'}")
     if not ok:
-        print("\n  DIAGNOSIS from [5c-3]:")
-        if kernels_agree and not fft_exact:
-            print("    The two architectures build the SAME kernel (agreeing to")
-            print("    round-off), and slab_scattering's FFT convolution disagrees")
-            print("    with a direct convolution of that very kernel. The defect is")
-            print("    therefore inside _slab_matvec, not in the propagator, not in")
-            print("    the D4h orbit symmetrisation, and not in the real-space")
-            print("    tables -- each of which is separately confirmed here or by")
-            print("    gate_g0_3d (pairwise sum, 2.9e-16).")
-            print("\n    NOTE ON WHY THIS WAS NOT CAUGHT: slab_scattering is validated")
-            print("    against Kennett at ~0.5-1%, and this defect is ~4e-4. It sits")
-            print("    two orders BELOW that tolerance and cannot show there.")
-        elif not kernels_agree:
-            print("    The kernels themselves differ -- check the propagator, the D4h")
-            print("    orbit transforms, the units, and the volume-averaging flag")
-            print("    before suspecting either convolution.")
-        else:
-            print("    Both links check out individually; the disagreement is in the")
-            print("    comparison itself. Check the self-term convention and the")
-            print("    lattice-centre offsets.")
+        print("\n  Read [5c-0] FIRST. If the guard failed, the extraction is")
+        print("  cancelling and every other number here is noise. Only once it")
+        print("  passes do [5c-3]'s two lines mean anything: kernels agreeing with")
+        print("  the FFT path disagreeing would indicate _slab_matvec; kernels")
+        print("  disagreeing would indicate the propagator, the D4h orbit, the")
+        print("  units, or the volume-averaging flag.")
     print("=" * 78)
     return 0 if ok else 1
 
