@@ -83,13 +83,27 @@ P_layered(Δz; Δx, Δy)  =  P_wholespace(Δz; Δx, Δy)   +   ΔG₀(Δz; Δx, 
                           closed form, exact, free       spectral, but rank 3
 ```
 
-The reverberation `ΔG₀` was measured this morning to factor as
-`ΔG₀ = D↑ · R_D · S↓` with the out-of-span residual **≤ 4e-9**
-(`scripts/gate_dg0_absolute_magnitude.py`, gate `[M1]`): it is genuinely rank 3
-and free of the whole-space singularity, so it needs far fewer transverse nodes
-than the full kernel. **That rank-3 property is load-bearing for this plan** and
-is why Task 2 measures its node requirement separately rather than reusing the
-1.85 M-node rule.
+`gate_dg0_absolute_magnitude.py` `[M1]` measured `ΔG₀ = D↑ · R_D · S↓` to be
+genuinely rank 3 (out-of-span ≤ 4e-9). **That licenses the split; it is not what
+makes it affordable.** Task 2 measured the cost directly, and corrected two
+claims this plan made before measuring:
+
+| Claim as first written | Measured |
+|---|---|
+| "the rank-3 property is load-bearing" | **No.** Rank 3 justifies writing the split; it does not reduce the node count. |
+| "separability is what makes the build tractable" | **No.** The transform is 0.36 Gflop separable against 5.55 Gflop dense — both negligible. |
+| — | **What actually helps:** `ΔG₀` converges at `kr·pitch = 10`, where the full kernel needs 30. That is 65 536 nodes against 2 365 444 — a 36× saving, from the reverberation's smaller `k`-support, not its smoothness. |
+| — | **What actually costs:** `corrected_layered_9x9` at **0.88 ms/node**, already batched. Everything else is noise beside it. |
+
+Measured convergence of `ΔG₀` at `kr·pitch = 10` (self-change between successive
+rules, since no closed form exists for the reverberation): 3.4e-1 → 2.6e-2 →
+1.4e-3, falling ~18× per doubling.
+
+**Build cost, one-time and outside the Krylov loop:** 2.1 h at 16³, 8.7 h at 32³.
+Affordable, but it scales as `n_z²` and is the first thing that will bite. The
+obvious reduction if it does: the stratified propagator between two planes needs
+only the layers between and around them, not all 60 in the model — untested, and
+not to be assumed.
 
 ---
 
@@ -141,31 +155,24 @@ pitch changes materially, since the node requirement scales with `kP·pitch`.
 
 ---
 
-### Task 2: Measure the reverberation's transverse rule
+### Task 2: ✅ DONE — the reverberation's transverse rule and the build cost
 
-The whole plan's affordability rests on `ΔG₀` needing far fewer nodes than the
-singular whole-space kernel, because it is rank 3 and non-singular. **That is an
-expectation, not yet a measurement.** Measure it before building on it.
+Committed as `scripts/measure_dg0_transverse_rule.py`. Findings are in the
+decomposition table above. **Do not repeat it**; do re-run it if the background
+model or the plane spacing changes, since the cutoff scales with `kP·pitch`.
 
-**Files:** Create `scripts/measure_dg0_transverse_rule.py`.
+**The rule Task 4 uses:** `kr·pitch = 10`, `Δk ≈ 0.31`, **65 536 tensor nodes**.
 
-**Interfaces:** Consumes `layered_correction.corrected_layered_9x9`,
-`sweep_kernels.same_depth_kernel_9x9`, `horizontal_greens.exact_propagator_9x9`.
-Produces the node count `N_K_DG0` that Task 4 imports.
+**Two corrections this task forced**, both to claims made before measuring:
+the rank-3 property is not what reduces the cost, and the separable transform is
+not the bottleneck. Both are recorded in the table above rather than quietly
+fixed, because the pattern — justifying an architecture with the most
+interesting property to hand rather than the one that governs — is the same one
+that produced the first version of this plan.
 
-- [ ] **Step 1:** Write the script. For a fixed layered model and `Δz = pitch`,
-  form `ΔG₀(k_x,k_y) = corrected_layered_9x9(…) − whole-space`, integrate it to
-  real space at several `(Δx, Δy)` on progressively finer transverse rules, and
-  report the relative change between successive rules. Reuse `masked_rule` from
-  `measure_sweep3d_cost.py` rather than writing a second quadrature.
-- [ ] **Step 2:** Run it. **Expected: convergence at far fewer than 1.85 M
-  nodes** — the reverberation carries no `1/w` singularity at coincident points,
-  which is the whole reason it is the integrable half of the split.
-- [ ] **Step 3:** If it does **not** converge cheaply, stop and report rather
-  than raising the node count until it does. A reverberation needing the same
-  rule as the singular kernel would mean the split is not doing the work this
-  plan assumes, and the architecture needs revisiting again — not more nodes.
-- [ ] **Step 4:** Commit `"🔢 math: measure the transverse rule the reverberation needs"`.
+**A tensor grid, not the radially masked set.** Class A uses a plain tensor
+product in `(k_x, k_y)`. The mask that pays at `Δz = 0` buys much less here,
+since `e^{−κ|Δz|}` already suppresses the corners.
 
 ---
 
