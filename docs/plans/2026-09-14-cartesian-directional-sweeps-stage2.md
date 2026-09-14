@@ -326,33 +326,54 @@ Two of them are now wrong in ways a reader would act on.
   > modules. The gate now leads with a `[5c-0]` guard asserting
   > `|G₀ψ|/|ψ| > 1e-3` before any other number is believed.
 
-- [ ] **Step 2: Rung 7 — the `FFTProp` convergence study. NOT a step. Scoped
-  2026-09-14 and found to be a project.**
+- [ ] **Step 2: Rung 7 — the `FFTProp` convergence study.**
 
-  The stage-1 plan and the resume note both record rung 7 as deferred *because
-  the arbiter is 3-D and the comparison would measure geometry rather than
-  sweeps*. **Surveyed, that reason is wrong.** `FFTProp` is 2½-D — its own
-  README says so, heterogeneity in `(x,z)` with a 3-D reference medium — so
-  stage 1's 2½-D solver was always its natural counterpart and stage 2 was never
-  the blocker. The real blockers are three, none of them dimensionality:
+  > **It is already specified.** `docs/plans/2026-09-13-cartesian-directional-sweeps-stage1.md`,
+  > Task 8, gives the whole method in five steps: the `importlib` loader (the
+  > package directory is literally named `FFTProp.py`, so `import FFTProp`
+  > cannot reach it — copy the loader from `gate_lateral_sweep_alg52.py` rather
+  > than inventing a second), one physical model at pitches `p, p/2, p/3, p/4`
+  > with the voxel count rising to hold the physical extent fixed, equal-volume
+  > matching of cylinders to cubes, a four-row table of the difference plus
+  > GMRES counts and wall time, and the write-up. **Follow that.** Do not write
+  > a new spec for it.
+  >
+  > **Numbering:** the design spec calls this **rung 4**; the stage-1 plan calls
+  > it **rung 7** because it inserted unnumbered rungs, and states the map at
+  > its own §"the tails do not line up". Same object.
 
-  1. **A representation conversion sits at its heart.** `FFTProp` carries state
-     as cylindrical harmonics `m = −2..+2` for P and SV (`PC` of shape
-     `(Nk, 5, 2, Nscatz)`); this solver carries the 9-component `(u, ε)` state.
-     Bridging them is exactly the class of work spec §4 avoids on purpose —
-     *"conversions between representations are where this project's defects have
-     actually lived"*, all three wrapper defects being conversion errors, one
-     surviving months behind a passing symmetry gate.
-  2. **`FFTProp` has a free surface** (`free_surface_reflect`, Rayleigh with
-     P-SV coupling) built into its sweep. The 3-D operator has none. Either the
-     free surface comes out of `FFTProp` or it goes into the operator, and
-     neither is a small change.
-  3. **Cylinders against cubes**, which is the *known* difference the rung is
-     supposed to measure — infinite along `y` against a finite `n_y`, so
-     convergence in `n_y` compounds with convergence in pitch.
+  **Corrected 2026-09-14, after a survey that had itself been wrong twice.** The
+  stage-1 plan and the resume note recorded rung 7 as deferred *because the
+  arbiter is 3-D and the comparison would measure geometry rather than sweeps*.
+  That is wrong: `FFTProp` is 2½-D by its own README, so stage 1's solver was
+  always its natural counterpart. A first correction then claimed three
+  blockers; **two of those were also wrong.** What the code actually says:
 
-  Treat rung 7 as its own spec and plan. Do not start it as a task inside this
-  one, and do not report it as nearly done because the other rungs closed.
+  1. **No far-field projection module is needed.** Neither
+     `directional_sweeps.py` nor `sweep_solver.py` has one, and none is
+     required: the observable is a point source-to-receiver response, and the
+     receiver leg is the same closed-form propagator the tables already use —
+     `u(r_rec) = Σ_voxels P(r_rec − r_v) · T · ψ_v`. `scattered_field.py`'s
+     `cube_far_field` is single-site and not the thing to reach for.
+  2. **No representation conversion is needed.** `FFTProp` returns `Svec` and
+     `Rvec` — source and receiver projections onto the cylindrical-harmonic
+     scatterer basis, shape `(Nscatx, 5, 2, Nscatz)`. Contracting the receiver
+     projection with the scattered field gives a **scalar** response in which
+     the harmonics cancel internally. The 9-component ↔ harmonic bridge that
+     spec §4 warns against is simply not on the path.
+  3. **The free surface is present but never exercised — this is the real open
+     item.** The stage-1 plan says Task 8 is unblocked because "its free surface
+     is part of the layered background, which the solver now carries", and that
+     is true of `layered_stack_table`. But *every gate written so far damps the
+     free surface away on purpose* (`q = 2`, so the uniform reduction can hold).
+     Rung 7 needs it ACTIVE and correct, which nothing has yet tested.
+  4. **Cylinders against cubes** is the known difference the rung exists to
+     measure, not a blocker.
+
+  So the bounded pieces are: an incident field on the 3-D lattice (the pattern
+  exists in `slab_scattering._build_slab_incident_field`), the receiver
+  contraction above, and **a gate for the free surface in the layered table
+  before any of it is believed**.
 
 ---
 
