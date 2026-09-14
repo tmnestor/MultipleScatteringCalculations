@@ -610,6 +610,7 @@ def compute_slab_scattering(
     periodic: bool = False,
     psi0: NDArray | None = None,
     kernel_hat: NDArray | None = None,
+    T_local: NDArray | None = None,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GMRES.
 
@@ -652,7 +653,12 @@ def compute_slab_scattering(
     Returns:
         SlabResult with exciting and incident fields.
     """
-    T_local = compute_slab_tmatrices(geometry, material, omega)
+    # A supplied T_local lets a caller probe a MODIFIED single-site response --
+    # a lattice renormalisation, say -- without having to fake it through the
+    # contrast, which T depends on nonlinearly. None rebuilds from the material,
+    # which is the existing behaviour.
+    if T_local is None:
+        T_local = compute_slab_tmatrices(geometry, material, omega)
     if kernel_hat is None:
         kernel_hat = _build_slab_kernels(
             geometry,
