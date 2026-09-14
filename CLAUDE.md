@@ -10,6 +10,38 @@ Elastic multiple scattering from cubic heterogeneities — T-matrix approach for
 
 **The deliverable is the LaTeX, not the code.** The principal product of this research is the set of `.tex` documents (`docs/`, `LatexPDFs/`) stating the physics and its mathematical formulation. Python and Mathematica exist to **validate** that formulation — they are the test harness, not the product. Every formulation anchors to a specific thesis §/equation.
 
+### 🛑 SURVEY FIRST — MANDATORY, MECHANICAL, BEFORE THE FIRST SENTENCE OF ANY DESIGN
+
+**This is the most frequently broken rule in this project, and the most expensive.** It has now failed at least four times: `P^x` was rebuilt four times from the least suitable of four existing representations; a verification sweep was designed three times before the existing code was read; a whole lattice-sum architecture was proposed for a problem the repository already solves a different way; and the Cartesian directional-sweep spec declared the stratified vertical propagator absent and rebuilt it, when `GlobalMatrix/layered_greens.py` already returned it in the identical 9-component basis, `layered_correction.py` already wrapped it with the validated corrections, and Chapter 5 of the thesis already derived it.
+
+It keeps failing because it was written as a principle. It is now a **procedure**. Before proposing any design, plan, approach, or architecture — before writing the first sentence of one — execute these and report the findings in the reply:
+
+```bash
+# 1. The overview that already exists
+sed -n '1,80p' docs/2026-07-26-codebase-survey.md
+
+# 2. Does an implementation already exist?
+git grep -ril "<the operator/concept>" -- cubic_scattering/ FFTProp.py/ scripts/ Mathematica/ PhD_fortran_code/
+
+# 3. Is there already a design note? (titles, not filenames)
+command grep -l "<topic>" LatexPDFs/*/*.tex docs/*.tex docs/*.md
+
+# 4. Is there already a gate? Run it — do not assume it fails.
+ls scripts/gate_*.py
+
+# 5. THE TWO MOST OFTEN SKIPPED — the search space is FOUR places, not one.
+ls ~/Desktop/SeismicInversion/GlobalMatrix/*.py        # the vertical operator lives here
+ls ~/Documents/PersonalAdmin/Thesis_Recompiled_2026/*.tex   # Ch.5 = GstratRep.tex
+```
+
+Then state plainly, before any proposal: **what exists, what it is validated to, and what is genuinely missing.** A design that does not begin with that list is not ready to be read.
+
+**"Not in `cubic_scattering/`" is NOT "does not exist."** The four places are this package, `FFTProp.py/`, the `GlobalMatrix` sibling repository, and the thesis `.tex`. The last two are configured as working directories precisely because they hold machinery this package depends on.
+
+Three standing facts this exists to protect: `FFTProp.py/` is a faithful Python port of the thesis Fortran and already implements the directional sweeps (`upsweep`, `downsweep`, `right_sweep`, `left_sweep`); four independent representations of the inter-site Green's tensor already exist; and the **stratified vertical propagator** `Q^∂ = (I − S_int E)⁻¹ S_int` (thesis Ch.5, `GstratRep.tex` Eq. `PstratDef`) is implemented by `GlobalMatrix/layered_greens.py` and wrapped, validated, by `cubic_scattering/layered_correction.py`. Assume the machinery is there until the grep says otherwise.
+
+**The tell.** If a design deletes a dependency that recent work was built to create — writing "X is not needed at all" about something the project has just spent weeks validating — that is the moment to re-survey, not to proceed.
+
 ### Formulations are developed test-first
 
 TDD applies to the mathematics, not just to the software:
