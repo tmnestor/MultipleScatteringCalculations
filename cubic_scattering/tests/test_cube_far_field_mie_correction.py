@@ -57,9 +57,7 @@ def _cube_fP(ka: float, contrast: MaterialContrast, k_vec, pol, theta):
     T27 = assemble_tmatrix_27(g)
     c_inc = cube_overlap_integrals(k_vec, pol, A)
     c_sc = T27 @ c_inc
-    f_P, _, _ = cube_far_field(
-        c_inc, c_sc, theta, REF, g, contrast, omega, A, k_vec, pol
-    )
+    f_P, _, _ = cube_far_field(c_inc, c_sc, theta, REF, g, contrast, omega, A, k_vec, pol)
     return f_P, omega
 
 
@@ -74,22 +72,13 @@ def _mie_fP(omega: float, contrast: MaterialContrast, theta) -> np.ndarray:
 
 
 def _l2(f: np.ndarray, f_ref: np.ndarray, wth: np.ndarray) -> float:
-    return float(
-        np.sqrt(np.sum(wth * np.abs(f - f_ref) ** 2))
-        / np.sqrt(np.sum(wth * np.abs(f_ref) ** 2))
-    )
+    return float(np.sqrt(np.sum(wth * np.abs(f - f_ref) ** 2)) / np.sqrt(np.sum(wth * np.abs(f_ref) ** 2)))
 
 
-def _legendre_moment(
-    f: np.ndarray, ell: int, theta: np.ndarray, wth: np.ndarray
-) -> float:
+def _legendre_moment(f: np.ndarray, ell: int, theta: np.ndarray, wth: np.ndarray) -> float:
     """Real part of the (2ℓ+1)/2 ∫ f P_ℓ(cosθ) sinθ dθ Legendre projection."""
     coeff = (2 * ell + 1) / 2.0
-    return float(
-        (
-            coeff * np.sum(wth * f * eval_legendre(ell, np.cos(theta)) * np.sin(theta))
-        ).real
-    )
+    return float((coeff * np.sum(wth * f * eval_legendre(ell, np.cos(theta)) * np.sin(theta))).real)
 
 
 def _P1(f: np.ndarray, theta: np.ndarray, wth: np.ndarray) -> float:
@@ -181,6 +170,56 @@ def test_preserved_limits_stay_at_floor():
         assert l2 < tol, f"{name}: L2={l2:.4f} regressed past floor {tol}"
 
 
+def test_a_modulus_contrast_radiates_no_force_monopole():
+    """Pure modulus ⟹ P1 dipole is ZERO, and that is why F is density-only.
+
+    THE STANDING TEMPTATION THIS GUARDS AGAINST. The T27 basis functions `s_p²`
+    have a non-zero monopole `∫s_p² = V d²/12`, which invites the conclusion that
+    the quadratic tier adds a radiating force monopole missing from `F`. It does
+    not, and the reason is exact: writing the modulus source as `∂_jΔσ_ij` and
+    integrating `∫G_im ∂_jΔσ_mj` BY PARTS moves the derivative onto G, giving
+    `∂_jG_im · VΔσ_mj` — the stress dipole `cube_far_field` already carries —
+    with no separate monopole. Adding `∮Δσ·n dS` on top counts the same source
+    twice. Measured cost of doing so: moderate-contrast L2 against Mie goes from
+    0.0047 to 0.79, and P1 flips sign.
+
+    The density channel needs no such term either: `φ_i = e_i` is the constant
+    mode, so `c_inc[0:3] = ∫u dV` EXACTLY and the quadratic modes contribute
+    nothing to it.
+
+    Mie agrees, and says so by its RATE rather than its size. The exact sphere's
+    modulus-only `|P1|/scale` is not zero -- it is 1.6e-4 at ka=0.05 rising to
+    1.6e-2 at ka=0.5 -- but divided by (ka)^2 it is 0.0639, 0.0639, 0.0640,
+    0.0641, 0.0645 across that whole range. A force monopole would contribute at
+    (ka)^0. A clean second-order law with a constant coefficient is therefore
+    positive evidence that there is none, which a magnitude bound could not give.
+    """
+    theta, wth = _gauss_theta()
+    ratios = []
+    for ka in (0.05, 0.10, 0.20, 0.30, 0.50):
+        omega = ka * REF.beta / A
+        k_vec, pol = _axis_kvec_pol(omega)
+        f_cube, _ = _cube_fP(ka, MODULUS_ONLY, k_vec, pol, theta)
+        f_mie = _mie_fP(omega, MODULUS_ONLY, theta)
+
+        # Scale to compare against: the field's own size, not an absolute.
+        scale = float(np.sqrt(np.sum(wth * np.abs(f_mie) ** 2)))
+        p1_cube, p1_mie = _P1(f_cube, theta, wth), _P1(f_mie, theta, wth)
+        assert abs(p1_cube) < 1e-6 * scale, (
+            f"ka={ka}: a pure modulus contrast radiated a P1 dipole "
+            f"{p1_cube:.3e} (scale {scale:.3e}) -- a force monopole has crept "
+            f"into F; see this test's docstring before 'fixing' it"
+        )
+        ratios.append(abs(p1_mie) / scale / ka**2)
+
+    spread = (max(ratios) - min(ratios)) / min(ratios)
+    assert spread < 0.02, (
+        f"Mie modulus-only P1 stopped being a clean (ka)^2 effect: "
+        f"|P1|/scale/(ka)^2 = {[f'{r:.4f}' for r in ratios]}, spread {spread:.3f}. "
+        "A (ka)^0 component would mean a force monopole after all."
+    )
+
+
 def test_density_zero_is_bit_for_bit_noop():
     """Δρ=0 ⟹ the density monopole vanishes ⟹ the corrected f_P is unchanged.
 
@@ -198,15 +237,11 @@ def test_density_zero_is_bit_for_bit_noop():
     c_inc = cube_overlap_integrals(k_vec, pol, A)
     c_sc = T27 @ c_inc
 
-    f_corrected, _, _ = cube_far_field(
-        c_inc, c_sc, theta, REF, g, contrast, omega, A, k_vec, pol
-    )
+    f_corrected, _, _ = cube_far_field(c_inc, c_sc, theta, REF, g, contrast, omega, A, k_vec, pol)
 
     # Reference: same call but with the OLD total-moment monopole — at Δρ=0
     # both reduce to F≡0, so they must be bit-for-bit identical.
-    f_old_total, _, _ = cube_far_field(
-        c_inc, c_inc + c_sc, theta, REF, g, contrast, omega, A, k_vec, pol
-    )
+    f_old_total, _, _ = cube_far_field(c_inc, c_inc + c_sc, theta, REF, g, contrast, omega, A, k_vec, pol)
     # c_sc argument is ignored for the monopole now, so passing a different
     # c_sc must not change anything (proves c_sc[:3] no longer feeds F).
     np.testing.assert_array_equal(f_corrected, f_old_total)
@@ -223,14 +258,10 @@ def test_density_zero_independent_of_c_sc_displacement():
     c_inc = cube_overlap_integrals(k_vec, pol, A)
     c_sc = T27 @ c_inc
 
-    f_a, _, _ = cube_far_field(
-        c_inc, c_sc, theta, REF, g, contrast, omega, A, k_vec, pol
-    )
+    f_a, _, _ = cube_far_field(c_inc, c_sc, theta, REF, g, contrast, omega, A, k_vec, pol)
     c_sc_perturbed = c_sc.copy()
     c_sc_perturbed[:3] += np.array([1.0 + 2j, -3.0, 0.5j])
-    f_b, _, _ = cube_far_field(
-        c_inc, c_sc_perturbed, theta, REF, g, contrast, omega, A, k_vec, pol
-    )
+    f_b, _, _ = cube_far_field(c_inc, c_sc_perturbed, theta, REF, g, contrast, omega, A, k_vec, pol)
     np.testing.assert_array_equal(f_a, f_b)
 
 
@@ -271,9 +302,5 @@ def test_oblique_incidence_density_dipole_tracks_mie():
         assert abs(m_obl - m_axis) < 1e-3 * abs(m_axis) + 1e-12, (
             f"P{ell}: oblique {m_obl:.4e} not rotation-invariant vs axis {m_axis:.4e}"
         )
-        assert np.sign(m_obl) == np.sign(m_mie), (
-            f"P{ell}: oblique sign {m_obl:.3e} vs mie {m_mie:.3e}"
-        )
-        assert abs(m_obl - m_mie) < 0.03 * abs(m_mie), (
-            f"P{ell}: oblique {m_obl:.4e} vs mie {m_mie:.4e}"
-        )
+        assert np.sign(m_obl) == np.sign(m_mie), f"P{ell}: oblique sign {m_obl:.3e} vs mie {m_mie:.3e}"
+        assert abs(m_obl - m_mie) < 0.03 * abs(m_mie), f"P{ell}: oblique {m_obl:.4e} vs mie {m_mie:.4e}"
