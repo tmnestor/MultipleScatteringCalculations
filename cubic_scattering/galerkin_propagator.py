@@ -1,7 +1,38 @@
 """The 9x9 BUBNOV-GALERKIN inter-cell propagator.
 
-WHY THIS EXISTS. The lattice solver currently pairs a Galerkin T-matrix with a
-MOMENT propagator, and the two are not the same operator. `T_0` is the first tier
+═══ ⚠ NOT WIRED IN. THE HYPOTHESIS THIS WAS BUILT TO TEST IS REFUTED. ═══════════
+This module was built to test whether the residual comes from pairing a Galerkin
+`T_0` with a MOMENT `G_0`. Measured end to end, with the normalisation correct,
+the Galerkin contact coupling is WORSE than the moment operator:
+
+    scheme                                   residual floor
+    moment contact correction                8.6e-4
+    Galerkin, correct normalisation          5.1e-3
+    Galerkin, WRONG (row-only) normalisation 8.6e-5   <- see below
+
+⚠ THE MIDDLE ROW IS THE RESULT; THE BOTTOM ROW IS A CAUTIONARY TALE. An earlier
+row-only normalisation scaled the contact strain coupling down by 12x and looked
+like a 6x improvement. It was an accidental FUDGE FACTOR, arrived at by error
+while trying to eliminate one -- and it passed reciprocity (1e-16), the
+centre-of-mass reduction (6e-14) and the G-block check (5e-13), because every one
+of those compares the construction against itself. Only the FAR-FIELD LIMIT,
+which compares against an independent object, caught it.
+
+WHY THE HYPOTHESIS PROBABLY FAILS. `T_0` is Galerkin-DERIVED, but as USED it is
+`T = V . Delta c*` -- a local constitutive multiplication on `(u, eps)`, which is
+a moment convention. The reduction to four effective contrasts discards the
+Galerkin projection structure, so the moment propagator is arguably its correct
+partner after all.
+
+WHY THIS FILE IS KEPT. It is correct and gated, and its machinery generalises
+directly to the 27-mode route that the evidence now favours: the autocorrelation
+kernels `C_ab`, the apex-pyramid rule for the contact singularity, and above all
+the far-field check that must be run FIRST on any future coupling.
+════════════════════════════════════════════════════════════════════════════════
+
+ORIGINAL MOTIVATION, kept because the observation stands even though the
+inference from it did not. The lattice solver pairs a Galerkin-derived T-matrix
+with a MOMENT propagator, and the two are not the same operator. `T_0` is the first tier
 of the Bubnov-Galerkin hierarchy -- trial functions are 3 constant plus 6 linear
 (`r_m e_k`, symmetric gradient) over the cell -- whereas `inter_voxel_propagator`
 supplies cell-AVERAGED field and derivatives, `<<G>>`, `<<dG>>`, `<<ddG>>`. Those
@@ -248,16 +279,172 @@ def galerkin_block_9x9(
     for i, uu in enumerate(u):
         g[i] = elastodynamic_greens(uu + r_vec, omega, ref)
 
+    # The autocorrelation depends only on the MONOMIAL PAIR, of which there are
+    # at most sixteen for a degree <= 1 basis, while the naive loop would rebuild
+    # it 81 x 4 times. Cache the weighted kernel once per pair.
+    exps = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
+    wc: dict[tuple[tuple[int, int, int], tuple[int, int, int]], NDArray] = {}
+    for ea in exps:
+        for eb in exps:
+            wc[(ea, eb)] = w * autocorrelation(ea, eb, u, a)
+
     out = np.zeros((9, 9), dtype=complex)
     for alpha in range(9):
         for beta in range(9):
             acc = 0.0 + 0.0j
             for ca, ea, da in basis_terms(alpha):
                 for cb, eb, db in basis_terms(beta):
-                    c_u = autocorrelation(ea, eb, u, a)
-                    acc += ca * cb * np.sum(w * c_u * g[:, da, db])
+                    acc += ca * cb * np.dot(wc[(ea, eb)], g[:, da, db])
             out[alpha, beta] = acc
     return out
 
 
-__all__ = ["autocorrelation", "basis_terms", "galerkin_block_9x9"]
+def gram_diagonal(d: float) -> NDArray:
+    """The Gram matrix of the 9 trial functions over a cell of side d, diagonal.
+
+    M_ab = Int_V phi_a . phi_b. The basis is orthogonal, so only the diagonal
+    survives:
+        constant modes        Int e_a . e_a          = V
+        axial strain (p == q) Int s_p^2              = V d^2 / 12
+        shear  (p != q)       Int |0.5(s_q e_p + s_p e_q)|^2
+                              = 0.25 (Int s_q^2 + Int s_p^2) = V d^2 / 24
+
+    The shear entry is HALF the axial one, which is the engineering-convention
+    factor showing up in the mass rather than in the trial function.
+    """
+    v = d**3
+    return v * np.array([1.0, 1.0, 1.0] + [d**2 / 12.0] * 3 + [d**2 / 24.0] * 3)
+
+
+def galerkin_propagator_9x9(
+    r_vec: NDArray,
+    d: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_quad: int = 10,
+) -> NDArray:
+    """Galerkin coupling NORMALISED for the solver's convention: M^-1 Gamma / V.
+
+    WHY THE NORMALISATION IS WHAT IT IS. The Galerkin system is
+    `M c = M c0 + Gamma q`, whereas the solver iterates `psi = psi0 + G0 T0 psi`
+    with no Gram matrix. Two facts close the gap:
+
+      * the trial functions are normalised so their coefficients ARE the
+        9-component state -- the linear modes vanish at the cell centre, so
+        c[0:3] is the centre displacement, and each linear mode carries unit
+        Voigt strain -- hence psi = c, with no conversion;
+      * `T0 = V . Delta c*` returns a cell TOTAL (force, moment), while the
+        Galerkin source coefficient q is a DENSITY. That is the factor of V.
+
+    So the object the solver needs is `M^-1 Gamma / V`.
+
+    THE NORMALISATION IS ASYMMETRIC, and the asymmetry is the ENGINEERING SHEAR
+    CONVENTION rather than an accident:
+
+        rows (field side)   scaled by 1 / M          , M_shear = V d^2 / 24
+        cols (source side)  scaled by 1 / M_src      , M_src   = V d^2 / 12 for
+                                                       ALL SIX strain modes
+
+    The field-side shear component is `2 eps` and carries the extra factor of
+    two; the source-side shear is a stress and does not. That is the same
+    asymmetry the moment propagator records as `H = W C^T`,
+    `W = diag(1,1,1,2,2,2)`.
+
+    ⚠ THIS TOOK THREE ATTEMPTS AND TWO OF THEM PASSED THE OBVIOUS CHECKS. The G
+    block reduces to `<<G>>` to 5e-13 under ANY of them, because the constant
+    mode's mass is V on both sides -- so that check, and reciprocity, and the
+    centre-of-mass reduction, all pass while the strain sector is wrong. They
+    compare the construction against itself.
+
+    Only the FAR-FIELD LIMIT compares it against an INDEPENDENT object: at large
+    R two cells look like points, so the coupling must reduce to the point
+    propagator. Measured `point / Gamma_raw` at R = 12d gave block maxima
+    1.0008, 12.035, 23.91, 289.5 -- that is rows 24 and columns 12 on the strain
+    sector, which is what the scaling above encodes.
+
+    The far-field limit is also what makes a short-ranged CORRECTION legitimate
+    at all: `[Galerkin - point]` must vanish with R, or every extra shell adds
+    spurious contribution. Under the first (row-only) attempt it tended to a
+    non-zero constant, and the measured symptom was the conversion getting
+    monotonically WORSE as its reach was extended.
+
+    WHY THIS MATTERS BEYOND TIDINESS. A short-ranged CORRECTION is only
+    legitimate if `[Galerkin - point]` vanishes at large separation. Under
+    row-only scaling it tended to a non-zero constant, so every extra shell added
+    spurious contribution -- measured, as monotone worsening with conversion
+    reach. Under `M^-1 Gamma M^-1` the difference decays and the correction is
+    well posed.
+
+    Both limits are analytic: `Gamma_GG = V^2 <<G>>` gives `<<G>>`, and
+    `Gamma_SS -> -(V d^2/12)^2 d_p d_q G` gives `-d_p d_q G`. Both are the point
+    propagator's own blocks.
+    """
+    gam = galerkin_block_9x9(r_vec, d, omega, ref, n_quad)
+    m_row = gram_diagonal(d)
+    v = d**3
+    # Source side: no engineering factor of two on the shear modes.
+    m_col = v * np.array([1.0, 1.0, 1.0] + [d**2 / 12.0] * 6)
+    return gam / m_row[:, None] / m_col[None, :]
+
+
+def galerkin_plane_wave_state(k_vec: NDArray, pol: NDArray, centre: NDArray, d: float) -> NDArray:
+    """A plane wave PROJECTED onto the 9 trial functions, not sampled at a point.
+
+    The solver's incident field is `pol * exp(i k . r_centre)` with the strain
+    read off analytically -- a POINT VALUE at the cell centre. That is a third
+    convention alongside a Galerkin `T_0` and a Galerkin `G_0`, and finishing the
+    conversion means projecting it too:
+
+        c_a = (1 / M_aa) Int_V phi_a(s) . u0(centre + s) ds.
+
+    Everything factorises because the cell is a box and the wave is a product:
+
+        I0(k) = Int_{-d/2}^{d/2} e^{i k s} ds        = 2 sin(k d / 2) / k
+        I1(k) = Int_{-d/2}^{d/2} s e^{i k s} ds      = -i dI0/dk
+
+    THE LONG-WAVELENGTH LIMIT IS THE CHECK, and it is exact rather than
+    approximate: I0 -> d and I1 -> i k d^3 / 12, so the constant modes tend to
+    `pol` and the axial modes to `i k_p pol_p = eps_pp`, the shear modes to
+    `i(k_q pol_p + k_p pol_q) = 2 eps_pq`. So this reduces to the existing
+    point-sampled state as k d -> 0, and differs from it at O((k d)^2).
+    """
+    k_vec = np.asarray(k_vec, dtype=complex)
+    pol = np.asarray(pol, dtype=complex)
+    a = 0.5 * d
+
+    def i0(k: complex) -> complex:
+        # 2 sin(k a)/k, with the removable singularity at k = 0 handled.
+        return complex(d) if abs(k) < 1e-12 else complex(2.0 * np.sin(k * a) / k)
+
+    def i1(k: complex) -> complex:
+        # Int s e^{iks} ds = -i d/dk [2 sin(k a)/k]
+        if abs(k) < 1e-12:
+            return 1j * 0.0
+        return complex(-1j * (2.0 * a * np.cos(k * a) / k - 2.0 * np.sin(k * a) / k**2))
+
+    i0s = [i0(k_vec[j]) for j in range(3)]
+    i1s = [i1(k_vec[j]) for j in range(3)]
+    phase = np.exp(1j * float(np.real(np.dot(k_vec, centre))))
+
+    gram = gram_diagonal(d)
+
+    out = np.zeros(9, dtype=complex)
+    for alpha in range(9):
+        acc = 0.0 + 0.0j
+        for c, e, dirn in basis_terms(alpha):
+            term = c * pol[dirn]
+            for j in range(3):
+                term *= i1s[j] if e[j] == 1 else i0s[j]
+            acc += term
+        out[alpha] = acc * phase / gram[alpha]  # gram already carries the V
+    return out
+
+
+__all__ = [
+    "autocorrelation",
+    "basis_terms",
+    "galerkin_block_9x9",
+    "galerkin_plane_wave_state",
+    "galerkin_propagator_9x9",
+    "gram_diagonal",
+]
