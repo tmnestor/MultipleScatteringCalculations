@@ -98,27 +98,43 @@ def basis_terms(alpha: int) -> list[BasisTerm]:
     (monomial, direction) pair -- as the general derivation's notation suggests --
     would silently halve the shear sector.
     """
-    if alpha < 0 or alpha > 8:
+    if alpha < 0 or alpha > 26:
         msg = (
-            f"basis index must be in 0..8, got {alpha}.\n"
+            f"basis index must be in 0..26, got {alpha}.\n"
             "  Where: cubic_scattering/galerkin_propagator.py, basis_terms(alpha)\n"
-            "  Valid: 0-2 constant displacement, 3-8 linear (Voigt strain) modes\n"
-            "  Fix:   the 9-component state is (u_z,u_x,u_y, e_zz,e_xx,e_yy,"
-            " 2e_xy,2e_zy,2e_zx)"
+            "  Valid: 0-2 constant displacement, 3-8 linear (Voigt strain),\n"
+            "         9-26 quadratic (6 monomials x 3 directions)\n"
+            "  Fix:   indices 0-8 are the T9 tier; 9-26 extend it to T27"
         )
         raise ValueError(msg)
     if alpha < 3:
         return [(1.0, (0, 0, 0), alpha)]
-    p, q = VOIGT_PAIRS[alpha - 3]
-    if p == q:
-        e = [0, 0, 0]
-        e[p] = 1
-        return [(1.0, (e[0], e[1], e[2]), p)]
-    ep = [0, 0, 0]
-    ep[q] = 1
-    eq = [0, 0, 0]
-    eq[p] = 1
-    return [(0.5, (ep[0], ep[1], ep[2]), p), (0.5, (eq[0], eq[1], eq[2]), q)]
+    if alpha < 9:
+        p, q = VOIGT_PAIRS[alpha - 3]
+        if p == q:
+            e = [0, 0, 0]
+            e[p] = 1
+            return [(1.0, (e[0], e[1], e[2]), p)]
+        ep = [0, 0, 0]
+        ep[q] = 1
+        eq = [0, 0, 0]
+        eq[p] = 1
+        return [(0.5, (ep[0], ep[1], ep[2]), p), (0.5, (eq[0], eq[1], eq[2]), q)]
+    # T27 quadratic tier. Ordering follows `tmatrix_assembly`: six monomials
+    # (r1^2, r2^2, r3^2, r2r3, r1r3, r1r2) for each of the three directions.
+    # That file's strain ordering was checked against VOIGT_PAIRS and agrees, so
+    # indices 0-8 here ARE its first nine and the tiers stack cleanly.
+    idx = alpha - 9
+    direction, mono = divmod(idx, 6)
+    quad_exponents: list[tuple[int, int, int]] = [
+        (2, 0, 0),
+        (0, 2, 0),
+        (0, 0, 2),
+        (0, 1, 1),
+        (1, 0, 1),
+        (1, 1, 0),
+    ]
+    return [(1.0, quad_exponents[mono], direction)]
 
 
 def autocorrelation(ea: tuple[int, int, int], eb: tuple[int, int, int], u: NDArray, a: float) -> NDArray:
@@ -143,15 +159,33 @@ def autocorrelation(ea: tuple[int, int, int], eb: tuple[int, int, int], u: NDArr
     out = np.ones(u.shape[:-1], dtype=float)
     for k in range(3):
         bk, uk = b[..., k], u[..., k]
-        pa, pb = ea[k], eb[k]
-        if pa == 0 and pb == 0:
+        key = (ea[k], eb[k])
+        if key == (0, 0):
             fac = 2.0 * bk
-        elif pa == 1 and pb == 0:
+        elif key == (1, 0):
             fac = bk * uk
-        elif pa == 0 and pb == 1:
+        elif key == (0, 1):
             fac = -bk * uk
-        else:
+        elif key == (1, 1):
             fac = 2.0 * bk**3 / 3.0 - bk * uk**2 / 2.0
+        # ---- degree-2 cases, needed only by the T27 quadratic tier ----------
+        elif key in {(2, 0), (0, 2)}:
+            # Int (xi +- u/2)^2 = 2b^3/3 + b u^2/2 -- EVEN in u, unlike (1,1).
+            fac = 2.0 * bk**3 / 3.0 + bk * uk**2 / 2.0
+        elif key == (2, 1):
+            fac = bk**3 * uk / 3.0 - bk * uk**3 / 4.0
+        elif key == (1, 2):
+            fac = -(bk**3) * uk / 3.0 + bk * uk**3 / 4.0
+        elif key == (2, 2):
+            fac = 2.0 * bk**5 / 5.0 - bk**3 * uk**2 / 3.0 + bk * uk**4 / 8.0
+        else:
+            msg = (
+                f"autocorrelation: unsupported monomial pair {key} on axis {k}.\n"
+                "  Where: cubic_scattering/galerkin_propagator.py, autocorrelation\n"
+                "  Valid: per-axis exponents 0, 1 or 2 (T9 uses 0-1, T27 adds 2)\n"
+                "  Fix:   extend the closed forms above for higher degree (T57)"
+            )
+            raise ValueError(msg)
         out = out * fac
     return out
 
@@ -251,6 +285,7 @@ def galerkin_block_9x9(
     omega: float,
     ref: ReferenceMedium,
     n_quad: int = 10,
+    n_modes: int = 9,
 ) -> NDArray:
     """The 9x9 Bubnov-Galerkin coupling between two cells of side d at offset r_vec.
 
@@ -268,7 +303,8 @@ def galerkin_block_9x9(
         n_quad: Gauss points per dimension of the reduced 3-D integral.
 
     Returns:
-        (9, 9) complex. Row = receiver trial function, column = source.
+        (n_modes, n_modes) complex. Row = receiver trial function, column =
+        source. n_modes is 9 for the T9 tier, 27 with the quadratic tier.
     """
     r_vec = np.asarray(r_vec, dtype=float)
     a = 0.5 * d
@@ -279,21 +315,24 @@ def galerkin_block_9x9(
     for i, uu in enumerate(u):
         g[i] = elastodynamic_greens(uu + r_vec, omega, ref)
 
-    # The autocorrelation depends only on the MONOMIAL PAIR, of which there are
-    # at most sixteen for a degree <= 1 basis, while the naive loop would rebuild
-    # it 81 x 4 times. Cache the weighted kernel once per pair.
-    exps = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
+    # The autocorrelation depends only on the MONOMIAL PAIR, and the distinct
+    # pairs are far fewer than the mode pairs -- 16 at T9, 100 at T27, against
+    # 729 mode pairs each with several terms. Cache the weighted kernel per pair,
+    # gathered from the basis actually in use rather than hard-coded, so the
+    # quadratic tier needs no second list to keep in step.
+    terms = [basis_terms(al) for al in range(n_modes)]
+    exps = sorted({e for t in terms for _, e, _ in t})
     wc: dict[tuple[tuple[int, int, int], tuple[int, int, int]], NDArray] = {}
     for ea in exps:
         for eb in exps:
             wc[(ea, eb)] = w * autocorrelation(ea, eb, u, a)
 
-    out = np.zeros((9, 9), dtype=complex)
-    for alpha in range(9):
-        for beta in range(9):
+    out = np.zeros((n_modes, n_modes), dtype=complex)
+    for alpha in range(n_modes):
+        for beta in range(n_modes):
             acc = 0.0 + 0.0j
-            for ca, ea, da in basis_terms(alpha):
-                for cb, eb, db in basis_terms(beta):
+            for ca, ea, da in terms[alpha]:
+                for cb, eb, db in terms[beta]:
                     acc += ca * cb * np.dot(wc[(ea, eb)], g[:, da, db])
             out[alpha, beta] = acc
     return out
