@@ -23,8 +23,9 @@ kP = (kx,ky,kzP), kS = (kx,ky,kzS), Im(kz) >= 0.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from time import time
-from typing import TYPE_CHECKING, Annotated, Callable
+from typing import TYPE_CHECKING, Annotated
 
 import numpy as np
 import typer
