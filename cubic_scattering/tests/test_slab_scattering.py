@@ -661,7 +661,16 @@ class TestVolumeAveragedPropagator:
         )
 
         geom = SlabGeometry(M=3, N_z=2, a=A)  # d = 2.0
-        kernel_hat = _build_slab_kernels(geom, OMEGA, REF, volume_averaged=True)
+        # `contact_average='double'` is PINNED, not inherited. This test asserts
+        # the kernel block IS `inter_voxel_propagator_9x9` -- i.e. it validates
+        # that the O_h table is wired with the PHYSICAL pitch. That table is the
+        # double-average operator, so the test must name it rather than follow
+        # the default (which became 'single' on 2026-09-15). Following the
+        # default would turn a structural check of the pitch threading into an
+        # accidental assertion about which operator is default.
+        kernel_hat = _build_slab_kernels(
+            geom, OMEGA, REF, volume_averaged=True, contact_average="double"
+        )
         # dz = +d plane: k = N_z = 2; dx = dy = 0 -> spatial index (2, 2)
         kernel_spatial = np.fft.ifft2(kernel_hat[2], axes=(0, 1))
         block = kernel_spatial[2, 2]

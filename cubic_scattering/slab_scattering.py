@@ -10,6 +10,7 @@ Voigt ordering: (zz, xx, yy, xy, zy, zx) with engineering halving.
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 from numpy.typing import NDArray
@@ -269,8 +270,9 @@ def _bloch_contact_correction(
     va_all: bool = False,
     va_gauss: int = 4,
     va_all_reach: int = 4,
+    contact_average: str = "single",
 ) -> NDArray:
-    """Bloch transform of [Galerkin - point] over the contact shell.
+    """Bloch transform of [averaged - point] over the contact shell.
 
     The exact lattice sum is assembled from point propagators, which are a
     MIDPOINT rule for what should be the doubly volume-averaged operator between
@@ -304,10 +306,8 @@ def _bloch_contact_correction(
             r_vec = np.array([dz_vox * d, dx * d, dy * d])
             g_pt = _propagator_block_9x9(r_vec, omega, ref)
             if cheb <= va_radius:
-                # Contact shell: the analytic O_h tables, exact at face, edge and
-                # corner contact where no quadrature converges.
-                g_avg = inter_voxel_propagator_9x9(
-                    (dz_vox, dx, dy), ref.alpha, ref.beta, ref.rho, omega, n_orders, d=d
+                g_avg = _contact_operator(
+                    r_vec, (dz_vox, dx, dy), d, omega, ref, n_orders, contact_average
                 )
             elif va_all:
                 # Beyond contact the kernel is smooth over the cell, so plain
@@ -330,6 +330,150 @@ def _bloch_contact_correction(
                 phase = np.exp(-1j * (k_par[0] * dx * d + k_par[1] * dy * d))
                 out[n1, n2] += delta * phase
     return out
+
+
+#: Gauss points per axis for the SINGLE-averaged contact operator. The receiver
+#: centre lies outside the source cube for every non-self neighbour (face d/2,
+#: edge 0.707 d, corner 0.866 d), so the integrand is regular but peaked toward
+#: the touching face. Measured convergence at face contact: 1.75e-2, 2.88e-5,
+#: 3.59e-8, 3.85e-11 at 8, 12, 16, 24 points. 20 sits comfortably converged.
+CONTACT_GAUSS = 20
+
+
+@lru_cache(maxsize=4096)
+def _single_contact_cached(
+    offset: tuple[int, int, int],
+    d: float,
+    omega: float,
+    alpha: float,
+    beta: float,
+    rho: float,
+    n_gauss: int,
+) -> NDArray:
+    """Memoised single-source-cell average. Scalar args only, so it is hashable.
+
+    Returns a SHARED array -- every caller must ``.copy()`` before mutating.
+    """
+    r_vec = np.array([offset[0] * d, offset[1] * d, offset[2] * d], dtype=float)
+    return _cell_averaged_propagator(
+        r_vec, d, omega, ReferenceMedium(alpha, beta, rho), n_gauss, double=False
+    )
+
+
+def _contact_operator(
+    r_vec: NDArray,
+    offset: tuple[int, int, int],
+    d: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_orders: int,
+    contact_average: str,
+) -> NDArray:
+    """The propagator on the contact shell, SINGLE- or double-averaged.
+
+    ⚠ WHICH AVERAGE IS CORRECT IS SET BY THE STATE VARIABLE, NOT BY ACCURACY.
+    The solver's state is a POINT VALUE at the cell centre --
+    ``_build_slab_incident_field`` builds ``psi0 = pol exp(i k . r_centre)`` --
+    so the scheme is COLLOCATION. A source cell carries a VOLUME moment, so the
+    field that state variable needs is
+
+        psi_i = Int_{V_source} G(x_centre_i - x') dx'  x  (moment / V),
+
+    the average over the SOURCE cell only, evaluated at the RECEIVER CENTRE.
+    The doubly-averaged (Galerkin) operator applies a second average over the
+    receiver cell that a collocation state never asked for.
+
+    THE DECIDING EVIDENCE IS THE REFINEMENT LADDER, and the reason it decides is
+    that it is the only comparison with no SHARED contaminant in it.
+
+    This T-matrix is accurate through (ka)^4 -- static Eshelby core, Taylor
+    dynamic part to omega^15/omega^17 (N_TAYLOR=8, not the limit), form factors
+    c2/c4 -- so its leading error is O((ka)^6). At a FIXED coarse mesh that error
+    is COMMON to both contact operators and, for ka >= 0.3, larger than the
+    difference between them, so fixed-ka comparisons there measure the T-matrix,
+    not the propagator. Refining at fixed PHYSICAL frequency drives ka_cell -> 0
+    and removes it.
+
+    Refinement, physical H and omega FIXED, ka_cell 0.10 -> 0.0125:
+
+        pure mu    n_z:      1         2         4         8
+          double        1.47e-3   2.54e-3   2.83e-3   2.91e-3   RISES, saturates
+          SINGLE        1.89e-3   8.92e-4   6.39e-4   5.70e-4   FALLS, converges
+
+        mixed
+          double        5.40e-4   7.78e-4   8.38e-4   8.54e-4   RISES, saturates
+          SINGLE        4.44e-4   2.27e-4   1.76e-4   1.62e-4   FALLS, converges
+
+    BOTH channels: the double average saturates, the single average converges,
+    5x better by n_z = 8. Convergence under refinement is the structural property
+    the empirical shear factor K was introduced to restore, and the single
+    average restores it with NO fitted parameter. The cleanest fixed-ka point
+    (ka = 0.05, where (ka)^6 = 1.6e-8) agrees: single wins both channels ~3x.
+
+    ⚠ A REAL CAVEAT, SO NOBODY "FIXES" IT BACK. At a coarse mesh with ka >= 0.3
+    the DOUBLE average gives smaller numbers (e.g. mixed ka=0.3: double 1.78e-3,
+    single 2.62e-3). That is not the double average being better -- it is the
+    T-matrix's own O((ka)^6) truncation being partly cancelled by the propagator
+    error, the same compensating-error mechanism recorded for the point
+    propagator in the off-normal R_SS investigation. Making the coupling more
+    correct exposes it.
+
+    ``double`` is retained because every pre-2026-09-15 validated number in this
+    repository was produced with it, so regressions need it to reproduce them.
+
+    ⚠ MEASUREMENT TRAPS PAID FOR ON THE WAY TO THIS DEFAULT, all three of which
+    produced the OPPOSITE conclusion before being caught:
+      * comparing on the TRUNCATED lateral sum (`lattice_ewald=False`), where the
+        artifact is two orders above the effect being measured;
+      * comparing at fixed coarse mesh and ka >= 0.3, where the shared (ka)^6
+        truncation dominates;
+      * a "refinement" ladder that held ka_cell fixed instead of the physical
+        frequency -- that raises omega at every rung and is not refinement at all.
+
+    Args:
+        r_vec: Centre-to-centre separation (z, x, y), metres.
+        offset: The same separation in CELLS, for the O_h tables.
+        d: Lattice pitch = cube side.
+        omega: Angular frequency.
+        ref: Background medium.
+        n_orders: Dynamic correction orders for the O_h tables.
+        contact_average: ``'single'`` (source cell only -- the collocation-
+            consistent choice) or ``'double'`` (Galerkin, historical).
+
+    Returns:
+        (9, 9) complex.
+    """
+    if contact_average == "single":
+        # Regular: the receiver centre is outside the source cube at every
+        # non-self offset, so plain Gauss over the source cell suffices and no
+        # singular O_h table is needed.
+        #
+        # CACHED, and it matters. This is a CONTACT_GAUSS^3 = 8000-point
+        # quadrature, and unlike the O_h tables it cannot be computed once and
+        # rotated around the D4h orbit -- the single average is direction
+        # dependent. Recomputing it per orbit point per dz slice made the test
+        # suite ~2x slower. The value depends only on the offset and the medium,
+        # so memoising on those recovers the cost exactly, with no approximation.
+        return _single_contact_cached(
+            offset, d, omega, ref.alpha, ref.beta, ref.rho, CONTACT_GAUSS
+        ).copy()
+    if contact_average == "double":
+        # The analytic O_h tables, exact at face, edge and corner contact where
+        # the doubly-averaged integrand is singular and no quadrature converges.
+        return inter_voxel_propagator_9x9(
+            offset, ref.alpha, ref.beta, ref.rho, omega, n_orders, d=d
+        )
+    msg = (
+        f"contact_average must be 'single' or 'double', got {contact_average!r}.\n"
+        "  Where: cubic_scattering/slab_scattering.py, _contact_operator()\n"
+        "  Valid: 'single' -- average over the SOURCE cell only, evaluated at the\n"
+        "                    receiver centre; consistent with the collocation state\n"
+        "         'double' -- Galerkin double average; reproduces pre-2026-09-15\n"
+        "                    validated numbers\n"
+        "  Fix:   pass contact_average='single' (the default) unless you are\n"
+        "         reproducing a historical result"
+    )
+    raise ValueError(msg)
 
 
 def _cell_averaged_propagator(
@@ -454,6 +598,7 @@ def _build_slab_kernels(
     lattice_ewald: bool = False,
     ewald_eta: float | None = None,
     ewald_cutoff: int = 4,
+    contact_average: str = "single",
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -482,6 +627,33 @@ def _build_slab_kernels(
     H_xy = M if periodic else S
     kernel_hat = np.zeros((n_dz, H_xy, H_xy, 9, 9), dtype=complex)
 
+    # ⚠⚠ THE EWALD ROUTE IS NOT VALID AT ALL FREQUENCIES -- IT RETURNS NaN FOR
+    # SHORT WAVELENGTHS, AND THAT IS WHY IT IS NOT THE DEFAULT.
+    #
+    # Making it default-on for `periodic=True` was tried on 2026-09-15 and had to
+    # be reverted: the kernel goes non-finite once the cell is more than a few
+    # wavelengths across. Measured with alpha=4.0, beta=2.22, d=1.0
+    # (`tests/test_frequency_sweep`):
+    #
+    #     f      k_P d    k_S d    ewald finite    truncated finite
+    #     6.0     9.4     17.0     NO              yes
+    #    10.0    15.7     28.3     NO              yes
+    #    14.0    22.0     39.6     NO              yes
+    #
+    # and with the SI medium at d = 100 m it is still finite at k_S d = 14, so
+    # the threshold is around k_S d ~ 15. Symptom: `RuntimeWarning: invalid value
+    # encountered in add` from `lattice_kupradze`, then NaN through the solve,
+    # then GMRES failing at 500 iterations -- 6 sweep tests failed exactly that
+    # way. The screened ladder carries exp(kappa^2 / 4 eta^2) = exp((kappa d)^2 /
+    # 4 pi) with the default eta = sqrt(pi)/d, which is where it comes apart.
+    #
+    # This does NOT affect the project's own regime (ka < 0.3 => kappa d ~ 0.6),
+    # where Ewald is exact and the truncated sum is the defective one -- see the
+    # accuracy suite, 10-40x better on the exact sum. It only means the choice
+    # cannot be made blindly for a caller at arbitrary frequency.
+    #
+    # ▶ A kappa-d-aware default would be the right fix, once the threshold is
+    #   measured properly rather than bracketed.
     if lattice_ewald:
         if not periodic:
             raise ValueError(
@@ -516,7 +688,16 @@ def _build_slab_kernels(
                 # Bloch sum over the contact shell. Without this the Ewald route
                 # would silently ignore volume_averaged.
                 kernel_hat[k] += _bloch_contact_correction(
-                    M, d, dz_vox, omega, ref, n_orders, va_radius, va_all, va_gauss
+                    M,
+                    d,
+                    dz_vox,
+                    omega,
+                    ref,
+                    n_orders,
+                    va_radius,
+                    va_all,
+                    va_gauss,
+                    contact_average=contact_average,
                 )
         return kernel_hat
 
@@ -543,21 +724,18 @@ def _build_slab_kernels(
                 is_nn = max(abs(dz_vox), dx, dy) <= va_radius
 
                 if volume_averaged and is_nn:
-                    # Call inter_voxel_propagator_9x9 for each orbit point
-                    # (it has its own O_h rotation, so pass signed offsets).
-                    # d = geometry.d is the PHYSICAL cube side = lattice
-                    # pitch — the propagator tables are unit-pitch and
-                    # rescale internally (G/C/H/S by d^-1/-2/-2/-3).
+                    # Per orbit point, with signed offsets: the 'double' O_h
+                    # tables carry their own rotation, and the 'single' average
+                    # is direction-dependent, so neither may be transformed.
                     for sdx, sdy, _transform in _d4h_orbit(dx, dy):
-                        R_lattice = (dz_vox, sdx, sdy)
-                        G0 = inter_voxel_propagator_9x9(
-                            R_lattice,
-                            ref.alpha,
-                            ref.beta,
-                            ref.rho,
+                        G0 = _contact_operator(
+                            np.array([dz, sdx * d, sdy * d]),
+                            (dz_vox, sdx, sdy),
+                            d,
                             omega,
+                            ref,
                             n_orders,
-                            d=d,
+                            contact_average,
                         )
                         kernel_spatial[sdx + M - 1, sdy + M - 1] = G0
                 else:
@@ -808,6 +986,7 @@ def build_slab_kernels(
     lattice_ewald: bool = False,
     ewald_eta: float | None = None,
     ewald_cutoff: int = 4,
+    contact_average: str = "single",
 ) -> NDArray:
     """Build the FFT propagator kernel, for reuse across right-hand sides.
 
@@ -860,6 +1039,7 @@ def build_slab_kernels(
         lattice_ewald=lattice_ewald,
         ewald_eta=ewald_eta,
         ewald_cutoff=ewald_cutoff,
+        contact_average=contact_average,
     )
 
 
@@ -1273,6 +1453,7 @@ def slab_reflection_matrix(
     volume_averaged: bool = False,
     n_orders: int = 2,
     include_sh: bool = True,
+    kernel_hat: NDArray | None = None,
 ) -> SlabReflectionMatrix:
     """Full specular reflection matrix via three periodic Foldy-Lax solves.
 
@@ -1359,6 +1540,7 @@ def slab_reflection_matrix(
             volume_averaged=volume_averaged,
             n_orders=n_orders,
             psi0=psi0,
+            kernel_hat=kernel_hat,
         )
         amps[wave_type] = slab_weyl_amplitudes(result, T_local, p=p)
         iters[wave_type] = result.n_gmres_iter

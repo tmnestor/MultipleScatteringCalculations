@@ -7,6 +7,7 @@ from numpy.testing import assert_allclose
 from cubic_scattering.effective_contrasts import MaterialContrast, ReferenceMedium
 from cubic_scattering.slab_scattering import (
     SlabGeometry,
+    build_slab_kernels,
     compute_slab_scattering,
     compute_slab_tmatrices,
     kennett_reference_matrix,
@@ -244,11 +245,57 @@ def test_periodic_uniform_slab_closer_to_kennett():
 
 _KA_KENNETT = (0.1, 0.2, 0.3, 0.5)
 # Measured VA-vs-Kennett errors (n=2) above, with margin (cube c₂+c₄ form factor).
-_VA_KENNETT_TOL = {0.1: 0.010, 0.2: 0.014, 0.3: 0.018, 0.5: 0.024}
+# Re-baselined 2026-09-15 onto the EXACT lattice sum (`lattice_ewald=True`) and
+# the SINGLE-average contact operator (`contact_average='single'`, the default).
+#
+# Two separate moves, kept separate here so neither hides the other:
+#
+#   ka    truncated   exact/double   exact/SINGLE   tol
+#   0.1   1.0e-2      5.90e-4        4.19e-4        6.3e-4
+#   0.2   1.4e-2      3.39e-4        1.21e-3        1.8e-3
+#   0.3   1.8e-2      1.78e-3        2.62e-3        3.9e-3
+#   0.5   2.4e-2      8.80e-3        7.81e-3        1.2e-2
+#
+# Leaving the truncated path (10-40x) is an unambiguous gain. Moving to the
+# single average TIGHTENS ka = 0.1 and 0.5 but LOOSENS ka = 0.2 and 0.3, and
+# that is NOT hidden: at a coarse mesh the double average benefits from the
+# T-matrix's own O((ka)^6) truncation being partly cancelled by the propagator
+# error, so it flatters at mid ka. The default was chosen on the REFINEMENT
+# ladder, where that cancellation is absent because ka_cell -> 0: the double
+# average saturates (1.47e-3 -> 2.91e-3 over n_z = 1..8) while the single
+# converges (1.89e-3 -> 5.70e-4), in BOTH channels. See
+# `slab_scattering._contact_operator`.
+#
+# Pinned at ~1.5x the measured error, so drift is caught without being brittle.
+_VA_KENNETT_TOL = {0.1: 6.3e-4, 0.2: 1.8e-3, 0.3: 3.9e-3, 0.5: 1.2e-2}
 
 
 def _rpp_vol_avg(geom, mat, omega, *, volume_averaged, n_orders=2):
-    """Periodic normal-incidence specular R_PP for a given propagator mode."""
+    """Periodic normal-incidence specular R_PP, on the EXACT lattice sum.
+
+    ⚠ `lattice_ewald=True` IS LOAD-BEARING, not a tuning flag. Without it the
+    lateral sum is TRUNCATED -- it covers only dx, dy in [-(M-1), M-1] and wraps
+    -- and at M = 4 roughly 74% of the measured error is that artifact. Every
+    number this class asserts is ~1e-3 or smaller, i.e. an order below the
+    artifact, so on the truncated path these tests were adjudicating a defect
+    rather than the quantity named in their docstrings.
+
+    That was not hypothetical. Three findings documented in this class were
+    artifacts of the truncated sum and INVERT on the exact one:
+      * "point beats VA at ka >= 0.3"  -- VA now beats point at EVERY ka;
+      * the oblique R_PP "documented regression" above the no-FF baseline
+        -- it closes (3.37% -> 1.98%, below the 2.03% baseline);
+      * "n=3 is worse than n=2 at ka=0.5" -- n=3 is now better.
+    """
+    kernel_hat = build_slab_kernels(
+        geom,
+        omega,
+        mat.ref,
+        periodic=True,
+        volume_averaged=volume_averaged,
+        n_orders=n_orders,
+        lattice_ewald=True,
+    )
     res = compute_slab_scattering(
         geom,
         mat,
@@ -259,6 +306,7 @@ def _rpp_vol_avg(geom, mat, omega, *, volume_averaged, n_orders=2):
         volume_averaged=volume_averaged,
         n_orders=n_orders,
         periodic=True,
+        kernel_hat=kernel_hat,
     )
     T_local = compute_slab_tmatrices(geom, mat, omega)
     return slab_rpp_periodic(res, T_local, p=0.0)
@@ -296,31 +344,31 @@ class TestVolumeAveragedKennettAccuracy:
             f"ka={ka}: vol-avg vs Kennett rel-err {rel_err:.4e} exceeds {tol}"
         )
 
-    # Honest scope: vol-avg STRICTLY beats point only at low ka (≤ 0.2).
-    # The single-site form-factor correction supplies real (ka)² content to
-    # BOTH propagator modes, and toward the top of the band it helps the point
-    # mode slightly more, so the "beats point" property is FALSE at ka ≥ 0.3
-    # (point is marginally better there).  Measured 2026-06-14 (cube c₂+c₄ FF):
-    #   ka    err VA n=2   err PT n=2   verdict
-    #   0.10  0.76%        1.21%        VA beats point (strict)
-    #   0.20  1.12%        1.40%        VA beats point (strict)
-    #   0.30  1.59%        1.57%        point beats VA by 0.02% (within envelope)
-    #   0.50  2.14%        1.70%        point beats VA by 0.44% (within envelope)
-    # The test is split accordingly: a STRICT beats-point assertion for
-    # ka ≤ 0.2, and a documented within-envelope-of-point assertion for
-    # ka ≥ 0.3 (NOT a strict guarantee — both modes are far below the no-FF
-    # baseline; the small VA deficit at high ka is a coarse-mesh effect).
     @pytest.mark.parametrize("ka", _KA_KENNETT)
-    def test_vol_avg_beats_point_low_ka_else_within_envelope(self, ka):
-        """Vol-avg beats point STRICTLY for ka ≤ 0.2; within-envelope for ka ≥ 0.3.
+    def test_vol_avg_beats_point_at_every_ka(self, ka):
+        """Vol-avg beats the point propagator STRICTLY at every ka.
 
-        The named guarantee — volume averaging is at least as accurate as the
-        point propagator against Kennett — holds STRICTLY only at low ka.  At
-        ka ≥ 0.3 the form factor (which improved both modes vs no-FF) helps the
-        point mode marginally more, so vol-avg is NOT strictly better there; we
-        assert only that it stays within a measured envelope of point
-        (~0.05% at ka=0.3, ~0.5% at ka=0.5).  This split keeps the assertion
-        honest: the strict claim is made only where it is true.
+        ⚠ THIS ASSERTION WAS STRENGTHENED ON 2026-09-15, and the reason is a
+        correction rather than an improvement in the physics.
+
+        The previous version split at ka = 0.3, asserting only a
+        "within-envelope" property above it, because the point mode measured
+        marginally BETTER there (0.30: point 1.57% vs VA 1.59%; 0.50: point
+        1.70% vs VA 2.14%).  That split was honest about what was measured --
+        but what was measured was the TRUNCATED lateral sum, not the
+        propagator.  On the exact sum (`lattice_ewald=True`, see `_rpp_vol_avg`)
+        the crossover does not exist:
+
+            ka    err VA      err point    ratio
+            0.10  5.90e-4     4.29e-3      7.3x
+            0.20  3.39e-4     5.17e-3      15.3x
+            0.30  1.78e-3     6.70e-3      3.8x
+            0.50  8.80e-3     1.24e-2      1.4x
+
+        So volume averaging is strictly more accurate across the whole band,
+        and the documented high-ka "coarse-mesh effect" was an artifact of the
+        truncation. The margin is kept at 1e-4 -- the claim is strict, not
+        envelope-based.
         """
         geom, mat = self._geom_mat()
         omega = ka * REF.beta / self.A
@@ -330,21 +378,10 @@ class TestVolumeAveragedKennettAccuracy:
         R_pt = _rpp_vol_avg(geom, mat, omega, volume_averaged=False, n_orders=2)
         err_va = abs(R_va - R_K) / abs(R_K)
         err_pt = abs(R_pt - R_K) / abs(R_K)
-        if ka <= 0.2:
-            # STRICT: vol-avg is genuinely at least as accurate as point.
-            assert err_va <= err_pt + 1e-4, (
-                f"ka={ka}: vol-avg error {err_va:.4e} should STRICTLY beat point "
-                f"{err_pt:.4e} (low-ka beats-point guarantee)"
-            )
-        else:
-            # WITHIN-ENVELOPE (documented, not strict): point is marginally
-            # better; vol-avg must not fall outside the measured envelope.
-            envelope = {0.3: 5e-4, 0.5: 5e-3}[ka]
-            assert err_va <= err_pt + envelope, (
-                f"ka={ka}: vol-avg error {err_va:.4e} exceeds point {err_pt:.4e} "
-                f"by more than the documented envelope {envelope} "
-                f"(point marginally beats VA at high ka — coarse-mesh effect)"
-            )
+        assert err_va <= err_pt + 1e-4, (
+            f"ka={ka}: vol-avg error {err_va:.4e} should STRICTLY beat point "
+            f"{err_pt:.4e} — strict at EVERY ka on the exact lattice sum"
+        )
 
     @pytest.mark.parametrize("ka", _KA_KENNETT)
     def test_n_orders_convergence(self, ka):
@@ -411,32 +448,40 @@ class TestVolumeAveragedKennettAccuracy:
         omega = ka * REF.beta / self.A
         H = geom.d * geom.N_z
         p = 1e-4  # sub-critical: p < 1/alpha = 2e-4
+        kernel_hat = build_slab_kernels(
+            geom, omega, mat.ref, periodic=True, volume_averaged=True,
+            n_orders=2, lattice_ewald=True,
+        )
         sm = slab_reflection_matrix(
-            geom, mat, omega, p=p, volume_averaged=True, n_orders=2
+            geom, mat, omega, p=p, volume_averaged=True, n_orders=2,
+            kernel_hat=kernel_hat,
         )
         R_mod = sm.to_modified()
         kref = kennett_reference_matrix(REF, CONTRAST, H=H, omega=omega, p=p)
         err_pp = abs(R_mod[0, 0] - kref.R_PP) / abs(kref.R_PP)
         err_ss = abs(R_mod[1, 1] - kref.R_SS) / abs(kref.R_SS)
-        # R_SS: form factor IMPROVED the floor; assert the improvement explicitly
-        # (must be well below the no-FF 6.61%).  Measured cube 4.65%.
-        assert err_ss < 0.050, (
-            f"oblique R_SS vol-avg vs Kennett {err_ss:.4e} > 5.0% "
-            f"(form factor must keep R_SS below the no-FF 6.61% floor; "
-            f"measured cube 4.65%, sphere 4.78%)"
+        # ═══ RE-BASELINED 2026-09-15 ONTO THE EXACT LATTICE SUM ═══════════════
+        # Everything above this line was measured on the TRUNCATED spatial path.
+        # On the exact sum both channels improve sharply and the R_PP
+        # "documented regression" CLOSES:
+        #
+        #     channel   truncated   exact     note
+        #     R_PP      3.37e-2     1.98e-2   now BELOW the 2.03% no-FF baseline
+        #     R_SS      4.65e-2     1.29e-2   3.6x better
+        #
+        # The old test asserted `err_pp > 0.0203` and pinned a 3.3-3.7% band,
+        # with the docstring saying: "if this now PASSES below baseline, the
+        # artifact closed and the comment is stale". It has, and it was — the
+        # artifact was the truncated lateral sum, not a per-voxel Bloch-phase
+        # effect. The narrative above is kept as the record of what was believed
+        # when it was measured through the truncation.
+        assert err_ss < 0.016, (
+            f"oblique R_SS vol-avg vs Kennett {err_ss:.4e} > 1.6% "
+            f"(exact-lattice-sum baseline 1.29e-2; was 4.65% truncated)"
         )
-        # R_PP: this is a KNOWN, DOCUMENTED REGRESSION at this coarse mesh, not
-        # absorbed silently.  No-FF 2.03% → cube-FF 3.37% (the in-plane-Bloch-
-        # phase / per-voxel artifact described above; closes with mesh
-        # refinement).  We pin the measured value tightly (3.37% ± 0.3%) so any
-        # FURTHER drift is caught, rather than loosening to hide it.
-        R_PP_NO_FF = 0.0203  # measured baseline before the form factor
-        assert err_pp > R_PP_NO_FF, (
-            f"oblique R_PP {err_pp:.4e}: expected the documented coarse-mesh "
-            f"regression above the no-FF baseline {R_PP_NO_FF} — if this now "
-            f"PASSES below baseline, the artifact closed and the comment is stale"
-        )
-        assert 0.033 < err_pp < 0.037, (
-            f"oblique R_PP vol-avg vs Kennett {err_pp:.4e} outside the pinned "
-            f"documented-regression band 3.3–3.7% (measured 3.37%); investigate drift"
+        assert err_pp < 0.024, (
+            f"oblique R_PP vol-avg vs Kennett {err_pp:.4e} > 2.4% "
+            f"(exact-lattice-sum baseline 1.98e-2; was 3.37% truncated). The "
+            f"old above-baseline regression assertion is GONE: it closed with "
+            f"the exact lattice sum."
         )
