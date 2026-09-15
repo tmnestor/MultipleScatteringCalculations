@@ -124,14 +124,45 @@ Do[B = blocks[key];
    Print["--- ", key, "   B.B^-1 = I : ", ok, "   det B = ", Simplify[Det[B]]],
  {key, Keys[irreps]}];
 
+(* ---------- the inverses, written out ---------- *)
 Print[];
-Print["[5] the 1x1 and 2x2 inverses in closed form:"];
-Do[Print["    ", key, " :  ", MatrixForm[Simplify[invs[key]]]],
- {key, {"A1u", "A2u", "Eu"}}];
+Print["=============================================================="];
+Print["THE INVERSES IN CLOSED FORM"];
+Print["=============================================================="];
+(* B^-1 = adj(B) / det(B). The ADJUGATE is what to print: its entries are
+   cofactor determinants, i.e. POLYNOMIALS in a..t with no denominators. Naively
+   printing Inverse[B] instead gives every entry over the full determinant, and
+   multiplying back through by det and expanding does NOT cancel -- it
+   distributes, and the 4x4 came out at 2.9 MB of unusable output. *)
+adjugate[B_] := Module[{nn = Length[B]},
+   If[nn == 1, {{1}},
+     Table[(-1)^(ii + jj) Det[Drop[Transpose[B], {ii}, None][[All, Drop[Range[nn], {jj}]]]],
+       {ii, nn}, {jj, nn}]]];
 
+Do[B = blocks[key]; nn = Length[B];
+   Print[];
+   Print["--- ", key, "^-1 = adj/det   (", nn, "x", nn, ", appears ",
+     dims[key], " times in M^-1) ---"];
+   Print["    det = ", Factor[Det[B]]];
+   adj = Factor /@ adjugate[B];
+   Print["    adj ="];
+   Do[Print["      [", ii, ",", jj, "]  ", adj[[ii, jj]]], {ii, nn}, {jj, nn}];
+   Print["    check adj.B == det I : ",
+     Simplify[adj . B - Det[B] IdentityMatrix[nn]] === ConstantArray[0, {nn, nn}]],
+ {key, Keys[irreps]}];
+
+(* ---------- verification, MEMORY-LEAN ----------
+   ⚠ NOT a symbolic Det[M]: the determinant of a 27x27 matrix in 19 parameters
+   is an astronomically large expression and exhausts memory. Exact RATIONAL
+   parameter points cost nothing and prove MORE, because the characteristic
+   polynomial can be compared rather than just the determinant -- see
+   CubeT27CommutantVerify.wl, which does this at five independent points.     *)
 Print[];
-Print["[6] det M factorises over the blocks:"];
-detFromBlocks = Simplify[Times @@ Table[Det[blocks[key]]^dims[key], {key, Keys[irreps]}]];
-Print["    prod det(B_lambda)^d_lambda = ", detFromBlocks];
-Print["    equals Det[M] : ", Simplify[detFromBlocks - Det[M]] === 0];
+Print["[5] verification at an exact rational point (see CubeT27CommutantVerify.wl"];
+Print["    for the full characteristic-polynomial identity at five points):"];
+SeedRandom[7];
+sub = Thread[vars -> Table[RandomInteger[{2, 40}]/RandomInteger[{1, 5}], Length[vars]]];
+dm = Det[M /. sub];
+db = Times @@ Table[Det[blocks[key] /. sub]^dims[key], {key, Keys[irreps]}];
+Print["    Det[M] == prod det(B_lambda)^d_lambda : ", dm === db];
 Print["=============================================================="];
