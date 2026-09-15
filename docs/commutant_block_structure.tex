@@ -1,0 +1,221 @@
+\documentclass[11pt]{article}
+\usepackage{fontspec}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.6cm]{geometry}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\title{Why the $27\times27$ cubic system has an analytic inverse:\\
+       the commutant of $O_h$ on $\mathbb{R}^3\otimes\mathbb{R}^3\otimes\mathbb{R}^3$}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The dynamic single-site system for a cubic voxel is a $27\times27$ matrix $M$
+carrying $19$ independent entries. Inverting it by brute force produces an
+expression of no use to anybody. This note explains why that is the wrong thing
+to do: $M$ commutes with the octahedral group acting on
+$\mathbb{R}^3\otimes\mathbb{R}^3\otimes\mathbb{R}^3$, and Schur's lemma then
+forces $M$ into block-diagonal form in a basis fixed by the \emph{symmetry
+alone}. The parameters $a,\dots,t$ move the eigenvalues; they cannot move the
+eigenvectors. Inversion therefore reduces to inverting a handful of small
+blocks, analytically and in general moduli.
+\end{abstract}
+
+%======================================================================
+\section{The space and the group}
+%======================================================================
+
+The unknowns are \emph{raw} derivatives --- $\partial_p\partial_q u_i$ with all
+three indices free and no symmetrisation --- so the solution space is
+\[
+  V \;=\; \mathbb{R}^3\otimes\mathbb{R}^3\otimes\mathbb{R}^3,
+  \qquad \dim V = 27 .
+\]
+This is worth stating plainly because it is \emph{not} the space used by the
+Voigt-based $T_{27}$, which is $3\oplus6\oplus18$ (displacement, symmetric
+strain, quadratic) and projects the antisymmetric part out. The two spaces have
+the same dimension and different content.
+
+A cube is invariant under the octahedral group $O_h$, realised concretely as the
+$48$ signed permutation matrices --- every $3\times3$ matrix with exactly one
+$\pm1$ in each row and column. Because $V$ is a threefold tensor power, each
+$R\in O_h$ acts on it as
+\[
+  \rho(R) \;=\; R\otimes R\otimes R .
+\]
+
+\paragraph{Verified.} $M$ commutes with $\rho$ on the generators of $O_h$ --- a
+$90^\circ$ rotation about $z$, a $120^\circ$ rotation about $(111)$, and the
+mirror $z\mapsto-z$:
+\[
+  \rho(R)\,M\,\rho(R)^{-1} - M \;=\; 0
+  \qquad\text{identically in } a,\dots,t .
+\]
+Checked symbolically, not numerically: the difference is the zero matrix as a
+polynomial identity in the nineteen parameters, so it holds for every medium and
+every frequency, not at a sampled point.
+
+%======================================================================
+\section{The consequence}
+%======================================================================
+
+\begin{theorem}[Schur]
+Let $V=\bigoplus_\lambda \Gamma_\lambda\otimes\mathbb{C}^{m_\lambda}$ be the
+isotypic decomposition of $V$ under $G$, where $\Gamma_\lambda$ is an irreducible
+representation of dimension $d_\lambda$ occurring with multiplicity $m_\lambda$.
+Then every $G$-equivariant operator $M$ has the form
+\[
+  M \;=\; \bigoplus_\lambda \; \mathrm{id}_{\Gamma_\lambda} \otimes\, B_\lambda ,
+  \qquad B_\lambda \in \mathbb{C}^{m_\lambda\times m_\lambda},
+\]
+and the commutant algebra is $\mathrm{End}_G(V)\cong\bigoplus_\lambda
+\mathbb{C}^{m_\lambda\times m_\lambda}$, of dimension $\sum_\lambda m_\lambda^2$.
+\end{theorem}
+
+The content for us is the placement of the tensor factors. $M$ acts as the
+\emph{identity} on the internal index of each irreducible representation and as
+an $m_\lambda\times m_\lambda$ matrix on the multiplicity space. Two things
+follow, and they are what make the problem tractable.
+
+\begin{corollary}[The basis is parameter-free]
+A symmetry-adapted basis block-diagonalises $M$ for \emph{all} values of
+$a,\dots,t$ simultaneously. The nineteen parameters enter only through the
+entries of the small matrices $B_\lambda$; they cannot rotate the blocks,
+because the blocks are determined by $O_h$ before $M$ is known.
+\end{corollary}
+
+\begin{corollary}[Inversion is small]
+\[
+  M^{-1} \;=\; \bigoplus_\lambda \;\mathrm{id}_{\Gamma_\lambda}\otimes\, B_\lambda^{-1},
+\]
+so inverting a $27\times27$ matrix costs exactly the inversion of the
+$B_\lambda$, whose sizes are the \emph{multiplicities} $m_\lambda$, each result
+reused $d_\lambda$ times. A brute-force symbolic inverse of $M$ recomputes the
+same small quantities $27$ times over, in a basis that hides them.
+\end{corollary}
+
+%======================================================================
+\section{What is measured}
+%======================================================================
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lr}
+\toprule
+quantity & value \\
+\midrule
+$|O_h|$ & $48$ \\
+$\dim\mathrm{End}_G(V)=\sum_\lambda m_\lambda^2
+  =\frac{1}{48}\sum_{R}(\operatorname{tr}R)^6$ & $31$ \\
+free parameters in $M$ & $19$ \\
+generic eigenvalue degeneracies of $M$ & $\{1,\,2,\,3^{\times8}\}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The commutant dimension is computed exactly from the character
+$\chi(R)=(\operatorname{tr}R)^3$ of $\rho$, with no character table required,
+since $\sum_\lambda m_\lambda^2 = \langle\chi,\chi\rangle$.
+
+Two readings of this table matter.
+
+\paragraph{$M$ does not fill its commutant.} Nineteen parameters inside a
+$31$-dimensional algebra means $M$ carries $12$ further relations beyond
+$O_h$-equivariance. Those are physics, not symmetry --- reciprocity and the
+structure of the Green operator --- and they are worth identifying, because each
+one further constrains the $B_\lambda$.
+
+%======================================================================
+\section{The decomposition}
+%======================================================================
+
+Everything appearing is \emph{ungerade}, and this needs no computation:
+$\rho(-I)=(-I)\otimes(-I)\otimes(-I)=-\mathbb{1}_{27}$, so inversion acts as
+$-1$ on all of $V$ and every gerade irreducible is excluded. Computed
+multiplicities confirm it --- $A_{1g}$, $T_{1g}$, $T_{2g}$ and the
+symmetric-traceless $E_g\oplus T_{2g}$ all return $0$.
+
+The characters were built explicitly rather than copied from a table, each
+verified irreducible by $\langle\chi,\chi\rangle=1$: $A_{1u}=\det R$;
+$A_{2u}=\operatorname{sgn}(P)\det R$ with $P$ the permutation part;
+$T_{1u}=\operatorname{tr}R$ (the defining representation);
+$T_{2u}=T_{2g}\!\cdot\!\det R$ with
+$T_{2g}=\tfrac12\bigl((\operatorname{tr}R)^2-\operatorname{tr}R^2\bigr)\operatorname{sgn}(P)$;
+and $E_u=E_g\!\cdot\!\det R$ with $E_g$ the symmetric-traceless part less
+$T_{2g}$. Then
+\[
+  \boxed{\;T_{1u}\otimes T_{1u}\otimes T_{1u}
+   \;=\; A_{1u}\;\oplus\;A_{2u}\;\oplus\;2\,E_u\;\oplus\;4\,T_{1u}\;\oplus\;3\,T_{2u}\;}
+\]
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+irreducible & $d_\lambda$ & $m_\lambda$ & block $B_\lambda$ & copies \\
+\midrule
+$A_{1u}$ & 1 & 1 & $1\times1$ & 1 \\
+$A_{2u}$ & 1 & 1 & $1\times1$ & 1 \\
+$E_u$    & 2 & 2 & $2\times2$ & 2 \\
+$T_{2u}$ & 3 & 3 & $3\times3$ & 3 \\
+$T_{1u}$ & 3 & 4 & $4\times4$ & 3 \\
+\midrule
+ & \multicolumn{2}{r}{$\sum m_\lambda d_\lambda=27$} &
+   \multicolumn{2}{r}{$\sum m_\lambda^2=31$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Both totals are independent checks and both are met: $27$ is $\dim V$, and $31$
+was obtained twice by separate routes --- the character inner product
+$\frac{1}{48}\sum_R(\operatorname{tr}R)^6=1488/48$, and an exact linear solve for
+the commutant. The count of five irreducibles matches the dimension of the
+centre of the commutant, computed independently.
+
+\paragraph{Consistency with the eigenvalue probe.} The degeneracies
+$\{1,2,3^{\times8}\}$ follow: one eigenvalue of degeneracy $1$ from each of
+$A_{1u}$ and $A_{2u}$, two of degeneracy $2$ from $E_u$, and $4+3=7$ of
+degeneracy $3$ from $T_{1u}$ and $T_{2u}$ --- eleven distinct eigenvalues in
+all. The probe reported ten because one degeneracy-$1$ and one degeneracy-$2$
+eigenvalue fell within its clustering tolerance and were counted as a single
+degeneracy-$3$ value. The exact characteristic polynomial shows the same near
+coincidence. This is why the decomposition is settled by characters and by the
+commutant, not by a degeneracy count.
+
+\paragraph{The practical result.}
+\[
+  M^{-1} \;=\; \bigoplus_\lambda \mathrm{id}_{\Gamma_\lambda}\otimes B_\lambda^{-1},
+  \qquad
+  \text{blocks } 1\times1,\;1\times1,\;2\times2,\;3\times3,\;4\times4 .
+\]
+The largest object to invert symbolically is a $4\times4$. That is closed form at
+general $\lambda,\mu$ and general frequency, and it is the whole content of the
+$27\times27$ inverse.
+
+%======================================================================
+\section{Why this is the right route}
+%======================================================================
+
+The practical claim is not that a symbolic inverse is unobtainable otherwise ---
+one exists, at roughly a megabyte of expression. It is that such an object
+answers no question. The block form answers several:
+
+\begin{itemize}
+\item each $B_\lambda^{-1}$ is small enough to read, so the frequency and
+      modulus dependence of each symmetry channel is visible;
+\item a channel that misbehaves (the shear channel, in this project's history)
+      is isolated in one block rather than smeared over $729$ entries;
+\item the static limit can be taken blockwise and checked against the
+      independently derived static system;
+\item the construction is valid at general $\lambda,\mu$, so it is not tied to
+      the Poisson-solid values at which the existing inverse was demonstrated.
+\end{itemize}
+
+\end{document}
