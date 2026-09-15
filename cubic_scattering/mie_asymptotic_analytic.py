@@ -52,7 +52,7 @@ class NondimContrast:
         Dlambda: float,
         Dmu: float,
         Drho: float,
-    ) -> "NondimContrast":
+    ) -> NondimContrast:
         """Build from physical (SI) values. mu0 = rho*beta², lam0_phys = rho*alpha² - 2 mu0."""
         mu0 = rho * beta**2
         lam0_phys = rho * alpha**2 - 2.0 * mu0

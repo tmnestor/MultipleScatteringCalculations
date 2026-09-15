@@ -28,7 +28,7 @@ Run:  conda run -n seismic pytest cubic_scattering/tests/test_intraplane_converg
 from __future__ import annotations
 
 import json
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 import numpy as np
@@ -62,7 +62,7 @@ def _sph_h(q, z):
     return np.sqrt(np.pi / (2.0 * z)) * hankel1(q + 0.5, z)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _gaunt(l1, m1, l2, m2, l3, m3):
     """Memoised Gaunt coefficient (sympy wigner_3j is symbolic/slow; many repeats)."""
     if m1 + m2 + m3 != 0 or abs(m1) > l1 or abs(m2) > l2 or abs(m3) > l3:

@@ -15,6 +15,7 @@ couple through the fluid and is excluded.
 
 import time
 from dataclasses import dataclass, field
+from datetime import UTC
 from pathlib import Path
 
 import numpy as np
@@ -396,7 +397,7 @@ def write_log(result: OceanBottomResult, path: str | Path) -> None:
         result: Completed simulation result.
         path: Output log file path.
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     path = Path(path)
     cfg = result.config
@@ -418,7 +419,7 @@ def write_log(result: OceanBottomResult, path: str | Path) -> None:
 
     with path.open("w") as f:
         f.write("# Ocean-Bottom Reflection Log\n")
-        f.write(f"# Generated: {datetime.now(timezone.utc).isoformat()}\n\n")
+        f.write(f"# Generated: {datetime.now(UTC).isoformat()}\n\n")
 
         # Configuration
         f.write("## Configuration\n\n")

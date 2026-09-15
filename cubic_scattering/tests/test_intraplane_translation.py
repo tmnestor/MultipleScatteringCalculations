@@ -19,6 +19,7 @@ Run:  conda run -n seismic pytest cubic_scattering/tests/test_intraplane_transla
 
 from __future__ import annotations
 
+import functools
 import json
 from pathlib import Path
 
@@ -129,9 +130,8 @@ def test_projection_matches_mathematica(ref):
 def test_closedform_matches_mathematica(ref):
     """Independent Python Gaunt/Wigner-3j closed form vs Mathematica, for every entry."""
     wigner = pytest.importorskip("sympy.physics.wigner", reason="sympy not installed")
-    from functools import lru_cache
 
-    @lru_cache(maxsize=None)
+    @functools.cache
     def gaunt(l1, m1, l2, m2, l3, m3):
         if m1 + m2 + m3 != 0 or abs(m1) > l1 or abs(m2) > l2 or abs(m3) > l3:
             return 0.0
