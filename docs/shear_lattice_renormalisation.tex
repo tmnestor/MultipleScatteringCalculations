@@ -23,10 +23,10 @@
 \newcommand{\Drho}{\Delta\rho}
 \newcommand{\Kren}{K}
 
-\title{A lattice renormalisation of the shear depolarisation\\
-of a cubic voxel\\[6pt]
-\large Identification, measurement, and correction of the residual error\\
-in a space-filling cubic-voxel discretisation}
+\title{An empirical shear-channel correction for a\\
+space-filling cubic-voxel discretisation\\[6pt]
+\large Identification and measurement of the residual error,\\
+and an honest account of what the correction is and is not}
 \author{Tod Nestor}
 \date{September 2026}
 
@@ -62,6 +62,15 @@ scheme converges under refinement instead of saturating.
 
 The constant is measured, universal and predictive. \textbf{It is not derived},
 and this document says so throughout. $8/9$ is excluded.
+
+Two caveats are developed in \S7 and \S8 rather than buried. First, $\Kren$ is
+tied to the $T_9$ single-site baseline: repeating the optimisation from the
+$T_{27}$ Galerkin strain sector puts the isolated response on the \emph{other}
+side of the optimum, so the $T_9$-derived constant makes $T_{27}$ worse. Second,
+and more bluntly: \textbf{the word ``renormalisation'' asserts a mechanism that
+is not established here}. \S8 sets out the case that $\Kren$ is a fudge factor
+and the case that it is more than one, and does not pretend the matter is
+settled.
 \end{abstract}
 
 \tableofcontents
@@ -177,10 +186,11 @@ residual is the subject of the rest of this document.
 \section{Experimental procedure: elimination}
 %======================================================================
 
-Each suspect was tested by a measurement with a pre-stated outcome, and every one
-of the first four was refuted. They are recorded because the refutations
-constrain the answer as much as the confirmation does, and because three of them
-are natural enough to be proposed again.
+Each suspect was tested by a measurement with a pre-stated outcome. Three were
+refuted outright; the fourth (\S3.4) turned out to have been tested unfairly and
+remains \emph{open}. They are recorded because the refutations constrain the
+answer as much as the confirmation does, and because each is natural enough to be
+proposed again.
 
 \subsection{Signature of the residual}
 
@@ -237,7 +247,7 @@ test was three orders of magnitude too blunt to detect what was there. A null
 result from a coarse instrument is not evidence of absence.
 \end{tcolorbox}
 
-\subsection{Refuted: the 27-component single-site response}
+\subsection{\emph{Not} refuted --- untested: the 27-component single-site response}
 
 The nine-component basis represents the exciting field by value and gradient at
 the cell centre; the quadratic modes of the 27-component Galerkin T-matrix
@@ -246,11 +256,15 @@ represent its curvature.
 \emph{Measured:} substituting the $T_{27}$ strain sector makes the answer
 $3\times$ \emph{worse} ($8.61\times10^{-4}\to2.61\times10^{-3}$).
 
-This is \textbf{not} a refutation of $T_{27}$. It is a refutation of the
-\emph{pairing}: a 27-mode single-site response was driven through a nine-mode
-propagator. The companion derivation of the generalised inter-voxel propagator
-states in advance that for $T_{27}$ ``the propagator must couple all 27 modes''.
-The measurement confirms that warning rather than testing the physics.
+This is \textbf{not} a refutation of $T_{27}$, and it is not a test of it either.
+A 27-mode single-site response was driven through a nine-mode propagator; the
+companion derivation of the generalised inter-voxel propagator states in advance
+that for $T_{27}$ ``the propagator must couple all 27 modes''. The measurement
+confirms that warning rather than probing the physics, and the comparison is
+therefore \textbf{rigged against $T_{27}$ by construction} --- see
+\S\ref{sec:t27-caveat}, where the consequences for this document's own inferences
+are drawn out. The entry is retained in this list only so that the suspect is not
+silently dropped; it is \emph{unresolved}, not eliminated.
 
 \subsection{Refuted: propagator averaging beyond contact}
 
@@ -329,26 +343,30 @@ returned bit-identical numbers.) Scanning it:
 
 The residual behaves as a \emph{single wrong scalar}, with a sharp minimum
 displaced from the isolated-cube value --- and \textbf{the minimum sits in the
-same place at both refinements}, which is what a per-cell renormalisation must
-do and what a numerical artifact would not.
+same place at both refinements}. That is a necessary condition for any per-cell
+explanation, and one a numerical artifact of the discretisation would be unlikely
+to meet; it is not on its own sufficient to establish a mechanism
+(\S\ref{sec:fudge}).
 
 %======================================================================
-\section{The law}
+\section{The correction, and how far it generalises}
 %======================================================================
 
 \subsection{Statement}
 
 \begin{tcolorbox}[colback=blue!4,colframe=blue!50!black,
-  title=Lattice renormalisation of the shear depolarisation]
-In a space-filling cubic lattice, a cube's shear depolarisation is a fixed
-fraction of its isolated-cube value:
+  title={The shear-channel correction, $T_9$ baseline}]
+For a space-filling cubic lattice of voxels carrying the $T_9$ cube T-matrix,
+setting the shear depolarisation to a fixed fraction of its isolated-cube value
+removes the residual:
 \[
   1-A^{\text{eff}}_{\varepsilon,\text{diag}}
   \;=\; \Kren\,\bigl(1-A^{\text{iso}}_{\varepsilon,\text{diag}}\bigr),
   \qquad
   \Kren = 0.8862 \quad(\text{static, weak-contrast limit}).
 \]
-The dilatational and density channels require no correction.
+The dilatational and density channels require no correction. The restriction to
+the $T_9$ baseline is not cosmetic --- see \S\ref{sec:t27-caveat}.
 \end{tcolorbox}
 
 \subsection{Universality}
@@ -378,7 +396,7 @@ $(\Dmu/\mu_0,\,(ka)^2)$ to the origin gives
   \partial \Kren/\partial (ka)^2 = +33.6 .
 \]
 
-\subsection{At the optimum the identity is recovered}
+\subsection{At the optimum the identity is recovered --- read with care}
 
 \begin{center}
 \begin{tabular}{lrrrrr}
@@ -394,6 +412,12 @@ residual at the optimum & $1.2\!\times\!10^{-8}$ & $3.1\!\times\!10^{-8}$ &
 \end{center}
 
 Five orders of magnitude. \emph{The entire residual is this one scalar.}
+
+⚠ This table shows that one parameter \emph{suffices}, not that it is
+\emph{right}: $s^\star$ is chosen by minimising against Kennett, so hitting
+Kennett at $s^\star$ is guaranteed by construction. The evidence that the
+parameter means something is in \S5.2 (it is the same number everywhere) and \S6
+(it predicts cases it was not fitted to), not here. See \S\ref{sec:fudge}.
 
 \subsection{$8/9$ is excluded}
 
@@ -481,18 +505,171 @@ measurement scripts apply it explicitly so that no result silently depends on an
 unproven number.
 \end{tcolorbox}
 
-The natural route to a derivation is the difference between the isolated cube's
-Eshelby shear component and its space-filling-lattice counterpart --- the same
-class of correction as the packing-fraction renormalisation already established
-for spheres in this project. Two constraints any derivation must satisfy:
+\subsection{$\Kren$ is tied to the $T_9$ baseline, and may not be purely a
+lattice effect}
+\label{sec:t27-caveat}
+
+A sharper question than universality is whether $\Kren$ is a property of the
+\emph{lattice} --- in which case any single-site theory would have to be
+corrected to the same absolute effective contrast $s^\star$ --- or whether part of
+it compensates a deficiency in $T_9$'s own shear response. Substituting the
+$T_{27}$ Galerkin strain sector and repeating the optimisation answers this, and
+the answer is not the comfortable one.
+
+\begin{center}
+\begin{tabular}{llrrr}
+\toprule
+baseline & case & $s_{\text{iso}}$ & optimum $s^\star$ & $\Kren$ \\
+\midrule
+$T_9$   & pure shear & $0.974315$ & $0.977194$ & $0.8879$ \\
+$T_9$   & working    & $0.974300$ & $0.977150$ & $0.8891$ \\
+$T_{27}$ & pure shear & $0.980928$ & $0.978985$ & $1.1019$ \\
+$T_{27}$ & working    & $0.980929$ & $0.972128$ & $1.4615$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Three observations, in increasing order of consequence.
+
+\paragraph{$T_{27}$ starts on the other side of the optimum.} Its isolated shear
+response \emph{overshoots}, so it requires a downward correction, $\Kren>1$.
+Applying the $T_9$-derived $\Kren=0.8862$ to it therefore moves it further away,
+and measurably so: $2.12\times$ worse on pure shear, $1.25\times$ worse on the
+mixed contrast. Plain $T_{27}$ is in fact \emph{better} than plain $T_9$ on pure
+shear ($1.95\times10^{-3}$ against $2.89\times10^{-3}$); the earlier report that
+``$T_{27}$ is $3\times$ worse'' was taken on the mixed contrast alone.
+
+\paragraph{$s^\star$ is not baseline-independent.} It differs by
+$1.8\times10^{-3}$ between the two baselines on pure shear and by
+$5.0\times10^{-3}$ on the mixed case. A single scalar fitted in the shear channel
+is an \emph{absorber}: it takes up whatever else differs between the two
+T-matrices --- and $T_{27}$ also changes $\Dlam^*$ and $\Dmu^*_{\text{off}}$ ---
+provided it projects onto the same observable.
+
+\paragraph{The $T_9$ correction is universal; the $T_{27}$ one is not.} Across
+pure shear and the mixed contrast, $T_9$ requires $0.8879$ and $0.8891$ ---
+agreeing to $0.14\%$ --- whereas $T_{27}$ requires $1.102$ and $1.462$, differing
+by $33\%$.
+
+\begin{tcolorbox}[colback=red!4,colframe=red!45!black,
+  title={The $T_{27}$ comparison is rigged, and cannot be used either way}]
+It is tempting to read the non-universality above as evidence that the $T_{27}$
+optimum ``carries no physical weight''. That reasoning is \textbf{circular} and
+is withdrawn. A 27-mode single-site response driven through a \emph{nine}-mode
+propagator is not a well-posed scheme, and non-universality is precisely what
+such a mismatch produces \emph{regardless of $T_{27}$'s merit}. One cannot use a
+symptom of the rigging as evidence about the thing being rigged.
+
+The consequence cuts against this document's own inferences, not just in
+$T_{27}$'s favour. The suggestion that ``part of $\Kren$ compensates $T_9$'s own
+shear response'' rested on $T_{27}$'s isolated value $0.9809$ being meaningful,
+and it is not. \textbf{The $T_{27}$ arm establishes nothing in either
+direction.} It shows only that the $T_9$-derived constant must not be applied to
+a different baseline --- which is a statement about $\Kren$'s portability, not
+about $T_{27}$.
+
+Likewise \S3.4's ``refuted: the 27-component single-site response'' should be read
+as \emph{untested}, not refuted. A fair assessment of $T_{27}$ requires the
+$27\times27$ generalised propagator, and until it exists no verdict on the
+27-mode physics --- favourable or otherwise --- is available from this work.
+\end{tcolorbox}
+
+\subsection{Routes to a derivation}
+
+The natural route is the difference between the isolated cube's Eshelby shear
+component and its space-filling-lattice counterpart --- the same class of
+correction as the packing-fraction renormalisation already established for
+spheres in this project. Two constraints any derivation must satisfy:
 \begin{enumerate}[nosep]
   \item it must produce $0.8862$ and not $8/9$;
   \item it must act on the deviatoric response \emph{only}, leaving the
     dilatational and density channels untouched --- the channel split of \S4.1 is
-    a sharp constraint and not every mechanism will respect it.
+    a sharp constraint and not every mechanism will respect it;
+  \item it must explain the \textbf{baseline dependence} of
+    \S\ref{sec:t27-caveat} --- or show that it is an artifact of the rigged
+    pairing there, which is the other live possibility and the one that would
+    rescue a purely geometric reading.
 \end{enumerate}
 
-\paragraph{Reproduction.} Every number in this document is produced by scripts in
+%======================================================================
+\section{Is this a renormalisation, or a fudge factor?}
+\label{sec:fudge}
+%======================================================================
+
+The question deserves a direct answer rather than a vocabulary choice, because
+``renormalisation'' asserts a mechanism --- the lattice environment modifying a
+voxel's depolarisation --- and \textbf{no such mechanism is derived here}. What
+is on the table is one scalar, tuned against the very reference it is then scored
+against. That is the definition of a fudge factor, and the burden is on the
+evidence to show it is more.
+
+\subsection{The case that it is a fudge factor}
+
+\begin{itemize}[nosep]
+  \item It is \textbf{not derived}. No calculation produces $0.8862$; it is read
+    off a minimisation.
+  \item It is \textbf{fitted against the arbiter}. Kennett supplies both the
+    target and the score, so agreement at the optimum is guaranteed by
+    construction, not earned. The $\sim\!10^{-8}$ residual at $s^\star$
+    demonstrates only that one parameter suffices to hit one number --- it is
+    \emph{not} independent evidence.
+  \item It is \textbf{baseline-dependent} (\S\ref{sec:t27-caveat}). A genuine
+    statement of the form ``the lattice multiplies the true depolarisation by
+    $0.886$'' ought to hold whichever theory computes the true depolarisation. It
+    demonstrably does not. On its own terms this is the strongest argument
+    against calling $\Kren$ a property of the lattice.
+  \item The name \textbf{does rhetorical work the physics has not paid for}.
+\end{itemize}
+
+\subsection{The case that it is more than one}
+
+\begin{itemize}[nosep]
+  \item \textbf{One parameter, many independent predictions.} $\Kren$ is fixed
+    once, on pure positive shear in the static limit. It is then applied
+    unchanged and could have failed on each of: negative shear --- a
+    \emph{sign reversal} of the contrast, $44\times$; three mixed contrasts,
+    $38\times$, $20\times$, $10\times$; and a threefold stronger contrast.
+  \item \textbf{It does nothing where nothing is due.} The pure-$\lambda$ and
+    pure-density cases come out bit-identical. A fudge factor has to be told
+    which cases to leave alone; this one is not told, and leaves them alone
+    because the shear channel is genuinely where the defect sits (\S4.1).
+  \item \textbf{It restores a structural property, not a magnitude.} Convergence
+    under refinement is qualitative: the uncorrected ladder saturates at ratio
+    $1.00$, the corrected one keeps falling. No single scalar tuned to one
+    reflection coefficient is obliged to change the \emph{rate} at which a
+    sequence converges, and a pure absorber would not.
+  \item \textbf{It is universal in two independent directions} --- $0.3\%$ over
+    sixteen-fold contrast, and flat in frequency until $ka$ grows. A fudge
+    fitted at one operating point has no reason to hold at another.
+\end{itemize}
+
+\subsection{Verdict}
+
+\begin{tcolorbox}[colback=gray!6,colframe=black!62,
+  title={Where this leaves the claim}]
+The evidence supports ``\textbf{an empirical one-parameter correction with real
+predictive content, localised to the shear channel}''. It does \emph{not}
+support ``a lattice renormalisation'', because that names a cause and no cause
+has been established --- and the baseline dependence actively argues against the
+most natural candidate. The title of this document has been set accordingly.
+
+The distinction is not pedantry. A renormalisation would transfer to other
+lattices, other voxel shapes and other single-site theories; a fitted correction
+transfers to none of them without being re-measured. Nothing here licenses the
+former, and $\Kren$ is deliberately not wired into the library for that reason.
+\end{tcolorbox}
+
+What would settle it, in order of decisiveness: a derivation producing $0.8862$
+from the difference between the isolated and space-filling Eshelby shear
+components; failing that, a demonstration that the same constant appears for a
+different voxel aspect ratio or a different lattice, which no fit could be
+expected to survive.
+
+%======================================================================
+\section{Reproduction}
+%======================================================================
+
+\paragraph{} Every number in this document is produced by scripts in
 the repository, run under the project's environment:
 
 \begin{itemize}[nosep,leftmargin=1.4em]
