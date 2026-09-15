@@ -482,14 +482,35 @@ def galerkin_propagator_9x9(
     `Gamma_SS -> -(V d^2/12)^2 d_p d_q G` gives `-d_p d_q G`. Both are the point
     propagator's own blocks.
     """
-    gam = galerkin_block_9x9(r_vec, d, omega, ref, n_quad)
+    return galerkin_propagator(r_vec, d, omega, ref, n_quad, n_modes=9)
+
+
+def galerkin_propagator(
+    r_vec: NDArray,
+    d: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_quad: int = 10,
+    n_modes: int = 9,
+) -> NDArray:
+    """`galerkin_propagator_9x9` at either tier -- see that function for the why.
+
+    The scaling rule is the same at both tiers and was measured, not assumed:
+    field side by the Gram, source side by the lowest surviving moment. What
+    changes at 27 modes is only that those two stop being proportional (the
+    `s_p^2` modes carry a monopole), so neither can stand in for the other.
+    `scripts/gate_t27_far_field.py` pins both.
+    """
+    gam = galerkin_block_9x9(r_vec, d, omega, ref, n_quad, n_modes=n_modes)
     # Field side: the Gram. Source side: the lowest surviving moment -- which for
     # the T9 tier differs from the Gram only by the engineering factor of two on
     # the shear modes. They part company in the quadratic tier.
-    return gam / gram_diagonal(d)[:, None] / far_field_moment(d)[None, :]
+    return gam / gram_diagonal(d, n_modes)[:, None] / far_field_moment(d, n_modes)[None, :]
 
 
-def galerkin_plane_wave_state(k_vec: NDArray, pol: NDArray, centre: NDArray, d: float) -> NDArray:
+def galerkin_plane_wave_state(
+    k_vec: NDArray, pol: NDArray, centre: NDArray, d: float, n_modes: int = 9
+) -> NDArray:
     """A plane wave PROJECTED onto the 9 trial functions, not sampled at a point.
 
     The solver's incident field is `pol * exp(i k . r_centre)` with the strain
@@ -519,24 +540,44 @@ def galerkin_plane_wave_state(k_vec: NDArray, pol: NDArray, centre: NDArray, d: 
         return complex(d) if abs(k) < 1e-12 else complex(2.0 * np.sin(k * a) / k)
 
     def i1(k: complex) -> complex:
-        # Int s e^{iks} ds = -i d/dk [2 sin(k a)/k]
-        if abs(k) < 1e-12:
-            return 1j * 0.0
-        return complex(-1j * (2.0 * a * np.cos(k * a) / k - 2.0 * np.sin(k * a) / k**2))
+        """Int s e^{iks} ds = -i d/dk [2 sin(k a)/k].
 
-    i0s = [i0(k_vec[j]) for j in range(3)]
-    i1s = [i1(k_vec[j]) for j in range(3)]
+        ⚠ THE CANCELLATION, not the removable singularity, sets the cutoff. Both
+        terms are O(1/k) and they cancel to O(k): at k a = 5e-7 each is ~1e6 and
+        the answer is ~8e-8, so the direct form keeps almost no digits. A guard
+        at |k| < 1e-12 fires far too late -- it catches 0/0 and misses this. The
+        symptom is quiet: a long-wavelength limit off by 1.2e-3 with nothing
+        raised.
+        """
+        ka = k * a
+        if abs(ka) < 1e-3:
+            return complex(1j * (2.0 * a**3 * k / 3.0 - a**5 * k**3 / 15.0))
+        return complex(-1j * (2.0 * a * np.cos(ka) / k - 2.0 * np.sin(ka) / k**2))
+
+    def i2(k: complex) -> complex:
+        """Int s^2 e^{iks} ds = -d^2/dk^2 [2 sin(k a)/k].
+
+        The three terms are individually O(k^-2) and cancel to O(1), so the
+        series is used well before k reaches zero -- at k a ~ 1e-4 the direct
+        form has already lost half its digits to that cancellation.
+        """
+        ka = k * a
+        if abs(ka) < 1e-3:
+            return complex(2.0 * a**3 / 3.0 - k**2 * a**5 / 5.0)
+        return complex(2.0 * a**2 * np.sin(ka) / k + 4.0 * a * np.cos(ka) / k**2 - 4.0 * np.sin(ka) / k**3)
+
+    tab = [[i0(k_vec[j]), i1(k_vec[j]), i2(k_vec[j])] for j in range(3)]
     phase = np.exp(1j * float(np.real(np.dot(k_vec, centre))))
 
-    gram = gram_diagonal(d)
+    gram = gram_diagonal(d, n_modes)
 
-    out = np.zeros(9, dtype=complex)
-    for alpha in range(9):
+    out = np.zeros(n_modes, dtype=complex)
+    for alpha in range(n_modes):
         acc = 0.0 + 0.0j
         for c, e, dirn in basis_terms(alpha):
             term = c * pol[dirn]
             for j in range(3):
-                term *= i1s[j] if e[j] == 1 else i0s[j]
+                term *= tab[j][e[j]]
             acc += term
         out[alpha] = acc * phase / gram[alpha]  # gram already carries the V
     return out
@@ -545,8 +586,10 @@ def galerkin_plane_wave_state(k_vec: NDArray, pol: NDArray, centre: NDArray, d: 
 __all__ = [
     "autocorrelation",
     "basis_terms",
+    "far_field_moment",
     "galerkin_block_9x9",
     "galerkin_plane_wave_state",
+    "galerkin_propagator",
     "galerkin_propagator_9x9",
     "gram_diagonal",
 ]

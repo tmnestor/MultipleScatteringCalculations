@@ -16,6 +16,7 @@ from cubic_scattering.galerkin_propagator import (
     basis_terms,
     far_field_moment,
     galerkin_block_9x9,
+    galerkin_plane_wave_state,
     gram_diagonal,
 )
 from cubic_scattering.slab_scattering import _cell_averaged_propagator
@@ -272,6 +273,100 @@ def test_the_quadratic_tier_carries_two_different_source_scales() -> None:
 def test_scale_helpers_reject_an_unsupported_tier(fn) -> None:
     with pytest.raises(ValueError, match="n_modes must be 9 or 27"):
         fn(D, 57)
+
+
+def _project_by_quadrature(k_vec: np.ndarray, pol: np.ndarray, centre: np.ndarray) -> np.ndarray:
+    """The 27 coefficients by brute-force 3-D Gauss on the cell.
+
+    The independent arbiter for `galerkin_plane_wave_state`. It is trustworthy
+    at small k precisely where the closed forms are not: the quadrature sums
+    `s^n e^{iks}` directly and never forms the cancelling O(1/k) terms.
+    """
+    from numpy.polynomial.legendre import leggauss
+
+    x, w = leggauss(24)
+    s = 0.5 * D * x
+    wt = 0.5 * D * w
+    s0, s1, s2 = np.meshgrid(s, s, s, indexing="ij")
+    wgt = wt[:, None, None] * wt[None, :, None] * wt[None, None, :]
+    wave = np.exp(1j * (k_vec[0] * s0 + k_vec[1] * s1 + k_vec[2] * s2))
+    wave = wave * np.exp(1j * complex(np.dot(k_vec, centre)))
+
+    gram = gram_diagonal(D, 27)
+    out = np.zeros(27, dtype=complex)
+    for alpha in range(27):
+        acc = 0.0 + 0.0j
+        for c, e, dirn in basis_terms(alpha):
+            mono = (s0 ** e[0]) * (s1 ** e[1]) * (s2 ** e[2])
+            acc += c * pol[dirn] * np.sum(wgt * mono * wave)
+        out[alpha] = acc / gram[alpha]
+    return out
+
+
+def test_plane_wave_projection_matches_direct_quadrature() -> None:
+    """All 27 coefficients against a brute-force 3-D integral of the wave.
+
+    The degree-2 factor `I2` is new algebra, and nothing else exercises it.
+    """
+    k_vec = np.array([0.31, -0.17, 0.44])
+    pol = np.array([0.2, 1.0, -0.5], dtype=complex)
+    centre = np.array([1.3, -0.4, 2.2])
+    got = galerkin_plane_wave_state(k_vec, pol, centre, D, n_modes=27)
+    np.testing.assert_allclose(got, _project_by_quadrature(k_vec, pol, centre), rtol=1e-10)
+
+
+@pytest.mark.parametrize("k", [3e-3, 1.1e-3, 9e-4, 1e-4, 1e-6, 1e-9])
+def test_plane_wave_is_accurate_across_the_small_k_branch(k: float) -> None:
+    """REGRESSION. The closed forms must hold on BOTH sides of the cutoff.
+
+    I1 and I2 are built from terms that are individually O(1/k) or O(1/k^2) and
+    cancel to O(k) and O(1), so the direct expressions lose digits long before k
+    reaches zero. I1's guard originally fired only at |k| < 1e-12 -- catching the
+    removable singularity and missing the cancellation entirely, which left the
+    long-wavelength limit wrong by 1.2e-3 with nothing raised. Quadrature never
+    forms those terms, so it stays accurate all the way down and can arbitrate.
+    """
+    pol = np.array([0.2, 1.0, -0.5], dtype=complex)
+    centre = np.zeros(3)
+    k_vec = np.array([0.3 * k, k, -0.7 * k])
+    got = galerkin_plane_wave_state(k_vec, pol, centre, D, n_modes=27)
+    want = _project_by_quadrature(k_vec, pol, centre)
+    scale = np.abs(want).max()
+    assert np.abs(got - want).max() / scale < 1e-9
+
+
+def test_plane_wave_reduces_to_the_point_state_at_long_wavelength() -> None:
+    """kd -> 0 must give pol and the engineering Voigt strain."""
+    from cubic_scattering.galerkin_propagator import VOIGT_PAIRS
+
+    pol = np.array([0.3, -0.8, 0.5], dtype=complex)
+    k_vec = np.array([1e-6, 2e-6, -1e-6])
+    got = galerkin_plane_wave_state(k_vec, pol, np.zeros(3), D, n_modes=27)
+    np.testing.assert_allclose(got[:3], pol, rtol=1e-8)
+    for alpha in range(3, 9):
+        p, q = VOIGT_PAIRS[alpha - 3]
+        want = 1j * k_vec[p] * pol[p] if p == q else 1j * (k_vec[q] * pol[p] + k_vec[p] * pol[q])
+        assert got[alpha] == pytest.approx(want, rel=1e-5, abs=1e-14)
+
+
+def test_the_quadratic_source_coefficient_does_not_vanish_at_long_wavelength() -> None:
+    """The monopole again, now on the SOURCE side.
+
+    A pure higher multipole would project to zero from a uniform field. The
+    `s_p^2` modes do not: their coefficient tends to `pol * (V d^2/12)/(V d^4/80)`,
+    a CONSTANT, while the `s_p s_q` modes do vanish. So the quadratic tier is
+    excited at leading order by a uniform incident field, which is the same fact
+    `far_field_moment` records on the radiating side.
+    """
+    pol = np.array([0.3, -0.8, 0.5], dtype=complex)
+    k_vec = np.array([1e-7, 2e-7, -1e-7])
+    got = galerkin_plane_wave_state(k_vec, pol, np.zeros(3), D, n_modes=27)
+    for direction in range(3):
+        for mono in range(3):  # s_p^2 -- monopole-carrying
+            want = pol[direction] * (D**2 / 12.0) / (D**4 / 80.0)
+            assert got[9 + 6 * direction + mono] == pytest.approx(want, rel=1e-6)
+        for mono in range(3, 6):  # s_p s_q -- genuinely quadrupolar
+            assert abs(got[9 + 6 * direction + mono]) < 1e-10
 
 
 def test_reciprocity_holds_for_the_full_27x27() -> None:
