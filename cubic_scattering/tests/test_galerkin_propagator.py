@@ -14,7 +14,9 @@ from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.galerkin_propagator import (
     autocorrelation,
     basis_terms,
+    far_field_moment,
     galerkin_block_9x9,
+    gram_diagonal,
 )
 from cubic_scattering.slab_scattering import _cell_averaged_propagator
 
@@ -140,22 +142,28 @@ def test_basis_index_out_of_range_is_diagnostic() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_quadratic_tier_layout_matches_tmatrix_assembly() -> None:
-    """Indices 9-26 are six monomials x three directions, in that order.
+def test_basis_is_identical_to_the_one_the_tmatrix_is_built_on() -> None:
+    """All 27 trial functions must BE `_build_basis_components`'s first 27.
 
-    The ordering must match `tmatrix_assembly`'s 27-basis, whose strain ordering
-    was separately checked against VOIGT_PAIRS. If the tiers ever stop nesting,
-    every 27-mode result silently permutes.
+    The propagator and T0 have to live on one basis or the Foldy-Lax product is
+    meaningless. Comparing against the actual builder rather than a second
+    hardcoded list is the point: two copies of the same table drift silently,
+    and a permutation here would reorder every 27-mode result without any check
+    noticing.
+
+    It also pins the fact the far-field limit turns on: the quadratic functions
+    are RAW monomials, not mean-subtracted, so `s_p^2` carries a monopole
+    `Int s_p^2 = V d^2/12` in T0's basis as well as in the propagator's.
     """
-    want = [(2, 0, 0), (0, 2, 0), (0, 0, 2), (0, 1, 1), (1, 0, 1), (1, 1, 0)]
-    for direction in range(3):
-        for mono in range(6):
-            terms = basis_terms(9 + 6 * direction + mono)
-            assert len(terms) == 1
-            c, e, dirn = terms[0]
-            assert c == 1.0
-            assert e == want[mono]
-            assert dirn == direction
+    from cubic_scattering.compute_gerade_blocks import _build_basis_components
+
+    ref_basis = _build_basis_components()
+    for alpha in range(27):
+        # the builder stores (component, exponents, coeff); this module stores
+        # (coeff, exponents, direction).
+        want = sorted((c, e, d) for d, e, c in ref_basis[alpha])
+        got = sorted(basis_terms(alpha))
+        assert got == want, f"basis mode {alpha} differs from the T-matrix basis"
 
 
 @pytest.mark.parametrize("pair", [(2, 0), (0, 2), (2, 1), (1, 2), (2, 2)])
@@ -194,6 +202,76 @@ def test_tiers_nest_exactly(r_vec: np.ndarray) -> None:
     g9 = galerkin_block_9x9(r_vec, D, OMEGA, REF, n_quad=8, n_modes=9)
     g27 = galerkin_block_9x9(r_vec, D, OMEGA, REF, n_quad=8, n_modes=27)
     np.testing.assert_array_equal(g27[:9, :9], g9)
+
+
+def _moment(e: tuple[int, int, int], a: float) -> float:
+    """Int s^e over [-a,a]^3, by elementary integration -- no shared code."""
+    out = 1.0
+    for n in e:
+        if n % 2:
+            return 0.0
+        out *= 2.0 * a ** (n + 1) / (n + 1)
+    return out
+
+
+def test_gram_diagonal_is_the_integral_of_phi_dot_phi() -> None:
+    """Both tiers, computed term by term rather than from the closed forms."""
+    g = gram_diagonal(D, 27)
+    assert g.shape == (27,)
+    for alpha in range(27):
+        want = sum(
+            ca * cb * _moment(tuple(x + y for x, y in zip(ea, eb, strict=True)), A)
+            for ca, ea, da in basis_terms(alpha)
+            for cb, eb, db in basis_terms(alpha)
+            if da == db
+        )
+        assert g[alpha] == pytest.approx(want, rel=1e-14)
+    np.testing.assert_allclose(g[:9], gram_diagonal(D), rtol=1e-15)
+
+
+def test_far_field_moment_is_the_lowest_surviving_moment() -> None:
+    """The source scale is the lowest non-vanishing multipole, by construction.
+
+    This is the half of the normalisation the far-field limit pins, and the half
+    that is NOT the Gram -- see `scripts/gate_t27_far_field.py`.
+    """
+    m = far_field_moment(D, 27)
+    for alpha in range(27):
+        _, e, _ = basis_terms(alpha)[0]
+        for order in range(3):
+            vals = [
+                _moment(tuple(e[k] + sum(1 for i in idx if i == k) for k in range(3)), A)
+                for idx in np.ndindex(*(3,) * order)
+            ]
+            if any(abs(v) > 0 for v in vals):
+                assert m[alpha] == pytest.approx(max(abs(v) for v in vals), rel=1e-14)
+                break
+        else:
+            pytest.fail(f"mode {alpha} has no surviving moment up to the quadrupole")
+
+
+def test_the_quadratic_tier_carries_two_different_source_scales() -> None:
+    """s_p^2 is a MONOPOLE; s_p s_q is a quadrupole. One tier, two channels.
+
+    If this ever collapses to a single scale, the quadratic modes have stopped
+    radiating into the displacement channel and every 27-mode far field is wrong.
+    """
+    m = far_field_moment(D, 27)
+    v = D**3
+    for k in range(3):
+        for mono in range(3):  # s_p^2
+            assert m[9 + 6 * k + mono] == pytest.approx(v * D**2 / 12.0, rel=1e-14)
+        for mono in range(3, 6):  # s_p s_q
+            assert m[9 + 6 * k + mono] == pytest.approx(v * D**4 / 144.0, rel=1e-14)
+    # ... and the monopole one coincides with the LINEAR modes' dipole scale,
+    # which is why a tier-wide scale cannot be read off the tier index.
+    assert m[9] == pytest.approx(m[3], rel=1e-14)
+
+
+@pytest.mark.parametrize("fn", [gram_diagonal, far_field_moment])
+def test_scale_helpers_reject_an_unsupported_tier(fn) -> None:
+    with pytest.raises(ValueError, match="n_modes must be 9 or 27"):
+        fn(D, 57)
 
 
 def test_reciprocity_holds_for_the_full_27x27() -> None:

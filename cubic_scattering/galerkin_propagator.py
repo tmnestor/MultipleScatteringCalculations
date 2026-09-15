@@ -338,8 +338,8 @@ def galerkin_block_9x9(
     return out
 
 
-def gram_diagonal(d: float) -> NDArray:
-    """The Gram matrix of the 9 trial functions over a cell of side d, diagonal.
+def gram_diagonal(d: float, n_modes: int = 9) -> NDArray:
+    """The Gram matrix of the trial functions over a cell of side d, diagonal.
 
     M_ab = Int_V phi_a . phi_b. The basis is orthogonal, so only the diagonal
     survives:
@@ -347,12 +347,76 @@ def gram_diagonal(d: float) -> NDArray:
         axial strain (p == q) Int s_p^2              = V d^2 / 12
         shear  (p != q)       Int |0.5(s_q e_p + s_p e_q)|^2
                               = 0.25 (Int s_q^2 + Int s_p^2) = V d^2 / 24
+        quadratic s_p^2       Int s_p^4              = V d^4 / 80
+        quadratic s_p s_q     Int s_p^2 s_q^2        = V d^4 / 144
 
     The shear entry is HALF the axial one, which is the engineering-convention
     factor showing up in the mass rather than in the trial function.
+
+    ⚠ The Gram is the FIELD-side scale. It is NOT the source-side scale, and in
+    the quadratic tier the two genuinely differ -- see `far_field_moment`.
     """
     v = d**3
-    return v * np.array([1.0, 1.0, 1.0] + [d**2 / 12.0] * 3 + [d**2 / 24.0] * 3)
+    out = v * np.array([1.0, 1.0, 1.0] + [d**2 / 12.0] * 3 + [d**2 / 24.0] * 3)
+    if n_modes == 9:
+        return out
+    if n_modes != 27:
+        msg = (
+            f"n_modes must be 9 or 27, got {n_modes}.\n"
+            "  Where: cubic_scattering/galerkin_propagator.py, gram_diagonal()\n"
+            "  Valid: 9 (T9 tier) or 27 (T9 plus the quadratic tier)\n"
+            "  Fix:   the T57 tier would need the degree-3 autocorrelations first"
+        )
+        raise ValueError(msg)
+    quad = [d**4 / 80.0] * 3 + [d**4 / 144.0] * 3
+    return np.concatenate([out, v * np.array(quad * 3)])
+
+
+def far_field_moment(d: float, n_modes: int = 9) -> NDArray:
+    """The lowest surviving moment of each trial function -- the SOURCE scale.
+
+    At large separation two cells look like points, so what a mode couples
+    through is fixed by the lowest n with `Int s_{i1}..s_{in} p(s) dV` non-zero:
+
+        constant   1        monopole    V              -> G
+        linear     s_p      dipole      V d^2 / 12     -> d_p G
+        quadratic  s_p^2    MONOPOLE    V d^2 / 12     -> G
+        quadratic  s_p s_q  quadrupole  V d^4 / 144    -> d_p d_q G
+
+    THE QUADRATIC TIER IS NOT A PURE HIGHER MULTIPOLE. The six `s_p^2` modes
+    carry a non-zero monopole, so in the far field they radiate into the SAME
+    channel as the constant displacement modes. One uniform scale per tier is
+    therefore wrong: within the quadratic tier the source scale is V d^2/12 for
+    `s_p^2` and V d^4/144 for `s_p s_q`, a ratio of 12/d^2.
+
+    HOW THIS DIFFERS FROM THE T9 GRAM/MOMENT SPLIT. In the T9 tier the two
+    scales already disagree -- on the shear modes, by exactly the factor of two
+    of the engineering convention (Gram V d^2/24 against moment V d^2/12), the
+    same asymmetry the moment propagator records as `H = W C^T`. In the
+    quadratic tier they disagree for a DIFFERENT reason and by a different
+    factor: `s_p^2` has Gram V d^4/80 against moment V d^2/12, a ratio 0.15 d^2
+    that is not a convention at all but the gap between a mode's self-energy and
+    its monopole. Carrying the T9 rule across unchanged would be wrong.
+
+    MEASURED, not assumed: `Gamma_raw / (point-propagator structure)` equals
+    `m_alpha m_beta` for all sixteen sub-tier block pairs, the residual falling
+    as (d/R)^2 -- 1.78e-3, 4.64e-4, 1.25e-4 at R = 20, 40, 80 d. See
+    `scripts/gate_t27_far_field.py`.
+    """
+    v = d**3
+    out = v * np.array([1.0, 1.0, 1.0] + [d**2 / 12.0] * 6)
+    if n_modes == 9:
+        return out
+    if n_modes != 27:
+        msg = (
+            f"n_modes must be 9 or 27, got {n_modes}.\n"
+            "  Where: cubic_scattering/galerkin_propagator.py, far_field_moment()\n"
+            "  Valid: 9 (T9 tier) or 27 (T9 plus the quadratic tier)\n"
+            "  Fix:   the T57 tier would need the degree-3 autocorrelations first"
+        )
+        raise ValueError(msg)
+    quad = [d**2 / 12.0] * 3 + [d**4 / 144.0] * 3
+    return np.concatenate([out, v * np.array(quad * 3)])
 
 
 def galerkin_propagator_9x9(
@@ -419,11 +483,10 @@ def galerkin_propagator_9x9(
     propagator's own blocks.
     """
     gam = galerkin_block_9x9(r_vec, d, omega, ref, n_quad)
-    m_row = gram_diagonal(d)
-    v = d**3
-    # Source side: no engineering factor of two on the shear modes.
-    m_col = v * np.array([1.0, 1.0, 1.0] + [d**2 / 12.0] * 6)
-    return gam / m_row[:, None] / m_col[None, :]
+    # Field side: the Gram. Source side: the lowest surviving moment -- which for
+    # the T9 tier differs from the Gram only by the engineering factor of two on
+    # the shear modes. They part company in the quadratic tier.
+    return gam / gram_diagonal(d)[:, None] / far_field_moment(d)[None, :]
 
 
 def galerkin_plane_wave_state(k_vec: NDArray, pol: NDArray, centre: NDArray, d: float) -> NDArray:
