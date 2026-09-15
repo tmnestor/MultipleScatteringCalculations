@@ -470,6 +470,49 @@ Three features make this a prediction rather than a fit:
     threefold stronger contrast.
 \end{enumerate}
 
+\subsection{Range of applicability: $\Kren$ helps only for $ka \lesssim 0.05$}
+\label{sec:ka-limit}
+
+$\Kren$ is a \emph{static} correction, and \S5.2 showed its value drifting once
+$ka$ grows. What that costs end to end was not stated, and matters more: applied
+outside its range, $\Kren$ makes the answer \textbf{worse}. Sweeping $\omega$ at
+fixed voxel size, where the Kennett reference stays exact at every frequency:
+
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+$ka$ & $0.006$ & $0.030$ & $0.060$ & $0.120$ & $0.240$ & $0.300$ \\
+\midrule
+$T_9$      & $8.5\!\times\!10^{-4}$ & $7.9\!\times\!10^{-4}$ & $6.0\!\times\!10^{-4}$
+           & $3.5\!\times\!10^{-4}$ & $4.2\!\times\!10^{-3}$ & $9.1\!\times\!10^{-3}$ \\
+$T_9+\Kren$ & $\bm{2.2\!\times\!10^{-5}}$ & $\bm{1.1\!\times\!10^{-4}}$ & $3.8\!\times\!10^{-4}$
+           & $1.5\!\times\!10^{-3}$ & $6.6\!\times\!10^{-3}$ & $1.3\!\times\!10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The crossover is near $ka \approx 0.05$; by $ka = 0.12$ the corrected scheme is
+four times \emph{worse} than the uncorrected one. \textbf{Do not apply $\Kren$
+above $ka \approx 0.05$.}
+
+\begin{tcolorbox}[colback=gray!5,colframe=black!62,
+  title={Two things this table would be misread without}]
+\textbf{$T_9$'s dip at $ka = 0.12$ is not accuracy.} Its error falls to
+$3.5\times10^{-4}$ and then climbs. That is accidental cancellation between a
+static and a dynamic error of opposite sign. $\Kren$ removes the static part, so
+the corrected curve rises monotonically --- it is the more honest of the two,
+even where it reads worse.
+
+\textbf{Relative error is unreliable near a reflection null.} At $ka = 0.4$ the
+sweep reports $2.2\times10^{-1}$, which looks like collapse. It is not:
+$|r_{\text{Kennett}}| = 1.1\times10^{-3}$ there against $1.5\times10^{-2}$ on
+either side, and the \emph{absolute} error is smaller than at $ka = 0.3$. Check
+$|r_{\text{Kennett}}|$ before reading any relative error at high $\omega$.
+\end{tcolorbox}
+
+Independently, this sweep reproduces the project's documented $T_9$ validity
+limit from a new direction: $T_9$ reaches $\sim\!1\%$ at $ka = 0.3$.
+
 \subsection{Convergence is restored}
 
 This is the structural result, more important than the smaller constant:
@@ -573,6 +616,17 @@ as \emph{untested}, not refuted. A fair assessment of $T_{27}$ requires the
 $27\times27$ generalised propagator, and until it exists no verdict on the
 27-mode physics --- favourable or otherwise --- is available from this work.
 \end{tcolorbox}
+
+\paragraph{One thing the rigged arm \emph{does} show, and it is useful.} Swept in
+frequency at fixed voxel size, $T_{27}$-through-nine-modes is worse than $T_9$ at
+\emph{every} $ka$ and the deficit \textbf{widens} --- $3\times$ at $ka = 0.006$,
+$5.5\times$ at $ka = 0.3$. That is what one expects if the mismatch itself grows
+with $ka$: the field varies more across a cell, so describing the source with 27
+modes while propagating with 9 becomes progressively more inconsistent. The
+reading this supports is not about $T_{27}$ but about the \emph{propagator} ---
+it is the binding constraint. A practical consequence follows: there is \textbf{no
+cheap partial win}. The $27\times27$ propagator is a prerequisite for any
+$T_{27}$ benefit at all, not an optimisation of one.
 
 \subsection{Routes to a derivation}
 
