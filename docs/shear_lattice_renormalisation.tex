@@ -1,3 +1,20 @@
+% ⚠ SUPERSEDED IN ITS CENTRAL NUMBER --- 2026-09-17
+%
+% This document was written when the contact propagator was DOUBLE-averaged
+% (Galerkin) against a collocation state.  That mismatch was the dominant cause
+% of the residual K corrects.  With the contact operator switched to the single
+% (source-cell) average, `scripts/measure_shear_renormalisation.py` now measures
+%
+%     residual  ~8.6e-4  ->  1.6e-4        K  0.886234  ->  1.023737
+%
+% The qualitative case in this document still stands: K remains universal
+% (spread 2.9e-3 over a 16x contrast range), leaves the lambda and density
+% channels exactly untouched, and improves negative shear it was not fitted to.
+% What is superseded is the VALUE, and with it every numerological reading ---
+% 8/9 = 0.888889 and sqrt(pi)/2 = 0.886227 are now far from the measurement.
+% Section 8's fudge-factor argument is unaffected and if anything strengthened.
+%
+% Do not quote 0.886234 from this file.  Re-run the measurement.
 % LuaLaTeX document — compile with:
 %   cd docs && lualatex shear_lattice_renormalisation.tex   (run twice)
 \documentclass[11pt,a4paper]{article}

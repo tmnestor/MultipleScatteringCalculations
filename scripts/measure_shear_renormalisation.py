@@ -7,6 +7,25 @@ the very arbiter it is then scored against. Section [V] below sets out the case
 that it is a fudge factor and the case that it is more than one; the honest label
 until a derivation exists is "an empirical one-parameter correction".
 
+⚠ THE NUMBER IN THIS HEADER CHANGED. Everything below was written when the
+contact propagator was DOUBLE-averaged (Galerkin) against a collocation state.
+That mismatch turned out to be the dominant cause of the residual K was
+correcting. With the contact operator switched to the single (source-cell)
+average:
+
+    residual   ~8.6e-4  ->  1.6e-4     (working case, n_z = 8)
+    K           0.886234 ->  1.023737   (static, weak-contrast limit)
+
+so roughly four fifths of the correction was an artefact of the contact
+convention, not physics. The QUALITATIVE case below is unaffected -- K is still
+universal (spread 2.9e-3 over a 16x contrast range), still does exactly nothing
+to the lambda and density channels, and still improves NEGATIVE shear (12.4x)
+which it was never fitted to. What died is the VALUE, and with it both
+candidate closed forms: 8/9 = 0.888889 and sqrt(pi)/2 = 0.886227 are now far
+from the measurement rather than near it.
+
+The script no longer hard-codes K; it measures it and uses what it measures.
+
 THE RESIDUAL THIS EXPLAINS. With the lateral sum exact and the Galerkin contact
 correction applied, the refinement ladder flattens and a residual of ~8.6e-4
 survives that refinement cannot remove. Of four suspects tested
@@ -96,7 +115,19 @@ from cubic_scattering.voigt_tmatrix import effective_stiffness_voigt  # noqa: E4
 REF = ReferenceMedium(5000.0, 3000.0, 2500.0)
 OMEGA, H_PHYS, M = 60.0, 4.0, 4
 MU0 = REF.rho * REF.beta**2
-K_RENORM = 0.886234
+# ⚠ K IS NO LONGER FROZEN. 0.886234 was measured when the contact propagator
+# was DOUBLE-averaged (Galerkin) against a collocation state. That mismatch was
+# the dominant cause of the residual it was correcting: switching the contact
+# operator to the single (source-cell) average moved the measured optimum to
+# ~1.021 and cut the residual from ~8.6e-4 to ~1.6e-4. Applying the old
+# constant now makes every case it used to help 5-10x WORSE.
+#
+# So the script measures K and uses what it measures. The historical value is
+# retained only for the explicit before/after comparison, never as the
+# operating constant -- freezing it is exactly how a stale number outlives the
+# defect that produced it.
+K_HISTORICAL = 0.886234
+K_RENORM = K_HISTORICAL  # replaced at run time by the measured static optimum
 
 
 def _reflection(dlam, dmu, drho, n_z, omega, *, shear_scale=None, renorm=False, baseline="t9"):
@@ -209,8 +240,20 @@ def main() -> int:
         print(f"       {1.0e9 / MU0:9.4f} {om:7.0f} {k:10.6f} {res:21.3e}")
     spread = (max(ks) - min(ks)) / float(np.mean(ks))
     print(f"       spread of K across a 16x contrast range: {spread:.2e}")
-    print(f"       8/9 = {8 / 9:.6f} is REFUTED: the static limit is 0.886234,")
-    print("       2.6e-3 below it and far outside the fit scatter.")
+
+    # Use what was just measured, not a constant frozen under a different
+    # contact convention.  The weak-contrast end of the scan is the static
+    # limit; take it as the operating value for [P] and [C] below.
+    global K_RENORM
+    K_RENORM = float(ks[0])
+    print(f"       measured static-limit K = {K_RENORM:.6f}")
+    print(f"       historical value (double-averaged contact) = {K_HISTORICAL:.6f}")
+    if abs(K_RENORM - K_HISTORICAL) > 10.0 * spread:
+        print("       ⚠ THE TWO DISAGREE FAR BEYOND THE FIT SCATTER.")
+        print("         The historical constant was measured against a contact")
+        print("         propagator that was double-averaged relative to a")
+        print("         collocation state; that defect is fixed, and most of")
+        print("         the correction went with it.")
 
     print(f"\n  [P] K = {K_RENORM} applied as a RULE to cases it was not fitted to")
     print(f"       {'case':>26} {'isolated':>12} {'renormalised':>13} {'gain':>8}")
@@ -280,7 +323,7 @@ def main() -> int:
     print("       propagator, derived in docs/BubnovGalerkinCubicScatter.tex and")
     print("       not implemented.")
 
-    print(f"\n       applying the T9-derived K = {K_RENORM} to each baseline:")
+    print(f"\n       applying the HISTORICAL K = {K_HISTORICAL} to each baseline:")
     print(f"       {'baseline':>9} {'case':>12} {'plain':>12} {'+K':>12} {'effect':>14}")
     for base in ("t9", "t27"):
         for label, (dl, dm, dr) in (
