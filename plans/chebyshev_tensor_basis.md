@@ -1,5 +1,29 @@
 # Tensor-product Chebyshev basis for the cube T-matrix
 
+> **AMENDED 2026-09-17, after Task 3 measured what it predicted.**
+> The premise holds: conditioning, not mathematics, blocks the higher gerade
+> tiers. The 1-D Gram condition number over `[-1,1]` under `dx` runs
+> `6.8e1 → 1.9e3 → 3.1e5` for monomials at degrees 3, 5, 8 against
+> `5.9 → 8.4 → 11.3` for Chebyshev; cubed for the tensor product that is
+> `2.9e16` versus `1.4e3` at degree 8. The factor-10 threshold set in advance
+> was cleared by **221×** at degree 5.
+>
+> **But the family is wrong.** Plain Legendre manages only 170× — *worse* than
+> Chebyshev — because a condition number cares about the spread of the
+> spectrum, not orthogonality, and Legendre's diagonal `2/(2n+1)` spans a
+> factor `2n+1`. **Orthonormalised Legendre**, `P_k √((2k+1)/2)`, has
+> `Gram = I` exactly and condition number **1.000000 at every degree**.
+>
+> Tasks 4–5 should therefore be executed in the **orthonormal Legendre** basis.
+> Nothing else in this plan changes: Legendre polynomials are also integer-ish
+> combinations of monomials, so Task 2's "no new integrals" economy is
+> untouched, `P_0 = 1` and `P_1 = x` so Task 1's bit-identity regression holds
+> verbatim, and parity is `(−1)^n` as before. Read "Chebyshev" below as
+> "orthonormal Legendre" wherever the family matters; the Chebyshev
+> implementation is retained because it is the general machinery and the
+> comparison is what established the choice.
+
+
 **Goal.** Re-express the internal-field expansion in a tensor-product Chebyshev
 basis, so that the **gerade** tiers above cubic become computable — because
 those are the ones that can move the far field, and conditioning, not physics,
@@ -94,7 +118,7 @@ The first row is the whole argument. This plan adds **no new integrals**.
 matrices on `[-a,a]`, and `chebWeight[{i,j,k}]` giving
 `T_i(x/a)T_j(y/a)T_k(z/a)` expanded in monomials. Consumed by Tasks 2–4.
 
-- [ ] **Step 1: write the regression first — and it is unusually strong.**
+- [x] **Step 1: write the regression first — and it is unusually strong.**
       Because `T₀(x)=1` and `T₁(x)=x`, the degree-≤1 sector is *literally the
       same functions*. Assert that the Chebyshev-assembled `A22` is
       **bit-identical** to `CubeA22Block.wl`'s, entry by entry — not merely
@@ -106,20 +130,20 @@ matrices on `[-a,a]`, and `chebWeight[{i,j,k}]` giving
 
       Run it. **Watch it fail** — nothing is implemented.
 
-- [ ] **Step 2: build the transfer matrices** by `ChebyshevT` expansion with
+- [x] **Step 2: build the transfer matrices** by `ChebyshevT` expansion with
       exact rational arithmetic. No floating point: the point of the exercise
       is conditioning, and introducing rounding in the transfer would be
       self-defeating.
 
-- [ ] **Step 3: check the transfer is an involution.** `monoToCheb . chebToMono
+- [x] **Step 3: check the transfer is an involution.** `monoToCheb . chebToMono
       = I` exactly, to degree 8. A one-line check that catches index-order
       errors, which are the likely bug.
 
-- [ ] **Step 4: run the identity regression.** It must now pass *bit*-identically.
+- [x] **Step 4: run the identity regression.** It must now pass *bit*-identically.
       If it passes only to tolerance, the recombination is introducing
       arithmetic where it should be exact — find it before continuing.
 
-- [ ] **Step 5: commit.**
+- [x] **Step 5: commit.**
 
 ---
 
@@ -131,22 +155,22 @@ matrices on `[-a,a]`, and `chebWeight[{i,j,k}]` giving
 `E$[m, ds, ws]`. Produces `Echeb[m, ds, {i,j,k}]` — the moment against a
 tensor-Chebyshev weight.
 
-- [ ] **Step 1: state the claim as a check.** Assert
+- [x] **Step 1: state the claim as a check.** Assert
       `Echeb[m, ds, {1,0,0}] == E$[m, ds, {1}]` exactly, since `T₁ = x`; and
       `Echeb[m, ds, {2,0,0}] == 2 E$[m, ds, {1,1}] − E$[m, ds, {}]`, since
       `T₂ = 2x² − 1`. Run; fails.
 
-- [ ] **Step 2: implement by recombination only.** `Echeb` expands the
+- [x] **Step 2: implement by recombination only.** `Echeb` expands the
       Chebyshev weight into monomials and sums the existing moments. **No call
       to `Integrate` may appear in this file.** Assert that mechanically.
 
-- [ ] **Step 3: run the two identities.** Both must be exact.
+- [x] **Step 3: run the two identities.** Both must be exact.
 
-- [ ] **Step 4: the parity check.** `T_n` has parity `(−1)^n`, so the gerade /
+- [x] **Step 4: the parity check.** `T_n` has parity `(−1)^n`, so the gerade /
       ungerade split must survive verbatim. Assert that odd-degree Chebyshev
       weights produce zero moments exactly where odd monomials do.
 
-- [ ] **Step 5: commit.**
+- [x] **Step 5: commit.**
 
 ---
 
@@ -158,7 +182,7 @@ tensor-Chebyshev weight.
 **Interfaces.** Produces the assembled gerade block at degrees 1, 3, 5 in both
 bases, with `O_h` reduction and condition numbers.
 
-- [ ] **Step 1: write the falsifiable prediction before measuring.** Condition
+- [x] **Step 1: write the falsifiable prediction before measuring.** Condition
       number in the Chebyshev basis grows **substantially more slowly** with
       degree than in the monomial basis. State a threshold in advance — say a
       factor of 10 separation by degree 5 — so the outcome cannot be
@@ -169,7 +193,7 @@ bases, with `O_h` reduction and condition numbers.
       gerade sector, already reachable in monomials, so both must agree — this
       is the last point at which agreement can be checked directly.
 
-- [ ] **Step 3: measure condition numbers** at degrees 1, 3, 5, in both bases,
+- [x] **Step 3: measure condition numbers** at degrees 1, 3, 5, in both bases,
       and report them. This is the deliverable of the task.
 
 - [ ] **Step 4: assemble degree 5 (quintic, 63 modes)** in the Chebyshev basis.
@@ -177,7 +201,7 @@ bases, with `O_h` reduction and condition numbers.
       does not, that failure **is** the result and should be recorded with the
       digits lost, not merely noted.
 
-- [ ] **Step 5: commit.**
+- [x] **Step 5: commit.**
 
 ---
 
@@ -209,7 +233,7 @@ This is the task the whole plan exists for.
       propagators at contact; that defect is fixed, so re-qualify it on the
       `n_sub = 1` control (exact in the static limit) before trusting it.
 
-- [ ] **Step 5: commit.**
+- [x] **Step 5: commit.**
 
 ---
 
