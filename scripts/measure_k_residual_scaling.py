@@ -54,8 +54,12 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from scripts.measure_shear_renormalisation import (  # noqa: E402
+# imported as a module, not as `scripts.<name>` -- `scripts/` is not a package,
+# and the dotted form resolves at run time only by namespace-package accident
+# while failing type checking outright.
+from measure_shear_renormalisation import (  # noqa: E402
     H_PHYS,
     MU0,
     REF,
@@ -90,16 +94,18 @@ def main() -> int:
     # ---- [A] frequency scan at fixed weak contrast -----------------------
     print(f"\n  [A] frequency scan at Dmu/mu0 = {dmu_weak / MU0:.4f}")
     print(f"       {'omega':>7} {'k_P a':>8} {'K':>12} {'residual':>12}")
-    omegas, ks = [], []
+    om_list: list[float] = []
+    k_list: list[float] = []
     for om in (15.0, 30.0, 60.0, 120.0, 240.0):
         kk, _, _, res = _optimum(dmu_weak, om)
         ka = ka_of(om)
         flag = "  ** ABOVE CEILING" if ka >= KA_CEILING else ""
         print(f"       {om:7.0f} {ka:8.4f} {kk:12.6f} {res:12.3e}{flag}")
         if ka < KA_CEILING:
-            omegas.append(om)
-            ks.append(kk)
-    omegas, ks = np.array(omegas), np.array(ks)
+            om_list.append(om)
+            k_list.append(float(kk))
+    omegas = np.asarray(om_list, dtype=float)
+    ks = np.asarray(k_list, dtype=float)
 
     # K_0 from the two lowest frequencies assuming omega^2, then refine
     def k0_from(p: float) -> tuple[float, float]:
@@ -127,13 +133,15 @@ def main() -> int:
     om_low = 30.0
     print(f"\n  [B] contrast scan at omega = {om_low:.0f}  (k_P a = {ka_of(om_low):.4f})")
     print(f"       {'Dmu/mu0':>9} {'K':>12} {'residual':>12}")
-    fr, kc = [], []
+    fr_list: list[float] = []
+    kc_list: list[float] = []
     for dmu in (0.0625e9, 0.125e9, 0.25e9, 0.5e9, 1.0e9, 2.0e9):
         kk, _, _, res = _optimum(dmu, om_low)
         print(f"       {dmu / MU0:9.5f} {kk:12.6f} {res:12.3e}")
-        fr.append(dmu / MU0)
-        kc.append(kk)
-    fr, kc = np.array(fr), np.array(kc)
+        fr_list.append(dmu / MU0)
+        kc_list.append(float(kk))
+    fr = np.asarray(fr_list, dtype=float)
+    kc = np.asarray(kc_list, dtype=float)
     A = np.vstack([fr, np.ones_like(fr)]).T
     slope_c, k_zero = np.linalg.lstsq(A, kc, rcond=None)[0]
     print(f"\n       linear extrapolation to zero contrast: K -> {k_zero:.6f}")
@@ -159,7 +167,7 @@ def main() -> int:
     # if that is contrast-independent, the mechanism is dynamic and additive.
     print("\n  [D] the dynamic part as an ABSOLUTE shear-scale error, s_iso - s*")
     print(f"       {'omega':>7} {'k_P a':>8} {'Dmu/mu0':>9} {'s_iso - s*':>13}")
-    rows = []
+    rows: list[tuple[float, float, float]] = []
     for dmu in (0.25e9, 1.0e9):
         for om in (15.0, 30.0, 60.0, 120.0):
             if ka_of(om) >= KA_CEILING:
