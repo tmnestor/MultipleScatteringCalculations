@@ -16,9 +16,11 @@ from cubic_scattering.resonance_tmatrix import (
 from cubic_scattering.slab_scattering import (
     SlabGeometry,
     SlabMaterial,
+    _bloch_contact_correction,
     _build_slab_incident_field,
     _build_slab_incident_field_slowness,
     _build_slab_kernels,
+    _cell_averaged_propagator,
     _slab_matvec,
     compute_slab_scattering,
     compute_slab_tmatrices,
@@ -168,9 +170,7 @@ class TestSlabTMatrices:
         mat = random_slab_material(geom, REF, CONTRAST, phi=0.5, seed=42)
         T_all = compute_slab_tmatrices(geom, mat, OMEGA)
         # All T-matrices should be either zero or the CONTRAST T-matrix
-        T_inc = _sub_cell_tmatrix_9x9(
-            compute_cube_tmatrix(OMEGA, A, REF, CONTRAST), OMEGA, A
-        )
+        T_inc = _sub_cell_tmatrix_9x9(compute_cube_tmatrix(OMEGA, A, REF, CONTRAST), OMEGA, A)
         for lz in range(geom.N_z):
             for i in range(geom.M):
                 for j in range(geom.M):
@@ -270,9 +270,7 @@ class TestSlabMatvec:
         kernel_hat = _build_slab_kernels(geom, OMEGA, REF)
 
         rng = np.random.default_rng(123)
-        psi = rng.standard_normal(geom.n_cubes * 9) + 1j * rng.standard_normal(
-            geom.n_cubes * 9
-        )
+        psi = rng.standard_normal(geom.n_cubes * 9) + 1j * rng.standard_normal(geom.n_cubes * 9)
 
         fft_result = _slab_matvec(psi, T_local, kernel_hat, geom)
         direct_result = _direct_matvec(psi, T_local, geom, OMEGA, REF)
@@ -491,9 +489,7 @@ class TestRandomSlab:
     def test_depth_dependent_phi(self):
         """Callable phi(layer) produces depth-dependent volume fraction."""
         geom = SlabGeometry(M=8, N_z=3, a=A)
-        mat = random_slab_material(
-            geom, REF, CONTRAST, phi=lambda lz: 0.1 * (lz + 1), seed=42
-        )
+        mat = random_slab_material(geom, REF, CONTRAST, phi=lambda lz: 0.1 * (lz + 1), seed=42)
         # Layer 0: phi=0.1, Layer 1: phi=0.2, Layer 2: phi=0.3
         # Check that deeper layers have more inclusions (statistically)
         n_inc = [(mat.Dlambda[lz] > 0).sum() for lz in range(3)]
@@ -668,30 +664,21 @@ class TestVolumeAveragedPropagator:
         # the default (which became 'single' on 2026-09-15). Following the
         # default would turn a structural check of the pitch threading into an
         # accidental assertion about which operator is default.
-        kernel_hat = _build_slab_kernels(
-            geom, OMEGA, REF, volume_averaged=True, contact_average="double"
-        )
+        kernel_hat = _build_slab_kernels(geom, OMEGA, REF, volume_averaged=True, contact_average="double")
         # dz = +d plane: k = N_z = 2; dx = dy = 0 -> spatial index (2, 2)
         kernel_spatial = np.fft.ifft2(kernel_hat[2], axes=(0, 1))
         block = kernel_spatial[2, 2]
 
-        expected = inter_voxel_propagator_9x9(
-            (1, 0, 0), REF.alpha, REF.beta, REF.rho, OMEGA, 2, d=geom.d
-        )
+        expected = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, OMEGA, 2, d=geom.d)
         # atol floor: FFT round-trip leaves ~1e-16 x scale noise on the
         # exact zeros of the propagator block.
-        assert_allclose(
-            block, expected, rtol=1e-12, atol=1e-14 * np.max(np.abs(expected))
-        )
+        assert_allclose(block, expected, rtol=1e-12, atol=1e-14 * np.max(np.abs(expected)))
 
         # And it must NOT be the unit-pitch value (the old bug)
-        bugged = inter_voxel_propagator_9x9(
-            (1, 0, 0), REF.alpha, REF.beta, REF.rho, OMEGA, 2, d=1.0
-        )
+        bugged = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, OMEGA, 2, d=1.0)
         scale = np.max(np.abs(bugged))
         assert np.max(np.abs(block - bugged)) > 0.4 * scale, (
-            "kernel block still matches the unit-pitch propagator "
-            "(physical pitch not threaded through)"
+            "kernel block still matches the unit-pitch propagator (physical pitch not threaded through)"
         )
 
 
@@ -729,9 +716,7 @@ class TestPeriodicConvolution:
         kernel_circ = np.fft.ifft2(kernel_hat_p, axes=(1, 2))  # (n_dz, M, M, 9, 9)
 
         rng = np.random.default_rng(42)
-        psi = rng.standard_normal(geom.n_cubes * 9) + 1j * rng.standard_normal(
-            geom.n_cubes * 9
-        )
+        psi = rng.standard_normal(geom.n_cubes * 9) + 1j * rng.standard_normal(geom.n_cubes * 9)
 
         fft_result = _slab_matvec(psi, T_local, kernel_hat_p, geom, periodic=True)
 
@@ -765,9 +750,7 @@ class TestPeriodicConvolution:
                 for iy in range(S):
                     dx_val = ix - (M - 1)
                     dy_val = iy - (M - 1)
-                    kernel_folded_check[k, dx_val % M, dy_val % M] += kernel_spatial_ap[
-                        k, ix, iy
-                    ]
+                    kernel_folded_check[k, dx_val % M, dy_val % M] += kernel_spatial_ap[k, ix, iy]
         assert_allclose(kernel_circ, kernel_folded_check, atol=1e-12)
 
     def test_identity_when_T_zero_periodic(self):
@@ -815,9 +798,7 @@ class TestWeylAmplitudes:
         c = ref.alpha if wave_type == "P" else ref.beta
         eta = np.sqrt(1.0 / c**2 - p**2 + 0j)
         k_hat = np.array([float(np.real(eta * c)), p * c, 0.0])
-        result = compute_slab_scattering(
-            geom, mat, omega, k_hat, wave_type=wave_type, periodic=True
-        )
+        result = compute_slab_scattering(geom, mat, omega, k_hat, wave_type=wave_type, periodic=True)
         T_local = compute_slab_tmatrices(geom, mat, omega)
         return result, T_local
 
@@ -891,9 +872,7 @@ class TestSlabReflectionMatrix:
         """p=0: R_PP and R_SS match Kennett; conversions vanish; R_SS == R_SH."""
         p = 0.0
         slab = self._slab_matrix(p)
-        kref = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
-        )
+        kref = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p)
         R_mod = slab.to_modified()
         np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=0.05)
         np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.05)
@@ -911,9 +890,7 @@ class TestSlabReflectionMatrix:
         """Sub-critical oblique p: all five channels vs Kennett."""
         p = 1.0e-4  # sin(theta_P) = 0.5
         slab = self._slab_matrix(p)
-        kref = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
-        )
+        kref = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p)
         R_mod = slab.to_modified()
         np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=0.07)
         np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.07)
@@ -936,9 +913,7 @@ class TestSlabReflectionMatrix:
             Dmu=self.REF.mu * 1e-4,
             Drho=self.REF.rho * 1e-4,
         )
-        weak2 = MaterialContrast(
-            Dlambda=2 * weak.Dlambda, Dmu=2 * weak.Dmu, Drho=2 * weak.Drho
-        )
+        weak2 = MaterialContrast(Dlambda=2 * weak.Dlambda, Dmu=2 * weak.Dmu, Drho=2 * weak.Drho)
         p = 1.0e-4
         r1 = self._slab_matrix(p, contrast=weak).to_modified()[1, 0]
         r2 = self._slab_matrix(p, contrast=weak2).to_modified()[1, 0]
@@ -950,9 +925,7 @@ class TestSlabReflectionMatrix:
         """p past the P-critical slowness: finite, branch-consistent R_SS."""
         p = 2.5e-4  # > 1/alpha = 2e-4 (P evanescent), < 1/beta (SV propagating)
         slab = self._slab_matrix(p)
-        kref = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
-        )
+        kref = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p)
         R_mod = slab.to_modified()
         assert np.isfinite(R_mod).all()
         np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.15)
@@ -989,9 +962,7 @@ class TestEvanescentIncidence:
         # new slowness-vector incident path at sub-critical p.
         p = 1.0e-4
         slab = self._slab_matrix(p)
-        kref = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
-        )
+        kref = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p)
         R_mod = slab.to_modified()
         np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=0.07)
         np.testing.assert_allclose(R_mod[1, 0], kref.R_PS, rtol=0.10)
@@ -1000,9 +971,7 @@ class TestEvanescentIncidence:
         """p past 1/alpha: ALL channels match Kennett with evanescent incidence."""
         p = 2.5e-4
         slab = self._slab_matrix(p)
-        kref = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
-        )
+        kref = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p)
         R_mod = slab.to_modified()
         np.testing.assert_allclose(R_mod[0, 0], kref.R_PP, rtol=TOL_PP)
         np.testing.assert_allclose(R_mod[1, 1], kref.R_SS, rtol=0.15)
@@ -1012,12 +981,8 @@ class TestEvanescentIncidence:
 
     def test_continuity_across_critical(self):
         """R_PP is continuous through the critical slowness (away from grazing)."""
-        kref_lo = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=1.9e-4
-        )
-        kref_hi = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=2.1e-4
-        )
+        kref_lo = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=1.9e-4)
+        kref_hi = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=2.1e-4)
         slab_lo = self._slab_matrix(1.9e-4).to_modified()[0, 0]
         slab_hi = self._slab_matrix(2.1e-4).to_modified()[0, 0]
         # Same relative accuracy on both sides of critical
@@ -1053,9 +1018,7 @@ class TestEvanescentIncidence:
         (a, N_z) = (2.0, 1) -> (1.0, 2) -> (0.5, 4).
         """
         p = 2.5e-4  # past 1/alpha = 2e-4
-        kref = kennett_reference_matrix(
-            self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p
-        )
+        kref = kennett_reference_matrix(self.REF, self.CONTRAST, H=4.0, omega=self.OMEGA, p=p)
         errs = []
         for a, n_z in ((2.0, 1), (1.0, 2), (0.5, 4)):
             geom = SlabGeometry(M=8, N_z=n_z, a=a)
@@ -1063,9 +1026,113 @@ class TestEvanescentIncidence:
             slab = slab_reflection_matrix(geom, mat, self.OMEGA, p=p, include_sh=False)
             R_mod = slab.to_modified()
             errs.append(abs(R_mod[0, 0] - kref.R_PP) / abs(kref.R_PP))
-        assert errs[0] > errs[1] > errs[2], (
-            f"no monotonic convergence to Kennett: {errs}"
+        assert errs[0] > errs[1] > errs[2], f"no monotonic convergence to Kennett: {errs}"
+        assert errs[2] < 0.005, f"finest-mesh post-critical error {errs[2]:.4f} not converged"
+
+
+class TestVaAllAveragingConvention:
+    """`va_all` must apply the average named by `contact_average`.
+
+    THE DEFECT THIS PINS. `_cell_averaged_propagator` defaults to
+    ``double=True``. `_single_contact_cached` passes ``double=False``
+    explicitly, so the contact shell got the SOURCE-cell average, but both
+    `va_all` call sites omitted the argument and so applied the GALERKIN
+    double average beyond contact -- the same formulation mismatch that was
+    found and removed at contact, reintroduced one shell further out, under a
+    flag documented as "average the propagator over the source cell at EVERY
+    separation".
+
+    It was invisible to the whole suite (1033 tests passed with the defect in
+    place) because nothing asserted WHICH average `va_all` applies. It showed
+    up only as an arithmetic impossibility in a measurement: extending the
+    single average by hand to Chebyshev radius 3 beat `va_all` covering radii
+    2-4, and a superset of shells cannot do worse unless the two are computing
+    different operators. Fixing it moved the Kennett error 1.59e-4 -> 1.76e-5.
+    """
+
+    M, N_Z, D = 3, 2, 2.0 * A
+    REACH = 4  # va_all_reach, pinned inside _bloch_contact_correction
+
+    def _expected_beyond_contact(self, *, double: bool) -> np.ndarray:
+        """Sum over the shells that `va_all` adds, at Bloch k = 0 (phases 1)."""
+        total = np.zeros((9, 9), dtype=complex)
+        for dx in range(-self.REACH, self.REACH + 1):
+            for dy in range(-self.REACH, self.REACH + 1):
+                cheb = max(abs(dx), abs(dy))
+                if cheb <= 1 or cheb > self.REACH:
+                    continue  # <=1 is the contact shell, common to both builds
+                r_vec = np.array([0.0, dx * self.D, dy * self.D])
+                total += _cell_averaged_propagator(
+                    r_vec, self.D, OMEGA, REF, 4, double=double
+                ) - _propagator_block_9x9(r_vec, OMEGA, REF)
+        return total
+
+    def test_va_all_uses_the_single_average_when_contact_is_single(self):
+        """The shells va_all adds must carry the SOURCE-cell average."""
+        common = {
+            "M": self.M,
+            "d": self.D,
+            "dz_vox": 0,
+            "omega": OMEGA,
+            "ref": REF,
+            "n_orders": 2,
+            "va_radius": 1,
+            "contact_average": "single",
+        }
+        with_all = _bloch_contact_correction(**common, va_all=True)
+        without = _bloch_contact_correction(**common, va_all=False)
+        # k = 0 row: every Bloch phase is 1, so this is the raw shell sum.
+        added = with_all[0, 0] - without[0, 0]
+
+        single = self._expected_beyond_contact(double=False)
+        assert_allclose(added, single, rtol=1e-11, atol=1e-13 * np.max(np.abs(single)))
+
+        # ...and it must NOT be the Galerkin average, which is what it was.
+        galerkin = self._expected_beyond_contact(double=True)
+        sep = np.max(np.abs(single - galerkin))
+        assert sep > 1e-10 * np.max(np.abs(single)), (
+            "single and double averages are indistinguishable here, so this "
+            "test cannot discriminate -- pick a shell where they differ"
         )
-        assert errs[2] < 0.005, (
-            f"finest-mesh post-critical error {errs[2]:.4f} not converged"
+        assert np.max(np.abs(added - galerkin)) > 0.5 * sep, (
+            "va_all applied the Galerkin double average while the contact "
+            "shell used the single one (the 2026-09-17 defect)"
+        )
+
+    def test_contact_average_reaches_beyond_the_contact_shell(self):
+        """`contact_average` must change the kernel OUTSIDE contact too.
+
+        A naive single-vs-double comparison is vacuous here: the contact shell
+        responds to `contact_average` even with the defect present, and that
+        alone clears any absolute threshold. So the contact shell is
+        differenced out -- what remains is attributable only to the shells
+        `va_all` adds, and with the defect it is identically zero.
+        """
+        common = {
+            "M": self.M,
+            "d": self.D,
+            "dz_vox": 0,
+            "omega": OMEGA,
+            "ref": REF,
+            "n_orders": 2,
+            "va_radius": 1,
+        }
+
+        def shell_response(va_all: bool) -> np.ndarray:
+            s = _bloch_contact_correction(**common, va_all=va_all, contact_average="single")
+            d = _bloch_contact_correction(**common, va_all=va_all, contact_average="double")
+            return np.asarray(s - d)
+
+        # With va_all off both builds cover only the contact shell, so this
+        # cancels it exactly and leaves the added shells alone.
+        beyond_measured = shell_response(True) - shell_response(False)
+        beyond_expected = self._expected_beyond_contact(double=False) - self._expected_beyond_contact(
+            double=True
+        )
+
+        scale = np.max(np.abs(beyond_expected))
+        assert scale > 0, "degenerate reference: the two averages agree exactly"
+        assert np.max(np.abs(beyond_measured[0, 0] - beyond_expected)) < 1e-10 * scale, (
+            "contact_average does not propagate past the contact shell -- "
+            "va_all is Galerkin-averaging there (the 2026-09-17 defect)"
         )
