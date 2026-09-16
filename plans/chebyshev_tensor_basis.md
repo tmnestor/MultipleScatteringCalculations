@@ -14,6 +14,26 @@
 > factor `2n+1`. **Orthonormalised Legendre**, `P_k √((2k+1)/2)`, has
 > `Gram = I` exactly and condition number **1.000000 at every degree**.
 >
+> **SECOND AMENDMENT — Task 4 refuted the motivation's reading of the tier
+> history.** `σ_Eg` is a gerade scalar and T27 adds only ungerade modes, so on
+> the parity argument T9 and T27 had to agree. Measured, they differ by **25%**
+> (`−0.0065872` vs `−0.0049327`). The cause: `compute_cube_tmatrix` (analytic
+> Eshelby route) and `compute_cube_tmatrix_galerkin` are **different
+> formulations, not nested truncations**, so comparing their `σ_Eg` conflates
+> added modes with changed method.
+>
+> What survives is the parity decoupling of the **closed set**, verified
+> directly in `CubeA22Block.wl` (`A22` contains neither `Q` nor `P`). What does
+> not survive is carrying that over to the package's tier ladder. The section
+> "The motivation, stated precisely" below is therefore **wrong in its reading
+> of T9 → T27 → T57**, and the conditioning case for the plan (Task 3, 221×,
+> orthonormal Legendre at cond 1) is unaffected and stands on its own.
+>
+> Task 4 Step 1 did succeed: the sequence `1.000 → 0.7488 → 0.9641` reproduces
+> the recorded `1.000 → 0.7525 → 0.9692`, so it is a single-site quantity that
+> the lattice-side contact fix left alone. It was safe to extend; the
+> interpretation was not.
+>
 > Tasks 4–5 should therefore be executed in the **orthonormal Legendre** basis.
 > Nothing else in this plan changes: Legendre polynomials are also integer-ish
 > combinations of monomials, so Task 2's "no new integrals" economy is
