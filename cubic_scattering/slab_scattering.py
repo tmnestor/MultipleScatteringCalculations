@@ -277,9 +277,40 @@ def _bloch_contact_correction(
     The exact lattice sum is assembled from point propagators, which are a
     MIDPOINT rule for what should be the doubly volume-averaged operator between
     cells. That approximation is scale-invariant at contact -- (cell size) /
-    (separation) is 1 at every refinement -- and negligible beyond it, where the
-    ratio falls. So the correction is short-ranged by construction and its Bloch
-    transform is a finite sum over a handful of cells, exact and cheap.
+    (separation) is 1 at every refinement.
+
+    ⚠⚠ THIS CORRECTION IS **NOT** SHORT-RANGED, AND THIS DOCSTRING SAID IT WAS.
+    The retracted claim was that it is "negligible beyond contact, so the Bloch
+    transform is a finite sum over a handful of cells, exact and cheap". Measured
+    (`scripts/settle_collocation_everywhere.py`, panel 4), the Kennett error
+    against ``va_all_reach`` is
+
+        reach     1        2        3        4        6        8
+        err    5.75e-4  2.03e-4  1.12e-4  7.34e-5  3.89e-5  2.57e-5
+
+    still falling at 289 shells, with no saturation, as R^-1.5 (1.47, 1.52, 1.51
+    fitted on the disjoint pairs 2->4, 3->6, 4->8). The default reach of 4 is
+    therefore a TRUNCATION, not a converged value, and it costs a factor ~3.
+
+    Why it is long-ranged: <G> - G ~ d^2 grad^2 G / 24 ~ d^2 / r^3, while a 2-D
+    lateral shell at radius R holds ~8R cells, so each shell contributes ~d^2/R^2
+    and the tail beyond R goes like d^2/R. A 1/R tail is not summable by
+    enlarging the box, so ``va_all_reach`` is a diagnostic for the size of the
+    truncation, NOT the route to removing it -- that needs an analytic tail or a
+    resummation.
+
+    ⚠ AND THE k=0 TAIL MAY BE SHAPE-DEPENDENT. A 1/R tail in a 2-D lattice sum
+    is the regime where the limit can depend on the summation shape, which is the
+    same structure already characterised for the k=0 lattice sum of the point
+    propagator. Treat any reach-extrapolated number as provisional until that is
+    settled; this has not been checked.
+
+    ⚠ ASYMMETRY WITH THE REAL-SPACE PATH, deliberate. `_build_slab_kernels`'s
+    non-Ewald branch applies the source-cell average at EVERY separation in the
+    kernel, with no reach cutoff, because that kernel is finite already and
+    truncating it would only lose accuracy. So ``va_all_reach`` is a parameter
+    of the EWALD route alone, and the two routes agree in the limit of large
+    reach rather than at the default.
 
     Args:
         M: Supercell size.
@@ -289,6 +320,13 @@ def _bloch_contact_correction(
         ref: Background medium.
         n_orders: Dynamic correction orders for the volume-averaged propagator.
         va_radius: Chebyshev cell radius of the correction shell.
+        va_all: Extend the source-cell average past ``va_radius``.
+        va_gauss: Gauss points per axis beyond ``va_radius``.
+        va_all_reach: Chebyshev radius out to which ``va_all`` extends. Only
+            meaningful when ``va_all`` is True; the effective reach is
+            ``max(va_radius, va_all_reach)``.
+        contact_average: ``'single'`` or ``'double'`` -- tracked all the way
+            out, not just on the contact shell.
 
     Returns:
         Shape (M, M, 9, 9), to be added to the point-propagator Bloch kernel.
@@ -597,6 +635,7 @@ def _build_slab_kernels(
     va_radius: int = 1,
     va_all: bool = False,
     va_gauss: int = 4,
+    va_all_reach: int = 4,
     lattice_images: int = 0,
     lattice_ewald: bool = False,
     ewald_eta: float | None = None,
@@ -624,6 +663,28 @@ def _build_slab_kernels(
         FFT'd kernels, shape (2*N_z-1, H_xy, H_xy, 9, 9), complex,
         where H_xy = M if periodic else 2*M-1.
     """
+    if va_all_reach < 1:
+        msg = (
+            f"va_all_reach must be >= 1, got {va_all_reach}.\n"
+            "  Where: cubic_scattering/slab_scattering.py, _build_slab_kernels()\n"
+            "  Valid: a Chebyshev cell radius >= 1; the effective reach is\n"
+            "         max(va_radius, va_all_reach). It is a convergence\n"
+            "         parameter -- raise it until the answer stops moving.\n"
+            "  Fix:   pass va_all_reach=4 (the default) or larger"
+        )
+        raise ValueError(msg)
+    if va_all and not volume_averaged:
+        msg = (
+            "va_all=True requires volume_averaged=True, but volume_averaged is False.\n"
+            "  Where: cubic_scattering/slab_scattering.py, _build_slab_kernels()\n"
+            "  Valid: va_all extends the source-cell average past va_radius, so\n"
+            "         it is meaningless unless that averaging is switched on. On\n"
+            "         the non-Ewald route it would be silently ignored.\n"
+            "  Fix:   pass volume_averaged=True alongside va_all=True, or drop\n"
+            "         va_all to use the midpoint propagator throughout"
+        )
+        raise ValueError(msg)
+
     M, N_z, d = geometry.M, geometry.N_z, geometry.d
     S = 2 * M - 1
     n_dz = 2 * N_z - 1
@@ -700,6 +761,7 @@ def _build_slab_kernels(
                     va_radius,
                     va_all,
                     va_gauss,
+                    va_all_reach=va_all_reach,
                     contact_average=contact_average,
                 )
         return kernel_hat
@@ -991,6 +1053,7 @@ def build_slab_kernels(
     va_radius: int = 1,
     va_all: bool = False,
     va_gauss: int = 4,
+    va_all_reach: int = 4,
     lattice_images: int = 0,
     lattice_ewald: bool = False,
     ewald_eta: float | None = None,
@@ -1019,6 +1082,21 @@ def build_slab_kernels(
             otherwise uses the midpoint value G(r) in place of the continuum
             integral V<G>, a scale-invariant bias that refinement cannot remove.
         va_gauss: Gauss points per axis for that quadrature (default 4).
+        va_all_reach: Chebyshev radius out to which ``va_all`` extends on the
+            EWALD route (default 4). Only meaningful with ``va_all=True``; the
+            effective reach is ``max(va_radius, va_all_reach)``.
+
+            This is a CONVERGENCE PARAMETER, not a constant. The correction it
+            bounds was assumed negligible past contact, and that assumption is
+            false at the near shells: extending the average from radius 1 to 3
+            moves the Kennett error 5.75e-4 -> 1.12e-4, still descending. Raise
+            it until the answer stops moving rather than trusting the default.
+
+            The non-Ewald route ignores it: that kernel is finite already and
+            averages at every separation, so the two routes agree in the
+            large-reach limit rather than at the default. Cost grows as the
+            shell area, ~(2R+1)^2 per dz plane, and each added cell is one
+            ``va_gauss^3`` quadrature.
         lattice_images: Supercell images added to the periodic lateral sum.
             0 (default) reproduces the historical truncated-and-wrapped sum,
             which is NOT a lattice sum and carries an O(1/M) artifact.
@@ -1044,6 +1122,7 @@ def build_slab_kernels(
         va_radius=va_radius,
         va_all=va_all,
         va_gauss=va_gauss,
+        va_all_reach=va_all_reach,
         lattice_images=lattice_images,
         lattice_ewald=lattice_ewald,
         ewald_eta=ewald_eta,
