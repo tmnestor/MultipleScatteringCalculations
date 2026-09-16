@@ -103,6 +103,39 @@ $MomentCoreLoaded = True;
 $MaxExtraPrecision = 400;
 
 (* ==========================================================================
+   ON-DISK CACHE
+
+   Assembling the 27x27 block costs minutes and every downstream question --
+   the equality-partition tests, the Schur complement, the far-field
+   comparison -- rebuilds the same object.  `cached` stores a computed value
+   under Mathematica/cache/ and returns it next time.
+
+   INVALIDATION IS BY THE CORE'S OWN TIMESTAMP.  A cache entry is used only if
+   it is NEWER than CubeMomentCore.wl, so editing the engine silently
+   invalidates every stored moment rather than serving a stale one.  That
+   matters here more than usual: the engine has already changed convention
+   twice in this session (the excision/distributional definition, and the
+   (-1)^D source-derivative factor), and either would have been baked into a
+   cache that outlived it.
+
+   Caches are machine-specific binaries and are not committed. *)
+
+$cacheDir = FileNameJoin[{DirectoryName[$InputFileName], "cache"}];
+$coreStamp = Quiet[Check[FileDate[$InputFileName], Now]];
+
+SetAttributes[cached, HoldRest];
+cached[key_String, expr_] := Module[{f, v},
+   f = FileNameJoin[{$cacheDir, key <> ".mx"}];
+   If[FileExistsQ[f] && FileDate[f] > $coreStamp,
+      v = Quiet[Check[Import[f], $Failed]];
+      If[v =!= $Failed, Print["    [cache hit] ", key]; Return[v]]];
+   v = expr;
+   If[! DirectoryQ[$cacheDir], CreateDirectory[$cacheDir]];
+   Quiet[Export[f, v]];
+   Print["    [cache store] ", key];
+   v];
+
+(* ==========================================================================
    DECIDING WHETHER TWO CLOSED FORMS ARE EQUAL
 
    Simplify[a - b] === 0 is NOT a usable test here.  These moments come out
@@ -120,7 +153,7 @@ $MaxExtraPrecision = 400;
    non-zero.
    ========================================================================== *)
 
-momentSyms = {Del, lam, mu, ka, kb};
+momentSyms = {Del, lam, mu, ka, kb, dlam, dmu, drho, om};
 
 numericZero[e_] := AllTrue[{11, 23, 41}, Function[sd,
    SeedRandom[sd];
@@ -190,15 +223,41 @@ volInt[m_, w_List] := volInt[m, Sort[w]] = Module[{fx, uu, vv, ww},
    fx = (wt[w] rr^m) /. {x -> uu, y -> vv, z -> ww};
    8 seqInt[fx, {ww, vv, uu}, 0, hw]];
 
-(* ---------------- outer faces: the two planes normal to axis q ---------- *)
+(* ---------------- outer faces: the two planes normal to axis q ----------
+   THREE ROUTES, TRIED IN TURN.  The face integral is benign in principle --
+   the integrand is bounded on a plane at distance Del/2 from the origin --
+   but Integrate can still fail to close it.  The deepest kernels (m = 5 with
+   five derivatives, which the dynamic Q needs at O(k^6)) produce ArcCsch and
+   ArcSinh terms from the inner integration that the outer one cannot then
+   handle in that variable order.
+
+   Pmat.nb works around exactly this by hand-picking a different integration
+   order per component.  That is the symptom, not a fix, so it is generalised
+   here: try the other order, and failing that integrate the EVEN PART over
+   the positive quadrant, which is exact because the odd parts of the face
+   integrand cancel over a symmetric square and the even part is often the
+   easier antiderivative.
+
+   An unevaluated result is never returned silently -- E$ asserts on it. *)
 outerFace[m_, rest_List, w_List, q_] := outerFace[m, Sort[rest], Sort[w], q] =
-  Module[{F, o1, o2, uu, vv},
+  Module[{F, o1, o2, uu, vv, ig, res},
    F = dk[m, rest] wt[w];
    {o1, o2} = Complement[{1, 2, 3}, {q}];
-   seqInt[
-     (F /. {X[[q]] ->  hw, X[[o1]] -> uu, X[[o2]] -> vv}) -
-     (F /. {X[[q]] -> -hw, X[[o1]] -> uu, X[[o2]] -> vv}),
-     {vv, uu}, -hw, hw]];
+   ig = (F /. {X[[q]] ->  hw, X[[o1]] -> uu, X[[o2]] -> vv}) -
+        (F /. {X[[q]] -> -hw, X[[o1]] -> uu, X[[o2]] -> vv});
+   res = seqInt[ig, {vv, uu}, -hw, hw];
+   If[! FreeQ[res, Integrate], res = seqInt[ig, {uu, vv}, -hw, hw]];
+   If[! FreeQ[res, Integrate],
+      res = 4 seqInt[
+         Simplify[(ig + (ig /. uu -> -uu) + (ig /. vv -> -vv)
+                   + (ig /. {uu -> -uu, vv -> -vv}))/4],
+         {vv, uu}, 0, hw]];
+   If[! FreeQ[res, Integrate],
+      res = 4 seqInt[
+         Simplify[(ig + (ig /. uu -> -uu) + (ig /. vv -> -vv)
+                   + (ig /. {uu -> -uu, vv -> -vv}))/4],
+         {uu, vv}, 0, hw]];
+   res];
 
 (* ---------------- inner sphere: DIAGNOSTIC ONLY ------------------------- *)
 (* Sur_{|r|=eps} rhat_q (prod x_w) (d^rest r^m) dA, as eps -> 0.  This is the
@@ -245,15 +304,44 @@ assertEvaluated[res_, m_, ds_, w_] := (
       Abort[]];
    res);
 
+(* ---- the direct route, for integrands with no distributional content ----
+   d^D r^m is homogeneous of degree m - D.  When m - D >= 0 the integrand is
+   BOUNDED at the origin, absolutely integrable, and carries no delta: the
+   face-peeling machinery is unnecessary and the plain volume integral is the
+   whole answer.  That matters in practice as well as in principle -- the
+   deepest case the dynamic Q needs, E[5;{1,1,1,1,1};{1}] at O(k^6), defeats
+   all four face routes (the inner integration throws up ArcCsch/ArcSinh over
+   nested radicals that Integrate cannot then close), while the direct
+   integral of the same quantity is elementary.
+
+   Used ONLY when m - D >= 0, so it can never silently replace a moment that
+   has delta content.  Where both routes are valid they must agree, and
+   CubeMomentCoreTest.wl checks that they do. *)
+directVol[m_, ds_List, w_List] := directVol[m, Sort[ds], Sort[w]] =
+  Module[{fx, uu, vv, ww, res},
+   fx = (wt[w] dk[m, ds]) /. {x -> uu, y -> vv, z -> ww};
+   res = seqInt[fx, {ww, vv, uu}, -hw, hw];
+   If[! FreeQ[res, Integrate], res = seqInt[fx, {uu, vv, ww}, -hw, hw]];
+   If[! FreeQ[res, Integrate], res = seqInt[fx, {vv, ww, uu}, -hw, hw]];
+   res];
+
 E$[m_, ds_List, w_List] := E$[m, Sort[ds], Sort[w]] =
-  Module[{q, rest},
-   If[ds === {}, Return[assertEvaluated[volInt[m, w], m, ds, w]]];
+  Module[{q, rest, res},
+   (* the D = 0 branch must be Pell-reduced too: Int_V x_1^2 dV/r carries
+      Log[3650401 - 2107560 Sqrt[3]] = 12 Log[2-Sqrt[3]], and unreduced it is
+      wrong in the fifth significant figure at machine precision. *)
+   If[ds === {}, Return[assertEvaluated[pellSimplify[volInt[m, w]], m, ds, w]]];
+   (* bounded integrand -> no delta content -> integrate directly *)
+   If[m - Length[ds] >= 0,
+      res = directVol[m, ds, w];
+      If[FreeQ[res, Integrate],
+         Return[assertEvaluated[pellSimplify[res], m, ds, w]]]];
    q = First[ds]; rest = Rest[ds];
    assertEvaluated[
-     Simplify[
+     pellSimplify[
        outerFace[m, rest, w, q]
-       - Sum[If[w[[u]] === q, E$[m, rest, Drop[w, {u}]], 0], {u, Length[w]}],
-       Assumptions -> Del > 0], m, ds, w]];
+       - Sum[If[w[[u]] === q, E$[m, rest, Drop[w, {u}]], 0], {u, Length[w]}]],
+     m, ds, w]];
 
 (* Diagnostic twin: the spherically-excised (delta-free) principal value.
    E$ - excisedE is the delta content of the moment. *)
@@ -387,6 +475,66 @@ gStatic[i_, n_, ds_List, w_List] :=
 
 (* the same substitution applied to a dynamic result *)
 lameRule = {ka -> Sqrt[mu/(lam + 2 mu)] kb};
+
+(* ==========================================================================
+   PELL REDUCTION OF THE LOGARITHMS  --  a CONDITIONING fix, not cosmetics
+
+   The face and volume integrals throw out logarithms of Pell units:
+
+       Log[72010600134783751 - 41575339372323900 Sqrt[3]]  =  30 Log[2-Sqrt[3]]
+
+   because (2 +- Sqrt[3])^n = A_n +- B_n Sqrt[3] solves x^2 - 3 y^2 = 1, with
+   A_{n+1} = 4 A_n - A_{n-1} : 2, 7, 26, 97, 362, 1351, 5042, 18817, ...
+
+   Left alone these are NUMERICALLY LETHAL.  A_30 - B_30 Sqrt[3] is about
+   9.3*10^-18 formed as a difference of two integers of order 10^17 -- a
+   cancellation of some 35 significant digits.  At machine precision the
+   result is noise, and every quantity built on it inherits that.  It is also
+   why zeroQ needs $MaxExtraPrecision raised so far.
+
+   Mathematica/CubeT6PellSimplify.wl already does this for the T6 scalars, but
+   by a TABLE: k = 2..12, and only the (A + B Sqrt[3]) sign.  Both limits bite
+   here -- the moments need k = 30 and the MINUS sign.  So the exponent is
+   DETECTED instead of tabulated: estimate n from the magnitude, then confirm
+   it by an exact integer identity.  No table to outgrow, and the confirmation
+   is exact rather than numerical.
+   ========================================================================== *)
+
+pellExponent[$p_Integer, $q_Integer] := Module[{$n, $e},
+   If[$q == 0, Return[$None]];
+   $n = Round[N[Log[Abs[$p] + Abs[$q] Sqrt[3]]/Log[2 + Sqrt[3]], 60]];
+   If[! IntegerQ[$n] || $n <= 0, Return[$None]];
+   $e = Expand[(2 + Sqrt[3])^$n];
+   If[Coefficient[$e, Sqrt[3], 0] == $p && Coefficient[$e, Sqrt[3], 1] == $q,
+      Return[{$n, +1}]];
+   $e = Expand[(2 - Sqrt[3])^$n];
+   If[Coefficient[$e, Sqrt[3], 0] == $p && Coefficient[$e, Sqrt[3], 1] == $q,
+      Return[{$n, -1}]];
+   $None];
+
+pellLogOne[$z_] := Module[{$zz, $rat, $p, $q, $hit},
+   $zz = Expand[$z];
+   $p = Coefficient[$zz, Sqrt[3], 0]; $q = Coefficient[$zz, Sqrt[3], 1];
+   If[! (NumericQ[$p] && NumericQ[$q]), Return[Log[$z]]];
+   (* strip a rational common factor, e.g. Log[64 (26 + 15 Sqrt[3])] *)
+   $rat = If[IntegerQ[$p] && IntegerQ[$q] && $q =!= 0, GCD[$p, $q], 1];
+   If[$rat > 1, $p = $p/$rat; $q = $q/$rat, $rat = 1];
+   If[! (IntegerQ[$p] && IntegerQ[$q]), Return[Log[$z]]];
+   $hit = pellExponent[$p, $q];
+   If[$hit === $None, Return[Log[$z]]];
+   Log[$rat] + $hit[[1]] Log[2 + $hit[[2]] Sqrt[3]]];
+
+(* Apply to every Log in an expression, and normalise the inverse-hyperbolics
+   that the same integrals produce in equivalent spellings. *)
+pellSimplify[$e_] := Simplify[
+   ($e /. Log[$z_] :> pellLogOne[$z]) /.
+     {ArcCoth[Sqrt[3]] -> Log[1 + Sqrt[3]] - Log[2]/2,
+      ArcCsch[Sqrt[2]] -> Log[1 + Sqrt[3]] - Log[2]/2,
+      ArcSinh[1/Sqrt[2]] -> Log[1 + Sqrt[3]] - Log[2]/2,
+      ArcCosh[$a_Integer] :> With[{$h = pellExponent[$a,
+           Sqrt[($a^2 - 1)/3] /. $x_ /; ! IntegerQ[$x] -> 0]},
+         If[$h === $None, ArcCosh[$a], $h[[1]] Log[2 + Sqrt[3]]]]},
+   Assumptions -> Del > 0];
 
 (* ==========================================================================
    SOURCE versus FIELD DERIVATIVES -- the (-1)^D convention
