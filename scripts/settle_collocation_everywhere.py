@@ -57,7 +57,18 @@ So the source side is always an integral over the cell; the only question is
 whether that integral is approximated by its midpoint. The question is
 therefore not "collocation or not" but "at what separation does the midpoint
 rule become accurate enough", which is a quadrature question with a measurable
-answer -- the third panel below.
+answer -- panels [3] and [4].
+
+⚠ THE ANSWER IS "FURTHER OUT THAN THE BOX", AND IT REFUTES A SECOND DOCSTRING.
+`_bloch_contact_correction` called this correction "short-ranged by
+construction ... a finite sum over a handful of cells". Panel [4] sweeps the
+reach now that it is exposed and the error is still falling at 289 shells, as
+R^-1.5 with no saturation. The tail is O(1/R) on the obvious estimate
+(<G> - G ~ d^2/r^3 against ~8R cells per shell), so `va_all_reach` MEASURES the
+truncation rather than removing it, and the claim has been retracted in that
+docstring. Removing it needs an analytic tail or a resummation -- and a 1/R tail
+in a 2-D lattice sum raises a shape-dependence question that is NOT settled
+here.
 
 ARBITER: Kennett, exact for a uniform layer.
 
@@ -107,6 +118,7 @@ def err_vs_kennett(
     va_all: bool,
     va_radius: int = 1,
     va_gauss: int = 4,
+    reach: int = 4,
 ) -> float:
     """Relative |R_PP| error against Kennett, collocation T-matrix throughout."""
     a = H_PHYS / (2.0 * n_z)
@@ -134,6 +146,7 @@ def err_vs_kennett(
         va_all=va_all,
         va_radius=va_radius,
         va_gauss=va_gauss,
+        va_all_reach=reach,
     )
     res = compute_slab_scattering(
         geom,
@@ -175,9 +188,6 @@ def main() -> int:
 
     print("\n  [2] is the va_all quadrature converged?  (if it is not, panel [1]")
     print("      measures quadrature error, not the midpoint bias)")
-    print("      NOTE: the correction REACH is pinned at 4 cells inside the")
-    print("      Ewald correction and is not exposed, so what is varied here is")
-    print("      the Gauss order at fixed reach.")
     dl, dm, dr = CASES[0][1:]
     print(f"\n      {'va_gauss':>9} {'err':>13} {'d vs prev':>12}")
     prev = None
@@ -201,6 +211,47 @@ def main() -> int:
             base = e
         print(f"      {rad:>10} {e:14.4e} {e / base:14.4f}")
 
+    print("\n  [4] IS THE CORRECTION SHELL CONVERGED?  va_all_reach is now a")
+    print("      parameter (it was hard-wired at 4), so the truncation can be")
+    print("      separated from the physics.  If the error keeps falling with")
+    print("      reach, the default was TRUNCATING a real correction and part")
+    print("      of the residual attributed to physics was shell cutoff.")
+    print(f"\n      {'reach':>6} {'shells':>8} {'err':>14} {'d vs prev':>12}")
+    reaches = (1, 2, 3, 4, 6, 8)
+    errs: dict[int, float] = {}
+    prev = None
+    for reach in reaches:
+        e = err_vs_kennett(dl, dm, dr, 4, True, reach=reach)
+        errs[reach] = e
+        d = "" if prev is None else f"{abs(e - prev) / abs(e):12.2e}"
+        print(f"      {reach:>6} {(2 * reach + 1) ** 2:>8} {e:14.4e} {d:>12}")
+        prev = e
+
+    # A rate from DISJOINT pairs: if they agree, it is a genuine power law and
+    # not two points forced through a curve.
+    print("\n      fitted exponent p in err ~ R^-p, on disjoint pairs:")
+    ps = []
+    for lo, hi in ((2, 4), (3, 6), (4, 8)):
+        p = np.log(errs[lo] / errs[hi]) / np.log(hi / lo)
+        ps.append(p)
+        print(f"        R = {lo} -> {hi}:  p = {p:.3f}")
+    spread = max(ps) - min(ps)
+    print(f"        spread {spread:.3f} -- consistent power law: {spread < 0.1}")
+    print()
+    print("      THE CORRECTION IS NOT SHORT-RANGED, and the docstring of")
+    print("      _bloch_contact_correction said it was.  That claim is now")
+    print("      retracted there.  <G> - G ~ d^2/r^3 and a 2-D shell at radius R")
+    print("      holds ~8R cells, so each shell gives ~d^2/R^2 and the TAIL")
+    print("      beyond R goes like d^2/R.  A 1/R tail cannot be summed away by")
+    print("      enlarging the box: va_all_reach MEASURES the truncation, it")
+    print("      does not remove it.  Removing it needs an analytic tail.")
+    print()
+    print("      ⚠ UNCHECKED RISK: a 1/R tail in a 2-D lattice sum is exactly")
+    print("      the regime where the limit can depend on the summation SHAPE,")
+    print("      the same structure already found in the k=0 lattice sum of the")
+    print("      point propagator.  Any reach-extrapolated number is provisional")
+    print("      until that is settled.")
+
     print("\n" + "=" * 78)
     print("WHY NOT COLLOCATION FOR EVERYTHING -- the structural half")
     print()
@@ -214,16 +265,21 @@ def main() -> int:
     print("  The real question is where the MIDPOINT RULE is an adequate")
     print("  approximation to that source integral, and that is what panel [1]")
     print("  and [3] measure.  Answer: NOT at the shells it is currently used")
-    print("  on.  Correcting them is worth ~9x on the Kennett residual, and the")
-    print("  gain grows under refinement -- a scale-invariant bias removed, not")
-    print("  a discretisation error reduced.")
+    print("  on.  Correcting them at the DEFAULT reach is worth ~9x on the")
+    print("  Kennett residual, and the gain grows under refinement -- a")
+    print("  scale-invariant bias removed, not a discretisation error reduced.")
     print()
-    print("  ⚠ TWO THINGS THIS DOES NOT ESTABLISH.  The corrected sequence is")
+    print("  ⚠ BUT ~9x IS NOT THE ANSWER, IT IS THE ANSWER AT reach = 4.")
+    print("  Panel [4] shows that default is itself a truncation worth a further")
+    print("  factor ~3 by reach 8, with no saturation in sight.  The converged")
+    print("  value is UNKNOWN and cannot be reached by raising the parameter:")
+    print("  the tail is O(1/R).  Quote the ~9x as 'at the current default',")
+    print("  never as the size of the effect.")
+    print()
+    print("  ⚠ ALSO NOT ESTABLISHED.  The refinement sequence in panel [1] is")
     print("  still falling but NOT at a clean second-order rate (1.20, 1.16 per")
-    print("  halving), so it is not yet a convergence claim.  And the correction")
-    print("  reach is pinned at 4 cells and not exposed, so part of what remains")
-    print("  may be shell truncation rather than physics -- panel [3] is still")
-    print("  descending at its last point, which is the evidence for that.")
+    print("  halving), so it is not yet a convergence claim -- and part of that")
+    print("  is the shell truncation panel [4] measures, not physics.")
     print("=" * 78)
     return 0
 
