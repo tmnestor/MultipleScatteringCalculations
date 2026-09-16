@@ -22,6 +22,7 @@ from cubic_scattering.slab_scattering import (
     _build_slab_kernels,
     _cell_averaged_propagator,
     _slab_matvec,
+    build_slab_kernels,
     compute_slab_scattering,
     compute_slab_tmatrices,
     kennett_reference_matrix,
@@ -1051,15 +1052,16 @@ class TestVaAllAveragingConvention:
     """
 
     M, N_Z, D = 3, 2, 2.0 * A
-    REACH = 4  # va_all_reach, pinned inside _bloch_contact_correction
+    REACH = 4  # the va_all_reach default
 
-    def _expected_beyond_contact(self, *, double: bool) -> np.ndarray:
+    def _expected_beyond_contact(self, *, double: bool, reach: int | None = None) -> np.ndarray:
         """Sum over the shells that `va_all` adds, at Bloch k = 0 (phases 1)."""
+        r = self.REACH if reach is None else reach
         total = np.zeros((9, 9), dtype=complex)
-        for dx in range(-self.REACH, self.REACH + 1):
-            for dy in range(-self.REACH, self.REACH + 1):
+        for dx in range(-r, r + 1):
+            for dy in range(-r, r + 1):
                 cheb = max(abs(dx), abs(dy))
-                if cheb <= 1 or cheb > self.REACH:
+                if cheb <= 1 or cheb > r:
                     continue  # <=1 is the contact shell, common to both builds
                 r_vec = np.array([0.0, dx * self.D, dy * self.D])
                 total += _cell_averaged_propagator(
@@ -1136,3 +1138,97 @@ class TestVaAllAveragingConvention:
             "contact_average does not propagate past the contact shell -- "
             "va_all is Galerkin-averaging there (the 2026-09-17 defect)"
         )
+
+
+class TestVaAllReachIsExposed:
+    """`va_all_reach` must reach the kernel from the public entry point.
+
+    It was hard-wired at 4 inside `_bloch_contact_correction` with no way to
+    vary it, which made the shell truncation an unmeasurable part of the
+    residual. It is a CONVERGENCE parameter -- the correction it bounds was
+    assumed negligible past contact, and that assumption is false on the near
+    shells -- so it has to be settable to be gated.
+    """
+
+    M, N_Z, D = 3, 2, 2.0 * A
+
+    def _shell_sum(self, reach: int) -> np.ndarray:
+        """Reference: the shells va_all adds out to `reach`, at Bloch k = 0."""
+        total = np.zeros((9, 9), dtype=complex)
+        for dx in range(-reach, reach + 1):
+            for dy in range(-reach, reach + 1):
+                if max(abs(dx), abs(dy)) <= 1:
+                    continue
+                r_vec = np.array([0.0, dx * self.D, dy * self.D])
+                total += _cell_averaged_propagator(
+                    r_vec, self.D, OMEGA, REF, 4, double=False
+                ) - _propagator_block_9x9(r_vec, OMEGA, REF)
+        return total
+
+    @pytest.mark.parametrize("reach", [2, 3, 5])
+    def test_reach_selects_the_right_shells(self, reach):
+        """Each reach must cover exactly its own shells -- no more, no less."""
+        common = {
+            "M": self.M,
+            "d": self.D,
+            "dz_vox": 0,
+            "omega": OMEGA,
+            "ref": REF,
+            "n_orders": 2,
+            "va_radius": 1,
+            "contact_average": "single",
+        }
+        added = (
+            _bloch_contact_correction(**common, va_all=True, va_all_reach=reach)[0, 0]
+            - _bloch_contact_correction(**common, va_all=False)[0, 0]
+        )
+        expected = self._shell_sum(reach)
+        assert_allclose(added, expected, rtol=1e-11, atol=1e-13 * np.max(np.abs(expected)))
+
+        # and it must differ from the neighbouring reach, or the parameter is inert
+        other = self._shell_sum(reach + 1)
+        assert np.max(np.abs(expected - other)) > 1e-12 * np.max(np.abs(expected))
+
+    def test_reach_threads_from_the_public_builder(self):
+        """build_slab_kernels must forward it -- not silently drop it."""
+        geom = SlabGeometry(M=self.M, N_z=self.N_Z, a=A)
+        common = {
+            "volume_averaged": True,
+            "periodic": True,
+            "lattice_ewald": True,
+            "va_all": True,
+            "contact_average": "single",
+        }
+        k4 = build_slab_kernels(geom, OMEGA, REF, **common, va_all_reach=4)
+        k6 = build_slab_kernels(geom, OMEGA, REF, **common, va_all_reach=6)
+        assert np.max(np.abs(k6 - k4)) > 1e-14 * np.max(np.abs(k4)), (
+            "va_all_reach does not reach the kernel from build_slab_kernels"
+        )
+
+    def test_reach_is_inert_without_va_all(self):
+        """With va_all off the reach must do nothing at all."""
+        geom = SlabGeometry(M=self.M, N_z=self.N_Z, a=A)
+        common = {"volume_averaged": True, "periodic": True, "lattice_ewald": True}
+        k4 = build_slab_kernels(geom, OMEGA, REF, **common, va_all_reach=4)
+        k9 = build_slab_kernels(geom, OMEGA, REF, **common, va_all_reach=9)
+        assert_allclose(k9, k4, rtol=0, atol=0)
+
+    def test_rejects_reach_below_one(self):
+        geom = SlabGeometry(M=2, N_z=1, a=A)
+        with pytest.raises(ValueError, match=r"va_all_reach must be >= 1"):
+            build_slab_kernels(geom, OMEGA, REF, va_all_reach=0)
+
+    def test_rejects_va_all_without_volume_averaged(self):
+        geom = SlabGeometry(M=2, N_z=1, a=A)
+        with pytest.raises(ValueError, match=r"va_all=True requires volume_averaged=True"):
+            build_slab_kernels(geom, OMEGA, REF, va_all=True, volume_averaged=False)
+
+    def test_diagnostics_name_where_and_how_to_fix(self):
+        """The project standard: what, where, what it should be, how to recover."""
+        geom = SlabGeometry(M=2, N_z=1, a=A)
+        with pytest.raises(ValueError) as exc:
+            build_slab_kernels(geom, OMEGA, REF, va_all_reach=0)
+        text = str(exc.value)
+        assert "slab_scattering.py" in text  # where
+        assert "Valid:" in text  # what it should look like
+        assert "Fix:" in text  # how to recover
