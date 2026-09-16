@@ -306,14 +306,21 @@ def _bloch_contact_correction(
             r_vec = np.array([dz_vox * d, dx * d, dy * d])
             g_pt = _propagator_block_9x9(r_vec, omega, ref)
             if cheb <= va_radius:
-                g_avg = _contact_operator(
-                    r_vec, (dz_vox, dx, dy), d, omega, ref, n_orders, contact_average
-                )
+                g_avg = _contact_operator(r_vec, (dz_vox, dx, dy), d, omega, ref, n_orders, contact_average)
             elif va_all:
                 # Beyond contact the kernel is smooth over the cell, so plain
                 # Gauss quadrature is the source-cell average. Without this
                 # branch va_all would be silently dropped on the Ewald path.
-                g_avg = _cell_averaged_propagator(r_vec, d, omega, ref, va_gauss)
+                #
+                # ⚠ `double` MUST track contact_average. _cell_averaged_propagator
+                # defaults to double=True, so omitting it applied the GALERKIN
+                # average here while the contact shell beside it used the single
+                # one -- the exact formulation mismatch this scheme was fixed to
+                # remove, reintroduced one shell further out. That defect is what
+                # made va_all measure as "32% worse" and hid a 5x gain.
+                g_avg = _cell_averaged_propagator(
+                    r_vec, d, omega, ref, va_gauss, double=contact_average == "double"
+                )
             else:
                 continue
             offsets.append((dx, dy))
@@ -454,15 +461,11 @@ def _contact_operator(
         # dependent. Recomputing it per orbit point per dz slice made the test
         # suite ~2x slower. The value depends only on the offset and the medium,
         # so memoising on those recovers the cost exactly, with no approximation.
-        return _single_contact_cached(
-            offset, d, omega, ref.alpha, ref.beta, ref.rho, CONTACT_GAUSS
-        ).copy()
+        return _single_contact_cached(offset, d, omega, ref.alpha, ref.beta, ref.rho, CONTACT_GAUSS).copy()
     if contact_average == "double":
         # The analytic O_h tables, exact at face, edge and corner contact where
         # the doubly-averaged integrand is singular and no quadrature converges.
-        return inter_voxel_propagator_9x9(
-            offset, ref.alpha, ref.beta, ref.rho, omega, n_orders, d=d
-        )
+        return inter_voxel_propagator_9x9(offset, ref.alpha, ref.beta, ref.rho, omega, n_orders, d=d)
     msg = (
         f"contact_average must be 'single' or 'double', got {contact_average!r}.\n"
         "  Where: cubic_scattering/slab_scattering.py, _contact_operator()\n"
@@ -748,8 +751,14 @@ def _build_slab_kernels(
                     # Beyond the contact shell the kernel is SMOOTH over the
                     # cell, so the average is plain Gauss quadrature; only
                     # contact needs the analytic tables above.
+                    # ⚠ `double` tracks contact_average -- see the note at the
+                    # matching Ewald-path call. The default is double=True, so
+                    # leaving it out silently Galerkin-averages here while the
+                    # contact shell uses the single average.
                     G0 = (
-                        _cell_averaged_propagator(r_vec, d, omega, ref, va_gauss)
+                        _cell_averaged_propagator(
+                            r_vec, d, omega, ref, va_gauss, double=contact_average == "double"
+                        )
                         if volume_averaged and va_all
                         else _propagator_block_9x9(r_vec, omega, ref)
                     )
