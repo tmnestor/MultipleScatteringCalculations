@@ -292,7 +292,7 @@ def main() -> int:
     print("       If K were purely a property of the LATTICE, any single-site theory")
     print("       would have to be corrected to the SAME absolute s*. It is not.")
     print(f"       {'baseline':>9} {'case':>12} {'s_iso':>10} {'s*':>10} {'K':>10}")
-    k_by = {}
+    k_by: dict[str, list[float]] = {}
     for base in ("t9", "t27"):
         for label, (dl, dm, dr) in (
             ("pure shear", (0.0, 1.0e9, 0.0)),
