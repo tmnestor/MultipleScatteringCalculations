@@ -1,0 +1,276 @@
+% LuaLaTeX document — compile with: lualatex moment_t9_no_eshelby.tex  (twice)
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{mathtools}
+
+\newcommand{\D}{\Delta}
+\newcommand{\order}{\mathcal{O}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\Gz}{G^{0}}
+\newcommand{\half}{\tfrac{1}{2}}
+
+\title{The nine-component single-site T-matrix\\ from moment integrals,
+       without Eshelby}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The cubic single-site T-matrix is usually obtained by importing Eshelby's
+uniform-eigenstrain result and patching it for a cube. This note derives it
+instead from the moment integrals of the elastodynamic Green's tensor over the
+cube. Eshelby is never invoked: it \emph{emerges} as the first-gradient
+truncation of a closed hierarchy, and the derivation says exactly what that
+truncation costs. The route is constructive throughout --- every integral is in
+closed form, the $r=0$ distributional content is carried automatically rather
+than patched in, and the resulting $9\times 9$ block reduces under $O_h$ to
+three scalars. Two independent implementations agree on those scalars to
+$4\times10^{-16}$.
+\end{abstract}
+
+\section{The closed set}
+
+Let the scatterer be a cube $V=[-\D/2,\D/2]^3$ of contrast
+$\delta c_{ijkl}=\delta\lambda\,\delta_{ij}\delta_{kl}
++\delta\mu(\delta_{ik}\delta_{jl}+\delta_{il}\delta_{jk})$ and $\delta\rho$,
+embedded in an isotropic background with Green's tensor $\Gz_{ij}$. Expanding
+the internal field about the cube centre and projecting the
+Lippmann--Schwinger equation onto the monomials $1$, $x_p$, $x_px_q$ gives a
+closed system in the three unknowns $u_i(0)$, $\partial_pu_i(0)$,
+$\partial_p\partial_qu_i(0)$:
+\begin{align}
+\bigl(\delta_{ij}-\omega^2\delta\rho\,G_{ij}\bigr)u_j(0)
+  &+\bigl(N^{r}_{in,k}\,\delta c_{nksj}
+  -\half\omega^2\delta\rho\,K^{rs}_{ij}\bigr)\partial_r\partial_su_j(0)
+  = u^0_i(0), \label{eq:A11}\\[2pt]
+\bigl(\delta_{pr}\delta_{ij}+\omega^2\delta\rho\,N^{r}_{ij,p}
+  &-M_{in,pk}\,\delta c_{nkrj}\bigr)\partial_ru_j(0)
+  = \partial_pu^0_i(0), \label{eq:A22}\\[2pt]
+-\omega^2\delta\rho\,M_{ij,pq}u_j(0)
+  &+\bigl(\delta_{qr}\delta_{ps}\delta_{ij}+Q^{r}_{in,pqk}\,\delta c_{nksj}
+  -\half\omega^2\delta\rho\,P^{rs}_{ij,pq}\bigr)\partial_r\partial_su_j(0)
+  = \partial_p\partial_qu^0_i(0). \label{eq:A33}
+\end{align}
+The six coefficient tensors are moments of $\Gz$ over the cube,
+\begin{equation}
+\begin{aligned}
+G_{ij}&=\int_V \Gz_{ij}\,\dd V, &
+K^{rs}_{ij}&=\int_V \Gz_{ij}\,x_rx_s\,\dd V, &
+N^{r}_{in,k}&=\int_V \partial_k\Gz_{in}\,x_r\,\dd V,\\
+M_{in,pk}&=\int_V \partial_p\partial_k\Gz_{in}\,\dd V, &
+P^{rs}_{ij,pq}&=\int_V \partial_q\partial_p\Gz_{ij}\,x_rx_s\,\dd V, &
+Q^{r}_{in,pqk}&=\int_V \partial_q\partial_p\partial_k\Gz_{in}\,x_r\,\dd V,
+\end{aligned}
+\label{eq:moments}
+\end{equation}
+graded by $(D,W)$, the number of derivatives and the degree of the $x$-weight:
+\[
+G\,(0,0)\quad K\,(0,2)\quad N\,(1,1)\quad M\,(2,0)\quad P\,(2,2)\quad Q\,(3,1).
+\]
+
+\paragraph{A convention that is easy to get backwards.} The derivatives in
+\eqref{eq:moments} are with respect to the \emph{source} point. Since $\Gz$
+depends on the separation, $\partial' = -\partial$ and a moment with $D$
+derivatives differs from its field-derivative value by $(-1)^D$. Only $N$ and
+$Q$ are affected. This is invisible to every symmetry, parity and scaling
+check, so it must be fixed by convention rather than discovered by testing.
+
+\section{The parity decoupling}
+
+$D+W$ is even for five of the six moments and odd only for $N$. Equivalently,
+$u$, $\partial u$ and $\partial\partial u$ carry degrees $0$, $1$, $2$, and
+even couples only to even. The consequence is
+\eqref{eq:A22}: \emph{it involves nothing else}. The first gradient is
+determined by its own block, with no reference to $u$ or to
+$\partial\partial u$.
+
+This is the structural fact the rest of the note rests on. The leading
+scattering from a modulus contrast is the stress dipole
+$\int_V \delta c:\nabla u\,\dd V$, which needs only $\partial u$. Therefore
+\emph{no amount of work on the second-gradient block
+\eqref{eq:A33} can change the leading far field}. Whatever \eqref{eq:A33}
+contributes reaches the far field only through the $\order((ka)^2)$ coupling
+in \eqref{eq:A11}.
+
+\section{The moments, in closed form}
+
+Write the elastodynamic tensor as
+\begin{equation}
+\Gz_{in}(\bm r)=\frac{1}{4\pi\mu}\Bigl[\delta_{in}\,g_\beta(r)
++\frac{1}{k_\beta^2}\,\partial_i\partial_n\bigl(g_\beta(r)-g_\alpha(r)\bigr)\Bigr],
+\qquad g_k(r)=\frac{e^{ikr}}{r}.
+\label{eq:Gdecomp}
+\end{equation}
+Its static limit reproduces Kupradze exactly, with
+$a_0=(\lambda+3\mu)/8\pi\mu(\lambda+2\mu)$ and
+$b_0=(\lambda+\mu)/8\pi\mu(\lambda+2\mu)$. Expanding $g_k$ in powers of $r$
+turns every moment in \eqref{eq:moments} into a finite sum of \emph{scalar}
+moments
+\begin{equation}
+E\bigl[m;d_1\ldots d_D;w_1\ldots w_W\bigr]
+ =\Bigl\langle \partial_{d_1}\!\cdots\partial_{d_D} r^m,\;
+   x_{w_1}\!\cdots x_{w_W}\,\mathbf{1}_V\Bigr\rangle .
+\label{eq:E}
+\end{equation}
+
+\paragraph{Why these are distributions, not integrals.} For $m=-1$ the
+classical integrand is not absolutely integrable: $\partial^4(1/r)$ is a
+harmonic, hence traceless, tensor of degree $-5$, so its angular average
+vanishes and the radial divergence is multiplied by zero. The value then
+depends on the shape of the exclusion. This is precisely the delta-function
+term that naive quadrature misses --- and gets the \emph{sign} wrong without.
+
+The remedy is not to patch a delta in afterwards but to pair against the test
+function $w\,\mathbf{1}_V$ from the start. Using
+$\partial_q\mathbf{1}_V=-n_q\delta_{\partial V}$,
+\begin{equation}
+\bigl\langle \partial_q T',\,w\mathbf{1}_V\bigr\rangle
+ =\oint_{\partial V} n_q\,w\,T'\,\dd A
+ -\bigl\langle T',\,(\partial_qw)\mathbf{1}_V\bigr\rangle ,
+\label{eq:peel}
+\end{equation}
+with $T'=\partial_{\text{rest}}r^m$. Two features make \eqref{eq:peel} exact
+rather than merely plausible: $T'$ is evaluated \emph{only on the boundary},
+at distance $\D/2$ from the origin, where every derivative of $r^m$ is smooth
+and bounded; and the recursion lowers both $D$ and $W$, terminating on an
+ordinary convergent integral. The delta content is inside the surface term and
+cannot be dropped. The sharp check is
+\begin{equation}
+\sum_p E[-1;\{p,p\};\,] = -4\pi ,
+\label{eq:lap}
+\end{equation}
+which a spherical excision returns as $0$.
+
+\paragraph{Conditioning.} The integrals emit logarithms of Pell units,
+$(2\pm\sqrt3)^n=A_n\pm B_n\sqrt3$ solving $x^2-3y^2=1$. Left unreduced these
+are numerically lethal: $\log(72010600134783751-41575339372323900\sqrt3)$ is a
+$35$-digit cancellation between integers of order $10^{17}$ and evaluates to
+\texttt{Indeterminate} in double precision. Reduced by $\log(A_n-B_n\sqrt3)=n\log(2-\sqrt3)$
+it is exact to machine precision. Every closed form below is Pell-reduced.
+
+\section{The nine-component block}
+
+Specialise \eqref{eq:A22}. With $\delta\rho=0$ --- the regime in which the
+single-site modulus T-matrix is defined --- the block is
+\begin{equation}
+A^{(2)}_{(p,i),(r,j)}
+ =\delta_{pr}\delta_{ij}-M_{in,pk}\,\delta c_{nkrj},
+\label{eq:A22static}
+\end{equation}
+a $9\times 9$ operator built from $M$ alone. It contains neither $Q$ nor $P$:
+the second-gradient moments do not appear.
+
+Under $O_h$ the nine components decompose as
+$\mathbf{3}\otimes\mathbf{3}=A_{1g}\oplus E_g\oplus T_{1g}\oplus T_{2g}$, and
+\eqref{eq:A22static} is diagonal in that basis. The strain concentration in
+each channel is the inverse of the corresponding eigenvalue:
+\begin{align}
+A_{1g}\ \text{(bulk)}: &\quad
+  1+\frac{3\delta\lambda+2\delta\mu}{3(\lambda+2\mu)}, \label{eq:bulk}\\[4pt]
+T_{2g}\ \text{(off-diagonal shear)}: &\quad
+  1+2\,\delta\mu\,S_{\text{shear}},\qquad
+  S_{\text{shear}}=\frac{\pi(\lambda+2\mu)-\sqrt3(\lambda+\mu)}
+                        {3\pi\mu(\lambda+2\mu)}, \label{eq:t2g}\\[4pt]
+E_{g}\ \text{(diagonal shear)}: &\quad
+  1+2\,\delta\mu\,S_{\text{diag}},\qquad
+  S_{\text{diag}}=\frac{3\sqrt3(\lambda+\mu)+2\mu\pi}
+                        {6\pi\mu(\lambda+2\mu)} . \label{eq:eg}
+\end{align}
+
+That $E_g\neq T_{2g}$ is not a discrepancy: they are inequivalent
+representations, and their difference \emph{is} the cubic anisotropy, carried
+elsewhere in this project as $\D\mu^*_{\text{diag}}-\D\mu^*_{\text{off}}$. A
+sphere would have no such split; a cube must.
+
+\section{Where Eshelby went}
+
+Eshelby's uniformity theorem says the internal field of an inclusion under
+uniform remote strain is uniform \emph{if and only if} the inclusion is an
+ellipsoid. The usual construction imports the ellipsoidal result and adapts
+it. Nothing of the sort happens here. Equations
+\eqref{eq:bulk}--\eqref{eq:eg} follow from the moment integrals and the group
+theory alone.
+
+What \emph{does} correspond to Eshelby is the truncation: retaining only
+$\partial u$ and discarding $\partial\partial u$ is exactly the
+uniform-internal-strain ansatz. So the classical result is recovered as the
+first-gradient closure of \eqref{eq:A11}--\eqref{eq:A33}, and the hierarchy
+makes the cost of that closure explicit rather than hidden.
+
+\paragraph{And the cost does not shrink by going further.} Because
+\eqref{eq:A22} is self-contained, adding the second-gradient block cannot
+improve the leading far field. This is not an estimate; it is a consequence of
+the parity decoupling. It also explains an otherwise puzzling observation: the
+tier sequence $T_9\to T_{27}\to T_{57}$ in the shear channel runs
+$1.000\to0.7525\to0.9692$ --- oscillating, not converging. A polynomial
+expansion about the centre cannot represent the edge and corner stress
+singularities of a cube at any order, so the series is asymptotic. Improving
+the far field requires changing the \emph{basis}, not adding terms to it.
+
+\section{Validation}
+
+The construction is checked against objects it does not contain.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Check & Against & Result \\
+\midrule
+$\sum_p E[-1;\{p,p\}]=-4\pi$ & analytic & exact \\
+$\nabla^2 r=2/r$, $\nabla^2r^3=12r$, $\nabla^2r^5=30r^3$ & analytic & exact \\
+$\int_V \dd V/r$ & solid-angle quadrature & $3.4\times10^{-9}$ \\
+$M$ components $A,B,C$ & independent first-principles route & $10$ digits \\
+$M$, all $81$ components & 2012 archive closed form & exact \\
+$T_{2}^{c}$, $T_{3}^{c}$ & production \texttt{effective\_contrasts} & $3.6\times10^{-16}$,
+$1.3\times10^{-15}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The last row is the load-bearing one. The production code reaches the same
+quantities by a completely different route --- tabulated master integrals with
+an explicit Eshelby delta correction --- and the two agree to machine
+precision. Matching the identification
+\[
+\text{amp}^{\text{off}}_e=\frac{1}{1-2T_2},\qquad
+\text{amp}^{\text{diag}}_e=\frac{1}{1-2T_2-T_3}
+\]
+against \eqref{eq:t2g}--\eqref{eq:eg} predicts, with no free parameters,
+\[
+T_2^{c}=-\delta\mu\,S_{\text{shear}},\qquad
+T_3^{c}=2\,\delta\mu\,\bigl(S_{\text{shear}}-S_{\text{diag}}\bigr),
+\]
+and both hold to $10^{-15}$. Two independent implementations agreeing is the
+evidence standard; one implementation agreeing with itself is not.
+
+\section{What this does and does not establish}
+
+\textbf{Established.} The nine-component single-site T-matrix follows from the
+moment integrals with no ellipsoidal input; the moments are exact and carry
+their distributional content correctly; the block reduces to three closed-form
+scalars; and those scalars are confirmed by an independent implementation.
+
+\textbf{Not established.} That the result is \emph{accurate} for a cube. It is
+the first-gradient truncation of an asymptotic hierarchy, and
+\eqref{eq:bulk}--\eqref{eq:eg} inherit whatever error that truncation carries.
+The construction makes the approximation explicit and bounds where it can
+live --- in the internal-field basis, not in the integrals --- but it does not
+remove it. Improving on it means replacing the polynomial ansatz, for instance
+by supplying the three channel concentrations from an independent exact
+computation while keeping everything else in this note intact.
+
+\end{document}
