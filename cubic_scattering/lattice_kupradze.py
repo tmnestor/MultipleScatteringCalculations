@@ -449,6 +449,7 @@ def bloch_kernel_hat_9x9(
     *,
     eta: float | None = None,
     cutoff: int = 4,
+    cell_half_width: float | None = None,
 ) -> NDArray:
     """The periodic 9x9 kernel in Bloch space, exactly -- no truncation, no FFT.
 
@@ -514,6 +515,23 @@ def bloch_kernel_hat_9x9(
     k_p = omega / ref.alpha
     k_s = omega / ref.beta
     on_plane = abs(dz) < 1.0e-15 * max(d, 1.0)
+
+    if cell_half_width is not None and on_plane:
+        msg = (
+            "cell_half_width is not available at dz = 0.\n"
+            "  Where: cubic_scattering/lattice_kupradze.py, bloch_kernel_hat_9x9()\n"
+            "  Why:   dz = 0 goes through the EWALD sum, whose real-space half is\n"
+            "         not a plane-wave sum, so the cell form factor is not a\n"
+            "         multiplication there.  Nor can the plain reciprocal sum be\n"
+            "         used instead: with the SINGLE form factor its terms decay\n"
+            "         only as 1/|G|^2 against ~|G| growth of the strain block and\n"
+            "         ~|G| states per shell, which is log-divergent.  (The DOUBLE\n"
+            "         form factor gains a further 1/|G|^2 and does converge --\n"
+            "         that is why inter_voxel_propagator's sinc^2 route exists.)\n"
+            "  Fix:   use the same-plane contact correction for dz = 0, and pass\n"
+            "         cell_half_width only for dz != 0"
+        )
+        raise ValueError(msg)
     r_vec = np.array([dz, 0.0, 0.0])
 
     out = np.zeros((m_cells, m_cells, 9, 9), dtype=complex)
@@ -530,7 +548,7 @@ def bloch_kernel_hat_9x9(
                 out[n1, n2, 3:, :3] = h
                 out[n1, n2, 3:, 3:] = s
             else:
-                out[n1, n2] = _spectral_bloch_block(k_par, dz, d, omega, ref, cutoff)
+                out[n1, n2] = _spectral_bloch_block(k_par, dz, d, omega, ref, cutoff, cell_half_width)
     return out
 
 
@@ -541,6 +559,7 @@ def _spectral_bloch_block(
     omega: complex,
     ref: ReferenceMedium,
     n_g: int,
+    cell_half_width: float | None = None,
 ) -> NDArray:
     """(1/d^2) sum_G Ghat(k_par + G, dz) -- exact and exponentially convergent.
 
@@ -554,14 +573,20 @@ def _spectral_bloch_block(
     sum is cheap and its cutoff has nothing to do with the Ewald cutoff that the
     caller is choosing for the dz = 0 branch.
     """
-    n_g = max(n_g, 6)
+    # ⚠ THE FLOOR DOUBLES WHEN THE SOURCE CELL IS AVERAGED. The 6 below buys
+    # 1e-16 at dz = d because each order costs exp(-2 pi). With the single form
+    # factor the evanescent sinc(k_z h) = sinh(kappa h)/(kappa h) grows like
+    # e^{kappa h}, so the net decay is e^{-kappa(|dz| - h)} = e^{-kappa h} at
+    # dz = d = 2h -- exp(-pi) per order, HALF the exponent. Keeping 6 there
+    # would silently return ~1e-8 instead of 1e-16.
+    n_g = max(n_g, 6 if cell_half_width is None else 12)
     b = 2.0 * np.pi / d
     acc = np.zeros((9, 9), dtype=complex)
     for m in range(-n_g, n_g + 1):
         for n in range(-n_g, n_g + 1):
             kx = k_par[0] + b * m
             ky = k_par[1] + b * n
-            acc += vertical_kernel_9x9(np.array([kx]), ky, dz, omega, ref)[:, :, 0]
+            acc += vertical_kernel_9x9(np.array([kx]), ky, dz, omega, ref, cell_half_width)[:, :, 0]
     return acc / d**2
 
 

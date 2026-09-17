@@ -312,8 +312,26 @@ def same_depth_kernel_9x9(kx_arr: NDArray, ky: float, omega: complex, ref: Refer
     return _assemble_9x9(total, [g_p, g_s_iso, g_s_pol], [kvec_p, kvec_s, kvec_s])
 
 
+def _cell_sinc(z: NDArray) -> NDArray:
+    """sin(z)/z for COMPLEX z, equal to 1 at z = 0.
+
+    `np.sinc` is real-only and carries a pi in its argument; the evanescent
+    branch here has z = i kappa h, where sin(z)/z = sinh(kappa h)/(kappa h).
+    """
+    z = np.asarray(z, dtype=complex)
+    out = np.ones_like(z)
+    big = np.abs(z) > 1.0e-12
+    out[big] = np.sin(z[big]) / z[big]
+    return out
+
+
 def vertical_kernel_9x9(
-    kx_arr: NDArray, ky: float, dz: float, omega: complex, ref: ReferenceMedium
+    kx_arr: NDArray,
+    ky: float,
+    dz: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    cell_half_width: float | None = None,
 ) -> NDArray:
     """Whole-space 9x9 plane-to-plane kernel, k_z integral done by residue.
 
@@ -333,6 +351,29 @@ def vertical_kernel_9x9(
         dz: Signed depth separation, km. Must be non-zero.
         omega: Complex angular frequency.
         ref: Background medium.
+        cell_half_width: If given, return the kernel averaged over a CUBIC
+            SOURCE CELL of half-width h, instead of the point kernel. None
+            (default) leaves every existing caller bit-for-bit unchanged.
+
+            The source-cell average is a convolution with the cell indicator,
+            so on a plane-wave component it is exactly the SINGLE form factor
+            sinc(k_x h) sinc(k_y h) sinc(k_z h) -- one power, not the squared
+            form factor of `inter_voxel_propagator`, which is the DOUBLE
+            (Galerkin) average of source cell against field cell.
+
+            ⚠ APPLIED PER MODE. The P and S poles carry different k_z, so a
+            single scalar factor on the assembled 9x9 is WRONG; each pole is
+            scaled by the sinc built from its own k_z. This is the same defect
+            `_assemble_9x9` warns about for the k-vectors.
+
+            ⚠ AND IT HALVES THE SPECTRAL DECAY RATE. On the evanescent branch
+            k_z = i kappa, so sinc(k_z h) = sinh(kappa h)/(kappa h) ~
+            e^{kappa h}/(2 kappa h), which GROWS. Against the kernel's own
+            e^{-kappa|dz|} the product decays as e^{-kappa(|dz| - h)}: still
+            convergent because |dz| >= 2h for distinct planes, but at half the
+            rate at dz = d. A reciprocal-sum cutoff tuned for the point kernel
+            is therefore NOT sufficient here -- `_spectral_bloch_block` raises
+            its floor when averaging is on.
 
     Returns:
         P of shape (9, 9, n_kx).
@@ -365,9 +406,20 @@ def vertical_kernel_9x9(
     kvec_p = [sign * kz_p, kx.astype(complex), np.full(n, ky, dtype=complex)]
     kvec_s = [sign * kz_s, kx.astype(complex), np.full(n, ky, dtype=complex)]
 
-    c_s_iso = (1j / (2 * rho)) * e_s / (beta**2 * kz_s)
-    c_p_pol = (1j / (2 * rho)) * e_p / (omega**2 * kz_p)
-    c_s_pol = -(1j / (2 * rho)) * e_s / (omega**2 * kz_s)
+    # Source-cell average, per mode. Scaling these coefficients is sufficient:
+    # g_p, g_s_iso and g_s_pol are built linearly from them, and _assemble_9x9
+    # is linear in the g-parts, so the C, H and S blocks inherit the factor.
+    if cell_half_width is None:
+        ff_p = ff_s = np.ones(n, dtype=complex)
+    else:
+        h_cell = float(cell_half_width)
+        ff_xy = _cell_sinc(kx * h_cell) * _cell_sinc(np.full(n, ky) * h_cell)
+        ff_p = ff_xy * _cell_sinc(kz_p * h_cell)
+        ff_s = ff_xy * _cell_sinc(kz_s * h_cell)
+
+    c_s_iso = ff_s * (1j / (2 * rho)) * e_s / (beta**2 * kz_s)
+    c_p_pol = ff_p * (1j / (2 * rho)) * e_p / (omega**2 * kz_p)
+    c_s_pol = ff_s * -(1j / (2 * rho)) * e_s / (omega**2 * kz_s)
 
     g_p = np.zeros((3, 3, n), dtype=complex)
     g_s_iso = np.zeros((3, 3, n), dtype=complex)
