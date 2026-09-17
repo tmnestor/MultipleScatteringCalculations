@@ -134,18 +134,43 @@ class TestExactCellAverageWiring:
     def _geom(self):
         return SlabGeometry(M=2, N_z=2, a=0.5)
 
-    def test_default_off_leaves_the_kernel_unchanged(self):
+    def test_auto_turns_it_on_where_it_exists(self):
+        """The DEFAULT is now the exact route on the Bloch path.
+
+        `None` means auto: on wherever the construction is available. It cannot
+        be unconditionally True, since it is built at the M^2 Bloch points and
+        has no meaning for a truncated real-space kernel or a finite slab.
+        """
         g = self._geom()
-        a = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW)
-        b = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, exact_cell_average=False)
+        auto = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW)
+        on = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, exact_cell_average=True)
+        assert_allclose(auto, on, rtol=0, atol=0)
+
+    def test_explicit_false_still_gives_the_old_kernel(self):
+        """The previous behaviour stays reachable, and genuinely differs."""
+        g = self._geom()
+        auto = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW)
+        off = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, exact_cell_average=False)
+        assert np.max(np.abs(auto - off)) > 1e-12 * np.max(np.abs(auto))
+
+    def test_auto_stays_off_without_the_bloch_route(self):
+        """Auto must not switch on where the construction does not exist."""
+        g = self._geom()
+        a = build_slab_kernels(g, OMEGA, REF, periodic=True, volume_averaged=True)
+        b = build_slab_kernels(g, OMEGA, REF, periodic=True, volume_averaged=True, exact_cell_average=False)
         assert_allclose(a, b, rtol=0, atol=0)
 
-    def test_it_actually_changes_the_kernel(self):
-        """An inert flag would pass every validation test below."""
+    def test_auto_defers_to_an_explicit_va_all(self):
+        """An explicit request for the old route is honoured, not overridden.
+
+        Auto must not silently replace a choice the caller made, and must not
+        raise for it either -- combining them is an error only when BOTH are
+        asked for explicitly.
+        """
         g = self._geom()
-        a = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW)
-        b = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, exact_cell_average=True)
-        assert np.max(np.abs(b - a)) > 1e-12 * np.max(np.abs(a))
+        a = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, va_all=True)
+        b = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, va_all=True, exact_cell_average=False)
+        assert_allclose(a, b, rtol=0, atol=0)
 
     def test_requires_the_ewald_bloch_route(self):
         with pytest.raises(ValueError, match=r"requires lattice_ewald=True"):
