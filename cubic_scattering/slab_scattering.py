@@ -642,7 +642,7 @@ def _build_slab_kernels(
     ewald_eta: float | None = None,
     ewald_cutoff: int = 4,
     contact_average: str = "single",
-    exact_cell_average: bool = False,
+    exact_cell_average: bool | None = None,
     cell_avg_r0: int = 2,
     cell_avg_gauss: int = 6,
 ) -> NDArray:
@@ -688,6 +688,25 @@ def _build_slab_kernels(
             "         va_all to use the midpoint propagator throughout"
         )
         raise ValueError(msg)
+
+    # ═══ THE EXACT CELL AVERAGE IS THE DEFAULT WHERE IT EXISTS ═══════════════
+    # None means AUTO: on wherever the construction is available, which is the
+    # Bloch route with averaging requested. It cannot be made unconditionally
+    # True, because it is built at the M^2 Bloch points and has no meaning for a
+    # truncated real-space kernel or a finite slab.
+    #
+    # WHY IT IS PREFERRED. The correction it replaces is truncated at a radius
+    # that CANNOT be chosen correctly: converging the O(1/R) tail needs R ~ 80,
+    # while past R ~ 1/(k_S d) ~ 50 the sum turns shape-dependent. Measured
+    # against Kennett, the truncated route SATURATES under mesh refinement
+    # (error ratio per halving 2.2 -> 1.29) while this one keeps improving
+    # (6.1 -> 3.70, approaching second order).
+    #
+    # ⚠ It costs ~3.5x more, and `va_all` remains available for the old
+    # behaviour. AUTO defers to va_all when that is explicitly requested, rather
+    # than raising -- an explicit choice is not an error.
+    if exact_cell_average is None:
+        exact_cell_average = bool(lattice_ewald and periodic and volume_averaged and not va_all)
 
     if exact_cell_average and not (lattice_ewald and periodic):
         msg = (
@@ -1135,7 +1154,7 @@ def build_slab_kernels(
     ewald_eta: float | None = None,
     ewald_cutoff: int = 4,
     contact_average: str = "single",
-    exact_cell_average: bool = False,
+    exact_cell_average: bool | None = None,
     cell_avg_r0: int = 2,
     cell_avg_gauss: int = 6,
 ) -> NDArray:
