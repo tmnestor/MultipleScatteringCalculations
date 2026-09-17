@@ -1,0 +1,752 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=24mm, top=28mm, bottom=28mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape The First-Order Contrast Operator}
+\fancyhead[R]{\small\itshape 17 September 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.12}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bC}{\mathbf{C}}
+\newcommand{\bU}{\mathbf{U}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bq}{\mathbf{q}}
+\newcommand{\bd}{\mathbf{d}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bta}{\boldsymbol{\tau}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\Aop}{\mathcal{A}}
+\newcommand{\dA}{\Delta\mathcal{A}}
+\newcommand{\dC}{\Delta\mathbf{C}}
+\newcommand{\dCeff}{\Delta\mathbf{C}_{\mathrm{eff}}}
+\newcommand{\Jsix}{\mathbf{J}_{6}}
+\newcommand{\Oh}{O_{h}}
+
+\title{\bfseries The First-Order Contrast Operator\\[4pt]
+\large The elastodynamic matrix--vector wave equation as a route to the\\
+single-site $T$-matrix: derivation, validation, and what it actually buys}
+\author{}
+\date{17 September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The elastodynamic matrix--vector wave equation $\partial_3\bq = \Aop\bq + \bd$
+expresses the wave field as a first-order recursion in depth.  This note asks
+whether the cube moment method can be applied to it directly, to obtain a
+single-site $T$-matrix without passing through the Navier equation.  The answer
+is yes, and the construction is not new: the thesis already carries it in
+$2\tfrac12$-D.  What is new here is the $3$-D Cartesian operator, and a
+measurement of what the route is worth.
+
+Three results.  \emph{First}, the operator matrix $\Aop$ is derived from the
+stiffness tensor and validated against two independent objects that agree under
+one constant similarity transform; the thesis shorthand $\zeta,\chi$ are shown
+to be the paper's $\nu_1,\nu_2$.  \emph{Second}, the test space is
+\emph{derived} rather than chosen: $\Jsix$ is antisymmetric and
+$\dA^{t}\Jsix = -\Jsix\dA$, so $\Jsix\dA$ is symmetric and the only natural
+projection is $\text{test} = \Jsix\times\text{trial}$.  This dissolves an
+apparent mismatch of ten conditions against nine unknowns.  \emph{Third}, and
+least expected, the resulting coupling agrees with the ordinary Navier weak form
+at Born order but differs at $O(\Delta c^{2})$ entirely within the traction
+channel --- and that difference splits into a genuine $\Oh$-invariant
+resummation \emph{and} a spurious preference for the $x_3$ axis, in comparable
+amounts.  A single-site score against an independent arbiter in a homogeneous
+background would mix the two and settle neither.  The directional preference
+ceases to be an artefact once the background is layered, which is where the
+route was wanted.
+
+Every claim below is backed by an executable check; the two scripts report
+$25/25$ and $44/44$, and a separate gate binds the numerical propagator to the
+derived $\Aop$.  Section~\ref{sec:open} states plainly what is \emph{not} yet
+established.
+\end{abstract}
+
+\tableofcontents
+
+%=====================================================================
+\section{Conventions and objects}
+
+\subsection{Indices, time, and units}
+
+The positive $x_3$ axis points downward; $x_1,x_2$ are lateral.  Greek indices
+$\alpha,\beta$ run over the lateral pair $\{1,2\}$ only, Latin indices over
+$\{1,2,3\}$.  The time convention is $e^{-i\omega t}$ throughout, so
+$\partial_t \to -i\omega$ and the particle velocity is $\bv = -i\omega\bu$.  The
+lateral transform is $e^{+i(k_1x_1+k_2x_2)}$, hence $\partial_\alpha \to
+ik_\alpha$.
+
+Numerical work uses seismic units: km, km\,s$^{-1}$, g\,cm$^{-3}$, GPa.  These
+are consistent, since $\text{GPa} = \text{g\,cm}^{-3}\cdot(\text{km\,s}^{-1})^2$.
+
+Two orderings appear in the sources and must not be conflated.  The paper orders
+components $(1,2,3)$; the thesis orders them $(z,x,y) = (x_3,x_1,x_2)$.  The map
+between them is written explicitly in \S\ref{sec:arbiterB}.
+
+\subsection{The field vector}
+
+The matrix--vector wave equation is
+\begin{equation}\label{eq:mvwe}
+  \partial_3\bq = \Aop\,\bq + \bd,
+  \qquad
+  \bq = \begin{pmatrix}\bq_1\\ \bq_2\end{pmatrix},
+  \quad
+  \Aop = \begin{pmatrix}\Aop_{11} & \Aop_{12}\\ \Aop_{21} & \Aop_{22}\end{pmatrix},
+\end{equation}
+with the elastodynamic choice
+\begin{equation}\label{eq:qdef}
+  \bq_1 = -\bta_3, \qquad \bq_2 = \bv,
+  \qquad (\bta_j)_i = \tau_{ij},
+\end{equation}
+so that $\bq = (-\tau_{13},\,-\tau_{23},\,-\tau_{33},\,v_1,\,v_2,\,v_3)^{t}$.
+This is not an arbitrary pairing: $-\bta_3$ and $\bv$ are conjugate in the
+vertical power flux, $j = \tfrac14(-\bta_3^{\dagger}\bv - \bv^{\dagger}\bta_3)$,
+and that is what makes the metric of \S\ref{sec:metric} the natural one.
+
+\subsection{The metric \texorpdfstring{$\Jsix$}{J6}}\label{sec:metric}
+
+The symplectic metric is
+\begin{equation}\label{eq:J6}
+  \Jsix = \begin{pmatrix}\mathbf{0} & \bI_3\\ -\bI_3 & \mathbf{0}\end{pmatrix},
+  \qquad \Jsix^{t} = -\Jsix,
+  \qquad \Jsix^{2} = -\bI_6 .
+\end{equation}
+
+\paragraph{A naming warning.}  This project, following the thesis, calls this
+matrix $\Jsix$; it is already defined as such in the package.  The paper calls
+the \emph{same} matrix $\mathbf{N}$, and uses $\mathbf{J}$ for
+$\operatorname{diag}(\bI_3,-\bI_3)$, a different object.  Translate on the way
+in.  Every occurrence of $\mathbf{N}$ in the paper's equations (16)--(30)
+corresponds to $\Jsix$ here.
+
+The operator matrix is \emph{quasi-Hamiltonian} with respect to it,
+\begin{equation}\label{eq:quasiham}
+  \Aop^{t}\Jsix = -\Jsix\Aop,
+\end{equation}
+which is the paper's eq.~(27) and the thesis's \texttt{ATdef}.  Everything in
+\S\ref{sec:testspace} follows from \eqref{eq:quasiham} together with the
+antisymmetry of $\Jsix$, and from nothing else.
+
+%=====================================================================
+\section{The first-order system for an isotropic medium}
+
+\subsection{From the stiffness tensor to the stiffness matrices}
+
+For an isotropic solid,
+\begin{equation}\label{eq:cijkl}
+  c_{ijkl} = \lambda\delta_{ij}\delta_{kl}
+           + \mu(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}),
+  \qquad \rho_{ij} = \rho\,\delta_{ij},
+\end{equation}
+with $\lambda = \lambda(\mathbf{x},\omega)$, $\mu = \mu(\mathbf{x},\omega)$,
+$\rho = \rho(\mathbf{x},\omega)$ and $K_c = \lambda + 2\mu$.  The stiffness
+matrices are $(\bC_{jl})_{ik} = c_{ijkl}$.  In particular
+\begin{equation}
+  \bC_{33} = \operatorname{diag}(\mu,\mu,K_c),
+  \qquad
+  \bC_{33}^{-1} = \operatorname{diag}(\mu^{-1},\mu^{-1},K_c^{-1}),
+\end{equation}
+and $\bC_{jl}^{t} = \bC_{lj}$, which follows from $c_{ijkl} = c_{klij}$.  All
+nine blocks are reproduced from \eqref{eq:cijkl} and checked entry by entry.
+
+\subsection{Eliminating the in-plane tractions}
+
+The components $\bta_1,\bta_2$ do not appear in \eqref{eq:qdef} and must be
+removed.  Doing so introduces the reduced stiffness
+\begin{equation}\label{eq:U}
+  \bU_{\alpha l} = \bC_{\alpha l} - \bC_{\alpha 3}\bC_{33}^{-1}\bC_{3l},
+\end{equation}
+with the two structural properties $\bU_{\alpha 3} = \mathbf{0}$ and
+$\bU_{\alpha\beta}^{t} = \bU_{\beta\alpha}$.  Both are checked rather than
+assumed, because it is they --- not the algebra that produced them --- that make
+the symmetry relations of \S\ref{sec:symrel} hold.
+
+The isotropic $\bU_{\alpha\beta}$ is where two constants are \emph{born}:
+\begin{equation}\label{eq:nu}
+  \nu_1 \equiv (\bU_{11})_{11} = \frac{4\mu(\lambda+\mu)}{\lambda+2\mu},
+  \qquad
+  \nu_2 \equiv (\bU_{12})_{12} = \frac{2\mu\lambda}{\lambda+2\mu},
+  \qquad
+  \nu_1 - \nu_2 = 2\mu .
+\end{equation}
+They are read off $\bU$ and only then compared with the published definitions;
+they are not independent quantities.  Every $\bU_{\alpha\beta}$ has a null third
+row and column, which is the statement that $\tau_{33}$ has been fully
+eliminated.
+
+\subsection{The operator matrices}
+
+The general construction gives
+\begin{equation}\label{eq:Ablocks}
+  \Aop_{11} = -\partial_\alpha\,\bC_{\alpha3}\bC_{33}^{-1},
+  \quad
+  \Aop_{12} = i\omega\rho - \tfrac{1}{i\omega}\,\partial_\alpha\bU_{\alpha\beta}\partial_\beta,
+  \quad
+  \Aop_{21} = i\omega\,\bC_{33}^{-1},
+  \quad
+  \Aop_{22} = -\bC_{33}^{-1}\bC_{3\beta}\,\partial_\beta,
+\end{equation}
+and for the isotropic medium these evaluate to
+\begin{equation}\label{eq:A11A22}
+  \Aop_{11} =
+  \begin{pmatrix}
+    0 & 0 & -\partial_1\tfrac{\lambda}{\lambda+2\mu}\\
+    0 & 0 & -\partial_2\tfrac{\lambda}{\lambda+2\mu}\\
+    -\partial_1 & -\partial_2 & 0
+  \end{pmatrix},
+  \qquad
+  \Aop_{22} =
+  \begin{pmatrix}
+    0 & 0 & -\partial_1\\
+    0 & 0 & -\partial_2\\
+    -\tfrac{\lambda}{\lambda+2\mu}\partial_1 & -\tfrac{\lambda}{\lambda+2\mu}\partial_2 & 0
+  \end{pmatrix},
+\end{equation}
+\begin{equation}\label{eq:A12A21}
+  \Aop_{12} =
+  \begin{pmatrix}
+    i\omega\rho - \tfrac{1}{i\omega}(\partial_1\nu_1\partial_1 + \partial_2\mu\partial_2)
+      & -\tfrac{1}{i\omega}(\partial_2\mu\partial_1 + \partial_1\nu_2\partial_2) & 0\\
+    -\tfrac{1}{i\omega}(\partial_2\nu_2\partial_1 + \partial_1\mu\partial_2)
+      & i\omega\rho - \tfrac{1}{i\omega}(\partial_1\mu\partial_1 + \partial_2\nu_1\partial_2) & 0\\
+    0 & 0 & i\omega\rho
+  \end{pmatrix},
+\end{equation}
+with $\Aop_{21} = i\omega\operatorname{diag}(\mu^{-1},\mu^{-1},K_c^{-1})$.
+
+\paragraph{The ordering is the content.}  Compare the $(1,3)$ entry of
+$\Aop_{11}$ with the $(3,1)$ entry of $\Aop_{22}$.  In the first the derivative
+stands to the \emph{left} of the modulus and differentiates the product; in the
+second it stands to the \emph{right} and differentiates the field alone.  For a
+laterally invariant medium the distinction collapses and is invisible.  For a
+laterally varying one it is the physics.  This is why the checks in
+\S\ref{sec:arbiterA} compare \emph{operators} --- by their action on generic
+fields --- rather than expressions, and why they are accompanied by a negative
+control that corrupts precisely this ordering.
+
+%=====================================================================
+\section{Validating \texorpdfstring{$\Aop$}{A} against two independent objects}
+
+\subsection{Arbiter A: the published isotropic operator matrices}\label{sec:arbiterA}
+
+The blocks \eqref{eq:A11A22}--\eqref{eq:A12A21} are transcribed separately and
+compared against those built from \eqref{eq:Ablocks}.  The comparison is made by
+acting on a vector of generic symbolic functions, so it tests the derivative
+ordering as well as the coefficients.  All four match.
+
+A check that cannot fail is worth nothing, so a corrupted $\Aop_{22}$ --- with
+the derivative wrongly placed outside the modulus --- is also tested, and is
+rejected.
+
+\subsection{Arbiter B: the thesis system matrix}\label{sec:arbiterB}
+
+The thesis carries a $6\times6$ Fourier-domain system matrix $\bA(k_x,k_y)$ for
+a laterally invariant medium, in a \emph{different} field vector
+\begin{equation}
+  \mathbf{b} = (u_3,\,u_1,\,u_2,\,\tau_{33},\,\tau_{31},\,\tau_{32})^{t},
+\end{equation}
+i.e.\ displacement--stress rather than velocity--traction, ordered $(z,x,y)$
+rather than $(1,2,3)$, and normalised so that $\rho\omega^2$ appears where the
+paper has $i\omega\rho$.  It uses the shorthand
+\begin{equation}
+  \gamma = \frac{\lambda}{\lambda+2\mu},\quad
+  a = \frac{1}{\lambda+2\mu},\quad
+  b = \frac{1}{\mu},\quad
+  \zeta = \frac{4\mu(\lambda+\mu)}{\lambda+2\mu},\quad
+  \chi = \frac{2\mu\lambda}{\lambda+2\mu}.
+\end{equation}
+
+\begin{quote}
+\textbf{Comparing \eqref{eq:nu} with these:} $\zeta \equiv \nu_1$ and
+$\chi \equiv \nu_2$.  The thesis's in-plane stiffnesses and the paper's
+auxiliary moduli are the same two quantities, born in the same elimination
+\eqref{eq:U}.  This is verified, not asserted.
+\end{quote}
+
+Setting $\lambda,\mu,\rho$ constant and acting on $e^{i(k_1x_1+k_2x_2)}$ reduces
+$\Aop$ to a matrix.  With the constant map $\mathbf{b} = \bS\bq$ built from
+$\bu = \bv/(-i\omega)$, $\bta_3 = -\bq_{1:3}$ and the permutation
+$(1,2,3)\to(3,1,2)$, the identity
+\begin{equation}\label{eq:similarity}
+  \bA_{\text{thesis}} = \bS\,\bA_{\text{paper}}\,\bS^{-1}
+\end{equation}
+holds entry by entry.  Since the two matrices were derived independently and
+published separately, this is evidence rather than bookkeeping.
+
+\subsection{Structural checks}\label{sec:symrel}
+
+Three further properties are verified on the reduced $6\times6$:
+\begin{enumerate}
+\item the operator symmetry relations $\Aop_{11}^{t} = -\Aop_{22}$,
+      $\Aop_{12}^{t} = \Aop_{12}$, $\Aop_{21}^{t} = \Aop_{21}$, where the
+      transpose is the formal adjoint under integration by parts
+      ($\partial_\alpha^{t} = -\partial_\alpha$);
+\item the quasi-Hamiltonian relation \eqref{eq:quasiham}, which in the
+      wavenumber domain reads $\bA^{t}(-\mathbf{k})\Jsix = -\Jsix\bA(\mathbf{k})$;
+\item the characteristic polynomial factorises as
+      $(s^2 + k_{z,P}^2)(s^2 + k_{z,S}^2)^2$, recovering
+      $\alpha^2 = (\lambda+2\mu)/\rho$ and $\beta^2 = \mu/\rho$ from a
+      construction in which no wave speed was ever written down.
+\end{enumerate}
+Item 3 is the one that binds the algebra to physics: nothing upstream knows the
+wave speeds.
+
+%=====================================================================
+\section{The contrast operator}
+
+\subsection{Definition and the Lippmann--Schwinger equation}
+
+Inside the scatterer the medium is $(\lambda+\Delta\lambda,\ \mu+\Delta\mu,\
+\rho+\Delta\rho)$.  Writing $\Aop^{\text{tot}} = \Aop + \dA$, the total field
+solves the background system driven by its own contrast,
+\begin{equation}\label{eq:LS}
+  (\partial_3 - \Aop)\,\bq = \dA\,\bq + \bd,
+\end{equation}
+which is the Lippmann--Schwinger equation of the first-order system.
+
+\subsection{The foundation check}
+
+Before \eqref{eq:LS} means anything, $\bq$ must actually satisfy
+\eqref{eq:mvwe}.  Building $\bq$ from a \emph{generic} displacement field in a
+\emph{laterally varying} medium and forming $\partial_3\bq - \Aop\bq$ gives two
+halves with different strengths:
+\begin{itemize}
+\item rows $4$--$6$ vanish \textbf{identically}, for any $\bu$ whatever.  They
+      are the constitutive relation rearranged; no equation of motion is used.
+      Failure here would mean the elimination \eqref{eq:U} is wrong.
+\item rows $1$--$3$ equal \textbf{exactly} the Navier body force
+      $f_i = -\rho\omega^2 u_i - \partial_j\tau_{ij}$.  Anything left over would
+      be a defect in $\Aop_{11}$ or $\Aop_{12}$.
+\end{itemize}
+Both hold.  This is a considerably stronger statement than the plane-wave and
+eigenvalue checks of \S\ref{sec:symrel}, because $\bu$ is generic and the
+moduli vary laterally, so every ordering term in \eqref{eq:A11A22} is exercised.
+
+\subsection{\texorpdfstring{$\dA$}{DeltaA} is not linear in the contrast}
+\label{sec:nonlinear}
+
+The Navier potential is exactly linear in $(\Delta\lambda,\Delta\mu,\Delta\rho)$.
+$\dA$ is not, because the elimination inverted $\bC_{33}$:
+\begin{equation}\label{eq:resum}
+  (\dA_{21})_{11} = i\omega\left(\frac{1}{\mu+\Delta\mu} - \frac{1}{\mu}\right)
+  = -\,\frac{i\omega\,\Delta\mu}{\mu(\mu+\Delta\mu)},
+\end{equation}
+whose ratio to its linearisation $-i\omega\Delta\mu/\mu^2$ is exactly
+$\mu/(\mu+\Delta\mu)$.  At the project's validated moderate contrast
+($\alpha = 5$, $\beta = 3$, $\rho = 2.5$, so $\lambda = 17.5$, $\mu = 22.5$ GPa;
+$\Delta\lambda = 2$, $\Delta\mu = 1$ GPa):
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+quantity & value\\
+\midrule
+$\Delta\mu/\mu$ & $0.04444$\\
+exact\,/\,linear for $\Delta b = \Delta(1/\mu)$ & $0.95745$\\
+exact\,/\,linear for $\Delta a = \Delta(1/K_c)$ & $0.93985$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The first-order form has already summed part of the local response exactly.
+\S\ref{sec:whatitbuys} measures what that is worth, and finds the answer is not
+the obvious one.
+
+%=====================================================================
+\section{The augmentation}
+
+\subsection{Why a derivative must be moved}
+
+Inside the scatterer the contrasts are constant, so every coefficient of $\dA$
+carries the indicator $\mathbf{1}_V$.  A derivative standing to the \emph{left}
+of such a coefficient differentiates the indicator and produces a surface delta
+on the cube faces.  Integration by parts over all space moves that derivative
+onto the test function instead, where it meets something smooth:
+\begin{equation}\label{eq:byparts}
+  \int \phi_i\,\bigl(-\partial_\alpha( m\,\mathbf{1}_V\,\psi_j)\bigr)\,d\mathbf{x}
+  = +\int (\partial_\alpha\phi_i)\, m\,\mathbf{1}_V\,\psi_j\,d\mathbf{x},
+\end{equation}
+and the face term never arises.  This is the step the thesis describes as
+transferring the derivatives onto the source and receiver coordinates of the
+propagator, and it is what converts a singular integro-differential equation
+into a nonsingular, compact integral equation.
+
+\subsection{The augmented dimension}
+
+After the transfer every term has the form
+$(\partial^{a}\phi)^{t}\,\cdot\,\text{const}\,\cdot\,(\partial^{b}\psi)$ with
+$a,b\in\{0,1\}$, so the form is \emph{multiplicative} on the enlarged vector
+$\mathcal{L}\psi = (\psi,\ \partial_1\psi,\ \partial_2\psi)$ --- nominally
+$6+6+6 = 18$ slots.  The true dimension is smaller and is counted, not assumed.
+
+\begin{quote}
+\textbf{Result.}  Exactly $10 = 6+4$ slots are used.  The four extra are
+$\partial_1 v_1,\ \partial_2 v_1,\ \partial_1 v_2,\ \partial_2 v_2$: the lateral
+gradients of the two \emph{horizontal} velocity components, and nothing else.
+\end{quote}
+
+Setting $\partial_2 \to ik_y$, as a $2\tfrac12$-D formulation does, makes two of
+those four multiplicative, leaving $6+2 = 8$.  That is precisely the thesis's
+count for its augmented coupling matrix, reproduced here from an independent
+$3$-D Cartesian derivation.  The agreement is a corroboration of the thesis
+construction, not a restatement of it.
+
+The transfer identity is verified three ways: the augmented matrix is constant
+(no derivative operators survive); the augmented form reproduces the transferred
+bilinear; and the untransferred and transferred bilinears differ by an
+explicitly exhibited lateral divergence $\partial_\alpha P_\alpha$.
+
+%=====================================================================
+\section{The test space, derived}\label{sec:testspace}
+
+\subsection{The argument}
+
+At this point there are ten augmented slots and, for an affine trial space, nine
+parameters.  The temptation is to choose nine conditions.  That temptation must
+be resisted: a subset chosen by scoring against the arbiter it is later judged
+by is a fitted parameter wearing a derivation's clothes.
+
+There is no choice to make.  $\Jsix$ is \emph{anti}symmetric, and
+\eqref{eq:quasiham} applies to $\dA$ as well as to $\Aop$ (it is linear in the
+operator), so
+\begin{equation}\label{eq:symmetric}
+  (\Jsix\dA)^{t} = \dA^{t}\Jsix^{t} = \dA^{t}(-\Jsix) = \Jsix\dA .
+\end{equation}
+$\Jsix\dA$ is a \textbf{symmetric} matrix, so
+\begin{equation}
+  b[\phi,\psi] = \phi^{t}\,\Jsix\dA\,\psi
+\end{equation}
+is a symmetric bilinear form.  A symmetric form admits exactly one natural
+projection:
+\begin{equation}\label{eq:testspace}
+  \boxed{\ \text{test space} \;=\; \Jsix \times \text{trial space}. \ }
+\end{equation}
+Verified, together with the negative control: drop $\Jsix$ and the symmetry is
+lost, both at operator level and in the projected system.
+
+\subsection{The ten-versus-nine mismatch dissolves}
+
+The ten slots were never test conditions.  They measure how many derivative
+channels the \emph{form} touches --- its representation --- not how many
+independent functionals it supplies.  Each trial function $\psi_k$ gives exactly
+one test functional $(\Jsix\psi_k)^{t}$, so the number of conditions equals the
+trial dimension by construction.
+
+\subsection{The effective coupling matrix}
+
+For the affine trial space --- nine parameters, three rigid translations and six
+uniform strains --- the projected coupling
+\begin{equation}\label{eq:dCeff}
+  (\dCeff)_{kl} = \int_V (\mathcal{L}\psi_k)^{t}\,\dC\,(\mathcal{L}\psi_l)\,dV
+\end{equation}
+is the $3$-D Cartesian analogue of the thesis's effective coupling matrix.  It
+is $9\times9$, symmetric, of full rank $9$, vanishes with the contrast, and
+--- because the trial functions are polynomials --- requires \textbf{no Green's
+function at all}: the cube integral is exact.
+
+The rigid-translation block is diagonal,
+\begin{equation}\label{eq:rigid}
+  (\dCeff)_{1:3,1:3} = i\omega^{3}\,\Delta\rho\,V\,\bI_3,
+  \qquad V = (2a)^3 .
+\end{equation}
+
+\paragraph{The power of $\omega$ is a basis statement, not a physical one.}
+$\dA$'s density entry is $i\omega\Delta\rho$ acting on the velocity slot; the
+trial carries $\bv = -i\omega\bu$ there; and $\Jsix$ pulls the test function's
+velocity slot into the traction rows, supplying a second $-i\omega$.  Hence
+$i\omega\cdot(-i\omega)\cdot(-i\omega) = i\omega^{3}$.  The displacement-basis
+answer $i\omega\Delta\rho V$ is wrong by $\omega^2$.  This is the
+displacement-versus-flux confusion in a new place, and the check asserts the
+correct factor \emph{and} asserts the incorrect one is incorrect, so it cannot
+drift back.
+
+%=====================================================================
+\section{What the first-order coupling actually buys}\label{sec:whatitbuys}
+
+\subsection{The trial spaces coincide}
+
+It is tempting to attribute any difference from the Navier formulation to the
+nonlinearity of \S\ref{sec:nonlinear}, or to a different ansatz.  Neither is
+right.  Inside the scatterer the moduli are constant, so
+$\bta_3 = \bC_{33}^{\text{tot}}\,\boldsymbol\varepsilon_{i3}$ is a constant
+\emph{invertible} map.  A uniform strain gives a uniform $\bta_3$ and an affine
+$\bv$, and conversely: ``$\boldsymbol\varepsilon$ uniform'' and ``$\bta_3$
+uniform plus in-plane $\boldsymbol\varepsilon$ uniform'' describe the same
+nine-parameter family.
+
+The two formulations are therefore \textbf{different projections of the same
+residual onto the same trial space}.  The difference lives in the test
+conditions.
+
+\subsection{The density channel cannot differ}
+
+With $\Delta\lambda = \Delta\mu = 0$, $\dA$ is exactly $i\omega\Delta\rho$ in
+rows $1$--$3$, columns $4$--$6$, and reaches \emph{no} part of the stress-glut
+slot: a density contrast is a pure body force.  The propagator's body-force
+velocity block is $-i\omega\bG$, so both routes return
+\begin{equation}
+  A_u = \frac{1}{1 - \omega^2\Delta\rho\,\Gamma_0},
+  \qquad \Gamma_0 = \int_V \bG\,dV,
+\end{equation}
+identically.  The modulus channels are the only place the two can part.
+
+\subsection{Born agreement, and an \texorpdfstring{$O(\Delta c^2)$}{O(Dc2)} difference}
+
+Reading a proportionality constant off the rigid block alone gives $i\omega$,
+and testing it on the remaining eighty entries \textbf{refutes} the hypothesis
+$\dCeff = i\omega\,\dC_{\text{Navier}}$.  The two couplings agree exactly at
+$O(\Delta c^{0})$ and $O(\Delta c^{1})$ --- identical Born limits, so nothing is
+broken --- and differ from second order.
+
+\begin{quote}
+\textbf{Where.}  Eleven of eighty-one entries differ.  With the parameter order
+$(c_1,c_2,c_3,\ e_{11},e_{22},e_{33},\ e_{12},e_{13},e_{23})$ the nonzero block
+is $\{e_{11},e_{22},e_{33}\}^{2}$ together with $(e_{13},e_{13})$ and
+$(e_{23},e_{23})$.
+\end{quote}
+
+That is exactly the set of strains $\bta_3$ sees:
+\begin{equation}
+  \tau_{13} = 2\mu\,e_{13},\qquad
+  \tau_{23} = 2\mu\,e_{23},\qquad
+  \tau_{33} = \lambda(e_{11}+e_{22}+e_{33}) + 2\mu\,e_{33}.
+\end{equation}
+The in-plane shear $e_{12}$ is \textbf{untouched}, as it must be: $\tau_{12}$ was
+eliminated, not resummed.  This was a falsifiable prediction about which entries
+may be nonzero, and it held.  A representative entry is
+\begin{equation}
+  \bigl(\dCeff - i\omega\,\dC_{\text{Navier}}\bigr)_{e_{11}e_{11}}
+  = -\,\frac{i\omega V\,\Delta\lambda^{2}}{\lambda+2\mu},
+\end{equation}
+pure second order, divided by $K_c$: the remainder of the geometric series for
+$1/(K_c+\Delta K_c)$.
+
+\subsection{Half of it is a broken symmetry}\label{sec:oh}
+
+An isotropic cube in an isotropic whole space has an $\Oh$-symmetric
+$T$-matrix; no direction is special.  But the first-order system is a recursion
+in \emph{depth}: it eliminated $\tau_1,\tau_2$ and kept $\tau_3$, so $x_3$ is
+preferred by construction.  The tell is already above --- $(e_{13},e_{13})$ and
+$(e_{23},e_{23})$ differ while $(e_{12},e_{12})$ does not, and those three are
+$\Oh$-equivalent.
+
+Applying the cyclic element $x\to y\to z\to x$ (positive controls: $P^3 = \bI$,
+and the Navier coupling \emph{is} invariant):
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+contrast (GPa) & invariant & breaking & ratio\\
+\midrule
+pure shear, $\Delta\mu = 1$                       & $2.62\times10^{-2}$ & $1.94\times10^{-2}$ & $1.3520$\\
+moderate, $(2,\,1,\,0.1)$                         & $5.17\times10^{-4}$ & $2.93\times10^{-4}$ & $1.7669$\\
+strong, $(20,\,10,\,0.5)$                         & $1.05\times10^{-2}$ & $5.92\times10^{-3}$ & $1.7669$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Decomposition of $\dCeff - i\omega\dC_{\text{Navier}}$,
+relative to $\|\dCeff\|$, at $\lambda = 17.5$, $\mu = 22.5$ GPa.  The two mixed
+rows share a contrast \emph{direction} $(\Delta\lambda{:}\Delta\mu = 2{:}1)$ at
+different magnitudes and return the identical ratio, so the split is a function
+of contrast direction alone --- as a leading-order $O(\Delta c^2)$ split must be.}
+\end{center}
+
+So the difference is neither pure artefact nor pure physics.  It carries both a
+genuine $\Oh$-invariant resummation the Navier form lacks, and a spurious
+preference for $x_3$.
+
+\paragraph{A caveat on this test.}  The group used is the cyclic subgroup of
+order $3$, not all $48$ elements of $\Oh$.  Invariance under it is necessary for
+$\Oh$ invariance, not sufficient.
+
+\subsection{What follows, and what does not}
+
+Two readings are available and the measurement above does not separate them.
+
+\emph{Against the route:} an approximation that breaks a symmetry the exact
+answer possesses has introduced an error that no propagator can remove.
+
+\emph{For the route:} the correction is not scattered.  It lands exactly on the
+traction channel, treating $\bC_{33}$ exactly instead of leaving it to the
+Neumann series, and leaves the in-plane channel alone.  Vertical $P$ incidence
+excites $e_{33}$; vertical $S$ incidence excites $e_{13}$ or $e_{23}$; both are
+corrected.  The in-plane shear, which the side-scattered field carries, is
+unchanged.  If the response is dominated by reflection and transmission, the
+asymmetry is ``$z$ treated better'' rather than ``$z$ treated worse''.
+
+\begin{quote}
+\textbf{Consequence for any comparison.}  Do not score the raw coupling against
+an independent arbiter in a homogeneous background.  Three effects are in play
+at comparable magnitude --- the Galerkin-versus-collocation projection, the
+$\Oh$-invariant resummation, and the artefact --- and a single number separates
+none of them.  Any comparison must be channel-resolved.
+\end{quote}
+
+Whether the resummation is an \emph{improvement} is not established here.  The
+local inversion $1/(K_c+\Delta K_c)$ is exact; whether that makes the closed
+$T$-matrix better depends on how the ansatz error and the series truncation
+interact, and those do not simply add.
+
+%=====================================================================
+\section{The propagator, and the bridge to it}
+
+\subsection{It already exists}
+
+Everything downstream needs the Green's matrix of \eqref{eq:mvwe}.  It does not
+need to be built: the stratified $6\times6$ Green's function and its validated
+wrapper already return it, in the basis
+$(u_z,u_x,u_y,T_{zz},T_{xz},T_{yz})$ --- which is exactly the basis the thesis
+writes $\bA$ in.  That the two are the same object had, however, been
+\emph{assumed}.
+
+\subsection{The bridge identity}
+
+Away from the source plane the Green's matrix solves the homogeneous system in
+its receiver coordinate, so for two receiver depths in one uniform layer
+\begin{equation}\label{eq:bridge}
+  \boldsymbol\Gamma(z_2,z') = \exp\!\bigl(\bA\,(z_2-z_1)\bigr)\,\boldsymbol\Gamma(z_1,z'),
+\end{equation}
+with no free parameters.  The identity is \emph{local}: it holds however
+complicated the medium between the source and $z_1$ is, because the ODE knows
+only the layer the receiver sits in.  The gate therefore places the source above
+a fast slab and the receivers below it, so transmission, reflection, conversion
+and interbed multiples are all present in $\boldsymbol\Gamma$ and
+\eqref{eq:bridge} must still hold exactly.
+
+\subsection{Reporting residuals against the arithmetic floor}
+
+A bare relative residual is not comparable across incidence angles.  Beyond the
+critical slowness the propagator carries both a growing and a decaying
+evanescent branch, so $\exp(\bA\,dz)$ has dynamic range $\sim e^{|k|dz}$ ---
+about $1.6\times10^{7}$ at the widest angle used.  Forming
+$\exp(\bA\,dz)\,\boldsymbol\Gamma(z_1)$ then amplifies the rounding already
+present by $\|\exp(\bA\,dz)\|$, and no correct implementation can beat
+\begin{equation}
+  \text{floor} = \epsilon\;\|\exp(\bA\,dz)\|\;
+  \frac{\|\boldsymbol\Gamma(z_1)\|}{\|\boldsymbol\Gamma(z_2)\|}.
+\end{equation}
+Residuals below are quoted in units of that floor, so $O(1)$ means the identity
+holds to the last bit available at that conditioning.
+
+\begin{center}
+\begin{tabular}{rrrrr}
+\toprule
+$k_x$ & $k_y$ & $|k|/\omega$ & raw & corrected\\
+\midrule
+$2.00$  & $1.30$ & $0.0759$ & $7.68\times10^{13}$ & $1.26\times10^{-2}$\\
+$0.40$  & $0.05$ & $0.0128$ & $2.95\times10^{14}$ & $2.43\times10^{-2}$\\
+$14.00$ & $9.00$ & $0.5298$ & $4.31\times10^{13}$ & $9.37\times10^{-3}$\\
+\midrule
+\multicolumn{3}{r}{control, $\zeta\leftrightarrow\chi$ swapped} & $7.68\times10^{13}$ & $1.36\times10^{12}$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Residual of \eqref{eq:bridge} in units of the arithmetic
+floor.  $\omega = 31.4159$ rad\,s$^{-1}$, $dz = 1$ km.  The third row is
+evanescent for both branches.}
+\end{center}
+
+\begin{quote}
+\textbf{The corrected object is the physical state vector of
+$\partial_3\bq = \Aop\bq$}; the raw one misses by fourteen orders of magnitude.
+\end{quote}
+
+The negative control swaps $\zeta$ and $\chi$ --- two in-plane stiffnesses that
+differ by exactly $2\mu$, a plausible transcription slip that no symmetry check
+would catch.  It is rejected by fourteen orders.
+
+%=====================================================================
+\section{Summary of checks}
+
+\begin{center}
+\begin{tabular}{llr}
+\toprule
+object & what is established & checks\\
+\midrule
+$\Aop$ & built from $c_{ijkl}$; matches the published isotropic blocks & 4\\
+       & matches the thesis $\bA(k_x,k_y)$ under one similarity transform & 3\\
+       & symmetry relations, spectrum, normal incidence & 6\\
+       & stiffness matrices, $\bU_{\alpha l}$, $\nu_1$, $\nu_2$ & 9\\
+       & source vector, negative control & 3\\
+\midrule
+$\dA$  & exact contrast operator; Navier body force on a generic field & 4\\
+       & nonlinearity in the contrast, quantified & 3\\
+       & augmentation: constant, reproduces the form, divergence exhibited & 4\\
+       & $\Oh$/trial-space structure, density channel & 6\\
+\midrule
+$\dCeff$ & $\Jsix\dA$ symmetric; test space derived; controls & 5\\
+         & $9\times9$ symmetric, rank $9$, rigid block, basis trap & 7\\
+         & Born agreement, $O(\Delta c^2)$ difference, localisation & 9\\
+         & $\Oh$ decomposition, positive and negative controls & 6\\
+\midrule
+$\boldsymbol\Gamma$ & propagates by $\exp(\bA\,dz)$ with all multiples present & 3\\
+\bottomrule
+\end{tabular}
+\captionof{table}{All checks pass.  The two symbolic scripts report $25/25$ and
+$44/44$; the propagator gate exits clean.}
+\end{center}
+
+%=====================================================================
+\section{What is not established}\label{sec:open}
+
+In keeping with the project's standard that an unvalidated formula be labelled
+as such, the following are \emph{open}:
+
+\begin{enumerate}
+\item \textbf{No single-site $T$-matrix has been assembled.}  $\dCeff$ is the
+      coupling; the propagator moments
+      $\langle \Jsix\psi_k,\ \boldsymbol\Gamma\,\psi_l\rangle$ that close
+      $T = \dCeff(\bI - \mathcal{G}\dCeff)^{-1}$ have not been computed.
+\item \textbf{No comparison against an independent arbiter has been run.}  The
+      quantities in \S\ref{sec:whatitbuys} compare two \emph{formulations} with
+      each other, not either against truth.  Section~\ref{sec:oh} argues such a
+      comparison must be channel-resolved before it can mean anything.
+\item \textbf{Whether the resummation improves accuracy is unknown.}  It is
+      exact as a local inversion; that is not the same claim.
+\item \textbf{$\Oh$ invariance was tested on a subgroup of order $3$}, not the
+      full group.
+\item \textbf{The derivative count for a collocation scheme differs from the
+      Galerkin one.}  In the Galerkin pairing the transferred derivative lands
+      on polynomials, so the third-derivative moment cannot arise; under
+      collocation it transfers onto $\boldsymbol\Gamma$ and can.  Do not quote
+      the Galerkin count for a collocation build.
+\end{enumerate}
+
+\section{Where the route belongs}
+
+The $x_3$ preference of \S\ref{sec:oh} is an artefact only because the problem
+posed there --- an isotropic cube in an isotropic whole space --- has no
+preferred direction.  A layered background does.  There the formulation's
+directional structure matches the physics rather than contradicting it, the
+$\Oh$ argument does not apply, and the propagator is already available and
+already bridged to $\Aop$ by \eqref{eq:bridge}.
+
+That is also the case in which the ordinary route has no competitor: the cube
+moment method rests on volume moments of the whole-space Green's tensor, and in
+a stratified background that object does not exist.  The first-order form
+supplies what the moment method cannot.
+
+\end{document}
