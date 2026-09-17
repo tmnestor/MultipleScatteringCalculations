@@ -11,8 +11,10 @@ from cubic_scattering.cell_averaged_lattice import (
 from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.lattice_kupradze import bloch_kernel_hat_9x9
 from cubic_scattering.slab_scattering import (
+    SlabGeometry,
     _cell_averaged_propagator,
     _propagator_block_9x9,
+    build_slab_kernels,
 )
 from cubic_scattering.sweep_kernels import vertical_kernel_9x9
 
@@ -122,3 +124,45 @@ class TestFormFactorAtNonZeroDz:
         """Ewald's real-space half is a spatial sum; a form factor is meaningless."""
         with pytest.raises(ValueError, match=r"not available at dz = 0"):
             bloch_kernel_hat_9x9(2, D, 0.0, OMEGA, REF, cell_half_width=0.5 * D)
+
+
+class TestExactCellAverageWiring:
+    """The `exact_cell_average` route through build_slab_kernels."""
+
+    EWALD_KW = {"periodic": True, "lattice_ewald": True, "volume_averaged": True}
+
+    def _geom(self):
+        return SlabGeometry(M=2, N_z=2, a=0.5)
+
+    def test_default_off_leaves_the_kernel_unchanged(self):
+        g = self._geom()
+        a = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW)
+        b = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, exact_cell_average=False)
+        assert_allclose(a, b, rtol=0, atol=0)
+
+    def test_it_actually_changes_the_kernel(self):
+        """An inert flag would pass every validation test below."""
+        g = self._geom()
+        a = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW)
+        b = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, exact_cell_average=True)
+        assert np.max(np.abs(b - a)) > 1e-12 * np.max(np.abs(a))
+
+    def test_requires_the_ewald_bloch_route(self):
+        with pytest.raises(ValueError, match=r"requires lattice_ewald=True"):
+            build_slab_kernels(self._geom(), OMEGA, REF, periodic=True, exact_cell_average=True)
+
+    def test_refuses_to_double_count_with_va_all(self):
+        """Both routes compute the SAME correction; together it applies twice.
+
+        That failure is silent -- a plausible wrong number, not an error -- so
+        it is refused rather than merely documented.
+        """
+        with pytest.raises(ValueError, match=r"two routes to the SAME"):
+            build_slab_kernels(
+                self._geom(),
+                OMEGA,
+                REF,
+                **self.EWALD_KW,
+                va_all=True,
+                exact_cell_average=True,
+            )

@@ -16,6 +16,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse.linalg import LinearOperator, gmres
 
+from .cell_averaged_lattice import averaged_same_plane_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
@@ -641,6 +642,9 @@ def _build_slab_kernels(
     ewald_eta: float | None = None,
     ewald_cutoff: int = 4,
     contact_average: str = "single",
+    exact_cell_average: bool = False,
+    cell_avg_r0: int = 2,
+    cell_avg_gauss: int = 6,
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -682,6 +686,31 @@ def _build_slab_kernels(
             "         the non-Ewald route it would be silently ignored.\n"
             "  Fix:   pass volume_averaged=True alongside va_all=True, or drop\n"
             "         va_all to use the midpoint propagator throughout"
+        )
+        raise ValueError(msg)
+
+    if exact_cell_average and not (lattice_ewald and periodic):
+        msg = (
+            "exact_cell_average=True requires lattice_ewald=True and periodic=True, "
+            f"got lattice_ewald={lattice_ewald}, periodic={periodic}.\n"
+            "  Where: cubic_scattering/slab_scattering.py, _build_slab_kernels()\n"
+            "  Valid: the exact cell average is built at the M^2 BLOCH points -- a\n"
+            "         sinc form factor on the plane-wave branch (dz != 0) and an\n"
+            "         analytic d^2 tail on the Ewald branch (dz == 0). Neither\n"
+            "         exists for a real-space truncated kernel or a finite slab.\n"
+            "  Fix:   pass periodic=True, lattice_ewald=True alongside it, or drop\n"
+            "         exact_cell_average and use va_all with contact_average='single'"
+        )
+        raise ValueError(msg)
+    if exact_cell_average and va_all:
+        msg = (
+            "exact_cell_average=True and va_all=True are two routes to the SAME\n"
+            "  object and must not be combined -- the correction would be applied twice.\n"
+            "  Where: cubic_scattering/slab_scattering.py, _build_slab_kernels()\n"
+            "  Valid: exact_cell_average replaces the real-space correction shell\n"
+            "         entirely; va_all IS that shell, extended outward.\n"
+            "  Fix:   pass exact_cell_average=True alone (preferred -- it has no\n"
+            "         truncation), or va_all=True alone to use the shell route"
         )
         raise ValueError(msg)
 
@@ -732,6 +761,53 @@ def _build_slab_kernels(
         # the Bloch sum at k_n = 2 pi n / (M d); the defect was that only one
         # (2M-1)^2 patch of that sum was ever formed. So write the answer at
         # those M^2 points directly and never build the real-space array.
+        if exact_cell_average:
+            # ═══ THE SOURCE-CELL AVERAGE, EXACTLY, WITH NO CORRECTION SHELL ═══
+            # Two different instruments, because a form factor is the Fourier
+            # transform of the cell indicator: it MULTIPLIES plane waves and
+            # means nothing against a spatial summation.
+            #
+            #   dz != 0  the Bloch kernel IS a plane-wave sum, so the average is
+            #            exactly sinc(k_x h) sinc(k_y h) sinc(k_z h), applied per
+            #            mode inside vertical_kernel_9x9.
+            #   dz == 0  that branch is EWALD, whose real-space half is a spatial
+            #            sum, so no form factor exists. An exact analytic d^2
+            #            tail is used instead -- see cell_averaged_lattice.
+            #
+            # Neither needs `_bloch_contact_correction`, and that is the point:
+            # the correction it computes has an O(1/R) tail and turns
+            # SHAPE-DEPENDENT past k r ~ 1, so it cannot be converged by
+            # enlarging the box (R ~ 80 needed, shape term at R ~ 50).
+            half = 0.5 * d
+            for k in range(n_dz):
+                dz_vox = k - (N_z - 1)
+                if dz_vox == 0:
+                    for n1 in range(M):
+                        for n2 in range(M):
+                            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (M * d)
+                            kernel_hat[k, n1, n2] = averaged_same_plane_9x9(
+                                d,
+                                omega,
+                                ref,
+                                k_par,
+                                eta=ewald_eta,
+                                cutoff=ewald_cutoff,
+                                r0_cells=cell_avg_r0,
+                                n_gauss=cell_avg_gauss,
+                            )
+                else:
+                    kernel_hat[k] = bloch_kernel_hat_9x9(
+                        M,
+                        d,
+                        dz_vox * d,
+                        omega,
+                        ref,
+                        eta=ewald_eta,
+                        cutoff=ewald_cutoff,
+                        cell_half_width=half,
+                    )
+            return kernel_hat
+
         for k in range(n_dz):
             dz_vox = k - (N_z - 1)
             kernel_hat[k] = bloch_kernel_hat_9x9(
@@ -1059,6 +1135,9 @@ def build_slab_kernels(
     ewald_eta: float | None = None,
     ewald_cutoff: int = 4,
     contact_average: str = "single",
+    exact_cell_average: bool = False,
+    cell_avg_r0: int = 2,
+    cell_avg_gauss: int = 6,
 ) -> NDArray:
     """Build the FFT propagator kernel, for reuse across right-hand sides.
 
@@ -1123,6 +1202,9 @@ def build_slab_kernels(
         va_all=va_all,
         va_gauss=va_gauss,
         va_all_reach=va_all_reach,
+        exact_cell_average=exact_cell_average,
+        cell_avg_r0=cell_avg_r0,
+        cell_avg_gauss=cell_avg_gauss,
         lattice_images=lattice_images,
         lattice_ewald=lattice_ewald,
         ewald_eta=ewald_eta,
