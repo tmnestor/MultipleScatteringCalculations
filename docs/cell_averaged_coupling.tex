@@ -1,0 +1,350 @@
+% LuaLaTeX document — compile with: lualatex cell_averaged_coupling.tex  (twice)
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{mathtools}
+
+\newcommand{\D}{\Delta}
+\newcommand{\order}{\mathcal{O}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\avg}[1]{\langle #1 \rangle}
+\newcommand{\kpar}{k_{\parallel}}
+
+\title{Cell-averaged coupling for a cubic-voxel lattice:\\
+       why the midpoint rule cannot be repaired by summing further}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A voxel lattice couples its cells through a propagator that is almost always
+\emph{sampled at cell centres}. The cell has volume, so this is a midpoint rule,
+and its error is scale-invariant: refining the mesh shrinks the cell and the
+spacing together, so the bias never dilutes. This note establishes that the
+obvious repair --- correcting neighbours one at a time out to some radius ---
+\emph{cannot be made to work}, because the correction has an $\order(1/R)$ tail
+and becomes summation-shape dependent beyond $kr\sim1$, and the two requirements
+are incompatible at any box size. It then gives a closed-form replacement in two
+halves, exploiting the fact that the cube average is an identity on plane waves
+but not on a spatial sum. Against an exact reference the corrected scheme
+converges at second order where the truncated one saturates. A secondary
+consequence is the closure of a long-standing empirical constant: a fitted shear
+correction that had stood at $0.886234$, then $1.023737$, is measured here at
+$1.0000$ and is shown to have been a propagator artefact throughout.
+\end{abstract}
+
+\tableofcontents
+
+%======================================================================
+\section{The defect}
+%======================================================================
+
+Write the coupling between two cells as the propagator $G$ evaluated at the
+separation of their centres. The source cell carries a volume moment, so the
+field its neighbour should receive is
+%
+\begin{equation}
+  \psi_i \;=\; \Bigl[\frac{1}{V}\int_{V_{\text{source}}} G(\bm{x}_i - \bm{x}')\,\dd^3x'\Bigr]
+              \times (\text{moment}),
+  \label{eq:source-average}
+\end{equation}
+%
+the average over the source cell, evaluated at the \emph{receiver centre}. The
+usual practice replaces the bracket by $G(\bm{x}_i-\bm{x}_j)$: a midpoint rule.
+
+The error is
+%
+\begin{equation}
+  \avg{G} - G \;=\; \frac{d^{2}}{24}\,\nabla^{2}G \;+\; \order(d^{4}),
+  \label{eq:midpoint-error}
+\end{equation}
+%
+with $d$ the cell side. What makes this pernicious rather than merely
+inaccurate is that it is \emph{scale-invariant on a space-filling lattice}. The
+cells and their separations shrink together, so the relative error at each
+neighbour is unchanged by refinement, and the summed bias tends to a constant
+that no mesh refinement removes.
+
+\paragraph{Which average.}
+Equation~\eqref{eq:source-average} averages over the source cell only, with the
+receiver a point. That is the choice consistent with a collocation scheme, whose
+state variable is a point value at the cell centre. A Galerkin scheme, whose
+state is a cell average, wants a \emph{double} average over both cells. The two
+differ, and the distinction is load-bearing: on this solver the collocation
+pairing outperforms the Galerkin one by factors of $3.4$ and $16$ against an
+exact reference. For an ellipsoid the two coincide, by Eshelby's uniformity
+theorem; a cube is the only place they can differ at all.
+
+%======================================================================
+\section{Why the obvious repair fails}
+%======================================================================
+
+The natural fix is to correct neighbours directly out to some radius $R$ and
+accept the midpoint rule beyond it. This fails for two reasons that are
+individually survivable and jointly fatal.
+
+\subsection{The tail is long-ranged}
+
+Away from the origin the propagator entries satisfy the Helmholtz equation,
+$\nabla^{2}g_c = -k_c^{2}g_c$ exactly, and derivatives commute with
+$\nabla^{2}$. Two regimes follow from \eqref{eq:midpoint-error}:
+
+\begin{itemize}[leftmargin=2em]
+\item $kr \ll 1$: the elastostatic Kelvin tensor is \emph{biharmonic}, not
+  harmonic ($\nabla^{2}r = 2/r$), so $\nabla^{2}G \neq 0$ but sits two orders
+  below $G$. With the displacement block $G\sim1/r$ this gives a correction
+  $\sim d^{2}/r^{3}$, a shell sum $\sim d^{2}/R^{2}$, and an $\order(1/R)$
+  tail --- slow, but absolutely convergent.
+\item $kr \gg 1$: Helmholtz makes the correction $\to -(kd)^{2}G/24$, so it
+  \emph{tracks the kernel itself}. Each shell then contributes a constant and
+  only oscillation converges the sum --- conditionally.
+\end{itemize}
+
+Both halves are measured. The far-field ratio $|\avg{G}-G|/|G|$ plateaus at
+$9.14\times10^{-4}$ against the predicted $(k_Sd)^{2}/24 = 9.375\times10^{-4}$,
+within $3\%$; and the static ratio falls as $1/r^{2}$ exactly, the signature of a
+surviving $d^{2}\nabla^{2}$ term rather than a cancelled one.
+
+\subsection{The far field is shape-dependent}
+
+Summing the correction over a \emph{square} region and over a \emph{circular}
+one tests conditional convergence directly. At $k_S r_{\max}=0.4$ the gap
+between them shrinks by $5.4\times$: absolutely convergent. At
+$k_S r_{\max}=3$ it \emph{grows} by $2\times$: conditionally convergent, so the
+limit depends on the shape of the region summed.
+
+\subsection{The two are incompatible}
+
+\begin{quote}
+Converging the $\order(1/R)$ tail requires $R\sim80$ cells. The shape term
+switches on near $R \sim 1/(k_S d) \approx 50$ cells. \emph{The box cannot be
+made large enough to converge without becoming large enough to be
+shape-dependent.}
+\end{quote}
+
+No radius is correct. This is a structural obstruction, not a tuning problem,
+and it is why the truncated correction had to be replaced rather than extended.
+
+%======================================================================
+\section{The closed-form replacement}
+%======================================================================
+
+The cell average is a convolution with the cell indicator, so on a plane wave it
+is exactly a multiplication by the cube form factor
+%
+\begin{equation}
+  f_0(\bm{k}) \;=\; \operatorname{sinc}(k_1h)\,\operatorname{sinc}(k_2h)\,
+                    \operatorname{sinc}(k_3h), \qquad h=d/2,
+  \label{eq:form-factor}
+\end{equation}
+%
+\emph{one} power --- the single average of \eqref{eq:source-average}. The
+squared form factor $|f_0|^{2}$, which appears in the existing literature and in
+this package's own inter-voxel tables, is the \emph{double} (Galerkin) average:
+source cell convolved with field cell.
+
+\paragraph{A form factor multiplies plane waves, and nothing else.}
+This is the organising fact, and it splits the construction in two. Where the
+lattice kernel is a plane-wave sum, the average is an identity. Where it is a
+spatial summation, no form factor exists.
+
+\subsection{Between planes: an identity}
+
+For non-equal depths the Bloch kernel is a plane-wave sum, and
+\eqref{eq:form-factor} applies directly. Two properties of the implementation
+are worth recording because neither is optional.
+
+\emph{Per mode.} The $P$ and $S$ poles carry different $k_3$, so a single scalar
+factor on the assembled block merely rescales it; each pole must be scaled by
+the sinc built from its own $k_3$.
+
+\emph{The decay margin halves.} On the evanescent branch $k_3 = i\kappa$ and
+%
+\begin{equation}
+  \operatorname{sinc}(i\kappa h) \;=\; \frac{\sinh \kappa h}{\kappa h}
+  \;\sim\; \frac{e^{\kappa h}}{2\kappa h},
+\end{equation}
+%
+which \emph{grows}. Against the kernel's own $e^{-\kappa|\D z|}$ the product
+decays as $e^{-\kappa(|\D z|-h)}$: still convergent, because $|\D z|\ge 2h$ for
+distinct planes, but at half the rate at adjacent planes. A reciprocal-sum
+cutoff tuned for the point kernel silently returns $10^{-8}$ where it had
+returned $10^{-16}$.
+
+\subsection{In-plane: an analytic tail}
+
+At equal depth the route is an Ewald sum, whose real-space half is a spatial
+summation --- so no form factor applies. Nor can the plain reciprocal sum be
+substituted: with the \emph{single} form factor its terms decay as $1/|\bm{G}|^{2}$
+against $\sim|\bm{G}|$ growth of the strain block and $\sim|\bm{G}|$ states per
+shell, which is logarithmically divergent. (The double form factor gains a
+further $1/|\bm{G}|^{2}$ and does converge, which is why the squared route never
+met this obstruction.)
+
+Instead, using $\nabla^{2}g_c = -k_c^{2}g_c$ exactly away from the origin,
+%
+\begin{equation}
+  \sum_{|\bm{R}|>R_0} \avg{D} \;=\;
+  \Bigl(1 - \frac{k_c^{2}d^{2}}{24}\Bigr)\bigl(D_{\text{full}} - D_{\text{near}}\bigr)
+  \;+\; \order(d^{4}),
+  \label{eq:tail}
+\end{equation}
+%
+where $D_{\text{full}}$ is the existing Ewald sum --- already computed once per
+mode, which is exactly the granularity \eqref{eq:tail} needs, since $P$ and $S$
+carry different $k^{2}$. The near shell is averaged directly; the far field is
+closed form.
+
+\paragraph{The sharp test is $R_0$-independence.} $R_0$ splits the sum between
+the two pieces, so a wrong tail would make the answer drift with it. Measured
+drift is $3.2\times10^{-6}$ and $3.8\times10^{-6}$ for $R_0=3,4$ against $R_0=2$.
+
+%======================================================================
+\section{Results}
+%======================================================================
+
+Against Kennett, exact for a uniform layer and independent of the construction:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrr}
+\toprule
+case & scheme & \multicolumn{2}{c}{error ratio per mesh halving}\\
+\cmidrule(lr){3-4}
+ & & $n_z\!:\!2\to4$ & $4\to8$ \\
+\midrule
+pure shear & truncated shell & $2.2$ & $1.29$\\
+           & closed form     & $6.1$ & $3.70$\\
+mixed      & truncated shell & $2.0$ & $1.19$\\
+\bottomrule
+\end{tabular}
+\caption{The truncated scheme \emph{saturates} --- its ratio tends to $1.0$,
+a floor --- because its bias is scale-invariant. The closed-form scheme tends
+to $4.0$, second order.}
+\end{table}
+
+The single-mesh error is the least informative number here; the distinction is
+between a scheme that keeps improving under refinement and one that stops. The
+mixed case's closed-form column is omitted deliberately: its error passes
+through zero between $n_z=4$ and $n_z=8$, so no convergence order can be quoted
+for it. Its magnitude is below the truncated scheme's at every mesh tested.
+
+\paragraph{Validity.} The in-plane tail is an expansion in $(\kappa d)^{2}$.
+Measured across frequency it is flat to $k_Sd\approx1$ and degrades beyond;
+a larger near shell reduces the error at every frequency tested, confirming that
+the expansion and not something else is the limiting term. The regime of use,
+$ka<0.3$, sits an order of magnitude inside that.
+
+%======================================================================
+\section{A fitted constant, closed}
+%======================================================================
+
+A one-parameter shear correction $K$ had been carried for some time, defined so
+that $K=1$ means the cube's own shear response is correct. Its history:
+%
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+value & context & what it was measuring\\
+\midrule
+$0.886234$ & original & a doubly-averaged contact term against a collocation state\\
+$1.023737$ & contact fixed & the remaining average truncated at a finite shell\\
+$1.0000$   & this work & nothing\\
+\bottomrule
+\end{tabular}
+\end{center}
+%
+Measured on the corrected propagator, $|K-1| = 2.75\times10^{-4}$. Each time a
+propagator defect was removed, $K$ moved toward unity; there is no mechanism to
+derive. The near-misses $8/9 = 0.888889$ and $\sqrt{\pi}/2 = 0.886227$ were
+close to an artefact.
+
+\paragraph{The methodological point is the durable one.} A one-parameter
+correction fitted against the same reference it is then scored on will look
+successful: $K$ was universal across contrasts, did nothing to the channels it
+should not have touched, and improved cases it was never fitted to. It was still
+an artefact. Relatedly, the tempting success metric --- how much the answer
+improves once the parameter is tuned --- reaches $290\times$ here and means
+nothing, because one knob with leverage cancels almost any small scalar
+residual. The honest measure is the distance of the \emph{unfitted} prediction
+from ideal.
+
+%======================================================================
+\section{What is not established}
+%======================================================================
+
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{The in-plane half is still an expansion.} Equation~\eqref{eq:tail}
+  is exact through $d^{2}$; the between-plane half is exact at any cell size.
+  This is the one place a small-$d$ limit re-enters a formulation that otherwise
+  avoids them, and it is the origin of the frequency degradation above.
+  Section~\ref{sec:exact-inplane} sets out what an exact version would require.
+\item \textbf{The dynamic verification is incomplete.} The spectral single
+  average was verified against a real-space reference in the static limit, where
+  the ultraviolet behaviour in question lives. The dynamic case, with its poles
+  and the subtracted formulation they force, is untested.
+\item \textbf{One convergence order is unpinned}, as noted above.
+\item \textbf{The isolated cube is not the lattice.} Against a subdivided-cube
+  reference that resolves the internal field, the uniform-strain single-site
+  T-matrix differs by $\approx0.35\%$, while its effective response in a
+  space-filling lattice is correct to $2.75\times10^{-4}$. Both hold: the
+  discrepancy largely cancels among identical neighbours. The $0.35\%$ is
+  \emph{not} decisive --- changing the sub-cell coupling moves it by four times
+  its own size --- and sharpening it requires a coupling whose bias is below
+  $10^{-3}$, not a richer single-site basis.
+\end{enumerate}
+
+%======================================================================
+\section{Making the in-plane average exact}
+\label{sec:exact-inplane}
+%======================================================================
+
+The obstruction is stated precisely in \eqref{eq:tail}: the Ewald real-space
+half is a spatial sum, so the form factor does not apply, and the plain
+reciprocal sum is logarithmically divergent under the single form factor. The
+$d^{2}$ expansion is a way around that, not a resolution of it.
+
+Averaging is linear, so it distributes across the Ewald split:
+%
+\begin{equation}
+  \sum_{\bm{R}} \avg{G}(\bm{R})\,e^{-i\bm{k}\cdot\bm{R}}
+  \;=\; \avg{\text{real-space screened half}} \;+\; \avg{\text{reciprocal half}} .
+\end{equation}
+%
+Each half admits an exact treatment, by different means:
+
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Reciprocal half.} Plane waves, so the form factor multiplies. The
+  vertical factor is not $\operatorname{sinc}$ at equal depth, because the
+  average crosses the $|z|$ branch point at the cell centre, but it remains in
+  closed form:
+  \begin{equation}
+    \frac{1}{2h}\int_{-h}^{h} e^{i\gamma|u|}\,\dd u
+      \;=\; \frac{e^{i\gamma h}-1}{i\gamma h}.
+  \end{equation}
+\item \textbf{Real-space half.} The screened kernel is short-ranged and regular
+  at every non-self lattice site --- the nearest in-plane neighbour has
+  $|\bm r| \ge d - h\sqrt{3} > 0$, and $\bm R = 0$ is excluded as the self term
+  --- so ordinary quadrature averages it exactly. No form factor is needed, and
+  none exists.
+\end{itemize}
+
+This would remove the last small-$d$ expansion from the construction and with it
+the frequency degradation, at the cost of reworking the Ewald internals rather
+than wrapping them. It is not implemented here, and the argument above is a
+derivation sketch, not a validated result.
+
+\end{document}
