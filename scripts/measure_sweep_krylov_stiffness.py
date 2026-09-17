@@ -86,7 +86,54 @@ CONTRAST = MaterialContrast(2.0, 1.0, 0.1)  # seismic units
 KA_CEILING = 0.3
 
 
-def run_once(n_side: int, freq_hz: float, scale: float = 1.0) -> tuple[int, float, float, int]:
+def _layered_background(pitch: float, n_z: int):
+    """A two-layer stratified background, plus the reference it perturbs.
+
+    The point of this arm is that a layered background is where the original
+    invariant-imbedding cost lived: the reverberation between interfaces is
+    exactly the multiply-scattered content the Riccati equation had to carry,
+    and it is the obvious place for an iteration count to blow up if the sweep
+    has merely relocated the difficulty.
+
+    Returns (model, plane_ifaces, transverse, ref) or None if the sibling
+    layered machinery is not importable.
+    """
+    sibling = "/Users/tod/Desktop/SeismicInversion"
+    if sibling not in sys.path:
+        sys.path.insert(0, sibling)
+    try:
+        import GlobalMatrix.layered_greens  # type: ignore[import-not-found]  # noqa: F401
+        from Kennett_Reflectivity import layer_model as lm  # type: ignore[import-not-found]
+    except Exception:
+        return None
+
+    from cubic_scattering.pair_propagators import TransverseRule
+
+    n_lay, q = 16, 2.0
+    al, be, rh = 4.0, 2.22, 2.6
+    fast = [1.5, *([al] * n_lay), al]
+    fast_b = [0.0, *([be] * n_lay), be]
+    fast_r = [1.03, *([rh] * n_lay), rh]
+    for lay in (9, 10):  # a genuine material jump, not a pseudo-interface
+        fast[lay], fast_b[lay], fast_r[lay] = 6.5, 3.7, 3.3
+    model = lm.LayerModel.from_arrays(
+        alpha=fast,
+        beta=fast_b,
+        rho=fast_r,
+        thickness=[3.0, *([pitch] * n_lay), np.inf],
+        Q_alpha=[q] * (n_lay + 2),
+        Q_beta=[1e10, *([q] * n_lay), q],
+    )
+    s_p, s_s = model.complex_slowness_p(), model.complex_slowness_s()
+    ref = ReferenceMedium(1.0 / s_p[1], 1.0 / s_s[1], model.rho[1])
+    ifaces = tuple(7 + 4 * i for i in range(n_z))
+    rule = TransverseRule(kr_max=10.0 / pitch, n_axis=128)
+    return model, ifaces, rule, ref
+
+
+def run_once(
+    n_side: int, freq_hz: float, scale: float = 1.0, layered: bool = False
+) -> tuple[int, float, float, int]:
     """(n_matvec, spectral radius, kappa_max / k_S, n_sites) for one setup.
 
     ⚠ `scale` multiplies the contrast, and it is not cosmetic. At the physical
@@ -103,10 +150,20 @@ def run_once(n_side: int, freq_hz: float, scale: float = 1.0) -> tuple[int, floa
     pitch = DOMAIN / n_side
     omega = 2.0 * np.pi * freq_hz * (1 + 0.03j)
     grid = SweepGrid3D(n_z=2, n_x=n_side, n_y=n_side, pitch=pitch)
-    cache = build_g0_cache_3d(grid, REF, omega)
+    ref = REF
+    if layered:
+        bg = _layered_background(pitch, grid.n_z)
+        if bg is None:
+            raise RuntimeError("layered background unavailable")
+        model, ifaces, rule, ref = bg
+        cache = build_g0_cache_3d(grid, ref, omega, model=model, plane_ifaces=ifaces, transverse=rule)
+    else:
+        cache = build_g0_cache_3d(grid, REF, omega)
 
     a = 0.5 * pitch
-    ka = float(omega.real) / REF.alpha * a
+    # abs(): a layered reference carries Q, so ref.alpha is COMPLEX and a bare
+    # division makes ka complex, which then compares oddly and prints oddly.
+    ka = float(omega.real) / abs(complex(ref.alpha)) * a
     if ka >= KA_CEILING:
         msg = (
             f"ka = {ka:.3f} exceeds the validated ceiling {KA_CEILING}.\n"
@@ -118,7 +175,7 @@ def run_once(n_side: int, freq_hz: float, scale: float = 1.0) -> tuple[int, floa
         )
         raise ValueError(msg)
     con = MaterialContrast(scale * CONTRAST.Dlambda, scale * CONTRAST.Dmu, scale * CONTRAST.Drho)
-    res_t = compute_cube_tmatrix(float(omega.real), a, REF, con)
+    res_t = compute_cube_tmatrix(float(omega.real), a, ref, con)
     v = pitch**3
     block = np.zeros((9, 9), dtype=complex)
     block[:3, :3] = float(omega.real) ** 2 * complex(res_t.Drho_star) * v * np.eye(3)
@@ -129,7 +186,7 @@ def run_once(n_side: int, freq_hz: float, scale: float = 1.0) -> tuple[int, floa
     t0 = np.broadcast_to(block, (*shape, 9, 9)).copy()
 
     # A plane wave down z, evaluated on the grid -- the physical drive, not noise.
-    k_s = float(omega.real) / REF.beta
+    k_s = float(omega.real) / abs(complex(ref.beta))
     zs = np.arange(grid.n_z) * pitch
     psi = np.zeros((*shape, 9), dtype=complex)
     phase = np.exp(1j * k_s * zs)
@@ -200,6 +257,27 @@ def main() -> int:
         rows_b.append((freq, ratio, nm, rho))
         print(f"      {freq:8.1f} {ratio:14.1f} {rho:8.3f} {nm:>9}")
 
+    # ---- [D] the layered background ---------------------------------------
+    # This is where the original invariant-imbedding cost lived: reverberation
+    # between interfaces IS the multiply-scattered content the Riccati equation
+    # had to carry. If the sweep has merely relocated the difficulty, a
+    # stratified background is where it should show.
+    print("\n  [D] LAYERED background, frequency at fixed grid")
+    rows_d: list[tuple[float, float, int, float]] = []
+    try:
+        for freq in (6.0, 3.0, 1.5):
+            _, r1, _, _ = run_once(8, freq, 1.0, layered=True)
+            s_f = target_rho / max(r1, 1e-12)
+            nm, rho, ratio, _ = run_once(8, freq, s_f, layered=True)
+            rows_d.append((freq, ratio, nm, rho))
+        print(f"      {'freq Hz':>8} {'kappa_max/k_S':>14} {'rho':>8} {'n_matvec':>9}")
+        for freq, ratio, nm, rho in rows_d:
+            print(f"      {freq:8.1f} {ratio:14.1f} {rho:8.3f} {nm:>9}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"      UNAVAILABLE: {type(exc).__name__}: {exc}")
+        print("      (the stratified operator lives in the sibling GlobalMatrix")
+        print("       repository; this arm is SKIPPED, not passed)")
+
     # ---- reading it -------------------------------------------------------
     # ⚠ THE RATIO MUST BE SIGNED, i.e. taken in the DIRECTION of widening
     # evanescent range. A max/min ratio ignores direction, and an earlier
@@ -221,6 +299,12 @@ def main() -> int:
         f" n_matvec {ratio_a:.2f}x"
     )
     print(f"      [B] kappa_max/k spanned {kappa_span_b:.1f}x at fixed size, n_matvec {ratio_b:.2f}x")
+    if rows_d:
+        span_d = rows_d[-1][1] / rows_d[0][1]
+        ratio_d = rows_d[-1][2] / max(rows_d[0][2], 1)
+        print(f"      [D] LAYERED: kappa_max/k spanned {span_d:.1f}x, n_matvec {ratio_d:.2f}x")
+    else:
+        print("      [D] LAYERED: not run")
 
     flat_a = ratio_a < 1.5
     flat_b = ratio_b < 1.5
@@ -253,9 +337,13 @@ def main() -> int:
         print("implicit solver is NOT established, and a preconditioner would be")
         print("needed before any cost claim could be made.")
     print()
-    print("⚠ SCOPE: whole-space background, one contrast, n_z = 2, GMRES without")
-    print("a preconditioner.  A layered background or stronger contrast could")
-    print("behave differently, and neither is tested here.")
+    print("⚠ SCOPE: n_z = 2, unpreconditioned GMRES, rho ~ 0.5.  The LAYERED arm")
+    print("[D] is the one that matters most -- reverberation between interfaces")
+    print("is the multiply-scattered content the Riccati equation had to carry --")
+    print("and it behaves like the whole-space case.  Not tested: strong")
+    print("contrast beyond rho ~ 0.5, deep stacks, and the head-to-head cost")
+    print("comparison against an implicit Riccati solver, which is what a claim")
+    print("about COST rather than iteration count would need.")
     print("=" * 78)
     return 0
 
