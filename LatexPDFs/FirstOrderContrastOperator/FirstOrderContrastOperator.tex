@@ -574,7 +574,7 @@ With $\Delta\lambda = \Delta\mu = 0$, $\dA$ is exactly $i\omega\Delta\rho$ in
 rows $1$--$3$, columns $4$--$6$, and reaches \emph{no} part of the stress-glut
 slot: a density contrast is a pure body force.  The propagator's body-force
 velocity block is $-i\omega\bG$, so both routes return
-\begin{equation}
+\begin{equation}\label{eq:amplification}
   A_u = \frac{1}{1 - \omega^2\Delta\rho\,\Gamma_0},
   \qquad \Gamma_0 = \int_V \bG\,dV,
 \end{equation}
@@ -712,9 +712,37 @@ interact, and those do not simply add.
 
 \subsection{It already exists}
 
-Everything downstream needs the Green's matrix of \eqref{eq:mvwe}.  It does not
-need to be built: the stratified $6\times6$ Green's function and its validated
-wrapper already return it, in the basis
+Everything downstream needs the Green's matrix of \eqref{eq:mvwe}.  Write it
+$\boldsymbol\Gamma$, defined by
+\begin{equation}\label{eq:gammadef}
+  \bigl[\partial_z - \bA(\mathbf{k})\bigr]\,
+  \boldsymbol\Gamma(\mathbf{k}; z,z') = \Isix\,\delta(z-z'),
+\end{equation}
+together with the radiation condition at $z\to\pm\infty$.  It is a $6\times6$
+matrix in the state-vector basis of \eqref{eq:qdef}, not a Green's
+\emph{tensor}: its $j$th column is the state vector produced at $z$ by a unit
+jump in the $j$th component of $\bq$ imposed at $z'$, so it carries the
+displacement-to-displacement, traction-to-displacement and
+traction-to-traction responses together.  Three consequences are used
+repeatedly and are worth naming here rather than where each is first needed.
+\eqref{eq:gammadef} makes $\boldsymbol\Gamma$ satisfy the \emph{homogeneous}
+system in $z$ away from the source plane, which is \eqref{eq:bridge} below; it
+fixes the jump across $z=z'$ to be exactly $\Isix$, which
+\S\ref{sec:layered} measures and which \S\ref{sec:leibniz} shows is what makes
+the integral equation and the differential equation the same statement; and,
+with the radiation condition, it makes $\boldsymbol\Gamma$ one-sided --- built
+from downgoing modes below the source and upgoing modes above --- which is what
+\eqref{eq:recip} tests and what \S\ref{sec:layered} uses to name the difference
+between a layered and a whole-space background.
+
+One warning about the symbol.  $\boldsymbol\Gamma$ here is unrelated to the
+scalar $\Gamma_0 = \int_V \bG\,dV$ of \eqref{eq:amplification}, which is a
+volume moment of the Kelvin tensor and not this object evaluated anywhere.  The
+two are kept apart by weight and by subscript only, so the bold face is
+load-bearing.
+
+It does not need to be built: the stratified $6\times6$ Green's function and its
+validated wrapper already return it, in the basis
 $(u_z,u_x,u_y,T_{zz},T_{xz},T_{yz})$ --- which is exactly the basis the thesis
 writes $\bA$ in.  That the two are the same object had, however, been
 \emph{assumed}.
@@ -782,7 +810,7 @@ trial space,
 \begin{equation}\label{eq:T}
   \boxed{\ \mathbf{T} = \dCeff\bigl(\bI_9 - \mathcal{G}\,\dCeff\bigr)^{-1}, \ }
 \end{equation}
-with $\dCeff$ the projected coupling of \S\ref{sec:testspace} and $\mathcal{G}$
+with $\dCeff$ the projected coupling of \S\ref{sec:testspace} and $\mathcal{G}$ of \eqref{eq:Gmoment}
 the self propagator moment of the cube.
 
 \subsection{What is new and what is borrowed}
@@ -1127,7 +1155,8 @@ in \emph{odd} dimension --- here nine --- is singular.
 \subsection{Step 1: \texorpdfstring{$\Gamma$}{Gamma}, built from
 \texorpdfstring{$\Aop$}{A} alone}
 
-For $\partial_3\bq = \bA\bq + \bd\,\delta(z-z')$ the radiating Green's matrix is
+Solving \eqref{eq:gammadef} by the spectral representation, the radiating
+Green's matrix is
 \begin{equation}\label{eq:gammaspec}
   \boldsymbol\Gamma(z,z') =
   \begin{cases}
@@ -2522,7 +2551,7 @@ needs both receivers carried back onto the source plane,
   \;=\; \Isix ,
 \end{equation}
 and \eqref{eq:jumpmeasured} holds to $7\times10^{-14}$, flat in $\delta$ over a
-factor of eight.  So $[\partial_z-\bA]\boldsymbol\Gamma = \Isix\,\delta(z-z')$
+factor of eight.  So the defining relation \eqref{eq:gammadef} holds
 with \emph{no} calibration constant anywhere, and the $6\times6$ half of the
 source-convention question is closed.  Reciprocity in the thesis basis,
 $\boldsymbol\Gamma(-\mathbf{k};z',z)\tp =
