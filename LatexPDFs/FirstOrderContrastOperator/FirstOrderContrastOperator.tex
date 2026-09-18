@@ -101,10 +101,19 @@ them by exactly zero.  That split is an arbiter-free \emph{lower bound} on the
 first-order error, $\ge\delta/2$; it bounds nothing about the ordinary route,
 which can be symmetrically wrong, so no ordering of the two follows from it.
 
+The ordering is settled elsewhere, in the one geometry where both formulations
+apply and an external reference exists.  A periodic patch of space-filling cubes
+\emph{is} a homogeneous layer, so a reflectivity recursion gives its reflection
+coefficient exactly; running both routes through the same lattice sum and the
+same solve, with only $T_0$ substituted, the first-order $T$ is the more accurate
+of the two, by a margin that grows with contrast and that \emph{grows further as
+the shared lattice error is refined away} --- which is what distinguishes a real
+advantage from an accidental cancellation (\S\ref{sec:whichbetter}).
+
 Every claim below is backed by an executable check; the scripts report $25/25$,
-$44/44$ and $12/12$, and a separate gate binds the numerical propagator to the
-derived $\Aop$.  Section~\ref{sec:open} states plainly what is \emph{not} yet
-established.
+$44/44$, $14/14$, $17/17$, $8/8$, $7/7$ and $3/3$, and a separate gate binds the
+numerical propagator to the derived $\Aop$.  Section~\ref{sec:open} states
+plainly what is \emph{not} yet established.
 \end{abstract}
 
 \tableofcontents
@@ -2024,6 +2033,94 @@ remain checked only against other formulations.
 \end{quote}
 
 %=====================================================================
+\section{Which formulation is more accurate}\label{sec:whichbetter}
+
+\S\ref{sec:layer} validates the operator and the propagator but cannot compare
+the two formulations, because a laterally invariant problem is one the cube
+moment method does not address at all.  The geometry that does compare them is
+the one this package already uses to score itself: a periodic patch of
+space-filling cubes, which for identical cubes \emph{is} a homogeneous layer, and
+whose reflection coefficient the reflectivity recursion gives exactly.  Both
+routes then build a single-site $T$ for the same cube, both pass through the same
+lattice sum, the same contact correction and the same Foldy--Lax solve, and both
+are scored against the same reference.  Only $T_0$ differs.
+
+\subsection{Substituting at the one place both routes speak the same language}
+
+$\mathbf{T} = \dC(\mathbf{I}-\mathcal{G}\dC)^{-1}$ is not in the package's
+$9\times9$ convention --- the strain block differs in sign and by the engineering
+doubling, and $\dCeff$ is in velocity units besides (\S\ref{sec:units}).  Mapping
+all of that would risk measuring a convention as though it were physics.  The
+substitution is therefore made through the four \emph{dimensionless}
+amplification factors $A_u$, $A_\theta$, $A_{e,\mathrm{diag}}$,
+$A_{e,\mathrm{off}}$, which are ratios and carry no units.  The package's own
+mapping to renormalised contrasts and its own $T_0$ construction are then used
+unchanged for both routes, so nothing distinguishes them but those four numbers.
+What licenses this is that the Navier route reproduces the package's own factors
+to $1.5\times10^{-6}$, re-checked rather than assumed.
+
+\subsection{The measurement}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+contrast & ordinary & first order & ratio\\
+\midrule
+weak, $\Delta\mu/\mu \approx 0.4\%$   & $2.08\times10^{-3}$ & $2.09\times10^{-3}$ & $1.007$\\
+moderate, $\approx 4\%$               & $2.00\times10^{-2}$ & $1.94\times10^{-2}$ & $0.966$\\
+strong, $\approx 13\%$                & $5.59\times10^{-2}$ & $5.02\times10^{-2}$ & $0.899$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Relative error in $R_{PP}$ against the reflectivity reference,
+$M=8$, $N_z=16$, $a=0.5$\,m, $\omega=60$, $p=0$.  At weak contrast the two agree,
+as they must --- they agree at Born order --- and the advantage appears where the
+$O(\Delta c^2)$ difference lives.}
+\end{center}
+
+\subsection{Why this is not cancellation}
+
+At weak contrast the two $T_0$ differ by $1.8\times10^{-5}$ and yet both miss the
+reference by $2.1\times10^{-3}$: \textbf{most of the error is shared}, and belongs
+to the lattice rather than to $T_0$.  A difference in a mostly-shared error is
+exactly the shape an accidental cancellation would take --- the first-order
+$O(\Delta c^2)$ term happening to offset the lattice's own.  Refining the lattice
+discriminates between the two readings:
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+$M$ & shared error at weak contrast & ratio at strong contrast\\
+\midrule
+$8$  & $2.0995\times10^{-3}$ & $0.8987$\\
+$12$ & $1.7157\times10^{-3}$ & $0.8766$\\
+$16$ & $1.4690\times10^{-3}$ & $0.8570$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The shared error falls and the advantage \emph{grows}.  Cancellation would erode
+as the thing being cancelled against is removed; instead the advantage was being
+\emph{masked} at coarse $M$.  So $14.3\%$ is a \textbf{lower bound} on the part
+attributable to $T_0$, not an estimate of it --- it is still improving at the
+finest lattice tested.
+
+A remark on how that check was posed, since the first version of it was wrong:
+it demanded that the ratio be \emph{stable} under refinement, and it failed.
+Stability is not what should be expected.  As the shared error goes to zero the
+ratio should approach the $T_0$-attributable value, and monotone movement towards
+a limit --- not constancy --- is the correct signature.
+
+\begin{quote}
+\textbf{The answer, with its scope.}  On the question as posed --- same geometry,
+same lattice machinery, same external reference, only $T_0$ swapped --- the
+first-order $T$ is the more accurate of the two, and the margin grows with
+contrast.  This is one geometry, one frequency, normal incidence, three
+contrasts, and an unconverged lattice.  It scores the \emph{single-site} $T$
+only, so an error the two share is invisible by construction.  And it does not
+touch \S\ref{sec:oh}: the $\Oh$ symmetry breaking remains a genuine
+$\approx4.2\times10^{-4}$ debit against the first-order route in a homogeneous
+whole space, where there is no preferred direction for it to be right about.
+\end{quote}
+
+%=====================================================================
 \section{Summary of checks}
 
 \begin{center}
@@ -2082,6 +2179,10 @@ thesis & $\mathbf{D}_z^{-1}$ from \eqref{eq:dzinv} is diagonal on the thesis
        & quasi-$SV$ and quasi-$SH$ independent at $k=0$ & 1\\
        & $\boldsymbol\Gamma$ reciprocal, and the Kelvin tensor with the
          radiation reaction, from the analytic modes alone & 3\\
+\midrule
+slab & the Navier route reproduces the package's amplification factors & 1\\
+     & the advantage grows as the shared lattice error falls & 1\\
+     & the first-order $T_0$ is the more accurate of the two & 1\\
           & the one-pass assembly reproduces the density channel & 1\\
 \midrule
 layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
@@ -2094,8 +2195,8 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \end{tabular}
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
-layer comparison $9/9$, the thesis spectral representation $8/8$, and the
-propagator gate exits clean.}
+layer comparison $7/7$, the thesis spectral representation $8/8$, the slab
+comparison $3/3$, and the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================
@@ -2127,8 +2228,13 @@ as such, the following are \emph{open}:
       other rather than either against truth.  The $\Oh$ split remains the only
       partial exception there, and it is one-sided: it lower-bounds the
       first-order error at $\approx4.2\times10^{-4}$ and bounds the ordinary
-      route not at all.  \textbf{For the cube, which formulation is more accurate
-      remains open.}
+      route not at all.  \S\ref{sec:whichbetter} then answers the accuracy
+      question for the cube by the one geometry in which both formulations
+      apply and an external reference exists --- a space-filling patch --- and
+      the first-order $T$ wins there by a margin that grows with contrast.  What
+      remains genuinely open is the \emph{scope} of that: one frequency, normal
+      incidence, an unconverged lattice, and no measurement at all away from
+      space-filling.
 \item \textbf{Whether the resummation improves accuracy is unknown.}  It is
       exact as a local inversion; that is not the same claim.
 \item \textbf{$\Oh$ invariance was tested on a subgroup of order $3$}, not the
