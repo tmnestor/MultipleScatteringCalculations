@@ -1137,6 +1137,48 @@ The decisive check of this step is not the closed forms themselves but the
 \eqref{eq:T00}--\eqref{eq:T11}, matrices and all, reproduces a brute-force
 double quadrature of $\Gamma$ to $2.5\times10^{-9}$ relative.
 
+\subsubsection{The same integrals as a series, and why they are
+needed}\label{sec:triseries}
+
+\eqref{eq:T00}--\eqref{eq:T11} are exact and, evaluated as written, lose most of
+their digits as $q\to0$.  Expanding \eqref{eq:T11} gives
+\begin{equation}
+  3 - 3(1+x)^{2}e^{-2x} + x^{2}(2x-3) = \tfrac{4}{5}x^{5} - \tfrac{2}{3}x^{6} +
+  O(x^{7}), \qquad x = aq,
+\end{equation}
+so a numerator of order $x^{5}$ is assembled from terms of order unity: at
+$x = 0.025$ about eight digits are gone.  That is not a corner of the parameter
+space --- it is the whole propagating window $k < \omega/\beta$, which is
+precisely where the radiation lives.
+
+The remedy is the series.  Substituting $u = z-z'$ in \eqref{eq:tridef} and
+expanding the exponential,
+\begin{equation}\label{eq:triseries}
+  T_{mn}(q) = \sum_{j\ge0} \frac{(-q)^{j}}{j!}
+              \int_{0}^{2a}\!\! u^{j}\,J_{mn}(u)\,du ,
+  \qquad
+  J_{mn}(u) = \int_{-a}^{a-u} (z'+u)^{m} z'^{n}\,dz' ,
+\end{equation}
+and every $u$-integral is elementary.  With $b = 2a$,
+\begin{equation}
+  J_{00} = b - u, \quad
+  J_{10} = -J_{01} = \tfrac{b}{2}u - \tfrac{u^{2}}{2}, \quad
+  J_{11} = \tfrac{b^{3}}{12} - \tfrac{b^{2}}{4}u + \tfrac{u^{3}}{6},
+\end{equation}
+giving coefficients of $(-qb)^{j}/j!$ equal to
+\begin{equation}\label{eq:tricoef}
+  \frac{b^{2}}{(j+1)(j+2)}, \qquad
+  \frac{b^{3}}{2(j+2)(j+3)}, \qquad
+  b^{4}\Bigl[\frac{1}{12(j+1)} - \frac{1}{4(j+2)} + \frac{1}{6(j+4)}\Bigr]
+\end{equation}
+for $(0,0)$, $(1,0)$ and $(1,1)$ respectively.  Two structural checks: at $q=0$
+the first gives $2a^{2}$ and the second $2a^{3}/3$, which are
+$\iint_{z>z'}1$ and $\iint_{z>z'}z$; the third gives \emph{zero}, and indeed
+$\iint_{z>z'} zz' = 0$ by parity.  Its $j=1$ term is $\tfrac{4}{15}a^{5}q$, which
+is exactly what \eqref{eq:T11} tends to, $\tfrac{4}{5}a^{5}q^{5}/3q^{4}$.  The
+series is entire, so it is valid for the imaginary $q$ that propagating modes
+carry; it is used below $|2aq| = 3$, where it is also the accurate branch.
+
 \subsection{Step 3: the lateral integral}
 
 Count powers as $|k|\to\infty$ for the \emph{untransferred} form, in which
@@ -1600,16 +1642,103 @@ gated on.  Two statements, both of which matter:
   settled here; see \S\ref{sec:open}.
 \end{itemize}
 
-\emph{Status of Task~1.}  The design question is settled and the assembly now
-computes a definite object, verified against an independent real-space arbiter on
-the channel where that arbiter exists in closed form.  What remains is the
-derivative-carrying channels --- where \eqref{eq:ikrule} does work that the
-density channel does not exercise --- the remaining eight trial functions, and
-reading the shear moment $B$ off the result for comparison with
-$\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$.  The quadrature in the density
-channel agrees at $10^{-4}$ but is not monotone under refinement
-($6.9\times10^{-5} \to 1.2\times10^{-3}$ as the box is widened), so it is not yet
-converged to better than about $10^{-3}$.
+\subsubsection*{The derivative channels, and three defects the test exposed}
+
+The density channel settles the basis, the kernel, the $z$ integrals and the
+quadrature, but its contrast operator is \emph{multiplicative}: it does not
+exercise \eqref{eq:ikrule} at all.  The channels that do are those carrying
+$\Delta\lambda$ and $\Delta\mu$, and for them a sharp statement is available with
+no new arbiter.  $\Jsix\dA$ is symmetric --- that is what derived the test space
+in \S\ref{sec:testspace} --- and $\boldsymbol\Gamma$ is reciprocal,
+\begin{equation}\label{eq:recip}
+  \boldsymbol\Gamma(-\mathbf{k}; z', z)^{\!\top} =
+  \Jsix\, \boldsymbol\Gamma(\mathbf{k}; z, z')\, \Jsix ,
+\end{equation}
+which follows from $\Aop(-\mathbf{k})^{\!\top}\Jsix = -\Jsix\Aop(\mathbf{k})$ and
+$\Jsix^{-1} = -\Jsix$.  Hence the assembled matrix must be symmetric.  It is not
+symmetric by construction: the assembly builds its two legs by opposite rules,
+transferring the left outer derivative onto the test polynomial and carrying the
+right one on the kernel as $ik$.  Symmetry is therefore a test of exactly the
+bookkeeping in question, and on a quadrature grid symmetric under
+$\mathbf{k}\to-\mathbf{k}$ it is an \emph{algebraic} property, holding to round-off
+even where the grid is far too coarse to give the value accurately.
+
+Applied, it found three defects, each in code that had already passed its own
+checks:
+
+\begin{enumerate}
+\item \textbf{The up/down split was decided by round-off inside the propagating
+      window.}  Classifying by $\Re(\text{ev}) < 0$ is right for evanescent modes
+      and meaningless for propagating ones: below $k = \omega/\beta$ the vertical
+      wavenumber is real, $\Re(\text{ev})$ vanishes to arithmetic noise, and its
+      sign was being decided independently at $+\mathbf{k}$ and $-\mathbf{k}$.
+      The reciprocity residual \eqref{eq:recip} at $|k| = 1.1\times10^{-3}$ was
+      $1.245$ --- a complete failure, in the region that carries all of the
+      radiation.  The limit $\omega \to \omega(1+i\epsilon)$ settles it without
+      needing $\epsilon$: a propagating mode has $\text{ev} = ik_z$ and the
+      perturbation gives $k_z$ a positive imaginary part, so $\Re(\text{ev})\to0^-$
+      exactly when $\Im(\text{ev}) > 0$.  Residual after: $3.7\times10^{-13}$.
+\item \textbf{The triangular $z$ integral cancels catastrophically at small
+      $aq$.}  The numerator of $T^{11}$ is $O((aq)^5)$ while its individual terms
+      are $O(1)$, so by $aq \approx 0.025$ it has lost about eight digits.  That
+      is not a corner case --- it is again the propagating window.  Expanding
+      $T^{mn}$ as a power series in $q$ below $|2aq| = 3$, with the coefficients
+      of \S\ref{sec:triseries}, took that node from $1.3\times10^{-6}$ to
+      $2.1\times10^{-13}$.
+\item \textbf{The scaling used to condition the eigenproblem is in the wrong
+      direction.}  $\mathrm{diag}(1,1,1,k,k,k)$ was introduced because the up-
+      and down-going eigenvectors become parallel as $k$ grows.  Measured against
+      \emph{no scaling at all} it makes the eigenvector condition number
+      \emph{worse} at every $k$ above the propagating window --- by two orders at
+      $k = 60$.  Parlett--Reinsch balancing beats both by about twelve orders
+      there ($8.7\times10^{7}$ against $1.6\times10^{20}$), because it is free to
+      treat the third component differently from the first two, which no scalar
+      rule can.
+\end{enumerate}
+
+With all three repaired the assembled $9\times9$ matrix is symmetric to
+$4.7\times10^{-12}$, while reversing the sign of the right leg's $ik$ --- the
+one step \eqref{eq:ikrule} licenses --- breaks it at $7.2\times10^{-2}$.  That is
+a separation of ten orders on precisely the disputed bookkeeping, and the
+derivative terms carry $80\%$ of the matrix, so the test is not vacuous.
+
+\subsubsection*{The radiation reaction, from the first-order system}
+
+Repairing the branch selection changed the physics, not just the arithmetic.  The
+previous classification suppressed the outgoing condition; with it restored, the
+propagator carries radiation damping, and both real-space arbiters above had to
+acquire the term they were missing.  The sharpest form of the check is pointwise:
+\begin{equation}\label{eq:radiation}
+  \Im G_{11}\bigl(\Delta z\bigr)\Bigm|_{\text{first-order}} = 5.2134\times10^{-14}
+  \qquad\text{against}\qquad
+  \frac{\omega}{12\pi\rho}\Bigl(\frac{1}{\alpha^3} + \frac{2}{\beta^3}\Bigr)
+  = 5.2250\times10^{-14},
+\end{equation}
+agreeing to $2.2\times10^{-3}$.  This quantity has \emph{no static counterpart at
+all}: it is not a correction to the Kelvin tensor but a term the static theory
+does not contain, and it arrives here out of the spectral projectors of $\Aop$
+with nothing put in by hand.
+
+Resolving it needs the quadrature to respect the two branch radii $|k| =
+\omega/\alpha$ and $\omega/\beta$, where the vertical wavenumber vanishes.  Those
+are \emph{circles}: no Cartesian panel can follow one, and an unresolved
+square-root costs several per cent.  The lateral integral is therefore split ---
+Cartesian outside the propagating window, where the integrand is a separable
+product of sinc-type form factors that polar cannot resolve; polar inside it,
+where the branch radii are panel edges and $ka < 0.02$ makes the form factors
+constant to $10^{-4}$.  The central block of the Cartesian grid is exactly the
+inner square, so the two tile the box with no overlap and no gap.  With that in
+place the density channel converges cleanly --- $9.858$, $9.834$,
+$9.828 \times 10^{-4}$ over a fourfold refinement --- where before it drifted.
+
+\emph{Status of Task~1.}  The design question is settled; the assembly computes a
+definite object; the density channel is verified against an independent
+real-space arbiter to $9.8\times10^{-4}$; the derivative channels are verified by
+a symmetry with a ten-order separation from its control; and the radiation
+reaction comes out right.  What remains is to read the shear moment $B$ off the
+assembled matrix and compare it with
+$\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$, and to settle the $i\omega$ of
+\eqref{eq:gapfactor}.
 
 %=====================================================================
 \section{Summary of checks}
@@ -1656,12 +1785,17 @@ Schwinger & $\mathcal{F}[\partial_\alpha(\mathbf{1}_Vc)] = ik_\alpha
             $\Aop(-\mathbf{k})^{\!\top}\!\Jsix = -\Jsix\Aop(\mathbf{k})$,
             with a control & 4\\
           & $\boldsymbol\Gamma$ inverted laterally \emph{is} the Kelvin tensor & 1\\
+          & the radiation reaction \eqref{eq:radiation}, no static counterpart & 1\\
+          & reciprocity \eqref{eq:recip}, pointwise and $z$-integrated & 2\\
           & the two-$\dA$ assembly is the Galerkin double-volume moment & 1\\
           & the gap to the calibrated $\mathcal{G}$, factorised & 1\\
+          & the $9\times9$ matrix is symmetric, with a sign control and a
+            not-vacuous control & 3\\
+          & the one-pass assembly reproduces the density channel & 1\\
 \bottomrule
 \end{tabular}
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
-$44/44$, the $T$-matrix assembly $12/12$, the Schwinger settlement $10/10$, and
+$44/44$, the $T$-matrix assembly $12/12$, the Schwinger settlement $17/17$, and
 the propagator gate exits clean.}
 \end{center}
 
@@ -1705,12 +1839,19 @@ as such, the following are \emph{open}:
       the Galerkin count for a collocation build.  \eqref{eq:ikrule} is how that
       transfer is carried out in practice, and it is verified; what is not yet
       done is the count itself.
-\item \textbf{The derivative-carrying channels of \eqref{eq:schwinger} are not
-      yet assembled.}  The density channel verifies the basis, the $\Jsix$
-      contraction, the kernel, the triangular $z$ integrals, the form factors and
-      the quadrature --- but its contrast operator is multiplicative, so it does
-      not exercise \eqref{eq:ikrule} at all.  The channels that do are the ones
-      that carry $\Delta\lambda$ and $\Delta\mu$, and they are untested.
+\item \textbf{The derivative channels are verified only by symmetry.}  That is a
+      strong test --- ten orders of separation from its control, and the
+      derivative terms carry $80\%$ of the matrix --- but symmetry is a
+      \emph{structural} property.  A bookkeeping error that is symmetric would
+      pass it.  The value of those channels has not been compared with an
+      independent arbiter, which would need the Galerkin double-volume moments of
+      $\partial_i\partial_j G_{kl}$; those follow from the same autocorrelation
+      and Duffy construction as $D_0$, with $\partial_i\partial_j$ moved onto the
+      weight, but they have not been computed.
+\item \textbf{The shear moment $B$ has not been read off.}  This is the
+      comparison Task~1 exists for --- $B$ against
+      $\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$ --- and it is now the one
+      remaining step of the task rather than a matter of method.
 \end{enumerate}
 
 \section{Where the route belongs}
