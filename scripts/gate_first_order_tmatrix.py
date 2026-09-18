@@ -792,8 +792,12 @@ def main() -> int:
     print("  amplitudes as a consistent Galerkin T.")
     print("  CAVEAT 2: the O_h split lower-bounds the FIRST-ORDER error only.")
     print("  A symmetric approximation can be symmetrically wrong, so this")
-    print("  bounds the Navier route not at all.  Which is more accurate is")
-    print("  OPEN.  No winner is declared here, and none should be read in.")
+    print("  bounds the Navier route not at all, and NO ORDERING OF THE TWO")
+    print("  FOLLOWS FROM IT.  The ordering is settled elsewhere, on a")
+    print("  space-filling slab against Kennett -- see")
+    print("  gate_first_order_slab_vs_kennett.py -- where the first-order T is")
+    print("  the more accurate of the two.  Do not read that result out of the")
+    print("  numbers above, which compare formulations and not truth.")
     return 0 if n_ok == len(_PASS) else 1
 
 
