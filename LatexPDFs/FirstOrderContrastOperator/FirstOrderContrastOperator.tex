@@ -2553,10 +2553,14 @@ imbedding}\label{sec:imbedding}
 Status.  The equivalence of \S\ref{sec:leibniz} is a derivation, and its pivot
 --- that the jump is exactly $\Isix$ --- is measured, at
 $7\times10^{-14}$.  The Riccati equation \eqref{eq:riccatiR} is derived here and
-is \emph{not yet implemented in this route}: the existing implementation is the
-sibling repository's layer recursion, which is the same object discretised.  The
-lateral generalisation of \S\ref{sec:imbedlateral} is neither implemented nor
-gated, and is written down to fix what would have to be built.
+the \emph{march} is not yet implemented in this route: the existing
+implementation is the sibling repository's layer recursion, which
+\S\ref{sec:stiff} identifies as the same object discretised.  Its coefficient
+matrices, however, are built and gated --- \S\ref{sec:vblocks} to
+\S\ref{sec:nonnormal} report measurements, not expectations.  The impedance
+alternative at the end of \S\ref{sec:nonnormal} and the lateral generalisation
+of \S\ref{sec:imbedlateral} are neither implemented nor gated, and are written
+down to fix what would have to be built.
 \end{quote}
 
 \subsection{The kernel is one-sided, so the integral equation splits}
@@ -2685,6 +2689,115 @@ scatterer in a Foldy--Lax solve needs a $T_0$, and a $T_0$ is not what a depth
 march produces.  The two decompositions answer different questions, and the
 moment route remains the one that answers the second.
 
+\subsection{Building the coefficient matrices}\label{sec:vblocks}
+
+Every piece of $\bV = \mathbf{D}_z^{-1}\,\dA\,\mathbf{D}_z$ already exists.
+$\dA$ is the difference of two (Akdef) matrices; $\mathbf{D}_z$ is analytic,
+from (Peigen), (SVeigen) and (SHeigen); and $\mathbf{D}_z^{-1}$ comes from
+\eqref{eq:dzinv}, with the balanced numerical inverse taking over where
+\S\ref{sec:thesisspectral} says it must.  The row scaling cancels out of $\bV$
+identically --- $(\mathbf{R}\mathbf{D})^{-1}(\mathbf{R}\dA\mathbf{R}^{-1})
+(\mathbf{R}\mathbf{D}) = \mathbf{D}^{-1}\dA\mathbf{D}$ --- so the two routes must
+agree, and they do, to $2\times10^{-16}$, which checks both.
+
+$\dA$ is sparse for a structural reason: every entry of (Akdef) built from
+$\mathbf{k}$ alone is kinematic and cancels in the difference, leaving $12$ of
+$36$.  The compliance block is exactly diagonal,
+$\mathrm{diag}(\Delta a,\Delta b,\Delta b)$, so $\bV_{du}$ has a three-term
+source; the inertia block carries $\Delta\rho\,\omega^2$ and the
+$\Delta\zeta,\Delta\chi,\Delta\mu$ pair; and the two remaining blocks are
+nilpotent and are each other's negative transpose.
+
+That last is not a coincidence.  $\dA$ inherits (ATdef) from the two operators it
+differences, and \eqref{eq:dzinv} carries the relation into the mode basis:
+\begin{equation}\label{eq:vham}
+  \Jsix\,\bV^{t}(-\mathbf{k}) + \bV(\mathbf{k})\,\Jsix = 0
+  \iff
+  \begin{cases}
+    \bV_{du}(\mathbf{k}) = \bV_{du}^{t}(-\mathbf{k}),\\
+    \bV_{ud}(\mathbf{k}) = \bV_{ud}^{t}(-\mathbf{k}),\\
+    \bV_{dd}(\mathbf{k}) = -\bV_{uu}^{t}(-\mathbf{k}),
+  \end{cases}
+\end{equation}
+verified to $3\times10^{-14}$.  Only half the blocks are independent, and
+\eqref{eq:riccatiR} preserves the symmetry of $\bR$ --- which is reciprocity of
+the reflection operator, and a gate rather than an assumption.
+
+\subsection{Is the march stiff?}\label{sec:stiff}
+
+Yes, and the answer is more useful than that, because of \emph{where} the
+stiffness sits.  The linear part of \eqref{eq:riccatiR} is diagonal on the
+entries of $\bR$: entry $(c,c')$ sees
+\begin{equation}\label{eq:stiffrate}
+  \mu_{cc'} = -\bigl(\lambda_{u,c} - \lambda_{d,c'}\bigr)
+            = -i\,\bigl(k_{z,c} + k_{z,c'}\bigr).
+\end{equation}
+Inside the propagating window $k_z$ is real, so \eqref{eq:stiffrate} is purely
+imaginary: the march is \emph{oscillatory}, not stiff, and the step is set by
+resolving the phase.  Beyond it $k_z = i|k_z|$ and $\mu_{cc'}$ is real and
+negative marching upward --- decaying, at a rate up to $2|\mathbf{k}|$.  That is
+stiffness, and the ratio grows as $|\mathbf{k}|\beta/\omega$: measured
+$1.0,\,1.3,\,3.5,\,10.6,\,35.5,\,106.4$ at
+$|\mathbf{k}| = 0.5,\,8,\,20,\,60,\,200,\,600$ against
+$\omega/\beta = 5.66$.
+
+But \eqref{eq:stiffrate} is \emph{diagonal}, so an integrating factor removes it
+exactly and for nothing: march
+$\tilde{\bR} = e^{-\Lambda_u z}\,\bR\,e^{\Lambda_d z}$ and no stiff linear term
+remains.  No implicit solver is needed, and a general-purpose stiff integrator
+would be the wrong tool.
+
+This is not a new prescription.  It is what the sibling repository's layer
+recursion already does: in a homogeneous layer $\bV = 0$ and the exact update is
+$\bR \leftarrow e^{\Lambda_u h}\,\bR\,e^{-\Lambda_d h}$, which is precisely the
+phase factor it applies.  The recursion is an exponential integrator with the
+layer as its step, which is why it is stable at any layer thickness.
+
+\subsection{The real obstruction is non-normality}\label{sec:nonnormal}
+
+Stiffness turns out not to be the difficulty.  Physics requires the spectrum of
+$\bV$ to scale with $\Lambda\sim|\mathbf{k}|$ --- a fixed material contrast
+cannot strengthen with lateral wavenumber --- and it does:
+$\max|\mathrm{eig}\,\bV|/2|\mathbf{k}|$ is flat at $0.0656$ over four decades,
+$|\mathbf{k}| = 2$ to $2000$.  The \emph{norm} does not.
+$\|\bV\|/2|\mathbf{k}|$ runs $0.07,\,1.8,\,16.7,\,186,\,1671,\,18566$ over the
+same range, growing as $|\mathbf{k}|^2$.  Nor is it a scaling choice:
+Parlett--Reinsch balancing of $\bV$ returns the identity, so the non-normality
+is structural --- \eqref{eq:vham} pins $\bV_{du}$ and $\bV_{ud}$ to comparable
+size and leaves a diagonal rescaling nothing to do.
+
+The mechanism is measurable and is physical.  As $|\mathbf{k}|$ grows, both
+$k_{z,P}$ and $k_{z,S}$ tend to $i|\mathbf{k}|$, so the $P$ and $S$ columns of
+$\mathbf{D}_z$ become parallel: $\cos(+P,+S)$ reaches $1.000000$, and
+$\mathrm{cond}(\mathbf{D}_z)$ grows as $|\mathbf{k}|^{2.001}$ \emph{after} the
+symplectic row scaling has been applied.  This is the elastostatic degeneracy
+--- at short lateral scale there is no distinction between $P$ and $S$, both
+being the same decaying static field --- and unlike the unit mismatch of
+\S\ref{sec:thesisspectral}, which the row scaling does remove, it cannot be
+scaled away.  Up- and downgoing modes are untouched: $\cos(+P,-P)$ falls to
+$2\times10^{-6}$.
+
+\paragraph{The ceiling this imposes.}  At $|\mathbf{k}| = 600$,
+$\bV_{du}$ and $\bV_{ud}$ are each $2.0\times10^{6}$ while the eigenvalues of
+their product are only $79^2$ --- a nine-order cancellation.  The similarity
+$\mathrm{eig}(\bV) = \mathrm{eig}(\dA)$, which is exact in theory, degrades
+accordingly: $1.5\times10^{-15}$, $4.2\times10^{-13}$, $3.5\times10^{-8}$,
+$2.0$ at $|\mathbf{k}| = 2,\,20,\,200,\,600$.  \textbf{The mode basis is sound to
+$|\mathbf{k}|\approx200$ here, about $35$ times the $S$ wavenumber, and not
+beyond.}  Whether that is a real limit depends on the lateral resolution the
+scatterer demands, $|\mathbf{k}|_{\max}\sim\pi N/a$, and so it is recorded as a
+range rather than dismissed.
+
+\paragraph{What it suggests.}  Where the modes coalesce, the mode basis is the
+wrong basis, and the remedy is not to condition $\bV$ but to avoid forming it:
+march an impedance in the physical $(\bu,\bta_3)$ variables, where
+$\mathbf{D}_z$ never appears and the coefficient matrices are the blocks of
+$\bA + \dA$ themselves, polynomial in $\mathbf{k}$.  That is what the existing
+Riccati solver and the classical imbedding codes do.  \emph{This is an
+inference, not a measurement} --- the impedance form has not been built or
+gated here --- and it is recorded as the next thing to test rather than as a
+result.
+
 \subsection{Where the lateral coupling enters}\label{sec:imbedlateral}
 
 A cube is not laterally invariant, so $\dA$ depends on $x$ and $y$ and couples
@@ -2783,6 +2896,15 @@ slab & the Navier route reproduces the package's amplification factors & 1\\
        spoiling the channel the cubic one gets right & 2\\
           & the one-pass assembly reproduces the density channel & 1\\
 \midrule
+Riccati & $\dA$ is $12/36$ sparse, the compliance block diagonal & 2\\
+  blocks & $\bV$ built two ways, the row scaling cancelling & 1\\
+  & $\bV$ is quasi-Hamiltonian \eqref{eq:vham} & 1\\
+  & the linear part is oscillatory inside the window, stiff outside & 2\\
+  & $\mathrm{eig}(\bV)\propto\Lambda$ but $\|\bV\|$ does not, and balancing
+    cannot fix it & 2\\
+  & $\mathrm{cond}(\mathbf{D}_z)\sim|\mathbf{k}|^2$ from $P$/$S$ coalescence,
+    with the ceiling recorded & 3\\
+\midrule
 layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
   $\boldsymbol\Gamma$ & zero-contrast cuts are harmless, so any depth is reachable & 1\\
   & the bridge identity at depths on no lattice & 1\\
@@ -2802,7 +2924,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, the layered $\boldsymbol\Gamma$
+comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the layered $\boldsymbol\Gamma$
 $8/8$, and the propagator gate exits clean.}
 \end{center}
 
