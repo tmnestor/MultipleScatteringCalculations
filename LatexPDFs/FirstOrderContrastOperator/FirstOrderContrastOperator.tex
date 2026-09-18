@@ -53,6 +53,7 @@
 \newcommand{\Jsix}{\mathbf{J}_{6}}
 \newcommand{\Isix}{\mathbf{I}_{6}}
 \newcommand{\Oh}{O_{h}}
+\newcommand{\bR}{\mathbf{R}}
 
 \title{\bfseries The First-Order Contrast Operator\\[4pt]
 \large The elastodynamic matrix--vector wave equation as a route to the\\
@@ -2542,6 +2543,164 @@ projection and a projection can be satisfied for uninteresting reasons.  Moving
 the contrast \emph{below} the receiver instead sends an upgoing field back, and
 $\|\bP_u\Delta\|/\|\Delta\|$ rises from $10^{-16}$ to
 $1.9\times10^{-1}$--$4.8\times10^{-1}$: twelve orders, on the same geometry.
+
+%=====================================================================
+\section{From the integral equation to invariant
+imbedding}\label{sec:imbedding}
+
+\begin{quote}
+\small\itshape
+Status.  The equivalence of \S\ref{sec:leibniz} is a derivation, and its pivot
+--- that the jump is exactly $\Isix$ --- is measured, at
+$7\times10^{-14}$.  The Riccati equation \eqref{eq:riccatiR} is derived here and
+is \emph{not yet implemented in this route}: the existing implementation is the
+sibling repository's layer recursion, which is the same object discretised.  The
+lateral generalisation of \S\ref{sec:imbedlateral} is neither implemented nor
+gated, and is written down to fix what would have to be built.
+\end{quote}
+
+\subsection{The kernel is one-sided, so the integral equation splits}
+\label{sec:leibniz}
+
+The propagator of \S\ref{sec:thesisspectral} is one-sided by construction:
+downgoing projectors below the source, upgoing above,
+\begin{equation}\label{eq:onesided}
+  \boldsymbol\Gamma(z-z') =
+  \begin{cases}
+    +\sum_{i\,\in\,\text{down}} e^{\lambda_i (z-z')}\,\bP_i, & z>z',\\[2pt]
+    -\sum_{i\,\in\,\text{up}} e^{\lambda_i (z-z')}\,\bP_i,   & z<z',
+  \end{cases}
+  \qquad \bP_d + \bP_u = \Isix .
+\end{equation}
+The Lippmann--Schwinger equation therefore splits at the \emph{receiver} --- down
+from above, up from below:
+\begin{equation}\label{eq:lssplit}
+  \bq(z) = \bq^{0}(z)
+  + \int_{-\infty}^{z}\!\boldsymbol\Gamma_{d}(z-z')\,\dA(z')\,\bq(z')\,dz'
+  + \int_{z}^{\infty}\!\boldsymbol\Gamma_{u}(z-z')\,\dA(z')\,\bq(z')\,dz' .
+\end{equation}
+
+Both limits of integration move with $z$, so differentiating
+\eqref{eq:lssplit} produces two Leibniz boundary terms in addition to the
+interior derivative:
+\begin{equation}\label{eq:leibniz}
+  \partial_z\bq =
+  \underbrace{\bA\bq^{0}}_{\partial_z\bq^{0}}
+  + \underbrace{\bA\,(\bq-\bq^{0})}_{\partial_z\boldsymbol\Gamma\,=\,\bA\boldsymbol\Gamma}
+  + \underbrace{\boldsymbol\Gamma_{d}(0^{+})\,\dA\,\bq}_{\text{upper limit}}
+  - \underbrace{\boldsymbol\Gamma_{u}(0^{-})\,\dA\,\bq}_{\text{lower limit}} .
+\end{equation}
+By \eqref{eq:onesided} the two boundary terms are $\bP_d\,\dA\,\bq$ and
+$+\bP_u\,\dA\,\bq$, and they sum to $(\bP_d+\bP_u)\dA\,\bq = \Isix\,\dA\,\bq$.
+Hence
+\begin{equation}\label{eq:lsisode}
+  \boxed{\;\partial_z\bq = \bigl[\bA + \dA(z)\bigr]\bq\;}
+\end{equation}
+--- the integral equation and the local first-order system with the \emph{total}
+operator are the same statement.
+
+Two things are worth naming about \eqref{eq:lsisode}.
+
+\paragraph{The jump is load-bearing, not bookkeeping.}  The coefficient of
+$\dA$ in \eqref{eq:lsisode} is exactly one \emph{because} $\bP_d+\bP_u = \Isix$.
+Any other normalisation of $\boldsymbol\Gamma$ would leave a constant standing
+there and the equivalence would be false.  That is the quantity
+\eqref{eq:jumpmeasured} measures on the stratified object, at
+$7\times10^{-14}$ and flat in $\delta$; \S\ref{sec:layered} presents it as
+closing a convention question, and this is the reason it was worth closing.
+
+\paragraph{What the integral form carries that the ODE does not.}  The ODE needs
+boundary conditions; \eqref{eq:lssplit} already has them, in the one-sidedness of
+its kernel --- radiation at $\pm\infty$ is built into which projectors appear on
+which side.  The integral equation is the ODE \emph{plus} its boundary
+conditions, which is exactly why it is the useful form to discretise.
+
+\subsection{One-sidedness makes the discretised operator tridiagonal}
+
+Because the kernel is one-sided, a depth discretisation of \eqref{eq:lssplit}
+couples only neighbouring depths.  The thesis states this directly: in
+Chapter~5 the array $(\bI - \mathcal{S}_{int}\mathcal{E})$ --- the discretised
+Lippmann--Schwinger operator --- is \emph{block tridiagonal}
+(\texttt{GstratRep.tex}, eq.~\texttt{Amat}), and block-tridiagonal elimination
+\emph{is} the Riccati recursion, given there as Algorithm~5.1.  The
+Introduction names the connection: Riccati factorisation for discretely layered
+media is ``implicit in the invariant embedding schemes of Kennett~(1984),
+Tromp \& Snieder~(1988)'', after Chin, Hedstrom \& Thigpen~(1984) and Ha~(1985).
+
+So the three descriptions --- the split integral equation, the two-point
+boundary-value ODE, and the invariant imbedding --- are one object seen three
+ways, and the sibling repository's sweep is its discretisation.
+
+\subsection{The imbedding equation}
+
+Write \eqref{eq:lsisode} in mode coordinates, $\bq = \mathbf{D}_z\mathbf{a}$ with
+$\mathbf{a} = (\mathbf{a}_d,\mathbf{a}_u)$ split by the column ordering of
+\eqref{eq:specA}, and let
+$\bV = \mathbf{D}_z^{-1}\,\dA\,\mathbf{D}_z$ carry the same block structure:
+\begin{equation}\label{eq:modeode}
+  \mathbf{a}_d' = \Lambda_d\mathbf{a}_d + \bV_{dd}\mathbf{a}_d + \bV_{du}\mathbf{a}_u,
+  \qquad
+  \mathbf{a}_u' = \Lambda_u\mathbf{a}_u + \bV_{ud}\mathbf{a}_d + \bV_{uu}\mathbf{a}_u .
+\end{equation}
+Define $\bR(z)$ as the operator returning the upgoing amplitude produced by
+everything \emph{below} $z$ in response to the downgoing amplitude there,
+$\mathbf{a}_u(z) = \bR(z)\,\mathbf{a}_d(z)$.  Substituting into
+\eqref{eq:modeode} and requiring the result to hold for every $\mathbf{a}_d$
+gives the matrix Riccati equation
+\begin{equation}\label{eq:riccatiR}
+  \bR' = \bV_{ud}
+        + \Lambda_u\bR - \bR\,\Lambda_d
+        + \bV_{uu}\bR - \bR\,\bV_{dd}
+        - \bR\,\bV_{du}\,\bR ,
+  \qquad \bR = \mathbf{0} \ \text{below the heterogeneity}.
+\end{equation}
+The initial condition is the radiation condition, and it is literally the
+sibling repository's \texttt{Y[M+1] = 0}: nothing comes back from the radiating
+half-space, so the sweep starts from zero reflection and marches up.
+
+\paragraph{Why this is the stable form.}  $\bR$ is a reflection operator and is
+bounded --- in an energy norm, $\|\bR\|\le1$ for a passive medium --- so
+integrating \eqref{eq:riccatiR} never forms a growing exponential.  A propagator
+matrix does form one, which is the Thomson--Haskell instability and is what the
+discarded build of \S\ref{sec:layered} ran into at
+$\mathrm{cond} = 9.0\times10^{15}$.  The nonlinearity $-\bR\bV_{du}\bR$ is not a
+complication to be removed: it is the resummation of the two-way multiple
+scattering, and it is what keeps the marched quantity bounded.
+
+\subsection{What this replaces, and what it does not}
+
+For a laterally invariant contrast, \eqref{eq:riccatiR} supersedes the moment
+assembly this note has been building toward.  There is no moment integral, no
+split-and-subtract, and --- the substantive point --- \textbf{no ultraviolet
+treatment at all}.  The delta has been absorbed \emph{analytically}, by the
+Leibniz boundary terms of \eqref{eq:leibniz}, rather than subtracted
+numerically.  Everything in \S\ref{sec:acmoment} exists to handle a singularity
+that, in this formulation, never has to be represented.
+$\boldsymbol\Gamma$ stops being an object to build and becomes an object to
+factorise.
+
+That is a statement about the \emph{background}, and it is worth being exact
+about how far it reaches.  It does not retire the single-site $T$: a compact
+scatterer in a Foldy--Lax solve needs a $T_0$, and a $T_0$ is not what a depth
+march produces.  The two decompositions answer different questions, and the
+moment route remains the one that answers the second.
+
+\subsection{Where the lateral coupling enters}\label{sec:imbedlateral}
+
+A cube is not laterally invariant, so $\dA$ depends on $x$ and $y$ and couples
+lateral wavenumbers.  Then $\bV$ in \eqref{eq:modeode} is an operator in
+$\mathbf{k}_\perp$ as well as in mode index, and $\bR$ becomes a matrix on
+$(\text{3 modes})\times(\text{lateral grid})$.
+
+The structure survives exactly: \eqref{eq:riccatiR} is unchanged in form, and
+the tridiagonality in depth is untouched, because one-sidedness in $z$ is a
+property of the kernel and not of the contrast.  What changes is that each block
+goes dense in $\mathbf{k}_\perp$, and $\bR\,\bV_{du}\,\bR$ --- two dense products
+per step --- becomes the cost.  That term is also where a near-field
+preconditioner would act, and it is the reason such a preconditioner is
+effective on an imbedding scheme specifically: it conditions the quadratic term
+that carries the strong scattering, which is the axis a directional-sweep
+architecture does not touch at all.
 
 %=====================================================================
 \section{Summary of checks}
