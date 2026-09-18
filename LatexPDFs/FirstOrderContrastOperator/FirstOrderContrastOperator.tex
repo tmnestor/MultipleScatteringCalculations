@@ -297,10 +297,14 @@ control that corrupts precisely this ordering.
 \section{\texorpdfstring{$\Aop$}{A} against the thesis, and against the
 published operator form}\label{sec:against}
 
-Two independent objects are used here and neither is derived in this note: the
-thesis system matrix \cite{nestor1996}, and the operator form of the
-matrix--vector wave equation whose Appendix~J supplies the published
-matrices \cite{mvwe}.
+One object is used here and not derived in this note: the thesis system matrix
+\cite{nestor1996}.  The published matrix--vector operator form \cite{mvwe} is
+\emph{not} a second source.  It contains nothing beyond the thesis --- the two
+are the same object under one constant similarity transform, as
+\eqref{eq:similarity} shows entry by entry --- and it is used here for the one
+thing an independent publication of the same result is good for: corroboration.
+Two derivations made separately and agreeing is evidence; it is not a
+contribution, and nothing in this note rests on it.
 
 \begin{quote}
 \textbf{A note on where this starts.}  An earlier version of this note presented
@@ -1356,10 +1360,8 @@ the augmentation buys, and it is taken up there.)
 The divergence is not an artefact to be trimmed.  A delta function in real space
 is a constant in $k$-space, so the non-decaying tail of the integrand \emph{is}
 the Eshelby term of \S\ref{sec:moments}.  A bare cutoff discards precisely the
-piece whose omission reverses the sign of the depolarisation.  The remedy is
-\textbf{ultraviolet subtraction} --- \emph{a standard technique, borrowed here
-and not devised here} \cite{uvsub} --- in which a non-decaying $k$-space
-integrand is split into a convergent remainder and an asymptote that is
+piece whose omission reverses the sign of the depolarisation.  The remedy is to
+split the integrand into a convergent remainder and an asymptote that is
 integrated in closed form:
 \begin{equation}\label{eq:splitsub}
   I(\mathbf{k}) = \bigl[I(\mathbf{k}) - I_\infty(\mathbf{k})\bigr] + I_\infty(\mathbf{k}),
@@ -1370,6 +1372,18 @@ the whole plane, where the delta content resides.  The asymptote is taken of the
 $z$-integrated kernel \eqref{eq:T00}--\eqref{eq:T11}, with the box form factors
 kept exact: they are what makes the remainder converge, so expanding them would
 defeat the subtraction.
+
+\paragraph{Where the credit sits.}  Subtracting a non-decaying asymptote and
+integrating it in closed form rather than truncating it is ordinary practice,
+not a result.  What is borrowed is the \emph{physics} that makes it the right
+move here: that the non-decaying tail is the delta at $r=0$, and that dropping
+it reverses the sign of the depolarisation, is Eshelby's
+\cite{eshelby1957,mura1987}, and this note takes it from there rather than
+rediscovering it.  What is new is only the setting --- the horizontal
+wavenumber integrals that the first-order formulation mandates, in which the
+tail arises from the two contrast operators rather than from a quoted inclusion
+tensor.  ``Split-and-subtract'' is used below as a shorthand for that
+arrangement and is a label, not a citation.
 
 \subsubsection{The scaling that makes the expansion uniform}
 
@@ -3331,10 +3345,13 @@ supplies what the moment method cannot.
 \begin{quote}
 \small\itshape
 Standing rule for this note: a technique that is \emph{borrowed} rather than
-derived here carries an author--date reference at the point it is used.  Two
-entries below are marked \textbf{TO SUPPLY}: their bibliographic details have
-not been verified against a library and must be before this note is circulated.
-Nothing in this list should be quoted from here without that check.
+derived here carries an author--date reference at the point it is used.  The
+converse matters too --- a technique that is \emph{not} borrowed must not be
+dressed as though it were, and a name coined in this note is a label, not a
+citation.  One entry below is marked \textbf{TO SUPPLY}.  The remaining details
+are from memory and have \emph{not} been verified against a library; they must
+be before this note is circulated, and nothing in this list should be quoted
+from here without that check.
 \end{quote}
 
 \begin{thebibliography}{99}\small
@@ -3384,15 +3401,11 @@ Nothing in this list should be quoted from here without that check.
 \bibitem{tromp1988} Tromp, J. \& Snieder, R. (1988).  Cited via the thesis
   Introduction for invariant embedding.
 
-\bibitem{uvsub} \textbf{TO SUPPLY}.  The reference for \textbf{ultraviolet
-  subtraction} --- splitting a non-decaying $k$-space integrand into a
-  numerically convergent remainder plus an asymptote integrated in closed form,
-  \eqref{eq:splitsub}.  This technique is borrowed, not devised here, and the
-  note must say from where.
-
-\bibitem{mvwe} \textbf{TO SUPPLY}.  The matrix--vector wave equation paper
-  whose Appendix~J supplies the operator form of $\Aop$ validated in
-  \S\ref{sec:against}.
+\bibitem{mvwe} \textbf{TO SUPPLY}.  The published matrix--vector operator form
+  of the elastodynamic system, compared against in \S\ref{sec:against}.  Cited
+  as \emph{corroboration only}: it contains nothing beyond \cite{nestor1996},
+  being the same object under one constant similarity transform, and nothing
+  here depends on it.
 
 \bibitem{nestor1996} Nestor, T.~M. (1996).  PhD thesis, Australian National
   University.  The source of (Akdef), (ATdef), (eigDef), (kzcDef), (specA),
