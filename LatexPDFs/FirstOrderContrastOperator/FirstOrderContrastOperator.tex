@@ -55,6 +55,7 @@
 \newcommand{\Oh}{O_{h}}
 \newcommand{\bR}{\mathbf{R}}
 \newcommand{\bY}{\mathbf{Y}}
+\newcommand{\bM}{\mathbf{M}}
 
 \title{\bfseries The First-Order Contrast Operator\\[4pt]
 \large The elastodynamic matrix--vector wave equation as a route to the\\
@@ -2862,6 +2863,62 @@ exact.  What it does not do is fail.  \textbf{The usable range goes from
 $|\mathbf{k}|\approx200$ to beyond $6000$ --- a factor of thirty --- and the
 failure mode changes from losing the branch to losing digits slowly.}
 
+\subsection{Marching it through a slab, and scoring
+it}\label{sec:impmarch}
+
+\S\ref{sec:impedance} only ever solved the \emph{algebraic} Riccati equation, in
+a homogeneous medium.  This is the march: integrate \eqref{eq:impedance} upward
+from the base of a slab, starting from the downgoing impedance of the background
+half-space --- the radiation condition, and the continuum form of
+$\mathbf{Y}_{M+1}=0$ --- then read a reflection matrix off the result using
+continuity of $\bu$ and $\bta_3$ and nothing else,
+\begin{equation}\label{eq:rfromy}
+  \bR = -\bigl(\mathbf{T}_u - \bY\,\mathbf{U}_u\bigr)^{-1}
+         \bigl(\mathbf{T}_d - \bY\,\mathbf{U}_d\bigr).
+\end{equation}
+Two integrators are carried so that each checks the other.  For a
+piecewise-constant medium the step is a \emph{linear-fractional transform} and
+is exact,
+\begin{equation}\label{eq:mobius}
+  \bY_{\text{top}} = \bigl(\bM_{21} + \bM_{22}\bY_{\text{bot}}\bigr)
+                     \bigl(\bM_{11} + \bM_{12}\bY_{\text{bot}}\bigr)^{-1},
+  \qquad \bM = e^{-\bA h},
+\end{equation}
+so one step settles a uniform slab outright; RK4 applied to
+\eqref{eq:impedance} directly never forms $e^{-\bA h}$ at all, and is the
+control.
+
+\paragraph{Absolute, before anything relative.}  At normal incidence one step of
+\eqref{eq:mobius} reproduces the closed form to $1.4\times10^{-16}$,
+$4.5\times10^{-16}$ and $3.8\times10^{-15}$ at contrasts of $+2\%$, $+10\%$ and
+$+40\%$ --- with no discretisation in it anywhere.  RK4 then converges on the
+same answer at ratios $11.4,\,15.3,\,15.9,\,15.9$: fourth order, confirming that
+\eqref{eq:impedance} is what is being integrated.
+
+\paragraph{Against Kennett.}  The thesis and Kennett amplitude conventions
+differ by a fixed matrix, and what is testable is that it is fixed --- a
+convention cannot depend on angle.  Across $\sin i = 0$ to $0.75$ the three
+diagonal ratios are constant to $4.6\times10^{-14}$, and equal
+$(-1,-1,+1)$ to $4.8\times10^{-14}$.  \textbf{The $SH$ sign does not flip where
+$P$--$SV$ does}; the split is real, and lumping the three together is what made
+this gate's first run report a spurious $2.000$.  The collocation route of
+\S\ref{sec:layer} reaches the same three constants, $(-1.000042,\,-1.000166,\,
++1.000166)$ at $120$ cells, by an entirely different path --- so this is a
+cross-check between two independent routes rather than a fitted offset, and the
+march reaches it ten orders more sharply.  The constants survive past both
+critical slownesses, where the march has to carry evanescence.
+
+\paragraph{The graded slab, which is the point.}  A uniform slab never needed a
+march.  Grade the contrast with depth and no closed form exists --- while
+Kennett, cut at the \emph{same} depths, is solving the identical
+piecewise-constant problem.  The two must therefore agree to the arithmetic
+floor at finite step count, not merely converge together, and they do:
+$3.6\times10^{-15}$, $2.2\times10^{-15}$ and $1.1\times10^{-14}$ at $4$, $16$
+and $64$ steps, at normal and oblique incidence alike.  Reversing the depth
+profile --- same layers, same thicknesses, reordered --- changes $\bR$ by
+$50\%$, so the agreement is not the insensitivity of a march that cannot see
+where the contrast sits.
+
 \subsection{Where the lateral coupling enters}\label{sec:imbedlateral}
 
 A cube is not laterally invariant, so $\dA$ depends on $x$ and $y$ and couples
@@ -2976,6 +3033,14 @@ impedance & \eqref{eq:impedance} is satisfied by the $\mathbf{D}_z$ impedance & 
   & $\mathrm{cond}(\bY) = O(1)$; the static limit is $\omega$-independent & 2\\
   & the arbiter: $\bY$ reproduces $k_{z,P}$ and $k_{z,S}$ to $|\mathbf{k}|=6000$ & 2\\
 \midrule
+impedance & one exact step \eqref{eq:mobius} reproduces the closed form & 1\\
+  march & RK4 on \eqref{eq:impedance} converges at fourth order & 2\\
+  & the conventions are $(-1,-1,+1)$, constant across slowness, and
+    agree with the collocation route & 2\\
+  & they survive past both critical slownesses & 1\\
+  & the GRADED slab matches Kennett to the floor at every mesh & 1\\
+  & reversing the profile changes $\bR$ by $50\%$ & 1\\
+\midrule
 layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
   $\boldsymbol\Gamma$ & zero-contrast cuts are harmless, so any depth is reachable & 1\\
   & the bridge identity at depths on no lattice & 1\\
@@ -2995,7 +3060,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, the layered $\boldsymbol\Gamma$
+comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, its march $8/8$, the layered $\boldsymbol\Gamma$
 $8/8$, and the propagator gate exits clean.}
 \end{center}
 
