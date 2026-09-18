@@ -54,6 +54,7 @@
 \newcommand{\Isix}{\mathbf{I}_{6}}
 \newcommand{\Oh}{O_{h}}
 \newcommand{\bR}{\mathbf{R}}
+\newcommand{\bY}{\mathbf{Y}}
 
 \title{\bfseries The First-Order Contrast Operator\\[4pt]
 \large The elastodynamic matrix--vector wave equation as a route to the\\
@@ -2557,10 +2558,10 @@ the \emph{march} is not yet implemented in this route: the existing
 implementation is the sibling repository's layer recursion, which
 \S\ref{sec:stiff} identifies as the same object discretised.  Its coefficient
 matrices, however, are built and gated --- \S\ref{sec:vblocks} to
-\S\ref{sec:nonnormal} report measurements, not expectations.  The impedance
-alternative at the end of \S\ref{sec:nonnormal} and the lateral generalisation
-of \S\ref{sec:imbedlateral} are neither implemented nor gated, and are written
-down to fix what would have to be built.
+\S\ref{sec:impedance} report measurements, not expectations, including the
+impedance form and the wavenumber range it reaches.  What remains unbuilt is the
+march itself and the lateral generalisation of \S\ref{sec:imbedlateral}, which
+is written down to fix what would have to be built.
 \end{quote}
 
 \subsection{The kernel is one-sided, so the integral equation splits}
@@ -2792,11 +2793,74 @@ range rather than dismissed.
 wrong basis, and the remedy is not to condition $\bV$ but to avoid forming it:
 march an impedance in the physical $(\bu,\bta_3)$ variables, where
 $\mathbf{D}_z$ never appears and the coefficient matrices are the blocks of
-$\bA + \dA$ themselves, polynomial in $\mathbf{k}$.  That is what the existing
-Riccati solver and the classical imbedding codes do.  \emph{This is an
-inference, not a measurement} --- the impedance form has not been built or
-gated here --- and it is recorded as the next thing to test rather than as a
-result.
+$\bA + \dA$ themselves, polynomial in $\mathbf{k}$.  \S\ref{sec:impedance}
+builds it and finds that it does clear the ceiling.
+
+\subsection{The impedance form, and the ceiling cleared}\label{sec:impedance}
+
+\begin{quote}
+\small\itshape
+A correction.  An earlier draft of the paragraph above asserted that marching an
+impedance ``is what the existing Riccati solver and the classical imbedding
+codes do''.  The survey that preceded this subsection found otherwise: no matrix
+impedance exists in this package, in the sibling repository, or in the thesis.
+What exists is a \emph{scalar} $SH$ impedance used as an eigenvector
+normalisation convention, and two Riccati sweeps --- both of which march a
+reflection matrix in \emph{mode amplitudes}.  The claim has been withdrawn and
+the construction below is new.
+\end{quote}
+
+Split $\bq = (\bu,\bta_3)$ and $\bA$ into $3\times3$ blocks, and let
+$\bta_3 = \bY\bu$.  Then $\bu' = (\bA_{11}+\bA_{12}\bY)\bu$ and
+$\bta_3' = (\bA_{21}+\bA_{22}\bY)\bu$, while $\bta_3' = \bY'\bu + \bY\bu'$, so
+\begin{equation}\label{eq:impedance}
+  \bY' = \bA_{21} + \bA_{22}\bY - \bY\bA_{11} - \bY\bA_{12}\bY .
+\end{equation}
+The coefficients are the blocks of $\bA$ itself, polynomial in $\mathbf{k}$,
+with no eigenvectors anywhere.  In a homogeneous medium $\bY'=0$ and
+\eqref{eq:impedance} becomes an algebraic Riccati equation whose stabilising
+solution is the downgoing half-space impedance; the equation is confirmed by
+checking that the impedance read off $\mathbf{D}_z$ satisfies it, to
+$10^{-14}$, where $\mathbf{D}_z$ is still trustworthy.
+
+\paragraph{Why it behaves differently, in one line.}  $\bV$ needs the
+\emph{full} inverse $\mathbf{D}_z^{-1}$, which mixes up- and downgoing and is
+where the cancellation lives.  $\bY = \mathbf{T}_d\mathbf{U}_d^{-1}$ needs only
+the three \emph{downgoing} columns.  Measured side by side over
+$|\mathbf{k}| = 2$ to $6000$: the impedance residual tracks
+$\mathrm{cond}(\mathbf{U}_d)\,\epsilon$ linearly, reaching
+$7.2\times10^{-10}$, while $\bV$ returns $2.000$ from
+$|\mathbf{k}| = 600$ on.  That $2.000$ is $|{-}ik_z - ik_z|/|k_z|$: a lost
+branch, not a lost digit.
+
+\paragraph{Refining with $\bA$ alone.}  Newton's method on
+\eqref{eq:impedance} --- the correction solving a Sylvester equation built from
+$\bA$ --- holds the residual at $10^{-16}$ at \emph{every} wavenumber tested.
+The division of labour is the natural one: $\mathbf{D}_z$ is analytic, so it
+names the right branch however imprecise it has become, and $\bA$ supplies the
+precision.  Continuation in $|\mathbf{k}|$ was tried instead of a
+$\mathbf{D}_z$ start and \emph{flipped branch} at $\omega/\alpha$, returning the
+upgoing root; the arbiter caught it at exactly $2.000$.  The branch is then
+confirmed without reference to $\mathbf{D}_z$ at all, by requiring every
+eigenvalue of $\bA_{11}+\bA_{12}\bY$ to have negative real part.
+
+\paragraph{$\bY$ is bounded, where $\bV$ was not.}  This is the whole
+difference.  $\|\bY\|/\mu|\mathbf{k}|$ converges to $1.529022$ and
+$\mathrm{cond}(\bY)$ to $2.0000$ across four decades --- the elastostatic
+half-space stiffness, $O(1)$ conditioning, no growth relative to its own
+spectrum.  The limit is also $\omega$-independent, as a static limit must be:
+two frequencies a factor of four apart agree to $7.9\times10^{-6}$ at
+$|\mathbf{k}| = 6000$, converging as $|\mathbf{k}|^{-2}$.
+
+\paragraph{The arbiter, and the verdict.}  Self-consistency would not settle
+this, so $\bY$ is scored against an independently known analytic quantity:
+$\mathrm{eig}(\bA_{11}+\bA_{12}\bY)$ must be $\{ik_{z,P},ik_{z,S},ik_{z,S}\}$
+with $k_{z,c}$ from (kzcDef) in closed form.  The impedance holds it to
+$3.4\times10^{-10}$ at $|\mathbf{k}| = 6000$, drifting as about
+$|\mathbf{k}|^{1.6}$ from $2\times10^{-13}$ at $|\mathbf{k}| = 60$.  It is not
+exact.  What it does not do is fail.  \textbf{The usable range goes from
+$|\mathbf{k}|\approx200$ to beyond $6000$ --- a factor of thirty --- and the
+failure mode changes from losing the branch to losing digits slowly.}
 
 \subsection{Where the lateral coupling enters}\label{sec:imbedlateral}
 
@@ -2905,6 +2969,13 @@ Riccati & $\dA$ is $12/36$ sparse, the compliance block diagonal & 2\\
   & $\mathrm{cond}(\mathbf{D}_z)\sim|\mathbf{k}|^2$ from $P$/$S$ coalescence,
     with the ceiling recorded & 3\\
 \midrule
+impedance & \eqref{eq:impedance} is satisfied by the $\mathbf{D}_z$ impedance & 1\\
+  & $\bY$ degrades linearly where $\bV$ fails outright & 2\\
+  & Newton on $\bA$ alone holds the residual at the floor & 1\\
+  & and lands on the downgoing root, tested without $\mathbf{D}_z$ & 1\\
+  & $\mathrm{cond}(\bY) = O(1)$; the static limit is $\omega$-independent & 2\\
+  & the arbiter: $\bY$ reproduces $k_{z,P}$ and $k_{z,S}$ to $|\mathbf{k}|=6000$ & 2\\
+\midrule
 layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
   $\boldsymbol\Gamma$ & zero-contrast cuts are harmless, so any depth is reachable & 1\\
   & the bridge identity at depths on no lattice & 1\\
@@ -2924,7 +2995,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the layered $\boldsymbol\Gamma$
+comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, the layered $\boldsymbol\Gamma$
 $8/8$, and the propagator gate exits clean.}
 \end{center}
 
