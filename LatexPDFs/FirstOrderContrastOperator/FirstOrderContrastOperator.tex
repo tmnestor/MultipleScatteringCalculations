@@ -111,7 +111,7 @@ the shared lattice error is refined away} --- which is what distinguishes a real
 advantage from an accidental cancellation (\S\ref{sec:whichbetter}).
 
 Every claim below is backed by an executable check; the scripts report $25/25$,
-$44/44$, $14/14$, $17/17$, $9/9$, $7/7$, $7/7$ and $4/4$, and a separate gate binds the
+$44/44$, $14/14$, $17/17$, $9/9$, $7/7$, $7/7$ and $11/11$, and a separate gate binds the
 numerical propagator to the derived $\Aop$.  Section~\ref{sec:open} states
 plainly what is \emph{not} yet established.
 \end{abstract}
@@ -2033,7 +2033,8 @@ remain checked only against other formulations.
 \end{quote}
 
 %=====================================================================
-\section{The shear moment \texorpdfstring{$B$}{B}, read off}\label{sec:bmoment}
+\section{The static moments \texorpdfstring{$A$, $B$ and $C$}{A, B and C},
+read off}\label{sec:bmoment}
 
 This is what Task~1 was for: the cube's propagator moment obtained from
 $\partial_3\bq = \Aop\bq + \bd$ rather than from the Kelvin tensor, and compared
@@ -2102,6 +2103,85 @@ bounds the quadrature and is not a discrepancy.}
 
 Dropping the two factors of $i$ returns $-1.000275\times B$: the control flips the
 sign exactly, as it must.
+
+\subsection{\texorpdfstring{$A$ and $C$}{A and C}, and the delta they
+carry}\label{sec:acmoment}
+
+The same index map gives the other two with lateral derivatives alone:
+\begin{equation}
+  I_{xxyy} = A, \qquad I_{xxxx} = A + 2B + C,
+\end{equation}
+so nothing here needs $\partial_z$ either.  What they do have, and $B$ does not,
+is the Eshelby delta.  It lives in the $\delta_{ij}$ channels; $B$ has $i\neq j$
+and so carries none, which is why its integral converges outright while these
+two do not.  \emph{Convergence tracking the delta's presence is a check on the
+setup in itself.}
+
+\subsubsection*{The split closes by representation, not by magnitude}
+
+Since $\widehat{g}\to C(\theta)/k^2$, the asymptotic integrand is
+\begin{equation}\label{eq:asymint}
+  -k_x^2 F(\mathbf{k})\,\frac{C(\theta)}{k^2}
+  = -\cos^2\!\theta\; C(\theta)\, F(\mathbf{k}),
+\end{equation}
+a function of \emph{direction} only.  Its $k$-space integral is a pure pole with
+no finite part, so adding it back restores exactly the divergence the
+subtraction was introduced to remove: \textbf{the split cannot be closed in
+$k$-space at all}, as \S\ref{sec:propmom} already found for the tail there.  It
+closes by representation instead.
+
+\emph{The remainder stays in $k$}, and is regular at the origin --- which is the
+point, because $-k_x^2$ times $-C/k^2$ is $+\cos^2\!\theta\,C$, bounded.  No
+taper, no cutoff, no matching of one region to another: it is independent of the
+box half-width to seven digits across a fourfold change, where the unsubtracted
+integral drifted by per cent.
+
+\emph{The local part goes to real space.}  Writing
+$h(\theta) = -\cos^2\!\theta\,C(\theta) = \sum_n h_n e^{in\theta}$, the $n=0$
+term is a delta contributing $h_0\,\mathbf{1}_S(0) = h_0$.  For $n\neq0$ the
+inverse transform of $e^{in\theta}$ is a homogeneous distribution of degree
+$-2$,
+\begin{equation}\label{eq:pvdipole}
+  \check{f}_n(r,\varphi) = \frac{(-i)^n |n|}{2\pi}\,\frac{e^{in\varphi}}{r^{2}},
+  \qquad \int_0^\infty\! k\,J_n(kr)\,dk = \frac{|n|}{r^{2}},
+\end{equation}
+whose principal-value integral over the square is elementary, the $\ln\epsilon$
+of $\int_\epsilon^R dr/r$ cancelling because $e^{in\varphi}$ has zero angular
+mean:
+\begin{equation}\label{eq:pvsquare}
+  \int_S \frac{e^{in\varphi}}{r^{2}}\,d^2x
+  = \int_0^{2\pi}\! e^{in\varphi}\,\ln R(\varphi)\,d\varphi,
+  \qquad R(\varphi) = \frac{a}{\max(|\cos\varphi|,|\sin\varphi|)} .
+\end{equation}
+$D_4$ symmetry admits $n = 0, \pm4, \pm8,\dots$, and the measurement says the
+series stops at the first of them: $n=4$ carries the whole correction and
+everything above it contributes $4\times10^{-9}$ relative.  Taking the local
+term as the delta alone is wrong by $5.5\%$, so the dipole is load-bearing and
+not decorative --- both are gated.
+
+\subsubsection*{The result, and the relations tested}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+ & first order & closed form & relative\\
+\midrule
+$A$ & $-1.2205739\times10^{-11}$ & $-1.2201107\times10^{-11}$ & $3.8\times10^{-4}$\\
+$B$ & $+2.6137524\times10^{-12}$ & $+2.6137074\times10^{-12}$ & $1.7\times10^{-5}$\\
+$C$ & $-3.5777391\times10^{-12}$ & $-3.5870553\times10^{-12}$ & $2.6\times10^{-3}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Because all three come out of $\partial_3\bq = \Aop\bq+\bd$ separately, the
+structural relations of \S\ref{sec:moments} become \emph{tests} rather than
+definitions.  On first-order numbers only, with nothing substituted from the
+closed forms:
+\begin{equation}\label{eq:relstested}
+  A \;\text{vs}\; B - \tfrac{1}{3\mu}: \; 3.8\times10^{-4},
+  \qquad
+  C \;\text{vs}\; -(5-2\pi/\!\sqrt3)\,B: \; 2.6\times10^{-3}.
+\end{equation}
 
 \subsection{Two things that nearly went wrong}
 
@@ -2383,10 +2463,14 @@ thesis & $\mathbf{D}_z^{-1}$ from \eqref{eq:dzinv} is diagonal on the thesis
          radiation reaction, from the analytic modes alone & 3\\
        & the valid range in $k$, recorded & 1\\
 \midrule
-$B$ & the batched eigenvectors are the scalar ones & 1\\
+$A,B,C$ & the batched eigenvectors are the scalar ones & 1\\
     & \eqref{eq:bsurface} pins the realisation and the sign & 1\\
     & $B$ from the first-order system matches the closed form & 1\\
     & the two factors of $i$ are load-bearing & 1\\
+    & the subtracted remainder is cutoff-independent & 1\\
+    & the local term stops at $n=4$; the dipole is load-bearing & 2\\
+    & $A$ and $C$ match their closed forms & 2\\
+    & the two structural relations, tested on first-order numbers & 2\\
 \midrule
 slab & the Navier route reproduces the package's amplification factors & 1\\
      & the advantage grows as the shared lattice error falls & 1\\
@@ -2408,7 +2492,8 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $8/8$, the slab
-comparison $7/7$, the shear moment $4/4$, and the propagator gate exits clean.}
+comparison $7/7$, the static moments $11/11$, and the propagator gate exits
+clean.}
 \end{center}
 
 %=====================================================================
@@ -2475,13 +2560,6 @@ as such, the following are \emph{open}:
       backwards-compatible change, and the right moment for it is when the
       first-order route is wired into the package proper rather than now, when
       nothing upstream in the package produces two shear amplitudes.
-\item \textbf{Only $B$ has been read off, not $A$ and $C$.}
-      \S\ref{sec:bmoment} does the shear moment because $I_{xyxy}$ realises it
-      with lateral derivatives alone.  $A$ and $C$ need $\partial_z$, hence the
-      $\Aop\boldsymbol\Gamma$ product, and are not done --- although the
-      structural relations $A = B - 1/3\mu$ and $C = -(5-2\pi/\!\sqrt3)B$, both
-      verified in \S\ref{sec:moments}, then determine them.  Obtaining them
-      independently would test those relations rather than assume them.
 \end{enumerate}
 
 \section{Where the route belongs}
