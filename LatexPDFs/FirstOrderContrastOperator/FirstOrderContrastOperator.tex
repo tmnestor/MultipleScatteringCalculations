@@ -1879,6 +1879,32 @@ guessed: with $\epsilon=1$ the product \eqref{eq:dzinv}$\,\cdot\mathbf{D}_z$ is
 diagonal --- to $1.1\times10^{-15}$, itself a test of the eigenvectors --- and
 $\epsilon_c^2$ is the reciprocal of each diagonal entry.
 
+\paragraph{The one place $\mathbf{D}_z$ is genuinely singular, and why it is not
+a difficulty.}  Reading $\epsilon_c$ off the diagonal fails where a diagonal
+entry vanishes, and that is not round-off: it is the branch point $k_{z,c} = 0$,
+at $|k| = \hat K_P$ and $|k| = \hat K_S$ exactly, where that wave type's up- and
+down-going columns coalesce and $\mathbf{D}_z$ has rank five.  It must be tested
+on $k_{z,c}$ itself and not on the spread of the diagonal --- the entries of
+$\mathbf{D}_z$ span many orders at moderate $k$, so a smallest-entry threshold
+measures dynamic range and fires where nothing is wrong.
+
+The degeneracy exists only in the lossless idealisation.  Since
+$k_{z,c}^2 = \hat K_c^2 - k^2$ and $\hat K_c = \omega/c$, it cannot vanish at
+real $k$ once $\omega$ carries an imaginary part, so the attenuation that
+\S\ref{sec:propmom} already adopts for the quadrature --- ``$\omega$ is complex
+from the outset'' --- removes the coalescence outright rather than dodging it.
+At $Q = 200$ the closest approach of $|k_{z,S}|$ across its own circle is
+$1.4\times10^{-3}$ against a scale of $2\times10^{-2}$; $\mathbf{D}_z$ inverts
+\emph{on} the circle to $1.2\times10^{-15}$, where the lossless evaluation is
+singular; and \eqref{eq:specA} is rebuilt there to $3.7\times10^{-16}$.  The
+device is the one the package already uses: putting the loss in a complex
+slowness rather than a complex $\omega$ is the same statement, since $k_{z,c}$
+depends on the two only through $\omega/c$, and the two agree to
+$6.3\times10^{-6}$ at $Q = 200$ --- the $O(Q^{-2})$ difference.  Nudging a node
+off the point remains the fallback for a deliberately lossless calculation, and
+placing a panel edge there, as the lateral gates do, is the right treatment of
+the integrable $1/\sqrt{\cdot}$ that survives in that limit.
+
 \subsection{What it removes}
 
 \begin{center}
@@ -2480,6 +2506,8 @@ thesis & $\mathbf{D}_z^{-1}$ from \eqref{eq:dzinv} is diagonal on the thesis
        & $\boldsymbol\Gamma$ reciprocal, and the Kelvin tensor with the
          radiation reaction, from the analytic modes alone & 3\\
        & the valid range in $k$, recorded & 1\\
+       & the branch point is real, and attenuation removes it; complex
+         $\omega$ is the complex slowness & 4\\
 \midrule
 $A,B,C$ & the batched eigenvectors are the scalar ones & 1\\
     & \eqref{eq:bsurface} pins the realisation and the sign & 1\\
@@ -2509,7 +2537,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \end{tabular}
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
-layer comparison $7/7$, the thesis spectral representation $8/8$, the slab
+layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, and the propagator gate exits
 clean.}
 \end{center}
