@@ -61,6 +61,7 @@ from cubic_scattering.slab_scattering import (  # noqa: E402
     SlabGeometry,
     compute_slab_scattering,
     compute_slab_tmatrices,
+    kennett_reference_matrix,
     kennett_reference_rpp,
     slab_weyl_amplitudes,
     uniform_slab_material,
@@ -69,6 +70,7 @@ from cubic_scattering.voigt_tmatrix import effective_stiffness_voigt  # noqa: E4
 from scripts.gate_first_order_tmatrix import (  # noqa: E402
     CH_DIAG,
     CH_OFF,
+    CH_OFF_XZ,
     CH_TRACE,
     channel_amp,
     coupling_first_order,
@@ -280,6 +282,86 @@ def main() -> int:
     print("    and still improving, so that figure is a lower bound.")
     report("the advantage is not cancellation: it grows as the shared error falls", monotone)
     report("the first-order T_0 is the more accurate of the two here", ratios[-1] < 1.0)
+
+    print("")
+    print("--- 5: which channel carries the improvement? ---------------------")
+    print("    STRUCTURAL FACT FIRST.  effective_stiffness_voigt takes ONE")
+    print("    Dmu*_off and writes it into all three shear slots, so the package's")
+    print("    T_0 is cubic-symmetric by construction and CANNOT represent an")
+    print("    e12/e13 split.  The symmetry-breaking part of the O(Dc^2)")
+    print("    difference is therefore excluded from this comparison already --")
+    print("    not by choice, but because there is no slot for it.  Of the four")
+    print("    channels only theta touches x3 at all; e_diag = e11 - e22 and")
+    print("    e_off = e12 are both x3-free.")
+    g3 = SlabGeometry(M=16, N_z=16, a=0.5)
+    big_h = g3.N_z * g3.d
+    con = MaterialContrast(6.0e9, 3.0e9, 300.0)
+    mat = uniform_slab_material(g3, ref, con)
+    r_k = kennett_reference_rpp(ref, con, H=big_h, omega=omega)
+    nav_a = amps_of(coupling_navier(ref.lam, ref.mu, ref.rho, con, omega, a), gmom)
+    eff = to_navier_units(coupling_first_order(ref.lam, ref.mu, ref.rho, con, omega, a), omega)
+    fo_a = amps_of(eff, gmom)
+
+    def slab_err(amps: dict[str, complex]) -> float:
+        """Relative error in R_PP for one set of amplification factors."""
+        tl = np.broadcast_to(tlocal_from_amps(con, amps, omega, a), (g3.N_z, g3.M, g3.M, 9, 9)).copy()
+        res = compute_slab_scattering(g3, mat, omega, k_hat, wave_type="P", periodic=True, T_local=tl)
+        rr = complex(slab_weyl_amplitudes(res, tl, p=p).R_P)
+        return abs(rr - r_k) / abs(r_k)
+
+    base = slab_err(nav_a)
+    print(f"    baseline (all Navier)                  err {base:.4e}   ratio 1.0000")
+    for key in ("u", "theta", "e_diag", "e_off"):
+        one = dict(nav_a)
+        one[key] = fo_a[key]
+        e1 = slab_err(one)
+        print(f"    first-order {key:7s} only               err {e1:.4e}   ratio {e1 / base:.4f}")
+    allf = slab_err(fo_a)
+    print(f"    all four first-order                   err {allf:.4e}   ratio {allf / base:.4f}")
+
+    # How much does the discarded split matter?  e12 and e13 must amplify
+    # identically under O_h; the first-order route splits them, and the package's
+    # parameterisation forces a choice.  Running both brackets the effect.
+    fo_xz = dict(fo_a)
+    fo_xz["e_off"] = channel_amp(eff, gmom, CH_OFF_XZ)
+    exz = slab_err(fo_xz)
+    split = abs(fo_a["e_off"] - fo_xz["e_off"]) / abs(fo_a["e_off"])
+    print(f"    all four, but e13 in place of e12      err {exz:.4e}   ratio {exz / base:.4f}")
+    print(f"    the e12/e13 amplitude split itself is {split:.3e}")
+    bracket = abs(exz - allf) / base
+    print(f"    so the discarded symmetry breaking is worth {bracket:.3e} of the baseline error")
+    report("the improvement survives either choice of the split channel", (exz / base) < 1.0)
+
+    print("")
+    print("--- 6: oblique incidence, where the shear channels are probed -----")
+    print("    At p = 0 a normal-incidence P wave is pure compression along z: it")
+    print("    couples to the trace and to nothing else, which is why every shear")
+    print("    channel above moved R_PP by exactly zero.  SH incidence at p /= 0")
+    print("    probes the shear channels directly, and is the only place the")
+    print("    e12/e13 split can show at all.")
+    p_ob = 1.0e-4
+    kref = kennett_reference_matrix(ref, con, H=big_h, omega=omega, p=p_ob)
+    c_ob = ref.beta
+    eta_ob = np.sqrt(1.0 / c_ob**2 - p_ob**2 + 0j)
+    khat_ob = np.array([float(np.real(eta_ob * c_ob)), p_ob * c_ob, 0.0])
+
+    def slab_sh(amps: dict[str, complex]) -> float:
+        """Relative error in R_SH for one set of amplification factors."""
+        tl = np.broadcast_to(tlocal_from_amps(con, amps, omega, a), (g3.N_z, g3.M, g3.M, 9, 9)).copy()
+        res = compute_slab_scattering(g3, mat, omega, khat_ob, wave_type="SH", periodic=True, T_local=tl)
+        rr = complex(slab_weyl_amplitudes(res, tl, p=p_ob).R_SH)
+        return abs(rr - complex(kref.R_SH)) / abs(complex(kref.R_SH))
+
+    base_sh = slab_sh(nav_a)
+    all_sh = slab_sh(fo_a)
+    xz_sh = slab_sh(fo_xz)
+    print(f"    Kennett R_SH reference at p={p_ob:.1e}")
+    print(f"    baseline (all Navier)                  err {base_sh:.4e}   ratio 1.0000")
+    print(f"    all four first-order, e12              err {all_sh:.4e}   ratio {all_sh / base_sh:.4f}")
+    print(f"    all four first-order, e13              err {xz_sh:.4e}   ratio {xz_sh / base_sh:.4f}")
+    gap = abs(xz_sh - all_sh) / base_sh
+    print(f"    the choice between e12 and e13 is worth {gap:.3e} of the baseline error")
+    report("SH incidence does probe the shear channels", gap > 1e-6 or abs(all_sh - base_sh) > 1e-6)
 
     print("")
     print("=" * 78)

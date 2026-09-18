@@ -111,7 +111,7 @@ the shared lattice error is refined away} --- which is what distinguishes a real
 advantage from an accidental cancellation (\S\ref{sec:whichbetter}).
 
 Every claim below is backed by an executable check; the scripts report $25/25$,
-$44/44$, $14/14$, $17/17$, $8/8$, $7/7$ and $3/3$, and a separate gate binds the
+$44/44$, $14/14$, $17/17$, $8/8$, $7/7$ and $5/5$, and a separate gate binds the
 numerical propagator to the derived $\Aop$.  Section~\ref{sec:open} states
 plainly what is \emph{not} yet established.
 \end{abstract}
@@ -2108,11 +2108,78 @@ Stability is not what should be expected.  As the shared error goes to zero the
 ratio should approach the $T_0$-attributable value, and monotone movement towards
 a limit --- not constancy --- is the correct signature.
 
+\subsection{Which channel carries it}\label{sec:whichchannel}
+
+The improvement can be attributed, because the substitution runs through four
+separable factors.  Replacing one at a time, at the strongest contrast and the
+finest lattice:
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+substituted & error & ratio\\
+\midrule
+none (all ordinary)      & $3.7826\times10^{-2}$ & $1.0000$\\
+$A_u$ only               & $3.7826\times10^{-2}$ & $1.0000$\\
+$A_\theta$ only          & $3.2418\times10^{-2}$ & $\mathbf{0.8570}$\\
+$A_{e,\mathrm{diag}}$ only & $3.7826\times10^{-2}$ & $1.0000$\\
+$A_{e,\mathrm{off}}$ only  & $3.7826\times10^{-2}$ & $1.0000$\\
+all four                 & $3.2418\times10^{-2}$ & $0.8570$\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{The whole of it is in $A_\theta$}, the trace --- which is the $A_{1g}$
+channel, invariant under the full cubic group.  So the advantage measured at
+normal incidence is the genuine $\Oh$-invariant resummation, and the $x_3$-
+preferring part of the $O(\Delta c^2)$ difference contributes nothing.  The
+reason is elementary once seen: a normally incident $P$ wave is pure compression
+along $z$ and never probes a shear channel at all.  At $p=0$ the measurement is
+blind to precisely the part of the formulation that singles out $x_3$.
+
+\subsection{What the \texorpdfstring{$x_3$}{x3} preference is worth, bracketed}
+
+Two facts have to be put together.  First, a structural one:
+\texttt{effective\_stiffness\_voigt} takes a \emph{single} $\Delta\mu^{*}_{\rm
+off}$ and writes it into all three shear slots, so the package's $T_0$ is
+cubic-symmetric by construction and \textbf{cannot represent an
+$e_{12}/e_{13}$ split}.  The symmetry breaking was therefore excluded from
+\S\ref{sec:whichbetter} not by choice but for want of a slot.  Second, $SH$
+incidence at $p\neq0$ does probe the shear channels, and there:
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+$SH$ at $p = 10^{-4}$ & error in $R_{SH}$ & ratio\\
+\midrule
+all ordinary                     & $4.7933\times10^{-3}$ & $1.0000$\\
+first order, $e_{12}$ amplitude  & $4.7933\times10^{-3}$ & $1.0000$\\
+first order, $e_{13}$ amplitude  & $1.8432\times10^{-3}$ & $\mathbf{0.3845}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The $e_{12}$ row reproducing the ordinary route \emph{exactly} is
+\S\ref{sec:whatitbuys} confirmed end to end: the two differ only in the traction
+channel, and the in-plane shear is untouched.  The $e_{13}$ row is the
+interesting one.  An $SH$ wave reflecting off a layer near normal incidence is
+dominated by $\partial_z u_y$ --- a $yz$ shear, the $z$-involving one --- and the
+$x_3$-distinguished amplitude gives an error $2.6$ times smaller.  The
+first-order route separates the two by $7.2\times10^{-3}$; the ordinary route
+does not separate them at all.
+
+\emph{This brackets the effect rather than realising it.}  Feeding the $e_{13}$
+amplitude through a cubic-symmetric $T_0$ writes it into the $e_{12}$ slot as
+well, which is also wrong; it is the other \emph{uniform} choice, not the split.
+A faithful first-order $T$ needs a $T_0$ of tetragonal rather than cubic
+symmetry, $e_{12} \neq e_{13} = e_{23}$ --- three shear slots where there is
+currently one.  That is a small and well-defined piece of work, and until it is
+done the $x_3$ benefit is bounded, not collected.
+
 \begin{quote}
 \textbf{The answer, with its scope.}  On the question as posed --- same geometry,
 same lattice machinery, same external reference, only $T_0$ swapped --- the
 first-order $T$ is the more accurate of the two, and the margin grows with
-contrast.  This is one geometry, one frequency, normal incidence, three
+contrast.  The part of that measured at normal incidence is entirely the
+$\Oh$-invariant resummation; the $x_3$-preferring part is separately shown to be
+worth a further factor of $2.6$ in the one channel that probes it, but cannot be
+carried by the present $T_0$.  This is one geometry, one frequency, normal incidence, three
 contrasts, and an unconverged lattice.  It scores the \emph{single-site} $T$
 only, so an error the two share is invisible by construction.  And it does not
 touch \S\ref{sec:oh}: the $\Oh$ symmetry breaking remains a genuine
@@ -2183,6 +2250,8 @@ thesis & $\mathbf{D}_z^{-1}$ from \eqref{eq:dzinv} is diagonal on the thesis
 slab & the Navier route reproduces the package's amplification factors & 1\\
      & the advantage grows as the shared lattice error falls & 1\\
      & the first-order $T_0$ is the more accurate of the two & 1\\
+     & the improvement survives either choice of the split channel & 1\\
+     & $SH$ incidence does probe the shear channels & 1\\
           & the one-pass assembly reproduces the density channel & 1\\
 \midrule
 layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
@@ -2196,7 +2265,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $8/8$, the slab
-comparison $3/3$, and the propagator gate exits clean.}
+comparison $5/5$, and the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================
@@ -2255,6 +2324,15 @@ as such, the following are \emph{open}:
       $\partial_i\partial_j G_{kl}$; those follow from the same autocorrelation
       and Duffy construction as $D_0$, with $\partial_i\partial_j$ moved onto the
       weight, but they have not been computed.
+\item \textbf{The present $T_0$ cannot carry the $x_3$ benefit.}
+      \texttt{effective\_stiffness\_voigt} has one shear slot and writes it into
+      all three, so it is cubic-symmetric by construction.
+      \S\ref{sec:whichchannel} shows the $x_3$-distinguished shear amplitude is
+      worth a factor of $2.6$ in the channel that probes it, and that this is
+      \emph{bracketed} rather than realised: passing $e_{13}$'s amplitude through
+      a cubic $T_0$ writes it into the $e_{12}$ slot as well.  Collecting it needs
+      a tetragonal $T_0$, $e_{12} \neq e_{13} = e_{23}$.  Small, well defined, not
+      done.
 \item \textbf{The shear moment $B$ has not been read off.}  This is the
       comparison Task~1 exists for --- $B$ against
       $\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$ --- and it is now the one
@@ -2269,6 +2347,15 @@ preferred direction.  A layered background does.  There the formulation's
 directional structure matches the physics rather than contradicting it, the
 $\Oh$ argument does not apply, and the propagator is already available and
 already bridged to $\Aop$ by \eqref{eq:bridge}.
+
+That was written as an expectation and is now a measurement.  In the stratified
+geometry of \S\ref{sec:whichbetter}, the $x_3$-distinguished shear amplitude is
+the one the physics wants, by a factor of $2.6$ in the channel that probes it
+(\S\ref{sec:whichchannel}).  The same feature that is demonstrably wrong in a
+whole space --- $\ge4.2\times10^{-4}$ of error, by \S\ref{sec:oh} --- is
+demonstrably right once there is a stack of interfaces for it to be right about.
+Both statements are measured, and they are not in tension: they are about
+different problems.
 
 That is also the case in which the ordinary route has no competitor: the cube
 moment method rests on volume moments of the whole-space Green's tensor, and in
