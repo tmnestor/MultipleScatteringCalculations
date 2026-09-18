@@ -2896,9 +2896,10 @@ same answer at ratios $11.4,\,15.3,\,15.9,\,15.9$: fourth order, confirming that
 \eqref{eq:impedance} is what is being integrated.
 
 \paragraph{Against Kennett.}  The thesis and Kennett amplitude conventions
-differ by a fixed matrix, and what is testable is that it is fixed --- a
-convention cannot depend on angle.  Across $\sin i = 0$ to $0.75$ the three
-diagonal ratios are constant to $4.6\times10^{-14}$, and equal
+differ, and \S\ref{sec:whatconvention} determines exactly how; for the moment
+what is compared is the three \emph{diagonal} ratios, which must be constant
+because a convention cannot depend on angle.  Across $\sin i = 0$ to $0.75$ they
+are constant to $4.6\times10^{-14}$, and equal
 $(-1,-1,+1)$ to $4.8\times10^{-14}$.  \textbf{The $SH$ sign does not flip where
 $P$--$SV$ does}; the split is real, and lumping the three together is what made
 this gate's first run report a spurious $2.000$.  The collocation route of
@@ -2918,6 +2919,56 @@ and $64$ steps, at normal and oblique incidence alike.  Reversing the depth
 profile --- same layers, same thicknesses, reordered --- changes $\bR$ by
 $50\%$, so the agreement is not the insensitivity of a march that cannot see
 where the contrast sits.
+
+\subsection{What the convention actually is}\label{sec:whatconvention}
+
+\begin{quote}
+\small\itshape
+A correction, and a instructive one.  Both this section and \S\ref{sec:layer}
+previously said the two conventions ``differ by a fixed matrix''.  That was
+asserted on the strength of the three \emph{diagonal} ratios, which cannot
+establish it --- and it is wrong twice: the relation is two-sided rather than a
+single matrix, and it is not fixed.
+\end{quote}
+
+A convention is a renormalisation of mode amplitudes, and the incident and
+reflected sets need not be renormalised the same way.  If
+$\mathbf{a}_d^{\text{th}} = \bS_d\,\mathbf{a}_d^{\text{ken}}$ and
+$\mathbf{a}_u^{\text{th}} = \bS_u\,\mathbf{a}_u^{\text{ken}}$ then
+\begin{equation}\label{eq:convention}
+  \bR_{\text{th}} = \bS_u\,\bR_{\text{ken}}\,\bS_d^{-1},
+\end{equation}
+which is a \emph{two-sided} transform.  If both are diagonal, the elementwise
+ratio $Q_{ij} = (\bR_{\text{th}})_{ij}/(\bR_{\text{ken}})_{ij}$ satisfies
+$Q_{ij} = (\bS_u)_i/(\bS_d)_j$ --- rank one in log space, so
+\begin{equation}\label{eq:rankone}
+  Q_{PP}\,Q_{SS} = Q_{PS}\,Q_{SP}
+\end{equation}
+exactly.  That is a sharp test of diagonality, and the diagonal-only measurement
+never performed it.  Measured, \eqref{eq:rankone} holds to $1.9\times10^{-14}$:
+both renormalisations \emph{are} diagonal.
+
+Writing $Q_{ij} = -s_i/s_j$ with $s = (1,\,ic)$, the off-diagonals give $c$, and
+\begin{equation}\label{eq:convratio}
+  c = \sqrt{k_{z,S}/k_{z,P}}\,,
+\end{equation}
+to $5.6\times10^{-15}$ across the sweep.  This is the displacement-versus-flux
+difference: Kennett normalises modes to unit vertical energy flux, which carries
+$\sqrt{k_z}$ per mode, while the columns here are normalised by their own
+displacement component.  \textbf{$c$ runs from $1.293$ to $2.466$ over
+$p = 2\times10^{-5}$ to $1.95\times10^{-4}$ and diverges as
+$k_{z,P}\to0$ at the $P$ critical slowness, so the convention is not fixed.}
+What is fixed is its diagonal --- $\bS_u = -\bS_d$ on $P$--$SV$ and
+$\bS_u = +\bS_d$ on $SH$, giving $(-1,-1,+1)$ --- which is all
+\S\ref{sec:impmarch} and \S\ref{sec:layer} ever saw.
+
+Two further things are worth stating precisely.  The overall scale is not
+observable at all: \eqref{eq:convention} is unchanged by
+$\bS\to\lambda\bS$ on both sides, so only $\bS_u\bS_d^{-1}$ and the $P/S$ ratio
+within each set are determined --- reporting a single convention matrix would
+be overclaiming a third time.  And the standing signature of a
+displacement-versus-flux difference is that it is \emph{invisible to any
+per-mode ratio test}, which is precisely the test that was being run.
 
 \subsection{Where the lateral coupling enters}\label{sec:imbedlateral}
 
@@ -3040,6 +3091,9 @@ impedance & one exact step \eqref{eq:mobius} reproduces the closed form & 1\\
   & they survive past both critical slownesses & 1\\
   & the GRADED slab matches Kennett to the floor at every mesh & 1\\
   & reversing the profile changes $\bR$ by $50\%$ & 1\\
+  & the convention is DIAGONAL, by the rank-one test \eqref{eq:rankone} & 1\\
+  & its $P/S$ part is $\sqrt{k_{z,S}/k_{z,P}}$, and so not fixed & 1\\
+  & $\bS_u=-\bS_d$ on $P$--$SV$ and $+\bS_d$ on $SH$ & 1\\
 \midrule
 layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
   $\boldsymbol\Gamma$ & zero-contrast cuts are harmless, so any depth is reachable & 1\\
@@ -3060,7 +3114,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, its march $8/8$, the layered $\boldsymbol\Gamma$
+comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, its march $11/11$, the layered $\boldsymbol\Gamma$
 $8/8$, and the propagator gate exits clean.}
 \end{center}
 

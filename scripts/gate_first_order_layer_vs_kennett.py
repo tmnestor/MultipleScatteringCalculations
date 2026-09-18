@@ -303,8 +303,11 @@ def main() -> int:
 
     print("")
     print("--- 3: oblique incidence, against Kennett -------------------------")
-    print("    The two conventions differ by a fixed matrix; what is CHECKED is")
-    print("    that it is fixed, since a convention cannot depend on angle.")
+    print("    What is CHECKED here is that the three DIAGONAL ratios are")
+    print("    constant across angle.  That is not the whole convention: Part 7")
+    print("    of ``gate_first_order_impedance_march`` determines it properly and")
+    print("    finds a two-sided transform R_th = S_u R_ken S_d^-1 whose P/S part")
+    print("    is sqrt(k_zS/k_zP) and so is NOT constant.  The diagonal is.")
     ratios = []
     for p in (0.0, 5e-5, 1.0e-4, 1.5e-4):
         rmat = layer_reflection_matrix(ref, lay, h, omega, p, 120)
