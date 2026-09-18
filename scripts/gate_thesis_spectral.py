@@ -303,6 +303,29 @@ def dz_balanced(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> t
     # diagonal similarity, so the accurate route is to invert the BALANCED matrix
     # numerically and keep the identity as the check it is good at: Part 1 still
     # verifies it, where it is accurate.
+    # A vanishing diagonal entry is not round-off: it is the BRANCH POINT, where
+    # k_{z,c} = 0 and that mode's up- and down-going vectors coalesce, so D_z is
+    # genuinely singular.  It happens at |k| = omega/alpha and omega/beta exactly.
+    # Left alone, eps = 1/sqrt(diag) returns nan and the caller gets a silent
+    # nan propagator; that is worth a diagnostic rather than a surprise.
+    # Tested on k_z ITSELF, not on the spread of the diagonal: D_z's entries span
+    # many orders at moderate k, so a smallest-entry threshold catches dynamic
+    # range and fires where nothing is wrong.
+    kmag = float(np.hypot(kx, ky))
+    zs_p = abs(kz_c(ref.alpha, omega, kx, ky))
+    zs_s = abs(kz_c(ref.beta, omega, kx, ky))
+    at_branch = min(zs_p, zs_s) < 1e-9 * max(kmag, float(abs(omega) / ref.beta))
+    if at_branch:
+        msg = (
+            f"D_z is singular at |k| = {kmag:.8g}: a branch point, where k_z = 0 for "
+            f"one wave type and its two modes coalesce.  omega/alpha = "
+            f"{abs(omega) / ref.alpha:.8g}, omega/beta = {abs(omega) / ref.beta:.8g}.\n"
+            f"Fix: evaluate off the branch point.  It is a single point, so a "
+            f"quadrature node may be nudged, and a panel EDGE placed there is the "
+            f"right treatment for an integral -- which is what the branch radii "
+            f"panels in the lateral gates are for."
+        )
+        raise ValueError(msg)
     eps = 1.0 / np.sqrt(diag.astype(np.complex128))
     dzt = raw * eps[None, :]
     return dzt, np.linalg.inv(dzt), scl, off
