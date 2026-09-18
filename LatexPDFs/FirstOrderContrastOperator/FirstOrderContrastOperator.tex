@@ -21,6 +21,7 @@
 \setcounter{secnumdepth}{3}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{multirow}
 \usepackage[font=small, labelfont=bf, labelsep=period]{caption}
 \usepackage{setspace}
 \setstretch{1.12}
@@ -33,6 +34,10 @@
 \newcommand{\bC}{\mathbf{C}}
 \newcommand{\bU}{\mathbf{U}}
 \newcommand{\bS}{\mathbf{S}}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bK}{\mathbf{K}}
 \newcommand{\bq}{\mathbf{q}}
 \newcommand{\bd}{\mathbf{d}}
 \newcommand{\bv}{\mathbf{v}}
@@ -83,8 +88,16 @@ background would mix the two and settle neither.  The directional preference
 ceases to be an artefact once the background is layered, which is where the
 route was wanted.
 
-Every claim below is backed by an executable check; the two scripts report
-$25/25$ and $44/44$, and a separate gate binds the numerical propagator to the
+The $T$-matrix itself is assembled in \S\ref{sec:tmatrix} and the comparison is
+reported channel by channel.  The sharpest statement is not a norm: $e_{12}$ and
+$e_{13}$ are equivalent under $\Oh$ and so must amplify identically, and in the
+first-order $T$ they split by $8.4\times10^{-4}$ while the ordinary route splits
+them by exactly zero.  That split is an arbiter-free \emph{lower bound} on the
+first-order error, $\ge\delta/2$; it bounds nothing about the ordinary route,
+which can be symmetrically wrong, so no ordering of the two follows from it.
+
+Every claim below is backed by an executable check; the scripts report $25/25$,
+$44/44$ and $12/12$, and a separate gate binds the numerical propagator to the
 derived $\Aop$.  Section~\ref{sec:open} states plainly what is \emph{not} yet
 established.
 \end{abstract}
@@ -679,6 +692,775 @@ differ by exactly $2\mu$, a plausible transcription slip that no symmetry check
 would catch.  It is rejected by fourteen orders.
 
 %=====================================================================
+\section{The single-site \texorpdfstring{$T$}{T}-matrix}\label{sec:tmatrix}
+
+This is the object the construction was for.  On the nine-parameter affine
+trial space,
+\begin{equation}\label{eq:T}
+  \boxed{\ \mathbf{T} = \dCeff\bigl(\bI_9 - \mathcal{G}\,\dCeff\bigr)^{-1}, \ }
+\end{equation}
+with $\dCeff$ the projected coupling of \S\ref{sec:testspace} and $\mathcal{G}$
+the self propagator moment of the cube.
+
+\subsection{What is new and what is borrowed}
+
+New is $\dCeff$.  Borrowed is $\mathcal{G}$: the first-order route changes the
+\emph{coupling}, not the Green's function.  The two moments it needs are
+\begin{equation}\label{eq:selfmoments}
+  \bG_{ij} = \int_V G^0_{ij}\,dV,
+  \qquad
+  M_{in,pk} = \int_V \partial'_p\partial'_k G^0_{in}\,dV .
+\end{equation}
+
+These are \emph{derived} in \S\ref{sec:moments} below, not taken from a table.
+In the parameter basis
+\begin{equation}\label{eq:Gmoment}
+  \mathcal{G} = \frac{1}{V}
+  \begin{pmatrix}\Gamma_0\,\bI_3 & \mathbf{0}\\ \mathbf{0} & -\bS\,\bW^{-1}\end{pmatrix},
+  \qquad \bW = \operatorname{diag}(1,1,1,2,2,2),
+\end{equation}
+where $\bW$ undoes the engineering doubling of the shear slots.
+
+Note that \eqref{eq:Gmoment} is asserted, not derived --- which is exactly why
+\S\ref{sec:calibration} exists.
+
+\subsection{The self moments, derived}\label{sec:moments}
+
+The integrand of $M$ goes as $1/r^3$, which is not absolutely integrable in
+three dimensions.  The customary remedy is to quote a tabulated Eshelby tensor
+and add a delta-function term at $r=0$ by hand; omit the delta and the
+depolarisation comes out with the \emph{wrong sign}.  Nothing below is
+tabulated and nothing is added by hand.
+
+\subsubsection{The static Green's tensor}
+
+In the static limit the elastodynamic tensor reduces to Kelvin's,
+\begin{equation}\label{eq:kelvin}
+  G^0_{in}(\mathbf{r}) = \frac{a_0\,\delta_{in}}{r} + \frac{b_0\,x_ix_n}{r^3},
+  \qquad
+  a_0 = \frac{1}{8\pi}\Bigl(\frac1\mu + \frac{1}{\lambda+2\mu}\Bigr),
+  \quad
+  b_0 = \frac{1}{8\pi}\Bigl(\frac1\mu - \frac{1}{\lambda+2\mu}\Bigr),
+\end{equation}
+the coefficients being fixed by requiring that \eqref{eq:kelvin} satisfy the
+Navier operator away from the origin.  An equivalent form makes the
+distributional content visible, since $\partial_i\partial_n r = \delta_{in}/r -
+x_ix_n/r^3$:
+\begin{equation}\label{eq:kelvinhc}
+  G^0_{in} = \frac{1}{4\pi\mu}\Bigl[\frac{\delta_{in}}{r}
+             + h_c\,\partial_i\partial_n r\Bigr],
+  \qquad h_c = -\frac{\lambda+\mu}{2(\lambda+2\mu)} ,
+\end{equation}
+and $a_0 = (1+h_c)/4\pi\mu$, $b_0 = -h_c/4\pi\mu$ identically.
+
+\subsubsection{The moment as a distribution, and why no delta is inserted}
+
+Write the moment as a pairing against the test function $w\,\mathbf{1}_V$
+rather than as an integral of a function.  With $T = \partial_{\text{rest}}r^m$
+and $\partial_q\mathbf{1}_V = -n_q\,\delta_{\partial V}$,
+\begin{equation}\label{eq:recursion}
+  \langle \partial_q T,\; w\,\mathbf{1}_V\rangle
+  = \oint_{\partial V} n_q\,w\,T\,dA
+  \;-\; \langle T,\; (\partial_q w)\,\mathbf{1}_V\rangle .
+\end{equation}
+That is the entire construction.  Two features make it exact rather than merely
+plausible:
+
+\begin{itemize}
+\item $T$ is only ever evaluated \emph{on the boundary}, at distance $\Delta/2$
+      from the origin, where every derivative of $r^m$ is smooth and bounded.
+      The singular pointwise structure of $\partial^Dr^m$ at the origin is never
+      formed, so there is no principal value to take and no delta to insert.
+\item the recursion strictly lowers both the derivative count and the weight
+      degree, terminating at $\int_V x_w\,r^m\,dV$, an ordinary convergent
+      integral for $m\ge-1$.
+\end{itemize}
+
+The delta term is therefore neither added nor droppable --- it is already inside
+the surface integral.  The sharp test is the Laplacian sum rule
+$\sum_p E[-1;\{p,p\}] = -4\pi$, which a spherical excision returns as $0$.
+
+\subsubsection{The face integrals, and one of them by pure geometry}
+
+On the face $x_3 = \Delta/2$, scaling the in-face coordinates by $\Delta/2$
+reduces every surface term to one of three integrals over $[-1,1]^2$:
+\begin{equation}\label{eq:faceints}
+  j_1 = \!\iint\!\frac{du\,dv}{(1+u^2+v^2)^{3/2}} = \frac{2\pi}{3},
+  \quad
+  j_2 = \!\iint\!\frac{u^2\,du\,dv}{(1+u^2+v^2)^{5/2}} = -\frac{2(\sqrt3-\pi)}{9},
+  \quad
+  k_1 = \!\iint\!\frac{du\,dv}{(1+u^2+v^2)^{5/2}} = \frac{2(2\sqrt3+\pi)}{9}.
+\end{equation}
+All three are evaluated in closed form.  The first needs no integration at all:
+$j_1$ \emph{is} the solid angle subtended by one face at the cube's centre, and
+the six faces subtend $4\pi$, so $j_1 = 4\pi/6 = 2\pi/3$.  That identity is a
+check on the scaling and orientation of \eqref{eq:faceints}, obtained
+independently of any quadrature.
+
+The zeroth moment needs one further integral, which also has a closed form:
+\begin{equation}\label{eq:ivr}
+  \int_{[-1,1]^3}\frac{dV}{r}
+  = -2\bigl(\pi + \log 64 - 12\log(1+\sqrt3)\bigr)
+  = \tfrac43\log\bigl(70226 + 40545\sqrt3\bigr) - 2\pi
+  = 9.520309455918214\ldots
+\end{equation}
+The two closed forms are independent evaluations of the same constant and agree
+to the precision carried; the second is the one this package uses elsewhere.
+
+\subsubsection{The closed forms}
+
+Assembling \eqref{eq:kelvin} through the recursion \eqref{eq:recursion} with the
+face integrals \eqref{eq:faceints} gives, with
+\begin{equation}\label{eq:Mdecomp}
+  M_{in,pk} = A\,\delta_{in}\delta_{pk}
+            + B\,(\delta_{ip}\delta_{nk} + \delta_{ik}\delta_{np})
+            + C\,E_{inpk},
+  \qquad
+  E_{inpk} = \begin{cases}1 & i=n=p=k\\ 0 & \text{otherwise,}\end{cases}
+\end{equation}
+the third structure being the one a cubic --- as opposed to isotropic ---
+geometry admits,
+\begin{align}
+  B &= \frac{\sqrt3\,(\lambda+\mu)}{6\pi\mu(\lambda+2\mu)}, \label{eq:Bclosed}\\
+  A &= B - \frac{1}{3\mu}, \label{eq:Aclosed}\\
+  C &= -\Bigl(5 - \frac{2\pi}{\sqrt3}\Bigr)B, \label{eq:Cclosed}\\
+  G_{ij} &= \delta_{ij}\,\Bigl(a_0 + \frac{b_0}{3}\Bigr)\Bigl(\frac{\Delta}{2}\Bigr)^{\!2}
+            \int_{[-1,1]^3}\frac{dV}{r}. \label{eq:Gclosed}
+\end{align}
+$A$, $B$ and $C$ are scale-free; $G$ carries $\Delta^2$.  Note that $A$, $B$ and
+$C$ are \emph{not} three independent constants --- the whole rank-four moment is
+carried by $B$ together with the elementary $1/3\mu$, which is a structural
+statement the tabulated presentation obscures.  $G_{ij}$ must be a multiple of
+$\delta_{ij}$, because a rank-two cubic invariant has no other form: the cube
+cannot distinguish its own axes at that order.
+
+\subsubsection{The check that certifies the delta content}
+
+From \eqref{eq:kelvinhc} with $\nabla^2(1/r) = -4\pi\delta^3$ and
+$\nabla^2(\partial_i\partial_n r) = 2\partial_i\partial_n(1/r)$, whose cube
+integral is $-\tfrac{4\pi}{3}\delta_{in}$,
+\begin{equation}\label{eq:trace}
+  \sum_p M_{in,pp}
+  = -\,\frac{\delta_{in}}{\mu}\Bigl(1 + \frac{2h_c}{3}\Bigr)
+  = -\,\delta_{in}\,\frac{2\lambda+5\mu}{3\mu(\lambda+2\mu)} ,
+\end{equation}
+derived without reference to the recursion at all.  The assembled moment
+satisfies \eqref{eq:trace} identically, and the export refuses to write its
+output otherwise.  A spherically excised moment returns zero on the left-hand
+side, so \eqref{eq:trace} is exactly the statement that the $r=0$ content is
+present and correctly weighted.
+
+\subsection{The tabulated route agrees}
+
+This package also carries the conventional tabulated Eshelby route, in which
+$j_1$, $j_2$ and $k_1$ are quoted rather than integrated.  Evaluated alongside
+\eqref{eq:Bclosed}--\eqref{eq:Gclosed} at $\lambda = 17.5$, $\mu = 22.5$ GPa,
+$\Delta = 1$:
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+moment & integrated & tabulated & relative\\
+\midrule
+$A$ & $-1.220110745874\times10^{-11}$ & $-1.220110745874\times10^{-11}$ & $0$\\
+$B$ & $\phantom{-}2.613707356074\times10^{-12}$ & $\phantom{-}2.613707356074\times10^{-12}$ & $3.1\times10^{-16}$\\
+$C$ & $-3.587055298887\times10^{-12}$ & $-3.587055298887\times10^{-12}$ & $2.3\times10^{-16}$\\
+$G$ & $\phantom{-}6.622004020056\times10^{-12}$ & $\phantom{-}6.622004020056\times10^{-12}$ & $0$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The table reproduces the integration to machine precision.
+The direction of that statement matters: the integration \emph{verifies} the
+table; the assembly reads the integrated values.}
+\end{center}
+
+The dynamic (smooth radiation) part carries no table --- it is already exact
+polynomial integration --- and is taken from the existing route with its
+tabulated static piece removed and the integrated one substituted.
+
+\subsection{Two implementations of the coupling}
+
+$\dCeff$ is rebuilt in Python directly from $\dA$, independently of the symbolic
+derivation, and compared against the values that derivation exports.  Worst
+relative difference over three contrasts: $1.4\times10^{-15}$ for $\dCeff$ and
+exactly zero for the Navier coupling.  Two implementations agreeing is the
+evidence standard; one agreeing with itself is not.
+
+\subsection{Calibration: every normalisation fixed against existing code}
+\label{sec:calibration}
+
+Run the \emph{same} assembly with the ordinary Navier coupling in place of
+$\dCeff$.  It must reproduce this package's validated four amplification
+factors.  That pins the volume factors, the sign of $\mathcal{G}$ and the
+weight $\bW$ --- the \emph{bookkeeping} of \eqref{eq:Gmoment} --- with no
+freedom left to tune.  It does not certify the moments themselves; that is what
+the integration of the previous subsection is for.  Against
+$\alpha = 5000$, $\beta = 3000$, $\rho = 2500$ (SI), $\omega = 60$, $a = 0.5$:
+
+\begin{center}
+\begin{tabular}{llrr}
+\toprule
+case & factor & assembled vs existing (rel.) \\
+\midrule
+pure shear $(\Delta\mu = 1$ GPa$)$ & $A_u$, $A_\theta$, $A_e^{\text{diag}}$, $A_e^{\text{off}}$
+  & $0$, $2.2\times10^{-16}$, $0$, $0$\\
+moderate $(2,\,1,\,100)$ & same four
+  & $0$, $2.3\times10^{-16}$, $1.1\times10^{-16}$, $0$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The assembly reproduces the existing amplification factors to
+machine precision.  Only after this is the coupling swapped.}
+\end{center}
+
+\paragraph{One term had to be isolated to get there.}  The weak form's
+$\int_V\Delta\rho\,\omega^2\,\boldsymbol\phi\cdot\bu\,dV$ contributes to the
+\emph{strain}--strain block as well as the rigid one, because an affine trial
+displacement is not constant: $\int_V x_ax_b\,dV = \delta_{ab}Va^2/3$.  This is
+a finite-size dynamic coupling between the density contrast and the strain
+channels, and the factorised amplification factors do not carry it --- there
+$A_u$ and the strain amplifications are independent.  It shifts $A_\theta$ by
+$1.5\times10^{-7}$ at the moderate contrast and vanishes identically with
+$\Delta\rho$.  It is a small correction that the factorisation drops, not a
+defect in either object, and it is reported rather than absorbed.
+
+\subsection{The first-order \texorpdfstring{$T$}{T}, channel by channel}
+
+A single norm would average a correction that lives in a few channels against
+others that do not move.  The comparison is therefore resolved by channel.
+
+\begin{center}
+\begin{tabular}{llrr}
+\toprule
+case & channel & relative difference from the Navier route\\
+\midrule
+\multirow{5}{*}{pure shear}
+ & $\theta$ (bulk)            & $1.13\times10^{-4}$\\
+ & $e_{\text{diag}}$          & $1.1\times10^{-16}$\\
+ & $e_{12}$ (in-plane shear)  & $0$\\
+ & $e_{13}$ (out-of-plane shear) & $\mathbf{8.36\times10^{-4}}$\\
+ & $u$ (density)              & $0$\\
+\midrule
+\multirow{5}{*}{moderate}
+ & $\theta$ (bulk)            & $1.74\times10^{-3}$\\
+ & $e_{\text{diag}}$          & $1.1\times10^{-16}$\\
+ & $e_{12}$                   & $0$\\
+ & $e_{13}$                   & $\mathbf{8.36\times10^{-4}}$\\
+ & $u$                        & $0$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Amplification $(\bI - \mathcal{G}\Delta\mathbf{C})^{-1}$ along
+each channel.  The density channel is identical in both routes, as
+\S\ref{sec:whatitbuys} requires; the in-plane shear is untouched; the bulk and
+out-of-plane shear channels move.}
+\end{center}
+
+\subsection{The broken symmetry, now visible in \texorpdfstring{$T$}{T} itself}
+
+$e_{12}$ and $e_{13}$ are equivalent under $\Oh$.  For an isotropic cube in an
+isotropic background their amplifications \emph{must} be equal.  They are, in the
+Navier route, to exactly zero.  In the first-order route they split:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+ & Navier & first-order\\
+\midrule
+$|A(e_{12}) - A(e_{13})|\,/\,|A(e_{12})|$ & $0$ & $8.36\times10^{-4}$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The $\Oh$ violation of \S\ref{sec:oh}, measured on the
+$T$-matrix rather than on the coupling.  Identical at both contrasts, because
+both carry the same $\Delta\mu$ and the shear channels see only that.}
+\end{center}
+
+This is the sharpest form of the result.  It is not a norm over a matrix: it is
+two numbers that a symmetry argument says must agree, and do not.
+
+\paragraph{What the split does and does not license.}  It is tempting to read
+this as the first-order $T$ failing an external test while the ordinary route
+passes.  That reading claims more than the check can deliver, and the two halves
+must be kept apart.
+
+\emph{What it gives.}  An \textbf{arbiter-free lower bound on the error of the
+first-order $T$}.  If $A(e_{12})$ and $A(e_{13})$ must be equal and differ by
+$\delta$, then whichever lies closer to the truth, the larger of the two errors
+is at least $\delta/2 \approx 4.2\times10^{-4}$.  An absolute error estimate
+obtained from a symmetry alone, with nothing external to compare against, is
+worth having --- and it is the absolute companion this project requires
+alongside any ratio test.
+
+\emph{What it does not give.}  Any bound whatever on the ordinary route's error.
+A symmetric approximation can be symmetrically wrong, missing the truth in
+\emph{both} channels by more than $8.4\times10^{-4}$ while satisfying the
+symmetry exactly.  Symmetry compliance is not accuracy.  Setting a bound on one
+formulation against no bound on the other is not a comparison, and no ordering
+of the two follows from this table.
+
+\emph{What is nonetheless attributable.}  The breaking is not manufactured by
+the projection mismatch of \S\ref{sec:tmatrix}: $\mathcal{G}$ is itself
+$\Oh$-symmetric, and \S\ref{sec:oh} measured the coupling's asymmetry
+symbolically with no propagator present at all.  The asymmetry is a property of
+the coupling, and it survives into $\mathbf{T}$.
+
+\paragraph{The channel set has to include $e_{13}$.}  The coupling leaves
+$e_{12}$ untouched by construction, so a comparison spanning only $\theta$,
+$e_{\text{diag}}$ and $e_{12}$ reports that the shear channels agree --- true,
+and uninformative.  A channel-resolved comparison is only as good as the
+channels chosen, and the $\Oh$-equivalent pair is the one that carries the
+information.
+
+\subsection{What this does and does not settle}
+
+The Born limits agree: at a contrast of $10^{-6}$ the two couplings differ by
+$4.2\times10^{-8}$, i.e.\ at $O(\Delta c)$ as they must.
+
+\begin{quote}
+\textbf{The caveat that no number above reveals.}  The propagator moment used is
+the \emph{single} (collocation) one, while the $\Jsix$ pairing makes the scheme
+Galerkin.  The consistent pairing needs the \emph{double} moment.  This is the
+same class of mismatch the package has already measured as a genuine error
+elsewhere, so the table above should be read as the first-order coupling
+evaluated through a collocation propagator, not as the fully consistent
+first-order $T$.  No winner is declared, and none should be read in.
+\end{quote}
+
+%=====================================================================
+\section{The propagator moment from the first-order system}\label{sec:propmom}
+
+\S\ref{sec:tmatrix} took $\mathcal{G}$ from the ordinary Kelvin tensor, so the
+$T$-matrix assembled there is first-order in its \emph{coupling} only.  This
+section replaces that half.  The plan is
+\texttt{docs/plans/2026-09-18-first-order-propagator-moment.md}; what follows is
+written as each step lands, and says plainly where the front is.
+
+The object is the sandwiched form
+\begin{equation}\label{eq:sandwich}
+  \bigl[\dCeff\,\mathcal{G}\,\dCeff\bigr]_{kl}
+  = \bigl\langle \Jsix\psi_k \bigm| \dA\,\boldsymbol\Gamma\,\dA \bigm| \psi_l \bigr\rangle .
+\end{equation}
+Plain Galerkin on $\bq$ is not available: its mass matrix
+$\langle\Jsix\psi_k,\psi_l\rangle$ is antisymmetric, and an antisymmetric matrix
+in \emph{odd} dimension --- here nine --- is singular.
+
+\subsection{Step 1: \texorpdfstring{$\Gamma$}{Gamma}, built from
+\texorpdfstring{$\Aop$}{A} alone}
+
+For $\partial_3\bq = \bA\bq + \bd\,\delta(z-z')$ the radiating Green's matrix is
+\begin{equation}\label{eq:gammaspec}
+  \boldsymbol\Gamma(z,z') =
+  \begin{cases}
+    +\bP_d\,e^{\bA(z-z')}, & z > z',\\[2pt]
+    -\bP_u\,e^{\bA(z-z')}, & z < z',
+  \end{cases}
+\end{equation}
+with $\bP_d,\bP_u$ the spectral projectors onto the down- and up-going
+eigenspaces, so that $\boldsymbol\Gamma$ decays away from the source in both
+directions and jumps by $\bP_d + \bP_u = \bI$ across it.
+
+\paragraph{Projectors, not eigenvectors.}  The thesis writes the eigen-matrix
+column by column with normalisation factors $\epsilon_P,\epsilon_S,\epsilon_H$
+left symbolic.  Those factors are fixed by a flux normalisation that degenerates
+at normal incidence, where the horizontal direction no longer distinguishes the
+$SV$ and $SH$ polarisations --- exactly the $k_\parallel\to0$ difficulty.  The
+spectral projector
+\begin{equation}\label{eq:projector}
+  \bP_d = \bV_d\bigl(\bW_d^{t}\bV_d\bigr)^{-1}\bW_d^{t}
+\end{equation}
+is invariant under any rescaling of the columns of $\bV_d$, so building
+$\boldsymbol\Gamma$ from projectors removes the ambiguity instead of carrying
+it.  That invariance is verified directly, by rescaling every eigenvector by a
+random complex factor and confirming $\bP_d$ is unchanged.
+
+\paragraph{The matrix exponential must never be formed.}
+Equation~\eqref{eq:gammaspec} is a statement, not an algorithm.  Evaluating it as
+written --- projecting \emph{after} exponentiating --- builds the growing branch
+and then cancels it.  At a separation of $640$\,km the growing entries reach
+$e^{+28}\approx10^{12}$, so the cancellation leaves $10^{-4}$ of absolute noise
+on a true answer of $3\times10^{-8}$.  This is the Thomson--Haskell instability,
+the reason invariant imbedding exists, reappearing inside our own construction;
+it announces itself as a decay rate that turns \emph{negative} at large
+separation.  Applying the exponential to the projected eigenvalues never forms
+the growing branch at all,
+\begin{equation}\label{eq:gammastable}
+  \boldsymbol\Gamma(z-z') = \pm\!\!\sum_{i\,\in\,\text{down/up}}\!\!
+    e^{s_i(z-z')}\,\mathbf{v}_i\mathbf{w}_i^{t},
+  \qquad \mathbf{w}_i\!\cdot\!\mathbf{v}_j = \delta_{ij},
+\end{equation}
+and is what is used.  The moment integral needs only $|z-z'|\le 2a$, where the
+instability cannot bite; a layered background with thick layers is where it
+would.
+
+\paragraph{$\omega$ is complex from the outset.}  The vertical wavenumbers
+$k_{z,c} = \sqrt{k_c^2-k^2}$ vanish on the circles $|k| = k_P$ and $|k| = k_S$,
+which the lateral integral must cross, and $k_z$ sits in a denominator.  At real
+$\omega$ a quadrature straddles an integrable $1/\sqrt{\cdot}$ singularity and
+does not converge; the directional-sweep work measured $1.9\times10^{-1} \to
+1.1\times10^{-1}$ over an eightfold refinement, non-monotone.  With damping
+$0.02$ the smallest $|s|$ \emph{on} the $P$ circle is $0.240$ rather than zero.
+
+\paragraph{Checks.}  Thirteen, all passing: the spectrum is
+$\{\pm ik_{z,P}\}$ and $\{\pm ik_{z,S}\}$ twice; $\bP_d+\bP_u=\bI$, both
+idempotent, both commuting with $\bA$; $\bP_d$ invariant under rescaling;
+$\partial_z\boldsymbol\Gamma = \bA\boldsymbol\Gamma$ on both sides; the jump
+exactly $\bI$; and the decay rate converging to the slowest eigenvalue,
+$0.034990 \to 0.033901 \to 0.032857 \to 0.032436$ against $0.032393$ --- a rate,
+not a bar, because at any one finite separation the faster mode still
+contributes.
+
+\subsection{Step 2: the vertical integral, in closed form}
+
+The vertical integral is exact, but it is \emph{not} an integral over the
+square.  The two halves of $\Gamma$ carry different matrices, so the double
+integral splits over the two triangles and they cannot be recombined: treating
+the kernel as a function of $|z-z'|$ alone would symmetrise the propagator and
+destroy the up/down distinction the first-order system exists to carry.
+
+With affine trial fields the weights are $1$ and $z$, so four triangular
+integrals are needed,
+\begin{equation}\label{eq:tridef}
+  T_{mn}(q) = \int_{-a}^{a}\!\!dz\int_{-a}^{z}\!\!dz'\;
+              z^{m}z'^{n}\,e^{-q(z-z')},
+\end{equation}
+the lower triangle being $T_{nm}$ by relabelling.  All four are elementary:
+\begin{align}
+  T_{00} &= \frac{2aq - 1 + e^{-2aq}}{q^{2}}, \label{eq:T00}\\
+  T_{10} &= -T_{01} = \frac{aq - 1 + (1+aq)\,e^{-2aq}}{q^{3}}, \label{eq:T10}\\
+  T_{11} &= \frac{3 - 3(1+aq)^{2}e^{-2aq} + a^{2}q^{2}(2aq-3)}{3q^{4}}.
+           \label{eq:T11}
+\end{align}
+Summing the two triangles with a common matrix recovers the familiar square
+integral $2(2aq-1+e^{-2aq})/q^{2}$, and the odd weight cancels between them by
+parity --- both checked, as is the large-$q$ behaviour $T_{00}\sim 2a/q$, each
+triangle carrying half of the square's $4a/q$.
+
+The decisive check of this step is not the closed forms themselves but the
+\emph{assembly}: the vertical integration of $\Gamma$ performed through
+\eqref{eq:T00}--\eqref{eq:T11}, matrices and all, reproduces a brute-force
+double quadrature of $\Gamma$ to $2.5\times10^{-9}$ relative.
+
+\subsection{Step 3: the lateral integral}
+
+Count powers as $|k|\to\infty$ for the \emph{untransferred} form, in which
+$\partial_\alpha\to ik_\alpha$: the box form factor gives $k^{-2}$,
+\eqref{eq:T00} gives $q^{-1}\sim|k|^{-1}$, the two contrast operators give
+$k^{2}$, and the measure gives $k$.  The strain channel does not converge.
+(The transferred form of \S\ref{sec:transferred} does; that is one of the things
+the augmentation buys, and it is taken up there.)
+
+The divergence is not an artefact to be trimmed.  A delta function in real space
+is a constant in $k$-space, so the non-decaying tail of the integrand \emph{is}
+the Eshelby term of \S\ref{sec:moments}.  A bare cutoff discards precisely the
+piece whose omission reverses the sign of the depolarisation.  Hence
+split-and-subtract,
+\begin{equation}\label{eq:splitsub}
+  I(\mathbf{k}) = \bigl[I(\mathbf{k}) - I_\infty(\mathbf{k})\bigr] + I_\infty(\mathbf{k}),
+\end{equation}
+with the bracket integrated numerically --- convergent, and its convergence
+measured as a rate --- and $\int I_\infty\,d^2k$ evaluated in closed form over
+the whole plane, where the delta content resides.  The asymptote is taken of the
+$z$-integrated kernel \eqref{eq:T00}--\eqref{eq:T11}, with the box form factors
+kept exact: they are what makes the remainder converge, so expanding them would
+defeat the subtraction.
+
+\subsubsection{The scaling that makes the expansion uniform}
+
+$\bA$ is not uniformly $O(k)$.  Rows $1$--$3$ carry $k$, but rows $5$--$6$ carry
+$k^2$, because the basis mixes displacement with traction and the two have
+different dimensions; expanding $\bA$ in $1/k$ as it stands mixes orders between
+blocks.  The traction of an evanescent field scales as $\mu k u$, so the natural
+balance is $\bq \to (\bu, \bta_3/k)$.  Under
+$\bS = \operatorname{diag}(1,1,1,k,k,k)$,
+\begin{equation}\label{eq:scaling}
+  \widetilde{\bA} = \bS^{-1}\bA\,\bS
+\end{equation}
+is uniformly $O(k)$: the upper-right block gains a factor $k$, the lower-left
+loses one, and the diagonal blocks are untouched.  Measured, $\|\bA\|/k$ grows
+as $5.3\times10^{3} \to 5.3\times10^{5}$ over two decades in $k$ while
+$\|\widetilde{\bA}\|/k$ settles at $53.0100 \to 53.0101$.  Being a similarity
+transform it changes no eigenvalue, and $|s|/k \to 1$ for all six.
+
+The scaling is also what makes the decomposition numerically usable.  On the
+unscaled matrix the down- and up-going eigenvectors become nearly parallel as
+$k$ grows --- the evanescent limit degenerates --- the eigen-decomposition is
+reported badly conditioned, and the kernel entries collapse into rounding error,
+from which no asymptotic power can be read.  The decomposition is therefore done
+on $\widetilde{\bA}$ and mapped back, $\bK = \bS\,\widetilde{\bK}\,\bS^{-1}$,
+checked against the verified kernel of step 2 at moderate $k$.
+
+\subsubsection{Which entries fail to decay}
+
+The order in $1/k$ that each entry of the $z$-integrated kernel carries is read
+off numerically, over decades in $k$, rather than derived: a measured power is
+harder to fool oneself with than one obtained from a $6\times6$
+eigen-perturbation.  A dot marks an entry that vanishes, so no power can be read.
+
+\begin{center}
+\begin{tabular}{l|cccccc}
+\toprule
+ & $u_z$ & $u_x$ & $u_y$ & $\tau_{zz}$ & $\tau_{xz}$ & $\tau_{yz}$\\
+\midrule
+$u_z$        & $\cdot$ & $-1$ & $-1$ & $-2$ & $\cdot$ & $\cdot$\\
+$u_x$        & $-1$ & $\cdot$ & $\cdot$ & $\cdot$ & $-2$ & $-2$\\
+$u_y$        & $-1$ & $\cdot$ & $\cdot$ & $\cdot$ & $-2$ & $-2$\\
+$\tau_{zz}$  & $\mathbf{0}$ & $\cdot$ & $\cdot$ & $\cdot$ & $-1$ & $-1$\\
+$\tau_{xz}$  & $\cdot$ & $\mathbf{0}$ & $\mathbf{0}$ & $-1$ & $\cdot$ & $\cdot$\\
+$\tau_{yz}$  & $\cdot$ & $\mathbf{0}$ & $\mathbf{0}$ & $-1$ & $\cdot$ & $\cdot$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Power of $k$ carried by each entry of the $z$-integrated
+kernel as $|k|\to\infty$.  Exactly one block fails to decay.}
+\end{center}
+
+\begin{quote}
+\textbf{The entire ultraviolet problem sits in one block:} the traction rows
+against the displacement columns.  Everything else decays at least as $1/k$ and
+needs no subtraction.
+\end{quote}
+
+That block is also the one the physics predicts.  In the evanescent limit a
+short-wavelength displacement produces a traction $\tau\sim\mu k u$, while the
+vertical integral \eqref{eq:T00} supplies $1/k$; the ratio is $k$-independent.
+A traction response to a displacement that does not depend on $k$ \emph{is} a
+local stiffness --- which is the Eshelby delta of \S\ref{sec:moments}, seen from
+the first-order side.  The two representations identify the same object, and
+$I_\infty$ has to reproduce exactly this block.
+
+\subsubsection{The asymptote in closed form}
+
+The limit of the non-decaying block is not merely numerical.  Writing
+$\hat{\mathbf{k}}$ for the lateral direction,
+\begin{align}
+  C\bigl[\tau_{zz}\!\leftarrow\!u_z\bigr] &= -\nu_1
+     = -\frac{4\mu(\lambda+\mu)}{\lambda+2\mu}, \label{eq:Cnu1}\\
+  C\bigl[\tau_{\alpha z}\!\leftarrow\!u_\beta\bigr]
+     &= \mu\bigl(\hat{k}_\alpha\hat{k}_\beta - \delta_{\alpha\beta}\bigr).
+     \label{eq:Cinplane}
+\end{align}
+
+\begin{quote}
+\textbf{$\nu_1$ is not a new constant.}  It is the same $\nu_1$ that appears in
+$\Aop_{12}$ --- born in the elimination \eqref{eq:U}, and shown in
+\S\ref{sec:arbiterB} to be the thesis's $\zeta$.  The subtraction is expressible
+entirely in the operator's own constants.  A wrongly identified asymptote would
+have no reason to land on $\nu_1$ and $\mu$.
+\end{quote}
+
+Both are established as \emph{rates}.  The relative residuals fall
+$1.50\times10^{-3} \to 1.50\times10^{-4} \to 1.50\times10^{-5}$ across decades in
+$k$, ratios $10.0006$ and $10.011$ --- clean $O(1/k)$, which is the $O(k_c/k)$
+correction to the evanescent limit.  Agreement at a single $k$ would not
+distinguish a correct closed form from a coincidence.
+
+The in-plane form is the sharper test.  Two constants are fitted on \emph{two}
+angles and then predict \emph{six}: $P = -22.4977$ and $Q = +22.4948$, both
+equal to $\mu = 22.5$, with predictions tracking measurements to five digits
+across $\theta\in[0,2.4]$.  The isotropic entry \eqref{eq:Cnu1} is constant to
+seven digits over the same range.
+
+\paragraph{What this settles about the integration.}  The asymptote \emph{is}
+direction-dependent --- the relative variation over $\theta$ is $0.39$ --- so
+$I_\infty$ is not a pure delta and the regulator cannot be avoided.  But the
+structure is the most favourable available: $\delta_{\alpha\beta}$ and
+$\hat{k}_\alpha\hat{k}_\beta$ are the only two rank-two invariants a direction
+can build, and they transform to a local delta and a principal-value dipole
+kernel respectively, both standard.  The $\tau_{zz}\!\leftarrow\!u_z$ entry is
+isotropic and so is a pure delta of weight $-\nu_1$.
+
+\subsubsection{The lateral integral, and where it must be evaluated}
+
+The box form factor is separable --- the lateral transform of the cube's
+indicator is $(2a)^2\operatorname{sinc}(k_1a)\operatorname{sinc}(k_2a)$ --- so
+with \eqref{eq:Cnu1}--\eqref{eq:Cinplane} and one lateral derivative from each
+$\dA$, the integrand carries $k_ck_d$ against $C$, giving two families:
+$\int d^2k\,W k_ck_d$, which is separable, and $\int d^2k\,W k_ak_bk_ck_d/k^2$,
+which is not.  The elementary one-dimensional integrals are
+\begin{equation}\label{eq:sincints}
+  \int_{-\infty}^{\infty}\!\operatorname{sinc}^2(ka)\,dk = \frac{\pi}{a},
+  \qquad
+  \int_{-\infty}^{\infty}\!k^2\operatorname{sinc}^2(ka)\,e^{-\epsilon|k|}dk
+  = \frac{4}{4a^2\epsilon + \epsilon^3}
+  = \frac{1}{a^2\epsilon} - \frac{\epsilon}{4a^4} .
+\end{equation}
+
+\begin{quote}
+\textbf{The second is a pure pole with no finite part.}  So
+$\int I_\infty\,d^2k$ is not a number, and the split-and-subtract cannot be
+closed in $k$-space alone: adding back a pure pole restores exactly the
+divergence it was introduced to remove.
+\end{quote}
+
+The method is not wrong; the tail is being evaluated in the wrong
+representation.  Forming $|\widehat{S}|^2$ first and then integrating term by
+term destroys the structure that makes the constant part finite.  By Parseval,
+\begin{equation}\label{eq:parseval}
+  \int\!\!\int f(\mathbf{x})\,K(\mathbf{x}-\mathbf{x}')\,g(\mathbf{x}')
+  = \int\!\frac{d^2k}{(2\pi)^2}\,\widehat{f}(-\mathbf{k})\,
+      \widehat{K}(\mathbf{k})\,\widehat{g}(\mathbf{k}),
+\end{equation}
+so a $\widehat{K}$ tending to a constant $C$ contributes
+$C\!\int_V\! f g\,d\mathbf{x}$ --- a \emph{local} term, finite, needing no
+regulator at all.  This is verified directly in one dimension, both sides
+returning $1/2a$.
+
+The decomposition therefore splits by representation rather than by magnitude:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+piece & real-space object & evaluation\\
+\midrule
+isotropic, $-\nu_1$ and $P\delta_{\alpha\beta}$ & delta & local, elementary\\
+traceless $\hat{k}_\alpha\hat{k}_\beta - \tfrac12\delta_{\alpha\beta}$
+  & 2-D principal-value dipole & conditionally convergent\\
+remainder $I - I_\infty$ & --- & numerically, in $k$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Split-and-subtract survives, but $\int I_\infty$ is evaluated
+in real space.  Only the remainder stays in $k$.}
+\end{center}
+
+The traceless part is of degree $-2$ with vanishing angular average --- exactly
+the conditional convergence the real-space engine of \S\ref{sec:moments} handles
+by peeling derivatives onto the cube faces.  The two representations meet again
+here: the same distributional structure, in two dimensions rather than three.
+
+\subsubsection{The principal-value piece vanishes}
+
+In two dimensions $\nabla^2\log\rho = 2\pi\delta^2$, and
+$\partial_\alpha\partial_\beta\log\rho = (\delta_{\alpha\beta} -
+2\hat{n}_\alpha\hat{n}_\beta)/\rho^2$ away from the origin; taking the trace
+fixes the delta weight, so that
+\begin{equation}\label{eq:pvsplit}
+  \partial_\alpha\partial_\beta\log\rho
+  = \mathrm{PV}\!\left[\frac{\delta_{\alpha\beta}
+      - 2\hat{n}_\alpha\hat{n}_\beta}{\rho^{2}}\right]
+    + \pi\,\delta_{\alpha\beta}\,\delta^{2}(\mathbf{x}) .
+\end{equation}
+By translation invariance the double integral over the square collapses onto the
+autocorrelation of its indicator, $w(\mathbf{u}) = (2a-|u_1|)(2a-|u_2|)$, exactly
+--- removing two of the four dimensions --- and both derivatives move onto $w$,
+which is legitimate because $w$ has compact support.
+
+$w$ is piecewise bilinear, so $\partial_1\partial_1 w$ is a sum of line deltas.
+It has three terms, not one: $w$ vanishes at $|u_1| = 2a$ but
+$\partial_1 w$ does \emph{not} --- it jumps from $\mp(2a-|u_2|)$ to zero --- so
+there are edge deltas at $u_1 = \pm2a$ alongside the interior one at $u_1 = 0$.
+With them,
+\begin{equation}\label{eq:Dab}
+  D_{11} = \underbrace{3}_{\text{interior}} + \underbrace{(\pi-3)}_{\text{edges}}
+         = \pi = \pi(2a)^2 \Big|_{a=1/2},
+  \qquad D_{12} = 0 ,
+\end{equation}
+and the trace identity $\operatorname{tr}D = \langle\nabla^2\log\rho, w\rangle =
+2\pi w(0) = 2\pi(2a)^2$ holds exactly.  Dropping the edge deltas gives $6$ in
+place of $2\pi$, so that identity is what detects them.
+
+\begin{quote}
+\textbf{Hence $\langle \mathrm{PV}_{\alpha\beta}, w\rangle = D_{\alpha\beta} -
+\pi\delta_{\alpha\beta}w(0) = 0$: the traceless dipole contributes nothing.}
+\end{quote}
+
+It could not have contributed.  $\langle\mathrm{PV}_{\alpha\beta},w\rangle$ is a
+symmetric two-tensor invariant under the square's $D_4$ symmetry, and the only
+such tensor is a multiple of $\delta_{\alpha\beta}$ --- the traceless part has
+nowhere to live.  The conditional convergence is real, but for this cross-section
+it integrates away.
+
+\begin{quote}
+\textbf{The whole of $\int I_\infty$ is therefore the local delta term.}  The
+piece that looked hardest --- the conditionally convergent, shape-dependent
+dipole --- is identically zero here, and what remains is elementary.
+\end{quote}
+
+\subsubsection{Why the transferred form converges}\label{sec:transferred}
+
+In the untransferred form $\partial_\alpha \to ik_\alpha$, each contrast
+operator contributes a factor of $k$, and the pole of \eqref{eq:sincints}
+follows.  After the by-parts transfer of \eqref{eq:byparts} the derivatives act
+on the \emph{polynomials, in real space}: $\partial_\alpha$ of an affine trial
+function is a constant, whose lateral transform is again the box form factor.
+No factor of $k$ survives, and the lateral integral converges.
+
+\begin{quote}
+\textbf{The augmentation therefore does two things at once:} it keeps the
+indicator from being differentiated, and it makes the lateral integral
+convergent.  Both are the same integration by parts.
+\end{quote}
+
+Convergence is nevertheless slow.  With $\widehat{K}\to C$ the truncation error
+falls only as $1/\Lambda$, which is what the subtraction is for.
+
+\subsubsection{The tail, in closed form}
+
+The tail is elementary.  For the in-plane entry
+$C = \mu(\hat{k}_1^2-1) = -\mu\,k_2^2/k^2$, so
+\begin{equation}\label{eq:tail}
+  \int\! d^2k\,W\,C = -\mu\!\int\! d^2k\,
+    \operatorname{sinc}^2(k_1a)\operatorname{sinc}^2(k_2a)\,\frac{k_2^2}{k^2}
+  = -\frac{\mu}{2}\Bigl(\frac{\pi}{a}\Bigr)^{\!2},
+\end{equation}
+because $k_1^2/k^2 + k_2^2/k^2 = 1$ and the weight is symmetric under
+$k_1\!\leftrightarrow\!k_2$, so each piece is exactly half of
+$\int\!d^2k\,W = (\pi/a)^2$.  No quadrature is required; direct integration
+returns $19.7376$ against $(\pi/a)^2/2 = 19.7392$, the difference being the
+quadrature's own error on a slowly converging integrand.
+
+\subsubsection{The remainder, and the test that closes the construction}
+
+Truncating the lateral integral at $|k| < \Lambda$ for the
+$\tau_{xz}\!\leftarrow\!u_x$ entry, with and without the subtraction:
+
+The split is only worth making if both halves give the same answer.  Truncating
+at $|k| < \Lambda$ for the $\tau_{xz}\!\leftarrow\!u_x$ entry:
+
+\begin{center}
+\begin{tabular}{rrrr}
+\toprule
+$\Lambda$ & unsubtracted & remainder & remainder $+$ tail\\
+\midrule
+$80$  & $-318.2214$ & $118.83504$ & $-325.29716$\\
+$160$ & $-321.6764$ & $118.82727$ & $-325.30493$\\
+$320$ & $-323.4539$ & $118.82513$ & $-325.30707$\\
+$640$ & $-324.3400$ & $118.82466$ & $-325.30754$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The subtracted route is converged to six figures by
+$\Lambda = 80$; the unsubtracted one is still $0.97$ short of the limit at
+$\Lambda = 640$.}
+\end{center}
+
+The remainder's successive differences fall $7.8\times10^{-3} \to
+2.1\times10^{-3} \to 4.7\times10^{-4}$, a ratio near $0.27$, against the
+unsubtracted $0.50$ --- the latter being the $1/\Lambda$ decay the constant part
+imposes.  Extrapolating both:
+\begin{equation}\label{eq:closure}
+  \underbrace{-325.226}_{\text{unsubtracted limit}}
+  \;\;\text{versus}\;\;
+  \underbrace{-325.308}_{\text{remainder} + \text{closed-form tail}},
+  \qquad \text{relative difference } 2.5\times10^{-4},
+\end{equation}
+and that residue is dominated by the single-term extrapolation of the slowly
+converging unsubtracted series, not by the construction.  At $\Lambda = 640$ the
+unsubtracted error is $0.97$ and the subtracted one $5\times10^{-4}$: a factor
+of about two thousand.
+
+\begin{quote}
+\textbf{Split-and-subtract is verified.}  The two routes to the same number
+agree, the tail is closed in form by \eqref{eq:tail}, and the remainder converges
+three orders of magnitude faster than the direct integral.
+\end{quote}
+
+\emph{Status of Task~1.}  The method is established end to end: $\Gamma$ from
+spectral projectors; the triangular $z$ integrals and their assembly; the
+scaling, the power table, and the asymptote $-\nu_1$,
+$\mu(\hat{k}\hat{k}-\delta)$ verified as an $O(1/k)$ rate; $\int I_\infty$
+decomposed by representation, its principal-value part vanishing by $D_4$
+symmetry and its remaining part closed by \eqref{eq:tail}; and the closure test
+\eqref{eq:closure}.  What remains is bookkeeping rather than method: assembling
+all nine trial functions and the full contrast operator, and reading the shear
+moment $B$ off the result for comparison with
+$\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$.
+
+%=====================================================================
 \section{Summary of checks}
 
 \begin{center}
@@ -703,10 +1485,23 @@ $\dCeff$ & $\Jsix\dA$ symmetric; test space derived; controls & 5\\
          & $\Oh$ decomposition, positive and negative controls & 6\\
 \midrule
 $\boldsymbol\Gamma$ & propagates by $\exp(\bA\,dz)$ with all multiples present & 3\\
+\midrule
+moments & face integrals evaluated; $j_1$ also by solid angle & 4\\
+        & $\int dV/r$ in two independent closed forms & 1\\
+        & $B$, and $A = B - 1/3\mu$, $C = -(5-2\pi/\!\sqrt3)B$, $G$ & 4\\
+        & Kelvin coefficients against the $h_c$ form & 1\\
+        & the trace identity \eqref{eq:trace}, derived without the recursion & 1\\
+        & the tabulated route reproduces all four & 1\\
+\midrule
+$\mathbf{T}$ & coupling rebuilt independently, matches the symbolic derivation & 2\\
+             & calibration: reproduces the existing amplification factors & 1\\
+             & the finite-size density--strain term, isolated and sized & 2\\
+             & density channel identical; $\Oh$ split on the $e_{12}/e_{13}$ pair & 6\\
+             & Born limits agree & 1\\
 \bottomrule
 \end{tabular}
-\captionof{table}{All checks pass.  The two symbolic scripts report $25/25$ and
-$44/44$; the propagator gate exits clean.}
+\captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
+$44/44$, the $T$-matrix assembly $12/12$, and the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================
@@ -716,14 +1511,20 @@ In keeping with the project's standard that an unvalidated formula be labelled
 as such, the following are \emph{open}:
 
 \begin{enumerate}
-\item \textbf{No single-site $T$-matrix has been assembled.}  $\dCeff$ is the
-      coupling; the propagator moments
-      $\langle \Jsix\psi_k,\ \boldsymbol\Gamma\,\psi_l\rangle$ that close
-      $T = \dCeff(\bI - \mathcal{G}\dCeff)^{-1}$ have not been computed.
+\item \textbf{The $T$-matrix uses the collocation propagator, not the
+      consistent one.}  $\mathbf{T}$ is assembled in \S\ref{sec:tmatrix} and
+      calibrated exactly, but $\mathcal{G}$ there is the \emph{single} cube
+      moment while the $\Jsix$ pairing makes the scheme Galerkin.  The
+      consistent pairing needs the \emph{double} moment, which has not been
+      extracted.  Everything in \S\ref{sec:tmatrix} is therefore the first-order
+      coupling seen through a collocation propagator.
 \item \textbf{No comparison against an independent arbiter has been run.}  The
-      quantities in \S\ref{sec:whatitbuys} compare two \emph{formulations} with
-      each other, not either against truth.  Section~\ref{sec:oh} argues such a
-      comparison must be channel-resolved before it can mean anything.
+      quantities in \S\ref{sec:whatitbuys} and \S\ref{sec:tmatrix} compare two
+      \emph{formulations} with each other, not either against truth.  The $\Oh$
+      split is the one partial exception, and it is one-sided: it lower-bounds
+      the first-order error at $\approx4.2\times10^{-4}$ and bounds the ordinary
+      route not at all.  \textbf{Which formulation is more accurate remains
+      open}, and nothing in this note decides it.
 \item \textbf{Whether the resummation improves accuracy is unknown.}  It is
       exact as a local inversion; that is not the same claim.
 \item \textbf{$\Oh$ invariance was tested on a subgroup of order $3$}, not the
