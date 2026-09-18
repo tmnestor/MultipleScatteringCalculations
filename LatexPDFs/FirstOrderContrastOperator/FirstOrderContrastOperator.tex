@@ -295,7 +295,12 @@ control that corrupts precisely this ordering.
 
 %=====================================================================
 \section{\texorpdfstring{$\Aop$}{A} against the thesis, and against the
-published operator form}
+published operator form}\label{sec:against}
+
+Two independent objects are used here and neither is derived in this note: the
+thesis system matrix \cite{nestor1996}, and the operator form of the
+matrix--vector wave equation whose Appendix~J supplies the published
+matrices \cite{mvwe}.
 
 \begin{quote}
 \textbf{A note on where this starts.}  An earlier version of this note presented
@@ -396,7 +401,7 @@ solves the background system driven by its own contrast,
 \begin{equation}\label{eq:LS}
   (\partial_3 - \Aop)\,\bq = \dA\,\bq + \bd,
 \end{equation}
-which is the Lippmann--Schwinger equation of the first-order system.
+which is the Lippmann--Schwinger equation \cite{lippmann1950} of the first-order system.
 
 \subsection{The foundation check}
 
@@ -860,7 +865,7 @@ cube's \emph{own} radiated field produces back inside it, averaged over the
 cube.  That self-response is what is called the \textbf{depolarisation} here and
 at the two places below where the term recurs: the name is the standard one from
 inclusion theory, where for an ellipsoid the corresponding object is Eshelby's
-tensor.  It is the object the $r=0$ delta of \S\ref{sec:moments} belongs to, and
+tensor \cite{eshelby1957}.  It is the object the $r=0$ delta of \S\ref{sec:moments} belongs to, and
 the reason that delta cannot be dropped --- omitting it reverses the sign of
 $\bS$, which is the failure \S\ref{sec:moments} and \S\ref{sec:triseries} both
 warn about.  The symmetrisation is not cosmetic and is not
@@ -883,7 +888,7 @@ Note that \eqref{eq:Gmoment} is asserted, not derived --- which is exactly why
 \subsection{The self moments, derived}\label{sec:moments}
 
 The integrand of $M$ goes as $1/r^3$, which is not absolutely integrable in
-three dimensions.  The customary remedy is to quote a tabulated Eshelby tensor
+three dimensions.  The customary remedy is to quote a tabulated Eshelby tensor \cite{eshelby1957,mura1987}
 and add a delta-function term at $r=0$ by hand; omit the delta and the
 depolarisation comes out with the \emph{wrong sign}.  Nothing below is
 tabulated and nothing is added by hand.
@@ -1232,7 +1237,7 @@ Equation~\eqref{eq:gammaspec} is a statement, not an algorithm.  Evaluating it a
 written --- projecting \emph{after} exponentiating --- builds the growing branch
 and then cancels it.  At a separation of $640$\,km the growing entries reach
 $e^{+28}\approx10^{12}$, so the cancellation leaves $10^{-4}$ of absolute noise
-on a true answer of $3\times10^{-8}$.  This is the Thomson--Haskell instability,
+on a true answer of $3\times10^{-8}$.  This is the Thomson--Haskell instability \cite{thomson1950,haskell1953},
 the reason invariant imbedding exists, reappearing inside our own construction;
 it announces itself as a decay rate that turns \emph{negative} at large
 separation.  Applying the exponential to the projected eigenvalues never forms
@@ -1348,8 +1353,11 @@ the augmentation buys, and it is taken up there.)
 The divergence is not an artefact to be trimmed.  A delta function in real space
 is a constant in $k$-space, so the non-decaying tail of the integrand \emph{is}
 the Eshelby term of \S\ref{sec:moments}.  A bare cutoff discards precisely the
-piece whose omission reverses the sign of the depolarisation.  Hence
-split-and-subtract,
+piece whose omission reverses the sign of the depolarisation.  The remedy is
+\textbf{ultraviolet subtraction} --- \emph{a standard technique, borrowed here
+and not devised here} \cite{uvsub} --- in which a non-decaying $k$-space
+integrand is split into a convergent remainder and an asymptote that is
+integrated in closed form:
 \begin{equation}\label{eq:splitsub}
   I(\mathbf{k}) = \bigl[I(\mathbf{k}) - I_\infty(\mathbf{k})\bigr] + I_\infty(\mathbf{k}),
 \end{equation}
@@ -1865,7 +1873,7 @@ checks:
       and down-going eigenvectors become parallel as $k$ grows.  Measured against
       \emph{no scaling at all} it makes the eigenvector condition number
       \emph{worse} at every $k$ above the propagating window --- by two orders at
-      $k = 60$.  Parlett--Reinsch balancing beats both by about twelve orders
+      $k = 60$.  Parlett--Reinsch balancing \cite{parlett1969} beats both by about twelve orders
       there ($8.7\times10^{7}$ against $1.6\times10^{20}$), because it is free to
       treat the third component differently from the first two, which no scalar
       rule can.
@@ -2049,7 +2057,7 @@ arbiter}\label{sec:layer}
 Every comparison so far in this note sets two formulations against each other.
 None of them says which is right.  A single layer embedded in a whole space
 removes that limitation, because its reflection coefficient is known
-independently --- from a validated reflectivity recursion, and from a closed
+independently --- from a validated reflectivity recursion \cite{kennett1983}, and from a closed
 form short enough to derive here --- and because it exercises the operator in a
 way the cube cannot.
 
@@ -2359,7 +2367,7 @@ the one this package already uses to score itself: a periodic patch of
 space-filling cubes, which for identical cubes \emph{is} a homogeneous layer, and
 whose reflection coefficient the reflectivity recursion gives exactly.  Both
 routes then build a single-site $T$ for the same cube, both pass through the same
-lattice sum, the same contact correction and the same Foldy--Lax solve, and both
+lattice sum, the same contact correction and the same Foldy--Lax \cite{foldy1945,lax1951} solve, and both
 are scored against the same reference.  Only $T_0$ differs.
 
 \subsection{Substituting at the one place both routes speak the same language}
@@ -3304,5 +3312,81 @@ That is also the case in which the ordinary route has no competitor: the cube
 moment method rests on volume moments of the whole-space Green's tensor, and in
 a stratified background that object does not exist.  The first-order form
 supplies what the moment method cannot.
+
+%=====================================================================
+\section*{References}
+\addcontentsline{toc}{section}{References}
+
+\begin{quote}
+\small\itshape
+Standing rule for this note: a technique that is \emph{borrowed} rather than
+derived here carries an author--date reference at the point it is used.  Two
+entries below are marked \textbf{TO SUPPLY}: their bibliographic details have
+not been verified against a library and must be before this note is circulated.
+Nothing in this list should be quoted from here without that check.
+\end{quote}
+
+\begin{thebibliography}{99}\small
+
+\bibitem{chin1984} Chin, R.~C.~Y., Hedstrom, G.~W. \& Thigpen, L. (1984).
+  Matrix methods in synthetic seismograms.  Cited via the thesis
+  Introduction for Riccati factorisation of discretely layered media.
+
+\bibitem{eshelby1957} Eshelby, J.~D. (1957).  The determination of the elastic
+  field of an ellipsoidal inclusion, and related problems.  \emph{Proceedings
+  of the Royal Society of London A} \textbf{241}, 376--396.
+
+\bibitem{foldy1945} Foldy, L.~L. (1945).  The multiple scattering of waves.
+  \emph{Physical Review} \textbf{67}, 107--119.
+
+\bibitem{ha1985} Ha, J. (1985).  Cited via the thesis Introduction, with
+  \cite{chin1984}, for Riccati factorisation in discretely layered media.
+
+\bibitem{haskell1953} Haskell, N.~A. (1953).  The dispersion of surface waves
+  on multilayered media.  \emph{Bulletin of the Seismological Society of
+  America} \textbf{43}, 17--34.
+
+\bibitem{kennett1983} Kennett, B.~L.~N. (1983).  \emph{Seismic Wave
+  Propagation in Stratified Media}.  Cambridge University Press.
+
+\bibitem{kennett1984} Kennett, B.~L.~N. (1984).  Cited via the thesis
+  Introduction for invariant embedding.
+
+\bibitem{lax1951} Lax, M. (1951).  Multiple scattering of waves.
+  \emph{Reviews of Modern Physics} \textbf{23}, 287--310.
+
+\bibitem{lippmann1950} Lippmann, B.~A. \& Schwinger, J. (1950).  Variational
+  principles for scattering processes~I.  \emph{Physical Review} \textbf{79},
+  469--480.
+
+\bibitem{mura1987} Mura, T. (1987).  \emph{Micromechanics of Defects in
+  Solids}, 2nd revised edition.  Martinus Nijhoff.
+
+\bibitem{parlett1969} Parlett, B.~N. \& Reinsch, C. (1969).  Balancing a matrix
+  for calculation of eigenvalues and eigenvectors.  \emph{Numerische
+  Mathematik} \textbf{13}, 293--304.
+
+\bibitem{thomson1950} Thomson, W.~T. (1950).  Transmission of elastic waves
+  through a stratified solid medium.  \emph{Journal of Applied Physics}
+  \textbf{21}, 89--93.
+
+\bibitem{tromp1988} Tromp, J. \& Snieder, R. (1988).  Cited via the thesis
+  Introduction for invariant embedding.
+
+\bibitem{uvsub} \textbf{TO SUPPLY}.  The reference for \textbf{ultraviolet
+  subtraction} --- splitting a non-decaying $k$-space integrand into a
+  numerically convergent remainder plus an asymptote integrated in closed form,
+  \eqref{eq:splitsub}.  This technique is borrowed, not devised here, and the
+  note must say from where.
+
+\bibitem{mvwe} \textbf{TO SUPPLY}.  The matrix--vector wave equation paper
+  whose Appendix~J supplies the operator form of $\Aop$ validated in
+  \S\ref{sec:against}.
+
+\bibitem{nestor1996} Nestor, T.~M. (1996).  PhD thesis, Australian National
+  University.  The source of (Akdef), (ATdef), (eigDef), (kzcDef), (specA),
+  Chapter~5's Riccati factorisation and Algorithm~5.1.
+
+\end{thebibliography}
 
 \end{document}
