@@ -168,30 +168,52 @@ def step_mobius(y: np.ndarray, blk: tuple, h: float) -> np.ndarray:
     return np.asarray(num @ np.linalg.inv(den))
 
 
-def step_rk4(y: np.ndarray, blk: tuple, h: float, nsub: int = 1) -> np.ndarray:
-    """One step up through a uniform sublayer, by RK4 on (*) directly.
+def step_rk4(
+    y: np.ndarray,
+    medium_at: Callable[[float], ReferenceMedium],
+    z_bot: float,
+    z_top: float,
+    omega: complex,
+    kx: float,
+    nsub: int = 1,
+) -> np.ndarray:
+    """One step up from z_bot to z_top by RK4, sampling the medium at the STAGES.
+
+    (*) is non-autonomous: its coefficients are the blocks of A at the current
+    depth.  Freezing them at the sublayer midpoint and then running RK4 inside
+    integrates the STAIRCASE exactly rather than the profile approximately, and
+    caps the whole march at second order however good the integrator is -- the
+    medium approximation, not the ODE solver, is then the error.  Measured that
+    way RK4 returned order 1.96.  Evaluating A at z, z+h/2 and z+h instead is
+    what makes the fourth order real, and is the only reason a smooth gradient
+    costs less here than in a layer stack.
 
     Args:
         y: Impedance at the bottom.
-        blk: The four blocks of A there.
-        h: Sublayer thickness, positive.
-        nsub: RK4 substeps within the sublayer.
+        medium_at: Medium as a function of depth.
+        z_bot: Starting depth (deeper).
+        z_top: Ending depth (shallower).
+        omega: Angular frequency.
+        kx: Lateral wavenumber.
+        nsub: Substeps.
 
     Returns:
         The impedance at the top.
     """
-    a11, a12, a21, a22 = blk
 
-    def f(yy: np.ndarray) -> np.ndarray:
+    def f(yy: np.ndarray, z: float) -> np.ndarray:
+        a11, a12, a21, a22 = ablocks(medium_at(z), omega, kx, 0.0)
         return a21 + a22 @ yy - yy @ a11 - yy @ a12 @ yy
 
-    dz = -h / nsub
+    dz = (z_top - z_bot) / nsub
+    z = z_bot
     for _ in range(nsub):
-        k1 = f(y)
-        k2 = f(y + 0.5 * dz * k1)
-        k3 = f(y + 0.5 * dz * k2)
-        k4 = f(y + dz * k3)
+        k1 = f(y, z)
+        k2 = f(y + 0.5 * dz * k1, z + 0.5 * dz)
+        k3 = f(y + 0.5 * dz * k2, z + 0.5 * dz)
+        k4 = f(y + dz * k3, z + dz)
         y = y + (dz / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        z += dz
     return y
 
 
@@ -225,10 +247,14 @@ def march(
     y = y_downgoing(REF, omega, kx)
     edge = np.linspace(0.0, thickness, nstep + 1)
     for n in range(nstep - 1, -1, -1):
-        zc = 0.5 * (edge[n] + edge[n + 1])
-        blk = ablocks(medium_at(float(zc)), omega, kx, 0.0)
-        hstep = float(edge[n + 1] - edge[n])
-        y = step_mobius(y, blk, hstep) if method == "mobius" else step_rk4(y, blk, hstep, nsub)
+        lo, hi = float(edge[n]), float(edge[n + 1])
+        if method == "mobius":
+            # Piecewise constant, sampled at the midpoint: this IS a layer stack,
+            # and is what the comparison in Part 8 treats as one.
+            blk = ablocks(medium_at(0.5 * (lo + hi)), omega, kx, 0.0)
+            y = step_mobius(y, blk, hi - lo)
+        else:
+            y = step_rk4(y, medium_at, hi, lo, omega, kx, nsub)
     return y
 
 
@@ -510,6 +536,68 @@ def main() -> int:
         sc_ok = sc_ok and abs(rmat[0, 0] / ken[0, 0] + 1.0) < 1e-10
         sc_ok = sc_ok and abs(rmat[2, 2] / ksh - 1.0) < 1e-10
     report("S_u = -S_d on P-SV and S_u = +S_d on SH, which is the sign split", sc_ok)
+
+    print("")
+    print("--- 8: the order of accuracy on a SMOOTH gradient --------------------")
+    print("    This is the case the whole formulation is aimed at: a background")
+    print("    whose dominant variation is in DEPTH, and smooth -- a gradient,")
+    print("    not a stack.  Parts 1-5 compared two ways of solving the same")
+    print("    piecewise-constant problem, which cannot separate them.  Against a")
+    print("    genuinely CONTINUOUS profile they separate, because a layer stack")
+    print("    approximates a gradient by staircasing it while the ODE does not.")
+    print("    Reference: RK4 at 4096 steps, itself converged far past both.")
+    kx = float(OMEGA * 1.0e-4)
+    ref_y = march(graded, OMEGA, kx, H, 4096, method="rk4", nsub=4)
+    ref_r = reflection(ref_y, OMEGA, kx)
+    sc = float(np.max(np.abs(ref_r)))
+    print(f"    {'steps':>7} {'staircase':>12} {'order':>7} {'RK4':>12} {'order':>7}")
+    e_st_prev = e_rk_prev = None
+    ord_st: list[float] = []
+    ord_rk: list[float] = []
+    for ns in (8, 16, 32, 64, 128):
+        e_st = float(np.max(np.abs(reflection(march(graded, OMEGA, kx, H, ns), OMEGA, kx) - ref_r)))
+        e_rk = float(
+            np.max(np.abs(reflection(march(graded, OMEGA, kx, H, ns, method="rk4"), OMEGA, kx) - ref_r))
+        )
+        e_st, e_rk = e_st / sc, e_rk / sc
+        p_st = np.log2(e_st_prev / e_st) if e_st_prev else float("nan")
+        p_rk = np.log2(e_rk_prev / e_rk) if e_rk_prev else float("nan")
+        if e_st_prev:
+            ord_st.append(p_st)
+            ord_rk.append(p_rk)
+        e_st_prev, e_rk_prev = e_st, e_rk
+        print(f"    {ns:7d} {e_st:12.3e} {p_st:7.2f} {e_rk:12.3e} {p_rk:7.2f}")
+    print(f"    staircase order {np.mean(ord_st):.2f},  RK4 order {np.mean(ord_rk):.2f}")
+    report("a layer stack is SECOND order on a smooth gradient", bool(1.6 < np.mean(ord_st) < 2.4))
+    report("the impedance ODE is FOURTH order on the same profile", bool(np.mean(ord_rk) > 3.5))
+    # What that is worth: steps needed for a fixed accuracy.
+    tgt = 1e-8
+    n_st = next(
+        (
+            n
+            for n in (2**p for p in range(3, 22))
+            if float(np.max(np.abs(reflection(march(graded, OMEGA, kx, H, n), OMEGA, kx) - ref_r))) / sc
+            < tgt
+        ),
+        None,
+    )
+    n_rk = next(
+        (
+            n
+            for n in (2**p for p in range(3, 16))
+            if float(
+                np.max(np.abs(reflection(march(graded, OMEGA, kx, H, n, method="rk4"), OMEGA, kx) - ref_r))
+            )
+            / sc
+            < tgt
+        ),
+        None,
+    )
+    print(f"    steps to reach {tgt:.0e}:  staircase {n_st},  ODE {n_rk}")
+    report(
+        "so the ODE reaches a fixed accuracy in far fewer steps",
+        n_rk is not None and n_st is not None and n_rk * 8 <= n_st,
+    )
 
     print("")
     print("=" * 74)
