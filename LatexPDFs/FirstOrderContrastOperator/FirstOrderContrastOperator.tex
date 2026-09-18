@@ -73,9 +73,13 @@ $2\tfrac12$-D.  What is new here is the $3$-D Cartesian operator, and a
 measurement of what the route is worth.
 
 Three results.  \emph{First}, the operator matrix $\Aop$ is derived from the
-stiffness tensor and validated against two independent objects that agree under
-one constant similarity transform; the thesis shorthand $\zeta,\chi$ are shown
-to be the paper's $\nu_1,\nu_2$.  \emph{Second}, the test space is
+stiffness tensor and reproduces the thesis system matrix (Akdef) under one
+constant similarity transform; the paper's $\nu_1,\nu_2$ are the thesis's
+$\zeta,\chi$.  A fourth, arrived at late and by the wrong road, is that the
+thesis's own spectral representation of $\bA$ --- analytic eigenvectors, a
+piecewise branch, and an inverse obtained from the symplectic structure rather
+than by inversion --- removes three numerical hazards outright that the operator
+route had to discover and repair one at a time.  \emph{Second}, the test space is
 \emph{derived} rather than chosen: $\Jsix$ is antisymmetric and
 $\dA^{t}\Jsix = -\Jsix\dA$, so $\Jsix\dA$ is symmetric and the only natural
 projection is $\text{test} = \Jsix\times\text{trial}$.  This dissolves an
@@ -266,7 +270,23 @@ fields --- rather than expressions, and why they are accompanied by a negative
 control that corrupts precisely this ordering.
 
 %=====================================================================
-\section{Validating \texorpdfstring{$\Aop$}{A} against two independent objects}
+\section{\texorpdfstring{$\Aop$}{A} against the thesis, and against the
+published operator form}
+
+\begin{quote}
+\textbf{A note on where this starts.}  An earlier version of this note presented
+the published operator matrices as the foundation and the thesis system matrix
+as an arbiter for them.  That is the wrong way round.  The thesis carries
+$\bA(k_x,k_y)$ in \S2.1, equation~(Akdef), and the purpose of this work is to
+extend and test the thesis, not to check the thesis against a later paper.  What
+the operator form genuinely contributes is narrower: the thesis has the system
+only in the laterally \emph{invariant} case, where $\partial_\alpha \to ik_\alpha$
+has already been taken, and a cube requires the coefficients to vary laterally.
+So the operator form is a \emph{generalisation} of (Akdef), and it is
+that generalisation --- not the system --- that is new here.  The consequences
+of getting this backwards were not only presentational; they are collected in
+\S\ref{sec:thesisspectral}.
+\end{quote}
 
 \subsection{Arbiter A: the published isotropic operator matrices}\label{sec:arbiterA}
 
@@ -279,7 +299,8 @@ A check that cannot fail is worth nothing, so a corrupted $\Aop_{22}$ --- with
 the derivative wrongly placed outside the modulus --- is also tested, and is
 rejected.
 
-\subsection{Arbiter B: the thesis system matrix}\label{sec:arbiterB}
+\subsection{The anchor: the thesis system matrix
+\texorpdfstring{(Akdef)}{(Akdef)}}\label{sec:arbiterB}
 
 The thesis carries a $6\times6$ Fourier-domain system matrix $\bA(k_x,k_y)$ for
 a laterally invariant medium, in a \emph{different} field vector
@@ -296,6 +317,14 @@ paper has $i\omega\rho$.  It uses the shorthand
   \zeta = \frac{4\mu(\lambda+\mu)}{\lambda+2\mu},\quad
   \chi = \frac{2\mu\lambda}{\lambda+2\mu}.
 \end{equation}
+The thesis attaches a warning to these that must travel with them: the shorthand
+$\gamma, a, b, \zeta, \chi$ is \emph{local to} (Akdef), and is \emph{not} the
+$\gamma, \zeta, \chi$ of the List of Symbols, which denote the Chapter~5
+material-contrast ratios.  Since this note uses $\zeta$ and $\chi$ throughout as
+the in-plane stiffnesses that survive the elimination of $\varepsilon_{33}$, the
+collision is worth stating once rather than inheriting silently.  With that
+said, $\zeta - \chi \equiv 2\mu$, which is the thesis's own footnote and the
+cleanest check on the pair.
 
 \begin{quote}
 \textbf{Comparing \eqref{eq:nu} with these:} $\zeta \equiv \nu_1$ and
@@ -1773,6 +1802,92 @@ $\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$, and to settle the $i\omega$ of
 \eqref{eq:gapfactor}.
 
 %=====================================================================
+\section{The thesis spectral representation, and what it
+removes}\label{sec:thesisspectral}
+
+Three of the four numerical defects of \S\ref{sec:schwinger} are not properties
+of the physics.  They are consequences of asking a numerical eigensolver to do
+work that \S2.1 of the thesis has already done in closed form, and they do not
+arise at all if $\boldsymbol\Gamma$ is built the way the thesis builds it.
+
+\subsection{What the thesis gives}
+
+Alongside (Akdef) the thesis carries the complete spectral
+representation
+\begin{equation}\label{eq:specA}
+  \bA(k_x,k_y) = \mathbf{D}_z\,\boldsymbol\Lambda\,\mathbf{D}_z^{-1},
+  \qquad
+  \boldsymbol\Lambda = i\,\mathrm{diag}\bigl[k_{z,P},k_{z,S},k_{z,H},
+                                            -k_{z,P},-k_{z,S},-k_{z,H}\bigr],
+\end{equation}
+with the columns of $\mathbf{D}_z$ written out analytically --- $|\pm,P\rangle$,
+$|\pm,S\rangle$, $|\pm,H\rangle$, the $+$ columns downgoing --- and three
+further things that matter more than they look:
+
+\begin{enumerate}
+\item \textbf{The branch is defined piecewise.}
+      $k_{z,c} = \sqrt{\hat K_c^2-k_x^2}$ where $|k_x|<|\hat K_c|$ and
+      $i\sqrt{k_x^2-\hat K_c^2}$ otherwise: the positive root in both regimes,
+      with the up/down assignment carried by the \emph{column ordering} of
+      \eqref{eq:specA} rather than by the sign of any computed quantity.
+\item \textbf{The shear basis is chosen non-degenerate.}  The thesis notes
+      $k_{z,S} = k_{z,H}$ and keeps the two labelled apart regardless, remarking
+      that its quasi-$SV$ and quasi-$SH$ vectors --- unlike the conventional
+      seismological decomposition --- remain independent at $k_x=k_y=0$.
+\item \textbf{The inverse requires no inversion.}  From the quasi-Hamiltonian
+      relation,
+      \begin{equation}\label{eq:dzinv}
+        \mathbf{D}_z^{-1}(k_x,k_y)
+          = -i\,\Jsix\,\mathbf{D}_z^{t}(-k_x,-k_y)\,\Jsix .
+      \end{equation}
+\end{enumerate}
+
+All of it is verified here rather than taken on trust, and the checks are
+coupled: \eqref{eq:specA} cannot reproduce (Akdef) unless the
+eigenvectors, the ordering, the branch and \eqref{eq:dzinv} are all correct
+together.  It does, to $6.2\times10^{-14}$.  The normalisation factors
+$\epsilon_c$, which the thesis specifies only as ``chosen so that
+$\mathbf{D}_z^{-1}$ takes a simple form'', are \emph{read off} rather than
+guessed: with $\epsilon=1$ the product \eqref{eq:dzinv}$\,\cdot\mathbf{D}_z$ is
+diagonal --- to $1.1\times10^{-15}$, itself a test of the eigenvectors --- and
+$\epsilon_c^2$ is the reciprocal of each diagonal entry.
+
+\subsection{What it removes}
+
+\begin{center}
+\begin{tabular}{p{0.44\linewidth}p{0.48\linewidth}}
+\toprule
+found numerically, working from the operator form & already settled in \S2.1\\
+\midrule
+$\Re(\lambda)$ carries no information in the propagating window; its sign was
+decided independently at $\pm\mathbf{k}$, giving a reciprocity residual of
+$1.245$ &
+the branch of $k_{z,c}$, defined piecewise, with the ordering of
+\eqref{eq:specA} carrying up/down\\[4pt]
+the doubly degenerate shear eigenspace returns an arbitrary $SV$/$SH$ mixture;
+an intermittent factor of four in a mode-converted coefficient &
+quasi-$SV$ and quasi-$SH$ chosen non-degenerate, and said to be so\\[4pt]
+eigenvector conditioning of $1.6\times10^{20}$; a scalar scaling that proved to
+be in the wrong direction; then Parlett--Reinsch balancing &
+no eigenvectors are computed\\[4pt]
+$\mathbf{D}_z^{-1}$ by numerical inversion & \eqref{eq:dzinv}\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The fourth defect, the cancellation in $T^{11}$ of
+\S\ref{sec:triseries}, is genuine: it concerns the $z$ integral and not the
+spectral representation.}
+\end{center}
+
+Rebuilt on \eqref{eq:specA}, $\boldsymbol\Gamma$ is reciprocal to
+$3.6\times10^{-12}$ with no classification performed anywhere, reproduces the
+Kelvin tensor to $1.0\times10^{-3}$ and converging, and carries the radiation
+reaction to $4.4\times10^{-3}$ --- \emph{with no $\epsilon$ prescription}, since
+the outgoing condition is already in the branch of $k_{z,c}$.  In the thesis
+basis the extraction is also plainer: a force $f_j$ enters row $3+j$ with a
+minus sign and the displacement comes out in rows $0$--$2$, so
+$G_{ij} = -\boldsymbol\Gamma_{i,3+j}$ with no velocity factor at all.
+
+%=====================================================================
 \section{A layer in a whole space: the external
 arbiter}\label{sec:layer}
 
@@ -1959,6 +2074,14 @@ Schwinger & $\mathcal{F}[\partial_\alpha(\mathbf{1}_Vc)] = ik_\alpha
           & the gap to the calibrated $\mathcal{G}$, factorised & 1\\
           & the $9\times9$ matrix is symmetric, with a sign control and a
             not-vacuous control & 3\\
+\midrule
+thesis & $\mathbf{D}_z^{-1}$ from \eqref{eq:dzinv} is diagonal on the thesis
+         eigenvectors, and exact after normalisation & 2\\
+       & $\mathbf{D}_z\boldsymbol\Lambda\mathbf{D}_z^{-1}$ reproduces (Akdef) & 1\\
+       & the quasi-Hamiltonian relation as the thesis states it & 1\\
+       & quasi-$SV$ and quasi-$SH$ independent at $k=0$ & 1\\
+       & $\boldsymbol\Gamma$ reciprocal, and the Kelvin tensor with the
+         radiation reaction, from the analytic modes alone & 3\\
           & the one-pass assembly reproduces the density channel & 1\\
 \midrule
 layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
@@ -1970,8 +2093,9 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \bottomrule
 \end{tabular}
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
-$44/44$, the $T$-matrix assembly $12/12$, the Schwinger settlement $17/17$, the
-layer comparison $9/9$, and the propagator gate exits clean.}
+$44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
+layer comparison $9/9$, the thesis spectral representation $8/8$, and the
+propagator gate exits clean.}
 \end{center}
 
 %=====================================================================

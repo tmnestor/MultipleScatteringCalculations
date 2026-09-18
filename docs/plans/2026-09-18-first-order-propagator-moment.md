@@ -1,5 +1,60 @@
 # The First-Order Propagator Moment — Implementation Plan
 
+> ## 🛑 FIFTH REVISION, 2026-09-18 — RE-ANCHORED TO THE THESIS
+>
+> `scripts/gate_thesis_spectral.py`, **8/8**. ▶ Tod: *"Thesis should have been
+> the basis for the First Order Formulation — not some recent paper!"* Correct,
+> and the cost was concrete rather than presentational.
+>
+> ### 🔑 §2.1 of the thesis already contains what I spent the session finding
+>
+> `GRepresentations.tex` carries the **complete spectral representation** of `A`:
+>
+> - `(specA)` `A = D_z Λ D_z⁻¹` with **analytic** eigenvectors
+>   `(Peigen)`, `(SVeigen)`, `(SHeigen)`, columns ordered `[+P,+S,+H,−P,−S,−H]`
+> - `(kzcDef)` the branch **defined piecewise** — real root when propagating,
+>   `i√(k_x²−K̂²)` when evanescent
+> - `(ATdef)` `Aᵀ(−k)J₆ + J₆A(k) = 0` — the relation I re-derived and called
+>   "an easy and silent slip"
+> - **`D_z⁻¹ = −i J₆ D_zᵀ(−k) J₆`** — the inverse needs **no inversion**
+>
+> | found the hard way, from the operator form | already in §2.1 |
+> |---|---|
+> | `Re(ev)` sign meaningless in the propagating window; reciprocity **1.245** | `kzcDef` + the column ordering |
+> | degenerate S eigenspace → **factor of four**, intermittent | quasi-SV/SH chosen **non-degenerate**, and *stated* to be |
+> | `cond(rv)=1.6e20`; scaling in the wrong direction; then balancing | **no eigenvectors are computed** |
+> | `inv(rv)` | the symplectic identity |
+>
+> ⚠ Only `tri(1,1)`'s cancellation survives as a genuine defect — it concerns the
+> `z` integral, not the spectral representation.
+>
+> ### Verified, not taken on trust
+>
+> The checks are **coupled**: `specA` cannot reproduce `Akdef` unless the
+> eigenvectors, ordering, branch and inverse are all right together. It does, to
+> **6.2e-14**. The `ε` normalisations — which the thesis gives only as "chosen so
+> that `D_z⁻¹` takes a simple form" — are **read off**: with `ε=1` the product is
+> diagonal to 1.1e-15 (itself a test of the eigenvectors) and `ε² = 1/diagonal`.
+>
+> Γ rebuilt on it: reciprocal to **3.6e-12** with no classification anywhere,
+> Kelvin to 1.0e-3 and converging, and the radiation reaction to 4.4e-3 **with no
+> `ε` prescription** — the outgoing condition is already in `kzcDef`.
+>
+> ▶ In the thesis basis the extraction is plainer too: a force `f_j` enters row
+> `3+j` with a minus sign, `u` comes out in rows 0–2, so `G_ij = −Γ[i,3+j]` —
+> **no velocity factor at all**, so the `iω` units trap does not arise.
+>
+> ### ⚠ Carry the thesis's own warning
+>
+> Its `γ, a, b, ζ, χ` are **local to (Akdef)** and collide with the List of
+> Symbols' Chapter-5 contrast ratios. Say so wherever `ζ, χ` are used.
+>
+> ### Next
+>
+> 1. Port the Schwinger and layer gates onto `gate_thesis_spectral`, deleting
+>    `balance_batch`, `downgoing()` and the P-SV block restriction.
+> 2. Then `B`, the geometric collocation/Galerkin factor, and the slab A/B.
+
 > ## ⭐ FOURTH REVISION, 2026-09-18 — the EXTERNAL arbiter, and it passes
 >
 > `scripts/gate_first_order_layer_vs_kennett.py`, **9/9**. ▶ Tod's suggestion:
