@@ -268,8 +268,11 @@ def rowscale(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> np.n
     Returns:
         Shape (6,) real, the diagonal of R.
     """
-    k = max(float(np.hypot(kx, ky)), float(abs(omega) / ref.beta))
-    s = float(np.sqrt(ref.mu * k))
+    # abs() before float(): with attenuation beta and mu are COMPLEX, and the
+    # scaling only ever needs their magnitude -- it is a real diagonal similarity
+    # that cancels out of D_z Lambda D_z^-1 entirely.
+    k = max(float(np.hypot(kx, ky)), float(abs(omega / ref.beta)))
+    s = float(np.sqrt(abs(ref.mu) * k))
     return np.array([s, s, s, 1.0 / s, 1.0 / s, 1.0 / s])
 
 
@@ -321,12 +324,12 @@ def dz_balanced(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> t
     kmag = float(np.hypot(kx, ky))
     zs_p = abs(kz_c(ref.alpha, omega, kx, ky))
     zs_s = abs(kz_c(ref.beta, omega, kx, ky))
-    at_branch = min(zs_p, zs_s) < 1e-9 * max(kmag, float(abs(omega) / ref.beta))
+    at_branch = min(zs_p, zs_s) < 1e-9 * max(kmag, float(abs(omega / ref.beta)))
     if at_branch:
         msg = (
             f"D_z is singular at |k| = {kmag:.8g}: a branch point, where k_z = 0 for "
             f"one wave type and its two modes coalesce.  omega/alpha = "
-            f"{abs(omega) / ref.alpha:.8g}, omega/beta = {abs(omega) / ref.beta:.8g}.\n"
+            f"{abs(omega / ref.alpha):.8g}, omega/beta = {abs(omega / ref.beta):.8g}.\n"
             f"Fix: give omega an imaginary part.  Attenuation removes this "
             f"degeneracy outright -- k_z^2 = omega^2/c^2 - k^2 cannot vanish for "
             f"real k when omega^2/c^2 is complex -- so the branch point exists "
