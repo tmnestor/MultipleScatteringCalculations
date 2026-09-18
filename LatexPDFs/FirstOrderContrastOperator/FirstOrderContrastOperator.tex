@@ -644,9 +644,11 @@ broken --- and differ from second order.
 
 \begin{quote}
 \textbf{Where.}  Eleven of eighty-one entries differ.  With the parameter order
-$(c_1,c_2,c_3,\ e_{11},e_{22},e_{33},\ e_{12},e_{13},e_{23})$ the nonzero block
-is $\{e_{11},e_{22},e_{33}\}^{2}$ together with $(e_{13},e_{13})$ and
-$(e_{23},e_{23})$.
+\[
+  (c_1,c_2,c_3,\ e_{11},e_{22},e_{33},\ e_{12},e_{13},e_{23})
+\]
+the nonzero block is $\{e_{11},e_{22},e_{33}\}^{2}$ together with
+$(e_{13},e_{13})$ and $(e_{23},e_{23})$.
 \end{quote}
 
 That is exactly the set of strains $\bta_3$ sees:
@@ -945,13 +947,14 @@ $\sum_p E[-1;\{p,p\}] = -4\pi$, which a spherical excision returns as $0$.
 
 On the face $x_3 = \Delta/2$, scaling the in-face coordinates by $\Delta/2$
 reduces every surface term to one of three integrals over $[-1,1]^2$:
-\begin{equation}\label{eq:faceints}
-  j_1 = \!\iint\!\frac{du\,dv}{(1+u^2+v^2)^{3/2}} = \frac{2\pi}{3},
-  \quad
-  j_2 = \!\iint\!\frac{u^2\,du\,dv}{(1+u^2+v^2)^{5/2}} = -\frac{2(\sqrt3-\pi)}{9},
-  \quad
-  k_1 = \!\iint\!\frac{du\,dv}{(1+u^2+v^2)^{5/2}} = \frac{2(2\sqrt3+\pi)}{9}.
-\end{equation}
+\begin{align}\label{eq:faceints}
+  j_1 &= \iint\frac{du\,dv}{(1+u^2+v^2)^{3/2}}
+       &&= \frac{2\pi}{3}, \notag\\[2pt]
+  j_2 &= \iint\frac{u^2\,du\,dv}{(1+u^2+v^2)^{5/2}}
+       &&= -\frac{2(\sqrt3-\pi)}{9}, \\[2pt]
+  k_1 &= \iint\frac{du\,dv}{(1+u^2+v^2)^{5/2}}
+       &&= \frac{2(2\sqrt3+\pi)}{9}. \notag
+\end{align}
 All three are evaluated in closed form.  The first needs no integration at all:
 $j_1$ \emph{is} the solid angle subtended by one face at the cube's centre, and
 the six faces subtend $4\pi$, so $j_1 = 4\pi/6 = 2\pi/3$.  That identity is a
@@ -1475,11 +1478,19 @@ isotropic and so is a pure delta of weight $-\nu_1$.
 \subsubsection{The lateral integral, and where it must be evaluated}
 
 The box form factor is separable --- the lateral transform of the cube's
-indicator is $(2a)^2\operatorname{sinc}(k_1a)\operatorname{sinc}(k_2a)$ --- so
-with \eqref{eq:Cnu1}--\eqref{eq:Cinplane} and one lateral derivative from each
-$\dA$, the integrand carries $k_ck_d$ against $C$, giving two families:
-$\int d^2k\,W k_ck_d$, which is separable, and $\int d^2k\,W k_ak_bk_ck_d/k^2$,
-which is not.  The elementary one-dimensional integrals are
+indicator being
+\[
+  (2a)^2\operatorname{sinc}(k_1a)\,\operatorname{sinc}(k_2a) .
+\]
+With \eqref{eq:Cnu1}--\eqref{eq:Cinplane} and one lateral derivative from each
+$\dA$, the integrand carries $k_ck_d$ against $C$, giving two families,
+\[
+  \int d^2k\;W\,k_ck_d
+  \qquad\text{and}\qquad
+  \int d^2k\;W\,k_ak_bk_ck_d/k^2 ,
+\]
+of which the first is separable and the second is not.  The elementary
+one-dimensional integrals are
 \begin{equation}\label{eq:sincints}
   \int_{-\infty}^{\infty}\!\operatorname{sinc}^2(ka)\,dk = \frac{\pi}{a},
   \qquad
@@ -3097,7 +3108,7 @@ architecture does not touch at all.
 \section{Summary of checks}
 
 \begin{center}
-\begin{tabular}{llr}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.60\linewidth}r@{}}
 \toprule
 object & what is established & checks\\
 \midrule
