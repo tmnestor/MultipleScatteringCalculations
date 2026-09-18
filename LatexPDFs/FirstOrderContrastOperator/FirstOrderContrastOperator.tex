@@ -111,7 +111,7 @@ the shared lattice error is refined away} --- which is what distinguishes a real
 advantage from an accidental cancellation (\S\ref{sec:whichbetter}).
 
 Every claim below is backed by an executable check; the scripts report $25/25$,
-$44/44$, $14/14$, $17/17$, $8/8$, $7/7$ and $7/7$, and a separate gate binds the
+$44/44$, $14/14$, $17/17$, $9/9$, $7/7$, $7/7$ and $4/4$, and a separate gate binds the
 numerical propagator to the derived $\Aop$.  Section~\ref{sec:open} states
 plainly what is \emph{not} yet established.
 \end{abstract}
@@ -2033,6 +2033,97 @@ remain checked only against other formulations.
 \end{quote}
 
 %=====================================================================
+\section{The shear moment \texorpdfstring{$B$}{B}, read off}\label{sec:bmoment}
+
+This is what Task~1 was for: the cube's propagator moment obtained from
+$\partial_3\bq = \Aop\bq + \bd$ rather than from the Kelvin tensor, and compared
+with a closed form the first-order machinery knows nothing about.
+
+\subsection{Which realisation, and why it is the easy one}
+
+$B$ multiplies $(\delta_{ik}\delta_{jm} + \delta_{im}\delta_{jk})$ in the moment
+tensor, so
+\begin{equation}\label{eq:brealise}
+  B = I_{xyxy} = \int_V \partial_y\partial_x G_{xy}\,dV ,
+\end{equation}
+and \emph{that} realisation carries only lateral derivatives.  In the lateral
+Fourier domain they are factors of $ik$, with no $\partial_z$ and hence no
+$\Aop\boldsymbol\Gamma$ product to form:
+\begin{equation}\label{eq:bintegral}
+  B = \frac{1}{(2\pi)^2}\int\! d^2k\;(ik_x)(ik_y)\,F(\mathbf{k})
+      \int_{-a}^{a}\! G_{xy}(\mathbf{k}; -z')\,dz' .
+\end{equation}
+Every other realisation of $B$ involves $\partial_z$.  The $z$ integral is closed
+form from \eqref{eq:specA}; the lateral one is quadrature.
+
+\subsection{The sign, pinned independently}
+
+The two factors of $i$ give $(ik_x)(ik_y) = -k_xk_y$.  Dropping them costs
+exactly a sign, which is invisible against $|B|$ and would be reported as
+success.  So the sign is fixed by an evaluation owing nothing to the first-order
+machinery: by the divergence theorem,
+\begin{equation}\label{eq:bsurface}
+  \int_V \partial_y\partial_x G_{xy}\,dV
+  = \oint_{\partial V} n_y\,\bigl(\partial_x G_{xy}\bigr)\,dA ,
+\end{equation}
+which is legitimate --- and, more to the point, \emph{complete} --- because the
+divergence theorem applied to a locally integrable $F$ returns the full
+\emph{distributional} integral.  Any delta at the origin is therefore included
+automatically, which is what makes this a safe way to evaluate a quantity whose
+volume form has an Eshelby delta in it.  Here $\partial_x G_{xy} \sim 1/r^2$,
+integrable in three dimensions and non-singular on faces standing at distance $a$
+from the centre; only the $y=\pm a$ faces contribute and their integrands add,
+being odd in $y$.  Evaluated,
+\begin{equation}
+  \oint_{\partial V} n_y \partial_x G_{xy}\,dA = +2.6137073561\times10^{-12}
+  = B \quad\text{to } 1.7\times10^{-13},
+\end{equation}
+so \eqref{eq:brealise} is the right realisation and the sign is positive.
+
+\subsection{The result}
+
+\begin{center}
+\begin{tabular}{ccrc}
+\toprule
+$\Lambda$ & nodes per half-period & $B$ from \eqref{eq:bintegral} & relative\\
+\midrule
+$400$  & $8$  & $2.6144253494\times10^{-12}$ & $2.7\times10^{-4}$\\
+$400$  & $12$ & $2.6138081029\times10^{-12}$ & $3.9\times10^{-5}$\\
+$800$  & $12$ & $2.6137960462\times10^{-12}$ & $3.4\times10^{-5}$\\
+$1200$ & $14$ & $2.6137524215\times10^{-12}$ & $\mathbf{1.7\times10^{-5}}$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Against
+$B = \sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu) = 2.6137073561\times10^{-12}$, at
+$\omega = 6$ so that $(k_Sa)^2 = 10^{-6}$ and the static form is the right
+comparison.  The residual falls under refinement with no sign of a floor, so it
+bounds the quadrature and is not a discrepancy.}
+\end{center}
+
+Dropping the two factors of $i$ returns $-1.000275\times B$: the control flips the
+sign exactly, as it must.
+
+\subsection{Two things that nearly went wrong}
+
+\emph{The grid.}  The integrand is $4\sin(k_xa)\sin(k_ya)$ times the kernel, a
+product of sincs separable in the \emph{Cartesian} components.  On a polar grid
+it does not converge even at fixed cutoff, and that drift, read as cutoff
+dependence, looks exactly like a logarithmic divergence --- which invites a hunt
+for a missing Eshelby delta.  There is none.  On Cartesian panels cut at the sinc
+half-period $\pi/a$ the integral converges cleanly.  The resolution study at
+\emph{fixed} cutoff is what separates the two readings, and nothing else does.
+
+\emph{A near miss.}  On the polar grid at $\Lambda = 50$ the value was
+$2.6147\times10^{-12}$ --- agreeing with $B$ to $3.8\times10^{-4}$, and entirely
+an artefact of where the truncation happened to land.
+
+Finally, the normalisation factors $\epsilon_c$ play no part: $\epsilon$ scales
+column $i$ of $\mathbf{D}_z$ and divides row $i$ of its inverse, so it cancels out
+of every projector.  Dropping it removes the one step in the construction that
+cancels --- the step of \S\ref{sec:thesisspectral} that limits the useful range in
+$k$ --- and lets the whole assembly batch.
+
+%=====================================================================
 \section{Which formulation is more accurate}\label{sec:whichbetter}
 
 \S\ref{sec:layer} validates the operator and the propagator but cannot compare
@@ -2290,6 +2381,12 @@ thesis & $\mathbf{D}_z^{-1}$ from \eqref{eq:dzinv} is diagonal on the thesis
        & quasi-$SV$ and quasi-$SH$ independent at $k=0$ & 1\\
        & $\boldsymbol\Gamma$ reciprocal, and the Kelvin tensor with the
          radiation reaction, from the analytic modes alone & 3\\
+       & the valid range in $k$, recorded & 1\\
+\midrule
+$B$ & the batched eigenvectors are the scalar ones & 1\\
+    & \eqref{eq:bsurface} pins the realisation and the sign & 1\\
+    & $B$ from the first-order system matches the closed form & 1\\
+    & the two factors of $i$ are load-bearing & 1\\
 \midrule
 slab & the Navier route reproduces the package's amplification factors & 1\\
      & the advantage grows as the shared lattice error falls & 1\\
@@ -2311,7 +2408,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $8/8$, the slab
-comparison $7/7$, and the propagator gate exits clean.}
+comparison $7/7$, the shear moment $4/4$, and the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================
@@ -2378,10 +2475,13 @@ as such, the following are \emph{open}:
       backwards-compatible change, and the right moment for it is when the
       first-order route is wired into the package proper rather than now, when
       nothing upstream in the package produces two shear amplitudes.
-\item \textbf{The shear moment $B$ has not been read off.}  This is the
-      comparison Task~1 exists for --- $B$ against
-      $\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$ --- and it is now the one
-      remaining step of the task rather than a matter of method.
+\item \textbf{Only $B$ has been read off, not $A$ and $C$.}
+      \S\ref{sec:bmoment} does the shear moment because $I_{xyxy}$ realises it
+      with lateral derivatives alone.  $A$ and $C$ need $\partial_z$, hence the
+      $\Aop\boldsymbol\Gamma$ product, and are not done --- although the
+      structural relations $A = B - 1/3\mu$ and $C = -(5-2\pi/\!\sqrt3)B$, both
+      verified in \S\ref{sec:moments}, then determine them.  Obtaining them
+      independently would test those relations rather than assume them.
 \end{enumerate}
 
 \section{Where the route belongs}
