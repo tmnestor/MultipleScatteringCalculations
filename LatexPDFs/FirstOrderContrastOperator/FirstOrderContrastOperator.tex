@@ -1449,16 +1449,167 @@ agree, the tail is closed in form by \eqref{eq:tail}, and the remainder converge
 three orders of magnitude faster than the direct integral.
 \end{quote}
 
-\emph{Status of Task~1.}  The method is established end to end: $\Gamma$ from
-spectral projectors; the triangular $z$ integrals and their assembly; the
-scaling, the power table, and the asymptote $-\nu_1$,
-$\mu(\hat{k}\hat{k}-\delta)$ verified as an $O(1/k)$ rate; $\int I_\infty$
-decomposed by representation, its principal-value part vanishing by $D_4$
-symmetry and its remaining part closed by \eqref{eq:tail}; and the closure test
-\eqref{eq:closure}.  What remains is bookkeeping rather than method: assembling
-all nine trial functions and the full contrast operator, and reading the shear
-moment $B$ off the result for comparison with
-$\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$.
+\emph{What steps 1--3 establish.}  $\Gamma$ from spectral projectors; the
+triangular $z$ integrals and their assembly; the scaling, the power table, and
+the asymptote $-\nu_1$, $\mu(\hat{k}\hat{k}-\delta)$ verified as an $O(1/k)$
+rate; $\int I_\infty$ decomposed by representation, its principal-value part
+vanishing by $D_4$ symmetry and its remaining part closed by \eqref{eq:tail};
+and the closure test \eqref{eq:closure}.  All of that is machinery for the
+lateral integral.  It does not yet say what the integrand is, and the next
+subsection is about a question that has to be answered before it can.
+
+%---------------------------------------------------------------------
+\subsection{Step 4: how the augmentation composes with the Schwinger
+form}\label{sec:schwinger}
+
+The augmentation of \S\ref{sec:testspace} turns the differential $\Delta A$ into
+a multiplicative $\Delta C_{\text{eff}}$ by moving each outer lateral derivative
+onto the test function.  That is what keeps $\partial_\alpha \mathbf{1}_V$ ---
+the surface layer on the faces of the cube --- from ever being formed.  The
+Schwinger object
+\begin{equation}\label{eq:schwinger}
+  \bigl[\Delta C\,\mathcal{G}\,\Delta C\bigr]_{kl}
+  = \bigl\langle J_6\psi_k \bigm| \Delta A\,\Gamma\,\Delta A \bigm| \psi_l\bigr\rangle
+\end{equation}
+carries \emph{two} contrast operators, and the right-hand one has no test
+function next to it: what $\Gamma$ needs is $\Delta A\psi_l$ as an actual
+source, which is $\partial_\alpha(\Delta c\,\mathbf{1}_V\,\partial_\beta\psi_l)$
+--- precisely the object the transfer exists to avoid.  Read that way the two
+constructions look incompatible.
+
+They are not, and the reason is that the Born term and the Schwinger term differ
+in a way that matters.  In the Born term the indicator of the contrast and the
+test function sit at the \emph{same} point, so $\partial_\alpha(\mathbf{1}_V c)$
+would have to be multiplied by another factor supported on $\bar{V}$; a surface
+layer times an indicator is not defined, and the transfer is therefore not a
+convenience but the only well-posed form.  In the Schwinger term the two
+indicators are separated by $\Gamma$.  The source at $\mathbf{x}'$ is paired,
+through a kernel, with a test object at $\mathbf{x}$; nothing coincides, the
+surface layer is harmless --- and in the lateral Fourier domain it need not be
+formed at all, because
+\begin{equation}\label{eq:ikrule}
+  \mathcal{F}\bigl[\partial_\alpha(\mathbf{1}_V c)\bigr](\mathbf{k})
+  = i k_\alpha\, \mathcal{F}\bigl[\mathbf{1}_V c\bigr](\mathbf{k})
+\end{equation}
+is exact.  The derivative is carried by the \emph{transform}; the indicator
+stays inside the form factor, undifferentiated.
+
+The bookkeeping that follows is uniform.  Every derivative in $A$ is lateral ---
+the depth derivative is the left-hand side of $\partial_3 q = Aq+d$ --- so in the
+lateral Fourier domain each is a factor $ik_\alpha$ at the single wavenumber the
+integral runs over.  One entry of \eqref{eq:schwinger} has four derivative slots,
+and they are placed as
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+leg & slot & where it goes\\
+\midrule
+left  & outer & onto the test polynomial \quad(the augmentation)\\
+left  & inner & onto the propagated field \quad$\to\ ik_\beta$\\
+right & outer & onto the source transform \quad$\to\ ik_\alpha$, by \eqref{eq:ikrule}\\
+right & inner & onto the trial polynomial \quad(the augmentation)\\
+\bottomrule
+\end{tabular}
+\end{center}
+The two outer slots are the ones in question.  The left one goes exactly where
+$\Delta C_{\text{eff}}$ already puts it; the right one goes onto the kernel.  No
+surface term is evaluated on a face, and the augmentation is unchanged.
+
+\eqref{eq:ikrule} is checked numerically rather than asserted.  Paired with a
+smooth bump $f$ it states
+$\int f\,\partial_1\mathbf{1}_S = -\int_S \partial_1 f$, whose right side is an
+ordinary integral over the square; evaluating the left side in the Fourier
+domain as $(2\pi)^{-2}\!\int \hat{f}(-\mathbf{k})\,ik_1 F(\mathbf{k})$ reproduces
+it to $1.0\times10^{-13}$, with a zero imaginary residue and the opposite sign
+rejected by a factor of two.
+
+\subsubsection*{The propagator, checked against the Kelvin tensor}
+
+Before any of this can be assembled, one normalisation has to be settled that the
+bridge identity of \S\ref{sec:tmatrix} does not reach: the bridge compares
+$\Gamma$ at two depths and so tests propagation, not the strength of the source
+jump.  Inverting $\Gamma$ laterally at a fixed vertical separation and reading
+the velocity--force block,
+\begin{equation}
+  \frac{1}{-i\omega}\,(2\pi)^{-2}\!\!\int\! d^2k\;
+  \Gamma_{3+i,\,j}(\mathbf{k};\Delta z)
+  \;\;\longrightarrow\;\; G_{ij}(\Delta z),
+\end{equation}
+the analytic Kelvin tensor comes back to $7.3\times10^{-4}$ and still
+converging, with off-diagonal leakage $2.9\times10^{-4}$; the residue is
+consistent with the $O((k_S r)^2)$ the static comparison drops.  This fixes both
+conventions at once --- that a force $f_i$ enters row $i$ of
+$\partial_3 q = Aq + s$, and that $q_{3+i} = v_i = -i\omega u_i$ comes out.  The
+quadrature must be polar: the kernel depends on $|\mathbf{k}|$ and on direction
+separately and so is not smooth at the origin, where a Cartesian tensor rule
+converges only as $1/n$ (measured: $4.0\times10^{-2} \to 1.2\times10^{-2}$ over
+a ninefold refinement, against $5.4\times10^{-3} \to 7.3\times10^{-4}$ in
+polar).  This is the opposite of the lateral moment itself, whose form factors
+are separable sinc products that polar cannot resolve.
+
+\subsubsection*{The density channel, assembled}
+
+With $\Delta\lambda = \Delta\mu = 0$ only the multiplicative $i\omega\Delta\rho$
+term of $\Delta A$ survives, both legs reduce to constants, and
+\eqref{eq:schwinger} can be predicted in closed form:
+\begin{equation}\label{eq:densarb}
+  \bigl\langle J_6\psi_0 \bigm| \Delta A\,\Gamma\,\Delta A \bigm| \psi_0\bigr\rangle
+  = i\omega^5 \Delta\rho^2\, M,
+  \qquad
+  M = \int_V\!\!\int_V G_{11} = \Bigl(a_0 + \tfrac{b_0}{3}\Bigr) D_0 ,
+\end{equation}
+with $a_0, b_0$ the Kelvin coefficients of \S\ref{sec:moments} and $D_0$ the
+purely geometric double-volume moment $\int_V\!\int_V 1/r$.  $D_0$ is evaluated
+by writing the double integral as a single one against the autocorrelation
+weight $\prod_i(2a - |u_i|)$ --- exact, and three dimensions cheaper --- and
+removing the $1/r$ outright with a Duffy substitution
+$\mathbf{u} = t(\xi,\eta,1)$, whose Jacobian $t^2$ cancels it:
+\begin{equation}
+  D_0 = 1.8823126444 ,\qquad
+  \int_V 1/r = 2.3800773640 .
+\end{equation}
+The lateral assembly with \emph{both} contrast operators in place reproduces
+\eqref{eq:densarb} to $6.9\times10^{-5}$, the two routes sharing nothing but the
+medium: one is a spectral construction on $A$ integrated over lateral
+wavenumber, the other a real-space moment of the Kelvin tensor.
+
+\subsubsection*{What the nine-parameter $\mathcal{G}$ is, and is not}
+
+The same comparison locates an object that had been taken on trust.  The
+$\mathcal{G}$ used in \S\ref{sec:tmatrix} was \emph{calibrated} against this
+package's $T_9$ operator rather than derived, and it is not the moment that
+\eqref{eq:schwinger} calls for.  The gap factorises exactly:
+\begin{equation}\label{eq:gapfactor}
+  \frac{[\Delta C\,\mathcal{G}\,\Delta C]_{00}}{i\omega^5\Delta\rho^2 M}
+  = i\omega\,\frac{\int_V 1/r \;+\; i\,(\text{radiation})}{D_0},
+  \qquad \text{residual } 3.6\times10^{-5},
+\end{equation}
+where the radiation term is the closed form
+$V\omega(\alpha^{-3}+2\beta^{-3})/12\pi\rho$ that the moment export is itself
+gated on.  Two statements, both of which matter:
+\begin{itemize}
+\item The geometric factor $\int_V 1/r \big/ D_0 = 1.2644$ is the ratio of a
+  \emph{point}-volume moment to a \emph{volume}-volume moment.  The calibrated
+  $\mathcal{G}$ is a collocation object; \eqref{eq:schwinger} is a Galerkin one.
+  That is consistent with this project's own finding that the single site is
+  best posed by collocation, but the two cannot be mixed without the factor.
+\item The remaining $i\omega$ is the normalisation of the $q$-field trial space:
+  $\Delta C\,\mathcal{G}\,\Delta C$ carries two $J_6$ test factors while
+  \eqref{eq:schwinger} carries one, so a $\mathcal{G}$ that composes correctly
+  must absorb the trial-function normalisation.  How it should do so is not
+  settled here; see \S\ref{sec:open}.
+\end{itemize}
+
+\emph{Status of Task~1.}  The design question is settled and the assembly now
+computes a definite object, verified against an independent real-space arbiter on
+the channel where that arbiter exists in closed form.  What remains is the
+derivative-carrying channels --- where \eqref{eq:ikrule} does work that the
+density channel does not exercise --- the remaining eight trial functions, and
+reading the shear moment $B$ off the result for comparison with
+$\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$.  The quadrature in the density
+channel agrees at $10^{-4}$ but is not monotone under refinement
+($6.9\times10^{-5} \to 1.2\times10^{-3}$ as the box is widened), so it is not yet
+converged to better than about $10^{-3}$.
 
 %=====================================================================
 \section{Summary of checks}
@@ -1498,10 +1649,20 @@ $\mathbf{T}$ & coupling rebuilt independently, matches the symbolic derivation &
              & the finite-size density--strain term, isolated and sized & 2\\
              & density channel identical; $\Oh$ split on the $e_{12}/e_{13}$ pair & 6\\
              & Born limits agree & 1\\
+\midrule
+Schwinger & $\mathcal{F}[\partial_\alpha(\mathbf{1}_Vc)] = ik_\alpha
+            \mathcal{F}[\mathbf{1}_Vc]$, with a sign control & 3\\
+          & $\Aop$ in the paper basis $= S^{-1}\Aop_{\text{thesis}}S$; spectrum;
+            $\Aop(-\mathbf{k})^{\!\top}\!\Jsix = -\Jsix\Aop(\mathbf{k})$,
+            with a control & 4\\
+          & $\boldsymbol\Gamma$ inverted laterally \emph{is} the Kelvin tensor & 1\\
+          & the two-$\dA$ assembly is the Galerkin double-volume moment & 1\\
+          & the gap to the calibrated $\mathcal{G}$, factorised & 1\\
 \bottomrule
 \end{tabular}
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
-$44/44$, the $T$-matrix assembly $12/12$, and the propagator gate exits clean.}
+$44/44$, the $T$-matrix assembly $12/12$, the Schwinger settlement $10/10$, and
+the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================
@@ -1514,10 +1675,18 @@ as such, the following are \emph{open}:
 \item \textbf{The $T$-matrix uses the collocation propagator, not the
       consistent one.}  $\mathbf{T}$ is assembled in \S\ref{sec:tmatrix} and
       calibrated exactly, but $\mathcal{G}$ there is the \emph{single} cube
-      moment while the $\Jsix$ pairing makes the scheme Galerkin.  The
-      consistent pairing needs the \emph{double} moment, which has not been
-      extracted.  Everything in \S\ref{sec:tmatrix} is therefore the first-order
-      coupling seen through a collocation propagator.
+      moment while the $\Jsix$ pairing makes the scheme Galerkin.  This is now
+      measured rather than suspected: \eqref{eq:gapfactor} separates the gap
+      into a geometric factor $\int_V 1/r \big/ D_0 = 1.2644$ and a factor
+      $i\omega$, and the double moment $D_0$ that the consistent pairing needs is
+      extracted in \S\ref{sec:schwinger}.  \textbf{What is still open is the
+      $i\omega$}: $\Delta C\,\mathcal{G}\,\Delta C$ carries two $\Jsix$ test
+      factors where \eqref{eq:schwinger} carries one, so a $\mathcal{G}$ that
+      composes correctly must absorb the trial-space normalisation --- and the
+      natural candidate, an inverse Gram $\langle \Jsix\psi_k,\psi_l\rangle$, is
+      degenerate on the rigid block and so cannot simply be inverted.  Until that
+      is resolved, everything in \S\ref{sec:tmatrix} is the first-order coupling
+      seen through a collocation propagator.
 \item \textbf{No comparison against an independent arbiter has been run.}  The
       quantities in \S\ref{sec:whatitbuys} and \S\ref{sec:tmatrix} compare two
       \emph{formulations} with each other, not either against truth.  The $\Oh$
@@ -1533,7 +1702,15 @@ as such, the following are \emph{open}:
       Galerkin one.}  In the Galerkin pairing the transferred derivative lands
       on polynomials, so the third-derivative moment cannot arise; under
       collocation it transfers onto $\boldsymbol\Gamma$ and can.  Do not quote
-      the Galerkin count for a collocation build.
+      the Galerkin count for a collocation build.  \eqref{eq:ikrule} is how that
+      transfer is carried out in practice, and it is verified; what is not yet
+      done is the count itself.
+\item \textbf{The derivative-carrying channels of \eqref{eq:schwinger} are not
+      yet assembled.}  The density channel verifies the basis, the $\Jsix$
+      contraction, the kernel, the triangular $z$ integrals, the form factors and
+      the quadrature --- but its contrast operator is multiplicative, so it does
+      not exercise \eqref{eq:ikrule} at all.  The channels that do are the ones
+      that carry $\Delta\lambda$ and $\Delta\mu$, and they are untested.
 \end{enumerate}
 
 \section{Where the route belongs}
