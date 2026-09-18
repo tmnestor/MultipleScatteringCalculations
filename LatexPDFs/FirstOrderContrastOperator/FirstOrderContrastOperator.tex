@@ -53,6 +53,7 @@
 \newcommand{\Jsix}{\mathbf{J}_{6}}
 \newcommand{\Isix}{\mathbf{I}_{6}}
 \newcommand{\Oh}{O_{h}}
+\newcommand{\tp}{^{\mkern-1.5mu\mathsf{T}}}
 \newcommand{\bR}{\mathbf{R}}
 \newcommand{\bY}{\mathbf{Y}}
 \newcommand{\bM}{\mathbf{M}}
@@ -85,7 +86,7 @@ piecewise branch, and an inverse obtained from the symplectic structure rather
 than by inversion --- removes three numerical hazards outright that the operator
 route had to discover and repair one at a time.  \emph{Second}, the test space is
 \emph{derived} rather than chosen: $\Jsix$ is antisymmetric and
-$\dA^{t}\Jsix = -\Jsix\dA$, so $\Jsix\dA$ is symmetric and the only natural
+$\dA\tp\Jsix = -\Jsix\dA$, so $\Jsix\dA$ is symmetric and the only natural
 projection is $\text{test} = \Jsix\times\text{trial}$.  This dissolves an
 apparent mismatch of ten conditions against nine unknowns.  \emph{Third}, and
 least expected, the resulting coupling agrees with the ordinary Navier weak form
@@ -156,17 +157,25 @@ with the elastodynamic choice
   \bq_1 = -\bta_3, \qquad \bq_2 = \bv,
   \qquad (\bta_j)_i = \tau_{ij},
 \end{equation}
-so that $\bq = (-\tau_{13},\,-\tau_{23},\,-\tau_{33},\,v_1,\,v_2,\,v_3)^{t}$.
+so that $\bq = (-\tau_{13},\,-\tau_{23},\,-\tau_{33},\,v_1,\,v_2,\,v_3)\tp$.
 This is not an arbitrary pairing: $-\bta_3$ and $\bv$ are conjugate in the
 vertical power flux, $j = \tfrac14(-\bta_3^{\dagger}\bv - \bv^{\dagger}\bta_3)$,
 and that is what makes the metric of \S\ref{sec:metric} the natural one.
+
+\paragraph{Transpose, and why it is marked this way.}  $(\cdot)\tp$ is the
+transpose throughout and $(\cdot)^{\dagger}$ the conjugate transpose.  Neither
+is ever a power.  The upright sans-serif marker is used deliberately: this note
+carries $\bta_3$ as half of its own state vector, so a transpose written
+$(\cdot)^{\top}$ sits a symbol next to $\tau$ that is hard to tell from it, and
+one written $(\cdot)^{t}$ collides with the time of the $e^{-i\omega t}$
+convention.  Earlier drafts used both, and inconsistently.
 
 \subsection{The metric \texorpdfstring{$\Jsix$}{J6}}\label{sec:metric}
 
 The symplectic metric is
 \begin{equation}\label{eq:J6}
   \Jsix = \begin{pmatrix}\mathbf{0} & \bI_3\\ -\bI_3 & \mathbf{0}\end{pmatrix},
-  \qquad \Jsix^{t} = -\Jsix,
+  \qquad \Jsix\tp = -\Jsix,
   \qquad \Jsix^{2} = -\bI_6 .
 \end{equation}
 
@@ -179,7 +188,7 @@ corresponds to $\Jsix$ here.
 
 The operator matrix is \emph{quasi-Hamiltonian} with respect to it,
 \begin{equation}\label{eq:quasiham}
-  \Aop^{t}\Jsix = -\Jsix\Aop,
+  \Aop\tp\Jsix = -\Jsix\Aop,
 \end{equation}
 which is the paper's eq.~(27) and the thesis's \texttt{ATdef}.  Everything in
 \S\ref{sec:testspace} follows from \eqref{eq:quasiham} together with the
@@ -204,7 +213,7 @@ matrices are $(\bC_{jl})_{ik} = c_{ijkl}$.  In particular
   \qquad
   \bC_{33}^{-1} = \operatorname{diag}(\mu^{-1},\mu^{-1},K_c^{-1}),
 \end{equation}
-and $\bC_{jl}^{t} = \bC_{lj}$, which follows from $c_{ijkl} = c_{klij}$.  All
+and $\bC_{jl}\tp = \bC_{lj}$, which follows from $c_{ijkl} = c_{klij}$.  All
 nine blocks are reproduced from \eqref{eq:cijkl} and checked entry by entry.
 
 \subsection{Eliminating the in-plane tractions}
@@ -215,7 +224,7 @@ removed.  Doing so introduces the reduced stiffness
   \bU_{\alpha l} = \bC_{\alpha l} - \bC_{\alpha 3}\bC_{33}^{-1}\bC_{3l},
 \end{equation}
 with the two structural properties $\bU_{\alpha 3} = \mathbf{0}$ and
-$\bU_{\alpha\beta}^{t} = \bU_{\beta\alpha}$.  Both are checked rather than
+$\bU_{\alpha\beta}\tp = \bU_{\beta\alpha}$.  Both are checked rather than
 assumed, because it is they --- not the algebra that produced them --- that make
 the symmetry relations of \S\ref{sec:symrel} hold.
 
@@ -318,7 +327,7 @@ rejected.
 The thesis carries a $6\times6$ Fourier-domain system matrix $\bA(k_x,k_y)$ for
 a laterally invariant medium, in a \emph{different} field vector
 \begin{equation}
-  \mathbf{b} = (u_3,\,u_1,\,u_2,\,\tau_{33},\,\tau_{31},\,\tau_{32})^{t},
+  \mathbf{b} = (u_3,\,u_1,\,u_2,\,\tau_{33},\,\tau_{31},\,\tau_{32})\tp,
 \end{equation}
 i.e.\ displacement--stress rather than velocity--traction, ordered $(z,x,y)$
 rather than $(1,2,3)$, and normalised so that $\rho\omega^2$ appears where the
@@ -360,12 +369,12 @@ published separately, this is evidence rather than bookkeeping.
 
 Three further properties are verified on the reduced $6\times6$:
 \begin{enumerate}
-\item the operator symmetry relations $\Aop_{11}^{t} = -\Aop_{22}$,
-      $\Aop_{12}^{t} = \Aop_{12}$, $\Aop_{21}^{t} = \Aop_{21}$, where the
+\item the operator symmetry relations $\Aop_{11}\tp = -\Aop_{22}$,
+      $\Aop_{12}\tp = \Aop_{12}$, $\Aop_{21}\tp = \Aop_{21}$, where the
       transpose is the formal adjoint under integration by parts
-      ($\partial_\alpha^{t} = -\partial_\alpha$);
+      ($\partial_\alpha\tp = -\partial_\alpha$);
 \item the quasi-Hamiltonian relation \eqref{eq:quasiham}, which in the
-      wavenumber domain reads $\bA^{t}(-\mathbf{k})\Jsix = -\Jsix\bA(\mathbf{k})$;
+      wavenumber domain reads $\bA\tp(-\mathbf{k})\Jsix = -\Jsix\bA(\mathbf{k})$;
 \item the characteristic polynomial factorises as
       $(s^2 + k_{z,P}^2)(s^2 + k_{z,S}^2)^2$, recovering
       $\alpha^2 = (\lambda+2\mu)/\rho$ and $\beta^2 = \mu/\rho$ from a
@@ -455,7 +464,7 @@ into a nonsingular, compact integral equation.
 \subsection{The augmented dimension}
 
 After the transfer every term has the form
-$(\partial^{a}\phi)^{t}\,\cdot\,\text{const}\,\cdot\,(\partial^{b}\psi)$ with
+$(\partial^{a}\phi)\tp\,\cdot\,\text{const}\,\cdot\,(\partial^{b}\psi)$ with
 $a,b\in\{0,1\}$, so the form is \emph{multiplicative} on the enlarged vector
 $\mathcal{L}\psi = (\psi,\ \partial_1\psi,\ \partial_2\psi)$ --- nominally
 $6+6+6 = 18$ slots.  The true dimension is smaller and is counted, not assumed.
@@ -491,11 +500,11 @@ There is no choice to make.  $\Jsix$ is \emph{anti}symmetric, and
 \eqref{eq:quasiham} applies to $\dA$ as well as to $\Aop$ (it is linear in the
 operator), so
 \begin{equation}\label{eq:symmetric}
-  (\Jsix\dA)^{t} = \dA^{t}\Jsix^{t} = \dA^{t}(-\Jsix) = \Jsix\dA .
+  (\Jsix\dA)\tp = \dA\tp\Jsix\tp = \dA\tp(-\Jsix) = \Jsix\dA .
 \end{equation}
 $\Jsix\dA$ is a \textbf{symmetric} matrix, so
 \begin{equation}
-  b[\phi,\psi] = \phi^{t}\,\Jsix\dA\,\psi
+  b[\phi,\psi] = \phi\tp\,\Jsix\dA\,\psi
 \end{equation}
 is a symmetric bilinear form.  A symmetric form admits exactly one natural
 projection:
@@ -510,7 +519,7 @@ lost, both at operator level and in the projected system.
 The ten slots were never test conditions.  They measure how many derivative
 channels the \emph{form} touches --- its representation --- not how many
 independent functionals it supplies.  Each trial function $\psi_k$ gives exactly
-one test functional $(\Jsix\psi_k)^{t}$, so the number of conditions equals the
+one test functional $(\Jsix\psi_k)\tp$, so the number of conditions equals the
 trial dimension by construction.
 
 \subsection{The effective coupling matrix}
@@ -518,7 +527,7 @@ trial dimension by construction.
 For the affine trial space --- nine parameters, three rigid translations and six
 uniform strains --- the projected coupling
 \begin{equation}\label{eq:dCeff}
-  (\dCeff)_{kl} = \int_V (\mathcal{L}\psi_k)^{t}\,\dC\,(\mathcal{L}\psi_l)\,dV
+  (\dCeff)_{kl} = \int_V (\mathcal{L}\psi_k)\tp\,\dC\,(\mathcal{L}\psi_l)\,dV
 \end{equation}
 is the $3$-D Cartesian analogue of the thesis's effective coupling matrix.  It
 is $9\times9$, symmetric, of full rank $9$, vanishes with the contrast, and
@@ -1137,7 +1146,7 @@ at normal incidence, where the horizontal direction no longer distinguishes the
 $SV$ and $SH$ polarisations --- exactly the $k_\parallel\to0$ difficulty.  The
 spectral projector
 \begin{equation}\label{eq:projector}
-  \bP_d = \bV_d\bigl(\bW_d^{t}\bV_d\bigr)^{-1}\bW_d^{t}
+  \bP_d = \bV_d\bigl(\bW_d\tp\bV_d\bigr)^{-1}\bW_d\tp
 \end{equation}
 is invariant under any rescaling of the columns of $\bV_d$, so building
 $\boldsymbol\Gamma$ from projectors removes the ambiguity instead of carrying
@@ -1156,7 +1165,7 @@ separation.  Applying the exponential to the projected eigenvalues never forms
 the growing branch at all,
 \begin{equation}\label{eq:gammastable}
   \boldsymbol\Gamma(z-z') = \pm\!\!\sum_{i\,\in\,\text{down/up}}\!\!
-    e^{s_i(z-z')}\,\mathbf{v}_i\mathbf{w}_i^{t},
+    e^{s_i(z-z')}\,\mathbf{v}_i\mathbf{w}_i\tp,
   \qquad \mathbf{w}_i\!\cdot\!\mathbf{v}_j = \delta_{ij},
 \end{equation}
 and is what is used.  The moment integral needs only $|z-z'|\le 2a$, where the
@@ -1743,10 +1752,10 @@ $\Delta\lambda$ and $\Delta\mu$, and for them a sharp statement is available wit
 no new arbiter.  $\Jsix\dA$ is symmetric --- that is what derived the test space
 in \S\ref{sec:testspace} --- and $\boldsymbol\Gamma$ is reciprocal,
 \begin{equation}\label{eq:recip}
-  \boldsymbol\Gamma(-\mathbf{k}; z', z)^{\!\top} =
+  \boldsymbol\Gamma(-\mathbf{k}; z', z)\tp =
   \Jsix\, \boldsymbol\Gamma(\mathbf{k}; z, z')\, \Jsix ,
 \end{equation}
-which follows from $\Aop(-\mathbf{k})^{\!\top}\Jsix = -\Jsix\Aop(\mathbf{k})$ and
+which follows from $\Aop(-\mathbf{k})\tp\Jsix = -\Jsix\Aop(\mathbf{k})$ and
 $\Jsix^{-1} = -\Jsix$.  Hence the assembled matrix must be symmetric.  It is not
 symmetric by construction: the assembly builds its two legs by opposite rules,
 transferring the left outer derivative onto the test polynomial and carrying the
@@ -1869,7 +1878,7 @@ further things that matter more than they look:
       relation,
       \begin{equation}\label{eq:dzinv}
         \mathbf{D}_z^{-1}(k_x,k_y)
-          = -i\,\Jsix\,\mathbf{D}_z^{t}(-k_x,-k_y)\,\Jsix .
+          = -i\,\Jsix\,\mathbf{D}_z\tp(-k_x,-k_y)\,\Jsix .
       \end{equation}
 \end{enumerate}
 
@@ -1938,7 +1947,7 @@ spectral representation.}
 Rebuilt on \eqref{eq:specA}, $\boldsymbol\Gamma$ satisfies the reciprocity
 relation \eqref{eq:recip},
 \begin{equation}\label{eq:recipagain}
-  \boldsymbol\Gamma(-\mathbf{k}; z', z)^{\!\top} =
+  \boldsymbol\Gamma(-\mathbf{k}; z', z)\tp =
   \Jsix\,\boldsymbol\Gamma(\mathbf{k}; z, z')\,\Jsix ,
 \end{equation}
 to a residual of $2.2\times10^{-11}$ \emph{relative to}
@@ -2516,7 +2525,7 @@ and \eqref{eq:jumpmeasured} holds to $7\times10^{-14}$, flat in $\delta$ over a
 factor of eight.  So $[\partial_z-\bA]\boldsymbol\Gamma = \Isix\,\delta(z-z')$
 with \emph{no} calibration constant anywhere, and the $6\times6$ half of the
 source-convention question is closed.  Reciprocity in the thesis basis,
-$\boldsymbol\Gamma(-\mathbf{k};z',z)^{t} =
+$\boldsymbol\Gamma(-\mathbf{k};z',z)\tp =
 \Jsix\boldsymbol\Gamma(\mathbf{k};z,z')\Jsix$ with source and receiver
 exchanged, holds to $1.2\times10^{-15}$.
 
@@ -2728,12 +2737,12 @@ nilpotent and are each other's negative transpose.
 That last is not a coincidence.  $\dA$ inherits (ATdef) from the two operators it
 differences, and \eqref{eq:dzinv} carries the relation into the mode basis:
 \begin{equation}\label{eq:vham}
-  \Jsix\,\bV^{t}(-\mathbf{k}) + \bV(\mathbf{k})\,\Jsix = 0
+  \Jsix\,\bV\tp(-\mathbf{k}) + \bV(\mathbf{k})\,\Jsix = 0
   \iff
   \begin{cases}
-    \bV_{du}(\mathbf{k}) = \bV_{du}^{t}(-\mathbf{k}),\\
-    \bV_{ud}(\mathbf{k}) = \bV_{ud}^{t}(-\mathbf{k}),\\
-    \bV_{dd}(\mathbf{k}) = -\bV_{uu}^{t}(-\mathbf{k}),
+    \bV_{du}(\mathbf{k}) = \bV_{du}\tp(-\mathbf{k}),\\
+    \bV_{ud}(\mathbf{k}) = \bV_{ud}\tp(-\mathbf{k}),\\
+    \bV_{dd}(\mathbf{k}) = -\bV_{uu}\tp(-\mathbf{k}),
   \end{cases}
 \end{equation}
 verified to $3\times10^{-14}$.  Only half the blocks are independent, and
@@ -3044,7 +3053,7 @@ $\mathbf{T}$ & coupling rebuilt independently, matches the symbolic derivation &
 Schwinger & $\mathcal{F}[\partial_\alpha(\mathbf{1}_Vc)] = ik_\alpha
             \mathcal{F}[\mathbf{1}_Vc]$, with a sign control & 3\\
           & $\Aop$ in the paper basis $= S^{-1}\Aop_{\text{thesis}}S$; spectrum;
-            $\Aop(-\mathbf{k})^{\!\top}\!\Jsix = -\Jsix\Aop(\mathbf{k})$,
+            $\Aop(-\mathbf{k})\tp\!\Jsix = -\Jsix\Aop(\mathbf{k})$,
             with a control & 4\\
           & $\boldsymbol\Gamma$ inverted laterally \emph{is} the Kelvin tensor & 1\\
           & the radiation reaction \eqref{eq:radiation}, no static counterpart & 1\\
