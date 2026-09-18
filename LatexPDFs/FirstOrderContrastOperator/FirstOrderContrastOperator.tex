@@ -51,6 +51,7 @@
 \newcommand{\dCeff}{\Delta\mathbf{C}_{\mathrm{eff}}}
 \newcommand{\dCnav}{\Delta\mathbf{C}_{\mathrm{Nav}}}
 \newcommand{\Jsix}{\mathbf{J}_{6}}
+\newcommand{\Isix}{\mathbf{I}_{6}}
 \newcommand{\Oh}{O_{h}}
 
 \title{\bfseries The First-Order Contrast Operator\\[4pt]
@@ -695,7 +696,7 @@ $T$-matrix better depends on how the ansatz error and the series truncation
 interact, and those do not simply add.
 
 %=====================================================================
-\section{The propagator, and the bridge to it}
+\section{The propagator, and the bridge to it}\label{sec:bridge}
 
 \subsection{It already exists}
 
@@ -2447,6 +2448,102 @@ whole space, where there is no preferred direction for it to be right about.
 \end{quote}
 
 %=====================================================================
+\section{The layered background}\label{sec:layered}
+
+This is the payoff, and it is also where the route stops having a competitor.
+Everything up to here has had a closed-form whole-space $\mathbf{G}$ standing
+behind it, so the moment method could be scored against something.  Over a stack
+there is no such object, and $\boldsymbol\Gamma$ must simply \emph{be} the
+stratified propagator.
+
+\subsection{Nothing here is new machinery}
+
+The stratified $6\times6$ already exists and is validated, and
+\S\ref{sec:bridge} has already measured that it is the Green's matrix of
+\emph{this} $\bA$.  What it is not is a function of depth: the block-Riccati
+sweep is indexed by \emph{interface}, while the moment integral needs
+$\boldsymbol\Gamma(z,z')$ at continuously varying $z$ and $z'$.
+
+The tempting repair --- propagate away from the nearest interface with
+$\exp(\bA\,\delta)$ --- is the Thomson--Haskell instability reintroduced
+deliberately, and an earlier attempt did exactly that: a propagator-matrix
+traversal that reduced correctly in the no-contrast limit, to
+$7.4\times10^{-15}$, and was unusable, $\mathrm{cond}(\mathbf{Y}_{\text{up}})$
+reaching $9.0\times10^{15}$, because forming $\exp(\bA\,\delta)$ forms the
+growing evanescent branch explicitly.  It was discarded rather than patched.
+
+The stable construction does not propagate at all.  The model is \emph{cut} at
+the depths wanted, with zero contrast across the cut; the sweep is unchanged, is
+still a Riccati recursion, and still never forms the growing branch.  Cutting
+must then be harmless, and is: between two \emph{fixed} physical depths, two
+cuts and six cuts agree to $2.5\times10^{-15}$ across the propagating and
+evanescent regimes alike.  The bridge identity, previously verified only at the
+interfaces of a fixed stack, is then re-measured at depths lying on no lattice
+and holds to a fraction of one arithmetic floor.
+
+\subsection{The source normalisation, which the bridge could not see}
+
+\S\ref{sec:bridge} tests a \emph{ratio} of two receiver depths.  The source-side
+operator cancels out of a ratio, so that gate says nothing about how
+$\boldsymbol\Gamma$ is normalised at the source --- and the normalisation is
+what makes it a Green's matrix rather than merely a solution.  Measuring it
+needs both receivers carried back onto the source plane,
+\begin{equation}\label{eq:jumpmeasured}
+  e^{-\bA\delta}\,\boldsymbol\Gamma(z'{+}\delta,z')
+  \;-\;
+  e^{+\bA\delta}\,\boldsymbol\Gamma(z'{-}\delta,z')
+  \;=\; \Isix ,
+\end{equation}
+and \eqref{eq:jumpmeasured} holds to $7\times10^{-14}$, flat in $\delta$ over a
+factor of eight.  So $[\partial_z-\bA]\boldsymbol\Gamma = \Isix\,\delta(z-z')$
+with \emph{no} calibration constant anywhere, and the $6\times6$ half of the
+source-convention question is closed.  Reciprocity in the thesis basis,
+$\boldsymbol\Gamma(-\mathbf{k};z',z)^{t} =
+\Jsix\boldsymbol\Gamma(\mathbf{k};z,z')\Jsix$ with source and receiver
+exchanged, holds to $1.2\times10^{-15}$.
+
+\subsection{The uniform limit, which cannot be what was planned}
+
+The plan called for the uniform limit of the layered assembly to reduce to the
+whole space.  It cannot, and the reason is structural rather than numerical:
+layer $0$ of the stratified solver is acoustic, so a uniform \emph{elastic}
+whole space is not a model the solver can be given.  The ocean floor is always
+there and always reflects.
+
+What replaces it is sharper, and has no free parameter.  Whatever the ocean
+floor returns is, at \emph{every} receiver, downgoing --- it left the source
+upward, turned once, and is coming back down --- and the half-space below
+radiates, so nothing else can contribute.  Therefore
+\begin{equation}\label{eq:uniformlimit}
+  \boldsymbol\Gamma_{\text{layered}}(z,z') -
+  \boldsymbol\Gamma_{\text{whole space}}(z-z')
+  \;=\; \bP_{d}\,\bigl[\,\cdot\,\bigr],
+  \qquad
+  \bP_{d} = \mathbf{D}_z\,\mathrm{diag}(1,1,1,0,0,0)\,\mathbf{D}_z^{-1},
+\end{equation}
+with the split taken from the column ordering of \eqref{eq:specA} and nothing
+classified numerically.  Measured, $\|\bP_u\Delta\|/\|\Delta\|$ is
+$2.6\times10^{-16}$ to $5.2\times10^{-14}$ over five wavenumbers and three
+receiver depths, \emph{including} receivers above the source, where the
+whole-space term is upgoing and the difference is still not.  The difference
+itself is $54\%$--$74\%$ of $\|\boldsymbol\Gamma\|$, so the projection is not
+being satisfied by a vanishing numerator.
+
+Beyond the critical wavenumber the returned field is evanescent over the whole
+round trip and the difference vanishes outright: at $k_x = 6,7,9$ against
+$\omega/\beta = 5.66$, $\|\Delta\|/\|\boldsymbol\Gamma\|$ is
+$3\times10^{-15}$--$3\times10^{-14}$.  There the layered $\boldsymbol\Gamma$
+\emph{is} the whole-space $\boldsymbol\Gamma$, to the arithmetic floor --- which
+is the reduction the plan wanted, holding exactly where the boundary cannot
+reach and failing elsewhere only by the boundary term it should fail by.
+
+The control matters here, because \eqref{eq:uniformlimit} is a statement about a
+projection and a projection can be satisfied for uninteresting reasons.  Moving
+the contrast \emph{below} the receiver instead sends an upgoing field back, and
+$\|\bP_u\Delta\|/\|\Delta\|$ rises from $10^{-16}$ to
+$1.9\times10^{-1}$--$4.8\times10^{-1}$: twelve orders, on the same geometry.
+
+%=====================================================================
 \section{Summary of checks}
 
 \begin{center}
@@ -2527,6 +2624,14 @@ slab & the Navier route reproduces the package's amplification factors & 1\\
        spoiling the channel the cubic one gets right & 2\\
           & the one-pass assembly reproduces the density channel & 1\\
 \midrule
+layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
+  $\boldsymbol\Gamma$ & zero-contrast cuts are harmless, so any depth is reachable & 1\\
+  & the bridge identity at depths on no lattice & 1\\
+  & reciprocity, source and receiver exchanged & 1\\
+  & \eqref{eq:uniformlimit}, with a not-vacuous control & 2\\
+  & the evanescent reduction to the whole space & 1\\
+  & a reflector below returns an upgoing part, by twelve orders & 1\\
+\midrule
 layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
       & second-order convergence in the cell count & 1\\
       & $PP$ and $SS$ conventions constant across slowness; that
@@ -2538,8 +2643,8 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, and the propagator gate exits
-clean.}
+comparison $7/7$, the static moments $11/11$, the layered $\boldsymbol\Gamma$
+$8/8$, and the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================

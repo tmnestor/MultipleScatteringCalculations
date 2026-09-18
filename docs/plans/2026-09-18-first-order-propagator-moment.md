@@ -673,6 +673,31 @@ competitor** and this route is the only one.
 **Gate.** The uniform limit of the layered assembly reduces to Task 5. Any
 further claim needs an arbiter chosen in advance, not after seeing the number.
 
+> **Γ DONE — `scripts/gate_first_order_layered_gamma.py`, 8/8.** Written up as
+> §"The layered background". Three things worth carrying forward:
+>
+> 1. **Arbitrary depth is reached by CUTTING the model, not by propagating.**
+>    The Riccati sweep is indexed by interface; inserting a zero-contrast
+>    interface at the depth wanted leaves Γ unchanged to 2.5e-15 and keeps the
+>    sweep a Riccati recursion. Propagating away from an interface with
+>    `expm(A δ)` is the discarded Thomson–Haskell route reintroduced.
+> 2. **The source jump is exactly I₆** (7e-14, flat in δ over a factor of 8),
+>    so there is no calibration constant. The bridge could not see this — it
+>    tests a *ratio* of receiver depths, and the source-side operator cancels
+>    out of a ratio. This closes the 6×6 half of the source-convention question.
+> 3. **The planned uniform limit is unreachable and had to be replaced.** Layer
+>    0 of the solver is acoustic, so a uniform *elastic* whole space is not a
+>    model the solver accepts. What replaced it is sharper and parameter-free:
+>    `Γ_layered − Γ_wholespace` is purely DOWNGOING (2.6e-16, receivers above
+>    the source included), because the only thing the whole space lacks is what
+>    the ocean floor turned back. Beyond critical it vanishes outright
+>    (3e-15), which *is* the planned reduction, holding exactly where the
+>    boundary cannot reach. Negative control: a reflector below instead lifts
+>    the upgoing part to 4.8e-1.
+>
+> **Still open for Task 6:** the assembly itself — the moment integral run with
+> this Γ in place of the whole-space one. Γ is the input, not the answer.
+
 ---
 
 ## Open questions, to settle at the task that needs them
