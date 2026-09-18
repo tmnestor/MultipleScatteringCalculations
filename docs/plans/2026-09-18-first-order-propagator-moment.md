@@ -1,5 +1,73 @@
 # The First-Order Propagator Moment — Implementation Plan
 
+> ## ⭐ FOURTH REVISION, 2026-09-18 — the EXTERNAL arbiter, and it passes
+>
+> `scripts/gate_first_order_layer_vs_kennett.py`, **9/9**. ▶ Tod's suggestion:
+> *"a single thin layer added to a whole space can be checked against GMM or
+> Kennett"*. It is the right check and it closed the standing open item —
+> every prior comparison set two formulations against each other.
+>
+> ### Why a layer reaches what the cube cannot
+>
+> For a laterally invariant contrast `ΔA(z) = [A_tot(k) − A_bg(k)]·1_{[0,h]}(z)`,
+> piecewise constant. **No augmentation, no by-parts transfer, no surface term,
+> no differentiated indicator** — `A` carries no `∂₃`, so a jump in the medium is
+> just a jump in an ODE's coefficients. That is the structural advantage of the
+> first-order form, and it is exactly what the cube development had to work
+> around.
+>
+> It also reaches two things the cube checks could not: it is **nonlinear** in
+> the contrast (so it tests the resummation), and `ΔA` carries `k` explicitly, so
+> scanning slowness tests a `k`-dependence the multiplicative density channel
+> left untouched.
+>
+> ### Results
+>
+> | check | result |
+> |---|---|
+> | normal incidence vs a closed form derived in-script, +2 / +10 / **+40%** | 2.7e-5 / 2.4e-5 / **1.7e-5** |
+> | convergence in cell count | **4.00, 4.00, 4.00** (second order) |
+> | `R_PP` vs Kennett, to sin i = 0.75 | constant `−1.00004 … −1.00002` |
+> | `R_SS` vs Kennett | constant, spread 1.04e-4 |
+> | `PS × SP` | 1.00008, 1.00010, 1.00008 |
+>
+> ### 🔑 How the convention question was made into a statement
+>
+> - Kennett's `RD` is **independent of the thickness of the layer above** —
+>   identical at d = 50, 100, 200, 400. So it is already referenced at the target
+>   layer, and the two-way phase correction that looks obviously required
+>   **manufactures a spurious slowness-dependent offset**. Measured, not assumed.
+> - What is checked is **not the value `−1` but that the factor is constant**. A
+>   convention cannot depend on angle; a physics error would not be constant. The
+>   sign itself is pinned by the in-script closed form, which owes nothing to
+>   either code.
+> - Off-diagonals need no knowledge of the convention at all: if it is a diagonal
+>   rescaling then `PS × SP = 1` whatever `D` is. It is 1.0001.
+>
+> ### 🐛 And it caught the degenerate-`q_S` trap again
+>
+> `SS` was right at three slownesses and **wrong by a factor of four** at the
+> fourth — `eig` returning an arbitrary SV/SH mixture. Reads as a critical angle;
+> is linear algebra. `PP` was unaffected throughout, so a P-only check proves
+> nothing. **Fix: restrict to the P-SV block `[0,2,3,5]`** — exact when `k` is
+> along an axis, cheaper, and no degeneracy by construction.
+>
+> ### ⚠ What this does NOT establish
+>
+> **It reaches the operator, not the cube.** A laterally invariant problem never
+> touches the augmentation, the form factors or the moments. Those are still
+> checked only against other formulations.
+>
+> ### Next
+>
+> 1. **Read `B` off** and compare with `√3(λ+μ)/6πμ(λ+2μ)` — still the one
+>    remaining step of Task 1 proper.
+> 2. The `iω` of the `𝒢` normalisation.
+> 3. ▶ Tod also named **GMM** as an arbiter. It is at parity with `kennett_layers`
+>    to 4.42e-15, so it adds little for a whole space — but it is the natural
+>    arbiter for the **layered background** (Task 6), where Kennett's stack and
+>    the first-order `ΔA` both still apply and the cube moments do not exist.
+
 > ## ✅ THIRD REVISION, 2026-09-18 — the design question is settled; both faults closed
 >
 > `scripts/gate_first_order_schwinger.py`, **10/10**. Read this before the second

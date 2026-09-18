@@ -1741,6 +1741,142 @@ $\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$, and to settle the $i\omega$ of
 \eqref{eq:gapfactor}.
 
 %=====================================================================
+\section{A layer in a whole space: the external
+arbiter}\label{sec:layer}
+
+Every comparison so far in this note sets two formulations against each other.
+None of them says which is right.  A single layer embedded in a whole space
+removes that limitation, because its reflection coefficient is known
+independently --- from a validated reflectivity recursion, and from a closed
+form short enough to derive here --- and because it exercises the operator in a
+way the cube cannot.
+
+\subsection{Why a layer is the right test}
+
+For a laterally invariant contrast the operator difference is simply
+\begin{equation}\label{eq:dalayer}
+  \dA(z) = \bigl[\Aop_{\text{total}}(\mathbf{k}) -
+                 \Aop_{\text{background}}(\mathbf{k})\bigr]\,
+           \mathbf{1}_{[0,h]}(z),
+\end{equation}
+a piecewise-constant matrix.  \textbf{There is no augmentation, no by-parts
+transfer, no surface term and no differentiated indicator}, because $\Aop$
+carries no $\partial_3$: a jump in the medium is simply a jump in the
+coefficients of an ODE, and is harmless.  That is the structural advantage of
+the first-order form, and it is precisely the property the whole cube
+development of \S\ref{sec:testspace}--\S\ref{sec:schwinger} had to work around.
+So this tests $\Aop$, $\boldsymbol\Gamma$ and the Lippmann--Schwinger
+composition with none of the cube machinery in the way.
+
+It also tests two things the cube checks could not.  It is \emph{nonlinear} in
+the contrast, so it reaches the resummation rather than the Born term alone; and
+$\dA$ carries $\mathbf{k}$ explicitly through $\Aop_{12} \sim \nu_1k^2/i\omega$,
+so scanning slowness tests a $k$ dependence that the density channel of
+\S\ref{sec:schwinger}, being multiplicative, left untouched.
+
+\subsection{The closed form, by continuity}
+
+At normal incidence the answer follows from matching.  With $e^{-i\omega t}$ and
+$u$ the vertical displacement, each medium carries
+$u = D e^{ikz} + U e^{-ikz}$ with $k = \omega/c$, and the traction is
+$\tau = \rho c^2 \partial_z u = i\rho c\,\omega\,(D e^{ikz} - U e^{-ikz})$.
+Continuity of $u$ and $\tau$ at $z=0$ and $z=h$, with no up-going wave below,
+gives
+\begin{equation}\label{eq:normallayer}
+  R = \frac{r_{12} + r_{23}\,e^{2i\omega h/\alpha_2}}
+           {1 + r_{12}r_{23}\,e^{2i\omega h/\alpha_2}},
+  \qquad
+  r_{12} = \frac{Z_1-Z_2}{Z_1+Z_2} = -r_{23},
+  \qquad Z = \rho c .
+\end{equation}
+The point of deriving it rather than quoting it is that the \emph{sign} is then
+fixed by the derivation.  Throughout this section
+\begin{equation}\label{eq:rdef}
+  R \;=\;
+  \frac{u_3 \text{ of the up-going field at } z=0^-}
+       {u_3 \text{ of the incident field at } z=0^-},
+\end{equation}
+on both sides of every comparison, which leaves no convention free.
+
+\subsection{The first-order route}
+
+The laterally invariant Lippmann--Schwinger equation
+\begin{equation}
+  q(z) = q_{\text{inc}}(z) +
+         \int_0^h \boldsymbol\Gamma(\mathbf{k}; z,z')\,\dA\, q(z')\,dz'
+\end{equation}
+is solved by piecewise-constant collocation, the cell integrals taken in closed
+form from the spectral representation of $\boldsymbol\Gamma$ and \emph{split at
+$z'=z$}: the jump across the diagonal is the source delta, and quadrature across
+it would smear exactly the object that defines the propagator.
+
+One structural simplification is used, and it is exact.  With $\mathbf{k}$ along
+$x_1$ the system is block diagonal: $\{-\tau_{23}, v_2\}$ is $SH$ and does not
+couple to $\{-\tau_{13}, -\tau_{33}, v_1, v_3\}$.  Working in the $4\times4$
+$P$-$SV$ block is therefore no approximation --- and it removes the double
+degeneracy of $q_S$, which is a genuine hazard rather than a nicety: a
+degenerate eigenspace has no preferred basis, so \texttt{eig} returns an
+arbitrary mixture of $SV$ and $SH$.  Before the block restriction the $SS$
+coefficient was correct at three slownesses and wrong \emph{by a factor of four}
+at the fourth, which reads as a critical angle and is linear algebra.
+
+\subsection{What it gives}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+contrast & \eqref{eq:normallayer} & first order & relative\\
+\midrule
+$+2\%$  & $-0.019937-0.019792i$ & $-0.019937-0.019792i$ & $2.7\times10^{-5}$\\
+$+10\%$ & $-0.127846-0.087946i$ & $-0.127849-0.087948i$ & $2.4\times10^{-5}$\\
+$+40\%$ & $-0.578990-0.067730i$ & $-0.578999-0.067736i$ & $1.7\times10^{-5}$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Normal incidence, $h = 200$\,m, $\omega h/\alpha = 2.4$.  The
+$+40\%$ row is the one that matters: it is far from Born, so it tests the
+\emph{resummation}.  Refinement in the cell count gives ratios $4.00$, $4.00$,
+$4.00$ --- clean second order.}
+\end{center}
+
+Against the reflectivity recursion the comparison runs to $\sin i = 0.75$:
+\begin{equation}\label{eq:kenratio}
+  \frac{R^{\text{first order}}_{PP}}{R^{\text{Kennett}}_{PP}}
+  = -1.00004,\; -1.00004,\; -1.00003,\; -1.00002,
+\end{equation}
+and the same for $SS$ to $1.0\times10^{-4}$.  Two remarks make this a statement
+rather than a fitted factor.  First, the recursion's $R$ proved
+\emph{independent of the thickness of the layer above} --- identical for
+$d = 50, 100, 200, 400$\,m --- so it is already referenced at the target layer,
+and the two-way phase correction that seemed obviously required in fact
+manufactures a spurious slowness-dependent offset.  Second, what is checked is
+not the value $-1$ but that the factor is \emph{constant}: a convention cannot
+depend on angle, and a physics error would not be constant.  The sign itself is
+pinned by \eqref{eq:normallayer}, which owes nothing to either code.
+
+The mode-converted coefficients are covered by an identity that needs no
+knowledge of the convention at all.  If the two differ by a diagonal rescaling
+$\mathrm{diag}(d_P, d_S)$ --- the displacement-versus-flux factor, invisible to
+any per-mode ratio test --- then the off-diagonal ratios are $d_P/d_S$ and
+$d_S/d_P$, whose product is unity whatever $\mathbf{D}$ is.  Measured:
+$1.00008$, $1.00010$, $1.00008$.
+
+Finally, a control isolates what this test uniquely reaches.  Building $\dA$ at
+$\mathbf{k}=0$ while leaving $\boldsymbol\Gamma$ at the true $\mathbf{k}$ changes
+\emph{nothing} at normal incidence (relative difference $0$, exactly) and breaks
+the answer by $6.8\times10^{-2}$ off it.  The $k$ dependence of the contrast
+operator is therefore load-bearing, and correct.
+
+\begin{quote}
+\textbf{What this establishes, and what it does not.}  The system matrix $\Aop$,
+the propagator $\boldsymbol\Gamma$, their composition, and the resummation
+reproduce an independently validated reflectivity code across contrast and
+across angle.  That is the first external validation in this note.  It does
+\emph{not} validate the cube: the augmentation, the form factors and the moments
+of \S\ref{sec:moments} play no part in a laterally invariant problem.  Those
+remain checked only against other formulations.
+\end{quote}
+
+%=====================================================================
 \section{Summary of checks}
 
 \begin{center}
@@ -1792,11 +1928,18 @@ Schwinger & $\mathcal{F}[\partial_\alpha(\mathbf{1}_Vc)] = ik_\alpha
           & the $9\times9$ matrix is symmetric, with a sign control and a
             not-vacuous control & 3\\
           & the one-pass assembly reproduces the density channel & 1\\
+\midrule
+layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
+      & second-order convergence in the cell count & 1\\
+      & $PP$ and $SS$ conventions constant across slowness; that
+        constant is $-1$ & 2\\
+      & mode conversion agrees up to a diagonal rescaling & 1\\
+      & the $k$ dependence of $\dA$ is load-bearing, two controls & 2\\
 \bottomrule
 \end{tabular}
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
-$44/44$, the $T$-matrix assembly $12/12$, the Schwinger settlement $17/17$, and
-the propagator gate exits clean.}
+$44/44$, the $T$-matrix assembly $12/12$, the Schwinger settlement $17/17$, the
+layer comparison $9/9$, and the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================
@@ -1821,13 +1964,18 @@ as such, the following are \emph{open}:
       degenerate on the rigid block and so cannot simply be inverted.  Until that
       is resolved, everything in \S\ref{sec:tmatrix} is the first-order coupling
       seen through a collocation propagator.
-\item \textbf{No comparison against an independent arbiter has been run.}  The
-      quantities in \S\ref{sec:whatitbuys} and \S\ref{sec:tmatrix} compare two
-      \emph{formulations} with each other, not either against truth.  The $\Oh$
-      split is the one partial exception, and it is one-sided: it lower-bounds
-      the first-order error at $\approx4.2\times10^{-4}$ and bounds the ordinary
-      route not at all.  \textbf{Which formulation is more accurate remains
-      open}, and nothing in this note decides it.
+\item \textbf{The external arbiter reaches the operator, not the cube.}
+      \S\ref{sec:layer} closes this item for $\Aop$, $\boldsymbol\Gamma$, their
+      composition and the resummation: a layer in a whole space reproduces an
+      independently validated reflectivity recursion across contrast and angle.
+      But a laterally invariant problem does not touch the augmentation, the
+      form factors or the moments, so the quantities in \S\ref{sec:whatitbuys}
+      and \S\ref{sec:tmatrix} still compare two \emph{formulations} with each
+      other rather than either against truth.  The $\Oh$ split remains the only
+      partial exception there, and it is one-sided: it lower-bounds the
+      first-order error at $\approx4.2\times10^{-4}$ and bounds the ordinary
+      route not at all.  \textbf{For the cube, which formulation is more accurate
+      remains open.}
 \item \textbf{Whether the resummation improves accuracy is unknown.}  It is
       exact as a local inversion; that is not the same claim.
 \item \textbf{$\Oh$ invariance was tested on a subgroup of order $3$}, not the
