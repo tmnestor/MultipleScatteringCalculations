@@ -452,17 +452,17 @@ def balance_batch(a6: np.ndarray, sweeps: int = 12) -> tuple[np.ndarray, np.ndar
     ``S P S^-1`` -- the same unscaling the fixed rule used.
 
     Args:
-        a6: Shape (N, 6, 6) complex.
+        a6: Shape (N, d, d) complex.
         sweeps: Balancing sweeps.
 
     Returns:
-        (balanced, s) with balanced shape (N, 6, 6) and s shape (N, 6).
+        (balanced, s) with balanced shape (N, d, d) and s shape (N, d).
     """
     m = a6.astype(np.complex128).copy()
-    n = m.shape[0]
-    s = np.ones((n, 6), dtype=np.complex128)
+    n, d = m.shape[0], m.shape[1]
+    s = np.ones((n, d), dtype=np.complex128)
     for _ in range(sweeps):
-        for i in range(6):
+        for i in range(d):
             dia = np.abs(m[:, i, i])
             r = np.sum(np.abs(m[:, i, :]), axis=1) - dia
             c = np.sum(np.abs(m[:, :, i]), axis=1) - dia
