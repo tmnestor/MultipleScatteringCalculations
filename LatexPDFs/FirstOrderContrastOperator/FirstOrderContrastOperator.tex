@@ -1350,6 +1350,15 @@ carry; it is used below $|2aq| = 3$, where it is also the accurate branch.
 
 \subsection{Step 3: the lateral integral}
 
+These are \textbf{Sommerfeld-type integrals} --- integrals over horizontal
+wavenumber, with the vertical dependence already reduced to the propagator, of
+the kind that layered-media Green's functions have always been evaluated by.
+Naming them so is not decoration: it says at once which family of numerical
+difficulty this is, and that the difficulty is a known one with a known remedy
+rather than something peculiar to the first-order formulation.  What is peculiar
+to it is only \emph{why} the integrand fails to decay, which the power count
+below settles.
+
 Count powers as $|k|\to\infty$ for the \emph{untransferred} form, in which
 $\partial_\alpha\to ik_\alpha$: the box form factor gives $k^{-2}$,
 \eqref{eq:T00} gives $q^{-1}\sim|k|^{-1}$, the two contrast operators give
@@ -1373,17 +1382,31 @@ $z$-integrated kernel \eqref{eq:T00}--\eqref{eq:T11}, with the box form factors
 kept exact: they are what makes the remainder converge, so expanding them would
 defeat the subtraction.
 
-\paragraph{Where the credit sits.}  Subtracting a non-decaying asymptote and
-integrating it in closed form rather than truncating it is ordinary practice,
-not a result.  What is borrowed is the \emph{physics} that makes it the right
-move here: that the non-decaying tail is the delta at $r=0$, and that dropping
-it reverses the sign of the depolarisation, is Eshelby's
-\cite{eshelby1957,mura1987}, and this note takes it from there rather than
-rediscovering it.  What is new is only the setting --- the horizontal
-wavenumber integrals that the first-order formulation mandates, in which the
-tail arises from the two contrast operators rather than from a quoted inclusion
-tensor.  ``Split-and-subtract'' is used below as a shorthand for that
-arrangement and is a label, not a citation.
+\paragraph{Where the credit sits.}  Two different things are borrowed here and
+neither is devised in this note.
+
+The \emph{method} --- subtract the large-wavenumber asymptote of a slowly
+convergent integrand, integrate the remainder numerically and the asymptote in
+closed form --- is the standard remedy for slowly convergent Sommerfeld-type
+integrals, and is standard in exactly this setting, wavenumber integration for
+layered elastic media, where it is known as \textbf{static term subtraction}
+\cite{hisada1994,hisada1995,luco1983}.  Hisada's case is the hardest one and is
+also ours: when source and receiver approach the same depth the integrand ceases
+to decay, and for equal depths the stress integrand \emph{grows}.  The self
+moment of a cube has $z$ and $z'$ in the same body, so it sits at that limit by
+construction.  The same technique is called \textbf{singularity extraction} in
+the computational-electromagnetics literature on layered-media Green's functions
+\cite{michalski1997}, where the subtracted piece is the quasi-static term.
+
+The \emph{physics} that says which asymptote to subtract is Eshelby's
+\cite{eshelby1957,mura1987}: the non-decaying tail is the delta at $r=0$, and
+dropping it reverses the sign of the depolarisation.  This note takes that from
+there rather than rediscovering it.
+
+What is new is only the setting --- the horizontal wavenumber integrals the
+first-order formulation mandates, in which the tail arises from the two contrast
+operators rather than from a quoted inclusion tensor.  ``Split-and-subtract'' is
+used below as a shorthand for that arrangement and is a label, not a citation.
 
 \subsubsection{The scaling that makes the expansion uniform}
 
@@ -1435,7 +1458,7 @@ kernel as $|k|\to\infty$.  Exactly one block fails to decay.}
 \end{center}
 
 \begin{quote}
-\textbf{The entire ultraviolet problem sits in one block:} the traction rows
+\textbf{The entire large-wavenumber problem sits in one block:} the traction rows
 against the displacement columns.  Everything else decays at least as $1/k$ and
 needs no subtraction.
 \end{quote}
@@ -2808,7 +2831,7 @@ scattering, and it is what keeps the marched quantity bounded.
 
 For a laterally invariant contrast, \eqref{eq:riccatiR} supersedes the moment
 assembly this note has been building toward.  There is no moment integral, no
-split-and-subtract, and --- the substantive point --- \textbf{no ultraviolet
+split-and-subtract, and --- the substantive point --- \textbf{no large-wavenumber
 treatment at all}.  The delta has been absorbed \emph{analytically}, by the
 Leibniz boundary terms of \eqref{eq:leibniz}, rather than subtracted
 numerically.  Everything in \S\ref{sec:acmoment} exists to handle a singularity
@@ -3348,11 +3371,13 @@ Standing rule for this note: a technique that is \emph{borrowed} rather than
 derived here carries an author--date reference at the point it is used.  The
 converse matters too --- a technique that is \emph{not} borrowed must not be
 dressed as though it were, and a name coined in this note is a label, not a
-citation.  \cite{mvwe} was read from the document itself; the rest are from
-memory and have \emph{not} been verified against a library.  Authors, years and
-titles should be reliable, volume and page numbers less so; all must be checked
-before this note is circulated, and nothing in this list should be quoted from
-here without that check.
+citation.  Provenance, since it differs: \cite{mvwe} was read from the document
+itself; \cite{hisada1994}, \cite{hisada1995}, \cite{luco1983} and
+\cite{michalski1997} were located by literature search; the rest are from
+memory.  \emph{None has been verified against a library.}  Authors, years and
+titles should be reliable and volume and page numbers less so; all must be
+checked before this note is circulated, and nothing in this list should be
+quoted from here without that check.
 \end{quote}
 
 \begin{thebibliography}{99}\small
@@ -3375,6 +3400,17 @@ here without that check.
   on multilayered media.  \emph{Bulletin of the Seismological Society of
   America} \textbf{43}, 17--34.
 
+\bibitem{hisada1994} Hisada, Y. (1994).  An efficient method for computing
+  Green's functions for a layered half-space with sources and receivers at close
+  depths.  \emph{Bulletin of the Seismological Society of America} \textbf{84}
+  (5), 1456--1472.  Static term subtraction for wavenumber integrals that cease
+  to decay as source and receiver depths coincide.
+
+\bibitem{hisada1995} Hisada, Y. (1995).  An efficient method for computing
+  Green's functions for a layered half-space with sources and receivers at close
+  depths (part~2).  \emph{Bulletin of the Seismological Society of America}
+  \textbf{85} (4), 1080--1093.
+
 \bibitem{kennett1983} Kennett, B.~L.~N. (1983).  \emph{Seismic Wave
   Propagation in Stratified Media}.  Cambridge University Press.
 
@@ -3387,6 +3423,17 @@ here without that check.
 \bibitem{lippmann1950} Lippmann, B.~A. \& Schwinger, J. (1950).  Variational
   principles for scattering processes~I.  \emph{Physical Review} \textbf{79},
   469--480.
+
+\bibitem{luco1983} Luco, J.~E. \& Apsel, R.~J. (1983).  On the Green's
+  functions for a layered half-space, Part~I.  \emph{Bulletin of the
+  Seismological Society of America} \textbf{73} (4), 909--929.  (Part~II,
+  Apsel \& Luco, same volume, 931--951.)
+
+\bibitem{michalski1997} Michalski, K.~A. \& Mosig, J.~R. (1997).  Multilayered
+  media Green's functions in integral equation formulations.  \emph{IEEE
+  Transactions on Antennas and Propagation} \textbf{45} (3), 508--519.  The same
+  technique under the name \emph{singularity extraction}, with the quasi-static
+  term as the subtracted piece.
 
 \bibitem{mura1987} Mura, T. (1987).  \emph{Micromechanics of Defects in
   Solids}, 2nd revised edition.  Martinus Nijhoff.
