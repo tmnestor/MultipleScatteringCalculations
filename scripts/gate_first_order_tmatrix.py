@@ -309,6 +309,31 @@ def coupling_first_order(
     return out
 
 
+def to_navier_units(coupling: np.ndarray, omega: complex) -> np.ndarray:
+    """Convert DeltaC_eff into the units DeltaC_Navier and this package use.
+
+    The J6 pairing tests against the field q, whose velocity slots carry
+    ``v = -i omega u``.  The Navier weak form and this package's local T-matrix
+    both test against the DISPLACEMENT.  So DeltaC_eff carries exactly one extra
+    factor of ``i omega``: its rigid block is ``i omega^3 Drho V`` where
+    ``_sub_cell_tmatrix_9x9`` uses ``omega^2 Drho V``.
+
+    This is a change of units, not of physics, and it cancels out of every
+    amplification factor and channel ratio -- which is precisely why it can sit
+    unnoticed in a gate whose checks are all ratios.  It does NOT cancel when
+    DeltaC_eff is combined with any object built in displacement units, which is
+    what makes it worth naming rather than dividing inline.
+
+    Args:
+        coupling: DeltaC_eff, shape (9, 9).
+        omega: Angular frequency, may be complex.
+
+    Returns:
+        The same coupling in displacement units.
+    """
+    return coupling / (1j * omega)
+
+
 def coupling_navier(
     lam: float,
     mu: float,
@@ -723,12 +748,35 @@ def main() -> int:
 
     # ---- 4. Born limit ---------------------------------------------------
     print("\n--- 5: the Born limit must agree exactly --------------------------")
+    print("  DeltaC_eff is in VELOCITY units and DeltaC_Navier in DISPLACEMENT")
+    print("  units -- see to_navier_units.  The rigid blocks are i w^3 Drho V and")
+    print("  w^2 Drho V, a ratio of exactly i w = " + f"{1j * omega:+.1f}.")
+    print("  Every other check in this gate is a ratio, so the factor cancels and")
+    print("  none of them can see it.  This one is absolute, and does.")
     tiny = MaterialContrast(2.0e3, 1.0e3, 1.0e-4)
     nav = coupling_navier(ref.lam, ref.mu, ref.rho, tiny, omega, a)
-    eff = coupling_first_order(ref.lam, ref.mu, ref.rho, tiny, omega, a) / (1j * omega)
+    eff = to_navier_units(coupling_first_order(ref.lam, ref.mu, ref.rho, tiny, omega, a), omega)
     rel_born = float(la.norm(eff - nav) / la.norm(nav))
     print(f"  ||DeltaC_eff/(i w) - DeltaC_Nav|| / ||DeltaC_Nav|| at 1e-6 contrast: {rel_born:.3e}")
     report("the two couplings agree to O(Dc) in the Born limit", bool(rel_born < 1e-5))
+
+    # A single small contrast shows agreement; a SCALING shows the residual is
+    # the O(Dc^2) difference and not a second, smaller units error hiding under
+    # the first.  The ratio between successive rows must be the contrast ratio.
+    print("  and the residual is O(Dc^2), not a smaller units slip:")
+    prev = None
+    ok_scale = True
+    for scale in (1.0, 0.1, 0.01, 0.001):
+        con_s = MaterialContrast(2.0e9 * scale, 1.0e9 * scale, 100.0 * scale)
+        nav_s = coupling_navier(ref.lam, ref.mu, ref.rho, con_s, omega, a)
+        eff_s = to_navier_units(coupling_first_order(ref.lam, ref.mu, ref.rho, con_s, omega, a), omega)
+        rel_s = float(la.norm(eff_s - nav_s) / la.norm(nav_s))
+        rate = "" if prev is None else f"   ratio {prev / rel_s:6.2f}  (expect 10)"
+        print(f"    contrast x{scale:<7g} {rel_s:.4e}{rate}")
+        if prev is not None and not 9.0 < prev / rel_s < 11.0:
+            ok_scale = False
+        prev = rel_s
+    report("that residual scales as the FIRST power of the contrast", ok_scale)
 
     print("\n" + "=" * 78)
     n_ok = sum(1 for _, ok in _PASS if ok)
@@ -736,10 +784,12 @@ def main() -> int:
     print("=" * 78)
     print("  CAVEAT 1: the propagator moment used is the SINGLE (collocation)")
     print("  one, while the J6 pairing makes the scheme Galerkin.  The gap is")
-    print("  now measured, not suspected -- gate_first_order_schwinger.py")
-    print("  factors it into int_V 1/r / int_V int_V 1/r = 1.2644 and a")
-    print("  remaining i*omega from the trial-space normalisation, which is")
-    print("  OPEN.  Do not read these amplitudes as a consistent Galerkin T.")
+    print("  measured, not suspected -- gate_first_order_schwinger.py factors it")
+    print("  into int_V 1/r / int_V int_V 1/r = 1.2644 and a factor i*omega.")
+    print("  The i*omega is NOT open: it is the velocity-vs-displacement units of")
+    print("  to_navier_units, closed by check 5 above.  What remains open is the")
+    print("  GEOMETRIC factor -- collocation against Galerkin.  Do not read these")
+    print("  amplitudes as a consistent Galerkin T.")
     print("  CAVEAT 2: the O_h split lower-bounds the FIRST-ORDER error only.")
     print("  A symmetric approximation can be symmetrically wrong, so this")
     print("  bounds the Navier route not at all.  Which is more accurate is")

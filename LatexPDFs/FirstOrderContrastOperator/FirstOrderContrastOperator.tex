@@ -49,6 +49,7 @@
 \newcommand{\dA}{\Delta\mathcal{A}}
 \newcommand{\dC}{\Delta\mathbf{C}}
 \newcommand{\dCeff}{\Delta\mathbf{C}_{\mathrm{eff}}}
+\newcommand{\dCnav}{\Delta\mathbf{C}_{\mathrm{Nav}}}
 \newcommand{\Jsix}{\mathbf{J}_{6}}
 \newcommand{\Oh}{O_{h}}
 
@@ -527,6 +528,37 @@ velocity block is $-i\omega\bG$, so both routes return
   \qquad \Gamma_0 = \int_V \bG\,dV,
 \end{equation}
 identically.  The modulus channels are the only place the two can part.
+
+\subsection{The units the two couplings are written in}\label{sec:units}
+
+The statement just made is about the \emph{amplification factor}, which is a
+ratio, and ratios are where this comparison is safe.  The couplings themselves
+are not in the same units, and it is worth saying so plainly because every other
+check in this note is also a ratio, and none of them can see it.
+
+The $\Jsix$ pairing tests against the field $q$, whose velocity slots carry
+$v = -i\omega u$.  The Navier weak form, and this package's local $T$-matrix,
+test against the \emph{displacement}.  So
+\begin{equation}\label{eq:units}
+  \dCeff = i\omega\,\times\,\bigl[\text{the same object in displacement units}\bigr],
+  \qquad
+  \dCeff\big|_{\text{rigid}} = i\omega^3\Delta\rho V
+  \;\;\text{against}\;\;
+  \omega^2\Delta\rho V .
+\end{equation}
+This is a change of units and not of physics.  It cancels out of every
+amplification factor, every channel ratio and every Born limit expressed as a
+ratio; it does \emph{not} cancel the moment $\dCeff$ is combined with an object
+built in displacement units.  The $i\omega$ appearing in \eqref{eq:gapfactor} is
+this same factor seen from the other side.
+
+The check that establishes it is necessarily absolute rather than relative:
+after dividing by $i\omega$, the residual $\|\dCeff/i\omega - \dCnav\|/\|\dCnav\|$
+falls as $4.19\times10^{-2}$, $4.19\times10^{-3}$, $4.19\times10^{-4}$,
+$4.19\times10^{-5}$ under decade reductions of the contrast --- the \emph{first}
+power, so the residual is the genuine $O(\Delta c^2)$ difference of
+\S\ref{sec:whatitbuys} against an $O(\Delta c)$ coupling, and not a second,
+smaller units error hiding beneath the first.
 
 \subsection{Born agreement, and an \texorpdfstring{$O(\Delta c^2)$}{O(Dc2)} difference}
 
@@ -1956,13 +1988,10 @@ as such, the following are \emph{open}:
       measured rather than suspected: \eqref{eq:gapfactor} separates the gap
       into a geometric factor $\int_V 1/r \big/ D_0 = 1.2644$ and a factor
       $i\omega$, and the double moment $D_0$ that the consistent pairing needs is
-      extracted in \S\ref{sec:schwinger}.  \textbf{What is still open is the
-      $i\omega$}: $\Delta C\,\mathcal{G}\,\Delta C$ carries two $\Jsix$ test
-      factors where \eqref{eq:schwinger} carries one, so a $\mathcal{G}$ that
-      composes correctly must absorb the trial-space normalisation --- and the
-      natural candidate, an inverse Gram $\langle \Jsix\psi_k,\psi_l\rangle$, is
-      degenerate on the rigid block and so cannot simply be inverted.  Until that
-      is resolved, everything in \S\ref{sec:tmatrix} is the first-order coupling
+      extracted in \S\ref{sec:schwinger}.  The $i\omega$ in
+      \eqref{eq:gapfactor} is \emph{not} open --- see \S\ref{sec:units} --- so
+      what remains is the \textbf{geometric} factor alone.  Until that is
+      resolved, everything in \S\ref{sec:tmatrix} is the first-order coupling
       seen through a collocation propagator.
 \item \textbf{The external arbiter reaches the operator, not the cube.}
       \S\ref{sec:layer} closes this item for $\Aop$, $\boldsymbol\Gamma$, their
