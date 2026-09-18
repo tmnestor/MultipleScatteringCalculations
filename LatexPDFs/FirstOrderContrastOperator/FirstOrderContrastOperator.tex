@@ -53,6 +53,8 @@
 \newcommand{\Jsix}{\mathbf{J}_{6}}
 \newcommand{\Isix}{\mathbf{I}_{6}}
 \newcommand{\Oh}{O_{h}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bSig}{\boldsymbol{\Sigma}}
 \newcommand{\tp}{^{\mkern-1.5mu\mathsf{T}}}
 \newcommand{\bR}{\mathbf{R}}
 \newcommand{\bY}{\mathbf{Y}}
@@ -356,11 +358,11 @@ auxiliary moduli are the same two quantities, born in the same elimination
 \end{quote}
 
 Setting $\lambda,\mu,\rho$ constant and acting on $e^{i(k_1x_1+k_2x_2)}$ reduces
-$\Aop$ to a matrix.  With the constant map $\mathbf{b} = \bS\bq$ built from
+$\Aop$ to a matrix.  With the constant map $\mathbf{b} = \bE\bq$ built from
 $\bu = \bv/(-i\omega)$, $\bta_3 = -\bq_{1:3}$ and the permutation
 $(1,2,3)\to(3,1,2)$, the identity
 \begin{equation}\label{eq:similarity}
-  \bA_{\text{thesis}} = \bS\,\bA_{\text{paper}}\,\bS^{-1}
+  \bA_{\text{thesis}} = \bE\,\bA_{\text{paper}}\,\bE^{-1}
 \end{equation}
 holds entry by entry.  Since the two matrices were derived independently and
 published separately, this is evidence rather than bookkeeping.
@@ -830,7 +832,28 @@ In the parameter basis
   \begin{pmatrix}\Gamma_0\,\bI_3 & \mathbf{0}\\ \mathbf{0} & -\bS\,\bW^{-1}\end{pmatrix},
   \qquad \bW = \operatorname{diag}(1,1,1,2,2,2),
 \end{equation}
-where $\bW$ undoes the engineering doubling of the shear slots.
+where $\bS$ is the second moment $M$ of \eqref{eq:selfmoments} carried into the
+$6\times6$ Voigt basis and symmetrised on its outer index pair,
+\begin{equation}\label{eq:Sdef}
+  S_{mn,jk} = \tfrac12\bigl(M_{mj,kn} + M_{nj,km}\bigr),
+  \qquad
+  M_{in,pk} = \int_V \partial'_p\partial'_k G^0_{in}\,dV ,
+\end{equation}
+so that $\bS$ maps a strain to the stress-like response the cube's own field
+produces --- the depolarisation matrix, and the object the $r=0$ delta of
+\S\ref{sec:moments} belongs to.  The symmetrisation is not cosmetic and is not
+supplied by any symmetry $M$ already has.  $M$ is symmetric in
+$p\leftrightarrow k$ because the derivatives commute, and in
+$i\leftrightarrow n$ because $G^0$ is; but $m$ and $n$ in \eqref{eq:Sdef} sit in
+\emph{different slots} --- $m$ is a Green's index in the first term and a
+derivative index in the second --- so nothing makes $\bS$ symmetric on its outer
+pair except writing it that way.  $\bW$ undoes the engineering doubling of the
+shear slots.
+
+$\bS$ here is not the $\bE$ of \eqref{eq:similarity}, nor the scaling
+$\bSig$ of \eqref{eq:scaling}, nor the convention factors $\bS_u,\bS_d$ of
+\eqref{eq:convention}; earlier drafts wrote all four with the same letter and
+defined only two of them.
 
 Note that \eqref{eq:Gmoment} is asserted, not derived --- which is exactly why
 \S\ref{sec:calibration} exists.
@@ -1322,9 +1345,9 @@ $k^2$, because the basis mixes displacement with traction and the two have
 different dimensions; expanding $\bA$ in $1/k$ as it stands mixes orders between
 blocks.  The traction of an evanescent field scales as $\mu k u$, so the natural
 balance is $\bq \to (\bu, \bta_3/k)$.  Under
-$\bS = \operatorname{diag}(1,1,1,k,k,k)$,
+$\bSig = \operatorname{diag}(1,1,1,k,k,k)$,
 \begin{equation}\label{eq:scaling}
-  \widetilde{\bA} = \bS^{-1}\bA\,\bS
+  \widetilde{\bA} = \bSig^{-1}\bA\,\bSig
 \end{equation}
 is uniformly $O(k)$: the upper-right block gains a factor $k$, the lower-left
 loses one, and the diagonal blocks are untouched.  Measured, $\|\bA\|/k$ grows
@@ -1337,7 +1360,7 @@ unscaled matrix the down- and up-going eigenvectors become nearly parallel as
 $k$ grows --- the evanescent limit degenerates --- the eigen-decomposition is
 reported badly conditioned, and the kernel entries collapse into rounding error,
 from which no asymptotic power can be read.  The decomposition is therefore done
-on $\widetilde{\bA}$ and mapped back, $\bK = \bS\,\widetilde{\bK}\,\bS^{-1}$,
+on $\widetilde{\bA}$ and mapped back, $\bK = \bSig\,\widetilde{\bK}\,\bSig^{-1}$,
 checked against the verified kernel of step 2 at moderate $k$.
 
 \subsubsection{Which entries fail to decay}
@@ -3017,7 +3040,7 @@ $\bS_u = +\bS_d$ on $SH$, giving $(-1,-1,+1)$ --- which is all
 
 Two further things are worth stating precisely.  The overall scale is not
 observable at all: \eqref{eq:convention} is unchanged by
-$\bS\to\lambda\bS$ on both sides, so only $\bS_u\bS_d^{-1}$ and the $P/S$ ratio
+$\bS_{u,d}\to\lambda\bS_{u,d}$ on both sides, so only $\bS_u\bS_d^{-1}$ and the $P/S$ ratio
 within each set are determined --- reporting a single convention matrix would
 be overclaiming a third time.  And the standing signature of a
 displacement-versus-flux difference is that it is \emph{invisible to any

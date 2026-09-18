@@ -778,6 +778,64 @@ def main() -> int:
         prev = rel_s
     report("that residual scales as the FIRST power of the contrast", ok_scale)
 
+    print("")
+    print("--- S: the index formula the write-up states for the depolarisation --")
+    print("    The note gives the strain block of the propagator moment as")
+    print("")
+    print("        S_mn,jk = 1/2 ( M_mj,kn + M_nj,km ),")
+    print("        M_in,pk = int_V d'_p d'_k G0_in dV,")
+    print("")
+    print("    which is a claim about INDEX PLACEMENT, and index placement is")
+    print("    exactly what a physical test cannot see: the isotropic moment is")
+    print("    so symmetric that several wrong formulae reproduce it.  So the")
+    print("    check is run on a GENERIC moment carrying only the symmetries the")
+    print("    object really has -- derivatives commute, G0 is symmetric -- and")
+    print("    nothing else.  A misplaced index then cannot pass by accident.")
+    rng_s = np.random.default_rng(7)
+    raw = rng_s.normal(size=(3, 3, 3, 3)) + 1j * rng_s.normal(size=(3, 3, 3, 3))
+    igen = np.zeros((3, 3, 3, 3), dtype=complex)
+    for a in range(3):
+        for b in range(3):
+            for c in range(3):
+                for d in range(3):
+                    igen[a, b, c, d] = raw[a, b, c, d] + raw[b, a, c, d] + raw[a, b, d, c] + raw[b, a, d, c]
+    mgen = np.einsum("pkin->inpk", igen)
+
+    def s_block(fn) -> np.ndarray:
+        """Assemble the 6x6 strain block from an index rule."""
+        out = np.zeros((6, 6), dtype=complex)
+        for p in range(3, 9):
+            i, j = STRAIN_IJ[p]
+            for q in range(3, 9):
+                eq = strain_of(q)
+                out[p - 3, q - 3] = sum(fn(i, j, r, s) * eq[r, s] for r in range(3) for s in range(3))
+        return out
+
+    # The implementation, structurally as propagator_moment writes it.
+    impl = s_block(lambda i, j, r, s: 0.5 * (igen[i, r, s, j] + igen[j, r, s, i]))
+    # The formula as the write-up states it, in terms of M.
+    stated = s_block(lambda i, j, r, s: 0.5 * (mgen[i, r, s, j] + mgen[j, r, s, i]))
+    rel_state = float(np.max(np.abs(stated - impl)) / np.max(np.abs(impl)))
+    print(f"    stated formula vs implementation, generic moment: {rel_state:.3e}")
+    report("the write-up's index formula for S is the one implemented", rel_state < 1e-13)
+    # Controls.  Note which transpositions are NOT controls: M is symmetric in
+    # its Green pair because G0 is, and in its derivative pair because the
+    # derivatives commute, so swapping within either pair changes nothing and
+    # would be a vacuous test.  A real control has to move an index ACROSS the
+    # Green/derivative split.  The natural wrong guess does exactly that --
+    # contracting with both free indices on the derivatives.
+    bad1 = s_block(lambda i, j, r, s: 0.5 * (igen[i, j, r, s] + igen[j, i, r, s]))
+    bad2 = s_block(lambda i, j, r, s: mgen[i, r, s, j])
+    d1 = float(np.max(np.abs(bad1 - impl)) / np.max(np.abs(impl)))
+    d2 = float(np.max(np.abs(bad2 - impl)) / np.max(np.abs(impl)))
+    vac = s_block(lambda i, j, r, s: 0.5 * (mgen[r, i, s, j] + mgen[j, r, s, i]))
+    dv = float(np.max(np.abs(vac - impl)) / np.max(np.abs(impl)))
+    print(f"    control, free indices on the derivatives: {d1:.3e}")
+    print(f"    control, symmetrisation dropped:          {d2:.3e}")
+    print(f"    NOT a control, swap within the Green pair: {dv:.3e} -- M is")
+    print("    symmetric there, which is why that transposition proves nothing.")
+    report("and misplacing an index, or dropping the symmetrisation, FAILS", min(d1, d2) > 1e-3)
+
     print("\n" + "=" * 78)
     n_ok = sum(1 for _, ok in _PASS if ok)
     print(f"  {n_ok} passed, {len(_PASS) - n_ok} failed")
