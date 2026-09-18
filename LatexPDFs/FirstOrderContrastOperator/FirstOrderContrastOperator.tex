@@ -3126,6 +3126,105 @@ be overclaiming a third time.  And the standing signature of a
 displacement-versus-flux difference is that it is \emph{invisible to any
 per-mode ratio test}, which is precisely the test that was being run.
 
+\subsection{What this is, against the thesis's own
+development}\label{sec:impedanceplace}
+
+It is worth being exact about which part of this is new, because most of it is
+not, and the parts that are not are the load-bearing ones.
+
+\paragraph{The problem the thesis set.}  The target is laterally varying
+propagation in which \emph{the dominant material variation is in depth}.  That is
+not a simplification of convenience: it is the structure of the medium.
+Depth-average properties generally increase with depth, so the reference carries
+a strong gradient, while the lateral departure from that depth-average is
+superimposed and comparatively weak.  The thesis's two-potential split is built
+on exactly that asymmetry --- the depth-dependent profile is solved
+\emph{exactly and never expanded}, and only the lateral contrast is carried as a
+series --- and, because the contrast is a deviation from the depth-average at
+each depth, it has zero lateral mean by construction, so the reference is the
+optimal expansion point and not merely a convenient one.
+
+\paragraph{The thesis already says this is the regime for a Riccati sweep.}
+Its Introduction states the criterion directly: the Riccati sweep ``factorizes
+the reference medium Green's tensor, but does not include any of the scattered
+field in the reference solution.  Hence, a multiple scattering series based on
+this scheme converges rapidly, \emph{even when there are strong gradients in the
+reference model}, provided that the superimposed heterogeneity is not too
+strong.''  Strong gradients in the reference, weak superimposed heterogeneity:
+that is the stated regime, and it is the regime above.  The complementary case
+--- smooth reference, strong heterogeneity --- the thesis assigns to its
+cumulative forward-scattering factorisation instead, so the choice between them
+is already made and is not being re-opened here.
+
+\paragraph{What is therefore borrowed.}  The formulation, the regime, the
+criterion, the vertical operator and the economy that makes it affordable are
+all the thesis's \cite{nestor1996}: the block-tridiagonal structure
+(eq.~\texttt{Amat}), the Riccati factorisation and Algorithm~5.1, the
+$\bP^{z}$ vertical sweep, and the observation that
+$Q^{\partial} = (\bI - \mathcal{S}_{int}\mathcal{E})^{-1}\mathcal{S}_{int}$
+depends on the reference alone and so is built \emph{once} per frequency, after
+which each Krylov iterate is a cheap forward--backward sweep.  Nothing here
+displaces any of that.
+
+\paragraph{What is new, and it is two things.}  First, the marched variable.
+The thesis factorises in reflection/transmission operators on mode amplitudes;
+\S\ref{sec:nonnormal} measures why that has a ceiling --- $P$ and $S$ coalesce
+at large lateral wavenumber, $\mathrm{cond}(\mathbf{D}_z)$ grows as
+$|\mathbf{k}|^2$, and the mode-basis coefficients lose the \emph{branch} by
+$|\mathbf{k}| = 600$ --- and \S\ref{sec:impedance} shows the impedance is free
+of it, because $\bY$ needs only the downgoing columns and never the full
+inverse.  This is not academic for the present problem: resolving lateral
+structure of scale $a$ on $N$ points demands
+$|\mathbf{k}|_{\max}\sim\pi N/a$, so the ceiling is reached by refining the
+lateral mesh, which is precisely what a laterally varying calculation does.
+
+Second, the march is a \emph{continuum} one.  The thesis factorises a stack of
+interfaces; \eqref{eq:impedance} is an ODE in $z$.  For a stack the two agree
+exactly --- \S\ref{sec:impmarch} measures agreement with Kennett to
+$10^{-14}$ on a graded stack cut at the same depths --- but for a
+\emph{gradient} they do not, and that is the case this problem is made of.
+
+\subsection{What the continuum march buys, measured}\label{sec:whatimbedbuys}
+
+A layer stack approximates a gradient by staircasing it.  That caps the
+accuracy at second order in the step, however the layer response is computed,
+because the error is then in the medium and not in the solver.  Integrating
+\eqref{eq:impedance} through the true profile has no such cap.  Measured on a
+smooth gradient, against a converged reference:
+
+\begin{center}
+\begin{tabular}{@{}rrcrc@{}}
+\toprule
+steps & staircase & order & impedance ODE & order\\
+\midrule
+  $8$   & $3.35\times10^{-2}$ & ---  & $1.42\times10^{-2}$ & ---\\
+  $16$  & $8.27\times10^{-3}$ & 2.02 & $8.74\times10^{-4}$ & 4.02\\
+  $32$  & $2.06\times10^{-3}$ & 2.00 & $5.42\times10^{-5}$ & 4.01\\
+  $64$  & $5.15\times10^{-4}$ & 2.00 & $3.38\times10^{-6}$ & 4.00\\
+  $128$ & $1.29\times10^{-4}$ & 2.00 & $2.11\times10^{-7}$ & 4.00\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Second order against fourth, on the same profile.  To reach
+$10^{-8}$ the staircase needs $16\,384$ steps and the ODE $512$ --- a factor of
+$32$ in the depth direction, which multiplies every lateral wavenumber and every
+frequency.}
+\end{center}
+
+The fourth order has to be earned and was not, at first: sampling the medium at
+each sublayer's midpoint and running RK4 inside that sublayer integrates the
+staircase \emph{exactly} rather than the profile \emph{accurately}, and returns
+order $1.96$ --- the medium approximation, not the integrator, being the error.
+Evaluating $\bA$ at the Runge--Kutta stage depths is what makes the order real.
+The distinction is recorded because it is invisible in any test against a
+layered arbiter: \S\ref{sec:impmarch} agrees with Kennett to $10^{-14}$ either
+way, since there both are solving the same piecewise-constant problem.
+
+\paragraph{What it does not buy.}  The economy above is in the depth direction
+only.  It does not change the lateral cost, it does not change the number of
+Krylov iterations, and it says nothing about strong scattering --- for which the
+thesis's own criterion, weak superimposed heterogeneity, still governs whether
+the series converges at all.
+
 \subsection{Where the lateral coupling enters}\label{sec:imbedlateral}
 
 A cube is not laterally invariant, so $\dA$ depends on $x$ and $y$ and couples
@@ -3239,6 +3338,8 @@ impedance & \eqref{eq:impedance} is satisfied by the $\mathbf{D}_z$ impedance & 
   & and lands on the downgoing root, tested without $\mathbf{D}_z$ & 1\\
   & $\mathrm{cond}(\bY) = O(1)$; the static limit is $\omega$-independent & 2\\
   & the arbiter: $\bY$ reproduces $k_{z,P}$ and $k_{z,S}$ to $|\mathbf{k}|=6000$ & 2\\
+  & a layer stack is second order on a smooth gradient, the ODE fourth,
+    and the step count to fixed accuracy differs by $32\times$ & 3\\
 \midrule
 impedance & one exact step \eqref{eq:mobius} reproduces the closed form & 1\\
   march & RK4 on \eqref{eq:impedance} converges at fourth order & 2\\
@@ -3270,7 +3371,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, its march $11/11$, the layered $\boldsymbol\Gamma$
+comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$
 $8/8$, and the propagator gate exits clean.}
 \end{center}
 
