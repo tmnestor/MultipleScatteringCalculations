@@ -526,8 +526,24 @@ trial dimension by construction.
 
 \subsection{The effective coupling matrix}
 
+Collecting the last three subsections gives the object that goes inside the
+integral.  The form $b[\phi,\psi] = \phi\tp\Jsix\dA\,\psi$ became
+\emph{multiplicative} on the augmented vector $\mathcal{L}\psi$ once the
+derivatives were transferred, so it has a matrix there; call it $\dC$,
+\begin{equation}\label{eq:dCdef}
+  b[\phi,\psi] = (\mathcal{L}\phi)\tp\,\dC\,(\mathcal{L}\psi)
+  \quad\text{pointwise},
+\end{equation}
+the \emph{augmented contrast matrix}.  It is not a stiffness contrast and not
+$\dA$: it is $\Jsix\dA$ rewritten on the enlarged vector, so it is symmetric by
+\eqref{eq:symmetric}, it carries no derivatives of its own --- they are all in
+$\mathcal{L}$ --- and by the count above only $10 = 6+4$ of the nominal $18$
+slots of $\mathcal{L}\psi$ are occupied.  It is distinct from the Navier
+coupling $\dCnav$ of \S\ref{sec:units}, which is the object the two routes are
+later compared \emph{against}, not a name for this one.
+
 For the affine trial space --- nine parameters, three rigid translations and six
-uniform strains --- the projected coupling
+uniform strains --- the projected coupling is then
 \begin{equation}\label{eq:dCeff}
   (\dCeff)_{kl} = \int_V (\mathcal{L}\psi_k)\tp\,\dC\,(\mathcal{L}\psi_l)\,dV
 \end{equation}
@@ -812,7 +828,7 @@ trial space,
 \begin{equation}\label{eq:T}
   \boxed{\ \mathbf{T} = \dCeff\bigl(\bI_9 - \mathcal{G}\,\dCeff\bigr)^{-1}, \ }
 \end{equation}
-with $\dCeff$ the projected coupling of \S\ref{sec:testspace} and $\mathcal{G}$ of \eqref{eq:Gmoment}
+with $\dCeff$ the projected coupling \eqref{eq:dCeff} and $\mathcal{G}$ of \eqref{eq:Gmoment}
 the self propagator moment of the cube.
 
 \subsection{What is new and what is borrowed}
