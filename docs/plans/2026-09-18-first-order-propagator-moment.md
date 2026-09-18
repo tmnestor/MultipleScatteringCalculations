@@ -1,5 +1,109 @@
 # The First-Order Propagator Moment — Implementation Plan
 
+> ## ✅ THIRD REVISION, 2026-09-18 — the design question is settled; both faults closed
+>
+> `scripts/gate_first_order_schwinger.py`, **10/10**. Read this before the second
+> banner below, which it supersedes on every point except the warnings.
+>
+> ### The settlement — route 2, and it is exact
+>
+> The Born term and the Schwinger term are **not** the same situation, which is
+> why they take different forms:
+>
+> - **Born.** The contrast's indicator and the test function sit at the *same*
+>   point. `∂α(1_V c)` there would multiply a surface layer by an indicator,
+>   which is undefined. The transfer is not a convenience — it is the only
+>   well-posed form, and `ΔC_eff` is right.
+> - **Schwinger.** The two indicators are separated by `Γ`. Nothing coincides,
+>   the surface layer is harmless, and in the lateral Fourier domain it never has
+>   to be formed at all:
+>
+>   ```
+>   FT[ ∂α (1_V c) ] = i k_α FT[ 1_V c ]        exact
+>   ```
+>
+>   The derivative rides on the **transform**; the indicator stays inside the
+>   form factor, undifferentiated.
+>
+> ▶ **Route 1 (surface terms on the faces) is not needed** — same number, harder.
+>
+> Every derivative in `A` is lateral, so all four derivative slots of one entry
+> are `ik_α` at the single wavenumber: left-outer → test polynomial (the
+> augmentation, unchanged), left-inner → propagated field, right-outer → source
+> transform, right-inner → trial polynomial.
+>
+> Checked, not asserted: `∫f ∂₁1_S = −∫_S ∂₁f` via the k-route to **1.0e-13**,
+> zero imaginary residue, opposite sign rejected by 2×.
+>
+> ### Fault 1 (basis) — fixed
+>
+> `amat_paper` / `amat_paper_batch`, transcribed from the validated Mathematica
+> blocks. `A_paper = S⁻¹ A_thesis S` to **1.2e-26**, spectra to 8.6e-12.
+>
+> 🔑 **The quasi-Hamiltonian relation is `A(−k)ᵀJ₆ = −J₆A(k)`, not the fixed-k
+> form.** The operator statement carries `∂ᵀ = −∂`, so the transpose flips the
+> wavenumber. The fixed-k version fails by 4.7e6 arithmetic floors — it is now a
+> negative control. An easy and silent slip.
+>
+> ### Fault 2 (one ΔA where two are needed) — fixed and verified
+>
+> The kernel connects the component the **left** operator READS to the component
+> the **right** operator WRITES: `kern[(m,n)][colL, rowR]`. The old assembly used
+> `[idx, col]`, which is the single-operator object.
+>
+> Two new arbiters, neither owing anything to the moment machinery:
+>
+> 1. **Γ inverted laterally IS the Kelvin tensor** — `7.3e-4` and converging,
+>    off-diagonal leakage `2.9e-4`. This fixes the source normalisation, which
+>    the bridge gate could not reach (it compares two depths, so it tests
+>    propagation, not the strength of the jump).
+> 2. **The density channel** reproduces `iω⁵Δρ²M` with `M = (a₀+b₀/3)D₀` to
+>    `6.9e-5`, `D₀ = ∫∫1/r` computed in real space by the autocorrelation weight
+>    plus a Duffy substitution (Jacobian `t²` cancels the `1/r` outright).
+>
+> ### 🔍 What that comparison found in code already committed
+>
+> `propagator_moment` is a **collocation** object; the Schwinger form is
+> **Galerkin**. The gap factorises exactly (residual 3.6e-5):
+>
+> ```
+> [ΔC G ΔC]₀₀ / (iω⁵Δρ²M) = iω · ( ∫_V 1/r + i·radiation ) / D₀
+> ∫_V 1/r = 2.3800773640   D₀ = 1.8823126444   ratio = 1.2644431684
+> ```
+>
+> The geometric factor is consistent with the project's settled finding that the
+> single site is collocation — but the two **cannot be mixed without it**.
+>
+> ▶▶ **STILL OPEN: the `iω`.** `ΔC 𝒢 ΔC` carries two `J₆` test factors where
+> `⟨J₆φ|ΔAΓΔA|ψ⟩` carries one, so a composing `𝒢` must absorb the trial-space
+> normalisation. The natural candidate — an inverse Gram `⟨J₆ψ_k, ψ_l⟩` — is
+> **degenerate on the rigid block** (the `J₆` contraction of a pure-velocity
+> field with itself is zero), so it cannot simply be inverted. Settle this before
+> quoting any first-order `T` as consistent.
+>
+> ### Quadrature: two opposite cases, do not swap them
+>
+> - **The propagator alone → POLAR.** It depends on `|k|` and on direction
+>   separately, so it is not smooth at the origin and a Cartesian tensor rule
+>   converges as `1/n` (4.0e-2 → 1.2e-2 over a 9× refinement, against 5.4e-3 →
+>   7.3e-4 in polar).
+> - **The lateral moment → CARTESIAN.** Its form factors are separable sinc
+>   products, which polar cannot resolve. (Unchanged from the second banner.)
+> - **Panel it either way.** A single Gauss rule puts its nodes at the *ends*,
+>   which is the opposite of where these integrands keep their mass. This alone
+>   accounted for a 24% error that looked like a physics discrepancy.
+>
+> ⚠ The density-channel quadrature agrees at `1e-4` but is **not monotone**
+> (6.9e-5 → 1.2e-3 as the box widens); treat it as converged to `1e-3`, no better.
+>
+> ### Next
+>
+> 1. The `iω` above.
+> 2. The **derivative-carrying channels** — the density channel's contrast
+>    operator is multiplicative, so it does not exercise the `ik` rule *at all*.
+>    `Δλ`, `Δμ` are what test the thing Part 1 settled.
+> 3. Then the remaining eight trial functions, and read `B` off.
+
 > ## ⚠⚠ SECOND REVISION, 2026-09-18 — the assembly computed the wrong object, in the wrong basis
 >
 > `scripts/gate_first_order_lateral_moment.py` assembles the lateral integral and

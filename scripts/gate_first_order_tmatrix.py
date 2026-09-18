@@ -428,7 +428,7 @@ def static_moments_tabulated(ref: ReferenceMedium, a: float) -> dict[str, comple
     return {"A": a_t, "B": b_t, "C": c_t, "G": a**2 * (a0 + b0 / 3.0) * G0_CUBE}
 
 
-def dynamic_moments_integrated(ref: ReferenceMedium, omega: float, a: float) -> dict[str, complex]:
+def dynamic_moments_integrated(ref: ReferenceMedium, omega: complex, a: float) -> dict[str, complex]:
     """The cube's self moments at finite frequency, BY INTEGRATION.
 
     The static part is not the whole moment.  Keeping the exponential of the
@@ -467,7 +467,7 @@ def dynamic_moments_integrated(ref: ReferenceMedium, omega: float, a: float) -> 
     return {k: complex(mom[f"{k}_dyn_re"], mom[f"{k}_dyn_im"]) for k in ("A", "B", "C", "G")}
 
 
-def propagator_moment(ref: ReferenceMedium, omega: float, a: float) -> np.ndarray:
+def propagator_moment(ref: ReferenceMedium, omega: complex, a: float) -> np.ndarray:
     """G, the self propagator moment of the cube, in the nine-parameter basis.
 
     The STATIC part comes from the moment engine, by integration.  The dynamic
@@ -735,8 +735,11 @@ def main() -> int:
     print(f"  {n_ok} passed, {len(_PASS) - n_ok} failed")
     print("=" * 78)
     print("  CAVEAT 1: the propagator moment used is the SINGLE (collocation)")
-    print("  one, while the J6 pairing makes the scheme Galerkin.  The")
-    print("  consistent pairing needs the double moment, not extracted here.")
+    print("  one, while the J6 pairing makes the scheme Galerkin.  The gap is")
+    print("  now measured, not suspected -- gate_first_order_schwinger.py")
+    print("  factors it into int_V 1/r / int_V int_V 1/r = 1.2644 and a")
+    print("  remaining i*omega from the trial-space normalisation, which is")
+    print("  OPEN.  Do not read these amplitudes as a consistent Galerkin T.")
     print("  CAVEAT 2: the O_h split lower-bounds the FIRST-ORDER error only.")
     print("  A symmetric approximation can be symmetrically wrong, so this")
     print("  bounds the Navier route not at all.  Which is more accurate is")
