@@ -68,6 +68,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
+from cubic_scattering.kennett_layers import _complex_slowness  # noqa: E402
 
 J6 = np.zeros((6, 6))
 J6[:3, 3:], J6[3:, :3] = np.eye(3), -np.eye(3)
@@ -305,7 +306,13 @@ def dz_balanced(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> t
     # verifies it, where it is accurate.
     # A vanishing diagonal entry is not round-off: it is the BRANCH POINT, where
     # k_{z,c} = 0 and that mode's up- and down-going vectors coalesce, so D_z is
-    # genuinely singular.  It happens at |k| = omega/alpha and omega/beta exactly.
+    # genuinely singular.  It happens at |k| = omega/alpha and omega/beta exactly
+    # -- but ONLY for a real omega.  The degeneracy is an artefact of the lossless
+    # idealisation: k_z^2 = omega^2/c^2 - k^2 cannot vanish for real k once
+    # omega^2/c^2 carries an imaginary part, so any physical Q moves the branch
+    # point off the real-k axis and the whole radius becomes ordinary.  Measured:
+    # at Q = 200 the closest approach of |k_{z,S}| across the S radius is 1.4e-3
+    # against a scale of 0.02, and D_z inverts ON the radius to 1.2e-15.
     # Left alone, eps = 1/sqrt(diag) returns nan and the caller gets a silent
     # nan propagator; that is worth a diagnostic rather than a surprise.
     # Tested on k_z ITSELF, not on the spread of the diagonal: D_z's entries span
@@ -320,10 +327,15 @@ def dz_balanced(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> t
             f"D_z is singular at |k| = {kmag:.8g}: a branch point, where k_z = 0 for "
             f"one wave type and its two modes coalesce.  omega/alpha = "
             f"{abs(omega) / ref.alpha:.8g}, omega/beta = {abs(omega) / ref.beta:.8g}.\n"
-            f"Fix: evaluate off the branch point.  It is a single point, so a "
-            f"quadrature node may be nudged, and a panel EDGE placed there is the "
-            f"right treatment for an integral -- which is what the branch radii "
-            f"panels in the lateral gates are for."
+            f"Fix: give omega an imaginary part.  Attenuation removes this "
+            f"degeneracy outright -- k_z^2 = omega^2/c^2 - k^2 cannot vanish for "
+            f"real k when omega^2/c^2 is complex -- so the branch point exists "
+            f"only in the lossless idealisation.  Use the project's complex "
+            f"slowness (_complex_slowness in kennett_layers.py) with a physical Q.\n"
+            f"For a deliberately lossless calculation, evaluate off the point "
+            f"instead: it is a single point, so a quadrature node may be nudged, "
+            f"and a panel EDGE placed there is the right treatment for an integral "
+            f"-- which is what the branch radii panels in the lateral gates are for."
         )
         raise ValueError(msg)
     eps = 1.0 / np.sqrt(diag.astype(np.complex128))
@@ -554,6 +566,56 @@ def main() -> int:
     relr = float(abs(gnum[0, 0].imag - rad) / rad)
     print(f"    Im G_zz {gnum[0, 0].imag: .6e}   w(1/a^3+2/b^3)/12 pi rho {rad: .6e}  rel {relr:.3e}")
     report("and carries the radiation reaction, with no epsilon prescription", relr < 5e-3)
+
+    print("")
+    print("--- 7: the branch point is an artefact of a LOSSLESS omega --------")
+    print("    Part 4b's guard fires where k_z = 0 and the two modes coalesce.")
+    print("    That can only happen for a real omega: k_z^2 = omega^2/c^2 - k^2")
+    print("    cannot vanish at real k once omega^2/c^2 is complex.  Attenuation")
+    print("    therefore removes the degeneracy outright rather than dodging it,")
+    print("    and node-nudging is only the fallback for a lossless calculation.")
+    kb = omega / ref.beta
+    scan = np.linspace(0.75 * kb, 1.25 * kb, 4001)
+    print(f"    {'omega':>20} {'min |k_zS| over scan':>22} {'| D^-1 D - I | AT k_b':>24}")
+    lossless_raises = False
+    worst_att = 0.0
+    for tag, om in (
+        ("real (lossless)", complex(omega)),
+        ("Q = 200", omega * (1.0 + 0.5j / 200.0)),
+        ("Q = 50", omega * (1.0 + 0.5j / 50.0)),
+    ):
+        mn = min(abs(kz_c(ref.beta, om, float(k), 0.0)) for k in scan)
+        try:
+            dzt, invt, _, _ = dz_balanced(ref, om, float(kb), 0.0)
+            res = float(np.max(np.abs(invt @ dzt - np.eye(6))))
+            worst_att = max(worst_att, res)
+            cell = f"{res:.3e}"
+        except ValueError:
+            lossless_raises = True
+            cell = "singular (guard)"
+        print(f"    {tag:>20} {mn:22.3e} {cell:>24}")
+    report("the lossless guard still fires exactly on the branch radius", lossless_raises)
+    report("attenuation makes D_z ordinary there, at both Q values", worst_att < 1e-10)
+    # The project already carries this device: kennett_layers puts the loss in a
+    # complex SLOWNESS rather than a complex omega.  They are the same thing --
+    # k_z depends on omega and c only through omega/c -- and the check is that
+    # omega * s(v, Q) and the complex-omega form agree to O(1/Q^2).
+    qq = 200.0
+    lhs = omega * _complex_slowness(ref.beta, qq)
+    rhs = omega * (1.0 + 0.5j / qq) / ref.beta
+    dev = abs(lhs - rhs) / abs(rhs)
+    print(f"    omega * s(beta, Q=200) = {lhs:.10g}")
+    print(f"    omega (1 + i/2Q) / beta = {rhs:.10g}    relative gap {dev:.3e}")
+    report("complex frequency IS the project's complex slowness, to O(1/Q^2)", dev < 3e-5)
+    # And the representation itself must survive on the radius, not merely invert.
+    om_q = omega * (1.0 + 0.5j / 200.0)
+    scl = rowscale(ref, om_q, float(kb), 0.0)
+    dzt, invt, _, _ = dz_balanced(ref, om_q, float(kb), 0.0)
+    at_b = scl[:, None] * amat_thesis(ref, om_q, float(kb), 0.0) * (1.0 / scl)[None, :]
+    reb = dzt @ np.diag(lam_diag(ref, om_q, float(kb), 0.0)) @ invt
+    err = float(np.max(np.abs(reb - at_b)) / np.max(np.abs(at_b)))
+    print(f"    (specA) rebuilt ON the S branch radius at Q = 200 = {err:.3e}")
+    report("(specA) holds on the branch radius once omega is complex", err < 1e-10)
 
     print("")
     print("=" * 74)
