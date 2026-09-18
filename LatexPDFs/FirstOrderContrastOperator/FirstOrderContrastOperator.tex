@@ -2707,16 +2707,18 @@ imbedding}\label{sec:imbedding}
 \begin{quote}
 \small\itshape
 Status.  The equivalence of \S\ref{sec:leibniz} is a derivation, and its pivot
---- that the jump is exactly $\Isix$ --- is measured, at
-$7\times10^{-14}$.  The Riccati equation \eqref{eq:riccatiR} is derived here and
-the \emph{march} is not yet implemented in this route: the existing
-implementation is the sibling repository's layer recursion, which
-\S\ref{sec:stiff} identifies as the same object discretised.  Its coefficient
-matrices, however, are built and gated --- \S\ref{sec:vblocks} to
-\S\ref{sec:impedance} report measurements, not expectations, including the
-impedance form and the wavenumber range it reaches.  What remains unbuilt is the
-march itself and the lateral generalisation of \S\ref{sec:imbedlateral}, which
-is written down to fix what would have to be built.
+--- that the jump is exactly $\Isix$ --- is measured, at $7\times10^{-14}$.
+Everything from \eqref{eq:riccatiR} to \S\ref{sec:impmarch} is built and gated:
+the coefficient matrices and their conditioning, the impedance form and the
+wavenumber range it reaches, the march itself, and its score against a closed
+form and against Kennett, on a graded slab where no closed form exists.  These
+report measurements, not expectations.
+
+\emph{One thing is not built}: the laterally coupled case of
+\S\ref{sec:imbedlateral}, where $\dA$ varies across the cube and couples
+$\mathbf{k}_\perp$.  Everything above it is laterally invariant --- a stack, not
+a scatterer --- so the note has a complete $1$-D chain and the step that makes
+it a cube is written down rather than done.
 \end{quote}
 
 \subsection{The kernel is one-sided, so the integral equation splits}
