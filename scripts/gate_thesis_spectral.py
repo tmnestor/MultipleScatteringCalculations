@@ -31,8 +31,28 @@ way while working from the operator form instead:
   * the conditioning of the eigenvectors, which motivated a scalar scaling that
     turned out to be in the wrong direction, and then a Parlett--Reinsch
     balancing.  Neither is needed if the eigenvectors are not computed.
-  * the inversion of the eigenvector matrix, replaced by the symplectic
-    identity above.
+  * the inversion of the eigenvector matrix -- PARTLY.  See below.
+
+WHERE THE THESIS IDENTITY STOPS PAYING, AND THE VALID RANGE
+-----------------------------------------------------------
+D_z^-1 = -i J6 D_z^T(-k) J6 is exact and needs no inversion, but fixing the
+normalisation factors epsilon from it goes through a product that CANCELS, and
+epsilon then enters the rebuild squared.  At k = 100 that turns (specA) from
+1e-14 into 0.59.  Since the epsilons cancel out of D Lambda D^-1 anyway, being a
+diagonal similarity, the accurate route is to invert the BALANCED matrix and keep
+the identity as the check it is genuinely good at, which Part 1 still performs.
+
+Balancing is the other half.  D_z's displacement rows carry entries of order k
+and its traction rows of order mu k^2, so the raw matrix has a condition number
+of 1e18 by k = 100 -- a UNIT mismatch, not a property of the eigenvectors.  The
+symplectic row scaling of ``rowscale`` removes it, and must be applied BEFORE the
+identity and before epsilon, since those are the steps that cancel.
+
+With both, (specA) holds to 4.7e-15, 1.3e-12, 9.5e-11, 1.3e-8 and 2.7e-6 at
+k = 0.05, 1, 10, 100 and 1000.  Part 4b records that, because Parts 1-3 sample
+only the propagating window |k| <= 0.05 and a claim tested there is a claim about
+there -- while the cube's second-derivative moments, whose kernel decays only
+algebraically, need k of order 100.
 
 Run:  conda run -n seismic python scripts/gate_thesis_spectral.py
 """
@@ -223,6 +243,71 @@ def dz_inverse_symplectic(dz_m: np.ndarray) -> np.ndarray:
     return -1j * J6 @ dz_m.T @ J6
 
 
+def rowscale(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> np.ndarray:
+    """A SYMPLECTIC row scaling that conditions D_z.
+
+    The displacement rows of D_z carry entries of order k and the traction rows
+    of order mu k^2, so as written the matrix has a dynamic range of about mu k
+    and a condition number of 1e18 by k = 100.  That is a UNIT mismatch, not a
+    property of the eigenvectors: balanced, the condition number is 8.8e9 there
+    and (specA) is recovered to 1.3e-8 instead of 0.25.
+
+    ``diag(s, s, s, 1/s, 1/s, 1/s)`` is symplectic, ``R^T J6 R = J6``, hence
+    ``R^T J6 = J6 R^-1``, which is exactly what the proof of the inverse identity
+    needs -- so every symplectic statement in this file survives it unchanged.
+    ``s = sqrt(mu k)`` brings the two blocks together, with k floored at
+    omega/beta so the scaling does not degenerate where it was never needed.
+
+    Args:
+        ref: Medium.
+        omega: Angular frequency.
+        kx: Lateral wavenumber, x.
+        ky: Lateral wavenumber, y.
+
+    Returns:
+        Shape (6,) real, the diagonal of R.
+    """
+    k = max(float(np.hypot(kx, ky)), float(abs(omega) / ref.beta))
+    s = float(np.sqrt(ref.mu * k))
+    return np.array([s, s, s, 1.0 / s, 1.0 / s, 1.0 / s])
+
+
+def dz_balanced(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> tuple:
+    """D_z and its symplectic inverse, computed in the BALANCED basis.
+
+    The order matters and is the whole point: the scaling must be applied BEFORE
+    the symplectic identity and before the epsilon determination, because those
+    are the steps that cancel.  Scaling an inverse that was already formed in the
+    raw basis recovers nothing -- measured, 0.25 against 1.3e-8 at k = 100.
+
+    Args:
+        ref: Medium.
+        omega: Angular frequency.
+        kx: Lateral wavenumber, x.
+        ky: Lateral wavenumber, y.
+
+    Returns:
+        (D_tilde, D_tilde^-1, scale, off_diagonal_residual).
+    """
+    scl = rowscale(ref, omega, kx, ky)
+    raw = scl[:, None] * dz_columns(ref, omega, kx, ky)
+    raw_m = scl[:, None] * dz_columns(ref, omega, -kx, -ky)
+    prod = dz_inverse_symplectic(raw_m) @ raw
+    diag = np.diag(prod)
+    off = float(np.max(np.abs(prod - np.diag(diag))) / max(float(np.max(np.abs(diag))), 1e-300))
+    # WHERE THE SYMPLECTIC IDENTITY STOPS PAYING.  It is exact, and it needs no
+    # inversion -- but it fixes the epsilons through a product that CANCELS, and
+    # at large k the diagonal it extracts is itself inaccurate.  Since epsilon
+    # enters the rebuild squared, that is what turns (specA) from 1e-14 into 0.59
+    # at k = 100.  The epsilons cancel out of D Lambda D^-1 entirely, being a
+    # diagonal similarity, so the accurate route is to invert the BALANCED matrix
+    # numerically and keep the identity as the check it is good at: Part 1 still
+    # verifies it, where it is accurate.
+    eps = 1.0 / np.sqrt(diag.astype(np.complex128))
+    dzt = raw * eps[None, :]
+    return dzt, np.linalg.inv(dzt), scl, off
+
+
 def dz_normalised(ref: ReferenceMedium, omega: complex, kx: float, ky: float) -> tuple:
     """D_z with the epsilon factors fixed so the symplectic inverse is exact.
 
@@ -242,18 +327,8 @@ def dz_normalised(ref: ReferenceMedium, omega: complex, kx: float, ky: float) ->
     Returns:
         (D_z, D_z^-1, off_diagonal_residual).
     """
-    raw = dz_columns(ref, omega, kx, ky)
-    raw_m = dz_columns(ref, omega, -kx, -ky)
-    prod = dz_inverse_symplectic(raw_m) @ raw
-    diag = np.diag(prod)
-    off = float(np.max(np.abs(prod - np.diag(diag))) / max(float(np.max(np.abs(diag))), 1e-300))
-    # The SAME epsilon scales D_z at +k and at -k: the identity then reads
-    #   [-i J6 (Dz(-k) E)^T J6] (Dz(k) E) = E diag(d) E = E^2 diag(d),
-    # so epsilon_i^2 d_i = 1 fixes every factor at once.
-    eps = 1.0 / np.sqrt(diag.astype(np.complex128))
-    dz_m = raw * eps[None, :]
-    inv = dz_inverse_symplectic(raw_m * eps[None, :])
-    return dz_m, inv, off
+    dzt, invt, scl, off = dz_balanced(ref, omega, kx, ky)
+    return dzt / scl[:, None], invt * scl[None, :], off
 
 
 def gamma_thesis(ref: ReferenceMedium, omega: complex, kx: float, ky: float, dz: float) -> np.ndarray:
@@ -281,14 +356,18 @@ def gamma_thesis(ref: ReferenceMedium, omega: complex, kx: float, ky: float, dz:
     Returns:
         Shape (6, 6) complex.
     """
-    dz_m, inv, _ = dz_normalised(ref, omega, kx, ky)
+    # Built in the BALANCED basis and unscaled at the end.  Gamma = R^-1 Gt R is
+    # a similarity, so this is algebraically identical to assembling it from the
+    # unscaled D_z -- and numerically much better, because forming the projectors
+    # from columns whose entries span mu*k is where the digits are lost.
+    dzt, invt, scl, _ = dz_balanced(ref, omega, kx, ky)
     lam = lam_diag(ref, omega, kx, ky)
     sel = range(3) if dz > 0.0 else range(3, 6)
     sgn = 1.0 if dz > 0.0 else -1.0
     out = np.zeros((6, 6), dtype=np.complex128)
     for i in sel:
-        out += sgn * np.exp(lam[i] * dz) * np.outer(dz_m[:, i], inv[i, :])
-    return out
+        out += sgn * np.exp(lam[i] * dz) * np.outer(dzt[:, i], invt[i, :])
+    return (1.0 / scl)[:, None] * out * scl[None, :]
 
 
 def _radial_panels(edges: list[float], nper: int) -> tuple[np.ndarray, np.ndarray]:
@@ -386,6 +465,31 @@ def main() -> int:
     )
     print(f"    |<+S | +H>| / (|+S||+H|) at k_x = k_y = 0 = {ang:.3e}")
     report("quasi-SV and quasi-SH remain independent at k = 0", ang < 1e-10)
+
+    print("")
+    print("--- 4b: the VALID RANGE in k, recorded rather than assumed --------")
+    print("    Parts 1-3 sample only |k| <= 0.05, the propagating window, which is")
+    print("    where this file's own physics lives -- and a claim tested there is")
+    print("    a claim about there.  Objects whose kernel decays only")
+    print("    algebraically, such as the cube's second-derivative moments, need")
+    print("    k of order 100, so the range has to be stated.")
+    print(f"    {'k':>10} {'cond(D_z) raw':>15} {'cond balanced':>15} {'(specA) rebuilt':>17}")
+    worst_hi = 0.0
+    for kk in (0.05, 1.0, 10.0, 100.0, 1000.0):
+        kx = ky = kk / np.sqrt(2.0)
+        raw = dz_columns(ref, omega, kx, ky)
+        scl = rowscale(ref, omega, kx, ky)
+        bal = scl[:, None] * raw
+        dzt, invt, _, _ = dz_balanced(ref, omega, kx, ky)
+        at_b = scl[:, None] * amat_thesis(ref, omega, kx, ky) * (1.0 / scl)[None, :]
+        reb = dzt @ np.diag(lam_diag(ref, omega, kx, ky)) @ invt
+        err = float(np.max(np.abs(reb - at_b)) / np.max(np.abs(at_b)))
+        if kk <= 100.0:
+            worst_hi = max(worst_hi, err)
+        print(f"    {kk:10.2f} {np.linalg.cond(raw):15.2e} {np.linalg.cond(bal):15.2e} {err:17.3e}")
+    print("    The raw column is a UNIT mismatch, not a property of the")
+    print("    eigenvectors: displacement rows go as k and traction rows as mu k^2.")
+    report("(specA) holds to 1e-7 out to k = 100 in the balanced basis", worst_hi < 1e-7)
 
     print("")
     print("--- 5: reciprocity of Gamma, with no classification involved ------")
