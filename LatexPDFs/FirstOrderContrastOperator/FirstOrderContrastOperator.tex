@@ -1935,11 +1935,26 @@ $\mathbf{D}_z^{-1}$ by numerical inversion & \eqref{eq:dzinv}\\
 spectral representation.}
 \end{center}
 
-Rebuilt on \eqref{eq:specA}, $\boldsymbol\Gamma$ is reciprocal to
-$3.6\times10^{-12}$ with no classification performed anywhere, reproduces the
-Kelvin tensor to $1.0\times10^{-3}$ and converging, and carries the radiation
-reaction to $4.4\times10^{-3}$ --- \emph{with no $\epsilon$ prescription}, since
-the outgoing condition is already in the branch of $k_{z,c}$.  In the thesis
+Rebuilt on \eqref{eq:specA}, $\boldsymbol\Gamma$ satisfies the reciprocity
+relation \eqref{eq:recip},
+\begin{equation}\label{eq:recipagain}
+  \boldsymbol\Gamma(-\mathbf{k}; z', z)^{\!\top} =
+  \Jsix\,\boldsymbol\Gamma(\mathbf{k}; z, z')\,\Jsix ,
+\end{equation}
+to a residual of $2.2\times10^{-11}$ \emph{relative to}
+$\max|\boldsymbol\Gamma(\mathbf{k})|$, with no classification performed
+anywhere.  Two things make that a real test rather than an arithmetic one.  The
+source and receiver are \emph{exchanged}, not just $\mathbf{k}$ reversed, and
+exchanging them negates $z-z'$ --- so the right-hand side is built from the
+downgoing columns of \eqref{eq:specA} and the left-hand side from the upgoing
+ones, and no one-sided object can satisfy it.  And the sampling runs to
+$|\mathbf{k}| = 3.22\,\mathrm{rad\,m^{-1}}$ against
+$\omega/\beta = 0.02$, a factor of $160$, so it is an evanescent-regime claim
+and not merely a propagating one.  On the same construction
+$\boldsymbol\Gamma$ reproduces the Kelvin tensor to $1.0\times10^{-3}$ and
+converging, and carries the radiation reaction to $4.4\times10^{-3}$ ---
+\emph{with no $\epsilon$ prescription}, since the outgoing condition is already
+in the branch of $k_{z,c}$.  In the thesis
 basis the extraction is also plainer: a force $f_j$ enters row $3+j$ with a
 minus sign and the displacement comes out in rows $0$--$2$, so
 $G_{ij} = -\boldsymbol\Gamma_{i,3+j}$ with no velocity factor at all.
@@ -3044,7 +3059,7 @@ thesis & $\mathbf{D}_z^{-1}$ from \eqref{eq:dzinv} is diagonal on the thesis
        & $\mathbf{D}_z\boldsymbol\Lambda\mathbf{D}_z^{-1}$ reproduces (Akdef) & 1\\
        & the quasi-Hamiltonian relation as the thesis states it & 1\\
        & quasi-$SV$ and quasi-$SH$ independent at $k=0$ & 1\\
-       & $\boldsymbol\Gamma$ reciprocal, and the Kelvin tensor with the
+       & $\boldsymbol\Gamma$ reciprocal in the sense \eqref{eq:recip}, and the Kelvin tensor with the
          radiation reaction, from the analytic modes alone & 3\\
        & the valid range in $k$, recorded & 1\\
        & the branch point is real, and attenuation removes it; complex
@@ -3098,7 +3113,7 @@ impedance & one exact step \eqref{eq:mobius} reproduces the closed form & 1\\
 layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
   $\boldsymbol\Gamma$ & zero-contrast cuts are harmless, so any depth is reachable & 1\\
   & the bridge identity at depths on no lattice & 1\\
-  & reciprocity, source and receiver exchanged & 1\\
+  & reciprocity \eqref{eq:recip}, source and receiver exchanged & 1\\
   & \eqref{eq:uniformlimit}, with a not-vacuous control & 2\\
   & the evanescent reduction to the whole space & 1\\
   & a reflector below returns an upgoing part, by twelve orders & 1\\

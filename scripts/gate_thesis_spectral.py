@@ -531,13 +531,29 @@ def main() -> int:
 
     print("")
     print("--- 5: reciprocity of Gamma, with no classification involved ------")
+    print("    RECIPROCAL IN WHAT SENSE: the symplectic relation inherited from")
+    print("    (ATdef) by way of J6^-1 = -J6, with the SOURCE AND RECEIVER")
+    print("    EXCHANGED as well as k reversed --")
+    print("")
+    print("        Gamma(-k; z', z)^T  =  J6 Gamma(k; z, z') J6.")
+    print("")
+    print("    Exchanging z and z' negates dz, so the right-hand Gamma is built")
+    print("    from the DOWNgoing columns and the left-hand one from the UPgoing:")
+    print("    the identity is not satisfiable by a one-sided object, which is")
+    print("    what makes it a test of the up/down assignment rather than of")
+    print("    arithmetic.  The sampling reaches far past omega/beta, so this is")
+    print("    an evanescent-regime claim and not only a propagating one; the")
+    print("    range actually reached is reported below rather than asserted.")
+    kmax = 0.0
     worst_r = 0.0
     for _ in range(5):
         kx, ky = rng.uniform(-3.0, 3.0, size=2)
+        kmax = max(kmax, float(np.hypot(kx, ky)))
         gp = gamma_thesis(ref, omega, kx, ky, 0.37)
         gm = gamma_thesis(ref, omega, -kx, -ky, -0.37)
         worst_r = max(worst_r, float(np.max(np.abs(gm.T - J6 @ gp @ J6)) / np.max(np.abs(gp))))
-    print(f"    worst | Gamma(-k; z', z)^T - J6 Gamma(k; z, z') J6 | = {worst_r:.3e}")
+    print(f"    worst residual, RELATIVE to max|Gamma(k)| = {worst_r:.3e}")
+    print(f"    over |k| <= {kmax:.3f} rad/m, against omega/beta = {abs(omega) / ref.beta:.4f}")
     report("Gamma is reciprocal, from the analytic modes alone", worst_r < 1e-10)
 
     print("")
