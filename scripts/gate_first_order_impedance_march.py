@@ -75,14 +75,19 @@ from scripts.gate_first_order_layer_vs_kennett import (  # noqa: E402
     NORM,
     normal_incidence_layer,
 )
-from scripts.gate_thesis_spectral import dz_normalised  # noqa: E402
+from scripts.gate_thesis_spectral import dz_normalised, kz_c  # noqa: E402
 
-#: The thesis-to-Kennett amplitude convention, per channel.  P-SV differs by a
-#: sign and SH does NOT -- confirmed independently by the collocation route of
-#: ``gate_first_order_layer_vs_kennett``, which reports
+#: The DIAGONAL of the thesis-to-Kennett convention -- which is not the whole of
+#: it.  P-SV differs by a sign and SH does NOT; confirmed independently by the
+#: collocation route of ``gate_first_order_layer_vs_kennett``, which reports
 #: (-1.000042, -1.000166, +1.000166) at 120 cells.  The sign split is a real
 #: feature of the two conventions, not an error, and lumping the three together
 #: is what made this gate's first run report a spurious 2.000.
+#:
+#: The OFF-diagonal is not constant and is not here: see Part 7, which finds the
+#: relation is two-sided, R_th = S_u R_ken S_d^-1, with the P/S part equal to
+#: sqrt(k_zS/k_zP) and therefore slowness-dependent.  Anything using CONV alone
+#: is making a statement about the diagonal only.
 CONV = np.array([-1.0, -1.0, +1.0])
 
 REF = ReferenceMedium(5000.0, 3000.0, 2500.0)
@@ -438,6 +443,73 @@ def main() -> int:
     print(f"    forward PP {complex(r_fwd[0, 0]):+.8f}")
     print(f"    reversed PP {complex(r_rev[0, 0]):+.8f}   relative change {rel:.3e}")
     report("reversing the depth profile changes R, so the march sees order", rel > 1e-3)
+
+    print("")
+    print("--- 7: WHAT the convention actually is ------------------------------")
+    print("    Parts 3 to 5 compared only the DIAGONAL of R, which cannot see")
+    print("    the convention -- it can only see part of it.  A convention is a")
+    print("    renormalisation of mode amplitudes, and if the incident and")
+    print("    reflected sets are renormalised by S_d and S_u then")
+    print("")
+    print("        R_thesis = S_u R_kennett S_d^-1,")
+    print("")
+    print("    a TWO-SIDED transform, not multiplication by one matrix.  If both")
+    print("    are diagonal the elementwise ratio obeys Q_ij = (S_u)_i/(S_d)_j,")
+    print("    which is rank one in log space, so Q_PP Q_SS = Q_PS Q_SP exactly.")
+    print("    That is a sharp test of diagonality, and the diagonal-only")
+    print("    measurement never performed it.")
+    print(f"    {'p':>10} {'rank-1 residual':>17} {'Q_PS':>20} {'Q_SP':>20}")
+    worst_r1 = 0.0
+    for p in (2e-5, 5e-5, 1.0e-4, 1.5e-4, 1.8e-4):
+        rmat = r_march(LAY, p, 1)
+        ken, _ = kennett_r([(LAY, H)], p)
+        q = np.array(
+            [
+                [rmat[0, 0] / ken[0, 0], rmat[0, 1] / ken[0, 1]],
+                [rmat[1, 0] / ken[1, 0], rmat[1, 1] / ken[1, 1]],
+            ]
+        )
+        r1 = float(abs(q[0, 0] * q[1, 1] - q[0, 1] * q[1, 0]) / abs(q[0, 0] * q[1, 1]))
+        worst_r1 = max(worst_r1, r1)
+        print(f"    {p:10.2e} {r1:17.3e} {q[0, 1]:+20.8f} {q[1, 0]:+20.8f}")
+    report("both renormalisations ARE diagonal -- Q is rank one to 1e-14", worst_r1 < 1e-12)
+
+    print("")
+    print("    With Q_ij = -s_i/s_j and s = (1, i c) the off-diagonals give c,")
+    print("    and c is NOT a constant: it is sqrt(k_zS / k_zP), the ratio of")
+    print("    the two flux normalisations.  Kennett normalises modes to unit")
+    print("    vertical energy flux, which carries sqrt(k_z) per mode; this")
+    print("    note normalises each column by its own displacement component.")
+    print(f"    {'p':>10} {'c from Q_SP':>16} {'sqrt(k_zS/k_zP)':>18} {'rel':>11}")
+    worst_c = 0.0
+    for p in (2e-5, 5e-5, 1.0e-4, 1.5e-4, 1.8e-4, 1.95e-4):
+        rmat = r_march(LAY, p, 1)
+        ken, _ = kennett_r([(LAY, H)], p)
+        kx = float(OMEGA * p)
+        c_meas = (rmat[1, 0] / ken[1, 0]) / (-1j)
+        c_pred = np.sqrt(kz_c(REF.beta, OMEGA, kx, 0.0) / kz_c(REF.alpha, OMEGA, kx, 0.0))
+        rel = float(abs(c_meas - c_pred) / abs(c_pred))
+        worst_c = max(worst_c, rel)
+        print(f"    {p:10.2e} {c_meas:+16.8f} {c_pred:+18.8f} {rel:11.3e}")
+    report("the P/S part of the convention is exactly sqrt(k_zS/k_zP)", worst_c < 1e-12)
+    print("    It runs 1.293 to 2.466 over this sweep and diverges as k_zP -> 0")
+    print("    at the P critical slowness, so the convention is NOT FIXED.  What")
+    print("    is fixed is its diagonal, which is all Parts 3-5 ever saw.")
+    print("    This is the displacement-versus-flux difference, and its standing")
+    print("    signature is that it is invisible to any PER-MODE ratio test --")
+    print("    which is precisely how the diagonal-only measurement missed it.")
+    print("")
+    print("    The overall scale is not observable at all: R = S_u R_ken S_d^-1")
+    print("    is unchanged by S -> lambda S on both sides, so only S_u S_d^-1")
+    print("    and the P/S ratio within each set are determined.  Reporting a")
+    print("    single convention MATRIX would therefore be overclaiming twice.")
+    sc_ok = True
+    for p in (5e-5, 1.5e-4):
+        rmat = r_march(LAY, p, 1)
+        ken, ksh = kennett_r([(LAY, H)], p)
+        sc_ok = sc_ok and abs(rmat[0, 0] / ken[0, 0] + 1.0) < 1e-10
+        sc_ok = sc_ok and abs(rmat[2, 2] / ksh - 1.0) < 1e-10
+    report("S_u = -S_d on P-SV and S_u = +S_d on SH, which is the sign split", sc_ok)
 
     print("")
     print("=" * 74)
