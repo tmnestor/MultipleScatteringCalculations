@@ -54,11 +54,45 @@
 > that limits the useful `k` range — and lets the whole construction batch: 6×6
 > inverses over ~10⁷ nodes in one `np.linalg.inv`. Seconds, not minutes.
 >
-> ### Still open
+> ### ✅ `A` and `C` too — the relations are now TESTED, not assumed
 >
-> `A` and `C` need `∂_z`, hence `AΓ`. The relations `A = B − 1/3μ` and
-> `C = −(5−2π/√3)B` determine them, but obtaining them independently would
-> **test** those relations rather than assume them.
+> They do **not** need `∂_z`: `I_xxyy = A` and `I_xxxx = A+2B+C` are lateral-only
+> as well. What they have and `B` lacks is the **Eshelby delta**, which lives in
+> the `δ_ij` channels — so `B` (with `i≠j`) converges outright while these need
+> the UV piece removed. ▶ Convergence tracking the delta is itself a check.
+>
+> | | first order | closed | rel |
+> |---|---|---|---|
+> | `A` | −1.2205739e-11 | −1.2201107e-11 | 3.8e-4 |
+> | `B` | +2.6137524e-12 | +2.6137074e-12 | 1.7e-5 |
+> | `C` | −3.5777391e-12 | −3.5870553e-12 | 2.6e-3 |
+>
+> On first-order numbers only: `A vs B−1/3μ` → 3.8e-4, `C vs −(5−2π/√3)B` → 2.6e-3.
+>
+> ### 🛑🛑 THE LESSON: the tail CANNOT be closed in k-space
+>
+> Four attempts failed — `Ci`-function tails, graded angular meshes, a square-vs-
+> disc geometry fix — **and this document already said so**, in the Step-3d
+> banner: *"adding back a pure pole restores exactly the divergence it was
+> introduced to remove… the tail is being evaluated in the wrong
+> representation."*
+>
+> ▶▶ **Split by REPRESENTATION, not by magnitude:**
+>
+> - **remainder → stays in `k`.** Regular at the origin because `−k_x²·(−C/k²) =
+>   +cos²θ·C` is bounded. No taper, no cutoff, no region matching. Box-size
+>   independent to **seven digits** where the unsubtracted integral drifted by
+>   per cent.
+> - **local → real space.** `n=0` is a delta giving `h₀`; `n≠0` is a PV dipole,
+>   `f̌_n = (−i)^n|n|e^{inφ}/2πr²` (from `∫₀^∞ kJ_n(kr)dk = |n|/r²`), whose square
+>   integral is `∫e^{inφ} ln R(φ)dφ` with `R = a/max(|cos|,|sin|)` — the `ln ε`
+>   cancels since `e^{inφ}` has zero angular mean.
+>
+> `D4` admits `n = 0, ±4, ±8…`; **`n=4` carries the whole correction** and above
+> it contributes 4e-9. Delta alone is wrong by 5.5%, so the dipole is
+> load-bearing — both gated.
+>
+> ⚠ I reported "ten digits" for the remainder; it is **seven**. Misread digits.
 
 > ## 🛑 FIFTH REVISION, 2026-09-18 — RE-ANCHORED TO THE THESIS
 >
