@@ -1,5 +1,65 @@
 # The First-Order Propagator Moment — Implementation Plan
 
+> ## ✅✅ TASK 1 COMPLETE, 2026-09-18 — `B` IS READ OFF
+>
+> `scripts/gate_first_order_shear_moment.py`, **4/4**.
+>
+> ```
+> B from d3 q = A q + d   2.6137524215e-12
+> sqrt3(λ+μ)/6πμ(λ+2μ)    2.6137073561e-12     rel 1.7e-5
+> ```
+>
+> and still improving under refinement, so that figure **bounds the quadrature**
+> rather than naming a discrepancy.
+>
+> ### Why `I_xyxy` is the realisation to pick
+>
+> `B` multiplies `(δ_ik δ_jm + δ_im δ_jk)`, so `I_xyxy = B` exactly — and that
+> realisation carries **only lateral derivatives**, which become `ik` with no
+> `∂_z` and hence **no `AΓ` product**. Every other realisation of `B` needs `∂_z`.
+>
+> ### 🔑 The sign, pinned independently — and it was WRONG at first
+>
+> `(ik_x)(ik_y) = −k_x k_y`. Dropping the two `i`s costs exactly a sign, which is
+> **invisible against |B|**. Pinned by an evaluation owing nothing to Γ:
+>
+> ```
+> ∫_V ∂_y∂_x G_xy dV = ∮ n_y (∂_x G_xy) dA        [divergence theorem]
+>                    = +2.6137073561e-12 = B      to 1.7e-13
+> ```
+>
+> ▶ That route is not just legitimate but **complete**: the divergence theorem on
+> a locally integrable `F` returns the FULL *distributional* integral, so an
+> Eshelby delta at the origin is included automatically. `∂_xG_xy ~ 1/r²` is
+> integrable in 3-D and non-singular on faces at distance `a`.
+>
+> ### 🐛 The grid — a recorded trap, walked into again
+>
+> The integrand is `4 sin(k_x a) sin(k_y a) × kernel`: **sincs separable in the
+> CARTESIAN components**. On a polar grid it does not converge *even at fixed
+> cutoff*, and that drift read as cutoff dependence looks exactly like a **log
+> divergence** — which sent me hunting a missing Eshelby delta. There is none.
+>
+> ▶▶ **The resolution study at FIXED cutoff is the only thing that separates
+> "divergent" from "under-resolved".** Nothing else does.
+>
+> ⚠ **Near miss:** on the polar grid at `Λ=50` the value was `2.6147e-12`,
+> agreeing with `B` to 3.8e-4 — pure artefact of where the truncation landed, and
+> exactly the number that would have been reported as success.
+>
+> ### 🔑 `ε` is not needed, and dropping it is what made this affordable
+>
+> `ε` scales column `i` of `D_z` and divides row `i` of `D_z⁻¹`, so it **cancels
+> out of every projector**. Dropping it removes the one cancelling step — the one
+> that limits the useful `k` range — and lets the whole construction batch: 6×6
+> inverses over ~10⁷ nodes in one `np.linalg.inv`. Seconds, not minutes.
+>
+> ### Still open
+>
+> `A` and `C` need `∂_z`, hence `AΓ`. The relations `A = B − 1/3μ` and
+> `C = −(5−2π/√3)B` determine them, but obtaining them independently would
+> **test** those relations rather than assume them.
+
 > ## 🛑 FIFTH REVISION, 2026-09-18 — RE-ANCHORED TO THE THESIS
 >
 > `scripts/gate_thesis_spectral.py`, **8/8**. ▶ Tod: *"Thesis should have been
