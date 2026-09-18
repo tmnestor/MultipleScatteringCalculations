@@ -109,7 +109,44 @@ def amps_of(coupling: np.ndarray, gmom: np.ndarray) -> dict[str, complex]:
         "theta": channel_amp(coupling, gmom, CH_TRACE),
         "e_diag": channel_amp(coupling, gmom, CH_DIAG),
         "e_off": channel_amp(coupling, gmom, CH_OFF),
+        "e_off_axial": channel_amp(coupling, gmom, CH_OFF_XZ),
     }
+
+
+def tlocal_tetragonal(
+    con: MaterialContrast, amps: dict[str, complex], omega: float, a: float
+) -> np.ndarray:
+    """A local T of TETRAGONAL symmetry: e12 distinct from e13 = e23.
+
+    ``effective_stiffness_voigt`` writes a single shear modulus into all three
+    slots, which is cubic by construction and cannot carry the split the
+    first-order route produces.  This widens the shear block by one parameter,
+    the minimum needed: the in-plane shear keeps its own amplitude and the two
+    depth-involving shears share the other.
+
+    The slot assignment is the whole of the correctness here and is NOT taken
+    from the two docstrings that happen to agree.  In the package's Voigt
+    ordering (z, x, y) with 1->z, 2->x, 3->y, slot 3 is (x,y), slot 4 is (z,y)
+    and slot 5 is (z,x); in the first-order gate's paper indices slot 3 is e12
+    and slots 4, 5 are e13 and e23.  Both therefore put the in-plane shear first
+    and the two depth-involving ones second and third.  ``part7`` checks that by
+    perturbing the slots separately and seeing which one the SH channel reads.
+
+    Args:
+        con: Material contrast.
+        amps: Must contain e_off (in-plane) and e_off_axial.
+        omega: Angular frequency.
+        a: Cube half-width.
+
+    Returns:
+        Shape (9, 9) complex.
+    """
+    t = tlocal_from_amps(con, amps, omega, a)
+    vol = (2.0 * a) ** 3
+    axial = con.Dmu * amps["e_off_axial"]
+    t[3 + 4, 3 + 4] = vol * 2.0 * axial
+    t[3 + 5, 3 + 5] = vol * 2.0 * axial
+    return t
 
 
 def tlocal_from_amps(con: MaterialContrast, amps: dict[str, complex], omega: float, a: float) -> np.ndarray:
@@ -362,6 +399,52 @@ def main() -> int:
     gap = abs(xz_sh - all_sh) / base_sh
     print(f"    the choice between e12 and e13 is worth {gap:.3e} of the baseline error")
     report("SH incidence does probe the shear channels", gap > 1e-6 or abs(all_sh - base_sh) > 1e-6)
+
+    print("")
+    print("--- 7: a TETRAGONAL T_0, which can carry the split ----------------")
+    print("    First, which Voigt slot does the SH channel actually read?  Two")
+    print("    docstrings agreeing is not evidence, so the slots are perturbed")
+    print("    separately and the answer is measured.")
+
+    def slab_sh_t(tl6: np.ndarray) -> float:
+        """Relative error in R_SH for an explicit 9x9 local T."""
+        tl = np.broadcast_to(tl6, (g3.N_z, g3.M, g3.M, 9, 9)).copy()
+        res = compute_slab_scattering(g3, mat, omega, khat_ob, wave_type="SH", periodic=True, T_local=tl)
+        rr = complex(slab_weyl_amplitudes(res, tl, p=p_ob).R_SH)
+        return abs(rr - complex(kref.R_SH)) / abs(complex(kref.R_SH))
+
+    probe = tlocal_from_amps(con, nav_a, omega, a)
+    for slot, label in ((3, "slot 3 (in-plane)"), (4, "slot 4 (depth)"), (5, "slot 5 (depth)")):
+        bumped = probe.copy()
+        bumped[3 + slot, 3 + slot] *= 1.10
+        moved = abs(slab_sh_t(bumped) - base_sh) / base_sh
+        print(f"    +10% on {label:20s} moves the SH error by {moved:.3e}")
+
+    tet = dict(nav_a)
+    tet["theta"] = fo_a["theta"]
+    tet["e_diag"] = fo_a["e_diag"]
+    tet["e_off"] = fo_a["e_off"]
+    tet["e_off_axial"] = fo_a["e_off_axial"]
+    tet["u"] = fo_a["u"]
+    e_tet_sh = slab_sh_t(tlocal_tetragonal(con, tet, omega, a))
+    print("")
+    print(f"    SH:  ordinary                   err {base_sh:.4e}   ratio 1.0000")
+    print(f"         first-order, cubic T_0     err {all_sh:.4e}   ratio {all_sh / base_sh:.4f}")
+    print(f"         first-order, TETRAGONAL    err {e_tet_sh:.4e}   ratio {e_tet_sh / base_sh:.4f}")
+    report("the tetragonal T_0 collects the improvement the cubic one cannot", e_tet_sh < 0.9 * base_sh)
+
+    # It must not spoil the channel the cubic form already got right.
+    def slab_err_t(tl6: np.ndarray) -> float:
+        """Relative error in R_PP for an explicit 9x9 local T."""
+        tl = np.broadcast_to(tl6, (g3.N_z, g3.M, g3.M, 9, 9)).copy()
+        res = compute_slab_scattering(g3, mat, omega, k_hat, wave_type="P", periodic=True, T_local=tl)
+        rr = complex(slab_weyl_amplitudes(res, tl, p=p).R_P)
+        return abs(rr - r_k) / abs(r_k)
+
+    e_tet_p = slab_err_t(tlocal_tetragonal(con, tet, omega, a))
+    print(f"    P :  first-order, cubic T_0     err {allf:.4e}   ratio {allf / base:.4f}")
+    print(f"         first-order, TETRAGONAL    err {e_tet_p:.4e}   ratio {e_tet_p / base:.4f}")
+    report("and does not spoil the normal-incidence channel", e_tet_p <= allf * 1.001)
 
     print("")
     print("=" * 78)

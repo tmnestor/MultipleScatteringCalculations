@@ -111,7 +111,7 @@ the shared lattice error is refined away} --- which is what distinguishes a real
 advantage from an accidental cancellation (\S\ref{sec:whichbetter}).
 
 Every claim below is backed by an executable check; the scripts report $25/25$,
-$44/44$, $14/14$, $17/17$, $8/8$, $7/7$ and $5/5$, and a separate gate binds the
+$44/44$, $14/14$, $17/17$, $8/8$, $7/7$ and $7/7$, and a separate gate binds the
 numerical propagator to the derived $\Aop$.  Section~\ref{sec:open} states
 plainly what is \emph{not} yet established.
 \end{abstract}
@@ -2164,13 +2164,57 @@ $x_3$-distinguished amplitude gives an error $2.6$ times smaller.  The
 first-order route separates the two by $7.2\times10^{-3}$; the ordinary route
 does not separate them at all.
 
-\emph{This brackets the effect rather than realising it.}  Feeding the $e_{13}$
+\emph{That brackets the effect rather than realising it.}  Feeding the $e_{13}$
 amplitude through a cubic-symmetric $T_0$ writes it into the $e_{12}$ slot as
 well, which is also wrong; it is the other \emph{uniform} choice, not the split.
-A faithful first-order $T$ needs a $T_0$ of tetragonal rather than cubic
-symmetry, $e_{12} \neq e_{13} = e_{23}$ --- three shear slots where there is
-currently one.  That is a small and well-defined piece of work, and until it is
-done the $x_3$ benefit is bounded, not collected.
+
+\subsection{The tetragonal \texorpdfstring{$T_0$}{T0}}\label{sec:tetragonal}
+
+What the split needs is a $T_0$ of tetragonal rather than cubic symmetry ---
+$e_{12} \neq e_{13} = e_{23}$, one extra shear parameter, which is the minimum
+that can carry it.  The in-plane shear keeps its own amplitude and the two
+depth-involving shears share the other.
+
+The whole of the correctness is the slot assignment, and it is measured rather
+than inherited.  The package's Voigt ordering is $(z,x,y)$ with
+$1\!\to\!z,\,2\!\to\!x,\,3\!\to\!y$, so slot $3$ is $(x,y)$, slot $4$ is $(z,y)$
+and slot $5$ is $(z,x)$; the first-order gate's paper indices put $e_{12}$ in
+slot $3$ and $e_{13}, e_{23}$ in slots $4$ and $5$.  The two agree --- but two
+docstrings agreeing is not evidence, so each slot is perturbed on its own and
+the $SH$ channel is asked which one it reads:
+\begin{center}
+\begin{tabular}{lc}
+\toprule
+$+10\%$ on & moves the $SH$ error by\\
+\midrule
+slot 3, in-plane $(x,y)$ & $9.390\times10^{-1}$\\
+slot 4, depth $(z,y)$    & $9.537\times10^{0}$\\
+slot 5, depth $(z,x)$    & $0$\\
+\bottomrule
+\end{tabular}
+\end{center}
+which is exactly the physics of an $SH$ wave in the $(x,z)$ plane polarised along
+$y$: $\partial_z u_y$ dominates, $\partial_x u_y$ contributes near normal
+incidence, and a $zx$ shear does not enter an $SH$ problem at all.  Slot $5$
+reading \emph{identically} zero is the sharpest part of that.
+
+With the slots so assigned:
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+$SH$ at $p = 10^{-4}$ & error in $R_{SH}$ & ratio\\
+\midrule
+ordinary                        & $4.7933\times10^{-3}$ & $1.0000$\\
+first order, cubic $T_0$        & $4.7933\times10^{-3}$ & $1.0000$\\
+first order, tetragonal $T_0$   & $1.4905\times10^{-3}$ & $\mathbf{0.3110}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The tetragonal form collects \emph{more} than the bracket of the previous
+subsection predicted --- $3.2\times$ against $2.6\times$ --- and for a reason:
+the uniform-$e_{13}$ substitution also wrote that amplitude into slot $3$, where
+it is wrong and where slot $3$ demonstrably contributes.  Nothing is traded away
+for it: the normal-incidence channel is unchanged at $0.8570$.
 
 \begin{quote}
 \textbf{The answer, with its scope.}  On the question as posed --- same geometry,
@@ -2252,6 +2296,8 @@ slab & the Navier route reproduces the package's amplification factors & 1\\
      & the first-order $T_0$ is the more accurate of the two & 1\\
      & the improvement survives either choice of the split channel & 1\\
      & $SH$ incidence does probe the shear channels & 1\\
+     & the tetragonal $T_0$ collects what the cubic one cannot, without
+       spoiling the channel the cubic one gets right & 2\\
           & the one-pass assembly reproduces the density channel & 1\\
 \midrule
 layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
@@ -2265,7 +2311,7 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
 $44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $8/8$, the slab
-comparison $5/5$, and the propagator gate exits clean.}
+comparison $7/7$, and the propagator gate exits clean.}
 \end{center}
 
 %=====================================================================
@@ -2324,15 +2370,14 @@ as such, the following are \emph{open}:
       $\partial_i\partial_j G_{kl}$; those follow from the same autocorrelation
       and Duffy construction as $D_0$, with $\partial_i\partial_j$ moved onto the
       weight, but they have not been computed.
-\item \textbf{The present $T_0$ cannot carry the $x_3$ benefit.}
-      \texttt{effective\_stiffness\_voigt} has one shear slot and writes it into
-      all three, so it is cubic-symmetric by construction.
-      \S\ref{sec:whichchannel} shows the $x_3$-distinguished shear amplitude is
-      worth a factor of $2.6$ in the channel that probes it, and that this is
-      \emph{bracketed} rather than realised: passing $e_{13}$'s amplitude through
-      a cubic $T_0$ writes it into the $e_{12}$ slot as well.  Collecting it needs
-      a tetragonal $T_0$, $e_{12} \neq e_{13} = e_{23}$.  Small, well defined, not
-      done.
+\item \textbf{The tetragonal $T_0$ is measured but not shipped.}
+      \S\ref{sec:tetragonal} builds it and shows it collects the $x_3$ benefit,
+      $3.2\times$ in the channel that probes it.  But it is built in the gate,
+      not in the package: \texttt{effective\_stiffness\_voigt} still takes one
+      shear parameter and writes it into all three slots.  Widening it is a small
+      backwards-compatible change, and the right moment for it is when the
+      first-order route is wired into the package proper rather than now, when
+      nothing upstream in the package produces two shear amplitudes.
 \item \textbf{The shear moment $B$ has not been read off.}  This is the
       comparison Task~1 exists for --- $B$ against
       $\sqrt3(\lambda+\mu)/6\pi\mu(\lambda+2\mu)$ --- and it is now the one
