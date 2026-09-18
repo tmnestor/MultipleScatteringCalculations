@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 """The propagator moment of the first-order system, assembled laterally.
 
+SUPERSEDED BY scripts/gate_first_order_schwinger.py.  DO NOT READ THE NUMBER
+THIS PRINTS.  Its assembly carries two faults recorded in the second revision
+banner of the plan: it works in the THESIS basis while the contrast operator
+works in the PAPER basis, and it loops once over the contrast terms, so it
+computes <J6 psi, Gamma DeltaA psi> where the Schwinger object needs
+<J6 psi, DeltaA Gamma DeltaA psi>.  It fails by a factor of order 1e5 and is
+kept only because ``tri`` and ``amat`` live here and are imported by the gate
+that supersedes it -- and because the claim in the HOW THE PIECES MEET note
+below, that no factor of k appears, is the false step worth keeping on record.
+
 Task 1 of docs/plans/2026-09-18-first-order-propagator-moment.md, final step.
 
 This computes the object itself rather than a demonstration of the method:
@@ -101,8 +111,22 @@ def amat(ref: ReferenceMedium, omega: complex, k1: float, k2: float) -> np.ndarr
     )
 
 
-def tri(m: int, n: int, q: np.ndarray, a: float) -> np.ndarray:
-    """T[m,n](q), the triangular z integral, in closed form.
+def _tri_series(m: int, n: int, q: np.ndarray, a: float) -> np.ndarray:
+    """T[m,n](q) as a power series in q, for use where the closed form cancels.
+
+    Substituting u = z - z' and expanding the exponential,
+
+        T[m,n](q) = sum_j (-q)^j / j!  int_0^{2a} u^j J_{mn}(u) du ,
+
+    with J the inner integral over z' at fixed u.  Every u-integral is
+    elementary, and with b = 2a the coefficients are
+
+        (0,0): b^2 / (j+1)(j+2)
+        (1,0): b^3 / 2(j+2)(j+3)
+        (1,1): b^4 [ 1/12(j+1) - 1/4(j+2) + 1/6(j+4) ] .
+
+    The series is entire, so it is valid for complex q (propagating modes give
+    imaginary q); it is used only where it is also the accurate branch.
 
     Args:
         m: Power of z on the receiver side.
@@ -113,14 +137,57 @@ def tri(m: int, n: int, q: np.ndarray, a: float) -> np.ndarray:
     Returns:
         Same shape as q.
     """
-    e = np.exp(-2.0 * a * q)
+    b = 2.0 * a
+    x = -b * q
+    acc = np.zeros_like(q, dtype=np.complex128)
+    term = np.ones_like(q, dtype=np.complex128)
+    for j in range(40):
+        if (m, n) == (0, 0):
+            c = b**2 / ((j + 1.0) * (j + 2.0))
+        elif (m, n) in {(1, 0), (0, 1)}:
+            c = b**3 / (2.0 * (j + 2.0) * (j + 3.0))
+        else:
+            c = b**4 * (1.0 / (12.0 * (j + 1.0)) - 1.0 / (4.0 * (j + 2.0)) + 1.0 / (6.0 * (j + 4.0)))
+        acc = acc + c * term
+        term = term * x / (j + 1.0)
+    return -acc if (m, n) == (0, 1) else acc
+
+
+def tri(m: int, n: int, q: np.ndarray, a: float) -> np.ndarray:
+    """T[m,n](q), the triangular z integral.
+
+    The closed forms below are exact but CANCEL badly as q -> 0: the numerator of
+    the (1,1) form is O((aq)^5) while its individual terms are O(1), so at
+    aq ~ 0.025 it has already lost about eight digits.  That is not an academic
+    corner -- it is the whole propagating window k < omega/beta, and it was
+    measured breaking the reciprocity of the z-integrated kernel at 1.3e-6.
+    Below |2aq| = 3 the series of ``_tri_series`` is used instead, where no
+    cancellation occurs.
+
+    Args:
+        m: Power of z on the receiver side.
+        n: Power of z' on the source side.
+        q: Decay rates, any shape.
+        a: Cube half-width.
+
+    Returns:
+        Same shape as q.
+    """
+    q = np.asarray(q)
+    small = np.abs(2.0 * a * q) < 3.0
+    safe = np.where(small, 1.0, q)
+    e = np.exp(-2.0 * a * safe)
     if (m, n) == (0, 0):
-        return (2.0 * a * q - 1.0 + e) / q**2
-    if (m, n) == (1, 0):
-        return (a * q - 1.0 + (1.0 + a * q) * e) / q**3
-    if (m, n) == (0, 1):
-        return -(a * q - 1.0 + (1.0 + a * q) * e) / q**3
-    return (3.0 - 3.0 * (1.0 + a * q) ** 2 * e + a**2 * q**2 * (2.0 * a * q - 3.0)) / (3.0 * q**4)
+        big = (2.0 * a * safe - 1.0 + e) / safe**2
+    elif (m, n) == (1, 0):
+        big = (a * safe - 1.0 + (1.0 + a * safe) * e) / safe**3
+    elif (m, n) == (0, 1):
+        big = -(a * safe - 1.0 + (1.0 + a * safe) * e) / safe**3
+    else:
+        big = (3.0 - 3.0 * (1.0 + a * safe) ** 2 * e + a**2 * safe**2 * (2.0 * a * safe - 3.0)) / (
+            3.0 * safe**4
+        )
+    return np.where(small, _tri_series(m, n, q, a), big)
 
 
 def amat_batch(ref: ReferenceMedium, omega: complex, k1: np.ndarray, k2: np.ndarray) -> np.ndarray:

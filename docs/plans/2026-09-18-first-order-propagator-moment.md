@@ -96,13 +96,75 @@
 > ⚠ The density-channel quadrature agrees at `1e-4` but is **not monotone**
 > (6.9e-5 → 1.2e-3 as the box widens); treat it as converged to `1e-3`, no better.
 >
+> ### The derivative channels — done, and they found three defects
+>
+> The density channel's contrast operator is **multiplicative**, so it does not
+> exercise the `ik` rule at all. The channels that do are `Δλ`, `Δμ`, and the
+> sharp test needs no new arbiter: `J₆ΔA` is symmetric and `Γ` is reciprocal, so
+> the assembled matrix must be symmetric — while the assembly builds its two legs
+> by **opposite** rules. On a grid symmetric under `k → −k` this is algebraic, so
+> it holds to round-off even on a grid far too coarse for the value.
+>
+> Result: **‖S − Sᵀ‖/‖S‖ = 4.7e-12**, against **7.2e-2** with the right leg's
+> `ik` sign flipped — ten orders of separation, with the derivative terms
+> carrying 80% of the matrix. The `ik` rule is confirmed.
+>
+> ⚠ Symmetry is **structural**. A bookkeeping error that happened to be symmetric
+> would pass. The values of those channels are still unchecked against an
+> independent arbiter.
+>
+> ### 🐛🐛🐛 Three defects it exposed, all in code that had passed its own checks
+>
+> 1. **The up/down split was decided by round-off in the propagating window.**
+>    Below `k = ω/β` the vertical wavenumber is real, `Re(ev)` vanishes to noise,
+>    and its sign was decided *independently at +k and −k*. Reciprocity residual
+>    at `|k|=1.1e-3` was **1.245** — total failure, in the region carrying all the
+>    radiation. Fix: the `ω → ω(1+iε)` limit, which needs no `ε` — downgoing is
+>    `Im(ev) > 0` where `Re(ev)` is uninformative. → **3.7e-13**.
+> 2. **`tri(1,1)` cancels catastrophically.** Numerator is `O((aq)^5)` from `O(1)`
+>    terms; eight digits gone by `aq ≈ 0.025` — again the propagating window.
+>    Fix: power series below `|2aq| = 3`. → **2.1e-13**.
+> 3. **🔑 The scaling `diag(1,1,1,k,k,k)` is in the WRONG DIRECTION.** Measured
+>    against *no scaling at all* it makes the eigenvector conditioning **worse**
+>    at every `k` above the propagating window — two orders at `k=60`.
+>    Parlett–Reinsch balancing beats both by **twelve orders** (8.7e7 vs 1.6e20).
+>    Do not reinstate the scalar rule.
+>
+> ### ⭐ The radiation reaction, out of the first-order system
+>
+> Fixing (1) restored the outgoing condition, which the old classification had
+> been suppressing — so both real-space arbiters had to gain the term they were
+> missing. Pointwise:
+>
+> ```
+> Im G_11 from the first-order system  = 5.2134e-14
+> w(1/a^3 + 2/b^3)/(12 pi rho)         = 5.2250e-14     rel 2.2e-3
+> ```
+>
+> **This has no static counterpart at all** — not a correction to Kelvin but a
+> term the static theory does not contain, arriving out of the spectral
+> projectors of `A` with nothing put in by hand.
+>
+> ### Quadrature: the branch radii are CIRCLES
+>
+> The vertical wavenumber vanishes at `|k| = ω/α` and `ω/β`. No Cartesian panel
+> can follow a circle, and an unresolved square root costs several per cent (it
+> was the 6% in the radiation term and the non-monotone drift). Fix: **split** —
+> Cartesian outside the propagating window (separable sincs, which polar cannot
+> resolve), polar inside it (branch radii as radial panel edges; `ka < 0.02` so
+> the form factors are constant to 1e-4). The Cartesian grid's central block IS
+> the inner square, so they tile with no overlap and no gap.
+>
+> Density channel now converges: `9.858, 9.834, 9.828 e-4` over a 4× refinement.
+>
 > ### Next
 >
-> 1. The `iω` above.
-> 2. The **derivative-carrying channels** — the density channel's contrast
->    operator is multiplicative, so it does not exercise the `ik` rule *at all*.
->    `Δλ`, `Δμ` are what test the thing Part 1 settled.
-> 3. Then the remaining eight trial functions, and read `B` off.
+> 1. **Read `B` off** and compare with `√3(λ+μ)/6πμ(λ+2μ)`. This is what Task 1
+>    exists for and it is now the only remaining step of it.
+> 2. The `iω` of the `𝒢` normalisation.
+> 3. An independent arbiter for the derivative channels' *values* — the Galerkin
+>    double-volume moments of `∂ᵢ∂ⱼG_kl`, by the same autocorrelation + Duffy
+>    construction as `D₀` with the derivatives moved onto the weight.
 
 > ## ⚠⚠ SECOND REVISION, 2026-09-18 — the assembly computed the wrong object, in the wrong basis
 >

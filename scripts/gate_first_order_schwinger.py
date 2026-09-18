@@ -394,15 +394,11 @@ def kernels_paper(ref: ReferenceMedium, omega: complex, k1: np.ndarray, k2: np.n
         Dict keyed by (m, n) with (N, 6, 6) complex values, indexed
         [receiver component, source component].
     """
-    k = np.maximum(np.hypot(k1, k2), 1e-12)
-    n = k1.shape[0]
-    sd = np.ones((n, 6), dtype=np.complex128)
-    sd[:, 3:] = k[:, None]
     a6 = amat_paper_batch(ref, omega, k1, k2)
-    scaled = a6 / sd[:, :, None] * sd[:, None, :]
+    scaled, sd = balance_batch(a6)
     ev, rv = np.linalg.eig(scaled)
     lv = np.linalg.inv(rv)
-    dn = np.real(ev) < 0.0
+    dn = downgoing(ev)
     out = {}
     for m in (0, 1):
         for nn in (0, 1):
@@ -440,6 +436,70 @@ def panel_axis(kmax: float, nk: int, ksplit: float, nin: int) -> tuple[np.ndarra
     return np.concatenate(nodes), np.concatenate(wts)
 
 
+def balance_batch(a6: np.ndarray, sweeps: int = 12) -> tuple[np.ndarray, np.ndarray]:
+    """Balance a stack of matrices by a diagonal similarity, Parlett--Reinsch.
+
+    The spectral construction of Gamma needs the eigenvectors of A, and at large
+    k the up- and down-going ones become nearly parallel.  The fixed scaling
+    ``diag(1,1,1,k,k,k)`` that this work previously used is in the WRONG
+    DIRECTION: measured against the unscaled matrix it makes the eigenvector
+    condition number worse at every k above the propagating window, by two orders
+    at k = 60.  Balancing beats both by about twelve orders there
+    (8.7e7 against 1.6e20), because it is free to treat the third component
+    differently from the first two, which no scalar rule can.
+
+    Returns S with ``a6 = S M S^-1``, so a projector computed from M maps back as
+    ``S P S^-1`` -- the same unscaling the fixed rule used.
+
+    Args:
+        a6: Shape (N, 6, 6) complex.
+        sweeps: Balancing sweeps.
+
+    Returns:
+        (balanced, s) with balanced shape (N, 6, 6) and s shape (N, 6).
+    """
+    m = a6.astype(np.complex128).copy()
+    n = m.shape[0]
+    s = np.ones((n, 6), dtype=np.complex128)
+    for _ in range(sweeps):
+        for i in range(6):
+            dia = np.abs(m[:, i, i])
+            r = np.sum(np.abs(m[:, i, :]), axis=1) - dia
+            c = np.sum(np.abs(m[:, :, i]), axis=1) - dia
+            ok = (r > 0.0) & (c > 0.0)
+            f = np.where(ok, np.sqrt(np.divide(c, r, out=np.ones_like(r), where=ok)), 1.0)
+            m[:, i, :] *= f[:, None]
+            m[:, :, i] /= f[:, None]
+            s[:, i] /= f
+    return m, s
+
+
+def downgoing(ev: np.ndarray) -> np.ndarray:
+    """Split the spectrum of A by the radiation condition.
+
+    Classifying by ``Re(ev) < 0`` alone is correct for evanescent modes and
+    MEANINGLESS for propagating ones: below k = omega/beta the vertical
+    wavenumber is real, Re(ev) is zero up to round-off, and its sign is then
+    decided by arithmetic noise -- independently at +k and -k, which destroys
+    reciprocity outright (measured: a residual of 1.2 at |k| = 1.1e-3).
+
+    The limit omega -> omega(1 + i eps) settles it without needing eps.  A
+    propagating mode has ev = i k_z, and the perturbation gives k_z a positive
+    imaginary part, so Re(ev) -> 0^- exactly when Im(ev) > 0.  Downgoing is
+    therefore ``Re(ev) < 0`` where that is meaningful and ``Im(ev) > 0`` where it
+    is not, and the two agree wherever both apply.
+
+    Args:
+        ev: Eigenvalues, any shape.
+
+    Returns:
+        Boolean array of the same shape.
+    """
+    scale = np.maximum(np.abs(ev), np.finfo(float).tiny)
+    propagating = np.abs(np.real(ev) / scale) < 1e-8
+    return np.where(propagating, np.imag(ev) > 0.0, np.real(ev) < 0.0)
+
+
 def radial_panels(edges: list[float], nper: int) -> tuple[np.ndarray, np.ndarray]:
     """Gauss nodes and weights on [edges[0], edges[-1]], panel by panel.
 
@@ -471,15 +531,12 @@ def gamma_at(ref: ReferenceMedium, omega: complex, k1: np.ndarray, k2: np.ndarra
     Returns:
         Shape (N, 6, 6) complex.
     """
-    k = np.maximum(np.hypot(k1, k2), 1e-12)
-    n = k1.shape[0]
-    sd = np.ones((n, 6), dtype=np.complex128)
-    sd[:, 3:] = k[:, None]
     a6 = amat_paper_batch(ref, omega, k1, k2)
-    scaled = a6 / sd[:, :, None] * sd[:, None, :]
+    scaled, sd = balance_batch(a6)
     ev, rv = np.linalg.eig(scaled)
     lv = np.linalg.inv(rv)
-    keep = (np.real(ev) < 0.0) if dz > 0.0 else (np.real(ev) > 0.0)
+    dn = downgoing(ev)
+    keep = dn if dz > 0.0 else ~dn
     sgn = 1.0 if dz > 0.0 else -1.0
     w = np.where(keep, sgn * np.exp(ev * dz), 0.0)
     acc = np.einsum("nij,nj,njl->nil", rv, w, lv)
@@ -534,8 +591,13 @@ def part3a_propagator_pointwise(ref: ReferenceMedium, omega: complex, dz: float 
     # (The lateral moment in Part 3 is the opposite case: its form factors are
     # separable sinc products that polar cannot resolve.)
     for nr, nth in ((200, 48), (400, 64), (800, 96)):
-        edges = [0.0, 4.0 / dz, 20.0 / dz, 80.0 / dz]
-        kr, wr = radial_panels(edges, nr // 3)
+        # Panel edges at the two branch radii, where the vertical wavenumber
+        # vanishes: the radiation reaction comes entirely from k < omega/beta,
+        # which without these edges falls inside one panel spanning [0, 8] and
+        # gets perhaps one node.
+        ka, kb = float(abs(omega) / ref.alpha), float(abs(omega) / ref.beta)
+        edges = [0.0, ka, kb, 4.0 / dz, 20.0 / dz, 80.0 / dz]
+        kr, wr = radial_panels(edges, nr // 5)
         th = 2.0 * np.pi * np.arange(nth) / nth
         kg, tg = np.meshgrid(kr, th, indexing="ij")
         wg = np.meshgrid(wr * kr, np.full(nth, 2.0 * np.pi / nth), indexing="ij")
@@ -543,7 +605,7 @@ def part3a_propagator_pointwise(ref: ReferenceMedium, omega: complex, dz: float 
         got = np.einsum("n,nij->ij", (wg[0] * wg[1]).ravel(), gam) / (2.0 * np.pi) ** 2
         # q_{3+i} = v_i = -i omega u_i, and the source in row j is the force f_j
         gnum = got[3:, :3] / (-1j * omega)
-        rel = float(np.max(np.abs(gnum - gref)) / np.max(np.abs(gref)))
+        rel = float(np.max(np.abs(gnum.real - gref)) / np.max(np.abs(gref)))
         print(f"    nr={nr:4d} nth={nth:3d}   worst relative difference = {rel:.3e}")
     print(f"    G_11 from the first-order system = {gnum[0, 0].real: .10e}")
     print(f"    G_11 analytic (static Kelvin)    = {gref[0, 0]: .10e}")
@@ -552,6 +614,15 @@ def part3a_propagator_pointwise(ref: ReferenceMedium, omega: complex, dz: float 
     off = float(np.max(np.abs(gnum - np.diag(np.diag(gnum)))) / np.max(np.abs(gref)))
     print(f"    off-diagonal leakage             = {off:.3e}")
     report("Gamma inverted laterally IS the Green's tensor, normalisation included", rel < 2e-3)
+
+    # The imaginary part has no static counterpart at all: it is the radiation
+    # reaction, and it is here only because the up/down split now follows the
+    # radiation condition rather than the sign of a quantity that vanishes.
+    rad = float(omega.real * (1.0 / ref.alpha**3 + 2.0 / ref.beta**3) / (12.0 * np.pi * ref.rho))
+    relr = float(abs(gnum[0, 0].imag - rad) / rad)
+    print(f"    Im G_11 from the first-order system = {gnum[0, 0].imag: .6e}")
+    print(f"    Im G_11 = w(1/a^3 + 2/b^3)/12 pi rho = {rad: .6e}   rel {relr:.3e}")
+    report("the radiation reaction comes out right, with no static counterpart", relr < 5e-3)
 
 
 def weight_coeffs(q0: np.ndarray, qg: np.ndarray, comp: int, d: int, ff: tuple) -> tuple:
@@ -642,6 +713,83 @@ def schwinger_integrand(
     return tot
 
 
+def lateral_grid(
+    ref: ReferenceMedium,
+    omega: complex,
+    kmax: float,
+    nk: int,
+    ksplit: float,
+    nin: int,
+    nth: int = 10,
+    nrad: int = 14,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Nodes and weights for the lateral integral, Cartesian outside, polar in.
+
+    Two scales, two geometries, and neither rule works for both:
+
+      * OUTSIDE the propagating window everything is evanescent and smooth, and
+        the integrand is a product of sinc-type form factors -- separable in
+        (k1, k2), which is what a Cartesian tensor rule is for and what a polar
+        rule cannot resolve.
+      * INSIDE it the kernel has square-root branch points where the vertical
+        wavenumber vanishes, at |k| = omega/alpha and omega/beta.  Those are
+        CIRCLES: no Cartesian panel can follow one, and Gauss quadrature across
+        an unresolved square-root costs several per cent.  In polar they are
+        radial panel edges.  Over that window k a < 0.02, so the form factors
+        are constant there to 1e-4 and the polar rule loses nothing.
+
+    The central block of the Cartesian grid is exactly the square
+    [-ksplit, ksplit]^2, so it is dropped and replaced by the polar rule on the
+    same square -- the two tile the box with no overlap and no gap.
+
+    Args:
+        ref: Background medium.
+        omega: Angular frequency, complex.
+        kmax: Half-width of the wavenumber box.
+        nk: Nodes per outer Cartesian panel per axis.
+        ksplit: Half-width of the inner square.
+        nin: Unused placeholder kept for signature stability.
+        nth: Angular Gauss nodes per octant of the inner square.
+        nrad: Radial Gauss nodes per inner panel.
+
+    Returns:
+        (k1, k2, weights), each shape (N,).
+    """
+    # --- outer: Cartesian, central block removed ---
+    kv, kw = panel_axis(kmax, nk, ksplit, 2)
+    k1g, k2g = np.meshgrid(kv, kv, indexing="ij")
+    w1g, w2g = np.meshgrid(kw, kw, indexing="ij")
+    inner = (np.abs(k1g) < ksplit) & (np.abs(k2g) < ksplit)
+    wout = np.where(inner, 0.0, w1g * w2g)
+    k1o, k2o, wo = k1g.ravel(), k2g.ravel(), wout.ravel()
+    keep = wo != 0.0
+
+    # --- inner: polar on the square, panelled at the two branch radii ---
+    ka, kb = float(abs(omega) / ref.alpha), float(abs(omega) / ref.beta)
+    tt, tw = np.polynomial.legendre.leggauss(nth)
+    rt, rw = np.polynomial.legendre.leggauss(nrad)
+    k1i, k2i, wi = [], [], []
+    for oct_ in range(8):
+        lo = oct_ * np.pi / 4.0
+        th = 0.5 * (np.pi / 4.0) * (tt + 1.0) + lo
+        wth = 0.5 * (np.pi / 4.0) * tw
+        rmax = ksplit / np.maximum(np.abs(np.cos(th)), np.abs(np.sin(th)))
+        for elo, ehi in ((0.0, ka), (ka, kb), (kb, None)):
+            hi = rmax if ehi is None else np.full_like(rmax, ehi)
+            lo_r = np.full_like(rmax, elo)
+            rr = 0.5 * (hi - lo_r)[:, None] * rt[None, :] + 0.5 * (hi + lo_r)[:, None]
+            wr = 0.5 * (hi - lo_r)[:, None] * rw[None, :]
+            ww = wth[:, None] * wr * rr
+            k1i.append((rr * np.cos(th)[:, None]).ravel())
+            k2i.append((rr * np.sin(th)[:, None]).ravel())
+            wi.append(ww.ravel())
+    return (
+        np.concatenate([k1o[keep], *k1i]),
+        np.concatenate([k2o[keep], *k2i]),
+        np.concatenate([wo[keep], *wi]),
+    )
+
+
 def schwinger_entry(
     ref: ReferenceMedium,
     omega: complex,
@@ -678,13 +826,10 @@ def schwinger_entry(
     Returns:
         The integral, with the (2 pi)^-2 of the inverse transform included.
     """
-    kv, kw = panel_axis(kmax, nk, ksplit, nin)
-    k1g, k2g = np.meshgrid(kv, kv, indexing="ij")
-    w1g, w2g = np.meshgrid(kw, kw, indexing="ij")
-    k1f, k2f = k1g.ravel(), k2g.ravel()
+    k1f, k2f, wq = lateral_grid(ref, omega, kmax, nk, ksplit, nin)
     kern = kernels_paper(ref, omega, k1f, k2f, a)
     vals = schwinger_integrand(ref, omega, con, a, kk, ll, k1f, k2f, kern)
-    return complex(np.sum((w1g * w2g).ravel() * vals) / (2.0 * np.pi) ** 2)
+    return complex(np.sum(wq * vals) / (2.0 * np.pi) ** 2)
 
 
 def duffy_moment(a: float, n: int, doubled: bool) -> float:
@@ -754,10 +899,16 @@ def part3_density(ref: ReferenceMedium, omega: complex, a: float) -> None:
     b0 = (lam + mu) / (8.0 * np.pi * mu * kc)
     d0 = duffy_moment(a, 60, doubled=True)
     d0c = duffy_moment(a, 80, doubled=True)
-    mgal = (a0 + b0 / 3.0) * d0
+    # The moment is complex.  Its real part is the static double-volume Kelvin
+    # moment; its imaginary part is the radiation reaction, which at k_S a = 0.01
+    # is constant across the cube to O((k_S a)^2) and so contributes V^2 times
+    # its value at the origin.
+    vol = (2.0 * a) ** 3
+    rad = omega.real * (1.0 / ref.alpha**3 + 2.0 / ref.beta**3) / (12.0 * np.pi * ref.rho)
+    mgal = (a0 + b0 / 3.0) * d0 + 1j * vol**2 * rad
     want = 1j * omega**5 * drho**2 * mgal
     print(f"    D0 = int_V int_V 1/r        = {d0:.10f}   (n=80: {d0c:.10f})")
-    print(f"    M  = int_V int_V G_11       = {mgal: .8e}")
+    print(f"    M  = int_V int_V G_11       = {mgal.real: .8e} {mgal.imag:+.4e}i")
     print(f"    arbiter  i w^5 Drho^2 M     = {want.real: .6e} {want.imag:+.8e}i")
 
     ks = 4.0 * omega.real / ref.beta
@@ -781,8 +932,8 @@ def part3_density(ref: ReferenceMedium, omega: complex, a: float) -> None:
     # the static point-volume moment, and the radiation reaction that goes with
     # it -- the latter in the closed form the moment export is itself gated on
     reg = (a0 + b0 / 3.0) * d1
-    rad = vol * omega * (1.0 / ref.alpha**3 + 2.0 / ref.beta**3) / (12.0 * np.pi * ref.rho)
-    pred = 1j * omega * (reg + 1j * rad) / mgal
+    radv = vol * omega * (1.0 / ref.alpha**3 + 2.0 / ref.beta**3) / (12.0 * np.pi * ref.rho)
+    pred = 1j * omega * (reg + 1j * radv) / mgal
     print("")
     print(f"    [DeltaC G DeltaC]_00 from the T-matrix gate = {alt.real: .6e} {alt.imag:+.4e}i")
     print(f"    ratio to the arbiter                        = {alt / want: .6f}")
@@ -793,6 +944,201 @@ def part3_density(ref: ReferenceMedium, omega: complex, a: float) -> None:
     res = abs(alt / want - pred) / abs(pred)
     print(f"    residual of that account                    = {res:.3e}")
     report("the gap to the T-matrix gate's G is (i omega) x collocation/Galerkin", res < 2e-3)
+
+
+def part3b_reciprocity(ref: ReferenceMedium, omega: complex, dz: float = 0.37) -> None:
+    """The propagator's reciprocity, in the form the symmetry test needs.
+
+    From A(-k)^T J6 = -J6 A(k) and the adjoint equation for Gamma,
+
+        Gamma(-k; z', z)^T = J6 Gamma(k; z, z') J6 ,
+
+    using J6^-1 = -J6.  This is the statement that makes the assembled Schwinger
+    matrix symmetric even though its two legs are built by different rules, so it
+    is worth checking on its own before relying on it.
+
+    Args:
+        ref: Background medium.
+        omega: Angular frequency, complex.
+        dz: Depth offset.
+    """
+    print("")
+    print("--- Part 3b: reciprocity of Gamma ---------------------------------")
+    rng = np.random.default_rng(18092026)
+    worst = 0.0
+    for _ in range(5):
+        k1, k2 = rng.uniform(-4.0, 4.0, size=2)
+        kpv = (np.array([k1]), np.array([k2]))
+        kmv = (np.array([-k1]), np.array([-k2]))
+        gp = gamma_at(ref, omega, kpv[0], kpv[1], dz)[0]
+        gm = gamma_at(ref, omega, kmv[0], kmv[1], -dz)[0]
+        res = np.max(np.abs(gm.T - J6 @ gp @ J6)) / np.max(np.abs(gp))
+        worst = max(worst, float(res))
+    print(f"    worst relative residual over 5 wavenumbers = {worst:.3e}")
+    report("Gamma(-k; z', z)^T = J6 Gamma(k; z, z') J6", worst < 1e-10)
+
+    # The assembly does not use Gamma pointwise, it uses the z-integrated
+    # kernels; integrating the identity above over z and z' and relabelling gives
+    #     K^{mn}(-k)^T = J6 K^{nm}(k) J6 ,
+    # which is what makes the assembled matrix symmetric.  Checking it separately
+    # localises any symmetry defect to the kernel or to the assembly, instead of
+    # leaving it to be argued about.
+    a = 0.5
+    kk1 = np.array([0.8, -2.3, 1.7, 0.05, 4.1])
+    kk2 = np.array([-1.4, 0.6, 1.7, -0.02, 0.9])
+    kerp = kernels_paper(ref, omega, kk1, kk2, a)
+    kerm = kernels_paper(ref, omega, -kk1, -kk2, a)
+    worst_k = 0.0
+    for m in (0, 1):
+        for n in (0, 1):
+            lhs = np.swapaxes(kerm[(m, n)], 1, 2)
+            rhs = np.einsum("ij,njl,lm->nim", J6, kerp[(n, m)], J6)
+            scale = np.max(np.abs(rhs), axis=(1, 2))
+            worst_k = max(worst_k, float(np.max(np.abs(lhs - rhs) / scale[:, None, None])))
+    print(f"    z-integrated:  K^mn(-k)^T vs J6 K^nm(k) J6 = {worst_k:.3e}")
+    report("the z-integrated kernels carry the same reciprocity", worst_k < 1e-10)
+
+
+def schwinger_matrix(
+    ref: ReferenceMedium,
+    omega: complex,
+    con: MaterialContrast,
+    a: float,
+    kmax: float,
+    nk: int,
+    ksplit: float,
+    nin: int,
+    flip: bool = False,
+    multiplicative_only: bool = False,
+) -> np.ndarray:
+    """The full 9x9 Schwinger matrix, assembled in one pass over term pairs.
+
+    The quadrature grid is symmetric under k -> -k, which matters: the symmetry
+    of the result is an algebraic property relating the integrand at +k and -k,
+    so it holds to near machine precision on a symmetric grid even when the grid
+    is far too coarse to give the VALUE accurately.  That is what makes the
+    symmetry a cheap test and an accuracy-independent one.
+
+    Args:
+        ref: Background medium.
+        omega: Angular frequency, complex.
+        con: Material contrast.
+        a: Cube half-width.
+        kmax: Half-width of the wavenumber box.
+        nk: Nodes per outer panel per axis.
+        ksplit: Inner panel half-width.
+        nin: Nodes in the inner panel per axis.
+        flip: Negative control -- reverse the sign of the right leg's i k.
+        multiplicative_only: Drop every term that carries a derivative.
+
+    Returns:
+        Shape (9, 9) complex.
+    """
+    k1f, k2f, wq = lateral_grid(ref, omega, kmax, nk, ksplit, nin)
+    wts = wq / (2.0 * np.pi) ** 2
+    kern = kernels_paper(ref, omega, k1f, k2f, a)
+    ffm = form_factors_batch(-k1f, -k2f, a)
+    ffp = form_factors_batch(k1f, k2f, a)
+
+    lam_t, mu_t = ref.lam + con.Dlambda, ref.mu + con.Dmu
+    fields = [qfield_of(p, lam_t, mu_t, omega) for p in range(9)]
+    one = np.ones_like(k1f, dtype=complex)
+    kvec = (one, k1f.astype(complex), k2f.astype(complex))
+
+    def stack(ff: tuple, comp: int, d: int, m: int) -> np.ndarray:
+        """Weight coefficient of every trial function, as a (9, N) array."""
+        return np.stack([weight_coeffs(q0, qg, comp, d, ff)[m] * one for q0, qg in fields])
+
+    cache_m: dict = {}
+    cache_p: dict = {}
+    terms = delta_a_terms(ref.lam, ref.mu, ref.rho, con, omega)
+    if multiplicative_only:
+        terms = [t for t in terms if t[3] == 0 and t[4] == 0]
+    terms = [t for t in terms if abs(t[2]) > 0.0]
+
+    out = np.zeros((9, 9), dtype=complex)
+    for rowl, coll, coefl, dphil, dpsil in terms:
+        idxl, sgnl = (rowl + 3, -1.0) if rowl < 3 else (rowl - 3, 1.0)
+        fl = one if dpsil == 0 else 1j * kvec[dpsil]
+        for rowr, colr, coefr, dphir, dpsir in terms:
+            sgn = -1.0 if (flip and dphir != 0) else 1.0
+            fr = one if dphir == 0 else -sgn * 1j * kvec[dphir]
+            pre = sgnl * coefl * coefr * fl * fr * wts
+            for m in (0, 1):
+                key_m = (idxl, dphil, m)
+                if key_m not in cache_m:
+                    cache_m[key_m] = stack(ffm, idxl, dphil, m)
+                ck = cache_m[key_m]
+                if not np.any(ck):
+                    continue
+                base = pre * kern[(m, 0)][:, coll, rowr]
+                for n in (0, 1):
+                    key_p = (colr, dpsir, n)
+                    if key_p not in cache_p:
+                        cache_p[key_p] = stack(ffp, colr, dpsir, n)
+                    cl = cache_p[key_p]
+                    if not np.any(cl):
+                        continue
+                    if n == 1:
+                        base = pre * kern[(m, 1)][:, coll, rowr]
+                    out += (ck * base) @ cl.T
+    return out
+
+
+def part4_derivative_channels(ref: ReferenceMedium, omega: complex, a: float) -> None:
+    """The derivative-carrying channels, tested by the symmetry they must have.
+
+    The density channel of Part 3 settles the basis, the kernel and the
+    quadrature, but its contrast operator is MULTIPLICATIVE: it does not exercise
+    the i k rule at all.  The channels that do are the ones carrying Dlambda and
+    Dmu, and for those the sharp statement available without a new arbiter is
+    symmetry.  J6 DeltaA is symmetric -- that is what derived the test space --
+    and Gamma is reciprocal by Part 3b, so the assembled matrix must be
+    symmetric.  The assembly builds its two legs by opposite rules, transferring
+    the left outer derivative onto the test polynomial and carrying the right one
+    on the kernel as i k, so this is a genuine test of that bookkeeping rather
+    than an identity it satisfies by construction.
+
+    Args:
+        ref: Background medium.
+        omega: Angular frequency, complex.
+        a: Cube half-width.
+    """
+    print("")
+    print("--- Part 4: the derivative channels, by symmetry -------------------")
+    con = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+    ks = 4.0 * omega.real / ref.beta
+    mat = schwinger_matrix(ref, omega, con, a, 60.0, 40, ks, 20)
+    asym = float(np.max(np.abs(mat - mat.T)) / np.max(np.abs(mat)))
+    print(f"    ||S - S^T|| / ||S||                    = {asym:.3e}")
+    report("the assembled Schwinger matrix is symmetric", asym < 1e-10)
+
+    # The test must not be vacuous: the derivative terms have to be doing work.
+    mult = schwinger_matrix(ref, omega, con, a, 60.0, 40, ks, 20, multiplicative_only=True)
+    share = float(np.max(np.abs(mat - mult)) / np.max(np.abs(mat)))
+    print(f"    share of S the derivative terms carry  = {share:.3e}")
+    report("the derivative terms are not a negligible part of S", share > 0.1)
+
+    # And it must have teeth on exactly the disputed sign.
+    bad = schwinger_matrix(ref, omega, con, a, 60.0, 40, ks, 20, flip=True)
+    basym = float(np.max(np.abs(bad - bad.T)) / np.max(np.abs(bad)))
+    print(f"    NEGATIVE CONTROL, right-leg i k flipped: {basym:.3e}")
+    report("NEGATIVE CONTROL: the wrong sign on the right leg breaks symmetry", basym > 1e-3)
+
+    # The density channel must survive being embedded in the full matrix.
+    dens = MaterialContrast(Dlambda=0.0, Dmu=0.0, Drho=100.0)
+    dmat = schwinger_matrix(ref, omega, dens, a, 90.0, 120, ks, 60)
+    lam, mu = ref.lam, ref.mu
+    kc = lam + 2.0 * mu
+    a0 = (lam + 3.0 * mu) / (8.0 * np.pi * mu * kc)
+    b0 = (lam + mu) / (8.0 * np.pi * mu * kc)
+    rad = omega.real * (1.0 / ref.alpha**3 + 2.0 / ref.beta**3) / (12.0 * np.pi * ref.rho)
+    mg = (a0 + b0 / 3.0) * duffy_moment(a, 60, doubled=True) + 1j * (2.0 * a) ** 6 * rad
+    want = 1j * omega**5 * dens.Drho**2 * mg
+    rel = abs(dmat[0, 0] - want) / abs(want)
+    got = dmat[0, 0]
+    print(f"    density entry via the full assembly    = {got.real: .4e} {got.imag:+.8e}i  rel {rel:.3e}")
+    report("the one-pass assembly reproduces the density channel", rel < 5e-3)
 
 
 def main() -> int:
@@ -814,7 +1160,9 @@ def main() -> int:
     part1_indicator_derivative()
     part2_basis(ref, omega)
     part3a_propagator_pointwise(ref, omega)
+    part3b_reciprocity(ref, omega)
     part3_density(ref, omega, a)
+    part4_derivative_channels(ref, omega, a)
 
     print("")
     print("=" * 70)
