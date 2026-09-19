@@ -2960,14 +2960,26 @@ builds it and finds that it does clear the ceiling.
 
 \begin{quote}
 \small\itshape
-A correction.  An earlier draft of the paragraph above asserted that marching an
-impedance ``is what the existing Riccati solver and the classical imbedding
-codes do''.  The survey that preceded this subsection found otherwise: no matrix
-impedance exists in this package, in the sibling repository, or in the thesis.
-What exists is a \emph{scalar} $SH$ impedance used as an eigenvector
+A correction, twice over.  An earlier draft of the paragraph above asserted that
+marching an impedance ``is what the existing Riccati solver and the classical
+imbedding codes do''.  The survey that preceded this subsection found otherwise:
+no matrix impedance exists in this package, in the sibling repository, or in the
+thesis.  What exists is a \emph{scalar} $SH$ impedance used as an eigenvector
 normalisation convention, and two Riccati sweeps --- both of which march a
-reflection matrix in \emph{mode amplitudes}.  The claim has been withdrawn and
-the construction below is new.
+reflection matrix in \emph{mode amplitudes}.  That much stands.
+
+The draft then concluded ``the construction below is new'', and \emph{that} is
+wrong.  The survey covered this package, the sibling repository, the thesis and
+the symbolic archive; it did not cover the literature, and the literature has
+it.  Haines, Hulme \& Yu (2004) give exactly this construction --- an impedance
+operator satisfying a Riccati equation, solved as an initial value problem,
+together with a one-way equation for the particle velocity --- and handle
+lateral heterogeneity by expanding in a truncated Fourier basis, which turns
+their impedance operator into a finite matrix.  That is the same object as
+$\bY$ below and the same means of carrying the lateral coupling inside it.
+Thomson (2015a,b) then established the symmetry of that operator, which is the
+identity used here as the main structural check.  \S\ref{sec:priorart} sets out
+the correspondence term by term and says what, if anything, is left over.
 \end{quote}
 
 Split $\bq = (\bu,\bta_3)$ and $\bA$ into $3\times3$ blocks, and let
@@ -4126,6 +4138,102 @@ a stratified background that object does not exist.  The first-order form
 supplies what the moment method cannot.
 
 %=====================================================================
+\section{Against the literature}\label{sec:priorart}
+
+The construction marched in \S\ref{sec:impedance} and extended in
+\S\ref{sec:latop} and \S\ref{sec:threed} is not new.  It is the impedance
+operator approach of Haines, Hulme \& Yu \cite{haines2004}, and the symmetry relied on
+throughout as a structural check is the impedance-operator symmetry of Thomson
+\cite{thomson2015a,thomson2015b}.  Neither is cited in the thesis or anywhere in the codebase this
+document accompanies, which is how the omission survived: the survey that
+precedes work here covers five places, and all five are local.
+
+\subsection{The correspondence}
+
+Haines \emph{et al.}\ \cite{haines2004} define an impedance operator $\mathbf{Z}$ by
+$\sigma^{n}_{i} = -(\mathbf{Z}\cdot\mathbf{v})_{i}$, relating stretched traction
+to particle velocity, and show it satisfies a first-order pseudo-differential
+Riccati equation
+\begin{equation}
+  \partial_{\xi_3}\mathbf{Z} + \mathbf{Z}A_1\mathbf{Z} + \mathbf{Z}A_2
+    + A_3\mathbf{Z} + A_4 = 0 ,
+  \label{eq:hainesriccati}
+\end{equation}
+independent of the boundary conditions and solved as an initial value problem,
+after which the particle velocity follows from a one-way equation
+$\partial_{\xi_3}\mathbf{V} = (A_1 - A_2\mathbf{Z})\mathbf{V}$.
+
+Set against \eqref{eq:impedance}, $\bY' = \bA_{21} + \bA_{22}\bY - \bY\bA_{11}
+- \bY\bA_{12}\bY$: the two are the same equation.  The quadratic term is
+$\mathbf{Z}A_1\mathbf{Z}$ against $\bY\bA_{12}\bY$, the two linear terms
+correspond one for one, and the inhomogeneous term is $A_4$ against $\bA_{21}$.
+The marched variable differs only in that $\bY$ maps displacement to traction
+where $\mathbf{Z}$ maps particle velocity to traction, a factor $-i\omega$; the
+sign conventions differ correspondingly.
+
+\emph{The lateral treatment corresponds too}, and this is the part worth being
+plain about.  Haines \emph{et al.} represent horizontal variation in a complete
+orthonormal basis, typically Fourier, so that the partial differential equation
+becomes a system of ordinary differential equations in $\xi_3$ for the
+coefficients and the impedance operator becomes a finite matrix under
+truncation.  That is what \S\ref{sec:latop} does with a pseudospectral grid and
+\S\ref{sec:threed} with two of them.  Carrying the lateral coupling inside the
+marched variable, rather than by an outer iteration on
+$(\bI-\bP\,\dCeff)$, is \emph{their} construction, not a departure from the
+literature; it is a departure only from the thesis's own architecture
+\eqref{eq:cbpdef}, which is what \S\ref{sec:latop} actually compares against.
+
+Thomson \cite{thomson2015b} develops the displacement-to-traction operator --- the same
+object, there called an impedance operator and identified as the elastic
+analogue of a Dirichlet-to-Neumann map --- for laterally heterogeneous
+anisotropic media, and proves that its kernel equals its transpose with the
+arguments reversed.  That is the identity \eqref{eq:latsymp} is a discrete
+statement of, and \eqref{eq:symp3d} its specialisation when both lateral
+directions are gridded and the derivative matrices are antisymmetric.  The
+symplectic orthogonality of the lateral modes, which the same paper
+establishes, is the continuum statement behind the $\bJ_6$ pairing used here
+throughout.
+
+\subsection{What is left}
+
+Setting the formulation aside, three things in this document are not in the
+papers above, and they are smaller claims than the one they replace.
+
+\begin{itemize}
+\item \textbf{The contrast operator.}  $\dA$ and $\dCeff$ are derived from the
+thesis's own \texttt{dCBC}/\texttt{dCBCrho} and carry its $\Oh$ structure; the
+march is driven by that operator rather than by a general anisotropic medium.
+The comparison in \S\ref{sec:latop} is against the thesis architecture
+\eqref{eq:cbpdef}, which the literature above does not treat.
+\item \textbf{Verification against an exact scatterer.}  The march is scored
+against the elastic Mie sphere at fourth order in the depth step
+(\S\ref{sec:threed}), on a sharp boundary, through the Poisson array relation.
+The papers above establish the formulation and its accuracy in their own terms;
+this is an independent external check of the same construction.
+\item \textbf{The array coupling as a measurement.}  The residual after the
+depth error is exhausted is inter-sphere multiple scattering, linear in the
+contrast at $1.45\,\varepsilon$ over two decades --- a number about the
+periodic problem the march actually solves, not about the march.
+\end{itemize}
+
+The fourth-order continuum result of \S\ref{sec:whatimbedbuys} and the
+stage-sampling requirement behind it are statements about the integrator rather
+than the formulation, and are not claimed against the literature either way:
+Haines \emph{et al.} state that their initial value problems can be solved to
+high precision without committing to a particular integrator.
+
+\subsection{What has not been checked}
+
+The correspondence above is drawn from the abstract, the mathematical
+development sections and the numerical discussion of \cite{haines2004}, and from the abstract and stated results of \cite{thomson2015b}.  The
+companion paper \cite{hulme2004} has not been consulted, and neither has the
+detailed treatment of material discontinuities --- Haines \emph{et al.} use a
+curvilinear transformation with $\xi_3$ constant on major interfaces, so that
+the wavefield variables stay continuous, where \S\ref{sec:threed} instead takes
+the cross-section through its exact transform and marches the sphere's own
+bounding slab.  Whether those two devices coincide has not been established.
+
+%=====================================================================
 \section*{References}
 \addcontentsline{toc}{section}{References}
 
@@ -4136,8 +4244,9 @@ derived here carries an author--date reference at the point it is used.  The
 converse matters too --- a technique that is \emph{not} borrowed must not be
 dressed as though it were, and a name coined in this note is a label, not a
 citation.  Provenance, since it differs: \cite{mvwe} was read from the document
-itself; \cite{hisada1994}, \cite{hisada1995}, \cite{luco1983} and
-\cite{michalski1997} were located by literature search; the rest are from
+itself; \cite{hisada1994}, \cite{hisada1995}, \cite{luco1983},
+\cite{michalski1997}, \cite{haines2004}, \cite{thomson2015a} and
+\cite{thomson2015b} were located by literature search; the rest are from
 memory.  \emph{None has been verified against a library.}  Authors, years and
 titles should be reliable and volume and page numbers less so; all must be
 checked before this note is circulated, and nothing in this list should be
@@ -4160,6 +4269,15 @@ quoted from here without that check.
 \bibitem{ha1985} Ha, J. (1985).  Cited via the thesis Introduction, with
   \cite{chin1984}, for Riccati factorisation in discretely layered media.
 
+\bibitem{haines2004} Haines, A.~J., Hulme, T. \& Yu, J. (2004).
+  General elastic wave scattering problems using an impedance operator
+  approach --- I.  Mathematical development.  \emph{Geophysical Journal
+  International} \textbf{159}(2), 643--657.
+  \texttt{doi:10.1111/j.1365-246X.2004.02405.x}.  Located by literature search;
+  abstract, mathematical development and numerical sections consulted, full
+  text not obtained.  This is the construction marched in
+  \S\ref{sec:impedance}--\S\ref{sec:threed}; see \S\ref{sec:priorart}.
+
 \bibitem{haskell1953} Haskell, N.~A. (1953).  The dispersion of surface waves
   on multilayered media.  \emph{Bulletin of the Seismological Society of
   America} \textbf{43}, 17--34.
@@ -4174,6 +4292,10 @@ quoted from here without that check.
   Green's functions for a layered half-space with sources and receivers at close
   depths (part~2).  \emph{Bulletin of the Seismological Society of America}
   \textbf{85} (4), 1080--1093.
+
+\bibitem{hulme2004} Hulme, T. (2004).  General elastic wave scattering problems
+  using an impedance operator approach --- II.  Cited by \cite{haines2004} as
+  its companion.  \emph{Not consulted.}
 
 \bibitem{kennett1983} Kennett, B.~L.~N. (1983).  \emph{Seismic Wave
   Propagation in Stratified Media}.  Cambridge University Press.
@@ -4209,6 +4331,18 @@ quoted from here without that check.
 \bibitem{thomson1950} Thomson, W.~T. (1950).  Transmission of elastic waves
   through a stratified solid medium.  \emph{Journal of Applied Physics}
   \textbf{21}, 89--93.
+
+\bibitem{thomson2015a} Thomson, C.~J. (2015).  Seismic transmission operator
+  reciprocity --- I: a direct derivation showing the role of elastic impedance
+  operator symmetry.  \emph{Geophysical Journal International} \textbf{202}(2),
+  1064--1070.  Located by literature search; \emph{abstract only.}
+
+\bibitem{thomson2015b} Thomson, C.~J. (2015).  Seismic transmission operator
+  reciprocity --- II: impedance-operator symmetry via elastic lateral modes.
+  \emph{Geophysical Journal International} \textbf{202}(2), 1071--1087.
+  \texttt{doi:10.1093/gji/ggv168}.  Located by literature search; abstract and
+  stated results consulted.  The symmetry proved there is the continuum
+  statement of \eqref{eq:latsymp} and \eqref{eq:symp3d}.
 
 \bibitem{tromp1988} Tromp, J. \& Snieder, R. (1988).  Cited via the thesis
   Introduction for invariant embedding.
