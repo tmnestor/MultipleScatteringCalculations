@@ -4210,6 +4210,24 @@ against the elastic Mie sphere at fourth order in the depth step
 (\S\ref{sec:threed}), on a sharp boundary, through the Poisson array relation.
 The papers above establish the formulation and its accuracy in their own terms;
 this is an independent external check of the same construction.
+\item \textbf{Why the impedance is better \emph{conditioned}.}  Haines
+\emph{et al.}\ do argue for the impedance over an up--down split, but on
+different grounds: the decomposition into upgoing and downgoing parts ``can
+become poorly defined for laterally varying media'', whereas decomposing by the
+direction of energy \emph{flow} gives something that ``exists and is
+well-defined for all wavefields''.  That is a statement about well-definedness,
+and the difficulty they name is the lateral coupling --- a two-dimensional
+medium scatters one wavenumber into all of them, and $P$ at a given wavenumber
+may be evanescent while $S$ at the same wavenumber still propagates.  They do
+not discuss eigenvector degeneracy, conditioning or loss of precision.  The
+argument of \S\ref{sec:impedance} is therefore a different one and is measured:
+$\bV$ needs the \emph{full} inverse $\mathbf{D}_z^{-1}$, which mixes the two
+families and is where the cancellation lives, while $\bY$ needs only the three
+downgoing columns, so its residual tracks
+$\mathrm{cond}(\mathbf{U}_d)\,\epsilon$ linearly to $7.2\times10^{-10}$ over
+$|\mathbf{k}|=2$ to $6000$ where $\bV$ returns $2.000$ --- a lost branch, not a
+lost digit.  The two arguments are complementary: theirs is that the
+decomposition may fail to exist, this one is what computing it anyway costs.
 \item \textbf{The array coupling as a measurement.}  The residual after the
 depth error is exhausted is inter-sphere multiple scattering, linear in the
 contrast at $1.45\,\varepsilon$ over two decades --- a number about the
