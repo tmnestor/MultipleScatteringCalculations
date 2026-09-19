@@ -3639,8 +3639,10 @@ reflection of a laterally varying slab}\newline
 \begin{itemize}
 \item given a slab $0\le z\le H$ over a laterally uniform half-space, a lateral
 grid of $N=N_xN_y$ points with spectral derivatives $\mathbf{D}_x$,
-$\mathbf{D}_y$, and a depth partition $H=z_0>z_1>\cdots>z_M=0$, compute the
-impedance $\bY$ at the top of the slab and the reflection matrix $\bR$
+$\mathbf{D}_y$, and a depth partition $0=z_0<z_1<\cdots<z_M=H$ numbered
+\emph{downward} as in Chapter~5, with sublayer thicknesses
+$h_m=z_m-z_{m-1}>0$, compute the impedance $\bY$ at the top of the slab and the
+reflection matrix $\bR$
 
 \begin{itemize}
 \item (*{\em the operator at one depth --- every modulus is a multiplication
@@ -3686,7 +3688,8 @@ operator on the lateral grid\/}*)
 \end{itemize}
 
 \begin{itemize}
-\item (*{\em base of the slab: the half-space impedance, one $3\times3$ block
+\item (*{\em bottom of the slab, $z_M=H$: the half-space impedance, one
+$3\times3$ block
 per lateral wavenumber\/}*)
 \end{itemize}
 
@@ -3714,20 +3717,23 @@ per lateral wavenumber\/}*)
 \vspace{2mm}
 
 \begin{itemize}
-\item (*{\em march from the base to the top\/}*)
+\item (*{\em upsweep\/}*)
 
-\item \textbf{For} $m=1,\cdots,M$ \quad with $h=z_m-z_{m-1}<0$
+\item \textbf{For} $m=M,\cdots,1$ \quad --- $\bY$ enters each step at $z_m$ and
+      leaves it at $z_{m-1}$, a distance $h_m$ \emph{upward}
 \begin{itemize}
-\item $\mathbf{K}_1 = \mathcal{F}\!\left(\bY,\;\bA(z_{m-1})\right)$
-\item $\mathbf{K}_2 = \mathcal{F}\!\left(\bY+\tfrac{h}{2}\mathbf{K}_1,\;
-        \bA(z_{m-1}+\tfrac{h}{2})\right)$
-\item $\mathbf{K}_3 = \mathcal{F}\!\left(\bY+\tfrac{h}{2}\mathbf{K}_2,\;
-        \bA(z_{m-1}+\tfrac{h}{2})\right)$
-\item $\mathbf{K}_4 = \mathcal{F}\!\left(\bY+h\mathbf{K}_3,\;
-        \bA(z_{m-1}+h)\right)$
+\item $\mathbf{K}_1 = \mathcal{F}\!\left(\bY,\;\bA(z_{m})\right)$
+\item $\mathbf{K}_2 = \mathcal{F}\!\left(\bY-\tfrac{h_m}{2}\mathbf{K}_1,\;
+        \bA(z_{m}-\tfrac{h_m}{2})\right)$
+\item $\mathbf{K}_3 = \mathcal{F}\!\left(\bY-\tfrac{h_m}{2}\mathbf{K}_2,\;
+        \bA(z_{m}-\tfrac{h_m}{2})\right)$
+\item $\mathbf{K}_4 = \mathcal{F}\!\left(\bY-h_m\mathbf{K}_3,\;
+        \bA(z_{m-1})\right)$
 \item $\bY \leftarrow \bY
-        + \tfrac{h}{6}\left(\mathbf{K}_1+2\mathbf{K}_2+2\mathbf{K}_3
+        - \tfrac{h_m}{6}\left(\mathbf{K}_1+2\mathbf{K}_2+2\mathbf{K}_3
         +\mathbf{K}_4\right)$
+\item (*{\em the minus signs are the upsweep: $h_m>0$ is a thickness, and the
+      march runs against increasing $z$\/}*)
 \item (*{\em $\bA$ is rebuilt at each stage depth.  Freezing it per sublayer
       integrates a staircase exactly and returns second order\/}*)
 \end{itemize}
@@ -3736,16 +3742,16 @@ per lateral wavenumber\/}*)
 \item (*{\em or, unconditionally stable and second order, with $\bA$ frozen at
       the midpoint --- one solve, no exponential\/}*)
 \end{itemize}
-\item $\bA_{\mathrm{mid}}=\bA\!\left(\tfrac{z_{m-1}+z_m}{2}\right)$, \quad
+\item $\bA_{\mathrm{mid}}=\bA\!\left(z_m-\tfrac{h_m}{2}\right)$, \quad
       solve
-      $\left(\bI-\tfrac{h}{2}\bA_{\mathrm{mid}}\right)\mathbf{W}
-       = \left(\bI+\tfrac{h}{2}\bA_{\mathrm{mid}}\right)
+      $\left(\bI+\tfrac{h_m}{2}\bA_{\mathrm{mid}}\right)\mathbf{W}
+       = \left(\bI-\tfrac{h_m}{2}\bA_{\mathrm{mid}}\right)
          \begin{bmatrix}\bI\\ \bY\end{bmatrix}$
       \quad for $\mathbf{W}$
 \item $\bY \leftarrow \mathbf{W}_{\mathrm{lower}}\,
         \mathbf{W}_{\mathrm{upper}}^{-1}$
-\item (*{\em no matrix exponential is formed.  $h<0$, so this propagates
-      upward; the sign follows from $\bq'=\bA\bq$\/}*)
+\item (*{\em no matrix exponential is formed.  The signs are the upsweep: the
+      step advances from $z_m$ to $z_{m-1}$, and follows from $\bq'=\bA\bq$\/}*)
 
 \begin{itemize}
 \item (*{\em the reflection matrix at the top\/}*)
@@ -3770,7 +3776,7 @@ alternatives, not successive stages.  The explicit one attains fourth order but
 is conditionally stable: the right-hand side of \eqref{eq:impedance} carries
 decay rates set by the largest vertical wavenumber, so the largest lateral
 wavenumber on the grid sets the limit, and the step becomes unstable once
-$2\,|k|_{\max}|h| \gtrsim 1.3$.  \emph{Refining the lateral grid therefore
+$2\,|k|_{\max}h \gtrsim 1.3$.  \emph{Refining the lateral grid therefore
 forces a smaller depth step}, which offsets part of the advantage measured in
 \S\ref{sec:whatimbedbuys} by an amount that has not been quantified.  The
 stable step freezes the medium at the midpoint and is second order --- confirmed,
