@@ -45,6 +45,7 @@ CLAIMS = {
     "the impedance": "gate_first_order_impedance",
     "its march": "gate_first_order_impedance_march",
     "layered $\\boldsymbol\\Gamma$": "gate_first_order_layered_gamma",
+    "lateral impedance march": "gate_first_order_lateral_impedance",
 }
 
 TALLY = re.compile(r"(\d+)/(\d+) checks passed|(\d+) passed, (\d+) failed")
@@ -98,11 +99,24 @@ def main() -> int:
         0 if all agree, 1 otherwise.
     """
     text = TEX.read_text()
-    i = text.index("\\captionof{table}{All checks pass")
+    try:
+        i = text.index("All checks pass")
+        j = text.index("\\toprule", i)
+    except ValueError:
+        print(
+            "Could not find the summary caption.\n"
+            f"  Where: {TEX}\n"
+            '  Expected: a caption beginning "All checks pass", followed by the\n'
+            "            table's \\toprule -- the summary table is a longtable,\n"
+            "            so its caption precedes the header rows.\n"
+            "  Fix:   restore that caption, or update the anchors here if the\n"
+            "         table's structure has deliberately changed."
+        )
+        return 1
     # Collapse whitespace: LaTeX wraps the caption, and a phrase split across a
     # line break would otherwise read as absent -- which is a false alarm, and a
     # checker that cries wolf is worse than none.
-    caption = " ".join(text[i : text.index("}\n\\end{center}", i)].split())
+    caption = " ".join(text[i:j].split())
 
     print("=" * 74)
     print("  The write-up's claimed tallies, against the gates")
