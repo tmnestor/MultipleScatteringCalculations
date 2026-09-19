@@ -3733,15 +3733,19 @@ per lateral wavenumber\/}*)
 \end{itemize}
 
 \begin{itemize}
-\item (*{\em or, unconditionally stable, with $\bA$ frozen at the midpoint\/}*)
+\item (*{\em or, unconditionally stable and second order, with $\bA$ frozen at
+      the midpoint --- one solve, no exponential\/}*)
 \end{itemize}
-\item $\mathbf{M}=\exp\!\left(\bA\!\left(\tfrac{z_{m-1}+z_m}{2}\right)h\right)$,
-      \qquad
-      $\bY \leftarrow
-        \left(\mathbf{M}_{21}+\mathbf{M}_{22}\bY\right)
-        \left(\mathbf{M}_{11}+\mathbf{M}_{12}\bY\right)^{-1}$
-\item (*{\em $h<0$, so this propagates upward; the sign follows from
-      $\bq'=\bA\bq$ and not from a convention\/}*)
+\item $\bA_{\mathrm{mid}}=\bA\!\left(\tfrac{z_{m-1}+z_m}{2}\right)$, \quad
+      solve
+      $\left(\bI-\tfrac{h}{2}\bA_{\mathrm{mid}}\right)\mathbf{W}
+       = \left(\bI+\tfrac{h}{2}\bA_{\mathrm{mid}}\right)
+         \begin{bmatrix}\bI\\ \bY\end{bmatrix}$
+      \quad for $\mathbf{W}$
+\item $\bY \leftarrow \mathbf{W}_{\mathrm{lower}}\,
+        \mathbf{W}_{\mathrm{upper}}^{-1}$
+\item (*{\em no matrix exponential is formed.  $h<0$, so this propagates
+      upward; the sign follows from $\bq'=\bA\bq$\/}*)
 
 \begin{itemize}
 \item (*{\em the reflection matrix at the top\/}*)
@@ -3769,17 +3773,22 @@ wavenumber on the grid sets the limit, and the step becomes unstable once
 $2\,|k|_{\max}|h| \gtrsim 1.3$.  \emph{Refining the lateral grid therefore
 forces a smaller depth step}, which offsets part of the advantage measured in
 \S\ref{sec:whatimbedbuys} by an amount that has not been quantified.  The
-M\"obius step is exact for a piecewise constant medium and stable at every step
-tried, at second order --- confirmed, with errors falling by $4.00$, $4.00$,
-$4.00$ over a fourfold refinement.
+stable step freezes the medium at the midpoint and is second order --- confirmed,
+with errors falling by $4.00$, $4.00$, $4.00$ over a fourfold refinement --- and
+it is one solve of the $6N$ system rather than an exponential of it.  The next
+paragraph says why, because the imbedding literature's step is the exponential
+and the difference is worth stating.
 
-\paragraph{What the exponential costs.}  The M\"obius step forms
-$\exp(\bA h)$ for the \emph{full} $6N\times6N$ operator, and that is not free.
-Measured against one explicit step, at $h=-H/32$:
+\paragraph{Why the stable step is a solve and not an exponential.}  The
+M\"obius step of the imbedding literature freezes the medium in each sublayer
+and propagates with $\exp(\bA h)$, which is exact for that frozen medium.  It is
+also an exponential of the \emph{full} $6N\times6N$ operator, and the impedance
+form exists precisely to avoid handling that object.  Measured against one
+explicit step, at $h=-H/32$:
 \begin{center}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
-grid & $3N$ & explicit step & $\exp(\bA h)$ & ratio & $(1,1)$ Pad\'e \\
+grid & $3N$ & explicit step & $\exp(\bA h)$ & ratio & one solve \\
 \midrule
 $6\times6$   & $108$ & $3.48$\,ms & $10.45$\,ms & $3.0$ & $2.51$\,ms \\
 $8\times8$   & $192$ & $9.46$\,ms & $33.43$\,ms & $3.5$ & $7.93$\,ms \\
@@ -3787,28 +3796,48 @@ $10\times10$ & $300$ & $25.13$\,ms & $71.06$\,ms & $2.8$ & $20.93$\,ms \\
 \bottomrule
 \end{tabular}
 \end{center}
-About three times the explicit step, and the ratio is flat in $N$ because both
-scale as $N^{3}$: $(6N)^{3}=8(3N)^{3}$ against four right-hand sides of roughly
-four $(3N)^{3}$ products each.  So the choice is not order against stability
-alone --- the stable step also costs three times as much, and buys back only the
-freedom to take larger ones.
+about three times the explicit step, the ratio flat in $N$ because both scale as
+$N^{3}$: $(6N)^{3}=8(3N)^{3}$ against four right-hand sides of roughly four
+$(3N)^{3}$ products each.
 
-Two things follow, and only the second is useful.  The exponential itself is
-never needed: the update uses only $\mathbf{M}_{21}+\mathbf{M}_{22}\bY$ and
-$\mathbf{M}_{11}+\mathbf{M}_{12}\bY$, which are the two halves of
-$\mathbf{M}\,[\bI;\,\bY]$, so its \emph{action} on a $6N\times3N$ block
-suffices.  That is of no help here: computed by a Krylov method it agrees to
-$2.5\times10^{-15}$ and runs about twice as slowly as forming the exponential
-outright, because at these dense sizes the scaling-and-squaring is the faster
-algorithm.  What does help is that the method is second order regardless, the
-medium being sampled at the midpoint, so the exponential may be replaced by its
-$(1,1)$ Pad\'e, $\mathbf{M}=(\bI-\tfrac{h}{2}\bA)^{-1}(\bI+\tfrac{h}{2}\bA)$ ---
-one solve rather than a scaling-and-squaring, $3.3$ times cheaper, and
-$A$-stable.  It is not equivalent, and the difference matters: for $|\lambda h|$ large the Pad\'e tends to
-$-\bI$ where the exponential tends to $\mathbf{0}$, so the strongly evanescent
-sublayer modes are held rather than decayed.  Whether that matters depends on
-how stiff the slab is, and it has not been tested; the exponential form is what
-is gated.
+\emph{The exactness buys nothing.}  Freezing the medium at the midpoint already
+makes the step second order, so reproducing the frozen sublayer exactly is
+accuracy spent where the method cannot use it.  Replacing the exponential by its
+$(1,1)$ Pad\'e,
+$\mathbf{M}=(\bI-\tfrac{h}{2}\bA)^{-1}(\bI+\tfrac{h}{2}\bA)$, keeps the order
+and the $A$-stability and costs one solve:
+\begin{center}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+depth steps & $4$ & $8$ & $16$ & $32$ \\
+\midrule
+$2|k|_{\max}h$ & $1.26$ & $0.63$ & $0.31$ & $0.16$ \\
+$\exp(\bA h)$ & $2.80\times10^{-2}$ & $6.99\times10^{-3}$
+              & $1.74\times10^{-3}$ & $4.30\times10^{-4}$ \\
+one solve     & $4.17\times10^{-2}$ & $1.08\times10^{-2}$
+              & $2.72\times10^{-3}$ & $6.81\times10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+observed orders $2.00,2.00,2.02$ against $1.95,1.99,2.00$, and a constant factor
+of about $1.6$ in the error for a factor of $3.3$ in cost.  It holds where the
+explicit step does not: at $2|k|_{\max}h = 2.51$ the explicit march returns
+$4.33$ --- it has diverged --- and the solve returns $1.41\times10^{-1}$.  That
+is what the stable branch is for, and it is why the algorithm above forms no
+exponential.
+
+Two remarks, one of them a dead end worth recording.  The exponential is never
+needed even when it is used, because the update takes only
+$\mathbf{M}_{21}+\mathbf{M}_{22}\bY$ and $\mathbf{M}_{11}+\mathbf{M}_{12}\bY$,
+the two halves of $\mathbf{M}[\bI;\bY]$; but computing that \emph{action} by a
+Krylov method, while it agrees to $2.5\times10^{-15}$, runs about twice as
+slowly as forming the exponential outright, because at these dense sizes
+scaling-and-squaring is the faster algorithm.  And the Pad\'e is not the
+exponential: for $|\lambda h|$ large it tends to $-\bI$ where the exponential
+tends to $\mathbf{0}$, so a strongly evanescent sublayer mode is held rather
+than decayed.  That did not bite over the range above, where the largest lateral
+wavenumber on the grid was carried at $2|k|_{\max}h$ up to $2.51$; a slab stiff
+enough to expose it would want the exponential back.
 
 \paragraph{Cost.}  $\bA_{12}$ is diagonal --- it carries no derivative --- so
 the quadratic term of $\mathcal{F}$ is a single dense product of
@@ -3828,7 +3857,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$26/26$; and the propagator gate exits clean.
+$30/30$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
