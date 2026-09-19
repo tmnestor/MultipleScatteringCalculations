@@ -1,0 +1,526 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=24mm, top=28mm, bottom=28mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape The Plane-Wave Response of a Sphere}
+\fancyhead[R]{\small\itshape 19 September 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.12}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bR}{\mathbf{R}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bk}{\mathbf{k}}
+\newcommand{\br}{\mathbf{r}}
+\newcommand{\bta}{\boldsymbol{\tau}}
+\newcommand{\bsig}{\boldsymbol{\sigma}}
+\newcommand{\bep}{\mathbf{e}}
+\newcommand{\khat}{\hat{\bk}}
+\newcommand{\rhat}{\hat{\br}}
+\newcommand{\zhat}{\hat{\mathbf{z}}}
+\newcommand{\kperp}{\bk_\perp}
+\newcommand{\tp}{^{\mkern-1.5mu\mathsf{T}}}
+
+\title{\bfseries The Plane-Wave Response of a Sphere\\[4pt]
+\large The angular spectrum of the elastic Mie field, and the reflection and\\
+transmission matrices on planes bounding the scatterer}
+\author{}
+\date{19 September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A homogeneous elastic sphere in a homogeneous whole space scatters an incident
+plane wave into a field whose exact solution is a series of spherical waves.
+This note gives that field's \emph{plane-wave} content: the amplitude, at each
+lateral wavenumber, of every up- and down-going $P$, $SV$ and $SH$ wave crossing
+a plane placed just outside the sphere.  Those amplitudes are the reflection and
+transmission matrices $\bR(\kperp)$ and $\bT(\kperp)$.
+
+The construction is closed-form.  Each outgoing multipole has a plane-wave
+representation whose angular weight is its own spherical harmonic evaluated at
+the plane-wave direction, so the spectrum of the scattered field is read off its
+Mie coefficients with no spatial transform, no lateral window and no truncation.
+Everything needed to implement it is given: the potentials and their
+coefficients, the displacement and traction, the plane-wave representation and
+its branch, the three channel spectra with their polarisations, the quadrature
+path that removes the branch-point singularity, and the assembly into $\bR$ and
+$\bT$.
+
+Conventions are fixed in \S\ref{sec:conv} and used throughout: time dependence
+$e^{-i\omega t}$, outgoing radial functions $h_n^{(1)}$, and $\operatorname{Im}
+k_z \ge 0$.
+\end{abstract}
+
+\tableofcontents
+
+%=====================================================================
+\section{Statement of the problem}\label{sec:problem}
+
+A sphere of radius $a$, with Lam\'e parameters $\lambda_1,\mu_1$ and density
+$\rho_1$, sits in an unbounded homogeneous medium $\lambda,\mu,\rho$ with wave
+speeds
+\begin{equation}
+  \alpha = \sqrt{(\lambda+2\mu)/\rho},\qquad \beta = \sqrt{\mu/\rho},
+  \qquad k_P = \omega/\alpha, \qquad k_S = \omega/\beta .
+\end{equation}
+A plane wave is incident along $+z$.  Take two planes $z = -z_p$ and
+$z = +z_p$ with $z_p > a$, so that both lie wholly outside the sphere.
+
+We want, at each lateral wavenumber $\kperp = (k_x,k_y)$, the amplitudes of the
+plane waves crossing those planes.  Above the sphere every scattered wave
+travels in $-z$; below, in $+z$.  Collecting the three polarisations gives a
+$3\times3$ reflection matrix on the upper plane and a $3\times3$ transmission
+matrix on the lower one, each a function of $\kperp$.
+
+\subsection{Conventions}\label{sec:conv}
+
+\begin{itemize}
+\item Time dependence $e^{-i\omega t}$; outgoing spherical waves carry
+      $h_n^{(1)}(kr)$.
+\item $z$ increases downward and is the first Cartesian index, so a vector is
+      ordered $(z,x,y)$.  Spherical angles are measured from $+z$:
+      $\cos\theta = z/r$, and $\varphi$ is the azimuth in the $(x,y)$ plane.
+\item The vertical wavenumber of a plane wave is taken on the branch
+      \begin{equation}\label{eq:branch}
+        k_z(\kperp) = \sqrt{k^2 - |\kperp|^2}, \qquad \operatorname{Im}k_z \ge 0,
+      \end{equation}
+      real inside the light circle $|\kperp| < k$ and positive-imaginary outside
+      it, so that $e^{i k_z |z|}$ is outgoing in both half-spaces: propagating
+      within the circle and decaying beyond it.
+\item Seismic units are used throughout --- $\mathrm{km/s}$,
+      $\mathrm{g/cm^3}$, $\mathrm{GPa}$, $\mathrm{km}$.  In SI the matrices of
+      \S\ref{sec:rt} carry displacement rows of order unity against traction
+      rows of order $\mu k \sim 10^{6}$, and appear ill conditioned for a
+      reason that is purely one of units.
+\end{itemize}
+
+%=====================================================================
+\section{The exact field in spherical waves}\label{sec:mie}
+
+\subsection{Potentials}
+
+Write the displacement through the Helmholtz decomposition
+\begin{equation}\label{eq:helm}
+  \bu = \nabla\phi \;+\; \nabla\times\nabla\times(\br\psi) \;+\; \nabla\times(\br\chi),
+\end{equation}
+where $\br$ is the position vector and each potential satisfies a scalar
+Helmholtz equation: $\phi$ with $k_P$, and $\psi$, $\chi$ with $k_S$.  The three
+terms are the $L$-, $N$- and $M$-type families, radiating $P$, $SV$ and $SH$
+respectively.  The two shear terms are divergence free, so
+\begin{equation}\label{eq:div}
+  \nabla\cdot\bu = \nabla^2\phi = -k_P^2\,\phi .
+\end{equation}
+
+Outside the sphere the scattered potentials are outgoing:
+\begin{equation}\label{eq:pots}
+  \phi = \sum_n a_n\,h_n^{(1)}(k_P r)\,P_n^m(\cos\theta)e^{im\varphi},
+  \qquad
+  \psi = \sum_n b_n\,h_n^{(1)}(k_S r)\,P_n^m(\cos\theta)e^{im\varphi},
+\end{equation}
+and likewise $\chi$ with coefficients $c_n$.  Inside, the same forms with
+$j_n$ and the interior wavenumbers.
+
+An axial $P$ wave is azimuthally symmetric, so it excites only $m = 0$, and it
+excites no toroidal field: $c_n = 0$.  Incident $SV$ and $SH$ excite $m = 1$.
+The channel formulas of \S\ref{sec:spectra} cover both, with the angular
+functions \eqref{eq:angexplicit} giving the $m=0$ and $m=1$ cases explicitly.
+
+\subsection{The incident field}\label{sec:incident}
+
+The incident wave enters twice, in different forms, and both are needed.
+
+\paragraph{As a series, to drive the boundary conditions.}  A unit-amplitude
+$P$ wave travelling along $+z$ is $\bu^{\rm inc} = \zhat\,e^{ik_Pz}$, which
+comes from the potential $\phi^{\rm inc} = e^{ik_Pz}/(ik_P)$ since
+$\bu = \nabla\phi$.  The Rayleigh expansion
+\begin{equation}\label{eq:rayleigh}
+  e^{ikz} = \sum_{n\ge0}(2n+1)\,i^{\,n} j_n(kr)\,P_n(\cos\theta)
+\end{equation}
+then gives the incident partial-wave coefficients
+\begin{equation}\label{eq:aninc}
+  a^{\rm inc}_n = \frac{(2n+1)\,i^{\,n}}{i k_P},
+  \qquad b^{\rm inc}_n = c^{\rm inc}_n = 0 ,
+\end{equation}
+so axial $P$ incidence is purely $m=0$ and purely $L$-type.
+
+A unit shear wave along $+z$ is transverse, $\bu^{\rm inc} = \hat{\mathbf{x}}
+e^{ik_Sz}$ for $SV$ and $\hat{\mathbf{y}}e^{ik_Sz}$ for $SH$.  Its expansion
+carries $P_n^1$ and $e^{\pm i\varphi}$, so shear incidence is $m=1$, with the
+$N$-type and $M$-type potentials respectively.  The conversion from the $m=0$
+plane-wave coefficients to the $m=1$ ones is
+\begin{equation}\label{eq:renorm}
+  \varrho(n) = -\,\frac{1}{n(n+1)} ,
+\end{equation}
+which carries the normalisation of $P_n^1$ relative to $P_n$.
+
+\paragraph{As a plane wave, in the angular spectrum.}  The same incident field
+is, trivially, a single plane wave, so its spectrum is a delta:
+\begin{equation}\label{eq:incspec}
+  \hat{\bu}^{\rm inc}(\kperp) = (2\pi)^2\,\bep_\iota\,\delta^2(\kperp - \kperp^0),
+\end{equation}
+with $\kperp^0 = \mathbf{0}$ for axial incidence.  It travels in $+z$, so it is
+present on the lower plane and absent on the upper one.  That is the whole of
+the difference between $\bR$ and $\bT$ in \S\ref{sec:rt}: reflection is purely
+scattered, transmission is the incident delta plus the scattered part.
+
+\subsection{Coefficients}
+
+The $a_n,b_n$ follow from continuity of $u_r$, $u_\theta$, $\sigma_{rr}$ and
+$\sigma_{r\theta}$ at $r=a$ --- a $4\times4$ system per order, with columns
+(scattered $P$, scattered $S$, interior $P$, interior $S$) and right-hand side
+built from \eqref{eq:aninc}, or its shear counterpart through
+\eqref{eq:renorm}.  The $c_n$ follow from the corresponding $2\times2$ system
+in $u_\varphi$ and $\sigma_{r\varphi}$.  These are the classical Mie relations
+and are not restated here.
+
+\subsection{Displacement}
+
+For $m=0$ the $L$- and $N$-type fields have no azimuthal component, and with
+$z_n \equiv h^{(1)}_n$,
+\begin{align}
+  \text{$L$-type:}\quad
+    & u_r = a_n\,k_P\,z_n'(k_P r)\,P_n, &
+    & u_\theta = a_n\,\frac{z_n(k_P r)}{r}\,\frac{dP_n}{d\theta}, \label{eq:uL}\\[2pt]
+  \text{$N$-type:}\quad
+    & u_r = b_n\,n(n+1)\,\frac{z_n(k_S r)}{r}\,P_n, &
+    & u_\theta = b_n\!\left[\frac{z_n(k_S r)}{r} + k_S z_n'(k_S r)\right]\!\frac{dP_n}{d\theta}. \label{eq:uN}
+\end{align}
+The $M$-type is purely azimuthal,
+\begin{equation}\label{eq:uM}
+  u_r = u_\theta = 0, \qquad u_\varphi = -\,c_n\,z_n(k_S r)\,\frac{dP_n}{d\theta}.
+\end{equation}
+Throughout, $dP_n/d\theta = P_n^1(\cos\theta)$ in the Condon--Shortley
+convention, which follows from $P_n^1(u) = -\sqrt{1-u^2}\,P_n'(u)$ and
+$dP_n/d\theta = -\sin\theta\,P_n'(u)$, the two coinciding because
+$\sin\theta\ge0$ on $[0,\pi]$.  The combination $P_n^1(\cos\theta)/\sin\theta =
+-P_n'(\cos\theta)$ is finite on the axis, with limit $-n(n+1)/2$.
+
+\subsection{Traction on a plane of constant \texorpdfstring{$z$}{z}}\label{sec:traction}
+
+The state used in \S\ref{sec:rt} is $(\bu,\bta_3)$ with
+$\bta_3 = \bsig\cdot\zhat$.  From
+$\bsig = \lambda(\nabla\cdot\bu)\bI + \mu(\nabla\bu + \nabla\bu\tp)$,
+\begin{equation}\label{eq:tau3}
+  (\bsig\cdot\zhat)_i = \lambda\,(\nabla\cdot\bu)\,\delta_{iz}
+   + \mu\left(\partial_z u_i + \partial_i u_z\right),
+\end{equation}
+so only the $z$-row and $z$-column of the displacement gradient are required,
+and $\nabla\cdot\bu$ is known in closed form from \eqref{eq:div}.
+
+For $m=0$ the field is axisymmetric with no azimuthal component, so
+$\sigma_{r\varphi} = \sigma_{\theta\varphi} = 0$ and the strain reduces to
+\begin{equation}\label{eq:strain}
+\begin{aligned}
+  \varepsilon_{rr} &= \partial_r u_r, &
+  \varepsilon_{\theta\theta} &= \frac{\partial_\theta u_\theta + u_r}{r}, \\
+  \varepsilon_{\varphi\varphi} &= \frac{u_r + \cot\theta\,u_\theta}{r}, &
+  \varepsilon_{r\theta} &= \tfrac12\!\left[\frac{\partial_\theta u_r}{r}
+     + \partial_r u_\theta - \frac{u_\theta}{r}\right].
+\end{aligned}
+\end{equation}
+Each term is finite on the axis: $u_\theta$ carries $dP_n/d\theta\sim\sin\theta$,
+so $\cot\theta\,u_\theta$ is regular and is evaluated through
+$P_n^1/\sin\theta$ rather than by dividing.  Legendre's equation removes the
+second angular derivative,
+\begin{equation}\label{eq:d2P}
+  \frac{d^2P_n}{d\theta^2} = -\cot\theta\,\frac{dP_n}{d\theta} - n(n+1)P_n ,
+\end{equation}
+so no function beyond $P_n$ and $P_n^1$ is needed.  With
+$\bsig = \lambda\,\mathrm{tr}(\varepsilon)\bI + 2\mu\varepsilon$ in the
+orthonormal spherical basis, and $\rhat\cdot\zhat = \cos\theta$,
+$\hat{\boldsymbol\theta}\cdot\zhat = -\sin\theta$,
+$\hat{\boldsymbol\varphi}\cdot\zhat = 0$,
+\begin{equation}\label{eq:tau3sph}
+  \bta_3 = \left(\sigma_{rr}\cos\theta - \sigma_{r\theta}\sin\theta\right)\rhat
+   + \left(\sigma_{r\theta}\cos\theta - \sigma_{\theta\theta}\sin\theta\right)
+     \hat{\boldsymbol\theta}.
+\end{equation}
+The radial derivatives in \eqref{eq:strain} follow from
+\eqref{eq:uL}--\eqref{eq:uM} with
+$z_n'' = \big(n(n+1)/x^2 - 1\big)z_n - (2/x)z_n'$, the spherical Bessel
+equation.
+
+%=====================================================================
+\section{The plane-wave representation}\label{sec:weyl}
+
+\subsection{The identity}
+
+Every outgoing multipole is a superposition of plane waves.  For $z > 0$,
+\begin{equation}\label{eq:weyl}
+  h^{(1)}_n(Kr)\,Y_n^m(\rhat)
+   = \frac{1}{2\pi K\,i^{\,n}}
+     \iint dk_x\,dk_y\;
+     e^{\,i\bk\cdot\br}\;
+     \frac{Y_n^m(\khat)}{k_z},
+   \qquad \bk = (k_z,k_x,k_y),
+\end{equation}
+with $k_z$ on the branch \eqref{eq:branch}.  For $z < 0$ replace $k_z$ by
+$-k_z$ in $\bk$ and in $\khat$, so that the exponential is
+$e^{i(k_xx + k_yy + k_z|z|)}$ in either half-space.  At $n=0$, \eqref{eq:weyl}
+is the classical Weyl identity for $h_0$.
+
+The angular weight is the multipole's own harmonic \emph{evaluated at the
+plane-wave direction}.  This is what makes the spectrum closed-form: no
+transform of the field is involved.
+
+\subsection{The harmonic must be the solid form}\label{sec:solid}
+
+Outside the light circle $k_z$ is imaginary, so $\khat$ is a complex direction
+and its polar angle is complex.  $Y_n^m$ must therefore be evaluated in a form
+that is analytic in its arguments --- the solid harmonic, a homogeneous
+degree-zero ratio of polynomials in $(k_x,k_y,k_z)$.  A representation through
+real polar angles is defined only inside the light circle and silently discards
+the evanescent band, which is most of the domain of integration.
+
+In practice this means evaluating $P_n$, $P_n'$ and $P_n''$ at the complex
+argument $k_z/K$, which \eqref{eq:angexplicit} requires; all three are
+polynomials and take a complex argument without qualification.
+
+%=====================================================================
+\section{The three channel spectra}\label{sec:spectra}
+
+\subsection{Polarisations}
+
+Write $q = |\kperp|$, let $\psi_k$ be the azimuth of $\kperp$, and let
+$k_z^{\pm}$ denote $+k_z$ below the sphere and $-k_z$ above it.  At each
+$\kperp$ the scattered field is a sum of exactly three plane waves: one $P$ at
+$k_{z,P}$ and two shear at $k_{z,S}$.  Their polarisations are
+\begin{equation}\label{eq:pols}
+  \bep_P = \frac{(k_z^{\pm},\,k_x,\,k_y)}{k_P},
+  \qquad
+  \bep_{SV} = \frac{(-q,\;k_z^{\pm}\cos\psi_k,\;k_z^{\pm}\sin\psi_k)}{k_S},
+  \qquad
+  \bep_{SH} = (0,\,-\sin\psi_k,\,\cos\psi_k),
+\end{equation}
+each of unit length, with $\bep_{SV}$ and $\bep_{SH}$ orthogonal to $\bk$.
+They depend on the direction only, not on $n$ or $m$.
+
+\subsection{The angular function and its surface gradient}
+
+Let $A_{nm}$ be the angular function of the potential --- $P_n(\cos\theta)$ at
+$m=0$, $P_n^1(\cos\theta)\cos\varphi$ at $m=1$ --- evaluated at the
+\emph{plane-wave direction}, so that $\cos\theta \to k_z^{\pm}/K$,
+$\sin\theta \to q/K$ and $\varphi \to \psi_k$.  The two transverse vector
+harmonics built from it are
+\begin{equation}\label{eq:vecharm}
+  \nabla_{\!s}A = \frac{\partial A}{\partial\theta}\,\hat{\boldsymbol\theta}
+    + \frac{1}{\sin\theta}\frac{\partial A}{\partial\varphi}\,\hat{\boldsymbol\varphi},
+  \qquad
+  \rhat\times\nabla_{\!s}A
+    = -\frac{1}{\sin\theta}\frac{\partial A}{\partial\varphi}\,\hat{\boldsymbol\theta}
+      + \frac{\partial A}{\partial\theta}\,\hat{\boldsymbol\varphi},
+\end{equation}
+with $\hat{\boldsymbol\theta}$ and $\hat{\boldsymbol\varphi}$ at the plane-wave
+direction identified with $\bep_{SV}$ and $\bep_{SH}$ respectively.
+
+\subsection{The spectra}
+
+With the normalisations of \eqref{eq:weyl} cancelling, and writing
+$D = 2\pi K\,i^{\,n} k_z$ with $K = k_P$ for the $L$-type and $k_S$ for the
+other two,
+\begin{equation}\label{eq:spectra}
+\boxed{\;
+\begin{aligned}
+  \text{$L$-type } (a_n):\quad
+    &\frac{i k_P}{D}\;A_{nm}\;\bep_P,\\[4pt]
+  \text{$N$-type } (b_n):\quad
+    &\frac{i k_S}{D}\left[\frac{\partial A_{nm}}{\partial\theta}\,\bep_{SV}
+      + \frac{1}{\sin\theta}\frac{\partial A_{nm}}{\partial\varphi}\,\bep_{SH}\right],\\[4pt]
+  \text{$M$-type } (c_n):\quad
+    &\frac{-1}{D}\left[-\frac{1}{\sin\theta}\frac{\partial A_{nm}}{\partial\varphi}\,\bep_{SV}
+      + \frac{\partial A_{nm}}{\partial\theta}\,\bep_{SH}\right],
+\end{aligned}\;}
+\end{equation}
+each multiplied by its Mie coefficient and summed over $n$.  The three
+constants $ik_P$, $ik_S$ and $-1$ are independent of $n$ and of $m$.
+
+Explicitly, with $u = k_z^{\pm}/K$ and $s = q/K$,
+\begin{equation}\label{eq:angexplicit}
+\begin{aligned}
+  m=0:\quad & A = P_n(u), &
+    & \frac{\partial A}{\partial\theta} = -s\,P_n'(u), &
+    & \frac{1}{\sin\theta}\frac{\partial A}{\partial\varphi} = 0,\\[4pt]
+  m=1:\quad & A = -s\,P_n'(u)\cos\psi_k, &
+    & \frac{\partial A}{\partial\theta} = \big[{-u}P_n'(u) + s^2P_n''(u)\big]\cos\psi_k, &
+    & \frac{1}{\sin\theta}\frac{\partial A}{\partial\varphi} = P_n'(u)\sin\psi_k .
+\end{aligned}
+\end{equation}
+
+\subsection{Three remarks}
+
+\paragraph{The $L$-type is a multiplier; the others are not.}
+$\bu = \nabla\phi$ gives the $P$ amplitude immediately.
+$\nabla\times\nabla\times(\br\psi)$ carries an explicit position vector, and
+acting on a single plane-wave component,
+\begin{equation}\label{eq:obstruct}
+  \nabla\times\nabla\times\!\left(\br\,e^{i\bk\cdot\br}\right)
+   = e^{i\bk\cdot\br}\big[k_S^2\br - \bk(\bk\cdot\br)\big] - 2i\,\bk\,e^{i\bk\cdot\br},
+\end{equation}
+so the $\br$-dependence cancels only under the $\bk$ integration and not term
+by term.  The results in \eqref{eq:spectra} are nonetheless exact.
+
+\paragraph{Each shear family feeds \emph{both} transverse polarisations.}
+That is the content of \eqref{eq:vecharm}, and it is why \eqref{eq:spectra}
+cannot be written as one amplitude per family.  At $m=0$ the azimuthal
+derivative vanishes, each family collapses onto a single polarisation, and the
+structure is invisible --- which is the case most often written down.
+
+\paragraph{The $M$-type constant carries no factor of $k$.}
+$\nabla\times\nabla\times(\br\,\cdot)$ has one derivative more than
+$\nabla\times(\br\,\cdot)$, so potentials normalised alike give amplitudes
+differing by a power of $k_S$: the constants are $ik_S$ and $-1$ respectively.
+
+%=====================================================================
+\section{Evaluating the representation}\label{sec:eval}
+
+The spectra \eqref{eq:spectra} are what $\bR$ and $\bT$ are built from, and
+need no integration.  Reconstructing the field from them --- to verify the
+construction, or to obtain the field at a point --- requires the integral in
+\eqref{eq:weyl}, and two reductions make it straightforward.
+
+\subsection{The azimuthal integral, in closed form}
+
+For $m=0$ the only azimuthal dependence of the integrand is the plane-wave
+phase and the polarisation.  With $\rho = \sqrt{x^2+y^2}$ and $\varphi$ its
+azimuth,
+\begin{equation}\label{eq:azim}
+  \int_0^{2\pi}\!\! e^{iq\rho\cos(\psi_k-\varphi)}\,d\psi_k = 2\pi J_0(q\rho),
+  \qquad
+  \int_0^{2\pi}\!\!\cos\psi_k\,e^{iq\rho\cos(\psi_k-\varphi)}\,d\psi_k
+    = 2\pi i\cos\varphi\,J_1(q\rho),
+\end{equation}
+and similarly with $\sin\psi_k \to \sin\varphi$.  The double integral collapses
+to a one-dimensional integral in $q$.  The vertical component of the $P$ and
+$SV$ fields pairs with $J_0$ and the horizontal with $J_1$; the $SH$ field,
+having no vertical component, carries only $J_1$.
+
+\subsection{The branch point, removed by substitution}
+
+The integrand carries $1/k_z$, which is singular at $q = K$.  The singularity
+is integrable but a quadrature driven across it converges only algebraically.
+Splitting the path at the light circle and substituting
+\begin{equation}\label{eq:sommer}
+  q = K\sin\theta \;\;(0\le\theta\le\tfrac{\pi}{2}), \qquad
+  q = K\cosh t \;\;(t\ge0),
+\end{equation}
+gives, respectively,
+\begin{equation}
+  \frac{q\,dq}{k_z} = K\sin\theta\,d\theta,
+  \qquad
+  \frac{q\,dq}{k_z} = -\,i\,K\cosh t\,dt,
+\end{equation}
+so the singular factor cancels identically and both pieces are analytic.  This
+is the standard Sommerfeld path.  The upper limit $t_{\max}$ is the one
+convergence parameter; the evanescent branch carries $e^{-K\sinh t\,|z|}$, so
+convergence is geometric and $q_{\max}$ of a few times $K$ suffices unless the
+plane is very close to the sphere.
+
+%=====================================================================
+\section{Reflection and transmission}\label{sec:rt}
+
+\subsection{One-sidedness}
+
+Above the sphere there are no sources, so every scattered wave crossing
+$z = -z_p$ travels in $-z$: the field there is purely up-going.  Below
+$z = +z_p$ it is purely down-going.  The representation \eqref{eq:weyl} with
+$k_z \to -k_z$ above builds this in, so the spectra of \S\ref{sec:spectra} are
+one-sided by construction and no separation step is required.
+
+\subsection{The matrices}
+
+Let the incident wave be of type $\iota\in\{P,SV,SH\}$ with unit amplitude, and
+let $A^{(\iota)}_\nu(\kperp)$ be the amplitude of the outgoing wave of type
+$\nu$ obtained from \eqref{eq:spectra} with the Mie coefficients for that
+incidence, \S\ref{sec:incident}.  Then
+\begin{equation}\label{eq:RT}
+  \bR_{\nu\iota}(\kperp) = A^{(\iota)}_\nu(\kperp)\Big|_{z=-z_p},
+  \qquad
+  \bT_{\nu\iota}(\kperp) = \delta_{\nu\iota}\,(2\pi)^2\delta^2(\kperp-\kperp^0)
+     + A^{(\iota)}_\nu(\kperp)\Big|_{z=+z_p} .
+\end{equation}
+The delta in $\bT$ is the unscattered incident wave \eqref{eq:incspec}: it
+travels in $+z$, so it appears on the lower plane and not the upper one, which
+is why $\bR$ is purely scattered.  In practice the delta is kept symbolically
+and only the scattered part is computed; if a finite lateral grid is used it
+becomes $\delta_{\kperp\kperp^0}/\Delta^2$ with $\Delta$ the grid spacing in
+$\kperp$.
+
+Both matrices are $3\times3$ in polarisation at each $\kperp$, and both carry
+the $e^{ik_zz_p}$ phase of the plane they are referred to; changing $z_p$
+multiplies them by a diagonal phase and nothing else, which is a useful check.
+
+\subsection{State form}
+
+If the response is wanted on the six-component state $(\bu,\bta_3)$ rather than
+on mode amplitudes --- as it is when comparing against a depth-marching
+scheme --- each mode contributes a column
+\begin{equation}\label{eq:state}
+  \begin{pmatrix}\bu\\[2pt]\bta_3\end{pmatrix}_\nu
+  = \begin{pmatrix}
+      \bep_\nu\\[4pt]
+      i\big[\lambda(\bk\cdot\bep_\nu)\zhat + \mu\big(k_z\bep_\nu + (\bep_\nu\!\cdot\!\zhat)\bk\big)\big]
+    \end{pmatrix},
+\end{equation}
+obtained by substituting a single plane wave into \eqref{eq:tau3}.  The six
+columns --- three up, three down --- are independent at every $\kperp$, so a
+state on a plane determines its up- and down-going content uniquely.  With
+displacement alone they would not be: six three-vectors in three dimensions are
+necessarily dependent, and the traction is what separates the two senses.
+
+%=====================================================================
+\section{Summary of the construction}
+
+\begin{enumerate}
+\item Solve the Mie boundary conditions at $r = a$ for $a_n$, $b_n$, $c_n$.
+\item Fix $\kperp$; take $k_{z,P}$ and $k_{z,S}$ on the branch
+      \eqref{eq:branch}, reversing their sign above the sphere.
+\item Evaluate $P_n$, $P_n'$ and $P_n''$ at $k_z/k_P$ and $k_z/k_S$ ---
+      complex arguments, polynomial form --- and assemble the angular function
+      and its two surface derivatives, \eqref{eq:angexplicit}.
+\item Form the polarisation-resolved amplitudes \eqref{eq:spectra}, weight by
+      $a_n$, $b_n$, $c_n$, and sum over $n$.  Both shear families contribute to
+      both transverse polarisations unless $m=0$.
+\item Assemble $\bR$ and $\bT$ from \eqref{eq:RT}, or the state columns from
+      \eqref{eq:state}.
+\end{enumerate}
+
+\noindent
+No spatial grid, no transform, and no lateral truncation enters at any stage.
+The only quadrature is the optional reconstruction of \S\ref{sec:eval}, whose
+single parameter is the upper limit of a geometrically convergent integral.
+
+\paragraph{On the azimuthal reduction.}  The closed forms \eqref{eq:azim} are
+stated for $m=0$, where the only azimuthal dependence is the plane-wave phase.
+At $m=1$ the angular function contributes its own $\cos\psi_k$, which multiplies
+the polarisations' $\cos\psi_k$ and $\sin\psi_k$ and produces $J_0$, $J_1$ and
+$J_2$ terms.  That bookkeeping is avoidable: the $\psi_k$ integrand is smooth
+and $2\pi$-periodic, so a uniform rule converges spectrally and the same
+quadrature serves every $m$.  Nothing in \eqref{eq:spectra} depends on which
+route is taken --- the reduction is only for reconstructing the field, not for
+forming the response.
+
+\end{document}

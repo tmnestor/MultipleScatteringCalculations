@@ -1,0 +1,363 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=24mm, top=28mm, bottom=28mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape The Voxel \texorpdfstring{$T$}{T}-Matrix}
+\fancyhead[R]{\small\itshape 19 September 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.12}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bs}{\mathbf{s}}
+\newcommand{\br}{\mathbf{r}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bR}{\mathbf{R}}
+\newcommand{\bpsi}{\boldsymbol{\psi}}
+\newcommand{\tp}{^{\mkern-1.5mu\mathsf{T}}}
+
+\title{\bfseries The Voxel \texorpdfstring{$T$}{T}-Matrix\\[4pt]
+\large Discretising an elastic scatterer into cubes: the matched propagator,\\
+and the accuracy of the result against exact Mie}
+\author{}
+\date{19 September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A scatterer of arbitrary shape can be represented as a lattice of small cubes,
+each carrying an analytic single-site $T$-matrix, coupled through the
+elastodynamic propagator and solved by Foldy--Lax.  This note sets out that
+construction, identifies the condition the propagator must satisfy for the
+scheme to be consistent, and measures the accuracy that results.
+
+The condition is a pairing.  A single-site $T$-matrix closes on a particular
+functional of the internal field --- the value at the cube centre, or the
+average over the cube --- and the propagator it is used with must close on the
+same one.  The collocation closure requires the propagator averaged over the
+\emph{receiver cell only}: one power of the cell form factor, not the two of a
+Galerkin pairing and not the none of a point evaluation.
+
+That average is given in closed form.  It is regular at every non-zero lattice
+separation, its far field is a scalar multiple of the point propagator per
+mode, and near contact it needs a quadrature order that follows the separation.
+
+Accuracy is measured against the exact elastic Mie solution for a sphere, which
+is the one arbiter that is both exact and laterally varying.  Two controls are
+needed for the comparison to measure the method rather than the test: the
+observation distance must reach the far field, and the staircase volume of the
+voxelised body must be divided out.  With those in place the matched pairing is
+$5.3\times$ closer to Mie than a point propagator in the Rayleigh regime, and
+the method's own limits appear clearly at higher frequency.
+\end{abstract}
+
+\tableofcontents
+
+%=====================================================================
+\section{The construction}\label{sec:construction}
+
+\subsection{Foldy--Lax on a lattice of cubes}
+
+Partition the scatterer into $N$ cubes of side $d$ on a regular lattice, with
+centres $\br_m$.  Each cube is represented by a local $T$-matrix $\bT_{\rm loc}$
+acting on a nine-component state --- three displacements and six Voigt strains,
+\begin{equation}
+  \bpsi = \big(u_z,\,u_x,\,u_y,\;\varepsilon_{zz},\,\varepsilon_{xx},\,
+               \varepsilon_{yy},\,2\varepsilon_{xy},\,2\varepsilon_{zy},\,
+               2\varepsilon_{zx}\big)\tp,
+\end{equation}
+which is the smallest state closed under the coupling: the source a cube
+radiates depends on both the displacement and the strain it experiences.
+
+The exciting field at cube $m$ is the incident field plus the field radiated by
+every other cube,
+\begin{equation}\label{eq:foldy}
+  \bpsi_m = \bpsi^{\rm inc}_m + \sum_{n\neq m} \bP(\br_m-\br_n)\,\bT_{\rm loc}\,\bpsi_n,
+  \qquad\text{that is}\qquad
+  \big(\bI - \bP\bT\big)\bpsi = \bpsi^{\rm inc},
+\end{equation}
+with $\bP(\bs)$ the $9\times9$ propagator between cubes at separation $\bs$.
+The composite $T$-matrix of the whole body follows by summing the sources,
+$\bT_{\rm comp} = \sum_m \bT_{\rm loc}\bpsi_m$.
+
+The self term is excluded from the sum: a cube's action on itself is contained
+in $\bT_{\rm loc}$, which is where the singular part of the Green's tensor and
+its static (Eshelby) content live.
+
+\subsection{The propagator}
+
+$\bP$ is assembled from the elastodynamic Green's tensor and its derivatives,
+in blocks
+\begin{equation}\label{eq:Pblocks}
+  \bP = \begin{pmatrix} \bG & \mathbf{C}\\[2pt] \mathbf{H} & \mathbf{S}\end{pmatrix},
+\end{equation}
+where $\bG$ maps force to displacement, $\mathbf{S}$ maps stress source to
+strain, and $\mathbf{C},\mathbf{H}$ are the cross couplings obtained by Voigt
+contraction of $\partial G$ and $\partial\partial G$.  Written through the
+Kupradze representation, every block is built from the two scalar Helmholtz
+kernels $g_P$ and $g_S$ and their Cartesian derivative tensors, so the $P$ and
+$S$ content is separable --- which \S\ref{sec:average} requires.
+
+%=====================================================================
+\section{The pairing condition}\label{sec:pairing}
+
+\subsection{Two closures}
+
+Volume-averaging the Lippmann--Schwinger equation with a uniform internal
+ansatz gives
+\begin{equation}\label{eq:double}
+  \langle\nabla\bu\rangle = \langle\nabla\bu^0\rangle
+   + \left[\frac{1}{V}\iint \partial\partial G(\bx-\bx')\,d\bx\,d\bx'\right]\Delta c\;E,
+\end{equation}
+a \emph{double} average, while evaluating the same equation at the cube centre
+gives
+\begin{equation}\label{eq:single}
+  \nabla\bu(0) = \nabla\bu^0(0)
+   + \left[\int_V \partial\partial G(-\bx')\,d\bx'\right]\Delta c\;E,
+\end{equation}
+a \emph{single} average.  Neither is wrong: one closes on the volume average of
+the internal field, the other on its centre value.  For an ellipsoid they
+coincide, because Eshelby's uniformity theorem makes the internal field
+uniform; for a cube they differ.
+
+\subsection{The condition}
+
+A $T$-matrix built on \eqref{eq:single} must be used with a propagator that
+also closes on the centre value.  The propagator between two cubes therefore
+carries \emph{one} power of the cell form factor --- the average over the
+receiver cell, with the source treated as a point --- and not two.  Writing the
+cell indicator's transform,
+\begin{equation}\label{eq:formfactor}
+  \text{single average}\;\;\longleftrightarrow\;\;
+    \operatorname{sinc}(k_xh)\operatorname{sinc}(k_yh)\operatorname{sinc}(k_zh),
+  \qquad h = d/2,
+\end{equation}
+against the squared factor that a Galerkin pairing produces.  A point
+propagator carries neither and is not a consistent partner for either closure.
+
+\paragraph{Per mode.}  The form factor must be applied to each mode separately.
+The $P$ and $S$ poles carry different $k_z$ at the same lateral wavenumber, so
+a single scalar factor applied to the assembled $9\times9$ is incorrect.
+
+%=====================================================================
+\section{The single cell average}\label{sec:average}
+
+\subsection{Definition and regularity}
+
+For cubes at separation $\bs$ on the lattice, the matched propagator is
+\begin{equation}\label{eq:avgdef}
+  \langle\bP\rangle(\bs) = \frac{1}{d^3}\int_{|\mathbf{u}|_\infty\le h}
+     \bP(\bs-\mathbf{u})\,d\mathbf{u}, \qquad h = d/2 .
+\end{equation}
+With a point source and a cubic receiver cell, the closest approach of the cell
+to the source is its near face, so
+\begin{equation}\label{eq:regular}
+  |\bs-\mathbf{u}| \;\ge\; d/2 \qquad\text{for every lattice separation }\bs\neq0,
+\end{equation}
+and the integrand in \eqref{eq:avgdef} is regular everywhere on the domain.
+The double average has no such property: its integrand reaches $r=0$ whenever
+the cells touch.
+
+\subsection{The far field, in closed form}
+
+The midpoint error of a cell average is
+\begin{equation}\label{eq:tail}
+  \langle g\rangle - g = \frac{d^2}{24}\nabla^2 g + O(d^4),
+\end{equation}
+and for a Helmholtz kernel $\nabla^2 g_c = -\kappa_c^2 g_c$ exactly away from
+the origin.  Derivatives commute with $\nabla^2$, so the same holds for every
+derivative tensor and hence for every block of \eqref{eq:Pblocks}.  Therefore,
+away from contact,
+\begin{equation}\label{eq:scalartail}
+  \langle\bP\rangle = \Big(1 - \frac{\kappa_c^2 d^2}{24}\Big)\bP + O(d^4)
+  \qquad\text{per mode } c\in\{P,S\},
+\end{equation}
+the two modes carrying their own $\kappa$ and therefore not combinable before
+the average is taken.
+
+\subsection{Quadrature near contact}
+
+Inside the near shell \eqref{eq:scalartail} is not accurate enough and
+\eqref{eq:avgdef} is integrated directly.  The integrand is regular but peaked
+near the face of the cell closest to the source, and a Gauss rule converges
+slowly against a nearby peak.  The difficulty is a property of the separation
+alone,
+\begin{equation}\label{eq:qparam}
+  q(\bs) = \frac{\big|\max(|\bs|-h,\,0)\big|}{d},
+\end{equation}
+componentwise in the clamp, which takes the values $0.5$ for a face neighbour,
+$1/\sqrt2$ for an edge neighbour and $\sqrt3/2$ for a corner one.  Convergence
+of a product Gauss rule against a $24$-point reference:
+
+\begin{center}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+neighbour & $g=4$ & $g=8$ & $g=12$ & $g=16$\\
+\midrule
+face $(q=0.50)$   & $1.8\times10^{-2}$ & $2.9\times10^{-5}$ & $3.6\times10^{-8}$ & $1.4\times10^{-10}$\\
+edge $(q=0.71)$   & $6.5\times10^{-4}$ & $9.0\times10^{-8}$ & $1.6\times10^{-10}$ & ---\\
+corner $(q=0.87)$ & $6.1\times10^{-5}$ & $2.3\times10^{-10}$ & --- & ---\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The order should follow $q$: $16$ points per axis for face
+neighbours, $12$ for edge, $8$ for corner, and the base order elsewhere.  Only
+six and twelve separations respectively are expensive, so the adaptive rule
+costs almost nothing.}
+\end{center}
+
+\noindent
+Two independent evaluations of \eqref{eq:avgdef} --- direct quadrature and the
+closed form \eqref{eq:scalartail} --- agree to $O(d^4)$, halving $d$ reducing
+their difference by sixteen ($5.3\times10^{-4}$, $3.4\times10^{-5}$,
+$2.1\times10^{-6}$ at $d = 0.2,\,0.1,\,0.05$), and the average reduces to the
+point propagator at second order as \eqref{eq:tail} requires.
+
+\subsection{Cost}
+
+$\bP$ depends only on the separation, so on a regular lattice there are
+$O(n^3)$ distinct blocks rather than $O(N^2)$ pairs.  Building the kernel once
+per distinct separation --- which is what an FFT-accelerated solver does
+anyway --- makes the averaged propagator affordable: the few near-contact
+separations needing high-order quadrature are evaluated once, whatever the cell
+count.
+
+%=====================================================================
+\section{Measuring the accuracy}\label{sec:measure}
+
+The exact elastic Mie solution for a homogeneous sphere is the natural arbiter:
+it is exact, and unlike a layered reference it is laterally varying.  Two
+things must be controlled for the comparison to measure the discretisation
+rather than the test.
+
+\subsection{The observation distance}
+
+If the scattered field is compared through a far-field asymptotic on one side
+and an exact expression on the other, the neglected $1/(kr)$ term must be
+small compared with the quantity being measured.  It is not a weak condition.
+Measured at $ka = 0.1$ with the sphere divided $4$ per edge:
+
+\begin{center}
+\begin{tabular}{@{}rrr@{}}
+\toprule
+$r/a$ & $k_S r$ & volume-corrected error\\
+\midrule
+$100$ & $10$ & $0.5052$\\
+$500$ & $50$ & $0.0562$\\
+$5\times10^{3}$ & $500$ & $0.0088$\\
+$5\times10^{4}$ & $5000$ & $0.0088$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The comparison is converged only from $k_Sr\sim500$.  At
+$k_Sr=50$ it overstates the error sixfold.}
+\end{center}
+
+\subsection{The staircase}
+
+A cubic lattice does not fill a sphere, and its coverage is not monotonic in
+the number of cells per edge.  For $n_{\rm sub} = 3,4,6$ the voxel volume
+exceeds the sphere's by $26\%$, $4.7\%$ and $17\%$, and the raw error tracks
+that dilution to within a factor $1.4$.  Two consequences follow.
+
+First, the raw error must be divided by the volume ratio before it says
+anything about the propagator.  Second, a refinement ladder in $n_{\rm sub}$
+measures the geometry, not the method: the error moves non-monotonically
+because the dilution does.  The comparison that isolates the discretisation is
+at \emph{fixed} geometry --- the same voxel set, the same staircase, one
+propagator exchanged for the other --- and its stability across resolutions is
+what makes it meaningful.
+
+%=====================================================================
+\section{Results}\label{sec:results}
+
+Volume-corrected far-field error against exact Mie, for a sphere with
+$\Delta\lambda = 2$, $\Delta\mu = 1$, $\Delta\rho = 0.1$ on a background
+$\alpha=5$, $\beta=3$, $\rho=2.5$:
+
+\begin{center}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$ka$ & $n_{\rm sub}$ & point propagator & matched average & ratio\\
+\midrule
+$0.1$ & $3$ & $0.0074$ & $\mathbf{0.0014}$ & $5.28$\\
+      & $4$ & $0.0088$ & $\mathbf{0.0017}$ & $5.24$\\
+      & $6$ & $0.0107$ & $\mathbf{0.0019}$ & $5.72$\\
+\midrule
+$0.5$ & $3$ & $0.0454$ & $\mathbf{0.0394}$ & $1.15$\\
+      & $4$ & $0.0507$ & $\mathbf{0.0436}$ & $1.16$\\
+      & $6$ & $0.0539$ & $\mathbf{0.0451}$ & $1.19$\\
+\midrule
+$1.5$ & $6$ & $0.5286$ & $\mathbf{0.5164}$ & $1.02$\\
+      & $8$ & $0.5452$ & $\mathbf{0.5319}$ & $1.02$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The improvement from matching the pairing is stable to
+$8.8\%$ across resolutions at $ka=0.1$ and $3.7\%$ at $ka=0.5$.}
+\end{center}
+
+\subsection{The three regimes}
+
+\paragraph{Rayleigh, $ka\lesssim0.1$.}  The matched average reaches $0.19\%$,
+at or below the shape-factor floor of representing a sphere by cubes.  The
+propagator error is essentially removed and what remains is geometric.
+
+\paragraph{Transition, $ka\sim0.5$.}  The geometric floor is $4.5\%$, some
+twenty-four times larger, and it absorbs most of the improvement.  The pairing
+still helps, by a factor stable across resolutions, but the method is becoming
+geometry limited.
+
+\paragraph{Resonance, $ka\gtrsim1$.}  The error is $52\%$ and the propagator is
+not what is wrong: the sub-cell $T$-matrices remain inside their Rayleigh
+validity ($ka_{\rm sub} = 0.25$ at $n_{\rm sub}=6$), and refining to
+$n_{\rm sub}=8$ makes the error slightly \emph{worse} because the dilution is
+non-monotonic.  What fails is the staircase representation of a curved boundary
+at a wavelength comparable with the radius.  This is a limit of the
+discretisation itself, not of the propagator within it.
+
+%=====================================================================
+\section{Summary}
+
+\begin{enumerate}
+\item Partition the body into cubes; give each the analytic single-site
+      $T$-matrix for its contrast.
+\item Couple them with the propagator averaged over the \emph{receiver} cell,
+      \eqref{eq:avgdef}, applied per mode --- matching the collocation closure
+      of the single-site $T$-matrix.
+\item Use the closed form \eqref{eq:scalartail} beyond a near shell and direct
+      quadrature inside it, with the order chosen from \eqref{eq:qparam}.
+\item Solve \eqref{eq:foldy}; build the kernel once per distinct separation.
+\item When comparing against an exact reference, reach the far field and
+      divide out the staircase volume; compare at fixed geometry.
+\end{enumerate}
+
+\noindent
+The method is accurate to a fraction of a percent in the Rayleigh regime,
+degrades to a few percent through the transition, and is geometry limited
+beyond $ka\sim1$, where a representation that follows the boundary rather than
+staircasing it is required instead.
+
+\end{document}
