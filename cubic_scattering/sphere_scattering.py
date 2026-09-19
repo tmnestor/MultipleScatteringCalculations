@@ -25,6 +25,7 @@ from scipy.special import hankel1, jv, lpmv
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+from .cell_averaged_pair import averaged_pair_block_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
@@ -145,6 +146,9 @@ def compute_sphere_foldy_lax(
     n_sub: int,
     k_hat: NDArray | None = None,
     wave_type: str = "S",
+    *,
+    cell_average: bool = True,
+    n_gauss: int | None = None,
 ) -> SphereDecompositionResult:
     """Compute sphere T-matrix via Foldy-Lax decomposition.
 
@@ -159,6 +163,17 @@ def compute_sphere_foldy_lax(
         n_sub: Number of sub-cells per edge of bounding cube.
         k_hat: Unit incident direction (default z-hat).
         wave_type: 'S' or 'P'.
+        cell_average: Use the SINGLE (sinc^1) receiver-cell average in place of
+            the point propagator.  The single-site closure here is collocation
+            (T9 closes on the cube-centre value), so the matching propagator is
+            the single average; the point propagator is no average at all and
+            is therefore an unmatched pair.  Default True, on the measurement in
+            ``scripts/gate_sphere_cell_average_vs_mie.py``: against exact Mie at
+            fixed geometry it is 5.2-5.7x closer at ka = 0.1 and 1.15-1.19x at
+            ka = 0.5, stable across three resolutions.  Pass False to recover
+            the pre-2026-09-19 point-propagator behaviour.
+        n_gauss: Gauss points per axis for that average.  ``None`` picks the
+            order from the separation, which the near neighbours require.
 
     Returns:
         SphereDecompositionResult with composite T-matrix.
@@ -170,15 +185,46 @@ def compute_sphere_foldy_lax(
     rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
+    # a_sub is the sub-cell HALF-width, so the cell side -- and the centre
+    # spacing -- is twice it.  Getting that factor wrong would scale the cell
+    # average by 2 in each axis and still leave every symmetry intact.
+    pitch = 2.0 * a_sub
+
+    def _direct(r_vec: NDArray) -> NDArray:
+        if cell_average:
+            return averaged_pair_block_9x9(r_vec, omega, ref, pitch, n_gauss=n_gauss)
+        return _propagator_block_9x9(r_vec, omega, ref)
+
+    # The propagator depends only on the separation, and the centres lie on a
+    # regular grid, so there are only O(n_sub^3) distinct blocks rather than
+    # O(N^2).  That is what makes the averaged route affordable at all.
+    cache: dict[tuple[int, int, int], NDArray] = {}
+
+    def _block(r_vec: NDArray) -> NDArray:
+        key = (
+            int(round(float(r_vec[0]) / pitch)),
+            int(round(float(r_vec[1]) / pitch)),
+            int(round(float(r_vec[2]) / pitch)),
+        )
+        # Keyed on the lattice offset, so valid only if the centres really do
+        # lie on that lattice.  Verified rather than assumed: a silent mis-key
+        # would return a propagator for the wrong separation, and every
+        # symmetry and reciprocity test would still pass.
+        if float(np.max(np.abs(np.asarray(r_vec) - pitch * np.array(key)))) > 1.0e-9 * pitch:
+            return _direct(r_vec)
+        hit = cache.get(key)
+        if hit is None:
+            hit = _direct(r_vec)
+            cache[key] = hit
+        return hit
+
     # Build 9N x 9N propagator (off-diagonal only)
     P_tilde = np.zeros((9 * N, 9 * N), dtype=complex)
     for m in range(N):
         for n in range(N):
             if m != n:
                 r_vec = centres[m] - centres[n]
-                P_tilde[9 * m : 9 * m + 9, 9 * n : 9 * n + 9] = _propagator_block_9x9(
-                    r_vec, omega, ref
-                )
+                P_tilde[9 * m : 9 * m + 9, 9 * n : 9 * n + 9] = _block(r_vec)
 
     # Block-diagonal T_tilde
     T_block = np.kron(np.eye(N, dtype=complex), T_loc)
@@ -188,9 +234,7 @@ def compute_sphere_foldy_lax(
     cond_num = float(np.linalg.cond(A_mat))
 
     # Incident field
-    psi_inc = _build_incident_field_coupled(
-        centres, omega, ref, k_hat=k_hat, wave_type=wave_type
-    )
+    psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
     # Solve
     psi_exc = np.linalg.solve(A_mat, psi_inc)
@@ -266,9 +310,7 @@ def _spherical_jn_deriv(n: int, z: complex) -> complex:
     """
     if abs(z) < 1e-30:
         return 1.0 / 3.0 if n == 1 else 0.0
-    return complex(
-        (n / z) * _spherical_jn_complex(n, z) - _spherical_jn_complex(n + 1, z)
-    )
+    return complex((n / z) * _spherical_jn_complex(n, z) - _spherical_jn_complex(n + 1, z))
 
 
 def _spherical_h1_deriv(n: int, z: complex) -> complex:
@@ -276,9 +318,7 @@ def _spherical_h1_deriv(n: int, z: complex) -> complex:
 
     h_n^(1)'(z) = (n/z) h_n^(1)(z) - h_n^(1)_{n+1}(z)
     """
-    return complex(
-        (n / z) * _spherical_h1_complex(n, z) - _spherical_h1_complex(n + 1, z)
-    )
+    return complex((n / z) * _spherical_h1_complex(n, z) - _spherical_h1_complex(n + 1, z))
 
 
 def _mie_pwave_fields(
@@ -331,11 +371,7 @@ def _mie_pwave_fields(
     # sigma_rr = -(lam+2mu) k^2 z_n - 4mu k z_n'/r + 2mu n(n+1) z_n/r^2
     # Derived from: sigma_rr = lam(-k^2 z_n) + 2mu k^2 z_n''
     # with z_n'' eliminated via Bessel equation
-    srr = (
-        -(lam + 2.0 * mu) * k**2 * zn
-        - 4.0 * mu * k * zn_p / r
-        + 2.0 * mu * n * (n + 1) * zn / r**2
-    )
+    srr = -(lam + 2.0 * mu) * k**2 * zn - 4.0 * mu * k * zn_p / r + 2.0 * mu * n * (n + 1) * zn / r**2
 
     # sigma_rtheta = 2mu [k z_n' - z_n/r] / r
     srt = 2.0 * mu * (k * zn_p - zn / r) / r
@@ -446,9 +482,7 @@ def _mie_matrix_psv(
     kS_in = omega / beta_in
 
     # Scattered P (outgoing h1, exterior)
-    ur_Ps, ut_Ps, srr_Ps, srt_Ps = _mie_pwave_fields(
-        n, kP_out, a, lam_out, mu_out, "h1"
-    )
+    ur_Ps, ut_Ps, srr_Ps, srt_Ps = _mie_pwave_fields(n, kP_out, a, lam_out, mu_out, "h1")
     # Scattered S (outgoing h1, exterior)
     ur_Ss, ut_Ss, srr_Ss, srt_Ss = _mie_swave_fields(n, kS_out, a, mu_out, "h1")
     # Interior P (regular j)
@@ -685,9 +719,7 @@ def compute_elastic_mie(
         rhs_sh = np.array(
             [
                 -coeff_sh * j_inc,
-                -coeff_sh
-                * ref.mu
-                * (omega / ref.beta * _spherical_jn_deriv(n, z_inc) - j_inc / radius),
+                -coeff_sh * ref.mu * (omega / ref.beta * _spherical_jn_deriv(n, z_inc) - j_inc / radius),
             ],
             dtype=complex,
         )
@@ -822,11 +854,32 @@ def mie_extract_effective_contrasts(mie_result: MieResult) -> MieEffectiveContra
 
 
 def _dPn_dtheta(n: int, theta: float) -> float:
-    """Derivative dP_n(cos theta)/dtheta via finite differences."""
-    dt = 1e-8
-    Pn_p = float(lpmv(0, n, np.cos(theta + dt)))
-    Pn_m = float(lpmv(0, n, np.cos(theta - dt)))
-    return (Pn_p - Pn_m) / (2.0 * dt)
+    """Derivative dP_n(cos theta)/dtheta, in closed form.
+
+    With u = cos(theta) and the Condon-Shortley convention that ``lpmv`` uses,
+    ``P_n^1(u) = -sqrt(1-u^2) P_n'(u)``, while
+    ``dP_n/dtheta = -sin(theta) P_n'(u)``.  Since ``sin(theta) >= 0`` on
+    ``[0, pi]`` the two coincide:
+
+        dP_n/dtheta = P_n^1(cos theta) = lpmv(1, n, cos theta).
+
+    THIS WAS A FINITE DIFFERENCE, with ``dt = 1e-8``.  A central difference at
+    that step carries a round-off error of order ``eps/dt = 1e-8``, so every
+    Mie displacement in this package was accurate only to about seven digits,
+    and any comparison against Mie inherited that as a floor.  It is what made
+    the exact Mie traction disagree with its Mathematica derivation at 7e-9 --
+    a magnitude too large for round-off and too small for a wrong formula.
+    Checked against mpmath: the closed form agrees to every printed digit where
+    the difference agreed to seven.
+
+    Args:
+        n: Degree.
+        theta: Polar angle, radians.
+
+    Returns:
+        dP_n(cos theta)/dtheta.
+    """
+    return float(lpmv(1, n, np.cos(theta)))
 
 
 def _dPn1_dtheta(n: int, theta: float) -> float:
@@ -849,17 +902,101 @@ def _dPn1_dtheta(n: int, theta: float) -> float:
 
 
 def _Pn1_over_sintheta(n: int, theta: float) -> float:
-    """P_n^1(cos theta) / sin(theta).
+    """P_n^1(cos theta) / sin(theta), regular on the axis.
 
-    Uses the identity P_n^1 = -dP_n/d(cos theta) = dP_n/dtheta * (-1/(-sin theta))
-    = dP_n/dtheta. So P_n^1/sin(theta) = dP_n/dtheta / sin(theta).
+    Since ``P_n^1(u) = -sqrt(1-u^2) P_n'(u)``, the ratio is simply
+    ``-P_n'(cos theta)``, which is finite everywhere; the division is only a
+    convenient way to evaluate it away from the axis.
 
-    Limit as theta -> 0 or pi: n(n+1)/2.
+    THE AXIS LIMIT HAD THE WRONG SIGN.  The limit is ``-P_n'(1) = -n(n+1)/2``,
+    not ``+n(n+1)/2``: at n = 1 the ratio is ``-sin(theta)/sin(theta) = -1``
+    for every theta, so the continuous value is -1 while the old branch
+    returned +1.  The defect was latent because it fires only when
+    ``|sin(theta)| < 1e-12`` -- exactly on the symmetry axis, which the
+    far-field angle sweeps never sample.  It matters here because the traction
+    is evaluated on planes of constant z that are centred on that axis.
+
+    Args:
+        n: Degree.
+        theta: Polar angle, radians.
+
+    Returns:
+        P_n^1(cos theta) / sin(theta).
     """
     sin_t = np.sin(theta)
     if abs(sin_t) < 1e-12:
-        return n * (n + 1) / 2.0
+        return -n * (n + 1) / 2.0
     return _dPn_dtheta(n, theta) / sin_t
+
+
+def mie_toroidal_displacement(
+    mie_result: MieResult,
+    r_points: NDArray[np.floating],
+    coeffs: NDArray[np.complexfloating] | None = None,
+) -> NDArray[np.complexfloating]:
+    """The M-type (toroidal) scattered displacement, axisymmetric.
+
+    WHY THIS IS SEPARATE FROM ``mie_scattered_displacement``.  That evaluator
+    carries the L-type (``a_n``) and N-type (``b_n``) families, which is what an
+    axial P wave excites.  The M-type is the third family,
+
+        u = curl(r chi),  chi = z_n(kS r) P_n(cos theta),
+
+    and for an axisymmetric chi it is purely azimuthal:
+
+        u_r = u_theta = 0,      u_phi = -z_n(kS r) dP_n/dtheta .
+
+    It is NOT added to ``mie_scattered_displacement`` silently, and it is not
+    driven by ``mie_result.c_n`` by default, because ``c_n`` is the m = 1 SH
+    channel -- the response to SH incidence -- and is generally non-zero even in
+    a MieResult built for P incidence.  Folding it in unconditionally would
+    change every existing result by adding a toroidal field that axial P
+    incidence does not excite.
+
+    What this is for: an exact M-type arbiter, so that a plane-wave spectrum
+    for the SH channel can be tested the way the SV one was.  Supply ``coeffs``
+    to select the multipole content.
+
+    Args:
+        mie_result: Provides the background medium and frequency.
+        r_points: Observation points, shape (M, 3), ordered (z, x, y), outside
+            the sphere.
+        coeffs: Toroidal coefficients, shape (n_max+1,).  Defaults to
+            ``mie_result.c_n``, which is meaningful only if the caller intends
+            the m = 1 SH channel's radial content in an m = 0 geometry -- so it
+            is usually given explicitly.
+
+    Returns:
+        Scattered displacement, shape (M, 3), complex, ordered (z, x, y).
+    """
+    ref = mie_result.ref
+    kS = mie_result.omega / ref.beta
+    n_max = mie_result.n_max
+    cs = mie_result.c_n if coeffs is None else np.asarray(coeffs)
+
+    pts = np.asarray(r_points, dtype=float)
+    out = np.zeros((pts.shape[0], 3), dtype=complex)
+
+    for idx in range(pts.shape[0]):
+        pos = pts[idx]
+        r = float(np.linalg.norm(pos))
+        if r < 1e-14:
+            continue
+        cos_t = pos[0] / r
+        sin_t = np.sqrt(max(0.0, 1.0 - cos_t**2))
+        theta = np.arccos(np.clip(cos_t, -1.0, 1.0))
+        if sin_t > 1e-12:
+            cos_p, sin_p = pos[1] / (r * sin_t), pos[2] / (r * sin_t)
+        else:
+            cos_p, sin_p = 1.0, 0.0
+
+        u_phi = 0.0j
+        for n in range(1, n_max + 1):
+            u_phi += -cs[n] * _spherical_h1_complex(n, kS * r) * _dPn_dtheta(n, theta)
+
+        # phi_hat = (0, -sin(phi), cos(phi)) in the package's (z, x, y).
+        out[idx] = np.array([0.0, -u_phi * sin_p, u_phi * cos_p])
+    return out
 
 
 def mie_scattered_displacement(
@@ -943,6 +1080,157 @@ def mie_scattered_displacement(
     return u_scat
 
 
+def _spherical_h1_deriv2(n: int, z: complex) -> complex:
+    """Second derivative h_n^(1)''(z), from the spherical Bessel equation.
+
+    ``z^2 w'' + 2 z w' + (z^2 - n(n+1)) w = 0`` gives
+
+        w'' = (n(n+1)/z^2 - 1) w - (2/z) w' ,
+
+    which costs two function values rather than the four a recurrence in n
+    would need, and is independent of the recurrence used for ``w'`` -- so a
+    slip in one is not hidden by the same slip in the other.
+
+    Args:
+        n: Order.
+        z: Argument.
+
+    Returns:
+        h_n^(1)''(z).
+    """
+    h = _spherical_h1_complex(n, z)
+    hp = _spherical_h1_deriv(n, z)
+    return complex((n * (n + 1) / z**2 - 1.0) * h - (2.0 / z) * hp)
+
+
+def mie_scattered_traction(
+    mie_result: MieResult,
+    r_points: NDArray[np.floating],
+) -> NDArray[np.complexfloating]:
+    """Exact Mie scattered TRACTION on planes of constant z: tau_3 = sigma . zhat.
+
+    WHY THIS EXISTS.  The boundary-condition matrices carry sigma_rr and
+    sigma_rtheta at arbitrary radius, because those are the components a
+    spherical boundary needs.  A plane of constant z needs the Cartesian
+    z-traction, which also requires sigma_thetatheta and sigma_phiphi.  Those
+    existed nowhere, in Python or in Mathematica, before
+    ``Mathematica/MieSphericalWaves.wl``.
+
+    THE m = 0 SIMPLIFICATION.  For P incidence along z the field is
+    axisymmetric with no azimuthal component, so ``sigma_rphi`` and
+    ``sigma_thetaphi`` vanish identically and the strain reduces to
+
+        e_rr = d_r u_r
+        e_tt = (d_theta u_theta + u_r) / r
+        e_pp = (u_r + cot(theta) u_theta) / r
+        e_rt = [ (d_theta u_r)/r + d_r u_theta - u_theta/r ] / 2
+
+    Every one of those stays finite on the axis, which matters here because the
+    plane directly above the sphere is centred on it: ``u_theta`` carries a
+    factor ``dP_n/dtheta ~ sin(theta)``, so ``cot(theta) u_theta`` is regular,
+    and it is evaluated through ``_Pn1_over_sintheta`` rather than by dividing.
+
+    Using Legendre's equation to remove the second derivative,
+
+        d2P_n/dtheta^2 = -cot(theta) dP_n/dtheta - n(n+1) P_n ,
+
+    so no new special function is needed.
+
+    Validated against ``Mathematica/MieSphericalWaves_reference.json``, whose
+    stresses were derived in Cartesian -- an independent route to this one --
+    and satisfy Navier exactly.
+
+    Args:
+        mie_result: Output of ``compute_elastic_mie`` (P incidence along z).
+        r_points: Observation points, shape (M, 3), ordered (z, x, y), outside
+            the sphere.
+
+    Returns:
+        Scattered traction on the plane normal to z, shape (M, 3), complex,
+        ordered (z, x, y).
+    """
+    ref = mie_result.ref
+    omega = mie_result.omega
+    n_max = mie_result.n_max
+    kP, kS = omega / ref.alpha, omega / ref.beta
+    lam, mu = ref.lam, ref.mu
+
+    pts = np.asarray(r_points, dtype=float)
+    out = np.zeros((pts.shape[0], 3), dtype=complex)
+
+    for idx in range(pts.shape[0]):
+        pos = pts[idx]
+        r = float(np.linalg.norm(pos))
+        if r < 1e-14:
+            continue
+        cos_t = pos[0] / r
+        sin_t = np.sqrt(max(0.0, 1.0 - cos_t**2))
+        theta = np.arccos(np.clip(cos_t, -1.0, 1.0))
+        if sin_t > 1e-12:
+            cos_p, sin_p = pos[1] / (r * sin_t), pos[2] / (r * sin_t)
+        else:
+            cos_p, sin_p = 1.0, 0.0
+
+        u_r = u_t = dur_dr = dut_dr = dur_dt = dut_dt = cot_ut = 0.0j
+
+        for n in range(n_max + 1):
+            an, bn = mie_result.a_n[n], mie_result.b_n[n]
+
+            p_n = float(lpmv(0, n, cos_t))
+            # dP_n/dtheta and cot(theta) dP_n/dtheta, both through the
+            # regular combination P_n^1/sin(theta).
+            pn1_over_s = _Pn1_over_sintheta(n, theta) if n > 0 else 0.0
+            dp_n = sin_t * pn1_over_s
+            c_n = cos_t * pn1_over_s
+            d2p_n = -c_n - n * (n + 1) * p_n
+
+            zp = kP * r
+            hp_, hpp_ = _spherical_h1_complex(n, zp), _spherical_h1_deriv(n, zp)
+            hppp_ = _spherical_h1_deriv2(n, zp)
+            cr = an * kP * hpp_
+            ct = an * hp_ / r
+            dcr = an * kP**2 * hppp_
+            dct = an * (kP * hpp_ / r - hp_ / r**2)
+
+            if n >= 1:
+                zs = kS * r
+                hs, hsp = _spherical_h1_complex(n, zs), _spherical_h1_deriv(n, zs)
+                hspp = _spherical_h1_deriv2(n, zs)
+                nn = n * (n + 1)
+                cr += bn * nn * hs / r
+                ct += bn * (hs / r + kS * hsp)
+                dcr += bn * nn * (kS * hsp / r - hs / r**2)
+                dct += bn * (kS * hsp / r - hs / r**2 + kS**2 * hspp)
+
+            u_r += cr * p_n
+            u_t += ct * dp_n
+            dur_dr += dcr * p_n
+            dut_dr += dct * dp_n
+            dur_dt += cr * dp_n
+            dut_dt += ct * d2p_n
+            cot_ut += ct * c_n
+
+        e_rr = dur_dr
+        e_tt = (dut_dt + u_r) / r
+        e_pp = (u_r + cot_ut) / r
+        e_rt = 0.5 * (dur_dt / r + dut_dr - u_t / r)
+        tr = e_rr + e_tt + e_pp
+
+        s_rr = lam * tr + 2.0 * mu * e_rr
+        s_tt = lam * tr + 2.0 * mu * e_tt
+        s_rt = 2.0 * mu * e_rt
+
+        # tau_3 = sigma . zhat with rhat.zhat = cos_t and that_.zhat = -sin_t;
+        # the phi-hat term drops because sigma_rphi = sigma_thetaphi = 0 here.
+        w_r = s_rr * cos_t - s_rt * sin_t
+        w_t = s_rt * cos_t - s_tt * sin_t
+        r_hat = np.array([cos_t, sin_t * cos_p, sin_t * sin_p])
+        t_hat = np.array([-sin_t, cos_t * cos_p, cos_t * sin_p])
+        out[idx] = w_r * r_hat + w_t * t_hat
+
+    return out
+
+
 def mie_far_field(
     mie_result: MieResult,
     theta_arr: NDArray[np.floating],
@@ -1006,15 +1294,9 @@ def mie_far_field(
                 bn = mie_result.b_n[n]
 
                 Pn = float(lpmv(0, n, cos_t))
-                dPn = (
-                    _dPn_dtheta(n, theta)
-                    if (n > 0 and abs(np.sin(theta)) > 1e-10)
-                    else 0.0
-                )
+                dPn = _dPn_dtheta(n, theta) if (n > 0 and abs(np.sin(theta)) > 1e-10) else 0.0
 
-                ur_P, ut_P, _, _ = _mie_pwave_fields(
-                    n, kP, r_eval, ref.lam, ref.mu, "h1"
-                )
+                ur_P, ut_P, _, _ = _mie_pwave_fields(n, kP, r_eval, ref.lam, ref.mu, "h1")
                 u_r += an * ur_P * Pn
                 u_theta += an * ut_P * dPn
 
@@ -1045,9 +1327,7 @@ def mie_far_field(
                 Pn1 = _dPn_dtheta(n, theta)
                 dPn1 = _dPn1_dtheta(n, theta)
 
-                ur_P, ut_P, _, _ = _mie_pwave_fields(
-                    n, kP, r_eval, ref.lam, ref.mu, "h1"
-                )
+                ur_P, ut_P, _, _ = _mie_pwave_fields(n, kP, r_eval, ref.lam, ref.mu, "h1")
                 u_r += an_sv * ur_P * Pn1
                 u_theta += an_sv * ut_P * dPn1
 
