@@ -46,6 +46,7 @@ CLAIMS = {
     "its march": "gate_first_order_impedance_march",
     "layered $\\boldsymbol\\Gamma$": "gate_first_order_layered_gamma",
     "lateral impedance march": "gate_first_order_lateral_impedance",
+    "same march in three dimensions": "gate_first_order_lateral_impedance_3d",
 }
 
 TALLY = re.compile(r"(\d+)/(\d+) checks passed|(\d+) passed, (\d+) failed")

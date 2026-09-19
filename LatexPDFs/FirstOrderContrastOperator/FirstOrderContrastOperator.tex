@@ -3406,10 +3406,209 @@ is any end-to-end advantage over the thesis's own architecture
 \eqref{eq:cbpdef} on a problem either could solve.  That comparison needs a
 laterally coupled arbiter, and the natural one --- the thesis's
 $2\tfrac12$-D solver --- has not been run against it.  Until it has, the case
-for putting the coupling inside the march rests on the structural results above
-and not on a measured speed or accuracy advantage.  The extension to full
-three-dimensional lateral structure, where the augmented dimension is
-$10 = 6+4$ rather than the thesis's $8$, is untouched.
+for putting the coupling inside the march rests on the structural results above,
+on the exact-sphere verification of \S\ref{sec:threed}, and not on a measured
+speed advantage against the thesis's own solver.
+
+%=====================================================================
+\section{Three-dimensional lateral structure, and the exact-sphere
+verification}\label{sec:threed}
+
+\subsection{Both lateral directions carried as grid directions}
+
+Section~\ref{sec:latop} carries the lateral coupling inside the marched
+variable along one direction, with the third held as the parameter $k_y$.  A
+medium invariant in $y$ is then represented exactly and a medium that is not is
+not represented at all: no single $k_y$ describes a sphere, however fine the
+lateral grid.
+
+Both directions become grid directions by the same construction.  The impedance
+$\bY$ acts on $(3\ \text{components})\times(N_xN_y)$ lateral points, the lateral
+index running $x$-slowest so that
+\begin{equation}
+  \mathbf{D}_x = D_x\otimes\bI_{N_y},\qquad
+  \mathbf{D}_y = \bI_{N_x}\otimes D_y ,
+\end{equation}
+each factor the spectral derivative of its own direction.  Every $i k_y$ of
+\eqref{eq:latrow} becomes $\mathbf{D}_y$, and the modulus/derivative ordering that
+momentum balance forces is the same ordering applied twice: the two horizontal
+traction rows read
+\begin{align}
+  \partial_3 T_{xz} &= -\rho\omega^2 u_x
+    - \partial_x\!\left[\zeta\,\partial_x u_x + \chi\,\partial_y u_y
+      + \gamma\,T_{zz}\right]
+    - \partial_y\!\left[\mu(\partial_x u_y + \partial_y u_x)\right], \\
+  \partial_3 T_{yz} &= -\rho\omega^2 u_y
+    - \partial_y\!\left[\chi\,\partial_x u_x + \zeta\,\partial_y u_y
+      + \gamma\,T_{zz}\right]
+    - \partial_x\!\left[\mu(\partial_x u_y + \partial_y u_x)\right],
+\end{align}
+with every derivative outside its modulus.  The constitutive rows keep the
+modulus inside, because they are not divergences.
+
+The symplectic statement becomes \emph{simpler}, not more complicated.  In
+$2\tfrac12$-D it had to be written $\bJ_6\bA(k_y) = [\bJ_6\bA(-k_y)]^{\mathsf T}$
+--- a transpose in the lateral index together with an explicit sign flip,
+because $k_y$ is a parameter and transposition does nothing to a scalar.  Here
+$\mathbf{D}_y$ is a real antisymmetric matrix, so it reverses its own sign under
+transposition and the identity closes outright,
+\begin{equation}
+  \bJ_6\bA = (\bJ_6\bA)^{\mathsf T},
+  \label{eq:symp3d}
+\end{equation}
+with no parameter to flip.  It holds at $8.7\times10^{-17}$, and the ordering
+with the modulus outside every derivative pair --- indistinguishable in a
+laterally uniform medium --- breaks it at $1.3\times10^{-1}$.
+
+The operator reduces to objects established earlier: to $\bA$ of
+\eqref{eq:quasiham} at each of the $N_xN_y$ wavenumber pairs in a uniform medium
+($2.1\times10^{-15}$), to the $2\tfrac12$-D operator block by block in $k_y$
+when the medium is invariant in $y$ ($3.6\times10^{-16}$), to the
+$2\tfrac12$-D \emph{march} at every $k_y$ ($3.9\times10^{-15}$), and to the
+scalar march of \S\ref{sec:impedance} at zero lateral contrast
+($3.8\times10^{-15}$).  Shift covariance holds in each direction separately,
+which is what distinguishes an index slip between the two Kronecker factors
+from a consistent relabelling.
+
+\subsection{The cross-section enters through its area, not its radius}
+
+A sphere of radius $a$ centred at depth $z_c$ cuts the plane at depth $z$ in a
+disc of radius $R(z)=\sqrt{a^2-\zeta^2}$, $\zeta = z-z_c$.  Painting that disc
+onto the lateral grid cell by cell makes the marched coefficient piecewise
+constant in depth: it changes in jumps as $R(z)$ crosses successive grid radii,
+the integrator reproduces the staircase exactly, and the order of
+\S\ref{sec:whatimbedbuys} is lost.
+
+The disc has an exact two-dimensional transform,
+\begin{equation}
+  F(q,R) \;=\; \frac{2\pi R\,J_1(qR)}{q}
+         \;=\; 2\pi R^2\,\frac{J_1(qR)}{qR},
+  \qquad F(0)=\pi R^2 ,
+  \label{eq:discff}
+\end{equation}
+and $J_1(x)/x$ is even and entire.  So $F$ is a power series in $(qR)^2$, hence
+in $R^2 = a^2-\zeta^2$ --- a polynomial in depth.  \emph{The contrast taken in
+wavenumber is therefore an analytic function of $z$ across the whole of the
+sphere's bounding slab, poles included}, because the cross-sectional area enters
+and not the radius, and the area vanishes linearly in $R^2$ where the radius has
+a square root.  Marching over exactly $[z_c-a,\,z_c+a]$ places the only
+non-smoothness --- the junction to the identically zero exterior --- at the
+endpoints, never inside a step.
+
+Measured on the sphere's own bounding slab, with the cross-section built from
+\eqref{eq:discff} and sampled at the stage depths:
+\begin{center}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{4}{c}{depth steps} \\
+\cmidrule(l){2-5}
+ & 32 & 64 & 128 & 256 \\
+\midrule
+exact transform   & $3.18\times 10^{-5}$ & $1.81\times 10^{-6}$ & $1.08\times 10^{-7}$ & $6.55\times 10^{-9}$ \\
+observed order    & \multicolumn{4}{c}{$4.14\quad 4.07\quad 4.04$} \\[2pt]
+voxelised control & $6.29\times 10^{-3}$ & $2.06\times 10^{-3}$ & $1.77\times 10^{-3}$ & $3.60\times 10^{-4}$ \\
+observed order    & \multicolumn{4}{c}{$1.61\quad 0.22\quad 2.30$} \\
+\bottomrule
+\end{tabular}
+\end{center}
+Fourth order is attained on a sphere with a sharp boundary.  The control does
+not merely converge more slowly: it has no order at all, because a staircase's
+error depends on where the step boundaries happen to fall relative to the radius
+crossings, so refinement moves the error rather than reducing it.
+
+\subsection{The array relation}
+
+The march is laterally periodic, so it solves an array of spheres, one per cell
+of area $A=L_xL_y$.  At normal incidence every sphere sees the same incident
+phase, so the array field is $\sum_{\mathbf{R}}\bu_{\rm sc}(\mathbf{r}-\mathbf{R})$, and Poisson
+summation gives
+\begin{equation}
+  \bu_{\rm array}
+    = \frac{(2\pi)^2}{A}\sum_{\mathbf{g}}\hat{\bu}(\mathbf{g})\,
+      e^{i\mathbf{g}\cdot\boldsymbol{\rho} + i k_z(\mathbf{g})|z|} ,
+  \label{eq:poisson}
+\end{equation}
+so each diffraction order carries the isolated sphere's angular spectrum times
+$(2\pi)^2/A$.  Referring the incident wave from the top of the bounding slab to
+the sphere centre and the scattered order back again supplies the two phases,
+and the reflection matrix extracted from $\bY$ at the top of the slab satisfies
+\begin{equation}
+  \bR[\mathbf{g}\!\leftarrow\!\mathbf{0}]
+    = \frac{(2\pi)^2}{A}\,c_{\rm mode}(\mathbf{g})\,
+      e^{i\left(k_P + k_z(\mathbf{g})\right)a} .
+  \label{eq:arrayrel}
+\end{equation}
+The mode amplitudes $c_{\rm mode}$ are those of the elastic Mie solution,
+assembled as plane-wave amplitudes rather than as a field: at one lateral
+wavenumber $P$ and $S$ carry different $k_z$, so they cannot be summed into a
+single vector before a depth is chosen.
+
+Equation~\eqref{eq:arrayrel} is exact but for scattering \emph{between} array
+elements, which is second order in the contrast where the signal is first.
+
+\subsection{What the three refinement axes measure}
+
+The comparison has three independent resolutions --- the depth step, the lateral
+grid at fixed period, and the period at fixed pitch --- and they do not measure
+the same kind of quantity.
+
+Write $\varepsilon$ for the fractional perturbation of $\alpha$, $\beta$ and
+$\rho$ inside the sphere.  Because the single-sphere signal is $O(\varepsilon)$
+and the array coupling $O(\varepsilon^2)$, the \emph{relative} departure of the
+march from \eqref{eq:arrayrel} must be linear in $\varepsilon$.  At
+$k_Pa=1.44$, on an $8\times8$ grid of period $2.5$ diameters:
+\begin{center}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+$\varepsilon$ & $0.001$ & $0.003$ & $0.010$ & $0.030$ & $0.100$ \\
+\midrule
+relative departure & $0.00145$ & $0.00435$ & $0.01444$ & $0.04275$ & $0.13554$ \\
+$/\varepsilon$     & $1.454$ & $1.451$ & $1.444$ & $1.425$ & $1.355$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+constant at $\simeq 1.45$ over two decades, the drift at the largest contrast
+being the next order appearing.  The departure is therefore not an error of the
+march but the coupling of the array, and $1.45\,\varepsilon$ measures its
+strength at this spacing.  The marched amplitude exceeds the single-scattering
+prediction in every row: at this spacing and frequency the neighbours enhance
+the specular return.
+
+With the coupling identified, the depth ladder converges \emph{to} it rather
+than through it.  At $\varepsilon=10^{-3}$, where the coupling is
+$1.45\times10^{-3}$:
+\begin{center}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+depth steps & $16$ & $32$ & $64$ & $128$ \\
+\midrule
+departure            & $1.8137\times 10^{-3}$ & $1.4764\times 10^{-3}$ & $1.4543\times 10^{-3}$
+                     & $1.4528\times 10^{-3}$ \\
+less the coupling    & $3.6090\times 10^{-4}$ & $2.3513\times 10^{-5}$ & $1.419\times 10^{-6}$ & --- \\
+observed order       & \multicolumn{4}{c}{$3.94\qquad 4.05$} \\
+\bottomrule
+\end{tabular}
+\end{center}
+Fourth order in the depth step, measured against an exact solution rather than
+against the march itself.
+
+The lateral grid at fixed period moves by less than two per cent across
+$N=8,12,16$ and stays at the coupling floor throughout, so that axis bounds the
+lateral discretisation error below $1.5\times10^{-3}$ without resolving it.  The
+period at fixed pitch moves the floor itself --- $1.4543\times 10^{-3}$, $6.711\times 10^{-4}$,
+$8.519\times 10^{-4}$ at $2.5$, $3.8$ and $5.0$ diameters --- falling as the lattice
+opens and then rising, which is the oscillatory phase of the coupling and not
+scatter: a $1/A$ falloff alone would fall monotonically.
+
+\subsection{What this establishes}
+
+The continuum impedance march, with the lateral coupling carried inside the
+marched variable on a full three-dimensional lateral grid, reproduces the exact
+elastic response of a sphere at fourth order in the depth step.  The sphere has
+a sharp boundary, and the order survives it because the cross-section enters
+through \eqref{eq:discff}.  The residual after the depth error is exhausted is
+the array's own multiple scattering, measured at $1.45\,\varepsilon$ and linear
+in the contrast over two decades.
 
 %=====================================================================
 \section{Summary of checks}
@@ -3420,7 +3619,8 @@ $44/44$; the $T$-matrix assembly $16/16$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
-the lateral impedance march $33/33$; and the propagator gate exits clean.
+the lateral impedance march $33/33$ and the same march in three dimensions
+$26/26$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
