@@ -4183,16 +4183,20 @@ $(\bI-\bP\,\dCeff)$, is \emph{their} construction, not a departure from the
 literature; it is a departure only from the thesis's own architecture
 \eqref{eq:cbpdef}, which is what \S\ref{sec:latop} actually compares against.
 
-Thomson \cite{thomson2015b} develops the displacement-to-traction operator --- the same
-object, there called an impedance operator and identified as the elastic
-analogue of a Dirichlet-to-Neumann map --- for laterally heterogeneous
-anisotropic media, and proves that its kernel equals its transpose with the
-arguments reversed.  That is the identity \eqref{eq:latsymp} is a discrete
-statement of, and \eqref{eq:symp3d} its specialisation when both lateral
-directions are gridded and the derivative matrices are antisymmetric.  The
-symplectic orthogonality of the lateral modes, which the same paper
-establishes, is the continuum statement behind the $\bJ_6$ pairing used here
-throughout.
+\emph{The symplectic identity is theirs too, and older than either of us.}
+Haines \emph{et al.}\ note in passing, at their eq.~(44), that the system matrix
+satisfies $\bA^{T}\bJ = -\bJ\bA$ in both elastic and anelastic media --- which
+is \eqref{eq:latsymp} and \eqref{eq:symp3d}, since
+$(\bJ\bA)^{T} = \bA^{T}\bJ^{T} = -\bA^{T}\bJ = \bJ\bA$ --- and attribute it to
+Kennett, Kerry \& Woodhouse (1978), Chapman (1994) and Haines \& de Hoop (1996),
+remarking that each such symmetry reflects a conservation law.  It is a 1978
+result used here as a discretisation check, not a new identity.  Thomson
+\cite{thomson2015b} later develops the same operator for laterally heterogeneous
+anisotropic media --- there called a displacement-to-traction operator and
+identified as the elastic analogue of a Dirichlet-to-Neumann map --- and proves
+that its kernel equals its transpose with the arguments reversed, together with
+the symplectic orthogonality of the lateral modes that stands behind the $\bJ_6$
+pairing used throughout.
 
 \subsection{What is left}
 
@@ -4234,22 +4238,71 @@ contrast at $1.45\,\varepsilon$ over two decades --- a number about the
 periodic problem the march actually solves, not about the march.
 \end{itemize}
 
-The fourth-order continuum result of \S\ref{sec:whatimbedbuys} and the
-stage-sampling requirement behind it are statements about the integrator rather
-than the formulation, and are not claimed against the literature either way:
-Haines \emph{et al.} state that their initial value problems can be solved to
-high precision without committing to a particular integrator.
+\subsection{The integrator is theirs as well, and better}
+
+The fourth-order result of \S\ref{sec:whatimbedbuys} is \emph{not} a contrast
+with this literature.  Haines \emph{et al.}\ solve both the Riccati and the
+one-way equation with ``multiply linked applications of the explicit
+fourth-order Runge--Kutta scheme'', and state the stage requirement outright:
+``for a step size of $h$, the Runge--Kutta scheme requires function values at
+$\xi_3$, $\xi_3+\tfrac12 h$ and $\xi_3+h$: in other words at half-step
+intervals''.  That is the scheme of Algorithm~1 and the sampling discipline of
+\S\ref{sec:whatimbedbuys}.  The $32\times$ of \S\ref{sec:whatimbedbuys} is
+measured against a \emph{layer stack}, which is a different comparison and not
+one with them.
+
+On three further counts their implementation is ahead of the one described
+here, and saying so is the point of this section:
+
+\begin{itemize}
+\item \textbf{Adaptive step control.}  They derive a step size from the leading
+Runge--Kutta error, $h = \theta/(\|\mathbf{D}\| +
+\sqrt{\theta\,\|\partial_{\xi_3}\mathbf{D}\|})$ with
+$\mathbf{D}=-i\omega(\bA^{VV}-\bA^{VT}\mathbf{Z})$, reporting relative
+precisions of about $1$ part in $4\times10^{3}$ and $10^{5}$ at
+$\theta=\tfrac12$ and $\tfrac14$.  The march here uses a uniform step and meets
+the explicit method's stability wall at $2|k|_{\max}h \simeq 1.3$ with no
+adaptive rule at all.
+\item \textbf{Assembling $\bA$ by FFT.}  ``The elements can be computed by fast
+Fourier transform when using Fourier series as the basis functions.''  Here
+$\mathbf{D}_x$ and $\mathbf{D}_y$ are built as dense Kronecker matrices.  The
+saving is bounded --- the quadratic term $\bY\bA_{12}\bY$ is dense in any basis
+and is $69\%$ of the work by \S\ref{sec:latcost}, so the ceiling is about
+$1.45\times$ --- but it is a saving not taken.
+\item \textbf{Reuse.}  ``Once the impedance operators and fundamental solutions
+have been calculated for a given region of heterogeneity they can be used in
+solving any number of problems (allowing, for example, varying source and
+receiver geometries) involving that region.''  Nothing here exploits that.
+\end{itemize}
+
+They also make explicit a stability argument used only implicitly here: the
+one-way equation is integrated \emph{in} the direction of energy flow and the
+Riccati equation \emph{against} it, and that choice is what keeps both stable.
+
+The M\"obius step and its replacement in \S\ref{sec:algorithm} are therefore not
+an improvement on this literature either.  Haines \emph{et al.}\ form no matrix
+exponential anywhere; the exponential is inherited from the layer-stack
+tradition, and removing it recovers a position they already held.
 
 \subsection{What has not been checked}
 
-The correspondence above is drawn from the abstract, the mathematical
-development sections and the numerical discussion of \cite{haines2004}, and from the abstract and stated results of \cite{thomson2015b}.  The
-companion paper \cite{hulme2004} has not been consulted, and neither has the
-detailed treatment of material discontinuities --- Haines \emph{et al.} use a
-curvilinear transformation with $\xi_3$ constant on major interfaces, so that
-the wavefield variables stay continuous, where \S\ref{sec:threed} instead takes
-the cross-section through its exact transform and marches the sphere's own
-bounding slab.  Whether those two devices coincide has not been established.
+The correspondence above is drawn from the full text of \cite{haines2004}, and
+from the abstract and stated results of \cite{thomson2015b} only.  The companion
+paper \cite{hulme2004}, which carries the worked examples and the numerical
+validation, has not been consulted, so no comparison of accuracy or run time
+against their implementation is offered here --- and on the evidence of their
+\S2.5 there is no reason to expect one to favour the march described above.
+
+One genuine difference of construction remains unresolved.  Haines \emph{et al.}
+handle material discontinuities with a curvilinear transformation, $\xi_3$
+constant on major interfaces, so that tractions and velocities stay continuous
+and are never differentiated across a jump.  \S\ref{sec:threed} instead takes
+the cross-section through its exact transform \eqref{eq:discff} and marches the
+sphere's own bounding slab, which earns fourth order across a sharp boundary
+with no transform at all --- but only because the disc's \emph{area} is
+polynomial in depth.  That is a device for this problem, not a method for
+interfaces, and whether the two coincide in any useful sense has not been
+established.
 
 %=====================================================================
 \section*{References}
@@ -4291,10 +4344,11 @@ quoted from here without that check.
   General elastic wave scattering problems using an impedance operator
   approach --- I.  Mathematical development.  \emph{Geophysical Journal
   International} \textbf{159}(2), 643--657.
-  \texttt{doi:10.1111/j.1365-246X.2004.02405.x}.  Located by literature search;
-  abstract, mathematical development and numerical sections consulted, full
-  text not obtained.  This is the construction marched in
-  \S\ref{sec:impedance}--\S\ref{sec:threed}; see \S\ref{sec:priorart}.
+  \texttt{doi:10.1111/j.1365-246X.2004.02405.x}.  \emph{Full text consulted.}
+  This is the construction marched in
+  \S\ref{sec:impedance}--\S\ref{sec:threed}, the symplectic identity used
+  throughout is their eq.~(44), and their \S2.5 is the integrator of
+  Algorithm~1 with adaptive step control added.  See \S\ref{sec:priorart}.
 
 \bibitem{haskell1953} Haskell, N.~A. (1953).  The dispersion of surface waves
   on multilayered media.  \emph{Bulletin of the Seismological Society of
