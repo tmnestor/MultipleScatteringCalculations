@@ -3611,6 +3611,171 @@ the array's own multiple scattering, measured at $1.45\,\varepsilon$ and linear
 in the contrast over two decades.
 
 %=====================================================================
+\section{The algorithm}\label{sec:algorithm}
+
+Everything above is stated as identities and measurements; what follows collects
+it as a procedure, in the form Chapter~5 of the thesis uses for
+Algorithms~5.1--5.3.  One algorithm covers every case treated here.  With
+$N_x=N_y=1$ and the lateral derivatives replaced by $ik_x$, $ik_y$ it is the
+laterally invariant march of \S\ref{sec:impedance}; with $N_y=1$ and
+$\mathbf{D}_y = ik_y\bI$ it is the $2\tfrac12$-D march of \S\ref{sec:latop};
+with both directions gridded it is the three-dimensional march of
+\S\ref{sec:threed}.  Nothing in the body of the march distinguishes them, which
+is the point of carrying the coupling inside the marched variable.
+
+Three things in it are not free choices, and each is marked where it occurs:
+the modulus/derivative ordering in $\bA_{21}$ and the lower rows of $\bA_{22}$,
+which momentum balance forces; the sampling of $\bA$ at the \emph{stage} depths
+rather than once per sublayer, without which the order falls to two; and the
+starting impedance, which must solve the algebraic Riccati equation of the
+half-space rather than be read off $\mathbf{D}_z$ alone.
+
+\vspace{3mm}
+\noindent\begin{minipage}{\linewidth}
+\textbf{Algorithm}~\textbf{1} {\sc A continuum impedance march for the
+reflection of a laterally varying slab}\newline
+\vspace{2mm}
+
+\begin{itemize}
+\item given a slab $0\le z\le H$ over a laterally uniform half-space, a lateral
+grid of $N=N_xN_y$ points with spectral derivatives $\mathbf{D}_x$,
+$\mathbf{D}_y$, and a depth partition $H=z_0>z_1>\cdots>z_M=0$, compute the
+impedance $\bY$ at the top of the slab and the reflection matrix $\bR$
+
+\begin{itemize}
+\item (*{\em the operator at one depth --- every modulus is a multiplication
+operator on the lateral grid\/}*)
+\end{itemize}
+
+\item \textbf{Procedure} $\bA(z)$:
+\begin{itemize}
+\item $\kappa=\lambda+2\mu$, \quad $\gamma=\lambda/\kappa$, \quad
+      $\zeta = 4\mu(\lambda+\mu)/\kappa$, \quad $\chi = 2\mu\lambda/\kappa$,
+      \quad all evaluated from $(\alpha,\beta,\rho)$ at depth $z$
+\item $\bA_{11}=\begin{bmatrix}
+        0 & -\gamma\mathbf{D}_x & -\gamma\mathbf{D}_y\\
+        -\mathbf{D}_x & 0 & 0\\ -\mathbf{D}_y & 0 & 0\end{bmatrix}$,
+      \qquad
+      $\bA_{12}=\mathrm{diag}\!\left(\kappa^{-1},\,\mu^{-1},\,\mu^{-1}\right)$
+\item $\bA_{21}=-\begin{bmatrix}
+        \rho\omega^{2} & 0 & 0\\
+        0 & \rho\omega^{2}+\mathcal{X} & \mathcal{C}\\
+        0 & \mathcal{C}^{\ast} & \rho\omega^{2}+\mathcal{Y}\end{bmatrix}$,
+      \qquad
+      $\bA_{22}=-\begin{bmatrix}
+        0 & \mathbf{D}_x & \mathbf{D}_y\\
+        \mathbf{D}_x\gamma & 0 & 0\\
+        \mathbf{D}_y\gamma & 0 & 0\end{bmatrix}$
+\item with, \textbf{the derivative outside the modulus},
+      \[
+        \begin{aligned}
+          \mathcal{X} &= \mathbf{D}_x\zeta\mathbf{D}_x
+                       + \mathbf{D}_y\mu\mathbf{D}_y, &\qquad
+          \mathcal{C} &= \mathbf{D}_x\chi\mathbf{D}_y
+                       + \mathbf{D}_y\mu\mathbf{D}_x, \\
+          \mathcal{Y} &= \mathbf{D}_y\zeta\mathbf{D}_y
+                       + \mathbf{D}_x\mu\mathbf{D}_x, &
+          \mathcal{C}^{\ast} &= \mathbf{D}_y\chi\mathbf{D}_x
+                       + \mathbf{D}_x\mu\mathbf{D}_y
+        \end{aligned}
+      \]
+\item (*{\em $\zeta\mathbf{D}_x\mathbf{D}_x$ in place of
+      $\mathbf{D}_x\zeta\mathbf{D}_x$ agrees exactly in a laterally uniform
+      medium and breaks \eqref{eq:symp3d}\/}*)
+\item \textbf{Return} $(\bA_{11},\bA_{12},\bA_{21},\bA_{22})$
+\end{itemize}
+
+\begin{itemize}
+\item (*{\em base of the slab: the half-space impedance, one $3\times3$ block
+per lateral wavenumber\/}*)
+\end{itemize}
+
+\item \textbf{For} each lateral wavenumber $(k_x,k_y)$ of the grid
+\begin{itemize}
+\item $\bY^{(0)} = \mathbf{T}_d\mathbf{U}_d^{-1}$ from the three
+      \emph{downgoing} columns of $\mathbf{D}_z$
+\item \textbf{Repeat} until the residual of \eqref{eq:impedance} stops falling
+\begin{itemize}
+\item $\mathbf{F} = \bA_{21}+\bA_{22}\bY-\bY\bA_{11}-\bY\bA_{12}\bY$
+\item solve
+      $(\bA_{22}-\bY\bA_{12})\,\mathbf{E}-\mathbf{E}\,(\bA_{11}+\bA_{12}\bY)
+       = -\mathbf{F}$ \quad for $\mathbf{E}$
+\item $\bY \leftarrow \bY+\mathbf{E}$
+\end{itemize}
+\item (*{\em $\mathbf{D}_z$ names the branch; $\bA$ supplies the precision\/}*)
+\end{itemize}
+\item assemble the blocks block-diagonally and transform to the lateral grid
+
+\begin{itemize}
+\item (*{\em march from the base to the top\/}*)
+\end{itemize}
+
+\item \textbf{For} $m=1,\cdots,M$ \quad with $h=z_m-z_{m-1}<0$
+\begin{itemize}
+\item $\mathbf{K}_1 = \mathcal{F}\!\left(\bY,\;\bA(z_{m-1})\right)$
+\item $\mathbf{K}_2 = \mathcal{F}\!\left(\bY+\tfrac{h}{2}\mathbf{K}_1,\;
+        \bA(z_{m-1}+\tfrac{h}{2})\right)$
+\item $\mathbf{K}_3 = \mathcal{F}\!\left(\bY+\tfrac{h}{2}\mathbf{K}_2,\;
+        \bA(z_{m-1}+\tfrac{h}{2})\right)$
+\item $\mathbf{K}_4 = \mathcal{F}\!\left(\bY+h\mathbf{K}_3,\;
+        \bA(z_{m-1}+h)\right)$
+\item $\bY \leftarrow \bY
+        + \tfrac{h}{6}\left(\mathbf{K}_1+2\mathbf{K}_2+2\mathbf{K}_3
+        +\mathbf{K}_4\right)$
+\item (*{\em $\bA$ is rebuilt at each stage depth.  Freezing it per sublayer
+      integrates a staircase exactly and returns second order\/}*)
+\end{itemize}
+
+\begin{itemize}
+\item (*{\em or, unconditionally stable, with $\bA$ frozen at the midpoint\/}*)
+\end{itemize}
+\item $\mathbf{M}=\exp\!\left(\bA\!\left(\tfrac{z_{m-1}+z_m}{2}\right)h\right)$,
+      \qquad
+      $\bY \leftarrow
+        \left(\mathbf{M}_{21}+\mathbf{M}_{22}\bY\right)
+        \left(\mathbf{M}_{11}+\mathbf{M}_{12}\bY\right)^{-1}$
+\item (*{\em $h<0$, so this propagates upward; the sign follows from
+      $\bq'=\bA\bq$ and not from a convention\/}*)
+
+\begin{itemize}
+\item (*{\em the reflection matrix at the top\/}*)
+\end{itemize}
+
+\item transform $\bY$ to the lateral wavenumber domain, giving $\hat{\bY}$
+\item build $\mathbf{U}_d,\mathbf{T}_d,\mathbf{U}_u,\mathbf{T}_u$
+      block-diagonally, each column a unit-displacement mode of the medium
+      above
+\item $\bR = \left(\mathbf{T}_u-\hat{\bY}\mathbf{U}_u\right)^{-1}
+             \left(\hat{\bY}\mathbf{U}_d-\mathbf{T}_d\right)$
+\end{itemize}
+\end{minipage}
+
+\vspace{3mm}
+\noindent where
+$\mathcal{F}(\bY,\bA)=\bA_{21}+\bA_{22}\bY-\bY\bA_{11}-\bY\bA_{12}\bY$ is the
+right-hand side of \eqref{eq:impedance}.
+
+\paragraph{Which integrator, and when.}  The two marching steps are
+alternatives, not successive stages.  The explicit one attains fourth order but
+is conditionally stable: the right-hand side of \eqref{eq:impedance} carries
+decay rates set by the largest vertical wavenumber, so the largest lateral
+wavenumber on the grid sets the limit, and the step becomes unstable once
+$2\,|k|_{\max}|h| \gtrsim 1.3$.  \emph{Refining the lateral grid therefore
+forces a smaller depth step}, which offsets part of the advantage measured in
+\S\ref{sec:whatimbedbuys} by an amount that has not been quantified.  The
+M\"obius step is exact for a piecewise constant medium and stable at every step
+tried, at second order.  An implicit or exponential integrator would pay neither
+penalty and has not been built.
+
+\paragraph{Cost.}  $\bA_{12}$ is diagonal --- it carries no derivative --- so
+the quadratic term of $\mathcal{F}$ is a single dense product of
+$3N\times3N$ matrices.  It nevertheless dominates, because the linear terms are
+block sparse: two of the nine $N\times N$ sub-blocks of $\bA_{11}$ and
+$\bA_{22}$ are non-zero.  Per right-hand side, in units of $N^3$: the quadratic
+term $27$, $\bA_{22}\bY$ and $\bY\bA_{11}$ six apiece, so the quadratic term is
+$69\%$ of the work and the preconditioner, when one is built, belongs there.
+
+%=====================================================================
 \section{Summary of checks}
 
 \begin{longtable}{@{}l>{\raggedright\arraybackslash}p{0.60\linewidth}r@{}}
