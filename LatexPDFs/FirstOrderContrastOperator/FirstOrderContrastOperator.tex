@@ -3321,7 +3321,6 @@ slab & the Navier route reproduces the package's amplification factors & 1\\
      & $SH$ incidence does probe the shear channels & 1\\
      & the tetragonal $T_0$ collects what the cubic one cannot, without
        spoiling the channel the cubic one gets right & 2\\
-          & the one-pass assembly reproduces the density channel & 1\\
 \midrule
 Riccati & $\dA$ is $12/36$ sparse, the compliance block diagonal & 2\\
   blocks & $\bV$ built two ways, the row scaling cancelling & 1\\
@@ -3338,8 +3337,6 @@ impedance & \eqref{eq:impedance} is satisfied by the $\mathbf{D}_z$ impedance & 
   & and lands on the downgoing root, tested without $\mathbf{D}_z$ & 1\\
   & $\mathrm{cond}(\bY) = O(1)$; the static limit is $\omega$-independent & 2\\
   & the arbiter: $\bY$ reproduces $k_{z,P}$ and $k_{z,S}$ to $|\mathbf{k}|=6000$ & 2\\
-  & a layer stack is second order on a smooth gradient, the ODE fourth,
-    and the step count to fixed accuracy differs by $32\times$ & 3\\
 \midrule
 impedance & one exact step \eqref{eq:mobius} reproduces the closed form & 1\\
   march & RK4 on \eqref{eq:impedance} converges at fourth order & 2\\
@@ -3351,6 +3348,8 @@ impedance & one exact step \eqref{eq:mobius} reproduces the closed form & 1\\
   & the convention is DIAGONAL, by the rank-one test \eqref{eq:rankone} & 1\\
   & its $P/S$ part is $\sqrt{k_{z,S}/k_{z,P}}$, and so not fixed & 1\\
   & $\bS_u=-\bS_d$ on $P$--$SV$ and $+\bS_d$ on $SH$ & 1\\
+  & a layer stack is second order on a smooth gradient, the ODE fourth,
+    and the step count to fixed accuracy differs by $32\times$ & 3\\
 \midrule
 layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
   $\boldsymbol\Gamma$ & zero-contrast cuts are harmless, so any depth is reachable & 1\\
@@ -3362,17 +3361,19 @@ layered & the source jump \eqref{eq:jumpmeasured} is exactly $\Isix$ & 1\\
 \midrule
 layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
       & second-order convergence in the cell count & 1\\
-      & $PP$ and $SS$ conventions constant across slowness; that
-        constant is $-1$ & 2\\
-      & mode conversion agrees up to a diagonal rescaling & 1\\
+      & the $PP$, $SS$ and $SH$ conventions are constant across slowness
+        --- see \S\ref{sec:whatconvention} for what they are & 1\\
       & the $k$ dependence of $\dA$ is load-bearing, two controls & 2\\
 \bottomrule
 \end{tabular}
 \captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
-$44/44$, the $T$-matrix assembly $14/14$, the Schwinger settlement $17/17$, the
+$44/44$; the $T$-matrix assembly $16/16$, the Schwinger settlement $17/17$, the
 layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$
-$8/8$, and the propagator gate exits clean.}
+comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
+impedance $9/9$, its march $14/14$ and the layered $\boldsymbol\Gamma$ $8/8$;
+and the propagator gate exits clean.  These tallies are machine-checked against
+the gates by \texttt{scripts/check\_paper\_tallies.py}, because a hand-written
+count of someone else's output is exactly the thing that goes stale.}
 \end{center}
 
 %=====================================================================
