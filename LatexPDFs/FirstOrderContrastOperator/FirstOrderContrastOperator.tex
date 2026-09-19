@@ -22,6 +22,7 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{multirow}
+\usepackage{longtable}
 \usepackage[font=small, labelfont=bf, labelsep=period]{caption}
 \usepackage{setspace}
 \setstretch{1.12}
@@ -2714,11 +2715,13 @@ wavenumber range it reaches, the march itself, and its score against a closed
 form and against Kennett, on a graded slab where no closed form exists.  These
 report measurements, not expectations.
 
-\emph{One thing is not built}: the laterally coupled case of
-\S\ref{sec:imbedlateral}, where $\dA$ varies across the cube and couples
-$\mathbf{k}_\perp$.  Everything above it is laterally invariant --- a stack, not
-a scatterer --- so the note has a complete $1$-D chain and the step that makes
-it a cube is written down rather than done.
+The laterally coupled case of \S\ref{sec:imbedlateral} --- where $\dA$ varies
+laterally and couples $\mathbf{k}_\perp$, so that $\bY$ is a matrix on
+$(\text{3 components})\times(\text{lateral grid})$ --- is built and gated in
+$2\tfrac12$-D, the thesis's own geometry.  \emph{What is not built} is the
+extension to full three-dimensional lateral structure, and the end-to-end
+comparison against the thesis's architecture \eqref{eq:cbpdef} on a problem
+both could solve; \S\ref{sec:imbedlateral} says what that leaves open.
 \end{quote}
 
 \subsection{The kernel is one-sided, so the integral equation splits}
@@ -3225,31 +3228,212 @@ Krylov iterations, and it says nothing about strong scattering --- for which the
 thesis's own criterion, weak superimposed heterogeneity, still governs whether
 the series converges at all.
 
-\subsection{Where the lateral coupling enters}\label{sec:imbedlateral}
+%=====================================================================
+\section{The lateral coupling, carried inside the
+march}\label{sec:imbedlateral}
 
-A cube is not laterally invariant, so $\dA$ depends on $x$ and $y$ and couples
-lateral wavenumbers.  Then $\bV$ in \eqref{eq:modeode} is an operator in
-$\mathbf{k}_\perp$ as well as in mode index, and $\bR$ becomes a matrix on
-$(\text{3 modes})\times(\text{lateral grid})$.
+\subsection{Where the thesis puts it, and where this puts it}
 
-The structure survives exactly: \eqref{eq:riccatiR} is unchanged in form, and
-the tridiagonality in depth is untouched, because one-sidedness in $z$ is a
-property of the kernel and not of the contrast.  What changes is that each block
-goes dense in $\mathbf{k}_\perp$, and $\bR\,\bV_{du}\,\bR$ --- two dense products
-per step --- becomes the cost.  That term is also where a near-field
-preconditioner would act, and it is the reason such a preconditioner is
-effective on an imbedding scheme specifically: it conditions the quadratic term
-that carries the strong scattering, which is the axis a directional-sweep
-architecture does not touch at all.
+The thesis already solves the laterally varying problem, and it makes a
+definite architectural choice.  Its eq.~\texttt{(CBPdef0)} assembles
+\begin{equation}\label{eq:cbpdef}
+  \bP_{r,s} \;=\; \bP^{z}_{r,s} + \bP^{x}_{r,s}
+  \;=\; -i\,\Theta^{z}_{in}\,Q^{\partial}\,\Theta^{z}_{ou}
+  \;+\; \mathrm{diag}\!\left[\bP^{x}_{r,s,1},\ \dots,\ \bP^{x}_{r,s,L}\right],
+\end{equation}
+acting on an $8LN_x$ vector --- eight augmented components, $L$ depth rows,
+$N_x$ lateral sites.  Its contrast array \texttt{(dCBC)}, \texttt{(dCBCrho)} is
+doubly block diagonal: over the $L$ rows, and within each row over the $N_x$
+sites, each site carrying its own $8\times8$ $\dCeff(\mathbf{R}_j;k_y)$ weighted
+by the cell area.  So the vertical operator is \emph{diagonal in lateral
+wavenumber} --- Algorithm~5.3 is a mode-domain reflection/transmission recursion
+at fixed $k_x$ --- and every lateral coupling lives in the site-diagonal
+contrast together with the sideways sweeps $\bP^{x}$ of Algorithm~5.2, the two
+being reconciled by an outer iteration on $(\bI - \bP\,\dCeff)$.
+
+What follows does the opposite, and that is the only part of it that is new.
+The lateral grid is carried \emph{inside} the marched variable: $\bY$ becomes a
+matrix on $(\text{3 components})\times(N_x\ \text{lateral points})$ and the
+lateral coupling is integrated along with depth, with no outer iteration for it
+at all.  The geometry is the thesis's own $2\tfrac12$-D --- heterogeneity in
+$(x,z)$, the third direction carried by the parameter $k_y$ --- so that the
+thesis's solver remains available as an arbiter.
+
+\subsection{The operator has to be derived, not read off}\label{sec:latop}
+
+A laterally varying $\Aop$ cannot be transcribed from \texttt{(Akdef)}.  That
+equation is a \emph{symbol} in $k_x$; it says nothing about where a spatially
+varying modulus sits relative to a derivative, and the two orderings that
+differ are indistinguishable in any laterally uniform medium.  Momentum balance
+does say.  With $\zeta = 4\mu(\lambda+\mu)/\kappa$, $\chi = 2\mu\lambda/\kappa$
+and $\gamma = \lambda/\kappa$, eliminating $T_{xx}$ and $T_{xy}$ gives
+\begin{equation}\label{eq:latrow}
+  \partial_3 T_{xz} = -\rho\omega^{2}u_x
+    - \partial_x\!\left[\zeta\,\partial_x u_x + \chi\,\partial_y u_y
+      + \gamma\,T_{zz}\right]
+    - \partial_y\!\left[\mu\left(\partial_x u_y + \partial_y u_x\right)\right],
+\end{equation}
+with the derivative \emph{outside} the modulus.  That ordering is forced by
+$\partial_j T_{ij}$, not chosen, and it is what leaves the discretised operator
+symplectic.  The lateral derivative is spectral on a periodic grid, hence
+exactly antisymmetric, which turns the symplectic relation into an available
+test rather than an approximation:
+\begin{equation}\label{eq:latsymp}
+  \Jsix\,\Aop(k_y) \;=\; \left[\Jsix\,\Aop(-k_y)\right]^{\mathsf{T}_x} .
+\end{equation}
+Here $\mathsf{T}_x$ denotes transposition in the \emph{lateral grid index
+alone}, the six component indices being left as they are --- it is not the
+$\tp$ used elsewhere in this note.  The parameter $k_y$ reverses with it
+because in $2\tfrac12$-D it is a parameter and not a grid direction, and the
+formal transpose of $\partial_x$ is $-\partial_x$ while a modulus is its own
+transpose.  \eqref{eq:latsymp} reduces to \eqref{eq:recip} when the medium is
+laterally uniform.  It
+holds to $1.9\times10^{-16}$ for a laterally varying medium, and the plausible
+wrong ordering --- $\mu\,\partial_x^2$ in place of
+$\partial_x\mu\,\partial_x$ --- breaks it by $1.2\times10^{-1}$ while agreeing
+with \eqref{eq:latrow} \emph{identically} when the medium does not vary.  No
+laterally invariant test could have separated them.
+
+Nothing is trusted on the strength of that alone.  Transformed to the lateral
+wavenumber domain in a uniform medium the operator must reproduce
+\texttt{(Akdef)} block by block, and does, to $10^{-15}$ at every grid
+wavenumber, for two media and for $k_y = 0$ and $k_y\neq0$.
+
+\subsection{What survives, measured}
+
+The reduction is exact.  With the lateral contrast switched off but the depth
+gradient left on, the coupled march must return a $\bY$ that is block diagonal
+in $k_x$ whose $n$th block is the $3\times3$ march of \S\ref{sec:impmarch}.  It
+is, to $3\times10^{-15}$, with no spurious coupling generated by the
+discretisation ($6\times10^{-16}$).  Two structural identities come with it: at
+$k_y=0$, $SH$ decouples from $P$--$SV$ exactly however the medium varies
+laterally; and shifting the medium one grid point conjugates the marched
+impedance by the shift, to $10^{-15}$, which is what catches an index slip
+between the medium array and the derivative matrix.
+
+The fourth order survives the coupling.  On a profile smooth in \emph{both}
+depth and lateral position, against a converged reference:
+
+\begin{center}
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+steps & staircase & order & impedance ODE & order\\
+\midrule
+ $12$ & $2.73\times10^{-3}$ & ---  & $3.75\times10^{-4}$ & ---\\
+ $24$ & $6.82\times10^{-4}$ & 2.00 & $2.30\times10^{-5}$ & 4.02\\
+ $48$ & $1.70\times10^{-4}$ & 2.00 & $1.43\times10^{-6}$ & 4.01\\
+ $96$ & $4.26\times10^{-5}$ & 2.00 & $8.88\times10^{-8}$ & 4.01\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The orders of \S\ref{sec:whatimbedbuys} are unchanged by the
+lateral coupling.}
+\end{center}
+
+An independent algorithm on the same operator agrees.  Rather than marching the
+quadratic Riccati for a $3N_x\times3N_x$ impedance, one may march the
+\emph{linear} system for a $6N_x\times3N_x$ fundamental block started at
+$[\bI;\bY_0]$ and form $\bY = \bT\bU^{-1}$ only at the top.  The two disagree by
+their own truncation, and the discriminating test is that the disagreement
+falls at fourth order --- $2.2\times10^{-5}$, $1.4\times10^{-6}$,
+$9.2\times10^{-8}$, $5.8\times10^{-9}$ at $24,48,96,192$ steps, orders
+$3.91$, $3.97$, $3.99$.  A genuine error in the Riccati reduction would plateau.
+The linear route is also where the reason for marching an impedance becomes
+visible directly.  At fixed step size, as the slab thickens
+$\mathrm{cond}(\bU)$ runs $1.3\times10^{4}$, $3.4\times10^{11}$,
+$3.7\times10^{22}$, $5.2\times10^{28}$ at $200$, $600$, $1200$, $2000$\,m and
+the route fails outright --- the two answers disagree by $99\%$ at the last two
+--- while $\|\bY\|$ stays finite throughout and within a factor $1.27$ of
+itself.
+
+\paragraph{The explicit step is limited, and the lateral mesh tightens it.}
+This was found by the gate failing, and it matters for the economy claimed in
+\S\ref{sec:whatimbedbuys}.  The right-hand side of \eqref{eq:impedance} has
+decay rates set by the vertical wavenumbers, so the \emph{largest lateral}
+wavenumber on the grid sets the largest rate, and explicit RK4 is stable only
+while $2|k_x|_{\max}h$ is of order one --- measured, the march returns
+\texttt{nan} at $2|k_x|_{\max}h = 1.31$ and is stable from $0.98$ down.  The
+M\"obius step \eqref{eq:mobius}, being exact per sublayer, has no such limit and
+is stable at every step tried.
+
+The consequence is that the lateral mesh and the depth step are coupled:
+refining laterally raises $|k_x|_{\max}$ and therefore forces a smaller depth
+step for the explicit integrator.  That offsets part of the fourth-order economy
+of \S\ref{sec:whatimbedbuys}, and how much of it is offset in any particular
+calculation has not been measured.  An implicit or exponential integrator would
+not pay it, and neither would the M\"obius step at the cost of returning to
+second order.
+
+\subsection{Where the cost actually is}\label{sec:latcost}
+
+An earlier draft of this section asserted that
+$\bR\,\bV_{du}\,\bR$ --- ``two dense products per step'' --- is the cost.
+Building it says otherwise on both counts, and the reason is structural.
+$\bA_{12}$ is the inverse vertical stiffness,
+$\mathrm{diag}(1/\kappa,1/\mu,1/\mu)$: a pure multiplication operator carrying
+no derivative, hence \emph{exactly} diagonal on the lateral grid.  So
+$\bY\bA_{12}\bY$ needs one dense product, not two --- measured, $0.189$\,ms
+naive against $0.093$\,ms exploiting the diagonal.  The other blocks are block
+sparse at the component level, occupying $2$, $3$ and $2$ of nine $N_x\times
+N_x$ sub-blocks, each occupied sub-block that carries a derivative being dense
+laterally.  Counting one right-hand side in units of $N_x^{3}$:
+
+\begin{center}
+\begin{tabular}{@{}lrl@{}}
+\toprule
+term & flops & structure\\
+\midrule
+$\bY(\bA_{12}\bY)$ & $27$ & one dense $(3N_x)^3$ product; $\bA_{12}$ diagonal\\
+$\bA_{22}\bY$      & $6$  & $2$ of $9$ sub-blocks occupied\\
+$\bY\bA_{11}$      & $6$  & $2$ of $9$ sub-blocks occupied\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The quadratic term is $69\%$ of the step --- the dominant
+single cost, but because the linear terms are block sparse, not because it is
+two products.}
+\end{center}
+
+So the conclusion the earlier draft reached survives, with its stated reason
+replaced.  The quadratic term is where a near-field preconditioner would act,
+and that remains a claim about physics --- it is the term carrying the
+back-scattering --- rather than about arithmetic.
+
+\subsection{What this does not establish}
+
+The march is built, reduces exactly, keeps its order and its symplectic
+structure, and stays on the downgoing branch with $\|\bY\|$ constant to six
+figures across a sixteen-fold change in step count.  What is \emph{not} measured
+is any end-to-end advantage over the thesis's own architecture
+\eqref{eq:cbpdef} on a problem either could solve.  That comparison needs a
+laterally coupled arbiter, and the natural one --- the thesis's
+$2\tfrac12$-D solver --- has not been run against it.  Until it has, the case
+for putting the coupling inside the march rests on the structural results above
+and not on a measured speed or accuracy advantage.  The extension to full
+three-dimensional lateral structure, where the augmented dimension is
+$10 = 6+4$ rather than the thesis's $8$, is untouched.
 
 %=====================================================================
 \section{Summary of checks}
 
-\begin{center}
-\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.60\linewidth}r@{}}
+\begin{longtable}{@{}l>{\raggedright\arraybackslash}p{0.60\linewidth}r@{}}
+\caption{All checks pass.  The symbolic scripts report $25/25$ and
+$44/44$; the $T$-matrix assembly $16/16$, the Schwinger settlement $17/17$, the
+layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
+comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
+impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
+the lateral impedance march $33/33$; and the propagator gate exits clean.
+These tallies are machine-checked against the gates by
+\texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
+someone else's output is exactly the thing that goes stale.}\\
 \toprule
 object & what is established & checks\\
 \midrule
+\endfirsthead
+\toprule
+object & what is established & checks\\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
 $\Aop$ & built from $c_{ijkl}$; matches the published isotropic blocks & 4\\
        & matches the thesis $\bA(k_x,k_y)$ under one similarity transform & 3\\
        & symmetry relations, spectrum, normal incidence & 6\\
@@ -3364,17 +3548,34 @@ layer & normal incidence vs \eqref{eq:normallayer}, three contrasts & 3\\
       & the $PP$, $SS$ and $SH$ conventions are constant across slowness
         --- see \S\ref{sec:whatconvention} for what they are & 1\\
       & the $k$ dependence of $\dA$ is load-bearing, two controls & 2\\
-\bottomrule
-\end{tabular}
-\captionof{table}{All checks pass.  The symbolic scripts report $25/25$ and
-$44/44$; the $T$-matrix assembly $16/16$, the Schwinger settlement $17/17$, the
-layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
-comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
-impedance $9/9$, its march $14/14$ and the layered $\boldsymbol\Gamma$ $8/8$;
-and the propagator gate exits clean.  These tallies are machine-checked against
-the gates by \texttt{scripts/check\_paper\_tallies.py}, because a hand-written
-count of someone else's output is exactly the thing that goes stale.}
-\end{center}
+\midrule
+lateral & the operator reproduces \texttt{(Akdef)} at every grid wavenumber,
+          for two media and two $k_y$ & 3\\
+  impedance & the spectral lateral derivative is exactly antisymmetric & 1\\
+  & the symplectic relation \eqref{eq:latsymp} under lateral variation & 2\\
+  & the wrong modulus ordering breaks it, and is indistinguishable from
+    \eqref{eq:latrow} when the medium is uniform & 2\\
+  & $SH$ decouples at $k_y=0$; the march is lateral-shift covariant & 2\\
+  & zero lateral contrast reduces to the $3\times3$ march of
+    \S\ref{sec:impmarch}, with no coupling made by the discretisation & 4\\
+  & the linear route agrees at fourth order, and $\mathrm{cond}(\bU)$
+    diverges with thickness where $\|\bY\|$ stays finite & 3\\
+  & the explicit step limit is set by the largest lateral wavenumber, and
+    the M\"obius step has no such limit & 2\\
+  & second order for the staircase and fourth for the ODE, with the lateral
+    coupling on & 2\\
+  & a single contrast mode couples $k_x\pm m$, and dominantly so: the
+    remaining coupling, which multiple scattering must generate, is
+    $6\%$ of it & 2\\
+  & $\bA_{12}$ is exactly diagonal; block occupancy as
+    \S\ref{sec:latcost} tabulates it; the quadratic term is one dense
+    product and $69\%$ of the step & 5\\
+  & the measured cost exponent is below the dense cubic estimate & 1\\
+  & the coupled algebraic Riccati equation has a stabilising downgoing
+    solution, and the march holds that branch to the top & 3\\
+  & $\|\bY\|$ constant to six figures across a sixteen-fold change in the
+    step count & 1\\
+\end{longtable}
 
 %=====================================================================
 \section{What is not established}\label{sec:open}
@@ -3440,6 +3641,22 @@ as such, the following are \emph{open}:
       backwards-compatible change, and the right moment for it is when the
       first-order route is wired into the package proper rather than now, when
       nothing upstream in the package produces two shear amplitudes.
+\item \textbf{The laterally coupled march has no external arbiter, and no
+      measured advantage.}  \S\ref{sec:imbedlateral} establishes that the
+      construction is sound --- it reduces exactly to the validated
+      $3\times3$ march, keeps fourth order, keeps the symplectic structure
+      \eqref{eq:latsymp}, and agrees with an independent algorithm on the same
+      operator.  Every one of those is internal.  Nothing yet compares it with
+      an object built outside this development, and in particular nothing
+      compares it with the thesis's own architecture \eqref{eq:cbpdef}, which
+      solves the same problem by keeping the vertical operator diagonal in
+      $k_x$.  The natural arbiter is the thesis's $2\tfrac12$-D solver; until it
+      has been run, ``carrying the coupling inside the march'' is a structural
+      result and not a demonstrated improvement.  The cost trade is likewise
+      only half measured: the quadratic term is $69\%$ of a step, but the
+      explicit integrator's step limit tightens as the lateral mesh is refined,
+      and how much of the fourth-order economy that consumes has not been
+      quantified.
 \end{enumerate}
 
 \section{Where the route belongs}
