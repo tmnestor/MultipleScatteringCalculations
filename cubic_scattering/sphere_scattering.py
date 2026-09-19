@@ -686,14 +686,38 @@ def compute_elastic_mie(
         M_psv = _mie_matrix_psv(n, omega, radius, ref, contrast)
         rhs_psv = _mie_incident_psv(n, omega, radius, ref, incident_type="P")
 
-        # Sign convention: the standard Mie partial wave expansion
-        # exp(ikz) = sum (2n+1) i^n j_n P_n(cos theta) uses a polar axis
-        # convention that produces backward-peaked scattering in our
-        # coordinate system (axis 0 = propagation direction, z-down).
-        # The factor (-1)^n corrects the angular pattern so that the
-        # scattering is forward-peaked, consistent with the Rayleigh
-        # and Foldy-Lax implementations.
-        sign = (-1.0) ** n
+        # THERE IS NO SIGN FACTOR HERE, AND THERE MUST NOT BE ONE.
+        #
+        # This block used to multiply every n >= 1 coefficient by (-1)^n, on
+        # the grounds that it made the angular pattern "forward-peaked,
+        # consistent with the Rayleigh and Foldy-Lax implementations".  It was
+        # tuned against the other solver rather than against physics, and it
+        # was wrong.  It flipped every ODD multipole while leaving the n = 0
+        # monopole (solved separately above) alone, with two consequences:
+        #
+        #   1. The DIPOLE is where the density response lives, so Drho
+        #      acquired the wrong sign against Dlambda and Dmu.  A sphere with
+        #      NO impedance contrast -- drho/rho = +e together with dM/M = -e,
+        #      so that Z = sqrt(rho M) is unchanged -- then reflected 2.0002
+        #      times a density-only sphere at normal incidence, where it must
+        #      reflect nothing at all.  That invariant is exact, not a Born
+        #      statement and not a convention: for a step interface
+        #      R = (Z2 - Z1)/(Z2 + Z1).
+        #   2. Flipping odd multipoles destroys the interference between them,
+        #      so the backscattered amplitude scaled as the sphere VOLUME with
+        #      no form-factor suppression -- exactly a^3 out to k_P a = 1.44,
+        #      which no exact solution can do.
+        #
+        # Measured against the elastic Born backscattering amplitude derived
+        # independently in Mathematica/ElasticBornBackscatter.wl (Green's
+        # tensor verified against Navier, contraction done by the kernel):
+        #
+        #     k_P a        0.18     0.36     0.72     1.44
+        #     with (-1)^n  0.5063   0.5266   0.6191   1.3092
+        #     without      0.9997   0.9997   0.9998   1.0000
+        #
+        # The null test is the cheap guard -- see the sphere tests.
+        sign = 1.0
 
         try:
             sol_psv = np.linalg.solve(M_psv, rhs_psv)
@@ -828,16 +852,34 @@ def mie_extract_effective_contrasts(mie_result: MieResult) -> MieEffectiveContra
 
     # Direct extraction from partial wave coefficients (Legendre projection):
     #   n=0: a₀ = -C_P k² Δκ*
-    #   n=1: -i a₁ = -C_P ω² Δρ*   →  Δρ* = i a₁ / (C_P ω²)
+    #   n=1: -i a₁ = +C_P ω² Δρ*   →  Δρ* = -i a₁ / (C_P ω²)
     #   n=2: -a₂ = -C_P (4k²Δμ*/3) →  Δμ* = 3 a₂ / (4 C_P k²)
+    #
+    # ⚠ THE DIPOLE SIGN IS THE ONE THAT WAS WRONG.  The expansion this inverts
+    # used to carry the density term as -C_P ω² Δρ* P₁, i.e. with the SAME sign
+    # as the monopole and quadrupole.  It is the opposite: the Born P->P kernel
+    # is
+    #
+    #     f_P(θ) = C_P [ ω² Δρ cosθ - k² (Δλ + 2 Δμ cos²θ) ]
+    #
+    # (derived independently in Mathematica/ElasticBornBackscatter.wl and equal
+    # to the standard Wu & Aki form), so the density term enters with the
+    # OPPOSITE sign to the moduli.  The old convention fails the impedance null:
+    # for Δκ = -εM and ω²Δρ = +k²εM, where Z = sqrt(ρM) is unchanged and the
+    # sphere must not backscatter at all, it returns +2 C_P k² εM instead of 0.
+    #
+    # This error was the compensating partner of the (-1)^n that used to be
+    # applied to the n >= 1 coefficients -- see the note in compute_elastic_mie.
+    # With that removed, the monopole (n=0) and quadrupole (n=2) extractions
+    # came out right and only this one, the odd multipole, was left negated.
     Dkappa_star = -a_n[0] / (C_P * kP**2)
-    Drho_star = 1j * a_n[1] / (C_P * omega**2)
+    Drho_star = -1j * a_n[1] / (C_P * omega**2)
     Dmu_star = 3.0 * a_n[2] / (4.0 * C_P * kP**2)
     Dlambda_star = Dkappa_star - 2.0 * Dmu_star / 3.0
 
-    # S-wave dipole coefficient gives independent density:
-    #   -i b₁ = -C_S ω² Δρ*_S  →  Δρ*_S = i b₁ / (C_S ω²)
-    Drho_star_S = 1j * b_n[1] / (C_S * omega**2)
+    # S-wave dipole coefficient gives independent density, same sign convention:
+    #   -i b₁ = +C_S ω² Δρ*_S  →  Δρ*_S = -i b₁ / (C_S ω²)
+    Drho_star_S = -1j * b_n[1] / (C_S * omega**2)
 
     return MieEffectiveContrasts(
         Dlambda_star=complex(Dlambda_star),
@@ -1523,17 +1565,39 @@ def foldy_lax_far_field(
             sigma_r = sigma @ r_hat  # sigma . r_hat (vector)
             sigma_rr = np.dot(r_hat, sigma_r)  # r_hat . sigma . r_hat (scalar)
 
-            # P-wave: the T-matrix force convention (+Vω²Δρ*u) has the
-            # opposite sign from the Lippmann-Schwinger body force (-ω²δρ u),
-            # so an overall minus sign is needed in the far-field formula.
-            # Q_P = -(r_hat.F - ik_P sigma_RR) gives the physical scattered field.
-            Q_P = np.dot(r_hat, force) - 1j * kP * sigma_rr
-            u_P[obs_idx] -= G_far_P * Q_P * r_hat
+            # ⚠ THE SIGNS HERE WERE WRONG, IN A WAY THAT CANCELLED AGAINST MIE.
+            #
+            # This block used to read
+            #     Q_P = (r_hat.F) - i k_P sigma_rr ;   u_P -= G_far_P Q_P r_hat
+            # justified by a comment asserting that the Lippmann-Schwinger body
+            # force is "-ω²δρ u".  It is "+ω²δρ u".  Expanded, the old code
+            # computed  u_P = G[-(r_hat.F) + i k sigma_rr]: the FORCE term
+            # negated and the dipole term correct.  Scored channel by channel at
+            # the backscattering axis against the Born amplitude derived
+            # independently in Mathematica/ElasticBornBackscatter.wl:
+            #
+            #     density only   0.9862 at -180.00 deg     <- inverted
+            #     lambda  only   0.9995 at   -0.00 deg     <- correct
+            #
+            # The correct assembly follows from u_i = G_ij f_j - (d'_k G_ij)m_jk
+            # with d' = -d, i.e. the SOURCE derivative, which in the far field is
+            # d'_k G ~ -i k r_hat_k G.  Hence the dipole enters as +i k, with the
+            # same overall sign as the force -- and the propagator's own C block
+            # already uses +dG, so the old form was inconsistent with the solve
+            # it was extracting from.
+            #
+            # This error paired with the (-1)^n that used to sit in
+            # compute_elastic_mie: the two agreed with each other and neither
+            # agreed with physics.  The invariant that catches it either way is
+            # TestImpedanceNull -- a sphere with no impedance contrast cannot
+            # backscatter at normal incidence.
+            Q_P = np.dot(r_hat, force) + 1j * kP * sigma_rr
+            u_P[obs_idx] += G_far_P * Q_P * r_hat
 
-            # S-wave: same sign convention applies
-            Q_S = force - 1j * kS * sigma_r
+            # S-wave: same convention -- force and dipole with the same sign.
+            Q_S = force + 1j * kS * sigma_r
             Q_S_perp = Q_S - np.dot(r_hat, Q_S) * r_hat
-            u_S[obs_idx] -= G_far_S * Q_S_perp
+            u_S[obs_idx] += G_far_S * Q_S_perp
 
     return u_P, u_S
 

@@ -62,7 +62,10 @@ displacement (3 DOF) and Voigt strain (6 DOF)::
              [0₆ₓ₃,              V_sub Δc*_V]]
 
 This captures both density scattering (Δρ) and stiffness scattering
-(Δλ, Δμ) simultaneously.
+(Δλ, Δμ) simultaneously.  Both blocks are positive — the
+Lippmann-Schwinger convention, in which the equivalent body force is
+``+ω² δρ u``.  See ``TestImpedanceNull`` in the sphere tests for the
+invariant that pins the relative sign of the two channels.
 
 Foldy-Lax system (9N×9N)
 -------------------------
@@ -329,21 +332,9 @@ def elastodynamic_greens_deriv(
         t1 * np.einsum("ij,kl->ijkl", delta, delta)
         + t2 * np.einsum("ij,k,l->ijkl", delta, g, g)
         + t3 * np.einsum("i,j,kl->ijkl", g, g, delta)
-        + t4
-        * (
-            np.einsum("ik,jl->ijkl", delta, delta)
-            + np.einsum("jk,il->ijkl", delta, delta)
-        )
-        + t3
-        * (
-            np.einsum("il,j,k->ijkl", delta, g, g)
-            + np.einsum("jl,i,k->ijkl", delta, g, g)
-        )
-        + t3
-        * (
-            np.einsum("ik,j,l->ijkl", delta, g, g)
-            + np.einsum("jk,i,l->ijkl", delta, g, g)
-        )
+        + t4 * (np.einsum("ik,jl->ijkl", delta, delta) + np.einsum("jk,il->ijkl", delta, delta))
+        + t3 * (np.einsum("il,j,k->ijkl", delta, g, g) + np.einsum("jl,i,k->ijkl", delta, g, g))
+        + t3 * (np.einsum("ik,j,l->ijkl", delta, g, g) + np.einsum("jk,i,l->ijkl", delta, g, g))
         + t7 * np.einsum("i,j,k,l->ijkl", g, g, g, g)
     )
 
@@ -392,12 +383,7 @@ def _voigt_contract(Gd: NDArray, Gdd: NDArray) -> tuple[NDArray, NDArray, NDArra
             elif p != q and m == n:
                 S[alpha, beta] = Gdd[p, m, m, q] + Gdd[q, m, m, p]
             else:
-                S[alpha, beta] = (
-                    Gdd[p, m, n, q]
-                    + Gdd[p, n, m, q]
-                    + Gdd[q, m, n, p]
-                    + Gdd[q, n, m, p]
-                )
+                S[alpha, beta] = Gdd[p, m, n, q] + Gdd[p, n, m, q] + Gdd[q, m, n, p] + Gdd[q, n, m, p]
 
     # Correct for engineering stress input: off-diagonal Voigt
     # components carry a factor of 2 (2*sigma), so the explicit
@@ -469,6 +455,15 @@ def _sub_cell_tmatrix_9x9(
 
         T = [[ω²Δρ* V_sub I₃,    0₃ₓ₆     ],
              [0₆ₓ₃,              V_sub Δc*_V]]
+
+    Both blocks are POSITIVE, and that is the Lippmann-Schwinger convention:
+    the equivalent body force of a density perturbation is ``+ω² δρ u``, and the
+    stress dipole is ``+δσ V``.  A sign error in the density channel was tracked
+    down in 2026-09 and it is NOT here -- it was in ``foldy_lax_far_field``,
+    which negated the force term while leaving the dipole alone.  Putting a
+    minus here would fix the far field and silently change the meaning of the
+    exposed ``T3x3``, which ``Drho_star`` is defined to match; it was tried and
+    reverted for exactly that reason.
 
     Args:
         rayleigh: Rayleigh T-matrix result for the sub-cell.
@@ -795,9 +790,7 @@ def _solve_coupled(
         )
 
     # --- 9N×9 incident field ---
-    psi_inc = _build_incident_field_coupled(
-        centres, omega, ref, k_hat=k_hat, wave_type=wave_type
-    )
+    psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
     # --- Solve for exciting field ---
     n_iters_converged: int | None = None
@@ -1042,9 +1035,7 @@ def scattering_order_decomposition(
         ``'converged_order'``, ``'ka_cube'``.
     """
     # Direct solve (ground truth)
-    full_result = compute_resonance_tmatrix(
-        omega, a, ref, contrast, n_sub=n_sub, neumann_order=0
-    )
+    full_result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=n_sub, neumann_order=0)
     T_full = full_result.T3x3
     norm_full = float(np.linalg.norm(T_full))
 
