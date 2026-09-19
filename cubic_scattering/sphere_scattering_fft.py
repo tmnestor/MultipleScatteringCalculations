@@ -26,6 +26,7 @@ from scipy.sparse.linalg import LinearOperator, gmres
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+from .cell_averaged_pair import averaged_pair_block_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
@@ -86,6 +87,9 @@ def _build_fft_kernel(
     T_loc: NDArray[np.complexfloating],
     omega: float,
     ref: ReferenceMedium,
+    *,
+    cell_average: bool = True,
+    n_gauss: int | None = None,
 ) -> NDArray[np.complexfloating]:
     """Build FFT kernel for the propagator convolution.
 
@@ -93,12 +97,22 @@ def _build_fft_kernel(
     -P(r)*T_loc (9x9) and stores on a (2n-1)^3 grid with circular
     embedding.  Then FFTs each of the 81 components.
 
+    This is the natural home for the receiver-cell average: the kernel is
+    built once per DISTINCT SEPARATION rather than once per pair, so the few
+    near-contact separations that need a high-order quadrature are evaluated a
+    handful of times whatever the cell count.
+
     Args:
         n_sub: Sub-cells per edge.
         a_sub: Sub-cell half-width (m).
         T_loc: Local 9x9 T-matrix for each sub-cell.
         omega: Angular frequency (rad/s).
         ref: Background medium.
+        cell_average: Use the SINGLE (sinc^1) receiver-cell average, which is
+            what pairs with the collocation single-site closure.  See
+            ``cell_averaged_pair`` and
+            ``scripts/gate_sphere_cell_average_vs_mie.py``.
+        n_gauss: Gauss points per axis; ``None`` picks it from the separation.
 
     Returns:
         kernel_hat: shape (9, 9, nP, nP, nP), complex. FFT of the
@@ -115,7 +129,11 @@ def _build_fft_kernel(
                 if d0 == 0 and d1 == 0 and d2 == 0:
                     continue
                 r_vec = np.array([d0, d1, d2], dtype=float) * dd
-                P_block = _propagator_block_9x9(r_vec, omega, ref)
+                P_block = (
+                    averaged_pair_block_9x9(r_vec, omega, ref, dd, n_gauss=n_gauss)
+                    if cell_average
+                    else _propagator_block_9x9(r_vec, omega, ref)
+                )
                 block = -(P_block @ T_loc)
                 # Circular embedding: negative offsets wrap
                 i0 = d0 % nP
@@ -235,6 +253,9 @@ def compute_sphere_foldy_lax_fft(
     wave_type: str = "S",
     gmres_tol: float = 1e-8,
     gmres_maxiter: int = 200,
+    *,
+    cell_average: bool = True,
+    n_gauss: int | None = None,
 ) -> SphereDecompositionResult:
     """Compute sphere T-matrix via FFT-accelerated Foldy-Lax.
 
@@ -252,6 +273,10 @@ def compute_sphere_foldy_lax_fft(
         wave_type: 'S' or 'P'.
         gmres_tol: Relative tolerance for GMRES (default 1e-8).
         gmres_maxiter: Maximum GMRES iterations (default 200).
+        cell_average: Use the SINGLE (sinc^1) receiver-cell average.  Default
+            True: it is the propagator that matches the collocation single-site
+            closure, and it is measured 5.3x closer to exact Mie at ka = 0.1.
+        n_gauss: Gauss points per axis; ``None`` picks it from the separation.
 
     Returns:
         SphereDecompositionResult with composite T-matrix.
@@ -266,7 +291,9 @@ def compute_sphere_foldy_lax_fft(
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
     # Step 2: Build FFT kernel
-    kernel_hat = _build_fft_kernel(n_sub, a_sub, T_loc, omega, ref)
+    kernel_hat = _build_fft_kernel(
+        n_sub, a_sub, T_loc, omega, ref, cell_average=cell_average, n_gauss=n_gauss
+    )
 
     # Step 3: Build matvec operator
     dim = 9 * nC
@@ -277,9 +304,7 @@ def compute_sphere_foldy_lax_fft(
     A_op = LinearOperator((dim, dim), matvec=matvec, dtype=complex)
 
     # Step 4: Build incident field (9N x 9 matrix, solve column by column)
-    psi_inc = _build_incident_field_coupled(
-        centres, omega, ref, k_hat=k_hat, wave_type=wave_type
-    )
+    psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
     # Solve 9 independent RHS columns via GMRES
     psi_exc = np.zeros((dim, 9), dtype=complex)

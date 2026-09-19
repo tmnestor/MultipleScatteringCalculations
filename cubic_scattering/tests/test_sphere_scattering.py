@@ -107,9 +107,7 @@ class TestSphereDecomposition:
             V_cells = len(centres) * (2 * a_sub) ** 3
             V_sphere = (4.0 / 3.0) * np.pi * radius**3
             ratio = V_cells / V_sphere
-            assert 0.3 < ratio < 2.5, (
-                f"Volume ratio = {ratio} for n={n}, expected reasonable"
-            )
+            assert 0.3 < ratio < 2.5, f"Volume ratio = {ratio} for n={n}, expected reasonable"
 
     def test_sphere_decomposition_isotropy(self):
         """T3x3 should be approximately proportional to I_3 for sphere.
@@ -160,8 +158,7 @@ class TestSphereDecomposition:
         print("\n  Foldy-Lax convergence (per-unit-volume):")
         print(f"  Mie Drho_star = {Drho_star:.6e}")
         print(
-            f"  {'n_sub':>5} {'N_cells':>7} {'V_ratio':>8} "
-            f"{'Drho_eff':>14} {'vol_err':>10} {'raw_err':>10}"
+            f"  {'n_sub':>5} {'N_cells':>7} {'V_ratio':>8} {'Drho_eff':>14} {'vol_err':>10} {'raw_err':>10}"
         )
 
         V_sphere = (4.0 / 3.0) * np.pi * radius**3
@@ -179,9 +176,7 @@ class TestSphereDecomposition:
             # Per-unit-volume effective density contrast
             Drho_eff = T_mean / (V_cubes * omega**2)
             vol_err = abs(Drho_eff - Drho_star) / abs(Drho_star)
-            raw_err = abs(T_mean - V_sphere * omega**2 * Drho_star) / abs(
-                V_sphere * omega**2 * Drho_star
-            )
+            raw_err = abs(T_mean - V_sphere * omega**2 * Drho_star) / abs(V_sphere * omega**2 * Drho_star)
             vol_errs.append(vol_err)
             raw_errs.append(raw_err)
             print(
@@ -191,9 +186,7 @@ class TestSphereDecomposition:
 
         # Volume-corrected error < 1% for ALL n_sub >= 2
         for i, n in enumerate(n_values):
-            assert vol_errs[i] < 0.01, (
-                f"Volume-corrected error {vol_errs[i]:.4f} > 1% at n_sub={n}"
-            )
+            assert vol_errs[i] < 0.01, f"Volume-corrected error {vol_errs[i]:.4f} > 1% at n_sub={n}"
 
         # Raw error correlates with |V_ratio - 1|: the best raw errors
         # occur when V_ratio is closest to 1.0
@@ -223,13 +216,8 @@ class TestSphereDecomposition:
         # Volume-corrected comparison
         Drho_eff = np.mean(np.diag(fl_result.T3x3)) / (V_cubes * omega**2)
         rel_err = abs(Drho_eff - Drho_star) / abs(Drho_star)
-        print(
-            f"  Drho_eff={Drho_eff.real:.6e}, Drho_star={Drho_star:.6e}, "
-            f"rel_err={rel_err:.6f}"
-        )
-        assert rel_err < 0.01, (
-            f"Volume-corrected Foldy-Lax vs Mie: rel_err = {rel_err:.4f}"
-        )
+        print(f"  Drho_eff={Drho_eff.real:.6e}, Drho_star={Drho_star:.6e}, rel_err={rel_err:.6f}")
+        assert rel_err < 0.01, f"Volume-corrected Foldy-Lax vs Mie: rel_err = {rel_err:.4f}"
 
 
 # =====================================================================
@@ -290,9 +278,7 @@ class TestMieTheory:
         # The imaginary part of the forward amplitude should be positive
         # (positive extinction)
         # Note: this depends on convention, so we just check finiteness
-        assert abs(f_P[0]) > 0 or abs(f_SV[0]) > 0, (
-            "Forward scattering should be nonzero"
-        )
+        assert abs(f_P[0]) > 0 or abs(f_SV[0]) > 0, "Forward scattering should be nonzero"
 
     def test_mie_reciprocity(self):
         """Scattering amplitude has forward-backward symmetry properties.
@@ -316,9 +302,7 @@ class TestMieTheory:
 
         # Check smoothness: max |df/dtheta| should be bounded
         df_P = np.diff(f_P)
-        assert np.max(np.abs(df_P)) < 100 * np.max(np.abs(f_P)), (
-            "P far-field has discontinuities"
-        )
+        assert np.max(np.abs(df_P)) < 100 * np.max(np.abs(f_P)), "P far-field has discontinuities"
 
 
 # =====================================================================
@@ -334,6 +318,21 @@ class TestCrossComparison:
     Foldy-Lax voxelized sphere displacement at the same points.
     """
 
+    #: Observation distance for the cross-comparisons, in sphere radii.
+    #:
+    #: ``foldy_lax_far_field`` returns the ASYMPTOTIC field while
+    #: ``mie_scattered_displacement`` returns the exact one, so the comparison
+    #: measures the method only once the neglected 1/(k r) term has died.  These
+    #: tests previously used 100 to 500 radii, where it has not.  Measured at
+    #: ka = 0.1, n_sub = 4, the volume-corrected error reads
+    #:
+    #:     r/a = 100 -> 0.5052    500 -> 0.0562    5e3 -> 0.0088    5e4 -> 0.0088
+    #:
+    #: so the old distances were reporting the harness, inflating the error by
+    #: about six times, and the magnitude-ratio bars of (0.1, 10) were three
+    #: orders of magnitude too loose to notice.
+    R_FAR_MULT = 5.0e4
+
     @staticmethod
     def _far_field_obs_points(r_distance: float, theta_arr: np.ndarray) -> np.ndarray:
         """Observation points in the z-x plane at distance r_distance.
@@ -345,6 +344,35 @@ class TestCrossComparison:
         points[:, 0] = r_distance * np.cos(theta_arr)  # z
         points[:, 1] = r_distance * np.sin(theta_arr)  # x
         return points
+
+    @classmethod
+    def _corrected_pattern_error(
+        cls,
+        omega: float,
+        radius: float,
+        n_sub: int,
+        theta_arr: np.ndarray,
+    ) -> float:
+        """Volume-corrected far-field error against Mie, as a fraction of peak.
+
+        The RAW error is dominated by the staircase and cannot be read as a
+        statement about the method: a cubic grid's coverage of a sphere is not
+        monotonic in n_sub -- the voxel volume is 26%, 4.7% and 17% too large at
+        n_sub = 3, 4, 6 -- and the raw error tracks that dilution to within a
+        factor 1.4.  Scaling by the volume ratio removes the dilution, leaving
+        something closer to what the propagator owns.  It does NOT remove the
+        shape error.
+        """
+        k_hat = np.array([1.0, 0.0, 0.0])
+        pol = np.array([1.0, 0.0, 0.0])
+        mie = compute_elastic_mie(omega, radius, REF, CONTRAST)
+        fl = compute_sphere_foldy_lax(omega, radius, REF, CONTRAST, n_sub=n_sub, k_hat=k_hat, wave_type="P")
+        r_far = cls.R_FAR_MULT * radius
+        pts = cls._far_field_obs_points(r_far, theta_arr)
+        u_mie = mie_scattered_displacement(mie, pts)
+        u_p, u_s = foldy_lax_far_field(fl, pts / r_far, r_far, k_hat, pol, wave_type="P")
+        vol_ratio = (4.0 / 3.0 * np.pi * radius**3) / (fl.n_cells * (2.0 * fl.a_sub) ** 3)
+        return float(np.max(np.abs((u_p + u_s) * vol_ratio - u_mie))) / float(np.max(np.abs(u_mie)))
 
     def test_mie_vs_foldy_lax_rayleigh(self):
         """ka=0.1: quantitative Mie vs Foldy-Lax at observation points.
@@ -397,21 +425,22 @@ class TestCrossComparison:
         for i, theta in enumerate(theta_arr):
             mag_mie = np.linalg.norm(u_mie[i])
             mag_fl = np.linalg.norm(u_fl[i])
-            print(
-                f"    theta={np.degrees(theta):.0f}deg: "
-                f"|u_mie|={mag_mie:.3e}, |u_FL|={mag_fl:.3e}"
-            )
+            print(f"    theta={np.degrees(theta):.0f}deg: |u_mie|={mag_mie:.3e}, |u_FL|={mag_fl:.3e}")
 
         # Both should be nonzero
         assert np.max(np.linalg.norm(u_mie, axis=1)) > 0, "Mie displacement all zero"
         assert np.max(np.linalg.norm(u_fl, axis=1)) > 0, "FL displacement all zero"
 
-        # Magnitude ratio: should be O(1) — voxelization limits precision
-        mag_mie_mean = np.mean(np.linalg.norm(u_mie, axis=1))
-        mag_fl_mean = np.mean(np.linalg.norm(u_fl, axis=1))
-        ratio = mag_fl_mean / max(mag_mie_mean, 1e-30)
-        print(f"  Mean magnitude ratio (FL/Mie): {ratio:.4f}")
-        assert 0.1 < ratio < 10.0, f"Mie vs FL magnitude ratio = {ratio}, expected O(1)"
+        # The quantitative bar, at a CONVERGED observation distance and with the
+        # staircase dilution removed.  Measured 0.0017 with the single
+        # cell-averaged propagator (the default since 2026-09-19); it was 0.0088
+        # with the point propagator, so this bar also guards the pairing.
+        err = self._corrected_pattern_error(omega, radius, 4, theta_arr)
+        print(f"  Volume-corrected pattern error at ka=0.1: {err:.4f}")
+        assert err < 0.005, (
+            f"Mie vs Foldy-Lax volume-corrected error = {err:.4f} at ka=0.1, "
+            "expected < 0.005 (measured 0.0017 with the cell-averaged propagator)"
+        )
 
     def test_mie_vs_foldy_lax_transition(self):
         """ka=0.5: quantitative Mie vs Foldy-Lax in transition regime.
@@ -478,12 +507,16 @@ class TestCrossComparison:
         assert np.max(np.linalg.norm(u_mie, axis=1)) > 0, "Mie displacement all zero"
         assert np.max(np.linalg.norm(u_fl, axis=1)) > 0, "FL displacement all zero"
 
-        # Magnitude ratio should be within an order of magnitude
-        mag_mie_mean = np.mean(np.linalg.norm(u_mie, axis=1))
-        mag_fl_mean = np.mean(np.linalg.norm(u_fl, axis=1))
-        ratio = mag_fl_mean / max(mag_mie_mean, 1e-30)
-        print(f"  Mean magnitude ratio (FL/Mie): {ratio:.4f}")
-        assert 0.05 < ratio < 20.0, f"Mie vs FL magnitude ratio = {ratio} at ka=0.5"
+        # The quantitative bar.  Measured 0.0451 with the cell-averaged
+        # propagator, 0.0539 with the point one -- the gain is only 1.19x here
+        # because the geometric floor at ka = 0.5 is 24x larger than at Rayleigh
+        # and swallows most of the propagator improvement.
+        err = self._corrected_pattern_error(omega, radius, 6, theta_arr)
+        print(f"  Volume-corrected pattern error at ka=0.5: {err:.4f}")
+        assert err < 0.07, (
+            f"Mie vs Foldy-Lax volume-corrected error = {err:.4f} at ka=0.5, "
+            "expected < 0.07 (measured 0.0451 with the cell-averaged propagator)"
+        )
 
     def test_mie_vs_foldy_lax_resonance(self):
         """ka=1.5: Mie vs Foldy-Lax far-field P-wave scattering.
@@ -505,9 +538,7 @@ class TestCrossComparison:
         # Mie far-field amplitudes should show angle dependence
         theta_arr = np.linspace(0.1, np.pi - 0.1, 10)
         f_P, f_SV, f_SH = mie_far_field(mie, theta_arr)
-        assert np.std(np.abs(f_P)) > 0.01 * np.mean(np.abs(f_P)), (
-            "P far-field pattern too flat at ka=1.5"
-        )
+        assert np.std(np.abs(f_P)) > 0.01 * np.mean(np.abs(f_P)), "P far-field pattern too flat at ka=1.5"
 
         # Foldy-Lax (n_sub=6 for resonance)
         fl = compute_sphere_foldy_lax(
@@ -541,16 +572,31 @@ class TestCrossComparison:
         for i, theta in enumerate(theta_obs):
             mag_mie = np.linalg.norm(u_mie[i])
             mag_fl = np.linalg.norm(u_fl[i])
-            print(
-                f"    theta={np.degrees(theta):.0f}deg: "
-                f"|u_mie|={mag_mie:.3e}, |u_FL|={mag_fl:.3e}"
-            )
+            print(f"    theta={np.degrees(theta):.0f}deg: |u_mie|={mag_mie:.3e}, |u_FL|={mag_fl:.3e}")
 
         # Both should be nonzero and finite
         assert np.all(np.isfinite(u_mie)), "Mie displacement not finite at ka=1.5"
         assert np.all(np.isfinite(u_fl)), "FL displacement not finite at ka=1.5"
         assert np.max(np.linalg.norm(u_mie, axis=1)) > 0
         assert np.max(np.linalg.norm(u_fl, axis=1)) > 0
+
+        # AT ka = 1.5 THE VOXEL ROUTE IS NOT ACCURATE, and this test records
+        # that rather than hiding it behind a finiteness check.  The
+        # volume-corrected error is 0.5164 with the cell-averaged propagator and
+        # 0.5286 with the point one -- a 1.02x gain, so the propagator is not
+        # what is wrong here.  The sub-cell T-matrices are still inside their
+        # Rayleigh validity (ka_sub = 1.5/6 = 0.25 < 0.3); what fails is the
+        # staircase representation of a curved boundary at a wavelength
+        # comparable with the radius.  The band below is a REGRESSION bar: it
+        # catches a change in this behaviour without pretending the agreement
+        # is good.
+        err = self._corrected_pattern_error(omega, radius, 6, theta_obs)
+        print(f"  Volume-corrected pattern error at ka=1.5: {err:.4f}  (NOT accurate)")
+        assert 0.40 < err < 0.65, (
+            f"Mie vs Foldy-Lax volume-corrected error = {err:.4f} at ka=1.5, "
+            "expected in the band (0.40, 0.65); measured 0.5164. This is a "
+            "regression bar on a regime where the voxel route does not converge."
+        )
 
     def test_convergence_study(self):
         """Foldy-Lax T-matrix per unit volume converges to Mie as n_sub increases.
@@ -572,10 +618,7 @@ class TestCrossComparison:
 
         print(f"\n  Convergence study at ka={ka_target}:")
         print(f"  Mie Drho_star = {Drho_star:.6e}")
-        print(
-            f"  {'n_sub':>5} {'N_cells':>7} {'V_ratio':>8} "
-            f"{'Drho_eff':>14} {'vol_corr_err':>14}"
-        )
+        print(f"  {'n_sub':>5} {'N_cells':>7} {'V_ratio':>8} {'Drho_eff':>14} {'vol_corr_err':>14}")
 
         V_sphere = (4.0 / 3.0) * np.pi * radius**3
         n_values = [2, 4, 6, 8, 10, 12]
@@ -590,10 +633,7 @@ class TestCrossComparison:
             Drho_eff = T_mean / (V_cubes * omega**2)
             err = abs(Drho_eff - Drho_star) / abs(Drho_star)
             vol_corr_errs.append(err)
-            print(
-                f"  {n:5d} {len(centres):7d} {V_ratio:8.4f} "
-                f"{Drho_eff.real:14.6e} {err:14.6f}"
-            )
+            print(f"  {n:5d} {len(centres):7d} {V_ratio:8.4f} {Drho_eff.real:14.6e} {err:14.6f}")
 
         # All volume-corrected errors should be < 1%
         for i, n in enumerate(n_values):
@@ -605,9 +645,7 @@ class TestCrossComparison:
         # confirms the cubic T-matrix is correct. Strict monotonic convergence
         # is not expected because the staircase volume oscillation causes
         # non-monotonic behavior in this metric.
-        assert max(vol_corr_errs) < 0.005, (
-            f"Max volume-corrected error {max(vol_corr_errs):.6f} > 0.5%"
-        )
+        assert max(vol_corr_errs) < 0.005, f"Max volume-corrected error {max(vol_corr_errs):.6f} > 0.5%"
 
 
 # =====================================================================
@@ -652,12 +690,8 @@ class TestMieEffectiveContrasts:
         """
         omega = 0.001 * REF.beta / 10.0
         for eps in [0.01, 0.05, 0.1, 0.2, 0.5]:
-            contrast = MaterialContrast(
-                Dlambda=REF.lam * eps, Dmu=REF.mu * eps, Drho=REF.rho * eps
-            )
-            Dlam_ref, Dmu_ref, Drho_ref = _sphere_eshelby_effective_contrasts(
-                REF, contrast
-            )
+            contrast = MaterialContrast(Dlambda=REF.lam * eps, Dmu=REF.mu * eps, Drho=REF.rho * eps)
+            Dlam_ref, Dmu_ref, Drho_ref = _sphere_eshelby_effective_contrasts(REF, contrast)
             mie = compute_elastic_mie(omega, 10.0, REF, contrast)
             mc = mie_extract_effective_contrasts(mie)
 
@@ -687,9 +721,7 @@ class TestMieEffectiveContrasts:
         """
         omega = 0.001 * REF.beta / 10.0
         for eps in [1e-4, 0.1, 0.5]:
-            contrast = MaterialContrast(
-                Dlambda=REF.lam * eps, Dmu=REF.mu * eps, Drho=REF.rho * eps
-            )
+            contrast = MaterialContrast(Dlambda=REF.lam * eps, Dmu=REF.mu * eps, Drho=REF.rho * eps)
             _, Dmu_ref, _ = _sphere_eshelby_effective_contrasts(REF, contrast)
             mie = compute_elastic_mie(omega, 10.0, REF, contrast)
             mc = mie_extract_effective_contrasts(mie)
@@ -708,9 +740,7 @@ class TestMieEffectiveContrasts:
             ("Dmu", mc.Dmu_star),
             ("Drho", mc.Drho_star),
         ]:
-            assert abs(val.imag) < 0.05 * abs(val.real), (
-                f"{name}: Im/Re = {abs(val.imag / val.real):.4f}"
-            )
+            assert abs(val.imag) < 0.05 * abs(val.real), f"{name}: Im/Re = {abs(val.imag / val.real):.4f}"
 
     def test_eshelby_amplification_factors(self):
         """Amplification factors match known Eshelby theory for a sphere.
@@ -725,9 +755,7 @@ class TestMieEffectiveContrasts:
         beta_E = 6.0 * (K0 + 2.0 * REF.mu) / (5.0 * (3.0 * K0 + 4.0 * REF.mu))
 
         for eps in [0.01, 0.1, 0.5]:
-            contrast = MaterialContrast(
-                Dlambda=REF.lam * eps, Dmu=REF.mu * eps, Drho=REF.rho * eps
-            )
+            contrast = MaterialContrast(Dlambda=REF.lam * eps, Dmu=REF.mu * eps, Drho=REF.rho * eps)
             mie = compute_elastic_mie(omega, 10.0, REF, contrast)
             mc = mie_extract_effective_contrasts(mie)
 
@@ -907,9 +935,7 @@ class TestCompleteScatteringMatrix:
         assert ref_mag > 0, f"{incident_type}->{channel}: zero amplitude"
 
         # Magnitude pattern should agree within tolerance
-        assert err_mag < tol, (
-            f"{incident_type}->{channel} magnitude error {err_mag:.3f} > {tol}"
-        )
+        assert err_mag < tol, f"{incident_type}->{channel} magnitude error {err_mag:.3f} > {tol}"
 
         # Phase-sensitive: Re and Im must each agree within the same
         # tolerance (relative to the pattern peak). A sign or phase
@@ -1026,16 +1052,11 @@ class TestReciprocity:
         if np.any(mask):
             ratios = rhs[mask] / lhs[mask]
             spread = np.std(np.abs(ratios)) / np.mean(np.abs(ratios))
-            print(
-                f"\n  Reciprocity ratios: mean={np.mean(ratios):.4f}, "
-                f"spread={spread:.4f}"
-            )
+            print(f"\n  Reciprocity ratios: mean={np.mean(ratios):.4f}, spread={spread:.4f}")
             assert spread < 0.01, f"Reciprocity ratio spread = {spread:.4f}"
             # The convention factor is exactly -1: k_P^2 f_PS = -k_S^2 f_SP
             mean_ratio = np.mean(ratios)
-            assert abs(mean_ratio + 1.0) < 0.01, (
-                f"Reciprocity ratio {mean_ratio:.4f} != -1"
-            )
+            assert abs(mean_ratio + 1.0) < 0.01, f"Reciprocity ratio {mean_ratio:.4f} != -1"
 
     def test_reciprocity_transition(self):
         """Reciprocity at ka=0.5 (transition)."""
@@ -1057,16 +1078,11 @@ class TestReciprocity:
         if np.any(mask):
             ratios = rhs[mask] / lhs[mask]
             spread = np.std(np.abs(ratios)) / np.mean(np.abs(ratios))
-            print(
-                f"\n  Reciprocity ratios (ka=0.5): mean={np.mean(ratios):.4f}, "
-                f"spread={spread:.4f}"
-            )
+            print(f"\n  Reciprocity ratios (ka=0.5): mean={np.mean(ratios):.4f}, spread={spread:.4f}")
             assert spread < 0.01, f"Reciprocity ratio spread = {spread:.4f}"
             # The convention factor is exactly -1: k_P^2 f_PS = -k_S^2 f_SP
             mean_ratio = np.mean(ratios)
-            assert abs(mean_ratio + 1.0) < 0.01, (
-                f"Reciprocity ratio {mean_ratio:.4f} != -1"
-            )
+            assert abs(mean_ratio + 1.0) < 0.01, f"Reciprocity ratio {mean_ratio:.4f} != -1"
 
 
 class TestOpticalTheorem:

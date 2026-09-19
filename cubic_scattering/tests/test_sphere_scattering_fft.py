@@ -16,6 +16,7 @@ from cubic_scattering import (
     MaterialContrast,
     ReferenceMedium,
 )
+from cubic_scattering.cell_averaged_pair import averaged_pair_block_9x9
 from cubic_scattering.effective_contrasts import compute_cube_tmatrix
 from cubic_scattering.resonance_tmatrix import (
     _propagator_block_9x9,
@@ -69,7 +70,18 @@ class TestPackUnpack:
 
 
 class TestFFTMatvec:
-    def test_fft_matvec_vs_dense(self) -> None:
+    @pytest.mark.parametrize("cell_average", [False, True])
+    def test_fft_matvec_vs_dense(self, cell_average: bool) -> None:
+        """The FFT convolution reproduces the dense assembly of the SAME operator.
+
+        Both propagators are exercised.  The test previously built the kernel
+        through ``_build_fft_kernel`` while assembling the dense reference from
+        the point propagator explicitly; once the single cell average became the
+        default for the kernel, the two sides were different operators and the
+        comparison failed at 6.5e-3 -- which is the size of the cell-average
+        correction, not a defect in the convolution.  Pinning the test to one
+        propagator would have hidden the new default instead of covering it.
+        """
         n_sub = 3
         grid_idx, centres, a_sub = _build_grid_index_map(RADIUS, n_sub)
         nC = len(centres)
@@ -77,15 +89,22 @@ class TestFFTMatvec:
 
         rayleigh_sub = compute_cube_tmatrix(OMEGA, a_sub, REF, CONTRAST)
         T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, OMEGA, a_sub)
-        kernel_hat = _build_fft_kernel(n_sub, a_sub, T_loc, OMEGA, REF)
+        kernel_hat = _build_fft_kernel(
+            n_sub, a_sub, T_loc, OMEGA, REF, cell_average=cell_average
+        )
 
+        pitch = 2.0 * a_sub
         dim = 9 * nC
         A_dense = np.eye(dim, dtype=complex)
         for m in range(nC):
             for n in range(nC):
                 if m != n:
                     r_vec = centres[m] - centres[n]
-                    P = _propagator_block_9x9(r_vec, OMEGA, REF)
+                    P = (
+                        averaged_pair_block_9x9(r_vec, OMEGA, REF, pitch)
+                        if cell_average
+                        else _propagator_block_9x9(r_vec, OMEGA, REF)
+                    )
                     A_dense[9 * m : 9 * m + 9, 9 * n : 9 * n + 9] -= P @ T_loc
 
         rng = np.random.default_rng(42)
