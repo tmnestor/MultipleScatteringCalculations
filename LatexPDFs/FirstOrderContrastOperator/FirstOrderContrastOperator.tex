@@ -4515,7 +4515,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$56/56$; against multiple scattering $17/17$; and the propagator gate exits clean.
+$56/56$; against multiple scattering $18/18$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4801,12 +4801,17 @@ lattice with no per-cell occupancy, so it cannot hold a sphere --- and therefore
 has no externally validated problem to be compared on at all.  Closing that gap
 needs a Bloch-periodic Foldy--Lax over a voxelised sphere, which is not built.
 
-And the arbiter is \emph{not neutral}.  Exact Mie is the isolated sphere.  The
-voxel route also solves the isolated sphere, so it is charged only for its own
-discretisation.  The march solves an \emph{array}, and most of what is charged
-against it is the inter-sphere coupling of \S\ref{sec:threed} --- real physics
-it includes correctly and the arbiter does not contain.  The comparison is
-therefore biased \emph{against} the march.
+And on the periodization, an earlier draft of this section argued that the
+comparison was \emph{biased against the march}: exact Mie is the isolated
+sphere, the march solves an array, and the inter-sphere coupling it is charged
+for is real physics the arbiter does not contain.  \textbf{That argument is
+wrong and is withdrawn.}  The question being asked is what one sphere
+scatters.  The march cannot answer it directly --- it requires a laterally
+periodic grid --- so the array is not a different problem that happened to be
+posed, it is \emph{machinery this method needs}, and the accuracy that
+machinery costs is the method's to carry.  A route that must periodize is
+charged for periodizing, exactly as a route that must voxelise is charged for
+the staircase.  Both errors below are method errors and neither is discounted.
 
 \paragraph{What ``error'' means in every table below.}  The two routes return
 different objects, so the two columns are not the same functional and it is
@@ -4984,23 +4989,59 @@ ones, and that is where the march's error is of order unity.}
 \end{center}
 
 \noindent
-\textbf{Most of that is the arbiter, and the figure shows it directly.}  The
-exact sphere is \emph{axisymmetric}: its far field depends on $\theta$ alone.
-The march solves a \emph{square array}, which is not.  At
-$\theta=144.4^{\circ}$ there are eight propagating orders sharing that angle and
-differing only in azimuth; the voxel route gives all eight the same error to
-five figures ($0.52571$), because it too is solving an isolated sphere, while
-the march gives eight different values ($1.94$ to $1.98$).  The spread is not
-error --- it is the array's own azimuthal structure, which the arbiter does not
-contain.  The specular orders are the only directions where the array's symmetry
-cannot enter, which is why they are the only ones the comparison can fairly use.
+\textbf{Where the march's wide-angle error comes from.}  The exact sphere is
+\emph{axisymmetric}: its far field depends on $\theta$ alone.  A square array is
+not.  At $\theta=144.4^{\circ}$ eight propagating orders share that angle and
+differ only in azimuth; the voxel route gives all eight the same error to five
+figures ($0.52571$), because it is solving an isolated sphere, while the march
+gives eight different values ($1.94$ to $1.98$).  That spread is the array's
+azimuthal structure.
 
-So the scope of the earlier claim is narrower than it first appears: the march
-is more accurate \emph{in the specular directions, above $k_Sa\simeq0.24$}.
-Away from those directions this comparison cannot say which method is better,
-because the two are not computing the same quantity.  Settling that needs the
-array's own exact solution --- a periodic multiple-scattering reference rather
-than an isolated one --- which \S\ref{sec:open} now also lists.
+\emph{It is still the march's error.}  The spread explains the mechanism, not
+away the number: the target is one sphere, the azimuthal structure is absent
+from the target, and it is present in the answer only because this method had to
+periodize to produce an answer at all.  The specular orders are the directions
+in which the array's symmetry cannot enter, which is why the march does best
+there --- not a reason to score it only there.
+
+\paragraph{Wide angles at lower frequency, where the confound is removed.}
+The table above has wide-angle orders at $k_Sa=2.4$ only, and that is an
+artefact of the period rather than a choice: an order propagates when
+$L>\lambda_P=1257\,\text{m}/(k_Sa)$, so at $L=900$ none exists below about
+$k_Sa=1.5$.  The one frequency the comparison could reach was therefore the one
+least favourable to the voxel route.  Holding the lateral pitch fixed and
+growing $L$ until wide-angle orders exist removes that:
+
+\begin{center}
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+& & \multicolumn{2}{c}{specular} & \multicolumn{2}{c}{wide angle} & \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+$k_Sa$ & $L$ (m) & march & voxel & march & voxel & voxel/march\\
+\midrule
+$2.4$ & $900$  & $5.98\times10^{-2}$ & $2.16\times10^{-1}$
+       & $1.96$ & $\mathbf{3.06\times10^{-1}}$ & $0.16$\\
+$1.5$ & $1800$ & $4.78\times10^{-2}$ & $8.03\times10^{-2}$
+       & $4.15\times10^{-1}$ & $\mathbf{1.84\times10^{-1}}$ & $0.44$\\
+$1.0$ & $2700$ & $4.57\times10^{-2}$ & $\mathbf{3.45\times10^{-2}}$
+       & $2.82\times10^{-1}$ & $\mathbf{7.52\times10^{-2}}$ & $0.27$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Medians of the per-order relative errors \eqref{eq:errmarch}
+and \eqref{eq:errvoxel}, at $\varepsilon=0.1$ and $n_{\rm sub}=6$, with the
+lateral pitch held at $112.5$\,m so only the period changes.  Bold is the better
+of the pair.  \textbf{The voxel route is better at wide angles at every
+frequency tested}, by $2.3$ to $6.3$ times, and at $k_Sa=1.0$ it is better at
+the specular orders as well.}
+\end{center}
+
+\noindent
+So the earlier claim narrows again, and in the same direction each time it is
+tested.  \textbf{The march's advantage is confined to the specular orders, and
+within them to $k_Sa\gtrsim1$}; at wide angles the voxel route is better
+everywhere measured.  The march's wide-angle error falls as the period grows
+--- $1.96$, $0.41$, $0.28$ across the three rows --- which is the periodization
+error converging, and it is still the larger of the two at every row.
 
 \paragraph{And the fast iterative route exists.}  The comparison above uses the
 dense direct solve that \texttt{compute\_sphere\_foldy\_lax} ships with, and an
