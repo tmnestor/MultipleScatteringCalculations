@@ -3034,6 +3034,207 @@ exact.  What it does not do is fail.  \textbf{The usable range goes from
 $|\mathbf{k}|\approx200$ to beyond $6000$ --- a factor of thirty --- and the
 failure mode changes from losing the branch to losing digits slowly.}
 
+\subsection{What $\bY$ is: the Dirichlet-to-Neumann
+map}\label{sec:dtn}
+
+Prescribe the displacement $\bu$ on the plane $x_3=z$ --- Dirichlet data ---
+solve the field equations in the region below it subject to the radiation
+condition at depth, and read off the traction $\bta_3$ that results --- Neumann
+data.  The operator carrying the one to the other is the Dirichlet-to-Neumann
+map of that region, and it is $\bY$:
+\begin{equation}\label{eq:dtn}
+  \bta_3 = \bY(z)\,\bu ,
+\end{equation}
+so $\bY(z)$ is the Dirichlet-to-Neumann map of the half-space below $z$.
+
+This is not a gloss on \eqref{eq:impedance}; it is what \eqref{eq:impedance} is
+an equation \emph{for}.  It is also the single idea the rest of this note keeps
+meeting under different names --- the imbedding equation, the impedance form,
+the M\"obius step, the symplectic identity, the boundedness of $\bY$ where $\bV$
+was unbounded, the dominance of the quadratic term --- and each of those is a
+consequence of \eqref{eq:dtn} rather than an independent finding.  The purpose
+of this subsection is to say so once, carefully, and to record which of the
+consequences are measured.  They are gated in
+\verb|gate_first_order_lateral_impedance_3d.py|, part~14.
+
+\paragraph{The scalar case, which is the whole idea.}  Take one dimension, an
+acoustic medium of density $\rho$ and speed $c$, modulus $M=\rho c^{2}$.  The
+first-order system is $u'=\tau/M$, $\tau'=-\rho\omega^{2}u$, so
+$A_{11}=A_{22}=0$, $A_{12}=1/M$, $A_{21}=-\rho\omega^{2}$.  In a half-space
+$Y'=0$ and \eqref{eq:impedance} collapses to the algebraic statement
+\begin{equation}\label{eq:scalarare}
+  0 = -\rho\omega^{2} - \frac{Y^{2}}{M}
+  \qquad\Longrightarrow\qquad
+  Y = \pm\, i\omega\sqrt{\rho M} = \pm\, i\omega\rho c ,
+\end{equation}
+and the radiation condition picks the sign.  So $Y$ \emph{is} the acoustic
+impedance $\rho c$, carrying the factor $i\omega$ that converts displacement to
+velocity; ``impedance operator'' is not an analogy.  The elastic matrix reduces
+to exactly this: at normal incidence the three channels decouple and
+$\mathrm{diag}(\bY)=i\omega\rho\,(\alpha,\beta,\beta)$ to $10^{-13}$, with the
+off-diagonal at $10^{-16}$ of the whole.
+
+Two media in welded contact share both $\bu$ and $\bta_3$, so $\bY$ is
+\emph{continuous} across an interface --- which is the entire content of the
+interface condition, and is why reflection coefficients fall out of it.  Writing
+$\bu = \bU_d\mathbf{a}_d + \bU_u\mathbf{a}_u$ and imposing \eqref{eq:dtn},
+\begin{equation}\label{eq:rfromy}
+  \bR = -\bigl(\mathbf{T}_u - \bY\,\bU_u\bigr)^{-1}
+         \bigl(\mathbf{T}_d - \bY\,\bU_d\bigr)
+      = \bU_u^{-1}\,(\bY_u-\bY)^{-1}(\bY-\bY_d)\,\bU_d ,
+\end{equation}
+which in the scalar case with $\bY_{u,d}=\mp i\omega\rho_1c_1$ and
+$\bY=i\omega\rho_2c_2$ is $|R| = |Z_2-Z_1|/(Z_2+Z_1)$, $Z=\rho c$ --- the
+textbook coefficient, and the identity the impedance-null test of
+\S\ref{sec:threed} rests on.  \emph{This is the first place the advantage shows.}
+Equation~\eqref{eq:rfromy} says $\bR$ is $\bY$ read in a chart, and reaching that
+chart costs the mode matrices $\bU_u,\bU_d$ --- that is, $\mathbf{D}_z$ and its
+inverse.  $\bY$ needs no chart at all.
+
+\paragraph{Existence, which is the argument \cite{haines2004} actually make.}
+Displacement and traction are physical fields; they exist whatever the medium
+does, and so does the map between them.  An up/down decomposition does not: it
+presupposes a mode structure that, in \cite{haines2004}'s words, ``can become
+poorly defined for laterally varying media''.  Their objection is about
+existence, not about conditioning, and \eqref{eq:dtn} is what answers it.  The
+conditioning argument of \S\ref{sec:impedance} is separate and is this note's
+own; \eqref{eq:rfromy} shows the two are related --- the chart that may fail to
+exist is the same one that is ill-conditioned when it does.
+
+\paragraph{The transformation law is M\"obius, and the march applies it.}  Let
+$\bM=e^{-\bA h}$ propagate $\bq=(\bu,\bta_3)$ up through a uniform step.  The
+graph of $\bY_{\text{bot}}$ is carried to the graph of
+\begin{equation}\label{eq:mobius}
+  \bY_{\text{top}} = \bigl(\bM_{21}+\bM_{22}\bY_{\text{bot}}\bigr)
+                     \bigl(\bM_{11}+\bM_{12}\bY_{\text{bot}}\bigr)^{-1},
+  \qquad \bM = e^{-\bA h},
+\end{equation}
+a matrix fractional-linear --- M\"obius --- transformation.  The
+\texttt{mobius} method of the march is literally one application of
+\eqref{eq:mobius}, which is why it is exact for a piecewise-constant medium and
+why it is therefore a layer stack.  In a uniform medium the
+half-space map is the \emph{fixed point} of this action, and that is how
+\eqref{eq:mobius} is checked here: to $9.2\times10^{-16}$ at $h=5$ and
+$3.3\times10^{-15}$ at $h=80$, with the propagator that acts symplectic to
+$4\times10^{-8}$.
+
+The Riccati equation is the infinitesimal form of \eqref{eq:mobius}.  Put
+$\bM=\mathbf{I}-\bA h+O(h^{2})$, expand, and the $O(h)$ term is
+\eqref{eq:impedance}.  So ``imbed the problem in the family indexed by the
+position of the surface and differentiate along the family'' --- the move of
+\cite{bellman1959} and \cite{mccoy1986}, and the imbedding step of
+\S\ref{sec:imbedding} --- and ``write down the M\"obius action of the propagator
+and take its generator'' are the same derivation.
+
+\paragraph{The graph is Lagrangian, and that is reciprocity.}  Set
+$\mathbf{W}=\begin{psmallmatrix}\mathbf{I}_{3N}\\ \bY\end{psmallmatrix}$, whose
+columns span the downgoing subspace.  Restricting the symplectic form to it,
+\begin{equation}\label{eq:lagrangian}
+  \mathbf{W}^{T}\Jsix\mathbf{W} = \bY-\bY^{T},
+\end{equation}
+so \emph{$\bY$ symmetric} and \emph{the downgoing subspace is Lagrangian} are
+one statement.  Since $\Jsix\bA=(\Jsix\bA)^{T}$ makes the flow symplectic, and a
+symplectic flow carries Lagrangian subspaces to Lagrangian subspaces, symmetry
+is \textbf{preserved by the march rather than approached by it}.  The
+measurement says exactly that: $\|\bY-\bY^{T}\|/\|\bY\| \le 2.7\times10^{-16}$
+at every contrast and every step count tried, with \emph{no} improvement under
+refinement, because there is nothing to improve.  Physically it is reciprocity;
+the symplectic identity used throughout this note as a discretisation check is
+this same fact one level down.
+
+This also says what $\bY$ is as a geometric object: a point of the
+\emph{Lagrangian Grassmannian}, the space of Lagrangian subspaces, of which
+symmetric matrices are one coordinate chart.
+
+\paragraph{Why $\bY$ is bounded where $\bV$ was not.}  The Grassmannian is
+compact; the chart is not.  $\bY$ blows up exactly where its graph stops being
+transverse to $\{\bu=0\}$, and $\bR$ blows up --- by \eqref{eq:rfromy} --- where
+$\bY_u-\bY$ becomes singular.  \textbf{Both are chart singularities, not
+singularities of the field}, and they sit in different places.  That is the
+structural reason behind the measurement of \S\ref{sec:impedance}: $\bV$
+returning $2.000$ from $|\mathbf{k}|=600$ is the reflection chart failing, not
+the solution failing.
+
+Whether the $\bY$ chart fails is then a physical question with a physical
+answer.  $\bY$ becomes singular only if the region below has a resonance with a
+\emph{clamped} surface, and a region radiating into a half-space at real
+$\omega$ has none, because energy leaks out of every candidate mode.  That is an
+argument rather than a proof, and it is offered as one; what supports it is the
+measurement already reported --- $\|\bY\|/\mu|\mathbf{k}|\to1.529022$ and
+$\mathrm{cond}(\bY)\to2.0000$ across four decades, with no growth anywhere.
+
+\paragraph{Energy: the anti-Hermitian part, and what its kernel counts.}  A
+Dirichlet-to-Neumann surface can lose energy downward but cannot be fed from
+below, so $(\bY-\bY^{\dagger})/2i$ must be positive \emph{semi}-definite.  Semi,
+not definite: an evanescent channel carries no flux and contributes an exact
+zero, so the kernel is not slack in the statement but a count.  One zero per
+P-evanescent lateral mode of the half-space below, two per S-evanescent one.  At
+the gate's parameters ($k_P=0.0120$, $k_S=0.0200$, $\max|\mathbf{k}|=0.0178$)
+that predicts $20$ null channels of $108$, and $20$ is what is measured --- with
+the most negative eigenvalue at $-5.5\times10^{-16}$ of scale and a gap of
+$0.24$ of scale to the smallest surviving one, so the count is unambiguous.
+
+Two things are worth drawing out.  The prediction is a \emph{count}, which no
+tolerance can be tuned to satisfy; and the regime it counts is precisely the one
+\cite{haines2004} single out as awkward --- wavenumbers at which $P$ has gone
+evanescent while $S$ still propagates.  Every one of the $20$ is such a channel.
+The construction meets that case by not distinguishing it.
+
+\paragraph{A Schur complement, which is why the quadratic term is irreducible.}
+Discretise the region below the surface and eliminate every interior degree of
+freedom.  With $\mathbf{K}$ the stiffness, $b$ the boundary and $i$ the interior,
+\begin{equation}\label{eq:schur}
+  \bY = \mathbf{K}_{bb} - \mathbf{K}_{bi}\mathbf{K}_{ii}^{-1}\mathbf{K}_{ib},
+\end{equation}
+which is static condensation of an entire half-space onto one surface, and
+$\bY\bA_{12}\bY$ in \eqref{eq:impedance} is
+$\mathbf{K}_{bi}\mathbf{K}_{ii}^{-1}\mathbf{K}_{ib}$ in differential form.  This
+settles structurally what \S\ref{sec:latcost} measures.  That term is $69\%$ of
+the step and is dense in \emph{every} basis, because the Schur complement of a
+connected region is dense however the region is parametrised --- so no change of
+basis reaches it.  It is also, for the same reason, the term that carries the
+multiple scattering: it is the only place where what is below the surface acts
+back on it.
+
+\paragraph{The exact transparent boundary condition.}  A Dirichlet-to-Neumann
+map is a relation on a surface that replaces an infinite domain with no
+approximation whatever.  An absorbing layer is an approximation to this object;
+here the object itself is in hand, which is why the slab is closed at its base
+by $\bY$ rather than by a sponge, and why a vertical absorbing layer never
+arises as a question.  It arises laterally, where the grid is periodic and no
+such map is available --- and an absorbing layer tried there is the one part of
+this construction that failed to earn its place, recorded in the gate rather
+than here because it produced no result to report.
+
+\paragraph{$\bY$ is a complete state.}  Nothing below the surface enters except
+through \eqref{eq:dtn}, so the march carries no history.  Stopping it at
+mid-slab and restarting from the value reached returns the same answer: to the
+arithmetic floor when the two stages use the same step size --- it is then the
+same arithmetic in the same order --- and to $1.4\times10^{-7}$ when they do
+not, which is truncation error and not a discrepancy.  The practical consequence
+is that regions compose by handing over one matrix, and the march exposes this
+as a starting value rather than hiding it.  It is also, in a second guise, the
+reuse of \S\ref{sec:tricks}: $\bY$ contains no reference to a source, so one
+march serves any number of them.
+
+\paragraph{Its other names.}  The same operator is the \emph{admittance} or
+\emph{impedance operator} of \cite{haines1989,hainesdehoop1996,haines2004}, the
+\emph{static condensation} of structural analysis, the \emph{transparent} or
+non-reflecting boundary condition of numerical wave propagation, and --- in one
+dimension --- the Weyl--Titchmarsh $m$-function.  Whether the map determines the
+medium is the Calder\'on problem, whose answer is that it does.  That is worth
+recording because it identifies what the march computes as exactly the object an
+inverse problem would want to measure, although nothing in this note pursues it.
+
+\paragraph{What it does not give.}  The map is a statement on one surface.  It
+carries no information about the field in the interior, which is why a one-way
+equation is still needed to reconstruct it, and why the reuse of
+\S\ref{sec:tricks} is partial --- \cite{haines2004} reuse fundamental solutions
+as well as the operator, and the fundamental solutions are what this note has
+not built.  The map is also frequency-by-frequency: it is non-local in time, so
+nothing here transfers to a time-domain march without an additional
+construction.
+
 \subsection{Marching it through a slab, and scoring
 it}\label{sec:impmarch}
 
@@ -3042,20 +3243,13 @@ a homogeneous medium.  This is the march: integrate \eqref{eq:impedance} upward
 from the base of a slab, starting from the downgoing impedance of the background
 half-space --- the radiation condition, and the continuum form of
 $\mathbf{Y}_{M+1}=0$ --- then read a reflection matrix off the result using
-continuity of $\bu$ and $\bta_3$ and nothing else,
-\begin{equation}\label{eq:rfromy}
-  \bR = -\bigl(\mathbf{T}_u - \bY\,\mathbf{U}_u\bigr)^{-1}
-         \bigl(\mathbf{T}_d - \bY\,\mathbf{U}_d\bigr).
-\end{equation}
+continuity of $\bu$ and $\bta_3$ and nothing else --- equation
+\eqref{eq:rfromy}, which \S\ref{sec:dtn} reads as the statement that $\bR$ is
+$\bY$ expressed in a chart that costs a mode decomposition.
+
 Two integrators are carried so that each checks the other.  For a
-piecewise-constant medium the step is a \emph{linear-fractional transform} and
-is exact,
-\begin{equation}\label{eq:mobius}
-  \bY_{\text{top}} = \bigl(\bM_{21} + \bM_{22}\bY_{\text{bot}}\bigr)
-                     \bigl(\bM_{11} + \bM_{12}\bY_{\text{bot}}\bigr)^{-1},
-  \qquad \bM = e^{-\bA h},
-\end{equation}
-so one step settles a uniform slab outright; RK4 applied to
+piecewise-constant medium the step is the \emph{linear-fractional transform}
+\eqref{eq:mobius} and is exact, so one step settles a uniform slab outright; RK4 applied to
 \eqref{eq:impedance} directly never forms $e^{-\bA h}$ at all, and is the
 control.
 
@@ -3875,7 +4069,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$30/30$; and the propagator gate exits clean.
+$51/51$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4257,8 +4451,11 @@ intervals''.  That is the scheme of Algorithm~1 and the sampling discipline of
 measured against a \emph{layer stack}, which is a different comparison and not
 one with them.
 
-On three further counts their implementation is ahead of the one described
-here, and saying so is the point of this section:
+On three further counts their implementation was ahead of the one described
+here.  All three have since been adopted, and \S\ref{sec:tricks} reports what
+each was worth when measured rather than estimated --- which in one case is a
+good deal less than the estimate below, left standing so the correction is
+visible:
 
 \begin{itemize}
 \item \textbf{Adaptive step control.}  They derive a step size from the leading
@@ -4289,6 +4486,84 @@ The M\"obius step and its replacement in \S\ref{sec:algorithm} are therefore not
 an improvement on this literature either.  Haines \emph{et al.}\ form no matrix
 exponential anywhere; the exponential is inherited from the layer-stack
 tradition, and removing it recovers a position they already held.
+
+\subsection{The three counts, adopted and measured}\label{sec:tricks}
+
+Each of the three was built into the march and scored against the version
+without it.  The gate is \verb|gate_first_order_lateral_impedance_3d.py|, now
+$51/51$.
+
+\paragraph{Adaptive step control, and what it really controls.}  Their rule is
+implemented as written, with $\mathbf{D}=\bA_{11}+\bA_{12}\bY$ --- the operator
+of the one-way equation $\bu'=(\bA_{11}+\bA_{12}\bY)\bu$, which is their
+$-i\omega(\bA^{VV}-\bA^{VT}\mathbf{Z})$ in the conventions of this note --- and
+$\partial_z\mathbf{D}$ by one finite difference at the start of each step.
+Tightening $\theta$ tightens the answer as it should:
+
+\begin{center}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+$\theta$ & steps & relative error & mean $2|k|_{\max}h$\\
+\midrule
+$1$            & $21$ & $4.18\times10^{-5}$ & $0.24$\\
+$\tfrac12$     & $39$ & $3.06\times10^{-6}$ & $0.13$\\
+$\tfrac14$     & $75$ & $2.18\times10^{-7}$ & $0.07$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Adaptive stepping on the 3-D lateral grid, scored against a
+converged uniform march.  Halving $\theta$ buys about $14\times$, consistent
+with the fourth-order error the rule is derived from.}
+\end{center}
+
+\noindent
+Against a uniform step at equal accuracy the saving is $75$ steps rather than
+$128$ --- worth having, and smaller than the headline.  The more useful
+observation is structural, and it is not one this note made before implementing
+the rule: \textbf{the step control is also the stability control.}  Since
+$h \le \theta/\|\mathbf{D}\|$ and $\|\mathbf{D}\|$ bounds the largest vertical
+wavenumber, $2|k|_{\max}h \le 2\theta$; at $\theta=\tfrac12$ that is $1.0$,
+inside the explicit method's wall at $\simeq1.3$ measured in
+\S\ref{sec:whatimbedbuys}.  This is why \cite{haines2004} can use an explicit
+Runge--Kutta scheme throughout and meet no stability wall, where the uniform
+march here did.  The wall was never an argument for an implicit step; it was an
+argument for a step-size rule.
+
+One honest qualification.  $\|\mathbf{D}\|$ is taken as the maximum absolute row
+sum, which bounds the spectral radius at $O(n^2)$ rather than the cost of a
+decomposition --- and measured on the operator at the base of the slab it
+over-bounds it by $4.4\times$.  That factor is paid in steps.  A tighter
+estimate would recover it; an eigendecomposition would cost more than it saves.
+
+\paragraph{Fourier assembly of $\bA$, which is worth much less than estimated.}
+Every factor of $\mathbf{D}_x$ or $\mathbf{D}_y$ is applied to the columns of
+the identity by transform instead of multiplied in, so a term such as
+$\mathbf{D}_x\zeta\mathbf{D}_x$ costs $O(N^{2}\log N)$ rather than $O(N^{3})$.
+It reproduces the dense assembly to $4.4\times10^{-16}$.  It is also
+\emph{slower} than the dense product below $N\approx100$, where the transform's
+constant dominates, and reaches $1.8$--$2.5\times$ at $N=144$.
+
+The estimate above --- a ceiling of about $1.45\times$ --- was too generous, and
+for a reason worth stating.  It compared assembly against assembly.  Assembly is
+not the step: one Runge--Kutta step is four evaluations of the right-hand side
+at $13.7$\,ms each against $6.2$\,ms of assembly, so assembly is $10\%$ of the
+step and a $2\times$ saving on it is $5\%$ of the march.  The reason is the one
+\S\ref{sec:dtn} gives structurally: $\bY\bA_{12}\bY$ is a Schur complement and
+is dense in every basis, so no transform reaches the term that dominates.  The
+trick is real, it is now taken, and it is worth a few per cent rather than half.
+
+\paragraph{Reuse, which this formulation gets for nothing.}  $\bY$ is the
+Dirichlet-to-Neumann map of the medium and contains no reference to a source, so
+one march serves any number of them: $425$\,ms for the march, then eight sources
+in $2.0$\,ms in total, against $3400$\,ms to treat each as a fresh problem.
+Nothing had to be added for this beyond noticing it, and the same property in a
+second guise --- $\bY$ as a complete state, so that regions compose by handing
+over one matrix --- is what \S\ref{sec:dtn} gates as the imbedding restart.
+
+\medskip
+\noindent
+What remains theirs and not taken is the reuse of \emph{fundamental solutions}
+as well as the operator, which requires the one-way equation this note has not
+built, and their treatment of varying receiver geometry.
 
 \subsection{What has not been checked}
 
@@ -4392,7 +4667,8 @@ quoted from here without that check.
   This is the construction marched in
   \S\ref{sec:impedance}--\S\ref{sec:threed}, the symplectic identity used
   throughout is their eq.~(44), and their \S2.5 is the integrator of
-  Algorithm~1 with adaptive step control added.  See \S\ref{sec:priorart}.
+  Algorithm~1, whose adaptive step control and Fourier assembly are adopted in
+  \S\ref{sec:tricks}.  See \S\ref{sec:priorart}.
 
 \bibitem{haskell1953} Haskell, N.~A. (1953).  The dispersion of surface waves
   on multilayered media.  \emph{Bulletin of the Seismological Society of
