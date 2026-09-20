@@ -28,13 +28,16 @@ can be applied here: the sphere's Foldy-Lax system is an ordinary linear system
 ``(I - P~ T~) psi = psi_inc`` on the voxel centres, and GMRES applies to it
 directly.  Part 5 does exactly that, and it works.
 
-⚠ THE ARBITER IS NOT NEUTRAL BETWEEN THEM.  Exact Mie is the isolated sphere.
-Foldy-Lax also solves the isolated sphere, so the comparison charges it only for
-its own discretisation.  The march solves an ARRAY, and its residual is
-dominated by inter-sphere coupling -- measured at 1.45 eps and linear in
-contrast -- which is not an error at all but the correct answer to a different
-question.  The march is therefore being charged for physics it includes
-correctly.  It is reported that way, and it still wins.
+⛔ AN EARLIER VERSION OF THIS GATE ARGUED THAT THE ARBITER WAS BIASED AGAINST
+THE MARCH -- exact Mie being the isolated sphere while the march solves an
+array, so that the inter-sphere coupling charged against it was "real physics it
+includes correctly".  THAT ARGUMENT IS WRONG AND IS WITHDRAWN.  The question is
+what ONE sphere scatters.  The march cannot answer it directly: it requires a
+laterally periodic grid, so the array is not a different problem that happened
+to be posed, it is MACHINERY THIS METHOD NEEDS, and the accuracy that machinery
+costs belongs to the method.  A route that must periodize is charged for
+periodizing exactly as a route that must voxelise is charged for the staircase.
+Both errors here are method errors and neither is discounted.
 
 Run:
     conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py
@@ -242,12 +245,11 @@ def part3() -> None:
     print(
         "\n      ⚠ BOTH ROUTES HERE SOLVE DIRECTLY; part 5 adds GMRES on the\n"
         "      same matrix.\n"
-        "\n      ⚠ THE COMPARISON IS NOT EVEN-HANDED, AND IT FAVOURS THE OTHER ONE.\n"
-        "      Exact Mie is the ISOLATED sphere.  Foldy-Lax solves the isolated\n"
-        "      sphere, so it is charged only for its own discretisation.  The march\n"
-        "      solves an ARRAY, and most of what is charged against it is the\n"
-        "      inter-sphere coupling -- real physics it includes correctly, and\n"
-        "      which the arbiter does not contain.  It wins anyway.\n"
+        "\n      ⛔ AN EARLIER VERSION CALLED THIS COMPARISON UNFAIR TO THE MARCH,\n"
+        "      on the grounds that its residual is inter-sphere coupling rather\n"
+        "      than error.  WITHDRAWN.  The target is ONE sphere; the march must\n"
+        "      periodize to answer at all, so periodization is its own machinery\n"
+        "      and its cost is its own.  Both errors are method errors.\n"
         "\n"
         "      ⚠ NEITHER ERROR IS A DISCRETISATION ERROR THAT REFINEMENT REMOVES.\n"
         "      The voxel route's is the staircase, non-monotonic in n_sub because\n"
@@ -543,6 +545,119 @@ def part7() -> None:
     )
 
 
+def _order_errors(ka_s: float, period: float) -> tuple[float, float, float, float]:
+    """Median per-order errors of both routes, split specular / wide angle.
+
+    The lateral pitch is held at 112.5 m so that only the period changes; an
+    order propagates when ``period > lambda_P``, which is what brings wide
+    angles into reach at lower frequency.
+
+    Args:
+        ka_s: Shear wavenumber times the sphere radius.
+        period: Lateral period.
+
+    Returns:
+        (specular march, specular voxel, wide march, wide voxel).
+    """
+    import scripts.gate_sphere_vs_impedance_march as march_mod
+    from scripts.gate_sphere_plane_wave_spectrum import kz_of
+
+    nsz = int(round(period / 112.5))
+    saved = march_mod.OMEGA
+    try:
+        march_mod.OMEGA = ka_s * REF.beta / RADIUS
+        omega = march_mod.OMEGA
+        kp = omega / REF.alpha
+        r_mat, t_mat = march_mod.reflection_transmission(nsz, nsz, period, period, 32)
+        r_pred = march_mod.mie_prediction(nsz, nsz, period, period)
+        t_pred = march_mod.mie_transmission(nsz, nsz, period, period)
+        kx = np.repeat(march_mod.grid_wavenumbers(nsz, period), nsz)
+        ky = np.tile(march_mod.grid_wavenumbers(nsz, period), nsz)
+    finally:
+        march_mod.OMEGA = saved
+
+    q = np.hypot(kx, ky)
+    kzp = kz_of(q, kp)
+    mie = compute_elastic_mie(omega, RADIUS, REF, CONTRAST)
+    fl = compute_sphere_foldy_lax(
+        omega,
+        RADIUS,
+        REF,
+        CONTRAST,
+        n_sub=6,
+        k_hat=K_HAT,
+        wave_type="P",
+        cell_average=True,
+    )
+    vol = fl.n_cells * (2.0 * fl.a_sub) ** 3 / ((4.0 / 3.0) * np.pi * RADIUS**3)
+    r_far = 5.0e4 * RADIUS
+
+    groups: dict[str, list[tuple[float, float]]] = {"spec": [], "wide": []}
+    for i in range(nsz * nsz):
+        if abs(kzp[i].imag) > 1e-12 * max(abs(kzp[i].real), 1e-30):
+            continue
+        if q[i] > 0.999 * kp:
+            continue
+        for got, want, sgn in (
+            (r_mat[i, 0], r_pred[i], -1.0),
+            (t_mat[i, 0], t_pred[i], +1.0),
+        ):
+            if abs(want) < 1e-6 * abs(r_pred[0]):
+                continue
+            direction = np.array([sgn * float(kzp[i].real), kx[i], ky[i]]) / kp
+            theta = float(np.degrees(np.arccos(np.clip(direction[0], -1.0, 1.0))))
+            pts = direction[None, :] * r_far
+            u_m = mie_scattered_displacement(mie, pts)
+            u_p, u_s = foldy_lax_far_field(fl, pts / r_far, r_far, K_HAT, K_HAT, wave_type="P")
+            key = "spec" if (theta < 1.0 or theta > 179.0) else "wide"
+            groups[key].append(
+                (
+                    float(abs(got - want) / abs(want)),
+                    float(np.abs(u_p + u_s - u_m * vol).max() / np.abs(u_m * vol).max()),
+                )
+            )
+
+    def med(key: str, col: int) -> float:
+        vals = [row[col] for row in groups[key]]
+        return float(np.median(vals)) if vals else float("nan")
+
+    return med("spec", 0), med("spec", 1), med("wide", 0), med("wide", 1)
+
+
+def part8() -> None:
+    """Wide angles at LOW frequency, where the period no longer forces the issue."""
+    print("\n[8] wide-angle orders across frequency")
+    print("      ⚠ part 6 could only reach wide angles at k_S a = 2.4, and that is")
+    print("      the period's doing, not a choice: an order propagates only when")
+    print("      L > lambda_P = 1257 m / (k_S a), so at L = 900 none exists below")
+    print("      about k_S a = 1.5.  The one frequency available was the one least")
+    print("      favourable to the voxel route.  Growing L at fixed pitch fixes it.")
+
+    print(
+        f"\n      {'k_S a':>7}{'L (m)':>8}{'spec march':>12}{'spec voxel':>12}"
+        f"{'wide march':>12}{'wide voxel':>12}{'vox/march':>11}"
+    )
+    wide_ratios = []
+    for ka_s, period in ((2.4, 900.0), (1.5, 1800.0), (1.0, 2700.0)):
+        spec_m, spec_v, wide_m, wide_v = _order_errors(ka_s, period)
+        wide_ratios.append(wide_v / wide_m)
+        print(
+            f"      {ka_s:7.2f}{period:8.0f}{spec_m:12.4e}{spec_v:12.4e}"
+            f"{wide_m:12.4e}{wide_v:12.4e}{wide_v / wide_m:11.2f}"
+        )
+
+    report(
+        "the VOXEL route is better at wide angles at every frequency tested",
+        all(r < 1.0 for r in wide_ratios),
+    )
+    print(
+        "\n      ▶ So the march's advantage is confined to the SPECULAR orders, and\n"
+        "      within them to k_S a >~ 1.  Its wide-angle error falls as the period\n"
+        "      grows -- 1.96, 0.41, 0.28 -- which is the periodization error\n"
+        "      converging, and it is the larger of the two at every row."
+    )
+
+
 def main() -> int:
     """Run every part and summarise.
 
@@ -556,7 +671,7 @@ def main() -> int:
         f"k_S a = {OMEGA / REF.beta * RADIUS:.2f}   contrast eps = {EPS}"
     )
     print("=" * 78)
-    for fn in (part0, part1, part2, part3, part4, part5, part6, part7):
+    for fn in (part0, part1, part2, part3, part4, part5, part6, part7, part8):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)
