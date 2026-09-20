@@ -132,9 +132,22 @@ def ang_triple(
     """
     u = kz_dir / k
     q = np.sqrt(np.asarray(kx, dtype=complex) ** 2 + np.asarray(ky) ** 2)
-    q = np.where(np.abs(q) < 1e-300, 1e-300, q)
     s = q / k
-    cps, sps = kx / q, ky / q
+    # ⚠ ON AXIS THE AZIMUTH IS UNDEFINED, and 0/0 is not the right answer.
+    # cos psi = kx/q and sin psi = ky/q have no limit at q = 0, but the physical
+    # field does: the psi-dependence of the m = 1 angular functions is cancelled
+    # by the psi-dependence of the SV/SH polarisation vectors, which are equally
+    # undefined there.  The convention has to be shared, and ``mode_matrix``
+    # takes the psi = 0 branch (e_SV = x_hat, e_SH = y_hat), so this does too.
+    #
+    # The Sommerfeld nodes never land exactly on q = 0, so the 72-case check of
+    # part 1 does not exercise this; it is the SPECULAR order of an array that
+    # does, where q is exactly zero.  Returning 0/0 -> 0 there silently zeroed
+    # the whole specular column.
+    on_axis = np.abs(q) < 1e-300
+    q_safe = np.where(on_axis, 1.0, q)
+    cps = np.where(on_axis, 1.0, kx / q_safe)
+    sps = np.where(on_axis, 0.0, ky / q_safe)
     p1 = legendre_dp(n, u)
     if m == 0:
         return legendre_p(n, u), -s * p1, np.zeros_like(p1)
