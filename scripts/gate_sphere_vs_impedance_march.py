@@ -68,6 +68,7 @@ from scripts.gate_first_order_lateral_impedance_3d import (  # noqa: E402
     rel,
     riccati_rhs,
 )
+from scripts.gate_mie_spectrum_general_m import ang_triple  # noqa: E402
 from scripts.gate_sphere_plane_wave_spectrum import kz_of, mode_amplitudes  # noqa: E402
 from scripts.gate_thesis_spectral import dz_normalised  # noqa: E402
 
@@ -700,6 +701,109 @@ def energy_residual(nx: int, ny: int, lx: float, ly: float, nstep: int) -> tuple
     return float(np.linalg.norm(m - np.eye(k)) / np.sqrt(k)), int(prop.sum())
 
 
+def mie_spectrum_s(nx: int, ny: int, lx: float, ly: float, *, upward: bool) -> tuple:
+    """The scattered plane-wave spectrum of an x-polarised S wave at normal incidence.
+
+    The m = +/-1 counterpart of ``mode_amplitudes``.  Its angular content is the
+    triple of ``gate_mie_spectrum_general_m.ang_triple`` -- ported from
+    ``Mathematica/MieSphericalWaves.wl`` Section 7 and validated there against
+    the exact field -- and its normalisation is fixed by the same relation the
+    m = 0 case obeys, with the m = 1 renormalisation renorm(n) = -1/[n(n+1)]:
+
+        c_mode = (i / 2 pi k_z) sum_n coeff_n renorm(n) ang_n(m=1) / i^n
+
+    That is not assumed.  Converting a spectrum to a far field by stationary
+    phase gives f = -2 pi i k_z c, and for m = 0 this reproduces
+    ``mie_far_field``'s Sum a_n (-i)^n P_n exactly; for m = 1 it reproduces its
+    independently written SV branch to 4e-6 over a spread of angles, which is
+    what pins the normalisation above.
+
+    ⚠ THE TOROIDAL (M-type) PART IS NOT INCLUDED, and that is a stated gap
+    rather than an oversight.  An x-polarised S wave excites the toroidal family
+    as well as the spheroidal one, and ``compute_elastic_mie`` carries its
+    coefficients as ``c_n``.  What is missing is the scalar relating ``c_n`` to
+    the shared potential convention: ``c_n`` is normalised against its own
+    incident expansion (2n+1) i^n / (i k_S), which a_n_sv and b_n_sv do not
+    share, and ``mie_far_field``'s SH branch cannot settle it because that
+    branch drops the M-type outright as "O((ka)^4) and negligible" -- a claim
+    that fails here, where |c_n| runs 1.5 to 2.5 times |b_n_sv renorm(n)| at
+    k_S a = 2.4.  Scanning the scalar against the march bounds it at or below
+    k_S: at that size the toroidal is invisible against the array-coupling
+    floor, while a scalar of 1 degrades the median agreement from 0.94 to 0.58
+    and one of 1/(i k_S) destroys it.  Bounded, not determined.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+        upward: True for the reflected half-space.
+
+    Returns:
+        (c_P, c_SV, c_SH), each shape (N,).
+    """
+    mie = compute_elastic_mie(OMEGA, RADIUS, REF, MIE_CONTRAST)
+    kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
+    kx1, ky1 = grid_wavenumbers(nx, lx), grid_wavenumbers(ny, ly)
+    kx = np.repeat(kx1, ny)
+    ky = np.tile(ky1, nx)
+    q = np.hypot(kx, ky)
+    kzp, kzs = kz_of(q, kp), kz_of(q, ks)
+    dirp = -kzp if upward else kzp
+    dirs = -kzs if upward else kzs
+
+    sp = np.zeros(kx.size, dtype=complex)
+    ssv = np.zeros(kx.size, dtype=complex)
+    ssh = np.zeros(kx.size, dtype=complex)
+    for n in range(1, mie.n_max + 1):
+        renorm = -1.0 / (n * (n + 1))
+        inv_in = 1.0 / (1j**n)
+        a_ang, _, _ = ang_triple(n, 1, kx, ky, dirp, kp)
+        _, dth, dph = ang_triple(n, 1, kx, ky, dirs, ks)
+        sp = sp + mie.a_n_sv[n] * renorm * a_ang * inv_in
+        ssv = ssv + mie.b_n_sv[n] * renorm * dth * inv_in
+        ssh = ssh + mie.b_n_sv[n] * renorm * dph * inv_in
+    return (
+        (1j / (2.0 * np.pi * kzp)) * sp,
+        (1j / (2.0 * np.pi * kzs)) * ssv,
+        (1j / (2.0 * np.pi * kzs)) * ssh,
+    )
+
+
+def mie_columns_s(nx: int, ny: int, lx: float, ly: float) -> tuple[NDArray, NDArray]:
+    """The predicted R and T columns for an SV wave at the Gamma order.
+
+    Same Poisson relation as ``mie_prediction``, with the incident wavenumber
+    k_S in place of k_P, and the transmitted column carrying the unscattered
+    wave on its own (SV, Gamma) entry.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+
+    Returns:
+        (R column, T column), each shape (3N,).
+    """
+    n = nx * ny
+    kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
+    q = q_grid(nx, ny, lx, ly)
+    kzp, kzs = kz_of(q, kp), kz_of(q, ks)
+    pref = (2.0 * np.pi) ** 2 / (lx * ly)
+
+    out = []
+    for upward in (True, False):
+        c_p, c_sv, c_sh = mie_spectrum_s(nx, ny, lx, ly, upward=upward)
+        col = np.zeros(3 * n, dtype=complex)
+        col[:n] = pref * c_p * np.exp(1j * (ks + kzp) * RADIUS)
+        col[n : 2 * n] = pref * c_sv * np.exp(1j * (ks + kzs) * RADIUS)
+        col[2 * n :] = pref * c_sh * np.exp(1j * (ks + kzs) * RADIUS)
+        out.append(col)
+    out[1][n] = out[1][n] + np.exp(2j * ks * RADIUS)  # the unscattered wave
+    return out[0], out[1]
+
+
 def part1() -> None:
     """The band-limited disc is the disc: area exact, and it converges to it."""
     print("\n[1] the band-limited disc against the disc it represents")
@@ -1175,6 +1279,55 @@ def part7() -> None:
     )
 
 
+def part8() -> None:
+    """SV incidence, scored against Mie -- the column the m=0 spectrum could not."""
+    print("\n[8] SV incidence against exact Mie (the m = +/-1 spectrum)")
+    nx = ny = 6
+    lx = ly = 600.0
+    n = nx * ny
+
+    r_mat, t_mat = reflection_transmission(nx, ny, lx, ly, 32)
+    r_want, t_want = mie_columns_s(nx, ny, lx, ly)
+    got_r, got_t = r_mat[:, n], t_mat[:, n]  # incident SV at the Gamma order
+
+    # THE SPECULAR SV->P ENTRY IS EXACTLY ZERO IN MIE, and that is a symmetry
+    # statement worth keeping: the m = 1 angular function carries a factor
+    # sin(theta), so an S wave cannot backscatter into P exactly along the axis.
+    print(f"      specular SV->P: Mie {abs(r_want[0]):.3e} (zero by symmetry), march {abs(got_r[0]):.3e}")
+    report("Mie gives exactly zero for specular SV->P", abs(r_want[0]) < 1e-30)
+    # The march cannot return an exact zero here and should not be asked to: it
+    # is solving a periodic ARRAY, whose inter-sphere coupling is measured at
+    # 1.45 eps -- about 14% at this contrast -- and that coupling breaks the
+    # isolated sphere's axial symmetry.  The leakage is 3.6% of the specular
+    # SV->SV, comfortably inside that floor, so what this checks is that the
+    # symmetry holds AS WELL AS the array allows, not exactly.
+    leak = abs(got_r[0]) / abs(got_r[n])
+    print(f"      the march's leakage into it is {leak:.1%} of specular SV->SV, against a 14% array floor")
+    report("and the march respects it to within the array coupling", leak < 0.10)
+
+    # The P channel of the SV column is driven by a_n_sv ALONE -- the toroidal
+    # field is transverse and cannot radiate P -- so it is the part of this
+    # comparison that the stated toroidal gap does not touch.
+    for lab, got, want in (("R", got_r, r_want), ("T", got_t, t_want)):
+        big = np.abs(want[:n]) > 1.0e-2 * np.max(np.abs(want[:n]))
+        rat = np.abs(got[:n][big]) / np.abs(want[:n][big])
+        print(
+            f"      {lab} column, P channel: {int(big.sum())} orders, "
+            f"median march/Mie {np.median(rat):.4f}, range {rat.min():.3f}-{rat.max():.3f}"
+        )
+        report(f"the SV->P channel of {lab} tracks Mie", 0.6 < float(np.median(rat)) < 1.6)
+
+    big = np.abs(r_want[n:]) > 3.0e-2 * np.max(np.abs(r_want[n:]))
+    rat = np.abs(got_r[n:][big]) / np.abs(r_want[n:][big])
+    print(f"      R column, S channels: {int(big.sum())} orders, median march/Mie {np.median(rat):.4f}")
+    report("the SV->S channels track Mie too", 0.6 < float(np.median(rat)) < 1.6)
+    print(
+        "      ⚠ the S channels carry the toroidal gap of ``mie_spectrum_s``: the\n"
+        "      scalar joining c_n to the shared convention is bounded at or below\n"
+        "      k_S by this comparison and is NOT determined by it."
+    )
+
+
 def main() -> int:
     """Run every part and summarise.
 
@@ -1184,7 +1337,7 @@ def main() -> int:
     print("=" * 78)
     print("THE SPHERE AS SEEN BY THE LATERALLY COUPLED IMPEDANCE MARCH")
     print("=" * 78)
-    for fn in (part1, part2, part3, part4, part5, part6, part7):
+    for fn in (part1, part2, part3, part4, part5, part6, part7, part8):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)

@@ -3353,15 +3353,59 @@ $2.3\times10^{-3}$.  The two are not comparable with one another: transmission
 is dominated by the unscattered wave, so its relative error is necessarily the
 smaller.
 
-\paragraph{What the arbiter, not the march, still limits.}  Scoring $SV$ and
-$SH$ \emph{incidence} against Mie needs the $m=\pm1$ plane-wave spectrum rather
-than the $m=0$ one.  That spectrum is derived and validated --- Section~7 of
+\paragraph{$S$ incidence, scored.}  The comparison above is the $P$ column,
+because the plane-wave spectrum it uses is the $m=0$ one --- which is what a $P$
+wave at normal incidence excites.  $S$ incidence excites $m=\pm1$, and that
+spectrum is now available: Section~7 of
 \texttt{Mathematica/MieSphericalWaves.wl}, ``the channel spectra, general in
-$m$'', with the angular triple in closed form for $m\neq0$, all three families,
-and the Sommerfeld path on both branches --- and the Mie coefficients for $S$
-incidence already exist.  What is missing is the \emph{Python port} of a
-validated derivation, not the derivation.  An earlier draft of this paragraph
-said the spectrum was not built, which was a survey that stopped at the Python.
+$m$'', carries it in closed form for all three families with the Sommerfeld path
+on both branches, and it is ported and checked against that file's $72$-case
+exact-field reference at $1.5\times10^{-8}$.
+
+Its normalisation is not assumed.  Stationary phase relates a spectrum to a far
+field by $f=-2\pi i k_z c$, which for $m=0$ reproduces
+$\sum_n a_n(-i)^n P_n$ exactly; requiring the same of $m=1$ fixes the
+renormalisation $\varrho(n)=-1/[n(n+1)]$, and the result then reproduces an
+independently written $SV$ far field to $4\times10^{-6}$ across a spread of
+angles.  With that, the $SV$ column of the response scores against Mie as
+
+\begin{center}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+column & channel & orders & median march/Mie\\
+\midrule
+$\bR$ & $P$   & $24$ & $0.920$ \quad(range $0.78$--$1.08$)\\
+$\bT$ & $P$   & $24$ & $1.016$ \quad(range $0.63$--$1.60$)\\
+$\bR$ & $S$   & $52$ & $0.939$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{$SV$ incidence at the $\Gamma$ order, $k_Sa=2.4$.  The scatter
+is the array coupling of \S\ref{sec:threed}, $1.45\,\varepsilon\simeq14\%$ here,
+not a march error.}
+\end{center}
+
+\noindent
+One entry is a symmetry rather than a measurement and is worth keeping: the
+$m=1$ angular function carries a factor $\sin\theta$, so an $S$ wave
+\emph{cannot} backscatter into $P$ exactly along the axis.  Mie gives
+identically zero there; the march gives $3.6\%$ of the specular $SV\to SV$,
+which is inside the array floor --- a periodic array has no axial symmetry to
+respect exactly.
+
+\paragraph{What is still open, and it is the arbiter again.}  An $x$-polarised
+$S$ wave excites the \emph{toroidal} family as well as the spheroidal one, and
+\texttt{compute\_elastic\_mie} carries its coefficients.  What is missing is the
+scalar relating them to the shared potential convention: they are normalised
+against their own incident expansion, which the spheroidal coefficients do not
+share, and the package's $SH$ far field cannot settle it because that routine
+drops the toroidal part outright as ``$O((ka)^4)$ and negligible'' --- a claim
+that fails at $k_Sa=2.4$, where the toroidal coefficients run $1.5$ to $2.5$
+times the spheroidal ones.  Scanning the scalar against the march \emph{bounds}
+it at or below $k_S$, where the toroidal is invisible against the array floor,
+and rules out $1$ (median agreement $0.94\to0.58$) and $1/(ik_S)$ (which
+destroys it).  Bounded, not determined, and it is recorded that way rather than
+fitted: a scalar tuned against the one comparison it is scored on always looks
+successful.
 
 \subsection{The symplectic picture, and what it
 guarantees}\label{sec:symplectic}
