@@ -4326,6 +4326,184 @@ $\bA_{22}$ are non-zero.  Per right-hand side, in units of $N^3$: the quadratic
 term $27$, $\bA_{22}\bY$ and $\bY\bA_{11}$ six apiece, so the quadratic term is
 $69\%$ of the work and the preconditioner, when one is built, belongs there.
 
+\subsection{The plane-wave R/T arrays of a
+sphere}\label{sec:algorithm-rt}
+
+Algorithm~1 stops at $\bR$, which is all one sweep can give.  The procedure
+below is the whole response --- both matrices, every incident and outgoing
+channel --- and it is stated separately because three of its steps are not
+refinements of Algorithm~1 but additions to it: the second sweep, the impedance
+\emph{history} that sweep consumes, and the cross-section that puts a sphere on
+a periodic grid without a staircase.
+
+Four things in it are not free choices.  The cross-section enters through its
+\emph{area} and not its radius, so the disc is band-limited rather than
+voxelised (\S\ref{sec:threed}).  The march domain is exactly $[-a,+a]$ about the
+centre, so the only non-smoothness in the coefficient --- the junction to the
+homogeneous exterior --- sits at the endpoints and never inside a step.  The
+upward sweep is run at \emph{twice} the depth resolution of the downward one and
+every value kept, so that the downward Runge--Kutta finds $\bY$ already
+evaluated at each of its stage depths and no interpolation enters; without that
+the second sweep is second order and the first is wasted.  And the azimuthal
+convention on the array's specular order is shared between the mode matrices and
+the multipole spectrum, because on axis neither is defined alone.
+
+\vspace{3mm}
+\noindent\begin{minipage}{\linewidth}
+\textbf{Algorithm}~\textbf{2} {\sc The plane-wave reflection and transmission
+arrays of a sphere}\newline
+\vspace{2mm}
+
+\begin{itemize}
+\item given a sphere of radius $a$ and contrast $(\Delta\lambda,\Delta\mu,
+\Delta\rho)$ centred in a cell of area $A=L_xL_y$ repeated periodically, a
+lateral grid of $N=N_xN_y$ points, and $M$ depth steps, compute $\bR$ and $\bT$
+for every incident and outgoing plane-wave channel
+
+\begin{itemize}
+\item (*{\em the medium at one depth: a disc of the right AREA, band-limited to
+the grid\/}*)
+\end{itemize}
+
+\item \textbf{Procedure} $\mathrm{slice}(\zeta)$:
+\begin{itemize}
+\item $R^{2} = a^{2}-\zeta^{2}$ \quad (and the slice is the exterior medium
+      where $R^{2}\le0$)
+\item $\widehat{\Pi}(\mathbf{q}) = 2\pi R^{2}\,
+      \dfrac{J_1(|\mathbf{q}|R)}{|\mathbf{q}|R}$ \quad on the grid's lateral
+      wavenumbers, with the value $\pi R^{2}$ at $\mathbf{q}=0$
+\item (*{\em $J_1(x)/x$ is even and entire, so $\widehat{\Pi}$ is analytic in
+      $R^{2}=a^{2}-\zeta^{2}$ and therefore smooth across the pole.  A voxelised
+      disc is not, and the fourth order does not survive it\/}*)
+\item $\Pi(\mathbf{x})$ = the inverse lateral transform of $\widehat{\Pi}/A$, centred on the
+      cell by the shift phase
+\item \textbf{Return} $(\lambda,\mu,\rho)(\mathbf{x}) =
+      (\lambda_0,\mu_0,\rho_0) + \Pi(\mathbf{x})\,
+      (\Delta\lambda,\Delta\mu,\Delta\rho)$
+\end{itemize}
+
+\begin{itemize}
+\item (*{\em sweep one: upward, at DOUBLE resolution, keeping every value\/}*)
+\end{itemize}
+
+\item partition $[-a,+a]$ into $2M$ steps $\zeta_0=-a<\cdots<\zeta_{2M}=+a$,
+      where $\zeta=z-a$ is measured from the sphere's centre and increases
+      \emph{downward}: $\zeta_{2M}$ is the base and $\zeta_0$ the top
+\item $\bY \leftarrow$ the half-space impedance of the exterior medium, by the
+      Newton loop of Algorithm~1
+\item store $\mathbf{Y}_{2M}\leftarrow\bY$
+\item \textbf{For} $j=2M,\cdots,1$: advance $\bY$ from $\zeta_j$ to
+      $\zeta_{j-1}$ by one step of Algorithm~1, then store
+      $\mathbf{Y}_{j-1}\leftarrow\bY$
+\item (*{\em the stored values at even $j$ are the downward sweep's step edges
+      and those at odd $j$ its midpoints --- exactly its stage depths\/}*)
+\end{itemize}
+\end{minipage}
+
+\vspace{4mm}
+\noindent\begin{minipage}{\linewidth}
+\textbf{Algorithm}~\textbf{2} {\em continued\/}\newline
+\vspace{2mm}
+
+\begin{itemize}
+\item (*{\em the mode matrices, and the one convention that is shared\/}*)
+
+\item \textbf{For} each lateral wavenumber $\mathbf{q}=(k_x,k_y)$ of the grid,
+build the $3\times3$ blocks $\bU_d,\mathbf{T}_d,\bU_u,\mathbf{T}_u$ of the
+exterior medium, columns ordered $P,SV,SH$ and each of unit displacement
+\item on the specular order $\mathbf{q}=\mathbf{0}$ take the azimuth
+      $\psi=0$, so that $\hat{\mathbf{e}}_{SV}=\hat{\mathbf{x}}$ and
+      $\hat{\mathbf{e}}_{SH}=\hat{\mathbf{y}}$
+\item (*{\em the azimuth has no limit there, but the field does: the
+      $\psi$-dependence of these polarisations cancels against that of the
+      $m=\pm1$ multipole spectrum they are compared with, so the SAME branch
+      must be taken in both.  Taking $0/0=0$ instead zeroes the entire specular
+      column\/}*)
+
+\begin{itemize}
+\item (*{\em reflection, from the top of the first sweep alone\/}*)
+\end{itemize}
+
+\item $\hat{\bY}\leftarrow$ $\bY$ transformed to the lateral wavenumber domain
+\item $\bR = \left(\mathbf{T}_u-\hat{\bY}\bU_u\right)^{-1}
+             \left(\hat{\bY}\bU_d-\mathbf{T}_d\right)$
+
+\begin{itemize}
+\item (*{\em sweep two: downward, WITH the energy flow, while the Riccati ran
+against it\/}*)
+\end{itemize}
+
+\item $\bu \leftarrow \bU_d + \bU_u\bR$ \quad --- the total displacement at the
+      top for unit incidence in each channel, transformed to the lateral grid
+\item \textbf{For} $m=1,\cdots,M$ \quad --- with $j=2(m-1)$ and step
+      $h=\zeta_{j+2}-\zeta_{j}>0$
+\begin{itemize}
+\item $\mathbf{K}_1 = \mathcal{O}_{j}\,\bu$, \quad
+      $\mathbf{K}_2 = \mathcal{O}_{j+1}\!\left(\bu+\tfrac{h}{2}\mathbf{K}_1\right)$
+\item $\mathbf{K}_3 = \mathcal{O}_{j+1}\!\left(\bu+\tfrac{h}{2}\mathbf{K}_2\right)$,
+      \quad
+      $\mathbf{K}_4 = \mathcal{O}_{j+2}\!\left(\bu+h\mathbf{K}_3\right)$
+\item $\bu \leftarrow \bu + \tfrac{h}{6}\left(\mathbf{K}_1+2\mathbf{K}_2
+      +2\mathbf{K}_3+\mathbf{K}_4\right)$
+\end{itemize}
+\item (*{\em the signs are the downsweep, and it is the stable direction here
+      for the same reason the upsweep is stable for $\bY$\/}*)
+
+\begin{itemize}
+\item (*{\em transmission: below the slab the field is purely downgoing\/}*)
+\end{itemize}
+
+\item $\bT = \bU_d^{-1}\,\hat{\bu}$, \quad with $\hat{\bu}$ the field at
+      $\zeta_{2M}$ returned to the wavenumber domain
+\end{itemize}
+\end{minipage}
+
+\vspace{3mm}
+\noindent where
+$\mathcal{O}_j = \bA_{11}(\zeta_j)+\bA_{12}(\zeta_j)\,\mathbf{Y}_j$ is the
+one-way operator of \eqref{eq:oneway}, built from the stored impedance at that
+depth and never re-marched.
+
+\paragraph{What it costs, against Algorithm~1.}  Measured at $N=36$, $M=16$:
+$2.49\times$ the reflection alone.  Most of that is not the second sweep.  The
+\emph{upward} sweep is what doubles --- it runs at $2M$ steps so that the
+downward one finds $\bY$ at its stage depths --- and the downward sweep itself
+is $M$ steps of four matrix--vector products against $\mathcal{O}$, cheaper per
+step than the Riccati by the whole quadratic term.  So the price of transmission
+is paid mostly in the sweep one already had.
+
+\emph{An earlier draft of this paragraph said $1.5\times$, reasoning from the
+cheapness of the second sweep and forgetting that the first one had been
+doubled.}  The memory cost is the history, $2M+1$ matrices of $3N\times3N$,
+which is the only new storage in the procedure and the reason the doubling is
+stated as part of the algorithm rather than left to the caller.
+
+\paragraph{Checking it without an arbiter.}  Two conditions are available before
+any comparison with Mie, and both are stated in \S\ref{sec:rt}.  At zero
+contrast every entry is known in closed form, $\bR=\mathbf{0}$ and
+$\bT=\mathrm{diag}\,e^{ik_{z,c}\cdot2a}$, which tests the sweeps and the mode
+matrices together.  At finite contrast, rescaling to the flux basis by
+$w_c(\mathbf{q})=\sqrt{c^{2}k_{z,c}/\omega}$ and restricting to propagating
+channels, $\bR^{\dagger}\bR+\bT^{\dagger}\bT=\bI$ --- which scores every entry
+of both matrices at once, and needs nothing external.
+
+\paragraph{Against the isolated sphere.}  To compare with Mie the array must be
+undone.  One sphere per cell of area $A$, all seeing the same incident phase at
+normal incidence, gives by Poisson summation
+\begin{equation}\label{eq:poisson-rt}
+  \bR[\mathbf{G}\!\leftarrow\!\Gamma]
+  = \frac{(2\pi)^2}{A}\,c_{\mathrm{mode}}(\mathbf{G})\,
+    e^{i(k_{\mathrm{inc}}+k_z(\mathbf{G}))a},
+\end{equation}
+with the same expression for $\bT$ plus the unscattered wave
+$e^{2ik_{\mathrm{inc}}a}$ on the specular entry of the incident channel.  The
+two phases are the incident wave referred from the top of the slab to the
+sphere's centre, where Mie normalises it, and the scattered order referred back
+from the centre to the plane.  The spectrum $c_{\mathrm{mode}}$ is the $m=0$ one
+for $P$ incidence and the $m=\pm1$ one for $S$; \eqref{eq:poisson-rt} is exact
+but for scattering \emph{between} spheres, which is what growing $A$ removes and
+what the residual of \S\ref{sec:threed} measures at $1.45\,\varepsilon$.
+
 %=====================================================================
 \section{Summary of checks}
 
