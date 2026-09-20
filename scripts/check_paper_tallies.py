@@ -47,6 +47,7 @@ CLAIMS = {
     "layered $\\boldsymbol\\Gamma$": "gate_first_order_layered_gamma",
     "lateral impedance march": "gate_first_order_lateral_impedance",
     "same march in three dimensions": "gate_first_order_lateral_impedance_3d",
+    "against multiple scattering": "gate_imbedding_vs_foldy_lax",
 }
 
 TALLY = re.compile(r"(\d+)/(\d+) checks passed|(\d+) passed, (\d+) failed")
