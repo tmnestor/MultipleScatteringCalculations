@@ -26,8 +26,8 @@ Physics:
   incident strain, which already includes self-consistent amplification.
 
 Sign convention:
-  f_P = -Q_P/(4πρα²) where Q_P = r̂·F - ikP V(r̂·Δσ·r̂)
-  This matches the Mie far-field convention with the (-1)^n correction.
+  f_P = Q_P/(4πρα²) where Q_P = r̂·F + ikP V(r̂·Δσ·r̂)
+  This matches the Mie far-field convention (``mie_far_field``) directly.
 """
 
 from typing import TYPE_CHECKING
@@ -97,7 +97,7 @@ def cube_far_field(
     """Compute far-field scattering amplitudes from T27 results.
 
     Uses the correct Lippmann-Schwinger far-field formula:
-      f_P = -[r̂·F - ikP V(r̂·Δσ·r̂)] / (4πρα²)
+      f_P = [r̂·F + ikP V(r̂·Δσ·r̂)] / (4πρα²)
 
     where:
       F = ω²Δρ A_u c_inc[0:3]  — density-only amplified force monopole
@@ -193,15 +193,29 @@ def cube_far_field(
         rSr = r_hat @ (V * dsigma) @ r_hat
         Sr = (V * dsigma) @ r_hat
 
-        # f_P = -[r̂·F - ikP(r̂·VΔσ·r̂)] / (4πρα²)
-        Q_P = rF - 1j * kP * rSr
-        f_P[idx] = -Q_P / (4.0 * np.pi * rho * ref.alpha**2)
+        # f_P = [r̂·F + ikP(r̂·VΔσ·r̂)] / (4πρα²)
+        #
+        # ⚠ THE FORCE TERM'S SIGN WAS WRONG HERE, and it is the same error that
+        # was found and fixed in ``foldy_lax_far_field``: the overall minus and
+        # the minus on the stress term together leave the force contributing
+        # -r̂·F where it must contribute +r̂·F.  That routine was corrected; this
+        # one was missed, and stayed wrong because the Mie arbiter it was checked
+        # against carried a (-1)^n inverting ITS dipole.  Two wrong dipoles agreed.
+        #
+        # With Mie corrected the disagreement became visible and specific --
+        # equal magnitudes, opposite sign, "P1: oblique sign -8.224e-03 vs mie
+        # 8.079e-03" -- and fixing it takes the cube/Mie far-field ratio from
+        # (4.68, 4.18, 1.01) to (1.01, 1.01, 1.01) at moderate contrast and from
+        # (26.0, 111.4, 1.00) to (1.00, 1.01, 1.00) at weak contrast, where the
+        # Born limit says they must agree.
+        Q_P = rF + 1j * kP * rSr
+        f_P[idx] = Q_P / (4.0 * np.pi * rho * ref.alpha**2)
 
-        # f_S = -[(I-r̂r̂)·F - ikS(I-r̂r̂)·VΔσ·r̂] / (4πρβ²)
+        # f_S = [(I-r̂r̂)·F + ikS(I-r̂r̂)·VΔσ·r̂] / (4πρβ²), same correction.
         F_perp = F - rF * r_hat
         S_perp = Sr - rSr * r_hat
-        Q_S = F_perp - 1j * kS * S_perp
-        u_S = -Q_S / (4.0 * np.pi * rho * ref.beta**2)
+        Q_S = F_perp + 1j * kS * S_perp
+        u_S = Q_S / (4.0 * np.pi * rho * ref.beta**2)
 
         f_SV[idx] = np.dot(sv_hat, u_S)
         f_SH[idx] = np.dot(sh_hat, u_S)
@@ -306,19 +320,22 @@ def resonance_far_field(
         phase_S = np.exp(-1j * kS * r_dot_centres)  # (N,)
 
         # Sum over sub-cells with phase factors
-        # P-wave: Q_P_n = r̂·F_n - ikP(r̂·σ_n·r̂)
+        # Same force-term sign correction as the single-cell routine above --
+        # this is the multi-cell form of the identical expression and carried the
+        # identical error.
+        # P-wave: Q_P_n = r̂·F_n + ikP(r̂·σ_n·r̂)
         rF = forces @ r_hat  # (N,)
         rSr = np.einsum("i,nij,j->n", r_hat, sigmas, r_hat)  # (N,)
-        Q_P_total = np.sum((rF - 1j * kP * rSr) * phase_P)
-        f_P[idx] = -Q_P_total / (4.0 * np.pi * rho * ref.alpha**2)
+        Q_P_total = np.sum((rF + 1j * kP * rSr) * phase_P)
+        f_P[idx] = Q_P_total / (4.0 * np.pi * rho * ref.alpha**2)
 
-        # S-wave: Q_S = F_perp - ikS(σ·r̂)_perp
+        # S-wave: Q_S = F_perp + ikS(σ·r̂)_perp
         Sr = np.einsum("nij,j->ni", sigmas, r_hat)  # (N, 3)
         F_perp = forces - np.outer(rF, r_hat)  # (N, 3)
         S_perp = Sr - np.outer(rSr, r_hat)  # (N, 3)
-        Q_S_per_cell = F_perp - 1j * kS * S_perp  # (N, 3)
+        Q_S_per_cell = F_perp + 1j * kS * S_perp  # (N, 3)
         Q_S_total = np.sum(Q_S_per_cell * phase_S[:, None], axis=0)  # (3,)
-        u_S = -Q_S_total / (4.0 * np.pi * rho * ref.beta**2)
+        u_S = Q_S_total / (4.0 * np.pi * rho * ref.beta**2)
 
         f_SV[idx] = np.dot(sv_hat, u_S)
         f_SH[idx] = np.dot(sh_hat, u_S)
@@ -371,8 +388,7 @@ def total_cross_section_from_amplitudes(
         Total scattering cross-section (m²).
     """
     integrand = (
-        (c_P / c_inc) * np.abs(f_P) ** 2
-        + (c_S / c_inc) * (np.abs(f_SV) ** 2 + np.abs(f_SH) ** 2)
+        (c_P / c_inc) * np.abs(f_P) ** 2 + (c_S / c_inc) * (np.abs(f_SV) ** 2 + np.abs(f_SH) ** 2)
     ) * np.sin(theta)
     return float(2.0 * np.pi * np.trapezoid(integrand, theta))
 
@@ -412,13 +428,9 @@ def scattering_cross_section(
     c_inc_speed = ref.alpha if dot > 0.5 else ref.beta
 
     theta = np.linspace(0, np.pi, n_theta)
-    f_P, f_SV, f_SH = cube_far_field(
-        c_inc, c_sc, theta, ref, galerkin, contrast, omega, a, k_vec, pol
-    )
+    f_P, f_SV, f_SH = cube_far_field(c_inc, c_sc, theta, ref, galerkin, contrast, omega, a, k_vec, pol)
 
-    return total_cross_section_from_amplitudes(
-        theta, f_P, f_SV, f_SH, c_inc_speed, ref.alpha, ref.beta
-    )
+    return total_cross_section_from_amplitudes(theta, f_P, f_SV, f_SH, c_inc_speed, ref.alpha, ref.beta)
 
 
 # ================================================================
@@ -468,9 +480,7 @@ def optical_theorem_from_amplitudes(
         (sigma_ext, sigma_sc) in m².
     """
     sigma_ext = -4.0 * np.pi / k_inc * float(np.imag(f_P_forward))
-    sigma_sc = total_cross_section_from_amplitudes(
-        theta, f_P, f_SV, f_SH, c_inc, c_P, c_S
-    )
+    sigma_sc = total_cross_section_from_amplitudes(theta, f_P, f_SV, f_SH, c_inc, c_P, c_S)
     return sigma_ext, sigma_sc
 
 
@@ -504,12 +514,14 @@ def optical_theorem_check(
         c_inc, c_sc, np.array([0.0]), ref, galerkin, contrast, omega, a, k_vec, pol
     )
 
-    # Note: our far-field uses f_P = -Q_P/(4πρα²), so the optical theorem
-    # σ_ext = (4π/k) Im[f(0)] picks up the opposite sign from the standard
-    # convention. We flip to get σ_ext > 0 for passive scatterers.
-    sigma_ext = -4.0 * np.pi / kI * np.imag(f_P_fwd[0])
-    sigma_sc = scattering_cross_section(
-        c_inc, c_sc, ref, galerkin, contrast, omega, a, k_vec, pol
-    )
+    # The STANDARD optical theorem, σ_ext = (4π/k) Im[f(0)].
+    #
+    # This used to carry a compensating minus, because the far field was built
+    # as f_P = -Q_P/(4πρα²) and the flip was needed to get σ_ext > 0 for a
+    # passive scatterer.  That convention was itself the force-term sign error
+    # (see ``cube_far_field``); with it corrected, f_P is in the same convention
+    # as ``mie_far_field`` and the compensating minus has to go with it.
+    sigma_ext = 4.0 * np.pi / kI * np.imag(f_P_fwd[0])
+    sigma_sc = scattering_cross_section(c_inc, c_sc, ref, galerkin, contrast, omega, a, k_vec, pol)
 
     return float(sigma_ext), float(sigma_sc)

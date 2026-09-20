@@ -23,9 +23,7 @@ from cubic_scattering.tmatrix_assembly import assemble_tmatrix_27
 
 REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
 CONTRAST = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
-WEAK_CONTRAST = MaterialContrast(
-    Dlambda=REF.mu * 1e-4, Dmu=REF.mu * 1e-4, Drho=REF.rho * 1e-4
-)
+WEAK_CONTRAST = MaterialContrast(Dlambda=REF.mu * 1e-4, Dmu=REF.mu * 1e-4, Drho=REF.rho * 1e-4)
 
 
 def _setup(ka: float, a: float = 10.0, contrast: MaterialContrast = CONTRAST):
@@ -46,9 +44,7 @@ def test_dipole_pattern():
     omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(0.05, contrast=density_only)
 
     theta = np.linspace(0, np.pi, 100)
-    f_P, f_SV, f_SH = cube_far_field(
-        c_inc, c_sc, theta, REF, g, density_only, omega, 10.0, k_vec, pol
-    )
+    f_P, f_SV, f_SH = cube_far_field(c_inc, c_sc, theta, REF, g, density_only, omega, 10.0, k_vec, pol)
 
     # For pure density contrast, f_P should be dominated by cos(θ) pattern
     # from the dipole term F·r̂ = |F| cos(θ)
@@ -68,17 +64,13 @@ def test_stiffness_monopole():
     omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(0.05, contrast=stiffness_only)
 
     theta = np.array([0.0, np.pi / 2, np.pi])
-    f_P, f_SV, f_SH = cube_far_field(
-        c_inc, c_sc, theta, REF, g, stiffness_only, omega, 10.0, k_vec, pol
-    )
+    f_P, f_SV, f_SH = cube_far_field(c_inc, c_sc, theta, REF, g, stiffness_only, omega, 10.0, k_vec, pol)
 
     # With Δρ=0, the density force monopole is zero.
     # The stiffness stress dipole gives l=0 (monopole) + l=2 (quadrupole).
     # The monopole is isotropic, so f_P should be similar at all angles.
     # Check that f_P(0) and f_P(π) have the same sign (monopole dominates).
-    assert np.real(f_P[0]) * np.real(f_P[2]) > 0, (
-        "Stiffness monopole should have same sign at 0 and π"
-    )
+    assert np.real(f_P[0]) * np.real(f_P[2]) > 0, "Stiffness monopole should have same sign at 0 and π"
 
 
 def test_cube_vs_mie_rayleigh():
@@ -87,9 +79,7 @@ def test_cube_vs_mie_rayleigh():
     a = 10.0
 
     theta = np.array([0.0, np.pi / 4, np.pi / 2])
-    f_P, f_SV, f_SH = cube_far_field(
-        c_inc, c_sc, theta, REF, g, CONTRAST, omega, a, k_vec, pol
-    )
+    f_P, f_SV, f_SH = cube_far_field(c_inc, c_sc, theta, REF, g, CONTRAST, omega, a, k_vec, pol)
 
     # Equal-volume sphere
     V_cube = (2 * a) ** 3
@@ -111,9 +101,7 @@ def test_cube_vs_mie_weak_contrast():
     omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(0.05, contrast=WEAK_CONTRAST)
     a = 10.0
 
-    f_P, _, _ = cube_far_field(
-        c_inc, c_sc, np.array([0.0]), REF, g, WEAK_CONTRAST, omega, a, k_vec, pol
-    )
+    f_P, _, _ = cube_far_field(c_inc, c_sc, np.array([0.0]), REF, g, WEAK_CONTRAST, omega, a, k_vec, pol)
 
     V_cube = (2 * a) ** 3
     a_sphere = (3 * V_cube / (4 * np.pi)) ** (1.0 / 3.0)
@@ -152,7 +140,7 @@ def _mie_forward_pp(mie) -> complex:
     Mie sphere closes the optical theorem to σ_ext = σ_sc = 1.0 to 5 digits,
     ka-independent — confirming ``compute_elastic_mie`` is unitary.
     """
-    return -sum(mie.a_n[n] * (1j) ** n for n in range(mie.n_max + 1))
+    return -sum(mie.a_n[n] * (-1j) ** n for n in range(mie.n_max + 1))
 
 
 def test_optical_theorem_mie_gate():
@@ -268,13 +256,10 @@ def test_optical_theorem_cube():
     ratios = []
     for ka in (0.05, 0.1, 0.3):
         omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(ka)
-        sigma_ext, sigma_sc = optical_theorem_check(
-            T27, REF, g, CONTRAST, omega, 10.0, k_vec, pol
-        )
+        sigma_ext, sigma_sc = optical_theorem_check(T27, REF, g, CONTRAST, omega, 10.0, k_vec, pol)
         assert sigma_sc > 0, f"ka={ka}: sigma_sc={sigma_sc:.4e} should be positive"
         assert sigma_ext > 0, (
-            f"ka={ka}: σ_ext={sigma_ext:.4e} should be positive "
-            "(forward scattering present)"
+            f"ka={ka}: σ_ext={sigma_ext:.4e} should be positive (forward scattering present)"
         )
         ratios.append(sigma_ext / sigma_sc)
 
@@ -315,9 +300,7 @@ def test_cross_section_positive():
     """Scattering cross-section should be positive."""
     omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(0.05)
 
-    sigma_sc = scattering_cross_section(
-        c_inc, c_sc, REF, g, CONTRAST, omega, 10.0, k_vec, pol
-    )
+    sigma_sc = scattering_cross_section(c_inc, c_sc, REF, g, CONTRAST, omega, 10.0, k_vec, pol)
     assert sigma_sc > 0
 
 
@@ -326,9 +309,7 @@ def test_sv_scattering_nonzero():
     omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(0.05)
 
     theta = np.array([np.pi / 4])
-    f_P, f_SV, f_SH = cube_far_field(
-        c_inc, c_sc, theta, REF, g, CONTRAST, omega, 10.0, k_vec, pol
-    )
+    f_P, f_SV, f_SH = cube_far_field(c_inc, c_sc, theta, REF, g, CONTRAST, omega, 10.0, k_vec, pol)
 
     # For P-wave along z with stiffness contrast, mode conversion to SV
     # should be nonzero at oblique angles
@@ -347,9 +328,7 @@ def test_far_field_scales_with_frequency():
 
     for ka in ka_vals:
         omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(ka, a=a)
-        f_P, _, _ = cube_far_field(
-            c_inc, c_sc, np.array([0.0]), REF, g, CONTRAST, omega, a, k_vec, pol
-        )
+        f_P, _, _ = cube_far_field(c_inc, c_sc, np.array([0.0]), REF, g, CONTRAST, omega, a, k_vec, pol)
         f_vals.append(abs(f_P[0]))
 
     # f_P(0) ~ (ka)^2 in the Rayleigh limit (monopole + dipole both ~ k²)

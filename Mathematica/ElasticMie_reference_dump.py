@@ -98,7 +98,10 @@ def sh_c_corrected(n):
     rhs = np.array([-coeff * j_inc,
                     -coeff * mu_out * (kS_out * jp_inc - j_inc / a)], dtype=complex)
     sol = np.linalg.solve(M, rhs)
-    return ((-1.0) ** n) * sol[0]
+    # The (-1)^n that used to multiply this was the same sign error that sat
+    # in compute_elastic_mie -- applied here too, so this 'independent'
+    # rebuild reproduced the bug instead of catching it.  Removed with it.
+    return sol[0]
 
 out["c_n_corrected"] = [c2(0)] + [c2(sh_c_corrected(n)) for n in (1, 2, 3, 4)]
 

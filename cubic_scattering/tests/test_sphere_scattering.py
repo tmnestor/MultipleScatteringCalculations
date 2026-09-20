@@ -592,10 +592,19 @@ class TestCrossComparison:
         # is good.
         err = self._corrected_pattern_error(omega, radius, 6, theta_obs)
         print(f"  Volume-corrected pattern error at ka=1.5: {err:.4f}  (NOT accurate)")
-        assert 0.40 < err < 0.65, (
+        # THE BAND WAS RE-DERIVED, AND DOWNWARD.  It used to read
+        # 0.40 < err < 0.65 around a measured 0.5164.  Both solvers were then
+        # corrected -- three sign errors, of which the (-1)^n inverted the Mie
+        # density/dipole channel -- and the agreement IMPROVED to 0.2632, so the
+        # test failed by being too good.  A band is the wrong shape for that: it
+        # treats an improvement as a regression.  What this should catch is the
+        # error getting WORSE, so it is now one-sided.
+        assert err < 0.35, (
             f"Mie vs Foldy-Lax volume-corrected error = {err:.4f} at ka=1.5, "
-            "expected in the band (0.40, 0.65); measured 0.5164. This is a "
-            "regression bar on a regime where the voxel route does not converge."
+            "expected below 0.35; measured 0.2632 after the sign corrections "
+            "(0.5164 before them). This is a regression bar on a regime where "
+            "the voxel route does not converge -- the agreement is poor by "
+            "design, but it should not get poorer."
         )
 
     def test_convergence_study(self):
@@ -1141,9 +1150,17 @@ class TestSHTractionFiniteContrast:
     the SH scattering coefficient c_n wrong at finite contrast (it cancels only
     at zero contrast, where matrix and RHS would share the omission).
 
-    Reference values were computed independently in the Hansen L/M/N basis
-    (Mathematica/ElasticMieTmatrix.nb) and by a from-scratch corrected Python
-    solve; see Mathematica/ElasticMie_reference.json key "c_n_corrected".
+    Reference values come from the from-scratch 2x2 solve in
+    Mathematica/ElasticMie_reference_dump.py, key "c_n_corrected".
+
+    WHAT THIS TEST IS AND IS NOT.  It locks the -z_n/a traction term, which is
+    what it was written for.  It is NOT an independent check on the SIGN
+    convention, and it was briefly mistaken for one: the rebuild it is scored
+    against ended with ((-1.0)**n) * sol[0] -- the same (-1)^n that sat in
+    compute_elastic_mie -- so it reproduced that error rather than catching it.
+    The sign is fixed by the channel that DOES have an outside arbiter: a_n
+    agrees with an independent Born calculation to 0.9997-1.0000 after the
+    removal, and one variable sets the factor for every channel.
     Test case: REF background, CONTRAST, radius=1, omega=4500 (ka_P=0.9, ka_S=1.5).
     """
 
@@ -1155,9 +1172,9 @@ class TestSHTractionFiniteContrast:
         c_ref = np.array(
             [
                 0.0,
-                4.1210580877748076e-05 - 0.0090785165882717j,
+                -4.1210580877748076e-05 + 0.0090785165882717j,
                 0.0025064027424763335 - 1.884617477782357e-06j,
-                -4.07980036429831e-08 - 0.00043633780721250075j,
+                4.07980036429831e-08 + 0.00043633780721250075j,
                 -2.5894618942196937e-05 + 1.117552150251524e-10j,
             ]
         )
