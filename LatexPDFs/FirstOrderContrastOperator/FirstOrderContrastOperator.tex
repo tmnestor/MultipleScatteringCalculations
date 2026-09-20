@@ -4514,7 +4514,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$56/56$; against multiple scattering $8/8$; and the propagator gate exits clean.
+$56/56$; against multiple scattering $14/14$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4805,10 +4805,11 @@ voxel Foldy--Lax, $n_{\rm sub}=6$ & $1224$ & $0.379$  & $1.26$\\
 impedance march, $N=81$, $L=900$  & $\mathbf{243}$  & $\mathbf{0.0112}$ & $1.16$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{At matched cost: $34\times$ the accuracy on a fifth of the
-unknowns.  The measured time exponents are $2.05$ and $2.14$ over the ranges
-tested, so the advantage is accuracy \emph{per unknown} and not a difference in
-scaling.}
+\captionof{table}{At matched cost \emph{and at this frequency}: $34\times$ the
+accuracy on a fifth of the unknowns.  The measured time exponents are $2.05$ and
+$2.14$ over the ranges tested, so the advantage is accuracy \emph{per unknown}
+and not a difference in scaling.  The ratio is strongly frequency dependent
+and falls to $3.3$ at $k_Sa=0.5$ --- see below.}
 \end{center}
 
 \paragraph{Neither error is a discretisation error, and neither ladder
@@ -4838,11 +4839,53 @@ wrong.}
 \noindent
 The difference that survives is in the floors, not the rates.  Forty times the
 cells buys the voxel route nothing: its best is $0.205$ and refinement does not
-go below it, because what fails is the representation of a curved boundary at a
-wavelength comparable with the radius --- the same conclusion \S\ref{sec:threed}
-reached from the other direction, and the reason the cross-section here is
-band-limited rather than voxelised.  The march's floor is not a floor of the
-method at all: it is the array, and it moves when the array does.
+go below it.
+
+\paragraph{The floor is geometric, and it is not the sub-cell validity limit.}
+That limit is the obvious suspect and it is worth ruling out explicitly, because
+the analytic cube $T$-matrix is validated only for $ka<0.3$ and at
+$k_Sa=2.4$ with $n_{\rm sub}=6$ the sub-cells sit at $0.40$ --- outside it.
+Refining to $n_{\rm sub}=10$ brings them to $0.24$, inside, and the error is
+$0.293$ against $0.205$ at $n_{\rm sub}=4$.  It does not help.  What fails is the
+representation of a curved boundary, which is \S\ref{sec:threed}'s conclusion
+reached from the other direction and the reason the cross-section of
+Algorithm~2 is band-limited rather than voxelised.
+
+\paragraph{So the ratio is not a constant --- it is a frequency dependence.}
+$k_Sa=2.4$ is where the march's own gate runs, which is not a neutral choice, so
+the comparison is repeated across the band:
+
+\begin{center}
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+$k_Sa$ & voxel Foldy--Lax & march & ratio\\
+\midrule
+$0.5$ & $1.98\times10^{-2}$ & $6.00\times10^{-3}$ & $3.3$\\
+$1.0$ & $6.70\times10^{-2}$ & $4.24\times10^{-3}$ & $15.8$\\
+$1.5$ & $1.45\times10^{-1}$ & $1.31\times10^{-2}$ & $11.0$\\
+$2.4$ & $3.79\times10^{-1}$ & $1.12\times10^{-2}$ & $33.9$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The voxel error grows as $(k_Sa)^{1.9}$; the march's varies by
+$3.1\times$ over the whole band.  The two errors are different \emph{kinds} of
+thing, which is why the gap opens: the march's is the array's coupling, a
+property of the arrangement and nearly flat in frequency, while the voxel
+route's is the staircase, whose phase error scales with the cell size measured
+in wavelengths.}
+\end{center}
+
+\noindent
+Extrapolated downward the two meet near the Rayleigh regime --- the voxel route
+reaches $4.2\times10^{-3}$ at $k_Sa=0.2$, which is the march's own level, and
+the project's earlier arbiter note records it at a few parts in $10^{3}$ there.
+\textbf{So the honest statement is not that one method is an order of magnitude
+better, but that one degrades with frequency and the other does not.}  For a
+Rayleigh-regime problem there is nothing to choose between them on accuracy; the
+imbedding route's advantage is bought at $ka\sim1$ and above, which is where a
+staircase stops being able to represent a boundary.
+
+The march's floor is also not a floor of the method: it is the array, and it
+moves when the array does.
 
 \paragraph{What this does and does not settle.}  It settles that on this
 problem, at this frequency and contrast, the imbedding route is the more

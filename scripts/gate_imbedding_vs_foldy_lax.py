@@ -201,6 +201,7 @@ def part3() -> None:
     print(f"      voxel Foldy-Lax  (136 cells, 1224 unknowns): err {fl_err:.4f} in {fl_t:.2f} s")
     print(f"      impedance march  (N=81, 243 unknowns)      : err {mr_err:.4f} in {mr_t:.2f} s")
     print(f"      ratio of errors at comparable cost: {fl_err / mr_err:.0f}x")
+    print("      ⚠ at k_S a = 2.4.  Part 6 shows this ratio is NOT a constant.")
     report("the march is the more accurate of the two at matched cost", mr_err < fl_err)
     report("and by more than an order of magnitude", fl_err / mr_err > 10.0)
 
@@ -368,6 +369,75 @@ def part5() -> None:
     )
 
 
+def part6() -> None:
+    """Where the gap comes from: it is a frequency dependence, not a constant."""
+    print("\n[6] the SAME comparison across frequency")
+    print("      the head-to-head above is at k_S a = 2.4, which is where the")
+    print("      march's own gate runs.  That is not a neutral choice, so the")
+    print("      whole comparison is repeated across the band.")
+
+    import scripts.gate_sphere_vs_impedance_march as march_mod
+
+    omega_save = march_mod.OMEGA
+    print(f"\n      {'k_S a':>7}{'ka_sub':>9}{'voxel FL':>12}{'march':>12}{'ratio':>9}")
+    fl_errs, mr_errs = [], []
+    try:
+        for ka_s in (0.5, 1.0, 1.5, 2.4):
+            omega = ka_s * REF.beta / RADIUS
+
+            mie = compute_elastic_mie(omega, RADIUS, REF, CONTRAST)
+            r_far = 5.0e4 * RADIUS
+            pts = np.array([[np.cos(np.pi - 0.2), np.sin(np.pi - 0.2), 0.0]]) * r_far
+            u_mie = mie_scattered_displacement(mie, pts)
+            fl = compute_sphere_foldy_lax(
+                omega,
+                RADIUS,
+                REF,
+                CONTRAST,
+                n_sub=6,
+                k_hat=K_HAT,
+                wave_type="P",
+                cell_average=True,
+            )
+            u_p, u_s = foldy_lax_far_field(fl, pts / r_far, r_far, K_HAT, K_HAT, wave_type="P")
+            ratio = fl.n_cells * (2.0 * fl.a_sub) ** 3 / ((4.0 / 3.0) * np.pi * RADIUS**3)
+            fl_err = float(np.abs(u_p + u_s - u_mie * ratio).max() / np.abs(u_mie * ratio).max())
+
+            march_mod.OMEGA = omega
+            mr_err, _w = march_mod.compare_to_mie(9, 9, 900.0, 900.0, 32)
+
+            fl_errs.append(fl_err)
+            mr_errs.append(mr_err)
+            print(f"      {ka_s:7.2f}{ka_s / 6.0:9.3f}{fl_err:12.4e}{mr_err:12.4e}{fl_err / mr_err:9.1f}")
+    finally:
+        march_mod.OMEGA = omega_save
+
+    slope = float(np.polyfit(np.log([0.5, 1.0, 1.5, 2.4]), np.log(fl_errs), 1)[0])
+    spread = max(mr_errs) / min(mr_errs)
+    print(f"\n      voxel error grows as (k_S a)^{slope:.1f}")
+    print(f"      march error varies by only {spread:.1f}x over the same band")
+    report("the voxel route's error grows with frequency", slope > 1.3)
+    report("the march's does not", spread < 4.0)
+
+    print(
+        "\n      ⚠ SO THE HEADLINE RATIO IS NOT A CONSTANT.  It is 3x at\n"
+        "      k_S a = 0.5 and 34x at 2.4, because the two errors are different\n"
+        "      KINDS of thing: the march's is the array's coupling, a property of\n"
+        "      the arrangement and nearly flat in frequency, while the voxel\n"
+        "      route's is the staircase, whose phase error scales with the cell\n"
+        "      size in wavelengths.  Extrapolating down, they meet near the\n"
+        "      Rayleigh regime -- the voxel route reaches 4.2e-3 at k_S a = 0.2,\n"
+        "      which is the march's own level.\n"
+        "\n"
+        "      ⚠ AND THE FLOOR IS NOT THE SUB-CELL VALIDITY LIMIT.  The analytic\n"
+        "      cube T-matrix is validated for ka < 0.3, and at k_S a = 2.4 with\n"
+        "      n_sub = 6 the sub-cells sit at 0.40, outside it -- an obvious\n"
+        "      suspect.  Refining to n_sub = 10 brings them to 0.24, inside, and\n"
+        "      the error is 0.293 against 0.205 at n_sub = 4.  It does not help.\n"
+        "      The floor is geometric, not a validity breach."
+    )
+
+
 def main() -> int:
     """Run every part and summarise.
 
@@ -381,7 +451,7 @@ def main() -> int:
         f"k_S a = {OMEGA / REF.beta * RADIUS:.2f}   contrast eps = {EPS}"
     )
     print("=" * 78)
-    for fn in (part1, part2, part3, part4, part5):
+    for fn in (part1, part2, part3, part4, part5, part6):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)
