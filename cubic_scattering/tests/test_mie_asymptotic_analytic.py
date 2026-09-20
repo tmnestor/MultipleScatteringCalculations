@@ -113,8 +113,14 @@ class TestAnalyticVsNumericalMie:
     Conventions to bridge:
       * Python's a_n carries units of length (the radius `a` in m); our
         non-dim analytic uses a=1, so we scale Python by 1/RADIUS.
-      * Python applies a (-1)^n post-solve sign convention; for odd n
-        we negate the analytic value to match.
+
+    There used to be a second bridge here: `compute_elastic_mie` multiplied its
+    coefficients by (-1)^n after the solve, so the odd-n tests undid it.  That
+    factor was never a convention -- it was a sign ERROR that inverted the
+    density/dipole channel, and it was removed.  The undo therefore had to go
+    with it: with the solver fixed and the undo left in place, this test failed
+    by exactly a factor of two in the difference (-3.0e-8j against +3.0e-8j),
+    which is the signature of comparing a quantity with its own negative.
     """
 
     def _ratio(self, num: complex, ana: complex) -> complex:
@@ -131,7 +137,7 @@ class TestAnalyticVsNumericalMie:
         w = _w_from_omega(OMEGA_TEST)
 
         mie = compute_elastic_mie(OMEGA_TEST, RADIUS, REF, contrast)
-        a0_num_nondim = complex(mie.a_n[0]) / RADIUS  # (-1)^0 = +1
+        a0_num_nondim = complex(mie.a_n[0]) / RADIUS
         a0_ana = a_0_analytic(c, w)
 
         # Relative error at ka_S=0.05 (ka_P~0.03) should be O(ka²) ~ 1e-3
@@ -150,11 +156,11 @@ class TestAnalyticVsNumericalMie:
 
         mie = compute_elastic_mie(OMEGA_TEST, RADIUS, REF, contrast)
         a1_num_nondim = complex(mie.a_n[1]) / RADIUS
-        # Python applies (-1)^1 = -1 post-solve; undo to match analytic
-        a1_num_undone = -a1_num_nondim
         a1_ana = a_1_analytic(c, w)
 
-        assert abs(a1_num_undone - a1_ana) / abs(a1_ana) < 0.05
+        assert abs(a1_num_nondim - a1_ana) / abs(a1_ana) < 0.05, (
+            f"eps={dmu_eps}: nondim a1_num={a1_num_nondim}, a1_ana={a1_ana}"
+        )
 
     def test_a2_matches_numerical(self, dmu_eps):
         contrast = MaterialContrast(
@@ -166,7 +172,7 @@ class TestAnalyticVsNumericalMie:
         w = _w_from_omega(OMEGA_TEST)
 
         mie = compute_elastic_mie(OMEGA_TEST, RADIUS, REF, contrast)
-        a2_num_nondim = complex(mie.a_n[2]) / RADIUS  # (-1)^2 = +1
+        a2_num_nondim = complex(mie.a_n[2]) / RADIUS
         a2_ana = a_2_analytic(c, w)
 
         assert abs(a2_num_nondim - a2_ana) / abs(a2_ana) < 0.01
@@ -218,8 +224,7 @@ class TestEffectiveContrastExtraction:
 
         # Mie extraction should match Eshelby, NOT bare
         assert abs(Dmu_extracted - Dmu_eshelby) / abs(Dmu_eshelby) < 1e-3, (
-            f"eps={dmu_eps}: extracted={Dmu_extracted}, "
-            f"eshelby={Dmu_eshelby}, bare={Dmu_bare}"
+            f"eps={dmu_eps}: extracted={Dmu_extracted}, eshelby={Dmu_eshelby}, bare={Dmu_bare}"
         )
 
     @pytest.mark.parametrize("dmu_eps", [0.05, 0.1, 0.2, 0.5, 1.0])

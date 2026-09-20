@@ -13,7 +13,7 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\itshape The First-Order Contrast Operator}
+\fancyhead[L]{\small\itshape Lateral heterogeneity on depth stratification}
 \fancyhead[R]{\small\itshape 17 September 2026}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -61,9 +61,11 @@
 \newcommand{\bY}{\mathbf{Y}}
 \newcommand{\bM}{\mathbf{M}}
 
-\title{\bfseries The First-Order Contrast Operator\\[4pt]
-\large The elastodynamic matrix--vector wave equation as a route to the\\
-single-site $T$-matrix: derivation, validation, and what it actually buys}
+\title{\bfseries Efficient Modelling of Lateral Heterogeneity on Depth
+Stratification via the Impedance Marching\\[4pt]
+\large From the elastodynamic matrix--vector wave equation to a laterally
+coupled\\ Dirichlet-to-Neumann march: derivation, validation, and what it
+actually buys}
 \author{}
 \date{17 September 2026}
 
@@ -117,6 +119,22 @@ same solve, with only $T_0$ substituted, the first-order $T$ is the more accurat
 of the two, by a margin that grows with contrast and that \emph{grows further as
 the shared lattice error is refined away} --- which is what distinguishes a real
 advantage from an accidental cancellation (\S\ref{sec:whichbetter}).
+
+That first-order system is then used for what the title names.  Because the
+kernel is one-sided in depth, the integral equation splits and the problem
+becomes an initial-value march in the impedance $\bY$, defined by
+$\bta_3=\bY\bu$ --- the \emph{Dirichlet-to-Neumann map} of everything below the
+current depth, which \S\ref{sec:dtn} argues is the single idea the rest of this
+note keeps meeting under other names.  Marching $\bY$ rather than a reflection
+matrix removes the mode decomposition entirely, and with it the branch loss that
+limits the mode-basis form; carrying the lateral grid \emph{inside} the marched
+variable then handles lateral heterogeneity without an outer iteration.  Against
+an exact Mie sphere the march is fourth order in depth, and its residual is not
+error but the multiple scattering of the periodic array, linear in contrast at
+$1.45\,\varepsilon$ over two decades.  \S\ref{sec:priorart} sets out the
+substantial prior art --- the construction is that of Haines, Hulme \& Yu
+(2004) --- and \S\ref{sec:tricks} adopts and measures three of their
+computational devices.
 
 Every claim below is backed by an executable check; the scripts report $25/25$,
 $44/44$, $14/14$, $17/17$, $9/9$, $7/7$, $7/7$ and $11/11$, and a separate gate binds the
@@ -3126,17 +3144,50 @@ position of the surface and differentiate along the family'' --- the move of
 \S\ref{sec:imbedding} --- and ``write down the M\"obius action of the propagator
 and take its generator'' are the same derivation.
 
+\paragraph{Which way it marches, and why there are two directions.}  The
+question is natural and the answer is not a convention.  $\bY(z)$ maps what lies
+\emph{below} $z$, so the one depth at which it is known in advance is the
+\textbf{base}, where the radiation condition supplies the half-space impedance
+of \S\ref{sec:impedance}.  At the surface $\bY$ is the answer, not the input.
+The Riccati equation therefore runs \textbf{upward}, from the base to the
+surface, and Algorithm~1 is written as an upsweep for that reason rather than
+for a stylistic one.
+
+Stability then agrees, and does so for a reason worth isolating.  Perturbing the
+half-space impedance and integrating \eqref{eq:impedance} both ways over one
+slab thickness, the perturbation is $0.92$ of its initial size marching towards
+the surface and $3.2\times10^{3}$ marching towards depth.  \textbf{But that
+asymmetry is carried entirely by the evanescent channels.}  Where every lateral
+mode propagates, $\mathrm{eig}(\bA_{11}+\bA_{12}\bY)$ is purely imaginary --- to
+$10^{-17}$ --- the fixed point is neutral, and neither direction is preferred.
+A direction test run on a grid too coarse to reach $k_P$ measures nothing, which
+is how this one first came out inconclusive.
+
+The second direction is real, and belongs to the other pass.  Once $\bY$ is
+known, the field is recovered from the one-way equation
+$\bu'=(\bA_{11}+\bA_{12}\bY)\bu$ integrated \textbf{downward} from the surface,
+in the direction of energy flow --- the structure \cite{haines2004} state
+explicitly and which \S\ref{sec:priorart} records.  \emph{The Riccati runs
+against the energy flow and the field runs with it}, and neither is a choice.
+
+A third object, easily confused with the first, genuinely does march downward
+from the top: the Dirichlet-to-Neumann map of the region \emph{above} $z$,
+started from $\bY=\mathbf{0}$ at a traction-free surface.  That is the operator
+for a problem whose radiation condition sits on the other side --- a source
+beneath the structure rather than above it --- and it is not the one marched
+here.
+
 \paragraph{The graph is Lagrangian, and that is reciprocity.}  Set
 $\mathbf{W}=\begin{psmallmatrix}\mathbf{I}_{3N}\\ \bY\end{psmallmatrix}$, whose
 columns span the downgoing subspace.  Restricting the symplectic form to it,
 \begin{equation}\label{eq:lagrangian}
-  \mathbf{W}^{T}\Jsix\mathbf{W} = \bY-\bY^{T},
+  \mathbf{W}\tp\Jsix\mathbf{W} = \bY-\bY\tp,
 \end{equation}
 so \emph{$\bY$ symmetric} and \emph{the downgoing subspace is Lagrangian} are
-one statement.  Since $\Jsix\bA=(\Jsix\bA)^{T}$ makes the flow symplectic, and a
+one statement.  Since $\Jsix\bA=(\Jsix\bA)\tp$ makes the flow symplectic, and a
 symplectic flow carries Lagrangian subspaces to Lagrangian subspaces, symmetry
 is \textbf{preserved by the march rather than approached by it}.  The
-measurement says exactly that: $\|\bY-\bY^{T}\|/\|\bY\| \le 2.7\times10^{-16}$
+measurement says exactly that: $\|\bY-\bY\tp\|/\|\bY\| \le 2.7\times10^{-16}$
 at every contrast and every step count tried, with \emph{no} improvement under
 refinement, because there is nothing to improve.  Physically it is reciprocity;
 the symplectic identity used throughout this note as a discretisation check is
@@ -3226,14 +3277,186 @@ medium is the Calder\'on problem, whose answer is that it does.  That is worth
 recording because it identifies what the march computes as exactly the object an
 inverse problem would want to measure, although nothing in this note pursues it.
 
-\paragraph{What it does not give.}  The map is a statement on one surface.  It
-carries no information about the field in the interior, which is why a one-way
-equation is still needed to reconstruct it, and why the reuse of
-\S\ref{sec:tricks} is partial --- \cite{haines2004} reuse fundamental solutions
-as well as the operator, and the fundamental solutions are what this note has
-not built.  The map is also frequency-by-frequency: it is non-local in time, so
-nothing here transfers to a time-domain march without an additional
-construction.
+\paragraph{What it does not give, and the second sweep that supplies it.}
+The map is a statement on one surface: it carries no information about the field
+in the interior.  Reflection is therefore available from $\bY$ at the top alone,
+by \eqref{eq:rfromy}, but \emph{transmission is not} --- transmission is the
+field carried through the slab, and recovering it needs the one-way equation
+\begin{equation}\label{eq:oneway}
+  \bu' = \bigl(\bA_{11}+\bA_{12}\bY(z)\bigr)\bu ,
+\end{equation}
+integrated \textbf{downward} from the surface while the Riccati runs upward
+against it.  That is the double sweep of \cite{haines2004}, and it is now built:
+\S\ref{sec:rt} reports it.  It costs one thing the single sweep did not need ---
+$\bY$ at every depth rather than only at the top --- which is why the upward
+sweep is run at twice the resolution and every value kept, so that the downward
+Runge--Kutta finds $\bY$ already evaluated at each of its stage depths and no
+interpolation enters.
+
+Two limitations are unaffected by it.  The map is frequency-by-frequency, hence
+non-local in time, so nothing here transfers to a time-domain march without an
+additional construction.  And \cite{haines2004} reuse \emph{fundamental
+solutions} as well as the operator; the second sweep is the machinery those are
+built from, but assembling and reusing them is not done here.
+
+\subsection{The reflection/transmission response, from both
+sweeps}\label{sec:rt}
+
+Reflection needs one sweep and transmission needs two, so the second sweep is
+what turns an impedance into a scattering response.  With unit downgoing
+amplitude above the slab the total field at the top is
+$\bu(0)=(\bU_d+\bU_u\bR)$, and sweeping \eqref{eq:oneway} down to the base --
+where the field is purely downgoing -- gives
+\begin{equation}\label{eq:tfromsweep}
+  \bT = \bU_d^{-1}\,\bu(2a) .
+\end{equation}
+
+\paragraph{The exact limit, first.}  At zero contrast every entry is known in
+closed form, which tests the sweep before any arbiter is involved: $\bR$
+vanishes to $10^{-15}$, $\bT$ is diagonal to $7\times10^{-16}$ --- a uniform
+slab mixes no modes --- and $\bT$ approaches
+$\mathrm{diag}\,e^{ik_{z,c}\cdot2a}$ at \emph{fourth} order, $3.96$, $4.00$,
+$4.00$ over $4$ to $32$ steps.  The downward sweep therefore carries the same
+order as the upward one, which is what the stage-matched $\bY$ history is for.
+
+\paragraph{Every channel at once.}  The Mie comparison of \S\ref{sec:threed}
+scores one column, because the plane-wave spectrum implemented alongside it is
+the $m=0$ one.  Energy balance scores \emph{every entry of both matrices}:
+every incident channel, every outgoing channel, $P$, $SV$ and $SH$ alike, and
+every propagating diffraction order.  Rescaling to the flux basis by
+$w_c(q)=\sqrt{c^{2}k_{z,c}(q)/\omega}$ and restricting to the propagating
+channels, $\bR^{\dagger}\bR+\bT^{\dagger}\bT=\bI$ holds to
+
+\begin{center}
+\begin{tabular}{@{}rrr@{}}
+\toprule
+steps & residual & order\\
+\midrule
+$8$  & $2.32\times10^{-3}$ & \\
+$16$ & $7.56\times10^{-5}$ & $4.94$\\
+$32$ & $2.44\times10^{-6}$ & $4.95$\\
+$64$ & $8.23\times10^{-8}$ & $4.89$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Energy balance of the full response over $44$ propagating
+channels of $108$, with the contrast on.  The rescaling $w_c$ is not asserted
+--- this project has twice claimed a displacement-to-flux relation from diagonal
+ratios and been wrong --- it is written down and the identity it should produce
+is measured.  Reaching $8\times10^{-8}$ is the evidence that it is right.}
+\end{center}
+
+\noindent
+Against exact Mie on the column its spectrum covers, the specular reflection
+agrees to $1.4\times10^{-1}$ --- the array-coupling floor of
+\S\ref{sec:threed}, not a march error --- and the specular transmission to
+$2.3\times10^{-3}$.  The two are not comparable with one another: transmission
+is dominated by the unscattered wave, so its relative error is necessarily the
+smaller.
+
+\paragraph{What the arbiter, not the march, still limits.}  Scoring $SV$ and
+$SH$ \emph{incidence} against Mie needs the $m=\pm1$ plane-wave spectrum rather
+than the $m=0$ one.  That spectrum is derived and validated --- Section~7 of
+\texttt{Mathematica/MieSphericalWaves.wl}, ``the channel spectra, general in
+$m$'', with the angular triple in closed form for $m\neq0$, all three families,
+and the Sommerfeld path on both branches --- and the Mie coefficients for $S$
+incidence already exist.  What is missing is the \emph{Python port} of a
+validated derivation, not the derivation.  An earlier draft of this paragraph
+said the spectrum was not built, which was a survey that stopped at the Python.
+
+\subsection{The symplectic picture, and what it
+guarantees}\label{sec:symplectic}
+
+The identity $\Jsix\bA=(\Jsix\bA)\tp$ has been used three times already in this
+note --- as a discretisation check in \S\ref{sec:symrel}, as the reason the
+lateral operator must be derived rather than read off in \S\ref{sec:latop}, and
+as the source of $\bY=\bY\tp$ in \S\ref{sec:dtn}.  They are one structure, and
+it is worth setting out on its own, because it is what makes several of this
+note's results exact rather than approximate.
+
+\paragraph{The algebra and the group.}  Written as $\bA\tp\Jsix = -\Jsix\bA$,
+the identity is exactly the defining condition of the symplectic Lie algebra
+$\mathfrak{sp}(6N)$.  Its exponential therefore lies in the symplectic group:
+\begin{equation}\label{eq:sympgroup}
+  \bM = e^{-\bA h} \;\in\; \mathrm{Sp}(6N),
+  \qquad \bM\tp\Jsix\bM = \Jsix ,
+\end{equation}
+measured here to $4\times10^{-8}$ at $h=5$ and $5\times10^{-7}$ at $h=80$ --- a
+looser figure than the algebraic identity behind it, which holds to
+$8.7\times10^{-17}$, because it is the accuracy of the matrix exponential rather
+than of the structure.  Physically the conserved form is the vertical power
+flux: $\Jsix$ pairs $-\bta_3$ with $\bv$, which \S\ref{sec:metric} chose for
+exactly that reason, so \eqref{eq:sympgroup} is energy flux conservation written
+as a group property.
+
+\paragraph{Lagrangian subspaces.}  A $3N$-dimensional subspace $L$ of the $6N$-%
+dimensional phase space is \emph{Lagrangian} when the symplectic form vanishes
+identically on it --- the largest dimension at which that is possible.  The
+downgoing solutions span such a subspace, and \eqref{eq:lagrangian} is the
+statement in coordinates: for the graph $\mathbf{W}=(\mathbf{I},\bY)\tp$,
+$\mathbf{W}\tp\Jsix\mathbf{W}=\bY-\bY\tp$, so
+\begin{equation}\label{eq:lagequiv}
+  \bY \text{ symmetric}
+  \iff
+  \text{the downgoing subspace is Lagrangian}
+  \iff
+  \text{reciprocity.}
+\end{equation}
+The three are the same fact in three languages, and the middle one is the
+reason the outer two are exact.
+
+\paragraph{The Lagrangian Grassmannian.}  Collect all such subspaces and the
+result is a compact manifold $\Lambda(3N)$ of dimension $3N(3N{+}1)/2$, on which
+$\mathrm{Sp}(6N)$ acts.  Symmetric matrices are \emph{one coordinate chart} on
+it, and \eqref{eq:mobius} is that action written in the chart --- which is why
+the transformation law is fractional-linear and why its generator is a Riccati
+equation.  Every object this note marches is a curve in $\Lambda(3N)$; $\bY$ and
+$\bR$ are two ways of writing down where that curve is.
+
+\paragraph{What this buys: reciprocity is exact, and needs no symplectic
+integrator.}  This is the part worth stating carefully, because the obvious
+inference is wrong.  One might expect that preserving $\bY=\bY\tp$ requires a
+structure-preserving integrator --- and it does not.  Write the right-hand side
+of \eqref{eq:impedance} as $\mathcal{R}(\bY)$.  The symplectic identity makes
+$\bA_{21}$ and $\bA_{12}$ symmetric and $\bA_{22}=-\bA_{11}\tp$, so
+\begin{equation}\label{eq:rhssym}
+  \mathcal{R}(\bY)\tp
+  = \bA_{21} + \bY\tp\bA_{22}\tp - \bA_{11}\tp\bY\tp - \bY\tp\bA_{12}\bY\tp
+  = \mathcal{R}(\bY\tp),
+\end{equation}
+so $\mathcal{R}$ carries symmetric matrices to symmetric matrices.  A
+Runge--Kutta step is a linear combination of evaluations of $\mathcal{R}$ added
+to $\bY$, and linear combinations of symmetric matrices are symmetric.
+\textbf{Symmetry is therefore preserved exactly by any explicit Runge--Kutta
+method, not merely to the order of the method}, and the measurement shows the
+signature: $\|\bY-\bY\tp\|/\|\bY\| \le 2.7\times10^{-16}$, unchanged between $8$
+and $32$ steps and between zero and six per cent contrast.  A quantity that is
+being approximated improves under refinement; this one does not move.  It is
+also why the M\"obius step and RK4 agree on reciprocity although only the former
+is symplectic.
+
+\paragraph{What this buys: a discretisation test with a control.}  The identity
+belongs to the continuum operator, and a discretisation inherits it only if it
+is built correctly --- which makes it the sharpest available check on the
+lateral operator.  \S\ref{sec:latop} derives the traction rows with each
+derivative \emph{outside} its modulus, and that is what the identity is
+testing: the derived ordering gives $8.7\times10^{-17}$, the plausible wrong
+ordering with the modulus pulled outside gives $1.3\times10^{-1}$, and the two
+are indistinguishable to $1.3\times10^{-17}$ in a laterally uniform medium.  A
+check that cannot fail proves nothing, so the control is the point: this
+identity is the only test in the note that distinguishes the two orderings at
+all.
+
+\paragraph{Where the charts fail.}  The subspaces that are \emph{not} transverse
+to the reference one form the Maslov cycle of $\Lambda(3N)$, and that is exactly
+the set where the $\bY$ chart blows up; $\bR$ blows up on a different cycle,
+which is \S\ref{sec:dtn}'s point that the two fail in different places.  Since
+$\Lambda(3N)$ is compact and the charts are not, some such failure is
+unavoidable for any coordinate --- the question is only whether the physical
+problem drives the curve into that particular cycle, and \S\ref{sec:dtn} argues
+on radiation grounds that for $\bY$ it does not.  Counting crossings is the
+Maslov index, which in one dimension is the oscillation theory of Sturm and
+Liouville; nothing here uses it, and it is named only so that the structure is
+recognisable.
 
 \subsection{Marching it through a slab, and scoring
 it}\label{sec:impmarch}
@@ -4069,7 +4292,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$51/51$; and the propagator gate exits clean.
+$56/56$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4491,7 +4714,7 @@ tradition, and removing it recovers a position they already held.
 
 Each of the three was built into the march and scored against the version
 without it.  The gate is \verb|gate_first_order_lateral_impedance_3d.py|, now
-$51/51$.
+$56/56$.
 
 \paragraph{Adaptive step control, and what it really controls.}  Their rule is
 implemented as written, with $\mathbf{D}=\bA_{11}+\bA_{12}\bY$ --- the operator
@@ -4561,9 +4784,10 @@ over one matrix --- is what \S\ref{sec:dtn} gates as the imbedding restart.
 
 \medskip
 \noindent
-What remains theirs and not taken is the reuse of \emph{fundamental solutions}
-as well as the operator, which requires the one-way equation this note has not
-built, and their treatment of varying receiver geometry.
+The one-way equation those fundamental solutions would be assembled from is
+now built --- \S\ref{sec:rt} --- so what remains theirs and not taken is the
+assembly and reuse of the solutions themselves, and their treatment of varying
+receiver geometry.
 
 \subsection{What has not been checked}
 

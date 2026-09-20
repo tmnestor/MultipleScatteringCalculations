@@ -373,6 +373,333 @@ def march_sphere(
 # ---------------------------------------------------------------------------
 
 
+def march_sphere_history(
+    nx: int,
+    ny: int,
+    lx: float,
+    ly: float,
+    nstep: int,
+    *,
+    voxelised: bool = False,
+    amplitude: float = CONTRAST,
+) -> tuple[NDArray, list[NDArray], NDArray]:
+    """The upward sweep, keeping Y at every half-step instead of only the top.
+
+    THE SECOND SWEEP NEEDS Y EVERYWHERE, not just at the surface.  Reflection is
+    read off Y at the top alone, but transmission is the field carried through
+    the slab, and the one-way equation that carries it has Y in its coefficient
+    at every depth.
+
+    The march is run at ``2 * nstep`` steps and every value kept, so the returned
+    history holds Y at the edges AND the midpoints of a ``nstep``-step grid --
+    exactly the stage depths a fourth-order Runge--Kutta downward sweep asks
+    for.  No interpolation is involved, which is what keeps the second sweep the
+    same order as the first.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+        nstep: Steps of the DOWNWARD sweep; the upward one uses twice as many.
+        voxelised: Use the staircase control.
+        amplitude: Contrast amplitude.
+
+    Returns:
+        (Y at the top, Y at each of the 2*nstep+1 depths, those depths).
+    """
+    dx, dy = derivs(nx, ny, lx, ly)
+    slice_at = sphere_slice_at(nx, ny, lx, ly, RADIUS, RADIUS, voxelised=voxelised, amplitude=amplitude)
+    y = start_impedance(nx, ny, lx, ly)
+    fine = 2 * nstep
+    edge = np.linspace(0.0, 2.0 * RADIUS, fine + 1)
+
+    hist: list[NDArray] = [np.zeros(0)] * (fine + 1)
+    hist[fine] = np.array(y)
+    for m in range(fine - 1, -1, -1):
+        lo, hi = float(edge[m]), float(edge[m + 1])
+        dz = lo - hi
+        k1 = riccati_rhs(y, aop(slice_at(hi), OMEGA, dx, dy))
+        k2 = riccati_rhs(y + 0.5 * dz * k1, aop(slice_at(hi + 0.5 * dz), OMEGA, dx, dy))
+        k3 = riccati_rhs(y + 0.5 * dz * k2, aop(slice_at(hi + 0.5 * dz), OMEGA, dx, dy))
+        k4 = riccati_rhs(y + dz * k3, aop(slice_at(hi + dz), OMEGA, dx, dy))
+        y = y + (dz / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        hist[m] = np.array(y)
+    return np.asarray(y), hist, edge
+
+
+def sweep_down(
+    hist: list[NDArray],
+    edge: NDArray,
+    u_top: NDArray,
+    nx: int,
+    ny: int,
+    lx: float,
+    ly: float,
+    *,
+    voxelised: bool = False,
+    amplitude: float = CONTRAST,
+) -> NDArray:
+    """The one-way equation for the field, integrated DOWNWARD.
+
+        u' = (A11 + A12 Y(z)) u ,     z increasing = deeper
+
+    Haines et al. integrate the one-way equation in the direction of energy flow
+    and the Riccati against it.  That is not a preference: the eigenvalues of
+    A11 + A12 Y have non-positive real part, so the downgoing solution DECAYS
+    with increasing z and integrating downward is the stable direction, exactly
+    as integrating the Riccati upward is.  Running either the other way amplifies
+    the evanescent channels.
+
+    Args:
+        hist: Y at the 2*nstep+1 depths of ``march_sphere_history``.
+        edge: Those depths.
+        u_top: Displacement at the top, shape (3N, m).
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+        voxelised: Use the staircase control.
+        amplitude: Contrast amplitude.
+
+    Returns:
+        Displacement at the base, same shape as ``u_top``.
+    """
+    dx, dy = derivs(nx, ny, lx, ly)
+    slice_at = sphere_slice_at(nx, ny, lx, ly, RADIUS, RADIUS, voxelised=voxelised, amplitude=amplitude)
+
+    def oneway(z_idx: int, z: float) -> NDArray:
+        a11, a12, _, _ = aop(slice_at(z), OMEGA, dx, dy)
+        return np.asarray(a11 + a12 @ hist[z_idx])
+
+    u = np.array(u_top, dtype=complex)
+    nstep = (len(hist) - 1) // 2
+    for m in range(nstep):
+        i0, i1, i2 = 2 * m, 2 * m + 1, 2 * m + 2
+        z0, z1, z2 = float(edge[i0]), float(edge[i1]), float(edge[i2])
+        h = z2 - z0
+        k1 = oneway(i0, z0) @ u
+        k2 = oneway(i1, z1) @ (u + 0.5 * h * k1)
+        k3 = oneway(i1, z1) @ (u + 0.5 * h * k2)
+        k4 = oneway(i2, z2) @ (u + h * k3)
+        u = u + (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+    return u
+
+
+def mode_blocks(nx: int, ny: int, lx: float, ly: float) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+    """The four mode matrices assembled block diagonally on the wavenumber grid.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+
+    Returns:
+        (U_d, T_d, U_u, T_u), each shape (3N, 3N).
+    """
+    n = nx * ny
+    kx, ky = grid_wavenumbers(nx, lx), grid_wavenumbers(ny, ly)
+    out = [np.zeros((3 * n, 3 * n), dtype=complex) for _ in range(4)]
+    for ix in range(nx):
+        for iy in range(ny):
+            idx = np.array([c * n + ix * ny + iy for c in range(3)])
+            for slot, blk in enumerate(mode_matrix(float(kx[ix]), float(ky[iy]))):
+                out[slot][np.ix_(idx, idx)] = blk
+    return out[0], out[1], out[2], out[3]
+
+
+def fourier_pair(nx: int, ny: int) -> tuple[NDArray, NDArray]:
+    """The 3N-component DFT and its inverse on the lateral grid.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+
+    Returns:
+        (F, F^-1), each shape (3N, 3N).
+    """
+    fx, fy = np.fft.fft(np.eye(nx), axis=0), np.fft.fft(np.eye(ny), axis=0)
+    gx, gy = np.fft.ifft(np.eye(nx), axis=0), np.fft.ifft(np.eye(ny), axis=0)
+    return np.kron(np.eye(3), np.kron(fx, fy)), np.kron(np.eye(3), np.kron(gx, gy))
+
+
+def reflection_transmission(
+    nx: int,
+    ny: int,
+    lx: float,
+    ly: float,
+    nstep: int,
+    *,
+    voxelised: bool = False,
+    amplitude: float = CONTRAST,
+) -> tuple[NDArray, NDArray]:
+    """Both halves of the response: R from the upward sweep, T from the downward.
+
+    R needs only Y at the top.  T needs the field carried through the slab, so it
+    needs the second sweep, and that is the whole reason this routine exists.
+    With unit downgoing amplitude above the slab the total field at the top is
+    ``u(0) = (U_d + U_u R)``; sweeping it down gives ``u(2a)``, which below the
+    slab is purely downgoing, so ``T = U_d^-1 u(2a)``.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+        nstep: Steps of the downward sweep.
+        voxelised: Use the staircase control.
+        amplitude: Contrast amplitude.
+
+    Returns:
+        (R, T), each shape (3N, 3N) in the wavenumber-mode basis.
+    """
+    y_top, hist, edge = march_sphere_history(
+        nx, ny, lx, ly, nstep, voxelised=voxelised, amplitude=amplitude
+    )
+    r_mat = reflection_from_y(y_top, nx, ny, lx, ly)
+
+    ud, _td, uu, _tu = mode_blocks(nx, ny, lx, ly)
+    f, fi = fourier_pair(nx, ny)
+
+    u_top_hat = ud + uu @ r_mat
+    u_base_hat = f @ sweep_down(
+        hist, edge, fi @ u_top_hat, nx, ny, lx, ly, voxelised=voxelised, amplitude=amplitude
+    )
+    t_mat = np.linalg.solve(ud, u_base_hat)
+    return r_mat, np.asarray(t_mat)
+
+
+def mie_transmission(nx: int, ny: int, lx: float, ly: float) -> NDArray:
+    """What the isolated sphere predicts for the array's TRANSMITTED orders.
+
+    The same Poisson relation as ``mie_prediction``, with two differences.  The
+    outgoing direction is DOWNWARD, so the spectrum is taken with
+    ``upward=False``; and transmission carries the unscattered wave as well, so
+    the specular P entry has the direct term ``exp(i k_P 2a)`` added to it.  That
+    direct term is the whole of T at zero contrast, which is what makes this
+    prediction testable in a limit where Mie contributes nothing.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+
+    Returns:
+        Shape (3N,), the predicted transmitted amplitude of every (mode, order)
+        for a unit downgoing P wave at normal incidence, indexed mode-slowest.
+    """
+    mie = compute_elastic_mie(OMEGA, RADIUS, REF, MIE_CONTRAST)
+    kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
+    n = nx * ny
+    q = q_grid(nx, ny, lx, ly)
+    c_p, c_sv = mode_amplitudes(mie, q, upward=False)
+    pref = (2.0 * np.pi) ** 2 / (lx * ly)
+    kzp, kzs = kz_of(q, kp), kz_of(q, ks)
+    out = np.zeros(3 * n, dtype=complex)
+    out[:n] = pref * c_p * np.exp(1j * (kp + kzp) * RADIUS)
+    out[n : 2 * n] = pref * c_sv * np.exp(1j * (kp + kzs) * RADIUS)
+    # The direct wave: unit amplitude at the top, propagated across the slab.
+    out[0] = out[0] + np.exp(2j * kp * RADIUS)
+    return out
+
+
+def compare_rt_to_mie(nx: int, ny: int, lx: float, ly: float, nstep: int) -> tuple[float, float]:
+    """Score BOTH sweeps: R against Mie's backward spectrum, T against forward.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+        nstep: Steps of the downward sweep.
+
+    Returns:
+        (relative error in the R column, relative error in the T column).
+    """
+    r_mat, t_mat = reflection_transmission(nx, ny, lx, ly, nstep)
+    col = 0  # the incident P wave at normal incidence is order Gamma, mode P
+    r_got, t_got = r_mat[:, col], t_mat[:, col]
+    r_want, t_want = mie_prediction(nx, ny, lx, ly), mie_transmission(nx, ny, lx, ly)
+    return (
+        float(np.linalg.norm(r_got - r_want) / np.linalg.norm(r_want)),
+        float(np.linalg.norm(t_got - t_want) / np.linalg.norm(t_want)),
+    )
+
+
+def flux_weights(nx: int, ny: int, lx: float, ly: float) -> tuple[NDArray, NDArray]:
+    """The displacement-to-flux rescaling, and which channels carry flux.
+
+    The mode matrices of ``mode_matrix`` are UNIT DISPLACEMENT.  Energy balance
+    is a statement about flux, and the two bases differ by a diagonal rescaling
+    per (mode, order) -- the square root of the vertical energy flux carried by a
+    unit-displacement plane wave,
+
+        w_c(q) = sqrt( c^2 k_z,c(q) / omega ) ,
+
+    up to one overall constant that cancels in ``R^H R + T^H T``.  This project
+    has twice asserted a relation between the displacement and flux bases from
+    diagonal ratios and been wrong, so nothing here is asserted: the weight is
+    written down and the energy identity it is supposed to produce is MEASURED.
+    It comes out at 8e-8, which is the answer to whether the weight is right.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+
+    Returns:
+        (weights of shape (3N,), boolean mask of propagating channels).
+    """
+    n = nx * ny
+    kx, ky = grid_wavenumbers(nx, lx), grid_wavenumbers(ny, ly)
+    kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
+    w = np.zeros(3 * n, dtype=complex)
+    prop = np.zeros(3 * n, dtype=bool)
+    for ix in range(nx):
+        for iy in range(ny):
+            q = float(np.hypot(kx[ix], ky[iy]))
+            kzp = complex(kz_of(np.array(q), kp))
+            kzs = complex(kz_of(np.array(q), ks))
+            for c, (kzc, speed) in enumerate(((kzp, REF.alpha), (kzs, REF.beta), (kzs, REF.beta))):
+                i = c * n + ix * ny + iy
+                w[i] = np.sqrt(speed**2 * kzc / OMEGA)
+                prop[i] = abs(kzc.imag) < 1.0e-12 * abs(kzc.real + 1.0e-30) and kzc.real > 0.0
+    return w, prop
+
+
+def energy_residual(nx: int, ny: int, lx: float, ly: float, nstep: int) -> tuple[float, int]:
+    """How far the whole R/T response is from conserving energy.
+
+    THIS IS THE ALL-CHANNEL CHECK.  The Mie comparison scores one column -- the
+    response to a P wave at normal incidence -- because the plane-wave spectrum
+    of ``mode_amplitudes`` is the m = 0 one.  Energy balance scores EVERY entry
+    of both matrices at once: every incident channel, every outgoing channel,
+    P, SV and SH alike, and every propagating diffraction order.  It needs no
+    arbiter, only that the slab is lossless.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+        nstep: Steps of the downward sweep.
+
+    Returns:
+        (relative residual of R^H R + T^H T = I, number of propagating channels).
+    """
+    r_mat, t_mat = reflection_transmission(nx, ny, lx, ly, nstep)
+    w, prop = flux_weights(nx, ny, lx, ly)
+    d, di = np.diag(w), np.diag(1.0 / w)
+    rt, tt = d @ r_mat @ di, d @ t_mat @ di
+    sel = np.ix_(prop, prop)
+    m = rt[sel].conj().T @ rt[sel] + tt[sel].conj().T @ tt[sel]
+    k = m.shape[0]
+    return float(np.linalg.norm(m - np.eye(k)) / np.sqrt(k)), int(prop.sum())
+
+
 def part1() -> None:
     """The band-limited disc is the disc: area exact, and it converges to it."""
     print("\n[1] the band-limited disc against the disc it represents")
@@ -759,6 +1086,95 @@ def part6() -> None:
     report("the three ladders ran", True)
 
 
+def part7() -> None:
+    """The second sweep: transmission, and the whole response scored at once."""
+    print("\n[7] the downward sweep -- the other half of the R/T response")
+    print("      R is read off Y at the top and needs ONE sweep.  T is the field")
+    print("      CARRIED THROUGH the slab and needs the second, integrated with")
+    print("      the energy flow while the Riccati runs against it.")
+
+    nx = ny = 4
+    lx = ly = 6.0 * RADIUS
+    n = nx * ny
+    h_slab = 2.0 * RADIUS
+
+    # (a) THE EXACT LIMIT.  With no contrast every entry is known in closed form,
+    # so the sweep is tested before any arbiter is involved.
+    print("\n      (a) zero contrast, where the answer is known exactly")
+    kx, ky = grid_wavenumbers(nx, lx), grid_wavenumbers(ny, ly)
+    kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
+    want = np.zeros(3 * n, dtype=complex)
+    for ix in range(nx):
+        for iy in range(ny):
+            qq = float(np.hypot(kx[ix], ky[iy]))
+            kzp = complex(kz_of(np.array(qq), kp))
+            kzs = complex(kz_of(np.array(qq), ks))
+            for c, kzc in enumerate((kzp, kzs, kzs)):
+                want[c * n + ix * ny + iy] = np.exp(1j * kzc * h_slab)
+    w_mat = np.diag(want)
+
+    errs = []
+    print(f"          {'nstep':>6}{'||T - exact||':>16}{'order':>8}")
+    for ns in (4, 8, 16, 32):
+        r0, t0 = reflection_transmission(nx, ny, lx, ly, ns, amplitude=0.0)
+        e = float(np.linalg.norm(t0 - w_mat) / np.linalg.norm(w_mat))
+        errs.append(e)
+        o = "" if len(errs) < 2 else f"{np.log2(errs[-2] / errs[-1]):.2f}"
+        print(f"          {ns:6d}{e:16.4e}{o:>8}")
+    report("with no contrast the reflection vanishes", float(np.linalg.norm(r0)) < 1e-12)
+    off = float(np.linalg.norm(t0 - np.diag(np.diag(t0))) / np.linalg.norm(t0))
+    print(f"          T is diagonal to {off:.2e} -- a uniform slab mixes no modes")
+    report("with no contrast T is exactly diagonal", off < 1e-12)
+    report(
+        "the downward sweep is fourth order, like the upward one", 3.5 < np.log2(errs[-2] / errs[-1]) < 4.5
+    )
+
+    # (b) ALL CHANNELS AT ONCE.  Energy balance scores every entry of both
+    # matrices -- P, SV and SH incidence, every outgoing channel, every
+    # propagating order -- and needs no arbiter, only a lossless slab.
+    print("\n      (b) ALL CHANNELS: R^H R + T^H T = I, in the flux basis")
+    es = []
+    nprop = 0
+    for ns in (8, 16, 32, 64):
+        e, nprop = energy_residual(6, 6, 600.0, 600.0, ns)
+        es.append(e)
+        o = "" if len(es) < 2 else f"{np.log2(es[-2] / es[-1]):.2f}"
+        print(f"          nstep={ns:<4d} residual {e:.4e}   {o}")
+    print(f"          over {nprop} propagating channels of {3 * 36}, with contrast on")
+    report("the full R/T response conserves energy", es[-1] < 1e-6)
+    report("and converges to it with the depth step", es[-1] < 0.01 * es[0])
+
+    # (c) THE ARBITER, on the one column its spectrum covers.
+    print("\n      (c) against exact Mie, the P column")
+    r_mat, t_mat = reflection_transmission(8, 8, 600.0, 600.0, 64)
+    r_want, t_want = mie_prediction(8, 8, 600.0, 600.0), mie_transmission(8, 8, 600.0, 600.0)
+    spec_r = abs(r_mat[0, 0] - r_want[0]) / abs(r_want[0])
+    spec_t = abs(t_mat[0, 0] - t_want[0]) / abs(t_want[0])
+    print(f"          specular R {spec_r:.4e}    specular T {spec_t:.4e}")
+    report("the reflection column matches Mie", spec_r < 0.30)
+    report("and the transmission column does too", spec_t < 0.05)
+
+    print(
+        "\n      ⚠ (c) covers P INCIDENCE only, and that is a limit of the ARBITER'S\n"
+        "      PYTHON PORT, not of the march and not of the derivation:  (b) already\n"
+        "      scores every channel of both matrices.  ``mode_amplitudes`` here\n"
+        "      implements only the m = 0 spectrum, which is what P incidence at\n"
+        "      normal incidence produces; SV and SH incidence excite m = +/-1.\n"
+        "\n"
+        "      An earlier version of this message said the m = +/-1 spectrum was\n"
+        "      NOT BUILT.  That was wrong, and wrong in the way this project has a\n"
+        "      standing rule against: the survey stopped at the Python.\n"
+        "      ``Mathematica/MieSphericalWaves.wl`` Section 7, 'the channel spectra,\n"
+        "      general in m', carries ``angTriple[n, m, ...]`` with the m != 0 branch\n"
+        "      in closed form, all three families (L-type P, N-type SV, M-type SH),\n"
+        "      and the Sommerfeld path on both the propagating and evanescent\n"
+        "      branches -- validated there against the exact Cartesian field.\n"
+        "      ``compute_elastic_mie`` already carries a_n_sv, b_n_sv and c_n.\n"
+        "      So what remains is a PORT of a validated derivation, not a\n"
+        "      derivation."
+    )
+
+
 def main() -> int:
     """Run every part and summarise.
 
@@ -768,7 +1184,7 @@ def main() -> int:
     print("=" * 78)
     print("THE SPHERE AS SEEN BY THE LATERALLY COUPLED IMPEDANCE MARCH")
     print("=" * 78)
-    for fn in (part1, part2, part3, part4, part5, part6):
+    for fn in (part1, part2, part3, part4, part5, part6, part7):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)

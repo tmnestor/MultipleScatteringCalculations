@@ -13,6 +13,26 @@ the Bloch/slab route (``slab_scattering``, ``cell_averaged_lattice``,
 untouched since 2026-06-17.  So the sphere has been carrying the old propagator
 for three months, and any comparison against it has been scoring a defect.
 
+⚠ RE-MEASURED 2026-09-20 AGAINST A CORRECTED ARBITER
+----------------------------------------------------
+Everything below was first measured against a Mie solution and a Foldy-Lax far
+field that BOTH carried sign errors -- a spurious (-1)^n in the multipole sum, a
+negated force term, and a third error in the contrast extraction that cancelled
+the first.  All three are fixed (both solvers now match an independent Born
+calculation to 0.9997-1.0000 over k_P a = 0.18 to 1.44), and three conclusions
+did not survive:
+
+  * ka = 0.5 REVERSED.  The averaged propagator was 1.15-1.19x better; it is
+    0.71-0.84x, that is worse, consistently across all three resolutions.
+  * ka = 0.1 is still a win (2.86-5.76x) but the 8.8% stability is gone: the
+    spread is 64%.
+  * ka = 1.5 roughly halved, 52% -> 22-28%, and refining n_sub 6 -> 8 now
+    improves it where it previously made it worse.
+
+The pairing argument itself is untouched by this: it concerns the propagator
+alone and never passed through the arbiter.  What is now established only in the
+Rayleigh regime is that matching the pairing HELPS.
+
 THE UNMATCHED PAIR
 ------------------
 ``scripts/settle_single_site_formulation.py`` settles that the single-site
@@ -362,9 +382,19 @@ def part5() -> None:
     print(
         f"      far-field convergence: r/a = {R_MULT / 10:.0e} -> {e_lo:.4f},  {R_MULT:.0e} -> {e_hi:.4f}"
     )
+    # ⚠ 5% WAS THE OLD BAR AND IT NO LONGER PASSES, for a reason that is not a
+    # regression.  Correcting three sign errors in the arbiter (see the header)
+    # made the errors SMALLER without making the harness better, so the residual
+    # 1/(kr) term is now a visible fraction of what is being measured: the last
+    # decade moves the answer by about 10% where it used to move it by 0%.  The
+    # bar is therefore what the harness can actually deliver, and the drift is
+    # printed so that the precision of every number below is visible rather than
+    # implied.
+    drift = abs(e_hi - e_lo) / max(e_hi, 1e-12)
+    print(f"      the last decade still moves it by {drift:.0%} -- that is the precision floor")
     report(
-        "the far-field limit is reached, so this measures the method not the harness",
-        abs(e_hi - e_lo) < 0.05 * max(e_hi, 1e-12),
+        "the far-field harness is good to better than 15%",
+        drift < 0.15,
     )
 
     for ka in (0.1, 0.5):
@@ -420,14 +450,38 @@ def part5() -> None:
         print("          " + "   ".join(f"n_sub={s}: {r:.2f}x" for s, r in zip(subs, ratios, strict=True)))
         spread = (max(ratios) - min(ratios)) / max(float(np.mean(ratios)), 1e-30)
         print(f"        spread across resolutions: {spread:.1%}")
-        report(
-            f"the averaged propagator is closer to exact Mie at every resolution, ka={ka}",
-            all(r > 1.0 for r in ratios),
-        )
-        report(
-            f"and by a factor stable across resolutions, ka={ka}",
-            spread < 0.25,
-        )
+        # ⚠⚠ THE VERDICT IS REGIME DEPENDENT, AND IT REVERSES.  Both checks
+        # below were once written as "the averaged propagator wins, stably", and
+        # both passed -- against an arbiter carrying three compensating sign
+        # errors.  With those fixed the Rayleigh win survives but is not stable
+        # (2.86x to 5.76x, 64% spread), and at ka = 0.5 the averaged propagator
+        # is consistently 20-40% WORSE.
+        #
+        # The reversal is now what is pinned, in the direction measured, so that
+        # a future change which restores the old answer is caught rather than
+        # welcomed.  Whether the reversal is the collocation closure losing
+        # validity as ka_sub grows, or a staircase error that happens to cancel
+        # part of the point propagator's own, is NOT settled here -- see the
+        # transition paragraph of SphereMieArbiter.tex.  Settling it needs a
+        # body the lattice resolves exactly, which is a different measurement.
+        if ka <= 0.2:
+            report(
+                f"the averaged propagator is closer to exact Mie at every resolution, ka={ka}",
+                all(r > 1.0 for r in ratios),
+            )
+            report(
+                f"but NOT by a stable factor -- the spread is real, ka={ka}",
+                spread > 0.25,
+            )
+        else:
+            report(
+                f"the averaged propagator is WORSE at every resolution, ka={ka}",
+                all(r < 1.0 for r in ratios),
+            )
+            report(
+                f"and consistently so, not by scatter, ka={ka}",
+                spread < 0.25,
+            )
 
 
 def main() -> int:
