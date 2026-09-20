@@ -4853,7 +4853,8 @@ impedance march, $N=81$, $L=900$  & $\mathbf{243}$  & $\mathbf{0.0112}$ & $1.16$
 \bottomrule
 \end{tabular}
 \captionof{table}{At matched cost \emph{and at this frequency}: $34\times$ the
-accuracy on a fifth of the unknowns.  The measured time exponents are $2.05$ and
+accuracy on a fifth of the unknowns.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  Both are backscatter, at
+$k_Sa=2.4$, $\varepsilon=0.1$.  The measured time exponents are $2.05$ and
 $2.14$ over the ranges tested, so the advantage is accuracy \emph{per unknown}
 and not a difference in scaling.  The ratio is strongly frequency dependent
 and falls to $3.3$ at $k_Sa=0.5$ --- see below.}
@@ -4874,7 +4875,7 @@ march, period (diameters) & $2.5$ & $3.8$ & $5.0$ & $6.7$\\
 error & $0.135$ & $\mathbf{0.011}$ & $0.082$ & $0.047$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{Both are non-monotone, for different reasons.  The voxel
+\captionof{table}{Backscatter error against the exact sphere: \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  Both are non-monotone, for different reasons.  The voxel
 route's error is the \emph{staircase}, and a cubic lattice's coverage of a
 sphere is not monotone in $n_{\rm sub}$ --- the voxel volume is $26\%$, $4.7\%$,
 $17\%$ and $4.3\%$ wrong at these four.  The march's is \emph{array coupling},
@@ -4920,7 +4921,8 @@ $2.00$ & $2.69\times10^{-1}$ & $3.41\times10^{-2}$ & $7.9$\\
 $2.40$ & $3.79\times10^{-1}$ & $1.12\times10^{-2}$ & $33.9$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{The voxel error grows as $(k_Sa)^{1.7}$; the march's stays
+\captionof{table}{Backscatter error against the exact sphere, at
+$\varepsilon=0.1$, $n_{\rm sub}=6$ and period $900$\,m.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  The voxel error grows as $(k_Sa)^{1.7}$; the march's stays
 within a factor of eight across more than a decade, and within a factor of $1.6$
 below $k_Sa=1$.  The two errors are different \emph{kinds} of thing, which is
 why the gap opens: the march's is the array's coupling, a property of the
@@ -4940,8 +4942,10 @@ follows from where the problem sits.
 
 \begin{center}
 \includegraphics[width=0.78\linewidth]{imbedding_vs_voxel.pdf}
-\captionof{figure}{The same measurements.  The upper panel is the error of each
-route against exact Mie; the lower is their ratio, crossing one at
+\captionof{figure}{The same measurements.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  $a$ is the
+\emph{sphere's} radius; the voxels sit at $k_Sa/n_{\rm sub}$, a sixth of it
+here.  The upper panel is the error of each route; the lower is their ratio,
+crossing one at
 $k_Sa=0.24$.  The march's non-monotonicity above $k_Sa=1$ is the array coupling
 behaving as an interference rather than a decay; the voxel route's curve is a
 clean power law over the whole range.}
@@ -4963,7 +4967,7 @@ $2.4$ & \textbf{wide angle}      & $\mathbf{1.96}$     & $3.06\times10^{-1}$ & $
 \bottomrule
 \end{tabular}
 \captionof{table}{Medians, over the propagating orders in each group, of the
-per-order relative errors \eqref{eq:errmarch} and \eqref{eq:errvoxel}.  The
+per-order relative errors: \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  The
 median is taken across orders spanning several scattering angles, so it
 summarises and does not replace the figure below.  In the specular directions
 the march is the better of the two at $k_Sa=2.4$ and level with the voxel route
@@ -4973,7 +4977,8 @@ route is six times better.}
 
 \begin{center}
 \includegraphics[width=\linewidth]{angle_resolved.pdf}
-\captionof{figure}{Every propagating order, by scattering angle.  At $k_Sa=1$
+\captionof{figure}{Every propagating order, by scattering angle, $\theta$
+measured from the incident direction so that $180^{\circ}$ is backscatter.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  At $k_Sa=1$
 the period supports only the specular orders; at $2.4$ it supports wide-angle
 ones, and that is where the march's error is of order unity.}
 \end{center}
