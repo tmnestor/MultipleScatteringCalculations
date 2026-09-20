@@ -1626,8 +1626,11 @@ def part14() -> None:
 
     # The imbedding property.  Y(z) is the map of the region below z and of
     # nothing else, so the march carries no state but Y: stopping it halfway and
-    # restarting from the intermediate Y must give the same answer.  z counts
-    # height above the base, so the LOWER half is the shifted profile.
+    # restarting from the intermediate Y must give the same answer.  z is DEPTH:
+    # z = thickness is the base, where y_start supplies the radiation condition,
+    # and z = 0 is the surface, so the march runs UPWARD and the DEEPER half is
+    # the shifted profile.  (An earlier version of this comment said z counted
+    # height above the base, which is backwards.)
     prof = profile_3d(nx, ny, 0.06)
     whole = march_lateral(prof, OMEGA, nx, ny, 64, method="rk4")
 
@@ -1731,6 +1734,72 @@ def part14() -> None:
         report(f"and its null channels count the evanescent ones ({lab})", int(null.sum()) == predicted)
 
 
+def part15() -> None:
+    """Why the march runs upward, and what happens if it does not."""
+    print("\n[15] the direction of the march, and the direction of the field")
+    print("      Y(z) maps what lies BELOW z, so its one known value is at the")
+    print("      BASE -- the radiation condition.  At the surface Y is the answer.")
+    print("      That fixes the direction before any stability question is asked.")
+
+    nx = ny = 8
+    dxm, dym = deriv_pair(nx, ny)
+    blk = aop(uniform_slice(REF, nx, ny), OMEGA, dxm, dym)
+    y_fix = y_start(REF, OMEGA, nx, ny)
+    n3 = y_fix.shape[0]
+
+    rng = np.random.default_rng(11)
+    pert = rng.normal(size=(n3, n3)) + 1j * rng.normal(size=(n3, n3))
+    pert = 1.0e-6 * np.linalg.norm(y_fix) * (pert + pert.T) / (2.0 * np.linalg.norm(pert))
+
+    def drift(sign: float, dist: float, nstep: int) -> float:
+        """RK4 the Riccati a distance dist; sign -1 is towards the surface."""
+        y = y_fix + pert
+        dz = sign * dist / nstep
+        for _ in range(nstep):
+            k1 = riccati_rhs(y, blk)
+            k2 = riccati_rhs(y + 0.5 * dz * k1, blk)
+            k3 = riccati_rhs(y + 0.5 * dz * k2, blk)
+            k4 = riccati_rhs(y + dz * k3, blk)
+            y = y + (dz / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return float(np.linalg.norm(y - y_fix) / np.linalg.norm(pert))
+
+    print(f"\n      {'distance':>9}{'towards surface (used)':>24}{'towards depth':>16}")
+    up_last, down_last = 1.0, 1.0
+    for dist in (20.0, 60.0, H):
+        up_last, down_last = drift(-1.0, dist, 400), drift(+1.0, dist, 400)
+        print(f"      {dist:9.0f}{up_last:24.3e}{down_last:16.3e}")
+    report("marching towards the surface does not amplify a perturbation", up_last < 1.5)
+    report("marching towards depth does", down_last > 100.0)
+
+    # ⚠ THE ASYMMETRY IS CARRIED ENTIRELY BY THE EVANESCENT CHANNELS.  Where
+    # every mode propagates the eigenvalues are purely imaginary, the fixed point
+    # is neutral, and NEITHER direction is preferred -- so a direction test run
+    # on a grid too coarse to reach k_P proves nothing.  This was measured the
+    # wrong way round first, at n = 4, where max|k| = 0.0089 < k_P = 0.012.
+    ev = np.linalg.eigvals(blk[0] + blk[1] @ y_fix)
+    kmag = np.hypot(*np.meshgrid(grid_wavenumbers(nx, LX), grid_wavenumbers(ny, LY)))
+    print(
+        f"      eig(A11+A12 Y): Re in [{ev.real.min():+.3e}, {ev.real.max():+.3e}];"
+        f" max|k|={kmag.max():.5f} vs k_P={OMEGA / REF.alpha:.5f}"
+    )
+    report("no eigenvalue has positive real part (all downgoing)", ev.real.max() < 1e-12)
+    report("this grid actually reaches the evanescent range", kmag.max() > OMEGA / REF.alpha)
+
+    blk4 = aop(uniform_slice(REF, 4, 4), OMEGA, *deriv_pair(4, 4))
+    ev4 = np.linalg.eigvals(blk4[0] + blk4[1] @ y_start(REF, OMEGA, 4, 4))
+    print(
+        f"      the control at n=4 (all modes propagating): |Re| <= {np.abs(ev4.real).max():.1e}"
+        " -- neutral, no preferred direction"
+    )
+    report("with no evanescent mode the direction is NOT forced", np.abs(ev4.real).max() < 1e-12)
+
+    print(
+        "\n      So: the RICCATI runs upward, against the energy flow, and the\n"
+        "      one-way equation for the FIELD runs downward, with it.  Two passes,\n"
+        "      opposite directions, neither of them a choice."
+    )
+
+
 def main() -> int:
     """Run every part and summarise.
 
@@ -1755,6 +1824,7 @@ def main() -> int:
         part12,
         part13,
         part14,
+        part15,
     ):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
