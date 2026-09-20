@@ -4148,6 +4148,12 @@ throughout as a structural check is the impedance-operator symmetry of Thomson
 document accompanies, which is how the omission survived: the survey that
 precedes work here covers five places, and all five are local.
 
+The lineage is also shared rather than parallel.  Haines \emph{et al.}\ build on an
+invariant imbedding formulation \cite{bellman1959,mccoy1986}, which is the same
+tradition Chapter~5 of \cite{nestor1996} works in, and their impedance treatment
+begins with \cite{haines1989} for $SH$ and \cite{hainesdehoop1996} for general
+hyperbolic systems.  None of those is cited in the thesis either.
+
 \subsection{The correspondence}
 
 Haines \emph{et al.}\ \cite{haines2004} define an impedance operator $\mathbf{Z}$ by
@@ -4188,8 +4194,8 @@ Haines \emph{et al.}\ note in passing, at their eq.~(44), that the system matrix
 satisfies $\bA^{T}\bJ = -\bJ\bA$ in both elastic and anelastic media --- which
 is \eqref{eq:latsymp} and \eqref{eq:symp3d}, since
 $(\bJ\bA)^{T} = \bA^{T}\bJ^{T} = -\bA^{T}\bJ = \bJ\bA$ --- and attribute it to
-Kennett, Kerry \& Woodhouse (1978), Chapman (1994) and Haines \& de Hoop (1996),
-remarking that each such symmetry reflects a conservation law.  It is a 1978
+\cite{kennett1978}, \cite{chapman1994} and \cite{hainesdehoop1996}, remarking that
+each such symmetry reflects a conservation law.  It is a 1978
 result used here as a discretisation check, not a new identity.  Thomson
 \cite{thomson2015b} later develops the same operator for laterally heterogeneous
 anisotropic media --- there called a displacement-to-traction operator and
@@ -4316,15 +4322,35 @@ converse matters too --- a technique that is \emph{not} borrowed must not be
 dressed as though it were, and a name coined in this note is a label, not a
 citation.  Provenance, since it differs: \cite{mvwe} was read from the document
 itself; \cite{hisada1994}, \cite{hisada1995}, \cite{luco1983},
-\cite{michalski1997}, \cite{haines2004}, \cite{thomson2015a} and
-\cite{thomson2015b} were located by literature search; the rest are from
+\cite{michalski1997}, \cite{haines2004}, \cite{hulme2004}, \cite{thomson2015a} and
+\cite{thomson2015b} were located by literature search; \cite{bellman1959},
+\cite{chapman1994}, \cite{haines1989}, \cite{hainesdehoop1996},
+\cite{kennett1978} and \cite{mccoy1986} were transcribed from the reference
+list of \cite{haines2004} and are not otherwise verified; the rest are from
 memory.  \emph{None has been verified against a library.}  Authors, years and
 titles should be reliable and volume and page numbers less so; all must be
 checked before this note is circulated, and nothing in this list should be
 quoted from here without that check.
 \end{quote}
 
+% thebibliography emits its own \section*{\refname}, which duplicates the
+% heading above it.  Swallow it for the length of the environment only.
+\begingroup
+\renewcommand{\section}[2]{}
 \begin{thebibliography}{99}\small
+
+\bibitem{bellman1959} Bellman, R. \& Kalaba, R. (1959).
+  Functional equations, wave propagation and invariant imbedding.
+  \emph{Journal of Mathematics and Mechanics} \textbf{8}, 683--704.
+  Transcribed from the reference list of \cite{haines2004}, where it is one of
+  the two sources given for the invariant imbedding formulation.  \emph{Not
+  consulted.}
+
+\bibitem{chapman1994} Chapman, C.~H. (1994).
+  Reflection/transmission coefficient reciprocities in anisotropic media.
+  \emph{Geophysical Journal International} \textbf{116}, 498--501.
+  Transcribed from the reference list of \cite{haines2004}, cited there for the
+  symmetries of the system matrix.  \emph{Not consulted.}
 
 \bibitem{chin1984} Chin, R.~C.~Y., Hedstrom, G.~W. \& Thigpen, L. (1984).
   Matrix methods in synthetic seismograms.  Cited via the thesis
@@ -4339,6 +4365,24 @@ quoted from here without that check.
 
 \bibitem{ha1985} Ha, J. (1985).  Cited via the thesis Introduction, with
   \cite{chin1984}, for Riccati factorisation in discretely layered media.
+
+\bibitem{haines1989} Haines, A.~J. (1989).  On the structure
+  of one-way elastic-wave propagation and exact solutions to the elastodynamic
+  equations: theory for 2-dimensional SH waves.  Monograph, Institute of
+  Geological \& Nuclear Sciences Ltd, Wellington.  The origin of the impedance
+  operator treatment for $SH$, cited as such by \cite{haines2004}.
+  Transcribed from their reference list; \emph{not consulted}, and not
+  available online --- it is an institutional monograph rather than a journal
+  article.
+
+\bibitem{hainesdehoop1996} Haines, A.~J. \& de~Hoop,
+  M.~V. (1996).  An invariant imbedding analysis of general wave scattering
+  problems.  \emph{Journal of Mathematical Physics} \textbf{37}, 3854--3881.
+  \texttt{doi:10.1063/1.531606}.  Cited by \cite{haines2004} for the class of
+  admittance operator methods extending wavefield factorisation to general
+  hyperbolic systems, and for the symmetries of the system matrix.  \emph{Not
+  consulted}; the invariant imbedding analysis it carries is the natural
+  comparison for Chapter~5 of \cite{nestor1996} and has not been made.
 
 \bibitem{haines2004} Haines, A.~J., Hulme, T. \& Yu, J. (2004).
   General elastic wave scattering problems using an impedance operator
@@ -4365,9 +4409,22 @@ quoted from here without that check.
   depths (part~2).  \emph{Bulletin of the Seismological Society of America}
   \textbf{85} (4), 1080--1093.
 
-\bibitem{hulme2004} Hulme, T. (2004).  General elastic wave scattering problems
-  using an impedance operator approach --- II.  Cited by \cite{haines2004} as
-  its companion.  \emph{Not consulted.}
+\bibitem{hulme2004} Hulme, T., Haines, A.~J. \& Yu, J. (2004).
+  General elastic wave scattering problems using an impedance operator approach
+  --- II.  Two-dimensional isotropic validation and examples.  \emph{Geophysical
+  Journal International} \textbf{159}(2).
+  \texttt{doi:10.1111/j.1365-246X.2004.02406.x}.  The companion to
+  \cite{haines2004}, carrying its numerical validation and worked examples.
+  \emph{Not consulted}, which is why no comparison of accuracy or run time
+  against their implementation is offered in \S\ref{sec:priorart}.
+
+\bibitem{kennett1978} Kennett, B.~L.~N., Kerry, N.~J. \&
+  Woodhouse, J.~H. (1978).  Symmetries in the reflection and transmission of
+  elastic waves.  \emph{Geophysical Journal of the Royal Astronomical Society}
+  \textbf{52}, 215--229.  Transcribed from the reference list of
+  \cite{haines2004}, which gives it as the source of the symplectic symmetry
+  $\bA^{T}\bJ=-\bJ\bA$ used throughout this note as a discretisation check.
+  \emph{Not consulted.}
 
 \bibitem{kennett1983} Kennett, B.~L.~N. (1983).  \emph{Seismic Wave
   Propagation in Stratified Media}.  Cambridge University Press.
@@ -4386,6 +4443,13 @@ quoted from here without that check.
   functions for a layered half-space, Part~I.  \emph{Bulletin of the
   Seismological Society of America} \textbf{73} (4), 909--929.  (Part~II,
   Apsel \& Luco, same volume, 931--951.)
+
+\bibitem{mccoy1986} McCoy, J. \& Frazer, L.~N. (1986).
+  Propagation modelling based on wavefield factorization and invariant
+  imbedding.  \emph{Geophysical Journal of the Royal Astronomical Society}
+  \textbf{86}, 703--717.  Transcribed from the reference list of
+  \cite{haines2004}, with \cite{bellman1959}, for the invariant imbedding
+  formulation.  \emph{Not consulted.}
 
 \bibitem{michalski1997} Michalski, K.~A. \& Mosig, J.~R. (1997).  Multilayered
   media Green's functions in integral equation formulations.  \emph{IEEE
@@ -4437,5 +4501,6 @@ quoted from here without that check.
   Chapter~5's Riccati factorisation and Algorithm~5.1.
 
 \end{thebibliography}
+\endgroup
 
 \end{document}
