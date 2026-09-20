@@ -5134,6 +5134,72 @@ interfaces, and whether the two coincide in any useful sense has not been
 established.
 
 %=====================================================================
+%=====================================================================
+\appendix
+\section{What the contrast parameter scales}\label{sec:epsscaling}
+
+Every sphere measurement in this note is indexed by a single number
+$\varepsilon$, and several of the conclusions are statements about how something
+depends on it --- the array coupling is linear in $\varepsilon$
+(\S\ref{sec:threed}), the Krylov iteration count grows with it
+(\S\ref{sec:vsfoldy}).  Those are only readable if it is clear what
+$\varepsilon$ moves.  It is defined in \S\ref{sec:threed} as the fractional
+perturbation of $\alpha$, $\beta$ and $\rho$ inside the sphere; this appendix
+records what that forces everything else to do, because the answer is not
+$\varepsilon$ and in one place is nearly five times it.
+
+\paragraph{The family.}  Put $s = 1+\varepsilon$ and scale all three primary
+quantities by it, $\alpha'=s\alpha$, $\beta'=s\beta$, $\rho'=s\rho$.  The moduli
+are then fixed, not free:
+\begin{equation}\label{eq:sfamily}
+  \rho' = s\rho, \qquad
+  \mu' = \rho'\beta'^{2} = s^{3}\mu, \qquad
+  \lambda' = \rho'\alpha'^{2}-2\mu' = s^{3}\lambda .
+\end{equation}
+This is the construction the sphere gate already carries, and it is derived
+there rather than typed, because the march and the Mie arbiter must describe the
+same sphere and a hand conversion between $(\alpha,\beta,\rho)$ and
+$(\lambda,\mu,\rho)$ is a silent factor waiting to happen.
+
+\paragraph{What follows, and why one exponent is easy to miss.}  Everything else
+in the problem is a power of $s$:
+
+\begin{center}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+$\varepsilon$ & $0.02$ & $0.10$ & $0.20$ & $0.40$ & $0.80$\\
+\midrule
+$\Delta\alpha/\alpha=\Delta\beta/\beta=\Delta\rho/\rho \;=\; s-1$
+  & $0.020$ & $0.100$ & $0.200$ & $0.400$ & $0.800$\\
+$\Delta\lambda/\lambda=\Delta\mu/\mu \;=\; s^{3}-1$
+  & $0.061$ & $0.331$ & $0.728$ & $1.744$ & $\mathbf{4.832}$\\
+$\Delta Z/Z \;=\; s^{2}-1$, \quad $Z=\rho c$
+  & $0.040$ & $0.210$ & $0.440$ & $0.960$ & $2.240$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The moduli move as the \emph{cube}.  At $\varepsilon=0.8$ ---
+the strongest point of the Krylov sweep in \S\ref{sec:vsfoldy} --- the shear
+modulus inside the sphere is nearly six times the background, not $1.8$ times,
+and that is what the iteration count is responding to.}
+\end{center}
+
+\noindent
+Two consequences are worth naming.  \textbf{Poisson's ratio is unchanged}:
+$\alpha/\beta$ is $s$-independent by construction, so the family moves the
+\emph{scale} of the medium and not its elastic character, and a sweep in
+$\varepsilon$ is a clean one-parameter sweep rather than a path through a
+two-parameter space.  And \textbf{the impedance moves as $s^{2}$}, which is the
+quantity reflection actually responds to --- so the single-interface coefficient
+$(Z'-Z)/(Z'+Z)$ is $(s^{2}-1)/(s^{2}+1)$, exactly $\varepsilon$ to leading order
+and only that to leading order.
+
+\paragraph{A symbol warning.}  $\varepsilon$ is overloaded in this note: bare and
+without indices it is the contrast of \eqref{eq:sfamily}; bold
+($\boldsymbol\varepsilon$, $\boldsymbol\varepsilon_{i3}$) or carrying indices
+($\varepsilon_{33}$) it is strain.  The usage is consistent throughout and the
+two never appear in the same expression, but they are not the same object and
+the distinction is carried entirely by the typography.
+
 \section*{References}
 \addcontentsline{toc}{section}{References}
 
