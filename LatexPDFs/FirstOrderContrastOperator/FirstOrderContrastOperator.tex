@@ -19,6 +19,7 @@
 \renewcommand{\headrulewidth}{0.4pt}
 
 \setcounter{secnumdepth}{3}
+\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{multirow}
@@ -4514,7 +4515,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$56/56$; against multiple scattering $14/14$; and the propagator gate exits clean.
+$56/56$; against multiple scattering $17/17$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4678,8 +4679,19 @@ In keeping with the project's standard that an unvalidated formula be labelled
 as such, the following are \emph{open}:
 
 \begin{enumerate}
+\item \textbf{There is no exact reference for the ARRAY, only for the
+      isolated sphere.}  \S\ref{sec:vsfoldy} scores both routes against exact
+      Mie, which is axisymmetric; the march solves a square array, which is
+      not.  In the specular directions that cannot matter and the comparison is
+      clean.  Away from them it is comparing different quantities --- eight
+      orders sharing a scattering angle get one voxel error and eight different
+      march errors --- so nothing there is a statement about method accuracy.
+      What is needed is a periodic multiple-scattering reference for the array
+      itself.  Until there is one, the wide-angle orders of $\bR$ and $\bT$ are
+      unvalidated against anything external.
+
 \item \textbf{The \emph{iterative} multiple-scattering solver has never been
-      compared, because it has no problem to be compared on.}
+      compared on equal terms.}
       \S\ref{sec:vsfoldy} scores the march against the voxel route, but that
       route solves a sphere by a \emph{direct} dense solve of the $9N_c$
       system.  The GMRES solver in this project works on a uniform periodic
@@ -4860,29 +4872,111 @@ the comparison is repeated across the band:
 \toprule
 $k_Sa$ & voxel Foldy--Lax & march & ratio\\
 \midrule
-$0.5$ & $1.98\times10^{-2}$ & $6.00\times10^{-3}$ & $3.3$\\
-$1.0$ & $6.70\times10^{-2}$ & $4.24\times10^{-3}$ & $15.8$\\
-$1.5$ & $1.45\times10^{-1}$ & $1.31\times10^{-2}$ & $11.0$\\
-$2.4$ & $3.79\times10^{-1}$ & $1.12\times10^{-2}$ & $33.9$\\
+$0.10$ & $2.74\times10^{-3}$ & $4.66\times10^{-3}$ & $\mathbf{0.59}$\\
+$0.15$ & $3.22\times10^{-3}$ & $4.77\times10^{-3}$ & $\mathbf{0.67}$\\
+$0.20$ & $4.24\times10^{-3}$ & $4.91\times10^{-3}$ & $\mathbf{0.86}$\\
+$0.30$ & $6.50\times10^{-3}$ & $5.27\times10^{-3}$ & $1.23$\\
+$0.40$ & $1.12\times10^{-2}$ & $5.66\times10^{-3}$ & $1.98$\\
+$0.50$ & $1.98\times10^{-2}$ & $6.00\times10^{-3}$ & $3.29$\\
+$0.75$ & $3.62\times10^{-2}$ & $6.76\times10^{-3}$ & $5.36$\\
+$1.00$ & $6.70\times10^{-2}$ & $4.24\times10^{-3}$ & $15.8$\\
+$1.50$ & $1.45\times10^{-1}$ & $1.31\times10^{-2}$ & $11.0$\\
+$2.00$ & $2.69\times10^{-1}$ & $3.41\times10^{-2}$ & $7.9$\\
+$2.40$ & $3.79\times10^{-1}$ & $1.12\times10^{-2}$ & $33.9$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{The voxel error grows as $(k_Sa)^{1.9}$; the march's varies by
-$3.1\times$ over the whole band.  The two errors are different \emph{kinds} of
-thing, which is why the gap opens: the march's is the array's coupling, a
-property of the arrangement and nearly flat in frequency, while the voxel
-route's is the staircase, whose phase error scales with the cell size measured
-in wavelengths.}
+\captionof{table}{The voxel error grows as $(k_Sa)^{1.7}$; the march's stays
+within a factor of eight across more than a decade, and within a factor of $1.6$
+below $k_Sa=1$.  The two errors are different \emph{kinds} of thing, which is
+why the gap opens: the march's is the array's coupling, a property of the
+arrangement, while the voxel route's is the staircase, whose phase error scales
+with the cell size measured in wavelengths.  Bold marks the rows where the
+\emph{voxel} route is the better of the two.}
 \end{center}
 
 \noindent
-Extrapolated downward the two meet near the Rayleigh regime --- the voxel route
-reaches $4.2\times10^{-3}$ at $k_Sa=0.2$, which is the march's own level, and
-the project's earlier arbiter note records it at a few parts in $10^{3}$ there.
-\textbf{So the honest statement is not that one method is an order of magnitude
-better, but that one degrades with frequency and the other does not.}  For a
-Rayleigh-regime problem there is nothing to choose between them on accuracy; the
-imbedding route's advantage is bought at $ka\sim1$ and above, which is where a
-staircase stops being able to represent a boundary.
+\textbf{The crossover is measured and not extrapolated: it is at
+$k_Sa=0.24$.}  Below it the voxel route wins --- by $1.7\times$ at $k_Sa=0.1$,
+where the staircase costs less than the array does.  Above it the imbedding
+route wins, by a margin that grows with frequency.  So the honest statement is
+not that one method is an order of magnitude better than the other; it is that
+\emph{one degrades with frequency and the other does not}, and which to use
+follows from where the problem sits.
+
+\begin{center}
+\includegraphics[width=0.78\linewidth]{imbedding_vs_voxel.pdf}
+\captionof{figure}{The same measurements.  The upper panel is the error of each
+route against exact Mie; the lower is their ratio, crossing one at
+$k_Sa=0.24$.  The march's non-monotonicity above $k_Sa=1$ is the array coupling
+behaving as an interference rather than a decay; the voxel route's curve is a
+clean power law over the whole range.}
+\end{center}
+
+\paragraph{And it is a BACKSCATTER comparison, which is the direction most
+favourable to the march.}  Everything above scores one direction.  Repeating it
+over every propagating order of the array --- reflected and transmitted, at
+$k_Sa=1$ and $2.4$ --- gives a different picture:
+
+\begin{center}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+$k_Sa$ & directions & march & voxel & ratio\\
+\midrule
+$1.0$ & specular only            & $3.99\times10^{-2}$ & $3.45\times10^{-2}$ & $0.87$\\
+$2.4$ & specular                 & $5.98\times10^{-2}$ & $2.16\times10^{-1}$ & $3.61$\\
+$2.4$ & \textbf{wide angle}      & $\mathbf{1.96}$     & $3.06\times10^{-1}$ & $\mathbf{0.16}$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Medians over the propagating orders in each group.  In the
+specular directions the march is the better of the two at $k_Sa=2.4$ and level
+with the voxel route at $1$; at wide angles its relative error is of order
+\emph{unity} and the voxel route is six times better.}
+\end{center}
+
+\begin{center}
+\includegraphics[width=\linewidth]{angle_resolved.pdf}
+\captionof{figure}{Every propagating order, by scattering angle.  At $k_Sa=1$
+the period supports only the specular orders; at $2.4$ it supports wide-angle
+ones, and that is where the march's error is of order unity.}
+\end{center}
+
+\noindent
+\textbf{Most of that is the arbiter, and the figure shows it directly.}  The
+exact sphere is \emph{axisymmetric}: its far field depends on $\theta$ alone.
+The march solves a \emph{square array}, which is not.  At
+$\theta=144.4^{\circ}$ there are eight propagating orders sharing that angle and
+differing only in azimuth; the voxel route gives all eight the same error to
+five figures ($0.52571$), because it too is solving an isolated sphere, while
+the march gives eight different values ($1.94$ to $1.98$).  The spread is not
+error --- it is the array's own azimuthal structure, which the arbiter does not
+contain.  The specular orders are the only directions where the array's symmetry
+cannot enter, which is why they are the only ones the comparison can fairly use.
+
+So the scope of the earlier claim is narrower than it first appears: the march
+is more accurate \emph{in the specular directions, above $k_Sa\simeq0.24$}.
+Away from those directions this comparison cannot say which method is better,
+because the two are not computing the same quantity.  Settling that needs the
+array's own exact solution --- a periodic multiple-scattering reference rather
+than an isolated one --- which \S\ref{sec:open} now also lists.
+
+\paragraph{And the fast iterative route exists.}  The comparison above uses the
+dense direct solve that \texttt{compute\_sphere\_foldy\_lax} ships with, and an
+earlier draft of this section said the block-Toeplitz FFT version --- the one
+worth racing against the march --- was not built.  It is:
+\texttt{cubic\_scattering/sphere\_scattering\_fft.py} maps the sub-cells to a
+$3$-D grid, embeds the propagator in a $(2n-1)^3$ circulant block, transforms
+its $81$ components and solves with GMRES.  It reproduces the dense answer to
+$10^{-9}$.
+
+Measured, it does not yet win end to end, and the reason is a setup cost rather
+than the algorithm: the kernel construction is $99.9\%$ of the call --- $77.2$
+of $77.3$\,s at $n_{\rm sub}=6$, $360.0$ of $360.4$\,s at $10$ --- while the FFT
+matvec and the GMRES solve together are $0.09$ and $0.43$\,s, against a dense
+solve of $1.14$ and (at $n_{\rm sub}=8$) $6.96$\,s that grows as $O(n^3)$.  The
+kernel depends only on the frequency, the lattice and the contrast, so it
+amortises over incident directions and repeated solves exactly as $\bY$ does for
+the march.  \emph{Comparing the two properly means amortising both, and that has
+not been done.}
 
 The march's floor is also not a floor of the method: it is the array, and it
 moves when the array does.
