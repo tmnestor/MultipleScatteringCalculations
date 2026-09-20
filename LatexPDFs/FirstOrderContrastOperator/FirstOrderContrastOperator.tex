@@ -4514,7 +4514,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$56/56$; and the propagator gate exits clean.
+$56/56$; against multiple scattering $8/8$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4678,6 +4678,22 @@ In keeping with the project's standard that an unvalidated formula be labelled
 as such, the following are \emph{open}:
 
 \begin{enumerate}
+\item \textbf{The \emph{iterative} multiple-scattering solver has never been
+      compared, because it has no problem to be compared on.}
+      \S\ref{sec:vsfoldy} scores the march against the voxel route, but that
+      route solves a sphere by a \emph{direct} dense solve of the $9N_c$
+      system.  The GMRES solver in this project works on a uniform periodic
+      slab, whose geometry is a fully occupied lattice with no per-cell
+      occupancy and which therefore cannot hold a sphere --- so the one
+      configuration with an exact external arbiter is closed to it.  What is
+      needed is a Bloch-periodic Foldy--Lax over a \emph{voxelised sphere},
+      which would put the iterative solver on the same problem as the march
+      and, unlike the present comparison, on the same periodic array.  Until
+      then nothing here says anything about iterative cost, and in particular
+      the iteration count's growth with contrast --- the axis on which the
+      sweep architecture is known to do nothing --- remains unmeasured against
+      the march, which has no iteration count at all.
+
 \item \textbf{The $T$-matrix uses the collocation propagator, not the
       consistent one.}  $\mathbf{T}$ is assembled in \S\ref{sec:tmatrix} and
       calibrated exactly, but $\mathcal{G}$ there is the \emph{single} cube
@@ -4752,6 +4768,92 @@ as such, the following are \emph{open}:
       and how much of the fourth-order economy that consumes has not been
       quantified.
 \end{enumerate}
+
+%=====================================================================
+\section{Against multiple scattering, on the one validated
+problem}\label{sec:vsfoldy}
+
+The sphere is the only problem in this note with an exact external solution and
+a laterally varying medium at once, so it is the only place the imbedding route
+can be scored against the alternative the rest of this project is built on: a
+body voxelised into cubes, each carrying an analytic $T$-matrix, coupled and
+solved.  Both compute the same physical quantity --- the backscattered $P$
+amplitude of a sphere at $k_Sa=2.4$, contrast $\varepsilon=0.1$ --- and both are
+scored against exact Mie.
+
+\paragraph{Two corrections to the framing, before the numbers.}  The voxel route
+\emph{as applied to a sphere} is not iterative: it ends in a direct dense solve
+of the $9N_c$ system.  The iterative (GMRES) multiple-scattering solver in this
+project works on a uniform periodic slab whose geometry is a fully occupied
+lattice with no per-cell occupancy, so it cannot hold a sphere --- and therefore
+has no externally validated problem to be compared on at all.  Closing that gap
+needs a Bloch-periodic Foldy--Lax over a voxelised sphere, which is not built.
+
+And the arbiter is \emph{not neutral}.  Exact Mie is the isolated sphere.  The
+voxel route also solves the isolated sphere, so it is charged only for its own
+discretisation.  The march solves an \emph{array}, and most of what is charged
+against it is the inter-sphere coupling of \S\ref{sec:threed} --- real physics
+it includes correctly and the arbiter does not contain.  The comparison is
+therefore biased \emph{against} the march.
+
+\begin{center}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+& unknowns & error vs Mie & time (s) \\
+\midrule
+voxel Foldy--Lax, $n_{\rm sub}=6$ & $1224$ & $0.379$  & $1.26$\\
+impedance march, $N=81$, $L=900$  & $\mathbf{243}$  & $\mathbf{0.0112}$ & $1.16$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{At matched cost: $34\times$ the accuracy on a fifth of the
+unknowns.  The measured time exponents are $2.05$ and $2.14$ over the ranges
+tested, so the advantage is accuracy \emph{per unknown} and not a difference in
+scaling.}
+\end{center}
+
+\paragraph{Neither error is a discretisation error, and neither ladder
+converges.}  This is the part worth stating carefully, because the obvious
+reading of the table --- that one method is converging faster --- is wrong.
+Refining either knob does \emph{not} reduce either error monotonically:
+
+\begin{center}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+voxel route, $n_{\rm sub}$ & $3$ & $4$ & $6$ & $8$\\
+error & $0.502$ & $\mathbf{0.205}$ & $0.379$ & $0.282$\\
+\midrule
+march, period (diameters) & $2.5$ & $3.8$ & $5.0$ & $6.7$\\
+error & $0.135$ & $\mathbf{0.011}$ & $0.082$ & $0.047$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Both are non-monotone, for different reasons.  The voxel
+route's error is the \emph{staircase}, and a cubic lattice's coverage of a
+sphere is not monotone in $n_{\rm sub}$ --- the voxel volume is $26\%$, $4.7\%$,
+$17\%$ and $4.3\%$ wrong at these four.  The march's is \emph{array coupling},
+which is a wave interference and so oscillates with spacing rather than
+decaying.  Quoting a convergence rate for either on this problem would be
+wrong.}
+\end{center}
+
+\noindent
+The difference that survives is in the floors, not the rates.  Forty times the
+cells buys the voxel route nothing: its best is $0.205$ and refinement does not
+go below it, because what fails is the representation of a curved boundary at a
+wavelength comparable with the radius --- the same conclusion \S\ref{sec:threed}
+reached from the other direction, and the reason the cross-section here is
+band-limited rather than voxelised.  The march's floor is not a floor of the
+method at all: it is the array, and it moves when the array does.
+
+\paragraph{What this does and does not settle.}  It settles that on this
+problem, at this frequency and contrast, the imbedding route is the more
+accurate of the two per unknown by a wide margin, while being scored against an
+arbiter that does not contain the physics it is charged for.  It does not settle
+anything about the \emph{iterative} solver, which was never in the comparison.
+It also does not settle the asymptotic cost of either: four points at these
+sizes are descriptive, and the dense products are not in their cubic regime.
+The comparison that would settle the remaining question --- iterative multiple
+scattering against imbedding, on a problem with an external arbiter --- needs
+the periodic voxel sphere that \S\ref{sec:open} now lists.
 
 \section{Where the route belongs}
 
