@@ -96,9 +96,9 @@
 
 > ## 🛑 FIFTH REVISION, 2026-09-18 — RE-ANCHORED TO THE THESIS
 >
-> `scripts/gate_thesis_spectral.py`, **8/8**. ▶ Tod: *"Thesis should have been
-> the basis for the First Order Formulation — not some recent paper!"* Correct,
-> and the cost was concrete rather than presentational.
+> `scripts/gate_thesis_spectral.py`, **8/8**. ▶ The thesis, not a recent paper,
+> should have been the basis for the first-order formulation. Correct, and the
+> cost was concrete rather than presentational.
 >
 > ### 🔑 §2.1 of the thesis already contains what I spent the session finding
 >
@@ -151,9 +151,9 @@
 
 > ## ⭐ FOURTH REVISION, 2026-09-18 — the EXTERNAL arbiter, and it passes
 >
-> `scripts/gate_first_order_layer_vs_kennett.py`, **9/9**. ▶ Tod's suggestion:
-> *"a single thin layer added to a whole space can be checked against GMM or
-> Kennett"*. It is the right check and it closed the standing open item —
+> `scripts/gate_first_order_layer_vs_kennett.py`, **9/9**. ▶ A single thin layer
+> added to a whole space can be checked against GMM or Kennett.
+> It is the right check and it closed the standing open item —
 > every prior comparison set two formulations against each other.
 >
 > ### Why a layer reaches what the cube cannot
@@ -212,7 +212,7 @@
 > 1. **Read `B` off** and compare with `√3(λ+μ)/6πμ(λ+2μ)` — still the one
 >    remaining step of Task 1 proper.
 > 2. The `iω` of the `𝒢` normalisation.
-> 3. ▶ Tod also named **GMM** as an arbiter. It is at parity with `kennett_layers`
+> 3. ▶ **GMM** was also named as an arbiter. It is at parity with `kennett_layers`
 >    to 4.42e-15, so it adds little for a whole space — but it is the natural
 >    arbiter for the **layered background** (Task 6), where Kennett's stack and
 >    the first-order `ΔA` both still apply and the cube moments do not exist.
@@ -502,7 +502,7 @@ first-order in *both* factors — coupling **and** propagator. This is the last
 missing piece: the coupling is already derived from `ΔA`, but the propagator
 moment is still taken from the ordinary Kelvin/Navier Green's tensor.
 
-**Decisions taken before writing this plan** (Tod, 2026-09-18):
+**Decisions taken before writing this plan** (2026-09-18):
 
 - the **sandwiched** Schwinger form, not plain Galerkin on `q`;
 - **split-and-subtract** for the lateral wavenumber integral, not a bare window;
