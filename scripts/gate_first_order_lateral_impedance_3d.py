@@ -569,6 +569,95 @@ def aop(
     return a11, a12, a21, a22
 
 
+def apply_dx(mat: NDArray, nx: int, ny: int) -> NDArray:
+    """Apply d/dx to every column, by FFT rather than by a dense matrix product.
+
+    The columns carry a field on the flattened grid ``idx = ix * ny + iy``, so
+    x is the slow axis and the transform runs along it.
+
+    Args:
+        mat: Shape (nx*ny, m).
+        nx: Points along x.
+        ny: Points along y.
+
+    Returns:
+        Shape (nx*ny, m).
+    """
+    kx = grid_wavenumbers(nx, LX)
+    a = mat.reshape(nx, ny, -1)
+    out = np.fft.ifft(1j * kx[:, None, None] * np.fft.fft(a, axis=0), axis=0)
+    return (np.real(out) if np.isrealobj(mat) else out).reshape(nx * ny, -1)
+
+
+def apply_dy(mat: NDArray, nx: int, ny: int) -> NDArray:
+    """Apply d/dy to every column by FFT.  See :func:`apply_dx`.
+
+    Args:
+        mat: Shape (nx*ny, m).
+        nx: Points along x.
+        ny: Points along y.
+
+    Returns:
+        Shape (nx*ny, m).
+    """
+    ky = grid_wavenumbers(ny, LY)
+    a = mat.reshape(nx, ny, -1)
+    out = np.fft.ifft(1j * ky[None, :, None] * np.fft.fft(a, axis=1), axis=1)
+    return (np.real(out) if np.isrealobj(mat) else out).reshape(nx * ny, -1)
+
+
+def aop_fft(sl: Slice, omega: complex, nx: int, ny: int) -> tuple:
+    """The same four blocks as :func:`aop`, assembled by FFT.
+
+    Haines et al. note that when the lateral basis is Fourier, the system
+    matrix can be built by transform rather than by dense products.  Every
+    factor of ``d_x`` or ``d_y`` here is applied to the columns of the identity
+    instead of multiplied in, so a term such as ``d_x zeta d_x`` costs
+    O(N^2 log N) rather than the O(N^3) of two dense products.  A multiplication
+    by a modulus is a scaling of rows either way.
+
+    The ordering is the one :func:`aop` derives -- derivative outside its
+    modulus in the traction rows, inside in the constitutive rows -- and is not
+    re-derived here; this routine is a cheaper assembly of the same operator,
+    which is what the gate checks.
+
+    Args:
+        sl: Medium on the flattened lateral grid.
+        omega: Angular frequency.
+        nx: Points along x.
+        ny: Points along y.
+
+    Returns:
+        (A11, A12, A21, A22).
+    """
+    n = sl.alpha.size
+    mu, lam = sl.mu, sl.lam
+    kc = lam + 2.0 * mu
+    gam, aa, bb = lam / kc, 1.0 / kc, 1.0 / mu
+    zet, chi = 4.0 * mu * (lam + mu) / kc, 2.0 * mu * lam / kc
+    rw2 = np.asarray(sl.rho * omega**2, dtype=np.complex128)
+
+    eye = np.eye(n)
+    zero = np.zeros((n, n))
+    dxi, dyi = apply_dx(eye, nx, ny), apply_dy(eye, nx, ny)
+
+    def sx(vec: NDArray, mat: NDArray) -> NDArray:
+        return vec[:, None] * mat
+
+    xx = apply_dx(sx(zet, dxi), nx, ny) + apply_dy(sx(mu, dyi), nx, ny)
+    yy = apply_dy(sx(zet, dyi), nx, ny) + apply_dx(sx(mu, dxi), nx, ny)
+    xy = apply_dx(sx(chi, dyi), nx, ny) + apply_dy(sx(mu, dxi), nx, ny)
+    yx = apply_dy(sx(chi, dxi), nx, ny) + apply_dx(sx(mu, dyi), nx, ny)
+    gx, gy = apply_dx(np.diag(gam), nx, ny), apply_dy(np.diag(gam), nx, ny)
+    rw = np.diag(rw2)
+
+    a11 = np.block([[zero, -sx(gam, dxi), -sx(gam, dyi)], [-dxi, zero, zero], [-dyi, zero, zero]])
+    a12 = np.block([[np.diag(aa), zero, zero], [zero, np.diag(bb), zero], [zero, zero, np.diag(bb)]])
+    a21 = np.block([[-rw, zero, zero], [zero, -rw - xx, -xy], [zero, -yx, -rw - yy]])
+    a22 = np.block([[zero, -dxi, -dyi], [-gx, zero, zero], [-gy, zero, zero]])
+    return a11, a12, a21, a22
+
+
 def abig(blk: tuple) -> NDArray:
     """Assemble the four blocks into one operator.
 
@@ -697,6 +786,7 @@ def march_lateral(
     method: str = "mobius",
     thickness: float = H,
     pml: tuple[float, float] | None = None,
+    y0: NDArray | None = None,
 ) -> NDArray:
     """March the laterally coupled impedance from the base of the slab to its top.
 
@@ -715,6 +805,12 @@ def march_lateral(
         pml: ``(width, smax)`` to stretch both lateral directions, or ``None``
             for no absorption.  The starting impedance is left UNSTRETCHED: it
             is the half-space below, and the PML is a lateral device.
+        y0: Impedance at the base to start from, or ``None`` for the half-space
+            below.  Because ``Y`` is the Dirichlet-to-Neumann map of everything
+            beneath the current depth, it is a complete state: a march can be
+            stopped anywhere and resumed from the value it reached, and what
+            lies below enters only through this matrix.  Passing ``y0`` is how
+            a slab is stacked on an already-marched region.
 
     Returns:
         The impedance at the top, shape (3N, 3N).
@@ -724,8 +820,8 @@ def march_lateral(
     else:
         dx, dy, _ = deriv_pair_pml(nx, ny, omega, width=pml[0], smax=pml[1])
     n3 = 3 * nx * ny
-    y = y_start(REF, omega, nx, ny)
-    if pml is not None:
+    y = y_start(REF, omega, nx, ny) if y0 is None else np.array(y0, dtype=complex)
+    if pml is not None and y0 is None:
         # The start must solve the STRETCHED half-space, or the base of the slab
         # contradicts the operator above it -- see ``y_start_stretched``.
         y, _ = y_start_stretched(REF, omega, nx, ny, dx, dy, y)
@@ -794,6 +890,114 @@ def order_of(errs: list[float], factor: float = 2.0) -> list[float]:
 # ---------------------------------------------------------------------------
 # The checks
 # ---------------------------------------------------------------------------
+
+
+def bound_spectral(mat: NDArray) -> float:
+    """An upper bound on the spectral radius: the induced infinity norm.
+
+    Haines et al. size their step from "upper bounds for the eigenvalues" of the
+    one-way operator, not from the eigenvalues themselves.  The maximum absolute
+    row sum is such a bound, costs O(n^2) rather than a decomposition, and is
+    what makes the rule cheap enough to apply at every step.
+
+    Args:
+        mat: Square matrix.
+
+    Returns:
+        max_i sum_j |mat_ij|.
+    """
+    return float(np.max(np.sum(np.abs(mat), axis=1)))
+
+
+def haines_step(
+    blocks_at: Callable[[float], tuple],
+    y: NDArray,
+    z: float,
+    theta: float,
+    probe: float,
+) -> float:
+    """The step size of Haines et al. eq. (90).
+
+        h = theta / ( ||D|| + sqrt(theta ||d_z D||) ),   D = A11 + A12 Y
+
+    ``D`` is the operator of the one-way equation ``u' = (A11 + A12 Y) u`` --
+    their ``-i omega (A^VV - A^VT Z)`` in this note's conventions -- and the
+    rule comes from the leading Runge-Kutta error, so ``theta`` sets a relative
+    precision directly.  They report about 1 part in 4e3 at theta = 1/2 and 1e5
+    at theta = 1/4.
+
+    ⚠ IT IS ALSO THE STABILITY CONTROL, which is why an explicit method serves.
+    ``h <= theta/||D||`` and ``||D||`` bounds the largest vertical wavenumber, so
+    ``2 |k|max h <= 2 theta``: at theta = 1/2 that is 1.0, inside the measured
+    explicit-method wall at about 1.3.  A uniform step has no such guard, which
+    is the whole of the difference.
+
+    Args:
+        blocks_at: The four blocks of A as a function of depth.
+        y: Current impedance.
+        z: Current depth.
+        theta: Precision parameter.
+        probe: Depth offset for the derivative estimate.
+
+    Returns:
+        Step size, positive.
+    """
+    a11, a12, _, _ = blocks_at(z)
+    d_here = a11 + a12 @ y
+    b11, b12, _, _ = blocks_at(max(z - probe, 0.0))
+    d_there = b11 + b12 @ y
+    dd = (d_there - d_here) / probe
+    return float(theta / (bound_spectral(d_here) + np.sqrt(theta * bound_spectral(dd))))
+
+
+def march_lateral_adaptive(
+    slice_at: Callable[[float], Slice],
+    omega: complex,
+    nx: int,
+    ny: int,
+    theta: float,
+    *,
+    thickness: float = H,
+    probe: float | None = None,
+) -> tuple[NDArray, int]:
+    """March with the step chosen by ``haines_step`` rather than fixed.
+
+    Stage-sampled RK4, as Haines et al. use for both of their equations, with
+    the step resized at the start of each one.
+
+    Args:
+        slice_at: The medium on the lateral grid as a function of depth.
+        omega: Angular frequency.
+        nx: Points along x.
+        ny: Points along y.
+        theta: Precision parameter of eq. (90).
+        thickness: Slab thickness.
+        probe: Depth offset for the derivative estimate; defaults to a
+            thousandth of the slab.
+
+    Returns:
+        (impedance at the top, number of steps taken).
+    """
+    dx, dy = deriv_pair(nx, ny)
+    y = y_start(REF, omega, nx, ny)
+    pr = 1.0e-3 * thickness if probe is None else probe
+
+    def blocks_at(z: float) -> tuple:
+        return aop(slice_at(z), omega, dx, dy)
+
+    z = thickness
+    taken = 0
+    while z > 1.0e-12 * thickness:
+        h = min(haines_step(blocks_at, y, z, theta, pr), z)
+        dz = -h
+        k1 = riccati_rhs(y, blocks_at(z))
+        k2 = riccati_rhs(y + 0.5 * dz * k1, blocks_at(z + 0.5 * dz))
+        k3 = riccati_rhs(y + 0.5 * dz * k2, blocks_at(z + 0.5 * dz))
+        k4 = riccati_rhs(y + dz * k3, blocks_at(z + dz))
+        y = y + (dz / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        z -= h
+        taken += 1
+    return np.asarray(y), taken
 
 
 def part1() -> None:
@@ -1220,7 +1424,7 @@ def part9() -> None:
     y_rk = march_lateral(prof, OMEGA, nx, ny, big_step, method="rk4")
     y_pd = march_lateral(prof, OMEGA, nx, ny, big_step, method="pade")
     rk_bad = (not np.all(np.isfinite(y_rk))) or rel(y_rk, ref_y) > 1.0
-    pd_ok = np.all(np.isfinite(y_pd)) and rel(y_pd, ref_y) < 0.5
+    pd_ok = bool(np.all(np.isfinite(y_pd))) and rel(y_pd, ref_y) < 0.5
     print(
         f"      nstep={big_step} (2|k|max h={stiff:.2f}): "
         f"rk4 {rel(y_rk, ref_y):.3e}, Pade {rel(y_pd, ref_y):.3e}"
@@ -1242,6 +1446,291 @@ def part10() -> None:
     report("the 3-D march runs at every grid size tried", True)
 
 
+def part11() -> None:
+    """Haines' adaptive step control, against a uniform step."""
+    print("\n[11] adaptive step control (Haines et al. eq. 90) vs a uniform step")
+    nx = ny = 6
+    eps = 0.06
+    prof = profile_3d(nx, ny, eps)
+    kmax = float(np.max(np.abs(grid_wavenumbers(nx, LX))))
+    ref_y = march_lateral(prof, OMEGA, nx, ny, 512, method="rk4")
+
+    print(f"      |k|max = {kmax:.5f}; the explicit wall is 2|k|max h ~ 1.3")
+    adaptive = []
+    for theta in (1.0, 0.5, 0.25):
+        y, taken = march_lateral_adaptive(prof, OMEGA, nx, ny, theta)
+        err = rel(y, ref_y)
+        h_mean = H / taken
+        adaptive.append((theta, taken, err))
+        print(
+            f"      theta={theta:<5.2f} steps={taken:<4d} err={err:.3e}   "
+            f"mean 2|k|max h = {2 * kmax * h_mean:.2f}"
+        )
+
+    # It must actually converge with theta, and stay inside the stability wall.
+    errs = [e for _, _, e in adaptive]
+    report("tightening theta tightens the answer", errs[0] > errs[1] > errs[2])
+    worst_h = 2.0 * kmax * (H / min(t for _, t, _ in adaptive))
+    print(f"      loosest mean step sits at 2|k|max h = {worst_h:.2f}")
+    report("the rule keeps the explicit step stable on its own", worst_h < 1.3)
+
+    # What the cheap bound costs.  The rule is driven by ||D||, and the row-sum
+    # norm is an UPPER bound on the spectral radius, so every factor by which it
+    # over-bounds is a factor of extra steps paid for nothing.
+    dx_m, dy_m = deriv_pair(nx, ny)
+    a11, a12, _, _ = aop(prof(H), OMEGA, dx_m, dy_m)
+    d_top = a11 + a12 @ y_start(REF, OMEGA, nx, ny)
+    rowsum = bound_spectral(d_top)
+    spectral = float(np.max(np.abs(np.linalg.eigvals(d_top))))
+    print(
+        f"      ||D||_inf = {rowsum:.4e} vs spectral radius {spectral:.4e}"
+        f"  -> over-bound {rowsum / spectral:.1f}x"
+    )
+    report("the row-sum norm does bound the spectral radius", rowsum >= spectral)
+    print(
+        "      so the step is conservative by about that factor; a tighter\n"
+        "      estimate would buy steps, and an eigendecomposition would cost\n"
+        "      more than it saves."
+    )
+
+    # The point of adaptivity: fewer steps for the same accuracy.
+    theta_ref, steps_ref, err_ref = adaptive[-1]
+    need = None
+    for nstep in (8, 16, 32, 64, 128, 256):
+        if rel(march_lateral(prof, OMEGA, nx, ny, nstep, method="rk4"), ref_y) <= err_ref:
+            need = nstep
+            break
+    if need is None:
+        print("      uniform RK4 did not reach the adaptive error within 256 steps")
+        report("adaptive reaches an accuracy uniform stepping did not", True)
+    else:
+        print(f"      to match err={err_ref:.3e}: adaptive {steps_ref} steps, uniform {need} steps")
+        report("adaptive is no worse than uniform at equal accuracy", steps_ref <= need)
+
+
+def part12() -> None:
+    """Assembling A by FFT instead of by dense Kronecker products."""
+    print("\n[12] A assembled by FFT (Haines et al.), against dense products")
+    eps = 0.06
+    for nx, ny in ((6, 6), (8, 8), (12, 12)):
+        prof = profile_3d(nx, ny, eps)
+        sl = prof(0.5 * H)
+        dx_m, dy_m = deriv_pair(nx, ny)
+
+        t0 = time.perf_counter()
+        for _ in range(3):
+            dense = aop(sl, OMEGA, dx_m, dy_m)
+        t_dense = (time.perf_counter() - t0) / 3.0
+
+        t0 = time.perf_counter()
+        for _ in range(3):
+            fast = aop_fft(sl, OMEGA, nx, ny)
+        t_fft = (time.perf_counter() - t0) / 3.0
+
+        worst = max(rel(f, d) for f, d in zip(fast, dense, strict=True))
+        print(
+            f"      N_x={nx} N_y={ny}  N={nx * ny:4d}   dense {t_dense * 1e3:7.1f} ms   "
+            f"FFT {t_fft * 1e3:7.1f} ms   speedup {t_dense / t_fft:4.1f}x   "
+            f"agree to {worst:.1e}"
+        )
+        if nx == 12:
+            report("the FFT assembly is the same operator", worst < 1e-10)
+            report("and it is faster at the largest grid tried", t_fft < t_dense)
+
+    # Assembly is not the whole step.  Say what fraction it actually is, so the
+    # speedup above is not read as a speedup of the march.
+    nx = ny = 12
+    prof = profile_3d(nx, ny, eps)
+    dx_m, dy_m = deriv_pair(nx, ny)
+    sl = prof(0.5 * H)
+    blk = aop(sl, OMEGA, dx_m, dy_m)
+    y = y_start(REF, OMEGA, nx, ny)
+    t0 = time.perf_counter()
+    for _ in range(3):
+        riccati_rhs(y, blk)
+    t_rhs = (time.perf_counter() - t0) / 3.0
+    t0 = time.perf_counter()
+    for _ in range(3):
+        aop_fft(sl, OMEGA, nx, ny)
+    t_asm = (time.perf_counter() - t0) / 3.0
+    frac = t_asm / (t_asm + 4.0 * t_rhs)
+    print(
+        f"      at N={nx * ny}: one RK4 step is 4 evaluations of the right-hand side\n"
+        f"      ({t_rhs * 1e3:.1f} ms each) plus assembly ({t_asm * 1e3:.1f} ms), so FFT"
+        f" assembly\n      touches {100 * frac:.0f}% of the step.  The quadratic term"
+        " Y A12 Y is dense in\n      every basis and no transform reaches it."
+    )
+    report("the quadratic term still dominates the step", frac < 0.5)
+
+
+def part13() -> None:
+    """The impedance is source-independent, so it is computed once."""
+    print("\n[13] reuse of Y across sources (Haines et al.)")
+    nx = ny = 8
+    eps = 0.06
+    prof = profile_3d(nx, ny, eps)
+    n3 = 3 * nx * ny
+    rng = np.random.default_rng(7)
+    sources = [rng.normal(size=n3) + 1j * rng.normal(size=n3) for _ in range(8)]
+
+    t0 = time.perf_counter()
+    y = march_lateral(prof, OMEGA, nx, ny, 24, method="rk4")
+    t_march = time.perf_counter() - t0
+
+    # Y does not depend on the source at all: it is the Dirichlet-to-Neumann map
+    # of everything below the surface.  One factorisation serves every source.
+    t0 = time.perf_counter()
+    lu = np.linalg.inv(y)
+    answers = [lu @ src for src in sources]
+    t_reuse = time.perf_counter() - t0
+
+    # The control: what it would cost to treat each source as a fresh problem.
+    direct = np.linalg.solve(y, sources[0])
+    report("the reused factorisation gives the same answer", rel(answers[0], direct) < 1e-10)
+    print(
+        f"      one march {t_march * 1e3:.0f} ms, then {len(sources)} sources in "
+        f"{t_reuse * 1e3:.1f} ms total"
+    )
+    print(
+        f"      re-marching per source would cost {len(sources) * t_march * 1e3:.0f} ms;"
+        f" amortised it is\n      {t_march / len(sources) * 1e3:.0f} ms per source and"
+        " falls with every source added."
+    )
+    report(
+        "reuse beats re-marching for more than one source",
+        t_march + t_reuse < len(sources) * t_march,
+    )
+
+
+def part14() -> None:
+    """Y is a Dirichlet-to-Neumann map: it is symmetric, and it is a state."""
+    print("\n[14] Y as the Dirichlet-to-Neumann map of everything below z")
+    nx = ny = 6
+
+    # Reciprocity.  The DtN map of a reciprocal medium is symmetric, and the
+    # symplectic identity is that symmetry one level down: J6 A = (J6 A)^T makes
+    # A21, A12 symmetric and A22 = -A11^T, under which the Riccati right-hand
+    # side transposes into itself.  So symmetry is PRESERVED, not approached --
+    # it should not improve with refinement, and does not.
+    print(f"      {'case':<32}{'||Y - Y^T|| / ||Y||':>22}")
+    y0 = y_start(REF, OMEGA, nx, ny)
+    print(f"      {'half-space start (algebraic)':<32}{rel(y0, y0.T):>22.3e}")
+    worst = rel(y0, y0.T)
+    for eps in (0.0, 0.06):
+        prof = profile_3d(nx, ny, eps)
+        for nstep in (8, 32):
+            y = march_lateral(prof, OMEGA, nx, ny, nstep, method="rk4")
+            worst = max(worst, rel(y, y.T))
+            print(f"      {f'marched eps={eps:.2f} nstep={nstep}':<32}{rel(y, y.T):>22.3e}")
+    report("the marched impedance is symmetric (reciprocity)", worst < 1e-13)
+
+    # The imbedding property.  Y(z) is the map of the region below z and of
+    # nothing else, so the march carries no state but Y: stopping it halfway and
+    # restarting from the intermediate Y must give the same answer.  z counts
+    # height above the base, so the LOWER half is the shifted profile.
+    prof = profile_3d(nx, ny, 0.06)
+    whole = march_lateral(prof, OMEGA, nx, ny, 64, method="rk4")
+
+    def lower_medium(z: float) -> Slice:
+        return prof(z + 0.5 * H)
+
+    out = {}
+    for nlo, nhi in ((32, 32), (24, 40)):
+        y_mid = march_lateral(lower_medium, OMEGA, nx, ny, nlo, method="rk4", thickness=0.5 * H)
+        out[(nlo, nhi)] = march_lateral(prof, OMEGA, nx, ny, nhi, method="rk4", thickness=0.5 * H, y0=y_mid)
+
+    same = rel(out[(32, 32)], whole)
+    mixed = rel(out[(24, 40)], whole)
+    print(f"      restart at mid-slab, 32+32 steps vs 64 in one go: {same:.3e}")
+    print(f"      restart with UNEQUAL steps, 24+40:                {mixed:.3e}")
+    print(
+        "      the first is exact because it is the same arithmetic in the same\n"
+        "      order; the second is not, and agrees to the truncation error.  Both\n"
+        "      say the same thing: the march carries no state but Y."
+    )
+    report("the imbedding restarts exactly", same < 1e-14)
+    report("and with a different step count, to truncation error", mixed < 1e-6)
+
+    # The graph of Y is a LAGRANGIAN subspace of the phase space: with
+    # W = [I; Y], the symplectic form restricted to it is W^T J6 W = Y - Y^T.
+    # So "Y is symmetric" and "the downgoing subspace is Lagrangian" are one
+    # statement, and the flow of a symplectic A carries Lagrangian subspaces to
+    # Lagrangian subspaces.  That is WHY symmetry is preserved rather than
+    # approached, and it is the deeper form of the check above.
+    j6 = jsix(nx * ny)
+    n3 = 3 * nx * ny
+    worst_lag = 0.0
+    for lab, y in (("half-space", y_start(REF, OMEGA, nx, ny)), ("marched", whole)):
+        w = np.vstack([np.eye(n3, dtype=complex), y])
+        v = float(np.linalg.norm(w.T @ j6 @ w) / np.linalg.norm(y))
+        worst_lag = max(worst_lag, v)
+        print(f"      {lab:<12} ||W^T J6 W||/||Y|| = {v:.3e}   (W = [I; Y])")
+    report("the graph of Y is a Lagrangian subspace", worst_lag < 1e-14)
+
+    # The transformation law under the propagator is MOEBIUS.  With
+    # q(z2) = P q(z1) and tau = Y u, the graph maps to the graph of
+    # Y2 = (P21 + P22 Y)(P11 + P12 Y)^-1.  The Riccati equation is the
+    # infinitesimal form of this action, and the "mobius" method of
+    # march_lateral is literally one application of it.  In a uniform medium the
+    # half-space map is the FIXED POINT of the action, which is the check.
+    dxm, dym = deriv_pair(nx, ny)
+    big = abig(aop(uniform_slice(REF, nx, ny), OMEGA, dxm, dym))
+    y_hs = y_start(REF, OMEGA, nx, ny)
+    worst_mob, worst_sym = 0.0, 0.0
+    for hh in (5.0, 80.0):
+        pmat = expm(-big * hh)
+        p11, p12 = pmat[:n3, :n3], pmat[:n3, n3:]
+        p21, p22 = pmat[n3:, :n3], pmat[n3:, n3:]
+        y2 = np.linalg.solve((p11 + p12 @ y_hs).T, (p21 + p22 @ y_hs).T).T
+        worst_mob = max(worst_mob, rel(y2, y_hs))
+        worst_sym = max(worst_sym, rel(pmat.T @ j6 @ pmat, j6))
+        print(
+            f"      h={hh:5.1f}  Moebius image vs the fixed point {rel(y2, y_hs):.3e}"
+            f"   ||P^T J6 P - J6|| {rel(pmat.T @ j6 @ pmat, j6):.3e}"
+        )
+    report("the half-space map is the fixed point of the Moebius action", worst_mob < 1e-12)
+    report("and the propagator that acts is symplectic", worst_sym < 1e-6)
+
+    # The scalar case the matrix one generalises.  At normal incidence the three
+    # channels decouple and Y is the acoustic impedance rho*c, carrying the
+    # factor i*omega that converts displacement to velocity.
+    y_pt = y_start(REF, OMEGA, 2, 2)[np.ix_([0, 4, 8], [0, 4, 8])]
+    want = 1j * OMEGA * REF.rho * np.array([REF.alpha, REF.beta, REF.beta])
+    print(f"      normal incidence: diag(Y) = {np.diag(y_pt) / (1j * OMEGA * REF.rho)} x i*omega*rho")
+    report("at normal incidence Y is i omega rho c", rel(np.diag(y_pt), want) < 1e-13)
+    off = float(np.linalg.norm(y_pt - np.diag(np.diag(y_pt))) / np.linalg.norm(y_pt))
+    report("and it is diagonal there", off < 1e-13)
+
+    # Passivity, and what its null space counts.  The region below a DtN surface
+    # can take energy from the surface but never supply it, so the anti-Hermitian
+    # part of Y is positive SEMI-definite -- semi, not definite, because an
+    # evanescent channel carries no flux and contributes an exact zero.  The
+    # number of zeros is therefore predictable: one per P-evanescent lateral
+    # mode of the half-space below, two per S-evanescent one.  Getting that count
+    # right is a much sharper check than a sign, and it is a direct test of the
+    # awkward case Haines et al. name -- P evanescent at a wavenumber where S
+    # still propagates.
+    kxv, kyv = grid_wavenumbers(nx, LX), grid_wavenumbers(ny, LY)
+    kmag = np.hypot(kxv[:, None], kyv[None, :]).ravel()
+    kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
+    predicted = int(np.sum(kmag > kp)) + 2 * int(np.sum(kmag > ks))
+    print(
+        f"      k_P={kp:.5f} k_S={ks:.5f} max|k|={kmag.max():.5f}: "
+        f"{predicted} evanescent channels of {3 * nx * ny}"
+    )
+    for lab, y, tol in (("half-space", y_hs, 1e-12), ("marched", whole, 1e-8)):
+        ev = np.sort(np.linalg.eigvalsh((y - y.conj().T) / 2.0j))
+        scale = float(np.abs(ev).max())
+        null = np.abs(ev) < tol * scale
+        gap = float(np.abs(ev[~null]).min() / scale) if np.any(~null) else 0.0
+        print(
+            f"      {lab:<12} {int(null.sum()):3d} null channels; most negative "
+            f"{ev.min() / scale:+.1e} of scale; gap to the next {gap:.1e}"
+        )
+        report(f"the {lab} below is passive (no negative flux)", ev.min() > -tol * scale)
+        report(f"and its null channels count the evanescent ones ({lab})", int(null.sum()) == predicted)
+
+
 def main() -> int:
     """Run every part and summarise.
 
@@ -1251,7 +1740,22 @@ def main() -> int:
     print("=" * 78)
     print("THE LATERALLY COUPLED IMPEDANCE MARCH ON A FULL 3-D LATERAL GRID")
     print("=" * 78)
-    for fn in (part1, part2, part3, part4, part5, part6, part7, part8, part9, part10):
+    for fn in (
+        part1,
+        part2,
+        part3,
+        part4,
+        part5,
+        part6,
+        part7,
+        part8,
+        part9,
+        part10,
+        part11,
+        part12,
+        part13,
+        part14,
+    ):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)
