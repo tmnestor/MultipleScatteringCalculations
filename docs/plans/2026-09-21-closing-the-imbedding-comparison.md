@@ -12,6 +12,33 @@
 
 ---
 
+## Status, 2026-09-25
+
+- **Task 1 — DONE.** The toroidal weight is `t_n = i k_S c_n renorm(n)`, on the
+  **sin φ** parity; it is determined, not bounded (Mathematica
+  `ToroidalIncidentExpansion.wl` to 1e-26, a Python fit to 1e-8, the optical
+  theorem for S incidence rejecting 1, −i k_S, k_S, 1/(i k_S)).  The S channels
+  of the SV column now match Mie in complex value: R 0.174, T 0.223, against
+  0.445 / 0.283 without the term.  March gate 36/36.
+- **A scoring defect found on the way reverses §22's wide-angle verdict.** The
+  Mie predictions put the sphere at the lateral origin while the march puts it
+  at the grid centre; the translation phase `exp(−i(k_x x_c + k_y y_c))` was
+  never applied, and it is 1 only on the specular order.  With it (plus the
+  zeroed-Nyquist orders excluded, and the forward specular T scored on its
+  scattered part), the march is better than the voxel route at wide angles by
+  7–17× at every frequency, and at the specular orders too.  The earlier
+  "1.96 / 0.41 / 0.28" and "voxel better at every row" were the scrambled
+  phase.  Imbedding gate 19/19; §22 rewritten.
+- **Task 2's rationale below is stale** — the wide-angle orders are no longer
+  "uninterpretable"; they match the isolated sphere to a few per cent.  A
+  periodic reference would still split that residual into array coupling and
+  march error.
+- **New open item:** the SV→P channel of T sits at 0.32, the worst entry of the
+  SV column, with the toroidal term unable to reach it; its P-incidence
+  counterpart is 0.11.
+
+---
+
 ## What already exists — DO NOT REBUILD IT
 
 Three things were declared "not built" during the last session and all three

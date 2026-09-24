@@ -41,6 +41,8 @@ Both errors here are method errors and neither is discounted.
 
 Run:
     conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py
+    conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py --dump-angles angles.json
+The second writes the per-order errors that ``plot_angle_resolved.py`` draws.
 """
 
 from __future__ import annotations
@@ -545,8 +547,8 @@ def part7() -> None:
     )
 
 
-def _order_errors(ka_s: float, period: float) -> tuple[float, float, float, float]:
-    """Median per-order errors of both routes, split specular / wide angle.
+def _order_rows(ka_s: float, period: float) -> list[dict[str, float | str]]:
+    """Per-order errors of both routes, one row per propagating order and side.
 
     The lateral pitch is held at 112.5 m so that only the period changes; an
     order propagates when ``period > lambda_P``, which is what brings wide
@@ -557,7 +559,8 @@ def _order_errors(ka_s: float, period: float) -> tuple[float, float, float, floa
         period: Lateral period.
 
     Returns:
-        (specular march, specular voxel, wide march, wide voxel).
+        Rows with keys ``theta`` (degrees from the incident direction),
+        ``kind`` ("R" or "T"), ``march`` and ``voxel`` (relative errors).
     """
     import scripts.gate_sphere_vs_impedance_march as march_mod
     from scripts.gate_sphere_plane_wave_spectrum import kz_of
@@ -573,6 +576,7 @@ def _order_errors(ka_s: float, period: float) -> tuple[float, float, float, floa
         t_pred = march_mod.mie_transmission(nsz, nsz, period, period)
         kx = np.repeat(march_mod.grid_wavenumbers(nsz, period), nsz)
         ky = np.tile(march_mod.grid_wavenumbers(nsz, period), nsz)
+        aliased = march_mod.nyquist_orders(nsz, nsz)
     finally:
         march_mod.OMEGA = saved
 
@@ -592,36 +596,64 @@ def _order_errors(ka_s: float, period: float) -> tuple[float, float, float, floa
     vol = fl.n_cells * (2.0 * fl.a_sub) ** 3 / ((4.0 / 3.0) * np.pi * RADIUS**3)
     r_far = 5.0e4 * RADIUS
 
-    groups: dict[str, list[tuple[float, float]]] = {"spec": [], "wide": []}
+    rows: list[dict[str, float | str]] = []
     for i in range(nsz * nsz):
+        # A zeroed-Nyquist order is labelled with a wavenumber it does not
+        # have -- (n/2, 0) reads as q = 0 -- so it would enter the SPECULAR
+        # group scored against the specular prediction.  Excluded.
+        if aliased[i]:
+            continue
         if abs(kzp[i].imag) > 1e-12 * max(abs(kzp[i].real), 1e-30):
             continue
         if q[i] > 0.999 * kp:
             continue
-        for got, want, sgn in (
-            (r_mat[i, 0], r_pred[i], -1.0),
-            (t_mat[i, 0], t_pred[i], +1.0),
+        for got, want, sgn, kind in (
+            (r_mat[i, 0], r_pred[i], -1.0, "R"),
+            (t_mat[i, 0], t_pred[i], +1.0, "T"),
         ):
             if abs(want) < 1e-6 * abs(r_pred[0]):
                 continue
+            # The forward specular T entry carries the unscattered wave, the same
+            # exp(2 i k_P a) on both sides.  Left in, it divides the march's error
+            # by the incident amplitude while the voxel route is scored on its
+            # scattered field alone -- so it is removed, and both routes are
+            # scored on the scattered field.
+            if i == 0 and sgn > 0:
+                direct = np.exp(2j * kp * march_mod.RADIUS)
+                got, want = got - direct, want - direct
             direction = np.array([sgn * float(kzp[i].real), kx[i], ky[i]]) / kp
             theta = float(np.degrees(np.arccos(np.clip(direction[0], -1.0, 1.0))))
             pts = direction[None, :] * r_far
             u_m = mie_scattered_displacement(mie, pts)
             u_p, u_s = foldy_lax_far_field(fl, pts / r_far, r_far, K_HAT, K_HAT, wave_type="P")
-            key = "spec" if (theta < 1.0 or theta > 179.0) else "wide"
-            groups[key].append(
-                (
-                    float(abs(got - want) / abs(want)),
-                    float(np.abs(u_p + u_s - u_m * vol).max() / np.abs(u_m * vol).max()),
-                )
+            rows.append(
+                {
+                    "theta": theta,
+                    "kind": kind,
+                    "march": float(abs(got - want) / abs(want)),
+                    "voxel": float(np.abs(u_p + u_s - u_m * vol).max() / np.abs(u_m * vol).max()),
+                }
             )
+    return rows
 
-    def med(key: str, col: int) -> float:
-        vals = [row[col] for row in groups[key]]
+
+def _order_errors(ka_s: float, period: float) -> tuple[float, float, float, float]:
+    """Median per-order errors of both routes, split specular / wide angle.
+
+    Args:
+        ka_s: Shear wavenumber times the sphere radius.
+        period: Lateral period.
+
+    Returns:
+        (specular march, specular voxel, wide march, wide voxel).
+    """
+    rows = _order_rows(ka_s, period)
+
+    def med(wide: bool, col: str) -> float:
+        vals = [float(r[col]) for r in rows if (1.0 <= float(r["theta"]) <= 179.0) == wide]
         return float(np.median(vals)) if vals else float("nan")
 
-    return med("spec", 0), med("spec", 1), med("wide", 0), med("wide", 1)
+    return med(False, "march"), med(False, "voxel"), med(True, "march"), med(True, "voxel")
 
 
 def part8() -> None:
@@ -637,25 +669,49 @@ def part8() -> None:
         f"\n      {'k_S a':>7}{'L (m)':>8}{'spec march':>12}{'spec voxel':>12}"
         f"{'wide march':>12}{'wide voxel':>12}{'vox/march':>11}"
     )
-    wide_ratios = []
+    wide_ratios, spec_ratios = [], []
     for ka_s, period in ((2.4, 900.0), (1.5, 1800.0), (1.0, 2700.0)):
         spec_m, spec_v, wide_m, wide_v = _order_errors(ka_s, period)
         wide_ratios.append(wide_v / wide_m)
+        spec_ratios.append(spec_v / spec_m)
         print(
             f"      {ka_s:7.2f}{period:8.0f}{spec_m:12.4e}{spec_v:12.4e}"
             f"{wide_m:12.4e}{wide_v:12.4e}{wide_v / wide_m:11.2f}"
         )
 
     report(
-        "the VOXEL route is better at wide angles at every frequency tested",
-        all(r < 1.0 for r in wide_ratios),
+        "the march is better at wide angles at every frequency tested", all(r > 1.0 for r in wide_ratios)
     )
+    report("and at the specular orders too", all(r > 1.0 for r in spec_ratios))
     print(
-        "\n      ▶ So the march's advantage is confined to the SPECULAR orders, and\n"
-        "      within them to k_S a >~ 1.  Its wide-angle error falls as the period\n"
-        "      grows -- 1.96, 0.41, 0.28 -- which is the periodization error\n"
-        "      converging, and it is the larger of the two at every row."
+        "\n      ⛔ AN EARLIER VERSION OF THIS TABLE HAD THE OPPOSITE VERDICT -- wide-\n"
+        "      angle march errors of 1.96, 0.41, 0.28, the voxel route better at every\n"
+        "      row.  Three defects in the SCORING produced it, none in either method:\n"
+        "        1. the Mie prediction put the sphere at the lateral origin, the march\n"
+        "           at the grid centre, and nothing applied the translation phase\n"
+        "           exp(-i(k_x x_c + k_y y_c)).  Every non-specular order was scored\n"
+        "           with a scrambled phase and a correct magnitude, so |1 - e^{i phi}|\n"
+        "           up to 2 -- the 1.94-1.98 that was read as the array's azimuthal\n"
+        "           structure.  (``centre_phase`` in the march gate.)\n"
+        "        2. the zeroed-Nyquist orders read as q = 0 and entered the SPECULAR\n"
+        "           group, scored against the specular prediction.\n"
+        "        3. the forward specular T was scored with the unscattered wave in\n"
+        "           both sides, diluting the march's error; the voxel route is scored\n"
+        "           on its scattered field, and now so is the march."
     )
+
+
+def dump_angles(path: Path) -> None:
+    """Write the per-order errors that ``plot_angle_resolved.py`` draws.
+
+    Args:
+        path: Output JSON, keyed by k_S a.
+    """
+    import json
+
+    data = {f"{ka_s:g}": _order_rows(ka_s, 900.0) for ka_s in (1.0, 2.4)}
+    path.write_text(json.dumps(data, indent=1))
+    print(f"wrote {path}")
 
 
 def main() -> int:
@@ -684,4 +740,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--dump-angles":
+        dump_angles(Path(sys.argv[2]))
+        raise SystemExit(0)
     raise SystemExit(main())

@@ -2,21 +2,22 @@
 """Error against scattering angle, for reflection and transmission together.
 
 The backscatter comparison of ``plot_imbedding_vs_voxel`` is one direction out
-of many, and it is the one most favourable to the march.  This figure shows the
-rest, and the picture it gives is different: the march is far more accurate in
-the SPECULAR directions (theta = 0 and 180) and far less accurate everywhere
-else.
+of many.  This figure shows the rest.  At k_S a = 2.4 the march is the more
+accurate route at every angle, by 7x at the wide angles; at k_S a = 1 on this
+900 m period only the specular orders propagate, and there the voxel route is
+the better, because the period is short against the wavelength and the array
+coupling it costs is largest.
 
-⚠ THAT IS MOSTLY THE ARBITER, NOT THE METHOD, and the figure is drawn so the
-reason is visible.  Exact Mie is an ISOLATED sphere and is axisymmetric: its
-far field depends on theta alone.  The march solves a square ARRAY, which is
-not axisymmetric, so orders sharing a theta but differing in azimuth have
-genuinely different amplitudes.  Those orders appear here as a vertical spread
-in the march's points at a single theta, against a single voxel point.  Only
-the specular orders are directions where the array's symmetry cannot matter.
+⛔ AN EARLIER VERSION OF THIS FIGURE SHOWED THE MARCH ORDER-OF-UNITY WRONG AT
+EVERY WIDE ANGLE, and explained the spread of its points at one theta as the
+square array's azimuthal structure.  Both were a scoring defect: the Mie
+prediction omitted the phase that moves the sphere from the lateral origin to
+the grid centre, where the march puts it.  That phase is 1 on the specular
+orders only.  See ``centre_phase`` in ``gate_sphere_vs_impedance_march.py``.
 
 Run:
-    conda run -n seismic python scripts/plot_angle_resolved.py <angles.json>
+    conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py --dump-angles angles.json
+    conda run -n seismic python scripts/plot_angle_resolved.py angles.json
 """
 
 from __future__ import annotations
@@ -82,7 +83,7 @@ def main(path: str) -> int:
     axes[0][0].set_ylabel("relative error against the exact sphere")
     axes[0][0].legend(frameon=False, fontsize=8, loc="lower center", ncol=2)
     fig.suptitle(
-        "Specular directions flatter the march; the rest do not",
+        "Error against the exact sphere, by scattering angle",
         fontsize=11,
         y=0.99,
     )
