@@ -3354,6 +3354,26 @@ $2.3\times10^{-3}$.  The two are not comparable with one another: transmission
 is dominated by the unscattered wave, so its relative error is necessarily the
 smaller.
 
+\paragraph{Every order, in complex value, needs the sphere's lateral
+position.}  Mie places the sphere at the lateral origin; the march places it at
+the centre of the periodic cell, $(x_c,y_c)=\bigl(\tfrac{N_x-1}{2}\,\tfrac{L_x}{N_x},
+\tfrac{N_y-1}{2}\,\tfrac{L_y}{N_y}\bigr)$, where $N_x,N_y$ are the lateral
+grid sizes and $L_x,L_y$ the periods.  A lateral translation multiplies each
+scattered order by
+\begin{equation}\label{eq:centrephase}
+  e^{-i(k_x x_c + k_y y_c)},
+\end{equation}
+which is exactly $1$ on the specular order and nowhere else.  With it, every
+order of the $P$ column agrees with Mie in complex value: over the $49$
+scoreable orders of an $8\times8$ grid the relative $2$-norm residual is
+$0.125$ for $\bR$ and $0.111$ for the scattered part of $\bT$, the array floor
+again.  Without it the same residual is $1.38$ --- every non-specular phase
+scrambled while every magnitude is right --- so a comparison of specular
+entries, or of magnitudes, cannot see the omission.  The
+orders indexed at a zeroed Nyquist wavenumber are excluded: they are labelled
+with a wavenumber they do not carry, and $(N_x/2,0)$ reads as the specular
+order.
+
 \paragraph{$S$ incidence, scored.}  The comparison above is the $P$ column,
 because the plane-wave spectrum it uses is the $m=0$ one --- which is what a $P$
 wave at normal incidence excites.  $S$ incidence excites $m=\pm1$, and that
@@ -3377,12 +3397,32 @@ column & channel & orders & median march/Mie\\
 \midrule
 $\bR$ & $P$   & $24$ & $0.920$ \quad(range $0.78$--$1.08$)\\
 $\bT$ & $P$   & $24$ & $1.016$ \quad(range $0.63$--$1.60$)\\
-$\bR$ & $S$   & $52$ & $0.939$\\
+$\bR$ & $S$   & $52$ & $0.964$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{$SV$ incidence at the $\Gamma$ order, $k_Sa=2.4$.  The scatter
+\captionof{table}{$SV$ incidence at the $\Gamma$ order, $k_Sa=2.4$, on a
+$6\times6$ grid of period $600$\,m: the median over orders of
+$|\bR_{\text{march}}|/|\bR_{\text{Mie}}|$, and likewise for $\bT$.  The scatter
 is the array coupling of \S\ref{sec:threed}, $1.45\,\varepsilon\simeq14\%$ here,
-not a march error.}
+not a march error.  A magnitude ratio is blind to phase; the complex residual
+is in the next table.}
+\end{center}
+
+\begin{center}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+column & $P$ channel & $S$ channels & $S$, toroidal omitted\\
+\midrule
+$\bR$ & $0.164$ & $\mathbf{0.174}$ & $0.445$\\
+$\bT$ & $0.322$ & $\mathbf{0.223}$ & $0.283$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{The same column in complex value: the relative $2$-norm
+residual $\|\bR_{\text{march}}-\bR_{\text{Mie}}\|/\|\bR_{\text{Mie}}\|$ over the
+scoreable orders of each channel, with the translation phase
+\eqref{eq:centrephase} applied and, for $\bT$, the unscattered wave removed from
+both sides.  The last column drops the toroidal term \eqref{eq:toroidal} from
+the prediction; including it lowers the $S$ residual in both $\bR$ and $\bT$.}
 \end{center}
 
 \noindent
@@ -3393,20 +3433,44 @@ identically zero there; the march gives $3.6\%$ of the specular $SV\to SV$,
 which is inside the array floor --- a periodic array has no axial symmetry to
 respect exactly.
 
-\paragraph{What is still open, and it is the arbiter again.}  An $x$-polarised
-$S$ wave excites the \emph{toroidal} family as well as the spheroidal one, and
-\texttt{compute\_elastic\_mie} carries its coefficients.  What is missing is the
-scalar relating them to the shared potential convention: they are normalised
-against their own incident expansion, which the spheroidal coefficients do not
-share, and the package's $SH$ far field cannot settle it because that routine
-drops the toroidal part outright as ``$O((ka)^4)$ and negligible'' --- a claim
-that fails at $k_Sa=2.4$, where the toroidal coefficients run $1.5$ to $2.5$
-times the spheroidal ones.  Scanning the scalar against the march \emph{bounds}
-it at or below $k_S$, where the toroidal is invisible against the array floor,
-and rules out $1$ (median agreement $0.94\to0.58$) and $1/(ik_S)$ (which
-destroys it).  Bounded, not determined, and it is recorded that way rather than
-fitted: a scalar tuned against the one comparison it is scored on always looks
-successful.
+\paragraph{The toroidal term.}  An $x$-polarised $S$ wave excites the
+\emph{toroidal} ($M$-type) family, $\bu=\nabla\times(\mathbf{r}\chi)$, as well as the
+spheroidal one.  Its potential is odd in azimuth,
+$\chi=h_n(k_Sr)\,P_n^1(\cos\theta)\sin\varphi$, and its coefficient is
+\begin{equation}\label{eq:toroidal}
+  t_n = i k_S\, c_n\, \varrho(n),
+\end{equation}
+where $c_n$ is the $SH$ Mie coefficient, the scattered response per unit of its
+own incident coefficient $(2n+1)i^n/(ik_S)$.  The factor $ik_S$ is the ratio of
+the plane wave's own $M$-type and $N$-type expansion coefficients: with
+$\alpha_n=-(2n+1)i^n/[ik_S\,n(n+1)]$ on
+$\nabla\times\nabla\times(\mathbf{r}\, j_nP_n^1\cos\varphi)$,
+\[
+  \hat{\mathbf{x}}\,e^{ik_Sz}=\sum_n \alpha_n\,\nabla\times\nabla\times(\mathbf{r}\,j_nP_n^1\cos\varphi)
+  + ik_S\,\alpha_n\,\nabla\times(\mathbf{r}\,j_nP_n^1\sin\varphi),
+\]
+one curl fewer costing one power of $k_S$.  This is determined, not fitted, and
+three ways independent of the march: the identity is reproduced from the exact
+Cartesian families in \texttt{Mathematica/}\allowbreak\texttt{ToroidalIncidentExpansion.wl} to
+$10^{-26}$, where the opposite sign fails at $O(1)$; a least-squares fit of the
+expansion by finite-difference curls in Python recovers both coefficients to
+$10^{-8}$; and the optical theorem for $S$ incidence on the lossless sphere,
+$\sigma_{\rm sc}=\sigma_{\rm ext}$ with
+$\sigma_{\rm sc}=\oint[(\alpha/\beta)|\mathbf{f}_P|^2+|\mathbf{f}_S|^2]\,d\Omega$ and
+$\sigma_{\rm ext}=(4\pi/k_S)\,\mathrm{Im}\,\hat{\mathbf{x}}\cdot\mathbf{f}_S(0)$, holds to
+$10^{-8}$ with \eqref{eq:toroidal} and fails for $-ik_S$ ($1.145$), $k_S$
+($0.516$) and $1$ ($3.13$).  The toroidal family conserves energy on its own, so
+the theorem alone cannot distinguish \eqref{eq:toroidal} from omitting the term;
+the expansion fixes the magnitude and the theorem the sign.  The package's $SH$
+far field is not an arbiter here: it drops the toroidal part as
+``$O((ka)^4)$'', which fails at $k_Sa=2.4$, where $|c_n|$ runs $1.5$ to $2.5$
+times the spheroidal ones, $|b_n\varrho(n)|$ with $b_n$ the $SV\to SV$ Mie coefficient.
+
+\emph{What remains open} is the $P$ channel of $\bT$ for $SV$ incidence, at
+$0.32$ the worst entry of the column.  The toroidal term cannot reach it --- a
+transverse field radiates no $P$ --- and the $P$-incidence counterpart reaches
+$0.11$, so why the array's $SV\to P$ conversion sits further from the isolated
+sphere is not yet explained.
 
 \subsection{The symplectic picture, and what it
 guarantees}\label{sec:symplectic}
@@ -4515,7 +4579,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$56/56$; against multiple scattering $18/18$; and the propagator gate exits clean.
+$56/56$; against multiple scattering $19/19$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4682,13 +4746,12 @@ as such, the following are \emph{open}:
 \item \textbf{There is no exact reference for the ARRAY, only for the
       isolated sphere.}  \S\ref{sec:vsfoldy} scores both routes against exact
       Mie, which is axisymmetric; the march solves a square array, which is
-      not.  In the specular directions that cannot matter and the comparison is
-      clean.  Away from them it is comparing different quantities --- eight
-      orders sharing a scattering angle get one voxel error and eight different
-      march errors --- so nothing there is a statement about method accuracy.
-      What is needed is a periodic multiple-scattering reference for the array
-      itself.  Until there is one, the wide-angle orders of $\bR$ and $\bT$ are
-      unvalidated against anything external.
+      not.  Against the isolated sphere the march's wide-angle orders agree to
+      a few per cent, and orders sharing a scattering angle differ by about as
+      much --- the periodization the method pays for.  What that comparison
+      cannot do is split the residual into the array's genuine coupling and the
+      march's own error: a periodic multiple-scattering reference for the array
+      itself would, and does not yet exist.
 
 \item \textbf{The \emph{iterative} multiple-scattering solver has never been
       compared on equal terms.}
@@ -4956,28 +5019,31 @@ behaving as an interference rather than a decay; the voxel route's curve is a
 clean power law over the whole range.}
 \end{center}
 
-\paragraph{And it is a BACKSCATTER comparison, which is the direction most
-favourable to the march.}  Everything above scores one direction.  Repeating it
-over every propagating order of the array --- reflected and transmitted, at
-$k_Sa=1$ and $2.4$ --- gives a different picture:
+\paragraph{Every direction, not only backscatter.}  Everything above scores one
+direction.  Repeating it over every propagating order of the array ---
+reflected and transmitted, at $k_Sa=1$ and $2.4$, on the $900$\,m period ---
+scores the rest:
 
 \begin{center}
 \begin{tabular}{@{}llrrr@{}}
 \toprule
 $k_Sa$ & directions & march & voxel & ratio\\
 \midrule
-$1.0$ & specular only            & $3.99\times10^{-2}$ & $3.45\times10^{-2}$ & $0.87$\\
-$2.4$ & specular                 & $5.98\times10^{-2}$ & $2.16\times10^{-1}$ & $3.61$\\
-$2.4$ & \textbf{wide angle}      & $\mathbf{1.96}$     & $3.06\times10^{-1}$ & $\mathbf{0.16}$\\
+$1.0$ & specular only            & $6.61\times10^{-2}$ & $\mathbf{3.45\times10^{-2}}$ & $0.52$\\
+$2.4$ & specular                 & $\mathbf{6.70\times10^{-2}}$ & $2.16\times10^{-1}$ & $3.22$\\
+$2.4$ & wide angle               & $\mathbf{4.36\times10^{-2}}$ & $3.06\times10^{-1}$ & $7.02$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Medians, over the propagating orders in each group, of the
 per-order relative errors: \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  The
 median is taken across orders spanning several scattering angles, so it
-summarises and does not replace the figure below.  In the specular directions
-the march is the better of the two at $k_Sa=2.4$ and level with the voxel route
-at $1$; at wide angles its relative error is of order \emph{unity} and the voxel
-route is six times better.}
+summarises and does not replace the figure below.  The march's scores carry the
+translation phase \eqref{eq:centrephase}, exclude the zeroed-Nyquist orders,
+and, for the forward specular order, remove the unscattered wave from both
+sides, so that both routes are scored on the scattered field.  Bold is the
+better of the pair.  At $k_Sa=2.4$ the march is the better route in every
+direction, by $7\times$ at the wide angles; at $k_Sa=1$ on this period the voxel
+route is the better, and the next table shows that this is the period's doing.}
 \end{center}
 
 \begin{center}
@@ -4985,24 +5051,22 @@ route is six times better.}
 \captionof{figure}{Every propagating order, by scattering angle, $\theta$
 measured from the incident direction so that $180^{\circ}$ is backscatter.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  At $k_Sa=1$
 the period supports only the specular orders; at $2.4$ it supports wide-angle
-ones, and that is where the march's error is of order unity.}
+ones, and the march is the more accurate route at every one of them.}
 \end{center}
 
 \noindent
-\textbf{Where the march's wide-angle error comes from.}  The exact sphere is
-\emph{axisymmetric}: its far field depends on $\theta$ alone.  A square array is
-not.  At $\theta=144.4^{\circ}$ eight propagating orders share that angle and
-differ only in azimuth; the voxel route gives all eight the same error to five
-figures ($0.52571$), because it is solving an isolated sphere, while the march
-gives eight different values ($1.94$ to $1.98$).  That spread is the array's
-azimuthal structure.
-
-\emph{It is still the march's error.}  The spread explains the mechanism, not
-away the number: the target is one sphere, the azimuthal structure is absent
-from the target, and it is present in the answer only because this method had to
-periodize to produce an answer at all.  The specular orders are the directions
-in which the array's symmetry cannot enter, which is why the march does best
-there --- not a reason to score it only there.
+\textbf{The azimuthal spread is the array's, and it is small.}  The exact
+sphere is \emph{axisymmetric}: its far field depends on $\theta$ alone.  A
+square array is not, so orders that share a scattering angle and differ in
+azimuth need not share an error.  At $\theta=144.4^{\circ}$ they do not: the
+march's errors there are $0.009$ and $0.062$, where the voxel route, solving an
+isolated sphere, gives one value.  That spread is the periodization error the
+march pays for, and it is the march's error --- the target is one sphere --- but
+it is a few per cent, not of order unity.  Without the translation phase
+\eqref{eq:centrephase} the same orders score $1.94$ to $1.98$, which is
+$|1-e^{i\phi}|$ for a phase $\phi$ near $\pi$: an error of order unity at wide
+angles alongside correct magnitudes is the signature of a missing translation,
+not of the array.
 
 \paragraph{Wide angles at lower frequency, where the confound is removed.}
 The table above has wide-angle orders at $k_Sa=2.4$ only, and that is an
@@ -5019,29 +5083,31 @@ growing $L$ until wide-angle orders exist removes that:
 \cmidrule(lr){3-4}\cmidrule(lr){5-6}
 $k_Sa$ & $L$ (m) & march & voxel & march & voxel & voxel/march\\
 \midrule
-$2.4$ & $900$  & $5.98\times10^{-2}$ & $2.16\times10^{-1}$
-       & $1.96$ & $\mathbf{3.06\times10^{-1}}$ & $0.16$\\
-$1.5$ & $1800$ & $4.78\times10^{-2}$ & $8.03\times10^{-2}$
-       & $4.15\times10^{-1}$ & $\mathbf{1.84\times10^{-1}}$ & $0.44$\\
-$1.0$ & $2700$ & $4.57\times10^{-2}$ & $\mathbf{3.45\times10^{-2}}$
-       & $2.82\times10^{-1}$ & $\mathbf{7.52\times10^{-2}}$ & $0.27$\\
+$2.4$ & $900$  & $\mathbf{6.70\times10^{-2}}$ & $2.16\times10^{-1}$
+       & $\mathbf{4.36\times10^{-2}}$ & $3.06\times10^{-1}$ & $7.0$\\
+$1.5$ & $1800$ & $\mathbf{3.05\times10^{-2}}$ & $8.03\times10^{-2}$
+       & $\mathbf{1.07\times10^{-2}}$ & $1.83\times10^{-1}$ & $17.1$\\
+$1.0$ & $2700$ & $\mathbf{1.39\times10^{-2}}$ & $3.45\times10^{-2}$
+       & $\mathbf{7.32\times10^{-3}}$ & $7.52\times10^{-2}$ & $10.3$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Medians of the per-order relative errors \eqref{eq:errmarch}
-and \eqref{eq:errvoxel}, at $\varepsilon=0.1$ and $n_{\rm sub}=6$, with the
-lateral pitch held at $112.5$\,m so only the period changes.  Bold is the better
-of the pair.  \textbf{The voxel route is better at wide angles at every
-frequency tested}, by $2.3$ to $6.3$ times, and at $k_Sa=1.0$ it is better at
-the specular orders as well.}
+and \eqref{eq:errvoxel}, scored as in the previous table, at $\varepsilon=0.1$
+and $n_{\rm sub}=6$, with the lateral pitch held at $112.5$\,m so only the
+period changes.  Bold is the better of the pair; the last column is the ratio
+at wide angles.  \textbf{The march is the better route at every frequency
+tested, at wide angles and at the specular orders}, by $7$ to $17$ times at
+wide angles.}
 \end{center}
 
 \noindent
-So the earlier claim narrows again, and in the same direction each time it is
-tested.  \textbf{The march's advantage is confined to the specular orders, and
-within them to $k_Sa\gtrsim1$}; at wide angles the voxel route is better
-everywhere measured.  The march's wide-angle error falls as the period grows
---- $1.96$, $0.41$, $0.28$ across the three rows --- which is the periodization
-error converging, and it is still the larger of the two at every row.
+The march's errors fall as the period grows --- $4.4\times10^{-2}$,
+$1.1\times10^{-2}$, $7.3\times10^{-3}$ at wide angles across the three rows ---
+which is the periodization error converging, and at $k_Sa=1$ it reverses the
+specular verdict of the $900$\,m period: there the voxel route was the better,
+by $1.9\times$; at $2700$\,m the march is, by $2.5\times$.  A method that must
+periodize pays for it in the period it can afford, and at $k_Sa=1$ the $900$\,m
+period is too short.
 
 \paragraph{And the fast iterative route exists.}  The comparison above uses the
 dense direct solve that \texttt{compute\_sphere\_foldy\_lax} ships with, and an

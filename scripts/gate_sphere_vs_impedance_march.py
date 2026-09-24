@@ -50,7 +50,7 @@ from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.special import j1
+from scipy.special import j1, lpmv, spherical_jn, spherical_yn
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -68,7 +68,7 @@ from scripts.gate_first_order_lateral_impedance_3d import (  # noqa: E402
     rel,
     riccati_rhs,
 )
-from scripts.gate_mie_spectrum_general_m import ang_triple  # noqa: E402
+from scripts.gate_mie_spectrum_general_m import ang_triple, legendre_ddp, legendre_dp  # noqa: E402
 from scripts.gate_sphere_plane_wave_spectrum import kz_of, mode_amplitudes  # noqa: E402
 from scripts.gate_thesis_spectral import dz_normalised  # noqa: E402
 
@@ -172,6 +172,76 @@ def q_grid(nx: int, ny: int, lx: float, ly: float) -> NDArray:
     kx = grid_wavenumbers(nx, lx)
     ky = grid_wavenumbers(ny, ly)
     return np.sqrt((kx**2)[:, None] + (ky**2)[None, :]).reshape(-1)
+
+
+def centre_phase(nx: int, ny: int, lx: float, ly: float) -> NDArray:
+    """The phase that moves an isolated-sphere prediction onto the march's sphere.
+
+    Mie puts the sphere at the lateral ORIGIN.  The march puts it at the middle
+    of the grid, ``((nx-1)/2, (ny-1)/2)`` in pitch units -- see
+    ``band_limited_disc``, which applies this same phase to the disc.  A lateral
+    translation by ``(x_c, y_c)`` multiplies every scattered order by
+    ``exp(-i (k_x x_c + k_y y_c))``, and without it the comparison measures a
+    translation, not the scattering.
+
+    ⚠ THIS WAS MISSING, AND NOTHING CAUGHT IT FOR A LONG TIME.  The specular
+    order has ``k_x = k_y = 0``, so the phase is exactly 1 there, and every
+    scored check was either specular or compared MAGNITUDES, which a phase
+    cannot move.  The per-order ``worst`` of part 6 read 2.4 to 10.7 with no
+    threshold on it, and that was the symptom.  Adding the phase takes the
+    complex residual of the P-incidence R column from 1.38 to 0.15.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+        lx: Period along x.
+        ly: Period along y.
+
+    Returns:
+        Shape (nx*ny,), unit modulus, ``idx = ix*ny + iy``.
+    """
+    kx, ky = grid_wavenumbers(nx, lx), grid_wavenumbers(ny, ly)
+    xc, yc = 0.5 * (nx - 1) * (lx / nx), 0.5 * (ny - 1) * (ly / ny)
+    return np.exp(-1j * (kx[:, None] * xc + ky[None, :] * yc)).reshape(-1)
+
+
+def l2_rel(got: NDArray, want: NDArray) -> float:
+    """Relative difference in the 2-norm, over every entry, in complex value.
+
+    Args:
+        got: Computed.
+        want: Reference.
+
+    Returns:
+        ||got - want|| / ||want||.
+    """
+    return float(np.linalg.norm(got - want) / max(float(np.linalg.norm(want)), 1e-300))
+
+
+def nyquist_orders(nx: int, ny: int) -> NDArray:
+    """The orders that use a zeroed Nyquist wavenumber, which no arbiter can score.
+
+    For even n the Nyquist entry of ``grid_wavenumbers`` is set to zero (the
+    derivative must be antisymmetric).  An order indexed there is labelled with
+    a wavenumber it does not have: a Mie prediction evaluated at the labelled
+    ``q`` is the prediction for a DIFFERENT order -- at ``(n/2, 0)`` it is the
+    specular one -- so scoring it compares the march against the wrong answer.
+
+    Args:
+        nx: Points along x.
+        ny: Points along y.
+
+    Returns:
+        Shape (nx*ny,), bool, True where the order must be excluded.
+    """
+    ix = np.repeat(np.arange(nx), ny)
+    iy = np.tile(np.arange(ny), nx)
+    bad = np.zeros(nx * ny, dtype=bool)
+    if nx % 2 == 0:
+        bad |= ix == nx // 2
+    if ny % 2 == 0:
+        bad |= iy == ny // 2
+    return bad
 
 
 def band_limited_disc(nx: int, ny: int, lx: float, ly: float, r_sq: float) -> NDArray:
@@ -598,10 +668,12 @@ def mie_transmission(nx: int, ny: int, lx: float, ly: float) -> NDArray:
     c_p, c_sv = mode_amplitudes(mie, q, upward=False)
     pref = (2.0 * np.pi) ** 2 / (lx * ly)
     kzp, kzs = kz_of(q, kp), kz_of(q, ks)
+    shift = centre_phase(nx, ny, lx, ly)
     out = np.zeros(3 * n, dtype=complex)
-    out[:n] = pref * c_p * np.exp(1j * (kp + kzp) * RADIUS)
-    out[n : 2 * n] = pref * c_sv * np.exp(1j * (kp + kzs) * RADIUS)
+    out[:n] = pref * c_p * np.exp(1j * (kp + kzp) * RADIUS) * shift
+    out[n : 2 * n] = pref * c_sv * np.exp(1j * (kp + kzs) * RADIUS) * shift
     # The direct wave: unit amplitude at the top, propagated across the slab.
+    # It is laterally uniform, so the sphere's position does not touch it.
     out[0] = out[0] + np.exp(2j * kp * RADIUS)
     return out
 
@@ -701,7 +773,43 @@ def energy_residual(nx: int, ny: int, lx: float, ly: float, nstep: int) -> tuple
     return float(np.linalg.norm(m - np.eye(k)) / np.sqrt(k)), int(prop.sum())
 
 
-def mie_spectrum_s(nx: int, ny: int, lx: float, ly: float, *, upward: bool) -> tuple:
+def ang_triple_sin(n: int, kx: NDArray, ky: NDArray, kz_dir: NDArray, k: float) -> tuple:
+    """``ang_triple`` for the ODD azimuthal parity, ``A = P_n^1(cos theta) sin(phi)``.
+
+    With ``P_n^1 = -s P_n'`` (Condon--Shortley), exactly as ``ang_triple``:
+
+        A               = -s P_n'(u) sin psi
+        dA/dtheta       = (-u P_n'(u) + s^2 P_n''(u)) sin psi
+        (1/sin) dA/dphi = -P_n'(u) cos psi
+
+    ⚠ NOT obtained by rotating the arguments of ``ang_triple``, which is the
+    tempting shortcut.  Off axis the rotation is exact; ON axis it is not,
+    because ``ang_triple`` takes the psi = 0 branch there, and a rotated call
+    would take psi = pi/2 while ``mode_matrix`` still takes psi = 0.  The
+    specular order is exactly where that disagreement lands.
+
+    Args:
+        n: Degree.
+        kx: Wavenumber component, x.
+        ky: Wavenumber component, y.
+        kz_dir: Vertical wavenumber WITH the propagation direction's sign.
+        k: Medium wavenumber.
+
+    Returns:
+        The three angular functions, each broadcast to the shape of ``kx``.
+    """
+    u = kz_dir / k
+    q = np.sqrt(np.asarray(kx, dtype=complex) ** 2 + np.asarray(ky) ** 2)
+    s = q / k
+    on_axis = np.abs(q) < 1e-300
+    q_safe = np.where(on_axis, 1.0, q)
+    cps = np.where(on_axis, 1.0, kx / q_safe)
+    sps = np.where(on_axis, 0.0, ky / q_safe)
+    p1, p2 = legendre_dp(n, u), legendre_ddp(n, u)
+    return -s * p1 * sps, (-u * p1 + s * s * p2) * sps, -p1 * cps
+
+
+def mie_spectrum_s(nx: int, ny: int, lx: float, ly: float, *, upward: bool, toroidal: bool = True) -> tuple:
     """The scattered plane-wave spectrum of an x-polarised S wave at normal incidence.
 
     The m = +/-1 counterpart of ``mode_amplitudes``.  Its angular content is the
@@ -718,19 +826,39 @@ def mie_spectrum_s(nx: int, ny: int, lx: float, ly: float, *, upward: bool) -> t
     independently written SV branch to 4e-6 over a spread of angles, which is
     what pins the normalisation above.
 
-    ⚠ THE TOROIDAL (M-type) PART IS NOT INCLUDED, and that is a stated gap
-    rather than an oversight.  An x-polarised S wave excites the toroidal family
-    as well as the spheroidal one, and ``compute_elastic_mie`` carries its
-    coefficients as ``c_n``.  What is missing is the scalar relating ``c_n`` to
-    the shared potential convention: ``c_n`` is normalised against its own
-    incident expansion (2n+1) i^n / (i k_S), which a_n_sv and b_n_sv do not
-    share, and ``mie_far_field``'s SH branch cannot settle it because that
-    branch drops the M-type outright as "O((ka)^4) and negligible" -- a claim
-    that fails here, where |c_n| runs 1.5 to 2.5 times |b_n_sv renorm(n)| at
-    k_S a = 2.4.  Scanning the scalar against the march bounds it at or below
-    k_S: at that size the toroidal is invisible against the array-coupling
-    floor, while a scalar of 1 degrades the median agreement from 0.94 to 0.58
-    and one of 1/(i k_S) destroys it.  Bounded, not determined.
+    THE TOROIDAL (M-type) PART.  An x-polarised S wave excites the toroidal
+    family as well as the spheroidal one.  Its potential is odd in azimuth,
+    ``chi = h_n P_n^1 sin(phi)``, and its coefficient is
+
+        t_n = i k_S c_n renorm(n) ,
+
+    because the plane wave's own expansion carries the M-type at ``i k_S``
+    times the N-type weight (one curl fewer, one power of k_S more), and
+    ``c_n`` is the SH response per unit of ITS incident coefficient,
+    (2n+1) i^n / (i k_S), which is the same scalar as the SV one.  Through the
+    Section 7 amplitude ``-1/D [-dphi e_SV + dtheta e_SH]`` the ``i k_S``
+    cancels against D's ``k_S``, and the term enters with the same prefactor as
+    the N-type:
+
+        SV += c_n renorm dphi_s / i^n ,   SH -= c_n renorm dtheta_s / i^n .
+
+    The factor is DETERMINED, not fitted, three ways, none of which is the march:
+    ``Mathematica/ToroidalIncidentExpansion.wl`` reproduces the plane wave from
+    the exact families to 1e-26 (and the opposite sign fails at O(1)); a
+    least-squares fit of the expansion by finite-difference curls gives it to
+    1e-8; and part 9 below imposes the optical theorem for S incidence, which
+    rejects 1, -i k_S, k_S and 1/(i k_S).
+
+    It had been recorded as "bounded at or below k_S" by a scan against the
+    march.  That scan could not have determined it: it compared MAGNITUDES, and
+    the missing ``centre_phase`` had scrambled every non-specular phase, so the
+    complex residual sat above 1 whatever the scalar.  With the phase in, the
+    S channels discriminate sharply -- R column 0.45 without the term, 0.17
+    with it.
+
+    ⚠ ``mie_far_field(..., "SH")`` is NOT an arbiter for this: it drops the
+    M-type as "O((ka)^4) and negligible", which fails here, where |c_n| runs 1.5
+    to 2.5 times |b_n_sv renorm(n)| at k_S a = 2.4.
 
     Args:
         nx: Points along x.
@@ -738,11 +866,14 @@ def mie_spectrum_s(nx: int, ny: int, lx: float, ly: float, *, upward: bool) -> t
         lx: Period along x.
         ly: Period along y.
         upward: True for the reflected half-space.
+        toroidal: Include the M-type family.  False exists only as the control
+            that shows the term is doing the work.
 
     Returns:
         (c_P, c_SV, c_SH), each shape (N,).
     """
     mie = compute_elastic_mie(OMEGA, RADIUS, REF, MIE_CONTRAST)
+    c_tor = mie.c_n if toroidal else np.zeros_like(mie.c_n)
     kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
     kx1, ky1 = grid_wavenumbers(nx, lx), grid_wavenumbers(ny, ly)
     kx = np.repeat(kx1, ny)
@@ -760,9 +891,10 @@ def mie_spectrum_s(nx: int, ny: int, lx: float, ly: float, *, upward: bool) -> t
         inv_in = 1.0 / (1j**n)
         a_ang, _, _ = ang_triple(n, 1, kx, ky, dirp, kp)
         _, dth, dph = ang_triple(n, 1, kx, ky, dirs, ks)
+        _, dth_s, dph_s = ang_triple_sin(n, kx, ky, dirs, ks)
         sp = sp + mie.a_n_sv[n] * renorm * a_ang * inv_in
-        ssv = ssv + mie.b_n_sv[n] * renorm * dth * inv_in
-        ssh = ssh + mie.b_n_sv[n] * renorm * dph * inv_in
+        ssv = ssv + (mie.b_n_sv[n] * dth + c_tor[n] * dph_s) * renorm * inv_in
+        ssh = ssh + (mie.b_n_sv[n] * dph - c_tor[n] * dth_s) * renorm * inv_in
     return (
         (1j / (2.0 * np.pi * kzp)) * sp,
         (1j / (2.0 * np.pi * kzs)) * ssv,
@@ -770,7 +902,9 @@ def mie_spectrum_s(nx: int, ny: int, lx: float, ly: float, *, upward: bool) -> t
     )
 
 
-def mie_columns_s(nx: int, ny: int, lx: float, ly: float) -> tuple[NDArray, NDArray]:
+def mie_columns_s(
+    nx: int, ny: int, lx: float, ly: float, *, toroidal: bool = True
+) -> tuple[NDArray, NDArray]:
     """The predicted R and T columns for an SV wave at the Gamma order.
 
     Same Poisson relation as ``mie_prediction``, with the incident wavenumber
@@ -782,6 +916,7 @@ def mie_columns_s(nx: int, ny: int, lx: float, ly: float) -> tuple[NDArray, NDAr
         ny: Points along y.
         lx: Period along x.
         ly: Period along y.
+        toroidal: Passed to ``mie_spectrum_s``.
 
     Returns:
         (R column, T column), each shape (3N,).
@@ -790,11 +925,11 @@ def mie_columns_s(nx: int, ny: int, lx: float, ly: float) -> tuple[NDArray, NDAr
     kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
     q = q_grid(nx, ny, lx, ly)
     kzp, kzs = kz_of(q, kp), kz_of(q, ks)
-    pref = (2.0 * np.pi) ** 2 / (lx * ly)
+    pref = (2.0 * np.pi) ** 2 / (lx * ly) * centre_phase(nx, ny, lx, ly)
 
     out = []
     for upward in (True, False):
-        c_p, c_sv, c_sh = mie_spectrum_s(nx, ny, lx, ly, upward=upward)
+        c_p, c_sv, c_sh = mie_spectrum_s(nx, ny, lx, ly, upward=upward, toroidal=toroidal)
         col = np.zeros(3 * n, dtype=complex)
         col[:n] = pref * c_p * np.exp(1j * (ks + kzp) * RADIUS)
         col[n : 2 * n] = pref * c_sv * np.exp(1j * (ks + kzs) * RADIUS)
@@ -1100,10 +1235,12 @@ def mie_prediction(nx: int, ny: int, lx: float, ly: float) -> NDArray:
     -- exact but for scattering BETWEEN spheres, which is what growing the
     period removes and what the period ladder measures.
 
-    Two phases close the comparison.  The march's incident wave is unit
+    Three phases close the comparison.  The march's incident wave is unit
     amplitude at the TOP of the slab and so has ``exp(i k_P a)`` at the sphere
-    centre, where Mie normalises it; and the scattered order, referred back from
-    the centre to the top plane, carries ``exp(i k_z(G) a)``.
+    centre, where Mie normalises it; the scattered order, referred back from
+    the centre to the top plane, carries ``exp(i k_z(G) a)``; and the march's
+    sphere is at the middle of the grid, not the lateral origin, which is
+    ``centre_phase``.
 
     Args:
         nx: Points along x.
@@ -1122,9 +1259,10 @@ def mie_prediction(nx: int, ny: int, lx: float, ly: float) -> NDArray:
     c_p, c_sv = mode_amplitudes(mie, q, upward=True)
     pref = (2.0 * np.pi) ** 2 / (lx * ly)
     kzp, kzs = kz_of(q, kp), kz_of(q, ks)
+    shift = centre_phase(nx, ny, lx, ly)
     out = np.zeros(3 * n, dtype=complex)
-    out[:n] = pref * c_p * np.exp(1j * (kp + kzp) * RADIUS)
-    out[n : 2 * n] = pref * c_sv * np.exp(1j * (kp + kzs) * RADIUS)
+    out[:n] = pref * c_p * np.exp(1j * (kp + kzp) * RADIUS) * shift
+    out[n : 2 * n] = pref * c_sv * np.exp(1j * (kp + kzs) * RADIUS) * shift
     return out
 
 
@@ -1148,7 +1286,7 @@ def compare_to_mie(nx: int, ny: int, lx: float, ly: float, nstep: int) -> tuple[
     want = mie_prediction(nx, ny, lx, ly)
 
     spec = abs(got[0] - want[0]) / abs(want[0])
-    big = np.abs(want) > 1.0e-3 * abs(want[0])
+    big = (np.abs(want) > 1.0e-3 * abs(want[0])) & ~np.tile(nyquist_orders(nx, ny), 3)
     worst = float(np.max(np.abs(got[big] - want[big]) / np.abs(want[big]))) if big.any() else spec
     return spec, worst
 
@@ -1258,6 +1396,22 @@ def part7() -> None:
     report("the reflection column matches Mie", spec_r < 0.30)
     report("and the transmission column does too", spec_t < 0.05)
 
+    # EVERY order, in complex value.  The specular entries above cannot see a
+    # lateral phase, which is how a missing ``centre_phase`` survived them.
+    n8 = 64
+    keep = ~np.tile(nyquist_orders(8, 8), 3)
+    t_scat_got = t_mat[:, 0].copy()
+    t_scat_want = t_want.copy()
+    t_scat_got[0] -= np.exp(2j * kp * RADIUS)
+    t_scat_want[0] -= np.exp(2j * kp * RADIUS)
+    all_r = l2_rel(r_mat[:, 0][keep], r_want[keep])
+    all_t = l2_rel(t_scat_got[keep], t_scat_want[keep])
+    print(
+        f"          all {int(keep[:n8].sum())} scoreable orders, complex: "
+        f"R {all_r:.4f}   T (scattered) {all_t:.4f}"
+    )
+    report("every order of the P column matches Mie in complex value", max(all_r, all_t) < 0.30)
+
     print(
         "\n      ⚠ (c) covers P INCIDENCE only, and that is a limit of the ARBITER'S\n"
         "      PYTHON PORT, not of the march and not of the derivation:  (b) already\n"
@@ -1321,11 +1475,230 @@ def part8() -> None:
     rat = np.abs(got_r[n:][big]) / np.abs(r_want[n:][big])
     print(f"      R column, S channels: {int(big.sum())} orders, median march/Mie {np.median(rat):.4f}")
     report("the SV->S channels track Mie too", 0.6 < float(np.median(rat)) < 1.6)
-    print(
-        "      ⚠ the S channels carry the toroidal gap of ``mie_spectrum_s``: the\n"
-        "      scalar joining c_n to the shared convention is bounded at or below\n"
-        "      k_S by this comparison and is NOT determined by it."
+
+    # IN COMPLEX VALUE, not magnitude.  A magnitude ratio is blind to phase,
+    # and a phase error is exactly what hid the missing ``centre_phase`` here.
+    # The direct wave sits on (SV, Gamma) of T on BOTH sides and is removed from
+    # both, so that the residual measures the scattering and not the unit
+    # entry; the Nyquist orders are excluded because no arbiter can score them.
+    r_bare, t_bare = mie_columns_s(nx, ny, lx, ly, toroidal=False)
+    res: dict[tuple[str, str], float] = {}
+    bare_res: dict[tuple[str, str], float] = {}
+    for lab, got, want, bare in (("R", got_r, r_want, r_bare), ("T", got_t, t_want, t_bare)):
+        for ch, sl in (("P", slice(0, n)), ("S", slice(n, 3 * n))):
+            g_c, w_c, b_c = (_scattered_only(v, lab, n)[sl] for v in (got, want, bare))
+            keep = ~np.tile(nyquist_orders(nx, ny), (sl.stop - sl.start) // n)
+            res[lab, ch] = l2_rel(g_c[keep], w_c[keep])
+            bare_res[lab, ch] = l2_rel(g_c[keep], b_c[keep])
+    print(f"\n      complex residual, SV column   {'P':>8}{'S':>8}{'S, no toroidal':>17}")
+    for lab in ("R", "T"):
+        print(f"      {lab:>28}{res[lab, 'P']:8.3f}{res[lab, 'S']:8.3f}{bare_res[lab, 'S']:17.3f}")
+    report(
+        "the S channels of the SV column match Mie in complex value",
+        max(res["R", "S"], res["T", "S"]) < 0.30,
     )
+    report(
+        "and including the toroidal term lowers the residual in both columns",
+        all(res[k, "S"] < bare_res[k, "S"] for k in "RT"),
+    )
+    # ⚠ NOT GATED: the P channel of T, 0.32, is the worst entry of the whole
+    # column.  It is untouched by the toroidal term (a transverse field cannot
+    # radiate P), and it is the noisiest channel by magnitude too, 0.63-1.60
+    # across orders.  Its P-incidence counterpart reaches 0.11, so the P
+    # channel is not generically worse; why the SV->P conversion of the ARRAY
+    # sits further from the isolated sphere is open.
+    print(
+        f"      ⚠ the SV->P channel of T is the worst entry, {res['T', 'P']:.3f}, and is\n"
+        "      not gated: the toroidal term cannot reach it, and why the array's\n"
+        "      SV->P conversion sits further from the isolated sphere is open."
+    )
+
+
+def far_field_families(n: int, th: NDArray, ph: NDArray) -> tuple[NDArray, NDArray, NDArray]:
+    """Far-field amplitudes f, with u ~ f exp(ikr)/r, of one multipole per family.
+
+    For ``h_n(kr)`` and the angular functions of ``ang_triple`` (L, N: cos
+    parity) and ``ang_triple_sin`` (M: sin parity), with
+    ``h_n -> (-i)^(n+1) e^{ikr}/(kr)``:
+
+        L = grad phi           ->  (-i)^n A r_hat
+        N = curl curl (r phi)  ->  (-i)^n (dA/dth th_hat + (1/s) dA/dph ph_hat)
+        M = curl (r chi)       ->  (-i)^(n+1)/k_S ((1/s) dA/dph th_hat - dA/dth ph_hat)
+
+    Part 9 checks these against finite-difference fields before using them.
+
+    Args:
+        n: Degree.
+        th: Polar angles, any shape.
+        ph: Azimuths, same shape.
+
+    Returns:
+        (f_L, f_N, f_M), each shape th.shape + (3,), Cartesian (x, y, z).
+    """
+    ks = OMEGA / REF.beta
+    u, s = np.cos(th), np.sin(th)
+    p1, p2 = legendre_dp(n, u), legendre_ddp(n, u)
+    rh = np.stack([s * np.cos(ph), s * np.sin(ph), u], axis=-1)
+    tt = np.stack([u * np.cos(ph), u * np.sin(ph), -s], axis=-1)
+    pp = np.stack([-np.sin(ph), np.cos(ph), np.zeros_like(ph)], axis=-1)
+    d_th = -u * p1 + s * s * p2
+    a_c, dth_c, dph_c = -s * p1 * np.cos(ph), d_th * np.cos(ph), p1 * np.sin(ph)
+    dth_s, dph_s = d_th * np.sin(ph), -p1 * np.cos(ph)
+    f_l = (-1j) ** n * a_c[..., None] * rh
+    f_n = (-1j) ** n * (dth_c[..., None] * tt + dph_c[..., None] * pp)
+    f_m = (-1j) ** (n + 1) / ks * (dph_s[..., None] * tt - dth_s[..., None] * pp)
+    return f_l, f_n, f_m
+
+
+def s_far_field(th: NDArray, ph: NDArray, scale: complex) -> tuple[NDArray, NDArray]:
+    """Scattered far field of the x-polarised S wave, toroidal weight ``scale c_n renorm``.
+
+    Args:
+        th: Polar angles.
+        ph: Azimuths.
+        scale: The candidate scalar joining ``c_n`` to the shared convention.
+
+    Returns:
+        (f_P, f_S), each shape th.shape + (3,).
+    """
+    mie = compute_elastic_mie(OMEGA, RADIUS, REF, MIE_CONTRAST)
+    f_p = np.zeros(np.shape(th) + (3,), dtype=complex)
+    f_s = np.zeros_like(f_p)
+    for n in range(1, mie.n_max + 1):
+        renorm = -1.0 / (n * (n + 1))
+        f_l, f_n, f_m = far_field_families(n, th, ph)
+        f_p += mie.a_n_sv[n] * renorm * f_l
+        f_s += mie.b_n_sv[n] * renorm * f_n + scale * mie.c_n[n] * renorm * f_m
+    return f_p, f_s
+
+
+def _grad_fd(f: Callable[[NDArray], complex], p: NDArray, h: float) -> NDArray:
+    """Central-difference gradient.
+
+    Args:
+        f: Scalar field.
+        p: Point, Cartesian (x, y, z).
+        h: Step.
+
+    Returns:
+        Shape (3,).
+    """
+    return np.array([(f(p + h * e) - f(p - h * e)) / (2.0 * h) for e in np.eye(3)])
+
+
+def _curl_fd(f: Callable[[NDArray], NDArray], p: NDArray, h: float) -> NDArray:
+    """Central-difference curl.
+
+    Args:
+        f: Vector field.
+        p: Point, Cartesian (x, y, z).
+        h: Step.
+
+    Returns:
+        Shape (3,).
+    """
+    jac = np.array([(f(p + h * e) - f(p - h * e)) / (2.0 * h) for e in np.eye(3)]).T
+    return np.array([jac[2, 1] - jac[1, 2], jac[0, 2] - jac[2, 0], jac[1, 0] - jac[0, 1]])
+
+
+def part9() -> None:
+    """The toroidal weight, fixed by the optical theorem rather than by the march."""
+    print("\n[9] the optical theorem for S incidence fixes the toroidal weight")
+    kp, ks = OMEGA / REF.alpha, OMEGA / REF.beta
+
+    # (a) The far-field formulas, against finite-difference fields at k_S R = 8000.
+    # ⚠ M is taken as grad(chi) x r, not curl(r chi) by differences: at this R
+    # the second form cancels terms 10^4 times larger than the result.
+    def pot(n: int, k: float, p: NDArray, odd: bool) -> complex:
+        r = float(np.linalg.norm(p))
+        phi = np.arctan2(p[1], p[0])
+        h = spherical_jn(n, k * r) + 1j * spherical_yn(n, k * r)
+        return complex(h * lpmv(1, n, p[2] / r) * (np.sin(phi) if odd else np.cos(phi)))
+
+    th0, ph0, r_far, h = 1.1, 0.7, 4.0e5, 0.02
+    p0 = r_far * np.array([np.sin(th0) * np.cos(ph0), np.sin(th0) * np.sin(ph0), np.cos(th0)])
+    worst = 0.0
+    for n in (1, 2, 5):
+        f_l, f_n, f_m = far_field_families(n, np.array(th0), np.array(ph0))
+
+        def phi_p(q: NDArray, n: int = n) -> complex:
+            return pot(n, kp, q, False)
+
+        def chi_s(q: NDArray, n: int = n) -> complex:
+            return pot(n, ks, q, True)
+
+        def phi_s(q: NDArray, n: int = n) -> complex:
+            return pot(n, ks, q, False)
+
+        def m_of_phi_s(q: NDArray) -> NDArray:
+            return np.cross(_grad_fd(phi_s, q, h), q)
+
+        u_l = _grad_fd(phi_p, p0, h)
+        u_m = np.cross(_grad_fd(chi_s, p0, h), p0)
+        u_n = _curl_fd(m_of_phi_s, p0, h)
+        for got, f, k in ((u_l, f_l, kp), (u_n, f_n, ks), (u_m, f_m, ks)):
+            want = f * np.exp(1j * k * r_far) / r_far
+            worst = max(worst, float(np.linalg.norm(got - want) / np.linalg.norm(want)))
+    print(f"      far-field formulas vs finite differences: worst {worst:.1e} (O(n^2 / k R))")
+    report("the three far-field families are right", worst < 1e-2)
+
+    # (b) c_n is normalised to its own incident coefficient: each SH partial
+    # wave of a lossless sphere has a unimodular S-matrix element.
+    mie = compute_elastic_mie(OMEGA, RADIUS, REF, MIE_CONTRAST)
+    s_err = max(
+        abs(abs(1.0 + 2.0 * mie.c_n[n] / ((2 * n + 1) * 1j**n / (1j * ks))) - 1.0)
+        for n in range(1, mie.n_max + 1)
+    )
+    print(f"      SH partial waves: max | |S_n| - 1 | = {s_err:.1e}")
+    report("c_n is the SH response per unit of its own incident coefficient", s_err < 1e-10)
+
+    # (c) sigma_sc = sigma_ext.  The toroidal family conserves energy ON ITS
+    # OWN, so omitting it also balances -- the theorem cannot tell 0 from the
+    # right weight, which is why the expansion (Mathematica) fixes the
+    # magnitude.  What it does is reject every other candidate, the sign
+    # included, which a magnitude scan never could.
+    xg, wg = np.polynomial.legendre.leggauss(160)
+    nph = 48
+    th = np.repeat(np.arccos(xg), nph)
+    ph = np.tile(2.0 * np.pi * np.arange(nph) / nph, xg.size)
+    w = np.repeat(wg, nph) * (2.0 * np.pi / nph)
+
+    def balance(scale: complex) -> float:
+        f_p, f_s = s_far_field(th, ph, scale)
+        # P flux carries alpha where S carries beta; the incident S sets the unit.
+        dens = (REF.alpha / REF.beta) * np.sum(np.abs(f_p) ** 2, axis=-1)
+        dens = dens + np.sum(np.abs(f_s) ** 2, axis=-1)
+        _, f0 = s_far_field(np.array([1e-9]), np.array([0.0]), scale)
+        return float(np.sum(w * dens) / (4.0 * np.pi / ks * f0[0, 0].imag))
+
+    print(f"      {'toroidal weight':>22}{'sigma_sc / sigma_ext':>24}")
+    cands = (("i k_S  (derived)", 1j * ks), ("-i k_S", -1j * ks), ("k_S", ks), ("1", 1.0))
+    ratios = {}
+    for lab, sc in cands:
+        ratios[lab] = balance(sc)
+        print(f"      {lab:>22}{ratios[lab]:24.8f}")
+    report("the derived weight i k_S conserves energy", abs(ratios["i k_S  (derived)"] - 1.0) < 1e-6)
+    report(
+        "and every other candidate violates it",
+        all(abs(v - 1.0) > 1e-2 for k, v in ratios.items() if k != "i k_S  (derived)"),
+    )
+
+
+def _scattered_only(col: NDArray, which: str, n: int) -> NDArray:
+    """A column of R or T with the unscattered wave removed from T's (SV, Gamma).
+
+    Args:
+        col: Shape (3N,), a column for SV incidence.
+        which: "R" or "T".
+        n: Number of lateral orders.
+
+    Returns:
+        A copy, with the direct wave subtracted when ``which == "T"``.
+    """
+    out = np.array(col, dtype=complex)
+    if which == "T":
+        out[n] -= np.exp(2j * OMEGA / REF.beta * RADIUS)
+    return out
 
 
 def main() -> int:
@@ -1337,7 +1710,7 @@ def main() -> int:
     print("=" * 78)
     print("THE SPHERE AS SEEN BY THE LATERALLY COUPLED IMPEDANCE MARCH")
     print("=" * 78)
-    for fn in (part1, part2, part3, part4, part5, part6, part7, part8):
+    for fn in (part1, part2, part3, part4, part5, part6, part7, part8, part9):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)
