@@ -209,55 +209,55 @@ def _compute_phi_diagonal(
     return phi
 
 
-def _modulus_radiation_reaction(
+def _modulus_radiation_reaction_cubic(
     Dlambda: float,
-    Dmu: float,
+    Dmu_off: float,
+    Dmu_diag: float,
     omega: float,
     a: float,
     alpha: float,
     beta: float,
     rho: float,
-) -> tuple[float, float]:
-    """Imaginary (radiation-reaction) part of the modulus effective contrasts.
+) -> tuple[float, float, float]:
+    """Imaginary (radiation-reaction) part of the cubic modulus effective contrasts.
 
     MODULUS RADIATION REACTION (strain-channel analog of the density ``Im[Γ₀]``).
-    An inclusion of volume ``V`` with modulus contrast ``Δc`` in incident strain
-    ``e`` carries a stress-dipole moment ``M_ij = V·Δc_ijkl·e_kl`` (the same
-    ``V·Δσ`` dipole radiated by :func:`scattered_field.cube_far_field`).  That
-    moment radiates elastic energy, and the imaginary part of the effective
-    stiffness is its radiation reaction — the strain LDOS
-    ``Im[∂_k∂_l G_ij(0)]`` contracted with ``Δc``, exactly as the density
-    radiation reaction is the displacement LDOS ``Im[G_ij(0)]`` (see
-    :func:`_compute_phi_diagonal`).
+    A cube of volume ``V`` whose EFFECTIVE modulus contrast is the real cubic
+    tensor
 
-    The exact moment-tensor radiated power (Aki & Richards far field) is
+        C = Δλ δδ + 2Δμ_off I + 2(Δμ_diag − Δμ_off) D,
 
-        P_rad = ω⁴/(8πρα⁵)·⟨(r̂·M·r̂)²⟩ + ω⁴/(8πρβ⁵)·⟨|(M·r̂)_⊥|²⟩,
+    (``I`` the symmetric identity, ``D_ijkl = 1`` iff i=j=k=l) carries, in
+    incident strain ``e``, the stress-dipole moment ``M = V·C:e`` -- the same
+    ``V·Δσ`` dipole radiated by :func:`scattered_field.cube_far_field`.  Its
+    radiated power (Aki & Richards moment-tensor far field) is
 
-    with the unit-sphere averages
-    ``⟨(r̂·M·r̂)²⟩ = (1/15)(tr(M)² + 2 M:M)`` (P monopole + quadrupole) and
-    ``⟨|(M·r̂)_⊥|²⟩ = (1/15)(3 M:M − tr(M)²)`` (S quadrupole).  Energy
-    conservation sets ``Im[e:Δc*:e] = -(2/(ωV))·P_rad``; polarizing this
-    quadratic form in ``e`` for the isotropic ``Δc`` gives the two scalars
-    below (no cubic O_h anisotropy appears at this leading order, so
-    ``Im[Δμ*_diag] = Im[Δμ*_off]``):
+        P_rad = c_P·⟨(r̂·M·r̂)²⟩ + c_S·⟨|(M·r̂)_⊥|²⟩ = M:K:M,
+        K = k_λ δδ + 2k_μ I,  k_λ = (c_P − c_S)/15,  k_μ = (2c_P + 3c_S)/30,
 
-        Im[Δλ*] = -(2V/ω)[c_P/15·(15Δλ² + 20ΔλΔμ + 4Δμ²) − c_S/15·4Δμ²],
-        Im[Δμ*] = -(V/ω)[c_P/15·8Δμ² + c_S/15·12Δμ²],
+    with ``c_P = ω⁴/(8πρα⁵)``, ``c_S = ω⁴/(8πρβ⁵)``.  Energy conservation sets
+    ``Im[e:Δc*:e] = −(2/(ωV))·P_rad`` for every ``e``, so
+    ``Im[Δc*] = −(2V/ω) C:K:C``.  The products of δδ, I and D close on the same
+    three tensors, giving
 
-    where ``c_P = ω⁴/(8πρα⁵)``, ``c_S = ω⁴/(8πρβ⁵)`` and ``V = (2a)³`` is the
-    cube volume.  This is derived from the background Green's function —
-    NOT by imposing the optical theorem — and is gated against the exact elastic
-    Mie ``a₀``/``a₂`` partial-wave coefficients: it reproduces Mie's sign, the
-    absence of cross-channel leakage (pure-bulk ⇒ ``Im[Δμ*] = 0``), and the
-    radiation magnitude to a few percent in the Rayleigh band (the residual is
-    the cube-vs-equal-volume-sphere geometric drift, the same character as the
-    validated density channel).  The cube's own optical theorem closes to 1.0 as
-    a CONSEQUENCE.  See ``test_modulus_radiation_reaction.py``.
+        Im[Δλ*]      = −(2V/ω)[(k_λ(3Δλ + 2Δμ_d) + 2k_μΔλ)(3Δλ + 2Δμ_d) + 4k_μΔλΔμ_d],
+        Im[Δμ*_off]  = −(8V/ω) k_μ Δμ_off²,
+        Im[Δμ*_diag] = −(8V/ω) k_μ Δμ_diag².
+
+    For ``Δμ_off = Δμ_diag`` this is the isotropic closed form
+    ``Im[Δλ*] = −(2V/ω)[c_P/15·(15Δλ² + 20ΔλΔμ + 4Δμ²) − c_S/15·4Δμ²]``.
+
+    The arguments must be the REAL EFFECTIVE contrasts ``Re[Δc*]`` -- the dipole
+    actually radiated -- not the bare material contrast.  The exact (unitary) Mie
+    sphere obeys this identity with its own effective contrasts to 1e-4; the bare
+    source misses Mie by 5-9 % and breaks the cube's optical theorem.  See
+    ``test_modulus_radiation_reaction.py`` (direct far-field power quadrature,
+    Mie identity, Mie gate) and ``test_scattered_field.test_optical_theorem_cube``.
 
     Args:
-        Dlambda: Lamé contrast Δλ (Pa).
-        Dmu: Shear contrast Δμ (Pa).
+        Dlambda: Real effective Lamé contrast Re[Δλ*] (Pa).
+        Dmu_off: Real effective off-diagonal shear contrast Re[Δμ*_off] (Pa).
+        Dmu_diag: Real effective diagonal shear contrast Re[Δμ*_diag] (Pa).
         omega: Angular frequency (rad/s).
         a: Cube half-width (m); the cube volume is ``V = (2a)³``.
         alpha: P-wave speed (m/s).
@@ -265,22 +265,24 @@ def _modulus_radiation_reaction(
         rho: Background density (kg/m³).
 
     Returns:
-        ``(im_lambda, im_mu)``: the radiation-reaction imaginary parts of the
-        modulus effective contrasts ``Im[Δλ*]`` and ``Im[Δμ*]`` (Pa).
+        ``(im_lambda, im_mu_off, im_mu_diag)``: the radiation-reaction imaginary
+        parts ``Im[Δλ*]``, ``Im[Δμ*_off]``, ``Im[Δμ*_diag]`` (Pa).
     """
     if omega == 0.0:
         # Radiation reaction ∝ ω³; vanishes in the static limit.
-        return 0.0, 0.0
+        return 0.0, 0.0, 0.0
     V = (2.0 * a) ** 3
     cP = omega**4 / (8.0 * np.pi * rho * alpha**5)
     cS = omega**4 / (8.0 * np.pi * rho * beta**5)
-    pre = 2.0 * V / omega
-    im_lambda = -pre * (
-        cP / 15.0 * (15.0 * Dlambda**2 + 20.0 * Dlambda * Dmu + 4.0 * Dmu**2)
-        - cS / 15.0 * 4.0 * Dmu**2
+    k_lam = (cP - cS) / 15.0
+    k_mu = (2.0 * cP + 3.0 * cS) / 30.0
+    trace = 3.0 * Dlambda + 2.0 * Dmu_diag
+    im_lambda = -(2.0 * V / omega) * (
+        (k_lam * trace + 2.0 * k_mu * Dlambda) * trace + 4.0 * k_mu * Dlambda * Dmu_diag
     )
-    im_mu = -(V / omega) * (cP / 15.0 * 8.0 * Dmu**2 + cS / 15.0 * 12.0 * Dmu**2)
-    return im_lambda, im_mu
+    im_mu_off = -(8.0 * V / omega) * k_mu * Dmu_off**2
+    im_mu_diag = -(8.0 * V / omega) * k_mu * Dmu_diag**2
+    return im_lambda, im_mu_off, im_mu_diag
 
 
 # ================================================================
@@ -1324,15 +1326,23 @@ def compute_cube_tmatrix_galerkin(
     # (radiating) body bilinear for a pure-modulus contrast, and bel is static —
     # so the strain-mode radiation reaction is otherwise ABSENT (Im[Δλ*] and
     # Im[Δμ*] are exactly 0 here for pure modulus).  We add the first-principles
-    # radiation reaction (see :func:`_modulus_radiation_reaction`), keeping the
-    # real (static + form-factor) response BIT-FOR-BIT.  Mie-gated for sign, no
-    # cross-channel leakage, and magnitude.
-    im_lambda_rr, im_mu_rr = _modulus_radiation_reaction(
-        Dlam, Dmu_val, omega, a, alpha, beta, rho
+    # radiation reaction (see :func:`_modulus_radiation_reaction_cubic`), keeping
+    # the real (static + form-factor) response BIT-FOR-BIT.  Its source is the
+    # EFFECTIVE Re[Δc*] computed above -- the dipole the far field radiates --
+    # not the bare (Dlam, Dmu_val).
+    im_lambda_rr, im_mu_off_rr, im_mu_diag_rr = _modulus_radiation_reaction_cubic(
+        Dlam_star.real,
+        Dmu_off_star.real,
+        Dmu_diag_star.real,
+        omega,
+        a,
+        alpha,
+        beta,
+        rho,
     )
     Dlam_star = Dlam_star.real + 1j * (Dlam_star.imag + im_lambda_rr)
-    Dmu_diag_star = Dmu_diag_star.real + 1j * (Dmu_diag_star.imag + im_mu_rr)
-    Dmu_off_star = Dmu_off_star.real + 1j * (Dmu_off_star.imag + im_mu_rr)
+    Dmu_diag_star = Dmu_diag_star.real + 1j * (Dmu_diag_star.imag + im_mu_diag_rr)
+    Dmu_off_star = Dmu_off_star.real + 1j * (Dmu_off_star.imag + im_mu_off_rr)
 
     # ── Ungerade sector (displacement + quadratic modes) ──
     # T1u: 4x4 block
@@ -2361,13 +2371,20 @@ def compute_cube_tmatrix_galerkin_57(
 
     # ── Modulus radiation reaction (strain LDOS); see compute_cube_tmatrix_galerkin.
     # Real (static + (ka)⁴ cubic-mode) response is kept BIT-FOR-BIT; the
-    # first-principles imaginary radiation reaction is added (Mie-gated).
-    im_lambda_rr, im_mu_rr = _modulus_radiation_reaction(
-        Dlam, Dmu_val, omega, a, alpha, beta, rho
+    # first-principles imaginary radiation reaction of the EFFECTIVE Re[Δc*] is added.
+    im_lambda_rr, im_mu_off_rr, im_mu_diag_rr = _modulus_radiation_reaction_cubic(
+        Dlam_star.real,
+        Dmu_off_star.real,
+        Dmu_diag_star.real,
+        omega,
+        a,
+        alpha,
+        beta,
+        rho,
     )
     Dlam_star = Dlam_star.real + 1j * (Dlam_star.imag + im_lambda_rr)
-    Dmu_diag_star = Dmu_diag_star.real + 1j * (Dmu_diag_star.imag + im_mu_rr)
-    Dmu_off_star = Dmu_off_star.real + 1j * (Dmu_off_star.imag + im_mu_rr)
+    Dmu_diag_star = Dmu_diag_star.real + 1j * (Dmu_diag_star.imag + im_mu_diag_rr)
+    Dmu_off_star = Dmu_off_star.real + 1j * (Dmu_off_star.imag + im_mu_off_rr)
 
     return GalerkinTMatrixResult57(
         # Ungerade
