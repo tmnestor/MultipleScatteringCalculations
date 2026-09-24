@@ -1,0 +1,465 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape P--SV--SH Optical Theorem}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\setlength{\emergencystretch}{3em}
+
+% --- Bibliography ---
+\usepackage[round,authoryear]{natbib}
+\bibliographystyle{plainnat}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros (house set) ---
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\bT}{\mathbf{T}}
+
+% --- New macros for this document ---
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bd}{\hat{\mathbf{d}}}
+\newcommand{\bp}{\hat{\mathbf{p}}}
+\newcommand{\xh}{\hat{\mathbf{x}}}
+\newcommand{\thh}{\hat{\boldsymbol{\theta}}}
+\newcommand{\phh}{\hat{\boldsymbol{\phi}}}
+\newcommand{\bsig}{\boldsymbol{\sigma}}
+\newcommand{\herm}{^{\dagger}}
+\newcommand{\sext}{\sigma_{\mathrm{ext}}}
+\newcommand{\ssc}{\sigma_{\mathrm{sc}}}
+\newcommand{\sabs}{\sigma_{\mathrm{abs}}}
+\newcommand{\kp}{k_{P}}
+\newcommand{\ks}{k_{S}}
+\DeclareMathOperator{\Imag}{Im}
+\DeclareMathOperator{\Real}{Re}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+\vspace*{1em}
+{\LARGE\bfseries P--SV--SH Optical Theorem:\\[0.3em]
+Forward Amplitude, Flux Weights and Extinction}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
+\end{center}
+
+\noindent\textbf{Status.} Explanatory note. The results of
+\S\S\ref{sec:setup}--\ref{sec:theorem} are textbook material
+\citep{Varatharajulu1977,PaoMow1973,Newton1982}. In this project the
+$S$-incidence form \eqref{eq:ot-s} has been checked numerically for the
+lossless sphere to $10^{-8}$ (\texttt{FirstOrderContrastOperator.tex},
+toroidal-term paragraph). The $P$-incidence form \eqref{eq:ot-p} is
+checked for the exact Mie sphere and for the $T_{27}$ cube
+(\S\ref{sec:sign}). The cube symmetry statements of
+\S\ref{sec:forward-matrix} and the T-matrix form of \S\ref{sec:tmatrix}
+have no independent check here and are \emph{unvalidated} in the sense of
+the project's engineering standards.
+
+% =============================================================================
+\section{Setting and far field}
+\label{sec:setup}
+% =============================================================================
+
+A bounded scatterer $V$ is embedded in a homogeneous isotropic elastic
+background with density $\rho$ and wave speeds $\alpha$ (P) and $\beta$
+(S). The time dependence is $e^{-i\omega t}$ throughout, and
+\begin{equation}
+  \kp = \omega/\alpha, \qquad \ks = \omega/\beta, \qquad \kp < \ks .
+  \label{eq:k}
+\end{equation}
+Outside $V$ the scattered displacement satisfies the Kupradze radiation
+condition \citep{PaoVaratharajulu1976}. Far from $V$ it separates into
+an outgoing longitudinal wave and an outgoing transverse wave
+\citep{PaoMow1973,AkiRichards2002}:
+\begin{equation}
+  \bu^{s}(\bx) \sim
+  \bA_P(\xh)\,\frac{e^{i\kp r}}{r}
+  + \bA_S(\xh)\,\frac{e^{i\ks r}}{r},
+  \qquad r = |\bx| \to \infty,
+  \label{eq:farfield}
+\end{equation}
+where $\bA_P \parallel \xh$ and $\bA_S \perp \xh$. The transverse
+amplitude splits in the spherical triad into
+\begin{equation}
+  \bA_S = A_{SV}\,\thh + A_{SH}\,\phh ,
+  \label{eq:svsh}
+\end{equation}
+so the far field carries three channels, P, SV and SH. The amplitudes
+$\bA_P$ and $\bA_S$ are displacement amplitudes with dimension of
+length, per unit incident amplitude.
+
+Two incident waves are considered, each of unit displacement amplitude:
+\begin{align}
+  \text{P incidence:}\quad & \bu^{i} = \bd\, e^{i\kp \bd\cdot\bx},
+  \label{eq:inc-p}\\
+  \text{S incidence:}\quad & \bu^{i} = \bp\, e^{i\ks \bd\cdot\bx},
+  \qquad \bp\cdot\bd = 0,\ |\bp| = 1 .
+  \label{eq:inc-s}
+\end{align}
+For S incidence $\bp$ may be the SV or SH direction, or complex for
+elliptical polarisation.
+
+% =============================================================================
+\section{Energy flux and channel weights}
+\label{sec:flux}
+% =============================================================================
+
+For time-harmonic motion the time-averaged energy flux vector is
+\begin{equation}
+  \langle \bJ \rangle = \tfrac{\omega}{2}\,
+    \Imag\bigl(\bsig\cdot\bar{\bu}\bigr),
+  \label{eq:flux}
+\end{equation}
+with $\bsig$ the stress tensor \citep{Achenbach1973,AkiRichards2002}.
+For a plane wave of amplitude $U$ travelling at speed $c$ this reduces
+to $\tfrac12\rho\omega^2 c\,|U|^2$ along the propagation direction.
+Applied to each term of \eqref{eq:farfield}, the scattered power per
+unit solid angle is
+\begin{equation}
+  \frac{\dd P_{s}}{\dd\Omega}
+  = \tfrac12\rho\omega^{2}
+    \bigl(\alpha\,|\bA_P|^{2} + \beta\,|\bA_S|^{2}\bigr).
+  \label{eq:dP}
+\end{equation}
+The P--S cross term drops out of \eqref{eq:dP}: its phase
+$e^{i(\ks-\kp)r}$ oscillates in $r$, and its polarisations are
+orthogonal.
+
+Cross sections are powers divided by the incident flux, which is
+$\tfrac12\rho\omega^2 \alpha$ for \eqref{eq:inc-p} and
+$\tfrac12\rho\omega^2 \beta$ for \eqref{eq:inc-s}. Each scattered
+channel is therefore weighted by the ratio of its wave speed to the
+incident speed \citep{WuAki1985,SatoFehlerMaeda2012}:
+\begin{align}
+  \text{P incidence:}\quad
+  \ssc &= \oint |\bA_P|^{2}\,\dd\Omega
+        + \frac{\beta}{\alpha}\oint |\bA_S|^{2}\,\dd\Omega ,
+  \label{eq:ssc-p}\\
+  \text{S incidence:}\quad
+  \ssc &= \frac{\alpha}{\beta}\oint |\bA_P|^{2}\,\dd\Omega
+        + \oint |\bA_S|^{2}\,\dd\Omega .
+  \label{eq:ssc-s}
+\end{align}
+Since $\beta/\alpha = \kp/\ks$, the weights are ratios of wavenumbers
+too. The S term in \eqref{eq:ssc-p} and \eqref{eq:ssc-s} is the sum of
+its SV and SH parts, $|\bA_S|^2 = |A_{SV}|^2 + |A_{SH}|^2$.
+
+% =============================================================================
+\section{The theorem}
+\label{sec:theorem}
+% =============================================================================
+
+Write the total field as $\bu = \bu^i + \bu^s$ and integrate the flux
+\eqref{eq:flux} over a large sphere $S_R$. The net outward flux is
+$-P_{\mathrm{abs}}$, where $P_{\mathrm{abs}}$ is the power absorbed in $V$.
+The incident term alone integrates to zero. The scattered term gives
+$P_s$ through \eqref{eq:dP}. What remains is the interference term,
+\begin{equation}
+  P_{\mathrm{ext}}
+  = -\tfrac{\omega}{2}\oint_{S_R}
+     \Imag\bigl(\bsig^{i}\cdot\bar{\bu}^{s}
+               + \bsig^{s}\cdot\bar{\bu}^{i}\bigr)\cdot\xh\;\dd S ,
+  \label{eq:pext}
+\end{equation}
+with the balance
+\begin{equation}
+  P_{\mathrm{ext}} = P_{s} + P_{\mathrm{abs}}, \qquad
+  \sext = \ssc + \sabs .
+  \label{eq:balance}
+\end{equation}
+The integrand of \eqref{eq:pext} carries the phase
+$e^{ik(r - \bd\cdot\bx)}$, which oscillates rapidly on $S_R$ as
+$R\to\infty$. Stationary phase \citep{MorseFeshbach1953} confines
+the integral to the forward point $\xh = \bd$, where the phase is
+stationary and independent of $R$. The backward point contributes a term
+proportional to $e^{2ikR}$. Equation \eqref{eq:balance} must hold for every
+$R$, so that term vanishes. This is the same argument as in the scalar
+and electromagnetic cases \citep{Newton1976,BohrenHuffman1983}.
+
+The elastic case adds one step. The incident wave can interfere only
+with the scattered wave of the \emph{same} type:
+\begin{itemize}
+\item \textbf{Different wavenumbers.} Incident P interferes with
+  scattered S with the phase $e^{i(\ks - \kp)R}$ at the forward point,
+  and the reverse pairing is the same. This phase is never stationary in
+  $R$, so the term vanishes by the argument above.
+\item \textbf{Orthogonal polarisations.} At $\xh = \bd$ the scattered S
+  wave is transverse, $\bA_S(\bd)\perp\bd$, while an incident P wave is
+  polarised along $\bd$. Conversely, a scattered P wave is polarised
+  along $\bd$, while an incident S wave is polarised along $\bp\perp\bd$.
+  The leading-order cross flux is proportional to the polarisation
+  product and is zero.
+\end{itemize}
+Evaluating the same-mode forward term gives the elastic optical theorem,
+or forward-amplitude theorem \citep{Varatharajulu1977}:
+\begin{align}
+  \text{P incidence:}\quad
+  \sext &= \frac{4\pi}{\kp}\,
+           \Imag\bigl[\bd\cdot\bA_P(\bd)\bigr],
+  \label{eq:ot-p}\\
+  \text{S incidence:}\quad
+  \sext &= \frac{4\pi}{\ks}\,
+           \Imag\bigl[\bar{\bp}\cdot\bA_S(\bd)\bigr].
+  \label{eq:ot-s}
+\end{align}
+For a lossless scatterer $\sabs = 0$, so the imaginary part of one
+forward amplitude sets the total power scattered into all three
+channels P, SV and SH, with the weights of \eqref{eq:ssc-p} and
+\eqref{eq:ssc-s}. Mode conversion is fully accounted for, but only on
+the right of \eqref{eq:balance}. It never appears in $\sext$.
+
+\begin{table}[h]
+\centering
+\caption{Contents of the two sides of \eqref{eq:balance} for each
+incident type. ``Forward'' means $\xh = \bd$.}
+\label{tab:summary}
+\begin{tabular}{l >{\raggedright}p{0.33\textwidth} >{\raggedright\arraybackslash}p{0.38\textwidth}}
+\toprule
+Incident & $\sext$ uses & $\ssc$ uses \\
+\midrule
+P & forward P amplitude, component along $\bd$
+  & $|\bA_P|^2$ with weight 1; $|A_{SV}|^2 + |A_{SH}|^2$ with weight $\beta/\alpha$ \\[0.3em]
+SV & forward S amplitude, $\thh$ component
+  & $|\bA_P|^2$ with weight $\alpha/\beta$; $|A_{SV}|^2 + |A_{SH}|^2$ with weight 1 \\[0.3em]
+SH & forward S amplitude, $\phh$ component
+  & as for SV \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{The forward S matrix and polarisation}
+\label{sec:forward-matrix}
+% =============================================================================
+
+For S incidence the forward response is linear in $\bp$. In the
+$(\thh,\phh)$ basis at $\xh = \bd$ it is a $2\times2$ matrix
+$\mathsf{F}(\bd)$,
+\begin{equation}
+  \bA_S(\bd) = \mathsf{F}(\bd)\,\bp, \qquad
+  \sext(\bp) = \frac{4\pi}{\ks}\,\Imag\bigl[\bp\herm\mathsf{F}(\bd)\,\bp\bigr].
+  \label{eq:fmatrix}
+\end{equation}
+Off-diagonal elements of $\mathsf{F}$ (forward SV$\to$SH conversion)
+enter $\sext$ only through the anti-Hermitian part of $\mathsf{F}$. For
+linear SV or SH polarisation, the extinction takes the corresponding
+diagonal element. Forward cross-polarised power still counts in
+$\ssc$ through $|\bA_S|^2$.
+
+The structure of $\mathsf{F}$ follows from the point symmetry of the
+scatterer about the axis $\bd$. It must commute with every symmetry
+operation that fixes $\bd$.
+\begin{itemize}
+\item \textbf{Sphere.} Full axial symmetry, so $\mathsf{F}$ is scalar,
+  and SV and SH extinction are equal for any $\bd$.
+\item \textbf{Cube, $\bd$ along $[100]$ or $[111]$.} The symmetry groups
+  are $C_{4v}$ and $C_{3v}$. Each contains a rotation of order at least
+  three and a mirror containing the axis, and this forces $\mathsf{F}$ to
+  be scalar. Extinction is independent of polarisation.
+\item \textbf{Cube, $\bd$ along $[110]$.} The group is $C_{2v}$, with
+  mirrors $(001)$ and $(1\bar{1}0)$. In the basis aligned with them,
+  $\mathsf{F}$ is diagonal with two different eigenvalues in general.
+  The two linear polarisations have different extinction, so a cube is
+  weakly dichroic, and weakly birefringent, along face diagonals.
+\item \textbf{Cube, general $\bd$.} No symmetry. $\mathsf{F}$ is a
+  general $2\times2$ matrix, and the eigenpolarisations need not be
+  linear.
+\end{itemize}
+The same argument applied to P incidence gives nothing new, since
+$\bd\cdot\bA_P(\bd)$ is a scalar for every scatterer.
+
+% =============================================================================
+\section{T-matrix form: flux-normalised unitarity}
+\label{sec:tmatrix}
+% =============================================================================
+
+In a spherical-wave basis the regular and outgoing vector wavefunctions
+split into a longitudinal family $\mathbf{L}$ (P), and two transverse
+families, $\mathbf{M}$ (toroidal, SH-type) and $\mathbf{N}$ (spheroidal,
+SV-type) \citep{PaoMow1973,Waterman1976}. The T-matrix maps regular
+incident coefficients to outgoing scattered coefficients. The scattering
+matrix
+\begin{equation}
+  \bS = \bI + 2\bT
+  \label{eq:s-from-t}
+\end{equation}
+maps incoming to outgoing waves \citep{VaratharajuluPao1976,Newton1982}.
+
+If each basis function carries unit energy flux, the energy balance
+\eqref{eq:balance} becomes, for all incident vectors,
+\begin{equation}
+  \bI - \bS\herm\bS \succeq 0,
+  \qquad \text{with equality when the scatterer is lossless.}
+  \label{eq:unitary}
+\end{equation}
+Substituting \eqref{eq:s-from-t} gives, in the lossless case,
+\begin{equation}
+  \bT + \bT\herm = -2\,\bT\herm\bT,
+  \qquad
+  -\Real T_{\nu\nu} = \sum_{\mu} |T_{\mu\nu}|^{2},
+  \label{eq:t-unitary}
+\end{equation}
+where $\mu$ runs over every outgoing channel in the $\mathbf{L}$,
+$\mathbf{M}$ and $\mathbf{N}$ families. Equation \eqref{eq:t-unitary}
+is the optical theorem written one partial wave at a time: the left
+side is extinction, the right side is scattering. Summing over the
+partial waves of a plane wave and evaluating the result in the forward
+direction recovers \eqref{eq:ot-p} and \eqref{eq:ot-s}
+\citep{Waterman1976,Varatharajulu1977}.
+
+\paragraph{Normalisation is essential.} Standard vector wavefunctions
+are not flux-normalised. The $\mathbf{L}$ family is built on $\kp$ and
+the $\mathbf{M}$, $\mathbf{N}$ families on $\ks$, so a raw T-matrix
+satisfies \eqref{eq:t-unitary} only with channel weights. These weights
+are the same speed ratios as in \eqref{eq:ssc-p} and \eqref{eq:ssc-s}.
+Without them, the P--S blocks appear to violate energy conservation by
+factors of $\beta/\alpha$ or $\alpha/\beta$. The same rescaling makes
+the reciprocity relation a plain transpose, $\bS = \bS^{\mathsf T}$
+\citep{Varatharajulu1977,Pao1978}. The analogous statement for
+plane-wave interface coefficients is in \texttt{psvsh\_unitarity.tex}.
+
+% =============================================================================
+\section{Coherent attenuation}
+\label{sec:foldy}
+% =============================================================================
+
+The theorem is what connects a single-scatterer T-matrix to the
+attenuation of the coherent wave in a random distribution. For number
+density $n$ in the Foldy approximation \citep{Foldy1945,Lax1951,Martin2006},
+the coherent P wave has effective wavenumber
+\begin{equation}
+  K_P^{2} \approx \kp^{2} + 4\pi n\,\bd\cdot\bA_P(\bd),
+  \label{eq:foldy}
+\end{equation}
+so to first order in $n$,
+\begin{equation}
+  \Imag K_P \approx \frac{2\pi n}{\kp}\,\Imag\bigl[\bd\cdot\bA_P(\bd)\bigr]
+  = \tfrac12\, n\,\sext .
+  \label{eq:atten}
+\end{equation}
+The coherent amplitude therefore decays at half the extinction per unit
+length, and the coherent intensity decays at the full rate
+$n\sext$ \citep{SatoFehlerMaeda2012}. The S case is identical,
+with $\mathsf{F}(\bd)$ taking the place of the scalar forward amplitude.
+Along a direction where $\mathsf{F}$ is not scalar, such as $[110]$ for
+aligned cubes, the coherent S wave splits into two eigenpolarisations
+with different $K_S$.
+
+% =============================================================================
+\section{Uses as a numerical check}
+\label{sec:check}
+% =============================================================================
+
+For a lossless scatterer, the ratio $\sext/\ssc$ is unity with no free
+parameters. The two sides are computed from different data: $\sext$
+from one forward amplitude, $\ssc$ from an angular quadrature over all
+three channels. The ratio therefore checks any T-matrix independently
+of how the T-matrix was obtained. Its main uses are these.
+\begin{itemize}
+\item \textbf{Truncation.} A deficit that shrinks with increasing
+  $n_{\max}$ measures multipole truncation.
+\item \textbf{Mode-conversion weights.} Dropping the flux weight in
+  \eqref{eq:ssc-p} or \eqref{eq:ssc-s} gives an error that grows with
+  the converted power. It is a common failure mode.
+\item \textbf{Signs.} The theorem fixes the sign of a scattered
+  amplitude but not its magnitude. For example it fixes the sign of the
+  toroidal coefficient in \texttt{FirstOrderContrastOperator.tex}.
+  A family that conserves energy on its own passes the test whether it
+  is present or not.
+\item \textbf{Approximate T-matrices.} A Born or first-order T-matrix
+  is real to leading order and has no radiation damping. Its forward
+  amplitude has an imaginary part only at second order in contrast, so
+  it cannot satisfy the theorem exactly
+  \citep{GubernatisDomanyKrumhansl1977}. The residual measures the
+  missing self-consistency and is not a coding error.
+\end{itemize}
+
+% =============================================================================
+\section{Conventions and checks in this repository}
+\label{sec:sign}
+% =============================================================================
+
+Equations \eqref{eq:ot-p} and \eqref{eq:ot-s} assume $e^{-i\omega t}$
+and far-field amplitudes defined by \eqref{eq:farfield}. Under
+$e^{+i\omega t}$ the imaginary part changes sign, and so does any
+convention that puts an extra minus sign on the far-field amplitude. Every
+checker in \texttt{scattered\_field.py} now uses the standard sign,
+$\sext = +(4\pi/k)\Imag f(\bd)$, as does
+\texttt{docs/cube\_tmatrix\_closedform.tex}. An earlier minus sign there
+compensated a force-term sign error in the cube far field, and the two
+were removed together.
+
+For P incidence on the lossless $T_{27}$ cube, $\sext/\ssc$ is
+$0.99997$ at $ka = 0.05$ and $0.9986$ at $ka = 0.3$. For a pure-modulus
+contrast it is $1.00002$. Getting there required the modulus radiation
+reaction to be treated like the density one:
+\begin{itemize}
+\item \textbf{Kept in the far field.} At forward incidence the incident
+  strain $i\kp\bd\bd$ is imaginary, so $\Imag\Delta\mathbf{c}^*$ is
+  exactly what enters $\Imag f_P(\bd)$. A far field built from
+  $\Real\Delta\mathbf{c}^*$ alone gave a pure-modulus cube $\sext = 0$
+  and the full cube a ratio of $0.61$.
+\item \textbf{Built from the effective contrast.} The reaction is the
+  radiated power of the dipole the far field actually emits,
+  $\Imag\Delta\mathbf{c}^* = -(2V/\omega)\,
+  \Real\Delta\mathbf{c}^*:\mathbf{K}:\Real\Delta\mathbf{c}^*$, with
+  $\mathbf{K}$ the isotropic radiated-power kernel. Built from the bare
+  contrast it overshoots, giving a ratio near $1.02$. The exact Mie
+  sphere obeys this identity with its own effective contrasts to
+  $10^{-4}$.
+\end{itemize}
+The closed form and its checks are in
+\texttt{docs/cube\_tmatrix\_closedform.tex} (eq.~modulus-reaction).
+This case belongs with the \emph{signs} and \emph{mode-conversion}
+entries of \S\ref{sec:check}: a missing radiation reaction is a
+bookkeeping defect, and the theorem detects it exactly.
+
+\bibliography{psvsh_optical_theorem}
+
+\end{document}

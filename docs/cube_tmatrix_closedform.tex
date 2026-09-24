@@ -1106,10 +1106,10 @@ are the P- and S-wave far-field projection tensors, the scattered
 P-wave amplitude in the direction $\hat{\br}$ is
 \begin{equation}
   f^P_i(\hat{\br})
-  = -\frac{\hat{r}_i}{4\pi\rho\alpha^2}\,
+  = \frac{\hat{r}_i}{4\pi\rho\alpha^2}\,
     \Bigl[\hat{r}_j F_j
-    \;-\; ik_P\,\hat{r}_j\hat{r}_k\,D_{jk}
-    \;-\; \tfrac{1}{2}k_P^2\,\hat{r}_j\hat{r}_k\hat{r}_l\,Q_{jkl}
+    \;+\; ik_P\,\hat{r}_j\hat{r}_k\,D_{jk}
+    \;+\; \tfrac{1}{2}k_P^2\,\hat{r}_j\hat{r}_k\hat{r}_l\,Q_{jkl}
     \;+\; \cdots
     \Bigr],
   \label{eq:fP}
@@ -1117,10 +1117,10 @@ P-wave amplitude in the direction $\hat{\br}$ is
 and the S-wave amplitude is
 \begin{equation}
   f^S_i(\hat{\br})
-  = -\frac{\delta_{ij} - \hat{r}_i\hat{r}_j}{4\pi\rho\beta^2}\,
+  = \frac{\delta_{ij} - \hat{r}_i\hat{r}_j}{4\pi\rho\beta^2}\,
     \Bigl[F_j
-    \;-\; ik_S\,\hat{r}_k\,D_{jk}
-    \;-\; \tfrac{1}{2}k_S^2\,\hat{r}_k\hat{r}_l\,Q_{jkl}
+    \;+\; ik_S\,\hat{r}_k\,D_{jk}
+    \;+\; \tfrac{1}{2}k_S^2\,\hat{r}_k\hat{r}_l\,Q_{jkl}
     \;+\; \cdots
     \Bigr].
   \label{eq:fS}
@@ -1151,7 +1151,7 @@ The total scattering cross section is obtained by integrating
 follows from the optical theorem:
 \begin{equation}
   \sigma_{\mathrm{ext}}
-  = -\frac{4\pi}{k_{\mathrm{inc}}}\,
+  = \frac{4\pi}{k_{\mathrm{inc}}}\,
     \operatorname{Im}\!\bigl[f(\hat{\bm{k}})\bigr],
   \label{eq:optical-theorem}
 \end{equation}
@@ -1208,8 +1208,9 @@ cubic anisotropy lifts these degeneracies, generating mode conversions
   $\sim\!1\%$ (the $O((ka)^2)$ Galerkin truncation error).
 \item \textbf{Optical theorem.}  The extinction and total scattering
   cross sections computed from \eqref{eq:optical-theorem} and the
-  angular integral of \eqref{eq:dsigma} must agree to $\sim\!10^{-6}$
-  (numerical integration precision).
+  angular integral of \eqref{eq:dsigma} must agree for a lossless
+  scatterer. Achieved: $1 - \sigma_{\mathrm{ext}}/\sigma_{\mathrm{sc}}
+  \le 3\times10^{-5}$ at $ka = 0.05$ (Table~\ref{tab:optical-theorem}).
 \item \textbf{$T_9$ consistency.}  The leading $9 \times 9$ sub-block
   of $T_{27}$ must reproduce the Path-A T-matrix from
   \texttt{compute\_cube\_tmatrix()} to the Galerkin truncation error
@@ -1356,31 +1357,89 @@ backward hemisphere where higher multipoles contribute.}
 \end{table}
 
 \paragraph{Optical theorem and sign convention.}
-The far-field sign convention $f^P = -Q^P/(4\pi\rho\alpha^2)$ with the
-global minus sign from the T-matrix force convention
-$+V\omega^2\D\rho^* u$ requires a corresponding sign flip in the
-optical theorem:
+With $e^{-i\omega t}$ and the far-field amplitudes of
+\eqref{eq:fP}--\eqref{eq:fS}, the optical theorem takes its standard form
+\eqref{eq:optical-theorem}, $\sigma_{\mathrm{ext}} = +(4\pi/k_{\mathrm{inc}})
+\operatorname{Im} f(\hat{\bm{k}})$. An earlier version of this section wrote it
+with a leading minus sign. That sign compensated a sign error on the force term
+of \eqref{eq:fP}, since corrected in \texttt{cube\_far\_field}; both have been
+removed together. The quadrupole terms of \eqref{eq:fP}--\eqref{eq:fS} are not
+implemented in code.
+
+The extinction of the two channels arrives by different routes. The density
+channel's forward extinction comes from the radiation reaction
+$\operatorname{Im}\Gamma_0$ in the amplification $A_u$. The modulus channel's
+comes from the radiation reaction $\operatorname{Im}\D\mathbf{c}^*$ in the
+stress dipole: at forward incidence the incident strain
+$ik_P\hat{\bm{k}}\hat{\bm{k}}$ is imaginary, so $\operatorname{Re}\D\mathbf{c}^*$
+feeds $\operatorname{Re} f^P(\hat{\bm{k}})$ and $\operatorname{Im}\D\mathbf{c}^*$
+feeds $\operatorname{Im} f^P(\hat{\bm{k}})$. Energy conservation fixes the
+modulus reaction as the radiated power of the dipole the far field actually
+emits, $\mathbf{M} = V\operatorname{Re}\D\mathbf{c}^*:\bm{\varepsilon}$:
 \begin{equation}
-  \sigma_{\mathrm{ext}}
-  = -\frac{4\pi}{k_{\mathrm{inc}}}\,
-    \operatorname{Im}\!\bigl[f^P(\hat{\bm{k}})\bigr].
-  \label{eq:optical-sign}
+  \operatorname{Im}\D\mathbf{c}^*
+  = -\frac{2V}{\omega}\,
+    \operatorname{Re}\D\mathbf{c}^* : \mathbf{K} :
+    \operatorname{Re}\D\mathbf{c}^*,
+  \qquad
+  \mathbf{K} = k_\lambda\,\bm{\delta}\bm{\delta} + 2k_\mu\,\mathbf{I},
+  \label{eq:modulus-reaction}
 \end{equation}
-At $ka = 0.05$ with moderate contrast ($\D\lambda = 2$\,GPa,
-$\D\mu = 1$\,GPa, $\D\rho = 100$\,kg/m$^3$), the optical theorem
-holds to $\sim\!8\%$:
-\[
-  \sigma_{\mathrm{ext}} = 6.88 \times 10^{-6}\,\mathrm{m}^2,
+with $k_\lambda = (c_P - c_S)/15$, $k_\mu = (2c_P + 3c_S)/30$,
+$c_P = \omega^4/(8\pi\rho\alpha^5)$ and $c_S = \omega^4/(8\pi\rho\beta^5)$. For
+the cubic $\operatorname{Re}\D\mathbf{c}^*$ this closes on the three cubic
+invariants,
+\begin{align}
+  \operatorname{Im}\D\lambda^*
+  &= -\frac{2V}{\omega}\Bigl[\bigl(k_\lambda(3\D\lambda^* + 2\D\mu^*_{\mathrm{diag}})
+     + 2k_\mu\D\lambda^*\bigr)(3\D\lambda^* + 2\D\mu^*_{\mathrm{diag}})
+     + 4k_\mu\,\D\lambda^*\D\mu^*_{\mathrm{diag}}\Bigr],
+  \label{eq:modulus-reaction-lambda}\\
+  \operatorname{Im}\D\mu^*_{\mathrm{off}}
+  &= -\frac{8V}{\omega}\,k_\mu\,(\D\mu^*_{\mathrm{off}})^2,
   \qquad
-  \sigma_{\mathrm{sc}} = 7.45 \times 10^{-6}\,\mathrm{m}^2,
-  \qquad
-  \frac{\sigma_{\mathrm{ext}}}{\sigma_{\mathrm{sc}}} = 0.92.
-\]
-The $8\%$ discrepancy arises from truncation of the multipole expansion:
-the current far-field formula includes only the force monopole
-($\ell = 1$) and stress dipole ($\ell = 0, 2$), omitting the
-force quadrupole ($\ell = 3$) from the quadratic modes.
-This truncation violates strict energy conservation at finite contrast.
+  \operatorname{Im}\D\mu^*_{\mathrm{diag}}
+  = -\frac{8V}{\omega}\,k_\mu\,(\D\mu^*_{\mathrm{diag}})^2,
+  \label{eq:modulus-reaction-mu}
+\end{align}
+with real parts on the right. The source must be the \emph{effective}
+contrast. The exact Mie sphere, which is unitary, obeys
+\eqref{eq:modulus-reaction} with its own effective contrasts to $10^{-4}$;
+built from the bare contrasts $\D\lambda, \D\mu$ instead, the reaction exceeds
+Mie by $5$ to $9\%$. The closed form is checked symbolically against the
+explicitly integrated far-field power
+(\texttt{Mathematica/ModulusRadiationReactionCubic.wl}) and numerically by
+direct quadrature (\texttt{test\_modulus\_radiation\_reaction.py}).
+
+With both reactions in place the cube satisfies the optical theorem
+(Table~\ref{tab:optical-theorem}).
+\begin{table}[ht]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lccc}
+\toprule
+Contrast & $ka = 0.05$ & $ka = 0.1$ & $ka = 0.3$ \\
+\midrule
+$\D\lambda = 2$\,GPa, $\D\mu = 1$\,GPa, $\D\rho = 100$\,kg/m$^3$
+  & $0.99997$ & $0.99985$ & $0.99855$ \\
+density only, $\D\rho = 100$\,kg/m$^3$
+  & $0.99994$ & $0.99974$ & $0.99760$ \\
+modulus only, $\D\lambda = 2$\,GPa, $\D\mu = 1$\,GPa
+  & $1.00002$ & $1.00002$ & $1.00002$ \\
+\bottomrule
+\end{tabular}
+\caption{$\sigma_{\mathrm{ext}}/\sigma_{\mathrm{sc}}$ for the $T_{27}$ cube,
+P incidence along $[001]$, from \texttt{optical\_theorem\_check}. The residual
+grows with $ka$ in the density channel only.}
+\label{tab:optical-theorem}
+\end{table}
+Two earlier figures are superseded. The value $0.92$ quoted here before was
+attributed to omitting the force quadrupole, but at $ka = 0.05$ that term
+enters at relative order $(ka)^2 \approx 0.25\%$ and cannot produce $8\%$.
+After the force-term sign fix the ratio became $0.61$. The whole of that
+deficit was the modulus extinction: the far field used
+$\operatorname{Re}\D\mathbf{c}^*$ only, so a pure-modulus cube had
+$\sigma_{\mathrm{ext}} = 0$.
 
 \paragraph{Rayleigh scaling.}
 In the Rayleigh limit, the scattering amplitude scales as $f^P \sim (ka)^2$

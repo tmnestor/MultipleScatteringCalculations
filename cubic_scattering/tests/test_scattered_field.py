@@ -115,71 +115,38 @@ def test_cube_vs_mie_weak_contrast():
 
 
 def _mie_forward_pp(mie) -> complex:
-    """Phase-consistent forward (θ=0) P→P amplitude for the optical theorem.
+    """Forward (θ=0) P→P Mie amplitude, summed analytically from the coefficients.
 
-    The forward extinction is a tiny O((ka)³) imaginary part riding on an
-    O(1) real part, so a single θ=0 Hankel evaluation of ``mie_far_field`` is
-    numerically unreliable at low ka.  We therefore build the forward sum
-    analytically from the coefficients.
+    The forward extinction is a tiny O((ka)³) imaginary part riding on an O(1)
+    real part, so a single θ=0 Hankel evaluation of ``mie_far_field`` is
+    numerically unreliable at low ka.  Asymptotically ``k h_n'(kr) → (-i)^n
+    e^{ikr}/r`` and ``P_n(1) = 1``, so
 
-    The crucial subtlety: the stored coefficients ``mie.a_n`` carry a deliberate
-    ``(-1)^n`` phase rotation (``sphere_scattering.py:659``) whose only purpose
-    is to make the *angular displacement pattern* forward-peaked, matching the
-    Rayleigh / Foldy-Lax convention.  That rotation is harmless for ``|f|²`` (it
-    cancels in σ_sc) but it CORRUPTS the coherent forward-interference sum that
-    drives the optical theorem.  We therefore UNDO it here.
+        f_PP(0) = Σ a_n (-i)^n,
 
-    Asymptotically ``k h_n'(kr) → (-i)^n e^{ikr}/r`` and ``P_n(1)=1``, so the
-    forward sum with the rotation removed is::
-
-        f_PP(0) = Σ a_n · (-1)^n · (-i)^n = Σ a_n · i^n,
-
-    negated to match the ``σ_ext = -(4π/k) Im[f(0)]`` sign convention used by
-    ``optical_theorem_from_amplitudes`` (the same ``-4π/k`` prefactor the cube
-    far-field obeys).  With this phase-consistent forward amplitude the exact
-    Mie sphere closes the optical theorem to σ_ext = σ_sc = 1.0 to 5 digits,
-    ka-independent — confirming ``compute_elastic_mie`` is unitary.
+    in the standard e^{-iωt} convention used by ``optical_theorem_from_amplitudes``
+    (σ_ext = +(4π/k) Im f(0)).  The stored ``a_n`` no longer carry the old (-1)^n
+    rotation (removed in ``sphere_scattering.py``), and this sum is no longer
+    negated: that negation only compensated the former -4π/k checker sign.
     """
-    return -sum(mie.a_n[n] * (-1j) ** n for n in range(mie.n_max + 1))
+    return sum(mie.a_n[n] * (-1j) ** n for n in range(mie.n_max + 1))
 
 
 def test_optical_theorem_mie_gate():
     """Ground-truth energy-conservation gate: exact-Mie σ_ext = σ_sc ≈ 1.0.
 
-    The elastic optical theorem (``cube_tmatrix_closedform.tex``):
+    The elastic optical theorem (``LatexPDFs/psvsh_optical_theorem.tex``):
 
-        σ_ext = -(4π/k_P) Im[f_PP(0)],
+        σ_ext = +(4π/k_P) Im[f_PP(0)],
         σ_sc  = 2π ∫ [ |f_P|² + (β/α)(|f_SV|²+|f_SH|²) ] sinθ dθ,
 
-    derived from energy flux: a unit-amplitude scattered wave of mode c carries
-    radial flux ½ρcω², so the per-channel weight in σ_sc is the scattered speed
-    over the incident speed — β/α = k_P/k_S for the S channels (eq:dsigma), the
-    energy-CONSERVING weight.  The previous code used its inverse k_S/k_P = α/β.
+    from energy flux: a unit-amplitude scattered wave of mode c carries radial
+    flux ½ρcω², so the S channels carry weight β/α = k_P/k_S.
 
-    ``compute_elastic_mie`` is UNITARY to 10 significant figures: per order, the
-    extinction |ext_n| equals the scattered power (P→P plus P→S converted).
-    There is NO Mie-solver defect and NO radiation-reaction deficit — the BC
-    solve and coefficients are exact and must not be touched.
-
-    The only obstacle to closing σ_ext = σ_sc = 1.0 was the COHERENT FORWARD
-    SUM.  The stored coefficients ``mie.a_n`` carry a deliberate ``(-1)^n`` phase
-    rotation (``sphere_scattering.py:659``) that makes the *angular displacement
-    pattern* forward-peaked — a real convention the Rayleigh / Foldy-Lax code
-    relies on, kept for the angular amplitudes.  It cancels in ``|f|²`` (σ_sc is
-    unaffected) but corrupts the coherent forward-interference sum, which is the
-    sole reason the naive forward amplitude gave the stable ≈0.229 artifact
-    (NOT a missing P→S converted power, NOT a solver defect).
-
-    The fix (``_mie_forward_pp``) forms the forward amplitude with the rotation
-    UNDONE: f_PP(0) = Σ a_n·(-1)^n·(-i)^n = Σ a_n·i^n (negated for the -4π/k
-    sign convention).  With the energy-conserving β/α S-flux weight in σ_sc this
-    closes the optical theorem to σ_ext = σ_sc = 1.0, ka-INDEPENDENT — the true
-    energy-conservation gate, asserted here across ka_β ∈ {0.05,0.1,0.3,0.5}.
-    Verified per-order to 10 digits and total to ~5 digits.
-
-    Regression guard: the wrong α/β S-flux weight would shift the level off 1.0,
-    and the old (-1)^n-rotated forward sum would give ≈0.229 — both FAIL the
-    band below.
+    ``compute_elastic_mie`` is unitary, so the ratio must be 1.0 and
+    ka-independent.  Regression guard: the inverse α/β S-flux weight shifts the
+    level off 1.0, and a wrong forward phase makes it drift with ka; both FAIL
+    the bands below.
     """
     radius = 10.0
     ka_vals = [0.05, 0.1, 0.3, 0.5]
@@ -217,62 +184,54 @@ def test_optical_theorem_mie_gate():
 
 
 def test_optical_theorem_cube():
-    """Cube T27 σ_ext/σ_sc through the corrected (β/α) checker.
+    """Cube T27 closes the elastic optical theorem: σ_ext/σ_sc = 1 (lossless).
 
-    With the energy-conserving β/α S-flux weight the cube ratio is finite,
-    positive and frequency-stable (≈0.61, drifting only with ka²).
+    σ_ext = (4π/k_P) Im[f_P(0)] and σ_sc with the β/α S-flux weight, both from
+    optical_theorem_check.  The density channel's forward extinction comes
+    from Im[Γ₀] through the complex amp_u; the modulus channel's from the
+    radiation reaction Im[Δc*] through the stress dipole.  At forward incidence
+    the incident strain i k_P d̂d̂ is imaginary, so Im[Δc*] lands in Im[f_P(0)].
 
-    Unlike the Mie sphere, the cube far-field (``cube_far_field``) does NOT use
-    the Mie ``(-1)^n`` coefficient rotation — its forward amplitude obeys the
-    same ``-Q_P/(4πρα²)`` convention as the ``-4π/k`` optical-theorem prefactor
-    in ``optical_theorem_check``.  The cube forward is therefore already
-    phase-consistent for the optical theorem and needs NO analogous undo; the
-    checker is used unmodified here.
-
-    The exact-Mie sphere closes the optical theorem to σ_ext = σ_sc = 1.0
-    (``test_optical_theorem_mie_gate``), so the σ_sc side and the β/α weight are
-    independently validated.  The cube sits below 1.0 because of the FORWARD
-    amplitude, not the checker:
-
-      * the cube's DENSITY radiation damping is now CORRECT — the corrected
-        Im[Γ₀] = (1/3)P + (2/3)S diagonal radiation reaction closes the
-        density-only optical theorem to 1.0 to ~0.02 across ka (see
-        ``test_gamma0_radiation_reaction.test_density_optical_theorem_closes_to_one``);
-      * the cube's MODULUS forward damping is a structural 2nd-order optical
-        term: the linearized Galerkin far-field maps Im(Δσ) → Re(f_P), so the
-        modulus contribution to Im[f_P(0)] is absent at first order.
-
-    The ≈0.61 deficit is precisely this missing MODULUS extinction in the linear
-    forward amplitude (a known T-matrix limitation, NOT a normalization bug).
-    NOTE: the previous ≈0.82 pin (and its "density radiation damping is correct"
-    claim) was an artifact of the OLD Im[Γ₀] overshooting the density channel by
-    ~1.354×: the inflated density σ_ext partially masked the absent modulus
-    extinction.  Fixing Im[Γ₀] (density σ_ext/σ_sc 1.354→1.0) drops the FULL-cube
-    ratio to ≈0.61, exposing the modulus deficit honestly; the modulus channel
-    is still STRUCTURALLY absent from the linear forward amplitude.  The textbook
-    1.0 would require both the corrected density damping (done) AND the 2nd-order
-    modulus forward term (not built).
+    Before the fix the far field used Re[Δc*] only, and the ratio sat at 0.61
+    with the modulus extinction missing entirely.
     """
-    ratios = []
-    for ka in (0.05, 0.1, 0.3):
+    for ka, tol in ((0.05, 0.003), (0.1, 0.003), (0.3, 0.005)):
         omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(ka)
         sigma_ext, sigma_sc = optical_theorem_check(T27, REF, g, CONTRAST, omega, 10.0, k_vec, pol)
-        assert sigma_sc > 0, f"ka={ka}: sigma_sc={sigma_sc:.4e} should be positive"
-        assert sigma_ext > 0, (
-            f"ka={ka}: σ_ext={sigma_ext:.4e} should be positive (forward scattering present)"
-        )
-        ratios.append(sigma_ext / sigma_sc)
+        ratio = sigma_ext / sigma_sc
+        assert abs(ratio - 1.0) < tol, f"ka={ka}: cube σ_ext/σ_sc = {ratio:.5f}, expected 1"
 
-    ratios = np.array(ratios)
-    # Achieved with the corrected β/α weight AND the corrected density Im[Γ₀]
-    # (radiation reaction); frequency-stable ≈0.61.  Residual = missing MODULUS
-    # forward damping (2nd-order optical term the linearized forward amplitude
-    # omits); NOT a checker normalization bug and NOT a density-damping error.
-    assert np.all((ratios > 0.58) & (ratios < 0.64)), (
-        f"cube σ_ext/σ_sc = {ratios}; expected ≈0.61 (frequency-stable). "
-        "Residual from absent modulus forward damping (2nd-order optical term); "
-        "density radiation damping is now correct (Im[Γ₀] fix)."
+
+def test_optical_theorem_cube_modulus_only():
+    """A pure-modulus cube has non-zero extinction equal to its scattering.
+
+    Regression guard: with Re[Δc*] only, σ_ext was exactly 0 here while σ_sc > 0.
+    """
+    modulus_only = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=0.0)
+    for ka in (0.05, 0.1, 0.3):
+        omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(ka, contrast=modulus_only)
+        sigma_ext, sigma_sc = optical_theorem_check(T27, REF, g, modulus_only, omega, 10.0, k_vec, pol)
+        ratio = sigma_ext / sigma_sc
+        assert abs(ratio - 1.0) < 0.003, f"ka={ka}: modulus-only σ_ext/σ_sc = {ratio:.5f}"
+
+
+def test_optical_theorem_checkers_share_sign_convention():
+    """Both checkers compute σ_ext from the SAME forward amplitude identically.
+
+    optical_theorem_from_amplitudes and optical_theorem_check must use one
+    convention, σ_ext = +(4π/k) Im[f(0)] with e^{-iωt}; a passive scatterer gives
+    σ_ext > 0 in both.
+    """
+    omega, g, T27, k_vec, pol, c_inc, c_sc = _setup(0.1)
+    kP = omega / REF.alpha
+    theta = np.linspace(0.0, np.pi, 721)
+    f_P, f_SV, f_SH = cube_far_field(c_inc, c_sc, theta, REF, g, CONTRAST, omega, 10.0, k_vec, pol)
+    ext_amp, _ = optical_theorem_from_amplitudes(
+        f_P[0], theta, f_P, f_SV, f_SH, kP, REF.alpha, REF.alpha, REF.beta
     )
+    ext_chk, _ = optical_theorem_check(T27, REF, g, CONTRAST, omega, 10.0, k_vec, pol)
+    assert ext_chk > 0.0
+    assert abs(ext_amp - ext_chk) < 1e-12 * abs(ext_chk), f"{ext_amp} vs {ext_chk}"
 
 
 def test_cross_section_scales_with_contrast():

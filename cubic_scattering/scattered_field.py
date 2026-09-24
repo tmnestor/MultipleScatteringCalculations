@@ -23,7 +23,12 @@ Physics:
     exact Mie sphere.  The correction is exactly a no-op when Δρ=0.
 
   The stress dipole uses the Voigt T-matrix (T1c,T2c,T3c) applied to the
-  incident strain, which already includes self-consistent amplification.
+  incident strain, which already includes self-consistent amplification.  The
+  effective stiffness Δc* is COMPLEX: its imaginary part is the modulus
+  radiation reaction, which carries the modulus forward extinction.
+
+Optical theorem (e^{-iωt}, outgoing e^{ikr}/r):
+  σ_ext = +(4π/k) Im[f(0)] in every checker in this module.
 
 Sign convention:
   f_P = Q_P/(4πρα²) where Q_P = r̂·F + ikP V(r̂·Δσ·r̂)
@@ -152,20 +157,18 @@ def cube_far_field(
     F = omega**2 * contrast.Drho * amp_u * c_inc[:3]
 
     # ── Stress dipole from stiffness contrast ──
-    # Δσ = Δc* @ ε_inc where Δc* is the PHYSICAL effective stiffness (Pa).
-    # Use the REAL (elastic) modulus response only.  The imaginary modulus part
-    # is the radiation reaction Im[Δc*] (``_modulus_radiation_reaction``), a
-    # SECOND-order self-energy whose physical role is multiple-scattering
-    # attenuation (the Foldy-Lax solve), not a new first-order radiating source.
-    # This single-site linearized far field maps Im(Δσ)→Re(f_P) (see the module
-    # docstring), so feeding Im[Δc*] here would add to σ_sc without the matching
-    # forward extinction in Im[f_P(0)] — corrupting the optical-theorem ratio.
-    # The radiation reaction is retained in the effective contrasts
-    # (``galerkin.Dlambda_star`` etc.) for the lattice/Foldy-Lax attenuation.
+    # Δσ = Δc* @ ε_inc where Δc* is the PHYSICAL effective stiffness (Pa),
+    # COMPLEX: Re is the elastic response, Im the radiation reaction
+    # (``_modulus_radiation_reaction_cubic``).  The incident strain is
+    # ε = i k (p̂k̂)_sym, imaginary, so Re[Δc*] feeds Re[f_P(0)] and Im[Δc*] feeds
+    # Im[f_P(0)] -- the modulus forward extinction.  Dropping Im[Δc*] here left a
+    # pure-modulus cube with σ_ext ≡ 0 while σ_sc > 0.  Im[Δc*] enters σ_sc only
+    # at 4th order in contrast.  This mirrors the density channel, whose Im[Γ₀]
+    # reaches the far field through the complex amp_u.
     Dc_star = effective_stiffness_voigt(
-        galerkin.Dlambda_star.real,
-        galerkin.Dmu_star_diag.real,
-        galerkin.Dmu_star_off.real,
+        galerkin.Dlambda_star,
+        galerkin.Dmu_star_diag,
+        galerkin.Dmu_star_off,
     )
     eps_inc_V = _incident_voigt_strain(k_vec, pol)
     dsigma_V = Dc_star @ eps_inc_V  # 6-component Voigt stress perturbation (Pa)
@@ -456,9 +459,10 @@ def optical_theorem_from_amplitudes(
     channel, with ``f`` evaluated by the caller's own far-field routine, so the
     forward amplitude and the differential amplitudes are in the same units.
 
-    Extinction (``cube_tmatrix_closedform.tex`` eq:optical-theorem):
+    Extinction, standard form for e^{-iωt} and outgoing e^{ikr}/r
+    (``LatexPDFs/psvsh_optical_theorem.tex`` eq:ot-p):
 
-        σ_ext = -(4π / k_inc) Im[ f_P(forward) ]
+        σ_ext = +(4π / k_inc) Im[ f_P(forward) ]
 
     Total scattering (eq:dsigma), via
     :func:`total_cross_section_from_amplitudes`:
@@ -479,7 +483,7 @@ def optical_theorem_from_amplitudes(
     Returns:
         (sigma_ext, sigma_sc) in m².
     """
-    sigma_ext = -4.0 * np.pi / k_inc * float(np.imag(f_P_forward))
+    sigma_ext = 4.0 * np.pi / k_inc * float(np.imag(f_P_forward))
     sigma_sc = total_cross_section_from_amplitudes(theta, f_P, f_SV, f_SH, c_inc, c_P, c_S)
     return sigma_ext, sigma_sc
 
