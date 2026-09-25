@@ -77,6 +77,17 @@ class TransverseRule:
     needs a far smaller cutoff than the singular whole-space kernel (10 against
     30), which is what makes this affordable.
 
+    THAT RULE HOLDS ONLY FAR FROM A CONTRAST. It was measured on one pair of
+    planes in the same medium, with the nearest interface 2.5 pitches away.
+    With a material contrast half a pitch from a plane --
+    `scripts/measure_stack_table_cross_material.py` -- 10/pitch leaves errors of
+    up to 25% of the operator's scale in cross-material blocks AND in the
+    diagonal (reverberation) block of a plane near the contrast; 20/pitch is
+    the first rule to converge (<= 3e-4). The remainder after subtracting the
+    receiver-medium whole-space kernel is then not reverberation alone. The
+    cutoff appears to scale with the distance to the nearest contrast, not with
+    the pitch -- consistent with the measurement, not proven.
+
     Attributes:
         kr_max: Cutoff on each axis, 1/km.
         n_axis: Nodes per axis.
@@ -328,7 +339,9 @@ def layered_stack_table(
             # This is the entire economy of the design. The full layered kernel
             # inherits the whole-space kernel's slow spectral decay and needs
             # kr*pitch = 30 at dk = 0.156, some 2.4M nodes; the reverberation
-            # converges at kr*pitch = 10, some 65k. Transforming the full kernel
+            # converges at kr*pitch = 10, some 65k -- but only far from a material
+            # contrast; within half a pitch of one it needs kr*pitch = 20
+            # (see TransverseRule). Transforming the full kernel
             # puts the expensive rule back and throws away the 36x saving that
             # makes this architecture affordable at all. Measured in
             # scripts/measure_sweep3d_cost.py and measure_dg0_transverse_rule.py.
