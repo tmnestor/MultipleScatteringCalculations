@@ -621,6 +621,90 @@ def _mie_matrix_sh(
     return M
 
 
+def mie_tmatrix_psv(
+    n: int,
+    omega: float,
+    radius: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+) -> NDArray[np.complexfloating]:
+    """The P-SV Mie T-matrix of one order.
+
+    Maps the INCIDENT potential coefficients (P, SV) of order n to the SCATTERED
+    ones, from the direct solve of continuity of (u_r, u_theta, sigma_rr,
+    sigma_rtheta) with the scattered and interior amplitudes as unknowns.
+
+    ⚠ ITS CONDITION NUMBER IS HUGE AND DOES NOT MATTER.  In SI units it is 4.5e9
+    at n = 1 and 2.1e33 at n = 12 at k_S a = 2.4, because the columns carry j_n
+    inside and h_n outside and the rows mix displacement with traction.  That is
+    ill-SCALING, which partial pivoting is insensitive to: against the fifty-digit
+    solve of ``Mathematica/MieTmatrixReference.wl`` every entry is right to
+    1e-13 for n = 0..25, and an interior-impedance (2x2) elimination, built and
+    measured as the alternative, was no more accurate at any order up to 80 or
+    at k_S a up to 10.  Checked also by flux unitarity and reciprocity per order
+    (``tests/test_sphere_tmatrix_per_order.py``).
+
+    Args:
+        n: Order; for n = 0 only the P-P entry is nonzero (the monopole has no
+            shear part).
+        omega: Angular frequency.
+        radius: Sphere radius.
+        ref: Background medium.
+        contrast: Material contrast.
+
+    Returns:
+        Shape (2, 2): rows scattered (P, SV), columns incident (P, SV).
+    """
+    kp, ks = omega / ref.alpha, omega / ref.beta
+    tm = np.zeros((2, 2), dtype=complex)
+    if n == 0:
+        lam_in = ref.lam + contrast.Dlambda
+        mu_in = ref.mu + contrast.Dmu
+        rho_in = ref.rho + contrast.Drho
+        kp_in = omega / np.sqrt((lam_in + 2.0 * mu_in) / rho_in)
+        ur_s, _, srr_s, _ = _mie_pwave_fields(0, kp, radius, ref.lam, ref.mu, "h1")
+        ur_i, _, srr_i, _ = _mie_pwave_fields(0, kp_in, radius, lam_in, mu_in, "j")
+        ur_j, _, srr_j, _ = _mie_pwave_fields(0, kp, radius, ref.lam, ref.mu, "j")
+        m0 = np.array([[ur_s, -ur_i], [srr_s, -srr_i]], dtype=complex)
+        tm[0, 0] = np.linalg.solve(m0, -np.array([ur_j, srr_j], dtype=complex))[0]
+        return tm
+    m = _mie_matrix_psv(n, omega, radius, ref, contrast)
+    rhs = np.column_stack([_mie_incident_psv(n, omega, radius, ref, t) for t in ("P", "S")])
+    # _mie_incident_psv carries the plane wave's expansion coefficient; divide
+    # it out so the result is per unit incident POTENTIAL coefficient.
+    coeff = (2 * n + 1) * (1j) ** n / (1j * np.array([kp, ks]))
+    return np.linalg.solve(m, rhs)[:2] / coeff[None, :]
+
+
+def mie_tmatrix_sh(
+    n: int,
+    omega: float,
+    radius: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+) -> complex:
+    """The SH (toroidal) Mie T-matrix element of one order, n >= 1.
+
+    Scattered toroidal coefficient per unit incident one, from continuity of
+    u_phi and sigma_rphi = mu (d/dr - 1/r) u_phi.
+
+    Args:
+        n: Order, >= 1.
+        omega: Angular frequency.
+        radius: Sphere radius.
+        ref: Background medium.
+        contrast: Material contrast.
+
+    Returns:
+        The element.
+    """
+    ks = omega / ref.beta
+    x = ks * radius
+    j_inc = _spherical_jn_complex(n, x)
+    rhs = -np.array([j_inc, ref.mu * (ks * _spherical_jn_deriv(n, x) - j_inc / radius)], dtype=complex)
+    return complex(np.linalg.solve(_mie_matrix_sh(n, omega, radius, ref, contrast), rhs)[0])
+
+
 def compute_elastic_mie(
     omega: float,
     radius: float,
@@ -657,102 +741,34 @@ def compute_elastic_mie(
     a_n_sv = np.zeros(n_max + 1, dtype=complex)  # SV->P
     b_n_sv = np.zeros(n_max + 1, dtype=complex)  # SV->SV
 
-    # n=0 monopole: purely P-wave, 2x2 system
-    a = radius
-    lam_out = ref.lam
-    mu_out = ref.mu
-    lam_in = lam_out + contrast.Dlambda
-    mu_in = mu_out + contrast.Dmu
-    rho_in = ref.rho + contrast.Drho
-    alpha_in = np.sqrt((lam_in + 2.0 * mu_in) / rho_in)
-    kP_out = omega / ref.alpha
-    kP_in = omega / alpha_in
-
-    ur_s, _, srr_s, _ = _mie_pwave_fields(0, kP_out, a, lam_out, mu_out, "h1")
-    ur_i, _, srr_i, _ = _mie_pwave_fields(0, kP_in, a, lam_in, mu_in, "j")
-    ur_inc, _, srr_inc, _ = _mie_pwave_fields(0, kP_out, a, lam_out, mu_out, "j")
-
-    M0 = np.array([[ur_s, -ur_i], [srr_s, -srr_i]], dtype=complex)
-    coeff_0 = 1.0 / (1j * kP_out)  # (2*0+1)*i^0 / (ik_P)
-    rhs_0 = np.array([-coeff_0 * ur_inc, -coeff_0 * srr_inc], dtype=complex)
-    try:
-        sol_0 = np.linalg.solve(M0, rhs_0)
-        a_n[0] = sol_0[0]
-    except np.linalg.LinAlgError:
-        pass
-
-    # n>=1: P-SV 4x4 system + SH 2x2 system
-    for n in range(1, n_max + 1):
-        M_psv = _mie_matrix_psv(n, omega, radius, ref, contrast)
-        rhs_psv = _mie_incident_psv(n, omega, radius, ref, incident_type="P")
-
-        # THERE IS NO SIGN FACTOR HERE, AND THERE MUST NOT BE ONE.
+    kp = omega / ref.alpha
+    ks = omega / ref.beta
+    for n in range(0, n_max + 1):
+        # The plane wave's own expansion coefficient, (2n+1) i^n / (i k), for a
+        # unit P or SV wave; the Mie coefficients are T times it.  A singular
+        # solve raises: a coefficient silently left at zero was once the
+        # fallback here, and a zero coefficient is a wrong answer, not a default.
         #
-        # This block used to multiply every n >= 1 coefficient by (-1)^n, on
-        # the grounds that it made the angular pattern "forward-peaked,
-        # consistent with the Rayleigh and Foldy-Lax implementations".  It was
-        # tuned against the other solver rather than against physics, and it
-        # was wrong.  It flipped every ODD multipole while leaving the n = 0
-        # monopole (solved separately above) alone, with two consequences:
-        #
-        #   1. The DIPOLE is where the density response lives, so Drho
-        #      acquired the wrong sign against Dlambda and Dmu.  A sphere with
-        #      NO impedance contrast -- drho/rho = +e together with dM/M = -e,
-        #      so that Z = sqrt(rho M) is unchanged -- then reflected 2.0002
-        #      times a density-only sphere at normal incidence, where it must
-        #      reflect nothing at all.  That invariant is exact, not a Born
-        #      statement and not a convention: for a step interface
-        #      R = (Z2 - Z1)/(Z2 + Z1).
-        #   2. Flipping odd multipoles destroys the interference between them,
-        #      so the backscattered amplitude scaled as the sphere VOLUME with
-        #      no form-factor suppression -- exactly a^3 out to k_P a = 1.44,
-        #      which no exact solution can do.
-        #
-        # Measured against the elastic Born backscattering amplitude derived
-        # independently in Mathematica/ElasticBornBackscatter.wl (Green's
-        # tensor verified against Navier, contraction done by the kernel):
-        #
-        #     k_P a        0.18     0.36     0.72     1.44
-        #     with (-1)^n  0.5063   0.5266   0.6191   1.3092
-        #     without      0.9997   0.9997   0.9998   1.0000
-        #
-        # The null test is the cheap guard -- see the sphere tests.
-        sign = 1.0
-
-        try:
-            sol_psv = np.linalg.solve(M_psv, rhs_psv)
-            a_n[n] = sign * sol_psv[0]  # scattered P coefficient
-            b_n[n] = sign * sol_psv[1]  # scattered S coefficient
-        except np.linalg.LinAlgError:
-            pass
-
-        # SV-incident solve (same matrix, different RHS)
-        rhs_psv_sv = _mie_incident_psv(n, omega, radius, ref, incident_type="S")
-        try:
-            sol_psv_sv = np.linalg.solve(M_psv, rhs_psv_sv)
-            a_n_sv[n] = sign * sol_psv_sv[0]  # SV->P coefficient
-            b_n_sv[n] = sign * sol_psv_sv[1]  # SV->SV coefficient
-        except np.linalg.LinAlgError:
-            pass
-
-        # SH modes: 2x2 system
-        M_sh = _mie_matrix_sh(n, omega, radius, ref, contrast)
-        z_inc = omega / ref.beta * radius
-        j_inc = _spherical_jn_complex(n, z_inc)
-        coeff_sh = (2 * n + 1) * (1j) ** n / (1j * omega / ref.beta)
-        rhs_sh = np.array(
-            [
-                -coeff_sh * j_inc,
-                -coeff_sh * ref.mu * (omega / ref.beta * _spherical_jn_deriv(n, z_inc) - j_inc / radius),
-            ],
-            dtype=complex,
-        )
-
-        try:
-            sol_sh = np.linalg.solve(M_sh, rhs_sh)
-            c_n[n] = sign * sol_sh[0]  # scattered SH coefficient
-        except np.linalg.LinAlgError:
-            pass
+        # THERE IS NO (-1)^n SIGN FACTOR HERE, AND THERE MUST NOT BE ONE.  One
+        # was once applied to every n >= 1 coefficient, tuned against another
+        # solver.  It flipped the dipole, where the density response lives, so
+        # an impedance-matched sphere reflected 2.0002 times a density-only one
+        # at normal incidence, where it must reflect nothing; and it made the
+        # backscatter scale as the volume with no form-factor suppression.
+        # Measured against the independent elastic Born backscatter of
+        # Mathematica/ElasticBornBackscatter.wl it gave 0.51-1.31 where the
+        # correct coefficients give 0.9997-1.0000.  The null test in the sphere
+        # tests is the cheap guard.
+        cp = (2 * n + 1) * (1j) ** n / (1j * kp)
+        cs = (2 * n + 1) * (1j) ** n / (1j * ks)
+        tm = mie_tmatrix_psv(n, omega, radius, ref, contrast)
+        a_n[n] = tm[0, 0] * cp
+        if n == 0:
+            continue
+        b_n[n] = tm[1, 0] * cp
+        a_n_sv[n] = tm[0, 1] * cs
+        b_n_sv[n] = tm[1, 1] * cs
+        c_n[n] = mie_tmatrix_sh(n, omega, radius, ref, contrast) * cs
 
     return MieResult(
         a_n=a_n,

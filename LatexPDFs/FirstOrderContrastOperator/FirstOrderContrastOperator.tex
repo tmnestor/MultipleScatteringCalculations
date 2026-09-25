@@ -132,9 +132,9 @@ limits the mode-basis form; carrying the lateral grid \emph{inside} the marched
 variable then handles lateral heterogeneity without an outer iteration.  Against
 an exact Mie sphere the march is fourth order in depth, and the residual that
 depth refinement leaves is linear in contrast and converges under lateral
-refinement to about $0.3\,\varepsilon$ at a spacing of $2.5$ diameters --- the
-periodic array's multiple scattering together with whatever the march's own
-error contributes, which only a periodic reference can separate.  \S\ref{sec:priorart} sets out the
+refinement to about $0.29\,\varepsilon$ at a spacing of $2.5$ diameters,
+which second-order Born of the periodic array predicts independently, in real
+and imaginary part: it is the array's own double scattering.  \S\ref{sec:priorart} sets out the
 substantial prior art --- the construction is that of Haines, Hulme \& Yu
 (2004) --- and \S\ref{sec:tricks} adopts and measures three of their
 computational devices.
@@ -2801,7 +2801,7 @@ its kernel --- radiation at $\pm\infty$ is built into which projectors appear on
 which side.  The integral equation is the ODE \emph{plus} its boundary
 conditions, which is exactly why it is the useful form to discretise.
 
-\subsection{One-sidedness makes the discretised operator tridiagonal}
+\subsection{One-sidedness makes the discretised operator tridiagonal}\label{sec:onesided}
 
 Because the kernel is one-sided, a depth discretisation of \eqref{eq:lssplit}
 couples only neighbouring depths.  The thesis states this directly: in
@@ -2811,7 +2811,7 @@ Lippmann--Schwinger operator --- is \emph{block tridiagonal}
 \emph{is} the Riccati recursion, given there as Algorithm~5.1.  The
 Introduction names the connection: Riccati factorisation for discretely layered
 media is ``implicit in the invariant embedding schemes of Kennett~(1984),
-Tromp \& Snieder~(1988)'', after Chin, Hedstrom \& Thigpen~(1984) and Ha~(1985).
+Tromp \& Snieder~(1988)'' --- published as \cite{tromp1989}, and tested in \S\ref{sec:trompsnieder} --- after Chin, Hedstrom \& Thigpen~(1984) and Ha~(1985).
 
 So the three descriptions --- the split integral equation, the two-point
 boundary-value ODE, and the invariant imbedding --- are one object seen three
@@ -4152,6 +4152,43 @@ $2.45\times10^{-4}$ at $2.5$, $3.8$ and $5.0$ diameters and a $75$\,m pitch ---
 without falling monotonically, which is what an interference does and a $1/A$
 falloff would not.
 
+\paragraph{The residual, predicted.}  Because the array and the isolated sphere
+share their first-order response exactly, their difference begins with double
+scattering, and second-order Born computes it without the march.  Per lateral
+wavenumber $\mathbf{q}$ the double-scattering amplitude is
+\begin{equation}\label{eq:born2q}
+  I(\mathbf{q}) = \int\!\!\int dz\,dz'\;
+     e^{ik_P(z+z')}\,F(q,z)\,F(q,z')\,K(\mathbf{q};z-z'),
+\end{equation}
+with $F$ the transform \eqref{eq:discff} of the cross-section at each depth and
+$K$ the two-vertex kernel: the weak-form Born vertex at each end and the
+spectral Green's tensor
+$\hat{\mathbf{G}} = [k_S^2\hat g_S\mathbf{I} + \mathbf{D}\mathbf{D}(\hat g_S-\hat
+g_P)]/\rho\omega^2$, $\mathbf{D}=(iq_x,iq_y,\partial_\zeta)$,
+$\hat g_K=(i/2\kappa_K)\,e^{i\kappa_K|\zeta|}$, between them.  Up to four
+$\zeta$-derivatives act on $\hat g_S-\hat g_P$; their $\delta'$ and $\delta''$
+parts cancel between $S$ and $P$ identically in $\mathbf{q}$ and the
+contrasts, and the one contact term that survives,
+$(\delta\lambda+2\delta\mu)^2k_P^4\,\delta(\zeta)/\rho\omega^2$, is independent
+of $\mathbf{q}$ --- the spectral form of the Eshelby self-term.  The kernel is
+derived twice, in \texttt{Mathematica/ElasticBornSecondOrderKernel.wl} and
+independently in \texttt{sympy}, agreeing to $1.7\times10^{-15}$.  The array
+takes $(1/A)\sum_{\mathbf{g}}$ over diffraction orders and the isolated sphere
+$\int d^2q/(2\pi)^2$, so the relative departure per unit contrast is
+\begin{equation}\label{eq:born2delta}
+  \frac{1}{4\pi\rho\alpha^2 f_1}\Bigl[\frac{1}{A}\sum_{\mathbf{g}} I(\mathbf{g})
+    - \int\!\frac{d^2q}{(2\pi)^2}\,I(\mathbf{q})\Bigr],
+\end{equation}
+$f_1$ the first-order backscatter amplitude, which agrees with Mie's linear
+coefficient to $10^{-6}$.  By Poisson summation the bracket couples a sphere only
+to images at least $L-2a$ away, so the same smooth window
+$e^{-(q/Q)^8}$ may be applied to both terms; the prediction does not move, to
+six figures, over $Q=0.08$ to $0.16$, while each term moves by three per cent.
+It is $0.2880-0.0556i$ at $2.5$ diameters.  The march, converged in depth, gives
+an imaginary part of $-0.0558$ at every lateral resolution, and a real part that
+rises under lateral refinement --- $0.146$, $0.201$, $0.224$, $0.237$, $0.245$ at
+$N=8$ to $24$ --- and extrapolates in $1/N$ to between $0.280$ and $0.290$.
+
 \subsection{What this establishes}
 
 The continuum impedance march, with the lateral coupling carried inside the
@@ -4160,10 +4197,11 @@ elastic response of a sphere at fourth order in the depth step.  The sphere has
 a sharp boundary, and the order survives it because the cross-section enters
 through \eqref{eq:discff}.  The residual after the depth error is exhausted is
 linear in the contrast, converges under lateral refinement to about
-$0.3\,\varepsilon$ at $2.5$ diameters, and varies with the period as an
-interference.  That is the signature of the array's own multiple scattering,
-but the comparison against an isolated sphere cannot split it from any error of
-the march that scales the same way; a periodic reference for the array can.
+$0.29\,\varepsilon$ at $2.5$ diameters, and varies with the period as an
+interference --- and second-order Born of the periodic medium, less that of the
+isolated sphere, predicts it in real and imaginary part without any of the
+march's machinery.  It is the array's own double scattering, and the march
+converges to it.
 
 %=====================================================================
 \section{The algorithm}\label{sec:algorithm}
@@ -4765,12 +4803,11 @@ as such, the following are \emph{open}:
       isolated sphere.}  \S\ref{sec:vsfoldy} scores both routes against exact
       Mie, which is axisymmetric; the march solves a square array, which is
       not.  Against the isolated sphere the march's orders agree to one or
-      two per cent at every angle measured, which bounds the periodization the
-      method pays for.  What that comparison cannot do is split the residual
-      --- about $0.3\,\varepsilon$ at $2.5$ diameters --- into the array's
-      genuine coupling and the march's own error: a periodic
-      multiple-scattering reference for the array itself would, and does not
-      yet exist.
+      two per cent at every angle measured.  At small contrast the residual is
+      now accounted for: second-order Born predicts the specular one
+      (\S\ref{sec:threed}).  What remains open is a reference at \emph{finite}
+      contrast and at every order --- an exact multiple-scattering solution for
+      the periodic array itself, which does not yet exist.
 
 \item \textbf{The \emph{iterative} multiple-scattering solver has never been
       compared on equal terms.}
@@ -5435,6 +5472,108 @@ polynomial in depth.  That is a device for this problem, not a method for
 interfaces, and whether the two coincide in any useful sense has not been
 established.
 
+\subsection{Tromp \& Snieder: the same imbedding, with the contrast
+linearised}\label{sec:trompsnieder}
+
+The thesis Introduction names Tromp \& Snieder among the invariant imbedding
+schemes behind the Riccati sweep (\S\ref{sec:onesided}).  Their paper
+\cite{tromp1989} is closer to \eqref{eq:riccatiR} than that citation suggests,
+and it differs from it in exactly one place --- the place \S\ref{sec:nonlinear}
+identified.
+
+\paragraph{Their construction.}  They take the first Born response of a thin
+homogeneous layer of width $\Delta z$ in a homogeneous background, per unit
+width (their eqs~2.12 and~2.15), add the layer to the base of a band by the
+reflection/transmission addition rule, and let $\Delta z\to0$.  The result, their
+eqs~3.6a--d, is the Riccati system for the band's $\bR$ and $\mathbf{T}$ from
+both sides, with $\mathbf{T}=\mathbf{I}$ and $\bR=\mathbf{0}$ at zero thickness.
+Structurally it is \eqref{eq:riccatiR}, marched in the other direction and in
+the interaction picture (the background phases carried in the coefficients
+rather than in $\Lambda$).  They call the equations \emph{exact}, on the ground
+that the $n$th Born term of the thin layer is $O(\Delta z^n)$, so that first
+Born is exact at $O(\Delta z)$.
+
+\paragraph{Where that fails.}  Their coefficients are linear in the density and
+stiffness perturbations.  $\dA$ is not linear in the stiffness, because the
+elimination inverted $\bC_{33}$, \eqref{eq:resum}.  The Born argument misses
+this because their Born series carries $\partial_z$ and $\partial_{z_0}$ of the
+plane-wave Green's tensor, and $\partial_z\partial_{z_0}G$ contains
+$\delta(z-z_0)$: for a stiffness perturbation the second Born term of the thin
+layer is $O(\Delta z)$, not $O(\Delta z^2)$.  Physically, normal traction is
+continuous across the layer, so the strain inside it is rescaled by
+$\mu/(\mu+\Delta\mu)$ or $(\lambda+2\mu)/(\lambda+2\mu+\Delta\lambda+2\Delta\mu)$
+at $O(1)$, whatever the width.  That is the same local field that the elimination of
+\S\ref{sec:nonlinear} sums exactly and that the thin layer's first Born
+response omits.
+
+\paragraph{The statement proved.}  Let $\dA^{(1)} =
+\partial_\varepsilon\,\dA(\varepsilon\,\Delta c,\varepsilon\,\Delta\rho)\big|_{\varepsilon=0}$
+be the linearisation of the contrast operator.  Then:
+\begin{enumerate}
+\item their thin-layer coefficients are \emph{exactly} the interaction-picture
+      blocks of $\mathbf{D}_z^{-1}\dA^{(1)}\mathbf{D}_z$, with
+      $\mathbf{t}_D = \bV_{dd}$, $\mathbf{r}_U = -\bV_{ud}$,
+      $\mathbf{t}_U = -\bV_{uu}$, $\mathbf{r}_D = \bV_{du}$.  This holds at every
+      slowness and for a general anisotropic perturbation;
+\item consequently their eqs~3.6 return, to integration precision, the
+      \emph{exact} response of a fictitious medium with system matrix
+      $\Aop + \dA^{(1)}$;
+\item $\partial^2_\varepsilon\dA = 0$ in the density direction and $\neq 0$ in
+      any stiffness direction, so the equations are exact for density contrast
+      and wrong at $O(\Delta c^2)$ otherwise.
+\end{enumerate}
+At normal incidence the fictitious medium is an ordinary one: the band with its
+moduli $M\in\{\lambda+2\mu,\ \mu\}$ replaced by the linearised compliance
+$M_{\text{eff}} = M^2/(M-\Delta M)$.  Their eq.~3.9, the transmitted phase of a
+smooth band, is linear in the contrast for the same reason.
+
+\paragraph{The measurement.}  A uniform band $100$\,m thick in the project's
+background at $10$\,Hz, three slownesses up to $1.5\times10^{-4}$\,s/m.  The
+Python gate \verb|gate_tromp_snieder_uniform_band.py| ($21/21$) integrates their
+system against the Kennett recursion; \verb|TrompSniederBornGenerator.wl|
+($45/45$) transcribes their coefficients term by term from the printed sign
+patterns, integrates eqs~3.6 at $32$ digits, and scores them against exact
+propagators $\exp(\Aop^{\text{tot}}H)$, so the two share neither the
+transcription nor the reference.  Their result (their reflection matrices
+are displacement-normalised and Kennett's are flux-normalised) is compared
+through similarity invariants:
+\begin{center}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+band & $R_{PP}$ & $R_{SS}$ & $R_{SH}$ & $R_{PS}R_{SP}$\\
+\midrule
+density $+40\%$            & \multicolumn{4}{c}{$\le 10^{-20}$ (Mathematica), $\le 3\times10^{-13}$ (Python)}\\
+project moderate & $4.18\times10^{-2}$ & $2.45\times10^{-2}$ & $2.51\times10^{-2}$ & $6.24\times10^{-2}$\\
+moduli $+20\%$             & $0.197$ & $0.299$ & $0.254$ & $0.553$\\
+moduli $-20\%$             & $0.186$ & $0.195$ & $0.167$ & $0.347$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Relative error of eqs~3.6 of \cite{tromp1989} against the exact
+band, at $p = 8\times10^{-5}$\,s/m; ``project moderate'' is $\Delta\lambda=2$, $\Delta\mu=1$\,GPa, $\Delta\rho=100$\,kg/m$^3$.  Over the three slownesses the moderate
+contrast gives $2.3$--$5.2\%$ in the diagonal channels; at $\pm20\%$ the
+$R_{PS}R_{SP}$ error reaches $1.63$ at $p=1.5\times10^{-4}$\,s/m.  The two
+implementations agree to $\le0.27\%$ of each entry, the rounding of the printed
+values.}
+\end{center}
+\noindent
+Stiffness-only bands as $\varepsilon\to0$ give a relative error proportional to
+$\varepsilon$ (log--log slope $1.03$--$1.07$): correct at Born order, as they
+should be.  Against $\Aop+\dA^{(1)}$ their result agrees to $\le10^{-20}$ in
+every case, so the error is entirely the linearisation and none of it is the
+imbedding.
+
+\paragraph{What this means here.}  The route is sound: a thin-layer response
+composed by the addition rule and taken to the limit is the Riccati equation,
+and \eqref{eq:riccatiR} is that equation.  What the thin layer must supply is
+its \emph{exact} $O(\Delta z)$ response, which is $\dA$ itself and not its Born
+approximation.  \eqref{eq:riccatiR} is driven by $\dA$, so it is untouched.  The
+ratios in the table of \S\ref{sec:nonlinear}, $0.957$ and $0.940$ at the
+moderate contrast, are precisely the per-unit-depth coefficients that
+\cite{tromp1989} get wrong.  The same point constrains any scheme that builds the
+depth generator from a thin slab of scatterers --- a single layer of cube
+voxels, say --- rather than from $\dA$: the slab's in-plane local field is
+$O(1)$ as $\Delta z\to0$ and must be carried, not dropped.
+
 %=====================================================================
 %=====================================================================
 \appendix
@@ -5512,7 +5651,7 @@ derived here carries an author--date reference at the point it is used.  The
 converse matters too --- a technique that is \emph{not} borrowed must not be
 dressed as though it were, and a name coined in this note is a label, not a
 citation.  Provenance, since it differs: \cite{mvwe} was read from the document
-itself; \cite{hisada1994}, \cite{hisada1995}, \cite{luco1983},
+itself; \cite{tromp1989} was read in full and checked against Crossref; \cite{hisada1994}, \cite{hisada1995}, \cite{luco1983},
 \cite{michalski1997}, \cite{haines2004}, \cite{hulme2004}, \cite{thomson2015a} and
 \cite{thomson2015b} were located by literature search; \cite{bellman1959},
 \cite{chapman1994}, \cite{haines1989}, \cite{hainesdehoop1996},
@@ -5672,8 +5811,13 @@ quoted from here without that check.
   stated results consulted.  The symmetry proved there is the continuum
   statement of \eqref{eq:latsymp} and \eqref{eq:symp3d}.
 
-\bibitem{tromp1988} Tromp, J. \& Snieder, R. (1988).  Cited via the thesis
-  Introduction for invariant embedding.
+\bibitem{tromp1989} Tromp, J. \& Snieder, R. (1989).  The reflection and
+  transmission of plane $P$- and $S$-waves by a continuously stratified band: a
+  new approach using invariant imbedding.  \emph{Geophysical Journal}
+  \textbf{96}(3), 447--456.  \texttt{doi:10.1111/j.1365-246X.1989.tb06006.x}.
+  Full text consulted; bibliographic fields checked against Crossref.  The
+  thesis Introduction cites it as 1988, the year of acceptance.  Tested in
+  \S\ref{sec:trompsnieder}.
 
 \bibitem{mvwe} Wapenaar, K. (2020).  Unified matrix--vector wave equation,
   reciprocity and representations.  arXiv:1801.07728v2 [physics.app-ph].
