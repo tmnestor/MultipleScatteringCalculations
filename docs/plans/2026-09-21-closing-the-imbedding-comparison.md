@@ -49,6 +49,19 @@
   The backscatter figure (odd 9×9 grid) was unaffected; crossover 0.237.
 - March gate 44/44, imbedding gate 19/19.  Both §22 figures now have producers
   (`--dump-angles`, `--dump-backscatter`).
+- **Task 2, small-contrast half — DONE by second-order Born** (`scripts/gate_born2_array_coupling.py`,
+  4/4).  Kernel derived in Mathematica and sympy (agree 1.7e-15; δ′/δ″ cancel,
+  one q-independent contact term).  Windowed lattice-sum minus continuum,
+  Q-independent to 6 figures, predicts departure/ε = 0.2880 − 0.0556i at 2.5
+  diameters; the march gives −0.0558 (imag, depth-converged) and real part
+  extrapolating to 0.280–0.290.  The residual is the array's double scattering.
+  **Still open:** a finite-contrast periodic reference (layer-KKR, option A);
+  and the isolated sphere's full Born-2 integral against Mie's ε² coefficient
+  (slow ~q^-1.4 tail, not needed for the difference).
+- **Mie T-matrix per order** (`mie_tmatrix_psv/sh`): a 2×2 interior-impedance
+  form was built and found NO more accurate than the direct 4×4 (whose 1e33
+  condition number is ill-scaling); kept the 4×4, with a 50-digit arbiter
+  (`Mathematica/MieTmatrixReference.wl`) and per-order tests.
 
 ---
 
