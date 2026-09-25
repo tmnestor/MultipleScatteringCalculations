@@ -1,0 +1,332 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape P--SV--SH Reciprocity}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+
+% --- Bibliography ---
+\usepackage[round,authoryear]{natbib}
+\bibliographystyle{plainnat}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros (house set) ---
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\bT}{\mathbf{T}}
+
+% --- New macros for this document ---
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bt}{\mathbf{t}}
+\newcommand{\bfv}{\mathbf{f}}
+\newcommand{\bsig}{\boldsymbol{\sigma}}
+\newcommand{\bL}{\mathbf{L}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bN}{\mathbf{N}}
+\newcommand{\xhat}{\hat{\mathbf{x}}}
+\newcommand{\dhat}{\hat{\mathbf{d}}}
+\newcommand{\phat}{\hat{\mathbf{p}}}
+\newcommand{\qhat}{\hat{\mathbf{q}}}
+\newcommand{\nhat}{\hat{\mathbf{n}}}
+\newcommand{\kin}{k_{\mathrm{in}}}
+\newcommand{\kout}{k_{\mathrm{out}}}
+\newcommand{\fout}{\bfv_{\mathrm{out}\leftarrow\mathrm{in}}}
+\newcommand{\fin}{\bfv_{\mathrm{in}\leftarrow\mathrm{out}}}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+\vspace*{1em}
+{\LARGE\bfseries P--SV--SH Reciprocity:\\[0.3em]
+Mode Conversion, Flux Normalisation and the T-Matrix Metric}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
+\end{center}
+
+\noindent\textbf{Status.} Explanatory note. The far-field relation
+\eqref{eq:ff-recip} is validated numerically for the P$\leftrightarrow$SV
+channel of the exact Mie sphere (Section~\ref{sec:mie-check}; Python only,
+no Mathematica cross-check yet). The flux normalisation
+\eqref{eq:flux-norm} and the T-matrix metric statement
+\eqref{eq:t-recip} remain \emph{unvalidated} in this repository.
+
+% =============================================================================
+\section{Origin: Betti--Rayleigh reciprocity}
+\label{sec:origin}
+% =============================================================================
+
+Let the medium be linear elastic with the major symmetry
+$c_{ijkl} = c_{klij}$. It may be anisotropic, heterogeneous or
+attenuating \citep{Betti1872,Rayleigh1873,Rayleigh1894,Achenbach2003}.
+For two time-harmonic states $A$ and $B$ in the same
+medium, with no sources inside a closed surface $S$,
+\begin{equation}
+  \oint_S \bigl( \bu^A \cdot \bt^B - \bu^B \cdot \bt^A \bigr)\,\dd S = 0,
+  \qquad \bt = \bsig \cdot \nhat .
+  \label{eq:betti}
+\end{equation}
+Two properties of \eqref{eq:betti} matter below.
+\begin{itemize}
+\item It is \textbf{bilinear}: there is no complex conjugate. It is
+  not an energy statement, so it survives attenuation.
+\item It is \textbf{antisymmetric} in $A \leftrightarrow B$, so it is a
+  symplectic form on displacement--traction pairs $(\bu, \bt)$.
+\end{itemize}
+The point-source form is the Green's-tensor symmetry
+\begin{equation}
+  G_{ij}(\bx, \bx') = G_{ji}(\bx', \bx),
+  \label{eq:green-sym}
+\end{equation}
+which swaps source with receiver and force component with receiver
+component \citep{KnopoffGangi1959}; see \citet[\S2.3]{AkiRichards2002}.
+
+% =============================================================================
+\section{Mode conversion breaks naive symmetry}
+\label{sec:naive}
+% =============================================================================
+
+For scalar waves the far-field amplitude obeys
+$f(\xhat; \dhat) = f(-\dhat; -\xhat)$. Elastic waves have two speeds,
+$\alpha$ (P) and $\beta$ (S), and the converted amplitudes are
+\emph{not} symmetric in displacement units.
+
+Write the scattered far field for a unit-amplitude incident plane wave
+of direction $\dhat$ and polarisation $\phat$ as
+$\fout\, e^{i\kout r}/r$. The far-field Green's tensor carries a
+mode-dependent factor $1/(4\pi\rho c^2)$ \citep[\S4.2]{AkiRichards2002}:
+\begin{equation}
+  \bG^{P} \sim \frac{\xhat\xhat}{4\pi\rho\alpha^2}\,\frac{e^{ik_P r}}{r},
+  \qquad
+  \bG^{S} \sim \frac{\bI - \xhat\xhat}{4\pi\rho\beta^2}\,\frac{e^{ik_S r}}{r}.
+  \label{eq:green-ff}
+\end{equation}
+Building each plane wave as the limit of a distant point force and
+applying \eqref{eq:green-sym} to the scattered part gives
+\begin{equation}
+  \kin^{2}\; \qhat \cdot \fout(\xhat; \dhat, \phat)
+  \;=\;
+  \kout^{2}\; \phat \cdot \fin(-\dhat; -\xhat, \qhat).
+  \label{eq:ff-recip}
+\end{equation}
+This is the elastic form of the reciprocity relation for scattering
+amplitudes \citep{PaoVaratharajulu1976,Varatharajulu1977}.
+Consequently:
+\begin{itemize}
+\item \textbf{P$\to$P and S$\to$S (including SV$\leftrightarrow$SH).}
+  Equal speeds on both sides, so \eqref{eq:ff-recip} is plain symmetry.
+  The only subtlety is the sign convention of the SV unit vector under
+  direction reversal.
+\item \textbf{P$\to$S versus S$\to$P.} These differ by
+  $(k_S/k_P)^2 = (\alpha/\beta)^2$, which is $3$ for a Poisson solid.
+\end{itemize}
+
+\subsection{Check against the exact Mie sphere}
+\label{sec:mie-check}
+
+For a sphere, rotational symmetry reduces \eqref{eq:ff-recip} to a
+statement about a single pair of Mie amplitudes. Take P incident along
+$+\hat{\mathbf{z}}$ and observe SV at polar angle $\theta$ in the
+$xz$-plane, projected on $\hat{\boldsymbol{\theta}}$; call this
+$f_{P\to SV}(\theta)$. The reverse experiment has S incident along
+$-\xhat(\theta)$ with polarisation $\hat{\boldsymbol{\theta}}$, and P observed
+along $-\hat{\mathbf{z}}$. A rotation about $\hat{\mathbf{y}}$ by
+$\pi-\theta$ carries it onto SV incident along $+\hat{\mathbf{z}}$ with
+polarisation $-\hat{\mathbf{x}}$, observed at $(\theta, \phi=\pi)$. The
+$\cos\phi$ dependence of the radial P field cancels the polarisation
+sign, and projecting the outgoing P wave along $-\hat{\mathbf{z}}$ onto
+$\hat{\mathbf{z}}$ leaves one minus sign:
+\begin{equation}
+  k_P^{2}\, f_{P\to SV}(\theta) \;=\; -\,k_S^{2}\, f_{SV\to P}(\theta),
+  \label{eq:mie-recip}
+\end{equation}
+where $f_{SV\to P}(\theta)$ is the radial P amplitude for an
+$\hat{\mathbf{x}}$-polarised SV wave incident along $+\hat{\mathbf{z}}$.
+
+The gate
+\begin{center}
+\texttt{scripts/gate\_mie\_psv\_reciprocity.py}
+\end{center}
+evaluates both sides using \texttt{compute\_elastic\_mie} and
+\texttt{mie\_far\_field}.
+The P- and SV-incident branches use different right-hand sides and
+different far-field assembly (the $m=0$ Legendre expansion versus the
+renormalised $m=1$ N-type expansion), so a normalisation fault in either
+branch would break \eqref{eq:mie-recip}. The background is
+$\alpha = 5$~km/s, $\beta = 3$~km/s, $\rho = 2.5$~g/cm$^3$, with
+$(\alpha/\beta)^2 = 2.78$. The gate covers $k_S a \in \{0.1, 0.5, 1.5,
+4.0\}$, 60 angles in $[0.05, \pi-0.05]$, and three contrasts:
+\emph{moderate} ($\Delta\lambda = +2$~GPa, $\Delta\mu = +1$~GPa,
+$\Delta\rho = +100$~kg/m$^3$), \emph{density only}
+($\Delta\rho = +250$~kg/m$^3$) and \emph{strong soft}
+($\Delta\lambda = -8$~GPa, $\Delta\mu = -10$~GPa,
+$\Delta\rho = -500$~kg/m$^3$).
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Contrast & $k_S a = 0.1$ & $0.5$ & $1.5$ & $4.0$ \\
+\midrule
+Moderate     & $9.3\times10^{-5}$ & $1.1\times10^{-5}$ & $2.8\times10^{-6}$ & $5.1\times10^{-6}$ \\
+Density only & $5.9\times10^{-5}$ & $5.1\times10^{-6}$ & $1.9\times10^{-6}$ & $3.2\times10^{-6}$ \\
+Strong soft  & $1.1\times10^{-4}$ & $1.4\times10^{-5}$ & $6.1\times10^{-6}$ & $5.6\times10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The table gives the maximum deviation over angle, normalised by
+the peak amplitude. The residual comes from \texttt{mie\_far\_field}
+evaluating the field at $r = 10^{6}a$ rather than at infinity, an
+$\mathcal{O}(n^2/kr)$ near-field remainder that is largest at low
+frequency. Two negative controls fail in every case, as they must. The
+unweighted scalar form $f_{P\to SV} = -f_{SV\to P}$ is off by exactly
+$(\alpha/\beta)^2 - 1 = 1.78$, and reversing the sign of
+\eqref{eq:mie-recip} gives an error of $2$.
+
+% =============================================================================
+\section{Flux normalisation restores symmetry}
+\label{sec:flux}
+% =============================================================================
+
+Normalise each amplitude so that its squared modulus is an energy flux.
+The incoming and outgoing spherical-wave amplitudes carry
+$\sqrt{\rho c}$, and the plane-wave expansion contributes $1/\kin$,
+giving
+\begin{equation}
+  \tilde{\bfv}_{\mathrm{out}\leftarrow\mathrm{in}}
+  = \frac{\kin^{3/2}}{\kout^{1/2}}\; \fout .
+  \label{eq:flux-norm}
+\end{equation}
+In these units the scattering matrix over
+$(\mathrm{P}, \mathrm{SV}, \mathrm{SH}) \times$ directions is
+\textbf{symmetric} under direction reversal,
+$\tilde{S} = \tilde{S}^{\mathsf T}$, and in the absence of attenuation it
+is also unitary \citep{VaratharajuluPao1976,Varatharajulu1977}.
+Reciprocity supplies the symmetry and energy
+conservation the unitarity. They are independent facts that share one
+normalisation.
+
+The layered-media analogue is given by \citet[Ch.~5]{AkiRichards2002}
+and \citet{Kennett1983}: the displacement
+coefficients satisfy $R_{PS} \neq R_{SP}$, whereas the
+energy-normalised coefficients, with a factor
+$\sqrt{\rho\, c \cos\theta}$ per wave, form a symmetric matrix.
+
+% =============================================================================
+\section{Decoupling of SH}
+\label{sec:sh}
+% =============================================================================
+
+In two-dimensional or laterally homogeneous geometries (plane layers,
+spheres) SH decouples from P--SV, and reciprocity splits into blocks:
+\begin{itemize}
+\item \textbf{SH block}: scalar with a single speed, so plainly symmetric;
+\item \textbf{P--SV block}: $2\times 2$. The P$\leftrightarrow$SV
+  off-diagonal terms need the weighting of \eqref{eq:flux-norm}.
+\end{itemize}
+For a sphere in the vector spherical-wave basis
+\citep{MorseFeshbach1953,BenMenahemSingh1981}:
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+Basis field & Character & Wave type & Coupling \\
+\midrule
+$\bL$ & longitudinal & P  & couples with $\bN$ \\
+$\bN$ & poloidal     & SV & couples with $\bL$ \\
+$\bM$ & toroidal     & SH & decoupled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Within each multipole order $n$, $\bL$ and $\bN$ form the
+P--SV block and $\bM$ stands alone.
+
+% =============================================================================
+\section{T-matrix form and the reciprocity metric}
+\label{sec:tmatrix}
+% =============================================================================
+
+In a basis of regular and outgoing fields, \eqref{eq:betti} becomes the
+matrix statement \citep{Waterman1976,Pao1978}
+\begin{equation}
+  \bT^{\mathsf T} W = W \bT ,
+  \label{eq:t-recip}
+\end{equation}
+where $W$ is the Gram matrix of the bilinear form
+$\oint (\bu^A\cdot\bt^B - \bu^B\cdot\bt^A)\,\dd S$ between regular and
+outgoing basis fields. That form is the symplectic $J$ acting on
+displacement--traction columns.
+
+\begin{itemize}
+\item With un-normalised $\bL/\bM/\bN$ columns, $W$ is diagonal with
+  mode-dependent entries ($k_P$ for $\bL$, $k_S$ for $\bM$ and $\bN$,
+  together with $\rho$ and $\mu$ factors). $\bT$ is then only
+  $W$-symmetric, not symmetric.
+\item Rescaling the columns by $W^{1/2}$ yields
+  $\tilde{\bT} = W^{1/2} \bT W^{-1/2}$ with
+  $\tilde{\bT} = \tilde{\bT}^{\mathsf T}$ exactly: the spherical-wave
+  counterpart of \eqref{eq:flux-norm}.
+\end{itemize}
+
+This is how two operators built with different column normalisations
+(T0 and G0 in the IntraPlane Foldy--Lax work) can each be reciprocal yet
+appear to disagree: each is symmetric only in its own metric.
+Evaluating $W$ from the explicit displacement--stress arrays with the
+plain symplectic $J$ checks both against the same form, so any residual
+mismatch is a genuine error rather than a normalisation artefact.
+
+\paragraph{Numerical check.} Build $W$ from the explicit arrays at a
+test radius and confirm, separately for the P--SV and SH blocks, that
+\begin{equation}
+  \frac{\lVert \bT^{\mathsf T} W - W \bT \rVert}{\lVert W \bT \rVert}
+  \approx \varepsilon_{\mathrm{mach}} .
+  \label{eq:check}
+\end{equation}
+
+\bibliography{psvsh_reciprocity}
+
+\end{document}

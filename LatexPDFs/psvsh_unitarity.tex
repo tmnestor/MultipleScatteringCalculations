@@ -1,0 +1,407 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+% --- Microtypography (after all font setup) ---
+\usepackage{microtype}
+
+% --- Colors & page layout ---
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape P--SV--SH Unitarity}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Section numbering ---
+\setcounter{secnumdepth}{3}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Captions ---
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+% --- Spacing ---
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\setlength{\emergencystretch}{3em}
+
+% --- Bibliography ---
+\usepackage[round,authoryear]{natbib}
+\bibliographystyle{plainnat}
+
+% --- Hyperlinks (last before macros) ---
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros (house set) ---
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\bT}{\mathbf{T}}
+
+% --- New macros for this document ---
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bR}{\mathbf{R}}
+\newcommand{\ba}{\mathbf{a}}
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\RD}{\bR_{D}}
+\newcommand{\RU}{\bR_{U}}
+\newcommand{\TD}{\bT_{D}}
+\newcommand{\TU}{\bT_{U}}
+\newcommand{\etas}{\eta_{\beta}}
+\newcommand{\kpar}{\mathbf{k}_{\parallel}}
+\newcommand{\herm}{^{\dagger}}
+
+\begin{document}
+
+% --- Title block ---
+\thispagestyle{plain}
+\begin{center}
+\vspace*{1em}
+{\LARGE\bfseries P--SV--SH Unitarity:\\[0.3em]
+Energy Flux, Open Channels and the Kennett Recursion}\\[1.8em]
+{\large T.\,M.\ Nestor}\\[0.5em]
+{\itshape Research School of Earth Sciences, Australian National University}\\[2em]
+\end{center}
+
+\noindent\textbf{Status.} The interface results of \S\ref{sec:numerics}
+are validated by two independent implementations that agree to
+$10^{-15}$: the Aki--Richards closed forms in \texttt{kennett\_layers.py}
+(Python) and displacement--traction continuity in the thesis
+energy-normalised eigenbasis, \texttt{InterfaceUnitarity.wl}
+(Mathematica, 50 digits). The comparison is run by
+\texttt{scripts/gate\_interface\_unitarity.py}. The periodic-plane
+statement of \S\ref{sec:periodic} is the acceptance criterion of the
+intra-plane energy-balance gate and is not re-derived here.
+
+% =============================================================================
+\section{The scattering matrix at fixed horizontal slowness}
+\label{sec:smatrix}
+% =============================================================================
+
+A laterally homogeneous layer, or a stack of layers, preserves the
+horizontal slowness $p$. At each $p$ and frequency $\omega$ it therefore
+acts as a linear map from incoming to outgoing plane waves
+\citep{Kennett1983,KennettKerry1979}. Write $\ba$ for the incoming
+amplitudes (downgoing above, upgoing below) and $\bb$ for the outgoing
+ones (upgoing above, downgoing below). Then
+\begin{equation}
+  \bb = \bS\,\ba,
+  \qquad
+  \bS =
+  \begin{pmatrix}
+    \RD & \TU \\
+    \TD & \RU
+  \end{pmatrix}.
+  \label{eq:smatrix}
+\end{equation}
+In an isotropic medium the in-plane (P--SV) and anti-plane (SH) motions
+decouple \citep[ch.~5]{AkiRichards2002}, so $\bS$ is block diagonal
+with two independent pieces.
+\begin{itemize}
+\item \textbf{P--SV}: channels $\{\mathrm{P},\mathrm{SV}\}$ on each
+  side. $\RD, \RU, \TD, \TU$ are $2\times2$ and $\bS$ is $4\times4$.
+\item \textbf{SH}: one channel on each side. The blocks are scalars
+  and $\bS$ is $2\times2$.
+\end{itemize}
+The unitarity statement
+\begin{equation}
+  \bS\herm \bS = \bI
+  \label{eq:unitary}
+\end{equation}
+is therefore two statements, one for each block.
+
+% =============================================================================
+\section{Why flux normalisation is required}
+\label{sec:flux}
+% =============================================================================
+
+Equation \eqref{eq:unitary} expresses energy conservation only if
+$|a_k|^2$ \emph{is} the vertical energy flux carried by channel $k$.
+For a plane wave of displacement amplitude $A$ the time-averaged
+vertical flux is
+\begin{equation}
+  \langle F_z \rangle =
+  \tfrac12 \omega^2 \, \rho \, v^2 \, \eta_v \, |A|^2,
+  \qquad
+  \eta_v = \sqrt{v^{-2} - p^2},
+  \label{eq:flux}
+\end{equation}
+with $v = \alpha$ for P and $v = \beta$ for SV and SH
+\citep[ch.~5]{AkiRichards2002}. For SH the prefactor is the vertical
+impedance $Z = \rho\beta^2\etas$.
+
+Displacement coefficients therefore obey an energy balance with
+channel weights, for example
+\begin{equation}
+  1 = |R_{PP}|^2
+    + \frac{\rho_1\beta_1^2\eta_{\beta1}}{\rho_1\alpha_1^2\eta_{\alpha1}}|R_{SP}|^2
+    + \frac{\rho_2\alpha_2^2\eta_{\alpha2}}{\rho_1\alpha_1^2\eta_{\alpha1}}|T_{PP}|^2
+    + \frac{\rho_2\beta_2^2\eta_{\beta2}}{\rho_1\alpha_1^2\eta_{\alpha1}}|T_{SP}|^2 .
+  \label{eq:weighted}
+\end{equation}
+Rescaling each amplitude by the square root of its flux weight removes
+the weights. The rescaled coefficients are the \emph{energy-normalised}
+or \emph{modified} coefficients
+\citep{Frasier1970,KennettKerry1979,Chapman2004}. In these variables,
+\begin{equation}
+  \sum_k |b_k|^2 = \sum_k |a_k|^2 \quad \text{for all } \ba
+  \quad\Longleftrightarrow\quad
+  \bS\herm\bS = \bI .
+  \label{eq:equiv}
+\end{equation}
+The implementation uses $\sqrt{\rho\eta}$ factors for P--SV, with the
+velocity factors carried by Kennett's amplitude convention, and
+$\sqrt{Z}$ for SH.
+
+\paragraph{SH example.} At a welded interface the modified SH
+coefficients are
+\begin{equation}
+  R = \frac{Z_1 - Z_2}{Z_1 + Z_2}, \qquad
+  T = \frac{2\sqrt{Z_1 Z_2}}{Z_1 + Z_2}, \qquad
+  \bS_{\mathrm{SH}} =
+  \begin{pmatrix} R & T \\ T & -R \end{pmatrix}.
+  \label{eq:sh}
+\end{equation}
+For real $Z_1, Z_2$, $R^2 + T^2 = 1$ and $RT - TR = 0$, so
+$\bS_{\mathrm{SH}}$ is real orthogonal and hence unitary.
+
+% =============================================================================
+\section{Content of the identity}
+\label{sec:content}
+% =============================================================================
+
+Equation \eqref{eq:unitary} says that the columns of $\bS$ are
+orthonormal. The two parts constrain different things.
+
+\begin{itemize}
+\item \textbf{Unit column norms: energy.} For an incident downgoing P
+  wave, $|R_{PP}|^2 + |R_{SP}|^2 + |T_{PP}|^2 + |T_{SP}|^2 = 1$. This is
+  \eqref{eq:weighted} with the weights absorbed.
+\item \textbf{Orthogonal columns: phase.} For distinct inputs $j \neq
+  l$, $\sum_k S_{kj}^{*} S_{kl} = 0$. Two different incident waves
+  produce outgoing fields with no net interference flux. A model can
+  have correct energies and still fail this condition if its phases are
+  wrong.
+\end{itemize}
+
+% =============================================================================
+\section{Conditions for unitarity}
+\label{sec:conditions}
+% =============================================================================
+
+\begin{table}[h]
+\centering
+\caption{Conditions under which \eqref{eq:unitary} holds, and what
+happens when each one fails.}
+\label{tab:conditions}
+\begin{tabular}{>{\raggedright}p{0.28\textwidth} >{\raggedright\arraybackslash}p{0.62\textwidth}}
+\toprule
+Condition & If violated \\
+\midrule
+Lossless media (real $\alpha$, $\beta$)
+  & $\eta$ is complex, $\sqrt{\rho\eta}$ is no longer a flux
+    normalisation, and \eqref{eq:unitary} carries no energy meaning.
+    For a thick lossy layer propagation dominates and
+    $\bS\herm\bS \preceq \bI$ approximately, the defect being absorbed
+    energy. \\[0.4em]
+Propagating channels only
+  & Beyond a critical slowness, e.g.\ $p > 1/\alpha_2$, the channel is
+    evanescent and carries no flux on its own. Remove it; the
+    restriction of $\bS$ to open channels is unitary. \\[0.4em]
+No open diffraction orders (periodic plane)
+  & Energy leaves through channels with $\kpar + \mathbf{G} \neq
+    \kpar$. The specular $\bS$ is sub-unitary even without loss. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Evanescent channels.} An evanescent pair carries flux only
+through the interference of its up- and downgoing parts. If such a
+channel is kept, energy conservation is no longer $\bS\herm\bS = \bI$
+but a statement in a non-diagonal flux metric
+\citep{Newton1982}. Restricting to open channels avoids this.
+Near the critical slowness $\eta \to 0$, so the normalisation factor
+$\sqrt{\rho\eta}$ vanishes and the coefficients are poorly conditioned.
+
+% =============================================================================
+\section{Periodic planes: why specular unitarity is legitimate}
+\label{sec:periodic}
+% =============================================================================
+
+A plane of cubic voxels with lattice pitch $a_L$ is laterally periodic,
+not laterally invariant. Horizontal wavenumber is conserved only modulo
+reciprocal-lattice vectors $\mathbf{G}$, and the unitary scattering
+matrix lives in one Bloch sector. It includes \emph{every} open
+channel $(\text{mode}, \pm, \mathbf{G})$ with real vertical
+wavenumber
+\begin{equation}
+  k_z(\mathbf{G}) = \sqrt{\kappa^2 - |\kpar + \mathbf{G}|^2},
+  \qquad \kappa \in \{\kappa_P, \kappa_S\}
+  \label{eq:kz}
+\end{equation}
+\citep{Rayleigh1907,Petit1980}. When the plane is sub-wavelength, every
+$\mathbf{G} \neq 0$ order is evanescent. Only the specular order is
+open, and the $4\times4$ P--SV and $2\times2$ SH specular matrices are
+unitary by themselves. The plane then acts as an effective laterally
+homogeneous layer, which is the premise of an intra-plane Foldy--Lax
+reduction to $R/T(p)$. If an order opens, specular unitarity is false,
+and $\bI - \bS\herm\bS$ measures diffracted energy rather than error.
+A numerical gate must refuse to run in that regime, not report a
+defect.
+
+% =============================================================================
+\section{Unitarity versus reciprocity}
+\label{sec:reciprocity}
+% =============================================================================
+
+These are independent properties.
+\begin{itemize}
+\item \textbf{Reciprocity} follows from the Betti--Rayleigh theorem.
+  With Kennett's phase convention for the modified coefficients it
+  makes $\bS$ symmetric: $\bS = \bS^{\mathsf T}$, i.e.\ $\RD =
+  \RD^{\mathsf T}$, $\RU = \RU^{\mathsf T}$ and $\TU = \TD^{\mathsf T}$
+  \citep{KennettKerry1979,VaratharajuluPao1976}. It is bilinear,
+  contains no complex conjugate, and \emph{survives attenuation}.
+  Its matrix form depends on the per-channel phase convention. In the
+  thesis eigenbasis the P--SV block obeys instead
+  \begin{equation}
+    \bS^{\mathsf T} = \hat\Sigma\,\bS\,\hat\Sigma,\qquad
+    \hat\Sigma = \mathrm{diag}(1,-1,1,-1),
+    \label{eq:recip-thesis}
+  \end{equation}
+  i.e.\ $\RD^{\mathsf T} = \Sigma\RD\Sigma$, $\RU^{\mathsf T} =
+  \Sigma\RU\Sigma$ and $\TU = \Sigma\TD^{\mathsf T}\Sigma$ with $\Sigma
+  = \mathrm{diag}(1,-1)$, while the SH block is symmetric. Both hold to
+  50 digits at an interface, with and without attenuation, and plain
+  $\bS = \bS^{\mathsf T}$ fails there by $0.31$.
+\item \textbf{Unitarity} is sesquilinear and holds \emph{only in the
+  absence of loss}.
+\end{itemize}
+A lossless reciprocal system satisfies both. In the Kennett convention
+$\bS^{-1} = \bS\herm = \bS^{*}$, which is the time-reversal statement that the conjugate
+outgoing field retraces the incident one \citep{Waterman1976}. Because
+the two properties constrain different combinations of entries, a
+numerical check should test both.
+
+% =============================================================================
+\section{Unitarity of the Kennett recursion}
+\label{sec:recursion}
+% =============================================================================
+
+The reflectivity recursion combines layer scattering matrices with the
+Redheffer star product \citep{Redheffer1961,KennettKerry1979}. For two
+elements $\bS^{(1)}$ above $\bS^{(2)}$,
+\begin{equation}
+  \RD^{(12)} = \RD^{(1)} + \TU^{(1)}\RD^{(2)}
+    \bigl(\bI - \RU^{(1)}\RD^{(2)}\bigr)^{-1}\TD^{(1)},
+  \label{eq:star}
+\end{equation}
+together with the analogous expressions for $\TD^{(12)}$, $\RU^{(12)}$
+and $\TU^{(12)}$. The composite is the scattering matrix of the cascade.
+Since each element conserves flux, the cascade does too, so the star
+product of unitary matrices is unitary \citep{Pozar2012}. With modified
+coefficients a lossless stack therefore remains unitary at every step,
+and $\lVert \bS\herm\bS - \bI \rVert$ directly measures accumulated
+numerical error. Displacement coefficients would require the flux
+weights of \eqref{eq:weighted} to be carried through every step.
+
+% =============================================================================
+\section{Numerical check}
+\label{sec:numerics}
+% =============================================================================
+
+The interface coefficients were evaluated for
+$(\alpha, \beta, \rho)_1 = (3.0, 1.7, 2.3)$ and
+$(\alpha, \beta, \rho)_2 = (4.2, 2.4, 2.7)$, in km/s and g/cm$^3$.
+Attenuation uses the complex slowness
+\begin{equation}
+  s = \frac{1}{v}\,\frac{(2Q)^2 + \mathrm{i}\,2Q}{1 + (2Q)^2},
+  \qquad \operatorname{Im} s > 0,
+  \label{eq:qslow}
+\end{equation}
+with the branch $\operatorname{Re}\eta > 0$, $\operatorname{Im}\eta >
+0$. The column $\lVert\cdot\rVert_{\max}$ reports the largest entry of
+the residual.
+
+\paragraph{Two independent routes.}
+\begin{itemize}
+\item \textbf{Python}, \texttt{kennett\_layers.py}: the Aki--Richards
+  closed forms with $\sqrt{\rho\eta}$ and $\sqrt{Z}$ normalisation,
+  in double precision.
+\item \textbf{Mathematica}, \texttt{InterfaceUnitarity.wl}: continuity
+  of the displacement--traction vector across $z = 0$ in the thesis
+  energy-normalised eigenbasis $D_z$ (Nestor 1996, \S3.1), at 50 digits.
+  With $\bb = D_1(\mathbf{d}_1;\mathbf{u}_1) = D_2(\mathbf{d}_2;\mathbf{u}_2)$
+  and $Q = D_1^{-1}D_2$ in $3\times3$ blocks,
+  \begin{equation}
+    \TD = Q_{11}^{-1},\quad \RD = Q_{21}\TD,\quad \RU = -\TD Q_{12},\quad
+    \TU = Q_{22} - Q_{21}\TD Q_{12}.
+    \label{eq:qblocks}
+  \end{equation}
+\end{itemize}
+The two share no code and no algebra. Both are flux-normalised but use
+different per-channel phase conventions, so they are compared through
+quantities invariant under unit-modulus rephasing: the magnitudes
+$|S_{ij}|$ and the eigenvalues of $\bS\herm\bS$. As a negative control
+the Python $\bS$ is converted back to displacement-basis coefficients,
+$W^{-1/2}\bS W^{1/2}$ with $W = \rho v^2\eta$ from \eqref{eq:flux}. The
+comparison must then fail, and it does, by $0.55$ to $1.4$ in every
+case.
+
+\begin{table}[h]
+\centering
+\caption{Unitarity residuals of the interface $\bS$ from the
+Mathematica route, and its agreement with the Python route. The
+$p = 0.30$ rows exceed $1/\alpha_2 \approx 0.238$, so P in medium 2 is
+evanescent. ``0'' means zero to 50-digit working precision.}
+\label{tab:numerics}
+\small
+\begin{tabular}{l l r}
+\toprule
+Case & Quantity & Value \\
+\midrule
+Lossless, $p \in \{0, 0.1, 0.2\}$ & $\lVert\bS\herm\bS - \bI\rVert_{\max}$, P--SV and SH & $0$ \\
+Lossless, $p = 0.30$, all 4 channels & $\lVert\bS\herm\bS - \bI\rVert_{\max}$, P--SV & $1.56$ \\
+Lossless, $p = 0.30$, 3 open channels & $\lVert\bS_r\herm\bS_r - \bI\rVert_{\max}$ & $0$ \\
+Lossless, $p = 0.30$, SH & $\lVert\bS\herm\bS - \bI\rVert_{\max}$ & $0$ \\
+$Q_P = 50$, $Q_S = 30$, $p = 0.1$ & eig$(\bS\herm\bS)$, P--SV & $0.9892$ to $1.0109$ \\
+ & eig$(\bS\herm\bS)$, SH & $0.99949$, $1.00051$ \\
+$Q_P = 20$, $Q_S = 10$, $p = 0.1$ & eig$(\bS\herm\bS)$, P--SV & $0.9666$ to $1.0346$ \\
+ & eig$(\bS\herm\bS)$, SH & $0.99848$, $1.00152$ \\
+\midrule
+All six cases & Python vs Mathematica, $|S_{ij}|$, eig$(\bS\herm\bS)$ & $\le 1.0\times10^{-15}$ \\
+All six cases & Displacement-basis control & $\ge 0.55$ \\
+Lossy, Kennett basis & $\lVert\bS - \bS^{\mathsf T}\rVert_{\max}$ & $0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The lossy rows show the point of \S\ref{sec:reciprocity}. Eigenvalues
+of $\bS\herm\bS$ fall on \emph{both} sides of unity, and the spread
+grows as $Q$ falls, so the lossy interface matrix is not a contraction
+and \eqref{eq:unitary} has no energy interpretation there. Reciprocity
+still holds exactly.
+
+\bibliography{psvsh_unitarity}
+
+\end{document}
