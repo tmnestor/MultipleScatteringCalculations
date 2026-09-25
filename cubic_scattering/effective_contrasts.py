@@ -112,7 +112,7 @@ G0_CUBE = (4.0 / 3.0) * np.log(70226 + 40545 * np.sqrt(3.0)) - 2.0 * np.pi
 
 
 def _compute_Gamma0_analytical(
-    omega: float,
+    omega: complex,
     a: float,
     alpha: float,
     beta: float,
@@ -164,7 +164,7 @@ def _compute_Gamma0_analytical(
 
 
 def _compute_phi_diagonal(
-    omega: float, alpha: float, beta: float, rho: float, n_taylor: int = N_TAYLOR
+    omega: complex, alpha: float, beta: float, rho: float, n_taylor: int = N_TAYLOR
 ) -> np.ndarray:
     """Diagonal radiating-Green-tensor coefficients φ_n^diag (density channel).
 
@@ -291,7 +291,7 @@ def _modulus_radiation_reaction_cubic(
 
 
 def _compute_taylor_coefficients(
-    omega: float, alpha: float, beta: float, rho: float, n_taylor: int = N_TAYLOR
+    omega: complex, alpha: float, beta: float, rho: float, n_taylor: int = N_TAYLOR
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute the Taylor coefficients φ_n and ψ_n.
@@ -423,7 +423,7 @@ def _static_eshelby_ABC(
 
 
 def _compute_ABC_polynomial(
-    omega: float,
+    omega: complex,
     a: float,
     alpha: float,
     beta: float,
@@ -550,7 +550,7 @@ def _compute_T123(
 
 
 def _compute_amplification_factors(
-    T1c: complex, T2c: complex, T3c: complex, Gamma0: complex, omega: float, Drho: float
+    T1c: complex, T2c: complex, T3c: complex, Gamma0: complex, omega: complex, Drho: float
 ) -> tuple[complex, complex, complex, complex]:
     """
     Four self-consistent amplification factors (Eqs 42-45).
@@ -819,7 +819,7 @@ def form_factor_c4(
 
 
 def compute_cube_tmatrix(
-    omega: float,
+    omega: complex,
     a: float,
     ref: ReferenceMedium,
     contrast: MaterialContrast,
@@ -836,8 +836,9 @@ def compute_cube_tmatrix(
 
     Parameters
     ----------
-    omega : float
-        Angular frequency (rad/s).
+    omega : complex
+        Angular frequency (rad/s). May be complex (damped), as the sweep
+        solvers and their gates use.
     a : float
         Cube half-width (m). Cube extends from [-a, a]^3.
     ref : ReferenceMedium
