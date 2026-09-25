@@ -498,6 +498,21 @@ reverberation converges at $k_r p = 10$ on about $6.6\times10^4$ --- a factor of
 resulting build costs $2.1$~h at $16^3$, once, outside the Krylov loop.
 
 \medskip\noindent
+\textbf{Correction, 26 September 2026: the $k_r p = 10$ rule holds only far from a contrast.} It
+was measured on one plane pair in a single medium, with the nearest interface $2.5$ pitches away.
+\texttt{scripts/measure\_stack\_table\_cross\_material.py} places planes half a pitch from a fast
+slab, using half-pitch sublayers because a plane may not sit on a material jump. Against the
+operator's own scale, $k_r p = 10$ is then off by up to $25\%$. That happens in cross-material
+blocks, and \emph{also} in the reverberation (diagonal) block of a plane near the contrast.
+$k_r p = 20$ is the first rule to converge (${\le}3\times10^{-4}$). A control with no slab is exact
+at $k_r p = 10$, and halving the node spacing moves nothing, so this is truncation. Subtracting the
+receiver-plane whole-space kernel leaves more than reverberation once a contrast is near. The
+cutoff appears to scale with the distance to the nearest contrast rather than with the pitch
+(consistent with the measurement, not proven). Build cost goes as $n_{\mathrm{axis}}^2$, so
+$k_r p = 20$ at fixed spacing costs four times the $2.1$~h above. The adjoint gate A1b found the
+same defect in the layered incident field (note~IV).
+
+\medskip\noindent
 \textbf{The $(z,x)$ closed-form $y$-integral.} The two architectures meet exactly, through the
 $y$-integral, and it is worth being precise because it is often stated as though 2\textonehalf-D
 required a propagator of its own. It does not. For a $y$-invariant model every voxel is a line of
