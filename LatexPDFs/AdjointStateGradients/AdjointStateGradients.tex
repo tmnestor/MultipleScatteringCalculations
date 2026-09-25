@@ -1,0 +1,834 @@
+% !TEX program = lualatex
+%==============================================================================
+%  Adjoint-State Gradients on the Stratified Voxel Grid.
+%  Waveform-inversion gradients through the Foldy--Lax solve, and their
+%  Dietrich--Kormendi limit.
+%
+%  Self-contained LuaLaTeX source. Compile with:
+%      latexmk -lualatex AdjointStateGradients.tex
+%==============================================================================
+\documentclass[11pt,a4paper]{article}
+
+% --- LuaLaTeX font handling -------------------------------------------------
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+
+% --- Mathematics ------------------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
+% --- Layout and typography --------------------------------------------------
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% --- Hyperlinks -------------------------------------------------------------
+\usepackage[colorlinks=true,
+            linkcolor=blue!55!black,
+            citecolor=blue!55!black,
+            urlcolor=blue!55!black]{hyperref}
+\hypersetup{
+  pdftitle={Adjoint-State Gradients on the Stratified Voxel Grid},
+  pdfauthor={Tod Nestor}
+}
+% Let long code paths break after underscores and dots.
+\makeatletter
+\g@addto@macro\UrlBreaks{\do\_\do\.}
+\makeatother
+
+% --- Macros -----------------------------------------------------------------
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\rd}{\mathrm{d}}
+\newcommand{\Tz}{T_0}
+\newcommand{\Gz}{G_0}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bR}{\mathbf{R}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\T}{\mathsf{T}}
+\newcommand{\unval}{\textcolor{red!60!black}{\textbf{unvalidated}}}
+\newcommand{\meas}{\textcolor{green!40!black}{\textbf{measured}}}
+
+% Evidence files cited in this note.  Plain names, for searching:
+% gate_t0_reciprocity  gate_9x9_source_convention  gate_sweep_dressed_equivalence
+% gate_sweep_rung5_gmres  gate_dg0_absolute_magnitude  composed_matvec
+\newcommand{\gtz}{\nolinkurl{g:t0_reciprocity}}
+
+\title{Adjoint-State Gradients on the Stratified Voxel Grid\\[4pt]
+\large Waveform-inversion gradients through the Foldy--Lax solve,\\
+and their Dietrich--Kormendi limit}
+\author{Tod Nestor}
+\date{25 September 2026 \quad(design note; see \S\ref{sec:status} for what is validated)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The two-potential formulation of this programme --- a depth-stratified reference solved exactly,
+plus a lateral contrast of cubic voxels summed by a Foldy--Lax solve carried by the reference
+Green's tensor --- is the natural forward model for waveform inversion. Its first-order term
+\emph{is} the Dietrich--Kormendi (1990) Born perturbation of the plane-wave reflectivity; the full
+resolvent is its multiple-scattering generalisation. This note derives the adjoint-state gradient
+of a waveform misfit with respect to every voxel's contrast. The gradient costs one extra Krylov
+solve per source, frequency and transverse wavenumber, independent of the number of voxels, and
+the adjoint system is the \emph{forward} system at $-k_y$, conjugated by $\mathbf{W}_{\pm} = \mathbf{I}_{\pm}\bW$,
+the Voigt weight times a displacement--strain parity --- the nine-component form of the thesis
+identity $\mathcal{H}^\dagger(k_y) = \mathcal{H}(-k_y)$. That identity requires matching
+reciprocity laws of both $\Gz$ and $\Tz$, and both are measured here. The $\Gz$ law holds on the
+assembled sweep operator to $10^{-13}$ or better, in a whole space and in a stratified
+background, and the Foldy--Lax identity to $10^{-16}$ (gate A1). The $\Tz$ law is exact for the
+Rayleigh cube carried by the sweep solver, and \emph{failed} by the resonance composite, which is
+incidence-dependent and must not be used as it stands. A1 also corrected this note's first draft,
+which stated the law with $\bW$ alone and the Foldy--Lax operator in the wrong order. The gradient
+is implemented (\nolinkurl{sweep_gradient.py}) and passes a six-rung validation ladder
+(\S\ref{sec:gates}). That covers the receiver transpose and the $\Tz$ derivative (complex step is
+invalid, since $\Tz$ is not holomorphic in its contrast), an absolute check of the Born limit
+against the exact thin-layer reflection, a dot-product test, and a Taylor test against the
+nonlinear misfit. The last two reach spectral radius $0.74$--$0.80$.
+\end{abstract}
+
+\bigskip
+\noindent\textbf{Companion series.}\enspace{\small\itshape One of a companion series on elastic
+multiple scattering from cubic heterogeneities on a depth-stratified background, the T-matrix
+programme $T=T_0(I-G_0T_0)^{-1}$: \textbf{(I)}~the stratified inter-site propagator
+(\texttt{EwaldIntraPlanePropagator}); \textbf{(II)}~the contrast-source volume integral equation
+and the seismic grid T-matrix lineage (\texttt{ContrastSourceVIE}); \textbf{(III)}~the directional
+partial-wave sweep matvec and the Krylov multiple-scattering solve
+(\texttt{DirectionalSweepSolver}); \textbf{(IV)}~adjoint-state gradients through that solve, for
+waveform inversion (\texttt{AdjointStateGradients}). This is note~(IV).}
+
+\tableofcontents
+\bigskip
+
+%==============================================================================
+\section{What already exists}\label{sec:exists}
+%==============================================================================
+
+Nothing below is new machinery until \S\ref{sec:voxgrad}. The inversion problem sits on four
+things this programme and its sibling repository have already built, and one thing the thesis
+already proved.
+
+\begin{center}
+\small
+\begin{tabular}{@{}L{0.30\textwidth}L{0.34\textwidth}L{0.28\textwidth}@{}}
+\toprule
+Object & Where & Validated to \\
+\midrule
+Forward operator $(\bI-\Gz\Tz)$, 2\textonehalf-D, stratified $\Gz$
+  & note (III); \texttt{sweep\_solver}, \texttt{directional\_sweeps}
+  & GMRES $=$ LU $=$ Neumann $1.2\times10^{-12}$; $\Delta\Gz$ vs Kennett $2\times10^{-10}$ \\
+Forward operator, 3-D
+  & note (III) \S``three-dimensional case'': real-space tables, reverberation spectral
+  & designed and costed ($2.1$\,h build at $16^3$); not gated end to end \\
+Composed $\mathsf{P}^z+\mathsf{P}^x$ on the slab kernel
+  & \texttt{scripts/composed\_matvec.py}
+  & \emph{blocked}: GATE 1 fails, lattice aliasing. Not needed here \\
+Adjoint of the Foldy--Lax operator
+  & thesis \texttt{VariationalSum.tex}, Eqs.~\texttt{sym}, \texttt{HsymDef}, \texttt{Htdef}
+  & proved, in the thesis's own representation \\
+1-D Fréchet derivatives, $=$ Dietrich--Kormendi
+  & \nolinkurl{SeismicInversion/latex/frechet_derivatives.tex} \S``Equivalence to D\&K''
+  & AD vs tangent-linear $<10^{-10}$; vs finite differences $<10^{-5}$ \\
+1-D Levenberg--Marquardt, Hessian hierarchy
+  & same, \S\S``Hessian'', ``Global Matrix Method'', ``LM inversion''
+  & gated in \texttt{Kennett\_Reflectivity}, \texttt{GlobalMatrix} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Two consequences shape the rest of this note. First, the adjoint is built on the
+\emph{sweep} operator of note (III), not on the composed slab matvec, whose blocker is a
+representation problem the sweeps do not have. Second, the reference-layer derivatives are a
+solved problem in one dimension; what is missing is the gradient with respect to the
+\emph{voxel} contrasts, through the multiple-scattering solve. That is the subject here.
+
+%==============================================================================
+\section{Forward model and misfit}\label{sec:forward}
+%==============================================================================
+
+Fix a source $s$, frequency $\omega$ and, in 2\textonehalf-D, a transverse wavenumber node
+$k_y$. The nine-component exciting field $\psi$ on the voxel grid solves
+\begin{equation}\label{eq:fl}
+  (\bI - \Gz\Tz)\,\psi = \psi^{\mathrm{inc}},
+\end{equation}
+with $\Tz = \operatorname{blockdiag}_i \Tz^{(i)}(m_i)$ the per-voxel cube T-matrices and
+$m_i = (\Delta\lambda_i,\Delta\mu_i,\Delta\rho_i)$ the contrast of voxel $i$ from the local
+reference. The data are the reference response plus the field radiated by the contrast sources
+$\tau = \Tz\psi$,
+\begin{equation}\label{eq:data}
+  d = d^{\mathrm{ref}} + \bR\,\Tz\,\psi ,
+\end{equation}
+where $\bR$ carries the stratified Green's tensor from each voxel to the receivers (the
+$\mathcal{P}^{z,R}_{s}$ of the thesis \texttt{LSstrat}). With residual $r = d - d^{\mathrm{obs}}$,
+\begin{equation}\label{eq:misfit}
+  \mathsf{M} = \tfrac12 \sum_{s,\omega,k_y} w_{k_y}\, r^{\mathsf H} r .
+\end{equation}
+Moduli are complex (constant-$Q$), so every adjoint below is a \emph{transpose}, never a
+Hermitian conjugate: the operators are complex-symmetric in a weighted sense, not Hermitian. The
+only conjugate in the problem is the one on the residual.
+
+%==============================================================================
+\section{The voxel gradient}\label{sec:voxgrad}
+%==============================================================================
+
+Perturb $\Tz\to\Tz+\delta\Tz$. From \eqref{eq:fl},
+$\delta\psi = (\bI-\Gz\Tz)^{-1}\Gz\,\delta\Tz\,\psi$, and so
+\begin{equation}
+  \delta d = \bR\bigl[\bI + \Tz(\bI-\Gz\Tz)^{-1}\Gz\bigr]\delta\Tz\,\psi
+           = \bR\,(\bI-\Tz\Gz)^{-1}\,\delta\Tz\,\psi ,
+\end{equation}
+by the push-through identity $\bI + A(\bI-BA)^{-1}B = (\bI-AB)^{-1}$. Define the adjoint field
+$\tilde\psi$ by
+\begin{equation}\label{eq:adj}
+  \boxed{\;(\bI - \Gz^{\T}\Tz^{\T})\,\tilde\psi = \tilde{\mathbf b},\qquad \tilde{\mathbf b} = \bR^{\T}\,\bar r\;}
+\end{equation}
+so that $\bar r^{\T}\bR(\bI-\Tz\Gz)^{-1} = \tilde\psi^{\T}$. The tilde follows the thesis
+(\texttt{VariationalSum.tex}, Eqs.~\texttt{bvardef} and \texttt{btdef}). There the incident field
+$\mathbf{b}$ is paired with $\tilde{\mathbf{b}} = [\mathcal{P}^{z,R}_{s}]^{\T}\tilde{\mathbf{f}}$,
+radiated from the receiver with directivity $\tilde{\mathbf{f}}$. The right-hand side of
+\eqref{eq:adj} is that field with $\tilde{\mathbf{f}} = \bar r$, and $\tilde\psi$ is its exciting
+field. Then
+$\delta\mathsf{M} = \operatorname{Re}\sum \tilde\psi^{\T}\delta\Tz\,\psi$, and because $\Tz$ is block-diagonal
+the gradient is a local $9\times9$ contraction at each voxel:
+\begin{equation}\label{eq:grad}
+  \boxed{\;
+  \frac{\partial\mathsf{M}}{\partial m_{i,\ell}}
+  = \operatorname{Re}\sum_{s,\omega,k_y} w_{k_y}\;
+    \tilde\psi_i^{\T}\,\frac{\partial\Tz^{(i)}}{\partial m_{i,\ell}}\,\psi_i ,
+  \qquad \ell\in\{\Delta\lambda,\Delta\mu,\Delta\rho\}. \;}
+\end{equation}
+The right-hand side of \eqref{eq:adj} is the residual injected at the receivers and carried to the
+voxels by the transposed receiver operator. By reciprocity $\bR^{\T}$ is the reference field
+radiated \emph{from} the receivers, with the same weight $\mathbf{W}_{\pm}$ as \S\ref{sec:selfadj}:
+$G(r\!\leftarrow\!v)^{\T} = \mathbf{W}_{\pm}\,G(v\!\leftarrow\!r)\,\mathbf{W}_{\pm}^{-1}$. For a receiver
+recording displacement, $\bR = \Pi_u\,G(r\!\leftarrow\!v)$ with $\Pi_u$ selecting the three displacement
+rows, and $\mathbf{W}_{\pm}^{-1}\Pi_u^{\T} = \Pi_u^{\T}$, so
+\begin{equation}\label{eq:rt}
+  \bR^{\T}\bar r = \mathbf{W}_{\pm}\cdot\bigl[\text{field at the voxels from a point \emph{force}
+  $\bar r$ at the receiver}\bigr],
+\end{equation}
+which the existing layered incident-field code already computes. Both statements are measured in
+\S\ref{sec:a1b}. In 2\textonehalf-D
+the observed data live in real $y$, so the residual enters node $k_y$ with the phase and weight
+of the $k_y$ quadrature, $w_{k_y}e^{\ii k_y y_r}\bar r(y_r)$.
+
+\paragraph{Status.} Equations \eqref{eq:adj}--\eqref{eq:grad} are an exact algebraic identity for
+any $\Gz$ and $\Tz$; nothing about the physics is assumed. Their implementation passes the
+dot-product and Taylor tests A4 and A5 (\S\ref{sec:a4}, \S\ref{sec:a5}).
+
+\paragraph{The derivative of the cube T-matrix.} $\partial\Tz/\partial m$ is not the Born weight.
+The Rayleigh cube carries the \emph{effective} contrasts
+$(\Delta\rho^*,\Delta\lambda^*,\Delta\mu^*_{\mathrm{diag}},\Delta\mu^*_{\mathrm{off}})$, which
+are nonlinear in $(\Delta\lambda,\Delta\mu,\Delta\rho)$ through the Eshelby amplification factors
+(\nolinkurl{effective_contrasts._compute_amplification_factors}). That is the point: the
+gradient is exact for the resummed intra-voxel scattering, which a Born kernel is not.
+
+The first draft of this note proposed a complex-step derivative. That is invalid here. Complex
+step, and its generalisation the Cauchy contour integral, require $\Tz$ to be
+\emph{holomorphic} in $m$, and it is not: \nolinkurl{compute_cube_tmatrix} applies its real form
+factors to the \emph{real parts} of the effective contrasts only
+($\Delta\mu^* \mapsto \operatorname{Re}\Delta\mu^*\,f_\mu + \ii\operatorname{Im}\Delta\mu^*$, and
+likewise for $\kappa$ and $\rho$). Every contrast-dependent ingredient is otherwise a smooth
+rational function, so $\Tz$ is smooth as a map of \emph{real} $m$, away from the resonance poles of
+the amplification factors. The derivative is therefore taken by Richardson-extrapolated central
+differences along the real axis. There are three parameters per voxel type, so it costs nine $\Tz$
+evaluations. At zero contrast the amplification factors are exactly 1, and the derivative
+reduces to the Born weights $\omega^2V\,\bI_3\oplus0$ and $0\oplus V\,\partial c_{\mathrm{Voigt}}$
+only as $ka\to0$. At finite $ka$ it carries the form factor, which the Born weight does not.
+Gate A2 measures all of this (\S\ref{sec:a2}).
+
+\subsection{The derivative, measured (gate A2)}\label{sec:a2}
+
+\nolinkurl{gate_a2_t0_derivative} uses the project's validated test parameters ($\alpha=5$,
+$\beta=3$, $\rho=2.5$; contrast $(2\ \text{GPa}, 1\ \text{GPa}, 0.1\ \text{g/cm}^3)$; $a=0.5$ km)
+at $ka_S = 0.05$ and $0.3$, and at a complex frequency ($\omega(1+0.03\ii)$) as in the sweep
+gates.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lccc@{}}
+\toprule
+Check & $ka_S=0.05$ & $ka_S=0.3$ & $ka_S=0.3$, complex $\omega$ \\
+\midrule
+Richardson error estimate, worst parameter & $2.5\times10^{-11}$ & $3.4\times10^{-13}$ & $2.9\times10^{-13}$ \\
+observed order of raw differences & 2.00 (see text) & 2.00 & 2.00 \\
+random direction vs $\sum_\ell u_\ell\,\partial_\ell\Tz$ & $1.0\times10^{-13}$ & $1.0\times10^{-13}$ & $1.6\times10^{-13}$ \\
+\emph{must fail:} imaginary-step derivative & $4$--$7\times10^{-4}$ & $1.5$--$2.4\times10^{-2}$ & $1.5$--$2.4\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The imaginary-step row is what complex step would have delivered. It is wrong by an amount that
+grows like $(ka)^2$, which is at least $10^7$ times the finite-difference error. The density
+channel at $ka_S = 0.05$ is linear in $\Delta\rho$ to rounding, so its raw differences agree to
+rounding and have no truncation order to measure. The gate reports it as linear rather than
+asserting an order. (The first run asserted a fixed $10^{-3}$ for the imaginary-step disagreement
+and an order for every channel; both failed for those reasons, not for any defect in $\Tz$.)
+
+\paragraph{Born limit.} At zero contrast, the relative difference from the Born weights is:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+$ka_S$ & 0.40 & 0.20 & 0.10 & 0.05 \\
+\midrule
+$\partial_{\Delta\lambda}$, $\partial_{\Delta\mu}$, $\partial_{\Delta\rho}$ &
+$1.90\times10^{-2}$ & $4.79\times10^{-3}$ & $1.20\times10^{-3}$ & $3.00\times10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The fitted slope is $2.00$, $1.99$, $1.99$, which is the $(ka)^2$ convergence the form
+factor predicts. The residual is identical in all three channels at every $ka$, with a coefficient
+of about $0.119$ in $(k_S a)^2$. That is consistent with a single contrast-independent geometric
+form factor at zero contrast. This is an observation; the code path that makes the three equal has
+not been traced.
+
+%==============================================================================
+\section{The adjoint is the forward solve at \texorpdfstring{$-k_y$}{-ky}}\label{sec:selfadj}
+%==============================================================================
+
+Equation \eqref{eq:adj} needs a solver for the transposed operator. It does not need a new one.
+Both factors obey one diagonal similarity law (measured below),
+\begin{equation}\label{eq:laws}
+  \Gz(k_y)^{\T} = \mathbf{W}_{\pm}\,\Gz(-k_y)\,\mathbf{W}_{\pm}^{-1},
+  \qquad
+  \Tz^{\T} = \mathbf{W}_{\pm}\,\Tz\,\mathbf{W}_{\pm}^{-1},
+  \qquad
+  \mathbf{W}_{\pm} = \mathbf{I}_{\pm}\bW,
+\end{equation}
+\begin{equation*}
+  \bW = \operatorname{diag}\bigl(1,1,1,\ 1,1,1,\ \tfrac12,\tfrac12,\tfrac12\bigr),
+  \qquad
+  \mathbf{I}_{\pm} = \operatorname{diag}\bigl(1,1,1,\ -1,-1,-1,\ -1,-1,-1\bigr).
+\end{equation*}
+$\bW$ is the Voigt engineering factor. $\mathbf{I}_{\pm}$ is the parity between the displacement and
+strain halves of the state: the two off-diagonal blocks of the $9\times9$ carry one spatial
+derivative, taken at the receiver in one and at the source in the other, so exchanging source and
+receiver flips their sign. The adjoint system \eqref{eq:adj} is the transpose of
+$(\bI - \Tz\Gz)$, \emph{not} of $(\bI-\Gz\Tz)$, and
+$\Gz^{\T}\Tz^{\T} = \mathbf{W}_{\pm}\,\Gz(-k_y)\Tz\,\mathbf{W}_{\pm}^{-1}$, so
+\begin{equation}\label{eq:selfadj}
+  \boxed{\;
+  \bigl(\bI - \Tz\Gz(k_y)\bigr)^{\T} = \mathbf{W}_{\pm}\bigl(\bI - \Gz(-k_y)\Tz\bigr)\mathbf{W}_{\pm}^{-1}
+  \;}
+\end{equation}
+and \eqref{eq:adj} becomes a forward solve at $-k_y$ with the right-hand side
+$\mathbf{W}_{\pm}^{-1}\tilde{\mathbf b}$, solved for $\tilde\psi_{-}$, followed by $\tilde\psi = \mathbf{W}_{\pm}\tilde\psi_{-}$. This is the nine-component statement of the
+thesis result: with $\Delta\mathcal{C}_{\mathit{eff}}(k_y) = \Delta\mathcal{C}^{\T}_{\mathit{eff}}(-k_y)$
+and $\mathcal{P}_{r,s}(k_y) = \mathcal{P}^{\T}_{r,s}(-k_y)$ (\texttt{VariationalSum.tex},
+Eq.~\texttt{sym}), the Lippmann--Schwinger operator
+$\mathcal{H}(k_y) = \bI - \mathcal{P}_{r,s}(k_y)\Delta\mathcal{C}_{\mathit{eff}}(k_y)$ has adjoint
+$\mathcal{H}^\dagger(k_y) = \mathcal{H}(-k_y)$ (Eq.~\texttt{Htdef}). The thesis used that identity
+to build Schwinger--Levine variational estimates; here it makes the gradient cost exactly one
+forward solve. Two practical consequences follow. The $k_y$ grid of note (III) is symmetric about
+zero, so the $-k_y$ operator is already in the cache; and the forward and adjoint solves share an
+operator and can share a Krylov space. In 3-D, where $k_y$ is not a parameter, the same law is a
+pair swap on the real-space tables, and the adjoint reuses the tables built for the forward solve.
+
+\paragraph{The $\Tz$ half, measured.} \gtz\ checks $\Tz\bW^{-1}$ for symmetry, i.e.\
+$\Tz^{\T} = \bW\Tz\bW^{-1}$. A cube $\Tz$ has no displacement--strain block, so $\mathbf{I}_{\pm}$
+commutes with it, and this is the second law of \eqref{eq:laws}:
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lccc@{}}
+\toprule
+$\Tz$ & $ka_S$ & asymmetry of $\Tz\bW^{-1}$ & normal--shear block \\
+\midrule
+Rayleigh cube & 0.05, 0.1, 0.3 & $0$ & $0$ \\
+Resonance composite, $n_{\mathrm{sub}}=3$, $\hat k = \hat z$ & 0.5 & $1.6\times10^{-2}$ & $2\times10^{-19}$ \\
+Resonance composite, $n_{\mathrm{sub}}=3$, $\hat k$ oblique & 1.2 & $1.7\times10^{-1}$ & $4\times10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The Rayleigh result is structural and was expected: the cube is block-diagonal, the density
+block is a multiple of $\bI_3$, and a cubic Voigt stiffness has no normal--shear coupling, so
+$\bW$ commutes with $\Tz$ and the law reduces to plain symmetry. The gate's value is as a
+regression guard, with the composite rows as its calibration leg: they show the check can fail.
+
+The composite fails, and not by a rounding amount. It is
+$\sum_n T_{\mathrm{loc}}\,\psi^{\mathrm{exc}}_n$ for sub-cell exciting fields driven by one
+incident plane wave, so it carries the incident phase on its input side and none on its output
+side, and it changes with $\hat k$. It is a response to one illumination, not a field-independent
+operator, and \emph{no} such object can be reciprocal. The adjoint field arrives from the
+receivers, from a different direction than the source field, so a gradient built on the composite
+would be wrong by the asymmetry in the table. Above the Rayleigh range the options are to keep the
+sub-cells as explicit unknowns in the global solve (so the local operator is $T_{\mathrm{loc}}$,
+which is Rayleigh and reciprocal), or to rebuild the composite with a symmetric projection. The
+27-component Galerkin $\Tz$ has not been checked.
+
+\paragraph{The $\Gz$ half, measured on the assembled operator (gate A1).} The pieces had been
+checked separately (the whole-space $\bW$-symmetry of \texttt{StratifiedComposition}; the $J_6$
+law of the reverberation, note (III) \texttt{[D3]}), but not the assembled discrete sweep operator,
+which is what \eqref{eq:selfadj} applies. \nolinkurl{gate_a1_sweep_reciprocity} materialises it
+densely at $\pm k_y$, split into the lateral sweep, the same-plane reverberation and the
+inter-plane coupling. Residuals are $\lVert A - B\rVert/\lVert A\rVert$ at the finer of two
+quadratures; every one is flat under refinement.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lcc@{}}
+\toprule
+Claim & whole space & stratified \\
+\midrule
+$\Gz$ law \eqref{eq:laws}, lateral sweep & $2.8\times10^{-14}$ & $1.6\times10^{-16}$ \\
+\quad same-plane reverberation & --- & $1.0\times10^{-13}$ \\
+\quad inter-plane coupling & $1.0\times10^{-14}$ & $5.1\times10^{-16}$ \\
+\quad \textbf{assembled} $\Gz$ & $2.1\times10^{-14}$ & $1.7\times10^{-15}$ \\
+identity \eqref{eq:selfadj}, Rayleigh $\Tz$ & $4.4\times10^{-17}$ & $3.0\times10^{-16}$ \\
+\midrule
+\emph{must fail:} $\bW$ in place of $\mathbf{W}_{\pm}$ & $0.74$ & $0.29$ \\
+\quad $\mathbf{W}_{\pm}$ without the $k_y$ flip & $0.41$ & $0.097$ \\
+\quad $(\bI-\Gz\Tz)^{\T}$ for $(\bI-\Tz\Gz)^{\T}$ & $2.4\times10^{-3}$ & $0.095$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+$\mathbf{W}_{\pm}$ was measured, not assumed. A free fit of
+$[\Gz(k_y)^{\T}]_{ab}/[\Gz(-k_y)]_{ab}$ is an exact outer product $c_a/c_b$, spread
+$1.4\times10^{-13}$ (whole space) and $2.6\times10^{-11}$ (stratified), with $c$ equal in both to the diagonal of $\mathbf{W}_{\pm}$ given in \eqref{eq:laws}. The whole space is at
+$\omega/2\pi = 1+0.03\ii$, $k_y = 0.6$, pitch $0.25$; the stratified case is the fast-slab crust of
+the sweep-solver tests, planes 7 and 11, $\omega/2\pi = 6$, $k_y=0.3$, $Q=2$; both $2\times4$
+voxels. $k_y\neq0$ is essential, since at $k_y=0$ the SH channel decouples and the flip is
+invisible.
+
+\paragraph{Two errors this gate caught in the first draft of this note.} The law was stated with
+$\bW$ alone. That transcribed the whole-space $\bW$-symmetry, which compares entries at the same
+separation, as a transpose law, which reverses the separation; the reversal is where $\mathbf{I}_{\pm}$
+comes from, and without it the law fails at $0.29$--$0.74$. The identity \eqref{eq:selfadj} was
+also written for $(\bI-\Gz\Tz)^{\T}$; that operator does \emph{not} map to the forward operator
+at $-k_y$ (third calibration row), and the adjoint system never needed it. Neither error would
+have been visible without the dense measurement: both drafts are algebraically self-consistent.
+
+\subsection{The receiver transpose, measured (gate A1b)}\label{sec:a1b}
+
+\nolinkurl{gate_a1b_receiver_transpose} tests the law in 3-D, where there is no $k_y$ to flip and
+it is a pure exchange of source and receiver. It checks the wavenumber-domain kernel
+\nolinkurl{corrected_layered_9x9} first, then the real-space field of
+\nolinkurl{layered_incident_field}. For the real-space check it builds the dense $\bR$ one voxel at
+a time, with nine unit sources at each voxel read at the receiver, and compares it with the field
+radiated \emph{from} the receiver. The model is the fast-slab crust of the sweep-solver tests,
+with voxel planes 7 and 11. One receiver is in the background above them (the same material as the
+voxels); the other is \emph{inside} the slab (a different material), which is the case where
+taking the wrong interface's material once left an 83\% residual (\texttt{StratifiedComposition}).
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lccc@{}}
+\toprule
+Check & same material & cross material & $\bW$ in place of $\mathbf{W}_{\pm}$ \\
+\midrule
+$k$-domain, $Q=2, 1000$, surface off/on & $\le6.5\times10^{-16}$ & $\le7.6\times10^{-16}$ & $0.30$--$0.40$ \\
+real space, $k_r^{\max}=10/\text{pitch}$ (documented rule) & $1.2\times10^{-16}$ & $\mathbf{1.4\times10^{-2}}$ & $0.30$, $0.37$ \\
+real space, $k_r^{\max}=20/\text{pitch}$ (asserted) & $9.6\times10^{-17}$ & $1.1\times10^{-9}$ & $0.30$, $0.37$ \\
+real space, $k_r^{\max}=30/\text{pitch}$ & $9.6\times10^{-17}$ & $7.7\times10^{-12}$ & $0.30$, $0.37$ \\
+form \eqref{eq:rt}, force at the receiver, $20/\text{pitch}$ & $1.8\times10^{-16}$ & $2.6\times10^{-10}$ & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The node spacing is held at $\Delta k = 0.31$ while the cutoff grows. At $Q=2$ the free surface
+changes nothing (it is damped out), so the free-surface leg is discriminating only at $Q=1000$,
+which is why the $k$-domain check is run at both.
+
+\paragraph{A defect in the transverse rule, outside the adjoint.} The law holds; the documented
+rule does not resolve it. At $k_r^{\max} = 10/\text{pitch}$ the cross-material pair fails at
+$1.4\times10^{-2}$, flat in the node spacing (in a first run on a $3\times2$ lattice, $1.53\times10^{-2}$ at 32 nodes and $1.52\times10^{-2}$ at 64). Raising
+only the cutoff at fixed spacing brings it to $1.1\times10^{-9}$ and then $7.7\times10^{-12}$. So this
+is truncation, not a convention error, and it appears only when the two planes are in different
+materials. The construction subtracts the whole-space kernel \emph{of the receiver plane's medium}
+spectrally and adds it back in closed form. When the media differ, what remains to be transformed
+is not reverberation alone but also the difference between the two direct paths, and
+\nolinkurl{measure_dg0_transverse_rule} fixed the $10/\text{pitch}$ cutoff on a single pair of
+planes in the \emph{same} medium (planes 51 and 50 of the \texttt{gate\_sh\_impedance} model).
+\texttt{layered\_stack\_table}, which builds the 3-D \emph{forward} tables, uses the same
+construction and rule. Measured since (\nolinkurl{measure_stack_table_cross_material}), the defect
+is there and larger than the ${\sim}1\%$ first guessed. With a fast slab half a pitch from the
+planes, $10/\text{pitch}$ is off by up to $25\%$ of the operator's scale, and that includes the
+reverberation block of a background plane next to the slab, not only cross-material pairs.
+$20/\text{pitch}$ converges to ${\le}3\times10^{-4}$. A no-slab control is exact. The correction
+is recorded in note (III). For the adjoint the remedy is simply the finer cutoff.
+
+%==============================================================================
+\section{The Dietrich--Kormendi limit}\label{sec:dk}
+%==============================================================================
+
+At zero contrast, $\psi = \psi^{\mathrm{inc}}$ and $\tilde\psi = \bR^{\T}\bar r$, the residual carried
+into the reference by reciprocity. Equation \eqref{eq:grad} becomes
+\begin{equation}\label{eq:dkgrad}
+  \left.\frac{\partial\mathsf{M}}{\partial m_{i,\ell}}\right|_{\Tz=0}
+  = \operatorname{Re}\sum_{s,\omega,k_y} w_{k_y}\;
+    \bigl(\bR^{\T}\bar r\bigr)_i^{\T}\;
+    \left.\frac{\partial\Tz^{(i)}}{\partial m_{i,\ell}}\right|_0\;
+    \psi^{\mathrm{inc}}_i ,
+\end{equation}
+the reference Green's function to the receivers, times the Born vertex, times the reference field
+from the source. That is the Dietrich--Kormendi Fréchet kernel,
+$\delta R = \int G^{\uparrow}\,\delta\mathbf{P}\,G^{\downarrow}\,\rd z$, contracted with the
+residual: a migration of the residual in the stratified reference, as Tarantola observed for the
+homogeneous case. So the D\&K derivative is the first gradient of this inversion, and the full
+formulation adds exactly two things: the multiple scattering between voxels, through
+$(\bI-\Gz\Tz)^{-1}$, and the resummed intra-voxel scattering, through $\partial\Tz/\partial m$
+away from zero.
+
+This limit supplies the one \emph{absolute} gate of the ladder (A3). The earlier invariants and
+self-consistency checks are all blind to an overall scale or sign; this one is not.
+
+\subsection{The limit, measured (gate A3)}\label{sec:a3}
+
+The first draft planned the AD Kennett Jacobian of \nolinkurl{Kennett_Reflectivity} as the arbiter.
+That code's PP reflectivity is referenced to a water layer above a fluid--solid seabed, so matching
+it would put the voxel side's sources and receivers in water, which the corrected layered kernel
+does not support. The gate instead uses the D\&K kernel in its simplest exact form. In a uniform
+medium the Born PP reflection of a layer of thickness $h$, referenced at its top, is exactly
+\begin{equation}\label{eq:bornlayer}
+  \delta R_{PP} = R_{\mathrm{lin}}(\delta m)\,\bigl(1 - e^{2\ii\omega\eta_P h}\bigr),
+\end{equation}
+with $R_{\mathrm{lin}}$ the Aki \& Richards linearised PP coefficient. That closed form shares no code
+with the voxel side. On the voxel side, cubes of side $2a$ on a $2a\times2a$ lattice form a sheet at
+mid-layer with Born source density $(2a)^{-2}\,\partial\Tz/\partial m|_0\,\psi^{\mathrm{inc}}$ per unit
+area. This uses the gradient code's own Richardson derivative. The sheet radiates through
+\nolinkurl{vertical_kernel_9x9}, the kernel the receiver maps and the vertical sweep carry, and is
+projected onto up-going P by the mode bridge. P polarisations follow Aki \& Richards on both
+sides. The sheet samples the layer at its midpoint and $\Tz$ carries its form factor, so the two
+differ by $O(a^2)$. Any $O(1)$ defect (a sign, a missing $2\pi$ or $(2a)^{-2}$, a wrong vertex) would
+leave a flat residual.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lccc@{}}
+\toprule
+Incidence & residual at $2a=0.4$ & residual at $2a=0.05$ km & slope in $a$ ($\Delta\lambda$, $\Delta\mu$, $\Delta\rho$) \\
+\midrule
+normal & $2.2\times10^{-2}$ & $3.3\times10^{-4}$ & 2.01, 2.01, 2.01 \\
+$30^\circ$, in $k_x$ & $1.1\times10^{-2}$ & $1.7\times10^{-4}$ & 2.01, 2.01, 2.01 \\
+$48.6^\circ$, split over $k_x$ and $k_y$ & $3.4\times10^{-3}$ & $4.1\times10^{-5}$ & 1.99, 2.11, 1.98 \\
+\midrule
+\emph{must fail:} vertex sign flipped & $2.0$ & $2.0$ & 0.00 \\
+\quad $(2a)^{-2}$ omitted & $0.84$ & $1.0$ & $-0.08$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The medium is $\alpha=5$, $\beta=3$, $\rho=2.5$ at 1\,Hz; the largest residual per row is
+quoted. The voxel Born vertex, the kernel's absolute normalisation and the polarisation conventions
+are therefore right in absolute terms, not only consistent with one another. A3 does \emph{not}
+cover the finite-lattice assembly or the adjoint chain (the unit tests of \S\ref{sec:impl} check
+those against brute force). It also does not cover the lattice's non-specular orders, which are
+evanescent for $2a$ below half a wavelength and are dropped, or a stratified reference.
+
+%==============================================================================
+\section{Reference-layer parameters}\label{sec:ref}
+%==============================================================================
+
+Note (III) found that the crust gradient belongs in the reference, not in the scattering series.
+The reference parameters $m^{\mathrm{ref}}$ enter $d^{\mathrm{ref}}$, $\bR$, $\psi^{\mathrm{inc}}$
+and $\Gz$. Differentiating \eqref{eq:fl}--\eqref{eq:data} and using
+$\bR\Tz(\bI-\Gz\Tz)^{-1} = \bR(\bI-\Tz\Gz)^{-1}\Tz$,
+\begin{equation}\label{eq:refgrad}
+  \delta\mathsf{M} = \operatorname{Re}\sum \Bigl[
+    \bar r^{\T}\delta d^{\mathrm{ref}}
+    + \bar r^{\T}\delta\bR\,\tau
+    + \tilde\psi^{\T}\Tz\,\delta\psi^{\mathrm{inc}}
+    + (\Tz^{\T}\tilde\psi)^{\T}\,\delta\Gz\,\tau
+  \Bigr],
+  \qquad \tau = \Tz\psi .
+\end{equation}
+The first term is the 1-D problem, already solved and gated. The second and third are the
+reference Green's function differentiated at the receivers and the source. The fourth contracts
+the adjoint and forward contrast sources through $\partial\Gz/\partial m^{\mathrm{ref}}$ and costs
+about one $\Gz$ matvec per reference parameter, which is acceptable because $\Gz$ depends only on
+the reference. Whether \nolinkurl{GlobalMatrix.layered_greens} can be differentiated through the
+existing \nolinkurl{gmm_torch} machinery has not been established. The recommended first scheme is
+\emph{alternating}: update the reference with the existing 1-D machinery at fixed voxels, then the
+voxels with \eqref{eq:grad} at fixed reference. Joint inversion waits for \eqref{eq:refgrad}.
+
+%==============================================================================
+\section{Cost, Gauss--Newton, and place in the lineage}\label{sec:cost}
+%==============================================================================
+
+Per source, frequency and $k_y$ node, the gradient costs one forward and one adjoint Krylov solve
+on the same operator \eqref{eq:selfadj}, whatever the number of voxels or receivers. In the
+frequency domain the stored state is $\psi$ alone, nine complex numbers per voxel, with none of the
+wavefield checkpointing a time-domain adjoint needs. A Fr\'echet-derivative product
+$\mathsf{F}\,\delta m = \bR(\bI-\Tz\Gz)^{-1}\delta\Tz\,\psi$ is one further solve, so Gauss--Newton by
+inner conjugate gradients costs two solves per inner iteration, and the second-order Born Hessian
+hierarchy of \nolinkurl{frechet_derivatives.tex} is the 1-D template for its approximations.
+
+In the lineage of note (II), this is the distorted-Born iterative T-matrix inversion of Jakobsen
+\& Ursin, with an analytic, resummed cell T-matrix and an exact stratified reference; and in the
+thesis's own terms, the Schwinger--Levine functional already pairs the forward field with the
+$-k_y$ field, which is the pairing \eqref{eq:grad} uses.
+
+%==============================================================================
+\section{Implementation}\label{sec:impl}
+%==============================================================================
+
+\nolinkurl{cubic_scattering/sweep_gradient.py} implements \eqref{eq:adj}--\eqref{eq:grad} for one
+source, frequency and $k_y$ node on the 2\textonehalf-D directional-sweep solver. The sum over
+$k_y$ nodes, with the quadrature weight and phase of \S\ref{sec:voxgrad}, is left to the caller.
+
+\begin{center}
+\small
+\begin{tabular}{@{}L{0.30\textwidth}L{0.62\textwidth}@{}}
+\toprule
+Function & What it does, and the result it rests on \\
+\midrule
+\nolinkurl{misfit_and_gradient} & forward solve, data, misfit, then $\mathrm{Re}(\mathsf{F}^{\mathsf H}r)$
+  through \nolinkurl{frechet_adjoint_product}; refuses caches that are not at $\pm k_y$ \\
+\nolinkurl{frechet_vector_product} & the tangent-linear $\mathsf{F}\,\delta m = \bR(\bI-\Tz\Gz)^{-1}\delta\Tz\,\psi$
+  by one further forward solve; the Gauss--Newton building block \\
+\nolinkurl{frechet_adjoint_product} & $\mathrm{Re}(\mathsf{F}^{\mathsf H}q)$ for any data-space $q$:
+  adjoint solve and local contraction \eqref{eq:grad} \\
+\nolinkurl{adjoint_solve} & the forward solver at $-k_y$ on $\mathbf{W}_{\pm}^{-1}\tilde{\mathbf b}$, then $\tilde\psi=\mathbf{W}_{\pm}\tilde\psi_{-}$ (A1) \\
+\nolinkurl{rayleigh_t0_and_derivative} & Rayleigh $\Tz$ per voxel in its plane's medium, and
+  $\partial\Tz/\partial m$ by one Richardson step (A2) \\
+\nolinkurl{whole_space_receiver_map}, \nolinkurl{layered_receiver_map} & a \emph{dense} $\bR$
+  (one row per recorded component), so $\bR^{\T}$ is exact by construction; the force form
+  \eqref{eq:rt} (A1b) is the route to take only if $\bR$ becomes too large to store \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Only the Rayleigh cube is supported; the resonance composite fails the $\Tz$ law. The
+numerical settings (GMRES tolerance, iteration cap, Richardson step) are required arguments with
+no defaults. Wiring the gradient to the $\omega$ annotations exposed that
+\nolinkurl{compute_cube_tmatrix} and six helpers were annotated \texttt{omega: float} while every
+sweep gate passes a complex $\omega$. The annotations were widened to \texttt{complex}; the
+runtime is unchanged.
+
+\paragraph{Tests} (\nolinkurl{cubic_scattering/tests/test_sweep_gradient.py}, fourteen):
+\begin{itemize}
+\item the adjoint solve against a dense solve of $(\bI-\Gz^{\T}\Tz^{\T})\tilde\psi=\tilde{\mathbf b}$, to $10^{-9}$;
+\item the gradient against brute-force central differences of the misfit, to $10^{-6}$. In a
+  whole space this is at weak and moderate contrast. In the fast-slab crust it uses stratified
+  forward and adjoint caches, per-plane media, and a receiver \emph{inside} the slab;
+\item the receiver map against the entries of the dense sweep operator $\Gz$, with asymmetric
+  offsets, to $10^{-12}$;
+\item on a uniform model, the layered receiver map reduces to the whole-space map to $10^{-9}$ at
+  3\,Hz. At 0.3\,Hz the two differ by the physical seabed return, $9.7\times10^{-4}$, flat in the
+  quadrature rule and falling with frequency; the first version of that test ran at 0.3\,Hz and
+  failed for that reason;
+\item $\mathsf{F}\,\delta m$ against central differences of the predicted data, to $10^{-7}$; the dot-product
+  identity, to $10^{-10}$; and the misfit gradient equal to $\mathrm{Re}(\mathsf{F}^{\mathsf H}r)$;
+\item $\partial\Tz/\partial m$ against an independent small-step difference; zero residual giving
+  zero gradient; and three fail-fast diagnostics.
+\end{itemize}
+Deliberate defects were injected to show the tests can fail. Each of these turned at least one
+test red: $\bW$ in place of $\mathbf{W}_{\pm}$; the adjoint solved at $+k_y$; the residual left
+unconjugated; $\partial\Tz/\partial m$ frozen at its Born value; the lateral phase sign of $\bR$
+flipped; and the multiple-scattering term dropped from $\mathsf{F}\,\delta m$.
+
+These tests check the gradient of the \emph{discrete} misfit at moderate contrast. They do not
+replace A3 (absolute agreement with the D\&K limit), A4, or A5 (the Taylor test).
+
+\subsection{The dot product, measured (gate A4)}\label{sec:a4}
+
+\nolinkurl{gate_a4_dot_product} checks $\mathrm{Re}(q^{\mathsf H}\mathsf{F}\,\delta m) =
+\delta m\cdot\mathrm{Re}(\mathsf{F}^{\mathsf H}q)$ for five random pairs $(\delta m, q)$ per case. $\mathsf{F}\,\delta m$
+is computed forward, and $\mathsf{F}^{\mathsf H}q$ by the adjoint route the gradient uses. The two share only
+$\psi$ and $\partial\Tz/\partial m$, and there is no step, so the identity holds to solver
+tolerance only if the adjoint really is the transpose. That covers the A1 and A1b laws, the
+receiver transpose, the conjugate on $q$ and the real part, all at once. GMRES runs at
+$10^{-12}$, and the spectral radius $\operatorname{spr}(\Gz\Tz)$ is measured for each case.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lccccc@{}}
+\toprule
+Case & contrast & $\operatorname{spr}(\Gz\Tz)$ & mismatch & \emph{must fail:} Born $\mathsf{F}$ & \emph{must fail:} $\bW$ for $\mathbf{W}_{\pm}$ \\
+\midrule
+whole space, $ka_S=0.26$ & $1\times$ & 0.011 & $4.1\times10^{-13}$ & $3.2\times10^{-2}$ & $0.11$ \\
+ & $4\times$ & 0.041 & $4.4\times10^{-13}$ & $0.12$ & $0.70$ \\
+ & $8\times$ & 0.075 & $2.4\times10^{-11}$ & $8.1$ & $3.4$ \\
+stress, $ka_S=0.52$ & $25\times$ & 0.427 & $7.6\times10^{-12}$ & $0.22$ & $0.72$ \\
+ & $40\times$ & 0.804 & $6.6\times10^{-12}$ & $1.1$ & $24$ \\
+stratified, receiver in slab & $1\times$ & 0.056 & $1.8\times10^{-13}$ & $2.7\times10^{-2}$ & $5.0\times10^{-2}$ \\
+ & $4\times$ & 0.196 & $1.1\times10^{-12}$ & $6.2\times10^{-2}$ & $0.15$ \\
+ & $8\times$ & 0.334 & $3.9\times10^{-12}$ & $9.3\times10^{-2}$ & $0.23$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Contrast is a multiple of the project's test contrast $(2\ \text{GPa},1\ \text{GPa},
+0.1\ \text{g/cm}^3)$, perturbed per voxel. The identity holds to $\le2.4\times10^{-11}$ everywhere,
+including $\operatorname{spr}=0.80$, and both calibration legs fail in every row.
+
+\paragraph{How strong the multiple scattering can get.} With \emph{physical} Rayleigh $\Tz$
+inside its validity ($ka_S\le0.3$) and the project's contrasts, $\operatorname{spr}(\Gz\Tz)$ stays at about $0.3$ or
+below. Reaching $\operatorname{spr}\approx0.8$ needs $ka_S\approx0.5$ and $\Delta\mu\approx1.8\mu_0$, outside the
+Rayleigh cube's validity. The dot product is an algebraic identity, so the \emph{stress} rows are
+run there, labelled as such, to exercise the resolvent. The $\operatorname{spr}=0.92$ of the rung-5 solver gate
+used random $\Tz$ blocks, not physical ones, so the ladder's earlier plan to run A5 ``at the rung-5
+spectral radius'' with physical $\Tz$ was not achievable as written.
+
+\subsection{The Taylor test, measured (gate A5)}\label{sec:a5}
+
+A4 shows the adjoint is the transpose of the tangent-linear model. The Taylor test shows that
+model is the derivative of the \emph{misfit}. For a random direction $\delta m$,
+\begin{equation}\label{eq:taylor}
+  \mathrm{Rem}_2(\varepsilon) = \mathsf{M}(m+\varepsilon\,\delta m) - \mathsf{M}(m) - \varepsilon\,\nabla\mathsf{M}\cdot\delta m
+  = O(\varepsilon^2)
+\end{equation}
+if and only if $\nabla\mathsf{M}$ is right. Any gradient error leaves an $O(\varepsilon)$ piece, and
+$\mathrm{Rem}_2/\varepsilon^2$ must settle to $\tfrac12\,\delta m^{\T}(\nabla^2\mathsf{M})\,\delta m$.
+\nolinkurl{gate_a5_taylor} evaluates $\mathsf{M}$ with the full nonlinear model at every $\varepsilon$:
+$\Tz$ recomputed from the perturbed contrasts, the Foldy--Lax solve and the receiver map. It uses
+data from a different ``true'' model, so the residual is $O(1)$. $\varepsilon$ runs from $10^{-1}$
+to $10^{-1}/2^{10}$ of the base contrast.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lccccc@{}}
+\toprule
+Case & spr & slope, $\mathrm{Rem}_2$ & steady to & $\mathrm{Rem}_1$ & Born $\nabla\mathsf{M}$ \\
+\midrule
+whole space, $ka_S=0.26$, $8\times$ & 0.071 & 2.000 & $3.4\times10^{-6}$ & 0.993 & 1.021 \\
+stratified, receiver in slab, $8\times$ & 0.358 & 2.004 & $7.5\times10^{-5}$ & 1.001 & 1.007 \\
+stress, $ka_S=0.52$, $40\times$ & 0.739 & 2.012 & $1.9\times10^{-4}$ & 0.988 & 1.005 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Columns: spr is $\operatorname{spr}(\Gz\Tz)$; ``steady to'' is the relative change of
+$\mathrm{Rem}_2/\varepsilon^2$ over the finest three $\varepsilon$; the last two are the slopes of the
+calibration legs, which must be $\approx1$. $\mathrm{Rem}_1$ omits the gradient term, and the
+Born-only gradient back-propagates the residual without the adjoint solve. Their slopes are
+asymptotic, fitted over the finest three $\varepsilon$. No solver floor appears: $\mathrm{Rem}_2/\varepsilon^2$ is steady to four digits
+at $\varepsilon\approx10^{-4}$ with GMRES at $10^{-12}$.
+
+Two design errors in the first run, neither a gradient defect, are recorded because they would
+recur. The calibration slopes were first fitted over the whole range, and the gate reported itself
+blind. Where $\nabla\mathsf{M}\cdot\delta m$ is small beside the curvature ($\mathrm{Rem}_1$ even changes sign), or the
+Born error is small ($\operatorname{spr}\approx0.07$), the $O(\varepsilon^2)$ term dominates at large $\varepsilon$,
+and only the small-$\varepsilon$ end shows the $O(\varepsilon)$ defect the legs exist to expose. In the
+stress case $\nabla\mathsf{M}\cdot\delta m\approx-0.04$ against a curvature of $2.6$, so $\mathrm{Rem}_1$ turns linear
+only for $\varepsilon\ll0.017$, and the first $\varepsilon$ grid, stopping at $10^{-1}/2^6$, did not
+reach it.
+
+%==============================================================================
+\section{Validation ladder}\label{sec:gates}
+%==============================================================================
+
+In order. Each rung is a prerequisite for trusting the next. Following note (III), every invariant
+is paired with at least one absolute comparison, because reciprocity and dot-product tests are
+homogeneous of degree one and blind to an overall scale error.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lL{0.34\textwidth}L{0.34\textwidth}L{0.17\textwidth}@{}}
+\toprule
+& Claim & Arbiter & Status \\
+\midrule
+A0 & $\Tz^{\T} = \bW\Tz\bW^{-1} = \mathbf{W}_{\pm}\Tz\mathbf{W}_{\pm}^{-1}$ & direct measurement, with failing calibration leg & \meas{} \gtz \\
+A1 & $\Gz(k_y)^{\T} = \mathbf{W}_{\pm}\Gz(-k_y)\mathbf{W}_{\pm}^{-1}$ on the assembled sweep operator, and
+     identity \eqref{eq:selfadj} & dense materialisation at $\pm k_y$, three failing calibration legs
+     & \meas{} \nolinkurl{g:a1_sweep_reciprocity} \\
+A1b & $G(r\!\leftarrow\!v)^{\T} = \mathbf{W}_{\pm}G(v\!\leftarrow\!r)\mathbf{W}_{\pm}^{-1}$ and form
+      \eqref{eq:rt} of $\bR^{\T}$ & $k$-domain kernel; real-space dense $\bR$, two failing calibration legs
+      & \meas{} \nolinkurl{g:a1b_receiver_transpose} \\
+A2 & $\partial\Tz/\partial m$, and its Born limit & Richardson differences; directional consistency;
+      Born weights as $ka\to0$; imaginary step must fail & \meas{} \nolinkurl{g:a2_t0_derivative} \\
+A3 & D\&K limit \eqref{eq:dkgrad} & exact Born thin layer \eqref{eq:bornlayer} (absolute; slope 2 in
+      pitch; two failing calibration legs) & \meas{} \nolinkurl{g:a3_dk_limit} \\
+A4 & $\mathrm{Re}(q^{\mathsf H}\mathsf{F}\delta m) = \delta m\cdot\mathrm{Re}(\mathsf{F}^{\mathsf H}q)$ & dot-product
+     test, $\mathsf{F}$ forward vs $\mathsf{F}^{\mathsf H}$ adjoint, to $\operatorname{spr}=0.80$; two failing calibration legs
+     & \meas{} \nolinkurl{g:a4_dot_product} \\
+A5 & gradient \eqref{eq:grad} at finite contrast & Taylor test \eqref{eq:taylor}, slope 2, to
+     $\operatorname{spr}=0.74$ (labelled stress case); two calibration legs at slope 1 & \meas{} \nolinkurl{g:a5_taylor} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Every rung has passed. The two that exercise the multiple scattering, A4 and A5, reach
+$\operatorname{spr}\approx0.36$ with physical $\Tz$ and $\operatorname{spr}\approx0.74$--$0.80$ in a labelled stress case outside
+the Rayleigh cube's validity (\S\ref{sec:a4}).
+
+%==============================================================================
+\section{Status}\label{sec:status}
+%==============================================================================
+
+\begin{center}
+\small
+\begin{tabular}{@{}L{0.42\textwidth}L{0.32\textwidth}L{0.18\textwidth}@{}}
+\toprule
+Item & Status & Evidence \\
+\midrule
+Gradient identity \eqref{eq:adj}--\eqref{eq:grad} & exact algebra & \S\ref{sec:voxgrad} \\
+Adjoint $=$ forward at $-k_y$ \eqref{eq:selfadj} & \meas, $\le3\times10^{-16}$ & A1 \\
+$\Tz$ half of \eqref{eq:laws}, Rayleigh cube & \meas, exact & \gtz \\
+$\Tz$ half, resonance composite & \textbf{fails}, 1.6--17\% & \gtz \\
+$\Gz$ half, assembled, whole space and stratified & \meas, $\le2\times10^{-14}$ & A1 \\
+Receiver transpose $\bR^{\T}$, form \eqref{eq:rt} & \meas, $\le10^{-9}$ at $k_r^{\max}=20/\text{pitch}$ & A1b \\
+Transverse rule $10/\text{pitch}$, cross-material planes & \textbf{inadequate}, $1.4\times10^{-2}$ & A1b \\
+$\partial\Tz/\partial m$, Richardson differences & \meas, $\le2.5\times10^{-11}$ & A2 \\
+$\Tz$ holomorphic in $m$ (complex step) & \textbf{no}; off by $4\times10^{-4}$--$2\times10^{-2}$ & A2 \\
+D\&K limit, uniform reference & \meas, $O(a^2)$ to $\le3.3\times10^{-4}$ & A3 \\
+Dot product, $\mathsf{F}$ forward vs $\mathsf{F}^{\mathsf H}$ adjoint & \meas, $\le2.4\times10^{-11}$ to $\operatorname{spr}=0.80$ & A4 \\
+$\operatorname{spr}(\Gz\Tz)$, physical Rayleigh $\Tz$ within validity & $\lesssim0.36$ & A4, A5 \\
+Taylor test of $\nabla\mathsf{M}$ against the nonlinear misfit & \meas, slope 2.000--2.012 to $\operatorname{spr}=0.74$ & A5 \\
+Reference-layer gradient & 1-D term gated elsewhere; coupling terms \unval & \S\ref{sec:ref} \\
+\midrule
+Gradient code, 2\textonehalf-D, one $k_y$ node & built; passes A0--A5 & \S\ref{sec:impl} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The validation ladder is complete. A0--A2 measure every ingredient of the gradient: the adjoint as
+the forward solve at $-k_y$ conjugated by $\mathbf{W}_{\pm}$, the receiver transpose, and a Richardson
+derivative of $\Tz$. The code (\S\ref{sec:impl}) assembles them. A3 confirms its Born limit
+against exact physics in absolute terms. A4 shows the adjoint is the exact transpose of the
+tangent-linear model, and A5 that this model is the derivative of the nonlinear misfit, both into
+strong multiple scattering.
+
+What the ladder does not cover is equally specific:
+\begin{itemize}
+\item the sum over $k_y$ nodes, which is the caller's (\S\ref{sec:voxgrad});
+\item the 3-D solver, and reference-layer parameters beyond the 1-D term (\S\ref{sec:ref});
+\item $\Tz$ other than the Rayleigh cube: the resonance composite fails the law, and the Galerkin
+  $\Tz$ is untested;
+\item physical $\Tz$ at $\operatorname{spr}$ above about $0.36$, which lies outside the Rayleigh cube's validity;
+\item the stratified A3.
+\end{itemize}
+The A1 and A1b evidence is a few voxels at one frequency per background: small, but the laws are
+pairwise identities, so lattice size does not enter them. A2 covers the Rayleigh cube only; the resonance composite is
+excluded (\S\ref{sec:selfadj}), and the 27-component Galerkin $\Tz$ is untested.
+A1b also found a defect outside the adjoint: the transverse rule is under-resolved for
+planes near a material contrast, which reaches the \emph{forward} 3-D tables at up to $25\%$ of
+the operator's scale (\S\ref{sec:a1b}).
+
+\begin{thebibliography}{9}\small
+\bibitem{DK90} Dietrich, M.\ \& Kormendi, F.\ (1990). Perturbation of the plane-wave reflectivity
+  of a depth-dependent elastic medium by weak inhomogeneities. \emph{Geophys.\ J.\ Int.} 100,
+  203--214.
+\bibitem{KD91} Kormendi, F.\ \& Dietrich, M.\ (1991). Nonlinear waveform inversion of plane-wave
+  seismograms in stratified elastic media. \emph{Geophysics} 56, 664--674.
+\bibitem{Tar84} Tarantola, A.\ (1984). Inversion of seismic reflection data in the acoustic
+  approximation. \emph{Geophysics} 49, 1259--1266.
+\bibitem{Ple06} Plessix, R.-E.\ (2006). A review of the adjoint-state method for computing the
+  gradient of a functional with geophysical applications. \emph{Geophys.\ J.\ Int.} 167, 495--503.
+\bibitem{TTL05} Tromp, J., Tape, C.\ \& Liu, Q.\ (2005). Seismic tomography, adjoint methods, time
+  reversal and banana-doughnut kernels. \emph{Geophys.\ J.\ Int.} 160, 195--216.
+\bibitem{JU15} Jakobsen, M.\ \& Ursin, B.\ (2015). Full waveform inversion in the frequency domain
+  using direct iterative T-matrix methods. \emph{J.\ Geophys.\ Eng.} 12, 400--418.
+\bibitem{Ken83} Kennett, B.\,L.\,N.\ (1983). \emph{Seismic Wave Propagation in Stratified Media}.
+  Cambridge University Press.
+\end{thebibliography}
+
+\vfill
+\noindent\rule{\linewidth}{0.4pt}\\
+{\footnotesize The measured values in this note are reproducible from
+\nolinkurl{scripts/gate_t0_reciprocity.py}, \nolinkurl{scripts/gate_a1_sweep_reciprocity.py},
+\nolinkurl{scripts/gate_a1b_receiver_transpose.py},
+\nolinkurl{scripts/gate_a2_t0_derivative.py}, \nolinkurl{scripts/gate_a3_dk_limit.py},
+\nolinkurl{scripts/gate_a4_dot_product.py} and \nolinkurl{scripts/gate_a5_taylor.py}.
+Values quoted from other notes are reproducible from the gates those notes cite.}
+
+\end{document}
