@@ -9,11 +9,13 @@ A single ratio quoted at one frequency hides both facts, which is what an
 earlier version of this comparison did.
 
 Reads the measurements written by the sweep in
-``scripts/gate_imbedding_vs_foldy_lax.py`` (part 6 prints them; the JSON is
-produced by ``--dump``) and writes a figure next to the note that uses it.
+``scripts/gate_imbedding_vs_foldy_lax.py`` (part 6 prints four of them; the
+full sweep is written by ``--dump-backscatter``) and writes a figure next to
+the note that uses it.
 
 Run:
-    conda run -n seismic python scripts/plot_imbedding_vs_voxel.py <data.json>
+    conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py --dump-backscatter data.json
+    conda run -n seismic python scripts/plot_imbedding_vs_voxel.py data.json
 """
 
 from __future__ import annotations

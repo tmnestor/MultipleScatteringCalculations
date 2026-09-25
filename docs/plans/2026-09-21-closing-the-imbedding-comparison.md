@@ -33,9 +33,22 @@
   "uninterpretable"; they match the isolated sphere to a few per cent.  A
   periodic reference would still split that residual into array coupling and
   march error.
-- **New open item:** the SV→P channel of T sits at 0.32, the worst entry of the
-  SV column, with the toroidal term unable to reach it; its P-incidence
-  counterpart is 0.11.
+- **The SV→P outlier (T at 0.32) — RESOLVED, and it was not about SV→P.**
+  `band_limited_disc` evaluated the form factor and the centring phase with
+  `grid_wavenumbers`, whose Nyquist entry is zeroed; on an even grid the
+  Nyquist modes got `F(0)` with phase 1 where the true content is zero.  The
+  disc overshot by 75% and broke the x-mirror at order one.  Symptom: march/Mie
+  differed at ±k_x.  Zeroed, T SV→P is 0.104 and the mirror holds to 6.5e-14.
+- **The "1.45 ε array-coupling floor" was mostly that artefact.**  It is linear
+  in ε because the artefact reaches the specular order only at second order.
+  Corrected: 0.157 ε at N=8, 0.190 ε at odd N=9 (never affected), converging
+  under lateral refinement (~1/N) to ≈ 0.3 ε at 2.5 diameters.  Depth order
+  4.00/4.00/4.09.  March gate part 10 now produces these tables.
+- **§22 corrected again:** the march wins at wide angles by 7–15× and at the
+  specular orders by 3.7–13× at every frequency, including k_S a = 1 on 900 m.
+  The backscatter figure (odd 9×9 grid) was unaffected; crossover 0.237.
+- March gate 44/44, imbedding gate 19/19.  Both §22 figures now have producers
+  (`--dump-angles`, `--dump-backscatter`).
 
 ---
 

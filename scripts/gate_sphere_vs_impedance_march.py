@@ -258,6 +258,20 @@ def band_limited_disc(nx: int, ny: int, lx: float, ly: float, r_sq: float) -> ND
     distance between them measures a translation and sits flat under refinement
     at about 0.48, which is how this was found.
 
+    ⚠ THE NYQUIST MODES ARE ZERO, AND MUST BE SET SO EXPLICITLY.  For even n
+    ``grid_wavenumbers`` zeroes its Nyquist entry, so evaluating the form factor
+    and the centring phase there uses a wavenumber the mode does not carry: the
+    (n/2, 0) entry receives F(0) = pi R^2, the LARGEST value, with phase 1.  The
+    true content is exactly zero -- a function symmetric about a half-integer
+    centre has none, since exp(i pi j) is antisymmetric about it.  Left in, it
+    added an alternating (-1)^j component of about 0.5 to the disc, an overshoot
+    of 1.75 that does not decay with n, and a mirror asymmetry of order one.  It
+    reached the specular response only at second order in the contrast, so its
+    relative error was LINEAR in the contrast -- which is how 1.45 eps of it was
+    read as array coupling.  The residual without it is about 0.16 eps at N=8,
+    converging to about 0.3 eps as N grows (part 10).  Odd n has no Nyquist mode
+    and was never affected.
+
     Args:
         nx: Points along x.
         ny: Points along y.
@@ -273,7 +287,8 @@ def band_limited_disc(nx: int, ny: int, lx: float, ly: float, r_sq: float) -> ND
     fhat = disc_form_factor(q, r_sq) * (nx * ny) / (lx * ly)
     xc, yc = 0.5 * (nx - 1) * (lx / nx), 0.5 * (ny - 1) * (ly / ny)
     phase = np.exp(-1j * (kx[:, None] * xc + ky[None, :] * yc)).reshape(-1)
-    return np.real(np.fft.ifft2((fhat * phase).reshape(nx, ny))).reshape(-1)
+    fhat = fhat * phase * ~nyquist_orders(nx, ny)
+    return np.real(np.fft.ifft2(fhat.reshape(nx, ny))).reshape(-1)
 
 
 def voxel_disc(nx: int, ny: int, lx: float, ly: float, r_sq: float) -> NDArray:
@@ -965,34 +980,45 @@ def part1() -> None:
     phase = np.exp(-1j * (kx[:, None] * xc + ky[None, :] * yc)).reshape(-1)
     back = np.fft.fft2(ind.reshape(nx, nx)).reshape(-1) / phase * (lx * ly) / (nx * nx)
     want_ff = disc_form_factor(q_grid(nx, nx, lx, ly), r_sq)
-    resid = float(np.max(np.abs(back - want_ff))) / float(np.max(np.abs(want_ff)))
-    print(f"      round trip to the analytic form factor, all {nx * nx} modes: {resid:.3e}")
-    report("the construction reproduces the analytic form factor at every mode", resid < 1e-13)
+    # ⚠ THE NYQUIST MODES ARE SCORED SEPARATELY, AGAINST ZERO.  This round trip
+    # once included them and passed while they were wrong: it inverts the same
+    # zeroed-Nyquist phase the construction used, so it could only confirm the
+    # construction agreed with itself.  Their true value is zero, which does
+    # not depend on anything the construction computes.
+    nyq = nyquist_orders(nx, nx)
+    resid = float(np.max(np.abs(back - want_ff)[~nyq])) / float(np.max(np.abs(want_ff)))
+    nyq_content = float(np.max(np.abs(back[nyq]))) / float(np.max(np.abs(want_ff)))
+    print(f"      round trip to the analytic form factor, {int((~nyq).sum())} modes: {resid:.3e}")
+    print(f"      content at the {int(nyq.sum())} Nyquist modes, which must be zero: {nyq_content:.3e}")
+    report("the construction reproduces the analytic form factor at every carried mode", resid < 1e-13)
+    report("and has no Nyquist content", nyq_content < 1e-13)
 
-    # ⚠ AND THE MEASURE THAT DOES NOT WORK, recorded so it is not tried again.
-    # The pointwise distance to a voxelised disc looks like the obvious
-    # convergence test and is not one.  The band-limited disc is the EXACT
-    # projection of the true disc onto the modes the grid can carry; the
-    # staircase is a different, worse approximation.  Neither is the truth, so
-    # their distance measures neither.  Measured: the overshoot is pinned at
-    # about 1.754 and the undershoot at -0.52 at EVERY N from 16 to 256, and the
-    # rms distance sits at 0.24 throughout.  Lateral convergence has to be
-    # measured in the PHYSICS, against the Mie arbiter, which is what the
-    # lateral ladder does.
-    peaks = []
+    # THE SHAPE, against two knowable answers.  A disc centred on the sphere is
+    # mirror-symmetric about that centre, exactly; and a band-limited jump
+    # overshoots by the Gibbs constant, 1.0895, whatever the band.  Both failed
+    # while the Nyquist modes were wrong -- an overshoot of 1.754 at every N and
+    # a mirror asymmetry of order one -- and that overshoot was once recorded
+    # here as ringing that "does not decay", which is what Gibbs ringing does,
+    # but at 9 per cent, not 75.
+    rows = []
     for nsz in (16, 64, 256):
         f = band_limited_disc(nsz, nsz, lx, ly, r_sq)
-        peaks.append(
+        f2 = f.reshape(nsz, nsz)
+        rows.append(
             (
                 float(f.max()),
-                float(f.min()),
+                float(max(np.abs(f2 - f2[::-1]).max(), np.abs(f2 - f2[:, ::-1]).max())),
                 float(np.sqrt(np.mean((f - voxel_disc(nsz, nsz, lx, ly, r_sq)) ** 2))),
             )
         )
-    for nsz, (hi, lo, rms) in zip((16, 64, 256), peaks, strict=True):
-        print(f"      N={nsz:<4d} overshoot {hi:.4f}  undershoot {lo:+.4f}  rms vs staircase {rms:.4e}")
-    flat = abs(peaks[0][0] - peaks[-1][0]) < 0.01
-    report("the ringing does NOT decay with N, so this is not a convergence measure", flat)
+    for nsz, (hi, mirror, rms) in zip((16, 64, 256), rows, strict=True):
+        print(
+            f"      N={nsz:<4d} overshoot {hi:.4f}  mirror asymmetry {mirror:.1e}  "
+            f"rms vs staircase {rms:.4e}"
+        )
+    report("the disc is mirror-symmetric about the sphere centre", max(r[1] for r in rows) < 1e-12)
+    report("its overshoot is the Gibbs constant", abs(rows[-1][0] - 1.0895) < 0.02)
+    report("and its distance to the staircase falls as the grid refines", rows[-1][2] < 0.5 * rows[0][2])
 
 
 def part2() -> None:
@@ -1449,21 +1475,20 @@ def part8() -> None:
     # sin(theta), so an S wave cannot backscatter into P exactly along the axis.
     print(f"      specular SV->P: Mie {abs(r_want[0]):.3e} (zero by symmetry), march {abs(got_r[0]):.3e}")
     report("Mie gives exactly zero for specular SV->P", abs(r_want[0]) < 1e-30)
-    # The march cannot return an exact zero here and should not be asked to: it
-    # is solving a periodic ARRAY, whose inter-sphere coupling is measured at
-    # 1.45 eps -- about 14% at this contrast -- and that coupling breaks the
-    # isolated sphere's axial symmetry.  The leakage is 3.6% of the specular
-    # SV->SV, comfortably inside that floor, so what this checks is that the
-    # symmetry holds AS WELL AS the array allows, not exactly.
+    # The march must return it EXACTLY too.  The square array is not
+    # axisymmetric, but it keeps the mirror x -> -x, under which the specular P
+    # amplitude of an x-polarised S wave is odd -- so it is zero by the array's
+    # own symmetry.  It once read 3.6% of the specular SV->SV and was put down
+    # to array coupling; it was the zeroed-Nyquist disc, which broke that mirror.
     leak = abs(got_r[0]) / abs(got_r[n])
-    print(f"      the march's leakage into it is {leak:.1%} of specular SV->SV, against a 14% array floor")
-    report("and the march respects it to within the array coupling", leak < 0.10)
+    print(f"      the march's leakage into it is {leak:.1e} of specular SV->SV")
+    report("and the march gives zero too, by the array's mirror symmetry", leak < 1e-12)
 
     # The P channel of the SV column is driven by a_n_sv ALONE -- the toroidal
     # field is transverse and cannot radiate P -- so it is the part of this
     # comparison that the stated toroidal gap does not touch.
     for lab, got, want in (("R", got_r, r_want), ("T", got_t, t_want)):
-        big = np.abs(want[:n]) > 1.0e-2 * np.max(np.abs(want[:n]))
+        big = (np.abs(want[:n]) > 1.0e-2 * np.max(np.abs(want[:n]))) & ~nyquist_orders(nx, ny)
         rat = np.abs(got[:n][big]) / np.abs(want[:n][big])
         print(
             f"      {lab} column, P channel: {int(big.sum())} orders, "
@@ -1471,7 +1496,7 @@ def part8() -> None:
         )
         report(f"the SV->P channel of {lab} tracks Mie", 0.6 < float(np.median(rat)) < 1.6)
 
-    big = np.abs(r_want[n:]) > 3.0e-2 * np.max(np.abs(r_want[n:]))
+    big = (np.abs(r_want[n:]) > 3.0e-2 * np.max(np.abs(r_want[n:]))) & ~np.tile(nyquist_orders(nx, ny), 2)
     rat = np.abs(got_r[n:][big]) / np.abs(r_want[n:][big])
     print(f"      R column, S channels: {int(big.sum())} orders, median march/Mie {np.median(rat):.4f}")
     report("the SV->S channels track Mie too", 0.6 < float(np.median(rat)) < 1.6)
@@ -1494,24 +1519,36 @@ def part8() -> None:
     for lab in ("R", "T"):
         print(f"      {lab:>28}{res[lab, 'P']:8.3f}{res[lab, 'S']:8.3f}{bare_res[lab, 'S']:17.3f}")
     report(
-        "the S channels of the SV column match Mie in complex value",
-        max(res["R", "S"], res["T", "S"]) < 0.30,
+        "every channel of the SV column matches Mie in complex value",
+        max(res[k, c] for k in "RT" for c in "PS") < 0.30,
     )
     report(
         "and including the toroidal term lowers the residual in both columns",
         all(res[k, "S"] < bare_res[k, "S"] for k in "RT"),
     )
-    # ⚠ NOT GATED: the P channel of T, 0.32, is the worst entry of the whole
-    # column.  It is untouched by the toroidal term (a transverse field cannot
-    # radiate P), and it is the noisiest channel by magnitude too, 0.63-1.60
-    # across orders.  Its P-incidence counterpart reaches 0.11, so the P
-    # channel is not generically worse; why the SV->P conversion of the ARRAY
-    # sits further from the isolated sphere is open.
-    print(
-        f"      ⚠ the SV->P channel of T is the worst entry, {res['T', 'P']:.3f}, and is\n"
-        "      not gated: the toroidal term cannot reach it, and why the array's\n"
-        "      SV->P conversion sits further from the isolated sphere is open."
-    )
+    # THE MIRROR, checked without any arbiter's magnitude: the problem is
+    # symmetric under x -> -x, so march/Mie must be the SAME at +k_x and -k_x in
+    # every channel.  (Mie itself obeys the mirror; the check is on the march.)
+    ix = np.repeat(np.arange(nx), ny)
+    iy = np.tile(np.arange(ny), nx)
+    mirror = ((-ix) % nx) * ny + iy
+    worst_mirror = 0.0
+    for got, want in ((got_r, r_want), (_scattered_only(got_t, "T", n), _scattered_only(t_want, "T", n))):
+        for c in range(3):
+            g_c, w_c = got[c * n : (c + 1) * n], want[c * n : (c + 1) * n]
+            ok = ~nyquist_orders(nx, ny) & (np.abs(w_c) > 1e-2 * np.abs(w_c).max())
+            ok &= np.abs(w_c[mirror]) > 1e-2 * np.abs(w_c).max()
+            if ok.any():
+                ratio = g_c / np.where(ok, w_c, 1.0)
+                worst_mirror = max(worst_mirror, float(np.max(np.abs(ratio - ratio[mirror])[ok])))
+    print(f"      march/Mie at +k_x against -k_x, worst over R, T and every channel: {worst_mirror:.1e}")
+    report("the march keeps the x -> -x mirror in every channel", worst_mirror < 1e-10)
+
+    # The SV->P channel of T once sat at 0.32, out of line with the rest, and the
+    # per-order ratios at +k_x and -k_x differed -- which a problem with the
+    # x -> -x mirror cannot do.  The zeroed-Nyquist disc broke that mirror; see
+    # ``band_limited_disc``.  What remains falls with the period, not with the
+    # lateral grid.
 
 
 def far_field_families(n: int, th: NDArray, ph: NDArray) -> tuple[NDArray, NDArray, NDArray]:
@@ -1684,6 +1721,110 @@ def part9() -> None:
     )
 
 
+def _specular_at(nx: int, lx: float, eps: float, nstep: int) -> tuple[complex, complex]:
+    """March and Mie specular P reflection at contrast ``eps``.
+
+    Args:
+        nx: Points along each lateral direction.
+        lx: Period along each lateral direction.
+        eps: Fractional perturbation of alpha, beta and rho.
+        nstep: Depth steps.
+
+    Returns:
+        (march, Mie) specular amplitudes.
+    """
+    global MIE_CONTRAST
+    saved = MIE_CONTRAST
+    s = 1.0 + eps
+    try:
+        MIE_CONTRAST = MaterialContrast(
+            Dlambda=(s**3 - 1.0) * REF.lam, Dmu=(s**3 - 1.0) * REF.mu, Drho=(s - 1.0) * REF.rho
+        )
+        want = complex(mie_prediction(nx, nx, lx, lx)[0])
+    finally:
+        MIE_CONTRAST = saved
+    y_top = march_sphere(nx, nx, lx, lx, nstep, amplitude=eps)
+    return complex(reflection_from_y(y_top, nx, nx, lx, lx)[0, 0]), want
+
+
+def part10() -> None:
+    """What the residual is: array coupling, and how strong."""
+    print("\n[10] the residual after the depth error: its size and its scaling")
+
+    # (a) LINEARITY IN THE CONTRAST.  The single-sphere signal is O(eps) and the
+    # array coupling O(eps^2), so coupling shows as a relative departure linear
+    # in eps.  ⚠ Linearity does NOT identify coupling on its own: ANY defect
+    # that reaches the specular order only at second order scales the same way.
+    # The zeroed-Nyquist disc did exactly that and read 1.45 eps here; the odd
+    # grid below has no Nyquist mode at all and is the control.
+    print("\n      (a) relative specular departure / eps, 2.5 diameters, k_P a = 1.44")
+    print(f"          {'eps':>8}{'N=8':>10}{'N=9':>10}")
+    per_eps = {}
+    for eps in (1e-3, 3e-3, 1e-2, 3e-2, 1e-1):
+        vals = []
+        for nx in (8, 9):
+            got, want = _specular_at(nx, 600.0, eps, 64)
+            vals.append(abs(got - want) / abs(want) / eps)
+        per_eps[eps] = vals
+        print(f"          {eps:8.3f}{vals[0]:10.4f}{vals[1]:10.4f}")
+    small = per_eps[1e-3]
+    report(
+        "the departure is linear in the contrast at small eps", abs(per_eps[3e-3][0] / small[0] - 1) < 0.02
+    )
+    report(
+        "and even and odd grids agree on it to within the lateral resolution",
+        abs(small[0] - small[1]) < 0.05,
+    )
+
+    # (b) THE DEPTH LADDER at eps = 1e-3, against the finest march so that the
+    # coupling, which no depth step removes, cancels out of the difference.
+    print("\n      (b) the depth ladder at eps = 1e-3, N=8, L=600")
+    ref, want = _specular_at(8, 600.0, 1e-3, 256)
+    diffs = []
+    for ns in (16, 32, 64, 128):
+        got, _ = _specular_at(8, 600.0, 1e-3, ns)
+        diffs.append(abs(got - ref) / abs(want))
+        print(
+            f"          nstep={ns:<4d} departure {abs(got - want) / abs(want):.4e}  "
+            f"less the finest {diffs[-1]:.4e}"
+        )
+    orders = order_of(diffs)
+    print(f"          orders: {'  '.join(f'{o:.2f}' for o in orders)}")
+    report("the depth ladder is fourth order against the exact sphere", all(3.5 < o < 4.5 for o in orders))
+
+    # (c) LATERAL GRID at fixed period.  The band-limited disc converges to the
+    # sharp one algebraically at its edge, so the departure moves with N -- by
+    # 47 per cent from N=8 to N=16 -- and converges roughly as 1/N: each
+    # refinement changes it by less than the last.  At N=24 (not run here, three
+    # minutes) it is 0.252 eps and still rising by 8e-6 a step, so the
+    # converged residual at 2.5 diameters is about 0.3 eps.  How much of that
+    # is the array's coupling and how much the march's own error, only a
+    # periodic reference for the array can say.
+    print("\n      (c) eps = 1e-3: the lateral grid at L = 600")
+    lat = []
+    for nx in (8, 12, 16, 20):
+        got, want = _specular_at(nx, 600.0, 1e-3, 64)
+        lat.append(abs(got - want) / abs(want))
+        step = "" if len(lat) < 2 else f"   change {lat[-1] - lat[-2]:+.3e}"
+        print(f"          N={nx:<3d} departure {lat[-1]:.4e}  /eps {lat[-1] / 1e-3:.4f}{step}")
+    changes = np.diff(lat)
+    report(
+        "the lateral ladder converges: each refinement moves it less",
+        bool(np.all(np.diff(np.abs(changes)) < 0)),
+    )
+
+    # (d) PERIOD at fixed pitch.  Recorded, not gated: the coupling is an
+    # interference and oscillates with spacing, and at a 75 m pitch the lateral
+    # error of (c) is carried along unchanged.
+    print("\n      (d) eps = 1e-3: the period at 75 m pitch")
+    for nx in (8, 12, 16):
+        got, want = _specular_at(nx, 75.0 * nx, 1e-3, 64)
+        print(
+            f"          L={75 * nx:<5d} ({75 * nx / (2 * RADIUS):.1f} diameters)  "
+            f"departure {abs(got - want) / abs(want):.4e}"
+        )
+
+
 def _scattered_only(col: NDArray, which: str, n: int) -> NDArray:
     """A column of R or T with the unscattered wave removed from T's (SV, Gamma).
 
@@ -1710,7 +1851,7 @@ def main() -> int:
     print("=" * 78)
     print("THE SPHERE AS SEEN BY THE LATERALLY COUPLED IMPEDANCE MARCH")
     print("=" * 78)
-    for fn in (part1, part2, part3, part4, part5, part6, part7, part8, part9):
+    for fn in (part1, part2, part3, part4, part5, part6, part7, part8, part9, part10):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)
