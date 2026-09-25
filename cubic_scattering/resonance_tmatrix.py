@@ -446,7 +446,7 @@ def sub_cell_centres(a: float, n: int) -> NDArray[np.floating]:
 
 def _sub_cell_tmatrix_9x9(
     rayleigh: CubeTMatrixResult,
-    omega: float,
+    omega: complex,
     a_sub: float,
 ) -> NDArray:
     """9x9 local T-matrix for a sub-cell (displacement + Voigt strain).
@@ -467,7 +467,7 @@ def _sub_cell_tmatrix_9x9(
 
     Args:
         rayleigh: Rayleigh T-matrix result for the sub-cell.
-        omega: Angular frequency (rad/s).
+        omega: Angular frequency (rad/s); may be complex.
         a_sub: Sub-cell half-width (m).
 
     Returns:
