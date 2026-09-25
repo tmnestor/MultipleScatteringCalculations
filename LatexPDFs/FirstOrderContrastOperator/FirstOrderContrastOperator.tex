@@ -4658,7 +4658,7 @@ layer comparison $7/7$, the thesis spectral representation $13/13$, the slab
 comparison $7/7$, the static moments $11/11$, the Riccati blocks $11/11$, the
 impedance $9/9$, its march $14/14$, the layered $\boldsymbol\Gamma$ $8/8$ and
 the lateral impedance march $33/33$ and the same march in three dimensions
-$56/56$; against multiple scattering $19/19$; and the propagator gate exits clean.
+$56/56$; against multiple scattering $21/21$; and the propagator gate exits clean.
 These tallies are machine-checked against the gates by
 \texttt{scripts/check\_paper\_tallies.py}, because a hand-written count of
 someone else's output is exactly the thing that goes stale.}\\
@@ -4822,16 +4822,6 @@ In keeping with the project's standard that an unvalidated formula be labelled
 as such, the following are \emph{open}:
 
 \begin{enumerate}
-\item \textbf{There is no exact reference for the ARRAY, only for the
-      isolated sphere.}  \S\ref{sec:vsfoldy} scores both routes against exact
-      Mie, which is axisymmetric; the march solves a square array, which is
-      not.  Against the isolated sphere the march's orders agree to one or
-      two per cent at every angle measured.  The array itself now has an exact
-      reference at finite contrast, by layer multiple scattering
-      (\S\ref{sec:threed}), and the march converges to it; what remains is to
-      score the wide-angle orders of \S\ref{sec:vsfoldy} against it rather than
-      against the isolated sphere.
-
 \item \textbf{The \emph{iterative} multiple-scattering solver has never been
       compared on equal terms.}
       \S\ref{sec:vsfoldy} scores the march against the voxel route, but that
@@ -5182,6 +5172,42 @@ wide angles and $3.7$ to $13$ times at the specular orders.}
 The march's errors stay between $0.9$ and $2.2$ per cent across the three rows,
 while the voxel route's grow with frequency as the staircase does, so the
 margin is set by the voxel route's error rather than by the march's.
+
+\paragraph{Against the array the march solves.}  The isolated sphere scores
+the march on the one-sphere question, periodization included.  The array's
+exact solution (\S\ref{sec:threed}) scores it on the periodic problem it
+actually solves, which isolates its own error.  Medians over the non-specular
+propagating orders:
+
+\begin{center}
+\begin{tabular}{@{}rrrccc@{}}
+\toprule
+$k_Sa$ & $L$ (m) & pitch (m) & march vs array & march vs sphere & array vs sphere\\
+\midrule
+$2.4$ & $900$  & $112.5$ & $1.84\%$ & $2.18\%$ & $1.52\%$\\
+      &        & $75.0$  & $0.88\%$ & $1.78\%$ & \\
+      &        & $56.2$  & $0.64\%$ & $1.72\%$ & \\
+$1.5$ & $1800$ & $112.5$ & $1.23\%$ & $1.21\%$ & $1.61\%$\\
+      &        & $75.0$  & $0.72\%$ & $1.26\%$ & \\
+$1.0$ & $2700$ & $112.5$ & $1.29\%$ & $1.02\%$ & $0.70\%$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{$P$ incidence, $P$ channel of $\bR$ and $\bT$, $\varepsilon=0.1$.
+The array's answer is the layer-multiple-scattering solution of
+\S\ref{sec:threed}; the sphere's is the same solve with the lattice coupling
+switched off.}
+\end{center}
+
+\noindent
+At the $112.5$\,m pitch of the table above, the march's own error on its
+periodic problem is as large as the array's coupling and partly cancels it, so
+its error against the sphere understates both.  Refining the pitch at fixed
+period drives the error against the array down --- $1.84$, $0.88$, $0.64$ per
+cent --- while the error against the sphere settles at the array's coupling.
+The march's wide-angle residual against one sphere is therefore periodization
+only once the lateral grid is resolved; at the coarse pitch it is periodization
+and lateral discretisation in comparable parts.  Neither approaches the voxel
+route's $7.5$ to $31$ per cent.
 
 \paragraph{And the fast iterative route exists.}  The comparison above uses the
 dense direct solve that \texttt{compute\_sphere\_foldy\_lax} ships with, and an

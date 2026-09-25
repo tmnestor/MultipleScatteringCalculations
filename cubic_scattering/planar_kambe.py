@@ -55,8 +55,8 @@ def lattice_field(
     a_l: float,
     k_par: NDArray,
     eta: float,
-    n_real: int = 5,
-    n_recip: int = 8,
+    n_real: int | None = None,
+    n_recip: int | None = None,
 ) -> NDArray[np.complexfloating]:
     """The R != 0 lattice field at many points: ``planar_ewald.ewald_total`` vectorised.
 
@@ -66,14 +66,19 @@ def lattice_field(
         a_l: Lattice pitch.
         k_par: Bloch vector, shape (2,).
         eta: Ewald splitting parameter.  The halves carry e^{kappa^2/(4 eta^2)} and
-            cancel to the smaller field, so eta a_L = 3 (not the balanced 2) is
-            used below: at kappa a_L = 12 that factor is e^4, not e^9.
-        n_real: Real-space shells.
-        n_recip: Reciprocal-space shells.
+            cancel to the smaller field, so it must grow with kappa (see
+            ``structure_constants``).
+        n_real: Real-space shells; default makes d eta >= 6.5 at the last shell.
+        n_recip: Reciprocal-space shells; default makes |g|/(2 eta) >= 6.5, which
+            a fixed count cannot do once eta a_L grows with kappa a_L.
 
     Returns:
         Shape (N,).
     """
+    if n_real is None:
+        n_real = max(4, int(np.ceil(6.5 / (eta * a_l))) + 1)
+    if n_recip is None:
+        n_recip = max(6, int(np.ceil(13.0 * eta * a_l / (2.0 * np.pi))) + 1)
     pts = np.asarray(pts, dtype=float)
     x, y, z = pts[:, 0:1], pts[:, 1:2], pts[:, 2:3]
 
@@ -103,6 +108,24 @@ def lattice_field(
     return real + recip - np.exp(1j * kappa * rn) / (4.0 * np.pi * rn)
 
 
+def default_eta(kappa: complex, a_l: float) -> float:
+    """The Ewald parameter: max(3/a_L, |kappa|/4).
+
+    The two halves each carry e^{kappa^2/(4 eta^2)} and cancel to the smaller
+    lattice field, losing that many digits.  eta a_L = 3 keeps it at e^4 for
+    kappa a_L = 12 but lets it reach e^9 at kappa a_L = 18 and e^14 at 22.5;
+    eta = |kappa|/4 caps it at e^4 for every kappa.
+
+    Args:
+        kappa: Wavenumber.
+        a_l: Lattice pitch.
+
+    Returns:
+        eta.
+    """
+    return max(3.0 / a_l, abs(kappa) / 4.0)
+
+
 def structure_constants(
     kappa: complex,
     qmax: int,
@@ -121,7 +144,7 @@ def structure_constants(
         a_l: Lattice pitch.
         k_par: Bloch vector, shape (2,).
         rho_frac: Projection radius over the pitch; must be below 1.
-        eta: Ewald parameter; defaults to 3 / a_L (see lattice_field).
+        eta: Ewald parameter; defaults to default_eta(kappa, a_l).
         n_theta: Gauss-Legendre nodes in cos(theta); 2 n_theta uniform in phi.
         field: Override for the lattice field (the damped direct sum, in tests).
 
@@ -145,7 +168,7 @@ def structure_constants(
     f = (
         field(pts)
         if field is not None
-        else lattice_field(kappa, pts, a_l, k_par, 3.0 / a_l if eta is None else eta)
+        else lattice_field(kappa, pts, a_l, k_par, default_eta(kappa, a_l) if eta is None else eta)
     )
     out: dict[tuple[int, int], complex] = {}
     for q in range(qmax + 1):
