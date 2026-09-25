@@ -130,9 +130,11 @@ note keeps meeting under other names.  Marching $\bY$ rather than a reflection
 matrix removes the mode decomposition entirely, and with it the branch loss that
 limits the mode-basis form; carrying the lateral grid \emph{inside} the marched
 variable then handles lateral heterogeneity without an outer iteration.  Against
-an exact Mie sphere the march is fourth order in depth, and its residual is not
-error but the multiple scattering of the periodic array, linear in contrast at
-$1.45\,\varepsilon$ over two decades.  \S\ref{sec:priorart} sets out the
+an exact Mie sphere the march is fourth order in depth, and the residual that
+depth refinement leaves is linear in contrast and converges under lateral
+refinement to about $0.3\,\varepsilon$ at a spacing of $2.5$ diameters --- the
+periodic array's multiple scattering together with whatever the march's own
+error contributes, which only a periodic reference can separate.  \S\ref{sec:priorart} sets out the
 substantial prior art --- the construction is that of Haines, Hulme \& Yu
 (2004) --- and \S\ref{sec:tricks} adopts and measures three of their
 computational devices.
@@ -3348,9 +3350,8 @@ is measured.  Reaching $8\times10^{-8}$ is the evidence that it is right.}
 
 \noindent
 Against exact Mie on the column its spectrum covers, the specular reflection
-agrees to $1.4\times10^{-1}$ --- the array-coupling floor of
-\S\ref{sec:threed}, not a march error --- and the specular transmission to
-$2.3\times10^{-3}$.  The two are not comparable with one another: transmission
+agrees to $2.2\times10^{-2}$ --- the residual of \S\ref{sec:threed} at
+$\varepsilon=0.1$ --- and the specular transmission to $4.6\times10^{-4}$.  The two are not comparable with one another: transmission
 is dominated by the unscattered wave, so its relative error is necessarily the
 smaller.
 
@@ -3366,8 +3367,7 @@ scattered order by
 which is exactly $1$ on the specular order and nowhere else.  With it, every
 order of the $P$ column agrees with Mie in complex value: over the $49$
 scoreable orders of an $8\times8$ grid the relative $2$-norm residual is
-$0.125$ for $\bR$ and $0.111$ for the scattered part of $\bT$, the array floor
-again.  Without it the same residual is $1.38$ --- every non-specular phase
+$0.070$ for $\bR$ and $0.038$ for the scattered part of $\bT$.  Without it the same residual is $1.38$ --- every non-specular phase
 scrambled while every magnitude is right --- so a comparison of specular
 entries, or of magnitudes, cannot see the omission.  The
 orders indexed at a zeroed Nyquist wavenumber are excluded: they are labelled
@@ -3395,16 +3395,15 @@ angles.  With that, the $SV$ column of the response scores against Mie as
 \toprule
 column & channel & orders & median march/Mie\\
 \midrule
-$\bR$ & $P$   & $24$ & $0.920$ \quad(range $0.78$--$1.08$)\\
-$\bT$ & $P$   & $24$ & $1.016$ \quad(range $0.63$--$1.60$)\\
-$\bR$ & $S$   & $52$ & $0.964$\\
+$\bR$ & $P$   & $20$ & $0.954$ \quad(range $0.935$--$0.966$)\\
+$\bT$ & $P$   & $20$ & $1.058$ \quad(range $0.992$--$1.112$)\\
+$\bR$ & $S$   & $41$ & $0.933$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{$SV$ incidence at the $\Gamma$ order, $k_Sa=2.4$, on a
 $6\times6$ grid of period $600$\,m: the median over orders of
 $|\bR_{\text{march}}|/|\bR_{\text{Mie}}|$, and likewise for $\bT$.  The scatter
-is the array coupling of \S\ref{sec:threed}, $1.45\,\varepsilon\simeq14\%$ here,
-not a march error.  A magnitude ratio is blind to phase; the complex residual
+is the residual of \S\ref{sec:threed}; the zeroed-Nyquist orders are excluded.  A magnitude ratio is blind to phase; the complex residual
 is in the next table.}
 \end{center}
 
@@ -3413,8 +3412,8 @@ is in the next table.}
 \toprule
 column & $P$ channel & $S$ channels & $S$, toroidal omitted\\
 \midrule
-$\bR$ & $0.164$ & $\mathbf{0.174}$ & $0.445$\\
-$\bT$ & $0.322$ & $\mathbf{0.223}$ & $0.283$\\
+$\bR$ & $0.066$ & $\mathbf{0.098}$ & $0.414$\\
+$\bT$ & $0.104$ & $\mathbf{0.075}$ & $0.198$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{The same column in complex value: the relative $2$-norm
@@ -3429,9 +3428,12 @@ the prediction; including it lowers the $S$ residual in both $\bR$ and $\bT$.}
 One entry is a symmetry rather than a measurement and is worth keeping: the
 $m=1$ angular function carries a factor $\sin\theta$, so an $S$ wave
 \emph{cannot} backscatter into $P$ exactly along the axis.  Mie gives
-identically zero there; the march gives $3.6\%$ of the specular $SV\to SV$,
-which is inside the array floor --- a periodic array has no axial symmetry to
-respect exactly.
+identically zero there, and so does the march, to $8\times10^{-15}$ of the
+specular $SV\to SV$: the square array is not axisymmetric, but it keeps the
+mirror $x\to-x$, under which the specular $P$ amplitude of an $x$-polarised $S$
+wave is odd.  The same mirror requires march$/$Mie to be equal at $\pm k_x$ in
+every channel, and it is, to $6.5\times10^{-14}$ --- a check on the
+cross-section of \S\ref{sec:threed} that needs no arbiter.
 
 \paragraph{The toroidal term.}  An $x$-polarised $S$ wave excites the
 \emph{toroidal} ($M$-type) family, $\bu=\nabla\times(\mathbf{r}\chi)$, as well as the
@@ -3465,12 +3467,6 @@ the expansion fixes the magnitude and the theorem the sign.  The package's $SH$
 far field is not an arbiter here: it drops the toroidal part as
 ``$O((ka)^4)$'', which fails at $k_Sa=2.4$, where $|c_n|$ runs $1.5$ to $2.5$
 times the spheroidal ones, $|b_n\varrho(n)|$ with $b_n$ the $SV\to SV$ Mie coefficient.
-
-\emph{What remains open} is the $P$ channel of $\bT$ for $SV$ incidence, at
-$0.32$ the worst entry of the column.  The toroidal term cannot reach it --- a
-transverse field radiates no $P$ --- and the $P$-incidence counterpart reaches
-$0.11$, so why the array's $SV\to P$ conversion sits further from the isolated
-sphere is not yet explained.
 
 \subsection{The symplectic picture, and what it
 guarantees}\label{sec:symplectic}
@@ -4042,8 +4038,8 @@ Measured on the sphere's own bounding slab, with the cross-section built from
 \cmidrule(l){2-5}
  & 32 & 64 & 128 & 256 \\
 \midrule
-exact transform   & $3.18\times 10^{-5}$ & $1.81\times 10^{-6}$ & $1.08\times 10^{-7}$ & $6.55\times 10^{-9}$ \\
-observed order    & \multicolumn{4}{c}{$4.14\quad 4.07\quad 4.04$} \\[2pt]
+exact transform   & $3.03\times 10^{-5}$ & $1.72\times 10^{-6}$ & $1.02\times 10^{-7}$ & $6.16\times 10^{-9}$ \\
+observed order    & \multicolumn{4}{c}{$4.14\quad 4.08\quad 4.05$} \\[2pt]
 voxelised control & $6.29\times 10^{-3}$ & $2.06\times 10^{-3}$ & $1.77\times 10^{-3}$ & $3.60\times 10^{-4}$ \\
 observed order    & \multicolumn{4}{c}{$1.61\quad 0.22\quad 2.30$} \\
 \bottomrule
@@ -4083,6 +4079,9 @@ single vector before a depth is chosen.
 
 Equation~\eqref{eq:arrayrel} is exact but for scattering \emph{between} array
 elements, which is second order in the contrast where the signal is first.
+It is written for a sphere at the lateral origin; the march places the sphere
+at the centre of the periodic cell, and each order then carries the translation
+phase \eqref{eq:centrephase} as well.
 
 \subsection{What the three refinement axes measure}
 
@@ -4093,50 +4092,65 @@ the same kind of quantity.
 Write $\varepsilon$ for the fractional perturbation of $\alpha$, $\beta$ and
 $\rho$ inside the sphere.  Because the single-sphere signal is $O(\varepsilon)$
 and the array coupling $O(\varepsilon^2)$, the \emph{relative} departure of the
-march from \eqref{eq:arrayrel} must be linear in $\varepsilon$.  At
-$k_Pa=1.44$, on an $8\times8$ grid of period $2.5$ diameters:
+march from \eqref{eq:arrayrel} is linear in $\varepsilon$.  At $k_Pa=1.44$, with
+a period of $2.5$ diameters, on an even ($8\times8$) and an odd ($9\times9$)
+grid:
 \begin{center}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
 $\varepsilon$ & $0.001$ & $0.003$ & $0.010$ & $0.030$ & $0.100$ \\
 \midrule
-relative departure & $0.00145$ & $0.00435$ & $0.01444$ & $0.04275$ & $0.13554$ \\
-$/\varepsilon$     & $1.454$ & $1.451$ & $1.444$ & $1.425$ & $1.355$ \\
+departure$/\varepsilon$, $N=8$ & $0.157$ & $0.158$ & $0.163$ & $0.175$ & $0.218$ \\
+departure$/\varepsilon$, $N=9$ & $0.190$ & $0.190$ & $0.193$ & $0.202$ & $0.232$ \\
 \bottomrule
 \end{tabular}
 \end{center}
-constant at $\simeq 1.45$ over two decades, the drift at the largest contrast
-being the next order appearing.  The departure is therefore not an error of the
-march but the coupling of the array, and $1.45\,\varepsilon$ measures its
-strength at this spacing.  The marched amplitude exceeds the single-scattering
-prediction in every row: at this spacing and frequency the neighbours enhance
-the specular return.
+constant over two decades, the drift at the largest contrast being the next
+order appearing.
 
-With the coupling identified, the depth ladder converges \emph{to} it rather
-than through it.  At $\varepsilon=10^{-3}$, where the coupling is
-$1.45\times10^{-3}$:
+Linearity does not by itself identify the departure as coupling: any defect that
+reaches the specular order only at second order in the contrast scales the same
+way.  One such defect is easy to make.  On an even grid the Nyquist wavenumber
+of the lateral derivative is set to zero, and a cross-section built from
+\eqref{eq:discff} with that wavenumber inherits a component
+$F(0)\,(-1)^j$ at the Nyquist modes, where the true content is exactly zero ---
+a disc centred between grid points is symmetric about its centre, and
+$e^{i\pi j}$ is antisymmetric about it.  That component overshoots the disc by
+$75\%$ at every $N$, breaks its mirror symmetry at order one, and produces a
+departure of $1.45\,\varepsilon$ that is just as linear.  The odd grid, which has
+no Nyquist mode, is the control; with the Nyquist modes zeroed the even grid
+agrees with it to within the lateral resolution, the disc's overshoot is the
+Gibbs constant $1.0895$, and it is mirror-symmetric to round-off.
+
+\paragraph{The depth ladder} converges to the residual rather than through it.
+At $\varepsilon=10^{-3}$ on the $8\times8$ grid, differenced against the finest
+march so that the part no depth step removes cancels:
 \begin{center}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
 depth steps & $16$ & $32$ & $64$ & $128$ \\
 \midrule
-departure            & $1.8137\times 10^{-3}$ & $1.4764\times 10^{-3}$ & $1.4543\times 10^{-3}$
-                     & $1.4528\times 10^{-3}$ \\
-less the coupling    & $3.6090\times 10^{-4}$ & $2.3513\times 10^{-5}$ & $1.419\times 10^{-6}$ & --- \\
-observed order       & \multicolumn{4}{c}{$3.94\qquad 4.05$} \\
+departure            & $4.569\times 10^{-4}$ & $1.664\times 10^{-4}$ & $1.572\times 10^{-4}$
+                     & $1.567\times 10^{-4}$ \\
+less the finest      & $4.031\times 10^{-4}$ & $2.528\times 10^{-5}$ & $1.576\times 10^{-6}$ & $9.28\times10^{-8}$ \\
+observed order       & \multicolumn{4}{c}{$4.00\qquad 4.00\qquad 4.09$} \\
 \bottomrule
 \end{tabular}
 \end{center}
 Fourth order in the depth step, measured against an exact solution rather than
 against the march itself.
 
-The lateral grid at fixed period moves by less than two per cent across
-$N=8,12,16$ and stays at the coupling floor throughout, so that axis bounds the
-lateral discretisation error below $1.5\times10^{-3}$ without resolving it.  The
-period at fixed pitch moves the floor itself --- $1.4543\times 10^{-3}$, $6.711\times 10^{-4}$,
-$8.519\times 10^{-4}$ at $2.5$, $3.8$ and $5.0$ diameters --- falling as the lattice
-opens and then rising, which is the oscillatory phase of the coupling and not
-scatter: a $1/A$ falloff alone would fall monotonically.
+\paragraph{The lateral grid} at fixed period does move the residual, because
+the band-limited disc converges to the sharp one only algebraically at its edge.
+At $\varepsilon=10^{-3}$ and $L=600$\,m the departure is $0.157$, $0.209$,
+$0.231$, $0.244$ and $0.252$ times $\varepsilon$ at $N=8$, $12$, $16$, $20$ and
+$24$, each refinement moving it less than the last --- roughly as $1/N$ --- so
+the converged residual at this spacing is about $0.3\,\varepsilon$.
+
+\paragraph{The period} at fixed pitch moves it too --- $1.57$, $1.56$ and
+$2.45\times10^{-4}$ at $2.5$, $3.8$ and $5.0$ diameters and a $75$\,m pitch ---
+without falling monotonically, which is what an interference does and a $1/A$
+falloff would not.
 
 \subsection{What this establishes}
 
@@ -4145,8 +4159,11 @@ marched variable on a full three-dimensional lateral grid, reproduces the exact
 elastic response of a sphere at fourth order in the depth step.  The sphere has
 a sharp boundary, and the order survives it because the cross-section enters
 through \eqref{eq:discff}.  The residual after the depth error is exhausted is
-the array's own multiple scattering, measured at $1.45\,\varepsilon$ and linear
-in the contrast over two decades.
+linear in the contrast, converges under lateral refinement to about
+$0.3\,\varepsilon$ at $2.5$ diameters, and varies with the period as an
+interference.  That is the signature of the array's own multiple scattering,
+but the comparison against an isolated sphere cannot split it from any error of
+the march that scales the same way; a periodic reference for the array can.
 
 %=====================================================================
 \section{The algorithm}\label{sec:algorithm}
@@ -4567,7 +4584,8 @@ sphere's centre, where Mie normalises it, and the scattered order referred back
 from the centre to the plane.  The spectrum $c_{\mathrm{mode}}$ is the $m=0$ one
 for $P$ incidence and the $m=\pm1$ one for $S$; \eqref{eq:poisson-rt} is exact
 but for scattering \emph{between} spheres, which is what growing $A$ removes and
-what the residual of \S\ref{sec:threed} measures at $1.45\,\varepsilon$.
+what the residual of \S\ref{sec:threed}, about $0.3\,\varepsilon$ at $2.5$
+diameters, bounds.
 
 %=====================================================================
 \section{Summary of checks}
@@ -4746,12 +4764,13 @@ as such, the following are \emph{open}:
 \item \textbf{There is no exact reference for the ARRAY, only for the
       isolated sphere.}  \S\ref{sec:vsfoldy} scores both routes against exact
       Mie, which is axisymmetric; the march solves a square array, which is
-      not.  Against the isolated sphere the march's wide-angle orders agree to
-      a few per cent, and orders sharing a scattering angle differ by about as
-      much --- the periodization the method pays for.  What that comparison
-      cannot do is split the residual into the array's genuine coupling and the
-      march's own error: a periodic multiple-scattering reference for the array
-      itself would, and does not yet exist.
+      not.  Against the isolated sphere the march's orders agree to one or
+      two per cent at every angle measured, which bounds the periodization the
+      method pays for.  What that comparison cannot do is split the residual
+      --- about $0.3\,\varepsilon$ at $2.5$ diameters --- into the array's
+      genuine coupling and the march's own error: a periodic
+      multiple-scattering reference for the array itself would, and does not
+      yet exist.
 
 \item \textbf{The \emph{iterative} multiple-scattering solver has never been
       compared on equal terms.}
@@ -4928,10 +4947,10 @@ and not a difference in scaling.  The ratio is strongly frequency dependent
 and falls to $3.3$ at $k_Sa=0.5$ --- see below.}
 \end{center}
 
-\paragraph{Neither error is a discretisation error, and neither ladder
-converges.}  This is the part worth stating carefully, because the obvious
-reading of the table --- that one method is converging faster --- is wrong.
-Refining either knob does \emph{not} reduce either error monotonically:
+\paragraph{Neither ladder converges monotonically.}  This is the part worth
+stating carefully, because the obvious reading of the table --- that one method
+is converging faster --- is wrong.  Refining either knob does \emph{not} reduce
+either error monotonically:
 
 \begin{center}
 \begin{tabular}{@{}lrrrr@{}}
@@ -4940,16 +4959,17 @@ voxel route, $n_{\rm sub}$ & $3$ & $4$ & $6$ & $8$\\
 error & $0.502$ & $\mathbf{0.205}$ & $0.379$ & $0.282$\\
 \midrule
 march, period (diameters) & $2.5$ & $3.8$ & $5.0$ & $6.7$\\
-error & $0.135$ & $\mathbf{0.011}$ & $0.082$ & $0.047$\\
+error & $0.021$ & $\mathbf{0.011}$ & $0.023$ & $0.016$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Backscatter error against the exact sphere: \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  Both are non-monotone, for different reasons.  The voxel
 route's error is the \emph{staircase}, and a cubic lattice's coverage of a
 sphere is not monotone in $n_{\rm sub}$ --- the voxel volume is $26\%$, $4.7\%$,
-$17\%$ and $4.3\%$ wrong at these four.  The march's is \emph{array coupling},
-which is a wave interference and so oscillates with spacing rather than
-decaying.  Quoting a convergence rate for either on this problem would be
-wrong.}
+$17\%$ and $4.3\%$ wrong at these four.  The march's, at a fixed $100$\,m
+pitch, combines the array coupling, a wave interference that oscillates with
+spacing rather than decaying, with the lateral discretisation of
+\S\ref{sec:threed}, which does converge --- roughly as $1/N$ at fixed period.
+Quoting a single convergence rate for either on this problem would be wrong.}
 \end{center}
 
 \noindent
@@ -5029,9 +5049,9 @@ scores the rest:
 \toprule
 $k_Sa$ & directions & march & voxel & ratio\\
 \midrule
-$1.0$ & specular only            & $6.61\times10^{-2}$ & $\mathbf{3.45\times10^{-2}}$ & $0.52$\\
-$2.4$ & specular                 & $\mathbf{6.70\times10^{-2}}$ & $2.16\times10^{-1}$ & $3.22$\\
-$2.4$ & wide angle               & $\mathbf{4.36\times10^{-2}}$ & $3.06\times10^{-1}$ & $7.02$\\
+$1.0$ & specular only            & $\mathbf{1.39\times10^{-2}}$ & $3.45\times10^{-2}$ & $2.49$\\
+$2.4$ & specular                 & $\mathbf{1.67\times10^{-2}}$ & $2.16\times10^{-1}$ & $12.9$\\
+$2.4$ & wide angle               & $\mathbf{2.18\times10^{-2}}$ & $3.06\times10^{-1}$ & $14.0$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Medians, over the propagating orders in each group, of the
@@ -5041,9 +5061,8 @@ summarises and does not replace the figure below.  The march's scores carry the
 translation phase \eqref{eq:centrephase}, exclude the zeroed-Nyquist orders,
 and, for the forward specular order, remove the unscattered wave from both
 sides, so that both routes are scored on the scattered field.  Bold is the
-better of the pair.  At $k_Sa=2.4$ the march is the better route in every
-direction, by $7\times$ at the wide angles; at $k_Sa=1$ on this period the voxel
-route is the better, and the next table shows that this is the period's doing.}
+better of the pair.  The march is the better route in every direction at both
+frequencies, by $14\times$ at the wide angles at $k_Sa=2.4$.}
 \end{center}
 
 \begin{center}
@@ -5055,18 +5074,17 @@ ones, and the march is the more accurate route at every one of them.}
 \end{center}
 
 \noindent
-\textbf{The azimuthal spread is the array's, and it is small.}  The exact
-sphere is \emph{axisymmetric}: its far field depends on $\theta$ alone.  A
-square array is not, so orders that share a scattering angle and differ in
-azimuth need not share an error.  At $\theta=144.4^{\circ}$ they do not: the
-march's errors there are $0.009$ and $0.062$, where the voxel route, solving an
-isolated sphere, gives one value.  That spread is the periodization error the
-march pays for, and it is the march's error --- the target is one sphere --- but
-it is a few per cent, not of order unity.  Without the translation phase
-\eqref{eq:centrephase} the same orders score $1.94$ to $1.98$, which is
-$|1-e^{i\phi}|$ for a phase $\phi$ near $\pi$: an error of order unity at wide
-angles alongside correct magnitudes is the signature of a missing translation,
-not of the array.
+\textbf{Orders at one scattering angle.}  The exact sphere is
+\emph{axisymmetric}: its far field depends on $\theta$ alone.  A square array
+is not, but it keeps the four-fold rotation and the mirrors of the square, and
+for normal $P$ incidence those relate every order at $\theta=144.4^{\circ}$ to
+every other.  The march's errors there must therefore agree, and they do, at
+$0.00927$ to twelve figures, against the voxel route's $0.526$.  These orders
+see two defects that the specular orders cannot.  A missing translation phase
+\eqref{eq:centrephase} scores them at $1.94$ to $1.98$ --- $|1-e^{i\phi}|$ for
+$\phi$ near $\pi$, an order-unity error alongside correct magnitudes --- and a
+cross-section that breaks the mirror, as a zeroed-Nyquist disc does
+(\S\ref{sec:threed}), scores symmetry-related orders differently.
 
 \paragraph{Wide angles at lower frequency, where the confound is removed.}
 The table above has wide-angle orders at $k_Sa=2.4$ only, and that is an
@@ -5083,12 +5101,12 @@ growing $L$ until wide-angle orders exist removes that:
 \cmidrule(lr){3-4}\cmidrule(lr){5-6}
 $k_Sa$ & $L$ (m) & march & voxel & march & voxel & voxel/march\\
 \midrule
-$2.4$ & $900$  & $\mathbf{6.70\times10^{-2}}$ & $2.16\times10^{-1}$
-       & $\mathbf{4.36\times10^{-2}}$ & $3.06\times10^{-1}$ & $7.0$\\
-$1.5$ & $1800$ & $\mathbf{3.05\times10^{-2}}$ & $8.03\times10^{-2}$
-       & $\mathbf{1.07\times10^{-2}}$ & $1.83\times10^{-1}$ & $17.1$\\
-$1.0$ & $2700$ & $\mathbf{1.39\times10^{-2}}$ & $3.45\times10^{-2}$
-       & $\mathbf{7.32\times10^{-3}}$ & $7.52\times10^{-2}$ & $10.3$\\
+$2.4$ & $900$  & $\mathbf{1.67\times10^{-2}}$ & $2.16\times10^{-1}$
+       & $\mathbf{2.18\times10^{-2}}$ & $3.06\times10^{-1}$ & $14.0$\\
+$1.5$ & $1800$ & $\mathbf{1.27\times10^{-2}}$ & $8.03\times10^{-2}$
+       & $\mathbf{1.21\times10^{-2}}$ & $1.83\times10^{-1}$ & $15.1$\\
+$1.0$ & $2700$ & $\mathbf{9.42\times10^{-3}}$ & $3.45\times10^{-2}$
+       & $\mathbf{1.02\times10^{-2}}$ & $7.52\times10^{-2}$ & $7.4$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Medians of the per-order relative errors \eqref{eq:errmarch}
@@ -5096,18 +5114,14 @@ and \eqref{eq:errvoxel}, scored as in the previous table, at $\varepsilon=0.1$
 and $n_{\rm sub}=6$, with the lateral pitch held at $112.5$\,m so only the
 period changes.  Bold is the better of the pair; the last column is the ratio
 at wide angles.  \textbf{The march is the better route at every frequency
-tested, at wide angles and at the specular orders}, by $7$ to $17$ times at
-wide angles.}
+tested, at wide angles and at the specular orders}, by $7$ to $15$ times at
+wide angles and $3.7$ to $13$ times at the specular orders.}
 \end{center}
 
 \noindent
-The march's errors fall as the period grows --- $4.4\times10^{-2}$,
-$1.1\times10^{-2}$, $7.3\times10^{-3}$ at wide angles across the three rows ---
-which is the periodization error converging, and at $k_Sa=1$ it reverses the
-specular verdict of the $900$\,m period: there the voxel route was the better,
-by $1.9\times$; at $2700$\,m the march is, by $2.5\times$.  A method that must
-periodize pays for it in the period it can afford, and at $k_Sa=1$ the $900$\,m
-period is too short.
+The march's errors stay between $0.9$ and $2.2$ per cent across the three rows,
+while the voxel route's grow with frequency as the staircase does, so the
+margin is set by the voxel route's error rather than by the march's.
 
 \paragraph{And the fast iterative route exists.}  The comparison above uses the
 dense direct solve that \texttt{compute\_sphere\_foldy\_lax} ships with, and an
@@ -5266,10 +5280,11 @@ $\mathrm{cond}(\mathbf{U}_d)\,\epsilon$ linearly to $7.2\times10^{-10}$ over
 $|\mathbf{k}|=2$ to $6000$ where $\bV$ returns $2.000$ --- a lost branch, not a
 lost digit.  The two arguments are complementary: theirs is that the
 decomposition may fail to exist, this one is what computing it anyway costs.
-\item \textbf{The array coupling as a measurement.}  The residual after the
-depth error is exhausted is inter-sphere multiple scattering, linear in the
-contrast at $1.45\,\varepsilon$ over two decades --- a number about the
-periodic problem the march actually solves, not about the march.
+\item \textbf{The residual as a measurement.}  The residual after the depth
+error is exhausted is linear in the contrast and converges under lateral
+refinement to about $0.3\,\varepsilon$ at $2.5$ diameters --- a bound on the
+inter-sphere multiple scattering of the periodic problem the march actually
+solves, though not yet separated from the march's own error.
 \end{itemize}
 
 \subsection{The integrator is theirs as well, and better}

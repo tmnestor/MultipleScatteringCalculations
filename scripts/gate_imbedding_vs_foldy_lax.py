@@ -42,7 +42,8 @@ Both errors here are method errors and neither is discounted.
 Run:
     conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py
     conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py --dump-angles angles.json
-The second writes the per-order errors that ``plot_angle_resolved.py`` draws.
+    conda run -n seismic python scripts/gate_imbedding_vs_foldy_lax.py --dump-backscatter data.json
+The last two write what ``plot_angle_resolved.py`` and ``plot_imbedding_vs_voxel.py`` draw.
 """
 
 from __future__ import annotations
@@ -204,9 +205,9 @@ def part1() -> None:
 def part2() -> None:
     """The march: refine ITS knob, which is the period."""
     print("\n[2] impedance march -- specular (exact backscatter) error vs Mie")
-    print("      the depth step and lateral grid are already converged here, so")
-    print("      the knob that matters is the PERIOD: the residual is the array's")
-    print("      own coupling, and only separating the spheres removes it.")
+    print("      the depth step is converged here; the lateral grid is not, and")
+    print("      converges roughly as 1/N (march gate part 10).  At a fixed 100 m")
+    print("      pitch the knob is the PERIOD, which moves the array's coupling.")
     print(f"      {'L (m)':>8}{'diameters':>11}{'N':>6}{'3N':>6}{'specular err':>15}{'time (s)':>10}")
     errs, times = [], []
     for nsz, lx in ((6, 600.0), (9, 900.0), (12, 1200.0), (16, 1600.0)):
@@ -253,11 +254,12 @@ def part3() -> None:
         "      periodize to answer at all, so periodization is its own machinery\n"
         "      and its cost is its own.  Both errors are method errors.\n"
         "\n"
-        "      ⚠ NEITHER ERROR IS A DISCRETISATION ERROR THAT REFINEMENT REMOVES.\n"
-        "      The voxel route's is the staircase, non-monotonic in n_sub because\n"
-        "      the volume ratio is; the march's is array coupling, oscillatory in\n"
-        "      spacing because it is an interference.  Quoting a convergence rate\n"
-        "      for either on this problem would be wrong."
+        "      ⚠ NEITHER LADDER CONVERGES MONOTONICALLY.  The voxel route's error\n"
+        "      is the staircase, non-monotonic in n_sub because the volume ratio\n"
+        "      is; the march's combines array coupling, oscillatory in spacing\n"
+        "      because it is an interference, with a lateral discretisation that\n"
+        "      does converge, as ~1/N at fixed period.  Quoting a single rate for\n"
+        "      either on this problem would be wrong."
     )
 
 
@@ -408,6 +410,49 @@ def part5() -> None:
     )
 
 
+def _backscatter_errors(ka_s: float) -> tuple[float, float]:
+    """Backscatter error of the voxel route and of the march at one frequency.
+
+    The march runs on a 9 x 9 grid of period 900 m.  An ODD grid has no Nyquist
+    mode, so these numbers were never touched by the zeroed-Nyquist disc that
+    contaminated the even-grid results.
+
+    Args:
+        ka_s: Shear wavenumber times the sphere radius.
+
+    Returns:
+        (voxel Foldy-Lax error, march error), each relative to exact Mie.
+    """
+    import scripts.gate_sphere_vs_impedance_march as march_mod
+
+    omega = ka_s * REF.beta / RADIUS
+    mie = compute_elastic_mie(omega, RADIUS, REF, CONTRAST)
+    r_far = 5.0e4 * RADIUS
+    pts = np.array([[np.cos(np.pi - 0.2), np.sin(np.pi - 0.2), 0.0]]) * r_far
+    u_mie = mie_scattered_displacement(mie, pts)
+    fl = compute_sphere_foldy_lax(
+        omega,
+        RADIUS,
+        REF,
+        CONTRAST,
+        n_sub=6,
+        k_hat=K_HAT,
+        wave_type="P",
+        cell_average=True,
+    )
+    u_p, u_s = foldy_lax_far_field(fl, pts / r_far, r_far, K_HAT, K_HAT, wave_type="P")
+    ratio = fl.n_cells * (2.0 * fl.a_sub) ** 3 / ((4.0 / 3.0) * np.pi * RADIUS**3)
+    fl_err = float(np.abs(u_p + u_s - u_mie * ratio).max() / np.abs(u_mie * ratio).max())
+
+    omega_save = march_mod.OMEGA
+    try:
+        march_mod.OMEGA = omega
+        mr_err, _w = march_mod.compare_to_mie(9, 9, 900.0, 900.0, 32)
+    finally:
+        march_mod.OMEGA = omega_save
+    return fl_err, float(mr_err)
+
+
 def part6() -> None:
     """Where the gap comes from: it is a frequency dependence, not a constant."""
     print("\n[6] the SAME comparison across frequency")
@@ -415,41 +460,13 @@ def part6() -> None:
     print("      march's own gate runs.  That is not a neutral choice, so the")
     print("      whole comparison is repeated across the band.")
 
-    import scripts.gate_sphere_vs_impedance_march as march_mod
-
-    omega_save = march_mod.OMEGA
     print(f"\n      {'k_S a':>7}{'ka_sub':>9}{'voxel FL':>12}{'march':>12}{'ratio':>9}")
     fl_errs, mr_errs = [], []
-    try:
-        for ka_s in (0.5, 1.0, 1.5, 2.4):
-            omega = ka_s * REF.beta / RADIUS
-
-            mie = compute_elastic_mie(omega, RADIUS, REF, CONTRAST)
-            r_far = 5.0e4 * RADIUS
-            pts = np.array([[np.cos(np.pi - 0.2), np.sin(np.pi - 0.2), 0.0]]) * r_far
-            u_mie = mie_scattered_displacement(mie, pts)
-            fl = compute_sphere_foldy_lax(
-                omega,
-                RADIUS,
-                REF,
-                CONTRAST,
-                n_sub=6,
-                k_hat=K_HAT,
-                wave_type="P",
-                cell_average=True,
-            )
-            u_p, u_s = foldy_lax_far_field(fl, pts / r_far, r_far, K_HAT, K_HAT, wave_type="P")
-            ratio = fl.n_cells * (2.0 * fl.a_sub) ** 3 / ((4.0 / 3.0) * np.pi * RADIUS**3)
-            fl_err = float(np.abs(u_p + u_s - u_mie * ratio).max() / np.abs(u_mie * ratio).max())
-
-            march_mod.OMEGA = omega
-            mr_err, _w = march_mod.compare_to_mie(9, 9, 900.0, 900.0, 32)
-
-            fl_errs.append(fl_err)
-            mr_errs.append(mr_err)
-            print(f"      {ka_s:7.2f}{ka_s / 6.0:9.3f}{fl_err:12.4e}{mr_err:12.4e}{fl_err / mr_err:9.1f}")
-    finally:
-        march_mod.OMEGA = omega_save
+    for ka_s in (0.5, 1.0, 1.5, 2.4):
+        fl_err, mr_err = _backscatter_errors(ka_s)
+        fl_errs.append(fl_err)
+        mr_errs.append(mr_err)
+        print(f"      {ka_s:7.2f}{ka_s / 6.0:9.3f}{fl_err:12.4e}{mr_err:12.4e}{fl_err / mr_err:9.1f}")
 
     slope = float(np.polyfit(np.log([0.5, 1.0, 1.5, 2.4]), np.log(fl_errs), 1)[0])
     spread = max(mr_errs) / min(mr_errs)
@@ -739,8 +756,28 @@ def main() -> int:
     return 0 if npass == len(_PASS) else 1
 
 
+def dump_backscatter(path: Path) -> None:
+    """Write the backscatter sweep that ``plot_imbedding_vs_voxel.py`` draws.
+
+    Args:
+        path: Output JSON, a list of rows with ``ka_s``, ``voxel``, ``march``.
+    """
+    import json
+
+    rows = []
+    for ka_s in (0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 2.4):
+        fl_err, mr_err = _backscatter_errors(ka_s)
+        rows.append({"ka_s": ka_s, "voxel": fl_err, "march": mr_err})
+        print(f"  k_S a={ka_s:5.2f}  voxel {fl_err:.4e}  march {mr_err:.4e}  ratio {fl_err / mr_err:6.2f}")
+    path.write_text(json.dumps(rows, indent=1))
+    print(f"wrote {path}")
+
+
 if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "--dump-angles":
         dump_angles(Path(sys.argv[2]))
+        raise SystemExit(0)
+    if len(sys.argv) == 3 and sys.argv[1] == "--dump-backscatter":
+        dump_backscatter(Path(sys.argv[2]))
         raise SystemExit(0)
     raise SystemExit(main())
