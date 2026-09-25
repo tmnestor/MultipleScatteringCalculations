@@ -253,13 +253,13 @@ def lattice(period: float, qw: float) -> complex:
     for m in range(-mmax, mmax + 1):
         for n in range(-mmax, mmax + 1):
             radii[m * m + n * n] = radii.get(m * m + n * n, 0) + 1
-    total = 0.0j
+    total: complex = 0.0j
     for r2, count in radii.items():
         q = g0 * np.sqrt(r2)
         wq = window(q, qw)
         if wq < 1e-30:
             continue
-        total += count * wq * sum(per_q(q))
+        total += complex(count * wq * sum(per_q(q)))
     return complex(total / period**2)
 
 

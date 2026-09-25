@@ -4172,7 +4172,26 @@ contrasts, and the one contact term that survives,
 $(\delta\lambda+2\delta\mu)^2k_P^4\,\delta(\zeta)/\rho\omega^2$, is independent
 of $\mathbf{q}$ --- the spectral form of the Eshelby self-term.  The kernel is
 derived twice, in \texttt{Mathematica/ElasticBornSecondOrderKernel.wl} and
-independently in \texttt{sympy}, agreeing to $1.7\times10^{-15}$.  The array
+independently in \texttt{sympy}, agreeing to $1.7\times10^{-15}$.
+
+It is also tested against the exact sphere, at every $\mathbf{q}$ and with its
+contact term, which the array's difference from one sphere cannot see.  The
+isolated sphere's integral converges slowly --- its large-$q$ tail is the local
+self-interaction, falling only as $q^{-1.4}$ --- so the kernel built on the static
+(Kelvin) tensor, which has the same contact term and approaches the dynamic one
+as $(k/q)^2$, is subtracted: the remainder falls as $q^{-5}$ and is integrated
+numerically, and the static self-term is added back in real space, exactly.
+For a ball the static potentials of a polynomial source are polynomials inside
+it, so with the plane waves expanded to $36$ Taylor terms every step is
+elementary (\texttt{Mathematica/BornSecondOrderStatic.wl}, checked against
+Poisson's equation, the biharmonic identity and the static Navier equation).
+First order with the $\varepsilon^2$ part of the contrast, $-95.01999$, plus the
+remainder, $60.32414+136.34050i$, plus the static self-term, $-0.52061$, gives
+$-35.21646+136.34050i$ for the $\varepsilon^2$ coefficient of the backscatter;
+Mie's own is $-35.21616+136.34011i$, agreement to $3.3\times10^{-6}$ of the
+double scattering.
+
+The array
 takes $(1/A)\sum_{\mathbf{g}}$ over diffraction orders and the isolated sphere
 $\int d^2q/(2\pi)^2$, so the relative departure per unit contrast is
 \begin{equation}\label{eq:born2delta}
