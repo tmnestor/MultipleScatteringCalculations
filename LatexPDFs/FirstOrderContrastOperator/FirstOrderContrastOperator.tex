@@ -4189,6 +4189,28 @@ an imaginary part of $-0.0558$ at every lateral resolution, and a real part that
 rises under lateral refinement --- $0.146$, $0.201$, $0.224$, $0.237$, $0.245$ at
 $N=8$ to $24$ --- and extrapolates in $1/N$ to between $0.280$ and $0.290$.
 
+\paragraph{The array, solved exactly.}  Second-order Born settles the
+residual only as $\varepsilon\to0$.  At finite contrast the array has an exact
+solution of its own, by layer multiple scattering: each sphere's outgoing
+multipole coefficients are $\mathbf{b}=\mathbf{T}(\mathbf{I}-\mathbf{G}_0\mathbf{T})^{-1}
+\mathbf{a}_{\rm inc}$, with $\mathbf{T}$ the Mie $T$-matrix of each order and
+$\mathbf{G}_0$ the lattice coupling of the $L$, $M$, $N$ multipoles --- the scalar
+translation contracted with the planar structure constants, and the toroidal
+family through $\mathbf{M}_{nm}=-i\mathbf{L}\psi_{nm}$ with $\mathbf{L}$ the angular
+momentum about the multipole's own centre, which reduces its lattice sum to
+scalar ones.  The structure constants are the lattice field projected on a
+sphere of radius $0.7\,L$, where their product with $j_q$ behaves like
+$0.7^q$ and nothing is lost to order $q=36$.  With the coupling switched off it
+reproduces the isolated sphere's predictions at every order to $3\times10^{-12}$;
+it converges in the multipole order to $1.2\times10^{-8}$ at $N_{\max}=10$; and
+as $\varepsilon\to0$ its departure from the isolated sphere is
+$0.28805-0.05570i$ per unit contrast, against the second-order Born
+$0.28801-0.05560i$.  At $\varepsilon=0.1$ the march's complex residual against
+it falls under lateral refinement --- $4.3\times10^{-2}$, $2.0\times10^{-2}$,
+$1.2\times10^{-2}$ at $N=6$, $9$, $12$ --- while its residual against the
+isolated sphere stays at $0.07$: at finite contrast the march converges to the
+periodic problem it solves.
+
 \subsection{What this establishes}
 
 The continuum impedance march, with the lateral coupling carried inside the
@@ -4201,7 +4223,8 @@ $0.29\,\varepsilon$ at $2.5$ diameters, and varies with the period as an
 interference --- and second-order Born of the periodic medium, less that of the
 isolated sphere, predicts it in real and imaginary part without any of the
 march's machinery.  It is the array's own double scattering, and the march
-converges to it.
+converges to it --- and, at finite contrast, to the array's exact
+layer-multiple-scattering solution.
 
 %=====================================================================
 \section{The algorithm}\label{sec:algorithm}
@@ -4803,11 +4826,11 @@ as such, the following are \emph{open}:
       isolated sphere.}  \S\ref{sec:vsfoldy} scores both routes against exact
       Mie, which is axisymmetric; the march solves a square array, which is
       not.  Against the isolated sphere the march's orders agree to one or
-      two per cent at every angle measured.  At small contrast the residual is
-      now accounted for: second-order Born predicts the specular one
-      (\S\ref{sec:threed}).  What remains open is a reference at \emph{finite}
-      contrast and at every order --- an exact multiple-scattering solution for
-      the periodic array itself, which does not yet exist.
+      two per cent at every angle measured.  The array itself now has an exact
+      reference at finite contrast, by layer multiple scattering
+      (\S\ref{sec:threed}), and the march converges to it; what remains is to
+      score the wide-angle orders of \S\ref{sec:vsfoldy} against it rather than
+      against the isolated sphere.
 
 \item \textbf{The \emph{iterative} multiple-scattering solver has never been
       compared on equal terms.}
