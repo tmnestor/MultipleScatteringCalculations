@@ -22,7 +22,9 @@ from __future__ import annotations
 import functools
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import sympy as sp
 
@@ -116,7 +118,7 @@ def kernel_symbolic() -> dict[str, sp.Expr]:
 
 
 @functools.cache
-def kernel_numeric() -> dict[str, object]:
+def kernel_numeric() -> dict[str, Callable[..., Any]]:
     """The kernel coefficients as numpy functions of (q, kP, kS, rho, w, drho, dlam, dmu).
 
     Rotation invariance makes them functions of |q| alone; they are evaluated

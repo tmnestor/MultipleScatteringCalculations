@@ -1,0 +1,12 @@
+{
+	"S_static":[
+		-4.088862555406030331628302e11,
+		0
+	],
+	"taylor_terms":36,
+	"checks":{
+		"laplace":true,
+		"direct":true,
+		"navier":true
+	}
+}
