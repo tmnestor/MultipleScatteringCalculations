@@ -81,25 +81,34 @@ def contrast(eps: float) -> MaterialContrast:
 
 
 @functools.cache
-def coupling(period: float, nmax: int) -> tuple:
+def coupling(period: float, nmax: int, omega: float = OMEGA) -> tuple:
     """The lattice coupling for a square lattice at normal incidence.
+
+    The projection radius is 0.25 L, but no more than 2/k_S: the M, N
+    projection divides by j_nu(k_S rho0), and past k_S rho0 = 4.49 (the first
+    zero of j_1) that division would be by a near-zero.
 
     Args:
         period: Lattice period.
         nmax: Truncation order.
+        omega: Angular frequency.
 
     Returns:
         (G0, sources) from ``vector_coupling``.
     """
+    k_p, k_s = omega / REF.alpha, omega / REF.beta
     extra = lk.DEFAULT_N_EVAL_EXTRA
     qmax = 2 * nmax + extra
     kpar = np.zeros(2)
-    d_p = structure_constants(KP, qmax, period, kpar)
-    d_s = structure_constants(KS, qmax, period, kpar)
-    return lk.vector_coupling(d_p, d_s, KP, KS, nmax, rho0=0.25 * period, n_eval_extra=extra)
+    d_p = structure_constants(k_p, qmax, period, kpar)
+    d_s = structure_constants(k_s, qmax, period, kpar)
+    rho0 = min(0.25 * period, 2.0 / k_s)
+    return lk.vector_coupling(d_p, d_s, k_p, k_s, nmax, rho0=rho0, n_eval_extra=extra)
 
 
-def kkr_columns(n_grid: int, period: float, eps: float, incident: str, nmax: int, coupled: bool) -> tuple:
+def kkr_columns(
+    n_grid: int, period: float, eps: float, incident: str, nmax: int, coupled: bool, omega: float = OMEGA
+) -> tuple:
     """R and T columns of the array, in the march gate's (mode, order) layout.
 
     Args:
@@ -109,11 +118,13 @@ def kkr_columns(n_grid: int, period: float, eps: float, incident: str, nmax: int
         incident: "P" or "SV" (x-polarised S) at normal incidence.
         nmax: Truncation order.
         coupled: False switches the lattice coupling off (the isolated sphere).
+        omega: Angular frequency.
 
     Returns:
         (R column, T column), each shape (3 n_grid^2,).
     """
-    tm = lk.sphere_tmatrix(OMEGA, RADIUS, REF, contrast(eps), nmax)
+    KP, KS = omega / REF.alpha, omega / REF.beta  # noqa: N806
+    tm = lk.sphere_tmatrix(omega, RADIUS, REF, contrast(eps), nmax)
     down = np.array([0.0, 0.0, 1.0])
     if incident == "P":
         a_inc = lk.incident_coefficients("P", down, KP, KS, nmax)
@@ -121,7 +132,7 @@ def kkr_columns(n_grid: int, period: float, eps: float, incident: str, nmax: int
     else:
         a_inc = lk.incident_coefficients("S", down, KP, KS, nmax, pol=np.array([1.0, 0.0, 0.0]))
         k_in, slot = KS, 1
-    g0 = coupling(period, nmax)[0] if coupled else {}
+    g0 = coupling(period, nmax, omega)[0] if coupled else {}
     b = lk.solve_array(g0, tm, a_inc, nmax)
 
     n = n_grid * n_grid

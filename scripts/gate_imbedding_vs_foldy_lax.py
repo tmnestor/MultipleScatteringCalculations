@@ -718,6 +718,91 @@ def part8() -> None:
     )
 
 
+def _wide_vs_array(ka_s: float, period: float, nsz: int) -> tuple[float, float, float]:
+    """Median wide-angle errors of the march against the ARRAY and the sphere.
+
+    The array's exact answer is the layer-KKR solution of
+    ``gate_layer_kkr_sphere_array``; the isolated sphere is the same solve with
+    the lattice coupling off (which is exact Mie, to 3e-12).  P incidence, the P
+    channel, propagating non-specular orders of R and T.
+
+    Args:
+        ka_s: Shear wavenumber times the sphere radius.
+        period: Lattice period.
+        nsz: Lateral grid size.
+
+    Returns:
+        (march vs array, march vs isolated sphere, array vs isolated sphere).
+    """
+    import scripts.gate_layer_kkr_sphere_array as kkr
+    import scripts.gate_sphere_vs_impedance_march as march_mod
+    from scripts.gate_sphere_plane_wave_spectrum import kz_of
+
+    omega = ka_s * REF.beta / RADIUS
+    kp = omega / REF.alpha
+    nmax = int(np.ceil(ka_s + 4 * ka_s ** (1 / 3) + 2))
+    saved = march_mod.OMEGA
+    try:
+        march_mod.OMEGA = omega
+        r_mat, t_mat = march_mod.reflection_transmission(nsz, nsz, period, period, 32)
+    finally:
+        march_mod.OMEGA = saved
+    rk, tk = kkr.kkr_columns(nsz, period, EPS, "P", nmax, True, omega)
+    rm, tm = kkr.kkr_columns(nsz, period, EPS, "P", nmax, False, omega)
+    kx = np.repeat(march_mod.grid_wavenumbers(nsz, period), nsz)
+    ky = np.tile(march_mod.grid_wavenumbers(nsz, period), nsz)
+    q = np.hypot(kx, ky)
+    kzp = kz_of(q, kp)
+    bad = march_mod.nyquist_orders(nsz, nsz)
+    rows = []
+    for i in range(1, nsz * nsz):
+        if bad[i] or abs(kzp[i].imag) > 1e-12 * max(abs(kzp[i].real), 1e-30) or q[i] > 0.999 * kp:
+            continue
+        for got, wk, wm in ((r_mat[i, 0], rk[i], rm[i]), (t_mat[i, 0], tk[i], tm[i])):
+            if abs(wm) < 1e-6 * abs(rm[0]):
+                continue
+            rows.append((abs(got - wk) / abs(wk), abs(got - wm) / abs(wm), abs(wk - wm) / abs(wm)))
+    med = np.median(np.array(rows), axis=0)
+    return float(med[0]), float(med[1]), float(med[2])
+
+
+def part9() -> None:
+    """The wide angles scored against the ARRAY the march actually solves."""
+    print("\n[9] wide angles against the exact ARRAY (layer-KKR), not only the isolated sphere")
+    print(
+        "      The isolated sphere scores the march on the ONE-sphere question, periodization\n"
+        "      included.  The array's exact solution scores it on the periodic problem it\n"
+        "      solves, which isolates the march's own error."
+    )
+    print(
+        f"\n      {'k_S a':>6}{'L (m)':>7}{'pitch':>7}{'vs array':>11}{'vs sphere':>11}"
+        f"{'array vs sphere':>17}"
+    )
+    ladders = {(2.4, 900.0): (8, 12, 16), (1.5, 1800.0): (16, 24), (1.0, 2700.0): (24,)}
+    results: dict[tuple[float, float], list[tuple[float, float, float]]] = {}
+    for (ka_s, period), grids in ladders.items():
+        results[ka_s, period] = []
+        for nsz in grids:
+            ek, em, ea = _wide_vs_array(ka_s, period, nsz)
+            results[ka_s, period].append((ek, em, ea))
+            print(f"      {ka_s:6.2f}{period:7.0f}{period / nsz:7.1f}{ek:11.3e}{em:11.3e}{ea:17.3e}")
+    refinable = [v for v in results.values() if len(v) > 1]
+    report(
+        "refining the pitch lowers the march's wide-angle error against the array",
+        all(all(a[0] > b[0] for a, b in zip(v, v[1:], strict=False)) for v in refinable),
+    )
+    report(
+        "and at the finest pitch the march is closer to the array than to the sphere",
+        all(v[-1][0] < v[-1][1] for v in refinable),
+    )
+    print(
+        "\n      At the 112.5 m pitch of part 8 the march's own lateral error (1.2-1.8%) is\n"
+        "      as large as the array's coupling (0.7-1.6%) and partly cancels it; refined,\n"
+        "      it falls towards zero while the error against the sphere settles at the\n"
+        "      coupling.  Neither is near the voxel route's 7.5-31%."
+    )
+
+
 def dump_angles(path: Path) -> None:
     """Write the per-order errors that ``plot_angle_resolved.py`` draws.
 
@@ -744,7 +829,7 @@ def main() -> int:
         f"k_S a = {OMEGA / REF.beta * RADIUS:.2f}   contrast eps = {EPS}"
     )
     print("=" * 78)
-    for fn in (part0, part1, part2, part3, part4, part5, part6, part7, part8):
+    for fn in (part0, part1, part2, part3, part4, part5, part6, part7, part8, part9):
         fn()
     npass = sum(1 for _, ok in _PASS if ok)
     print("\n" + "=" * 78)
