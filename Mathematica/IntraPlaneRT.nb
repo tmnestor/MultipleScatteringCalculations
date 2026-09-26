@@ -3,24 +3,24 @@
 (*** Wolfram Notebook File ***)
 (* http://www.wolfram.com/nb *)
 
-(* CreatedBy='Wolfram 14.3' *)
+(* CreatedBy='Wolfram 15.0' *)
 
 (*CacheID: 234*)
 (* Internal cache information:
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     18922,        400]
-NotebookOptionsPosition[     17990,        381]
-NotebookOutlinePosition[     18307,        395]
-CellTagsIndexPosition[     18264,        392]
+NotebookDataLength[     19324,        408]
+NotebookOptionsPosition[     18390,        389]
+NotebookOutlinePosition[     18707,        403]
+CellTagsIndexPosition[     18664,        400]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
 Cell["\<\
 Phase 3a : Layer R/T(p) Projection (thesis symplectic energy normalisation)\
-\>", "Title",ExpressionUUID->"747d0180-b1f1-4be8-bddc-201030d07b60"],
+\>", "Title",ExpressionUUID->"8e6f72f0-b21c-4520-a523-d4e6b3011ebb"],
 
 Cell["\<\
 Projects the Phase-2 spherical collective T_coll(k_par) onto the PhD thesis \
@@ -29,12 +29,13 @@ Peigen/SVeigen/SHeigen + epsdef), giving the layer R/T(p) operator (Rd, Ru, \
 Td, Tu 2x2 P-SV + SH scalar) across normal / sub-critical / post-critical \
 slowness.  The incident IS the eps-eigenvector; the scattered field is \
 projected onto the eps-eigenvectors (no slab D, no post-hoc factors).  The \
-full symplectic reciprocity holds at every p: Rd=-Rd^T, Ru=-Ru^T (quadrature \
-~1e-8) and Tu=Sig.Td.Sig, Sig=diag(1,-1) (exact 1e-19).  Energy balance \
-|R|^2+|T|^2=1 is deferred to Phase 3b (needs the undamped G0).  Executable \
-twin: IntraPlaneRT.wl.  Python cross-check: \
+full symplectic reciprocity holds at every p: Rd=-Rd^T, Ru=-Ru^T and \
+Tu=Sig.Td.Sig, Sig=diag(1,-1), all at round-off (<= 3e-16).  A transverse \
+incident wave carries both N and M multipoles; the lattice Weyl prefactor is \
+2 pi i/(A k_z).  Energy balance |R|^2+|T|^2=1 is deferred to Phase 3b (needs \
+the undamped G0).  Executable twin: IntraPlaneRT.wl.  Python cross-check: \
 cubic_scattering/tests/test_intraplane_rt.py.\
-\>", "Text",ExpressionUUID->"81b3b4a9-2977-4722-84dc-76294f33ca36"],
+\>", "Text",ExpressionUUID->"bc305c78-eb6c-40a3-b25a-f9395bce80e0"],
 
 Cell["\<\
 IntraPlaneRT.wl  --  Phase 3a: planar layer R/T(p) PROJECTION.
@@ -65,7 +66,7 @@ bridge's
 h_n^(1)
    (SphericalHankelH1).  Inner T0 at REAL background wavenumbers; lattice \
 damped.\
-\>", "Text",ExpressionUUID->"26c24f23-938b-443b-ae2c-3a981205e4ba"],
+\>", "Text",ExpressionUUID->"d43e1a9f-c7ca-4c46-b719-9cc62e3e828e"],
 
 Cell["\<\
 Get[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -200,11 +201,11 @@ toSph[v_] := {v[[2]], v[[3]], v[[1]]};          (* project (z,x,y) -> bridge \
 etaOf[c_, p_] := Module[{e = Sqrt[1./c^2 - p^2]}, If[Im[e] < 0, -e, e]];
 khatPhys[m_, p_, sign_] := Module[{c = If[m == \"P\", alpha0, beta0]}, c \
 {sign etaOf[c, p], p, 0.}]; (* (z,x,y) *)\
-\>", "Input",ExpressionUUID->"fc21b251-cdc1-49db-b309-99be96197144"],
+\>", "Input",ExpressionUUID->"1614bf7c-1bf5-4905-9be9-b3dc95985662"],
 
 Cell["\<\
 thesis (PhD Section 3.1) plane-wave ENERGY normalisation + R/T projection\
-\>", "Section",ExpressionUUID->"d0c964ec-355f-4bc9-aa94-f7988371d9c9"],
+\>", "Section",ExpressionUUID->"d831f838-2d13-47db-81f0-82de843ef7ee"],
 
 Cell["\<\
 (* ---- thesis (PhD Section 3.1, Eqs. Peigen/SVeigen/SHeigen + epsdef) \
@@ -253,9 +254,14 @@ k]);
 incMac[n_, m_, k_, e_] := -4 Pi I^n/(n (n + 1)) (-1)^m (e . Cv[n, -m, k]);
 incVec[mode_, khatSph_, ehatSph_, Nmax_] := Map[
    Function[idx, Module[{n = idx[[1]], m = idx[[2]], ch = idx[[3]]},
-     Switch[{mode, ch}, {\"P\", \"L\"}, incPac[n, m, khatSph], {\"SV\", \
-\"N\"}, incNac[n, m, khatSph, ehatSph],
-       {\"SH\", \"M\"}, incMac[n, m, khatSph, ehatSph], _, 0]]], idxVof[Nmax]];
+     (* a transverse plane wave carries BOTH N and M multipoles, whatever its \
+polarisation
+        (CartesianT0 farField); SV -> N only, SH -> M only breaks energy \
+balance *)
+     Switch[{mode, ch}, {\"P\", \"L\"}, incPac[n, m, khatSph], {\"SV\" | \"SH\
+\", \"N\"}, incNac[n, m, khatSph, ehatSph],
+       {\"SV\" | \"SH\", \"M\"}, incMac[n, m, khatSph, ehatSph], _, 0]]], \
+idxVof[Nmax]];
 
 (* ---- plane-wave content of an outgoing multipole vector at bridge-frame \
 direction ks ---- *)
@@ -276,8 +282,10 @@ Incident = the eps-normalised
 into multipoles; project
    the specular scattered displacement onto the eps-normalised \
 |outSign,outMode> eigenvector.  The
-   lattice Weyl prefactor i/(2 eta_out omega Acell) is the physical \
-array-to-plane-wave conversion.
+   lattice Weyl prefactor 2 pi i/(eta_out omega Acell) is the physical \
+array-to-plane-wave conversion:
+   a far field f e^{ikr}/r summed over the lattice is (2 pi i/(A k_z)) f in \
+each order.
    R^E = Weyl (muTh_in/muTh_out) (ehatTh_out . scattered plane-wave \
 displacement). ---- *)
 rtAmpE[Tcoll_, inMode_, p_, inSign_, outMode_, outSign_, Nmax_] := Module[
@@ -289,7 +297,7 @@ outSign]],
   avec = incVec[inMode, kin, ein, Nmax];
   bvec = Tcoll . avec;
   f = projPW[bvec, kout, Nmax];
-  (I/(2 etaOut omegaOf Acell)) (muTh[inMode, p, inSign]/muTh[outMode, p, \
+  (2 Pi I/(etaOut omegaOf Acell)) (muTh[inMode, p, inSign]/muTh[outMode, p, \
 outSign]) *
     (eout . If[outMode == \"P\", First[f], Last[f]])];
 
@@ -302,12 +310,12 @@ Nmax], {om, modes}, {im, modes}];
 \"Tu\" -> blk[-1., -1.],
     \"Rsh\" -> rtAmpE[Tcoll, \"SH\", p, 1., \"SH\", -1., Nmax],
     \"Tsh\" -> rtAmpE[Tcoll, \"SH\", p, 1., \"SH\", 1., Nmax]|>];\
-\>", "Input",ExpressionUUID->"b28d65d4-68e8-400f-b66b-02d4a8b1021c"],
+\>", "Input",ExpressionUUID->"3b67ba9f-e383-4bcc-afb4-84c841caf8ee"],
 
 Cell["\<\
 sweep over (normal / sub-critical / post-critical) p, build collective \
 T_coll(p)\
-\>", "Section",ExpressionUUID->"edf3cb28-183f-45b4-9b31-3af52460304c"],
+\>", "Section",ExpressionUUID->"f9cd7e17-1dc5-4735-8eff-5805f9c1ad75"],
 
 Cell["\<\
 Print[\"==== Phase 3a :: layer R/T(p) projection (thesis energy \
@@ -377,11 +385,11 @@ IntraPlaneRT_reference.json\",
     \"stageRT\" -> stageRT|>];
 Print[\"  wrote IntraPlaneRT_reference.json\"];
 Print[\"Phase 3a (IntraPlaneRT.wl) loaded.\"];\
-\>", "Input",ExpressionUUID->"f36e1549-26a1-45b0-ba88-b8c6f580ad6d"]
+\>", "Input",ExpressionUUID->"5ccad146-690e-4996-a196-6ca9d4100cd5"]
 },
-FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (July 2, 2026)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"0db32eeb-0287-4def-a038-f74eaf6463b2"
+ExpressionUUID->"6c4e7a39-8399-4ef5-8ec9-d3a65ae01c1c"
 ]
 (* End of Notebook Content *)
 
@@ -394,14 +402,14 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 155, 2, 70, "Title",ExpressionUUID->"747d0180-b1f1-4be8-bddc-201030d07b60"],
-Cell[712, 24, 849, 12, 70, "Text",ExpressionUUID->"81b3b4a9-2977-4722-84dc-76294f33ca36"],
-Cell[1564, 38, 1588, 29, 70, "Text",ExpressionUUID->"26c24f23-938b-443b-ae2c-3a981205e4ba"],
-Cell[3155, 69, 6673, 133, 70, "Input",ExpressionUUID->"fc21b251-cdc1-49db-b309-99be96197144"],
-Cell[9831, 204, 155, 2, 70, "Section",ExpressionUUID->"d0c964ec-355f-4bc9-aa94-f7988371d9c9"],
-Cell[9989, 208, 4652, 96, 70, "Input",ExpressionUUID->"b28d65d4-68e8-400f-b66b-02d4a8b1021c"],
-Cell[14644, 306, 164, 3, 70, "Section",ExpressionUUID->"edf3cb28-183f-45b4-9b31-3af52460304c"],
-Cell[14811, 311, 3175, 68, 70, "Input",ExpressionUUID->"f36e1549-26a1-45b0-ba88-b8c6f580ad6d"]
+Cell[554, 20, 155, 2, 70, "Title",ExpressionUUID->"8e6f72f0-b21c-4520-a523-d4e6b3011ebb"],
+Cell[712, 24, 954, 13, 70, "Text",ExpressionUUID->"bc305c78-eb6c-40a3-b25a-f9395bce80e0"],
+Cell[1669, 39, 1588, 29, 70, "Text",ExpressionUUID->"d43e1a9f-c7ca-4c46-b719-9cc62e3e828e"],
+Cell[3260, 70, 6673, 133, 70, "Input",ExpressionUUID->"1614bf7c-1bf5-4905-9be9-b3dc95985662"],
+Cell[9936, 205, 155, 2, 70, "Section",ExpressionUUID->"d831f838-2d13-47db-81f0-82de843ef7ee"],
+Cell[10094, 209, 4947, 103, 70, "Input",ExpressionUUID->"3b67ba9f-e383-4bcc-afb4-84c841caf8ee"],
+Cell[15044, 314, 164, 3, 70, "Section",ExpressionUUID->"f9cd7e17-1dc5-4735-8eff-5805f9c1ad75"],
+Cell[15211, 319, 3175, 68, 70, "Input",ExpressionUUID->"5ccad146-690e-4996-a196-6ca9d4100cd5"]
 }
 ]
 *)
