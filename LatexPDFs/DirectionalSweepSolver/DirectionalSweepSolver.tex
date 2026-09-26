@@ -785,11 +785,29 @@ are the closer analogue of the thesis's $\tilde{\mathsf{P}}_F$, which keeps the 
 medium's transmission and reflection and ignores only the heterogeneity's backscatter; they
 serve at weak contrast and fail at strong, where that backscatter dominates. Truncating each
 $S_z$ to a lateral band of radius $r$ pitches converges slowly in $r$ and is not even monotone at
-$\rho = 6.4$: a Dirichlet-to-Neumann map is laterally nonlocal. What the sweep must carry is
-therefore an honest approximation of that map --- Liu and Ying's moving absorbing layer, which
-replaces $S_z^{-1}$ by a small local problem padded by a perfectly matched layer, or a
-hierarchical compression of $S_z$ --- and neither is yet measured here. The same object is the
+$\rho = 6.4$: a Dirichlet-to-Neumann map is laterally nonlocal. The same object is the
 impedance of the continuum march, which is marched exactly for that reason.
+
+\paragraph{A moving absorbing layer, and why it fails here.} Liu and Ying replace $S_z^{-1}$ by
+the solve of a small local problem: the last $b$ planes down to $z$, closed above by a perfectly
+matched layer whose stencils annihilate complex-stretched plane waves. Transferred to the elastic
+system --- $P$ and both $S$ waves in the nine-component state, the strain rows carrying the
+stretching Jacobian, fitted to $26$, $64$ or $78$ directions --- it fails
+(\texttt{measure\_sparsify\_moving\_layer}, \texttt{measure\_sparsify\_pml}). On $6^3$ every
+padded window preconditions worse than a plain cut, and against the exact $S_z^{-1}$ of the
+contrast-free system a plain cut is already $0.78$ off while the unstretched pads are $10$ to
+$380$ times off. Anchoring each pad stencil on the interior stencil of the same type, so that
+the unstretched pad is simply more interior medium, does not help: the discrepancy follows the
+\emph{depth} of the truncated system, not the construction of the pad. The likely reason, not
+yet tested, lies in how $H$ is closed. Here the rows of voxels on the domain faces use stencils
+fitted to cancel the dense operator's far field, which makes the global system equivalent to
+the dense one --- the source of the exact-solve result above --- but leaves $H$ by itself a
+closed cavity: the radiation condition is carried by the cancellation between $H^{-1}$ and $P$,
+and the Schur complements of $H$ are cavity maps rather than Dirichlet-to-Neumann maps. Any
+window breaks that cancellation. Liu and Ying's $H$ is radiating by construction: the domain is
+extended on every side by layers of absorbing voxels with absorbing stencils, so its Schur
+complements are genuine Dirichlet-to-Neumann maps and a moving layer has something to
+approximate. Building $H$ that way is the next step.
 
 %==============================================================================
 \section{What is distinctive}
