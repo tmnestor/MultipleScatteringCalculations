@@ -195,8 +195,10 @@ incNac[n_, m_, k_, e_] := -4 Pi I^(n + 1)/(n (n + 1)) (-1)^m (e . Bv[n, -m, k]);
 incMac[n_, m_, k_, e_] := -4 Pi I^n/(n (n + 1)) (-1)^m (e . Cv[n, -m, k]);
 incVec[mode_, khatSph_, ehatSph_, Nmax_] := Map[
    Function[idx, Module[{n = idx[[1]], m = idx[[2]], ch = idx[[3]]},
-     Switch[{mode, ch}, {"P", "L"}, incPac[n, m, khatSph], {"SV", "N"}, incNac[n, m, khatSph, ehatSph],
-       {"SH", "M"}, incMac[n, m, khatSph, ehatSph], _, 0]]], idxVof[Nmax]];
+     (* a transverse plane wave carries BOTH N and M multipoles, whatever its polarisation
+        (CartesianT0 farField); SV -> N only, SH -> M only breaks energy balance *)
+     Switch[{mode, ch}, {"P", "L"}, incPac[n, m, khatSph], {"SV" | "SH", "N"}, incNac[n, m, khatSph, ehatSph],
+       {"SV" | "SH", "M"}, incMac[n, m, khatSph, ehatSph], _, 0]]], idxVof[Nmax]];
 projPW[bvec_, ksSph_, Nmax_] := Module[{fP = {0, 0, 0}, fS = {0, 0, 0}, idx = idxVof[Nmax]},
   Do[With[{n = idx[[i, 1]], m = idx[[i, 2]], ch = idx[[i, 3]], b = bvec[[i]]},
     Switch[ch,
@@ -211,7 +213,8 @@ rtAmpE[Tcoll_, inMode_, p_, inSign_, outMode_, outSign_, Nmax_] := Module[
   avec = incVec[inMode, kin, ein, Nmax];
   bvec = Tcoll . avec;
   f = projPW[bvec, kout, Nmax];
-  (I/(2 etaOut omegaOf Acell)) (muTh[inMode, p, inSign]/muTh[outMode, p, outSign]) *
+  (* Weyl: a far field f e^{ikr}/r summed over the lattice is (2 pi i/(A k_z)) f per order *)
+  (2 Pi I/(etaOut omegaOf Acell)) (muTh[inMode, p, inSign]/muTh[outMode, p, outSign]) *
     (eout . If[outMode == "P", First[f], Last[f]])];
 
 (* ============================================================================

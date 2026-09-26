@@ -52,13 +52,17 @@ Per slowness $p$ and incident mode $m$:
   expanded into regular multipoles via the verified incident bridge. For an evanescent
   ($\operatorname{Im}\eta_m>0$) direction the bridge uses the analytic continuation
   $\overline{Y_n^m(\hat{\mathbf k})}=(-1)^m Y_n^{-m}(\hat{\mathbf k})$ (correct for complex $\hat{\mathbf k}$;
-  na\"ively conjugating the direction is wrong and was the post-critical bug).
+  na\"ively conjugating the direction is wrong and was the post-critical bug). A transverse
+  incident wave, $SV$ or $SH$, carries \emph{both} $\mathbf N$ and $\mathbf M$ multipoles whatever its
+  polarisation; keeping only $\mathbf N$ for $SV$ and only $\mathbf M$ for $SH$ breaks energy balance
+  and leaves a reciprocity residual of $10^{-10}$--$10^{-8}$.
 \item \textbf{Scatter.} $\mathbf b=\mathbf{T}_{\mathrm{coll}}\,\mathbf a$, with
   $\mathbf{T}_{\mathrm{coll}}=\mathbf{T}_0(\mathbf I-\mathbf{G}_0\mathbf{T}_0)^{-1}$ at Bloch vector
   $\mathbf{k}_\parallel=\omega(0,p,0)$.
 \item \textbf{Project.} The specular scattered displacement at the up/down direction of mode $c$,
-  $\mathbf U^{\mathrm{sc}}=\bigl(i/2\eta_c\omega A_{\mathrm{cell}}\bigr)\,\mathbf f$ (the lattice Weyl
-  prefactor times the multipole far-field $\mathbf f$), is projected onto the $\epsilon$-normalised
+  $\mathbf U^{\mathrm{sc}}=\bigl(2\pi i/\eta_c\omega A_{\mathrm{cell}}\bigr)\,\mathbf f$ (the lattice Weyl
+  prefactor times the multipole far-field $\mathbf f$, with $\mathbf u\sim\mathbf f\,e^{ikr}/r$: summed over
+  the lattice, $e^{ikr}/r$ is $2\pi i/(A_{\mathrm{cell}}k_z)$ per order), is projected onto the $\epsilon$-normalised
   $\lvert\mathrm{out},c\rangle$: $R^{E}_{c}=(\hat{\mathbf e}_c\!\cdot\!\mathbf U^{\mathrm{sc}})/\mu_c$.
 \end{enumerate}
 No separate flux matrix $\mathbf D$ and no fitted constant appear; the $\epsilon_c$ carry the energy
@@ -79,15 +83,15 @@ evanescent):
 \toprule
 regime & $\lVert\Rd+\Rd^{T}\rVert$ & $\lVert\Ru+\Ru^{T}\rVert$ & $\lVert\Tu-\boldsymbol\Sigma\Td\boldsymbol\Sigma\rVert$\\
 \midrule
-normal ($p=10^{-6}$)            & $2.7\times10^{-10}$ & $2.7\times10^{-10}$ & $2.5\times10^{-20}$\\
-sub-critical ($p=0.5/\alpha$)   & $2.3\times10^{-8}$  & $2.3\times10^{-8}$  & $2.4\times10^{-19}$\\
-post-critical ($p=0.8/\beta$)   & $4.0\times10^{-8}$  & $4.0\times10^{-8}$  & $4.1\times10^{-19}$\\
+normal ($p=10^{-6}$)            & $4.7\times10^{-19}$ & $4.9\times10^{-18}$ & $1.2\times10^{-17}$\\
+sub-critical ($p=0.5/\alpha$)   & $2.5\times10^{-16}$ & $2.6\times10^{-16}$ & $2.6\times10^{-18}$\\
+post-critical ($p=0.8/\beta$)   & $3.2\times10^{-16}$ & $3.2\times10^{-16}$ & $2.3\times10^{-18}$\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-The reflection residual is the lattice-quadrature floor; the transmission parity is exact
-(a structural identity of the projection). The plain-symmetric $\Tu=\Td^{T}$, $\Rd$ symmetric is the
+All three are at round-off. The reflection residuals of $10^{-10}$--$10^{-8}$ previously
+reported here were not a quadrature floor: they came from the incomplete incident expansion above. The plain-symmetric $\Tu=\Td^{T}$, $\Rd$ symmetric is the
 codebase-Kennett (velocity-weighted) convention, which differs from the thesis by the factor $i$ on $SV$;
 that factor converts symmetric $\leftrightarrow$ antisymmetric. Both are valid; the thesis-native form is
 symplectic.

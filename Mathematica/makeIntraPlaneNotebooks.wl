@@ -89,7 +89,9 @@ makeTwin["IntraPlaneRT.wl", "Phase 3a : Layer R/T(p) Projection (thesis symplect
    <> "layer R/T(p) operator (Rd, Ru, Td, Tu 2x2 P-SV + SH scalar) across normal / sub-critical / "
    <> "post-critical slowness.  The incident IS the eps-eigenvector; the scattered field is projected onto "
    <> "the eps-eigenvectors (no slab D, no post-hoc factors).  The full symplectic reciprocity holds at "
-   <> "every p: Rd=-Rd^T, Ru=-Ru^T (quadrature ~1e-8) and Tu=Sig.Td.Sig, Sig=diag(1,-1) (exact 1e-19).  "
+   <> "every p: Rd=-Rd^T, Ru=-Ru^T and Tu=Sig.Td.Sig, Sig=diag(1,-1), all at round-off (<= 3e-16).  "
+   <> "A transverse incident wave carries both N and M multipoles; the lattice Weyl prefactor is "
+   <> "2 pi i/(A k_z).  "
    <> "Energy balance |R|^2+|T|^2=1 is deferred to Phase 3b (needs the undamped G0).  Executable twin: "
    <> "IntraPlaneRT.wl.  Python cross-check: cubic_scattering/tests/test_intraplane_rt.py."];
 
@@ -121,7 +123,18 @@ makeTwin["IntraPlaneEnergyBalance.wl", "Phase 3b cycle 3 : Layer Energy Balance 
    <> "R/T projection, assembles the propagating-channel scattering matrix S = [[Rd,Tu],[Td,Ru]] "
    <> "(+ SH 2x2), and gates unitarity S^dag S = I across normal / sub-critical / post-critical p.  "
    <> "Sub-wavelength precondition (no open diffraction orders) makes the specular statement well-posed.  "
+   <> "Unitary to 3.5e-14 at every p, reciprocal to 2.8e-16.  (A former 1.2e-5 floor came from a Weyl "
+   <> "prefactor i/(2 k_z A) in place of 2 pi i/(A k_z) and an incident SV -> N / SH -> M split.)  "
+   <> "Open orders: IntraPlaneEnergyBalanceOpenOrders.wl.  "
    <> "Executable twin: IntraPlaneEnergyBalance.wl.  Python cross-check: "
    <> "cubic_scattering/tests/test_intraplane_energy.py."];
+
+makeTwin["IntraPlaneEnergyBalanceOpenOrders.wl", "Energy Balance of the Sphere Array over Every Open Diffraction Order",
+   "The independent second implementation of the layer multiple-scattering energy balance: a "
+   <> "super-wavelength lattice (k_S a_L = 12) with 46 open channels, S^dag S = I at 7.7e-13 (N_max 3), "
+   <> "agreeing with the Python layer_kkr S-matrix entry by entry to 4e-10.  Controls: coupling off, "
+   <> "the Weyl factor i/(2 k_z A), and an SV -> N / SH -> M incident split each break the balance.  "
+   <> "Executable twin: IntraPlaneEnergyBalanceOpenOrders.wl.  Python cross-check: "
+   <> "scripts/gate_layer_kkr_energy_balance.py [5]."];
 
 Print["Phase-2/3 notebook twins generated."];
