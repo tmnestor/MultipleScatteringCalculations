@@ -288,7 +288,8 @@ Do[Module[{G0, Tc, e, modes, Spsv, eR, shResid, antiRd, antiRu, tparity},
      energyMetric, ")=", ScientificForm[eR, 3], ", SH=", ScientificForm[shResid, 3],
      ", recip=", ScientificForm[Max[antiRd, antiRu, tparity], 3]]],
    {p, pList}];
-enTol = 1.*^-3;   (* gate-[3] tolerance: set from the Task-2 observed floor (R3) *)
+enTol = 1.*^-10;  (* gate-[3] tolerance: the balance is exact; observed 3.5e-14 at every p.  The former
+                     1e-3 accommodated a 1.2e-5 floor that was a defect (Weyl factor, incident split) *)
 energyOK = Max[energyResids] < enTol;
 recipOK = Max[recipResids] < 1.*^-6;
 Print["  [3] energy unitarity (", energyMetric, ", restricted) max = ",

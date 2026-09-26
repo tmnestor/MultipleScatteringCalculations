@@ -10,7 +10,7 @@
 		"Nmax":2,
 		"etaU":0.7,
 		"energyMetric":"plain",
-		"enTol":1.0e-3,
+		"enTol":1.0e-10,
 		"contrast":{
 			"Dlambda":2.0e9,
 			"Dmu":1.0e9,
