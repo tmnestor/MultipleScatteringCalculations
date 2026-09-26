@@ -36,13 +36,18 @@ THE CHECKS:
       same S is not unitary -- the check sees the coupling;
   [3] the diffracted orders carry a flux the check cannot pass without: the
       balance restricted to the specular channels fails;
-  [4] a stronger contrast and a second period, with more open orders.
+  [4] a stronger contrast and a second period, with more open orders;
+  [5] the SECOND IMPLEMENTATION: ``Mathematica/IntraPlaneEnergyBalanceOpenOrders.wl``
+      builds the same S-matrix sharing no code with this one (CartesianT0 Mie,
+      its own Ewald sums and projection, numerically extracted vector
+      translations); the two must agree ENTRY BY ENTRY, not only in modulus.
 
 Run:  conda run -n seismic python scripts/gate_layer_kkr_energy_balance.py
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -61,6 +66,8 @@ KP, KS = OMEGA / REF.alpha, OMEGA / REF.beta
 #: An order is open when k_z/k exceeds this; closer to grazing the flux weight
 #: vanishes and the channel carries no energy either way.
 GRAZING = 1e-3
+
+MATHEMATICA_REF = ROOT / "Mathematica" / "IntraPlaneEnergyBalanceOpenOrders_reference.json"
 
 _PASS: list[tuple[str, bool]] = []
 
@@ -203,6 +210,25 @@ def census(period: float) -> str:
     return ", ".join(f"{m} {sum(c[0] == m for c in ch)}" for m in ("P", "SV", "SH"))
 
 
+def mathematica_s() -> tuple[NDArray, list[tuple[str, int, int, bool]], dict]:
+    """The Mathematica chain's flux-basis S-matrix, its channels and parameters.
+
+    Returns:
+        (S, channels as (mode, i, j, upward) with G = 2 pi (i, j)/L, params).
+    """
+    if not MATHEMATICA_REF.exists():
+        raise FileNotFoundError(
+            f"missing the second implementation's dump {MATHEMATICA_REF}.\n"
+            "  It is written by Mathematica/IntraPlaneEnergyBalanceOpenOrders.wl.  Recover with:\n"
+            "  /Applications/Wolfram.app/Contents/MacOS/wolframscript -file "
+            "Mathematica/IntraPlaneEnergyBalanceOpenOrders.wl 3"
+        )
+    d = json.loads(MATHEMATICA_REF.read_text())
+    s = np.asarray(d["S"], dtype=float)
+    chans = [(c["mode"], int(c["i"]), int(c["j"]), bool(c["upward"])) for c in d["channels"]]
+    return s[..., 0] + 1j * s[..., 1], chans, d["params"]
+
+
 def main() -> int:
     """Run the checks.
 
@@ -245,6 +271,25 @@ def main() -> int:
         r = residual(s_matrix(per, eps, nm, coupled=True))
         print(f"      L = {per:.0f}, eps = {eps}: {census(per)}; N_max {nm}: {r:.2e}")
         report(f"energy conserved at L = {per:.0f}, eps = {eps}", r < 1e-8)
+
+    print("\n[5] against the independent Mathematica chain, entry by entry")
+    s_m, ch_m, pm = mathematica_s()
+    same = (
+        abs(pm["aL"] / pm["radius"] - period / RADIUS) < 1e-12
+        and abs(pm["kPa"] - KP * RADIUS) < 1e-12
+        and abs(pm["eps"] - 0.1) < 1e-12
+    )
+    report("the Mathematica dump is of this same array", same)
+    b = 2.0 * np.pi / period
+    ch_py = [(m, round(x / b), round(y / b), up) for m, x, y, up in open_channels(period)]
+    report("both enumerate the same open channels", sorted(ch_py) == sorted(ch_m))
+    perm = [ch_py.index(c) for c in ch_m]
+    s_py = s_matrix(period, 0.1, int(pm["Nmax"]), coupled=True)[np.ix_(perm, perm)]
+    scat = s_py - np.eye(len(perm))
+    diff = np.max(np.abs(s_m - s_py)) / np.max(np.abs(scat))
+    print(f"      N_max {pm['Nmax']}: Mathematica S^H S - I {residual(s_m):.2e}")
+    print(f"      max |S_Mathematica - S_Python| / max |S - I| = {diff:.2e}")
+    report("the two implementations agree in complex value", diff < 1e-6)
 
     npass = sum(ok for _, ok in _PASS)
     print("\n" + "=" * 78)
