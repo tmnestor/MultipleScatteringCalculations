@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     24973,        514]
-NotebookOptionsPosition[     22328,        477]
-NotebookOutlinePosition[     22645,        491]
-CellTagsIndexPosition[     22602,        488]
+NotebookDataLength[     25100,        516]
+NotebookOptionsPosition[     22455,        479]
+NotebookOutlinePosition[     22772,        493]
+CellTagsIndexPosition[     22729,        490]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -21,7 +21,7 @@ Notebook[{
 Cell["\<\
 Phase 3b cycle 3 : Layer Energy Balance (undamped G0^vec, S-matrix unitarity)\
 \
-\>", "Title",ExpressionUUID->"d808765b-bd6a-4f6b-986d-3a694d753940"],
+\>", "Title",ExpressionUUID->"958b8248-b2e8-4e72-8fe1-ed4d45b7b396"],
 
 Cell["\<\
 Builds the cycle-2 undamped vector G0^vec at physical parameters, runs the \
@@ -35,7 +35,7 @@ incident SV -> N / SH -> M split.)  Open orders: \
 IntraPlaneEnergyBalanceOpenOrders.wl.  Executable twin: \
 IntraPlaneEnergyBalance.wl.  Python cross-check: \
 cubic_scattering/tests/test_intraplane_energy.py.\
-\>", "Text",ExpressionUUID->"435ab70e-45b4-4983-bc45-dfef5bce2006"],
+\>", "Text",ExpressionUUID->"44d335f0-2cd7-4931-9e08-f42548487e1e"],
 
 Cell["\<\
 IntraPlaneEnergyBalance.wl  --  Phase 3b cycle 3:
@@ -51,7 +51,7 @@ diffraction
 (IntraPlaneKambeVector.wl)
    and the Phase-3a projection (IntraPlaneRT.wl); Gets only CartesianT0.wl.
    Time e^{-i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).\
-\>", "Text",ExpressionUUID->"65f63b9e-b144-4644-a6ce-ea58c4ee11c9"],
+\>", "Text",ExpressionUUID->"110545b4-3b21-42ff-a56e-54fd22120138"],
 
 Cell["\<\
 Get[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -85,11 +85,11 @@ ewRecip3[kappa_, r_, eta_, Gc_] := (I/(4 Aarea)) Total[Flatten[Table[
 ewTot3[kappa_, r_, eta_, Rc_, Gc_] :=
   ewReal3[kappa, r, eta, Rc] + ewRecip3[kappa, r, eta, Gc] - gKs[kappa, \
 Sqrt[r . r]];\
-\>", "Input",ExpressionUUID->"65765ec9-1524-40f2-986b-0be807f3dcee"],
+\>", "Input",ExpressionUUID->"d9b50ab1-5aa9-4872-a2e1-b7066691749f"],
 
 Cell["\<\
 Step 2: Non-memoised structure-constant projection + per-p Dtab\
-\>", "Section",ExpressionUUID->"e0fb8586-44c7-4f86-b07e-04116fab0019"],
+\>", "Section",ExpressionUUID->"7094bab7-d6e6-493c-89e0-70f008f0f897"],
 
 Cell["\<\
 Needs[\"NumericalDifferentialEquationAnalysis`\"];
@@ -108,12 +108,12 @@ DfieldU[kappa_, eta_, q_, s_] := Module[{integ},
 buildDtab[kappa_, eta_, qmax_] := Association[
    Flatten[Table[{q, s} -> DfieldU[kappa, eta, q, s], {q, 0, qmax}, {s, -q, \
 q}], 1]];\
-\>", "Input",ExpressionUUID->"b76e134c-44ae-4557-9487-670d27e4b0b1"],
+\>", "Input",ExpressionUUID->"a70060a1-2378-4ce5-8c6d-85a36daf8075"],
 
 Cell["\<\
 Step 3: Vector helpers + coeff_q extraction + block builders
    (verbatim from IntraPlaneKambeVector.wl lines 69-151)\
-\>", "Section",ExpressionUUID->"aee63cbd-741d-4192-9807-40a09093ae61"],
+\>", "Section",ExpressionUUID->"9df0745d-6838-41e0-8b2d-62252654d288"],
 
 Cell["\<\
 gaunt[l1_, m1_, l2_, m2_, l3_, m3_] :=
@@ -182,9 +182,9 @@ Abs[n - nu], n + nu}];
 g0MNblock[cP_, nu_, mu_, c_, n_, m_, kS_, Dfun_] := Module[{cf = coeffq[cP, \
 nu, mu, c, n, m, kS]},
    Total[KeyValueMap[#2 Dfun[#1, m - mu] &, cf]]];\
-\>", "Input",ExpressionUUID->"f6faec56-c5d2-4a52-8667-6fa678897d75"],
+\>", "Input",ExpressionUUID->"a1763ff5-ddfb-41df-a1e5-e9415b65076f"],
 
-Cell["Step 4: setMie, idxVof, T0LMN, collV, buildG0undamped", "Section",ExpressionUUID->"76940cf9-3ba1-41f0-ba56-53d52580c59c"],
+Cell["Step 4: setMie, idxVof, T0LMN, collV, buildG0undamped", "Section",ExpressionUUID->"311839e9-9e55-4c26-b95f-f070248873be"],
 
 Cell["\<\
 setMie[ka_, Dl_, Dm_, Dr_] := Module[{rhoI = rho0Bg + Dr, lamI0 = lam0 + Dl, \
@@ -225,11 +225,11 @@ DtabS, DuP, DuS, Gentry},
 g0MNblock[ct, nu, mu, cs, n, m, kSo, DuS],
     True, 0];
   Table[Gentry[idx[[i]], idx[[j]]], {i, nD}, {j, nD}]];\
-\>", "Input",ExpressionUUID->"49ff67a7-461e-4be0-9bac-b9b74706595c"],
+\>", "Input",ExpressionUUID->"43f00d4e-c8bc-4e2b-b0e8-7acbbb6200b3"],
 
 Cell["\<\
 Step 5: Gate [1] (no open diffraction orders) + Gate [2] (eta-independence)\
-\>", "Section",ExpressionUUID->"8b052e76-4a88-4efa-8e97-f9eabcb8656b"],
+\>", "Section",ExpressionUUID->"00fe58c8-a0cd-4b09-8718-b7e768a19036"],
 
 Cell["\<\
 Print[\"==== Phase 3b cycle 3 :: layer energy balance (undamped G0^vec) \
@@ -267,12 +267,12 @@ etaIndep = Max[etaIndepP, etaIndepS];
 Print[\"  [2] undamped eta-independence (kP=\", kPo, \", kS=\", kSo, \") = \
 \", ScientificForm[etaIndep, 3],
    \" -> \", If[etaIndep < 1.*^-6, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"e0152e59-7aa5-4cc3-92c3-94c0da2ac8b0"],
+\>", "Input",ExpressionUUID->"8ba3d1c7-9ad3-4fb2-b1f0-7702c2a6cc13"],
 
 Cell["\<\
 Task 2 Step 1: Phase-3a slowness geometry + thesis-eps R/T projection
    (verbatim from IntraPlaneRT.wl lines 124-186; rho0 -> rho0Bg for this file)\
-\>", "Section",ExpressionUUID->"f2e33275-45c1-40d2-9d2d-b0220a19f73c"],
+\>", "Section",ExpressionUUID->"a1e99122-a9e9-4c10-bb36-36bdf197647e"],
 
 Cell["\<\
 toSph[v_] := {v[[2]], v[[3]], v[[1]]};
@@ -330,11 +330,11 @@ k_z)) f per order *)
   (2 Pi I/(etaOut omegaOf Acell)) (muTh[inMode, p, inSign]/muTh[outMode, p, \
 outSign]) *
     (eout . If[outMode == \"P\", First[f], Last[f]])];\
-\>", "Input",ExpressionUUID->"52f75648-8eae-4888-9a36-9f19b84d07f5"],
+\>", "Input",ExpressionUUID->"ea8202fd-887b-4070-b153-d12ae8207d3d"],
 
 Cell["\<\
 Task 2 Step 2: rtBlocksE extended with up-incident SH (full SH 2x2)\
-\>", "Section",ExpressionUUID->"47b88263-f899-4286-ad45-98b58976202b"],
+\>", "Section",ExpressionUUID->"ad870b4e-4d9c-4f70-96e2-53e7432ee2d1"],
 
 Cell["\<\
 rtBlocksE[Tcoll_, p_, Nmax_] := Module[{modes = {\"P\", \"SV\"}, blk},
@@ -350,11 +350,11 @@ down-out *)
 down-out *)
     \"Tsh_u\" -> rtAmpE[Tcoll, \"SH\", p, -1., \"SH\", -1., Nmax]|>]; (* \
 up-in, up-out *)\
-\>", "Input",ExpressionUUID->"60a35f92-9c48-42a5-9d22-35b7facf14f0"],
+\>", "Input",ExpressionUUID->"d2c41f7f-9611-4b50-8140-6a430a34854e"],
 
 Cell["\<\
 Task 2 Step 3: Propagating-mode selection, S assembly, both energy metrics\
-\>", "Section",ExpressionUUID->"166bd4fe-2b52-403b-96ef-e45084462d00"],
+\>", "Section",ExpressionUUID->"98ed9997-b9ba-421b-a9ce-0dfd870db632"],
 
 Cell["\<\
 modePos = <|\"P\" -> 1, \"SV\" -> 2|>;
@@ -379,9 +379,9 @@ shS[e_] := {{e[\"Rsh\"], e[\"Tsh_u\"] + 1.}, {e[\"Tsh\"] + 1., \
 e[\"Rsh_u\"]}};
 shEnergyResid[e_] := Module[{s = shS[e]}, Abs[Abs[s[[1, 1]]]^2 + Abs[s[[2, \
 1]]]^2 - 1.]];\
-\>", "Input",ExpressionUUID->"ebb6e676-0cb3-420c-a5a1-09310c56c375"],
+\>", "Input",ExpressionUUID->"6dc3fd59-a023-4e55-9e0f-f1d1019d8bad"],
 
-Cell["Task 2 Step 4: Resolve the energy metric (R1) at pNormal", "Section",ExpressionUUID->"b8526641-29ff-4db9-b0e4-aa79da12e033"],
+Cell["Task 2 Step 4: Resolve the energy metric (R1) at pNormal", "Section",ExpressionUUID->"1c37ec2d-befa-4a4e-bdab-b827dd867ecd"],
 
 Cell["\<\
 Nm = 2;
@@ -396,11 +396,11 @@ Print[\"  R1 metric @pNormal: |S^dag S - I| = \", ScientificForm[residPlain, \
    \", |S^dag Sig S - Sig| = \", ScientificForm[residSigma, 3],
    \" -> energyMetric = \", energyMetric];
 Print[\"  SH @pNormal: |Rsh|^2+|Tsh|^2-1 = \", ScientificForm[residSH, 3]];\
-\>", "Input",ExpressionUUID->"81978ce5-2afe-4027-89a6-ee8cb790c84f"],
+\>", "Input",ExpressionUUID->"8fb2830f-6911-4eb0-ba9b-7499f52d9980"],
 
 Cell["\<\
 Task 3 Step 1: p-sweep -- energy gate [3] + reciprocity gate [4]\
-\>", "Section",ExpressionUUID->"c28e6be5-530e-4486-90e3-c0f54e9d8ae4"],
+\>", "Section",ExpressionUUID->"6bfc4a93-05f7-464f-809a-de532ab2dbcc"],
 
 Cell["\<\
 Sig2 = DiagonalMatrix[{1., -1.}];
@@ -434,8 +434,10 @@ modes, \"): energy(\",
 ScientificForm[shResid, 3],
      \", recip=\", ScientificForm[Max[antiRd, antiRu, tparity], 3]]],
    {p, pList}];
-enTol = 1.*^-3;   (* gate-[3] tolerance: set from the Task-2 observed floor \
-(R3) *)
+enTol = 1.*^-10;  (* gate-[3] tolerance: the balance is exact; observed \
+3.5e-14 at every p.  The former
+                     1e-3 accommodated a 1.2e-5 floor that was a defect (Weyl \
+factor, incident split) *)
 energyOK = Max[energyResids] < enTol;
 recipOK = Max[recipResids] < 1.*^-6;
 Print[\"  [3] energy unitarity (\", energyMetric, \", restricted) max = \",
@@ -444,9 +446,9 @@ Print[\"  [3] energy unitarity (\", energyMetric, \", restricted) max = \",
 Print[\"  [4] reciprocity preserved (undamped) max = \", \
 ScientificForm[Max[recipResids], 3],
    \" -> \", If[recipOK, \"PASS\", \"FAIL\"]];\
-\>", "Input",ExpressionUUID->"5f3dbb16-95a8-4036-a1ef-e2dc6cb4fa34"],
+\>", "Input",ExpressionUUID->"5cae8996-498a-49dd-9cdf-d5b20abada26"],
 
-Cell["Task 3 Step 2: Nmax convergence sub-study -- gate [5]", "Section",ExpressionUUID->"ec8d2e31-bb31-46db-a9cd-79cdee2cf456"],
+Cell["Task 3 Step 2: Nmax convergence sub-study -- gate [5]", "Section",ExpressionUUID->"165d154c-29df-4711-82c8-7d7e57831aa8"],
 
 Cell["\<\
 pStudy = 0.5 pcritP;
@@ -455,9 +457,9 @@ nmaxStudy = Table[Module[{G0, Tc, e, modes},
     e = rtBlocksE[Tc, pStudy, nmx]; modes = propModes[pStudy];
     {nmx, N[energyResid[e, modes, energyMetric]]}], {nmx, 1, 3}];
 Print[\"  [5] Nmax convergence (energy resid @subcritical): \", nmaxStudy];\
-\>", "Input",ExpressionUUID->"73aec453-dc57-4753-973f-1a90d3f5c568"],
+\>", "Input",ExpressionUUID->"6fc8d46e-217d-42f0-bf1e-07338606fed4"],
 
-Cell["Task 3 Step 3: JSON dump", "Section",ExpressionUUID->"9ac77c64-2939-43dd-86ed-bdcdb7d7bfc5"],
+Cell["Task 3 Step 3: JSON dump", "Section",ExpressionUUID->"815a95a2-ef88-4610-a152-eb2c9c3f4a54"],
 
 Cell["\<\
 Export[\"/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
@@ -473,11 +475,11 @@ rho0Bg, \"aa\" -> aa,
     \"stageEB\" -> stageEB, \"nmaxStudy\" -> nmaxStudy|>];
 Print[\"  wrote IntraPlaneEnergyBalance_reference.json\"];
 Print[\"Phase 3b cycle 3 (IntraPlaneEnergyBalance.wl) loaded.\"];\
-\>", "Input",ExpressionUUID->"5a77c69b-a4d6-4ce6-8b6b-3b0df783b231"]
+\>", "Input",ExpressionUUID->"be217ea8-1d4d-4ffb-b568-cd578c0e0cb1"]
 },
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (July 2, 2026)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"6c4e7a39-8399-4ef5-8ec9-d3a65ae01c1c"
+ExpressionUUID->"2dc9c3be-db50-4b4a-bc65-821cc281a78e"
 ]
 (* End of Notebook Content *)
 
@@ -490,32 +492,32 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 159, 3, 70, "Title",ExpressionUUID->"d808765b-bd6a-4f6b-986d-3a694d753940"],
-Cell[716, 25, 821, 12, 70, "Text",ExpressionUUID->"435ab70e-45b4-4983-bc45-dfef5bce2006"],
-Cell[1540, 39, 811, 14, 70, "Text",ExpressionUUID->"65f63b9e-b144-4644-a6ce-ea58c4ee11c9"],
-Cell[2354, 55, 1550, 32, 70, "Input",ExpressionUUID->"65765ec9-1524-40f2-986b-0be807f3dcee"],
-Cell[3907, 89, 145, 2, 70, "Section",ExpressionUUID->"e0fb8586-44c7-4f86-b07e-04116fab0019"],
-Cell[4055, 93, 918, 17, 70, "Input",ExpressionUUID->"b76e134c-44ae-4557-9487-670d27e4b0b1"],
-Cell[4976, 112, 199, 3, 70, "Section",ExpressionUUID->"aee63cbd-741d-4192-9807-40a09093ae61"],
-Cell[5178, 117, 3665, 67, 70, "Input",ExpressionUUID->"f6faec56-c5d2-4a52-8667-6fa678897d75"],
-Cell[8846, 186, 127, 0, 70, "Section",ExpressionUUID->"76940cf9-3ba1-41f0-ba56-53d52580c59c"],
-Cell[8976, 188, 1930, 39, 70, "Input",ExpressionUUID->"49ff67a7-461e-4be0-9bac-b9b74706595c"],
-Cell[10909, 229, 157, 2, 70, "Section",ExpressionUUID->"8b052e76-4a88-4efa-8e97-f9eabcb8656b"],
-Cell[11069, 233, 1622, 36, 70, "Input",ExpressionUUID->"e0152e59-7aa5-4cc3-92c3-94c0da2ac8b0"],
-Cell[12694, 271, 230, 3, 70, "Section",ExpressionUUID->"f2e33275-45c1-40d2-9d2d-b0220a19f73c"],
-Cell[12927, 276, 2630, 56, 70, "Input",ExpressionUUID->"52f75648-8eae-4888-9a36-9f19b84d07f5"],
-Cell[15560, 334, 149, 2, 70, "Section",ExpressionUUID->"47b88263-f899-4286-ad45-98b58976202b"],
-Cell[15712, 338, 729, 14, 70, "Input",ExpressionUUID->"60a35f92-9c48-42a5-9d22-35b7facf14f0"],
-Cell[16444, 354, 156, 2, 70, "Section",ExpressionUUID->"166bd4fe-2b52-403b-96ef-e45084462d00"],
-Cell[16603, 358, 1258, 23, 70, "Input",ExpressionUUID->"ebb6e676-0cb3-420c-a5a1-09310c56c375"],
-Cell[17864, 383, 130, 0, 70, "Section",ExpressionUUID->"b8526641-29ff-4db9-b0e4-aa79da12e033"],
-Cell[17997, 385, 667, 13, 70, "Input",ExpressionUUID->"81978ce5-2afe-4027-89a6-ee8cb790c84f"],
-Cell[18667, 400, 146, 2, 70, "Section",ExpressionUUID->"c28e6be5-530e-4486-90e3-c0f54e9d8ae4"],
-Cell[18816, 404, 2068, 42, 70, "Input",ExpressionUUID->"5f3dbb16-95a8-4036-a1ef-e2dc6cb4fa34"],
-Cell[20887, 448, 127, 0, 70, "Section",ExpressionUUID->"ec8d2e31-bb31-46db-a9cd-79cdee2cf456"],
-Cell[21017, 450, 417, 7, 70, "Input",ExpressionUUID->"73aec453-dc57-4753-973f-1a90d3f5c568"],
-Cell[21437, 459, 98, 0, 70, "Section",ExpressionUUID->"9ac77c64-2939-43dd-86ed-bdcdb7d7bfc5"],
-Cell[21538, 461, 786, 14, 70, "Input",ExpressionUUID->"5a77c69b-a4d6-4ce6-8b6b-3b0df783b231"]
+Cell[554, 20, 159, 3, 70, "Title",ExpressionUUID->"958b8248-b2e8-4e72-8fe1-ed4d45b7b396"],
+Cell[716, 25, 821, 12, 70, "Text",ExpressionUUID->"44d335f0-2cd7-4931-9e08-f42548487e1e"],
+Cell[1540, 39, 811, 14, 70, "Text",ExpressionUUID->"110545b4-3b21-42ff-a56e-54fd22120138"],
+Cell[2354, 55, 1550, 32, 70, "Input",ExpressionUUID->"d9b50ab1-5aa9-4872-a2e1-b7066691749f"],
+Cell[3907, 89, 145, 2, 70, "Section",ExpressionUUID->"7094bab7-d6e6-493c-89e0-70f008f0f897"],
+Cell[4055, 93, 918, 17, 70, "Input",ExpressionUUID->"a70060a1-2378-4ce5-8c6d-85a36daf8075"],
+Cell[4976, 112, 199, 3, 70, "Section",ExpressionUUID->"9df0745d-6838-41e0-8b2d-62252654d288"],
+Cell[5178, 117, 3665, 67, 70, "Input",ExpressionUUID->"a1763ff5-ddfb-41df-a1e5-e9415b65076f"],
+Cell[8846, 186, 127, 0, 70, "Section",ExpressionUUID->"311839e9-9e55-4c26-b95f-f070248873be"],
+Cell[8976, 188, 1930, 39, 70, "Input",ExpressionUUID->"43f00d4e-c8bc-4e2b-b0e8-7acbbb6200b3"],
+Cell[10909, 229, 157, 2, 70, "Section",ExpressionUUID->"00fe58c8-a0cd-4b09-8718-b7e768a19036"],
+Cell[11069, 233, 1622, 36, 70, "Input",ExpressionUUID->"8ba3d1c7-9ad3-4fb2-b1f0-7702c2a6cc13"],
+Cell[12694, 271, 230, 3, 70, "Section",ExpressionUUID->"a1e99122-a9e9-4c10-bb36-36bdf197647e"],
+Cell[12927, 276, 2630, 56, 70, "Input",ExpressionUUID->"ea8202fd-887b-4070-b153-d12ae8207d3d"],
+Cell[15560, 334, 149, 2, 70, "Section",ExpressionUUID->"ad870b4e-4d9c-4f70-96e2-53e7432ee2d1"],
+Cell[15712, 338, 729, 14, 70, "Input",ExpressionUUID->"d2c41f7f-9611-4b50-8140-6a430a34854e"],
+Cell[16444, 354, 156, 2, 70, "Section",ExpressionUUID->"98ed9997-b9ba-421b-a9ce-0dfd870db632"],
+Cell[16603, 358, 1258, 23, 70, "Input",ExpressionUUID->"6dc3fd59-a023-4e55-9e0f-f1d1019d8bad"],
+Cell[17864, 383, 130, 0, 70, "Section",ExpressionUUID->"1c37ec2d-befa-4a4e-bdab-b827dd867ecd"],
+Cell[17997, 385, 667, 13, 70, "Input",ExpressionUUID->"8fb2830f-6911-4eb0-ba9b-7499f52d9980"],
+Cell[18667, 400, 146, 2, 70, "Section",ExpressionUUID->"6bfc4a93-05f7-464f-809a-de532ab2dbcc"],
+Cell[18816, 404, 2195, 44, 70, "Input",ExpressionUUID->"5cae8996-498a-49dd-9cdf-d5b20abada26"],
+Cell[21014, 450, 127, 0, 70, "Section",ExpressionUUID->"165d154c-29df-4711-82c8-7d7e57831aa8"],
+Cell[21144, 452, 417, 7, 70, "Input",ExpressionUUID->"6fc8d46e-217d-42f0-bf1e-07338606fed4"],
+Cell[21564, 461, 98, 0, 70, "Section",ExpressionUUID->"815a95a2-ef88-4610-a152-eb2c9c3f4a54"],
+Cell[21665, 463, 786, 14, 70, "Input",ExpressionUUID->"be217ea8-1d4d-4ffb-b568-cd578c0e0cb1"]
 }
 ]
 *)
