@@ -15,11 +15,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-REF = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneEnergyBalance_reference.json"
-)
+REF = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneEnergyBalance_reference.json"
 
 
 @pytest.fixture(scope="module")
@@ -46,11 +42,7 @@ def test_energy_unitarity_each_p(dump):
     worst = 0.0
     for st in dump["stageEB"]:
         s = _cplx(st["S_psv"])
-        m = (
-            _sig_metric(st["propModes"])
-            if metric == "sigma"
-            else np.eye(s.shape[0], dtype=complex)
-        )
+        m = _sig_metric(st["propModes"]) if metric == "sigma" else np.eye(s.shape[0], dtype=complex)
         resid = np.max(np.abs(s.conj().T @ m @ s - m))
         worst = max(worst, resid)
     assert worst < tol, f"energy ({metric}) residual {worst:.3e} >= tol {tol:.3e}"
@@ -98,24 +90,45 @@ def test_no_open_diffraction_orders(dump):
     pr = dump["params"]
     omega = pr["kPo"] * pr["alpha"] / pr["aa"]
     recip_b = 2 * math.pi / pr["aLpitch"]
-    shells = [
-        (m, n) for m in range(-3, 4) for n in range(-3, 4) if not (m == 0 and n == 0)
-    ]
+    shells = [(m, n) for m in range(-3, 4) for n in range(-3, 4) if not (m == 0 and n == 0)]
     worst_margin = math.inf
     for st in dump["stageEB"]:
         kpar = np.array([omega * st["p"], 0.0])
-        margin = (
-            min(np.linalg.norm(kpar + recip_b * np.array([m, n])) for m, n in shells)
-            - pr["kSo"]
-        )
+        margin = min(np.linalg.norm(kpar + recip_b * np.array([m, n])) for m, n in shells) - pr["kSo"]
         worst_margin = min(worst_margin, margin)
     assert worst_margin > 0.0, f"open diffraction order: margin {worst_margin:.3e}"
     assert abs(worst_margin - dump["diffMargin"]) < 1e-6
 
 
+#: Below this the residual is round-off, whose ratio between two N_max is noise
+#: (6.5e-15 -> 7.6e-15 at N_max 2 -> 3), not a trend.
+ROUNDOFF_FLOOR = 1e-12
+
+
+def _nmax_diverges(r2: float, r3: float) -> bool:
+    """True if the N_max = 3 residual has grown past both 1.5x N_max = 2 and round-off."""
+    return r3 > max(1.5 * r2, ROUNDOFF_FLOOR)
+
+
 def test_nmax_does_not_diverge(dump):
     """Energy residual must not blow up with Nmax (convergence, not divergence)."""
     study = {int(nmx): r for nmx, r in dump["nmaxStudy"]}
-    assert study[3] <= 1.5 * study[2], (
-        "energy residual diverges with Nmax (ratio > 1.5)"
+    assert not _nmax_diverges(study[2], study[3]), (
+        f"energy residual diverges with Nmax: {study[2]:.3e} -> {study[3]:.3e} "
+        f"(ratio > 1.5 and above the {ROUNDOFF_FLOOR:.0e} round-off floor)"
     )
+
+
+@pytest.mark.parametrize(
+    ("r2", "r3", "diverges"),
+    [
+        (6.5e-15, 7.6e-15, False),  # round-off jitter, ratio 1.17
+        (6.5e-15, 5e-13, False),  # ratio 77, still round-off
+        (1e-14, 1e-9, True),  # a real blow-up from round-off
+        (1e-6, 2e-6, True),  # above the floor, ratio 2
+        (1e-6, 1.2e-6, False),  # above the floor, ratio 1.2
+    ],
+)
+def test_nmax_divergence_rule(r2, r3, diverges):
+    """The floor forgives round-off jitter but still catches growth above it."""
+    assert _nmax_diverges(r2, r3) is diverges
