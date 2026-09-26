@@ -32,9 +32,14 @@ neighbours by regularised least squares) make P invertible (cond 3e3) and cut
 iterations; at 6^3, none / 27-voxel truncation / centred (lam = 1e-3):
     rho 0.06: 7 / 7 / 5      rho 0.57: 20 / 16 / 9
     rho 1.98: 61 / 36 / 13   rho 4.99: 269 / 142 / 28
-Still idealised: stencils fitted against this domain, H solved by exact LU.
+TRANSLATION-INVARIANT stencils (``invariant`` mode: 27 neighbourhood types,
+each fitted ONCE against a fixed far window R = 7, independent of the domain)
+keep nearly all of it.  none / per-domain / invariant:
+    6^3:  rho 0.06: 7/5/5   0.57: 20/9/10   1.98: 61/13/16   4.99: 269/28/34
+    8^3:  rho 0.06: 7/6/6   0.69: 23/10/11  2.48: 99/20/23   6.41: 998/43/50
+Still idealised: H solved by exact LU (no sweep), whole-space background.
 
-Run:  conda run -n seismic python scripts/measure_sparsify_preconditioner.py [N] [variants]
+Run:  conda run -n seismic python scripts/measure_sparsify_preconditioner.py [N] [variants|invariant]
 SI units (m, Pa, kg/m3); real omega, as the end-to-end gate.
 """
 
@@ -299,6 +304,146 @@ def main() -> int:
     return 0
 
 
+def kernel_window(r: int) -> NDArray:
+    """G0 blocks at every offset within |d|_inf <= r, from the solver's own apply_g0_3d.
+
+    Args:
+        r: Window half-width, in pitches.
+
+    Returns:
+        Shape (2r+1, 2r+1, 2r+1, 9, 9): [dz+r, dx+r, dy+r] = G0(receiver - source = d).
+    """
+    n = 2 * r + 1
+    cache = build_g0_cache_3d(SweepGrid3D(n_z=n, n_x=n, n_y=n, pitch=PITCH), REF, OM)
+    ker = np.zeros((n, n, n, 9, 9), dtype=complex)
+    for c in range(9):
+        e = np.zeros((n, n, n, 9), dtype=complex)
+        e[r, r, r, c] = 1.0  # source at the window centre: receiver index = offset + r
+        ker[..., c] = apply_g0_3d(e, cache)
+    return ker
+
+
+def stencils_invariant(
+    ker: NDArray, r: int, lam: float = 1e-3
+) -> dict[tuple[int, ...], tuple[list[tuple[int, ...]], NDArray]]:
+    """Centre-anchored stencils fitted ONCE per neighbourhood type, not per voxel.
+
+    A type is (s_z, s_x, s_y), each -1 (voxel on the low face), 0 (interior) or
+    +1 (high face).  Near offsets are those of {-1,0,1}^3 the type allows; the far
+    set is every other offset within |d|_inf <= r that the type allows (a voxel on
+    a low face has nothing below it) -- Liu & Ying's union of translated
+    complements, independent of the domain it will be used on.
+
+    Args:
+        ker: ``kernel_window(r + 1)``: a near offset (|o| <= 1) minus a far one
+            (|f| <= r) reaches r + 1.
+        r: Half-width of the far set.
+        lam: Tikhonov weight, as ``stencils_centred``.
+
+    Returns:
+        {type: (near offsets, centre first; alpha of shape (9 |near|, 9))}.
+    """
+    d9 = np.r_[np.ones(3), np.full(6, PITCH)]
+    c = r + 1  # index of offset 0 in ker
+    if ker.shape[0] != 2 * c + 1:
+        msg = (
+            f"kernel window has half-width {(ker.shape[0] - 1) // 2}, expected {c}.\n"
+            "  Where: scripts/measure_sparsify_preconditioner.py, stencils_invariant(ker=...)\n"
+            f"  Valid: kernel_window({c}) -- near minus far offsets reach r + 1\n"
+            "  Fix:   build the window one pitch wider than the far set."
+        )
+        raise ValueError(msg)
+    out = {}
+    for typ in itertools.product((-1, 0, 1), repeat=3):
+
+        def allowed(o: tuple[int, ...], lim: int, t: tuple[int, ...] = typ) -> bool:
+            return all(
+                (-lim if s >= 0 else 0) <= v <= (lim if s <= 0 else 0) for v, s in zip(o, t, strict=True)
+            )
+
+        near = [o for o in itertools.product((-1, 0, 1), repeat=3) if allowed(o, 1)]
+        near.sort(key=lambda o: o != (0, 0, 0))  # centre first
+        far = [
+            o
+            for o in itertools.product(range(-r, r + 1), repeat=3)
+            if allowed(o, r) and max(map(abs, o)) > 1
+        ]
+        k = np.zeros((9 * len(near), 9 * len(far)), dtype=complex)
+        for i, o in enumerate(near):
+            for j, f in enumerate(far):
+                dz, dx, dy = (o[0] - f[0] + c, o[1] - f[1] + c, o[2] - f[2] + c)
+                k[9 * i : 9 * i + 9, 9 * j : 9 * j + 9] = d9[:, None] * ker[dz, dx, dy]
+        k_c, k_o = k[:9], k[9:]
+        gram = k_o @ k_o.conj().T
+        reg = lam * float(np.linalg.eigvalsh(gram)[-1]) * np.eye(gram.shape[0])
+        xh = -np.linalg.solve((gram + reg).T, (k_c @ k_o.conj().T).T).T
+        out[typ] = (near, np.vstack([np.eye(9), xh.conj().T]))
+    return out
+
+
+def place_invariant(sten_types: dict) -> list:
+    """Apply the per-type stencils at every voxel of the N^3 domain.
+
+    Args:
+        sten_types: ``stencils_invariant`` output.
+
+    Returns:
+        The ``stencils`` list format: per voxel, (mu dofs, alpha).
+    """
+    out = []
+    for z, x, y in itertools.product(range(N), repeat=3):
+        typ = tuple(-1 if v == 0 else (1 if v == N - 1 else 0) for v in (z, x, y))
+        near, alpha = sten_types[typ]
+        vox = np.array([((z + a) * N + (x + b)) * N + (y + c) for a, b, c in near])
+        out.append((dofs(vox), alpha))
+    return out
+
+
+def compare_invariant(r: int = 7) -> int:
+    """Per-domain stencils (the idealised best case) against translation-invariant ones.
+
+    Args:
+        r: Window half-width for the invariant fit.
+
+    Returns:
+        0.
+    """
+    print("=" * 78)
+    print(f"TRANSLATION-INVARIANT STENCILS AT {N}^3 ({9 * N**3} unknowns), window R = {r}")
+    print("=" * 78)
+    clock = time.perf_counter()
+    g = dense_g0()
+    nbs = neighbourhoods()
+    row_scale = np.tile(np.r_[np.ones(3), np.full(6, PITCH)], N**3)
+    per_domain, _ = stencils_centred(g, nbs, row_scale, 1e-3)
+    print(f"  [{time.perf_counter() - clock:5.0f} s] dense G0 and per-domain stencils", flush=True)
+    types = stencils_invariant(kernel_window(r + 1), r)
+    invariant = place_invariant(types)
+    print(f"  [{time.perf_counter() - clock:5.0f} s] 27 invariant stencil types fitted once", flush=True)
+    size = g.shape[0]
+    rng = np.random.default_rng(1)
+    b: NDArray = np.asarray(rng.standard_normal(size) + 1j * rng.standard_normal(size))
+    cols = ("rho", "none", "per-domain", "invariant", "|PA-H|/|PA| inv")
+    print(
+        f"\n  {'strength':>8} "
+        + " ".join(f"{c:>{w}}" for c, w in zip(cols, (7, 6, 11, 10, 16), strict=True))
+    )
+    for strength in (1.0, 10.0, 30.0, 60.0):
+        tb = t_blocks(strength)
+        t = sp.block_diag([tb[z, x, y] for z, x, y in itertools.product(range(N), repeat=3)]).toarray()
+        a = np.eye(size) - g @ t
+        rho = float(np.abs(eigs(g @ t, k=1, which="LM", return_eigenvectors=False))[0])
+        row = [run_gmres(a, b, None)]
+        for sten in (per_domain, invariant):
+            h, p = assemble(g, t, sten, row_scale)
+            lu_h = splu(h)
+            row.append(run_gmres(a, b, lambda v, lu=lu_h, pp=p: lu.solve(pp @ v)))
+        pa = p @ a
+        err = float(np.linalg.norm(pa - h.toarray()) / np.linalg.norm(pa))
+        print(f"  {strength:8g} {rho:7.3f} {row[0]:6d} {row[1]:11d} {row[2]:10d} {err:16.2e}", flush=True)
+    return 0
+
+
 def compare_variants() -> int:
     """Smallest-singular versus centre-anchored stencils: conditioning, spectrum, iterations.
 
@@ -355,4 +500,6 @@ def compare_variants() -> int:
 
 
 if __name__ == "__main__":
+    if "invariant" in sys.argv:
+        raise SystemExit(compare_invariant())
     raise SystemExit(compare_variants() if "variants" in sys.argv else main())
