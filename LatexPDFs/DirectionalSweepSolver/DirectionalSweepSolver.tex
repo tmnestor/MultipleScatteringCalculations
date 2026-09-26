@@ -82,11 +82,11 @@ the lateral coupling is summed by constant-$z$ left-right ($k_x$) and constant-$
 reflectivity recursion ($k_z$). Choosing the lateral directions for the in-plane coupling sums
 the propagator along axes in which the voxels are separated, so the $k_z$ partial-wave sum that
 diverges at zero depth separation is never evaluated. The sweeps are a pure forward matvec; all
-multiple scattering, to every order, is resolved by the Krylov iterations. At strong contrast
-those iterations are preconditioned by a sparsified local system with centre-anchored stencils,
-which cuts them twentyfold on an $8^3$ lattice and needs no knowledge of the layering; sweeping
-that system in place of solving it requires an approximation of the Dirichlet-to-Neumann map
-carried by its Schur complements.
+multiple scattering, to every order, is resolved by the Krylov iterations. A sparsified local
+system with centre-anchored stencils preconditions those iterations and needs no knowledge of
+the layering, but at physical contrasts, on the lattices measured, the solve converges in a few
+iterations without it and the gain is marginal; sweeping that system in place of solving it
+requires an approximation of the Dirichlet-to-Neumann map carried by its Schur complements.
 \end{abstract}
 
 \bigskip
@@ -645,6 +645,20 @@ GMRES to $10^{-8}$ takes $7$ iterations at $\rho = 0.06$ and $998$ at $\rho = 6.
 already preconditioned this solve with a Riccati sweep (Ch.~6, Alg.~6.4); what follows asks
 what such a sweep must carry in three dimensions.
 
+\paragraph{A caveat that governs every table in this section.} The rows of each table are
+strength factors $1$, $10$, $30$ and $60$, in order. Against the background
+($\lambda_0 = 17.5$, $\mu_0 = 22.5$\,GPa), strength $1$ is $\Delta\lambda/\lambda_0 = 11\%$,
+$\Delta\mu/\mu_0 = 4\%$, $\Delta\rho/\rho_0 = 4\%$ --- the validated test contrast. Strength $10$
+is already $114\%$, $44\%$, $40\%$, and strengths $30$ and $60$ reach $343$--$686\%$ of
+$\lambda_0$: beyond the $|\Delta| < 52\%$ validity floor of the single-site renormalisation, and
+beyond any physical rock. Only the first row of each table is a physical medium. At that row the
+preconditioner saves one or two iterations of about seven. The larger savings at $\rho \ge 0.4$
+are demonstrations of the \emph{mechanism} on a strongly scattering but unphysical operator, not
+of a gain on a physical problem. Strong scattering at physical contrast arises instead from the
+number of scatterers --- $\rho$ grows with the lattice at fixed contrast --- and that regime is
+not yet measured here. The structural results below do not depend on the contrast: the stencils,
+their conditioning and the Schur-complement analysis involve $\Gz$ alone.
+
 \subsection{The sparsified system}
 
 Liu and Ying \cite{LiuYing2018} make a dense Lippmann--Schwinger system nearly local before
@@ -743,13 +757,20 @@ $3.68$ & $167$ & $83$ & $17$ & $16$\\
 \bottomrule
 \end{tabular}
 \end{center}
-The stencils matter --- five times fewer iterations than truncation at the strongest contrast ---
-but the layering in them does not. Stencils fitted to medium A's whole-space kernel do as well as
+The stencils matter --- five times fewer iterations than truncation at the strongest, unphysical,
+contrast --- but the layering in them does not. Stencils fitted to medium A's whole-space kernel do as well as
 stencils fitted plane by plane to the layered kernel, although the layered operator differs from
 that kernel by $43$--$97$\% in medium B. The system $H$ carries the true local blocks through
 $\beta_i$ either way; only the far-annihilating combinations come from the fit, and they tolerate
 a wrong kernel (\texttt{measure\_sparsify\_layered}). One whole-space stencil set therefore serves
 a stratified background.
+
+\paragraph{The cost of solving $H$ exactly.} $H$ is sparse, and a sparse LU of it is
+contrast-independent in cost. On $16^3$ ($36{,}864$ unknowns, whole space) the factorisation takes
+$7.5$ minutes with $1.8\times10^{8}$ nonzeros of fill, about $3.5$\,GB, and each application
+$0.6$\,s, against $3.7$\,s for one application of $\Gz$ (\texttt{measure\_sparse\_direct\_16}). A
+factorisation depends on the medium and the frequency, not the source, so it can be shared by
+every source of a survey.
 
 \subsection{What the sweep must carry}
 
