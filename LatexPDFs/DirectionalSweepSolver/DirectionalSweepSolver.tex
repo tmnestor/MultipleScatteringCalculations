@@ -82,7 +82,11 @@ the lateral coupling is summed by constant-$z$ left-right ($k_x$) and constant-$
 reflectivity recursion ($k_z$). Choosing the lateral directions for the in-plane coupling sums
 the propagator along axes in which the voxels are separated, so the $k_z$ partial-wave sum that
 diverges at zero depth separation is never evaluated. The sweeps are a pure forward matvec; all
-multiple scattering, to every order, is resolved by the Krylov iterations.
+multiple scattering, to every order, is resolved by the Krylov iterations. At strong contrast
+those iterations are preconditioned by a sparsified local system with centre-anchored stencils,
+which cuts them twentyfold on an $8^3$ lattice and needs no knowledge of the layering; sweeping
+that system in place of solving it requires an approximation of the Dirichlet-to-Neumann map
+carried by its Schur complements.
 \end{abstract}
 
 \bigskip
@@ -479,6 +483,27 @@ reaching $3.2\times10^{-7}$ against the closed form --- that is $68$~GB on a $16
 two live at once, and the inter-plane stack stored spectrally is $615$~GB. Both were measured,
 not estimated.
 
+Nor can a compressed kernel rescue the sweep. A running sweep does not need a quadrature at
+all, only that the lattice kernel be a short sum of exponentials in the swept offset: a term
+$z_j^{\,m}$, with $m$ the offset in pitches and $z_j$ a complex ratio, is carried by one amplitude
+multiplied by $z_j$ per voxel. For an $x$-then-$y$ sweep the equal-depth propagator
+$\mathsf{P}(m p, n p, 0)$ must take the separable form
+$\sum_{j,l} C_{jl}\, z_j^{\,m} w_l^{\,n}$, with the $x$-ratios $z_j$ shared by every $y$-offset
+$n$ and every component, and the accumulator then carries $J L$ amplitudes, $J$ and $L$ the
+numbers of $x$- and $y$-terms. A multi-channel matrix pencil fit of the exact nine-component
+propagator to $10^{-6}$ of its largest entry --- validated on a synthetic five-term sequence,
+which it recovers as exactly five terms to $5\times10^{-15}$, and on random data, which it does
+not compress --- gives no such form. At two points per $S$ wavelength the $x$-terms never reach
+$10^{-6}$; at six, they need $15$ of the $31$ available offsets on a $32$-wide lattice and $21$ of
+$63$ on a $64$-wide one, and the $y$-stage then never reaches it
+(\texttt{measure\_sweep\_exponential\_rank}). The term count grows with the lattice, so the sweep
+would be a dense sum in disguise. This is not a weakness of the fit: Engquist and
+Zhao \cite{EngquistZhao} bound the number of separable terms that represent the Helmholtz
+Green's function between two sets to fixed accuracy from below by $k^{s-\delta}$ for any
+$\delta > 0$ in the geometries they treat, $k$ the wavenumber and $s$ the dimension of the
+smaller set, with a matching upper bound $k^{s+\delta}$. So no fixed-size exponential
+representation of the in-plane kernel exists once the lattice spans many wavelengths.
+
 The same operators \emph{tabulated in real space} are $1.2$~MB and $149$~MB. So in three
 dimensions the coupling is split by depth separation rather than by direction:
 \begin{equation}
@@ -496,6 +521,16 @@ economy of the scheme and not a convenience: the full layered kernel inherits th
 kernel's slow spectral decay and needs some $2.4\times10^6$ transverse nodes, whereas the
 reverberation converges at $k_r p = 10$ on about $6.6\times10^4$ --- a factor of 36. The
 resulting build costs $2.1$~h at $16^3$, once, outside the Krylov loop.
+
+The equal-depth closed form in \eqref{eq:threedsplit} is that of \emph{each plane's own medium}.
+The reverberation table subtracts, on its diagonal, the whole-space kernel of the medium at the
+plane; the closed form added back must be the same one, or the same-plane coupling of a plane in
+a different material is wrong by the difference of the two whole-space kernels --- an error of
+the order of the material contrast. With every plane in one medium the distinction vanishes, and
+no configuration measured before this section had planes on both sides of a contrast. The
+package's cache builder (\texttt{build\_g0\_cache\_3d}) adds a single same-depth table for every
+plane, so a domain that straddles an interface must be assembled per plane, as the layered
+preconditioner measurement of \S\ref{sec:precon} does.
 
 \medskip\noindent
 \textbf{Correction, 26 September 2026: the $k_r p = 10$ rule holds only far from a contrast.} It
@@ -595,6 +630,168 @@ does not convert, would principally measure the difference between two discretis
 a real quantity, and it is not validation of the sweeps.
 
 %==============================================================================
+\section{Preconditioning the Krylov solve: sparsify, then sweep}\label{sec:precon}
+%==============================================================================
+
+The Krylov solve of \eqref{eq:foldylax} needs few iterations at weak contrast and very many at
+strong. Write $\rho = \rho(\Gz\Tz)$ for the spectral radius of the scattering operator, the
+measure of how strongly the medium scatters. On an $8^3$ lattice of cubes of pitch
+$p = 100$\,m in a whole space ($\alpha = 5000$, $\beta = 3000$\,m\,s$^{-1}$,
+$\rho_0 = 2500$\,kg\,m$^{-3}$), at eight points per $S$ wavelength ($ka = 0.24$, inside the
+range the analytic cube T-matrix is validated for), with a distinct contrast per voxel ---
+$(\Delta\lambda, \Delta\mu, \Delta\rho) = (2\,\text{GPa}, 1\,\text{GPa}, 100\,\text{kg\,m}^{-3})$
+scaled by a strength factor and by a uniform random factor in $[0.5, 1.5]$ --- unpreconditioned
+GMRES to $10^{-8}$ takes $7$ iterations at $\rho = 0.06$ and $998$ at $\rho = 6.4$. The thesis
+already preconditioned this solve with a Riccati sweep (Ch.~6, Alg.~6.4); what follows asks
+what such a sweep must carry in three dimensions.
+
+\subsection{The sparsified system}
+
+Liu and Ying \cite{LiuYing2018} make a dense Lippmann--Schwinger system nearly local before
+sweeping it. For voxel $i$ let $\mu_i$ be its $3\times3\times3$ neighbourhood (clipped at the
+domain faces) and $\mu_i^{c}$ the rest of the domain. A \emph{stencil} $\alpha_i$ --- a matrix of
+$9$ columns, one per equation the voxel contributes, and $9|\mu_i|$ rows --- combines the $9|\mu_i|$
+rows of $(I-\Gz\Tz)\psi = \psi^{\mathrm{inc}}$ indexed by $\mu_i$. If
+$\alpha_i^{\dagger}\,\Gz[\mu_i,\mu_i^{c}] \approx 0$, the combination involves only unknowns
+in $\mu_i$:
+\begin{equation}
+\alpha_i^{\dagger}\psi_{\mu_i} - \beta_i^{\dagger}\,\Tz\,\psi_{\mu_i} = \alpha_i^{\dagger}\psi^{\mathrm{inc}}_{\mu_i},
+\qquad \beta_i^{\dagger} = \alpha_i^{\dagger}\,\Gz[\mu_i,\mu_i],
+\label{eq:sparsified}
+\end{equation}
+where $\dagger$ is the conjugate transpose. Stacking \eqref{eq:sparsified} over all voxels gives
+a sparse matrix $H$, and stacking the combinations $\alpha_i^{\dagger}$ gives the stencil operator
+$P$, so that $H \approx P(I-\Gz\Tz)$. The preconditioner is $M = H^{-1}P$, applied on the right.
+Rows are combined after scaling the strain rows by $p$, so that all nine have the units of
+displacement.
+
+\paragraph{Annihilating the far field is not enough.} The natural choice of $\alpha_i$ --- the
+$9$ left singular vectors of $\Gz[\mu_i,\mu_i^{c}]$ with the smallest singular values --- leaves
+far-field residuals of $1.5\times10^{-3}$ of the largest response at eight points per
+wavelength, against $1.5\times10^{-4}$ for Liu and Ying's scalar case at the same pitch
+(\texttt{measure\_sparsify\_stencil\_accuracy}). Yet the resulting preconditioner never
+converges: the nine combinations chosen at neighbouring voxels are not independent, $P$ is
+singular (condition number $2\times10^{18}$ on $6^3$) and $H$ nearly so, and although
+$H$ matches $P(I-\Gz\Tz)$ to $6\times10^{-4}$, $H^{-1}$ amplifies the mismatch until the
+preconditioned operator has eigenvalues as small as $10^{-10}$. Liu and Ying's single scalar
+stencil is, in effect, a centred discrete Helmholtz operator, invertible by construction; the
+nine elastic stencils carry no such guarantee.
+
+\paragraph{Centre-anchored stencils.} Anchoring each row on its own voxel, as a finite-difference
+stencil is anchored on its centre, restores it. Write $\alpha_i = [\,I;\ X_i\,]$, with the
+identity on the voxel's own nine components and $X_i$ on its neighbours, and let $K_c$ and $K_o$
+be the rows of $\Gz[\mu_i,\mu_i^{c}]$ belonging to the voxel and to its neighbours. The far
+leakage is $K_c + X_i^{\dagger}K_o$, minimised by
+\begin{equation}
+X_i^{\dagger} = -K_c K_o^{\dagger}\left(K_o K_o^{\dagger} + \lambda\,\|K_o K_o^{\dagger}\|\,I\right)^{-1},
+\label{eq:centred}
+\end{equation}
+with a small Tikhonov weight $\lambda$. At $\lambda = 10^{-3}$ the leakage rises to
+$1$--$4\times10^{-2}$, but $P = I + (\text{neighbour blocks})$ is invertible (condition number
+$3\times10^{3}$) and the preconditioned spectrum stays near one. Fitting the stencils against
+the whole domain and solving $H$ exactly by sparse LU, GMRES iterations on $6^3$ are:
+\begin{center}
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+$\rho$ & none & $27$-voxel truncation of $\Gz$ & centre-anchored \\
+\midrule
+$0.06$ & $7$ & $7$ & $5$\\
+$0.57$ & $20$ & $16$ & $9$\\
+$1.98$ & $61$ & $36$ & $13$\\
+$4.99$ & $269$ & $142$ & $28$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The truncation column --- $I-\Gz\Tz$ with $\Gz$ cut to the neighbourhood, no stencils --- is the
+control: the stencils, not the local inversion alone, carry most of the gain.
+
+\paragraph{Fitted once.} The stencils need not be fitted per voxel or per domain. Classify a voxel
+by which faces it touches --- interior, face, edge or corner, $27$ types --- and fit one stencil
+per type against a fixed window of far offsets, $|\Delta|_\infty \le 7$ pitches, clipped on the
+side a boundary voxel lacks: Liu and Ying's union of translated complements. The fit takes about
+a minute and does not depend on the domain or the contrast. It keeps nearly all of the gain, and
+the gain grows with the domain:
+\begin{center}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+lattice & $\rho$ & none & fitted per domain & fitted once \\
+\midrule
+$6^3$ & $4.99$ & $269$ & $28$ & $34$\\
+$8^3$ & $0.69$ & $23$ & $10$ & $11$\\
+$8^3$ & $2.48$ & $99$ & $20$ & $23$\\
+$8^3$ & $6.41$ & $998$ & $43$ & $50$\\
+\bottomrule
+\end{tabular}
+\end{center}
+(\texttt{measure\_sparsify\_preconditioner}).
+
+\paragraph{In a stratified background.} Six depth planes one pitch apart, on half-pitch
+sublayers, with a material contrast half a pitch from two of them --- medium A
+($5$, $3$\,km\,s$^{-1}$, $2.5$\,g\,cm$^{-3}$) above, medium B ($6.5$, $3.7$, $3.0$) below ---
+under water, $Q = 50$, pitch $0.25$\,km at $1.5$\,Hz, with the reverberation table at
+$k_r p = 20$ as the correction above requires. The operator is assembled per plane, each plane's
+same-depth term from its own medium. GMRES iterations:
+\begin{center}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$\rho$ & none & $27$-voxel truncation & stencils, whole space (A) & stencils, layered \\
+\midrule
+$0.05$ & $6$ & $5$ & $4$ & $4$\\
+$0.45$ & $15$ & $12$ & $7$ & $7$\\
+$1.52$ & $43$ & $27$ & $11$ & $11$\\
+$3.68$ & $167$ & $83$ & $17$ & $16$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The stencils matter --- five times fewer iterations than truncation at the strongest contrast ---
+but the layering in them does not. Stencils fitted to medium A's whole-space kernel do as well as
+stencils fitted plane by plane to the layered kernel, although the layered operator differs from
+that kernel by $43$--$97$\% in medium B. The system $H$ carries the true local blocks through
+$\beta_i$ either way; only the far-annihilating combinations come from the fit, and they tolerate
+a wrong kernel (\texttt{measure\_sparsify\_layered}). One whole-space stencil set therefore serves
+a stratified background.
+
+\subsection{What the sweep must carry}
+
+Exact LU of $H$ does not scale. Because the stencil couples only neighbouring planes, $H$ is
+block-tridiagonal in depth, with diagonal blocks $D_z$, sub-diagonal $L_z$ and super-diagonal
+$U_z$, and exact LU \emph{is} the Riccati up/down sweep of the thesis's Alg.~5.1:
+\begin{equation}
+S_1 = D_1, \qquad S_z = D_z - L_z\, S_{z-1}^{-1}\, U_{z-1},
+\label{eq:schur}
+\end{equation}
+a downsweep forming the Schur complements $S_z$, then back-substitution upward. $S_z$ is the
+discrete Dirichlet-to-Neumann map of the half-domain above plane $z$: it carries the radiation
+condition. On $8^3$, GMRES iterations with the sweep variants replacing exact LU
+(\texttt{measure\_sparsify\_sweep}):
+\begin{center}
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+$\rho$ & none & exact & $S_z \approx D_z$ & nested & reference $S_z$ & band $r = 1/2/3$ \\
+\midrule
+$0.06$ & $7$ & $6$ & $56$ & $63$ & $8$ & $35/22/13$\\
+$0.69$ & $23$ & $11$ & $59$ & $66$ & $23$ & $37/25/17$\\
+$2.48$ & $99$ & $23$ & $73$ & $87$ & $58$ & $50/40/32$\\
+$6.41$ & $998$ & $50$ & $185$ & $279$ & $332$ & $229/279/302$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The exact sweep reproduces exact LU at every contrast. \emph{Dropping the Schur term},
+$S_z \approx D_z$ --- the literal reading of ``ignore backscattering'' --- is worse than no
+preconditioner at weak contrast: without the map of the half-domain above, every plane reflects.
+Nesting a left/right sweep inside each plane (the full alternating-direction scheme) inherits the
+defect. The \emph{reference} Schur complements, computed once from the contrast-free system,
+are the closer analogue of the thesis's $\tilde{\mathsf{P}}_F$, which keeps the reference
+medium's transmission and reflection and ignores only the heterogeneity's backscatter; they
+serve at weak contrast and fail at strong, where that backscatter dominates. Truncating each
+$S_z$ to a lateral band of radius $r$ pitches converges slowly in $r$ and is not even monotone at
+$\rho = 6.4$: a Dirichlet-to-Neumann map is laterally nonlocal. What the sweep must carry is
+therefore an honest approximation of that map --- Liu and Ying's moving absorbing layer, which
+replaces $S_z^{-1}$ by a small local problem padded by a perfectly matched layer, or a
+hierarchical compression of $S_z$ --- and neither is yet measured here. The same object is the
+impedance of the continuum march, which is marched exactly for that reason.
+
+%==============================================================================
 \section{What is distinctive}
 %==============================================================================
 
@@ -645,6 +842,13 @@ frequency-domain waveform modelling of strong velocity contrasts}, Geophys. J. I
 \bibitem{Osnabrugge2016} G. Osnabrugge, S. Leedumrongwatthanakun and I.~M. Vellekoop, \emph{A
 convergent Born series for solving the inhomogeneous Helmholtz equation in arbitrarily large
 media}, J. Comput. Phys. \textbf{322}, 113 (2016).
+
+\bibitem{LiuYing2018} F. Liu and L. Ying, \emph{Sparsify and sweep: an efficient preconditioner
+for the Lippmann--Schwinger equation}, SIAM J. Sci. Comput. \textbf{40}(2) (2018);
+arXiv:1705.09443.
+
+\bibitem{EngquistZhao} B. Engquist and H. Zhao, \emph{Approximate separability of Green's
+function for high frequency Helmholtz equations}.
 
 \end{thebibliography}
 
