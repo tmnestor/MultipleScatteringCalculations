@@ -3341,8 +3341,11 @@ $32$ & $2.44\times10^{-6}$ & $4.95$\\
 $64$ & $8.23\times10^{-8}$ & $4.89$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{Energy balance of the full response over $44$ propagating
-channels of $108$, with the contrast on.  The rescaling $w_c$ is not asserted
+\captionof{table}{Energy balance of the full response over the $44$ channels of
+$108$ that the $6\times6$ grid counts as propagating, with the contrast on.  Only
+$23$ of them are distinct orders ($5$ $P$, $9$ $SV$, $9$ $SH$); the other $21$ sit at
+a zeroed Nyquist index and repeat the $k=0$ component of a lower order, so the
+check includes them but they add no independent information.  The rescaling $w_c$ is not asserted
 --- this project has twice claimed a displacement-to-flux relation from diagonal
 ratios and been wrong --- it is written down and the identity it should produce
 is measured.  Reaching $8\times10^{-8}$ is the evidence that it is right.}
@@ -4229,6 +4232,48 @@ it falls under lateral refinement --- $4.3\times10^{-2}$, $2.0\times10^{-2}$,
 $1.2\times10^{-2}$ at $N=6$, $9$, $12$ --- while its residual against the
 isolated sphere stays at $0.07$: at finite contrast the march converges to the
 periodic problem it solves.
+
+\paragraph{Energy, over every open order.}  The array is super-wavelength:
+at $L=600$\,m, $k_SL=12$, and $5$ $P$, $9$ $SV$ and $9$ $SH$ diffraction orders
+propagate on each side --- $46$ channels in all.  Each has a lateral wavevector
+$\mathbf{G}$ in the reciprocal lattice, and $e^{i\mathbf{G}\cdot\mathbf{R}}=1$ on
+every site, so every incidence lies in the Bloch sector of normal incidence and
+one coupling $\mathbf{G}_0$ serves them all.  A far field $\mathbf{f}\,e^{ikr}/r$
+radiated by every site is, in each order,
+\begin{equation}\label{eq:latticeweyl}
+  \sum_{\mathbf{R}}\mathbf{f}\,\frac{e^{ik|\mathbf{r}-\mathbf{R}|}}{|\mathbf{r}-\mathbf{R}|}
+  = \sum_{\mathbf{G}}\frac{2\pi i}{A\,k_z(\mathbf{G})}\,
+    \mathbf{f}(\hat{\mathbf{k}}_{\mathbf{G}})\,
+    e^{i(\mathbf{G}\cdot\boldsymbol{\rho}+k_z(\mathbf{G})|z|)},
+\end{equation}
+with $A$ the cell area and $\hat{\mathbf{k}}_{\mathbf{G}}$ the direction of order
+$\mathbf{G}$.  With the reference plane through the sphere centres and the flux
+rescaling $w_c$ of \S\ref{sec:rt}, the $46\times46$ scattering matrix
+$\mathbf{S}$ --- incidence from above and below, every mode, every open order ---
+satisfies $\mathbf{S}^{\dagger}\mathbf{S}=\mathbf{I}$ to between
+$6\times10^{-16}$ and $2\times10^{-14}$ at $N_{\max}=2$, $4$, $6$ and $10$, to
+$2\times10^{-14}$ at $\varepsilon=0.3$, and to $1\times10^{-14}$ at $L=900$\,m,
+where $118$ channels are open.  That the residual does not fall with $N_{\max}$
+is the expected result, not a coincidence: each order's Mie $T$ is unitary, so the truncated
+problem conserves energy exactly whenever the anti-Hermitian part of
+$\mathbf{G}_0$ matches the sum~\eqref{eq:latticeweyl} over the open orders.  The
+check therefore measures the reciprocal-space lattice sums --- the only place
+the open orders enter --- and not the truncation.  It can fail: with the
+coupling switched off the residual is $7.2\times10^{-3}$, and restricted to the
+specular channels it is $3.7\times10^{-3}$, the flux of $0.29$ to $0.36$ per
+cent that each specular incidence sends into diffracted orders.
+
+A second implementation shares no code with the first: the Mie operator from the
+symplectic bracket, its own Ewald sums projected on a different sphere with a
+different Ewald parameter, and the vector translations extracted numerically
+rather than through $\mathbf{L}$.  At $N_{\max}=3$ it is unitary to
+$7.7\times10^{-13}$, and it agrees with the first \emph{entry by entry, in
+complex value}, to $4.1\times10^{-10}$ of the scattered part.  It also fixes the
+two conventions that the balance is sensitive to.  The prefactor
+$i/(2Ak_z)$ in place of $2\pi i/(Ak_z)$ breaks it to $1.1\times10^{-3}$; an
+incident expansion that gives an $SV$ wave only $\mathbf{N}$ multipoles, and an
+$SH$ wave only $\mathbf{M}$, breaks it to $4.0\times10^{-2}$ --- a transverse
+plane wave carries both families, whatever its polarisation.
 
 \subsection{What this establishes}
 
