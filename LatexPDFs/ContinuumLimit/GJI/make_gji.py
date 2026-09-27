@@ -103,7 +103,7 @@ The Mathematica notebooks that derive and check every result
 and the independent
 implementation of the first-moment voxel (\path{scripts/continuum_limit_*.py},
 \path{scripts/crosscheck_first_moment_voxel.py}), and the exact normal-incidence kernel
-(\path{cubic_scattering/cell_averaged_lattice.py}) are available at REPOSITORY URL.
+(\path{cubic_scattering/cell_averaged_lattice.py}) are available at \url{https://github.com/tmnestor/MultipleScatteringCalculations}.
 
 \bibliographystyle{gji}
 \bibliography{../references}

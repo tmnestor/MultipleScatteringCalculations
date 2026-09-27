@@ -41,25 +41,22 @@ $^{1}$Independent researcher, Australia}
 Voxel schemes for elastic scattering represent a heterogeneous medium as cubic cells, each
 carrying a single-site $T$-matrix and coupled through the background Green's tensor. They are
 built for media with no exact solution, where their error cannot be measured directly and a
-refinement study can converge smoothly to the wrong limit. A laterally uniform layer of identical
-voxels is the one configuration that exercises such a scheme in full while having an exact
-answer. Because cubes tile space, it isolates the discretisation error exactly. For this layer we
-establish whether, how fast and with what error the scheme converges, at normal and at oblique
-incidence. (i) The cube's lateral form factor vanishes on the reciprocal lattice, so the
-source-cell-averaged coupling between planes is \emph{exactly} the continuum's, and within a plane
-the sum over all cells, the voxel's own included, is \emph{exactly} the field of a uniform plate.
-The lattice kernel at normal incidence is therefore in closed form. (ii) The single-site $T$-matrix
-is derived from distributional moments of the Green's tensor over the cube. The uniform-strain
-closure is the first-gradient truncation of an exact hierarchy. It differs from a sphere's only
-by a cubic anisotropy of the shear response. Against exact scattering by a sphere it is exact
-statically, and it departs dynamically only by a real, closed-form $(ka)^2$ term. (iii) The closure's
-self term cancels the one the kernel removes, so the discrete system is a collocation of the
-continuum equation. (iv) It converges at second order, with leading error $+(kd)^2/8$ in reflection
-and $-(kd)^2/24$ in transmission. The opposite signs mean that no scalar correction of the single
-site can remove it. (v) A voxel that also carries the first moment of its internal field converges
-at fourth order, with leading error $-(kd)^4/720$. It stays fourth order at oblique incidence,
-for incident P, SV and SH, and in a randomly stratified layer, where it reaches an accuracy of $10^{-6}$ with
-one voxel per model cell. Every result is derived symbolically and checked
+refinement study can converge smoothly to the wrong limit. A layer of identical voxels exercises
+such a scheme in full and has an exact answer. Because cubes tile space, it isolates the
+discretisation error exactly. For this layer we establish whether, how fast and with what error
+the scheme converges. (i) The cube's lateral form factor vanishes on the reciprocal lattice, so
+the source-cell-averaged coupling is \emph{exactly} the continuum's, and the lattice kernel at
+normal incidence is in closed form. (ii) The single-site $T$-matrix follows from distributional
+moments of the Green's tensor over the cube. Its uniform-strain closure differs from a sphere's
+only by a cubic anisotropy of the shear response. Against exact scattering by a sphere it is exact
+statically, and it departs only by a real, closed-form $(ka)^2$ term. (iii) The closure's self term
+cancels the kernel's, so the discrete system is a collocation of the continuum equation. (iv) It
+converges at second order, with leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
+transmission. The opposite signs mean that no scalar correction of the single site can remove it.
+(v) A voxel that also carries the first moment of its internal field converges at fourth order,
+with leading error $-(kd)^4/720$, for incident P, SV and SH at normal and oblique incidence. In a
+randomly stratified layer the orders are unchanged, and the first-moment voxel reaches an accuracy
+of $10^{-6}$ with one voxel per model cell. Every result is derived symbolically and checked
 against an independent implementation or an exact solution.
 \end{summary}
 
@@ -131,27 +128,18 @@ displacement and strain --- and the single site's self-interaction is the elasti
 a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
 
 \paragraph{This paper.} The approach originates in the two-and-a-half-dimensional formulation of
-\citet{Nestor1996}. A medium is divided into cells that interact through the background Green's
-tensor, each cell carries a single-site contrast renormalised by its own near field, and the
-multiple-scattering series is summed. This paper extends that approach to cubic voxels and settles, for a space-filling
-layer of them, three questions that are usually answered only empirically: whether the discrete Foldy--Lax system converges to the continuous medium,
-at what order, and with what leading error. The answers are exact rather than measured. The
-coupling between voxels, averaged over the source cell, is \emph{exactly} the continuum's cell
-integral at normal incidence, because cubes tile the plane (\S\ref{sec:tiling}). The single-site
-$T$-matrix is derived, not imported (\S\ref{sec:single}). The moments of the elastodynamic Green's
-tensor over the cube, evaluated as distributions, give a closed hierarchy for the internal field.
-Its first-gradient truncation is the uniform-strain (Eshelby) closure, and it fixes the leading
-far field alone. In closed form, a cube differs from a sphere only by a cubic anisotropy of the
-shear response. The collocation closure carries the same self term as the lattice kernel, which
-therefore cancels, so the discrete system is a collocation of the continuum equation
-(\S\ref{sec:closure}). It converges at second
-order with a leading error known in closed form for every discretisation, whose opposite signs in
-reflection and transmission show that no correction of a uniform-field single site can remove it
-(\S\ref{sec:convergence}). A voxel that carries the first moment of its internal field removes it,
-and converges at fourth order at normal and oblique incidence, for incident P and S waves alike
-(\S\ref{sec:fourth}); in its spectral
-form the lattice sum needs no Ewald splitting. Every result is derived symbolically in Mathematica
-and checked against an independent Python implementation or an exact solution.
+\citet{Nestor1996}: a medium divided into cells that interact through the background Green's tensor,
+each carrying a single-site contrast renormalised by its own near field, with the multiple-scattering
+series summed. This paper extends it to cubic voxels. \S\ref{sec:setting} sets out the discrete medium
+and \S\ref{sec:continuum} the continuous layer it must reproduce. \S\ref{sec:point} shows why the
+point coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly.
+\S\ref{sec:single} derives the single-site $T$-matrix from moment integrals, tests it against the exact
+sphere, and shows that with it the discrete system is a collocation of the continuum equation.
+\S\ref{sec:convergence} gives that collocation's second-order error in closed form, and
+\S\ref{sec:fourth} the fourth-order voxel, for incident P and S at normal and oblique incidence.
+\S\ref{sec:hetero} repeats the tests on a randomly stratified layer, and \S\ref{sec:discussion} discusses
+what the results imply for voxel schemes in general. Every result is derived symbolically in
+Mathematica and checked against an independent Python implementation or an exact solution.
 
 \section{Setting}\label{sec:setting}
 
@@ -833,22 +821,24 @@ voxel count falls by $58^3\approx2\times10^5$ and the number of unknowns by abou
 (these are the Born-order constants; at the contrast studied the first-moment voxel's measured errors
 lie within $5\%$ of them, while the uniform voxel's transmission constant grows with the contrast, so
 the comparison is if anything conservative).
-The gain is largest precisely where it matters: when the grid of a geological model is coarse
+The stratified model of \S\ref{sec:hetero} measures it directly: $347$ planes of uniform-field voxels
+against $8$ first-moment voxels for the same accuracy. The gain is largest precisely where it matters: when the grid of a geological model is coarse
 compared with the accuracy the wavefield must have.
 
 \paragraph{Limitations and outlook.} The results concern laterally uniform media --- a homogeneous layer
 and a randomly stratified one --- for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
 first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
-$O(k_\parallel h)$. The numerical evidence is at a moderate, physically typical contrast (a few per
-cent in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
+$O(k_\parallel h)$. The numerical evidence is at moderate, physically typical contrasts (up to
+$15\%$ in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
 validated; the closed forms are first order in the contrast, and the departures from them at the
 full contrast are of second order. What is established is the \emph{order} of convergence and its
 leading constant, not the behaviour at strong contrast, where the single site's own closure may
 limit the accuracy before the lattice coupling does. The single site's dynamic error is in closed
 form for a sphere only; for a cube, for which no exact solution exists, it is known through the
 layer (\S\S\ref{sec:convergence}--\ref{sec:fourth}). Two extensions follow directly. The first is
-the three-dimensional solver itself. The second is a stratified background: the lattice coupling
+the three-dimensional solver itself. The second is a stratified \emph{background} --- a layered
+reference medium, as distinct from the stratified contrast of \S\ref{sec:hetero}: the lattice coupling
 then carries the reverberation of the layering, which is not translation invariant in depth, and
 whether a tiling identity holds for it is the natural next question.
 
@@ -920,7 +910,7 @@ The Mathematica notebooks that derive and check every result
 and the independent
 implementation of the first-moment voxel (\path{scripts/continuum_limit_*.py},
 \path{scripts/crosscheck_first_moment_voxel.py}), and the exact normal-incidence kernel
-(\path{cubic_scattering/cell_averaged_lattice.py}) are available at REPOSITORY URL.
+(\path{cubic_scattering/cell_averaged_lattice.py}) are available at \url{https://github.com/tmnestor/MultipleScatteringCalculations}.
 
 \bibliographystyle{gji}
 \bibliography{../references}
