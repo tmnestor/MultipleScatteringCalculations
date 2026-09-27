@@ -61,30 +61,26 @@ and the Closed-Form Error of the Discrete Layer}
 \noindent
 A heterogeneous elastic medium discretised into cubic voxels, each carrying a single-site
 $T$-matrix and coupled through a lattice Green's tensor, must reproduce the continuous medium as
-the voxels shrink. For a laterally uniform layer we establish when, how fast, and with what error
-it does, at normal and at oblique incidence. Five results. (i) Cubes tile the plane, so the lateral form factor of
-a cube vanishes on the reciprocal lattice; consequently the source-cell-averaged coupling between
-planes is \emph{exactly} the continuum's plane-wave term, and within a plane the sum over all
+the voxels shrink. For a laterally uniform layer we establish when, how fast and with what error
+it does, at normal and at oblique incidence. (i) Cubes tile the plane, so the lateral form factor
+of a cube vanishes on the reciprocal lattice. Consequently the source-cell-averaged coupling
+between planes is \emph{exactly} the continuum's plane-wave term. Within a plane, the sum over all
 cells, the voxel's own included, is \emph{exactly} the field of a uniform plate. This tiling
-identity gives the lattice kernel at normal incidence in closed form, with no lattice sum.
-(ii) The collocation closure of the single site carries the same self term the kernel removes, so
-the self term cancels and the discrete system becomes a collocation of the continuum equation with
-exact cell integrals. (iii) That collocation converges at exactly second order in the voxel size.
-(iv) Its leading error is closed-form for every discretisation --- a midpoint-rule error of the
-internal field across each voxel, $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission ---
-and the opposite signs show that no scalar correction of a uniform-field single site can remove it.
-(v) A voxel that carries the first moment of its field, coupled through exact cell-to-cell integrals,
-removes it and converges at fourth order, with leading error $-(kd)^4/720$ in reflection and
-transmission alike: one plane of such voxels is $6500$ times more accurate than one plane of uniform
-ones, and the scheme stays fourth order at oblique incidence, in the converted S wave as well as the
-reflected P. The single site itself is derived from the moments of the elastodynamic Green's tensor
-over the cube. These are evaluated as distributions, in closed form, with no $\delta$-function term
-added by hand. The uniform-strain closure is the first-gradient truncation of an exact hierarchy.
-Parity makes that gradient block self-contained, so it alone fixes the leading far field. The
-cube's dilatational channel is the sphere's. Its two shear channels split about the sphere's by a
-pure cubic anisotropy, $(\lambda+\mu)(5\sqrt3-2\pi)/[6\pi\mu(\lambda+2\mu)]$, and their isotropic
-average is the sphere's exactly. Every result is derived symbolically in
-Mathematica and checked against an independent numerical implementation.
+identity gives the lattice kernel at normal incidence in closed form. (ii) The single-site
+$T$-matrix is derived from the moments of the elastodynamic Green's tensor over the cube,
+evaluated as distributions in closed form. The uniform-strain closure is the first-gradient
+truncation of an exact hierarchy. A cube differs from a sphere only by a cubic anisotropy of the
+shear response, whose isotropic average is the sphere's. Against exact scattering by a sphere the
+closure is exact statically. It departs only by a real, closed-form $(ka)^2$ term, and its
+radiation damping is exact. (iii) The closure carries the same self term the kernel removes, so
+the discrete system is a collocation of the continuum equation with exact cell integrals.
+(iv) The collocation converges at second order. Its leading error is closed-form for every
+discretisation: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission. Because the signs are
+opposite, no scalar correction of a uniform-field single site can remove it. (v) A voxel that also
+carries the first moment of its internal field converges at fourth order, with leading error
+$-(kd)^4/720$ in reflection and transmission alike. It stays fourth order at oblique incidence, in
+the converted S wave as well as the reflected P. Every result is derived symbolically and checked
+against an independent numerical implementation or an exact solution.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -377,9 +373,8 @@ function $w\mathbf 1_V$, using $\partial_q\mathbf 1_V=-n_q\,\delta_{\partial V}$
 \end{equation}
 The surface term is evaluated on the faces, a distance $h$ from the origin, where every
 derivative of $r^m$ is smooth. The recursion lowers $D$ and $W$ together and ends on convergent
-integrals. The face integrals are done in closed form, by continuous two-dimensional
-antiderivatives summed over the corners. A triple antiderivative evaluated at the corners is
-\emph{not} equivalent: its branch jumps lose the $\delta$ term. The sharp check is the sum rule
+integrals. The face integrals are done in closed form by the corner sums of \S\ref{sec:tiling}. The
+sharp check is the sum rule
 \begin{equation}\label{eq:sumrule}
   \textstyle\sum_pE[-1;p,p;\,]=\nabla^2(1/r)\ \text{paired with}\ \mathbf 1_V=-4\pi ,
 \end{equation}
@@ -438,8 +433,8 @@ also exactly:
   S_{\text{diag}}-S_{\text{off}}=\frac{(\lambda+\mu)(5\sqrt3-2\pi)}{6\pi\mu(\lambda+2\mu)}>0 .
 \end{equation}
 The $\sqrt3$ terms cancel in the average. What a cube adds to a sphere at this order is therefore
-a pure cubic anisotropy, which splits the deviatoric channel symmetrically (with weights $3:2$)
-about the sphere's value. The diagonal shear is the more depolarised. At the background of
+a pure cubic anisotropy. It splits the deviatoric channel about the sphere's value, weighted $3:2$
+by the dimensions of $T_{2g}$ and $E_g$, and the diagonal shear is the more depolarised. At the background of
 \S\ref{sec:convergence} ($\nu=7/32$), $2\mu S_{\text{off}}=0.4314$, $2\mu S_{\text{diag}}=0.5929$
 and the sphere's value is $0.4960$.
 
@@ -460,7 +455,7 @@ isolated cube.
 \paragraph{Against the exact sphere.} These statements are tested against the exact elastic Mie
 solution for a sphere, with no Eshelby formula in between. The concentration of Mie order $n$ is
 $E_n=a_n/a_n^{\text{Born}}$ (orders $0$, $1$, $2$ are the dilatational, density and shear
-channels), extrapolated to $ka\to0$. The formulation is applied to a ball, with its moment
+channels), extrapolated to $ka\to0$. The formulation is applied to a ball of radius $a$, with its moment
 $\mathsf M$ evaluated by the surface route of Eq.~\eqref{eq:peel} on $|\mathbf r|=a$. Its
 dilatational and shear channels equal Mie's to $2\times10^{-10}$, and the density channel is
 $1$. The cube's closed forms meet the same numbers. Its dilatational channel is Mie's
@@ -712,6 +707,16 @@ single site's closure --- leaves a local term that does not vanish as the voxels
 voxel volume. A scheme built that way converges to the wrong limit, and refinement cannot reveal
 it, because the error is scale-invariant.
 
+\paragraph{What the single site is.} The moment hierarchy of \S\ref{sec:single} turns the
+uniform-field single site from a modelling choice into a derived object with a stated error. Its
+static part is exact for a sphere, and for a cube it differs from the sphere's only by the cubic
+split of Eq.~\eqref{eq:shearsplit}. Its dynamic part departs from exact scattering by a sphere only
+through the real $(ka)^2$ term of Eq.~\eqref{eq:spheredynamic}; the radiation damping is exact.
+That term and the collocation error of Eq.~\eqref{eq:errorR} have the same origin, the variation of
+the field across the scatterer, and the same remedy, a richer internal field. In a lattice the
+remedy is cheap: the field a voxel must represent is the smooth continuum field, not the field of an
+isolated cube, with its concentrations at the edges and corners.
+
 \paragraph{Relation to the discrete dipole approximation.} The same partition appears in the
 electromagnetic literature as the choice of polarisability. The Clausius--Mossotti relation, the
 lattice dispersion relation \citep{Draine1993} and the integrated Green tensor \citep{Chaumet2004} all
@@ -748,7 +753,9 @@ cent in density and moduli) and at $k_Sh\le0.3$, the range in which the single-s
 validated; the closed forms are first order in the contrast, and the departures from them at the
 full contrast are of second order. What is established is the \emph{order} of convergence and its
 leading constant, not the behaviour at strong contrast, where the single site's own closure may
-limit the accuracy before the lattice coupling does. Two extensions follow directly. The first is
+limit the accuracy before the lattice coupling does. The single site's dynamic error is in closed
+form for a sphere only; for a cube, for which no exact solution exists, it is known through the
+layer (\S\S\ref{sec:convergence}--\ref{sec:fourth}). Two extensions follow directly. The first is
 the three-dimensional solver itself. The second is a stratified background: the lattice coupling
 then carries the reverberation of the layering, which is not translation invariant in depth, and
 whether a tiling identity holds for it is the natural next question.
@@ -758,7 +765,12 @@ whether a tiling identity holds for it is the natural next question.
 A lattice of cubic voxels reproduces a continuous elastic medium in a precise sense. Because cubes
 tile the plane, the source-cell-averaged coupling between voxels is the continuum's cell integral
 exactly, and at normal incidence the lattice kernel is available in closed form with no lattice sum.
-The collocation closure of the single site carries the same self term, which cancels, so the discrete
+The single site is derived rather than assumed. The moments of the Green's tensor over the cube,
+taken as distributions, give a closed hierarchy whose first-gradient truncation is the
+uniform-strain closure. That closure is exact for a sphere in the static limit, and it departs from
+exact scattering by a sphere only by a real $(ka)^2$ term, with the radiation damping exact. For a
+cube it differs from the sphere only by a cubic anisotropy of the shear response.
+The collocation closure carries the same self term as the lattice kernel, which cancels, so the discrete
 system is a collocation of the continuum equation. It converges at second order, with a leading
 error that is a midpoint-rule error of the internal field, known in closed form for every
 discretisation, and opposite in sign in reflection and transmission. A voxel that also carries the
