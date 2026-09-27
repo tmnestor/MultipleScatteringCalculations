@@ -333,6 +333,63 @@ others would be caught by a careful reader, whereas the symbol collision
 produces a wrong matrix with nothing in the text to flag it.
 
 % =============================================================================
+\section{Does the composition reproduce the medium?}\label{sec:correctness}
+
+Equation~\eqref{eq:LSstrat} is an identity: for a lateral contrast $\dC$ on a stratified
+reference it is exact, so the question is not whether it holds but whether a
+\emph{discretised} solve of it --- cubic voxels, a lattice propagator, a single-site
+$T$-matrix --- reproduces the medium it describes. One configuration answers that against an
+external reference. A laterally uniform, space-filling layer of identical cubes \emph{is} a
+homogeneous layer, so one medium can be written two ways: the reference plus a contrast carried by
+the voxels and solved by Foldy--Lax, or the contrast folded into the layered background with no
+scattering at all, which the stratified propagator gives exactly. At normal incidence the medium is
+laterally uniform, so only the specular (zero lateral wavenumber) block of the lattice propagator
+acts, and the layer reverberation of the reference enters that block as a single addition.
+
+Three solves are compared with the exact answer, at an observation plane carrying no contrast:
+[T1] the \emph{thesis ordering}, the lattice propagator dressed with the reverberation, which is
+\eqref{eq:LSstrat}; [T2] \emph{dress-after}, the lattice propagator left whole-space, which omits
+the reverberation between voxels; and [T3] a \emph{discretisation control} on a uniform background,
+where the two coincide by construction and the residual is the discretisation alone. The thesis
+ordering has no ordering error, so its residual should be discretisation only; dress-after should
+carry an ordering error on top.
+
+\paragraph{The specular block must be the exact lattice sum.} A lateral lattice sum truncated at
+the supercell and wrapped is not a lattice sum, and for the specular block it is wrong by the
+block's full size; an Ewald summation gives it exactly, matching the point propagator's Weyl sum to
+$7\times10^{-5}$ between planes. On the truncated sum [T1] sits at $0.87$ times [T3] and [T2] at
+$3.30$ times, which reads as support for the formulation; on the exact sum the two exchange, to
+$3.63$ and $1.58$. Exchanging only the specular blocks between the two kernels exchanges the arms
+exactly, so that block is the whole story, and the reverberation added to it is consistent with
+either kernel (on a uniform background it changes the answer by $4\times10^{-21}$). The truncated
+reading is therefore withdrawn (\texttt{measure\_thesis\_gate\_dressing}).
+
+\paragraph{Refinement at fixed physics.} The exchange at the coarse lattice is resolved by
+refining it. The same $2$\,m layer, lying on a reflector, is represented by $n$ planes of cubes of
+side $2/n$\,m, with the kernel chosen from the discretisation control alone; relative errors at the
+observation plane (\texttt{measure\_thesis\_refinement}):
+\begin{center}
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+$n$ & $ka$ & [T1] thesis & [T2] dress-after & [T3] control & [T1]/[T3] & [T2]/[T3]\\
+\midrule
+$1$ & $0.0120$ & $1.48\times10^{-3}$ & $9.29\times10^{-4}$ & $4.73\times10^{-4}$ & $3.14$ & $1.96$\\
+$2$ & $0.0060$ & $7.38\times10^{-4}$ & $1.02\times10^{-3}$ & $3.57\times10^{-4}$ & $2.07$ & $2.87$\\
+$3$ & $0.0040$ & $6.24\times10^{-4}$ & $1.06\times10^{-3}$ & $3.57\times10^{-4}$ & $1.75$ & $2.98$\\
+$4$ & $0.0030$ & $6.23\times10^{-4}$ & $1.08\times10^{-3}$ & $3.57\times10^{-4}$ & $1.75$ & $3.04$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Every arm converges by $n = 3$, and to a nonzero limit: the control stops at
+$3.57\times10^{-4}$, identical to four digits from $n = 2$, a scale-invariant error of
+representing a continuous layer by cubes that no refinement removes. The exchange seen at $n = 1$
+is coarse discretisation: under refinement the thesis residual falls while the dress-after
+residual rises, and at convergence the thesis ordering reproduces the folded medium better than
+dress-after by a factor of $1.74$. That supports the composition. It does not confirm it by the
+standard set before the comparison was run --- dress-after at least five times the control --- and
+the scale-invariant error caps the separation this configuration can show, so reaching that
+standard needs a better single-cube representation of the layer, not a finer lattice.
+
 \section{Status and what remains}
 
 \begin{center}
@@ -348,25 +405,29 @@ Corrected $9\times9$               & reconciled & $9.7\times10^{-16}$ \\
 Crust gradient in the reference    & required   & measured \\
 Per-voxel 3-D $\Px$                & exists     & FFT block-Toeplitz \\
 \midrule
-Composed matvec                    & \emph{not built} & --- \\
+Composed matvec                    & built      & layered real-space tables \\
+Composition reproduces the medium  & supported  & $1.74\times$, \S\ref{sec:correctness} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-What remains is implementation rather than investigation: assemble
-\[
-  \Bigl(\bI - \bigl[\Pz + \Px\bigr]\dC\Bigr)\psi
-\]
-with $\Pz$ from the corrected layered propagator and $\Px$ from the existing
-per-voxel FFT kernel, and drive it with the existing Krylov solver.  The
-lateral operator already handles disorder --- its block-Toeplitz structure
-comes from the regular \emph{mesh}, not from the scatterers being identical ---
-so no new operator is required.
+The composed operator $\bI - [\Pz + \Px]\dC$ is assembled from real-space tables ---
+the closed-form propagator between voxels plus the layer reverberation, transformed
+once --- and driven by the existing Krylov solver. The same-depth closed form added
+back to each plane's reverberation is that of the plane's own medium, so planes on
+both sides of a material contrast are each correct. The lateral operator handles
+disorder --- its structure comes from the regular \emph{mesh}, not from the
+scatterers being identical. What remains open is the correctness standard of
+\S\ref{sec:correctness}: the composition reproduces a folded layer better than
+dress-after, but not yet by the margin set in advance.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
 {\footnotesize All numerical values in this note are reproducible from
-\texttt{scripts/gate\_9x9\_source\_convention.py} (gates A--E) and
-\texttt{Mathematica/BoxFiveThree.wl} (the Box~5.3 derivation).}
+\texttt{scripts/gate\_9x9\_source\_convention.py} (gates A--E),
+\texttt{Mathematica/BoxFiveThree.wl} (the Box~5.3 derivation), and, for
+\S\ref{sec:correctness}, \texttt{scripts/gate\_thesis\_formulation\_periodic.py},
+\texttt{scripts/measure\_thesis\_gate\_dressing.py} and
+\texttt{scripts/measure\_thesis\_refinement.py}.}
 
 \end{document}
