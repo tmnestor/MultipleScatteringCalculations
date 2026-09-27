@@ -527,10 +527,11 @@ The reverberation table subtracts, on its diagonal, the whole-space kernel of th
 plane; the closed form added back must be the same one, or the same-plane coupling of a plane in
 a different material is wrong by the difference of the two whole-space kernels --- an error of
 the order of the material contrast. With every plane in one medium the distinction vanishes, and
-no configuration measured before this section had planes on both sides of a contrast. The
-package's cache builder (\texttt{build\_g0\_cache\_3d}) adds a single same-depth table for every
-plane, so a domain that straddles an interface must be assembled per plane, as the layered
-preconditioner measurement of \S\ref{sec:precon} does.
+no configuration measured before this section had planes on both sides of a contrast. The cache
+builder (\texttt{build\_g0\_cache\_3d}) therefore holds one same-depth table per plane, each from
+that plane's own medium, and with a layered model the operator does not depend on the caller's
+reference medium at all --- gated on planes that straddle a contrast, where a single shared
+table was measured $58\%$ off (\texttt{test\_apply\_g0\_3d}).
 
 \medskip\noindent
 \textbf{Correction, 26 September 2026: the $k_r p = 10$ rule holds only far from a contrast.} It

@@ -83,8 +83,8 @@ def _counting_cache(grid: SweepGrid3D, *, with_reverberation: bool) -> G0Cache3D
     the integer number of (target, source) contributions.
     """
     ones = np.ones((9, 9), dtype=complex)
-    sd = np.broadcast_to(ones, (2 * grid.n_x - 1, 2 * grid.n_y - 1, 9, 9)).copy()
-    sd[grid.n_x - 1, grid.n_y - 1] = np.nan  # keep the poison
+    sd = np.broadcast_to(ones, (grid.n_z, 2 * grid.n_x - 1, 2 * grid.n_y - 1, 9, 9)).copy()
+    sd[:, grid.n_x - 1, grid.n_y - 1] = np.nan  # keep the poison
     ls = np.zeros((grid.n_z, grid.n_z, 2 * grid.n_x - 1, 2 * grid.n_y - 1, 9, 9), dtype=complex)
     for lz in range(grid.n_z):
         for mz in range(grid.n_z):
@@ -136,6 +136,113 @@ def test_partition_counts_every_pair_exactly_once(with_reverberation: bool) -> N
         f"got min {counts.min()} max {counts.max()}"
     )
     assert np.abs(got.imag).max() < 1e-9
+
+
+def _straddling_model():
+    """Half-pitch sublayers; planes at interfaces 10 and 12, a material jump on interface 11 between them.
+
+    Interface j lies between layers j and j+1, so plane 10 sits in medium A (layers
+    10-11) and plane 12 in medium B (layers 12-13).
+    """
+    import sys
+
+    sibling = "/Users/tod/Desktop/SeismicInversion"
+    if sibling not in sys.path:
+        sys.path.insert(0, sibling)
+    pytest.importorskip("GlobalMatrix.layered_greens")
+    lm = pytest.importorskip("Kennett_Reflectivity.layer_model")
+    n_lay, q = 24, 50.0
+    alpha = [1.5, *([5.0] * n_lay), 6.5]
+    beta = [0.0, *([3.0] * n_lay), 3.7]
+    rho = [1.03, *([2.5] * n_lay), 3.0]
+    for lay in range(12, n_lay + 2):
+        alpha[lay], beta[lay], rho[lay] = 6.5, 3.7, 3.0
+    return lm.LayerModel.from_arrays(
+        alpha=alpha,
+        beta=beta,
+        rho=rho,
+        thickness=[3.0, *([PITCH / 2] * n_lay), np.inf],
+        Q_alpha=[q] * (n_lay + 2),
+        Q_beta=[1e10, *([q] * n_lay), q],
+    )
+
+
+STRADDLE_PLANES = (10, 12)
+
+
+def _plane_medium(model, iface: int) -> ReferenceMedium:
+    s_p, s_s = model.complex_slowness_p(), model.complex_slowness_s()
+    return ReferenceMedium(1.0 / s_p[iface], 1.0 / s_s[iface], model.rho[iface])
+
+
+def test_layered_operator_does_not_depend_on_the_callers_reference() -> None:
+    """With a layered model the operator is defined by the MODEL; the caller's ref must not enter.
+
+    The planes straddle a material contrast.  The layered table subtracts each
+    plane's OWN whole-space kernel on its diagonal, so the same-depth closed form
+    added back must be that plane's own too.  A single caller ref cannot be right
+    for both planes: the two builds below would differ by W(A) - W(B), of the
+    order of the contrast.
+    """
+    from cubic_scattering.pair_propagators import TransverseRule
+
+    model = _straddling_model()
+    grid = SweepGrid3D(n_z=2, n_x=2, n_y=2, pitch=PITCH)
+    rule = TransverseRule(kr_max=10.0 / PITCH, n_axis=32)
+    med_a, med_b = (_plane_medium(model, j) for j in STRADDLE_PLANES)
+    kw = dict(model=model, plane_ifaces=STRADDLE_PLANES, transverse=rule)
+    rng = np.random.default_rng(11)
+    src = rng.standard_normal((2, 2, 2, 9)) + 1j * rng.standard_normal((2, 2, 2, 9))
+    out_a = apply_g0_3d(src, build_g0_cache_3d(grid, med_a, OM, **kw))
+    out_b = apply_g0_3d(src, build_g0_cache_3d(grid, med_b, OM, **kw))
+    rel = np.abs(out_a - out_b).max() / np.abs(out_a).max()
+    assert rel < 1e-12, f"the layered operator depends on the caller's ref: {rel:.3e}"
+
+
+def test_same_plane_pairs_use_each_planes_own_medium() -> None:
+    """VALUE, straddling a contrast: same-plane pair = layered diagonal + that plane's closed form.
+
+    The closed form is evaluated here independently, by exact_propagator_9x9 in the
+    plane's own attenuated medium, not through same_depth_table.
+    """
+    from cubic_scattering.pair_propagators import TransverseRule, layered_stack_table
+
+    model = _straddling_model()
+    grid = SweepGrid3D(n_z=2, n_x=2, n_y=2, pitch=PITCH)
+    rule = TransverseRule(kr_max=10.0 / PITCH, n_axis=32)
+    media = [_plane_medium(model, j) for j in STRADDLE_PLANES]
+    cache = build_g0_cache_3d(
+        grid, media[0], OM, model=model, plane_ifaces=STRADDLE_PLANES, transverse=rule
+    )
+    lay = layered_stack_table(
+        2, 2, 2, PITCH, OM, media[0], model=model, plane_ifaces=STRADDLE_PLANES, transverse=rule
+    )
+    for z in range(2):
+        # source at (z, 0, 0), component c; receiver at (z, 1, 0): same plane, dx = +1
+        for c in range(9):
+            src = np.zeros((2, 2, 2, 9), dtype=complex)
+            src[z, 0, 0, c] = 1.0
+            got = apply_g0_3d(src, cache)[z, 1, 0]
+            want = lay[z, z, 1 + 1, 0 + 1][:, c] + exact_propagator_9x9(PITCH, 0.0, 0.0, OM, media[z])[:, c]
+            rel = np.abs(got - want).max() / np.abs(want).max()
+            assert rel < 1e-12, f"plane {STRADDLE_PLANES[z]}, component {c}: {rel:.3e}"
+
+
+def test_rejects_a_single_same_depth_table() -> None:
+    """A cache with ONE same-depth table (the old shape) is refused, not broadcast silently.
+
+    Silently broadcasting would reintroduce the defect: one medium for every plane.
+    """
+    grid = _grid()
+    good = build_g0_cache_3d(grid, REF, OM)
+    old = G0Cache3D(grid=grid, same_depth=good.same_depth[0], layered=good.layered)
+    with pytest.raises(ValueError) as exc:
+        apply_g0_3d(np.zeros((grid.n_z, grid.n_x, grid.n_y, 9), dtype=complex), old)
+    msg = str(exc.value)
+    assert "same_depth has shape" in msg
+    assert "Where:" in msg
+    assert "Valid:" in msg
+    assert "Fix:" in msg
 
 
 def test_rejects_a_source_of_the_wrong_shape() -> None:
