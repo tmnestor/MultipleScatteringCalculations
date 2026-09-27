@@ -61,6 +61,17 @@ runs' discretisation error.  This test cannot tell which.  The kernel is now
 chosen by the floor alone (``measure_thesis_gate_floor``: Ewald sum plus the
 source-cell average to reach 1, the first setting within 10% of the previous).
 
+REFINEMENT RESOLVES THE REVERSAL (``measure_thesis_refinement``: the same slab
+in n = 1..4 planes of cubes).  Every arm converges by n = 3, to NONZERO limits:
+the uniform floor itself stops at 3.565e-4 (identical to four digits from
+n = 2) -- a scale-invariant discretisation bias no refinement removes.  At
+n = 1, this gate's configuration, the thesis arm is worse than dress-after
+(3.14x vs 1.96x the floor); refined, it is better and its error FALLS while
+dress-after's RISES: 1.75x vs 3.04x at n = 4.  So the reversal was coarse
+discretisation.  At convergence the thesis ordering beats dress-after by 1.74x
+-- support for the formulation, but not by this gate's 5x standard, which the
+scale-invariant bias caps.
+
 Run:  conda run -n seismic python scripts/gate_thesis_formulation_periodic.py
 SI units (m, m/s, kg/m3, Pa) -- the slab machinery's own convention.
 """
@@ -194,6 +205,13 @@ def _dressed_kernel(
         # Plane lz is at PLANE_IFACES[lz]; index 0 is the observation plane.
         lz, mz = (dz_vox, 0) if dz_vox >= 0 else (0, -dz_vox)
         rcv, src = PLANE_IFACES[lz], PLANE_IFACES[mz]
+        if dz_vox == 0:
+            # The kernel holds ONE same-plane block. The observation plane has
+            # T0 = 0, so only the SCATTERING plane's self-coupling acts: dress it
+            # with that plane's reverberation, not the observation plane's.
+            # (Measured 27 Sep 2026: the two differ by 3% here and the arms move
+            # by <= 0.02x -- a correctness fix, not the cause of anything.)
+            rcv = src = SCAT_IFACE
         lay = _p_tilde(model, src, rcv, omega)
         # The whole-space SUBTRACTION must use the COMPLEX medium, to match the
         # layered propagator it is subtracted from; only the kernel builder
