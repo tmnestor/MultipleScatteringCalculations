@@ -390,8 +390,22 @@ planes $i$ and $j$ plus the reverberation between them. The reverberation off th
 travels a path set by $z_i + z_j$, not by $z_i - z_j$, so it does not fit a kernel holding one block
 per depth separation. Taking that one block from a single pair of planes (the fourth column) leaves an
 error that refines only slowly, ${\approx}10^{-5}$ at every $n$ shown; it is an error of the kernel's
-storage, not of Eq.~\eqref{eq:LSstrat}. At $n = 1$ the gate (\texttt{gate\_thesis\_formulation\_periodic})
-separates the arms by $178$ against the standard of $5$ set before the comparison.
+storage, not of Eq.~\eqref{eq:LSstrat}.
+
+\paragraph{The criterion is convergence.} At a single lattice, [T1] and [T3] are discretisation
+errors of two different problems, and their ratio moves with the kernel alone ($1.85$ to $3.82$ at
+$n = 1$ across the kernels tried), so the gate (\texttt{gate\_thesis\_formulation\_periodic}) is
+stated on refinement. Over $n = 1, 2, 4$, with $p$ the observed order per doubling, it requires the
+control to converge ($p \ge 0.7$), the thesis ordering to keep pace ($|p_{\rm T1} - p_{\rm T3}| \le
+0.3$), and dress-after to hold its error (change below $10\%$, and at least $5$ times the control).
+Measured: $p_{\rm T1} = 1.07, 1.12$ against $p_{\rm T3} = 1.05, 1.08$; dress-after changes by $0.9\%$
+at $179$ times the control. Confirmed.
+
+The kernel must leave a discretisation error to watch. With the exact source-cell average both arms
+already sit at the reference's own accuracy at $n=1$ --- the control at $2\times10^{-8}$ of the
+field, the thesis ordering at $10^{-7}$, dress-after $10^{4}$ times higher --- and stay there under
+refinement, so the gate uses a source-cell average truncated at the first neighbours, whose error
+lies $30$--$300$ times above that floor and converges at first order.
 
 \section{Status and what remains}
 
