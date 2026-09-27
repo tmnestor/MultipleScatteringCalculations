@@ -40,6 +40,27 @@ formulation. [T1] above the floor is a REFUTATION and would point at the
 stratified propagator or the composition. [T1] and [T2] both at the floor means
 this configuration still cannot separate them.
 
+WARNING, 27 September 2026: THE EARLIER "POSITIVE" READING WAS AN ARTEFACT.
+Until then this gate built its kernel with the TRUNCATED lateral sum (it
+predates the exact Ewald sum, 46f3402).  For a laterally uniform medium at
+normal incidence only the specular block kernel_hat[dz][0, 0] acts, and the
+truncated sum gets that block 100% wrong against the exact Weyl lattice sum
+(the Ewald block matches the point propagator's Weyl sum to 7e-5 off-plane).
+The arms follow the specular block exactly (``measure_thesis_gate_dressing``):
+    kernel      thesis [T1]/[T3]   dress-after [T2]/[T3]
+    truncated        0.87x              3.30x           (the committed result)
+    Ewald            3.63x              1.58x
+The dressing is consistent with the kernel -- on a uniform background it changes
+nothing (3.6e-21), and the Ewald block matches the ws/d^2 it subtracts -- so the
+reversal is not a convention mismatch.  With the correct kernel the gate is still
+INCONCLUSIVE (separation 1.6x < 5x), and the thesis arm misses the exact answer
+by MORE than dress-after.  That is not a refutation by this gate's own
+thresholds, but it withdraws the earlier support: either the formulation fails
+here, or the uniform-background floor [T3] does not measure the stratified
+runs' discretisation error.  This test cannot tell which.  The kernel is now
+chosen by the floor alone (``measure_thesis_gate_floor``: Ewald sum plus the
+source-cell average to reach 1, the first setting within 10% of the previous).
+
 Run:  conda run -n seismic python scripts/gate_thesis_formulation_periodic.py
 SI units (m, m/s, kg/m3, Pa) -- the slab machinery's own convention.
 """
@@ -101,6 +122,10 @@ PLANE_IFACES = (OBS_IFACE, SCAT_IFACE)
 # it. `scripts/measure_reflector_lever.py` measures that claim rather than
 # assuming it.
 REFL_JUMP = (2000.0, 1200.0, 600.0)
+# The discretisation of the periodic kernel -- the ONLY thing that sets the
+# floor [T3]. Chosen by the floor's own convergence (scripts/measure_thesis_gate_floor.py),
+# never by the separation, so it cannot be tuned toward a pass.
+KERNEL_KW: dict = dict(volume_averaged=True, periodic=True, lattice_ewald=True, va_all=True, va_all_reach=1)
 
 
 def _model(
@@ -153,6 +178,7 @@ def _dressed_kernel(
     ref_c: ReferenceMedium,
     geom: SlabGeometry,
     omega: float = OM,
+    kernel_kw: dict | None = None,
 ) -> np.ndarray:
     """The periodic volume-averaged kernel, plus the layer reverberation at k = 0.
 
@@ -161,7 +187,7 @@ def _dressed_kernel(
     DeltaG0(k_par -> 0)/d^2 there dresses the specular channel, which for a
     laterally uniform medium is the only one that acts.
     """
-    kh = build_slab_kernels(geom, omega, ref, volume_averaged=True, periodic=True).copy()
+    kh = build_slab_kernels(geom, omega, ref, **(KERNEL_KW if kernel_kw is None else kernel_kw)).copy()
     n_z = geom.N_z
     for k in range(2 * n_z - 1):
         dz_vox = k - (n_z - 1)
@@ -188,6 +214,7 @@ def _run(
     refl_layer: int = REFL_LAYER,
     omega: float = OM,
     contrast: float = 1.0,
+    kernel_kw: dict | None = None,
 ) -> tuple[float, float]:
     """(relative error against the exact layered answer, |exact|).
 
@@ -237,9 +264,9 @@ def _run(
     exact = _p_tilde(m_full, SRC_IFACE, planes[0], omega) @ src_vec
 
     kh = (
-        _dressed_kernel(m_ref, ref, ref_c, geom, omega)
+        _dressed_kernel(m_ref, ref, ref_c, geom, omega, kernel_kw)
         if dressed
-        else build_slab_kernels(geom, omega, ref, volume_averaged=True, periodic=True)
+        else build_slab_kernels(geom, omega, ref, **(KERNEL_KW if kernel_kw is None else kernel_kw))
     )
     res = compute_slab_scattering(
         geom,
@@ -262,8 +289,8 @@ def main() -> int:
     print("=" * 78)
     print("GATE -- the thesis two-potential formulation, periodic lattice")
     print(f"  ka = {ka:.4f} (validated range is ka < 0.3); N_z = {N_Z}, M = {M}")
-    print("  periodic Weyl lattice sum + volume-averaged nearest neighbours")
-    print("  floor measured at 1.8e-3 by scripts/measure_periodic_floor.py")
+    print(f"  kernel: {KERNEL_KW}")
+    print("  (exact Ewald lattice sum; see the header's 27 September warning)")
     print("=" * 78)
 
     t1, s1 = _run(dressed=True, uniform=False)
