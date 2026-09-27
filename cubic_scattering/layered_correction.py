@@ -68,6 +68,7 @@ __all__ = [
     "correct_6x6",
     "corrected_layered_6x6",
     "corrected_layered_9x9",
+    "assert_ocean_top",
     "k_operator",
     "source_jump_operator",
     "strain_from_state",
@@ -311,6 +312,43 @@ def assert_interface_continuous(model: object, iface: int, role: str) -> None:
     raise ValueError(msg) from None
 
 
+def assert_ocean_top(model: object) -> None:
+    """Reject a model whose layer 0 is not a fluid.
+
+    ``GlobalMatrix.layered_greens`` treats layer 0 as an OCEAN whatever
+    ``beta[0]`` says: SH meets a traction-free boundary at interface 0 and P-SV a
+    fluid-solid one. A solid layer 0 is therefore silently computed as a fluid --
+    in a model meant to be uniform, the S response came back multiplied by
+    ``1 + e^{2 i k_S (z - z_0)}``, a unit-amplitude reflection off interface 0
+    (``Mathematica/OceanBoundary.wl`` derives it exactly and matches the package
+    to 1.3e-14).
+
+    Args:
+        model: Anything exposing a ``beta`` sequence.
+
+    Raises:
+        ValueError: If ``beta[0]`` is not zero.
+    """
+    b0 = model.beta[0]  # type: ignore[attr-defined]
+    if b0 == 0:
+        return
+    msg = (
+        f"layer 0 has beta = {b0}, but the layered solver treats layer 0 as a fluid ocean.\n"
+        "  What: GlobalMatrix.layered_greens ignores beta[0]; the S wave then reflects\n"
+        "        totally off interface 0 (the base of layer 0), so a solid layer 0 is\n"
+        "        silently computed as water.\n"
+        "  Where: the model passed to corrected_layered_6x6 / corrected_layered_9x9\n"
+        "         (cubic_scattering/layered_correction.py).\n"
+        "  Valid: beta[0] == 0, e.g. LayerModel.from_arrays(alpha=[1500.0, ...],\n"
+        "         beta=[0.0, ...], rho=[1030.0, ...], ...). For a background with no\n"
+        "         S reflection above, keep the solid thick enough that the round trip\n"
+        "         to interface 0 is attenuated away, or use the whole-space kernel.\n"
+        "  Fix:   set beta[0] = 0.0 in the model and accept the fluid-solid boundary\n"
+        "         at interface 0 as part of the reference."
+    )
+    raise ValueError(msg) from None
+
+
 def corrected_layered_6x6(
     model: object,
     omega: float,
@@ -335,6 +373,7 @@ def corrected_layered_6x6(
     Returns:
         Shape (6, 6) complex in basis (u_z, u_x, u_y, T_zz, T_xz, T_yz).
     """
+    assert_ocean_top(model)  # before any external import: a pure input check
     from GlobalMatrix.layered_greens import layered_greens_6x6
 
     assert_sh_impedance_paired()
@@ -411,6 +450,7 @@ def corrected_layered_9x9(
         Shape ``(*kx.shape, 9, 9)`` complex, basis
         ``(u_z, u_x, u_y, e_zz, e_xx, e_yy, 2e_xy, 2e_zy, 2e_zx)``.
     """
+    assert_ocean_top(model)  # before any external import: a pure input check
     from GlobalMatrix.layered_greens import layered_greens_6x6
 
     assert_sh_impedance_paired()

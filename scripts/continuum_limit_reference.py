@@ -7,9 +7,9 @@ horizontal one a pure 1-D S problem:
 
   * the whole-space specular kernels -- ``vertical_kernel_9x9`` (dz != 0) and ``same_depth_kernel_9x9``
     (dz = 0) -- at several dz;
-  * the layered propagator ``corrected_layered_9x9`` for a contrast layer in a UNIFORM background (the
-    refinement study's "exact" answer for its control arm), source 12 m above the layer, receivers
-    above, inside and below it;
+  * the layered propagator ``corrected_layered_9x9`` for a contrast layer in a uniform solid below a
+    matched fluid layer 0 (the refinement study's "exact" answer for its control arm), source 12 m
+    above the layer, receivers above, inside and below it;
   * the complex slownesses and densities of the two media, so both routes use identical attenuation.
 
 Every 9x9 is dumped whole (rows and columns in the package's order: u_z, u_x, u_y, e_zz, e_xx, e_yy,
@@ -52,9 +52,10 @@ def main() -> int:
         0.
     """
     geo = refine.Geometry(N)
-    # fluid_top=False: a genuinely uniform background, for S as well as P
-    m_bg = geo.model(contrast=False, uniform=True, fluid_top=False)
-    m_full = geo.model(contrast=True, uniform=True, fluid_top=False)
+    # Layer 0 is a fluid with the background's alpha and rho: transparent to P at normal incidence,
+    # but a traction-free boundary for S at interface 0 (Mathematica/OceanBoundary.wl).
+    m_bg = geo.model(contrast=False, uniform=True)
+    m_full = geo.model(contrast=True, uniform=True)
     src = geo.iface(refine.Z_SRC)
     bg = plane_reference_medium(m_bg, geo.iface(-1.0))
     inside = plane_reference_medium(m_full, geo.iface(1.0))
@@ -65,6 +66,8 @@ def main() -> int:
         "eps_kpar": refine.EPS,
         "D": refine.D_SLAB,
         "z_src": refine.Z_SRC,
+        # interface 0, the fluid-solid boundary: interface 1 sits at the source, layer 1 above it
+        "z_ocean": refine.Z_SRC - float(m_full.thickness[1]),
         "background": {
             "alpha": [bg.alpha.real, bg.alpha.imag],
             "beta": [bg.beta.real, bg.beta.imag],

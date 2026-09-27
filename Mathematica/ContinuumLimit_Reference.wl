@@ -86,43 +86,52 @@ Print["      the package takes the dz -> 0- side (", pass[relErr[above, g0m[[4, 
    u1 = g(z - zs) + R Exp[-i k0 z];  u2 = B Exp[i k1 z] + C Exp[-i k1 z];
    u3 = T Exp[i k0 (z - D)].  Continuity of u and M u' at z = 0 and z = D.
    --------------------------------------------------------------------------- *)
-layerField[m0_, k0_, m1_, k1_, zs_, dd_] := Module[{rr, bb, cc, tt, u1, u2, u3, sol},
-  u1[z_] := g1[m0, k0, z - zs] + rr Exp[-I k0 z];
-  u2[z_] := bb Exp[I k1 z] + cc Exp[-I k1 z];
-  u3[z_] := tt Exp[I k0 (z - dd)];
+(* ztop: None for an outgoing condition above (P: the matched fluid layer 0 is transparent), or the
+   depth of a TRACTION-FREE boundary (S: the layered solver's layer 0 is a fluid, which carries no
+   shear -- Mathematica/OceanBoundary.wl), where u' = 0 and region 1 gains a downgoing wave *)
+layerField[m0_, k0_, m1_, k1_, zs_, dd_, ztop_ : None] := Module[
+  {rr, dn, bb, cc, tt, u1, u2, u3, sol, eqs, sc = 1/(2 m0 k0), unk},
+  (* amplitudes carried in units of sc = 1/(2 M k), the plane Green's function's own scale, and the
+     traction equations divided by M k: in SI the raw system spans ~20 orders of magnitude *)
+  u1[z_] := g1[m0, k0, z - zs] + sc (rr Exp[-I k0 z] + dn Exp[I k0 z]);
+  u2[z_] := sc (bb Exp[I k1 z] + cc Exp[-I k1 z]);
+  u3[z_] := sc tt Exp[I k0 (z - dd)];
   (* derivatives written out: for z > zs the source term is g1 Exp[+i k0 (z - zs)] *)
-  sol = First@Solve[{
-      u1[0] == u2[0],
-      m0 (I k0 g1[m0, k0, 0 - zs] - I k0 rr) == m1 (I k1 bb - I k1 cc),
-      u2[dd] == u3[dd],
-      m1 (I k1 bb Exp[I k1 dd] - I k1 cc Exp[-I k1 dd]) == m0 I k0 tt}, {rr, bb, cc, tt}];
+  eqs = {
+    u1[0]/sc == u2[0]/sc,
+    (I k0 g1[m0, k0, 0 - zs]/sc - I k0 rr + I k0 dn)/k0 == (m1/m0) (I k1 bb - I k1 cc)/k0,
+    u2[dd]/sc == u3[dd]/sc,
+    (m1/m0) (I k1 bb Exp[I k1 dd] - I k1 cc Exp[-I k1 dd])/k0 == I tt};
+  If[ztop === None,
+   (* P: outgoing above -- the matched fluid layer 0 is transparent to it *)
+   dn = 0; unk = {rr, bb, cc, tt},
+   (* S: u1'(ztop) = 0, ztop above the source, where the source term is g1 Exp[-i k0 (z - zs)] *)
+   AppendTo[eqs, (-I k0 g1[m0, k0, ztop - zs]/sc - I k0 rr Exp[-I k0 ztop] + I k0 dn Exp[I k0 ztop])/k0 == 0];
+   unk = {rr, dn, bb, cc, tt}];
+  sol = First@Solve[eqs, unk];
   {Function[z, Piecewise[{{u1[z], z < 0}, {u2[z], z <= dd}}, u3[z]] /. sol],
    Function[z, Piecewise[{
-       {I k0 Sign[z - zs] g1[m0, k0, z - zs] - I k0 rr Exp[-I k0 z], z < 0},
-       {I k1 (bb Exp[I k1 z] - cc Exp[-I k1 z]), z <= dd}}, I k0 tt Exp[I k0 (z - dd)]] /. sol]}];
+       {I k0 Sign[z - zs] g1[m0, k0, z - zs] + sc (-I k0 rr Exp[-I k0 z] + I k0 dn Exp[I k0 z]), z < 0},
+       {sc I k1 (bb Exp[I k1 z] - cc Exp[-I k1 z]), z <= dd}}, sc I k0 tt Exp[I k0 (z - dd)]] /. sol]}];
 
 kp1 = kOf[a1]; ks1 = kOf[b1]; mp1 = mP[a1, r1]; ms1 = mS[b1, r1];
 {uP, eP} = layerField[mp0, kp0, mp1, kp1, zSrc, dLayer];
-{uS, eS} = layerField[ms0, ks0, ms1, ks1, zSrc, dLayer];
+zOcean = ref["z_ocean"];  (* interface 0: the fluid-solid boundary, traction-free for S *)
+{uS, eS} = layerField[ms0, ks0, ms1, ks1, zSrc, dLayer, zOcean];
+{uSb, eSb} = layerField[ms0, ks0, ms0, ks0, zSrc, dLayer, zOcean];  (* background: no layer *)
 checks3 = Table[
    With[{z = rcv["z"], gl = mat[rcv["G_layer"]], gb = mat[rcv["G_background"]]},
     {z,
      relErr[uP[z], gl[[1, 1]]], relErr[eP[z], gl[[4, 1]]],
      relErr[uS[z], gl[[2, 2]]], relErr[eS[z], gl[[9, 2]]],
-     relErr[g1[mp0, kp0, z - zSrc], gb[[1, 1]]]}],
+     relErr[g1[mp0, kp0, z - zSrc], gb[[1, 1]]], relErr[uSb[z], gb[[2, 2]]]}],
    {rcv, ref["layered"]}];
-Print["  [3] layered field vs the package's corrected_layered_9x9 (relative):"];
-Print["      z       u_z(P)     e_zz(P)    u_x(S)     2e_zx(S)   background u_z"];
+Print["  [3] layered field vs the package's corrected_layered_9x9 (relative); S with the traction-free"];
+Print["      top at interface 0, z = ", zOcean, " m (the layered solver's layer 0 is a fluid):"];
+Print["      z       u_z(P)     e_zz(P)    u_x(S)     2e_zx(S)   bg u_z(P)  bg u_x(S)"];
 Do[Print["      ", ToString[r[[1]]], "  ", Row[sci[#] & /@ r[[2 ;;]], "  "]], {r, checks3}];
-worst3 = Max[checks3[[All, {2, 3, 6}]]];  (* P: the problem this study needs *)
-Print["      P (u_z, e_zz, background u_z): worst ", sci[worst3], " -> ", pass[worst3 < 10^-6]];
-(* S is REPORTED, not gated: in a uniform medium the package's layered propagator differs
-   from the 1-D S Green's function -- and from the package's OWN whole-space S kernel, which
-   check [1] matches to 3e-9 -- by one constant complex factor at every depth. That is a
-   package-internal inconsistency at near-normal incidence, recorded as an open finding. *)
-sRatio = mat[ref["layered"][[1]]["G_background"]][[2, 2]]/g1[ms0, ks0, ref["layered"][[1]]["z"] - zSrc];
-Print["      S: OPEN FINDING -- layered/1-D ratio ", sci[sRatio], " at every depth (not a reflection:"];
-Print["         depth-independent), while the whole-space S kernel matches (check [1])."];
+worst3 = Max[checks3[[All, 2 ;;]]];
+Print["      P and S, layer and background: worst ", sci[worst3], " -> ", pass[worst3 < 10^-6]];
 
 (* ---------------------------------------------------------------------------
    [4] Born series in the contrast, and the thin layer.  Scale the layer's

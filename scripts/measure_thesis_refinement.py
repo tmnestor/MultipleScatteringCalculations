@@ -103,7 +103,7 @@ class Geometry:
         ]
         return tuple(self.iface(z) for z in zs)
 
-    def model(self, *, contrast: bool, uniform: bool, fluid_top: bool = True):
+    def model(self, *, contrast: bool, uniform: bool):
         """Water, background down to the source, fine sublayers to the slab bottom, reflector below."""
         import Kennett_Reflectivity.layer_model as lm
 
@@ -113,11 +113,10 @@ class Geometry:
         rh = [1030.0, R0, *([R0] * self.n_fine), R0]
         th = [3000.0, 300.0, *([self.h] * self.n_fine), np.inf]
         if uniform:
+            # a fluid matched to the background: transparent to P at normal incidence. Layer 0 is
+            # ALWAYS a fluid to the layered solver, so S reflects totally off interface 0 whatever
+            # beta[0] is (Mathematica/OceanBoundary.wl); P-only studies (this one) are unaffected.
             al[0], rh[0] = A0, R0
-            if not fluid_top:
-                # a SOLID top as well: without it the water column keeps beta = 0 and an S wave
-                # reflects off the fluid-solid interface. P-only studies (this one) are unaffected.
-                be[0] = B0
         else:
             d_al, d_be, d_rh = gate.REFL_JUMP
             al[-1], be[-1], rh[-1] = A0 + d_al, B0 + d_be, R0 + d_rh
