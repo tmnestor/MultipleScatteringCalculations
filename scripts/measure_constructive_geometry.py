@@ -1,5 +1,10 @@
 """MEASUREMENT: is there a geometry where the reverberation ADDS at the observer?
 
+CORRECTION, 27 September 2026: every number below was measured while the gate's solve
+ignored its zeroed observation-plane T-matrix (no ``T_local``), so the observation plane
+scattered and every arm carried a spurious error of ~3.6e-4.  Fixed in the gate; rerun:
+    best separation 368.5x (omega 200, reflector layer 38), thesis arm 2.16x the floor.
+
 `measure_reflector_lever` showed that strengthening the reflector does not
 sharpen the thesis gate: the relative separation rises to 5.4x, but only because
 |exact| falls 3.4x by DESTRUCTIVE interference at the observation plane, while

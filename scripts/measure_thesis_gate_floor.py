@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """MEASUREMENT: choose the periodic thesis gate's kernel by the discretisation floor ALONE.
 
+CORRECTION, 27 September 2026: every number below was measured while the gate's solve
+ignored its zeroed observation-plane T-matrix (no ``T_local``), so the observation plane
+scattered and every arm carried a spurious error of ~3.6e-4.  Fixed in the gate; rerun:
+    floor [T3] now falls with the reach: 4.67e-15 (reach 1) ... 1.54e-16 (reach 6), so the
+    rule picks reach 6; there [T2]/[T3] = 5344x, [T1]/[T3] = 2.09x.
+
 WHY.  ``gate_thesis_formulation_periodic`` was inconclusive: dress-after sat
 3.28x above the discretisation floor [T3], short of the 5x bar set before it
 ran.  The gate was written on 14 September with the periodic kernel's

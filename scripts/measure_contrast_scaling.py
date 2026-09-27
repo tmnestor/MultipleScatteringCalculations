@@ -1,5 +1,11 @@
 """MEASUREMENT: do the floor and the ordering signal scale DIFFERENTLY in contrast?
 
+CORRECTION, 27 September 2026: every number below was measured while the gate's solve
+ignored its zeroed observation-plane T-matrix (no ``T_local``), so the observation plane
+scattered and every arm carried a spurious error of ~3.6e-4.  Fixed in the gate; rerun:
+    separation 173-209x at every contrast; floor and ordering both ~c^0.97, as they must
+    be once the floor is discretisation only.  The 'floor has to go' conclusion is moot.
+
 `measure_constructive_geometry` found the dressing gain [T2]/[T1] falling from
 3.7 at omega = 60 to ~1.1 at omega = 400, and flagged two readings: either the
 two-potential formulation is incomplete, or the DRESSED arm is simply
