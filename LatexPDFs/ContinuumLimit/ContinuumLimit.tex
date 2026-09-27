@@ -1,0 +1,312 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape The Continuum Limit of a Space-Filling Layer of Cubes}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bD}{\boldsymbol{\Delta}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\sinc}{\operatorname{sinc}}
+\newcommand{\nb}[1]{\texttt{#1}}
+
+\title{\bfseries The Continuum Limit of a Space-Filling Layer of Cubes\\[4pt]
+\large A Tiling Identity, an Exact Lattice Kernel,\\
+and the Closed-Form Error of the Discrete Layer}
+\author{}
+\date{28 September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A heterogeneous elastic medium discretised into cubic voxels, each carrying a single-site
+$T$-matrix and coupled through a lattice Green's tensor, must reproduce the continuous medium as
+the voxels shrink. For a laterally uniform layer at normal incidence we establish when, how fast,
+and with what error it does. Four results. (i) Cubes tile the plane, so the lateral form factor of
+a cube vanishes on the reciprocal lattice; consequently the source-cell-averaged coupling between
+planes is \emph{exactly} the continuum's plane-wave term, and within a plane the sum over all
+cells, the voxel's own included, is \emph{exactly} the field of a uniform plate. This tiling
+identity gives the lattice kernel at normal incidence in closed form, with no lattice sum.
+(ii) The collocation closure of the single site carries the same self term the kernel removes, so
+the self term cancels and the discrete system becomes a collocation of the continuum equation with
+exact cell integrals. (iii) That collocation converges at exactly second order in the voxel size.
+(iv) Its leading error is closed-form for every discretisation --- a midpoint-rule error of the
+internal field across each voxel, $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission ---
+and the opposite signs show that no scalar correction of a uniform-field single site can remove it:
+a fourth-order scheme must carry each voxel's first moment. Every result is derived symbolically in
+Mathematica and checked against an independent numerical implementation.
+\end{abstract}
+
+\section{Setting}\label{sec:setting}
+
+\paragraph{The discrete medium.} Space is tiled by cubes of side $d$ (half-side $h=d/2$). Cube $i$
+carries a contrast $\Delta\lambda,\Delta\mu,\Delta\rho$ from an isotropic background with Lamé
+parameters $\lambda,\mu$, density $\rho$, P and S speeds $\alpha,\beta$ and P-wave modulus
+$M_P=\lambda+2\mu$. Time dependence is $e^{-i\omega t}$; $k_P=\omega/\alpha$, $k_S=\omega/\beta$.
+Coordinates are ordered $(z,x,y)$ with $z$ down. The field at a voxel is the nine-component state
+\begin{equation}
+  \psi=(u_z,u_x,u_y,\ \varepsilon_{zz},\varepsilon_{xx},\varepsilon_{yy},
+  2\varepsilon_{xy},2\varepsilon_{zy},2\varepsilon_{zx}),
+\end{equation}
+displacement followed by engineering strain. A voxel responds with a force and a moment (stress
+dipole); the $9\times9$ single-site $T$-matrix maps the exciting state to them, and the $9\times9$
+lattice Green's tensor $\bK(i,j)$ maps a source voxel's force and moment to the state at voxel $i$.
+The Foldy--Lax system is
+\begin{equation}\label{eq:foldylax}
+  \psi_i=\psi^0_i+\sum_{j\neq i}\bK(i,j)\,\bT_j\,\psi_j ,
+\end{equation}
+with $\psi^0$ the incident state. Strain rows of $\bK$ are receiver derivatives of the point
+Green's tensor $\bG$; moment columns are derivatives with respect to the receiver coordinate,
+symmetrised with a factor $\tfrac12$ on the shear components. In that convention the contrast
+operator is
+\begin{equation}\label{eq:delta}
+  \bD=\operatorname{blockdiag}\!\bigl(\omega^2\Delta\rho\,\bI_3,\ \Delta\mathcal{C}\bigr),
+\end{equation}
+where $\Delta\mathcal{C}$ is the $6\times6$ contrast stiffness with $\Delta\lambda+2\Delta\mu$ and
+$\Delta\lambda$ in the normal block and $2\Delta\mu$ (not $\Delta\mu$) on the shear diagonal.
+
+\paragraph{The laterally uniform layer.} A layer of thickness $D$ is filled with $n$ planes of
+voxels, $d=D/n$, and illuminated at normal incidence. The field is then laterally uniform, only the
+zero-lateral-wavenumber (specular) component of the lattice coupling acts, and
+Eq.~\eqref{eq:foldylax} becomes exactly a chain of $n$ planes coupled by the specular lattice sums
+\begin{equation}\label{eq:specsum}
+  \bS(m)=\sum_{\mathbf R}\bG(\mathbf R+m d\,\hat{\mathbf z}),
+\end{equation}
+the sum running over the square lattice $\mathbf R$ of pitch $d$, $m$ the plane separation in
+pitches. The question is whether, and how fast, this chain converges to the continuous layer as
+$n\to\infty$ at fixed $D$.
+
+\section{The continuous layer and its thin-layer expansion}\label{sec:continuum}
+
+At normal incidence a plane force drives a one-dimensional problem per wave type, with modulus $M$
+($M_P$ for P, $\mu$ for S), wavenumber $k$ and plane Green's function
+$g(z)=\tfrac{i}{2Mk}e^{ik|z|}$. The layer's reflection and transmission follow from continuity of
+displacement and traction at its faces; they agree with the stratified propagator used as the
+reference in this work to $2.5\times10^{-8}$, P and S (\nb{ContinuumLimit\_Reference.wl}).
+
+For a layer of thickness $D$ with modulus $M_1$ and density $\rho_1$ in a background $M_0,\rho_0$,
+the reflection coefficient expands as
+\begin{equation}\label{eq:thin}
+  R=\frac{i\omega D}{2}\sqrt{\frac{M_0}{\rho_0}}
+  \Bigl[\frac{\rho_1-\rho_0}{M_0}-\rho_0\Bigl(\frac1{M_1}-\frac1{M_0}\Bigr)\Bigr]+O(D^2),
+\end{equation}
+exact in the contrast (\nb{ContinuumLimit\_ThinLayer.wl}): to first order a thin layer is an
+interface across which the traction jumps by the excess inertia and the displacement by the excess
+compliance. At oblique incidence the same statement holds with the first-order system
+$\partial_z\mathbf b=\bA\mathbf b$ for the P--SV state $\mathbf b=(u_x,u_z,t_{xz},t_{zz})$: the layer
+acts to $O(D)$ as the jump $\bI+(\bA_1-\bA_0)D$, which reproduces the layer's $O(D)$ reflection
+coefficients $R_{PP},R_{PS}$ to $10^{-12}$; the series truncated at $O(D^k)$ converges at exactly
+order $k$; and a soft thin layer with shear modulus $\mu_1=D/\eta$ at fixed compliance $\eta$ tends to
+the linear-slip interface as $D\to0$. These expansions are the target a single plane of voxels must
+reproduce order by order.
+
+\section{The specular sums of the point Green's tensor}\label{sec:point}
+
+By Poisson summation,
+\begin{equation}\label{eq:poisson}
+  \bS(m)=\frac1{d^2}\sum_{\mathbf g}\hat\bG(\mathbf g;\,m d),\qquad \mathbf g=\tfrac{2\pi}{d}(p,q),
+\end{equation}
+with $\hat\bG$ the two-dimensional transform of the Green's tensor between planes. The $\mathbf g=0$
+term is the continuum's plane-wave term; the others are evanescent, decaying as
+$e^{-2\pi m\sqrt{p^2+q^2}}$ independently of $d$. In the strain-from-moment block they carry two
+powers of $|\mathbf g|\propto1/d$, so their contribution per voxel volume does \emph{not} vanish as
+$d\to0$: at $m=1$ it is eleven times the continuum term (\nb{ContinuumLimit\_SpecularSums.wl},
+matched to the package's Ewald lattice sum to $5\times10^{-13}$). This surviving term is static.
+Summed over all planes in slab order, the static lattice sum of the point kernel is exactly the
+depolarisation of a uniform plate --- $-1/M_P$ on $\varepsilon_{zz}\leftarrow M_{zz}$ and $-1/(2\mu)$
+on the normal shears, per unit volume --- plus a cubic-symmetric remainder
+(\nb{ContinuumLimit\_StaticLocal.wl}, to $2\times10^{-10}$). The point kernel therefore reproduces
+the continuum only if that remainder is cancelled by the voxel's own self term.
+
+\section{The tiling identity}\label{sec:tiling}
+
+Replace the point coupling by the \emph{source-cell average}
+$\langle\bG\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bG(\mathbf r-\mathbf y)\,d\mathbf y$ --- the
+field at a voxel centre of a uniform polarisation of the source voxel. Each Poisson order in
+Eq.~\eqref{eq:poisson} is then multiplied by the cube's form factor
+\begin{equation}
+  F(\mathbf g)=\sinc(g_x h)\,\sinc(g_y h),
+\end{equation}
+which vanishes at every $\mathbf g\neq0$ of the reciprocal lattice since $\sinc(p\pi)=0$ for integer
+$p\neq0$. This is the Fourier form of the fact that cubes tile the plane,
+$\sum_{\mathbf R}\chi(\mathbf x-\mathbf R)=1$ for the cube's indicator $\chi$. Two exact statements
+follow.
+
+\paragraph{Between planes.} For $m\neq0$ every evanescent order is removed and
+\begin{equation}\label{eq:between}
+  \bS_{\text{avg}}(m)=\frac1{d^2}\sum_{W=P,S}\hat\bG_W(0;\,m d)\,\sinc(k_W h),
+\end{equation}
+the continuum's plane-wave term times the vertical form factor. The package's cell-averaged kernel
+agrees in all 81 entries to $2.8\times10^{-16}$ (\nb{ContinuumLimit\_AveragedSums.wl}).
+
+\paragraph{Within a plane.} The sum over \emph{all} cells of the plane, the voxel's own included,
+is the field at the mid-plane of a uniform plate of thickness $d$:
+\begin{equation}\label{eq:tiling}
+  d^3\,\bS_{\text{avg}}(0)+\bS_{\text{self}}=d^3\,\bP_0,
+  \qquad
+  \bS_{\text{self}}=\int_{\text{cube}}\bG(-\mathbf y)\,d\mathbf y,
+\end{equation}
+where $\bP_0=d^{-3}\int_{-h}^{h}\bG_{\text{plate}}(-z')\,dz'$ is elementary: in the one-dimensional
+transform each entry is $c_0+A/(Mk_z^2-\rho\omega^2)$, so it averages to
+$c_0/d+A\,(e^{ikh}-1)/(dMk^2)$. Its only nonzero entries are $u\leftarrow f$ on the diagonal and the
+three normal strain-from-moment entries, whose local weights $-1/M_P$ and $-1/(2\mu)$ are the plate
+depolarisation of \S\ref{sec:point}. Statically the identity holds for all 21 independent components
+of the strain-from-moment tensor to $4\times10^{-9}$, with every cell integral evaluated analytically
+(below).
+
+\paragraph{Consequence: an exact kernel with no lattice sum.} At normal incidence the same-plane
+block of the cell-averaged Foldy--Lax kernel is
+\begin{equation}\label{eq:exactkernel}
+  \bS_{\text{avg}}(0)=\bP_0-\bS_{\text{self}}/d^3 ,
+\end{equation}
+with no Ewald splitting, near shell or asymptotic tail. The route it replaces --- Ewald summation
+with a near shell averaged by quadrature and an $O(d^2)$ Taylor tail beyond it --- carries a static
+strain-from-moment error of $9.4\times10^{-4}$ at its default settings, falling to $2.6\times10^{-5}$
+only when both the shell radius and the quadrature order are raised; Eq.~\eqref{eq:exactkernel} is
+now the package's kernel at normal incidence.
+
+\paragraph{Cell integrals without quadrature.} Write the static (Kelvin) tensor as
+$G_{bc}=(c_A+c_B)\,\delta_{bc}/r-c_B\,\partial_b\partial_c r$ with
+$c_B=(1/\mu-1/M_P)/8\pi$ and $c_A=1/(4\pi\mu)-c_B$. Every cell integral of its derivatives is a cell
+integral of derivatives of $1/r$ and $r$. One application of the divergence theorem moves it onto
+faces $x_p=c_p\pm h$, which never contain the origin, and there the two-dimensional antiderivative in
+the face coordinates is continuous, so the face integral is a sum over the face's corners. The
+distributional term at $r=0$ is carried by the divergence theorem itself. (A triple antiderivative
+evaluated at the cube's corners is \emph{not} usable for repeated derivatives: its arctangent terms
+jump across the coordinate planes through the origin, and differentiating twice there discards
+exactly that term.) The self term so obtained reproduces the classical closed form of the cube's
+depolarisation to machine precision.
+
+\section{The single site}\label{sec:single}
+
+The collocation closure takes the internal field of a voxel as uniform. The voxel's own field at its
+centre is then $\bS_{\text{self}}\bD\,e$ for internal state $e$, so
+$e=\psi+\bS_{\text{self}}\bD e$ and
+\begin{equation}\label{eq:closure}
+  \bT=d^3\,\bD\bigl(\bI-\bS_{\text{self}}\bD\bigr)^{-1}.
+\end{equation}
+With the kernel \eqref{eq:exactkernel} the self term cancels. Substituting
+$\psi=(\bI-\bS_{\text{self}}\bD)e$ into Eq.~\eqref{eq:foldylax},
+\begin{equation}\label{eq:collocation}
+  e_i=\psi^0_i+d^3\sum_j \bK_{\text{all}}(i,j)\,\bD\,e_j,
+  \qquad
+  \bK_{\text{all}}(i,i)=\bP_0,\quad \bK_{\text{all}}(i,j)=\bS_{\text{avg}}(i-j),
+\end{equation}
+an identity checked on the matrices to $4\times10^{-16}$. Every block of $\bK_{\text{all}}$ is an
+\emph{exact} cell integral of the one-dimensional continuum kernel (Eqs.~\eqref{eq:between},
+\eqref{eq:tiling}), so Eq.~\eqref{eq:collocation} is precisely the collocation of the continuum
+Lippmann--Schwinger equation with a strain piecewise constant over voxels. It does not contain
+$\bS_{\text{self}}$ at all.
+
+The package's cube $T$-matrix is this closure statically: both blocks agree with
+Eq.~\eqref{eq:closure} to $2\times10^{-5}$ at $k_Sa=0.01$ ($a$ the half-side), the difference falling
+as $(ka)^2$ (\nb{ContinuumLimit\_CubeT.wl}). It departs dynamically by about $0.25(ka)^2$ through its
+far-field form-factor corrections. Its self integrals are exact in the static and radiation parts
+but omit the real even-power terms of the Green's tensor's expansion ($k^2r$, $r^3$, \dots), an
+error of $0.4$--$0.6\,(ka)^2$ against the analytic self term, whose series agrees with the
+closed-form elastodynamic tensor to $10^{-14}$. By Eq.~\eqref{eq:collocation} that error cannot enter
+the closure scheme.
+
+\section{Convergence, and the closed-form error}\label{sec:convergence}
+
+\paragraph{Second order.} For a layer $D=2$\,m with the contrast
+$\Delta\lambda=2$\,GPa, $\Delta\mu=1$\,GPa, $\Delta\rho=100$\,kg\,m$^{-3}$ in a background
+$\alpha=5000$, $\beta=3000$\,m\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$, illuminated by a P plane force,
+the reflected displacement of the chain converges to the continuous layer's at order $2.000$ for
+$n=4\to16$ at $\omega=60$, $300$ and $600$\,rad\,s$^{-1}$, with the collocation
+\eqref{eq:collocation} and with the package $T$-matrix alike (\nb{ContinuumLimit\_Chain.wl}). The
+error depends on $k_Sa$ alone.
+
+\paragraph{The leading error in closed form.} In Eq.~\eqref{eq:collocation} the kernel is
+integrated exactly; the only approximation is the internal field's variation across a voxel. At
+first order in the contrast the discrete scattered field is therefore a midpoint rule applied to
+the continuum's Born integral, with the kernel's cell integral exact. For reflection the integrand
+carries the two-way phase $e^{2ikz}$; for transmission it is flat. Hence, for \emph{every} $n$,
+\begin{equation}\label{eq:errorR}
+  \frac{R_{\text{disc}}}{R}=\frac{\sinc(kh)}{\sinc(2kh)}=1+\frac{(kd)^2}{8}+O(d^4),
+  \qquad
+  \frac{T^{\text{sc}}_{\text{disc}}}{T^{\text{sc}}}=\sinc(kh)=1-\frac{(kd)^2}{24}+O(d^4),
+\end{equation}
+confirmed for $n=1$ to $16$ to $10^{-4}$ of the error itself
+(\nb{ContinuumLimit\_ErrorConstant.wl}). At the full contrast the reflection constant is unchanged
+($0.124$ against $1/8$); the transmission constant grows to $-0.092$.
+
+\paragraph{Why a uniform-field single site stops at second order.} The two constants have opposite
+signs, so no scalar correction of $\bT$ --- no single $O((ka)^2)$ factor --- can cancel both. The
+package $T$-matrix illustrates it: its form-factor corrections reduce the reflection error by a
+factor $4.45$ and \emph{increase} the transmission error by $1.7$, at every $n$. The missing term in
+Eq.~\eqref{eq:errorR} is the first moment of the internal field over each voxel, which radiates
+through the derivative of the kernel. A fourth-order scheme must carry it: a single site with a
+gradient channel, and a kernel whose cell integrals include the kernel's derivative.
+
+\section{Summary}\label{sec:summary}
+
+\begin{center}
+\begin{tabular}{@{}p{0.52\linewidth}p{0.36\linewidth}@{}}
+\toprule
+Result & Evidence \\
+\midrule
+Continuous layer, exact and to $O(D^k)$ & reference to $2.5\times10^{-8}$; series order $k$ \\
+Point-kernel local term survives $d\to0$ & $11\times$ the continuum term at $m=1$ \\
+Averaged coupling between planes $=$ continuum$\times\sinc$ & $2.8\times10^{-16}$, 81 entries \\
+Tiling identity, Eq.~\eqref{eq:tiling} & 21/21 components to $4\times10^{-9}$ \\
+Exact kernel, Eq.~\eqref{eq:exactkernel} & replaces a $9.4\times10^{-4}$ static error \\
+Self term cancels, Eq.~\eqref{eq:collocation} & $4\times10^{-16}$ \\
+Package $T$ $=$ closure statically & $2\times10^{-5}$ at $k_Sa=0.01$ \\
+Second-order convergence & order $2.000$, three frequencies \\
+Closed-form error, Eq.~\eqref{eq:errorR} & $n=1$--$16$, to $10^{-4}$ of the error \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The discrete scheme is exact wherever the voxel is: its coupling is the continuum's cell integral,
+and its self term cancels. What remains is the assumption that the field inside a voxel is uniform,
+and that error is known in closed form. The next step is the single site that carries the internal
+field's first moment, and the fourth-order convergence it should deliver.
+
+\vfill
+\noindent\rule{\linewidth}{0.4pt}\\
+{\footnotesize Every numerical value is reproducible from the Mathematica notebooks
+\texttt{Mathematica/ContinuumLimit\_\{Reference, ThinLayer, SpecularSums, StaticLocal,
+AveragedSums, CubeT, Chain, ErrorConstant\}.wl} and their reference dumps
+\texttt{scripts/continuum\_limit\_*.py}; the exact kernel is
+\texttt{cubic\_scattering/cell\_averaged\_lattice.py}.}
+
+\end{document}
