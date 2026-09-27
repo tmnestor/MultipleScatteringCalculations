@@ -59,54 +59,77 @@ and the Closed-Form Error of the Discrete Layer}
 
 \begin{abstract}
 \noindent
-A heterogeneous elastic medium discretised into cubic voxels, each carrying a single-site
-$T$-matrix and coupled through a lattice Green's tensor, must reproduce the continuous medium as
-the voxels shrink. For a laterally uniform layer we establish when, how fast and with what error
-it does, at normal and at oblique incidence. (i) Cubes tile the plane, so the lateral form factor
-of a cube vanishes on the reciprocal lattice. Consequently the source-cell-averaged coupling
-between planes is \emph{exactly} the continuum's plane-wave term. Within a plane, the sum over all
-cells, the voxel's own included, is \emph{exactly} the field of a uniform plate. This tiling
-identity gives the lattice kernel at normal incidence in closed form. (ii) The single-site
-$T$-matrix is derived from the moments of the elastodynamic Green's tensor over the cube,
-evaluated as distributions in closed form. The uniform-strain closure is the first-gradient
-truncation of an exact hierarchy. A cube differs from a sphere only by a cubic anisotropy of the
-shear response, whose isotropic average is the sphere's. Against exact scattering by a sphere the
-closure is exact statically. It departs only by a real, closed-form $(ka)^2$ term, and its
-radiation damping is exact. (iii) The closure carries the same self term the kernel removes, so
-the discrete system is a collocation of the continuum equation with exact cell integrals.
-(iv) The collocation converges at second order. Its leading error is closed-form for every
-discretisation: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission. Because the signs are
-opposite, no scalar correction of a uniform-field single site can remove it. (v) A voxel that also
-carries the first moment of its internal field converges at fourth order, with leading error
-$-(kd)^4/720$ in reflection and transmission alike. It stays fourth order at oblique incidence, in
-the converted S wave as well as the reflected P. Every result is derived symbolically and checked
-against an independent numerical implementation or an exact solution.
+Voxel schemes for elastic scattering represent a heterogeneous medium as cubic cells, each
+carrying a single-site $T$-matrix and coupled through the background Green's tensor. They are
+built for media with no exact solution, where their error cannot be measured directly and a
+refinement study can converge smoothly to the wrong limit. A laterally uniform layer of identical
+voxels is the one configuration that exercises such a scheme in full while having an exact
+answer. Because cubes tile space, it isolates the discretisation error exactly. For this layer we
+establish whether, how fast and with what error the scheme converges, at normal and at oblique
+incidence. (i) The cube's lateral form factor vanishes on the reciprocal lattice, so the
+source-cell-averaged coupling between planes is \emph{exactly} the continuum's, and within a plane
+the sum over all cells, the voxel's own included, is \emph{exactly} the field of a uniform plate.
+The lattice kernel at normal incidence is therefore in closed form. (ii) The single-site $T$-matrix
+is derived from distributional moments of the Green's tensor over the cube. The uniform-strain
+closure is the first-gradient truncation of an exact hierarchy. It differs from a sphere's only
+by a cubic anisotropy of the shear response. Against exact scattering by a sphere it is exact
+statically, and it departs dynamically only by a real, closed-form $(ka)^2$ term. (iii) The closure's
+self term cancels the one the kernel removes, so the discrete system is a collocation of the
+continuum equation. (iv) It converges at second order, with leading error $+(kd)^2/8$ in reflection
+and $-(kd)^2/24$ in transmission. The opposite signs mean that no scalar correction of the single
+site can remove it. (v) A voxel that also carries the first moment of its internal field converges
+at fourth order, with leading error $-(kd)^4/720$. It stays fourth order at oblique incidence,
+for incident P, SV and SH, in the converted waves as well as the reflected ones. Every result is derived symbolically and checked
+against an independent implementation or an exact solution.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
 
-\paragraph{Why cubic voxels.} The heterogeneous Earth reaches a wave calculation as a grid. Seismic
-tomography, full-waveform inversion and geological modelling all deliver a medium as cells of
-constant properties on a regular lattice, and the ocean crust that motivates this work --- a
-stratified background carrying lateral heterogeneity on every scale --- is no exception. A
-scattering calculation that is to use such a model directly must represent each cell as a
-scatterer. Cubes are the natural choice for three reasons. They \emph{tile space}: a lattice of cubes
-is a medium with no gaps and no overlaps, so a uniform region discretised into cubes is still that
-uniform region, whereas spheres or point scatterers can only approximate it and carry a packing
-error of their own. Their \emph{regular lattice} makes the interaction between cells translation
-invariant, so the coupling is a convolution --- Toeplitz between planes, Bloch-periodic within them
---- and the whole system is solved by fast transforms. And a cube small compared with the wavelength
-has a \emph{single-site response in closed form}: its $T$-matrix follows from the elastic
-depolarisation of a cube, so the only approximation a cell introduces is the internal field it
-assumes.
+\paragraph{The problem this paper serves.} Seismic waves in the crust are scattered by heterogeneity
+on every scale, and the models that describe it --- tomographic images, full-waveform inversions,
+geological models --- arrive as grids of cells of constant properties. A scattering calculation
+that uses such a model directly treats every cell as a scatterer: a voxel carrying a single-site
+$T$-matrix and coupled to every other voxel through the Green's tensor of the background, with the
+multiple-scattering series summed. For the media such a scheme is built for, there is no exact
+solution, and that is the difficulty. Its error cannot be measured against the answer. Comparison
+with another numerical method mixes the errors of both. And a refinement study can mislead,
+because a voxel scheme can converge smoothly to the wrong limit. \S\ref{sec:point} shows how that
+happens with the most natural choice of coupling, the Green's tensor evaluated between voxel
+centres: it carries a local term whose size per unit volume does not shrink as the voxels do, and
+unless the single voxel's response is matched to cancel it, refinement converges to the wrong
+answer without revealing it.
 
-Those three properties raise the question this paper answers. If cubes tile space, a layer of
-identical cubes \emph{is} a homogeneous layer, and the multiple-scattering calculation for it has
-an exact answer: the continuous layer's. Any difference between the discrete and continuous
-results is then purely a property of the discretisation, with no modelling error behind which to
-hide. A laterally uniform layer is therefore the sharpest test of a voxel scheme --- whether it
-converges, how fast, and with what error --- and the answers carry over to any gridded medium,
-because every such medium is locally a layer of identical cells.
+\paragraph{Why a homogeneous layer.} This paper therefore studies the one configuration in which a
+voxel scheme runs in full --- every voxel, every coupling, the whole multiple-scattering series,
+at normal and at oblique incidence --- and the exact answer is nevertheless known: a laterally
+uniform layer filled with identical voxels. Because cubes tile space, such a layer does not
+approximate a homogeneous layer; it \emph{is} one. Any difference between its reflection and
+transmission and those of the continuous layer is therefore error of the discretisation alone,
+with no modelling error and no shape error behind which to hide. A sphere, the usual test object
+for volume-integral and discrete-dipole methods \citep{Yurkin2006}, cannot give this: its error mixes
+the discretisation with the staircase approximation of a curved surface by cubes. The layer plays
+the part of the patch test in finite elements. A scheme that cannot reproduce a uniform medium
+correctly cannot be trusted in a heterogeneous one. What the layer reveals about the scheme's two
+ingredients --- the coupling between voxels and the response of a single voxel --- does not depend on
+the medium, because the same two ingredients are used wherever the scheme is applied.
+
+\paragraph{What the reader gains.} Four things that a heterogeneous test cannot provide. First, a
+proof, exact at normal incidence, that the voxel scheme converges to the continuum, and the specific ingredient --- a coupling
+averaged over the source voxel --- without which it converges to the wrong answer. Second, the
+leading error in closed form for every discretisation, so that a grid can be chosen for a required
+accuracy before the calculation is run. Third, a single-site $T$-matrix derived from first
+principles, with its error stated and checked against the exact solution for a sphere. Fourth, a
+voxel that converges at fourth order: for a reflection accuracy of $10^{-6}$ it allows voxels $58$
+times larger in each direction than the standard one (\S\ref{sec:discussion}).
+
+\paragraph{Why cubic voxels.} Cubes are the natural cell for three reasons. They \emph{tile space},
+so a uniform region discretised into cubes is still that uniform region, whereas spheres or point
+scatterers can only approximate it and carry a packing error of their own. Their \emph{regular
+lattice} makes the interaction between cells translation invariant, so the coupling is a
+convolution --- Toeplitz between planes, Bloch-periodic within them --- and the whole system is solved
+by fast transforms. And a cube small compared with the wavelength has a \emph{single-site response
+in closed form}, the elastic depolarisation of a cube (\S\ref{sec:single}), so the only
+approximation a voxel introduces is the internal field it assumes.
 
 \paragraph{Multiple scattering on a lattice.} Replacing a heterogeneous body by a lattice of small scatterers that interact through the background
 Green's function is the multiple-scattering description of \citet{Foldy1945} and \citet{Lax1951}.
@@ -141,7 +164,8 @@ therefore cancels, so the discrete system is a collocation of the continuum equa
 order with a leading error known in closed form for every discretisation, whose opposite signs in
 reflection and transmission show that no correction of a uniform-field single site can remove it
 (\S\ref{sec:convergence}). A voxel that carries the first moment of its internal field removes it,
-and converges at fourth order at normal and oblique incidence (\S\ref{sec:fourth}); in its spectral
+and converges at fourth order at normal and oblique incidence, for incident P and S waves alike
+(\S\ref{sec:fourth}); in its spectral
 form the lattice sum needs no Ewald splitting. Every result is derived symbolically in Mathematica
 and checked against an independent Python implementation or an exact solution.
 
@@ -538,7 +562,7 @@ integrated exactly; the only approximation is the internal field's variation acr
 first order in the contrast the discrete scattered field is therefore a midpoint rule applied to
 the continuum's Born integral, with the kernel's cell integral exact. For reflection the integrand
 carries the two-way phase $e^{2ikz}$; for transmission it is flat. With $k$ the background
-wavenumber of the wave concerned ($k_P$ here), $R$ the reflection coefficient and $T^{\text{sc}}$ the
+wavenumber of the wave concerned ($k_P$ for an incident P wave, $k_S$ for an incident S wave), $R$ the reflection coefficient and $T^{\text{sc}}$ the
 scattered part of the transmitted field, for \emph{every} $n$
 \begin{equation}\label{eq:errorR}
   \frac{R_{\text{disc}}}{R}=\frac{\sinc(kh)}{\sinc(2kh)}=1+\frac{(kd)^2}{8}+O(d^4),
@@ -546,7 +570,8 @@ scattered part of the transmitted field, for \emph{every} $n$
   \frac{T^{\text{sc}}_{\text{disc}}}{T^{\text{sc}}}=\sinc(kh)=1-\frac{(kd)^2}{24}+O(d^4),
 \end{equation}
 confirmed for $n=1$ to $16$ to $10^{-4}$ of the error itself
-(\nb{ContinuumLimit\_ErrorConstant.wl}). At the full contrast the reflection constant is unchanged
+(\nb{ContinuumLimit\_ErrorConstant.wl}); for an incident S wave, with $k=k_S$, the same forms and those of
+Eq.~\eqref{eq:ratio} hold to $4\times10^{-4}$ (\nb{ContinuumLimit\_IncidentS.wl}, \S\ref{sec:fourth}). At the full contrast the reflection constant is unchanged
 ($0.124$ against $1/8$); the transmission constant grows to $-0.092$.
 
 \paragraph{Why a uniform-field single site stops at second order.} The two constants have opposite
@@ -677,13 +702,35 @@ the breakdown of the tiling identity at $O(k_\parallel h)$ and the evanescent co
 channels do not cost an order. At $\mathbf k_\parallel=0$ the construction reproduces
 Eq.~\eqref{eq:galerkin} to all printed digits.
 
+\paragraph{Incident S.} Nothing in the construction is specific to P. For a normally incident S wave
+the layer is the one-dimensional problem of Eq.~\eqref{eq:galerkin} with $M_P\to\mu$, $k_P\to k_S$ and
+$\Delta M\to\Delta\mu$; the collocation and mean-only schemes converge at order $2.00$ and the
+first-moment voxel at $4.00$, in reflection and transmission, and the full $9\times9$ construction
+with an incident SH wave reproduces that one-dimensional result to all printed digits. At oblique
+incidence, against the exact layer (\nb{ContinuumLimit\_IncidentS.wl}):
+\begin{center}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & mean only & mean and first moments \\
+\midrule
+SV at $20^\circ$: $R_{SS}$ / $R_{SP}$ & $2.00$ / $2.00$ & $4.00$ / $3.99$ \\
+SV at $30^\circ$: $R_{SS}$ / $R_{SP}$ & $1.98$ / $2.00$ & $3.97$ / $4.00$ \\
+SH at $20^\circ$ and $40^\circ$: $R_{SH}$ & $2.00$ & $4.00$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+(observed order, $n=2\to8$, $\omega=300$\,rad\,s$^{-1}$; the SV angles lie below the critical angle
+$\arcsin(\beta/\alpha)=36.9^\circ$). The orders, and with $k=k_S$ the closed-form constants of
+Eqs.~\eqref{eq:errorR} and \eqref{eq:ratio}, are those of the incident P wave.
+
 The spectral construction is implemented twice. The second implementation
 (\path{scripts/crosscheck_first_moment_voxel.py}) shares only the definition of the scheme: it takes
 the depth dependence of the transformed kernel from an independent residue construction, obtains
 the local weight as a numerical large-$k_z$ limit of the inverted Christoffel matrix, evaluates every
 double integral by quadrature and separates P from S by sampling the upgoing field at two depths.
-The raw reflected displacements of the two agree to $6\times10^{-16}$ in every case compared ---
-normal and oblique incidence, $n=1,2,4$, with and without the first moments.
+The raw reflected displacements of the two agree to $9\times10^{-16}$ in all $36$ cases compared ---
+incident P, SV and SH, normal incidence and $20^\circ$, $n=1,2,4$, with and without the first moments.
 Figure~\ref{fig:convergence} collects the convergence.
 
 \begin{figure}[t]
@@ -692,8 +739,10 @@ Figure~\ref{fig:convergence} collects the convergence.
 \caption{Relative reflection error of the discrete layer against the number of voxel planes $n$
 ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}). Filled: normal
 incidence, P reflection --- collocation (\S\ref{sec:single}), the mean-only voxel and the first-moment
-voxel of Eq.~\eqref{eq:galerkin}. Dashed, open markers: P incident at $20^\circ$, the converted S wave,
-mean-only (green) and first-moment (orange) voxels of Eq.~\eqref{eq:bloch}. Grey: slopes $2$ and $4$.}
+voxel of Eq.~\eqref{eq:galerkin}. Dashed, open squares and diamonds: P incident at $20^\circ$, the
+converted S wave, mean-only (green) and first-moment (orange) voxels of Eq.~\eqref{eq:bloch}. Dotted, open
+triangles: SV incident at $20^\circ$, the reflected S wave, mean-only (purple) and first-moment (brown).
+Grey: slopes $2$ and $4$.}
 \label{fig:convergence}
 \end{figure}
 
@@ -807,8 +856,9 @@ Second-order convergence & order $2.000$, three frequencies \\
 Closed-form error, Eq.~\eqref{eq:errorR} & $n=1$--$16$, to $10^{-4}$ of the error \\
 First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
 First-moment voxel, oblique, Eq.~\eqref{eq:bloch} & order $4$, P and S, $20^\circ$ and $40^\circ$ \\
+Incident SV and SH, all schemes & orders $2$ and $4$; constants with $k_S$ to $4\times10^{-4}$ \\
 First-moment error $-(kd)^4/720$, Eq.~\eqref{eq:ratio} & $n=1$--$8$, to $10^{-4}$ of the error \\
-Independent implementation of Eq.~\eqref{eq:bloch} & $6\times10^{-16}$, 12 cases \\
+Independent implementation of Eq.~\eqref{eq:bloch} & $9\times10^{-16}$, 36 cases, P, SV and SH \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -818,7 +868,7 @@ Independent implementation of Eq.~\eqref{eq:bloch} & $6\times10^{-16}$, 12 cases
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
 StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, FourthOrderError, Reduction3D,
-Oblique and Figure (the figure), and their reference dumps
+Oblique, IncidentS and Figure (the figure), and their reference dumps
 \path{scripts/continuum_limit_*.py}; the moment integrals are
 \path{Mathematica/CubeMomentCore.wl} (gate \path{CubeMomentCoreTest.wl}), \path{CubeA22Block.wl},
 \path{CubeMomentArchiveCheck.wl} and \path{CubeShearSplit.wl}, with the Python half of the last in
