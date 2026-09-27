@@ -58,7 +58,8 @@ continuum equation. (iv) It converges at second order, with leading error $+(kd)
 and $-(kd)^2/24$ in transmission. The opposite signs mean that no scalar correction of the single
 site can remove it. (v) A voxel that also carries the first moment of its internal field converges
 at fourth order, with leading error $-(kd)^4/720$. It stays fourth order at oblique incidence,
-for incident P, SV and SH, in the converted waves as well as the reflected ones. Every result is derived symbolically and checked
+for incident P, SV and SH, and in a randomly stratified layer, where it reaches an accuracy of $10^{-6}$ with
+one voxel per model cell. Every result is derived symbolically and checked
 against an independent implementation or an exact solution.
 \end{summary}
 
@@ -102,7 +103,7 @@ averaged over the source voxel --- without which it converges to the wrong answe
 leading error in closed form for every discretisation, so that a grid can be chosen for a required
 accuracy before the calculation is run. Third, a single-site $T$-matrix derived from first
 principles, with its error stated and checked against the exact solution for a sphere. Fourth, a
-voxel that converges at fourth order: for a reflection accuracy of $10^{-6}$ it allows voxels $58$
+voxel that converges at fourth order, also in a randomly stratified model (\S\ref{sec:hetero}): for a reflection accuracy of $10^{-6}$ it allows voxels $58$
 times larger in each direction than the standard one (\S\ref{sec:discussion}).
 
 \paragraph{Why cubic voxels.} Cubes are the natural cell for three reasons. They \emph{tile space},
@@ -730,6 +731,59 @@ Grey: slopes $2$ and $4$.}
 \end{figure}
 
 \FloatBarrier
+\section{A heterogeneous layer}\label{sec:hetero}
+
+A gridded Earth model is not a layer of identical cells. It is a set of model cells of constant
+properties with real interfaces between them. The last test takes such a model. A layer $D=4$\,m
+thick is divided into eight model cells of $0.5$\,m, and in each one $\Delta\lambda$, $\Delta\mu$
+and $\Delta\rho$ are drawn uniformly within $\pm15\%$ of the background (the values are listed in
+\path{ContinuumLimit_Heterogeneous.wl}). The result is a random stratification with physical contrasts. The voxels refine
+the model grid, with $m$ planes of voxels in each model cell, so no voxel straddles a model
+interface; that is how a gridded model is discretised. At $\omega=1500$\,rad\,s$^{-1}$ the layer is
+$k_PD=1.2$ and $k_SD=2.0$ thick, so the field reverberates between the model interfaces. The exact
+answer is the product of the model cells' propagators. Its same-type reflection coefficients agree
+with those of the reflection--transmission recursion of \citet{Kennett1983}, computed independently,
+to $10^{-14}$. The schemes are those of \S\S\ref{sec:convergence}--\ref{sec:fourth}, with the
+contrast now changing from plane to plane; nothing else changes:
+\begin{center}
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+ & & $m=1$ & $m=2$ & $m=4$ & order \\
+\midrule
+P, normal, $R$ & mean only & $1.9\times10^{-3}$ & $4.7\times10^{-4}$ & $1.2\times10^{-4}$ & $2.00$ \\
+ & first moment & $8.5\times10^{-7}$ & $5.3\times10^{-8}$ & $3.3\times10^{-9}$ & $4.00$ \\
+S, normal, $R$ & mean only & $5.3\times10^{-3}$ & $1.3\times10^{-3}$ & $3.3\times10^{-4}$ & $2.00$ \\
+ & first moment & $6.2\times10^{-6}$ & $3.9\times10^{-7}$ & $2.4\times10^{-8}$ & $4.00$ \\
+P, $20^\circ$, $R_{PP}$ & mean only & $1.4\times10^{-3}$ & $3.6\times10^{-4}$ & $9.0\times10^{-5}$ & $2.00$ \\
+ & first moments & $3.3\times10^{-7}$ & $2.1\times10^{-8}$ & $1.3\times10^{-9}$ & $4.00$ \\
+P, $20^\circ$, $R_{PS}$ & mean only & $2.8\times10^{-3}$ & $6.9\times10^{-4}$ & $1.7\times10^{-4}$ & $2.00$ \\
+ & first moments & $1.4\times10^{-6}$ & $8.8\times10^{-8}$ & $5.5\times10^{-9}$ & $4.00$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+(relative error against the exact stratified layer. At normal incidence the order is measured from
+$m=4$ to $16$, where it is also $2.00$ for collocation and $4.00$ in transmission; at $20^\circ$ it is
+measured from $m=2$ to $4$.)
+
+\paragraph{The interfaces cost nothing.} Every order is the one measured for the uniform layer. At a
+model interface the strain of the true field jumps. A voxel basis that is discontinuous from voxel
+to voxel represents that jump exactly when the interface lies on a voxel boundary, so the interface
+adds no error of its own. The only requirement is that the voxels resolve the model grid. A voxel
+that straddled an interface would carry a contrast that is not uniform within it, a case not
+examined here.
+
+\paragraph{What fourth order buys.} For a reflection error of $10^{-6}$ at normal incidence (P), the
+mean-only voxel needs $347$ planes of voxels, about $43$ per model cell. The first-moment voxel needs
+$8$, one per model cell: the model grid itself, which already gives $8.5\times10^{-7}$. Counting
+unknowns ($9$ per voxel against $36$), that is $3123$ against $288$ per vertical column of voxels, a
+factor of eleven. In three dimensions, with the lateral grid refined as the vertical one is, the
+number of voxels falls by $(347/8)^3\approx8\times10^4$ and the number of unknowns by about $2\times10^4$.
+The same model has been solved independently in Python, with a contrast for each plane: the raw
+reflected displacements agree with the Mathematica scheme to $1.1\times10^{-15}$ at normal incidence
+and at $20^\circ$, with and without the first moments. Lateral
+heterogeneity needs the full three-dimensional solver; it is the first extension discussed below.
+
 \section{Discussion}\label{sec:discussion}
 
 \paragraph{Where the error of a voxel scheme lives.} The results separate the two approximations
@@ -782,8 +836,8 @@ the comparison is if anything conservative).
 The gain is largest precisely where it matters: when the grid of a geological model is coarse
 compared with the accuracy the wavefield must have.
 
-\paragraph{Limitations and outlook.} The results concern a laterally uniform layer, for which the
-discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
+\paragraph{Limitations and outlook.} The results concern laterally uniform media --- a homogeneous layer
+and a randomly stratified one --- for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
 first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
 $O(k_\parallel h)$. The numerical evidence is at a moderate, physically typical contrast (a few per
@@ -814,7 +868,10 @@ error that is a midpoint-rule error of the internal field, known in closed form 
 discretisation, and opposite in sign in reflection and transmission. A voxel that also carries the
 first moment of its internal field converges at fourth order --- at normal incidence, where the
 three-dimensional scheme reduces exactly to one dimension, and at oblique incidence --- with a
-leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The results,
+leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The orders survive
+the interfaces of a randomly stratified model, provided the voxels resolve its grid, and there the
+first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model cell, where the uniform-field
+voxel needs about forty. The results,
 and the evidence for each, are:
 
 \begin{center}\small\sloppy
@@ -841,7 +898,9 @@ First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
 First-moment voxel, oblique, Eq.~\eqref{eq:bloch} & order $4$, P and S, $20^\circ$ and $40^\circ$ \\
 Incident SV and SH, all schemes & orders $2$ and $4$; constants with $k_S$ to $4\times10^{-4}$ \\
 First-moment error $-(kd)^4/720$, Eq.~\eqref{eq:ratio} & $n=1$--$8$, to $10^{-4}$ of the error \\
-Independent implementation of Eq.~\eqref{eq:bloch} & $9\times10^{-16}$, 36 cases, P, SV and SH \\
+Independent implementation of Eq.~\eqref{eq:bloch} & $1.1\times10^{-15}$, 40 cases: P, SV, SH, stratified \\
+Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, normal and $20^\circ$ \\
+Stratified reference against Kennett's recursion & $10^{-14}$ \\
 \bottomrule
 \end{tabular}
 \end{center}
