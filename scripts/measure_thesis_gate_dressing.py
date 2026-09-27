@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """MEASUREMENT: is the periodic thesis gate's dressing consistent with its kernel?
 
+CORRECTION, 27 September 2026: every number below was measured while the gate's solve
+ignored its zeroed observation-plane T-matrix (no ``T_local``), so the observation plane
+scattered and every arm carried a spurious error of ~3.6e-4.  Fixed in the gate; rerun:
+    [1] still holds (dressing on a uniform background changes nothing, 1.4e-17); [3] with
+    the Ewald kernel [T1]/[T3] = 3.82x, [T2]/[T3] = 42165x -- the arms no longer exchange.
+
 WHY.  With the exact Ewald lateral sum in place of the truncated one, the gate's
 arms SWAP (``measure_thesis_gate_floor``): the thesis ordering goes from 0.94x
 to 3.66x the floor while dress-after goes from 3.28x to 1.62x, although the

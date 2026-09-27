@@ -1,5 +1,10 @@
 """GATE: the thesis's OWN principal contribution -- variational summation (Alg 6.2).
 
+CORRECTION, 27 September 2026: every number below was measured while the gate's solve
+ignored its zeroed observation-plane T-matrix (no ``T_local``), so the observation plane
+scattered and every arm carried a spurious error of ~3.6e-4.  Fixed in the gate; rerun:
+    the gate's separation is 178x, not 3.28x; the motivation below no longer applies.
+
 WHY THIS GATE EXISTS, AND WHY THE EARLIER ONES COULD NOT CONCLUDE
 -----------------------------------------------------------------
 `gate_thesis_formulation_periodic` has been stuck at 3.28x separation against a

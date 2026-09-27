@@ -1,5 +1,10 @@
 """MEASUREMENT: can the thesis test be sharpened WITHOUT raising its own floor?
 
+CORRECTION, 27 September 2026: every number below was measured while the gate's solve
+ignored its zeroed observation-plane T-matrix (no ``T_local``), so the observation plane
+scattered and every arm carried a spurious error of ~3.6e-4.  Fixed in the gate; rerun:
+    separation 163x / 235x / 337x across the sweep; [T1]/[T3] 1.69x / 2.59x / 3.65x.
+
 `gate_thesis_formulation_periodic` returned a positive indication that could not
 be called conclusive: it demanded 5x separation between dress-after and the
 discretisation floor, and got 3.01x. The obvious response -- scatter harder --
