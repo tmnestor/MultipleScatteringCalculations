@@ -357,38 +357,33 @@ carry an ordering error on top.
 \paragraph{The specular block must be the exact lattice sum.} A lateral lattice sum truncated at
 the supercell and wrapped is not a lattice sum, and for the specular block it is wrong by the
 block's full size; an Ewald summation gives it exactly, matching the point propagator's Weyl sum to
-$7\times10^{-5}$ between planes. On the truncated sum [T1] sits at $0.87$ times [T3] and [T2] at
-$3.30$ times, which reads as support for the formulation; on the exact sum the two exchange, to
-$3.63$ and $1.58$. Exchanging only the specular blocks between the two kernels exchanges the arms
-exactly, so that block is the whole story, and the reverberation added to it is consistent with
-either kernel (on a uniform background it changes the answer by $4\times10^{-21}$). The truncated
-reading is therefore withdrawn (\texttt{measure\_thesis\_gate\_dressing}).
+$7\times10^{-5}$ between planes. Every comparison below uses the exact sum. The reverberation added
+to it is consistent with the kernel: on a uniform background it changes the answer by
+$4\times10^{-21}$ (\texttt{measure\_thesis\_gate\_dressing}).
 
-\paragraph{Refinement at fixed physics.} The exchange at the coarse lattice is resolved by
-refining it. The same $2$\,m layer, lying on a reflector, is represented by $n$ planes of cubes of
-side $2/n$\,m, with the kernel chosen from the discretisation control alone; relative errors at the
-observation plane (\texttt{measure\_thesis\_refinement}):
+\paragraph{Refinement at fixed physics.} The same $2$\,m layer, lying on a reflector, is
+represented by $n$ planes of cubes of side $2/n$\,m; the observation plane and any planes between it
+and the layer carry no contrast. Relative errors at the observation plane
+(\texttt{measure\_thesis\_refinement}):
 \begin{center}
 \begin{tabular}{@{}rrrrrrr@{}}
 \toprule
 $n$ & $ka$ & [T1] thesis & [T2] dress-after & [T3] control & [T1]/[T3] & [T2]/[T3]\\
 \midrule
-$1$ & $0.0120$ & $1.48\times10^{-3}$ & $9.29\times10^{-4}$ & $4.73\times10^{-4}$ & $3.14$ & $1.96$\\
-$2$ & $0.0060$ & $7.38\times10^{-4}$ & $1.02\times10^{-3}$ & $3.57\times10^{-4}$ & $2.07$ & $2.87$\\
-$3$ & $0.0040$ & $6.24\times10^{-4}$ & $1.06\times10^{-3}$ & $3.57\times10^{-4}$ & $1.75$ & $2.98$\\
-$4$ & $0.0030$ & $6.23\times10^{-4}$ & $1.08\times10^{-3}$ & $3.57\times10^{-4}$ & $1.75$ & $3.04$\\
+$1$ & $0.0120$ & $1.20\times10^{-5}$ & $1.16\times10^{-3}$ & $7.00\times10^{-6}$ & $1.71$ & $166$\\
+$2$ & $0.0060$ & $1.97\times10^{-5}$ & $1.16\times10^{-3}$ & $3.37\times10^{-6}$ & $5.84$ & $343$\\
+$3$ & $0.0040$ & $1.62\times10^{-5}$ & $1.15\times10^{-3}$ & $2.18\times10^{-6}$ & $7.40$ & $529$\\
+$4$ & $0.0030$ & $1.32\times10^{-5}$ & $1.15\times10^{-3}$ & $1.59\times10^{-6}$ & $8.31$ & $725$\\
 \bottomrule
 \end{tabular}
 \end{center}
-Every arm converges by $n = 3$, and to a nonzero limit: the control stops at
-$3.57\times10^{-4}$, identical to four digits from $n = 2$, a scale-invariant error of
-representing a continuous layer by cubes that no refinement removes. The exchange seen at $n = 1$
-is coarse discretisation: under refinement the thesis residual falls while the dress-after
-residual rises, and at convergence the thesis ordering reproduces the folded medium better than
-dress-after by a factor of $1.74$. That supports the composition. It does not confirm it by the
-standard set before the comparison was run --- dress-after at least five times the control --- and
-the scale-invariant error caps the separation this configuration can show, so reaching that
-standard needs a better single-cube representation of the layer, not a finer lattice.
+The control converges as $1/n$: representing a continuous layer by cubes carries no scale-invariant
+error. Dress-after stays at $1.15\times10^{-3}$ at every $n$ --- an ordering error, the reverberation
+between voxels that it omits, which no refinement removes. The thesis ordering sits a factor of
+about $100$ below it at every refinement, and at $n=1$ within $1.85$ of the control with a separation
+of $178$ against the standard of $5$ set before the comparison
+(\texttt{gate\_thesis\_formulation\_periodic}). The composition reproduces the medium. Its residual
+does not yet fall as fast as the control's ($1.3\times10^{-5}$ at $n=4$); what limits it is open.
 
 \section{Status and what remains}
 
@@ -406,7 +401,7 @@ Crust gradient in the reference    & required   & measured \\
 Per-voxel 3-D $\Px$                & exists     & FFT block-Toeplitz \\
 \midrule
 Composed matvec                    & built      & layered real-space tables \\
-Composition reproduces the medium  & supported  & $1.74\times$, \S\ref{sec:correctness} \\
+Composition reproduces the medium  & confirmed  & $178\times$ separation, \S\ref{sec:correctness} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -417,9 +412,9 @@ once --- and driven by the existing Krylov solver. The same-depth closed form ad
 back to each plane's reverberation is that of the plane's own medium, so planes on
 both sides of a material contrast are each correct. The lateral operator handles
 disorder --- its structure comes from the regular \emph{mesh}, not from the
-scatterers being identical. What remains open is the correctness standard of
-\S\ref{sec:correctness}: the composition reproduces a folded layer better than
-dress-after, but not yet by the margin set in advance.
+scatterers being identical. The composition reproduces a folded layer by the margin set in
+advance (\S\ref{sec:correctness}); what remains open is why its residual refines more slowly
+than the discretisation control's.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\

@@ -24,6 +24,17 @@ SCATTERING planes' depths (the Toeplitz kernel holds one block per dz).
 THE FIRST QUESTION is whether the uniform floor [T3] falls with n at all: a
 scale-invariant discretisation bias would make refinement useless here too.
 
+RESULT (after passing ``T_local=t0``: before that the solve rebuilt T from the
+material and the observation/empty planes scattered, which produced a spurious
+n-independent "floor" of 3.565e-4):
+    n   [T1] thesis  [T2] dress-after  [T3] control
+    1    1.199e-5       1.163e-3        7.000e-6
+    2    1.969e-5       1.156e-3        3.371e-6
+    3    1.615e-5       1.154e-3        2.184e-6
+    4    1.321e-5       1.153e-3        1.590e-6
+The control converges as 1/n; dress-after carries an n-independent ordering
+error; the thesis ordering sits ~100x below dress-after.
+
 Run:  conda run -n seismic python scripts/measure_thesis_refinement.py
 SI units, as the gate.
 """
@@ -176,6 +187,7 @@ def run(geo: Geometry, *, dressed: bool, uniform: bool) -> tuple[float, float]:
         gmres_tol=1e-12,
         psi0=psi0,
         kernel_hat=kh,
+        T_local=t0,  # without it the solve rebuilds T from the material: the observation plane scatters
     )
     got = res.psi[0, 0, 0]
     return float(np.abs(got - exact).max()), float(np.abs(exact).max())
