@@ -163,7 +163,7 @@ Mathematica and checked against an independent Python implementation or an exact
 \paragraph{The discrete medium.} Space is tiled by cubes of side $d$ (half-side $h=d/2$). Cube $i$
 carries a contrast $\Delta\lambda,\Delta\mu,\Delta\rho$ from an isotropic background with Lamé
 parameters $\lambda,\mu$, density $\rho$, P and S speeds $\alpha,\beta$ and P-wave modulus
-$M_P=\lambda+2\mu$. Time dependence is $e^{-i\omega t}$; $k_P=\omega/\alpha$, $k_S=\omega/\beta$.
+$M_P=\lambda+2\mu$. Time dependence is $\mathrm{e}^{-\mathrm{i}\omega t}$; $k_P=\omega/\alpha$, $k_S=\omega/\beta$.
 Coordinates are ordered $(z,x,y)$ with $z$ down. The field at a voxel is the nine-component state
 \begin{equation}
   \psi=(u_z,u_x,u_y,\ \varepsilon_{zz},\varepsilon_{xx},\varepsilon_{yy},
@@ -207,14 +207,14 @@ validated, as a second implementation.
 
 At normal incidence a plane force drives a one-dimensional problem per wave type, with modulus $M$
 ($M_P$ for P, $\mu$ for S), wavenumber $k$ and plane Green's function
-$g(z)=\tfrac{i}{2Mk}e^{ik|z|}$. The layer's reflection and transmission follow from continuity of
+$g(z)=\tfrac{\mathrm{i}}{2Mk}\mathrm{e}^{\mathrm{i}k|z|}$. The layer's reflection and transmission follow from continuity of
 displacement and traction at its faces; they agree with the stratified propagator used as the
 reference in this work to $2.5\times10^{-8}$, P and S (\nb{ContinuumLimit\_Reference.wl}).
 
 For a layer of thickness $D$ with modulus $M_1$ and density $\rho_1$ in a background $M_0,\rho_0$,
 the reflection coefficient expands as
 \begin{equation}\label{eq:thin}
-  R=\frac{i\omega D}{2}\sqrt{\frac{M_0}{\rho_0}}
+  R=\frac{\mathrm{i}\omega D}{2}\sqrt{\frac{M_0}{\rho_0}}
   \Bigl[\frac{\rho_1-\rho_0}{M_0}-\rho_0\Bigl(\frac1{M_1}-\frac1{M_0}\Bigr)\Bigr]+O(D^2),
 \end{equation}
 exact in the contrast (\nb{ContinuumLimit\_ThinLayer.wl}): to first order a thin layer is an
@@ -235,7 +235,7 @@ By Poisson summation,
 \end{equation}
 with $\hat\bG$ the two-dimensional transform of the Green's tensor between planes. The $\mathbf g=0$
 term is the continuum's plane-wave term; the others are evanescent, decaying as
-$e^{-2\pi m\sqrt{p^2+q^2}}$ independently of $d$. In the strain-from-moment block they carry two
+$\mathrm{e}^{-2\pi m\sqrt{p^2+q^2}}$ independently of $d$. In the strain-from-moment block they carry two
 powers of $|\mathbf g|\propto1/d$, so their contribution per voxel volume does \emph{not} vanish as
 $d\to0$: at $m=1$ it is eleven times the continuum term (\nb{ContinuumLimit\_SpecularSums.wl},
 matched to the package's Ewald lattice sum to $5\times10^{-13}$). This surviving term is static.
@@ -248,7 +248,7 @@ the continuum only if that remainder is cancelled by the voxel's own self term.
 \section{The tiling identity}\label{sec:tiling}
 
 Replace the point coupling by the \emph{source-cell average}
-$\langle\bG\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bG(\mathbf r-\mathbf y)\,d\mathbf y$ --- the
+$\langle\bG\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bG(\mathbf r-\mathbf y)\,\mathrm{d}\mathbf y$ --- the
 field at a voxel centre of a uniform polarisation of the source voxel. Each Poisson order in
 Eq.~\eqref{eq:poisson} is then multiplied by the cube's form factor
 \begin{equation}
@@ -271,11 +271,11 @@ is the field at the mid-plane of a uniform plate of thickness $d$:
 \begin{equation}\label{eq:tiling}
   d^3\,\bS_{\text{avg}}(0)+\bS_{\text{self}}=d^3\,\bP_0,
   \qquad
-  \bS_{\text{self}}=\int_{\text{cube}}\bG(-\mathbf y)\,d\mathbf y,
+  \bS_{\text{self}}=\int_{\text{cube}}\bG(-\mathbf y)\,\mathrm{d}\mathbf y,
 \end{equation}
-where $\bP_0=d^{-3}\int_{-h}^{h}\bG_{\text{plate}}(-z')\,dz'$ is elementary: in the one-dimensional
+where $\bP_0=d^{-3}\int_{-h}^{h}\bG_{\text{plate}}(-z')\,\mathrm{d}z'$ is elementary: in the one-dimensional
 transform each entry is $c_0+A/(Mk_z^2-\rho\omega^2)$, so it averages to
-$c_0/d+A\,(e^{ikh}-1)/(dMk^2)$. Its only nonzero entries are $u\leftarrow f$ on the diagonal and the
+$c_0/d+A\,(\mathrm{e}^{\mathrm{i}kh}-1)/(dMk^2)$. Its only nonzero entries are $u\leftarrow f$ on the diagonal and the
 three normal strain-from-moment entries, whose local weights $-1/M_P$ and $-1/(2\mu)$ are the plate
 depolarisation of \S\ref{sec:point}. Statically the identity holds for all 21 independent components
 of the strain-from-moment tensor to $4\times10^{-9}$, with every cell integral evaluated analytically
@@ -351,12 +351,12 @@ all fields evaluated at the centre. Its coefficients are six moments of the back
 tensor $\bG$ over the voxel,
 \begin{equation}\label{eq:moments}
 \begin{aligned}
-\mathsf G_{ij}&=\int_V G_{ij}\,dV, &
-\mathsf K^{rs}_{ij}&=\int_V G_{ij}\,x_rx_s\,dV, &
-\mathsf N^{r}_{in,k}&=\int_V \partial'_kG_{in}\,x_r\,dV,\\
-\mathsf M_{in,pk}&=\int_V \partial'_p\partial'_kG_{in}\,dV, &
-\mathsf P^{rs}_{ij,pq}&=\int_V \partial'_q\partial'_pG_{ij}\,x_rx_s\,dV, &
-\mathsf Q^{r}_{in,pqk}&=\int_V \partial'_q\partial'_p\partial'_kG_{in}\,x_r\,dV,
+\mathsf G_{ij}&=\int_V G_{ij}\,\mathrm{d}V, &
+\mathsf K^{rs}_{ij}&=\int_V G_{ij}\,x_rx_s\,\mathrm{d}V, &
+\mathsf N^{r}_{in,k}&=\int_V \partial'_kG_{in}\,x_r\,\mathrm{d}V,\\
+\mathsf M_{in,pk}&=\int_V \partial'_p\partial'_kG_{in}\,\mathrm{d}V, &
+\mathsf P^{rs}_{ij,pq}&=\int_V \partial'_q\partial'_pG_{ij}\,x_rx_s\,\mathrm{d}V, &
+\mathsf Q^{r}_{in,pqk}&=\int_V \partial'_q\partial'_p\partial'_kG_{in}\,x_r\,\mathrm{d}V,
 \end{aligned}
 \end{equation}
 with derivatives taken with respect to the source point, $\partial'=-\partial$. That sign reaches
@@ -371,7 +371,7 @@ Write the elastodynamic tensor as
 \begin{equation}\label{eq:Gdecomp}
   G_{in}(\mathbf r)=\frac{1}{4\pi\mu}\Bigl[\delta_{in}\,g_{S}(r)
   +\frac{1}{k_S^2}\,\partial_i\partial_n\bigl(g_S(r)-g_P(r)\bigr)\Bigr],
-  \qquad g_{c}(r)=\frac{e^{ik_cr}}{r}
+  \qquad g_{c}(r)=\frac{\mathrm{e}^{\mathrm{i}k_cr}}{r}
 \end{equation}
 \citep{Kupradze1963,Aki2002}. Expanding $g_c$ in powers of $r$ reduces every moment in
 Eq.~\eqref{eq:moments} to a finite sum of scalar moments
@@ -388,7 +388,7 @@ distributional from the start, and each is moved onto the voxel's faces by pairi
 function $w\mathbf 1_V$, using $\partial_q\mathbf 1_V=-n_q\,\delta_{\partial V}$:
 \begin{equation}\label{eq:peel}
   \bigl\langle \partial_qT,\,w\mathbf 1_V\bigr\rangle
-  =\oint_{\partial V} n_q\,w\,T\,dA-\bigl\langle T,\,(\partial_qw)\,\mathbf 1_V\bigr\rangle .
+  =\oint_{\partial V} n_q\,w\,T\,\mathrm{d}A-\bigl\langle T,\,(\partial_qw)\,\mathbf 1_V\bigr\rangle .
 \end{equation}
 The surface term is evaluated on the faces, a distance $h$ from the origin, where every
 derivative of $r^m$ is smooth. The recursion lowers $D$ and $W$ together and ends on convergent
@@ -412,7 +412,7 @@ The cube is centrosymmetric. A moment that couples a field quantity of degree $a
 $b$ therefore vanishes unless $a+b$ is even. $u$, $\partial u$ and $\partial\partial u$ have
 degrees $0$, $1$ and $2$, so Eq.~\eqref{eq:A22} contains the first gradient alone: $\partial u$
 is determined by its own block and couples to neither $u$ nor $\partial\partial u$. The leading
-scattering by a stiffness contrast is the stress dipole $\int_V\delta c:\nabla u\,dV$, which needs
+scattering by a stiffness contrast is the stress dipole $\int_V\delta c:\nabla u\,\mathrm{d}V$, which needs
 only $\partial u$. The leading far field of the stiffness contrast is therefore fixed by
 Eq.~\eqref{eq:A22}, and \emph{no treatment of the second-gradient block \eqref{eq:A33} can change
 it}. What Eq.~\eqref{eq:A33} contributes reaches the far field only through the $O((kh)^2)$
@@ -442,7 +442,7 @@ integral of $\bG$.
 channel $1+\Delta K/(\lambda+2\mu)$, with $\Delta K=\Delta\lambda+\tfrac23\Delta\mu$, and a single
 deviatoric channel $1+2\Delta\mu\,S_{\text{sph}}$, with $2\mu S_{\text{sph}}=2(4-5\nu)/[15(1-\nu)]$.
 The cube's dilatational channel, Eq.~\eqref{eq:A1g}, is the sphere's exactly: its eigenvalue
-involves $\mathsf M$ only through the contraction $\int_V\partial_i\partial_nG_{in}\,dV$, and the
+involves $\mathsf M$ only through the contraction $\int_V\partial_i\partial_nG_{in}\,\mathrm{d}V$, and the
 static Navier equation makes $\partial_i\partial_nG_{in}=-\delta(\mathbf r)/(\lambda+2\mu)$, whose
 integral does not depend on the shape. The
 cube's shear channels differ from each other. Their isotropic average, however, is the sphere's,
@@ -550,7 +550,7 @@ error depends on $k_Sh$ alone.
 integrated exactly; the only approximation is the internal field's variation across a voxel. At
 first order in the contrast the discrete scattered field is therefore a midpoint rule applied to
 the continuum's Born integral, with the kernel's cell integral exact. For reflection the integrand
-carries the two-way phase $e^{2ikz}$; for transmission it is flat. With $k$ the background
+carries the two-way phase $\mathrm{e}^{2\mathrm{i}kz}$; for transmission it is flat. With $k$ the background
 wavenumber of the wave concerned ($k_P$ for an incident P wave, $k_S$ for an incident S wave), $R$ the reflection coefficient and $T^{\text{sc}}$ the
 scattered part of the transmitted field, for \emph{every} $n$
 \begin{equation}\label{eq:errorR}
@@ -579,21 +579,23 @@ $w=\sum_{b}c_{b,j}\,\phi_b$, $w=(u,\varepsilon)$ the displacement and strain of 
 the polarisation is $q=(\omega^2\Delta\rho\,u,\ \Delta M\,\varepsilon)$ with $\Delta M=\Delta\lambda
 +2\Delta\mu$. Testing the continuum equation
 \begin{equation}
-  w(z)=w^0(z)+\int\bK(z-z')\,q(z')\,dz',\qquad
+  w(z)=w^0(z)+\int\bK(z-z')\,q(z')\,\mathrm{d}z',\qquad
   \bK=\begin{pmatrix} g & g' \\ g' & g''\end{pmatrix},\quad g''=-k^2g-\delta(z)/M_P,
 \end{equation}
 with the same two functions on every voxel gives
 \begin{equation}\label{eq:galerkin}
   \Bigl(\int_{i}\phi_a^2\Bigr)c_{a,i}
-  =\int_i\phi_a w^0+\sum_{j,b}\Bigl[\int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\phi_b(z')\,dz\,dz'\Bigr]
+  =\int_i\phi_a w^0+\sum_{j,b}\Bigl[\int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\phi_b(z')\,\mathrm{d}z\,\mathrm{d}z'\Bigr]
   \bD_1 c_{b,j},
 \end{equation}
 $\bD_1=\operatorname{diag}(\omega^2\Delta\rho,\Delta M)$. Between voxels the double integral is
-separable, a product of Legendre moments of $e^{\pm ikz}$; within a voxel it is split at $z'=z$ and
+separable, a product of Legendre moments of $\mathrm{e}^{\pm \mathrm{i}kz}$; within a voxel it is split at $z'=z$ and
 the local term contributes $-\int_i\phi_a\phi_b/M_P$. Every entry is closed-form. Keeping only
 $\phi_0$ recovers a second-order scheme; keeping $\phi_0$ and $\phi_1$ converges at fourth order in
-both reflection and transmission (\nb{ContinuumLimit\_FourthOrder.wl}):
-\begin{center}
+both reflection and transmission (\nb{ContinuumLimit\_FourthOrder.wl}; Table~\ref{tab:fourth1d}).
+\begin{table}[htbp]
+\centering
+\caption{Relative error of the scattered displacement of the layer, reflection / transmission, at $\omega=300$\,rad\,s$^{-1}$, against the number of voxel planes $n$: collocation, the mean-only voxel and the first-moment voxel of Eq.~\eqref{eq:galerkin}. The order is $4.00$ at $\omega=60$ and $600$\,rad\,s$^{-1}$ too.}\label{tab:fourth1d}
 \begin{tabular}{@{}rccc@{}}
 \toprule
 $n$ & collocation & mean only & mean and first moment \\
@@ -607,9 +609,8 @@ $16$ & $7.0\times10^{-6}$ / $5.2\times10^{-6}$ & $4.7\times10^{-6}$ / $6.9\times
 order & $2$ / $2$ & $2$ / $2$ & $4$ / $4$ \\
 \bottomrule
 \end{tabular}
-\end{center}
-(relative error of the scattered displacement, reflection / transmission, $\omega=300$\,rad\,s$^{-1}$;
-the order is $4.00$ at $\omega=60$ and $600$\,rad\,s$^{-1}$ too). A single plane of first-moment
+\end{table}
+A single plane of first-moment
 voxels represents the $2$\,m layer $6500$ times more accurately than a single plane of uniform ones.
 The collocation column is the scheme of \S\ref{sec:single} and reproduces the chain of the full
 $9\times9$ system to all printed digits.
@@ -617,16 +618,18 @@ $9\times9$ system to all printed digits.
 \paragraph{The leading error in closed form.} Without scattering, the Galerkin solution is the
 $L^2$ projection $\Pi$ of the incident field onto each voxel's basis, and the kernel is integrated
 over each voxel exactly; at first order in the contrast the error is therefore the kernel's cell
-integral applied to $\Pi w^0-w^0$. The field varies as $e^{iks}$ across a voxel and the kernel toward
-an outside observer as $e^{iqs}$, $q=+k$ for reflection and $q=-k$ for transmission, so for every
+integral applied to $\Pi w^0-w^0$. The field varies as $\mathrm{e}^{\mathrm{i}ks}$ across a voxel and the kernel toward
+an outside observer as $\mathrm{e}^{\mathrm{i}qs}$, $q=+k$ for reflection and $q=-k$ for transmission, so for every
 scheme and every $n$
 \begin{equation}\label{eq:ratio}
   \frac{\text{discrete}}{\text{exact}}
-  =\frac{\int_{-h}^{h}e^{iqs}\,\Pi[e^{iks}]\,ds}{\int_{-h}^{h}e^{i(q+k)s}\,ds},
+  =\frac{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}qs}\,\Pi[\mathrm{e}^{\mathrm{i}ks}]\,\mathrm{d}s}{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}(q+k)s}\,\mathrm{d}s},
 \end{equation}
 with $\Pi$ the centre value for collocation, the cell mean for the mean-only voxel and the projection
-onto $\{1,s/h\}$ for the first-moment voxel (\nb{ContinuumLimit\_FourthOrderError.wl}):
-\begin{center}
+onto $\{1,s/h\}$ for the first-moment voxel (\nb{ContinuumLimit\_FourthOrderError.wl}). The results are in Table~\ref{tab:ratio}.
+\begin{table}[htbp]
+\centering
+\caption{The leading error of the discrete layer in closed form, Eq.~\eqref{eq:ratio}: discrete over exact scattered field at first order in the contrast, for every number of voxel planes $n$.}\label{tab:ratio}
 \begin{tabular}{@{}lcc@{}}
 \toprule
  & reflection & transmission \\
@@ -636,7 +639,7 @@ mean only        & $1+(kd)^2/12+O(d^4)$ & $1-(kd)^2/12+O(d^4)$ \\
 first moment     & $1-(kd)^4/720+O(d^6)$ & $1-(kd)^4/720+O(d^6)$ \\
 \bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 The chain of Eq.~\eqref{eq:galerkin} reproduces all six forms at $n=1$ to $8$ to $10^{-4}$ of the
 error, the remainder being the second order in the contrast. The first-moment voxel's leading
 error is the same in reflection and in transmission: its projection error is orthogonal to
@@ -653,8 +656,8 @@ are odd there. The mean and the $z$-moment carry weights that are constant later
 form factor $\sinc(g_xh)\sinc(g_yh)$ vanishes on the reciprocal lattice and the plane sum of the
 double integrals is the plate-to-plate integral in $z$ alone. Two facts mark where genuinely
 three-dimensional structure begins. The lateral first moment's form factor,
-$F_1(g)=i\,(gh\cos gh-\sin gh)/(gh)^2$, does not vanish on the reciprocal lattice
-($F_1=i(-1)^p/p\pi$), so the gradient channels couple through the evanescent orders. And at oblique
+$F_1(g)=\mathrm{i}\,(gh\cos gh-\sin gh)/(gh)^2$, does not vanish on the reciprocal lattice
+($F_1=\mathrm{i}(-1)^p/p\pi$), so the gradient channels couple through the evanescent orders. And at oblique
 incidence the mean's own zeros shift, $\sinc\bigl((2\pi p/d+k_x)h\bigr)=(-1)^p k_xh/p\pi+O(k_x^2h^2)$,
 so the tiling identity holds only to $O(k_\parallel h)$.
 
@@ -662,16 +665,18 @@ so the tiling identity holds only to $O(k_\parallel h)$.
 between planes $i$ and $j$ at lateral wavenumber $\mathbf k_\parallel$ is
 \begin{equation}\label{eq:bloch}
   C_{ab}(i,j)=\frac1{d^2}\sum_{\mathbf g}L_a(\boldsymbol\kappa)\,L_b(-\boldsymbol\kappa)\,
-  \int\!\!\int\phi_a(z)\,\hat\bG(\boldsymbol\kappa;z-z')\,\phi_b(z')\,dz\,dz',
+  \int\!\!\int\phi_a(z)\,\hat\bG(\boldsymbol\kappa;z-z')\,\phi_b(z')\,\mathrm{d}z\,\mathrm{d}z',
   \qquad \boldsymbol\kappa=\mathbf k_\parallel+\mathbf g,
 \end{equation}
 with $L_a$ the lateral Legendre factors. The whole-space tensor decays as $1/k_z^2$ and the nine-component
 state adds at most two powers of $k_z$, so each entry of $\hat\bG(\boldsymbol\kappa;z)$ is a $\delta(z)$
-of constant weight plus, per mode, $[i\alpha/2\gamma+i\beta\,\mathrm{sgn}(z)/2]\,e^{i\gamma|z|}$,
+of constant weight plus, per mode, $[\mathrm{i}\alpha/2\gamma+\mathrm{i}\beta\,\mathrm{sgn}(z)/2]\,\mathrm{e}^{\mathrm{i}\gamma|z|}$,
 $\gamma^2=k_W^2-\kappa^2$: every $z$ integral is closed-form. Double averaging makes the lattice sum
 converge without Ewald splitting, to three digits at $|p|,|q|\le8$. Against the exact layer, for a P
-wave incident at $20^\circ$ and $40^\circ$ (\nb{ContinuumLimit\_Oblique.wl}):
-\begin{center}
+wave incident at $20^\circ$ and $40^\circ$ (\nb{ContinuumLimit\_Oblique.wl}; Table~\ref{tab:oblique}).
+\begin{table}[htbp]
+\centering
+\caption{Relative error of the reflected P ($R_{PP}$) and converted S ($R_{PS}$) waves for a P wave incident at $20^\circ$, with the mean-only and first-moment voxels of Eq.~\eqref{eq:bloch}. At $40^\circ$ the orders are again $2$ and $4$.}\label{tab:oblique}
 \small\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}rcccc@{}}
 \toprule
@@ -684,8 +689,8 @@ $8$ & $1.5\times10^{-5}$ & $2.7\times10^{-5}$ & $1.7\times10^{-11}$ & $9.9\times
 order & $2$ & $2$ & $4$ & $4$ \\
 \bottomrule
 \end{tabular}
-\end{center}
-(relative error, $20^\circ$; at $40^\circ$ the orders are again $2$ and $4$). The mean-only voxel is
+\end{table}
+The mean-only voxel is
 second order and the first-moment voxel fourth order in both the reflected P and the converted S wave:
 the breakdown of the tiling identity at $O(k_\parallel h)$ and the evanescent coupling of the gradient
 channels do not cost an order. At $\mathbf k_\parallel=0$ the construction reproduces
@@ -696,8 +701,11 @@ the layer is the one-dimensional problem of Eq.~\eqref{eq:galerkin} with $M_P\to
 $\Delta M\to\Delta\mu$; the collocation and mean-only schemes converge at order $2.00$ and the
 first-moment voxel at $4.00$, in reflection and transmission, and the full $9\times9$ construction
 with an incident SH wave reproduces that one-dimensional result to all printed digits. At oblique
-incidence, against the exact layer (\nb{ContinuumLimit\_IncidentS.wl}):
-\begin{center}
+incidence, against the exact layer (\nb{ContinuumLimit\_IncidentS.wl}), the orders are those of
+Table~\ref{tab:incS}.
+\begin{table}[htbp]
+\centering
+\caption{Observed order of convergence ($n=2\to8$, $\omega=300$\,rad\,s$^{-1}$) for incident SV and SH waves, with the mean-only and first-moment voxels. The SV angles lie below the critical angle $\arcsin(\beta/\alpha)=36.9^\circ$.}\label{tab:incS}
 \small
 \begin{tabular}{@{}lcc@{}}
 \toprule
@@ -708,9 +716,8 @@ SV at $30^\circ$: $R_{SS}$ / $R_{SP}$ & $1.98$ / $2.00$ & $3.97$ / $4.00$ \\
 SH at $20^\circ$ and $40^\circ$: $R_{SH}$ & $2.00$ & $4.00$ \\
 \bottomrule
 \end{tabular}
-\end{center}
-(observed order, $n=2\to8$, $\omega=300$\,rad\,s$^{-1}$; the SV angles lie below the critical angle
-$\arcsin(\beta/\alpha)=36.9^\circ$). The orders, and with $k=k_S$ the closed-form constants of
+\end{table}
+The orders, and with $k=k_S$ the closed-form constants of
 Eqs.~\eqref{eq:errorR} and \eqref{eq:ratio}, are those of the incident P wave.
 
 The spectral construction is implemented twice. The second implementation
@@ -733,6 +740,7 @@ converted S wave, mean-only (green) and first-moment (orange) voxels of Eq.~\eqr
 triangles: SV incident at $20^\circ$, the reflected S wave, mean-only (purple) and first-moment (brown).
 Grey: slopes $2$ and $4$.}
 \label{fig:convergence}
+\par\smallskip{\footnotesize\textit{Alt text:} A log--log plot of relative reflection error (vertical axis, $10^{-14}$ to $10^{-2}$) against the number of voxel planes (horizontal axis, 1 to 32). The collocation and mean-only curves fall as straight lines of slope $-2$ from about $10^{-3}$ at one plane; the first-moment curves fall as straight lines of slope $-4$ from about $10^{-6}$ at one plane to about $10^{-13}$ at 32 planes. The oblique P-to-S and incident-SV curves lie alongside the normal-incidence curves of the same scheme, and grey guide lines show slopes 2 and 4.\par}
 \end{figure}
 
 \FloatBarrier
@@ -749,8 +757,10 @@ $k_PD=1.2$ and $k_SD=2.0$ thick, so the field reverberates between the model int
 answer is the product of the model cells' propagators. Its same-type reflection coefficients agree
 with those of the reflection--transmission recursion of \citet{Kennett1983}, computed independently,
 to $10^{-14}$. The schemes are those of \S\S\ref{sec:convergence}--\ref{sec:fourth}, with the
-contrast now changing from plane to plane; nothing else changes:
-\begin{center}
+contrast now changing from plane to plane; nothing else changes. The errors are in Table~\ref{tab:hetero}.
+\begin{table}[htbp]
+\centering
+\caption{Relative error against the exact stratified layer, for $m$ planes of voxels per model cell (\S\ref{sec:hetero}). At normal incidence the order is measured from $m=4$ to $16$, where it is also $2.00$ for collocation and $4.00$ in transmission; at $20^\circ$ it is measured from $m=2$ to $4$.}\label{tab:hetero}
 \small
 \begin{tabular}{@{}llcccc@{}}
 \toprule
@@ -766,10 +776,7 @@ P, $20^\circ$, $R_{PS}$ & mean only & $2.8\times10^{-3}$ & $6.9\times10^{-4}$ & 
  & first moments & $1.4\times10^{-6}$ & $8.8\times10^{-8}$ & $5.5\times10^{-9}$ & $4.00$ \\
 \bottomrule
 \end{tabular}
-\end{center}
-(relative error against the exact stratified layer. At normal incidence the order is measured from
-$m=4$ to $16$, where it is also $2.00$ for collocation and $4.00$ in transmission; at $20^\circ$ it is
-measured from $m=2$ to $4$.)
+\end{table}
 
 \paragraph{The interfaces cost nothing.} Every order is the one measured for the uniform layer. At a
 model interface the strain of the true field jumps. A voxel basis that is discontinuous from voxel
@@ -878,10 +885,11 @@ three-dimensional scheme reduces exactly to one dimension, and at oblique incide
 leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The orders survive
 the interfaces of a randomly stratified model, provided the voxels resolve its grid, and there the
 first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model cell, where the uniform-field
-voxel needs about forty. The results,
-and the evidence for each, are:
+voxel needs about forty. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
 
-\begin{center}
+\begin{table}[htbp]
+\centering
+\caption{The results of the paper, and the evidence for each.}\label{tab:evidence}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.52\linewidth}>{\raggedright\arraybackslash}p{0.40\linewidth}@{}}
 \toprule
 Result & Evidence \\
@@ -910,7 +918,7 @@ Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, norma
 Stratified reference against Kennett's recursion & $10^{-14}$ \\
 \bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
