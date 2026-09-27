@@ -26,6 +26,7 @@
 \setcounter{secnumdepth}{3}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{graphicx}
 \usepackage[font=small, labelfont=bf, labelsep=period]{caption}
 \usepackage{setspace}
 \setstretch{1.15}
@@ -76,6 +77,37 @@ than one plane of uniform ones, and the scheme stays fourth order at oblique inc
 converted S wave as well as the reflected P. Every result is derived symbolically in
 Mathematica and checked against an independent numerical implementation.
 \end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Replacing a heterogeneous body by a lattice of small scatterers that interact through the background
+Green's function is the multiple-scattering description of Foldy and Lax \cite{Foldy1945,Lax1951}.
+In electromagnetics its discretised form is the discrete dipole approximation (DDA)
+\cite{Purcell1973,Draine1994}, whose accuracy has been studied in detail: each dipole's
+polarisability must account for the local field of the surrounding lattice, which the lattice
+dispersion relation fixes so that an infinite lattice propagates waves as the continuum does to a
+given order in $kd$ \cite{Draine1993}; the error of the method converges at second order in the
+dipole spacing when shape errors are absent \cite{Yurkin2006}; and integrating the Green's tensor
+over each cell rather than sampling it at the centre improves accuracy, most of all for strong
+contrasts \cite{Chaumet2004}. The elastic problem adds a structure the scalar and electromagnetic
+ones lack. A cubic voxel responds to the incident field with a force (through its density contrast)
+and a moment (through its stiffness contrast), so the state at a voxel has nine components ---
+displacement and strain --- and the single site's self-interaction is the elastic depolarisation of
+a cube, the discrete counterpart of Eshelby's inclusion tensor \cite{Eshelby1957}.
+
+This paper settles, for a space-filling layer of cubic voxels, three questions that are usually
+answered only empirically: whether the discrete Foldy--Lax system converges to the continuous medium,
+at what order, and with what leading error. The answers are exact rather than measured. The
+coupling between voxels, averaged over the source cell, is \emph{exactly} the continuum's cell
+integral at normal incidence, because cubes tile the plane (\S\ref{sec:tiling}). The collocation
+closure of the single site carries the same self term, which therefore cancels, so the discrete
+system is a collocation of the continuum equation (\S\ref{sec:single}). It converges at second
+order with a leading error known in closed form for every discretisation, whose opposite signs in
+reflection and transmission show that no correction of a uniform-field single site can remove it
+(\S\ref{sec:convergence}). A voxel that carries the first moment of its internal field removes it,
+and converges at fourth order at normal and oblique incidence (\S\ref{sec:fourth}); in its spectral
+form the lattice sum needs no Ewald splitting. Every result is derived symbolically in Mathematica
+and checked against an independent Python implementation or an exact solution.
 
 \section{Setting}\label{sec:setting}
 
@@ -370,6 +402,26 @@ the breakdown of the tiling identity at $O(k_\parallel h)$ and the evanescent co
 channels do not cost an order. At $\mathbf k_\parallel=0$ the construction reproduces
 Eq.~\eqref{eq:galerkin} to all printed digits.
 
+The spectral construction is implemented twice. The second implementation
+(\path{scripts/crosscheck_first_moment_voxel.py}) shares only the definition of the scheme: it takes
+the depth dependence of the transformed kernel from an independent residue construction, obtains
+the local weight as a numerical large-$k_z$ limit of the inverted Christoffel matrix, evaluates every
+double integral by quadrature and separates P from S by sampling the upgoing field at two depths.
+The raw reflected displacements of the two agree to $6\times10^{-16}$ in every case compared ---
+normal and oblique incidence, $n=1,2,4$, with and without the first moments.
+Figure~\ref{fig:convergence} collects the convergence.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{convergence.pdf}
+\caption{Relative reflection error of the discrete layer against the number of voxel planes $n$
+($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}). Filled: normal
+incidence, P reflection --- collocation (\S\ref{sec:single}), the mean-only voxel and the first-moment
+voxel of Eq.~\eqref{eq:galerkin}. Dashed, open markers: P incident at $20^\circ$, the converted S wave,
+mean-only (green) and first-moment (orange) voxels of Eq.~\eqref{eq:bloch}. Grey: slopes $2$ and $4$.}
+\label{fig:convergence}
+\end{figure}
+
 \section{Summary}\label{sec:summary}
 
 \begin{center}
@@ -404,6 +456,28 @@ and in three at oblique incidence for both the reflected P and the converted S w
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
 StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, Reduction3D and Oblique, and their reference dumps
 \path{scripts/continuum_limit_*.py}; the exact kernel is
-\path{cubic_scattering/cell_averaged_lattice.py}.}
+\path{cubic_scattering/cell_averaged_lattice.py}; the independent implementation of the
+first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}.}
+
+\begin{thebibliography}{9}\small
+\bibitem{Foldy1945} L.~L. Foldy, The multiple scattering of waves. I. General theory of isotropic
+  scattering by randomly distributed scatterers, \emph{Phys.\ Rev.} \textbf{67}, 107--119 (1945).
+\bibitem{Lax1951} M.~Lax, Multiple scattering of waves, \emph{Rev.\ Mod.\ Phys.} \textbf{23},
+  287--310 (1951).
+\bibitem{Purcell1973} E.~M. Purcell and C.~R. Pennypacker, Scattering and absorption of light by
+  nonspherical dielectric grains, \emph{Astrophys.\ J.} \textbf{186}, 705--714 (1973).
+\bibitem{Draine1994} B.~T. Draine and P.~J. Flatau, Discrete-dipole approximation for scattering
+  calculations, \emph{J.\ Opt.\ Soc.\ Am.\ A} \textbf{11}, 1491--1499 (1994).
+\bibitem{Draine1993} B.~T. Draine and J.~Goodman, Beyond Clausius--Mossotti: wave propagation on a
+  polarizable point lattice and the discrete dipole approximation, \emph{Astrophys.\ J.}
+  \textbf{405}, 685--697 (1993).
+\bibitem{Yurkin2006} M.~A. Yurkin, V.~P. Maltsev and A.~G. Hoekstra, Convergence of the discrete
+  dipole approximation. I. Theoretical analysis, \emph{J.\ Opt.\ Soc.\ Am.\ A} \textbf{23},
+  2578--2591 (2006).
+\bibitem{Chaumet2004} P.~C. Chaumet, A.~Sentenac and A.~Rahmani, Coupled dipole method for scatterers
+  with large permittivity, \emph{Phys.\ Rev.\ E} \textbf{70}, 036606 (2004).
+\bibitem{Eshelby1957} J.~D. Eshelby, The determination of the elastic field of an ellipsoidal
+  inclusion, and related problems, \emph{Proc.\ R.\ Soc.\ Lond.\ A} \textbf{241}, 376--396 (1957).
+\end{thebibliography}
 
 \end{document}
