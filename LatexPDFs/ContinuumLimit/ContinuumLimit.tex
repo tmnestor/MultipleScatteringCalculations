@@ -27,6 +27,7 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{graphicx}
+\usepackage{placeins}
 \usepackage[font=small, labelfont=bf, labelsep=period]{caption}
 \usepackage{setspace}
 \setstretch{1.15}
@@ -81,7 +82,30 @@ Mathematica and checked against an independent numerical implementation.
 
 \section{Introduction}\label{sec:intro}
 
-Replacing a heterogeneous body by a lattice of small scatterers that interact through the background
+\paragraph{Why cubic voxels.} The heterogeneous Earth reaches a wave calculation as a grid. Seismic
+tomography, full-waveform inversion and geological modelling all deliver a medium as cells of
+constant properties on a regular lattice, and the ocean crust that motivates this work --- a
+stratified background carrying lateral heterogeneity on every scale --- is no exception. A
+scattering calculation that is to use such a model directly must represent each cell as a
+scatterer. Cubes are the natural choice for three reasons. They \emph{tile space}: a lattice of cubes
+is a medium with no gaps and no overlaps, so a uniform region discretised into cubes is still that
+uniform region, whereas spheres or point scatterers can only approximate it and carry a packing
+error of their own. Their \emph{regular lattice} makes the interaction between cells translation
+invariant, so the coupling is a convolution --- Toeplitz between planes, Bloch-periodic within them
+--- and the whole system is solved by fast transforms. And a cube small compared with the wavelength
+has a \emph{single-site response in closed form}: its $T$-matrix follows from the elastic
+depolarisation of a cube, so the only approximation a cell introduces is the internal field it
+assumes.
+
+Those three properties raise the question this paper answers. If cubes tile space, a layer of
+identical cubes \emph{is} a homogeneous layer, and the multiple-scattering calculation for it has
+an exact answer: the continuous layer's. Any difference between the discrete and continuous
+results is then purely a property of the discretisation, with no modelling error behind which to
+hide. A laterally uniform layer is therefore the sharpest test of a voxel scheme --- whether it
+converges, how fast, and with what error --- and the answers carry over to any gridded medium,
+because every such medium is locally a layer of identical cells.
+
+\paragraph{Multiple scattering on a lattice.} Replacing a heterogeneous body by a lattice of small scatterers that interact through the background
 Green's function is the multiple-scattering description of Foldy and Lax \cite{Foldy1945,Lax1951}.
 In electromagnetics its discretised form is the discrete dipole approximation (DDA)
 \cite{Purcell1973,Draine1994}, whose accuracy has been studied in detail: each dipole's
@@ -96,7 +120,7 @@ and a moment (through its stiffness contrast), so the state at a voxel has nine 
 displacement and strain --- and the single site's self-interaction is the elastic depolarisation of
 a cube, the discrete counterpart of Eshelby's inclusion tensor \cite{Eshelby1957}.
 
-This paper settles, for a space-filling layer of cubic voxels, three questions that are usually
+\paragraph{This paper.} It settles, for a space-filling layer of cubic voxels, three questions that are usually
 answered only empirically: whether the discrete Foldy--Lax system converges to the continuous medium,
 at what order, and with what leading error. The answers are exact rather than measured. The
 coupling between voxels, averaged over the source cell, is \emph{exactly} the continuum's cell
@@ -460,7 +484,76 @@ mean-only (green) and first-moment (orange) voxels of Eq.~\eqref{eq:bloch}. Grey
 \label{fig:convergence}
 \end{figure}
 
-\section{Summary}\label{sec:summary}
+\FloatBarrier
+\section{Discussion}\label{sec:discussion}
+
+\paragraph{Where the error of a voxel scheme lives.} The results separate the two approximations
+a voxel scheme makes. The \emph{coupling} between voxels makes none: averaged over the source cell it
+is the continuum's cell integral exactly, between planes by the form factor's zeros and within a
+plane by the tiling identity, and the self term it omits is exactly the one the single site
+carries. Every error therefore comes from the \emph{single site}, from the internal field it
+assumes. For a uniform field that error is the midpoint rule's, known in closed form; for a linear
+field it is the next term of the same expansion. The converse is the practical warning. A kernel that
+is not the cell integral --- the point Green's tensor, or a cell average that does not match the
+single site's closure --- leaves a local term that does not vanish as the voxels shrink
+(\S\ref{sec:point}): the evanescent lattice orders carry a static contribution of fixed size per
+voxel volume. A scheme built that way converges to the wrong limit, and refinement cannot reveal
+it, because the error is scale-invariant.
+
+\paragraph{Relation to the discrete dipole approximation.} The same partition appears in the
+electromagnetic literature as the choice of polarisability. The Clausius--Mossotti relation, the
+lattice dispersion relation \cite{Draine1993} and the integrated Green tensor \cite{Chaumet2004} all
+adjust the single site so that the lattice reproduces the continuum. For space-filling cubes the
+adjustment is neither needed nor a free parameter: the tiling identity fixes the local field exactly, the
+self term of the collocation closure is the one that makes it cancel, and what is left is a
+closed-form error rather than an empirical one. The second-order convergence reported for the DDA
+\cite{Yurkin2006} corresponds to the uniform-field voxel's, and the opposite-signed constants of
+Eq.~\eqref{eq:errorR} explain why a polarisability correction can improve one observable only at
+the expense of another, as the package's own form-factor corrections do in reflection and
+transmission. Going beyond second order requires a richer internal field, which is the point of
+higher-order bases for volume integral equations; the first-moment voxel is the lowest such basis,
+and in its spectral form the Galerkin double average makes the lattice sum converge without Ewald
+splitting.
+
+\paragraph{The cost of fourth order.} A first-moment voxel carries four times as many unknowns as
+a uniform one (36 against 9 in three dimensions). The closed forms show what that buys. To reach an
+error $\varepsilon$ in reflection, the uniform voxel needs $kd=\sqrt{8\varepsilon}$ and the
+first-moment voxel $kd=(720\,\varepsilon)^{1/4}$; at $\varepsilon=10^{-6}$ that is $kd=2.8\times
+10^{-3}$ against $0.16$, voxels $58$ times larger in each direction. In a three-dimensional model the
+voxel count falls by $58^3\approx2\times10^5$ and the number of unknowns by about $5\times10^4$
+(these are the Born-order constants; at the contrast studied the first-moment voxel's measured errors
+lie within $5\%$ of them, while the uniform voxel's transmission constant grows with the contrast, so
+the comparison is if anything conservative).
+The gain is largest precisely where it matters: when the grid of a geological model is coarse
+compared with the accuracy the wavefield must have.
+
+\paragraph{Limitations and outlook.} The results concern a laterally uniform layer, for which the
+discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
+first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
+the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
+$O(k_\parallel h)$. The numerical evidence is at a moderate, physically typical contrast (a few per
+cent in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
+validated; the closed forms are first order in the contrast, and the departures from them at the
+full contrast are of second order. What is established is the \emph{order} of convergence and its
+leading constant, not the behaviour at strong contrast, where the single site's own closure may
+limit the accuracy before the lattice coupling does. Two extensions follow directly. The first is
+the three-dimensional solver itself. The second is a stratified background: the lattice coupling
+then carries the reverberation of the layering, which is not translation invariant in depth, and
+whether a tiling identity holds for it is the natural next question.
+
+\section{Conclusions}\label{sec:summary}
+
+A lattice of cubic voxels reproduces a continuous elastic medium in a precise sense. Because cubes
+tile the plane, the source-cell-averaged coupling between voxels is the continuum's cell integral
+exactly, and at normal incidence the lattice kernel is available in closed form with no lattice sum.
+The collocation closure of the single site carries the same self term, which cancels, so the discrete
+system is a collocation of the continuum equation. It converges at second order, with a leading
+error that is a midpoint-rule error of the internal field, known in closed form for every
+discretisation, and opposite in sign in reflection and transmission. A voxel that also carries the
+first moment of its internal field converges at fourth order --- at normal incidence, where the
+three-dimensional scheme reduces exactly to one dimension, and at oblique incidence --- with a
+leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The results,
+and the evidence for each, are:
 
 \begin{center}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.52\linewidth}>{\raggedright\arraybackslash}p{0.40\linewidth}@{}}
@@ -483,22 +576,6 @@ Independent implementation of Eq.~\eqref{eq:bloch} & $6\times10^{-16}$, 12 cases
 \bottomrule
 \end{tabular}
 \end{center}
-
-The discrete scheme is exact wherever the voxel is: its coupling is the continuum's cell integral,
-and its self term cancels. What remains is the assumption that the field inside a voxel is uniform,
-and that error is known in closed form. A voxel that also carries the first moment of its field
-removes it and converges at fourth order: in one dimension, exactly in three at normal incidence,
-and in three at oblique incidence for both the reflected P and the converted S wave; its leading
-error, $-(kd)^4/720$, no longer depends on the direction of observation.
-
-\paragraph{Scope.} The results concern a laterally uniform layer, for which the discrete system is
-exactly a chain of planes; a laterally heterogeneous medium needs the same voxel in a full
-three-dimensional solver, which this paper does not build. The numerical evidence is at a moderate,
-physically typical contrast (a few per cent in density and moduli) and at $k_Sh\le0.3$, the range
-in which the single-site $T$-matrix is validated; the closed forms are first order in the contrast,
-and the measured departures from them at the full contrast are second order. What is established
-is the \emph{order} of convergence and its leading constant, not the behaviour at strong contrast,
-where the single site's own closure, rather than the lattice coupling, may limit the accuracy.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
