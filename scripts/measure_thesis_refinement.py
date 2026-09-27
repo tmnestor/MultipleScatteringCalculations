@@ -27,13 +27,19 @@ scale-invariant discretisation bias would make refinement useless here too.
 RESULT (after passing ``T_local=t0``: before that the solve rebuilt T from the
 material and the observation/empty planes scattered, which produced a spurious
 n-independent "floor" of 3.565e-4):
-    n   [T1] thesis  [T2] dress-after  [T3] control
-    1    1.199e-5       1.163e-3        7.000e-6
-    2    1.969e-5       1.156e-3        3.371e-6
-    3    1.615e-5       1.154e-3        2.184e-6
-    4    1.321e-5       1.153e-3        1.590e-6
+    n   [T1] thesis  Toeplitz   [T2] dress-after  [T3] control  T1/T3
+    1    1.199e-5    1.199e-5      1.163e-3        7.000e-6     1.71
+    2    5.720e-6    1.969e-5      1.156e-3        3.371e-6     1.70
+    3    3.666e-6    1.615e-5      1.154e-3        2.184e-6     1.68
+    4    2.641e-6    1.321e-5      1.153e-3        1.590e-6     1.66
+    6    1.620e-6    9.482e-6      1.152e-3        9.969e-7     1.63
 The control converges as 1/n; dress-after carries an n-independent ordering
-error; the thesis ordering sits ~100x below dress-after.
+error; the thesis ordering converges as 1/n at ~1.65x the control -- once the
+reverberation is added PAIR BY PAIR (``run_pairwise``).  The Toeplitz column,
+one reverberation block per depth separation as ``kernel_hat`` must store it,
+refines only slowly: the reverberation off the reflector depends on z_i + z_j,
+not z_i - z_j.  That is a limitation of the Toeplitz kernel, not of the
+formulation; ``apply_g0_3d`` stores every pair.
 
 Run:  conda run -n seismic python scripts/measure_thesis_refinement.py
 SI units, as the gate.
@@ -193,6 +199,55 @@ def run(geo: Geometry, *, dressed: bool, uniform: bool) -> tuple[float, float]:
     return float(np.abs(got - exact).max()), float(np.abs(exact).max())
 
 
+def run_pairwise(geo: Geometry, *, dressed: bool) -> tuple[float, float, np.ndarray]:
+    """The stratified arm solved as the specular chain, dressing each plane PAIR exactly.
+
+    At normal incidence on a laterally uniform slab only the k_par = 0 block acts, so the
+    Foldy-Lax system is exactly a chain of n_z planes, psi_i = psi0_i + sum_j K_ij T_j psi_j.
+    The Toeplitz kernel of ``run`` holds one reverberation block per depth separation, but
+    the reverberation off the reflector depends on BOTH depths (its path is z_src + z_rcv),
+    so here K_ij = kernel(i - j) + [P~(j -> i) - W(i - j)] / d^2 for every pair.
+
+    Returns:
+        (absolute error, |exact|, the observation-plane field).
+    """
+    m_ref = geo.model(contrast=False, uniform=False)
+    m_full = geo.model(contrast=True, uniform=False)
+    planes = geo.planes
+    n_z = len(planes)
+    ref = ReferenceMedium(A0, B0, R0)
+    ref_c = plane_reference_medium(m_ref, planes[geo.gap])
+    geom = SlabGeometry(M=M, N_z=n_z, a=geo.d / 2)
+    ones = np.ones((n_z, M, M))
+    material = SlabMaterial(
+        Dlambda=gate.D_LAM * ones, Dmu=gate.D_MU * ones, Drho=gate.D_RHO * ones, ref=ref
+    )
+    t0 = compute_slab_tmatrices(geom, material, OM)[:, 0, 0]
+    t0[: geo.gap] = 0.0
+    src_vec = np.zeros(9, dtype=complex)
+    src_vec[0] = 1.0
+    src_iface = geo.iface(Z_SRC)
+    psi0 = np.array([p_tilde(m_ref, src_iface, j) @ src_vec for j in planes])
+    exact = p_tilde(m_full, src_iface, planes[0]) @ src_vec
+    kh = build_slab_kernels(geom, OM, ref, **KERNEL_KW)[:, 0, 0]
+    eps = np.array([EPS])
+    big = np.eye(9 * n_z, dtype=complex)
+    for i in range(n_z):
+        for j in range(n_z):
+            dz = i - j
+            k = kh[dz + n_z - 1].copy()
+            if dressed:
+                ws = (
+                    same_depth_kernel_9x9(eps, 0.0, OM, ref_c)[:, :, 0]
+                    if dz == 0
+                    else vertical_kernel_9x9(eps, 0.0, dz * geo.d, OM, ref_c)[:, :, 0]
+                )
+                k += (p_tilde(m_ref, planes[j], planes[i]) - ws) / geo.d**2
+            big[9 * i : 9 * i + 9, 9 * j : 9 * j + 9] -= k @ t0[j]
+    got = np.linalg.solve(big, psi0.reshape(-1)).reshape(n_z, 9)[0]
+    return float(np.abs(got - exact).max()), float(np.abs(exact).max()), got
+
+
 def main() -> int:
     """Arms per refinement; the trend of [T3] with n decides whether refinement can separate them.
 
@@ -202,22 +257,33 @@ def main() -> int:
     print("=" * 78)
     print("THESIS ORDERING UNDER REFINEMENT: slab D = 2 m in n planes of cubes of side D/n")
     print("=" * 78)
-    cols = (("n", 2), ("ka", 8), ("[T1] thesis", 12), ("[T2] dress-after", 17), ("[T3] floor", 11))
+    cols = (
+        ("n", 2),
+        ("ka", 8),
+        ("[T1] thesis", 12),
+        ("Toeplitz", 10),
+        ("[T2] dress-after", 17),
+        ("[T3] control", 13),
+    )
     head = " ".join(f"{c:>{w}}" for c, w in cols)
-    print(f"  {head} {'T1/T3':>6} {'T2/T3':>6}")
-    for n in (1, 2, 3, 4):
+    print(f"  {head} {'T1/T3':>6} {'T2/T3':>6} {'chain check':>12}")
+    for n in (1, 2, 3, 4, 6):
         geo = Geometry(n)
-        a1, s1 = run(geo, dressed=True, uniform=False)
+        a1, s1, _ = run_pairwise(geo, dressed=True)
+        a1t, _ = run(geo, dressed=True, uniform=False)
         a2, _ = run(geo, dressed=False, uniform=False)
+        a2c, _, _ = run_pairwise(geo, dressed=False)  # the chain against the package solve
         a3, s3 = run(geo, dressed=True, uniform=True)
-        r1, r2, r3 = a1 / s1, a2 / s1, a3 / s3
+        r1, r1t, r2, r3 = a1 / s1, a1t / s1, a2 / s1, a3 / s3
         ka = OM / A0 * geo.d / 2
         print(
-            f"  {n:2d} {ka:8.4f} {r1:12.3e} {r2:17.3e} {r3:11.3e} {r1 / r3:6.2f} {r2 / r3:6.2f}"
-            f"   [{time.perf_counter() - T_START:5.0f} s]",
+            f"  {n:2d} {ka:8.4f} {r1:12.3e} {r1t:10.3e} {r2:17.3e} {r3:13.3e} {r1 / r3:6.2f} {r2 / r3:6.2f}"
+            f" {abs(a2c - a2) / s1:12.1e}   [{time.perf_counter() - T_START:5.0f} s]",
             flush=True,
         )
-    print("\n  (relative errors, each arm by its own exact field)")
+    print("\n  (relative errors, each arm by its own exact field; [T1] dresses every plane pair,")
+    print("   'Toeplitz' one pair per depth separation as the package kernel must; 'chain check'")
+    print("   is the undressed chain against the package's own solve)")
     return 0
 
 
