@@ -561,8 +561,11 @@ class G0Cache3D:
 
     Attributes:
         grid: The lattice.
-        same_depth: Whole-space propagator per same-depth separation, shape
-            (2 n_x - 1, 2 n_y - 1, 9, 9), with the zero separation NaN.
+        same_depth: Whole-space propagator per same-depth separation, PER PLANE,
+            shape (n_z, 2 n_x - 1, 2 n_y - 1, 9, 9), with the zero separation NaN.
+            Plane lz's table is the whole-space kernel of plane lz's OWN medium --
+            the one ``layered`` subtracts from its diagonal -- so that planes in
+            different materials each get back exactly what was removed.
         layered: Plane-to-plane propagator per separation, shape
             (n_z, n_z, 2 n_x - 1, 2 n_y - 1, 9, 9). Off-diagonal blocks carry the
             full propagator; diagonal blocks carry the reverberation only, and
@@ -585,9 +588,18 @@ def build_g0_cache_3d(
 ) -> G0Cache3D:
     """Build both real-space tables once, outside the Krylov loop.
 
+    THE SAME-DEPTH TABLE IS PER PLANE. The layered table's diagonal is the full
+    layered kernel minus the whole-space kernel of each plane's OWN medium, so the
+    closed form added back must be that same medium's. With a model, ``ref`` does
+    not enter the operator at all -- each plane's medium comes from the model --
+    and planes on both sides of a material contrast are each correct. (A single
+    table from ``ref`` was right only when every plane shared ref's medium; across
+    a contrast it was off by W(ref) - W(local), of the order of the contrast.)
+
     Args:
         grid: The lattice.
-        ref: Background medium for the whole-space parts.
+        ref: Background medium for the whole-space case. Ignored with ``model``,
+            where each plane's medium is ``plane_reference_medium(model, iface)``.
         omega: Complex angular frequency, rad/s.
         model: A ``LayerModel`` for the stratified background. Omit for the
             whole-space case, where the layered tables reduce to the closed form
@@ -600,11 +612,23 @@ def build_g0_cache_3d(
     Returns:
         A G0Cache3D.
     """
-    from .pair_propagators import layered_stack_table, same_depth_table
+    from .pair_propagators import layered_stack_table, plane_reference_medium, same_depth_table
+
+    if model is None or plane_ifaces is None:
+        media = [ref] * grid.n_z
+    else:
+        media = [plane_reference_medium(model, iface) for iface in plane_ifaces]
+    tables: dict[tuple, NDArray] = {}
+    per_plane = []
+    for m in media:
+        key = (complex(m.alpha), complex(m.beta), complex(m.rho))
+        if key not in tables:
+            tables[key] = same_depth_table(grid.n_x, grid.n_y, grid.pitch, omega, m)
+        per_plane.append(tables[key])
 
     return G0Cache3D(
         grid=grid,
-        same_depth=same_depth_table(grid.n_x, grid.n_y, grid.pitch, omega, ref),
+        same_depth=np.stack(per_plane),
         layered=layered_stack_table(
             grid.n_z,
             grid.n_x,
@@ -662,6 +686,17 @@ def apply_g0_3d(sources: NDArray, cache: G0Cache3D) -> NDArray:
             "         6-component Voigt state or a flattened lattice will not do."
         )
         raise ValueError(msg) from None
+    want_sd = (g.n_z, 2 * g.n_x - 1, 2 * g.n_y - 1, 9, 9)
+    if cache.same_depth.shape != want_sd:
+        msg = (
+            f"cache.same_depth has shape {cache.same_depth.shape}, expected {want_sd}.\n"
+            "  Where: cubic_scattering/directional_sweeps.py, apply_g0_3d (G0Cache3D.same_depth)\n"
+            "  Valid: one same-depth table per plane, shape (n_z, 2 n_x - 1, 2 n_y - 1, 9, 9)\n"
+            f"         = {want_sd} here\n"
+            "  Fix:   build the cache with build_g0_cache_3d, or stack one table per plane,\n"
+            "         each from that plane's own medium (plane_reference_medium)."
+        )
+        raise ValueError(msg) from None
 
     out = np.zeros_like(sources, dtype=complex)
     for dx in range(-(g.n_x - 1), g.n_x):
@@ -674,7 +709,7 @@ def apply_g0_3d(sources: NDArray, cache: G0Cache3D) -> NDArray:
                 # Same depth, whole space. The zero separation is the poisoned
                 # entry and belongs to T0.
                 out[:, tx, ty, :] += np.einsum(
-                    "ab,zxyb->zxya", cache.same_depth[i, j], sources[:, sx, sy, :]
+                    "zab,zxyb->zxya", cache.same_depth[:, i, j], sources[:, sx, sy, :]
                 )
 
             for lz in range(g.n_z):

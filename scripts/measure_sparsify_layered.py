@@ -137,7 +137,10 @@ def plane_caches(model, media: list[ReferenceMedium]) -> list[G0Cache3D]:
     for m in media:
         key = (complex(m.alpha), complex(m.beta), float(m.rho))
         if key not in tables:
-            tables[key] = same_depth_table(W, W, PITCH, OM, m)
+            # one medium on every plane; each receiver plane takes its rows from its own medium's cache
+            tables[key] = np.broadcast_to(
+                same_depth_table(W, W, PITCH, OM, m), (N, 2 * W - 1, 2 * W - 1, 9, 9)
+            )
         out.append(G0Cache3D(grid=grid, same_depth=tables[key], layered=lay))
     return out
 

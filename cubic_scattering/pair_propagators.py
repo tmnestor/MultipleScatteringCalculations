@@ -119,6 +119,29 @@ def separation_index(d: int, n: int) -> int:
     return d + n - 1
 
 
+def plane_reference_medium(model: object, plane_iface: int) -> ReferenceMedium:
+    """The attenuated medium AT a depth plane: the whole-space kernel the layered tables subtract.
+
+    The single definition shared by ``layered_stack_table``,
+    ``layered_incident_field`` and ``directional_sweeps.build_g0_cache_3d``. The
+    same-depth closed form added back to a plane's reverberation must be built
+    from exactly this medium, or the same-plane coupling of a plane in a
+    different material is wrong by the difference of the two whole-space kernels.
+
+    Args:
+        model: A ``LayerModel``.
+        plane_iface: The plane's interface index; interface j lies between layers
+            j and j+1, and the plane's medium is that of layer max(j, 1).
+
+    Returns:
+        The medium, with the model's complex (attenuated) velocities.
+    """
+    j = max(int(plane_iface), 1)
+    s_p = model.complex_slowness_p()  # type: ignore[attr-defined]
+    s_s = model.complex_slowness_s()  # type: ignore[attr-defined]
+    return ReferenceMedium(1.0 / s_p[j], 1.0 / s_s[j], model.rho[j])  # type: ignore[attr-defined]
+
+
 def _check_lattice(n_x: int, n_y: int) -> None:
     if n_x < 2 or n_y < 2:
         msg = (
@@ -318,9 +341,6 @@ def layered_stack_table(
     kxg, kyg = np.meshgrid(k, k, indexing="ij")
     kx, ky = kxg.ravel(), kyg.ravel()
     n_k = k.size
-    s_p = model.complex_slowness_p()  # type: ignore[attr-defined]
-    s_s = model.complex_slowness_s()  # type: ignore[attr-defined]
-    rho_m = model.rho  # type: ignore[attr-defined]
 
     for lz in range(n_z):
         for mz in range(n_z):
@@ -349,8 +369,7 @@ def layered_stack_table(
             # The local medium AT THE PLANE, not the caller's reference --
             # mirroring build_vertical_stack_layered. With a contrast between
             # planes the two differ, and the caller's would leave a residue.
-            j_lay = max(int(plane_ifaces[lz]), 1)
-            ref_local = ReferenceMedium(1.0 / s_p[j_lay], 1.0 / s_s[j_lay], rho_m[j_lay])
+            ref_local = plane_reference_medium(model, plane_ifaces[lz])
             d_z = (lz - mz) * pitch
 
             # meshgrid(indexing="ij") ravels as index = i * n_k + j with
@@ -506,9 +525,6 @@ def layered_incident_field(
     kxg, kyg = np.meshgrid(k, k, indexing="ij")
     kx, ky = kxg.ravel(), kyg.ravel()
     n_k = k.size
-    s_p = model.complex_slowness_p()  # type: ignore[attr-defined]
-    s_s = model.complex_slowness_s()  # type: ignore[attr-defined]
-    rho_m = model.rho  # type: ignore[attr-defined]
 
     for lz in range(n_z):
         g9 = corrected_layered_9x9(
@@ -525,8 +541,7 @@ def layered_incident_field(
         # from the closed form, exactly as layered_stack_table does and for the
         # same reason: the full layered kernel inherits the whole-space kernel's
         # slow spectral decay, the reverberation does not.
-        j_lay = max(int(plane_ifaces[lz]), 1)
-        ref_local = ReferenceMedium(1.0 / s_p[j_lay], 1.0 / s_s[j_lay], rho_m[j_lay])
+        ref_local = plane_reference_medium(model, plane_ifaces[lz])
         d_z = float(dz_planes[lz])
         for j in range(n_k):
             ws = vertical_kernel_9x9(k, float(k[j]), d_z, omega, ref_local)
