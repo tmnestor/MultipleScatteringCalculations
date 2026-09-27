@@ -28,6 +28,7 @@
 \usepackage{array}
 \usepackage{graphicx}
 \usepackage{placeins}
+\usepackage[numbers,sort&compress]{natbib}
 \usepackage[font=small, labelfont=bf, labelsep=period]{caption}
 \usepackage{setspace}
 \setstretch{1.15}
@@ -76,7 +77,13 @@ and the opposite signs show that no scalar correction of a uniform-field single 
 removes it and converges at fourth order, with leading error $-(kd)^4/720$ in reflection and
 transmission alike: one plane of such voxels is $6500$ times more accurate than one plane of uniform
 ones, and the scheme stays fourth order at oblique incidence, in the converted S wave as well as the
-reflected P. Every result is derived symbolically in
+reflected P. The single site itself is derived from the moments of the elastodynamic Green's tensor
+over the cube. These are evaluated as distributions, in closed form, with no $\delta$-function term
+added by hand. The uniform-strain closure is the first-gradient truncation of an exact hierarchy.
+Parity makes that gradient block self-contained, so it alone fixes the leading far field. The
+cube's dilatational channel is the sphere's. Its two shear channels split about the sphere's by a
+pure cubic anisotropy, $(\lambda+\mu)(5\sqrt3-2\pi)/[6\pi\mu(\lambda+2\mu)]$, and their isotropic
+average is the sphere's exactly. Every result is derived symbolically in
 Mathematica and checked against an independent numerical implementation.
 \end{abstract}
 
@@ -106,27 +113,32 @@ converges, how fast, and with what error --- and the answers carry over to any g
 because every such medium is locally a layer of identical cells.
 
 \paragraph{Multiple scattering on a lattice.} Replacing a heterogeneous body by a lattice of small scatterers that interact through the background
-Green's function is the multiple-scattering description of Foldy and Lax \cite{Foldy1945,Lax1951}.
-In electromagnetics its discretised form is the discrete dipole approximation (DDA)
-\cite{Purcell1973,Draine1994}, whose accuracy has been studied in detail: each dipole's
+Green's function is the multiple-scattering description of \citet{Foldy1945} and \citet{Lax1951}.
+In electromagnetics its discretised form is the discrete dipole approximation
+\citep[DDA;][]{Purcell1973,Draine1994}, whose accuracy has been studied in detail: each dipole's
 polarisability must account for the local field of the surrounding lattice, which the lattice
 dispersion relation fixes so that an infinite lattice propagates waves as the continuum does to a
-given order in $kd$ \cite{Draine1993}; the error of the method converges at second order in the
-dipole spacing when shape errors are absent \cite{Yurkin2006}; and integrating the Green's tensor
+given order in $kd$ \citep{Draine1993}; the error of the method converges at second order in the
+dipole spacing when shape errors are absent \citep{Yurkin2006}; and integrating the Green's tensor
 over each cell rather than sampling it at the centre improves accuracy, most of all for strong
-contrasts \cite{Chaumet2004}. The elastic problem adds a structure the scalar and electromagnetic
+contrasts \citep{Chaumet2004}. The elastic problem adds a structure the scalar and electromagnetic
 ones lack. A cubic voxel responds to the incident field with a force (through its density contrast)
 and a moment (through its stiffness contrast), so the state at a voxel has nine components ---
 displacement and strain --- and the single site's self-interaction is the elastic depolarisation of
-a cube, the discrete counterpart of Eshelby's inclusion tensor \cite{Eshelby1957}.
+a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
 
 \paragraph{This paper.} It settles, for a space-filling layer of cubic voxels, three questions that are usually
 answered only empirically: whether the discrete Foldy--Lax system converges to the continuous medium,
 at what order, and with what leading error. The answers are exact rather than measured. The
 coupling between voxels, averaged over the source cell, is \emph{exactly} the continuum's cell
-integral at normal incidence, because cubes tile the plane (\S\ref{sec:tiling}). The collocation
-closure of the single site carries the same self term, which therefore cancels, so the discrete
-system is a collocation of the continuum equation (\S\ref{sec:single}). It converges at second
+integral at normal incidence, because cubes tile the plane (\S\ref{sec:tiling}). The single-site
+$T$-matrix is derived, not imported (\S\ref{sec:single}). The moments of the elastodynamic Green's
+tensor over the cube, evaluated as distributions, give a closed hierarchy for the internal field.
+Its first-gradient truncation is the uniform-strain (Eshelby) closure, and it fixes the leading
+far field alone. In closed form, a cube differs from a sphere only by a cubic anisotropy of the
+shear response. The collocation closure carries the same self term as the lattice kernel, which
+therefore cancels, so the discrete system is a collocation of the continuum equation
+(\S\ref{sec:closure}). It converges at second
 order with a leading error known in closed form for every discretisation, whose opposite signs in
 reflection and transmission show that no correction of a uniform-field single site can remove it
 (\S\ref{sec:convergence}). A voxel that carries the first moment of its internal field removes it,
@@ -280,10 +292,210 @@ jump across the coordinate planes through the origin, and differentiating twice 
 exactly that term.) The self term so obtained reproduces the classical closed form of the cube's
 depolarisation to machine precision.
 
-\section{The single site}\label{sec:single}
+\section{The single site: the cube \texorpdfstring{$T$}{T}-matrix from moment integrals}\label{sec:single}
 
-The collocation closure takes the internal field of a voxel as uniform. The voxel's own field at its
-centre is then $\bS_{\text{self}}\bD\,e$ for internal state $e$, so
+Every error of a voxel scheme is made at the single site (\S\ref{sec:discussion}), so the single
+site is derived here rather than imported. The classical route imports it. For an ellipsoid,
+Eshelby's uniformity theorem makes the internal strain under a uniform load uniform, with a
+depolarisation tensor in closed form \citep{Eshelby1957,Eshelby1959,Mura1987}; its dynamic
+generalisation is known for spheres and ellipsoids \citep{Mikata1990,Michelitsch2003}. For a cube
+or a general polyhedron the static field of a uniform eigenstrain is also in closed form
+\citep{Chiu1977,LeeJohnson1978,Rodin1996,Nozaki2001}, but the strain it produces is not uniform,
+so there is no exact uniform-strain inclusion to import. In scattering theory the same object
+appears as the self-consistent or effective-field closure of the volume integral equation
+\citep{MalKnopoff1967,Gubernatis1977,Kanaun2008}: a first-order (Born) scatterer
+\citep{Wu1985} renormalised by the geometric series of its own near field, the step that turns a
+contrast into an effective contrast. The elastic $T$-matrix of \citet{Waterman1976} represents a
+scatterer in spherical multipoles, the natural basis for a sphere; a voxel in a lattice needs one
+compatible with the lattice, and the moments over the cube provide it. The construction below makes the
+approximation of a voxel explicit rather than implicit: it derives the cube's $T$-matrix from
+the moments of the elastodynamic Green's tensor over the cube, and identifies the
+uniform-strain closure as one truncation of an exact hierarchy.
+
+\subsection{The closed hierarchy}\label{sec:hierarchy}
+
+Let the voxel be $V=[-h,h]^3$ with contrast
+$\delta c_{ijkl}=\Delta\lambda\,\delta_{ij}\delta_{kl}+\Delta\mu(\delta_{ik}\delta_{jl}+\delta_{il}\delta_{jk})$
+and $\Delta\rho$. Expand the internal displacement about the centre to second degree and project
+the Lippmann--Schwinger equation onto $1$, $x_p$ and $x_px_q$. The unknowns are $u_i(0)$,
+$\partial_pu_i(0)$ and $\partial_p\partial_qu_i(0)$, and the result is the closed system
+\begin{align}
+\bigl(\delta_{ij}-\omega^2\Delta\rho\,\mathsf G_{ij}\bigr)u_j
+  +\bigl(\mathsf N^{r}_{in,k}\,\delta c_{nksj}-\tfrac12\omega^2\Delta\rho\,\mathsf K^{rs}_{ij}\bigr)
+  \partial_r\partial_su_j
+  &= u^0_i, \label{eq:A11}\\
+\bigl(\delta_{pr}\delta_{ij}+\omega^2\Delta\rho\,\mathsf N^{r}_{ij,p}
+  -\mathsf M_{in,pk}\,\delta c_{nkrj}\bigr)\partial_ru_j
+  &= \partial_pu^0_i, \label{eq:A22}\\
+-\omega^2\Delta\rho\,\mathsf M_{ij,pq}\,u_j
+  +\bigl(\delta_{qr}\delta_{ps}\delta_{ij}+\mathsf Q^{r}_{in,pqk}\,\delta c_{nksj}
+  -\tfrac12\omega^2\Delta\rho\,\mathsf P^{rs}_{ij,pq}\bigr)\partial_r\partial_su_j
+  &= \partial_p\partial_qu^0_i, \label{eq:A33}
+\end{align}
+all fields evaluated at the centre. Its coefficients are six moments of the background Green's
+tensor $\bG$ over the voxel,
+\begin{equation}\label{eq:moments}
+\begin{aligned}
+\mathsf G_{ij}&=\int_V G_{ij}\,dV, &
+\mathsf K^{rs}_{ij}&=\int_V G_{ij}\,x_rx_s\,dV, &
+\mathsf N^{r}_{in,k}&=\int_V \partial'_kG_{in}\,x_r\,dV,\\
+\mathsf M_{in,pk}&=\int_V \partial'_p\partial'_kG_{in}\,dV, &
+\mathsf P^{rs}_{ij,pq}&=\int_V \partial'_q\partial'_pG_{ij}\,x_rx_s\,dV, &
+\mathsf Q^{r}_{in,pqk}&=\int_V \partial'_q\partial'_p\partial'_kG_{in}\,x_r\,dV,
+\end{aligned}
+\end{equation}
+with derivatives taken with respect to the source point, $\partial'=-\partial$. That sign reaches
+$\mathsf N$ and $\mathsf Q$ only, and no symmetry, parity or scaling check can detect it, so it is
+fixed by convention. The moments are graded by $(D,W)$, the number of derivatives and the degree of
+the weight: $\mathsf G\,(0,0)$, $\mathsf K\,(0,2)$, $\mathsf N\,(1,1)$, $\mathsf M\,(2,0)$,
+$\mathsf P\,(2,2)$, $\mathsf Q\,(3,1)$.
+
+\subsection{The moments as distributions}\label{sec:distributions}
+
+Write the elastodynamic tensor as
+\begin{equation}\label{eq:Gdecomp}
+  G_{in}(\mathbf r)=\frac{1}{4\pi\mu}\Bigl[\delta_{in}\,g_{S}(r)
+  +\frac{1}{k_S^2}\,\partial_i\partial_n\bigl(g_S(r)-g_P(r)\bigr)\Bigr],
+  \qquad g_{c}(r)=\frac{e^{ik_cr}}{r}
+\end{equation}
+\citep{Kupradze1963,Aki2002}. Expanding $g_c$ in powers of $r$ reduces every moment in
+Eq.~\eqref{eq:moments} to a finite sum of scalar moments
+\begin{equation}\label{eq:Emoment}
+  E\bigl[m;d_1\ldots d_D;w_1\ldots w_W\bigr]
+  =\bigl\langle \partial_{d_1}\!\cdots\partial_{d_D}\,r^m,\ x_{w_1}\!\cdots x_{w_W}\,\mathbf 1_V\bigr\rangle .
+\end{equation}
+For $m=-1$ and $D\ge2$ the classical integrand is not absolutely integrable. $\partial^2(1/r)$
+decays as $r^{-3}$, its angular average vanishes, and the value of the integral depends on the
+shape of the region excluded around the origin. This is the source of the $\delta$-function term
+of the inclusion problem, which a numerical quadrature misses. Without it the depolarisation is
+wrong; for a sphere it vanishes altogether (\S\ref{sec:parity}). It is not added afterwards here. The derivatives are
+distributional from the start, and each is moved onto the voxel's faces by pairing with the test
+function $w\mathbf 1_V$, using $\partial_q\mathbf 1_V=-n_q\,\delta_{\partial V}$:
+\begin{equation}\label{eq:peel}
+  \bigl\langle \partial_qT,\,w\mathbf 1_V\bigr\rangle
+  =\oint_{\partial V} n_q\,w\,T\,dA-\bigl\langle T,\,(\partial_qw)\,\mathbf 1_V\bigr\rangle .
+\end{equation}
+The surface term is evaluated on the faces, a distance $h$ from the origin, where every
+derivative of $r^m$ is smooth. The recursion lowers $D$ and $W$ together and ends on convergent
+integrals. The face integrals are done in closed form, by continuous two-dimensional
+antiderivatives summed over the corners. A triple antiderivative evaluated at the corners is
+\emph{not} equivalent: its branch jumps lose the $\delta$ term. The sharp check is the sum rule
+\begin{equation}\label{eq:sumrule}
+  \textstyle\sum_pE[-1;p,p;\,]=\nabla^2(1/r)\ \text{paired with}\ \mathbf 1_V=-4\pi ,
+\end{equation}
+which the face route satisfies exactly and a spherical excision returns as $0$. The closed forms
+contain logarithms of the units $(2\pm\sqrt3)^n$ of the Pell equation $x^2-3y^2=1$. Left
+unreduced, these cancel catastrophically: for example, $\log(72010600134783751-41575339372323900\sqrt3)$
+is a cancellation of $35$ digits. They are therefore reduced to $n\log(2-\sqrt3)$, which is
+exact. Because every power of $r$ is paired this way, the dynamic moments keep the even-power terms
+of the expansion ($k^2r$, $r^3$, \dots) as well as the odd ones. A route that integrates only the
+polynomial (odd-power) terms of $\bG$ misses those terms, at a real $O((kh)^2)$ cost
+(\S\ref{sec:closure}).
+
+\subsection{Parity, and the nine-component block}\label{sec:parity}
+
+The cube is centrosymmetric. A moment that couples a field quantity of degree $a$ to one of degree
+$b$ therefore vanishes unless $a+b$ is even. $u$, $\partial u$ and $\partial\partial u$ have
+degrees $0$, $1$ and $2$, so Eq.~\eqref{eq:A22} contains the first gradient alone: $\partial u$
+is determined by its own block and couples to neither $u$ nor $\partial\partial u$. The leading
+scattering by a stiffness contrast is the stress dipole $\int_V\delta c:\nabla u\,dV$, which needs
+only $\partial u$. The leading far field of the stiffness contrast is therefore fixed by
+Eq.~\eqref{eq:A22}, and \emph{no treatment of the second-gradient block \eqref{eq:A33} can change
+it}. What Eq.~\eqref{eq:A33} contributes reaches the far field only through the $O((kh)^2)$
+coupling in Eq.~\eqref{eq:A11}. That is the order, and the origin (the variation of the field
+across the voxel), of the collocation error of \S\ref{sec:convergence}, which the first-moment
+voxel of \S\ref{sec:fourth} removes.
+
+With $\Delta\rho=0$, Eq.~\eqref{eq:A22} is the $9\times9$ operator
+$\delta_{pr}\delta_{ij}-\mathsf M_{in,pk}\,\delta c_{nkrj}$, built from $\mathsf M$ alone. Under
+$O_h$ the nine gradient components decompose as $A_{1g}\oplus E_g\oplus T_{1g}\oplus T_{2g}$, and
+the operator is diagonal in that basis. Its eigenvalues are the inverse strain concentrations:
+\begin{align}
+A_{1g}\ \text{(dilatation)}:&\quad 1+\frac{\Delta\lambda+\tfrac23\Delta\mu}{\lambda+2\mu},
+  \label{eq:A1g}\\
+T_{2g}\ \text{(off-diagonal shear)}:&\quad 1+2\Delta\mu\,S_{\text{off}},\qquad
+  S_{\text{off}}=\frac{\pi(\lambda+2\mu)-\sqrt3\,(\lambda+\mu)}{3\pi\mu(\lambda+2\mu)},
+  \label{eq:T2g}\\
+E_{g}\ \text{(diagonal shear)}:&\quad 1+2\Delta\mu\,S_{\text{diag}},\qquad
+  S_{\text{diag}}=\frac{3\sqrt3\,(\lambda+\mu)+2\pi\mu}{6\pi\mu(\lambda+2\mu)}.
+  \label{eq:Eg}
+\end{align}
+The density channel is the displacement block of Eq.~\eqref{eq:A11} with the second gradients
+dropped, an amplification $(1-\omega^2\Delta\rho\,\mathsf G)^{-1}$ with $\mathsf G$ the cube
+integral of $\bG$.
+
+\paragraph{The cube against the sphere.} For a sphere, Eshelby's tensor gives a dilatational
+channel $1+\Delta K/(\lambda+2\mu)$, with $\Delta K=\Delta\lambda+\tfrac23\Delta\mu$, and a single
+deviatoric channel $1+2\Delta\mu\,S_{\text{sph}}$, with $2\mu S_{\text{sph}}=2(4-5\nu)/[15(1-\nu)]$.
+The cube's dilatational channel, Eq.~\eqref{eq:A1g}, is the sphere's exactly: its eigenvalue
+involves $\mathsf M$ only through the contraction $\int_V\partial_i\partial_nG_{in}\,dV$, and the
+static Navier equation makes $\partial_i\partial_nG_{in}=-\delta(\mathbf r)/(\lambda+2\mu)$, whose
+integral does not depend on the shape. The
+cube's shear channels differ from each other. Their isotropic average, however, is the sphere's,
+also exactly:
+\begin{equation}\label{eq:shearsplit}
+  \tfrac15\bigl(3S_{\text{off}}+2S_{\text{diag}}\bigr)=S_{\text{sph}},\qquad
+  S_{\text{diag}}-S_{\text{off}}=\frac{(\lambda+\mu)(5\sqrt3-2\pi)}{6\pi\mu(\lambda+2\mu)}>0 .
+\end{equation}
+The $\sqrt3$ terms cancel in the average. What a cube adds to a sphere at this order is therefore
+a pure cubic anisotropy, which splits the deviatoric channel symmetrically (with weights $3:2$)
+about the sphere's value. The diagonal shear is the more depolarised. At the background of
+\S\ref{sec:convergence} ($\nu=7/32$), $2\mu S_{\text{off}}=0.4314$, $2\mu S_{\text{diag}}=0.5929$
+and the sphere's value is $0.4960$.
+
+\paragraph{Where Eshelby enters.} Equations \eqref{eq:A1g}--\eqref{eq:Eg} follow from the moment
+integrals and the group theory alone. No ellipsoidal result is used, and no $\delta$ term is added
+by hand. What corresponds to Eshelby is the \emph{truncation}. Keeping $\partial u$ and discarding
+$\partial\partial u$ is exactly the uniform-internal-strain ansatz, and by the uniformity theorem
+that ansatz is exact if and only if the inclusion is an ellipsoid. For a sphere the construction
+is therefore exact in the static limit, and for a cube it is an approximation. The hierarchy
+\eqref{eq:A11}--\eqref{eq:A33} states that approximation as the omitted blocks, rather than as an
+unquantified shape correction. A polynomial expansion about the centre cannot represent the edge
+and corner concentrations of an isolated cube's internal field at any finite degree. A voxel in a
+uniform layer has no such concentrations: its neighbours have the same properties, so its internal
+field is the continuum's, which is smooth. That is why a low-degree internal field suffices in a
+lattice (\S\S\ref{sec:convergence}--\ref{sec:fourth}) although it is only an approximation for an
+isolated cube.
+
+\paragraph{Against the exact sphere.} These statements are tested against the exact elastic Mie
+solution for a sphere, with no Eshelby formula in between. The concentration of Mie order $n$ is
+$E_n=a_n/a_n^{\text{Born}}$ (orders $0$, $1$, $2$ are the dilatational, density and shear
+channels), extrapolated to $ka\to0$. The formulation is applied to a ball, with its moment
+$\mathsf M$ evaluated by the surface route of Eq.~\eqref{eq:peel} on $|\mathbf r|=a$. Its
+dilatational and shear channels equal Mie's to $2\times10^{-10}$, and the density channel is
+$1$. The cube's closed forms meet the same numbers. Its dilatational channel is Mie's
+$E_0$ to $2\times10^{-10}$, and its isotropic shear average, Eq.~\eqref{eq:shearsplit}, is the
+depolarisation read from Mie's $E_2$ to $10^{-8}$. The same moment taken as a principal value, over
+the ball with a small sphere excluded around the origin, has zero depolarisation in every
+channel. The whole static response of the sphere is the $\delta$ term.
+
+At finite frequency the closure uses the dynamic ball moments, which are in closed form. It
+departs from Mie at second order in $ka$ and first order in the contrast, and the departure is
+closed-form too: the ball's moments are elementary, and Mie's low-frequency series with the
+contrast kept exact gives $E_n$ to relative order $(ka)^3$. To first order in the contrast,
+\begin{equation}\label{eq:spheredynamic}
+\frac{E_n^{\text{closure}}}{E_n^{\text{Mie}}}-1=
+\begin{cases}
+  -\dfrac{(k_Pa)^2}{10}\,\dfrac{\Delta\lambda}{\lambda+2\mu}, & n=0,\\[8pt]
+  \dfrac{2(k_Sa)^2+(k_Pa)^2}{30}\,\dfrac{\Delta\rho}{\rho}, & n=1,\\[8pt]
+  -\dfrac{3(k_Sa)^2+2(k_Pa)^2\beta^2/\alpha^2}{75}\,\dfrac{\Delta\mu}{\mu}, & n=2,
+\end{cases}
+\end{equation}
+with no $O(ka)$ term and no $O((ka)^3)$ term. The imaginary $(ka)^3$ terms, the radiation damping,
+agree exactly in all three channels. So the closure's only error at this order is the real
+$(ka)^2$ term, the uniform-field ansatz's own. That is the order the hierarchy assigns to the
+omitted second gradients (\S\ref{sec:parity}), and it has the same origin, the variation of the
+field across the scatterer, as the collocation error of \S\ref{sec:convergence}. Eq.~\eqref{eq:spheredynamic} is derived symbolically
+(\nb{SphereClosureDynamic.wl}). It agrees with the coefficient extracted from the numerical Mie
+solve and an independent implementation of the closure to $5\times10^{-4}$, which is the size of the
+next order in the contrast.
+
+\subsection{The collocation closure}\label{sec:closure}
+
+The collocation closure takes the internal field of a voxel as uniform, the truncation of
+\S\ref{sec:parity} for the density and stiffness channels together. The voxel's own field at its
+centre is then $\bS_{\text{self}}\bD\,e$ for internal state $e$, where $\bS_{\text{self}}$ is the
+nine-component form of the moments $\mathsf G$ and $\mathsf M$. By parity it is block-diagonal. So
 $e=\psi+\bS_{\text{self}}\bD e$ and
 \begin{equation}\label{eq:closure}
   \bT=d^3\,\bD\bigl(\bI-\bS_{\text{self}}\bD\bigr)^{-1}.
@@ -502,12 +714,12 @@ it, because the error is scale-invariant.
 
 \paragraph{Relation to the discrete dipole approximation.} The same partition appears in the
 electromagnetic literature as the choice of polarisability. The Clausius--Mossotti relation, the
-lattice dispersion relation \cite{Draine1993} and the integrated Green tensor \cite{Chaumet2004} all
+lattice dispersion relation \citep{Draine1993} and the integrated Green tensor \citep{Chaumet2004} all
 adjust the single site so that the lattice reproduces the continuum. For space-filling cubes the
 adjustment is neither needed nor a free parameter: the tiling identity fixes the local field exactly, the
 self term of the collocation closure is the one that makes it cancel, and what is left is a
 closed-form error rather than an empirical one. The second-order convergence reported for the DDA
-\cite{Yurkin2006} corresponds to the uniform-field voxel's, and the opposite-signed constants of
+by \citet{Yurkin2006} corresponds to the uniform-field voxel's, and the opposite-signed constants of
 Eq.~\eqref{eq:errorR} explain why a polarisability correction can improve one observable only at
 the expense of another, as the package's own form-factor corrections do in reflection and
 transmission. Going beyond second order requires a richer internal field, which is the point of
@@ -565,6 +777,12 @@ Point-kernel local term survives $d\to0$ & $11\times$ the continuum term at $m=1
 Averaged coupling between planes $=$ continuum$\times\sinc$ & $2.8\times10^{-16}$, 81 entries \\
 Tiling identity, Eq.~\eqref{eq:tiling} & 21/21 components to $4\times10^{-9}$ \\
 Exact kernel, Eq.~\eqref{eq:exactkernel} & replaces a $9.4\times10^{-4}$ static error \\
+Moments as distributions, Eq.~\eqref{eq:peel} & sum rule \eqref{eq:sumrule} exact; $\mathsf M$, $\mathsf Q$ equal an independent archive, 81/81 \\
+Channels \eqref{eq:A1g}--\eqref{eq:Eg} & a production code by another route, $2\times10^{-15}$ \\
+Cube vs sphere, Eq.~\eqref{eq:shearsplit} & symbolic; and numerically at five $\nu$, $4\times10^{-16}$ \\
+Ball closure $=$ exact Mie, static & $2\times10^{-10}$; cube's bulk and shear average $10^{-8}$ \\
+Ball closure vs Mie, dynamic, Eq.~\eqref{eq:spheredynamic} & symbolic; numerical Mie $5\times10^{-4}$;
+$(ka)^3$ terms exact \\
 Self term cancels, Eq.~\eqref{eq:collocation} & $4\times10^{-16}$ \\
 Package $T$ $=$ closure statically & $2\times10^{-5}$ at $k_Sh=0.01$ \\
 Second-order convergence & order $2.000$, three frequencies \\
@@ -583,29 +801,15 @@ Independent implementation of Eq.~\eqref{eq:bloch} & $6\times10^{-16}$, 12 cases
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
 StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, FourthOrderError, Reduction3D,
 Oblique and Figure (the figure), and their reference dumps
-\path{scripts/continuum_limit_*.py}; the exact kernel is
+\path{scripts/continuum_limit_*.py}; the moment integrals are
+\path{Mathematica/CubeMomentCore.wl} (gate \path{CubeMomentCoreTest.wl}), \path{CubeA22Block.wl},
+\path{CubeMomentArchiveCheck.wl} and \path{CubeShearSplit.wl}, with the Python half of the last in
+\path{scripts/gate_cube_shear_split.py}; the test against exact Mie is
+\path{scripts/gate_sphere_closure_vs_mie.py}, with the closed forms in \path{Mathematica/SphereClosureDynamic.wl}; the exact kernel is
 \path{cubic_scattering/cell_averaged_lattice.py}; the independent implementation of the
 first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}.}
 
-\begin{thebibliography}{9}\small
-\bibitem{Foldy1945} L.~L. Foldy, The multiple scattering of waves. I. General theory of isotropic
-  scattering by randomly distributed scatterers, \emph{Phys.\ Rev.} \textbf{67}, 107--119 (1945).
-\bibitem{Lax1951} M.~Lax, Multiple scattering of waves, \emph{Rev.\ Mod.\ Phys.} \textbf{23},
-  287--310 (1951).
-\bibitem{Purcell1973} E.~M. Purcell and C.~R. Pennypacker, Scattering and absorption of light by
-  nonspherical dielectric grains, \emph{Astrophys.\ J.} \textbf{186}, 705--714 (1973).
-\bibitem{Draine1994} B.~T. Draine and P.~J. Flatau, Discrete-dipole approximation for scattering
-  calculations, \emph{J.\ Opt.\ Soc.\ Am.\ A} \textbf{11}, 1491--1499 (1994).
-\bibitem{Draine1993} B.~T. Draine and J.~Goodman, Beyond Clausius--Mossotti: wave propagation on a
-  polarizable point lattice and the discrete dipole approximation, \emph{Astrophys.\ J.}
-  \textbf{405}, 685--697 (1993).
-\bibitem{Yurkin2006} M.~A. Yurkin, V.~P. Maltsev and A.~G. Hoekstra, Convergence of the discrete
-  dipole approximation. I. Theoretical analysis, \emph{J.\ Opt.\ Soc.\ Am.\ A} \textbf{23},
-  2578--2591 (2006).
-\bibitem{Chaumet2004} P.~C. Chaumet, A.~Sentenac and A.~Rahmani, Coupled dipole method for scatterers
-  with large permittivity, \emph{Phys.\ Rev.\ E} \textbf{70}, 036606 (2004).
-\bibitem{Eshelby1957} J.~D. Eshelby, The determination of the elastic field of an ellipsoidal
-  inclusion, and related problems, \emph{Proc.\ R.\ Soc.\ Lond.\ A} \textbf{241}, 376--396 (1957).
-\end{thebibliography}
+\bibliographystyle{unsrtnat}
+\bibliography{references}
 
 \end{document}
