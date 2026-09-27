@@ -61,16 +61,19 @@ runs' discretisation error.  This test cannot tell which.  The kernel is now
 chosen by the floor alone (``measure_thesis_gate_floor``: Ewald sum plus the
 source-cell average to reach 1, the first setting within 10% of the previous).
 
-REFINEMENT RESOLVES THE REVERSAL (``measure_thesis_refinement``: the same slab
-in n = 1..4 planes of cubes).  Every arm converges by n = 3, to NONZERO limits:
-the uniform floor itself stops at 3.565e-4 (identical to four digits from
-n = 2) -- a scale-invariant discretisation bias no refinement removes.  At
-n = 1, this gate's configuration, the thesis arm is worse than dress-after
-(3.14x vs 1.96x the floor); refined, it is better and its error FALLS while
-dress-after's RISES: 1.75x vs 3.04x at n = 4.  So the reversal was coarse
-discretisation.  At convergence the thesis ordering beats dress-after by 1.74x
--- support for the formulation, but not by this gate's 5x standard, which the
-scale-invariant bias caps.
+SECOND WARNING, same day: THE OBSERVATION PLANE WAS SCATTERING.  ``t0[0] = 0``
+zeroed a LOCAL array that was never passed to the solve, which rebuilt T from
+the material -- contrast on every plane, the observation plane included.  So
+every arm carried an extra contrast layer above the slab, and the largest error
+component was the static local strain of that layer at its own sites (a strain
+error normalised by the displacement, which is how the mixed-component metric
+read it).  That was the whole "scale-invariant floor" of 3.565e-4 and the
+inconclusive verdicts above.  With ``T_local=t0``:
+    [T1] thesis 1.19e-5,  [T2] dress-after 1.14e-3,  [T3] control 7.0e-6
+    separation [T2]/[T3] = 178x, thesis arm [T1]/[T3] = 1.85x  -> CONFIRMED.
+Under refinement (``measure_thesis_refinement``, n = 1..4) the control falls as
+1/n (7.0e-6 -> 1.6e-6), dress-after stays at 1.15e-3 (a genuine ordering error,
+independent of n), and the thesis arm stays ~100x below it (1.2e-5 -> 1.3e-5).
 
 Run:  conda run -n seismic python scripts/gate_thesis_formulation_periodic.py
 SI units (m, m/s, kg/m3, Pa) -- the slab machinery's own convention.
@@ -296,6 +299,7 @@ def _run(
         gmres_tol=1e-12,
         psi0=psi0,
         kernel_hat=kh,
+        T_local=t0,  # without it the solve rebuilds T from the material: the observation plane scatters
     )
     got = res.psi[0, M // 2, M // 2]
     scale = float(np.abs(exact).max())
