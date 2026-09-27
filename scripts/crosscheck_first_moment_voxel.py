@@ -20,7 +20,8 @@ the double integral over z and z'.
 Compared: the raw specular reflection displacements {S, P} at |p|, |q| <= 2, for normal incidence and
 20 degrees, n = 1, 2, 4, mean-only and mean + first moments, for an incident P wave
 (``Mathematica/ContinuumLimit_oblique_ref.json``, notebook 9) and incident SV and SH waves
-(``Mathematica/ContinuumLimit_incidentS_ref.json``, notebook 12).
+(``Mathematica/ContinuumLimit_incidentS_ref.json``, notebook 12), and a stratified model of eight
+random cells, one contrast per plane (``Mathematica/ContinuumLimit_heterogeneous_ref.json``, notebook 13).
 
 Run:  conda run -n seismic python scripts/crosscheck_first_moment_voxel.py
 SI units.
@@ -42,6 +43,7 @@ from cubic_scattering.sweep_kernels import vertical_kernel_9x9  # noqa: E402
 REFJSONS = (
     ROOT / "Mathematica" / "ContinuumLimit_oblique_ref.json",
     ROOT / "Mathematica" / "ContinuumLimit_incidentS_ref.json",
+    ROOT / "Mathematica" / "ContinuumLimit_heterogeneous_ref.json",
 )
 VOIGT = (
     (0, 0),
@@ -130,17 +132,30 @@ class Scheme:
         self.h = self.d / 2
         self.zs = (np.arange(n) + 0.5) * self.d
         self.bas = [BASIS[b] for b in basis]
-        dl, dm, dr = contrast["dlambda"], contrast["dmu"], contrast["drho"]
+        # one contrast for the layer, or one per plane (a stratified model: list of (dl, dm, dr))
+        planes = (
+            contrast
+            if isinstance(contrast, list)
+            else [(contrast["dlambda"], contrast["dmu"], contrast["drho"])] * n
+        )
+        if len(planes) != n:
+            raise ValueError(f"{len(planes)} plane contrasts for n = {n} planes")
+        self.dds = [self._delta(omega, *c) for c in planes]
+        g = 2 * np.pi / self.d * np.arange(-p_max, p_max + 1)
+        self.kxs = kx + g
+        self.kys = g.copy()
+
+    @staticmethod
+    def _delta(omega: float, dl: float, dm: float, dr: float) -> np.ndarray:
+        """The 9x9 contrast operator: diag(w^2 drho I3, the 6x6 stiffness with shear 2 dmu)."""
         c6 = np.zeros((6, 6))
         c6[:3, :3] = dl
         c6[np.arange(3), np.arange(3)] = dl + 2 * dm
         c6[np.arange(3, 6), np.arange(3, 6)] = 2 * dm  # the kernel's moment convention: shear 2 dmu
-        self.dd = np.zeros((9, 9), dtype=complex)
-        self.dd[:3, :3] = omega**2 * dr * np.eye(3)
-        self.dd[3:, 3:] = c6
-        g = 2 * np.pi / self.d * np.arange(-p_max, p_max + 1)
-        self.kxs = kx + g
-        self.kys = g.copy()
+        dd = np.zeros((9, 9), dtype=complex)
+        dd[:3, :3] = omega**2 * dr * np.eye(3)
+        dd[3:, 3:] = c6
+        return dd
 
     def kern(self, ky: float, z: float) -> np.ndarray:
         """Transformed kernel at all lateral kx nodes, shape (9, 9, n_kx)."""
@@ -228,7 +243,7 @@ class Scheme:
                         key = (m, a, b)
                         if key not in cache:
                             cache[key] = self.coupling(ztab[m], a, b)
-                        blk = -cache[key] @ self.dd
+                        blk = -cache[key] @ self.dds[j]
                         if i == j and ai == bi:
                             blk = blk + self.d**3 * np.prod(
                                 [1.0 if q == 0 else 1.0 / 3.0 for q in a]
@@ -273,7 +288,7 @@ class Scheme:
                     )
                     lat = lateral(b[1], -self.kx, self.h) * lateral(b[2], 0.0, self.h)
                     c = sol[9 * (nb * j + bi) : 9 * (nb * j + bi) + 9]
-                    tot += (lat * kz @ self.dd @ c)[:3] / self.d**2
+                    tot += (lat * kz @ self.dds[j] @ c)[:3] / self.d**2
             return tot
 
         # split upgoing P and S: U(z) = A_P e^{-i gP z} + A_S e^{-i gS z}, two depths
@@ -304,12 +319,18 @@ def main() -> int:
     for path in REFJSONS:
         ref = json.loads(path.read_text())
         medium = ReferenceMedium(ref["alpha"], ref["beta"], ref["rho"])
+        # the stratified model (notebook 13) carries one contrast per model cell, one plane each (m = 1)
+        contrast = (
+            [tuple(c) for c in ref["cells_dlambda_dmu_drho"]]
+            if "cells_dlambda_dmu_drho" in ref
+            else ref["contrast"]
+        )
         for c in ref["cases"]:
             inc = c.get("incident", "P")
             mm_s = np.array([complex(*v) for v in c["refl_S"]])
             mm_p = np.array([complex(*v) for v in c["refl_P"]])
             sch = Scheme(
-                medium, ref["contrast"], ref["D"], c["omega"], c["kx"], c["n"], c["basis"], c["p_max"], inc
+                medium, contrast, ref["D"], c["omega"], c["kx"], c["n"], c["basis"], c["p_max"], inc
             )
             py_s, py_p = sch.solve()
             # each part relative to itself, or to the larger part where it vanishes (SH, SV at 0: no P)
