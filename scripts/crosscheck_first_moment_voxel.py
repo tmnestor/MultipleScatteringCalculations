@@ -18,8 +18,9 @@ with the same functions; Bloch coupling by Poisson summation over the reciprocal
     C_ab(m) = (1/d^2) sum_g L_a(kappa) L_b(-kappa) int int phi_a(z) Ghat(kappa; m d + z - z') phi_b(z'),
 the double integral over z and z'.
 Compared: the raw specular reflection displacements {S, P} at |p|, |q| <= 2, for normal incidence and
-a P wave at 20 degrees, n = 1, 2, 4, mean-only and mean + first moments
-(``Mathematica/ContinuumLimit_oblique_ref.json``).
+20 degrees, n = 1, 2, 4, mean-only and mean + first moments, for an incident P wave
+(``Mathematica/ContinuumLimit_oblique_ref.json``, notebook 9) and incident SV and SH waves
+(``Mathematica/ContinuumLimit_incidentS_ref.json``, notebook 12).
 
 Run:  conda run -n seismic python scripts/crosscheck_first_moment_voxel.py
 SI units.
@@ -38,7 +39,10 @@ sys.path.insert(0, str(ROOT))
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.sweep_kernels import vertical_kernel_9x9  # noqa: E402
 
-REFJSON = ROOT / "Mathematica" / "ContinuumLimit_oblique_ref.json"
+REFJSONS = (
+    ROOT / "Mathematica" / "ContinuumLimit_oblique_ref.json",
+    ROOT / "Mathematica" / "ContinuumLimit_incidentS_ref.json",
+)
 VOIGT = (
     (0, 0),
     (1, 1),
@@ -118,8 +122,10 @@ class Scheme:
         n: int,
         basis: list[int],
         p_max: int,
+        incident: str,
     ) -> None:
         self.ref, self.om, self.kx, self.n, self.p_max = ref, omega, kx, n, p_max
+        self.incident = incident
         self.d = d_layer / n
         self.h = self.d / 2
         self.zs = (np.arange(n) + 0.5) * self.d
@@ -229,10 +235,14 @@ class Scheme:
                             ) * np.eye(9)
                         r0, c0 = 9 * (nb * i + ai), 9 * (nb * j + bi)
                         big[r0 : r0 + 9, c0 : c0 + 9] = blk
-        # incident P plane wave, displacement (gamma, kx, 0)/k_P
-        kp = self.om / self.ref.alpha
-        kin = np.array([np.sqrt(kp**2 - self.kx**2), self.kx, 0.0])
-        uin = kin / kp
+        # incident plane wave, unit displacement: P along k; SV in the (z, x) plane, normal to k; SH along y
+        kw = self.om / (self.ref.alpha if self.incident == "P" else self.ref.beta)
+        kin = np.array([np.sqrt(kw**2 - self.kx**2), self.kx, 0.0])
+        uin = {
+            "P": kin / kw,
+            "SV": np.array([-self.kx, kin[0], 0.0]) / kw,
+            "SH": np.array([0.0, 0.0, 1.0]),
+        }[self.incident]
         psi = nine(np.outer(uin, [1, 0, 0]), kin)[:, 0]  # rows of the displacement column
         sz, wz = gauss(-self.h, self.h, N_GAUSS)
         rhs = np.zeros(9 * nb * n, dtype=complex)
@@ -287,29 +297,32 @@ def main() -> int:
     Returns:
         0 if every case agrees to 1e-8, else 1.
     """
-    ref = json.loads(REFJSON.read_text())
-    medium = ReferenceMedium(ref["alpha"], ref["beta"], ref["rho"])
     print("=" * 92)
-    print("CROSS-CHECK: first-moment voxel, independent Python vs Mathematica notebook 9 (raw reflections)")
+    print("CROSS-CHECK: first-moment voxel, independent Python vs Mathematica notebooks 9 and 12")
     print("=" * 92)
     worst = 0.0
-    for c in ref["cases"]:
-        mm_s = np.array([complex(*v) for v in c["refl_S"]])
-        mm_p = np.array([complex(*v) for v in c["refl_P"]])
-        sch = Scheme(medium, ref["contrast"], ref["D"], c["omega"], c["kx"], c["n"], c["basis"], c["p_max"])
-        py_s, py_p = sch.solve()
-        dp = np.linalg.norm(py_p - mm_p) / np.linalg.norm(mm_p)
-        ds = (
-            np.linalg.norm(py_s - mm_s) / np.linalg.norm(mm_s)
-            if np.linalg.norm(mm_s) > 0
-            else np.linalg.norm(py_s)
-        )
-        worst = max(worst, dp, ds if np.linalg.norm(mm_s) > 0 else 0.0)
-        print(
-            f"  theta {c['theta_deg']:2d}  n {c['n']}  basis {str(c['basis']):9s}:  |dP|/|P| {dp:.2e}   "
-            f"|dS|/|S| {ds:.2e}   [{time.perf_counter() - T_START:5.0f} s]",
-            flush=True,
-        )
+    for path in REFJSONS:
+        ref = json.loads(path.read_text())
+        medium = ReferenceMedium(ref["alpha"], ref["beta"], ref["rho"])
+        for c in ref["cases"]:
+            inc = c.get("incident", "P")
+            mm_s = np.array([complex(*v) for v in c["refl_S"]])
+            mm_p = np.array([complex(*v) for v in c["refl_P"]])
+            sch = Scheme(
+                medium, ref["contrast"], ref["D"], c["omega"], c["kx"], c["n"], c["basis"], c["p_max"], inc
+            )
+            py_s, py_p = sch.solve()
+            # each part relative to itself, or to the larger part where it vanishes (SH, SV at 0: no P)
+            norm_p, norm_s = np.linalg.norm(mm_p), np.linalg.norm(mm_s)
+            scale = max(norm_p, norm_s)
+            dp = np.linalg.norm(py_p - mm_p) / (norm_p if norm_p >= 1e-6 * scale else scale)
+            ds = np.linalg.norm(py_s - mm_s) / (norm_s if norm_s >= 1e-6 * scale else scale)
+            worst = max(worst, dp, ds)
+            print(
+                f"  {inc:2s} theta {c['theta_deg']:2d}  n {c['n']}  basis {str(c['basis']):9s}:"
+                f"  |dP| {dp:.2e}   |dS| {ds:.2e}   [{time.perf_counter() - T_START:5.0f} s]",
+                flush=True,
+            )
     ok = worst < 1e-8
     print(f"\n  worst disagreement {worst:.2e} -> {'PASS' if ok else 'FAIL'}")
     return 0 if ok else 1
