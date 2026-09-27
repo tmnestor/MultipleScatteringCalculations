@@ -81,7 +81,8 @@ $^{1}$Independent researcher, Australia}
 \end{summary}
 
 \begin{keywords}
-Numerical modelling -- Computational seismology -- Wave scattering and diffraction -- Theoretical seismology
+Numerical approximations and analysis -- Numerical modelling -- Computational seismology --
+Theoretical seismology -- Wave propagation -- Wave scattering and diffraction
 \end{keywords}
 
 """
@@ -103,7 +104,9 @@ The Mathematica notebooks that derive and check every result
 and the independent
 implementation of the first-moment voxel (\path{scripts/continuum_limit_*.py},
 \path{scripts/crosscheck_first_moment_voxel.py}), and the exact normal-incidence kernel
-(\path{cubic_scattering/cell_averaged_lattice.py}) are available at \url{https://github.com/tmnestor/MultipleScatteringCalculations}.
+(\path{cubic_scattering/cell_averaged_lattice.py})
+are archived at Zenodo, \url{https://doi.org/10.5281/zenodo.23003242}, and developed at
+\url{https://github.com/tmnestor/MultipleScatteringCalculations}.
 
 \bibliographystyle{gji}
 \bibliography{../references}
