@@ -46,6 +46,19 @@ a CONVERGENCE parameter with a measurable effect, and `R0-independence` is the
 sharp test of the construction -- if the tail were wrong, the answer would drift
 with R0.
 
+AT k_par = 0 NO LATTICE SUM IS NEEDED AT ALL: THE TILING IDENTITY. Cubes tile the
+plane, so the source-cell-averaged sum over ALL cells, the cube's own included, is
+the field at the mid-plane of a uniform plate of thickness d -- a 1-D closed form.
+Removing the self cell (which the T-matrix carries) leaves the exact kernel,
+``exact_same_plane_9x9 = P0 - self/d^3``, which ``averaged_same_plane_9x9`` returns
+at k_par = 0. Measured against the exact analytic value
+(``Mathematica/ContinuumLimit_AveragedSums.wl``), the Ewald + near-shell + tail route
+below carried a STATIC strain-from-moment error of 9.4e-4 at its defaults (r0_cells
+2, n_gauss 6), falling to 3.6e-4 at n_gauss 20 and 2.6e-5 at (8, 20): both the
+near-shell quadrature at face contact and the O(d^4) tail truncation contribute.
+The route remains in use at k_par != 0, where the form factor's zeros shift and the
+identity does not apply directly.
+
 Conventions inherited: (z, x, y) ordering, time e^{-i w t}, outgoing h^(1).
 """
 
@@ -57,6 +70,21 @@ from numpy.typing import NDArray
 from .effective_contrasts import ReferenceMedium
 from .kupradze_derivatives import MAX_ORDER, scalar_derivative_tensors
 from .lattice_kupradze import origin_scalar_tensors
+
+
+def _check_r0_cells(r0_cells: int) -> None:
+    """Reject a near shell that cannot contain the nearest neighbours."""
+    if r0_cells < 1:
+        msg = (
+            f"r0_cells must be >= 1, got {r0_cells}.\n"
+            "  Where: cubic_scattering/cell_averaged_lattice.py,\n"
+            "         averaged_origin_scalar_tensors() / averaged_same_plane_9x9()\n"
+            "  Valid: a near-shell Chebyshev radius in cells, >= 1. The shell\n"
+            "         must contain at least the nearest neighbours, where the\n"
+            "         d^2 tail is least accurate.\n"
+            "  Fix:   pass r0_cells=2 (the default) or larger"
+        )
+        raise ValueError(msg)
 
 
 def _cell_nodes(h: float, n_gauss: int) -> tuple[NDArray, NDArray]:
@@ -99,17 +127,7 @@ def averaged_origin_scalar_tensors(
     Returns:
         A list whose n-th entry has shape (3,)*n, complex.
     """
-    if r0_cells < 1:
-        msg = (
-            f"r0_cells must be >= 1, got {r0_cells}.\n"
-            "  Where: cubic_scattering/cell_averaged_lattice.py,\n"
-            "         averaged_origin_scalar_tensors()\n"
-            "  Valid: a near-shell Chebyshev radius in cells, >= 1. The shell\n"
-            "         must contain at least the nearest neighbours, where the\n"
-            "         d^2 tail is least accurate.\n"
-            "  Fix:   pass r0_cells=2 (the default) or larger"
-        )
-        raise ValueError(msg)
+    _check_r0_cells(r0_cells)
 
     h = 0.5 * a_l
     nodes, wts = _cell_nodes(h, n_gauss)
@@ -160,9 +178,15 @@ def averaged_same_plane_9x9(
 ) -> NDArray:
     """The dz = 0 Bloch block with the source cell averaged, as a 9x9.
 
-    The two modes are averaged SEPARATELY and only then assembled, because the
-    tail factor carries kappa^2 and P and S do not share it.
+    At k_par = 0 this is the exact closed form ``exact_same_plane_9x9`` (the
+    tiling identity; see the module docstring) and no lattice sum is formed.
+    Elsewhere the two modes are averaged SEPARATELY and only then assembled,
+    because the tail factor carries kappa^2 and P and S do not share it.
     """
+    _check_r0_cells(r0_cells)
+    if not np.any(np.asarray(k_par)):
+        return exact_same_plane_9x9(d, omega, ref)
+
     from .kupradze_derivatives import greens_from_scalars
     from .resonance_tmatrix import _voigt_contract
 
@@ -199,3 +223,107 @@ def averaged_same_plane_9x9(
     out[3:, :3] = h_blk
     out[3:, 3:] = s
     return out
+
+
+# (z, x, y) index pairs of the strain rows / moment columns: e_zz e_xx e_yy 2e_xy 2e_zy 2e_zx
+_VOIGT = ((0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1))
+_ENG = (1, 1, 1, 2, 2, 2)
+
+
+def plate_average_9x9(d: float, omega: complex, ref: ReferenceMedium) -> NDArray:
+    """The plane Green's tensor at k_par = 0, averaged over a source slab of thickness d, per cell.
+
+    ``P0 = (1/d^2) (1/d) int_{-d/2}^{d/2} g_plate(-z') dz'``: the field at the mid-plane of a uniform
+    plate of thickness d, per unit cell area.  At k_par = 0 only the vertical wavenumber acts, so
+    each entry is ``c0 delta(z) + A / (M k_z^2 - rho w^2)`` in the 1-D transform, and averages to
+    ``c0/d + A (e^{i k h} - 1)/(d M k^2)``.  Nonzero entries: u <- f on the diagonal, and the three
+    normal strain-from-moment entries, whose delta weights -1/M_P and -1/(2 mu) are the plate's
+    static depolarisation.
+
+    Args:
+        d: Lattice pitch (cube side).
+        omega: Angular frequency.
+        ref: Background medium (real or attenuative).
+
+    Returns:
+        Shape (9, 9) complex.
+    """
+    h = 0.5 * d
+    m_p, m_s = ref.rho * ref.alpha**2, ref.rho * ref.beta**2
+    k_p, k_s = omega / ref.alpha, omega / ref.beta
+    rw2 = ref.rho * omega**2
+
+    def avg(m: complex, k: complex) -> complex:
+        return complex((np.exp(1j * k * h) - 1.0) / (d * m * k**2))
+
+    out = np.zeros((9, 9), dtype=complex)
+    out[0, 0] = avg(m_p, k_p)
+    out[1, 1] = out[2, 2] = avg(m_s, k_s)
+    out[3, 3] = -1.0 / (m_p * d) - (rw2 / m_p) * avg(m_p, k_p)  # e_zz <- M_zz
+    shear = -1.0 / (2.0 * m_s * d) - (rw2 / (2.0 * m_s)) * avg(m_s, k_s)
+    out[7, 7] = out[8, 8] = shear  # 2e_zy <- M_zy, 2e_zx <- M_zx
+    return out / d**2
+
+
+def cube_self_9x9(d: float, omega: complex, ref: ReferenceMedium) -> NDArray:
+    """The cube's own cell integral int_cube Gamma(-y) dy, as a 9x9 -- the term the T-matrix carries.
+
+    Built from the T-matrix's own integrals, so the kernel and the single site agree on what the
+    self cell is: ``Gamma0 = int_cube G_11`` for u <- f, and ``I_ijkl = int_cube d_k d_l G_ij``
+    (``A^c, B^c, C^c``, static Eshelby plus radiation) for strain <- moment.  The odd blocks vanish
+    by the cube's symmetry.
+
+    Args:
+        d: Cube side.
+        omega: Angular frequency.
+        ref: Background medium.
+
+    Returns:
+        Shape (9, 9) complex.
+    """
+    from .effective_contrasts import _compute_ABC_polynomial, _compute_Gamma0_analytical
+
+    a = 0.5 * d
+    g0 = _compute_Gamma0_analytical(omega, a, ref.alpha, ref.beta, ref.rho)
+    ac, bc, cc = _compute_ABC_polynomial(omega, a, ref.alpha, ref.beta, ref.rho)
+
+    def i_t(i: int, j: int, k: int, l: int) -> complex:  # noqa: E741 -- I_ijkl = int d_k d_l G_ij
+        return complex(
+            ac * (i == j) * (k == l)
+            + bc * ((i == k) * (j == l) + (i == l) * (j == k))
+            + cc * (i == j == k == l)
+        )
+
+    out = np.zeros((9, 9), dtype=complex)
+    out[:3, :3] = g0 * np.eye(3)
+    for v, (ra, rb) in enumerate(_VOIGT):
+        for w, (ca, ce) in enumerate(_VOIGT):
+            # row (ra, rb) engineering, column (ca, ce) symmetrised; int d_a d_e G_bc = I_{b c a e}
+            out[3 + v, 3 + w] = (
+                _ENG[v]
+                * 0.25
+                * (i_t(rb, ca, ra, ce) + i_t(rb, ce, ra, ca) + i_t(ra, ca, rb, ce) + i_t(ra, ce, rb, ca))
+            )
+    return out
+
+
+def exact_same_plane_9x9(d: float, omega: complex, ref: ReferenceMedium) -> NDArray:
+    """The same-plane cell-averaged lattice sum at k_par = 0, EXACTLY: ``P0 - self / d^3``.
+
+    Cubes tile the plane, so the sum over ALL cells of the source-cell-averaged Green's tensor, the
+    cube's own included, is the field at the mid-plane of a uniform plate of thickness d
+    (``plate_average_9x9``).  Removing the self cell, which lives in the T-matrix, leaves the sum
+    the Foldy-Lax kernel needs -- with no lattice sum, Ewald split, near shell or tail.  Proved and
+    checked analytically in ``Mathematica/ContinuumLimit_AveragedSums.wl`` (static, all 21
+    components of the plate identity to 4e-9); the Ewald + near-shell + O(d^2)-tail route it
+    replaces here carried a static strain-from-moment error of 9.4e-4 at its defaults.
+
+    Args:
+        d: Lattice pitch (cube side).
+        omega: Angular frequency.
+        ref: Background medium.
+
+    Returns:
+        Shape (9, 9) complex.
+    """
+    return plate_average_9x9(d, omega, ref) - cube_self_9x9(d, omega, ref) / d**3
