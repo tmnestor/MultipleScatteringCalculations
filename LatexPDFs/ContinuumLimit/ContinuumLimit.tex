@@ -59,7 +59,7 @@ and the Closed-Form Error of the Discrete Layer}
 A heterogeneous elastic medium discretised into cubic voxels, each carrying a single-site
 $T$-matrix and coupled through a lattice Green's tensor, must reproduce the continuous medium as
 the voxels shrink. For a laterally uniform layer at normal incidence we establish when, how fast,
-and with what error it does. Four results. (i) Cubes tile the plane, so the lateral form factor of
+and with what error it does. Five results. (i) Cubes tile the plane, so the lateral form factor of
 a cube vanishes on the reciprocal lattice; consequently the source-cell-averaged coupling between
 planes is \emph{exactly} the continuum's plane-wave term, and within a plane the sum over all
 cells, the voxel's own included, is \emph{exactly} the field of a uniform plate. This tiling
@@ -69,8 +69,10 @@ the self term cancels and the discrete system becomes a collocation of the conti
 exact cell integrals. (iii) That collocation converges at exactly second order in the voxel size.
 (iv) Its leading error is closed-form for every discretisation --- a midpoint-rule error of the
 internal field across each voxel, $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission ---
-and the opposite signs show that no scalar correction of a uniform-field single site can remove it:
-a fourth-order scheme must carry each voxel's first moment. Every result is derived symbolically in
+and the opposite signs show that no scalar correction of a uniform-field single site can remove it.
+(v) A voxel that carries the first moment of its field, coupled through exact cell-to-cell integrals,
+removes it and converges at fourth order: one plane of such voxels is $6500$ times more accurate
+than one plane of uniform ones. Every result is derived symbolically in
 Mathematica and checked against an independent numerical implementation.
 \end{abstract}
 
@@ -276,10 +278,56 @@ Eq.~\eqref{eq:errorR} is the first moment of the internal field over each voxel,
 through the derivative of the kernel. A fourth-order scheme must carry it: a single site with a
 gradient channel, and a kernel whose cell integrals include the kernel's derivative.
 
+\section{Fourth order: the first-moment voxel}\label{sec:fourth}
+
+Let each voxel carry the mean \emph{and} the first moment of its internal field. On voxel $j$, with
+local coordinate $s\in[-h,h]$ and Legendre functions $\phi_0=1$, $\phi_1=s/h$, the field is
+$w=\sum_{b}c_{b,j}\,\phi_b$, $w=(u,\varepsilon)$ the displacement and strain of the P channel, and
+the polarisation is $q=(\omega^2\Delta\rho\,u,\ \Delta M\,\varepsilon)$ with $\Delta M=\Delta\lambda
++2\Delta\mu$. Testing the continuum equation
+\begin{equation}
+  w(z)=w^0(z)+\int\bK(z-z')\,q(z')\,dz',\qquad
+  \bK=\begin{pmatrix} g & g' \\ g' & g''\end{pmatrix},\quad g''=-k^2g-\delta(z)/M_P,
+\end{equation}
+with the same two functions on every voxel gives
+\begin{equation}\label{eq:galerkin}
+  \Bigl(\int_{i}\phi_a^2\Bigr)c_{a,i}
+  =\int_i\phi_a w^0+\sum_{j,b}\Bigl[\int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\phi_b(z')\,dz\,dz'\Bigr]
+  \bD_1 c_{b,j},
+\end{equation}
+$\bD_1=\operatorname{diag}(\omega^2\Delta\rho,\Delta M)$. Between voxels the double integral is
+separable, a product of Legendre moments of $e^{\pm ikz}$; within a voxel it is split at $z'=z$ and
+the local term contributes $-\int_i\phi_a\phi_b/M_P$. Every entry is closed-form. Keeping only
+$\phi_0$ recovers a second-order scheme; keeping $\phi_0$ and $\phi_1$ converges at fourth order in
+both reflection and transmission (\nb{ContinuumLimit\_FourthOrder.wl}):
+\begin{center}
+\begin{tabular}{@{}rccc@{}}
+\toprule
+$n$ & collocation & mean only & mean and first moment \\
+\midrule
+$1$  & $1.8\times10^{-3}$ / $1.3\times10^{-3}$ & $1.2\times10^{-3}$ / $1.8\times10^{-3}$ &
+       $2.8\times10^{-7}$ / $2.8\times10^{-7}$ \\
+$4$  & $1.1\times10^{-4}$ / $8.3\times10^{-5}$ & $7.5\times10^{-5}$ / $1.1\times10^{-4}$ &
+       $1.1\times10^{-9}$ / $1.1\times10^{-9}$ \\
+$16$ & $7.0\times10^{-6}$ / $5.2\times10^{-6}$ & $4.7\times10^{-6}$ / $6.9\times10^{-6}$ &
+       $4.2\times10^{-12}$ / $4.2\times10^{-12}$ \\
+order & $2$ / $2$ & $2$ / $2$ & $4$ / $4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+(relative error of the scattered displacement, reflection / transmission, $\omega=300$\,rad\,s$^{-1}$;
+the order is $4.00$ at $\omega=60$ and $600$\,rad\,s$^{-1}$ too). A single plane of first-moment
+voxels represents the $2$\,m layer $6500$ times more accurately than a single plane of uniform ones.
+The collocation column is the scheme of \S\ref{sec:single} and reproduces the chain of the full
+$9\times9$ system to all printed digits. In a three-dimensional voxel the corresponding single site
+carries the strain gradient --- the quadratic displacement channel of a 27-component cube
+$T$-matrix --- coupled by cell-to-cell integrals of the Green's tensor and its derivatives; the
+one-dimensional result fixes the order that construction must reach.
+
 \section{Summary}\label{sec:summary}
 
 \begin{center}
-\begin{tabular}{@{}p{0.52\linewidth}p{0.36\linewidth}@{}}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.52\linewidth}>{\raggedright\arraybackslash}p{0.40\linewidth}@{}}
 \toprule
 Result & Evidence \\
 \midrule
@@ -292,21 +340,23 @@ Self term cancels, Eq.~\eqref{eq:collocation} & $4\times10^{-16}$ \\
 Package $T$ $=$ closure statically & $2\times10^{-5}$ at $k_Sa=0.01$ \\
 Second-order convergence & order $2.000$, three frequencies \\
 Closed-form error, Eq.~\eqref{eq:errorR} & $n=1$--$16$, to $10^{-4}$ of the error \\
+First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 The discrete scheme is exact wherever the voxel is: its coupling is the continuum's cell integral,
 and its self term cancels. What remains is the assumption that the field inside a voxel is uniform,
-and that error is known in closed form. The next step is the single site that carries the internal
-field's first moment, and the fourth-order convergence it should deliver.
+and that error is known in closed form. A voxel that also carries the first moment of its field
+removes it and converges at fourth order; carrying that construction to the three-dimensional
+27-component cube is the next step.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
-\texttt{Mathematica/ContinuumLimit\_\{Reference, ThinLayer, SpecularSums, StaticLocal,
-AveragedSums, CubeT, Chain, ErrorConstant\}.wl} and their reference dumps
-\texttt{scripts/continuum\_limit\_*.py}; the exact kernel is
-\texttt{cubic\_scattering/cell\_averaged\_lattice.py}.}
+\path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
+StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant and FourthOrder, and their reference dumps
+\path{scripts/continuum_limit_*.py}; the exact kernel is
+\path{cubic_scattering/cell_averaged_lattice.py}.}
 
 \end{document}
