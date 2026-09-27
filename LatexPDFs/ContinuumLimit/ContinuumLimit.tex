@@ -72,7 +72,8 @@ internal field across each voxel, $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in 
 and the opposite signs show that no scalar correction of a uniform-field single site can remove it.
 (v) A voxel that carries the first moment of its field, coupled through exact cell-to-cell integrals,
 removes it and converges at fourth order: one plane of such voxels is $6500$ times more accurate
-than one plane of uniform ones. Every result is derived symbolically in
+than one plane of uniform ones, and the scheme stays fourth order at oblique incidence, in the
+converted S wave as well as the reflected P. Every result is derived symbolically in
 Mathematica and checked against an independent numerical implementation.
 \end{abstract}
 
@@ -336,6 +337,39 @@ $F_1(g)=i\,(gh\cos gh-\sin gh)/(gh)^2$, does not vanish on the reciprocal lattic
 incidence the mean's own zeros shift, $\sinc\bigl((2\pi p/d+k_x)h\bigr)=(-1)^p k_xh/p\pi+O(k_x^2h^2)$,
 so the tiling identity holds only to $O(k_\parallel h)$.
 
+\paragraph{Oblique incidence.} The scheme is built spectrally. By Poisson summation the Bloch coupling
+between planes $i$ and $j$ at lateral wavenumber $\mathbf k_\parallel$ is
+\begin{equation}\label{eq:bloch}
+  C_{ab}(i,j)=\frac1{d^2}\sum_{\mathbf g}L_a(\boldsymbol\kappa)\,L_b(-\boldsymbol\kappa)\,
+  \int\!\!\int\phi_a(z)\,\hat\bG(\boldsymbol\kappa;z-z')\,\phi_b(z')\,dz\,dz',
+  \qquad \boldsymbol\kappa=\mathbf k_\parallel+\mathbf g,
+\end{equation}
+with $L_a$ the lateral Legendre factors. The whole-space tensor decays as $1/k_z^2$ and the nine-component
+state adds at most two powers of $k_z$, so each entry of $\hat\bG(\boldsymbol\kappa;z)$ is a $\delta(z)$
+of constant weight plus, per mode, $[i\alpha/2\gamma+i\beta\,\mathrm{sgn}(z)/2]\,e^{i\gamma|z|}$,
+$\gamma^2=k_W^2-\kappa^2$: every $z$ integral is closed-form. Double averaging makes the lattice sum
+converge without Ewald splitting, to three digits at $|p|,|q|\le8$. Against the exact layer, for a P
+wave incident at $20^\circ$ and $40^\circ$ (\nb{ContinuumLimit\_Oblique.wl}):
+\begin{center}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{mean only} & \multicolumn{2}{c}{mean and first moments}\\
+$n$ & $R_{PP}$ & $R_{PS}$ & $R_{PP}$ & $R_{PS}$ \\
+\midrule
+$1$ & $9.3\times10^{-4}$ & $1.7\times10^{-3}$ & $7.2\times10^{-8}$ & $4.1\times10^{-7}$ \\
+$2$ & $2.3\times10^{-4}$ & $4.2\times10^{-4}$ & $4.5\times10^{-9}$ & $2.5\times10^{-8}$ \\
+$8$ & $1.5\times10^{-5}$ & $2.7\times10^{-5}$ & $1.7\times10^{-11}$ & $9.9\times10^{-11}$ \\
+order & $2$ & $2$ & $4$ & $4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+(relative error, $20^\circ$; at $40^\circ$ the orders are again $2$ and $4$). The mean-only voxel is
+second order and the first-moment voxel fourth order in both the reflected P and the converted S wave:
+the breakdown of the tiling identity at $O(k_\parallel h)$ and the evanescent coupling of the gradient
+channels do not cost an order. At $\mathbf k_\parallel=0$ the construction reproduces
+Eq.~\eqref{eq:galerkin} to all printed digits.
+
 \section{Summary}\label{sec:summary}
 
 \begin{center}
@@ -353,6 +387,7 @@ Package $T$ $=$ closure statically & $2\times10^{-5}$ at $k_Sa=0.01$ \\
 Second-order convergence & order $2.000$, three frequencies \\
 Closed-form error, Eq.~\eqref{eq:errorR} & $n=1$--$16$, to $10^{-4}$ of the error \\
 First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
+First-moment voxel, oblique, Eq.~\eqref{eq:bloch} & order $4$, P and S, $20^\circ$ and $40^\circ$ \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -360,15 +395,14 @@ First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
 The discrete scheme is exact wherever the voxel is: its coupling is the continuum's cell integral,
 and its self term cancels. What remains is the assumption that the field inside a voxel is uniform,
 and that error is known in closed form. A voxel that also carries the first moment of its field
-removes it and converges at fourth order, in one dimension and, at normal incidence, exactly in three.
-Oblique incidence is the next step: there the gradient channels couple through the evanescent
-lattice orders and the tiling identity holds only to $O(k_\parallel h)$.
+removes it and converges at fourth order: in one dimension, exactly in three at normal incidence,
+and in three at oblique incidence for both the reflected P and the converted S wave.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
-StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder and Reduction3D, and their reference dumps
+StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, Reduction3D and Oblique, and their reference dumps
 \path{scripts/continuum_limit_*.py}; the exact kernel is
 \path{cubic_scattering/cell_averaged_lattice.py}.}
 
