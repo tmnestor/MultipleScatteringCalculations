@@ -1,0 +1,23 @@
+{
+  "title": "MultipleScatteringCalculations: elastic multiple scattering from cubic heterogeneities",
+  "upload_type": "software",
+  "description": "Code, symbolic derivations and validation scripts for elastic multiple scattering from cubic heterogeneities by the T-matrix method: the single-site T-matrix of a cube, the inter-site Green's tensor, and the Foldy-Lax multiple-scattering solve. The Python package (cubic_scattering/) implements the numerical schemes; the Mathematica notebooks (Mathematica/) derive the formulation symbolically; the scripts (scripts/) are the validation gates. This archive accompanies the paper 'The continuum limit of a space-filling layer of cubes: a tiling identity, an exact lattice kernel and the closed-form error of the discrete layer' (LatexPDFs/ContinuumLimit/), whose results are reproduced by Mathematica/ContinuumLimit_*.wl, Mathematica/CubeMomentCore.wl, Mathematica/CubeA22Block.wl, Mathematica/CubeShearSplit.wl, Mathematica/SphereClosureDynamic.wl and the scripts named in the paper's data-availability statement.",
+  "creators": [
+    {
+      "name": "Nestor, T. M.",
+      "affiliation": "Independent researcher, Australia"
+    }
+  ],
+  "keywords": [
+    "seismic wave scattering",
+    "elastic multiple scattering",
+    "T-matrix",
+    "Foldy-Lax",
+    "volume integral equation",
+    "voxel discretisation",
+    "Eshelby inclusion",
+    "continuum limit",
+    "computational seismology"
+  ],
+  "access_right": "open"
+}

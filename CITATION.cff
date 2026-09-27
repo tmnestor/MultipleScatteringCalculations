@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "MultipleScatteringCalculations: elastic multiple scattering from cubic heterogeneities"
+type: software
+authors:
+  - family-names: Nestor
+    given-names: T. M.
+    affiliation: "Independent researcher, Australia"
+repository-code: "https://github.com/tmnestor/MultipleScatteringCalculations"
+abstract: >-
+  Code, symbolic derivations and validation scripts for elastic multiple scattering from cubic
+  heterogeneities by the T-matrix method: the single-site T-matrix of a cube, the inter-site Green's
+  tensor, and the Foldy-Lax multiple-scattering solve. Accompanies the paper "The continuum limit of a
+  space-filling layer of cubes: a tiling identity, an exact lattice kernel and the closed-form error of
+  the discrete layer".
+keywords:
+  - seismic wave scattering
+  - elastic multiple scattering
+  - T-matrix
+  - Foldy-Lax
+  - volume integral equation
+  - voxel discretisation
+  - continuum limit
