@@ -59,8 +59,8 @@ and the Closed-Form Error of the Discrete Layer}
 \noindent
 A heterogeneous elastic medium discretised into cubic voxels, each carrying a single-site
 $T$-matrix and coupled through a lattice Green's tensor, must reproduce the continuous medium as
-the voxels shrink. For a laterally uniform layer at normal incidence we establish when, how fast,
-and with what error it does. Five results. (i) Cubes tile the plane, so the lateral form factor of
+the voxels shrink. For a laterally uniform layer we establish when, how fast, and with what error
+it does, at normal and at oblique incidence. Five results. (i) Cubes tile the plane, so the lateral form factor of
 a cube vanishes on the reciprocal lattice; consequently the source-cell-averaged coupling between
 planes is \emph{exactly} the continuum's plane-wave term, and within a plane the sum over all
 cells, the voxel's own included, is \emph{exactly} the field of a uniform plate. This tiling
@@ -72,9 +72,10 @@ exact cell integrals. (iii) That collocation converges at exactly second order i
 internal field across each voxel, $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission ---
 and the opposite signs show that no scalar correction of a uniform-field single site can remove it.
 (v) A voxel that carries the first moment of its field, coupled through exact cell-to-cell integrals,
-removes it and converges at fourth order: one plane of such voxels is $6500$ times more accurate
-than one plane of uniform ones, and the scheme stays fourth order at oblique incidence, in the
-converted S wave as well as the reflected P. Every result is derived symbolically in
+removes it and converges at fourth order, with leading error $-(kd)^4/720$ in reflection and
+transmission alike: one plane of such voxels is $6500$ times more accurate than one plane of uniform
+ones, and the scheme stays fourth order at oblique incidence, in the converted S wave as well as the
+reflected P. Every result is derived symbolically in
 Mathematica and checked against an independent numerical implementation.
 \end{abstract}
 
@@ -147,6 +148,12 @@ Eq.~\eqref{eq:foldylax} becomes exactly a chain of $n$ planes coupled by the spe
 the sum running over the square lattice $\mathbf R$ of pitch $d$, $m$ the plane separation in
 pitches. The question is whether, and how fast, this chain converges to the continuous layer as
 $n\to\infty$ at fixed $D$.
+
+\paragraph{Implementations.} Every result is derived symbolically in Mathematica and compared with
+an independent numerical implementation or an exact solution. ``The package'' below is the Python
+implementation of the voxel scheme (\path{cubic_scattering}): its cube $T$-matrix, its lattice
+kernels and its stratified propagator, which serve both as the object under test and, where
+validated, as a second implementation.
 
 \section{The continuous layer and its thin-layer expansion}\label{sec:continuum}
 
@@ -271,11 +278,11 @@ Lippmann--Schwinger equation with a strain piecewise constant over voxels. It do
 $\bS_{\text{self}}$ at all.
 
 The package's cube $T$-matrix is this closure statically: both blocks agree with
-Eq.~\eqref{eq:closure} to $2\times10^{-5}$ at $k_Sa=0.01$ ($a$ the half-side), the difference falling
-as $(ka)^2$ (\nb{ContinuumLimit\_CubeT.wl}). It departs dynamically by about $0.25(ka)^2$ through its
+Eq.~\eqref{eq:closure} to $2\times10^{-5}$ at $k_Sh=0.01$, the difference falling
+as $(kh)^2$ (\nb{ContinuumLimit\_CubeT.wl}). It departs dynamically by about $0.25(kh)^2$ through its
 far-field form-factor corrections. Its self integrals are exact in the static and radiation parts
 but omit the real even-power terms of the Green's tensor's expansion ($k^2r$, $r^3$, \dots), an
-error of $0.4$--$0.6\,(ka)^2$ against the analytic self term, whose series agrees with the
+error of $0.4$--$0.6\,(kh)^2$ against the analytic self term, whose series agrees with the
 closed-form elastodynamic tensor to $10^{-14}$. By Eq.~\eqref{eq:collocation} that error cannot enter
 the closure scheme.
 
@@ -287,13 +294,15 @@ $\alpha=5000$, $\beta=3000$\,m\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$, illuminated
 the reflected displacement of the chain converges to the continuous layer's at order $2.000$ for
 $n=4\to16$ at $\omega=60$, $300$ and $600$\,rad\,s$^{-1}$, with the collocation
 \eqref{eq:collocation} and with the package $T$-matrix alike (\nb{ContinuumLimit\_Chain.wl}). The
-error depends on $k_Sa$ alone.
+error depends on $k_Sh$ alone.
 
 \paragraph{The leading error in closed form.} In Eq.~\eqref{eq:collocation} the kernel is
 integrated exactly; the only approximation is the internal field's variation across a voxel. At
 first order in the contrast the discrete scattered field is therefore a midpoint rule applied to
 the continuum's Born integral, with the kernel's cell integral exact. For reflection the integrand
-carries the two-way phase $e^{2ikz}$; for transmission it is flat. Hence, for \emph{every} $n$,
+carries the two-way phase $e^{2ikz}$; for transmission it is flat. With $k$ the background
+wavenumber of the wave concerned ($k_P$ here), $R$ the reflection coefficient and $T^{\text{sc}}$ the
+scattered part of the transmitted field, for \emph{every} $n$
 \begin{equation}\label{eq:errorR}
   \frac{R_{\text{disc}}}{R}=\frac{\sinc(kh)}{\sinc(2kh)}=1+\frac{(kd)^2}{8}+O(d^4),
   \qquad
@@ -304,7 +313,7 @@ confirmed for $n=1$ to $16$ to $10^{-4}$ of the error itself
 ($0.124$ against $1/8$); the transmission constant grows to $-0.092$.
 
 \paragraph{Why a uniform-field single site stops at second order.} The two constants have opposite
-signs, so no scalar correction of $\bT$ --- no single $O((ka)^2)$ factor --- can cancel both. The
+signs, so no scalar correction of $\bT$ --- no single $O((kh)^2)$ factor --- can cancel both. The
 package $T$-matrix illustrates it: its form-factor corrections reduce the reflection error by a
 factor $4.45$ and \emph{increase} the transmission error by $1.7$, at every $n$. The missing term in
 Eq.~\eqref{eq:errorR} is the first moment of the internal field over each voxel, which radiates
@@ -353,6 +362,35 @@ the order is $4.00$ at $\omega=60$ and $600$\,rad\,s$^{-1}$ too). A single plane
 voxels represents the $2$\,m layer $6500$ times more accurately than a single plane of uniform ones.
 The collocation column is the scheme of \S\ref{sec:single} and reproduces the chain of the full
 $9\times9$ system to all printed digits.
+
+\paragraph{The leading error in closed form.} Without scattering, the Galerkin solution is the
+$L^2$ projection $\Pi$ of the incident field onto each voxel's basis, and the kernel is integrated
+over each voxel exactly; at first order in the contrast the error is therefore the kernel's cell
+integral applied to $\Pi w^0-w^0$. The field varies as $e^{iks}$ across a voxel and the kernel toward
+an outside observer as $e^{iqs}$, $q=+k$ for reflection and $q=-k$ for transmission, so for every
+scheme and every $n$
+\begin{equation}\label{eq:ratio}
+  \frac{\text{discrete}}{\text{exact}}
+  =\frac{\int_{-h}^{h}e^{iqs}\,\Pi[e^{iks}]\,ds}{\int_{-h}^{h}e^{i(q+k)s}\,ds},
+\end{equation}
+with $\Pi$ the centre value for collocation, the cell mean for the mean-only voxel and the projection
+onto $\{1,s/h\}$ for the first-moment voxel (\nb{ContinuumLimit\_FourthOrderError.wl}):
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & reflection & transmission \\
+\midrule
+collocation      & $1+(kd)^2/8+O(d^4)$  & $1-(kd)^2/24+O(d^4)$ \\
+mean only        & $1+(kd)^2/12+O(d^4)$ & $1-(kd)^2/12+O(d^4)$ \\
+first moment     & $1-(kd)^4/720+O(d^6)$ & $1-(kd)^4/720+O(d^6)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+The chain of Eq.~\eqref{eq:galerkin} reproduces all six forms at $n=1$ to $8$ to $10^{-4}$ of the
+error, the remainder being the second order in the contrast. The first-moment voxel's leading
+error is the same in reflection and in transmission: its projection error is orthogonal to
+everything linear across the voxel, so the leading term no longer depends on the direction in which
+the field is observed.
 
 \paragraph{In three dimensions.} The three-dimensional first-moment voxel carries the nine-component
 state with Legendre weights $\{1,\,x/h,\,y/h,\,z/h\}$ --- 36 unknowns --- tested with the same
@@ -435,11 +473,13 @@ Averaged coupling between planes $=$ continuum$\times\sinc$ & $2.8\times10^{-16}
 Tiling identity, Eq.~\eqref{eq:tiling} & 21/21 components to $4\times10^{-9}$ \\
 Exact kernel, Eq.~\eqref{eq:exactkernel} & replaces a $9.4\times10^{-4}$ static error \\
 Self term cancels, Eq.~\eqref{eq:collocation} & $4\times10^{-16}$ \\
-Package $T$ $=$ closure statically & $2\times10^{-5}$ at $k_Sa=0.01$ \\
+Package $T$ $=$ closure statically & $2\times10^{-5}$ at $k_Sh=0.01$ \\
 Second-order convergence & order $2.000$, three frequencies \\
 Closed-form error, Eq.~\eqref{eq:errorR} & $n=1$--$16$, to $10^{-4}$ of the error \\
 First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
 First-moment voxel, oblique, Eq.~\eqref{eq:bloch} & order $4$, P and S, $20^\circ$ and $40^\circ$ \\
+First-moment error $-(kd)^4/720$, Eq.~\eqref{eq:ratio} & $n=1$--$8$, to $10^{-4}$ of the error \\
+Independent implementation of Eq.~\eqref{eq:bloch} & $6\times10^{-16}$, 12 cases \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -448,13 +488,24 @@ The discrete scheme is exact wherever the voxel is: its coupling is the continuu
 and its self term cancels. What remains is the assumption that the field inside a voxel is uniform,
 and that error is known in closed form. A voxel that also carries the first moment of its field
 removes it and converges at fourth order: in one dimension, exactly in three at normal incidence,
-and in three at oblique incidence for both the reflected P and the converted S wave.
+and in three at oblique incidence for both the reflected P and the converted S wave; its leading
+error, $-(kd)^4/720$, no longer depends on the direction of observation.
+
+\paragraph{Scope.} The results concern a laterally uniform layer, for which the discrete system is
+exactly a chain of planes; a laterally heterogeneous medium needs the same voxel in a full
+three-dimensional solver, which this paper does not build. The numerical evidence is at a moderate,
+physically typical contrast (a few per cent in density and moduli) and at $k_Sh\le0.3$, the range
+in which the single-site $T$-matrix is validated; the closed forms are first order in the contrast,
+and the measured departures from them at the full contrast are second order. What is established
+is the \emph{order} of convergence and its leading constant, not the behaviour at strong contrast,
+where the single site's own closure, rather than the lattice coupling, may limit the accuracy.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
-StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, Reduction3D and Oblique, and their reference dumps
+StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, FourthOrderError, Reduction3D,
+Oblique and Figure (the figure), and their reference dumps
 \path{scripts/continuum_limit_*.py}; the exact kernel is
 \path{cubic_scattering/cell_averaged_lattice.py}; the independent implementation of the
 first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}.}
