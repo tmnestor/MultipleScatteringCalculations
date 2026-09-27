@@ -319,10 +319,22 @@ order & $2$ / $2$ & $2$ / $2$ & $4$ / $4$ \\
 the order is $4.00$ at $\omega=60$ and $600$\,rad\,s$^{-1}$ too). A single plane of first-moment
 voxels represents the $2$\,m layer $6500$ times more accurately than a single plane of uniform ones.
 The collocation column is the scheme of \S\ref{sec:single} and reproduces the chain of the full
-$9\times9$ system to all printed digits. In a three-dimensional voxel the corresponding single site
-carries the strain gradient --- the quadratic displacement channel of a 27-component cube
-$T$-matrix --- coupled by cell-to-cell integrals of the Green's tensor and its derivatives; the
-one-dimensional result fixes the order that construction must reach.
+$9\times9$ system to all printed digits.
+
+\paragraph{In three dimensions.} The three-dimensional first-moment voxel carries the nine-component
+state with Legendre weights $\{1,\,x/h,\,y/h,\,z/h\}$ --- 36 unknowns --- tested with the same
+functions and coupled by cell-to-cell double integrals of the Green's tensor. For a laterally uniform
+layer at normal incidence it reduces \emph{exactly} to Eq.~\eqref{eq:galerkin}
+(\nb{ContinuumLimit\_Reduction3D.wl}). The lateral first moments are never excited: the lattice and
+the incident field are symmetric under reflection about every voxel's centre planes, and $x/h$, $y/h$
+are odd there. The mean and the $z$-moment carry weights that are constant laterally, so their lateral
+form factor $\sinc(g_xh)\sinc(g_yh)$ vanishes on the reciprocal lattice and the plane sum of the
+double integrals is the plate-to-plate integral in $z$ alone. Two facts mark where genuinely
+three-dimensional structure begins. The lateral first moment's form factor,
+$F_1(g)=i\,(gh\cos gh-\sin gh)/(gh)^2$, does not vanish on the reciprocal lattice
+($F_1=i(-1)^p/p\pi$), so the gradient channels couple through the evanescent orders. And at oblique
+incidence the mean's own zeros shift, $\sinc\bigl((2\pi p/d+k_x)h\bigr)=(-1)^p k_xh/p\pi+O(k_x^2h^2)$,
+so the tiling identity holds only to $O(k_\parallel h)$.
 
 \section{Summary}\label{sec:summary}
 
@@ -348,14 +360,15 @@ First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
 The discrete scheme is exact wherever the voxel is: its coupling is the continuum's cell integral,
 and its self term cancels. What remains is the assumption that the field inside a voxel is uniform,
 and that error is known in closed form. A voxel that also carries the first moment of its field
-removes it and converges at fourth order; carrying that construction to the three-dimensional
-27-component cube is the next step.
+removes it and converges at fourth order, in one dimension and, at normal incidence, exactly in three.
+Oblique incidence is the next step: there the gradient channels couple through the evanescent
+lattice orders and the tiling identity holds only to $O(k_\parallel h)$.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
-StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant and FourthOrder, and their reference dumps
+StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder and Reduction3D, and their reference dumps
 \path{scripts/continuum_limit_*.py}; the exact kernel is
 \path{cubic_scattering/cell_averaged_lattice.py}.}
 
