@@ -12,7 +12,9 @@ from cubic_scattering.layered_correction import (
     J6,
     W9,
     assert_interface_continuous,
+    assert_ocean_top,
     correct_6x6,
+    corrected_layered_9x9,
     k_operator,
     source_jump_operator,
     strain_from_state,
@@ -230,6 +232,35 @@ def test_discontinuity_error_is_diagnostic():
     assert "eta_S" in text
     assert "Fix:" in text
     assert "subdivid" in text.lower()
+
+
+def test_ocean_top_accepts_a_fluid_layer_0():
+    """beta[0] = 0 is the model the layered solver actually solves."""
+    assert_ocean_top(_StubModel([1.5, 4.0, 4.0], [0.0, 2.22, 2.22], [1.03, 2.6, 2.6]))
+
+
+def test_ocean_top_rejects_a_solid_layer_0():
+    """A solid layer 0 would silently be computed as water."""
+    with pytest.raises(ValueError, match="treats layer 0 as a fluid ocean"):
+        assert_ocean_top(_StubModel([4.0, 4.0, 4.0], [2.22, 2.22, 2.22], [2.6, 2.6, 2.6]))
+
+
+def test_ocean_top_error_is_diagnostic():
+    """What, where, a valid example, and how to recover."""
+    with pytest.raises(ValueError) as exc:
+        assert_ocean_top(_StubModel([4.0, 4.0], [2.22, 2.22], [2.6, 2.6]))
+    text = str(exc.value)
+    assert "What:" in text and "ignores beta[0]" in text
+    assert "Where:" in text and "layered_correction.py" in text
+    assert "Valid:" in text and "beta=[0.0" in text
+    assert "Fix:" in text
+
+
+def test_layered_9x9_rejects_a_solid_layer_0():
+    """The guard is wired into the public entry point, before any solve."""
+    mod = _StubModel([4.0, 4.0, 4.0], [2.22, 2.22, 2.22], [2.6, 2.6, 2.6])
+    with pytest.raises(ValueError, match="treats layer 0 as a fluid ocean"):
+        corrected_layered_9x9(mod, 1.0, np.array([0.1]), np.array([0.0]), 1, 1)
 
 
 def test_half_space_interface_is_accepted():
