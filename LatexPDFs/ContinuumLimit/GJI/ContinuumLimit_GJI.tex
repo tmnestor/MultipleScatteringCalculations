@@ -25,9 +25,8 @@
 \title[Continuum limit of a layer of cubic voxels]{The continuum limit of a space-filling layer of
 cubes: a tiling identity, an exact lattice kernel and the closed-form error of the discrete layer}
 
-% AUTHOR AND AFFILIATION: to be completed by the author before submission.
-\author[AUTHOR]{AUTHOR NAME$^{1}$\\
-$^{1}$AFFILIATION}
+\author[T. M. Nestor]{T. M. Nestor$^{1}$\\
+$^{1}$Independent researcher, Australia}
 
 \date{Received 2026 month day; in original form 2026 month day}
 \pagerange{\pageref{firstpage}--\pageref{lastpage}}
@@ -107,8 +106,11 @@ and a moment (through its stiffness contrast), so the state at a voxel has nine 
 displacement and strain --- and the single site's self-interaction is the elastic depolarisation of
 a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
 
-\paragraph{This paper.} It settles, for a space-filling layer of cubic voxels, three questions that are usually
-answered only empirically: whether the discrete Foldy--Lax system converges to the continuous medium,
+\paragraph{This paper.} The approach originates in the two-and-a-half-dimensional formulation of
+\citet{Nestor1996}. A medium is divided into cells that interact through the background Green's
+tensor, each cell carries a single-site contrast renormalised by its own near field, and the
+multiple-scattering series is summed. This paper extends that approach to cubic voxels and settles, for a space-filling
+layer of them, three questions that are usually answered only empirically: whether the discrete Foldy--Lax system converges to the continuous medium,
 at what order, and with what leading error. The answers are exact rather than measured. The
 coupling between voxels, averaged over the source cell, is \emph{exactly} the continuum's cell
 integral at normal incidence, because cubes tile the plane (\S\ref{sec:tiling}). The single-site
@@ -285,7 +287,10 @@ so there is no exact uniform-strain inclusion to import. In scattering theory th
 appears as the self-consistent or effective-field closure of the volume integral equation
 \citep{MalKnopoff1967,Gubernatis1977,Kanaun2008}: a first-order (Born) scatterer
 \citep{Wu1985} renormalised by the geometric series of its own near field, the step that turns a
-contrast into an effective contrast. The elastic $T$-matrix of \citet{Waterman1976} represents a
+contrast into an effective contrast. \citet{Nestor1996} introduced the single site in this form,
+summing the series of the cell's self integral, with the singular near field evaluated over an
+infinitesimal cell. The moments below evaluate the same self integral over the finite cube, as a
+distribution. The elastic $T$-matrix of \citet{Waterman1976} represents a
 scatterer in spherical multipoles, the natural basis for a sphere; a voxel in a lattice needs one
 compatible with the lattice, and the moments over the cube provide it. The construction below makes the
 approximation of a voxel explicit rather than implicit: it derives the cube's $T$-matrix from
@@ -792,7 +797,8 @@ Independent implementation of Eq.~\eqref{eq:bloch} & $6\times10^{-16}$, 12 cases
 \end{center}
 
 \section*{Acknowledgments}
-% ACKNOWLEDGMENTS: to be completed by the author.
+This work began thirty years ago in the author's doctoral research at the Research School of Earth
+Sciences of the Australian National University, Canberra \citep{Nestor1996}.
 
 \section*{Data availability}
 \sloppy

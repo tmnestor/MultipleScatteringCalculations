@@ -62,9 +62,8 @@ FRONT = (
 \title[Continuum limit of a layer of cubic voxels]{The continuum limit of a space-filling layer of
 cubes: a tiling identity, an exact lattice kernel and the closed-form error of the discrete layer}
 
-% AUTHOR AND AFFILIATION: to be completed by the author before submission.
-\author[AUTHOR]{AUTHOR NAME$^{1}$\\
-$^{1}$AFFILIATION}
+\author[T. M. Nestor]{T. M. Nestor$^{1}$\\
+$^{1}$Independent researcher, Australia}
 
 \date{Received 2026 month day; in original form 2026 month day}
 \pagerange{\pageref{firstpage}--\pageref{lastpage}}
@@ -90,7 +89,8 @@ Numerical modelling -- Computational seismology -- Wave scattering and diffracti
 BACK = r"""
 
 \section*{Acknowledgments}
-% ACKNOWLEDGMENTS: to be completed by the author.
+This work began thirty years ago in the author's doctoral research at the Research School of Earth
+Sciences of the Australian National University, Canberra \citep{Nestor1996}.
 
 \section*{Data availability}
 \sloppy
