@@ -64,8 +64,9 @@ T_START = time.perf_counter()
 class Geometry:
     """Layers and plane interfaces for refinement n (depth z down, slab top at z = 0)."""
 
-    def __init__(self, n: int) -> None:
+    def __init__(self, n: int, gap: int = 1) -> None:
         self.n = n
+        self.gap = gap  # observation plane this many pitches above the slab; gap - 1 empty planes between
         self.d = D_SLAB / n
         self.h = self.d / 2  # sublayer thickness
         self.n_fine = int(round((D_SLAB - Z_SRC) / self.h))
@@ -79,8 +80,10 @@ class Geometry:
 
     @property
     def planes(self) -> tuple[int, ...]:
-        """Observation plane, then the n scattering planes at the voxel centres, top down."""
-        zs = [-self.d / 2] + [(k + 0.5) * self.d for k in range(self.n)]
+        """Observation plane, gap - 1 empty planes, then the n scattering planes at the voxel centres."""
+        zs = [(i - self.gap + 0.5) * self.d for i in range(self.gap)] + [
+            (k + 0.5) * self.d for k in range(self.n)
+        ]
         return tuple(self.iface(z) for z in zs)
 
     def model(self, *, contrast: bool, uniform: bool):
@@ -128,14 +131,15 @@ def run(geo: Geometry, *, dressed: bool, uniform: bool) -> tuple[float, float]:
     planes = geo.planes
     n_z = len(planes)
     ref = ReferenceMedium(A0, B0, R0)
-    ref_c = plane_reference_medium(m_ref, planes[1])  # the scattering planes' own (complex) medium
+    s0 = geo.gap  # index of the first scattering plane
+    ref_c = plane_reference_medium(m_ref, planes[s0])  # the scattering planes' own (complex) medium
     geom = SlabGeometry(M=M, N_z=n_z, a=geo.d / 2)
     ones = np.ones((n_z, M, M))
     material = SlabMaterial(
         Dlambda=gate.D_LAM * ones, Dmu=gate.D_MU * ones, Drho=gate.D_RHO * ones, ref=ref
     )
     t0 = compute_slab_tmatrices(geom, material, OM)
-    t0[0] = 0.0  # the observation plane scatters nothing
+    t0[:s0] = 0.0  # the observation plane and the empty planes scatter nothing
     src_vec = np.zeros(9, dtype=complex)
     src_vec[0] = 1.0
     src_iface = geo.iface(Z_SRC)
@@ -149,9 +153,9 @@ def run(geo: Geometry, *, dressed: bool, uniform: bool) -> tuple[float, float]:
             dz = k - (n_z - 1)
             # one Toeplitz block per dz: take it between SCATTERING planes where one exists
             if dz >= 0:
-                rcv, src = (planes[1 + dz], planes[1]) if 1 + dz < n_z else (planes[dz], planes[0])
+                rcv, src = (planes[s0 + dz], planes[s0]) if s0 + dz < n_z else (planes[dz], planes[0])
             else:
-                rcv, src = (planes[1], planes[1 - dz]) if 1 - dz < n_z else (planes[0], planes[-dz])
+                rcv, src = (planes[s0], planes[s0 - dz]) if s0 - dz < n_z else (planes[0], planes[-dz])
             ws = (
                 same_depth_kernel_9x9(np.array([EPS]), 0.0, OM, ref_c)[:, :, 0]
                 if dz == 0
