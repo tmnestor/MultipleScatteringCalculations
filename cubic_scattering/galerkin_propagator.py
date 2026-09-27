@@ -355,6 +355,17 @@ def gram_diagonal(d: float, n_modes: int = 9) -> NDArray:
 
     ⚠ The Gram is the FIELD-side scale. It is NOT the source-side scale, and in
     the quadratic tier the two genuinely differ -- see `far_field_moment`.
+
+    ⚠⚠ AT 27 MODES THE BASIS IS NOT ORTHOGONAL, so this diagonal is not the Gram.
+    The squares overlap the constants and each other in the same direction:
+    Int 1 . s_p^2 = V d^2/12 and Int s_p^2 . s_q^2 = V d^4/144 (p != q), both
+    nonzero -- ``CubeT27AssembleResults.wl`` carries the full M27, with an
+    off-diagonal between the constant and s_p^2 modes. The claim above holds only
+    for the 9-mode tier. ``galerkin_propagator(..., n_modes=27)`` and
+    ``galerkin_plane_wave_state(..., n_modes=27)`` therefore do not compute true
+    L2 projections. Nothing uses the 27-mode route in a solve (surveyed
+    2026-09-28); orthogonalise the squares (r_p^2 - a^2/3, as
+    ``scripts/t27_coupling_study.py`` does) or use the full Gram before it is.
     """
     v = d**3
     out = v * np.array([1.0, 1.0, 1.0] + [d**2 / 12.0] * 3 + [d**2 / 24.0] * 3)
