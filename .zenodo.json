@@ -19,5 +19,6 @@
     "continuum limit",
     "computational seismology"
   ],
-  "access_right": "open"
+  "access_right": "open",
+  "license": "MIT"
 }
