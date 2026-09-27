@@ -195,6 +195,11 @@ Print["       the package's default carries a STATIC error of ", sci[res3d[[1, 3
   "; it converges onto the exact value as BOTH parameters grow: ",
   chk[res3d[[3, 3]] < res3d[[2, 3]] < res3d[[1, 3]] && res3d[[3, 3]] < 5 10^-5]];
 Print["       By [3c], the exact route needs no lattice sum at k_par = 0:  V S_avg(0) = V P0 - self."];
+(* the exact static e<-M block of V S_avg(0), x mu, for the package's test of its closed-form kernel *)
+Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_tiling_exact.json",
+  <|"medium" -> <|"alpha" -> N[al], "beta" -> N[be], "rho" -> N[rho]|>,
+   "note" -> "exact static V S_avg(0) at k_par = 0, e<-M block (rows/cols e_zz e_xx e_yy 2e_xy 2e_zy 2e_zx), times mu",
+   "eM_times_mu" -> N[exact6 mu]|>, "RawJSON"];
 
 Print["==== ContinuumLimit_AveragedSums (stage 3): ",
   If[And @@ oks, "ALL " <> ToString[Length[oks]] <> " CHECKS PASS", "CHECKS FAILED"], " ===="];
