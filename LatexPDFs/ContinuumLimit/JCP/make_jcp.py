@@ -25,6 +25,60 @@ HERE = Path(__file__).resolve().parent
 SRC = (HERE.parent / "ContinuumLimit.tex").read_text()
 
 
+MATH = re.compile(
+    r"\$\$(.+?)\$\$|\$(.+?)\$|\\\[(.+?)\\\]"
+    r"|\\begin\{(equation|align|gather|multline)\*?\}(.+?)\\end\{\4\*?\}",
+    re.S,
+)
+# an italic differential: "\,dz", "\,d\mathbf y", "\,d^2x", or d/dz written as \frac{d}{dz}
+ITALIC_DIFFERENTIAL = re.compile(r"\\[,;!]\s*d(?=[A-Za-z\\^])|\\frac\{d[^{}]*\}\{d[A-Za-z\\]")
+
+
+def check_upright_differentials(text: str, name: str) -> None:
+    """Fail unless every differential is the upright \\dd and every integral carries one.
+
+    An italic d in this paper is the lattice pitch, so an italic differential changes the meaning.
+    """
+    src = re.sub(r"(?<!\\)%.*", "", text)
+    problems = []
+    for m in re.finditer(r"\\mathrm\{d\}", src):
+        if not src[max(0, m.start() - 20) : m.start()].endswith("\\newcommand{\\dd}{"):
+            problems.append((m.start(), "\\mathrm{d} written out", "use \\dd"))
+    for m in ITALIC_DIFFERENTIAL.finditer(src):
+        problems.append((m.start(), f"italic differential {m.group(0)!r}", "write \\dd in place of d"))
+    # "\ddV" is one undefined control sequence, not \dd followed by V
+    for m in re.finditer(r"\\dd[A-Za-z]+", src):
+        problems.append((m.start(), f"{m.group(0)} is not \\dd", f"write \\dd {m.group(0)[3:]}"))
+    for m in MATH.finditer(src):
+        block = next(g for g in (m.group(1), m.group(2), m.group(3), m.group(5)) if g is not None)
+        signs = len(re.findall(r"\\o?int(?![a-zA-Z])", block)) + 2 * block.count("\\iint")
+        signs += 3 * block.count("\\iiint")
+        dds = len(re.findall(r"\\dd(?![A-Za-z])", block))
+        if signs > dds:
+            problems.append(
+                (
+                    m.start(),
+                    f"{signs} integral sign(s) but {dds} \\dd",
+                    "end each integrand with \\,\\dd <variable>",
+                )
+            )
+    if problems:
+        lines = [
+            f"  line {src.count(chr(10), 0, pos) + 1}: {what}; fix: {fix}"
+            for pos, what, fix in sorted(problems)
+        ]
+        raise SystemExit(
+            f"{name}: the differential of every integral and derivative must be upright.\n"
+            + "\n".join(lines)
+            + "\nExample: \\int_V G\\,\\dd V, \\int f(z')\\,\\dd z', \\frac{\\dd u}{\\dd z}"
+            " (\\dd is \\mathrm{d}, defined in the Macros block).\n"
+            f"Fix the lines above in {name}, then rerun make_jcp.py."
+        )
+
+
+check_upright_differentials(SRC, str(HERE.parent / "ContinuumLimit.tex"))
+
+
 def between(text: str, start: str, end: str) -> str:
     a = text.index(start) + len(start)
     return text[a : text.index(end, a)]
@@ -33,11 +87,9 @@ def between(text: str, start: str, end: str) -> str:
 body = SRC[SRC.index("\\section{Introduction}") : SRC.index("\\vfill\n\\noindent\\rule")].rstrip()
 macros = between(SRC, "% --- Macros ---\n", "\\title").strip()
 
-FIGURES = [HERE.parent / "convergence.pdf"] + sorted((HERE.parent / "figures").glob("fig_*.pdf"))
+FIGURES = sorted((HERE.parent / "figures").glob("fig_*.pdf"))
 # the master's figure paths, relative to its own folder; the local JCP build sits one level down
-body = body.replace("{convergence.pdf}", "{../convergence.pdf}").replace(
-    "{figures/fig_", "{../figures/fig_"
-)
+body = body.replace("{figures/fig_", "{../figures/fig_")
 # elsarticle's \paragraph adds its own full stop: drop the source's, or headings end in ".."
 body = re.sub(r"\\paragraph\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\.\}", r"\\paragraph{\1}", body)
 # notebook names: \path breaks at underscores and dots
@@ -48,18 +100,18 @@ We analyse the convergence of voxel discretisations of the elastic volume integr
 which a medium is divided into cubic cells, each represented by a single-site $T$-matrix and coupled
 through the background Green's tensor: the elastic counterpart of the discrete dipole approximation.
 Because cubes tile space, a layer of identical voxels is exactly a homogeneous layer, so it isolates
-the discretisation error, free of modelling and shape error. We show that (i) the cube's lateral
-form factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
-continuum's and the lattice kernel at normal incidence is in closed form; (ii)
-the single-site $T$-matrix follows from distributional moments of the Green's tensor and, against
-exact scattering by a sphere, is exact statically and departs only by a real, closed-form $(ka)^2$
-term; (iii) its self term cancels, so the scheme is a collocation of the continuum equation, of
-second order with leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission, which no
-scalar correction can remove; (iv) a Galerkin voxel carrying the first moment of its internal field
-converges at fourth order, with leading error $-(kd)^4/720$, for incident P, SV and SH waves at
-normal and oblique incidence, and its spectral lattice sum needs no Ewald splitting. In a randomly
-stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
-$10^{-6}$ with one voxel per model layer. Every result is derived symbolically and verified by an
+the discretisation error, with no modelling or shape error. We show that (i) the cube's lateral form
+factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
+continuum's and the lattice kernel at normal incidence is in closed form; (ii) the single-site
+$T$-matrix follows from distributional moments of the Green's tensor and, against exact scattering
+by a sphere, is exact statically and departs only by a real, closed-form $(ka)^2$ term; (iii) its
+self term cancels, so the scheme is a collocation of the continuum equation, of second order with
+leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission, which no scalar correction
+can remove; (iv) a Galerkin voxel carrying the first moment of its internal field converges at
+fourth order, with leading error $-(kd)^4/720$, for incident P, SV and SH waves at normal and
+oblique incidence. In a randomly stratified layer the orders are unchanged, and the fourth-order
+voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer. On a voxelised sphere the
+error is again second order, dominated by the staircase error. Every result is verified by an
 independent implementation or an exact solution."""
 words = len(re.sub(r"\$[^$]*\$", "x", ABSTRACT).split())
 assert words <= 250, f"the JCP abstract is {words} words; the limit is 250"
@@ -159,7 +211,7 @@ def assemble_submission() -> None:
     sub.mkdir(exist_ok=True)
     for f in sub.iterdir():
         f.unlink()
-    flat = out.replace("{../convergence.pdf}", "{convergence.pdf}").replace("{../figures/fig_", "{fig_")
+    flat = out.replace("{../figures/fig_", "{fig_")
     flat = flat.replace("\\bibliography{../references}", "\\bibliography{references}")
     assert "../" not in flat, "a relative path to another folder remains in the submission source"
     (sub / "ContinuumLimit_JCP.tex").write_text(flat)

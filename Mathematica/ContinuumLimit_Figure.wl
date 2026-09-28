@@ -1,10 +1,11 @@
 #!/usr/bin/env wolframscript
 (* ============================================================================
-   ContinuumLimit_Figure.wl  --  the convergence figure of the continuum-limit paper.
+   ContinuumLimit_Figure.wl  --  the uniform-layer data of the continuum-limit paper's convergence figure.
 
    Recomputes, from notebook 7 (normal incidence, 1-D scheme), notebook 9 (oblique, spectral 3-D scheme) and
    notebook 12 (its incident-wave solver) definitions, the relative reflection error against the number of voxel planes n, and writes
-   LatexPDFs/ContinuumLimit/convergence.pdf.  Nothing is transcribed by hand.
+   Mathematica/ContinuumLimit_figure_data.json.  The figure itself, with its regression fits, is drawn
+   from that file by scripts/plot_convergence_orders.py.  Nothing is transcribed by hand.
    ============================================================================ *)
 
 base = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
@@ -39,27 +40,5 @@ Print["incident SV done"];
 
 (* cache the data, so the layout can be revised without recomputing the lattice sums *)
 Export[base <> "ContinuumLimit_figure_data.json", <|"normal" -> N[normal], "oblique" -> N[oblique], "incidentSV" -> N[incS]|>, "RawJSON"];
-guide[p_, n0_, e0_] := Table[{n, e0 (n0/n)^p}, {n, {1, 32}}];
-styleOf = <|"C" -> Directive[Gray, Dashed], "G0" -> Directive[RGBColor[0.2, 0.4, 0.8]], "G1" -> Directive[RGBColor[0.8, 0.2, 0.2]]|>;
-plot = ListLogLogPlot[
-   {normal["C"], normal["G0"], normal["G1"], oblique["G0"], oblique["G1"], incS["G0"], incS["G1"],
-    guide[2, 1, 4*^-3], guide[4, 1, 1.5*^-6]},
-   Joined -> {True, True, True, True, True, True, True, True, True},
-   PlotMarkers -> {"\[FilledCircle]", "\[FilledSquare]", "\[FilledDiamond]", "\[EmptySquare]", "\[EmptyDiamond]",
-     "\[EmptyUpTriangle]", "\[EmptyDownTriangle]", None, None},
-   PlotStyle -> {styleOf["C"], styleOf["G0"], styleOf["G1"],
-     Directive[RGBColor[0.1, 0.6, 0.5], Dashed], Directive[RGBColor[0.9, 0.55, 0.1], Dashed],
-     Directive[RGBColor[0.45, 0.25, 0.7], Dotted], Directive[RGBColor[0.55, 0.35, 0.15], Dotted],
-     Directive[GrayLevel[0.6], Thin], Directive[GrayLevel[0.6], Thin]},
-   PlotLegends -> Placed[LineLegend[{"collocation, normal", "mean only, normal", "first moment, normal",
-       "mean only, P\[Rule]S 20\[Degree]", "first moment, P\[Rule]S 20\[Degree]",
-       "mean only, SV\[Rule]S 20\[Degree]", "first moment, SV\[Rule]S 20\[Degree]", "slope 2 / slope 4"},
-      LegendMarkers -> {"\[FilledCircle]", "\[FilledSquare]", "\[FilledDiamond]", "\[EmptySquare]", "\[EmptyDiamond]",
-        "\[EmptyUpTriangle]", "\[EmptyDownTriangle]", None},
-      LabelStyle -> {FontFamily -> "Times", 10}, LegendLayout -> {"Column", 2}], Below],
-   Frame -> True, FrameLabel -> {"planes of voxels, n", "relative reflection error"},
-   FrameStyle -> Directive[Black, 11], LabelStyle -> {FontFamily -> "Times", 11},
-   PlotRange -> {{0.9, 36}, {1*^-14, 1*^-2}}, ImageSize -> 480, GridLines -> None];
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/LatexPDFs/ContinuumLimit/convergence.pdf", plot];
-Print["wrote convergence.pdf; normal G1 at n = 32: ", normal["G1"][[-1, 2]], ";  oblique G1 at n = 8: ", oblique["G1"][[-1, 2]],
+Print["wrote the figure data; normal G1 at n = 32: ", normal["G1"][[-1, 2]], ";  oblique G1 at n = 8: ", oblique["G1"][[-1, 2]],
   ";  SV G1 at n = 8: ", incS["G1"][[-1, 2]]];
