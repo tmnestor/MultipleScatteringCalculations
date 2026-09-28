@@ -52,9 +52,50 @@ class TestGridIndexMapping:
 
             order_fft = np.lexsort(centres_fft.T)
             order_ref = np.lexsort(centres_ref.T)
-            np.testing.assert_allclose(
-                centres_fft[order_fft], centres_ref[order_ref], atol=1e-14
-            )
+            np.testing.assert_allclose(centres_fft[order_fft], centres_ref[order_ref], atol=1e-14)
+
+
+def _staircase(radius: float, n_coarse: int):
+    """Cell-centre test for the n_coarse sphere staircase, usable on any refinement of its grid."""
+    dd = 2.0 * radius / n_coarse
+
+    def inside(pos: np.ndarray) -> bool:
+        idx = np.clip(np.floor((pos + radius) / dd), 0, n_coarse - 1)
+        return bool(np.linalg.norm(-radius + (idx + 0.5) * dd) < radius)
+
+    return inside
+
+
+class TestShapeMask:
+    """The optional ``inside`` test: the default is the sphere, and a staircase refines exactly."""
+
+    def test_default_is_the_sphere(self) -> None:
+        for n_sub in [3, 5]:
+            a = _build_grid_index_map(RADIUS, n_sub)
+            b = _build_grid_index_map(RADIUS, n_sub, lambda p: bool(np.linalg.norm(p) < RADIUS))
+            np.testing.assert_array_equal(a[0], b[0])
+            np.testing.assert_allclose(a[1], b[1], atol=0.0)
+
+    def test_staircase_at_its_own_resolution_is_the_sphere(self) -> None:
+        for n_sub in [3, 4, 5]:
+            a = _build_grid_index_map(RADIUS, n_sub)
+            b = _build_grid_index_map(RADIUS, n_sub, _staircase(RADIUS, n_sub))
+            np.testing.assert_array_equal(a[0], b[0])
+
+    def test_refined_staircase_has_m_cubed_times_the_cells(self) -> None:
+        for n_coarse, m in [(3, 2), (4, 2), (3, 3)]:
+            coarse = _build_grid_index_map(RADIUS, n_coarse)
+            fine = _build_grid_index_map(RADIUS, n_coarse * m, _staircase(RADIUS, n_coarse))
+            assert len(fine[0]) == m**3 * len(coarse[0])
+            # the refined staircase fills exactly the coarse staircase's volume
+            assert len(fine[0]) * (2 * fine[2]) ** 3 == pytest.approx(len(coarse[0]) * (2 * coarse[2]) ** 3)
+
+    def test_solver_accepts_the_mask(self) -> None:
+        a = compute_sphere_foldy_lax_fft(OMEGA, RADIUS, REF, CONTRAST, n_sub=3)
+        mask = _staircase(RADIUS, 3)
+        b = compute_sphere_foldy_lax_fft(OMEGA, RADIUS, REF, CONTRAST, n_sub=3, inside=mask)
+        assert a.n_cells == b.n_cells
+        np.testing.assert_allclose(b.T_comp_9x9, a.T_comp_9x9, rtol=1e-12, atol=0.0)
 
 
 class TestPackUnpack:
@@ -89,9 +130,7 @@ class TestFFTMatvec:
 
         rayleigh_sub = compute_cube_tmatrix(OMEGA, a_sub, REF, CONTRAST)
         T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, OMEGA, a_sub)
-        kernel_hat = _build_fft_kernel(
-            n_sub, a_sub, T_loc, OMEGA, REF, cell_average=cell_average
-        )
+        kernel_hat = _build_fft_kernel(n_sub, a_sub, T_loc, OMEGA, REF, cell_average=cell_average)
 
         pitch = 2.0 * a_sub
         dim = 9 * nC
@@ -121,11 +160,9 @@ class TestFFTvsDense:
     @pytest.mark.parametrize("n_sub", [3, 5])
     def test_fft_vs_dense(self, n_sub: int) -> None:
         result_dense = compute_sphere_foldy_lax(OMEGA, RADIUS, REF, CONTRAST, n_sub)
-        result_fft = compute_sphere_foldy_lax_fft(
-            OMEGA, RADIUS, REF, CONTRAST, n_sub, gmres_tol=1e-12
-        )
+        result_fft = compute_sphere_foldy_lax_fft(OMEGA, RADIUS, REF, CONTRAST, n_sub, gmres_tol=1e-12)
 
-        rel_err = np.linalg.norm(
-            result_fft.T_comp_9x9 - result_dense.T_comp_9x9
-        ) / np.linalg.norm(result_dense.T_comp_9x9)
+        rel_err = np.linalg.norm(result_fft.T_comp_9x9 - result_dense.T_comp_9x9) / np.linalg.norm(
+            result_dense.T_comp_9x9
+        )
         assert rel_err < 1e-5, f"T_comp rel err at n_sub={n_sub}: {rel_err:.2e}"
