@@ -120,7 +120,7 @@ appeared to influence the work reported in this paper.
 
 \section*{Data availability}
 The Mathematica notebooks and Python scripts that derive and check every result, and the package they
-test, are archived at \url{https://doi.org/10.5281/zenodo.23003242} and developed at
+test, are archived at \url{https://doi.org/10.5281/zenodo.23003241} and developed at
 \url{https://github.com/tmnestor/MultipleScatteringCalculations}.
 
 \bibliographystyle{elsarticle-num-names}
