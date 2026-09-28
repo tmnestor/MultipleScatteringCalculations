@@ -48,7 +48,7 @@ scalar correction can remove; (iv) a Galerkin voxel carrying the first moment of
 converges at fourth order, with leading error $-(kd)^4/720$, for incident P, SV and SH waves at
 normal and oblique incidence, and its spectral lattice sum needs no Ewald splitting. In a randomly
 stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
-$10^{-6}$ with one voxel per model cell. Every result is derived symbolically and verified by an
+$10^{-6}$ with one voxel per model layer. Every result is derived symbolically and verified by an
 independent implementation or an exact solution."""
 words = len(re.sub(r"\$[^$]*\$", "x", ABSTRACT).split())
 assert words <= 250, f"the JCP abstract is {words} words; the limit is 250"
@@ -58,7 +58,7 @@ HIGHLIGHTS = [
     "The cube's single-site T-matrix follows from distributional moment integrals",
     "The voxel scheme's leading error is known in closed form for every grid",
     "A first-moment voxel converges at fourth order for P, SV and SH waves",
-    "In a random stratified layer, one voxel per model cell reaches 1e-6 accuracy",
+    "In a random stratified layer, one voxel per model layer reaches 1e-6 accuracy",
 ]
 assert all(len(h) <= 85 for h in HIGHLIGHTS), "a highlight exceeds 85 characters"
 

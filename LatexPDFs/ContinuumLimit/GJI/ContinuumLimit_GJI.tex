@@ -56,7 +56,7 @@ transmission. The opposite signs mean that no scalar correction of the single si
 (v) A voxel that also carries the first moment of its internal field converges at fourth order,
 with leading error $-(kd)^4/720$, for incident P, SV and SH at normal and oblique incidence. In a
 randomly stratified layer the orders are unchanged, and the first-moment voxel reaches an accuracy
-of $10^{-6}$ with one voxel per model cell. Every result is derived symbolically and checked
+of $10^{-6}$ with one voxel per model layer. Every result is derived symbolically and checked
 against an independent implementation or an exact solution.
 \end{summary}
 
@@ -68,9 +68,10 @@ Theoretical seismology -- Wave propagation -- Wave scattering and diffraction
 \section{Introduction}\label{sec:intro}
 
 \paragraph{The problem this paper serves.} Seismic waves in the crust are scattered by heterogeneity
-on every scale, and the models that describe it --- tomographic images, full-waveform inversions,
-geological models --- arrive as grids of cells of constant properties. A scattering calculation
-that uses such a model directly treats every cell as a scatterer: a voxel carrying a single-site
+on every scale. The models that describe it are parameterised in many ways --- as layers or blocks,
+by smooth basis functions, or by interfaces --- and a calculation that uses one must first sample it
+onto a grid. A volume-integral scattering calculation represents the sampled model as cells of
+constant properties and treats every cell as a scatterer: a voxel carrying a single-site
 $T$-matrix and coupled to every other voxel through the Green's tensor of the background, with the
 multiple-scattering series summed. For the media such a scheme is built for, there is no exact
 solution, and that is the difficulty. Its error cannot be measured against the answer. Comparison
@@ -730,21 +731,22 @@ Grey: slopes $2$ and $4$.}
 \FloatBarrier
 \section{A heterogeneous layer}\label{sec:hetero}
 
-A gridded Earth model is not a layer of identical cells. It is a set of model cells of constant
-properties with real interfaces between them. The last test takes such a model. A layer $D=4$\,m
-thick is divided into eight model cells of $0.5$\,m, and in each one $\Delta\lambda$, $\Delta\mu$
+A heterogeneous medium is not a layer of identical cells. The simplest heterogeneous case with an
+exact answer is a stratified model built from layers of constant properties, with real interfaces
+between them: the form of many layered crustal velocity models. The last test takes such a model. A
+layer $D=4$\,m thick is divided into eight model layers of $0.5$\,m, and in each one $\Delta\lambda$, $\Delta\mu$
 and $\Delta\rho$ are drawn uniformly within $\pm15\%$ of the background (the values are listed in
 \path{ContinuumLimit_Heterogeneous.wl}). The result is a random stratification with physical contrasts. The voxels refine
-the model grid, with $m$ planes of voxels in each model cell, so no voxel straddles a model
-interface; that is how a gridded model is discretised. At $\omega=1500$\,rad\,s$^{-1}$ the layer is
+the model's layering, with $m$ planes of voxels in each model layer, so no voxel straddles a model
+interface: the natural discretisation when the model's interfaces are known. At $\omega=1500$\,rad\,s$^{-1}$ the layer is
 $k_PD=1.2$ and $k_SD=2.0$ thick, so the field reverberates between the model interfaces. The exact
-answer is the product of the model cells' propagators. Its same-type reflection coefficients agree
+answer is the product of the model layers' propagators. Its same-type reflection coefficients agree
 with those of the reflection--transmission recursion of \citet{Kennett1983}, computed independently,
 to $10^{-14}$. The schemes are those of \S\S\ref{sec:convergence}--\ref{sec:fourth}, with the
 contrast now changing from plane to plane; nothing else changes. The errors are in Table~\ref{tab:hetero}.
 \begin{table}
 \centering
-\caption{Relative error against the exact stratified layer, for $m$ planes of voxels per model cell (\S\ref{sec:hetero}). At normal incidence the order is measured from $m=4$ to $16$, where it is also $2.00$ for collocation and $4.00$ in transmission; at $20^\circ$ it is measured from $m=2$ to $4$.}\label{tab:hetero}
+\caption{Relative error against the exact stratified layer, for $m$ planes of voxels per model layer (\S\ref{sec:hetero}). At normal incidence the order is measured from $m=4$ to $16$, where it is also $2.00$ for collocation and $4.00$ in transmission; at $20^\circ$ it is measured from $m=2$ to $4$.}\label{tab:hetero}
 \small
 \begin{tabular}{@{}llcccc@{}}
 \toprule
@@ -765,13 +767,13 @@ P, $20^\circ$, $R_{PS}$ & mean only & $2.8\times10^{-3}$ & $6.9\times10^{-4}$ & 
 \paragraph{The interfaces cost nothing.} Every order is the one measured for the uniform layer. At a
 model interface the strain of the true field jumps. A voxel basis that is discontinuous from voxel
 to voxel represents that jump exactly when the interface lies on a voxel boundary, so the interface
-adds no error of its own. The only requirement is that the voxels resolve the model grid. A voxel
+adds no error of its own. The only requirement is that voxel boundaries coincide with the model's interfaces. A voxel
 that straddled an interface would carry a contrast that is not uniform within it, a case not
 examined here.
 
 \paragraph{What fourth order buys.} For a reflection error of $10^{-6}$ at normal incidence (P), the
-mean-only voxel needs $347$ planes of voxels, about $43$ per model cell. The first-moment voxel needs
-$8$, one per model cell: the model grid itself, which already gives $8.5\times10^{-7}$. Counting
+mean-only voxel needs $347$ planes of voxels, about $43$ per model layer. The first-moment voxel needs
+$8$, one per model layer: the model's own layering, which already gives $8.5\times10^{-7}$. Counting
 unknowns ($9$ per voxel against $36$), that is $3123$ against $288$ per vertical column of voxels, a
 factor of eleven. In three dimensions, with the lateral grid refined as the vertical one is, the
 number of voxels falls by $(347/8)^3\approx8\times10^4$ and the number of unknowns by about $2\times10^4$.
@@ -830,7 +832,7 @@ voxel count falls by $58^3\approx2\times10^5$ and the number of unknowns by abou
 lie within $5\%$ of them, while the uniform voxel's transmission constant grows with the contrast, so
 the comparison is if anything conservative).
 The stratified model of \S\ref{sec:hetero} measures it directly: $347$ planes of uniform-field voxels
-against $8$ first-moment voxels for the same accuracy. The gain is largest precisely where it matters: when the grid of a geological model is coarse
+against $8$ first-moment voxels for the same accuracy. The gain is largest precisely where it matters: when the model varies on scales that are coarse
 compared with the accuracy the wavefield must have.
 
 \paragraph{Limitations and outlook.} The results concern laterally uniform media --- a homogeneous layer
@@ -867,8 +869,8 @@ discretisation, and opposite in sign in reflection and transmission. A voxel tha
 first moment of its internal field converges at fourth order --- at normal incidence, where the
 three-dimensional scheme reduces exactly to one dimension, and at oblique incidence --- with a
 leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The orders survive
-the interfaces of a randomly stratified model, provided the voxels resolve its grid, and there the
-first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model cell, where the uniform-field
+the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
+first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
 voxel needs about forty. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
 
 \begin{table}
