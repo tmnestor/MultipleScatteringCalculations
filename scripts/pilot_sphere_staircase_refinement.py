@@ -9,9 +9,14 @@ the voxel scheme converges to when each voxel is split into m^3 sub-voxels of th
   * shape error: (the converged staircase field) - (exact Mie for the sphere).
 Far fields are stored per m in the scratch directory given, so later levels compare against earlier ones.
 
-Run:  conda run -n seismic python -u scripts/pilot_sphere_staircase_refinement.py <outdir> 1 2
+With --summary=<file>, the per-level errors, the apparent order and the shape error are written as a summary
+(the data of the paper's convergence figure; see scripts/plot_convergence_orders.py).
+
+Run:  conda run -n seismic python -u scripts/pilot_sphere_staircase_refinement.py \
+        [--ka=0.5] [--summary=f] <outdir> 1 2
 """
 
+import json
 import sys
 import time
 from pathlib import Path
@@ -59,14 +64,23 @@ def far_field(m: int) -> tuple[np.ndarray, int, float]:
 
 
 def main() -> int:
-    out = Path(sys.argv[1])
+    global KA_S, OMEGA
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    json_path = None
+    for arg in sys.argv[1:]:
+        if arg.startswith("--ka="):
+            KA_S = float(arg.split("=", 1)[1])
+            OMEGA = KA_S * REF.beta / RADIUS
+        elif arg.startswith("--summary="):
+            json_path = Path(arg.split("=", 1)[1])
+    out = Path(args[0])
     out.mkdir(parents=True, exist_ok=True)
-    levels = [int(a) for a in sys.argv[2:]] or [1]
+    levels = [int(a) for a in args[1:]] or [1]
     u_mie = mie_scattered_displacement(compute_elastic_mie(OMEGA, RADIUS, REF, CONTRAST), PTS)
     peak = float(np.max(np.abs(u_mie)))
     print(f"staircase n0 = {N0}, sphere k_S a = {KA_S}; errors are max|difference| / Mie peak", flush=True)
     for m in levels:
-        f = out / f"staircase_n{N0}_m{m}.npy"
+        f = out / f"staircase_ka{KA_S:g}_n{N0}_m{m}.npy"
         t0 = time.perf_counter()
         if f.exists():
             u = np.load(f)
@@ -78,7 +92,8 @@ def main() -> int:
         dt = time.perf_counter() - t0
         err = np.max(np.abs(u - u_mie)) / peak
         print(f"  m = {m}: vs Mie {err:.4e}   {note}   {dt:7.1f} s", flush=True)
-    stored = sorted(out.glob(f"staircase_n{N0}_m*.npy"), key=lambda p: int(p.stem.split("_m")[1]))
+    pattern = f"staircase_ka{KA_S:g}_n{N0}_m*.npy"
+    stored = sorted(out.glob(pattern), key=lambda p: int(p.stem.split("_m")[1]))
     fields = {int(p.stem.split("_m")[1]): np.load(p) for p in stored}
     ms = sorted(fields)
     for a, b in zip(ms, ms[1:], strict=False):
@@ -107,6 +122,25 @@ def main() -> int:
             print(f"  apparent order of the discretisation error (m = {a}, {b}, {c}): {p:.2f}")
             shape_err = np.max(np.abs(limit - u_mie)) / peak
             print(f"  extrapolated staircase field vs Mie (the shape error): {shape_err:.4e}")
+            if json_path is not None:
+                summary = {
+                    "ka_s": KA_S,
+                    "n0": N0,
+                    "m": ms,
+                    "error_vs_mie": [float(np.max(np.abs(fields[k] - u_mie)) / peak) for k in ms],
+                    "change_from_previous": [None]
+                    + [
+                        float(np.max(np.abs(fields[k] - fields[j])) / peak)
+                        for j, k in zip(ms, ms[1:], strict=False)
+                    ],
+                    "error_vs_extrapolated_staircase": [
+                        float(np.max(np.abs(fields[k] - limit)) / peak) for k in ms
+                    ],
+                    "apparent_order": p,
+                    "shape_error": float(shape_err),
+                }
+                json_path.write_text(json.dumps(summary, indent=2) + "\n")
+                print(f"  wrote {json_path}")
     return 0
 
 

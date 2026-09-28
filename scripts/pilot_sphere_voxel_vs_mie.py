@@ -7,7 +7,8 @@ cubes. This pilot measures, before any design, how large the sphere's total erro
 converges, using the validated far-field comparison of ``scripts/gate_sphere_cell_average_vs_mie.py``
 (``pattern_error``: max |far field - Mie| / peak over nine angles at 5e4 radii, raw and volume-corrected).
 
-Run small first:  conda run -n seismic python -u scripts/pilot_sphere_voxel_vs_mie.py [--fft] 4 6 8
+Run small first:
+    conda run -n seismic python -u scripts/pilot_sphere_voxel_vs_mie.py [--fft] [--ka=0.5] 4 6 8
 """
 
 import sys
@@ -28,7 +29,12 @@ OMEGA = KA_S * REF.beta / RADIUS
 
 
 def main() -> int:
-    args = sys.argv[1:]
+    global KA_S, OMEGA
+    args = [a for a in sys.argv[1:] if not a.startswith("--ka=")]
+    for a in sys.argv[1:]:
+        if a.startswith("--ka="):
+            KA_S = float(a.split("=", 1)[1])
+            OMEGA = KA_S * REF.beta / RADIUS
     if "--fft" in args:
         # the FFT-accelerated solver is a drop-in replacement for the dense one inside pattern_error
         gate.compute_sphere_foldy_lax = compute_sphere_foldy_lax_fft

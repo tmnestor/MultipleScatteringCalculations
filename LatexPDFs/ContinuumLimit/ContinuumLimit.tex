@@ -47,6 +47,9 @@
 \newcommand{\bG}{\mathbf{G}}
 \newcommand{\sinc}{\operatorname{sinc}}
 \newcommand{\nb}[1]{\texttt{#1}}
+% the differential of every integral and derivative is upright: \dd z, \dd^2x, \frac{\dd}{\dd z};
+% an italic d is the lattice pitch. JCP/make_jcp.py refuses to build if this is broken.
+\newcommand{\dd}{\mathrm{d}}
 
 \title{\bfseries The Continuum Limit of a Space-Filling Layer of Cubes\\[4pt]
 \large A Tiling Identity, an Exact Lattice Kernel,\\
@@ -77,7 +80,8 @@ transmission. The opposite signs mean that no scalar correction of the single si
 (v) A voxel that also carries the first moment of its internal field converges at fourth order,
 with leading error $-(kd)^4/720$, for incident P, SV and SH at normal and oblique incidence. In a
 randomly stratified layer the orders are unchanged, and the first-moment voxel reaches an accuracy
-of $10^{-6}$ with one voxel per model layer. Every result is derived symbolically and checked
+of $10^{-6}$ with one voxel per model layer. On a voxelised sphere the discretisation error is again
+second order, and the staircase error of the shape dominates it. Every result is derived symbolically and checked
 against an independent implementation or an exact solution.
 \end{abstract}
 
@@ -157,7 +161,7 @@ point coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling su
 sphere, and shows that with it the discrete system is a collocation of the continuum equation.
 \S\ref{sec:convergence} gives that collocation's second-order error in closed form, and
 \S\ref{sec:fourth} the fourth-order voxel, for incident P and S at normal and oblique incidence.
-\S\ref{sec:hetero} repeats the tests on a randomly stratified layer, and \S\ref{sec:discussion} discusses
+\S\ref{sec:hetero} repeats the tests on a randomly stratified layer, \S\ref{sec:sphere} on a sphere, and \S\ref{sec:discussion} discusses
 what the results imply for voxel schemes in general. Every result is derived symbolically in
 Mathematica and checked against an independent Python implementation or an exact solution.
 
@@ -262,7 +266,7 @@ of wave fields \citep{Linton2010}. For a function $f$ on the plane and the squar
 it states
 \begin{equation}\label{eq:poissonformula}
   \sum_{\mathbf R}f(\mathbf R)=\frac1{d^2}\sum_{\mathbf g}\hat f(\mathbf g),\qquad
-  \hat f(\mathbf g)=\int f(\mathbf x)\,\mathrm{e}^{-\mathrm{i}\mathbf g\cdot\mathbf x}\,\mathrm{d}^2x,\qquad
+  \hat f(\mathbf g)=\int f(\mathbf x)\,\mathrm{e}^{-\mathrm{i}\mathbf g\cdot\mathbf x}\,\dd^2x,\qquad
   \mathbf g=\tfrac{2\pi}{d}(p,q),
 \end{equation}
 with $p,q$ integers: a sum of samples of $f$ on the lattice equals a sum of samples of its Fourier
@@ -314,7 +318,7 @@ the continuum only if that remainder is cancelled by the voxel's own self term.
 \section{The tiling identity}\label{sec:tiling}
 
 Replace the point coupling by the \emph{source-cell average}
-$\langle\bG\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bG(\mathbf r-\mathbf y)\,\mathrm{d}\mathbf y$, the
+$\langle\bG\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bG(\mathbf r-\mathbf y)\,\dd\mathbf y$, the
 field at a voxel centre of a uniform polarisation of the source voxel. Each Poisson order in
 Eq.~\eqref{eq:poisson} is then multiplied by the cube's form factor
 \begin{equation}
@@ -354,9 +358,9 @@ is the field at the mid-plane of a uniform plate of thickness $d$ (Fig.~\ref{fig
 \begin{equation}\label{eq:tiling}
   d^3\,\bS_{\text{avg}}(0)+\bS_{\text{self}}=d^3\,\bP_0,
   \qquad
-  \bS_{\text{self}}=\int_{\text{cube}}\bG(-\mathbf y)\,\mathrm{d}\mathbf y,
+  \bS_{\text{self}}=\int_{\text{cube}}\bG(-\mathbf y)\,\dd\mathbf y,
 \end{equation}
-where $\bP_0=d^{-3}\int_{-h}^{h}\bG_{\text{plate}}(-z')\,\mathrm{d}z'$ is elementary: in the one-dimensional
+where $\bP_0=d^{-3}\int_{-h}^{h}\bG_{\text{plate}}(-z')\,\dd z'$ is elementary: in the one-dimensional
 transform each entry is $c_0+A/(Mk_z^2-\rho\omega^2)$, so it averages to
 $c_0/d+A\,(\mathrm{e}^{\mathrm{i}kh}-1)/(dMk^2)$. Its only nonzero entries are $u\leftarrow f$ on the diagonal and the
 three normal strain-from-moment entries, whose local weights $-1/M_P$ and $-1/(2\mu)$ are the plate
@@ -434,12 +438,12 @@ all fields evaluated at the centre. Its coefficients are six moments of the back
 tensor $\bG$ over the voxel,
 \begin{equation}\label{eq:moments}
 \begin{aligned}
-\mathsf G_{ij}&=\int_V G_{ij}\,\mathrm{d}V, &
-\mathsf K^{rs}_{ij}&=\int_V G_{ij}\,x_rx_s\,\mathrm{d}V, &
-\mathsf N^{r}_{in,k}&=\int_V \partial'_kG_{in}\,x_r\,\mathrm{d}V,\\
-\mathsf M_{in,pk}&=\int_V \partial'_p\partial'_kG_{in}\,\mathrm{d}V, &
-\mathsf P^{rs}_{ij,pq}&=\int_V \partial'_q\partial'_pG_{ij}\,x_rx_s\,\mathrm{d}V, &
-\mathsf Q^{r}_{in,pqk}&=\int_V \partial'_q\partial'_p\partial'_kG_{in}\,x_r\,\mathrm{d}V,
+\mathsf G_{ij}&=\int_V G_{ij}\,\dd V, &
+\mathsf K^{rs}_{ij}&=\int_V G_{ij}\,x_rx_s\,\dd V, &
+\mathsf N^{r}_{in,k}&=\int_V \partial'_kG_{in}\,x_r\,\dd V,\\
+\mathsf M_{in,pk}&=\int_V \partial'_p\partial'_kG_{in}\,\dd V, &
+\mathsf P^{rs}_{ij,pq}&=\int_V \partial'_q\partial'_pG_{ij}\,x_rx_s\,\dd V, &
+\mathsf Q^{r}_{in,pqk}&=\int_V \partial'_q\partial'_p\partial'_kG_{in}\,x_r\,\dd V,
 \end{aligned}
 \end{equation}
 with derivatives taken with respect to the source point, $\partial'=-\partial$. That sign reaches
@@ -471,7 +475,7 @@ distributional from the start, and each is moved onto the voxel's faces by pairi
 function $w\mathbf 1_V$, using $\partial_q\mathbf 1_V=-n_q\,\delta_{\partial V}$:
 \begin{equation}\label{eq:peel}
   \bigl\langle \partial_qT,\,w\mathbf 1_V\bigr\rangle
-  =\oint_{\partial V} n_q\,w\,T\,\mathrm{d}A-\bigl\langle T,\,(\partial_qw)\,\mathbf 1_V\bigr\rangle .
+  =\oint_{\partial V} n_q\,w\,T\,\dd A-\bigl\langle T,\,(\partial_qw)\,\mathbf 1_V\bigr\rangle .
 \end{equation}
 The surface term is evaluated on the faces, a distance $h$ from the origin, where every
 derivative of $r^m$ is smooth. The recursion lowers $D$ and $W$ together and ends on convergent
@@ -495,7 +499,7 @@ The cube is centrosymmetric. A moment that couples a field quantity of degree $a
 $b$ therefore vanishes unless $a+b$ is even. $u$, $\partial u$ and $\partial\partial u$ have
 degrees $0$, $1$ and $2$, so Eq.~\eqref{eq:A22} contains the first gradient alone: $\partial u$
 is determined by its own block and couples to neither $u$ nor $\partial\partial u$. The leading
-scattering by a stiffness contrast is the stress dipole $\int_V\delta c:\nabla u\,\mathrm{d}V$, which needs
+scattering by a stiffness contrast is the stress dipole $\int_V\delta c:\nabla u\,\dd V$, which needs
 only $\partial u$. The leading far field of the stiffness contrast is therefore fixed by
 Eq.~\eqref{eq:A22}, and \emph{no treatment of the second-gradient block \eqref{eq:A33} can change
 it}. What Eq.~\eqref{eq:A33} contributes reaches the far field only through the $O((kh)^2)$
@@ -525,7 +529,7 @@ integral of $\bG$.
 channel $1+\Delta K/(\lambda+2\mu)$, with $\Delta K=\Delta\lambda+\tfrac23\Delta\mu$, and a single
 deviatoric channel $1+2\Delta\mu\,S_{\text{sph}}$, with $2\mu S_{\text{sph}}=2(4-5\nu)/[15(1-\nu)]$.
 The cube's dilatational channel, Eq.~\eqref{eq:A1g}, is the sphere's exactly: its eigenvalue
-involves $\mathsf M$ only through the contraction $\int_V\partial_i\partial_nG_{in}\,\mathrm{d}V$, and the
+involves $\mathsf M$ only through the contraction $\int_V\partial_i\partial_nG_{in}\,\dd V$, and the
 static Navier equation makes $\partial_i\partial_nG_{in}=-\delta(\mathbf r)/(\lambda+2\mu)$, whose
 integral does not depend on the shape. The
 cube's shear channels differ from each other. Their isotropic average, however, is the sphere's,
@@ -662,18 +666,18 @@ $w=\sum_{b}c_{b,j}\,\phi_b$, $w=(u,\varepsilon)$ the displacement and strain of 
 the polarisation is $q=(\omega^2\Delta\rho\,u,\ \Delta M\,\varepsilon)$ with $\Delta M=\Delta\lambda
 +2\Delta\mu$. Testing the continuum equation
 \begin{equation}
-  w(z)=w^0(z)+\int\bK(z-z')\,q(z')\,\mathrm{d}z',\qquad
+  w(z)=w^0(z)+\int\bK(z-z')\,q(z')\,\dd z',\qquad
   \bK=\begin{pmatrix} g & g' \\ g' & g''\end{pmatrix},\quad g''=-k^2g-\delta(z)/M_P,
 \end{equation}
 with the same two functions on every voxel gives
 \begin{equation}\label{eq:galerkin}
-  \Bigl(\int_{i}\phi_a^2\Bigr)c_{a,i}
-  =\int_i\phi_a w^0+\sum_{j,b}\Bigl[\int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\phi_b(z')\,\mathrm{d}z\,\mathrm{d}z'\Bigr]
+  \Bigl(\int_{i}\phi_a^2\,\dd z\Bigr)c_{a,i}
+  =\int_i\phi_a w^0\,\dd z+\sum_{j,b}\Bigl[\int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\phi_b(z')\,\dd z\,\dd z'\Bigr]
   \bD_1 c_{b,j},
 \end{equation}
 $\bD_1=\operatorname{diag}(\omega^2\Delta\rho,\Delta M)$. Between voxels the double integral is
 separable, a product of Legendre moments of $\mathrm{e}^{\pm \mathrm{i}kz}$; within a voxel it is split at $z'=z$ and
-the local term contributes $-\int_i\phi_a\phi_b/M_P$. Every entry is closed-form. Keeping only
+the local term contributes $-\int_i\phi_a\phi_b\,\dd z/M_P$. Every entry is closed-form. Keeping only
 $\phi_0$ recovers a second-order scheme; keeping $\phi_0$ and $\phi_1$ converges at fourth order in
 both reflection and transmission (\nb{ContinuumLimit\_FourthOrder.wl}; Table~\ref{tab:fourth1d}).
 \begin{table}[htbp]
@@ -706,7 +710,7 @@ an outside observer as $\mathrm{e}^{\mathrm{i}qs}$, $q=+k$ for reflection and $q
 scheme and every $n$
 \begin{equation}\label{eq:ratio}
   \frac{\text{discrete}}{\text{exact}}
-  =\frac{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}qs}\,\Pi[\mathrm{e}^{\mathrm{i}ks}]\,\mathrm{d}s}{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}(q+k)s}\,\mathrm{d}s},
+  =\frac{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}qs}\,\Pi[\mathrm{e}^{\mathrm{i}ks}]\,\dd s}{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}(q+k)s}\,\dd s},
 \end{equation}
 with $\Pi$ the centre value for collocation, the cell mean for the mean-only voxel and the projection
 onto $\{1,s/h\}$ for the first-moment voxel (\nb{ContinuumLimit\_FourthOrderError.wl}). The results are in Table~\ref{tab:ratio}.
@@ -748,7 +752,7 @@ so the tiling identity holds only to $O(k_\parallel h)$.
 between planes $i$ and $j$ at lateral wavenumber $\mathbf k_\parallel$ is
 \begin{equation}\label{eq:bloch}
   C_{ab}(i,j)=\frac1{d^2}\sum_{\mathbf g}L_a(\boldsymbol\kappa)\,L_b(-\boldsymbol\kappa)\,
-  \int\!\!\int\phi_a(z)\,\hat\bG(\boldsymbol\kappa;z-z')\,\phi_b(z')\,\mathrm{d}z\,\mathrm{d}z',
+  \int\!\!\int\phi_a(z)\,\hat\bG(\boldsymbol\kappa;z-z')\,\phi_b(z')\,\dd z\,\dd z',
   \qquad \boldsymbol\kappa=\mathbf k_\parallel+\mathbf g,
 \end{equation}
 with $L_a$ the lateral Legendre factors. The whole-space tensor decays as $1/k_z^2$ and the nine-component
@@ -810,21 +814,8 @@ the local weight as a numerical large-$k_z$ limit of the inverted Christoffel ma
 double integral by quadrature and separates P from S by sampling the upgoing field at two depths.
 The raw reflected displacements of the two agree to $9\times10^{-16}$ in all $36$ cases compared:
 incident P, SV and SH, normal incidence and $20^\circ$, $n=1,2,4$, with and without the first moments.
-Figure~\ref{fig:convergence} collects the convergence.
+Figure~\ref{fig:convergence}(a,b) shows the convergence, with the orders fitted to it.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{convergence.pdf}
-\caption{Relative reflection error of the discrete layer against the number of voxel planes $n$
-($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}). Filled: normal
-incidence, P reflection: collocation (\S\ref{sec:single}), the mean-only voxel and the first-moment
-voxel of Eq.~\eqref{eq:galerkin}. Dashed, open squares and diamonds: P incident at $20^\circ$, the
-converted S wave, mean-only (green) and first-moment (orange) voxels of Eq.~\eqref{eq:bloch}. Dotted, open
-triangles: SV incident at $20^\circ$, the reflected S wave, mean-only (purple) and first-moment (brown).
-Grey: slopes $2$ and $4$.}
-\label{fig:convergence}
-\par\smallskip{\footnotesize\textit{Alt text:} A log--log plot of relative reflection error (vertical axis, $10^{-14}$ to $10^{-2}$) against the number of voxel planes (horizontal axis, 1 to 32). The collocation and mean-only curves fall as straight lines of slope $-2$ from about $10^{-3}$ at one plane; the first-moment curves fall as straight lines of slope $-4$ from about $10^{-6}$ at one plane to about $10^{-13}$ at 32 planes. The oblique P-to-S and incident-SV curves lie alongside the normal-incidence curves of the same scheme, and grey guide lines show slopes 2 and 4.\par}
-\end{figure}
 
 \FloatBarrier
 \section{A heterogeneous layer}\label{sec:hetero}
@@ -841,7 +832,7 @@ $k_PD=1.2$ and $k_SD=2.0$ thick, so the field reverberates between the model int
 answer is the product of the model layers' propagators. Its same-type reflection coefficients agree
 with those of the reflection--transmission recursion of \citet{Kennett1983}, computed independently,
 to $10^{-14}$. The schemes are those of \S\S\ref{sec:convergence}--\ref{sec:fourth}, with the
-contrast now changing from plane to plane; nothing else changes. The errors are in Table~\ref{tab:hetero}.
+contrast now changing from plane to plane; nothing else changes. The errors are in Table~\ref{tab:hetero} and Fig.~\ref{fig:convergence}(c).
 \begin{table}[htbp]
 \centering
 \caption{Relative error against the exact stratified layer, for $m$ planes of voxels per model layer (\S\ref{sec:hetero}). At normal incidence the order is measured from $m=4$ to $16$, where it is also $2.00$ for collocation and $4.00$ in transmission; at $20^\circ$ it is measured from $m=2$ to $4$.}\label{tab:hetero}
@@ -880,7 +871,133 @@ reflected displacements agree with the Mathematica scheme to $1.1\times10^{-15}$
 and at $20^\circ$, with and without the first moments. Lateral
 heterogeneity needs the full three-dimensional solver; it is the first extension discussed below.
 
+\section{A sphere: what the layer predicts in three dimensions}\label{sec:sphere}
+
+The layer and the stratified layer are laterally uniform. A sphere is not, and it has an exact
+solution for elastic scattering \citep{YingTruell1956,PaoMow1973}: it is the usual benchmark for
+volume-integral and discrete-dipole methods. This section solves it with the full three-dimensional
+voxel scheme, to test what the layer predicts for a laterally heterogeneous body. The sphere is
+voxelised by the cubes of an $n_{\mathrm{sub}}^3$ grid whose centres lie inside it, and the
+Foldy--Lax system is solved with the uniform-field voxel (the second-order scheme of
+\S\S\ref{sec:single}--\ref{sec:convergence}; the first-moment voxel of \S\ref{sec:fourth} has not been
+built for finite three-dimensional scatterers) and the cell-averaged coupling, by an FFT-accelerated
+iterative solver. The single site is the package's cube $T$-matrix, which differs from the collocation
+closure only through its far-field corrections (\S\ref{sec:closure}) and has the same order. A P wave
+is incident; the contrast is that of \S\ref{sec:convergence}. The error is the largest difference
+between the scattered far field and the exact one over nine scattering angles from $11^\circ$ to
+$169^\circ$, relative to the largest exact value, at a distance of $5\times10^4$ radii where the far
+field has converged (\path{scripts/pilot_sphere_voxel_vs_mie.py}).
+
+\paragraph{The raw error does not converge.} Table~\ref{tab:sphereraw} shows the error for grids of
+$4$, $6$ and $8$ voxels across. It does not fall steadily: at $k_Sa=0.5$ it is $6.1\%$, then
+$17\%$, then $2.4\%$. The staircase changes with every grid, and with it the volume and the shape of
+the scatterer. Rescaling by the ratio of the sphere's volume to the staircase's removes the largest
+swings but leaves an error of about $2\%$ at $k_Sa=0.5$, and $8$ to $11\%$ at $k_Sa=1.0$, that does
+not decrease. A refinement study of the voxelised sphere measures the staircase, not the scheme.
+
+\begin{table}[htbp]
+\centering
+\caption{A sphere voxelised on grids of $n_{\mathrm{sub}}$ voxels across, against exact elastic
+scattering: relative far-field error, raw and rescaled by the ratio of the sphere's volume to the
+staircase's. It does not converge with refinement, because the staircase changes with the grid.}
+\label{tab:sphereraw}
+\small
+\begin{tabular}{@{}rrcccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{$k_Sa=0.5$} & \multicolumn{2}{c}{$k_Sa=1.0$} \\
+$n_{\mathrm{sub}}$ & voxels & raw & volume-rescaled & raw & volume-rescaled \\
+\midrule
+$4$ & $32$  & $6.1\times10^{-2}$ & $1.8\times10^{-2}$ & $1.19\times10^{-1}$ & $7.7\times10^{-2}$ \\
+$6$ & $136$ & $1.71\times10^{-1}$ & $2.8\times10^{-2}$ & $6.8\times10^{-2}$ & $1.12\times10^{-1}$ \\
+$8$ & $280$ & $2.4\times10^{-2}$ & $2.1\times10^{-2}$ & $4.6\times10^{-2}$ & $8.6\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Refining a fixed shape.} The staircase is itself a union of cubes, so it has its own exact
+solution, and the voxel scheme converges to it when each voxel is split into $m^3$ sub-voxels of the
+same shape (Fig.~\ref{fig:staircase}). The change of the far field under that refinement is the
+discretisation error alone; the difference between the converged staircase field and the sphere's is
+the shape error alone. Table~\ref{tab:spherestair} refines the $n_{\mathrm{sub}}=8$ staircase to $m=2$
+and $3$, up to $7560$ voxels (\path{scripts/pilot_sphere_staircase_refinement.py}). The discretisation
+error converges at order $1.99$ at $k_Sa=0.5$ and $2.06$ at $k_Sa=1.0$ (Fig.~\ref{fig:convergence}d): the second order of the
+uniform-field voxel on the layer, now on a laterally heterogeneous body. At the original grid it is
+$5.4\times10^{-4}$ and $2.7\times10^{-3}$, larger by a factor of about five when the frequency doubles,
+close to the factor four of its $(kh)^2$ scaling. The shape error, from the field extrapolated to
+$m\to\infty$, is $2.36\times10^{-2}$ and $4.83\times10^{-2}$: $44$ and $18$ times the discretisation
+error. On a sphere the staircase dominates the error of the scheme, which is why the layer, where the
+staircase is exact, is the test that measures the scheme itself.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.75\linewidth]{figures/fig_staircase.pdf}
+\caption{Refining a fixed shape. (a) A cross-section through the $n_{\mathrm{sub}}=8$ voxelisation of a
+sphere (red circle): the voxels whose centres lie inside it. (b) The same staircase with every voxel
+split into $2\times2\times2$ sub-voxels ($m=2$): the shape, and so its exact solution, is unchanged, and
+only the discretisation is refined.}
+\label{fig:staircase}
+\par\smallskip{\footnotesize\textit{Alt text:} Two panels, each a square grid of shaded cells
+approximating a circle drawn in red; the shaded cells form a stepped outline that crosses the circle.
+In the right panel every shaded cell is divided into four smaller cells by thin lines, while the
+stepped outline is exactly the same as on the left.\par}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{The $n_{\mathrm{sub}}=8$ staircase with every voxel split into $m^3$ sub-voxels: far-field
+error against the exact sphere, and the change from the previous level. The change is the
+discretisation error; its order is measured from the two changes, and the field extrapolated to
+$m\to\infty$ gives the shape error.}
+\label{tab:spherestair}
+\small
+\begin{tabular}{@{}rrcccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{$k_Sa=0.5$} & \multicolumn{2}{c}{$k_Sa=1.0$} \\
+$m$ & voxels & vs sphere & change & vs sphere & change \\
+\midrule
+$1$ & $280$  & $2.403\times10^{-2}$ & & $4.604\times10^{-2}$ & \\
+$2$ & $2240$ & $2.369\times10^{-2}$ & $4.04\times10^{-4}$ & $4.779\times10^{-2}$ & $2.05\times10^{-3}$ \\
+$3$ & $7560$ & $2.364\times10^{-2}$ & $7.51\times10^{-5}$ & $4.811\times10^{-2}$ & $3.65\times10^{-4}$ \\
+\midrule
+\multicolumn{2}{@{}l}{order of the discretisation error} & \multicolumn{2}{c}{$1.99$} & \multicolumn{2}{c}{$2.06$} \\
+\multicolumn{2}{@{}l}{shape error ($m\to\infty$)} & \multicolumn{2}{c}{$2.36\times10^{-2}$} & \multicolumn{2}{c}{$4.83\times10^{-2}$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
 \section{Discussion}\label{sec:discussion}
+
+Figure~\ref{fig:convergence} collects the convergence of every test, with the order fitted to each by
+least squares (\path{scripts/plot_convergence_orders.py}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_convergence.pdf}
+\caption{Convergence of every test, with least-squares regression lines. Each line fits
+$\log e=c-p\log n$ to the filled points; open points are pre-asymptotic and are not fitted. The legend
+gives the order $p$ and its standard error. Colour marks the scheme: collocation (\S\ref{sec:single}),
+the mean-only voxel and the first-moment voxel (Eqs.~\eqref{eq:galerkin} and \eqref{eq:bloch}).
+(a)~The uniform layer, P reflection at normal incidence ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the
+contrast of \S\ref{sec:convergence}), fitted from $n=4$. (b)~The uniform layer at $20^\circ$, fitted from
+$n=2$: the S wave converted from incident P (solid) and reflected from incident SV (dashed).
+(c)~The stratified layer of \S\ref{sec:hetero}, reflection at normal incidence for P (solid) and S
+(dashed), against the number $m$ of voxel planes per model layer, fitted from $m=4$. (d)~The
+voxelised sphere of \S\ref{sec:sphere}: the far-field difference between the $n_{\mathrm{sub}}=8$
+staircase with every voxel split into $m^3$ sub-voxels and the staircase field extrapolated to
+$m\to\infty$, fitted over $m=1,2,3$. That limit is extrapolated from the same three levels, so panel (d)
+checks consistency; its fitted orders differ slightly from those of Table~\ref{tab:spherestair}
+($1.99$ and $2.06$), which are measured from the changes between levels.}
+\label{fig:convergence}
+\par\smallskip{\footnotesize\textit{Alt text:} Four log--log panels of relative error against refinement,
+each showing data points and fitted straight lines with the fitted order in the legend. (a) Uniform layer
+at normal incidence, 1 to 32 voxel planes: the collocation and mean-only lines have order 2.000, the
+first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10^{-13}$. (b) Uniform layer at 20 degrees,
+1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
+first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
+for collocation and mean-only, 4.000 for first moment. (d) Voxelised sphere, 1 to 3 sub-voxels per voxel
+edge: two lines of order about 2, for $k_Sa=0.5$ and $1$.\par}
+\end{figure}
 
 \paragraph{Where the error of a voxel scheme lives.} The results separate the two approximations
 a voxel scheme makes. The \emph{coupling} between voxels makes none: averaged over the source cell it
@@ -937,7 +1054,8 @@ compared with the accuracy the wavefield must have.
 and a randomly stratified one, for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
 first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
-$O(k_\parallel h)$. The numerical evidence is at moderate, physically typical contrasts (up to
+$O(k_\parallel h)$. The sphere of \S\ref{sec:sphere} shows that the second order of the
+uniform-field voxel carries over to a laterally heterogeneous body; the fourth order has still to be shown there. The numerical evidence is at moderate, physically typical contrasts (up to
 $15\%$ in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
 validated; the closed forms are first order in the contrast, and the departures from them at the
 full contrast are of second order. What is established is the \emph{order} of convergence and its
@@ -969,7 +1087,8 @@ three-dimensional scheme reduces exactly to one dimension) and at oblique incide
 leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The orders survive
 the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
 first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
-voxel needs about forty. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
+voxel needs about forty. On a voxelised sphere the discretisation error is again second order, and the
+staircase approximation of the surface dominates it, by factors of $18$ to $44$. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
 
 \begin{table}[htbp]
 \centering
@@ -1000,6 +1119,7 @@ First-moment error $-(kd)^4/720$, Eq.~\eqref{eq:ratio} & $n=1$--$8$, to $10^{-4}
 Independent implementation of Eq.~\eqref{eq:bloch} & $1.1\times10^{-15}$, 40 cases: P, SV, SH, stratified \\
 Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, normal and $20^\circ$ \\
 Stratified reference against Kennett's recursion & $10^{-14}$ \\
+Sphere, fixed staircase refined, \S\ref{sec:sphere} & order $1.99$ and $2.06$; shape error $18$--$44\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1014,7 +1134,9 @@ Oblique, IncidentS, Heterogeneous and Figure (the figure), and their reference d
 \path{Mathematica/CubeMomentCore.wl} (gate \path{CubeMomentCoreTest.wl}), \path{CubeA22Block.wl},
 \path{CubeMomentArchiveCheck.wl} and \path{CubeShearSplit.wl}, with the Python half of the last in
 \path{scripts/gate_cube_shear_split.py}; the stratified reference against Kennett's recursion is
-\path{scripts/gate_heterogeneous_reference_vs_kennett.py}; the test against exact Mie is
+\path{scripts/gate_heterogeneous_reference_vs_kennett.py}; the voxelised sphere is
+\path{scripts/pilot_sphere_voxel_vs_mie.py} and \path{scripts/pilot_sphere_staircase_refinement.py};
+the test against exact Mie is
 \path{scripts/gate_sphere_closure_vs_mie.py}, with the closed forms in \path{Mathematica/SphereClosureDynamic.wl}; the exact kernel is
 \path{cubic_scattering/cell_averaged_lattice.py}; the independent implementation of the
 first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}. All are archived at

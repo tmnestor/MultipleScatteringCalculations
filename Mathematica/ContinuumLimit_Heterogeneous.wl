@@ -193,6 +193,7 @@ Module[{kx0 = N[omH/al Sin[20 Degree], 20], ex, ms = {1, 2, 4}, e0, e1, ord, pl}
   Print["      orders (m = 2 -> 4): mean only ", ToString[NumberForm[ord[e0[[All, 1]]], 3], OutputForm], " / ",
    ToString[NumberForm[ord[e0[[All, 2]]], 3], OutputForm], "   first moments ", ToString[NumberForm[ord[e1[[All, 1]]], 3], OutputForm],
    " / ", ToString[NumberForm[ord[e1[[All, 2]]], 3], OutputForm]];
+  obliqueErrs = <|"m" -> ms, "G0" -> e0, "G1" -> e1|>;   (* {R_PP, R_PS} per m, for the convergence figure *)
   AppendTo[allOks, AllTrue[{ord[e0[[All, 1]]], ord[e0[[All, 2]]]}, 1.7 < # < 2.3 &] &&
     AllTrue[{ord[e1[[All, 1]]], ord[e1[[All, 2]]]}, 3.6 < # < 4.4 &]];
   Print["  [5] oblique P: mean only second order, first moments FOURTH, R_PP and R_PS: ", pass[Last[allOks]]]];
@@ -210,5 +211,12 @@ Export[base <> "ContinuumLimit_heterogeneous_ref.json",
    "exact_normal_P_RT" -> Map[reim, N[resP["RT"]]], "exact_normal_S_RT" -> Map[reim, N[resS["RT"]]],
    "exact_oblique_20deg_RPP_RPS" -> Map[reim, N[exactRHet[omH, N[omH/al Sin[20 Degree], 20], cells, dCell]]],
    "cases" -> rawCases|>, "RawJSON"];
+(* the errors themselves, for the convergence figure (scripts/plot_convergence_orders.py): relative errors of the
+   scattered field against the exact stratified layer, {R, T} at normal incidence and {R_PP, R_PS} at 20 degrees *)
+Export[base <> "ContinuumLimit_heterogeneous_convergence.json",
+  <|"n_layers" -> nCells, "omega" -> omH,
+   "normal_P" -> <|"m" -> resP["ms"], "errors_R_T" -> N[resP["errs"]]|>,
+   "normal_S" -> <|"m" -> resS["ms"], "errors_R_T" -> N[resS["errs"]]|>,
+   "oblique_P_20deg" -> <|"m" -> obliqueErrs["m"], "errors_RPP_RPS" -> N[KeyDrop[obliqueErrs, "m"]]|>|>, "RawJSON"];
 Print["==== ContinuumLimit_Heterogeneous (stage 13): ",
   If[And @@ allOks, "ALL " <> ToString[Length[allOks]] <> " CHECKS PASS", "CHECKS FAILED"], " ===="];
