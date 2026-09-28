@@ -71,6 +71,8 @@ PREAMBLE = r"""\documentclass[preprint,review,12pt]{elsarticle}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{calc}
 \usepackage{placeins}
 \usepackage{url}
 \usepackage{lineno}

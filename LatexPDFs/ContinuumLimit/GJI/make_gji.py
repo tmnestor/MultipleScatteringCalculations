@@ -49,6 +49,8 @@ PREAMBLE = r"""\documentclass[extra,mreferee]{gji}
 \usepackage{mathtools}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{calc}
 \usepackage{placeins}
 \usepackage{url}
 \usepackage{lineno}
