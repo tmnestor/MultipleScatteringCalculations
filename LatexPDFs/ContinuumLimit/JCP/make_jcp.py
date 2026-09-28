@@ -29,6 +29,8 @@ body = body.replace(
     "\\includegraphics[width=\\linewidth]{convergence.pdf}",
     "\\includegraphics[width=\\linewidth]{../convergence.pdf}",
 )
+# elsarticle's \paragraph adds its own full stop: drop the source's, or headings end in ".."
+body = re.sub(r"\\paragraph\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\.\}", r"\\paragraph{\1}", body)
 # notebook names: \path breaks at underscores and dots
 body = re.sub(r"\\nb\{([^{}]*)\}", lambda m: r"\path{" + m.group(1).replace(r"\_", "_") + "}", body)
 

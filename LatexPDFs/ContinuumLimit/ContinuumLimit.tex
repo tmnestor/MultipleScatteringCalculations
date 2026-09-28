@@ -84,8 +84,8 @@ against an independent implementation or an exact solution.
 \section{Introduction}\label{sec:intro}
 
 \paragraph{The problem this paper serves.} Seismic waves in the crust are scattered by heterogeneity
-on every scale. The models that describe it are parameterised in many ways --- as layers or blocks,
-by smooth basis functions, or by interfaces --- and a calculation that uses one must first sample it
+on every scale. The models that describe it are parameterised in many ways (as layers or blocks,
+by smooth basis functions, or by interfaces), and a calculation that uses one must first sample it
 onto a grid. A volume-integral scattering calculation represents the sampled model as cells of
 constant properties and treats every cell as a scatterer: a voxel carrying a single-site
 $T$-matrix and coupled to every other voxel through the Green's tensor of the background, with the
@@ -98,23 +98,25 @@ centres: it carries a local term whose size per unit volume does not shrink as t
 unless the single voxel's response is matched to cancel it, refinement converges to the wrong
 answer without revealing it.
 
-\paragraph{Why a homogeneous layer.} This paper therefore studies the one configuration in which a
-voxel scheme runs in full --- every voxel, every coupling, the whole multiple-scattering series,
-at normal and at oblique incidence --- and the exact answer is nevertheless known: a laterally
-uniform layer filled with identical voxels. Because cubes tile space, such a layer does not
-approximate a homogeneous layer; it \emph{is} one. Any difference between its reflection and
-transmission and those of the continuous layer is therefore error of the discretisation alone,
-with no modelling error and no shape error behind which to hide. A sphere, the usual test object
-for volume-integral and discrete-dipole methods \citep{Yurkin2006}, cannot give this: its error mixes
-the discretisation with the staircase approximation of a curved surface by cubes. The layer plays
-the part of the patch test in finite elements. A scheme that cannot reproduce a uniform medium
-correctly cannot be trusted in a heterogeneous one. What the layer reveals about the scheme's two
-ingredients --- the coupling between voxels and the response of a single voxel --- does not depend on
-the medium, because the same two ingredients are used wherever the scheme is applied.
+\paragraph{Why a homogeneous layer.} This paper therefore starts from the simplest configuration in
+which a voxel scheme runs in full (every voxel, every coupling, the whole multiple-scattering series,
+at normal and at oblique incidence) and the exact answer is nevertheless known: a layer filled with
+identical voxels. Because cubes tile space, such a layer does not approximate a homogeneous layer; it
+\emph{is} one. Any difference between its reflection and transmission and those of the continuous
+layer is therefore error of the discretisation alone, with no modelling error and no shape error behind
+which to hide. A sphere, the usual test object for volume-integral and discrete-dipole methods
+\citep{Yurkin2006}, cannot give this: its error mixes the discretisation with the staircase
+approximation of a curved surface by cubes. The layer plays the part of the patch test in finite
+elements: reproducing a uniform medium correctly is necessary, though not sufficient, for a scheme to be
+trusted in a heterogeneous one. What the layer establishes about the scheme's two ingredients, the
+coupling between voxels and the response of a single voxel, are properties of the ingredients, which
+are the same in any medium: that the averaged coupling is exact, that the self term cancels, and the
+form of the single-site error. \S\ref{sec:hetero} confirms that they carry over to a stratified
+medium; a laterally heterogeneous one remains to be tested.
 
 \paragraph{What the reader gains.} Four things that a heterogeneous test cannot provide. First, a
-proof, exact at normal incidence, that the voxel scheme converges to the continuum, and the specific ingredient --- a coupling
-averaged over the source voxel --- without which it converges to the wrong answer. Second, the
+proof, exact at normal incidence, that the voxel scheme converges to the continuum, and the specific ingredient, a coupling
+averaged over the source voxel, without which it converges to the wrong answer. Second, the
 leading error in closed form for every discretisation, so that a grid can be chosen for a required
 accuracy before the calculation is run. Third, a single-site $T$-matrix derived from first
 principles, with its error stated and checked against the exact solution for a sphere. Fourth, a
@@ -125,7 +127,7 @@ times larger in each direction than the standard one (\S\ref{sec:discussion}).
 so a uniform region discretised into cubes is still that uniform region, whereas spheres or point
 scatterers can only approximate it and carry a packing error of their own. Their \emph{regular
 lattice} makes the interaction between cells translation invariant, so the coupling is a
-convolution --- Toeplitz between planes, Bloch-periodic within them --- and the whole system is solved
+convolution (Toeplitz between planes, Bloch-periodic within them), and the whole system is solved
 by fast transforms. And a cube small compared with the wavelength has a \emph{single-site response
 in closed form}, the elastic depolarisation of a cube (\S\ref{sec:single}), so the only
 approximation a voxel introduces is the internal field it assumes.
@@ -141,8 +143,8 @@ dipole spacing when shape errors are absent \citep{Yurkin2006}; and integrating 
 over each cell rather than sampling it at the centre improves accuracy, most of all for strong
 contrasts \citep{Chaumet2004}. The elastic problem adds a structure the scalar and electromagnetic
 ones lack. A cubic voxel responds to the incident field with a force (through its density contrast)
-and a moment (through its stiffness contrast), so the state at a voxel has nine components ---
-displacement and strain --- and the single site's self-interaction is the elastic depolarisation of
+and a moment (through its stiffness contrast), so the state at a voxel has nine components
+(displacement and strain), and the single site's self-interaction is the elastic depolarisation of
 a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
 
 \paragraph{This paper.} The approach originates in the two-and-a-half-dimensional formulation of
@@ -241,15 +243,15 @@ powers of $|\mathbf g|\propto1/d$, so their contribution per voxel volume does \
 $d\to0$: at $m=1$ it is eleven times the continuum term (\nb{ContinuumLimit\_SpecularSums.wl},
 matched to the package's Ewald lattice sum to $5\times10^{-13}$). This surviving term is static.
 Summed over all planes in slab order, the static lattice sum of the point kernel is exactly the
-depolarisation of a uniform plate --- $-1/M_P$ on $\varepsilon_{zz}\leftarrow M_{zz}$ and $-1/(2\mu)$
-on the normal shears, per unit volume --- plus a cubic-symmetric remainder
+depolarisation of a uniform plate ($-1/M_P$ on $\varepsilon_{zz}\leftarrow M_{zz}$ and $-1/(2\mu)$
+on the normal shears, per unit volume) plus a cubic-symmetric remainder
 (\nb{ContinuumLimit\_StaticLocal.wl}, to $2\times10^{-10}$). The point kernel therefore reproduces
 the continuum only if that remainder is cancelled by the voxel's own self term.
 
 \section{The tiling identity}\label{sec:tiling}
 
 Replace the point coupling by the \emph{source-cell average}
-$\langle\bG\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bG(\mathbf r-\mathbf y)\,\mathrm{d}\mathbf y$ --- the
+$\langle\bG\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bG(\mathbf r-\mathbf y)\,\mathrm{d}\mathbf y$, the
 field at a voxel centre of a uniform polarisation of the source voxel. Each Poisson order in
 Eq.~\eqref{eq:poisson} is then multiplied by the cube's form factor
 \begin{equation}
@@ -287,8 +289,8 @@ block of the cell-averaged Foldy--Lax kernel is
 \begin{equation}\label{eq:exactkernel}
   \bS_{\text{avg}}(0)=\bP_0-\bS_{\text{self}}/d^3 ,
 \end{equation}
-with no Ewald splitting, near shell or asymptotic tail. The route it replaces --- Ewald summation
-with a near shell averaged by quadrature and an $O(d^2)$ Taylor tail beyond it --- carries a static
+with no Ewald splitting, near shell or asymptotic tail. The route it replaces (Ewald summation
+with a near shell averaged by quadrature and an $O(d^2)$ Taylor tail beyond it) carries a static
 strain-from-moment error of $9.4\times10^{-4}$ at its default settings, falling to $2.6\times10^{-5}$
 only when both the shell radius and the quadrature order are raised; Eq.~\eqref{eq:exactkernel} is
 now the package's kernel at normal incidence.
@@ -565,7 +567,7 @@ Eq.~\eqref{eq:ratio} hold to $4\times10^{-4}$ (\nb{ContinuumLimit\_IncidentS.wl}
 ($0.124$ against $1/8$); the transmission constant grows to $-0.092$.
 
 \paragraph{Why a uniform-field single site stops at second order.} The two constants have opposite
-signs, so no scalar correction of $\bT$ --- no single $O((kh)^2)$ factor --- can cancel both. The
+signs, so no scalar correction of $\bT$, no single $O((kh)^2)$ factor, can cancel both. The
 package $T$-matrix illustrates it: its form-factor corrections reduce the reflection error by a
 factor $4.45$ and \emph{increase} the transmission error by $1.7$, at every $n$. The missing term in
 Eq.~\eqref{eq:errorR} is the first moment of the internal field over each voxel, which radiates
@@ -648,7 +650,7 @@ everything linear across the voxel, so the leading term no longer depends on the
 the field is observed.
 
 \paragraph{In three dimensions.} The three-dimensional first-moment voxel carries the nine-component
-state with Legendre weights $\{1,\,x/h,\,y/h,\,z/h\}$ --- 36 unknowns --- tested with the same
+state with Legendre weights $\{1,\,x/h,\,y/h,\,z/h\}$, 36 unknowns in all, tested with the same
 functions and coupled by cell-to-cell double integrals of the Green's tensor. For a laterally uniform
 layer at normal incidence it reduces \emph{exactly} to Eq.~\eqref{eq:galerkin}
 (\nb{ContinuumLimit\_Reduction3D.wl}). The lateral first moments are never excited: the lattice and
@@ -726,7 +728,7 @@ The spectral construction is implemented twice. The second implementation
 the depth dependence of the transformed kernel from an independent residue construction, obtains
 the local weight as a numerical large-$k_z$ limit of the inverted Christoffel matrix, evaluates every
 double integral by quadrature and separates P from S by sampling the upgoing field at two depths.
-The raw reflected displacements of the two agree to $9\times10^{-16}$ in all $36$ cases compared ---
+The raw reflected displacements of the two agree to $9\times10^{-16}$ in all $36$ cases compared:
 incident P, SV and SH, normal incidence and $20^\circ$, $n=1,2,4$, with and without the first moments.
 Figure~\ref{fig:convergence} collects the convergence.
 
@@ -735,7 +737,7 @@ Figure~\ref{fig:convergence} collects the convergence.
 \includegraphics[width=\linewidth]{convergence.pdf}
 \caption{Relative reflection error of the discrete layer against the number of voxel planes $n$
 ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}). Filled: normal
-incidence, P reflection --- collocation (\S\ref{sec:single}), the mean-only voxel and the first-moment
+incidence, P reflection: collocation (\S\ref{sec:single}), the mean-only voxel and the first-moment
 voxel of Eq.~\eqref{eq:galerkin}. Dashed, open squares and diamonds: P incident at $20^\circ$, the
 converted S wave, mean-only (green) and first-moment (orange) voxels of Eq.~\eqref{eq:bloch}. Dotted, open
 triangles: SV incident at $20^\circ$, the reflected S wave, mean-only (purple) and first-moment (brown).
@@ -807,8 +809,8 @@ plane by the tiling identity, and the self term it omits is exactly the one the 
 carries. Every error therefore comes from the \emph{single site}, from the internal field it
 assumes. For a uniform field that error is the midpoint rule's, known in closed form; for a linear
 field it is the next term of the same expansion. The converse is the practical warning. A kernel that
-is not the cell integral --- the point Green's tensor, or a cell average that does not match the
-single site's closure --- leaves a local term that does not vanish as the voxels shrink
+is not the cell integral (the point Green's tensor, or a cell average that does not match the
+single site's closure) leaves a local term that does not vanish as the voxels shrink
 (\S\ref{sec:point}): the evanescent lattice orders carry a static contribution of fixed size per
 voxel volume. A scheme built that way converges to the wrong limit, and refinement cannot reveal
 it, because the error is scale-invariant.
@@ -851,8 +853,8 @@ The stratified model of \S\ref{sec:hetero} measures it directly: $347$ planes of
 against $8$ first-moment voxels for the same accuracy. The gain is largest precisely where it matters: when the model varies on scales that are coarse
 compared with the accuracy the wavefield must have.
 
-\paragraph{Limitations and outlook.} The results concern laterally uniform media --- a homogeneous layer
-and a randomly stratified one --- for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
+\paragraph{Limitations and outlook.} The results concern laterally uniform media, a homogeneous layer
+and a randomly stratified one, for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
 first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
 $O(k_\parallel h)$. The numerical evidence is at moderate, physically typical contrasts (up to
@@ -863,8 +865,8 @@ leading constant, not the behaviour at strong contrast, where the single site's 
 limit the accuracy before the lattice coupling does. The single site's dynamic error is in closed
 form for a sphere only; for a cube, for which no exact solution exists, it is known through the
 layer (\S\S\ref{sec:convergence}--\ref{sec:fourth}). Two extensions follow directly. The first is
-the three-dimensional solver itself. The second is a stratified \emph{background} --- a layered
-reference medium, as distinct from the stratified contrast of \S\ref{sec:hetero}: the lattice coupling
+the three-dimensional solver itself. The second is a stratified \emph{background}, a layered
+reference medium, as distinct from the stratified contrast of \S\ref{sec:hetero}. There the lattice coupling
 then carries the reverberation of the layering, which is not translation invariant in depth, and
 whether a tiling identity holds for it is the natural next question.
 
@@ -882,8 +884,8 @@ The collocation closure carries the same self term as the lattice kernel, which 
 system is a collocation of the continuum equation. It converges at second order, with a leading
 error that is a midpoint-rule error of the internal field, known in closed form for every
 discretisation, and opposite in sign in reflection and transmission. A voxel that also carries the
-first moment of its internal field converges at fourth order --- at normal incidence, where the
-three-dimensional scheme reduces exactly to one dimension, and at oblique incidence --- with a
+first moment of its internal field converges at fourth order, at normal incidence (where the
+three-dimensional scheme reduces exactly to one dimension) and at oblique incidence, with a
 leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The orders survive
 the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
 first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
