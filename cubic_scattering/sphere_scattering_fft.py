@@ -18,6 +18,7 @@ Algorithm (mirrors FFTLaxFoldy.wl):
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -43,6 +44,7 @@ from .sphere_scattering import SphereDecompositionResult
 def _build_grid_index_map(
     radius: float,
     n_sub: int,
+    inside: Callable[[NDArray[np.floating]], bool] | None = None,
 ) -> tuple[NDArray[np.intp], NDArray[np.floating], float]:
     """Build grid index mapping for sphere sub-cells.
 
@@ -52,6 +54,10 @@ def _build_grid_index_map(
     Args:
         radius: Sphere radius (m).
         n_sub: Number of sub-cells per edge of bounding cube.
+        inside: Which grid cells belong to the scatterer, decided from the cell centre.  ``None`` (the
+            default) keeps the cells whose centre lies inside the sphere of ``radius``.  Any other shape
+            inside the bounding cube ``[-radius, radius]^3`` can be given, e.g. a fixed staircase refined
+            into sub-voxels, so that the same shape is solved at several resolutions.
 
     Returns:
         (grid_idx, centres, a_sub) where:
@@ -72,7 +78,8 @@ def _build_grid_index_map(
         for i1 in range(n_sub):
             for i2 in range(n_sub):
                 pos = np.array([coords_1d[i0], coords_1d[i1], coords_1d[i2]])
-                if np.linalg.norm(pos) < radius:
+                keep = np.linalg.norm(pos) < radius if inside is None else inside(pos)
+                if keep:
                     grid_indices.append([i0, i1, i2])
                     centres_list.append(pos)
 
@@ -256,6 +263,7 @@ def compute_sphere_foldy_lax_fft(
     *,
     cell_average: bool = True,
     n_gauss: int | None = None,
+    inside: Callable[[NDArray[np.floating]], bool] | None = None,
 ) -> SphereDecompositionResult:
     """Compute sphere T-matrix via FFT-accelerated Foldy-Lax.
 
@@ -277,12 +285,14 @@ def compute_sphere_foldy_lax_fft(
             True: it is the propagator that matches the collocation single-site
             closure, and it is measured 5.3x closer to exact Mie at ka = 0.1.
         n_gauss: Gauss points per axis; ``None`` picks it from the separation.
+        inside: Scatterer shape as a cell-centre test; ``None`` is the sphere of ``radius``.  See
+            ``_build_grid_index_map``.
 
     Returns:
         SphereDecompositionResult with composite T-matrix.
     """
     # Step 1: Grid index mapping
-    grid_idx, centres, a_sub = _build_grid_index_map(radius, n_sub)
+    grid_idx, centres, a_sub = _build_grid_index_map(radius, n_sub, inside)
     nC = len(centres)
     nP = 2 * n_sub - 1
 
