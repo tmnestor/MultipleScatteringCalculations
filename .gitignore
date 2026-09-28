@@ -19,6 +19,7 @@ htmlcov/
 *.bbl
 *.blg
 *.log
+*.spl
 *.out
 *.toc
 *.fls
@@ -70,3 +71,6 @@ LatexPDFs/ContrastSourceVIE/Renormalized scattering series for frequency-domain 
 
 # generated symbolic caches (machine-specific binaries)
 Mathematica/cache/
+
+# local reference copies of journal templates and author instructions
+LatexPDFs/ContinuumLimit/templates/
