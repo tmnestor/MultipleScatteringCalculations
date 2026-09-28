@@ -41,17 +41,17 @@ through the background Green's tensor: the elastic counterpart of the discrete d
 Because cubes tile space, a layer of identical voxels is exactly a homogeneous layer, so it isolates
 the discretisation error, with no modelling or shape error. We show that (i) the cube's lateral form
 factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
-continuum's and the lattice kernel at normal incidence is in closed form; (ii) the single-site
-$T$-matrix follows from distributional moments of the Green's tensor and, against exact scattering
-by a sphere, is exact statically and departs only by a real, closed-form $(ka)^2$ term; (iii) its
-self term cancels, so the scheme is a collocation of the continuum equation, of second order with
-leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission, which no scalar correction
-can remove; (iv) a Galerkin voxel carrying the first moment of its internal field converges at
-fourth order, with leading error $-(kd)^4/720$, for incident P, SV and SH waves at normal and
-oblique incidence. In a randomly stratified layer the orders are unchanged, and the fourth-order
-voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer. On a voxelised sphere the
-error is again second order, dominated by the staircase error. Every result is verified by an
-independent implementation or an exact solution.
+continuum's; (ii) the single-site $T$-matrix follows from distributional moments of the Green's
+tensor and, against exact scattering by a sphere, is exact statically and departs only by a real,
+closed-form $(ka)^2$ term; (iii) its self term cancels, so the scheme is a collocation of the
+continuum equation, of second order with leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
+transmission, which no scalar correction can remove; (iv) a Galerkin voxel carrying Legendre moments
+of its internal field to degree $p$ converges at order $2p+2$, with leading error $-(kd)^4/720$ at
+$p=1$, for incident P, SV and SH waves at normal and oblique incidence, and one plane of it
+reproduces the thin-layer series in the thickness $D$ through $O(D^{2p+2})$. In a randomly
+stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
+$10^{-6}$ with one voxel per model layer. On a voxelised sphere the staircase error dominates. Every
+result is verified by an independent implementation or an exact solution.
 \end{abstract}
 
 \begin{highlights}
