@@ -78,7 +78,10 @@ cancels the kernel's, so the discrete system is a collocation of the continuum e
 converges at second order, with leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
 transmission. The opposite signs mean that no scalar correction of the single site can remove it.
 (v) A voxel that also carries the first moment of its internal field converges at fourth order,
-with leading error $-(kd)^4/720$, for incident P, SV and SH at normal and oblique incidence. In a
+with leading error $-(kd)^4/720$, for incident P, SV and SH at normal and oblique incidence; with
+Legendre moments to degree $p$ it converges at order $2p+2$, with a closed-form constant, and a
+single plane of such voxels reproduces the thin layer's series in its thickness through
+$O(D^{2p+2})$. In a
 randomly stratified layer the orders are unchanged, and the first-moment voxel reaches an accuracy
 of $10^{-6}$ with one voxel per model layer. On a voxelised sphere the discretisation error is again
 second order, and the staircase error of the shape dominates it. Every result is derived symbolically and checked
@@ -124,7 +127,8 @@ averaged over the source voxel, without which it converges to the wrong answer. 
 leading error in closed form for every discretisation, so that a grid can be chosen for a required
 accuracy before the calculation is run. Third, a single-site $T$-matrix derived from first
 principles, with its error stated and checked against the exact solution for a sphere. Fourth, a
-voxel that converges at fourth order, also in a randomly stratified model (\S\ref{sec:hetero}): for a reflection accuracy of $10^{-6}$ it allows voxels $58$
+voxel that converges at fourth order, and with further Legendre moments at any even order, also in a
+randomly stratified model (\S\ref{sec:hetero}): for a reflection accuracy of $10^{-6}$ it allows voxels $58$
 times larger in each direction than the standard one (\S\ref{sec:discussion}).
 
 \paragraph{Why cubic voxels.} Cubes are the natural cell for three reasons. They \emph{tile space},
@@ -160,7 +164,8 @@ point coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling su
 \S\ref{sec:single} derives the single-site $T$-matrix from moment integrals, tests it against the exact
 sphere, and shows that with it the discrete system is a collocation of the continuum equation.
 \S\ref{sec:convergence} gives that collocation's second-order error in closed form, and
-\S\ref{sec:fourth} the fourth-order voxel, for incident P and S at normal and oblique incidence.
+\S\ref{sec:fourth} the fourth-order voxel, for incident P and S at normal and oblique incidence, and
+its generalisation to Legendre moments of any degree.
 \S\ref{sec:hetero} repeats the tests on a randomly stratified layer, \S\ref{sec:sphere} on a sphere, and \S\ref{sec:discussion} discusses
 what the results imply for voxel schemes in general. Every result is derived symbolically in
 Mathematica and checked against an independent Python implementation or an exact solution.
@@ -240,12 +245,23 @@ displacement and traction at its faces; they agree with the stratified propagato
 reference in this work to $2.5\times10^{-8}$, P and S (\nb{ContinuumLimit\_Reference.wl}).
 
 For a layer of thickness $D$ with modulus $M_1$ and density $\rho_1$ in a background $M_0,\rho_0$,
-the reflection coefficient expands as
+write $Z_j=\sqrt{M_j\rho_j}$ for the impedances, $\zeta=Z_1/Z_0$ for their ratio and
+$k_1=\omega\sqrt{\rho_1/M_1}$ for the layer's wavenumber. The reflection coefficient expands as
 \begin{equation}\label{eq:thin}
-  R=\frac{\mathrm{i}\omega D}{2}\sqrt{\frac{M_0}{\rho_0}}
-  \Bigl[\frac{\rho_1-\rho_0}{M_0}-\rho_0\Bigl(\frac1{M_1}-\frac1{M_0}\Bigr)\Bigr]+O(D^2),
+\begin{aligned}
+  R={}&\frac{\mathrm{i}k_1D}{2}\bigl(\zeta-\zeta^{-1}\bigr)
+  +\frac{(k_1D)^2}{4}\bigl(\zeta^{-2}-\zeta^{2}\bigr)
+  -\frac{\mathrm{i}(k_1D)^3}{24}\bigl(\zeta-\zeta^{-1}\bigr)\bigl(3\zeta^{-2}+2+3\zeta^{2}\bigr)\\
+  &+\frac{(k_1D)^4}{48}\bigl(\zeta^{2}-\zeta^{-2}\bigr)\bigl(3\zeta^{2}-2+3\zeta^{-2}\bigr)+O(D^5),
+\end{aligned}
 \end{equation}
-exact in the contrast (\nb{ContinuumLimit\_ThinLayer.wl}): to first order a thin layer is an
+exact in the contrast (\nb{ContinuumLimit\_ThinLayer.wl}, which checks each coefficient symbolically
+and the truncated series against the exact layer). The first term is
+\begin{equation}\label{eq:thin1}
+  \frac{\mathrm{i}\omega D}{2}\sqrt{\frac{M_0}{\rho_0}}
+  \Bigl[\frac{\rho_1-\rho_0}{M_0}-\rho_0\Bigl(\frac1{M_1}-\frac1{M_0}\Bigr)\Bigr]:
+\end{equation}
+to first order a thin layer is an
 interface across which the traction jumps by the excess inertia and the displacement by the excess
 compliance. At oblique incidence the same statement holds with the first-order system
 $\partial_z\mathbf b=\bA\mathbf b$ for the P--SV state $\mathbf b=(u_x,u_z,t_{xz},t_{zz})$: the layer
@@ -253,7 +269,10 @@ acts to $O(D)$ as the jump $\bI+(\bA_1-\bA_0)D$, which reproduces the layer's $O
 coefficients $R_{PP},R_{PS}$ to $10^{-12}$; the series truncated at $O(D^k)$ converges at exactly
 order $k$; and a soft thin layer with shear modulus $\mu_1=D/\eta$ at fixed compliance $\eta$ tends to
 the linear-slip interface as $D\to0$. These expansions are the target a single plane of voxels must
-reproduce order by order.
+reproduce order by order. A plane of voxels that carry Legendre moments of their internal field to
+degree $p$ reproduces Eq.~\eqref{eq:thin} term by term through $O(D^{2p+2})$ and first differs at
+$D^{2p+3}$ (\S\ref{sec:fourth}): the mean-only voxel reproduces the equivalent interface and the $D^2$
+term, the first-moment voxel all four terms shown.
 
 \section{The specular sums of the point Green's tensor}\label{sec:point}
 
@@ -658,10 +677,11 @@ Eq.~\eqref{eq:errorR} is the first moment of the internal field over each voxel,
 through the derivative of the kernel. A fourth-order scheme must carry it: a single site with a
 gradient channel, and a kernel whose cell integrals include the kernel's derivative.
 
-\section{Fourth order: the first-moment voxel}\label{sec:fourth}
+\section{Fourth order and beyond: Legendre moments of the voxel field}\label{sec:fourth}
 
 Let each voxel carry the mean \emph{and} the first moment of its internal field. On voxel $j$, with
-local coordinate $s\in[-h,h]$ and Legendre functions $\phi_0=1$, $\phi_1=s/h$, the field is
+local coordinate $s\in[-h,h]$ and Legendre functions $\phi_b(s)=P_b(s/h)$ ($\phi_0=1$, $\phi_1=s/h$,
+$\phi_2=(3s^2/h^2-1)/2$, \dots), the field is
 $w=\sum_{b}c_{b,j}\,\phi_b$, $w=(u,\varepsilon)$ the displacement and strain of the P channel, and
 the polarisation is $q=(\omega^2\Delta\rho\,u,\ \Delta M\,\varepsilon)$ with $\Delta M=\Delta\lambda
 +2\Delta\mu$. Testing the continuum equation
@@ -669,7 +689,7 @@ the polarisation is $q=(\omega^2\Delta\rho\,u,\ \Delta M\,\varepsilon)$ with $\D
   w(z)=w^0(z)+\int\bK(z-z')\,q(z')\,\dd z',\qquad
   \bK=\begin{pmatrix} g & g' \\ g' & g''\end{pmatrix},\quad g''=-k^2g-\delta(z)/M_P,
 \end{equation}
-with the same two functions on every voxel gives
+with the same functions on every voxel gives
 \begin{equation}\label{eq:galerkin}
   \Bigl(\int_{i}\phi_a^2\,\dd z\Bigr)c_{a,i}
   =\int_i\phi_a w^0\,\dd z+\sum_{j,b}\Bigl[\int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\phi_b(z')\,\dd z\,\dd z'\Bigr]
@@ -702,6 +722,36 @@ voxels represents the $2$\,m layer $6500$ times more accurately than a single pl
 The collocation column is the scheme of \S\ref{sec:single} and reproduces the chain of the full
 $9\times9$ system to all printed digits.
 
+\paragraph{Higher moments.} Carrying the Legendre moments to degree $p$ changes nothing in the
+construction: the moments and the same-cell double integrals of $P_b(s/h)$ against exponentials are
+again closed-form, and for $p\le1$ the general-degree solver reproduces the chain above exactly. The
+second-moment voxel ($p=2$) converges at sixth order and the third-moment voxel ($p=3$) at eighth, in
+reflection and transmission (Table~\ref{tab:higher}; \nb{ContinuumLimit\_SecondMoment.wl}); the
+second-moment voxel's order is $6.00$ at $\omega=60$, $300$ and $600$\,rad\,s$^{-1}$. The errors fall to
+$10^{-22}$, so they are computed in 40-digit arithmetic.
+\begin{table}[htbp]
+\centering
+\caption{Relative error of the scattered displacement of the layer, reflection / transmission, at
+$\omega=300$\,rad\,s$^{-1}$, for voxels carrying Legendre moments to degree $p$. The order is the mean
+over the halvings $n=2\to4\to8$.}\label{tab:higher}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}rccc@{}}
+\toprule
+$n$ & first moment ($p=1$) & second moment ($p=2$) & third moment ($p=3$) \\
+\midrule
+$1$ & $2.8\times10^{-7}$ / $2.8\times10^{-7}$ & $2.8\times10^{-11}$ / $4.2\times10^{-11}$ &
+      $1.5\times10^{-15}$ / $1.5\times10^{-15}$ \\
+$2$ & $1.7\times10^{-8}$ / $1.7\times10^{-8}$ & $4.4\times10^{-13}$ / $6.5\times10^{-13}$ &
+      $6.0\times10^{-18}$ / $6.0\times10^{-18}$ \\
+$4$ & $1.1\times10^{-9}$ / $1.1\times10^{-9}$ & $6.9\times10^{-15}$ / $1.0\times10^{-14}$ &
+      $2.4\times10^{-20}$ / $2.4\times10^{-20}$ \\
+$8$ & $6.7\times10^{-11}$ / $6.7\times10^{-11}$ & $1.1\times10^{-16}$ / $1.6\times10^{-16}$ &
+      $9.2\times10^{-23}$ / $9.2\times10^{-23}$ \\
+order & $4$ / $4$ & $6$ / $6$ & $8$ / $8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{The leading error in closed form.} Without scattering, the Galerkin solution is the
 $L^2$ projection $\Pi$ of the incident field onto each voxel's basis, and the kernel is integrated
 over each voxel exactly; at first order in the contrast the error is therefore the kernel's cell
@@ -713,7 +763,8 @@ scheme and every $n$
   =\frac{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}qs}\,\Pi[\mathrm{e}^{\mathrm{i}ks}]\,\dd s}{\int_{-h}^{h}\mathrm{e}^{\mathrm{i}(q+k)s}\,\dd s},
 \end{equation}
 with $\Pi$ the centre value for collocation, the cell mean for the mean-only voxel and the projection
-onto $\{1,s/h\}$ for the first-moment voxel (\nb{ContinuumLimit\_FourthOrderError.wl}). The results are in Table~\ref{tab:ratio}.
+onto $\{P_0,\dots,P_p\}$ for the voxel of degree $p$ (\nb{ContinuumLimit\_FourthOrderError.wl},
+\nb{ContinuumLimit\_SecondMoment.wl}). The results are in Table~\ref{tab:ratio}.
 \begin{table}[htbp]
 \centering
 \caption{The leading error of the discrete layer in closed form, Eq.~\eqref{eq:ratio}: discrete over exact scattered field at first order in the contrast, for every number of voxel planes $n$.}\label{tab:ratio}
@@ -724,14 +775,35 @@ onto $\{1,s/h\}$ for the first-moment voxel (\nb{ContinuumLimit\_FourthOrderErro
 collocation      & $1+(kd)^2/8+O(d^4)$  & $1-(kd)^2/24+O(d^4)$ \\
 mean only        & $1+(kd)^2/12+O(d^4)$ & $1-(kd)^2/12+O(d^4)$ \\
 first moment     & $1-(kd)^4/720+O(d^6)$ & $1-(kd)^4/720+O(d^6)$ \\
+second moment    & $1+(kd)^6/100800+O(d^8)$ & $1-(kd)^6/100800+O(d^8)$ \\
+third moment     & $1-(kd)^8/25401600+O(d^{10})$ & $1-(kd)^8/25401600+O(d^{10})$ \\
+degree $p$       & $1+(-1)^pc_p(kd)^{2p+2}$ & $1-c_p(kd)^{2p+2}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-The chain of Eq.~\eqref{eq:galerkin} reproduces all six forms at $n=1$ to $8$ to $10^{-4}$ of the
-error, the remainder being the second order in the contrast. The first-moment voxel's leading
-error is the same in reflection and in transmission: its projection error is orthogonal to
-everything linear across the voxel, so the leading term no longer depends on the direction in which
-the field is observed.
+The chain of Eq.~\eqref{eq:galerkin} reproduces the forms for collocation and degrees $0$ and $1$
+at $n=1$ to $8$ to $10^{-4}$ of the error, the remainder being the second order in the contrast, and
+those for degrees $2$ and $3$ to $4\times10^{-7}$ at a contrast reduced by $10^{-6}$. The constant for
+degree $p$ follows from the Legendre expansion
+$\mathrm{e}^{\mathrm{i}ks}=\sum_j\mathrm{i}^j(2j+1)\,j_j(kh)\,P_j(s/h)$. The projection drops the terms
+$j>p$, led by $j=p+1$, whose coefficient is $O\bigl((kh)^{p+1}\bigr)$; its moment against
+$\mathrm{e}^{\mathrm{i}qs}$ is $2h\,\mathrm{i}^{p+1}j_{p+1}(qh)=O\bigl((qh)^{p+1}\bigr)$. With
+$j_n(x)\approx x^n/(2n+1)!!$ and $h=d/2$,
+\begin{equation}\label{eq:cp}
+  c_p=\frac{2p+3}{4^{p+1}\bigl[(2p+3)!!\bigr]^2}=\frac{\bigl[(p+1)!\bigr]^2}{(2p+2)!\,(2p+3)!},
+  \qquad c_0=\tfrac1{12},\ c_1=\tfrac1{720},\ c_2=\tfrac1{100800},
+\end{equation}
+and the leading error carries $(q/k)^{p+1}$: the same sign in reflection and transmission for odd
+$p$, opposite signs for even $p$. The first-moment voxel's leading error therefore does not depend on
+the direction in which the field is observed. Eq.~\eqref{eq:cp} is checked symbolically for $p=0$ to
+$5$ (every lower power of $kd$ vanishes) in Mathematica and, independently, in sympy.
+
+\paragraph{One plane of voxels and the thin-layer series.} Refining at fixed thickness is one limit;
+thinning a single plane is the other. For one plane of voxels ($n=1$, $d=D$) the series in $D$ of the
+reflection coefficient, computed exactly at the full contrast, coincides with that of the exact layer,
+Eq.~\eqref{eq:thin}, term by term through $D^{2p+2}$ and first differs at $D^{2p+3}$, for $p=0$ to $3$
+and for a layer both stiffer and softer than its surroundings (\nb{ContinuumLimit\_SecondMoment.wl}).
+Each further Legendre moment adds two terms of the thin-layer series.
 
 \paragraph{In three dimensions.} The three-dimensional first-moment voxel carries the nine-component
 state with Legendre weights $\{1,\,x/h,\,y/h,\,z/h\}$, 36 unknowns in all, tested with the same
@@ -814,7 +886,14 @@ the local weight as a numerical large-$k_z$ limit of the inverted Christoffel ma
 double integral by quadrature and separates P from S by sampling the upgoing field at two depths.
 The raw reflected displacements of the two agree to $9\times10^{-16}$ in all $36$ cases compared:
 incident P, SV and SH, normal incidence and $20^\circ$, $n=1,2,4$, with and without the first moments.
-Figure~\ref{fig:convergence}(a,b) shows the convergence, with the orders fitted to it.
+The one-dimensional scheme of any degree is also implemented twice. The second implementation
+(\path{scripts/crosscheck_second_moment_voxel.py}) evaluates every integral by Gauss quadrature, split
+at the receiver within a voxel, and the exact layer from its own interface system, in double
+precision. Its errors agree with the 40-digit ones within its round-off floor ($3\times10^{-14}$ in
+reflection, $1.6\times10^{-13}$ in transmission); at $\omega=1200$\,rad\,s$^{-1}$ it measures orders
+$4.02$ / $3.99$ and $6.02$ / $6.00$; for one plane as the layer thins its differences from the exact
+layer fall as $D^{3.00}$, $D^{5.00}$ and $D^{7.00}$ for $p=0$, $1$ and $2$; and it rederives $c_p$ for
+$p\le5$. Figure~\ref{fig:convergence}(a,b) shows the convergence, with the orders fitted to it.
 
 
 \FloatBarrier
@@ -977,9 +1056,10 @@ least squares (\path{scripts/plot_convergence_orders.py}).
 \caption{Convergence of every test, with least-squares regression lines. Each line fits
 $\log e=c-p\log n$ to the filled points; open points are pre-asymptotic and are not fitted. The legend
 gives the order $p$ and its standard error. Colour marks the scheme: collocation (\S\ref{sec:single}),
-the mean-only voxel and the first-moment voxel (Eqs.~\eqref{eq:galerkin} and \eqref{eq:bloch}).
-(a)~The uniform layer, P reflection at normal incidence ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the
-contrast of \S\ref{sec:convergence}), fitted from $n=4$. (b)~The uniform layer at $20^\circ$, fitted from
+the mean-only voxel and the voxels carrying Legendre moments to degree $p=1$, $2$ and $3$
+(Eqs.~\eqref{eq:galerkin} and \eqref{eq:bloch}). (a)~The uniform layer, P reflection at normal
+incidence ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}), fitted from
+$n=4$; the second- and third-moment voxels, computed in 40-digit arithmetic, fitted from $n=2$. (b)~The uniform layer at $20^\circ$, fitted from
 $n=2$: the S wave converted from incident P (solid) and reflected from incident SV (dashed).
 (c)~The stratified layer of \S\ref{sec:hetero}, reflection at normal incidence for P (solid) and S
 (dashed), against the number $m$ of voxel planes per model layer, fitted from $m=4$. (d)~The
@@ -992,7 +1072,8 @@ checks consistency; its fitted orders differ slightly from those of Table~\ref{t
 \par\smallskip{\footnotesize\textit{Alt text:} Four log--log panels of relative error against refinement,
 each showing data points and fitted straight lines with the fitted order in the legend. (a) Uniform layer
 at normal incidence, 1 to 32 voxel planes: the collocation and mean-only lines have order 2.000, the
-first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10^{-13}$. (b) Uniform layer at 20 degrees,
+first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10^{-13}$; the second-moment
+line has order 6.000 and the third-moment line order 8.000, over 1 to 8 planes, reaching about $10^{-22}$. (b) Uniform layer at 20 degrees,
 1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
 first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
 for collocation and mean-only, 4.000 for first moment. (d) Voxelised sphere, 1 to 3 sub-voxels per voxel
@@ -1047,7 +1128,12 @@ voxel count falls by $58^3\approx2\times10^5$ and the number of unknowns by abou
 lie within $5\%$ of them, while the uniform voxel's transmission constant grows with the contrast, so
 the comparison is if anything conservative).
 The stratified model of \S\ref{sec:hetero} measures it directly: $347$ planes of uniform-field voxels
-against $8$ first-moment voxels for the same accuracy. The gain is largest precisely where it matters: when the model varies on scales that are coarse
+against $8$ first-moment voxels for the same accuracy. Higher moments continue the trend in one
+dimension: by Eq.~\eqref{eq:cp} the second-moment voxel reaches $\varepsilon=10^{-6}$ at $kd=0.68$ and
+the third-moment voxel at $kd=1.5$, where a voxel is already a quarter of a wavelength. A
+three-dimensional voxel of degree $p$ has not been built; with the Legendre polynomials of total degree
+at most $p$ it would carry $10$ ($p=2$) or $20$ ($p=3$) weights per state component, against $4$ for the
+first-moment voxel. The gain is largest precisely where it matters: when the model varies on scales that are coarse
 compared with the accuracy the wavefield must have.
 
 \paragraph{Limitations and outlook.} The results concern laterally uniform media, a homogeneous layer
@@ -1084,7 +1170,10 @@ error that is a midpoint-rule error of the internal field, known in closed form 
 discretisation, and opposite in sign in reflection and transmission. A voxel that also carries the
 first moment of its internal field converges at fourth order, at normal incidence (where the
 three-dimensional scheme reduces exactly to one dimension) and at oblique incidence, with a
-leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. The orders survive
+leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. With Legendre
+moments to degree $p$ it converges at order $2p+2$ with the closed-form constant of Eq.~\eqref{eq:cp},
+and a single plane of such voxels reproduces the thin-layer series term by term through
+$O(D^{2p+2})$. The orders survive
 the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
 first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
 voxel needs about forty. On a voxelised sphere the discretisation error is again second order, and the
@@ -1098,6 +1187,7 @@ staircase approximation of the surface dominates it, by factors of $18$ to $44$.
 Result & Evidence \\
 \midrule
 Continuous layer, exact and to $O(D^k)$ & reference to $2.5\times10^{-8}$; series order $k$ \\
+Thin-layer series, Eq.~\eqref{eq:thin} & each coefficient symbolically, to $D^4$ \\
 Point-kernel local term survives $d\to0$ & $11\times$ the continuum term at $m=1$ \\
 Averaged coupling between planes $=$ continuum$\times\sinc$ & $2.8\times10^{-16}$, 81 entries \\
 Tiling identity, Eq.~\eqref{eq:tiling} & 21/21 components to $4\times10^{-9}$ \\
@@ -1116,6 +1206,10 @@ First-moment voxel, Eq.~\eqref{eq:galerkin} & order $4.00$, three frequencies \\
 First-moment voxel, oblique, Eq.~\eqref{eq:bloch} & order $4$, P and S, $20^\circ$ and $40^\circ$ \\
 Incident SV and SH, all schemes & orders $2$ and $4$; constants with $k_S$ to $4\times10^{-4}$ \\
 First-moment error $-(kd)^4/720$, Eq.~\eqref{eq:ratio} & $n=1$--$8$, to $10^{-4}$ of the error \\
+Voxel of degree $p$: order $2p+2$ & $6.00$ ($p=2$, three frequencies), $8.00$ ($p=3$) \\
+Constant $c_p$, Eq.~\eqref{eq:cp} & symbolic, $p=0$--$5$, twice; chain to $4\times10^{-7}$ \\
+One plane of degree $p$ $=$ thin-layer series to $D^{2p+2}$ & exact series, $p=0$--$3$, two layers; $D^{3.00}$, $D^{5.00}$, $D^{7.00}$ \\
+Independent implementation, any degree & within round-off; orders $4.02$, $6.02$ \\
 Independent implementation of Eq.~\eqref{eq:bloch} & $1.1\times10^{-15}$, 40 cases: P, SV, SH, stratified \\
 Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, normal and $20^\circ$ \\
 Stratified reference against Kennett's recursion & $10^{-14}$ \\
@@ -1129,7 +1223,7 @@ Sphere, fixed staircase refined, \S\ref{sec:sphere} & order $1.99$ and $2.06$; s
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
 StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, FourthOrderError, Reduction3D,
-Oblique, IncidentS, Heterogeneous and Figure (the figure), and their reference dumps
+Oblique, IncidentS, Heterogeneous, SecondMoment and Figure (data for the figure), and their reference dumps
 \path{scripts/continuum_limit_*.py}; the moment integrals are
 \path{Mathematica/CubeMomentCore.wl} (gate \path{CubeMomentCoreTest.wl}), \path{CubeA22Block.wl},
 \path{CubeMomentArchiveCheck.wl} and \path{CubeShearSplit.wl}, with the Python half of the last in
@@ -1139,7 +1233,9 @@ Oblique, IncidentS, Heterogeneous and Figure (the figure), and their reference d
 the test against exact Mie is
 \path{scripts/gate_sphere_closure_vs_mie.py}, with the closed forms in \path{Mathematica/SphereClosureDynamic.wl}; the exact kernel is
 \path{cubic_scattering/cell_averaged_lattice.py}; the independent implementation of the
-first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}. All are archived at
+first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}, and of the voxel of any
+degree \path{scripts/crosscheck_second_moment_voxel.py}; the convergence figure is drawn by
+\path{scripts/plot_convergence_orders.py}. All are archived at
 \url{https://doi.org/10.5281/zenodo.23003241} and developed at
 \url{https://github.com/tmnestor/MultipleScatteringCalculations}.}
 

@@ -103,6 +103,21 @@ jumpForm = I w/(2 Sqrt[rr0 mm0]) (rr1 - rr0) (-1) mm0/1 + 0;  (* placeholder, re
 jumpForm = (I w/2) Sqrt[mm0/rr0] ((rr1 - rr0)/mm0 - rr0 (1/mm1 - 1/mm0));
 Print["      O(D) coefficient = (i w/2) sqrt(M0/rho0) [ (rho1-rho0)/M0 - rho0 (1/M1 - 1/M0) ] : ",
   chk[PossibleZeroQ[FullSimplify[first - jumpForm, Assumptions -> {mm0 > 0, mm1 > 0, rr0 > 0, rr1 > 0, w > 0}]]]];
+(* the same coefficients in the layer's wavenumber k1 = w sqrt(rho1/M1) and the impedance ratio
+   zeta = Z1/Z0, Z = sqrt(M rho): the form printed in the paper, to O(D^4) *)
+Clear[zeta, kOne];
+asm = {mm0 > 0, mm1 > 0, rr0 > 0, rr1 > 0, w > 0};
+serR4 = Normal[Series[rSym, {dd, 0, 4}]];
+toZ = {zeta -> Sqrt[mm1 rr1/(mm0 rr0)], kOne -> w Sqrt[rr1/mm1]};
+zForm = {(I kOne/2) (zeta - 1/zeta), (kOne^2/4) (zeta^-2 - zeta^2),
+    -(I kOne^3/24) (zeta - 1/zeta) (3 zeta^-2 + 2 + 3 zeta^2), (kOne^4/48) (zeta^2 - zeta^-2) (3 zeta^2 - 2 + 3 zeta^-2)};
+zOK = Table[PossibleZeroQ[FullSimplify[Coefficient[serR4, dd, j] - (zForm[[j]] /. toZ), Assumptions -> asm]], {j, 4}];
+(* the D^4 coefficient, found in the same variables: solve for it as a polynomial in zeta *)
+(* Z1 = zeta Z0, rho1 = k1 Z1/w, M1 = Z1^2/rho1 = w zeta Z0/k1 *)
+c4 = FullSimplify[Coefficient[serR4, dd, 4] /. {mm1 -> w zeta Sqrt[mm0 rr0]/kOne, rr1 -> kOne zeta Sqrt[mm0 rr0]/w},
+   Assumptions -> Join[asm, {zeta > 0, kOne > 0}]];
+Print["      the same, in k1 and zeta = Z1/Z0:  D^1..D^4 ", InputForm /@ zForm, " -> ", chk[And @@ zOK]];
+Print["      D^4 coefficient: ", InputForm[Factor[c4]]];
 errSer = Table[Abs[(rP - (serR /. {mm0 -> lam0 + 2 mu0, mm1 -> lam1 + 2 mu1, rr0 -> rh0, rr1 -> rh1, w -> om}))/rP] /. dd -> dv,
    {dv, {2, 1, 0.5, 0.25}}];
 Print["      series (to D^3) vs exact, D = 2, 1, 0.5, 0.25 m: ", sci /@ N[errSer], "  -> ratio per halving ",

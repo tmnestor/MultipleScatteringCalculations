@@ -5,7 +5,8 @@ Each panel plots the relative error of a voxel scheme against its refinement on 
 least-squares line log(err) = c - p log(n) fitted over the asymptotic points (filled markers; open markers
 are plotted but not fitted). The legend gives the order p and its standard error from the fit.
 
-  (a) the uniform layer, normal incidence P (notebook 7, via Mathematica/ContinuumLimit_Figure.wl);
+  (a) the uniform layer, normal incidence P (notebook 7, via Mathematica/ContinuumLimit_Figure.wl), with the
+      second- and third-moment voxels (notebook 14, Mathematica/ContinuumLimit_SecondMoment.wl);
   (b) the uniform layer at 20 degrees: P to S and SV to S (notebooks 9 and 12, same source);
   (c) the stratified layer, normal incidence P and S, m planes per model layer (notebook 13,
       Mathematica/ContinuumLimit_Heterogeneous.wl);
@@ -43,8 +44,14 @@ mpl.rcParams.update(
     }
 )
 
-COLOURS = {"C": "tab:blue", "G0": "tab:green", "G1": "tab:orange"}
-NAMES = {"C": "collocation", "G0": "mean only", "G1": "first moment"}
+COLOURS = {"C": "tab:blue", "G0": "tab:green", "G1": "tab:orange", "G2": "tab:brown", "G3": "tab:pink"}
+NAMES = {
+    "C": "collocation",
+    "G0": "mean only",
+    "G1": "first moment",
+    "G2": "second moment",
+    "G3": "third moment",
+}
 
 
 def fit_order(n: np.ndarray, err: np.ndarray) -> tuple[float, float, float]:
@@ -76,17 +83,25 @@ def series(ax, n, err, fit_from: float, colour: str, marker: str, label: str, ls
 
 
 def style(
-    ax, xlabel: str, title: str, ticks: list[int], legend: str = "lower left", top: float = 0
+    ax,
+    xlabel: str,
+    title: str,
+    ticks: list[int],
+    legend: str = "lower left",
+    top: float = 0,
+    bottom: float = 0,
 ) -> None:
-    """Log-log axes, integer refinement ticks and the legend; ``top`` > 0 raises the upper y-limit to
-    make room for an upper legend."""
+    """Log-log axes, integer refinement ticks and the legend; ``top`` > 0 raises the upper y-limit, or
+    ``bottom`` > 0 lowers the lower one, to make room for the legend, with no ticks in that room."""
     ax.set_xscale("log")
     ax.set_yscale("log")
-    if top:
-        ax.set_ylim(top=top)
-        bottom, ymax = ax.get_ylim()[0], ax.dataLim.y1
-        ax.set_yticks([t for t in ax.get_yticks() if bottom <= t <= 3 * ymax])
-        ax.set_ylim(bottom, top)
+    if top or bottom:
+        lo, hi = ax.get_ylim()
+        lo, hi = (bottom or lo), (top or hi)
+        ax.set_ylim(lo, hi)
+        ymin, ymax = ax.dataLim.y0, ax.dataLim.y1
+        ax.set_yticks([t for t in ax.get_yticks() if max(lo, ymin / 3) <= t <= min(hi, 3 * ymax)])
+        ax.set_ylim(lo, hi)
     ax.set_xticks(ticks)
     ax.set_xticklabels([str(t) for t in ticks])
     ax.minorticks_off()
@@ -100,6 +115,7 @@ def style(
 def main() -> int:
     uni = json.loads((MMA / "ContinuumLimit_figure_data.json").read_text())
     het = json.loads((MMA / "ContinuumLimit_heterogeneous_convergence.json").read_text())
+    high = json.loads((MMA / "ContinuumLimit_second_moment_data.json").read_text())
     sph = [json.loads((FIG / f"data_sphere_staircase_ka{k}.json").read_text()) for k in ("0.5", "1")]
 
     fig, axes = plt.subplots(2, 2, figsize=(6.6, 6.2), constrained_layout=True)
@@ -109,7 +125,12 @@ def main() -> int:
     for sc, mk in (("C", "o"), ("G0", "s"), ("G1", "D")):
         n, e = np.array(uni["normal"][sc]).T
         orders[f"uniform normal {sc}"] = series(ax, n, e, 4, COLOURS[sc], mk, NAMES[sc])
-    style(ax, "voxel planes $n$", "(a) uniform layer, P at normal incidence", [1, 2, 4, 8, 16, 32])
+    # the second- and third-moment voxels (notebook 14), 40-digit errors down to 1e-22
+    for sc, mk in (("G2", "v"), ("G3", "p")):
+        e = np.array(high["errors_R_T"][sc])[:, 0]
+        orders[f"uniform normal {sc}"] = series(ax, high["n"], e, 2, COLOURS[sc], mk, NAMES[sc])
+    title = "(a) uniform layer, P at normal incidence"
+    style(ax, "voxel planes $n$", title, [1, 2, 4, 8, 16, 32], "lower right", bottom=1e-33)
 
     ax = axes[0, 1]
     for key, lab, ls, mk in (("oblique", "P$\\to$S", "-", "s"), ("incidentSV", "SV$\\to$S", "--", "^")):
