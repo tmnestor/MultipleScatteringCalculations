@@ -224,11 +224,11 @@ def static_term_table(alpha: float, beta: float, rho: float) -> dict[tuple[int, 
                 if mh[al, col, z]:
                     add(3 + al, col, (k,), i, j, mh[al, col, z])
     for z in range(81):
-        i, j, k, l = (int(v) for v in np.unravel_index(z, (3, 3, 3, 3)))
+        i, j, k, q = (int(v) for v in np.unravel_index(z, (3, 3, 3, 3)))
         for al in range(6):
             for be in range(6):
                 if ms[al, be, z]:
-                    add(3 + al, 3 + be, (k, l), i, j, ms[al, be, z])
+                    add(3 + al, 3 + be, (k, q), i, j, ms[al, be, z])
     return dict(table)
 
 
