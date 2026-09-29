@@ -198,8 +198,11 @@ def part1() -> None:
         "refining the voxel count does NOT reduce the error monotonically",
         not (errs[0] > errs[1] > errs[2] > errs[3]),
     )
-    report("and the best of them is no better than 0.15", min(errs) > 0.15)
-    print(f"      best {min(errs):.4f} at {times[int(np.argmin(errs))]:.2f} s; 40x the cells buys nothing")
+    # NO BAR ON THE BEST ERROR (2026-09-29).  "No better than 0.15" was measured through a far field
+    # that double-counted the plane wave's linear variation (``SphereDecompositionResult.psi_pw``
+    # fixes it); corrected, the errors are 0.275, 0.064, 0.132, 0.039.  The staircase still makes
+    # them erratic, which the check above asserts; their level is reported, not pinned.
+    print(f"      best {min(errs):.4f} at {times[int(np.argmin(errs))]:.2f} s")
 
 
 def part2() -> None:
@@ -799,7 +802,7 @@ def part9() -> None:
         "\n      At the 112.5 m pitch of part 8 the march's own lateral error (1.2-1.8%) is\n"
         "      as large as the array's coupling (0.7-1.6%) and partly cancels it; refined,\n"
         "      it falls towards zero while the error against the sphere settles at the\n"
-        "      coupling.  Neither is near the voxel route's 7.5-31%."
+        "      coupling.  Neither is near the voxel route's 2.3-13%."
     )
 
 

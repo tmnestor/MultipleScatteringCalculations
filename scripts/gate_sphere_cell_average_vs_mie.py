@@ -13,6 +13,21 @@ the Bloch/slab route (``slab_scattering``, ``cell_averaged_lattice``,
 untouched since 2026-06-17.  So the sphere has been carrying the old propagator
 for three months, and any comparison against it has been scoring a defect.
 
+⚠⚠ RE-MEASURED 2026-09-29 AFTER A FAR-FIELD FIX
+-----------------------------------------------
+``foldy_lax_far_field`` combined the composite-T incident columns with [pol, eps] for the plane wave.
+Their strain columns carry eps.(x - x_centre) on top of the plane-wave phase, so the wave's linear
+variation was counted twice: a first-order far-field error growing as (ka)^2 that no refinement removes
+(1.1% at k_S a = 0.5, 4.6% at 1, on a smoothly graded sphere).  The far field now uses the solution for
+the plain plane-wave basis (``SphereDecompositionResult.psi_pw``).  Re-measured with it:
+
+  * ka = 0.1: the averaged propagator is still closer to Mie, now 4.2-7.8x (spread 58%).
+  * ka = 0.5: the "reversal" below does NOT survive.  Point / averaged is 0.64x, 4.65x and 1.05x at
+    n_sub = 3, 4, 6: no consistent direction.  On a staircased sphere no verdict is available at this
+    ka; the two checks that pinned "worse at every resolution" are withdrawn.  A body the lattice
+    resolves without a staircase (the smoothly graded sphere, scripts/pilot_graded_sphere_vs_exact.py)
+    is the measurement that can settle it.
+
 ⚠ RE-MEASURED 2026-09-20 AGAINST A CORRECTED ARBITER
 ----------------------------------------------------
 Everything below was first measured against a Mie solution and a Foldy-Lax far
@@ -474,14 +489,15 @@ def part5() -> None:
                 spread > 0.25,
             )
         else:
-            report(
-                f"the averaged propagator is WORSE at every resolution, ka={ka}",
-                all(r < 1.0 for r in ratios),
+            # NO VERDICT HERE (2026-09-29).  "Worse at every resolution" was measured through a far field
+            # that double-counted the plane wave's linear variation; with that fixed the ratios straddle 1.
+            # Pinning today's scatter would repeat the mistake, so the ratios are reported, not asserted.
+            direction = (
+                "straddle 1"
+                if min(ratios) < 1.0 < max(ratios)
+                else ("all > 1" if min(ratios) > 1.0 else "all < 1")
             )
-            report(
-                f"and consistently so, not by scatter, ka={ka}",
-                spread < 0.25,
-            )
+            print(f"        no verdict at ka={ka} on a staircased sphere: the ratios {direction}")
 
 
 def main() -> int:
