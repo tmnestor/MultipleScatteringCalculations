@@ -30,7 +30,7 @@ def radiate(
     # The shear entries are ENGINEERING stress 2 sigma_pq (the contrast operator maps the engineering strain
     # gamma to 2 dmu gamma; the kernel's shear columns halve it), so the tensor is sigma_pq = entry / 2:
     # sphere_scattering._voigt_to_tensor, the helper foldy_lax_far_field uses. scattered_field has a
-    # homonym that does NOT halve; importing it radiated shear stress twice (a full-contrast floor, 2026-09-30).
+    # homonym that does NOT halve; importing it radiated shear stress twice (a full-contrast floor).
     sig = np.array([_voigt_to_tensor(s[3:]) for s in sources])
     u_p = np.zeros((len(directions), 3), dtype=complex)
     u_s = np.zeros((len(directions), 3), dtype=complex)
