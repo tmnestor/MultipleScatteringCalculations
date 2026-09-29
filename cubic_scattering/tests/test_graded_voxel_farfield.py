@@ -34,7 +34,7 @@ def test_point_force_and_dipole_far_field():
 def test_radiation_matches_the_kernel_for_every_source_component():
     # the far field of a unit source must be the kernel's own field there: the solve uses the kernel, whose
     # shear columns take ENGINEERING stress (2 sigma_pq: the contrast operator maps gamma to 2 dmu gamma).
-    # Radiating the shear entries as tensor sigma_pq doubled them (found 2026-09-30 as a full-contrast floor)
+    # Radiating the shear entries as tensor sigma_pq doubled them (found 2026-09-30: a full-contrast floor)
     from cubic_scattering.graded_voxel.kernel import kernel_9x9
 
     d = np.array([0.36, 0.48, 0.8])
