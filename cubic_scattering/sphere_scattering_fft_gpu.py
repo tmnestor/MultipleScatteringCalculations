@@ -186,14 +186,12 @@ def compute_sphere_foldy_lax_fft_gpu(
     grid_idx_gpu = torch.from_numpy(grid_idx_np.copy()).long().to(device)
 
     # Step 3: Build incident field on CPU
-    psi_inc = _build_incident_field_coupled(
-        centres, omega, ref, k_hat=k_hat, wave_type=wave_type
-    )
+    psi_inc = _build_incident_field_coupled(centres)
 
-    # the plane-wave basis for the far field: its displacement columns are those of psi_inc
+    # the plane-wave basis for the far field: it shares no column with the Taylor patterns psi_inc
     pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
-    # Step 4: Solve 9 RHS columns via GPU GMRES, then the six plane-wave strain columns
+    # Step 4: Solve the 9 Taylor columns and the 9 plane-wave columns via GPU GMRES
     dim = 9 * nC
     psi_exc = np.zeros((dim, 9), dtype=complex)
     psi_pw = np.zeros((dim, 9), dtype=complex)
@@ -202,7 +200,7 @@ def compute_sphere_foldy_lax_fft_gpu(
         return _matvec_fft_gpu(w, kernel_hat_gpu, grid_idx_gpu, nP, nC)
 
     jobs = [("exc", col, psi_inc[:, col]) for col in range(9)] + [
-        ("pw", col, pw_inc[:, col]) for col in range(3, 9)
+        ("pw", col, pw_inc[:, col]) for col in range(9)
     ]
     for which, col, rhs_np in jobs:
         b = to_torch(rhs_np, device, dtype)
@@ -212,9 +210,7 @@ def compute_sphere_foldy_lax_fft_gpu(
         else:
             x0 = None
 
-        x, n_iter, rel_res = torch_gmres(
-            matvec, b, x0=x0, tol=gmres_tol, maxiter=gmres_maxiter
-        )
+        x, n_iter, rel_res = torch_gmres(matvec, b, x0=x0, tol=gmres_tol, maxiter=gmres_maxiter)
 
         if rel_res > gmres_tol:
             import warnings
@@ -227,7 +223,6 @@ def compute_sphere_foldy_lax_fft_gpu(
             )
 
         (psi_exc if which == "exc" else psi_pw)[:, col] = to_numpy(x)
-    psi_pw[:, :3] = psi_exc[:, :3]
 
     # Step 5: Extract composite T-matrix
     T_comp = np.zeros((9, 9), dtype=complex)

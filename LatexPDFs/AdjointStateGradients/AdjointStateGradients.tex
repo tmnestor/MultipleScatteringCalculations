@@ -81,8 +81,9 @@ identity $\mathcal{H}^\dagger(k_y) = \mathcal{H}(-k_y)$. That identity requires 
 reciprocity laws of both $\Gz$ and $\Tz$, and both are measured here. The $\Gz$ law holds on the
 assembled sweep operator to $10^{-13}$ or better, in a whole space and in a stratified
 background, and the Foldy--Lax identity to $10^{-16}$ (gate A1). The $\Tz$ law is exact for the
-Rayleigh cube carried by the sweep solver, and \emph{failed} by the resonance composite, which is
-incidence-dependent and must not be used as it stands. A1 also corrected this note's first draft,
+Rayleigh cube carried by the sweep solver. The resonance composite \emph{failed} it by
+$1.6$--$17\%$ while it carried the incident phase; rebuilt on phase-free Taylor patterns, it
+satisfies it to $10^{-16}$. A1 also corrected this note's first draft,
 which stated the law with $\bW$ alone and the Foldy--Lax operator in the wrong order. The gradient
 is implemented (\nolinkurl{sweep_gradient.py}) and passes a six-rung validation ladder
 (\S\ref{sec:gates}). That covers the receiver transpose and the $\Tz$ derivative (complex step is
@@ -333,7 +334,8 @@ pair swap on the real-space tables, and the adjoint reuses the tables built for 
 
 \paragraph{The $\Tz$ half, measured.} \gtz\ checks $\Tz\bW^{-1}$ for symmetry, i.e.\
 $\Tz^{\T} = \bW\Tz\bW^{-1}$. A cube $\Tz$ has no displacement--strain block, so $\mathbf{I}_{\pm}$
-commutes with it, and this is the second law of \eqref{eq:laws}:
+commutes with it, and this is the second law of \eqref{eq:laws}. The composite rows are the
+resonance composite with $n_{\mathrm{sub}}=3$:
 
 \begin{center}
 \small
@@ -342,8 +344,10 @@ commutes with it, and this is the second law of \eqref{eq:laws}:
 $\Tz$ & $ka_S$ & asymmetry of $\Tz\bW^{-1}$ & normal--shear block \\
 \midrule
 Rayleigh cube & 0.05, 0.1, 0.3 & $0$ & $0$ \\
-Resonance composite, $n_{\mathrm{sub}}=3$, $\hat k = \hat z$ & 0.5 & $1.6\times10^{-2}$ & $2\times10^{-19}$ \\
-Resonance composite, $n_{\mathrm{sub}}=3$, $\hat k$ oblique & 1.2 & $1.7\times10^{-1}$ & $4\times10^{-4}$ \\
+Composite, first build, $\hat k = \hat z$ & 0.5 & $1.6\times10^{-2}$ & $2\times10^{-19}$ \\
+Composite, first build, $\hat k$ oblique & 1.2 & $1.7\times10^{-1}$ & $4\times10^{-4}$ \\
+Composite, Taylor patterns & 0.5 & $9\times10^{-17}$ & $2\times10^{-19}$ \\
+Composite, Taylor patterns & 1.2 & $6\times10^{-17}$ & $1\times10^{-19}$ \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -351,18 +355,34 @@ Resonance composite, $n_{\mathrm{sub}}=3$, $\hat k$ oblique & 1.2 & $1.7\times10
 The Rayleigh result is structural and was expected: the cube is block-diagonal, the density
 block is a multiple of $\bI_3$, and a cubic Voigt stiffness has no normal--shear coupling, so
 $\bW$ commutes with $\Tz$ and the law reduces to plain symmetry. The gate's value is as a
-regression guard, with the composite rows as its calibration leg: they show the check can fail.
+regression guard. The composite as first built is its calibration leg: it shows the check can
+fail, and by how much.
 
-The composite fails, and not by a rounding amount. It is
-$\sum_n T_{\mathrm{loc}}\,\psi^{\mathrm{exc}}_n$ for sub-cell exciting fields driven by one
-incident plane wave, so it carries the incident phase on its input side and none on its output
-side, and it changes with $\hat k$. It is a response to one illumination, not a field-independent
-operator, and \emph{no} such object can be reciprocal. The adjoint field arrives from the
-receivers, from a different direction than the source field, so a gradient built on the composite
-would be wrong by the asymmetry in the table. Above the Rayleigh range the options are to keep the
-sub-cells as explicit unknowns in the global solve (so the local operator is $T_{\mathrm{loc}}$,
-which is Rayleigh and reciprocal), or to rebuild the composite with a symmetric projection. The
-27-component Galerkin $\Tz$ has not been checked.
+The composite is $\sum_n T_{\mathrm{loc}}\,\psi^{\mathrm{exc}}_n$, the summed sub-cell sources
+for nine input patterns. As first built the patterns carried the phase of one incident plane wave
+on top of their linear variation, so the composite carried that phase on its input side and none
+on its output side, and it changed with $\hat k$. It was a response to one illumination, not a
+field-independent operator, and \emph{no} such object can be reciprocal. The adjoint field arrives
+from the receivers, from a different direction than the source field, so a gradient built on it
+would have been wrong by the asymmetry in the table. The same phase also counted the plane wave's
+linear variation twice in the resonance far field, an error of $2.7$--$12\%$ at
+$k_Sa = 0.5$--$1$ that did not fall with refinement.
+
+The composite is now built on the first-order Taylor expansion of the incident field about the
+cube centre, with no phase: a uniform displacement, and a uniform strain with its linear
+displacement. It is then a property of the cube, the same for every incident wave, and it
+satisfies the law to rounding at both frequencies. Its output is the plain sum of the sub-cell
+sources. The first moment of the sub-cell forces about the centre is not included, and the law
+cannot detect that omission: that term is symmetric, and its cross-coupling to a uniform
+displacement vanishes by the cube's inversion symmetry. Its effect is measured instead on the
+far field of the composite radiated as one point at the centre, against the per-cell far field
+(\nolinkurl{measure_composite_force_first_moment.py}, $n_{\mathrm{sub}}=4$, oblique incidence).
+The point composite's error grows as $(ka)^2$, from $0.3$--$0.6\%$ at $k_Sa=0.1$ to $9$--$17\%$
+at $0.5$. Adding the first moment lowers it by $10$--$30\%$ at every $ka$ and leaves the order
+unchanged. It supplies only the $\mathbf{k}_{\mathrm{in}}\cdot\mathbf{k}_{\mathrm{out}}$ cross
+term of the cube's form factor. The quadratic input terms, the output quadrupole and the incident
+rotation remain, and none of them fits in nine components. The 27-component Galerkin $\Tz$ has not
+been checked.
 
 \paragraph{The $\Gz$ half, measured on the assembled operator (gate A1).} The pieces had been
 checked separately (the whole-space $\bW$-symmetry of \texttt{StratifiedComposition}; the $J_6$
@@ -597,7 +617,8 @@ Function & What it does, and the result it rests on \\
 \end{tabular}
 \end{center}
 
-\noindent Only the Rayleigh cube is supported; the resonance composite fails the $\Tz$ law. The
+\noindent Only the Rayleigh cube is supported. The resonance composite now satisfies the $\Tz$
+law, but the code has no derivative $\partial\Tz/\partial m$ for it (A2 covers the Rayleigh cube). The
 numerical settings (GMRES tolerance, iteration cap, Richardson step) are required arguments with
 no defaults. Wiring the gradient to the $\omega$ annotations exposed that
 \nolinkurl{compute_cube_tmatrix} and six helpers were annotated \texttt{omega: float} while every
@@ -764,7 +785,7 @@ Item & Status & Evidence \\
 Gradient identity \eqref{eq:adj}--\eqref{eq:grad} & exact algebra & \S\ref{sec:voxgrad} \\
 Adjoint $=$ forward at $-k_y$ \eqref{eq:selfadj} & \meas, $\le3\times10^{-16}$ & A1 \\
 $\Tz$ half of \eqref{eq:laws}, Rayleigh cube & \meas, exact & \gtz \\
-$\Tz$ half, resonance composite & \textbf{fails}, 1.6--17\% & \gtz \\
+$\Tz$ half, resonance composite & \meas, $\le9\times10^{-17}$ (failed by 1.6--17\% as first built) & \gtz \\
 $\Gz$ half, assembled, whole space and stratified & \meas, $\le2\times10^{-14}$ & A1 \\
 Receiver transpose $\bR^{\T}$, form \eqref{eq:rt} & \meas, $\le10^{-9}$ at $k_r^{\max}=20/\text{pitch}$ & A1b \\
 Transverse rule $10/\text{pitch}$, cross-material planes & \textbf{inadequate}, $1.4\times10^{-2}$ & A1b \\
@@ -792,14 +813,15 @@ What the ladder does not cover is equally specific:
 \begin{itemize}
 \item the sum over $k_y$ nodes, which is the caller's (\S\ref{sec:voxgrad});
 \item the 3-D solver, and reference-layer parameters beyond the 1-D term (\S\ref{sec:ref});
-\item $\Tz$ other than the Rayleigh cube: the resonance composite fails the law, and the Galerkin
-  $\Tz$ is untested;
+\item $\Tz$ other than the Rayleigh cube: the resonance composite satisfies the law but has no
+  derivative in the gradient code, and the Galerkin $\Tz$ is untested;
 \item physical $\Tz$ at $\operatorname{spr}$ above about $0.36$, which lies outside the Rayleigh cube's validity;
 \item the stratified A3.
 \end{itemize}
 The A1 and A1b evidence is a few voxels at one frequency per background: small, but the laws are
-pairwise identities, so lattice size does not enter them. A2 covers the Rayleigh cube only; the resonance composite is
-excluded (\S\ref{sec:selfadj}), and the 27-component Galerkin $\Tz$ is untested.
+pairwise identities, so lattice size does not enter them. A2 covers the Rayleigh cube only; the
+resonance composite is not wired into the gradient (\S\ref{sec:selfadj}), and the 27-component
+Galerkin $\Tz$ is untested.
 A1b also found a defect outside the adjoint: the transverse rule is under-resolved for
 planes near a material contrast, which reaches the \emph{forward} 3-D tables at up to $25\%$ of
 the operator's scale (\S\ref{sec:a1b}).
