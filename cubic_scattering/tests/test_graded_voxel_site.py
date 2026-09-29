@@ -112,10 +112,14 @@ def test_born_error_with_gradient_scales_as_kh_squared():
 def test_matches_mathematica_term_integrals():
     # G3: the singular term integrals by integration by parts onto the cells (Mathematica) against the
     # s-form with derivatives moved onto the autocorrelation (Python)
-    path = ROOT / "Mathematica" / "GradedVoxel_term_integrals.json"
-    data = json.loads(path.read_text())
-    assert len(data["terms"]) == 128
-    for t in data["terms"]:
+    # the terms whose derivatives are moved (k = 1, 2), two (a, c) pairs, the four touching orbit
+    # representatives, h = 1: one JSON record per line
+    path = ROOT / "Mathematica" / "GradedVoxel_term_integrals.jsonl"
+    records = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    assert len(records) == 48
+    data = {"h": 1.0}
+    for t in records:
+        assert t["value"] is not None, t
         want = t["value"][0] + 1j * t["value"][1]
         got = static_term_integral(t["m"], tuple(t["idx"]), tuple(t["offset"]), float(data["h"]), 16)[
             t["a"], t["c"]
