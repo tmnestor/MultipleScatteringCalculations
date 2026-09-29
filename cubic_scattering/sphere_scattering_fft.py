@@ -264,6 +264,7 @@ def compute_sphere_foldy_lax_fft(
     cell_average: bool = True,
     n_gauss: int | None = None,
     inside: Callable[[NDArray[np.floating]], bool] | None = None,
+    contrast_profile: Callable[[NDArray[np.floating]], float] | None = None,
 ) -> SphereDecompositionResult:
     """Compute sphere T-matrix via FFT-accelerated Foldy-Lax.
 
@@ -287,6 +288,10 @@ def compute_sphere_foldy_lax_fft(
         n_gauss: Gauss points per axis; ``None`` picks it from the separation.
         inside: Scatterer shape as a cell-centre test; ``None`` is the sphere of ``radius``.  See
             ``_build_grid_index_map``.
+        contrast_profile: A medium that varies from cell to cell: the cell centred at x carries
+            ``contrast_profile(x)`` times ``contrast``, and so its own cube T-matrix.  The kernel is then
+            the propagator alone and each cell's T is applied before the convolution.  ``None`` (the
+            default) gives every cell ``contrast``, with the single T folded into the kernel.
 
     Returns:
         SphereDecompositionResult with composite T-matrix.
@@ -296,20 +301,43 @@ def compute_sphere_foldy_lax_fft(
     nC = len(centres)
     nP = 2 * n_sub - 1
 
-    # Sub-cell Rayleigh T-matrix (same for all cells)
-    rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, contrast)
-    T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
+    def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
+        return _sub_cell_tmatrix_9x9(compute_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
 
-    # Step 2: Build FFT kernel
-    kernel_hat = _build_fft_kernel(
-        n_sub, a_sub, T_loc, omega, ref, cell_average=cell_average, n_gauss=n_gauss
-    )
-
-    # Step 3: Build matvec operator
     dim = 9 * nC
+    t_local: NDArray[np.complexfloating] | None = None
+    if contrast_profile is None:
+        # Every cell carries the same T: fold it into the kernel, which then stores -P T
+        T_loc = cell_tmatrix(contrast)
+        kernel_hat = _build_fft_kernel(
+            n_sub, a_sub, T_loc, omega, ref, cell_average=cell_average, n_gauss=n_gauss
+        )
 
-    def matvec(w: NDArray) -> NDArray:
-        return _matvec_fft(w, kernel_hat, grid_idx, nP, nC)
+        def matvec(w: NDArray) -> NDArray:
+            return _matvec_fft(w, kernel_hat, grid_idx, nP, nC)
+
+    else:
+        # Each cell its own T (computed once per distinct contrast factor); the kernel stores -P alone,
+        # and (I - P T) w = w + conv(-P, T w)
+        cache: dict[float, NDArray[np.complexfloating]] = {}
+        t_cells = np.empty((nC, 9, 9), dtype=complex)
+        for n_cell, pos in enumerate(centres):
+            g = float(contrast_profile(pos))
+            if g not in cache:
+                cache[g] = cell_tmatrix(
+                    MaterialContrast(
+                        Dlambda=g * contrast.Dlambda, Dmu=g * contrast.Dmu, Drho=g * contrast.Drho
+                    )
+                )
+            t_cells[n_cell] = cache[g]
+        t_local = t_cells
+        kernel_hat = _build_fft_kernel(
+            n_sub, a_sub, np.eye(9, dtype=complex), omega, ref, cell_average=cell_average, n_gauss=n_gauss
+        )
+
+        def matvec(w: NDArray) -> NDArray:
+            tw = np.einsum("nij,nj->ni", t_cells, w.reshape(nC, 9)).ravel()
+            return w + (_matvec_fft(tw, kernel_hat, grid_idx, nP, nC) - tw)
 
     A_op = LinearOperator((dim, dim), matvec=matvec, dtype=complex)
 
@@ -341,7 +369,7 @@ def compute_sphere_foldy_lax_fft(
     # Step 5: Extract composite T-matrix
     T_comp = np.zeros((9, 9), dtype=complex)
     for n in range(nC):
-        T_comp += T_loc @ psi_exc[9 * n : 9 * n + 9, :]
+        T_comp += (T_loc if t_local is None else t_local[n]) @ psi_exc[9 * n : 9 * n + 9, :]
 
     T3x3 = T_comp[:3, :3].copy()
 
@@ -358,4 +386,5 @@ def compute_sphere_foldy_lax_fft(
         radius=radius,
         ref=ref,
         contrast=contrast,
+        t_local=t_local,
     )

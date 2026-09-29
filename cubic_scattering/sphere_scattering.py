@@ -60,6 +60,8 @@ class SphereDecompositionResult:
         radius: Sphere radius (m).
         ref: Background medium.
         contrast: Material contrast.
+        t_local: Per-cell 9x9 T-matrices, shape (N, 9, 9), when the cells carry different contrasts
+            (contrast_profile of the FFT solver); None when every cell carries contrast.
     """
 
     T3x3: NDArray[np.complexfloating]
@@ -74,6 +76,7 @@ class SphereDecompositionResult:
     radius: float
     ref: ReferenceMedium
     contrast: MaterialContrast
+    t_local: NDArray[np.complexfloating] | None = None
 
 
 @dataclass
@@ -1547,9 +1550,10 @@ def foldy_lax_far_field(
     u_P = np.zeros((M, 3), dtype=complex)
     u_S = np.zeros((M, 3), dtype=complex)
 
-    # Get the sub-cell Rayleigh T-matrix
+    # The sub-cell Rayleigh T-matrix: each cell's own when the cells carry different contrasts
     rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, decomp_result.contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
+    t_local = decomp_result.t_local
 
     psi_exc = decomp_result.psi_exc
 
@@ -1565,7 +1569,7 @@ def foldy_lax_far_field(
         for n in range(N):
             # Scattered source at cell n
             psi_n = psi_exc[9 * n : 9 * n + 9, :] @ inc_vec
-            source = T_loc @ psi_n  # 9-vector: [force_3, stress_dipole_6]
+            source = (T_loc if t_local is None else t_local[n]) @ psi_n  # [force_3, stress_dipole_6]
 
             force = source[:3]
             sigma = _voigt_to_tensor(source[3:])  # 3x3 stress dipole tensor
