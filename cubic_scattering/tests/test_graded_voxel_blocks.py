@@ -115,3 +115,22 @@ def test_static_term_table_reproduces_the_static_kernel():
         got += radial_component(power_F(m, r), X, idx)[:, None, None] * coef[None]
     want = kernel_9x9(X, OMEGA, REF, dynamic=False)
     np.testing.assert_allclose(got, want, rtol=1e-12, atol=1e-12 * np.abs(want).max())
+
+
+def test_biharmonic_sum_rule():
+    # the m = 1 static terms carry their own delta: sum_pq d_p d_p d_q d_q r = lap lap r = -8 pi delta, so the
+    # self-cell Galerkin integral is -8 pi V; and lap lap r = 2 lap (1/r) moment by moment
+    tot = sum(
+        static_term_integral(1, tuple(sorted((p, p, q, q))), (0, 0, 0), H, 12)[0, 0]
+        for p in range(3)
+        for q in range(3)
+    )
+    assert abs(tot / (-8 * np.pi * (2 * H) ** 3) - 1) < 1e-11
+    for a, c in ((1, 1), (0, 4)):
+        bih = sum(
+            static_term_integral(1, tuple(sorted((p, p, q, q))), (0, 0, 0), H, 12)[a, c]
+            for p in range(3)
+            for q in range(3)
+        )
+        lap = sum(static_term_integral(-1, (p, p), (0, 0, 0), H, 12)[a, c] for p in range(3))
+        assert abs(bih - 2 * lap) < 1e-11 * abs(lap)
