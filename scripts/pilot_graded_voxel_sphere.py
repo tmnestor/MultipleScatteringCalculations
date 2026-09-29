@@ -6,6 +6,7 @@ every cell overlapping it, since a Galerkin cell carries the projection of its c
   t9  the package's uniform-field collocation voxel, each cell at the profile's centre value;
   g0  Galerkin, p = 0, r = 0: the uniform-field Galerkin voxel (its convention check: it must converge);
   g1  Galerkin, p = 1, r = 1: the graded first-moment voxel.
+  g1fft  g1 solved by FFT matvec + GMRES (graded_voxel.fft): same answer, reaches larger n_sub.
 Error: max |far field - exact| / peak over nine angles at 5e8 radii (see R_MULT).
 --weak scales the contrast by 1e-6 (gate G4b: the discretisation alone; the reference is solved at the
 same weak contrast, so no Born approximation is involved).
@@ -27,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
 from cubic_scattering import MaterialContrast  # noqa: E402
 from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E402
+from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft  # noqa: E402
 from cubic_scattering.graded_voxel.solver import solve_graded_sphere  # noqa: E402
 from cubic_scattering.sphere_scattering import foldy_lax_far_field, mie_scattered_displacement  # noqa: E402
 from cubic_scattering.sphere_scattering_fft import compute_sphere_foldy_lax_fft  # noqa: E402
@@ -79,7 +81,8 @@ def main() -> int:
                 unknowns = 9 * fl.n_cells
             else:
                 p = r = 0 if arm == "g0" else 1
-                res = solve_graded_sphere(omega, RADIUS, REF, con, n, profile, K_HAT, POL, "P", p=p, r=r)
+                solve = solve_graded_sphere_fft if arm == "g1fft" else solve_graded_sphere
+                res = solve(omega, RADIUS, REF, con, n, profile, K_HAT, POL, "P", p=p, r=r)
                 u_p, u_s = graded_far_field(res, pts / r_far, r_far, K_HAT, POL, "P")
                 unknowns = len(res.centres) * 9 * (1 if p == 0 else 4)
             err = float(np.max(np.abs(u_p + u_s - exact))) / peak

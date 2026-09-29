@@ -47,7 +47,8 @@ def panel(ax, data: dict, title: str) -> None:
         d = data["arms"][arm]
         n, err = np.array(d["n_sub"], float), np.array(d["error"])
         ax.loglog(n, err, marker=marker, color=colour, lw=2.0, ms=6, label=label)
-    n0 = np.array([4.0, 8.0])
+    n_max = max(max(d["n_sub"]) for d in data["arms"].values())
+    n0 = np.array([4.0, float(n_max)])
     for p, anchor, name in (
         (2, data["arms"]["t9"]["error"][0], "$h^2$"),
         (4, data["arms"]["g1"]["error"][0], "$h^4$"),
@@ -55,9 +56,9 @@ def panel(ax, data: dict, title: str) -> None:
         y = 0.5 * anchor * (n0 / n0[0]) ** -p
         ax.loglog(n0, y, color=GUIDE, lw=1.0, ls="--")
         ax.text(n0[1] * 1.03, y[1], name, color=GUIDE, fontsize=7, va="center")
-    ax.set_xlim(3.7, 10.0)
-    ax.set_xticks([4, 6, 8])
-    ax.set_xticklabels(["4", "6", "8"])
+    ax.set_xlim(3.7, 19.0)
+    ax.set_xticks([4, 6, 8, 12, 16])
+    ax.set_xticklabels(["4", "6", "8", "12", "16"])
     ax.minorticks_off()
     ax.set_xlabel("cells across, $n$")
     ax.set_title(title)
