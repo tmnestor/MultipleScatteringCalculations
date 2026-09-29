@@ -294,6 +294,14 @@ order $6\to8$ & 1.98 & 2.05 & 3.35 & 1.70 & 1.95 & 3.40 \\
 \caption{Full contrast: the far-field error of the three voxels.}\label{tab:full}
 \end{table}
 
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_orders.pdf}
+\caption{Far-field error against the number of cells across the sphere, for the collocation and Galerkin
+uniform-field voxels and the graded first-moment voxel; dashed guides show $h^2$ and $h^4$. Top: weak
+contrast (the discretisation alone). Bottom: full contrast.}\label{fig:orders}
+\end{figure}
+
 \paragraph{A convention the Born limit cannot see.} The shear entries of the source are engineering
 stress $2\sigma_{pq}$: the contrast operator maps the engineering strain $\gamma_{pq}$ to
 $2\Delta\mu\,\gamma_{pq}$, and the kernel's shear columns carry a factor $\tfrac12$. The far field must
