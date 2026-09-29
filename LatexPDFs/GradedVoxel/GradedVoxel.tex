@@ -75,9 +75,9 @@ whose contrast falls smoothly to zero at its surface, against its exact solution
 converges at fourth order (apparent orders $4.01$ and $4.13$) where uniform-field voxels converge at
 second. At full contrast the error is $42$ to $66$ times below the collocation voxel at the same cell size.
 Solved with an FFT matrix-vector product to $16$ cells across, the full solve's apparent order rises to
-$3.80$ at both frequencies; its error fits $Ah^4+Bh^5$ to $0.15\%$ with $B/A=-2.6$, the ratio the
-multiple-scattering term alone gives, and a free power fits $4.05$: fourth order with a negative
-fifth-order correction. The
+$3.80$ at both frequencies, approaching four from below. The slow approach does not depend on the
+frequency, nor on the smoothness of the contrast profile; it depends on how many cells span the graded
+shell, and with the shell widened from four to six cells the apparent order reaches $3.92$. The
 far-field extraction must treat the engineering shear stress of the source consistently with the
 coupling kernel; a factor of two there is invisible at Born order along a cell axis and appears as an
 error in the second-order term that no refinement removes.
@@ -330,21 +330,52 @@ is $3.35$ and $3.40$: below four, and rising. The part of the error that multipl
 carried by the second-order Born term $T_2$ (one application of the coupling). Computed on its own, which
 needs no solve and so reaches finer grids, its apparent order at $k_Sa=0.5$ rises through $2.85$, $3.40$,
 $3.52$ and $3.65$ from $n=4$ to $12$ (errors $4.1\times10^{-2}$ to $1.1\times10^{-3}$ of $T_2$;
-\path{scripts/measure_graded_voxel_t2.py}). With $h=1/n$ (the cell half-width in units of the sphere's
-radius), a least-squares fit of $Ah^4+Bh^5$ matches all five to $1.1\%$ with $B/A=-2.6$; $Ah^4\log(L/h)$
-matches to $5.5\%$, and an $h^3$ admixture matches only to $12\%$ and would make the apparent order fall.
-At $k_Sa=1$ the sequence is almost the same: apparent orders $2.88$, $3.42$, $3.54$, $3.67$ (errors
-$4.2\times10^{-2}$ to $1.1\times10^{-3}$), fitted to $0.9\%$ with $B/A=-2.55$. The correction does not
-depend on the frequency, which points to the cell geometry rather than the wave.
+\path{scripts/measure_graded_voxel_t2.py}). At $k_Sa=1$ the sequence is almost the same: apparent orders
+$2.88$, $3.42$, $3.54$, $3.67$ (errors $4.2\times10^{-2}$ to $1.1\times10^{-3}$). The slow approach
+does not depend on the frequency. The Born term contributes little: its error, $7.5\times10^{-5}$ of
+$T_1$ at $n=4$ and $1.3\times10^{-7}$ at $n=16$, is below $T_2$'s share of the full error at every $n$.
 
 The full solve, taken to $n=16$ (Table~\ref{tab:fft}), follows the same law. Its apparent order rises
 through $3.54$, $3.67$, $3.75$ and $3.80$ from $n=8$ to $16$ at $k_Sa=0.5$, and through $3.56$, $3.67$,
-$3.75$, $3.80$ at $k_Sa=1$. From $n=10$ on, $Ah^4+Bh^5$ fits the errors to $0.15\%$ at both frequencies,
-with $B/A=-2.64$ and $-2.60$: the ratios of $T_2$ alone. The alternatives fit worse on the same points:
-$Ah^3+Bh^4$ to $0.9\%$ (with $A/B$ below $0.03$), $Ah^4\log(L/h)$ to $0.5\%$ at the best $L$; a free
-power with a first-order correction, $Ah^p(1+ch)$, gives $p=4.06$ and $c=-3.1$ and $-3.0$. The full solve
-converges at fourth order; its apparent order approaches four slowly because the fifth-order term is
-large and negative.
+$3.75$, $3.80$ at $k_Sa=1$, within $0.02$ of the apparent orders of $T_2$ on the same grids. The
+correction to fourth order is large, but its own order is not fixed by these grids: on the even grids
+from $n=10$, with $h=1/n$, $Ah^4+Bh^5$ and $Ah^4+Ch^6$ fit $T_2$ at $k_Sa=0.5$ to $0.21\%$ and $0.23\%$,
+and odd $n$, for which the sphere's centre falls at a cell centre rather than a vertex, scatter by $1$ to
+$2\%$ about the curve of the even ones.
+
+\paragraph{What sets the approach.} Three causes are separable (Table~\ref{tab:resolution};
+\path{scripts/measure_graded_voxel_resolution.py}). The profile $s(x)$ is only $C^2$: its third
+derivative jumps at $r=a/2$ and at $r=a$. Replaced by the $C^\infty$ step
+$s(x)=e^{-1/x}/(e^{-1/x}+e^{-1/(1-x)})$, whose derivatives all vanish at both ends, the approach is not
+faster but slower (apparent orders $3.31$ to $3.77$, irregular), so the jumps are not its cause; that step
+is steeper, with a maximum slope of $2$ against $1.875$ and much larger higher derivatives. Widening the
+shell instead, with the core at $a/4$, so that $n=16$ puts six cells across it rather than four, speeds
+the approach for both profiles: the apparent order reaches $3.92$ with $s$ and $3.88$ with the $C^\infty$
+step. The full solve follows $T_2$ throughout. The approach to fourth order is therefore governed by how
+finely the cells resolve the variation of the contrast; the data are consistent with an expansion in the
+ratio of the cell to the profile's length scale whose higher terms are still large when four cells span
+the shell, though they do not determine its terms.
+
+\begin{table}[ht]
+\centering\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{core $a/2$ (4 cells across the shell at $n=16$)} & \multicolumn{2}{c}{core $a/4$ (6 cells)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+$n$ & $C^2$ step & $C^\infty$ step & $C^2$ step & $C^\infty$ step \\
+\midrule
+8 & $6.28\times10^{-5}$ & $8.33\times10^{-5}$ & $2.91\times10^{-5}$ & $4.01\times10^{-5}$ \\
+10 & $2.85\times10^{-5}$ & $3.98\times10^{-5}$ & $1.26\times10^{-5}$ & $1.78\times10^{-5}$ \\
+12 & $1.46\times10^{-5}$ & $2.10\times10^{-5}$ & $6.25\times10^{-6}$ & $9.38\times10^{-6}$ \\
+14 & $8.18\times10^{-6}$ & $1.18\times10^{-5}$ & $3.44\times10^{-6}$ & $5.26\times10^{-6}$ \\
+16 & $4.93\times10^{-6}$ & $7.35\times10^{-6}$ & $2.04\times10^{-6}$ & $3.13\times10^{-6}$ \\
+order $14\to16$ & 3.80 & 3.52 & 3.92 & 3.88 \\
+\bottomrule
+\end{tabular}
+\caption{Full contrast, $k_Sa=0.5$: the graded voxel's far-field error for two shell profiles and two
+shell widths.}\label{tab:resolution}
+\end{table}
 
 \begin{table}[ht]
 \centering\small
@@ -411,9 +442,11 @@ now excited, and they couple through the near field of neighbouring cells; and t
 projected cell by cell, jumps by $O(h^2)$ across every face between cells, where in the layer only the
 faces normal to the stratification exist. The Born term does not see either: its error is the quadrature
 error of the source, and it is of fourth order. The multiple-scattering term sees both, but neither costs
-an order: the full solve converges at fourth order, with a fifth-order correction $B/A\approx-2.6$ that
-is the same in $T_2$ and in the full solve and does not depend on the frequency (\S\ref{sec:sphere}). Its
-origin, presumably the $O(h^2)$ jumps of the source at the lateral faces, has not been established.
+an order: its apparent order rises towards four, and the full solve follows it (\S\ref{sec:sphere}). The
+approach is slow where few cells span the variation of the contrast, and does not depend on the frequency
+or on the smoothness of the profile. Why the multiple-scattering term is so much more sensitive to that
+resolution than the Born term, whose relative error is three orders of magnitude smaller, has not been
+established.
 
 \paragraph{Galerkin and collocation.} With the lattice couplings then available, a uniform-field Galerkin
 cell was measured several times worse than the collocation cell \citep{NestorContinuum2026}. Here, with every
@@ -433,9 +466,9 @@ A Galerkin cube that carries the mean and first moments of displacement and an i
 contrast linear in the cell, converges at fourth order in its discretisation (at Born order) on a
 three-dimensional body with an exact solution, where cells of constant properties converge at second. At
 full contrast it is between one and two orders of magnitude more accurate than a uniform-field voxel at
-the same cell size, and the full solve also converges at fourth order: taken by an FFT solve to $16$ cells
-across, its error fits $Ah^4+Bh^5$ to $0.15\%$ at both frequencies, with the negative fifth-order
-correction of the multiple-scattering term, which holds the apparent order at $3.8$ there. The singular integrals of its coupling blocks follow from two
+the same cell size. Taken by an FFT solve to $16$ cells across, the full solve's apparent order rises to
+$3.80$, and to $3.92$ when six cells rather than four span the graded shell: it approaches fourth order at
+a rate set by the resolution of the contrast profile, not by the frequency or the profile's smoothness. The singular integrals of its coupling blocks follow from two
 independent constructions that agree to $10^{-10}$ for representative moment pairs. The far field of such a scheme must take the source's
 engineering shear stress as the coupling kernel does; the Born limit along a cell axis cannot reveal a
 mismatch there.
