@@ -113,6 +113,42 @@ def radial_tensors(F: list[NDArray], X: NDArray) -> tuple[NDArray, NDArray, NDAr
     return F[0], d1, d2, d3, d4
 
 
+def radial_component(F: list[NDArray], X: NDArray, idx: tuple[int, ...]) -> NDArray:
+    """One component d_idx f of a radial function's derivative tensor (order <= 4), shape (N,).
+
+    The same formulas as ``radial_tensors``, evaluated for fixed indices: a few vector operations instead
+    of building the (N, 3, 3, 3, 3) tensor.
+    """
+
+    def dl(a: int, b: int) -> float:
+        return 1.0 if a == b else 0.0
+
+    x = X
+    n = len(idx)
+    if n == 0:
+        return F[0]
+    if n == 1:
+        return x[:, idx[0]] * F[1]
+    if n == 2:
+        i, j = idx
+        return dl(i, j) * F[1] + x[:, i] * x[:, j] * F[2]
+    if n == 3:
+        i, j, k = idx
+        sym = dl(i, j) * x[:, k] + dl(i, k) * x[:, j] + dl(j, k) * x[:, i]
+        return sym * F[2] + x[:, i] * x[:, j] * x[:, k] * F[3]
+    i, j, k, m = idx
+    pairs = dl(i, j) * dl(k, m) + dl(i, k) * dl(j, m) + dl(i, m) * dl(j, k)
+    mixed = (
+        dl(i, j) * x[:, k] * x[:, m]
+        + dl(i, k) * x[:, j] * x[:, m]
+        + dl(i, m) * x[:, j] * x[:, k]
+        + dl(j, k) * x[:, i] * x[:, m]
+        + dl(j, m) * x[:, i] * x[:, k]
+        + dl(k, m) * x[:, i] * x[:, j]
+    )
+    return pairs * F[2] + mixed * F[3] + x[:, i] * x[:, j] * x[:, k] * x[:, m] * F[4]
+
+
 def _accumulate(acc: list[NDArray], fa: list[NDArray], fb: list[NDArray], X: NDArray) -> None:
     """Add delta_ij f_a + d_i d_j f_b to [G, Gd, Gdd]."""
     eye = np.eye(3)
@@ -177,8 +213,10 @@ def kernel_9x9(
     small = kb * r <= SERIES_LIMIT
     if small.any():
         Xs, rs = X[small], r[small]
-        zeros5 = [np.zeros_like(rs)] * 5
         part = [a[small] for a in acc]
+        # the F_q are linear in the series terms: sum them first, build the tensors once
+        fa = [np.zeros_like(rs, dtype=complex) for _ in range(5)]
+        fb = [np.zeros_like(rs, dtype=complex) for _ in range(5)]
         for t in range(N_SERIES):
             a_t = (1j * kb) ** t / math.factorial(t)
             b_t = ((1j * kb) ** t - (1j * ka) ** t) / (math.factorial(t) * kb**2)
@@ -187,12 +225,12 @@ def kernel_9x9(
             if not (use_a or use_b):
                 continue
             F = power_F(t - 1, rs)
-            _accumulate(
-                part,
-                [a_t * f for f in F] if use_a else zeros5,
-                [b_t * f for f in F] if use_b else zeros5,
-                Xs,
-            )
+            for q in range(5):
+                if use_a:
+                    fa[q] += a_t * F[q]
+                if use_b:
+                    fb[q] += b_t * F[q]
+        _accumulate(part, fa, fb, Xs)
         for a, p in zip(acc, part, strict=True):
             a[small] = p
     large = ~small

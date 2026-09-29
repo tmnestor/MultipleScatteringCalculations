@@ -77,3 +77,17 @@ def test_dynamic_remainder_is_weakly_singular():
 def test_origin_is_refused():
     with pytest.raises(ValueError, match="r = 0"):
         kn.kernel_9x9(np.zeros((1, 3)), OMEGA, REF)
+
+
+def test_radial_component_matches_the_tensors():
+    import itertools
+
+    X = _points(0.01, 3.0, n=7, seed=5)
+    r = np.linalg.norm(X, axis=1)
+    for m in (-1, 1, 3):
+        F = kn.power_F(m, r)
+        tensors = kn.radial_tensors(F, X)
+        for order in range(5):
+            for idx in itertools.product(range(3), repeat=order):
+                want = tensors[order][(slice(None), *idx)] if idx else tensors[0]
+                np.testing.assert_allclose(kn.radial_component(F, X, idx), want, rtol=1e-13, atol=1e-300)
