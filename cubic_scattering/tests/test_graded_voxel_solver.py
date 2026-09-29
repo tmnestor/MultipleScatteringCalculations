@@ -1,7 +1,6 @@
 """The graded voxel's global solve."""
 
 import numpy as np
-import pytest
 
 from cubic_scattering import MaterialContrast, ReferenceMedium
 from cubic_scattering.graded_voxel.basis import TEST_EXPONENTS, monomials
@@ -46,7 +45,6 @@ def test_cell_order_does_not_matter():
     np.testing.assert_allclose(b.psi, a.psi[perm], rtol=1e-10, atol=1e-10 * np.abs(a.psi).max())
 
 
-@pytest.mark.skip(reason="needs farfield (Task 8)")
 def test_p0_born_far_field_matches_the_package():
     # the p = 0, r = 0 arm at weak contrast agrees with the package's T9 sphere solver to O((kh)^2)
     from cubic_scattering.graded_voxel.farfield import graded_far_field
