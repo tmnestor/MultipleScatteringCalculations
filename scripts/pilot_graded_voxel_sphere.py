@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Pilot: graded first-moment voxels (T36) on the smoothly graded sphere, against its exact scattering.
 
-Arms, on the same grid (the FFT sphere solver's, cells kept by centre):
+Arms, at the same cell size (t9 keeps the cells whose centre is inside the sphere; the Galerkin arms keep
+every cell overlapping it, since a Galerkin cell carries the projection of its contrast):
   t9  the package's uniform-field collocation voxel, each cell at the profile's centre value;
   g0  Galerkin, p = 0, r = 0: the uniform-field Galerkin voxel (its convention check: it must converge);
   g1  Galerkin, p = 1, r = 1: the graded first-moment voxel.
