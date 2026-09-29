@@ -991,32 +991,73 @@ measures the orders of Eq.~\eqref{eq:graded} again.
 
 \section{A sphere: what the layer predicts in three dimensions}\label{sec:sphere}
 
-The layer and the stratified layer are laterally uniform. A sphere is not, and it has an exact
-solution for elastic scattering \citep{YingTruell1956,PaoMow1973}: it is the usual benchmark for
-volume-integral and discrete-dipole methods. This section solves it with the full three-dimensional
-voxel scheme, to test what the layer predicts for a laterally heterogeneous body. The sphere is
-voxelised by the cubes of an $n_{\mathrm{sub}}^3$ grid whose centres lie inside it, and the
-Foldy--Lax system is solved with the uniform-field voxel (the second-order scheme of
-\S\S\ref{sec:single}--\ref{sec:convergence}; the first-moment voxel of \S\ref{sec:fourth} has not been
-built for finite three-dimensional scatterers) and the cell-averaged coupling, by an FFT-accelerated
-iterative solver. The single site is the package's cube $T$-matrix, which differs from the collocation
-closure only through its far-field corrections (\S\ref{sec:closure}) and has the same order. A P wave
-is incident; the contrast is that of \S\ref{sec:convergence}. The error is the largest difference
-between the scattered far field and the exact one over nine scattering angles from $11^\circ$ to
-$169^\circ$, relative to the largest exact value, at a distance of $5\times10^4$ radii where the far
-field has converged (\path{scripts/pilot_sphere_voxel_vs_mie.py}).
+The layer and the stratified layer are laterally uniform. A sphere is not, and elastic scattering by a
+sphere, homogeneous \citep{YingTruell1956,PaoMow1973} or radially varying \citep{TakeuchiSaito1972},
+has an exact solution: it is the usual benchmark for volume-integral and discrete-dipole methods. This
+section solves two spheres with the full three-dimensional voxel scheme. The sphere is voxelised by the
+cubes of an $n_{\mathrm{sub}}^3$ grid whose centres lie inside it, and the Foldy--Lax system is solved
+with the uniform-field voxel (the second-order scheme of \S\S\ref{sec:single}--\ref{sec:convergence};
+the first-moment voxel of \S\ref{sec:fourth} has not been built for finite three-dimensional
+scatterers) and the cell-averaged coupling, by an FFT-accelerated iterative solver. The single site is
+the package's cube $T$-matrix, which differs from the collocation closure only through its far-field
+corrections (\S\ref{sec:closure}) and has the same order. A P wave is incident. The far field is
+computed from the solution for the incident plane wave itself, each voxel's displacement and strain
+carrying the plane-wave phase at its centre; adding to that phase a linear variation about the
+scatterer's centre, as a Taylor expansion of the incident field would, counts the wave's variation
+twice and leaves an error of order $(ka)^2$ that no refinement removes. The error is the largest
+difference between the scattered far field and the exact one over nine scattering angles from
+$11^\circ$ to $169^\circ$, relative to the largest exact value, at a distance of $5\times10^4$ radii
+where the far field has converged.
 
-\paragraph{The raw error does not converge} Table~\ref{tab:sphereraw} shows the error for grids of
-$4$, $6$ and $8$ voxels across. It does not fall steadily: at $k_Sa=0.5$ it is $6.1\%$, then
-$17\%$, then $2.4\%$. The staircase changes with every grid, and with it the volume and the shape of
-the scatterer. Rescaling by the ratio of the sphere's volume to the staircase's removes the largest
-swings but leaves an error of about $2\%$ at $k_Sa=0.5$, and $8$ to $11\%$ at $k_Sa=1.0$, that does
-not decrease. A refinement study of the voxelised sphere measures the staircase, not the scheme.
+\paragraph{A sphere without a staircase} A voxelised sphere with a sharp surface changes its shape
+with every grid. A sphere whose contrast falls smoothly to zero at its surface does not: the voxels
+that cross the surface carry a vanishing contrast. The body here has a homogeneous core $r<a/2$
+carrying the contrast of \S\ref{sec:convergence}, and across the shell $a/2<r<a$ the contrast falls to
+zero as the smoothstep $s(x)=10x^3-15x^4+6x^5$, $x=(a-r)/(a-a/2)$, which vanishes like $(a-r)^3$ at the
+surface. Its exact scattering follows, order by order, from the radial equations of
+\citet{TakeuchiSaito1972}, integrated across the shell from the core's regular solutions and matched to
+outgoing waves at $r=a$. The equations are derived symbolically from the equations of motion, and the
+solution is checked against a sphere of homogeneous concentric shells in closed form, by unitarity and
+reciprocity, and by an independent implementation that agrees to $2\times10^{-11}$
+(\path{TakeuchiSaito.wl}, \path{ContinuumLimit_GradedSphere.wl}, \path{scripts/crosscheck_graded_sphere.py}).
+Each voxel carries the contrast of its centre. Table~\ref{tab:spheregraded} shows that the error now
+falls steadily, from $0.47\%$ at $n_{\mathrm{sub}}=6$ to $0.061\%$ at $n_{\mathrm{sub}}=12$ at
+$k_Sa=0.5$, and from $0.84\%$ to $0.19\%$ at $k_Sa=1.0$ (\path{scripts/pilot_graded_sphere_vs_exact.py}).
+The apparent order is between $1.7$ and $3.6$: the second order of the uniform-field voxel with the
+error of sampling the profile at the voxel centres superposed, which converges irregularly on a cubic
+lattice. At $n_{\mathrm{sub}}=4$ a voxel is as wide as the graded shell and the error is $10$ to $12\%$.
 
 \begin{table}[htbp]
 \centering
-\caption{A sphere voxelised on grids of $n_{\mathrm{sub}}$ voxels across, against exact elastic
-scattering: relative far-field error, raw and rescaled by the ratio of the sphere's volume to the
+\caption{The smoothly graded sphere, voxelised on grids of $n_{\mathrm{sub}}$ voxels across, against its
+exact solution: relative far-field error, and the apparent order between successive grids.}
+\label{tab:spheregraded}
+\small
+\begin{tabular}{@{}rrcccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{$k_Sa=0.5$} & \multicolumn{2}{c}{$k_Sa=1.0$} \\
+$n_{\mathrm{sub}}$ & voxels & error & order & error & order \\
+\midrule
+$4$  & $32$  & $1.02\times10^{-1}$ &        & $1.15\times10^{-1}$ &        \\
+$6$  & $136$ & $4.66\times10^{-3}$ & $7.62$ & $8.43\times10^{-3}$ & $6.45$ \\
+$8$  & $280$ & $2.58\times10^{-3}$ & $2.06$ & $5.17\times10^{-3}$ & $1.70$ \\
+$12$ & $912$ & $6.11\times10^{-4}$ & $3.55$ & $1.88\times10^{-3}$ & $2.49$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{A sphere with a sharp surface} The homogeneous sphere is the familiar test, and its
+voxelisation changes with every grid. Table~\ref{tab:sphereraw} shows its error for grids of $4$, $6$
+and $8$ voxels across: $4.6\%$, then $19\%$, then $4.2\%$ at $k_Sa=0.5$. The error tracks the
+staircase's volume, which is $5\%$, $17\%$ and $4\%$ too large on these grids. Rescaled by the ratio of
+the sphere's volume to the staircase's, it falls below $1\%$ at $k_Sa=0.5$ and to at most
+$3\%$ at $k_Sa=1.0$, but it still does not converge: what remains is the staircase's shape. A refinement
+study of a sharp sphere measures its staircase; the smooth sphere, like the layer, measures the scheme.
+
+\begin{table}[htbp]
+\centering
+\caption{A homogeneous sphere voxelised on grids of $n_{\mathrm{sub}}$ voxels across, against exact
+elastic scattering: relative far-field error, raw and rescaled by the ratio of the sphere's volume to the
 staircase's. It does not converge with refinement, because the staircase changes with the grid.}
 \label{tab:sphereraw}
 \small
@@ -1025,60 +1066,9 @@ staircase's. It does not converge with refinement, because the staircase changes
  & & \multicolumn{2}{c}{$k_Sa=0.5$} & \multicolumn{2}{c}{$k_Sa=1.0$} \\
 $n_{\mathrm{sub}}$ & voxels & raw & volume-rescaled & raw & volume-rescaled \\
 \midrule
-$4$ & $32$  & $6.1\times10^{-2}$ & $1.8\times10^{-2}$ & $1.19\times10^{-1}$ & $7.7\times10^{-2}$ \\
-$6$ & $136$ & $1.71\times10^{-1}$ & $2.8\times10^{-2}$ & $6.8\times10^{-2}$ & $1.12\times10^{-1}$ \\
-$8$ & $280$ & $2.4\times10^{-2}$ & $2.1\times10^{-2}$ & $4.6\times10^{-2}$ & $8.6\times10^{-2}$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\paragraph{Refining a fixed shape} The staircase is itself a union of cubes, so it has its own exact
-solution, and the voxel scheme converges to it when each voxel is split into $m^3$ sub-voxels of the
-same shape (Fig.~\ref{fig:staircase}). The change of the far field under that refinement is the
-discretisation error alone; the difference between the converged staircase field and the sphere's is
-the shape error alone. Table~\ref{tab:spherestair} refines the $n_{\mathrm{sub}}=8$ staircase to $m=2$
-and $3$, up to $7560$ voxels (\path{scripts/pilot_sphere_staircase_refinement.py}). The discretisation
-error converges at order $1.99$ at $k_Sa=0.5$ and $2.06$ at $k_Sa=1.0$ (Fig.~\ref{fig:convergence}d): the second order of the
-uniform-field voxel on the layer, now on a laterally heterogeneous body. At the original grid it is
-$5.4\times10^{-4}$ and $2.7\times10^{-3}$, larger by a factor of about five when the frequency doubles,
-close to the factor four of its $(kh)^2$ scaling. The shape error, from the field extrapolated to
-$m\to\infty$, is $2.36\times10^{-2}$ and $4.83\times10^{-2}$: $44$ and $18$ times the discretisation
-error. On a sphere the staircase dominates the error of the scheme, which is why the layer, where the
-staircase is exact, is the test that measures the scheme itself.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.75\linewidth]{../figures/fig_staircase.pdf}
-\caption{Refining a fixed shape. (a) A cross-section through the $n_{\mathrm{sub}}=8$ voxelisation of a
-sphere (red circle): the voxels whose centres lie inside it. (b) The same staircase with every voxel
-split into $2\times2\times2$ sub-voxels ($m=2$): the shape, and so its exact solution, is unchanged, and
-only the discretisation is refined.}
-\label{fig:staircase}
-\par\smallskip{\footnotesize\textit{Alt text:} Two panels, each a square grid of shaded cells
-approximating a circle drawn in red; the shaded cells form a stepped outline that crosses the circle.
-In the right panel every shaded cell is divided into four smaller cells by thin lines, while the
-stepped outline is exactly the same as on the left.\par}
-\end{figure}
-
-\begin{table}[htbp]
-\centering
-\caption{The $n_{\mathrm{sub}}=8$ staircase with every voxel split into $m^3$ sub-voxels: far-field
-error against the exact sphere, and the change from the previous level. The change is the
-discretisation error; its order is measured from the two changes, and the field extrapolated to
-$m\to\infty$ gives the shape error.}
-\label{tab:spherestair}
-\small
-\begin{tabular}{@{}rrcccc@{}}
-\toprule
- & & \multicolumn{2}{c}{$k_Sa=0.5$} & \multicolumn{2}{c}{$k_Sa=1.0$} \\
-$m$ & voxels & vs sphere & change & vs sphere & change \\
-\midrule
-$1$ & $280$  & $2.403\times10^{-2}$ & & $4.604\times10^{-2}$ & \\
-$2$ & $2240$ & $2.369\times10^{-2}$ & $4.04\times10^{-4}$ & $4.779\times10^{-2}$ & $2.05\times10^{-3}$ \\
-$3$ & $7560$ & $2.364\times10^{-2}$ & $7.51\times10^{-5}$ & $4.811\times10^{-2}$ & $3.65\times10^{-4}$ \\
-\midrule
-\multicolumn{2}{@{}l}{order of the discretisation error} & \multicolumn{2}{c}{$1.99$} & \multicolumn{2}{c}{$2.06$} \\
-\multicolumn{2}{@{}l}{shape error ($m\to\infty$)} & \multicolumn{2}{c}{$2.36\times10^{-2}$} & \multicolumn{2}{c}{$4.83\times10^{-2}$} \\
+$4$ & $32$  & $4.6\times10^{-2}$ & $1.4\times10^{-3}$ & $5.0\times10^{-2}$ & $5.4\times10^{-3}$ \\
+$6$ & $136$ & $1.94\times10^{-1}$ & $7.9\times10^{-3}$ & $1.68\times10^{-1}$ & $3.0\times10^{-2}$ \\
+$8$ & $280$ & $4.2\times10^{-2}$ & $2.3\times10^{-3}$ & $3.5\times10^{-2}$ & $8.9\times10^{-3}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1102,11 +1092,8 @@ $n=4$; the second- and third-moment voxels, computed in 40-digit arithmetic, fit
 $n=2$: the S wave converted from incident P (solid) and reflected from incident SV (dashed).
 (c)~The stratified layer of \S\ref{sec:hetero}, reflection at normal incidence for P (solid) and S
 (dashed), against the number $m$ of voxel planes per model layer, fitted from $m=4$. (d)~The
-voxelised sphere of \S\ref{sec:sphere}: the far-field difference between the $n_{\mathrm{sub}}=8$
-staircase with every voxel split into $m^3$ sub-voxels and the staircase field extrapolated to
-$m\to\infty$, fitted over $m=1,2,3$. That limit is extrapolated from the same three levels, so panel (d)
-checks consistency; its fitted orders differ slightly from those of Table~\ref{tab:spherestair}
-($1.99$ and $2.06$), which are measured from the changes between levels.}
+smoothly graded sphere of \S\ref{sec:sphere} against its exact solution, for $n_{\mathrm{sub}}$ voxels
+across, fitted from $n_{\mathrm{sub}}=6$ (at $4$ a voxel is as wide as the graded shell).}
 \label{fig:convergence}
 \par\smallskip{\footnotesize\textit{Alt text:} Four log--log panels of relative error against refinement,
 each showing data points and fitted straight lines with the fitted order in the legend. (a) Uniform layer
@@ -1115,8 +1102,8 @@ first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10
 line has order 6.000 and the third-moment line order 8.000, over 1 to 8 planes, reaching about $10^{-22}$. (b) Uniform layer at 20 degrees,
 1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
 first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
-for collocation and mean-only, 4.000 for first moment. (d) Voxelised sphere, 1 to 3 sub-voxels per voxel
-edge: two lines of order about 2, for $k_Sa=0.5$ and $1$.\par}
+for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 12 voxels across:
+two falling lines, for $k_Sa=0.5$ and $1$, from about $10^{-1}$ at 4 voxels to below $2\times10^{-3}$ at 12.\par}
 \end{figure}
 
 \paragraph{Where the error of a voxel scheme lives} The results separate the two approximations
@@ -1179,8 +1166,8 @@ compared with the accuracy the wavefield must have.
 and a randomly stratified one, for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
 first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
-$O(k_\parallel h)$. The sphere of \S\ref{sec:sphere} shows that the second order of the
-uniform-field voxel carries over to a laterally heterogeneous body; the fourth order has still to be shown there.
+$O(k_\parallel h)$. The smoothly graded sphere of \S\ref{sec:sphere} shows the uniform-field
+voxel converging on a laterally heterogeneous body against an exact solution; the fourth order has still to be shown there.
 A contrast that varies within a cell, which \S\ref{sec:hetero} shows is needed beyond second order in a
 smoothly varying medium, has a further consequence in three dimensions: its linear part is odd about
 the cell's centre, so it couples the single site's uniform-field and first-moment blocks, which parity
@@ -1222,8 +1209,9 @@ at second order; with the contrast projected to degree $r$ the order is $\min(2p
 coupling needs nothing beyond the same kernel moments to degree $p+r$. The orders survive
 the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
 first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
-voxel needs about forty. On a voxelised sphere the discretisation error is again second order, and the
-staircase approximation of the surface dominates it, by factors of $18$ to $44$. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
+voxel needs about forty. A sphere whose contrast falls smoothly to zero at its surface converges against
+its exact solution, to $0.061\%$ at $k_Sa=0.5$ with twelve voxels across; a sharp sphere's error is
+set by its staircase, which changes with the grid. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
 
 \begin{table}[htbp]
 \centering
@@ -1260,7 +1248,7 @@ Independent implementation of Eq.~\eqref{eq:bloch} & $1.1\times10^{-15}$, 40 cas
 Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, normal and $20^\circ$ \\
 Stratified reference against Kennett's recursion & $10^{-14}$ \\
 Contrast varying within a cell, Eq.~\eqref{eq:graded} & $8$ cases, linear and smooth profiles; closed forms tested one by one to $2\times10^{-16}$ \\
-Sphere, fixed staircase refined, \S\ref{sec:sphere} & order $1.99$ and $2.06$; shape error $18$--$44\times$ \\
+Smoothly graded sphere, \S\ref{sec:sphere} & exact solution by two routes, $2\times10^{-11}$; error $6.1\times10^{-4}$ and $1.9\times10^{-3}$ at $n_{\mathrm{sub}}=12$ \\
 \bottomrule
 \end{tabular}
 \end{table}
