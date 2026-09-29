@@ -32,11 +32,14 @@ convention:
   x1 = depth (down page)
   x2 = horizontal (across page, right)
   x3 = out of page
-so that e3 is the out-of-plane unit vector.
+so that e3 is the out-of-plane unit vector.  Section 1 defines the unit \
+vectors e1 (vertical, down), e2 and e3 explicitly and checks that they are \
+right-handed; section 9 computes which of M and N is SH and which SV.
 
 Wavenumbers k\[Alpha] = \[Omega]/\[Alpha] and k\[Beta] = \[Omega]/\[Beta] are \
-kept symbolic throughout so that all verification identities simplify \
-cleanly to zero.\
+kept symbolic; the dispersion relations are applied by substituting \
+k\[Alpha] = |k| and k\[Beta] = |k| (dispP, dispS), after which every \
+verification identity simplifies to zero.\
 \>", "Text"],
 
 Cell[CellGroupData[{
@@ -87,27 +90,36 @@ Cell[BoxData[{
      RowBox[{"\[Omega]", "/", "\[Beta]"}]}]}], " ", "*)"}]}], "\n",
  RowBox[{
   RowBox[{"(*", " ",
-   RowBox[{"Dispersion", " ", "relations"}], " ", "*)"}], "\n",
+   "Dispersion relations, as substitutions for the wavenumbers (k\[Alpha] = |k| for P, k\[Beta] = |k| for S), so that they apply wherever the wavenumbers appear", " ", "*)"}], "\n",
   RowBox[{
    RowBox[{"dispP", "=",
-    RowBox[{
-     RowBox[{
-      SuperscriptBox["k1", "2"], "+",
-      SuperscriptBox["k2", "2"], "+",
-      SuperscriptBox["k3", "2"]}], "\[Rule]",
-     SuperscriptBox["k\[Alpha]", "2"]}]}], ";"}]}], "\n",
+    RowBox[{"k\[Alpha]", "\[Rule]",
+     SqrtBox[
+        RowBox[{
+         SuperscriptBox["k1", "2"], "+",
+         SuperscriptBox["k2", "2"], "+",
+         SuperscriptBox["k3", "2"]}]]}]}], ";"}]}], "\n",
  RowBox[{
   RowBox[{"dispS", "=",
-   RowBox[{
-    RowBox[{
-     SuperscriptBox["k1", "2"], "+",
-     SuperscriptBox["k2", "2"], "+",
-     SuperscriptBox["k3", "2"]}], "\[Rule]",
-    SuperscriptBox["k\[Beta]", "2"]}]}], ";"}]}], "Input"],
+   RowBox[{"k\[Beta]", "\[Rule]",
+    SqrtBox[
+        RowBox[{
+         SuperscriptBox["k1", "2"], "+",
+         SuperscriptBox["k2", "2"], "+",
+         SuperscriptBox["k3", "2"]}]]}]}], ";"}]}], "Input"],
+
+Cell["\<\
+The directions, explicitly.  The vertical is x1 (depth, down the page); e3, \
+out of the page, is horizontal and is the pilot vector of M and N.  The \
+sagittal plane of a wave contains k and the vertical; SH motion is normal \
+to it, SV motion lies in it perpendicular to k.\
+\>", "Text"],
+
+Cell["e1 = {1, 0, 0};  (* vertical: depth, down the page *)\ne2 = {0, 1, 0};  (* horizontal: across the page, right *)\n(* e3 = {0, 0, 1}, horizontal and out of the page, is defined above: the pilot vector *)\nvertical = e1;\nPrint[\"right-handed, e1 x e2 = e3: \", Cross[e1, e2] == e3];\nPrint[\"the pilot e3 is horizontal, e3 . vertical = 0: \", e3 . vertical == 0];", "Input"],
 
 Cell["\<\
 Plane-wave scalar potentials satisfying the Helmholtz equations \
-\[Del]\[Superscript]2\[Psi] + K\[Superscript]2\[Psi] = 0:\
+\[Del]^2\[Psi] + K^2\[Psi] = 0:\
 \>", "Text"],
 
 Cell[BoxData[{
@@ -209,8 +221,11 @@ Cell["\<\
 The three vector solutions to the vector Helmholtz equation \
 (Ben-Menahem & Singh, 1981, Eqns. 5.8.27\[Dash]5.8.29):
   L = (1/k\[Alpha]) \[Del]\[Psi]\[Alpha]   (irrotational, P-wave)
-  M = \[Del] \[Times] (e3 \[Psi]\[Beta])     (solenoidal, SH-type)
-  N = (1/k\[Beta]) \[Del] \[Times] M       (solenoidal, SV-type)\
+  M = \[Del] \[Times] (e3 \[Psi]\[Beta])     (solenoidal; SV when k3 = 0)
+  N = (1/k\[Beta]) \[Del] \[Times] M       (solenoidal; SH when k3 = 0)
+
+The pilot vector is e3 (out of page), not the vertical x1: for waves travelling \
+in the page (k3 = 0), M is the SV and N the SH polarisation (section 9).\
 \>", "Text"],
 
 Cell[BoxData[{
@@ -252,7 +267,7 @@ Cell[CellGroupData[{
 Cell["4. Verification: Scalar Helmholtz Equations", "Section"],
 
 Cell["\<\
-Verify \[Del]\[Superscript]2\[Psi] + K\[Superscript]2\[Psi] = 0 \
+Verify \[Del]^2\[Psi] + K^2\[Psi] = 0 \
 when the dispersion relation holds. With k\[Alpha], k\[Beta] symbolic, the \
 substitution simplifies cleanly to zero.\
 \>", "Text"],
@@ -270,7 +285,7 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{"Print", "[",
    RowBox[{
-    "\"\<\[Del]\[Superscript]2\[Psi]\[Alpha] + k\[Alpha]\[Superscript]2 \[Psi]\[Alpha] = \>\"", ",",
+    "\"\<\[Del]^2\[Psi]\[Alpha] + k\[Alpha]^2 \[Psi]\[Alpha] = \>\"", ",",
     "helmP"}], "]"}], ";"}], "\n",
  RowBox[{
   RowBox[{"helmS", "=",
@@ -284,7 +299,7 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{"Print", "[",
    RowBox[{
-    "\"\<\[Del]\[Superscript]2\[Psi]\[Beta] + k\[Beta]\[Superscript]2 \[Psi]\[Beta] = \>\"", ",",
+    "\"\<\[Del]^2\[Psi]\[Beta] + k\[Beta]^2 \[Psi]\[Beta] = \>\"", ",",
     "helmS"}], "]"}], ";"}]}], "Input"]
 
 }, Open  ]],
@@ -323,9 +338,9 @@ Cell["6. Verification: Vector Helmholtz Equations", "Section"],
 
 Cell["\<\
 Verify that L, M, N each satisfy their respective vector Helmholtz equations:
-  \[Del]\[Superscript]2 L + k\[Alpha]\[Superscript]2 L = 0
-  \[Del]\[Superscript]2 M + k\[Beta]\[Superscript]2 M = 0
-  \[Del]\[Superscript]2 N + k\[Beta]\[Superscript]2 N = 0\
+  \[Del]^2 L + k\[Alpha]^2 L = 0
+  \[Del]^2 M + k\[Beta]^2 M = 0
+  \[Del]^2 N + k\[Beta]^2 N = 0\
 \>", "Text"],
 
 Cell[BoxData[{
@@ -341,7 +356,7 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{"Print", "[",
    RowBox[{
-    "\"\<\[Del]\[Superscript]2 L + k\[Alpha]\[Superscript]2 L = \>\"", ",",
+    "\"\<\[Del]^2 L + k\[Alpha]^2 L = \>\"", ",",
     "vhL"}], "]"}], ";"}], "\n",
  RowBox[{
   RowBox[{"vhM", "=",
@@ -355,7 +370,7 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{"Print", "[",
    RowBox[{
-    "\"\<\[Del]\[Superscript]2 M + k\[Beta]\[Superscript]2 M = \>\"", ",",
+    "\"\<\[Del]^2 M + k\[Beta]^2 M = \>\"", ",",
     "vhM"}], "]"}], ";"}], "\n",
  RowBox[{
   RowBox[{"vhN", "=",
@@ -369,7 +384,7 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{"Print", "[",
    RowBox[{
-    "\"\<\[Del]\[Superscript]2 N + k\[Beta]\[Superscript]2 N = \>\"", ",",
+    "\"\<\[Del]^2 N + k\[Beta]^2 N = \>\"", ",",
     "vhN"}], "]"}], ";"}]}], "Input"]
 
 }, Open  ]],
@@ -442,10 +457,10 @@ Cell[BoxData[{
 Cell["\<\
 Expected plane-wave amplitudes (coefficient of exp(i k\[CenterDot]x)):
   L: (i/k\[Alpha]) {k1, k2, k3}   \[Proportional] k\[Dash]hat  (longitudinal)
-  M: i {k2, -k1, 0}             \[Proportional] k \[Times] e3  (SH, \
-\[Perpendicular] sagittal plane)
-  N: (1/k\[Beta]) {-k1 k3, -k2 k3, k1\[Superscript]2+k2\[Superscript]2}   \
-\[Proportional] k \[Times] (e3 \[Times] k)  (SV, in sagittal plane)\
+  M: i {k2, -k1, 0}             \[Proportional] k \[Times] e3  (\
+\[Perpendicular] k and e3: SV when k3 = 0)
+  N: (1/k\[Beta]) {-k1 k3, -k2 k3, k1^2+k2^2}   \
+\[Proportional] k \[Times] (e3 \[Times] k)  (in the plane of k and e3: SH when k3 = 0)\
 \>", "Text"]
 
 }, Open  ]],
@@ -457,9 +472,20 @@ Cell["9. Connection to P-SV-SH Polarisations", "Section"],
 Cell["\<\
 In the thesis convention (x1 = depth, e3 = out of page):
   L \[Proportional] k: P-wave polarisation (along propagation)
-  M \[Proportional] k \[Times] e3: SH polarisation (out of sagittal plane)
-  N \[Proportional] k \[Times] (e3 \[Times] k): SV polarisation (in sagittal \
-plane, \[Perpendicular] k)
+  M \[Proportional] k \[Times] e3: perpendicular to both k and e3
+  N \[Proportional] k \[Times] (e3 \[Times] k): in the plane of k and e3, \[Perpendicular] k
+
+For waves travelling in the page (k3 = 0) the sagittal plane (containing k and \
+the vertical x1) is the page itself, so
+  M = i {k2, -k1, 0} lies in the page, \[Perpendicular] k: SV polarisation
+  N = (1/k\[Beta]) {0, 0, k1^2+k2^2} is along e3, out of the page: SH polarisation
+
+The pilot is e3 rather than the vertical.  Ben-Menahem & Singh use the vertical, \
+which makes M the SH and N the SV polarisation; with e3 the two roles are \
+exchanged.  The choice of e3 is deliberate: the basis degenerates only for \
+propagation straight out of the page (k1 = k2 = 0, section 11), which never \
+occurs in an in-page problem, whereas a vertical pilot degenerates at normal \
+incidence.
 
 Note: \[Del] \[Times] (e3 \[Psi]) = (\[Del]\[Psi]) \[Times] e3 = i(k \
 \[Times] e3) exp(i k\[CenterDot]x).\
@@ -515,7 +541,18 @@ Cell[BoxData[{
    RowBox[{"\"\<N amp  -  (1/k\[Beta]) k\[Times](e3\[Times]k) = \>\"", ",",
     RowBox[{"Simplify", "[",
      RowBox[{"Namp", "-",
-      FractionBox["kcrosse3crossk", "k\[Beta]"]}], "]"}]}], "]"}], ";"}]}], "Input"]
+      FractionBox["kcrosse3crossk", "k\[Beta]"]}], "]"}]}], "]"}], ";"}]}], "Input"],
+
+Cell["\<\
+The SH/SV split, computed rather than asserted.  The SH direction is \
+vertical x k, the normal to the sagittal plane.  For a wave travelling in \
+the page (k3 = 0): M has no SH part and lies in the sagittal plane \
+perpendicular to k, so it is SV; N is parallel to the SH direction, so it \
+is SH.  For k3 != 0 both have SH and SV parts: M and N are then rotations \
+of SV and SH about k.\
+\>", "Text"],
+
+Cell["sSH = Cross[vertical, k];  (* the SH direction: normal to the sagittal plane *)\ninPage = {k3 -> 0};\nPrint[\"k3 = 0:  M . sSH = \", Simplify[Mamp . sSH /. inPage], \"   (0: M has no SH part)\"];\nPrint[\"k3 = 0:  M . k = \", Simplify[Mamp . k /. inPage], \",  Det[{M, k, vertical}] = \", Simplify[Det[{Mamp, k, vertical}] /. inPage], \"   (0, 0: M lies in the sagittal plane, perpendicular to k: SV)\"];\nPrint[\"k3 = 0:  N x sSH = \", Simplify[Cross[Namp, sSH] /. inPage], \"   (0: N is along the SH direction: SH)\"];\nPrint[\"k3 != 0: M . sSH = \", Simplify[Mamp . sSH], \"   (nonzero: out of the page, M and N mix SV and SH)\"];", "Input"]
 
 }, Open  ]],
 
@@ -524,7 +561,7 @@ Cell[CellGroupData[{
 Cell["10. Normalisation and Squared Magnitudes", "Section"],
 
 Cell["\<\
-Compute |L|\[Superscript]2, |M|\[Superscript]2, |N|\[Superscript]2 \
+Compute |L|^2, |M|^2, |N|^2 \
 for a plane wave, applying the dispersion relation.\
 \>", "Text"],
 
@@ -549,7 +586,7 @@ Cell[BoxData[{
      RowBox[{"Assumptions", "\[Rule]", "assn"}]}], "]"}]}], ";"}], "\n",
  RowBox[{
   RowBox[{"Print", "[",
-   RowBox[{"\"\<|L|\[Superscript]2 = \>\"", ",", "L2"}], "]"}], ";"}], "\n",
+   RowBox[{"\"\<|L|^2 = \>\"", ",", "L2"}], "]"}], ";"}], "\n",
  RowBox[{
   RowBox[{"M2", "=",
    RowBox[{"Simplify", "[",
@@ -560,7 +597,7 @@ Cell[BoxData[{
      RowBox[{"Assumptions", "\[Rule]", "assn"}]}], "]"}]}], ";"}], "\n",
  RowBox[{
   RowBox[{"Print", "[",
-   RowBox[{"\"\<|M|\[Superscript]2 = \>\"", ",", "M2"}], "]"}], ";"}], "\n",
+   RowBox[{"\"\<|M|^2 = \>\"", ",", "M2"}], "]"}], ";"}], "\n",
  RowBox[{
   RowBox[{"N2", "=",
    RowBox[{"Simplify", "[",
@@ -572,7 +609,7 @@ Cell[BoxData[{
      RowBox[{"Assumptions", "\[Rule]", "assn"}]}], "]"}]}], ";"}], "\n",
  RowBox[{
   RowBox[{"Print", "[",
-   RowBox[{"\"\<|N|\[Superscript]2 = \>\"", ",", "N2"}], "]"}], ";"}]}], "Input"]
+   RowBox[{"\"\<|N|^2 = \>\"", ",", "N2"}], "]"}], ";"}]}], "Input"]
 
 }, Open  ]],
 
@@ -605,10 +642,13 @@ Cell[BoxData[{
      RowBox[{"Det", "[", "polMatrix", "]"}], "]"}]}], "]"}], ";"}]}], "Input"],
 
 Cell["\<\
-The determinant vanishes when k1 = k2 = 0 (propagation along e3), \
-because M and N both lie in the (x1, x2) plane and the e3 component of M is \
-identically zero. In this degenerate case a different pilot vector must be \
-chosen.\
+The determinant vanishes when k1 = k2 = 0 (propagation along e3): k is then \
+parallel to the pilot e3, so both M = i (k x e3) and N = (1/k\[Beta]) \
+k x (e3 x k) vanish identically.  For any other k, M has no e3 component but \
+N has the e3 component (k1^2+k2^2)/k\[Beta], \
+and L, M, N are independent.  In the degenerate case a different pilot \
+vector must be chosen; with e3 it arises only for propagation straight out \
+of the page, never for an in-page wave.\
 \>", "Text"]
 
 }, Open  ]],
@@ -626,17 +666,17 @@ L = (i/k\[Alpha]) k exp(i k\[CenterDot]x)
   \[Rule] Components: (i/k\[Alpha]) {k1, k2, k3} exp(i k\[CenterDot]x)
 
 M = i (k \[Times] e3) exp(i k\[CenterDot]x)
-  \[Rule] SH-wave: polarised perpendicular to the sagittal plane
+  \[Rule] polarised perpendicular to k and e3: the SV wave when k3 = 0
   \[Rule] Components: i {k2, -k1, 0} exp(i k\[CenterDot]x)
 
 N = (1/k\[Beta]) k \[Times] (e3 \[Times] k) exp(i k\[CenterDot]x)
-  \[Rule] SV-wave: polarised in the sagittal plane, perpendicular to k
-  \[Rule] Components: (1/k\[Beta]) {-k1 k3, -k2 k3, k1\[Superscript]2+k2\[Superscript]2} exp(i k\[CenterDot]x)
+  \[Rule] polarised in the plane of k and e3, perpendicular to k: the SH wave when k3 = 0
+  \[Rule] Components: (1/k\[Beta]) {-k1 k3, -k2 k3, k1^2+k2^2} exp(i k\[CenterDot]x)
 
-When k3 = 0 (propagation in the sagittal plane x1\[Dash]x2):
-  M \[Rule] pure out-of-plane (SH) motion: i {k2, -k1, 0}
-  N \[Rule] pure in-plane (SV) motion: (1/k\[Beta]) {0, 0, k1\[Superscript]2+k2\[Superscript]2}
-  These reduce to the standard SH and P\[Dash]SV decomposition for layered media.\
+When k3 = 0 (propagation in the page, which is then the sagittal plane x1\[Dash]x2):
+  M \[Rule] pure in-plane (SV) motion: i {k2, -k1, 0}
+  N \[Rule] pure out-of-plane (SH) motion: (1/k\[Beta]) {0, 0, k1^2+k2^2}
+  These reduce to the standard P\[Dash]SV (L, M) and SH (N) decomposition for layered media.\
 \>", "Text"]
 
 }, Open  ]],
