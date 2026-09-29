@@ -82,7 +82,9 @@ with leading error $-(kd)^4/720$, for incident P, SV and SH at normal and obliqu
 Legendre moments to degree $p$ it converges at order $2p+2$, with a closed-form constant, and a
 single plane of such voxels reproduces the thin layer's series in its thickness through
 $O(D^{2p+2})$. In a
-randomly stratified layer the orders are unchanged, and the first-moment voxel reaches an accuracy
+randomly stratified layer the orders are unchanged; where the medium varies within a cell, a
+contrast sampled as constant caps every voxel at second order, and a contrast expanded to the field's
+degree restores the full order; and the first-moment voxel reaches an accuracy
 of $10^{-6}$ with one voxel per model layer. On a voxelised sphere the discretisation error is again
 second order, and the staircase error of the shape dominates it. Every result is derived symbolically and checked
 against an independent implementation or an exact solution.
@@ -96,7 +98,9 @@ by smooth basis functions, or by interfaces), and a calculation that uses one mu
 onto a grid. A volume-integral scattering calculation represents the sampled model as cells of
 constant properties and treats every cell as a scatterer: a voxel carrying a single-site
 $T$-matrix and coupled to every other voxel through the Green's tensor of the background, with the
-multiple-scattering series summed. For the media such a scheme is built for, there is no exact
+multiple-scattering series summed. Where the medium varies within a cell, that sampling is itself an
+approximation: \S\ref{sec:hetero} shows that it caps any voxel at second order, unless the cell's
+contrast is expanded to the degree of its field. For the media such a scheme is built for, there is no exact
 solution, and that is the difficulty. Its error cannot be measured against the answer. Comparison
 with another numerical method mixes the errors of both. And a refinement study can mislead,
 because a voxel scheme can converge smoothly to the wrong limit. \S\ref{sec:point} shows how that
@@ -166,7 +170,8 @@ sphere, and shows that with it the discrete system is a collocation of the conti
 \S\ref{sec:convergence} gives that collocation's second-order error in closed form, and
 \S\ref{sec:fourth} the fourth-order voxel, for incident P and S at normal and oblique incidence, and
 its generalisation to Legendre moments of any degree.
-\S\ref{sec:hetero} repeats the tests on a randomly stratified layer, \S\ref{sec:sphere} on a sphere, and \S\ref{sec:discussion} discusses
+\S\ref{sec:hetero} repeats the tests on a randomly stratified layer and on a medium that varies
+within a cell, \S\ref{sec:sphere} on a sphere, and \S\ref{sec:discussion} discusses
 what the results imply for voxel schemes in general. Every result is derived symbolically in
 Mathematica and checked against an independent Python implementation or an exact solution.
 
@@ -950,6 +955,60 @@ reflected displacements agree with the Mathematica scheme to $1.1\times10^{-15}$
 and at $20^\circ$, with and without the first moments. Lateral
 heterogeneity needs the full three-dimensional solver; it is the first extension discussed below.
 
+\paragraph{A medium that varies within a cell.} The stratified model is exact on its own grid: every
+cell is homogeneous. A smoothly varying medium is not, and sampling it as cells of constant
+properties is an approximation of its own. Let the contrast of cell $j$ be its Legendre projection to
+degree $r$, $\bD(z)=\bD_0\sum_{c\le r}f_c^{(j)}P_c(s/h)$, with the voxel's field of degree $p$ as in
+\S\ref{sec:fourth}. The product of contrast and field is again a Legendre sum,
+$P_cP_b=\sum_eA_{cbe}P_e$, with $A_{cbe}=(2e+1)\left(\begin{smallmatrix}c&b&e\\0&0&0\end{smallmatrix}\right)^2$
+the square of a Wigner $3j$ symbol, so the coupling of Eq.~\eqref{eq:galerkin} becomes
+\begin{equation}\label{eq:gradedcoupling}
+  \int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\bD(z')\,\phi_b(z')\,\dd z\,\dd z'
+  =\sum_{c\le r}\ \sum_{e\le p+r}f_c^{(j)}A_{cbe}
+  \Bigl[\int_i\!\!\int_j\phi_a(z)\,\bK(z-z')\,\phi_e(z')\,\dd z\,\dd z'\Bigr]\bD_0:
+\end{equation}
+the same kernel moments, now to degree $p+r$, and nothing else new. Against the exact graded layer, a
+high-precision solution of $(M(z)u')'+\omega^2\rho(z)u=0$, the order of convergence is
+\begin{equation}\label{eq:graded}
+  \min(2p+2,\ 2r+2),
+\end{equation}
+or $2p+2$ when degree $r$ represents the profile exactly (Table~\ref{tab:graded};
+\nb{ContinuumLimit\_GradedContrast.wl}). A contrast that is constant in each cell therefore caps every
+voxel at second order, however rich its field basis, and for the smooth profile the voxel of degree
+$2$ with a linear contrast has the error of the voxel of degree $1$ to within $0.06\%$. At first order in
+the contrast this is what one expects: the contrast's projection error is orthogonal to the polynomials
+of degree $r$, so against the smooth product of the incident and adjoint fields it contributes at
+$O(h^{2r+2})$. To keep order $2p+2$ the contrast must be represented to the degree of the field.
+\begin{table}[htbp]
+\centering
+\caption{A contrast that varies within the cells: the field of each voxel to Legendre degree $p$, its
+contrast to degree $r$. Relative reflection error at $n=16$ planes and the order ($n=4\to8\to16$),
+$\omega=300$\,rad\,s$^{-1}$, for the profiles $1+(2z/D-1)/2$ (linear) and $1+\tfrac12\sin(2\pi z/D)$
+(smooth) times the contrast of \S\ref{sec:convergence}. Predicted: Eq.~\eqref{eq:graded}, and $2p+2$
+for the linear profile once $r\ge1$.}\label{tab:graded}
+\small
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{linear profile} & \multicolumn{2}{c}{smooth profile} \\
+$p$ & $r$ & error & order & error & order \\
+\midrule
+$0$ & $0$ & $7.7\times10^{-5}$ & $2.00$ & & \\
+$1$ & $0$ & $7.6\times10^{-5}$ & $2.00$ & $5.5\times10^{-5}$ & $1.95$ \\
+$1$ & $1$ & $6.4\times10^{-11}$ & $4.00$ & $1.4\times10^{-7}$ & $3.95$ \\
+$2$ & $1$ & $2.3\times10^{-17}$ & $6.00$ & $1.4\times10^{-7}$ & $3.95$ \\
+$2$ & $2$ & & & $1.6\times10^{-10}$ & $5.98$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+The closed forms of the construction are tested one by one by an independent implementation
+(\path{scripts/crosscheck_graded_contrast.py}): the Legendre moments of the kernel against
+$2h\,\mathrm{i}^nj_n(ch)$ and 30-digit quadrature (to $2\times10^{-16}$), the linearisation
+coefficients against the $3j$ symbols (exactly), and the same-cell double integrals against 30-digit
+quadrature ($1.4\times10^{-16}$). It then assembles the scheme without linearisation, evaluating the
+projected contrast at the quadrature nodes, against its own 30-digit solution of the graded layer; its
+errors agree with those of Table~\ref{tab:graded} to $10^{-3}$, and at $\omega=1200$\,rad\,s$^{-1}$ it
+measures the orders of Eq.~\eqref{eq:graded} again.
+
 \section{A sphere: what the layer predicts in three dimensions}\label{sec:sphere}
 
 The layer and the stratified layer are laterally uniform. A sphere is not, and it has an exact
@@ -1141,7 +1200,12 @@ and a randomly stratified one, for which the discrete system is exactly a chain 
 first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
 $O(k_\parallel h)$. The sphere of \S\ref{sec:sphere} shows that the second order of the
-uniform-field voxel carries over to a laterally heterogeneous body; the fourth order has still to be shown there. The numerical evidence is at moderate, physically typical contrasts (up to
+uniform-field voxel carries over to a laterally heterogeneous body; the fourth order has still to be shown there.
+A contrast that varies within a cell, which \S\ref{sec:hetero} shows is needed beyond second order in a
+smoothly varying medium, has a further consequence in three dimensions: its linear part is odd about
+the cell's centre, so it couples the single site's uniform-field and first-moment blocks, which parity
+keeps apart for a homogeneous cube (\S\ref{sec:parity}). A graded voxel therefore needs at least the
+first-moment block; it has not been built. The numerical evidence is at moderate, physically typical contrasts (up to
 $15\%$ in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
 validated; the closed forms are first order in the contrast, and the departures from them at the
 full contrast are of second order. What is established is the \emph{order} of convergence and its
@@ -1173,7 +1237,9 @@ three-dimensional scheme reduces exactly to one dimension) and at oblique incide
 leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. With Legendre
 moments to degree $p$ it converges at order $2p+2$ with the closed-form constant of Eq.~\eqref{eq:cp},
 and a single plane of such voxels reproduces the thin-layer series term by term through
-$O(D^{2p+2})$. The orders survive
+$O(D^{2p+2})$. Where the medium varies within a cell, a contrast sampled as constant caps every voxel
+at second order; with the contrast projected to degree $r$ the order is $\min(2p+2,2r+2)$, and the
+coupling needs nothing beyond the same kernel moments to degree $p+r$. The orders survive
 the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
 first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
 voxel needs about forty. On a voxelised sphere the discretisation error is again second order, and the
@@ -1213,6 +1279,7 @@ Independent implementation, any degree & within round-off; orders $4.02$, $6.02$
 Independent implementation of Eq.~\eqref{eq:bloch} & $1.1\times10^{-15}$, 40 cases: P, SV, SH, stratified \\
 Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, normal and $20^\circ$ \\
 Stratified reference against Kennett's recursion & $10^{-14}$ \\
+Contrast varying within a cell, Eq.~\eqref{eq:graded} & $8$ cases, linear and smooth profiles; closed forms tested one by one to $2\times10^{-16}$ \\
 Sphere, fixed staircase refined, \S\ref{sec:sphere} & order $1.99$ and $2.06$; shape error $18$--$44\times$ \\
 \bottomrule
 \end{tabular}
@@ -1223,7 +1290,7 @@ Sphere, fixed staircase refined, \S\ref{sec:sphere} & order $1.99$ and $2.06$; s
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
 \path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
 StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, FourthOrderError, Reduction3D,
-Oblique, IncidentS, Heterogeneous, SecondMoment and Figure (data for the figure), and their reference dumps
+Oblique, IncidentS, Heterogeneous, SecondMoment, GradedContrast and Figure (data for the figure), and their reference dumps
 \path{scripts/continuum_limit_*.py}; the moment integrals are
 \path{Mathematica/CubeMomentCore.wl} (gate \path{CubeMomentCoreTest.wl}), \path{CubeA22Block.wl},
 \path{CubeMomentArchiveCheck.wl} and \path{CubeShearSplit.wl}, with the Python half of the last in
@@ -1234,7 +1301,8 @@ the test against exact Mie is
 \path{scripts/gate_sphere_closure_vs_mie.py}, with the closed forms in \path{Mathematica/SphereClosureDynamic.wl}; the exact kernel is
 \path{cubic_scattering/cell_averaged_lattice.py}; the independent implementation of the
 first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}, and of the voxel of any
-degree \path{scripts/crosscheck_second_moment_voxel.py}; the convergence figure is drawn by
+degree \path{scripts/crosscheck_second_moment_voxel.py}, and of the graded cell
+\path{scripts/crosscheck_graded_contrast.py}; the convergence figure is drawn by
 \path{scripts/plot_convergence_orders.py}. All are archived at
 \url{https://doi.org/10.5281/zenodo.23003241} and developed at
 \url{https://github.com/tmnestor/MultipleScatteringCalculations}.}
