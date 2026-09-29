@@ -70,13 +70,14 @@ def solve_graded_sphere(
     p: int = 1,
     r: int = 1,
     blocks: dict | None = None,
+    inside: Callable[[NDArray], bool] | None = None,
     _order: NDArray | None = None,
 ) -> GradedVoxelResult:
     """Solve (M - K E) psi = <L, psi0> densely for a plane wave of direction k_hat and polarisation pol.
 
     Args:
         omega: Angular frequency (rad/s).
-        radius: Sphere radius (m); cells are kept by centre, as the FFT sphere solver keeps them.
+        radius: Sphere radius (m): the support of the profile.
         ref: Background medium.
         contrast: The contrast that ``profile`` scales.
         n_sub: Cells per edge of the bounding cube.
@@ -87,9 +88,23 @@ def solve_graded_sphere(
         p: Field degree (0 or 1).
         r: Contrast degree (0 or 1).
         blocks: Optional cache {offset: K} reused across calls with the same h, omega and ref.
+        inside: Which grid cells to keep, from the cell centre; None keeps every cell overlapping the
+            sphere (below).
         _order: Test-only permutation of the cells.
+
+    Every grid cell that overlaps the sphere is kept (centre within radius + sqrt(3) h), not only those
+    whose centre lies inside: a Galerkin cell carries the exact projection of its contrast, and dropping
+    a partly filled shell cell truncates real contrast (the weak-contrast sphere then converges at order
+    1.07 instead of 2). The profile itself decides where the contrast vanishes.
     """
-    grid_idx, centres, h = _build_grid_index_map(radius, n_sub)
+    h_cell = radius / n_sub
+    grid_idx, centres, h = _build_grid_index_map(
+        radius,
+        n_sub,
+        inside
+        if inside is not None
+        else (lambda q: bool(np.linalg.norm(q) < radius + np.sqrt(3.0) * h_cell)),
+    )
     if _order is not None:
         grid_idx, centres = grid_idx[_order], centres[_order]
     n = len(centres)

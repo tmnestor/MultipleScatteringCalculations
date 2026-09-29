@@ -54,7 +54,21 @@ def test_p0_born_far_field_matches_the_package():
     weak = MaterialContrast(CON.Dlambda * 1e-6, CON.Dmu * 1e-6, CON.Drho * 1e-6)
     omega = 0.1 * REF.beta / 10.0
     dirs = np.array([[1.0, 0, 0], [0, 1.0, 0], [-0.6, 0, 0.8]])
-    g = solve_graded_sphere(omega, 10.0, REF, weak, 4, lambda _: 1.0, KHAT, KHAT, "P", p=0, r=0)
+    # the same cells as the FFT solver (centre inside), so only the conventions differ
+    g = solve_graded_sphere(
+        omega,
+        10.0,
+        REF,
+        weak,
+        4,
+        lambda _: 1.0,
+        KHAT,
+        KHAT,
+        "P",
+        p=0,
+        r=0,
+        inside=lambda q: bool(np.linalg.norm(q) < 10.0),
+    )
     ug = graded_far_field(g, dirs, 5e5, KHAT, KHAT, "P")
     # the FFT solver builds its grid with the same _build_grid_index_map
     fl = compute_sphere_foldy_lax_fft(
@@ -63,3 +77,16 @@ def test_p0_born_far_field_matches_the_package():
     uf = foldy_lax_far_field(fl, dirs, 5e5, KHAT, KHAT, wave_type="P")
     tot_g, tot_f = ug[0] + ug[1], uf[0] + uf[1]
     assert np.abs(tot_g - tot_f).max() / np.abs(tot_f).max() < 1e-3
+
+
+def test_every_cell_holding_contrast_is_kept():
+    # a Galerkin cell carries the exact projection of its contrast, so a cell whose centre lies outside the
+    # sphere but which overlaps it must be kept (dropping it truncates real contrast: G4b, 2026-09-29)
+    res = solve_graded_sphere(150.0, 10.0, REF, CON, 2, lambda _: 0.1, KHAT, KHAT, "P", p=0, r=0)
+    assert len(res.centres) == 8
+    from cubic_scattering.sphere_scattering_fft import _build_grid_index_map
+
+    _, centres, h = _build_grid_index_map(10.0, 4, inside=lambda q: True)
+    kept = [c for c in centres if np.linalg.norm(c) < 10.0 + np.sqrt(3) * h]
+    res4 = solve_graded_sphere(150.0, 10.0, REF, CON, 4, lambda _: 0.0, KHAT, KHAT, "P", p=0, r=0)
+    assert len(res4.centres) == len(kept) == 64
