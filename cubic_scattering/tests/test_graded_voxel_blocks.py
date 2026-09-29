@@ -118,8 +118,8 @@ def test_static_term_table_reproduces_the_static_kernel():
 
 
 def test_biharmonic_sum_rule():
-    # the m = 1 static terms carry their own delta: sum_pq d_p d_p d_q d_q r = lap lap r = -8 pi delta, so the
-    # self-cell Galerkin integral is -8 pi V; and lap lap r = 2 lap (1/r) moment by moment
+    # the m = 1 static terms carry their own delta: sum_pq d_p d_p d_q d_q r = lap lap r = -8 pi delta,
+    # so the self-cell Galerkin integral is -8 pi V; and lap lap r = 2 lap (1/r) moment by moment
     tot = sum(
         static_term_integral(1, tuple(sorted((p, p, q, q))), (0, 0, 0), H, 12)[0, 0]
         for p in range(3)
