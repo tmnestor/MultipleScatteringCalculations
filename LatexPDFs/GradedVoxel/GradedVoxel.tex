@@ -61,10 +61,40 @@
 
 \begin{abstract}
 \noindent
-(Written last, from the measured results.)
+Voxel schemes represent a heterogeneous elastic medium as cells of constant properties, and in a smoothly
+varying medium that representation caps them at second order in the cell size whatever the cell carries.
+In one dimension a cell that carries the Legendre moments of its field to degree $p$ and a contrast
+expanded to degree $r$ converges at order $\min(2p+2,2r+2)$. We build the three-dimensional cell with
+$p=r=1$: a Galerkin cube carrying the mean and first moments of the nine-component state, displacement
+and an independent strain, with a contrast linear in the cell. Its coupling blocks are derived twice, by
+moving derivatives onto the cells' autocorrelation and by integrating by parts onto their polynomials, and
+agree to $10^{-10}$; they reproduce the Eshelby and biharmonic sum rules, the cube's Coulomb energy and an
+exact subdivision identity. On a sphere whose contrast falls smoothly to zero at its surface, against its
+exact solution, the discretisation converges at fourth order (apparent orders $4.01$ and $4.13$) where
+uniform-field voxels converge at second. At full contrast the error is $42$ to $66$ times below the
+collocation voxel on the same grid, and below it with a quarter of the unknowns of its finest grid; the
+multiple-scattering part approaches fourth order slowly, with apparent orders rising to $3.65$. The
+far-field extraction must treat the engineering shear stress of the source consistently with the
+coupling kernel; a factor of two there is invisible at Born order along a cell axis and appears as an
+error in the second-order term that no refinement removes.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
+
+A voxel scheme for elastic scattering replaces a heterogeneous body by cubic cells, each carrying a
+single-site $T$-matrix and coupled through the background Green's tensor. In a layer of such cells the
+scheme converges at second order when each cell carries a uniform internal field, and a cell that also
+carries the first moment of its field converges at fourth order \citep{NestorContinuum2026}. That paper
+also showed that where the medium varies within a cell, a contrast sampled as constant caps every
+voxel at second order, and that the rule for a cell whose field has Legendre degree $p$ and whose
+contrast has degree $r$ is $\min(2p+2,2r+2)$. All of that is one-dimensional, or three-dimensional only
+for a laterally uniform layer, where the lateral moments are never excited.
+
+This paper builds the three-dimensional graded cell ($p=r=1$) and asks whether it keeps the fourth order
+on a body with genuine three-dimensional structure: a sphere whose contrast falls smoothly to zero at its
+surface, which has an exact solution and no staircase. The cell and its single-site $T$-matrix are
+described in \S\ref{sec:voxel} and \S\ref{sec:site}, the coupling between cells in
+\S\ref{sec:coupling}, and the sphere in \S\ref{sec:sphere}.
 
 \section{The graded voxel}\label{sec:voxel}
 
@@ -313,7 +343,36 @@ when the far field agrees with the kernel for every source component).
 
 \section{Discussion}\label{sec:discussion}
 
+\paragraph{What three dimensions change.} Two things differ from the layer. The lateral first moments are
+now excited, and they couple through the near field of neighbouring cells; and the discrete source,
+projected cell by cell, jumps by $O(h^2)$ across every face between cells, where in the layer only the
+faces normal to the stratification exist. The Born term does not see either: its error is the quadrature
+error of the source, and it is of fourth order. The multiple-scattering term sees both. Its apparent order
+rises from $2.85$ to $3.65$ between $n=4$ and $12$, which is the behaviour of $h^4\log(1/h)$ rather than of
+a lower power; a logarithm is what the edge singularities of the strain operator's response to face jumps
+would produce. Whether the order settles at four needs finer grids than a dense solve allows here.
+
+\paragraph{Galerkin and collocation.} With the lattice couplings then available, a uniform-field Galerkin
+cell was measured several times worse than the collocation cell \citep{NestorContinuum2026}. Here, with every
+block computed exactly, the uniform-field Galerkin voxel is comparable to the collocation voxel at second
+order, and the graded Galerkin voxel is far better. The double average is the route to fourth order when
+the coupling is exact.
+
+\paragraph{Cost.} The graded cell has 36 unknowns against 9. On the sphere at full contrast it reaches
+$7.6\times10^{-5}$ with $14{,}688$ unknowns, where the collocation voxel needs more than $64{,}872$ for
+$4.2\times10^{-4}$. The blocks between non-touching cells cost a three-dimensional Gauss rule over the
+eight pieces of the autocorrelation; the self block and its 26 neighbours are computed once per cell size.
+
 \section{Conclusions}\label{sec:summary}
+
+A Galerkin cube that carries the mean and first moments of displacement and an independent strain, with a
+contrast linear in the cell, converges at fourth order in its discretisation on a three-dimensional body
+with an exact solution, where cells of constant properties converge at second. At full contrast it is
+between one and two orders of magnitude more accurate than a uniform-field voxel on the same grid, and
+its multiple-scattering part approaches fourth order slowly. Its coupling blocks follow from two
+independent constructions that agree to $10^{-10}$. The far field of such a scheme must take the source's
+engineering shear stress as the coupling kernel does; the Born limit along a cell axis cannot reveal a
+mismatch there.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
