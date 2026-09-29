@@ -86,7 +86,7 @@ def test_every_cell_holding_contrast_is_kept():
     assert len(res.centres) == 8
     from cubic_scattering.sphere_scattering_fft import _build_grid_index_map
 
-    _, centres, h = _build_grid_index_map(10.0, 4, inside=lambda q: True)
+    _, centres, h = _build_grid_index_map(10.0, 4, inside=lambda _: True)
     kept = [c for c in centres if np.linalg.norm(c) < 10.0 + np.sqrt(3) * h]
     res4 = solve_graded_sphere(150.0, 10.0, REF, CON, 4, lambda _: 0.0, KHAT, KHAT, "P", p=0, r=0)
     assert len(res4.centres) == len(kept) == 64
