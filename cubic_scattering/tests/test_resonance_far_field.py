@@ -311,3 +311,46 @@ def test_plane_wave_exciting_field_is_stored():
     res = compute_resonance_tmatrix(omega, a, REF, CONTRAST, n_sub=2)
     assert res.psi_pw is not None
     assert res.psi_pw.shape == res.psi_exc.shape
+
+
+def test_resonance_far_field_radiates_the_kernels_own_field():
+    # the source's shear entries are ENGINEERING stress 2 sigma_pq (effective_stiffness_voigt maps gamma to
+    # 2 dmu gamma; the propagator's shear columns halve it). A one-cell shear-only T, oblique S wave,
+    # must radiate exactly the propagator's own far field; radiating the entries as sigma_pq doubles shear
+    import dataclasses
+
+    from cubic_scattering.resonance_tmatrix import _propagator_block_9x9
+    from cubic_scattering.scattered_field import _incident_voigt_strain
+
+    omega = 150.0
+    khat = np.array([0.3, 0.5, 0.81])
+    khat /= np.linalg.norm(khat)
+    res = compute_resonance_tmatrix(omega, 1.0, REF, WEAK, n_sub=1, k_hat=khat, wave_type="S")
+    # a pure shear-stress source: the force and normal-stress channels would hide the shear factor
+    shear_only = np.diag([0.0, 0, 0, 0, 0, 0, 1, 1, 1]).astype(complex)
+    res = dataclasses.replace(
+        res, T_loc_9x9=shear_only, psi_pw=np.eye(9, dtype=complex), centres=np.zeros((1, 3))
+    )
+    ks = omega / REF.beta
+    kvec = ks * khat
+    pol = np.cross(khat, [1.0, 0.0, 0.0])
+    pol /= np.linalg.norm(pol)
+    theta = np.array([0.7])
+    f_p, f_sv, f_sh = resonance_far_field(res, theta, REF, WEAK, omega, 1.0, kvec, pol)
+    inc = np.concatenate([pol.astype(complex), _incident_voigt_strain(kvec, pol)])
+    ref_vec = np.array([1.0, 0.0, 0.0]) if abs(khat[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+    p1 = ref_vec - ref_vec @ khat * khat
+    p1 /= np.linalg.norm(p1)
+    p2 = np.cross(khat, p1)
+    r_hat = np.sin(theta[0]) * p1 + np.cos(theta[0]) * khat
+    sv_hat = np.cos(theta[0]) * p1 - np.sin(theta[0]) * khat
+    rdist = 4e6
+    u = _propagator_block_9x9(r_hat * rdist, omega, REF)[:3] @ (shear_only @ inc)
+    g_s = np.exp(1j * ks * rdist) / rdist
+    want_sv, want_sh = (sv_hat @ u) / g_s, (p2 @ u) / g_s
+    g_p = np.exp(1j * omega / REF.alpha * rdist) / rdist
+    want_p = (r_hat @ u) / g_p
+    scale = max(abs(want_sv), abs(want_sh), abs(want_p))
+    assert abs(f_sv[0] - want_sv) / scale < 1e-3
+    assert abs(f_sh[0] - want_sh) / scale < 1e-3
+    assert abs(f_p[0] - want_p) / scale < 1e-3
