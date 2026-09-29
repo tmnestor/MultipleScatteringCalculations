@@ -36,11 +36,7 @@ import pytest
 from scipy.special import hankel1, sph_harm_y
 from sympy.physics.wigner import wigner_3j
 
-REF = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneConvergence_reference.json"
-)
+REF = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneConvergence_reference.json"
 
 
 @pytest.fixture(scope="module")
@@ -68,21 +64,12 @@ def _gaunt(l1, m1, l2, m2, l3, m3):
     if m1 + m2 + m3 != 0 or abs(m1) > l1 or abs(m2) > l2 or abs(m3) > l3:
         return 0.0
     pref = np.sqrt((2 * l1 + 1) * (2 * l2 + 1) * (2 * l3 + 1) / (4 * np.pi))
-    return (
-        float(pref)
-        * float(wigner_3j(l1, l2, l3, 0, 0, 0))
-        * float(wigner_3j(l1, l2, l3, m1, m2, m3))
-    )
+    return float(pref) * float(wigner_3j(l1, l2, l3, 0, 0, 0)) * float(wigner_3j(l1, l2, l3, m1, m2, m3))
 
 
 def _structD(q, s, kappa, aL, kx, ky, Lrad):
     ij = np.array(
-        [
-            (i, j)
-            for i in range(-Lrad, Lrad + 1)
-            for j in range(-Lrad, Lrad + 1)
-            if (i, j) != (0, 0)
-        ]
+        [(i, j) for i in range(-Lrad, Lrad + 1) for j in range(-Lrad, Lrad + 1) if (i, j) != (0, 0)]
     )
     i, j = ij[:, 0], ij[:, 1]
     Rn = aL * np.sqrt(i * i + j * j)
@@ -128,10 +115,7 @@ def _build_full(ref, ai):
     T0L = np.diag([ref["T0Lc"][n] for (n, _m) in idx])
     G0 = np.array(
         [
-            [
-                _g0LL(idx[j][0], idx[j][1], idx[i][0], idx[i][1], structD)
-                for j in range(nD)
-            ]
+            [_g0LL(idx[j][0], idx[j][1], idx[i][0], idx[i][1], structD) for j in range(nD)]
             for i in range(nD)
         ],
         dtype=complex,

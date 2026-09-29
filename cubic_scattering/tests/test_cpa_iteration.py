@@ -104,18 +104,14 @@ class TestTwoPhaseCPA:
     """Two-phase CPA should converge."""
 
     def test_moderate_contrast_converges(self) -> None:
-        result = compute_cpa_two_phase(
-            REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A)
         assert result.converged, (
             f"CPA did not converge after {result.n_iterations} iterations, "
             f"residual={result.residual_history[-1]:.2e}"
         )
 
     def test_weak_contrast_converges(self) -> None:
-        result = compute_cpa_two_phase(
-            REF, WEAK_CONTRAST, volume_fraction=0.5, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, WEAK_CONTRAST, volume_fraction=0.5, omega=OMEGA_LOW, a=A)
         assert result.converged
         assert result.n_iterations <= 5
 
@@ -133,9 +129,7 @@ class TestWeakContrastApproxVoigt:
         phases = phases_from_two_phase(REF, WEAK_CONTRAST, phi)
         voigt = voigt_average(phases)
 
-        result = compute_cpa_two_phase(
-            REF, WEAK_CONTRAST, volume_fraction=phi, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, WEAK_CONTRAST, volume_fraction=phi, omega=OMEGA_LOW, a=A)
         eff = result.effective_medium
 
         np.testing.assert_allclose(eff.lam, voigt.lam, rtol=1e-3)
@@ -152,9 +146,7 @@ class TestPhysicalModuli:
     """Effective medium should have positive moduli."""
 
     def test_positive_moduli(self) -> None:
-        result = compute_cpa_two_phase(
-            REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A)
         eff = result.effective_medium
         assert eff.mu_off > 0, f"mu_off={eff.mu_off}"
         assert eff.mu_diag > 0, f"mu_diag={eff.mu_diag}"
@@ -206,18 +198,14 @@ class TestCubicAnisotropy:
     """CPA should produce cubic anisotropy (mu_diag != mu_off)."""
 
     def test_anisotropy_nonzero(self) -> None:
-        result = compute_cpa_two_phase(
-            REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A)
         eff = result.effective_medium
         assert abs(eff.cubic_anisotropy) > 0, (
             f"No cubic anisotropy: mu_diag={eff.mu_diag}, mu_off={eff.mu_off}"
         )
 
     def test_anisotropy_small_at_weak_contrast(self) -> None:
-        result = compute_cpa_two_phase(
-            REF, WEAK_CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, WEAK_CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A)
         eff = result.effective_medium
         # Relative anisotropy should be very small
         rel = abs(eff.cubic_anisotropy) / max(abs(eff.mu_off), 1.0)
@@ -234,9 +222,7 @@ class TestPhaseSymmetry:
 
     def test_effective_between_phases(self) -> None:
         phi = 0.3
-        result = compute_cpa_two_phase(
-            REF, CONTRAST, volume_fraction=phi, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, CONTRAST, volume_fraction=phi, omega=OMEGA_LOW, a=A)
         eff = result.effective_medium
 
         mu_matrix = REF.mu
@@ -244,9 +230,7 @@ class TestPhaseSymmetry:
         mu_min = min(mu_matrix, mu_inclusion)
         mu_max = max(mu_matrix, mu_inclusion)
 
-        assert mu_min <= eff.mu_off <= mu_max, (
-            f"mu_off={eff.mu_off} outside [{mu_min}, {mu_max}]"
-        )
+        assert mu_min <= eff.mu_off <= mu_max, f"mu_off={eff.mu_off} outside [{mu_min}, {mu_max}]"
 
 
 # =====================================================================
@@ -258,9 +242,7 @@ class TestCPAResultStructure:
     """Verify CPAResult has correct fields."""
 
     def test_result_fields(self) -> None:
-        result = compute_cpa_two_phase(
-            REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A)
 
         assert isinstance(result, CPAResult)
         assert isinstance(result.effective_medium, CubicEffectiveMedium)
@@ -274,9 +256,7 @@ class TestCPAResultStructure:
 
     def test_residual_decreasing(self) -> None:
         """Residual should generally decrease (not strictly, but overall)."""
-        result = compute_cpa_two_phase(
-            REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A
-        )
+        result = compute_cpa_two_phase(REF, CONTRAST, volume_fraction=0.3, omega=OMEGA_LOW, a=A)
         if result.n_iterations > 2:
             # First residual should be larger than last
             assert result.residual_history[0] > result.residual_history[-1]

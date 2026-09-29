@@ -30,16 +30,12 @@ class TestDeviceHelpers:
         dtype = select_dtype(torch.device("cpu"), prefer_double=True)
         assert dtype == torch.complex128
 
-    @pytest.mark.skipif(
-        not torch.backends.mps.is_available(), reason="MPS not available"
-    )
+    @pytest.mark.skipif(not torch.backends.mps.is_available(), reason="MPS not available")
     def test_select_dtype_mps(self):
         dtype = select_dtype(torch.device("mps"))
         assert dtype == torch.complex64
 
-    @pytest.mark.skipif(
-        not torch.backends.mps.is_available(), reason="MPS not available"
-    )
+    @pytest.mark.skipif(not torch.backends.mps.is_available(), reason="MPS not available")
     def test_select_dtype_mps_prefer_double(self):
         dtype = select_dtype(torch.device("mps"), prefer_double=True)
         assert dtype == torch.complex128
@@ -154,18 +150,12 @@ class TestTorchGMRES:
         assert n_iter == 0
         assert rel_res < 1e-10
 
-    @pytest.mark.skipif(
-        not torch.backends.mps.is_available(), reason="MPS not available"
-    )
+    @pytest.mark.skipif(not torch.backends.mps.is_available(), reason="MPS not available")
     def test_mps_device(self):
         """GMRES should work on MPS with complex64."""
         device = torch.device("mps")
-        d = torch.tensor(
-            [2.0 + 0j, 3.0 + 0j, 5.0 + 0j], device=device, dtype=torch.complex64
-        )
-        b = torch.tensor(
-            [4.0 + 0j, 9.0 + 0j, 25.0 + 0j], device=device, dtype=torch.complex64
-        )
+        d = torch.tensor([2.0 + 0j, 3.0 + 0j, 5.0 + 0j], device=device, dtype=torch.complex64)
+        b = torch.tensor([4.0 + 0j, 9.0 + 0j, 25.0 + 0j], device=device, dtype=torch.complex64)
         expected = b / d
 
         def matvec(x):

@@ -27,11 +27,7 @@ import numpy as np
 import pytest
 from scipy.special import wofz
 
-REF_JSON = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneLatticeSum_reference.json"
-)
+REF_JSON = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneLatticeSum_reference.json"
 
 
 def erfc_c(z):
@@ -61,18 +57,14 @@ def _ewald(ref):
         bloch = np.exp(1j * aL * (kx * ii + ky * jj))
         term = np.zeros_like(d, dtype=complex)
         for s in (-1, 1):
-            term += np.exp(s * 1j * kappa * d) * erfc_c(
-                d * eta + s * 1j * kappa / (2 * eta)
-            )
+            term += np.exp(s * 1j * kappa * d) * erfc_c(d * eta + s * 1j * kappa / (2 * eta))
         return (1 / (8 * np.pi)) * np.sum(bloch / d * term)
 
     def recip_half(kappa, rho, eta, gc):
         m = np.arange(-gc, gc + 1)
         mm, nn = np.meshgrid(m, m, indexing="ij")
         kpgx, kpgy = kx + recipB * mm, ky + recipB * nn
-        kz = np.sqrt(
-            kappa**2 - (kpgx**2 + kpgy**2) + 0j
-        )  # Im kz >= 0 (principal branch)
+        kz = np.sqrt(kappa**2 - (kpgx**2 + kpgy**2) + 0j)  # Im kz >= 0 (principal branch)
         phase = np.exp(1j * (kpgx * rho[0] + kpgy * rho[1]))
         return (1j / (2 * area)) * np.sum(phase / kz * erfc_c(kz / (2j * eta)))
 
@@ -99,9 +91,7 @@ def test_ewald_matches_mathematica(ref):
         for rho, (re, im) in zip(ref["rhoPts"], ref[key], strict=True):
             got = total(kappa, np.array(rho), eta, rc, gc)
             worst = max(worst, abs(got - complex(re, im)))
-    print(
-        f"\n  max |Ewald(py) - Ewald(mma)| over {2 * len(ref['rhoPts'])} samples = {worst:.3e}"
-    )
+    print(f"\n  max |Ewald(py) - Ewald(mma)| over {2 * len(ref['rhoPts'])} samples = {worst:.3e}")
     assert worst < 1e-9
 
 

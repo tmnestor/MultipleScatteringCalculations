@@ -25,9 +25,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-REF = (
-    Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneRT_reference.json"
-)
+REF = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneRT_reference.json"
 SIG = np.diag([1.0, -1.0])
 
 
@@ -38,9 +36,7 @@ def dump():
 
 
 def _mat(block):
-    return np.array(
-        [[complex(block[i][j][0], block[i][j][1]) for j in range(2)] for i in range(2)]
-    )
+    return np.array([[complex(block[i][j][0], block[i][j][1]) for j in range(2)] for i in range(2)])
 
 
 # ── Tight gates: thesis symplectic reciprocity ───────────────────────────────
@@ -58,9 +54,7 @@ def test_transmission_parity(dump):
     """Tu = Sig . Td . Sig (symplectic transmission parity, SV odd) at every p."""
     for r in dump["stageRT"]:
         Td, Tu = _mat(r["Td"]), _mat(r["Tu"])
-        assert np.max(np.abs(Tu - SIG @ Td @ SIG)) < 1e-9, (
-            f"{r['regime']}: Tu != Sig.Td.Sig"
-        )
+        assert np.max(np.abs(Tu - SIG @ Td @ SIG)) < 1e-9, f"{r['regime']}: Tu != Sig.Td.Sig"
 
 
 def test_p0_decoupling(dump):
@@ -70,9 +64,7 @@ def test_p0_decoupling(dump):
     r = next(r for r in dump["stageRT"] if r["regime"] == "normal")
     Rd = _mat(r["Rd"])
     diag = max(abs(Rd[0, 0]), abs(Rd[1, 1]))
-    assert abs(Rd[0, 1]) < 0.02 * diag, (
-        "P-SV off-diagonal must be << diagonal near normal"
-    )
+    assert abs(Rd[0, 1]) < 0.02 * diag, "P-SV off-diagonal must be << diagonal near normal"
     assert abs(Rd[1, 0]) < 0.02 * diag
 
 
@@ -107,6 +99,4 @@ def test_rpp_trend_vs_kennett(dump):
         kref = abs(kennett_reference_matrix(ref, contrast, H, omega, p=r["p"]).R_PP)
         assert rpp < 1.0, f"{r['regime']}: |R_PP| must be sub-unit"
         # both small (thin sub-wavelength weak-contrast layer); same order of magnitude
-        assert rpp < 50 * kref + 1e-3, (
-            f"{r['regime']}: |R_PP| {rpp:.2e} vs Kennett {kref:.2e}"
-        )
+        assert rpp < 50 * kref + 1e-3, f"{r['regime']}: |R_PP| {rpp:.2e} vs Kennett {kref:.2e}"

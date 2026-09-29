@@ -288,9 +288,7 @@ def convergence_study(
             errors[i, j] = far_field_truncation_error(mie, int(n_trunc))
 
     # Compute static Eshelby factors
-    E_n_static = compute_static_eshelby_factors(
-        ref, contrast, n_max=max(int(n_trunc_values.max()), 5)
-    )
+    E_n_static = compute_static_eshelby_factors(ref, contrast, n_max=max(int(n_trunc_values.max()), 5))
 
     # Compute ka thresholds
     ka_thresholds: dict[tuple[int, float], float] = {}
@@ -298,9 +296,7 @@ def convergence_study(
         threshold = pct / 100.0
         for j, n_trunc in enumerate(n_trunc_values):
             below = ka_values[errors[:, j] < threshold]
-            ka_thresholds[(int(n_trunc), pct)] = (
-                float(below[-1]) if len(below) > 0 else 0.0
-            )
+            ka_thresholds[(int(n_trunc), pct)] = float(below[-1]) if len(below) > 0 else 0.0
 
     return ConvergenceResult(
         ka_values=ka_values,

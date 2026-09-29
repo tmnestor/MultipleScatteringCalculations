@@ -120,10 +120,7 @@ class LayerStack:
             msg = f"Need >= 2 layers, got {len(self.layers)}"
             raise ValueError(msg)
         if not np.isinf(self.layers[-1].thickness):
-            msg = (
-                f"Last layer must be half-space (thickness=inf), "
-                f"got {self.layers[-1].thickness}"
-            )
+            msg = f"Last layer must be half-space (thickness=inf), got {self.layers[-1].thickness}"
             raise ValueError(msg)
 
     @property
@@ -546,9 +543,7 @@ def _batch_matmul2x2(A: np.ndarray, B: np.ndarray) -> np.ndarray:
 # ── Kennett recursion ──────────────────────────────────────────────────
 
 
-def _kennett_psv_recursion(
-    stack: LayerStack, p: float, omega: np.ndarray
-) -> np.ndarray:
+def _kennett_psv_recursion(stack: LayerStack, p: float, omega: np.ndarray) -> np.ndarray:
     """Kennett upward sweep for P-SV waves.
 
     Args:
@@ -566,18 +561,12 @@ def _kennett_psv_recursion(
     # Complex slownesses and vertical slownesses for all layers
     s_p = np.array([_complex_slowness(lay.alpha, lay.Q_alpha) for lay in layers])
     s_s = np.array(
-        [
-            _complex_slowness(lay.beta, lay.Q_beta) if lay.beta > 0 else complex(0.0)
-            for lay in layers
-        ]
+        [_complex_slowness(lay.beta, lay.Q_beta) if lay.beta > 0 else complex(0.0) for lay in layers]
     )
     beta_c = np.array([1.0 / s if s != 0.0 else complex(0.0) for s in s_s])
     eta = np.array([_vertical_slowness(s_p[i], p) for i in range(nlayer)])
     neta = np.array(
-        [
-            _vertical_slowness(s_s[i], p) if s_s[i] != 0.0 else complex(0.0)
-            for i in range(nlayer)
-        ]
+        [_vertical_slowness(s_s[i], p) if s_s[i] != 0.0 else complex(0.0) for i in range(nlayer)]
     )
 
     # Phase factors: ea[i] = exp(i*omega*eta[i]*h[i]), shape (nfreq,)
@@ -681,17 +670,11 @@ def _kennett_sh_recursion(stack: LayerStack, p: float, omega: np.ndarray) -> np.
     layers = stack.layers
 
     s_s = np.array(
-        [
-            _complex_slowness(lay.beta, lay.Q_beta) if lay.beta > 0 else complex(0.0)
-            for lay in layers
-        ]
+        [_complex_slowness(lay.beta, lay.Q_beta) if lay.beta > 0 else complex(0.0) for lay in layers]
     )
     beta_c = np.array([1.0 / s if s != 0.0 else complex(0.0) for s in s_s])
     neta = np.array(
-        [
-            _vertical_slowness(s_s[i], p) if s_s[i] != 0.0 else complex(0.0)
-            for i in range(nlayer)
-        ]
+        [_vertical_slowness(s_s[i], p) if s_s[i] != 0.0 else complex(0.0) for i in range(nlayer)]
     )
 
     # Phase factors
@@ -788,10 +771,7 @@ def kennett_reflectivity_batch(
     # Complex slownesses per layer
     s_p = np.array([_complex_slowness(lay.alpha, lay.Q_alpha) for lay in layers])
     s_s = np.array(
-        [
-            _complex_slowness(lay.beta, lay.Q_beta) if lay.beta > 0 else complex(0.0)
-            for lay in layers
-        ]
+        [_complex_slowness(lay.beta, lay.Q_beta) if lay.beta > 0 else complex(0.0) for lay in layers]
     )
     beta_c = np.array([1.0 / s if s != 0.0 else complex(0.0) for s in s_s])
 
@@ -807,8 +787,7 @@ def kennett_reflectivity_batch(
     # Classify interfaces
     is_fluid_solid = np.array(
         [
-            isinstance(layers[il], FluidLayer)
-            and not isinstance(layers[il + 1], FluidLayer)
+            isinstance(layers[il], FluidLayer) and not isinstance(layers[il + 1], FluidLayer)
             for il in range(nlayer - 1)
         ]
     )
@@ -857,17 +836,10 @@ def kennett_reflectivity_batch(
     eb = np.ones((nlayer, np_slow, nfreq), dtype=np.complex128)
     for i in range(nlayer):
         if not np.isinf(layers[i].thickness):
-            phase_p = (
-                1j * eta[i, :, np.newaxis] * omega[np.newaxis, :] * layers[i].thickness
-            )
+            phase_p = 1j * eta[i, :, np.newaxis] * omega[np.newaxis, :] * layers[i].thickness
             ea[i] = np.exp(phase_p)
             if layers[i].beta > 0:
-                phase_s = (
-                    1j
-                    * neta[i, :, np.newaxis]
-                    * omega[np.newaxis, :]
-                    * layers[i].thickness
-                )
+                phase_s = 1j * neta[i, :, np.newaxis] * omega[np.newaxis, :] * layers[i].thickness
                 eb[i] = np.exp(phase_s)
 
     # Batched Kennett upward sweep: (np_slow, nfreq, 2, 2)
@@ -980,13 +952,9 @@ def cpa_stack_from_phases(
     layers: list[IsotropicLayer] = []
     for i, phases in enumerate(layer_phases):
         result = compute_cpa(phases, omega, a, **cpa_kwargs)
-        is_halfspace = (
-            (i == n - 1) if half_space_index == -1 else (i == half_space_index)
-        )
+        is_halfspace = (i == n - 1) if half_space_index == -1 else (i == half_space_index)
         h = np.inf if is_halfspace else thickness
-        layers.append(
-            cubic_to_isotropic_layer(result.effective_medium, h, Q_alpha, Q_beta)
-        )
+        layers.append(cubic_to_isotropic_layer(result.effective_medium, h, Q_alpha, Q_beta))
     return LayerStack(layers=layers)
 
 
@@ -1044,9 +1012,7 @@ def random_heterogeneous_stack(
         )
         layer_phases.append([matrix, inclusion])
 
-    return cpa_stack_from_phases(
-        layer_phases, omega, a, thickness=thickness, **cpa_kwargs
-    )
+    return cpa_stack_from_phases(layer_phases, omega, a, thickness=thickness, **cpa_kwargs)
 
 
 def random_velocity_stack(

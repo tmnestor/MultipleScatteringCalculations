@@ -169,27 +169,19 @@ class TestLaplacianIdentity:
 
     def test_face_laplacian_11(self):
         # B₁₁₁₁ + B₁₁₂₂ + B₁₁₃₃ = A₁₁
-        assert FACE_B1111 + FACE_B1122 + FACE_B1122 == pytest.approx(
-            FACE_A11, abs=1e-13
-        )
+        assert FACE_B1111 + FACE_B1122 + FACE_B1122 == pytest.approx(FACE_A11, abs=1e-13)
 
     def test_face_laplacian_22(self):
         # B₁₁₂₂ + B₂₂₂₂ + B₂₂₃₃ = A₂₂
-        assert FACE_B1122 + FACE_B2222 + FACE_B2233 == pytest.approx(
-            FACE_A22, abs=1e-13
-        )
+        assert FACE_B1122 + FACE_B2222 + FACE_B2233 == pytest.approx(FACE_A22, abs=1e-13)
 
     def test_edge_laplacian_11(self):
         # B₁₁₁₁ + B₁₁₂₂ + B₁₁₃₃ = A₁₁
-        assert EDGE_B1111 + EDGE_B1122 + EDGE_B1133 == pytest.approx(
-            EDGE_A11, abs=1e-13
-        )
+        assert EDGE_B1111 + EDGE_B1122 + EDGE_B1133 == pytest.approx(EDGE_A11, abs=1e-13)
 
     def test_edge_laplacian_33(self):
         # B₁₁₃₃ + B₂₂₃₃ + B₃₃₃₃ = A₃₃
-        assert EDGE_B1133 + EDGE_B1133 + EDGE_B3333 == pytest.approx(
-            EDGE_A33, abs=1e-13
-        )
+        assert EDGE_B1133 + EDGE_B1133 + EDGE_B3333 == pytest.approx(EDGE_A33, abs=1e-13)
 
     def test_edge_laplacian_12(self):
         # B₁₁₁₂ + B₁₂₂₂ + B₁₂₃₃ = A₁₂
@@ -241,9 +233,9 @@ class TestPropagatorSymmetry:
             for j in range(3):
                 for k in range(3):
                     for ll in range(3):
-                        assert P[i, j, k, ll] == pytest.approx(
-                            P[j, i, k, ll], abs=1e-15
-                        ), f"minor ij failed at ({i},{j},{k},{ll})"
+                        assert P[i, j, k, ll] == pytest.approx(P[j, i, k, ll], abs=1e-15), (
+                            f"minor ij failed at ({i},{j},{k},{ll})"
+                        )
 
     def test_face_c4v_symmetry(self):
         """Face propagator R=(1,0,0): axes 1,2 are equivalent (C₄ᵥ)."""
@@ -440,9 +432,7 @@ class TestDynamicLaplacianIdentity:
     """
 
     def test_face_order1_11(self):
-        assert DYN1_FACE_B1111 + 2 * DYN1_FACE_B1122 == pytest.approx(
-            DYN1_FACE_A11, rel=1e-12
-        )
+        assert DYN1_FACE_B1111 + 2 * DYN1_FACE_B1122 == pytest.approx(DYN1_FACE_A11, rel=1e-12)
 
     def test_face_order1_22(self):
         assert DYN1_FACE_B1122 + DYN1_FACE_B2222 + DYN1_FACE_B2233 == pytest.approx(
@@ -450,9 +440,7 @@ class TestDynamicLaplacianIdentity:
         )
 
     def test_face_order2_11(self):
-        assert DYN2_FACE_B1111 + 2 * DYN2_FACE_B1122 == pytest.approx(
-            DYN2_FACE_A11, rel=1e-12
-        )
+        assert DYN2_FACE_B1111 + 2 * DYN2_FACE_B1122 == pytest.approx(DYN2_FACE_A11, rel=1e-12)
 
     def test_face_order2_22(self):
         assert DYN2_FACE_B1122 + DYN2_FACE_B2222 + DYN2_FACE_B2233 == pytest.approx(
@@ -465,14 +453,10 @@ class TestDynamicLaplacianIdentity:
         )
 
     def test_edge_order1_33(self):
-        assert 2 * DYN1_EDGE_B1133 + DYN1_EDGE_B3333 == pytest.approx(
-            DYN1_EDGE_A33, rel=1e-12
-        )
+        assert 2 * DYN1_EDGE_B1133 + DYN1_EDGE_B3333 == pytest.approx(DYN1_EDGE_A33, rel=1e-12)
 
     def test_edge_order1_12(self):
-        assert 2 * DYN1_EDGE_B1112 + DYN1_EDGE_B1233 == pytest.approx(
-            DYN1_EDGE_A12, rel=1e-12
-        )
+        assert 2 * DYN1_EDGE_B1112 + DYN1_EDGE_B1233 == pytest.approx(DYN1_EDGE_A12, rel=1e-12)
 
     def test_edge_order2_11(self):
         assert DYN2_EDGE_B1111 + DYN2_EDGE_B1122 + DYN2_EDGE_B1133 == pytest.approx(
@@ -480,34 +464,22 @@ class TestDynamicLaplacianIdentity:
         )
 
     def test_edge_order2_33(self):
-        assert 2 * DYN2_EDGE_B1133 + DYN2_EDGE_B3333 == pytest.approx(
-            DYN2_EDGE_A33, rel=1e-12
-        )
+        assert 2 * DYN2_EDGE_B1133 + DYN2_EDGE_B3333 == pytest.approx(DYN2_EDGE_A33, rel=1e-12)
 
     def test_edge_order2_12(self):
-        assert 2 * DYN2_EDGE_B1112 + DYN2_EDGE_B1233 == pytest.approx(
-            DYN2_EDGE_A12, rel=1e-12
-        )
+        assert 2 * DYN2_EDGE_B1112 + DYN2_EDGE_B1233 == pytest.approx(DYN2_EDGE_A12, rel=1e-12)
 
     def test_corner_order1_11(self):
-        assert DYN1_CORNER_B1111 + 2 * DYN1_CORNER_B1122 == pytest.approx(
-            DYN1_CORNER_A11, rel=1e-12
-        )
+        assert DYN1_CORNER_B1111 + 2 * DYN1_CORNER_B1122 == pytest.approx(DYN1_CORNER_A11, rel=1e-12)
 
     def test_corner_order1_12(self):
-        assert 2 * DYN1_CORNER_B1112 + DYN1_CORNER_B1123 == pytest.approx(
-            DYN1_CORNER_A12, rel=1e-12
-        )
+        assert 2 * DYN1_CORNER_B1112 + DYN1_CORNER_B1123 == pytest.approx(DYN1_CORNER_A12, rel=1e-12)
 
     def test_corner_order2_11(self):
-        assert DYN2_CORNER_B1111 + 2 * DYN2_CORNER_B1122 == pytest.approx(
-            DYN2_CORNER_A11, rel=1e-12
-        )
+        assert DYN2_CORNER_B1111 + 2 * DYN2_CORNER_B1122 == pytest.approx(DYN2_CORNER_A11, rel=1e-12)
 
     def test_corner_order2_12(self):
-        assert 2 * DYN2_CORNER_B1112 + DYN2_CORNER_B1123 == pytest.approx(
-            DYN2_CORNER_A12, rel=1e-12
-        )
+        assert 2 * DYN2_CORNER_B1112 + DYN2_CORNER_B1123 == pytest.approx(DYN2_CORNER_A12, rel=1e-12)
 
 
 class TestDynamicStaticLimit:
@@ -531,18 +503,14 @@ class TestDynamicSymmetry:
     @pytest.fixture(params=[(1, 0, 0), (1, 1, 0), (1, 1, 1)])
     def P_dyn(self, request):
         omega = 2 * np.pi * 100  # 100 Hz
-        return dynamic_inter_voxel_propagator(
-            request.param, ALPHA, BETA, RHO, omega=omega
-        )
+        return dynamic_inter_voxel_propagator(request.param, ALPHA, BETA, RHO, omega=omega)
 
     def test_minor_symmetry_ij(self, P_dyn):
         for i in range(3):
             for j in range(3):
                 for k in range(3):
                     for ll in range(3):
-                        assert P_dyn[i, j, k, ll] == pytest.approx(
-                            P_dyn[j, i, k, ll], abs=1e-15
-                        )
+                        assert P_dyn[i, j, k, ll] == pytest.approx(P_dyn[j, i, k, ll], abs=1e-15)
 
 
 class TestDynamicConvergence:
@@ -782,14 +750,8 @@ class TestDynamicFourierReference:
         delta_P_03 = self._delta_P_series(R, 0.3 * ALPHA)
 
         # Relative errors against NIntegrate reference
-        rel_01 = abs(
-            (delta_P_01[0, 0, 0, 0] - WS3_FACE_01[(0, 0, 0, 0)])
-            / WS3_FACE_01[(0, 0, 0, 0)]
-        )
-        rel_03 = abs(
-            (delta_P_03[0, 0, 0, 0] - WS3_FACE_03[(0, 0, 0, 0)])
-            / WS3_FACE_03[(0, 0, 0, 0)]
-        )
+        rel_01 = abs((delta_P_01[0, 0, 0, 0] - WS3_FACE_01[(0, 0, 0, 0)]) / WS3_FACE_01[(0, 0, 0, 0)])
+        rel_03 = abs((delta_P_03[0, 0, 0, 0] - WS3_FACE_03[(0, 0, 0, 0)]) / WS3_FACE_03[(0, 0, 0, 0)])
 
         # Relative error at ka=0.3 should be much larger than at ka=0.1
         assert rel_03 > rel_01, "Truncation error should grow with ka"
@@ -849,17 +811,13 @@ class TestGBlock:
 
     def test_face_g_block_symmetric(self):
         """G block should be symmetric: G_ij = G_ji."""
-        P9 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         G = P9[:3, :3].real
         np.testing.assert_allclose(G, G.T, atol=1e-15)
 
     def test_face_g_block_c4v(self):
         """Face G block has C₄ᵥ: G_22 = G_33, G_12 = G_13 = 0."""
-        P9 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         G = P9[:3, :3].real
         assert G[1, 1] == pytest.approx(G[2, 2], abs=1e-15)
         assert G[0, 1] == pytest.approx(0.0, abs=1e-15)
@@ -868,9 +826,7 @@ class TestGBlock:
 
     def test_corner_g_block_s3(self):
         """Corner G block has S₃: G_11=G_22=G_33, G_12=G_13=G_23."""
-        P9 = inter_voxel_propagator_9x9(
-            (1, 1, 1), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9 = inter_voxel_propagator_9x9((1, 1, 1), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         G = P9[:3, :3].real
         assert G[0, 0] == pytest.approx(G[1, 1], abs=1e-14)
         assert G[0, 0] == pytest.approx(G[2, 2], abs=1e-14)
@@ -900,27 +856,19 @@ class TestGBlock:
         eta_s = 1.0 / (4.0 * (1.0 - nu))
         expected_trace = Phi * (3.0 - 2.0 * eta_s) / (4.0 * np.pi * mu)
 
-        P9 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         actual_trace = np.trace(P9[:3, :3].real)
         assert actual_trace == pytest.approx(expected_trace, rel=1e-12)
 
     def test_g_block_nonzero(self):
         """G block should have non-zero entries."""
-        P9 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         assert np.max(np.abs(P9[:3, :3])) > 0
 
     def test_g_block_rotates_correctly(self):
         """G for R=(0,1,0) should be a rotated version of R=(1,0,0)."""
-        P9_x = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
-        P9_y = inter_voxel_propagator_9x9(
-            (0, 1, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9_x = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
+        P9_y = inter_voxel_propagator_9x9((0, 1, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         Gx = P9_x[:3, :3].real
         Gy = P9_y[:3, :3].real
         # G_00 for R=(1,0,0) should equal G_11 for R=(0,1,0)
@@ -978,9 +926,7 @@ class TestPropagator9x9:
                     P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, d=1.0)
                     C = P9[:3, 3:].real
                     H = P9[3:, :3].real
-                    np.testing.assert_allclose(
-                        H, W @ C.T, atol=1e-15, err_msg=f"H ≠ W Cᵀ for R={R}"
-                    )
+                    np.testing.assert_allclose(H, W @ C.T, atol=1e-15, err_msg=f"H ≠ W Cᵀ for R={R}")
 
     def test_all_26_neighbours_finite(self):
         """9×9 propagator should be finite for all 26 neighbours."""
@@ -996,12 +942,8 @@ class TestPropagator9x9:
 
     def test_static_limit(self):
         """At ω=0, dynamic G block should still be well-defined."""
-        P9_0 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=1, d=1.0
-        )
-        P9_static = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9_0 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=1, d=1.0)
+        P9_static = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         # At ω=0, the ω² correction vanishes
         np.testing.assert_allclose(P9_0[:3, :3], P9_static[:3, :3], atol=1e-20)
 
@@ -1009,12 +951,8 @@ class TestPropagator9x9:
         """ω² correction to G block should be small at ka=0.1."""
         ka = 0.1
         omega = ka * ALPHA
-        P9_0 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
-        P9_1 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=1, d=1.0
-        )
+        P9_0 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
+        P9_1 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=1, d=1.0)
         G_static = np.max(np.abs(P9_0[:3, :3]))
         G_correction = np.max(np.abs(P9_1[:3, :3] - P9_0[:3, :3]))
         assert G_correction < G_static, "ω² G correction should be smaller than static"
@@ -1121,12 +1059,8 @@ class TestCBlockStructure:
         mu = RHO * BETA**2
         nu = (ALPHA**2 - 2 * BETA**2) / (2 * (ALPHA**2 - BETA**2))
 
-        P9_x = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
-        P9_y = inter_voxel_propagator_9x9(
-            (0, 1, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P9_x = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
+        P9_y = inter_voxel_propagator_9x9((0, 1, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
 
         C_x = P9_x[:3, 3:].real
         C_y = P9_y[:3, 3:].real
@@ -1139,12 +1073,8 @@ class TestCBlockStructure:
 
     def test_c_static_frequency_independent(self):
         """C/H blocks at n_orders=0 are static (frequency-independent)."""
-        P9_0 = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
-        P9_w = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 500.0, n_orders=0, d=1.0
-        )
+        P9_0 = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
+        P9_w = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 500.0, n_orders=0, d=1.0)
         # At n_orders=0, C/H are static — same regardless of ω
         # Values are O(1e-12) so use relative tolerance
         np.testing.assert_allclose(P9_0[:3, 3:], P9_w[:3, 3:], rtol=1e-10, atol=1e-15)
@@ -1153,12 +1083,8 @@ class TestCBlockStructure:
     def test_c_dynamic_omega_scaling(self):
         """C/H blocks at n_orders≥1 have ω² frequency dependence."""
         omega = 500.0
-        P9_static = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
-        P9_dyn = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=1, d=1.0
-        )
+        P9_static = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
+        P9_dyn = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=1, d=1.0)
         # Dynamic C/H should differ from static by O(ω²) correction
         C_static = P9_static[:3, 3:]
         C_dyn = P9_dyn[:3, 3:]
@@ -1179,9 +1105,7 @@ class TestCBlockStructure:
         n_orders = 0
         R0 = np.array([1, 0, 0])
 
-        P9_0 = inter_voxel_propagator_9x9(
-            tuple(R0), ALPHA, BETA, RHO, omega, n_orders, d=1.0
-        )
+        P9_0 = inter_voxel_propagator_9x9(tuple(R0), ALPHA, BETA, RHO, omega, n_orders, d=1.0)
         C_analytical = P9_0[:3, 3:].real
 
         # FD: dG_{ij}/dR_k ≈ (G_{ij}(R+ε e_k) - G_{ij}(R-ε e_k)) / (2ε)
@@ -1219,9 +1143,7 @@ class TestDynamic3LaplacianIdentity:
     """
 
     def test_face_order3_11(self):
-        assert DYN3_FACE_B1111 + 2 * DYN3_FACE_B1122 == pytest.approx(
-            DYN3_FACE_A11, rel=1e-11
-        )
+        assert DYN3_FACE_B1111 + 2 * DYN3_FACE_B1122 == pytest.approx(DYN3_FACE_A11, rel=1e-11)
 
     def test_face_order3_22(self):
         assert DYN3_FACE_B1122 + DYN3_FACE_B2222 + DYN3_FACE_B2233 == pytest.approx(
@@ -1234,24 +1156,16 @@ class TestDynamic3LaplacianIdentity:
         )
 
     def test_edge_order3_33(self):
-        assert 2 * DYN3_EDGE_B1133 + DYN3_EDGE_B3333 == pytest.approx(
-            DYN3_EDGE_A33, rel=1e-11
-        )
+        assert 2 * DYN3_EDGE_B1133 + DYN3_EDGE_B3333 == pytest.approx(DYN3_EDGE_A33, rel=1e-11)
 
     def test_edge_order3_12(self):
-        assert 2 * DYN3_EDGE_B1112 + DYN3_EDGE_B1233 == pytest.approx(
-            DYN3_EDGE_A12, rel=1e-11
-        )
+        assert 2 * DYN3_EDGE_B1112 + DYN3_EDGE_B1233 == pytest.approx(DYN3_EDGE_A12, rel=1e-11)
 
     def test_corner_order3_11(self):
-        assert DYN3_CORNER_B1111 + 2 * DYN3_CORNER_B1122 == pytest.approx(
-            DYN3_CORNER_A11, rel=1e-11
-        )
+        assert DYN3_CORNER_B1111 + 2 * DYN3_CORNER_B1122 == pytest.approx(DYN3_CORNER_A11, rel=1e-11)
 
     def test_corner_order3_12(self):
-        assert 2 * DYN3_CORNER_B1112 + DYN3_CORNER_B1123 == pytest.approx(
-            DYN3_CORNER_A12, rel=1e-11
-        )
+        assert 2 * DYN3_CORNER_B1112 + DYN3_CORNER_B1123 == pytest.approx(DYN3_CORNER_A12, rel=1e-11)
 
 
 class TestD3XLaplacian:
@@ -1342,13 +1256,9 @@ class TestGBlockOmega4:
         """G block should remain symmetric with ω⁴ correction."""
         omega = 0.3 * ALPHA
         for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
-            P9 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0
-            )
+            P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0)
             G = P9[:3, :3].real
-            np.testing.assert_allclose(
-                G, G.T, atol=1e-15, err_msg=f"G not symmetric for {R}"
-            )
+            np.testing.assert_allclose(G, G.T, atol=1e-15, err_msg=f"G not symmetric for {R}")
 
     def test_g_omega4_correction_scales(self):
         """ω⁴ G correction should be smaller than ω² correction at ka=0.3.
@@ -1374,12 +1284,8 @@ class TestGBlockOmega4:
 
         def g_corr_at_ka(ka):
             omega = ka * ALPHA
-            P9_1 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=1, d=1.0
-            )
-            P9_2 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0
-            )
+            P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1, d=1.0)
+            P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0)
             return np.max(np.abs(P9_2[:3, :3] - P9_1[:3, :3]))
 
         ratio = g_corr_at_ka(ka2) / g_corr_at_ka(ka1)
@@ -1399,12 +1305,8 @@ class TestCHBlockDynamic:
 
         def ch_corr_at_ka(ka):
             omega = ka * ALPHA
-            P9_0 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=0, d=1.0
-            )
-            P9_1 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=1, d=1.0
-            )
+            P9_0 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=0, d=1.0)
+            P9_1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=1, d=1.0)
             return np.max(np.abs(P9_1[:3, 3:] - P9_0[:3, 3:]))
 
         ratio = ch_corr_at_ka(ka2) / ch_corr_at_ka(ka1)
@@ -1438,9 +1340,7 @@ class TestCHBlockDynamic:
         W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
         for n_ord in (0, 1, 2):
             for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1), (-1, 0, 0), (0, -1, 1)]:
-                P9 = inter_voxel_propagator_9x9(
-                    R, ALPHA, BETA, RHO, omega, n_orders=n_ord, d=1.0
-                )
+                P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=n_ord, d=1.0)
                 np.testing.assert_allclose(
                     P9[3:, :3],
                     W @ P9[:3, 3:].T,
@@ -1457,12 +1357,8 @@ class TestCHBlockDynamic:
                 ((1, 1, 0), (-1, -1, 0)),
                 ((1, 1, 1), (-1, -1, -1)),
             ]:
-                Pp = inter_voxel_propagator_9x9(
-                    R_p, ALPHA, BETA, RHO, omega, n_ord, d=1.0
-                )
-                Pm = inter_voxel_propagator_9x9(
-                    R_m, ALPHA, BETA, RHO, omega, n_ord, d=1.0
-                )
+                Pp = inter_voxel_propagator_9x9(R_p, ALPHA, BETA, RHO, omega, n_ord, d=1.0)
+                Pm = inter_voxel_propagator_9x9(R_m, ALPHA, BETA, RHO, omega, n_ord, d=1.0)
                 np.testing.assert_allclose(
                     Pp[:3, :3],
                     Pm[:3, :3],
@@ -1501,12 +1397,8 @@ class TestConsistentTruncation:
                     if n1 == n2 == n3 == 0:
                         continue
                     R = (n1, n2, n3)
-                    P9 = inter_voxel_propagator_9x9(
-                        R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0
-                    )
-                    assert np.isfinite(P9).all(), (
-                        f"Non-finite P9 at n_orders=2 for R={R}"
-                    )
+                    P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0)
+                    assert np.isfinite(P9).all(), f"Non-finite P9 at n_orders=2 for R={R}"
 
     def test_g_block_symmetric_all_26(self):
         """G block should be symmetric for all 26 neighbours at n_orders=2."""
@@ -1517,13 +1409,9 @@ class TestConsistentTruncation:
                     if n1 == n2 == n3 == 0:
                         continue
                     R = (n1, n2, n3)
-                    P9 = inter_voxel_propagator_9x9(
-                        R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0
-                    )
+                    P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0)
                     G = P9[:3, :3].real
-                    np.testing.assert_allclose(
-                        G, G.T, atol=1e-14, err_msg=f"G not sym for R={R}"
-                    )
+                    np.testing.assert_allclose(G, G.T, atol=1e-14, err_msg=f"G not sym for R={R}")
 
 
 class TestMathematicaReferenceCH:
@@ -1652,13 +1540,9 @@ class TestGBlockOmega6:
         """G block should remain symmetric with omega^6 correction."""
         omega = 0.3 * ALPHA
         for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
-            P9 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-            )
+            P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
             G = P9[:3, :3].real
-            np.testing.assert_allclose(
-                G, G.T, atol=1e-15, err_msg=f"G not symmetric for {R}"
-            )
+            np.testing.assert_allclose(G, G.T, atol=1e-15, err_msg=f"G not symmetric for {R}")
 
     def test_g_omega6_correction_smaller_than_omega4(self):
         """omega^6 G correction should be smaller than omega^4 at ka=0.3."""
@@ -1682,12 +1566,8 @@ class TestGBlockOmega6:
 
         def g_corr_at_ka(ka):
             omega = ka * ALPHA
-            P9_2 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0
-            )
-            P9_3 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-            )
+            P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0)
+            P9_3 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
             return np.max(np.abs(P9_3[:3, :3] - P9_2[:3, :3]))
 
         ratio = g_corr_at_ka(ka2) / g_corr_at_ka(ka1)
@@ -1720,12 +1600,8 @@ class TestCHBlockOmega6:
 
         def ch_corr_at_ka(ka):
             omega = ka * ALPHA
-            P9_2 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0
-            )
-            P9_3 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-            )
+            P9_2 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=2, d=1.0)
+            P9_3 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
             return np.max(np.abs(P9_3[:3, 3:] - P9_2[:3, 3:]))
 
         ratio = ch_corr_at_ka(ka2) / ch_corr_at_ka(ka1)
@@ -1741,9 +1617,7 @@ class TestCHBlockOmega6:
         omega = 0.3 * ALPHA
         W = np.diag([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
         for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1), (-1, 0, 0), (0, -1, 1)]:
-            P9 = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-            )
+            P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
             np.testing.assert_allclose(
                 P9[3:, :3],
                 W @ P9[:3, 3:].T,
@@ -1799,12 +1673,8 @@ class TestConsistentTruncationOmega6:
                     if n1 == n2 == n3 == 0:
                         continue
                     R = (n1, n2, n3)
-                    P9 = inter_voxel_propagator_9x9(
-                        R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-                    )
-                    assert np.isfinite(P9).all(), (
-                        f"Non-finite P9 at n_orders=3 for R={R}"
-                    )
+                    P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
+                    assert np.isfinite(P9).all(), f"Non-finite P9 at n_orders=3 for R={R}"
 
     def test_g_block_symmetric_all_26_omega6(self):
         """G block should be symmetric for all 26 neighbours at n_orders=3."""
@@ -1815,13 +1685,9 @@ class TestConsistentTruncationOmega6:
                     if n1 == n2 == n3 == 0:
                         continue
                     R = (n1, n2, n3)
-                    P9 = inter_voxel_propagator_9x9(
-                        R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-                    )
+                    P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
                     G = P9[:3, :3].real
-                    np.testing.assert_allclose(
-                        G, G.T, atol=1e-14, err_msg=f"G not sym for R={R}"
-                    )
+                    np.testing.assert_allclose(G, G.T, atol=1e-14, err_msg=f"G not sym for R={R}")
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -1950,9 +1816,7 @@ class TestHEngineeringConvention:
                         if n1 == n2 == n3 == 0:
                             continue
                         R = (n1, n2, n3)
-                        P9 = inter_voxel_propagator_9x9(
-                            R, ALPHA, BETA, RHO, omega, n_orders=n_ord, d=1.0
-                        )
+                        P9 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=n_ord, d=1.0)
                         np.testing.assert_allclose(
                             P9[3:, :3],
                             W @ P9[:3, 3:].T,
@@ -2042,8 +1906,7 @@ class TestCornerC3SiteSymmetry:
         scale = np.max(np.abs(S))
         # The two specific measured violations, asserted by name:
         assert S[1, 4] == pytest.approx(S[0, 3], abs=1e-13 * scale), (
-            "S[1,4] must equal its C3 partner S[0,3] "
-            "(was 0 exactly before the {0,1,1,2} multiset fix)"
+            "S[1,4] must equal its C3 partner S[0,3] (was 0 exactly before the {0,1,1,2} multiset fix)"
         )
         assert S[3, 5] == pytest.approx(S[3, 4], abs=1e-13 * scale), (
             "S[3,5] must equal its C3 partner S[3,4] (was 0.72x before fix)"
@@ -2252,9 +2115,7 @@ class TestPhysicalPitch:
         pins still hold bit-for-bit.  At ω=0 the imaginary part is exactly
         zero (radiation vanishes in statics).
         """
-        P = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         pinned_face = {
             (0, 0): 3.124729218306932e-12,
             (1, 1): 2.5312579726092557e-12,
@@ -2267,9 +2128,7 @@ class TestPhysicalPitch:
             assert P[idx].real == val, f"face static P[{idx}] changed at d=1"
             assert P[idx].imag == 0.0  # statics: no radiation
 
-        P = inter_voxel_propagator_9x9(
-            (1, 1, 1), ALPHA, BETA, RHO, 900.0, n_orders=3, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 1, 1), ALPHA, BETA, RHO, 900.0, n_orders=3, d=1.0)
         pinned_corner_dyn = {
             (0, 0): 1.409458741477061e-12,
             (0, 1): 1.9927484469509047e-13,
@@ -2309,9 +2168,7 @@ class TestPhysicalPitch:
         for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
             P1 = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
             for d in (2.0, 2.5):
-                Pd = inter_voxel_propagator_9x9(
-                    R, ALPHA, BETA, RHO, 0.0, n_orders=0, d=d
-                )
+                Pd = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, 0.0, n_orders=0, d=d)
                 for bn, (r_, c_, s) in blocks.items():
                     np.testing.assert_allclose(
                         Pd[r_, c_],
@@ -2364,9 +2221,7 @@ class TestPhysicalPitch:
                     d ** (s + 2 * n + 1) * inc_1[r_, c_].imag,
                     rtol=1e-12,
                     atol=noise,
-                    err_msg=(
-                        f"{bn} order-{n} IMAG term must scale as d^{s + 2 * n + 1}"
-                    ),
+                    err_msg=(f"{bn} order-{n} IMAG term must scale as d^{s + 2 * n + 1}"),
                 )
             prev_1, prev_d = cur_1, cur_d
 
@@ -2462,9 +2317,7 @@ class TestPhysicalPitchArbiter:
             D = study.avg_point_propagator_fd(Rphys, omega, a, h=0.01, n=8)
             dev = self._devs(P9, D)
             for bn, tol in tols[name].items():
-                assert dev[bn] < tol, (
-                    f"{name} {bn} ka=0.3 dev {dev[bn]:.2e} >= {tol} at d=2"
-                )
+                assert dev[bn] < tol, f"{name} {bn} ka=0.3 dev {dev[bn]:.2e} >= {tol} at d=2"
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -2588,8 +2441,7 @@ class TestFaceSBlockArbiter:
                 got = subdivision_tables[kind][i, i, i, i]
                 want = mod[i, i, i, i]
                 assert got == pytest.approx(want, abs=1e-6 * scale), (
-                    f"{kind} [{i},{i},{i},{i}] subdivision {got:.6e} vs "
-                    f"module {want:.6e}"
+                    f"{kind} [{i},{i},{i},{i}] subdivision {got:.6e} vs module {want:.6e}"
                 )
 
     def test_face_gdd_entries_match_dyadic_reference(self):
@@ -2614,9 +2466,7 @@ class TestFaceSBlockArbiter:
         physical regression risk: anyone "fixing" the constants toward
         the biased arbiter flips this sign.
         """
-        P9 = inter_voxel_propagator_9x9(
-            (1, 0, 0), 5000.0, 3000.0, 2500.0, 0.0, n_orders=0, d=1.0
-        )
+        P9 = inter_voxel_propagator_9x9((1, 0, 0), 5000.0, 3000.0, 2500.0, 0.0, n_orders=0, d=1.0)
         S44 = float(np.real(P9[7, 7]))
         # S[4,4] = -(A11 + A22 - 4 eta B1122)/(2 mu) — equals the (0,2)
         # shear combination of the dyadic reference entries:
@@ -2731,8 +2581,7 @@ def _fix5_greens(rvecs, omega):
     psi = 3 * nfS - 3 * nfP + kP**2 * eP / r - kS**2 * eS / r
     pref = 1 / (4 * np.pi * RHO * omega**2)
     return pref * (
-        phi[..., None, None] * np.eye(3)
-        + psi[..., None, None] * g[..., :, None] * g[..., None, :]
+        phi[..., None, None] * np.eye(3) + psi[..., None, None] * g[..., :, None] * g[..., None, :]
     )
 
 
@@ -2805,9 +2654,7 @@ class TestRadiationImaginaryPart:
 
     def test_imag_part_nonzero(self):
         """Sanity: the module now carries a non-zero imaginary part."""
-        P = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 600.0, n_orders=2, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 600.0, n_orders=2, d=1.0)
         assert np.max(np.abs(P.imag)) > 0.0
 
     def test_imag_pitch_scaling(self):
@@ -2818,12 +2665,8 @@ class TestRadiationImaginaryPart:
         omega = 0.3 * BETA / 1.0
         for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
             for d in (2.0, 2.5):
-                Pd = inter_voxel_propagator_9x9(
-                    R, ALPHA, BETA, RHO, omega, n_orders=3, d=d
-                )
-                P_scaled = inter_voxel_propagator_9x9(
-                    R, ALPHA, BETA, RHO, omega * d, n_orders=3, d=1.0
-                )
+                Pd = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=d)
+                P_scaled = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega * d, n_orders=3, d=1.0)
                 for bn, (r_, c_) in _FIX5_BLOCKS.items():
                     s = {"G": -1, "C": -2, "H": -2, "S": -3}[bn]
                     lhs = Pd[r_, c_].imag
@@ -2840,18 +2683,14 @@ class TestRadiationImaginaryPart:
     def test_imag_static_limit_zero(self):
         """Radiation vanishes in statics: Im part -> 0 as w -> 0 (every term
         is proportional to w^{2n+1})."""
-        P_small = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 1e-6, n_orders=2, d=1.0
-        )
+        P_small = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 1e-6, n_orders=2, d=1.0)
         assert np.max(np.abs(P_small.imag)) < 1e-20
 
     def test_imag_leading_order_analytic(self):
         """n=0 leading radiation term, verified analytically (not vs quadrature):
         Im<G>_ij -> delta_ij * pref*(kP^3/3 + 2 kS^3/3), independent of R."""
         omega = 1e-4 * BETA
-        P = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=0, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=0, d=1.0)
         imG = P[:3, :3].imag
         kP, kS = omega / ALPHA, omega / BETA
         pref = 1.0 / (4.0 * np.pi * RHO * omega**2)
@@ -2862,9 +2701,7 @@ class TestRadiationImaginaryPart:
     def test_imag_face_c4v_symmetry(self):
         """Radiation S block respects C4v(100) (Voigt partners equal)."""
         omega = 0.3 * BETA / 1.0
-        P = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
         S = P[3:, 3:].imag
         scale = np.max(np.abs(S)) + 1e-300
         for (i1, j1), (i2, j2) in (
@@ -2877,9 +2714,7 @@ class TestRadiationImaginaryPart:
     def test_imag_corner_c3_symmetry(self):
         """Corner radiation G block respects C3(111) site symmetry."""
         omega = 0.3 * BETA / 1.0
-        P = inter_voxel_propagator_9x9(
-            (1, 1, 1), ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 1, 1), ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
         G = P[:3, :3].imag
         scale = np.max(np.abs(G))
         assert G[0, 0] == pytest.approx(G[1, 1], abs=1e-12 * scale)
@@ -2891,21 +2726,15 @@ class TestRadiationImaginaryPart:
         """Radiation H = W C^T with W = diag(1,1,1,2,2,2) (same as real part)."""
         omega = 0.3 * BETA / 1.0
         for R in [(1, 0, 0), (1, 1, 0), (1, 1, 1)]:
-            P = inter_voxel_propagator_9x9(
-                R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0
-            )
+            P = inter_voxel_propagator_9x9(R, ALPHA, BETA, RHO, omega, n_orders=3, d=1.0)
             C = P[:3, 3:].imag
             H = P[3:, :3].imag
             W = np.diag([1.0, 1, 1, 2, 2, 2])
-            np.testing.assert_allclose(
-                H, W @ C.T, atol=1e-14 * (np.max(np.abs(H)) + 1e-300)
-            )
+            np.testing.assert_allclose(H, W @ C.T, atol=1e-14 * (np.max(np.abs(H)) + 1e-300))
 
     def test_real_parts_unchanged_regression(self):
         """Fix 5 must NOT touch the real (even-w) part: bit-exact vs pins."""
-        P = inter_voxel_propagator_9x9(
-            (1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 0, 0), ALPHA, BETA, RHO, 0.0, n_orders=0, d=1.0)
         pinned_face = {
             (0, 0): 3.124729218306932e-12,
             (1, 1): 2.5312579726092557e-12,
@@ -2915,9 +2744,7 @@ class TestRadiationImaginaryPart:
         }
         for idx, val in pinned_face.items():
             assert P[idx].real == val, f"REAL part changed at {idx} (seam bug!)"
-        P = inter_voxel_propagator_9x9(
-            (1, 1, 1), ALPHA, BETA, RHO, 900.0, n_orders=3, d=1.0
-        )
+        P = inter_voxel_propagator_9x9((1, 1, 1), ALPHA, BETA, RHO, 900.0, n_orders=3, d=1.0)
         pinned_corner_dyn = {
             (0, 0): 1.409458741477061e-12,
             (0, 1): 1.9927484469509047e-13,

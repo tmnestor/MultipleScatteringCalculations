@@ -140,9 +140,7 @@ class TestKnownEshelbyFactors:
 
     def test_eshelby_amp_u(self, static_result: CubeEshelbyResult) -> None:
         """amp_u ~ 1.0 at static limit (density has no static correction)."""
-        np.testing.assert_allclose(
-            static_result.amp_u.real, 1.0, atol=1e-3, err_msg="amp_u vs 1.0"
-        )
+        np.testing.assert_allclose(static_result.amp_u.real, 1.0, atol=1e-3, err_msg="amp_u vs 1.0")
 
     def test_eshelby_amp_e_off(self, static_result: CubeEshelbyResult) -> None:
         """amp_e_off should be close to the sphere quadrupole analog."""
@@ -154,9 +152,7 @@ class TestKnownEshelbyFactors:
             err_msg="amp_e_off vs sphere analog",
         )
 
-    def test_eshelby_amp_e_diag_distinct(
-        self, static_result: CubeEshelbyResult
-    ) -> None:
+    def test_eshelby_amp_e_diag_distinct(self, static_result: CubeEshelbyResult) -> None:
         """amp_e_diag should differ from amp_e_off (cubic anisotropy)."""
         # They should both be real and positive, but different
         assert static_result.amp_e_diag.real > 0, "amp_e_diag should be positive"
@@ -165,8 +161,7 @@ class TestKnownEshelbyFactors:
         diff = abs(static_result.amp_e_diag - static_result.amp_e_off)
         # At finite contrast the difference should be measurable
         assert diff > 1e-6, (
-            f"amp_e_diag={static_result.amp_e_diag}, "
-            f"amp_e_off={static_result.amp_e_off}, diff={diff}"
+            f"amp_e_diag={static_result.amp_e_diag}, amp_e_off={static_result.amp_e_off}, diff={diff}"
         )
 
 
@@ -205,9 +200,7 @@ class TestWeakContrastUnity:
             ("amp_e_off", result.amp_e_off),
             ("amp_e_diag", result.amp_e_diag),
         ]:
-            np.testing.assert_allclose(
-                val.real, 1.0, atol=1e-3, err_msg=f"{name} at weak contrast"
-            )
+            np.testing.assert_allclose(val.real, 1.0, atol=1e-3, err_msg=f"{name} at weak contrast")
 
     def test_concentration_ratios_near_one(self) -> None:
         result = compute_cube_eshelby_factors(REF, WEAK_CONTRAST, ka=0.01)
@@ -217,9 +210,7 @@ class TestWeakContrastUnity:
             ("E_e_off", result.E_e_off),
             ("E_e_diag", result.E_e_diag),
         ]:
-            np.testing.assert_allclose(
-                val.real, 1.0, atol=1e-3, err_msg=f"{name} at weak contrast"
-            )
+            np.testing.assert_allclose(val.real, 1.0, atol=1e-3, err_msg=f"{name} at weak contrast")
 
 
 # =====================================================================
@@ -237,9 +228,7 @@ class TestScaleFree:
         for name in ["amp_u", "amp_theta", "amp_e_off", "amp_e_diag"]:
             val_s = getattr(r_small, name)
             val_l = getattr(r_large, name)
-            np.testing.assert_allclose(
-                val_s.real, val_l.real, atol=1e-3, err_msg=f"{name} a-dependence"
-            )
+            np.testing.assert_allclose(val_s.real, val_l.real, atol=1e-3, err_msg=f"{name} a-dependence")
 
 
 # =====================================================================
@@ -275,9 +264,7 @@ class TestCubicAnisotropy:
 
     def test_anisotropy_nonzero(self) -> None:
         result = compute_cube_eshelby_factors(REF, CONTRAST, ka=0.01)
-        assert abs(result.cubic_anisotropy) > 1e-3, (
-            f"cubic_anisotropy={result.cubic_anisotropy} too small"
-        )
+        assert abs(result.cubic_anisotropy) > 1e-3, f"cubic_anisotropy={result.cubic_anisotropy} too small"
 
     def test_anisotropy_zero_at_weak_contrast(self) -> None:
         result = compute_cube_eshelby_factors(REF, WEAK_CONTRAST, ka=0.01)

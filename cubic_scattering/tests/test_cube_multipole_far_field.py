@@ -73,7 +73,4 @@ def test_radiation_monomial_zero_k_is_volume_moment():
     k0 = np.array([0.0, 0.0, 0.0])
     # const -> volume (2a)**3; r0**2 -> (2a)**2 * 2a**3/3
     assert abs(radiation_monomial((0, 0, 0), k0, a) - (2 * a) ** 3) < 1e-12
-    assert (
-        abs(radiation_monomial((2, 0, 0), k0, a) - (2 * a) ** 2 * (2 * a**3 / 3))
-        < 1e-10
-    )
+    assert abs(radiation_monomial((2, 0, 0), k0, a) - (2 * a) ** 2 * (2 * a**3 / 3)) < 1e-10

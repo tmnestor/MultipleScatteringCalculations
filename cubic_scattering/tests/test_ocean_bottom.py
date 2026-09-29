@@ -108,9 +108,7 @@ class TestOceanBottom:
         peak = np.max(np.abs(result.trace_homogeneous))
         if peak > 0:
             relative_diff = np.max(diff) / peak
-            assert relative_diff < 0.01, (
-                f"Weak contrast perturbation too large: {relative_diff:.4f}"
-            )
+            assert relative_diff < 0.01, f"Weak contrast perturbation too large: {relative_diff:.4f}"
 
     def test_born_scaling_frequency_domain(self) -> None:
         """Doubling weak contrast roughly doubles |R_slab|."""
@@ -138,9 +136,7 @@ class TestOceanBottom:
         if np.any(active):
             ratio = np.abs(r2.R_slab[active]) / np.abs(r1.R_slab[active])
             mean_ratio = np.mean(ratio)
-            assert 1.5 < mean_ratio < 2.5, (
-                f"Born scaling ratio should be ~2, got {mean_ratio:.2f}"
-            )
+            assert 1.5 < mean_ratio < 2.5, f"Born scaling ratio should be ~2, got {mean_ratio:.2f}"
 
     def test_trace_is_causal(self) -> None:
         """Trace should be ~0 well before the two-way water travel time.
@@ -256,21 +252,15 @@ class TestOceanBottom:
             raw_slab = np.abs(result.R_slab[active])
             # T_d · T_u < 1 at fluid-solid → coupling reduces contribution
             ratio = np.mean(coupled_slab / raw_slab)
-            assert ratio < 1.0, (
-                f"Coupled slab should be smaller than raw: ratio = {ratio:.4f}"
-            )
+            assert ratio < 1.0, f"Coupled slab should be smaller than raw: ratio = {ratio:.4f}"
 
     def test_free_surface_creates_multiples(self) -> None:
         """free_surface=True creates water-column multiples at late times."""
         geom = SlabGeometry(M=2, N_z=1, a=1.0)
         mat = uniform_slab_material(geom, SED_REF, CONTRAST)
 
-        cfg_no_fs = _make_config(
-            geom, mat, nw=128, T=1.0, f_min=5.0, f_max=80.0, free_surface=False
-        )
-        cfg_fs = _make_config(
-            geom, mat, nw=128, T=1.0, f_min=5.0, f_max=80.0, free_surface=True
-        )
+        cfg_no_fs = _make_config(geom, mat, nw=128, T=1.0, f_min=5.0, f_max=80.0, free_surface=False)
+        cfg_fs = _make_config(geom, mat, nw=128, T=1.0, f_min=5.0, f_max=80.0, free_surface=True)
 
         result_no_fs = compute_ocean_bottom_reflection(cfg_no_fs, progress=False)
         result_fs = compute_ocean_bottom_reflection(cfg_fs, progress=False)
@@ -306,9 +296,7 @@ class TestOceanBottom:
             peak_energy = np.max(np.abs(result.trace_total))
             if peak_energy > 0:
                 ratio = late_energy / peak_energy
-                assert ratio < 0.15, (
-                    f"Without free surface, late energy should be small: {ratio:.4f}"
-                )
+                assert ratio < 0.15, f"Without free surface, late energy should be small: {ratio:.4f}"
 
 
 class TestObliqueIncidence:
@@ -654,9 +642,7 @@ class TestModeConvertedOceanBottom:
             f"weak-contrast slab conversion effect {diff / scale:.2e} not second-order"
         )
 
-    def test_write_log_includes_mode_conversion_columns(
-        self, weak_oblique_result, tmp_path: Path
-    ):
+    def test_write_log_includes_mode_conversion_columns(self, weak_oblique_result, tmp_path: Path):
         """write_log table contains |R_PS| and |R_SS| columns."""
         log_path = tmp_path / "test_log.txt"
         write_log(weak_oblique_result, log_path)

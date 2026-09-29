@@ -54,29 +54,21 @@ def radiation_I1d(p: int, k: float, a: float) -> complex:
         # int t exp(-ikt) dt = -(2i/k**2)(sin(ka) - ka cos(ka))
         if abs_ka < 1e-6:
             ka2 = ka * ka
-            return complex(
-                -2j * a**3 * k / 3.0 * (1.0 - ka2 / 10.0 + ka2 * ka2 / 280.0)
-            )
+            return complex(-2j * a**3 * k / 3.0 * (1.0 - ka2 / 10.0 + ka2 * ka2 / 280.0))
         return complex(-2j / k**2 * (np.sin(ka) - ka * np.cos(ka)))
 
     if p == 2:
         # int t**2 exp(-ikt) dt = (2/k**3)(2 ka cos(ka) + (k**2 a**2 - 2) sin(ka))
         if abs_ka < 1e-5:
             ka2 = ka * ka
-            return complex(
-                2.0 * a**3 / 3.0 * (1.0 - 3.0 * ka2 / 10.0 + ka2 * ka2 / 56.0)
-            )
-        return complex(
-            2.0 / k**3 * (2.0 * ka * np.cos(ka) + (ka**2 - 2.0) * np.sin(ka))
-        )
+            return complex(2.0 * a**3 / 3.0 * (1.0 - 3.0 * ka2 / 10.0 + ka2 * ka2 / 56.0))
+        return complex(2.0 / k**3 * (2.0 * ka * np.cos(ka) + (ka**2 - 2.0) * np.sin(ka)))
 
     msg = f"radiation_I1d: power p={p} not supported (only 0, 1, 2)"
     raise ValueError(msg)
 
 
-def radiation_monomial(
-    exp: tuple[int, int, int], k_sc: np.ndarray, a: float
-) -> complex:
+def radiation_monomial(exp: tuple[int, int, int], k_sc: np.ndarray, a: float) -> complex:
     """Radiate a single Cartesian monomial r0**e1 r1**e2 r2**e3 over the cube.
 
     Computes int_cube r0**e1 r1**e2 r2**e3 exp(-i k_sc . r') d3r' as the product

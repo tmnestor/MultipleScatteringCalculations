@@ -45,11 +45,7 @@ from cubic_scattering.sphere_scattering import (
 PHI_TOUCH = math.pi / 6.0
 A_RADIUS = 1.0  # m; ka = (omega/alpha)*a, so omega = ka*alpha/a with a = A_RADIUS
 KA_LIST = (0.05, 0.1)
-REF_JSON = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneDiscretisation_reference.json"
-)
+REF_JSON = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneDiscretisation_reference.json"
 
 
 @pytest.fixture(scope="module")
@@ -63,13 +59,9 @@ def contrasts(ref):
     lam0 = ref.rho * (ref.alpha**2 - 2 * ref.beta**2)
     mu0 = ref.rho * ref.beta**2
     return {
-        "weak": MaterialContrast(
-            Dlambda=1e-4 * lam0, Dmu=1e-4 * mu0, Drho=1e-4 * ref.rho
-        ),
+        "weak": MaterialContrast(Dlambda=1e-4 * lam0, Dmu=1e-4 * mu0, Drho=1e-4 * ref.rho),
         "moderate": MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0),
-        "negative": MaterialContrast(
-            Dlambda=-0.6 * lam0, Dmu=-0.6 * mu0, Drho=-0.6 * ref.rho
-        ),
+        "negative": MaterialContrast(Dlambda=-0.6 * lam0, Dmu=-0.6 * mu0, Drho=-0.6 * ref.rho),
     }
 
 
@@ -130,9 +122,7 @@ def test_stageA_shape_factor_grows_with_ka(ref, contrasts):
         e_lo = _shape_errors(_omega(0.05, ref), c, ref)
         e_hi = _shape_errors(_omega(0.1, ref), c, ref)
         # kappa channel is the cleanest monotone indicator across contrasts
-        assert e_hi["kappa"] > e_lo["kappa"], (
-            f"{name}: kappa shape error must grow with ka"
-        )
+        assert e_hi["kappa"] > e_lo["kappa"], f"{name}: kappa shape error must grow with ka"
 
 
 def test_stageA_shape_factor_grows_with_contrast(ref, contrasts):
@@ -140,9 +130,7 @@ def test_stageA_shape_factor_grows_with_contrast(ref, contrasts):
     ka = 0.1
     e_weak = _shape_errors(_omega(ka, ref), contrasts["weak"], ref)["kappa"]
     e_neg = _shape_errors(_omega(ka, ref), contrasts["negative"], ref)["kappa"]
-    assert e_neg > e_weak, (
-        "the -60% contrast shape error must exceed the weak-contrast one"
-    )
+    assert e_neg > e_weak, "the -60% contrast shape error must exceed the weak-contrast one"
 
 
 def test_stageA_born_limit(ref, contrasts):
@@ -166,9 +154,7 @@ def test_stageA_born_limit(ref, contrasts):
 
 @pytest.fixture(scope="module")
 def dump():
-    assert REF_JSON.exists(), (
-        f"missing {REF_JSON} (run IntraPlaneDiscretisation.wl first)"
-    )
+    assert REF_JSON.exists(), f"missing {REF_JSON} (run IntraPlaneDiscretisation.wl first)"
     d = json.loads(REF_JSON.read_text())
     d["_contrasts"] = {c["name"]: c for c in d["contrasts"]}
     return d
@@ -196,9 +182,7 @@ def _sphere_layer_rpp(dump, rec, ref, *, renorm):
     phi, ka = rec["phi"], rec["ka"]
     om = ka * ref.alpha / A_RADIUS
     scale = (1.0 / phi) if renorm else 1.0
-    mc = MaterialContrast(
-        Dlambda=c["Dlambda"] * scale, Dmu=c["Dmu"] * scale, Drho=c["Drho"] * scale
-    )
+    mc = MaterialContrast(Dlambda=c["Dlambda"] * scale, Dmu=c["Dmu"] * scale, Drho=c["Drho"] * scale)
     dk, dm, dr = _sphere_eff_mc(om, mc, ref)
     rms = complex(*rec["r_ms"]) if renorm else 1.0
     dk_layer, dm_layer, dr_layer = phi * dk * rms, phi * dm, phi * dr
@@ -236,15 +220,9 @@ def test_stageB_renorm_recovers_cube_layer(dump, ref):
             rc = _cube_layer_rpp(dump, name, rec["ka"], ref)
             e_ren = abs(_sphere_layer_rpp(dump, rec, ref, renorm=True) - rc) / abs(rc)
             e_raw = abs(_sphere_layer_rpp(dump, rec, ref, renorm=False) - rc) / abs(rc)
-            assert e_raw > 0.4, (
-                f"{name}/aL={rec['aL']}: raw dilution error {e_raw:.3e} too small"
-            )
-            assert e_ren < 6e-2, (
-                f"{name}/aL={rec['aL']}: renorm error {e_ren:.3e} too large"
-            )
-            assert e_ren < 0.2 * e_raw, (
-                f"{name}/aL={rec['aL']}: renorm did not recover the cube"
-            )
+            assert e_raw > 0.4, f"{name}/aL={rec['aL']}: raw dilution error {e_raw:.3e} too small"
+            assert e_ren < 6e-2, f"{name}/aL={rec['aL']}: renorm error {e_ren:.3e} too large"
+            assert e_ren < 0.2 * e_raw, f"{name}/aL={rec['aL']}: renorm did not recover the cube"
 
 
 def test_stageB_collective_negligible_at_rayleigh(dump, ref):
@@ -259,16 +237,13 @@ def test_stageB_collective_negligible_at_rayleigh(dump, ref):
             assert abs(complex(*rec["r_ms"]) - 1.0) < 5e-4
         errs = [
             abs(
-                _sphere_layer_rpp(dump, rec, ref, renorm=True)
-                - _cube_layer_rpp(dump, name, rec["ka"], ref)
+                _sphere_layer_rpp(dump, rec, ref, renorm=True) - _cube_layer_rpp(dump, name, rec["ka"], ref)
             )
             / abs(_cube_layer_rpp(dump, name, rec["ka"], ref))
             for rec in _phys(dump, name)
             if rec["ka"] == 0.1
         ]
-        assert max(errs) - min(errs) < 1e-3, (
-            f"{name}: collective drives the error (not aL-flat)"
-        )
+        assert max(errs) - min(errs) < 1e-3, f"{name}: collective drives the error (not aL-flat)"
 
 
 def test_stageB_collective_grows_toward_touching(dump):
@@ -280,12 +255,8 @@ def test_stageB_collective_grows_toward_touching(dump):
         )
         specrad = [r["specrad"] for r in recs]
         rmsdev = [abs(complex(*r["r_ms"]) - 1.0) for r in recs]
-        assert np.all(np.diff(specrad) > 0), (
-            f"{name}: specrad must grow toward touching"
-        )
-        assert np.all(np.diff(rmsdev) > 0), (
-            f"{name}: |r_ms-1| must grow toward touching"
-        )
+        assert np.all(np.diff(specrad) > 0), f"{name}: specrad must grow toward touching"
+        assert np.all(np.diff(rmsdev) > 0), f"{name}: |r_ms-1| must grow toward touching"
 
 
 def test_stageB_conditioning_boundary(dump):
@@ -311,10 +282,6 @@ def test_stageB_negative_beyond_renorm_floor(dump):
     """
     neg = [r for r in dump["stageB"] if r["name"] == "negative"]
     assert neg, "expected negative-contrast records in the dump"
-    assert all(r["physical"] == 0 for r in neg), (
-        "negative -60% must be flagged unphysical"
-    )
+    assert all(r["physical"] == 0 for r in neg), "negative -60% must be flagged unphysical"
     # weak/moderate stay physical under the renormalisation
-    assert all(
-        r["physical"] == 1 for r in dump["stageB"] if r["name"] in ("weak", "moderate")
-    )
+    assert all(r["physical"] == 1 for r in dump["stageB"] if r["name"] in ("weak", "moderate"))

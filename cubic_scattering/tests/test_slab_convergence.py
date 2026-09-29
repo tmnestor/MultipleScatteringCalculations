@@ -183,16 +183,12 @@ def test_periodic_uniform_slab_closer_to_kennett():
     err_ap = abs(R_ap - R_K) / abs(R_K)
 
     # Periodic
-    res_p = compute_slab_scattering(
-        geom, mat, OMEGA, K_HAT, gmres_tol=1e-8, periodic=True
-    )
+    res_p = compute_slab_scattering(geom, mat, OMEGA, K_HAT, gmres_tol=1e-8, periodic=True)
     T_local_p = compute_slab_tmatrices(geom, mat, OMEGA)
     R_p = slab_rpp_periodic(res_p, T_local_p)
     err_p = abs(R_p - R_K) / abs(R_K)
 
-    assert err_p <= err_ap + 1e-10, (
-        f"Periodic error {err_p:.4e} should be ≤ aperiodic error {err_ap:.4e}"
-    )
+    assert err_p <= err_ap + 1e-10, f"Periodic error {err_p:.4e} should be ≤ aperiodic error {err_ap:.4e}"
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -340,9 +336,7 @@ class TestVolumeAveragedKennettAccuracy:
         R_va = _rpp_vol_avg(geom, mat, omega, volume_averaged=True, n_orders=2)
         rel_err = abs(R_va - R_K) / abs(R_K)
         tol = _VA_KENNETT_TOL[ka]
-        assert rel_err < tol, (
-            f"ka={ka}: vol-avg vs Kennett rel-err {rel_err:.4e} exceeds {tol}"
-        )
+        assert rel_err < tol, f"ka={ka}: vol-avg vs Kennett rel-err {rel_err:.4e} exceeds {tol}"
 
     @pytest.mark.parametrize("ka", _KA_KENNETT)
     def test_vol_avg_beats_point_at_every_ka(self, ka):
@@ -449,11 +443,21 @@ class TestVolumeAveragedKennettAccuracy:
         H = geom.d * geom.N_z
         p = 1e-4  # sub-critical: p < 1/alpha = 2e-4
         kernel_hat = build_slab_kernels(
-            geom, omega, mat.ref, periodic=True, volume_averaged=True,
-            n_orders=2, lattice_ewald=True,
+            geom,
+            omega,
+            mat.ref,
+            periodic=True,
+            volume_averaged=True,
+            n_orders=2,
+            lattice_ewald=True,
         )
         sm = slab_reflection_matrix(
-            geom, mat, omega, p=p, volume_averaged=True, n_orders=2,
+            geom,
+            mat,
+            omega,
+            p=p,
+            volume_averaged=True,
+            n_orders=2,
             kernel_hat=kernel_hat,
         )
         R_mod = sm.to_modified()

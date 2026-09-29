@@ -267,9 +267,7 @@ def bessel_summation(
     taper = 0.5 * (1.0 + np.cos(np.pi * p_samples / p_max))
 
     # Weighted reflectivity: W[j, w] = R[j,w] * taper[j] * p_j * omega_w * dp
-    weight = (
-        taper[:, np.newaxis] * p_samples[:, np.newaxis] * omega_real[np.newaxis, :] * dp
-    )
+    weight = taper[:, np.newaxis] * p_samples[:, np.newaxis] * omega_real[np.newaxis, :] * dp
     W = R * weight  # (np_slow, nfreq)
 
     # Accumulate in chunks to manage memory
@@ -285,9 +283,7 @@ def bessel_summation(
         p_chunk = p_samples[j_start:j_end]  # (n_chunk,)
 
         # Bessel arguments: (nr, n_chunk, nfreq)
-        arg = (
-            offsets[:, None, None] * p_chunk[None, :, None] * omega_real[None, None, :]
-        )
+        arg = offsets[:, None, None] * p_chunk[None, :, None] * omega_real[None, None, :]
         J0_vals = j0(arg)  # (nr, n_chunk, nfreq)
 
         # Accumulate: U[r, w] += sum_j J0[r,j,w] * W[j,w]
@@ -338,9 +334,7 @@ def bessel_summation_gpu(
 
     p_max = p_samples[-1]
     taper = 0.5 * (1.0 + np.cos(np.pi * p_samples / p_max))
-    weight = (
-        taper[:, np.newaxis] * p_samples[:, np.newaxis] * omega_real[np.newaxis, :] * dp
-    )
+    weight = taper[:, np.newaxis] * p_samples[:, np.newaxis] * omega_real[np.newaxis, :] * dp
     W = R * weight
 
     from tqdm.auto import tqdm
@@ -357,9 +351,7 @@ def bessel_summation_gpu(
         W_chunk = W[j_start:j_end]
         W_re = torch.from_numpy(W_chunk.real.astype(np.float32)).to(device)
         W_im = torch.from_numpy(W_chunk.imag.astype(np.float32)).to(device)
-        p_chunk = torch.from_numpy(p_samples[j_start:j_end].astype(np.float32)).to(
-            device
-        )
+        p_chunk = torch.from_numpy(p_samples[j_start:j_end].astype(np.float32)).to(device)
 
         arg = off_t[:, None, None] * p_chunk[None, :, None] * omega_t[None, None, :]
         arg_cpu = arg.cpu().numpy()
@@ -482,12 +474,7 @@ def compute_shot_gather(
     water_layer = stack.layers[0]
     s_water = _complex_slowness(water_layer.alpha, water_layer.Q_alpha)
     eta_water = np.array([_vertical_slowness(s_water, float(pv)) for pv in p_samples])
-    eaea_water = np.exp(
-        2j
-        * eta_water[:, np.newaxis]
-        * omega_damped[np.newaxis, :]
-        * water_layer.thickness
-    )
+    eaea_water = np.exp(2j * eta_water[:, np.newaxis] * omega_damped[np.newaxis, :] * water_layer.thickness)
 
     if gc.free_surface:
         R = free_surface_reverberations(RRd_PP, eaea_water)
@@ -605,11 +592,7 @@ def load_survey_config(
     sediment_layers: list[IsotropicLayer] = []
     layer_defs = em["layers"]
     for i, ld in enumerate(layer_defs):
-        h = (
-            np.inf
-            if ld.get("thickness") in (None, "inf", float("inf"))
-            else ld["thickness"]
-        )
+        h = np.inf if ld.get("thickness") in (None, "inf", float("inf")) else ld["thickness"]
         if i == len(layer_defs) - 1:
             h = np.inf
         sediment_layers.append(

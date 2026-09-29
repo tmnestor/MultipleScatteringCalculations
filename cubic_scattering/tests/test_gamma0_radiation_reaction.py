@@ -65,9 +65,7 @@ def test_phi0_equals_exact_radiation_reaction():
             "value omega/(4 pi rho beta^3) is ~1.354x too large."
         )
         # phi_0^diag must remain purely imaginary (no real radiation contribution).
-        assert abs(phi[0].real) < 1e-30, (
-            f"ka={ka}: Re[phi_0^diag]={phi[0].real:.3e} must be exactly 0."
-        )
+        assert abs(phi[0].real) < 1e-30, f"ka={ka}: Re[phi_0^diag]={phi[0].real:.3e} must be exactly 0."
 
 
 def test_imGamma0_matches_point_dipole_reaction():
@@ -100,13 +98,10 @@ def test_reGamma0_is_static_and_imag_vanishes_at_zero_omega():
     g_lo = _compute_Gamma0_analytical(0.01 * BETA / A, A, ALPHA, BETA, RHO, 8)
     g_hi = _compute_Gamma0_analytical(0.5 * BETA / A, A, ALPHA, BETA, RHO, 8)
     assert abs(g_lo.real - g_hi.real) < 1e-18 * abs(g_hi.real) + 1e-30, (
-        f"Re[Gamma0] must be omega-independent (static Eshelby): "
-        f"{g_lo.real:.10e} vs {g_hi.real:.10e}."
+        f"Re[Gamma0] must be omega-independent (static Eshelby): {g_lo.real:.10e} vs {g_hi.real:.10e}."
     )
     g_static = _compute_Gamma0_analytical(0.0, A, ALPHA, BETA, RHO, 8)
-    assert abs(g_static.imag) < 1e-30, (
-        f"Im[Gamma0] must vanish at omega=0; got {g_static.imag:.3e}."
-    )
+    assert abs(g_static.imag) < 1e-30, f"Im[Gamma0] must vanish at omega=0; got {g_static.imag:.3e}."
     assert g_static.real != 0.0, "Re[Gamma0] (static Eshelby) must be nonzero."
 
 

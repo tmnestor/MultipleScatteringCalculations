@@ -18,11 +18,7 @@ import pytest
 from scipy.special import sph_harm_y, spherical_jn, wofz
 from sympy.physics.wigner import gaunt as _wig_gaunt
 
-REF = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneKambeVector_reference.json"
-)
+REF = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneKambeVector_reference.json"
 
 
 @pytest.fixture(scope="module")
@@ -47,8 +43,7 @@ def _ewald_total_z(kappa, r, eta, aL, kx, ky, Rc, Gc):
                 ph
                 / d
                 * sum(
-                    np.exp(s * 1j * kappa * d)
-                    * _cerfc(d * eta + s * 1j * kappa / (2 * eta))
+                    np.exp(s * 1j * kappa * d) * _cerfc(d * eta + s * 1j * kappa / (2 * eta))
                     for s in (-1, 1)
                 )
             )
@@ -94,9 +89,7 @@ def _Yc(q, s, d):
 
 def _Dstruct(field, q, s, kappa, rho0):
     pts, wts = _sph_pts(rho0)
-    integ = sum(
-        w * field(p) * np.conj(_Yc(q, -s, p)) for p, w in zip(pts, wts, strict=False)
-    )
+    integ = sum(w * field(p) * np.conj(_Yc(q, -s, p)) for p, w in zip(pts, wts, strict=False))
     return (-1) ** s * integ / (1j * kappa * spherical_jn(q, kappa * rho0))
 
 
@@ -109,12 +102,7 @@ def _gaunt(l1, m1, l2, m2, l3, m3):
 def _g0LL(n, m, nu, mu, Dfun):
     tot = 0.0 + 0j
     for q in range(abs(n - nu), n + nu + 1):
-        tot += (
-            1j ** (nu + q - n)
-            * (-1) ** q
-            * Dfun(q, m - mu)
-            * _gaunt(n, m, nu, -mu, q, mu - m)
-        )
+        tot += 1j ** (nu + q - n) * (-1) ** q * Dfun(q, m - mu) * _gaunt(n, m, nu, -mu, q, mu - m)
     return 4 * math.pi * (-1) ** m * tot
 
 

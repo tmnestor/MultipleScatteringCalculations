@@ -174,9 +174,7 @@ def effective_stiffness_voigt(
 # ================================================================
 
 
-def strain_from_displacement_traction(
-    kx: float, ky: float, ref: ReferenceMedium
-) -> np.ndarray:
+def strain_from_displacement_traction(kx: float, ky: float, ref: ReferenceMedium) -> np.ndarray:
     """
     6×6 matrix S that maps (uz, ux, uy, tzz, txz, tyz) → Voigt strain.
 
@@ -330,9 +328,7 @@ def tmatrix_displacement_traction(
     S = strain_from_displacement_traction(kx, ky, ref)
 
     # Effective stiffness contrast Voigt matrix
-    Dc_star = effective_stiffness_voigt(
-        result.Dlambda_star, result.Dmu_star_diag, result.Dmu_star_off
-    )
+    Dc_star = effective_stiffness_voigt(result.Dlambda_star, result.Dmu_star_diag, result.Dmu_star_off)
 
     # Stiffness scattering: scattered Voigt stress = Δc* @ ε^0
     # = Δc* @ S @ (u,t)^0
@@ -404,9 +400,7 @@ def tmatrix_displacement_traction(
 # ================================================================
 
 
-def _amplification_voigt(
-    amp_theta: complex, amp_e_diag: complex, amp_e_off: complex
-) -> np.ndarray:
+def _amplification_voigt(amp_theta: complex, amp_e_diag: complex, amp_e_off: complex) -> np.ndarray:
     """
     6×6 amplification matrix in Voigt strain space.
 
@@ -444,9 +438,7 @@ def _amplification_voigt(
 # ================================================================
 
 
-def scattered_stress_voigt(
-    result: CubeTMatrixResult, incident_strain_voigt: np.ndarray
-) -> np.ndarray:
+def scattered_stress_voigt(result: CubeTMatrixResult, incident_strain_voigt: np.ndarray) -> np.ndarray:
     """
     Compute scattered Voigt stress from incident Voigt strain.
 
@@ -466,7 +458,5 @@ def scattered_stress_voigt(
     stress_voigt : ndarray, shape (6,)
         Scattered stress perturbation in Voigt notation.
     """
-    Dc = effective_stiffness_voigt(
-        result.Dlambda_star, result.Dmu_star_diag, result.Dmu_star_off
-    )
+    Dc = effective_stiffness_voigt(result.Dlambda_star, result.Dmu_star_diag, result.Dmu_star_off)
     return Dc @ incident_strain_voigt

@@ -271,11 +271,7 @@ def Dc_func(j, k, l, p):
 
 
 def T_func(m, n, l, p, Av, Bv):
-    return sum(
-        S_func(m, n, j, k, Av, Bv) * Dc_func(j, k, l, p)
-        for j in range(3)
-        for k in range(3)
-    )
+    return sum(S_func(m, n, j, k, Av, Bv) * Dc_func(j, k, l, p) for j in range(3) for k in range(3))
 
 
 T1 = simplify(T_func(0, 0, 1, 1, A_exact, B_exact))
@@ -322,9 +318,7 @@ print("=" * 70)
 
 Drho_star = simplify(Drho * amp_u)
 Dmu_star = simplify(Dmu * amp_e)
-Dlambda_star = simplify(
-    Dlambda * amp_theta + Rational(2, 3) * Dmu * (amp_theta - amp_e)
-)
+Dlambda_star = simplify(Dlambda * amp_theta + Rational(2, 3) * Dmu * (amp_theta - amp_e))
 
 print("""
 Scattered field at observation point x:

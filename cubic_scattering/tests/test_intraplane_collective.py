@@ -28,20 +28,14 @@ import pytest
 from scipy.special import hankel1, sph_harm_y
 from sympy.physics.wigner import wigner_3j
 
-REF = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneVectorLattice_reference.json"
-)
+REF = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneVectorLattice_reference.json"
 
 
 @pytest.fixture(scope="module")
 def ref():
     assert REF.exists(), f"missing {REF} (run IntraPlaneVectorLattice.wl first)"
     d = json.loads(REF.read_text())
-    d["G0"] = np.array(
-        [[complex(re, im) for (re, im) in row] for row in d["G0vec"]], dtype=complex
-    )
+    d["G0"] = np.array([[complex(re, im) for (re, im) in row] for row in d["G0vec"]], dtype=complex)
     d["idx"] = [(int(n), int(m), str(c)) for (n, m, c) in d["idx"]]
     return d
 
@@ -81,10 +75,7 @@ def test_symplectic_reciprocity(ref):
     eye = np.eye(len(idx), dtype=complex)
     with_metric = _recip(ref["G0"], D, J0)
     without = _recip(ref["G0"], eye, J0)
-    print(
-        f"\n  G0 sigma-reciprocity: with symplectic D = {with_metric:.3e}"
-        f",  with D=I = {without:.3e}"
-    )
+    print(f"\n  G0 sigma-reciprocity: with symplectic D = {with_metric:.3e},  with D=I = {without:.3e}")
     assert with_metric < 1e-10  # reciprocal in the symplectic metric
     assert without > 1e-2  # and the metric is doing real work
 
@@ -115,21 +106,12 @@ def _gaunt(l1, m1, l2, m2, l3, m3):
     if m1 + m2 + m3 != 0 or abs(m1) > l1 or abs(m2) > l2 or abs(m3) > l3:
         return 0.0
     pref = np.sqrt((2 * l1 + 1) * (2 * l2 + 1) * (2 * l3 + 1) / (4 * np.pi))
-    return (
-        float(pref)
-        * float(wigner_3j(l1, l2, l3, 0, 0, 0))
-        * float(wigner_3j(l1, l2, l3, m1, m2, m3))
-    )
+    return float(pref) * float(wigner_3j(l1, l2, l3, 0, 0, 0)) * float(wigner_3j(l1, l2, l3, m1, m2, m3))
 
 
 def _structD(q, s, kappa, aL, kx, ky, Lrad):
     ij = np.array(
-        [
-            (i, j)
-            for i in range(-Lrad, Lrad + 1)
-            for j in range(-Lrad, Lrad + 1)
-            if (i, j) != (0, 0)
-        ]
+        [(i, j) for i in range(-Lrad, Lrad + 1) for j in range(-Lrad, Lrad + 1) if (i, j) != (0, 0)]
     )
     i, j = ij[:, 0], ij[:, 1]
     Rn = aL * np.sqrt(i * i + j * j)
@@ -145,12 +127,7 @@ def _g0LL(n, m, nu, mu, kappa, aL, kx, ky, Lrad):
         g = _gaunt(n, m, nu, -mu, q, mu - m)
         if g == 0.0:
             continue
-        tot += (
-            (1j) ** (nu + q - n)
-            * (-1) ** q
-            * _structD(q, m - mu, kappa, aL, kx, ky, Lrad)
-            * g
-        )
+        tot += (1j) ** (nu + q - n) * (-1) ** q * _structD(q, m - mu, kappa, aL, kx, ky, Lrad) * g
     return 4 * np.pi * (-1) ** m * tot
 
 

@@ -22,9 +22,7 @@ from cubic_scattering.tmatrix_assembly import (
 # Standard test parameters
 REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
 CONTRAST = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
-WEAK_CONTRAST = MaterialContrast(
-    Dlambda=REF.mu * 1e-4, Dmu=REF.mu * 1e-4, Drho=REF.rho * 1e-4
-)
+WEAK_CONTRAST = MaterialContrast(Dlambda=REF.mu * 1e-4, Dmu=REF.mu * 1e-4, Drho=REF.rho * 1e-4)
 
 
 def _galerkin_at_ka(ka: float, a: float = 10.0):
@@ -102,9 +100,7 @@ def test_t27_born_limit():
 
     # All eigenvalues should be small
     eigs = np.abs(np.linalg.eigvals(T27))
-    assert np.max(eigs) < 0.01, (
-        f"Max eigenvalue {np.max(eigs)} too large for weak contrast"
-    )
+    assert np.max(eigs) < 0.01, f"Max eigenvalue {np.max(eigs)} too large for weak contrast"
 
 
 def test_t27_shape():

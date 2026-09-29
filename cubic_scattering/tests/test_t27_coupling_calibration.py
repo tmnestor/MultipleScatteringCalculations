@@ -156,9 +156,7 @@ def test_analytic_volume_averaged_propagator_face_outcome():
     a = 0.5
     omega = 1e-3 * REF.beta / a  # quasi-static (analytic evaluated at omega=0)
     R = np.array([1.0, 0.0, 0.0])
-    P9 = inter_voxel_propagator_9x9(
-        (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
-    )
+    P9 = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0)
 
     # 1. The module's S block matches the bias-free volume-averaged truth.
     S_mod = np.real(P9[3:, 3:])

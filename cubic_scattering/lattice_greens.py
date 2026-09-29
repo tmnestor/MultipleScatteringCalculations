@@ -88,9 +88,7 @@ def spectral_kernel_z0(
         for j in range(3):
             dij = 1.0 if i == j else 0.0
             G[..., i, j] = prefac * (
-                dij / (beta**2 * kzS)
-                + kPv[i] * kPv[j] / (om2 * kzP)
-                - kSv[i] * kSv[j] / (om2 * kzS)
+                dij / (beta**2 * kzS) + kPv[i] * kPv[j] / (om2 * kzP) - kSv[i] * kSv[j] / (om2 * kzS)
             )
 
     return G
@@ -421,15 +419,9 @@ def _hankel_transform_cc(
     kH_probe = np.array([K_max * 10])
     Ap, Bp, Cp = _radial_kernels_z0(kH_probe, omega, rho, alpha, beta)
     inv_p1 = 1.0 / np.sqrt(kH_probe**2 + kc**2 + 0j)
-    c3_H0 = (
-        (Ap[0] + Bp[0] / 2) * kH_probe[0] - c_H0 * kH_probe[0] * inv_p1[0]
-    ) * kH_probe[0] ** 2
-    c3_H2 = ((Bp[0] / 2) * kH_probe[0] - c_B2 * kH_probe[0] * inv_p1[0]) * kH_probe[
-        0
-    ] ** 2
-    c3_V0 = ((Ap[0] + Cp[0]) * kH_probe[0] - c_V * kH_probe[0] * inv_p1[0]) * kH_probe[
-        0
-    ] ** 2
+    c3_H0 = ((Ap[0] + Bp[0] / 2) * kH_probe[0] - c_H0 * kH_probe[0] * inv_p1[0]) * kH_probe[0] ** 2
+    c3_H2 = ((Bp[0] / 2) * kH_probe[0] - c_B2 * kH_probe[0] * inv_p1[0]) * kH_probe[0] ** 2
+    c3_V0 = ((Ap[0] + Cp[0]) * kH_probe[0] - c_V * kH_probe[0] * inv_p1[0]) * kH_probe[0] ** 2
 
     # Level-2 subtraction: c3*kH/(kH^2+kc^2)^{3/2} matches c3/kH^2 asymptotic
     # (the residual integrand from level-1 is O(1/kH^2), need kH factor!)
@@ -667,9 +659,7 @@ class LatticeGreens:
         self._G_spatial = G_arr
         return G_arr
 
-    def _d4h_orbit(
-        self, n1: int, n2: int
-    ) -> list[tuple[int, int, Callable[[np.ndarray], np.ndarray]]]:
+    def _d4h_orbit(self, n1: int, n2: int) -> list[tuple[int, int, Callable[[np.ndarray], np.ndarray]]]:
         """
         Generate all D4h-related (n1, n2) pairs and their
         tensor transformation functions.
@@ -770,9 +760,7 @@ class LatticeGreens:
             while N_fft < min_N:
                 N_fft *= 2
         elif N_fft < min_N_spatial:
-            raise ValueError(
-                f"N_fft={N_fft} too small; need >= {min_N_spatial} for M={M}, p={p}"
-            )
+            raise ValueError(f"N_fft={N_fft} too small; need >= {min_N_spatial} for M={M}, p={p}")
 
         dk = 2.0 * kmax / N_fft
 
@@ -781,15 +769,11 @@ class LatticeGreens:
         KX, KY = np.meshgrid(k, k, indexing="ij")
 
         # Full spectral kernel
-        kernel = spectral_kernel_z0(
-            KX, KY, self.omega_c, self.rho, self.alpha, self.beta
-        )
+        kernel = spectral_kernel_z0(KX, KY, self.omega_c, self.rho, self.alpha, self.beta)
 
         # Subtract screened-Coulomb kernel from diagonal components
         if subtract:
-            kernel_sub = screened_kernel_z0(
-                KX, KY, self.omega_c, self.rho, self.alpha, self.beta, kc
-            )
+            kernel_sub = screened_kernel_z0(KX, KY, self.omega_c, self.rho, self.alpha, self.beta, kc)
             kernel_residual = kernel - kernel_sub
         else:
             kernel_residual = kernel
@@ -800,10 +784,7 @@ class LatticeGreens:
         for i in range(3):
             for j in range(3):
                 G_res_full[:, :, i, j] = (
-                    np.fft.fftshift(
-                        np.fft.ifft2(np.fft.ifftshift(kernel_residual[:, :, i, j]))
-                    )
-                    * scale
+                    np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(kernel_residual[:, :, i, j]))) * scale
                 )
 
         # Sample at lattice points and add back spatial screened-Coulomb
@@ -896,9 +877,7 @@ class LatticeGreens:
                 for a in range(9):
                     for b in range(9):
                         P_fft[a, b, :] += (
-                            np.fft.fftshift(
-                                np.fft.ifft(np.fft.ifftshift(kernel[a, b, :]))
-                            )
+                            np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(kernel[a, b, :])))
                             * scale_ky
                             * scale_kz
                         )
@@ -1020,9 +999,7 @@ class LatticeGreens:
                 if r <= r_cut:
                     i1 = n1 + M - 1
                     i2 = n2 + M - 1
-                    G_arr[i1, i2, :, :] = exact_propagator_9x9(
-                        n1 * d, n2 * d, 0.0, self.omega_c, ref
-                    )
+                    G_arr[i1, i2, :, :] = exact_propagator_9x9(n1 * d, n2 * d, 0.0, self.omega_c, ref)
 
         self._G_spectral = G_arr
         return G_arr
@@ -1380,12 +1357,10 @@ def verify_cmd(
                 1
                 for n1 in range(-(M - 1), M)
                 for n2 in range(-(M - 1), M)
-                if not (n1 == 0 and n2 == 0)
-                and np.sqrt((n1 * d) ** 2 + (n2 * d) ** 2) <= r_cut
+                if not (n1 == 0 and n2 == 0) and np.sqrt((n1 * d) ** 2 + (n2 * d) ** 2) <= r_cut
             )
             print(
-                f"  r_cut={r_cut_mult:.1f}d: {n_near:3d} spatial, "
-                f"worst err={worst_hyb:.4e}, time={dt:.1f}s"
+                f"  r_cut={r_cut_mult:.1f}d: {n_near:3d} spatial, worst err={worst_hyb:.4e}, time={dt:.1f}s"
             )
         print()
 
@@ -1432,15 +1407,11 @@ def verify_cmd(
                 G_rot = G_spatial[i1_r, i2_r, :, :]
 
                 G_neg_pred = _apply_refl_x(G_pos)
-                err_refl = float(
-                    np.linalg.norm(G_neg - G_neg_pred) / np.linalg.norm(G_neg)
-                )
+                err_refl = float(np.linalg.norm(G_neg - G_neg_pred) / np.linalg.norm(G_neg))
                 max_refl_err = max(max_refl_err, err_refl)
 
                 G_rot_pred = _apply_rot90(G_pos)
-                err_rot = float(
-                    np.linalg.norm(G_rot - G_rot_pred) / np.linalg.norm(G_rot)
-                )
+                err_rot = float(np.linalg.norm(G_rot - G_rot_pred) / np.linalg.norm(G_rot))
                 max_rot_err = max(max_rot_err, err_rot)
 
         print(f"  Max x-reflection error: {max_refl_err:.4e}")

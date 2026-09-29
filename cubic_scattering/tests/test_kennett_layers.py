@@ -70,9 +70,7 @@ class TestIsotropicLayer:
         assert np.isinf(layer.thickness)
 
     def test_with_attenuation(self):
-        layer = IsotropicLayer(
-            alpha=5000, beta=3000, rho=2500, thickness=100, Q_alpha=200, Q_beta=100
-        )
+        layer = IsotropicLayer(alpha=5000, beta=3000, rho=2500, thickness=100, Q_alpha=200, Q_beta=100)
         assert layer.Q_alpha == 200
         assert layer.Q_beta == 100
 
@@ -101,9 +99,7 @@ class TestLayerStack:
 
     def test_valid_two_layer(self):
         layers = [
-            IsotropicLayer(
-                alpha=ALPHA_REF, beta=BETA_REF, rho=RHO_REF, thickness=THICKNESS
-            ),
+            IsotropicLayer(alpha=ALPHA_REF, beta=BETA_REF, rho=RHO_REF, thickness=THICKNESS),
             IsotropicLayer(alpha=ALPHA2, beta=BETA2, rho=RHO2, thickness=np.inf),
         ]
         stack = LayerStack(layers=layers)
@@ -693,12 +689,8 @@ class TestRandomStack:
 
     def test_velocity_stack_reproducibility(self):
         """Same seed gives same stack."""
-        s1 = random_velocity_stack(
-            ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=42
-        )
-        s2 = random_velocity_stack(
-            ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=42
-        )
+        s1 = random_velocity_stack(ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=42)
+        s2 = random_velocity_stack(ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=42)
         for lay1, lay2 in zip(s1.layers, s2.layers, strict=True):
             assert lay1.alpha == lay2.alpha
             assert lay1.beta == lay2.beta
@@ -706,9 +698,7 @@ class TestRandomStack:
 
     def test_velocity_stack_physical(self):
         """Random stack has positive velocities and densities."""
-        stack = random_velocity_stack(
-            ALPHA_REF, BETA_REF, RHO_REF, 10, 100, 500, 300, 100, seed=123
-        )
+        stack = random_velocity_stack(ALPHA_REF, BETA_REF, RHO_REF, 10, 100, 500, 300, 100, seed=123)
         assert stack.n_layers == 10
         for lay in stack.layers:
             assert lay.alpha > 0
@@ -717,12 +707,8 @@ class TestRandomStack:
 
     def test_velocity_stack_different_seeds(self):
         """Different seeds give different stacks."""
-        s1 = random_velocity_stack(
-            ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=1
-        )
-        s2 = random_velocity_stack(
-            ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=2
-        )
+        s1 = random_velocity_stack(ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=1)
+        s2 = random_velocity_stack(ALPHA_REF, BETA_REF, RHO_REF, 5, 100, 200, 100, 50, seed=2)
         alphas1 = [lay.alpha for lay in s1.layers]
         alphas2 = [lay.alpha for lay in s2.layers]
         assert alphas1 != alphas2
@@ -771,12 +757,8 @@ class TestCrossValidationPhD:
                     bc1 = 1.0 / ss1
                     bc2 = 1.0 / ss2
 
-                    mine = psv_solid_solid(
-                        p, eta1, neta1, rho1, bc1, eta2, neta2, rho2, bc2
-                    )
-                    theirs = solid_solid_interface(
-                        p, eta1, neta1, rho1, bc1, eta2, neta2, rho2, bc2
-                    )
+                    mine = psv_solid_solid(p, eta1, neta1, rho1, bc1, eta2, neta2, rho2, bc2)
+                    theirs = solid_solid_interface(p, eta1, neta1, rho1, bc1, eta2, neta2, rho2, bc2)
 
                     np.testing.assert_allclose(mine.Rd, theirs.Rd, atol=1e-14)
                     np.testing.assert_allclose(mine.Ru, theirs.Ru, atol=1e-14)
@@ -811,15 +793,9 @@ class TestCrossValidationPhD:
         B3 = rng.standard_normal((32, 2, 2)) + 1j * rng.standard_normal((32, 2, 2))
         A3 = rng.standard_normal((32, 2, 2)) + 1j * rng.standard_normal((32, 2, 2))
 
-        np.testing.assert_allclose(
-            _batch_matmul2x2(A2, B3), phd_mul(A2, B3), atol=1e-12
-        )
-        np.testing.assert_allclose(
-            _batch_matmul2x2(A3, A2), phd_mul(A3, A2), atol=1e-12
-        )
-        np.testing.assert_allclose(
-            _batch_matmul2x2(A3, B3), phd_mul(A3, B3), atol=1e-12
-        )
+        np.testing.assert_allclose(_batch_matmul2x2(A2, B3), phd_mul(A2, B3), atol=1e-12)
+        np.testing.assert_allclose(_batch_matmul2x2(A3, A2), phd_mul(A3, A2), atol=1e-12)
+        np.testing.assert_allclose(_batch_matmul2x2(A3, B3), phd_mul(A3, B3), atol=1e-12)
 
 
 # ── 16. Modified-convention symmetry ────────────────────────────────────

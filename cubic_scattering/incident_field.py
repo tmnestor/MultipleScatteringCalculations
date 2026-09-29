@@ -77,11 +77,7 @@ def _monomial_fourier_1d(m: int, k: float, a: float) -> complex:
         # Derived by integration by parts:
         #   ∫ x³ e^{ikx} dx = [x³/(ik)]e^{ikx} - (3/ik)∫ x² e^{ikx} dx
         # After evaluating at ±a and simplifying:
-        return (
-            2j
-            / k**4
-            * ((3.0 * ka**2 - 6.0) * np.sin(ka) - (ka**3 - 6.0 * ka) * np.cos(ka))
-        )
+        return 2j / k**4 * ((3.0 * ka**2 - 6.0) * np.sin(ka) - (ka**3 - 6.0 * ka) * np.cos(ka))
 
     msg = f"Monomial power m={m} not supported (only 0, 1, 2, 3)"
     raise ValueError(msg)
@@ -189,9 +185,7 @@ def cube_overlap_integrals(k_vec: np.ndarray, pol: np.ndarray, a: float) -> np.n
     return c
 
 
-def cube_overlap_integrals_57(
-    k_vec: np.ndarray, pol: np.ndarray, a: float
-) -> np.ndarray:
+def cube_overlap_integrals_57(k_vec: np.ndarray, pol: np.ndarray, a: float) -> np.ndarray:
     """Compute the 57-component projection of a plane wave onto the T57 basis.
 
     Extends cube_overlap_integrals() with 30 cubic modes (indices 27-56):

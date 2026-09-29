@@ -25,11 +25,7 @@ import numpy as np
 import pytest
 from scipy.special import sph_harm_y, spherical_jn, wofz
 
-REF = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneKambe_reference.json"
-)
+REF = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneKambe_reference.json"
 
 
 @pytest.fixture(scope="module")
@@ -60,8 +56,7 @@ def _ewald_total_z(kappa, r, eta, aL, kx, ky, Rc, Gc):
                 ph
                 / d
                 * sum(
-                    np.exp(s * 1j * kappa * d)
-                    * _cerfc(d * eta + s * 1j * kappa / (2 * eta))
+                    np.exp(s * 1j * kappa * d) * _cerfc(d * eta + s * 1j * kappa / (2 * eta))
                     for s in (-1, 1)
                 )
             )
@@ -109,9 +104,7 @@ def _Yc(q, s, d):
 
 def _Dstruct_proj(field, q, s, kappa, rho0):
     pts, wts = _sph_pts(rho0)
-    integ = sum(
-        w * field(p) * np.conj(_Yc(q, -s, p)) for p, w in zip(pts, wts, strict=False)
-    )
+    integ = sum(w * field(p) * np.conj(_Yc(q, -s, p)) for p, w in zip(pts, wts, strict=False))
     return (-1) ** s * integ / (1j * kappa * spherical_jn(q, kappa * rho0))
 
 
