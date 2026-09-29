@@ -17,7 +17,7 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\itshape Graded Voxels at Fourth Order in Three Dimensions}
+\fancyhead[L]{\small\itshape Graded Voxels in Three Dimensions}
 \fancyhead[R]{\small\itshape Nestor (2026)}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -51,8 +51,9 @@
 % an italic d is the lattice pitch.
 \newcommand{\dd}{\mathrm{d}}
 
-\title{\bfseries Graded Voxels at Fourth Order in Three Dimensions\\[4pt]
-\large The Galerkin First-Moment Cube with a Contrast Linear in the Cell}
+\title{\bfseries Graded Voxels in Three Dimensions\\[4pt]
+\large A Galerkin First-Moment Cube with a Contrast Linear in the Cell,\\
+Fourth Order in its Discretisation}
 \author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
 \date{29 September 2026}
 
@@ -66,14 +67,16 @@ varying medium that representation caps them at second order in the cell size wh
 In one dimension a cell that carries the Legendre moments of its field to degree $p$ and a contrast
 expanded to degree $r$ converges at order $\min(2p+2,2r+2)$. We build the three-dimensional cell with
 $p=r=1$: a Galerkin cube carrying the mean and first moments of the nine-component state, displacement
-and an independent strain, with a contrast linear in the cell. Its coupling blocks are derived twice, by
-moving derivatives onto the cells' autocorrelation and by integrating by parts onto their polynomials, and
-agree to $10^{-10}$; they reproduce the Eshelby and biharmonic sum rules, the cube's Coulomb energy and an
-exact subdivision identity. On a sphere whose contrast falls smoothly to zero at its surface, against its
-exact solution, the discretisation converges at fourth order (apparent orders $4.01$ and $4.13$) where
-uniform-field voxels converge at second. At full contrast the error is $42$ to $66$ times below the
-collocation voxel on the same grid, and below it with a quarter of the unknowns of its finest grid; the
-multiple-scattering part approaches fourth order slowly, with apparent orders rising to $3.65$. The
+and an independent strain, with a contrast linear in the cell. The singular integrals of its coupling
+blocks are derived twice, by moving derivatives onto the cells' autocorrelation and by integrating by parts
+onto their polynomials, and agree to $10^{-10}$ for representative moment pairs; the blocks reproduce the
+Eshelby and biharmonic sum rules, the cube's Coulomb energy and an exact subdivision identity. On a sphere
+whose contrast falls smoothly to zero at its surface, against its exact solution, the discretisation
+converges at fourth order (apparent orders $4.01$ and $4.13$) where uniform-field voxels converge at
+second. At full contrast the error is $42$ to $66$ times below the collocation voxel at the same cell size.
+There the dense solve, limited here to $8$ cells across, reaches apparent orders $3.35$ and $3.40$; the
+multiple-scattering term alone, taken to $12$ cells across, rises to $3.65$ and fits fourth order with a
+negative fifth-order correction. The
 far-field extraction must treat the engineering shear stress of the source consistently with the
 coupling kernel; a factor of two there is invisible at Born order along a cell axis and appears as an
 error in the second-order term that no refinement removes.
@@ -177,7 +180,8 @@ incident field: the source moments are $\bD_0\langle L_a,\psi^0\rangle$. With a 
 source $\langle L_a,(\mathbf{g}\cdot\boldsymbol{\xi})\psi^0\rangle$ needs the incident field's
 \emph{quadratic} moments, which the degree-one input drops. The error is $O(\Delta\,gh\,(kh)^2)$, with $k$
 the incident wavenumber: measured slopes $2.0001$ and $2.0004$ for $kh=0.025\to0.05\to0.1$, where it
-reaches $8.9\times10^{-5}$ at $gh=0.2$. It is the single site's view of the rule
+reaches $8.9\times10^{-5}$ at $gh=0.2$ (these and the parity numbers: \path{scripts/measure_graded_voxel_site.py}).
+It is the single site's view of the rule
 $\min(2p+2,2r+2)$ for a field of degree $p$ and a contrast of degree $r$ \citep{NestorContinuum2026}.
 
 \paragraph{An isolated cube has an error floor that refinement in $k$ does not remove.} In the static
@@ -240,7 +244,11 @@ $\sum_p\int\!\!\int_{V\times V}\partial_p\partial_p r^{-1}=-4\pi V$ and the cube
   =2\Bigl[\tfrac15\bigl(1+\sqrt2-2\sqrt3\bigr)-\tfrac{\pi}{3}+\ln\bigl((1+\sqrt2)(2+\sqrt3)\bigr)\Bigr](2h)^5
 \end{equation}
 to $10^{-11}$, converges in the Gauss order to $10^{-11}$, and satisfies the reciprocity and exchange laws
-of \S\ref{sec:site}.
+of \S\ref{sec:site}. The biharmonic rule $\sum_{p,q}\partial_p\partial_p\partial_q\partial_q r=-8\pi\delta$
+holds to the same accuracy, which checks the delta carried by the $r$ terms. And every block equals the
+sum of the $64$ blocks between the two cells' half-size sub-cells, with the polynomials re-expressed on the
+sub-cells, to $2\times10^{-15}$ for all $(a,c)$ at the self cell, its touching neighbours and beyond
+(\path{scripts/check_graded_voxel_subdivision.py}).
 
 \paragraph{An independent construction.} Integration by parts can move the derivatives onto the cells'
 polynomials instead of onto $W$: one derivative onto each cell, each move either differentiating the
@@ -260,12 +268,13 @@ like $(a-r)^3$ at the surface: there is no staircase. Its per-order $T$-matrices
 integration, two implementations agreeing to $2\times10^{-11}$) \citep{NestorContinuum2026}. The incident
 wave is a P wave along $z$, at $k_Sa=0.5$ and $1$.
 
-\paragraph{Arms and measurement.} On the same grid of $n^3$ cells across the bounding cube: the
-collocation uniform-field voxel with each cell at the profile's centre value (T$_9$); the Galerkin
-uniform-field voxel ($p=r=0$); and the graded first-moment voxel ($p=r=1$). A Galerkin cell carries the
-exact projection of its contrast, so every cell overlapping the sphere is kept: keeping only cells whose
-centre lies inside drops contrast from partly filled shell cells, and the uniform Galerkin voxel then
-converges at order $1.07$ instead of $2$. The error is the largest far-field difference from the exact
+\paragraph{Arms and measurement.} At the same cell size, on a grid of $n^3$ cells across the bounding
+cube: the collocation uniform-field voxel with each cell at the profile's centre value (T$_9$), which keeps
+the cells whose centre lies inside the sphere; the Galerkin uniform-field voxel ($p=r=0$); and the graded
+first-moment voxel ($p=r=1$). A Galerkin cell carries the $L^2$ projection of its contrast (six-point Gauss
+rule per axis), so the Galerkin arms keep every cell overlapping the sphere ($408$ cells at $n=8$, against
+$280$): keeping only cells whose centre lies inside drops contrast from partly filled shell cells, and the
+uniform Galerkin voxel then converges at order $1.07$ instead of $2$. The error is the largest far-field difference from the exact
 solution over nine angles, relative to its peak, at $5\times10^{8}$ radii; at $5\times10^{4}$ radii the
 near-field terms that the asymptotic far field omits are $1.4\times10^{-4}$, larger than the graded
 voxel's own error.
@@ -295,16 +304,19 @@ order $6\to8$ & 1.92 & 1.96 & 4.01 & 1.63 & 1.93 & 4.13 \\
 \end{table}
 
 \paragraph{Full contrast.} With multiple scattering (Table~\ref{tab:full}) the graded voxel's error falls
-to $6.3\times10^{-5}$ and $7.6\times10^{-5}$ at $n=8$, $42$ and $66$ times below the collocation voxel on
-the same grid; at $k_Sa=1$ it is below the collocation voxel at $n=24$ ($4.2\times10^{-4}$, with
-$64{,}872$ unknowns against $14{,}688$). Its apparent order between $n=6$ and $8$ is $3.35$ and $3.40$,
-and rising. The part of the error that multiple scattering adds is carried by the second-order Born
-term $T_2$ (one application of the coupling): computed on its own, which needs no solve and so reaches
-finer grids, its apparent order rises through $2.85$, $3.40$, $3.52$ and $3.65$ from $n=4$ to $12$ at
-$k_Sa=0.5$ (errors $4.1\times10^{-2}$ to $1.1\times10^{-3}$ of $T_2$), consistent with fourth order
-approached slowly, as $h^4\log(1/h)$ would be; a third-order component would make it fall instead. The
-dense solve used here is limited by memory to $n=8$; an FFT matrix-vector product would take the full
-solve further.
+to $6.3\times10^{-5}$ and $7.6\times10^{-5}$ at $n=8$, $42$ and $66$ times below the collocation voxel at
+the same cell size; at $k_Sa=1$ it is below the collocation voxel at $n=24$ ($4.2\times10^{-4}$ with
+$64{,}872$ unknowns, against $7.6\times10^{-5}$ with $14{,}688$). Its apparent order between $n=6$ and $8$
+is $3.35$ and $3.40$: below four, and rising. The part of the error that multiple scattering adds is
+carried by the second-order Born term $T_2$ (one application of the coupling). Computed on its own, which
+needs no solve and so reaches finer grids, its apparent order at $k_Sa=0.5$ rises through $2.85$, $3.40$,
+$3.52$ and $3.65$ from $n=4$ to $12$ (errors $4.1\times10^{-2}$ to $1.1\times10^{-3}$ of $T_2$;
+\path{scripts/measure_graded_voxel_t2.py}). A least-squares fit of $Ah^4+Bh^5$ matches all five to $1.1\%$
+with $B/A=-2.6$ (in units of the cube's half-width); $Ah^4\log(L/h)$ matches to $5.5\%$, and an $h^3$
+admixture matches only to $12\%$ and would make the apparent order fall. The data are therefore consistent
+with fourth order and a negative fifth-order correction; they do not establish it, and $T_2$ has not
+been taken past $n=6$ at $k_Sa=1$. The dense solve used here is limited by memory to $n=8$; an FFT
+matrix-vector product would take the full solve further.
 
 \begin{table}[ht]
 \centering\small
@@ -348,9 +360,9 @@ now excited, and they couple through the near field of neighbouring cells; and t
 projected cell by cell, jumps by $O(h^2)$ across every face between cells, where in the layer only the
 faces normal to the stratification exist. The Born term does not see either: its error is the quadrature
 error of the source, and it is of fourth order. The multiple-scattering term sees both. Its apparent order
-rises from $2.85$ to $3.65$ between $n=4$ and $12$, which is the behaviour of $h^4\log(1/h)$ rather than of
-a lower power; a logarithm is what the edge singularities of the strain operator's response to face jumps
-would produce. Whether the order settles at four needs finer grids than a dense solve allows here.
+rises from $2.85$ to $3.65$ between $n=4$ and $12$, which fits fourth order with a negative fifth-order
+correction (\S\ref{sec:sphere}); why the approach is so slow has not been established. Whether the order
+settles at four needs finer grids than a dense solve allows here.
 
 \paragraph{Galerkin and collocation.} With the lattice couplings then available, a uniform-field Galerkin
 cell was measured several times worse than the collocation cell \citep{NestorContinuum2026}. Here, with every
@@ -359,18 +371,20 @@ order, and the graded Galerkin voxel is far better. The double average is the ro
 the coupling is exact.
 
 \paragraph{Cost.} The graded cell has 36 unknowns against 9. On the sphere at full contrast it reaches
-$7.6\times10^{-5}$ with $14{,}688$ unknowns, where the collocation voxel needs more than $64{,}872$ for
-$4.2\times10^{-4}$. The blocks between non-touching cells cost a three-dimensional Gauss rule over the
+$7.6\times10^{-5}$ with $14{,}688$ unknowns; the collocation voxel reaches only $4.2\times10^{-4}$ with
+$64{,}872$, and would need more to reach $7.6\times10^{-5}$. The blocks between non-touching cells cost a three-dimensional Gauss rule over the
 eight pieces of the autocorrelation; the self block and its 26 neighbours are computed once per cell size.
 
 \section{Conclusions}\label{sec:summary}
 
 A Galerkin cube that carries the mean and first moments of displacement and an independent strain, with a
-contrast linear in the cell, converges at fourth order in its discretisation on a three-dimensional body
-with an exact solution, where cells of constant properties converge at second. At full contrast it is
-between one and two orders of magnitude more accurate than a uniform-field voxel on the same grid, and
-its multiple-scattering part approaches fourth order slowly. Its coupling blocks follow from two
-independent constructions that agree to $10^{-10}$. The far field of such a scheme must take the source's
+contrast linear in the cell, converges at fourth order in its discretisation (at Born order) on a
+three-dimensional body with an exact solution, where cells of constant properties converge at second. At
+full contrast it is between one and two orders of magnitude more accurate than a uniform-field voxel at
+the same cell size, but the full solve has not yet shown fourth order: its apparent order at the finest
+grids reached here is $3.4$, and the multiple-scattering term alone rises to $3.65$, consistent with, but
+not proof of, fourth order approached slowly. The singular integrals of its coupling blocks follow from two
+independent constructions that agree to $10^{-10}$ for representative moment pairs. The far field of such a scheme must take the source's
 engineering shear stress as the coupling kernel does; the Born limit along a cell axis cannot reveal a
 mismatch there.
 
