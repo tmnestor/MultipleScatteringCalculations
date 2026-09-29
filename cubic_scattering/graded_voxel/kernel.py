@@ -138,16 +138,29 @@ def _assemble(G: NDArray, Gd: NDArray, Gdd: NDArray) -> NDArray:
     return P
 
 
+CHUNK = 40_000
+
+
 def kernel_9x9(
     X: NDArray, omega: float, ref: ReferenceMedium, *, static: bool = True, dynamic: bool = True
 ) -> NDArray:
     """The propagator at separations X = x - x' (N, 3), shape (N, 9, 9).
+
+    Evaluated in chunks of CHUNK points: the fourth-derivative tensors are (N, 3, 3, 3, 3) complex, and a
+    whole 6-D Gauss grid at once would need gigabytes of temporaries.
 
     Raises:
         ValueError: at r = 0, where the propagator is a distribution (integrate it with
             ``graded_voxel.blocks`` instead).
     """
     X = np.atleast_2d(np.asarray(X, dtype=float))
+    if len(X) > CHUNK:
+        return np.concatenate(
+            [
+                kernel_9x9(X[i : i + CHUNK], omega, ref, static=static, dynamic=dynamic)
+                for i in range(0, len(X), CHUNK)
+            ]
+        )
     r = np.linalg.norm(X, axis=1)
     if np.any(r == 0.0):
         raise ValueError(
