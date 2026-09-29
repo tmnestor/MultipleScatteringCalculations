@@ -10,8 +10,9 @@ are plotted but not fitted). The legend gives the order p and its standard error
   (b) the uniform layer at 20 degrees: P to S and SV to S (notebooks 9 and 12, same source);
   (c) the stratified layer, normal incidence P and S, m planes per model layer (notebook 13,
       Mathematica/ContinuumLimit_Heterogeneous.wl);
-  (d) the voxelised sphere, n0 = 8 staircase split into m^3 sub-voxels, error to the staircase field
-      extrapolated to m -> infinity (scripts/pilot_sphere_staircase_refinement.py --summary=...).
+  (d) the smoothly graded sphere (a core with the contrast, falling to zero across a shell as a C2
+      smoothstep), voxelised on n_sub^3 grids, against its exact solution
+      (scripts/pilot_graded_sphere_vs_exact.py --summary=...).
 
 Run:  conda run -n seismic python scripts/plot_convergence_orders.py
 """
@@ -116,7 +117,7 @@ def main() -> int:
     uni = json.loads((MMA / "ContinuumLimit_figure_data.json").read_text())
     het = json.loads((MMA / "ContinuumLimit_heterogeneous_convergence.json").read_text())
     high = json.loads((MMA / "ContinuumLimit_second_moment_data.json").read_text())
-    sph = [json.loads((FIG / f"data_sphere_staircase_ka{k}.json").read_text()) for k in ("0.5", "1")]
+    sph = [json.loads((FIG / f"data_graded_sphere_ka{k}.json").read_text()) for k in ("0.5", "1.0")]
 
     fig, axes = plt.subplots(2, 2, figsize=(6.6, 6.2), constrained_layout=True)
     orders: dict[str, float] = {}
@@ -153,10 +154,11 @@ def main() -> int:
     ax = axes[1, 1]
     for s, colour, mk in zip(sph, ("tab:red", "tab:purple"), ("o", "s"), strict=True):
         lab = f"$k_Sa={s['ka_s']:g}$"
-        orders[f"sphere ka {s['ka_s']:g}"] = series(
-            ax, s["m"], s["error_vs_extrapolated_staircase"], 1, colour, mk, lab
+        # fitted from n_sub = 6: at 4 a voxel is as wide as the graded shell
+        orders[f"graded sphere ka {s['ka_s']:g}"] = series(
+            ax, s["n_sub"], s["error_vs_exact"], 6, colour, mk, lab
         )
-    style(ax, "sub-voxels per voxel edge $m$", "(d) voxelised sphere, fixed staircase", [1, 2, 3])
+    style(ax, "voxels across the sphere $n_{\\rm sub}$", "(d) smoothly graded sphere", [4, 6, 8, 12])
 
     fig.savefig(OUT)
     for k, v in orders.items():
