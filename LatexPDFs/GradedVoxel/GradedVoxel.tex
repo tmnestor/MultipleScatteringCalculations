@@ -1,0 +1,394 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Graded Voxels in Three Dimensions}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bD}{\boldsymbol{\Delta}}
+\newcommand{\sinc}{\operatorname{sinc}}
+\newcommand{\nb}[1]{\texttt{#1}}
+% the differential of every integral and derivative is upright: \dd z, \dd^2x, \frac{\dd}{\dd z};
+% an italic d is the lattice pitch.
+\newcommand{\dd}{\mathrm{d}}
+
+\title{\bfseries Graded Voxels in Three Dimensions\\[4pt]
+\large A Galerkin First-Moment Cube with a Contrast Linear in the Cell,\\
+Fourth Order in its Discretisation}
+\author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
+\date{29 September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Voxel schemes represent a heterogeneous elastic medium as cells of constant properties, and in a smoothly
+varying medium that representation caps them at second order in the cell size whatever the cell carries.
+In one dimension a cell that carries the Legendre moments of its field to degree $p$ and a contrast
+expanded to degree $r$ converges at order $\min(2p+2,2r+2)$. We build the three-dimensional cell with
+$p=r=1$: a Galerkin cube carrying the mean and first moments of the nine-component state, displacement
+and an independent strain, with a contrast linear in the cell. The singular integrals of its coupling
+blocks are derived twice, by moving derivatives onto the cells' autocorrelation and by integrating by parts
+onto their polynomials, and agree to $10^{-10}$ for representative moment pairs; the blocks reproduce the
+Eshelby and biharmonic sum rules, the cube's Coulomb energy and an exact subdivision identity. On a sphere
+whose contrast falls smoothly to zero at its surface, against its exact solution, the discretisation
+converges at fourth order (apparent orders $4.01$ and $4.13$) where uniform-field voxels converge at
+second. At full contrast the error is $42$ to $66$ times below the collocation voxel at the same cell size.
+There the dense solve, limited here to $8$ cells across, reaches apparent orders $3.35$ and $3.40$; the
+multiple-scattering term alone, taken to $12$ cells across, rises to $3.65$ and fits fourth order with a
+negative fifth-order correction. The
+far-field extraction must treat the engineering shear stress of the source consistently with the
+coupling kernel; a factor of two there is invisible at Born order along a cell axis and appears as an
+error in the second-order term that no refinement removes.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+A voxel scheme for elastic scattering replaces a heterogeneous body by cubic cells, each carrying a
+single-site $T$-matrix and coupled through the background Green's tensor. In a layer of such cells the
+scheme converges at second order when each cell carries a uniform internal field, and a cell that also
+carries the first moment of its field converges at fourth order \citep{NestorContinuum2026}. That paper
+also showed that where the medium varies within a cell, a contrast sampled as constant caps every
+voxel at second order, and that the rule for a cell whose field has Legendre degree $p$ and whose
+contrast has degree $r$ is $\min(2p+2,2r+2)$. All of that is one-dimensional, or three-dimensional only
+for a laterally uniform layer, where the lateral moments are never excited.
+
+This paper builds the three-dimensional graded cell ($p=r=1$) and asks whether it keeps the fourth order
+on a body with genuine three-dimensional structure: a sphere whose contrast falls smoothly to zero at its
+surface, which has an exact solution and no staircase. The cell and its single-site $T$-matrix are
+described in \S\ref{sec:voxel} and \S\ref{sec:site}, the coupling between cells in
+\S\ref{sec:coupling}, and the sphere in \S\ref{sec:sphere}.
+
+\section{The graded voxel}\label{sec:voxel}
+
+A voxel is a cube $V=[-h,h]^3$ of half-width $h$ centred at $\mathbf{x}_c$, with local coordinates
+$\boldsymbol{\xi}=(\mathbf{x}-\mathbf{x}_c)/h\in[-1,1]^3$ in the axis order $(z,x,y)$. The field in it is the
+nine-component state $\psi=(\mathbf{u},\boldsymbol{\varepsilon})$: the displacement $\mathbf{u}$ and the
+engineering strain $\boldsymbol{\varepsilon}$ in Voigt order $(zz,xx,yy,2xy,2zy,2zx)$. The strain is an
+\emph{independent} unknown, not the gradient of $\mathbf{u}$. A basis whose strain is derived from its
+displacement leaves a spurious source at every face between cells, because each cell's projected
+displacement jumps across the face; in a layer that scheme converges at second or third order however
+rich the basis \citep{NestorContinuum2026}. The quadratic 27-mode cube $T$-matrix is of that kind and is
+not considered further.
+
+The state is expanded in the Legendre polynomials of degree at most one,
+\begin{equation}\label{eq:basis}
+  \psi(\mathbf{x}) = \sum_{a=0}^{3}\psi_a\,L_a(\boldsymbol{\xi}),\qquad
+  L_0=1,\quad L_i=\xi_{i-1}\ (i=1,2,3),
+\end{equation}
+36 weights per cell. The contrast operator
+$\bD=\operatorname{diag}(\omega^2\Delta\rho\,\bI_3,\ \Delta\mathbf{C})$, with $\omega$ the angular
+frequency, $\Delta\rho$ the density contrast and $\Delta\mathbf{C}$ the $6\times6$ Voigt stiffness
+contrast, is linear in the cell,
+\begin{equation}\label{eq:contrast}
+  \bD(\boldsymbol{\xi}) = \bD_0+\sum_{i=1}^{3}\bD_i\,\xi_{i-1},
+\end{equation}
+its coefficients the $L^2$ projection of the medium onto $\{1,\xi_i\}$. The source density
+$\bD\psi$ is then a polynomial of degree at most two. Writing $m_c$ ($c=0,\dots,9$) for the ten monomials
+of degree at most two,
+\begin{equation}\label{eq:linearisation}
+  \bD(\boldsymbol{\xi})\,L_b(\boldsymbol{\xi})=\sum_{c=0}^{9}\bE_{cb}\,m_c(\boldsymbol{\xi}),
+\end{equation}
+where $\bE_{cb}$ collects the $9\times9$ coefficients: the Legendre linearisation of the one-dimensional
+construction \citep{NestorContinuum2026}, with no new kernel object. The Lippmann--Schwinger equation
+$\psi=\psi^0+\int\bP(\mathbf{x}-\mathbf{x}')\,\bD\psi\,\dd^3x'$, with $\psi^0$ the incident state and
+$\bP$ the $9\times9$ point propagator $[[\mathbf{G},\mathbf{C}],[\mathbf{H},\mathbf{S}]]$ built from the
+elastodynamic Green's tensor and its derivatives, is tested with each $L_a$ over each cell (Galerkin).
+Cells $m$ and $n$ couple through the blocks
+\begin{equation}\label{eq:block}
+  \bK_{ac}(\mathbf{R}) = \int_{V_m}\!\int_{V_n} L_a(\boldsymbol{\xi})\,
+  \bP(\mathbf{x}-\mathbf{x}')\,m_c(\boldsymbol{\xi}')\,\dd^3x\,\dd^3x',\qquad \mathbf{R}=\mathbf{x}_m-\mathbf{x}_n,
+\end{equation}
+and the discrete system is
+\begin{equation}\label{eq:system}
+  \sum_b\bM_{ab}\psi_{m,b}-\sum_n\sum_{b,c}\bK_{ac}(\mathbf{R}_{mn})\,\bE^{(n)}_{cb}\,\psi_{n,b}
+  =\langle L_a,\psi^0\rangle_m ,
+\end{equation}
+with $\bM_{ab}=\langle L_a,L_b\rangle\,\bI_9$ the Gram matrix,
+$\operatorname{diag}(8h^3,\,8h^3/3,\,8h^3/3,\,8h^3/3)$.
+
+\section{The single site}\label{sec:site}
+
+For one isolated cell the system closes on the self block $\bK(0)$. With the source moments
+$\sigma_a=\langle L_a,\bD\psi\rangle=\sum_b\mathbf{F}_{ab}\psi_b$,
+$\mathbf{F}_{ab}=\sum_c\langle L_a,m_c\rangle\bE_{cb}$, the graded single site is
+\begin{equation}\label{eq:t36}
+  \bT_{36}=\mathbf{F}\,\bigl(\bM-\bK(0)\,\bE\bigr)^{-1}\bM ,
+\end{equation}
+which maps the incident field's Legendre coefficients to the source moments: force and stress means and
+their first moments. The first moment of the force, which a nine-component composite cannot hold, is part
+of the object.
+
+\paragraph{Parity.} Under inversion $\mathbf{x}\to-\mathbf{x}$ the displacement is odd, the strain even
+and $\xi_i$ odd. With $g=0$ (no gradient) $\bT_{36}$ therefore splits exactly into a 15-dimensional set
+(strain$\times1$, displacement$\times\xi$) and a 21-dimensional set (displacement$\times1$,
+strain$\times\xi$); the coupling between them is $5\times10^{-18}$ of the largest entry. A gradient is odd
+about the centre and couples the two sets linearly: $0.325\,gh$ of the largest entry, for a gradient $g$
+along one axis, at $gh=0.05$, $0.1$ and $0.2$. An axis-aligned gradient leaves the symmetry of rotations by
+a quarter turn about its axis, which $\bT_{36}$ satisfies to $10^{-11}$.
+
+\paragraph{Reciprocity.} The propagator satisfies $\bW\bP(\mathbf{r})$ symmetric at every
+$\mathbf{r}$, with $\bW=\operatorname{diag}(\bI_6,\tfrac12\bI_3)$, and
+$\bP(-\mathbf{r})=\boldsymbol{\Pi}\bP(\mathbf{r})\boldsymbol{\Pi}$ with
+$\boldsymbol{\Pi}=\operatorname{diag}(-\bI_3,\bI_6)$. Every block between test functions is therefore
+$\bW$-symmetric, $(\bW\bK_{ab})^{\mathsf T}=\bW\bK_{ab}$, and the self block obeys
+$\bK_{ba}(0)=\boldsymbol{\Pi}\bK_{ab}(0)\boldsymbol{\Pi}$ (exchange the two points of the cell). Both hold
+to $10^{-11}$.
+
+\paragraph{The Born limit.} Without a gradient $\bT_{36}$ is exact at first order in the contrast for any
+incident field: the source moments are $\bD_0\langle L_a,\psi^0\rangle$. With a gradient the first-order
+source $\langle L_a,(\mathbf{g}\cdot\boldsymbol{\xi})\psi^0\rangle$ needs the incident field's
+\emph{quadratic} moments, which the degree-one input drops. The error is $O(\Delta\,gh\,(kh)^2)$, with $k$
+the incident wavenumber: measured slopes $2.0001$ and $2.0004$ for $kh=0.025\to0.05\to0.1$, where it
+reaches $8.9\times10^{-5}$ at $gh=0.2$ (these and the parity numbers: \path{scripts/measure_graded_voxel_site.py}).
+It is the single site's view of the rule
+$\min(2p+2,2r+2)$ for a field of degree $p$ and a contrast of degree $r$ \citep{NestorContinuum2026}.
+
+\paragraph{An isolated cube has an error floor that refinement in $k$ does not remove.} In the static
+limit a cube of contrast $\Delta\mathbf{C}$ under a uniform remote strain has the internal strain
+$\boldsymbol{\varepsilon}(\mathbf{x})=\boldsymbol{\varepsilon}^0+\int_V\partial\partial\mathbf{G}(\mathbf{x}-\mathbf{x}')\,
+\Delta\mathbf{C}\,\boldsymbol{\varepsilon}(\mathbf{x}')\,\dd^3x'$. The self-interaction
+$\mathbf{S}(\mathbf{x})=\int_V\partial\partial\mathbf{G}(\mathbf{x}-\mathbf{x}')\,\dd^3x'$ is constant
+inside an ellipsoid and only there \citep{Eshelby1957}; in a cube it concentrates towards the edges and
+corners. A closure that keeps averages is exact through second order in the contrast, since the
+second-order source needs only $\int_V\mathbf{S}$, and first errs at third order, by
+$\Delta\mathbf{C}^3\,V\operatorname{Var}(\mathbf{S})$; a collocation closure, which uses
+$\mathbf{S}(0)$, errs already at second order. Neither error depends on $k$. It is not what a tiled medium
+sees: between identical cells the faces are not physical, the exact field is smooth there, and the
+concentration does not arise. The order of convergence is a property of the tiled medium, the closure
+error a property of the isolated cell; this paper measures the former
+(\S\ref{sec:sphere}).
+
+\section{The coupling between cells}\label{sec:coupling}
+
+\paragraph{The point propagator.} $\bP$ is built from
+$\mathbf{G}_{ij}=\frac{1}{4\pi\mu}\bigl[\delta_{ij}g_S(r)+k_S^{-2}\partial_i\partial_j(g_S-g_P)(r)\bigr]$,
+$g_k=\mathrm{e}^{\mathrm{i}kr}/r$, with $\mu$ the background shear modulus and $k_P$, $k_S$ the P and S
+wavenumbers. Every derivative of a radial function $f$ is a combination of
+$F_q=(r^{-1}\dd/\dd r)^q f$. Near the origin the closed form cancels catastrophically (the
+$k_S^{-2}$ difference), so for $k_Sr\le\tfrac12$ the $F_q$ are summed term by term from the power series
+of $g_k$. This kernel equals the package's closed form to $10^{-11}$ where both are accurate, and its
+static part is the Kelvin tensor to $10^{-13}$. Its static (Kelvin) part is the $t=0$ term of the
+$\delta_{ij}$ series and the $t=2$ term of the derivative series, $\frac{1}{4\pi\mu}[\delta_{ij}r^{-1}
++b_2\partial_i\partial_jr]$ with $b_2=-\tfrac12(1-\beta^2/\alpha^2)$; the dynamic remainder is at most
+$1/r$.
+
+\paragraph{The $s$-form.} With $\mathbf{x}=\mathbf{x}_m+\mathbf{u}$ and $\mathbf{x}'=\mathbf{x}_n+\mathbf{u}'$
+the kernel sees $\mathbf{R}+\mathbf{s}$, $\mathbf{s}=\mathbf{u}-\mathbf{u}'\in[-2h,2h]^3$, and
+Eq.~\eqref{eq:block} becomes
+\begin{equation}\label{eq:sform}
+  \bK_{ac}(\mathbf{R})=\int W_{ac}(\mathbf{s})\,\bP(\mathbf{R}+\mathbf{s})\,\dd^3s,\qquad
+  W_{ac}(\mathbf{s})=\prod_{i}w_{e_{a,i}e_{c,i}}(s_i),
+\end{equation}
+with the one-dimensional cross-correlation
+$w_{\alpha\beta}(s)=h\int v^\alpha(v-s/h)^\beta\,\dd v$ over
+$v\in[\max(-1,s/h-1),\min(1,s/h+1)]$: continuous, a polynomial on $[-2h,0]$ and on $[0,2h]$, zero at
+$\pm2h$, with kinks at $0$ and $\pm2h$. For cells that do not touch the kernel is smooth on each of the
+eight pieces and a three-dimensional Gauss rule suffices ($8n^3$ kernel evaluations against $n^6$ for the
+double integral). It agrees with six-dimensional Gauss quadrature of Eq.~\eqref{eq:block} to $10^{-9}$ one
+cell beyond contact.
+
+\paragraph{The self cell and its 26 neighbours.} The static part is a sum of terms
+$\partial^{\boldsymbol{\iota}}r^m$ ($m=-1$ with $|\boldsymbol{\iota}|\le2$, $m=1$ with
+$|\boldsymbol{\iota}|\le4$), distributions at the origin. Moving
+$k=\max(0,|\boldsymbol{\iota}|-(m+1))\le2$ derivatives onto $W$ leaves a kernel at most $1/r$:
+$\int W\,\partial^{\boldsymbol{\iota}}f=(-1)^k\int(\partial^{\text{moved}}W)\,\partial^{\text{rest}}f$.
+Two derivatives on one axis turn the kinks of $w$ into plane deltas $J_b\,\delta(s-bh)$,
+$b\in\{-2,0,2\}$, $J_b$ the jump of $w'$ at $b$. Every piece is then a box or a rectangle whose corners
+lie on the breakpoints, so the singular point $\mathbf{s}=-\mathbf{R}$ is either a vertex, integrated
+with Duffy's pyramids, or at distance $2h$ or more. The Eshelby delta is not added by hand; it is carried by
+the plane deltas. The construction reproduces the Eshelby sum rule
+$\sum_p\int\!\!\int_{V\times V}\partial_p\partial_p r^{-1}=-4\pi V$ and the cube's Coulomb self-energy
+\begin{equation}\label{eq:coulomb}
+  \int\!\!\int_{V\times V}\frac{\dd^3x\,\dd^3x'}{|\mathbf{x}-\mathbf{x}'|}
+  =2\Bigl[\tfrac15\bigl(1+\sqrt2-2\sqrt3\bigr)-\tfrac{\pi}{3}+\ln\bigl((1+\sqrt2)(2+\sqrt3)\bigr)\Bigr](2h)^5
+\end{equation}
+to $10^{-11}$, converges in the Gauss order to $10^{-11}$, and satisfies the reciprocity and exchange laws
+of \S\ref{sec:site}. The biharmonic rule $\sum_{p,q}\partial_p\partial_p\partial_q\partial_q r=-8\pi\delta$
+holds to the same accuracy, which checks the delta carried by the $r$ terms. And every block equals the
+sum of the $64$ blocks between the two cells' half-size sub-cells, with the polynomials re-expressed on the
+sub-cells, to $2\times10^{-15}$ for all $(a,c)$ at the self cell, its touching neighbours and beyond
+(\path{scripts/check_graded_voxel_subdivision.py}).
+
+\paragraph{An independent construction.} Integration by parts can move the derivatives onto the cells'
+polynomials instead of onto $W$: one derivative onto each cell, each move either differentiating the
+polynomial or producing a face term, which leaves $1/r$ kernels over cell$\times$cell, face$\times$cell
+and face$\times$face, all absolutely convergent. Built in Mathematica on its own (\path{GradedVoxel_WeakKernel.wl}),
+this reproduces the sum rule and the Coulomb energy, and, as the source cell shrinks to a point, the
+distributional single average of the moment engine \citep{NestorContinuum2026}; all to $10^{-14}$ or
+better.
+
+\section{The smoothly graded sphere}\label{sec:sphere}
+
+\paragraph{The body and its exact solution.} A sphere of radius $a=10$\,m has a homogeneous core
+$r<a/2$ with the contrast $\Delta\lambda=2$\,GPa, $\Delta\mu=1$\,GPa, $\Delta\rho=100$\,kg\,m$^{-3}$ in a
+background $\alpha=5$\,km\,s$^{-1}$, $\beta=3$\,km\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$. Across the shell
+$a/2<r<a$ the contrast is multiplied by the smoothstep $10x^3-15x^4+6x^5$, $x=(a-r)/(a/2)$, so it vanishes
+like $(a-r)^3$ at the surface: there is no staircase. Its per-order $T$-matrices are exact (Takeuchi--Saito
+integration, two implementations agreeing to $2\times10^{-11}$) \citep{NestorContinuum2026}. The incident
+wave is a P wave along $z$, at $k_Sa=0.5$ and $1$.
+
+\paragraph{Arms and measurement.} At the same cell size, on a grid of $n^3$ cells across the bounding
+cube: the collocation uniform-field voxel with each cell at the profile's centre value (T$_9$), which keeps
+the cells whose centre lies inside the sphere; the Galerkin uniform-field voxel ($p=r=0$); and the graded
+first-moment voxel ($p=r=1$). A Galerkin cell carries the $L^2$ projection of its contrast (six-point Gauss
+rule per axis), so the Galerkin arms keep every cell overlapping the sphere ($408$ cells at $n=8$, against
+$280$): keeping only cells whose centre lies inside drops contrast from partly filled shell cells, and the
+uniform Galerkin voxel then converges at order $1.07$ instead of $2$. The error is the largest far-field difference from the exact
+solution over nine angles, relative to its peak, at $5\times10^{8}$ radii; at $5\times10^{4}$ radii the
+near-field terms that the asymptotic far field omits are $1.4\times10^{-4}$, larger than the graded
+voxel's own error.
+
+\paragraph{The discretisation alone.} At a contrast $10^{-6}$ of the above, multiple scattering is
+negligible and the error is that of the discretisation (Table~\ref{tab:born}). The graded voxel converges
+at fourth order, with apparent orders $4.01$ and $4.13$ on the finest pair; both uniform-field voxels are
+of second order. At $n=4$ a cell is as wide as the graded shell and the orders there are not
+asymptotic.
+
+\begin{table}[ht]
+\centering\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{$k_Sa=0.5$} & \multicolumn{3}{c}{$k_Sa=1$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+$n$ & T$_9$ & $p=r=0$ & $p=r=1$ & T$_9$ & $p=r=0$ & $p=r=1$ \\
+\midrule
+4 & $1.04\times10^{-1}$ & $8.85\times10^{-3}$ & $7.53\times10^{-5}$ & $1.16\times10^{-1}$ & $3.45\times10^{-2}$ & $2.32\times10^{-4}$ \\
+6 & $4.71\times10^{-3}$ & $3.61\times10^{-3}$ & $5.03\times10^{-6}$ & $8.26\times10^{-3}$ & $1.42\times10^{-2}$ & $9.14\times10^{-5}$ \\
+8 & $2.71\times10^{-3}$ & $2.06\times10^{-3}$ & $1.59\times10^{-6}$ & $5.17\times10^{-3}$ & $8.15\times10^{-3}$ & $2.78\times10^{-5}$ \\
+order $6\to8$ & 1.92 & 1.96 & 4.01 & 1.63 & 1.93 & 4.13 \\
+\bottomrule
+\end{tabular}
+\caption{Weak contrast ($10^{-6}$): the discretisation error of the far field.}\label{tab:born}
+\end{table}
+
+\paragraph{Full contrast.} With multiple scattering (Table~\ref{tab:full}) the graded voxel's error falls
+to $6.3\times10^{-5}$ and $7.6\times10^{-5}$ at $n=8$, $42$ and $66$ times below the collocation voxel at
+the same cell size; at $k_Sa=1$ it is below the collocation voxel at $n=24$ ($4.2\times10^{-4}$ with
+$64{,}872$ unknowns, against $7.6\times10^{-5}$ with $14{,}688$). Its apparent order between $n=6$ and $8$
+is $3.35$ and $3.40$: below four, and rising. The part of the error that multiple scattering adds is
+carried by the second-order Born term $T_2$ (one application of the coupling). Computed on its own, which
+needs no solve and so reaches finer grids, its apparent order at $k_Sa=0.5$ rises through $2.85$, $3.40$,
+$3.52$ and $3.65$ from $n=4$ to $12$ (errors $4.1\times10^{-2}$ to $1.1\times10^{-3}$ of $T_2$;
+\path{scripts/measure_graded_voxel_t2.py}). A least-squares fit of $Ah^4+Bh^5$ matches all five to $1.1\%$
+with $B/A=-2.6$ (in units of the cube's half-width); $Ah^4\log(L/h)$ matches to $5.5\%$, and an $h^3$
+admixture matches only to $12\%$ and would make the apparent order fall. The data are therefore consistent
+with fourth order and a negative fifth-order correction; they do not establish it, and $T_2$ has not
+been taken past $n=6$ at $k_Sa=1$. The dense solve used here is limited by memory to $n=8$; an FFT
+matrix-vector product would take the full solve further.
+
+\begin{table}[ht]
+\centering\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{$k_Sa=0.5$} & \multicolumn{3}{c}{$k_Sa=1$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+$n$ & T$_9$ & $p=r=0$ & $p=r=1$ & T$_9$ & $p=r=0$ & $p=r=1$ \\
+\midrule
+4 & $1.03\times10^{-1}$ & $7.70\times10^{-3}$ & $5.47\times10^{-4}$ & $1.15\times10^{-1}$ & $3.24\times10^{-2}$ & $6.34\times10^{-4}$ \\
+6 & $4.66\times10^{-3}$ & $3.04\times10^{-3}$ & $1.65\times10^{-4}$ & $8.15\times10^{-3}$ & $1.32\times10^{-2}$ & $2.02\times10^{-4}$ \\
+8 & $2.64\times10^{-3}$ & $1.68\times10^{-3}$ & $6.28\times10^{-5}$ & $5.01\times10^{-3}$ & $7.52\times10^{-3}$ & $7.60\times10^{-5}$ \\
+order $6\to8$ & 1.98 & 2.05 & 3.35 & 1.70 & 1.95 & 3.40 \\
+\bottomrule
+\end{tabular}
+\caption{Full contrast: the far-field error of the three voxels.}\label{tab:full}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_orders.pdf}
+\caption{Far-field error against the number of cells across the sphere, for the collocation and Galerkin
+uniform-field voxels and the graded first-moment voxel; dashed guides show $h^2$ and $h^4$. Top: weak
+contrast (the discretisation alone). Bottom: full contrast.}\label{fig:orders}
+\end{figure}
+
+\paragraph{A convention the Born limit cannot see.} The shear entries of the source are engineering
+stress $2\sigma_{pq}$: the contrast operator maps the engineering strain $\gamma_{pq}$ to
+$2\Delta\mu\,\gamma_{pq}$, and the kernel's shear columns carry a factor $\tfrac12$. The far field must
+take the tensor stress $\sigma_{pq}$ from them, half the entry. Radiating the entry itself doubles the
+shear stress, and a P wave along a cell axis has no shear stress at Born order, so the weak-contrast test
+cannot see it. It appears at second order, through the density--shear cross terms, as an error in $T_2$
+that does not fall with refinement ($4.65\%$ and $4.05\%$ at $n=4$ and $6$, against $4.22\%$ and $1.31\%$
+when the far field agrees with the kernel for every source component).
+
+\section{Discussion}\label{sec:discussion}
+
+\paragraph{What three dimensions change.} Two things differ from the layer. The lateral first moments are
+now excited, and they couple through the near field of neighbouring cells; and the discrete source,
+projected cell by cell, jumps by $O(h^2)$ across every face between cells, where in the layer only the
+faces normal to the stratification exist. The Born term does not see either: its error is the quadrature
+error of the source, and it is of fourth order. The multiple-scattering term sees both. Its apparent order
+rises from $2.85$ to $3.65$ between $n=4$ and $12$, which fits fourth order with a negative fifth-order
+correction (\S\ref{sec:sphere}); why the approach is so slow has not been established. Whether the order
+settles at four needs finer grids than a dense solve allows here.
+
+\paragraph{Galerkin and collocation.} With the lattice couplings then available, a uniform-field Galerkin
+cell was measured several times worse than the collocation cell \citep{NestorContinuum2026}. Here, with every
+block computed exactly, the uniform-field Galerkin voxel is comparable to the collocation voxel at second
+order, and the graded Galerkin voxel is far better. The double average is the route to fourth order when
+the coupling is exact.
+
+\paragraph{Cost.} The graded cell has 36 unknowns against 9. On the sphere at full contrast it reaches
+$7.6\times10^{-5}$ with $14{,}688$ unknowns; the collocation voxel reaches only $4.2\times10^{-4}$ with
+$64{,}872$, and would need more to reach $7.6\times10^{-5}$. The blocks between non-touching cells cost a three-dimensional Gauss rule over the
+eight pieces of the autocorrelation; the self block and its 26 neighbours are computed once per cell size.
+
+\section{Conclusions}\label{sec:summary}
+
+A Galerkin cube that carries the mean and first moments of displacement and an independent strain, with a
+contrast linear in the cell, converges at fourth order in its discretisation (at Born order) on a
+three-dimensional body with an exact solution, where cells of constant properties converge at second. At
+full contrast it is between one and two orders of magnitude more accurate than a uniform-field voxel at
+the same cell size, but the full solve has not yet shown fourth order: its apparent order at the finest
+grids reached here is $3.4$, and the multiple-scattering term alone rises to $3.65$, consistent with, but
+not proof of, fourth order approached slowly. The singular integrals of its coupling blocks follow from two
+independent constructions that agree to $10^{-10}$ for representative moment pairs. The far field of such a scheme must take the source's
+engineering shear stress as the coupling kernel does; the Born limit along a cell axis cannot reveal a
+mismatch there.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}
