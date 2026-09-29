@@ -321,9 +321,15 @@ def resonance_far_field(
     perp1 = perp1 / np.linalg.norm(perp1)
     perp2 = np.cross(k_hat, perp1)
 
-    # Precompute per-cell stress tensors
+    # Precompute per-cell stress tensors. The sources' shear entries are ENGINEERING stress 2 sigma_pq
+    # (effective_stiffness_voigt maps the engineering strain gamma to 2 dmu gamma; the propagator's shear
+    # columns halve it), so the tensor takes half of each: this module's _voigt_to_tensor does not halve
+    # (sphere_scattering's does, and foldy_lax_far_field uses that one). Without the halving the shear
+    # stress radiated twice (measured against the propagator's own far field, 2026-09-30).
     forces = sources[:, :3]  # (N, 3)
-    sigmas = np.array([_voigt_to_tensor(sources[n, 3:]) for n in range(N)])  # (N, 3, 3)
+    stress = sources[:, 3:].copy()
+    stress[:, 3:] *= 0.5
+    sigmas = np.array([_voigt_to_tensor(stress[n]) for n in range(N)])  # (N, 3, 3)
 
     f_P = np.zeros_like(theta, dtype=complex)
     f_SV = np.zeros_like(theta, dtype=complex)
