@@ -9,6 +9,8 @@ Validates internal correctness:
 
 from __future__ import annotations
 
+import copy
+
 import numpy as np
 import pytest
 
@@ -172,6 +174,89 @@ class TestContrastProfile:
             strict=True,
         ):
             _assert_close_in_norm(ub, ua, self.REL)
+
+
+class TestPlaneWaveFarField:
+    """The far field is the response to the incident PLANE WAVE, pol and strain each carrying the phase.
+
+    The composite-T incident columns (``_build_incident_field_coupled``) add, in their strain columns, the
+    displacement eps.(x_m - x_centre) on top of the plane-wave phase.  Combining them with [pol, eps] for a
+    plane wave counted the wave's linear variation twice: a first-order error that grows as (ka)^2 and
+    does not fall under refinement (1.1% at k_S a = 0.5, 4.6% at 1 on a graded sphere).  The far field
+    now uses the solution for the plain plane-wave basis, ``psi_pw``.
+    """
+
+    OMEGA_HI = 1.0 * REF.beta / RADIUS  # k_S a = 1: the double counting is large here
+    EPS = 1e-4  # Born order: multiple scattering is O(EPS)
+
+    def _run(self, solver, **kw):
+        small = MaterialContrast(
+            Dlambda=self.EPS * CONTRAST.Dlambda, Dmu=self.EPS * CONTRAST.Dmu, Drho=self.EPS * CONTRAST.Drho
+        )
+        return solver(
+            self.OMEGA_HI, RADIUS, REF, small, n_sub=3, k_hat=np.array([1.0, 0.0, 0.0]), wave_type="P", **kw
+        )
+
+    def test_far_field_is_the_plane_wave_response(self) -> None:
+        """At Born order the solved far field equals the one of the plain plane wave with no scattering."""
+        fl = self._run(compute_sphere_foldy_lax_fft, gmres_tol=1e-12)
+        kp = self.OMEGA_HI / REF.alpha
+        phase = np.exp(1j * kp * fl.centres[:, 0])
+        born = copy.copy(fl)
+        # no scattering: the exciting field IS the incident plane-wave basis (set on both attributes, so the
+        # comparison also fails for a far field that reads the composite-T columns psi_exc)
+        born.psi_pw = np.kron(phase[:, None], np.eye(9))
+        born.psi_exc = born.psi_pw
+        dirs = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [-0.6, 0.0, 0.8], [0.3, 0.9, 0.0]])
+        k_hat = np.array([1.0, 0.0, 0.0])
+        for ua, ub in zip(
+            foldy_lax_far_field(fl, dirs, 1e4, k_hat, k_hat, wave_type="P"),
+            foldy_lax_far_field(born, dirs, 1e4, k_hat, k_hat, wave_type="P"),
+            strict=True,
+        ):
+            _assert_close_in_norm(ua, ub, 1e-3)
+
+    def test_displacement_columns_are_shared(self) -> None:
+        fl = self._run(compute_sphere_foldy_lax_fft, gmres_tol=1e-12)
+        assert fl.psi_pw is not None
+        np.testing.assert_array_equal(fl.psi_pw[:, :3], fl.psi_exc[:, :3])
+
+    def test_dense_and_fft_agree(self) -> None:
+        a = self._run(compute_sphere_foldy_lax)
+        b = self._run(compute_sphere_foldy_lax_fft, gmres_tol=1e-12)
+        _assert_close_in_norm(b.psi_pw, a.psi_pw, 1e-8)
+
+    def test_per_cell_path_matches_dense_column_by_column(self) -> None:
+        """The per-cell (contrast_profile) path is accurate in EVERY column, the strain ones included.
+
+        Applying SI-scaled T-matrices before the FFT once left the strain columns at 1e-5 of the dense
+        solve while the displacement columns reached 1e-8: a comparison relative to the largest entry of
+        T_comp could not see it.  Compared column by column here, at full contrast, for a sphere of 10 m
+        (the benchmark's size: the imbalance grows with the cell size, and 0.5 m hides it).
+        """
+        big = 10.0
+        omega = 1.0 * REF.beta / big  # k_S a = 1
+        kw = dict(n_sub=3, k_hat=np.array([1.0, 0.0, 0.0]), wave_type="P")
+        dense = compute_sphere_foldy_lax(omega, big, REF, CONTRAST, **kw)
+        per_cell = compute_sphere_foldy_lax_fft(
+            omega, big, REF, CONTRAST, contrast_profile=lambda _p: 1.0, gmres_tol=1e-12, **kw
+        )
+        for got, want in ((per_cell.psi_exc, dense.psi_exc), (per_cell.psi_pw, dense.psi_pw)):
+            for col in range(9):
+                _assert_close_in_norm(got[:, col], want[:, col], 1e-8)
+
+    def test_far_field_needs_the_plane_wave_solution(self) -> None:
+        fl = copy.copy(self._run(compute_sphere_foldy_lax_fft))
+        fl.psi_pw = None
+        with pytest.raises(ValueError, match="psi_pw"):
+            foldy_lax_far_field(
+                fl,
+                np.array([[1.0, 0.0, 0.0]]),
+                1e4,
+                np.array([1.0, 0.0, 0.0]),
+                np.array([1.0, 0.0, 0.0]),
+                wave_type="P",
+            )
 
 
 class TestPackUnpack:

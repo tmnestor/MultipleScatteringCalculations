@@ -33,6 +33,7 @@ from .effective_contrasts import (
 )
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
+    _build_incident_plane_wave_basis,
     _propagator_block_9x9,
     _sub_cell_tmatrix_9x9,
     sub_cell_centres,
@@ -61,7 +62,11 @@ class SphereDecompositionResult:
         ref: Background medium.
         contrast: Material contrast.
         t_local: Per-cell 9x9 T-matrices, shape (N, 9, 9), when the cells carry different contrasts
-            (contrast_profile of the FFT solver); None when every cell carries contrast.
+            (``contrast_profile`` of the FFT solver); ``None`` when every cell carries ``contrast``.
+        psi_pw: Exciting field for the plane-wave incident basis (``_build_incident_plane_wave_basis``),
+            shape (9*N, 9): the incident plane wave of polarisation p and strain eps is this basis times
+            [p, eps].  The far field uses it.  ``psi_exc`` solves the composite-T patterns instead, whose
+            strain columns also carry eps.(x - x_centre) and would count the wave's linear variation twice.
     """
 
     T3x3: NDArray[np.complexfloating]
@@ -77,6 +82,7 @@ class SphereDecompositionResult:
     ref: ReferenceMedium
     contrast: MaterialContrast
     t_local: NDArray[np.complexfloating] | None = None
+    psi_pw: NDArray[np.complexfloating] | None = None
 
 
 @dataclass
@@ -236,11 +242,13 @@ def compute_sphere_foldy_lax(
     A_mat = np.eye(9 * N, dtype=complex) - P_tilde @ T_block
     cond_num = float(np.linalg.cond(A_mat))
 
-    # Incident field
+    # Incident field: the composite-T patterns, and the plane-wave basis for the far field
     psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
+    pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
-    # Solve
-    psi_exc = np.linalg.solve(A_mat, psi_inc)
+    # Solve both with one factorisation
+    sol = np.linalg.solve(A_mat, np.hstack([psi_inc, pw_inc]))
+    psi_exc, psi_pw = sol[:, :9], sol[:, 9:]
 
     # Composite T-matrix
     T_comp = np.zeros((9, 9), dtype=complex)
@@ -262,6 +270,7 @@ def compute_sphere_foldy_lax(
         radius=radius,
         ref=ref,
         contrast=contrast,
+        psi_pw=psi_pw,
     )
 
 
@@ -1555,7 +1564,17 @@ def foldy_lax_far_field(
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
     t_local = decomp_result.t_local
 
-    psi_exc = decomp_result.psi_exc
+    # the plane wave's own exciting field: see SphereDecompositionResult.psi_pw
+    psi_exc = decomp_result.psi_pw
+    if psi_exc is None:
+        raise ValueError(
+            "foldy_lax_far_field: the decomposition result has no psi_pw, the exciting field for the "
+            "plane-wave incident basis.  The composite-T columns psi_exc cannot stand in for it: their "
+            "strain columns carry eps.(x - x_centre) on top of the plane-wave phase and count the wave's "
+            "linear variation twice (a first-order far-field error growing as (ka)^2).  Fix: compute the "
+            "result with compute_sphere_foldy_lax, compute_sphere_foldy_lax_fft or "
+            "compute_sphere_foldy_lax_fft_gpu, which all return psi_pw."
+        )
 
     # Precompute incident vector (same for all cells)
     eps_inc_voigt = _plane_wave_strain_voigt(k_hat, pol, k_mag)

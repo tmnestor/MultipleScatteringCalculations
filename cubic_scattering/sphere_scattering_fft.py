@@ -35,6 +35,7 @@ from .effective_contrasts import (
 )
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
+    _build_incident_plane_wave_basis,
     _propagator_block_9x9,
     _sub_cell_tmatrix_9x9,
 )
@@ -227,6 +228,28 @@ def _matvec_fft(
     Returns:
         Result vector, shape (9*nC,).
     """
+    return w_flat + _conv_fft(w_flat, kernel_hat, grid_idx, nP, nC)
+
+
+def _conv_fft(
+    w_flat: NDArray[np.complexfloating],
+    kernel_hat: NDArray[np.complexfloating],
+    grid_idx: NDArray[np.intp],
+    nP: int,
+    nC: int,
+) -> NDArray[np.complexfloating]:
+    """The FFT convolution of the stored kernel with w alone: IFFT(kernel_hat * FFT(w)).
+
+    Args:
+        w_flat: Input vector, shape (9*nC,).
+        kernel_hat: FFT of kernel, shape (9, 9, nP, nP, nP).
+        grid_idx: Grid indices, shape (nC, 3).
+        nP: Padded grid size.
+        nC: Number of active cells.
+
+    Returns:
+        The convolution, shape (9*nC,).
+    """
     # Pack input onto grid and FFT
     grids = _pack(w_flat, grid_idx, nP)
     w_hat = np.zeros_like(grids)
@@ -244,10 +267,7 @@ def _matvec_fft(
     for c in range(9):
         y_grids[c] = np.fft.ifftn(y_hat[c])
 
-    conv_result = _unpack(y_grids, grid_idx, nC)
-
-    # (I - P*T)*w = w + conv_result  (since kernel = -P*T)
-    return w_flat + conv_result
+    return _unpack(y_grids, grid_idx, nC)
 
 
 def compute_sphere_foldy_lax_fft(
@@ -336,35 +356,34 @@ def compute_sphere_foldy_lax_fft(
         )
 
         def matvec(w: NDArray) -> NDArray:
+            # the convolution alone: forming tw + conv and subtracting tw again cancelled about eight
+            # digits, since in SI units tw = T w is of order 1e8 while the convolution is of order one
             tw = np.einsum("nij,nj->ni", t_cells, w.reshape(nC, 9)).ravel()
-            return w + (_matvec_fft(tw, kernel_hat, grid_idx, nP, nC) - tw)
+            return w + _conv_fft(tw, kernel_hat, grid_idx, nP, nC)
 
     A_op = LinearOperator((dim, dim), matvec=matvec, dtype=complex)
 
-    # Step 4: Build incident field (9N x 9 matrix, solve column by column)
+    # Step 4: Build incident fields (9N x 9 matrices, solved column by column): the composite-T
+    # patterns, and the plane-wave basis for the far field.  Their displacement columns (0-2) are
+    # identical, so only the six strain columns of the plane-wave basis need solves of their own.
     psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
+    pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
-    # Solve 9 independent RHS columns via GMRES
-    psi_exc = np.zeros((dim, 9), dtype=complex)
-    for col in range(9):
-        rhs = psi_inc[:, col]
+    def solve(rhs: NDArray, label: str) -> NDArray:
         x0 = rhs.copy()  # Born approximation as initial guess
-        solution, info = gmres(
-            A_op,
-            rhs,
-            x0=x0,
-            rtol=gmres_tol,
-            maxiter=gmres_maxiter,
-        )
+        solution, info = gmres(A_op, rhs, x0=x0, rtol=gmres_tol, maxiter=gmres_maxiter)
         if info != 0:
             import warnings
 
-            warnings.warn(
-                f"GMRES did not converge for column {col} (info={info})",
-                UserWarning,
-                stacklevel=2,
-            )
-        psi_exc[:, col] = solution
+            warnings.warn(f"GMRES did not converge for {label} (info={info})", UserWarning, stacklevel=3)
+        return solution
+
+    psi_exc = np.zeros((dim, 9), dtype=complex)
+    for col in range(9):
+        psi_exc[:, col] = solve(psi_inc[:, col], f"column {col}")
+    psi_pw = psi_exc.copy()
+    for col in range(3, 9):
+        psi_pw[:, col] = solve(pw_inc[:, col], f"plane-wave column {col}")
 
     # Step 5: Extract composite T-matrix
     T_comp = np.zeros((9, 9), dtype=complex)
@@ -387,4 +406,5 @@ def compute_sphere_foldy_lax_fft(
         ref=ref,
         contrast=contrast,
         t_local=t_local,
+        psi_pw=psi_pw,
     )
