@@ -24,6 +24,7 @@ from cubic_scattering.resonance_tmatrix import (
 )
 from cubic_scattering.sphere_scattering import (
     compute_sphere_foldy_lax,
+    foldy_lax_far_field,
     sphere_sub_cell_centres,
 )
 from cubic_scattering.sphere_scattering_fft import (
@@ -96,6 +97,81 @@ class TestShapeMask:
         b = compute_sphere_foldy_lax_fft(OMEGA, RADIUS, REF, CONTRAST, n_sub=3, inside=mask)
         assert a.n_cells == b.n_cells
         np.testing.assert_allclose(b.T_comp_9x9, a.T_comp_9x9, rtol=1e-12, atol=0.0)
+
+
+def _assert_close_in_norm(got: np.ndarray, want: np.ndarray, rel: float) -> None:
+    """Agreement relative to the largest entry: T_comp has entries that vanish by symmetry, where an
+    entrywise rtol would compare round-off with round-off."""
+    assert np.max(np.abs(got - want)) <= rel * np.max(np.abs(want))
+
+
+class TestContrastProfile:
+    """The optional ``contrast_profile``: every cell carries its own contrast, and so its own T-matrix.
+
+    The per-cell path applies each T before the FFT convolution instead of folding it into the kernel. In SI
+    units a T spans many orders of magnitude, so the two paths agree to about 1e-8 of the largest entry (the
+    GMRES default tolerance), not to machine precision: the bound below is 1e-7.
+    """
+
+    TOL = 1e-8  # the solver default: reachable on the per-cell path, whose round-off is about 1e-8
+    REL = 1e-7
+
+    def _run(self, **kw):
+        return compute_sphere_foldy_lax_fft(
+            OMEGA,
+            RADIUS,
+            REF,
+            kw.pop("contrast", CONTRAST),
+            n_sub=3,
+            k_hat=np.array([1.0, 0.0, 0.0]),
+            wave_type="P",
+            gmres_tol=self.TOL,
+            **kw,
+        )
+
+    def test_unit_profile_is_the_uniform_solver(self) -> None:
+        a = self._run()
+        b = self._run(contrast_profile=lambda _p: 1.0)
+        assert b.t_local is not None and b.t_local.shape == (b.n_cells, 9, 9)
+        _assert_close_in_norm(b.T_comp_9x9, a.T_comp_9x9, self.REL)
+
+    def test_constant_profile_scales_the_contrast(self) -> None:
+        c = 0.5
+        half = MaterialContrast(Dlambda=c * CONTRAST.Dlambda, Dmu=c * CONTRAST.Dmu, Drho=c * CONTRAST.Drho)
+        a = self._run(contrast=half)
+        b = self._run(contrast_profile=lambda _p: c)
+        _assert_close_in_norm(b.T_comp_9x9, a.T_comp_9x9, self.REL)
+
+    def test_zero_profile_scatters_nothing(self) -> None:
+        b = self._run(contrast_profile=lambda _p: 0.0)
+        assert np.max(np.abs(b.T_comp_9x9)) == 0.0
+
+    def test_indicator_profile_is_the_mask(self) -> None:
+        """A cell of zero contrast is transparent: an indicator profile is the same scatterer as a mask.
+
+        Only the displacement-input columns (0-2) are compared.  The strain-input columns are built about
+        the centroid of the cells present (``_build_incident_field_coupled``), which the mask moves and the
+        indicator does not, so they differ by construction, not physics.
+        """
+        a = self._run(inside=lambda p: bool(np.linalg.norm(p) < RADIUS and p[0] > 0.0))
+        b = self._run(contrast_profile=lambda p: 1.0 if p[0] > 0.0 else 0.0)
+        assert a.n_cells < b.n_cells
+        _assert_close_in_norm(b.T_comp_9x9[:, :3], a.T_comp_9x9[:, :3], self.REL)
+
+    def test_far_field_uses_the_per_cell_tmatrices(self) -> None:
+        """The far field must use each cell's own T, not one rebuilt from the result's nominal contrast."""
+        c = 0.5
+        half = MaterialContrast(Dlambda=c * CONTRAST.Dlambda, Dmu=c * CONTRAST.Dmu, Drho=c * CONTRAST.Drho)
+        a = self._run(contrast=half)
+        b = self._run(contrast_profile=lambda _p: c)
+        dirs = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [-0.6, 0.0, 0.8]])
+        k_hat, pol = np.array([1.0, 0.0, 0.0]), np.array([1.0, 0.0, 0.0])
+        for ua, ub in zip(
+            foldy_lax_far_field(a, dirs, 1e4, k_hat, pol, wave_type="P"),
+            foldy_lax_far_field(b, dirs, 1e4, k_hat, pol, wave_type="P"),
+            strict=True,
+        ):
+            _assert_close_in_norm(ub, ua, self.REL)
 
 
 class TestPackUnpack:
