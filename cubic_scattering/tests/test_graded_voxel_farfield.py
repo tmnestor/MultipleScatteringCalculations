@@ -12,9 +12,12 @@ OMEGA = 150.0
 
 
 def _exact(src, x_obs):
-    # u_i = G_ij F_j + d_k G_ij sigma_jk (source derivative d' = -d), the Green's tensor evaluated exactly
+    # u_i = G_ij F_j + d_k G_ij sigma_jk (source derivative d' = -d), the Green's tensor evaluated exactly;
+    # the source's shear entries are engineering stress 2 sigma_pq
     g, gd, _ = elastodynamic_greens_deriv(x_obs, OMEGA, REF)
-    return g @ src[:3] + np.einsum("ijk,jk->i", gd, _voigt_to_tensor(src[3:]))
+    stress = np.array(src[3:], dtype=complex)
+    stress[3:] *= 0.5
+    return g @ src[:3] + np.einsum("ijk,jk->i", gd, _voigt_to_tensor(stress))
 
 
 def test_point_force_and_dipole_far_field():
@@ -26,3 +29,21 @@ def test_point_force_and_dipole_far_field():
     for d, u in zip(dirs, up + us, strict=True):
         want = _exact(src, d * rdist)
         assert np.abs(u - want).max() / np.abs(want).max() < 1e-4
+
+
+def test_radiation_matches_the_kernel_for_every_source_component():
+    # the far field of a unit source must be the kernel's own field there: the solve uses the kernel, whose
+    # shear columns take ENGINEERING stress (2 sigma_pq: the contrast operator maps gamma to 2 dmu gamma).
+    # Radiating the shear entries as tensor sigma_pq doubled them (found 2026-09-30 as a full-contrast floor)
+    from cubic_scattering.graded_voxel.kernel import kernel_9x9
+
+    d = np.array([0.36, 0.48, 0.8])
+    d /= np.linalg.norm(d)
+    rdist = 4e6
+    p = kernel_9x9((d * rdist)[None], OMEGA, REF)[0]
+    for k in range(9):
+        s = np.zeros(9, complex)
+        s[k] = 1.0
+        up, us = radiate(np.zeros((1, 3)), s[None], OMEGA, REF, d[None], rdist)
+        rad, ker = (up + us)[0], p[:3] @ s
+        assert np.abs(rad - ker).max() / np.abs(ker).max() < 1e-4, k
