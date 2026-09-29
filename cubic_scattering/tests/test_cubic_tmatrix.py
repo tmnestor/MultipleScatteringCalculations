@@ -75,15 +75,9 @@ def test_born_limit():
     # Check amplification factors ≈ 1  (T_i ∝ Δc → 0)
     tol = 1e-4
     assert abs(result.amp_u - 1.0) < tol, f"amp_u = {result.amp_u}, expected ≈ 1"
-    assert abs(result.amp_theta - 1.0) < tol, (
-        f"amp_theta = {result.amp_theta}, expected ≈ 1"
-    )
-    assert abs(result.amp_e_off - 1.0) < tol, (
-        f"amp_e_off = {result.amp_e_off}, expected ≈ 1"
-    )
-    assert abs(result.amp_e_diag - 1.0) < tol, (
-        f"amp_e_diag = {result.amp_e_diag}, expected ≈ 1"
-    )
+    assert abs(result.amp_theta - 1.0) < tol, f"amp_theta = {result.amp_theta}, expected ≈ 1"
+    assert abs(result.amp_e_off - 1.0) < tol, f"amp_e_off = {result.amp_e_off}, expected ≈ 1"
+    assert abs(result.amp_e_diag - 1.0) < tol, f"amp_e_diag = {result.amp_e_diag}, expected ≈ 1"
 
     # Check effective contrasts ≈ bare contrasts
     assert abs(result.Drho_star - contrast.Drho) / abs(contrast.Drho) < tol, (
@@ -191,9 +185,7 @@ def test_strain_extraction():
     two_eps_zy = 1j * kz_P * uy_0 + 1j * ky * uz_0
     two_eps_xy = 1j * ky * ux_0 + 1j * kx * uy_0
 
-    strain_direct = np.array(
-        [eps_zz, eps_xx, eps_yy, two_eps_xy, two_eps_zy, two_eps_zx]
-    )
+    strain_direct = np.array([eps_zz, eps_xx, eps_yy, two_eps_xy, two_eps_zy, two_eps_zx])
 
     # Compute tractions on z=const surface
     theta = eps_zz + eps_xx + eps_yy
@@ -238,9 +230,7 @@ def test_strain_extraction():
     two_eps_zy = 1j * kz_S * uy_0 + 1j * ky * uz_0
     two_eps_xy = 1j * ky * ux_0 + 1j * kx * uy_0
 
-    strain_direct = np.array(
-        [eps_zz, eps_xx, eps_yy, two_eps_xy, two_eps_zy, two_eps_zx]
-    )
+    strain_direct = np.array([eps_zz, eps_xx, eps_yy, two_eps_xy, two_eps_zy, two_eps_zx])
 
     theta = eps_zz + eps_xx + eps_yy
     tzz_0 = lam * theta + 2 * mu * eps_zz
@@ -295,9 +285,7 @@ def test_cubic_symmetry():
     # but less than 1 for the self-consistency to converge
     ratio = abs(result.T3c) / max(abs(result.T1c), abs(result.T2c))
     print(f"  |T3|/max(|T1|,|T2|) = {ratio:.6f}")
-    assert ratio < 5.0, (
-        f"T3 seems anomalously large relative to T1,T2 (ratio = {ratio:.6f})"
-    )
+    assert ratio < 5.0, f"T3 seems anomalously large relative to T1,T2 (ratio = {ratio:.6f})"
 
     print("  Cubic symmetry: all checks passed ✓")
 
@@ -371,9 +359,7 @@ def test_effective_stiffness_symmetry():
 
     result = compute_cube_tmatrix(omega, a, ref, contrast)
 
-    Dc = effective_stiffness_voigt(
-        result.Dlambda_star, result.Dmu_star_diag, result.Dmu_star_off
-    )
+    Dc = effective_stiffness_voigt(result.Dlambda_star, result.Dmu_star_diag, result.Dmu_star_off)
 
     # Should be symmetric
     assert np.allclose(Dc, Dc.T), "Effective stiffness should be symmetric"
@@ -445,9 +431,7 @@ def test_sphere_limit():
     if abs(result.Dmu_star_off) > 1e-30:
         aniso_ratio = abs(result.cubic_anisotropy) / abs(result.Dmu_star_off)
         print(f"  |cubic_aniso / Dmu_star_off| = {aniso_ratio:.6e}")
-        assert aniso_ratio < 0.01, (
-            f"Cubic anisotropy ratio = {aniso_ratio} should be << 1 when α ≈ β"
-        )
+        assert aniso_ratio < 0.01, f"Cubic anisotropy ratio = {aniso_ratio} should be << 1 when α ≈ β"
 
     print("  Sphere limit: all checks passed ✓")
 
@@ -493,8 +477,7 @@ def test_notebook_verification():
         rel_err = abs(computed - expected) / abs(expected)
         print(f"  {name}: rel_err = {rel_err:.2e}")
         assert rel_err < tol, (
-            f"{name} mismatch: computed={computed}, expected={expected}, "
-            f"rel_err={rel_err:.2e}"
+            f"{name} mismatch: computed={computed}, expected={expected}, rel_err={rel_err:.2e}"
         )
 
     # Verify static Eshelby dominance: |Re(A)| >> |Im(A)|
@@ -564,14 +547,12 @@ def test_greens_deriv_symmetry():
 
     # Symmetry in first two indices
     for k in range(3):
-        assert np.allclose(Gd[:, :, k], Gd[:, :, k].T, atol=1e-20), (
-            f"Gd[:,:,{k}] not symmetric"
-        )
+        assert np.allclose(Gd[:, :, k], Gd[:, :, k].T, atol=1e-20), f"Gd[:,:,{k}] not symmetric"
     for k in range(3):
         for l_idx in range(3):
-            assert np.allclose(
-                Gdd[:, :, k, l_idx], Gdd[:, :, k, l_idx].T, atol=1e-20
-            ), f"Gdd[:,:,{k},{l_idx}] not symmetric"
+            assert np.allclose(Gdd[:, :, k, l_idx], Gdd[:, :, k, l_idx].T, atol=1e-20), (
+                f"Gdd[:,:,{k},{l_idx}] not symmetric"
+            )
 
 
 def test_propagator_9x9_rayleigh_limit():
@@ -724,39 +705,27 @@ def test_voigt_from_resonance_near_field():
     )
     S = strain_from_displacement_traction(kx, ky, ref)
     expected_trac = V * C_trac @ S_V @ Dc_star @ S
-    rel_err_t = np.linalg.norm(T6_res[3:, :] - expected_trac) / max(
-        np.linalg.norm(expected_trac), 1e-30
-    )
+    rel_err_t = np.linalg.norm(T6_res[3:, :] - expected_trac) / max(np.linalg.norm(expected_trac), 1e-30)
     assert rel_err_t < 1e-10, f"Traction block vs analytic: rel_err = {rel_err_t:.2e}"
 
 
 def test_incident_strain_plane_wave():
-    """_build_incident_field_coupled gives correct Voigt strain."""
-    ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
-    omega = 2.0 * np.pi * 10.0
+    """_build_incident_field_coupled gives the phase-free Taylor patterns about the centre, per cell."""
     a = 1.0
     n = 2
     centres = sub_cell_centres(a, n)
 
-    U0 = _build_incident_field_coupled(centres, omega, ref)
-    N = len(centres)
+    U0 = _build_incident_field_coupled(centres)
+    x_c = centres.mean(axis=0)
 
-    # Column 0 (displacement e_z): u=(1,0,0), strain=0 at centre
-    m_centre = N // 2
-    u_col0 = U0[9 * m_centre : 9 * m_centre + 3, 0]
-    eps_col0 = U0[9 * m_centre + 3 : 9 * m_centre + 9, 0]
-    # Phase is exp(ikz·z), displacement should be nonzero
-    assert np.abs(u_col0[0]) > 0, "u_z for col 0 should be nonzero"
-    assert np.allclose(eps_col0, 0.0), "strain for col 0 should be zero"
-
-    # Column 3 (strain ε_zz): strain should have e_0 Voigt
-    eps_col3 = U0[9 * m_centre + 3 : 9 * m_centre + 9, 3]
-    phase = U0[9 * m_centre + 3, 3]  # should be the phase value
-    expected_eps = np.zeros(6, dtype=complex)
-    expected_eps[0] = phase  # e_zz in Voigt
-    assert np.allclose(eps_col3, expected_eps, atol=1e-14), (
-        f"Strain col 3: {eps_col3} vs expected {expected_eps}"
-    )
+    for m, x in enumerate(centres):
+        blk = U0[9 * m : 9 * m + 9]
+        # Columns 0-2: uniform unit displacement, no strain
+        np.testing.assert_array_equal(blk[:3, :3], np.eye(3))
+        np.testing.assert_array_equal(blk[3:, :3], 0.0)
+        # Column 3 (unit eps_zz): u = eps . (x - x_c) = ((x - x_c)_z, 0, 0), Voigt strain e_0
+        np.testing.assert_allclose(blk[:3, 3], [x[0] - x_c[0], 0.0, 0.0], atol=1e-15)
+        np.testing.assert_array_equal(blk[3:, 3], np.eye(6)[0])
 
 
 # ================================================================
@@ -781,15 +750,9 @@ def test_galerkin_matches_path_a_moderate():
     gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
 
     # Effective contrasts should agree to within ~5%
-    np.testing.assert_allclose(
-        gk.Dlambda_star, pa.Dlambda_star, rtol=0.05, err_msg="Dlambda_star"
-    )
-    np.testing.assert_allclose(
-        gk.Dmu_star_off, pa.Dmu_star_off, rtol=0.05, err_msg="Dmu_star_off"
-    )
-    np.testing.assert_allclose(
-        gk.Dmu_star_diag, pa.Dmu_star_diag, rtol=0.05, err_msg="Dmu_star_diag"
-    )
+    np.testing.assert_allclose(gk.Dlambda_star, pa.Dlambda_star, rtol=0.05, err_msg="Dlambda_star")
+    np.testing.assert_allclose(gk.Dmu_star_off, pa.Dmu_star_off, rtol=0.05, err_msg="Dmu_star_off")
+    np.testing.assert_allclose(gk.Dmu_star_diag, pa.Dmu_star_diag, rtol=0.05, err_msg="Dmu_star_diag")
     print("  ✓ Effective contrasts match Path-A to within 5%")
 
 
@@ -799,24 +762,16 @@ def test_galerkin_matches_path_a_weak():
     ref = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
     lam_bg = ref.rho * (ref.alpha**2 - 2 * ref.beta**2)
     mu_bg = ref.rho * ref.beta**2
-    contrast = MaterialContrast(
-        Dlambda=1e-4 * lam_bg, Dmu=1e-4 * mu_bg, Drho=1e-4 * ref.rho
-    )
+    contrast = MaterialContrast(Dlambda=1e-4 * lam_bg, Dmu=1e-4 * mu_bg, Drho=1e-4 * ref.rho)
     omega = 0.05 * 3000.0 / 1.0
 
     pa = compute_cube_tmatrix(omega, 1.0, ref, contrast)
     gk = compute_cube_tmatrix_galerkin(omega, 1.0, ref, contrast)
 
     # At weak contrast, effective contrasts should agree very closely
-    np.testing.assert_allclose(
-        gk.Dlambda_star, pa.Dlambda_star, rtol=0.05, err_msg="Dlambda_star weak"
-    )
-    np.testing.assert_allclose(
-        gk.Dmu_star_off, pa.Dmu_star_off, rtol=0.05, err_msg="Dmu_star_off weak"
-    )
-    np.testing.assert_allclose(
-        gk.Dmu_star_diag, pa.Dmu_star_diag, rtol=0.05, err_msg="Dmu_star_diag weak"
-    )
+    np.testing.assert_allclose(gk.Dlambda_star, pa.Dlambda_star, rtol=0.05, err_msg="Dlambda_star weak")
+    np.testing.assert_allclose(gk.Dmu_star_off, pa.Dmu_star_off, rtol=0.05, err_msg="Dmu_star_off weak")
+    np.testing.assert_allclose(gk.Dmu_star_diag, pa.Dmu_star_diag, rtol=0.05, err_msg="Dmu_star_diag weak")
     print("  ✓ Weak contrast: effective contrasts match Path-A")
 
 
@@ -887,18 +842,10 @@ def test_galerkin_ungerade_density_only():
     ref_A2u = 2.6760421745932236e-5
     ref_Eu = 3.01087931133197e-5
 
-    np.testing.assert_allclose(
-        gk.T1u_eigenvalues, ref_T1u, rtol=1e-10, err_msg="T1u density-only"
-    )
-    np.testing.assert_allclose(
-        gk.T2u_eigenvalues, ref_T2u, rtol=1e-10, err_msg="T2u density-only"
-    )
-    np.testing.assert_allclose(
-        np.real(gk.sigma_A2u), ref_A2u, rtol=1e-10, err_msg="A2u density-only"
-    )
-    np.testing.assert_allclose(
-        np.real(gk.sigma_Eu), ref_Eu, rtol=1e-10, err_msg="Eu density-only"
-    )
+    np.testing.assert_allclose(gk.T1u_eigenvalues, ref_T1u, rtol=1e-10, err_msg="T1u density-only")
+    np.testing.assert_allclose(gk.T2u_eigenvalues, ref_T2u, rtol=1e-10, err_msg="T2u density-only")
+    np.testing.assert_allclose(np.real(gk.sigma_A2u), ref_A2u, rtol=1e-10, err_msg="A2u density-only")
+    np.testing.assert_allclose(np.real(gk.sigma_Eu), ref_Eu, rtol=1e-10, err_msg="Eu density-only")
     print("  ✓ T1u 4 eigenvalues match Mathematica (rtol=1e-10)")
     print("  ✓ T2u 2 eigenvalues match Mathematica")
     print("  ✓ A2u, Eu scalars match Mathematica")
@@ -968,9 +915,7 @@ def test_galerkin_stiffness_only():
     print(f"  ✓ T1u: {gk.T1u_eigenvalues[:-1]} + zero")
 
     # T2u: both negative
-    assert np.all(gk.T2u_eigenvalues < -1e-3), (
-        f"T2u eigenvalues should be negative: {gk.T2u_eigenvalues}"
-    )
+    assert np.all(gk.T2u_eigenvalues < -1e-3), f"T2u eigenvalues should be negative: {gk.T2u_eigenvalues}"
     print(f"  ✓ T2u: {gk.T2u_eigenvalues}")
 
     # A2u, Eu: negative scalars

@@ -65,8 +65,8 @@ class SphereDecompositionResult:
             (``contrast_profile`` of the FFT solver); ``None`` when every cell carries ``contrast``.
         psi_pw: Exciting field for the plane-wave incident basis (``_build_incident_plane_wave_basis``),
             shape (9*N, 9): the incident plane wave of polarisation p and strain eps is this basis times
-            [p, eps].  The far field uses it.  ``psi_exc`` solves the composite-T patterns instead, whose
-            strain columns also carry eps.(x - x_centre) and would count the wave's linear variation twice.
+            [p, eps].  The far field uses it.  ``psi_exc`` solves the phase-free Taylor patterns of the
+            composite T instead, which lose the wave's variation beyond first order.
     """
 
     T3x3: NDArray[np.complexfloating]
@@ -243,7 +243,7 @@ def compute_sphere_foldy_lax(
     cond_num = float(np.linalg.cond(A_mat))
 
     # Incident field: the composite-T patterns, and the plane-wave basis for the far field
-    psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
+    psi_inc = _build_incident_field_coupled(centres)
     pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
     # Solve both with one factorisation

@@ -89,7 +89,14 @@ Composite T-matrix
 
 The 9×9 composite T-matrix maps incident (displacement, strain) to
 scattered (force monopole, stress dipole).  The 3×3 displacement block
-T3x3 is the effective displacement T-matrix for the full cube.
+T3x3 is the effective displacement T-matrix for the full cube.  Its
+input columns are the phase-free Taylor patterns about the cube centre
+(uniform displacement; uniform strain with its linear displacement), so
+it is a property of the cube, independent of the incident wave.  Its
+output is the plain sum of the sub-cell sources: the first moment of the
+sub-cell forces about the centre, Σ F_n ⊗ (x_n − x_centre), is not
+included.  The far field is driven instead by the plane wave itself
+(``psi_pw``).
 
 Interface compatibility
 -----------------------
@@ -518,16 +525,11 @@ def suggest_n_subcells(
     return max(1, int(np.ceil(ka_cube / ka_threshold)))
 
 
-def _build_incident_field_coupled(
-    centres: NDArray,
-    omega: float,
-    ref: ReferenceMedium,
-    k_hat: NDArray | None = None,
-    wave_type: str = "S",
-) -> NDArray:
-    """Build the (9N, 9) incident-field matrix for the coupled system.
+def _build_incident_field_coupled(centres: NDArray) -> NDArray:
+    """Build the (9N, 9) Taylor patterns that define the composite T-matrix.
 
-    9 independent incident patterns:
+    9 independent incident patterns, the first-order Taylor expansion of any
+    incident field about the centre ``x_centre`` of the cells:
 
     - **Columns 0--2** (displacement inputs): uniform displacement
       ``u^inc(x_m) = ê_p``, ``ε^inc_V = 0``.
@@ -535,33 +537,28 @@ def _build_incident_field_coupled(
       ``u^inc(x_m) = ε⁰_tensor · (x_m − x_centre)`` plus uniform
       Voigt strain ``ε^inc_V = ê_α``.
 
-    Phase factor ``exp(i k · x_m)`` is applied to all patterns.
+    There is NO incident phase: the composite ``T_comp`` built on these
+    patterns is a property of the body, the same for every incident wave, as
+    T₉ is.  An incident phase ``exp(i k · x_m)`` on top of the linear term
+    made ``T_comp`` depend on the direction and wave type it was built with
+    (not reciprocal, with a spurious O(ka) displacement-strain coupling), and
+    combined with a plane wave's ``[p, ε]`` it counted the wave's linear
+    variation twice.  A far field needs the plane wave itself:
+    ``_build_incident_plane_wave_basis``.
 
     Args:
         centres: Sub-cell centre coordinates, shape (N, 3).
-        omega: Angular frequency (rad/s).
-        ref: Background medium.
-        k_hat: Unit propagation direction (default ẑ).
-        wave_type: ``'S'`` or ``'P'``.
 
     Returns:
         Incident-field matrix, shape (9N, 9), complex.
     """
     N = len(centres)
-    if k_hat is None:
-        k_hat = np.array([0.0, 0.0, 1.0])
-    k_hat = np.asarray(k_hat, dtype=float)
-    k_hat /= np.linalg.norm(k_hat)
-
-    k_mag = omega / (ref.beta if wave_type == "S" else ref.alpha)
-    phases = np.exp(1j * k_mag * (centres @ k_hat))  # (N,)
     x_centre = np.mean(centres, axis=0)
 
     U0 = np.zeros((9 * N, 9), dtype=complex)
     for m in range(N):
-        phase = phases[m]
         # Columns 0-2: uniform displacement, zero strain
-        U0[9 * m : 9 * m + 3, :3] = np.eye(3) * phase
+        U0[9 * m : 9 * m + 3, :3] = np.eye(3)
 
         # Columns 3-8: strain inputs
         dx = centres[m] - x_centre
@@ -575,9 +572,9 @@ def _build_incident_field_coupled(
                 eps_tensor[q, p] = 0.5
 
             # u^inc = ε⁰_tensor · (x_m − x_centre)
-            U0[9 * m : 9 * m + 3, 3 + alpha] = (eps_tensor @ dx) * phase
+            U0[9 * m : 9 * m + 3, 3 + alpha] = eps_tensor @ dx
             # Voigt strain = unit vector ê_α
-            U0[9 * m + 3 + alpha, 3 + alpha] = phase
+            U0[9 * m + 3 + alpha, 3 + alpha] = 1.0
 
     return U0
 
@@ -594,11 +591,11 @@ def _build_incident_plane_wave_basis(
     A plane wave of polarisation ``p`` and Voigt strain ``ε`` is EXACTLY this basis times ``[p, ε]``: the
     phase carries the whole spatial variation.  This is the incident field for a far field.
 
-    It differs from ``_build_incident_field_coupled`` only in the strain columns, which there also carry the
-    displacement ``ε⁰ · (x_m − x_centre)`` (the composite-T patterns).  Combined with ``[p, ε]`` for a plane
-    wave, those columns count the wave's linear variation twice, once in the phase and once in
-    ``ε · (x_m − x_centre)``: a first-order error in the far field that grows as (ka)^2 and does not fall
-    under refinement (1.1% at k_S a = 0.5 and 4.6% at 1 on a smoothly graded sphere).
+    The composite-T patterns of ``_build_incident_field_coupled`` are the Taylor expansion about the centre
+    instead, with no phase.  Driving a far field with them loses the wave's variation beyond first order;
+    they formerly carried the phase as well, and then counted the linear variation twice: a first-order
+    far-field error that grew as (ka)^2 and did not fall under refinement (1.1% at k_S a = 0.5 and 4.6% at 1
+    on a smoothly graded sphere).
 
     Args:
         centres: Sub-cell centre coordinates, shape (N, 3).
@@ -610,13 +607,17 @@ def _build_incident_plane_wave_basis(
     Returns:
         Basis matrix, shape (9N, 9), complex.
     """
+    phases = np.exp(1j * (np.asarray(centres) @ _plane_wave_k_vec(omega, ref, k_hat, wave_type)))
+    return np.kron(phases[:, None], np.eye(9, dtype=complex))
+
+
+def _plane_wave_k_vec(omega: float, ref: ReferenceMedium, k_hat: NDArray | None, wave_type: str) -> NDArray:
+    """Wave vector of the plane wave of direction ``k_hat`` (default ẑ) and type ``'S'`` or ``'P'``."""
     if k_hat is None:
         k_hat = np.array([0.0, 0.0, 1.0])
     k_hat = np.asarray(k_hat, dtype=float)
     k_hat = k_hat / np.linalg.norm(k_hat)
-    k_mag = omega / (ref.beta if wave_type == "S" else ref.alpha)
-    phases = np.exp(1j * k_mag * (np.asarray(centres) @ k_hat))
-    return np.kron(phases[:, None], np.eye(9, dtype=complex))
+    return (omega / (ref.beta if wave_type == "S" else ref.alpha)) * k_hat
 
 
 # ===========================================================================
@@ -653,6 +654,14 @@ class ResonanceTmatrixResult:
         n_iterations_converged: If a Neumann-series solve was used
             (``neumann_order > 0``), the order at which the series
             converged.  ``None`` for direct solve.
+        psi_pw: Exciting field for the plane-wave incident basis
+            (``_build_incident_plane_wave_basis``, direction ``k_hat``,
+            wave ``wave_type``), shape (9*N, 9): the incident plane wave of
+            polarisation p and strain eps is this basis times [p, eps].  The
+            far field uses it; ``psi_exc`` solves the Taylor patterns that
+            define ``T_comp_9x9``.
+        k_vec_pw: Wave vector of that plane wave, shape (3,); the far field
+            checks its incident wave against it.
     """
 
     T3x3: Complex3x3
@@ -672,6 +681,8 @@ class ResonanceTmatrixResult:
     centres: NDArray
     T_loc_9x9: NDArray
     n_iterations_converged: int | None = None
+    psi_pw: NDArray | None = None
+    k_vec_pw: NDArray | None = None
 
 
 # ===========================================================================
@@ -703,10 +714,11 @@ def compute_resonance_tmatrix(
         contrast: Material contrast.
         n_sub: Sub-cells per edge.  If ``None``, auto-selected via
             ``suggest_n_subcells`` to keep ``ka_sub < 0.3``.
-        k_hat: Unit incident propagation direction, shape (3,).
-            Default: ẑ.
-        wave_type: ``'S'`` or ``'P'`` --- determines incident-field
-            phase (default ``'S'``).
+        k_hat: Unit incident propagation direction, shape (3,), of the
+            plane wave whose exciting field ``psi_pw`` is solved for the far
+            field.  Default: ẑ.  ``T_comp_9x9`` does not depend on it.
+        wave_type: ``'S'`` or ``'P'``: the speed of that plane wave
+            (default ``'S'``).  ``T_comp_9x9`` does not depend on it.
         neumann_order: If > 0, solve via truncated Neumann series to
             this order instead of a direct (LU) solve.  Order 0 =
             direct solve only (default).
@@ -826,21 +838,26 @@ def _solve_coupled(
             stacklevel=2,
         )
 
-    # --- 9N×9 incident field ---
-    psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
+    # --- 9N×18 incident fields: the Taylor patterns of T_comp, the plane-wave basis of the far field ---
+    rhs = np.hstack(
+        [
+            _build_incident_field_coupled(centres),
+            _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type),
+        ]
+    )
 
     # --- Solve for exciting field ---
     n_iters_converged: int | None = None
     if neumann_order == 0:
-        psi_exc = np.linalg.solve(A, psi_inc)
+        sol = np.linalg.solve(A, rhs)
     else:
         B_mat = P_tilde @ T_block
-        psi_exc = psi_inc.copy()
-        term = psi_inc.copy()
+        sol = rhs.copy()
+        term = rhs.copy()
         for k in range(1, neumann_order + 1):
             term = B_mat @ term
-            psi_exc = psi_exc + term
-            rel_norm = np.linalg.norm(term) / (np.linalg.norm(psi_exc) + 1.0e-300)
+            sol = sol + term
+            rel_norm = np.linalg.norm(term) / (np.linalg.norm(sol) + 1.0e-300)
             if rel_norm < neumann_tol:
                 n_iters_converged = k
                 break
@@ -851,6 +868,8 @@ def _solve_coupled(
                 UserWarning,
                 stacklevel=2,
             )
+
+    psi_exc, psi_pw = sol[:, :9], sol[:, 9:]
 
     # --- 9×9 composite T-matrix ---
     T_comp = np.zeros((9, 9), dtype=complex)
@@ -877,6 +896,8 @@ def _solve_coupled(
         psi_exc=psi_exc,
         centres=centres,
         T_loc_9x9=T_loc,
+        psi_pw=psi_pw,
+        k_vec_pw=_plane_wave_k_vec(omega, ref, k_hat, wave_type),
     )
 
 

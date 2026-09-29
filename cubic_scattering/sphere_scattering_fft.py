@@ -363,10 +363,9 @@ def compute_sphere_foldy_lax_fft(
 
     A_op = LinearOperator((dim, dim), matvec=matvec, dtype=complex)
 
-    # Step 4: Build incident fields (9N x 9 matrices, solved column by column): the composite-T
-    # patterns, and the plane-wave basis for the far field.  Their displacement columns (0-2) are
-    # identical, so only the six strain columns of the plane-wave basis need solves of their own.
-    psi_inc = _build_incident_field_coupled(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
+    # Step 4: Build incident fields (9N x 9 matrices, solved column by column): the phase-free Taylor
+    # patterns of the composite T, and the plane-wave basis for the far field.  They share no column.
+    psi_inc = _build_incident_field_coupled(centres)
     pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
     def solve(rhs: NDArray, label: str) -> NDArray:
@@ -381,8 +380,8 @@ def compute_sphere_foldy_lax_fft(
     psi_exc = np.zeros((dim, 9), dtype=complex)
     for col in range(9):
         psi_exc[:, col] = solve(psi_inc[:, col], f"column {col}")
-    psi_pw = psi_exc.copy()
-    for col in range(3, 9):
+    psi_pw = np.zeros((dim, 9), dtype=complex)
+    for col in range(9):
         psi_pw[:, col] = solve(pw_inc[:, col], f"plane-wave column {col}")
 
     # Step 5: Extract composite T-matrix

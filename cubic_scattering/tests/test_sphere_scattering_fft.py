@@ -193,9 +193,9 @@ class TestPlaneWaveFarField:
         small = MaterialContrast(
             Dlambda=self.EPS * CONTRAST.Dlambda, Dmu=self.EPS * CONTRAST.Dmu, Drho=self.EPS * CONTRAST.Drho
         )
-        return solver(
-            self.OMEGA_HI, RADIUS, REF, small, n_sub=3, k_hat=np.array([1.0, 0.0, 0.0]), wave_type="P", **kw
-        )
+        kw.setdefault("k_hat", np.array([1.0, 0.0, 0.0]))
+        kw.setdefault("wave_type", "P")
+        return solver(self.OMEGA_HI, RADIUS, REF, small, n_sub=3, **kw)
 
     def test_far_field_is_the_plane_wave_response(self) -> None:
         """At Born order the solved far field equals the one of the plain plane wave with no scattering."""
@@ -216,10 +216,11 @@ class TestPlaneWaveFarField:
         ):
             _assert_close_in_norm(ua, ub, 1e-3)
 
-    def test_displacement_columns_are_shared(self) -> None:
-        fl = self._run(compute_sphere_foldy_lax_fft, gmres_tol=1e-12)
-        assert fl.psi_pw is not None
-        np.testing.assert_array_equal(fl.psi_pw[:, :3], fl.psi_exc[:, :3])
+    def test_composite_is_independent_of_the_incidence(self) -> None:
+        """The composite T is built on the phase-free Taylor patterns: no incident wave enters it."""
+        a = self._run(compute_sphere_foldy_lax, k_hat=np.array([1.0, 0.0, 0.0]), wave_type="P")
+        b = self._run(compute_sphere_foldy_lax, k_hat=np.array([0.0, 0.6, 0.8]), wave_type="S")
+        _assert_close_in_norm(b.T_comp_9x9, a.T_comp_9x9, 1e-12)
 
     def test_dense_and_fft_agree(self) -> None:
         a = self._run(compute_sphere_foldy_lax)

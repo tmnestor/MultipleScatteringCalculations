@@ -22,10 +22,13 @@ along with the normal-shear block that decides whether they can differ.
     precision.  This is the T0 the directional-sweep solver carries.
 
 [C] RESONANCE COMPOSITE.  compute_resonance_tmatrix(...).T_comp_9x9 =
-    sum_n T_loc psi_exc[n] carries the incident plane-wave phase on its INPUT
-    side and no phase on its OUTPUT side, and depends on k_hat.  It is not a
-    field-independent operator, so it cannot be reciprocal.  REPORTED, not
-    asserted: the adjoint must not be built on it as it stands.
+    sum_n T_loc psi_exc[n], with psi_exc solved for the phase-free Taylor
+    patterns about the cube centre, so it is a field-independent operator.
+    Asserted to machine precision.  As first built its patterns also carried
+    the incident plane-wave phase: it depended on k_hat and failed this law by
+    1.6e-2 (ka_S 0.5) and 1.7e-1 (ka_S 1.2, oblique), the calibration that
+    shows the check can fail.  Its output omits the first moment of the
+    sub-cell forces, which this law cannot see (that term is symmetric).
 
 Run: conda run -n seismic python scripts/gate_t0_reciprocity.py
 """
@@ -75,7 +78,7 @@ def report(tag: str, res: dict[str, float]) -> None:
 
 
 def main() -> int:
-    """Run [R] (asserted) and [C] (reported)."""
+    """Run [R] and [C], both asserted."""
     ref = ReferenceMedium(alpha=5.0, beta=3.0, rho=2.5)
     con = MaterialContrast(Dlambda=2.0, Dmu=1.0, Drho=0.1)
     a = 0.5
@@ -88,17 +91,20 @@ def main() -> int:
         report(f"[R] Rayleigh cube, ka_S = {ka}", res)
         ok &= res["T0 W^-1 symmetric (required)"] < TOL
 
+    ok_c = True
     oblique = np.array([0.3, 0.5, 0.81])
     for ka, khat in ((0.5, None), (1.2, oblique / np.linalg.norm(oblique))):
         omega = ka * ref.beta / a
         res_c = compute_resonance_tmatrix(omega, a, ref, con, n_sub=3, k_hat=khat)
         direction = "z-hat" if khat is None else "oblique"
         tag = f"[C] Resonance composite, n_sub = 3, ka_S = {ka}, k_hat {direction}"
-        report(tag, measure(res_c.T_comp_9x9))
+        res = measure(res_c.T_comp_9x9)
+        report(tag, res)
+        ok_c &= res["T0 W^-1 symmetric (required)"] < TOL
 
     print("\n[R] PASS" if ok else "\n[R] FAIL")
-    print("[C] reported only: the composite is incidence-dependent and not an operator")
-    return 0 if ok else 1
+    print("[C] PASS" if ok_c else "[C] FAIL")
+    return 0 if ok and ok_c else 1
 
 
 if __name__ == "__main__":

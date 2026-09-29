@@ -247,12 +247,16 @@ def resonance_far_field(
     including force monopole and stress dipole with inter-cell phase factors.
     Converges to `cube_far_field` (T27) in the Rayleigh limit as n_sub → ∞.
 
-    The ``ResonanceTmatrixResult`` must have been computed with a ``wave_type``
-    matching the incident wave (``'P'`` or ``'S'``).
+    The per-cell exciting field is ``res.psi_pw``, solved for the plane wave
+    itself, so the ``ResonanceTmatrixResult`` must have been computed with the
+    ``k_hat`` and ``wave_type`` of the incident wave; a mismatch with ``k_vec``
+    raises.  The composite-T columns ``psi_exc`` cannot stand in: they are the
+    Taylor patterns about the centre and lose the wave's variation beyond
+    first order.
 
     Parameters
     ----------
-    res : Resonance T-matrix result (must include psi_exc, centres, T_loc_9x9).
+    res : Resonance T-matrix result (must include psi_pw, k_vec_pw, centres, T_loc_9x9).
     theta : Scattering angle(s) from forward direction.
     ref : Background medium.
     contrast : Material contrast (unused; stiffness is baked into T_loc_9x9).
@@ -286,10 +290,23 @@ def resonance_far_field(
     # Sub-cell data from result
     N = res.n_sub**3
     centres = res.centres
-    psi_exc = res.psi_exc
+    psi_exc = res.psi_pw
+    if psi_exc is None or res.k_vec_pw is None:
+        raise ValueError(
+            "resonance_far_field: the result has no psi_pw, the exciting field of the plane wave.  "
+            "The composite-T columns psi_exc cannot stand in for it: they are the Taylor patterns about "
+            "the cube centre and lose the wave's variation beyond first order.  Recompute the result with "
+            "compute_resonance_tmatrix, which returns psi_pw and k_vec_pw."
+        )
+    if not np.allclose(res.k_vec_pw, k_vec, rtol=1e-12, atol=1e-12 * np.linalg.norm(k_vec)):
+        raise ValueError(
+            f"resonance_far_field: the result was solved for the plane wave k = {res.k_vec_pw}, but the "
+            f"incident wave is k_vec = {k_vec}.  Recompute it with compute_resonance_tmatrix(..., "
+            "k_hat=k_vec / |k_vec|, wave_type='P' or 'S' to match |k_vec|)."
+        )
     T_loc = res.T_loc_9x9
 
-    # Precompute per-cell scattered sources: source_n = T_loc @ psi_exc_n @ inc_vec
+    # Precompute per-cell scattered sources: source_n = T_loc @ psi_pw_n @ inc_vec
     sources = np.zeros((N, 9), dtype=complex)
     for n in range(N):
         psi_n = psi_exc[9 * n : 9 * n + 9, :] @ inc_vec
