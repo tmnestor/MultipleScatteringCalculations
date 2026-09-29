@@ -126,11 +126,14 @@ If[! MemberQ[$ScriptCommandLine, "--export-only"],
 (* (a) the k = 2 identity on a smooth kernel: <x0, d_0 d_1 exp(-r^2) y1> *)
 Module[{ibp, brute, sm = Exp[-rT^2]},
   ibp = ibp2[xs[[1]], ys[[2]], 1, 2, cube, cube, sm];
-  (* NIntegrate needs plain symbols as variables, not xs[[i]] *)
-  brute = With[{a0 = xs[[1]], a1 = xs[[2]], a2 = xs[[3]], b0 = ys[[1]], b1 = ys[[2]], b2 = ys[[3]],
-      ig = (xs[[1]] ys[[2]] D[sm, t0, t1]) /. Thread[tt -> xs - ys]},
-    NIntegrate[ig, {a0, -1, 1}, {a1, -1, 1}, {a2, -1, 1}, {b0, -1, 1}, {b1, -1, 1}, {b2, -1, 1},
-      WorkingPrecision -> 20, PrecisionGoal -> 12]];
+  (* the reference is EXACT: exp(-r^2) factorises, so the 6-D integral is a product of three 2-D ones,
+     each in closed form (a 6-D NIntegrate reached only ~1e-6) *)
+  brute = Module[{u, v, g1d},
+    g1d[w_] := Exp[-w^2];
+    Integrate[u D[g1d[u - v], u], {u, -1, 1}, {v, -1, 1}]
+    * Integrate[v D[g1d[u - v], u], {u, -1, 1}, {v, -1, 1}]
+    * Integrate[g1d[u - v], {u, -1, 1}, {v, -1, 1}]];
+  Print["      exact reference ", N[brute, 25], ", IBP ", N[ibp, 20]];
   Print["  [a] IBP identity on exp(-r^2): rel ", sci[ibp/brute - 1], "  ", chk[Abs[ibp/brute - 1] < 10^-10]]];
 If[MemberQ[$ScriptCommandLine, "--gate-a"], Exit[If[And @@ oks, 0, 1]]];
 
