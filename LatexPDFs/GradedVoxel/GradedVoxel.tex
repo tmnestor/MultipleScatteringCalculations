@@ -75,7 +75,7 @@ whose contrast falls smoothly to zero at its surface, against its exact solution
 converges at fourth order (apparent orders $4.01$ and $4.13$) where uniform-field voxels converge at
 second. At full contrast the error is $42$ to $66$ times below the collocation voxel at the same cell size.
 There the dense solve, limited here to $8$ cells across, reaches apparent orders $3.35$ and $3.40$; the
-multiple-scattering term alone, taken to $12$ cells across, rises to $3.65$ and fits fourth order with a
+multiple-scattering term alone, taken to $12$ cells across, rises to $3.65$ and $3.67$ and fits fourth order with a
 negative fifth-order correction. The
 far-field extraction must treat the engineering shear stress of the source consistently with the
 coupling kernel; a factor of two there is invisible at Born order along a cell axis and appears as an
@@ -311,12 +311,15 @@ is $3.35$ and $3.40$: below four, and rising. The part of the error that multipl
 carried by the second-order Born term $T_2$ (one application of the coupling). Computed on its own, which
 needs no solve and so reaches finer grids, its apparent order at $k_Sa=0.5$ rises through $2.85$, $3.40$,
 $3.52$ and $3.65$ from $n=4$ to $12$ (errors $4.1\times10^{-2}$ to $1.1\times10^{-3}$ of $T_2$;
-\path{scripts/measure_graded_voxel_t2.py}). A least-squares fit of $Ah^4+Bh^5$ matches all five to $1.1\%$
-with $B/A=-2.6$ (in units of the cube's half-width); $Ah^4\log(L/h)$ matches to $5.5\%$, and an $h^3$
-admixture matches only to $12\%$ and would make the apparent order fall. The data are therefore consistent
-with fourth order and a negative fifth-order correction; they do not establish it, and $T_2$ has not
-been taken past $n=6$ at $k_Sa=1$. The dense solve used here is limited by memory to $n=8$; an FFT
-matrix-vector product would take the full solve further.
+\path{scripts/measure_graded_voxel_t2.py}). With $h=1/n$ (the cell half-width in units of the sphere's
+radius), a least-squares fit of $Ah^4+Bh^5$ matches all five to $1.1\%$ with $B/A=-2.6$; $Ah^4\log(L/h)$
+matches to $5.5\%$, and an $h^3$ admixture matches only to $12\%$ and would make the apparent order fall.
+At $k_Sa=1$ the sequence is almost the same: apparent orders $2.88$, $3.42$, $3.54$, $3.67$ (errors
+$4.2\times10^{-2}$ to $1.1\times10^{-3}$), fitted to $0.9\%$ with $B/A=-2.55$. The correction does not
+depend on the frequency, which points to the cell geometry rather than the wave. The data are therefore
+consistent with fourth order and a negative fifth-order correction; they do not establish it. The dense
+solve used here is limited by memory to $n=8$; an FFT matrix-vector product would take the full solve
+further.
 
 \begin{table}[ht]
 \centering\small
