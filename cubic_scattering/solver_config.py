@@ -59,10 +59,7 @@ class DeviceConfig:
             return get_device()
         if self.backend == "mps":
             if not torch.backends.mps.is_available():
-                msg = (
-                    "MPS backend requested but not available. "
-                    "Requires Apple Silicon with macOS 12.3+."
-                )
+                msg = "MPS backend requested but not available. Requires Apple Silicon with macOS 12.3+."
                 raise ValueError(msg)
             return torch.device("mps")
         if self.backend == "cuda":
@@ -93,9 +90,7 @@ class DeviceConfig:
             return torch.complex64
         if self.dtype == "complex128":
             return torch.complex128
-        msg = (
-            f"Invalid dtype '{self.dtype}'. Valid options: auto, complex64, complex128."
-        )
+        msg = f"Invalid dtype '{self.dtype}'. Valid options: auto, complex64, complex128."
         raise ValueError(msg)
 
 
@@ -264,9 +259,7 @@ def validate_config(config: ScatteringConfig) -> None:
     """
     # Validate problem type
     if config.problem.type not in ("slab", "sphere"):
-        msg = (
-            f"Invalid problem type '{config.problem.type}'. Must be 'slab' or 'sphere'."
-        )
+        msg = f"Invalid problem type '{config.problem.type}'. Must be 'slab' or 'sphere'."
         raise ValueError(msg)
 
     # Validate reference medium
@@ -288,8 +281,7 @@ def validate_config(config: ScatteringConfig) -> None:
     for key in ("Dlambda", "Dmu", "Drho"):
         if key not in contrast:
             msg = (
-                f"Missing 'problem.contrast.{key}'. "
-                f"Required fields: Dlambda (Pa), Dmu (Pa), Drho (kg/m³)."
+                f"Missing 'problem.contrast.{key}'. Required fields: Dlambda (Pa), Dmu (Pa), Drho (kg/m³)."
             )
             raise ValueError(msg)
 
@@ -298,10 +290,7 @@ def validate_config(config: ScatteringConfig) -> None:
         msg = "Missing 'problem.frequency.omega'. Must be a positive float (rad/s)."
         raise ValueError(msg)
     if float(config.problem.frequency["omega"]) <= 0:
-        msg = (
-            f"problem.frequency.omega must be positive, "
-            f"got {config.problem.frequency['omega']}"
-        )
+        msg = f"problem.frequency.omega must be positive, got {config.problem.frequency['omega']}"
         raise ValueError(msg)
 
     # Validate geometry
@@ -324,51 +313,33 @@ def validate_config(config: ScatteringConfig) -> None:
         msg = f"Invalid wave_type '{inc['wave_type']}'. Must be 'P' or 'S'."
         raise ValueError(msg)
     if "k_hat" not in inc:
-        msg = (
-            "Missing 'problem.incident.k_hat'. "
-            "Must be a 3-element list [z, x, y] direction."
-        )
+        msg = "Missing 'problem.incident.k_hat'. Must be a 3-element list [z, x, y] direction."
         raise ValueError(msg)
 
     # Validate solver
     if config.solver.initial_guess not in ("born", "zero"):
-        msg = (
-            f"Invalid initial_guess '{config.solver.initial_guess}'. "
-            f"Must be 'born' or 'zero'."
-        )
+        msg = f"Invalid initial_guess '{config.solver.initial_guess}'. Must be 'born' or 'zero'."
         raise ValueError(msg)
 
     # Validate device
     valid_backends = ("auto", "mps", "cuda", "cpu")
     if config.device.backend not in valid_backends:
-        msg = (
-            f"Invalid backend '{config.device.backend}'. "
-            f"Valid options: {', '.join(valid_backends)}."
-        )
+        msg = f"Invalid backend '{config.device.backend}'. Valid options: {', '.join(valid_backends)}."
         raise ValueError(msg)
 
     valid_dtypes = ("auto", "complex64", "complex128")
     if config.device.dtype not in valid_dtypes:
-        msg = (
-            f"Invalid dtype '{config.device.dtype}'. "
-            f"Valid options: {', '.join(valid_dtypes)}."
-        )
+        msg = f"Invalid dtype '{config.device.dtype}'. Valid options: {', '.join(valid_dtypes)}."
         raise ValueError(msg)
 
     # Sphere-specific validation
     if config.problem.type == "sphere":
         sp = config.problem.sphere
         if sp is None:
-            msg = (
-                "Problem type 'sphere' requires a 'sphere' section "
-                "with 'radius' and 'n_sub'."
-            )
+            msg = "Problem type 'sphere' requires a 'sphere' section with 'radius' and 'n_sub'."
             raise ValueError(msg)
         if "radius" not in sp or "n_sub" not in sp:
-            msg = (
-                "Sphere config requires 'radius' (m) and 'n_sub' (int). "
-                f"Got keys: {list(sp.keys())}"
-            )
+            msg = f"Sphere config requires 'radius' (m) and 'n_sub' (int). Got keys: {list(sp.keys())}"
             raise ValueError(msg)
 
 

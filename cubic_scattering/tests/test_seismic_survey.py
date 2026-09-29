@@ -61,16 +61,12 @@ class TestGhostOperators:
 
     def test_receiver_ghost_zero_depth_hydrophone(self):
         """Zero receiver depth gives 2.0 for hydrophone (pressure doubling)."""
-        g = receiver_ghost(
-            OMEGA, P_VALS, z_r=0.0, alpha=WATER_ALPHA, receiver_type="hydrophone"
-        )
+        g = receiver_ghost(OMEGA, P_VALS, z_r=0.0, alpha=WATER_ALPHA, receiver_type="hydrophone")
         np.testing.assert_allclose(g, 2.0, atol=1e-14)
 
     def test_receiver_ghost_zero_depth_geophone(self):
         """Zero receiver depth gives 0 for geophone (velocity cancels)."""
-        g = receiver_ghost(
-            OMEGA, P_VALS, z_r=0.0, alpha=WATER_ALPHA, receiver_type="geophone"
-        )
+        g = receiver_ghost(OMEGA, P_VALS, z_r=0.0, alpha=WATER_ALPHA, receiver_type="geophone")
         np.testing.assert_allclose(g, 0.0, atol=1e-14)
 
     def test_ghost_notch_frequency(self):
@@ -86,12 +82,8 @@ class TestGhostOperators:
     def test_hydrophone_vs_geophone_polarity(self):
         """Hydrophone and geophone ghosts have opposite sign convention."""
         z = 8.0
-        gh = receiver_ghost(
-            OMEGA, P_VALS, z_r=z, alpha=WATER_ALPHA, receiver_type="hydrophone"
-        )
-        gg = receiver_ghost(
-            OMEGA, P_VALS, z_r=z, alpha=WATER_ALPHA, receiver_type="geophone"
-        )
+        gh = receiver_ghost(OMEGA, P_VALS, z_r=z, alpha=WATER_ALPHA, receiver_type="hydrophone")
+        gg = receiver_ghost(OMEGA, P_VALS, z_r=z, alpha=WATER_ALPHA, receiver_type="geophone")
         # At normal incidence: hydrophone = 1+exp, geophone = 1-exp
         # Sum = 2, so hydrophone + geophone = 2 at all frequencies
         np.testing.assert_allclose(gh + gg, 2.0, atol=1e-12)
@@ -376,9 +368,7 @@ class TestBuildSurveyStack:
             water_alpha=1480.0,
             water_rho=1030.0,
         )
-        stack = build_survey_stack(
-            survey, [], IsotropicLayer(HS_ALPHA, HS_BETA, HS_RHO, np.inf)
-        )
+        stack = build_survey_stack(survey, [], IsotropicLayer(HS_ALPHA, HS_BETA, HS_RHO, np.inf))
         water = stack.layers[0]
         assert isinstance(water, FluidLayer)
         assert water.alpha == 1480.0

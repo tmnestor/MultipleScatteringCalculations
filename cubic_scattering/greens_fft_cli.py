@@ -244,9 +244,7 @@ def aliasing_error_bound(N, kmax, dz, omega, rho, alpha, beta, x=0, y=0):
     remainder = 0.0
     for n in range(3, 20):
         r_ring = n * L
-        ring_contrib = (
-            8 * n * np.exp(-im_kS * r_ring) / (4 * np.pi * rho * beta**2 * r_ring)
-        )
+        ring_contrib = 8 * n * np.exp(-im_kS * r_ring) / (4 * np.pi * rho * beta**2 * r_ring)
         remainder += ring_contrib
         if ring_contrib / (image_sum + 1e-30) < 1e-10:
             break
@@ -261,9 +259,7 @@ def compute_error_bounds(N, kmax, dz, omega, rho, alpha, beta):
 
     Returns dict with all computed quantities.
     """
-    trunc_num, trunc_ana, G_mag = truncation_error_bound(
-        kmax, dz, omega, rho, alpha, beta
-    )
+    trunc_num, trunc_ana, G_mag = truncation_error_bound(kmax, dz, omega, rho, alpha, beta)
     alias_abs, L, _ = aliasing_error_bound(N, kmax, dz, omega, rho, alpha, beta)
 
     p = kmax * dz
@@ -301,13 +297,9 @@ def compute_error_bounds(N, kmax, dz, omega, rho, alpha, beta):
 def print_error_bounds(bounds):
     """Pretty-print error bound results."""
     b = bounds
-    print(
-        f"  Grid:      N={b['N']},  kmax={b['kmax']:.1f},  dk={b['dk']:.4f},  dx={b['dx']:.6f}"
-    )
+    print(f"  Grid:      N={b['N']},  kmax={b['kmax']:.1f},  dk={b['dk']:.4f},  dx={b['dx']:.6f}")
     print(f"  Spatial period:  L = {b['L']:.4f}")
-    print(
-        f"  Propagation:     Δz = {b['dz']},  kmax·Δz = {b['p']:.2f},  kS·Δz = {b['kS_dz']:.4f}"
-    )
+    print(f"  Propagation:     Δz = {b['dz']},  kmax·Δz = {b['p']:.2f},  kS·Δz = {b['kS_dz']:.4f}")
     print(f"  |G_onaxis| = {b['G_mag']:.4e}")
     print()
     print("  TRUNCATION (kH > kmax omitted):")
@@ -354,9 +346,7 @@ def run_bounds(args, omega):
     """Compute and display error bounds only (no FFT)."""
     print("Computing error bounds...")
     print()
-    bounds = compute_error_bounds(
-        args.N, args.kmax, args.z, omega, args.rho, args.alpha, args.beta
-    )
+    bounds = compute_error_bounds(args.N, args.kmax, args.z, omega, args.rho, args.alpha, args.beta)
     print_error_bounds(bounds)
 
     if args.sweep:
@@ -389,9 +379,7 @@ def run_bounds(args, omega):
                 dk = 2.0 * kmax / N
                 if dk > 2.0:
                     continue
-                b = compute_error_bounds(
-                    N, kmax, dz, omega, args.rho, args.alpha, args.beta
-                )
+                b = compute_error_bounds(N, kmax, dz, omega, args.rho, args.alpha, args.beta)
                 print(
                     f"  {N:5d}  {kmax:6.0f}  {dk:8.4f}  {b['p']:8.2f}  "
                     f"{b['rel_trunc_num']:10.2e}  {b['rel_alias']:10.2e}  "
@@ -507,9 +495,7 @@ def run_single_component(args, omega):
     else:
         test_pts = [(0.0, 0.0), (0.3, 0.4), (1.0, 0.5)]
 
-    print(
-        f"\n{'Point':>20s}  {'grid':>22s}  {'FFT':>26s}  {'exact':>26s}  {'err':>10s}"
-    )
+    print(f"\n{'Point':>20s}  {'grid':>22s}  {'FFT':>26s}  {'exact':>26s}  {'err':>10s}")
     print("─" * 110)
     for pt in test_pts:
         ix = nearest_grid_index(x_grid, pt[0])
@@ -518,12 +504,9 @@ def run_single_component(args, omega):
         G_ex = exact_greens(xv, yv, z, omega, rho_v, alpha_v, beta_v)
         fft_val = comp[ix, iy]
         ex_val = G_ex[ci, cj]
-        err = (
-            abs(fft_val - ex_val) / abs(ex_val) if abs(ex_val) > 1e-20 else float("nan")
-        )
+        err = abs(fft_val - ex_val) / abs(ex_val) if abs(ex_val) > 1e-20 else float("nan")
         print(
-            f"  ({pt[0]:6.3f},{pt[1]:6.3f})  ({xv:9.5f},{yv:9.5f})  "
-            f"{fft_val:.8e}  {ex_val:.8e}  {err:.2e}"
+            f"  ({pt[0]:6.3f},{pt[1]:6.3f})  ({xv:9.5f},{yv:9.5f})  {fft_val:.8e}  {ex_val:.8e}  {err:.2e}"
         )
 
     if args.save:
@@ -670,24 +653,14 @@ Examples:
         """,
     )
 
-    p.add_argument(
-        "--z", type=float, required=True, help="Vertical separation (must be > 0)"
-    )
+    p.add_argument("--z", type=float, required=True, help="Vertical separation (must be > 0)")
     p.add_argument("--N", type=int, default=2048, help="Grid size (default: 2048)")
-    p.add_argument(
-        "--kmax", type=float, default=None, help="Wavenumber truncation (default: auto)"
-    )
+    p.add_argument("--kmax", type=float, default=None, help="Wavenumber truncation (default: auto)")
     p.add_argument("--rho", type=float, default=3.0, help="Density (default: 3.0)")
-    p.add_argument(
-        "--alpha", type=float, default=5.0, help="P-wave speed (default: 5.0)"
-    )
-    p.add_argument(
-        "--beta", type=float, default=3.0, help="S-wave speed (default: 3.0)"
-    )
+    p.add_argument("--alpha", type=float, default=5.0, help="P-wave speed (default: 5.0)")
+    p.add_argument("--beta", type=float, default=3.0, help="S-wave speed (default: 3.0)")
     p.add_argument("--omega", type=float, default=None, help="Real ω (default: 2π)")
-    p.add_argument(
-        "--eta", type=float, default=0.03, help="Im(ω)/Re(ω) (default: 0.03)"
-    )
+    p.add_argument("--eta", type=float, default=0.03, help="Im(ω)/Re(ω) (default: 0.03)")
     p.add_argument("--sweep", action="store_true", help="Convergence sweep")
     p.add_argument("--bounds", action="store_true", help="Error bounds only (no FFT)")
     p.add_argument("--component", type=str, default=None, help="Single component i,j")

@@ -264,8 +264,7 @@ def spectral_greens(kx, ky, kz, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
             # Correct form derived from Eq (1.39a) partial fractions,
             # verified to be consistent with the kz residue baseline:
             G[i, j] = (1.0 / mu) * (
-                dij / (xi2 - kS2)
-                + xi[i] * xi[j] / kS2 * (1.0 / (xi2 - kP2) - 1.0 / (xi2 - kS2))
+                dij / (xi2 - kS2) + xi[i] * xi[j] / kS2 * (1.0 / (xi2 - kP2) - 1.0 / (xi2 - kS2))
             )
     return G
 
@@ -420,9 +419,7 @@ def post_kx_residue_kernel(ky, kz, dx, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=B
 # ═══════════════════════════════════════════════════════════════
 #  Numerical kx integral (for verification)
 # ═══════════════════════════════════════════════════════════════
-def numerical_kx_integral(
-    ky, kz, dx, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA, kx_max=80, nkx=8192
-):
+def numerical_kx_integral(ky, kz, dx, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA, kx_max=80, nkx=8192):
     """
     Direct numerical integration of the kx integral:
       G_ik = (1/2π) ∫ G̃_ik(kx, ky, kz) exp(ikx Δx) dkx
@@ -443,9 +440,7 @@ def numerical_kx_integral(
 # ═══════════════════════════════════════════════════════════════
 #  Full 2D (ky, kz) integral after kx residue → spatial G
 # ═══════════════════════════════════════════════════════════════
-def spectral_2d_integral_kx(
-    dx, dy, dz, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA, kmax=25, nk=256
-):
+def spectral_2d_integral_kx(dx, dy, dz, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA, kmax=25, nk=256):
     """
     After kx residue, compute:
       G_ik(Δx, Δy, Δz) = (1/(2π)²) ∫∫ Ĝ_ik(ky, kz; Δx) exp(i(ky Δy + kz Δz)) dky dkz
@@ -526,9 +521,7 @@ def main():
             G_exact = exact_greens(dx, dy, dz)
 
             err = np.linalg.norm(G_spec - G_exact) / np.linalg.norm(G_exact)
-            print(
-                f"  Δx={dx:5.2f}, Δy={dy:5.2f}, Δz={dz:5.2f}  →  Frob err = {err:.4e}"
-            )
+            print(f"  Δx={dx:5.2f}, Δy={dy:5.2f}, Δz={dz:5.2f}  →  Frob err = {err:.4e}")
 
     print()
 
@@ -540,9 +533,7 @@ def main():
     G_exact = exact_greens(dx, dy, dz)
 
     print(f"  Point: ({dx}, {dy}, {dz})")
-    print(
-        f"  Frobenius error: {np.linalg.norm(G_spec - G_exact) / np.linalg.norm(G_exact):.4e}"
-    )
+    print(f"  Frobenius error: {np.linalg.norm(G_spec - G_exact) / np.linalg.norm(G_exact):.4e}")
     print()
     for i in range(3):
         for j in range(3):

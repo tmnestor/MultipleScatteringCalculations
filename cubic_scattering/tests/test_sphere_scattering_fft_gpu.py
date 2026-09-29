@@ -102,9 +102,7 @@ class TestMatvecGPU:
 
         assert_allclose(to_numpy(result_gpu), result_cpu, rtol=1e-10)
 
-    @pytest.mark.skipif(
-        not torch.backends.mps.is_available(), reason="MPS not available"
-    )
+    @pytest.mark.skipif(not torch.backends.mps.is_available(), reason="MPS not available")
     def test_matches_cpu_on_mps(self, sphere_setup):
         """GPU matvec on MPS should match CPU (float32 tolerance)."""
         grid_idx, _, _, nC, nP, _, kernel_hat = sphere_setup

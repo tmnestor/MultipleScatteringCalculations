@@ -27,11 +27,7 @@ import numpy as np
 import pytest
 import scipy.special as sp
 
-REF_JSON = (
-    Path(__file__).resolve().parents[2]
-    / "Mathematica"
-    / "IntraPlaneTranslation_reference.json"
-)
+REF_JSON = Path(__file__).resolve().parents[2] / "Mathematica" / "IntraPlaneTranslation_reference.json"
 
 
 # --------------------------------------------------------------------------- helpers
@@ -61,9 +57,7 @@ def angles(v: np.ndarray):
 
 @pytest.fixture(scope="module")
 def ref():
-    assert REF_JSON.exists(), (
-        f"missing reference JSON: {REF_JSON} (run IntraPlaneTranslation.wl first)"
-    )
+    assert REF_JSON.exists(), f"missing reference JSON: {REF_JSON} (run IntraPlaneTranslation.wl first)"
     return json.loads(REF_JSON.read_text())
 
 
@@ -103,9 +97,7 @@ def proj_beta(n, m, nu, mu, k, rho, grid):
     """beta by projecting the outgoing multipole (about A) onto Y_nu^mu on a sphere
     about B (origin); exact and independent of the closed form."""
     f = hn(n, k * grid["r_src"]) * ynm(n, m, grid["th_src"], grid["ph_src"])
-    integrand = (
-        grid["weight"] * f * np.conj(ynm(nu, mu, grid["th_tgt"], grid["ph_tgt"]))
-    )
+    integrand = grid["weight"] * f * np.conj(ynm(nu, mu, grid["th_tgt"], grid["ph_tgt"]))
     return integrand.sum() / jn(nu, k * rho)
 
 
@@ -150,13 +142,7 @@ def test_closedform_matches_mathematica(ref):
             g = gaunt(n, m, nu, -mu, q, mu - m)
             if g == 0.0:
                 continue
-            tot += (
-                (1j) ** (nu + q - n)
-                * (-1.0) ** q
-                * hn(q, k * dl)
-                * ynm(q, m - mu, thd, phd)
-                * g
-            )
+            tot += (1j) ** (nu + q - n) * (-1.0) ** q * hn(q, k * dl) * ynm(q, m - mu, thd, phd) * g
         return 4 * np.pi * (-1.0) ** m * tot
 
     dvec = np.array(ref["dvec"], float)
@@ -192,9 +178,7 @@ def test_python_field_reconstruction(ref):
     betas = {}
     for nu in range(nmax + 1):
         for mu in range(-nu, nu + 1):
-            betas[(nu, mu)] = proj_beta(
-                0, 0, nu, mu, k, rho_proj, grid
-            )  # source (n,m)=(0,0)
+            betas[(nu, mu)] = proj_beta(0, 0, nu, mu, k, rho_proj, grid)  # source (n,m)=(0,0)
     worst = 0.0
     for p in pts:
         lhs = hn(0, k * np.linalg.norm(p - dvec)) * ynm(0, 0, *angles(p - dvec)[1:])
@@ -203,7 +187,5 @@ def test_python_field_reconstruction(ref):
         for (nu, mu), b in betas.items():
             rhs += b * jn(nu, k * r_b) * ynm(nu, mu, th_b, ph_b)
         worst = max(worst, abs(lhs - rhs))
-    print(
-        f"\n  Python field-reconstruction residual (monopole source, {len(pts)} pts) = {worst:.3e}"
-    )
+    print(f"\n  Python field-reconstruction residual (monopole source, {len(pts)} pts) = {worst:.3e}")
     assert worst < 1e-7

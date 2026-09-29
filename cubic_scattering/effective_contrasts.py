@@ -346,9 +346,7 @@ def _compute_taylor_coefficients(
     return phi, psi
 
 
-def _compute_cube_moments(
-    a: float, n_max: int
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _compute_cube_moments(a: float, n_max: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute exact monomial moments of the cube [-a,a]³.
 
@@ -385,9 +383,7 @@ def _compute_cube_moments(
     return S0, S1, S2, S11
 
 
-def _static_eshelby_ABC(
-    alpha: float, beta: float, rho: float
-) -> tuple[complex, complex, complex]:
+def _static_eshelby_ABC(alpha: float, beta: float, rho: float) -> tuple[complex, complex, complex]:
     """
     Static Eshelby depolarization tensor for a cube: A_stat, B_stat, C_stat.
 
@@ -491,9 +487,7 @@ def _compute_ABC_polynomial(
     C_smooth = complex(0)
     if N > 2:
         nn = n_idx[2:]
-        C_smooth += np.sum(
-            4 * nn * (nn - 1) * psi[2:] * (S2[: N - 2] - 3 * S11[: N - 2])
-        )
+        C_smooth += np.sum(4 * nn * (nn - 1) * psi[2:] * (S2[: N - 2] - 3 * S11[: N - 2]))
 
     # ── Full = static + smooth ──
     return A_stat + A_smooth, B_stat + B_smooth, C_stat + C_smooth
@@ -517,8 +511,7 @@ def _compute_T123(
     def I_tens(i, j, k, l):
         """I_{ijkl} = Ac δ_{ij}δ_{kl} + Bc(δ_{ik}δ_{jl}+δ_{il}δ_{jk}) + Cc E_{ijkl}."""
         iso = Ac * (1 if i == j else 0) * (1 if k == l else 0) + Bc * (
-            (1 if i == k else 0) * (1 if j == l else 0)
-            + (1 if i == l else 0) * (1 if j == k else 0)
+            (1 if i == k else 0) * (1 if j == l else 0) + (1 if i == l else 0) * (1 if j == k else 0)
         )
         cubic = Cc * (1 if i == j == k == l else 0)
         return iso + cubic
@@ -528,14 +521,11 @@ def _compute_T123(
 
     def Dc(j, k, l, p):
         return Dlambda * (1 if j == k else 0) * (1 if l == p else 0) + Dmu * (
-            (1 if j == l else 0) * (1 if k == p else 0)
-            + (1 if j == p else 0) * (1 if k == l else 0)
+            (1 if j == l else 0) * (1 if k == p else 0) + (1 if j == p else 0) * (1 if k == l else 0)
         )
 
     def T_tens(m, n, l, p):
-        return sum(
-            S_tens(m, n, j, k) * Dc(j, k, l, p) for j in range(3) for k in range(3)
-        )
+        return sum(S_tens(m, n, j, k) * Dc(j, k, l, p) for j in range(3) for k in range(3))
 
     T1c = T_tens(0, 0, 1, 1)
     T2c = T_tens(0, 1, 0, 1)
@@ -587,9 +577,7 @@ def _compute_effective_contrasts(
     Drho_star = Drho * amp_u
     Dmu_star_off = Dmu * amp_e_off
     Dmu_star_diag = Dmu * amp_e_diag
-    Dlambda_star = (
-        Dlambda + 2.0 / 3.0 * Dmu
-    ) * amp_theta - 2.0 / 3.0 * Dmu * amp_e_diag
+    Dlambda_star = (Dlambda + 2.0 / 3.0 * Dmu) * amp_theta - 2.0 / 3.0 * Dmu * amp_e_diag
     return Drho_star, Dlambda_star, Dmu_star_off, Dmu_star_diag
 
 
@@ -598,9 +586,7 @@ def _compute_effective_contrasts(
 # ================================================================
 
 
-def form_factor_c2(
-    dlam: float, dmu: float, drho: float, lam0: float
-) -> tuple[float, float, float]:
+def form_factor_c2(dlam: float, dmu: float, drho: float, lam0: float) -> tuple[float, float, float]:
     """Real O((ka)²) form-factor coefficients per channel (in (k_S·R)² units).
 
     Finite scatterers see a non-uniform incident strain.  The leading
@@ -672,12 +658,7 @@ def form_factor_c2(
     #   M2 = −9(10δμ L + 5δρ L² + 4δμ²(12+9λ₀+2λ₀²)) / (2(15L+2δμ(8+3λ₀))²)
     if dmu != 0.0:
         c_mu = (
-            -3.0
-            * (
-                10.0 * dmu * L
-                + 5.0 * drho * L**2
-                + 4.0 * dmu**2 * (12.0 + 9.0 * g + 2.0 * g**2)
-            )
+            -3.0 * (10.0 * dmu * L + 5.0 * drho * L**2 + 4.0 * dmu**2 * (12.0 + 9.0 * g + 2.0 * g**2))
         ) / (10.0 * dmu * L * (15.0 * L + 2.0 * dmu * (8.0 + 3.0 * g)))
     else:
         c_mu = 0.0
@@ -712,12 +693,7 @@ def form_factor_c2(
         num = (
             -15.0 * dr * L * (-3.0 + 2.0 * dr * (5.0 + 2.0 * g))
             + dm**2 * (18.0 + 30.0 * dr - 10.0 * dr**2 * (5.0 + 2.0 * g))
-            + dm
-            * (
-                54.0
-                + 3.0 * dr * (64.0 + 17.0 * g)
-                - 2.0 * dr**2 * (157.0 + 101.0 * g + 15.0 * g**2)
-            )
+            + dm * (54.0 + 3.0 * dr * (64.0 + 17.0 * g) - 2.0 * dr**2 * (157.0 + 101.0 * g + 15.0 * g**2))
             + dl
             * (
                 45.0
@@ -726,11 +702,7 @@ def form_factor_c2(
                 + dm * (27.0 + 45.0 * dr - 15.0 * dr**2 * (5.0 + 2.0 * g))
             )
         )
-        den = (
-            dr
-            * L
-            * (2.0 * dm**2 + dl * (5.0 + 3.0 * dm) + 5.0 * L + 3.0 * dm * (4.0 + g))
-        )
+        den = dr * L * (2.0 * dm**2 + dl * (5.0 + 3.0 * dm) + 5.0 * L + 3.0 * dm * (4.0 + g))
         c_rho = -num / (45.0 * den)
     else:
         c_rho = 0.0
@@ -755,9 +727,7 @@ S4_ANISOTROPY_COEFF = -1.0 / 90.0
 S4_ISOTROPIC = 3.0 / 5.0  # orientation-average of Σ k̂_j⁴ over the unit sphere
 
 
-def form_factor_c4(
-    dlam: float, dmu: float, drho: float, lam0: float
-) -> tuple[float, float, float]:
+def form_factor_c4(dlam: float, dmu: float, drho: float, lam0: float) -> tuple[float, float, float]:
     """Exact O((ka)⁴) form-factor coefficients per channel (in (k_S·R)⁴ units).
 
     Extends :func:`form_factor_c2` one order up.  The leading real O((ka)²)
@@ -1291,20 +1261,12 @@ def compute_cube_tmatrix_galerkin(
     bel_T2g = a0 * Dmu_val * _S_Amu_T2g + b0 * Dmu_val * _S_Bmu_T2g
 
     # Solve gerade 1×1 blocks with smooth correction
-    bbody_A1g = (
-        a0 * blocks["A1g"]["Bbody_A"] + b0 * blocks["A1g"]["Bbody_B"] + smooth_A1g
-    )
-    sigma_A1g = (eps * bbody_A1g - bel_A1g) / (
-        blocks["A1g"]["M"] + bel_A1g - eps * bbody_A1g
-    )
+    bbody_A1g = a0 * blocks["A1g"]["Bbody_A"] + b0 * blocks["A1g"]["Bbody_B"] + smooth_A1g
+    sigma_A1g = (eps * bbody_A1g - bel_A1g) / (blocks["A1g"]["M"] + bel_A1g - eps * bbody_A1g)
     bbody_Eg = a0 * blocks["Eg"]["Bbody_A"] + b0 * blocks["Eg"]["Bbody_B"] + smooth_Eg
     sigma_Eg = (eps * bbody_Eg - bel_Eg) / (blocks["Eg"]["M"] + bel_Eg - eps * bbody_Eg)
-    bbody_T2g = (
-        a0 * blocks["T2g"]["Bbody_A"] + b0 * blocks["T2g"]["Bbody_B"] + smooth_T2g
-    )
-    sigma_T2g = (eps * bbody_T2g - bel_T2g) / (
-        blocks["T2g"]["M"] + bel_T2g - eps * bbody_T2g
-    )
+    bbody_T2g = a0 * blocks["T2g"]["Bbody_A"] + b0 * blocks["T2g"]["Bbody_B"] + smooth_T2g
+    sigma_T2g = (eps * bbody_T2g - bel_T2g) / (blocks["T2g"]["M"] + bel_T2g - eps * bbody_T2g)
 
     # Extract T1c, T2c, T3c from per-irrep strain eigenvalues
     T2c = sigma_T2g / 2.0
@@ -1316,9 +1278,7 @@ def compute_cube_tmatrix_galerkin(
     amp_e_off = 1.0 / (1.0 - sigma_T2g)
     amp_e_diag = 1.0 / (1.0 - sigma_Eg)
 
-    Dlam_star = (
-        Dlam + 2.0 / 3.0 * Dmu_val
-    ) * amp_theta - 2.0 / 3.0 * Dmu_val * amp_e_diag
+    Dlam_star = (Dlam + 2.0 / 3.0 * Dmu_val) * amp_theta - 2.0 / 3.0 * Dmu_val * amp_e_diag
     Dmu_off_star = Dmu_val * amp_e_off
     Dmu_diag_star = Dmu_val * amp_e_diag
 
@@ -1369,9 +1329,7 @@ def compute_cube_tmatrix_galerkin(
     # A2u: 1x1 (ungerade)
     bbody_A2u = a0 * blocks["A2u"]["Bbody_A"] + b0 * blocks["A2u"]["Bbody_B"]
     bel_A2u = blocks["A2u"]["Bel"]
-    sigma_A2u = (eps * bbody_A2u - bel_A2u) / (
-        blocks["A2u"]["M"] + bel_A2u - eps * bbody_A2u
-    )
+    sigma_A2u = (eps * bbody_A2u - bel_A2u) / (blocks["A2u"]["M"] + bel_A2u - eps * bbody_A2u)
     # Eu: 1x1 (ungerade)
     bbody_Eu = a0 * blocks["Eu"]["Bbody_A"] + b0 * blocks["Eu"]["Bbody_B"]
     bel_Eu = blocks["Eu"]["Bel"]
@@ -1428,9 +1386,7 @@ def _solve_irrep_block(
     return evals[order], Tblock
 
 
-def _build_galerkin_irrep_blocks(
-    a0: float, b0: float, Dlambda: float, Dmu: float
-) -> dict:
+def _build_galerkin_irrep_blocks(a0: float, b0: float, Dlambda: float, Dmu: float) -> dict:
     """Build per-irrep (M, Bbody_A, Bbody_B, Bel) blocks from hardcoded values.
 
     The 27x27 mass, body, and stiffness matrices are projected into
@@ -1664,9 +1620,7 @@ def _build_galerkin_irrep_blocks(
 # body bilinear (symmetrized A+B channels) + LS-convolved stiffness (volume + surface).
 
 
-def _build_galerkin_irrep_blocks_57(
-    a0: float, b0: float, Dlambda: float, Dmu: float
-) -> dict:
+def _build_galerkin_irrep_blocks_57(a0: float, b0: float, Dlambda: float, Dmu: float) -> dict:
     """Build per-irrep (M, Bbody_A, Bbody_B, Bel) blocks for T₅₇.
 
     Gerade blocks are enlarged; ungerade blocks are identical to T₂₇.
@@ -2274,9 +2228,7 @@ def compute_cube_tmatrix_galerkin_57(
     # A2u: 1×1
     bbody_A2u = a0 * blocks["A2u"]["Bbody_A"] + b0 * blocks["A2u"]["Bbody_B"]
     bel_A2u = blocks["A2u"]["Bel"]
-    sigma_A2u = (eps * bbody_A2u - bel_A2u) / (
-        blocks["A2u"]["M"] + bel_A2u - eps * bbody_A2u
-    )
+    sigma_A2u = (eps * bbody_A2u - bel_A2u) / (blocks["A2u"]["M"] + bel_A2u - eps * bbody_A2u)
     # Eu: 1×1
     bbody_Eu = a0 * blocks["Eu"]["Bbody_A"] + b0 * blocks["Eu"]["Bbody_B"]
     bel_Eu = blocks["Eu"]["Bel"]
@@ -2298,17 +2250,11 @@ def compute_cube_tmatrix_galerkin_57(
 
     # A2g: 1×1 (with smooth correction)
     bbody_A2g = (
-        a0 * blocks["A2g"]["Bbody_A"]
-        + b0 * blocks["A2g"]["Bbody_B"]
-        + complex(smooth_blocks["A2g"][0, 0])
+        a0 * blocks["A2g"]["Bbody_A"] + b0 * blocks["A2g"]["Bbody_B"] + complex(smooth_blocks["A2g"][0, 0])
     )
     bel_A2g = blocks["A2g"]["Bel"]
     denom_A2g = blocks["A2g"]["M"] + bel_A2g - eps * bbody_A2g
-    sigma_A2g = (
-        (eps * bbody_A2g - bel_A2g) / denom_A2g
-        if abs(denom_A2g) > 1e-30
-        else 0.0 + 0.0j
-    )
+    sigma_A2g = (eps * bbody_A2g - bel_A2g) / denom_A2g if abs(denom_A2g) > 1e-30 else 0.0 + 0.0j
 
     # Eg: 4×4
     Eg_evals, Eg_block = _solve_irrep_block(
@@ -2364,9 +2310,7 @@ def compute_cube_tmatrix_galerkin_57(
     amp_e_off = 1.0 / (1.0 - sigma_T2g)
     amp_e_diag = 1.0 / (1.0 - sigma_Eg)
 
-    Dlam_star = (
-        Dlam + 2.0 / 3.0 * Dmu_val
-    ) * amp_theta - 2.0 / 3.0 * Dmu_val * amp_e_diag
+    Dlam_star = (Dlam + 2.0 / 3.0 * Dmu_val) * amp_theta - 2.0 / 3.0 * Dmu_val * amp_e_diag
     Dmu_off_star = Dmu_val * amp_e_off
     Dmu_diag_star = Dmu_val * amp_e_diag
 

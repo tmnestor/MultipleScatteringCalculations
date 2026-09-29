@@ -155,9 +155,7 @@ def fft_grid_1d(N, kmax):
 # ═══════════════════════════════════════════════════════════════
 #  Vectorised post-kx-residue kernel over ky array
 # ═══════════════════════════════════════════════════════════════
-def post_kx_residue_kernel_vec(
-    ky_arr, kz, dx_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
-):
+def post_kx_residue_kernel_vec(ky_arr, kz, dx_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
     """
     Compute the post-kx-residue kernel for a 1D array of ky values
     and a single kz value.
@@ -230,9 +228,7 @@ def _pole_G_contributions(
     return G_L, G_T_iso, G_T_pol
 
 
-def post_kx_residue_kernel_9x9_vec(
-    ky_arr, kz, dx_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
-):
+def post_kx_residue_kernel_9x9_vec(ky_arr, kz, dx_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
     """Post-kx-residue 9×9 propagator kernel [[G, C], [H, S]].
 
     Keeps L-pole and T-pole contributions separate so that x-derivatives
@@ -394,15 +390,11 @@ def horizontal_greens_fft_9x9(
     P_total = np.zeros((9, 9, Nky), dtype=complex)
 
     for kz in kz_arr:
-        kernel = post_kx_residue_kernel_9x9_vec(
-            ky_arr, kz, dx_abs, omega, rho, alpha, beta
-        )
+        kernel = post_kx_residue_kernel_9x9_vec(ky_arr, kz, dx_abs, omega, rho, alpha, beta)
         for a in range(9):
             for b in range(9):
                 P_total[a, b, :] += (
-                    np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(kernel[a, b, :])))
-                    * scale_ky
-                    * scale_kz
+                    np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(kernel[a, b, :]))) * scale_ky * scale_kz
                 )
 
     return P_total, y_grid
@@ -411,9 +403,7 @@ def horizontal_greens_fft_9x9(
 # ═══════════════════════════════════════════════════════════════
 #  Horizontal Green's tensor: kx residue + ky IFFT + kz quadrature
 # ═══════════════════════════════════════════════════════════════
-def horizontal_greens_fft(
-    dx_abs, Nky, ky_max, kz_max, Nkz, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
-):
+def horizontal_greens_fft(dx_abs, Nky, ky_max, kz_max, Nkz, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
     """
     Compute G_ik(Δx, Δy_m, 0) for all Δy values on the 1D FFT grid.
 
@@ -459,9 +449,7 @@ def horizontal_greens_fft(
             for j in range(3):
                 # ifftshift → ifft → fftshift (1D along ky axis)
                 G_total[i, j, :] += (
-                    np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(kernel[i, j, :])))
-                    * scale_ky
-                    * scale_kz
+                    np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(kernel[i, j, :]))) * scale_ky * scale_kz
                 )
 
     return G_total, y_grid
@@ -470,9 +458,7 @@ def horizontal_greens_fft(
 # ═══════════════════════════════════════════════════════════════
 #  Vectorised post-ky-residue kernel over kx array (for Δx=0 case)
 # ═══════════════════════════════════════════════════════════════
-def post_ky_residue_kernel_vec(
-    kx_arr, kz, dy_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
-):
+def post_ky_residue_kernel_vec(kx_arr, kz, dy_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
     """
     Post-ky-residue kernel for Δy > 0, vectorised over a 1D array of kx values
     and a single kz value.
@@ -582,9 +568,7 @@ def horizontal_greens_ky_residue(
 # ═══════════════════════════════════════════════════════════════
 #  Vectorised post-ky-residue 9×9 kernel (Δx=0 case)
 # ═══════════════════════════════════════════════════════════════
-def post_ky_residue_kernel_9x9_vec(
-    kx_arr, kz, dy_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
-):
+def post_ky_residue_kernel_9x9_vec(kx_arr, kz, dy_abs, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
     """Post-ky-residue 9×9 propagator kernel for Δx=0 case.
 
     Same structure as post_kx_residue_kernel_9x9_vec but with the
@@ -691,9 +675,7 @@ def horizontal_greens_ky_residue_9x9(
 
     P_total = np.zeros((9, 9), dtype=complex)
     for kz in kz_arr:
-        kernel = post_ky_residue_kernel_9x9_vec(
-            kx_arr, kz, dy_abs, omega, rho, alpha, beta
-        )
+        kernel = post_ky_residue_kernel_9x9_vec(kx_arr, kz, dy_abs, omega, rho, alpha, beta)
         P_total += np.sum(kernel, axis=2) * scale
 
     return P_total
@@ -702,9 +684,7 @@ def horizontal_greens_ky_residue_9x9(
 # ═══════════════════════════════════════════════════════════════
 #  Direct 2D quadrature (for comparison)
 # ═══════════════════════════════════════════════════════════════
-def horizontal_greens_direct(
-    dx_abs, dy, kmax, nk, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA
-):
+def horizontal_greens_direct(dx_abs, dy, kmax, nk, omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA):
     """
     Direct 2D (ky, kz) quadrature at a single point. Slow but reliable.
     """
@@ -777,9 +757,7 @@ def main():
 
     # Compare at a few Δy values
     test_dy = [0.0, 0.3, 0.5, 1.0]
-    print(
-        f"\n  {'Δy':>8s}  {'grid Δy':>10s}  {'FFT vs Direct':>12s}  {'FFT vs Exact':>12s}"
-    )
+    print(f"\n  {'Δy':>8s}  {'grid Δy':>10s}  {'FFT vs Direct':>12s}  {'FFT vs Exact':>12s}")
     print("  " + "─" * 50)
 
     for dy in test_dy:
@@ -874,9 +852,7 @@ def main():
     kz_max = 15
 
     print(f"  Δx = 0, Δz = 0,  kx_max={kx_max}, kz_max={kz_max}")
-    print(
-        f"\n  {'Δy':>6s}  {'Nkx':>5s}  {'Nkz':>5s}  {'Frob error':>12s}  {'time':>8s}"
-    )
+    print(f"\n  {'Δy':>6s}  {'Nkx':>5s}  {'Nkz':>5s}  {'Frob error':>12s}  {'time':>8s}")
     print("  " + "─" * 50)
 
     for dy in test_dy_ky:
@@ -895,9 +871,7 @@ def main():
     print("─" * 72)
 
     for dy_target in [0.5, 1.0]:
-        G_ky = horizontal_greens_ky_residue(
-            dy_target, kx_max=15, Nkx=512, kz_max=15, Nkz=512
-        )
+        G_ky = horizontal_greens_ky_residue(dy_target, kx_max=15, Nkx=512, kz_max=15, Nkz=512)
         G_ex = exact_greens(0.0, dy_target, 0.0)
         frob_err = np.linalg.norm(G_ky - G_ex) / np.linalg.norm(G_ex)
 
@@ -907,9 +881,7 @@ def main():
                 s, e = G_ky[i, j], G_ex[i, j]
                 if abs(e) > 1e-20:
                     ce = abs(s - e) / abs(e)
-                    print(
-                        f"    G[{i},{j}]: ky_res={s:.8e}  exact={e:.8e}  err={ce:.2e}"
-                    )
+                    print(f"    G[{i},{j}]: ky_res={s:.8e}  exact={e:.8e}  err={ce:.2e}")
                 else:
                     print(f"    G[{i},{j}]: ky_res={s:.8e}  (exact≈0)")
 

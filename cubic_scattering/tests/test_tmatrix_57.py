@@ -37,9 +37,7 @@ from cubic_scattering.tmatrix_assembly import (
 # Standard test parameters
 REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
 CONTRAST = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=100.0)
-WEAK_CONTRAST = MaterialContrast(
-    Dlambda=REF.mu * 1e-4, Dmu=REF.mu * 1e-4, Drho=REF.rho * 1e-4
-)
+WEAK_CONTRAST = MaterialContrast(Dlambda=REF.mu * 1e-4, Dmu=REF.mu * 1e-4, Drho=REF.rho * 1e-4)
 
 
 # ================================================================
@@ -156,9 +154,7 @@ class TestUsym57:
         R_inv = _build_c2_matrix_57(0) @ _build_c2_matrix_57(1) @ _build_c2_matrix_57(2)
         # Check that rows 27-56 have positive inversion eigenvalue
         for i in range(27, 57):
-            assert R_inv[i, i] == 1.0, (
-                f"Cubic mode {i} is ungerade (inversion eigenvalue = {R_inv[i, i]})"
-            )
+            assert R_inv[i, i] == 1.0, f"Cubic mode {i} is ungerade (inversion eigenvalue = {R_inv[i, i]})"
 
 
 # ================================================================
@@ -296,18 +292,10 @@ class TestGalerkin57Solver:
 
     def test_ungerade_matches_t27(self, galerkin_57, galerkin_27):
         """Ungerade sector eigenvalues match T₂₇ exactly."""
-        np.testing.assert_allclose(
-            galerkin_57.T1u_eigenvalues, galerkin_27.T1u_eigenvalues, rtol=1e-12
-        )
-        np.testing.assert_allclose(
-            galerkin_57.T2u_eigenvalues, galerkin_27.T2u_eigenvalues, rtol=1e-12
-        )
-        np.testing.assert_allclose(
-            galerkin_57.sigma_A2u, galerkin_27.sigma_A2u, rtol=1e-12
-        )
-        np.testing.assert_allclose(
-            galerkin_57.sigma_Eu, galerkin_27.sigma_Eu, rtol=1e-12
-        )
+        np.testing.assert_allclose(galerkin_57.T1u_eigenvalues, galerkin_27.T1u_eigenvalues, rtol=1e-12)
+        np.testing.assert_allclose(galerkin_57.T2u_eigenvalues, galerkin_27.T2u_eigenvalues, rtol=1e-12)
+        np.testing.assert_allclose(galerkin_57.sigma_A2u, galerkin_27.sigma_A2u, rtol=1e-12)
+        np.testing.assert_allclose(galerkin_57.sigma_Eu, galerkin_27.sigma_Eu, rtol=1e-12)
 
     def test_block_shapes(self, galerkin_57):
         """Per-irrep block shapes are correct."""
@@ -330,9 +318,7 @@ class TestGalerkin57Solver:
     def test_t_scalar_relation(self, galerkin_57):
         """T1c, T2c, T3c follow from per-irrep strain eigenvalues."""
         # σ_T2g = 2*T2c
-        np.testing.assert_allclose(
-            galerkin_57.sigma_T2g, 2.0 * galerkin_57.T2c, rtol=1e-12
-        )
+        np.testing.assert_allclose(galerkin_57.sigma_T2g, 2.0 * galerkin_57.T2c, rtol=1e-12)
         # σ_Eg = 2*T2c + T3c
         np.testing.assert_allclose(
             galerkin_57.sigma_Eg, 2.0 * galerkin_57.T2c + galerkin_57.T3c, rtol=1e-12
@@ -377,12 +363,6 @@ class TestGalerkin57Solver:
         (3×3 A1g, 4×4 Eg, 5×5 T2g) with cubic mode corrections.
         The (ka)⁴ corrections from cubic modes create ~1-2% differences.
         """
-        np.testing.assert_allclose(
-            galerkin_57.Dlambda_star, galerkin_27.Dlambda_star, rtol=2e-2
-        )
-        np.testing.assert_allclose(
-            galerkin_57.Dmu_star_off, galerkin_27.Dmu_star_off, rtol=2e-2
-        )
-        np.testing.assert_allclose(
-            galerkin_57.Dmu_star_diag, galerkin_27.Dmu_star_diag, rtol=2e-2
-        )
+        np.testing.assert_allclose(galerkin_57.Dlambda_star, galerkin_27.Dlambda_star, rtol=2e-2)
+        np.testing.assert_allclose(galerkin_57.Dmu_star_off, galerkin_27.Dmu_star_off, rtol=2e-2)
+        np.testing.assert_allclose(galerkin_57.Dmu_star_diag, galerkin_27.Dmu_star_diag, rtol=2e-2)

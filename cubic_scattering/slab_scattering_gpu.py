@@ -128,9 +128,7 @@ def _slab_matvec_gpu(
     # Rearrange to (9, N_z, M, M) and zero-pad to (9, n_dz, H_xy, H_xy)
     tau_perm = tau.permute(3, 0, 1, 2)  # (9, N_z, M, M)
 
-    tau_pad = torch.zeros(
-        9, n_dz, H_xy, H_xy, device=psi_flat.device, dtype=psi_flat.dtype
-    )
+    tau_pad = torch.zeros(9, n_dz, H_xy, H_xy, device=psi_flat.device, dtype=psi_flat.dtype)
     tau_pad[:, :N_z, :M, :M] = tau_perm
 
     # 3D FFT
@@ -208,9 +206,7 @@ def compute_slab_scattering_gpu(
 
     # Step 1: Build T-matrices, kernel, incident field on CPU
     T_local_np = compute_slab_tmatrices(geometry, material, omega)
-    psi0_np = _build_slab_incident_field(
-        geometry, omega, material.ref, k_hat, wave_type
-    )
+    psi0_np = _build_slab_incident_field(geometry, omega, material.ref, k_hat, wave_type)
 
     # Build 3D FFT kernel on GPU
     kernel_hat_3d = _build_slab_kernels_gpu(
@@ -230,9 +226,7 @@ def compute_slab_scattering_gpu(
 
     # Step 2: Set up matvec
     def matvec(psi: torch.Tensor) -> torch.Tensor:
-        return _slab_matvec_gpu(
-            psi, T_local_gpu, kernel_hat_3d, M, N_z, periodic=periodic
-        )
+        return _slab_matvec_gpu(psi, T_local_gpu, kernel_hat_3d, M, N_z, periodic=periodic)
 
     # Step 3: Initial guess
     if initial_guess == "born":
@@ -247,8 +241,7 @@ def compute_slab_scattering_gpu(
         import warnings
 
         warnings.warn(
-            f"GPU GMRES did not converge: rel_res={rel_res:.2e} "
-            f"after {n_iter} iterations",
+            f"GPU GMRES did not converge: rel_res={rel_res:.2e} after {n_iter} iterations",
             stacklevel=2,
         )
 

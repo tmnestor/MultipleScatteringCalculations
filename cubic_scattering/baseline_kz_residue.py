@@ -236,10 +236,7 @@ if __name__ == "__main__":
         G_numerical = numerical_kz_integral(kx_t, ky_t, z_val, omega, rho, alpha, beta)
 
         err = np.linalg.norm(G_residue - G_numerical) / np.linalg.norm(G_numerical)
-        print(
-            f"  kx={kx_t:5.1f}, ky={ky_t:5.1f}: "
-            f"||residue-numerical||/||numerical|| = {err:.2e}"
-        )
+        print(f"  kx={kx_t:5.1f}, ky={ky_t:5.1f}: ||residue-numerical||/||numerical|| = {err:.2e}")
 
         if err > 0.01:
             print("  *** MISMATCH — showing components:")
@@ -248,9 +245,7 @@ if __name__ == "__main__":
                     r, n = G_residue[i, j], G_numerical[i, j]
                     if abs(n) > 1e-20:
                         ce = abs(r - n) / abs(n)
-                        print(
-                            f"      [{i},{j}]: res={r:.6e}  num={n:.6e}  err={ce:.2e}"
-                        )
+                        print(f"      [{i},{j}]: res={r:.6e}  num={n:.6e}  err={ce:.2e}")
 
     # Also test z = 0.5 and z = 2.0
     for z_t in [0.5, 2.0]:
@@ -285,9 +280,7 @@ if __name__ == "__main__":
 
     for x, y, z in test_points:
         t0 = time()
-        G_spec = spectral_2d_integral(
-            x, y, z, omega, rho, alpha, beta, kmax=kmax, nk=nk
-        )
+        G_spec = spectral_2d_integral(x, y, z, omega, rho, alpha, beta, kmax=kmax, nk=nk)
         dt = time() - t0
         G_exact = exact_greens(x, y, z, omega, rho, alpha, beta)
 
@@ -306,17 +299,13 @@ if __name__ == "__main__":
     for nk in [128, 256, 512, 1024]:
         for kmax in [15.0, 20.0, 25.0, 30.0]:
             t0 = time()
-            G_spec = spectral_2d_integral(
-                x, y, z, omega, rho, alpha, beta, kmax=kmax, nk=nk
-            )
+            G_spec = spectral_2d_integral(x, y, z, omega, rho, alpha, beta, kmax=kmax, nk=nk)
             dt = time() - t0
             err = np.linalg.norm(G_spec - G_exact) / np.linalg.norm(G_exact)
             if dt < 60:
                 print(f"  nk={nk:4d}  kmax={kmax:5.1f}  err={err:.4e}  [{dt:.1f}s]")
             else:
-                print(
-                    f"  nk={nk:4d}  kmax={kmax:5.1f}  err={err:.4e}  [{dt:.1f}s] (slow)"
-                )
+                print(f"  nk={nk:4d}  kmax={kmax:5.1f}  err={err:.4e}  [{dt:.1f}s] (slow)")
 
     # ── STEP 4: Show component-level detail at best point ──
     print()
@@ -327,9 +316,7 @@ if __name__ == "__main__":
     G_spec = spectral_2d_integral(x, y, z, omega, rho, alpha, beta, kmax=25.0, nk=1024)
     G_exact = exact_greens(x, y, z, omega, rho, alpha, beta)
 
-    print(
-        f"  Frobenius error = {np.linalg.norm(G_spec - G_exact) / np.linalg.norm(G_exact):.4e}"
-    )
+    print(f"  Frobenius error = {np.linalg.norm(G_spec - G_exact) / np.linalg.norm(G_exact):.4e}")
     print()
     for i in range(3):
         for j in range(3):

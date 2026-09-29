@@ -153,9 +153,7 @@ def _kennett_water_step(
     neta_sed = _vertical_slowness(s_sed_s, p)
     beta_sed = 1.0 / s_sed_s
 
-    coeff = psv_fluid_solid(
-        p, eta_water, cfg.water_rho, eta_sed, neta_sed, cfg.sed_ref.rho, beta_sed
-    )
+    coeff = psv_fluid_solid(p, eta_water, cfg.water_rho, eta_sed, neta_sed, cfg.sed_ref.rho, beta_sed)
 
     eye = np.eye(2, dtype=complex)
     out = np.zeros(MT_psv.shape[0], dtype=complex)
@@ -239,9 +237,7 @@ def compute_ocean_bottom_reflection(
     H = cfg.geometry.N_z * cfg.geometry.d
     full_stack = LayerStack(
         layers=[
-            FluidLayer(
-                alpha=cfg.water_alpha, rho=cfg.water_rho, thickness=cfg.water_depth
-            ),
+            FluidLayer(alpha=cfg.water_alpha, rho=cfg.water_rho, thickness=cfg.water_depth),
             IsotropicLayer(
                 alpha=cfg.sed_ref.alpha,
                 beta=cfg.sed_ref.beta,
@@ -322,9 +318,7 @@ def compute_ocean_bottom_reflection(
 
     # ── Total R_PP with slab injection into Kennett recursion ─────────
     # MT_ij = E_i · R_sed_hs_ij · E_j + R_slab_ij  (modified convention)
-    MT_psv = (
-        E_diag[:, :, None] * R_sed_hs_psv[None, :, :] * E_diag[:, None, :] + R_slab_psv
-    )
+    MT_psv = E_diag[:, :, None] * R_sed_hs_psv[None, :, :] * E_diag[:, None, :] + R_slab_psv
     # Single 2×2 Kennett step at the water-sed interface dresses the
     # sub-ocean reflectivity with Td·Tu coupling and keeps internal
     # P↔SV conversion in the reverberation operator
@@ -496,9 +490,7 @@ def write_log(result: OceanBottomResult, path: str | Path) -> None:
         if result.freq_elapsed:
             freq_times = result.freq_elapsed
             f.write(f"Per-freq (ms): mean = {np.mean(freq_times) * 1e3:.1f}, ")
-            f.write(
-                f"min = {min(freq_times) * 1e3:.1f}, max = {max(freq_times) * 1e3:.1f}\n"
-            )
+            f.write(f"min = {min(freq_times) * 1e3:.1f}, max = {max(freq_times) * 1e3:.1f}\n")
             f.write(f"Slab total:   {sum(freq_times):.2f} s\n")
         f.write(f"Total elapsed: {result.elapsed_seconds:.2f} s\n")
         f.write(f"Peak |R_bg|:   {np.max(np.abs(result.R_bg)):.6f}\n")

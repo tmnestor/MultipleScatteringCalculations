@@ -422,9 +422,7 @@ def _compute_axis_residuals(
         if exp_i[k] == exp_j[k]:
             swapped.append(normal[-1])  # symmetric → same
         else:
-            swapped.append(
-                _xi_integrate_residual(_expand_1d_product(exp_j[k], exp_i[k]))
-            )
+            swapped.append(_xi_integrate_residual(_expand_1d_product(exp_j[k], exp_i[k])))
     return normal, swapped
 
 
@@ -569,9 +567,7 @@ def _k1at_poly(p: int, q: int, r: int, n: int) -> float:
     return val
 
 
-def _k3kernel_poly(
-    exps: tuple[int, int, int], comp_i: int, comp_j: int, n: int
-) -> float:
+def _k3kernel_poly(exps: tuple[int, int, int], comp_i: int, comp_j: int, n: int) -> float:
     """Smooth B-channel: K1atPoly with shifted exponents for u_iu_j factor.
 
     The B-channel smooth kernel is u_i u_j |u|^{2n}. This shifts the
@@ -638,9 +634,7 @@ def _body_bilinear_entry_smooth(basis, i: int, j: int, n: int) -> tuple[float, f
     return a_sum, b_sum
 
 
-def compute_smooth_body_bilinear(
-    basis, indices: list[int], n: int
-) -> tuple[np.ndarray, np.ndarray]:
+def compute_smooth_body_bilinear(basis, indices: list[int], n: int) -> tuple[np.ndarray, np.ndarray]:
     """Compute 36×36 smooth body bilinear at Taylor order n.
 
     Returns (BA_n, BB_n) with prefactors 8·4^n and 32·4^n built in.
@@ -659,9 +653,7 @@ def compute_smooth_body_bilinear(
 
     for ii in range(m):
         for jj in range(ii, m):
-            a_part, b_part = _body_bilinear_entry_smooth(
-                basis, indices[ii], indices[jj], n
-            )
+            a_part, b_part = _body_bilinear_entry_smooth(basis, indices[ii], indices[jj], n)
             BA_n[ii, jj] = prefactor_A * a_part
             BA_n[jj, ii] = BA_n[ii, jj]
             BB_n[ii, jj] = prefactor_B * b_part
@@ -923,11 +915,7 @@ def _compute_face_traction(
                     result[key] = [0.0, 0.0]
                 result[key][1] += face_sign * deriv * face_factor
 
-    return [
-        (d, fe, dl, dm)
-        for (d, fe), (dl, dm) in result.items()
-        if abs(dl) > 1e-30 or abs(dm) > 1e-30
-    ]
+    return [(d, fe, dl, dm) for (d, fe), (dl, dm) in result.items() if abs(dl) > 1e-30 or abs(dm) > 1e-30]
 
 
 def _surface_bilinear_1face(
@@ -968,16 +956,8 @@ def _surface_bilinear_1face(
             poly2 = _expand_1d_product(a2, b2)
             norm1 = _xi_integrate_residual(poly1)
             norm2 = _xi_integrate_residual(poly2)
-            swap1 = (
-                norm1
-                if a1 == b1
-                else _xi_integrate_residual(_expand_1d_product(b1, a1))
-            )
-            swap2 = (
-                norm2
-                if a2 == b2
-                else _xi_integrate_residual(_expand_1d_product(b2, a2))
-            )
+            swap1 = norm1 if a1 == b1 else _xi_integrate_residual(_expand_1d_product(b1, a1))
+            swap2 = norm2 if a2 == b2 else _xi_integrate_residual(_expand_1d_product(b2, a2))
 
             # A-channel: diagonal (comp_a == trac_dir), kernel 1/rho (even)
             if comp_a == trac_dir:
@@ -1055,9 +1035,7 @@ def _compute_stiffness_surface(
     for jj, beta in enumerate(gerade_indices):
         for face_axis in range(3):
             for face_sign in [1, -1]:
-                traction_terms = _compute_face_traction(
-                    basis[beta], face_axis, face_sign
-                )
+                traction_terms = _compute_face_traction(basis[beta], face_axis, face_sign)
                 if not traction_terms:
                     count += n
                     continue
@@ -1090,9 +1068,7 @@ def _print_matrix(name: str, M: np.ndarray, threshold: float = 1e-12):
     n = M.shape[0]
     print(f"{name} = np.array([")
     for i in range(n):
-        row = ", ".join(
-            f"{M[i, j]:.14e}" if abs(M[i, j]) > threshold else "0.0" for j in range(n)
-        )
+        row = ", ".join(f"{M[i, j]:.14e}" if abs(M[i, j]) > threshold else "0.0" for j in range(n))
         print(f"    [{row}],")
     print("])")
 
@@ -1145,9 +1121,7 @@ def main():
     # ── Step 3b: Stiffness (surface part) ──
     print("\n── Step 3b: Stiffness surface part ──")
     t_surf = time.time()
-    SSurf_Alam, SSurf_Amu, SSurf_Blam, SSurf_Bmu = _compute_stiffness_surface(
-        basis, GERADE_INDICES
-    )
+    SSurf_Alam, SSurf_Amu, SSurf_Blam, SSurf_Bmu = _compute_stiffness_surface(basis, GERADE_INDICES)
     print(f"  SSurf_Alam norm: {np.linalg.norm(SSurf_Alam):.6f}")
     print(f"  SSurf_Amu norm: {np.linalg.norm(SSurf_Amu):.6f}")
     print(f"  SSurf_Blam norm: {np.linalg.norm(SSurf_Blam):.6f}")

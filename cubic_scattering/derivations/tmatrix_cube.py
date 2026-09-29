@@ -484,9 +484,7 @@ print(f"I_1212 = {I_1212}")
 # Verify symmetries
 I_2222 = integrate_poly_over_cube(G_ij_kl_poly(1, 1, 1, 1))
 I_1221 = integrate_poly_over_cube(G_ij_kl_poly(0, 1, 1, 0))
-assert simplify(I_2222 - I_1111) == 0, (
-    f"Cubic symmetry broken: I_2222={I_2222} != I_1111={I_1111}"
-)
+assert simplify(I_2222 - I_1111) == 0, f"Cubic symmetry broken: I_2222={I_2222} != I_1111={I_1111}"
 assert simplify(I_1221 - I_1212) == 0, "Minor symmetry broken: I_1221 != I_1212"
 print("\nCubic and minor symmetries verified ✓")
 
@@ -522,9 +520,7 @@ print("It vanishes for a sphere and is O(a^7) for the cube.")
 # So I_{iikl} = (3A_c + 2B_c + C_c) d_kl
 
 trace_check = simplify(3 * A_cube + 2 * B_cube + C_cube)
-I_iikl_direct = integrate_poly_over_cube(
-    sum(G_ij_kl_poly(i, i, 0, 0) for i in range(3))
-)
+I_iikl_direct = integrate_poly_over_cube(sum(G_ij_kl_poly(i, i, 0, 0) for i in range(3)))
 print(f"\nTrace check: 3A+2B+C = {trace_check}")
 print(f"Direct I_{{ii00}} = {I_iikl_direct}")
 assert simplify(trace_check - I_iikl_direct) == 0, "Trace check FAILED"
@@ -566,9 +562,7 @@ def Dc_tensor(j, k, l, p):
 
 def T_tensor(m, n, l, p):
     """T_{mnlp} = sum_{jk} S_{mnjk} Dc_{jklp}."""
-    return sum(
-        S_tensor(m, n, j, k) * Dc_tensor(j, k, l, p) for j in range(3) for k in range(3)
-    )
+    return sum(S_tensor(m, n, j, k) * Dc_tensor(j, k, l, p) for j in range(3) for k in range(3))
 
 
 # Compute independent components

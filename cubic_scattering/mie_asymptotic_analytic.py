@@ -122,11 +122,7 @@ def a_1_analytic(c: NondimContrast, w: float) -> complex:
 
 def a_2_analytic(c: NondimContrast, w: float) -> complex:
     """Leading scattered-P amplitude, quadrupole (shear-driven)."""
-    den = (
-        3.0
-        * (c.lam0 + 2.0)
-        * (15.0 * (c.lam0 + 2.0) + 2.0 * c.dmu * (8.0 + 3.0 * c.lam0))
-    )
+    den = 3.0 * (c.lam0 + 2.0) * (15.0 * (c.lam0 + 2.0) + 2.0 * c.dmu * (8.0 + 3.0 * c.lam0))
     return complex(w**2 * 20.0 * c.dmu / den)
 
 

@@ -49,9 +49,7 @@ WEAK_CONTRAST = MaterialContrast(
 )
 
 
-def _known_amplification_factors(
-    ref: ReferenceMedium, contrast: MaterialContrast
-) -> tuple[float, float]:
+def _known_amplification_factors(ref: ReferenceMedium, contrast: MaterialContrast) -> tuple[float, float]:
     """Return known static amplification factors for n=0 (amp_vol) and n=2 (amp_dev).
 
     E_0 = K₀/(K₀ + alpha_E·ΔK)   where alpha_E = 3K₀/(3K₀+4μ₀)
@@ -79,12 +77,8 @@ class TestBornLinearity:
         omega = 0.1 * REF.beta / 1.0  # ka=0.1, radius=1
         n_max = 5
 
-        a_eps1 = compute_born_coefficients(
-            omega, 1.0, REF, CONTRAST, n_max=n_max, epsilon=1e-6
-        )
-        a_eps2 = compute_born_coefficients(
-            omega, 1.0, REF, CONTRAST, n_max=n_max, epsilon=2e-6
-        )
+        a_eps1 = compute_born_coefficients(omega, 1.0, REF, CONTRAST, n_max=n_max, epsilon=1e-6)
+        a_eps2 = compute_born_coefficients(omega, 1.0, REF, CONTRAST, n_max=n_max, epsilon=2e-6)
 
         for n in range(n_max + 1):
             if abs(a_eps1[n]) > 1e-30:
@@ -107,22 +101,16 @@ class TestKnownEshelbyFactors:
     def test_eshelby_n0_monopole(self, static_factors: np.ndarray) -> None:
         """E_0 ≈ amp_vol = K₀/(K₀ + alpha_E·ΔK)."""
         amp_vol, _ = _known_amplification_factors(REF, CONTRAST)
-        np.testing.assert_allclose(
-            static_factors[0].real, amp_vol, atol=1e-4, err_msg="E_0 vs amp_vol"
-        )
+        np.testing.assert_allclose(static_factors[0].real, amp_vol, atol=1e-4, err_msg="E_0 vs amp_vol")
 
     def test_eshelby_n1_dipole(self, static_factors: np.ndarray) -> None:
         """E_1 ≈ 1.0 (no static density renormalization)."""
-        np.testing.assert_allclose(
-            static_factors[1].real, 1.0, atol=1e-4, err_msg="E_1 vs 1.0"
-        )
+        np.testing.assert_allclose(static_factors[1].real, 1.0, atol=1e-4, err_msg="E_1 vs 1.0")
 
     def test_eshelby_n2_quadrupole(self, static_factors: np.ndarray) -> None:
         """E_2 ≈ amp_dev = 1/(1 + beta_E·Δμ/μ₀)."""
         _, amp_dev = _known_amplification_factors(REF, CONTRAST)
-        np.testing.assert_allclose(
-            static_factors[2].real, amp_dev, atol=1e-4, err_msg="E_2 vs amp_dev"
-        )
+        np.testing.assert_allclose(static_factors[2].real, amp_dev, atol=1e-4, err_msg="E_2 vs amp_dev")
 
 
 # =====================================================================
@@ -149,13 +137,9 @@ class TestWeakContrastUnity:
 
     def test_all_factors_near_one(self) -> None:
         # Use ka=0.05 so higher-order coefficients are above noise floor
-        E_n = compute_static_eshelby_factors(
-            REF, WEAK_CONTRAST, n_max=3, ka_static=0.05
-        )
+        E_n = compute_static_eshelby_factors(REF, WEAK_CONTRAST, n_max=3, ka_static=0.05)
         for n in range(len(E_n)):
-            np.testing.assert_allclose(
-                E_n[n].real, 1.0, atol=1e-3, err_msg=f"E_{n} at weak contrast"
-            )
+            np.testing.assert_allclose(E_n[n].real, 1.0, atol=1e-3, err_msg=f"E_{n} at weak contrast")
 
 
 # =====================================================================
@@ -212,8 +196,7 @@ class TestTruncationMonotone:
         errors = [far_field_truncation_error(mie, n_trunc) for n_trunc in range(2, 8)]
         for i in range(len(errors) - 1):
             assert errors[i] >= errors[i + 1], (
-                f"Error not monotone: err(n={i + 2})={errors[i]:.6e} "
-                f"< err(n={i + 3})={errors[i + 1]:.6e}"
+                f"Error not monotone: err(n={i + 2})={errors[i]:.6e} < err(n={i + 3})={errors[i + 1]:.6e}"
             )
 
 
@@ -232,9 +215,7 @@ class TestOctupoleImprovement:
         err_n2 = far_field_truncation_error(mie, n_trunc=2)
         err_n3 = far_field_truncation_error(mie, n_trunc=3)
 
-        assert err_n3 < err_n2, (
-            f"n=3 truncation ({err_n3:.6e}) not better than n=2 ({err_n2:.6e})"
-        )
+        assert err_n3 < err_n2, f"n=3 truncation ({err_n3:.6e}) not better than n=2 ({err_n2:.6e})"
 
 
 # =====================================================================
@@ -249,9 +230,7 @@ class TestConvergenceStudy:
         ka_vals = np.array([0.1, 0.3, 0.5])
         n_trunc_vals = np.array([2, 3, 4])
 
-        result = convergence_study(
-            REF, CONTRAST, ka_values=ka_vals, n_trunc_values=n_trunc_vals
-        )
+        result = convergence_study(REF, CONTRAST, ka_values=ka_vals, n_trunc_values=n_trunc_vals)
 
         assert isinstance(result, ConvergenceResult)
         assert result.errors.shape == (3, 3)

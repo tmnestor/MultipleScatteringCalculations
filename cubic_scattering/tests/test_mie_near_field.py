@@ -129,8 +129,7 @@ class TestPointScattererVsMie:
         rel_err = abs(a2_mie_nondim - a2_eshelby) / abs(a2_eshelby)
         # Subleading O((ka)²) ~ 2.5e-3 residual; allow a bit more
         assert rel_err < 0.01, (
-            f"Δμ/μ₀={dmu_eps}: Eshelby-T₀={a2_eshelby:.4e}, "
-            f"Mie={a2_mie_nondim:.4e}, rel_err={rel_err:.4e}"
+            f"Δμ/μ₀={dmu_eps}: Eshelby-T₀={a2_eshelby:.4e}, Mie={a2_mie_nondim:.4e}, rel_err={rel_err:.4e}"
         )
 
     @pytest.mark.parametrize("dmu_eps", DMU_SWEEP)
@@ -214,9 +213,7 @@ class TestFiniteContrastDeparture:
                 contrast.Dmu,
                 contrast.Drho,
             )
-            a2_mie = complex(
-                compute_elastic_mie(OMEGA_TEST, RADIUS, REF, contrast).a_n[2]
-            )
+            a2_mie = complex(compute_elastic_mie(OMEGA_TEST, RADIUS, REF, contrast).a_n[2])
             a2_mie_nd = a2_mie / RADIUS
             a2_bare = a_2_T0_bare(c, w)
             a2_eshelby = a_2_T0_eshelby(c, w)
@@ -294,8 +291,7 @@ class TestCubeTMatrixVsMieSphere:
         # than the O(ka²) numerical residual but still small in absolute
         # terms compared to the Eshelby correction itself.
         assert rel_err < 0.01, (
-            f"Δμ/μ₀={dmu_eps}: cube_avg={dmu_cube:.6e}, "
-            f"sphere_mie={dmu_mie:.6e}, rel_err={rel_err:.4e}"
+            f"Δμ/μ₀={dmu_eps}: cube_avg={dmu_cube:.6e}, sphere_mie={dmu_mie:.6e}, rel_err={rel_err:.4e}"
         )
 
     @pytest.mark.parametrize("dmu_eps", DMU_SWEEP)
@@ -311,22 +307,15 @@ class TestCubeTMatrixVsMieSphere:
         # Anisotropy is ~ second-order in Δμ for small contrast (cubic
         # symmetry breaks linearly when contrast is non-zero, so we
         # expect anisotropy ≈ const·Δμ at small Δμ).
-        assert abs(anisotropy) < 0.15, (
-            f"Δμ/μ₀={dmu_eps}: cube anisotropy = {anisotropy:.4f}"
-        )
+        assert abs(anisotropy) < 0.15, f"Δμ/μ₀={dmu_eps}: cube anisotropy = {anisotropy:.4f}"
 
     def test_cube_vs_mie_summary_table(self, capsys):
         """Print the cube-T-matrix vs Mie comparison vs the bare-Born baseline."""
-        bE = beta_E(
-            NondimContrast.from_physical(REF.alpha, REF.beta, REF.rho, 0, 0, 0).lam0
-        )
+        bE = beta_E(NondimContrast.from_physical(REF.alpha, REF.beta, REF.rho, 0, 0, 0).lam0)
 
         print()
         print("=" * 80)
-        print(
-            f"  Cube 27×27 T-matrix vs Mie sphere  "
-            f"(equal-volume; ka_S={KA_S_TARGET}; β_E={bE:.4f})"
-        )
+        print(f"  Cube 27×27 T-matrix vs Mie sphere  (equal-volume; ka_S={KA_S_TARGET}; β_E={bE:.4f})")
         print("=" * 80)
         print(
             f"  {'Δμ/μ₀':>7}  {'bare':>10}  {'sphere-Eshelby':>14}  "
@@ -590,9 +579,7 @@ class TestFormFactorCorrection:
         G0 = _compute_Gamma0_analytical(omega, self.A, alpha, beta, rho, 8)
         Ac, Bc, Cc = _compute_ABC_polynomial(omega, self.A, alpha, beta, rho, 32, 8)
         T1c, T2c, T3c = _compute_T123(Ac, Bc, Cc, contrast.Dlambda, contrast.Dmu)
-        au, ath, aoff, adiag = _compute_amplification_factors(
-            T1c, T2c, T3c, G0, omega, contrast.Drho
-        )
+        au, ath, aoff, adiag = _compute_amplification_factors(T1c, T2c, T3c, G0, omega, contrast.Drho)
         dr, dl, doff, ddiag = _compute_effective_contrasts(
             contrast.Dlambda, contrast.Dmu, contrast.Drho, au, ath, aoff, adiag
         )
@@ -724,14 +711,10 @@ class TestFormFactorCorrection:
         r111 = compute_cube_tmatrix(omega, self.A, self.REF, contrast, k_hat=k111)
         riso = compute_cube_tmatrix(omega, self.A, self.REF, contrast)
         d = r100.Dmu_star_diag.real - r111.Dmu_star_diag.real
-        assert d < 0.0, (
-            f"⟨100⟩−⟨111⟩ Dmu must be negative (axis < diagonal); got {d:.4e}"
-        )
+        assert d < 0.0, f"⟨100⟩−⟨111⟩ Dmu must be negative (axis < diagonal); got {d:.4e}"
         lo = min(r100.Dmu_star_diag.real, r111.Dmu_star_diag.real)
         hi = max(r100.Dmu_star_diag.real, r111.Dmu_star_diag.real)
-        assert lo <= riso.Dmu_star_diag.real <= hi, (
-            "isotropic baseline not between 100/111"
-        )
+        assert lo <= riso.Dmu_star_diag.real <= hi, "isotropic baseline not between 100/111"
 
         # (k_S a)⁴ scaling: d / w⁴ ~ constant across a frequency octave.
         ratios = []

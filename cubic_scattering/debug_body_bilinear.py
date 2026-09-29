@@ -47,9 +47,7 @@ for name, mat in [("M", M_proj), ("BA", BA_proj), ("BB", BB_proj)]:
     max_offblock = 0.0
     for bi in range(len(boundaries) - 1):
         for bj in range(bi + 1, len(boundaries) - 1):
-            block = mat[
-                boundaries[bi] : boundaries[bi + 1], boundaries[bj] : boundaries[bj + 1]
-            ]
+            block = mat[boundaries[bi] : boundaries[bi + 1], boundaries[bj] : boundaries[bj + 1]]
             max_offblock = max(max_offblock, np.max(np.abs(block)))
     print(f"Off-block max {name}: {max_offblock:.2e}")
 

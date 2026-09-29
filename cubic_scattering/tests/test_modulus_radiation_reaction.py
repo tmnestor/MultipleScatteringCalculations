@@ -61,17 +61,13 @@ KA_TOL = ((0.05, 0.02), (0.1, 0.025), (0.3, 0.06), (0.5, 0.20))
 
 def _mie_contrasts(contrast: MaterialContrast, omega: float):
     """Mie effective contrasts for the equal-volume sphere."""
-    mie = compute_elastic_mie(
-        omega=omega, radius=R_EQ, ref=REF, contrast=contrast, n_max=None
-    )
+    mie = compute_elastic_mie(omega=omega, radius=R_EQ, ref=REF, contrast=contrast, n_max=None)
     return mie_extract_effective_contrasts(mie)
 
 
 def _reaction(lam: float, mu_off: float, mu_diag: float, omega: float):
     """Closed-form cubic radiation reaction on the given REAL contrasts."""
-    return _modulus_radiation_reaction_cubic(
-        lam, mu_off, mu_diag, omega, A, ALPHA, BETA, RHO
-    )
+    return _modulus_radiation_reaction_cubic(lam, mu_off, mu_diag, omega, A, ALPHA, BETA, RHO)
 
 
 def _cube_im(contrast: MaterialContrast, omega: float):
@@ -139,9 +135,7 @@ def test_cubic_reaction_equals_direct_radiated_power():
             lhs = np.einsum("ij,ijkl,kl->", e, ImC, e)
             M = V * np.einsum("ijkl,kl->ij", C, e)
             rhs = -2.0 / (omega * V) * _radiated_power_direct(M, omega)
-            assert abs(lhs - rhs) < 1e-9 * abs(rhs), (
-                f"C=({lam},{mo},{md}): {lhs} vs {rhs}"
-            )
+            assert abs(lhs - rhs) < 1e-9 * abs(rhs), f"C=({lam},{mo},{md}): {lhs} vs {rhs}"
 
 
 def test_cubic_reaction_isotropic_reduces_to_closed_form():
@@ -152,9 +146,7 @@ def test_cubic_reaction_isotropic_reduces_to_closed_form():
     cP = omega**4 / (8 * np.pi * RHO * ALPHA**5)
     cS = omega**4 / (8 * np.pi * RHO * BETA**5)
     il, imo, imd = _reaction(lam, mu, mu, omega)
-    ref_l = -(2 * V / omega) * (
-        cP / 15 * (15 * lam**2 + 20 * lam * mu + 4 * mu**2) - cS / 15 * 4 * mu**2
-    )
+    ref_l = -(2 * V / omega) * (cP / 15 * (15 * lam**2 + 20 * lam * mu + 4 * mu**2) - cS / 15 * 4 * mu**2)
     ref_m = -(V / omega) * (cP / 15 * 8 * mu**2 + cS / 15 * 12 * mu**2)
     assert abs(il - ref_l) < 1e-12 * abs(ref_l)
     assert abs(imo - ref_m) < 1e-12 * abs(ref_m)
@@ -199,9 +191,7 @@ def test_pure_bulk_matches_mie_kappa_no_shear_leak():
         # Sign + magnitude vs Mie (ratio ≈ +1).
         ratio = im_kappa / ec.Dkappa_star.imag
         assert ratio > 0, f"ka={ka}: Im[Dkappa*] wrong sign vs Mie (ratio={ratio})"
-        assert abs(ratio - 1.0) < tol, (
-            f"ka={ka}: Im[Dkappa*]/Mie={ratio:.4f} outside +1±{tol}"
-        )
+        assert abs(ratio - 1.0) < tol, f"ka={ka}: Im[Dkappa*]/Mie={ratio:.4f} outside +1±{tol}"
         # No cross-channel leakage: pure-bulk gives ZERO shear radiation.
         assert im_mu == 0.0, f"ka={ka}: pure-bulk leaked into Im[Dmu*]={im_mu}"
         # ... and Mie agrees that the shear channel is ~0 (machine noise).
@@ -233,9 +223,7 @@ def test_pure_shear_lambda_sign_matches_mie():
         omega = ka * BETA / A
         im_lam, _im_mu, _im_kappa = _cube_im(contrast, omega)
         ec = _mie_contrasts(contrast, omega)
-        assert im_lam > 0, (
-            f"ka={ka}: pure-shear Im[Dlambda*] must be > 0 (got {im_lam})"
-        )
+        assert im_lam > 0, f"ka={ka}: pure-shear Im[Dlambda*] must be > 0 (got {im_lam})"
         ratio = im_lam / ec.Dlambda_star.imag
         assert abs(ratio - 1.0) < tol, f"ka={ka}: Im[Dlambda*]/Mie={ratio:.4f}"
 
@@ -316,9 +304,7 @@ def test_galerkin_path_carries_radiation_reaction():
     for ka, _tol in KA_TOL:
         omega = ka * BETA / A
         g = compute_cube_tmatrix_galerkin(omega, A, REF, contrast)
-        il, imo, imd = _reaction(
-            g.Dlambda_star.real, g.Dmu_star_off.real, g.Dmu_star_diag.real, omega
-        )
+        il, imo, imd = _reaction(g.Dlambda_star.real, g.Dmu_star_off.real, g.Dmu_star_diag.real, omega)
         assert abs(g.Dlambda_star.imag - il) < 1e-9 * abs(il)
         assert abs(g.Dmu_star_off.imag - imo) < 1e-9 * abs(imo)
         assert abs(g.Dmu_star_diag.imag - imd) < 1e-9 * abs(imd)
@@ -329,9 +315,7 @@ def test_galerkin_57_path_carries_radiation_reaction():
     contrast = MaterialContrast(Dlambda=2e9, Dmu=1e9, Drho=0.0)
     omega = 0.1 * BETA / A
     g = compute_cube_tmatrix_galerkin_57(omega, A, REF, contrast)
-    il, imo, imd = _reaction(
-        g.Dlambda_star.real, g.Dmu_star_off.real, g.Dmu_star_diag.real, omega
-    )
+    il, imo, imd = _reaction(g.Dlambda_star.real, g.Dmu_star_off.real, g.Dmu_star_diag.real, omega)
     assert abs(g.Dlambda_star.imag - il) < 1e-9 * abs(il)
     assert abs(g.Dmu_star_off.imag - imo) < 1e-9 * abs(imo)
     assert abs(g.Dmu_star_diag.imag - imd) < 1e-9 * abs(imd)

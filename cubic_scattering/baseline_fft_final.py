@@ -120,9 +120,7 @@ def greens_fft(N, kmax, z):
     G = np.zeros_like(Ghat)
     for i in range(3):
         for j in range(3):
-            G[i, j] = (
-                np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(Ghat[i, j]))) * scale
-            )
+            G[i, j] = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(Ghat[i, j]))) * scale
     return G, x
 
 
@@ -203,9 +201,7 @@ if __name__ == "__main__":
         G_dir_pt = greens_direct(xv, yv, z_val, N, kmax)
 
         diff = np.linalg.norm(G_fft_pt - G_dir_pt) / np.linalg.norm(G_dir_pt)
-        print(
-            f"  z={z_val}, N={N}, kmax={kmax}: ||FFT−Direct||/||Direct|| = {diff:.2e}"
-        )
+        print(f"  z={z_val}, N={N}, kmax={kmax}: ||FFT−Direct||/||Direct|| = {diff:.2e}")
         del G_fft_full
 
     # ── TEST 2: Near-field convergence (kS·z < 0.1) ──
@@ -272,10 +268,7 @@ if __name__ == "__main__":
             errs.append(abs(G00[ix, iy] - G_ex[0, 0]) / abs(G_ex[0, 0]))
 
         del G00
-        print(
-            f"  N={N:4d}  kmax={kmax:3d}  dk={dk:.4f}  "
-            f"max_err={max(errs):.2e}  [{dt:.2f}s]"
-        )
+        print(f"  N={N:4d}  kmax={kmax:3d}  dk={dk:.4f}  max_err={max(errs):.2e}  [{dt:.2f}s]")
 
     # ── TEST 4: Full tensor near-field ──
     print()
@@ -302,10 +295,7 @@ if __name__ == "__main__":
 
         G_ex = exact_greens(xv, yv, z_val)
         err = np.linalg.norm(G_ff - G_ex) / np.linalg.norm(G_ex)
-        print(
-            f"  N={N:4d}  kmax={kmax:4d}  pt=({xv:.5f},{yv:.5f})  "
-            f"Frobenius={err:.2e}  [{dt:.1f}s]"
-        )
+        print(f"  N={N:4d}  kmax={kmax:4d}  pt=({xv:.5f},{yv:.5f})  Frobenius={err:.2e}  [{dt:.1f}s]")
 
     # Best-case component detail
     print("\n  Component detail (best case above):")
