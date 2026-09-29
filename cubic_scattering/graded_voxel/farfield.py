@@ -11,7 +11,7 @@ from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
-from ..scattered_field import _voigt_to_tensor
+from ..sphere_scattering import _voigt_to_tensor
 from .basis import SOURCE_EXPONENTS, monomials, source_expansion
 from .solver import GradedVoxelResult
 
@@ -27,12 +27,11 @@ def radiate(
     """Far-field displacement of point sources (force, Voigt stress) at `points`, shape (M, 3) twice."""
     k_p, k_s = omega / ref.alpha, omega / ref.beta
     forces = sources[:, :3]
-    # The shear entries are ENGINEERING stress 2 sigma_pq: the contrast operator maps the engineering strain
-    # gamma to 2 dmu gamma, and the kernel's shear columns halve it. The tensor is sigma_pq = entry / 2.
-    # Taking the entry as sigma_pq radiated shear stress twice (a full-contrast floor, 2026-09-30).
-    stress = sources[:, 3:].copy()
-    stress[:, 3:] *= 0.5
-    sig = np.array([_voigt_to_tensor(s) for s in stress])
+    # The shear entries are ENGINEERING stress 2 sigma_pq (the contrast operator maps the engineering strain
+    # gamma to 2 dmu gamma; the kernel's shear columns halve it), so the tensor is sigma_pq = entry / 2:
+    # sphere_scattering._voigt_to_tensor, the helper foldy_lax_far_field uses. scattered_field has a
+    # homonym that does NOT halve; importing it radiated shear stress twice (a full-contrast floor, 2026-09-30).
+    sig = np.array([_voigt_to_tensor(s[3:]) for s in sources])
     u_p = np.zeros((len(directions), 3), dtype=complex)
     u_s = np.zeros((len(directions), 3), dtype=complex)
     for o, direction in enumerate(np.asarray(directions, dtype=float)):

@@ -90,3 +90,47 @@ def test_every_cell_holding_contrast_is_kept():
     kept = [c for c in centres if np.linalg.norm(c) < 10.0 + np.sqrt(3) * h]
     res4 = solve_graded_sphere(150.0, 10.0, REF, CON, 4, lambda _: 0.0, KHAT, KHAT, "P", p=0, r=0)
     assert len(res4.centres) == len(kept) == 64
+
+
+def _two_cell_inside(q):
+    # two cells of the n = 8 grid, not touching: (-1.25, -1.25, -1.25) and (6.25, 1.25, -1.25)
+    targets = (np.array([-1.25, -1.25, -1.25]), np.array([6.25, 1.25, -1.25]))
+    return any(np.allclose(q, t) for t in targets)
+
+
+def test_assembly_uses_the_block_of_field_minus_source():
+    # Review Focus 2, pinned to the definition: the block coupling field cell m to source cell n is
+    # K(x_m - x_n). The system is built here by hand from coupling_block and compared with the solver; a
+    # globally flipped offset (K(x_n - x_m)) changes psi by ~1e-3 and must fail this test
+    from cubic_scattering.graded_voxel.basis import gram_test, source_expansion
+    from cubic_scattering.graded_voxel.blocks import coupling_block
+    from cubic_scattering.graded_voxel.site import cell_contrast_coefficients
+    from cubic_scattering.sphere_scattering import _plane_wave_strain_voigt
+
+    omega = 300.0
+    res = solve_graded_sphere(
+        omega, 10.0, REF, CON, 8, lambda _: 1.0, KHAT, KHAT, "P", inside=_two_cell_inside
+    )
+    assert len(res.centres) == 2
+    h = res.h
+    m9 = np.kron(gram_test(h), np.eye(9))
+    delta = [cell_contrast_coefficients(lambda _: 1.0, c, h, CON, REF, omega, 1) for c in res.centres]
+    e = [source_expansion(d) for d in delta]
+
+    def ke(k, en):
+        return np.einsum("acij,cbjk->aibk", k, en).reshape(36, 36)
+
+    k0 = coupling_block((0, 0, 0), h, omega, REF)
+    o01 = tuple(int(v) for v in res.grid_idx[0] - res.grid_idx[1])
+    o10 = tuple(-v for v in o01)
+    a = np.block(
+        [
+            [m9 - ke(k0, e[0]), -ke(coupling_block(o01, h, omega, REF), e[1])],
+            [-ke(coupling_block(o10, h, omega, REF), e[0]), m9 - ke(k0, e[1])],
+        ]
+    )
+    kp = omega / REF.alpha
+    amp = np.concatenate([KHAT.astype(complex), _plane_wave_strain_voigt(KHAT, KHAT, kp)])
+    rhs = plane_wave_moments(res.centres, h, kp * KHAT, amp).ravel()
+    want = np.linalg.solve(a, rhs).reshape(2, 4, 9)
+    np.testing.assert_allclose(res.psi, want, rtol=1e-10, atol=1e-12 * np.abs(want).max())
