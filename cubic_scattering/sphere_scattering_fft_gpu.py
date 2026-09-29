@@ -24,6 +24,7 @@ from .effective_contrasts import (
 )
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
+    _build_incident_plane_wave_basis,
     _sub_cell_tmatrix_9x9,
 )
 from .sphere_scattering import SphereDecompositionResult
@@ -189,15 +190,21 @@ def compute_sphere_foldy_lax_fft_gpu(
         centres, omega, ref, k_hat=k_hat, wave_type=wave_type
     )
 
-    # Step 4: Solve 9 RHS columns via GPU GMRES
+    # the plane-wave basis for the far field: its displacement columns are those of psi_inc
+    pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
+
+    # Step 4: Solve 9 RHS columns via GPU GMRES, then the six plane-wave strain columns
     dim = 9 * nC
     psi_exc = np.zeros((dim, 9), dtype=complex)
+    psi_pw = np.zeros((dim, 9), dtype=complex)
 
     def matvec(w: torch.Tensor) -> torch.Tensor:
         return _matvec_fft_gpu(w, kernel_hat_gpu, grid_idx_gpu, nP, nC)
 
-    for col in range(9):
-        rhs_np = psi_inc[:, col]
+    jobs = [("exc", col, psi_inc[:, col]) for col in range(9)] + [
+        ("pw", col, pw_inc[:, col]) for col in range(3, 9)
+    ]
+    for which, col, rhs_np in jobs:
         b = to_torch(rhs_np, device, dtype)
 
         if initial_guess == "born":
@@ -219,7 +226,8 @@ def compute_sphere_foldy_lax_fft_gpu(
                 stacklevel=2,
             )
 
-        psi_exc[:, col] = to_numpy(x)
+        (psi_exc if which == "exc" else psi_pw)[:, col] = to_numpy(x)
+    psi_pw[:, :3] = psi_exc[:, :3]
 
     # Step 5: Extract composite T-matrix
     T_comp = np.zeros((9, 9), dtype=complex)
@@ -241,4 +249,5 @@ def compute_sphere_foldy_lax_fft_gpu(
         radius=radius,
         ref=ref,
         contrast=contrast,
+        psi_pw=psi_pw,
     )

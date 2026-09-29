@@ -582,6 +582,43 @@ def _build_incident_field_coupled(
     return U0
 
 
+def _build_incident_plane_wave_basis(
+    centres: NDArray,
+    omega: float,
+    ref: ReferenceMedium,
+    k_hat: NDArray | None = None,
+    wave_type: str = "S",
+) -> NDArray:
+    """Build the (9N, 9) plane-wave incident basis: column j is ``ê_j exp(i k · x_m)`` on every cell.
+
+    A plane wave of polarisation ``p`` and Voigt strain ``ε`` is EXACTLY this basis times ``[p, ε]``: the
+    phase carries the whole spatial variation.  This is the incident field for a far field.
+
+    It differs from ``_build_incident_field_coupled`` only in the strain columns, which there also carry the
+    displacement ``ε⁰ · (x_m − x_centre)`` (the composite-T patterns).  Combined with ``[p, ε]`` for a plane
+    wave, those columns count the wave's linear variation twice, once in the phase and once in
+    ``ε · (x_m − x_centre)``: a first-order error in the far field that grows as (ka)^2 and does not fall
+    under refinement (1.1% at k_S a = 0.5 and 4.6% at 1 on a smoothly graded sphere).
+
+    Args:
+        centres: Sub-cell centre coordinates, shape (N, 3).
+        omega: Angular frequency (rad/s).
+        ref: Background medium.
+        k_hat: Unit propagation direction (default ẑ).
+        wave_type: ``'S'`` or ``'P'``.
+
+    Returns:
+        Basis matrix, shape (9N, 9), complex.
+    """
+    if k_hat is None:
+        k_hat = np.array([0.0, 0.0, 1.0])
+    k_hat = np.asarray(k_hat, dtype=float)
+    k_hat = k_hat / np.linalg.norm(k_hat)
+    k_mag = omega / (ref.beta if wave_type == "S" else ref.alpha)
+    phases = np.exp(1j * k_mag * (np.asarray(centres) @ k_hat))
+    return np.kron(phases[:, None], np.eye(9, dtype=complex))
+
+
 # ===========================================================================
 # Section 5 — Result dataclass
 # ===========================================================================
