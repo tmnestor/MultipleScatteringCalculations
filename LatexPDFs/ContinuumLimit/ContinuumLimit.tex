@@ -237,10 +237,36 @@ The Foldy--Lax system is
 \begin{equation}\label{eq:foldylax}
   \psi_i=\psi^0_i+\sum_{j\neq i}\bK(i,j)\,\bT_j\,\psi_j ,
 \end{equation}
-with $\psi^0$ the incident state. Strain rows of $\bK$ are receiver derivatives of the point
-Green's tensor $\bG$; moment columns are derivatives with respect to the receiver coordinate,
-symmetrised with a factor $\tfrac12$ on the shear components. In that convention the contrast
-operator is
+with $\psi^0$ the incident state.
+
+\paragraph{Where the kernel comes from.} Write the medium as the background plus the contrast. With
+time dependence $\mathrm{e}^{-\mathrm{i}\omega t}$ the equation of motion is
+$\partial_c\sigma_{bc}+\rho\omega^2u_b=0$. Splitting $\rho=\rho_0+\Delta\rho$ and
+$\sigma=\mathcal C_0{:}\varepsilon+\Delta\mathcal C{:}\varepsilon$ and moving the contrast terms to
+the right leaves the background operator on the left and the contrast on the right as a body force,
+\begin{equation}\label{eq:bodyforce}
+  f_b=\omega^2\Delta\rho\,u_b+\partial_c m_{bc},\qquad m_{bc}=(\Delta\mathcal C{:}\varepsilon)_{bc}:
+\end{equation}
+a force from the density contrast, and the divergence of the contrast stress $m$, the moment, from
+the stiffness contrast. With $\bG$ the Green's tensor of the background, the displacement is
+$u=u^0+\int\bG f\,\dd\mathbf y$, and the moment term integrates by parts,
+\begin{equation}\label{eq:byparts}
+  \int G_{ab}(\mathbf x-\mathbf y)\,\frac{\partial m_{bc}}{\partial y_c}\,\dd\mathbf y
+  =-\int\frac{\partial G_{ab}}{\partial y_c}(\mathbf x-\mathbf y)\,m_{bc}\,\dd\mathbf y
+  =+\int\frac{\partial G_{ab}}{\partial x_c}(\mathbf x-\mathbf y)\,m_{bc}\,\dd\mathbf y ,
+\end{equation}
+the boundary term vanishing because $m$ is confined to the scatterers, and the last step holding
+because $\bG$ depends only on the separation. The moment therefore radiates through the
+\emph{receiver} derivative of $\bG$, with a plus sign, when the moment is the contrast stress
+itself. With the moment tensor defined instead through its equivalent body force
+$-\partial_c[M_{bc}\,\delta(\mathbf x-\mathbf y)]$, as in \citet{Aki2002}, the same field reads
+$M_{bc}\,\partial G_{ab}/\partial y_c$, the source derivative, with $M=-m$. The two are one
+convention written two ways; what matters is that the derivative in the kernel and the sign in the
+contrast operator are chosen together. The nine-component kernel follows: its force columns are
+$\bG$ and its moment columns the receiver derivatives $\partial_cG_{ab}$, symmetrised over $(b,c)$
+with a factor $\tfrac12$ on the shear components; its displacement rows are those entries and its
+strain rows their receiver derivatives, symmetrised in the same way and doubled on the shear rows to
+give engineering strain. In that convention the contrast operator is
 \begin{equation}\label{eq:delta}
   \bD=\operatorname{blockdiag}\!\bigl(\omega^2\Delta\rho\,\bI_3,\ \Delta\mathcal{C}\bigr),
 \end{equation}
