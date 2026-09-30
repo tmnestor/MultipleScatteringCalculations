@@ -32,7 +32,7 @@ from scipy.sparse.linalg import LinearOperator, gmres
 from ..effective_contrasts import MaterialContrast, ReferenceMedium
 from ..sphere_scattering import _plane_wave_strain_voigt
 from ..sphere_scattering_fft import _build_grid_index_map
-from .basis import SOURCE_EXPONENTS, gram_test, monomials, source_expansion
+from .basis import gram_test, monomials, source_expansion, source_exponents
 from .blocks import coupling_block
 from .site import cell_contrast_coefficients
 from .solver import GradedVoxelResult, plane_wave_moments
@@ -65,15 +65,16 @@ def _voigt_rep(q: NDArray) -> NDArray:
     return rep
 
 
-def symmetry_reps(q: NDArray) -> tuple[NDArray, NDArray, NDArray]:
-    """(T, U, S): the test (4 x 4), source-monomial (10 x 10) and 9-component (9 x 9) reps of Q."""
+def symmetry_reps(q: NDArray, n_source: int = 10) -> tuple[NDArray, NDArray, NDArray]:
+    """(T, U, S): the test (4 x 4), source-monomial (n_source square) and 9-component (9 x 9) reps of Q."""
     t = np.zeros((4, 4))
     t[0, 0] = 1.0
     t[1:, 1:] = q  # L_{i+1}(Q eta) = (Q eta)_i
     rng = np.random.default_rng(12345)
-    eta = rng.uniform(-1.0, 1.0, (24, 3))
-    a = monomials(SOURCE_EXPONENTS, eta @ q.T)  # m_c(Q eta_k)
-    b = monomials(SOURCE_EXPONENTS, eta)  # m_d(eta_k)
+    eta = rng.uniform(-1.0, 1.0, (48, 3))
+    exps = source_exponents(n_source)
+    a = monomials(exps, eta @ q.T)  # m_c(Q eta_k)
+    b = monomials(exps, eta)  # m_d(eta_k)
     u = np.linalg.lstsq(b.T, a.T, rcond=None)[0].T
     u = np.round(u)  # exactly 0 or +-1 for a signed permutation
     s = np.zeros((9, 9))
@@ -83,13 +84,13 @@ def symmetry_reps(q: NDArray) -> tuple[NDArray, NDArray, NDArray]:
 
 
 def _transform(q: NDArray, block: NDArray) -> NDArray:
-    t, u, s = symmetry_reps(q)
+    t, u, s = symmetry_reps(q, block.shape[1])
     tmp = np.einsum("ij,bdjk,lk->bdil", s, block, s)
     return np.einsum("ab,cd,bdil->acil", t, u, tmp)
 
 
 def offset_blocks(
-    n_sub: int, h: float, omega: float, ref: ReferenceMedium
+    n_sub: int, h: float, omega: float, ref: ReferenceMedium, n_source: int = 10
 ) -> dict[tuple[int, int, int], NDArray]:
     """K(o) for every offset o in [-(n-1), n-1]^3: one ``coupling_block`` per cube-group orbit."""
     qs = signed_permutations()
@@ -100,7 +101,7 @@ def offset_blocks(
         a, b, d = sorted((abs(o) for o in off), reverse=True)
         c = (a, b, d)
         if c not in canonical:
-            canonical[c] = coupling_block(c, h, omega, ref)
+            canonical[c] = coupling_block(c, h, omega, ref, n_source)
         cv = np.array(c, dtype=float)
         target = np.array(off, dtype=float)
         q = next(q for q in qs if np.array_equal(q @ cv, target))
@@ -139,12 +140,12 @@ def solve_graded_sphere_fft(
     )
     n = len(centres)
     na = 1 if p == 0 else 4
-    nc = 1 if (p == 0 and r == 0) else 10
+    nc = 1 if (p == 0 and r == 0) else 20 if r == 2 else 10
     delta = np.array(
         [cell_contrast_coefficients(profile, c, h, contrast, ref, omega, degree=r) for c in centres]
     )
     e_cells = np.array([source_expansion(d)[:nc, :na] for d in delta])  # (N, nc, na, 9, 9)
-    blocks = offset_blocks(n_sub, h, omega, ref) if blocks is None else blocks
+    blocks = offset_blocks(n_sub, h, omega, ref, 20 if r == 2 else 10) if blocks is None else blocks
     npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
     kh = np.zeros((rows, cols, npad, npad, npad), dtype=complex)
