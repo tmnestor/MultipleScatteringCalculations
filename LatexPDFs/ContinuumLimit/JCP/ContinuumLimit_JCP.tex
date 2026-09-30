@@ -37,9 +37,9 @@ and the closed-form error of the discrete layer}
 
 We analyse the convergence of voxel discretisations of the elastic volume integral equation, in
 which a medium is divided into cubic cells, each represented by a single-site $T$-matrix and coupled
-through the background Green's tensor: the elastic counterpart of the discrete dipole approximation.
+through the background Green's tensor: the elastic coupled-dipole method.
 Because cubes tile space, a layer of identical voxels is exactly a homogeneous layer, so it isolates
-the discretisation error, with no modelling or shape error. We show that (i) the cube's lateral form
+the discretisation error, with no shape error. We show that (i) the cube's lateral form
 factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
 continuum's; (ii) the single-site $T$-matrix follows from distributional moments of the Green's
 tensor and, against exact scattering by a sphere, is exact statically and departs only by a real,
@@ -50,7 +50,8 @@ of its internal field to degree $p$ converges at order $2p+2$, with leading erro
 $p=1$, for incident P, SV and SH waves at normal and oblique incidence, and one plane of it
 reproduces the thin-layer series in the thickness $D$ through $O(D^{2p+2})$. In a randomly
 stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
-$10^{-6}$ with one voxel per model layer. On a voxelised sphere the staircase error dominates. Every
+$10^{-6}$ with one voxel per model layer. A smoothly graded sphere converges at second order against its
+exact solution. Every
 result is verified by an independent implementation or an exact solution.
 \end{abstract}
 
@@ -105,15 +106,31 @@ are the same in any medium: that the averaged coupling is exact, that the self t
 form of the single-site error. \S\ref{sec:hetero} confirms that they carry over to a stratified
 medium; a laterally heterogeneous one remains to be tested.
 
-\paragraph{What the reader gains} Four things that a heterogeneous test cannot provide. First, a
-proof, exact at normal incidence, that the voxel scheme converges to the continuum, and the specific ingredient, a coupling
-averaged over the source voxel, without which it converges to the wrong answer. Second, the
-leading error in closed form for every discretisation, so that a grid can be chosen for a required
-accuracy before the calculation is run. Third, a single-site $T$-matrix derived from first
-principles, with its error stated and checked against the exact solution for a sphere. Fourth, a
-voxel that converges at fourth order, and with further Legendre moments at any even order, also in a
-randomly stratified model (\S\ref{sec:hetero}): for a reflection accuracy of $10^{-6}$ it allows voxels $58$
-times larger in each direction than the standard one (\S\ref{sec:discussion}).
+\paragraph{What this paper adds} Set against the coupled-dipole method described below, the
+contributions are these. (1) \emph{An exact coupling.} The integrated Green tensor and the filtered
+coupled dipoles approximate the field of a cell; for cubes the source-cell average is exact, because
+the cube's form factor vanishes on the reciprocal lattice (the tiling identity, \S\ref{sec:tiling}),
+and at normal incidence the lattice kernel is in closed form with no lattice sum. (2) \emph{No
+polarisability to choose.} The self term the single site carries is the one the averaged kernel
+omits, so the discrete system is a collocation of the continuum equation (\S\ref{sec:single}). The
+polarisability, a modelling choice in the coupled-dipole method, is here a derived object: the
+moments that derive it, taken as distributions, yield Eshelby's $\delta$ term without adding it by
+hand, the cube's departure from the sphere as a pure cubic anisotropy, and the closure's error
+against exact scattering by a sphere as a real $(ka)^2$ term in closed form. (3) \emph{The error in
+closed form, for every grid}: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission, so that a
+grid can be chosen for a required accuracy before the calculation is run; and the opposite signs,
+which explain why no correction of the single site can improve both (\S\ref{sec:discussion}).
+(4) \emph{Higher order.} A voxel carrying Legendre moments of its field to degree $p$ converges at
+order $2p+2$ with a closed-form constant; its first-moment case converges at fourth order for P, SV
+and SH waves at normal and oblique incidence and in a randomly stratified model
+(\S\ref{sec:hetero}), and for a reflection accuracy of $10^{-6}$ it allows voxels $58$ times larger
+in each direction than the uniform one (\S\ref{sec:discussion}). Where the medium varies within a
+cell, with the contrast expanded to degree $r$, the order is $\min(2p+2,2r+2)$. (5) \emph{The
+elastic state.} A voxel carries a force and a moment, so its state has nine components, the
+coupling is a $9\times9$ tensor, and its local term is the depolarisation of a plate. (6) \emph{A
+sphere without a staircase}, whose contrast falls smoothly to zero at its surface, so that the scheme
+can be tested against an exact three-dimensional solution: it converges at second order here
+(\S\ref{sec:sphere}) and at fourth order in the companion paper \citep{NestorGraded2026}.
 
 \paragraph{Why cubic voxels} Cubes are the natural cell for three reasons. They \emph{tile space},
 so a uniform region discretised into cubes is still that uniform region, whereas spheres or point
@@ -124,25 +141,50 @@ by fast transforms. And a cube small compared with the wavelength has a \emph{si
 in closed form}, the elastic depolarisation of a cube (\S\ref{sec:single}), so the only
 approximation a voxel introduces is the internal field it assumes.
 
-\paragraph{Multiple scattering on a lattice} Replacing a heterogeneous body by a lattice of small scatterers that interact through the background
-Green's function is the multiple-scattering description of \citet{Foldy1945} and \citet{Lax1951}.
-In electromagnetics its discretised form is the discrete dipole approximation
-\citep[DDA;][]{Purcell1973,Draine1994}, whose accuracy has been studied in detail: each dipole's
-polarisability must account for the local field of the surrounding lattice, which the lattice
-dispersion relation fixes so that an infinite lattice propagates waves as the continuum does to a
-given order in $kd$ \citep{Draine1993}; the error of the method converges at second order in the
-dipole spacing when shape errors are absent \citep{Yurkin2006}; and integrating the Green's tensor
-over each cell rather than sampling it at the centre improves accuracy, most of all for strong
-contrasts \citep{Chaumet2004}. The elastic problem adds a structure the scalar and electromagnetic
-ones lack. A cubic voxel responds to the incident field with a force (through its density contrast)
-and a moment (through its stiffness contrast), so the state at a voxel has nine components
-(displacement and strain), and the single site's self-interaction is the elastic depolarisation of
-a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
+\paragraph{The coupled-dipole method} Replacing a heterogeneous body by a lattice of small
+scatterers that interact through the background Green's function is the multiple-scattering
+description of \citet{Foldy1945} and \citet{Lax1951}. In electromagnetics it became a numerical
+method as the coupled-dipole method, or discrete dipole approximation (DDA): each cell of a cubic
+grid is a polarisable point dipole driven by the incident field and by the fields of every other
+dipole \citep{Purcell1973,Draine1994}. The method is a collocation of the volume integral equation
+for the electric field, with the cell's self-interaction absorbed into its polarisability
+\citep{Lakhtakia1992}, and \citet{YurkinHoekstra2007} review it in that form. Its accuracy turns on
+two ingredients, and this paper takes up both for elasticity. The first is the polarisability. The
+Clausius--Mossotti value is the static response of a sphere; the lattice dispersion relation of
+\citet{Draine1993} adjusts it so that an infinite lattice propagates waves as the continuum does to
+a given order in $kd$; \citet{Rahmani2002} instead derive it from the exact static solution for the
+whole body, so that the method is exact in the long-wavelength limit. The second is the coupling.
+Integrating the Green tensor over the source cell rather than sampling it at the centre improves the
+accuracy, most of all for strong contrasts \citep{Chaumet2004}, and the filtered coupled dipoles of
+\citet{Piller1998}, revived by \citet{Yurkin2010} for large refractive indices, replace the point
+dipole by a source of finite extent whose spectrum is band-limited to the grid. The coupling summed
+over a lattice extends the method to periodic structures \citep{Chaumet2003}. Its error converges
+at second order in the dipole spacing when shape errors are absent \citep{Yurkin2006}, and for a
+cube, the one shape a cubic grid represents without a staircase, \citet{YurkinKahnert2013} reach
+relative uncertainties of $10^{-7}$ to $10^{-3}$ by extrapolation in the grid. The layer studied
+here is the elastic counterpart of that cube: a body the grid represents exactly, so that the
+discretisation error can be isolated. What this paper adds is the closed form: for cells that tile
+space, the coupling that makes the lattice reproduce the continuum exactly, and the order and the
+constant of the error that remains.
 
-\paragraph{This paper} The approach originates in the two-and-a-half-dimensional formulation of
-\citet{Nestor1996}: a medium divided into cells that interact through the background Green's tensor,
-each carrying a single-site contrast renormalised by its own near field, with the multiple-scattering
-series summed. This paper extends it to cubic voxels. \S\ref{sec:setting} sets out the discrete medium
+\paragraph{Its elastic counterparts} The elastic problem has the same volume integral equation
+\citep{Gubernatis1977}, and every cell-based solver of it is a coupled-dipole method whether or not
+it carries the name. \citet{Nestor1996} divided a two-and-a-half-dimensional medium into cells that
+interact through the background Green's tensor, each carrying a contrast renormalised by its own
+near field, with the multiple-scattering series summed. \citet{Kanaun2013} discretise the inclusion
+problem with Gaussian approximating functions whose matrix elements are analytic. \citet{Yang2008}
+solve a stress--velocity form of the integral equation on a grid by conjugate gradients with fast
+Fourier transforms, and \citet{Touhei2011} does the same for a half space with a generalised Fourier
+transform. \citet{Jakobsen2012} and \citet{Jakobsen2020} build the seismic forward and inverse problems on the
+transition operator of the discretised Lippmann--Schwinger equation, in the anisotropic elastic case
+with a nine-component state vector. The elastic problem adds a structure the scalar and
+electromagnetic ones lack. A cubic voxel responds to the incident field with a force (through its
+density contrast) and a moment (through its stiffness contrast), so the state at a voxel has nine
+components (displacement and strain), and the single site's self-interaction is the elastic
+depolarisation of a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
+
+\paragraph{This paper} It extends the formulation of \citet{Nestor1996} to cubic voxels.
+\S\ref{sec:setting} sets out the discrete medium
 and \S\ref{sec:continuum} the continuous layer it must reproduce. \S\ref{sec:point} shows why the
 point coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly.
 \S\ref{sec:single} derives the single-site $T$-matrix from moment integrals, tests it against the exact
@@ -182,6 +224,24 @@ operator is
 \end{equation}
 where $\Delta\mathcal{C}$ is the $6\times6$ contrast stiffness with $\Delta\lambda+2\Delta\mu$ and
 $\Delta\lambda$ in the normal block and $2\Delta\mu$ (not $\Delta\mu$) on the shear diagonal.
+
+\paragraph{Averaging, and collocation} Three operations in this paper are averages over a cell,
+and they are distinct. The \emph{source-cell average} integrates the kernel over the cell that
+radiates: $\langle\bK\rangle(\mathbf r)=d^{-3}\int_{\text{cube}}\bK(\mathbf r-\mathbf y)\,\dd\mathbf y$
+is the field at $\mathbf r$ of a uniform polarisation of the source cell. Every scheme in this paper
+uses it, and \S\ref{sec:tiling} shows it to be exact. \emph{Collocation} fixes where the discrete
+equation is imposed: at the receiving cell's centre, with the internal field of each cell uniform, so
+that the unknown is the field at the centre. The \emph{receiver-cell average} imposes the equation in
+the mean over the receiving cell instead; with a uniform internal field that is the Galerkin scheme
+of degree zero, called the mean-only voxel below. The two are both \emph{uniform-field} voxels, a
+term that refers to the internal field and not to the test, and they differ only in the test
+function (a delta at the centre against the cell's indicator) and in the constant of their
+$O((kd)^2)$ error (Table~\ref{tab:ratio}). The \emph{cell-mean contrast}, finally, is an average of
+the material, not of the field: where the medium varies within a cell, the contrast is projected
+onto the cell's basis, its mean for degree $r=0$, rather than sampled at the centre
+(\S\S\ref{sec:hetero}, \ref{sec:sphere}). In the language of the coupled-dipole method, the point
+dipole is collocation with the point kernel, the integrated Green tensor adds the source-cell
+average, and the filtered coupled dipoles replace the point source by one of finite extent.
 
 \paragraph{The laterally uniform layer} A layer of thickness $D$ is filled with $n$ planes of
 voxels, $d=D/n$, and illuminated at normal incidence. The field is then laterally uniform, only the
@@ -635,7 +695,11 @@ $\alpha=5000$, $\beta=3000$\,m\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$, illuminated
 the reflected displacement of the chain converges to the continuous layer's at order $2.000$ for
 $n=4\to16$ at $\omega=60$, $300$ and $600$\,rad\,s$^{-1}$, with the collocation
 \eqref{eq:collocation} and with the package $T$-matrix alike (\path{ContinuumLimit_Chain.wl}). The
-error depends on $k_Sh$ alone.
+error depends on $k_Sh$ alone. Throughout, an order quoted for a pair of grids is the apparent order
+$\ln(e_1/e_2)/\ln(n_2/n_1)$ between them, with $e$ the relative error against the exact solution
+and $n$ the refinement; the orders in the legend of Fig.~\ref{fig:convergence} are least-squares
+slopes of $\ln e$ against $\ln n$ over the grids marked as fitted, with their standard errors. The
+two agree where a sequence is asymptotic and differ where it is not, which the apparent orders show.
 
 \paragraph{The leading error in closed form} In Eq.~\eqref{eq:collocation} the kernel is
 integrated exactly; the only approximation is the internal field's variation across a voxel. At
@@ -994,20 +1058,26 @@ measures the orders of Eq.~\eqref{eq:graded} again.
 The layer and the stratified layer are laterally uniform. A sphere is not, and elastic scattering by a
 sphere, homogeneous \citep{YingTruell1956,PaoMow1973} or radially varying \citep{TakeuchiSaito1972},
 has an exact solution: it is the usual benchmark for volume-integral and discrete-dipole methods. This
-section solves two spheres with the full three-dimensional voxel scheme. The sphere is voxelised by the
-cubes of an $n_{\mathrm{sub}}^3$ grid whose centres lie inside it, and the Foldy--Lax system is solved
-with the uniform-field voxel (the second-order scheme of \S\S\ref{sec:single}--\ref{sec:convergence};
-the first-moment voxel of \S\ref{sec:fourth} has not been built for finite three-dimensional
-scatterers) and the cell-averaged coupling, by an FFT-accelerated iterative solver. The single site is
-the package's cube $T$-matrix, which differs from the collocation closure only through its far-field
-corrections (\S\ref{sec:closure}) and has the same order. A P wave is incident. The far field is
+section solves two spheres with the full three-dimensional voxel scheme: the sphere is voxelised on an
+$n_{\mathrm{sub}}^3$ grid, the Foldy--Lax system is solved with the cell-averaged coupling by an
+FFT-accelerated iterative solver, and a P wave is incident. For the graded sphere the voxel is the
+mean-only voxel of \S\ref{sec:fourth} in three dimensions: each cell carries the mean of its
+nine-component state, tested with the same constant, and the $L^2$ projection of its contrast, which is
+its cell mean; every cell that overlaps the sphere is kept, and the cells are coupled by cell-to-cell
+double integrals of the Green's tensor, one block per orbit of the cube group
+\citep{NestorGraded2026}. For the sharp sphere the voxel is the package's cube $T$-matrix, which
+differs from the collocation closure only through its far-field corrections (\S\ref{sec:closure}) and
+has the same order, each cell keeping the contrast of its centre. The far field is
 computed from the solution for the incident plane wave itself, each voxel's displacement and strain
 carrying the plane-wave phase at its centre; adding to that phase a linear variation about the
 scatterer's centre, as a Taylor expansion of the incident field would, counts the wave's variation
 twice and leaves an error of order $(ka)^2$ that no refinement removes. The error is the largest
 difference between the scattered far field and the exact one over nine scattering angles from
-$11^\circ$ to $169^\circ$, relative to the largest exact value, at a distance of $5\times10^4$ radii
-where the far field has converged.
+$11^\circ$ to $169^\circ$, relative to the largest exact value, at a distance of $5\times10^8$ radii
+for the graded sphere: at $5\times10^4$ radii the near-field terms that the asymptotic far field omits
+are $1.4\times10^{-4}$ of the peak, $4\%$ of the discretisation error at $12$ voxels across and most
+of it at $24$. The sharp sphere, whose errors are a hundred times larger, is observed at
+$5\times10^4$ radii.
 
 \paragraph{A sphere without a staircase} A voxelised sphere with a sharp surface changes its shape
 with every grid. A sphere whose contrast falls smoothly to zero at its surface does not: the voxels
@@ -1020,28 +1090,57 @@ outgoing waves at $r=a$. The equations are derived symbolically from the equatio
 solution is checked against a sphere of homogeneous concentric shells in closed form, by unitarity and
 reciprocity, and by an independent implementation that agrees to $2\times10^{-11}$
 (\path{TakeuchiSaito.wl}, \path{ContinuumLimit_GradedSphere.wl}, \path{scripts/crosscheck_graded_sphere.py}).
-Each voxel carries the contrast of its centre. Table~\ref{tab:spheregraded} shows that the error now
-falls steadily, from $0.47\%$ at $n_{\mathrm{sub}}=6$ to $0.061\%$ at $n_{\mathrm{sub}}=12$ at
-$k_Sa=0.5$, and from $0.84\%$ to $0.19\%$ at $k_Sa=1.0$ (\path{scripts/pilot_graded_sphere_vs_exact.py}).
-The apparent order is between $1.7$ and $3.6$: the second order of the uniform-field voxel with the
-error of sampling the profile at the voxel centres superposed, which converges irregularly on a cubic
-lattice. At $n_{\mathrm{sub}}=4$ a voxel is as wide as the graded shell and the error is $10$ to $12\%$.
+Each voxel carries the mean of the contrast over its cell. Table~\ref{tab:spheregraded} shows the
+error falling at second order from $n_{\mathrm{sub}}=6$ to $24$ at both frequencies
+(\path{scripts/pilot_graded_voxel_sphere.py}): the apparent order between successive grids is $2.02$
+to $2.06$ at $k_Sa=0.5$ and $2.00$ at $k_Sa=1$, and the least-squares orders of
+Fig.~\ref{fig:convergence}(d) are $2.045\pm0.004$ and $1.994\pm0.004$. With $24$ voxels across the
+error is $1.8\times10^{-4}$ and $8.3\times10^{-4}$. At $n_{\mathrm{sub}}=4$ a voxel is as wide as
+the graded shell and the order is not yet asymptotic. This is the order the layer predicts for the
+mean-only voxel, and the first test of that prediction on a body with genuine three-dimensional
+structure.
+
+What makes the sequence this clean is that the voxel carries a single error. The collocation voxel
+of the sharp sphere applied to this body, each cell at the profile's value at its centre and only the
+cells whose centres lie inside the sphere kept, carries two: its own internal-field error and the
+error of sampling the profile, both $O(h^2)$. Its error falls from $1.0\times10^{-1}$ at
+$n_{\mathrm{sub}}=4$ to $4.7\times10^{-3}$, $2.6\times10^{-3}$, $6.4\times10^{-4}$ and
+$2.3\times10^{-4}$ at $6$, $8$, $12$ and $16$, apparent orders $7.6$, $2.0$, $3.5$ and $3.6$ at
+$k_Sa=0.5$, and at $k_Sa=1$ the apparent orders are $1.7$, $2.5$ and $2.4$ from $6$ to $16$: on
+these grids its error is below the mean-only voxel's, but its apparent order is not that of any
+single term and cannot be read from them. The same collocation voxel with the cell mean of the
+contrast, and every overlapping cell kept, gives $3.4\times10^{-3}$, $1.9\times10^{-3}$ and
+$8.2\times10^{-4}$ at $6$, $8$ and $12$, apparent orders $2.03$ and $2.05$: the sampling of the
+profile was the second term, and with it removed the collocation and mean-only voxels differ only by
+their constants, as in Table~\ref{tab:ratio}. The cell mean, with every
+overlapping cell kept, represents the same body on every grid, and the order the layer predicts is
+then the one observed.
+
+The first-moment voxel of \S\ref{sec:fourth}, extended to three dimensions with a contrast linear in
+each cell, converges at fourth order on this same sphere \citep{NestorGraded2026}: its apparent orders
+are $4.01$ and $4.13$ where the discretisation error is isolated at weak contrast, and at the full
+contrast its error with $16$ voxels across is $4.9\times10^{-6}$ and $5.9\times10^{-6}$, $82$ and
+$317$ times below the mean-only voxel's on the same grid.
 
 \begin{table}[htbp]
 \centering
-\caption{The smoothly graded sphere, voxelised on grids of $n_{\mathrm{sub}}$ voxels across, against its
-exact solution: relative far-field error, and the apparent order between successive grids.}
+\caption{The smoothly graded sphere, voxelised with the mean-only voxel on grids of $n_{\mathrm{sub}}$
+voxels across, against its exact solution: relative far-field error, and the apparent order between
+successive grids. Nine unknowns per cell, every cell overlapping the sphere kept.}
 \label{tab:spheregraded}
 \small
 \begin{tabular}{@{}rrcccc@{}}
 \toprule
  & & \multicolumn{2}{c}{$k_Sa=0.5$} & \multicolumn{2}{c}{$k_Sa=1.0$} \\
-$n_{\mathrm{sub}}$ & voxels & error & order & error & order \\
+$n_{\mathrm{sub}}$ & unknowns & error & order & error & order \\
 \midrule
-$4$  & $32$  & $1.02\times10^{-1}$ &        & $1.15\times10^{-1}$ &        \\
-$6$  & $136$ & $4.66\times10^{-3}$ & $7.62$ & $8.43\times10^{-3}$ & $6.45$ \\
-$8$  & $280$ & $2.58\times10^{-3}$ & $2.06$ & $5.17\times10^{-3}$ & $1.70$ \\
-$12$ & $912$ & $6.11\times10^{-4}$ & $3.55$ & $1.88\times10^{-3}$ & $2.49$ \\
+$4$  & $576$    & $7.70\times10^{-3}$ &        & $3.24\times10^{-2}$ &        \\
+$6$  & $1\,872$  & $3.04\times10^{-3}$ & $2.30$ & $1.32\times10^{-2}$ & $2.22$ \\
+$8$  & $3\,672$  & $1.68\times10^{-3}$ & $2.05$ & $7.52\times10^{-3}$ & $1.95$ \\
+$12$ & $11\,520$ & $7.30\times10^{-4}$ & $2.06$ & $3.34\times10^{-3}$ & $2.00$ \\
+$16$ & $24\,984$ & $4.06\times10^{-4}$ & $2.04$ & $1.88\times10^{-3}$ & $2.00$ \\
+$20$ & $47\,304$ & $2.58\times10^{-4}$ & $2.03$ & $1.20\times10^{-3}$ & $2.00$ \\
+$24$ & $79\,344$ & $1.79\times10^{-4}$ & $2.02$ & $8.34\times10^{-4}$ & $2.00$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1102,8 +1201,9 @@ first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10
 line has order 6.000 and the third-moment line order 8.000, over 1 to 8 planes, reaching about $10^{-22}$. (b) Uniform layer at 20 degrees,
 1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
 first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
-for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 12 voxels across:
-two falling lines, for $k_Sa=0.5$ and $1$, from about $10^{-1}$ at 4 voxels to below $2\times10^{-3}$ at 12.\par}
+for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 24 voxels across:
+two straight falling lines of order 2, for $k_Sa=0.5$ and $1$, from about $10^{-2}$ and
+$3\times10^{-2}$ at 4 voxels to $2\times10^{-4}$ and $8\times10^{-4}$ at 24.\par}
 \end{figure}
 
 \paragraph{Where the error of a voxel scheme lives} The results separate the two approximations
@@ -1129,20 +1229,48 @@ the field across the scatterer, and the same remedy, a richer internal field. In
 remedy is cheap: the field a voxel must represent is the smooth continuum field, not the field of an
 isolated cube, with its concentrations at the edges and corners.
 
-\paragraph{Relation to the discrete dipole approximation} The same partition appears in the
-electromagnetic literature as the choice of polarisability. The Clausius--Mossotti relation, the
-lattice dispersion relation \citep{Draine1993} and the integrated Green tensor \citep{Chaumet2004} all
-adjust the single site so that the lattice reproduces the continuum. For space-filling cubes the
-adjustment is neither needed nor a free parameter: the tiling identity fixes the local field exactly, the
-self term of the collocation closure is the one that makes it cancel, and what is left is a
-closed-form error rather than an empirical one. The second-order convergence reported for the DDA
-by \citet{Yurkin2006} corresponds to the uniform-field voxel's, and the opposite-signed constants of
-Eq.~\eqref{eq:errorR} explain why a polarisability correction can improve one observable only at
-the expense of another, as the package's own form-factor corrections do in reflection and
-transmission. Going beyond second order requires a richer internal field, which is the point of
-higher-order bases for volume integral equations; the first-moment voxel is the lowest such basis,
-and in its spectral form the Galerkin double average makes the lattice sum converge without Ewald
-splitting.
+\paragraph{Relation to the coupled-dipole method} The same partition appears in the
+coupled-dipole method as the choice of polarisability. The Clausius--Mossotti relation, the lattice
+dispersion relation \citep{Draine1993}, the polarisability taken from the exact static solution
+\citep{Rahmani2002} and the integrated Green tensor \citep{Chaumet2004} all adjust the single site
+so that the lattice reproduces the continuum. For space-filling cubes the adjustment is neither
+needed nor a free parameter: the tiling identity fixes the local field exactly, the self term of the
+collocation closure is the one that makes it cancel, and what is left is a closed-form error rather
+than an empirical one. That the method is a collocation of the volume integral equation was shown
+for the electromagnetic case by \citet{Lakhtakia1992}; Eq.~\eqref{eq:collocation} is the same
+statement for the elastic lattice with the self term evaluated over the finite cube, and it is what
+makes the error a midpoint-rule error. The filtered coupled dipoles of \citet{Piller1998} and
+\citet{Yurkin2010} band-limit the source to the grid; the source-cell average does the
+complementary thing exactly, its form factor vanishing on the reciprocal lattice, and the spectral
+construction of Eq.~\eqref{eq:bloch} is the periodic coupled-dipole method of \citet{Chaumet2003}
+with the Galerkin double average in place of the point dipole. The second-order convergence
+reported for the DDA by \citet{Yurkin2006} corresponds to the uniform-field voxel's, and the
+opposite-signed constants of Eq.~\eqref{eq:errorR} explain why a polarisability correction can
+improve one observable only at the expense of another, as the package's own form-factor corrections
+do in reflection and transmission. Going beyond second order requires a richer internal field, which
+is the point of higher-order bases for volume integral equations; the first-moment voxel is the
+lowest such basis, and in its spectral form the Galerkin double average makes the lattice sum
+converge without Ewald splitting.
+
+\paragraph{The tension between the two error sources} The coupled-dipole method has two sources
+of error, the single site and the coupling between sites, and each has been corrected on its own:
+the polarisability by the Clausius--Mossotti relation, the lattice dispersion relation or the exact
+static limit, and the coupling by integrating or filtering the Green tensor. The two are not
+independent. The point kernel's evanescent orders carry a static local term whose size per voxel
+volume does not shrink with the voxels (\S\ref{sec:point}), and the single site must cancel exactly
+that term. A polarisability tuned for one kernel is therefore wrong for another: the lattice
+dispersion relation corrects the point-dipole lattice, and changing the kernel to an integrated or
+a filtered one changes the term it must cancel. Tuning either alone moves the error between the
+two, and refinement cannot reveal a mismatch, because the surviving term is scale-invariant. For
+space-filling cubes the tension is resolved rather than balanced: the cell-averaged kernel omits
+exactly the self term that the closure carries (Eq.~\eqref{eq:collocation}), so the coupling error
+vanishes identically and every remaining error is the single site's, the variation of the field
+across the cell. That error has a second tension of its own. It is a midpoint-rule error whose
+constants have opposite signs in reflection and transmission (Eq.~\eqref{eq:errorR}), so any
+scalar adjustment of the single site that improves one worsens the other; the package's far-field
+corrections reduce the reflection error by a factor $4.45$ and increase the transmission error by
+$1.7$. No polarisability, however chosen, can remove it. What removes it is a richer internal
+field: the first moment lowers the error by two orders in $kd$ in both observables at once.
 
 \paragraph{The cost of fourth order} A first-moment voxel carries four times as many unknowns as
 a uniform one (36 against 9 in three dimensions). The closed forms show what that buys. To reach an
@@ -1166,13 +1294,14 @@ compared with the accuracy the wavefield must have.
 and a randomly stratified one, for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
 first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
-$O(k_\parallel h)$. The smoothly graded sphere of \S\ref{sec:sphere} shows the uniform-field
-voxel converging on a laterally heterogeneous body against an exact solution; the fourth order has still to be shown there.
+$O(k_\parallel h)$. The smoothly graded sphere of \S\ref{sec:sphere} shows the mean-only
+voxel converging at second order on a laterally heterogeneous body against an exact solution, and the
+companion paper \citep{NestorGraded2026} shows the first-moment voxel converging at fourth order there.
 A contrast that varies within a cell, which \S\ref{sec:hetero} shows is needed beyond second order in a
 smoothly varying medium, has a further consequence in three dimensions: its linear part is odd about
 the cell's centre, so it couples the single site's uniform-field and first-moment blocks, which parity
 keeps apart for a homogeneous cube (\S\ref{sec:parity}). A graded voxel therefore needs at least the
-first-moment block; it has not been built. The numerical evidence is at moderate, physically typical contrasts (up to
+first-moment block; that voxel is built, and tested on the graded sphere, in the companion paper. The numerical evidence is at moderate, physically typical contrasts (up to
 $15\%$ in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
 validated; the closed forms are first order in the contrast, and the departures from them at the
 full contrast are of second order. What is established is the \emph{order} of convergence and its
@@ -1209,9 +1338,9 @@ at second order; with the contrast projected to degree $r$ the order is $\min(2p
 coupling needs nothing beyond the same kernel moments to degree $p+r$. The orders survive
 the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
 first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
-voxel needs about forty. A sphere whose contrast falls smoothly to zero at its surface converges against
-its exact solution, to $0.061\%$ at $k_Sa=0.5$ with twelve voxels across; a sharp sphere's error is
-set by its staircase, which changes with the grid. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
+voxel needs about forty. A sphere whose contrast falls smoothly to zero at its surface converges at
+second order against its exact solution, as the layer predicts, to $0.018\%$ at $k_Sa=0.5$ with
+twenty-four voxels across; a sharp sphere's error is set by its staircase, which changes with the grid. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
 
 \begin{table}[htbp]
 \centering
@@ -1248,7 +1377,7 @@ Independent implementation of Eq.~\eqref{eq:bloch} & $1.1\times10^{-15}$, 40 cas
 Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, normal and $20^\circ$ \\
 Stratified reference against Kennett's recursion & $10^{-14}$ \\
 Contrast varying within a cell, Eq.~\eqref{eq:graded} & $8$ cases, linear and smooth profiles; closed forms tested one by one to $2\times10^{-16}$ \\
-Smoothly graded sphere, \S\ref{sec:sphere} & exact solution by two routes, $2\times10^{-11}$; error $6.1\times10^{-4}$ and $1.9\times10^{-3}$ at $n_{\mathrm{sub}}=12$ \\
+Smoothly graded sphere, \S\ref{sec:sphere} & exact solution by two routes, $2\times10^{-11}$; orders $2.04$ and $1.99$, $n_{\mathrm{sub}}=6$ to $24$ \\
 \bottomrule
 \end{tabular}
 \end{table}
