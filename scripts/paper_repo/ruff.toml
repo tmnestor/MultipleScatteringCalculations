@@ -1,0 +1,7 @@
+# Lint settings for this repository, so that ruff behaves the same in every clone.
+line-length = 108
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "B"]
+ignore = ["E741", "ARG001", "ARG002", "F841"]

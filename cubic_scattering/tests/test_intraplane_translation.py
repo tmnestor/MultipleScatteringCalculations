@@ -114,7 +114,8 @@ def test_projection_matches_mathematica(ref):
             b_mma = complex(e["re"], e["im"])
             worst = max(worst, abs(b_py - b_mma))
     print(
-        f"\n  max |beta_proj(py) - beta_closed(mma)| over {len(ref['betaP']) + len(ref['betaS'])} entries = {worst:.3e}"
+        f"\n  max |beta_proj(py) - beta_closed(mma)| over "
+        f"{len(ref['betaP']) + len(ref['betaS'])} entries = {worst:.3e}"
     )
     assert worst < 1e-8
 
@@ -152,7 +153,8 @@ def test_closedform_matches_mathematica(ref):
             b_py = cf_beta(e["n"], e["m"], e["nu"], e["mu"], dvec, k)
             worst = max(worst, abs(b_py - complex(e["re"], e["im"])))
     print(
-        f"\n  max |beta_closed(py) - beta_closed(mma)| over {len(ref['betaP']) + len(ref['betaS'])} entries = {worst:.3e}"
+        f"\n  max |beta_closed(py) - beta_closed(mma)| over "
+        f"{len(ref['betaP']) + len(ref['betaS'])} entries = {worst:.3e}"
     )
     assert worst < 1e-10
 
