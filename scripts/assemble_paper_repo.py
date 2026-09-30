@@ -182,6 +182,7 @@ _NAMES, _STEMS = local_exclusions()
 HOME_ROOT = str(Path.home().parent) + "/"
 FORBIDDEN = re.compile("|".join([re.escape(HOME_ROOT)] + [re.escape(w) for w in _STEMS]), re.IGNORECASE)
 FORBIDDEN_NAMES = _NAMES | {"docs", "memory", "plans"}
+DECLARATION_HEADING = "Declaration of generative AI"
 TEXT_SUFFIXES = {
     ".py",
     ".wl",
@@ -275,7 +276,18 @@ def scrub(dest: Path) -> list[str]:
                 text = path.read_text(errors="replace")
             except OSError:
                 continue
+            # The papers' declaration of AI-assisted preparation, which the journals require, is the
+            # one place a tool may be named: the block from its heading to the next sectioning command.
+            in_declaration = False
             for i, line in enumerate(text.splitlines(), 1):
+                if DECLARATION_HEADING in line:
+                    in_declaration = True
+                elif in_declaration and line.lstrip().startswith(
+                    ("\\section", "\\bibliographystyle", "\\end{document}")
+                ):
+                    in_declaration = False
+                if in_declaration:
+                    continue
                 m = FORBIDDEN.search(line)
                 if m:
                     problems.append(f"{path.relative_to(dest)}:{i}: '{m.group(0)}'")
