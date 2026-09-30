@@ -67,9 +67,10 @@ electromagnetics, represent a heterogeneous medium as cubic cells, each
 carrying a single-site $T$-matrix and coupled through the background Green's tensor. They are
 built for media with no exact solution, where their error cannot be measured directly and a
 refinement study can converge smoothly to the wrong limit. A layer of identical voxels exercises
-such a scheme in full and has an exact answer. Because cubes tile space, it isolates the
-discretisation error exactly. For this layer we establish whether, how fast and with what error
-the scheme converges. (i) The cube's lateral form factor vanishes on the reciprocal lattice, so
+such a scheme in full and has an exact answer. Because cubes tile space, $n$ planes of voxels of
+side $D/n$ are the layer itself for every $n$, with no shape or modelling error, so the difference
+from the exact solution is the discretisation error alone. For this layer we establish whether, how
+fast and with what error the scheme converges. (i) The cube's lateral form factor vanishes on the reciprocal lattice, so
 the source-cell-averaged coupling is \emph{exactly} the continuum's, and the lattice kernel at
 normal incidence is in closed form. (ii) The single-site $T$-matrix follows from distributional
 moments of the Green's tensor over the cube. Its uniform-strain closure differs from a sphere's
@@ -1430,6 +1431,12 @@ degree \path{scripts/crosscheck_second_moment_voxel.py}, and of the graded cell
 \section*{Acknowledgments}
 This work began thirty years ago in the author's doctoral research at the Research School of Earth
 Sciences of the Australian National University, Canberra \citep{Nestor1996}.
+
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+During the preparation of this work, the author used Claude (Anthropic) in order to check the existing
+Mathematica notebooks, Python and Fortran code, and to build tests to ensure their correctness. After
+using this tool, the author reviewed and edited the content as needed and takes full responsibility for
+the content of the published article.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}

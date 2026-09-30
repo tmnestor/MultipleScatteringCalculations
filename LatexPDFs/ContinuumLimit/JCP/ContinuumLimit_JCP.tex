@@ -36,10 +36,10 @@ and the closed-form error of the discrete layer}
 \begin{abstract}
 
 We analyse the convergence of voxel discretisations of the elastic volume integral equation, in
-which a medium is divided into cubic cells, each represented by a single-site $T$-matrix and coupled
-through the background Green's tensor: the elastic coupled-dipole method.
-Because cubes tile space, a layer of identical voxels is exactly a homogeneous layer, so it isolates
-the discretisation error, with no shape error. We show that (i) the cube's lateral form
+which a medium is divided into cubic cells coupled through the background Green's tensor: the
+elastic coupled-dipole method. Because cubes tile space, $n$ planes of voxels of side $D/n$ are the
+layer itself for every $n$, with no shape error, so the difference from the exact solution is the
+discretisation error alone. We show that (i) the cube's lateral form
 factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
 continuum's; (ii) the single-site $T$-matrix follows from distributional moments of the Green's
 tensor and, against exact scattering by a sphere, is exact statically and departs only by a real,
@@ -48,7 +48,7 @@ continuum equation, of second order with leading error $+(kd)^2/8$ in reflection
 transmission, which no scalar correction can remove; (iv) a Galerkin voxel carrying Legendre moments
 of its internal field to degree $p$ converges at order $2p+2$, with leading error $-(kd)^4/720$ at
 $p=1$, for incident P, SV and SH waves at normal and oblique incidence, and one plane of it
-reproduces the thin-layer series in the thickness $D$ through $O(D^{2p+2})$. In a randomly
+reproduces the thin-layer series through $O(D^{2p+2})$. In a randomly
 stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
 $10^{-6}$ with one voxel per model layer. A smoothly graded sphere converges at second order against its
 exact solution. Every
@@ -1389,6 +1389,12 @@ Sciences of the Australian National University, Canberra \citep{Nestor1996}.
 \section*{Declaration of competing interest}
 The author declares no known competing financial interests or personal relationships that could have
 appeared to influence the work reported in this paper.
+
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+During the preparation of this work, the author used Claude (Anthropic) in order to check the existing
+Mathematica notebooks, Python and Fortran code, and to build tests to ensure their correctness. After
+using this tool, the author reviewed and edited the content as needed and takes full responsibility for
+the content of the published article.
 
 \section*{Data availability}
 The Mathematica notebooks and Python scripts that derive and check every result, and the package they
