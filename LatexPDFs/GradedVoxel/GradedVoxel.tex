@@ -352,9 +352,7 @@ is steeper, with a maximum slope of $2$ against $1.875$ and much larger higher d
 shell instead, with the core at $a/4$, so that $n=16$ puts six cells across it rather than four, speeds
 the approach for both profiles: the apparent order reaches $3.92$ with $s$ and $3.88$ with the $C^\infty$
 step. The full solve follows $T_2$ throughout. The approach to fourth order is therefore governed by how
-finely the cells resolve the variation of the contrast; the data are consistent with an expansion in the
-ratio of the cell to the profile's length scale whose higher terms are still large when four cells span
-the shell, though they do not determine its terms.
+finely the cells resolve the variation of the contrast.
 
 \begin{table}[ht]
 \centering\small
@@ -376,6 +374,33 @@ order $14\to16$ & 3.80 & 3.52 & 3.92 & 3.88 \\
 \caption{Full contrast, $k_Sa=0.5$: the graded voxel's far-field error for two shell profiles and two
 shell widths.}\label{tab:resolution}
 \end{table}
+
+\paragraph{The error of $T_2$ is a projection defect.} Two measurements identify it. First, it is static.
+At $n=8$ the relative error of $T_2$ is $5.3$, $5.2$, $4.8$, $4.9$ and $5.1\times10^{-3}$ at
+$k_Sa=0.125$, $0.25$, $0.5$, $1$ and $2$, while that of the Born term grows as the fourth power of the
+frequency ($1.6\times10^{-6}$, $2.8\times10^{-5}$ and $4.5\times10^{-4}$ at $k_Sa=0.5$, $1$ and $2$).
+Second, with $\Pi_1$ the $L^2$ projection onto the functions linear in each cell, it equals the defect
+\begin{equation}
+D_1=\frac{\sum_{\text{cells}}\int(s-\Pi_1s)^2\,\dd V}{\sum_{\text{cells}}\int s^2\,\dd V}
+\label{eq:defect}
+\end{equation}
+of the profile $s$, computed from the profile alone: the ratio of $T_2$'s error to $D_1$ lies between
+$1.03$ and $1.06$ on every grid from $n=8$ to $16$, odd and even, for both profiles and both shell
+widths ($D_1=4.6\times10^{-3}$ at $n=8$ and $3.6\times10^{-4}$ at $n=16$ for the sphere of
+Table~\ref{tab:full}). The apparent order of $D_1$ itself between $n=14$ and $16$ is $3.79$, which
+is the $3.80$ of the full solve. The reading is this. The once-scattered field has a local part
+proportional to the contrast, from the singular part of the propagator. The cells hold only its
+projection onto their linear field functions, so the second-order term pairs the contrast with
+$\Pi_1$ of itself, $\int(\Pi_1s)^2$ in place of $\int s^2$, and loses $D_1$. The Born term is spared
+because the projection keeps each cell's mean and first moments of the contrast. This is an argument
+that fits the measurements, not a derivation. It makes one prediction that was tested: the defect belongs to
+the field functions, not to the representation of the contrast. With the contrast quadratic in each cell
+(its ten orthogonal polynomials of degree two, twenty source monomials of degree three; the blocks pass
+the same subdivision identity) and the field still linear, the full-contrast error at $k_Sa=0.5$ falls
+only from $5.47\times10^{-4}$, $6.28\times10^{-5}$ and $1.46\times10^{-5}$ to $5.03\times10^{-4}$,
+$5.86\times10^{-5}$ and $1.35\times10^{-5}$ at $n=4$, $8$ and $12$: by $8\%$, where the defect of a
+quadratic projection is $10$ and $21$ times below $D_1$ at $n=8$ and $12$. A field quadratic in the cell
+is what the argument calls for; it has not been built.
 
 \begin{table}[ht]
 \centering\small
@@ -444,9 +469,9 @@ faces normal to the stratification exist. The Born term does not see either: its
 error of the source, and it is of fourth order. The multiple-scattering term sees both, but neither costs
 an order: its apparent order rises towards four, and the full solve follows it (\S\ref{sec:sphere}). The
 approach is slow where few cells span the variation of the contrast, and does not depend on the frequency
-or on the smoothness of the profile. Why the multiple-scattering term is so much more sensitive to that
-resolution than the Born term, whose relative error is three orders of magnitude smaller, has not been
-established.
+or on the smoothness of the profile. The error of the multiple-scattering term is the defect
+(\ref{eq:defect}) of the profile's projection onto the cells' field functions (\S\ref{sec:sphere}), a
+static quantity three orders of magnitude above the Born term's error at these frequencies.
 
 \paragraph{Galerkin and collocation.} With the lattice couplings then available, a uniform-field Galerkin
 cell was measured several times worse than the collocation cell \citep{NestorContinuum2026}. Here, with every
