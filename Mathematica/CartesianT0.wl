@@ -20,7 +20,7 @@
    ============================================================================ *)
 
 (* ---- 1. spherical bracket T_n in the clean L/M/N normalization ---- *)
-nb = Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ElasticMieTmatrix.nb"];
+nb = Get[DirectoryName[$InputFileName] <> "ElasticMieTmatrix.nb"];
 mcells = Cases[nb, Cell[c_String, "Input", ___] :> c, Infinity];
 cln[s_] := StringReplace[s, "ClearAll[\"Global`*\"]" -> "Null"];
 Do[ToExpression[cln[mcells[[i]]]], {i, {1, 2, 3, 5}}];

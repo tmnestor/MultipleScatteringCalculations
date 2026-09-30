@@ -8,7 +8,7 @@
    from that file by scripts/plot_convergence_orders.py.  Nothing is transcribed by hand.
    ============================================================================ *)
 
-base = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+base = DirectoryName[$InputFileName] <> "";
 loadDefs[file_, stop_] := Module[{txt = Import[base <> file, "Text"]},
    ToExpression[StringTake[txt, StringPosition[txt, stop][[1, 1]] - 1], InputForm]];
 

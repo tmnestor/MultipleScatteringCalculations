@@ -191,6 +191,6 @@ ewaldRef = <|"aL" -> aL, "kx" -> kx, "ky" -> ky,
    "eta1" -> eta1, "RcE" -> RcE, "GcE" -> GcE, "rhoPts" -> rhoPts,
    "ewaldDamp" -> Table[reim[ewaldTotal[kDamp, rho, eta1, RcE, GcE]], {rho, rhoPts}],
    "ewaldReal" -> Table[reim[ewaldTotal[kReal, rho, eta1, RcE, GcE]], {rho, rhoPts}]|>;
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneLatticeSum_reference.json", ewaldRef];
+Export[DirectoryName[$InputFileName] <> "IntraPlaneLatticeSum_reference.json", ewaldRef];
 Print["  wrote IntraPlaneLatticeSum_reference.json (", Length[rhoPts], " rho points x 2 kappa)"];
 Print["Phase 1 TB2+TB3 (Ewald + multipole connection) loaded + verified."];

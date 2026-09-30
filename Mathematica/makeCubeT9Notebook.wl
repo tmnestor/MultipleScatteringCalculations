@@ -5,7 +5,7 @@
    a banner edge if it contains a run of >= 10 '=' characters; banner blocks
    become Text cells, everything between them becomes Input cells. *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 wlpath = dir <> "CubeT9FromFirstPrinciples.wl";
 nbpath = dir <> "CubeT9FromFirstPrinciples.nb";
 

@@ -27,7 +27,7 @@
    same; [5] oblique P, 20 deg: G0 second, G1 fourth in R_PP and R_PS.
    ============================================================================ *)
 
-base = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+base = DirectoryName[$InputFileName] <> "";
 SeedRandom[1996];
 nCells = 8; dCell = 1/2; DHet = nCells dCell; omH = 1500;
 {al0, be0, rho0} = {5000, 3000, 2500};

@@ -183,7 +183,7 @@ out = <|
    "C_dyn_re" -> Re[N[cdyn /. dynRule, 20]], "C_dyn_im" -> Im[N[cdyn /. dynRule, 20]],
    "G_dyn_re" -> Re[N[gdyn /. dynRule, 20]], "G_dyn_im" -> Im[N[gdyn /. dynRule, 20]]|>;
 
-refPath = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
+refPath = DirectoryName[$InputFileName] <> "\
 cube_self_moments.json";
 Export[refPath, out, "JSON"];
 

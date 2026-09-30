@@ -12,7 +12,7 @@
 
    and no step transcribes anything by hand. *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 wlpath = dir <> "MieSphericalWaves.wl";
 nbpath = dir <> "MieSphericalWaves.nb";
 

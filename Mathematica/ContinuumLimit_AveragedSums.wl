@@ -33,7 +33,7 @@
    time e^{-i w t}; SI units.
    ============================================================================ *)
 
-ref = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_averaged.json", "RawJSON"];
+ref = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_averaged.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 {om, al, be, rho} = Rationalize[{ref["omega"], ref["alpha"], ref["beta"], ref["rho"]}, 0];
@@ -196,7 +196,7 @@ Print["       the package's default carries a STATIC error of ", sci[res3d[[1, 3
   chk[res3d[[3, 3]] < res3d[[2, 3]] < res3d[[1, 3]] && res3d[[3, 3]] < 5 10^-5]];
 Print["       By [3c], the exact route needs no lattice sum at k_par = 0:  V S_avg(0) = V P0 - self."];
 (* the exact static e<-M block of V S_avg(0), x mu, for the package's test of its closed-form kernel *)
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_tiling_exact.json",
+Export[DirectoryName[$InputFileName] <> "ContinuumLimit_tiling_exact.json",
   <|"medium" -> <|"alpha" -> N[al], "beta" -> N[be], "rho" -> N[rho]|>,
    "note" -> "exact static V S_avg(0) at k_par = 0, e<-M block (rows/cols e_zz e_xx e_yy 2e_xy 2e_zy 2e_zx), times mu",
    "eM_times_mu" -> N[exact6 mu]|>, "RawJSON"];

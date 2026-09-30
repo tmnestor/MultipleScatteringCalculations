@@ -62,7 +62,7 @@ rt1D[m0_, r0_, m1_, r1_, d_] := Module[{k0 = k[m0, r0], k1 = k[m1, r1], rr, tt, 
 
 (* against the package: notebook 1's reference, a plane force at z_src above a layer of the same
    contrast. Reflected displacement at a receiver z above the layer = R * g(0 - z_src) * e^{-i k0 z}. *)
-ref1 = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_reference.json", "RawJSON"];
+ref1 = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_reference.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 res1 = Module[{a0 = cplx[ref1["background"]["alpha"]], r0 = ref1["background"]["rho"],

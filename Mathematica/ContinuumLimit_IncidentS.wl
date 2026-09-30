@@ -26,7 +26,7 @@
 (* ---------------------------------------------------------------------------
    PART 1: notebook 7 with the S-wave substitution
    --------------------------------------------------------------------------- *)
-nb7 = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_FourthOrder.wl", "Text"];
+nb7 = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_FourthOrder.wl", "Text"];
 nb7 = StringTake[nb7, StringPosition[nb7, "Print[\"==== ContinuumLimit_FourthOrder ::"][[1, 1]] - 1];
 If[! StringContainsQ[nb7, "dM = dLam + 2 dMu;\n"], Print["ABORT: notebook 7's parameter line has changed"]; Exit[1]];
 nb7 = StringReplace[nb7, "dM = dLam + 2 dMu;\n" -> "dM = dMu; mP = mu; al = be;   (* the S-wave substitution *)\n"];
@@ -76,7 +76,7 @@ exNormal = ex[[1]];
    --------------------------------------------------------------------------- *)
 oksP1 = oks;   (* notebook 9 resets oks and chk when loaded *)
 Clear[al, mP, dM, om];
-nb9 = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_Oblique.wl", "Text"];
+nb9 = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_Oblique.wl", "Text"];
 nb9 = StringTake[nb9, StringPosition[nb9, "pMax = 8;"][[1, 1]] - 1];
 ToExpression[nb9, InputForm];
 Print["  PART 2: the 9x9 Bloch-Galerkin voxel (notebook 9), incident S"];

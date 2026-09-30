@@ -20,6 +20,8 @@ the NaN would propagate and every test here would fail loudly rather than
 quietly absorbing it.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -146,7 +148,7 @@ def _straddling_model():
     """
     import sys
 
-    sibling = "/Users/tod/Desktop/SeismicInversion"
+    sibling = str(Path(__file__).resolve().parents[2].parent / "SeismicInversion")
     if sibling not in sys.path:
         sys.path.insert(0, sibling)
     pytest.importorskip("GlobalMatrix.layered_greens")

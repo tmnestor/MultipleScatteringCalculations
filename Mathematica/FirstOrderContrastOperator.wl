@@ -792,7 +792,7 @@ Print["     is layered, which is where this route was wanted all along."];
    Auto-generated -- never hand-edit.
    ============================================================================ *)
 
-refPath = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/\
+refPath = DirectoryName[$InputFileName] <> "\
 first_order_coupling_reference.json";
 
 exportCase[dl_, dm_, dr_] := Module[{rule},

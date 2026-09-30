@@ -29,7 +29,7 @@
    scattered field.  Coordinates (z, x, y), z down; e^{-i w t}; SI units.
    ============================================================================ *)
 
-ref = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_chain.json", "RawJSON"];
+ref = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_chain.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 {al, be, rho, dLayer} = Rationalize[{ref["alpha"], ref["beta"], ref["rho"], ref["D"]}, 0];

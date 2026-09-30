@@ -31,7 +31,7 @@
    Time e^{-i w t}; depth z down; SI units.
    ============================================================================ *)
 
-ref = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_reference.json", "RawJSON"];
+ref = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_reference.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 om = ref["omega"]; dLayer = ref["D"]; zSrc = ref["z_src"];

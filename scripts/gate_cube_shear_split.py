@@ -25,10 +25,11 @@ Run:  conda run -n seismic python scripts/gate_cube_shear_split.py
 """
 
 import sys
+from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, "/Users/tod/Desktop/MultipleScatteringCalculations")
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from cubic_scattering.effective_contrasts import _compute_T123, _static_eshelby_ABC  # noqa: E402
 
 SQ3 = np.sqrt(3.0)

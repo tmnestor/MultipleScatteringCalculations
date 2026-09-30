@@ -24,7 +24,7 @@
    (SphericalHankelH1).  Inner T0 at REAL background wavenumbers; lattice damped.
    ============================================================================ *)
 
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 
 reim[z_] := {Re[N[z]], Im[N[z]]};
 alpha0 = 5000.; beta0 = 3000.; rho0 = 2500.;
@@ -238,7 +238,7 @@ recipOK = AllTrue[stageRT, #["recip_Rd_anti"] < 1.*^-6 && #["recip_Ru_anti"] < 1
 Print["  thesis symplectic reciprocity (Rd,Ru antisymmetric; Tu=Sig.Td.Sig) -> ",
    If[recipOK, "PASS", "FAIL"]];
 
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneRT_reference.json",
+Export[DirectoryName[$InputFileName] <> "IntraPlaneRT_reference.json",
   <|"params" -> <|"alpha" -> alpha0, "beta" -> beta0, "rho0" -> rho0, "aa" -> aa,
       "aLpitch" -> aLpitch, "kPo" -> kPo, "dampIm" -> dampIm, "Nmax" -> Nm,
       "contrast" -> <|"Dlambda" -> 2.*^9, "Dmu" -> 1.*^9, "Drho" -> 100.|>|>,

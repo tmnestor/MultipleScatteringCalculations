@@ -33,7 +33,7 @@
    h_n^(1), background wavenumbers kP=0.9, kS=1.5, z = polar axis = depth.
    ============================================================================ *)
 
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 
 (* ---- background wavenumbers / Mie params (match TB1) ---- *)
 kPo = 0.9; kSo = 1.5; kPi = 0.8897917302988777; kSi = 1.4968051081937466;

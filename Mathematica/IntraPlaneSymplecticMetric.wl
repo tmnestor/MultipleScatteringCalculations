@@ -12,7 +12,7 @@
    Metric ratio from T0's L-N coupling: tLN/tNL per n vs sqrt(n(n+1)), n(n+1).
    ============================================================================ *)
 
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 kPo = 0.9; kSo = 1.5; kPi = 0.8897917302988777; kSi = 1.4968051081937466;
 lamO = 17.5*^9; muO = 22.5*^9; lamI = 19.5*^9; muI = 23.5*^9; aa = 1.0;
 
@@ -30,7 +30,7 @@ T0entry[{n1_, m1_, c1_}, {n2_, m2_, c2_}] :=
   If[n1 == n2 && m1 == m2, If[n1 == 0, T0LMN[0][[1, 1]], T0LMN[n1][[chPos[c1], chPos[c2]]]], 0];
 T0mat = Table[T0entry[idx[[i]], idx[[j]]], {i, nDim}, {j, nDim}];
 
-g0data = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneVectorLattice_reference.json", "RawJSON"];
+g0data = Import[DirectoryName[$InputFileName] <> "IntraPlaneVectorLattice_reference.json", "RawJSON"];
 G0vec = Map[#[[1]] + I #[[2]] &, g0data["G0vec"], {2}];
 
 (* sigma m-flip conjugation *)

@@ -8,7 +8,7 @@
    so code never lands in a narrative cell.  Cell[string,"Input"] matches the repo
    convention (CartesianT0.wl extracts exactly this shape from ElasticMieTmatrix.nb). *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 wlpath = dir <> "IntraPlaneTranslation.wl";
 nbpath = dir <> "IntraPlaneTranslation.nb";
 

@@ -33,7 +33,7 @@
    wavenumbers; only the inter-voxel lattice sum is damped.
    ============================================================================ *)
 
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 
 (* ---- real background / Mie params for the single-site T0 (match TB1) ---- *)
 kPo = 0.9; kSo = 1.5; kPi = 0.8897917302988777; kSi = 1.4968051081937466;
@@ -219,6 +219,6 @@ g0Ref = <|"aL" -> aL, "kx" -> kx, "ky" -> ky, "dampIm" -> dampIm, "kPo" -> kPo, 
    "Lrad" -> LradB, "radP" -> radP, "Nmax" -> Nmax,
    "idx" -> Map[{#[[1]], #[[2]], #[[3]]} &, idx],
    "G0vec" -> Map[reim, G0vec, {2}]|>;
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneVectorLattice_reference.json", g0Ref];
+Export[DirectoryName[$InputFileName] <> "IntraPlaneVectorLattice_reference.json", g0Ref];
 Print["  wrote IntraPlaneVectorLattice_reference.json (G0^vec ", nDim, "x", nDim, ")"];
 Print["Phase 2 item (b) (IntraPlaneVectorLattice.wl) loaded + verified."];

@@ -116,7 +116,7 @@ Print["  [5] undamped G0 reciprocity = ", ScientificForm[recipResid, 3],
    " -> ", If[recipResid < 1.*^-6, "PASS", "FAIL"]];
 
 (* ---- dump reference JSON ---- *)
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneKambe_reference.json",
+Export[DirectoryName[$InputFileName] <> "IntraPlaneKambe_reference.json",
   <|"params" -> <|"aL" -> aL, "kx" -> kx, "ky" -> ky, "kappa" -> 1.5, "eta1" -> 0.7, "eta2" -> 1.15,
       "rho0" -> rho0, "Rc" -> 6, "Gc" -> 6, "Nq" -> Nq|>,
     "Dstruct" -> Flatten[Table[<|"q" -> q, "s" -> s, "val" -> reim[DU[q, s]]|>, {q, 0, Nq}, {s, -q, q}], 1],

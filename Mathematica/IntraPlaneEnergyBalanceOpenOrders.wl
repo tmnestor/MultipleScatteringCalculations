@@ -38,7 +38,7 @@
    Run:  wolframscript -file IntraPlaneEnergyBalanceOpenOrders.wl [Nmax]
    Time e^{-i w t}, outgoing h^(1); lattice in x-y, z down.
    ============================================================================ *)
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 Needs["NumericalDifferentialEquationAnalysis`"];
 
 Off[General::munfl];   (* e^{-800} real-space Ewald tails underflow to zero, harmlessly *)
@@ -258,7 +258,7 @@ rSplit = resid[sMatrix[Tcoll, Nm, weylTrue, True]];
 Print["  [5] CONTROL incident SV -> N only, SH -> M only: ", fmt[rSplit],
   " -> ", If[rSplit > 100 rOn, "PASS (fails)", "FAIL"]];
 
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneEnergyBalanceOpenOrders_reference.json",
+Export[DirectoryName[$InputFileName] <> "IntraPlaneEnergyBalanceOpenOrders_reference.json",
   <|"params" -> <|"alpha" -> alpha0, "beta" -> beta0, "rho" -> rho0Bg, "radius" -> aa, "aL" -> aL,
       "kPa" -> kPo, "kSa" -> kSo, "eps" -> epsC, "Nmax" -> Nm, "etaU" -> etaU, "rho0Proj" -> rho0Proj|>,
     "channels" -> Map[<|"mode" -> #[[1]], "i" -> #[[2]], "j" -> #[[3]], "upward" -> #[[4]]|> &, chans],

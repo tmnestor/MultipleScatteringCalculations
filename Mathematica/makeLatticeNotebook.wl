@@ -4,7 +4,7 @@
    re-importing, extracting the Input cells and evaluating them.  Robust line-based
    split: a line is a banner edge only if it contains a long (>=10) run of '='. *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 wlpath = dir <> "IntraPlaneLatticeSum.wl";
 nbpath = dir <> "IntraPlaneLatticeSum.nb";
 

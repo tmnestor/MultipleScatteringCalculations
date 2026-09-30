@@ -28,7 +28,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
-sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
+# the stratified propagator lives in the sibling repository SeismicInversion (GlobalMatrix)
+sys.path.insert(0, str(ROOT.parent / "SeismicInversion"))
 
 from cubic_scattering.pair_propagators import plane_reference_medium  # noqa: E402
 from cubic_scattering.sweep_kernels import same_depth_kernel_9x9, vertical_kernel_9x9  # noqa: E402

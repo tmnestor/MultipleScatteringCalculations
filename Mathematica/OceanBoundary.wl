@@ -33,7 +33,7 @@
    Coordinates (z, x, y); time e^{-i w t}; SI units.
    ============================================================================ *)
 
-ref = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/OceanBoundary_reference.json", "RawJSON"];
+ref = Import[DirectoryName[$InputFileName] <> "OceanBoundary_reference.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 om = ref["omega"]; rho = ref["rho"]; h = ref["h"];

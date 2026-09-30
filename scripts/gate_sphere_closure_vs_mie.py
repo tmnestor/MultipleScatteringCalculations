@@ -42,10 +42,11 @@ Run:  conda run -n seismic python scripts/gate_sphere_closure_vs_mie.py
 """
 
 import sys
+from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, "/Users/tod/Desktop/MultipleScatteringCalculations")
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from cubic_scattering.effective_contrasts import MaterialContrast, ReferenceMedium  # noqa: E402
 from cubic_scattering.sphere_scattering import compute_elastic_mie  # noqa: E402
 

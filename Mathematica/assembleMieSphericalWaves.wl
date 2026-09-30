@@ -13,7 +13,7 @@
        Mathematica/assembleMieSphericalWaves.wl
 *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 template = Import[dir <> "MieSphericalWaves_template.wl", "Text"];
 block = Import["/tmp/verified_defs_block.wl", "Text"];
 

@@ -17,7 +17,7 @@
 Print["==== CubeValidation.wl (Tier-5) ===="];
 
 (* Load Path-A package *)
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CubeAnalytic.wl"];
+Get[DirectoryName[$InputFileName] <> "CubeAnalytic.wl"];
 
 (* ============================================================ *)
 (* Path-B cached numerical values from CubeGalerkin27.wl run4    *)

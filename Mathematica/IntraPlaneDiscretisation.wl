@@ -29,7 +29,7 @@
    in x-y; inner T0 at REAL background wavenumbers, only the lattice sum is damped.
    ============================================================================ *)
 
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 
 reim[z_] := {Re[N[z]], Im[N[z]]};
 
@@ -143,6 +143,6 @@ discRef = <|"params" -> <|"alpha" -> alpha0, "beta" -> beta0, "rho0" -> rho0,
      "LradB" -> LradB, "NmaxB" -> NmaxB|>,
    "contrasts" -> (KeyMap[Replace[{"Dl" -> "Dlambda", "Dm" -> "Dmu", "Dr" -> "Drho"}], #] & /@ contrasts),
    "stageB" -> stageB|>;
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneDiscretisation_reference.json", discRef];
+Export[DirectoryName[$InputFileName] <> "IntraPlaneDiscretisation_reference.json", discRef];
 Print["  wrote IntraPlaneDiscretisation_reference.json"];
 Print["Phase 2 item (e) (IntraPlaneDiscretisation.wl) loaded + verified."];
