@@ -2,7 +2,8 @@
 
 K[a, c](R) = int_{V_m} int_{V_n} L_a((x - x_m)/h) P(x - x') m_c((x' - x_n)/h) dx dx',  R = x_m - x_n,
 
-a 9 x 9 block for each test function a (4) and source monomial c (10).
+a 9 x 9 block for each test function a (4) and source monomial c (n_source: 10 of degree <= 2 for a contrast
+linear in the cell, 20 of degree <= 3 for a quadratic one; the first ten columns are the same).
 
 THE s-FORM.  With x = x_m + u, x' = x_n + u', the kernel sees r = R + s, s = u - u' in [-2h, 2h]^3, and
 the double integral is int W_ac(s) P(R + s) ds with the separable autocorrelation
@@ -36,7 +37,7 @@ from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
-from .basis import SOURCE_EXPONENTS, TEST_EXPONENTS, monomials
+from .basis import TEST_EXPONENTS, monomials, source_exponents
 from .kernel import kernel_9x9, power_F, radial_component, static_b2, voigt_maps
 
 
@@ -56,17 +57,22 @@ def gauss_order(offset: tuple[int, int, int]) -> int:
 
 
 def far_block(
-    offset: tuple[int, int, int], h: float, omega: float, ref: ReferenceMedium, n_gauss: int
+    offset: tuple[int, int, int],
+    h: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_gauss: int,
+    n_source: int = 10,
 ) -> NDArray:
-    """K[a, c] for a non-touching offset, shape (4, 10, 9, 9)."""
+    """K[a, c] for a non-touching offset, shape (4, n_source, 9, 9)."""
     xi, w = _cell_rule(n_gauss)
     R = 2.0 * h * np.asarray(offset, dtype=float)
     X = (R[None, None, :] + h * (xi[:, None, :] - xi[None, :, :])).reshape(-1, 3)
     P = kernel_9x9(X, omega, ref).reshape(len(xi), len(xi), 81)
     lt = monomials(TEST_EXPONENTS, xi) * w
-    ls = monomials(SOURCE_EXPONENTS, xi) * w
+    ls = monomials(source_exponents(n_source), xi) * w
     tmp = np.einsum("ap,pqz->aqz", lt, P)
-    return (h**6 * np.einsum("cq,aqz->acz", ls, tmp)).reshape(4, 10, 9, 9)
+    return (h**6 * np.einsum("cq,aqz->acz", ls, tmp)).reshape(4, n_source, 9, 9)
 
 
 # ---------------------------------------------------------------------------
@@ -135,28 +141,28 @@ def _box_rule(lo: NDArray, hi: NDArray, vertex: NDArray | None, n: int) -> tuple
     return np.concatenate(nodes_all), np.concatenate(w_all)
 
 
-_PAIRS = [(a, c) for a in range(4) for c in range(10)]
-_AXIS_EXPS = sorted({(TEST_EXPONENTS[a][i], SOURCE_EXPONENTS[c][i]) for a, c in _PAIRS for i in range(3)})
-
-
 def _sform(
     offset: tuple[int, int, int],
     h: float,
     orders: tuple[int, int, int],
     kernel_at: Callable[[NDArray], NDArray],
     n_q: int,
+    n_source: int = 10,
 ) -> NDArray:
-    """sum over pieces of int prod_i d^orders_i w_i(s_i) K(R + s) ds for all (a, c), shape (4, 10, Z).
+    """sum over pieces of int prod_i d^orders_i w_i(s_i) K(R + s) ds for all (a, c), shape (4, n_source, Z).
 
     kernel_at(X) returns (N, Z) kernel values at the separations X = R + s.
     """
     R = 2.0 * h * np.asarray(offset, dtype=float)
     sstar = -R / h  # the singular point, in units of h
-    parts = {(i, et, es): _axis_parts(et, es, orders[i], h) for i in range(3) for et, es in _AXIS_EXPS}
-    shape = [len(parts[(i, *_AXIS_EXPS[0])]) for i in range(3)]
+    src = source_exponents(n_source)
+    pairs = [(a, c) for a in range(4) for c in range(n_source)]
+    axis_exps = sorted({(TEST_EXPONENTS[a][i], src[c][i]) for a, c in pairs for i in range(3)})
+    parts = {(i, et, es): _axis_parts(et, es, orders[i], h) for i in range(3) for et, es in axis_exps}
+    shape = [len(parts[(i, *axis_exps[0])]) for i in range(3)]
     out: NDArray | None = None
     for choice in itertools.product(*[range(s) for s in shape]):
-        kinds = [parts[(i, *_AXIS_EXPS[0])][choice[i]] for i in range(3)]
+        kinds = [parts[(i, *axis_exps[0])][choice[i]] for i in range(3)]
         delta_axes = [i for i, k in enumerate(kinds) if k[0] == "delta"]
         free = [i for i in range(3) if i not in delta_axes]
         lo = np.array([kinds[i][1] for i in free])
@@ -173,7 +179,7 @@ def _sform(
             sig[:, i] = kinds[i][1]
         kv = kernel_at(R + h * sig)
         if out is None:
-            out = np.zeros((4, 10, kv.shape[1]), dtype=complex)
+            out = np.zeros((4, n_source, kv.shape[1]), dtype=complex)
         jac = w * h ** len(free)
         axis_vals = {}
         for (i, et, es), plist in parts.items():
@@ -182,10 +188,10 @@ def _sform(
             axis_vals[(i, et, es)] = (
                 np.full(len(sig), float(poly)) if kind[0] == "delta" else poly(sig[:, i])  # type: ignore[operator, arg-type]
             )
-        for a, c in _PAIRS:
+        for a, c in pairs:
             val = jac.copy()
             for i in range(3):
-                val = val * axis_vals[(i, TEST_EXPONENTS[a][i], SOURCE_EXPONENTS[c][i])]
+                val = val * axis_vals[(i, TEST_EXPONENTS[a][i], src[c][i])]
             out[a, c] += val @ kv
     assert out is not None
     return out
@@ -239,9 +245,9 @@ def _moves(m: int, idx: tuple[int, ...]) -> int:
 
 
 def static_term_integral(
-    m: int, idx: tuple[int, ...], offset: tuple[int, int, int], h: float, n_q: int
+    m: int, idx: tuple[int, ...], offset: tuple[int, int, int], h: float, n_q: int, n_source: int = 10
 ) -> NDArray:
-    """int W_ac(s) d^idx r^m (R + s) ds for all (a, c), shape (4, 10), distributionally."""
+    """int W_ac(s) d^idx r^m (R + s) ds for all (a, c), shape (4, n_source), distributionally."""
     k = _moves(m, idx)
     moved, rest = idx[:k], idx[k:]
     orders = (moved.count(0), moved.count(1), moved.count(2))
@@ -249,36 +255,53 @@ def static_term_integral(
     def kern(X: NDArray) -> NDArray:
         return radial_component(power_F(m, np.linalg.norm(X, axis=1)), X, rest)[:, None]
 
-    return (-1) ** k * _sform(offset, h, orders, kern, n_q)[:, :, 0]
+    return (-1) ** k * _sform(offset, h, orders, kern, n_q, n_source)[:, :, 0]
 
 
 _NEAR_CACHE: dict[tuple, NDArray] = {}
 
 
 def near_block(
-    offset: tuple[int, int, int], h: float, omega: float, ref: ReferenceMedium, n_q: int = 12
+    offset: tuple[int, int, int],
+    h: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_q: int = 12,
+    n_source: int = 10,
 ) -> NDArray:
-    """K[a, c] by the s-form with the distributional static part, shape (4, 10, 9, 9).
+    """K[a, c] by the s-form with the distributional static part, shape (4, n_source, 9, 9).
 
     Valid for any offset; required for the self cell and its touching neighbours. Cached.
     """
-    key = (tuple(int(o) for o in offset), h, omega, ref.alpha, ref.beta, ref.rho, n_q)
+    key = (tuple(int(o) for o in offset), h, omega, ref.alpha, ref.beta, ref.rho, n_q, n_source)
     if key in _NEAR_CACHE:
         return _NEAR_CACHE[key]
     out = _sform(
-        offset, h, (0, 0, 0), lambda X: kernel_9x9(X, omega, ref, static=False).reshape(len(X), 81), n_q
-    ).reshape(4, 10, 9, 9)
+        offset,
+        h,
+        (0, 0, 0),
+        lambda X: kernel_9x9(X, omega, ref, static=False).reshape(len(X), 81),
+        n_q,
+        n_source,
+    ).reshape(4, n_source, 9, 9)
     for (m, idx), coef in static_term_table(ref.alpha, ref.beta, ref.rho).items():
-        out += static_term_integral(m, idx, offset, h, n_q)[:, :, None, None] * coef[None, None]
+        out += static_term_integral(m, idx, offset, h, n_q, n_source)[:, :, None, None] * coef[None, None]
     _NEAR_CACHE[key] = out
     return out
 
 
-def coupling_block(offset: tuple[int, int, int], h: float, omega: float, ref: ReferenceMedium) -> NDArray:
+def coupling_block(
+    offset: tuple[int, int, int], h: float, omega: float, ref: ReferenceMedium, n_source: int = 10
+) -> NDArray:
     """K[a, c] for any offset: near_block when touching, the s-form with the full kernel otherwise."""
     if max(abs(o) for o in offset) <= 1:
-        return near_block(offset, h, omega, ref)
+        return near_block(offset, h, omega, ref, n_source=n_source)
     out = _sform(
-        offset, h, (0, 0, 0), lambda X: kernel_9x9(X, omega, ref).reshape(len(X), 81), gauss_order(offset)
+        offset,
+        h,
+        (0, 0, 0),
+        lambda X: kernel_9x9(X, omega, ref).reshape(len(X), 81),
+        gauss_order(offset),
+        n_source,
     )
-    return out.reshape(4, 10, 9, 9)
+    return out.reshape(4, n_source, 9, 9)

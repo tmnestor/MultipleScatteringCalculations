@@ -51,7 +51,7 @@ class GradedVoxelResult:
     h: float
     omega: float
     ref: ReferenceMedium
-    delta: NDArray  # (N, 4, 9, 9) contrast operator coefficients per cell
+    delta: NDArray  # (N, 4, 9, 9), or (N, 10, 9, 9) for r = 2: contrast operator coefficients per cell
     psi: NDArray  # (N, 4, 9) Legendre coefficients of the state
     p: int
     r: int
@@ -86,7 +86,7 @@ def solve_graded_sphere(
         pol: Incident polarisation.
         wave_type: 'P' or 'S' (the incident speed).
         p: Field degree (0 or 1).
-        r: Contrast degree (0 or 1).
+        r: Contrast degree (0, 1 or 2).
         blocks: Optional cache {offset: K} reused across calls with the same h, omega and ref.
         inside: Which grid cells to keep, from the cell centre; None keeps every cell overlapping the
             sphere (below).
@@ -113,16 +113,19 @@ def solve_graded_sphere(
         [cell_contrast_coefficients(profile, c, h, contrast, ref, omega, degree=r) for c in centres]
     )
     blocks = {} if blocks is None else blocks
+    n_source = 20 if r == 2 else 10
     dim = n * na * 9
     a = np.zeros((dim, dim), dtype=complex)
     m9 = np.kron(gram_test(h)[:na, :na], np.eye(9))
     for col in range(n):
-        en = source_expansion(delta[col])[:, :na].transpose(0, 2, 1, 3).reshape(90, na * 9)  # (c j, b k)
+        en = source_expansion(delta[col])[:, :na].transpose(0, 2, 1, 3).reshape(n_source * 9, na * 9)
         for row in range(n):
             off = tuple(int(v) for v in grid_idx[row] - grid_idx[col])
             if off not in blocks:
-                blocks[off] = coupling_block(off, h, omega, ref)  # type: ignore[arg-type]
-            k = blocks[off][:na].transpose(0, 2, 1, 3).reshape(na * 9, 90)  # (a i, c j)
+                blocks[off] = coupling_block(off, h, omega, ref, n_source)  # type: ignore[arg-type]
+            k = (
+                blocks[off][:na, :n_source].transpose(0, 2, 1, 3).reshape(na * 9, n_source * 9)
+            )  # (a i, c j)
             blk = -(k @ en)
             if row == col:
                 blk = blk + m9
