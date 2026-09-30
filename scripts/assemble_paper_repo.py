@@ -62,6 +62,7 @@ SCRIPTS = [
     "paper_repo/reproduce.sh",
     "paper_repo/environment.yml",
     "paper_repo/gitignore",
+    "paper_repo/ruff.toml",
 ]
 
 NOTEBOOKS = [
@@ -201,6 +202,7 @@ ENVIRONMENT = (TEMPLATES / "environment.yml").read_text()
 GITIGNORE = (TEMPLATES / "gitignore").read_text()
 REPRODUCE = (TEMPLATES / "reproduce.sh").read_text()
 README = (TEMPLATES / "README.md").read_text()
+RUFF = (TEMPLATES / "ruff.toml").read_text()
 
 
 # --- assembly ----------------------------------------------------------------------------------------
@@ -246,6 +248,7 @@ def assemble(dest: Path) -> list[str]:
 
     (dest / "environment.yml").write_text(ENVIRONMENT)
     (dest / ".gitignore").write_text(GITIGNORE)
+    (dest / "ruff.toml").write_text(RUFF)
     (dest / "README.md").write_text(README)
     (dest / "reproduce.sh").write_text(REPRODUCE)
     (dest / "reproduce.sh").chmod(0o755)
@@ -256,6 +259,9 @@ def scrub(dest: Path) -> list[str]:
     """Return every violation of the release rules found in ``dest``: forbidden names and text."""
     problems: list[str] = []
     for path in sorted(dest.rglob("*")):
+        rel_parts = path.relative_to(dest).parts
+        if rel_parts and rel_parts[0] in {".git", ".ruff_cache", "__pycache__", ".pytest_cache"}:
+            continue
         if path.name in FORBIDDEN_NAMES or any(
             part in FORBIDDEN_NAMES for part in path.relative_to(dest).parts
         ):

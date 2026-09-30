@@ -64,5 +64,6 @@ for irrep, ref_B in [
     ratA = BAb[0, 0] / Mb[0, 0]
     ratB = BBb[0, 0] / Mb[0, 0]
     print(
-        f"{irrep}: BA/M[0,0]={ratA:.10f} (ref {strain_ev_A_ref:.10f})  BB/M[0,0]={ratB:.10f} (ref {ref_B:.10f})"
+        f"{irrep}: BA/M[0,0]={ratA:.10f} (ref {strain_ev_A_ref:.10f})  "
+        f"BB/M[0,0]={ratB:.10f} (ref {ref_B:.10f})"
     )

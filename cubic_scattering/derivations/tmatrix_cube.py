@@ -788,7 +788,8 @@ kSa = params[omega] * params[a] / params[beta]
 print("\nParameters: Vp=5000, Vs=3000, rho=2500, f=10Hz, a=10m (cube half-width)")
 print(f"k_P*a = {kPa:.4f},  k_S*a = {kSa:.4f}")
 print(
-    f"\nNote: cube side = 2a = 20m, sphere would have a_s = a*(6/pi)^(1/3) = {10 * (6 / np.pi) ** (1 / 3):.2f}m for equal volume"
+    f"\nNote: cube side = 2a = 20m, sphere would have a_s = a*(6/pi)^(1/3) = "
+    f"{10 * (6 / np.pi) ** (1 / 3):.2f}m for equal volume"
 )
 
 print(f"\n{'Quantity':<20} {'Value':<40}")
