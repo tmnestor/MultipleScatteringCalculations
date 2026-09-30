@@ -5,7 +5,7 @@
    a banner edge if it contains a run of >= 10 '=' characters; banner blocks
    become Text cells, everything between them becomes Input cells. *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 wlpath = dir <> "MatrixVectorWaveEquation.wl";
 nbpath = dir <> "MatrixVectorWaveEquation.nb";
 

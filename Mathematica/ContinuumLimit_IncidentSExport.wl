@@ -9,7 +9,7 @@
    for incident P.
    ============================================================================ *)
 
-base = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+base = DirectoryName[$InputFileName] <> "";
 nb9 = Import[base <> "ContinuumLimit_Oblique.wl", "Text"];
 ToExpression[StringTake[nb9, StringPosition[nb9, "pMax = 8;"][[1, 1]] - 1], InputForm];
 nb12 = Import[base <> "ContinuumLimit_IncidentS.wl", "Text"];

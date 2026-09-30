@@ -10,6 +10,8 @@ check below would fail if the adjoint shortcut, the weight W_pm, the receiver
 transpose, or the T0 derivative were wrong.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -271,7 +273,7 @@ def _layer_module():
     """The sibling repo's layer model, skipped rather than failed if absent."""
     import sys
 
-    sibling = "/Users/tod/Desktop/SeismicInversion"
+    sibling = str(Path(__file__).resolve().parents[2].parent / "SeismicInversion")
     if sibling not in sys.path:
         sys.path.insert(0, sibling)
     pytest.importorskip("GlobalMatrix.layered_greens")

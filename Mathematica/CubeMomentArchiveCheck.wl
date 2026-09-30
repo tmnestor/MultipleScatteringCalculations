@@ -2,9 +2,9 @@
 (* ==========================================================================
    CROSS-CHECK THE MOMENT ENGINE AGAINST THE 2012 ARCHIVE
 
-   Source: GreensTensorMoments6.nb, cell 28, in
-   /Users/tod/Documents/WaveTheory-Research/MathematicaSourceCode/
-   GreensTensorCalculations.  That notebook -- NOT Pmat.nb or QMat.nb -- is
+   Source: GreensTensorMoments6.nb, cell 28, in the author's 2012 archive
+   (GreensTensorCalculations; the archive is not distributed with this
+   repository).  That notebook -- NOT Pmat.nb or QMat.nb -- is
    where the COMPLETE general tensor forms live:
 
        QmatS1[i,n,p,q,k,r] := a epsm10s + b epsm11s + c epsm00s + d epsm3

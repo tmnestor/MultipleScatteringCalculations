@@ -255,7 +255,7 @@ mkDump[k_] := Flatten[Table[
     {n, 0, 3}, {m, -n, n}, {nu, 0, 3}, {mu, -nu, nu}], 3];
 refData = <|"dvec" -> dTest, "kP" -> kPval, "kS" -> kSval,
    "betaP" -> mkDump[kPval], "betaS" -> mkDump[kSval]|>;
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneTranslation_reference.json",
+Export[DirectoryName[$InputFileName] <> "IntraPlaneTranslation_reference.json",
    refData];
 Print["==== Phase 0 :: reference dump ===="];
 Print["  wrote IntraPlaneTranslation_reference.json: ",

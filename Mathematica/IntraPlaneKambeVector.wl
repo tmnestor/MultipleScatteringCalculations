@@ -10,7 +10,7 @@
    and the Phase-2(b) vector helpers (IntraPlaneVectorLattice.wl); Gets only
    CartesianT0.wl for T0LMN.  Time e^{-i w t}, outgoing h^(1); lattice in x-y.
    ============================================================================ *)
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 
 reim[z_] := {Re[N[z]], Im[N[z]]};
 aL = 2.0; kx = 0.2; ky = 0.1; kpar2 = {kx, ky}; Aarea = aL^2; recipB = 2 Pi/aL;
@@ -247,7 +247,7 @@ Print["  [8] undamped G0^vec eta-independence = ", ScientificForm[g0Eta, 3],
 (* ============================================================================
    Task 4 Step 3: Dump JSON reference
    ============================================================================ *)
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneKambeVector_reference.json",
+Export[DirectoryName[$InputFileName] <> "IntraPlaneKambeVector_reference.json",
   <|"params" -> <|"aL" -> aL, "kx" -> kx, "ky" -> ky, "kappaP" -> 0.9, "kappaS" -> 1.5,
       "eta" -> etaU, "rho0" -> rho0, "radP" -> radP, "dext" -> dext, "Nmax" -> Nmax, "LradB" -> LradB|>,
     "idx" -> Map[{#[[1]], #[[2]], #[[3]]} &, idx],

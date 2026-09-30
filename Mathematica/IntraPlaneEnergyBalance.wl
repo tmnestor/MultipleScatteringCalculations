@@ -11,7 +11,7 @@
    and the Phase-3a projection (IntraPlaneRT.wl); Gets only CartesianT0.wl.
    Time e^{-i w t}, outgoing h^(1); lattice in x-y; project frame (z,x,y).
    ============================================================================ *)
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 
 reim[z_] := {Re[N[z]], Im[N[z]]};
 alpha0 = 5000.; beta0 = 3000.; rho0Bg = 2500.;
@@ -310,7 +310,7 @@ Print["  [5] Nmax convergence (energy resid @subcritical): ", nmaxStudy];
 (* ============================================================================
    Task 3 Step 3: JSON dump
    ============================================================================ *)
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneEnergyBalance_reference.json",
+Export[DirectoryName[$InputFileName] <> "IntraPlaneEnergyBalance_reference.json",
   <|"params" -> <|"alpha" -> alpha0, "beta" -> beta0, "rho0" -> rho0Bg, "aa" -> aa,
       "aLpitch" -> aLpitch, "kPo" -> kPo, "kSo" -> kSo, "Nmax" -> Nm, "etaU" -> etaU,
       "energyMetric" -> energyMetric, "enTol" -> enTol,

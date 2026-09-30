@@ -34,7 +34,7 @@
    Coordinates (z, x, y), z down; time e^{-i w t}; SI units.
    ============================================================================ *)
 
-ref = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_specular.json", "RawJSON"];
+ref = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_specular.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 om = ref["omega"]; al = ref["alpha"]; be = ref["beta"]; rho = ref["rho"];

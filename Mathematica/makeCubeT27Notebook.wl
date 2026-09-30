@@ -5,7 +5,7 @@
    a line is a banner edge if it contains a run of >= 10 '=' characters;
    banner blocks become Text cells, everything between them becomes Input. *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 wlpath = dir <> "CubeT27CommutantBlocks.wl";
 nbpath = dir <> "CubeT27CommutantBlocks.nb";
 

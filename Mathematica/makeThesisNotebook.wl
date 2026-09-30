@@ -5,7 +5,7 @@
    leaving twins that carry saved outputs untouched:
      wolframscript -file makeThesisNotebook.wl InterfaceUnitarity.wl *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 bannerEdge[l_] := StringContainsQ[l, Repeated["=", {10, Infinity}]];
 cleanText[c_] := StringTrim[StringReplace[c,
     {"(*" -> "", "*)" -> "", Repeated["=", {3, Infinity}] -> "", Repeated["-", {4, Infinity}] -> ""}]];

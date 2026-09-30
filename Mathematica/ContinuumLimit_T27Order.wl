@@ -42,7 +42,7 @@
    [6] the order of each part.
    ============================================================================ *)
 
-nbText = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_FourthOrder.wl", "Text"];
+nbText = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_FourthOrder.wl", "Text"];
 ToExpression[StringTake[nbText, StringPosition[nbText, "Print[\"==== ContinuumLimit_FourthOrder ::"][[1, 1]] - 1],
   InputForm];
 oks = {};

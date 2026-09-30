@@ -5,6 +5,8 @@ Pins the three defects found in the 9x9 wrapper work (see
 makes the correction well defined.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -277,7 +279,7 @@ def test_gate_f_passes_with_the_module():
     import sys
 
     # the stratified solver lives in a sibling repository
-    sibling = "/Users/tod/Desktop/SeismicInversion"
+    sibling = str(Path(__file__).resolve().parents[2].parent / "SeismicInversion")
     if sibling not in sys.path:
         sys.path.insert(0, sibling)
     pytest.importorskip("GlobalMatrix.layered_greens")

@@ -34,7 +34,7 @@
    Coordinates (z, x, y), z down; time e^{-i w t}; SI units.
    ============================================================================ *)
 
-ref = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_specular.json", "RawJSON"];
+ref = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_specular.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 om = ref["omega"]; al = ref["alpha"]; be = ref["beta"]; rho = ref["rho"];
@@ -187,7 +187,7 @@ Print["      the cubic intrinsic part (x 1/mu): diagonal ", nf[cubA, 10], ", off
 Print["      So the point-coupled plate reproduces the continuum plate EXACTLY iff the cube's self term"];
 Print["      cancels this cubic part: self + L_cubic = 0.  Notebook 4 tests that condition."];
 
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_staticlocal.json",
+Export[DirectoryName[$InputFileName] <> "ContinuumLimit_staticlocal.json",
   <|"units" -> "x d^3 x mu, strain-from-moment block, rows/cols e_zz e_xx e_yy 2e_xy 2e_zy 2e_zx",
    "mu" -> mu, "nu" -> nu, "S0" -> s0 mu, "Sm" -> KeyMap[ToString, Map[# mu &, sm]], "L" -> lTot mu,
    "cubic" -> <|"diag" -> cubA, "off" -> cubB, "shear" -> cubC|>|>, "RawJSON"];

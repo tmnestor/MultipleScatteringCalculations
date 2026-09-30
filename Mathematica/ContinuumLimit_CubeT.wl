@@ -51,7 +51,7 @@
    cA = 1/(4 pi mu) - cB (notebook 3, [3b]).  Coordinates (z, x, y); SI units.
    ============================================================================ *)
 
-ref = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_cubet.json", "RawJSON"];
+ref = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_cubet.json", "RawJSON"];
 cplx[{re_, im_}] := re + I im;
 mat[g_] := Map[cplx, g, {2}];
 {al, be, rho, d} = Rationalize[{ref["alpha"], ref["beta"], ref["rho"], ref["d"]}, 0];

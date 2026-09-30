@@ -37,7 +37,7 @@
 oks = {};
 chk[b_] := (AppendTo[oks, TrueQ[b]]; If[TrueQ[b], "PASS", "FAIL"]);
 Print["==== SphereClosureDynamic :: the sphere's closure against Mie at O((ka)^2) ===="];
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/MieAsymptoticRaw.wl"];
+Get[DirectoryName[$InputFileName] <> "MieAsymptoticRaw.wl"];
 
 (* ---------------------------------------------------------------------------
    the closure side: the dynamic ball moments in closed form

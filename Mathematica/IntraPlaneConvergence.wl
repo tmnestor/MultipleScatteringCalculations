@@ -38,7 +38,7 @@
    the REAL background wavenumbers, only the inter-voxel lattice sum is damped (Im=0.25).
    ============================================================================ *)
 
-Get["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/CartesianT0.wl"];
+Get[DirectoryName[$InputFileName] <> "CartesianT0.wl"];
 
 (* ---- background / Mie params (match item b) ---- *)
 kPo = 0.9; kSo = 1.5; kPi = 0.8897917302988777; kSi = 1.4968051081937466;
@@ -282,6 +282,6 @@ convRef = <|"kPo" -> kPo, "kSo" -> kSo, "dampIm" -> dampIm, "kx" -> kx, "ky" -> 
    "floorB" -> N[floorB],
    "aLC" -> aLC, "LradC" -> LradC, "NmaxC" -> NmaxC, "floorC" -> N[floorC],
    "cauchyV" -> N[cauchyV], "couplingV" -> N[couplingV]|>;
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/IntraPlaneConvergence_reference.json", convRef];
+Export[DirectoryName[$InputFileName] <> "IntraPlaneConvergence_reference.json", convRef];
 Print["  wrote IntraPlaneConvergence_reference.json"];
 Print["Phase 2 item (c) (IntraPlaneConvergence.wl) loaded + verified."];

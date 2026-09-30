@@ -8,7 +8,7 @@
    the 1/|r| singularity, but the symbolic closed forms are exact).
 
    Usage:
-     Get["/Users/tod/.../Mathematica/CubeT6Masters.wl"];
+     Get[FileNameJoin[{DirectoryName[$InputFileName], "CubeT6Masters.wl"}]];
      (* Now Mp6m220[], Mp6m400[], ... are defined *)
 
    All values are Mp[p,q,r] = int_{[0,1]^3} x^p y^q z^r / |r| dV.

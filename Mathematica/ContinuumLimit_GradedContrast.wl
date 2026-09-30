@@ -30,7 +30,7 @@
    ============================================================================ *)
 
 (* notebook 14's definitions (notebook 7's model and the degree-p solver), its checks silenced *)
-nbText = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_SecondMoment.wl", "Text"];
+nbText = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_SecondMoment.wl", "Text"];
 Block[{Print = Null &},
   ToExpression[StringTake[nbText, StringPosition[nbText,
        "(* ---------------------------------------------------------------------------\n   [2] regression"][[1, 1]] - 1],
@@ -145,7 +145,7 @@ closed = Table[<|"k" -> N[pt[[1]], 30], "h" -> N[pt[[2]], 30],
     "moment_minus" -> Table[cplx[momF[[a]][-pt[[1]], pt[[2]]]], {a, nbMax}],
     (* same-cell block int int P_{a-1} K P_{b-1}, including the local term, as a 2 x 2 complex matrix *)
     "self" -> Table[Map[cplx, selfF[[a, b]][pt[[1]], pt[[2]]], {2}], {a, nbMax}, {b, nbMax}]|>, {pt, samplePts}];
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_graded_contrast_data.json",
+Export[DirectoryName[$InputFileName] <> "ContinuumLimit_graded_contrast_data.json",
   <|"omega" -> om, "n" -> ladder, "runs" -> exported, "mP" -> N[mP, 30],
     "linearisation" -> N[lin, 30], "closed_forms" -> closed|>, "RawJSON"];
 

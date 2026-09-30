@@ -31,7 +31,7 @@
    Coordinates (z, x, y), z down; e^{-i w t}; SI units.
    ============================================================================ *)
 
-nbText = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_Chain.wl", "Text"];
+nbText = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_Chain.wl", "Text"];
 ToExpression[StringTake[nbText, StringPosition[nbText, "omegas = Rationalize"][[1, 1]] - 1], InputForm];
 oks = {};
 chk[b_] := (AppendTo[oks, TrueQ[b]]; pass[b]);

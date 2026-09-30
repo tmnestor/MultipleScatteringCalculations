@@ -1,5 +1,7 @@
 """Tests for the directional-sweep Foldy-Lax solver."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -75,7 +77,7 @@ def test_solves_on_a_stratified_background() -> None:
     """
     import sys
 
-    sibling = "/Users/tod/Desktop/SeismicInversion"
+    sibling = str(Path(__file__).resolve().parents[2].parent / "SeismicInversion")
     if sibling not in sys.path:
         sys.path.insert(0, sibling)
     pytest.importorskip("GlobalMatrix.layered_greens")

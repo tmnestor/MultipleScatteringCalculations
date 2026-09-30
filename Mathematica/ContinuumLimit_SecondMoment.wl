@@ -25,7 +25,7 @@
    ============================================================================ *)
 
 (* notebook 7's model and chain (its definitions, not its checks), loaded first: it defines its own oks/chk *)
-nbText = Import["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_FourthOrder.wl", "Text"];
+nbText = Import[DirectoryName[$InputFileName] <> "ContinuumLimit_FourthOrder.wl", "Text"];
 ToExpression[StringTake[nbText, StringPosition[nbText, "Print[\"==== ContinuumLimit_FourthOrder ::"][[1, 1]] - 1], InputForm];
 sci[x_] := ToString[NumberForm[N[x], 3, NumberFormat -> (If[#3 == "", #1, Row[{#1, "e", #3}]] &)], OutputForm];
 fmt[x_, d_] := ToString[NumberForm[N[x], d], OutputForm];
@@ -161,7 +161,7 @@ planeOK = Flatten[Table[
 Print["      exact through D^(2p+2), first difference at D^(2p+3), p = 0..3, both layers: ", chk[And @@ planeOK]];
 
 (* the data of the paper's convergence figure *)
-Export["/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/ContinuumLimit_second_moment_data.json",
+Export[DirectoryName[$InputFileName] <> "ContinuumLimit_second_moment_data.json",
   <|"omega" -> 300, "n" -> ladder,
     "errors_R_T" -> <|"G0" -> N[errs[300, 1], 16], "G1" -> N[errs[300, 2], 16], "G2" -> N[errs[300, 3], 16],
       "G3" -> N[errs[300, 4], 16]|>|>, "RawJSON"];

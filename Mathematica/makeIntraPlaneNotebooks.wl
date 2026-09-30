@@ -5,7 +5,7 @@
    a faithful, deterministic cell-wrapping of the .wl source; the .wl scripts are already
    self-verified (and Python-cross-checked), so round-trip is spot-checked separately. *)
 
-dir = "/Users/tod/Desktop/MultipleScatteringCalculations/Mathematica/";
+dir = DirectoryName[$InputFileName] <> "";
 bannerEdge[l_] := StringContainsQ[l, Repeated["=", {10, Infinity}]];
 cleanText[c_] := StringTrim[StringReplace[c,
     {"(*" -> "", "*)" -> "", Repeated["=", {3, Infinity}] -> "", Repeated["-", {4, Infinity}] -> ""}]];
