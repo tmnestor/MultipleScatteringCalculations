@@ -130,9 +130,11 @@ def main() -> int:
     orders: dict[str, float] = {}
 
     ax = axes[0, 0]
-    for sc, mk in (("C", "o"), ("G0", "s"), ("G1", "D")):
+    # collocation and mean-only differ only by the factor 3/2 of their constants, so the collocation
+    # line is drawn last and dashed to stay visible on top of the mean-only line
+    for sc, mk, ls in (("G0", "s", "-"), ("G1", "D", "-"), ("C", "o", "--")):
         n, e = np.array(uni["normal"][sc]).T
-        orders[f"uniform normal {sc}"] = series(ax, n, e, 4, COLOURS[sc], mk, NAMES[sc])
+        orders[f"uniform normal {sc}"] = series(ax, n, e, 4, COLOURS[sc], mk, NAMES[sc], ls)
     # the second- and third-moment voxels (notebook 14), 40-digit errors down to 1e-22
     for sc, mk in (("G2", "v"), ("G3", "p")):
         e = np.array(high["errors_R_T"][sc])[:, 0]
@@ -151,7 +153,7 @@ def main() -> int:
     ax = axes[1, 0]
     for wave, ls, mk in (("normal_P", "-", "o"), ("normal_S", "--", "^")):
         m = np.array(het[wave]["m"], float)
-        for sc in ("C", "G0", "G1"):
+        for sc in ("G0", "G1", "C"):
             e = np.array(het[wave]["errors_R_T"][sc])[:, 0]
             lab = f"{wave[-1]}, {NAMES[sc]}"
             orders[f"stratified {wave} {sc}"] = series(ax, m, e, 4, COLOURS[sc], mk, lab, ls)
@@ -168,11 +170,11 @@ def main() -> int:
         # the collocation voxel with the centre-sampled contrast: two O(h^2) errors of opposite sign,
         # so its apparent order (2.0, 3.5, 3.6 at k_S a = 0.5) is not that of any single term
         c = s["collocation"]
-        unfitted(ax, c["n_sub"], c["error_vs_exact"], colour, "^", f"{ka}, collocation, centre sample")
+        unfitted(ax, c["n_sub"], c["error_vs_exact"], colour, "^", f"{ka}, collocation (centre)")
         if "collocation_cell_mean" in s:
             c = s["collocation_cell_mean"]
             orders[f"graded sphere ka {s['ka_s']:g} collocation cell mean"] = series(
-                ax, c["n_sub"], c["error_vs_exact"], 6, colour, "v", f"{ka}, collocation, cell mean", ":"
+                ax, c["n_sub"], c["error_vs_exact"], 6, colour, "v", f"{ka}, collocation (cell mean)", ":"
             )
     ticks = [4, 6, 8, 12, 16, 24]
     title = "(d) smoothly graded sphere"
