@@ -17,7 +17,7 @@ by T. M. Nestor. It is assembled from the author's research repository by
 | `cubic_scattering/` | The Python package under test: the cube T-matrix, the cell-averaged lattice kernel, the sphere solvers and the graded voxel, with its test suite |
 | `scripts/` | The cross-checks, gates, pilots and figure scripts the papers cite |
 | `Mathematica/` | The symbolic derivations, as Wolfram Language scripts, with their saved outputs (`*.json`) |
-| `LatexPDFs/` | The two papers: LaTeX source, bibliography, figures and figure data |
+| `LatexPDFs/` | The two papers as compiled PDFs (`ContinuumLimit.pdf`, `JCP/ContinuumLimit_JCP.pdf`, `GradedVoxel.pdf`), with LaTeX source, bibliography, figures and figure data |
 
 ## Environment
 
