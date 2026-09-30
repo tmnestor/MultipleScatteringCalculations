@@ -30,5 +30,37 @@
     0.00040610763608951565,
     0.00025834546505535414,
     0.0001787682900100731
-  ]
+  ],
+  "collocation": {
+    "voxel": "collocation voxel of the sharp sphere (package cube T-matrix): contrast sampled at the cell centre, cells kept if the centre is inside, far field at 5e8 radii",
+    "script": "scripts/pilot_graded_voxel_sphere.py --ka=0.5 --arms=t9 4 6 8 12 16",
+    "n_sub": [
+      4,
+      6,
+      8,
+      12,
+      16
+    ],
+    "error_vs_exact": [
+      0.10347,
+      0.0046553,
+      0.0026368,
+      0.00063504,
+      0.00022804
+    ]
+  },
+  "collocation_cell_mean": {
+    "voxel": "the same collocation voxel with the cell mean of the contrast and every overlapping cell kept",
+    "script": "collocation arm with cell-mean contrast and all overlapping cells (see section 10)",
+    "n_sub": [
+      6,
+      8,
+      12
+    ],
+    "error_vs_exact": [
+      0.0033858,
+      0.0018884,
+      0.00082405
+    ]
+  }
 }

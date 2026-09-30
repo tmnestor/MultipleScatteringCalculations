@@ -30,5 +30,23 @@
     0.001878820867790582,
     0.0012019890785164408,
     0.0008344914359150185
-  ]
+  ],
+  "collocation": {
+    "voxel": "collocation voxel of the sharp sphere (package cube T-matrix): contrast sampled at the cell centre, cells kept if the centre is inside, far field at 5e8 radii",
+    "script": "scripts/pilot_graded_voxel_sphere.py --ka=1.0 --arms=t9 4 6 8 12 16",
+    "n_sub": [
+      4,
+      6,
+      8,
+      12,
+      16
+    ],
+    "error_vs_exact": [
+      0.11472,
+      0.0081531,
+      0.0050065,
+      0.0018406,
+      0.00093104
+    ]
+  }
 }
