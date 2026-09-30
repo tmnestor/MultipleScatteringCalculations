@@ -11,8 +11,9 @@ are plotted but not fitted). The legend gives the order p and its standard error
   (c) the stratified layer, normal incidence P and S, m planes per model layer (notebook 13,
       Mathematica/ContinuumLimit_Heterogeneous.wl);
   (d) the smoothly graded sphere (a core with the contrast, falling to zero across a shell as a C2
-      smoothstep), voxelised on n_sub^3 grids, against its exact solution
-      (scripts/pilot_graded_sphere_vs_exact.py --summary=...).
+      smoothstep), voxelised on n_sub^3 grids with the mean-only Galerkin voxel (cell-mean contrast,
+      every overlapping cell kept), against its exact solution
+      (scripts/pilot_graded_voxel_sphere.py --arms=g0fft --summary=...).
 
 Run:  conda run -n seismic python scripts/plot_convergence_orders.py
 """
@@ -158,7 +159,8 @@ def main() -> int:
         orders[f"graded sphere ka {s['ka_s']:g}"] = series(
             ax, s["n_sub"], s["error_vs_exact"], 6, colour, mk, lab
         )
-    style(ax, "voxels across the sphere $n_{\\rm sub}$", "(d) smoothly graded sphere", [4, 6, 8, 12])
+    ticks = [4, 6, 8, 12, 16, 24]
+    style(ax, "voxels across the sphere $n_{\\rm sub}$", "(d) smoothly graded sphere", ticks)
 
     fig.savefig(OUT)
     for k, v in orders.items():

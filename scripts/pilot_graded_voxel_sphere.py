@@ -7,6 +7,7 @@ every cell overlapping it, since a Galerkin cell carries the projection of its c
   g0  Galerkin, p = 0, r = 0: the uniform-field Galerkin voxel (its convention check: it must converge);
   g1  Galerkin, p = 1, r = 1: the graded first-moment voxel.
   g1fft  g1 solved by FFT matvec + GMRES (graded_voxel.fft): same answer, reaches larger n_sub.
+  g0fft  g0 solved the same way.
 Error: max |far field - exact| / peak over nine angles at 5e8 radii (see R_MULT).
 --weak scales the contrast by 1e-6 (gate G4b: the discretisation alone; the reference is solved at the
 same weak contrast, so no Born approximation is involved).
@@ -80,8 +81,8 @@ def main() -> int:
                 u_p, u_s = foldy_lax_far_field(fl, pts / r_far, r_far, K_HAT, POL, wave_type="P")
                 unknowns = 9 * fl.n_cells
             else:
-                p = r = 0 if arm == "g0" else 1
-                solve = solve_graded_sphere_fft if arm == "g1fft" else solve_graded_sphere
+                p = r = 0 if arm in ("g0", "g0fft") else 1
+                solve = solve_graded_sphere_fft if arm in ("g1fft", "g0fft") else solve_graded_sphere
                 res = solve(omega, RADIUS, REF, con, n, profile, K_HAT, POL, "P", p=p, r=r)
                 u_p, u_s = graded_far_field(res, pts / r_far, r_far, K_HAT, POL, "P")
                 unknowns = len(res.centres) * 9 * (1 if p == 0 else 4)

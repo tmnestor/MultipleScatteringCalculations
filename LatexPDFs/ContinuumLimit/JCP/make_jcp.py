@@ -98,9 +98,9 @@ body = re.sub(r"\\nb\{([^{}]*)\}", lambda m: r"\path{" + m.group(1).replace(r"\_
 ABSTRACT = r"""
 We analyse the convergence of voxel discretisations of the elastic volume integral equation, in
 which a medium is divided into cubic cells, each represented by a single-site $T$-matrix and coupled
-through the background Green's tensor: the elastic counterpart of the discrete dipole approximation.
+through the background Green's tensor: the elastic coupled-dipole method.
 Because cubes tile space, a layer of identical voxels is exactly a homogeneous layer, so it isolates
-the discretisation error, with no modelling or shape error. We show that (i) the cube's lateral form
+the discretisation error, with no shape error. We show that (i) the cube's lateral form
 factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
 continuum's; (ii) the single-site $T$-matrix follows from distributional moments of the Green's
 tensor and, against exact scattering by a sphere, is exact statically and departs only by a real,
@@ -111,7 +111,8 @@ of its internal field to degree $p$ converges at order $2p+2$, with leading erro
 $p=1$, for incident P, SV and SH waves at normal and oblique incidence, and one plane of it
 reproduces the thin-layer series in the thickness $D$ through $O(D^{2p+2})$. In a randomly
 stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
-$10^{-6}$ with one voxel per model layer. On a voxelised sphere the staircase error dominates. Every
+$10^{-6}$ with one voxel per model layer. A smoothly graded sphere converges at second order against its
+exact solution. Every
 result is verified by an independent implementation or an exact solution."""
 words = len(re.sub(r"\$[^$]*\$", "x", ABSTRACT).split())
 assert words <= 250, f"the JCP abstract is {words} words; the limit is 250"
