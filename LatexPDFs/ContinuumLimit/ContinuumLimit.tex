@@ -241,11 +241,13 @@ with $\psi^0$ the incident state.
 
 \paragraph{Where the kernel comes from.} Write the medium as the background plus the contrast. With
 time dependence $\mathrm{e}^{-\mathrm{i}\omega t}$ the equation of motion is
-$\partial_c\sigma_{bc}+\rho\omega^2u_b=0$. Splitting $\rho=\rho_0+\Delta\rho$ and
-$\sigma=\mathcal C_0{:}\varepsilon+\Delta\mathcal C{:}\varepsilon$ and moving the contrast terms to
-the right leaves the background operator on the left and the contrast on the right as a body force,
+$\partial_c\sigma_{bc}+\rho\omega^2u_b=0$, with $\sigma_{bc}=c_{bcde}\,\varepsilon_{de}$ and
+summation over repeated indices. Splitting $\rho=\rho_0+\Delta\rho$ and $c=c^0+\delta c$, with
+$\delta c_{bcde}=\Delta\lambda\,\delta_{bc}\delta_{de}+\Delta\mu\,(\delta_{bd}\delta_{ce}+\delta_{be}\delta_{cd})$
+the contrast stiffness, and moving the contrast terms to the right leaves the background operator on
+the left and the contrast on the right as a body force,
 \begin{equation}\label{eq:bodyforce}
-  f_b=\omega^2\Delta\rho\,u_b+\partial_c m_{bc},\qquad m_{bc}=(\Delta\mathcal C{:}\varepsilon)_{bc}:
+  f_b=\omega^2\Delta\rho\,u_b+\partial_c m_{bc},\qquad m_{bc}=\delta c_{bcde}\,\varepsilon_{de},
 \end{equation}
 a force from the density contrast, and the divergence of the contrast stress $m$, the moment, from
 the stiffness contrast. With $\bG$ the Green's tensor of the background, the displacement is
@@ -262,7 +264,7 @@ itself. With the moment tensor defined instead through its equivalent body force
 $-\partial_c[M_{bc}\,\delta(\mathbf x-\mathbf y)]$, as in \citet{Aki2002}, the same field reads
 $M_{bc}\,\partial G_{ab}/\partial y_c$, the source derivative, with $M=-m$. The two are one
 convention written two ways; what matters is that the derivative in the kernel and the sign in the
-contrast operator are chosen together. The nine-component kernel follows: its force columns are
+contrast operator are chosen together. The nine-component kernel follows (Fig.~\ref{fig:kernel}): its force columns are
 $\bG$ and its moment columns the receiver derivatives $\partial_cG_{ab}$, symmetrised over $(b,c)$
 with a factor $\tfrac12$ on the shear components; its displacement rows are those entries and its
 strain rows their receiver derivatives, symmetrised in the same way and doubled on the shear rows to
@@ -270,8 +272,34 @@ give engineering strain. In that convention the contrast operator is
 \begin{equation}\label{eq:delta}
   \bD=\operatorname{blockdiag}\!\bigl(\omega^2\Delta\rho\,\bI_3,\ \Delta\mathcal{C}\bigr),
 \end{equation}
-where $\Delta\mathcal{C}$ is the $6\times6$ contrast stiffness with $\Delta\lambda+2\Delta\mu$ and
+where $\Delta\mathcal{C}$ is the $6\times6$ Voigt form of $\delta c$, the contrast stiffness with $\Delta\lambda+2\Delta\mu$ and
 $\Delta\lambda$ in the normal block and $2\Delta\mu$ (not $\Delta\mu$) on the shear diagonal.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_kernel.pdf}
+\caption{Where the kernel comes from. (a) A source cell at $\mathbf y$ acts on the background through
+the body force of Eq.~\eqref{eq:bodyforce}: a force $f$ from its density contrast, and the divergence
+of its contrast stress $m$, the moment, from its stiffness contrast (arrows on the faces). At the
+receiver $\mathbf x$ the state is the displacement $u$ and the strain $\varepsilon$. The moment's
+derivative moves onto $\bG(\mathbf x-\mathbf y)$ by parts, Eq.~\eqref{eq:byparts}, and becomes a
+receiver derivative with a plus sign. (b) The block structure of the $9\times9$ kernel $\bK$ that
+results: the force columns are $\bG$, the moment columns carry one receiver derivative across, the
+strain rows one receiver derivative down, and the strain-from-moment block two.}
+\label{fig:kernel}
+\par\smallskip{\footnotesize\textit{Alt text:} Two panels. On the left, a shaded square cell with a
+dot at its centre marked y; a thick red arrow labelled force rises from the centre, and four blue
+arrows labelled moment point outward from the cell's faces. A long arrow labelled r equals x minus y
+runs from the cell to a red dot marked x at the upper right, from which a red arrow labelled
+displacement leaves and above which a small dashed square deformed into a parallelogram is labelled
+strain. A boxed line below reads: the integral of G times the y-derivative of m equals minus the
+integral of the y-derivative of G times m, equals plus the integral of the x-derivative of G times m.
+On the right, a two-by-two grid of shaded blocks with rows labelled u, three rows, and strain, six
+rows, and columns labelled f, three columns, and m, six columns; the blocks read G, the first
+derivative of G, the first derivative of G, and the second derivative of G; an arrow down the right
+side reads rows: one receiver derivative down, and an arrow along the bottom reads columns: one
+receiver derivative across.\par}
+\end{figure}
 
 \paragraph{Averaging, and collocation.} Three operations in this paper are averages over a cell,
 and they are distinct. The \emph{source-cell average} integrates the kernel over the cell that

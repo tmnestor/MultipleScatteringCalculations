@@ -114,6 +114,8 @@ PAPERS = {
         "figures/fig_lattice.pdf",
         "figures/fig_poisson.pdf",
         "figures/fig_tiling.pdf",
+        "figures/fig_kernel.tex",
+        "figures/fig_kernel.pdf",
         "figures/fig_convergence.pdf",
         "figures/data_graded_sphere_ka0.5.json",
         "figures/data_graded_sphere_ka1.0.json",
