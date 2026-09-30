@@ -84,6 +84,12 @@ def series(ax, n, err, fit_from: float, colour: str, marker: str, label: str, ls
     return p
 
 
+def unfitted(ax, n, err, colour: str, marker: str, label: str, ls: str = "--") -> None:
+    """Plot a series whose apparent order is not asymptotic: open markers joined, no regression line."""
+    n, err = np.asarray(n, float), np.asarray(err, float)
+    ax.plot(n, err, marker, color=colour, ms=4.5, lw=0.9, ls=ls, mfc="none", label=f"{label}: not fitted")
+
+
 def style(
     ax,
     xlabel: str,
@@ -154,13 +160,23 @@ def main() -> int:
 
     ax = axes[1, 1]
     for s, colour, mk in zip(sph, ("tab:red", "tab:purple"), ("o", "s"), strict=True):
-        lab = f"$k_Sa={s['ka_s']:g}$"
-        # fitted from n_sub = 6: at 4 a voxel is as wide as the graded shell
+        ka = f"$k_Sa={s['ka_s']:g}$"
+        # the mean-only voxel, fitted from n_sub = 6: at 4 a voxel is as wide as the graded shell
         orders[f"graded sphere ka {s['ka_s']:g}"] = series(
-            ax, s["n_sub"], s["error_vs_exact"], 6, colour, mk, lab
+            ax, s["n_sub"], s["error_vs_exact"], 6, colour, mk, f"{ka}, mean only"
         )
+        # the collocation voxel with the centre-sampled contrast: two O(h^2) errors of opposite sign,
+        # so its apparent order (2.0, 3.5, 3.6 at k_S a = 0.5) is not that of any single term
+        c = s["collocation"]
+        unfitted(ax, c["n_sub"], c["error_vs_exact"], colour, "^", f"{ka}, collocation, centre sample")
+        if "collocation_cell_mean" in s:
+            c = s["collocation_cell_mean"]
+            orders[f"graded sphere ka {s['ka_s']:g} collocation cell mean"] = series(
+                ax, c["n_sub"], c["error_vs_exact"], 6, colour, "v", f"{ka}, collocation, cell mean", ":"
+            )
     ticks = [4, 6, 8, 12, 16, 24]
-    style(ax, "voxels across the sphere $n_{\\rm sub}$", "(d) smoothly graded sphere", ticks)
+    title = "(d) smoothly graded sphere"
+    style(ax, "voxels across the sphere $n_{\\rm sub}$", title, ticks, "lower left", bottom=2e-6)
 
     fig.savefig(OUT)
     for k, v in orders.items():

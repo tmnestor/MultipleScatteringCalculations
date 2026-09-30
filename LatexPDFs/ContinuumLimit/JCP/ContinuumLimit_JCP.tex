@@ -1192,7 +1192,11 @@ $n=2$: the S wave converted from incident P (solid) and reflected from incident 
 (c)~The stratified layer of \S\ref{sec:hetero}, reflection at normal incidence for P (solid) and S
 (dashed), against the number $m$ of voxel planes per model layer, fitted from $m=4$. (d)~The
 smoothly graded sphere of \S\ref{sec:sphere} against its exact solution, for $n_{\mathrm{sub}}$ voxels
-across, fitted from $n_{\mathrm{sub}}=6$ (at $4$ a voxel is as wide as the graded shell).}
+across: the mean-only voxel, fitted from $n_{\mathrm{sub}}=6$ (at $4$ a voxel is as wide as the
+graded shell); the collocation voxel with the contrast sampled at the cell centre, joined by dashed
+lines and not fitted, since its two $O(h^2)$ errors of opposite sign leave no single order to fit;
+and, at $k_Sa=0.5$, the same collocation voxel with the cell mean of the contrast, dotted, which
+recovers second order.}
 \label{fig:convergence}
 \par\smallskip{\footnotesize\textit{Alt text:} Four log--log panels of relative error against refinement,
 each showing data points and fitted straight lines with the fitted order in the legend. (a) Uniform layer
@@ -1202,8 +1206,11 @@ line has order 6.000 and the third-moment line order 8.000, over 1 to 8 planes, 
 1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
 first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
 for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 24 voxels across:
-two straight falling lines of order 2, for $k_Sa=0.5$ and $1$, from about $10^{-2}$ and
-$3\times10^{-2}$ at 4 voxels to $2\times10^{-4}$ and $8\times10^{-4}$ at 24.\par}
+two straight falling lines of order 2 for the mean-only voxel, for $k_Sa=0.5$ and $1$, from about
+$10^{-2}$ and $3\times10^{-2}$ at 4 voxels to $2\times10^{-4}$ and $8\times10^{-4}$ at 24; two
+dashed collocation curves starting near $10^{-1}$ at 4 voxels, dropping steeply to 6 and then
+falling faster than the mean-only lines, crossing below them by 16 voxels; and a dotted line of order
+2 for the cell-mean collocation voxel, close to the mean-only line.\par}
 \end{figure}
 
 \paragraph{Where the error of a voxel scheme lives} The results separate the two approximations
