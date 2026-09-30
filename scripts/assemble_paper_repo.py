@@ -104,6 +104,7 @@ NOTEBOOK_OUTPUTS_GLOB = ["ContinuumLimit_*.json", "GradedVoxel_*.jsonl"]
 
 PAPERS = {
     "LatexPDFs/ContinuumLimit": [
+        "ContinuumLimit.pdf",
         "ContinuumLimit.tex",
         "references.bib",
         "figures/fig_preamble.tex",
@@ -116,10 +117,12 @@ PAPERS = {
         "figures/fig_convergence.pdf",
         "figures/data_graded_sphere_ka0.5.json",
         "figures/data_graded_sphere_ka1.0.json",
+        "JCP/ContinuumLimit_JCP.pdf",
         "JCP/make_jcp.py",
         "JCP/elsarticle-num-names.bst",
     ],
     "LatexPDFs/GradedVoxel": [
+        "GradedVoxel.pdf",
         "GradedVoxel.tex",
         "references.bib",
         "figures/fig_orders.pdf",
