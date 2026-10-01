@@ -38,6 +38,7 @@ import numpy as np
 import scipy.linalg
 from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
+from scipy.special import spherical_jn
 
 from ..effective_contrasts import MaterialContrast, ReferenceMedium
 from ..sphere_scattering import _plane_wave_strain_voigt
@@ -368,6 +369,55 @@ def solve_graded_octree(
     )
 
 
+def born_octree(
+    omega: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    centres: NDArray,
+    half_widths: NDArray,
+    profile: Callable[[NDArray], float],
+    k_hat: NDArray,
+    pol: NDArray,
+    wave_type: str,
+    p: int | NDArray = 1,
+    r: int | NDArray = 1,
+) -> OctreeResult:
+    """The term of first order in the contrast, with no solve: each leaf holds the projected incident wave.
+
+    The Galerkin system at first order is M psi = <Q, psi0>, so psi is the L2 projection of the incident
+    state onto the leaf's field functions.  Its far field (octree_far_field) is the scheme's Born term,
+    which costs one pass over the leaves; against the Born term of a finer representation it gives the
+    first-order part of the scheme's error before anything is solved.  Arguments as solve_graded_octree.
+    """
+    centres = np.asarray(centres, dtype=float)
+    half_widths = np.asarray(half_widths, dtype=float)
+    n = len(centres)
+    p_leaf = np.broadcast_to(np.asarray(p, dtype=int), (n,))
+    r_leaf = np.broadcast_to(np.asarray(r, dtype=int), (n,))
+    k_mag = omega / (ref.alpha if wave_type == "P" else ref.beta)
+    k_hat = np.asarray(k_hat, dtype=float) / np.linalg.norm(k_hat)
+    amp = np.concatenate([np.asarray(pol, dtype=complex), _plane_wave_strain_voigt(k_hat, pol, k_mag)])
+    delta, psi = [], []
+    for c, h, pi, ri in zip(centres, half_widths, p_leaf, r_leaf, strict=True):
+        na, n_field, _, _ = field_sizes(int(pi), int(ri))
+        delta.append(cell_contrast_coefficients(profile, c, float(h), contrast, ref, omega, degree=int(ri)))
+        mom = plane_wave_moments(c[None, :], float(h), k_mag * k_hat, amp, n_field)[0, :na]
+        full = np.zeros((n_field, 9), dtype=complex)
+        full[:na] = np.linalg.solve(gram_test(float(h), n_field)[:na, :na], mom)
+        psi.append(full)
+    same = len({(f.shape, d.shape) for f, d in zip(psi, delta, strict=True)}) == 1
+    return OctreeResult(
+        centres,
+        half_widths,
+        omega,
+        ref,
+        np.array(delta) if same else delta,
+        np.array(psi) if same else psi,
+        int(p_leaf.max()),
+        int(r_leaf.max()),
+    )
+
+
 def octree_far_field(
     res: OctreeResult, directions: NDArray, r_distance: float, n_gauss: int = 4
 ) -> tuple[NDArray, NDArray]:
@@ -452,3 +502,37 @@ def adapt_leaves(
             keep = norm > 0.0
             return centres[keep], half_widths[keep]
         centres, half_widths = refine_leaves(centres, half_widths, flag)
+
+
+# ---------------------------------------------------------------------------
+# The wave term of a leaf's error
+# ---------------------------------------------------------------------------
+
+
+def born_wave_factor(k_in: NDArray, k_out: NDArray, h: float, p: int) -> float:
+    """1 + E_p: a cell's Born far field over its exact one, for a contrast uniform in the cell.
+
+    A cell of half-width h whose field is held to total degree p represents the incident wave
+    exp(i k_in.x) by its projection onto the Legendre products of total degree at most p, and radiates
+    towards k_out through the projection of exp(-i k_out.x).  With int_{-1}^{1} P_a(xi) exp(i q xi) d xi
+    = 2 i^a j_a(q), the ratio of the scheme's first-order far field to the exact one is
+
+        sum_{|a| <= p} prod_i (2 a_i + 1) j_{a_i}(k_in_i h) j_{a_i}(k_out_i h)
+        / prod_i j_0((k_in - k_out)_i h),
+
+    which tends to one as p grows (the addition theorem).  For p = 0 the leading departure is
+    -(k_in . k_out) (2h)^2 / 12; for degree p it is of order (k h)^(2p + 2).
+
+    Args:
+        k_in: Incident wavevector (rad/m), shape (3,).
+        k_out: Outgoing wavevector towards the observer, P or S (rad/m), shape (3,).
+        h: Half-width of the cell (m).
+        p: Field degree of the cell (0, 1 or 2).
+    """
+    a, b = np.asarray(k_in, dtype=float) * h, np.asarray(k_out, dtype=float) * h
+    total = 0.0
+    for e in SOURCE_EXPONENTS_QUARTIC[: N_FUN[p]]:
+        total += float(
+            np.prod([(2 * n + 1) * spherical_jn(n, a[i]) * spherical_jn(n, b[i]) for i, n in enumerate(e)])
+        )
+    return total / float(np.prod(spherical_jn(0, a - b)))

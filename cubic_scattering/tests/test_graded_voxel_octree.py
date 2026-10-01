@@ -17,6 +17,8 @@ from cubic_scattering.graded_voxel.farfield import graded_far_field
 from cubic_scattering.graded_voxel.kernel import kernel_9x9
 from cubic_scattering.graded_voxel.octree import (
     adapt_leaves,
+    born_octree,
+    born_wave_factor,
     field_reexpansion,
     leaf_energies,
     octree_block,
@@ -263,3 +265,72 @@ def test_leaves_of_different_field_degree_share_one_system():
     _, f_lin = field(1)
     # raising the field degree in the large leaves moves the answer towards the all-linear one
     assert np.abs(f_mixed - f_lin).max() < np.abs(f_const - f_lin).max()
+
+
+# ---------------------------------------------------------------- the wave term of a leaf's error
+K_IN = np.array([0.031, -0.012, 0.02])
+K_OUT = np.array([-0.05, 0.04, 0.011])
+
+
+def test_wave_factor_of_a_constant_cell_has_the_closed_leading_term():
+    # E_0 = -(k_in . k_out) d^2 / 12 to leading order, d = 2h
+    h = 0.5
+    lead = -(K_IN @ K_OUT) * (2 * h) ** 2 / 12
+    assert born_wave_factor(K_IN, K_OUT, h, 0) - 1 == pytest.approx(lead, rel=2e-3)
+
+
+@pytest.mark.parametrize("p", [0, 1, 2])
+def test_wave_factor_falls_at_order_2p_plus_2(p):
+    errs = [abs(born_wave_factor(K_IN, K_OUT, h, p) - 1) for h in (4.0, 2.0)]
+    assert errs[0] / errs[1] == pytest.approx(4.0 ** (p + 1), rel=0.05)
+
+
+def test_wave_factor_is_symmetric_and_exact_when_either_wave_is_uniform():
+    for p in (0, 1, 2):
+        assert born_wave_factor(K_IN, K_OUT, 3.0, p) == pytest.approx(born_wave_factor(K_OUT, K_IN, 3.0, p))
+        # a wave that does not vary across the cell is a constant: every cell holds it exactly
+        assert born_wave_factor(np.zeros(3), K_OUT, 3.0, p) == pytest.approx(1.0, abs=1e-14)
+
+
+def test_wave_factor_is_the_born_term_of_a_single_constant_cell():
+    # one cell, weak contrast: far field over (1 + E_0) equals that of a quadratic field over (1 + E_2)
+    omega, h = 300.0, 5.0
+    k_in = omega / REF.alpha * KHAT
+    dirs = np.array([[0.6, 0.8, 0.0], [-0.8, 0.0, 0.6]])
+    eps = 1e-3
+    out = {}
+    for p in (0, 2):
+        f = []
+        for sign in (1.0, -1.0):
+            con = MaterialContrast(sign * eps * 2e9, sign * eps * 1e9, sign * eps * 100.0)
+            res = solve_graded_octree(
+                omega, REF, con, np.zeros((1, 3)), np.array([h]), lambda _x: 1.0, KHAT, KHAT, "P", p=p, r=0
+            )
+            f.append(octree_far_field(res, dirs, 1e9))
+        out[p] = [(f[0][w] - f[1][w]) / (2 * eps) for w in (0, 1)]
+    for w, speed in ((0, REF.alpha), (1, REF.beta)):
+        fac = {p: np.array([born_wave_factor(k_in, omega / speed * d, h, p) for d in dirs]) for p in (0, 2)}
+        a, b = out[0][w] / fac[0][:, None], out[2][w] / fac[2][:, None]
+        assert np.abs(a - b).max() < 1e-5 * np.abs(b).max()
+        # and the factor matters: without it the two differ by far more
+        assert np.abs(out[0][w] - out[2][w]).max() > 1e-3 * np.abs(b).max()
+
+
+def test_born_octree_is_the_weak_contrast_limit_of_the_solver():
+    # a tree of two leaf sizes on the graded sphere, linear cells: no solve against a central difference
+    c2, h2 = uniform_leaves(RADIUS, 2)
+    cm, hm = refine_leaves(c2, h2, np.arange(len(c2)) % 4 == 1)
+    dirs = np.array([[0.6, 0.8, 0.0], [-0.8, 0.0, 0.6], [0.0, 0.0, 1.0]])
+    eps = 1e-3
+    f = []
+    for sign in (1.0, -1.0):
+        con = MaterialContrast(sign * eps * 2e9, sign * eps * 1e9, sign * eps * 100.0)
+        res = solve_graded_octree(OMEGA, REF, con, cm, hm, _profile, KHAT, KHAT, "P", p=1, r=1)
+        f.append(sum(octree_far_field(res, dirs, 1e9)))
+    by_difference = (f[0] - f[1]) / (2 * eps)
+    direct = sum(
+        octree_far_field(
+            born_octree(OMEGA, REF, CON, cm, hm, _profile, KHAT, KHAT, "P", p=1, r=1), dirs, 1e9
+        )
+    )
+    assert np.abs(direct - by_difference).max() < 1e-5 * np.abs(direct).max()
