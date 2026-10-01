@@ -87,8 +87,13 @@ moduli and the density from the background, which the model prescribes. The othe
 \emph{wavefield}: the displacement and strain inside the voxel, which the calculation must find. Each
 is expanded in a basis on the cell, and the two bases are separate choices. Here both are Legendre
 polynomials, the wavefield to degree $p$ and the contrast to degree $r$; the usual scheme, a uniform
-field in a cell of constant properties, is $p=r=0$. This paper asks which basis each of the two needs,
-and what error a given pair $(p,r)$ leaves. The answer decides the cost of everything built on it,
+field in a cell of constant properties, is $p=r=0$. Neither
+choice is new in itself. In higher-order volume integral methods for electromagnetics the material
+within an element is represented by polynomials whose orders are independent of those of the field
+\citep{Chobanyan2015}, as it is in finite elements, and voxels that carry a linear field are in use
+\citep{Georgakis2020}. What has been missing is the law that relates the two bases: the order a given
+pair attains, and the error it leaves. This paper asks which basis each of the two needs, and what error
+a given pair $(p,r)$ leaves. The answer decides the cost of everything built on it,
 because a voxel that represents its contents more accurately can be larger, and the number of voxels,
 not the size of each one's state, sets the cost of the multiple-scattering solve.
 
@@ -196,7 +201,11 @@ dipole by a source of finite extent whose spectrum is band-limited to the grid. 
 over a lattice extends the method to periodic structures \citep{Chaumet2003}. Its error converges
 at second order in the dipole spacing when shape errors are absent \citep{Yurkin2006}, and for a
 cube, the one shape a cubic grid represents without a staircase, \citet{YurkinKahnert2013} reach
-relative uncertainties of $10^{-7}$ to $10^{-3}$ by extrapolation in the grid. The layer studied
+relative uncertainties of $10^{-7}$ to $10^{-3}$ by extrapolation in the grid. On the mathematical
+side, \citet{Costabel2023} show that the method is a finite section of an infinite block Toeplitz
+matrix, stable for a large range of the contrast but not for all of it, and \citet{Costabel2023Hilbert}
+that in a one-dimensional model it converges at second order in the interior, with a boundary layer in
+which the consistency error does not vanish. The layer studied
 here is the elastic counterpart of that cube: a body the grid represents exactly, so that the
 discretisation error can be isolated. What this paper adds is the closed form: for cells that tile
 space, the coupling that makes the lattice reproduce the continuum exactly, and the order and the
@@ -1417,7 +1426,10 @@ the cells. Two cases bracket the choice. Where the medium is piecewise constant 
 layered model with voxel faces on its interfaces, a constant is exact for the medium, the projection
 error vanishes, and the degree of the field is spent entirely on the wave. Where the medium varies
 smoothly within the cells, the two degrees should be equal: a higher degree for the contrast than for
-the field is wasted, and a higher degree for the field improves only the Born term.
+the field is wasted, and a higher degree for the field improves only the Born term. That the two
+degrees can be chosen independently is the practice of higher-order electromagnetic volume methods
+\citep{Chobanyan2015}; what the present results add is the rule for choosing them, and the error each
+choice leaves.
 
 \paragraph{Where the error of a voxel scheme lives} The results separate the two approximations
 a voxel scheme makes. The \emph{coupling} between voxels makes none: averaged over the source cell it
@@ -1464,7 +1476,8 @@ reported for the DDA by \citet{Yurkin2006} corresponds to the uniform-field voxe
 opposite-signed constants of Eq.~\eqref{eq:errorR} explain why a polarisability correction can
 improve one observable only at the expense of another, as the package's own form-factor corrections
 do in reflection and transmission. Going beyond second order requires a richer internal field, which
-is the point of higher-order bases for volume integral equations; the first-moment voxel is the
+is the point of higher-order bases for volume integral equations
+\citep{Chobanyan2013,Georgakis2020}; the first-moment voxel is the
 lowest such basis, and in its spectral form the Galerkin double average makes the lattice sum
 converge without Ewald splitting.
 
