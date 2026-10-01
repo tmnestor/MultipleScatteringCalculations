@@ -16,6 +16,7 @@ from cubic_scattering.graded_voxel.blocks import coupling_block
 from cubic_scattering.graded_voxel.farfield import graded_far_field
 from cubic_scattering.graded_voxel.kernel import kernel_9x9
 from cubic_scattering.graded_voxel.octree import (
+    TreeBlocks,
     adapt_leaves,
     born_octree,
     born_wave_factor,
@@ -334,3 +335,50 @@ def test_born_octree_is_the_weak_contrast_limit_of_the_solver():
         )
     )
     assert np.abs(direct - by_difference).max() < 1e-5 * np.abs(direct).max()
+
+
+@pytest.mark.parametrize("n_source, n_test", [(10, 4), (20, 4)])
+def test_tree_blocks_by_symmetry_equal_the_blocks_computed_directly(n_source, n_test):
+    # cells two sizes apart at relative positions that are images of one another under the cube group:
+    # each is computed afresh by octree_block and drawn from the symmetry cache
+    unit = 0.5 * H
+    tree = TreeBlocks(OMEGA, REF, unit, n_source, n_test)
+    for h_field, h_source in ((2 * H, 0.5 * H), (0.5 * H, 2 * H)):
+        for rel in ((11, 5, -3), (-5, 3, 11), (3, -11, -5), (7, 5, 1)):
+            direct = octree_block(
+                (0.0, 0.0, 0.0),
+                h_field,
+                tuple(-unit * r for r in rel),
+                h_source,
+                OMEGA,
+                REF,
+                n_source,
+                n_test,
+            )
+            cached = tree(rel, h_field, h_source)
+            assert np.abs(cached - direct).max() < 1e-12 * np.abs(direct).max()
+    # three of the four positions are one orbit: two canonical blocks per pair of sizes
+    assert tree.computed == 4
+
+
+def test_block_cache_carries_blocks_between_solves_and_refuses_another_frequency():
+    c2, h2 = uniform_leaves(RADIUS, 2)
+    cm, hm = refine_leaves(c2, h2, np.arange(len(c2)) % 4 == 1)
+    cache: dict = {}
+    first = solve_graded_octree(
+        OMEGA, REF, CON, cm, hm, _profile, KHAT, KHAT, "P", p=0, r=0, block_cache=cache
+    )
+    done = sum(v.computed for k, v in cache.items() if k[0] == "tree")
+    again = solve_graded_octree(
+        OMEGA, REF, CON, cm, hm, _profile, KHAT, KHAT, "P", p=0, r=0, block_cache=cache
+    )
+    fresh = solve_graded_octree(OMEGA, REF, CON, cm, hm, _profile, KHAT, KHAT, "P", p=0, r=0)
+    assert sum(v.computed for k, v in cache.items() if k[0] == "tree") == done  # nothing recomputed
+    assert np.array_equal(first.psi, again.psi)
+    assert np.abs(first.psi - fresh.psi).max() < 1e-12 * np.abs(fresh.psi).max()
+    with pytest.raises(ValueError) as err:
+        solve_graded_octree(
+            2 * OMEGA, REF, CON, cm, hm, _profile, KHAT, KHAT, "P", p=0, r=0, block_cache=cache
+        )
+    msg = str(err.value)
+    assert "block_cache" in msg and "Fix:" in msg and str(float(OMEGA)) in msg
