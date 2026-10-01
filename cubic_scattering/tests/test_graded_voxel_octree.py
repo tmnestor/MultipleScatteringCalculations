@@ -16,7 +16,9 @@ from cubic_scattering.graded_voxel.blocks import coupling_block
 from cubic_scattering.graded_voxel.farfield import graded_far_field
 from cubic_scattering.graded_voxel.kernel import kernel_9x9
 from cubic_scattering.graded_voxel.octree import (
+    adapt_leaves,
     field_reexpansion,
+    leaf_energies,
     octree_block,
     octree_far_field,
     refine_leaves,
@@ -178,3 +180,44 @@ def test_a_mixed_tree_is_closer_to_the_fine_grid_than_the_coarse_grid_is():
     coarse, mixed = field(c2, h2), field(cm, hm)
     fine = field(*uniform_leaves(RADIUS, 4))
     assert np.abs(mixed - fine).max() < np.abs(coarse - fine).max()
+
+
+def test_leaf_energies_of_polynomial_profiles():
+    centres = np.array([[1.0, -2.0, 0.5], [4.0, 0.0, 0.0]])
+    hs = np.array([1.0, 0.5])
+
+    def linear(pos):
+        return 2.0 + 0.3 * pos[..., 0] - 0.2 * pos[..., 2]
+
+    def quadratic(pos):
+        return 1.0 + 0.1 * pos[..., 0] * pos[..., 1] + 0.05 * pos[..., 2] ** 2
+
+    # a profile of the cell's own degree has no defect and no detail
+    for prof, p in ((linear, 1), (quadratic, 2)):
+        defect, detail, norm = leaf_energies(prof, centres, hs, p)
+        assert np.all(defect < 1e-12 * norm) and np.all(detail < 1e-12 * norm)
+    # a linear profile on a constant cell: defect = sum_i g_i^2 h^2 / 3 times the volume
+    defect, detail, _ = leaf_energies(linear, centres, hs, 0)
+    want = (0.3**2 + 0.2**2) * hs**2 / 3.0 * (2 * hs) ** 3
+    np.testing.assert_allclose(defect, want, rtol=1e-10)
+    # one refinement of a constant cell recovers three quarters of a linear profile's defect
+    np.testing.assert_allclose(detail, 0.75 * want, rtol=1e-10)
+
+
+def test_adapt_leaves_refines_where_the_profile_varies_and_drops_empty_leaves():
+    centres, hs = uniform_leaves(RADIUS, 2)
+
+    def step(pos):  # uniform inside radius 6, a ramp to zero at radius 8, zero beyond
+        r = np.linalg.norm(pos, axis=-1)
+        return np.clip((8.0 - r) / 2.0, 0.0, 1.0)
+
+    c, h = adapt_leaves(step, centres, hs, p=1, tol=1e-4, h_min=RADIUS / 8)
+    assert len(np.unique(h)) >= 2 and h.min() >= RADIUS / 8 - 1e-12
+    # every surviving leaf carries some of the profile
+    assert np.all(np.linalg.norm(c, axis=1) - np.sqrt(3.0) * h < 8.0)
+    # and no leaf that could still be refined has a detail energy above the tolerance
+    _, detail, norm = leaf_energies(step, c, h, 1, levels=2)
+    assert np.all(detail[h > RADIUS / 8 + 1e-12] <= 1e-4 * norm.sum())
+    # a uniform profile needs no refinement
+    c0, h0 = adapt_leaves(lambda pos: np.ones(pos.shape[:-1]), centres, hs, p=0, tol=1e-6, h_min=RADIUS / 8)
+    assert len(c0) == len(centres) and np.all(h0 == hs)
