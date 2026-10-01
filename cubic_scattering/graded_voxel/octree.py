@@ -249,8 +249,9 @@ class OctreeResult:
     half_widths: NDArray  # (N,)
     omega: float
     ref: ReferenceMedium
-    delta: NDArray  # (N, 4 or 10, 9, 9) contrast operator coefficients per leaf
-    psi: NDArray  # (N, 4 or 10, 9) coefficients of the state per leaf
+    delta: NDArray | list[NDArray]  # per leaf (4 or 10, 9, 9): contrast operator coefficients
+    psi: NDArray | list[NDArray]  # per leaf (4 or 10, 9): coefficients of the state
+    # arrays when every leaf has the same degrees, lists of per-leaf arrays otherwise
     p: int
     r: int
 
@@ -265,10 +266,14 @@ def solve_graded_octree(
     k_hat: NDArray,
     pol: NDArray,
     wave_type: str,
-    p: int = 1,
-    r: int = 1,
+    p: int | NDArray = 1,
+    r: int | NDArray = 1,
 ) -> OctreeResult:
     """Solve the Galerkin system on leaves of mixed sizes, densely.
+
+    The field degree and the contrast degree may differ from leaf to leaf: a large leaf in a uniform part
+    of the medium needs no more than a constant contrast, but it needs a richer basis for the wavefield
+    than a small leaf does.
 
     Args:
         omega: Angular frequency (rad/s).
@@ -280,33 +285,47 @@ def solve_graded_octree(
         k_hat: Incident direction.
         pol: Incident polarisation.
         wave_type: 'P' or 'S' (the incident speed).
-        p: Field degree (0, 1 or 2).
-        r: Contrast degree (0, 1 or 2).
+        p: Field degree (0, 1 or 2): one value, or one per leaf.
+        r: Contrast degree (0, 1 or 2): one value, or one per leaf.
     """
     centres = np.asarray(centres, dtype=float)
     half_widths = np.asarray(half_widths, dtype=float)
     n = len(centres)
-    na, n_field, _, n_source = field_sizes(p, r)
-    delta = np.array(
-        [
-            cell_contrast_coefficients(profile, c, float(h), contrast, ref, omega, degree=r)
-            for c, h in zip(centres, half_widths, strict=True)
-        ]
-    )
-    rows = na * 9
-    a = np.zeros((n * rows, n * rows), dtype=complex)
+    p_leaf = np.broadcast_to(np.asarray(p, dtype=int), (n,))
+    r_leaf = np.broadcast_to(np.asarray(r, dtype=int), (n,))
+    sizes = [field_sizes(int(pi), int(ri)) for pi, ri in zip(p_leaf, r_leaf, strict=True)]
+    delta = [
+        cell_contrast_coefficients(profile, c, float(h), contrast, ref, omega, degree=int(ri))
+        for c, h, ri in zip(centres, half_widths, r_leaf, strict=True)
+    ]
+    rows = np.array([sz[0] * 9 for sz in sizes])
+    start = np.concatenate([[0], np.cumsum(rows)])
+    a = np.zeros((start[-1], start[-1]), dtype=complex)
     h_min = float(half_widths.min())
     cache_k: dict[tuple, NDArray] = {}
-    equal = EqualBlocks(omega, ref, n_source, n_field)
+    equal: dict[tuple[int, int], EqualBlocks] = {}
     expansions = [
-        source_expansion(d, n_field)[:, :na].transpose(0, 2, 1, 3).reshape(n_source * 9, rows)
-        for d in delta
+        source_expansion(d, sz[1])[:, : sz[0]].transpose(0, 2, 1, 3).reshape(sz[3] * 9, sz[0] * 9)
+        for d, sz in zip(delta, sizes, strict=True)
     ]
     for col in range(n):
+        n_source = sizes[col][3]
         for row in range(n):
+            na, n_field = sizes[row][0], sizes[row][1]
             rel = np.round((centres[row] - centres[col]) / h_min).astype(int)
-            key = (float(half_widths[row]), float(half_widths[col]), int(rel[0]), int(rel[1]), int(rel[2]))
+            key = (
+                float(half_widths[row]),
+                float(half_widths[col]),
+                int(rel[0]),
+                int(rel[1]),
+                int(rel[2]),
+                na,
+                n_field,
+                n_source,
+            )
             if key not in cache_k:
+                if (n_source, n_field) not in equal:
+                    equal[(n_source, n_field)] = EqualBlocks(omega, ref, n_source, n_field)
                 blk = octree_block(
                     (0.0, 0.0, 0.0),
                     key[0],
@@ -316,26 +335,37 @@ def solve_graded_octree(
                     ref,
                     n_source,
                     n_field,
-                    equal,
+                    equal[(n_source, n_field)],
                 )
-                cache_k[key] = blk[:na].transpose(0, 2, 1, 3).reshape(rows, n_source * 9)
+                cache_k[key] = blk[:na].transpose(0, 2, 1, 3).reshape(na * 9, n_source * 9)
             entry = -(cache_k[key] @ expansions[col])
             if row == col:
                 entry = entry + np.kron(gram_test(float(half_widths[row]), n_field)[:na, :na], np.eye(9))
-            a[row * rows : (row + 1) * rows, col * rows : (col + 1) * rows] = entry
+            a[start[row] : start[row + 1], start[col] : start[col + 1]] = entry
     k_mag = omega / (ref.alpha if wave_type == "P" else ref.beta)
     k_hat = np.asarray(k_hat, dtype=float) / np.linalg.norm(k_hat)
     amp = np.concatenate([np.asarray(pol, dtype=complex), _plane_wave_strain_voigt(k_hat, pol, k_mag)])
-    rhs = np.zeros((n, rows), dtype=complex)
-    for h in np.unique(half_widths):
-        sel = half_widths == h
-        rhs[sel] = plane_wave_moments(centres[sel], float(h), k_mag * k_hat, amp, n_field)[:, :na].reshape(
-            -1, rows
-        )
-    sol = scipy.linalg.solve(a, rhs.ravel(), overwrite_a=True, check_finite=False).reshape(n, na, 9)
-    full = np.zeros((n, n_field, 9), dtype=complex)
-    full[:, :na] = sol
-    return OctreeResult(centres, half_widths, omega, ref, delta, full, p, r)
+    rhs = np.zeros(start[-1], dtype=complex)
+    for i, (c, h, sz) in enumerate(zip(centres, half_widths, sizes, strict=True)):
+        mom = plane_wave_moments(c[None, :], float(h), k_mag * k_hat, amp, sz[1])[0, : sz[0]]
+        rhs[start[i] : start[i + 1]] = mom.ravel()
+    sol = scipy.linalg.solve(a, rhs, overwrite_a=True, check_finite=False)
+    psi = []
+    for i, sz in enumerate(sizes):
+        full = np.zeros((sz[1], 9), dtype=complex)
+        full[: sz[0]] = sol[start[i] : start[i + 1]].reshape(sz[0], 9)
+        psi.append(full)
+    same = len({(f.shape, d.shape) for f, d in zip(psi, delta, strict=True)}) == 1
+    return OctreeResult(
+        centres,
+        half_widths,
+        omega,
+        ref,
+        np.array(delta) if same else delta,
+        np.array(psi) if same else psi,
+        int(p_leaf.max()),
+        int(r_leaf.max()),
+    )
 
 
 def octree_far_field(
