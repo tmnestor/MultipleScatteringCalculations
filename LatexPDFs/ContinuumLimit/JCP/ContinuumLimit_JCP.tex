@@ -1107,6 +1107,57 @@ projected contrast at the quadrature nodes, against its own 30-digit solution of
 errors agree with those of Table~\ref{tab:graded} to $10^{-3}$, and at $\omega=1200$\,rad\,s$^{-1}$ it
 measures the orders of Eq.~\eqref{eq:graded} again.
 
+\paragraph{Which basis sets the error} Equation~\eqref{eq:graded} gives the order. The size of the
+error, and which of the two bases it belongs to, appear when the scattered field is separated by its
+order in the contrast: the Born term $T_1$, and the second-order term $T_2$ in which the field
+scattered once is scattered again. Both follow from the solution at contrasts scaled by $\pm\epsilon$
+and $\pm2\epsilon$, for the scheme and for the exact layer alike. With $f(z)$ the profile and $\Pi_q$
+the $L^2$ projection onto the Legendre polynomials of degree at most $q$ in each cell, define the
+\emph{relative projection error} of the medium at degree $q$,
+\begin{equation}\label{eq:defect}
+  \mathcal{E}_q=\frac{\sum_{\text{cells}}\int\bigl(f-\Pi_qf\bigr)^2\,\dd z}{\int f^2\,\dd z}
+     =1-\frac{\lVert\Pi_qf\rVert^2}{\lVert f\rVert^2},\qquad \lVert f\rVert^2=\int f^2\,\dd z:
+\end{equation}
+the fraction of the squared norm of the profile that polynomials of degree $q$ on the cells cannot
+represent. It is a property of the medium and the grid alone; it involves neither the wave nor the
+solution.
+For the smooth profile and every one of the nine pairs with $p,r\le2$, the relative error of $T_2$ is
+\begin{equation}\label{eq:defectlaw}
+  \frac{\lvert T_2^{\text{scheme}}-T_2\rvert}{\lvert T_2\rvert}=\mathcal{E}_{\min(p,r)}
+\end{equation}
+to within $1.3\%$ at $\omega=300$\,rad\,s$^{-1}$ on $4$ to $16$ cells: the ratio of the two sides is
+$0.998$ to $1.005$ when $\min(p,r)$ is $0$ or $1$, and $1.010$ to $1.013$ when it is $2$. The error of the
+Born term is smaller by two to six orders of magnitude. The error of the whole is therefore that of
+$T_2$, the projection error times $\lvert T_2\rvert/\lvert T_1\rvert$ ($0.044$ here): for $p=r=1$ on $16$ cells
+that predicts $1.6\times10^{-7}$, and Table~\ref{tab:graded} has $1.4\times10^{-7}$.
+
+Equation~\eqref{eq:defectlaw} is exact in the long-wave limit, for a reason that shows what each basis
+is for. The strain--strain entry of the kernel, $g''=-k^2g-\delta(z)/M_P$, is local as $kD\to0$, and the
+incident strain $\varepsilon_0$ is then uniform across the layer, so the strain scattered once is
+$-(\Delta M/M_P)\,f(z)\,\varepsilon_0$: it is the profile itself. A cell holds the contrast as
+$\Pi_rf$ and the field to degree $p$, so it holds the once-scattered strain as
+$\Pi_p(\Pi_rf)=\Pi_qf$ with $q=\min(p,r)$. The second-order term pairs the contrast with that strain:
+\begin{equation}\label{eq:defectproof}
+  T_2\ \propto\ \int f\cdot f\,\dd z=\lVert f\rVert^2,\qquad
+  T_2^{\text{scheme}}\ \propto\ \int(\Pi_rf)(\Pi_qf)\,\dd z=\lVert\Pi_qf\rVert^2,
+\end{equation}
+the last because $\Pi_qf$ lies in the range of $\Pi_r$. The relative error is
+$1-\lVert\Pi_qf\rVert^2/\lVert f\rVert^2=\mathcal{E}_q$. Measured, the ratio of the two sides of
+Eq.~\eqref{eq:defectlaw} for $p=r=1$ on $8$ cells departs from one by $1.7\times10^{-2}$,
+$4.3\times10^{-3}$, $4.8\times10^{-4}$ and $4\times10^{-5}$ at $kD=0.24$, $0.12$, $0.04$ and $0.012$: as
+$(kD)^2$ (\path{scripts/measure_layer_bases.py}). The pairing in Eq.~\eqref{eq:defectproof} is verified
+symbolically for all nine pairs, and the projection errors are computed exactly
+(\path{ContinuumLimit_LayerDefect.wl}); they fall by $4^{q+1}$ for each halving of the cells.
+
+Three consequences follow. The two bases must be matched: a contrast of higher degree than the field is
+wasted (the pairs $(p,r)=(0,1)$ and $(0,2)$ have the errors of $(0,0)$ to three digits), and a field of
+higher degree than the contrast improves only the Born term. The wavefield basis is there to carry what
+the medium imprints on the field, not only the wave: at these frequencies the wave itself varies little
+across a cell. And the error is known from the medium, before anything is solved: $\mathcal{E}_q$ is a
+property of the profile and the cells. It vanishes when the medium is piecewise constant on the cells,
+which is the stratified model above; there the contrast needs no more than a constant in each cell, and
+the degree of the field alone sets the order.
+
 \section{A sphere: what the layer predicts in three dimensions}\label{sec:sphere}
 
 The layer and the stratified layer are laterally uniform. A sphere is not, and elastic scattering by a
