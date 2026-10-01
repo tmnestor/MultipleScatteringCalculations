@@ -10,6 +10,9 @@ from cubic_scattering.graded_voxel.multipole import (
     cell_pair_moments,
     far_block_multipole,
     helmholtz_F,
+    piece_moments_1d,
+    piecewise_multipole_block,
+    radial_derivative_array,
     radial_derivatives,
     truncation_order,
 )
@@ -109,3 +112,47 @@ def test_truncation_order_and_refusal_near_contact():
     assert truncation_order((8, 0, 0), 1e-12) < truncation_order((4, 0, 0), 1e-12)
     with pytest.raises(ValueError, match="too close"):
         far_block_multipole((1, 1, 0), H, OMEGA, REF)
+
+
+def test_radial_derivative_array_equals_the_dictionary():
+    k, x = 0.3, np.array([7.0, -4.0, 5.5])
+    arr = radial_derivative_array(k, x, 6)
+    for beta, val in radial_derivatives(k, x, 6).items():
+        assert abs(arr[beta] / val - 1) < 1e-12, beta
+
+
+def test_piece_moments_match_quadrature():
+    # int over a sub-interval of the cross-correlation w(sigma) / h times (sigma - centre)^g
+    from cubic_scattering.graded_voxel.blocks import autocorrelation_1d
+
+    x, w = np.polynomial.legendre.leggauss(30)
+    for e_t, e_s in ((0, 0), (1, 2), (2, 4)):
+        left, right = autocorrelation_1d(e_t, e_s)
+        mom = piece_moments_1d(e_t, e_s, splits=1, order=9)  # (4 sub-intervals, 10)
+        assert mom.shape == (4, 10)
+        for sub, (lo, hi, poly) in enumerate(((-2, -1, left), (-1, 0, left), (0, 1, right), (1, 2, right))):
+            c, r = (lo + hi) / 2, (hi - lo) / 2
+            for g in (0, 3, 9):
+                ref = r * sum(wi * poly(c + r * xi) * (r * xi) ** g for xi, wi in zip(x, w, strict=True))
+                assert abs(mom[sub, g] - ref) < 1e-13 * max(1.0, abs(ref)), (e_t, e_s, sub, g)
+
+
+@pytest.mark.parametrize("off", [(2, 0, 0), (2, 1, 1), (2, -2, 2), (3, 1, 0), (5, -2, 1)])
+def test_piecewise_multipole_block_equals_the_quadrature_block(off):
+    # every non-touching offset, including the nearest ones, where the series about the cell centres fails
+    for omega in (150.0, 600.0):
+        want = coupling_block(off, H, omega, REF)
+        got = piecewise_multipole_block(off, H, omega, REF, tol=1e-11)
+        assert np.linalg.norm(got - want) / np.linalg.norm(want) < 2e-9, (off, omega)
+
+
+def test_piecewise_multipole_block_with_a_quadratic_field():
+    off = (2, 1, 0)
+    want = coupling_block(off, H, 600.0, REF, n_source=35, n_test=10)
+    got = piecewise_multipole_block(off, H, 600.0, REF, n_source=35, n_test=10, tol=1e-11)
+    assert np.linalg.norm(got - want) / np.linalg.norm(want) < 2e-9
+
+
+def test_piecewise_multipole_refuses_touching_cells():
+    with pytest.raises(ValueError, match="touch"):
+        piecewise_multipole_block((1, 0, 0), H, OMEGA, REF)

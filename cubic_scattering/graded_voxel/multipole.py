@@ -25,6 +25,20 @@ factorially small in the cell size over the wavelength.  It needs rho < 1 and is
 four cells apart; ``truncation_order`` picks the order for a tolerance.  There is no restriction on k R:
 this is the treatment for distant cells in a large body, where a power series in the wavenumber is
 useless.
+
+EVERY NON-TOUCHING PAIR (``piecewise_multipole_block``).  Close in, the series about the cell centres
+converges too slowly: at two cells apart rho = 0.87.  The cross-correlation W of the two cells'
+polynomials is itself a polynomial on each of the eight boxes into which the planes s_i = 0 cut its
+support [-2h, 2h]^3 (the s-form of ``blocks``), so
+
+    K_ac(R) = sum over boxes B of  int_B W_ac(s) P(R + s) ds,
+
+and on each box the propagator is expanded about the box's own centre s_B: the moments are those of a
+polynomial over a box, exact, and the ratio is now (half-diagonal of the box) / |R + s_B|, the distance
+from the box's centre to the singular point.  The boxes may be bisected further (W is still a polynomial
+on every part): each bisection halves the half-diagonal.  At two cells apart the ratio is 0.52 on the
+eight boxes and 0.33 after one bisection.  This is one treatment for every pair of cells that do not
+touch; for distant cells it reduces to the series above with a smaller ratio.
 """
 
 import itertools
@@ -32,12 +46,13 @@ import math
 from functools import cache
 
 import numpy as np
+from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 from scipy.special import spherical_jn, spherical_yn
 
 from ..effective_contrasts import ReferenceMedium
 from .basis import SOURCE_EXPONENTS, moment_1d, source_exponents
-from .blocks import _to_field_rows, family_tables
+from .blocks import _to_field_rows, autocorrelation_1d, family_tables
 
 Beta = tuple[int, int, int]
 
@@ -183,3 +198,157 @@ def far_block_multipole(
                 acc += w * d
             out += acc[:, :, None, None] * coef[None, None]
     return _to_field_rows(out) / (4.0 * np.pi * ref.mu)
+
+
+@cache
+def _flat_derivative_table(order: int) -> tuple[NDArray, NDArray, NDArray, NDArray, NDArray, NDArray]:
+    """``derivative_table`` flattened: (beta index, alpha0, alpha1, alpha2, q, coefficient) per term, the
+    beta index being b0 * (order + 1)^2 + b1 * (order + 1) + b2."""
+    n1 = order + 1
+    rows = [
+        (b[0] * n1 * n1 + b[1] * n1 + b[2], al[0], al[1], al[2], q, c)
+        for b, terms in derivative_table(order).items()
+        for al, q, c in terms
+    ]
+    arr = np.array(rows)
+    return tuple(arr[:, j].astype(int) for j in range(5)) + (arr[:, 5],)  # type: ignore[return-value]
+
+
+def radial_derivative_array(k: float, x: NDArray, order: int) -> NDArray:
+    """d^beta [exp(i k r) / r] at x as an array D[b0, b1, b2], zero where |beta| > order."""
+    x = np.asarray(x, dtype=float)
+    f = helmholtz_F(k, float(np.linalg.norm(x)), order)
+    ib, a0, a1, a2, q, coef = _flat_derivative_table(order)
+    e = np.arange(order + 1)
+    px, py, pz = (float(x[i]) ** e for i in range(3))
+    terms = coef * px[a0] * py[a1] * pz[a2] * f[q]
+    n1 = order + 1
+    out = np.bincount(ib, weights=terms.real, minlength=n1**3) + 1j * np.bincount(
+        ib, weights=terms.imag, minlength=n1**3
+    )
+    return out.reshape(n1, n1, n1)
+
+
+@cache
+def piece_moments_1d(e_t: int, e_s: int, splits: int, order: int) -> NDArray:
+    """M[sub, g] = int over sub-interval `sub` of (w / h)(sigma) (sigma - centre)^g d sigma, g <= order.
+
+    w / h is the one-dimensional cross-correlation of xi^e_t and xi^e_s (``blocks.autocorrelation_1d``),
+    a polynomial on [-2, 0] and on [0, 2]; each half is cut into 2^splits equal sub-intervals.  With
+    tau = sigma - centre and half-length r, int_{-r}^{r} tau^j d tau = 2 r^(j+1) / (j + 1) for even j.
+    """
+    left, right = autocorrelation_1d(e_t, e_s)
+    n_sub = 2**splits
+    r = 1.0 / n_sub
+    out = np.zeros((2 * n_sub, order + 1))
+    for half, poly in enumerate((left, right)):
+        for i in range(n_sub):
+            centre = -2.0 + 2.0 * half + (2 * i + 1) * r
+            shifted = poly(Polynomial([centre, 1.0])).coef  # w(centre + tau) in powers of tau
+            for g in range(order + 1):
+                out[half * n_sub + i, g] = sum(
+                    float(c) * 2.0 * r ** (j + g + 1) / (j + g + 1)
+                    for j, c in enumerate(shifted)
+                    if (j + g) % 2 == 0
+                )
+    return out
+
+
+def _piece_plan(offset: tuple[int, int, int], kappa: float, tol: float) -> tuple[int, int]:
+    """(splits, order): the bisection level that makes the series cheapest, and its order.
+
+    The ratio is that of the nearest sub-box: its half-diagonal sqrt(3) / 2^splits over the distance from
+    its centre to the singular point, both in units of h.
+    """
+    best: tuple[float, int, int] | None = None
+    for splits in range(4):
+        r = 1.0 / 2**splits
+        d = math.sqrt(sum(max(2 * abs(o) - 2 + r, r) ** 2 for o in offset))
+        ratio = math.sqrt(3.0) * r / d
+        kap = kappa * r / 2.0  # kappa was defined for the half-diagonal 2 sqrt(3) h
+        n = 2
+        while sum(ratio ** (n + 1 - j) * kap**j / math.factorial(j) for j in range(n + 2)) >= tol:
+            n += 1
+            if n > 60:
+                break
+        if n > 60:
+            continue
+        cost = 8.0 ** (splits + 1) * (n + 1) ** 3
+        if best is None or cost < best[0]:
+            best = (cost, splits, n)
+    if best is None:
+        raise ValueError(f"_piece_plan: no bisection level reaches tol = {tol:g} for offset {offset}")
+    return best[1], best[2]
+
+
+def piecewise_multipole_block(
+    offset: tuple[int, int, int],
+    h: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+    tol: float = 1e-12,
+    splits: int | None = None,
+    order: int | None = None,
+) -> NDArray:
+    """K[a, c] for any pair of cells that do not touch, from multipole series about the centres of the
+    polynomial pieces of the cross-correlation W; no quadrature.  Shape (n_test, n_source, 9, 9).
+
+    Args:
+        offset: Integer offset between the cells (field minus source), in cell widths.
+        h: Cell half-width (m).
+        omega: Angular frequency (rad/s).
+        ref: Background medium.
+        n_source: Source monomials (10, 20 or 35).
+        n_test: Field functions (4 or 10).
+        tol: Relative tolerance that chooses the bisection level and the order.
+        splits: Bisections of each of the eight boxes (None: chosen for least work).
+        order: Order of the series on each box (None: from ``tol``).
+
+    Raises:
+        ValueError: when the cells touch (use ``blocks.near_block_series``).
+    """
+    if max(abs(o) for o in offset) <= 1:
+        raise ValueError(
+            f"piecewise_multipole_block: the cells at offset {offset} touch, so the singular point lies on "
+            "a piece of W. Fix: use blocks.near_block_series for the self cell and its 26 neighbours."
+        )
+    ka, kb = omega / ref.alpha, omega / ref.beta
+    auto_splits, auto_order = _piece_plan(offset, 2.0 * math.sqrt(3.0) * kb * h, tol)
+    splits = auto_splits if splits is None else splits
+    n = auto_order if order is None else order
+    tst, src = SOURCE_EXPONENTS[:n_test], source_exponents(n_source)
+    # per axis: moments M_i[a, c, sub, g] of the test-source pair's cross-correlation
+    mom = [
+        np.array([[piece_moments_1d(ta[i], sc[i], splits, n) for sc in src] for ta in tst])
+        for i in range(3)
+    ]
+    n_sub = 2 ** (splits + 1)
+    half = 1.0 / 2**splits
+    centres = -2.0 + half * (2 * np.arange(n_sub) + 1)
+    big_r = 2.0 * h * np.asarray(offset, dtype=float)
+    g = np.arange(n + 1)
+    fact = np.array([math.factorial(int(v)) for v in g], dtype=float)
+    scale = h**g / fact  # h^g / g! per axis
+    total = np.add.outer(np.add.outer(g, g), g)
+    keep = total <= n
+    ta_tab, tb_tab = family_tables()
+    out = np.zeros((n_test, n_source, 9, 9), dtype=complex)
+    for i0 in range(n_sub):
+        for i1 in range(n_sub):
+            for i2 in range(n_sub):
+                x = big_r + h * np.array([centres[i0], centres[i1], centres[i2]])
+                ds = radial_derivative_array(kb, x, n + 4)
+                dp = radial_derivative_array(ka, x, n + 4)
+                db = (ds - dp) / kb**2
+                m0 = mom[0][:, :, i0, :] * scale
+                m1 = mom[1][:, :, i1, :] * scale
+                m2 = mom[2][:, :, i2, :] * scale
+                for table, d in ((ta_tab, ds), (tb_tab, db)):
+                    for idx, coef in table.items():
+                        s0, s1, s2 = idx.count(0), idx.count(1), idx.count(2)
+                        dg = np.where(keep, d[s0 : s0 + n + 1, s1 : s1 + n + 1, s2 : s2 + n + 1], 0.0)
+                        acc = np.einsum("aci,acj,ack,ijk->ac", m0, m1, m2, dg, optimize=True)
+                        out += acc[:, :, None, None] * coef[None, None]
+    return _to_field_rows(out) * h**6 / (4.0 * np.pi * ref.mu)
