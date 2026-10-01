@@ -10,11 +10,15 @@ basis).  The scheme is ``crosscheck_graded_contrast.graded_scattered``; the exac
   [2] the Born term T1 and the second-order term T2 separately (central differences in the contrast,
       steps d and 2d, Richardson-combined), and the relative error of each;
   [3] the projection defect of the profile, D_q = sum_cells int (s - P_q s)^2 / int s^2, for q = 0, 1, 2:
-      which degree's defect, if any, the error of T2 follows.
+      which degree's defect, if any, the error of T2 follows;
+  [4] the long-wave limit, in which T2 error = D_min(p,r) exactly: the departure falls as (k D)^2;
+  [5] the defects against exact values from an independent symbolic calculation.
 
 Run:  conda run -n seismic python -u scripts/measure_layer_bases.py [omega] [n ...]
 """
 
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -25,6 +29,7 @@ import crosscheck_graded_contrast as cg  # noqa: E402
 from crosscheck_second_moment_voxel import CONTRAST, D_LAYER, gauss  # noqa: E402
 
 PROFILE = "smooth"
+REF_DEFECT = Path(__file__).resolve().parent.parent / "Mathematica" / "ContinuumLimit_layer_defect.json"
 D_STEP = 1e-2
 
 
@@ -64,6 +69,14 @@ def defect(n: int, q: int) -> float:
         num += float(np.sum(w * (vals - fit) ** 2))
         den += float(np.sum(w * vals**2))
     return num / den
+
+
+def wolfram_real(text: str) -> float:
+    """The real part of a number in Wolfram InputForm: mantissa`precision*^exponent, perhaps + 0.*I."""
+    m = re.match(r"\s*(-?[0-9.]+)(?:`[0-9.]*)?(?:\*\^(-?[0-9]+))?", text)
+    if m is None:
+        raise ValueError(f"wolfram_real: cannot read {text!r}")
+    return float(m.group(1)) * 10.0 ** int(m.group(2) or 0)
 
 
 def rel(a: np.ndarray, b: np.ndarray) -> float:
@@ -106,7 +119,36 @@ def main() -> int:
                 + "   T2/D "
                 + " ".join(f"{v:.3f}" for v in ratio)
             )
-    return 0
+    # [4] the long-wave limit: the ratio T2 error / D tends to one as (k D)^2
+    print("long-wave limit, T2 error / D_min(p,r) - 1 for (p, r, n) = (0,0,8), (1,1,8), (2,2,4):")
+    gaps = []
+    for om in (600.0, 300.0, 100.0, 30.0):
+        e1x, e2x = born_terms(lambda sc, om=om: exact(om, sc))
+        row = []
+        for p, r, n in ((0, 0, 8), (1, 1, 8), (2, 2, 4)):
+            _, t2 = born_terms(lambda sc, om=om, p=p, r=r, n=n: scattered(om, n, p, r, sc))
+            row.append(rel(t2, e2x) / defect(n, min(p, r)) - 1.0)
+        gaps.append(row)
+        print(f"   k D = {om / 5000.0 * D_LAYER:.3f}: " + "  ".join(f"{v:+.2e}" for v in row))
+    # between k D = 0.12 and 0.04 the gap should fall ninefold
+    falls = [gaps[1][i] / gaps[2][i] for i in range(3)]
+    ok = all(6.0 < f < 12.0 for f in falls)
+    print(
+        f"   fall from k D = 0.12 to 0.04: {' '.join(f'{f:.1f}' for f in falls)} (9 for (k D)^2): "
+        f"{'PASS' if ok else 'FAIL'}"
+    )
+    # [5] the defects against their exact values (Mathematica/ContinuumLimit_LayerDefect.wl)
+    table = json.loads(REF_DEFECT.read_text())
+    worst = max(
+        abs(defect(n, q) / wolfram_real(table["defect"][q][i]) - 1.0)
+        for q in (0, 1, 2)
+        for i, n in enumerate(table["n"])
+        if n <= 16
+    )
+    ok5 = worst < 1e-8
+    verdict = "PASS" if ok5 else "FAIL"
+    print(f"defects against their exact values, n = 2 to 16, q = 0, 1, 2: {worst:.1e}: {verdict}")
+    return 0 if ok and ok5 else 1
 
 
 if __name__ == "__main__":
