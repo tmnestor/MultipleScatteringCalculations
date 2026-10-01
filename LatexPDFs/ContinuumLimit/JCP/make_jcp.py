@@ -96,33 +96,32 @@ body = re.sub(r"\\paragraph\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\.\}", r"\\paragraph{\
 body = re.sub(r"\\nb\{([^{}]*)\}", lambda m: r"\path{" + m.group(1).replace(r"\_", "_") + "}", body)
 
 ABSTRACT = r"""
-We analyse the convergence of voxel discretisations of the elastic volume integral equation, in
-which a medium is divided into cubic cells coupled through the background Green's tensor: the
-elastic coupled-dipole method. Because cubes tile space, $n$ planes of voxels of side $D/n$ are the
-layer itself for every $n$, with no shape error, so the difference from the exact solution is the
-discretisation error alone. We show that (i) the cube's lateral form
-factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
-continuum's; (ii) the single-site $T$-matrix follows from distributional moments of the Green's
-tensor and, against exact scattering by a sphere, is exact statically and departs only by a real,
-closed-form $(ka)^2$ term; (iii) its self term cancels, so the scheme is a collocation of the
-continuum equation, of second order with leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
-transmission, which no scalar correction can remove; (iv) a Galerkin voxel carrying Legendre moments
-of its internal field to degree $p$ converges at order $2p+2$, with leading error $-(kd)^4/720$ at
-$p=1$, for incident P, SV and SH waves at normal and oblique incidence, and one plane of it
-reproduces the thin-layer series through $O(D^{2p+2})$. In a randomly
-stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
-$10^{-6}$ with one voxel per model layer. A smoothly graded sphere converges at second order against its
-exact solution. Every
-result is verified by an independent implementation or an exact solution."""
+To model seismic waves efficiently in a realistically complicated medium, volume-integral
+(coupled-dipole) methods divide it into cubic voxels coupled through the background Green's tensor.
+Each voxel must represent the medium within it and the wavefield within it. We ask which basis each
+needs and what error a given choice leaves, which cannot be measured where no exact solution exists.
+We answer on a layer of voxels: because cubes tile space, $n$ planes of voxels are the layer itself,
+with no shape error, and its exact solution isolates the discretisation error. The source-averaged
+coupling equals the continuum's exactly; the cube's single-site $T$-matrix follows from distributional
+moments of the Green's tensor. With the wavefield expanded to Legendre degree $p$ and the medium's
+contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
+error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; for $p\le1$ also for
+SV and SH waves and at oblique incidence. The multiple-scattering error equals
+the relative projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit:
+the two bases must be matched, and the error is known from the medium before anything is solved.
+Where the medium is piecewise constant on the voxels it vanishes: in a randomly stratified layer one
+first-moment voxel per layer reaches $10^{-6}$. A smoothly graded sphere converges at second order
+against its exact solution. Every result is verified by an independent implementation or an exact
+solution."""
 words = len(re.sub(r"\$[^$]*\$", "x", ABSTRACT).split())
 assert words <= 250, f"the JCP abstract is {words} words; the limit is 250"
 
 HIGHLIGHTS = [
-    "Voxel coupling averaged over the source cell equals the continuum's exactly",
-    "The cube's single-site T-matrix follows from distributional moment integrals",
-    "The voxel scheme's leading error is known in closed form for every grid",
-    "A first-moment voxel converges at fourth order for P, SV and SH waves",
-    "In a random stratified layer, one voxel per model layer reaches 1e-6 accuracy",
+    "A voxel needs two bases: one for the medium and one for the wavefield",
+    "On a layer of cubes the discretisation error is isolated, with no shape error",
+    "The order is min(2p+2, 2r+2) for field degree p and medium degree r",
+    "The multiple-scattering error is the medium's relative projection error",
+    "The error is known in advance, from the medium and the grid alone",
 ]
 assert all(len(h) <= 85 for h in HIGHLIGHTS), "a highlight exceeds 85 characters"
 
