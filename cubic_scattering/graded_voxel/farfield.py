@@ -1,6 +1,6 @@
 """Far field of the graded voxel: each cell's polynomial source radiated from Gauss nodes.
 
-A cell's source density is sum_c (sum_b E_cb psi_b) m_c(xi), a polynomial of degree <= 3; it is radiated
+A cell's source density is sum_c (sum_b E_cb psi_b) m_c(xi), a polynomial of degree <= 4; it is radiated
 as point sources at a tensor Gauss rule's nodes (exact for the polynomial, and the outgoing phase varies
 by k h <= 0.25 across a cell).  The point-source formula is that of ``foldy_lax_far_field``: force and
 Voigt stress with the same sign, u_P = G_P r (r.F + i k_P r.sigma.r), u_S = G_S (F + i k_S sigma.r)_perp.
@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
 from ..sphere_scattering import _voigt_to_tensor
-from .basis import SOURCE_EXPONENTS_CUBIC, monomials, source_expansion
+from .basis import SOURCE_EXPONENTS_QUARTIC, monomials, source_expansion
 from .solver import GradedVoxelResult
 
 
@@ -62,10 +62,10 @@ def graded_far_field(
     x, w = leggauss(n_gauss)
     xi = np.stack(np.meshgrid(x, x, x, indexing="ij"), -1).reshape(-1, 3)
     ww = np.einsum("i,j,k->ijk", w, w, w).ravel()
-    ms = monomials(SOURCE_EXPONENTS_CUBIC, xi)  # (20, G)
+    ms = monomials(SOURCE_EXPONENTS_QUARTIC, xi)  # (35, G)
     pts, srcs = [], []
     for c, d, psi in zip(res.centres, res.delta, res.psi, strict=True):
-        coef = np.einsum("cbij,bj->ci", source_expansion(d), psi)  # (10 or 20, 9)
+        coef = np.einsum("cbij,bj->ci", source_expansion(d, psi.shape[0]), psi)  # (n_source, 9)
         srcs.append((ms[: len(coef)].T @ coef) * (ww * res.h**3)[:, None])
         pts.append(c + res.h * xi)
     return radiate(np.concatenate(pts), np.concatenate(srcs), res.omega, res.ref, directions, r_distance)

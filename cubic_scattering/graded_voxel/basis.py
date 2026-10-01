@@ -8,7 +8,12 @@ at most quadratic, so sources live in the SOURCE basis of the ten monomials of d
 A contrast QUADRATIC in the cell is expanded in the ten orthogonal polynomials of CONTRAST_BASIS (the test
 basis, then P_2(xi_i) and xi_i xi_j); its product with a test function is at most cubic, and the sources
 then live in the twenty monomials of degree <= 3, SOURCE_EXPONENTS_CUBIC, whose first ten are
-SOURCE_EXPONENTS.  Every function that depends on the source set takes its size (10 or 20).
+SOURCE_EXPONENTS.
+
+A FIELD quadratic in the cell is expanded in the same ten orthogonal polynomials (its first four are the
+test basis).  With a quadratic contrast its sources are quartic: the 35 monomials of degree <= 4,
+SOURCE_EXPONENTS_QUARTIC, whose first twenty are the cubic set.  The source set is fixed by the degree of
+the product (``source_size``): 10, 20 or 35 monomials for degree 2, 3 or 4.
 """
 
 import numpy as np
@@ -40,6 +45,12 @@ SOURCE_EXPONENTS_CUBIC: tuple[Exponent, ...] = SOURCE_EXPONENTS + (
     (1, 0, 2),
     (0, 1, 2),
     (1, 1, 1),
+)
+SOURCE_EXPONENTS_QUARTIC: tuple[Exponent, ...] = SOURCE_EXPONENTS_CUBIC + tuple(
+    sorted(
+        ((i, j, 4 - i - j) for i in range(5) for j in range(5 - i)),
+        key=lambda e: (-max(e), e),
+    )
 )
 #: The contrast basis as {exponent: coefficient}: 1, xi_i, P_2(xi_i) = (3 xi_i^2 - 1)/2, xi_i xi_j.
 CONTRAST_BASIS: tuple[dict[Exponent, float], ...] = (
@@ -80,10 +91,27 @@ def monomials(exps: tuple[Exponent, ...], xi: NDArray) -> NDArray:
 
 
 def source_exponents(n_source: int) -> tuple[Exponent, ...]:
-    """The source monomials: 10 (degree <= 2) or 20 (degree <= 3)."""
-    if n_source not in (10, 20):
-        raise ValueError(f"source_exponents: n_source must be 10 or 20, got {n_source}")
-    return SOURCE_EXPONENTS_CUBIC[:n_source]
+    """The source monomials: 10 (degree <= 2), 20 (degree <= 3) or 35 (degree <= 4)."""
+    if n_source not in (10, 20, 35):
+        raise ValueError(f"source_exponents: n_source must be 10, 20 or 35, got {n_source}")
+    return SOURCE_EXPONENTS_QUARTIC[:n_source]
+
+
+def source_size(n_contrast: int, n_field: int) -> int:
+    """Source monomials needed by the product of a contrast (4 or 10 functions) and a field (4 or 10)."""
+    for name, n in (("n_contrast", n_contrast), ("n_field", n_field)):
+        if n not in (4, 10):
+            raise ValueError(f"source_size: {name} must be 4 or 10, got {n}")
+    return {2: 10, 3: 20, 4: 35}[(1 if n_contrast == 4 else 2) + (1 if n_field == 4 else 2)]
+
+
+def field_in_monomials(n_field: int = 10) -> NDArray:
+    """C with Q_a = sum_m C[a, m] xi^SOURCE_EXPONENTS[m], shape (n_field, n_field); the identity for 4."""
+    c = np.zeros((n_field, n_field))
+    for a, poly in enumerate(CONTRAST_BASIS[:n_field]):
+        for e, coef in poly.items():
+            c[a, SOURCE_EXPONENTS.index(e)] = coef
+    return c
 
 
 def contrast_values(xi: NDArray) -> NDArray:
@@ -97,44 +125,47 @@ def contrast_values(xi: NDArray) -> NDArray:
     )
 
 
-def gram_test(h: float) -> NDArray:
-    """<L_a, L_b> over a cell of half-width h, shape (4, 4)."""
-    return np.array([[_cell_moment(_add(a, b), h) for b in TEST_EXPONENTS] for a in TEST_EXPONENTS])
+def gram_test(h: float, n_field: int = 4) -> NDArray:
+    """<Q_a, Q_b> over a cell of half-width h, shape (n_field, n_field): diagonal."""
+    return np.diag(h**3 * np.array(CONTRAST_NORMS[:n_field]))
 
 
-def gram_test_source(h: float, n_source: int = 10) -> NDArray:
-    """<L_a, m_c> over a cell of half-width h, shape (4, n_source)."""
-    return np.array(
-        [[_cell_moment(_add(a, c), h) for c in source_exponents(n_source)] for a in TEST_EXPONENTS]
+def gram_test_source(h: float, n_source: int = 10, n_field: int = 4) -> NDArray:
+    """<Q_a, m_c> over a cell of half-width h, shape (n_field, n_source)."""
+    mono = np.array(
+        [[_cell_moment(_add(a, c), h) for c in source_exponents(n_source)] for a in SOURCE_EXPONENTS]
     )
+    return (field_in_monomials(10) @ mono)[:n_field]
 
 
-def product_table(n_contrast: int = 4) -> NDArray:
-    """P[c, a, b] with Q_a L_b = sum_c P[c, a, b] m_c, Q the first n_contrast contrast basis functions.
+def product_table(n_contrast: int = 4, n_field: int = 4) -> NDArray:
+    """P[c, a, b] with Q_a Q_b = sum_c P[c, a, b] m_c: a over the contrast functions, b over the field's.
 
-    Shape (10, 4, 4) for a linear contrast (n_contrast = 4, Q = L) and (20, 10, 4) for a quadratic one.
+    Shape (source_size(n_contrast, n_field), n_contrast, n_field): (10, 4, 4) for a linear contrast and
+    field, (20, 10, 4) for a quadratic contrast, (35, 10, 10) when both are quadratic.
     """
-    if n_contrast not in (4, 10):
-        raise ValueError(f"product_table: n_contrast must be 4 or 10, got {n_contrast}")
-    exps = source_exponents(10 if n_contrast == 4 else 20)
-    table = np.zeros((len(exps), n_contrast, N_TEST))
-    for a, poly in enumerate(CONTRAST_BASIS[:n_contrast]):
-        for b, eb in enumerate(TEST_EXPONENTS):
-            for ea, coef in poly.items():
-                table[exps.index(_add(ea, eb)), a, b] += coef
+    exps = source_exponents(source_size(n_contrast, n_field))
+    table = np.zeros((len(exps), n_contrast, n_field))
+    for a, pa in enumerate(CONTRAST_BASIS[:n_contrast]):
+        for b, pb in enumerate(CONTRAST_BASIS[:n_field]):
+            for ea, ca in pa.items():
+                for eb, cb in pb.items():
+                    table[exps.index(_add(ea, eb)), a, b] += ca * cb
     return table
 
 
-def source_expansion(delta: NDArray) -> NDArray:
-    """E[c, b]: the 9 x 9 coefficient of m_c in Delta(xi) L_b(xi).
+def source_expansion(delta: NDArray, n_field: int = 4) -> NDArray:
+    """E[c, b]: the 9 x 9 coefficient of m_c in Delta(xi) Q_b(xi), b over the n_field field functions.
 
     Args:
         delta: Shape (4, 9, 9): Delta(xi) = sum_a delta[a] L_a(xi), i.e. the cell's mean contrast
             operator and its three gradient coefficients per unit xi (h times the physical gradient); or
             shape (10, 9, 9), the coefficients of the ten functions of CONTRAST_BASIS.
 
+        n_field: 4 for a field linear in the cell, 10 for a quadratic one.
+
     Returns:
-        Shape (10, 4, 9, 9) for a linear contrast, (20, 4, 9, 9) for a quadratic one.
+        Shape (n_source, n_field, 9, 9), n_source = source_size(len(delta), n_field).
     """
     delta = np.asarray(delta, dtype=complex)
-    return np.einsum("cab,aij->cbij", product_table(delta.shape[0]), delta)
+    return np.einsum("cab,aij->cbij", product_table(delta.shape[0], n_field), delta)
