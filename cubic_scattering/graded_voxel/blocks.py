@@ -412,11 +412,11 @@ def static_term_integral_closed(
                 f = fixed[0]
                 if x0 == 0 and alpha[f] > 0:
                     continue
-                j, l = free
+                j, j2 = free
                 tab = _face_table(power, abs(x0), e_max + pad)[
-                    :, :, alpha[j] : alpha[j] + e_max, alpha[l] : alpha[l] + e_max
+                    :, :, alpha[j] : alpha[j] + e_max, alpha[j2] : alpha[j2] + e_max
                 ]
-                term = np.einsum("ac,acyj,aczk,yzjk->ac", factors[f], factors[j], factors[l], tab)
+                term = np.einsum("ac,acyj,aczk,yzjk->ac", factors[f], factors[j], factors[j2], tab)
             else:
                 tab = _box_table(power, e_max + pad)[
                     :,
