@@ -431,11 +431,18 @@ r^{t-1}/t!$, the Green's tensor is a sum over powers $r^m$, $m=t-1\ge-1$, of two
 The static (Kelvin) tensor is $c_1$ at $m=-1$ and $c_2$ at $m=1$, where $c_2=b_2$. The propagator $\bP$
 adds up to two derivatives to $\mathbf{G}$, so every entry of every block is a sum of the scalar moments
 \begin{equation}\label{eq:umoment}
-  \int_{V_m}\!\int_{V_n}L_a\,\partial^{\boldsymbol\iota}r^m\,m_c\,\dd^3x\,\dd^3x'
+  \int_{V}\!\int_{V'}L_a(\boldsymbol\xi)\,\partial^{\boldsymbol\iota}r^m\,m_c(\boldsymbol\xi')\,\dd^3x\,\dd^3x'
   =h^{\,6+m-|\boldsymbol\iota|}\;U_{ac}(m,\boldsymbol\iota;\mathbf{o}),
-  \qquad |\boldsymbol\iota|\le4,
+  \qquad |\boldsymbol\iota|\le4.
 \end{equation}
-with $\mathbf{o}=\mathbf{R}/2h$ the integer offset between the cells. The $U$ are numbers: they depend on
+Here, as in Eq.~\eqref{eq:block}, $V$ is the field cell and $V'$ the source cell, and
+$r=|\mathbf{x}-\mathbf{x}'|$. $L_a$ is a test function in the local coordinate $\boldsymbol\xi$ of the
+field cell: one of the four of Eq.~\eqref{eq:basis}, or of the ten $Q_a$ of Eq.~\eqref{eq:qbasis}. $m_c$
+is a source monomial $\xi_0'^{\,e_0}\xi_1'^{\,e_1}\xi_2'^{\,e_2}$ in the local coordinate
+$\boldsymbol\xi'$ of the source cell, as in Eq.~\eqref{eq:linearisation}: one of the $10$, $20$ or $35$
+of degree at most two, three or four. The subscripted $m_c$ is the monomial; the bare $m$ is the power of
+$r$. $\boldsymbol\iota$ is the multi-index of the derivatives, taken with respect to $\mathbf{x}$, and
+$\mathbf{o}=\mathbf{R}/2h$ is the integer offset between the cells. The $U$ are numbers: they depend on
 neither the cell size, the frequency nor the medium. The medium enters a block only through $c_1$, $c_2$ and
 two fixed tables of $9\times9$ integer matrices, one for each family, that say which entry of $\bP$ takes
 which derivative $\partial^{\boldsymbol\iota}$. The series is that of the exponential and converges for
