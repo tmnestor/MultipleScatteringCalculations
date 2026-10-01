@@ -58,8 +58,10 @@ with the Error Known before the Solve}
 \noindent
 A volume-integral model of seismic waves in a realistically complicated medium cannot afford a uniform
 grid: real media vary on localised scales, and a uniform grid spends most of its cells where nothing
-varies. We ask whether cubic voxels can be placed where the medium needs them, on an octree, with the
-error of the scattering calculation known before it is run. Each leaf of the tree carries the medium's
+varies. Adaptive trees of polynomial cells, with fast solvers, are established for scalar scattering problems;
+they are refined to a tolerance, and what the tolerance means for the error of the scattered field is
+not stated. We ask whether, for elastic waves, cubic voxels on an octree can be placed where the medium
+needs them with the error of the scattering calculation known before it is run. Each leaf of the tree carries the medium's
 contrast to polynomial degree $r$ and the wavefield to degree $p$, and couples to every other leaf
 through blocks that follow exactly from those between equal cells. We find that the error of the
 scattered far field is the sum of two terms, both available before the solve. The first is the error
@@ -101,6 +103,30 @@ run, from the medium, the tree and the wave alone? The second matters as much as
 built by a rule, the rule needs an indicator of where the error is, and an indicator that needs the
 solution is too late.
 
+\paragraph{What exists.} The tree is not new. For the scalar Lippmann--Schwinger equation in two
+dimensions, \citet{Ambikasaran2015} discretise on an adaptive quad tree with a polynomial on every
+leaf, splitting a leaf until it holds a set number of points per wavelength and resolves the contrast to
+a tolerance, and \citet{Gopal2020} accelerate the direct solve. In three dimensions
+\citet{Malhotra2015,Malhotra2016} represent volume sources by polynomials of bounded total degree on
+the leaves of an adaptive octree, refined where the highest coefficients exceed a tolerance, and
+evaluate their potentials with a kernel-independent fast multipole method \citep{Ying2004} for the
+Poisson, Stokes and low-frequency Helmholtz problems, at up to $10^{10}$ unknowns. Polynomials on the
+cells of a dyadic tree are the multiwavelets of \citet{Alpert1993}, in which integral operators are
+sparse \citep{Alpert1993b}. In electromagnetics, large volume elements carry fields of high polynomial
+order \citep{Chobanyan2013}, with the material represented to an order of its own \citep{Chobanyan2015},
+and voxels with a linear field are solved with fast Fourier transforms \citep{Georgakis2020}. Where
+error is estimated for such methods it is estimated \emph{a posteriori}, from a computed solution that
+is then refined and solved again \citep{Beilina2022}. For elastic waves the volume integral equation is
+solved on uniform grids at low order \citep{Shekhar2023}, and fast multipole methods exist for boundary
+integral equations \citep{Fujiwara2000,Chaillat2008}.
+
+\paragraph{What this paper adds.} Not the tree, the adaptivity or a fast solver. It adds the statement
+of the error before the solve, for the elastic problem: the two terms of \S\ref{sec:twoterm}, the
+closed-form factor of a leaf, and the rule for choosing the basis of the medium. The law is a sharpened
+instance of a standard fact, that the error of a Galerkin solution of a second-kind equation is
+governed by the best approximation of the solution; here it is an equality with a known constant, for
+the part of the field that copies the medium.
+
 \paragraph{The answer in brief.} The error of the scattered field separates by its order in the
 contrast into two terms, and both are available before the solve (\S\ref{sec:twoterm}). The term of
 first order is computed in one pass over the leaves, and for a leaf of uniform contrast it is a closed
@@ -133,8 +159,8 @@ of both \citep{NestorGraded2026}.
 \paragraph{Blocks between leaves of different sizes.} A polynomial on a cube is a polynomial of the
 same degree on each of the cube's descendants, so the block between a large leaf and a small one is an
 exact, finite sum of blocks between equal cells: the large leaf is replaced by its descendants at the
-size of the small one, with its polynomials re-expanded. No integral is needed beyond those between
-equal cells. Against six-dimensional quadrature these blocks agree to $10^{-9}$ for leaves one and two
+size of the small one, with its polynomials re-expanded. No integral is needed beyond those between equal cells. This is the two-scale
+relation of the multiwavelet basis \citep{Alpert1993}. Against six-dimensional quadrature these blocks agree to $10^{-9}$ for leaves one and two
 levels apart, and on a tree whose leaves are all equal the solver reproduces the uniform solver to
 $10^{-11}$.
 
@@ -361,7 +387,9 @@ of $8.4\times10^{-5}$ with $4320$ unknowns; the uniform grid of constant cells h
 with $4608$: $65$ times more. Raising the field to linear in the large leaves alone lowers the tree's
 error from $1.5\times10^{-2}$ to $3.2\times10^{-3}$: a large leaf needs a richer basis for the
 wavefield, not for the medium. And where the faces of the inner cube fall inside cells, the linear
-field is worse than the constant one, as on the smooth body.
+field is worse than the constant one, as on the smooth body; for the scalar problem
+\citet{Anderson2026} likewise find that high order is lost at jumps of the medium unless the grid
+follows them.
 
 \paragraph{The choice.} The two cases give the rule. Where the medium is piecewise constant and the
 tree can follow its interfaces, hold it constant in each leaf and spend the degree on the field.
@@ -390,8 +418,11 @@ but fell $6\%$ below it for linear cells.
 or $550$ linear ones. The saving in cells is therefore shown on small bodies. An equal-cell block costs
 about $50$\,ms, and a tree of $344$ leaves of four sizes is assembled and solved in about three
 minutes.
-\item \emph{Earlier work.} The relation of these results to adaptive methods for integral equations and
-to the fast multipole method on an octree is not yet written; the literature has not been surveyed.
+\item \emph{Earlier work.} The survey behind \S\ref{sec:intro} found no statement of the two-term law,
+of the leaf's factor or of the matched-degree rule, and no elastic volume scheme with polynomial cells.
+It rests on some twenty searches and on the opening pages of most of the works cited; the adaptive
+solvers of \citet{Ambikasaran2015} and \citet{Malhotra2016} have yet to be read in full for any
+estimate that relates their refinement tolerance to the error of the solution.
 \end{itemize}
 
 \section{Conclusions}\label{sec:summary}
@@ -405,8 +436,11 @@ reaches the accuracy of a uniform grid with a quarter of the cells on a body who
 localised. A constant contrast in each leaf is the right basis for a medium that is piecewise constant
 on the leaves, where a linear field on the tree outperforms the uniform grid of constant cells
 sixty-five-fold at equal unknowns in a self-consistent test, and the wrong one for a smooth medium,
-where the two degrees must be matched. What remains before the method models a realistic medium is a
-solver whose cost does not grow as the square of the number of leaves.
+where the two degrees must be matched. What remains before the method models a realistic medium
+is a solver whose cost does not grow as the square of the number of leaves. Its parts are published:
+the fast multipole method for volume potentials on an octree \citep{Malhotra2016}, and the treatment of
+the elastic kernels in fast multipole methods for boundary integral equations
+\citep{Fujiwara2000,Chaillat2008}.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
