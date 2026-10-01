@@ -5,7 +5,7 @@ import itertools
 import numpy as np
 import pytest
 
-from cubic_scattering import ReferenceMedium
+from cubic_scattering import MaterialContrast, ReferenceMedium
 from cubic_scattering.graded_voxel.basis import (
     SOURCE_EXPONENTS,
     contrast_values,
@@ -13,8 +13,18 @@ from cubic_scattering.graded_voxel.basis import (
     source_exponents,
 )
 from cubic_scattering.graded_voxel.blocks import coupling_block
+from cubic_scattering.graded_voxel.farfield import graded_far_field
 from cubic_scattering.graded_voxel.kernel import kernel_9x9
-from cubic_scattering.graded_voxel.octree import field_reexpansion, octree_block, source_reexpansion
+from cubic_scattering.graded_voxel.octree import (
+    field_reexpansion,
+    octree_block,
+    octree_far_field,
+    refine_leaves,
+    solve_graded_octree,
+    source_reexpansion,
+    uniform_leaves,
+)
+from cubic_scattering.graded_voxel.solver import solve_graded_sphere
 
 REF = ReferenceMedium(5000.0, 3000.0, 2500.0)
 OMEGA, H = 150.0, 1.25
@@ -112,3 +122,59 @@ def test_misaligned_cells_are_refused():
         octree_block((0.0, 0.0, 0.0), 2 * H, (5.1 * H, 0.0, 0.0), H, OMEGA, REF)
     with pytest.raises(ValueError, match="power of two"):
         octree_block((0.0, 0.0, 0.0), 3 * H, (9 * H, 0.0, 0.0), H, OMEGA, REF)
+
+
+CON = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+KHAT = np.array([1.0, 0.0, 0.0])
+RADIUS = 10.0
+
+
+def _profile(pos):
+    return 1.0 - 0.004 * float(pos @ pos)
+
+
+def test_uniform_leaves_are_the_uniform_grid():
+    centres, hs = uniform_leaves(RADIUS, 4)
+    ref = solve_graded_sphere(OMEGA, RADIUS, REF, CON, 4, _profile, KHAT, KHAT, "P")
+    np.testing.assert_allclose(centres, ref.centres, atol=1e-13)
+    assert np.all(hs == ref.h)
+
+
+def test_refining_every_leaf_gives_the_finer_uniform_grid():
+    c2, h2 = uniform_leaves(RADIUS, 2)
+    c4, h4 = refine_leaves(c2, h2, np.ones(len(c2), dtype=bool))
+    want, hw = uniform_leaves(RADIUS, 4)
+    assert len(c4) == 8 * len(c2) and np.all(h4 == hw[0])
+    key = lambda a: sorted(map(tuple, np.round(a, 9)))  # noqa: E731
+    assert key(c4) == key(want)
+
+
+@pytest.mark.parametrize(("p", "r"), [(0, 0), (1, 1)])
+def test_octree_solver_on_a_uniform_tree_equals_the_uniform_solver(p, r):
+    centres, hs = uniform_leaves(RADIUS, 3)
+    oct_res = solve_graded_octree(OMEGA, REF, CON, centres, hs, _profile, KHAT, KHAT, "P", p=p, r=r)
+    ref = solve_graded_sphere(OMEGA, RADIUS, REF, CON, 3, _profile, KHAT, KHAT, "P", p=p, r=r)
+    assert np.linalg.norm(oct_res.psi - ref.psi) / np.linalg.norm(ref.psi) < 1e-11
+    dirs = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [-0.6, 0.0, 0.8]])
+    got = octree_far_field(oct_res, dirs, 1e9)
+    want = graded_far_field(ref, dirs, 1e9, KHAT, KHAT, "P")
+    for g, w in zip(got, want, strict=True):
+        assert np.abs(g - w).max() / np.abs(w).max() < 1e-11
+
+
+def test_a_mixed_tree_is_closer_to_the_fine_grid_than_the_coarse_grid_is():
+    # refine every second leaf of the coarse grid: leaves of two sizes in one system
+    c2, h2 = uniform_leaves(RADIUS, 2)
+    flag = np.arange(len(c2)) % 2 == 1
+    cm, hm = refine_leaves(c2, h2, flag)
+    assert len(np.unique(hm)) == 2
+    dirs = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [-0.6, 0.0, 0.8], [0.0, 0.0, -1.0]])
+
+    def field(c, h):
+        res = solve_graded_octree(OMEGA, REF, CON, c, h, _profile, KHAT, KHAT, "P")
+        up, us = octree_far_field(res, dirs, 1e9)
+        return up + us
+
+    coarse, mixed = field(c2, h2), field(cm, hm)
+    fine = field(*uniform_leaves(RADIUS, 4))
+    assert np.abs(mixed - fine).max() < np.abs(coarse - fine).max()
