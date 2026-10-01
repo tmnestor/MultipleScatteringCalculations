@@ -18,7 +18,9 @@ from central differences in the contrast at steps d and 2d, Richardson-combined 
 Beside them, the projection defect of the profile over the kept cells,
     defect = sum_cells int (s - P1 s)^2 / sum_cells int s^2,
 with P1 the L2 projection onto {1, x, y, z} in each cell (10-point Gauss rule per axis). The relative
-error of T2 equals it to within a few per cent, at every grid, profile and shell width measured.
+error of T2 equals it to within a few per cent, at every grid, profile and shell width measured. defect2
+is the same with the projection onto the ten polynomials of degree two: what a field quadratic in the
+cell leaves.
 
 Run small first:
     conda run -n seismic python -u scripts/measure_graded_voxel_resolution.py 0.5 0.5 s5,sinf 4
@@ -35,7 +37,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_graded_sphere import MieResult, graded_tmatrix  # noqa: E402
 from cubic_scattering import MaterialContrast  # noqa: E402
-from cubic_scattering.graded_voxel.basis import gram_test, source_expansion  # noqa: E402
+from cubic_scattering.graded_voxel.basis import (  # noqa: E402
+    CONTRAST_NORMS,
+    contrast_values,
+    gram_test,
+    source_expansion,
+)
 from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E402
 from cubic_scattering.graded_voxel.fft import offset_blocks, solve_graded_sphere_fft  # noqa: E402
 from cubic_scattering.graded_voxel.site import cell_contrast_coefficients  # noqa: E402
@@ -118,16 +125,20 @@ def exact_field(shape: str, core: float, omega: float, scale: float, pts: np.nda
     return mie_scattered_displacement(mie, pts)
 
 
-def projection_defect(shape: str, core: float, centres: np.ndarray, h: float) -> float:
-    """sum int (s - P1 s)^2 / sum int s^2 over the cells (half-width h), P1 the linear L2 projection."""
+def projection_defect(shape: str, core: float, centres: np.ndarray, h: float, degree: int = 1) -> float:
+    """sum int (s - P s)^2 / sum int s^2 over the cells (half-width h), P the L2 projection onto the cell's
+    polynomials of the given degree (1: the four linear functions; 2: the ten quadratic ones)."""
     x, w = np.polynomial.legendre.leggauss(10)
     xi = np.stack([g.ravel() for g in np.meshgrid(x, x, x, indexing="ij")], axis=1)
     wt = (w[:, None, None] * w[None, :, None] * w[None, None, :]).ravel()
+    n_fun = 4 if degree == 1 else 10
+    basis = contrast_values(xi)[:n_fun]
+    norms = np.array(CONTRAST_NORMS[:n_fun])
     num = den = 0.0
     for c in centres:
         s = np.array([radial(shape, core, float(r)) for r in np.linalg.norm(c + h * xi, axis=1)])
-        lin = (wt * s).sum() / 8 + xi @ ((wt * s) @ xi) * 3 / 8
-        num += float((wt * (s - lin) ** 2).sum())
+        fit = ((basis * wt) @ s / norms) @ basis
+        num += float((wt * (s - fit) ** 2).sum())
         den += float((wt * s * s).sum())
     return num / den
 
@@ -156,7 +167,7 @@ def main() -> int:
         t2 = (16 * (f[d] + f[-d]) - (f[2 * d] + f[-2 * d])) / (24 * d * d)
         ref[shape] = (t1, t2, exact_field(shape, core, omega, 1.0, pts) if full else None)
     out: dict = {"ka_s": ka, "core_frac": core / RADIUS, "n_sub": ns}
-    out.update({s: {"t1": [], "t2": [], "full": [], "defect": []} for s in shapes})
+    out.update({s: {"t1": [], "t2": [], "full": [], "defect": [], "defect2": []} for s in shapes})
     print(f"k_S a = {ka}, core = {core / RADIUS} a, profiles {shapes}, full = {full}", flush=True)
     for n in ns:
         grid, centres, h = _build_grid_index_map(
@@ -198,7 +209,10 @@ def main() -> int:
                 up, us = graded_far_field(res, pts / rf, rf, K_HAT, K_HAT, "P")
                 errs.append(rel_err(up + us, ex))
             defect = projection_defect(shape, core, centres, h)
-            line = f"  n {n:3d} {shape:5s} T1 {errs[0]:.4e}  T2 {errs[1]:.4e}  defect {defect:.4e}"
+            defect2 = projection_defect(shape, core, centres, h, degree=2)
+            out[shape]["defect2"].append(defect2)
+            line = f"  n {n:3d} {shape:5s} T1 {errs[0]:.4e}  T2 {errs[1]:.4e}"
+            line += f"  defect {defect:.4e}  defect2 {defect2:.4e}"
             out[shape]["defect"].append(defect)
             out[shape]["t1"].append(errs[0])
             out[shape]["t2"].append(errs[1])
