@@ -7,7 +7,6 @@ authors:
     given-names: T. M.
     affiliation: "Independent researcher, Australia"
 license: MIT
-doi: 10.5281/zenodo.23003241
 repository-code: "https://github.com/tmnestor/MultipleScatteringCalculations"
 abstract: >-
   Code, symbolic derivations and validation scripts for elastic multiple scattering from cubic
