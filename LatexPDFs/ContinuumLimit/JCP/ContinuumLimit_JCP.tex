@@ -35,32 +35,31 @@ and the closed-form error of the discrete layer}
 
 \begin{abstract}
 
-We analyse the convergence of voxel discretisations of the elastic volume integral equation, in
-which a medium is divided into cubic cells coupled through the background Green's tensor: the
-elastic coupled-dipole method. Because cubes tile space, $n$ planes of voxels of side $D/n$ are the
-layer itself for every $n$, with no shape error, so the difference from the exact solution is the
-discretisation error alone. We show that (i) the cube's lateral form
-factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling equals the
-continuum's; (ii) the single-site $T$-matrix follows from distributional moments of the Green's
-tensor and, against exact scattering by a sphere, is exact statically and departs only by a real,
-closed-form $(ka)^2$ term; (iii) its self term cancels, so the scheme is a collocation of the
-continuum equation, of second order with leading error $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
-transmission, which no scalar correction can remove; (iv) a Galerkin voxel carrying Legendre moments
-of its internal field to degree $p$ converges at order $2p+2$, with leading error $-(kd)^4/720$ at
-$p=1$, for incident P, SV and SH waves at normal and oblique incidence, and one plane of it
-reproduces the thin-layer series through $O(D^{2p+2})$. In a randomly
-stratified layer the orders are unchanged, and the fourth-order voxel reaches an accuracy of
-$10^{-6}$ with one voxel per model layer. A smoothly graded sphere converges at second order against its
-exact solution. Every
-result is verified by an independent implementation or an exact solution.
+To model seismic waves efficiently in a realistically complicated medium, volume-integral
+(coupled-dipole) methods divide it into cubic voxels coupled through the background Green's tensor.
+Each voxel must represent the medium within it and the wavefield within it. We ask which basis each
+needs and what error a given choice leaves, which cannot be measured where no exact solution exists.
+We answer on a layer of voxels: because cubes tile space, $n$ planes of voxels are the layer itself,
+with no shape error, and its exact solution isolates the discretisation error. The source-averaged
+coupling equals the continuum's exactly; the cube's single-site $T$-matrix follows from distributional
+moments of the Green's tensor. With the wavefield expanded to Legendre degree $p$ and the medium's
+contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
+error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; for $p\le1$ also for
+SV and SH waves and at oblique incidence. The multiple-scattering error equals
+the relative projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit:
+the two bases must be matched, and the error is known from the medium before anything is solved.
+Where the medium is piecewise constant on the voxels it vanishes: in a randomly stratified layer one
+first-moment voxel per layer reaches $10^{-6}$. A smoothly graded sphere converges at second order
+against its exact solution. Every result is verified by an independent implementation or an exact
+solution.
 \end{abstract}
 
 \begin{highlights}
-\item Voxel coupling averaged over the source cell equals the continuum's exactly
-\item The cube's single-site T-matrix follows from distributional moment integrals
-\item The voxel scheme's leading error is known in closed form for every grid
-\item A first-moment voxel converges at fourth order for P, SV and SH waves
-\item In a random stratified layer, one voxel per model layer reaches 1e-6 accuracy
+\item A voxel needs two bases: one for the medium and one for the wavefield
+\item On a layer of cubes the discretisation error is isolated, with no shape error
+\item The order is min(2p+2, 2r+2) for field degree p and medium degree r
+\item The multiple-scattering error is the medium's relative projection error
+\item The error is known in advance, from the medium and the grid alone
 \end{highlights}
 
 \begin{keyword}
@@ -1498,8 +1497,8 @@ Smoothly graded sphere, \S\ref{sec:sphere} & exact solution by two routes, $2\ti
 \paragraph{The error is known in advance} For every discretisation studied here the error is not
 something to be discovered by refining until the answer stops changing. Its order and its leading
 constant are known before anything is computed: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
-transmission for the uniform-field voxel (Eq.~\eqref{eq:errorR}), $-(kd)^4/720$ for the first-moment
-voxel (Eq.~\eqref{eq:ratio}), the constant $c_p$ of Eq.~\eqref{eq:cp} at degree $p$, and the order
+transmission for the collocation voxel (Eq.~\eqref{eq:errorR}), $(kd)^2/12$, $(kd)^4/720$ and
+$(kd)^6/100800$ for the voxels of degree $0$, $1$ and $2$ (Eq.~\eqref{eq:cp}), and the order
 $\min(2p+2,2r+2)$ where the medium varies within a cell (Eq.~\eqref{eq:graded}). That is worth more than
 the order alone, for three reasons. First, the cell size and the degree of the voxel that a required
 accuracy needs follow from the wavenumber and the medium, before the computation and without a

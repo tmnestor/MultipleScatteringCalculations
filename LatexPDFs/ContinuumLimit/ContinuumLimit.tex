@@ -1520,8 +1520,8 @@ Smoothly graded sphere, \S\ref{sec:sphere} & exact solution by two routes, $2\ti
 \paragraph{The error is known in advance.} For every discretisation studied here the error is not
 something to be discovered by refining until the answer stops changing. Its order and its leading
 constant are known before anything is computed: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
-transmission for the uniform-field voxel (Eq.~\eqref{eq:errorR}), $-(kd)^4/720$ for the first-moment
-voxel (Eq.~\eqref{eq:ratio}), the constant $c_p$ of Eq.~\eqref{eq:cp} at degree $p$, and the order
+transmission for the collocation voxel (Eq.~\eqref{eq:errorR}), $(kd)^2/12$, $(kd)^4/720$ and
+$(kd)^6/100800$ for the voxels of degree $0$, $1$ and $2$ (Eq.~\eqref{eq:cp}), and the order
 $\min(2p+2,2r+2)$ where the medium varies within a cell (Eq.~\eqref{eq:graded}). That is worth more than
 the order alone, for three reasons. First, the cell size and the degree of the voxel that a required
 accuracy needs follow from the wavenumber and the medium, before the computation and without a
