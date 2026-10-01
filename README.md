@@ -66,9 +66,7 @@ cd LatexPDFs/ContinuumLimit && lualatex ContinuumLimit.tex
 
 ## Citation
 
-The repository is archived on Zenodo. Cite the concept DOI, which always resolves to the latest
-release: [10.5281/zenodo.23003241](https://doi.org/10.5281/zenodo.23003241). Citation metadata is
-in `CITATION.cff`.
+Citation metadata is in `CITATION.cff`.
 
 ## License
 
