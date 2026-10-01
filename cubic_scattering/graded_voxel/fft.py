@@ -32,10 +32,10 @@ from scipy.sparse.linalg import LinearOperator, gmres
 from ..effective_contrasts import MaterialContrast, ReferenceMedium
 from ..sphere_scattering import _plane_wave_strain_voigt
 from ..sphere_scattering_fft import _build_grid_index_map
-from .basis import gram_test, monomials, source_expansion, source_exponents
+from .basis import contrast_values, gram_test, monomials, source_expansion, source_exponents
 from .blocks import coupling_block
 from .site import cell_contrast_coefficients
-from .solver import GradedVoxelResult, plane_wave_moments
+from .solver import GradedVoxelResult, field_sizes, plane_wave_moments
 
 VOIGT_PAIRS = ((0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1))
 
@@ -65,13 +65,24 @@ def _voigt_rep(q: NDArray) -> NDArray:
     return rep
 
 
-def symmetry_reps(q: NDArray, n_source: int = 10) -> tuple[NDArray, NDArray, NDArray]:
-    """(T, U, S): the test (4 x 4), source-monomial (n_source square) and 9-component (9 x 9) reps of Q."""
-    t = np.zeros((4, 4))
-    t[0, 0] = 1.0
-    t[1:, 1:] = q  # L_{i+1}(Q eta) = (Q eta)_i
+def symmetry_reps(q: NDArray, n_source: int = 10, n_test: int = 4) -> tuple[NDArray, NDArray, NDArray]:
+    """(T, U, S): the field-function (n_test square), source-monomial (n_source square) and 9-component
+    (9 x 9) representations of Q."""
+    key = (q.tobytes(), n_source, n_test)
+    if key not in _REPS:
+        _REPS[key] = _symmetry_reps(q, n_source, n_test)
+    return _REPS[key]
+
+
+_REPS: dict[tuple, tuple[NDArray, NDArray, NDArray]] = {}
+
+
+def _symmetry_reps(q: NDArray, n_source: int, n_test: int) -> tuple[NDArray, NDArray, NDArray]:
     rng = np.random.default_rng(12345)
-    eta = rng.uniform(-1.0, 1.0, (48, 3))
+    eta = rng.uniform(-1.0, 1.0, (96, 3))
+    fa = contrast_values(eta @ q.T)[:n_test]  # Q_a(Q eta_k); the first four are L_a
+    fb = contrast_values(eta)[:n_test]
+    t = np.round(np.linalg.lstsq(fb.T, fa.T, rcond=None)[0].T)  # exactly 0 or +-1
     exps = source_exponents(n_source)
     a = monomials(exps, eta @ q.T)  # m_c(Q eta_k)
     b = monomials(exps, eta)  # m_d(eta_k)
@@ -84,13 +95,13 @@ def symmetry_reps(q: NDArray, n_source: int = 10) -> tuple[NDArray, NDArray, NDA
 
 
 def _transform(q: NDArray, block: NDArray) -> NDArray:
-    t, u, s = symmetry_reps(q, block.shape[1])
+    t, u, s = symmetry_reps(q, block.shape[1], block.shape[0])
     tmp = np.einsum("ij,bdjk,lk->bdil", s, block, s)
     return np.einsum("ab,cd,bdil->acil", t, u, tmp)
 
 
 def offset_blocks(
-    n_sub: int, h: float, omega: float, ref: ReferenceMedium, n_source: int = 10
+    n_sub: int, h: float, omega: float, ref: ReferenceMedium, n_source: int = 10, n_test: int = 4
 ) -> dict[tuple[int, int, int], NDArray]:
     """K(o) for every offset o in [-(n-1), n-1]^3: one ``coupling_block`` per cube-group orbit."""
     qs = signed_permutations()
@@ -101,7 +112,7 @@ def offset_blocks(
         a, b, d = sorted((abs(o) for o in off), reverse=True)
         c = (a, b, d)
         if c not in canonical:
-            canonical[c] = coupling_block(c, h, omega, ref, n_source)
+            canonical[c] = coupling_block(c, h, omega, ref, n_source, n_test)
         cv = np.array(c, dtype=float)
         target = np.array(off, dtype=float)
         q = next(q for q in qs if np.array_equal(q @ cv, target))
@@ -139,13 +150,13 @@ def solve_graded_sphere_fft(
         radius, n_sub, lambda q: bool(np.linalg.norm(q) < radius + np.sqrt(3.0) * h_cell)
     )
     n = len(centres)
-    na = 1 if p == 0 else 4
-    nc = 1 if (p == 0 and r == 0) else 20 if r == 2 else 10
+    na, n_field, _, n_source = field_sizes(p, r)
+    nc = 1 if (p == 0 and r == 0) else n_source
     delta = np.array(
         [cell_contrast_coefficients(profile, c, h, contrast, ref, omega, degree=r) for c in centres]
     )
-    e_cells = np.array([source_expansion(d)[:nc, :na] for d in delta])  # (N, nc, na, 9, 9)
-    blocks = offset_blocks(n_sub, h, omega, ref, 20 if r == 2 else 10) if blocks is None else blocks
+    e_cells = np.array([source_expansion(d, n_field)[:nc, :na] for d in delta])  # (N, nc, na, 9, 9)
+    blocks = offset_blocks(n_sub, h, omega, ref, n_source, n_field) if blocks is None else blocks
     npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
     kh = np.zeros((rows, cols, npad, npad, npad), dtype=complex)
@@ -156,7 +167,7 @@ def solve_graded_sphere_fft(
     for row in range(rows):
         kh[row] = np.fft.fftn(kh[row], axes=(1, 2, 3))
     g0, g1, g2 = grid_idx[:, 0], grid_idx[:, 1], grid_idx[:, 2]
-    m9 = gram_test(h)[:na, :na]
+    m9 = gram_test(h, n_field)[:na, :na]
 
     def matvec(x: NDArray) -> NDArray:
         psi = x.reshape(n, na, 9)
@@ -187,7 +198,7 @@ def solve_graded_sphere_fft(
     k_mag = omega / (ref.alpha if wave_type == "P" else ref.beta)
     k_hat = np.asarray(k_hat, dtype=float) / np.linalg.norm(k_hat)
     amp = np.concatenate([np.asarray(pol, dtype=complex), _plane_wave_strain_voigt(k_hat, pol, k_mag)])
-    rhs = plane_wave_moments(centres, h, k_mag * k_hat, amp)[:, :na].ravel()
+    rhs = plane_wave_moments(centres, h, k_mag * k_hat, amp, n_field)[:, :na].ravel()
     sol, info = gmres(
         a_op,
         rhs,
@@ -205,6 +216,6 @@ def solve_graded_sphere_fft(
             f"info {info}) at n_sub = {n_sub}. Fix: raise "
             "max_cycles or restart, or loosen gmres_tol."
         )
-    full = np.zeros((n, 4, 9), dtype=complex)
+    full = np.zeros((n, n_field, 9), dtype=complex)
     full[:, :na] = sol.reshape(n, na, 9)
     return GradedVoxelResult(centres, grid_idx, h, omega, ref, delta, full, p, r)
