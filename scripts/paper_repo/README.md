@@ -2,8 +2,8 @@
 
 This repository contains everything needed to reproduce the two papers
 
-* *The Continuum Limit of a Space-Filling Layer of Cubes: A Tiling Identity, an Exact Lattice
-  Kernel, and the Closed-Form Error of the Discrete Layer* (`LatexPDFs/ContinuumLimit/`), and
+* *Two Bases for a Voxel: the Medium and the Wavefield. The Error of Elastic Volume-Integral
+  Scattering, Isolated on a Space-Filling Layer of Cubes* (`LatexPDFs/ContinuumLimit/`), and
 * *Graded Voxels in Three Dimensions: Galerkin Cubes with a Polynomial Field and Contrast: the
   Source of their Error, its Cure, and Closed-Form Moment Integrals* (`LatexPDFs/GradedVoxel/`),
 

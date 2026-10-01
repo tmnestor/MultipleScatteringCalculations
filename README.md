@@ -11,8 +11,8 @@ one symbolic and one numerical.
 
 ## The continuum-limit paper
 
-*The Continuum Limit of a Space-Filling Layer of Cubes: A Tiling Identity, an Exact Lattice Kernel,
-and the Closed-Form Error of the Discrete Layer* — T. M. Nestor.
+*Two Bases for a Voxel: the Medium and the Wavefield. The Error of Elastic Volume-Integral
+Scattering, Isolated on a Space-Filling Layer of Cubes*, by T. M. Nestor.
 
 | | |
 |---|---|

@@ -28,8 +28,8 @@
 
 \begin{document}
 \begin{frontmatter}
-\title{The continuum limit of a space-filling layer of cubes: a tiling identity, an exact lattice kernel
-and the closed-form error of the discrete layer}
+\title{Two bases for a voxel, the medium and the wavefield: the error of elastic volume-integral
+scattering, isolated on a space-filling layer of cubes}
 \author{T. M. Nestor}
 \affiliation{organization={Independent researcher}, country={Australia}}
 
@@ -45,7 +45,7 @@ coupling equals the continuum's exactly; the cube's single-site $T$-matrix follo
 moments of the Green's tensor. With the wavefield expanded to Legendre degree $p$ and the medium's
 contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
 error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; for $p\le1$ also for
-SV and SH waves and at oblique incidence. The multiple-scattering error equals
+SV and SH waves and at oblique incidence. The single-site $T$-matrix's second-order error equals
 the relative projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit:
 the two bases must be matched, and the error is known from the medium before anything is solved.
 Where the medium is piecewise constant on the voxels it vanishes: in a randomly stratified layer one
@@ -58,7 +58,7 @@ solution.
 \item A voxel needs two bases: one for the medium and one for the wavefield
 \item On a layer of cubes the discretisation error is isolated, with no shape error
 \item The order is min(2p+2, 2r+2) for field degree p and medium degree r
-\item The multiple-scattering error is the medium's relative projection error
+\item The single-site T-matrix's error is the medium's relative projection error
 \item The error is known in advance, from the medium and the grid alone
 \end{highlights}
 
@@ -73,63 +73,99 @@ Discrete dipole approximation \sep Galerkin method \sep Convergence analysis
 \section{Introduction}\label{sec:intro}
 
 \paragraph{The problem this paper serves} Seismic waves in the crust are scattered by heterogeneity
-on every scale. The models that describe it are parameterised in many ways (as layers or blocks,
-by smooth basis functions, or by interfaces), and a calculation that uses one must first sample it
-onto a grid. A volume-integral scattering calculation represents the sampled model as cells of
-constant properties and treats every cell as a scatterer: a voxel carrying a single-site
-$T$-matrix and coupled to every other voxel through the Green's tensor of the background, with the
-multiple-scattering series summed. Where the medium varies within a cell, that sampling is itself an
-approximation: \S\ref{sec:hetero} shows that it caps any voxel at second order, unless the cell's
-contrast is expanded to the degree of its field. For the media such a scheme is built for, there is no exact
-solution, and that is the difficulty. Its error cannot be measured against the answer. Comparison
-with another numerical method mixes the errors of both. And a refinement study can mislead,
-because a voxel scheme can converge smoothly to the wrong limit. \S\ref{sec:point} shows how that
-happens with the most natural choice of coupling, the Green's tensor evaluated between voxel
-centres: it carries a local term whose size per unit volume does not shrink as the voxels do, and
-unless the single voxel's response is matched to cancel it, refinement converges to the wrong
-answer without revealing it.
+on every scale, and the aim of the work this paper begins is an efficient model of the wavefield in a
+medium of realistic complication. The models that describe such a medium are parameterised in many
+ways (as layers or blocks, by smooth basis functions, or by interfaces), and a calculation that uses
+one must first sample it onto a grid. A volume-integral scattering calculation divides the medium into
+cells and treats every cell as a scatterer: a voxel carrying a single-site $T$-matrix, the operator
+that turns the field incident on the voxel into the sources it radiates, and coupled to every other
+voxel through the Green's tensor of the background, with the multiple-scattering series summed.
 
-\paragraph{Why a homogeneous layer} This paper therefore starts from the simplest configuration in
-which a voxel scheme runs in full (every voxel, every coupling, the whole multiple-scattering series,
-at normal and at oblique incidence) and the exact answer is nevertheless known: a layer filled with
-identical voxels. Because cubes tile space, such a layer does not approximate a homogeneous layer; it
-\emph{is} one. Any difference between its reflection and transmission and those of the continuous
-layer is therefore error of the discretisation alone, with no modelling error and no shape error behind
-which to hide. A sphere, the usual test object for volume-integral and discrete-dipole methods
-\citep{Yurkin2006}, cannot give this: its error mixes the discretisation with the staircase
-approximation of a curved surface by cubes. The layer plays the part of the patch test in finite
-elements: reproducing a uniform medium correctly is necessary, though not sufficient, for a scheme to be
-trusted in a heterogeneous one. What the layer establishes about the scheme's two ingredients, the
-coupling between voxels and the response of a single voxel, are properties of the ingredients, which
-are the same in any medium: that the averaged coupling is exact, that the self term cancels, and the
-form of the single-site error. \S\ref{sec:hetero} confirms that they carry over to a stratified
-medium; a laterally heterogeneous one remains to be tested.
+\paragraph{The question: two bases} A voxel is a small region in which two functions must be
+represented by a finite number of coefficients. One is the \emph{medium}: the contrast of the elastic
+moduli and the density from the background, which the model prescribes. The other is the
+\emph{wavefield}: the displacement and strain inside the voxel, which the calculation must find. Each
+is expanded in a basis on the cell, and the two bases are separate choices. Here both are Legendre
+polynomials, the wavefield to degree $p$ and the contrast to degree $r$; the usual scheme, a uniform
+field in a cell of constant properties, is $p=r=0$. This paper asks which basis each of the two needs,
+and what error a given pair $(p,r)$ leaves. The answer decides the cost of everything built on it,
+because a voxel that represents its contents more accurately can be larger, and the number of voxels,
+not the size of each one's state, sets the cost of the multiple-scattering solve.
 
-\paragraph{What this paper adds} Set against the coupled-dipole method described below, the
-contributions are these. (1) \emph{An exact coupling.} The integrated Green tensor and the filtered
-coupled dipoles approximate the field of a cell; for cubes the source-cell average is exact, because
-the cube's form factor vanishes on the reciprocal lattice (the tiling identity, \S\ref{sec:tiling}),
-and at normal incidence the lattice kernel is in closed form with no lattice sum. (2) \emph{No
-polarisability to choose.} The self term the single site carries is the one the averaged kernel
-omits, so the discrete system is a collocation of the continuum equation (\S\ref{sec:single}). The
-polarisability, a modelling choice in the coupled-dipole method, is here a derived object: the
-moments that derive it, taken as distributions, yield Eshelby's $\delta$ term without adding it by
-hand, the cube's departure from the sphere as a pure cubic anisotropy, and the closure's error
-against exact scattering by a sphere as a real $(ka)^2$ term in closed form. (3) \emph{The error in
-closed form, for every grid}: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission, so that a
-grid can be chosen for a required accuracy before the calculation is run; and the opposite signs,
-which explain why no correction of the single site can improve both (\S\ref{sec:discussion}).
-(4) \emph{Higher order.} A voxel carrying Legendre moments of its field to degree $p$ converges at
-order $2p+2$ with a closed-form constant; its first-moment case converges at fourth order for P, SV
-and SH waves at normal and oblique incidence and in a randomly stratified model
-(\S\ref{sec:hetero}), and for a reflection accuracy of $10^{-6}$ it allows voxels $58$ times larger
-in each direction than the uniform one (\S\ref{sec:discussion}). Where the medium varies within a
-cell, with the contrast expanded to degree $r$, the order is $\min(2p+2,2r+2)$. (5) \emph{The
-elastic state.} A voxel carries a force and a moment, so its state has nine components, the
-coupling is a $9\times9$ tensor, and its local term is the depolarisation of a plate. (6) \emph{A
-sphere without a staircase}, whose contrast falls smoothly to zero at its surface, so that the scheme
-can be tested against an exact three-dimensional solution: it converges at second order here
-(\S\ref{sec:sphere}) and at fourth order in the companion paper \citep{NestorGraded2026}.
+\paragraph{Why the question is hard to answer} For the media such a scheme is built for, there is no
+exact solution. Its error cannot be measured against the answer. Comparison with another numerical
+method mixes the errors of both. And a refinement study can mislead, because a voxel scheme can
+converge smoothly to the wrong limit. \S\ref{sec:point} shows how that happens with the most natural
+choice of coupling, the Green's tensor evaluated between voxel centres: it carries a local term whose
+size per unit volume does not shrink as the voxels do, and unless the single voxel's response is
+matched to cancel it, refinement converges to the wrong answer without revealing it.
+
+\paragraph{The method: a layer of voxels} This paper therefore answers the question in the simplest
+configuration in which a voxel scheme runs in full (every voxel, every coupling, the whole
+multiple-scattering series, at normal and at oblique incidence) and the exact answer is nevertheless
+known: a layer filled with voxels. Because cubes tile space, a layer of identical voxels does not
+approximate a homogeneous layer; it \emph{is} one. Any difference between its reflection and
+transmission and those of the continuous layer is therefore error of the discretisation alone, with no
+modelling error and no shape error behind which to hide. A sphere, the usual test object for
+volume-integral and discrete-dipole methods \citep{Yurkin2006}, cannot give this: its error mixes the
+discretisation with the staircase approximation of a curved surface by cubes. The layer plays the part
+of the patch test in finite elements: reproducing a uniform medium correctly is necessary, though not
+sufficient, for a scheme to be trusted in a heterogeneous one. The experiment is then made harder in
+three steps, each with an exact solution of its own: a randomly stratified layer, in which every cell
+is homogeneous but the cells differ; a layer whose properties vary smoothly within every cell, which is
+where the basis for the medium is tested; and a sphere whose contrast falls smoothly to zero at its
+surface, which carries the layer's prediction into three dimensions without a staircase. What the layer
+establishes about the scheme's two ingredients, the coupling between voxels and the response of a
+single voxel, are properties of the ingredients, which are the same in any medium. A laterally
+heterogeneous medium remains to be tested.
+
+\paragraph{The answer} (1) \emph{The order is set by the weaker basis.} The scheme converges at order
+$\min(2p+2,2r+2)$ in the cell size (\S\ref{sec:hetero}). A contrast held constant in each cell
+therefore caps every voxel at second order in a medium that varies within the cells, however rich the
+basis of its field; and a contrast of higher degree than the field is wasted. (2) \emph{The leading
+error is in closed form, for every grid.} For a voxel of side $d$ and a wave of wavenumber $k$ it is
+$c_p(kd)^{2p+2}$ with $c_0=1/12$, $c_1=1/720$ and $c_2=1/100800$ (\S\ref{sec:fourth}); the
+first-moment voxel, $p=1$, keeps its fourth order and its constant for P, SV and SH waves at normal and
+oblique incidence. For the collocation scheme, the uniform-field voxel in its simplest form, the error
+is $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission (\S\ref{sec:convergence}), and the
+opposite signs explain why no correction of the single site can improve both
+(\S\ref{sec:discussion}). (3) \emph{The error that remains is the single site's, and it is the
+projection error of the medium.} The single-site $T$-matrix sums the rescattering within a voxel to
+all orders, and the coupling between voxels is exact, so the multiple scattering itself is not
+approximated. But the $T$-matrix is that of the voxel as represented: its contrast projected to degree
+$r$ and its field held to degree $p$. When the scattered field is separated by its order in the
+contrast, the error of the second-order term, in which the field scattered once within a voxel is
+scattered there again, equals the \emph{relative projection error} of the medium: the fraction of the squared norm of its profile that polynomials of
+degree $\min(p,r)$ on the cells cannot represent (Eq.~\eqref{eq:defect}). The equality is exact in the
+long-wave limit, where it is derived, and holds to within $1.3\%$ for all nine pairs with $p,r\le2$ in
+the experiments (\S\ref{sec:hetero}). It shows what the wavefield basis is for: it must carry what the
+medium imprints on the field, not only the wave, which at these frequencies varies little across a
+cell. (4) \emph{The two bases must be matched, and the error is known in advance.} The relative
+projection error is a property of the medium and the grid alone, so the error of a calculation is known
+before anything is solved, and the cell size and the degree that a required accuracy needs can be
+chosen beforehand. (5) \emph{Where the medium is piecewise constant on the cells the projection error
+vanishes}, a constant suffices for the medium, and the degree of the field alone sets the order: in a
+randomly stratified model one first-moment voxel per model layer reaches a reflection accuracy of
+$10^{-6}$, where the uniform-field voxel needs about forty (\S\ref{sec:hetero}), and in the uniform
+layer it allows voxels $58$ times larger in each direction (\S\ref{sec:discussion}). (6) \emph{In three
+dimensions} the smoothly graded sphere converges at second order with the mean-only voxel, as the layer
+predicts (\S\ref{sec:sphere}), and at fourth order with the first-moment voxel in the companion paper
+\citep{NestorGraded2026}.
+
+\paragraph{What makes the experiment exact} The answer above can be trusted only if nothing but the
+two bases is approximated. Three results, set against the coupled-dipole method described below, secure
+that. (a) \emph{An exact coupling.} The integrated Green tensor and the filtered coupled dipoles
+approximate the field of a cell; for cubes the source-cell average is exact, because the cube's form
+factor vanishes on the reciprocal lattice (the tiling identity, \S\ref{sec:tiling}), and at normal
+incidence the lattice kernel is in closed form with no lattice sum. (b) \emph{No polarisability to
+choose.} The polarisability, a modelling choice in the coupled-dipole method, is here a derived object
+(\S\ref{sec:single}): the moments of the Green's tensor over the cube, taken as distributions, yield
+Eshelby's $\delta$ term without adding it by hand, the cube's departure from the sphere as a pure cubic
+anisotropy, and the closure's error against exact scattering by a sphere as a real $(ka)^2$ term in
+closed form. The self term the single site carries is the one the averaged kernel omits, so the
+discrete system is a collocation of the continuum equation. (c) \emph{The elastic state.} A voxel
+carries a force and a moment, so its state has nine components, the coupling is a $9\times9$ tensor,
+and its local term is the depolarisation of a plate.
 
 \paragraph{Why cubic voxels} Cubes are the natural cell for three reasons. They \emph{tile space},
 so a uniform region discretised into cubes is still that uniform region, whereas spheres or point
@@ -164,7 +200,9 @@ relative uncertainties of $10^{-7}$ to $10^{-3}$ by extrapolation in the grid. T
 here is the elastic counterpart of that cube: a body the grid represents exactly, so that the
 discretisation error can be isolated. What this paper adds is the closed form: for cells that tile
 space, the coupling that makes the lattice reproduce the continuum exactly, and the order and the
-constant of the error that remains.
+constant of the error that remains, as functions of the two bases. In the terms used here the
+coupled-dipole method is the pair $p=r=0$, and its refinements improve the polarisability and the
+coupling while leaving both bases constant in the cell.
 
 \paragraph{Its elastic counterparts} The elastic problem has the same volume integral equation
 \citep{Gubernatis1977}, and every cell-based solver of it is a coupled-dipole method whether or not
@@ -182,19 +220,23 @@ density contrast) and a moment (through its stiffness contrast), so the state at
 components (displacement and strain), and the single site's self-interaction is the elastic
 depolarisation of a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
 
-\paragraph{This paper} It extends the formulation of \citet{Nestor1996} to cubic voxels.
-\S\ref{sec:setting} sets out the discrete medium
-and \S\ref{sec:continuum} the continuous layer it must reproduce. \S\ref{sec:point} shows why the
-point coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly.
+\paragraph{This paper} It extends the formulation of \citet{Nestor1996} to cubic voxels, and is
+ordered as the experiment is built. \S\ref{sec:setting} sets out the discrete medium and
+\S\ref{sec:continuum} the continuous layer it must reproduce. \S\ref{sec:point} shows why the point
+coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly.
 \S\ref{sec:single} derives the single-site $T$-matrix from moment integrals, tests it against the exact
-sphere, and shows that with it the discrete system is a collocation of the continuum equation.
-\S\ref{sec:convergence} gives that collocation's second-order error in closed form, and
-\S\ref{sec:fourth} the fourth-order voxel, for incident P and S at normal and oblique incidence, and
-its generalisation to Legendre moments of any degree.
-\S\ref{sec:hetero} repeats the tests on a randomly stratified layer and on a medium that varies
-within a cell, \S\ref{sec:sphere} on a sphere, and \S\ref{sec:discussion} discusses
-what the results imply for voxel schemes in general. Every result is derived symbolically in
-Mathematica and checked against an independent Python implementation or an exact solution.
+sphere, and shows that with it the discrete system is a collocation of the continuum equation. The
+wavefield basis comes next: \S\ref{sec:convergence} gives the second-order error of the uniform field
+in closed form, and \S\ref{sec:fourth} the voxel whose field carries Legendre moments to degree $p$,
+with its order $2p+2$ and its constant, for incident P and S at normal and oblique incidence. The
+medium basis follows in \S\ref{sec:hetero}: a randomly stratified layer, for which a constant in each
+cell is exact, and a medium that varies within a cell, for which the contrast is expanded to degree
+$r$, the order becomes $\min(2p+2,2r+2)$ and the error of the single-site $T$-matrix is the relative
+projection error of the medium. \S\ref{sec:sphere} carries the prediction to a sphere,
+\S\ref{sec:discussion} discusses what the results imply for voxel schemes in general, and
+\S\ref{sec:summary} closes with why an error known in advance is worth having. Every result is derived
+symbolically in Mathematica and checked against an independent Python implementation or an exact
+solution.
 
 \section{Setting}\label{sec:setting}
 
@@ -1141,7 +1183,12 @@ $\Pi_p(\Pi_rf)=\Pi_qf$ with $q=\min(p,r)$. The second-order term pairs the contr
   T_2^{\text{scheme}}\ \propto\ \int(\Pi_rf)(\Pi_qf)\,\dd z=\lVert\Pi_qf\rVert^2,
 \end{equation}
 the last because $\Pi_qf$ lies in the range of $\Pi_r$. The relative error is
-$1-\lVert\Pi_qf\rVert^2/\lVert f\rVert^2=\mathcal{E}_q$. Measured, the ratio of the two sides of
+$1-\lVert\Pi_qf\rVert^2/\lVert f\rVert^2=\mathcal{E}_q$. Because the kernel is local in this limit, the
+second scattering takes place in the cell of the first: $T_2$ is the second-order term of the
+single-site $T$-matrix, and Eq.~\eqref{eq:defectlaw} is a statement about the single site. The
+$T$-matrix sums the rescattering within a cell exactly for the cell as it is represented, a contrast
+$\Pi_rf$ and a field of degree $p$; its error is that the cell is not the medium. The coupling between
+cells contributes only the departure from the limit. Measured, the ratio of the two sides of
 Eq.~\eqref{eq:defectlaw} for $p=r=1$ on $8$ cells departs from one by $1.7\times10^{-2}$,
 $4.3\times10^{-3}$, $4.8\times10^{-4}$ and $4\times10^{-5}$ at $kD=0.24$, $0.12$, $0.04$ and $0.012$: as
 $(kD)^2$ (\path{scripts/measure_layer_bases.py}). The pairing in Eq.~\eqref{eq:defectproof} is verified
