@@ -1,0 +1,426 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Polynomial Voxels on an Octree}
+\fancyhead[R]{\small\itshape Nestor (2026), draft}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bk}{\mathbf{k}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bD}{\boldsymbol{\Delta}}
+\newcommand{\cE}{\mathcal{E}}
+% the differential of every integral and derivative is upright; an italic d is the side of a cell
+\newcommand{\dd}{\mathrm{d}}
+
+\title{\bfseries Polynomial Voxels on an Octree\\[4pt]
+\large Placing the Cells where the Medium Needs them,\\
+with the Error Known before the Solve}
+\author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
+\date{Draft, 2 October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A volume-integral model of seismic waves in a realistically complicated medium cannot afford a uniform
+grid: real media vary on localised scales, and a uniform grid spends most of its cells where nothing
+varies. We ask whether cubic voxels can be placed where the medium needs them, on an octree, with the
+error of the scattering calculation known before it is run. Each leaf of the tree carries the medium's
+contrast to polynomial degree $r$ and the wavefield to degree $p$, and couples to every other leaf
+through blocks that follow exactly from those between equal cells. We find that the error of the
+scattered far field is the sum of two terms, both available before the solve. The first is the error
+of the term of first order in the contrast, which needs no solve: each leaf holds the projection of the
+incident wave, and for a leaf of uniform contrast its error is a closed-form factor in spherical Bessel
+functions, with leading term $-(\bk_{\mathrm{in}}\cdot\bk_{\mathrm{out}})\,d^2/12$ for a constant field
+in a cell of side $d$. The second is the nonlinear fraction of the response times the relative
+projection error of the medium. On a sphere with a thin graded shell, against its exact solution, the
+second term has one constant ($0.015$) for constant and for linear cells, on uniform grids and on
+trees, where the raw ratio of error to projection error varies by a factor of two. Refining by both
+terms, a tree of linear cells reaches the accuracy of a uniform grid with a quarter of the cells on a
+body whose variation fills $3\%$ of its volume. Which basis suits the medium depends on the medium.
+Where it varies smoothly the two degrees must be matched, and a constant contrast with a richer field
+is worse than a constant field. Where it is piecewise constant on the leaves, a constant contrast is
+exact, and a linear field on the tree has $65$ times less error than the uniform grid of constant cells
+with the same number of unknowns. This draft records what is established and what is not.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+\paragraph{The problem this paper serves.} The aim of this series is an efficient model of the seismic
+wavefield in a medium of realistic complication. Its method is the volume integral equation of elastic
+scattering \citep{Gubernatis1977}, discretised into cubic voxels that interact through the Green's tensor
+of a background medium, the multiple-scattering description of \citet{Foldy1945} and \citet{Lax1951}.
+The first paper of the series \citep{NestorContinuum2026} determined what a voxel must carry. A voxel
+represents two functions, the medium within it and the wavefield within it, each in a basis of its own.
+With the wavefield held to Legendre degree $p$ and the contrast of the medium to degree $r$, the scheme
+converges at order $\min(2p+2,2r+2)$ in the cell size, and the error that remains belongs to the single
+voxel: at second order in the contrast it is the \emph{relative projection error} of the medium, the
+fraction of the squared norm of its profile that polynomials of degree $\min(p,r)$ on the cells cannot
+represent. The companion paper \citep{NestorGraded2026} builds those voxels in three dimensions.
+
+\paragraph{The question.} Those results are for uniform grids. A real medium is not uniform in its
+difficulty: its variation is concentrated at interfaces, inclusions and thin zones, and a uniform grid
+fine enough for those is far finer than the rest of the medium needs. The natural cells are then the
+leaves of an octree, cubes whose sizes differ by powers of two. This paper asks two things. Can the
+cells be placed where the medium needs them? And can the error of the calculation be known before it is
+run, from the medium, the tree and the wave alone? The second matters as much as the first. A tree is
+built by a rule, the rule needs an indicator of where the error is, and an indicator that needs the
+solution is too late.
+
+\paragraph{The answer in brief.} The error of the scattered field separates by its order in the
+contrast into two terms, and both are available before the solve (\S\ref{sec:twoterm}). The term of
+first order is computed in one pass over the leaves, and for a leaf of uniform contrast it is a closed
+form. The rest is the nonlinear fraction of the response times the relative projection error of the
+medium, with one constant for every grid and tree tried. A refinement rule built on the two terms
+produces trees that a rule built on the medium alone cannot (\S\ref{sec:refine}). And the choice of
+basis for the medium follows from the medium (\S\ref{sec:which}): a constant in each leaf is the right
+basis where the medium is piecewise constant on the leaves, and the wrong one where it varies smoothly.
+
+\section{Setting}\label{sec:setting}
+
+\paragraph{Leaves.} The body is covered by cubes, the leaves of an octree: leaf $\ell$ has centre
+$\bx_\ell$ and half-width $h_\ell$ (side $d_\ell=2h_\ell$), and the half-widths are in ratios that are
+powers of two. With $\boldsymbol\xi=(\bx-\bx_\ell)/h_\ell$ the local coordinate, the leaf carries the
+nine-component state (displacement and strain) in the Legendre products
+$Q_a(\boldsymbol\xi)=P_{a_1}(\xi_1)P_{a_2}(\xi_2)P_{a_3}(\xi_3)$ of total degree $|a|=a_1+a_2+a_3\le p_\ell$,
+which is $1$, $4$ or $10$ functions for $p_\ell=0$, $1$ or $2$, and the contrast in the same products to
+degree $r_\ell$. The two degrees may differ from leaf to leaf. A leaf with $p=r=0$ is a Haar cell: a
+constant medium and a constant field.
+
+\paragraph{The system.} Tested with the same functions, the volume integral equation becomes
+\begin{equation}\label{eq:system}
+  M_\ell\,\psi_\ell-\sum_{m}\bK(\ell,m)\,E_m\,\psi_m=\langle Q,\psi^0\rangle_\ell ,
+\end{equation}
+with $\psi_\ell$ the coefficients of the state in leaf $\ell$, $M_\ell$ the Gram matrix of its
+functions, $E_m$ the projected contrast of leaf $m$ acting on its field, $\psi^0$ the incident wave and
+$\bK(\ell,m)$ the block that couples the two leaves: the Green's tensor integrated against the functions
+of both \citep{NestorGraded2026}.
+
+\paragraph{Blocks between leaves of different sizes.} A polynomial on a cube is a polynomial of the
+same degree on each of the cube's descendants, so the block between a large leaf and a small one is an
+exact, finite sum of blocks between equal cells: the large leaf is replaced by its descendants at the
+size of the small one, with its polynomials re-expanded. No integral is needed beyond those between
+equal cells. Against six-dimensional quadrature these blocks agree to $10^{-9}$ for leaves one and two
+levels apart, and on a tree whose leaves are all equal the solver reproduces the uniform solver to
+$10^{-11}$.
+
+\paragraph{Symmetry.} Two pairs of leaves whose relative positions are images of one another under a
+reflection or a permutation of the axes have blocks related by the representation of that operation on
+the polynomials and on the nine components, whatever the two sizes, because the operation acts on both
+cubes alike. One block is therefore computed for each orbit of the cube's group of $48$ operations.
+On a tree of $344$ leaves of three sizes this reduced the assembly from $125$\,s to $65$\,s with an
+unchanged solution, and made trees with four sizes practicable (\S\ref{sec:status}).
+
+\section{The error in two terms}\label{sec:twoterm}
+
+Write the scattered far field as a series in the contrast: $u=T_1+T_2+\dots$, with $T_1$ the term of
+first order (the Born term) and the rest the nonlinear part of the response. The error of the scheme
+separates the same way.
+
+\subsection{The first-order error needs no solve}\label{sec:born}
+
+At first order in the contrast Eq.~\eqref{eq:system} is $M_\ell\psi_\ell=\langle Q,\psi^0\rangle_\ell$:
+each leaf holds the $L^2$ projection of the incident wave onto its field functions. The scheme's Born
+term is therefore known from one pass over the leaves, with no system to solve, and its difference from
+the Born term of a finer representation (each leaf's eight children with quadratic cells) is the
+first-order error of the tree, leaf by leaf. On a tree of two leaf sizes this projected Born term equals
+the weak-contrast limit of the full solver to $10^{-5}$ of its size.
+
+\subsection{The wave factor of a leaf}\label{sec:factor}
+
+For a leaf whose contrast is uniform the first-order error is a closed form. The leaf represents the
+incident wave $\mathrm{e}^{\mathrm{i}\bk_{\mathrm{in}}\cdot\bx}$ by its projection, and it radiates
+towards the observer through the moments of $\mathrm{e}^{-\mathrm{i}\bk_{\mathrm{out}}\cdot\bx}$, with
+$\bk_{\mathrm{out}}$ the P or the S wavevector in the direction of observation. Since
+$\int_{-1}^{1}P_n(t)\,\mathrm{e}^{\mathrm{i}qt}\,\dd t=2\,\mathrm{i}^n j_n(q)$, with $j_n$ the spherical
+Bessel function, the leaf's Born far field is its exact Born far field times
+\begin{equation}\label{eq:factor}
+  1+E_p=\frac{\displaystyle\sum_{|a|\le p}\ \prod_{i=1}^{3}(2a_i+1)\,
+        j_{a_i}\bigl(k_{\mathrm{in},i}h\bigr)\,j_{a_i}\bigl(k_{\mathrm{out},i}h\bigr)}
+       {\displaystyle\prod_{i=1}^{3}j_0\bigl((k_{\mathrm{in},i}-k_{\mathrm{out},i})h\bigr)} .
+\end{equation}
+The sum over all degrees is the denominator (the addition theorem), so $E_p\to0$ as $p$ grows. Its
+leading term is
+\begin{equation}\label{eq:lead}
+  E_p=-h^{2p+2}\sum_{|a|=p+1}\ \prod_{i=1}^{3}
+      \frac{(2a_i+1)\,\bigl(k_{\mathrm{in},i}k_{\mathrm{out},i}\bigr)^{a_i}}{\bigl[(2a_i+1)!!\bigr]^2}
+      +O\bigl(h^{2p+4}\bigr),
+  \qquad E_0=-\frac{(\bk_{\mathrm{in}}\cdot\bk_{\mathrm{out}})\,d^2}{12}+\dots
+\end{equation}
+For a constant field the error of a leaf therefore depends on the angle of scattering, vanishes at
+right angles to the incident wave, and differs between the P and the S far field. Along one axis, with
+$\bk_{\mathrm{out}}=\pm\bk_{\mathrm{in}}$ of magnitude $k$, Eq.~\eqref{eq:lead} is
+$-(\pm1)^{p+1}c_p(kd)^{2p+2}$ with $c_p=(2p+3)/\bigl(4^{p+1}[(2p+3)!!]^2\bigr)$: the constants
+$c_0=1/12$, $c_1=1/720$ and $c_2=1/100800$ of the layer \citep{NestorContinuum2026}. The layer's
+closed-form error is the one-dimensional case of the leaf's.
+
+\paragraph{Checks.} Equation~\eqref{eq:factor} is derived symbolically, built a second way without
+Bessel functions (project, multiply, integrate over the cube) and found identical for $p=0$, $1$, $2$;
+Eq.~\eqref{eq:lead} and its one-dimensional reduction are verified symbolically; and the implementation
+used below agrees with $30$-digit values of the factor to $10^{-13}$ in $36$ cases. Against the solver,
+on a homogeneous cube (which every grid of cubes represents exactly) at $k_SA=1$ for half-side $A$: the
+Born far field divided by $1+E_p$ agrees across $p=0,1,2$ and two grids to $9\times10^{-7}$, where the
+uncorrected fields differ by up to $14\%$; and the Born far field of a tree of $15$ leaves of mixed
+sizes and degrees equals the sum over its leaves of exact contribution times factor to $2\times10^{-9}$.
+
+\subsection{The rest is the projection error of the medium}\label{sec:rest}
+
+Let $\cE_r$ be the relative projection error of the medium on the tree,
+\begin{equation}\label{eq:proj}
+  \cE_r=\frac{\sum_\ell\int_\ell\bigl(f-\Pi_rf\bigr)^2\,\dd V}{\int f^2\,\dd V},
+\end{equation}
+with $f(\bx)$ the profile of the contrast and $\Pi_r$ the $L^2$ projection onto the polynomials of
+degree at most $r$ on each leaf. Subtract from the error of the far field the first-order error of
+\S\ref{sec:born}. What is left, divided by $\cE_r$, is one constant (Table~\ref{tab:twoterm}). The test
+body is a sphere of radius $a$ with a uniform core of radius $0.75a$ and a shell across which the
+contrast falls smoothly to zero, at $k_Sa=0.5$, whose exact solution is known; the error is the largest
+difference of the far field from the exact one over nine scattering angles, relative to its peak.
+\begin{table}[htbp]
+\centering
+\caption{The error of the far field in two terms, on the sphere with a graded shell. The rest is the
+error less the first-order error, which is computed without a solve. $\cE$ is the relative projection
+error of Eq.~\eqref{eq:proj} at the degree of the cells. The nonlinear fraction of the exact response
+is $0.0151$.}\label{tab:twoterm}
+\small
+\begin{tabular}{@{}llrccc@{}}
+\toprule
+cells & grid & leaves & error & error / $\cE$ & rest / $\cE$ \\
+\midrule
+constant ($p=r=0$) & uniform & $64$   & $8.17\times10^{-3}$ & $0.0309$ & $0.0149$ \\
+ & uniform & $184$  & $3.18\times10^{-3}$ & $0.0235$ & $0.0151$ \\
+ & uniform & $408$  & $1.61\times10^{-3}$ & $0.0196$ & $0.0154$ \\
+ & uniform & $1256$ & $6.77\times10^{-4}$ & $0.0166$ & $0.0158$ \\
+ & tree    & $232$  & $3.29\times10^{-3}$ & $0.0321$ & $0.0152$ \\
+ & tree    & $856$  & $9.28\times10^{-4}$ & $0.0210$ & $0.0152$ \\
+ & tree    & $1360$ & $6.03\times10^{-4}$ & $0.0210$ & $0.0151$ \\
+ & tree    & $1696$ & $5.75\times10^{-4}$ & $0.0222$ & $0.0151$ \\
+\midrule
+linear ($p=r=1$) & uniform & $64$  & $8.99\times10^{-4}$ & $0.0147$ & $0.0148$ \\
+ & uniform & $184$ & $4.62\times10^{-4}$ & $0.0146$ & $0.0146$ \\
+ & uniform & $408$ & $2.20\times10^{-4}$ & $0.0146$ & $0.0146$ \\
+ & tree    & $184$ & $5.16\times10^{-4}$ & $0.0142$ & $0.0148$ \\
+ & tree    & $352$ & $2.20\times10^{-4}$ & $0.0146$ & $0.0145$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+For constant cells the ratio of error to projection error varies by a factor of $1.93$ across the
+grids; the rest over the projection error varies by $1.06$, and it is $0.0151$ to $0.0152$ on all four
+trees. For linear cells the first-order error is small and both ratios are near $0.0146$. The constant
+is the nonlinear fraction of the exact response, $\lvert u-T_1\rvert/\lvert u\rvert=0.0151$. This is
+the law of the layer \citep{NestorContinuum2026} in three dimensions: the error of the nonlinear part
+is that part times the relative projection error of the medium. It holds for constant cells as it does
+for linear ones, once the first-order error is accounted for; without that, constant cells appear not
+to follow it.
+
+\section{Refinement by the two terms}\label{sec:refine}
+
+\paragraph{The rule.} Each leaf has two indicators, both computed before any solve. The \emph{medium}
+indicator is the nonlinear fraction $\nu$ times the leaf's share of the projection error,
+$\nu\int_\ell(f-\Pi_rf)^2\,\dd V/\int f^2\,\dd V$. The \emph{wave} indicator is the leaf's own
+first-order error (\S\ref{sec:born}) relative to the peak of the Born far field. A leaf is split into
+its eight children while the sum of the two exceeds a tolerance. The nonlinear fraction is estimated
+from one solve on a coarse tree that resolves the medium, as $\lvert u-T_1\rvert/\lvert u\rvert$ of that
+tree. The predicted error of a tree is the first-order error of the whole tree, summed over the leaves
+as complex amplitudes, plus $\nu\,\cE_r$. It uses no reference solution.
+
+\paragraph{A localised feature.} The test body is a sphere of radius $a$ whose contrast is a weak
+halo, falling smoothly from $5\%$ of the central value to zero across the whole radius, plus a
+compact feature in which it falls from the central value to the halo between $0.1a$ and $0.3a$: under
+$3\%$ of the volume. Its exact solution is known. At $k_Sa=1$, with leaves no smaller than $a/32$, the
+errors are those of Table~\ref{tab:refine}. The rule that uses the medium alone refines a leaf while
+its share of the projection error exceeds a tolerance.
+\begin{table}[htbp]
+\centering
+\caption{The localised feature: leaves, the error predicted without a reference, and the error against
+the exact solution. The nonlinear fraction estimated from a coarse tree is $0.0051$ (constant cells)
+and $0.0059$ (linear cells); the exact value is $0.0059$.}\label{tab:refine}
+\small
+\begin{tabular}{@{}llrcc@{}}
+\toprule
+cells & grid & leaves & predicted & error \\
+\midrule
+constant & uniform & $408$ & $1.11\times10^{-2}$ & $7.15\times10^{-3}$ \\
+ & uniform & $1256$ & $4.36\times10^{-3}$ & $2.92\times10^{-3}$ \\
+ & medium alone & $344$ & $1.60\times10^{-2}$ & $1.55\times10^{-2}$ \\
+ & medium alone & $512$ & $1.57\times10^{-2}$ & $1.53\times10^{-2}$ \\
+ & medium alone & $736$ & $5.92\times10^{-3}$ & $5.49\times10^{-3}$ \\
+ & two terms & $260$ & $8.18\times10^{-3}$ & $7.18\times10^{-3}$ \\
+ & two terms & $372$ & $6.82\times10^{-3}$ & $5.38\times10^{-3}$ \\
+ & two terms & $752$ & $4.48\times10^{-3}$ & $3.78\times10^{-3}$ \\
+ & two terms & $1780$ & $2.18\times10^{-3}$ & $1.75\times10^{-3}$ \\
+\midrule
+linear & uniform & $184$ & $2.83\times10^{-3}$ & $2.73\times10^{-3}$ \\
+ & uniform & $408$ & $8.27\times10^{-4}$ & $6.77\times10^{-4}$ \\
+ & medium alone & $176$ & $2.43\times10^{-4}$ & $2.47\times10^{-4}$ \\
+ & medium alone & $344$ & $1.95\times10^{-4}$ & $1.96\times10^{-4}$ \\
+ & two terms & $260$ & $1.72\times10^{-4}$ & $1.68\times10^{-4}$ \\
+ & two terms & $336$ & $1.56\times10^{-4}$ & $1.66\times10^{-4}$ \\
+ & two terms & $452$ & $1.08\times10^{-4}$ & $1.14\times10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Constant cells.} The rule that uses the medium alone fails: with $512$ leaves its error is
+twice that of the uniform grid of $408$ cells. It refines the feature and leaves the halo coarse, and
+the halo is where the first-order error is, in leaves whose medium is too smooth for the rule to see.
+The rule with two terms sees it. Its tree of $260$ leaves has the error of the uniform grid of $408$,
+and against the trend of the uniform grids its trees have the same error with about $35\%$ fewer cells
+at the coarse end and an error $15$ to $20\%$ lower at the fine end. The saving is modest, and the
+reason is the cell: a constant field has a second-order error in every leaf, so the halo needs cells
+however smooth its medium is.
+
+\paragraph{Linear cells.} Here the tree pays. The tree of $176$ leaves has eleven times less error than
+the uniform grid of $184$ cells. By the trend of the two uniform grids its error would need about $730$
+uniform cells, four times as many, and that of the tree of $452$ leaves about $1130$; these uniform
+equivalents are extrapolated, not computed. The fourth-order error of a linear field lets the halo stay
+coarse, and the tree then follows the medium. The two-term rule improves on the medium alone by about
+$15\%$ at about $340$ leaves.
+
+\paragraph{The prediction.} The predicted error is above the true error on all eleven grids of constant
+cells computed for this body (nine of them in Table~\ref{tab:refine}), by $3\%$ to $55\%$. For linear
+cells the ratio of predicted to true is $0.94$ to $1.22$ on nine grids: close, but not a bound.
+
+\section{Which basis for the medium}\label{sec:which}
+
+\paragraph{A smooth medium: the degrees must be matched.} On the body of \S\ref{sec:refine}, hold the
+contrast constant in every leaf and raise the field to linear. The error rises, at four times the
+unknowns: from $7.15\times10^{-3}$ to $8.31\times10^{-3}$ on the uniform grid of $408$ cells, and from
+$7.18\times10^{-3}$ to $8.32\times10^{-3}$ on the tree of $260$ leaves. The prediction, made without a
+solve, says so beforehand ($1.11\times10^{-2}$ against $1.34\times10^{-2}$ on the uniform grid). On a
+smoothly varying medium the first-order error of a leaf with a constant contrast is not the wave's: it
+is the error of holding the contrast constant, which a richer field cannot repair, and with a constant
+field the wave's error partly cancels it. This is the rule of \citet{NestorContinuum2026} that the two
+bases must be matched.
+
+\paragraph{A medium that is piecewise constant on the leaves.} The pairing of a constant medium with a
+polynomial field belongs to the medium that is constant in each leaf. The test body is a cube of
+half-side $B$ with a uniform contrast a quarter of the central value, holding at its centre a cube of
+half-side $B/4$ with the full contrast, at $k_SB=2$. A tree of $120$ leaves represents it exactly with
+one constant per leaf ($\cE_0=0$): $56$ leaves of half-width $B/4$ and $64$ of half-width $B/8$. The
+uniform grid that does the same has $512$ cells. No exact solution is known for this body; the
+reference is the tree with quadratic fields, whose own first-order error is predicted to be
+$2\times10^{-7}$ (Table~\ref{tab:blocky}).
+\begin{table}[htbp]
+\centering
+\caption{A cube within a cube, the contrast constant in every leaf. The first-order error is predicted
+without a solve; the error is against the tree with quadratic fields. In the last two rows the faces of
+the inner cube fall inside the cells of the grid.}\label{tab:blocky}
+\small
+\begin{tabular}{@{}lrrcc@{}}
+\toprule
+grid and field & cells & unknowns & predicted & error \\
+\midrule
+tree, constant field & $120$ & $1080$ & $1.54\times10^{-2}$ & $1.53\times10^{-2}$ \\
+tree, linear in the $56$ large leaves & $120$ & $2592$ & $3.24\times10^{-3}$ & $3.21\times10^{-3}$ \\
+tree, linear field & $120$ & $4320$ & $8.07\times10^{-5}$ & $8.42\times10^{-5}$ \\
+uniform, constant field & $512$ & $4608$ & $5.54\times10^{-3}$ & $5.51\times10^{-3}$ \\
+uniform, linear field & $512$ & $18432$ & $8.17\times10^{-6}$ & $9.25\times10^{-6}$ \\
+\midrule
+uniform, constant field & $64$ & $576$ & $1.81\times10^{-2}$ & $1.79\times10^{-2}$ \\
+uniform, linear field & $64$ & $2304$ & $3.01\times10^{-2}$ & $2.92\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+With the medium exact there is no second term, and the first-order prediction is within $13\%$ of the
+measured error in all seven cases and within $4\%$ in five. The tree with a linear field has an error
+of $8.4\times10^{-5}$ with $4320$ unknowns; the uniform grid of constant cells has $5.5\times10^{-3}$
+with $4608$: $65$ times more. Raising the field to linear in the large leaves alone lowers the tree's
+error from $1.5\times10^{-2}$ to $3.2\times10^{-3}$: a large leaf needs a richer basis for the
+wavefield, not for the medium. And where the faces of the inner cube fall inside cells, the linear
+field is worse than the constant one, as on the smooth body.
+
+\paragraph{The choice.} The two cases give the rule. Where the medium is piecewise constant and the
+tree can follow its interfaces, hold it constant in each leaf and spend the degree on the field.
+Where it varies smoothly, give the medium and the field the same degree and let the tree follow the
+medium. In both the error is predicted before the solve.
+
+\section{What is established, and what is not}\label{sec:status}
+
+\begin{itemize}
+\item \emph{Established twice.} The wave factor, Eqs.~\eqref{eq:factor} and \eqref{eq:lead}: a symbolic
+derivation and an independent numerical implementation, and both against the solver.
+\item \emph{Established against exact solutions, by one implementation.} The two-term separation
+(Table~\ref{tab:twoterm}) and the refinement results (Table~\ref{tab:refine}): one frequency each, two
+bodies, both spheres with radial profiles.
+\item \emph{Self-consistent only.} The cube within a cube (Table~\ref{tab:blocky}) has no exact
+solution; its reference is the same scheme with quadratic fields. The field near the edges and corners
+of the cubes is not smooth, and an independent solution is needed before the figure of $65$ is relied
+on.
+\item \emph{Not yet derived.} The nonlinear fraction $\nu$ is estimated from a coarse solve; it is
+within $20\%$ of the exact value in the cases tried. The constant of the second term is observed to
+equal the nonlinear fraction of the response; the layer's derivation \citep{NestorContinuum2026} has
+not been carried to three dimensions.
+\item \emph{Not a bound.} The predicted error exceeded the true error for constant cells in every case,
+but fell $6\%$ below it for linear cells.
+\item \emph{Size.} The solver is dense and stops near $20\,000$ unknowns: about $2200$ constant leaves
+or $550$ linear ones. The saving in cells is therefore shown on small bodies. An equal-cell block costs
+about $50$\,ms, and a tree of $344$ leaves of four sizes is assembled and solved in about three
+minutes.
+\item \emph{Earlier work.} The relation of these results to adaptive methods for integral equations and
+to the fast multipole method on an octree is not yet written; the literature has not been surveyed.
+\end{itemize}
+
+\section{Conclusions}\label{sec:summary}
+
+On an octree of polynomial voxels the error of the scattered field is two terms, and both are known
+before the solve: the first-order error, from one pass over the leaves and in closed form for a leaf of
+uniform contrast, and the nonlinear fraction of the response times the relative projection error of the
+medium. The closed form reduces in one dimension to the constants of the layer. A refinement rule built
+on both terms places cells where a rule built on the medium alone cannot, and with linear cells a tree
+reaches the accuracy of a uniform grid with a quarter of the cells on a body whose variation is
+localised. A constant contrast in each leaf is the right basis for a medium that is piecewise constant
+on the leaves, where a linear field on the tree outperforms the uniform grid of constant cells
+sixty-five-fold at equal unknowns in a self-consistent test, and the wrong one for a smooth medium,
+where the two degrees must be matched. What remains before the method models a realistic medium is a
+solver whose cost does not grow as the square of the number of leaves.
+
+\vfill
+\noindent\rule{\linewidth}{0.4pt}\\
+{\footnotesize The octree, its blocks and its solver are \path{cubic_scattering/graded_voxel/octree.py},
+with tests in \path{cubic_scattering/tests/test_graded_voxel_octree.py}. The wave factor is derived in
+\path{Mathematica/AdaptiveOctree_WaveFactor.wl} and measured by
+\path{scripts/measure_octree_wave_term.py}; Table~\ref{tab:twoterm} is
+\path{scripts/measure_octree_two_term.py}; Table~\ref{tab:refine} is
+\path{scripts/pilot_octree_two_term_refinement.py}; the constant medium with a richer field is
+\path{scripts/pilot_octree_hp_refinement.py}; Table~\ref{tab:blocky} is
+\path{scripts/pilot_octree_blocky_body.py}. Their results are stored in
+\path{LatexPDFs/AdaptiveOctree/figures}.}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

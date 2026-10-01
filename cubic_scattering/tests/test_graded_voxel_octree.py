@@ -382,3 +382,20 @@ def test_block_cache_carries_blocks_between_solves_and_refuses_another_frequency
         )
     msg = str(err.value)
     assert "block_cache" in msg and "Fix:" in msg and str(float(OMEGA)) in msg
+
+
+def test_wave_factor_agrees_with_the_symbolic_calculation():
+    # 30-digit values from Mathematica/AdaptiveOctree_WaveFactor.wl, which also builds the factor directly
+    # (project, multiply, integrate) and derives its leading term
+    import json
+    import re
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "Mathematica" / "AdaptiveOctree_wave_factor.json"
+    cases = json.loads(path.read_text())
+    assert len(cases) == 36
+    for c in cases:
+        m = re.match(r"\s*(-?[0-9.]+)(?:`[0-9.]*)?(?:\*\^(-?[0-9]+))?", c["factor"])
+        expected = float(m.group(1)) * 10.0 ** int(m.group(2) or 0)
+        got = born_wave_factor(np.array(c["k_in"]), np.array(c["k_out"]), c["h"], c["p"])
+        assert got == pytest.approx(expected, rel=1e-13)
