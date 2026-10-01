@@ -190,24 +190,72 @@ def octree_block(
         if j == 0:
             return eq(_offset(ct, cs, h_source), h_source)
         kids, h = _descendants(ct, h_field, j)
-        out = np.zeros((n_test, n_source, 9, 9), dtype=complex)
-        for kid in kids:
-            shift = (kid - ct) / h_field
-            c_mat = field_reexpansion(
-                n_test, h / h_field, (float(shift[0]), float(shift[1]), float(shift[2]))
-            )
-            out += np.einsum("ab,bcij->acij", c_mat, eq(_offset(kid, cs, h), h))
-        return out
+        shifts = (kids - ct) / h_field
+        c_mats = np.array([field_reexpansion(n_test, h / h_field, tuple(map(float, s))) for s in shifts])
+        blocks = np.array([eq(_offset(kid, cs, h), h) for kid in kids])
+        return np.einsum("kab,kbcij->acij", c_mats, blocks)
     j = _levels_apart(h_source, h_field)
     kids, h = _descendants(cs, h_source, j)
-    out = np.zeros((n_test, n_source, 9, 9), dtype=complex)
-    for kid in kids:
-        shift = (kid - cs) / h_source
-        d_mat = source_reexpansion(
-            n_source, h / h_source, (float(shift[0]), float(shift[1]), float(shift[2]))
-        )
-        out += np.einsum("aeij,ce->acij", eq(_offset(ct, kid, h), h), d_mat)
-    return out
+    shifts = (kids - cs) / h_source
+    d_mats = np.array([source_reexpansion(n_source, h / h_source, tuple(map(float, s))) for s in shifts])
+    blocks = np.array([eq(_offset(ct, kid, h), h) for kid in kids])
+    return np.einsum("kaeij,kce->acij", blocks, d_mats)
+
+
+class TreeBlocks:
+    """Blocks between octree cells of any two sizes, one computed per orbit of the cube group.
+
+    Two pairs of cells whose relative positions are images of one another under a signed permutation of
+    the axes have blocks related by the representations of that permutation (fft._transform), whatever
+    the two sizes: the group acts on both cells alike.  Of the pairs of leaves of a tree, almost all are
+    such images, so the descent to the smaller size (octree_block) is made once for each orbit.
+
+    Args:
+        omega: Angular frequency (rad/s).
+        ref: Background medium.
+        unit: The length in which relative positions are given (m): the smallest half-width of the tree.
+        n_source: Source monomials (10, 20 or 35).
+        n_test: Field functions (4 or 10).
+        equal: Equal-cell blocks to draw on, for the same frequency, medium and sizes (None: its own).
+    """
+
+    def __init__(
+        self,
+        omega: float,
+        ref: ReferenceMedium,
+        unit: float,
+        n_source: int = 10,
+        n_test: int = 4,
+        equal: EqualBlocks | None = None,
+    ) -> None:
+        self.omega, self.ref, self.unit, self.n_source, self.n_test = omega, ref, unit, n_source, n_test
+        self.equal = equal if equal is not None else EqualBlocks(omega, ref, n_source, n_test)
+        self._canonical: dict[tuple, NDArray] = {}
+        self.computed = 0  # canonical blocks between unequal cells computed so far
+
+    def __call__(self, rel: tuple[int, int, int], h_field: float, h_source: float) -> NDArray:
+        """K[a, c] for a field cell at rel x unit from the source cell, shape (n_test, n_source, 9, 9)."""
+        a, b, d = sorted((abs(o) for o in rel), reverse=True)
+        canon = (a, b, d)
+        key = (h_field, h_source, canon)
+        if key not in self._canonical:
+            self._canonical[key] = octree_block(
+                (0.0, 0.0, 0.0),
+                h_field,
+                (-canon[0] * self.unit, -canon[1] * self.unit, -canon[2] * self.unit),
+                h_source,
+                self.omega,
+                self.ref,
+                self.n_source,
+                self.n_test,
+                self.equal,
+            )
+            self.computed += h_field != h_source
+        if tuple(rel) == canon:
+            return self._canonical[key]
+        cv, target = np.array(canon, dtype=float), np.array(rel, dtype=float)
+        q = next(q for q in signed_permutations() if np.array_equal(q @ cv, target))
+        return _transform(q, self._canonical[key])
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +317,7 @@ def solve_graded_octree(
     wave_type: str,
     p: int | NDArray = 1,
     r: int | NDArray = 1,
+    block_cache: dict | None = None,
 ) -> OctreeResult:
     """Solve the Galerkin system on leaves of mixed sizes, densely.
 
@@ -288,12 +337,27 @@ def solve_graded_octree(
         wave_type: 'P' or 'S' (the incident speed).
         p: Field degree (0, 1 or 2): one value, or one per leaf.
         r: Contrast degree (0, 1 or 2): one value, or one per leaf.
+        block_cache: A dictionary that carries the coupling blocks from one solve to the next (other
+            trees, other contrasts, other incident waves).  The blocks depend on the frequency and the
+            background only, and the dictionary remembers both.
+
+    Raises:
+        ValueError: when block_cache was filled at another frequency or background.
     """
     centres = np.asarray(centres, dtype=float)
     half_widths = np.asarray(half_widths, dtype=float)
     n = len(centres)
     p_leaf = np.broadcast_to(np.asarray(p, dtype=int), (n,))
     r_leaf = np.broadcast_to(np.asarray(r, dtype=int), (n,))
+    store: dict = block_cache if block_cache is not None else {}
+    medium = (float(omega), float(ref.alpha), float(ref.beta), float(ref.rho))
+    if store.setdefault("medium", medium) != medium:
+        raise ValueError(
+            f"solve_graded_octree: block_cache holds blocks for (omega, alpha, beta, rho) = "
+            f"{store['medium']}, but this solve has {medium}. Coupling blocks depend on the frequency "
+            "and the background. Fix: pass a separate dictionary for each frequency and background, "
+            "e.g. block_cache=caches.setdefault(omega, {})."
+        )
     sizes = [field_sizes(int(pi), int(ri)) for pi, ri in zip(p_leaf, r_leaf, strict=True)]
     delta = [
         cell_contrast_coefficients(profile, c, float(h), contrast, ref, omega, degree=int(ri))
@@ -304,7 +368,6 @@ def solve_graded_octree(
     a = np.zeros((start[-1], start[-1]), dtype=complex)
     h_min = float(half_widths.min())
     cache_k: dict[tuple, NDArray] = {}
-    equal: dict[tuple[int, int], EqualBlocks] = {}
     expansions = [
         source_expansion(d, sz[1])[:, : sz[0]].transpose(0, 2, 1, 3).reshape(sz[3] * 9, sz[0] * 9)
         for d, sz in zip(delta, sizes, strict=True)
@@ -325,19 +388,13 @@ def solve_graded_octree(
                 n_source,
             )
             if key not in cache_k:
-                if (n_source, n_field) not in equal:
-                    equal[(n_source, n_field)] = EqualBlocks(omega, ref, n_source, n_field)
-                blk = octree_block(
-                    (0.0, 0.0, 0.0),
-                    key[0],
-                    (-rel[0] * h_min, -rel[1] * h_min, -rel[2] * h_min),
-                    key[1],
-                    omega,
-                    ref,
-                    n_source,
-                    n_field,
-                    equal[(n_source, n_field)],
-                )
+                tree_key = ("tree", n_source, n_field, h_min)
+                if tree_key not in store:
+                    equal = store.setdefault(
+                        ("equal", n_source, n_field), EqualBlocks(omega, ref, n_source, n_field)
+                    )
+                    store[tree_key] = TreeBlocks(omega, ref, h_min, n_source, n_field, equal)
+                blk = store[tree_key]((int(rel[0]), int(rel[1]), int(rel[2])), key[0], key[1])
                 cache_k[key] = blk[:na].transpose(0, 2, 1, 3).reshape(na * 9, n_source * 9)
             entry = -(cache_k[key] @ expansions[col])
             if row == col:
