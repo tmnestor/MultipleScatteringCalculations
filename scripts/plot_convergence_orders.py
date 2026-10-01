@@ -47,6 +47,9 @@ mpl.rcParams.update(
 )
 
 COLOURS = {"C": "tab:blue", "G0": "tab:green", "G1": "tab:orange", "G2": "tab:brown", "G3": "tab:pink"}
+# one marker per scheme in every panel, so that the figure reads without colour; the line style then
+# separates the waves
+MARKERS = {"C": "o", "G0": "s", "G1": "D", "G2": "v", "G3": "p"}
 NAMES = {
     "C": "collocation",
     "G0": "mean only",
@@ -132,36 +135,39 @@ def main() -> int:
     ax = axes[0, 0]
     # collocation and mean-only differ only by the factor 3/2 of their constants, so the collocation
     # line is drawn last and dashed to stay visible on top of the mean-only line
-    for sc, mk, ls in (("G0", "s", "-"), ("G1", "D", "-"), ("C", "o", "--")):
+    for sc, ls in (("G0", "-"), ("G1", "-"), ("C", "--")):
         n, e = np.array(uni["normal"][sc]).T
-        orders[f"uniform normal {sc}"] = series(ax, n, e, 4, COLOURS[sc], mk, NAMES[sc], ls)
+        orders[f"uniform normal {sc}"] = series(ax, n, e, 4, COLOURS[sc], MARKERS[sc], NAMES[sc], ls)
     # the second- and third-moment voxels (notebook 14), 40-digit errors down to 1e-22
-    for sc, mk in (("G2", "v"), ("G3", "p")):
+    for sc in ("G2", "G3"):
         e = np.array(high["errors_R_T"][sc])[:, 0]
-        orders[f"uniform normal {sc}"] = series(ax, high["n"], e, 2, COLOURS[sc], mk, NAMES[sc])
+        orders[f"uniform normal {sc}"] = series(ax, high["n"], e, 2, COLOURS[sc], MARKERS[sc], NAMES[sc])
     title = "(a) uniform layer, P at normal incidence"
     style(ax, "voxel planes $n$", title, [1, 2, 4, 8, 16, 32], "lower right", bottom=1e-33)
 
     ax = axes[0, 1]
-    for key, lab, ls, mk in (("oblique", "P$\\to$S", "-", "s"), ("incidentSV", "SV$\\to$S", "--", "^")):
+    for key, lab, ls in (("oblique", "P$\\to$S", "-"), ("incidentSV", "SV$\\to$S", "--")):
         for sc in ("G0", "G1"):
             n, e = np.array(uni[key][sc]).T
-            orders[f"uniform {key} {sc}"] = series(ax, n, e, 2, COLOURS[sc], mk, f"{lab}, {NAMES[sc]}", ls)
+            lab_sc = f"{lab}, {NAMES[sc]}"
+            orders[f"uniform {key} {sc}"] = series(ax, n, e, 2, COLOURS[sc], MARKERS[sc], lab_sc, ls)
     title = "(b) uniform layer, $20^\\circ$ incidence"
     style(ax, "voxel planes $n$", title, [1, 2, 4, 8], "upper right", 1e1)
 
     ax = axes[1, 0]
-    for wave, ls, mk in (("normal_P", "-", "o"), ("normal_S", "--", "^")):
+    for wave, ls in (("normal_P", "-"), ("normal_S", "--")):
         m = np.array(het[wave]["m"], float)
         for sc in ("G0", "G1", "C"):
             e = np.array(het[wave]["errors_R_T"][sc])[:, 0]
             lab = f"{wave[-1]}, {NAMES[sc]}"
-            orders[f"stratified {wave} {sc}"] = series(ax, m, e, 4, COLOURS[sc], mk, lab, ls)
+            orders[f"stratified {wave} {sc}"] = series(ax, m, e, 4, COLOURS[sc], MARKERS[sc], lab, ls)
     title = "(c) stratified layer, normal incidence"
     style(ax, "voxel planes per model layer $m$", title, [1, 2, 4, 8, 16], "upper right", 1e6)
 
     ax = axes[1, 1]
-    for s, colour, mk in zip(sph, ("tab:red", "tab:purple"), ("o", "s"), strict=True):
+    # markers differ between the two frequencies as well as between the schemes
+    sphere_styles = (("tab:red", "o", "^", "v"), ("tab:purple", "s", "D", "p"))
+    for s, (colour, mk, mk_centre, mk_mean) in zip(sph, sphere_styles, strict=True):
         ka = f"$k_Sa={s['ka_s']:g}$"
         # the mean-only voxel, fitted from n_sub = 6: at 4 a voxel is as wide as the graded shell
         orders[f"graded sphere ka {s['ka_s']:g}"] = series(
@@ -170,11 +176,18 @@ def main() -> int:
         # the collocation voxel with the centre-sampled contrast: two O(h^2) errors of opposite sign,
         # so its apparent order (2.0, 3.5, 3.6 at k_S a = 0.5) is not that of any single term
         c = s["collocation"]
-        unfitted(ax, c["n_sub"], c["error_vs_exact"], colour, "^", f"{ka}, collocation (centre)")
+        unfitted(ax, c["n_sub"], c["error_vs_exact"], colour, mk_centre, f"{ka}, collocation (centre)")
         if "collocation_cell_mean" in s:
             c = s["collocation_cell_mean"]
             orders[f"graded sphere ka {s['ka_s']:g} collocation cell mean"] = series(
-                ax, c["n_sub"], c["error_vs_exact"], 6, colour, "v", f"{ka}, collocation (cell mean)", ":"
+                ax,
+                c["n_sub"],
+                c["error_vs_exact"],
+                6,
+                colour,
+                mk_mean,
+                f"{ka}, collocation (cell mean)",
+                ":",
             )
     ticks = [4, 6, 8, 12, 16, 24]
     title = "(d) smoothly graded sphere"

@@ -105,8 +105,8 @@ with no shape error, and its exact solution isolates the discretisation error. T
 coupling equals the continuum's exactly; the cube's single-site $T$-matrix follows from distributional
 moments of the Green's tensor. With the wavefield expanded to Legendre degree $p$ and the medium's
 contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
-error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; for $p\le1$ also for
-SV and SH waves and at oblique incidence. The single-site $T$-matrix's second-order error equals
+error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; the orders hold for
+SV and SH waves and at oblique incidence, to $p=2$. The single-site $T$-matrix's second-order error equals
 the relative projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit:
 the two bases must be matched, and the error is known from the medium before anything is solved.
 Where the medium is piecewise constant on the voxels it vanishes: in a randomly stratified layer one
