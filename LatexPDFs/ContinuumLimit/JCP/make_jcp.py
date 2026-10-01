@@ -106,7 +106,7 @@ coupling equals the continuum's exactly; the cube's single-site $T$-matrix follo
 moments of the Green's tensor. With the wavefield expanded to Legendre degree $p$ and the medium's
 contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
 error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; for $p\le1$ also for
-SV and SH waves and at oblique incidence. The multiple-scattering error equals
+SV and SH waves and at oblique incidence. The single-site $T$-matrix's second-order error equals
 the relative projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit:
 the two bases must be matched, and the error is known from the medium before anything is solved.
 Where the medium is piecewise constant on the voxels it vanishes: in a randomly stratified layer one
@@ -120,7 +120,7 @@ HIGHLIGHTS = [
     "A voxel needs two bases: one for the medium and one for the wavefield",
     "On a layer of cubes the discretisation error is isolated, with no shape error",
     "The order is min(2p+2, 2r+2) for field degree p and medium degree r",
-    "The multiple-scattering error is the medium's relative projection error",
+    "The single-site T-matrix's error is the medium's relative projection error",
     "The error is known in advance, from the medium and the grid alone",
 ]
 assert all(len(h) <= 85 for h in HIGHLIGHTS), "a highlight exceeds 85 characters"
@@ -144,8 +144,8 @@ FRONT = (
     r"""
 \begin{document}
 \begin{frontmatter}
-\title{The continuum limit of a space-filling layer of cubes: a tiling identity, an exact lattice kernel
-and the closed-form error of the discrete layer}
+\title{Two bases for a voxel, the medium and the wavefield: the error of elastic volume-integral
+scattering, isolated on a space-filling layer of cubes}
 \author{T. M. Nestor}
 \affiliation{organization={Independent researcher}, country={Australia}}
 
