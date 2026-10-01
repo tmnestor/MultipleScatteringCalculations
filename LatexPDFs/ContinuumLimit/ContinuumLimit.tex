@@ -1466,6 +1466,24 @@ Smoothly graded sphere, \S\ref{sec:sphere} & exact solution by two routes, $2\ti
 \end{tabular}
 \end{table}
 
+\paragraph{The error is known in advance.} For every discretisation studied here the error is not
+something to be discovered by refining until the answer stops changing. Its order and its leading
+constant are known before anything is computed: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
+transmission for the uniform-field voxel (Eq.~\eqref{eq:errorR}), $-(kd)^4/720$ for the first-moment
+voxel (Eq.~\eqref{eq:ratio}), the constant $c_p$ of Eq.~\eqref{eq:cp} at degree $p$, and the order
+$\min(2p+2,2r+2)$ where the medium varies within a cell (Eq.~\eqref{eq:graded}). That is worth more than
+the order alone, for three reasons. First, the cell size and the degree of the voxel that a required
+accuracy needs follow from the wavenumber and the medium, before the computation and without a
+refinement study. Secondly, it turns a refinement study from a hope into a test. A scheme of this kind
+can converge smoothly to the wrong limit (\S\ref{sec:point}), and smooth convergence alone cannot
+reveal it; but the difference between two grids must have the known order and the known constant, and
+a computation whose differences do not is in error from some cause other than the discretisation.
+Thirdly, it shows where effort pays. The error is that of representing the field and the medium within
+a cell, so raising the degree of the cell does what multiplying the cells cannot: in the stratified
+model one first-moment voxel per layer reaches $10^{-6}$ where the uniform-field voxel needs about forty.
+Whether the error of a body with three-dimensional structure can be known in advance in the same way is
+the question taken up in the companion paper \citep{NestorGraded2026}.
+
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
 {\footnotesize Every numerical value is reproducible from the Mathematica notebooks
