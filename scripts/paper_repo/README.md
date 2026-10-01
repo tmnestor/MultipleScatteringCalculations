@@ -4,8 +4,8 @@ This repository contains everything needed to reproduce the two papers
 
 * *The Continuum Limit of a Space-Filling Layer of Cubes: A Tiling Identity, an Exact Lattice
   Kernel, and the Closed-Form Error of the Discrete Layer* (`LatexPDFs/ContinuumLimit/`), and
-* *Graded Voxels in Three Dimensions: A Galerkin First-Moment Cube with a Contrast Linear in the
-  Cell, Fourth Order in its Discretisation* (`LatexPDFs/GradedVoxel/`),
+* *Graded Voxels in Three Dimensions: Galerkin Cubes with a Polynomial Field and Contrast: the
+  Source of their Error, its Cure, and Closed-Form Moment Integrals* (`LatexPDFs/GradedVoxel/`),
 
 by T. M. Nestor. It is assembled from the author's research repository by
 `scripts/assemble_paper_repo.py`, which records exactly which files a release contains.
