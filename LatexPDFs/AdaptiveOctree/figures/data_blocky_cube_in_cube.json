@@ -1,0 +1,97 @@
+{
+  "ks_b": 2.0,
+  "outer": 0.25,
+  "rows": [
+    {
+      "case": "tree, field 0",
+      "cells": 120,
+      "unknowns": 1080,
+      "first_order": 0.015371651170797961,
+      "degrees": {
+        "0": 120
+      },
+      "error": 0.015344998493221152
+    },
+    {
+      "case": "tree, field 1",
+      "cells": 120,
+      "unknowns": 4320,
+      "first_order": 8.06795966799321e-05,
+      "degrees": {
+        "1": 120
+      },
+      "error": 8.421015024453633e-05
+    },
+    {
+      "case": "tree, field 2",
+      "cells": 120,
+      "unknowns": 10800,
+      "first_order": 2.2404735626629825e-07,
+      "degrees": {
+        "2": 120
+      }
+    },
+    {
+      "case": "tree, field chosen, tol 0.001",
+      "cells": 120,
+      "unknowns": 2592,
+      "first_order": 0.003242025524959768,
+      "degrees": {
+        "0": 64,
+        "1": 56
+      },
+      "error": 0.0032130455569867175
+    },
+    {
+      "case": "tree, field chosen, tol 0.0001",
+      "cells": 120,
+      "unknowns": 2808,
+      "first_order": 0.0017733143795248616,
+      "degrees": {
+        "0": 56,
+        "1": 64
+      },
+      "error": 0.0017738295585016817
+    },
+    {
+      "case": "uniform 512, field 0",
+      "cells": 512,
+      "unknowns": 4608,
+      "first_order": 0.0055370144173554885,
+      "degrees": {
+        "0": 512
+      },
+      "error": 0.005504820580160606
+    },
+    {
+      "case": "uniform 512, field 1",
+      "cells": 512,
+      "unknowns": 18432,
+      "first_order": 8.170155798611664e-06,
+      "degrees": {
+        "1": 512
+      },
+      "error": 9.254180569053646e-06
+    },
+    {
+      "case": "uniform 64, inexact, field 0",
+      "cells": 64,
+      "unknowns": 576,
+      "first_order": 0.018087145952616804,
+      "degrees": {
+        "0": 64
+      },
+      "error": 0.01785323631577101
+    },
+    {
+      "case": "uniform 64, inexact, field 1",
+      "cells": 64,
+      "unknowns": 2304,
+      "first_order": 0.030131457958662077,
+      "degrees": {
+        "1": 64
+      },
+      "error": 0.02921229381456138
+    }
+  ]
+}
