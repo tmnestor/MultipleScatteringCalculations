@@ -44,8 +44,8 @@ with no shape error, and its exact solution isolates the discretisation error. T
 coupling equals the continuum's exactly; the cube's single-site $T$-matrix follows from distributional
 moments of the Green's tensor. With the wavefield expanded to Legendre degree $p$ and the medium's
 contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
-error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; for $p\le1$ also for
-SV and SH waves and at oblique incidence. The single-site $T$-matrix's second-order error equals
+error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; the orders hold for
+SV and SH waves and at oblique incidence, to $p=2$. The single-site $T$-matrix's second-order error equals
 the relative projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit:
 the two bases must be matched, and the error is known from the medium before anything is solved.
 Where the medium is piecewise constant on the voxels it vanishes: in a randomly stratified layer one
@@ -124,9 +124,8 @@ $\min(2p+2,2r+2)$ in the cell size (\S\ref{sec:hetero}). A contrast held constan
 therefore caps every voxel at second order in a medium that varies within the cells, however rich the
 basis of its field; and a contrast of higher degree than the field is wasted. (2) \emph{The leading
 error is in closed form, for every grid.} For a voxel of side $d$ and a wave of wavenumber $k$ it is
-$c_p(kd)^{2p+2}$ with $c_0=1/12$, $c_1=1/720$ and $c_2=1/100800$ (\S\ref{sec:fourth}); the
-first-moment voxel, $p=1$, keeps its fourth order and its constant for P, SV and SH waves at normal and
-oblique incidence. For the collocation scheme, the uniform-field voxel in its simplest form, the error
+$c_p(kd)^{2p+2}$ with $c_0=1/12$, $c_1=1/720$ and $c_2=1/100800$ (\S\ref{sec:fourth}); the orders $2$, $4$
+and $6$ of $p=0$, $1$ and $2$ hold for P, SV and SH waves at normal and oblique incidence. For the collocation scheme, the uniform-field voxel in its simplest form, the error
 is $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission (\S\ref{sec:convergence}), and the
 opposite signs explain why no correction of the single site can improve both
 (\S\ref{sec:discussion}). (3) \emph{The error that remains is the single site's, and it is the
@@ -138,7 +137,8 @@ contrast, the error of the second-order term, in which the field scattered once 
 scattered there again, equals the \emph{relative projection error} of the medium: the fraction of the squared norm of its profile that polynomials of
 degree $\min(p,r)$ on the cells cannot represent (Eq.~\eqref{eq:defect}). The equality is exact in the
 long-wave limit, where it is derived, and holds to within $1.3\%$ for all nine pairs with $p,r\le2$ in
-the experiments (\S\ref{sec:hetero}). It shows what the wavefield basis is for: it must carry what the
+the experiments (\S\ref{sec:hetero}). Splitting that term confirms whose error it is: the part in which
+both scatterings lie in one voxel carries the error, and the part between voxels at most $0.2\%$ of it. It shows what the wavefield basis is for: it must carry what the
 medium imprints on the field, not only the wave, which at these frequencies varies little across a
 cell. (4) \emph{The two bases must be matched, and the error is known in advance.} The relative
 projection error is a property of the medium and the grid alone, so the error of a calculation is known
@@ -354,8 +354,8 @@ continuous layer as $n\to\infty$ at fixed $D$.
 \centering
 \includegraphics[width=\linewidth]{../figures/fig_lattice.pdf}
 \caption{The lattice and its sums. (a) Plan view of one plane of voxels: their centres form a square
-lattice of pitch $d$, and a lattice vector $\mathbf R=d\,(0,p,q)$ joins the centre of one voxel (red)
-to another. (b) Cross-section ($z$ down), between planes: the voxel of a receiver plane (red) is coupled
+lattice of pitch $d$, and a lattice vector $\mathbf R=d\,(0,p,q)$ joins the centre of one voxel (shaded darker)
+to another. (b) Cross-section ($z$ down), between planes: the voxel of a receiver plane (shaded darker) is coupled
 to every voxel of a source plane $m$ planes above it, one for each lattice vector $\mathbf R$; the sum
 over $\mathbf R$ is the specular lattice sum of Eq.~\eqref{eq:specsum}. (c) Within a plane: the sum
 over every cell of the plane, the receiver's own cell (outlined) included, is the field of a uniform
@@ -1023,6 +1023,39 @@ SH at $20^\circ$ and $40^\circ$: $R_{SH}$ & $2.00$ & $4.00$ \\
 The orders, and with $k=k_S$ the closed-form constants of
 Eqs.~\eqref{eq:errorR} and \eqref{eq:ratio}, are those of the incident P wave.
 
+\paragraph{Degree two at oblique incidence} In three dimensions the voxel of degree $2$ carries, on each
+of the nine components of its state, the ten Legendre products of total degree at most two in
+$(z,x,y)$. In the construction of Eq.~\eqref{eq:bloch} it converges at sixth order against the exact
+layer for incident P, SV and SH waves (Table~\ref{tab:deg2}; \path{scripts/measure_oblique_degree.py}).
+The test is run at $\omega=3000$\,rad\,s$^{-1}$ ($k_PD=1.2$, $k_SD=2$), ten times the frequency of the
+other tables, because at $300$\,rad\,s$^{-1}$ a sixth-order error on these grids lies below the round-off
+of double precision. The exact reflection coefficient is that of Kennett's recursion, an independent
+algorithm, and the same computation with the bases of degree $0$ and $1$ returns orders $2$ and $4$ in
+all five cases. At normal incidence the error on four planes, $6.95\times10^{-9}$, is the
+$c_2(kd)^6=7.2\times10^{-9}$ of Eq.~\eqref{eq:cp} to $4\%$. Doubling the number of lattice orders retained
+in Eq.~\eqref{eq:bloch} changes the errors by less than $1\%$. Unlike the degrees $0$ and $1$, this degree
+is implemented once at oblique incidence; its check is the exact solution.
+\begin{table}[htbp]
+\centering
+\caption{The voxel of degree $2$ (ten Legendre products per state component) at
+$\omega=3000$\,rad\,s$^{-1}$: relative error of the same-type reflection coefficient against the exact
+layer on $n$ planes, and the order over the last halving, with the orders of the degrees $0$ and $1$ from
+the same computation.}\label{tab:deg2}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{error, $p=2$} & order & orders \\
+incident wave & $n=1$ & $n=2$ & $n=4$ & $p=2$ & $p=0$ / $p=1$ \\
+\midrule
+P, normal: $R_{PP}$ & $3.4\times10^{-5}$ & $4.6\times10^{-7}$ & $7.0\times10^{-9}$ & $6.05$ & $2.04$ / $4.05$ \\
+P at $20^\circ$: $R_{PP}$ & $7.3\times10^{-6}$ & $1.0\times10^{-7}$ & $1.5\times10^{-9}$ & $6.04$ & $2.04$ / $4.06$ \\
+SV at $20^\circ$: $R_{SS}$ & $2.2\times10^{-4}$ & $2.3\times10^{-6}$ & $3.4\times10^{-8}$ & $6.11$ & $2.10$ / $4.14$ \\
+SH at $20^\circ$: $R_{SH}$ & $2.3\times10^{-4}$ & $2.5\times10^{-6}$ & $3.6\times10^{-8}$ & $6.11$ & $2.10$ / $4.14$ \\
+SH at $40^\circ$: $R_{SH}$ & $3.0\times10^{-4}$ & $3.6\times10^{-6}$ & $5.2\times10^{-8}$ & $6.09$ & $2.12$ / $4.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 The spectral construction is implemented twice. The second implementation
 (\path{scripts/crosscheck_first_moment_voxel.py}) shares only the definition of the scheme: it takes
 the depth dependence of the transformed kernel from an independent residue construction, obtains
@@ -1187,8 +1220,12 @@ $1-\lVert\Pi_qf\rVert^2/\lVert f\rVert^2=\mathcal{E}_q$. Because the kernel is l
 second scattering takes place in the cell of the first: $T_2$ is the second-order term of the
 single-site $T$-matrix, and Eq.~\eqref{eq:defectlaw} is a statement about the single site. The
 $T$-matrix sums the rescattering within a cell exactly for the cell as it is represented, a contrast
-$\Pi_rf$ and a field of degree $p$; its error is that the cell is not the medium. The coupling between
-cells contributes only the departure from the limit. Measured, the ratio of the two sides of
+$\Pi_rf$ and a field of degree $p$; its error is that the cell is not the medium. The split is measured directly
+(\path{scripts/measure_layer_bases.py}): at $\omega=300$\,rad\,s$^{-1}$ on $4$, $8$ and $16$ cells, $T_2$
+of the scheme and of the exact layer are each divided into the part whose two scatterings lie in one cell
+and the part between different cells. For all nine pairs the error of the same-cell part is $0.998$ to
+$1.013$ times $\lvert T_2\rvert\,\mathcal{E}_{\min(p,r)}$, and that of the part between cells at most
+$0.002$ times it. The coupling between cells contributes only the departure from the limit. Measured, the ratio of the two sides of
 Eq.~\eqref{eq:defectlaw} for $p=r=1$ on $8$ cells departs from one by $1.7\times10^{-2}$,
 $4.3\times10^{-3}$, $4.8\times10^{-4}$ and $4\times10^{-5}$ at $kD=0.24$, $0.12$, $0.04$ and $0.012$: as
 $(kD)^2$ (\path{scripts/measure_layer_bases.py}). The pairing in Eq.~\eqref{eq:defectproof} is verified
@@ -1334,9 +1371,10 @@ least squares (\path{scripts/plot_convergence_orders.py}).
 \includegraphics[width=\linewidth]{../figures/fig_convergence.pdf}
 \caption{Convergence of every test, with least-squares regression lines. Each line fits
 $\log e=c-p\log n$ to the filled points; open points are pre-asymptotic and are not fitted. The legend
-gives the order $p$ and its standard error. Colour marks the scheme: collocation (\S\ref{sec:single}),
-the mean-only voxel and the voxels carrying Legendre moments to degree $p=1$, $2$ and $3$
-(Eqs.~\eqref{eq:galerkin} and \eqref{eq:bloch}). (a)~The uniform layer, P reflection at normal
+gives the order $p$ and its standard error. The marker, and in colour the hue, marks the scheme, so
+that the figure reads in grey scale: collocation (circles; \S\ref{sec:single}),
+the mean-only voxel (squares) and the voxels carrying Legendre moments to degree $p=1$ (diamonds), $2$
+(triangles) and $3$ (pentagons) (Eqs.~\eqref{eq:galerkin} and \eqref{eq:bloch}). (a)~The uniform layer, P reflection at normal
 incidence ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}), fitted from
 $n=4$; the collocation line is dashed and lies on the mean-only line, from which its constant differs
 only by the factor $3/2$ of Table~\ref{tab:ratio}; the second- and third-moment voxels, computed in 40-digit arithmetic, fitted from $n=2$. (b)~The uniform layer at $20^\circ$, fitted from
@@ -1365,12 +1403,31 @@ falling faster than the mean-only lines, crossing below them by 16 voxels; and a
 2 for the cell-mean collocation voxel, close to the mean-only line.\par}
 \end{figure}
 
+\paragraph{What each basis is for} A voxel holds two functions, and the results give each basis its
+part. The basis of the wavefield sets how well the voxel carries the field across itself: in a uniform
+medium the scheme converges at order $2p+2$ with the constant $c_p$ of Eq.~\eqref{eq:cp}, for P and S
+waves and at normal and oblique incidence alike. The basis of the medium sets how well the voxel
+\emph{is} the medium: with degree $r$ the order is capped at $2r+2$ (Eq.~\eqref{eq:graded}). Neither can
+make up for the other, and the second-order term shows why. The field scattered once is a copy of the
+medium's profile, so the wavefield basis must carry the profile as well as the wave, and the error of
+that term is the relative projection error of the profile at the lower of the two degrees
+(Eq.~\eqref{eq:defectlaw}). At the frequencies of interest the wave varies little across a cell and the
+medium may vary much, so it is the medium, not the wavelength, that decides the degree and the size of
+the cells. Two cases bracket the choice. Where the medium is piecewise constant on the cells, as in a
+layered model with voxel faces on its interfaces, a constant is exact for the medium, the projection
+error vanishes, and the degree of the field is spent entirely on the wave. Where the medium varies
+smoothly within the cells, the two degrees should be equal: a higher degree for the contrast than for
+the field is wasted, and a higher degree for the field improves only the Born term.
+
 \paragraph{Where the error of a voxel scheme lives} The results separate the two approximations
 a voxel scheme makes. The \emph{coupling} between voxels makes none: averaged over the source cell it
 is the continuum's cell integral exactly, between planes by the form factor's zeros and within a
 plane by the tiling identity, and the self term it omits is exactly the one the single site
-carries. Every error therefore comes from the \emph{single site}, from the internal field it
-assumes. For a uniform field that error is the midpoint rule's, known in closed form; for a linear
+carries. Every error therefore comes from the \emph{single site}: from the internal field it
+assumes and, where the medium varies within the cell, from the medium it is given. Its $T$-matrix sums
+the rescattering within the voxel exactly, but for the voxel as represented, and the split of the
+second-order term in \S\ref{sec:hetero} measures the consequence: the error sits in the part whose two
+scatterings lie in one cell, and the part between cells carries at most $0.2\%$ of it. For a uniform field that error is the midpoint rule's, known in closed form; for a linear
 field it is the next term of the same expansion. The converse is the practical warning. A kernel that
 is not the cell integral (the point Green's tensor, or a cell average that does not match the
 single site's closure) leaves a local term that does not vanish as the voxels shrink
@@ -1443,10 +1500,10 @@ the comparison is if anything conservative).
 The stratified model of \S\ref{sec:hetero} measures it directly: $347$ planes of uniform-field voxels
 against $8$ first-moment voxels for the same accuracy. Higher moments continue the trend in one
 dimension: by Eq.~\eqref{eq:cp} the second-moment voxel reaches $\varepsilon=10^{-6}$ at $kd=0.68$ and
-the third-moment voxel at $kd=1.5$, where a voxel is already a quarter of a wavelength. A
-three-dimensional voxel of degree $p$ has not been built; with the Legendre polynomials of total degree
-at most $p$ it would carry $10$ ($p=2$) or $20$ ($p=3$) weights per state component, against $4$ for the
-first-moment voxel. The gain is largest precisely where it matters: when the model varies on scales that are coarse
+the third-moment voxel at $kd=1.5$, where a voxel is already a quarter of a wavelength. In three dimensions, with the Legendre products of total degree at most $p$, a voxel carries $10$
+($p=2$) or $20$ ($p=3$) weights per state component, against $4$ for the first-moment voxel. The voxel
+of degree $2$ converges at sixth order in the layer at oblique incidence (Table~\ref{tab:deg2}); that of
+degree $3$ has not been built in three dimensions. The gain is largest precisely where it matters: when the model varies on scales that are coarse
 compared with the accuracy the wavefield must have.
 
 \paragraph{Limitations and outlook} The results concern laterally uniform media, a homogeneous layer
@@ -1475,31 +1532,42 @@ whether a tiling identity holds for it is the natural next question.
 
 \section{Conclusions}\label{sec:summary}
 
-A lattice of cubic voxels reproduces a continuous elastic medium in a precise sense. Because cubes
-tile the plane, the source-cell-averaged coupling between voxels is the continuum's cell integral
-exactly, and at normal incidence the lattice kernel is available in closed form with no lattice sum.
-The single site is derived rather than assumed. The moments of the Green's tensor over the cube,
-taken as distributions, give a closed hierarchy whose first-gradient truncation is the
-uniform-strain closure. That closure is exact for a sphere in the static limit, and it departs from
-exact scattering by a sphere only by a real $(ka)^2$ term, with the radiation damping exact. For a
-cube it differs from the sphere only by a cubic anisotropy of the shear response.
-The collocation closure carries the same self term as the lattice kernel, which cancels, so the discrete
-system is a collocation of the continuum equation. It converges at second order, with a leading
-error that is a midpoint-rule error of the internal field, known in closed form for every
-discretisation, and opposite in sign in reflection and transmission. A voxel that also carries the
-first moment of its internal field converges at fourth order, at normal incidence (where the
-three-dimensional scheme reduces exactly to one dimension) and at oblique incidence, with a
-leading error, $-(kd)^4/720$, that no longer depends on the direction of observation. With Legendre
-moments to degree $p$ it converges at order $2p+2$ with the closed-form constant of Eq.~\eqref{eq:cp},
-and a single plane of such voxels reproduces the thin-layer series term by term through
-$O(D^{2p+2})$. Where the medium varies within a cell, a contrast sampled as constant caps every voxel
-at second order; with the contrast projected to degree $r$ the order is $\min(2p+2,2r+2)$, and the
-coupling needs nothing beyond the same kernel moments to degree $p+r$. The orders survive
-the interfaces of a randomly stratified model, provided voxel boundaries coincide with its interfaces, and there the
-first-moment voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field
-voxel needs about forty. A sphere whose contrast falls smoothly to zero at its surface converges at
-second order against its exact solution, as the layer predicts, to $0.018\%$ at $k_Sa=0.5$ with
-twenty-four voxels across; a sharp sphere's error is set by its staircase, which changes with the grid. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
+A voxel of a volume-integral scheme must represent the medium within it and the wavefield within it.
+This paper has determined what each basis must be and what error a given choice leaves, by an
+experiment in which nothing else is approximated: a layer of cubes is the layer itself, so its exact
+solution isolates the discretisation error.
+
+With the wavefield expanded to Legendre degree $p$ and the contrast of the medium to degree $r$ in each
+voxel, the scheme converges at order $\min(2p+2,2r+2)$. In a uniform layer the leading error is
+$c_p(kd)^{2p+2}$ with the closed-form constant of Eq.~\eqref{eq:cp}, and a single plane of such voxels
+reproduces the thin-layer series term by term through $O(D^{2p+2})$; the orders $2$, $4$ and $6$ of the
+degrees $0$, $1$ and $2$ hold for P, SV and SH waves at normal and oblique incidence. The first-moment
+voxel's leading error, $-(kd)^4/720$, does not depend on the direction of observation, whereas the
+collocation scheme's is opposite in sign in reflection and transmission, so that no scalar correction of
+the single site removes it. Where the medium varies within a cell, a contrast held constant caps every
+voxel at second order, the coupling for a contrast of degree $r$ needs nothing beyond the same kernel
+moments to degree $p+r$, and the error of the term of second order in the contrast is the relative
+projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit. That error is the
+single site's: its $T$-matrix sums the rescattering within a voxel exactly for the voxel as represented,
+and the represented voxel is not the medium. The two bases must therefore be matched. Where the medium
+is piecewise constant on the cells the projection error vanishes: the orders survive the interfaces of a
+randomly stratified model, provided voxel boundaries coincide with them, and there the first-moment
+voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field voxel
+needs about forty. A sphere whose contrast falls smoothly to zero at its surface converges at second
+order against its exact solution, as the layer predicts, to $0.018\%$ at $k_Sa=0.5$ with twenty-four
+voxels across; a sharp sphere's error is set by its staircase, which changes with the grid.
+
+Three properties of the cube make the experiment exact. Because cubes tile the plane, the
+source-cell-averaged coupling between voxels is the continuum's cell integral exactly, and at normal
+incidence the lattice kernel is available in closed form with no lattice sum. The single site is derived
+rather than assumed: the moments of the Green's tensor over the cube, taken as distributions, give a
+closed hierarchy whose first-gradient truncation is the uniform-strain closure. That closure is exact
+for a sphere in the static limit, it departs from exact scattering by a sphere only by a real $(ka)^2$
+term, with the radiation damping exact, and for a cube it differs from the sphere only by a cubic
+anisotropy of the shear response. And the collocation closure carries the same self term as the lattice
+kernel, which cancels, so the discrete system is a collocation of the continuum equation, whose
+second-order error is a midpoint-rule error of the internal field, known in closed form for every
+discretisation. The results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
 
 \begin{table}[htbp]
 \centering
@@ -1536,6 +1604,9 @@ Independent implementation of Eq.~\eqref{eq:bloch} & $1.1\times10^{-15}$, 40 cas
 Random stratified layer, \S\ref{sec:hetero} & orders $2$ and $4$, P and S, normal and $20^\circ$ \\
 Stratified reference against Kennett's recursion & $10^{-14}$ \\
 Contrast varying within a cell, Eq.~\eqref{eq:graded} & $8$ cases, linear and smooth profiles; closed forms tested one by one to $2\times10^{-16}$ \\
+Projection-error law, Eq.~\eqref{eq:defectlaw} & nine pairs $(p,r)$ to $1.3\%$; departure as $(kD)^2$; pairing symbolic, nine pairs \\
+The error of $T_2$ is the single site's & same-cell part $0.998$ to $1.013$ of the law; between cells $\le0.002$ \\
+Degree $2$ at oblique incidence, Table~\ref{tab:deg2} & order $6$, P, SV and SH, against Kennett's recursion \\
 Smoothly graded sphere, \S\ref{sec:sphere} & exact solution by two routes, $2\times10^{-11}$; orders $2.04$ and $1.99$, $n_{\mathrm{sub}}=6$ to $24$ \\
 \bottomrule
 \end{tabular}
@@ -1546,7 +1617,9 @@ something to be discovered by refining until the answer stops changing. Its orde
 constant are known before anything is computed: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
 transmission for the collocation voxel (Eq.~\eqref{eq:errorR}), $(kd)^2/12$, $(kd)^4/720$ and
 $(kd)^6/100800$ for the voxels of degree $0$, $1$ and $2$ (Eq.~\eqref{eq:cp}), and the order
-$\min(2p+2,2r+2)$ where the medium varies within a cell (Eq.~\eqref{eq:graded}). That is worth more than
+$\min(2p+2,2r+2)$ where the medium varies within a cell (Eq.~\eqref{eq:graded}), with the size of the
+error there given by the relative projection error of the medium (Eq.~\eqref{eq:defectlaw}), which is
+computed from the model and the grid alone. That is worth more than
 the order alone, for three reasons. First, the cell size and the degree of the voxel that a required
 accuracy needs follow from the wavenumber and the medium, before the computation and without a
 refinement study. Secondly, it turns a refinement study from a hope into a test. A scheme of this kind
