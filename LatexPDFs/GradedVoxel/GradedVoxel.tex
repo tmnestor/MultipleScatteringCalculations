@@ -52,10 +52,10 @@
 \newcommand{\dd}{\mathrm{d}}
 
 \title{\bfseries Graded Voxels in Three Dimensions\\[4pt]
-\large A Galerkin First-Moment Cube with a Contrast Linear in the Cell,\\
-Fourth Order in its Discretisation}
+\large Galerkin Cubes with a Polynomial Field and Contrast:\\
+the Source of their Error, its Cure, and Closed-Form Moment Integrals}
 \author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
-\date{29 September 2026}
+\date{1 October 2026}
 
 \begin{document}
 \maketitle
@@ -64,23 +64,26 @@ Fourth Order in its Discretisation}
 \noindent
 Voxel schemes represent a heterogeneous elastic medium as cells of constant properties, and in a smoothly
 varying medium that representation caps them at second order in the cell size whatever the cell carries.
-In one dimension a cell that carries the Legendre moments of its field to degree $p$ and a contrast
-expanded to degree $r$ converges at order $\min(2p+2,2r+2)$. We build the three-dimensional cell with
-$p=r=1$: a Galerkin cube carrying the mean and first moments of the nine-component state, displacement
-and an independent strain, with a contrast linear in the cell. The singular integrals of its coupling
-blocks are derived twice, by moving derivatives onto the cells' autocorrelation and by integrating by parts
-onto their polynomials, and agree to $10^{-10}$ for representative moment pairs; the blocks reproduce the
-Eshelby and biharmonic sum rules, the cube's Coulomb energy and an exact subdivision identity. On a sphere
-whose contrast falls smoothly to zero at its surface, against its exact solution, the discretisation
-converges at fourth order (apparent orders $4.01$ and $4.13$) where uniform-field voxels converge at
-second. At full contrast the error is $42$ to $66$ times below the collocation voxel at the same cell size.
-Solved with an FFT matrix-vector product to $16$ cells across, the full solve's apparent order rises to
-$3.80$ at both frequencies, approaching four from below. The slow approach does not depend on the
-frequency, nor on the smoothness of the contrast profile; it depends on how many cells span the graded
-shell, and with the shell widened from four to six cells the apparent order reaches $3.92$. The
-far-field extraction must treat the engineering shear stress of the source consistently with the
-coupling kernel; a factor of two there is invisible at Born order along a cell axis and appears as an
-error in the second-order term that no refinement removes.
+We build Galerkin cubes that carry polynomial moments of the nine-component state, displacement and an
+independent strain, with a contrast that is itself a polynomial in the cell: first the cube with a
+linear field and a linear contrast, then the one with both quadratic. On a sphere whose contrast falls
+smoothly to zero at its surface, against its exact solution, the linear cube's discretisation converges at
+fourth order (apparent orders $4.01$ and $4.13$) where uniform-field voxels converge at second, and at
+full contrast its error is $42$ to $66$ times below the collocation voxel at the same cell size. Its
+full-contrast order approaches four slowly, and we identify why. The error of the multiple-scattering term
+is static, and it equals, to within $6\%$ on every grid, profile and shell width tried, the defect of the
+$L^2$ projection of the contrast profile onto the cell's field functions: the once-scattered field has a
+local part proportional to the contrast, and the cell can hold only its projection. Raising the degree of
+the contrast alone gains $8\%$; raising the degree of the field as well removes the defect at that order.
+The quadratic cube is more accurate than the linear one by factors of $4.1$, $6.0$, $10.0$, $15.6$ and
+$20.8$ at $4$ to $12$ cells across, where the ratio of the two defects, computed from the profile alone,
+is $4.4$, $6.2$, $9.8$, $15.6$ and $20.6$; it reaches with $408$ cells the accuracy the linear cube
+reaches with $2{,}776$. The coupling blocks of the self cell and its neighbours are obtained in closed
+form: a power series in the wavenumber whose coefficients are universal numbers, each a finite sum of
+three elementary master integrals reduced from volume to faces to edges, derived here in full and checked
+against the cube's Coulomb energy, the solid angle of the octant, an exact subdivision identity and
+independent quadrature. The far-field extraction must treat the engineering shear stress of the source
+consistently with the coupling kernel; a factor of two there is invisible at Born order along a cell axis.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -94,11 +97,16 @@ voxel at second order, and that the rule for a cell whose field has Legendre deg
 contrast has degree $r$ is $\min(2p+2,2r+2)$. All of that is one-dimensional, or three-dimensional only
 for a laterally uniform layer, where the lateral moments are never excited.
 
-This paper builds the three-dimensional graded cell ($p=r=1$) and asks whether it keeps the fourth order
-on a body with genuine three-dimensional structure: a sphere whose contrast falls smoothly to zero at its
-surface, which has an exact solution and no staircase. The cell and its single-site $T$-matrix are
-described in \S\ref{sec:voxel} and \S\ref{sec:site}, the coupling between cells in
-\S\ref{sec:coupling}, and the sphere in \S\ref{sec:sphere}.
+This paper builds the three-dimensional graded cell and asks what it achieves on a body with genuine
+three-dimensional structure: a sphere whose contrast falls smoothly to zero at its surface, which has an
+exact solution and no staircase. It has three results. The cell with a linear field and a linear contrast
+($p=r=1$) keeps the fourth order of its discretisation. Its error at full contrast is traced to a single
+source, the defect of the projection of the contrast onto the cell's field functions, and that source is
+removed by the cell with a quadratic field and contrast ($p=r=2$), so that far fewer cells give the same
+accuracy. And the singular integrals on which both cells rest are obtained in closed form. The cell and
+its single-site $T$-matrix are described in \S\ref{sec:voxel} and \S\ref{sec:site}, the coupling between
+cells in \S\ref{sec:coupling}, the closed-form moments in \S\ref{sec:moments}, and the sphere in
+\S\ref{sec:sphere}.
 
 \section{The graded voxel}\label{sec:voxel}
 
@@ -147,6 +155,20 @@ and the discrete system is
 \end{equation}
 with $\bM_{ab}=\langle L_a,L_b\rangle\,\bI_9$ the Gram matrix,
 $\operatorname{diag}(8h^3,\,8h^3/3,\,8h^3/3,\,8h^3/3)$.
+
+\paragraph{Higher degree.} Nothing in the construction is particular to degree one. The ten polynomials
+\begin{equation}\label{eq:qbasis}
+  Q_a\in\bigl\{1,\ \xi_i,\ \tfrac12(3\xi_i^2-1),\ \xi_i\xi_j\ (i<j)\bigr\}
+\end{equation}
+are orthogonal on the cell, with $\langle Q_a,Q_a\rangle=h^3\,(8,\tfrac83,\tfrac85,\tfrac89)$ by kind, and
+their first four are the $L_a$. A contrast quadratic in the cell is the $L^2$ projection of the medium
+onto all ten ($r=2$); a field quadratic in the cell is expanded in all ten ($p=2$), $90$ weights per cell.
+The products $Q_aQ_b$ are expanded in monomials as in Eq.~\eqref{eq:linearisation}: $10$, $20$ or $35$
+of them for a source of degree two, three or four. The blocks \eqref{eq:block} are computed with test
+monomials and recombined into the $Q_a$, the first four rows and the first ten columns being those of the
+linear cell. The incident moments are $\langle Q_a,\mathrm{e}^{\mathrm{i}\mathbf{k}\cdot\mathbf{x}}\rangle
+=h^3\mathrm{e}^{\mathrm{i}\mathbf{k}\cdot\mathbf{x}_c}\prod_i2\,\mathrm{i}^{n_i}j_{n_i}(k_ih)$, with $n_i$
+the Legendre degree of $Q_a$ on axis $i$ and $j_n$ the spherical Bessel function.
 
 \section{The single site}\label{sec:site}
 
@@ -251,6 +273,8 @@ sum of the $64$ blocks between the two cells' half-size sub-cells, with the poly
 sub-cells, to $2\times10^{-15}$ for all $(a,c)$ at the self cell, its touching neighbours and beyond
 (\path{scripts/check_graded_voxel_subdivision.py}).
 
+The pieces are integrated here by quadrature; \S\ref{sec:moments} evaluates the same pieces in closed form.
+
 \paragraph{An independent construction.} Integration by parts can move the derivatives onto the cells'
 polynomials instead of onto $W$: one derivative onto each cell, each move either differentiating the
 polynomial or producing a face term, which leaves $1/r$ kernels over cell$\times$cell, face$\times$cell
@@ -258,6 +282,123 @@ and face$\times$face, all absolutely convergent. Built in Mathematica on its own
 this reproduces the sum rule and the Coulomb energy, and, as the source cell shrinks to a point, the
 distributional single average of the moment engine \citep{NestorContinuum2026}; all to $10^{-14}$ or
 better.
+
+\section{The moment integrals in closed form}\label{sec:moments}
+
+The blocks of the self cell and of its 26 neighbours need no quadrature. They are a power series in the
+wavenumber whose coefficients are pure numbers, each a finite sum of elementary master integrals. This
+section derives them from the definition \eqref{eq:block}; nothing is taken from elsewhere.
+
+\paragraph{The series in the wavenumber.} With $g_k=\mathrm{e}^{\mathrm{i}kr}/r=\sum_{t\ge0}(\mathrm{i}k)^t
+r^{t-1}/t!$, the Green's tensor is a sum over powers $r^m$, $m=t-1\ge-1$, of two families,
+\begin{equation}\label{eq:series}
+  \mathbf{G}_{ij}=\frac{1}{4\pi\mu}\sum_{m\ge-1}\Bigl[c_1(m)\,\delta_{ij}\,r^m+c_2(m)\,\partial_i\partial_j r^m\Bigr],
+  \qquad
+  c_1=\frac{(\mathrm{i}k_S)^{m+1}}{(m+1)!},\quad
+  c_2=\frac{\mathrm{i}^{m+1}\bigl(k_S^{m+1}-k_P^{m+1}\bigr)}{k_S^2\,(m+1)!}.
+\end{equation}
+The static (Kelvin) tensor is $c_1$ at $m=-1$ and $c_2$ at $m=1$, where $c_2=b_2$. The propagator $\bP$
+adds up to two derivatives to $\mathbf{G}$, so every entry of every block is a sum of the scalar moments
+\begin{equation}\label{eq:umoment}
+  \int_{V_m}\!\int_{V_n}L_a\,\partial^{\boldsymbol\iota}r^m\,m_c\,\dd^3x\,\dd^3x'
+  =h^{\,6+m-|\boldsymbol\iota|}\;U_{ac}(m,\boldsymbol\iota;\mathbf{o}),
+  \qquad |\boldsymbol\iota|\le4,
+\end{equation}
+with $\mathbf{o}=\mathbf{R}/2h$ the integer offset between the cells. The $U$ are numbers: they depend on
+neither the cell size, the frequency nor the medium. The medium enters a block only through $c_1$, $c_2$ and
+two fixed tables of $9\times9$ integer matrices, one for each family, that say which entry of $\bP$ takes
+which derivative $\partial^{\boldsymbol\iota}$. The series is that of the exponential and converges for
+every $k$; for touching cells its term $t$ is bounded by $(4\sqrt3\,k_Sh)^t/t!$.
+
+\paragraph{Even and odd powers.} For even $m$, $r^m$ is a polynomial and \eqref{eq:umoment} is an integral
+of polynomials over the pieces of $W$, exact by a Gauss rule of sufficient order. For odd $m$ the kernel is
+singular at $\mathbf{x}=\mathbf{x}'$, and for $m=\pm1$ with enough derivatives it is a distribution. Of the
+derivatives in $\boldsymbol\iota$,
+\begin{equation}\label{eq:moves}
+  k=\max\Bigl(0,\;|\boldsymbol\iota|-\min\bigl(m+1,\tfrac{m+3}{2}\bigr)\Bigr)\le2
+\end{equation}
+are moved onto $W$ as in \S\ref{sec:coupling}. What remains, $\partial^{\text{rest}}r^m$, is then at most
+$1/r$ singular, and it is a sum of monomials times odd powers of the distance no lower than $r^{-3}$, by
+\begin{equation}\label{eq:monomials}
+  \partial_i\bigl(t^{\boldsymbol\alpha}\,|t|^{n}\bigr)
+  =\alpha_i\,t^{\boldsymbol\alpha-\mathbf{e}_i}\,|t|^{n}+n\,t^{\boldsymbol\alpha+\mathbf{e}_i}\,|t|^{n-2}:
+\end{equation}
+$1/r$ for $m=-1$, and $\delta_{ij}/r-t_it_j/r^3$ for $m=1$.
+
+\paragraph{From a piece of $W$ to boxes at the singular point.} Let $\mathbf{t}=(\mathbf{R}+\mathbf{s})/h$
+be the separation in units of $h$, measured from the singular point. Each piece of the differentiated
+$W$ is a polynomial in $\mathbf{t}$ on a box whose corners have coordinates in $\{0,\pm2,\pm4\}$. On each
+axis an integral from $l$ to $u$ is the difference of two integrals from the origin, and an integral from
+the origin to a negative limit is, by $t\to-t$, $\pm$ one to a positive limit, the sign being the parity
+of the total power of $t$ on that axis. A piece is therefore a signed sum of integrals over boxes
+$[0,a]\times[0,b]\times[0,c]$ with one corner at the singular point and sides $2$ or $4$. A plane delta
+of $W''$ fixes one coordinate at $t_i=x_0\in\{0,\pm2,\pm4\}$ and leaves an integral over a rectangle at
+distance $|x_0|$ from the singular point. Three master integrals remain:
+\begin{align}
+  I[p,q,r;a,b,c;m]&=\int_0^a\!\!\int_0^b\!\!\int_0^c x^py^qz^r\,R^m\,\dd z\,\dd y\,\dd x,
+  &R^2&=x^2+y^2+z^2,\label{eq:boxI}\\
+  J[q,r;a;b,c;m]&=\int_0^b\!\!\int_0^c y^qz^r\,S^m\,\dd z\,\dd y,
+  &S^2&=a^2+y^2+z^2,\label{eq:faceJ}\\
+  L[r;A;c;m]&=\int_0^c z^r\,(A^2+z^2)^{m/2}\,\dd z,\label{eq:lineL}
+\end{align}
+with $m$ odd.
+
+\paragraph{Volume to faces.} The integrand of $I$ is homogeneous of degree $d=p+q+r+m$, so
+$\nabla\cdot(\mathbf{x}f)=(d+3)f$. The divergence theorem on the box, whose faces through the origin
+carry no flux, gives
+\begin{equation}\label{eq:euler}
+  (d+3)\,I[p,q,r;a,b,c;m]=a^{p+1}J[q,r;a;b,c;m]+b^{q+1}J[p,r;b;a,c;m]+c^{r+1}J[p,q;c;a,b;m].
+\end{equation}
+Convergence at the origin is $d>-3$, so the factor never vanishes.
+
+\paragraph{Faces to edges.} Integrating
+$\partial_y\bigl(y^{q-1}S^{m+2}\bigr)=(q-1)\,y^{q-2}S^{m+2}+(m+2)\,y^qS^m$ over the face,
+\begin{equation}\label{eq:facerec}
+  (m+2)\,J[q,r;m]=b^{q-1}L\bigl[r;\sqrt{a^2+b^2};c;m+2\bigr]-\delta_{q1}\,L[r;a;c;m+2]-(q-1)\,J[q-2,r;m+2],
+\end{equation}
+which lowers $q$ two at a time, and $r$ likewise, to $q,r\in\{0,1\}$; at $q=1$ the last term is absent and
+$J$ is a single edge term. For $q=r=0$, writing $S^m=S^{m-2}(a^2+y^2+z^2)$ and using the same identity for
+the two quadratic terms,
+\begin{equation}\label{eq:j00}
+  (m+2)\,J[0,0;m]=m\,a^2J[0,0;m-2]+b\,L\bigl[0;\sqrt{a^2+b^2};c;m\bigr]+c\,L\bigl[0;\sqrt{a^2+c^2};b;m\bigr],
+\end{equation}
+which climbs from the one transcendental base case
+\begin{equation}\label{eq:solidangle}
+  J[0,0;a;b,c;-3]=\frac1a\arctan\frac{bc}{a\sqrt{a^2+b^2+c^2}},
+\end{equation}
+$1/a$ times the solid angle the rectangle subtends at the origin. On a face through the singular point,
+$a=0$, the integrand is homogeneous in $(y,z)$ and the plane form of \eqref{eq:euler} gives
+$(q+r+m+2)\,J=b^{q+1}L[r;b;c;m]+c^{r+1}L[q;c;b;m]$.
+
+\paragraph{Edges.} Integrating $\partial_z\bigl(z^{r-1}(A^2+z^2)^{(m+2)/2}\bigr)$,
+\begin{equation}\label{eq:linerec}
+  (m+2)\,L[r;m]=c^{\,r-1}(A^2+c^2)^{(m+2)/2}-\delta_{r1}\,A^{m+2}-(r-1)\,L[r-2;m+2],
+\end{equation}
+and for $r=0$, from $\partial_z\bigl(z\,(A^2+z^2)^{m/2}\bigr)$,
+\begin{equation}\label{eq:line0}
+  (m+1)\,L[0;m]=c\,(A^2+c^2)^{m/2}+m\,A^2L[0;m-2],\qquad
+  L[0;-1]=\operatorname{arsinh}\frac cA,\quad L[0;-3]=\frac{c}{A^2\sqrt{A^2+c^2}}.
+\end{equation}
+For $A=0$, $L[r;m]=c^{\,r+m+1}/(r+m+1)$. Every moment is thus a rational combination of square roots of
+integers, one inverse hyperbolic sine and one arctangent per box; the divisors are small odd integers, and
+the recursions are evaluated at forty digits.
+
+\paragraph{Checks.} Expanding $\prod_i(2-s_i)$ on the octant, the cube's Coulomb self-energy
+\eqref{eq:coulomb} at $h=1$ is
+$8\sum_{p,q,r\in\{0,1\}}2^{\,3-p-q-r}(-1)^{p+q+r}\,I[p,q,r;2,2,2;-1]$; the master integrals reproduce its
+closed form to 25 digits. The flux of
+$\mathbf{x}/r^3$ through the three far faces of any box is the octant's solid angle, and
+$aJ[0,0;a;b,c;-3]+bJ[0,0;b;a,c;-3]+cJ[0,0;c;a,b;-3]=\pi/2$ holds to 25 digits for boxes of sides
+$(2,2,2)$, $(2,4,2)$ and $(4,2,4)$. Lines, faces and boxes agree with direct numerical integration to
+the accuracy of that integration, and with direct symbolic integration, one variable at a time, to 25
+digits wherever it terminates (18 of 21 cases tried). Assembled, every static term of the kernel agrees
+with the Duffy quadrature of \S\ref{sec:coupling} to $10^{-9}$ for all pairs $(a,c)$ at the self cell and
+at face, edge and corner neighbours, and the complete blocks, static and dynamic, agree with the
+quadrature blocks to $10^{-10}$ at $k_Sh=0.0625$ and $0.5$ for the linear field and at $k_Sh=0.25$ for the
+quadratic field of \S\ref{sec:voxel} (\path{cubic_scattering/graded_voxel/moments.py},
+\path{blocks.near_block_series}). For cells that do not touch the kernel is smooth and the Gauss rule of
+\S\ref{sec:coupling} is used; the same closed forms apply there with longer boxes, and have not been
+tabulated.
 
 \section{The smoothly graded sphere}\label{sec:sphere}
 
@@ -400,7 +541,47 @@ the same subdivision identity) and the field still linear, the full-contrast err
 only from $5.47\times10^{-4}$, $6.28\times10^{-5}$ and $1.46\times10^{-5}$ to $5.03\times10^{-4}$,
 $5.86\times10^{-5}$ and $1.35\times10^{-5}$ at $n=4$, $8$ and $12$: by $8\%$, where the defect of a
 quadratic projection is $10$ and $21$ times below $D_1$ at $n=8$ and $12$. A field quadratic in the cell
-is what the argument calls for; it has not been built.
+is what the argument calls for.
+
+\paragraph{The cure: a field quadratic in the cell.} With field and contrast both quadratic ($p=r=2$,
+\S\ref{sec:voxel}) the defect becomes $D_2$, that of the projection $\Pi_2$ onto the ten polynomials of
+Eq.~\eqref{eq:qbasis}, and the argument predicts that the full-contrast error falls by $D_1/D_2$. It does
+(Table~\ref{tab:quadratic}): the measured gain over the linear cell is $4.1$, $6.0$, $10.0$, $15.6$ and
+$20.8$ from $n=4$ to $12$, and $D_1/D_2$, computed from the profile alone, is $4.4$, $6.2$, $9.8$, $15.6$
+and $20.6$. The apparent order of the quadratic cell rises through $3.91$, $5.08$ and $5.57$ and is
+$5.22$ on the last pair; $D_2$ itself has apparent orders $3.73$, $5.10$, $5.62$ and $5.19$ on the same
+pairs, so the dip is the defect's own and not a new source of error. A defect quadratic in a projection
+error of third order is of sixth order, and the cell is approaching it. At $n=12$ the error, $7.0\times
+10^{-7}$, is within an order of magnitude of the accuracy to which the comparison itself has been
+verified (the Born term's error stops falling near $10^{-7}$ at low frequency), so finer grids would need
+a sharper reference.
+
+\begin{table}[ht]
+\centering\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}rrrccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{unknowns} & \multicolumn{2}{c}{error} & & & \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+$n$ & $p=r=1$ & $p=r=2$ & $p=r=1$ & $p=r=2$ & gain & $D_1/D_2$ & order ($p=r=2$) \\
+\midrule
+4 & $2{,}304$ & $5{,}760$ & $5.47\times10^{-4}$ & $1.33\times10^{-4}$ & 4.1 & 4.4 & \\
+6 & $7{,}488$ & $18{,}720$ & $1.65\times10^{-4}$ & $2.72\times10^{-5}$ & 6.0 & 6.2 & 3.91 \\
+8 & $14{,}688$ & $36{,}720$ & $6.28\times10^{-5}$ & $6.30\times10^{-6}$ & 10.0 & 9.8 & 5.08 \\
+10 & $27{,}648$ & $69{,}120$ & $2.85\times10^{-5}$ & $1.82\times10^{-6}$ & 15.6 & 15.6 & 5.57 \\
+12 & $46{,}080$ & $115{,}200$ & $1.46\times10^{-5}$ & $7.02\times10^{-7}$ & 20.8 & 20.6 & 5.22 \\
+\bottomrule
+\end{tabular}
+\caption{Full contrast, $k_Sa=0.5$: the cell with a linear field and contrast against the cell with both
+quadratic. The gain is the ratio of the two errors; $D_1/D_2$ is the ratio of the projection defects of
+the profile, Eq.~\eqref{eq:defect} with $\Pi_1$ and with $\Pi_2$.}\label{tab:quadratic}
+\end{table}
+
+\paragraph{Fewer cells.} A more accurate cell is worth having because fewer are needed. The linear cell
+reaches $4.9\times10^{-6}$ at $n=16$ with $2{,}776$ cells and $99{,}936$ unknowns; the quadratic cell
+reaches $6.3\times10^{-6}$ at $n=8$ with $408$ cells and $36{,}720$ unknowns, and $1.8\times10^{-6}$ at
+$n=10$ with $768$ cells and $69{,}120$. The number of coupling blocks, and of offsets between cells, falls
+with the number of cells; the work per block rises with the size of the cell's basis.
 
 \begin{table}[ht]
 \centering\small
@@ -479,11 +660,20 @@ block computed exactly, the uniform-field Galerkin voxel is comparable to the co
 order, and the graded Galerkin voxel is far better. The double average is the route to fourth order when
 the coupling is exact.
 
-\paragraph{Cost.} The graded cell has 36 unknowns against 9. On the sphere at full contrast it reaches
-$7.6\times10^{-5}$ with $14{,}688$ unknowns; the collocation voxel reaches only $4.2\times10^{-4}$ with
-$64{,}872$, and would need more to reach $7.6\times10^{-5}$; at $n=16$ the graded voxel reaches
-$5.9\times10^{-6}$ with $99{,}936$. The blocks between non-touching cells cost a three-dimensional Gauss rule over the
-eight pieces of the autocorrelation; the self block and its 26 neighbours are computed once per cell size.
+\paragraph{Cost.} The linear cell has 36 unknowns against 9, the quadratic cell 90. On the sphere at full
+contrast the linear cell reaches $7.6\times10^{-5}$ with $14{,}688$ unknowns at $k_Sa=1$; the collocation
+voxel reaches only $4.2\times10^{-4}$ with $64{,}872$. The quadratic cell reaches $6.3\times10^{-6}$ with
+$36{,}720$ unknowns where the linear cell needs $99{,}936$ for $4.9\times10^{-6}$. With an FFT
+matrix-vector product the quadratic cell's kernel has $90\times315$ entries per offset against
+$36\times90$, and at $n=12$ the solve takes $587$\,s and $6.8$\,GB on a workstation. The blocks of the
+self cell and its neighbours are universal constants times powers of $h$ and $k$ (\S\ref{sec:moments})
+and are computed once; the blocks between cells that do not touch cost a three-dimensional Gauss rule
+over the eight pieces of the autocorrelation.
+
+\paragraph{The representation of the medium.} The order of a cell is set by how well it represents the
+medium, twice over: the contrast must be represented, and the field must be able to carry the variation
+that the contrast imprints on it. A contrast of higher degree than the field is wasted; the measured gain
+from it is $8\%$.
 
 \section{Conclusions}\label{sec:summary}
 
@@ -491,10 +681,15 @@ A Galerkin cube that carries the mean and first moments of displacement and an i
 contrast linear in the cell, converges at fourth order in its discretisation (at Born order) on a
 three-dimensional body with an exact solution, where cells of constant properties converge at second. At
 full contrast it is between one and two orders of magnitude more accurate than a uniform-field voxel at
-the same cell size. Taken by an FFT solve to $16$ cells across, the full solve's apparent order rises to
-$3.80$, and to $3.92$ when six cells rather than four span the graded shell: it approaches fourth order at
-a rate set by the resolution of the contrast profile, not by the frequency or the profile's smoothness. The singular integrals of its coupling blocks follow from two
-independent constructions that agree to $10^{-10}$ for representative moment pairs. The far field of such a scheme must take the source's
+the same cell size, and its error there has one identified source: the multiple-scattering term loses the
+defect of the $L^2$ projection of the contrast onto the cell's field functions, a static quantity that
+predicts the error to within $6\%$ and that explains the slow approach of the apparent order to four. A
+cube whose field and contrast are both quadratic removes the defect at that order. Its measured gain over
+the linear cube, $4.1$ to $20.8$ between $4$ and $12$ cells across, is the ratio of the two defects, and
+it reaches a given accuracy with several times fewer cells. A quadratic contrast alone does not.
+The singular integrals of the coupling blocks are available in closed form, as a power series in the
+wavenumber with universal coefficients built from three elementary master integrals; they agree with the
+quadrature construction of the same blocks to $10^{-10}$. The far field of such a scheme must take the source's
 engineering shear stress as the coupling kernel does; the Born limit along a cell axis cannot reveal a
 mismatch there.
 
