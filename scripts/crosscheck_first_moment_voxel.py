@@ -54,14 +54,26 @@ VOIGT = (
     (0, 1),
 )  # (z, x, y) pairs: e_zz e_xx e_yy 2e_xy 2e_zy 2e_zx
 ENG = (1, 1, 1, 2, 2, 2)
-BASIS = {1: (0, 0, 0), 2: (1, 0, 0), 3: (0, 1, 0), 4: (0, 0, 1)}  # Legendre degrees in (z, x, y)
+# Legendre degrees in (z, x, y): the mean, the three first moments, the six of total degree two
+BASIS = {
+    1: (0, 0, 0),
+    2: (1, 0, 0),
+    3: (0, 1, 0),
+    4: (0, 0, 1),
+    5: (2, 0, 0),
+    6: (0, 2, 0),
+    7: (0, 0, 2),
+    8: (1, 1, 0),
+    9: (1, 0, 1),
+    10: (0, 1, 1),
+}
 N_GAUSS = 16
 T_START = time.perf_counter()
 
 
 def phi(deg: int, s: np.ndarray, h: float) -> np.ndarray:
-    """Legendre P0 or P1 on [-h, h]."""
-    return np.ones_like(s) if deg == 0 else s / h
+    """The Legendre polynomial of degree deg on [-h, h]."""
+    return np.polynomial.legendre.Legendre.basis(deg)(np.asarray(s) / h)
 
 
 def gauss(a: float, b: float, n: int) -> tuple[np.ndarray, np.ndarray]:
@@ -132,6 +144,7 @@ class Scheme:
         self.h = self.d / 2
         self.zs = (np.arange(n) + 0.5) * self.d
         self.bas = [BASIS[b] for b in basis]
+        self.zdeg = sorted({b[0] for b in self.bas})  # the degrees in depth that the basis uses
         # one contrast for the layer, or one per plane (a stratified model: list of (dl, dm, dr))
         planes = (
             contrast
@@ -166,12 +179,12 @@ class Scheme:
         s, w = gauss(-self.h, self.h, N_GAUSS)
         out = {}
         for iy, ky in enumerate(self.kys):
-            acc = {(a, b): 0.0 for a in (0, 1) for b in (0, 1)}
+            acc = {(a, b): 0.0 for a in self.zdeg for b in self.zdeg}
             for i in range(N_GAUSS):
                 for j in range(N_GAUSS):
                     k = self.kern(ky, m * self.d + s[i] - s[j])
-                    for a in (0, 1):
-                        for b in (0, 1):
+                    for a in self.zdeg:
+                        for b in self.zdeg:
                             acc[(a, b)] = (
                                 acc[(a, b)] + w[i] * w[j] * phi(a, s[i], self.h) * phi(b, s[j], self.h) * k
                             )
@@ -198,14 +211,14 @@ class Scheme:
             t, w = gauss(-h, h - uu, 4)
             return float(np.sum(w * phi(a, t, h) * phi(b, t + uu, h)))
 
-        gram = {(0, 0): 2 * h, (1, 1): 2 * h / 3, (0, 1): 0.0, (1, 0): 0.0}
+        gram = {(a, b): 2 * h / (2 * a + 1) if a == b else 0.0 for a in self.zdeg for b in self.zdeg}
         out = {}
         for iy, ky in enumerate(self.kys):
-            acc = {(a, b): 0.0 for a in (0, 1) for b in (0, 1)}
+            acc = {(a, b): 0.0 for a in self.zdeg for b in self.zdeg}
             for q in range(len(u)):
                 kp, km = self.kern(ky, u[q]), self.kern(ky, -u[q])
-                for a in (0, 1):
-                    for b in (0, 1):
+                for a in self.zdeg:
+                    for b in self.zdeg:
                         acc[(a, b)] = acc[(a, b)] + wu[q] * (
                             pplus(a, b, u[q]) * kp + pminus(a, b, u[q]) * km
                         )
@@ -245,9 +258,7 @@ class Scheme:
                             cache[key] = self.coupling(ztab[m], a, b)
                         blk = -cache[key] @ self.dds[j]
                         if i == j and ai == bi:
-                            blk = blk + self.d**3 * np.prod(
-                                [1.0 if q == 0 else 1.0 / 3.0 for q in a]
-                            ) * np.eye(9)
+                            blk = blk + self.d**3 * np.prod([1.0 / (2 * q + 1) for q in a]) * np.eye(9)
                         r0, c0 = 9 * (nb * i + ai), 9 * (nb * j + bi)
                         big[r0 : r0 + 9, c0 : c0 + 9] = blk
         # incident plane wave, unit displacement: P along k; SV in the (z, x) plane, normal to k; SH along y
@@ -292,7 +303,7 @@ class Scheme:
             return tot
 
         # split upgoing P and S: U(z) = A_P e^{-i gP z} + A_S e^{-i gS z}, two depths
-        gp = np.sqrt((self.om / self.ref.alpha) ** 2 - self.kx**2)
+        gp = np.sqrt(complex((self.om / self.ref.alpha) ** 2 - self.kx**2))  # evanescent past critical
         gs = np.sqrt((self.om / self.ref.beta) ** 2 - self.kx**2)
         # the two depths a quarter beat apart: P and S differ in vertical wavenumber by only gs - gp, so
         # closely spaced depths make the 2x2 split nearly singular

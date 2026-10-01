@@ -157,6 +157,19 @@ def exact_graded(omega: float, name: str, contrast=CONTRAST) -> np.ndarray:
 # ---------------------------------------------------------------- the scheme, without linearisation
 def graded_scattered(omega: float, n: int, p: int, r: int, profile) -> np.ndarray:
     """Field degree p, contrast projected to degree r per cell, the product never re-expanded."""
+    mass, k_self, k_off, rhs, readout = graded_system(omega, n, p, r, profile)
+    return readout @ np.linalg.solve(mass - k_self - k_off, rhs)
+
+
+def graded_system(
+    omega: float, n: int, p: int, r: int, profile
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """The scheme's system in parts: (mass, k_self, k_off, rhs, readout).
+
+    The unknowns x solve (mass - k_self - k_off) x = rhs and the scattered u at the two observers is
+    readout @ x.  k_self holds the blocks that couple a cell to itself (the local term included), k_off
+    those between different cells; both carry the contrast.
+    """
     d_lam, d_mu, d_rho = CONTRAST
     k = omega / ALPHA
     h = D_LAYER / (2 * n)
@@ -177,13 +190,15 @@ def graded_scattered(omega: float, n: int, p: int, r: int, profile) -> np.ndarra
         return sum(coef[j, c] * leg(c, loc / h) for c in range(r + 1))
 
     size = 2 * nb * n
-    mat = np.zeros((size, size), dtype=complex)
+    mass = np.zeros((size, size), dtype=complex)
+    k_self = np.zeros((size, size), dtype=complex)
+    k_off = np.zeros((size, size), dtype=complex)
     rhs = np.zeros(size, dtype=complex)
     for i in range(n):
         zi = centres[i] + s
         for a in range(nb):
             row = 2 * (nb * i + a)
-            mat[row : row + 2, row : row + 2] += (2 * h / (2 * a + 1)) * np.eye(2)
+            mass[row : row + 2, row : row + 2] += (2 * h / (2 * a + 1)) * np.eye(2)
             w0 = np.array([[g_inc(k, z), 1j * k * g_inc(k, z)] for z in zi])
             rhs[row : row + 2] = np.einsum("n,n,ni->i", phi[a], ws, w0)
         for j in range(n):
@@ -197,22 +212,20 @@ def graded_scattered(omega: float, n: int, p: int, r: int, profile) -> np.ndarra
                 fj = f_r(j, s)
                 full = np.einsum("an,n,bm,m,m,nmij->abij", phi, ws, phi, ws, fj, kk)
                 blocks = [[full[a, b] for b in range(nb)] for a in range(nb)]
+            target = k_self if i == j else k_off
             for a in range(nb):
                 for b in range(nb):
                     rr, cc = 2 * (nb * i + a), 2 * (nb * j + b)
-                    mat[rr : rr + 2, cc : cc + 2] -= blocks[a][b] @ dq
-    sol = np.linalg.solve(mat, rhs)
-    out = []
-    for zo in (Z_OBS_R, Z_OBS_T):
-        total = 0j
+                    target[rr : rr + 2, cc : cc + 2] += blocks[a][b] @ dq
+    readout = np.zeros((2, size), dtype=complex)
+    for o, zo in enumerate((Z_OBS_R, Z_OBS_T)):
         for j in range(n):
             kz = kernel(k, zo - (centres[j] + s))
             fj = f_r(j, s)
             for b in range(nb):
                 col = 2 * (nb * j + b)
-                total += (np.einsum("n,n,n,nij->ij", phi[b], ws, fj, kz) @ dq @ sol[col : col + 2])[0]
-        out.append(total)
-    return np.array(out)
+                readout[o, col : col + 2] = (np.einsum("n,n,n,nij->ij", phi[b], ws, fj, kz) @ dq)[0]
+    return mass, k_self, k_off, rhs, readout
 
 
 def main() -> int:
