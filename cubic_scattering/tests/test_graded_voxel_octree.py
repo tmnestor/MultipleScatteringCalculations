@@ -221,3 +221,45 @@ def test_adapt_leaves_refines_where_the_profile_varies_and_drops_empty_leaves():
     # a uniform profile needs no refinement
     c0, h0 = adapt_leaves(lambda pos: np.ones(pos.shape[:-1]), centres, hs, p=0, tol=1e-6, h_min=RADIUS / 8)
     assert len(c0) == len(centres) and np.all(h0 == hs)
+
+
+def test_one_degree_per_leaf_equals_the_single_degree():
+    centres, hs = uniform_leaves(RADIUS, 2)
+    one = solve_graded_octree(OMEGA, REF, CON, centres, hs, _profile, KHAT, KHAT, "P", p=1, r=0)
+    per = solve_graded_octree(
+        OMEGA,
+        REF,
+        CON,
+        centres,
+        hs,
+        _profile,
+        KHAT,
+        KHAT,
+        "P",
+        p=np.ones(len(hs), int),
+        r=np.zeros(len(hs), int),
+    )
+    np.testing.assert_allclose(per.psi, one.psi, rtol=1e-13, atol=1e-30)
+    ref = solve_graded_sphere(OMEGA, RADIUS, REF, CON, 2, _profile, KHAT, KHAT, "P", p=1, r=0)
+    assert np.linalg.norm(one.psi - ref.psi) / np.linalg.norm(ref.psi) < 1e-11
+
+
+def test_leaves_of_different_field_degree_share_one_system():
+    # constant contrast everywhere; a linear field in the large leaves, a constant field in the small ones
+    c2, h2 = uniform_leaves(RADIUS, 2)
+    cm, hm = refine_leaves(c2, h2, np.arange(len(c2)) % 2 == 1)
+    p_leaf = np.where(hm > hm.min(), 1, 0)
+    dirs = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [-0.6, 0.0, 0.8], [0.0, 0.0, -1.0]])
+
+    def field(p):
+        res = solve_graded_octree(OMEGA, REF, CON, cm, hm, _profile, KHAT, KHAT, "P", p=p, r=0)
+        up, us = octree_far_field(res, dirs, 1e9)
+        return res, up + us
+
+    mixed, f_mixed = field(p_leaf)
+    assert {len(x) for x in mixed.psi} == {4}  # stored on four functions; a constant leaf uses the first
+    assert all(np.all(x[1:] == 0) for x, pl in zip(mixed.psi, p_leaf, strict=True) if pl == 0)
+    _, f_const = field(0)
+    _, f_lin = field(1)
+    # raising the field degree in the large leaves moves the answer towards the all-linear one
+    assert np.abs(f_mixed - f_lin).max() < np.abs(f_const - f_lin).max()

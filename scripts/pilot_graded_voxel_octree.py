@@ -16,7 +16,11 @@ relative to the peak, at 5e8 radii).
 Run small first:
     conda run -n seismic python -u scripts/pilot_graded_voxel_octree.py --dry 0.5 0.75 1
     ... [--dry] <k_S a> <core_frac> <p> [--uniform=4,6,8] [--tol=1e-3,3e-4] [--hmin=0.625] [--summary=path]
+        [--field=F] [--ufield=F]
 --dry prints the trees and their defects without solving.
+--field=F gives the leaves of a tree that are larger than its smallest a field of degree F, the contrast
+staying at degree p everywhere: a large cell needs a richer basis for the wavefield, not for the medium.
+--ufield=F gives every cell of the uniform grids a field of degree F, again with contrast degree p.
 """
 
 import json
@@ -42,7 +46,7 @@ from measure_graded_voxel_resolution import exact_field, radial  # noqa: E402
 from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
 
 K_HAT = np.array([1.0, 0.0, 0.0])
-DENSE_LIMIT = 16000  # unknowns the dense octree solve is allowed
+DENSE_LIMIT = 20000  # unknowns the dense octree solve is allowed
 
 
 def main() -> int:
@@ -53,10 +57,11 @@ def main() -> int:
     uniform_ns = [int(v) for v in opts.get("uniform", "4,6,8").split(",")]
     tols = [float(v) for v in opts.get("tol", "1e-3,3e-4,1e-4").split(",")]
     h_min = float(opts.get("hmin", RADIUS / 16))
+    field = int(opts["field"]) if "field" in opts else None
+    ufield = int(opts["ufield"]) if "ufield" in opts else p
     omega = ka * REF.beta / RADIUS
     rf = 5e8 * RADIUS
     pts = obs_points(rf, THETA)
-    na = (1, 4, 10)[p]
 
     def prof_vec(pos: np.ndarray) -> np.ndarray:
         x = np.clip((RADIUS - np.linalg.norm(pos, axis=-1)) / (RADIUS - core), 0.0, 1.0)
@@ -67,7 +72,8 @@ def main() -> int:
 
     exact = None if dry else exact_field("s5", core, omega, 1.0, pts)
     peak = None if dry else float(np.abs(exact).max())
-    out: dict = {"ka_s": ka, "core_frac": core / RADIUS, "p": p, "uniform": [], "octree": []}
+    out: dict = {"ka_s": ka, "core_frac": core / RADIUS, "p": p, "field": field, "ufield": ufield}
+    out.update({"uniform": [], "octree": []})
     print(f"thin-shell sphere: k_S a = {ka}, core = {core / RADIUS} a, degree p = r = {p}", flush=True)
 
     def describe(centres: np.ndarray, hs: np.ndarray) -> tuple[int, float]:
@@ -77,12 +83,12 @@ def main() -> int:
     for n in uniform_ns:
         centres, hs = uniform_leaves(RADIUS, n)
         cells, d = describe(centres, hs)
-        row = {"n": n, "cells": cells, "unknowns": cells * na * 9, "defect": d}
+        row = {"n": n, "cells": cells, "unknowns": cells * (1, 4, 10)[ufield] * 9, "defect": d}
         if not dry:
             t0 = time.perf_counter()
-            if p >= 1:
+            if ufield >= 1:
                 res = solve_graded_sphere_fft(
-                    omega, RADIUS, REF, CONTRAST, n, prof, K_HAT, K_HAT, "P", p=p, r=p
+                    omega, RADIUS, REF, CONTRAST, n, prof, K_HAT, K_HAT, "P", p=ufield, r=p
                 )
                 up, us = graded_far_field(res, pts / rf, rf, K_HAT, K_HAT, "P")
             else:
@@ -103,7 +109,9 @@ def main() -> int:
         centres, hs = adapt_leaves(prof_vec, base_c, base_h, p, tol, h_min)
         cells, d = describe(centres, hs)
         sizes = {float(h): int((hs == h).sum()) for h in np.unique(hs)}
-        row = {"tol": tol, "cells": cells, "unknowns": cells * na * 9, "defect": d, "sizes": sizes}
+        p_leaf = np.full(len(hs), p) if field is None else np.where(hs > hs.min(), field, p)
+        unknowns = int(sum((1, 4, 10)[int(v)] * 9 for v in p_leaf))
+        row = {"tol": tol, "cells": cells, "unknowns": unknowns, "defect": d, "sizes": sizes}
         if not dry:
             if row["unknowns"] > DENSE_LIMIT:
                 print(
@@ -112,7 +120,9 @@ def main() -> int:
                 )
                 continue
             t0 = time.perf_counter()
-            ores = solve_graded_octree(omega, REF, CONTRAST, centres, hs, prof, K_HAT, K_HAT, "P", p=p, r=p)
+            ores = solve_graded_octree(
+                omega, REF, CONTRAST, centres, hs, prof, K_HAT, K_HAT, "P", p=p_leaf, r=p
+            )
             up, us = octree_far_field(ores, pts / rf, rf)
             row["error"] = float(np.abs(up + us - exact).max() / peak)
             row["seconds"] = time.perf_counter() - t0
