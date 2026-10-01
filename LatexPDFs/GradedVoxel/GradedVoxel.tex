@@ -190,6 +190,137 @@ about the centre and couples the two sets linearly: $0.325\,gh$ of the largest e
 along one axis, at $gh=0.05$, $0.1$ and $0.2$. An axis-aligned gradient leaves the symmetry of rotations by
 a quarter turn about its axis, which $\bT_{36}$ satisfies to $10^{-11}$.
 
+\paragraph{The inverse by symmetry.} The 36 unknowns carry the representation
+$\mathbf{D}(\mathbf{Q})=\mathbf{T}(\mathbf{Q})\otimes\mathbf{S}(\mathbf{Q})$ of the 48 symmetries
+$\mathbf{Q}$ of the cube, $\mathbf{T}$ acting on the functions $\{1,\xi_i\}$ and $\mathbf{S}$ on the nine
+components (\S\ref{sec:sphere}). The self block has the full symmetry of the cube, and with a contrast
+uniform in the cell so does $\mathbf{A}=\bM-\bK(0)\bE$: it commutes with every $\mathbf{D}(\mathbf{Q})$.
+By Schur's lemma $\mathbf{A}$ is then an $n\times n$ block, repeated $d$ times, on each irreducible
+representation of $O_h$ of dimension $d$ that occurs $n$ times, and the inverse in Eq.~\eqref{eq:t36} is
+the inverse of those blocks (Table~\ref{tab:irreps}). The uniform strain ($1\times\boldsymbol\varepsilon$)
+is $A_{1g}+E_g+T_{2g}$: dilatation, the two diagonal deviators and the three shears. The linear
+displacement ($\xi\times\mathbf{u}$) is $A_{1g}+E_g+T_{1g}+T_{2g}$: the same three, which are the strain
+of a linear displacement, and the rigid rotation $T_{1g}$. Each strain therefore pairs with its own
+linear displacement in a $2\times2$ block, and the rotation stands alone. The odd set is the mean
+displacement, $T_{1u}$, and the eighteen linear strains, $3T_{1u}+2T_{2u}+A_{2u}+E_u$. No block is larger
+than $4\times4$, so $\bT_{36}$ of a uniform cell is available in closed form. Numerically
+(\path{scripts/check_graded_voxel_site_symmetry.py}), $\mathbf{A}$ commutes with all 48 operations to
+$10^{-16}$ of its largest entry; the multiplicities follow from the characters; on each representation
+$\mathbf{A}$ has $n$ distinct eigenvalues, each $d$-fold; and the inverse assembled from the blocks equals
+the $36\times36$ inverse to $10^{-15}$.
+
+\begin{table}[ht]
+\centering\small
+\setlength{\tabcolsep}{7pt}
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+ & \multicolumn{4}{c}{even (15)} & \multicolumn{4}{c}{odd (21)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+representation & $A_{1g}$ & $E_g$ & $T_{1g}$ & $T_{2g}$ & $A_{2u}$ & $E_u$ & $T_{1u}$ & $T_{2u}$ \\
+\midrule
+dimension $d$ & 1 & 2 & 3 & 3 & 1 & 2 & 3 & 3 \\
+multiplicity $n$ (block $n\times n$) & 2 & 2 & 1 & 2 & 1 & 1 & 4 & 2 \\
+\bottomrule
+\end{tabular}
+\caption{The single-site matrix of a cell with uniform contrast, reduced on the irreducible
+representations of the cube group: $\sum nd=36$.}\label{tab:irreps}
+\end{table}
+
+\paragraph{The blocks, entry by entry.} In the static limit the contrast acts on the strain alone, so the
+displacement-type functions drop out of $\mathbf{A}^{-1}$ wherever it meets $\bD$, and $\bT_{36}$ is carried
+by the strain-type functions: the uniform strain ($A_{1g}+E_g+T_{2g}$) and the linear strain
+($3T_{1u}+2T_{2u}+A_{2u}+E_u$). On each representation $\Gamma$,
+\begin{equation}\label{eq:tblock}
+  \bT_\Gamma=M_\Gamma\,\boldsymbol\Delta_\Gamma\bigl(\bI-\mathbf{N}_\Gamma\boldsymbol\Delta_\Gamma\bigr)^{-1},
+  \qquad \mathbf{N}_\Gamma=M_\Gamma^{-1}\bK_\Gamma=\frac{1}{\mu}\bigl(\mathbf{p}_\Gamma+b_2\,\mathbf{q}_\Gamma\bigr),
+\end{equation}
+with $M_\Gamma=8h^3$ for the uniform strain and $8h^3/3$ for the linear, $b_2=-\tfrac12(1-\beta^2/\alpha^2)$,
+and $\boldsymbol\Delta_\Gamma$ the contrast on the representation. The numbers $\mathbf{p}_\Gamma$ and
+$\mathbf{q}_\Gamma$ are the two families of Eq.~\eqref{eq:series} (the $\delta_{ij}/r$ and the
+$\partial_i\partial_jr$ parts of the Kelvin tensor). They do not depend on $h$, and they are rational
+combinations of five constants,
+\begin{equation}\label{eq:fiveconstants}
+  1,\qquad \frac1\pi,\qquad \frac{\sqrt2}{\pi},\qquad \frac{\sqrt3}{\pi},\qquad
+  \Lambda=\frac{1}{\pi}\Bigl[\ln\bigl(1+\sqrt2\bigr)-\operatorname{arsinh}\frac{1}{\sqrt2}\Bigr],
+\end{equation}
+obtained by carrying the reductions of \S\ref{sec:moments} in exact arithmetic. With $\gamma_{ij}$ the
+engineering shear on axes $i,j$, the representations are spanned, for the partner along axis $0$, by
+\begin{equation*}
+\begin{array}{@{}ll@{\qquad}ll@{}}
+  A_{1g}: & \varepsilon_{00}+\varepsilon_{11}+\varepsilon_{22}, & E_g: & 2\varepsilon_{00}-\varepsilon_{11}-\varepsilon_{22},\\[2pt]
+  T_{2g}: & \gamma_{12}, & A_{2u}: & \xi_0\gamma_{12}+\xi_1\gamma_{02}+\xi_2\gamma_{01},\\[2pt]
+  T_{1u}: & \multicolumn{3}{@{}l@{}}{v_1=\xi_0\varepsilon_{00},\quad v_2=\xi_0(\varepsilon_{11}+\varepsilon_{22}),\quad
+            v_3=\xi_1\gamma_{01}+\xi_2\gamma_{02},}\\[2pt]
+  T_{2u}: & \multicolumn{3}{@{}l@{}}{w_1=\xi_0(\varepsilon_{11}-\varepsilon_{22}),\quad w_2=\xi_1\gamma_{01}-\xi_2\gamma_{02},}\\[2pt]
+  E_u: & \xi_1\gamma_{02}-\xi_2\gamma_{01}, & &
+\end{array}
+\end{equation*}
+and the blocks are the matrices of the operators in these vectors (they are not normalised, so the blocks
+are not symmetric). The contrast is $\boldsymbol\Delta=3\Delta\lambda+2\Delta\mu$ on $A_{1g}$, $2\Delta\mu$
+on every other one-dimensional block and on $T_{2u}$, and on $T_{1u}$
+\begin{equation}
+  \boldsymbol\Delta_{T_{1u}}=\begin{pmatrix}\Delta\lambda+2\Delta\mu&2\Delta\lambda&0\\
+  \Delta\lambda&2\Delta\lambda+2\Delta\mu&0\\0&0&2\Delta\mu\end{pmatrix}.
+\end{equation}
+For the uniform strain,
+\begin{equation}\label{eq:uniformblocks}
+  N_{A_{1g}}=-\frac{1+2b_2}{3\mu}=-\frac{1}{3(\lambda+2\mu)},\qquad
+  N_{E_g}=-\frac{1}{3\mu}+\frac{b_2}{\mu}\Bigl(3c_1-\frac23\Bigr),\qquad
+  N_{T_{2g}}=-\frac{1}{3\mu}-\frac{2b_2c_1}{\mu},
+\end{equation}
+with $c_1=(1-2\sqrt2+\sqrt3)/\pi+2\Lambda=0.111222$. The dilatation is that of any shape. The two shear
+entries satisfy $2q_{E_g}+3q_{T_{2g}}=-\tfrac43$, the sphere's value $-\tfrac{4}{15}$ on each of the five
+deviators: the cube splits them $3{:}2$ about the sphere. For the linear strain the first family is one
+more constant,
+\begin{equation}
+  c_0=\frac{2-3\sqrt2+\sqrt3}{5\pi}+\Lambda=0.038444,
+\end{equation}
+and Table~\ref{tab:blocks} lists every entry. Assembled with Eq.~\eqref{eq:tblock}, these blocks reproduce
+the strain rows of the $36\times36$ single site as $\omega\to0$ to $5\times10^{-16}$, and the exact
+moments agree with the 40-digit ones of \S\ref{sec:moments} to $10^{-14}$
+(\path{scripts/derive_graded_voxel_site_blocks.py}). At finite frequency the displacement-type functions
+enter at order $(k_Sh)^2$ through the terms $m\ge0$ of Eq.~\eqref{eq:series}, built from the same moments;
+those entries are not tabulated here.
+
+\begin{table}[ht]
+\centering\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}llcrrrrr@{}}
+\toprule
+ & & & \multicolumn{5}{c}{$q$: coefficient of} \\
+\cmidrule(lr){4-8}
+block & entry & $p$ & $1$ & $1/\pi$ & $\sqrt2/\pi$ & $\sqrt3/\pi$ & $\Lambda$ \\
+\midrule
+$T_{1u}$ & $(1,1)$ & $-\tfrac13-8c_0$ & $-\tfrac23$ & $-\tfrac{14}{5}$ & $\tfrac{36}{5}$ & $-\tfrac{22}{5}$ & $-4$ \\
+ & $(1,2)$ & $0$ & $0$ & $-\tfrac{18}{5}$ & $\tfrac{12}{5}$ & $\tfrac65$ & $-12$ \\
+ & $(1,3)$ & $-\tfrac16+2c_0$ & $-\tfrac23$ & $\tfrac{22}{5}$ & $-\tfrac{48}{5}$ & $\tfrac{26}{5}$ & $8$ \\
+ & $(2,1)$ & $0$ & $0$ & $-\tfrac95$ & $\tfrac65$ & $\tfrac35$ & $-6$ \\
+ & $(2,2)$ & $-\tfrac13+4c_0$ & $-\tfrac23$ & $5$ & $-6$ & $1$ & $14$ \\
+ & $(2,3)$ & $-\tfrac1{12}+c_0$ & $0$ & $-\tfrac35$ & $\tfrac{12}{5}$ & $-\tfrac95$ & $0$ \\
+ & $(3,1)$ & $-\tfrac16+2c_0$ & $-\tfrac23$ & $\tfrac{22}{5}$ & $-\tfrac{48}{5}$ & $\tfrac{26}{5}$ & $8$ \\
+ & $(3,2)$ & $-\tfrac16+2c_0$ & $0$ & $-\tfrac65$ & $\tfrac{24}{5}$ & $-\tfrac{18}{5}$ & $0$ \\
+ & $(3,3)$ & $-\tfrac5{12}-c_0$ & $\tfrac23$ & $-\tfrac{46}{5}$ & $\tfrac{84}{5}$ & $-\tfrac{38}{5}$ & $-20$ \\
+\midrule
+$T_{2u}$ & $(1,1)$ & $-\tfrac13+4c_0$ & $-\tfrac23$ & $\tfrac{233}{15}$ & $-\tfrac{422}{15}$ & $\tfrac{63}{5}$ & $18$ \\
+ & $(1,2)$ & $-\tfrac1{12}+c_0$ & $-\tfrac23$ & $5$ & $-12$ & $7$ & $8$ \\
+ & $(2,1)$ & $-\tfrac16+2c_0$ & $-\tfrac43$ & $10$ & $-24$ & $14$ & $16$ \\
+ & $(2,2)$ & $-\tfrac14-3c_0$ & $-\tfrac23$ & $2$ & $-12$ & $10$ & $-4$ \\
+\midrule
+$A_{2u}$ & & $-\tfrac12+6c_0$ & $\tfrac43$ & $-\tfrac{326}{15}$ & $\tfrac{764}{15}$ & $-\tfrac{146}{5}$ & $-20$ \\
+$E_u$ & & $-\tfrac14+3c_0$ & $-\tfrac23$ & $-\tfrac{74}{15}$ & $\tfrac{116}{15}$ & $-\tfrac{14}{5}$ & $4$ \\
+\bottomrule
+\end{tabular}
+\caption{The static blocks of the linear strain in closed form: $\mathbf{N}_\Gamma=(\mathbf{p}+b_2\mathbf{q})/\mu$,
+with $q$ given by its rational coefficients on the constants of Eq.~\eqref{eq:fiveconstants}. Rows and
+columns of $T_{1u}$ are $(v_1,v_2,v_3)$, of $T_{2u}$ $(w_1,w_2)$.}\label{tab:blocks}
+\end{table}
+
+A gradient lowers the symmetry. With a gradient along a cell axis, exactly the eight operations that fix
+the axis still commute with $\mathbf{A}$, and the reduction is on the representations of that smaller
+group. In a general direction nothing is left but covariance: $\mathbf{D}(\mathbf{Q})$ carries the
+single site of a cell to that of the cell with the rotated gradient, so cells whose gradients are related
+by a symmetry of the cube share one inverse.
+
 \paragraph{Reciprocity.} The propagator satisfies $\bW\bP(\mathbf{r})$ symmetric at every
 $\mathbf{r}$, with $\bW=\operatorname{diag}(\bI_6,\tfrac12\bI_3)$, and
 $\bP(-\mathbf{r})=\boldsymbol{\Pi}\bP(\mathbf{r})\boldsymbol{\Pi}$ with
