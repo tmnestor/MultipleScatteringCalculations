@@ -1,9 +1,14 @@
-"""Far field of the graded voxel: each cell's polynomial source radiated from Gauss nodes.
+"""Radiation of the graded voxel: each cell's polynomial source radiated from Gauss nodes.
 
 A cell's source density is sum_c (sum_b E_cb psi_b) m_c(xi), a polynomial of degree <= 4; it is radiated
 as point sources at a tensor Gauss rule's nodes (exact for the polynomial, and the outgoing phase varies
-by k h <= 0.25 across a cell).  The point-source formula is that of ``foldy_lax_far_field``: force and
-Voigt stress with the same sign, u_P = G_P r (r.F + i k_P r.sigma.r), u_S = G_S (F + i k_S sigma.r)_perp.
+by k h <= 0.25 across a cell).  Two readouts share those sources:
+
+* ``graded_far_field`` keeps the 1/r term only.  Its point-source formula is that of
+  ``foldy_lax_far_field``: force and Voigt stress with the same sign, u_P = G_P r (r.F + i k_P r.sigma.r),
+  u_S = G_S (F + i k_S sigma.r)_perp.
+* ``graded_field`` evaluates the field at a finite distance with the propagator the solve itself uses
+  (``kernel.kernel_9x9``), near-field terms included.
 """
 
 import numpy as np
@@ -13,6 +18,7 @@ from numpy.typing import NDArray
 from ..effective_contrasts import ReferenceMedium
 from ..sphere_scattering import _voigt_to_tensor
 from .basis import SOURCE_EXPONENTS_QUARTIC, monomials, source_expansion
+from .kernel import kernel_9x9
 from .solver import GradedVoxelResult
 
 
@@ -48,6 +54,43 @@ def radiate(
     return u_p, u_s
 
 
+def radiate_exact(
+    points: NDArray,
+    sources: NDArray,
+    omega: float,
+    ref: ReferenceMedium,
+    obs_points: NDArray,
+) -> tuple[NDArray, NDArray]:
+    """Displacement (M, 3) and engineering strain (M, 6) at `obs_points` of point sources at `points`.
+
+    The field is the propagator applied to each source, summed: nothing is dropped, so it holds at any
+    distance from the sources.
+
+    Raises:
+        ValueError: when an observation point coincides with a source point, where the propagator is a
+            distribution.
+    """
+    obs = np.atleast_2d(np.asarray(obs_points, dtype=float))
+    out = np.zeros((len(obs), 9), dtype=complex)
+    for o, x in enumerate(obs):
+        out[o] = np.einsum("nab,nb->a", kernel_9x9(x - points, omega, ref), sources)
+    return out[:, :3], out[:, 3:]
+
+
+def _node_sources(res: GradedVoxelResult, n_gauss: int) -> tuple[NDArray, NDArray]:
+    """The cells' polynomial sources as point sources at Gauss nodes: positions (N, 3), sources (N, 9)."""
+    x, w = leggauss(n_gauss)
+    xi = np.stack(np.meshgrid(x, x, x, indexing="ij"), -1).reshape(-1, 3)
+    ww = np.einsum("i,j,k->ijk", w, w, w).ravel()
+    ms = monomials(SOURCE_EXPONENTS_QUARTIC, xi)  # (35, G)
+    pts, srcs = [], []
+    for c, d, psi in zip(res.centres, res.delta, res.psi, strict=True):
+        coef = np.einsum("cbij,bj->ci", source_expansion(d, psi.shape[0]), psi)  # (n_source, 9)
+        srcs.append((ms[: len(coef)].T @ coef) * (ww * res.h**3)[:, None])
+        pts.append(c + res.h * xi)
+    return np.concatenate(pts), np.concatenate(srcs)
+
+
 def graded_far_field(
     res: GradedVoxelResult,
     directions: NDArray,
@@ -59,13 +102,17 @@ def graded_far_field(
 ) -> tuple[NDArray, NDArray]:
     """Far field of the solved graded voxels; the incident wave (k_hat, pol, wave_type) is already in
     res.psi, and the arguments are kept for the same call shape as ``foldy_lax_far_field``."""
-    x, w = leggauss(n_gauss)
-    xi = np.stack(np.meshgrid(x, x, x, indexing="ij"), -1).reshape(-1, 3)
-    ww = np.einsum("i,j,k->ijk", w, w, w).ravel()
-    ms = monomials(SOURCE_EXPONENTS_QUARTIC, xi)  # (35, G)
-    pts, srcs = [], []
-    for c, d, psi in zip(res.centres, res.delta, res.psi, strict=True):
-        coef = np.einsum("cbij,bj->ci", source_expansion(d, psi.shape[0]), psi)  # (n_source, 9)
-        srcs.append((ms[: len(coef)].T @ coef) * (ww * res.h**3)[:, None])
-        pts.append(c + res.h * xi)
-    return radiate(np.concatenate(pts), np.concatenate(srcs), res.omega, res.ref, directions, r_distance)
+    pts, srcs = _node_sources(res, n_gauss)
+    return radiate(pts, srcs, res.omega, res.ref, directions, r_distance)
+
+
+def graded_field(res: GradedVoxelResult, obs_points: NDArray, n_gauss: int = 4) -> tuple[NDArray, NDArray]:
+    """Scattered displacement (M, 3) and engineering strain (M, 6) of the solved graded voxels at
+    `obs_points`, at any distance outside the cells.
+
+    The Gauss rule integrates the propagator over each cell.  It is exact for the cell's polynomial source
+    but not for the propagator, which is singular at the observer: for an observer within about a cell's
+    width of a cell that carries contrast, raise `n_gauss` until the value settles.
+    """
+    pts, srcs = _node_sources(res, n_gauss)
+    return radiate_exact(pts, srcs, res.omega, res.ref, obs_points)

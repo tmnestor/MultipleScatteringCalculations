@@ -1,0 +1,29 @@
+{
+  "ka_s": 0.5,
+  "rows": [
+    {
+      "period_radii": 5.0,
+      "n_lateral": 16,
+      "pitch_radii": 0.3125,
+      "nstep": 32,
+      "unknowns": 768,
+      "error_R": 0.003793971445499302,
+      "error_T": 0.0034763421191676223,
+      "error_R_at_gap": 0.004250012728289578,
+      "error_T_at_gap": 0.0035993673621903663,
+      "seconds": 23.974880457972176
+    },
+    {
+      "period_radii": 5.0,
+      "n_lateral": 20,
+      "pitch_radii": 0.25,
+      "nstep": 32,
+      "unknowns": 1200,
+      "error_R": 0.0006203685762166328,
+      "error_T": 0.000702577841595746,
+      "error_R_at_gap": 0.0007563733570799122,
+      "error_T_at_gap": 0.0007339123939243896,
+      "seconds": 86.01628350000829
+    }
+  ]
+}

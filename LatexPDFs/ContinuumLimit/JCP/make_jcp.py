@@ -97,22 +97,23 @@ body = re.sub(r"\\nb\{([^{}]*)\}", lambda m: r"\path{" + m.group(1).replace(r"\_
 
 ABSTRACT = r"""
 To model seismic waves efficiently in a realistically complicated medium, volume-integral
-(coupled-dipole) methods divide it into cubic voxels coupled through the background Green's tensor.
+methods divide it into cubic voxels coupled through the background Green's tensor.
 Each voxel must represent the medium within it and the wavefield within it. We ask which basis each
-needs and what error a given choice leaves, which cannot be measured where no exact solution exists.
+needs and what error a given choice leaves.
 We answer on a layer of voxels: because cubes tile space, $n$ planes of voxels are the layer itself,
-with no shape error, and its exact solution isolates the discretisation error. The source-averaged
-coupling equals the continuum's exactly; the cube's single-site $T$-matrix follows from distributional
-moments of the Green's tensor. With the wavefield expanded to Legendre degree $p$ and the medium's
-contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
-error $c_p(kd)^{2p+2}$ in closed form: $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$; the orders hold for
-SV and SH waves and at oblique incidence, to $p=2$. The single-site $T$-matrix's second-order error equals
-the relative projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit:
-the two bases must be matched, and the error is known from the medium before anything is solved.
-Where the medium is piecewise constant on the voxels it vanishes: in a randomly stratified layer one
-first-moment voxel per layer reaches $10^{-6}$. A smoothly graded sphere converges at second order
-against its exact solution. Every result is verified by an independent implementation or an exact
-solution."""
+and its exact solution isolates the discretisation error. With the wavefield expanded to
+Legendre degree $p$ and the
+medium's contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with
+leading error $c_p(kd)^{2p+2}$ in closed form; the orders hold for SV and SH waves and at oblique
+incidence. The single-site $T$-matrix's second-order error equals the relative projection error of the
+medium at degree $\min(p,r)$: the two bases must be matched, and the error is known from the medium
+before anything is solved. In a plane-stratified background the orders persist: the background changes
+the field the voxels must represent, not how well they represent it. The single site is the first member
+of a hierarchy in the gradients of the field, whose coefficients are moments of
+the Green's tensor over the cube, in closed form on four constants. Its blocks gain accuracy in pairs:
+with third gradients it is three hundred times more accurate than the uniform-strain closure against
+the exact sphere, and as a fourth-order voxel scheme it matches the first-moment voxel on a smoothly
+graded sphere."""
 words = len(re.sub(r"\$[^$]*\$", "x", ABSTRACT).split())
 assert words <= 250, f"the JCP abstract is {words} words; the limit is 250"
 

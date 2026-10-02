@@ -438,9 +438,12 @@ on the leaves, where a linear field on the tree outperforms the uniform grid of 
 sixty-five-fold at equal unknowns in a self-consistent test, and the wrong one for a smooth medium,
 where the two degrees must be matched. What remains before the method models a realistic medium
 is a solver whose cost does not grow as the square of the number of leaves. Its parts are published:
-the fast multipole method for volume potentials on an octree \citep{Malhotra2016}, and the treatment of
+the fast multipole method for volume potentials on an octree \citep{Malhotra2016}, the treatment of
 the elastic kernels in fast multipole methods for boundary integral equations
-\citep{Fujiwara2000,Chaillat2008}.
+\citep{Fujiwara2000,Chaillat2008}, and, for cells mapped to a uniform grid, the adaptive integral method
+\citep{Bleszynski1996}. What the error analysis gives any of them is the tolerance they must meet: the
+first-order error and the projection error are known before the solve, so a fast product need be no more
+accurate than they are.
 
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\

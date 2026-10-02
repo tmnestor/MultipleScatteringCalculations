@@ -15,7 +15,9 @@ basis).  The scheme is ``crosscheck_graded_contrast.graded_scattered``; the exac
   [5] the projection errors against exact values from an independent symbolic calculation;
   [6] whose error it is: T2 split into the part in which the second scattering is in the cell of the
       first (the second-order term of the single-site T-matrix) and the part between different cells,
-      for the scheme and for the exact layer on the same cells, and the error of each part.
+      for the scheme and for the exact layer on the same cells, and the error of each part;
+  [7] the first two terms of the exact layer in closed form (the uniform layer: the formulas of the
+      paper; the smooth profile: symbolic integrals) against the difference formulas used above.
 
 Run:  conda run -n seismic python -u scripts/measure_layer_bases.py [omega] [n ...]
 """
@@ -36,12 +38,14 @@ from crosscheck_second_moment_voxel import (  # noqa: E402
     M_P,
     Z_OBS_R,
     Z_OBS_T,
+    Z_SRC,
     g_inc,
     gauss,
     kernel,
 )
 
 PROFILE = "smooth"
+REF_BORN = Path(__file__).resolve().parent.parent / "Mathematica" / "ContinuumLimit_born_terms.json"
 REF_DEFECT = Path(__file__).resolve().parent.parent / "Mathematica" / "ContinuumLimit_layer_defect.json"
 D_STEP = 1e-2
 
@@ -135,6 +139,30 @@ def exact_split(omega: float, n: int) -> tuple[np.ndarray, np.ndarray]:
             parts[0][o] += np.sum(row * w_same)
             parts[1][o] += np.sum(row * w_other)
     return parts[0], parts[1]
+
+
+def born_closed(omega: float) -> tuple[np.ndarray, np.ndarray]:
+    """(T1, T2) of the UNIFORM layer at the two observers, in closed form.
+
+    With a = w^2 drho, b = dM, c = i / (2 M k):
+        T1(R) = c^2 e^{-ik(zo+zs)} (a + b k^2) (e^{2ikD} - 1) / (2ik),
+        T1(T) = c^2 e^{ik(zo-zs)} (a - b k^2) D,
+    and T2 as in the paper (Mathematica/ContinuumLimit_BornTerms.wl derives both).
+    """
+    k = omega / ALPHA
+    a, b = omega**2 * CONTRAST[2], CONTRAST[0] + 2 * CONTRAST[1]
+    c, d = 1j / (2 * M_P * k), D_LAYER
+    e = np.exp(2j * k * d)
+    pr = c * c * np.exp(-1j * k * (Z_OBS_R + Z_SRC))
+    pt = c * c * np.exp(1j * k * (Z_OBS_T - Z_SRC))
+    t1 = np.array([pr * (a + b * k * k) * (e - 1) / (2j * k), pt * (a - b * k * k) * d])
+    t2r = -1j * (a * a + b * b * k**4) + e * (a * a * (1j + 2 * k * d) + b * b * k**4 * (1j - 2 * k * d))
+    t2t = (
+        a * a * (1 - e + 2 * k * d * (1j + k * d))
+        - 2 * a * b * k * k * (e - 1 + 2 * k * d * (k * d - 1j))
+        + b * b * k**4 * (1 - e + 2 * k * d * (k * d - 3j))
+    )
+    return t1, np.array([pr / (4 * k**3 * M_P) * t2r, 1j * pt / (8 * k**3 * M_P) * t2t])
 
 
 def wolfram_real(text: str) -> float:
@@ -235,7 +263,23 @@ def main() -> int:
         f"   same cell {min(same_all):.3f} to {max(same_all):.3f}, between cells at most "
         f"{max(other_all):.1e}: {'PASS' if ok6 else 'FAIL'}"
     )
-    return 0 if ok and ok5 and ok6 else 1
+    # [7] the closed forms of T1 and T2 against the symbolic values and against the difference formulas
+    born = json.loads(REF_BORN.read_text())
+
+    def table(profile: str, name: str) -> np.ndarray:
+        return np.array([complex(wolfram_real(x[0]), wolfram_real(x[1])) for x in born[profile][name]])
+
+    ok7 = True
+    if omega == born["omega"]:
+        c1, c2 = born_closed(omega)
+        closed = max(rel(c1, table("const", "T1")), rel(c2, table("const", "T2")))
+        smooth = max(rel(ex1, table("smooth", "T1")), rel(ex2, table("smooth", "T2")))
+        ok7 = closed < 1e-13 and smooth < 1e-10
+        print(
+            f"closed forms of T1, T2: uniform layer against the symbolic values {closed:.1e}; smooth, "
+            f"differences against the symbolic integrals {smooth:.1e}: {'PASS' if ok7 else 'FAIL'}"
+        )
+    return 0 if ok and ok5 and ok6 and ok7 else 1
 
 
 if __name__ == "__main__":
