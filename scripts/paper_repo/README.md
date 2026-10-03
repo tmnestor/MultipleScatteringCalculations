@@ -1,11 +1,9 @@
 # Voxel discretisations of elastic scattering: reproduction repository
 
-This repository contains everything needed to reproduce the two papers
+This repository contains everything needed to reproduce the paper
 
-* *Two Bases for a Voxel: the Medium and the Wavefield. The Error of Elastic Volume-Integral
-  Scattering, Isolated on a Space-Filling Layer of Cubes* (`LatexPDFs/ContinuumLimit/`), and
-* *Graded Voxels in Three Dimensions: Galerkin Cubes with a Polynomial Field and Contrast: the
-  Source of their Error, its Cure, and Closed-Form Moment Integrals* (`LatexPDFs/GradedVoxel/`),
+* *A Moment Hierarchy for the Voxel: Closed-Form Single-Site T-Matrices, and the Error of Elastic
+  Volume-Integral Scattering Isolated on a Space-Filling Layer of Cubes* (`LatexPDFs/ContinuumLimit/`),
 
 by T. M. Nestor. It is assembled from the author's research repository by
 `scripts/assemble_paper_repo.py`, which records exactly which files a release contains.
@@ -17,7 +15,7 @@ by T. M. Nestor. It is assembled from the author's research repository by
 | `cubic_scattering/` | The Python package under test: the cube T-matrix, the cell-averaged lattice kernel, the sphere solvers and the graded voxel, with its test suite |
 | `scripts/` | The cross-checks, gates, pilots and figure scripts the papers cite |
 | `Mathematica/` | The symbolic derivations, as Wolfram Language scripts, with their saved outputs (`*.json`) |
-| `LatexPDFs/` | The two papers as compiled PDFs (`ContinuumLimit.pdf`, `JCP/ContinuumLimit_JCP.pdf`, `GradedVoxel.pdf`), with LaTeX source, bibliography, figures and figure data |
+| `LatexPDFs/` | The paper as compiled PDFs (`ContinuumLimit.pdf`, `JCP/ContinuumLimit_JCP.pdf`), with LaTeX source, bibliography, figures and figure data |
 
 ## Environment
 
@@ -91,16 +89,13 @@ their outputs are saved beside them, and the Python checks reproduce the numbers
 derivations that is not part of this release; the notebook is included for the record of what was
 compared.
 
-### The graded-voxel paper
+### Three-dimensional voxels (the paper's appendix on the voxel solver)
 
 | Result | Derivation (Mathematica) | Check (Python) |
 |---|---|---|
 | Coupling blocks: weak kernel, layer reduction, subdivision identity | `GradedVoxel_WeakKernel.wl`, `GradedVoxel_LayerReduction.wl` (integrals in `GradedVoxel_term_integrals.jsonl`) | `scripts/check_graded_voxel_subdivision.py`, `scripts/measure_graded_voxel_site.py`, `cubic_scattering/graded_voxel/` tests |
 | Weak-contrast orders (Born) | | `scripts/pilot_graded_voxel_sphere.py --weak --arms=t9,g0,g1 4 6 8` at each frequency |
 | Full-contrast orders, FFT solve to 16 cells | | `scripts/pilot_graded_voxel_sphere.py --arms=t9,g0,g1fft 4 6 8 10 12 14 16` |
-| The second-order Born term T2 and its approach to fourth order | | `scripts/measure_graded_voxel_t2.py` |
-| Profile smoothness and shell width | | `scripts/measure_graded_voxel_resolution.py` |
-| Convergence figure | | `scripts/plot_graded_voxel_orders.py` |
 
 ## Mathematica
 

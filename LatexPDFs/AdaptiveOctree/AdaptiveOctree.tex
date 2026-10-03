@@ -92,7 +92,7 @@ With the wavefield held to Legendre degree $p$ and the contrast of the medium to
 converges at order $\min(2p+2,2r+2)$ in the cell size, and the error that remains belongs to the single
 voxel: at second order in the contrast it is the \emph{relative projection error} of the medium, the
 fraction of the squared norm of its profile that polynomials of degree $\min(p,r)$ on the cells cannot
-represent. The companion paper \citep{NestorGraded2026} builds those voxels in three dimensions.
+represent. \citet{NestorContinuum2026} builds those voxels in three dimensions, in its appendix on the three-dimensional voxel solver.
 
 \paragraph{The question.} Those results are for uniform grids. A real medium is not uniform in its
 difficulty: its variation is concentrated at interfaces, inclusions and thin zones, and a uniform grid
@@ -154,7 +154,7 @@ constant medium and a constant field.
 with $\psi_\ell$ the coefficients of the state in leaf $\ell$, $M_\ell$ the Gram matrix of its
 functions, $E_m$ the projected contrast of leaf $m$ acting on its field, $\psi^0$ the incident wave and
 $\bK(\ell,m)$ the block that couples the two leaves: the Green's tensor integrated against the functions
-of both \citep{NestorGraded2026}.
+of both \citep{NestorContinuum2026}.
 
 \paragraph{Blocks between leaves of different sizes.} A polynomial on a cube is a polynomial of the
 same degree on each of the cube's descendants, so the block between a large leaf and a small one is an

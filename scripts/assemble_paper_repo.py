@@ -6,9 +6,9 @@ reproduces every table and figure, with a README that maps each to one command. 
 that tree from an explicit manifest, so it can be regenerated at every revision and never drifts:
 
   * the ``cubic_scattering`` package (the object under test, copied whole, tests included);
-  * the scripts the papers cite, plus the two they import;
-  * the Mathematica notebooks the papers cite, the notebooks they load, and their saved outputs;
-  * the two papers' LaTeX sources, bibliographies and figures, and the journal build script;
+  * the scripts the paper cites, plus the two they import;
+  * the Mathematica notebooks the paper cites, the notebooks they load, and their saved outputs;
+  * the paper's LaTeX source, bibliography and figures, and the journal build script;
   * a licence, a minimal environment file, a two-tier reproduction script and a README.
 
 The tree keeps the research repository's layout (``cubic_scattering/``, ``scripts/``,
@@ -58,12 +58,9 @@ SCRIPTS = [
     "continuum_limit_cubet.py",
     "continuum_limit_chain.py",
     "plot_convergence_orders.py",
-    # graded-voxel paper
+    # three-dimensional voxels (the paper's appendix on the voxel solver)
     "measure_graded_voxel_site.py",
-    "measure_graded_voxel_t2.py",
-    "measure_graded_voxel_resolution.py",
     "check_graded_voxel_subdivision.py",
-    "plot_graded_voxel_orders.py",
     # this script and its templates, so the release records how it was made
     "assemble_paper_repo.py",
     "paper_repo/README.md",
@@ -130,18 +127,6 @@ PAPERS = {
         "JCP/ContinuumLimit_JCP.pdf",
         "JCP/make_jcp.py",
         "JCP/elsarticle-num-names.bst",
-    ],
-    "LatexPDFs/GradedVoxel": [
-        "GradedVoxel.pdf",
-        "GradedVoxel.tex",
-        "references.bib",
-        "figures/fig_orders.pdf",
-        "figures/data_born_ka0.5.json",
-        "figures/data_born_ka1.0.json",
-        "figures/data_full_ka0.5.json",
-        "figures/data_full_ka1.0.json",
-        "figures/data_resolution_core0.25.json",
-        "figures/data_resolution_core0.5.json",
     ],
 }
 

@@ -28,8 +28,8 @@
 
 \begin{document}
 \begin{frontmatter}
-\title{Two bases for a voxel, the medium and the wavefield: the error of elastic volume-integral
-scattering, isolated on a space-filling layer of cubes}
+\title{A moment hierarchy for the voxel: closed-form single-site $T$-matrices, and the error of elastic
+volume-integral scattering isolated on a space-filling layer of cubes}
 \author{T. M. Nestor}
 \affiliation{organization={Independent researcher}, country={Australia}}
 
@@ -48,16 +48,17 @@ incidence. The single-site $T$-matrix's second-order error equals the relative p
 medium at degree $\min(p,r)$: the two bases must be matched, and the error is known from the medium
 before anything is solved. In a plane-stratified background the orders persist: the background changes
 the field the voxels must represent, not how well they represent it. The single site is the first member
-of a hierarchy in the gradients of the field, whose coefficients are moments of
-the Green's tensor over the cube, in closed form on four constants. Its blocks gain accuracy in pairs:
-with third gradients it is three hundred times more accurate than the uniform-strain closure against
-the exact sphere, and as a fourth-order voxel scheme it matches the first-moment voxel on a smoothly
-graded sphere.
+of a hierarchy in the field's gradients, an elastodynamic extension of the equivalent inclusion
+method, whose coefficients are moments of the Green's tensor over the cube, in closed form on four
+constants. Its blocks gain accuracy in pairs:
+with third gradients it is 300 times more accurate than the uniform-strain closure against
+the exact sphere, and as a voxel scheme it is fourth order on a graded
+sphere.
 \end{abstract}
 
 \begin{highlights}
+\item A moment hierarchy gives the cube's single-site T-matrix in closed form
 \item A voxel needs two bases: one for the medium and one for the wavefield
-\item On a layer of cubes the discretisation error is isolated, with no shape error
 \item The order is min(2p+2, 2r+2) for field degree p and medium degree r
 \item The single-site T-matrix's error is the medium's relative projection error
 \item The error is known in advance, from the medium and the grid alone
@@ -93,8 +94,7 @@ choice is new in itself. In higher-order volume integral methods for electromagn
 within an element is represented by polynomials whose orders are independent of those of the field
 \citep{Chobanyan2015}, as it is in finite elements, and voxels that carry a linear field are in use
 \citep{Georgakis2020}. What has been missing is the law that relates the two bases: the order a given
-pair attains, and the error it leaves. This paper asks which basis each of the two needs, and what error
-a given pair $(p,r)$ leaves. The answer decides the cost of everything built on it,
+pair attains, and the error it leaves. The answer decides the cost of everything built on it,
 because a voxel that represents its contents more accurately can be larger, and the number of voxels,
 not the size of each one's state, sets the cost of the multiple-scattering solve.
 
@@ -120,10 +120,9 @@ sufficient, for a scheme to be trusted in a heterogeneous one. The experiment is
 three steps, each with an exact solution of its own: a randomly stratified layer, in which every cell
 is homogeneous but the cells differ; a layer whose properties vary smoothly within every cell, which is
 where the basis for the medium is tested; and a sphere whose contrast falls smoothly to zero at its
-surface, which carries the layer's prediction into three dimensions without a staircase. What the layer
-establishes about the scheme's two ingredients, the coupling between voxels and the response of a
-single voxel, are properties of the ingredients, which are the same in any medium. A laterally
-heterogeneous medium remains to be tested.
+surface, which carries the layer's prediction into three dimensions without a staircase. The coupling
+and the single site that the layer validates are the same in any medium; a laterally heterogeneous
+medium remains to be tested.
 
 \paragraph{The answer} (1) \emph{The order is set by the weaker basis.} The scheme converges at order
 $\min(2p+2,2r+2)$ in the cell size (\S\ref{sec:hetero}). A contrast held constant in each cell
@@ -135,28 +134,22 @@ and $6$ of $p=0$, $1$ and $2$ hold for P, SV and SH waves at normal and oblique 
 is $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission (\S\ref{sec:convergence}), and the
 opposite signs explain why no correction of the single site can improve both
 (\S\ref{sec:discussion}). (3) \emph{The error that remains is the single site's, and it is the
-projection error of the medium.} The single-site $T$-matrix sums the rescattering within a voxel to
-all orders, and the coupling between voxels is exact, so the multiple scattering itself is not
-approximated. But the $T$-matrix is that of the voxel as represented: its contrast projected to degree
-$r$ and its field held to degree $p$. When the scattered field is separated by its order in the
-contrast, the error of the second-order term, in which the field scattered once within a voxel is
-scattered there again, equals the \emph{relative projection error} of the medium: the fraction of the squared norm of its profile that polynomials of
-degree $\min(p,r)$ on the cells cannot represent (Eq.~\eqref{eq:defect}). The equality is exact in the
-long-wave limit, where it is derived, and holds to within $1.3\%$ for all nine pairs with $p,r\le2$ in
-the experiments (\S\ref{sec:hetero}). Splitting that term confirms whose error it is: the part in which
-both scatterings lie in one voxel carries the error, and the part between voxels at most $0.2\%$ of it. It shows what the wavefield basis is for: it must carry what the
-medium imprints on the field, not only the wave, which at these frequencies varies little across a
-cell. (4) \emph{The two bases must be matched, and the error is known in advance.} The relative
-projection error is a property of the medium and the grid alone, so the error of a calculation is known
-before anything is solved, and the cell size and the degree that a required accuracy needs can be
-chosen beforehand. (5) \emph{Where the medium is piecewise constant on the cells the projection error
+projection error of the medium.} The single-site $T$-matrix sums the rescattering within a voxel to all
+orders and the coupling between voxels is exact, but the $T$-matrix is that of the voxel as
+represented, its contrast projected to degree $r$ and its field held to degree $p$. The error of the
+term of second order in the contrast equals the \emph{relative projection error} of the medium, the
+fraction of the squared norm of its profile that polynomials of degree $\min(p,r)$ on the cells cannot
+represent (Eq.~\eqref{eq:defect}): exactly in the long-wave limit, and to within $1.3\%$ for all nine
+pairs with $p,r\le2$ (\S\ref{sec:hetero}). The wavefield basis must therefore carry what the medium
+imprints on the field, not only the wave, and the two bases must be matched. (4) \emph{The error is
+known in advance.} The projection error is a property of the medium and the grid alone, so the cell
+size and the degree that a required accuracy needs are chosen before anything is solved. (5) \emph{Where the medium is piecewise constant on the cells the projection error
 vanishes}, a constant suffices for the medium, and the degree of the field alone sets the order: in a
 randomly stratified model one first-moment voxel per model layer reaches a reflection accuracy of
 $10^{-6}$, where the uniform-field voxel needs about forty (\S\ref{sec:hetero}), and in the uniform
-layer it allows voxels $58$ times larger in each direction (\S\ref{sec:discussion}). (6) \emph{In three
+layer it allows voxels $58$ times larger in each direction (Appendix~\ref{app:cost}). (6) \emph{In three
 dimensions} the smoothly graded sphere converges at second order with the mean-only voxel, as the layer
-predicts (\S\ref{sec:sphere}), and at fourth order with the first-moment voxel in the companion paper
-\citep{NestorGraded2026}.
+predicts (\S\ref{sec:sphere}), and at fourth order with the first-moment voxel (\S\ref{sec:gradvoxel}).
 
 \paragraph{What makes the experiment exact} The answer above can be trusted only if nothing but the
 two bases is approximated. Three results, set against the coupled-dipole method described below, secure
@@ -170,17 +163,12 @@ Eshelby's $\delta$ term without adding it by hand, the cube's departure from the
 anisotropy, and the closure's error against exact scattering by a sphere as a real $(ka)^2$ term in
 closed form. The self term the single site carries is the one the averaged kernel omits, so the
 discrete system is a collocation of the continuum equation. (c) \emph{The elastic state.} A voxel
-carries a force and a moment, so its state has nine components, the coupling is a $9\times9$ tensor,
-and its local term is the depolarisation of a plate.
-
-\paragraph{Why cubic voxels} Cubes are the natural cell for three reasons. They \emph{tile space},
-so a uniform region discretised into cubes is still that uniform region, whereas spheres or point
-scatterers can only approximate it and carry a packing error of their own. Their \emph{regular
-lattice} makes the interaction between cells translation invariant, so the coupling is a
-convolution (Toeplitz between planes, Bloch-periodic within them), and the whole system is solved
-by fast transforms. And a cube small compared with the wavelength has a \emph{single-site response
-in closed form}, the elastic depolarisation of a cube (\S\ref{sec:single}), so the only
-approximation a voxel introduces is the internal field it assumes.
+carries a force (through its density contrast) and a moment (through its stiffness contrast), so its
+state has nine components, displacement and strain, the coupling is a $9\times9$ tensor, and the single
+site's self-interaction is the elastic depolarisation of a cube, the discrete counterpart of the
+inclusion tensor of \citet{Eshelby1957}. Cubes serve all three: they tile space, so a uniform region
+cut into cubes is still that region, and their regular lattice makes the coupling a convolution, solved
+by fast transforms.
 
 \paragraph{The coupled-dipole method} Replacing a heterogeneous body by a lattice of small
 scatterers that interact through the background Green's function is the multiple-scattering
@@ -223,33 +211,20 @@ problem with Gaussian approximating functions whose matrix elements are analytic
 solve a stress--velocity form of the integral equation on a grid by conjugate gradients with fast
 Fourier transforms, and \citet{Touhei2011} does the same for a half space with a generalised Fourier
 transform. \citet{Jakobsen2012} and \citet{Jakobsen2020} build the seismic forward and inverse problems on the
-transition operator of the discretised Lippmann--Schwinger equation, in the anisotropic elastic case
-with a nine-component state vector. The elastic problem adds a structure the scalar and
-electromagnetic ones lack. A cubic voxel responds to the incident field with a force (through its
-density contrast) and a moment (through its stiffness contrast), so the state at a voxel has nine
-components (displacement and strain), and the single site's self-interaction is the elastic
-depolarisation of a cube, the discrete counterpart of the inclusion tensor of \citet{Eshelby1957}.
+transition operator of the discretised Lippmann--Schwinger equation, the first in the acoustic
+approximation and the second in arbitrary anisotropic elastic media with a nine-component state vector.
 
 \paragraph{This paper} It extends the formulation of \citet{Nestor1996} to cubic voxels, and is
-ordered as the experiment is built. \S\ref{sec:setting} sets out the discrete medium and
-\S\ref{sec:continuum} the continuous layer it must reproduce. \S\ref{sec:point} shows why the point
-coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly.
-\S\ref{sec:single} derives the single-site $T$-matrix from moment integrals, as the first member of a
-hierarchy in the gradients of the field whose moments are all in closed form, shows what each further
-block of that hierarchy buys, tests it against the exact sphere and on a cube, and shows that with its
-first member the discrete system is a collocation of the continuum equation. The
-wavefield basis comes next: \S\ref{sec:convergence} gives the second-order error of the uniform field
-in closed form, and \S\ref{sec:fourth} the voxel whose field carries Legendre moments to degree $p$,
-with its order $2p+2$ and its constant, for incident P and S at normal and oblique incidence. The
-medium basis follows in \S\ref{sec:hetero}: a randomly stratified layer, for which a constant in each
-cell is exact, and a medium that varies within a cell, for which the contrast is expanded to degree
-$r$, the order becomes $\min(2p+2,2r+2)$ and the error of the single-site $T$-matrix is the relative
-projection error of the medium. \S\ref{sec:sphere} carries the prediction to a sphere, in its far field and its near field, and
-\S\ref{sec:gradvoxel} builds the hierarchy of \S\ref{sec:single} into a voxel scheme and sets it beside
-the Legendre voxels. \S\ref{sec:discussion} discusses what the results imply for voxel schemes in general, and
-\S\ref{sec:summary} closes with why an error known in advance is worth having. Every result is derived
-symbolically in Mathematica and checked against an independent Python implementation or an exact
-solution.
+ordered as the experiment is built. \S\S\ref{sec:setting}--\ref{sec:continuum} set out the discrete
+medium and the continuous layer it must reproduce; \S\ref{sec:point} shows why the point coupling
+fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly. \S\ref{sec:single}
+derives the single-site $T$-matrix as the first member of a moment hierarchy in closed form, and sets
+out what that gives (\S\ref{sec:whyclosed}). \S\S\ref{sec:convergence}--\ref{sec:fourth} take up
+the wavefield basis, \S\ref{sec:hetero} the medium basis and its projection error,
+\S\ref{sec:sphere} the sphere, and \S\ref{sec:gradvoxel} the hierarchy as a voxel scheme.
+\S\ref{sec:discussion} discusses what the results imply and \S\ref{sec:summary} concludes. Every
+result is derived symbolically in Mathematica and checked against an independent Python implementation
+or an exact solution.
 
 \section{Setting}\label{sec:setting}
 
@@ -561,7 +536,7 @@ distributional term at $r=0$ is carried by the divergence theorem itself. (A tri
 evaluated at the cube's corners is \emph{not} usable for repeated derivatives: its arctangent terms
 jump across the coordinate planes through the origin, and differentiating twice there discards
 exactly that term.) The self term so obtained reproduces the classical closed form of the cube's
-depolarisation to machine precision.
+depolarisation \citep{Chiu1977,Nozaki2001} to machine precision.
 
 \section{The single site: the cube \texorpdfstring{$T$}{T}-matrix from moment integrals}\label{sec:single}
 
@@ -569,17 +544,18 @@ Every error of a voxel scheme is made at the single site (\S\ref{sec:discussion}
 site is derived here rather than imported. The classical route imports it. For an ellipsoid,
 Eshelby's uniformity theorem makes the internal strain under a uniform load uniform, with a
 depolarisation tensor in closed form \citep{Eshelby1957,Eshelby1959,Mura1987}; its dynamic
-generalisation is known for spheres and ellipsoids \citep{Mikata1990,Michelitsch2003}. For a cube
-or a general polyhedron the static field of a uniform eigenstrain is also in closed form
-\citep{Chiu1977,LeeJohnson1978,Rodin1996,Nozaki2001}, but the strain it produces is not uniform,
-so there is no exact uniform-strain inclusion to import. Closed-form Eshelby tensors for polyhedral
+generalisation is known for spheres and ellipsoids \citep{FuMura1983,Mikata1990,Michelitsch2003}. For a
+cube or a general polyhedron the static field of a uniform eigenstrain is also in closed form
+\citep{Chiu1977,Rodin1996,Nozaki2001}, and it has been computed for a cuboid in an anisotropic matrix
+\citep{LeeJohnson1978}, but the strain it produces is not uniform, so there is no exact uniform-strain
+inclusion to import. Closed-form Eshelby tensors for polyhedral
 inclusions with polynomial eigenstrains have since been given \citep{WuZhangYin2021}, the dynamic
 inclusion problem has been formulated for shapes other than the ellipsoid, cubes among them
 \citep{WangMichelitsch2005}, and the Green's tensor has been integrated analytically over a cuboid for
-the coupled-dipole method \citep{YurkinSmunev2023}; these are the static and electromagnetic
-counterparts of individual moments below. In scattering theory the same object
-appears as the self-consistent or effective-field closure of the volume integral equation
-\citep{MalKnopoff1967,Gubernatis1977,Kanaun2008}: a first-order (Born) scatterer
+the coupled-dipole method, to an error of $O((kd)^4)$ \citep{YurkinSmunev2023}; these are the static
+and electromagnetic counterparts of individual moments below. In scattering theory the volume integral
+equation of an elastic inclusion \citep{Gubernatis1977} is closed in the same spirit by a
+self-consistent or effective-field approximation \citep{MalKnopoff1967,Kanaun2008}: a first-order (Born) scatterer
 \citep{Wu1985} renormalised by the geometric series of its own near field, the step that turns a
 contrast into an effective contrast. \citet{Nestor1996} introduced the single site in this form,
 summing the series of the cell's self integral, with the singular near field evaluated over an
@@ -588,8 +564,30 @@ distribution. The elastic $T$-matrix of \citet{Waterman1976} represents a
 scatterer in spherical multipoles, the natural basis for a sphere; a voxel in a lattice needs one
 compatible with the lattice, and the moments over the cube provide it. The construction below makes the
 approximation of a voxel explicit rather than implicit: it derives the cube's $T$-matrix from
-the moments of the elastodynamic Green's tensor over the cube, and identifies the
-uniform-strain closure as one truncation of an exact hierarchy.
+the moments of the elastodynamic Green's tensor over the cube, with the uniform-strain closure as the
+first truncation of a hierarchy.
+
+\paragraph{Its origin in the equivalent inclusion method} In its static form the construction is the
+equivalent inclusion method with polynomial eigenstrains of \citet{Moschovidis1975}: the eigenstrain
+is expanded about the centre of the inhomogeneity, the consistency equation is expanded there in a
+Taylor series, and the coefficient of each monomial is equated, which amounts to imposing the
+Lippmann--Schwinger equation and its derivatives at the centre \citep[\S2.2]{Brisard2014}.
+\citet{Johnson1980a,Johnson1980b} applied an expansion about the origin to a cuboidal
+inhomogeneity, and \citet{WuZhangYin2021} expanded the eigenstrain of a polyhedron to second degree
+about its centroid; both report that the expansion about the centre does not follow the field near the
+edges, corners or vertices. \citet{FuMura1983} extended the method to time-harmonic waves for an
+ellipsoid, with a second unknown for the density mismatch, and in the cases they report evaluated it
+with uniform eigenstrains. \citet{Brisard2014} replaced the Taylor form by a Galerkin form of the same
+equation, because the Taylor form need not give an invertible system and a higher degree need not
+improve it. What is added here, to our knowledge, is the elastodynamic hierarchy, with density and
+stiffness contrasts together, to any degree and for a body that is not an ellipsoid; its moments as
+distributions in closed form; and the structure and the error of its truncations, tested degree by
+degree against the exact solution for a sphere. The moments here are integrals of the Green's tensor
+against monomials over the body. They are not moments in the sense of the method of moments
+\citep{Harrington1993}, of which the hierarchy is the instance with monomials about the centre as
+expansion functions and the $\delta$ function and its derivatives at the centre as testing functions;
+and the exact static response of an inclusion of any shape to polynomial loads is described by the
+polarisation and elastic moment tensors of \citet{AmmariKang2007}.
 
 \subsection{The closed hierarchy}\label{sec:hierarchy}
 
@@ -676,7 +674,13 @@ $P$ with $|P|\le\ell$,
 \end{equation}
 Equations \eqref{eq:A11}--\eqref{eq:A44} are the case $\ell=3$, with the moments of
 Eq.~\eqref{eq:moments} put for the $\mathsf g$; their truncations above are $\ell=2$ and the
-uniform-strain closure $\ell=1$. The cube is centrosymmetric, so a moment vanishes unless $|D|+|W|$ is even, and the system
+uniform-strain closure $\ell=1$. With the field rather than the eigenstrain as the unknown, the
+moments $\mathsf g[D;W]$ play the part of the polynomial Eshelby tensors of the equivalent inclusion
+method \citep[Ch.~4]{Mura1987}, which \citet{Brisard2014} call influence pseudotensors, here for the
+elastodynamic kernel and for the density channel as well. For an ellipsoid the static self term of a
+polynomial eigenstrain is itself a polynomial of the same degree, so the expansion about the centre is
+exact in the self term and approximate only in the interaction with other bodies \citep{Brisard2014};
+for a cube it is approximate in both. The cube is centrosymmetric, so a moment vanishes unless $|D|+|W|$ is even, and the system
 needs the grades
 \begin{equation}\label{eq:grades}
 \begin{aligned}
@@ -718,7 +722,9 @@ Of the sixty unknowns, twenty-one belong to the even system and thirty-nine to t
 $\int_V\Delta\rho\,u\,\dd V$, is drawn from the even system, and that of a stiffness contrast,
 $\int_V\delta c:\nabla u\,\dd V$, from the odd one. The separation is thus the structure behind the
 result of \S\ref{sec:blocks}, that the blocks improve the density and the stiffness channels
-alternately.
+alternately. At first degree it is implicit in the dynamic equivalent inclusion method for an
+ellipsoid, where the force and the strain systems uncouple at the centre \citep{FuMura1983}; here it
+holds at every degree, for any centrosymmetric body.
 
 \subsection{The moments as distributions}\label{sec:distributions}
 
@@ -761,7 +767,12 @@ of the expansion ($k^2r$, $r^3$, \dots) as well as the odd ones. A route that in
 polynomial (odd-power) terms of $\bG$ misses those terms, at a real $O((kh)^2)$ cost
 (\S\ref{sec:closure}).
 
-\paragraph{Every grade, in closed form on four constants} The recursion \eqref{eq:peel} does not
+\paragraph{Every grade, in closed form on four constants} Closed forms for monomial-weighted
+integrals of $1/r$ over bricks are known \citep{Hackbusch2002}, as are closed forms for the potential
+and its first two derivatives over polyhedra with polynomial density, from the gravity literature
+\citep{Ren2020}. The engine used here differs in taking derivatives of any order as distributions, in
+treating the kernel $r$ as well as $1/r$, and in the even-power terms of the dynamic series. The
+recursion \eqref{eq:peel} does not
 depend on the grade, so the same engine gives every scalar moment of Table~\ref{tab:grades}. Each is
 evaluated once and stored. The scalar moments of every grade through $\ell=5$, with up to six
 derivatives and weights to the fifth degree, have been evaluated for the kernels $r^{-1}$ and $r$:
@@ -779,27 +790,10 @@ digits, with $\log2$ and $\log3$ admitted to the search, and the reduction is ac
 with the stored form to $1200$ digits. All $4224$ reduce, and the coefficients of $\log2$ and $\log3$
 are zero in every one.
 
-Two checks, whose answers do not depend on the engine, gate every grade. Because
-$\nabla^2r^m=m(m+1)r^{m-2}$ and $\nabla^2(1/r)=-4\pi\delta$,
-\begin{equation}\label{eq:gates}
-  \sum_pE[m;\,ppR;\,W]=m(m+1)\,E[m-2;\,R;\,W],\qquad
-  \sum_pE[-1;\,ppR;\,W]=-4\pi\,(-1)^{|R|}\,\bigl(\partial_R\,x_W\bigr)(0),
-\end{equation}
-for any further derivatives $R$ and any weight $W$. The second is the sum rule \eqref{eq:sumrule} at
-every grade: it tests the $\delta$ function of the inclusion problem and its derivatives, which is
-where a quadrature fails. Both hold for every grade of Table~\ref{tab:grades} with two or more
-derivatives, $910$ traces of each kind; the grades with fewer, for which the integrand is integrable,
-agree with numerical integration over the cube.
-
-The closed forms are also confirmed by a route that shares nothing with the faces of the cube. The
-cube is its inscribed ball plus the remainder. On the ball the derivatives are moved onto the sphere,
-where the surface integrals of monomials are Gamma functions, and all the distributional content is
-there; on the remainder the integrand is an ordinary function, integrated radially in closed form and
-over directions through the six faces by Gauss--Legendre quadrature. This evaluation reproduces all
-$4224$ stored values, the largest difference being $1.1\times10^{-12}$, and satisfies
-Eq.~\eqref{eq:gates} by itself to $5\times10^{-10}$ or better up to eight derivatives
-(\path{CubeMomentCore.wl}, \path{CubeMomentHigherGrades.wl}, \path{CubeMomentStore.wl},
-\path{CubeMomentCanonical.wl}; \path{scripts/crosscheck_cube_moments_ball_shell.py}).
+Every grade is gated by two checks whose answers do not depend on the engine, the Laplacian
+sum rules of Eq.~\eqref{eq:gates}, which test the $\delta$ function of the inclusion problem and its
+derivatives where a quadrature fails, and confirmed by a second route that shares nothing with the
+faces of the cube, to $1.1\times10^{-12}$ or better (Appendix~\ref{app:engine}).
 
 \subsection{Parity, and the nine-component block}\label{sec:parity}
 
@@ -871,37 +865,14 @@ lattice (\S\S\ref{sec:convergence}--\ref{sec:fourth}) although it is only an app
 isolated cube.
 
 \paragraph{Against the exact sphere} These statements are tested against the exact elastic Mie
-solution for a sphere, with no Eshelby formula in between. The concentration of Mie order $n$ is
-$E_n=a_n/a_n^{\text{Born}}$ (orders $0$, $1$, $2$ are the dilatational, density and shear
-channels), extrapolated to $ka\to0$. The formulation is applied to a ball of radius $a$, with its moment
-$\mathsf M$ evaluated by the surface route of Eq.~\eqref{eq:peel} on $|\mathbf r|=a$. Its
-dilatational and shear channels equal Mie's to $2\times10^{-10}$, and the density channel is
-$1$. The cube's closed forms meet the same numbers. Its dilatational channel is Mie's
-$E_0$ to $2\times10^{-10}$, and its isotropic shear average, Eq.~\eqref{eq:shearsplit}, is the
-depolarisation read from Mie's $E_2$ to $10^{-8}$. The same moment taken as a principal value, over
-the ball with a small sphere excluded around the origin, has zero depolarisation in every
-channel. The whole static response of the sphere is the $\delta$ term.
-
-At finite frequency the closure uses the dynamic ball moments, which are in closed form. It
-departs from Mie at second order in $ka$ and first order in the contrast, and the departure is
-closed-form too: the ball's moments are elementary, and Mie's low-frequency series with the
-contrast kept exact gives $E_n$ to relative order $(ka)^3$. To first order in the contrast,
-\begin{equation}\label{eq:spheredynamic}
-\frac{E_n^{\text{closure}}}{E_n^{\text{Mie}}}-1=
-\begin{cases}
-  -\dfrac{(k_Pa)^2}{10}\,\dfrac{\Delta\lambda}{\lambda+2\mu}, & n=0,\\[8pt]
-  \dfrac{2(k_Sa)^2+(k_Pa)^2}{30}\,\dfrac{\Delta\rho}{\rho}, & n=1,\\[8pt]
-  -\dfrac{3(k_Sa)^2+2(k_Pa)^2\beta^2/\alpha^2}{75}\,\dfrac{\Delta\mu}{\mu}, & n=2,
-\end{cases}
-\end{equation}
-with no $O(ka)$ term and no $O((ka)^3)$ term. The imaginary $(ka)^3$ terms, the radiation damping,
-agree exactly in all three channels. So the closure's only error at this order is the real
-$(ka)^2$ term, the uniform-field ansatz's own. That is the order the hierarchy assigns to the
-omitted second gradients (\S\ref{sec:parity}), and it has the same origin, the variation of the
-field across the scatterer, as the collocation error of \S\ref{sec:convergence}. Eq.~\eqref{eq:spheredynamic} is derived symbolically
-(\path{SphereClosureDynamic.wl}). It agrees with the coefficient extracted from the numerical Mie
-solve and an independent implementation of the closure to $5\times10^{-4}$, which is the size of the
-next order in the contrast.
+solution, with no Eshelby formula in between (Appendix~\ref{app:closuremie}). Applied to a ball, the
+construction's dilatational and shear channels equal Mie's static concentrations to $2\times10^{-10}$,
+and the cube's dilatational channel and isotropic shear average meet the same numbers; taken as a
+principal value the moment has no depolarisation at all, so the whole static response is the
+$\delta$ term. At finite frequency the closure departs from Mie only by a real term of order $(ka)^2$
+at first order in the contrast, given in closed form in Eq.~\eqref{eq:spheredynamic}; the radiation
+damping is exact. That term is the uniform-field ansatz's own error, the order the hierarchy assigns
+to the omitted second gradients.
 
 \subsection{What each block of the hierarchy buys}\label{sec:blocks}
 
@@ -1036,7 +1007,8 @@ $3$ ($60$) & $3.5\times10^{-4}$ & $3.4\times10^{-4}$ & $2.9\times10^{-4}$ & $3.1
 \end{table}
 Table~\ref{tab:hiercube} shows what distinguishes a cube from a sphere. Each truncation has a floor that
 does not fall with the frequency, because the internal field of an isolated cube is not a polynomial
-even statically: it concentrates at the edges and corners. The floor is $2.7\times10^{-3}$ for the
+even statically: it concentrates at the edges and corners, as the static expansions about the centre
+of \citet{Johnson1980b} and \citet{WuZhangYin2021} found for the cuboid and for polyhedra. The floor is $2.7\times10^{-3}$ for the
 uniform-strain closure and nearly the same with second gradients, as \S\ref{sec:parity} requires, the
 static stress dipole being fixed by the first-gradient block and coupled next to the third. The
 third-gradient block lowers it ninefold, to $3\times10^{-4}$. Above the floor the error falls with the
@@ -1078,6 +1050,87 @@ but omit the real even-power terms of the Green's tensor's expansion ($k^2r$, $r
 error of $0.4$--$0.6\,(kh)^2$ against the analytic self term, whose series agrees with the
 closed-form elastodynamic tensor to $10^{-14}$. By Eq.~\eqref{eq:collocation} that error cannot enter
 the closure scheme.
+
+\subsection{What a closed-form single-site $T$-matrix gives}\label{sec:whyclosed}
+
+The moment hierarchy costs more to set up than the alternatives: moments of the Green's tensor to
+fourth derivatives, evaluated as distributions and reduced to closed form. This subsection collects
+what that buys. Each point is a property of the $T$-matrix that follows from the physics, the
+Lippmann--Schwinger equation of one body, rather than from a model fitted to it, and each rests on a
+result of this section.
+
+\paragraph{One derivation, from first principles} The whole single site comes from one construction:
+the Lippmann--Schwinger equation of the body, the Green's tensor of the background, and the truncation
+of the internal field at a stated degree. The static depolarisation, its dynamic corrections, the
+radiation damping and every higher block are consequences of that one equation, evaluated by one engine
+(\S\ref{sec:distributions}); none is taken from a separate theory and joined to the others. Because
+each piece follows from the same equation, the pieces cannot be inconsistent with one another, and the
+limits below (the static, the spherical and the low-frequency) are results of the construction rather
+than conditions imposed on it. The equivalent inclusion method rests on the same foundation
+\citep{Moschovidis1975,FuMura1983}; what the hierarchy adds is that, for a body that is not an
+ellipsoid and at finite frequency, every coefficient is in closed form and the error of each truncation
+is known.
+
+\paragraph{Nothing is fitted} Every coefficient of Eq.~\eqref{eq:hierarchy} is a moment of the
+background Green's tensor over the body. There is no polarisability to choose and no depolarisation
+factor to calibrate: as in the equivalent inclusion method, the single site is derived, with the
+uniform-strain closure as its first member (\S\ref{sec:parity}), where other routes import it from the
+ellipsoid \citep{Eshelby1957,Mura1987} or close the volume integral equation with an effective field
+\citep{MalKnopoff1967,Kanaun2008}.
+
+\paragraph{The singular self-interaction is exact, and is not added by hand} The $\delta$-function
+content of the inclusion problem, which a quadrature misses, is part of the moments from the start
+(\S\ref{sec:distributions}): the sum rule of Eq.~\eqref{eq:sumrule} holds exactly, and the traces of
+Eq.~\eqref{eq:gates} hold at every grade. The same moments with a spherical exclusion give no
+depolarisation at all; the whole static response of a sphere is the $\delta$ term
+(\S\ref{sec:parity}).
+
+\paragraph{The exact limits are built in} The dilatational channel of the cube equals the sphere's
+exactly, because it depends on the moments only through a contraction that does not depend on the
+shape, and the cube's isotropic shear average equals the sphere's exactly; both are confirmed against
+the exact Mie solution, to $2\times10^{-10}$ and $10^{-8}$ (\S\ref{sec:parity}). At finite frequency
+the closure departs from Mie only through a real term of order $(ka)^2$, and the imaginary $(ka)^3$
+terms, the radiation damping, agree with Mie exactly in all three channels
+(Eq.~\eqref{eq:spheredynamic}).
+
+\paragraph{The error is stated before anything is solved} A truncation of the hierarchy is a
+statement of which blocks are omitted, so its error is a property of the omitted blocks and can be
+predicted. The predictions hold: the orders come in parity pairs, all thirty-six on the layer and all
+nine on the sphere as predicted (Tables~\ref{tab:hierlayer} and \ref{tab:hiersphere}); the leading error
+factor is in closed form, Eq.~\eqref{eq:taylorfactor}; and the separation into an even and an odd
+system (\S\ref{sec:hierarchy}) says which channel each block improves.
+
+\paragraph{It improves block by block, on fixed constants} Raising the degree adds moments; it adds no
+numerical integration. The scalar moments are a power of the body's width times
+Eq.~\eqref{eq:fourconstants}, evaluated once and stored (through $\ell=5$ for the kernels $r^{-1}$ and
+$r$, and through $\ell=3$ for the extra derivatives of the second term of Eq.~\eqref{eq:Gdecomp}), and
+are confirmed by a second route that shares nothing with the first (\S\ref{sec:distributions}). The accuracy of the single site is therefore set
+by its degree, not by a quadrature: against the exact sphere at $k_Sa=0.4$ the error falls from
+$1.4\%$ for the uniform-strain closure to $0.0046\%$ with third gradients, three hundred times smaller,
+from a system of sixty equations with a condition number of $5.9$ (Table~\ref{tab:hiersphere}). That
+each degree improves on the one below is shown here for one sphere and one cube, not in general: in the
+Taylor form of the equivalent inclusion method, for interacting inhomogeneities, a higher degree need
+not improve the solution and the system need not be invertible \citep{RodinHwang1991,Brisard2014}.
+
+\paragraph{It says what a body's shape does} The construction resolves the response into the
+irreducible channels of the body's symmetry. For the cube it shows that, at the order of the
+uniform-strain closure, a cube is a sphere plus a pure cubic anisotropy, which splits the deviatoric
+channel about the sphere's value in the ratio $3:2$ (Eq.~\eqref{eq:shearsplit}), and the higher blocks
+measure what the corners cost (Table~\ref{tab:hiercube}).
+
+\paragraph{It describes a scatterer, not only a cell} The assembly of Eq.~\eqref{eq:hierarchy} is the
+same for every centrosymmetric body; only the scalar moments change, as the ball and the cube of
+\S\ref{sec:singlesite} show. The result is the $T$-matrix of one heterogeneity, which enters a
+multiple-scattering solve as it stands, and the same moments are the self block of a voxel scheme, whose
+singular work they then do once and in closed form (\S\ref{sec:gradvoxel}).
+
+\paragraph{What it does not give} A polynomial about the centre cannot follow the edge and corner
+concentrations of an isolated cube's internal field, so each truncation there has a floor that does
+not fall with the frequency ($3\times10^{-4}$ with third gradients; Table~\ref{tab:hiercube}). And in a
+lattice the Legendre voxel of \S\ref{sec:fourth} is the more economical in unknowns: both are fourth
+order on a smoothly graded sphere, the hierarchy with sixty unknowns a voxel and the first-moment voxel
+with thirty-six (\S\ref{sec:gradvoxel}). The hierarchy's case is not the number of unknowns; it is that
+it yields the single site itself, in closed form, with its error known.
 
 \section{Convergence, and the closed-form error}\label{sec:convergence}
 
@@ -1293,113 +1346,15 @@ $F_1(g)=\mathrm{i}\,(gh\cos gh-\sin gh)/(gh)^2$, does not vanish on the reciproc
 incidence the mean's own zeros shift, $\sinc\bigl((2\pi p/d+k_x)h\bigr)=(-1)^p k_xh/p\pi+O(k_x^2h^2)$,
 so the tiling identity holds only to $O(k_\parallel h)$.
 
-\paragraph{Oblique incidence} The scheme is built spectrally. By Poisson summation the Bloch coupling
-between planes $i$ and $j$ at lateral wavenumber $\mathbf k_\parallel$ is
-\begin{equation}\label{eq:bloch}
-  C_{ab}(i,j)=\frac1{d^2}\sum_{\mathbf g}L_a(\boldsymbol\kappa)\,L_b(-\boldsymbol\kappa)\,
-  \int\!\!\int\phi_a(z)\,\hat\bG(\boldsymbol\kappa;z-z')\,\phi_b(z')\,\dd z\,\dd z',
-  \qquad \boldsymbol\kappa=\mathbf k_\parallel+\mathbf g,
-\end{equation}
-with $L_a$ the lateral Legendre factors. The whole-space tensor decays as $1/k_z^2$ and the nine-component
-state adds at most two powers of $k_z$, so each entry of $\hat\bG(\boldsymbol\kappa;z)$ is a $\delta(z)$
-of constant weight plus, per mode, $[\mathrm{i}\alpha/2\gamma+\mathrm{i}\beta\,\mathrm{sgn}(z)/2]\,\mathrm{e}^{\mathrm{i}\gamma|z|}$,
-$\gamma^2=k_W^2-\kappa^2$: every $z$ integral is closed-form. Double averaging makes the lattice sum
-converge without Ewald splitting, to three digits at $|p|,|q|\le8$. Against the exact layer, for a P
-wave incident at $20^\circ$ and $40^\circ$ (\path{ContinuumLimit_Oblique.wl}; Table~\ref{tab:oblique}).
-\begin{table}[htbp]
-\centering
-\caption{Relative error of the reflected P ($R_{PP}$) and converted S ($R_{PS}$) waves for a P wave incident at $20^\circ$, with the mean-only and first-moment voxels of Eq.~\eqref{eq:bloch}. At $40^\circ$ the orders are again $2$ and $4$.}\label{tab:oblique}
-\small\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}rcccc@{}}
-\toprule
- & \multicolumn{2}{c}{mean only} & \multicolumn{2}{c}{mean and first moments}\\
-$n$ & $R_{PP}$ & $R_{PS}$ & $R_{PP}$ & $R_{PS}$ \\
-\midrule
-$1$ & $9.3\times10^{-4}$ & $1.7\times10^{-3}$ & $7.2\times10^{-8}$ & $4.1\times10^{-7}$ \\
-$2$ & $2.3\times10^{-4}$ & $4.2\times10^{-4}$ & $4.5\times10^{-9}$ & $2.5\times10^{-8}$ \\
-$8$ & $1.5\times10^{-5}$ & $2.7\times10^{-5}$ & $1.7\times10^{-11}$ & $9.9\times10^{-11}$ \\
-order & $2$ & $2$ & $4$ & $4$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-The mean-only voxel is
-second order and the first-moment voxel fourth order in both the reflected P and the converted S wave:
-the breakdown of the tiling identity at $O(k_\parallel h)$ and the evanescent coupling of the gradient
-channels do not cost an order. At $\mathbf k_\parallel=0$ the construction reproduces
-Eq.~\eqref{eq:galerkin} to all printed digits.
-
-\paragraph{Incident S} Nothing in the construction is specific to P. For a normally incident S wave
-the layer is the one-dimensional problem of Eq.~\eqref{eq:galerkin} with $M_P\to\mu$, $k_P\to k_S$ and
-$\Delta M\to\Delta\mu$; the collocation and mean-only schemes converge at order $2.00$ and the
-first-moment voxel at $4.00$, in reflection and transmission, and the full $9\times9$ construction
-with an incident SH wave reproduces that one-dimensional result to all printed digits. At oblique
-incidence, against the exact layer (\path{ContinuumLimit_IncidentS.wl}), the orders are those of
-Table~\ref{tab:incS}.
-\begin{table}[htbp]
-\centering
-\caption{Observed order of convergence ($n=2\to8$, $\omega=300$\,rad\,s$^{-1}$) for incident SV and SH waves, with the mean-only and first-moment voxels. The SV angles lie below the critical angle $\arcsin(\beta/\alpha)=36.9^\circ$.}\label{tab:incS}
-\small
-\begin{tabular}{@{}lcc@{}}
-\toprule
- & mean only & mean and first moments \\
-\midrule
-SV at $20^\circ$: $R_{SS}$ / $R_{SP}$ & $2.00$ / $2.00$ & $4.00$ / $3.99$ \\
-SV at $30^\circ$: $R_{SS}$ / $R_{SP}$ & $1.98$ / $2.00$ & $3.97$ / $4.00$ \\
-SH at $20^\circ$ and $40^\circ$: $R_{SH}$ & $2.00$ & $4.00$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-The orders, and with $k=k_S$ the closed-form constants of
-Eqs.~\eqref{eq:errorR} and \eqref{eq:ratio}, are those of the incident P wave.
-
-\paragraph{Degree two at oblique incidence} In three dimensions the voxel of degree $2$ carries, on each
-of the nine components of its state, the ten Legendre products of total degree at most two in
-$(z,x,y)$. In the construction of Eq.~\eqref{eq:bloch} it converges at sixth order against the exact
-layer for incident P, SV and SH waves (Table~\ref{tab:deg2}; \path{scripts/measure_oblique_degree.py}).
-The test is run at $\omega=3000$\,rad\,s$^{-1}$ ($k_PD=1.2$, $k_SD=2$), ten times the frequency of the
-other tables, because at $300$\,rad\,s$^{-1}$ a sixth-order error on these grids lies below the round-off
-of double precision. The exact reflection coefficient is that of Kennett's recursion, an independent
-algorithm, and the same computation with the bases of degree $0$ and $1$ returns orders $2$ and $4$ in
-all five cases. At normal incidence the error on four planes, $6.95\times10^{-9}$, is the
-$c_2(kd)^6=7.2\times10^{-9}$ of Eq.~\eqref{eq:cp} to $4\%$. Doubling the number of lattice orders retained
-in Eq.~\eqref{eq:bloch} changes the errors by less than $1\%$. Unlike the degrees $0$ and $1$, this degree
-is implemented once at oblique incidence; its check is the exact solution.
-\begin{table}[htbp]
-\centering
-\caption{The voxel of degree $2$ (ten Legendre products per state component) at
-$\omega=3000$\,rad\,s$^{-1}$: relative error of the same-type reflection coefficient against the exact
-layer on $n$ planes, and the order over the last halving, with the orders of the degrees $0$ and $1$ from
-the same computation.}\label{tab:deg2}
-\small
-\begin{tabular}{@{}lccccc@{}}
-\toprule
- & \multicolumn{3}{c}{error, $p=2$} & order & orders \\
-incident wave & $n=1$ & $n=2$ & $n=4$ & $p=2$ & $p=0$ / $p=1$ \\
-\midrule
-P, normal: $R_{PP}$ & $3.4\times10^{-5}$ & $4.6\times10^{-7}$ & $7.0\times10^{-9}$ & $6.05$ & $2.04$ / $4.05$ \\
-P at $20^\circ$: $R_{PP}$ & $7.3\times10^{-6}$ & $1.0\times10^{-7}$ & $1.5\times10^{-9}$ & $6.04$ & $2.04$ / $4.06$ \\
-SV at $20^\circ$: $R_{SS}$ & $2.2\times10^{-4}$ & $2.3\times10^{-6}$ & $3.4\times10^{-8}$ & $6.11$ & $2.10$ / $4.14$ \\
-SH at $20^\circ$: $R_{SH}$ & $2.3\times10^{-4}$ & $2.5\times10^{-6}$ & $3.6\times10^{-8}$ & $6.11$ & $2.10$ / $4.14$ \\
-SH at $40^\circ$: $R_{SH}$ & $3.0\times10^{-4}$ & $3.6\times10^{-6}$ & $5.2\times10^{-8}$ & $6.09$ & $2.12$ / $4.05$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The spectral construction is implemented twice. The second implementation
-(\path{scripts/crosscheck_first_moment_voxel.py}) shares only the definition of the scheme: it takes
-the depth dependence of the transformed kernel from an independent residue construction, obtains
-the local weight as a numerical large-$k_z$ limit of the inverted Christoffel matrix, evaluates every
-double integral by quadrature and separates P from S by sampling the upgoing field at two depths.
-The raw reflected displacements of the two agree to $9\times10^{-16}$ in all $36$ cases compared:
-incident P, SV and SH, normal incidence and $20^\circ$, $n=1,2,4$, with and without the first moments.
-The one-dimensional scheme of any degree is also implemented twice. The second implementation
-(\path{scripts/crosscheck_second_moment_voxel.py}) evaluates every integral by Gauss quadrature, split
-at the receiver within a voxel, and the exact layer from its own interface system, in double
-precision. Its errors agree with the 40-digit ones within its round-off floor ($3\times10^{-14}$ in
-reflection, $1.6\times10^{-13}$ in transmission); at $\omega=1200$\,rad\,s$^{-1}$ it measures orders
-$4.02$ / $3.99$ and $6.02$ / $6.00$; for one plane as the layer thins its differences from the exact
-layer fall as $D^{3.00}$, $D^{5.00}$ and $D^{7.00}$ for $p=0$, $1$ and $2$; and it rederives $c_p$ for
-$p\le5$. Figure~\ref{fig:convergence}(a,b) shows the convergence, with the orders fitted to it.
+\paragraph{Other angles, other waves, and degree two} The orders and their constants hold beyond
+normal incidence and incident P. At oblique incidence, where the tiling identity holds only to
+$O(k_\parallel h)$ and the gradient channels couple through the evanescent orders, the mean-only and
+first-moment voxels remain second and fourth order in the reflected P and the converted S wave; for
+incident SV and SH waves the orders, and with $k=k_S$ the constants, are those of incident P; and the
+voxel of degree two converges at sixth order for P, SV and SH waves, its error on four planes at normal
+incidence being the $c_2(kd)^6$ of Eq.~\eqref{eq:cp} to $4\%$. Appendix~\ref{app:legendre} gives the
+spectral construction, Eq.~\eqref{eq:bloch}, the tests, and the second implementations that check
+them; Figure~\ref{fig:convergence}(a,b) shows the convergence.
 
 
 \FloatBarrier
@@ -1549,121 +1504,11 @@ error, and which of the two bases it belongs to, appear when the scattered field
 order in the contrast: the Born term $T_1$, and the second-order term $T_2$ in which the field
 scattered once is scattered again.
 
-\emph{The scattering series.} Multiply the whole contrast, $\Delta\lambda$, $\Delta\mu$ and
-$\Delta\rho$ together, by a number $s$, and let $u(s)$ be the scattered displacement at an observer at
-depth $z_o$ outside the layer. It vanishes at $s=0$ and is analytic in $s$ there, and its expansion is
-the Born series,
-\begin{equation}\label{eq:bornseries}
-  u(s)=s\,T_1+s^2T_2+s^3T_3+\dots,
-\end{equation}
-so that $T_n$ is the part of the field at the full contrast, $s=1$, that has been scattered $n$ times.
-
-\emph{The first two terms of the exact layer.} They are integrals over the layer. With the incident
-state $w^0=(u^0,\varepsilon^0)$, the contrast $\bD_1=\operatorname{diag}(\omega^2\Delta\rho,\Delta M)$
-with profile $f(z)$, and the kernel $\bK$ of Eq.~\eqref{eq:galerkin}, whose first row
-$\bigl(g,g'\bigr)(z_o-z)$ gives the displacement at the observer,
-\begin{equation}\label{eq:born1}
-  T_1=\int_0^D\bigl(g,\,g'\bigr)(z_o-z)\;\bD_1f(z)\,w^0(z)\,\dd z ,
-\end{equation}
-\begin{equation}\label{eq:born2}
-  w^1(z)=\int_0^D\bK(z-z')\,\bD_1f(z')\,w^0(z')\,\dd z',\qquad
-  T_2=\int_0^D\bigl(g,\,g'\bigr)(z_o-z)\;\bD_1f(z)\,w^1(z)\,\dd z .
-\end{equation}
-Here $w^1$ is the state scattered once, inside the layer; its strain includes the local term of the
-kernel, $-f(z)\,\Delta M\,\varepsilon^0(z)/M_P$. Each further term repeats the step,
-$w^n(z)=\int_0^D\bK(z-z')\,\bD_1f(z')\,w^{n-1}(z')\,\dd z'$. For a plane force at $z_s$ above the layer,
-$w^0(z)=c\,\mathrm{e}^{\mathrm{i}k(z-z_s)}(1,\mathrm{i}k)$ with $c=\mathrm{i}/(2M_Pk)$, every integrand
-is an exponential times the profile. Writing $a=\omega^2\Delta\rho$ and $b=\Delta M$, and carrying out
-the products of Eqs.~\eqref{eq:born1} and \eqref{eq:born2}, the terms seen in reflection ($z_o<0$) and
-in transmission ($z_o>D$) are, for any profile,
-\begin{equation}\label{eq:born1explicit}
-  T_1^{R}=c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\bigl(a+bk^2\bigr)\int_0^Df(z)\,\mathrm{e}^{2\mathrm{i}kz}\,\dd z,
-  \qquad
-  T_1^{T}=c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}\bigl(a-bk^2\bigr)\int_0^Df(z)\,\dd z,
-\end{equation}
-\begin{equation}\label{eq:born2explicit}
-\begin{aligned}
-  T_2^{R}&=c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\Bigl[\,c\,\bigl(a^2-b^2k^4\bigr)
-     \int_0^D\!\!\int_0^Df(z)f(z')\,\mathrm{e}^{\mathrm{i}k(z+z'+|z-z'|)}\,\dd z'\,\dd z
-     -\frac{b^2k^2}{M_P}\int_0^Df(z)^2\,\mathrm{e}^{2\mathrm{i}kz}\,\dd z\Bigr],\\[4pt]
-  T_2^{T}&=c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}\Bigl[\,c\,\bigl(a-bk^2\bigr)^2
-     \int_0^D\!\!\int_0^{z}f(z)f(z')\,\dd z'\,\dd z
-     +c\,\bigl(a+bk^2\bigr)^2\int_0^D\!\!\int_z^{D}f(z)f(z')\,\mathrm{e}^{2\mathrm{i}k(z'-z)}\,\dd z'\,\dd z\\
-     &\hspace{9em}+\frac{b^2k^2}{M_P}\int_0^Df(z)^2\,\dd z\Bigr].
-\end{aligned}
-\end{equation}
-The first-order reflection is the Fourier transform of the profile at the wavenumber $2k$, and the
-first-order transmission its integral. In each second-order term the last integral is the local term of
-the kernel, in which both scatterings are at one point and the profile appears squared; the others are
-the two scatterings at different depths. In transmission the wave scattered twice forwards carries the
-contrast of velocity twice, $(a-bk^2)^2$, and the wave scattered backwards and then forwards again the
-contrast of impedance twice, $(a+bk^2)^2$. For the uniform layer ($f=1$) the integrals give
-\begin{equation}\label{eq:born1closed}
-  T_1^{R}=c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\,\bigl(a+bk^2\bigr)\,
-          \frac{\mathrm{e}^{2\mathrm{i}kD}-1}{2\mathrm{i}k},
-  \qquad
-  T_1^{T}=c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}\,\bigl(a-bk^2\bigr)\,D,
-\end{equation}
-\begin{equation}\label{eq:born2closed}
-\begin{aligned}
-  T_2^{R}&=\frac{c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}}{4k^3M_P}
-     \Bigl[-\mathrm{i}\bigl(a^2+b^2k^4\bigr)
-     +\mathrm{e}^{2\mathrm{i}kD}\bigl(a^2(\mathrm{i}+2kD)+b^2k^4(\mathrm{i}-2kD)\bigr)\Bigr],\\[4pt]
-  T_2^{T}&=\frac{\mathrm{i}\,c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}}{8k^3M_P}
-     \Bigl[a^2\bigl(1-\mathrm{e}^{2\mathrm{i}kD}+2kD(\mathrm{i}+kD)\bigr)
-     -2abk^2\bigl(\mathrm{e}^{2\mathrm{i}kD}-1+2kD(kD-\mathrm{i})\bigr)\\
-     &\hspace{9em}+b^2k^4\bigl(1-\mathrm{e}^{2\mathrm{i}kD}+2kD(kD-3\mathrm{i})\bigr)\Bigr].
-\end{aligned}
-\end{equation}
-The reflection sees the contrast of impedance, $a+bk^2=k^2M_P(\Delta\rho/\rho+\Delta M/M_P)$, and the
-transmission that of velocity, $a-bk^2$. As $kD\to0$, $T_2^{R}\to-c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\,
-b^2k^2D/M_P$: the local term alone, which is the starting point of the argument below. For the smooth
-profile the integrals of Eqs.~\eqref{eq:born1explicit} and \eqref{eq:born2explicit} are evaluated in
-closed form symbolically, and by quadrature they return the same values to $10^{-16}$.
-Equations~\eqref{eq:born1closed} and \eqref{eq:born2closed} equal, identically, the first two Taylor
-coefficients in $s$ of the exact
-reflection and transmission of the layer of \S\ref{sec:continuum} (\path{ContinuumLimit_BornTerms.wl}).
-At $\omega=300$\,rad\,s$^{-1}$, $\lvert T_2\rvert/\lvert T_1\rvert$ is $0.039$ in reflection and $0.17$
-in transmission for the uniform layer.
-
-\emph{The first two terms of the scheme.} Write Eq.~\eqref{eq:galerkin} as
-$(\mathsf{M}-\mathsf{K})\,\mathsf{c}=\mathsf{b}$, with $\mathsf{M}$ the diagonal matrix of the
-$\int_i\phi_a^2\,\dd z$, $\mathsf{K}$ the matrix of the coupling blocks times $\bD_1$, and $\mathsf{b}$ the
-moments of the incident field, and let $\mathsf{r}$ be the row that gives the scattered displacement at
-the observer from the coefficients, $u=\mathsf{r}\,\mathsf{c}$. Scaling the contrast by $s$ scales
-$\mathsf{K}$ and $\mathsf{r}$ by $s$, so $u(s)=s\,\mathsf{r}(\mathsf{M}-s\mathsf{K})^{-1}\mathsf{b}$ and
-\begin{equation}\label{eq:bornscheme}
-  T_1^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{b},\qquad
-  T_2^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{K}\,\mathsf{M}^{-1}\mathsf{b}.
-\end{equation}
-$\mathsf{M}^{-1}\mathsf{b}$ is the projection of the incident field onto each cell's functions: the
-first term needs no solve. Splitting $\mathsf{K}$ into its blocks within a cell and its blocks between
-cells splits $T_2^{\text{scheme}}$ into the part scattered twice in one cell and the part scattered in
-two; the same split of the inner integral of Eq.~\eqref{eq:born2} splits the exact $T_2$.
-
-\emph{A check by differences.} The terms can also be read from solutions at four scaled contrasts,
-$s=\pm\epsilon$ and $\pm2\epsilon$, with no knowledge of the formulas above. The odd and even parts of
-$u$ in $s$ separate the odd orders from the even, and the two step sizes remove the next term of each
-(the five-point central differences for $u'(0)$ and $\tfrac12u''(0)$):
-\begin{equation}\label{eq:isolate}
-\begin{aligned}
-  T_1&=\frac{8\bigl[u(\epsilon)-u(-\epsilon)\bigr]-\bigl[u(2\epsilon)-u(-2\epsilon)\bigr]}{12\,\epsilon}
-      +4\epsilon^4T_5+\dots,\\[4pt]
-  T_2&=\frac{16\bigl[u(\epsilon)+u(-\epsilon)\bigr]-\bigl[u(2\epsilon)+u(-2\epsilon)\bigr]}{24\,\epsilon^2}
-      +4\epsilon^4T_6+\dots
-\end{aligned}
-\end{equation}
-A negative $s$ is a medium slower and lighter than the background by the same fractions, as legitimate
-a medium as the other. With $\epsilon=0.01$ the remainders $4\epsilon^4T_5/T_1$ and $4\epsilon^4T_6/T_2$
-are below $2\times10^{-12}$ for this layer, and the formulas applied to the exact layer return
-Eqs.~\eqref{eq:born1closed} and \eqref{eq:born2closed} less exactly those remainders, to $10^{-17}$.
-The measurements below use the differences for the scheme and the exact layer alike, each in its own
-arithmetic, and they agree with Eqs.~\eqref{eq:born1}, \eqref{eq:born2} and \eqref{eq:bornscheme}.
-
-\emph{Why the terms must be separated.} The law below is a statement about $T_2$. At the full contrast
-the terms of third and higher order are $7\%$ of the second and carry errors of their own, and if every
-order above the first is taken together the ratio of Eq.~\eqref{eq:defectlaw} reads $0.90$ to $0.94$
-where the second-order term alone gives $1.00$ to $1.01$.
+Appendix~\ref{app:borndefect} gives both terms for the exact layer in closed form
+(Eqs.~\eqref{eq:born1}--\eqref{eq:born2closed}) and for the scheme, where the first needs no solve
+(Eq.~\eqref{eq:bornscheme}), and shows how both are read from solutions at four scaled contrasts
+(Eq.~\eqref{eq:isolate}). The terms must be separated: at the full contrast the terms of third and
+higher order are $7\%$ of the second and carry errors of their own.
 
 With $f(z)$ the profile and $\Pi_q$
 the $L^2$ projection onto the Legendre polynomials of degree at most $q$ in each cell, define the
@@ -1685,32 +1530,12 @@ Born term is smaller by two to six orders of magnitude. The error of the whole i
 $T_2$, the projection error times $\lvert T_2\rvert/\lvert T_1\rvert$ ($0.044$ here): for $p=r=1$ on $16$ cells
 that predicts $1.6\times10^{-7}$, and Table~\ref{tab:graded} has $1.4\times10^{-7}$.
 
-Equation~\eqref{eq:defectlaw} is exact in the long-wave limit, for a reason that shows what each basis
-is for. The strain--strain entry of the kernel, $g''=-k^2g-\delta(z)/M_P$, is local as $kD\to0$, and the
-incident strain $\varepsilon_0$ is then uniform across the layer, so the strain scattered once is
-$-(\Delta M/M_P)\,f(z)\,\varepsilon_0$: it is the profile itself. A cell holds the contrast as
-$\Pi_rf$ and the field to degree $p$, so it holds the once-scattered strain as
-$\Pi_p(\Pi_rf)=\Pi_qf$ with $q=\min(p,r)$. The second-order term pairs the contrast with that strain:
-\begin{equation}\label{eq:defectproof}
-  T_2\ \propto\ \int f\cdot f\,\dd z=\lVert f\rVert^2,\qquad
-  T_2^{\text{scheme}}\ \propto\ \int(\Pi_rf)(\Pi_qf)\,\dd z=\lVert\Pi_qf\rVert^2,
-\end{equation}
-the last because $\Pi_qf$ lies in the range of $\Pi_r$. The relative error is
-$1-\lVert\Pi_qf\rVert^2/\lVert f\rVert^2=\mathcal{E}_q$. Because the kernel is local in this limit, the
-second scattering takes place in the cell of the first: $T_2$ is the second-order term of the
-single-site $T$-matrix, and Eq.~\eqref{eq:defectlaw} is a statement about the single site. The
-$T$-matrix sums the rescattering within a cell exactly for the cell as it is represented, a contrast
-$\Pi_rf$ and a field of degree $p$; its error is that the cell is not the medium. The split is measured directly
-(\path{scripts/measure_layer_bases.py}): at $\omega=300$\,rad\,s$^{-1}$ on $4$, $8$ and $16$ cells, $T_2$
-of the scheme and of the exact layer are each divided into the part whose two scatterings lie in one cell
-and the part between different cells. For all nine pairs the error of the same-cell part is $0.998$ to
-$1.013$ times $\lvert T_2\rvert\,\mathcal{E}_{\min(p,r)}$, and that of the part between cells at most
-$0.002$ times it. The coupling between cells contributes only the departure from the limit. Measured, the ratio of the two sides of
-Eq.~\eqref{eq:defectlaw} for $p=r=1$ on $8$ cells departs from one by $1.7\times10^{-2}$,
-$4.3\times10^{-3}$, $4.8\times10^{-4}$ and $4\times10^{-5}$ at $kD=0.24$, $0.12$, $0.04$ and $0.012$: as
-$(kD)^2$ (\path{scripts/measure_layer_bases.py}). The pairing in Eq.~\eqref{eq:defectproof} is verified
-symbolically for all nine pairs, and the projection errors are computed exactly
-(\path{ContinuumLimit_LayerDefect.wl}); they fall by $4^{q+1}$ for each halving of the cells.
+Equation~\eqref{eq:defectlaw} is exact in the long-wave limit (Appendix~\ref{app:borndefect}). There
+the strain scattered once is the profile itself, a cell holds it as $\Pi_{\min(p,r)}f$, and the
+second scattering takes place in the cell of the first: the law is a statement about the single site,
+whose $T$-matrix is exact for the cell as represented and whose error is that the cell is not the
+medium. Measured, the part of $T_2$ between different cells carries at most $0.002$ of the error, and
+the departure from the law falls as $(kD)^2$.
 
 Three consequences follow. The two bases must be matched: a contrast of higher degree than the field is
 wasted (the pairs $(p,r)=(0,1)$ and $(0,2)$ have the errors of $(0,0)$ to three digits), and a field of
@@ -1749,193 +1574,18 @@ arithmetic). The reason is the one given for Eq.~\eqref{eq:defectproof}: the rev
 local term, so the second scattering in the cell of the first is unchanged. This check is by one
 implementation against an exact solution.
 
-\paragraph{Oblique incidence, and a three-layer background} At oblique incidence the test is the
-three-dimensional scheme of Eq.~\eqref{eq:bloch}, with P, SV and SH waves, in two backgrounds: the two
-half-spaces above, and a three-layer background in which the voxels lie in a layer between a slower
-half-space above ($\alpha=4200$, $\beta=2400$\,m\,s$^{-1}$, $\rho=2300$\,kg\,m$^{-3}$) and the faster
-one below ($6500$, $3700$, $2800$), so that the layer reverberates between two interfaces. The
-experiment is built in four steps.
+\paragraph{Oblique incidence, and a three-layer background} The same holds at oblique incidence, for
+P, SV and SH waves, in the two half-spaces and in a three-layer background in which the layer of voxels
+reverberates between two interfaces (Appendix~\ref{app:strat}). At $20^\circ$ the orders are $2$, $4$
+and $6$ for $p=0$, $1$ and $2$ in all thirty-six cases (Table~\ref{tab:strat}), and the errors are
+close to those of the whole space: the background changes the field the voxels must represent, not how
+well they represent it. Both terms of the error remain known in advance. The scheme's first-order term
+equals a closed-form prediction, built from the thirty-six pairs of incident and radiated plane waves
+(Eq.~\eqref{eq:wavefactor}), to $2\times10^{-15}$; and the law of Eq.~\eqref{eq:defectlaw} holds to
+$3\%$ for $p\le1$ and $6\%$ for $p=2$ at $k_SD=0.2$, and to $0.6\%$ at $k_SD=0.067$, in every
+background and for every wave type (Table~\ref{tab:obliquelaw}).
 
-\emph{The kernel.} At each lateral wavenumber $\boldsymbol\kappa$ the whole-space kernel between two
-depths factorises over the plane-wave modes, three going down and three going up (P, SV, SH):
-$\hat\bG(\boldsymbol\kappa;z-z')=\mathsf{D}_\downarrow\,\mathsf{E}(z-z')\,\mathsf{S}_\downarrow$ for
-$z>z'$, with $\mathsf{S}_\downarrow$ the $3\times9$ matrix of mode amplitudes radiated downwards by a
-nine-component source, $\mathsf{E}(L)=\operatorname{diag}(\mathrm{e}^{\mathrm{i}\gamma_mL})$ the
-propagation over a distance $L$ with $\gamma_m$ the vertical wavenumber of mode $m$, and
-$\mathsf{D}_\downarrow$ the $9\times3$ matrix of the modes' states; and likewise upwards. With the
-interfaces at $z_A$ above and $z_B$ below, $H=z_B-z_A$, and $\mathsf{R}_A$, $\mathsf{R}_B$ the
-$3\times3$ reflection matrices of the two interfaces seen from inside the layer, a source at $z'$
-sends $\mathsf{s}_\downarrow=\mathsf{S}_\downarrow q$ down and $\mathsf{s}_\uparrow=\mathsf{S}_\uparrow q$
-up, and the reverberation it sets up is
-\begin{equation}\label{eq:reverb}
-\begin{aligned}
-  \mathsf{d}_A&=\bigl(\mathsf{I}-\mathsf{R}_A\mathsf{E}(H)\mathsf{R}_B\mathsf{E}(H)\bigr)^{-1}\mathsf{R}_A
-     \bigl[\mathsf{E}(z'-z_A)\,\mathsf{s}_\uparrow+\mathsf{E}(H)\,\mathsf{R}_B\,\mathsf{E}(z_B-z')\,\mathsf{s}_\downarrow\bigr],\\
-  \mathsf{u}_B&=\mathsf{R}_B\bigl[\mathsf{E}(z_B-z')\,\mathsf{s}_\downarrow+\mathsf{E}(H)\,\mathsf{d}_A\bigr],\\
-  \hat\bG_{\text{rev}}(\boldsymbol\kappa;z,z')\,q&=\mathsf{D}_\downarrow\mathsf{E}(z-z_A)\,\mathsf{d}_A
-     +\mathsf{D}_\uparrow\mathsf{E}(z_B-z)\,\mathsf{u}_B ,
-\end{aligned}
-\end{equation}
-with $\mathsf{d}_A$ the downgoing amplitudes leaving the upper interface and $\mathsf{u}_B$ the upgoing
-ones leaving the lower. It is added to the whole-space kernel in every block of Eq.~\eqref{eq:bloch},
-at every order of the reciprocal lattice. It is smooth and separable in $z$ and $z'$, so its integrals
-over the cells are one-dimensional moments of exponentials. For two half-spaces $\mathsf{R}_A=0$ and
-only the second line survives.
-
-\emph{The interfaces.} $\mathsf{R}_A$, $\mathsf{R}_B$ and the transmission matrices into and out of
-the layer follow from continuity of displacement and traction at each interface: six equations in the
-states of the six modes on either side, solved for each lateral wavenumber, evanescent orders included.
-
-\emph{The incident field and the output.} A plane wave of unit amplitude arrives from the upper
-half-space. Its field in the layer, a downgoing part and an upgoing part with the reverberation summed
-as in Eq.~\eqref{eq:reverb}, is the right-hand side of the scheme. The output is the upgoing wave of
-the same type as the incident one, arriving at $z_A$ from the voxels and transmitted into the upper
-half-space: the change that the layer of voxels makes to the same-type reflection coefficient ($R_{PP}$,
-$R_{SS}$ or $R_{SH}$), a quantity that does not depend on how the waves are normalised.
-
-\emph{The reference, and a check of the construction.} The exact change is the same-type reflection
-coefficient of the stack with the layer, less that of the background, both from Kennett's recursion
-\citep{Kennett1983}, an independent algorithm. Before any voxel is introduced, the background's own
-reflection coefficient computed from the modes and the interface matrices above agrees with Kennett's
-to $5\times10^{-15}$ in all twelve cases.
-
-The results are in Table~\ref{tab:strat}, at $\omega=3000$\,rad\,s$^{-1}$ ($k_SD=2$; at
-$300$\,rad\,s$^{-1}$ the sixth-order errors lie below round-off, as in Table~\ref{tab:deg2}) and
-$20^\circ$ in the upper half-space. In all thirty-six cases the order is that of the whole space, with
-the interfaces $3$\,m from the layer and with the voxels against them
-(\path{scripts/measure_oblique_stratified_background.py}).
-\begin{table}[htbp]
-\centering
-\caption{The layer of voxels in a stratified background at $20^\circ$, $\omega=3000$\,rad\,s$^{-1}$:
-relative error of the change of the same-type reflection coefficient on $n=4$ planes, and the order
-over the last halving ($n=2\to4$), for field degrees $p=0$, $1$ and $2$.}\label{tab:strat}
-\small\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}llccc@{}}
-\toprule
-background & wave & $p=0$ & $p=1$ & $p=2$ \\
-\midrule
-two half-spaces, interface $3$\,m below
- & P  & $6.1\times10^{-3}$ ($2.03$) & $2.7\times10^{-6}$ ($4.02$) & $2.3\times10^{-9}$ ($6.04$) \\
- & SV & $1.5\times10^{-2}$ ($2.11$) & $2.6\times10^{-5}$ ($4.13$) & $3.7\times10^{-8}$ ($6.09$) \\
- & SH & $1.6\times10^{-2}$ ($2.11$) & $2.7\times10^{-5}$ ($4.13$) & $4.1\times10^{-8}$ ($6.09$) \\
-two half-spaces, interface against the voxels
- & P  & $5.1\times10^{-3}$ ($2.04$) & $3.8\times10^{-6}$ ($4.04$) & $2.1\times10^{-9}$ ($6.00$) \\
- & SV & $1.6\times10^{-2}$ ($2.10$) & $2.5\times10^{-5}$ ($4.14$) & $3.3\times10^{-8}$ ($6.11$) \\
- & SH & $1.7\times10^{-2}$ ($2.10$) & $2.4\times10^{-5}$ ($4.15$) & $3.4\times10^{-8}$ ($6.11$) \\
-three layers, interfaces $3$\,m away
- & P  & $6.3\times10^{-3}$ ($2.03$) & $8.7\times10^{-7}$ ($4.04$) & $2.4\times10^{-9}$ ($6.06$) \\
- & SV & $1.0\times10^{-2}$ ($2.10$) & $5.8\times10^{-6}$ ($4.08$) & $5.2\times10^{-8}$ ($6.11$) \\
- & SH & $1.3\times10^{-2}$ ($2.10$) & $3.0\times10^{-6}$ ($3.95$) & $9.3\times10^{-8}$ ($6.10$) \\
-three layers, interfaces against the voxels
- & P  & $4.8\times10^{-3}$ ($2.04$) & $2.4\times10^{-6}$ ($4.04$) & $4.1\times10^{-9}$ ($6.03$) \\
- & SV & $8.5\times10^{-3}$ ($2.09$) & $7.1\times10^{-6}$ ($4.01$) & $5.0\times10^{-8}$ ($6.09$) \\
- & SH & $1.4\times10^{-2}$ ($2.10$) & $5.8\times10^{-6}$ ($3.92$) & $8.5\times10^{-8}$ ($6.12$) \\
-\bottomrule
-\end{tabular}
-\end{table}
-The errors are close to those of the whole space at the same frequency (Table~\ref{tab:deg2}): the
-background changes the field the voxels must represent, not how well they represent it. 
-
-\paragraph{The two terms of the error at oblique incidence} The orders say that the scheme
-converges; the two-term analysis says what its error is. Both terms are tested at $20^\circ$, in the
-whole space and in the stratified backgrounds, for P, SV and SH waves.
-
-\emph{The first-order term.} The scheme is written as $(\mathsf{M}-\mathsf{K})\mathsf{c}=\mathsf{b}$ with
-the output $u=\mathsf{r}\,\mathsf{c}$, as in Eq.~\eqref{eq:bornscheme}, so that
-$T_1^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{b}$ with no differencing. The prediction is built
-from plane waves. The background field in the layer is a sum of six, P, SV and SH going down and going
-up, and the voxels radiate into six. For a pair made of an incident wave of wavevector
-$\mathbf{k}_{\text{in}}$ and a radiated wave of wavevector $\mathbf{k}_{\text{out}}$, a cubic voxel of
-half-side $h$ whose field is held to total degree $p$ gives the exact first-order term of that pair
-times
-\begin{equation}\label{eq:wavefactor}
-  1+E_p\bigl(\mathbf{k}_{\text{in}},\mathbf{k}_{\text{out}}\bigr)
-  =\frac{\displaystyle\sum_{|a|\le p}\ \prod_{i=1}^{3}(2a_i+1)\,
-        j_{a_i}\bigl(k_{\text{in},i}h\bigr)\,j_{a_i}\bigl(k_{\text{out},i}h\bigr)}
-       {\displaystyle\prod_{i=1}^{3}j_0\bigl((k_{\text{in},i}-k_{\text{out},i})h\bigr)},
-\end{equation}
-the sum being over the Legendre products $P_{a_1}P_{a_2}P_{a_3}$ of the voxel's basis and $j_n$ the
-spherical Bessel functions: the numerator is the projection of the incident wave onto the basis paired
-with that of the outgoing wave, the denominator the exact pairing. Its leading departure from one is
-$-d^2\,\mathbf{k}_{\text{in}}\cdot\mathbf{k}_{\text{out}}/12$ for $p=0$, with $d=2h$, and along one axis it is the
-factor of Eq.~\eqref{eq:ratio}. The predicted first-order term is the sum over the thirty-six pairs of
-the exact term of each pair, an integral of two exponentials over the voxel, times its factor, the
-radiated waves then being carried to the observer by the reverberation of Eq.~\eqref{eq:reverb}
-exactly. On one and two planes of voxels of degree $0$, $1$ and $2$, at
-$\omega=3000$\,rad\,s$^{-1}$, the scheme's first-order term equals this prediction to
-$2\times10^{-15}$ in all twelve combinations of background and wave type. The first-order error is
-therefore known in closed form at oblique incidence, in a stratified background, for every wave type.
-
-\emph{The second-order term.} For the law of Eq.~\eqref{eq:defectlaw} the contrast must vary within
-the voxels. Each plane of voxels is given the smooth profile of \S\ref{sec:hetero} in depth, projected
-to Legendre degree $r=p$, and the coupling is that of Eq.~\eqref{eq:gradedcoupling} with the
-reverberation added. The second-order term of the scheme is
-$T_2^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{K}\,\mathsf{M}^{-1}\mathsf{b}$. The exact $T_2$
-needs the exact stack with a layer whose properties vary continuously in depth, at oblique incidence,
-for which a recursion over homogeneous layers is not exact. It is computed by two independent
-algorithms. The first is invariant imbedding, the impedance march of \citet{Haines2004}: the
-six-component state of displacement and traction obeys $\dd\mathsf{y}/\dd z=\mathsf{A}(z)\,\mathsf{y}$,
-and with the four $3\times3$ blocks $\mathsf{A}_{ij}$ of $\mathsf{A}$ the impedance $\mathsf{Y}$, which
-gives the traction from the displacement, obeys the Riccati equation
-\begin{equation}\label{eq:riccati}
-  \frac{\dd\mathsf{Y}}{\dd z}=\mathsf{A}_{21}+\mathsf{A}_{22}\mathsf{Y}-\mathsf{Y}\mathsf{A}_{11}
-     -\mathsf{Y}\mathsf{A}_{12}\mathsf{Y}.
-\end{equation}
-It is started below the stack with the impedance of the downgoing waves of the lower half-space, which
-is the radiation condition, marched upwards, exactly through the homogeneous gaps and by fourth-order
-Runge--Kutta with the medium sampled at the stages through the graded layer, and at the top the
-reflection matrix follows from continuity of displacement and traction with the modes of the upper
-half-space. $\mathsf{Y}$ stays bounded, so no growing exponential is formed. The second is the
-propagator: the same state is integrated across the graded layer as a $6\times6$ matrix, with
-$\mathsf{A}(z)=\mathsf{F}(z)\operatorname{diag}(\mathrm{i}\gamma_m)\,\mathsf{F}(z)^{-1}$ built at each
-depth from the plane-wave modes of the medium there, $\mathsf{F}$ the matrix of the six modes'
-displacements and tractions and $\gamma_m$ their vertical wavenumbers, and the radiation conditions of
-the two half-spaces are imposed on the result. For the graded layer the two agree to $10^{-12}$ in all
-twelve cases with $400$ steps of the march, whose error falls sixteenfold for each doubling of the
-steps; for a uniform layer the propagator equals Kennett's recursion to $3\times10^{-14}$. $T_2$ then follows
-from Eq.~\eqref{eq:isolate} at $\epsilon=0.1$, where halving $\epsilon$ changes it by $2\times10^{-8}$. The ratio of the relative error of $T_2$ to the
-relative projection error $\mathcal{E}_p$ is in Table~\ref{tab:obliquelaw}.
-\begin{table}[htbp]
-\centering
-\caption{The relative error of the second-order term over the relative projection error of the medium,
-at $20^\circ$, on $n=4$ planes with $r=p$; the law of Eq.~\eqref{eq:defectlaw} predicts one in the
-long-wave limit.}\label{tab:obliquelaw}
-\small\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}llcccccc@{}}
-\toprule
- & & \multicolumn{3}{c}{$k_SD=0.2$} & \multicolumn{3}{c}{$k_SD=0.067$} \\
-background & wave & $p=0$ & $p=1$ & $p=2$ & $p=0$ & $p=1$ & $p=2$ \\
-\midrule
-whole space & P & $1.000$ & $0.998$ & $1.011$ & $1.000$ & $1.000$ & $1.000$ \\
- & SV & $0.998$ & $0.992$ & $1.032$ & $1.000$ & $0.999$ & $1.004$ \\
- & SH & $0.999$ & $0.992$ & $1.031$ & $1.000$ & $0.999$ & $1.003$ \\
-two half-spaces, interface $3$\,m below & P & $1.010$ & $1.009$ & $1.019$ & $1.001$ & $1.001$ & $1.001$ \\
- & SV & $1.012$ & $1.008$ & $1.046$ & $1.001$ & $1.001$ & $1.005$ \\
- & SH & $1.027$ & $1.025$ & $1.059$ & $1.003$ & $1.003$ & $1.006$ \\
-three layers, interfaces $3$\,m away & P & $1.004$ & $1.003$ & $1.013$ & $1.000$ & $1.000$ & $1.000$ \\
- & SV & $0.979$ & $0.973$ & $1.002$ & $0.997$ & $0.996$ & $1.000$ \\
- & SH & $1.007$ & $1.004$ & $1.035$ & $1.001$ & $1.001$ & $1.004$ \\
-three layers, interfaces against the voxels & P & $1.002$ & $1.001$ & $1.011$ & $1.000$ & $1.000$ & $1.000$ \\
- & SV & $0.995$ & $0.988$ & $1.018$ & $0.999$ & $0.999$ & $1.002$ \\
- & SH & $1.004$ & $1.002$ & $1.032$ & $1.000$ & $1.000$ & $1.003$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-On four planes the law holds to $3\%$ for $p=0$ and $1$ and to $6\%$ for $p=2$ at $k_SD=0.2$, and to
-$0.6\%$ for all three degrees at $k_SD=0.067$, in every background and for every wave type: the
-departure falls about ninefold as the frequency falls threefold, as $(kD)^2$. On two planes the ratios
-for $p=0$ and $1$ lie within $0.03$ of those in the table; for $p=2$ they are lower, $0.89$ to $0.99$ at
-$k_SD=0.2$ and $0.988$ to $0.999$ at $k_SD=0.067$. The law is loosest for the highest degree at the
-highest frequency, because the projection error of degree $2$ is so small ($1.6\times10^{-5}$ on four
-planes) that the departure from the long-wave limit is a larger share of it. Both terms of
-the error are thus known in advance at oblique incidence and in a stratified background, as they are
-at normal incidence in the whole space (\path{scripts/measure_oblique_two_term.py}).
-
-Two limits stand. The oblique construction is implemented once, and its checks are the exact
-solutions. And the voxels here fill their plane, so that the image of a voxel in an interface it
-touches is the image of a whole plane; a body of finite lateral extent against an interface, where
-that image is singular, has not been run.
-
+\FloatBarrier
 \section{A sphere: what the layer predicts in three dimensions}\label{sec:sphere}
 
 The layer and the stratified layer are laterally uniform. A sphere is not, and elastic scattering by a
@@ -1948,7 +1598,7 @@ mean-only voxel of \S\ref{sec:fourth} in three dimensions: each cell carries the
 nine-component state, tested with the same constant, and the $L^2$ projection of its contrast, which is
 its cell mean; every cell that overlaps the sphere is kept, and the cells are coupled by cell-to-cell
 double integrals of the Green's tensor, one block per orbit of the cube group
-\citep{NestorGraded2026}. For the sharp sphere the voxel is the package's cube $T$-matrix, which
+(Appendix~\ref{app:solver}). For the sharp sphere the voxel is the package's cube $T$-matrix, which
 differs from the collocation closure only through its far-field corrections (\S\ref{sec:closure}) and
 has the same order, each cell keeping the contrast of its centre. The far field is
 computed from the solution for the incident plane wave itself, each voxel's displacement and strain
@@ -2045,10 +1695,718 @@ overlapping cell kept, represents the same body on every grid, and the order the
 then the one observed.
 
 The first-moment voxel of \S\ref{sec:fourth}, extended to three dimensions with a contrast linear in
-each cell, converges at fourth order on this same sphere \citep{NestorGraded2026}: its apparent orders
+each cell, converges at fourth order on this same sphere (Appendix~\ref{app:solver}): its apparent orders
 are $4.01$ and $4.13$ where the discretisation error is isolated at weak contrast, and at the full
 contrast its error with $16$ voxels across is $4.9\times10^{-6}$ and $5.9\times10^{-6}$, $82$ and
 $317$ times below the mean-only voxel's on the same grid.
+
+\paragraph{The near field, an impedance march, and a sharp sphere} Three further tests are in
+Appendix~\ref{app:sphere}. Read at finite distance, down to a quarter of a radius from the surface, the
+graded sphere converges at the orders of the far field, second for the mean-only voxel and $3.8$ to
+$3.95$ for the first-moment voxel, while the asymptotic readout would be in error there by $48\%$ to
+$85\%$ (Table~\ref{tab:spherenear}). Against the impedance march of \citet{Haines2004}, which needs
+far fewer unknowns, the first-moment voxel reaches the march's accuracy with six voxels across and
+continues at close to fourth order below it, where the march is limited by the scattering between
+the spheres of the periodic array it must solve (Table~\ref{tab:march}). And a sphere with a sharp
+surface does not converge: its error tracks the volume of its staircase, which changes with the grid
+(Table~\ref{tab:sphereraw}); the smooth sphere, like the layer, measures the scheme.
+
+\FloatBarrier
+\section{The gradient hierarchy as a voxel scheme}\label{sec:gradvoxel}
+
+The Legendre voxels of \S\ref{sec:fourth} represent the field of a voxel by its moments over the
+voxel. The hierarchy of \S\ref{sec:single} represents it by its gradients at the centre. Both are
+polynomial, and \S\ref{sec:blocks} shows that on the layer the hierarchy of degree $\ell=3$ is fourth
+order, as the first-moment voxel is. This section builds the hierarchy into a voxel scheme in three
+dimensions and compares the two.
+
+\paragraph{The scheme} Each voxel $c$, centred at $\mathbf x_c$, carries the coefficients
+$U^c_{j;W}$ of Eq.~\eqref{eq:taylorfield}. The equation and its derivatives to order $\ell$ are imposed
+at every centre (with $\ell=1$ and no density contrast this is the static numerical equivalent
+inclusion method on cuboidal elements, with uniform eigenstrains, equivalence at the element centres and
+a fast Fourier transform, of \citet{Zhou2011}):
+\begin{equation}\label{eq:gradlattice}
+  U^c_{i;P}-\sum_{c'}\Bigl\{\omega^2\Delta\rho\sum_{W}\frac{\mathsf K_{ij}[P;W](\mathbf x_c-\mathbf x_{c'})}{|W|!}\,U^{c'}_{j;W}
+  +\sum_{W}\frac{\mathsf K_{in}[Pk;W](\mathbf x_c-\mathbf x_{c'})}{|W|!}\,\delta c_{nkrj}\,U^{c'}_{j;rW}\Bigr\}
+  =\partial_Pu^0_i(\mathbf x_c),
+\end{equation}
+\begin{equation}\label{eq:gradkernel}
+  \mathsf K_{in}[D;W](\boldsymbol\Delta)=\int_{V}\bigl(\partial_DG_{in}\bigr)(\boldsymbol\Delta-\boldsymbol\xi)\,
+  \xi_W\,\dd\boldsymbol\xi .
+\end{equation}
+The two kinds of block are of different character. For $c'=c$ the integrand is singular and the
+integral is a distribution: it is the moment of the hierarchy,
+$\mathsf K_{in}[D;W](0)=(-1)^{|D|}\mathsf g_{in}[D;W]$, in closed form on the cube. For $c'\neq c$ the
+field point is the centre of another voxel, at least half a voxel from the source voxel, so the
+integrand is smooth and a tensor Gauss rule integrates it; the derivatives of the Green's tensor, to
+any order, come from the family $x^ay^bz^c\,r^p\,\mathrm{e}^{\mathrm{i}kr}$, which is closed under
+differentiation. All the singular work of the scheme is thus in the self block, where it is done once
+and in closed form; the Legendre voxel's self block is a double integral of the same singular kernel.
+The blocks depend on the offset alone, so the product of the system with a vector is a convolution over
+the lattice and is done exactly by the fast Fourier transform. Where the contrast varies within a voxel
+it is projected there on polynomials of degree $r$, as in \S\ref{sec:hetero}, and the source is the
+product of that polynomial and the field's: the moments then carry weights to degree $\ell+r$, and a
+block is a sum, over the monomials of the contrast, of blocks with the weight shifted.
+
+\paragraph{Checks of the construction} The derivatives of the Green's tensor to fourth order agree
+with the closed forms of its value, gradient and second derivative, and with central differences beyond
+them, to $8\times10^{-7}$. A lattice of one voxel reproduces the single site of
+\S\ref{sec:singlesite} to $10^{-14}$. Only the offsets of one octant are computed, the others following
+from the parity of each index; a block obtained that way equals one computed directly to $10^{-15}$.
+The iterative solution equals a dense solution to $7\times10^{-11}$ where both can be run.
+
+\paragraph{A body with corners} The cube of \S\ref{sec:singlesite}, at $k_Sh=0.2$, is cut into $n^3$
+voxels. Table~\ref{tab:hiersub} gives the far-field error against the converged reference, with the
+Legendre voxels on the same body.
+\begin{table}[htbp]
+\centering
+\caption{A homogeneous cube cut into $n^3$ voxels, $k_Sh=0.2$: relative far-field error of the
+hierarchy of degree $\ell$ and of the Legendre voxels, with the unknowns of each voxel.}\label{tab:hiersub}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & unknowns a voxel & $n=1$ & $2$ & $3$ & $4$ \\
+\midrule
+hierarchy, $\ell=1$ & $12$ & $5.4\times10^{-3}$ & $1.7\times10^{-3}$ & $8.3\times10^{-4}$ & $5.0\times10^{-4}$ \\
+hierarchy, $\ell=2$ & $30$ & $1.6\times10^{-3}$ & $6.7\times10^{-4}$ & $3.7\times10^{-4}$ & $2.4\times10^{-4}$ \\
+hierarchy, $\ell=3$ & $60$ & $3.4\times10^{-4}$ & $7.0\times10^{-5}$ & $3.0\times10^{-5}$ & $1.7\times10^{-5}$ \\
+Legendre, mean only & $9$ & $5.4\times10^{-3}$ & $1.3\times10^{-3}$ & $5.8\times10^{-4}$ & $3.3\times10^{-4}$ \\
+Legendre, first moment & $36$ & $4.8\times10^{-5}$ & $6.0\times10^{-6}$ & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+On this body every degree of the hierarchy converges at about the same rate, an order near two between
+the two finest grids, and the degree buys a constant: thirty times from $\ell=1$ to $\ell=3$ on $64$
+voxels. That rate is the body's and not the scheme's, for the mean-only Legendre voxel shows it too: a
+homogeneous cube has edges and corners, whose fields no polynomial follows. The uniform-strain closure
+and the mean-only voxel agree on one cell, as they must, being the same approximation. And the
+first-moment Legendre voxel is far ahead: one cell of $36$ unknowns is more accurate than eight voxels
+of the third-gradient hierarchy with $480$. A projection, which the Legendre voxel is, follows a field
+that is not polynomial better than an expansion about a point: the advantage of a Galerkin over a Taylor
+discretisation of the Lippmann--Schwinger equation that \citet{Brisard2014} established for the static
+equivalent inclusion method.
+
+\paragraph{A smooth medium} The comparison that bears on voxel schemes is in a medium without corners.
+First in one dimension: the layer of \S\ref{sec:blocks} with a contrast that varies in depth, projected
+in each cell to the degree of the field, against the exact graded layer. With the profile
+$\sin^2(\pi z/D)$ the orders from $16$ to $32$ cells are $1.99$, $1.98$ and $3.99$ for $\ell=1$, $2$
+and $3$: a varying contrast leaves the pairs of \S\ref{sec:blocks} as they are. With the smoothstep of
+\S\ref{sec:sphere} as the profile they are $1.97$, $1.99$ and $3.84$, and on coarser grids they are
+erratic, the third-gradient scheme being worse than the second on four cells. The orders appear only
+when about four cells cross the graded part of the profile
+(\path{scripts/measure_layer_taylor_hierarchy_graded.py}). That fixes the conditions of the
+three-dimensional test. The graded sphere of \S\ref{sec:sphere} has a shell $5$\,m wide, and a solver
+that reaches fourteen voxels across puts fewer than four voxels across it; so the core is reduced here
+from $a/2$ to $a/10$, which widens the shell to $9$\,m, and a second profile, $\sin^2(\pi x/2)$ in the
+fraction $x$ of the shell's width measured from the surface, is run beside the smoothstep. The exact
+reference is the radial solution of \S\ref{sec:sphere} for each body. The contrast is linear in each
+voxel for $\ell=3$, which suffices for fourth order (\S\ref{sec:hetero}), and of degree $\ell$ for
+$\ell=1$ and $2$.
+\begin{table}[htbp]
+\centering
+\caption{The graded sphere with a shell $9$\,m wide, $k_Sa=0.5$: relative far-field error against the
+exact solution for $n_{\mathrm{sub}}$ voxels across, with the apparent order between the two finest
+grids of each row. The lower block is the profile $\sin^2$.}\label{tab:hiergraded}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+ & $n_{\mathrm{sub}}=4$ & $6$ & $8$ & $10$ & $12$ & $14$ & order \\
+\midrule
+hierarchy, $\ell=1$ & $1.5\times10^{-3}$ & $8.4\times10^{-4}$ & $4.9\times10^{-4}$ & $3.2\times10^{-4}$ & & & $1.94$ \\
+hierarchy, $\ell=2$ & $3.3\times10^{-4}$ & $2.1\times10^{-4}$ & $1.5\times10^{-4}$ & $1.0\times10^{-4}$ & & & $1.56$ \\
+hierarchy, $\ell=3$ & $2.6\times10^{-4}$ & $5.0\times10^{-5}$ & $1.7\times10^{-5}$ & $7.2\times10^{-6}$ & $3.6\times10^{-6}$ & $2.0\times10^{-6}$ & $3.80$ \\
+Legendre, mean only & $7.3\times10^{-3}$ & $3.2\times10^{-3}$ & $1.8\times10^{-3}$ & $1.1\times10^{-3}$ & & & $2.02$ \\
+Legendre, first moment & $2.9\times10^{-4}$ & $6.4\times10^{-5}$ & $2.2\times10^{-5}$ & $9.4\times10^{-6}$ & $4.6\times10^{-6}$ & $2.5\times10^{-6}$ & $3.92$ \\
+\midrule
+hierarchy, $\ell=3$ & $1.9\times10^{-4}$ & $3.8\times10^{-5}$ & $1.3\times10^{-5}$ & $5.2\times10^{-6}$ & $2.7\times10^{-6}$ & $1.5\times10^{-6}$ & $3.84$ \\
+Legendre, first moment & $2.2\times10^{-4}$ & $4.8\times10^{-5}$ & $1.6\times10^{-5}$ & $6.8\times10^{-6}$ & $3.4\times10^{-6}$ & $1.8\times10^{-6}$ & $4.02$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:hiergraded} gives the result. The first-gradient scheme converges at second order, and
+is three to four times more accurate than the mean-only Legendre voxel on every grid, for twelve
+unknowns a voxel against nine. The second-gradient scheme is more accurate again but gains no order,
+as \S\ref{sec:blocks} predicts; its apparent order is still rising towards two. The third-gradient
+scheme converges at an apparent order between $3.7$ and $4.1$ from grid to grid, $3.8$ over the range
+from six to fourteen voxels across, for both profiles; the first-moment Legendre voxel does the same,
+between $3.7$ and $4.0$ and $3.85$ over the range. Neither has settled on four at fourteen voxels
+across, and the second profile, gentler than the first, changes neither: the two fourth-order schemes
+behave alike. On every grid from six voxels across the hierarchy's error is the smaller, by a fifth to
+a quarter. It carries sixty unknowns a voxel against thirty-six, so that for a given number of unknowns
+the Legendre voxel remains somewhat the more accurate; the wide margin of Table~\ref{tab:hiersub} was
+the corners.
+
+\paragraph{What the hierarchy is for} The two schemes reach the same order by different closures of
+the same equation, and they differ in what they cost and in what they give besides. The Legendre voxel
+is the more economical in unknowns. The hierarchy's blocks are simpler: its self block is known in
+closed form on four constants (\S\ref{sec:distributions}), and its coupling is a single integral of a
+smooth function where the Legendre voxel's is a double integral; the relative cost of forming the two
+has not been measured here. The iteration converged in five steps at every size; the time went into the
+tables of blocks, which are computed once for a grid and a frequency. And the hierarchy is, in
+addition, a single-site $T$-matrix in closed form, whose accuracy improves block by block
+(\S\ref{sec:singlesite}), which no voxel defined by moments over the cell provides. The lattice results
+of this section come from one implementation, checked against exact solutions and, where it can be,
+against a dense solve; they are at one frequency and on one family of bodies
+(\path{scripts/gradient_voxel_lattice.py}, \path{scripts/measure_lattice_gradient_hierarchy.py},
+\path{scripts/measure_graded_sphere_gradient_hierarchy.py},
+\path{scripts/measure_graded_sphere_gradient_hierarchy_fft.py}).
+
+\FloatBarrier
+
+\section{Discussion}\label{sec:discussion}
+
+Figure~\ref{fig:convergence} collects the convergence of every test, with the order fitted to each by
+least squares (\path{scripts/plot_convergence_orders.py}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{../figures/fig_convergence.pdf}
+\caption{Convergence of every test, with least-squares regression lines. Each line fits
+$\log e=c-p\log n$ to the filled points; open points are pre-asymptotic and are not fitted. The legend
+gives the order $p$ and its standard error. The marker, and in colour the hue, marks the scheme, so
+that the figure reads in grey scale: collocation (circles; \S\ref{sec:single}),
+the mean-only voxel (squares) and the voxels carrying Legendre moments to degree $p=1$ (diamonds), $2$
+(triangles) and $3$ (pentagons) (Eqs.~\eqref{eq:galerkin} and \eqref{eq:bloch}). (a)~The uniform layer, P reflection at normal
+incidence ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}), fitted from
+$n=4$; the collocation line is dashed and lies on the mean-only line, from which its constant differs
+only by the factor $3/2$ of Table~\ref{tab:ratio}; the second- and third-moment voxels, computed in 40-digit arithmetic, fitted from $n=2$. (b)~The uniform layer at $20^\circ$, fitted from
+$n=2$: the S wave converted from incident P (solid) and reflected from incident SV (dashed).
+(c)~The stratified layer of \S\ref{sec:hetero}, reflection at normal incidence for P (solid) and S
+(dashed), against the number $m$ of voxel planes per model layer, fitted from $m=4$. (d)~The
+smoothly graded sphere of \S\ref{sec:sphere} against its exact solution, for $n_{\mathrm{sub}}$ voxels
+across: the mean-only voxel, fitted from $n_{\mathrm{sub}}=6$ (at $4$ a voxel is as wide as the
+graded shell); the collocation voxel with the contrast sampled at the cell centre, joined by dashed
+lines and not fitted, since its two $O(h^2)$ errors of opposite sign leave no single order to fit;
+and, at $k_Sa=0.5$, the same collocation voxel with the cell mean of the contrast, dotted, which
+recovers second order.}
+\label{fig:convergence}
+\par\smallskip{\footnotesize\textit{Alt text:} Four log--log panels of relative error against refinement,
+each showing data points and fitted straight lines with the fitted order in the legend. (a) Uniform layer
+at normal incidence, 1 to 32 voxel planes: the collocation and mean-only lines have order 2.000, the
+first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10^{-13}$; the second-moment
+line has order 6.000 and the third-moment line order 8.000, over 1 to 8 planes, reaching about $10^{-22}$. (b) Uniform layer at 20 degrees,
+1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
+first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
+for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 24 voxels across:
+two straight falling lines of order 2 for the mean-only voxel, for $k_Sa=0.5$ and $1$, from about
+$10^{-2}$ and $3\times10^{-2}$ at 4 voxels to $2\times10^{-4}$ and $8\times10^{-4}$ at 24; two
+dashed collocation curves starting near $10^{-1}$ at 4 voxels, dropping steeply to 6 and then
+falling faster than the mean-only lines, crossing below them by 16 voxels; and a dotted line of order
+2 for the cell-mean collocation voxel, close to the mean-only line.\par}
+\end{figure}
+
+\paragraph{What each basis is for} A voxel holds two functions, and the results give each basis its
+part. The basis of the wavefield sets how well the voxel carries the field across itself: in a uniform
+medium the scheme converges at order $2p+2$ with the constant $c_p$ of Eq.~\eqref{eq:cp}, for P and S
+waves and at normal and oblique incidence alike. The basis of the medium sets how well the voxel
+\emph{is} the medium: with degree $r$ the order is capped at $2r+2$ (Eq.~\eqref{eq:graded}). Neither can
+make up for the other, and the second-order term shows why. The field scattered once is a copy of the
+medium's profile, so the wavefield basis must carry the profile as well as the wave, and the error of
+that term is the relative projection error of the profile at the lower of the two degrees
+(Eq.~\eqref{eq:defectlaw}). At the frequencies of interest the wave varies little across a cell and the
+medium may vary much, so it is the medium, not the wavelength, that decides the degree and the size of
+the cells. Two cases bracket the choice. Where the medium is piecewise constant on the cells, as in a
+layered model with voxel faces on its interfaces, a constant is exact for the medium, the projection
+error vanishes, and the degree of the field is spent entirely on the wave. Where the medium varies
+smoothly within the cells, the two degrees should be equal: a higher degree for the contrast than for
+the field is wasted, and a higher degree for the field improves only the Born term. That the two
+degrees can be chosen independently is the practice of higher-order electromagnetic volume methods
+\citep{Chobanyan2015}; what the present results add is the rule for choosing them, and the error each
+choice leaves.
+
+\paragraph{Where the error of a voxel scheme lives} The results separate the two approximations
+a voxel scheme makes. The \emph{coupling} between voxels makes none: averaged over the source cell it
+is the continuum's cell integral exactly, between planes by the form factor's zeros and within a
+plane by the tiling identity, and the self term it omits is exactly the one the single site
+carries. Every error therefore comes from the \emph{single site}: from the internal field it
+assumes and, where the medium varies within the cell, from the medium it is given. Its $T$-matrix sums
+the rescattering within the voxel exactly, but for the voxel as represented, and the split of the
+second-order term in \S\ref{sec:hetero} measures the consequence: the error sits in the part whose two
+scatterings lie in one cell, and the part between cells carries at most $0.2\%$ of it. For a uniform field that error is the midpoint rule's, known in closed form; for a linear
+field it is the next term of the same expansion. The converse is the practical warning. A kernel that
+is not the cell integral (the point Green's tensor, or a cell average that does not match the
+single site's closure) leaves a local term that does not vanish as the voxels shrink
+(\S\ref{sec:point}): the evanescent lattice orders carry a static contribution of fixed size per
+voxel volume. A scheme built that way converges to the wrong limit, and refinement cannot reveal
+it, because the error is scale-invariant.
+
+\paragraph{What the single site is} The moment hierarchy of \S\ref{sec:single} turns the
+uniform-field single site from a modelling choice into a derived object with a stated error
+(\S\ref{sec:whyclosed} collects what that gives). Its
+static part is exact for a sphere, and for a cube it differs from the sphere's only by the cubic
+split of Eq.~\eqref{eq:shearsplit}. Its dynamic part departs from exact scattering by a sphere only
+through the real $(ka)^2$ term of Eq.~\eqref{eq:spheredynamic}; the radiation damping is exact.
+That term and the collocation error of Eq.~\eqref{eq:errorR} have the same origin, the variation of
+the field across the scatterer, and the same remedy, a richer internal field. In a lattice the
+remedy is cheap: the field a voxel must represent is the smooth continuum field, not the field of an
+isolated cube, with its concentrations at the edges and corners.
+
+\paragraph{Relation to other methods} The partition of the error is the coupled-dipole method's
+choice of polarisability seen from the other side: for space-filling cubes the tiling identity fixes
+the local field exactly, and the polarisability is neither needed nor a free parameter. The voxel of
+degree $p$ is close kin to the spectral element of seismology; the two share a Galerkin condition on
+polynomial bases, and differ as a differential formulation from an integral one, and so suit different
+problems. Appendix~\ref{app:related} sets out both relations, and where each method is the better
+choice.
+
+\paragraph{The tension between the two error sources} The coupled-dipole method has two sources
+of error, the single site and the coupling between sites, and each has been corrected on its own:
+the polarisability by the Clausius--Mossotti relation, the lattice dispersion relation or the exact
+static limit, and the coupling by integrating or filtering the Green tensor. The two are not
+independent. The point kernel's evanescent orders carry a static local term whose size per voxel
+volume does not shrink with the voxels (\S\ref{sec:point}), and the single site must cancel exactly
+that term. A polarisability tuned for one kernel is therefore wrong for another: the lattice
+dispersion relation corrects the point-dipole lattice, and changing the kernel to an integrated or
+a filtered one changes the term it must cancel. Tuning either alone moves the error between the
+two, and refinement cannot reveal a mismatch, because the surviving term is scale-invariant. For
+space-filling cubes the tension is resolved rather than balanced: the cell-averaged kernel omits
+exactly the self term that the closure carries (Eq.~\eqref{eq:collocation}), so the coupling error
+vanishes identically and every remaining error is the single site's, the variation of the field
+across the cell. That error has a second tension of its own. It is a midpoint-rule error whose
+constants have opposite signs in reflection and transmission (Eq.~\eqref{eq:errorR}), so any
+scalar adjustment of the single site that improves one worsens the other; the package's far-field
+corrections reduce the reflection error by a factor $4.45$ and increase the transmission error by
+$1.7$. No polarisability, however chosen, can remove it. What removes it is a richer internal
+field: the first moment lowers the error by two orders in $kd$ in both observables at once.
+
+\paragraph{The cost of higher order, and a fast solver} A first-moment voxel carries four times as
+many unknowns as a uniform one, but by the closed-form constants it reaches a reflection error of
+$10^{-6}$ with voxels $58$ times larger in each direction; the stratified model of \S\ref{sec:hetero}
+measures it directly, $347$ planes of uniform-field voxels against $8$ first-moment voxels. And because
+the discretisation error is known in advance and the coupling between cells is exact, a fast product
+need be no more accurate than that error, and can be budgeted separately from it.
+Appendix~\ref{app:cost} sets out the cost, and what the error analysis offers a fast solver.
+
+\paragraph{Limitations and outlook} The results concern laterally uniform media, a homogeneous layer
+and a randomly stratified one, for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
+first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
+the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
+$O(k_\parallel h)$. The smoothly graded sphere of \S\ref{sec:sphere} shows the mean-only
+voxel converging at second order on a laterally heterogeneous body against an exact solution, and the
+first-moment voxel converges at fourth order there (\S\ref{sec:gradvoxel}).
+A contrast that varies within a cell, which \S\ref{sec:hetero} shows is needed beyond second order in a
+smoothly varying medium, has a further consequence in three dimensions: its linear part is odd about
+the cell's centre, so it couples the single site's uniform-field and first-moment blocks, which parity
+keeps apart for a homogeneous cube (\S\ref{sec:parity}). A graded voxel therefore needs at least the
+first-moment block; that voxel is built, and tested on the graded sphere, in the companion paper. The numerical evidence is at moderate, physically typical contrasts (up to
+$15\%$ in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
+validated; the closed forms are first order in the contrast, and the departures from them at the
+full contrast are of second order. What is established is the \emph{order} of convergence and its
+leading constant, not the behaviour at strong contrast, where the single site's own closure may
+limit the accuracy before the lattice coupling does. The single site's dynamic error is in closed
+form for a sphere only; for a cube, for which no exact solution exists, it is known through the
+layer (\S\S\ref{sec:convergence}--\ref{sec:fourth}) and, for the isolated cube, by comparison with a
+converged solution (\S\ref{sec:singlesite}). The hierarchy beyond the first gradient is established
+less widely than the rest: its orders and its error factor on the layer are derived symbolically and
+checked independently to the third degree, and its moments are confirmed by two routes, but its
+three-dimensional results, the single site against the sphere and the cube and the voxel scheme of
+\S\ref{sec:gradvoxel}, come from one implementation, at one frequency for the voxel scheme, checked
+against exact solutions. There the fourth order is approached and not attained on the grids reached
+($3.8$ at fourteen voxels across, as for the first-moment voxel), the fifth-gradient system, whose
+moments are in hand, has not been assembled in three dimensions, and the cost of forming the blocks of
+the two fourth-order schemes has not been compared. Two extensions follow directly. The first is
+the three-dimensional solver itself. The second is a stratified \emph{background}, a layered
+reference medium, as distinct from the stratified contrast of \S\ref{sec:hetero}. For a
+laterally uniform layer of voxels the orders, the first-order factor and the projection-error law all
+survive it, at normal and at oblique incidence, for P, SV and SH waves, in a background of two
+half-spaces and in one of three layers (\S\ref{sec:hetero}). What remains is a body
+of finite lateral extent in such a background, where the image of a voxel in an interface it touches
+is singular.
+
+\section{Conclusions}\label{sec:summary}
+
+A voxel of a volume-integral scheme must represent the medium within it and the wavefield within it.
+This paper has determined what each basis must be and what error a given choice leaves, by an
+experiment in which nothing else is approximated: a layer of cubes is the layer itself, so its exact
+solution isolates the discretisation error.
+
+With the wavefield expanded to Legendre degree $p$ and the contrast to degree $r$ in each voxel, the
+scheme converges at order $\min(2p+2,2r+2)$, with the leading error $c_p(kd)^{2p+2}$ in closed form
+(Eq.~\eqref{eq:cp}) for P, SV and SH waves at normal and oblique incidence, in a whole space and in a
+plane-stratified background. A contrast held constant in each cell caps every voxel at second order.
+The error of the term of second order in the contrast is the relative projection error of the medium at
+degree $\min(p,r)$: it is the single site's, whose $T$-matrix sums the rescattering within a voxel
+exactly for the voxel as represented, so the two bases must be matched, and where the medium is
+piecewise constant on the cells it vanishes. A sphere whose contrast falls smoothly to zero at its
+surface converges at the orders the layer predicts.
+
+The single site is derived rather than assumed. Three properties of the cube make the experiment
+exact: the source-cell-averaged coupling is the continuum's cell integral exactly, the moments of the
+Green's tensor over the cube give the single site with no polarisability to choose, and its self term
+cancels the kernel's, so the simplest scheme is a collocation of the continuum equation. The
+uniform-strain closure is the first member of a moment hierarchy, the elastodynamic extension of the
+Taylor form of the equivalent inclusion method \citep{Moschovidis1975} to bodies that are not
+ellipsoids, whose moments are in closed form on four constants. Its blocks gain accuracy in pairs,
+with the error of each truncation in closed form: as a single site the third-gradient system is three
+hundred times more accurate than the uniform-strain closure against the exact sphere, and as a voxel
+scheme it is fourth order, as the first-moment voxel is, on a smoothly graded sphere, where in a lattice
+the Legendre voxel is the more economical. The results and the evidence for each are collected in
+Appendix~\ref{app:evidence}.
+
+\paragraph{The error is known in advance} For every discretisation studied here the error is not
+something to be discovered by refining until the answer stops changing. Its order and its leading
+constant are known before anything is computed: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
+transmission for the collocation voxel (Eq.~\eqref{eq:errorR}), $(kd)^2/12$, $(kd)^4/720$ and
+$(kd)^6/100800$ for the voxels of degree $0$, $1$ and $2$ (Eq.~\eqref{eq:cp}), and the order
+$\min(2p+2,2r+2)$ where the medium varies within a cell (Eq.~\eqref{eq:graded}), with the size of the
+error there given by the relative projection error of the medium (Eq.~\eqref{eq:defectlaw}), which is
+computed from the model and the grid alone. That is worth more than
+the order alone, for three reasons. First, the cell size and the degree of the voxel that a required
+accuracy needs follow from the wavenumber and the medium, before the computation and without a
+refinement study. Secondly, it turns a refinement study from a hope into a test. A scheme of this kind
+can converge smoothly to the wrong limit (\S\ref{sec:point}), and smooth convergence alone cannot
+reveal it; but the difference between two grids must have the known order and the known constant, and
+a computation whose differences do not is in error from some cause other than the discretisation.
+Thirdly, it shows where effort pays. The error is that of representing the field and the medium within
+a cell, so raising the degree of the cell does what multiplying the cells cannot: in the stratified
+model one first-moment voxel per layer reaches $10^{-6}$ where the uniform-field voxel needs about forty.
+Whether the error of a body with three-dimensional structure can be known in advance in the same way is
+the question taken up in a following paper \citep{NestorOctree2026}, where it decides where the cells of an adaptive grid are placed.
+
+\appendix
+
+\section{The moment engine: gates and a second route}\label{app:engine}
+
+Two checks, whose answers do not depend on the engine, gate every grade. Because
+$\nabla^2r^m=m(m+1)r^{m-2}$ and $\nabla^2(1/r)=-4\pi\delta$,
+\begin{equation}\label{eq:gates}
+  \sum_pE[m;\,ppR;\,W]=m(m+1)\,E[m-2;\,R;\,W],\qquad
+  \sum_pE[-1;\,ppR;\,W]=-4\pi\,(-1)^{|R|}\,\bigl(\partial_R\,x_W\bigr)(0),
+\end{equation}
+for any further derivatives $R$ and any weight $W$. The second is the sum rule \eqref{eq:sumrule} at
+every grade: it tests the $\delta$ function of the inclusion problem and its derivatives, which is
+where a quadrature fails. Both hold for every grade of Table~\ref{tab:grades} with two or more
+derivatives, $910$ traces of each kind; the grades with fewer, for which the integrand is integrable,
+agree with numerical integration over the cube.
+
+The closed forms are also confirmed by a route that shares nothing with the faces of the cube. The
+cube is its inscribed ball plus the remainder. On the ball the derivatives are moved onto the sphere,
+where the surface integrals of monomials are Gamma functions, and all the distributional content is
+there; on the remainder the integrand is an ordinary function, integrated radially in closed form and
+over directions through the six faces by Gauss--Legendre quadrature. This evaluation reproduces all
+$4224$ stored values, the largest difference being $1.1\times10^{-12}$, and satisfies
+Eq.~\eqref{eq:gates} by itself to $5\times10^{-10}$ or better up to eight derivatives
+(\path{CubeMomentCore.wl}, \path{CubeMomentHigherGrades.wl}, \path{CubeMomentStore.wl},
+\path{CubeMomentCanonical.wl}; \path{scripts/crosscheck_cube_moments_ball_shell.py}).
+
+\FloatBarrier
+
+\section{Further tests of the Legendre voxel}\label{app:legendre}
+
+\paragraph{Oblique incidence} The scheme is built spectrally. By Poisson summation the Bloch coupling
+between planes $i$ and $j$ at lateral wavenumber $\mathbf k_\parallel$ is
+\begin{equation}\label{eq:bloch}
+  C_{ab}(i,j)=\frac1{d^2}\sum_{\mathbf g}L_a(\boldsymbol\kappa)\,L_b(-\boldsymbol\kappa)\,
+  \int\!\!\int\phi_a(z)\,\hat\bG(\boldsymbol\kappa;z-z')\,\phi_b(z')\,\dd z\,\dd z',
+  \qquad \boldsymbol\kappa=\mathbf k_\parallel+\mathbf g,
+\end{equation}
+with $L_a$ the lateral Legendre factors. The whole-space tensor decays as $1/k_z^2$ and the nine-component
+state adds at most two powers of $k_z$, so each entry of $\hat\bG(\boldsymbol\kappa;z)$ is a $\delta(z)$
+of constant weight plus, per mode, $[\mathrm{i}\alpha/2\gamma+\mathrm{i}\beta\,\mathrm{sgn}(z)/2]\,\mathrm{e}^{\mathrm{i}\gamma|z|}$,
+$\gamma^2=k_W^2-\kappa^2$: every $z$ integral is closed-form. Double averaging makes the lattice sum
+converge without Ewald splitting, to three digits at $|p|,|q|\le8$. Against the exact layer, for a P
+wave incident at $20^\circ$ and $40^\circ$ (\path{ContinuumLimit_Oblique.wl}; Table~\ref{tab:oblique}).
+\begin{table}[htbp]
+\centering
+\caption{Relative error of the reflected P ($R_{PP}$) and converted S ($R_{PS}$) waves for a P wave incident at $20^\circ$, with the mean-only and first-moment voxels of Eq.~\eqref{eq:bloch}. At $40^\circ$ the orders are again $2$ and $4$.}\label{tab:oblique}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{mean only} & \multicolumn{2}{c}{mean and first moments}\\
+$n$ & $R_{PP}$ & $R_{PS}$ & $R_{PP}$ & $R_{PS}$ \\
+\midrule
+$1$ & $9.3\times10^{-4}$ & $1.7\times10^{-3}$ & $7.2\times10^{-8}$ & $4.1\times10^{-7}$ \\
+$2$ & $2.3\times10^{-4}$ & $4.2\times10^{-4}$ & $4.5\times10^{-9}$ & $2.5\times10^{-8}$ \\
+$8$ & $1.5\times10^{-5}$ & $2.7\times10^{-5}$ & $1.7\times10^{-11}$ & $9.9\times10^{-11}$ \\
+order & $2$ & $2$ & $4$ & $4$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+The mean-only voxel is
+second order and the first-moment voxel fourth order in both the reflected P and the converted S wave:
+the breakdown of the tiling identity at $O(k_\parallel h)$ and the evanescent coupling of the gradient
+channels do not cost an order. At $\mathbf k_\parallel=0$ the construction reproduces
+Eq.~\eqref{eq:galerkin} to all printed digits.
+
+\paragraph{Incident S} Nothing in the construction is specific to P. For a normally incident S wave
+the layer is the one-dimensional problem of Eq.~\eqref{eq:galerkin} with $M_P\to\mu$, $k_P\to k_S$ and
+$\Delta M\to\Delta\mu$; the collocation and mean-only schemes converge at order $2.00$ and the
+first-moment voxel at $4.00$, in reflection and transmission, and the full $9\times9$ construction
+with an incident SH wave reproduces that one-dimensional result to all printed digits. At oblique
+incidence, against the exact layer (\path{ContinuumLimit_IncidentS.wl}), the orders are those of
+Table~\ref{tab:incS}.
+\begin{table}[htbp]
+\centering
+\caption{Observed order of convergence ($n=2\to8$, $\omega=300$\,rad\,s$^{-1}$) for incident SV and SH waves, with the mean-only and first-moment voxels. The SV angles lie below the critical angle $\arcsin(\beta/\alpha)=36.9^\circ$.}\label{tab:incS}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & mean only & mean and first moments \\
+\midrule
+SV at $20^\circ$: $R_{SS}$ / $R_{SP}$ & $2.00$ / $2.00$ & $4.00$ / $3.99$ \\
+SV at $30^\circ$: $R_{SS}$ / $R_{SP}$ & $1.98$ / $2.00$ & $3.97$ / $4.00$ \\
+SH at $20^\circ$ and $40^\circ$: $R_{SH}$ & $2.00$ & $4.00$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+The orders, and with $k=k_S$ the closed-form constants of
+Eqs.~\eqref{eq:errorR} and \eqref{eq:ratio}, are those of the incident P wave.
+
+\paragraph{Degree two at oblique incidence} In three dimensions the voxel of degree $2$ carries, on each
+of the nine components of its state, the ten Legendre products of total degree at most two in
+$(z,x,y)$. In the construction of Eq.~\eqref{eq:bloch} it converges at sixth order against the exact
+layer for incident P, SV and SH waves (Table~\ref{tab:deg2}; \path{scripts/measure_oblique_degree.py}).
+The test is run at $\omega=3000$\,rad\,s$^{-1}$ ($k_PD=1.2$, $k_SD=2$), ten times the frequency of the
+other tables, because at $300$\,rad\,s$^{-1}$ a sixth-order error on these grids lies below the round-off
+of double precision. The exact reflection coefficient is that of Kennett's recursion, an independent
+algorithm, and the same computation with the bases of degree $0$ and $1$ returns orders $2$ and $4$ in
+all five cases. At normal incidence the error on four planes, $6.95\times10^{-9}$, is the
+$c_2(kd)^6=7.2\times10^{-9}$ of Eq.~\eqref{eq:cp} to $4\%$. Doubling the number of lattice orders retained
+in Eq.~\eqref{eq:bloch} changes the errors by less than $1\%$. Unlike the degrees $0$ and $1$, this degree
+is implemented once at oblique incidence; its check is the exact solution.
+\begin{table}[htbp]
+\centering
+\caption{The voxel of degree $2$ (ten Legendre products per state component) at
+$\omega=3000$\,rad\,s$^{-1}$: relative error of the same-type reflection coefficient against the exact
+layer on $n$ planes, and the order over the last halving, with the orders of the degrees $0$ and $1$ from
+the same computation.}\label{tab:deg2}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{error, $p=2$} & order & orders \\
+incident wave & $n=1$ & $n=2$ & $n=4$ & $p=2$ & $p=0$ / $p=1$ \\
+\midrule
+P, normal: $R_{PP}$ & $3.4\times10^{-5}$ & $4.6\times10^{-7}$ & $7.0\times10^{-9}$ & $6.05$ & $2.04$ / $4.05$ \\
+P at $20^\circ$: $R_{PP}$ & $7.3\times10^{-6}$ & $1.0\times10^{-7}$ & $1.5\times10^{-9}$ & $6.04$ & $2.04$ / $4.06$ \\
+SV at $20^\circ$: $R_{SS}$ & $2.2\times10^{-4}$ & $2.3\times10^{-6}$ & $3.4\times10^{-8}$ & $6.11$ & $2.10$ / $4.14$ \\
+SH at $20^\circ$: $R_{SH}$ & $2.3\times10^{-4}$ & $2.5\times10^{-6}$ & $3.6\times10^{-8}$ & $6.11$ & $2.10$ / $4.14$ \\
+SH at $40^\circ$: $R_{SH}$ & $3.0\times10^{-4}$ & $3.6\times10^{-6}$ & $5.2\times10^{-8}$ & $6.09$ & $2.12$ / $4.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The spectral construction is implemented twice. The second implementation
+(\path{scripts/crosscheck_first_moment_voxel.py}) shares only the definition of the scheme: it takes
+the depth dependence of the transformed kernel from an independent residue construction, obtains
+the local weight as a numerical large-$k_z$ limit of the inverted Christoffel matrix, evaluates every
+double integral by quadrature and separates P from S by sampling the upgoing field at two depths.
+The raw reflected displacements of the two agree to $9\times10^{-16}$ in all $36$ cases compared:
+incident P, SV and SH, normal incidence and $20^\circ$, $n=1,2,4$, with and without the first moments.
+The one-dimensional scheme of any degree is also implemented twice. The second implementation
+(\path{scripts/crosscheck_second_moment_voxel.py}) evaluates every integral by Gauss quadrature, split
+at the receiver within a voxel, and the exact layer from its own interface system, in double
+precision. Its errors agree with the 40-digit ones within its round-off floor ($3\times10^{-14}$ in
+reflection, $1.6\times10^{-13}$ in transmission); at $\omega=1200$\,rad\,s$^{-1}$ it measures orders
+$4.02$ / $3.99$ and $6.02$ / $6.00$; for one plane as the layer thins its differences from the exact
+layer fall as $D^{3.00}$, $D^{5.00}$ and $D^{7.00}$ for $p=0$, $1$ and $2$; and it rederives $c_p$ for
+$p\le5$. Figure~\ref{fig:convergence}(a,b) shows the convergence, with the orders fitted to it.
+
+\FloatBarrier
+
+\section{The stratified-background construction}\label{app:strat}
+
+The experiment is built in four steps.
+
+\emph{The kernel.} At each lateral wavenumber $\boldsymbol\kappa$ the whole-space kernel between two
+depths factorises over the plane-wave modes, three going down and three going up (P, SV, SH):
+$\hat\bG(\boldsymbol\kappa;z-z')=\mathsf{D}_\downarrow\,\mathsf{E}(z-z')\,\mathsf{S}_\downarrow$ for
+$z>z'$, with $\mathsf{S}_\downarrow$ the $3\times9$ matrix of mode amplitudes radiated downwards by a
+nine-component source, $\mathsf{E}(L)=\operatorname{diag}(\mathrm{e}^{\mathrm{i}\gamma_mL})$ the
+propagation over a distance $L$ with $\gamma_m$ the vertical wavenumber of mode $m$, and
+$\mathsf{D}_\downarrow$ the $9\times3$ matrix of the modes' states; and likewise upwards. With the
+interfaces at $z_A$ above and $z_B$ below, $H=z_B-z_A$, and $\mathsf{R}_A$, $\mathsf{R}_B$ the
+$3\times3$ reflection matrices of the two interfaces seen from inside the layer, a source at $z'$
+sends $\mathsf{s}_\downarrow=\mathsf{S}_\downarrow q$ down and $\mathsf{s}_\uparrow=\mathsf{S}_\uparrow q$
+up, and the reverberation it sets up is
+\begin{equation}\label{eq:reverb}
+\begin{aligned}
+  \mathsf{d}_A&=\bigl(\mathsf{I}-\mathsf{R}_A\mathsf{E}(H)\mathsf{R}_B\mathsf{E}(H)\bigr)^{-1}\mathsf{R}_A
+     \bigl[\mathsf{E}(z'-z_A)\,\mathsf{s}_\uparrow+\mathsf{E}(H)\,\mathsf{R}_B\,\mathsf{E}(z_B-z')\,\mathsf{s}_\downarrow\bigr],\\
+  \mathsf{u}_B&=\mathsf{R}_B\bigl[\mathsf{E}(z_B-z')\,\mathsf{s}_\downarrow+\mathsf{E}(H)\,\mathsf{d}_A\bigr],\\
+  \hat\bG_{\text{rev}}(\boldsymbol\kappa;z,z')\,q&=\mathsf{D}_\downarrow\mathsf{E}(z-z_A)\,\mathsf{d}_A
+     +\mathsf{D}_\uparrow\mathsf{E}(z_B-z)\,\mathsf{u}_B ,
+\end{aligned}
+\end{equation}
+with $\mathsf{d}_A$ the downgoing amplitudes leaving the upper interface and $\mathsf{u}_B$ the upgoing
+ones leaving the lower. It is added to the whole-space kernel in every block of Eq.~\eqref{eq:bloch},
+at every order of the reciprocal lattice. It is smooth and separable in $z$ and $z'$, so its integrals
+over the cells are one-dimensional moments of exponentials. For two half-spaces $\mathsf{R}_A=0$ and
+only the second line survives.
+
+\emph{The interfaces.} $\mathsf{R}_A$, $\mathsf{R}_B$ and the transmission matrices into and out of
+the layer follow from continuity of displacement and traction at each interface: six equations in the
+states of the six modes on either side, solved for each lateral wavenumber, evanescent orders included.
+
+\emph{The incident field and the output.} A plane wave of unit amplitude arrives from the upper
+half-space. Its field in the layer, a downgoing part and an upgoing part with the reverberation summed
+as in Eq.~\eqref{eq:reverb}, is the right-hand side of the scheme. The output is the upgoing wave of
+the same type as the incident one, arriving at $z_A$ from the voxels and transmitted into the upper
+half-space: the change that the layer of voxels makes to the same-type reflection coefficient ($R_{PP}$,
+$R_{SS}$ or $R_{SH}$), a quantity that does not depend on how the waves are normalised.
+
+\emph{The reference, and a check of the construction.} The exact change is the same-type reflection
+coefficient of the stack with the layer, less that of the background, both from Kennett's recursion
+\citep{Kennett1983}, an independent algorithm. Before any voxel is introduced, the background's own
+reflection coefficient computed from the modes and the interface matrices above agrees with Kennett's
+to $5\times10^{-15}$ in all twelve cases.
+
+It is computed by two independent
+algorithms. The first is invariant imbedding, the impedance march of \citet{Haines2004}: the
+six-component state of displacement and traction obeys $\dd\mathsf{y}/\dd z=\mathsf{A}(z)\,\mathsf{y}$,
+and with the four $3\times3$ blocks $\mathsf{A}_{ij}$ of $\mathsf{A}$ the impedance $\mathsf{Y}$, which
+gives the traction from the displacement, obeys the Riccati equation
+\begin{equation}\label{eq:riccati}
+  \frac{\dd\mathsf{Y}}{\dd z}=\mathsf{A}_{21}+\mathsf{A}_{22}\mathsf{Y}-\mathsf{Y}\mathsf{A}_{11}
+     -\mathsf{Y}\mathsf{A}_{12}\mathsf{Y}.
+\end{equation}
+It is started below the stack with the impedance of the downgoing waves of the lower half-space, which
+is the radiation condition, marched upwards, exactly through the homogeneous gaps and by fourth-order
+Runge--Kutta with the medium sampled at the stages through the graded layer, and at the top the
+reflection matrix follows from continuity of displacement and traction with the modes of the upper
+half-space. $\mathsf{Y}$ stays bounded, so no growing exponential is formed. The second is the
+propagator: the same state is integrated across the graded layer as a $6\times6$ matrix, with
+$\mathsf{A}(z)=\mathsf{F}(z)\operatorname{diag}(\mathrm{i}\gamma_m)\,\mathsf{F}(z)^{-1}$ built at each
+depth from the plane-wave modes of the medium there, $\mathsf{F}$ the matrix of the six modes'
+displacements and tractions and $\gamma_m$ their vertical wavenumbers, and the radiation conditions of
+the two half-spaces are imposed on the result. For the graded layer the two agree to $10^{-12}$ in all
+twelve cases with $400$ steps of the march, whose error falls sixteenfold for each doubling of the
+steps; for a uniform layer the propagator equals Kennett's recursion to $3\times10^{-14}$. 
+
+\FloatBarrier
+
+\paragraph{Oblique incidence, and a three-layer background} At oblique incidence the test is the
+three-dimensional scheme of Eq.~\eqref{eq:bloch}, with P, SV and SH waves, in two backgrounds: the two
+half-spaces above, and a three-layer background in which the voxels lie in a layer between a slower
+half-space above ($\alpha=4200$, $\beta=2400$\,m\,s$^{-1}$, $\rho=2300$\,kg\,m$^{-3}$) and the faster
+one below ($6500$, $3700$, $2800$), so that the layer reverberates between two interfaces. The construction is the one set out above: the reverberation added to the whole-space kernel
+at every order of the reciprocal lattice, Eq.~\eqref{eq:reverb}, the interface matrices, the
+incident field, and the reference, Kennett's recursion \citep{Kennett1983}, against which the
+background's own reflection coefficient is reproduced to $5\times10^{-15}$ in all twelve cases before
+any voxel is introduced.
+
+The results are in Table~\ref{tab:strat}, at $\omega=3000$\,rad\,s$^{-1}$ ($k_SD=2$; at
+$300$\,rad\,s$^{-1}$ the sixth-order errors lie below round-off, as in Table~\ref{tab:deg2}) and
+$20^\circ$ in the upper half-space. In all thirty-six cases the order is that of the whole space, with
+the interfaces $3$\,m from the layer and with the voxels against them
+(\path{scripts/measure_oblique_stratified_background.py}).
+\begin{table}[htbp]
+\centering
+\caption{The layer of voxels in a stratified background at $20^\circ$, $\omega=3000$\,rad\,s$^{-1}$:
+relative error of the change of the same-type reflection coefficient on $n=4$ planes, and the order
+over the last halving ($n=2\to4$), for field degrees $p=0$, $1$ and $2$.}\label{tab:strat}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+background & wave & $p=0$ & $p=1$ & $p=2$ \\
+\midrule
+two half-spaces, interface $3$\,m below
+ & P  & $6.1\times10^{-3}$ ($2.03$) & $2.7\times10^{-6}$ ($4.02$) & $2.3\times10^{-9}$ ($6.04$) \\
+ & SV & $1.5\times10^{-2}$ ($2.11$) & $2.6\times10^{-5}$ ($4.13$) & $3.7\times10^{-8}$ ($6.09$) \\
+ & SH & $1.6\times10^{-2}$ ($2.11$) & $2.7\times10^{-5}$ ($4.13$) & $4.1\times10^{-8}$ ($6.09$) \\
+two half-spaces, interface against the voxels
+ & P  & $5.1\times10^{-3}$ ($2.04$) & $3.8\times10^{-6}$ ($4.04$) & $2.1\times10^{-9}$ ($6.00$) \\
+ & SV & $1.6\times10^{-2}$ ($2.10$) & $2.5\times10^{-5}$ ($4.14$) & $3.3\times10^{-8}$ ($6.11$) \\
+ & SH & $1.7\times10^{-2}$ ($2.10$) & $2.4\times10^{-5}$ ($4.15$) & $3.4\times10^{-8}$ ($6.11$) \\
+three layers, interfaces $3$\,m away
+ & P  & $6.3\times10^{-3}$ ($2.03$) & $8.7\times10^{-7}$ ($4.04$) & $2.4\times10^{-9}$ ($6.06$) \\
+ & SV & $1.0\times10^{-2}$ ($2.10$) & $5.8\times10^{-6}$ ($4.08$) & $5.2\times10^{-8}$ ($6.11$) \\
+ & SH & $1.3\times10^{-2}$ ($2.10$) & $3.0\times10^{-6}$ ($3.95$) & $9.3\times10^{-8}$ ($6.10$) \\
+three layers, interfaces against the voxels
+ & P  & $4.8\times10^{-3}$ ($2.04$) & $2.4\times10^{-6}$ ($4.04$) & $4.1\times10^{-9}$ ($6.03$) \\
+ & SV & $8.5\times10^{-3}$ ($2.09$) & $7.1\times10^{-6}$ ($4.01$) & $5.0\times10^{-8}$ ($6.09$) \\
+ & SH & $1.4\times10^{-2}$ ($2.10$) & $5.8\times10^{-6}$ ($3.92$) & $8.5\times10^{-8}$ ($6.12$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+The errors are close to those of the whole space at the same frequency (Table~\ref{tab:deg2}): the
+background changes the field the voxels must represent, not how well they represent it. 
+
+\paragraph{The two terms of the error at oblique incidence} The orders say that the scheme
+converges; the two-term analysis says what its error is. Both terms are tested at $20^\circ$, in the
+whole space and in the stratified backgrounds, for P, SV and SH waves.
+
+\emph{The first-order term.} The scheme is written as $(\mathsf{M}-\mathsf{K})\mathsf{c}=\mathsf{b}$ with
+the output $u=\mathsf{r}\,\mathsf{c}$, as in Eq.~\eqref{eq:bornscheme}, so that
+$T_1^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{b}$ with no differencing. The prediction is built
+from plane waves. The background field in the layer is a sum of six, P, SV and SH going down and going
+up, and the voxels radiate into six. For a pair made of an incident wave of wavevector
+$\mathbf{k}_{\text{in}}$ and a radiated wave of wavevector $\mathbf{k}_{\text{out}}$, a cubic voxel of
+half-side $h$ whose field is held to total degree $p$ gives the exact first-order term of that pair
+times
+\begin{equation}\label{eq:wavefactor}
+  1+E_p\bigl(\mathbf{k}_{\text{in}},\mathbf{k}_{\text{out}}\bigr)
+  =\frac{\displaystyle\sum_{|a|\le p}\ \prod_{i=1}^{3}(2a_i+1)\,
+        j_{a_i}\bigl(k_{\text{in},i}h\bigr)\,j_{a_i}\bigl(k_{\text{out},i}h\bigr)}
+       {\displaystyle\prod_{i=1}^{3}j_0\bigl((k_{\text{in},i}-k_{\text{out},i})h\bigr)},
+\end{equation}
+the sum being over the Legendre products $P_{a_1}P_{a_2}P_{a_3}$ of the voxel's basis and $j_n$ the
+spherical Bessel functions: the numerator is the projection of the incident wave onto the basis paired
+with that of the outgoing wave, the denominator the exact pairing. Its leading departure from one is
+$-d^2\,\mathbf{k}_{\text{in}}\cdot\mathbf{k}_{\text{out}}/12$ for $p=0$, with $d=2h$, and along one axis it is the
+factor of Eq.~\eqref{eq:ratio}. The predicted first-order term is the sum over the thirty-six pairs of
+the exact term of each pair, an integral of two exponentials over the voxel, times its factor, the
+radiated waves then being carried to the observer by the reverberation of Eq.~\eqref{eq:reverb}
+exactly. On one and two planes of voxels of degree $0$, $1$ and $2$, at
+$\omega=3000$\,rad\,s$^{-1}$, the scheme's first-order term equals this prediction to
+$2\times10^{-15}$ in all twelve combinations of background and wave type. The first-order error is
+therefore known in closed form at oblique incidence, in a stratified background, for every wave type.
+
+\emph{The second-order term.} For the law of Eq.~\eqref{eq:defectlaw} the contrast must vary within
+the voxels. Each plane of voxels is given the smooth profile of \S\ref{sec:hetero} in depth, projected
+to Legendre degree $r=p$, and the coupling is that of Eq.~\eqref{eq:gradedcoupling} with the
+reverberation added. The second-order term of the scheme is
+$T_2^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{K}\,\mathsf{M}^{-1}\mathsf{b}$. The exact $T_2$
+needs the exact stack with a layer whose properties vary continuously in depth, at oblique incidence,
+for which a recursion over homogeneous layers is not exact. It is computed by two independent algorithms, invariant imbedding \citep{Haines2004} and the
+propagator of the six-component state, which agree to $10^{-12}$ in all twelve cases
+(above). $T_2$ then follows
+from Eq.~\eqref{eq:isolate} at $\epsilon=0.1$, where halving $\epsilon$ changes it by $2\times10^{-8}$. The ratio of the relative error of $T_2$ to the
+relative projection error $\mathcal{E}_p$ is in Table~\ref{tab:obliquelaw}.
+\begin{table}[htbp]
+\centering
+\caption{The relative error of the second-order term over the relative projection error of the medium,
+at $20^\circ$, on $n=4$ planes with $r=p$; the law of Eq.~\eqref{eq:defectlaw} predicts one in the
+long-wave limit.}\label{tab:obliquelaw}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+ & & \multicolumn{3}{c}{$k_SD=0.2$} & \multicolumn{3}{c}{$k_SD=0.067$} \\
+background & wave & $p=0$ & $p=1$ & $p=2$ & $p=0$ & $p=1$ & $p=2$ \\
+\midrule
+whole space & P & $1.000$ & $0.998$ & $1.011$ & $1.000$ & $1.000$ & $1.000$ \\
+ & SV & $0.998$ & $0.992$ & $1.032$ & $1.000$ & $0.999$ & $1.004$ \\
+ & SH & $0.999$ & $0.992$ & $1.031$ & $1.000$ & $0.999$ & $1.003$ \\
+two half-spaces, interface $3$\,m below & P & $1.010$ & $1.009$ & $1.019$ & $1.001$ & $1.001$ & $1.001$ \\
+ & SV & $1.012$ & $1.008$ & $1.046$ & $1.001$ & $1.001$ & $1.005$ \\
+ & SH & $1.027$ & $1.025$ & $1.059$ & $1.003$ & $1.003$ & $1.006$ \\
+three layers, interfaces $3$\,m away & P & $1.004$ & $1.003$ & $1.013$ & $1.000$ & $1.000$ & $1.000$ \\
+ & SV & $0.979$ & $0.973$ & $1.002$ & $0.997$ & $0.996$ & $1.000$ \\
+ & SH & $1.007$ & $1.004$ & $1.035$ & $1.001$ & $1.001$ & $1.004$ \\
+three layers, interfaces against the voxels & P & $1.002$ & $1.001$ & $1.011$ & $1.000$ & $1.000$ & $1.000$ \\
+ & SV & $0.995$ & $0.988$ & $1.018$ & $0.999$ & $0.999$ & $1.002$ \\
+ & SH & $1.004$ & $1.002$ & $1.032$ & $1.000$ & $1.000$ & $1.003$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+On four planes the law holds to $3\%$ for $p=0$ and $1$ and to $6\%$ for $p=2$ at $k_SD=0.2$, and to
+$0.6\%$ for all three degrees at $k_SD=0.067$, in every background and for every wave type: the
+departure falls about ninefold as the frequency falls threefold, as $(kD)^2$. On two planes the ratios
+for $p=0$ and $1$ lie within $0.03$ of those in the table; for $p=2$ they are lower, $0.89$ to $0.99$ at
+$k_SD=0.2$ and $0.988$ to $0.999$ at $k_SD=0.067$. The law is loosest for the highest degree at the
+highest frequency, because the projection error of degree $2$ is so small ($1.6\times10^{-5}$ on four
+planes) that the departure from the long-wave limit is a larger share of it. Both terms of
+the error are thus known in advance at oblique incidence and in a stratified background, as they are
+at normal incidence in the whole space (\path{scripts/measure_oblique_two_term.py}).
+
+Two limits stand. The oblique construction is implemented once, and its checks are the exact
+solutions. And the voxels here fill their plane, so that the image of a voxel in an interface it
+touches is the image of a whole plane; a body of finite lateral extent against an interface, where
+that image is singular, has not been run.
+
+\FloatBarrier
+
+\section{The sphere: near field, an impedance march and a sharp surface}\label{app:sphere}
 
 \paragraph{The near field} A receiver is seldom at infinity, and the scheme does not require it to
 be. The scattered field at a point $\mathbf{x}$ outside the voxels is the propagator applied to the
@@ -2067,7 +2425,7 @@ by less than $10^{-10}$ at $2a$. The observers are the nine angles of Fig.~\ref{
 spheres of radius $1.25a$, $2a$ and $10a$, where $k_Sr$ runs from $0.6$ to $10$; the reference is the
 exact partial-wave displacement at the same points; and the error is the measure of the far-field
 test. Table~\ref{tab:spherenear} gives it for the mean-only voxel and for the first-moment voxel
-\citep{NestorGraded2026}.
+(Appendix~\ref{app:solver}).
 \begin{table}[htbp]
 \centering
 \caption{The graded sphere read in the near field: relative error of the scattered displacement at
@@ -2231,230 +2589,265 @@ $8$ & $280$ & $4.2\times10^{-2}$ & $2.3\times10^{-3}$ & $3.5\times10^{-2}$ & $8.
 \end{table}
 
 \FloatBarrier
-\section{The gradient hierarchy as a voxel scheme}\label{sec:gradvoxel}
 
-The Legendre voxels of \S\ref{sec:fourth} represent the field of a voxel by its moments over the
-voxel. The hierarchy of \S\ref{sec:single} represents it by its gradients at the centre. Both are
-polynomial, and \S\ref{sec:blocks} shows that on the layer the hierarchy of degree $\ell=3$ is fourth
-order, as the first-moment voxel is. This section builds the hierarchy into a voxel scheme in three
-dimensions and compares the two.
+\section{The three-dimensional voxel solver}\label{app:solver}
 
-\paragraph{The scheme} Each voxel $c$, centred at $\mathbf x_c$, carries the coefficients
-$U^c_{j;W}$ of Eq.~\eqref{eq:taylorfield}. The equation and its derivatives to order $\ell$ are imposed
-at every centre:
-\begin{equation}\label{eq:gradlattice}
-  U^c_{i;P}-\sum_{c'}\Bigl\{\omega^2\Delta\rho\sum_{W}\frac{\mathsf K_{ij}[P;W](\mathbf x_c-\mathbf x_{c'})}{|W|!}\,U^{c'}_{j;W}
-  +\sum_{W}\frac{\mathsf K_{in}[Pk;W](\mathbf x_c-\mathbf x_{c'})}{|W|!}\,\delta c_{nkrj}\,U^{c'}_{j;rW}\Bigr\}
-  =\partial_Pu^0_i(\mathbf x_c),
+The three-dimensional results of \S\S\ref{sec:sphere} and \ref{sec:gradvoxel} use the Legendre voxels
+of \S\ref{sec:fourth} on a cubic grid, with the following construction
+(\path{cubic_scattering/graded_voxel}).
+
+\paragraph{The voxel} Each cell carries the nine-component state of \S\ref{sec:setting}, displacement
+and engineering strain, with the strain an \emph{independent} unknown and not the gradient of the
+displacement: a strain derived from a cell's projected displacement jumps across the faces between
+cells and leaves a spurious source there (\S\ref{sec:fourth}). The state is expanded in the Legendre
+products of degree at most $p$ in the cell's local coordinates $\boldsymbol\xi\in[-1,1]^3$, and the
+contrast operator $\bD$ in those of degree at most $r$, its coefficients the $L^2$ projection of the
+medium; $p=r=1$ gives the first-moment voxel of $36$ weights. The source $\bD\psi$ is then a polynomial
+of degree $p+r$, expanded in monomials $m_c$. The Lippmann--Schwinger equation is tested with each basis
+function over each cell (Galerkin), and cells $m$ and $n$ couple through the blocks
+\begin{equation}\label{eq:block3d}
+  \bK_{ac}(\mathbf{R})=\int_{V_m}\!\int_{V_n}L_a(\boldsymbol\xi)\,\bP(\mathbf{x}-\mathbf{x}')\,
+  m_c(\boldsymbol\xi')\,\dd^3x\,\dd^3x',\qquad \mathbf{R}=\mathbf{x}_m-\mathbf{x}_n,
 \end{equation}
-\begin{equation}\label{eq:gradkernel}
-  \mathsf K_{in}[D;W](\boldsymbol\Delta)=\int_{V}\bigl(\partial_DG_{in}\bigr)(\boldsymbol\Delta-\boldsymbol\xi)\,
-  \xi_W\,\dd\boldsymbol\xi .
+with $\bP$ the $9\times9$ point propagator of \S\ref{sec:setting}.
+
+\paragraph{One integral in place of two} With $\mathbf{s}=\mathbf{u}-\mathbf{u}'$ the difference of the
+two local positions, Eq.~\eqref{eq:block3d} becomes
+$\bK_{ac}(\mathbf{R})=\int W_{ac}(\mathbf{s})\,\bP(\mathbf{R}+\mathbf{s})\,\dd^3s$ over
+$\mathbf{s}\in[-2h,2h]^3$, where $W_{ac}$ is a product over the three axes of one-dimensional
+cross-correlations of the test and source polynomials: continuous, polynomial on $[-2h,0]$ and $[0,2h]$,
+with kinks at $0$ and $\pm2h$. For cells that do not touch, the kernel is smooth on each of the eight
+pieces, and a three-dimensional Gauss rule integrates it, with $14$, $10$ or $8$ points per axis at a
+Chebyshev distance of $2$, $3$ or $4$, and $5$ or more cells; this agrees with six-dimensional quadrature
+of Eq.~\eqref{eq:block3d} to $10^{-9}$ one cell beyond contact.
+
+\paragraph{The self cell and its $26$ neighbours} The static part of $\bP$ is a sum of derivatives of
+$r^{-1}$ and $r$, distributions at the origin. Derivatives are moved onto $W$ until the kernel is at most
+as singular as $1/r$, and the kinks of $W$ then carry plane $\delta$ functions; every piece is a box or a
+rectangle with its corners on the breakpoints, so the singular point is either a vertex of a piece,
+integrated with Duffy's pyramids, or at least $2h$ away. The $\delta$ function of the inclusion problem
+is carried by those plane $\delta$ functions and is not added by hand. The construction reproduces the
+sum rule $\sum_p\int_V\!\int_V\partial_p\partial_p\lvert\mathbf{x}-\mathbf{x}'\rvert^{-1}\,\dd^3x\,\dd^3x'=-4\pi V$, the biharmonic rule for
+$r$ and the cube's Coulomb self-energy to $10^{-11}$, and every block equals the sum of the $64$ blocks
+between the two cells' half-size sub-cells, with the polynomials re-expressed on them, to
+$2\times10^{-15}$. The dynamic remainder of $\bP$ is at most weakly singular and is integrated by the
+Gauss rule of the pieces.
+
+\paragraph{Symmetry, and the solve} A block depends only on the offset $\mathbf{o}$ between the two
+cells. The background is isotropic and the cube is mapped to itself by its $48$ signed permutations
+$\mathbf{Q}$, under which $\bP(\mathbf{Q}\mathbf{r})=\mathbf{S}\bP(\mathbf{r})\mathbf{S}^{\mathsf T}$, with
+$\mathbf{S}=\operatorname{diag}(\mathbf{Q},\mathbf{R}_6(\mathbf{Q}))$ and $\mathbf{R}_6$ the representation of
+$\mathbf{e}\mapsto\mathbf{Q}\mathbf{e}\mathbf{Q}^{\mathsf T}$ on Voigt vectors. With the test and source
+polynomials transforming by matrices $\mathbf{T}$ and $\mathbf{U}$,
+$\bK_{ac}(\mathbf{Q}\mathbf{o})=\sum_{b,d}T_{ab}U_{cd}\,\mathbf{S}\bK_{bd}(\mathbf{o})\mathbf{S}^{\mathsf T}$,
+so one block is computed for each orbit of offsets and the rest follow exactly. The coupling is then a
+convolution over the grid, applied by the fast Fourier transform on a $(2n-1)^3$ circular embedding, and
+the system is solved by GMRES preconditioned with each cell's own block. Where both can be run, the
+solution equals that of a dense solve to $10^{-10}$ relative (\path{tests/test_graded_voxel_fft.py}).
+Every cell that overlaps the body is kept, each with the $L^2$ projection of its contrast by a six-point
+Gauss rule per axis; keeping only the cells whose centre lies inside the body drops the contrast of the
+partly filled cells, and the mean-only voxel then converges at order one instead of two. The far field is
+read at $5\times10^8$ radii, where the near-field terms that the asymptotic form omits are negligible.
+
+\paragraph{The first-moment voxel on the graded sphere} The voxel with $p=r=1$ is applied to the graded
+sphere of \S\ref{sec:sphere}. To isolate the discretisation error from the rescattering the grid cannot
+yet resolve, the contrast is first scaled by $10^{-6}$, and the exact sphere is solved at the same scaled
+contrast, so that no Born approximation enters the reference: the relative error is then that of the
+scheme's first-order term, in which the field is the incident one carried across each cell. With $4$, $6$
+and $8$ voxels across, $2304$ to $14688$ unknowns, the error is $7.5\times10^{-5}$, $5.0\times10^{-6}$ and
+$1.6\times10^{-6}$ at $k_Sa=0.5$, and $2.3\times10^{-4}$, $9.1\times10^{-5}$ and $2.8\times10^{-5}$ at
+$k_Sa=1$. The apparent orders between $6$ and $8$ voxels are $4.01$ and $4.13$; between $4$ and $6$ they
+are not yet asymptotic, a voxel at $n=4$ being as wide as the graded shell
+(\path{scripts/pilot_graded_voxel_sphere.py --weak}). At the full contrast the fast solve is carried to
+$16$ voxels across, where the error is $4.9\times10^{-6}$ at $k_Sa=0.5$ and $5.9\times10^{-6}$ at
+$k_Sa=1$, and the apparent order approaches four at a rate set by the number of voxels across the graded
+shell.
+
+\section{The uniform-strain closure against the exact sphere}\label{app:closuremie}
+
+\paragraph{Against the exact sphere} These statements are tested against the exact elastic Mie
+solution for a sphere, with no Eshelby formula in between. The concentration of Mie order $n$ is
+$E_n=a_n/a_n^{\text{Born}}$ (orders $0$, $1$, $2$ are the dilatational, density and shear
+channels), extrapolated to $ka\to0$. The formulation is applied to a ball of radius $a$, with its moment
+$\mathsf M$ evaluated by the surface route of Eq.~\eqref{eq:peel} on $|\mathbf r|=a$. Its
+dilatational and shear channels equal Mie's to $2\times10^{-10}$, and the density channel is
+$1$. The cube's closed forms meet the same numbers. Its dilatational channel is Mie's
+$E_0$ to $2\times10^{-10}$, and its isotropic shear average, Eq.~\eqref{eq:shearsplit}, is the
+depolarisation read from Mie's $E_2$ to $10^{-8}$. The same moment taken as a principal value, over
+the ball with a small sphere excluded around the origin, has zero depolarisation in every
+channel. The whole static response of the sphere is the $\delta$ term.
+
+At finite frequency the closure uses the dynamic ball moments, which are in closed form. It
+departs from Mie at second order in $ka$ and first order in the contrast, and the departure is
+closed-form too: the ball's moments are elementary, and Mie's low-frequency series with the
+contrast kept exact gives $E_n$ to relative order $(ka)^3$. To first order in the contrast,
+\begin{equation}\label{eq:spheredynamic}
+\frac{E_n^{\text{closure}}}{E_n^{\text{Mie}}}-1=
+\begin{cases}
+  -\dfrac{(k_Pa)^2}{10}\,\dfrac{\Delta\lambda}{\lambda+2\mu}, & n=0,\\[8pt]
+  \dfrac{2(k_Sa)^2+(k_Pa)^2}{30}\,\dfrac{\Delta\rho}{\rho}, & n=1,\\[8pt]
+  -\dfrac{3(k_Sa)^2+2(k_Pa)^2\beta^2/\alpha^2}{75}\,\dfrac{\Delta\mu}{\mu}, & n=2,
+\end{cases}
 \end{equation}
-The two kinds of block are of different character. For $c'=c$ the integrand is singular and the
-integral is a distribution: it is the moment of the hierarchy,
-$\mathsf K_{in}[D;W](0)=(-1)^{|D|}\mathsf g_{in}[D;W]$, in closed form on the cube. For $c'\neq c$ the
-field point is the centre of another voxel, at least half a voxel from the source voxel, so the
-integrand is smooth and a tensor Gauss rule integrates it; the derivatives of the Green's tensor, to
-any order, come from the family $x^ay^bz^c\,r^p\,\mathrm{e}^{\mathrm{i}kr}$, which is closed under
-differentiation. All the singular work of the scheme is thus in the self block, where it is done once
-and in closed form; the Legendre voxel's self block is a double integral of the same singular kernel.
-The blocks depend on the offset alone, so the product of the system with a vector is a convolution over
-the lattice and is done exactly by the fast Fourier transform. Where the contrast varies within a voxel
-it is projected there on polynomials of degree $r$, as in \S\ref{sec:hetero}, and the source is the
-product of that polynomial and the field's: the moments then carry weights to degree $\ell+r$, and a
-block is a sum, over the monomials of the contrast, of blocks with the weight shifted.
-
-\paragraph{Checks of the construction} The derivatives of the Green's tensor to fourth order agree
-with the closed forms of its value, gradient and second derivative, and with central differences beyond
-them, to $8\times10^{-7}$. A lattice of one voxel reproduces the single site of
-\S\ref{sec:singlesite} to $10^{-14}$. Only the offsets of one octant are computed, the others following
-from the parity of each index; a block obtained that way equals one computed directly to $10^{-15}$.
-The iterative solution equals a dense solution to $7\times10^{-11}$ where both can be run.
-
-\paragraph{A body with corners} The cube of \S\ref{sec:singlesite}, at $k_Sh=0.2$, is cut into $n^3$
-voxels. Table~\ref{tab:hiersub} gives the far-field error against the converged reference, with the
-Legendre voxels on the same body.
-\begin{table}[htbp]
-\centering
-\caption{A homogeneous cube cut into $n^3$ voxels, $k_Sh=0.2$: relative far-field error of the
-hierarchy of degree $\ell$ and of the Legendre voxels, with the unknowns of each voxel.}\label{tab:hiersub}
-\small
-\begin{tabular}{@{}lccccc@{}}
-\toprule
- & unknowns a voxel & $n=1$ & $2$ & $3$ & $4$ \\
-\midrule
-hierarchy, $\ell=1$ & $12$ & $5.4\times10^{-3}$ & $1.7\times10^{-3}$ & $8.3\times10^{-4}$ & $5.0\times10^{-4}$ \\
-hierarchy, $\ell=2$ & $30$ & $1.6\times10^{-3}$ & $6.7\times10^{-4}$ & $3.7\times10^{-4}$ & $2.4\times10^{-4}$ \\
-hierarchy, $\ell=3$ & $60$ & $3.4\times10^{-4}$ & $7.0\times10^{-5}$ & $3.0\times10^{-5}$ & $1.7\times10^{-5}$ \\
-Legendre, mean only & $9$ & $5.4\times10^{-3}$ & $1.3\times10^{-3}$ & $5.8\times10^{-4}$ & $3.3\times10^{-4}$ \\
-Legendre, first moment & $36$ & $4.8\times10^{-5}$ & $6.0\times10^{-6}$ & & \\
-\bottomrule
-\end{tabular}
-\end{table}
-On this body every degree of the hierarchy converges at about the same rate, an order near two between
-the two finest grids, and the degree buys a constant: thirty times from $\ell=1$ to $\ell=3$ on $64$
-voxels. That rate is the body's and not the scheme's, for the mean-only Legendre voxel shows it too: a
-homogeneous cube has edges and corners, whose fields no polynomial follows. The uniform-strain closure
-and the mean-only voxel agree on one cell, as they must, being the same approximation. And the
-first-moment Legendre voxel is far ahead: one cell of $36$ unknowns is more accurate than eight voxels
-of the third-gradient hierarchy with $480$. A projection, which the Legendre voxel is, follows a field
-that is not polynomial better than an expansion about a point.
-
-\paragraph{A smooth medium} The comparison that bears on voxel schemes is in a medium without corners.
-First in one dimension: the layer of \S\ref{sec:blocks} with a contrast that varies in depth, projected
-in each cell to the degree of the field, against the exact graded layer. With the profile
-$\sin^2(\pi z/D)$ the orders from $16$ to $32$ cells are $1.99$, $1.98$ and $3.99$ for $\ell=1$, $2$
-and $3$: a varying contrast leaves the pairs of \S\ref{sec:blocks} as they are. With the smoothstep of
-\S\ref{sec:sphere} as the profile they are $1.97$, $1.99$ and $3.84$, and on coarser grids they are
-erratic, the third-gradient scheme being worse than the second on four cells. The orders appear only
-when about four cells cross the graded part of the profile
-(\path{scripts/measure_layer_taylor_hierarchy_graded.py}). That fixes the conditions of the
-three-dimensional test. The graded sphere of \S\ref{sec:sphere} has a shell $5$\,m wide, and a solver
-that reaches fourteen voxels across puts fewer than four voxels across it; so the core is reduced here
-from $a/2$ to $a/10$, which widens the shell to $9$\,m, and a second profile, $\sin^2(\pi x/2)$ in the
-fraction $x$ of the shell's width measured from the surface, is run beside the smoothstep. The exact
-reference is the radial solution of \S\ref{sec:sphere} for each body. The contrast is linear in each
-voxel for $\ell=3$, which suffices for fourth order (\S\ref{sec:hetero}), and of degree $\ell$ for
-$\ell=1$ and $2$.
-\begin{table}[htbp]
-\centering
-\caption{The graded sphere with a shell $9$\,m wide, $k_Sa=0.5$: relative far-field error against the
-exact solution for $n_{\mathrm{sub}}$ voxels across, with the apparent order between the two finest
-grids of each row. The lower block is the profile $\sin^2$.}\label{tab:hiergraded}
-\small\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lccccccc@{}}
-\toprule
- & $n_{\mathrm{sub}}=4$ & $6$ & $8$ & $10$ & $12$ & $14$ & order \\
-\midrule
-hierarchy, $\ell=1$ & $1.5\times10^{-3}$ & $8.4\times10^{-4}$ & $4.9\times10^{-4}$ & $3.2\times10^{-4}$ & & & $1.94$ \\
-hierarchy, $\ell=2$ & $3.3\times10^{-4}$ & $2.1\times10^{-4}$ & $1.5\times10^{-4}$ & $1.0\times10^{-4}$ & & & $1.56$ \\
-hierarchy, $\ell=3$ & $2.6\times10^{-4}$ & $5.0\times10^{-5}$ & $1.7\times10^{-5}$ & $7.2\times10^{-6}$ & $3.6\times10^{-6}$ & $2.0\times10^{-6}$ & $3.80$ \\
-Legendre, mean only & $7.3\times10^{-3}$ & $3.2\times10^{-3}$ & $1.8\times10^{-3}$ & $1.1\times10^{-3}$ & & & $2.02$ \\
-Legendre, first moment & $2.9\times10^{-4}$ & $6.4\times10^{-5}$ & $2.2\times10^{-5}$ & $9.4\times10^{-6}$ & $4.6\times10^{-6}$ & $2.5\times10^{-6}$ & $3.92$ \\
-\midrule
-hierarchy, $\ell=3$ & $1.9\times10^{-4}$ & $3.8\times10^{-5}$ & $1.3\times10^{-5}$ & $5.2\times10^{-6}$ & $2.7\times10^{-6}$ & $1.5\times10^{-6}$ & $3.84$ \\
-Legendre, first moment & $2.2\times10^{-4}$ & $4.8\times10^{-5}$ & $1.6\times10^{-5}$ & $6.8\times10^{-6}$ & $3.4\times10^{-6}$ & $1.8\times10^{-6}$ & $4.02$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Table~\ref{tab:hiergraded} gives the result. The first-gradient scheme converges at second order, and
-is three to four times more accurate than the mean-only Legendre voxel on every grid, for twelve
-unknowns a voxel against nine. The second-gradient scheme is more accurate again but gains no order,
-as \S\ref{sec:blocks} predicts; its apparent order is still rising towards two. The third-gradient
-scheme converges at an apparent order between $3.7$ and $4.1$ from grid to grid, $3.8$ over the range
-from six to fourteen voxels across, for both profiles; the first-moment Legendre voxel does the same,
-between $3.7$ and $4.0$ and $3.85$ over the range. Neither has settled on four at fourteen voxels
-across, and the second profile, gentler than the first, changes neither: the two fourth-order schemes
-behave alike. On every grid from six voxels across the hierarchy's error is the smaller, by a fifth to
-a quarter. It carries sixty unknowns a voxel against thirty-six, so that for a given number of unknowns
-the Legendre voxel remains somewhat the more accurate; the wide margin of Table~\ref{tab:hiersub} was
-the corners.
-
-\paragraph{What the hierarchy is for} The two schemes reach the same order by different closures of
-the same equation, and they differ in what they cost and in what they give besides. The Legendre voxel
-is the more economical in unknowns. The hierarchy's blocks are simpler: its self block is known in
-closed form on four constants (\S\ref{sec:distributions}), and its coupling is a single integral of a
-smooth function where the Legendre voxel's is a double integral; the relative cost of forming the two
-has not been measured here. The iteration converged in five steps at every size; the time went into the
-tables of blocks, which are computed once for a grid and a frequency. And the hierarchy is, in
-addition, a single-site $T$-matrix in closed form, whose accuracy improves block by block
-(\S\ref{sec:singlesite}), which no voxel defined by moments over the cell provides. The lattice results
-of this section come from one implementation, checked against exact solutions and, where it can be,
-against a dense solve; they are at one frequency and on one family of bodies
-(\path{scripts/gradient_voxel_lattice.py}, \path{scripts/measure_lattice_gradient_hierarchy.py},
-\path{scripts/measure_graded_sphere_gradient_hierarchy.py},
-\path{scripts/measure_graded_sphere_gradient_hierarchy_fft.py}).
+with no $O(ka)$ term and no $O((ka)^3)$ term. The imaginary $(ka)^3$ terms, the radiation damping,
+agree exactly in all three channels. So the closure's only error at this order is the real
+$(ka)^2$ term, the uniform-field ansatz's own. That is the order the hierarchy assigns to the
+omitted second gradients (\S\ref{sec:parity}), and it has the same origin, the variation of the
+field across the scatterer, as the collocation error of \S\ref{sec:convergence}. Eq.~\eqref{eq:spheredynamic} is derived symbolically
+(\path{SphereClosureDynamic.wl}). It agrees with the coefficient extracted from the numerical Mie
+solve and an independent implementation of the closure to $5\times10^{-4}$, which is the size of the
+next order in the contrast.
 
 \FloatBarrier
 
-\section{Discussion}\label{sec:discussion}
+\section{The scattering series of the layer, and the projection-error law}\label{app:borndefect}
 
-Figure~\ref{fig:convergence} collects the convergence of every test, with the order fitted to each by
-least squares (\path{scripts/plot_convergence_orders.py}).
+\emph{The scattering series.} Multiply the whole contrast, $\Delta\lambda$, $\Delta\mu$ and
+$\Delta\rho$ together, by a number $s$, and let $u(s)$ be the scattered displacement at an observer at
+depth $z_o$ outside the layer. It vanishes at $s=0$ and is analytic in $s$ there, and its expansion is
+the Born series,
+\begin{equation}\label{eq:bornseries}
+  u(s)=s\,T_1+s^2T_2+s^3T_3+\dots,
+\end{equation}
+so that $T_n$ is the part of the field at the full contrast, $s=1$, that has been scattered $n$ times.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{../figures/fig_convergence.pdf}
-\caption{Convergence of every test, with least-squares regression lines. Each line fits
-$\log e=c-p\log n$ to the filled points; open points are pre-asymptotic and are not fitted. The legend
-gives the order $p$ and its standard error. The marker, and in colour the hue, marks the scheme, so
-that the figure reads in grey scale: collocation (circles; \S\ref{sec:single}),
-the mean-only voxel (squares) and the voxels carrying Legendre moments to degree $p=1$ (diamonds), $2$
-(triangles) and $3$ (pentagons) (Eqs.~\eqref{eq:galerkin} and \eqref{eq:bloch}). (a)~The uniform layer, P reflection at normal
-incidence ($D=2$\,m, $\omega=300$\,rad\,s$^{-1}$, the contrast of \S\ref{sec:convergence}), fitted from
-$n=4$; the collocation line is dashed and lies on the mean-only line, from which its constant differs
-only by the factor $3/2$ of Table~\ref{tab:ratio}; the second- and third-moment voxels, computed in 40-digit arithmetic, fitted from $n=2$. (b)~The uniform layer at $20^\circ$, fitted from
-$n=2$: the S wave converted from incident P (solid) and reflected from incident SV (dashed).
-(c)~The stratified layer of \S\ref{sec:hetero}, reflection at normal incidence for P (solid) and S
-(dashed), against the number $m$ of voxel planes per model layer, fitted from $m=4$. (d)~The
-smoothly graded sphere of \S\ref{sec:sphere} against its exact solution, for $n_{\mathrm{sub}}$ voxels
-across: the mean-only voxel, fitted from $n_{\mathrm{sub}}=6$ (at $4$ a voxel is as wide as the
-graded shell); the collocation voxel with the contrast sampled at the cell centre, joined by dashed
-lines and not fitted, since its two $O(h^2)$ errors of opposite sign leave no single order to fit;
-and, at $k_Sa=0.5$, the same collocation voxel with the cell mean of the contrast, dotted, which
-recovers second order.}
-\label{fig:convergence}
-\par\smallskip{\footnotesize\textit{Alt text:} Four log--log panels of relative error against refinement,
-each showing data points and fitted straight lines with the fitted order in the legend. (a) Uniform layer
-at normal incidence, 1 to 32 voxel planes: the collocation and mean-only lines have order 2.000, the
-first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10^{-13}$; the second-moment
-line has order 6.000 and the third-moment line order 8.000, over 1 to 8 planes, reaching about $10^{-22}$. (b) Uniform layer at 20 degrees,
-1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
-first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
-for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 24 voxels across:
-two straight falling lines of order 2 for the mean-only voxel, for $k_Sa=0.5$ and $1$, from about
-$10^{-2}$ and $3\times10^{-2}$ at 4 voxels to $2\times10^{-4}$ and $8\times10^{-4}$ at 24; two
-dashed collocation curves starting near $10^{-1}$ at 4 voxels, dropping steeply to 6 and then
-falling faster than the mean-only lines, crossing below them by 16 voxels; and a dotted line of order
-2 for the cell-mean collocation voxel, close to the mean-only line.\par}
-\end{figure}
+\emph{The first two terms of the exact layer.} They are integrals over the layer. With the incident
+state $w^0=(u^0,\varepsilon^0)$, the contrast $\bD_1=\operatorname{diag}(\omega^2\Delta\rho,\Delta M)$
+with profile $f(z)$, and the kernel $\bK$ of Eq.~\eqref{eq:galerkin}, whose first row
+$\bigl(g,g'\bigr)(z_o-z)$ gives the displacement at the observer,
+\begin{equation}\label{eq:born1}
+  T_1=\int_0^D\bigl(g,\,g'\bigr)(z_o-z)\;\bD_1f(z)\,w^0(z)\,\dd z ,
+\end{equation}
+\begin{equation}\label{eq:born2}
+  w^1(z)=\int_0^D\bK(z-z')\,\bD_1f(z')\,w^0(z')\,\dd z',\qquad
+  T_2=\int_0^D\bigl(g,\,g'\bigr)(z_o-z)\;\bD_1f(z)\,w^1(z)\,\dd z .
+\end{equation}
+Here $w^1$ is the state scattered once, inside the layer; its strain includes the local term of the
+kernel, $-f(z)\,\Delta M\,\varepsilon^0(z)/M_P$. Each further term repeats the step,
+$w^n(z)=\int_0^D\bK(z-z')\,\bD_1f(z')\,w^{n-1}(z')\,\dd z'$. For a plane force at $z_s$ above the layer,
+$w^0(z)=c\,\mathrm{e}^{\mathrm{i}k(z-z_s)}(1,\mathrm{i}k)$ with $c=\mathrm{i}/(2M_Pk)$, every integrand
+is an exponential times the profile. Writing $a=\omega^2\Delta\rho$ and $b=\Delta M$, and carrying out
+the products of Eqs.~\eqref{eq:born1} and \eqref{eq:born2}, the terms seen in reflection ($z_o<0$) and
+in transmission ($z_o>D$) are, for any profile,
+\begin{equation}\label{eq:born1explicit}
+  T_1^{R}=c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\bigl(a+bk^2\bigr)\int_0^Df(z)\,\mathrm{e}^{2\mathrm{i}kz}\,\dd z,
+  \qquad
+  T_1^{T}=c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}\bigl(a-bk^2\bigr)\int_0^Df(z)\,\dd z,
+\end{equation}
+\begin{equation}\label{eq:born2explicit}
+\begin{aligned}
+  T_2^{R}&=c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\Bigl[\,c\,\bigl(a^2-b^2k^4\bigr)
+     \int_0^D\!\!\int_0^Df(z)f(z')\,\mathrm{e}^{\mathrm{i}k(z+z'+|z-z'|)}\,\dd z'\,\dd z
+     -\frac{b^2k^2}{M_P}\int_0^Df(z)^2\,\mathrm{e}^{2\mathrm{i}kz}\,\dd z\Bigr],\\[4pt]
+  T_2^{T}&=c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}\Bigl[\,c\,\bigl(a-bk^2\bigr)^2
+     \int_0^D\!\!\int_0^{z}f(z)f(z')\,\dd z'\,\dd z
+     +c\,\bigl(a+bk^2\bigr)^2\int_0^D\!\!\int_z^{D}f(z)f(z')\,\mathrm{e}^{2\mathrm{i}k(z'-z)}\,\dd z'\,\dd z\\
+     &\hspace{9em}+\frac{b^2k^2}{M_P}\int_0^Df(z)^2\,\dd z\Bigr].
+\end{aligned}
+\end{equation}
+The first-order reflection is the Fourier transform of the profile at the wavenumber $2k$, and the
+first-order transmission its integral. In each second-order term the last integral is the local term of
+the kernel, in which both scatterings are at one point and the profile appears squared; the others are
+the two scatterings at different depths. In transmission the wave scattered twice forwards carries the
+contrast of velocity twice, $(a-bk^2)^2$, and the wave scattered backwards and then forwards again the
+contrast of impedance twice, $(a+bk^2)^2$. For the uniform layer ($f=1$) the integrals give
+\begin{equation}\label{eq:born1closed}
+  T_1^{R}=c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\,\bigl(a+bk^2\bigr)\,
+          \frac{\mathrm{e}^{2\mathrm{i}kD}-1}{2\mathrm{i}k},
+  \qquad
+  T_1^{T}=c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}\,\bigl(a-bk^2\bigr)\,D,
+\end{equation}
+\begin{equation}\label{eq:born2closed}
+\begin{aligned}
+  T_2^{R}&=\frac{c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}}{4k^3M_P}
+     \Bigl[-\mathrm{i}\bigl(a^2+b^2k^4\bigr)
+     +\mathrm{e}^{2\mathrm{i}kD}\bigl(a^2(\mathrm{i}+2kD)+b^2k^4(\mathrm{i}-2kD)\bigr)\Bigr],\\[4pt]
+  T_2^{T}&=\frac{\mathrm{i}\,c^2\mathrm{e}^{\mathrm{i}k(z_o-z_s)}}{8k^3M_P}
+     \Bigl[a^2\bigl(1-\mathrm{e}^{2\mathrm{i}kD}+2kD(\mathrm{i}+kD)\bigr)
+     -2abk^2\bigl(\mathrm{e}^{2\mathrm{i}kD}-1+2kD(kD-\mathrm{i})\bigr)\\
+     &\hspace{9em}+b^2k^4\bigl(1-\mathrm{e}^{2\mathrm{i}kD}+2kD(kD-3\mathrm{i})\bigr)\Bigr].
+\end{aligned}
+\end{equation}
+The reflection sees the contrast of impedance, $a+bk^2=k^2M_P(\Delta\rho/\rho+\Delta M/M_P)$, and the
+transmission that of velocity, $a-bk^2$. As $kD\to0$, $T_2^{R}\to-c^2\mathrm{e}^{-\mathrm{i}k(z_o+z_s)}\,
+b^2k^2D/M_P$: the local term alone, which is the starting point of the argument at the end of this appendix. For the smooth
+profile the integrals of Eqs.~\eqref{eq:born1explicit} and \eqref{eq:born2explicit} are evaluated in
+closed form symbolically, and by quadrature they return the same values to $10^{-16}$.
+Equations~\eqref{eq:born1closed} and \eqref{eq:born2closed} equal, identically, the first two Taylor
+coefficients in $s$ of the exact
+reflection and transmission of the layer of \S\ref{sec:continuum} (\path{ContinuumLimit_BornTerms.wl}).
+At $\omega=300$\,rad\,s$^{-1}$, $\lvert T_2\rvert/\lvert T_1\rvert$ is $0.039$ in reflection and $0.17$
+in transmission for the uniform layer.
 
-\paragraph{What each basis is for} A voxel holds two functions, and the results give each basis its
-part. The basis of the wavefield sets how well the voxel carries the field across itself: in a uniform
-medium the scheme converges at order $2p+2$ with the constant $c_p$ of Eq.~\eqref{eq:cp}, for P and S
-waves and at normal and oblique incidence alike. The basis of the medium sets how well the voxel
-\emph{is} the medium: with degree $r$ the order is capped at $2r+2$ (Eq.~\eqref{eq:graded}). Neither can
-make up for the other, and the second-order term shows why. The field scattered once is a copy of the
-medium's profile, so the wavefield basis must carry the profile as well as the wave, and the error of
-that term is the relative projection error of the profile at the lower of the two degrees
-(Eq.~\eqref{eq:defectlaw}). At the frequencies of interest the wave varies little across a cell and the
-medium may vary much, so it is the medium, not the wavelength, that decides the degree and the size of
-the cells. Two cases bracket the choice. Where the medium is piecewise constant on the cells, as in a
-layered model with voxel faces on its interfaces, a constant is exact for the medium, the projection
-error vanishes, and the degree of the field is spent entirely on the wave. Where the medium varies
-smoothly within the cells, the two degrees should be equal: a higher degree for the contrast than for
-the field is wasted, and a higher degree for the field improves only the Born term. That the two
-degrees can be chosen independently is the practice of higher-order electromagnetic volume methods
-\citep{Chobanyan2015}; what the present results add is the rule for choosing them, and the error each
-choice leaves.
+\emph{The first two terms of the scheme.} Write Eq.~\eqref{eq:galerkin} as
+$(\mathsf{M}-\mathsf{K})\,\mathsf{c}=\mathsf{b}$, with $\mathsf{M}$ the diagonal matrix of the
+$\int_i\phi_a^2\,\dd z$, $\mathsf{K}$ the matrix of the coupling blocks times $\bD_1$, and $\mathsf{b}$ the
+moments of the incident field, and let $\mathsf{r}$ be the row that gives the scattered displacement at
+the observer from the coefficients, $u=\mathsf{r}\,\mathsf{c}$. Scaling the contrast by $s$ scales
+$\mathsf{K}$ and $\mathsf{r}$ by $s$, so $u(s)=s\,\mathsf{r}(\mathsf{M}-s\mathsf{K})^{-1}\mathsf{b}$ and
+\begin{equation}\label{eq:bornscheme}
+  T_1^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{b},\qquad
+  T_2^{\text{scheme}}=\mathsf{r}\,\mathsf{M}^{-1}\mathsf{K}\,\mathsf{M}^{-1}\mathsf{b}.
+\end{equation}
+$\mathsf{M}^{-1}\mathsf{b}$ is the projection of the incident field onto each cell's functions: the
+first term needs no solve. Splitting $\mathsf{K}$ into its blocks within a cell and its blocks between
+cells splits $T_2^{\text{scheme}}$ into the part scattered twice in one cell and the part scattered in
+two; the same split of the inner integral of Eq.~\eqref{eq:born2} splits the exact $T_2$.
 
-\paragraph{Where the error of a voxel scheme lives} The results separate the two approximations
-a voxel scheme makes. The \emph{coupling} between voxels makes none: averaged over the source cell it
-is the continuum's cell integral exactly, between planes by the form factor's zeros and within a
-plane by the tiling identity, and the self term it omits is exactly the one the single site
-carries. Every error therefore comes from the \emph{single site}: from the internal field it
-assumes and, where the medium varies within the cell, from the medium it is given. Its $T$-matrix sums
-the rescattering within the voxel exactly, but for the voxel as represented, and the split of the
-second-order term in \S\ref{sec:hetero} measures the consequence: the error sits in the part whose two
-scatterings lie in one cell, and the part between cells carries at most $0.2\%$ of it. For a uniform field that error is the midpoint rule's, known in closed form; for a linear
-field it is the next term of the same expansion. The converse is the practical warning. A kernel that
-is not the cell integral (the point Green's tensor, or a cell average that does not match the
-single site's closure) leaves a local term that does not vanish as the voxels shrink
-(\S\ref{sec:point}): the evanescent lattice orders carry a static contribution of fixed size per
-voxel volume. A scheme built that way converges to the wrong limit, and refinement cannot reveal
-it, because the error is scale-invariant.
+\emph{A check by differences.} The terms can also be read from solutions at four scaled contrasts,
+$s=\pm\epsilon$ and $\pm2\epsilon$, with no knowledge of the formulas above. The odd and even parts of
+$u$ in $s$ separate the odd orders from the even, and the two step sizes remove the next term of each
+(the five-point central differences for $u'(0)$ and $\tfrac12u''(0)$):
+\begin{equation}\label{eq:isolate}
+\begin{aligned}
+  T_1&=\frac{8\bigl[u(\epsilon)-u(-\epsilon)\bigr]-\bigl[u(2\epsilon)-u(-2\epsilon)\bigr]}{12\,\epsilon}
+      +4\epsilon^4T_5+\dots,\\[4pt]
+  T_2&=\frac{16\bigl[u(\epsilon)+u(-\epsilon)\bigr]-\bigl[u(2\epsilon)+u(-2\epsilon)\bigr]}{24\,\epsilon^2}
+      +4\epsilon^4T_6+\dots
+\end{aligned}
+\end{equation}
+A negative $s$ is a medium slower and lighter than the background by the same fractions, as legitimate
+a medium as the other. With $\epsilon=0.01$ the remainders $4\epsilon^4T_5/T_1$ and $4\epsilon^4T_6/T_2$
+are below $2\times10^{-12}$ for this layer, and the formulas applied to the exact layer return
+Eqs.~\eqref{eq:born1closed} and \eqref{eq:born2closed} less exactly those remainders, to $10^{-17}$.
+The measurements of \S\ref{sec:hetero} use the differences for the scheme and the exact layer alike, each in its own
+arithmetic, and they agree with Eqs.~\eqref{eq:born1}, \eqref{eq:born2} and \eqref{eq:bornscheme}.
 
-\paragraph{What the single site is} The moment hierarchy of \S\ref{sec:single} turns the
-uniform-field single site from a modelling choice into a derived object with a stated error. Its
-static part is exact for a sphere, and for a cube it differs from the sphere's only by the cubic
-split of Eq.~\eqref{eq:shearsplit}. Its dynamic part departs from exact scattering by a sphere only
-through the real $(ka)^2$ term of Eq.~\eqref{eq:spheredynamic}; the radiation damping is exact.
-That term and the collocation error of Eq.~\eqref{eq:errorR} have the same origin, the variation of
-the field across the scatterer, and the same remedy, a richer internal field. In a lattice the
-remedy is cheap: the field a voxel must represent is the smooth continuum field, not the field of an
-isolated cube, with its concentrations at the edges and corners.
+\emph{Why the terms must be separated.} The law of Eq.~\eqref{eq:defectlaw} is a statement about $T_2$. At the full contrast
+the terms of third and higher order are $7\%$ of the second and carry errors of their own, and if every
+order above the first is taken together the ratio of Eq.~\eqref{eq:defectlaw} reads $0.90$ to $0.94$
+where the second-order term alone gives $1.00$ to $1.01$.
+
+Equation~\eqref{eq:defectlaw} is exact in the long-wave limit, for a reason that shows what each basis
+is for. The strain--strain entry of the kernel, $g''=-k^2g-\delta(z)/M_P$, is local as $kD\to0$, and the
+incident strain $\varepsilon_0$ is then uniform across the layer, so the strain scattered once is
+$-(\Delta M/M_P)\,f(z)\,\varepsilon_0$: it is the profile itself. A cell holds the contrast as
+$\Pi_rf$ and the field to degree $p$, so it holds the once-scattered strain as
+$\Pi_p(\Pi_rf)=\Pi_qf$ with $q=\min(p,r)$. The second-order term pairs the contrast with that strain:
+\begin{equation}\label{eq:defectproof}
+  T_2\ \propto\ \int f\cdot f\,\dd z=\lVert f\rVert^2,\qquad
+  T_2^{\text{scheme}}\ \propto\ \int(\Pi_rf)(\Pi_qf)\,\dd z=\lVert\Pi_qf\rVert^2,
+\end{equation}
+the last because $\Pi_qf$ lies in the range of $\Pi_r$. The relative error is
+$1-\lVert\Pi_qf\rVert^2/\lVert f\rVert^2=\mathcal{E}_q$. Because the kernel is local in this limit, the
+second scattering takes place in the cell of the first: $T_2$ is the second-order term of the
+single-site $T$-matrix, and Eq.~\eqref{eq:defectlaw} is a statement about the single site. The
+$T$-matrix sums the rescattering within a cell exactly for the cell as it is represented, a contrast
+$\Pi_rf$ and a field of degree $p$; its error is that the cell is not the medium. The split is measured directly
+(\path{scripts/measure_layer_bases.py}): at $\omega=300$\,rad\,s$^{-1}$ on $4$, $8$ and $16$ cells, $T_2$
+of the scheme and of the exact layer are each divided into the part whose two scatterings lie in one cell
+and the part between different cells. For all nine pairs the error of the same-cell part is $0.998$ to
+$1.013$ times $\lvert T_2\rvert\,\mathcal{E}_{\min(p,r)}$, and that of the part between cells at most
+$0.002$ times it. The coupling between cells contributes only the departure from the limit. Measured, the ratio of the two sides of
+Eq.~\eqref{eq:defectlaw} for $p=r=1$ on $8$ cells departs from one by $1.7\times10^{-2}$,
+$4.3\times10^{-3}$, $4.8\times10^{-4}$ and $4\times10^{-5}$ at $kD=0.24$, $0.12$, $0.04$ and $0.012$: as
+$(kD)^2$ (\path{scripts/measure_layer_bases.py}). The pairing in Eq.~\eqref{eq:defectproof} is verified
+symbolically for all nine pairs, and the projection errors are computed exactly
+(\path{ContinuumLimit_LayerDefect.wl}); they fall by $4^{q+1}$ for each halving of the cells.
+
+\FloatBarrier
+
+\section{Relation to other methods}\label{app:related}
 
 \paragraph{Relation to the coupled-dipole method} The same partition appears in the
 coupled-dipole method as the choice of polarisability. The Clausius--Mossotti relation, the lattice
@@ -2530,25 +2923,9 @@ ten \citep{Komatitsch1999}. The error analysis of this paper is the counterpart 
 integral formulation: it gives the size and the degree of the voxels for a required accuracy in closed
 form, and it adds a term, the projection error of the medium.
 
-\paragraph{The tension between the two error sources} The coupled-dipole method has two sources
-of error, the single site and the coupling between sites, and each has been corrected on its own:
-the polarisability by the Clausius--Mossotti relation, the lattice dispersion relation or the exact
-static limit, and the coupling by integrating or filtering the Green tensor. The two are not
-independent. The point kernel's evanescent orders carry a static local term whose size per voxel
-volume does not shrink with the voxels (\S\ref{sec:point}), and the single site must cancel exactly
-that term. A polarisability tuned for one kernel is therefore wrong for another: the lattice
-dispersion relation corrects the point-dipole lattice, and changing the kernel to an integrated or
-a filtered one changes the term it must cancel. Tuning either alone moves the error between the
-two, and refinement cannot reveal a mismatch, because the surviving term is scale-invariant. For
-space-filling cubes the tension is resolved rather than balanced: the cell-averaged kernel omits
-exactly the self term that the closure carries (Eq.~\eqref{eq:collocation}), so the coupling error
-vanishes identically and every remaining error is the single site's, the variation of the field
-across the cell. That error has a second tension of its own. It is a midpoint-rule error whose
-constants have opposite signs in reflection and transmission (Eq.~\eqref{eq:errorR}), so any
-scalar adjustment of the single site that improves one worsens the other; the package's far-field
-corrections reduce the reflection error by a factor $4.45$ and increase the transmission error by
-$1.7$. No polarisability, however chosen, can remove it. What removes it is a richer internal
-field: the first moment lowers the error by two orders in $kd$ in both observables at once.
+\FloatBarrier
+
+\section{The cost of higher order, and what the error analysis offers a fast solver}\label{app:cost}
 
 \paragraph{The cost of fourth order} A first-moment voxel carries four times as many unknowns as
 a uniform one (36 against 9 in three dimensions). The closed forms show what that buys. To reach an
@@ -2607,96 +2984,42 @@ near-zone integrals are computed once for a whole sweep in frequency. And becaus
 \end{enumerate}
 No such solver is built here. These are consequences of the analysis, and they are to be tested.
 
-\paragraph{Limitations and outlook} The results concern laterally uniform media, a homogeneous layer
-and a randomly stratified one, for which the discrete system is exactly a chain of planes; a laterally heterogeneous medium needs the
-first-moment voxel in a full three-dimensional solver, where the gradient channels couple through
-the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
-$O(k_\parallel h)$. The smoothly graded sphere of \S\ref{sec:sphere} shows the mean-only
-voxel converging at second order on a laterally heterogeneous body against an exact solution, and the
-companion paper \citep{NestorGraded2026} shows the first-moment voxel converging at fourth order there.
-A contrast that varies within a cell, which \S\ref{sec:hetero} shows is needed beyond second order in a
-smoothly varying medium, has a further consequence in three dimensions: its linear part is odd about
-the cell's centre, so it couples the single site's uniform-field and first-moment blocks, which parity
-keeps apart for a homogeneous cube (\S\ref{sec:parity}). A graded voxel therefore needs at least the
-first-moment block; that voxel is built, and tested on the graded sphere, in the companion paper. The numerical evidence is at moderate, physically typical contrasts (up to
-$15\%$ in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
-validated; the closed forms are first order in the contrast, and the departures from them at the
-full contrast are of second order. What is established is the \emph{order} of convergence and its
-leading constant, not the behaviour at strong contrast, where the single site's own closure may
-limit the accuracy before the lattice coupling does. The single site's dynamic error is in closed
-form for a sphere only; for a cube, for which no exact solution exists, it is known through the
-layer (\S\S\ref{sec:convergence}--\ref{sec:fourth}) and, for the isolated cube, by comparison with a
-converged solution (\S\ref{sec:singlesite}). The hierarchy beyond the first gradient is established
-less widely than the rest: its orders and its error factor on the layer are derived symbolically and
-checked independently to the third degree, and its moments are confirmed by two routes, but its
-three-dimensional results, the single site against the sphere and the cube and the voxel scheme of
-\S\ref{sec:gradvoxel}, come from one implementation, at one frequency for the voxel scheme, checked
-against exact solutions. There the fourth order is approached and not attained on the grids reached
-($3.8$ at fourteen voxels across, as for the first-moment voxel), the fifth-gradient system, whose
-moments are in hand, has not been assembled in three dimensions, and the cost of forming the blocks of
-the two fourth-order schemes has not been compared. Two extensions follow directly. The first is
-the three-dimensional solver itself. The second is a stratified \emph{background}, a layered
-reference medium, as distinct from the stratified contrast of \S\ref{sec:hetero}. For a
-laterally uniform layer of voxels the orders, the first-order factor and the projection-error law all
-survive it, at normal and at oblique incidence, for P, SV and SH waves, in a background of two
-half-spaces and in one of three layers (\S\ref{sec:hetero}). What remains is a body
-of finite lateral extent in such a background, where the image of a voxel in an interface it touches
-is singular.
+\FloatBarrier
 
-\section{Conclusions}\label{sec:summary}
+\section{The evidence for each result, and where to reproduce it}\label{app:evidence}
 
-A voxel of a volume-integral scheme must represent the medium within it and the wavefield within it.
-This paper has determined what each basis must be and what error a given choice leaves, by an
-experiment in which nothing else is approximated: a layer of cubes is the layer itself, so its exact
-solution isolates the discretisation error.
-
-With the wavefield expanded to Legendre degree $p$ and the contrast of the medium to degree $r$ in each
-voxel, the scheme converges at order $\min(2p+2,2r+2)$. In a uniform layer the leading error is
-$c_p(kd)^{2p+2}$ with the closed-form constant of Eq.~\eqref{eq:cp}, and a single plane of such voxels
-reproduces the thin-layer series term by term through $O(D^{2p+2})$; the orders $2$, $4$ and $6$ of the
-degrees $0$, $1$ and $2$ hold for P, SV and SH waves at normal and oblique incidence. The first-moment
-voxel's leading error, $-(kd)^4/720$, does not depend on the direction of observation, whereas the
-collocation scheme's is opposite in sign in reflection and transmission, so that no scalar correction of
-the single site removes it. Where the medium varies within a cell, a contrast held constant caps every
-voxel at second order, the coupling for a contrast of degree $r$ needs nothing beyond the same kernel
-moments to degree $p+r$, and the error of the term of second order in the contrast is the relative
-projection error of the medium at degree $\min(p,r)$, exactly in the long-wave limit. That error is the
-single site's: its $T$-matrix sums the rescattering within a voxel exactly for the voxel as represented,
-and the represented voxel is not the medium. The two bases must therefore be matched. Where the medium
-is piecewise constant on the cells the projection error vanishes: the orders survive the interfaces of a
-randomly stratified model, provided voxel boundaries coincide with them, and there the first-moment
-voxel reaches an accuracy of $10^{-6}$ with one voxel per model layer, where the uniform-field voxel
-needs about forty. A sphere whose contrast falls smoothly to zero at its surface converges at second
-order against its exact solution, as the layer predicts, to $0.018\%$ at $k_Sa=0.5$ with twenty-four
-voxels across; a sharp sphere's error is set by its staircase, which changes with the grid.
-
-Three properties of the cube make the experiment exact. Because cubes tile the plane, the
-source-cell-averaged coupling between voxels is the continuum's cell integral exactly, and at normal
-incidence the lattice kernel is available in closed form with no lattice sum. The single site is derived
-rather than assumed: the moments of the Green's tensor over the cube, taken as distributions, give a
-closed hierarchy whose first-gradient truncation is the uniform-strain closure. That closure is exact
-for a sphere in the static limit, it departs from exact scattering by a sphere only by a real $(ka)^2$
-term, with the radiation damping exact, and for a cube it differs from the sphere only by a cubic
-anisotropy of the shear response. And the collocation closure carries the same self term as the lattice
-kernel, which cancels, so the discrete system is a collocation of the continuum equation, whose
-second-order error is a midpoint-rule error of the internal field, known in closed form for every
-discretisation.
-
-The uniform-strain closure is the first member of a hierarchy. Expanding the field of a voxel in its
-gradients at the centre, to any degree, gives a closed system whose coefficients are moments of the
-Green's tensor over the cube, graded by the number of derivatives and the degree of the weight; every
-moment through the fifth degree is in closed form on the four constants $1$, $\sqrt3$, $\pi$ and
-$\log(2-\sqrt3)$, gated by sum rules that test its distributional content and confirmed by an
-independent evaluation. The blocks of the hierarchy gain accuracy in pairs: the second gradients
-complete the density channel and the third the stiffness channel, so that fourth order needs the third
-gradients and sixth the fifth, and the error of each truncation at first order in the contrast is in
-closed form, the constants of the collocation scheme being its first case. As a single site the
-third-gradient system is three hundred times more accurate than the uniform-strain closure against the
-exact sphere at $k_Sa=0.4$, and lowers the static error of an isolated cube ninefold. As a voxel
-scheme, with its self block in closed form and its coupling a convolution of smooth integrals, it
-converges on a smoothly graded sphere as the first-moment Legendre voxel does, and is the more accurate
-of the two on a given grid by a fifth to a quarter, for sixty unknowns a voxel against thirty-six. The
-results, and the evidence for each, are collected in Table~\ref{tab:evidence}.
+Table~\ref{tab:evidence} lists each result with the evidence for it. Every numerical value is reproducible from the Mathematica notebooks
+\path{Mathematica/ContinuumLimit_X.wl}, for X in Reference, ThinLayer, SpecularSums,
+StaticLocal, AveragedSums, CubeT, Chain, ErrorConstant, FourthOrder, FourthOrderError, Reduction3D,
+Oblique, IncidentS, Heterogeneous, SecondMoment, GradedContrast, LayerDefect and Figure (data for the figure), and their reference dumps
+\path{scripts/continuum_limit_*.py}; the moment integrals are
+\path{Mathematica/CubeMomentCore.wl} (gate \path{CubeMomentCoreTest.wl}), \path{CubeA22Block.wl},
+\path{CubeMomentArchiveCheck.wl} and \path{CubeShearSplit.wl}, with the Python half of the last in
+\path{scripts/gate_cube_shear_split.py}; the stratified reference against Kennett's recursion is
+\path{scripts/gate_heterogeneous_reference_vs_kennett.py}; the voxelised spheres are
+\path{scripts/pilot_sphere_voxel_vs_mie.py} (sharp) and \path{scripts/pilot_graded_voxel_sphere.py} (graded, with the mean-only voxel of \path{cubic_scattering/graded_voxel}), the graded sphere's exact solution
+\path{Mathematica/ContinuumLimit_GradedSphere.wl} with the library \path{Mathematica/TakeuchiSaito.wl}
+and \path{scripts/crosscheck_graded_sphere.py};
+the test against exact Mie is
+\path{scripts/gate_sphere_closure_vs_mie.py}, with the closed forms in \path{Mathematica/SphereClosureDynamic.wl}; the exact kernel is
+\path{cubic_scattering/cell_averaged_lattice.py}; the independent implementation of the
+first-moment voxel is \path{scripts/crosscheck_first_moment_voxel.py}, and of the voxel of any
+degree \path{scripts/crosscheck_second_moment_voxel.py}, and of the graded cell
+\path{scripts/crosscheck_graded_contrast.py}; the projection-error law and its split are measured by
+\path{scripts/measure_layer_bases.py}, in a stratified background by
+\path{scripts/measure_layer_stratified_background.py},
+\path{scripts/measure_oblique_stratified_background.py} and \path{scripts/measure_oblique_two_term.py}, and the voxel of degree $2$ at oblique incidence by
+\path{scripts/measure_oblique_degree.py}; the convergence figure is drawn by
+\path{scripts/plot_convergence_orders.py}; the near field of the sphere is measured by
+\path{scripts/measure_graded_sphere_near_field.py}; the moments of every grade are in
+\path{Mathematica/CubeMomentHigherGrades.wl}, \path{Mathematica/CubeMomentStore.wl} and
+\path{Mathematica/CubeMomentCanonical.wl}, with their independent evaluation in
+\path{scripts/crosscheck_cube_moments_ball_shell.py}; the hierarchy on the layer is
+\path{Mathematica/ContinuumLimit_GradientHierarchy.wl} and \path{scripts/measure_layer_taylor_hierarchy.py},
+and in three dimensions \path{scripts/measure_ball_gradient_hierarchy.py},
+\path{scripts/measure_cube_gradient_hierarchy.py} and
+\path{scripts/measure_graded_sphere_gradient_hierarchy_fft.py}. All are available at
+\url{https://github.com/tmnestor/MultipleScatteringCalculations}.
 
 \begin{table}[htbp]
 \centering
@@ -2753,25 +3076,7 @@ Hierarchy as a voxel scheme, Table~\ref{tab:hiergraded} & order $3.8$, $6$ to $1
 \end{tabular}
 \end{table}
 
-\paragraph{The error is known in advance} For every discretisation studied here the error is not
-something to be discovered by refining until the answer stops changing. Its order and its leading
-constant are known before anything is computed: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
-transmission for the collocation voxel (Eq.~\eqref{eq:errorR}), $(kd)^2/12$, $(kd)^4/720$ and
-$(kd)^6/100800$ for the voxels of degree $0$, $1$ and $2$ (Eq.~\eqref{eq:cp}), and the order
-$\min(2p+2,2r+2)$ where the medium varies within a cell (Eq.~\eqref{eq:graded}), with the size of the
-error there given by the relative projection error of the medium (Eq.~\eqref{eq:defectlaw}), which is
-computed from the model and the grid alone. That is worth more than
-the order alone, for three reasons. First, the cell size and the degree of the voxel that a required
-accuracy needs follow from the wavenumber and the medium, before the computation and without a
-refinement study. Secondly, it turns a refinement study from a hope into a test. A scheme of this kind
-can converge smoothly to the wrong limit (\S\ref{sec:point}), and smooth convergence alone cannot
-reveal it; but the difference between two grids must have the known order and the known constant, and
-a computation whose differences do not is in error from some cause other than the discretisation.
-Thirdly, it shows where effort pays. The error is that of representing the field and the medium within
-a cell, so raising the degree of the cell does what multiplying the cells cannot: in the stratified
-model one first-moment voxel per layer reaches $10^{-6}$ where the uniform-field voxel needs about forty.
-Whether the error of a body with three-dimensional structure can be known in advance in the same way is
-the question taken up in the companion paper \citep{NestorGraded2026}.
+\FloatBarrier
 
 \section*{Acknowledgments}
 This work began thirty years ago in the author's doctoral research at the Research School of Earth
