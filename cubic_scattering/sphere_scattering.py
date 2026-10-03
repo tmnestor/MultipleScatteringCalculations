@@ -36,7 +36,9 @@ from .resonance_tmatrix import (
     _build_incident_plane_wave_basis,
     _pair_propagator_matrix,
     _propagator_blocks_9x9,
+    _solve_with_condition_estimate,
     _sub_cell_tmatrix_9x9,
+    _times_block_diagonal,
     sub_cell_centres,
 )
 
@@ -56,7 +58,10 @@ class SphereDecompositionResult:
         n_sub: Number of sub-cells per edge of bounding cube.
         n_cells: Number of cells inside sphere.
         a_sub: Sub-cell half-width (m).
-        condition_number: Condition number of Foldy-Lax matrix.
+        condition_number: 1-norm condition number of the Foldy-Lax matrix, LAPACK's estimate (zgecon)
+            from the LU factors of the solve. It never exceeds the exact kappa_1 and is in practice within
+            a small factor of it. (Until 2026-10-03 this was the exact 2-norm value from a full SVD, which
+            cost about 22 times the solve.)
         psi_exc: Exciting field solution, shape (9*N, 9).
         omega: Angular frequency.
         radius: Sphere radius (m).
@@ -213,19 +218,19 @@ def compute_sphere_foldy_lax(
     # separation, and every symmetry and reciprocity test would still pass.
     P_tilde = _pair_propagator_matrix(centres, pitch, _blocks)
 
-    # Block-diagonal T_tilde
-    T_block = np.kron(np.eye(N, dtype=complex), T_loc)
-
-    # Foldy-Lax matrix: A = I - P_tilde @ T_tilde
-    A_mat = np.eye(9 * N, dtype=complex) - P_tilde @ T_block
-    cond_num = float(np.linalg.cond(A_mat))
+    # Foldy-Lax matrix A = I - P_tilde T_tilde, with T_tilde = I_N (x) T_loc block-diagonal: the product is
+    # taken block by block, never through the dense Kronecker matrix.
+    A_mat = _times_block_diagonal(P_tilde, T_loc)
+    del P_tilde
+    A_mat *= -1.0
+    A_mat[np.diag_indices_from(A_mat)] += 1.0
 
     # Incident field: the composite-T patterns, and the plane-wave basis for the far field
     psi_inc = _build_incident_field_coupled(centres)
     pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
-    # Solve both with one factorisation
-    sol = np.linalg.solve(A_mat, np.hstack([psi_inc, pw_inc]))
+    # Solve both with one factorisation, which also gives the condition estimate
+    sol, cond_num = _solve_with_condition_estimate(A_mat, np.hstack([psi_inc, pw_inc]))
     psi_exc, psi_pw = sol[:, :9], sol[:, 9:]
 
     # Composite T-matrix
