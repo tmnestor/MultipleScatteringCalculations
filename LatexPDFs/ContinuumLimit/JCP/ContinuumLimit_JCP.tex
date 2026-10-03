@@ -2822,7 +2822,14 @@ arithmetic, and they agree with Eqs.~\eqref{eq:born1}, \eqref{eq:born2} and \eqr
 \emph{Why the terms must be separated.} The law of Eq.~\eqref{eq:defectlaw} is a statement about $T_2$. At the full contrast
 the terms of third and higher order are $7\%$ of the second and carry errors of their own, and if every
 order above the first is taken together the ratio of Eq.~\eqref{eq:defectlaw} reads $0.90$ to $0.94$
-where the second-order term alone gives $1.00$ to $1.01$.
+where the second-order term alone gives $1.00$ to $1.01$. The shortfall is itself the single site's. In
+the long-wave limit the kernel is local, the exact strain is $\varepsilon_0/(1-cf)$ with
+$c=-\Delta M/M_P$, and the scheme's is the Galerkin solution of $\varepsilon=\varepsilon_0+cf\varepsilon$
+in each cell on that cell's polynomials; the relative error of the term of order $n$ is
+$(\int f^n\,\dd z-\int(\Pi f)^n\,\dd z)/\int f^n\,\dd z$, $2.455$ times $\mathcal{E}_q$ for the third term of this profile,
+which has the opposite sign to the second. At $\omega=30$\,rad\,s$^{-1}$ the whole nonlinear part has
+$0.896$ times $\mathcal{E}_q$, and the cell-by-cell Galerkin solution reproduces it to four digits with
+$c$ from the contrast (\path{scripts/measure_layer_t3_law.py}).
 
 Equation~\eqref{eq:defectlaw} is exact in the long-wave limit, for a reason that shows what each basis
 is for. The strain--strain entry of the kernel, $g''=-k^2g-\delta(z)/M_P$, is local as $kD\to0$, and the
