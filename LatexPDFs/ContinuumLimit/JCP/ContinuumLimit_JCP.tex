@@ -2010,8 +2010,8 @@ three-dimensional results, the single site against the sphere and the cube and t
 \S\ref{sec:gradvoxel}, come from one implementation, at one frequency for the voxel scheme, checked
 against exact solutions. There the fourth order is approached and not attained on the grids reached
 ($3.8$ at fourteen voxels across, as for the first-moment voxel), the fifth-gradient system, whose
-moments are in hand, has not been assembled in three dimensions, and the cost of forming the blocks of
-the two fourth-order schemes has not been compared. Two extensions follow directly. The first is
+moments are in hand, has not been assembled in three dimensions, and the two fourth-order schemes have
+been compared in the cost of forming their tables only (\S\ref{sec:gradvoxel}). Two extensions follow directly. The first is
 the three-dimensional solver itself. The second is a stratified \emph{background}, a layered
 reference medium, as distinct from the stratified contrast of \S\ref{sec:hetero}. For a
 laterally uniform layer of voxels the orders, the first-order factor and the projection-error law all
@@ -2069,6 +2069,10 @@ a cell, so raising the degree of the cell does what multiplying the cells cannot
 model one first-moment voxel per layer reaches $10^{-6}$ where the uniform-field voxel needs about forty.
 Whether the error of a body with three-dimensional structure can be known in advance in the same way is
 the question taken up in a following paper \citep{NestorOctree2026}, where it decides where the cells of an adaptive grid are placed.
+That paper continues the paper's first strand, the two bases and their error, with the Legendre voxels.
+The second strand, the moment hierarchy, whose coefficients are integrals of the Green's tensor over the
+cube, is taken further in a paper on the coupling integrals of polynomial cubes in closed form, of which
+it is the worked application.
 
 \appendix
 
