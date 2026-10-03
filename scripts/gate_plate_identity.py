@@ -224,18 +224,15 @@ def main() -> int:
 
     # 1. Consistent collocation everywhere: the solver's default on this route.
     print("\n1. exact_cell_average (default on the Ewald route): prediction exact in the limit")
-    # cell_avg_r0 is the radius beyond which the analytic d^2 tail replaces
-    # direct averaging; the residual is its O(d^4) truncation and must fall.
+    # AT k_par = 0 THE KERNEL IS IN CLOSED FORM. Since 3de1c92 (2026-09-27) the same-plane cell-averaged
+    # kernel at k_par = 0 is cell_averaged_lattice.exact_same_plane_9x9 (the tiling identity): no lattice
+    # sum is formed, so cell_avg_r0 and cell_avg_gauss do not enter here, and the earlier check that the
+    # residual FALLS with cell_avg_r0 tested a truncation that no longer exists. What remains is the
+    # physical dynamic remainder of a static identity, O((k d)^2): it must be small, and it must grow
+    # four-fold when omega doubles. That second property is the sharp test that it is the remainder and
+    # not a defect.
     b_def = bias_of(kernel_k0())
     print(f"     library defaults (cell_avg_r0=2, cell_avg_gauss=6): {np.abs(b_def).max() / scale:.2e}")
-    ladder = []
-    for r0 in (4, 6, 8):
-        ladder.append(np.abs(bias_of(kernel_k0(cell_avg_r0=r0, cell_avg_gauss=12))).max() / scale)
-    check(
-        "residual falls with cell_avg_r0 (4, 6, 8) and reaches < 1e-6",
-        ladder[0] > ladder[1] > ladder[2] and ladder[2] < 1e-6,
-        " -> ".join(f"{v:.2e}" for v in ladder),
-    )
     b_w1 = bias_of(kernel_k0(cell_avg_r0=4, cell_avg_gauss=12))
     b_w2 = bias_of(
         build_slab_kernels(
@@ -251,6 +248,12 @@ def main() -> int:
     )
     dw = np.abs(b_w2 - b_w1).max() / scale
     check("static limit reached (2x omega moves it by < 1e-6)", dw < 1e-6, f"{dw:.1e}")
+    res1, res2 = np.abs(b_w1).max() / scale, np.abs(b_w2).max() / scale
+    check(
+        "residual is the O(omega^2) dynamic remainder: < 1e-6, and 4x at 2 omega",
+        res1 < 1e-6 and abs(res2 / res1 - 4.0) < 0.1,
+        f"{res1:.2e} -> {res2:.2e} (ratio {res2 / res1:.3f})",
+    )
 
     # 2. Contact shell only, midpoint beyond.
     print("\n2. contact shell only (exact_cell_average=False, va_all=False): prediction 2.14% bias")

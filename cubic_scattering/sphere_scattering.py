@@ -34,7 +34,8 @@ from .effective_contrasts import (
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
     _build_incident_plane_wave_basis,
-    _propagator_block_9x9,
+    _pair_propagator_matrix,
+    _propagator_blocks_9x9,
     _sub_cell_tmatrix_9x9,
     sub_cell_centres,
 )
@@ -199,41 +200,18 @@ def compute_sphere_foldy_lax(
     # average by 2 in each axis and still leave every symmetry intact.
     pitch = 2.0 * a_sub
 
-    def _direct(r_vec: NDArray) -> NDArray:
+    def _blocks(R: NDArray) -> NDArray:
         if cell_average:
-            return averaged_pair_block_9x9(r_vec, omega, ref, pitch, n_gauss=n_gauss)
-        return _propagator_block_9x9(r_vec, omega, ref)
+            return np.stack([averaged_pair_block_9x9(r, omega, ref, pitch, n_gauss=n_gauss) for r in R])
+        return _propagator_blocks_9x9(R, omega, ref)
 
     # The propagator depends only on the separation, and the centres lie on a
     # regular grid, so there are only O(n_sub^3) distinct blocks rather than
-    # O(N^2).  That is what makes the averaged route affordable at all.
-    cache: dict[tuple[int, int, int], NDArray] = {}
-
-    def _block(r_vec: NDArray) -> NDArray:
-        key = (
-            int(round(float(r_vec[0]) / pitch)),
-            int(round(float(r_vec[1]) / pitch)),
-            int(round(float(r_vec[2]) / pitch)),
-        )
-        # Keyed on the lattice offset, so valid only if the centres really do
-        # lie on that lattice.  Verified rather than assumed: a silent mis-key
-        # would return a propagator for the wrong separation, and every
-        # symmetry and reciprocity test would still pass.
-        if float(np.max(np.abs(np.asarray(r_vec) - pitch * np.array(key)))) > 1.0e-9 * pitch:
-            return _direct(r_vec)
-        hit = cache.get(key)
-        if hit is None:
-            hit = _direct(r_vec)
-            cache[key] = hit
-        return hit
-
-    # Build 9N x 9N propagator (off-diagonal only)
-    P_tilde = np.zeros((9 * N, 9 * N), dtype=complex)
-    for m in range(N):
-        for n in range(N):
-            if m != n:
-                r_vec = centres[m] - centres[n]
-                P_tilde[9 * m : 9 * m + 9, 9 * n : 9 * n + 9] = _block(r_vec)
+    # O(N^2).  That is what makes the averaged route affordable at all.  The
+    # lattice is verified, not assumed (off-lattice centres fall back to every
+    # pair): a silent mis-key would return a propagator for the wrong
+    # separation, and every symmetry and reciprocity test would still pass.
+    P_tilde = _pair_propagator_matrix(centres, pitch, _blocks)
 
     # Block-diagonal T_tilde
     T_block = np.kron(np.eye(N, dtype=complex), T_loc)

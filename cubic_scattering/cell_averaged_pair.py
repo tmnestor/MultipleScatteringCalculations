@@ -45,16 +45,22 @@ from the origin.  The two must agree to ``O(d^4)`` and diverge from each other
 near contact, where the expansion stops being good.  That disagreement is a
 measurement, not a defect, and the gate reports where it sets in.
 
-THE MODES MUST NOT BE MIXED BEFORE AVERAGING.  The tail factor carries
-``kappa^2`` and P and S do not share it, so both routes average the scalar
-derivative tensors per mode and assemble only afterwards -- the same discipline
-``cell_averaged_lattice.averaged_same_plane_9x9`` follows, for the same reason.
+THE MODES MUST NOT BE MIXED BEFORE THE TAIL FACTOR.  The tail factor carries
+``kappa^2`` and P and S do not share it, so the tail route scales each mode by
+its own factor before combining them.  The mode DIFFERENCE D = g_S - g_P is
+nevertheless formed as one function (``kupradze_derivatives.
+difference_derivative_tensors``), never by subtracting two averaged tensors:
+the subtraction cancels as eps / (kappa r)^2 at the nearest quadrature nodes.
+The direct quadrature is linear, so it averages D itself; the tail route writes
+fs g_S - fp g_P = fs D + (fs - fp) g_P, with fs - fp an explicit small factor.
 
 Conventions inherited: (z, x, y) ordering, time ``e^{-i omega t}``, outgoing
 ``h^(1)``.
 """
 
 from __future__ import annotations
+
+from collections.abc import Callable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -63,13 +69,15 @@ from .cell_averaged_lattice import _cell_nodes
 from .effective_contrasts import ReferenceMedium
 from .kupradze_derivatives import (
     MAX_ORDER,
-    greens_from_scalars,
+    difference_derivative_tensors,
+    greens_from_difference,
     scalar_derivative_tensors,
 )
 
 __all__ = [
     "auto_n_gauss",
     "averaged_pair_block_9x9",
+    "averaged_pair_difference_tensors",
     "averaged_pair_scalar_tensors",
     "tail_pair_block_9x9",
 ]
@@ -145,6 +153,11 @@ def averaged_pair_scalar_tensors(
             would be singular.
     """
     s = np.asarray(s_vec, dtype=float)
+    _check_receiver_clear(s, d)
+    return _receiver_average(s, d, n_gauss, order, lambda r: scalar_derivative_tensors(r, kappa, order))
+
+
+def _check_receiver_clear(s: NDArray, d: float) -> None:
     h = 0.5 * d
     # The receiver cell must not reach the source. The closest approach of a
     # cube of half-width h centred at s is |s| measured face-wise, so the
@@ -154,31 +167,63 @@ def averaged_pair_scalar_tensors(
             f"the receiver cell reaches the source: max|s| = {float(np.max(np.abs(s))):.6g} "
             f"<= h = {h:.6g}.\n"
             "  Where: cubic_scattering/cell_averaged_pair.py,\n"
-            "         averaged_pair_scalar_tensors()\n"
+            "         averaged_pair_scalar_tensors() / averaged_pair_difference_tensors()\n"
             "  Valid: a separation of at least one cell pitch. The self term is\n"
             "         the local T-matrix's business and is excluded here.\n"
             "  Fix:   skip the m == n pair, as the Foldy-Lax assembly does."
         )
         raise ValueError(msg)
 
+
+def averaged_pair_difference_tensors(
+    s_vec: NDArray,
+    kappa_p: complex,
+    kappa_s: complex,
+    d: float,
+    *,
+    n_gauss: int | None = None,
+    order: int = MAX_ORDER,
+) -> list[NDArray]:
+    """Derivative tensors of D = g_S - g_P averaged over the receiver cell.
+
+    The average is linear, so averaging D equals differencing the per-mode averages, exactly; formed
+    this way it does not cancel between the modes (``kupradze_derivatives.difference_radial_ladder``),
+    which the per-mode route does as eps / (kappa r)^2 at the nearest quadrature nodes.
+
+    Args and Raises: as ``averaged_pair_scalar_tensors``, with the two wavenumbers.
+    """
+    s = np.asarray(s_vec, dtype=float)
+    _check_receiver_clear(s, d)
+    return _receiver_average(
+        s, d, n_gauss, order, lambda r: difference_derivative_tensors(r, kappa_p, kappa_s, order)
+    )
+
+
+def _receiver_average(
+    s: NDArray,
+    d: float,
+    n_gauss: int | None,
+    order: int,
+    tensors_at: Callable[[NDArray], list[NDArray]],
+) -> list[NDArray]:
     ng = auto_n_gauss(s, d) if n_gauss is None else n_gauss
-    nodes, wts = _cell_nodes(h, ng)
+    nodes, wts = _cell_nodes(0.5 * d, ng)
     acc: list[NDArray] = [np.zeros((3,) * n, dtype=complex) for n in range(order + 1)]
     for uz, wz in zip(nodes, wts, strict=True):
         for ux, wx in zip(nodes, wts, strict=True):
             for uy, wy in zip(nodes, wts, strict=True):
                 w = wz * wx * wy
                 shifted = s - np.array([uz, ux, uy])
-                for n, t in enumerate(scalar_derivative_tensors(shifted, kappa, order)):
+                for n, t in enumerate(tensors_at(shifted)):
                     acc[n] = acc[n] + w * t
     return acc
 
 
-def _assemble(d_p: list[NDArray], d_s: list[NDArray], omega: complex, ref: ReferenceMedium) -> NDArray:
-    """Assemble the 9x9 [[G, C], [H, S]] from per-mode scalar tensors.
+def _assemble(d_diff: list[NDArray], d_s: list[NDArray], omega: complex, ref: ReferenceMedium) -> NDArray:
+    """Assemble the 9x9 [[G, C], [H, S]] from the tensors of D = g_S - g_P and of g_S.
 
     Args:
-        d_p: P-mode scalar derivative tensors.
+        d_diff: Derivative tensors of D.
         d_s: S-mode scalar derivative tensors.
         omega: Angular frequency.
         ref: Background medium.
@@ -188,7 +233,7 @@ def _assemble(d_p: list[NDArray], d_s: list[NDArray], omega: complex, ref: Refer
     """
     from .resonance_tmatrix import _voigt_contract
 
-    g, gd, gdd = greens_from_scalars(d_p, d_s, omega, ref)
+    g, gd, gdd = greens_from_difference(d_diff, d_s, omega, ref)
     c, h_blk, s_blk = _voigt_contract(gd, gdd)
     out = np.zeros((9, 9), dtype=complex)
     out[:3, :3] = g
@@ -267,9 +312,9 @@ def averaged_pair_block_9x9(
         if hit is not None:
             return hit.copy()
 
-    d_p = averaged_pair_scalar_tensors(s, omega / ref.alpha, d, n_gauss=n_gauss)
+    d_diff = averaged_pair_difference_tensors(s, omega / ref.alpha, omega / ref.beta, d, n_gauss=n_gauss)
     d_s = averaged_pair_scalar_tensors(s, omega / ref.beta, d, n_gauss=n_gauss)
-    block = _assemble(d_p, d_s, omega, ref)
+    block = _assemble(d_diff, d_s, omega, ref)
 
     if on_lattice and len(_BLOCK_CACHE) < _CACHE_MAX:
         _BLOCK_CACHE[key] = block
@@ -301,6 +346,10 @@ def tail_pair_block_9x9(
     kp, ks = omega / ref.alpha, omega / ref.beta
     fp = 1.0 - (kp**2) * (d**2) / 24.0
     fs = 1.0 - (ks**2) * (d**2) / 24.0
-    d_p = [fp * t for t in scalar_derivative_tensors(s_vec, kp)]
+    # fs g_S - fp g_P = fs D + (fs - fp) g_P: the mode difference D is formed stably, and fs - fp
+    # = -(ks^2 - kp^2) d^2 / 24 is an explicit small factor, so nothing cancels.
+    t_p = scalar_derivative_tensors(s_vec, kp)
+    t_diff = difference_derivative_tensors(s_vec, kp, ks)
+    d_diff = [fs * dd + (fs - fp) * p for dd, p in zip(t_diff, t_p, strict=True)]
     d_s = [fs * t for t in scalar_derivative_tensors(s_vec, ks)]
-    return _assemble(d_p, d_s, omega, ref)
+    return _assemble(d_diff, d_s, omega, ref)

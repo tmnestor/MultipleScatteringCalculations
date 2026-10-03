@@ -32,7 +32,7 @@ from .kennett_layers import (
 )
 from .lattice_greens import _apply_refl_x, _apply_refl_y, _apply_rot90
 from .lattice_kupradze import bloch_kernel_hat_9x9
-from .resonance_tmatrix import _propagator_block_9x9, _sub_cell_tmatrix_9x9
+from .resonance_tmatrix import _propagator_block_9x9, _propagator_blocks_9x9, _sub_cell_tmatrix_9x9
 from .sphere_scattering import _plane_wave_strain_voigt
 
 # ═══════════════════════════════════════════════════════════════
@@ -246,7 +246,7 @@ def _add_supercell_images(
     """
     for cx in range(M):
         for cy in range(M):
-            acc = np.zeros((9, 9), dtype=complex)
+            seps = []
             for nx in range(-n_img, n_img + 1):
                 for ny in range(-n_img, n_img + 1):
                     gx, gy = cx + nx * M, cy + ny * M
@@ -256,8 +256,9 @@ def _add_supercell_images(
                         continue
                     if gx == 0 and gy == 0 and abs(dz) < 1e-15 * max(d, 1.0):
                         continue
-                    acc += _propagator_block_9x9(np.array([dz, gx * d, gy * d]), omega, ref)
-            kernel_circ[cx, cy] += acc
+                    seps.append((dz, gx * d, gy * d))
+            if seps:
+                kernel_circ[cx, cy] += _propagator_blocks_9x9(np.array(seps), omega, ref).sum(axis=0)
 
 
 def _bloch_contact_correction(
@@ -562,13 +563,10 @@ def _cell_averaged_propagator(
     else:
         nodes = list(0.5 * d * x)
         wts = list(0.5 * w)
-    acc = np.zeros((9, 9), dtype=complex)
-    for i, ui in enumerate(nodes):
-        for j, uj in enumerate(nodes):
-            for k, uk in enumerate(nodes):
-                off = np.array([ui, uj, uk])
-                acc += (wts[i] * wts[j] * wts[k]) * _propagator_block_9x9(r_vec - off, omega, ref)
-    return acc
+    u = np.asarray(nodes)
+    w3 = np.einsum("i,j,k->ijk", wts, wts, wts).ravel()
+    offs = np.stack(np.meshgrid(u, u, u, indexing="ij"), -1).reshape(-1, 3)
+    return np.einsum("n,nab->ab", w3, _propagator_blocks_9x9(np.asarray(r_vec) - offs, omega, ref))
 
 
 def _identity(G: NDArray) -> NDArray:

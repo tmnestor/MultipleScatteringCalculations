@@ -22,6 +22,8 @@ Coordinates: z = axis 0 (down), x = axis 1 (right), y = axis 2 (out).
 Time convention e^{-i omega t}; every transverse wavenumber pinned to Im >= 0.
 """
 
+import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -409,6 +411,8 @@ def vertical_kernel_9x9(
     # Source-cell average, per mode. Scaling these coefficients is sufficient:
     # g_p, g_s_iso and g_s_pol are built linearly from them, and _assemble_9x9
     # is linear in the g-parts, so the C, H and S blocks inherit the factor.
+    h_cell = 0.0
+    ff_xy = np.ones(n, dtype=complex)
     if cell_half_width is None:
         ff_p = ff_s = np.ones(n, dtype=complex)
     else:
@@ -418,17 +422,67 @@ def vertical_kernel_9x9(
         ff_s = ff_xy * _cell_sinc(kz_s * h_cell)
 
     c_s_iso = ff_s * (1j / (2 * rho)) * e_s / (beta**2 * kz_s)
-    c_p_pol = ff_p * (1j / (2 * rho)) * e_p / (omega**2 * kz_p)
-    c_s_pol = ff_s * -(1j / (2 * rho)) * e_s / (omega**2 * kz_s)
-
-    g_p = np.zeros((3, 3, n), dtype=complex)
     g_s_iso = np.zeros((3, 3, n), dtype=complex)
-    g_s_pol = np.zeros((3, 3, n), dtype=complex)
     for i in range(3):
         g_s_iso[i, i, :] = c_s_iso
-        for j in range(3):
-            g_p[i, j, :] = kvec_p[i] * kvec_p[j] * c_p_pol
-            g_s_pol[i, j, :] = kvec_s[i] * kvec_s[j] * c_s_pol
+    iso = _assemble_9x9(g_s_iso, [g_s_iso], [kvec_s])
 
-    total = g_p + g_s_iso + g_s_pol
-    return _assemble_9x9(total, [g_p, g_s_iso, g_s_pol], [kvec_p, kvec_s, kvec_s])
+    # THE POLARISATION PARTS, AS ONE DIFFERENCE. The P pole and the S pole's polarisation term are the
+    # same function of u = kappa^2 at the two wavenumbers,
+    #     Phi(u) = assembled [ (i / 2 rho) k k e^{i k_z |dz|} ff(k_z) / k_z ],  k_z = sqrt(u - kh^2),
+    # and they enter as (Phi(k_P^2) - Phi(k_S^2)) / omega^2. For an evanescent order at small kappa each
+    # is ~ kh^2 / (omega^2 |kh|) while the difference is O(1), so summing them loses eps (kh / kappa)^2.
+    # The difference is taken by a contour integral in u instead (``_pole_difference``).
+    def phi(u: NDArray) -> NDArray:
+        kz = _branch(u - kh2)
+        ff = np.ones(n, dtype=complex) if cell_half_width is None else ff_xy * _cell_sinc(kz * h_cell)
+        coef = ff * (1j / (2 * rho)) * np.exp(1j * kz * abs(dz)) / kz
+        kv = [sign * kz, kx.astype(complex), np.full(n, ky, dtype=complex)]
+        g = np.zeros((3, 3, n), dtype=complex)
+        for i in range(3):
+            for j in range(3):
+                g[i, j, :] = kv[i] * kv[j] * coef
+        return _assemble_9x9(g, [g], [kv])
+
+    u_p, u_s = (omega / alpha) ** 2, (omega / beta) ** 2
+    return iso + _pole_difference(phi, u_p, u_s, kh2, abs(dz)) * (1.0 / alpha**2 - 1.0 / beta**2)
+
+
+_POLE_MAX_RATIO = 0.1
+
+
+def _pole_difference(
+    phi: Callable[[NDArray], NDArray], u_p: complex, u_s: complex, kh2: NDArray, dz_abs: float
+) -> NDArray:
+    """(Phi(u_p) - Phi(u_s)) / (u_p - u_s), node by node, without subtracting nearly equal values.
+
+    Phi maps an array of u (one per lateral node) to (9, 9, n). At a node with kh^2 > |u| the order is
+    evanescent and Phi is analytic in u for |u| < kh^2 (the branch point of k_z), so the divided
+    difference is the Cauchy integral (1 / 2 pi i) oint Phi(z) / ((z - u_p)(z - u_s)) dz on a circle
+    about the midpoint of radius a quarter of the reach; the trapezoid rule converges
+    as max(half-gap / radius, 1/4)^N. Propagating and near-anomaly nodes, where the two poles differ at
+    order one, take the plain divided difference.
+
+    The reach is the smaller of the distance to the branch point, kh^2 - |midpoint|, and Phi's scale of
+    variation: on the evanescent branch e^{i k_z |dz|} = e^{-|dz| sqrt(kh^2 - u)} changes by a factor e
+    when u moves by 2 kh / |dz|, which for high orders is far shorter. Taking the branch-point distance
+    alone lets Phi vary by e^{kh |dz| / 8} round the circle and amplifies its round-off accordingly.
+    """
+    centre = 0.5 * (u_p + u_s)
+    half_gap = 0.5 * abs(u_p - u_s)
+    reach = np.minimum(kh2 - abs(centre), 2.0 * np.sqrt(kh2) / dz_abs)
+    contour = reach > (half_gap / _POLE_MAX_RATIO)
+    out = (phi(np.full(kh2.shape, u_p, dtype=complex)) - phi(np.full(kh2.shape, u_s, dtype=complex))) / (
+        u_p - u_s
+    )
+    if not contour.any() or half_gap == 0.0:
+        return out
+    radius = np.where(contour, 0.25 * reach, 0.25 * half_gap / _POLE_MAX_RATIO)
+    ratio = float(np.max(np.maximum(half_gap / radius[contour], 0.25)))
+    n_nodes = max(8, math.ceil(math.log(1e-17) / math.log(ratio)) + 2)
+    acc = np.zeros_like(out)
+    for j in range(n_nodes):
+        z = centre + radius * np.exp(2j * np.pi * (j + 0.5) / n_nodes)
+        weight = (z - centre) / ((z - u_p) * (z - u_s)) / n_nodes
+        acc += phi(z) * weight
+    return np.where(contour, acc, out)

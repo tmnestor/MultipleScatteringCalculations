@@ -1,7 +1,8 @@
 """The 9 x 9 point propagator [[G, C], [H, S]], vectorised and accurate at every k r.
 
-``resonance_tmatrix._propagator_block_9x9`` builds the same object from ``elastodynamic_greens_deriv``,
-whose closed form cancels catastrophically as k r -> 0.  Here
+The closed form of this object cancels catastrophically as k r -> 0 (eps / (k r)^2), so every point
+propagator in the package is evaluated here: ``resonance_tmatrix.elastodynamic_greens_deriv`` and
+``_propagator_block_9x9`` delegate to ``greens_tensors`` and ``kernel_9x9``.  Here
 
     G_ij = (1 / 4 pi mu) [ delta_ij g_b(r) + (1 / k_b^2) d_i d_j (g_b - g_a)(r) ],   g_k = e^{ikr} / r,
 
@@ -18,9 +19,11 @@ remainder, which is at most weakly (1/r) singular.
 import math
 from collections.abc import Callable
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 import sympy as sp
+import yaml
 from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
@@ -68,14 +71,16 @@ def power_F(m: int, r: NDArray) -> list[NDArray]:
 
 @lru_cache(maxsize=1)
 def _closed_F_functions() -> list[Callable]:
-    r, k = sp.symbols("r k", positive=True)
+    # k is complex in general (attenuated omega): only r carries an assumption
+    r = sp.symbols("r", positive=True)
+    k = sp.symbols("k")
     out = [sp.exp(sp.I * k * r) / r]
     for _ in range(4):
         out.append(sp.simplify(sp.diff(out[-1], r) / r))
     return [sp.lambdify((r, k), e, "numpy") for e in out]
 
 
-def _helmholtz_F(k: float, r: NDArray) -> list[NDArray]:
+def _helmholtz_F(k: complex, r: NDArray) -> list[NDArray]:
     return [np.asarray(fn(r, k), dtype=complex) * np.ones_like(r) for fn in _closed_F_functions()]
 
 
@@ -176,31 +181,103 @@ def _assemble(G: NDArray, Gd: NDArray, Gdd: NDArray) -> NDArray:
 
 CHUNK = 40_000
 
+#: The numerics configuration: which implementation evaluates the point propagator.
+NUMERICS_YAML = Path(__file__).resolve().parents[1] / "numerics.yml"
+_BACKENDS = ("python", "fortran")
+
+
+@lru_cache(maxsize=1)
+def point_kernel_backend() -> str:
+    """``point_kernel.backend`` from ``cubic_scattering/numerics.yml``: 'python' or 'fortran'.
+
+    Read once per process. There is no default: a missing file, key or unknown value is an error.
+
+    Raises:
+        ValueError: with what is wrong, where to fix it, a valid example, and how to recover.
+    """
+    example = "point_kernel:\n  backend: fortran   # one of: python, fortran"
+    if not NUMERICS_YAML.is_file():
+        raise ValueError(
+            "the numerics configuration file is missing.\n"
+            f"  Where: {NUMERICS_YAML}\n"
+            f"  Valid:\n{example}\n"
+            "  Fix:   create that file with the block above."
+        )
+    cfg = yaml.safe_load(NUMERICS_YAML.read_text()) or {}
+    section = cfg.get("point_kernel") if isinstance(cfg, dict) else None
+    backend = section.get("backend") if isinstance(section, dict) else None
+    if backend not in _BACKENDS:
+        found = "missing" if backend is None else repr(backend)
+        raise ValueError(
+            f"point_kernel.backend is {found}; it must be one of {', '.join(_BACKENDS)}.\n"
+            f"  Where: {NUMERICS_YAML}, key point_kernel.backend\n"
+            f"  Valid:\n{example}\n"
+            "  Fix:   set point_kernel.backend to python or fortran (fortran needs\n"
+            "         conda run -n seismic python -m cubic_scattering.fortran.build)."
+        )
+    return str(backend)
+
 
 def kernel_9x9(
-    X: NDArray, omega: float, ref: ReferenceMedium, *, static: bool = True, dynamic: bool = True
+    X: NDArray, omega: complex, ref: ReferenceMedium, *, static: bool = True, dynamic: bool = True
 ) -> NDArray:
     """The propagator at separations X = x - x' (N, 3), shape (N, 9, 9).
+
+    Evaluated by the implementation that ``cubic_scattering/numerics.yml`` names
+    (``point_kernel.backend``): ``kernel_9x9_python`` below, or the compiled transcription of it,
+    ``kernel_fortran.kernel_9x9_fortran``. The two agree to round-off (``tests/test_kernel_fortran.py``).
+
+    Raises:
+        ValueError: at r = 0, where the propagator is a distribution (integrate it with
+            ``graded_voxel.blocks`` instead); or if the configuration is invalid.
+        ImportError: if the configuration asks for the compiled kernel and it has not been built.
+    """
+    if point_kernel_backend() == "fortran":
+        from .kernel_fortran import kernel_9x9_fortran  # local: kernel_fortran imports this module
+
+        return kernel_9x9_fortran(X, omega, ref, static=static, dynamic=dynamic)
+    return kernel_9x9_python(X, omega, ref, static=static, dynamic=dynamic)
+
+
+def kernel_9x9_python(
+    X: NDArray, omega: complex, ref: ReferenceMedium, *, static: bool = True, dynamic: bool = True
+) -> NDArray:
+    """The propagator in NumPy: the reference implementation, shape (N, 9, 9).
 
     Evaluated in chunks of CHUNK points: the fourth-derivative tensors are (N, 3, 3, 3, 3) complex, and a
     whole 6-D Gauss grid at once would need gigabytes of temporaries.
 
     Raises:
-        ValueError: at r = 0, where the propagator is a distribution (integrate it with
-            ``graded_voxel.blocks`` instead).
+        ValueError: at r = 0, where the propagator is a distribution.
     """
     X = np.atleast_2d(np.asarray(X, dtype=float))
     if len(X) > CHUNK:
         return np.concatenate(
             [
-                kernel_9x9(X[i : i + CHUNK], omega, ref, static=static, dynamic=dynamic)
+                kernel_9x9_python(X[i : i + CHUNK], omega, ref, static=static, dynamic=dynamic)
                 for i in range(0, len(X), CHUNK)
             ]
         )
+    return _assemble(*greens_tensors(X, omega, ref, static=static, dynamic=dynamic))
+
+
+def greens_tensors(
+    X: NDArray, omega: complex, ref: ReferenceMedium, *, static: bool = True, dynamic: bool = True
+) -> tuple[NDArray, NDArray, NDArray]:
+    """G_ij, d_k G_ij and d_k d_l G_ij at separations X = x - x' (N, 3).
+
+    Shapes (N, 3, 3), (N, 3, 3, 3), (N, 3, 3, 3, 3); the derivative indices come last, as in
+    ``resonance_tmatrix.elastodynamic_greens_deriv``. Accurate to round-off at every k r (see the module
+    docstring).
+
+    Raises:
+        ValueError: at r = 0, as ``kernel_9x9``.
+    """
+    X = np.atleast_2d(np.asarray(X, dtype=float))
     r = np.linalg.norm(X, axis=1)
     if np.any(r == 0.0):
         raise ValueError(
-            "kernel_9x9: r = 0 requested.  The propagator is a distribution at the origin; its cell "
+            "greens_tensors: r = 0 requested.  The propagator is a distribution at the origin; its cell "
             "integrals come from graded_voxel.blocks.near_block, never from a point value."
         )
     ka, kb = omega / ref.alpha, omega / ref.beta
@@ -210,7 +287,7 @@ def kernel_9x9(
         np.zeros((n, 3, 3, 3), complex),
         np.zeros((n, 3, 3, 3, 3), complex),
     ]
-    small = kb * r <= SERIES_LIMIT
+    small = abs(kb) * r <= SERIES_LIMIT  # abs: lattice_greens passes a complex (attenuated) omega
     if small.any():
         Xs, rs = X[small], r[small]
         part = [a[small] for a in acc]
@@ -255,4 +332,5 @@ def kernel_9x9(
         _accumulate(part, fa, fb, Xl)
         for a, p in zip(acc, part, strict=True):
             a[large] = p
-    return _assemble(*acc) / (4.0 * np.pi * ref.mu)
+    scale = 1.0 / (4.0 * np.pi * ref.mu)
+    return acc[0] * scale, acc[1] * scale, acc[2] * scale
