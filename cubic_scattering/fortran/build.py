@@ -15,12 +15,16 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SOURCES = {"_point_kernel": "point_kernel.f90"}
+#: extension module -> (Fortran source, the routines it exposes)
+SOURCES = {
+    "_point_kernel": ("point_kernel.f90", ["kernel_9x9"]),
+    "_green_derivatives": ("green_derivatives.f90", ["scalar_derivative_fields"]),
+}
 
 
 def main() -> int:
     env = dict(os.environ, FFLAGS="-O3 -fopenmp", LDFLAGS="-fopenmp")
-    for module, source in SOURCES.items():
+    for module, (source, routines) in SOURCES.items():
         cmd = [
             sys.executable,
             "-m",
@@ -32,7 +36,7 @@ def main() -> int:
             "--dep",
             "openmp",
             "only:",
-            "kernel_9x9",
+            *routines,
             ":",
         ]
         print(" ".join(cmd), flush=True)

@@ -62,16 +62,9 @@ def parity_signs(asm: gs.Assembler):
 
 
 def octant_blocks(n_sub: int, side: float, omega: float, asm: gs.Assembler) -> dict:
-    out = {}
-    for key in itertools.product(range(n_sub), repeat=3):
-        if key == (0, 0, 0):
-            out[key] = asm.blocks(gs.self_array(side, omega, asm.d_list, asm.w_list))
-        else:
-            reach = max(key)
-            n_g = 20 if reach == 1 else 12 if reach == 2 else 8
-            table = gs.coupling_array(side * np.array(key, float), side, omega, asm.d_list, asm.w_list, n_g)
-            out[key] = asm.blocks(table)
-    return out
+    """The blocks of every offset in the first octant: one integrated per orbit of the cube group."""
+    at = gs.symmetric_blocks(asm, side, omega)
+    return {key: at(key) for key in itertools.product(range(n_sub), repeat=3)}
 
 
 def check_parity(side: float, omega: float, asm: gs.Assembler) -> bool:

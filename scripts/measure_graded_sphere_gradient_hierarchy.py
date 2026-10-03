@@ -43,10 +43,11 @@ from numpy.polynomial.legendre import leggauss
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import gradient_voxel_lattice as lat  # noqa: E402
+import gradient_voxel_lattice as lat  # noqa: E402, F401
 import measure_ball_gradient_hierarchy as hier  # noqa: E402
 import measure_cube_gradient_hierarchy as cube  # noqa: E402
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
+from cubic_scattering.graded_voxel import derivatives as gd  # noqa: E402
 from cubic_scattering.sphere_scattering import mie_scattered_displacement  # noqa: E402
 from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
 from pilot_graded_sphere_vs_exact import CORE, RADIUS, THETA  # noqa: E402
@@ -97,21 +98,55 @@ def monomial(points: np.ndarray, w: tuple[int, ...]) -> np.ndarray:
 
 # ------------------------------------------------------------ the moment tables, as arrays
 def coupling_array(offset, side, omega, d_list, w_list, n_gauss) -> np.ndarray:
-    """T[i, n, d, w] = int_cube (d_D G_in)(offset - xi) xi^W dxi."""
-    x1, w1 = leggauss(n_gauss)
-    x1, w1 = 0.5 * side * x1, 0.5 * side * w1
-    xi = np.stack(np.meshgrid(x1, x1, x1, indexing="ij"), -1).reshape(-1, 3)
-    wts = np.einsum("i,j,k->ijk", w1, w1, w1).ravel()
-    monos = np.stack([wts * monomial(xi, w) for w in w_list])  # (nW, G)
-    arg = np.asarray(offset)[None, :] - xi
-    out = np.zeros((3, 3, len(d_list), len(w_list)), dtype=complex)
-    for di, ds in enumerate(d_list):
-        for i in AXES:
-            for n in range(i, 3):
-                vals = monos @ lat.green_derivative(i, n, ds, omega, arg)
-                out[i, n, di] = vals
-                out[n, i, di] = vals
-    return out
+    """T[i, n, d, w] = int_cube (d_D G_in)(offset - xi) xi^W dxi.
+
+    The package's moment table: every derivative from the compiled ladder, accurate at every k r
+    (``cubic_scattering.graded_voxel.derivatives``). It equals the symbolic route of
+    ``gradient_voxel_lattice.green_derivative`` to 1e-14 where that route has no cancellation.
+    """
+    return gd.moment_table(
+        np.asarray(offset, float),
+        side,
+        omega,
+        hier.REF,
+        [gd.as_exponents(d) for d in d_list],
+        [gd.as_exponents(w) for w in w_list],
+        n_gauss,
+    )
+
+
+def gauss_points(reach: int) -> int:
+    """Gauss points per axis for a source cell at this Chebyshev distance."""
+    return 20 if reach == 1 else 12 if reach == 2 else 8
+
+
+def symmetric_blocks(asm: "Assembler", side: float, omega: float):
+    """B_V(o) for any offset o: one block per orbit of the cube group, the rest by exact transforms.
+
+    The contrast stiffness is isotropic and the density contrast a scalar, so each B_V(o) is a covariant
+    contraction of the moment table and maps under a signed permutation Q exactly as the table does
+    (``derivatives.transform_block``).
+    """
+    v_exp = [gd.as_exponents(v) for v in asm.v_list]
+    u_exp = [gd.as_exponents(u) for u in asm.u_list]
+    canonical: dict[tuple[int, int, int], np.ndarray] = {}
+
+    def at(key: tuple[int, int, int]) -> np.ndarray:
+        if key == (0, 0, 0):
+            if key not in canonical:
+                canonical[key] = asm.blocks(self_array(side, omega, asm.d_list, asm.w_list))
+            return canonical[key]
+        rep = gd.canonical_offset(key)
+        if rep not in canonical:
+            table = coupling_array(
+                side * np.array(rep, float), side, omega, asm.d_list, asm.w_list, gauss_points(rep[0])
+            )
+            canonical[rep] = asm.blocks(table)
+        pi, sigma = gd.mapping_to(key)
+        return gd.transform_block(canonical[rep], pi, sigma, v_exp, u_exp)
+
+    at.canonical = canonical  # type: ignore[attr-defined]
+    return at
 
 
 def self_array(side, omega, d_list, w_list) -> np.ndarray:
@@ -213,13 +248,7 @@ def solve(n_sub: int, q: int, omega: float, contrast, r_c: int | None = None):
     nc = len(centres)
     kp = omega / hier.REF.alpha
 
-    @functools.cache
-    def offset_blocks(key: tuple[int, int, int]) -> np.ndarray:
-        if key == (0, 0, 0):
-            return asm.blocks(self_array(side, omega, asm.d_list, asm.w_list))
-        reach = max(abs(v) for v in key)
-        n_g = 20 if reach == 1 else 12 if reach == 2 else 8
-        return asm.blocks(coupling_array(side * np.array(key), side, omega, asm.d_list, asm.w_list, n_g))
+    offset_blocks = functools.cache(symmetric_blocks(asm, side, omega))
 
     # The incident P wave travels along axis 0 and is polarised along it, so the solution is symmetric
     # under the mirrors of axes 1 and 2: u_j(M x) = sigma_j u_j(x), sigma_j = -1 for j the mirrored axis.

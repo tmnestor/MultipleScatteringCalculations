@@ -25,14 +25,17 @@ by T. M. Nestor. It is assembled from the author's research repository by
 
 Python 3.12 with numpy, scipy, matplotlib, sympy, mpmath and PyTorch (the package's optional GPU
 solvers import it; the CPU build is enough and nothing here uses a GPU), and gfortran, Meson and Ninja
-for the compiled kernel.
+for the compiled kernels.
 
-The last command compiles the 9 x 9 point propagator (`cubic_scattering/fortran/point_kernel.f90`,
-Fortran 2008 with OpenMP) into an extension next to its source. It must be run once before anything
-else: `cubic_scattering/numerics.yml` selects it (`point_kernel.backend: fortran`), and without the build
-the first call to the propagator stops with the instruction to build it. The compiled kernel is a
-term-for-term transcription of the NumPy reference, `graded_voxel.kernel.kernel_9x9_python`, and agrees
-with it to round-off (`cubic_scattering/tests/test_kernel_fortran.py`). To run without compiling
+The last command compiles the 9 x 9 point propagator (`cubic_scattering/fortran/point_kernel.f90`)
+and the derivatives of the Green's tensor to any order that the moment hierarchy's tables use
+(`cubic_scattering/fortran/green_derivatives.f90`), both Fortran 2008 with OpenMP, into extensions next to
+their sources. It must be run once before anything else: `cubic_scattering/numerics.yml` selects them
+(`point_kernel.backend: fortran`), and without the build the first call stops with the instruction to
+build them. Each is a term-for-term transcription of a NumPy reference
+(`graded_voxel.kernel.kernel_9x9_python`, `graded_voxel.derivatives.scalar_derivative_fields_python`), and
+agrees with it to round-off (`cubic_scattering/tests/test_kernel_fortran.py`,
+`cubic_scattering/tests/test_green_derivatives.py`). To run without compiling
 anything, set `backend: python` in that file; every result is reproduced to round-off, more slowly.
 
 ## Reproducing the numbers
