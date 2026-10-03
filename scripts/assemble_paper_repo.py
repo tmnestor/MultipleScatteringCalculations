@@ -36,6 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PACKAGE_DATA = [
     "cubic_scattering/numerics.yml",
     "cubic_scattering/fortran/point_kernel.f90",
+    "cubic_scattering/fortran/green_derivatives.f90",
     "cubic_scattering/fortran/.f2py_f2cmap",
 ]
 

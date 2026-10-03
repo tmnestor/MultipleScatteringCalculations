@@ -1,11 +1,15 @@
 # Numerical implementation choices for cubic_scattering. Every key is required; there are no defaults.
 
 point_kernel:
-  # Which implementation evaluates the 9 x 9 point propagator (graded_voxel.kernel.kernel_9x9), used by
-  # the graded-voxel block integrals and far fields and by every pair / FFT table built through
-  # resonance_tmatrix._propagator_blocks_9x9 (resonance, sphere, sphere FFT, slab).
-  #   python   graded_voxel.kernel.kernel_9x9_python, the NumPy reference.
-  #   fortran  cubic_scattering/fortran/point_kernel.f90, a term-for-term transcription of it (OpenMP),
-  #            equal to round-off (tests/test_kernel_fortran.py). Build it first with
+  # Which implementation evaluates the point values of the Green's tensor: the 9 x 9 point propagator
+  # (graded_voxel.kernel.kernel_9x9), used by the graded-voxel block integrals and far fields and by every
+  # pair / FFT table built through resonance_tmatrix._propagator_blocks_9x9 (resonance, sphere, sphere
+  # FFT, slab); and its derivatives to any order (graded_voxel.derivatives.scalar_derivative_fields),
+  # used by the moment tables of the gradient hierarchy.
+  #   python   graded_voxel.kernel.kernel_9x9_python and
+  #            graded_voxel.derivatives.scalar_derivative_fields_python, the NumPy references.
+  #   fortran  cubic_scattering/fortran/point_kernel.f90 and green_derivatives.f90, term-for-term
+  #            transcriptions of them (OpenMP), equal to round-off (tests/test_kernel_fortran.py,
+  #            tests/test_green_derivatives.py). Build them first with
   #            conda run -n seismic python -m cubic_scattering.fortran.build
   backend: fortran

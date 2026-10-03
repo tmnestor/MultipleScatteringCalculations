@@ -262,8 +262,8 @@ out what that gives (\S\ref{sec:whyclosed}). \S\S\ref{sec:convergence}--\ref{sec
 the wavefield basis, \S\ref{sec:hetero} the medium basis and its projection error,
 \S\ref{sec:sphere} the sphere, and \S\ref{sec:gradvoxel} the hierarchy as a voxel scheme.
 \S\ref{sec:discussion} discusses what the results imply and \S\ref{sec:summary} concludes. Every
-result is derived symbolically in Mathematica and checked against an independent Python implementation
-or an exact solution.
+result is derived symbolically in Mathematica and checked against an independent Python/Fortran
+implementation or an exact solution.
 
 \section{Setting}\label{sec:setting}
 
@@ -398,7 +398,7 @@ to a continuous shaded band of the same thickness d, a uniform plate.\par}
 \end{figure}
 
 \paragraph{Implementations.} Every result is derived symbolically in Mathematica and compared with
-an independent numerical implementation or an exact solution. ``The package'' below is the Python
+an independent numerical implementation or an exact solution. ``The package'' below is the Python/Fortran
 implementation of the voxel scheme (\path{cubic_scattering}): its cube $T$-matrix, its lattice
 kernels and its stratified propagator, which serve both as the object under test and, where
 validated, as a second implementation.
@@ -1880,9 +1880,15 @@ the corners.
 the same equation, and they differ in what they cost and in what they give besides. The Legendre voxel
 is the more economical in unknowns. The hierarchy's blocks are simpler: its self block is known in
 closed form on four constants (\S\ref{sec:distributions}), and its coupling is a single integral of a
-smooth function where the Legendre voxel's is a double integral; the relative cost of forming the two
-has not been measured here. The iteration converged in five steps at every size; the time went into the
-tables of blocks, which are computed once for a grid and a frequency. And the hierarchy is, in
+smooth function where the Legendre voxel's is a double integral. The iteration converged in five steps
+at every size; the time goes into the tables of blocks, which are computed once for a grid and a
+frequency. Formed on the same footing, one block for each orbit of offsets under the $48$ symmetries of
+the cube, the others following exactly, and every point value of the Green's tensor or its derivatives
+from the same compiled radial ladder, the hierarchy's tables are the cheaper: $0.6$, $1.9$ and
+$4.5$\,s for $6$, $10$ and $14$ voxels across, against $4.0$, $9.3$ and $23.3$\,s for the first-moment
+Legendre voxel, with eight times fewer kernel evaluations. Both have a one-off cost besides, the
+hierarchy's larger ($13$\,s against $3$\,s), which is the closed-form constants of its self block
+(\path{scripts/measure_hierarchy_table_cost.py}; one machine, five threads). And the hierarchy is, in
 addition, a single-site $T$-matrix in closed form, whose accuracy improves block by block
 (\S\ref{sec:singlesite}), which no voxel defined by moments over the cell provides. The lattice results
 of this section come from one implementation, checked against exact solutions and, where it can be,
