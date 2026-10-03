@@ -17,7 +17,11 @@ Gamma on a symmetric tensor field tau: in Fourier, t = tau xi, v = (t - kappa xi
 its value at xi = 0 is set to its average over directions. Printed: (T - T_scheme) / (T E) for T2 and
 T3, outgoing P and SV at three angles, E the relative projection error on the samples.
 
-Run:  python scripts/measure_t3_tensor_forms.py <n cells across> <s samples per cell> <padding>
+For linear cells (p = 1) the projection is onto 1, eta_i on the samples, and the scheme's term is
+int Pi f U_a : C : Pi U_b (one projection, on the incident side), which for constant cells equals the
+form above.
+
+Run:  python scripts/measure_t3_tensor_forms.py <n cells across> <s samples per cell> <padding> [p]
       e.g. ... 8 8 2   (about 4 GB at 256^3)
 """
 
@@ -35,6 +39,7 @@ kappa = (lam + mu) / (lam + 2 * mu)
 PAIRS = [(0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1)]
 
 n, s, pad = int(sys.argv[1]), int(sys.argv[2]), float(sys.argv[3])
+P_DEG = int(sys.argv[4]) if len(sys.argv) > 4 else 0
 d = 2 * RADIUS / n
 nb = n * s
 N = int(round(pad * nb / 2)) * 2
@@ -50,12 +55,26 @@ off = (N - nb) // 2
 sl = (slice(off, off + nb),) * 3
 
 
+ETA = (np.arange(s) - (s - 1) / 2) / (s / 2)  # sub-sample coordinate in [-1, 1]
+
+
 def cell_mean(field: np.ndarray) -> np.ndarray:
-    """The field replaced by its mean over each voxel (zero outside the voxel box)."""
+    """The field projected in each voxel onto 1 (p = 0) or 1, eta_i (p = 1), on the samples.
+
+    Zero outside the voxel box.
+    """
     out = np.zeros_like(field)
     core = field[sl].reshape(n, s, n, s, n, s)
     m = core.mean(axis=(1, 3, 5))
-    out[sl] = np.broadcast_to(m[:, None, :, None, :, None], core.shape).reshape(nb, nb, nb)
+    fit = np.broadcast_to(m[:, None, :, None, :, None], core.shape).copy()
+    if P_DEG >= 1:
+        for ax in range(3):
+            shp = [1, 1, 1, 1, 1, 1]
+            shp[2 * ax + 1] = s
+            e = ETA.reshape(shp)
+            coef = (core * e).sum(axis=(1, 3, 5)) / (e * e).sum() / (s * s)
+            fit = fit + coef[:, None, :, None, :, None] * e
+    out[sl] = fit.reshape(nb, nb, nb)
     return out
 
 
@@ -146,7 +165,8 @@ for th_obs in (0.2, 0.8853981633974483, np.pi / 2):
         t2s = float(np.sum(pf * contract([np.full(1, x) for x in a_v], Ub)))
         ua, Ua = strain_field(F_hat, a), strain_field(P_hat, a)
         t3 = float(np.sum(f * contract(ua, dC_voigt(ub))))
-        t3s = float(np.sum(pf * contract([cell_mean(c) for c in Ua], dC_voigt(Ub_mean))))
+        # the scheme's third term, int Pi f U_a : C : Pi U_b (for p = 0 also int Pi f Pi U_a : C : Pi U_b)
+        t3s = float(np.sum(pf * contract(Ua, dC_voigt(Ub_mean))))
         print(
             f" {th_obs:5.2f}  {wave}    {(t2 - t2s) / (t2 * E): .4f}          {(t3 - t3s) / (t3 * E): .4f}"
             f"          {t3 / t2: .4f}",

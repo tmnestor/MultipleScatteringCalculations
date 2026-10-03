@@ -13,7 +13,12 @@ Scheme: ``octree.born_series_octree`` on a uniform tree (each term one product w
 Printed for each angle, P (radial) and S (transverse) parts: (T - T_scheme) / (T E) for T2, T3 and the
 whole nonlinear part.
 
-Run:  conda run -n seismic python -u scripts/measure_t3_law_3d.py <k_S a> <p> <n ...>   e.g. 0.125 0 4 6 8
+The step d (step=, default 1e-2) trades truncation, 5 d^2 T5/T3, against cancellation: T3 is recovered from
+the odd part through 3 d^2 T3/T1 of it, so the exact sphere must be accurate to well below that times the
+accuracy wanted. For linear cells, whose E is small, step=0.1 is needed.
+
+Run:  conda run -n seismic python -u scripts/measure_t3_law_3d.py <k_S a> <p> <n ...> [step=0.1]
+      e.g. 0.125 0 4 6 8
 """
 
 import sys
@@ -68,8 +73,13 @@ def ratio(t_ex: np.ndarray, t_sc: np.ndarray, e: float) -> np.ndarray:
 
 
 def main() -> int:
-    ka, p = float(sys.argv[1]), int(sys.argv[2])
-    ns = [int(a) for a in sys.argv[3:]]
+    global D  # noqa: PLW0603
+    args = [a for a in sys.argv[1:] if not a.startswith("step=")]
+    for a in sys.argv[1:]:
+        if a.startswith("step="):
+            D = float(a.split("=", 1)[1])
+    ka, p = float(args[0]), int(args[1])
+    ns = [int(a) for a in args[2:]]
     omega = ka * REF.beta / RADIUS
     rf = 5e8 * RADIUS
     pts = obs_points(rf, THETA)
