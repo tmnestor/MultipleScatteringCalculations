@@ -31,6 +31,14 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # --- manifest ----------------------------------------------------------------------------------------
 
+#: Non-Python files of the package, copied with it: without the configuration the point propagator
+#: refuses to run, and without the source the compiled kernel it names cannot be built.
+PACKAGE_DATA = [
+    "cubic_scattering/numerics.yml",
+    "cubic_scattering/fortran/point_kernel.f90",
+    "cubic_scattering/fortran/.f2py_f2cmap",
+]
+
 SCRIPTS = [
     # continuum-limit paper: cross-checks, gates, pilots, reference dumps, figure
     "crosscheck_first_moment_voxel.py",
@@ -240,6 +248,10 @@ def assemble(dest: Path) -> list[str]:
         if "__pycache__" in path.parts:
             continue
         take(str(path.relative_to(ROOT)))
+    # The package's non-Python files: its numerics configuration and the source of the compiled point
+    # kernel, which the reader builds (see the README). The built extension itself is never copied.
+    for rel in PACKAGE_DATA:
+        take(rel)
     for name in SCRIPTS:
         take(f"scripts/{name}")
     for name in NOTEBOOKS:

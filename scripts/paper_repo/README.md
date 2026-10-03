@@ -23,9 +23,19 @@ by T. M. Nestor. It is assembled from the author's research repository by
 
     conda env create -f environment.yml
     conda activate continuum-limit
+    python -m cubic_scattering.fortran.build
 
 Python 3.12 with numpy, scipy, matplotlib, sympy, mpmath and PyTorch (the package's optional GPU
-solvers import it; the CPU build is enough and nothing here uses a GPU).
+solvers import it; the CPU build is enough and nothing here uses a GPU), and gfortran, Meson and Ninja
+for the compiled kernel.
+
+The last command compiles the 9 x 9 point propagator (`cubic_scattering/fortran/point_kernel.f90`,
+Fortran 2008 with OpenMP) into an extension next to its source. It must be run once before anything
+else: `cubic_scattering/numerics.yml` selects it (`point_kernel.backend: fortran`), and without the build
+the first call to the propagator stops with the instruction to build it. The compiled kernel is a
+term-for-term transcription of the NumPy reference, `graded_voxel.kernel.kernel_9x9_python`, and agrees
+with it to round-off (`cubic_scattering/tests/test_kernel_fortran.py`). To run without compiling
+anything, set `backend: python` in that file; every result is reproduced to round-off, more slowly.
 
 ## Reproducing the numbers
 
@@ -110,9 +120,11 @@ The journal version is generated from the same source by `LatexPDFs/ContinuumLim
 
 ## Tests
 
-    pytest cubic_scattering/tests
+    pytest cubic_scattering/tests -n 5
 
-The full suite takes about 45 minutes; the graded-voxel tests alone, under `cubic_scattering/graded_voxel/`, take a few minutes.
+The compiled kernel must be built first (see Environment). The tests run in parallel with `-n`
+(pytest-xdist); on a 10-core machine five workers take about half an hour, and a serial run well over an
+hour. The graded-voxel tests alone (`pytest cubic_scattering/tests -k graded_voxel`) take a few minutes.
 
 ## Licence
 

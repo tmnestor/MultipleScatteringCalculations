@@ -1,0 +1,11 @@
+# Numerical implementation choices for cubic_scattering. Every key is required; there are no defaults.
+
+point_kernel:
+  # Which implementation evaluates the 9 x 9 point propagator (graded_voxel.kernel.kernel_9x9), used by
+  # the graded-voxel block integrals and far fields and by every pair / FFT table built through
+  # resonance_tmatrix._propagator_blocks_9x9 (resonance, sphere, sphere FFT, slab).
+  #   python   graded_voxel.kernel.kernel_9x9_python, the NumPy reference.
+  #   fortran  cubic_scattering/fortran/point_kernel.f90, a term-for-term transcription of it (OpenMP),
+  #            equal to round-off (tests/test_kernel_fortran.py). Build it first with
+  #            conda run -n seismic python -m cubic_scattering.fortran.build
+  backend: fortran

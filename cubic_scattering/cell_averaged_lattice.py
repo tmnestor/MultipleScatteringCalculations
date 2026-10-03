@@ -64,12 +64,14 @@ Conventions inherited: (z, x, y) ordering, time e^{-i w t}, outgoing h^(1).
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 from numpy.typing import NDArray
 
 from .effective_contrasts import ReferenceMedium
-from .kupradze_derivatives import MAX_ORDER, scalar_derivative_tensors
-from .lattice_kupradze import origin_scalar_tensors
+from .kupradze_derivatives import MAX_ORDER, difference_derivative_tensors, scalar_derivative_tensors
+from .lattice_kupradze import origin_difference_tensors, origin_scalar_tensors
 
 
 def _check_r0_cells(r0_cells: int) -> None:
@@ -128,13 +130,87 @@ def averaged_origin_scalar_tensors(
         A list whose n-th entry has shape (3,)*n, complex.
     """
     _check_r0_cells(r0_cells)
+    near_avg = _near_shell_sum(
+        a_l, k_par, r0_cells, n_gauss, order, lambda s: scalar_derivative_tensors(s, kappa, order), True
+    )
+    return [
+        a + f
+        for a, f in zip(
+            near_avg, _far_tail(kappa, eta, n_real, n_recip, a_l, k_par, r0_cells, order), strict=True
+        )
+    ]
 
-    h = 0.5 * a_l
-    nodes, wts = _cell_nodes(h, n_gauss)
 
-    near_avg: list[NDArray] = [np.zeros((3,) * n, dtype=complex) for n in range(order + 1)]
-    near_plain: list[NDArray] = [np.zeros((3,) * n, dtype=complex) for n in range(order + 1)]
+def averaged_origin_difference_tensors(
+    kappa_p: complex,
+    kappa_s: complex,
+    eta: float,
+    n_real: int,
+    n_recip: int,
+    a_l: float,
+    k_par: NDArray,
+    *,
+    r0_cells: int = 2,
+    n_gauss: int = 6,
+    order: int = MAX_ORDER,
+) -> list[NDArray]:
+    """``averaged_origin_scalar_tensors`` of D = g_S - g_P, without cancellation between the modes.
 
+    The near shell is where the quadrature nodes come within 0.134 a_l of the source, and there the
+    per-mode difference loses digits as eps / (kappa r)^2. It is averaged as one function
+    (``kupradze_derivatives.difference_derivative_tensors``).
+
+    The far tail carries each mode's own factor f_c = 1 - kappa_c^2 a^2 / 24, so it is written
+
+        f_S (S_far - P_far) + (f_S - f_P) P_far,   X_far = X_full - X_near,
+
+    with S_full - P_full the Ewald mode difference (``lattice_kupradze.origin_difference_tensors``,
+    which also removes the (eta / kappa)^n cancellation of the q = 0 order at k_par = 0), S_near -
+    P_near the near-shell centres' difference tensors, and f_S - f_P = -(kappa_S^2 - kappa_P^2) a^2 / 24
+    an explicit small factor. Nothing is subtracted between the modes.
+    """
+    _check_r0_cells(r0_cells)
+    near_avg = _near_shell_sum(
+        a_l,
+        k_par,
+        r0_cells,
+        n_gauss,
+        order,
+        lambda s: difference_derivative_tensors(s, kappa_p, kappa_s, order),
+        True,
+    )
+    near_plain_diff = _near_shell_sum(
+        a_l,
+        k_par,
+        r0_cells,
+        1,
+        order,
+        lambda s: difference_derivative_tensors(s, kappa_p, kappa_s, order),
+        False,
+    )
+    full_diff = origin_difference_tensors(kappa_p, kappa_s, eta, n_real, n_recip, a_l, k_par, order)
+    tail_factor_s = 1.0 - (kappa_s**2) * (a_l**2) / 24.0
+    tail_factor_gap = -(kappa_s**2 - kappa_p**2) * (a_l**2) / 24.0
+    far_p = _far_tail(kappa_p, eta, n_real, n_recip, a_l, k_par, r0_cells, order)
+    tail_factor_p = 1.0 - (kappa_p**2) * (a_l**2) / 24.0
+    return [
+        a + tail_factor_s * (f - q) + tail_factor_gap * (fp / tail_factor_p)
+        for a, f, q, fp in zip(near_avg, full_diff, near_plain_diff, far_p, strict=True)
+    ]
+
+
+def _near_shell_sum(
+    a_l: float,
+    k_par: NDArray,
+    r0_cells: int,
+    n_gauss: int,
+    order: int,
+    tensors_at: Callable[[NDArray], list[NDArray]],
+    averaged: bool,
+) -> list[NDArray]:
+    """Bloch-phased sum over the near shell 0 < |R| <= R0 of tensors_at, cell-averaged or at centres."""
+    nodes, wts = _cell_nodes(0.5 * a_l, n_gauss)
+    out: list[NDArray] = [np.zeros((3,) * n, dtype=complex) for n in range(order + 1)]
     for i in range(-r0_cells, r0_cells + 1):
         for j in range(-r0_cells, r0_cells + 1):
             if i == 0 and j == 0:
@@ -143,10 +219,10 @@ def averaged_origin_scalar_tensors(
             # in (z, x, y). Matches origin_scalar_tensors' sign convention.
             s_vec = np.array([0.0, -a_l * i, -a_l * j])
             phase = np.exp(1j * a_l * (k_par[0] * i + k_par[1] * j))
-
-            for n, t in enumerate(scalar_derivative_tensors(s_vec, kappa, order)):
-                near_plain[n] = near_plain[n] + phase * t
-
+            if not averaged:
+                for n, t in enumerate(tensors_at(s_vec)):
+                    out[n] = out[n] + phase * t
+                continue
             # The cell average of this one term, by product Gauss. Regular:
             # |s| >= a_l and |u| <= (sqrt3/2) a_l, so |s - u| >= 0.134 a_l.
             for iz, uz in enumerate(nodes):
@@ -154,15 +230,32 @@ def averaged_origin_scalar_tensors(
                     for iy, uy in enumerate(nodes):
                         wgt = wts[iz] * wts[ix] * wts[iy] * phase
                         shifted = s_vec - np.array([uz, ux, uy])
-                        for n, t in enumerate(scalar_derivative_tensors(shifted, kappa, order)):
-                            near_avg[n] = near_avg[n] + wgt * t
+                        for n, t in enumerate(tensors_at(shifted)):
+                            out[n] = out[n] + wgt * t
+    return out
 
+
+def _far_tail(
+    kappa: complex,
+    eta: float,
+    n_real: int,
+    n_recip: int,
+    a_l: float,
+    k_par: NDArray,
+    r0_cells: int,
+    order: int,
+) -> list[NDArray]:
+    """(1 - kappa^2 d^2 / 24) (D_full - D_near) for one mode: the cell average beyond the near shell.
+
+    grad^2 g = -kappa^2 g exactly away from the origin, so the cell average of the FAR field is a pure
+    scalar multiple of it.
+    """
+    near_plain = _near_shell_sum(
+        a_l, k_par, r0_cells, 1, order, lambda s: scalar_derivative_tensors(s, kappa, order), False
+    )
     full = origin_scalar_tensors(kappa, eta, n_real, n_recip, a_l, k_par, order)
-
-    # The analytic tail. grad^2 g = -kappa^2 g exactly away from the origin, so
-    # the cell average of the FAR field is a pure scalar multiple of it.
     tail_factor = 1.0 - (kappa**2) * (a_l**2) / 24.0
-    return [near_avg[n] + tail_factor * (full[n] - near_plain[n]) for n in range(order + 1)]
+    return [tail_factor * (f - p) for f, p in zip(full, near_plain, strict=True)]
 
 
 def averaged_same_plane_9x9(
@@ -187,15 +280,16 @@ def averaged_same_plane_9x9(
     if not np.any(np.asarray(k_par)):
         return exact_same_plane_9x9(d, omega, ref)
 
-    from .kupradze_derivatives import greens_from_scalars
+    from .kupradze_derivatives import greens_from_difference
     from .resonance_tmatrix import _voigt_contract
 
     eta_val = float(np.sqrt(np.pi) / d) if eta is None else float(eta)
     # Passed explicitly rather than through a **kwargs dict: mypy cannot keep
     # per-key types through `dict[str, object]`, and this call is exactly where
     # a mode mix-up would be invisible.
-    d_p = averaged_origin_scalar_tensors(
+    d_diff = averaged_origin_difference_tensors(
         omega / ref.alpha,
+        omega / ref.beta,
         eta_val,
         cutoff,
         cutoff,
@@ -215,7 +309,7 @@ def averaged_same_plane_9x9(
         n_gauss=n_gauss,
     )
 
-    g, gd, gdd = greens_from_scalars(d_p, d_s, omega, ref)
+    g, gd, gdd = greens_from_difference(d_diff, d_s, omega, ref)
     c, h_blk, s = _voigt_contract(gd, gdd)
     out = np.zeros((9, 9), dtype=complex)
     out[:3, :3] = g

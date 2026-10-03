@@ -48,6 +48,8 @@ Conventions inherited: time e^{-i w t}, outgoing h^(1).
 """
 
 import math
+from collections.abc import Callable
+from functools import partial
 
 import numpy as np
 from numpy.typing import NDArray
@@ -57,6 +59,8 @@ from .effective_contrasts import ReferenceMedium
 from .kupradze_derivatives import (
     MAX_ORDER,
     _delta_x_structure,
+    difference_derivative_tensors,
+    greens_from_difference,
     greens_from_scalars,
     scalar_derivative_tensors,
 )
@@ -404,6 +408,281 @@ def origin_scalar_tensors(
     return out
 
 
+# ---------------------------------------------------------------------------
+# The mode difference D = g_S - g_P, term by term
+# ---------------------------------------------------------------------------
+#
+# D is smaller than either mode's sum by about (kappa a)^2, so subtracting the two sums loses digits as
+# eps / (kappa a)^2: in the strain-strain block, 2e-12 at kappa_S a = 0.03 and 2e-9 at 1e-3, measured
+# as the eta-dependence of the assembled block (`tests/test_ewald_difference.py`). Each Ewald term is
+# instead differenced as ONE quantity. Every term is analytic in kappa on a disc about the two
+# wavenumbers -- the screened real-space terms and the regularised self term are entire (they are even in
+# kappa), and an evanescent reciprocal order q is analytic for |kappa| < |q| on the branch Im k_z >= 0 --
+# so its difference is the Cauchy integral
+#
+#     f(k_s) - f(k_p) = (k_s - k_p) / (2 pi i)  oint  f(z) / ((z - k_s)(z - k_p)) dz,
+#
+# which subtracts nothing. The trapezoid rule on a circle converges geometrically: with half-gap h and
+# the term's distance to its nearest singularity (or, for an entire term, its scale of variation) R, the
+# radius sqrt(h R) gives a ratio sqrt(h / R) per node. Where h / R is not small the plain subtraction
+# loses at most a factor R / h and is used instead.
+
+_CONTOUR_MAX_RATIO = 0.1
+
+
+def _mode_difference(
+    f: Callable[[complex], list[NDArray]],
+    k_p: complex,
+    k_s: complex,
+    reach: float,
+    *,
+    even: bool,
+) -> list[NDArray]:
+    """f(k_s) - f(k_p), by a contour integral that subtracts nothing.
+
+    ``even``: f depends on kappa only through kappa^2, and is then integrated in u = kappa^2, where its
+    derivative is of order one. In kappa an even f has f' ~ kappa, and each node's own round-off would
+    be amplified by |f| / (radius |f'|); that is the whole reason for the change of variable. ``reach``
+    is the distance from the midpoint (in the integration variable) to the nearest singularity, or for
+    an entire f its scale of variation.
+
+    The radius is a quarter of the reach: it keeps the amplification of each node's round-off near one,
+    and the trapezoid error falls as max(half_gap / radius, 1/4)^N.
+    """
+    a, b = (k_s**2, k_p**2) if even else (k_s, k_p)
+    centre = 0.5 * (a + b)
+    half_gap = 0.5 * abs(a - b)
+    if half_gap == 0.0:
+        return [np.zeros_like(t) for t in f(k_s)]
+    if reach <= 0.0 or half_gap / reach > _CONTOUR_MAX_RATIO:
+        return [s - p for s, p in zip(f(k_s), f(k_p), strict=True)]
+    radius = 0.25 * reach
+    ratio = max(half_gap / radius, 0.25)
+    n_nodes = max(8, math.ceil(math.log(1e-17) / math.log(ratio)) + 2)
+    acc: list[NDArray] | None = None
+    for j in range(n_nodes):
+        z = centre + radius * np.exp(2j * np.pi * (j + 0.5) / n_nodes)
+        weight = (z - centre) / ((z - a) * (z - b)) / n_nodes
+        terms = f(np.sqrt(z)) if even else f(z)
+        acc = (
+            [weight * t for t in terms]
+            if acc is None
+            else [s + weight * t for s, t in zip(acc, terms, strict=True)]
+        )
+    assert acc is not None
+    return [(a - b) * s for s in acc]
+
+
+def _real_term(s_vec: NDArray, kappa: complex, eta: float, order: int) -> list[NDArray]:
+    d = float(np.linalg.norm(s_vec))
+    return _tensors_from_ladder(screened_radial_ladder(d, kappa, eta, order), s_vec, order)
+
+
+def _real_term_reach(d: float, eta: float) -> float:
+    """Scale of variation in u = kappa^2 of an entire, even screened term.
+
+    The term varies through cos(kappa d)-like factors and exp(u / 4 eta^2).
+    """
+    return 1.0 / (d + 1.0 / (2.0 * eta)) ** 2
+
+
+def ewald_real_difference(
+    r_vec: NDArray,
+    kappa_p: complex,
+    kappa_s: complex,
+    eta: float,
+    n_real: int,
+    a_l: float,
+    k_par: NDArray,
+    order: int = MAX_ORDER,
+    *,
+    skip_origin: bool = False,
+) -> list[NDArray]:
+    """``ewald_real_tensors`` of D = g_S - g_P, term by term. r_vec and the output are (z, x, y)."""
+    out: list[NDArray] = [np.zeros((3,) * n, dtype=complex) for n in range(order + 1)]
+    for i in range(-n_real, n_real + 1):
+        for j in range(-n_real, n_real + 1):
+            if skip_origin and i == 0 and j == 0:
+                continue
+            s_vec = np.array([r_vec[0], r_vec[1] - a_l * i, r_vec[2] - a_l * j])
+            d = float(np.linalg.norm(s_vec))
+            phase = np.exp(1j * a_l * (k_par[0] * i + k_par[1] * j))
+            diff = _mode_difference(
+                partial(_real_term, s_vec, eta=eta, order=order),
+                kappa_p,
+                kappa_s,
+                _real_term_reach(d, eta),
+                even=True,
+            )
+            for n, t in enumerate(diff):
+                out[n] = out[n] + phase * t
+    return out
+
+
+def _recip_term(
+    r_vec: NDArray, qx: float, qy: float, kappa: complex, eta: float, area: float, order: int
+) -> list[NDArray]:
+    """One reciprocal order of ``ewald_recip_tensors``."""
+    kz = np.sqrt(complex(kappa**2 - (qx**2 + qy**2)))
+    if kz.imag < 0:
+        kz = -kz  # Im(kz) >= 0, so evanescent orders decay with |z|.
+    return _recip_term_kz(r_vec, qx, qy, kz, eta, area, order)
+
+
+def _recip_term_kz(
+    r_vec: NDArray, qx: float, qy: float, kz: complex, eta: float, area: float, order: int
+) -> list[NDArray]:
+    """One reciprocal order for a given k_z (no branch choice made here)."""
+    z = float(r_vec[0])
+    gauss = _gaussian_derivatives(z, eta, np.exp(kz**2 / (4.0 * eta**2)), order)
+    v = [0.0 + 0.0j] * (order + 1)
+    for sgn in (1.0, -1.0):
+        zeta = 1j * (sgn * z * eta + kz / (2j * eta))
+        w_der = _wofz_derivatives(zeta, order)
+        for p in range(order + 1):
+            v[p] += (sgn * 1j * eta) ** p * w_der[p]
+    p_der = _leibniz(gauss, v, order)
+    amp = 1j / (4.0 * area) * np.exp(1j * (qx * r_vec[1] + qy * r_vec[2])) / kz
+    lateral = (0.0, 1j * qx, 1j * qy)
+    out: list[NDArray] = [np.asarray(amp * p_der[0], dtype=complex)]
+    for deg in range(1, order + 1):
+        acc = np.zeros((3,) * deg, dtype=complex)
+        for idx in np.ndindex(*((3,) * deg)):
+            factor = 1.0 + 0.0j
+            for axis in idx:
+                if axis != 0:
+                    factor *= lateral[axis]
+            acc[idx] = factor * p_der[idx.count(0)]
+        out.append(amp * acc)
+    return out
+
+
+def _q0_difference(
+    r_vec: NDArray, kappa_p: complex, kappa_s: complex, eta: float, area: float, order: int
+) -> list[NDArray]:
+    """Mode difference of the q = 0 reciprocal order (k_par = 0), without its (eta/kappa)^n cancellation.
+
+    T_0(kappa) = (i / 4 A kappa) P(z; kappa), and P(z; 0) = erfc(z eta) + erfc(-z eta) = 2 for every z,
+    so T_0 = i / (2 A kappa) + E(kappa) with E entire in kappa. The singular part is the plane wave: it
+    does not depend on z, so its z-derivatives vanish, and its mode difference (i / 2A)(1/kappa_s -
+    1/kappa_p) cancels nothing. E carries the eta-heavy z-derivatives (a power of eta for each, where the
+    answer has a power of kappa), and its kappa^0 part is the same for both modes. Subtracting the two
+    modes' T_0 loses that part's size, (eta / kappa)^(n-1) in the n-th derivative; here E is differenced
+    by the contour in kappa (E is not even), whose nodes sit at |kappa| ~ eta where forming E = T_0 -
+    i / (2 A kappa) costs nothing. Along the contour k_z = kappa: the analytic continuation of the
+    physical branch, not the Im k_z >= 0 choice, which would jump across the real axis.
+    """
+    z = float(r_vec[0])
+
+    def entire_part(k: complex) -> list[NDArray]:
+        terms = _recip_term_kz(r_vec, 0.0, 0.0, k, eta, area, order)
+        terms[0] = terms[0] - 1j / (2.0 * area * k)
+        return terms
+
+    diff = _mode_difference(entire_part, kappa_p, kappa_s, 1.0 / (abs(z) + 1.0 / (2.0 * eta)), even=False)
+    diff[0] = diff[0] + 1j / (2.0 * area) * (1.0 / kappa_s - 1.0 / kappa_p)
+    return diff
+
+
+def ewald_recip_difference(
+    r_vec: NDArray,
+    kappa_p: complex,
+    kappa_s: complex,
+    eta: float,
+    n_recip: int,
+    a_l: float,
+    k_par: NDArray,
+    order: int = MAX_ORDER,
+) -> list[NDArray]:
+    """``ewald_recip_tensors`` of D = g_S - g_P, order by order.
+
+    An evanescent order q depends on kappa only through k_z^2 = kappa^2 - q^2, and is analytic in
+    u = kappa^2 for |u| < q^2 (its branch point is u = q^2), so its reach is q^2 - |midpoint in u|.
+    Propagating and near-anomaly orders have no useful reach and are subtracted plainly; their two modes
+    differ at order one, so nothing cancels. The q = 0 order at k_par = 0 is the exception, and is
+    treated analytically (_q0_difference).
+    """
+    b = 2.0 * np.pi / a_l
+    area = a_l**2
+    centre = abs(0.5 * (kappa_p**2 + kappa_s**2))
+    out: list[NDArray] = [np.zeros((3,) * n, dtype=complex) for n in range(order + 1)]
+    for m in range(-n_recip, n_recip + 1):
+        for n_idx in range(-n_recip, n_recip + 1):
+            qx = k_par[0] + b * m
+            qy = k_par[1] + b * n_idx
+            if qx == 0.0 and qy == 0.0:
+                diff = _q0_difference(r_vec, kappa_p, kappa_s, eta, area, order)
+                for n, t in enumerate(diff):
+                    out[n] = out[n] + t
+                continue
+            reach = qx**2 + qy**2 - centre
+            diff = _mode_difference(
+                partial(_recip_term, r_vec, qx, qy, eta=eta, area=area, order=order),
+                kappa_p,
+                kappa_s,
+                reach,
+                even=True,
+            )
+            for n, t in enumerate(diff):
+                out[n] = out[n] + t
+    return out
+
+
+def lattice_difference_tensors(
+    r_vec: NDArray,
+    kappa_p: complex,
+    kappa_s: complex,
+    eta: float,
+    n_real: int,
+    n_recip: int,
+    a_l: float,
+    k_par: NDArray,
+    order: int = MAX_ORDER,
+) -> list[NDArray]:
+    """``lattice_scalar_tensors`` of D = g_S - g_P, accurate at small kappa a. r_vec non-zero."""
+    real_half = ewald_real_difference(r_vec, kappa_p, kappa_s, eta, n_real, a_l, k_par, order)
+    recip_half = ewald_recip_difference(r_vec, kappa_p, kappa_s, eta, n_recip, a_l, k_par, order)
+    self_term = difference_derivative_tensors(r_vec, kappa_p, kappa_s, order)
+    return [a + b - c for a, b, c in zip(real_half, recip_half, self_term, strict=True)]
+
+
+def origin_difference_tensors(
+    kappa_p: complex,
+    kappa_s: complex,
+    eta: float,
+    n_real: int,
+    n_recip: int,
+    a_l: float,
+    k_par: NDArray,
+    order: int = MAX_ORDER,
+) -> list[NDArray]:
+    """``origin_scalar_tensors`` of D = g_S - g_P, accurate at small kappa a.
+
+    The regularised R = 0 term is entire in kappa, with scale 2 eta. It is NOT even: it carries the
+    radiation term i kappa / 4 pi of the free self-field, so it is integrated in kappa itself, where that
+    term keeps its derivative of order one.
+    """
+    zero = np.zeros(3)
+    out = ewald_real_difference(zero, kappa_p, kappa_s, eta, n_real, a_l, k_par, order, skip_origin=True)
+    for n, t in enumerate(ewald_recip_difference(zero, kappa_p, kappa_s, eta, n_recip, a_l, k_par, order)):
+        out[n] = out[n] + t
+
+    def self_part(k: complex) -> list[NDArray]:
+        ladder = _regularised_self_ladder(k, eta, order)
+        parts: list[NDArray] = [np.asarray(ladder[0], dtype=complex)]
+        for n in range(1, order + 1):
+            parts.append(
+                ladder[n // 2] * _delta_x_structure(n, n // 2, zero.astype(complex))
+                if n % 2 == 0
+                else np.zeros((3,) * n, dtype=complex)
+            )
+        return parts
+
+    for n, t in enumerate(_mode_difference(self_part, kappa_p, kappa_s, 2.0 * eta, even=False)):
+        out[n] = out[n] + t
+    return out
+
+
 def lattice_block_9x9(
     r_vec: NDArray,
     omega: complex,
@@ -425,12 +704,16 @@ def lattice_block_9x9(
         # The diagonal: a cube and its own images. Needs the analytic origin
         # limit, because the R = 0 screened term and the self-term are each
         # singular there and cancel.
-        d_p = origin_scalar_tensors(omega / ref.alpha, eta, n_real, n_recip, a_l, k_par)
+        d_diff = origin_difference_tensors(
+            omega / ref.alpha, omega / ref.beta, eta, n_real, n_recip, a_l, k_par
+        )
         d_s = origin_scalar_tensors(omega / ref.beta, eta, n_real, n_recip, a_l, k_par)
     else:
-        d_p = lattice_scalar_tensors(r_vec, omega / ref.alpha, eta, n_real, n_recip, a_l, k_par)
+        d_diff = lattice_difference_tensors(
+            r_vec, omega / ref.alpha, omega / ref.beta, eta, n_real, n_recip, a_l, k_par
+        )
         d_s = lattice_scalar_tensors(r_vec, omega / ref.beta, eta, n_real, n_recip, a_l, k_par)
-    G, Gd, Gdd = greens_from_scalars(d_p, d_s, omega, ref)
+    G, Gd, Gdd = greens_from_difference(d_diff, d_s, omega, ref)
     C, H, S = _voigt_contract(Gd, Gdd)
     P = np.zeros((9, 9), dtype=complex)
     P[:3, :3] = G
@@ -539,9 +822,9 @@ def bloch_kernel_hat_9x9(
         for n2 in range(m_cells):
             k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (m_cells * d)
             if on_plane:
-                d_p = origin_scalar_tensors(k_p, eta_val, cutoff, cutoff, d, k_par)
+                d_diff = origin_difference_tensors(k_p, k_s, eta_val, cutoff, cutoff, d, k_par)
                 d_s = origin_scalar_tensors(k_s, eta_val, cutoff, cutoff, d, k_par)
-                g, gd, gdd = greens_from_scalars(d_p, d_s, omega, ref)
+                g, gd, gdd = greens_from_difference(d_diff, d_s, omega, ref)
                 c, h, s = _voigt_contract(gd, gdd)
                 out[n1, n2, :3, :3] = g
                 out[n1, n2, :3, 3:] = c
@@ -582,11 +865,10 @@ def _spectral_bloch_block(
     n_g = max(n_g, 6 if cell_half_width is None else 12)
     b = 2.0 * np.pi / d
     acc = np.zeros((9, 9), dtype=complex)
-    for m in range(-n_g, n_g + 1):
-        for n in range(-n_g, n_g + 1):
-            kx = k_par[0] + b * m
-            ky = k_par[1] + b * n
-            acc += vertical_kernel_9x9(np.array([kx]), ky, dz, omega, ref, cell_half_width)[:, :, 0]
+    kx = k_par[0] + b * np.arange(-n_g, n_g + 1)
+    for n in range(-n_g, n_g + 1):
+        ky = k_par[1] + b * n
+        acc += vertical_kernel_9x9(kx, ky, dz, omega, ref, cell_half_width).sum(axis=2)
     return acc / d**2
 
 
@@ -612,12 +894,15 @@ def bloch_block_ewald_9x9(
     k_p, k_s = omega / ref.alpha, omega / ref.beta
     r_vec = np.array([dz, 0.0, 0.0])
     if abs(dz) < 1.0e-15 * max(d, 1.0):
-        d_p = origin_scalar_tensors(k_p, eta_val, cutoff, cutoff, d, k_par)
+        d_diff = origin_difference_tensors(k_p, k_s, eta_val, cutoff, cutoff, d, k_par)
         d_s = origin_scalar_tensors(k_s, eta_val, cutoff, cutoff, d, k_par)
+        g, gd, gdd = greens_from_difference(d_diff, d_s, omega, ref)
     else:
+        # dz != 0 stays per mode: Ewald is ill-conditioned there whichever form is used, and production
+        # takes the exact spectral sum instead (see bloch_kernel_hat_9x9). This route is a cross-gate.
         d_p = full_plane_scalar_tensors(r_vec, k_p, eta_val, cutoff, cutoff, d, k_par)
         d_s = full_plane_scalar_tensors(r_vec, k_s, eta_val, cutoff, cutoff, d, k_par)
-    g, gd, gdd = greens_from_scalars(d_p, d_s, omega, ref)
+        g, gd, gdd = greens_from_scalars(d_p, d_s, omega, ref)
     c, h, s = _voigt_contract(gd, gdd)
     out = np.zeros((9, 9), dtype=complex)
     out[:3, :3] = g

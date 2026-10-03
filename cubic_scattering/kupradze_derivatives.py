@@ -151,6 +151,81 @@ def radial_ladder(r: float, kappa: complex, order: int = MAX_ORDER) -> list[comp
     ]
 
 
+DIFFERENCE_SERIES_LIMIT = 0.5
+DIFFERENCE_N_SERIES = 24
+
+
+def difference_radial_ladder(
+    r: float, kappa_p: complex, kappa_s: complex, order: int = MAX_ORDER
+) -> list[complex]:
+    """f_k = (1/r d/dr)^k of D = g_S - g_P, g = exp(i kappa r)/(4 pi r), for k = 0..order.
+
+    D is evaluated as ONE function. The two ladders cancel their leading terms against each other (the
+    1/r singularity and its derivatives), so their difference loses digits as eps / (kappa r)^2. For
+    max |kappa| r <= DIFFERENCE_SERIES_LIMIT the power series is used instead,
+
+        D = (1/4 pi) sum_{t>=1} i^t (kappa_s^t - kappa_p^t) r^(t-1) / t!,
+
+    whose t = 0 term vanishes identically and is never formed; kappa_p / kappa_s = beta / alpha, so the
+    coefficients never cancel, for complex (attenuated) kappa too. Each power r^m contributes
+    m (m - 2) ... (m - 2k + 2) r^(m - 2k) to f_k. Above the limit the difference of the closed-form
+    ladders is accurate.
+    """
+    if max(abs(kappa_p), abs(kappa_s)) * r > DIFFERENCE_SERIES_LIMIT:
+        lad_s = radial_ladder(r, kappa_s, order)
+        lad_p = radial_ladder(r, kappa_p, order)
+        return [s - p for s, p in zip(lad_s, lad_p, strict=True)]
+    out = [0.0j] * (order + 1)
+    for t in range(1, DIFFERENCE_N_SERIES):
+        coef = (1j**t) * (kappa_s**t - kappa_p**t) / (4.0 * np.pi * math.factorial(t))
+        m = t - 1
+        for k in range(order + 1):
+            falling = 1.0
+            for s in range(k):
+                falling *= m - 2 * s
+            if falling:
+                out[k] += coef * falling * r ** (m - 2 * k)
+    return [complex(v) for v in out]
+
+
+def _tensors_from_ladder(r_vec: NDArray, ladder: list[complex], order: int) -> list[NDArray]:
+    """d_{i1..in} f for n = 0..order from the ladder f_k of a radial function f."""
+    x = np.asarray(r_vec, dtype=float).astype(complex)
+    out: list[NDArray] = [np.asarray(ladder[0], dtype=complex)]
+    for n in range(1, order + 1):
+        acc = np.zeros((3,) * n, dtype=complex)
+        for m in range(n // 2 + 1):
+            acc = acc + ladder[n - m] * _delta_x_structure(n, m, x)
+        out.append(acc)
+    return out
+
+
+def _nonzero_separation(r_vec: NDArray, caller: str) -> float:
+    r = float(np.linalg.norm(np.asarray(r_vec, dtype=float)))
+    if r < 1.0e-14:
+        raise ValueError(
+            f"{caller}: the separation is zero, where the kernel is "
+            "singular. Self-interaction belongs in the local T-matrix, and a lattice "
+            "sum must exclude R = 0 explicitly (see planar_ewald.ewald_total)."
+        )
+    return r
+
+
+def difference_derivative_tensors(
+    r_vec: NDArray,
+    kappa_p: complex,
+    kappa_s: complex,
+    order: int = MAX_ORDER,
+) -> list[NDArray]:
+    """Cartesian derivative tensors of D = g_S - g_P for n = 0..order, accurate at every kappa r.
+
+    Feed them to ``greens_from_difference``. Summing them (over cells, quadrature nodes or lattice
+    images) before assembly keeps the accuracy, because the sum is linear.
+    """
+    r = _nonzero_separation(r_vec, "difference_derivative_tensors")
+    return _tensors_from_ladder(r_vec, difference_radial_ladder(r, kappa_p, kappa_s, order), order)
+
+
 def scalar_derivative_tensors(
     r_vec: NDArray,
     kappa: complex,
@@ -166,24 +241,8 @@ def scalar_derivative_tensors(
     Returns:
         A list whose n-th entry has shape (3,)*n, complex.
     """
-    r_vec = np.asarray(r_vec, dtype=float)
-    r = float(np.linalg.norm(r_vec))
-    if r < 1.0e-14:
-        raise ValueError(
-            "scalar_derivative_tensors: the separation is zero, where the kernel is "
-            "singular. Self-interaction belongs in the local T-matrix, and a lattice "
-            "sum must exclude R = 0 explicitly (see planar_ewald.ewald_total)."
-        )
-    ladder = radial_ladder(r, kappa, order)
-    x = r_vec.astype(complex)
-
-    out: list[NDArray] = [np.asarray(ladder[0], dtype=complex)]
-    for n in range(1, order + 1):
-        acc = np.zeros((3,) * n, dtype=complex)
-        for m in range(n // 2 + 1):
-            acc = acc + ladder[n - m] * _delta_x_structure(n, m, x)
-        out.append(acc)
-    return out
+    r = _nonzero_separation(r_vec, "scalar_derivative_tensors")
+    return _tensors_from_ladder(r_vec, radial_ladder(r, kappa, order), order)
 
 
 def greens_from_scalars(
@@ -212,18 +271,41 @@ def greens_from_scalars(
     Returns:
         (G, Gd, Gdd) with shapes (3,3), (3,3,3), (3,3,3,3) -- exactly the triple
         `resonance_tmatrix._voigt_contract` consumes.
+
+    Forms d_s - d_p, which cancels as eps / (kappa r)^2 at small separations. Where the caller can
+    form the difference tensors of D = g_S - g_P directly (``difference_derivative_tensors``), it
+    should call ``greens_from_difference`` instead; this form is kept for the Ewald lattice sums, whose
+    halves are split per wavenumber and whose separations are at least one lattice pitch.
+    """
+    return greens_from_difference([s - p for s, p in zip(d_s, d_p, strict=True)], d_s, omega, ref)
+
+
+def greens_from_difference(
+    d_diff: list[NDArray],
+    d_s: list[NDArray],
+    omega: complex,
+    ref: ReferenceMedium,
+) -> tuple[NDArray, NDArray, NDArray]:
+    """Assemble (G, Gd, Gdd) from the tensors of D = g_S - g_P and of g_S.
+
+    G_ij = (1/(rho w^2)) [ delta_ij kS^2 g_S + d_i d_j D ], and its first and second derivatives.
+
+    Args:
+        d_diff: Derivative tensors of D, orders 0..4.
+        d_s: Derivative tensors of g_S, orders 0..2.
+        omega: Angular frequency (complex for an attenuative medium).
+        ref: Background medium.
+
+    Returns:
+        (G, Gd, Gdd) with shapes (3,3), (3,3,3), (3,3,3,3).
     """
     k_s2 = (omega / ref.beta) ** 2
     pref = 1.0 / (ref.rho * omega**2)
     delta = np.eye(3)
 
-    diff2 = d_s[2] - d_p[2]
-    diff3 = d_s[3] - d_p[3]
-    diff4 = d_s[4] - d_p[4]
-
-    G = pref * (k_s2 * d_s[0] * delta + diff2)
-    Gd = pref * (k_s2 * np.einsum("ij,k->ijk", delta, d_s[1]) + diff3)
-    Gdd = pref * (k_s2 * np.einsum("ij,kl->ijkl", delta, d_s[2]) + diff4)
+    G = pref * (k_s2 * d_s[0] * delta + d_diff[2])
+    Gd = pref * (k_s2 * np.einsum("ij,k->ijk", delta, d_s[1]) + d_diff[3])
+    Gdd = pref * (k_s2 * np.einsum("ij,kl->ijkl", delta, d_s[2]) + d_diff[4])
     return G, Gd, Gdd
 
 
@@ -239,9 +321,9 @@ def propagator_block_9x9_kupradze(
     be checked against the validated hand-derived path before any lattice
     summation is introduced.
     """
-    d_p = scalar_derivative_tensors(r_vec, omega / ref.alpha)
+    d_diff = difference_derivative_tensors(r_vec, omega / ref.alpha, omega / ref.beta)
     d_s = scalar_derivative_tensors(r_vec, omega / ref.beta)
-    G, Gd, Gdd = greens_from_scalars(d_p, d_s, omega, ref)
+    G, Gd, Gdd = greens_from_difference(d_diff, d_s, omega, ref)
     C, H, S = _voigt_contract(Gd, Gdd)
     P = np.zeros((9, 9), dtype=complex)
     P[:3, :3] = G
@@ -253,6 +335,9 @@ def propagator_block_9x9_kupradze(
 
 __all__ = [
     "MAX_ORDER",
+    "difference_derivative_tensors",
+    "difference_radial_ladder",
+    "greens_from_difference",
     "greens_from_scalars",
     "propagator_block_9x9_kupradze",
     "radial_ladder",

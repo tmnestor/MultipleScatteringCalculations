@@ -36,7 +36,7 @@ from .effective_contrasts import (
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
     _build_incident_plane_wave_basis,
-    _propagator_block_9x9,
+    _propagator_blocks_9x9,
     _sub_cell_tmatrix_9x9,
 )
 from .sphere_scattering import SphereDecompositionResult
@@ -131,23 +131,18 @@ def _build_fft_kernel(
 
     kernel = np.zeros((9, 9, nP, nP, nP), dtype=complex)
 
-    for d0 in range(-(n_sub - 1), n_sub):
-        for d1 in range(-(n_sub - 1), n_sub):
-            for d2 in range(-(n_sub - 1), n_sub):
-                if d0 == 0 and d1 == 0 and d2 == 0:
-                    continue
-                r_vec = np.array([d0, d1, d2], dtype=float) * dd
-                P_block = (
-                    averaged_pair_block_9x9(r_vec, omega, ref, dd, n_gauss=n_gauss)
-                    if cell_average
-                    else _propagator_block_9x9(r_vec, omega, ref)
-                )
-                block = -(P_block @ T_loc)
-                # Circular embedding: negative offsets wrap
-                i0 = d0 % nP
-                i1 = d1 % nP
-                i2 = d2 % nP
-                kernel[:, :, i0, i1, i2] = block
+    span = np.arange(-(n_sub - 1), n_sub)
+    offsets = np.stack(np.meshgrid(span, span, span, indexing="ij"), -1).reshape(-1, 3)
+    offsets = offsets[np.any(offsets != 0, axis=1)]
+    R = offsets.astype(float) * dd
+    P_blocks = (
+        np.stack([averaged_pair_block_9x9(r, omega, ref, dd, n_gauss=n_gauss) for r in R])
+        if cell_average
+        else _propagator_blocks_9x9(R, omega, ref)
+    )
+    # Circular embedding: negative offsets wrap
+    i0, i1, i2 = (offsets % nP).T
+    kernel[:, :, i0, i1, i2] = -np.einsum("kab,bc->ack", P_blocks, T_loc)
 
     # FFT each of the 81 (i, j) components
     kernel_hat = np.zeros_like(kernel)

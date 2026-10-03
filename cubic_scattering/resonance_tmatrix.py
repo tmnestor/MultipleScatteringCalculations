@@ -125,6 +125,7 @@ Waterman, P.C. (1969). Phys. Rev. D, 3, 825. (T-matrix / null-field
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -221,131 +222,36 @@ def elastodynamic_greens(
     return prefactor * (phi * np.eye(3) + psi * np.outer(gamma, gamma))
 
 
-def _radial_functions(
-    r: float, kP: float, kS: float
-) -> tuple[complex, complex, complex, complex, complex, complex]:
-    """Compute radial scalar functions φ, ψ and their first/second derivatives.
-
-    Both φ and ψ are sums of terms ``c · e^{ik r} · r^p`` for p in {-1,-2,-3}.
-    Derivatives use::
-
-        d/dr [e^{ikr} r^p]   = e^{ikr} r^{p-1} (ikr + p)
-        d²/dr² [e^{ikr} r^p] = e^{ikr} r^{p-2} [(ikr)² + 2p(ikr) + p(p-1)]
-
-    Args:
-        r: Distance (must be > 0).
-        kP: P-wave wavenumber.
-        kS: S-wave wavenumber.
-
-    Returns:
-        (φ, ψ, φ′, ψ′, φ″, ψ″).
-    """
-    expP = np.exp(1j * kP * r)
-    expS = np.exp(1j * kS * r)
-    exps = {kP: expP, kS: expS}
-
-    # Terms: (coefficient, wavenumber, power_of_r)
-    phi_terms: list[tuple[complex, float, int]] = [
-        (kS**2, kS, -1),
-        (1j * kS, kS, -2),
-        (-1.0, kS, -3),
-        (-1j * kP, kP, -2),
-        (1.0, kP, -3),
-    ]
-    psi_terms: list[tuple[complex, float, int]] = [
-        (-(kS**2), kS, -1),
-        (-3j * kS, kS, -2),
-        (3.0, kS, -3),
-        (kP**2, kP, -1),
-        (3j * kP, kP, -2),
-        (-3.0, kP, -3),
-    ]
-
-    phi = phi_p = phi_pp = 0j
-    psi = psi_p = psi_pp = 0j
-
-    for c, k, p in phi_terms:
-        e = exps[k]
-        ikr = 1j * k * r
-        phi += c * e * r**p
-        phi_p += c * e * r ** (p - 1) * (ikr + p)
-        phi_pp += c * e * r ** (p - 2) * (ikr**2 + 2 * p * ikr + p * (p - 1))
-
-    for c, k, p in psi_terms:
-        e = exps[k]
-        ikr = 1j * k * r
-        psi += c * e * r**p
-        psi_p += c * e * r ** (p - 1) * (ikr + p)
-        psi_pp += c * e * r ** (p - 2) * (ikr**2 + 2 * p * ikr + p * (p - 1))
-
-    return phi, psi, phi_p, psi_p, phi_pp, psi_pp
-
-
 def elastodynamic_greens_deriv(
     r_vec: NDArray[np.floating],
-    omega: float,
+    omega: complex,
     ref: ReferenceMedium,
 ) -> tuple[Complex3x3, NDArray, NDArray]:
     """Green's tensor G, first derivative Gd, and second derivative Gdd.
 
+    Gd[i, j, k] = d_k G_ij and Gdd[i, j, k, l] = d_k d_l G_ij, with respect to the separation
+    ``r_vec = x_field - x_source``; omega may be complex (attenuated).
+
+    Evaluated by ``graded_voxel.kernel.greens_tensors``: the power series of (g_S - g_P) / k_S^2 for
+    |k_S| r <= 0.5 and closed forms above, accurate to round-off at every k r. The closed form alone
+    cancels its 1/r terms between the P and S parts and loses digits as eps / (k_S r)^2 (4e-7 relative
+    at k_S r = 1e-4; ``tests/test_greens_small_kr.py``).
+
     Returns:
         (G, Gd, Gdd) with shapes (3,3), (3,3,3), (3,3,3,3).
         All zero at r=0 (self-interaction handled by local T-matrix).
-
-    The formulae follow from the chain rule on
-    ``G_{ij} = P [φ δ_{ij} + ψ γ_i γ_j]``::
-
-        G_{ij,k}  → 3 tensor structures (φ′, ψ′−2ψ/r, ψ/r)
-        G_{ij,kl} → 7 tensor structures (φ′/r, φ″−φ′/r, ψ′/r−2ψ/r²,
-                                          ψ/r², ψ″−5ψ′/r+8ψ/r²)
     """
+    from .graded_voxel.kernel import greens_tensors  # local: kernel imports this module
+
     r_vec = np.asarray(r_vec, dtype=float)
-    r = float(np.linalg.norm(r_vec))
-    z3 = np.zeros((3, 3), dtype=complex)
-    z33 = np.zeros((3, 3, 3), dtype=complex)
-    z333 = np.zeros((3, 3, 3, 3), dtype=complex)
-    if r < 1.0e-14:
-        return z3, z33, z333
-
-    kP: float = omega / ref.alpha
-    kS: float = omega / ref.beta
-    g = r_vec / r  # γ_i = unit direction vector
-
-    P = 1.0 / (4.0 * np.pi * ref.rho * omega**2)
-    phi, psi, phi_p, psi_p, phi_pp, psi_pp = _radial_functions(r, kP, kS)
-
-    # --- G_{ij} ---
-    G = P * (phi * np.eye(3) + psi * np.outer(g, g))
-
-    # --- G_{ij,k} ---
-    c1: complex = phi_p
-    c2: complex = psi_p - 2.0 * psi / r
-    c3: complex = psi / r
-    delta = np.eye(3)
-    Gd = P * (
-        c1 * np.einsum("k,ij->ijk", g, delta)
-        + c2 * np.einsum("i,j,k->ijk", g, g, g)
-        + c3 * (np.einsum("ik,j->ijk", delta, g) + np.einsum("jk,i->ijk", delta, g))
-    )
-
-    # --- G_{ij,kl} --- 7 tensor structures
-    t1: complex = phi_p / r  # δ_{ij}δ_{kl}
-    t2: complex = phi_pp - phi_p / r  # δ_{ij}γ_kγ_l
-    t3: complex = psi_p / r - 2.0 * psi / r**2  # γ_iγ_jδ_{kl}, and 4 mixed terms
-    t4: complex = psi / r**2  # δ_{ik}δ_{jl}+δ_{jk}δ_{il}
-    t7: complex = psi_pp - 5.0 * psi_p / r + 8.0 * psi / r**2  # γ_iγ_jγ_kγ_l
-
-    Gdd = P * (
-        t1 * np.einsum("ij,kl->ijkl", delta, delta)
-        + t2 * np.einsum("ij,k,l->ijkl", delta, g, g)
-        + t3 * np.einsum("i,j,kl->ijkl", g, g, delta)
-        + t4 * (np.einsum("ik,jl->ijkl", delta, delta) + np.einsum("jk,il->ijkl", delta, delta))
-        + t3 * (np.einsum("il,j,k->ijkl", delta, g, g) + np.einsum("jl,i,k->ijkl", delta, g, g))
-        + t3 * (np.einsum("ik,j,l->ijkl", delta, g, g) + np.einsum("jk,i,l->ijkl", delta, g, g))
-        + t7 * np.einsum("i,j,k,l->ijkl", g, g, g, g)
-    )
-
-    return G, Gd, Gdd
+    if float(np.linalg.norm(r_vec)) < 1.0e-14:
+        return (
+            np.zeros((3, 3), dtype=complex),
+            np.zeros((3, 3, 3), dtype=complex),
+            np.zeros((3, 3, 3, 3), dtype=complex),
+        )
+    G, Gd, Gdd = greens_tensors(r_vec[None], omega, ref)
+    return G[0], Gd[0], Gdd[0]
 
 
 def _voigt_contract(Gd: NDArray, Gdd: NDArray) -> tuple[NDArray, NDArray, NDArray]:
@@ -404,20 +310,76 @@ def _voigt_contract(Gd: NDArray, Gdd: NDArray) -> tuple[NDArray, NDArray, NDArra
 
 def _propagator_block_9x9(
     r_vec: NDArray[np.floating],
-    omega: float,
+    omega: complex,
     ref: ReferenceMedium,
 ) -> NDArray:
     """9x9 inter-sub-cell propagator [[G, C], [H, S]].
 
-    Returns zeros at r=0 (self-interaction is in T_loc).
+    Returns zeros at r=0 (self-interaction is in T_loc). One point of ``_propagator_blocks_9x9``; loops
+    over many separations should call that instead (about 12 us per point batched, against several
+    hundred for a single call).
     """
-    G, Gd, Gdd = elastodynamic_greens_deriv(r_vec, omega, ref)
-    C, H, S = _voigt_contract(Gd, Gdd)
-    P = np.zeros((9, 9), dtype=complex)
-    P[:3, :3] = G
-    P[:3, 3:] = C
-    P[3:, :3] = H
-    P[3:, 3:] = S
+    return _propagator_blocks_9x9(np.asarray(r_vec, dtype=float)[None], omega, ref)[0]
+
+
+def _propagator_blocks_9x9(
+    r_vecs: NDArray[np.floating],
+    omega: complex,
+    ref: ReferenceMedium,
+) -> NDArray:
+    """The 9x9 propagator at many separations (K, 3), shape (K, 9, 9); zeros where r = 0.
+
+    Evaluated by ``graded_voxel.kernel.kernel_9x9``, accurate to round-off at every k r.
+    """
+    from .graded_voxel.kernel import kernel_9x9  # local: kernel imports this module
+
+    R = np.atleast_2d(np.asarray(r_vecs, dtype=float))
+    out = np.zeros((len(R), 9, 9), dtype=complex)
+    keep = np.linalg.norm(R, axis=1) >= 1.0e-14
+    if keep.any():
+        out[keep] = kernel_9x9(R[keep], omega, ref)
+    return out
+
+
+def _pair_propagator_matrix(
+    centres: NDArray[np.floating],
+    pitch: float,
+    blocks_at: Callable[[NDArray], NDArray],
+) -> NDArray:
+    """The 9N x 9N matrix of blocks_at(centres[m] - centres[n]), zero on the block diagonal.
+
+    ``blocks_at`` maps separations (K, 3) to blocks (K, 9, 9). When the centres lie on a lattice of the
+    given pitch the block depends only on the integer offset, so each distinct offset is evaluated once,
+    in one call: O(n^3) evaluations rather than O(N^2). Otherwise each row is evaluated in one call. The
+    matrix is filled row by row, never through an N x N x 9 x 9 intermediate.
+    """
+    centres = np.asarray(centres, dtype=float)
+    N = len(centres)
+    P = np.zeros((9 * N, 9 * N), dtype=complex)
+    q = (centres - centres[0]) / pitch
+    idx = np.rint(q).astype(np.int64)
+    if float(np.max(np.abs(q - idx))) <= 1.0e-9:
+        span = int(np.max(np.abs(idx))) if N > 1 else 0
+        base = 2 * span + 1
+        enc = idx @ np.array([base * base, base, 1], dtype=np.int64)
+        codes = enc[:, None] - enc[None, :]
+        uniq, inv = np.unique(codes, return_inverse=True)
+        inv = inv.reshape(N, N)
+        shifted = uniq + span * (base * base + base + 1)
+        offsets = np.stack(
+            [shifted // (base * base) - span, (shifted // base) % base - span, shifted % base - span], 1
+        )
+        blocks = np.zeros((len(uniq), 9, 9), dtype=complex)
+        nonzero = np.any(offsets != 0, axis=1)
+        blocks[nonzero] = blocks_at(offsets[nonzero] * pitch)
+        for m in range(N):
+            P[9 * m : 9 * m + 9, :] = blocks[inv[m]].transpose(1, 0, 2).reshape(9, 9 * N)
+        return P
+    for m in range(N):
+        row = np.zeros((N, 9, 9), dtype=complex)
+        others = np.arange(N) != m
+        row[others] = blocks_at(centres[m] - centres[others])
+        P[9 * m : 9 * m + 9, :] = row.transpose(1, 0, 2).reshape(9, 9 * N)
     return P
 
 
@@ -816,13 +778,7 @@ def _solve_coupled(
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
     # --- 9N×9N propagator (off-diagonal only) ---
-    P_tilde = np.zeros((9 * N, 9 * N), dtype=complex)
-    for m in range(N):
-        for n in range(N):
-            if m != n:
-                P_tilde[9 * m : 9 * m + 9, 9 * n : 9 * n + 9] = _propagator_block_9x9(
-                    centres[m] - centres[n], omega, ref
-                )
+    P_tilde = _pair_propagator_matrix(centres, 2.0 * a_sub, lambda R: _propagator_blocks_9x9(R, omega, ref))
 
     # --- Block-diagonal T̃ = I_N ⊗ T_loc ---
     T_block = np.kron(np.eye(N, dtype=complex), T_loc)  # (9N, 9N)

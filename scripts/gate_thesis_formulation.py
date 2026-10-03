@@ -1,5 +1,9 @@
 """GATE: is the thesis's two-potential formulation CORRECT?
 
+SUPERSEDED by ``scripts/gate_thesis_formulation_periodic.py``, which answers the question on an infinite
+periodic layer. This finite-patch version is kept for its record; its own discretisation control (about
+2 per cent) is too large for it to conclude, and when that is so it reports INCONCLUSIVE and does not fail.
+
 Not "do the two orderings differ" -- that was measured, and they do, by up to
 110% of the field. This asks which one is right, which needs an exact answer and
 therefore a configuration in which one exists.
@@ -241,7 +245,17 @@ def main() -> int:
     print("\n  A thesis-ordering error that does NOT fall under refinement is a")
     print("  REFUTATION, and would point at the stratified propagator or the")
     print("  composition rather than at the ordering.")
+    # SUPERSEDED (2026-10-03 note). This finite-patch gate cannot conclude when its own discretisation
+    # control says so; the question it asks is settled on an INFINITE layer by
+    # scripts/gate_thesis_formulation_periodic.py. An inconclusive run therefore reports INCONCLUSIVE and
+    # does not fail; a conclusive run in which the thesis ordering does not improve still fails, because
+    # that would be a refutation.
+    if not conclusive:
+        print("\n  VERDICT: INCONCLUSIVE (discretisation-limited). Superseded by")
+        print("  scripts/gate_thesis_formulation_periodic.py, which settles the question.")
     print("=" * 78)
+    if not conclusive:
+        return 0
     return 0 if improving else 1
 
 

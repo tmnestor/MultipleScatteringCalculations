@@ -11,3 +11,9 @@ dependencies:
   - pyyaml
   - pytorch
   - pytest
+  - pytest-xdist
+  # the compiled point kernel (cubic_scattering/fortran): compiler and build system, from the same
+  # channel so the extension links the OpenMP runtime that OpenBLAS uses
+  - gfortran
+  - meson
+  - ninja
