@@ -69,7 +69,10 @@ of the term of first order in the contrast, which needs no solve: each leaf hold
 incident wave, and for a leaf of uniform contrast its error is a closed-form factor in spherical Bessel
 functions, with leading term $-(\bk_{\mathrm{in}}\cdot\bk_{\mathrm{out}})\,d^2/12$ for a constant field
 in a cell of side $d$. The second is the nonlinear fraction of the response times the relative
-projection error of the medium. On a sphere with a thin graded shell, against its exact solution, the
+projection error of the medium, times a factor of order one that we derive in closed form: it is one in
+a layer, and in three dimensions it depends on the background and the direction of scattering through the
+axes of the cells; the nonlinear fraction itself follows from two products with the matrix of a
+coarse tree, to $1.4\%$, with no solve. On a sphere with a thin graded shell, against its exact solution, the
 second term has one constant ($0.015$) for constant and for linear cells, on uniform grids and on
 trees, where the raw ratio of error to projection error varies by a factor of two. Refining by both
 terms, a tree of linear cells reaches the accuracy of a uniform grid with a quarter of the cells on a
@@ -124,14 +127,15 @@ integral equations \citep{Fujiwara2000,Chaillat2008}.
 of the error before the solve, for the elastic problem: the two terms of \S\ref{sec:twoterm}, the
 closed-form factor of a leaf, and the rule for choosing the basis of the medium. The law is a sharpened
 instance of a standard fact, that the error of a Galerkin solution of a second-kind equation is
-governed by the best approximation of the solution; here it is an equality with a known constant, for
-the part of the field that copies the medium.
+governed by the best approximation of the solution; here it is an equality with a factor known in
+closed form, for the part of the field that copies the medium.
 
 \paragraph{The answer in brief.} The error of the scattered field separates by its order in the
 contrast into two terms, and both are available before the solve (\S\ref{sec:twoterm}). The term of
 first order is computed in one pass over the leaves, and for a leaf of uniform contrast it is a closed
 form. The rest is the nonlinear fraction of the response times the relative projection error of the
-medium, with one constant for every grid and tree tried. A refinement rule built on the two terms
+medium, with one constant for every grid and tree tried, and times a factor of order one that is derived
+in closed form (\S\ref{sec:factor3d}). A refinement rule built on the two terms
 produces trees that a rule built on the medium alone cannot (\S\ref{sec:refine}). And the choice of
 basis for the medium follows from the medium (\S\ref{sec:which}): a constant in each leaf is the right
 basis where the medium is piecewise constant on the leaves, and the wrong one where it varies smoothly.
@@ -266,11 +270,192 @@ linear ($p=r=1$) & uniform & $64$  & $8.99\times10^{-4}$ & $0.0147$ & $0.0148$ \
 For constant cells the ratio of error to projection error varies by a factor of $1.93$ across the
 grids; the rest over the projection error varies by $1.06$, and it is $0.0151$ to $0.0152$ on all four
 trees. For linear cells the first-order error is small and both ratios are near $0.0146$. The constant
-is the nonlinear fraction of the exact response, $\lvert u-T_1\rvert/\lvert u\rvert=0.0151$. This is
-the law of the layer \citep{NestorContinuum2026} in three dimensions: the error of the nonlinear part
-is that part times the relative projection error of the medium. It holds for constant cells as it does
-for linear ones, once the first-order error is accounted for; without that, constant cells appear not
-to follow it.
+is close to the nonlinear fraction of the exact response, $\nu=\lvert u-T_1\rvert/\lvert u\rvert=0.0151$.
+This is the law of the layer \citep{NestorContinuum2026} carried to three dimensions: the error of the
+nonlinear part is that part times the relative projection error of the medium, times a factor of order
+one that \S\ref{sec:factor3d} derives. It holds for constant cells as it does for linear ones, once the
+first-order error is accounted for; without that, constant cells appear not to follow it.
+
+\subsection{The factor of the second term in three dimensions}\label{sec:factor3d}
+
+\paragraph{Why a factor appears.} In the layer the relative error of the term of second order in the
+contrast, $T_2$, equals the relative projection error exactly in the long-wave limit, because there the
+kernel that maps a strain source to the strain it scatters is local: the once-scattered strain is the
+profile itself, and a cell holds it as the profile's projection \citep{NestorContinuum2026}. In three
+dimensions the same kernel has, besides its local part, a part that falls as the inverse cube of the
+distance. The once-scattered strain then depends on how the residual of the projection is arranged in
+space, and the cells of an octree arrange it along their axes. The question is what replaces the
+layer's equality.
+
+\paragraph{The second-order term of the scheme.} Take a stiffness contrast $f(\bx)\,\Delta\mathbf{C}$,
+with $f$ the profile, struck by a uniform strain $\boldsymbol\varepsilon_{\mathrm{in}}$ and observed
+through a uniform strain $\boldsymbol\varepsilon_{\mathrm{out}}$ of the outgoing P or S wave (the
+long-wave limit, in which the derivation is made; the test below is at $k_Sa=0.125$). The second
+term is the quadratic form $T_2=\langle f,Kf\rangle$ of the operator $K$ whose Fourier multiplier is
+\begin{equation}\label{eq:mfactor}
+  m(\hat{\boldsymbol\xi})=\mathbf{a}:\boldsymbol\Gamma(\hat{\boldsymbol\xi}):\mathbf{b},\qquad
+  \mathbf{a}=\Delta\mathbf{C}:\boldsymbol\varepsilon_{\mathrm{out}},\quad
+  \mathbf{b}=\Delta\mathbf{C}:\boldsymbol\varepsilon_{\mathrm{in}},
+\end{equation}
+with $\boldsymbol\Gamma$ the static strain Green operator of the background, which depends only on the
+direction $\hat{\boldsymbol\xi}$ of the wavevector:
+$m=\hat{\boldsymbol\xi}\cdot\tfrac12(\mathbf{a}\mathbf{b}+\mathbf{b}\mathbf{a})\cdot\hat{\boldsymbol\xi}/\mu
+-\tfrac{\lambda+\mu}{\mu(\lambda+2\mu)}(\hat{\boldsymbol\xi}\cdot\mathbf{a}\cdot\hat{\boldsymbol\xi})
+(\hat{\boldsymbol\xi}\cdot\mathbf{b}\cdot\hat{\boldsymbol\xi})$. Cells whose field and contrast are
+of the same degree compute $\langle\Pi f,K\Pi f\rangle$, $\Pi$ the projection of \S\ref{sec:rest}, so
+with $g=f-\Pi f$ the residual,
+\begin{equation}\label{eq:t2factor}
+  \frac{T_2-T_2^{\mathrm{scheme}}}{T_2}=\cE\,F,\qquad
+  F=\frac{2\langle g,Kf\rangle-\langle g,Kg\rangle}{\langle f,Kf\rangle\,\cE}.
+\end{equation}
+In the layer $F=1$. For a body whose spectrum is the same in every direction, as a radial profile's is,
+$\langle f,Kf\rangle=\bar m\lVert f\rVert^2$ with
+$\bar m=\operatorname{tr}\bigl(\tfrac12(\mathbf{a}\mathbf{b}+\mathbf{b}\mathbf{a})\bigr)/(3\mu)
+-\tfrac{\lambda+\mu}{\mu(\lambda+2\mu)}\bigl(\operatorname{tr}\mathbf{a}\operatorname{tr}\mathbf{b}
++2\,\mathbf{a}:\mathbf{b}\bigr)/15$, the average of $m$ over directions. The two remaining forms are
+evaluated as the cells shrink, from what the residual looks like inside one cell.
+
+\paragraph{Constant cells.} In a cell of half-width $h$ the residual is $\nabla f\cdot(\bx-\bx_\ell)$, a
+sum of three sawtooths, one along each axis. Two facts settle the two forms. Its first moments and its
+energy carry the same constant, $h^2/3$, and its second moments vanish, so its transform at small
+wavenumbers is $(h^2/3)\lvert\boldsymbol\xi\rvert^2\hat f$, the same in every direction, and
+$2\langle g,Kf\rangle\to2\bar m\lVert g\rVert^2$. And a sawtooth has no mean and its harmonics lie
+on its own axis, carrying all its energy, so $\langle g,Kg\rangle\to m_{\mathrm{ax}}\lVert
+g\rVert^2$, with $m_{\mathrm{ax}}$ the mean of $m$ over the three cube axes. Hence
+\begin{equation}\label{eq:F0}
+  F_0=2-\frac{m_{\mathrm{ax}}}{\bar m}.
+\end{equation}
+The cell enters through its axes: a residual arranged along them sees the operator along them, while the
+body sees it averaged over all directions.
+
+\paragraph{Linear cells.} The residual is the quadratic part of $f$ less its projection,
+$\tfrac12\sum_iH_{ii}(x_i^2-h^2/3)+\sum_{i<j}H_{ij}x_ix_j$ with $H$ the second derivatives of $f$.
+Its energy is $\sum_iH_{ii}^2h^4/45+\sum_{i<j}H_{ij}^2h^4/9$ per unit volume, and its second moments,
+$2h^4/45$ on the diagonal and $h^4/9$ off it, give its transform at small wavenumbers as
+$h^4W(\boldsymbol\xi)\hat f$ with
+$W=\sum_k\xi_k^4/45+\sum_{k<l}\xi_k^2\xi_l^2/9$, which is no longer the same in every direction. The
+parabolas $x_i^2-h^2/3$ have their spectrum on their axes; each product $x_ix_j$ of two sawtooths has its
+spectrum on the lattice of the $(i,j)$ plane, at the points $(m,n)$, $m,n\neq0$, with weights
+$1/(m^2n^2)$, over which the averages of $u^2v^2$ and $u^4$ ($u$, $v$ the direction cosines) are
+$6G/\pi^2-\tfrac25$ and $\tfrac9{10}-6G/\pi^2$, $G$ being Catalan's constant, from the lattice sum
+$\sum_{m,n\neq0}(m^2+n^2)^{-2}=4\zeta(2)\beta(2)-4\zeta(4)$. For a radial profile
+\begin{equation}\label{eq:F1}
+  F_1=\frac{2\langle Wm\rangle-\tfrac1{225}\sum_im(\mathbf{e}_i)-\tfrac1{135}\sum_{i<j}M_{ij}}
+            {\tfrac{8}{225}\,\bar m},
+\end{equation}
+with $\langle Wm\rangle$ the average of $Wm$ over directions and $M_{ij}$ the average of $m$ over the
+lattice of the $(i,j)$ plane. A constant $m$ gives $F_0=F_1=1$, and so does a layer.
+
+\paragraph{Closed forms.} For an incident P wave and an outgoing SV wave the factors depend on the
+background alone, not on the contrast or the angle:
+\begin{equation}\label{eq:Fps}
+  F_0^{\mathrm{PS}}=\frac{6\lambda+11\mu}{3\lambda+8\mu},\qquad
+  F_1^{\mathrm{PS}}=\frac{5\bigl[(57\lambda+85\mu)\pi^2-315G(\lambda+\mu)\bigr]}{28\pi^2(3\lambda+8\mu)},
+\end{equation}
+$1.516$ and $1.337$ for the background of the tests ($\alpha=5000$, $\beta=3000$\,m\,s$^{-1}$). For an
+outgoing P wave the factors are ratios of expressions linear in $\cos2\theta$, $\theta$ the scattering
+angle; for the contrast of the tests $F_0^{\mathrm{PP}}$ runs from $1.101$ near forward and back
+scattering to $0.923$ at right angles, and $F_1^{\mathrm{PP}}$ from $1.066$ to $0.950$.
+
+\paragraph{The test.} The derivation is symbolic, in $31$ checks, from the Navier equation to the closed
+forms (\path{Mathematica/AdaptiveOctree_T2Factor.wl}). It is tested two ways on a sphere of radius
+$a=10$\,m whose contrast is uniform within $a/2$ and falls smoothly to zero at the surface, with a
+stiffness contrast, at $k_Sa=0.125$: by the scheme itself,
+whose $T_2$ is set against the exact one, angle by angle and wave by wave
+(\path{scripts/measure_t2_law_3d.py}); and by evaluating the two forms of Eq.~\eqref{eq:t2factor}
+directly, by fast Fourier transform on a grid finer than the cells (\path{scripts/measure_t2_quadratic_forms.py}).
+\begin{table}[htbp]
+\centering
+\caption{The factor $F$ of Eq.~\eqref{eq:t2factor}: the scheme on $8$ cells across, the direct
+evaluation on finer grids ($32$ cells for constant, $24$ for linear), and the limit,
+Eqs.~\eqref{eq:F0}--\eqref{eq:Fps}.}\label{tab:t2factor}
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{constant cells} & \multicolumn{3}{c}{linear cells} \\
+outgoing wave & scheme & direct & limit & scheme & direct & limit \\
+\midrule
+P at $0.2$\,rad & $1.074$ & $1.092$ & $1.101$ & $1.073$ & $1.067$ & $1.066$ \\
+P at $\pi/2$    & $0.944$ & $0.930$ & $0.923$ & $0.948$ & $0.949$ & $0.950$ \\
+SV at $0.2$\,rad & $1.376$ & $1.470$ & $1.516$ & $1.356$ & $1.342$ & $1.337$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+On $8$ cells the scheme and the direct evaluation agree to $1\%$ where both are computed on the same
+grid, which confirms Eq.~\eqref{eq:t2factor}. As the cells shrink both approach the limit: for constant
+cells $\langle g,Kg\rangle/(\bar m\lVert g\rVert^2)$ goes $0.926$, $0.909$, $0.902$ on $8$, $16$ and
+$32$ cells against its limit $m_{\mathrm{ax}}/\bar m=0.899$ (outgoing P at $0.2$\,rad), slowly, the
+distance falling as about $h^{1.7}$; for linear cells the factor is within $0.4\%$ of the limit by $24$
+cells. The scheme on $8$ cells is three quarters of the way to the limit
+for constant cells.
+
+\paragraph{What it means for the second term.} The second term of the error is the nonlinear part of the
+response times the relative projection error times $F$, a factor of order one that depends on the
+background, the direction of scattering and the type of wave, and on the cells through their axes, not
+on the grid. For this background and contrast it lies between $0.92$ and $1.52$ for constant cells and
+between $0.95$ and $1.34$ for linear cells, and it is one in a layer, which is why the layer's law is an
+equality. The constant of Table~\ref{tab:twoterm}, formed from the largest error over the angles and
+with every order above the first included, is $0.96$ to $1.05$ times $\nu$, inside that range. The second term is therefore known before
+the solve to within $F$, and in closed form once the direction of observation is chosen. The derivation
+holds for the term of second order, in the long-wave limit, for a body whose spectrum is isotropic; the
+terms of higher order are measured, not derived.
+
+\subsection{The nonlinear fraction without a solve}\label{sec:nu}
+
+\paragraph{Why it is needed.} The second term of the error is $\nu\,\cE\,F$, and of its three factors
+only the nonlinear fraction $\nu=\max\lvert u-T_1\rvert/\max\lvert u\rvert$ (the maxima over the angles
+of observation) has so far needed a solve: one solve on a coarse tree that resolves the medium, taking
+$\lvert u-T_1\rvert/\lvert u\rvert$ of that tree. That estimate is low, by up to a quarter for constant
+cells (Table~\ref{tab:nu}), and the reason is the second term itself: the coarse tree's nonlinear part is
+low by its own relative projection error.
+
+\paragraph{The method.} The scheme's response is a series in the contrast, $\psi=\sum_n\psi_n$ with
+$M\psi_1=b$ and $M\psi_{n+1}=KE\,\psi_n$, $M$ the Gram matrices of the leaves, $b$ the moments of the
+incident wave and $KE$ the coupling times the contrast (Eq.~\eqref{eq:system}). The first term is the
+Born term of \S\ref{sec:born}; each further term costs one product with the assembled matrix and no
+solve. Two facts make a few terms enough. On the exact solutions the terms of second and third order
+carry the nonlinear fraction to $0.2\%$ (on the three bodies of Table~\ref{tab:nu}; $T_2$ alone to
+$4\%$), because $\lvert T_3\rvert/\lvert T_2\rvert$ is $0.03$ to $0.04$. And on the coarse tree the
+nonlinear part of the scheme is low by its relative projection error $\cE$, which is known before the
+solve (\S\ref{sec:rest}). The estimate is therefore
+\begin{equation}\label{eq:nuest}
+  \nu\approx\frac{\max\lvert T_2+T_3\rvert/(1-\cE)}{\max\bigl\lvert T_1+(T_2+T_3)/(1-\cE)\bigr\rvert},
+\end{equation}
+with $T_n$ the far fields of the scheme's terms on the coarse tree and the factor $F$ of
+\S\ref{sec:factor3d} taken as one.
+
+\paragraph{The result.} Table~\ref{tab:nu} sets the estimates against the exact nonlinear fraction on
+the three bodies of the paper, for constant and linear cells, the coarse tree being that of the
+refinement experiments (the rule on the medium alone at a tolerance of $10^{-2}$ from a tree of eight
+leaves; \path{scripts/measure_octree_nu_estimate.py}).
+\begin{table}[htbp]
+\centering
+\caption{The nonlinear fraction estimated on a coarse tree, over its exact value. ``Solve'' is the
+earlier estimate (one dense solve); Eq.~\eqref{eq:nuest} uses two products with the matrix and the
+tree's projection error $\cE$.}\label{tab:nu}
+\small
+\begin{tabular}{@{}llrccccc@{}}
+\toprule
+body & cells & leaves & $\cE$ & exact $\nu$ & solve & $T_2/(1-\cE)$ & Eq.~\eqref{eq:nuest} \\
+\midrule
+thin shell, $k_Sa=0.5$ & constant & $64$ & $0.264$ & $0.0151$ & $0.746$ & $1.047$ & $1.014$ \\
+ & linear & $64$ & $0.061$ & & $0.940$ & $1.039$ & $1.000$ \\
+feature $0.2a$--$0.5a$, $k_Sa=1$ & constant & $120$ & $0.175$ & $0.0107$ & $0.816$ & $1.017$ & $0.990$ \\
+ & linear & $120$ & $0.036$ & & $0.963$ & $1.028$ & $0.999$ \\
+feature $0.1a$--$0.3a$, $k_Sa=1$ & constant & $176$ & $0.145$ & $0.0059$ & $0.854$ & $1.025$ & $1.000$ \\
+ & linear & $176$ & $0.015$ & & $0.985$ & $1.027$ & $0.999$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+The estimate of Eq.~\eqref{eq:nuest} is within $1.4\%$ of the exact value in all six cases; the solve
+is $25\%$ low at worst, and the second-order term alone, corrected, is $2\%$ to $5\%$ high, which is
+the share of the third-order term.
+
+\paragraph{What it means.} Both terms of the error are now known before the solve, without any solve:
+the first from one pass over the leaves, the second from the relative projection error, the factor
+$F$ in closed form, and the nonlinear fraction from two products with the matrix of a coarse tree. The
+estimate rests on the law of \S\ref{sec:rest} applied to the coarse tree, and has been tested on three
+bodies at two frequencies.
 
 \section{Refinement by the two terms}\label{sec:refine}
 
@@ -278,9 +463,10 @@ to follow it.
 indicator is the nonlinear fraction $\nu$ times the leaf's share of the projection error,
 $\nu\int_\ell(f-\Pi_rf)^2\,\dd V/\int f^2\,\dd V$. The \emph{wave} indicator is the leaf's own
 first-order error (\S\ref{sec:born}) relative to the peak of the Born far field. A leaf is split into
-its eight children while the sum of the two exceeds a tolerance. The nonlinear fraction is estimated
-from one solve on a coarse tree that resolves the medium, as $\lvert u-T_1\rvert/\lvert u\rvert$ of that
-tree. The predicted error of a tree is the first-order error of the whole tree, summed over the leaves
+its eight children while the sum of the two exceeds a tolerance. In the experiments below the nonlinear
+fraction is estimated from one solve on a coarse tree that resolves the medium, as
+$\lvert u-T_1\rvert/\lvert u\rvert$ of that tree; Eq.~\eqref{eq:nuest} now gives it without the solve
+and more accurately (\S\ref{sec:nu}). The predicted error of a tree is the first-order error of the whole tree, summed over the leaves
 as complex amplitudes, plus $\nu\,\cE_r$. It uses no reference solution.
 
 \paragraph{A localised feature.} The test body is a sphere of radius $a$ whose contrast is a weak
@@ -408,10 +594,16 @@ bodies, both spheres with radial profiles.
 solution; its reference is the same scheme with quadratic fields. The field near the edges and corners
 of the cubes is not smooth, and an independent solution is needed before the figure of $65$ is relied
 on.
-\item \emph{Not yet derived.} The nonlinear fraction $\nu$ is estimated from a coarse solve; it is
-within $20\%$ of the exact value in the cases tried. The constant of the second term is observed to
-equal the nonlinear fraction of the response; the layer's derivation \citep{NestorContinuum2026} has
-not been carried to three dimensions.
+\item \emph{Derived, and established twice.} The factor of the second term, Eqs.~\eqref{eq:t2factor}
+to \eqref{eq:Fps}: a symbolic derivation, and the scheme and a direct evaluation against it
+(Table~\ref{tab:t2factor}). It is derived for the term of second order, in the long-wave limit, for a
+body with an isotropic spectrum.
+\item \emph{Established against exact solutions, by one implementation.} The nonlinear fraction from
+two products with the matrix of a coarse tree, Eq.~\eqref{eq:nuest}: within $1.4\%$ on three bodies,
+for constant and linear cells (Table~\ref{tab:nu}). The refinement experiments of \S\ref{sec:refine}
+were run with the earlier estimate from a coarse solve and have not been repeated with it.
+\item \emph{Not yet derived.} The share of the terms of third and higher order in the nonlinear part,
+and the law of \S\ref{sec:rest} for them, are measured only.
 \item \emph{Not a bound.} The predicted error exceeded the true error for constant cells in every case,
 but fell $6\%$ below it for linear cells.
 \item \emph{Size.} The solver is dense and stops near $20\,000$ unknowns: about $2200$ constant leaves
@@ -430,7 +622,10 @@ estimate that relates their refinement tolerance to the error of the solution.
 On an octree of polynomial voxels the error of the scattered field is two terms, and both are known
 before the solve: the first-order error, from one pass over the leaves and in closed form for a leaf of
 uniform contrast, and the nonlinear fraction of the response times the relative projection error of the
-medium. The closed form reduces in one dimension to the constants of the layer. A refinement rule built
+medium, times a factor of order one that is one in a layer and in three dimensions depends, in closed form,
+on the background and the direction of scattering through the axes of the cells; the nonlinear
+fraction comes from two products with the matrix of a coarse tree, so neither term needs a solve. The
+closed form of the first term reduces in one dimension to the constants of the layer. A refinement rule built
 on both terms places cells where a rule built on the medium alone cannot, and with linear cells a tree
 reaches the accuracy of a uniform grid with a quarter of the cells on a body whose variation is
 localised. A constant contrast in each leaf is the right basis for a medium that is piecewise constant
@@ -450,7 +645,10 @@ accurate than they are.
 {\footnotesize The octree, its blocks and its solver are \path{cubic_scattering/graded_voxel/octree.py},
 with tests in \path{cubic_scattering/tests/test_graded_voxel_octree.py}. The wave factor is derived in
 \path{Mathematica/AdaptiveOctree_WaveFactor.wl} and measured by
-\path{scripts/measure_octree_wave_term.py}; Table~\ref{tab:twoterm} is
+\path{scripts/measure_octree_wave_term.py}; the factor of the second term is derived in
+\path{Mathematica/AdaptiveOctree_T2Factor.wl} and measured by \path{scripts/measure_t2_law_3d.py} and
+\path{scripts/measure_t2_quadratic_forms.py}; Table~\ref{tab:nu} is
+\path{scripts/measure_octree_nu_estimate.py}; Table~\ref{tab:twoterm} is
 \path{scripts/measure_octree_two_term.py}; Table~\ref{tab:refine} is
 \path{scripts/pilot_octree_two_term_refinement.py}; the constant medium with a richer field is
 \path{scripts/pilot_octree_hp_refinement.py}; Table~\ref{tab:blocky} is

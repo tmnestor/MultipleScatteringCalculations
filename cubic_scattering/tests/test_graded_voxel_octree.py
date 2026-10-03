@@ -19,6 +19,7 @@ from cubic_scattering.graded_voxel.octree import (
     TreeBlocks,
     adapt_leaves,
     born_octree,
+    born_series_octree,
     born_wave_factor,
     field_reexpansion,
     leaf_energies,
@@ -335,6 +336,34 @@ def test_born_octree_is_the_weak_contrast_limit_of_the_solver():
         )
     )
     assert np.abs(direct - by_difference).max() < 1e-5 * np.abs(direct).max()
+
+
+def test_born_series_first_term_is_born_octree_and_its_sum_is_the_solve():
+    # a tree of two leaf sizes, linear cells: term 1 is the projected incident wave, and the partial sums
+    # of the series converge to the dense solve (the contrast is weak enough for the series to converge)
+    c2, h2 = uniform_leaves(RADIUS, 2)
+    cm, hm = refine_leaves(c2, h2, np.arange(len(c2)) % 4 == 1)
+    dirs = np.array([[0.6, 0.8, 0.0], [-0.8, 0.0, 0.6], [0.0, 0.0, 1.0]])
+    con = MaterialContrast(0.3 * CON.Dlambda, 0.3 * CON.Dmu, 0.3 * CON.Drho)
+    terms = born_series_octree(OMEGA, REF, con, cm, hm, _profile, KHAT, KHAT, "P", 12, p=1, r=1)
+    born = born_octree(OMEGA, REF, con, cm, hm, _profile, KHAT, KHAT, "P", p=1, r=1)
+    t1 = sum(octree_far_field(terms[0], dirs, 1e9))
+    assert np.abs(t1 - sum(octree_far_field(born, dirs, 1e9))).max() < 1e-12 * np.abs(t1).max()
+    full = sum(
+        octree_far_field(
+            solve_graded_octree(OMEGA, REF, con, cm, hm, _profile, KHAT, KHAT, "P", p=1, r=1), dirs, 1e9
+        )
+    )
+    partial = sum(sum(octree_far_field(t, dirs, 1e9)) for t in terms)
+    sizes = [np.abs(sum(octree_far_field(t, dirs, 1e9))).max() for t in terms]
+    assert sizes[-1] < 1e-9 * sizes[0]  # the series has converged
+    assert np.abs(partial - full).max() < 1e-9 * np.abs(full).max()
+
+
+def test_born_series_needs_one_term():
+    c2, h2 = uniform_leaves(RADIUS, 2)
+    with pytest.raises(ValueError, match="orders >= 1"):
+        born_series_octree(OMEGA, REF, CON, c2, h2, _profile, KHAT, KHAT, "P", 0)
 
 
 @pytest.mark.parametrize("n_source, n_test", [(10, 4), (20, 4)])

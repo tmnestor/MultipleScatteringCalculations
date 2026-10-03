@@ -305,7 +305,21 @@ class OctreeResult:
     r: int
 
 
-def solve_graded_octree(
+@dataclass
+class _OctreeSystem:
+    """The assembled Galerkin system (M - K E) psi = b of a tree, with its per-leaf bookkeeping."""
+
+    a: NDArray  # the dense matrix M - K E
+    rhs: NDArray  # the moments b of the incident state
+    start: NDArray  # first row of each leaf
+    sizes: list  # field_sizes of each leaf
+    delta: list  # contrast coefficients of each leaf
+    gram: list  # Gram matrix of each leaf's field functions (na x na)
+    p_leaf: NDArray
+    r_leaf: NDArray
+
+
+def _assemble_octree(
     omega: float,
     ref: ReferenceMedium,
     contrast: MaterialContrast,
@@ -315,35 +329,11 @@ def solve_graded_octree(
     k_hat: NDArray,
     pol: NDArray,
     wave_type: str,
-    p: int | NDArray = 1,
-    r: int | NDArray = 1,
-    block_cache: dict | None = None,
-) -> OctreeResult:
-    """Solve the Galerkin system on leaves of mixed sizes, densely.
-
-    The field degree and the contrast degree may differ from leaf to leaf: a large leaf in a uniform part
-    of the medium needs no more than a constant contrast, but it needs a richer basis for the wavefield
-    than a small leaf does.
-
-    Args:
-        omega: Angular frequency (rad/s).
-        ref: Background medium.
-        contrast: The contrast that ``profile`` scales.
-        centres: Leaf centres, shape (N, 3) (m).
-        half_widths: Leaf half-widths, shape (N,) (m), in ratios 2^j.
-        profile: Scalar factor of the contrast as a function of position.
-        k_hat: Incident direction.
-        pol: Incident polarisation.
-        wave_type: 'P' or 'S' (the incident speed).
-        p: Field degree (0, 1 or 2): one value, or one per leaf.
-        r: Contrast degree (0, 1 or 2): one value, or one per leaf.
-        block_cache: A dictionary that carries the coupling blocks from one solve to the next (other
-            trees, other contrasts, other incident waves).  The blocks depend on the frequency and the
-            background only, and the dictionary remembers both.
-
-    Raises:
-        ValueError: when block_cache was filled at another frequency or background.
-    """
+    p: int | NDArray,
+    r: int | NDArray,
+    block_cache: dict | None,
+) -> _OctreeSystem:
+    """Assemble the system of ``solve_graded_octree``; arguments and errors as there."""
     centres = np.asarray(centres, dtype=float)
     half_widths = np.asarray(half_widths, dtype=float)
     n = len(centres)
@@ -407,23 +397,133 @@ def solve_graded_octree(
     for i, (c, h, sz) in enumerate(zip(centres, half_widths, sizes, strict=True)):
         mom = plane_wave_moments(c[None, :], float(h), k_mag * k_hat, amp, sz[1])[0, : sz[0]]
         rhs[start[i] : start[i + 1]] = mom.ravel()
-    sol = scipy.linalg.solve(a, rhs, overwrite_a=True, check_finite=False)
+    gram = [gram_test(float(h), sz[1])[: sz[0], : sz[0]] for h, sz in zip(half_widths, sizes, strict=True)]
+    return _OctreeSystem(a, rhs, start, sizes, delta, gram, p_leaf, r_leaf)
+
+
+def _octree_result(
+    system: _OctreeSystem,
+    coeffs: NDArray,
+    centres: NDArray,
+    half_widths: NDArray,
+    omega: float,
+    ref: ReferenceMedium,
+) -> OctreeResult:
+    """Package a vector of leaf coefficients as an OctreeResult."""
     psi = []
-    for i, sz in enumerate(sizes):
+    for i, sz in enumerate(system.sizes):
         full = np.zeros((sz[1], 9), dtype=complex)
-        full[: sz[0]] = sol[start[i] : start[i + 1]].reshape(sz[0], 9)
+        full[: sz[0]] = coeffs[system.start[i] : system.start[i + 1]].reshape(sz[0], 9)
         psi.append(full)
+    delta = system.delta
     same = len({(f.shape, d.shape) for f, d in zip(psi, delta, strict=True)}) == 1
     return OctreeResult(
-        centres,
-        half_widths,
+        np.asarray(centres, dtype=float),
+        np.asarray(half_widths, dtype=float),
         omega,
         ref,
         np.array(delta) if same else delta,
         np.array(psi) if same else psi,
-        int(p_leaf.max()),
-        int(r_leaf.max()),
+        int(system.p_leaf.max()),
+        int(system.r_leaf.max()),
     )
+
+
+def solve_graded_octree(
+    omega: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    centres: NDArray,
+    half_widths: NDArray,
+    profile: Callable[[NDArray], float],
+    k_hat: NDArray,
+    pol: NDArray,
+    wave_type: str,
+    p: int | NDArray = 1,
+    r: int | NDArray = 1,
+    block_cache: dict | None = None,
+) -> OctreeResult:
+    """Solve the Galerkin system on leaves of mixed sizes, densely.
+
+    The field degree and the contrast degree may differ from leaf to leaf: a large leaf in a uniform part
+    of the medium needs no more than a constant contrast, but it needs a richer basis for the wavefield
+    than a small leaf does.
+
+    Args:
+        omega: Angular frequency (rad/s).
+        ref: Background medium.
+        contrast: The contrast that ``profile`` scales.
+        centres: Leaf centres, shape (N, 3) (m).
+        half_widths: Leaf half-widths, shape (N,) (m), in ratios 2^j.
+        profile: Scalar factor of the contrast as a function of position.
+        k_hat: Incident direction.
+        pol: Incident polarisation.
+        wave_type: 'P' or 'S' (the incident speed).
+        p: Field degree (0, 1 or 2): one value, or one per leaf.
+        r: Contrast degree (0, 1 or 2): one value, or one per leaf.
+        block_cache: A dictionary that carries the coupling blocks from one solve to the next (other
+            trees, other contrasts, other incident waves).  The blocks depend on the frequency and the
+            background only, and the dictionary remembers both.
+
+    Raises:
+        ValueError: when block_cache was filled at another frequency or background.
+    """
+    system = _assemble_octree(
+        omega, ref, contrast, centres, half_widths, profile, k_hat, pol, wave_type, p, r, block_cache
+    )
+    sol = scipy.linalg.solve(system.a, system.rhs, overwrite_a=True, check_finite=False)
+    return _octree_result(system, sol, centres, half_widths, omega, ref)
+
+
+def born_series_octree(
+    omega: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    centres: NDArray,
+    half_widths: NDArray,
+    profile: Callable[[NDArray], float],
+    k_hat: NDArray,
+    pol: NDArray,
+    wave_type: str,
+    orders: int,
+    p: int | NDArray = 1,
+    r: int | NDArray = 1,
+    block_cache: dict | None = None,
+) -> list[OctreeResult]:
+    """The scheme's Born series on a tree, term by term, with no solve.
+
+    The system (M - K E) psi = b gives psi = sum_n psi_n with psi_1 = M^-1 b and
+    psi_{n+1} = M^-1 (K E) psi_n, where K E psi = M psi - (M - K E) psi. Term n is the part of the
+    scheme's response of order n in the contrast: its far field (``octree_far_field``) is the scheme's
+    T_n. Each further term costs one product with the assembled matrix. Arguments as
+    ``solve_graded_octree``; ``orders`` is the number of terms returned (psi_1 .. psi_orders).
+
+    Raises:
+        ValueError: when orders < 1, or as ``solve_graded_octree``.
+    """
+    if orders < 1:
+        raise ValueError(
+            f"born_series_octree: orders = {orders}; at least one term is needed.\n"
+            "  Fix: pass orders >= 1 (orders = 2 gives the Born term and the term of second order)."
+        )
+    system = _assemble_octree(
+        omega, ref, contrast, centres, half_widths, profile, k_hat, pol, wave_type, p, r, block_cache
+    )
+
+    def m_apply(vec: NDArray, inverse: bool) -> NDArray:
+        out = np.empty_like(vec)
+        for i, g in enumerate(system.gram):
+            blk = vec[system.start[i] : system.start[i + 1]].reshape(g.shape[0], 9)
+            out[system.start[i] : system.start[i + 1]] = (
+                np.linalg.solve(g, blk) if inverse else g @ blk
+            ).ravel()
+        return out
+
+    terms = [m_apply(system.rhs, inverse=True)]
+    for _ in range(orders - 1):
+        prev = terms[-1]
+        terms.append(m_apply(m_apply(prev, inverse=False) - system.a @ prev, inverse=True))
+    return [_octree_result(system, t, centres, half_widths, omega, ref) for t in terms]
 
 
 def born_octree(
