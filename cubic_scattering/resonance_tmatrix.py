@@ -129,6 +129,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
+import scipy.linalg as sla
 from numpy.typing import NDArray
 
 from .effective_contrasts import (
@@ -755,6 +756,45 @@ def compute_resonance_tmatrix(
     )
 
 
+def _solve_with_condition_estimate(A: NDArray, rhs: NDArray) -> tuple[NDArray, float]:
+    """Solve A x = rhs by one LU factorisation, and estimate kappa_1(A) from the same factors.
+
+    LAPACK's zgecon gives the reciprocal 1-norm condition number from the LU factors and ||A||_1 in
+    O(N^2), against O(N^3) for the factorisation and several times that for the SVD that the exact
+    2-norm value needs. The estimate never exceeds the exact kappa_1.
+
+    ``A`` is overwritten by its factors (it is not needed afterwards, and at n_sub = 12 it is 4 GB).
+
+    Raises:
+        np.linalg.LinAlgError: if A is singular, or LAPACK reports an error.
+    """
+    anorm = float(np.linalg.norm(A, 1))
+    lu, piv, info = sla.lapack.zgetrf(A, overwrite_a=True)
+    if info != 0:
+        raise np.linalg.LinAlgError(
+            f"Foldy-Lax matrix factorisation failed (LAPACK zgetrf info = {info}): "
+            + ("the matrix is singular" if info > 0 else "an illegal argument")
+        )
+    rcond, info = sla.lapack.zgecon(lu, anorm, norm="1")
+    if info != 0:
+        raise np.linalg.LinAlgError(f"condition estimate failed (LAPACK zgecon info = {info})")
+    x = sla.lu_solve((lu, piv), rhs, check_finite=False)
+    return x, (float("inf") if rcond == 0.0 else 1.0 / float(rcond))
+
+
+def _times_block_diagonal(P: NDArray, T_loc: NDArray) -> NDArray:
+    """P @ (I_N (x) T_loc) for P of shape (9N, 9N), without forming the Kronecker product.
+
+    Column block n of the product is P[:, 9n:9n+9] @ T_loc. The dense form multiplies by the N^2 - N zero
+    blocks as well, an O(N^3) product as costly as the factorisation that follows; this is O(N^2) work,
+    and needs no 9N x 9N Kronecker matrix (4 GB at 1728 cells). Equal to the dense product to round-off.
+    """
+    rows = P.shape[0]
+    n_blocks = P.shape[1] // T_loc.shape[0]
+    out = np.matmul(P.reshape(rows, n_blocks, T_loc.shape[0]), T_loc)
+    return out.reshape(rows, n_blocks * T_loc.shape[1])
+
+
 def _solve_coupled(
     omega: float,
     a: float,
@@ -780,19 +820,9 @@ def _solve_coupled(
     # --- 9N×9N propagator (off-diagonal only) ---
     P_tilde = _pair_propagator_matrix(centres, 2.0 * a_sub, lambda R: _propagator_blocks_9x9(R, omega, ref))
 
-    # --- Block-diagonal T̃ = I_N ⊗ T_loc ---
-    T_block = np.kron(np.eye(N, dtype=complex), T_loc)  # (9N, 9N)
-
-    # --- Foldy-Lax matrix A = I − P̃·T̃ ---
-    A = np.eye(9 * N, dtype=complex) - P_tilde @ T_block
-    cond_num = float(np.linalg.cond(A))
-    if cond_num > 1.0e10:
-        warnings.warn(
-            f"Coupled Foldy-Lax condition number = {cond_num:.2e}. "
-            "Near-resonance or strong-coupling instability.",
-            UserWarning,
-            stacklevel=2,
-        )
+    # --- Foldy-Lax matrix A = I − P̃·T̃, with T̃ = I_N ⊗ T_loc applied block by block ---
+    B_mat = _times_block_diagonal(P_tilde, T_loc)
+    A = np.eye(9 * N, dtype=complex) - B_mat
 
     # --- 9N×18 incident fields: the Taylor patterns of T_comp, the plane-wave basis of the far field ---
     rhs = np.hstack(
@@ -802,12 +832,23 @@ def _solve_coupled(
         ]
     )
 
-    # --- Solve for exciting field ---
+    # --- Solve for the exciting field; the 1-norm condition estimate comes from the same factors ---
     n_iters_converged: int | None = None
     if neumann_order == 0:
-        sol = np.linalg.solve(A, rhs)
+        del B_mat  # only the Neumann series needs it; at 1728 cells it is 4 GB
+        sol, cond_num = _solve_with_condition_estimate(A, rhs)
     else:
-        B_mat = P_tilde @ T_block
+        # The Neumann path does not factorise A to solve; it is factorised here only for the estimate.
+        _, cond_num = _solve_with_condition_estimate(A, rhs[:, :1])
+    if cond_num > 1.0e10:
+        warnings.warn(
+            f"Coupled Foldy-Lax condition number = {cond_num:.2e}. "
+            "Near-resonance or strong-coupling instability.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    if neumann_order != 0:
         sol = rhs.copy()
         term = rhs.copy()
         for k in range(1, neumann_order + 1):
