@@ -97,6 +97,17 @@ voxel: at second order in the contrast it is the \emph{relative projection error
 fraction of the squared norm of its profile that polynomials of degree $\min(p,r)$ on the cells cannot
 represent. \citet{NestorContinuum2026} builds those voxels in three dimensions, in its appendix on the three-dimensional voxel solver.
 
+\paragraph{Which cells.} The first paper also derives the single site of a cube from a hierarchy in the
+gradients of the field, whose coefficients are moments of the Green's tensor in closed form, and builds
+it into a voxel scheme collocated at the centres of the cells. The cells of this paper are the other
+kind, the Legendre voxels of that paper's appendix, which are Galerkin: each holds the $L^2$ projection
+of the field and of the contrast onto its own polynomials. Two of the results below rest on that. The
+term of first order needs no solve because a Galerkin cell holds the projection of the incident wave
+(\S\ref{sec:born}); and the second term is governed by the projection error of the medium because the
+cells hold its $L^2$ projection (\S\S\ref{sec:rest}--\ref{sec:higher}). Cells of the hierarchy hold
+Taylor coefficients matched at their centres instead, and on a tree they would need a first-order term
+and an error law of their own, which are not derived here.
+
 \paragraph{The question.} Those results are for uniform grids. A real medium is not uniform in its
 difficulty: its variation is concentrated at interfaces, inclusions and thin zones, and a uniform grid
 fine enough for those is far finer than the rest of the medium needs. The natural cells are then the
