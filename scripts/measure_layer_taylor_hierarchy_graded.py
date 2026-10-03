@@ -162,7 +162,8 @@ def main() -> int:
                 ]
             )
             orders = np.log2(errs[:-1] / errs[1:])
-            good = bool(np.all(np.abs(orders[-2] - want[q]) < 0.6))
+            # the finest pair (16 -> 32 cells), the orders the paper quotes
+            good = bool(np.all(np.abs(orders[-1] - want[q]) < 0.6))
             ok = ok and good
             print(
                 f"  q = {q}:  "

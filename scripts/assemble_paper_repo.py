@@ -59,6 +59,27 @@ SCRIPTS = [
     "continuum_limit_cubet.py",
     "continuum_limit_chain.py",
     "plot_convergence_orders.py",
+    # the layer: the two bases, the stratified background, oblique incidence (sections 8 and 9)
+    "measure_layer_bases.py",
+    "measure_layer_stratified_background.py",
+    "measure_oblique_degree.py",
+    "measure_oblique_stratified_background.py",
+    "measure_oblique_two_term.py",
+    # the moment hierarchy: the layer, one ball, one cube, the lattice, the graded sphere (6 and 11)
+    "crosscheck_cube_moments_ball_shell.py",
+    "measure_layer_taylor_hierarchy.py",
+    "measure_layer_taylor_hierarchy_graded.py",
+    "measure_ball_gradient_hierarchy.py",
+    "measure_cube_gradient_hierarchy.py",
+    "gradient_voxel_lattice.py",
+    "measure_lattice_gradient_hierarchy.py",
+    "measure_graded_sphere_gradient_hierarchy.py",
+    "measure_graded_sphere_gradient_hierarchy_fft.py",
+    "measure_hierarchy_table_cost.py",
+    # the graded sphere: near field, the impedance march, the voxels on its planes (appendix on the sphere)
+    "measure_graded_sphere_near_field.py",
+    "measure_graded_sphere_march.py",
+    "measure_graded_sphere_planes.py",
     # three-dimensional voxels (the paper's appendix on the voxel solver)
     "measure_graded_voxel_site.py",
     "check_graded_voxel_subdivision.py",
@@ -104,6 +125,15 @@ NOTEBOOKS = [
     "CubeT6Masters.wl",  # loaded by the cube notebooks
     "GradedVoxel_WeakKernel.wl",
     "GradedVoxel_LayerReduction.wl",
+    "ContinuumLimit_BornTerms.wl",
+    "ContinuumLimit_LayerDefect.wl",
+    "ContinuumLimit_GradientHierarchy.wl",
+    "CubeMomentHigherGrades.wl",
+    "CubeMomentCanonical.wl",
+    "CubeMomentStore.wl",  # the closed-form store the higher-grade notebooks read and extend
+    "CubeScalarMoments.m",  # the store itself
+    "CubeScalarMomentsCanonical.m",  # written by CubeMomentCanonical.wl
+    "cube_higher_moments.json",  # the store at 30 digits, read by the Python cross-check
 ]
 
 NOTEBOOK_OUTPUTS_GLOB = ["ContinuumLimit_*.json", "GradedVoxel_*.jsonl"]
