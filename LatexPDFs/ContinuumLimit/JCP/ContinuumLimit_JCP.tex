@@ -595,24 +595,39 @@ uniform-strain closure as one truncation of an exact hierarchy.
 
 Let the voxel be $V=[-h,h]^3$ with contrast
 $\delta c_{ijkl}=\Delta\lambda\,\delta_{ij}\delta_{kl}+\Delta\mu(\delta_{ik}\delta_{jl}+\delta_{il}\delta_{jk})$
-and $\Delta\rho$. Expand the internal displacement about the centre to second degree and project
-the Lippmann--Schwinger equation onto $1$, $x_p$ and $x_px_q$. The unknowns are $u_i(0)$,
-$\partial_pu_i(0)$ and $\partial_p\partial_qu_i(0)$, and the result is the closed system
+and $\Delta\rho$. The hierarchy is stated below for any degree; its third degree is written out
+first, being the lowest at which the stiffness channel converges at fourth order (\S\ref{sec:blocks}).
+Expand the internal displacement about the centre to third degree and project the
+Lippmann--Schwinger equation onto $1$, $x_p$, $x_px_q$ and $x_px_qx_v$. The unknowns are $u_i(0)$,
+$\partial_pu_i(0)$, $\partial_p\partial_qu_i(0)$ and $\partial_p\partial_q\partial_vu_i(0)$, and the
+result is the closed system
 \begin{align}
 \bigl(\delta_{ij}-\omega^2\Delta\rho\,\mathsf G_{ij}\bigr)u_j
   +\bigl(\mathsf N^{r}_{in,k}\,\delta c_{nksj}-\tfrac12\omega^2\Delta\rho\,\mathsf K^{rs}_{ij}\bigr)
   \partial_r\partial_su_j
   &= u^0_i, \label{eq:A11}\\
 \bigl(\delta_{pr}\delta_{ij}+\omega^2\Delta\rho\,\mathsf N^{r}_{ij,p}
-  -\mathsf M_{in,pk}\,\delta c_{nkrj}\bigr)\partial_ru_j
+  -\mathsf M_{in,pk}\,\delta c_{nkrj}\bigr)\partial_ru_j\qquad\qquad\qquad& \notag\\
+  +\bigl(\tfrac16\omega^2\Delta\rho\,\mathsf B^{rst}_{ij,p}
+  -\tfrac12\mathsf P^{st}_{in,pk}\,\delta c_{nkrj}\bigr)\partial_r\partial_s\partial_tu_j
   &= \partial_pu^0_i, \label{eq:A22}\\
 -\omega^2\Delta\rho\,\mathsf M_{ij,pq}\,u_j
   +\bigl(\delta_{qr}\delta_{ps}\delta_{ij}+\mathsf Q^{r}_{in,pqk}\,\delta c_{nksj}
   -\tfrac12\omega^2\Delta\rho\,\mathsf P^{rs}_{ij,pq}\bigr)\partial_r\partial_su_j
-  &= \partial_p\partial_qu^0_i, \label{eq:A33}
+  &= \partial_p\partial_qu^0_i, \label{eq:A33}\\
+\bigl(\omega^2\Delta\rho\,\mathsf Q^{r}_{ij,pqv}-\mathsf X_{in,pqvk}\,\delta c_{nkrj}\bigr)\partial_ru_j
+  \qquad\qquad\qquad\qquad& \notag\\
+  +\bigl(\delta_{pr}\delta_{qs}\delta_{vt}\delta_{ij}+\tfrac16\omega^2\Delta\rho\,\mathsf J^{rst}_{ij,pqv}
+  -\tfrac12\mathsf Z^{st}_{in,pqvk}\,\delta c_{nkrj}\bigr)\partial_r\partial_s\partial_tu_j
+  &= \partial_p\partial_q\partial_vu^0_i, \label{eq:A44}
 \end{align}
-all fields evaluated at the centre. Its coefficients are six moments of the background Green's
-tensor $\bG$ over the voxel,
+all fields evaluated at the centre. Dropping the third gradients, that is Eq.~\eqref{eq:A44} and the
+second line of Eq.~\eqref{eq:A22}, leaves the system of second degree; dropping the second gradients
+as well, that is Eq.~\eqref{eq:A33} and the $\partial\partial u$ terms of Eq.~\eqref{eq:A11}, leaves
+the uniform-strain closure. Equations \eqref{eq:A11} and \eqref{eq:A33} are the same at second and
+third degree, because every term the third degree would add to them vanishes by parity
+(\S\ref{sec:parity}). The coefficients are ten moments of the background Green's tensor $\bG$ over
+the voxel
 \begin{equation}\label{eq:moments}
 \begin{aligned}
 \mathsf G_{ij}&=\int_V G_{ij}\,\dd V, &
@@ -620,16 +635,22 @@ tensor $\bG$ over the voxel,
 \mathsf N^{r}_{in,k}&=\int_V \partial'_kG_{in}\,x_r\,\dd V,\\
 \mathsf M_{in,pk}&=\int_V \partial'_p\partial'_kG_{in}\,\dd V, &
 \mathsf P^{rs}_{ij,pq}&=\int_V \partial'_q\partial'_pG_{ij}\,x_rx_s\,\dd V, &
-\mathsf Q^{r}_{in,pqk}&=\int_V \partial'_q\partial'_p\partial'_kG_{in}\,x_r\,\dd V,
+\mathsf Q^{r}_{in,pqk}&=\int_V \partial'_q\partial'_p\partial'_kG_{in}\,x_r\,\dd V,\\
+\mathsf B^{rst}_{ij,p}&=\int_V \partial'_pG_{ij}\,x_rx_sx_t\,\dd V, &
+\mathsf J^{rst}_{ij,pqv}&=\int_V \partial'_v\partial'_q\partial'_pG_{ij}\,x_rx_sx_t\,\dd V, &
+\mathsf X_{in,pqvk}&=\int_V \partial'_v\partial'_q\partial'_p\partial'_kG_{in}\,\dd V,\\
+\mathsf Z^{rs}_{in,pqvk}&=\int_V \partial'_v\partial'_q\partial'_p\partial'_kG_{in}\,x_rx_s\,\dd V,
 \end{aligned}
 \end{equation}
-with derivatives taken with respect to the source point, $\partial'=-\partial$. That sign reaches
-$\mathsf N$ and $\mathsf Q$ only, and no symmetry, parity or scaling check can detect it, so it is
-fixed by convention. The moments are graded by $(D,W)$, the number of derivatives and the degree of
-the weight: $\mathsf G\,(0,0)$, $\mathsf K\,(0,2)$, $\mathsf N\,(1,1)$, $\mathsf M\,(2,0)$,
-$\mathsf P\,(2,2)$, $\mathsf Q\,(3,1)$.
+the first six being those of the second degree and the last four those the third gradients add. The
+derivatives are taken with respect to the source point, $\partial'=-\partial$. That sign reaches
+the moments with an odd number of derivatives, $\mathsf N$, $\mathsf Q$, $\mathsf B$ and $\mathsf J$,
+and no symmetry, parity or scaling check can detect it, so it is fixed by convention. The moments are
+graded by $(D,W)$, the number of derivatives and the degree of the weight: $\mathsf G\,(0,0)$,
+$\mathsf K\,(0,2)$, $\mathsf N\,(1,1)$, $\mathsf M\,(2,0)$, $\mathsf P\,(2,2)$, $\mathsf Q\,(3,1)$,
+and $\mathsf B\,(1,3)$, $\mathsf J\,(3,3)$, $\mathsf X\,(4,0)$, $\mathsf Z\,(4,2)$.
 
-\paragraph{The hierarchy at any degree} Nothing in the construction is special to the second degree.
+\paragraph{The hierarchy at any degree} Nothing in the construction is special to the third degree.
 Let the internal displacement be expanded to degree $\ell$,
 \begin{equation}\label{eq:taylorfield}
   u_j(\mathbf x)=\sum_{|W|\le\ell}\frac{x_W}{|W|!}\,U_{j;W},\qquad
@@ -641,8 +662,11 @@ Write the moments with any number of derivatives and any weight as
   \mathsf g_{in}[D;W]=\bigl\langle\partial_DG_{in},\ x_W\,\mathbf 1_V\bigr\rangle ,
 \end{equation}
 the derivatives being those of $G_{in}$ as a function of its argument and the pairing distributional
-(\S\ref{sec:distributions}); the six moments of Eq.~\eqref{eq:moments} are those with $|D|+|W|\le4$,
-up to the sign $(-1)^{|D|}$ of the source-derivative convention. Imposing the Lippmann--Schwinger
+(\S\ref{sec:distributions}). The ten moments of Eq.~\eqref{eq:moments} are these $\mathsf g$
+themselves: they are the integrals of $\partial'_D G_{in}(\mathbf 0-\mathbf x)$, and the factor
+$(-1)^{|D|}$ of the source derivative cancels the parity $(-1)^{|D|}$ of $\partial_DG_{in}$, so that,
+for example, $\mathsf N^r_{in,k}=\mathsf g_{in}[k;r]$ and $\mathsf Z^{rs}_{in,pqvk}=\mathsf
+g_{in}[pqvk;rs]$. Beyond the third degree the moments are written as $\mathsf g$ only. Imposing the Lippmann--Schwinger
 equation and its derivatives to order $\ell$ at the centre gives, for every set of derivative indices
 $P$ with $|P|\le\ell$,
 \begin{equation}\label{eq:hierarchy}
@@ -650,8 +674,9 @@ $P$ with $|P|\le\ell$,
   +(-1)^{|P|}\sum_{|W|\le\ell-1}\frac{\mathsf g_{in}[Pk;W]}{|W|!}\,\delta c_{nkrj}\,U_{j;rW}
   =\partial_Pu^0_i(0).
 \end{equation}
-Equations \eqref{eq:A11}--\eqref{eq:A33} are the case $\ell=2$, and the uniform-strain closure is
-$\ell=1$. The cube is centrosymmetric, so a moment vanishes unless $|D|+|W|$ is even, and the system
+Equations \eqref{eq:A11}--\eqref{eq:A44} are the case $\ell=3$, with the moments of
+Eq.~\eqref{eq:moments} put for the $\mathsf g$; their truncations above are $\ell=2$ and the
+uniform-strain closure $\ell=1$. The cube is centrosymmetric, so a moment vanishes unless $|D|+|W|$ is even, and the system
 needs the grades
 \begin{equation}\label{eq:grades}
 \begin{aligned}
@@ -672,13 +697,28 @@ $W$, that the hierarchy of degree $\ell$ needs beyond those of degree $\ell-1$.}
 $\ell$ & new grades & moments in all \\
 \midrule
 $1$ & $(0,0)$, $(1,1)$, $(2,0)$ & $3$ \\
-$2$ & $(0,2)$, $(2,2)$, $(3,1)$ & $6$: the set of Eq.~\eqref{eq:moments} \\
-$3$ & $(1,3)$, $(3,3)$, $(4,0)$, $(4,2)$ & $10$ \\
+$2$ & $(0,2)$, $(2,2)$, $(3,1)$ & $6$: $\mathsf G$, $\mathsf K$, $\mathsf N$, $\mathsf M$, $\mathsf P$, $\mathsf Q$ \\
+$3$ & $(1,3)$, $(3,3)$, $(4,0)$, $(4,2)$ & $10$: with $\mathsf B$, $\mathsf J$, $\mathsf X$, $\mathsf Z$ \\
 $4$ & $(0,4)$, $(2,4)$, $(4,4)$, $(5,1)$, $(5,3)$ & $15$ \\
 $5$ & $(1,5)$, $(3,5)$, $(5,5)$, $(6,0)$, $(6,2)$, $(6,4)$ & $21$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\paragraph{Two independent systems} In either sum of Eq.~\eqref{eq:hierarchy} the unknown
+$U_{i;P}$ is coupled to $U_{j;W}$, or to $U_{j;rW}$, through a moment of grade $(|P|,|W|)$ or
+$(|P|+1,|W|)$, and on a centrosymmetric body that moment vanishes unless $|P|$ and the degree of the
+unknown it multiplies have the same parity. The hierarchy of any degree therefore separates exactly,
+at every frequency and contrast, into two systems: one for the even gradients $u$,
+$\partial\partial u,\dots$ and one for the odd gradients $\partial u$, $\partial\partial\partial
+u,\dots$. Raising the degree from odd to even adds a block to the even system alone, and from even to
+odd a block to the odd system alone. At $\ell=3$ the even system is Eqs.~\eqref{eq:A11} and
+\eqref{eq:A33}, unchanged from $\ell=2$, and the odd system is Eqs.~\eqref{eq:A22} and \eqref{eq:A44}.
+Of the sixty unknowns, twenty-one belong to the even system and thirty-nine to the odd. The leading radiation of a density contrast,
+$\int_V\Delta\rho\,u\,\dd V$, is drawn from the even system, and that of a stiffness contrast,
+$\int_V\delta c:\nabla u\,\dd V$, from the odd one. The separation is thus the structure behind the
+result of \S\ref{sec:blocks}, that the blocks improve the density and the stiffness channels
+alternately.
 
 \subsection{The moments as distributions}\label{sec:distributions}
 
@@ -765,8 +805,10 @@ Eq.~\eqref{eq:gates} by itself to $5\times10^{-10}$ or better up to eight deriva
 
 The cube is centrosymmetric. A moment that couples a field quantity of degree $a$ to one of degree
 $b$ therefore vanishes unless $a+b$ is even. $u$, $\partial u$ and $\partial\partial u$ have
-degrees $0$, $1$ and $2$, so Eq.~\eqref{eq:A22} contains the first gradient alone: $\partial u$
-is determined by its own block and couples to neither $u$ nor $\partial\partial u$. The leading
+degrees $0$, $1$ and $2$, so at second degree Eq.~\eqref{eq:A22} contains the first gradient alone:
+$\partial u$ is determined by its own block and couples to neither $u$ nor $\partial\partial u$. At
+any degree it couples to nothing of even degree; from $\ell=3$ it couples to $\partial\partial\partial u$
+(the second line of Eq.~\eqref{eq:A22}). The leading
 scattering by a stiffness contrast is the stress dipole $\int_V\delta c:\nabla u\,\dd V$, which needs
 only $\partial u$. The leading far field of the stiffness contrast is therefore fixed by
 Eq.~\eqref{eq:A22}, and \emph{no treatment of the second-gradient block \eqref{eq:A33} can change
@@ -776,7 +818,7 @@ across the voxel), of the collocation error of \S\ref{sec:convergence}, which th
 voxel of \S\ref{sec:fourth} removes, as does the hierarchy itself once its third-gradient block is kept
 (\S\ref{sec:blocks}).
 
-With $\Delta\rho=0$, Eq.~\eqref{eq:A22} is the $9\times9$ operator
+With $\Delta\rho=0$, Eq.~\eqref{eq:A22} at second degree is the $9\times9$ operator
 $\delta_{pr}\delta_{ij}-\mathsf M_{in,pk}\,\delta c_{nkrj}$, built from $\mathsf M$ alone. Under
 $O_h$ the nine gradient components decompose as $A_{1g}\oplus E_g\oplus T_{1g}\oplus T_{2g}$, and
 the operator is diagonal in that basis. Its eigenvalues are the inverse strain concentrations:
@@ -819,7 +861,7 @@ by hand. What corresponds to Eshelby is the \emph{truncation}. Keeping $\partial
 $\partial\partial u$ is exactly the uniform-internal-strain ansatz, and by the uniformity theorem
 that ansatz is exact if and only if the inclusion is an ellipsoid. For a sphere the construction
 is therefore exact in the static limit, and for a cube it is an approximation. The hierarchy
-\eqref{eq:A11}--\eqref{eq:A33} states that approximation as the omitted blocks, rather than as an
+\eqref{eq:hierarchy} states that approximation as the omitted blocks, rather than as an
 unquantified shape correction. A polynomial expansion about the centre cannot represent the edge
 and corner concentrations of an isolated cube's internal field at any finite degree;
 Table~\ref{tab:hiercube} measures what each degree leaves. A voxel in a
@@ -906,7 +948,7 @@ error, both, $n=16$ & $5.4\times10^{-6}$ & $1.4\times10^{-6}$ & $5.8\times10^{-1
 gradients raise the density channel to fourth order and leave the stiffness channel at second, with a
 constant three to four times smaller in reflection; the third gradients bring the stiffness channel to fourth
 order; and so on in pairs. With both contrasts, fourth order therefore needs $\ell=3$ and sixth order
-$\ell=5$. The truncation of Eqs.~\eqref{eq:A11}--\eqref{eq:A33} at second gradients is one block short
+$\ell=5$. The truncation of Eqs.~\eqref{eq:A11}--\eqref{eq:A44} at second gradients is one block short
 of the next order for a stiffness contrast, which is why it improves the uniform-strain closure by a
 constant and not by an order.
 
