@@ -639,10 +639,12 @@ and those of the higher terms are measured.
 indicator is the nonlinear fraction $\nu$ times the leaf's share of the projection error,
 $\nu\int_\ell(f-\Pi_rf)^2\,\dd V/\int f^2\,\dd V$. The \emph{wave} indicator is the leaf's own
 first-order error (\S\ref{sec:born}) relative to the peak of the Born far field. A leaf is split into
-its eight children while the sum of the two exceeds a tolerance. In the experiments below the nonlinear
-fraction is estimated from one solve on a coarse tree that resolves the medium, as
-$\lvert u-T_1\rvert/\lvert u\rvert$ of that tree; Eq.~\eqref{eq:nuest} now gives it without the solve
-and more accurately (\S\ref{sec:nu}). The predicted error of a tree is the first-order error of the whole tree, summed over the leaves
+its eight children while the sum of the two exceeds a tolerance. The nonlinear fraction is estimated on a
+coarse tree that resolves the medium by Eq.~\eqref{eq:nuest}, from two products with its matrix and no
+solve (\S\ref{sec:nu}). The experiments below were first run with the earlier estimate, from one solve on
+that tree; the trees and their errors are the same with either, since $\nu$ enters the rule only through
+the medium indicator and the two estimates differ by up to a fifth, and only the predicted errors
+change. The predicted error of a tree is the first-order error of the whole tree, summed over the leaves
 as complex amplitudes, plus $\nu\,\cE_r$. It uses no reference solution.
 
 \paragraph{A localised feature.} The test body is a sphere of radius $a$ whose contrast is a weak
@@ -654,30 +656,31 @@ its share of the projection error exceeds a tolerance.
 \begin{table}[htbp]
 \centering
 \caption{The localised feature: leaves, the error predicted without a reference, and the error against
-the exact solution. The nonlinear fraction estimated from a coarse tree is $0.0051$ (constant cells)
-and $0.0059$ (linear cells); the exact value is $0.0059$.}\label{tab:refine}
+the exact solution. The nonlinear fraction estimated on a coarse tree by Eq.~\eqref{eq:nuest} is
+$0.0059$ for constant and for linear cells, the exact value; the earlier estimate from a solve was
+$0.0051$ for constant cells.}\label{tab:refine}
 \small
 \begin{tabular}{@{}llrcc@{}}
 \toprule
 cells & grid & leaves & predicted & error \\
 \midrule
-constant & uniform & $408$ & $1.11\times10^{-2}$ & $7.15\times10^{-3}$ \\
- & uniform & $1256$ & $4.36\times10^{-3}$ & $2.92\times10^{-3}$ \\
- & medium alone & $344$ & $1.60\times10^{-2}$ & $1.55\times10^{-2}$ \\
+constant & uniform & $408$ & $1.15\times10^{-2}$ & $7.15\times10^{-3}$ \\
+ & uniform & $1256$ & $4.50\times10^{-3}$ & $2.92\times10^{-3}$ \\
+ & medium alone & $344$ & $1.61\times10^{-2}$ & $1.55\times10^{-2}$ \\
  & medium alone & $512$ & $1.57\times10^{-2}$ & $1.53\times10^{-2}$ \\
- & medium alone & $736$ & $5.92\times10^{-3}$ & $5.49\times10^{-3}$ \\
- & two terms & $260$ & $8.18\times10^{-3}$ & $7.18\times10^{-3}$ \\
- & two terms & $372$ & $6.82\times10^{-3}$ & $5.38\times10^{-3}$ \\
- & two terms & $752$ & $4.48\times10^{-3}$ & $3.78\times10^{-3}$ \\
- & two terms & $1780$ & $2.18\times10^{-3}$ & $1.75\times10^{-3}$ \\
+ & medium alone & $736$ & $5.96\times10^{-3}$ & $5.49\times10^{-3}$ \\
+ & two terms & $260$ & $8.31\times10^{-3}$ & $7.18\times10^{-3}$ \\
+ & two terms & $372$ & $6.93\times10^{-3}$ & $5.38\times10^{-3}$ \\
+ & two terms & $752$ & $4.53\times10^{-3}$ & $3.78\times10^{-3}$ \\
+ & two terms & $1780$ & $2.22\times10^{-3}$ & $1.75\times10^{-3}$ \\
 \midrule
-linear & uniform & $184$ & $2.83\times10^{-3}$ & $2.73\times10^{-3}$ \\
- & uniform & $408$ & $8.27\times10^{-4}$ & $6.77\times10^{-4}$ \\
- & medium alone & $176$ & $2.43\times10^{-4}$ & $2.47\times10^{-4}$ \\
+linear & uniform & $184$ & $2.86\times10^{-3}$ & $2.73\times10^{-3}$ \\
+ & uniform & $408$ & $8.36\times10^{-4}$ & $6.77\times10^{-4}$ \\
+ & medium alone & $176$ & $2.44\times10^{-4}$ & $2.47\times10^{-4}$ \\
  & medium alone & $344$ & $1.95\times10^{-4}$ & $1.96\times10^{-4}$ \\
- & two terms & $260$ & $1.72\times10^{-4}$ & $1.68\times10^{-4}$ \\
- & two terms & $336$ & $1.56\times10^{-4}$ & $1.66\times10^{-4}$ \\
- & two terms & $452$ & $1.08\times10^{-4}$ & $1.14\times10^{-4}$ \\
+ & two terms & $260$ & $1.73\times10^{-4}$ & $1.68\times10^{-4}$ \\
+ & two terms & $336$ & $1.57\times10^{-4}$ & $1.66\times10^{-4}$ \\
+ & two terms & $452$ & $1.09\times10^{-4}$ & $1.14\times10^{-4}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -699,8 +702,8 @@ coarse, and the tree then follows the medium. The two-term rule improves on the 
 $15\%$ at about $340$ leaves.
 
 \paragraph{The prediction.} The predicted error is above the true error on all eleven grids of constant
-cells computed for this body (nine of them in Table~\ref{tab:refine}), by $3\%$ to $55\%$. For linear
-cells the ratio of predicted to true is $0.94$ to $1.22$ on nine grids: close, but not a bound.
+cells computed for this body (nine of them in Table~\ref{tab:refine}), by $3\%$ to $61\%$. For linear
+cells the ratio of predicted to true is $0.95$ to $1.23$ on nine grids: close, but not a bound.
 
 \section{Which basis for the medium}\label{sec:which}
 
@@ -777,7 +780,7 @@ body with an isotropic spectrum.
 \item \emph{Established against exact solutions, by one implementation.} The nonlinear fraction from
 two products with the matrix of a coarse tree, Eq.~\eqref{eq:nuest}: within $1.4\%$ on three bodies,
 for constant and linear cells (Table~\ref{tab:nu}). The refinement experiments of \S\ref{sec:refine}
-were run with the earlier estimate from a coarse solve and have not been repeated with it.
+use it; with the earlier estimate their trees and errors are the same.
 \item \emph{Derived in the layer; measured twice in three dimensions.} The terms of third and higher
 order (\S\ref{sec:higher}): in the layer each term's error and the whole series in closed form, the
 latter the cell-by-cell Galerkin solution of the local problem; in three dimensions the third term's
@@ -785,7 +788,7 @@ factor for constant cells in closed form, Eq.~\eqref{eq:F3}, verified symbolical
 scheme and a direct evaluation, and for linear cells, Eq.~\eqref{eq:F3lin}, likewise. The factors of the
 fourth and higher terms are not derived.
 \item \emph{Not a bound.} The predicted error exceeded the true error for constant cells in every case,
-but fell $6\%$ below it for linear cells.
+but fell $5\%$ below it for linear cells.
 \item \emph{Size.} The solver is dense and stops near $20\,000$ unknowns: about $2200$ constant leaves
 or $550$ linear ones. The saving in cells is therefore shown on small bodies. An equal-cell block costs
 about $50$\,ms, and a tree of $344$ leaves of four sizes is assembled and solved in about three

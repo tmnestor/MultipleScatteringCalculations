@@ -12,8 +12,11 @@ Its exact solution is the radial reference of ``measure_graded_voxel_resolution`
 
 THE RULE.  Before any solve each leaf has two indicators (``measure_octree_two_term.py``):
   medium   nu x (the leaf's projection error) / (the profile's total energy), with nu the nonlinear
-           fraction of the response, estimated from one solve on a coarse tree that resolves the medium
-           (the medium-only rule at a loose tolerance);
+           fraction of the response, estimated on a coarse tree that resolves the medium (the
+           medium-only rule at a loose tolerance): by default from the scheme's Born series there,
+           nu = max|(T2 + T3)/(1 - E)| / max|T1 + (T2 + T3)/(1 - E)| with E the coarse tree's
+           projection error (two products with the matrix, no solve; the octree paper, section 3.5),
+           or with --nu=solve from one solve on it, max|u - T1| / max|u| (the earlier estimate);
   wave     the leaf's first-order error: the far field of its projected incident wave
            (``octree.born_octree``) against that of its eight children with quadratic cells,
            over the peak of the Born far field.
@@ -26,7 +29,7 @@ cells, the predicted error and the true error against the exact solution.
 Run small first:
     conda run -n seismic python -u scripts/pilot_octree_two_term_refinement.py 1.0 0 --dry
     ... <k_S a> <p> [--dry] [--uniform=4,6,8] [--tol=3e-4,1e-4] [--mtol=1e-3,3e-4] [--hmin=0.625]
-        [--summary=path] [--core=0.2] [--width=0.5]
+        [--summary=path] [--core=0.2] [--width=0.5] [--nu=series|solve]
 --core and --width set the feature: the contrast falls from 1 to the halo between core x a and width x a.
 """
 
@@ -44,6 +47,7 @@ from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     _descendants,
     adapt_leaves,
     born_octree,
+    born_series_octree,
     leaf_energies,
     octree_far_field,
     refine_leaves,
@@ -147,6 +151,9 @@ def main() -> int:
     tols = [float(v) for v in opts.get("tol", "3e-4,1e-4").split(",") if v]
     mtols = [float(v) for v in opts.get("mtol", "1e-3,3e-4").split(",") if v]
     h_min = float(opts.get("hmin", RADIUS / 16))
+    nu_method = opts.get("nu", "series")
+    if nu_method not in ("series", "solve"):
+        raise SystemExit(f"--nu={nu_method}: use --nu=series (the Born series, no solve) or --nu=solve")
     body = Body(ka, p)
     t0 = time.perf_counter()
     print(
@@ -155,15 +162,28 @@ def main() -> int:
         flush=True,
     )
     cache: dict = {}  # coupling blocks, shared by every solve at this frequency
-    # the nonlinear fraction, from one solve on a coarse tree that resolves the medium: no reference
+    # the nonlinear fraction on a coarse tree that resolves the medium: no reference solution
     c2, h2 = adapt_leaves(prof_vec, *uniform_leaves(RADIUS, 2), p, 1e-2, h_min)
     coarse = solve_graded_octree(
         body.omega, REF, CONTRAST, c2, h2, prof, K_HAT, K_HAT, "P", p=p, r=p, block_cache=cache
     )
     u2 = sum(octree_far_field(coarse, body.pts / body.rf, body.rf))
     b2 = body.far(c2, h2, p)
-    nu = float(np.abs(u2 - b2).max() / np.abs(u2).max())
-    print(f"   nonlinear fraction from a coarse tree ({len(h2)} leaves): nu = {nu:.4f}", flush=True)
+    nu_solve = float(np.abs(u2 - b2).max() / np.abs(u2).max())
+    defect2, _, norm2 = leaf_energies(prof_vec, c2, h2, p)
+    e2 = float(defect2.sum() / norm2.sum())
+    series = born_series_octree(
+        body.omega, REF, CONTRAST, c2, h2, prof, K_HAT, K_HAT, "P", 3, p=p, r=p, block_cache=cache
+    )
+    t1, t2, t3 = (sum(octree_far_field(t, body.pts / body.rf, body.rf)) for t in series)
+    nl = (t2 + t3) / (1.0 - e2)
+    nu_series = float(np.abs(nl).max() / np.abs(t1 + nl).max())
+    nu = nu_series if nu_method == "series" else nu_solve
+    print(
+        f"   nonlinear fraction on a coarse tree ({len(h2)} leaves, E = {e2:.3e}): from the Born series "
+        f"{nu_series:.4f}, from a solve {nu_solve:.4f}; used ({nu_method}) nu = {nu:.4f}",
+        flush=True,
+    )
     exact = peak = None
     if not dry:
         exact = mres.exact_field(SHAPE, CORE, body.omega, 1.0, body.pts)
@@ -215,7 +235,18 @@ def main() -> int:
     if "summary" in opts:
         path = Path(opts["summary"])
         path.parent.mkdir(parents=True, exist_ok=True)
-        out = {"ka_s": ka, "p": p, "nu": nu, "core": CORE, "width": WIDTH, "halo": HALO, "rows": rows}
+        out = {
+            "ka_s": ka,
+            "p": p,
+            "nu": nu,
+            "nu_method": nu_method,
+            "nu_series": nu_series,
+            "nu_solve": nu_solve,
+            "core": CORE,
+            "width": WIDTH,
+            "halo": HALO,
+            "rows": rows,
+        }
         path.write_text(json.dumps(out, indent=2) + "\n")
         print(f"   wrote {path}")
     return 0
