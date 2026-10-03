@@ -493,29 +493,67 @@ $\mathbf{u}_{\mathbf{a}}=\boldsymbol\Gamma*(f\mathbf{a})$ in the notation of Eq.
 $T_3=\int f\,\mathbf{u}_{\mathbf{a}}:\Delta\mathbf{C}:\mathbf{u}_{\mathbf{b}}\,\dd V$, and constant cells compute
 $\int\Pi f\,\Pi\mathbf{U}_{\mathbf{a}}:\Delta\mathbf{C}:\Pi\mathbf{U}_{\mathbf{b}}\,\dd V$ with
 $\mathbf{U}=\boldsymbol\Gamma*(\Pi f\,\cdot)$. Its factor $F_3$, defined as $F$ is by
-Eq.~\eqref{eq:t2factor}, therefore depends on the body's own field and not only on averages of $m$. It
-is measured two ways on the sphere of \S\ref{sec:factor3d}: by the scheme, whose terms are those of its
-Born series (\path{scripts/measure_t3_law_3d.py}), and by applying $\boldsymbol\Gamma$ by fast Fourier
-transform (\path{scripts/measure_t3_tensor_forms.py}). On $4$ cells across they agree to $0.3\%$ for
-the outgoing P wave.
+Eq.~\eqref{eq:t2factor}, therefore depends on the body's own field and not only on averages of $m$.
+
+\paragraph{The closed form.} The difference is expanded to second order in the half-width, as for
+the second term, with $\mathbf{u}=\Pi\mathbf{u}+\mathbf{u}'$ the cell decomposition of each field. Four
+pieces appear, each from a lemma already in hand. The residual $g$ meets a smooth field
+$w_{\mathbf{ab}}=\mathbf{a}:\boldsymbol\Gamma*(f\,\Delta\mathbf{C}:\mathbf{u}_{\mathbf{b}})$ through its first
+moments, giving $(h^2/3)\nabla f\cdot\nabla w_{\mathbf{ab}}$. The field scattered by the residual is a
+sawtooth on each cube axis carrying $\boldsymbol\Gamma$ on that axis,
+$\mathbf{G}_{i\mathbf{b}}=\boldsymbol\Gamma(\mathbf{e}_i)\mathbf{b}$, with amplitude $\partial_if$. The
+smooth fields vary across a cell as sawtooths of amplitude $\partial_i\mathbf{u}$. And a cell's mean of
+a product of three fields splits exactly into the product of the means and the means of products of
+the departures. The terms in $(\partial_if)^2\mathbf{G}\mathbf{G}$ cancel, and
+\begin{equation}\label{eq:F3}
+\begin{split}
+  \frac{T_3-T_3^{\mathrm{scheme}}}{h^2/3}=\int\Bigl[&\nabla f\cdot\nabla(w_{\mathbf{ab}}+w_{\mathbf{ba}})\\
+  &+f\sum_i\bigl(\partial_i\mathbf{u}_{\mathbf{a}}:\Delta\mathbf{C}:\partial_i\mathbf{u}_{\mathbf{b}}
+     -\partial_if\,(\partial_i\mathbf{u}_{\mathbf{a}}:\Delta\mathbf{C}:\mathbf{G}_{i\mathbf{b}}
+     +\mathbf{G}_{i\mathbf{a}}:\Delta\mathbf{C}:\partial_i\mathbf{u}_{\mathbf{b}})\bigr)\\
+  &+\sum_i\partial_if\,\bigl(\mathbf{u}_{\mathbf{a}}:\Delta\mathbf{C}:\partial_i\mathbf{u}_{\mathbf{b}}
+     +\partial_i\mathbf{u}_{\mathbf{a}}:\Delta\mathbf{C}:\mathbf{u}_{\mathbf{b}}\bigr)\\
+  &-\sum_i(\partial_if)^2\bigl(\mathbf{u}_{\mathbf{a}}:\Delta\mathbf{C}:\mathbf{G}_{i\mathbf{b}}
+     +\mathbf{G}_{i\mathbf{a}}:\Delta\mathbf{C}:\mathbf{u}_{\mathbf{b}}\bigr)\Bigr]\,\dd V,
+\end{split}
+\end{equation}
+with $F_3=(T_3-T_3^{\mathrm{scheme}})/(T_3\cE)$ and $\cE=(h^2/3)\int\lvert\nabla f\rvert^2\dd V/\int
+f^2\dd V$. It is a closed form in the sense of Eq.~\eqref{eq:F0}: the cells enter only through
+$\boldsymbol\Gamma$ on their three axes, and everything else is an integral of the body's smooth,
+once-scattered static fields, so it needs no grid of cells. In a layer every field is local and the
+integrand is $3ff'^2\,\mathbf{G}_{\mathbf{a}}:\Delta\mathbf{C}:\mathbf{G}_{\mathbf{b}}$, which is the
+layer's $e_3$; the same expansion of the second term gives Eq.~\eqref{eq:F0}. The algebra is verified
+symbolically in $7$ checks (\path{Mathematica/AdaptiveOctree_F3.wl}).
+
+\paragraph{The test.} Equation~\eqref{eq:F3} is evaluated on the sphere of \S\ref{sec:factor3d} by fast
+Fourier transform of the smooth fields alone, converged in resolution and in the padding against the
+images of the periodic box (\path{scripts/measure_f3_closed_form.py}; its value of $F$ for the second
+term is $1.1016$ against the exact $1.1009$). It is set against two evaluations on cells: the scheme,
+whose terms are those of its Born series (\path{scripts/measure_t3_law_3d.py}), and the cell forms
+computed directly with $\boldsymbol\Gamma$ applied by fast Fourier transform
+(\path{scripts/measure_t3_tensor_forms.py}). On $4$ cells across the last two agree to $0.3\%$ for the
+outgoing P wave.
 \begin{table}[htbp]
 \centering
 \caption{The factors of the second and third terms and of the whole nonlinear part, constant cells,
-$k_Sa=0.125$: the scheme on $8$ cells across, and the direct evaluation of $F_3$ on $32$ (outgoing P;
-the direct evaluation of the SV wave is not converged).}\label{tab:higher}
+$k_Sa=0.125$: the scheme on $8$ cells across, the direct evaluation of $F_3$ on $32$ (outgoing P; the
+direct evaluation of the SV wave is not converged), and the closed form, Eq.~\eqref{eq:F3}.}\label{tab:higher}
 \small
-\begin{tabular}{@{}lccccc@{}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccccc@{}}
 \toprule
-outgoing wave & $F$ (scheme) & $F_3$ (scheme) & $F_3$ (direct, $32$ cells) & $T_3/T_2$ & nonlinear part \\
+outgoing wave & $F$ (scheme) & $F_3$ (scheme) & $F_3$ (direct) & $F_3$ (closed form) & $T_3/T_2$ & nonlinear part \\
 \midrule
-P at $0.2$\,rad & $1.073$ & $1.600$ & $1.586$ & $-0.036$ & $1.054$ \\
-P at $\pi/2$    & $0.944$ & $1.494$ & $1.417$ & $-0.042$ & $0.921$ \\
-SV at $0.2$\,rad & $1.375$ & $2.145$ & & $-0.021$ & $1.358$ \\
+P at $0.2$\,rad & $1.073$ & $1.600$ & $1.586$ & $1.594$ & $-0.036$ & $1.054$ \\
+P at $\pi/2$    & $0.944$ & $1.494$ & $1.417$ & $1.410$ & $-0.042$ & $0.921$ \\
+SV at $0.2$\,rad & $1.375$ & $2.145$ & & $2.46$ & $-0.021$ & $1.358$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-The factor of the third term converges as the cells shrink ($1.62$, $1.58$, $1.59$ on $8$, $16$ and
-$32$ cells, outgoing P at $0.2$\,rad), and the nonlinear part's factor is the mean of the terms' factors
+The direct evaluation converges as the cells shrink ($1.62$, $1.58$, $1.59$ on $8$, $16$ and $32$
+cells, outgoing P at $0.2$\,rad) to the closed form, $1.594$, and agrees with it to $0.5\%$ at both
+angles. The scheme on $8$ cells is three quarters of the way to it for the SV wave, as it is for the
+second term. The nonlinear part's factor is the mean of the terms' factors
 weighted by the terms: $(F+F_3T_3/T_2)/(1+T_3/T_2)=1.054$ against the measured $1.054$, so the fourth
 and higher terms contribute $0.05\%$.
 
@@ -523,8 +561,9 @@ and higher terms contribute $0.05\%$.
 nonlinear part is their mean weighted by the terms. Where the contrast is moderate the second term
 dominates ($\lvert T_3/T_2\rvert$ is $0.02$ to $0.04$ here) and the nonlinear part's factor is $F$ to
 within $\lvert T_3/T_2\rvert(F_3-F)$, two percent here; the estimate of \S\ref{sec:nu} already carries the
-third term. In the layer the whole series is derived; in three dimensions $F_3$ is computed for a given
-body but not yet in closed form.
+third term. In the layer the whole series is derived; in three dimensions the factor of the third
+term is derived in closed form, Eq.~\eqref{eq:F3}, for constant cells, and those of the higher terms are
+measured.
 
 \section{Refinement by the two terms}\label{sec:refine}
 
@@ -674,7 +713,9 @@ were run with the earlier estimate from a coarse solve and have not been repeate
 \item \emph{Derived in the layer; measured twice in three dimensions.} The terms of third and higher
 order (\S\ref{sec:higher}): in the layer each term's error and the whole series in closed form, the
 latter the cell-by-cell Galerkin solution of the local problem; in three dimensions the third term's
-factor by the scheme and by a direct evaluation, which agree, but not in closed form.
+factor for constant cells in closed form, Eq.~\eqref{eq:F3}, verified symbolically and against the
+scheme and a direct evaluation. Its linear-cell counterpart, and the factors of the fourth and higher
+terms, are not derived.
 \item \emph{Not a bound.} The predicted error exceeded the true error for constant cells in every case,
 but fell $6\%$ below it for linear cells.
 \item \emph{Size.} The solver is dense and stops near $20\,000$ unknowns: about $2200$ constant leaves
@@ -721,7 +762,9 @@ with tests in \path{cubic_scattering/tests/test_graded_voxel_octree.py}. The wav
 \path{scripts/measure_t2_quadratic_forms.py}; Table~\ref{tab:nu} is
 \path{scripts/measure_octree_nu_estimate.py}; the terms of higher order are
 \path{scripts/measure_layer_t3_law.py}, \path{scripts/measure_t3_law_3d.py} and
-\path{scripts/measure_t3_tensor_forms.py}; Table~\ref{tab:twoterm} is
+\path{scripts/measure_t3_tensor_forms.py}, with the closed form of the third term derived in
+\path{Mathematica/AdaptiveOctree_F3.wl} and evaluated by \path{scripts/measure_f3_closed_form.py};
+Table~\ref{tab:twoterm} is
 \path{scripts/measure_octree_two_term.py}; Table~\ref{tab:refine} is
 \path{scripts/pilot_octree_two_term_refinement.py}; the constant medium with a richer field is
 \path{scripts/pilot_octree_hp_refinement.py}; Table~\ref{tab:blocky} is
