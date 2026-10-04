@@ -16,7 +16,7 @@ The reference is the s-form with 32 Gauss points per axis on each piece (checked
 difference is printed). Relative Frobenius error of each route, and its cost per block (warm: the
 one-off moments and coefficients excluded and reported separately).
 
-Run:  python -u scripts/measure_distant_cell_blocks.py [linear|quadratic]
+Run:  python -u scripts/measure_distant_cell_blocks.py [linear|quadratic] [quick]
 """
 
 import sys
@@ -38,8 +38,9 @@ CELLS = {"linear": (10, 4), "quadratic": (35, 10)}
 
 
 def sform_block(off, omega, n_q, n_source, n_test):
-    out = blocks._sform(off, H, (0, 0, 0), lambda X: kernel_9x9(X, omega, REF).reshape(len(X), 81),
-                        n_q, n_source, n_test)
+    out = blocks._sform(
+        off, H, (0, 0, 0), lambda X: kernel_9x9(X, omega, REF).reshape(len(X), 81), n_q, n_source, n_test
+    )
     return blocks._to_field_rows(out.reshape(n_test, n_source, 9, 9))
 
 
@@ -53,10 +54,16 @@ def timed(fn, *args, **kwargs):
     return out, time.perf_counter() - t0
 
 
-def main(cell: str) -> int:
+def main(cell: str, quick: bool = False) -> int:
+    global OFFSETS, KS_H
+    if quick:  # a subset for the quadratic field, whose multipole routes cost about ten times more
+        OFFSETS = [(2, 0, 0), (2, 1, 1), (4, 3, 2), (16, 0, 0)]
+        KS_H = (1e-4, 0.5, 2.0)
     n_source, n_test = CELLS[cell]
-    print(f"{cell} field ({n_test} x {n_source}); relative error against the s-form at 32 points; "
-          "time per block (warm)")
+    print(
+        f"{cell} field ({n_test} x {n_source}); relative error against the s-form at 32 points; "
+        "time per block (warm)"
+    )
     for ks_h in KS_H:
         omega = ks_h * REF.beta / H
         print(f"k_S h = {ks_h:g}", flush=True)
@@ -66,8 +73,10 @@ def main(cell: str) -> int:
             row = [f"  o = {str(off):12s} ref 24 vs 32 {rel(ref24, ref):.0e} |"]
             g, tg = timed(blocks.coupling_block, off, H, omega, REF, n_source, n_test)
             row.append(f"gauss {rel(g, ref):.0e}/{tg * 1e3:.0f}ms")
-            for name, fn in (("multipole", multipole.far_block_multipole),
-                             ("piecewise", multipole.piecewise_multipole_block)):
+            for name, fn in (
+                ("multipole", multipole.far_block_multipole),
+                ("piecewise", multipole.piecewise_multipole_block),
+            ):
                 try:
                     fn(off, H, omega, REF, n_source=n_source, n_test=n_test, tol=1e-13)  # warm the moments
                     m, tm = timed(fn, off, H, omega, REF, n_source=n_source, n_test=n_test, tol=1e-13)
@@ -85,4 +94,4 @@ def main(cell: str) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else "linear"))
+    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else "linear", "quick" in sys.argv[2:]))

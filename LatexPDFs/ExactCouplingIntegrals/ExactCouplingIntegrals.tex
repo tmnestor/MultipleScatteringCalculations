@@ -97,13 +97,13 @@ step with the evaluation.
 %   6. Accuracy and cost                                                             [WRITTEN]
 %   7. Frequency-independent coefficients, and the frequency sweep                   [WRITTEN]
 %   To come:
-%   Distant cells: the two-centre multipole series (graded_voxel/multipole.py).
+%   Distant cells: the two-centre multipole series (graded_voxel/multipole.py)        [WRITTEN, quadratic to fill]
 %   The single cell: reduction on the irreducible representations of the cube group; static blocks on
 %     five constants.
 %   The worked application: the Cartesian multipole hierarchy's cell-to-cell tables (Paper 1's second strand),
 %     reproducing Paper 1's graded-sphere table, with accuracy and cost against quadrature.
-%   Multipoles for elastic waves (required section; where the word first appears).
-%   Relation to the fast multipole method (literature to be found and verified).
+%   Multipoles for elastic waves (required section; where the word first appears)   [WRITTEN]
+%   Relation to the fast multipole method (verified sources only)                 [WRITTEN]
 %   Declarations, worded as in Paper 1, before submission.
 % =====================================================================================================
 
@@ -493,6 +493,125 @@ changing any block beyond round-off: a truncation margin of $8$ Legendre degrees
 are the same to the digits shown for margins from $4$ to $16$), and one truncation shared by every term
 of a cell degree, so that the sparse systems are solved once and reused.
 
+\section{Multipoles for elastic waves}\label{sec:multipoles}
+
+The word multipole is used in two senses in what follows, and the difference matters. In the first, a
+source is resolved into its Cartesian moments while the Green's tensor is integrated exactly: the
+Cartesian multipole hierarchy of \citet{NestorContinuum2026}, whose cell-to-cell tables
+(\S\ref{sec:sweep}) are exact at every separation. In the second, the usual one, the kernel itself is
+expanded about a centre and truncated, which converges only when the cells are far enough apart: the
+series for distant cells of \S\ref{sec:distant}. The second is what the fast multipole method rests on
+\citep{CarrierGreengardRokhlin1988}; four things make it different for elastic waves and polynomial cubes.
+
+\paragraph{Two wave speeds.} The Green's tensor \eqref{eq:series} is a shear term plus the gradient of a
+difference of a shear and a compressional term divided by $k_S^2$, and that difference is finite at
+small distance only by cancellation. No single addition theorem serves, and the cancellation has to be
+removed analytically rather than numerically: evaluated as the difference of the two spherical-Hankel
+forms, the derivatives of $(g_S-g_P)/k_S^2$ lose accuracy as $\varepsilon/(kR)^2$, $\varepsilon$ the
+machine precision. Measured, the blocks of cells $3$ to $64$ cells apart at $k_Sh=10^{-4}$ were wrong by
+$3\times10^{-9}$ to $10^{-12}$, as that law predicts; with the derivatives taken from the power series of
+the difference for $k_Sr\le1$, they are accurate to $10^{-15}$ to $8\times10^{-15}$.
+
+\paragraph{A nine-component state.} The state carries an independent strain, so the propagator $\bP$
+carries up to two more derivatives than the Green's tensor, and the sources are forces and stresses
+rather than charges. The derivatives of every order are combinations of the radial functions
+$F_q=(r^{-1}\dd/\dd r)^q f$ of two scalars, $g_S$ and $(g_S-g_P)/k_S^2$, through fixed tables.
+
+\paragraph{Cubes carrying polynomials.} The natural multipoles are not spherical moments of a point
+source but Cartesian moments of two cells at once,
+$\mu^{\boldsymbol\gamma}_{ac}=\int\!\!\int\bxi^{\mathbf e_a}(\bxi-\bxi')^{\boldsymbol\gamma}\bxi'^{\,\mathbf e_c}
+\dd\bxi\,\dd\bxi'$, products of one-dimensional integrals of monomials, rational numbers.
+
+\paragraph{The radius of convergence.} The separation $\bs$ of two points of the cells ranges over
+$|\bs|\le2\sqrt3\,h$, so the expansion about the centre separation $\bR$ converges geometrically in
+$\rho=2\sqrt3\,h/R$, the extent of both cells over their distance, and the wavenumber enters only through
+the derivatives at $\bR$: the term of order $n$ is bounded by $\sum_j\rho^{\,n-j}\kappa^j/j!$ with
+$\kappa=2\sqrt3\,k_Sh$. There is no restriction on $k_SR$, but the series needs $\rho<1$.
+
+\section{Distant cells}\label{sec:distant}
+
+For two cells that do not touch, the kernel is analytic over the whole range of the separation $\bs$,
+and the block \eqref{eq:block} can be had without quadrature as a multipole series about the centre
+separation $\bR$:
+\begin{equation}\label{eq:multipoleseries}
+  \bK_{ac}(\bR)=\sum_{\boldsymbol\gamma}\frac{h^{\,6+|\boldsymbol\gamma|}}{\boldsymbol\gamma!}\,
+  \mu^{\boldsymbol\gamma}_{ac}\,\partial^{\boldsymbol\gamma}\bP(\bR),
+\end{equation}
+with the two cells' moments $\mu^{\boldsymbol\gamma}_{ac}$ of \S\ref{sec:multipoles} and the derivatives
+of the propagator at $\bR$ from those of the two radial scalars. The derivatives of $g_k$ are spherical
+Hankel functions, $F_q=\mathrm{i}(-1)^qk^{q+1}h_q(kr)/r^q$; those of $(g_S-g_P)/k_S^2$ come from its power
+series for $k_Sr\le1$ and from the difference of the two Hankel forms beyond
+(\S\ref{sec:multipoles}). The series converges geometrically in $\rho=2\sqrt3\,h/R$ and is refused for
+$\rho>0.6$, about three cells apart; it is truncated at the order where the bound of
+\S\ref{sec:multipoles} falls below the tolerance (\path{multipole.far_block_multipole}).
+
+\paragraph{Every pair that does not touch.} Close to contact the series about the cell centres converges
+too slowly: at two cells apart $\rho=0.87$. The cross-correlation $W_{ac}$ is a polynomial on each of the
+eight boxes of its support, so each box can be expanded about its own centre $\bs_B$, the moments being
+those of a polynomial over a box, exact, and the ratio becoming the box's half-diagonal over
+$|\bR+\bs_B|$: $0.52$ at two cells apart, and $0.33$ after one bisection of the boxes, each bisection
+halving it (\path{multipole.piecewise_multipole_block}). The order is chosen with the bisection level to
+minimise the cost, subject to one constraint found by measurement: at the offset $(2,1,1)$ a plan of
+order $48$ to $56$ without bisection stalled at $6\times10^{-13}$ to $2\times10^{-12}$, while one bisection
+at order $36$ to $40$ reached $10^{-15}$ to $4\times10^{-15}$. The rounding of a series that long grows
+with its order, so the order is capped at $40$ and a plan that needs more bisects instead.
+
+\paragraph{The experiment.} For a linear field, at offsets from two to sixty-four cells and at
+$k_Sh=10^{-4}$, $0.0625$, $0.5$ and $2$, every route was compared with the $s$-form integrated by Gauss
+rules of $32$ points per axis on each of its eight pieces; that reference agrees with $24$ points to
+$2\times10^{-15}$ (to $10^{-14}$ at $k_Sh=2$). Four routes were timed per block, warm, the one-off
+moments and coefficients excluded: the $s$-form with the package's Gauss rule, the series
+\eqref{eq:multipoleseries}, its piecewise form, and the frequency-independent series in $k$ of
+\S\ref{sec:sweep} (\path{scripts/measure_distant_cell_blocks.py}).
+
+\paragraph{Accuracy.} After the corrections below, every route is at round-off wherever it applies: the
+largest relative error over all offsets and frequencies is $9\times10^{-15}$ for the Gauss rule and
+$10^{-14}$ for the two multipole forms, the same as the reference's own agreement between $24$ and $32$
+points. The series in $k$ is at round-off where it converges, and loses accuracy as $k_Sr$ grows,
+$5\times10^{-13}$ at sixty-four cells for $k_Sh=0.0625$, because its terms grow like $(k_Sr)^t/t!$ before
+they fall; beyond about $k_Sr=14$ it refuses. Two defects were found and corrected by this experiment.
+The first is the cancellation of \S\ref{sec:multipoles}: with the derivatives of $(g_S-g_P)/k_S^2$ taken
+as a difference of Hankel forms, the multipole blocks at $k_Sh=10^{-4}$ were wrong by $3\times10^{-9}$ to
+$10^{-12}$, and the piecewise form near contact by up to $9\times10^{-5}$. The second is in the Gauss rule
+itself: its order had been chosen by distance alone, eight points per axis beyond four cells, which
+leaves the blocks wrong by $3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$. Measured against
+forty points, the order that reaches about $10^{-14}$ is the larger of the distance rule and
+$8+2\lceil k_Sh-1\rceil$, for offsets from two to thirty-two cells and $k_Sh$ up to $4$.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rcccc}
+\toprule
+offset & Gauss & multipole series & piecewise series & series in $k$ \\
+\midrule
+$(2,0,0)$ & $28$\,ms & refused & $15.8$\,s & $0.8$\,ms \\
+$(2,1,1)$ & $26$\,ms & refused & $15.7$\,s & $0.8$\,ms \\
+$(3,0,0)$ & $13$\,ms & $9.6$\,s & $2.2$\,s & $0.9$\,ms \\
+$(4,3,2)$ & $12$\,ms & $0.62$\,s & $0.73$\,s & $1.1$\,ms \\
+$(8,0,0)$ & $8$\,ms & $0.29$\,s & $0.49$\,s & refused \\
+$(64,0,0)$ & $8$\,ms & $0.12$\,s & $0.38$\,s & refused \\
+\bottomrule
+\end{tabular}
+\caption{Cost per block for a linear field at $k_Sh=0.5$, every route accurate to round-off. At
+$k_Sh=2$ the Gauss rule costs $11$ to $32$\,ms, the two multipole forms $1.5$ to $50$\,s, and the series
+in $k$ is refused at every offset; at $k_Sh=10^{-4}$ the multipole series falls to $15$\,ms at sixty-four
+cells.}
+\label{tab:distant}
+\end{table}
+
+\paragraph{What the routes are for.} On a regular grid the distant blocks are needed once per offset
+orbit and frequency, and the Gauss rule of the $s$-form, with its order now tied to the frequency, is the
+practical route: it is accurate to round-off at every separation and frequency tested, at $8$ to
+$32$\,ms a block. The series in $k$ is faster still, under a millisecond a block, wherever $k_Sr$ is
+small enough for it, which is the touching and near cells of a sweep at low frequency
+(\S\ref{sec:sweep}). The multipole series is the slowest, by one to four orders of magnitude, and it has
+one property the others lack: it is exact term by term, with no restriction on $k_SR$, so it is the
+independent check of the other two, and it is the form a fast multipole method would use for cells far
+apart (\S\ref{sec:fmm}).
+
+% QUADRATIC FIELD: TO FILL from scripts/measure_distant_cell_blocks.py quadratic quick.
+
 \section{Frequency-independent coefficients, and the frequency sweep}\label{sec:sweep}
 
 A synthetic seismogram needs the coupling blocks at every frequency of a sweep, at least $256$ of them.
@@ -584,6 +703,25 @@ $1.2\times10^{-11}$ (hierarchy) and to round-off (Legendre); the hierarchy's dif
 its calibrated Gauss tables ($10^{-10}$), not of the series. The comparison is of the tables alone: the
 solve, repeated at each frequency, is not included, and neither is accuracy per unknown, so it does not
 say which scheme is the better discretisation.
+
+\section{Relation to the fast multipole method}\label{sec:fmm}
+
+The fast multipole method and this paper answer different questions. The method accelerates the
+application of the whole operator to a chosen tolerance without forming its entries: it groups sources
+in a hierarchy of boxes, represents each group by a truncated multipole expansion, converts it to a local
+(Taylor) expansion about a distant box, and evaluates interactions by expansions only between sets that
+are well separated \citep{CarrierGreengardRokhlin1988}. Its elastodynamic form writes the Green's tensor
+through an addition theorem truncated at an order adjusted to the level of the tree, uses the expansions
+only between non-adjacent cells, and leaves adjacent cells to direct boundary-element integration
+\citep{ChaillatBonnetSemblat2007,Chaillat2008}. This paper computes the entries themselves, and the
+entries it is most concerned with, those of touching cells, are exactly the ones a fast multipole method
+leaves to direct integration. The two are therefore complementary: on an irregular or very large body the
+closed forms of \S\ref{sec:stable} could supply the near field of such a method. On a regular grid of
+cubes the operator is a convolution, and the fast Fourier transform applies it in $O(N\log N)$
+operations, so the expansions of \S\ref{sec:distant} are needed for exact entries, not for speed. A cube
+divides into eight cubes, so cubic cells are the leaves of an octree, the tree of the fast multipole
+method in three dimensions; if cells are refined where the medium varies fastest, the tree becomes the
+natural structure, and its coupling blocks are those of this paper. That is an outlook, not a result.
 
 \section{Discussion}\label{sec:discussion}
 
