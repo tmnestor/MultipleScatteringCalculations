@@ -55,12 +55,20 @@ def _cell_rule(n: int) -> tuple[NDArray, NDArray]:
     return xi, np.einsum("i,j,k->ijk", w, w, w).ravel()
 
 
-def gauss_order(offset: tuple[int, int, int]) -> int:
-    """Gauss points per axis on each s-form piece for a non-touching offset."""
+def gauss_order(offset: tuple[int, int, int], ks_h: float = 0.0) -> int:
+    """Gauss points per axis on each s-form piece for a non-touching offset, at k_S h = ks_h.
+
+    By distance (14 at two cells, 10 to four, 8 beyond), raised with the frequency to
+    8 + 2 ceil(k_S h - 1): measured against 40 points to reach about 1e-14 for offsets from 2 to 32
+    cells and k_S h up to 4 (scripts/measure_distant_cell_blocks.py). Without the frequency term the
+    distant blocks were wrong by 3e-11 at k_S h = 2 and by 1e-6 at k_S h = 4.
+    """
     d = max(abs(o) for o in offset)
     if d <= 1:
         raise ValueError(f"gauss_order: offset {offset} touches; use near_block")
-    return 14 if d == 2 else 10 if d <= 4 else 8
+    by_distance = 14 if d == 2 else 10 if d <= 4 else 8
+    by_frequency = 8 + 2 * max(0, math.ceil(ks_h - 1.0))
+    return max(by_distance, by_frequency)
 
 
 def far_block(
@@ -909,7 +917,7 @@ def coupling_block(
         h,
         (0, 0, 0),
         lambda X: kernel_9x9(X, omega, ref).reshape(len(X), 81),
-        gauss_order(offset),
+        gauss_order(offset, abs(omega) / ref.beta * h),
         n_source,
         n_test,
     )

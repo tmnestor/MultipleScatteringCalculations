@@ -134,3 +134,15 @@ def test_biharmonic_sum_rule():
         )
         lap = sum(static_term_integral(-1, (p, p), (0, 0, 0), H, 12)[a, c] for p in range(3))
         assert abs(bih - 2 * lap) < 1e-11 * abs(lap)
+
+
+def test_distant_block_gauss_order_grows_with_frequency():
+    # k_S h = 2, eight cells apart: the order chosen by distance alone (8 points) was wrong by 3e-11
+    from cubic_scattering.graded_voxel.blocks import _sform, _to_field_rows, coupling_block
+
+    h, off = 1.0, (8, 0, 0)
+    omega = 2.0 * REF.beta / h
+    ref = _sform(off, h, (0, 0, 0), lambda X: kernel_9x9(X, omega, REF).reshape(len(X), 81), 24, 10, 4)
+    want = _to_field_rows(ref.reshape(4, 10, 9, 9))
+    got = coupling_block(off, h, omega, REF)
+    assert np.linalg.norm(got - want) / np.linalg.norm(want) < 1e-13

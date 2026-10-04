@@ -32,6 +32,7 @@ def _static_series_block(offset, n_source: int, n_test: int) -> np.ndarray:
     return blocks.near_block_series(offset, 1.0, 1e-12 * REF.beta, REF, n_source, n_test).real
 
 
+@pytest.mark.slow  # 3.3 min and 31 s (measured 2026-10-05)
 @pytest.mark.parametrize("name", ["corner", "edge"])
 def test_linear_field_blocks_match_the_reference_to_round_off(name):
     want = _reference("linear", name, 4, 10)
@@ -39,6 +40,7 @@ def test_linear_field_blocks_match_the_reference_to_round_off(name):
     assert np.linalg.norm(got - want) / np.linalg.norm(want) < 5e-15
 
 
+@pytest.mark.slow  # about 10 min: the one-off sparse solves of the quadratic field
 def test_quadratic_field_corner_block_matches_the_reference_to_round_off():
     want = _reference("quadratic", "corner", 10, 35)
     got = _static_series_block(OFFSETS["corner"], 35, 10)

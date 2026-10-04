@@ -143,6 +143,7 @@ def test_master_integrals_match_direct_integration():
         assert mp.almosteq(got, want, rel_eps=tol), row
 
 
+@pytest.mark.slow  # about 9 minutes with the two below (measured 2026-10-05)
 @pytest.mark.parametrize("off", [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, -1, 1)])
 def test_closed_static_terms_equal_the_quadrature(off):
     # every singular static term d^idx r^m of the Kelvin kernel, for all 4 x 20 polynomial pairs, at h != 1
@@ -159,6 +160,7 @@ def test_closed_static_terms_equal_the_quadrature(off):
     assert worst < 1e-13, worst
 
 
+@pytest.mark.slow
 def test_closed_static_terms_with_a_quadratic_field():
     h = 0.7
     for m, idx in ((1, (0, 0, 1, 2)), (-1, (0, 1)), (1, (2, 2)), (1, (0, 1, 1))):
@@ -167,6 +169,7 @@ def test_closed_static_terms_with_a_quadratic_field():
         assert np.abs(closed - quad).max() / np.abs(quad).max() < 1e-13, (m, idx)
 
 
+@pytest.mark.slow
 def test_near_block_by_closed_forms_equals_the_quadrature_block():
     for off in ((0, 0, 0), (1, 1, 0)):
         quad = near_block(off, 1.25, 150.0, REF, n_q=14)
