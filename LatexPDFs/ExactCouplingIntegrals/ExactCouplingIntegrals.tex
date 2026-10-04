@@ -100,7 +100,7 @@ step with the evaluation.
 %   Distant cells: the two-centre multipole series (graded_voxel/multipole.py).
 %   The single cell: reduction on the irreducible representations of the cube group; static blocks on
 %     five constants.
-%   The worked application: the moment hierarchy's cell-to-cell tables (Paper 1's second strand),
+%   The worked application: the Cartesian multipole hierarchy's cell-to-cell tables (Paper 1's second strand),
 %     reproducing Paper 1's graded-sphere table, with accuracy and cost against quadrature.
 %   Multipoles for elastic waves (required section; where the word first appears).
 %   Relation to the fast multipole method (literature to be found and verified).
@@ -498,7 +498,7 @@ of a cell degree, so that the sparse systems are solved once and reused.
 A synthetic seismogram needs the coupling blocks at every frequency of a sweep, at least $256$ of them.
 What can be computed once, for the geometry alone, and what must be computed again at each frequency,
 decides the cost. The universal moments of the touching blocks are of the first kind. The same structure
-serves the blocks between cells that do not touch, and the cell-to-cell tables of the moment hierarchy of
+serves the blocks between cells that do not touch, and the cell-to-cell tables of the Cartesian multipole hierarchy of
 \citet{NestorContinuum2026}, whose integrals are never singular (the field point is a cell centre, at least
 half a cell outside the source cube).
 
@@ -517,7 +517,7 @@ truncation of the series. It agrees with the Gauss block to $10^{-15}$ to $10^{-
 to five cells and $k_Sh$ from $10^{-6}$ to $0.5$, and costs $0.3$\,ms per block and frequency against
 $9$\,ms for the Gauss block (\path{blocks.far_block_series}).
 
-\paragraph{The hierarchy's tables.} The moment hierarchy couples cells through the tables
+\paragraph{The hierarchy's tables.} The Cartesian multipole hierarchy couples cells through the tables
 \begin{equation}\label{eq:hiertable}
   T_{in}[\mathbf{D},\mathbf{W}](\bo)=\int_{\text{cube}}\partial^{\mathbf{D}}\bG_{in}(\bo-\bxi)\,
   \bxi^{\mathbf{W}}\,\dd^3\xi,

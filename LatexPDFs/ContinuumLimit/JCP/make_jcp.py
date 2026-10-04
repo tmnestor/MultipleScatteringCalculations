@@ -109,7 +109,7 @@ incidence. The single-site $T$-matrix's second-order error equals the relative p
 medium at degree $\min(p,r)$: the two bases must be matched, and the error is known from the medium
 before anything is solved. In a plane-stratified background the orders persist: the background changes
 the field the voxels must represent, not how well they represent it. The single site is the first member
-of a hierarchy in the field's gradients, an elastodynamic extension of the equivalent inclusion
+of a Cartesian multipole hierarchy, an elastodynamic extension of the equivalent inclusion
 method, whose coefficients are moments of the Green's tensor over the cube, in closed form on four
 constants. Its blocks gain accuracy in pairs:
 with third gradients it is 300 times more accurate than the uniform-strain closure against
@@ -119,7 +119,7 @@ words = len(re.sub(r"\$[^$]*\$", "x", ABSTRACT).split())
 assert words <= 250, f"the JCP abstract is {words} words; the limit is 250"
 
 HIGHLIGHTS = [
-    "A moment hierarchy gives the cube's single-site T-matrix in closed form",
+    "A Cartesian multipole hierarchy gives the cube's single-site T-matrix in closed form",
     "A voxel needs two bases: one for the medium and one for the wavefield",
     "The order is min(2p+2, 2r+2) for field degree p and medium degree r",
     "The single-site T-matrix's error is the medium's relative projection error",
@@ -146,8 +146,8 @@ FRONT = (
     r"""
 \begin{document}
 \begin{frontmatter}
-\title{A moment hierarchy for the voxel: closed-form single-site $T$-matrices, and the error of elastic
-volume-integral scattering isolated on a space-filling layer of cubes}
+\title{A Cartesian multipole hierarchy for the voxel: closed-form single-site $T$-matrices, and the
+error of elastic volume-integral scattering isolated on a space-filling layer of cubes}
 \author{T. M. Nestor}
 \affiliation{organization={Independent researcher}, country={Australia}}
 
