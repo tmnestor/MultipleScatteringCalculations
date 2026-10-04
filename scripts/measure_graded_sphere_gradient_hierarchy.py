@@ -115,9 +115,31 @@ def coupling_array(offset, side, omega, d_list, w_list, n_gauss) -> np.ndarray:
     )
 
 
-def gauss_points(reach: int) -> int:
-    """Gauss points per axis for a source cell at this Chebyshev distance."""
-    return 20 if reach == 1 else 12 if reach == 2 else 8
+#: the relative accuracy of the cell-to-cell tables (``gauss_points``)
+TABLE_TOL = 1e-10
+
+#: Gauss points per axis that reach a relative accuracy, for a source cell 1, 2 and 3 or more cells away
+#: (Chebyshev distance), measured against 40 points over every D and W of the third-gradient system,
+#: k_S d = 0.05, 1 and 3, and offsets on the axes, the face and the body diagonals out to 8 cells
+#: (scripts/calibrate_hierarchy_gauss.py)
+GAUSS_POINTS = {1e-8: (16, 8, 8), 1e-10: (20, 10, 8), 1e-12: (22, 12, 10)}
+
+
+def gauss_points(reach: int, tol: float = TABLE_TOL, ks_side: float = 0.0) -> int:
+    """Gauss points per axis for a source cell at this Chebyshev distance and a relative accuracy tol.
+
+    Raises:
+        ValueError: outside the calibration: tol below 1e-12, or the cell larger than k_S d = 3.
+    """
+    if tol < min(GAUSS_POINTS) or ks_side > 3.0:
+        raise ValueError(
+            f"gauss_points: tol = {tol:g}, k_S d = {ks_side:g} lies outside the measured table "
+            f"(tol >= {min(GAUSS_POINTS):g}, k_S d <= 3). Fix: extend GAUSS_POINTS with "
+            "scripts/calibrate_hierarchy_gauss.py, or use derivatives.moment_table_series, whose error "
+            "bound holds anywhere."
+        )
+    row = GAUSS_POINTS[max(t for t in GAUSS_POINTS if t <= tol)]
+    return row[min(reach, 3) - 1]
 
 
 def symmetric_blocks(asm: "Assembler", side: float, omega: float):
@@ -139,7 +161,12 @@ def symmetric_blocks(asm: "Assembler", side: float, omega: float):
         rep = gd.canonical_offset(key)
         if rep not in canonical:
             table = coupling_array(
-                side * np.array(rep, float), side, omega, asm.d_list, asm.w_list, gauss_points(rep[0])
+                side * np.array(rep, float),
+                side,
+                omega,
+                asm.d_list,
+                asm.w_list,
+                gauss_points(rep[0], TABLE_TOL, abs(omega) / hier.REF.beta * side),
             )
             canonical[rep] = asm.blocks(table)
         pi, sigma = gd.mapping_to(key)

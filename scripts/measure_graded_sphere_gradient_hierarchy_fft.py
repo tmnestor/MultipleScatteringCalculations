@@ -84,7 +84,39 @@ def check_parity(side: float, omega: float, asm: gs.Assembler) -> bool:
     return ok
 
 
-def solve_fft(n_sub: int, q: int, omega: float, contrast, tol: float = 1e-10):
+def _place(
+    octant: dict, n_fft: int, d: np.ndarray, s: np.ndarray, vi: int, rows: slice, n_v: int
+) -> np.ndarray:
+    """B_V on the periodic offset grid for the rows ``rows`` of the block, from the octant blocks.
+
+    The blocks of the other octants follow by the mirrors (``parity_signs``).
+    """
+    nu3 = d.shape[1]
+    n_rows = len(range(nu3)[rows])
+    out = np.zeros((n_fft, n_fft, n_fft, n_rows, nu3), dtype=complex)
+    for key, blk in octant.items():
+        for flips in itertools.product((False, True), repeat=3):
+            if any(f and k == 0 for f, k in zip(flips, key, strict=True)):
+                continue
+            dd = np.ones(nu3)
+            sv = 1.0
+            idx = []
+            for m in AXES:
+                if flips[m]:
+                    dd = dd * d[m]
+                    sv *= s[m][vi]
+                    idx.append((-key[m]) % n_fft)
+                else:
+                    idx.append(key[m])
+            out[idx[0], idx[1], idx[2]] = blk[vi, rows] * sv * dd[rows, None] * dd[None, :]
+    return out
+
+
+#: rows of the 60 x 60 blocks transformed at a time, which bounds the transient memory of the build
+ROW_CHUNK = 12
+
+
+def solve_fft(n_sub: int, q: int, omega: float, contrast, tol: float = 1e-10, check_octant: bool = False):
     side, centres, coefs, grid = gs.build_cells(n_sub, R_C)
     asm = gs.Assembler(q, R_C, omega, contrast)
     nu3 = 3 * asm.nu
@@ -95,26 +127,35 @@ def solve_fft(n_sub: int, q: int, omega: float, contrast, tol: float = 1e-10):
     t_tab = time.perf_counter() - t0
     d, s = parity_signs(asm)
 
-    # the blocks on the periodic offset grid, then their transform over the three offset axes
-    b_hat = np.zeros((n_v, n_fft, n_fft, n_fft, nu3, nu3), dtype=complex)
-    for key, blk in octant.items():
-        for flips in itertools.product((False, True), repeat=3):
-            if any(f and k == 0 for f, k in zip(flips, key, strict=True)):
-                continue
-            dd = np.ones(nu3)
-            sv = np.ones(n_v)
-            idx = []
-            for m in AXES:
-                if flips[m]:
-                    dd = dd * d[m]
-                    sv = sv * s[m]
-                    idx.append((-key[m]) % n_fft)
-                else:
-                    idx.append(key[m])
-            signed = blk * sv[:, None, None] * dd[None, :, None] * dd[None, None, :]
-            b_hat[:, idx[0], idx[1], idx[2]] = signed
+    # The blocks' transform over the three offset axes, kept for ONE OCTANT of wavevectors only. A mirror M
+    # of the offsets maps B_V(o) to s_V D B_V(o) D (``parity_signs``), so the transform obeys
+    # B^_V(M k) = s_V D B^_V(k) D, and the other octants follow from the stored one in the product:
+    # memory falls from (2n)^3 to (n + 1)^3 wavevectors. Built a few rows at a time.
+    k_half = n_fft // 2 + 1
+    b_oct = np.zeros((n_v, k_half, k_half, k_half, nu3, nu3), dtype=complex)
     for vi in range(n_v):
-        b_hat[vi] = np.fft.fftn(b_hat[vi], axes=(0, 1, 2))
+        for r0 in range(0, nu3, ROW_CHUNK):
+            rows = slice(r0, min(r0 + ROW_CHUNK, nu3))
+            spatial = _place(octant, n_fft, d, s, vi, rows, n_v)
+            b_oct[vi, :, :, :, rows] = np.fft.fftn(spatial, axes=(0, 1, 2))[:k_half, :k_half, :k_half]
+    # the eight reflections of the octant, on disjoint index ranges: '+' takes 0 .. n, '-' takes n+1 .. 2n-1
+    # and reads the stored octant at 2n - k
+    patterns = []
+    for sigma in itertools.product((1, -1), repeat=3):
+        tgt, src, dd = [], [], np.ones(nu3)
+        sv = np.ones(n_v)
+        for m, sg in enumerate(sigma):
+            if sg > 0:
+                tgt.append(np.arange(0, k_half))
+                src.append(np.arange(0, k_half))
+            else:
+                t_idx = np.arange(k_half, n_fft)
+                tgt.append(t_idx)
+                src.append(n_fft - t_idx)
+                dd = dd * d[m]
+                sv = sv * s[m]
+        if all(len(t) for t in tgt):
+            patterns.append((np.ix_(*tgt), np.ix_(*src), dd, sv))
 
     coef_grid = np.zeros((n_sub, n_sub, n_sub, n_v))
     mask = np.zeros((n_sub, n_sub, n_sub), dtype=bool)
@@ -138,9 +179,37 @@ def solve_fft(n_sub: int, q: int, omega: float, contrast, tol: float = 1e-10):
             z = np.zeros((n_fft, n_fft, n_fft, nu3), dtype=complex)
             z[:n_sub, :n_sub, :n_sub] = coef_grid[..., vi, None] * x
             z_hat = np.fft.fftn(z, axes=(0, 1, 2))
-            acc += np.matmul(b_hat[vi], z_hat[..., None])[..., 0]
+            for tgt, src, dd, sv in patterns:
+                zz = z_hat[tgt] * dd
+                acc[tgt] += sv[vi] * dd * np.matmul(b_oct[vi][src], zz[..., None])[..., 0]
         y = np.fft.ifftn(acc, axes=(0, 1, 2))[:n_sub, :n_sub, :n_sub]
         return (x - mask[..., None] * y).ravel()
+
+    if check_octant:
+        # the product with the blocks stored for every wavevector (as before this storage), on a random
+        # vector
+        full = np.zeros((n_v, n_fft, n_fft, n_fft, nu3, nu3), dtype=complex)
+        for vi in range(n_v):
+            full[vi] = np.fft.fftn(_place(octant, n_fft, d, s, vi, slice(0, nu3), n_v), axes=(0, 1, 2))
+        rng = np.random.default_rng(5)
+        vec = rng.normal(size=n_sub**3 * nu3) + 1j * rng.normal(size=n_sub**3 * nu3)
+        x = vec.reshape(n_sub, n_sub, n_sub, nu3)
+        acc = np.zeros((n_fft, n_fft, n_fft, nu3), dtype=complex)
+        for vi in range(n_v):
+            z = np.zeros((n_fft, n_fft, n_fft, nu3), dtype=complex)
+            z[:n_sub, :n_sub, :n_sub] = coef_grid[..., vi, None] * x
+            acc += np.matmul(full[vi], np.fft.fftn(z, axes=(0, 1, 2))[..., None])[..., 0]
+        y_full = (x - mask[..., None] * np.fft.ifftn(acc, axes=(0, 1, 2))[:n_sub, :n_sub, :n_sub]).ravel()
+        diff = float(np.abs(matvec(vec) - y_full).max() / np.abs(y_full).max())
+        verdict = "PASS" if diff < 1e-12 else "FAIL"
+        print(
+            f"  [octant] product from one octant of wavevectors against all of them: {diff:.1e}"
+            f"   {verdict}",
+            flush=True,
+        )
+        del full
+        if diff >= 1e-12:
+            raise RuntimeError(f"the octant storage changes the product by {diff:.1e}")
 
     size = n_sub**3 * nu3
     its = [0]
@@ -202,7 +271,7 @@ def main() -> int:
             if n == (ladder or [4])[0]:
                 side0 = 2.0 * gs.RADIUS / n
                 ok = check_parity(side0, omega, gs.Assembler(q, R_C, omega, contrast)) and ok
-            side, centres, coefs, asm, sol, info = solve_fft(n, q, omega, contrast)
+            side, centres, coefs, asm, sol, info = solve_fft(n, q, omega, contrast, check_octant=check)
             got = gs.far_field(side, centres, coefs, asm, sol, omega, contrast, obs)
             err = float(np.max(np.abs(got - exact)) / peak)
             rows.append((n, err))

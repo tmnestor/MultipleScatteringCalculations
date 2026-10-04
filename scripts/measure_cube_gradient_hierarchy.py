@@ -24,6 +24,7 @@ Run small first:  python -u scripts/measure_cube_gradient_hierarchy.py --ref=2,3
 """
 
 import functools
+import json
 import sys
 import time
 from pathlib import Path
@@ -46,9 +47,30 @@ K_HAT = np.array([1.0, 0.0, 0.0])
 POL = np.array([1.0, 0.0, 0.0])
 
 
+#: the unit-cube moments already computed, written by ``build_cube_unit_moments.py``: the self block of the
+#: hierarchy needs a few thousand of them, each a pure number, and computing them took 13 to 15 s a process
+STORE = Path(__file__).resolve().parent / "cube_unit_moments.json"
+
+
+@functools.cache
+def _stored() -> dict[tuple, float]:
+    if not STORE.is_file():
+        return {}
+    data = json.loads(STORE.read_text())
+    return {(int(e["m"]), tuple(e["d"]), tuple(e["w"])): float(e["value"]) for e in data["moments"]}
+
+
 @functools.cache
 def cube_unit(m: int, ds: tuple[int, ...], w: tuple[int, ...]) -> float:
-    """E[m; ds; w] over the cube [-1/2, 1/2]^3."""
+    """E[m; ds; w] over the cube [-1/2, 1/2]^3: from the store when it holds it, else computed."""
+    key = (m, tuple(ds), tuple(w))
+    # the cube is symmetric under each reflection x_k -> -x_k, which multiplies the integrand by (-1) to the
+    # number of times k occurs in ds and w: an odd count makes the moment vanish exactly
+    if any((ds.count(ax) + w.count(ax)) % 2 for ax in range(3)):
+        return 0.0
+    stored = _stored()
+    if key in stored:
+        return stored[key]
     return cm.moment(m, list(ds), list(w))
 
 

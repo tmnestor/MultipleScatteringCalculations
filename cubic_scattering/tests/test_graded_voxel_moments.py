@@ -145,24 +145,26 @@ def test_master_integrals_match_direct_integration():
 
 @pytest.mark.parametrize("off", [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, -1, 1)])
 def test_closed_static_terms_equal_the_quadrature(off):
-    # every singular static term d^idx r^m of the Kelvin kernel, for all 4 x 20 polynomial pairs
+    # every singular static term d^idx r^m of the Kelvin kernel, for all 4 x 20 polynomial pairs, at h != 1
+    # (which also guards the physical scaling of the pieces); both routes at round-off, quadrature's own
+    # worst terms being about 3e-14 against the 40-digit corner reference
     h = 1.25
     worst = 0.0
     for m, idx in static_term_table(REF.alpha, REF.beta, REF.rho):
-        quad = static_term_integral(m, idx, off, h, 14, 20)
+        quad = static_term_integral(m, idx, off, h, 20, 20)
         closed = static_term_integral_closed(m, idx, off, h, 20)
         scale = np.abs(quad).max()
         if scale > 0:
             worst = max(worst, np.abs(closed - quad).max() / scale)
-    assert worst < 1e-9, worst
+    assert worst < 1e-13, worst
 
 
 def test_closed_static_terms_with_a_quadratic_field():
     h = 0.7
     for m, idx in ((1, (0, 0, 1, 2)), (-1, (0, 1)), (1, (2, 2)), (1, (0, 1, 1))):
-        quad = static_term_integral(m, idx, (1, 0, -1), h, 14, 35, 10)
+        quad = static_term_integral(m, idx, (1, 0, -1), h, 20, 35, 10)
         closed = static_term_integral_closed(m, idx, (1, 0, -1), h, 35, 10)
-        assert np.abs(closed - quad).max() / np.abs(quad).max() < 1e-9, (m, idx)
+        assert np.abs(closed - quad).max() / np.abs(quad).max() < 1e-13, (m, idx)
 
 
 def test_near_block_by_closed_forms_equals_the_quadrature_block():
@@ -210,6 +212,19 @@ def test_series_near_block_equals_the_quadrature_block(off):
         quad = near_block(off, h, omega, REF, n_q=14)
         series = near_block_series(off, h, omega, REF)
         assert np.linalg.norm(series - quad) / np.linalg.norm(quad) < 1e-10, (off, omega)
+
+
+@pytest.mark.parametrize("ks_h", [1e-6, 1e-4])
+@pytest.mark.parametrize("off", [(0, 0, 0), (1, 0, 0)])
+def test_series_near_block_keeps_the_radiation_part_at_low_frequency(off, ks_h):
+    # the c2 weight carries 1 / k_S^2, so its term m is as large as the c1 term m - 2: a stopping rule
+    # that ignored this cut the series two powers early (imaginary part wrong by 7e-9 at k_S h = 1e-4)
+    h = 1.25
+    omega = ks_h * REF.beta / h
+    series = near_block_series(off, h, omega, REF)
+    full = near_block_series(off, h, omega, REF, tol=1e-40)
+    assert np.linalg.norm(series - full) / np.linalg.norm(full) < 1e-15
+    assert np.linalg.norm((series - full).imag) / np.linalg.norm(full.imag) < 1e-13
 
 
 def test_series_near_block_with_a_quadratic_field():
