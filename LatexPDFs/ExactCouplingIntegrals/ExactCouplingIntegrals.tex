@@ -1,0 +1,523 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape The Coupling Integrals of Polynomial Cubes}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bR}{\mathbf{R}}
+\newcommand{\bs}{\mathbf{s}}
+\newcommand{\bt}{\mathbf{t}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bo}{\mathbf{o}}
+\newcommand{\balpha}{\boldsymbol{\alpha}}
+\newcommand{\biota}{\boldsymbol{\iota}}
+\newcommand{\bxi}{\boldsymbol{\xi}}
+% the differential of every integral and derivative is upright: \dd z, \dd^3x, \frac{\dd}{\dd z}
+\newcommand{\dd}{\mathrm{d}}
+
+\title{\bfseries The Coupling Integrals of Polynomial Cubes in Closed Form\\[4pt]
+\large Exact for Elastic Waves, and Accurate in Double Precision}
+\author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
+\date{Draft, 4 October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Volume-integral methods for elastic waves couple cubic cells through integrals of the elastodynamic
+Green's tensor against the polynomials that the cells carry. For cells that touch, the integrals are
+singular, and their closed forms are known: a power series in the wavenumber whose coefficients are
+universal numbers, each built from elementary master integrals reduced from volume to faces to edges. We
+show that these closed forms, evaluated as written in double precision, lose four to five digits: against
+a forty-digit reference the coupling block of a cell carrying a quadratic field and its corner neighbour
+is wrong by $1.7\times10^{-11}$, where quadrature reaches $1.9\times10^{-15}$. The cause is not the
+formulas but their basis. Every piece of the integration domain away from the singular point becomes a
+signed sum of boxes anchored at that point, with the polynomial weight expanded in powers of the
+distance from it; the moments reach $10^{19}$ against a piece of order one. We give an evaluation that is
+exact in the same sense and accurate to round-off. Pieces away from the singular point are expanded in
+Legendre polynomials of their own coordinates, and their moments are obtained from a banded relation,
+derived from the Legendre identity $(2k+1)P_k=P'_{k+1}-P'_{k-1}$ and posed as a truncated boundary-value
+problem: the only data are the values of a power of the distance at the corners of the box, no
+transcendental function is evaluated, and every moment comes out to full relative accuracy, including in a
+band of geometries close to the singular point where marching the recurrence in either direction is
+unstable. Pieces holding the singular point are split into Duffy pyramids, whose radial integral is
+exact and whose far face lies at unit distance, where the same Legendre moments apply. Against the
+reference the coupling blocks are then accurate to $1.0\times10^{-15}$ and $9.7\times10^{-16}$ for a linear
+field and $3.7\times10^{-15}$ and $4.3\times10^{-15}$ for a quadratic field, at corner and edge contact,
+the same round-off floor as quadrature. The reference is a direct forty-digit integration that shares no
+step with the evaluation.
+\end{abstract}
+
+% =====================================================================================================
+% Outline of the paper as planned. Sections marked [WRITTEN] are complete for this draft; the others
+% are to be written from code that exists and is tested (cubic_scattering/graded_voxel/):
+%   1. Introduction                                                                  [WRITTEN, draft]
+%   2. The coupling blocks of polynomial cubes                                      [WRITTEN]
+%   3. The closed forms, and why they fail in double precision                       [WRITTEN]
+%   4. A forty-digit reference                                                       [WRITTEN]
+%   5. A stable evaluation                                                           [WRITTEN]
+%   6. Accuracy and cost                                                             [WRITTEN, cost to fill]
+%   7. Frequency-independent coefficients, and the frequency sweep                   [to fill from runs]
+%   To come:
+%   Distant cells: the two-centre multipole series (graded_voxel/multipole.py).
+%   The single cell: reduction on the irreducible representations of the cube group; static blocks on
+%     five constants.
+%   The worked application: the moment hierarchy's cell-to-cell tables (Paper 1's second strand),
+%     reproducing Paper 1's graded-sphere table, with accuracy and cost against quadrature.
+%   Multipoles for elastic waves (required section; where the word first appears).
+%   Relation to the fast multipole method (literature to be found and verified).
+%   Declarations, worded as in Paper 1, before submission.
+% =====================================================================================================
+
+\section{Introduction}\label{sec:intro}
+
+A volume-integral method for elastic scattering represents a heterogeneous medium by cells, here cubes,
+each carrying a polynomial field, and couples every pair of cells through the integral of the
+elastodynamic Green's tensor against the two cells' polynomials. Higher-order cells are worth having only
+if these coupling integrals are accurate: a cell whose field converges at fourth order in the cell size
+\citep{NestorContinuum2026} needs couplings correct to a matching tolerance, and in practice to
+round-off, because errors in the touching blocks are not reduced by refinement. For cells that touch, the
+integrand is singular. Quadrature with Duffy's transformation \citep{Duffy1982} at the singular vertex
+handles it, but it must be repeated for every frequency, and its accuracy has to be established case by
+case. Closed forms avoid both: the singular integrals are a power series in the wavenumber whose
+coefficients are universal numbers, independent of the frequency, the cell size and the medium, each a
+finite sum of elementary master integrals reduced from volume to faces to edges.
+
+This paper is about a property of those closed forms that the formulas themselves do not show. Evaluated
+as written in double precision they are much less accurate than quadrature (\S\ref{sec:failure}). We
+measure by how much against a reference computed at forty digits by a route that shares nothing with
+them (\S\ref{sec:reference}), locate the loss, and give an evaluation of the same exact integrals that is
+accurate to round-off (\S\ref{sec:stable}), with the experiments that led to it. The loss is a known
+phenomenon in another setting: in boundary-element methods the analytic integration of layer potentials
+over flat elements loses accuracy away from the singularity and with the order of the element, and the
+remedy adopted there is to switch to quadrature beyond some distance
+\citep{KanekoGumerovDuraiswami2024,GumerovKanekoDuraiswami2024}. Here the closed forms are kept
+everywhere and made stable instead, by changing the basis in which they are assembled. The underlying
+facts are classical: moments in powers of a variable are progressively ill-conditioned while moments in
+orthogonal polynomials are well conditioned \citep{Gautschi1970}, and a recurrence whose wanted solution
+is dominated by another solution cannot be marched, but can be solved as a truncated boundary-value
+problem \citep{Gautschi1967,Olver1967}. What is new is the relation that gives the Legendre moments of a
+power of the distance over a box in any dimension, and the decomposition that brings every piece of a
+touching coupling block within its reach.
+
+\section{The coupling blocks of polynomial cubes}\label{sec:blocks}
+
+\paragraph{Cells and fields.} A cell is a cube $[-h,h]^3$ of half-width $h$ centred at $\mathbf{x}_c$, with
+local coordinates $\bxi=(\mathbf{x}-\mathbf{x}_c)/h\in[-1,1]^3$. It carries the nine-component state, the
+displacement and an independent engineering strain, as a polynomial in $\bxi$: its Legendre moments of
+degree at most one (four functions, a linear field) or two (ten, a quadratic field)
+\citep{NestorContinuum2026}. The source density, the contrast times the state, is a polynomial in the
+source cell's coordinates $\bxi'$, written in the monomials $m_c(\bxi')=\xi_0'^{\,e_0}\xi_1'^{\,e_1}
+\xi_2'^{\,e_2}$ of degree at most two or four ($10$ or $35$ of them). With $\bP$ the $9\times9$ point
+propagator, built from the Green's tensor and up to two of its derivatives, the cells $m$ and $n$ couple
+through the blocks
+\begin{equation}\label{eq:block}
+  \bK_{ac}(\bR)=\int_{V_m}\!\int_{V_n}L_a(\bxi)\,\bP(\mathbf{x}-\mathbf{x}')\,m_c(\bxi')\,
+  \dd^3x\,\dd^3x',\qquad \bR=\mathbf{x}_m-\mathbf{x}_n,
+\end{equation}
+$L_a$ a test function of the field cell. They are computed with test monomials and recombined into the
+orthogonal $L_a$. The integer offset between the cells is $\bo=\bR/2h$; the cells touch when
+$\max_i|o_i|\le1$, and the self cell and its $26$ neighbours fall into four geometries up to the
+symmetries of the cube: self, face, edge and corner contact.
+
+\paragraph{The $s$-form.} With $\mathbf{x}=\mathbf{x}_m+\bu$ and $\mathbf{x}'=\mathbf{x}_n+\bu'$ the kernel
+sees $\bR+\bs$, $\bs=\bu-\bu'\in[-2h,2h]^3$, and
+\begin{equation}\label{eq:sform}
+  \bK_{ac}(\bR)=\int W_{ac}(\bs)\,\bP(\bR+\bs)\,\dd^3s,\qquad W_{ac}(\bs)=\prod_iw_{e_{a,i}e_{c,i}}(s_i),
+\end{equation}
+with the one-dimensional cross-correlation $w_{\alpha\beta}(s)=h\int v^\alpha(v-s/h)^\beta\,\dd v$ over
+$v\in[\max(-1,s/h-1),\min(1,s/h+1)]$. Each factor is a polynomial on $[-2h,0]$ and on $[0,2h]$, continuous,
+zero at $\pm2h$, and kinked at $0$ and $\pm2h$. In units of $h$, $\sigma=s/h$, the domain of
+Eq.~\eqref{eq:sform} is cut into $8$ boxes on which $W_{ac}$ is a polynomial, whose corners lie on the
+breakpoints $\sigma_i\in\{-2,0,2\}$. The kernel is singular at $\bs=-\bR$, that is at
+$\boldsymbol\sigma^*=-2\bo$, which for touching cells is always a breakpoint: a vertex of some of the boxes,
+and at a distance of at least $2$ (in units of $h$) from the others.
+
+\paragraph{The series in the wavenumber.} With $g_k=\mathrm{e}^{\mathrm{i}kr}/r=\sum_{t\ge0}
+(\mathrm{i}k)^tr^{t-1}/t!$, the Green's tensor is a sum over powers $r^m$, $m=t-1\ge-1$, of two families,
+\begin{equation}\label{eq:series}
+  \bG_{ij}=\frac{1}{4\pi\mu}\sum_{m\ge-1}\Bigl[c_1(m)\,\delta_{ij}\,r^m+c_2(m)\,\partial_i\partial_jr^m\Bigr],
+  \qquad c_1=\frac{(\mathrm{i}k_S)^{m+1}}{(m+1)!},\quad
+  c_2=\frac{\mathrm{i}^{m+1}\bigl(k_S^{m+1}-k_P^{m+1}\bigr)}{k_S^2\,(m+1)!},
+\end{equation}
+with $\mu$ the shear modulus and $k_P$, $k_S$ the compressional and shear wavenumbers of the background.
+The static (Kelvin) tensor is $c_1$ at $m=-1$ and $c_2$ at $m=1$. Since $\bP$ adds up to two derivatives,
+every entry of every block is a combination, with $9\times9$ coefficient tables fixed by the propagator's
+structure, of the scalar moments
+\begin{equation}\label{eq:umoment}
+  \int_{V}\!\int_{V'}L_a(\bxi)\,\partial^{\biota}r^m\,m_c(\bxi')\,\dd^3x\,\dd^3x'
+  =h^{\,6+m-|\biota|}\,U_{ac}(m,\biota;\bo),\qquad|\biota|\le4,
+\end{equation}
+where $\biota$ is the multi-index of derivatives with respect to $\mathbf{x}$. The $U$ are pure numbers:
+they depend on neither the frequency, the cell size nor the medium. For even $m$, $r^m$ is a polynomial
+and the moment is an integral of polynomials over the boxes, exact by a Gauss rule of sufficient order.
+The odd $m$ carry the singularity, and they are the subject of this paper.
+
+\paragraph{Moving derivatives.} For $m=-1$ and $m=1$ with enough derivatives the kernel
+$\partial^{\biota} r^m$ is a distribution at the singular point. Of the derivatives in $\biota$,
+$k=\max\bigl(0,|\biota|-\min(m+1,\tfrac{m+3}{2})\bigr)\le2$ are moved onto $W$:
+$\int W\,\partial^{\biota} f=(-1)^k\int(\partial^{\text{moved}}W)\,\partial^{\text{rest}}f$. What remains,
+$\partial^{\text{rest}}r^m$, is at most $1/r$ singular, and it is a sum of monomials times odd powers of
+the distance,
+\begin{equation}\label{eq:monomials}
+  \partial^{\text{rest}}r^m=\sum_j\gamma_j\,\bt^{\balpha_j}\,|\bt|^{n_j},\qquad
+  \partial_i\bigl(\bt^{\balpha}|\bt|^n\bigr)=\alpha_i\,\bt^{\balpha-\mathbf{e}_i}|\bt|^n+n\,\bt^{\balpha+
+  \mathbf{e}_i}|\bt|^{n-2},
+\end{equation}
+in the separation $\bt=\boldsymbol\sigma-\boldsymbol\sigma^*$ measured from the singular point, with
+$|\balpha_j|+n_j=m-|\text{rest}|$ for every $j$. Two moved derivatives on one axis turn the kinks of $w$
+into plane deltas $J_b\,\delta(\sigma-b)$, $b\in\{-2,0,2\}$, $J_b$ the jump of $w'$ at $b$. Each term of a
+moment is therefore an integral of a polynomial in $\bt$ times $\bt^{\balpha}|\bt|^n$ over a box of side $2$
+whose corners lie on the breakpoints, or over a face of one when a plane delta fixes a coordinate. This is
+the object every route below evaluates; they differ only in how.
+
+\section{The closed forms, and why they fail in double precision}\label{sec:failure}
+
+\paragraph{The closed forms as written.} The integrand $\bt^{\balpha}|\bt|^n$ is homogeneous about the
+singular point, and three master integrals anchored there are elementary:
+\begin{align}
+  I[p,q,r;a,b,c;n]&=\int_0^a\!\!\int_0^b\!\!\int_0^c x^py^qz^r\,(x^2+y^2+z^2)^{n/2}\,\dd z\,\dd y\,\dd x,
+  \label{eq:boxI}\\
+  J[q,r;a;b,c;n]&=\int_0^b\!\!\int_0^c y^qz^r\,(a^2+y^2+z^2)^{n/2}\,\dd z\,\dd y,\label{eq:faceJ}\\
+  L[r;A;c;n]&=\int_0^c z^r\,(A^2+z^2)^{n/2}\,\dd z,\label{eq:lineL}
+\end{align}
+with $n$ odd. Euler's identity for a homogeneous function and the divergence theorem reduce the box to
+faces, the faces through the singular point carrying no flux; on a face, the derivative of
+$y^{q-1}(a^2+y^2+z^2)^{(n+2)/2}$ lowers the power of $y$ by two and leaves edge integrals; on an edge the
+same step ends in a power, a square root or an inverse hyperbolic sine. One transcendental base case is
+left on the faces, $J[0,0;a;b,c;-3]=a^{-1}\arctan\bigl(bc/(a\sqrt{a^2+b^2+c^2})\bigr)$, $1/a$ times the
+solid angle the rectangle subtends at the singular point. The recursions divide by small integers only,
+and they were evaluated at forty digits. To use them for a box that is not anchored at the singular point,
+two steps are needed. On each axis an integral from $l$ to $u$ is the difference of two integrals from the
+origin (the singular point), so a box at a distance becomes a signed sum of eight anchored boxes of sides
+$2$ and $4$. And the polynomial weight is expanded in powers of $\bt$, so that each term is a master
+integral. The master integrals, rounded to double precision, were then contracted with the expanded
+weights in double precision.
+
+\paragraph{How large the loss is.} Against the forty-digit reference of \S\ref{sec:reference}, the static
+coupling block assembled this way is wrong by $2.3\times10^{-13}$ (linear field, corner contact),
+$9.4\times10^{-14}$ (linear, edge), $1.7\times10^{-11}$ (quadratic, corner) and $5.5\times10^{-12}$
+(quadratic, edge), relative error in the Frobenius norm over all entries of the block. Quadrature of the
+same block (Duffy pyramids at the singular vertex and tensor Gauss rules of $20$ points per axis on the
+pieces) is accurate to $1.1\times10^{-15}$, $1.8\times10^{-15}$, $1.9\times10^{-15}$ and $2.7\times10^{-15}$.
+The closed forms, exact on paper, are worse than quadrature by two orders of magnitude for a linear field
+and four for a quadratic one. The loss went unnoticed because the closed forms had been checked against
+quadrature to $10^{-9}$ only.
+
+\paragraph{Where it is lost.} Each block is a sum over the pieces of $W$. Taking one term, $m=1$ with
+$\biota=(0,2,2)$, at corner contact with a linear field, and evaluating the same algorithm once in double
+precision and once with every step at forty digits, the difference piece by piece is $2.1\times10^{-12}$
+(relative to the largest entry of the term) on the piece farthest from the singular point, the box
+$\bt\in[2,4]^3$, and at most $1.2\times10^{-15}$ on the piece that has the singular point as a vertex.
+The loss is in the pieces away from the singular point.
+
+\paragraph{Why it is lost.} On such a piece two cancellations act together: the inclusion-exclusion of
+anchored boxes, and the power basis about a point outside the piece. They can be separated. On the far
+piece of the corner contact, for the same term, the integral was computed four ways, each compared with
+the same piece at forty digits with exact rational weights:
+\begin{itemize}
+  \item[A] as written: anchored master integrals rounded to double precision, inclusion-exclusion and
+  contraction in double precision. Error $2.6\times10^{-13}$.
+  \item[B] the moments of the far box itself, $\int_{\text{box}}\bt^{\mathbf{e}}|\bt|^n$, exact
+  (inclusion-exclusion at forty digits) and then rounded; the contraction with the power-basis weights in
+  double precision. Error $6.7\times10^{-14}$.
+  \item[C] as B, with the contraction at forty digits too, the weights still rounded to double
+  precision. Error $8.6\times10^{-15}$.
+  \item[D] the weight re-expanded about the piece's own corner, in the local variable
+  $\boldsymbol\tau=\bt-\mathbf{l}\in[0,2]^3$, with the local moments $\int\boldsymbol\tau^{\mathbf{j}}
+  \bt^{\balpha}|\bt|^n$ exact and rounded, and a double-precision contraction. Error $6.8\times10^{-16}$.
+\end{itemize}
+Inclusion-exclusion accounts for a factor of four (A against B). The rest is the power basis about the
+singular point: the moments reach $2\times10^{19}$ against a piece of order one, so that the rounding of
+the weights alone (C) costs three digits. A basis local to the piece removes the loss entirely (D). At
+quadratic degree the local power basis is itself not quite enough: with exact moments the far piece is
+accurate to $4.9\times10^{-15}$ in local powers and to $1.9\times10^{-16}$ in Legendre polynomials of the
+local coordinate, and the piece at the singular point to $4.0\times10^{-15}$ and $2.4\times10^{-16}$. The
+basis the evaluation needs is therefore the Legendre basis of each piece. This is the classical
+conditioning contrast between power moments and orthogonal-polynomial (modified) moments
+\citep{Gautschi1970}.
+
+\paragraph{Quadrature on the smooth pieces is not enough.} A natural alternative keeps the closed forms only
+on the pieces that hold the singular point and integrates the others, which are smooth, by Gauss rules.
+It cures the linear field ($9.1\times10^{-16}$ and $1.6\times10^{-15}$ at corner and edge) but not the
+quadratic one ($5.9\times10^{-15}$ and $1.1\times10^{-14}$, insensitive to the Gauss order between $12$ and
+$20$), because at quadratic degree the pieces at the singular point lose digits too, to the power basis
+on $[0,2]$. The same switch is the remedy adopted for analytic boundary-element integrals
+\citep{KanekoGumerovDuraiswami2024,GumerovKanekoDuraiswami2024}; here it does not reach round-off, and
+it gives up the frequency-independent coefficients only on part of the domain while keeping the
+ill-conditioned basis on the rest.
+
+\section{A forty-digit reference}\label{sec:reference}
+
+A reference must share no step with the routes it judges. For corner and edge contact one exists that is
+also simple. There the singular point is a vertex of the pieces it touches, and $W_{ac}$ vanishes there as
+$\rho^3$ (corner) or $\rho^2$ (edge), $\rho$ the distance from the singular point. The most singular static
+term, $\partial^4r\sim\rho^{-3}$, is then absolutely integrable, and so is every other: the block is an
+ordinary integral, with no distribution, no moved derivative and no master integral.
+\texttt{Mathematica/GradedVoxel\_CornerReference.wl} evaluates
+\begin{equation}\label{eq:reference}
+  \int_{[-2,2]^3}W_{ac}(\bs)\,\partial^{\biota} r^m(\bR+\bs)\,\dd^3s
+\end{equation}
+for each of the $41$ static terms ($m=-1$ and $m=1$) at forty digits, at $h=1$. The factors of $W_{ac}$
+are integrated exactly from their definition. The domain is cut into its $8$ pieces; on a piece with the
+singular point at a vertex, three Duffy pyramids \citep{Duffy1982} about that vertex make the integrand
+$u_1^{\,k}$ times a smooth function, with $k\ge0$ an integer, so a tensor Gauss rule converges
+exponentially; the other pieces are smooth. The terms are assembled into the static block with exact
+rational weights and the medium's constants in exact arithmetic. Three gates check it.
+\begin{itemize}
+  \item[(a)] A polynomial kernel, $|\bR+\bs|^2$, for which Mathematica gives the six-dimensional integral
+  of Eq.~\eqref{eq:block} exactly. The reference reproduces it to $10^{-35}$, which checks $W$, the
+  pieces, the Duffy map and the weights.
+  \item[(b)] Integration by parts on the hardest term: with $F=\partial_0\partial_0\partial_1r$,
+  $\int W\,\partial_2F=-\int(\partial_2W)\,F$, the boundary terms vanishing because $W$ is continuous and
+  zero on the boundary of its support. The two sides have different integrands and agree only if the
+  singular integration is accurate. They agree to $1.4\times10^{-24}$ (corner) and $2.4\times10^{-24}$
+  (edge) for the linear field and $3.9\times10^{-24}$ and $3.5\times10^{-24}$ for the quadratic one.
+  \item[(c)] Convergence: the rule at $20$ and at $28$ points per axis agree to better than
+  $10^{-23}$ in every case ($3\times10^{-25}$ to $2\times10^{-24}$ where the value was recorded). Each piece
+  converges by about five digits per four points.
+\end{itemize}
+Pointwise identities such as $\nabla^2(1/r)=0$, which hold at every node of the rule, would pass whatever
+the integration did, and are not used as gates. The reference took $78$ to $93$\,s per geometry for the
+linear field and $502$ to $593$\,s for the quadratic one, at $20$ points per axis.
+
+\section{A stable evaluation}\label{sec:stable}
+
+\subsection{Marching the recurrences}\label{sec:marching}
+
+The reductions of \S\ref{sec:failure} can be re-anchored at the corner of each piece, so that the
+weights are local. In one dimension the edge moments $E[r]=\int_l^{l+L}u^r(A^2+t^2)^{n/2}\dd t$, with
+$t=u+l$, satisfy at fixed $n$ the three-term recurrence
+\begin{equation}\label{eq:edgerec}
+  (r+n+2)\,E[r+1]+l\,(2r+n+2)\,E[r]+r\,(A^2+l^2)\,E[r-1]=\bigl[u^r(A^2+t^2)^{(n+2)/2}\bigr]_{t=l}^{t=l+L},
+\end{equation}
+from $\frac{\dd}{\dd t}\bigl(u^r(A^2+t^2)^{(n+2)/2}\bigr)$ with $(A^2+t^2)=(A^2+l^2)+2lu+u^2$. Its homogeneous
+solutions grow like $\rho^r$, with $\rho=\sqrt{A^2+l^2}$ the distance from the singular point to the near
+end of the edge, while the wanted moments grow like $L^r$. Away from the singular point ($\rho>L$) the
+wanted solution is the minimal one, forward recursion amplifies the rounding errors, and backward
+recursion from zero values at a high degree converges to it, the error falling like $(L/\rho)^{R-r}$
+\citep{Gautschi1967,Olver1967}. Measured against forty-digit quadrature, forward recursion loses up to
+$10^{-7}$ by degree $20$ when $\rho/L=2.45$, and backward recursion is at round-off ($2\times10^{-16}$) for
+every $\rho/L$ tested, from $1.41$ to $2.45$, including $n=-3$, where the forward recursion fails at once on a zero
+divisor. Backward recursion needs no transcendental starting value, only the end terms of
+Eq.~\eqref{eq:edgerec}. For $\rho\le L$, near the singular point, forward recursion is the stable direction.
+
+In two dimensions the same identity along one axis acquires cross terms in the other, since
+$(c^2+t_y^2+t_z^2)$ involves both, and running it backwards requires a back-substitution in the other index
+at every level. This works to round-off (at most $10^{-15}$) on every face tested whose near corner is at
+least $1.73$ side lengths from the singular point, but it diverges, to errors of $10^2$ to $10^{97}$, on the
+faces at $\sqrt2$ side lengths; forward recursion there reaches only $10^{-9}$ to $2\times10^{-8}$ at
+degree $8$, and $4\times10^{-13}$ to $3\times10^{-11}$ at a distance of one side length. There is a band of
+geometries next to the singular point in which neither direction is stable, and the faces of the pieces
+adjacent to the singular point fall in it. Marching does not give a complete scheme.
+
+\subsection{Legendre moments by a boundary-value relation}\label{sec:legendre}
+
+On the unit box $\prod_j[l_j,l_j+1]$ in $d=1$, $2$ or $3$ dimensions, lifted by $c^2\ge0$ so that
+$S^2=c^2+\sum_jt_j^2$, define the Legendre moments
+\begin{equation}\label{eq:lam}
+  \Lambda[\mathbf{k}]=\int_{\text{box}}\prod_jP_{k_j}(x_j)\,S^m\,\dd^dt,\qquad x_j=2(t_j-l_j)-1\in[-1,1],
+\end{equation}
+for boxes whose closure does not hold the singular point ($S>0$ on the box). Along an anchor axis $i$, the
+Legendre identity $(2k+1)P_k=P'_{k+1}-P'_{k-1}$ and an integration by parts in $x_i$, applied to
+$g=S^{m+2}=(c^2+\sum_jt_j^2)\,S^m$, whose derivative is $\partial g/\partial x_i=\frac{m+2}{2}\,t_iS^m$, give
+\begin{equation}\label{eq:relation}
+  (2k_i+1)\int P_{\mathbf{k}}\Bigl(c^2+\sum_jt_j^2\Bigr)S^m
+  +\frac{m+2}{2}\int\bigl(P_{k_i+1}-P_{k_i-1}\bigr)(x_i)\,t_i\,P_{\hat{\mathbf{k}}}\,S^m=0,\qquad k_i\ge1,
+\end{equation}
+where $P_{\mathbf{k}}=\prod_jP_{k_j}(x_j)$ and $\hat{\mathbf{k}}$ collects the other axes. The boundary
+terms vanish because $P_{k_i+1}-P_{k_i-1}$ is zero at $x_i=\pm1$. For $k_i=0$, with $P_0=P_1'$,
+\begin{equation}\label{eq:relation0}
+  \int P_{\mathbf{k}}\Bigl(c^2+\sum_jt_j^2\Bigr)S^m+\frac{m+2}{2}\int P_1(x_i)\,t_i\,P_{\hat{\mathbf{k}}}\,S^m
+  =\tfrac12\Bigl(\Lambda_{d-1}\bigl[\hat{\mathbf{k}};c^2+(l_i+1)^2\bigr]+\Lambda_{d-1}\bigl[\hat{\mathbf{k}};
+  c^2+l_i^2\bigr]\Bigr),
+\end{equation}
+the right side being the moments of $S^{m+2}$ on the two faces normal to axis $i$, one dimension down,
+computed by the same relation. In zero dimensions the moment is the corner value $c^{m+2}$. Because
+$t_j=l_j+\tfrac12+\tfrac12x_j$, multiplication by $t_j$ and by $t_j^2$ is a banded operator on the
+Legendre index (three-term and five-term), so each relation couples $\Lambda$ at the indices $k_j-2$ to
+$k_j+2$ in every axis.
+
+\paragraph{The solution.} The anchor is taken as the axis of the largest $k_i$. The relations for
+$\mathbf{k}\in[0,N)^d$, with $\Lambda=0$ beyond, form one sparse linear system for the $N^d$ unknowns:
+the boundary-value formulation of a recurrence whose wanted solution is the minimal one, solved directly
+rather than marched \citep{Olver1967,OlverSookne1972}. The only data are the corner values of $S^{m+2}$
+and its analogues one and two dimensions down; no logarithm, inverse hyperbolic sine or arctangent is
+evaluated, the transcendental functions being carried by the system. Against forty-digit quadrature the
+edge moments come out to full relative accuracy, the high-order ones included: for $k\le16$ the absolute
+errors relative to $\Lambda[0]$ are $10^{-20}$ to $10^{-35}$ while the moments themselves fall to
+$10^{-13}$ to $10^{-21}$ of $\Lambda[0]$, at $\rho=1$, $\sqrt2$, $\sqrt3$, $\sqrt6$ and $3$ and for
+$m=-3$, $-1$ and $1$. The face moments are accurate to $9\times10^{-18}$ to $3\times10^{-16}$ relative to
+$\Lambda[0,0]$, including the faces at $\rho=\sqrt2$ and $\rho=1$ where marching failed. The truncation
+margin used is $16$ Legendre degrees beyond the highest needed.
+
+\subsection{Pieces away from the singular point}\label{sec:far}
+
+In $\bt$, a piece of $W$ away from the singular point is a box of side $2$ in one orthant (each axis
+interval is $[0,2]$, $[2,4]$ or their reflections), or a face of one at $|t_i|=|b-\sigma_i^*|$ for a plane
+delta. Reflecting each axis to $t_j\ge0$ and scaling by $\bt=2\tilde{\bt}$ makes it the unit box of
+\S\ref{sec:legendre}, with $c^2=(t_i/2)^2$ for a plane delta and $c=0$ otherwise. On each free axis the
+weight $w_j(\sigma_j)$ is written as a Legendre series in the box's own coordinate $x_j$; the kernel
+monomial $\tilde t_j^{\,\alpha_j}$ multiplies that series in the Legendre basis exactly; and the piece is the
+contraction
+\begin{equation}\label{eq:farpiece}
+  \int_{\text{piece}}W\,\bt^{\balpha}|\bt|^n=2^{\,n+|\balpha|+d}\,\prod_j(\pm1)^{\alpha_j}\sum_{\mathbf{k}}
+  \Bigl(\prod_j\bigl[\tilde t_j^{\,\alpha_j}w_j\bigr]_{k_j}\Bigr)\,\Lambda[\mathbf{k}],
+\end{equation}
+with the fixed coordinates' factors (the jump of $w'$ and $t_i^{\alpha_i}$) in front. The Legendre
+coefficients of the weights and the moments are of order one or smaller, and the moments decay with
+their degree, so the contraction has no large terms to cancel.
+
+\subsection{Pieces at the singular point}\label{sec:pyramids}
+
+A piece whose closure holds the singular point is, reflected and scaled, $[0,1]^d$ with a corner at the
+singular point ($d=3$, or $d=2$ for a plane-delta face through it). Its moments do not exist in the form
+\eqref{eq:lam}: the moments of $S^{-3}$ alone diverge at the corner, logarithmically in three dimensions,
+although the integrand the kernel actually presents, $\bt^{\balpha}|\bt|^{-3}$ with $|\balpha|=2$, is
+integrable; the separate moments do not see the factor $\bt^{\balpha}$. The piece is split instead into $d$ Duffy pyramids about the singular corner.
+In pyramid $k$, $\tilde t_k=\varrho$ and $\tilde t_j=\varrho v_j$ for the other axes, $\bv\in[0,1]^{d-1}$,
+so $\dd^d\tilde t=\varrho^{d-1}\dd\varrho\,\dd^{d-1}v$ and $|\tilde{\bt}|^n=\varrho^n(1+|\bv|^2)^{n/2}$, and
+\begin{equation}\label{eq:pyramid}
+  \int_{[0,1]^d}P(\tilde{\bt})\,|\tilde{\bt}|^n\,\dd^d\tilde t
+  =\sum_k\int_{[0,1]^{d-1}}(1+|\bv|^2)^{n/2}\,G_k(\bv)\,\dd^{d-1}v,\qquad
+  G_k(\bv)=\sum_p\frac{c_p(\bv)}{p+n+d},
+\end{equation}
+where $P$ is the weight times the kernel monomial and $c_p(\bv)$ is the coefficient of $\varrho^p$ in
+$P(\varrho\,\mathbf{e}_k(\bv))$. The radial integral is exact. The coefficients that vanish because $W$
+vanishes at the vertex, to order $1-n_{\text{der}}$ on an axis where the vertex is an outer end of the
+piece ($\sigma=\pm2$) with $n_{\text{der}}$ derivatives moved onto that axis, and to order zero where it is
+the inner breakpoint $\sigma=0$, are set exactly to zero, so that $p+n+d>0$ wherever $c_p\ne0$; a non-zero
+coefficient with $p+n+d\le0$ would be a divergent integral and is reported as an error. $G_k$ is a
+polynomial on the far face of the pyramid, at unit distance from the singular point. It is projected onto
+Legendre polynomials on $[0,1]^{d-1}$ by a Gauss rule exact for its degree ($24$ points per axis, $16$
+coefficients), which here only manipulates polynomials and never integrates the singular kernel, and
+contracted with the face moments $\Lambda$ of $(1+|\bv|^2)^{n/2}$ from \S\ref{sec:legendre}, with $c^2=1$
+and $\mathbf{l}=0$.
+
+\section{Accuracy and cost}\label{sec:results}
+
+\paragraph{Blocks against the reference.} With pieces away from the singular point by
+Eq.~\eqref{eq:farpiece} and pieces at it by Eq.~\eqref{eq:pyramid}, the static blocks agree with the
+reference as follows (relative Frobenius error, implementation
+\path{cubic_scattering/graded_voxel/blocks.static_term_integral_closed}):
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & linear, corner & linear, edge & quadratic, corner & quadratic, edge \\
+\midrule
+closed forms as written (\S\ref{sec:failure}) & $2.3\times10^{-13}$ & $9.4\times10^{-14}$ & $1.7\times10^{-11}$ & $5.5\times10^{-12}$\\
+stable evaluation (\S\ref{sec:stable}) & $1.0\times10^{-15}$ & $9.7\times10^{-16}$ & $3.7\times10^{-15}$ & $4.3\times10^{-15}$\\
+quadrature, $20$ points & $1.1\times10^{-15}$ & $1.8\times10^{-15}$ & $1.9\times10^{-15}$ & $2.7\times10^{-15}$\\
+\bottomrule
+\end{tabular}
+\caption{The static coupling block against the forty-digit reference. A linear field has $4$ test
+functions and $10$ source monomials, a quadratic one $10$ and $35$; each block has $81$ entries per pair.}
+\label{tab:accuracy}
+\end{table}
+
+The remaining gap to quadrature for the quadratic field, a factor of $1.3$ to $1.6$, is round-off, not a
+residual defect. Term by term, quadrature's own worst moments are in error by $2$ to $3\times10^{-14}$
+relative to the largest entry of the term and the stable evaluation's by about $5\times10^{-14}$, with a
+median of about $10^{-15}$ for both. Forming the weights' power coefficients in exact rational arithmetic
+before rounding gains only $15$ to $20\%$.
+
+\paragraph{Self and face contact.} The reference does not cover self and face contact, where the static
+terms are distributions. There the stable evaluation is compared with quadrature, which the reference
+shows to be accurate at corner and edge contact. At $h=1.25$, for all $41$ static terms and all pairs of
+the linear field, the two agree to a worst term of $4.2\times10^{-15}$ (self), $9.9\times10^{-15}$ (face),
+$3.3\times10^{-14}$ (edge) and $1.8\times10^{-14}$ (corner), with medians of $1.0$ to $1.7\times10^{-15}$.
+These comparisons are made at $h\ne1$ on purpose: they also check the physical scaling of each piece by
+powers of $h$, which a reference at $h=1$ cannot see.
+
+\paragraph{Cost.} % TO FILL from scripts/measure_galerkin_near_blocks.py and
+% scripts/measure_frequency_sweep_cost.py, re-run on the stable evaluation (4 October 2026).
+The universal moments are computed once for each geometry and cell degree; they serve every frequency and
+every cell size. The cost of that one-off step, and of each frequency thereafter, is reported in
+\S\ref{sec:sweep}.
+
+\section{Frequency-independent coefficients, and the frequency sweep}\label{sec:sweep}
+
+% TO FILL: the k-series of the hierarchy's tables (derivatives.moment_table_kseries) and of the Legendre
+% far blocks (blocks.far_block_series); the stopping rule that accounts for the 1/k_S^2 of c_2 (term t of
+% the c_2 family is as large as term t - 2 of the c_1 family; the old rule cut the series two powers early,
+% radiation part wrong by 7e-9 at k_S h = 1e-4); the sweep over 256 frequencies, one-off against
+% per-frequency cost, for both schemes, from the re-run.
+
+\section{Discussion}\label{sec:discussion}
+
+The closed forms of the touching blocks were never wrong: evaluated at forty digits they agree with the
+reference. What failed was their evaluation in double precision, and the failure has a single cause,
+the basis in which the polynomial weight meets the kernel. The classical results on moments
+\citep{Gautschi1970} and on minimal solutions of recurrences \citep{Gautschi1967,Olver1967} say both why
+and what to do: use moments of orthogonal polynomials, and obtain them from their recurrence posed as a
+boundary-value problem rather than marched. The relation \eqref{eq:relation} makes this possible for a
+power of the distance over a box in any dimension, and the pyramids of \S\ref{sec:pyramids} reduce the
+pieces at the singular point to faces where it applies. Two consequences are worth stating. The evaluation
+uses no transcendental function, only corner values and a sparse solve, so it is as easy to carry to
+other kernels homogeneous about a point as the closed forms were. And the accuracy is now that of
+quadrature, so the closed forms can be the default for the touching blocks, with their one advantage over
+quadrature intact: coefficients computed once, for every frequency.
+
+The boundary-element literature reached a different conclusion for the analytic integration of layer
+potentials, switching to quadrature away from the singularity
+\citep{KanekoGumerovDuraiswami2024,GumerovKanekoDuraiswami2024}. For the integrals of this paper that
+switch is not enough at quadratic degree (\S\ref{sec:failure}). Whether the Legendre relation would serve
+those integrals too we have not examined. We have not found the relation \eqref{eq:relation}, or the
+use of Legendre moments by a truncated boundary-value problem for integrals over boxes, in the literature
+we searched; the search was limited, and this is a statement of what we did not find.
+
+\section*{Data availability}
+The Mathematica notebooks and Python scripts that derive and check every result, and the package they
+test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalculations}: the reference
+\path{Mathematica/GradedVoxel_CornerReference.wl} and its results, the comparison
+\path{scripts/gate_galerkin_corner_reference.py}, the moments
+\path{cubic_scattering/graded_voxel/legendre_moments.py}, the blocks
+\path{cubic_scattering/graded_voxel/blocks.py}, and the tests
+\path{cubic_scattering/tests/test_legendre_moments.py} and
+\path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}
