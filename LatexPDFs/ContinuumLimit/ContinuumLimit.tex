@@ -897,6 +897,24 @@ across the voxel), of the collocation error of \S\ref{sec:convergence}, which th
 voxel of \S\ref{sec:fourth} removes, as does the hierarchy itself once its third-gradient block is kept
 (\S\ref{sec:blocks}).
 
+\paragraph{The symmetry of the cube.} The cube is unchanged by $48$ operations: the $24$ rotations
+that carry it into itself, each with or without the inversion $\mathbf x\to-\mathbf x$. They form the
+group $O_h$. Any operator built from the cube alone commutes with all $48$, and group theory then says
+how far it can be simplified \citep{Tinkham1964,Dresselhaus2008}. The quantities it acts on split into
+irreducible representations, the smallest sets of components that the symmetry operations mix only among
+themselves. Such an operator has no matrix elements between different representations, and on a
+representation that occurs once it is a multiple of the identity (Schur's lemma). It is then diagonal,
+with one eigenvalue for each representation, however many components that representation has. The
+labels are the standard ones of crystal physics. $A$, $E$ and $T$ are representations of dimension one,
+two and three, and the subscript $g$ (from the German \emph{gerade}, even) marks those that are even under
+inversion, as a strain is. For the nine components of a displacement gradient, $A_{1g}$ is the dilatation,
+$E_g$ the two traceless combinations of the diagonal strains, $T_{2g}$ the three off-diagonal shears, and
+$T_{1g}$ the three rotations, the antisymmetric part of the gradient. A stiffness contrast acts on strain
+only, so on $T_{1g}$ the operator below is the identity. A sphere is invariant under every rotation, not
+only the cube's, and there $E_g$ and $T_{2g}$ join into a single five-dimensional shear channel. The cube
+splits that channel into two and three dimensions, which is why its two shear eigenvalues are averaged
+with the weights $2$ and $3$ in Eq.~\eqref{eq:shearsplit} below.
+
 With $\Delta\rho=0$, Eq.~\eqref{eq:A22} at second degree is the $9\times9$ operator
 $\delta_{pr}\delta_{ij}-\mathsf M_{in,pk}\,\delta c_{nkrj}$, built from $\mathsf M$ alone. Under
 $O_h$ the nine gradient components decompose as $A_{1g}\oplus E_g\oplus T_{1g}\oplus T_{2g}$, and
