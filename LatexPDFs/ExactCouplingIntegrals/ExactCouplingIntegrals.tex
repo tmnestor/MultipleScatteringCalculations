@@ -99,7 +99,7 @@ step with the evaluation.
 %   To come:
 %   Distant cells: the two-centre multipole series (graded_voxel/multipole.py)        [WRITTEN]
 %   The single cell: reduction on the irreducible representations of the cube group; static blocks on
-%     five constants.
+%     five constants; Appendix A                                                   [WRITTEN]
 %   The worked application: the Cartesian multipole hierarchy's cell-to-cell tables (Paper 1's second strand),
 %     reproducing Paper 1's graded-sphere table, with accuracy and cost against quadrature.
 %   Multipoles for elastic waves (required section; where the word first appears)   [WRITTEN]
@@ -709,6 +709,184 @@ its calibrated Gauss tables ($10^{-10}$), not of the series. The comparison is o
 solve, repeated at each frequency, is not included, and neither is accuracy per unknown, so it does not
 say which scheme is the better discretisation.
 
+\section{The single cell}\label{sec:site}
+
+The self block $\bK(0)$ of \S\ref{sec:blocks} is all that an isolated cell needs, and for a cell whose
+contrast is uniform the symmetry of the cube reduces it far enough that its static part can be written
+down entry by entry. This section does so for the linear field, the four test functions $1$ and $\xi_i$.
+
+\paragraph{The single-site matrix.} The cell carries the state $\psi(\mathbf{x})=\sum_b\psi_bL_b(\bxi)$,
+each $\psi_b$ a nine-component vector. The contrast $\boldsymbol\Delta$ is the $9\times9$ operator per
+unit volume that turns the state into the source density: $\omega^2\Delta\rho$ on the displacement, at
+angular frequency $\omega$, and the stiffness contrast, with Lam\'e contrasts $\Delta\lambda$ and
+$\Delta\mu$, on the strain. The source density is a polynomial in the cell's coordinates,
+$\boldsymbol\Delta(\bxi)\psi=\sum_c\bigl(\sum_b\mathbf{E}_{cb}\psi_b\bigr)m_c(\bxi)$, with
+$9\times9$ coefficients $\mathbf{E}_{cb}$ on the monomials $m_c$. Tested against the $L_a$, the
+Lippmann--Schwinger equation of one cell in an incident field $\psi^0$ is
+\begin{equation}\label{eq:sitels}
+  \bigl(\mathbf{M}-\bK(0)\,\mathbf{E}\bigr)\psi=\langle L,\psi^0\rangle,\qquad
+  \mathbf{M}_{ab}=\langle L_a,L_b\rangle\,\mathbf{I}_9,\qquad
+  \bigl(\bK(0)\mathbf{E}\bigr)_{ab}=\sum_c\bK_{ac}(0)\,\mathbf{E}_{cb},
+\end{equation}
+with $\langle f,g\rangle=\int_Vfg\,\dd^3x$ over the cell. What the cell radiates is set by its source
+moments $\sigma_a=\langle L_a,\boldsymbol\Delta\psi\rangle=\sum_b\mathbf{F}_{ab}\psi_b$,
+$\mathbf{F}_{ab}=\sum_c\langle L_a,m_c\rangle\mathbf{E}_{cb}$, the force and stress means and their first
+moments. The single-site matrix
+\begin{equation}\label{eq:t36}
+  \mathbf{T}_{36}=\mathbf{F}\,\bigl(\mathbf{M}-\bK(0)\,\mathbf{E}\bigr)^{-1}\mathbf{M}
+\end{equation}
+maps the Legendre coefficients of the incident field, $\mathbf{M}^{-1}\langle L,\psi^0\rangle$, to the
+source moments; it is $36\times36$, four functions of nine components each
+(\path{graded_voxel.site.single_site_t36}). The first moment of the force, which a cell carrying a
+uniform field cannot hold, is part of it \citep{NestorContinuum2026}.
+
+\paragraph{The cube group.} The cube is unchanged by $48$ orthogonal maps, the signed permutations
+$\mathbf{Q}$ of the three axes; they form the group $O_h$ \citep{Tinkham1964,Dresselhaus2008}. Each acts
+on the $36$ unknowns by $\mathbf{D}(\mathbf{Q})=\mathbf{T}(\mathbf{Q})\otimes\mathbf{S}(\mathbf{Q})$:
+$\mathbf{T}$ leaves the function $1$ alone and maps $\xi_i$ as the coordinates, $\bxi\to\mathbf{Q}\bxi$,
+and $\mathbf{S}$ maps the displacement as a vector, $\bu\to\mathbf{Q}\bu$, and the strain as a tensor,
+$\boldsymbol\varepsilon\to\mathbf{Q}\boldsymbol\varepsilon\mathbf{Q}^{\mathsf T}$. The self block is an
+integral over the cube against itself, so it is unchanged by every $\mathbf{Q}$, and with a contrast
+uniform in the cell so is $\mathbf{A}=\mathbf{M}-\bK(0)\mathbf{E}$: it commutes with all $48$ matrices
+$\mathbf{D}(\mathbf{Q})$. Group theory then fixes how far $\mathbf{A}$ can be simplified. The $36$
+unknowns split into irreducible representations of $O_h$, the smallest sets that the $48$ maps mix only
+among themselves; $A$, $E$ and $T$ label those of dimension $d=1$, $2$ and $3$, and the subscripts $g$ and
+$u$ (\emph{gerade} and \emph{ungerade}) those even and odd under the inversion $\bxi\to-\bxi$. By Schur's
+lemma $\mathbf{A}$ has no entries between different representations, and on a representation that occurs
+$n$ times it is one $n\times n$ block, repeated $d$ times, once for each of the $d$ partners. The inverse
+in Eq.~\eqref{eq:t36} is the inverse of those blocks.
+
+\paragraph{The reduction.} Under inversion the displacement is odd, the strain even and $\xi_i$ odd. The
+$15$ even unknowns are the uniform strain, $1\times\boldsymbol\varepsilon$, which is $A_{1g}+E_g+T_{2g}$
+(the dilatation, the two traceless combinations of the diagonal strains, and the three shears), and the
+linear displacement, $\xi_i u_j$, which is $A_{1g}+E_g+T_{1g}+T_{2g}$: the same three, which are the strain
+of a linear displacement, and the rigid rotation $T_{1g}$. Each strain therefore pairs with its own linear
+displacement in a $2\times2$ block, and the rotation stands alone. The $21$ odd unknowns are the mean
+displacement, $T_{1u}$, and the eighteen linear strains, $\xi_i\varepsilon_{jk}$, which are
+$3T_{1u}+2T_{2u}+A_{2u}+E_u$. Table~\ref{tab:irreps} collects the multiplicities. No block is larger than
+$4\times4$. The multiplicities follow from the characters of $O_h$, and the reduction was checked
+numerically on the matrix of Eq.~\eqref{eq:t36} at $k_Sh=0.0625$
+(\path{scripts/check_graded_voxel_site_symmetry.py}): $\mathbf{A}$ commutes with all $48$ maps to
+$6\times10^{-17}$ of its largest entry; on each representation it has $n$ distinct eigenvalues, each
+$d$-fold; and the inverse assembled from the blocks equals the $36\times36$ inverse to
+$6\times10^{-16}$, and $\mathbf{T}_{36}$ from it to $3\times10^{-16}$.
+
+\begin{table}[h]
+\centering\small
+\setlength{\tabcolsep}{7pt}
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+ & \multicolumn{4}{c}{even ($15$)} & \multicolumn{4}{c}{odd ($21$)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+representation & $A_{1g}$ & $E_g$ & $T_{1g}$ & $T_{2g}$ & $A_{2u}$ & $E_u$ & $T_{1u}$ & $T_{2u}$ \\
+\midrule
+dimension $d$ & $1$ & $2$ & $3$ & $3$ & $1$ & $2$ & $3$ & $3$ \\
+multiplicity $n$ (block $n\times n$) & $2$ & $2$ & $1$ & $2$ & $1$ & $1$ & $4$ & $2$ \\
+\bottomrule
+\end{tabular}
+\caption{The single-site matrix $\mathbf{A}=\mathbf{M}-\bK(0)\mathbf{E}$ of a cell with uniform contrast
+and a linear field, reduced on the irreducible representations of the cube group: $\sum nd=36$.}
+\label{tab:irreps}
+\end{table}
+
+\paragraph{A graded contrast.} A contrast that varies linearly in the cell,
+$\boldsymbol\Delta(\mathbf{x})=\boldsymbol\Delta_0\bigl[1+\mathbf{g}\cdot(\mathbf{x}-\mathbf{x}_c)\bigr]$,
+is odd about the centre, and it couples the even and odd sets. With $\mathbf{g}=0$ the largest entry of
+$\mathbf{T}_{36}$ between them is $4\times10^{-18}$ of its largest entry; with $\mathbf{g}$ along an axis it
+is $0.325\,gh$ at $gh=0.05$, $0.1$ and $0.2$, linear in the gradient
+(\path{scripts/measure_graded_voxel_site.py}). A gradient along an axis leaves the symmetry of the eight
+maps that fix that axis, and exactly those eight commute with $\mathbf{A}$; the reduction is then on the
+representations of that smaller group. In a general direction no map is left, but covariance remains:
+$\mathbf{D}(\mathbf{Q})\mathbf{A}(\mathbf{g})\mathbf{D}(\mathbf{Q})^{\mathsf T}=\mathbf{A}(\mathbf{Q}\mathbf{g})$,
+to $6\times10^{-17}$, so cells whose gradients are related by a symmetry of the cube share one inverse.
+
+\paragraph{The Born limit.} Without a gradient $\mathbf{T}_{36}$ is exact at first order in the contrast
+for any incident field: the source moments are then $\boldsymbol\Delta_0\langle L_a,\psi^0\rangle$. With a
+gradient the first-order source $\langle L_a,(\mathbf{g}\cdot(\mathbf{x}-\mathbf{x}_c))\psi^0\rangle$ needs
+the incident field's quadratic moments, which a linear field drops. The error is then
+$O\bigl(\Delta\,gh\,(kh)^2\bigr)$, with $k$ the incident wavenumber: at $gh=0.2$ it is $5.5\times10^{-6}$,
+$2.2\times10^{-5}$ and $8.9\times10^{-5}$ at $kh=0.025$, $0.05$ and $0.1$, slopes $2.0001$ and $2.0004$. It
+is the single cell's view of the rule that a field of degree $p$ and a contrast of degree $r$ converge at
+order $\min(2p+2,2r+2)$ \citep{NestorContinuum2026}.
+
+\paragraph{The static blocks in closed form.} As $\omega\to0$ the contrast acts on the strain alone, so
+the displacement-type functions drop out of $\mathbf{A}^{-1}$ wherever it meets $\boldsymbol\Delta$, and
+$\mathbf{T}_{36}$ is carried by the strain-type functions: the uniform strain ($A_{1g}+E_g+T_{2g}$) and
+the linear strain ($3T_{1u}+2T_{2u}+A_{2u}+E_u$). On each representation $\Gamma$,
+\begin{equation}\label{eq:tblock}
+  \mathbf{T}_\Gamma=M_\Gamma\,\boldsymbol\Delta_\Gamma\bigl(\mathbf{I}-\mathbf{N}_\Gamma
+  \boldsymbol\Delta_\Gamma\bigr)^{-1},\qquad
+  \mathbf{N}_\Gamma=M_\Gamma^{-1}\bK_\Gamma=\frac{1}{\mu}\bigl(\mathbf{p}_\Gamma+b_2\,\mathbf{q}_\Gamma\bigr),
+\end{equation}
+with $M_\Gamma=\langle1,1\rangle=8h^3$ for the uniform strain and $\langle\xi_i,\xi_i\rangle=8h^3/3$ for
+the linear, $\bK_\Gamma$ the static self block on $\Gamma$, and $\boldsymbol\Delta_\Gamma$ the contrast
+on it. The two families of Eq.~\eqref{eq:series} give the two parts: $\mathbf{p}_\Gamma$ is the part of
+$\delta_{ij}/r$ ($c_1=1$ at $m=-1$) and $\mathbf{q}_\Gamma$ that of $\partial_i\partial_jr$, whose static
+weight is $b_2=c_2(1)=-\tfrac12(1-\beta^2/\alpha^2)$, $\alpha$ and $\beta$ the compressional and shear
+speeds. Both scale as $h^3$ (the factor $h^{6+m-|\biota|}$ of Eq.~\eqref{eq:umoment} with $m=-1$,
+$|\biota|=2$ and $m=1$, $|\biota|=4$), so $\mathbf{N}_\Gamma$ does not depend on $h$. Carried out in exact
+arithmetic, the reductions from volume to faces to edges of \S\ref{sec:failure} make every entry of
+$\mathbf{p}_\Gamma$ and $\mathbf{q}_\Gamma$ a combination with rational coefficients of five constants,
+\begin{equation}\label{eq:fiveconstants}
+  1,\qquad \frac1\pi,\qquad \frac{\sqrt2}{\pi},\qquad \frac{\sqrt3}{\pi},\qquad
+  \Lambda=\frac{1}{\pi}\Bigl[\ln\bigl(1+\sqrt2\bigr)-\operatorname{arsinh}\frac{1}{\sqrt2}\Bigr]=0.070950.
+\end{equation}
+For the uniform strain,
+\begin{equation}\label{eq:uniformblocks}
+  N_{A_{1g}}=-\frac{1+2b_2}{3\mu}=-\frac{1}{3(\lambda+2\mu)},\qquad
+  N_{E_g}=-\frac{1}{3\mu}+\frac{b_2}{\mu}\Bigl(3\chi_1-\frac23\Bigr),\qquad
+  N_{T_{2g}}=-\frac{1}{3\mu}-\frac{2b_2\chi_1}{\mu},
+\end{equation}
+with $\lambda$ and $\mu$ the background's Lam\'e constants and
+\begin{equation}\label{eq:c1}
+  \chi_1=\frac{1-2\sqrt2+\sqrt3}{\pi}+2\Lambda=0.111222 .
+\end{equation}
+The dilatation is the same for every shape, since the static Green's tensor has
+$\partial_i\partial_nG_{in}=-\delta(\mathbf{r})/(\lambda+2\mu)$. The two shear entries satisfy $2q_{E_g}+3q_{T_{2g}}=-\tfrac43$,
+which is five times $-\tfrac4{15}$, the value of a sphere on each of its five deviators: the cube splits
+the sphere's single shear channel into two and three dimensions, about the sphere's value. The linear
+strain needs one more constant in the first family,
+\begin{equation}\label{eq:c0}
+  \chi_0=\frac{2-3\sqrt2+\sqrt3}{5\pi}+\Lambda=0.038444 ;
+\end{equation}
+the vectors that span each representation, the contrast on them, and every entry of the $3\times3$ and
+$2\times2$ blocks are in Appendix~\ref{app:blocks}.
+
+\paragraph{Averaged and collocated.} The entries \eqref{eq:uniformblocks} are averages over the cell:
+$\bK_\Gamma/M_\Gamma$ for the uniform strain is the mean over the cube of its static self-interaction, the
+strain produced at a point by a unit uniform eigenstress in the cell. A single site collocated at the
+centre takes the value there instead, and the two differ. The point values are in closed form in
+\citep{NestorContinuum2026}, and at the background used there and here ($\beta^2/\alpha^2=9/25$) they are
+$2\mu|N|=0.5929$ for the diagonal deviators ($E_g$) and $0.4314$ for the shears ($T_{2g}$); the averages of
+Eq.~\eqref{eq:uniformblocks} are $0.4535$ and $0.5243$. Both pairs average, with the weights $2$ and $3$,
+to the sphere's $0.4960$, whose self-interaction is uniform inside it \citep{Eshelby1957} and the same
+either way. The order of the two cubic channels is reversed: at the centre the diagonal deviators are the
+more depolarised, on average over the cell the shears are. The self-interaction of a cube is not uniform,
+and averaging and collocation weight it differently.
+
+\paragraph{The checks.} The derivation is in \path{scripts/derive_graded_voxel_site_blocks.py}, which
+writes the exact moments and blocks to \path{LatexPDFs/ExactCouplingIntegrals/data/}. It re-derives the
+master integrals in exact arithmetic by the same three reductions, and they agree with the package's
+values to the last bit. The $41$ static moments $U_{ac}(m,\biota;\mathbf{0})$ that the self block needs,
+each a $4\times4$ matrix, agree in exact arithmetic with the stable evaluation of \S\ref{sec:stable} to
+$1.8\times10^{-15}$, an independent check of that evaluation at the self geometry. The exact static
+strain block equals the block of \path{blocks.near_block} as $\omega\to0$ to $1.2\times10^{-15}$, vectors
+of different representations do not couple, and $\mathbf{T}_{36}$ assembled from the closed-form blocks
+by Eq.~\eqref{eq:tblock} equals the $36\times36$ single site as $\omega\to0$ to $5\times10^{-16}$. At
+finite frequency the displacement-type functions enter at order $(k_Sh)^2$, through the terms $m\ge0$ of
+Eq.~\eqref{eq:series}, built from the same moments; those entries are not tabulated here.
+
+\paragraph{Reciprocity.} Two further symmetries hold for every touching block, not only the self block.
+The propagator satisfies $\mathbf{W}\bP(\mathbf{r})$ symmetric at every $\mathbf{r}$, with
+$\mathbf{W}=\operatorname{diag}(\mathbf{I}_6,\tfrac12\mathbf{I}_3)$ (the factor $\tfrac12$ on the three
+engineering shears), and $\bP(-\mathbf{r})=\boldsymbol\Pi\bP(\mathbf{r})\boldsymbol\Pi$ with
+$\boldsymbol\Pi=\operatorname{diag}(-\mathbf{I}_3,\mathbf{I}_6)$. Every block between test functions is
+therefore $\mathbf{W}$-symmetric, $(\mathbf{W}\bK_{ab})^{\mathsf T}=\mathbf{W}\bK_{ab}$, and the self
+block obeys $\bK_{ba}(0)=\boldsymbol\Pi\bK_{ab}(0)\boldsymbol\Pi$, by exchanging the two points of the
+cell. At the self, face, edge and corner geometries, by quadrature and by the series in $k$ of
+\S\ref{sec:sweep} alike, the first holds to $3\times10^{-21}$ of the largest entry and the second to
+$6\times10^{-17}$.
+
 \section{Relation to the fast multipole method}\label{sec:fmm}
 
 The fast multipole method and this paper answer different questions. The method accelerates the
@@ -752,6 +930,7 @@ use of Legendre moments by a truncated boundary-value problem for integrals over
 we searched; the search was limited, and this is a statement of what we did not find.
 
 \section*{Data availability}
+{\sloppy
 The Mathematica notebooks and Python scripts that derive and check every result, and the package they
 test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalculations}: the reference
 \path{Mathematica/GradedVoxel_CornerReference.wl} and its results, the comparison
@@ -759,7 +938,70 @@ test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalcul
 \path{cubic_scattering/graded_voxel/legendre_moments.py}, the blocks
 \path{cubic_scattering/graded_voxel/blocks.py}, and the tests
 \path{cubic_scattering/tests/test_legendre_moments.py} and
-\path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}.
+\path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}; for the single cell, \path{scripts/check_graded_voxel_site_symmetry.py}, \path{scripts/derive_graded_voxel_site_blocks.py} and \path{scripts/measure_graded_voxel_site.py}, with the exact moments and blocks in \path{LatexPDFs/ExactCouplingIntegrals/data/}.\par}
+
+\appendix
+
+\section{The static blocks of the linear strain}\label{app:blocks}
+
+This appendix completes \S\ref{sec:site}: the vectors that span each irreducible representation, the
+contrast on them, and the entries of $\mathbf{N}_\Gamma=(\mathbf{p}_\Gamma+b_2\mathbf{q}_\Gamma)/\mu$ of
+Eq.~\eqref{eq:tblock} for the linear strain. With $\gamma_{ij}$ the engineering shear on the axes $i$ and
+$j$, the representations are spanned, for the partner along axis $0$, by
+\begin{equation*}
+\begin{array}{@{}ll@{\qquad}ll@{}}
+  A_{1g}: & \varepsilon_{00}+\varepsilon_{11}+\varepsilon_{22}, & E_g: & 2\varepsilon_{00}-\varepsilon_{11}-\varepsilon_{22},\\[2pt]
+  T_{2g}: & \gamma_{12}, & A_{2u}: & \xi_0\gamma_{12}+\xi_1\gamma_{02}+\xi_2\gamma_{01},\\[2pt]
+  T_{1u}: & \multicolumn{3}{@{}l@{}}{v_1=\xi_0\varepsilon_{00},\quad v_2=\xi_0(\varepsilon_{11}+\varepsilon_{22}),\quad
+            v_3=\xi_1\gamma_{01}+\xi_2\gamma_{02},}\\[2pt]
+  T_{2u}: & \multicolumn{3}{@{}l@{}}{w_1=\xi_0(\varepsilon_{11}-\varepsilon_{22}),\quad w_2=\xi_1\gamma_{01}-\xi_2\gamma_{02},}\\[2pt]
+  E_u: & \xi_1\gamma_{02}-\xi_2\gamma_{01}, & &
+\end{array}
+\end{equation*}
+and the blocks are the matrices of the operators in these vectors. The vectors are not normalised, so the
+blocks are not symmetric. The contrast is $\boldsymbol\Delta=3\Delta\lambda+2\Delta\mu$ on $A_{1g}$,
+$2\Delta\mu$ on every other one-dimensional block and on $T_{2u}$, and on $T_{1u}$
+\begin{equation}
+  \boldsymbol\Delta_{T_{1u}}=\begin{pmatrix}\Delta\lambda+2\Delta\mu&2\Delta\lambda&0\\
+  \Delta\lambda&2\Delta\lambda+2\Delta\mu&0\\0&0&2\Delta\mu\end{pmatrix}.
+\end{equation}
+Table~\ref{tab:blocks} lists every entry of the linear strain, with $\chi_0$ of Eq.~\eqref{eq:c0}. The first
+family, $\mathbf{p}$, is $\chi_0$ and rationals throughout; the second needs all five constants of
+Eq.~\eqref{eq:fiveconstants}.
+
+\begin{table}[h]
+\centering\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}llcrrrrr@{}}
+\toprule
+ & & & \multicolumn{5}{c}{$q$: coefficient of} \\
+\cmidrule(lr){4-8}
+block & entry & $p$ & $1$ & $1/\pi$ & $\sqrt2/\pi$ & $\sqrt3/\pi$ & $\Lambda$ \\
+\midrule
+$T_{1u}$ & $(1,1)$ & $-\tfrac13-8\chi_0$ & $-\tfrac23$ & $-\tfrac{14}{5}$ & $\tfrac{36}{5}$ & $-\tfrac{22}{5}$ & $-4$ \\
+ & $(1,2)$ & $0$ & $0$ & $-\tfrac{18}{5}$ & $\tfrac{12}{5}$ & $\tfrac65$ & $-12$ \\
+ & $(1,3)$ & $-\tfrac16+2\chi_0$ & $-\tfrac23$ & $\tfrac{22}{5}$ & $-\tfrac{48}{5}$ & $\tfrac{26}{5}$ & $8$ \\
+ & $(2,1)$ & $0$ & $0$ & $-\tfrac95$ & $\tfrac65$ & $\tfrac35$ & $-6$ \\
+ & $(2,2)$ & $-\tfrac13+4\chi_0$ & $-\tfrac23$ & $5$ & $-6$ & $1$ & $14$ \\
+ & $(2,3)$ & $-\tfrac1{12}+\chi_0$ & $0$ & $-\tfrac35$ & $\tfrac{12}{5}$ & $-\tfrac95$ & $0$ \\
+ & $(3,1)$ & $-\tfrac16+2\chi_0$ & $-\tfrac23$ & $\tfrac{22}{5}$ & $-\tfrac{48}{5}$ & $\tfrac{26}{5}$ & $8$ \\
+ & $(3,2)$ & $-\tfrac16+2\chi_0$ & $0$ & $-\tfrac65$ & $\tfrac{24}{5}$ & $-\tfrac{18}{5}$ & $0$ \\
+ & $(3,3)$ & $-\tfrac5{12}-\chi_0$ & $\tfrac23$ & $-\tfrac{46}{5}$ & $\tfrac{84}{5}$ & $-\tfrac{38}{5}$ & $-20$ \\
+\midrule
+$T_{2u}$ & $(1,1)$ & $-\tfrac13+4\chi_0$ & $-\tfrac23$ & $\tfrac{233}{15}$ & $-\tfrac{422}{15}$ & $\tfrac{63}{5}$ & $18$ \\
+ & $(1,2)$ & $-\tfrac1{12}+\chi_0$ & $-\tfrac23$ & $5$ & $-12$ & $7$ & $8$ \\
+ & $(2,1)$ & $-\tfrac16+2\chi_0$ & $-\tfrac43$ & $10$ & $-24$ & $14$ & $16$ \\
+ & $(2,2)$ & $-\tfrac14-3\chi_0$ & $-\tfrac23$ & $2$ & $-12$ & $10$ & $-4$ \\
+\midrule
+$A_{2u}$ & & $-\tfrac12+6\chi_0$ & $\tfrac43$ & $-\tfrac{326}{15}$ & $\tfrac{764}{15}$ & $-\tfrac{146}{5}$ & $-20$ \\
+$E_u$ & & $-\tfrac14+3\chi_0$ & $-\tfrac23$ & $-\tfrac{74}{15}$ & $\tfrac{116}{15}$ & $-\tfrac{14}{5}$ & $4$ \\
+\bottomrule
+\end{tabular}
+\caption{The static blocks of the linear strain in closed form:
+$\mathbf{N}_\Gamma=(\mathbf{p}+b_2\mathbf{q})/\mu$, with $q$ given by its rational coefficients on the
+constants of Eq.~\eqref{eq:fiveconstants}. Rows and columns of $T_{1u}$ are $(v_1,v_2,v_3)$, of $T_{2u}$
+$(w_1,w_2)$.}\label{tab:blocks}
+\end{table}
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}

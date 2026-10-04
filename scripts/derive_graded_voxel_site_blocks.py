@@ -215,8 +215,8 @@ def main() -> int:
     out = (
         Path(__file__).resolve().parent.parent
         / "LatexPDFs"
-        / "GradedVoxel"
-        / "figures"
+        / "ExactCouplingIntegrals"
+        / "data"
         / "site_moments_exact.txt"
     )
     lines = []
