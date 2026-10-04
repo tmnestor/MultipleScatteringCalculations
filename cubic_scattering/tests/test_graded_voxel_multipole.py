@@ -7,6 +7,7 @@ from cubic_scattering import ReferenceMedium
 from cubic_scattering.graded_voxel.blocks import coupling_block, family_tables
 from cubic_scattering.graded_voxel.kernel import _helmholtz_F, kernel_9x9
 from cubic_scattering.graded_voxel.multipole import (
+    b_scalar_F,
     cell_pair_moments,
     far_block_multipole,
     helmholtz_F,
@@ -156,3 +157,48 @@ def test_piecewise_multipole_block_with_a_quadratic_field():
 def test_piecewise_multipole_refuses_touching_cells():
     with pytest.raises(ValueError, match="touch"):
         piecewise_multipole_block((1, 0, 0), H, OMEGA, REF)
+
+
+@pytest.mark.parametrize("ks_r", [1e-6, 1e-3, 0.3, 0.99, 1.5])
+def test_b_scalar_derivatives_have_no_cancellation(ks_r):
+    # F_q of B = (g_S - g_P) / k_S^2 against 40-digit arithmetic: the difference of Hankel forms loses
+    # eps / (k r)^2, so at k_S r = 1e-3 it was wrong by 1e-10 relative
+    import mpmath as mp
+
+    mp.mp.dps = 40
+    r = 2.5
+    ks = ks_r / r
+    kp = ks * REF.beta / REF.alpha
+    q_max = 8
+    got = b_scalar_F(ks, kp, r, q_max)
+
+    def f_q(k, q):
+        t = mp.mpf(r)
+        g = lambda x: mp.exp(1j * k * x) / x  # noqa: E731
+        # (r^-1 d/dr)^q applied symbolically through mpmath differentiation of g(sqrt(2 u)) in u = r^2 / 2
+        return mp.diff(lambda u: g(mp.sqrt(2 * u)), t * t / 2, q)
+
+    for q in range(q_max + 1):
+        want = (f_q(mp.mpf(ks), q) - f_q(mp.mpf(kp), q)) / mp.mpf(ks) ** 2
+        assert abs(got[q] - complex(want)) <= 1e-13 * abs(complex(want)), (q, got[q], want)
+
+
+@pytest.mark.parametrize("off", [(4, 3, 2), (8, 0, 0)])
+def test_multipole_block_at_low_frequency(off):
+    # k_S h = 1e-4: the old difference of Hankel forms gave 3e-10 and 1e-10 here
+    omega = 1e-4 * REF.beta / H
+    want = coupling_block(off, H, omega, REF)
+    got = far_block_multipole(off, H, omega, REF, tol=1e-13)
+    assert np.linalg.norm(got - want) / np.linalg.norm(want) < 1e-13
+
+
+def test_piecewise_block_bisects_rather_than_raise_the_order():
+    # (2, 1, 1) at k_S h = 0.5: the unbisected plan of order 48 stalled at 2.2e-12
+    from cubic_scattering.graded_voxel.blocks import _sform, _to_field_rows
+
+    h, off = 1.0, (2, 1, 1)
+    omega = 0.5 * REF.beta / h
+    ref = _sform(off, h, (0, 0, 0), lambda X: kernel_9x9(X, omega, REF).reshape(len(X), 81), 28, 10, 4)
+    want = _to_field_rows(ref.reshape(4, 10, 9, 9))
+    got = piecewise_multipole_block(off, h, omega, REF, tol=1e-13)
+    assert np.linalg.norm(got - want) / np.linalg.norm(want) < 1e-13

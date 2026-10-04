@@ -53,6 +53,7 @@ from scipy.special import spherical_jn, spherical_yn
 from ..effective_contrasts import ReferenceMedium
 from .basis import SOURCE_EXPONENTS, moment_1d, source_exponents
 from .blocks import _to_field_rows, autocorrelation_1d, family_tables
+from .kernel import falling
 
 Beta = tuple[int, int, int]
 
@@ -65,6 +66,34 @@ def helmholtz_F(k: float, r: float, q_max: int) -> NDArray:
     q = np.arange(q_max + 1)
     h = spherical_jn(q, k * r) + 1j * spherical_yn(q, k * r)
     return 1j * (-1.0) ** q * k ** (q + 1.0) * h / r**q
+
+
+#: Below k_S r = this, the derivatives of B = (g_S - g_P) / k_S^2 come from its power series; above it the
+#: difference of the two Hankel-function forms loses at most two digits.
+B_SERIES_LIMIT = 1.0
+#: Terms of that power series (k_S r <= 1: the last is below 1e-60 of the first)
+B_SERIES_TERMS = 48
+
+
+def b_scalar_F(ks: float, kp: float, r: float, q_max: int) -> NDArray:
+    """F_q = (r^-1 d/dr)^q B, B = (g_S - g_P) / k_S^2, q = 0..q_max, without cancellation.
+
+    The difference of the two Hankel forms of ``helmholtz_F`` divided by k_S^2 cancels as k r -> 0 (its
+    relative error is about eps / (k r)^2). For k_S r <= B_SERIES_LIMIT the series is used instead:
+    B = sum_t c2(t) r^(t-1), c2(t) = ((i k_S)^t - (i k_P)^t) / (t! k_S^2), and
+    F_q(r^m) = m (m - 2) ... (m - 2q + 2) r^(m - 2q), every term computed directly.
+    """
+    if ks * r > B_SERIES_LIMIT:
+        return (helmholtz_F(ks, r, q_max) - helmholtz_F(kp, r, q_max)) / ks**2
+    out = np.zeros(q_max + 1, dtype=complex)
+    for t in range(1, B_SERIES_TERMS):
+        c2 = ((1j * ks) ** t - (1j * kp) ** t) / (math.factorial(t) * ks**2)
+        m = t - 1
+        for q in range(q_max + 1):
+            f = falling(m, q)
+            if f != 0.0:
+                out[q] += c2 * f * r ** (m - 2 * q)
+    return out
 
 
 @cache
@@ -88,10 +117,12 @@ def derivative_table(order: int) -> dict[Beta, tuple[tuple[Beta, int, float], ..
     return {beta: tuple((alpha, q, c) for (alpha, q), c in terms.items()) for beta, terms in table.items()}
 
 
-def radial_derivatives(k: float, x: NDArray, order: int) -> dict[Beta, complex]:
-    """d^beta [exp(i k r) / r] at the point x, for every |beta| <= order."""
+def radial_derivatives(k: float, x: NDArray, order: int, f: NDArray | None = None) -> dict[Beta, complex]:
+    """d^beta f(r) at the point x, for every |beta| <= order; f(r) = exp(i k r) / r unless its F_q are
+    given."""
     x = np.asarray(x, dtype=float)
-    f = helmholtz_F(k, float(np.linalg.norm(x)), order)
+    if f is None:
+        f = helmholtz_F(k, float(np.linalg.norm(x)), order)
     powers = [[float(x[i]) ** e for e in range(order + 1)] for i in range(3)]
     out: dict[Beta, complex] = {}
     for beta, terms in derivative_table(order).items():
@@ -181,7 +212,7 @@ def far_block_multipole(
     big_r = 2.0 * h * np.asarray(offset, dtype=float)
     ka, kb = omega / ref.alpha, omega / ref.beta
     ds = radial_derivatives(kb, big_r, n + 4)
-    dp = radial_derivatives(ka, big_r, n + 4)
+    db = radial_derivatives(kb, big_r, n + 4, f=b_scalar_F(kb, ka, float(np.linalg.norm(big_r)), n + 4))
     ta, tb = family_tables()
     mu = cell_pair_moments(n, n_source, n_test)
     out = np.zeros((n_test, n_source, 9, 9), dtype=complex)
@@ -194,7 +225,7 @@ def far_block_multipole(
             acc = np.zeros((n_test, n_source), dtype=complex)
             for gam, w in weights.items():
                 beta = (gam[0] + shift[0], gam[1] + shift[1], gam[2] + shift[2])
-                d = ds[beta] if family == "a" else (ds[beta] - dp[beta]) / kb**2
+                d = ds[beta] if family == "a" else db[beta]
                 acc += w * d
             out += acc[:, :, None, None] * coef[None, None]
     return _to_field_rows(out) / (4.0 * np.pi * ref.mu)
@@ -214,10 +245,12 @@ def _flat_derivative_table(order: int) -> tuple[NDArray, NDArray, NDArray, NDArr
     return tuple(arr[:, j].astype(int) for j in range(5)) + (arr[:, 5],)  # type: ignore[return-value]
 
 
-def radial_derivative_array(k: float, x: NDArray, order: int) -> NDArray:
-    """d^beta [exp(i k r) / r] at x as an array D[b0, b1, b2], zero where |beta| > order."""
+def radial_derivative_array(k: float, x: NDArray, order: int, f: NDArray | None = None) -> NDArray:
+    """d^beta f(r) at x as an array D[b0, b1, b2], zero where |beta| > order; f(r) = exp(i k r) / r unless
+    its F_q are given."""
     x = np.asarray(x, dtype=float)
-    f = helmholtz_F(k, float(np.linalg.norm(x)), order)
+    if f is None:
+        f = helmholtz_F(k, float(np.linalg.norm(x)), order)
     ib, a0, a1, a2, q, coef = _flat_derivative_table(order)
     e = np.arange(order + 1)
     px, py, pz = (float(x[i]) ** e for i in range(3))
@@ -254,6 +287,12 @@ def piece_moments_1d(e_t: int, e_s: int, splits: int, order: int) -> NDArray:
     return out
 
 
+#: The highest series order a piece may use. At offset (2, 1, 1) the unbisected plan chose orders 48 to 56
+#: and stalled at 6e-13 to 2e-12, while one bisection at orders 36 to 40 reached 1e-15 to 4e-15: the
+#: rounding of a series this long grows with its order, so a plan that needs more bisects instead.
+PIECE_MAX_ORDER = 40
+
+
 def _piece_plan(offset: tuple[int, int, int], kappa: float, tol: float) -> tuple[int, int]:
     """(splits, order): the bisection level that makes the series cheapest, and its order.
 
@@ -269,9 +308,9 @@ def _piece_plan(offset: tuple[int, int, int], kappa: float, tol: float) -> tuple
         n = 2
         while sum(ratio ** (n + 1 - j) * kap**j / math.factorial(j) for j in range(n + 2)) >= tol:
             n += 1
-            if n > 60:
+            if n > PIECE_MAX_ORDER:
                 break
-        if n > 60:
+        if n > PIECE_MAX_ORDER:
             continue
         cost = 8.0 ** (splits + 1) * (n + 1) ** 3
         if best is None or cost < best[0]:
@@ -340,8 +379,9 @@ def piecewise_multipole_block(
             for i2 in range(n_sub):
                 x = big_r + h * np.array([centres[i0], centres[i1], centres[i2]])
                 ds = radial_derivative_array(kb, x, n + 4)
-                dp = radial_derivative_array(ka, x, n + 4)
-                db = (ds - dp) / kb**2
+                db = radial_derivative_array(
+                    kb, x, n + 4, f=b_scalar_F(kb, ka, float(np.linalg.norm(x)), n + 4)
+                )
                 m0 = mom[0][:, :, i0, :] * scale
                 m1 = mom[1][:, :, i1, :] * scale
                 m2 = mom[2][:, :, i2, :] * scale
