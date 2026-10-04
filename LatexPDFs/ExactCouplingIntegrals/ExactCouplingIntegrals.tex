@@ -94,8 +94,8 @@ step with the evaluation.
 %   3. The closed forms, and why they fail in double precision                       [WRITTEN]
 %   4. A forty-digit reference                                                       [WRITTEN]
 %   5. A stable evaluation                                                           [WRITTEN]
-%   6. Accuracy and cost                                                             [WRITTEN, cost to fill]
-%   7. Frequency-independent coefficients, and the frequency sweep                   [to fill from runs]
+%   6. Accuracy and cost                                                             [WRITTEN]
+%   7. Frequency-independent coefficients, and the frequency sweep                   [WRITTEN]
 %   To come:
 %   Distant cells: the two-centre multipole series (graded_voxel/multipole.py).
 %   The single cell: reduction on the irreducible representations of the cube group; static blocks on
@@ -387,7 +387,8 @@ errors relative to $\Lambda[0]$ are $10^{-20}$ to $10^{-35}$ while the moments t
 $10^{-13}$ to $10^{-21}$ of $\Lambda[0]$, at $\rho=1$, $\sqrt2$, $\sqrt3$, $\sqrt6$ and $3$ and for
 $m=-3$, $-1$ and $1$. The face moments are accurate to $9\times10^{-18}$ to $3\times10^{-16}$ relative to
 $\Lambda[0,0]$, including the faces at $\rho=\sqrt2$ and $\rho=1$ where marching failed. The truncation
-margin used is $16$ Legendre degrees beyond the highest needed.
+margin used in these tests is $16$ Legendre degrees beyond the highest needed; in the coupling blocks
+$8$ suffices (\S\ref{sec:results}).
 
 \subsection{Pieces away from the singular point}\label{sec:far}
 
@@ -470,19 +471,119 @@ $3.3\times10^{-14}$ (edge) and $1.8\times10^{-14}$ (corner), with medians of $1.
 These comparisons are made at $h\ne1$ on purpose: they also check the physical scaling of each piece by
 powers of $h$, which a reference at $h=1$ cannot see.
 
-\paragraph{Cost.} % TO FILL from scripts/measure_galerkin_near_blocks.py and
-% scripts/measure_frequency_sweep_cost.py, re-run on the stable evaluation (4 October 2026).
-The universal moments are computed once for each geometry and cell degree; they serve every frequency and
-every cell size. The cost of that one-off step, and of each frequency thereafter, is reported in
-\S\ref{sec:sweep}.
+\paragraph{The complete blocks.} With the dynamic terms of the series \eqref{eq:series} added, the
+whole touching block, static and dynamic, is the series summed term by term, each term a universal moment
+times $h^{\,6+m-|\biota|}$ and the weights $c_1$, $c_2$. At $k_Sh=0.0625$ it agrees with the quadrature
+block at $20$ points per axis to about $10^{-15}$ for the linear field at all four contact geometries, and
+to $2$ to $4\times10^{-15}$ for the quadratic field; with the closed forms as written the quadratic field's
+blocks had stalled at $9\times10^{-15}$ to $2\times10^{-11}$ (\path{scripts/measure_galerkin_near_blocks.py}).
+
+\paragraph{Cost.} The universal moments are computed once for each contact geometry and cell degree: they
+depend on neither the frequency nor the cell size. For all four geometries and both degrees, with the
+series carried to the powers that $k_Sh=0.0625$ needs, that one-off step took $3745$\,s on one machine,
+against $998$\,s for the closed forms as written: about $0.75$\,s per term against $0.3$\,s, over some
+$2600$ terms. Stability has a price, and it is paid once. Each block thereafter costs the assembly of the
+series alone, $5$\,ms for the linear field and $33$\,ms for the quadratic one, against $0.4$ to $13$\,s for
+a quadrature block at the number of points (14 to 20 per axis) that reaches $10^{-15}$. One frequency
+needs all eight blocks: $17.4$\,s by quadrature at $14$ points ($2.3$\,s for the linear field, $15.1$\,s
+for the quadratic), $0.15$\,s by the series. The one-off cost is therefore recovered after about $220$
+frequencies, and a synthetic over $256$ frequencies is already cheaper by the series
+(\S\ref{sec:sweep}). Two measures brought the one-off cost down by a factor of $2.3$ without
+changing any block beyond round-off: a truncation margin of $8$ Legendre degrees instead of $16$ (the blocks
+are the same to the digits shown for margins from $4$ to $16$), and one truncation shared by every term
+of a cell degree, so that the sparse systems are solved once and reused.
 
 \section{Frequency-independent coefficients, and the frequency sweep}\label{sec:sweep}
 
-% TO FILL: the k-series of the hierarchy's tables (derivatives.moment_table_kseries) and of the Legendre
-% far blocks (blocks.far_block_series); the stopping rule that accounts for the 1/k_S^2 of c_2 (term t of
-% the c_2 family is as large as term t - 2 of the c_1 family; the old rule cut the series two powers early,
-% radiation part wrong by 7e-9 at k_S h = 1e-4); the sweep over 256 frequencies, one-off against
-% per-frequency cost, for both schemes, from the re-run.
+A synthetic seismogram needs the coupling blocks at every frequency of a sweep, at least $256$ of them.
+What can be computed once, for the geometry alone, and what must be computed again at each frequency,
+decides the cost. The universal moments of the touching blocks are of the first kind. The same structure
+serves the blocks between cells that do not touch, and the cell-to-cell tables of the moment hierarchy of
+\citet{NestorContinuum2026}, whose integrals are never singular (the field point is a cell centre, at least
+half a cell outside the source cube).
+
+\paragraph{The series for cells that do not touch.} For two cells that do not touch, the kernel is smooth
+on every piece of $W$, and the series \eqref{eq:series} applies term by term with coefficients obtained by
+a Gauss rule on the unit cell, once for each offset:
+\begin{equation}\label{eq:farseries}
+  \bK_{ac}(\bR)=\sum_{t\ge0}\Bigl[c_1(t-1)\,\mathbf{S}^A_{ac}(t;h)+c_2(t-1)\,\mathbf{S}^B_{ac}(t;h)\Bigr],
+  \qquad\mathbf{S}(t;h)=h^{\,6+(t-1)-|\mathbf{a}|}\,\mathbf{S}(t;1),
+\end{equation}
+where $\mathbf{S}^A$ and $\mathbf{S}^B$ are the $s$-form integrals \eqref{eq:sform} of the propagator built
+from $\delta_{ij}r^{t-1}$ and from $\partial_i\partial_jr^{t-1}$, and $|\mathbf{a}|$ is the number of
+derivatives on $r^{t-1}$ in each of the $81$ entries (two more for the second family). Because quadrature is
+linear in the kernel, the series summed with these coefficients equals the Gauss block exactly, up to the
+truncation of the series. It agrees with the Gauss block to $10^{-15}$ to $10^{-13}$ for offsets from two
+to five cells and $k_Sh$ from $10^{-6}$ to $0.5$, and costs $0.3$\,ms per block and frequency against
+$9$\,ms for the Gauss block (\path{blocks.far_block_series}).
+
+\paragraph{The hierarchy's tables.} The moment hierarchy couples cells through the tables
+\begin{equation}\label{eq:hiertable}
+  T_{in}[\mathbf{D},\mathbf{W}](\bo)=\int_{\text{cube}}\partial^{\mathbf{D}}\bG_{in}(\bo-\bxi)\,
+  \bxi^{\mathbf{W}}\,\dd^3\xi,
+\end{equation}
+the derivatives of the Green's tensor at the field cell's centre against the source cube's monomials. The
+same expansion gives
+\begin{equation}\label{eq:hierseries}
+  T_{in}[\mathbf{D},\mathbf{W}]=\frac{1}{4\pi\mu}\sum_{t\ge0}\Bigl[c_1(t)\,\delta_{in}\,
+  U(t;\mathbf{D},\mathbf{W})+c_2(t)\,U(t;\mathbf{D}+\mathbf{e}_i+\mathbf{e}_n,\mathbf{W})\Bigr],
+\end{equation}
+now with $c_1(t)=(\mathrm{i}k_S)^t/t!$ and $c_2(t)=((\mathrm{i}k_S)^t-(\mathrm{i}k_P)^t)/(t!\,k_S^2)$, and
+$U(t;\mathbf{a},\mathbf{W})=\int\partial^{\mathbf{a}}r^{t-1}(\bo-\bxi)\,\bxi^{\mathbf{W}}\dd^3\xi$ on the
+unit cube, scaled to a cube of side $d$ by $d^{\,(t-1)-|\mathbf{a}|+|\mathbf{W}|+3}$. The $U$ are computed
+once per offset by a Gauss rule chosen by the offset's shape: $28$ points per axis for a face neighbour,
+$20$ for an edge neighbour, $14$ for a corner neighbour and $12$ beyond, each measured to reach $10^{-14}$
+against $36$ points for every derivative and weight of the third-gradient hierarchy. Each frequency then
+costs one weighted sum. The series agrees with Gauss quadrature at $36$ points to $10^{-15}$ to
+$6\times10^{-14}$ from $k_Sd=10^{-6}$ to $3$ (\path{derivatives.moment_table_kseries}); at $48$ terms
+it covers $k_S r$ up to about $14$, $r$ the largest distance from the field point to the source cube, and
+beyond that it refuses, with the Gauss table as the route.
+
+\paragraph{The stopping rule.} The weight $c_2$ carries $k_S^{-2}$: its term $t$ is of order $k^{t-2}$, as
+large as the $c_1$ term $t-2$, and the radiation (imaginary) part at order $k$ comes from $t=1$ of the first
+family and $t=3$ of the second together. Each series is therefore summed through $t=4$ at least, and until
+$(k_Sr_{\max})^{t-2}/(t-2)!$ falls below the tolerance, $r_{\max}$ the largest separation of two points of
+the cells. A rule that bounded term $t$ by $(k_Sr_{\max})^t/t!$, ignoring the $k_S^{-2}$, stopped two powers
+early at low frequency: the touching blocks' imaginary part was wrong by $7\times10^{-9}$ at $k_Sh=10^{-4}$,
+and the whole block by $10^{-12}$. Tests of the imaginary part's low-frequency law, which is $O(k)$ with an
+$O(k^3)$ correction, fail on the old rule and pass on the new.
+
+\paragraph{The sweep.} On the grid of the graded sphere of \citet{NestorContinuum2026} ($n$ cells across a
+sphere of radius $a$), all the tables or blocks of one frequency were formed for the third-gradient
+hierarchy with a linear contrast, and for the Legendre cell with a linear field and contrast, at $256$
+frequencies $k_Sa=0.5\,j/256$. The cost per frequency was timed at $j=1$, $64$, $160$ and $256$, and the
+total is the one-off cost plus $256$ times their mean (one machine, eight threads,
+\path{scripts/measure_frequency_sweep_cost.py}). The hierarchy's self table, in closed form
+\citep{NestorContinuum2026}, costs $0.05$ to $0.07$\,s per frequency and is included in its totals.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rcccc}
+\toprule
+$n$ & hierarchy, Gauss & hierarchy, series & Legendre, quadrature & Legendre, series \\
+\midrule
+$6$  & $1.6$ & $0.5$ & $8.5$  & $5.7$ \\
+$10$ & $3.9$ & $0.8$ & $12.8$ & $7.0$ \\
+$14$ & $7.7$ & $1.6$ & $22.2$ & $11.9$ \\
+\bottomrule
+\end{tabular}
+\caption{Minutes for the tables or blocks of $256$ frequencies, one-off cost included. The hierarchy's
+series costs $4.6$, $16$ and $40$\,s once and $0.02$, $0.08$ and $0.17$\,s per frequency; its Gauss tables
+$0.32$, $0.85$ and $1.75$\,s per frequency. The Legendre series costs $336$, $403$ and $684$\,s once (the
+universal moments of the touching blocks and the coefficients of every other offset) and $0.03$, $0.06$
+and $0.12$\,s per frequency; its quadrature $2.0$, $3.0$ and $5.2$\,s per frequency.}
+\label{tab:sweep}
+\end{table}
+
+Over the sweep the series is the cheaper route for both kinds of cell, by a factor of $3$ to $5$ for the
+hierarchy and $1.5$ to $1.9$ for the Legendre cell, whose one-off cost the stable evaluation of
+\S\ref{sec:stable} has raised by $14$ to $94\%$ (from $173$, $302$ and $601$\,s). The hierarchy's
+tables are the cheaper of the two by a factor of $7$ to $12$ at equal grids. The two series agree with the Gauss tables to $6\times10^{-12}$ to
+$1.2\times10^{-11}$ (hierarchy) and to round-off (Legendre); the hierarchy's difference is the tolerance of
+its calibrated Gauss tables ($10^{-10}$), not of the series. The comparison is of the tables alone: the
+solve, repeated at each frequency, is not included, and neither is accuracy per unknown, so it does not
+say which scheme is the better discretisation.
 
 \section{Discussion}\label{sec:discussion}
 

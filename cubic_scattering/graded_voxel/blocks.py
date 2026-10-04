@@ -288,8 +288,11 @@ def static_term_integral(
 # The static terms in closed form, evaluated stably
 # ---------------------------------------------------------------------------
 
-#: Legendre degrees beyond a piece's own polynomial degree kept in the moment systems (truncation margin)
-LEGENDRE_MARGIN = 16
+#: Legendre degrees beyond a piece's own polynomial degree kept in the moment systems (truncation margin).
+#: The blocks against the 40-digit reference are the same to the digits shown for margins 4 to 16, linear
+#: and quadratic fields (scripts/gate_galerkin_corner_reference.py); 8 keeps a factor of two in hand, and
+#: the sparse solve costs about 1.4 s at the quadratic field's 20^3 unknowns against 13.5 s at 28^3.
+LEGENDRE_MARGIN = 8
 #: Legendre coefficients kept per face axis for the polynomial a pyramid leaves on its far face
 PYRAMID_DEGREE = 16
 #: Gauss points per face axis projecting that polynomial onto Legendre polynomials (exact for its degree)
@@ -370,18 +373,16 @@ def _far_piece(
         for i in free:
             tpow = legendre.poly2leg((Polynomial([low[i] + 0.5, 0.5]) ** alpha[i]).coef)
             fac = (2.0 * sign[i]) ** alpha[i]
-            vecs.append(
-                np.array(
-                    [
-                        [_padded(legendre.legmul(wleg[(i, ta[i], sc[i])], tpow), n_leg) * fac for sc in src]
-                        for ta in tst
-                    ]
-                )
-            )
+            # the product depends only on the exponent pair of this axis, not on (a, c)
+            prod = {
+                (et, es): _padded(legendre.legmul(wleg[(i, et, es)], tpow), n_leg) * fac
+                for et, es in axis_exps
+            }
+            vecs.append(np.array([[prod[(ta[i], sc[i])] for sc in src] for ta in tst]))
         if len(free) == 3:
-            val = np.einsum("acx,acy,acz,xyz->ac", *vecs, lam)
+            val = np.einsum("acx,acy,acz,xyz->ac", *vecs, lam, optimize=True)
         else:
-            val = np.einsum("acx,acy,xy->ac", *vecs, lam)
+            val = np.einsum("acx,acy,xy->ac", *vecs, lam, optimize=True)
         out += scale * fixed_val * val
     return out
 
@@ -481,13 +482,13 @@ def _vertex_piece(
                 )
             g = (poly[..., ok] / denom[ok]).sum(axis=3)  # (a, c, nodes)
             if len(others) == 1:
-                g_leg = np.einsum("acg,kg,g->ack", g, p_at, v_wts) * norm
+                g_leg = np.einsum("acg,kg,g->ack", g, p_at, v_wts, optimize=True) * norm
                 total += np.einsum("ack,k->ac", g_leg, lam[:PYRAMID_DEGREE])
             else:
                 gr = g.reshape(n_test, n_source, PYRAMID_GAUSS, PYRAMID_GAUSS)
-                g_leg = np.einsum("acgh,kg,lh,g,h->ackl", gr, p_at, p_at, v_wts, v_wts) * np.outer(
-                    norm, norm
-                )
+                g_leg = np.einsum(
+                    "acgh,kg,lh,g,h->ackl", gr, p_at, p_at, v_wts, v_wts, optimize=True
+                ) * np.outer(norm, norm)
                 total += np.einsum("ackl,kl->ac", g_leg, lam[:PYRAMID_DEGREE, :PYRAMID_DEGREE])
         out += scale * fixed_val * total
     return out
@@ -546,8 +547,10 @@ def static_term_integral_closed(
     parts = {(i, et, es): _axis_parts(et, es, orders[i], h) for i in range(3) for et, es in axis_exps}
     shape = [len(parts[(i, *axis_exps[0])]) for i in range(3)]
     sstar = [-2.0 * o for o in offset]  # the singular point in sigma = s / h
-    deg = max(len(pl[3].coef) for plist in parts.values() for pl in plist if isinstance(pl[3], Polynomial))
-    n_leg = deg + 4 + LEGENDRE_MARGIN  # W's degree + the kernel monomial's (|alpha| <= 4) + the margin
+    # one truncation for every term of a cell degree, so that the moment systems are shared: W's largest
+    # number of coefficients on an axis (degree e_t + e_s + 1, before any derivative) + the kernel
+    # monomial's degree (|alpha| <= 4) + the margin
+    n_leg = max(et + es for et, es in axis_exps) + 2 + 4 + LEGENDRE_MARGIN
     out = np.zeros((n_test, n_source))
     for choice in itertools.product(*[range(n) for n in shape]):
         kinds = [parts[(i, *axis_exps[0])][choice[i]] for i in range(3)]
