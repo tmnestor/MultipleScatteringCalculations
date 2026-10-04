@@ -64,8 +64,9 @@ def box_moments(lows: tuple[float, ...], c2: float, m: int, n: int) -> NDArray:
     """Lam[k] for k in [0, n)^d (d = len(lows)), as an array of shape (n,) * d; a scalar for d = 0.
 
     Raises:
-        ValueError: when the closure of the box holds the singular point (c2 = 0 and every l_j = 0), where
-            the moments of the faces through it diverge for m <= -3.
+        ValueError: when the closure of the box holds the singular point (c2 = 0 and every l_j = 0): the
+            moments of S^m alone diverge there for m <= -d (logarithmically at m = -d), although the
+            kernel's integrand t^alpha |t|^m may not.
     """
     d = len(lows)
     if d == 0:
