@@ -17,7 +17,7 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\itshape A Moment Hierarchy for the Voxel}
+\fancyhead[L]{\small\itshape A Cartesian Multipole Hierarchy for the Voxel}
 \fancyhead[R]{\small\itshape Nestor (2026)}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -51,7 +51,7 @@
 % an italic d is the lattice pitch. JCP/make_jcp.py refuses to build if this is broken.
 \newcommand{\dd}{\mathrm{d}}
 
-\title{\bfseries A Moment Hierarchy for the Voxel\\[4pt]
+\title{\bfseries A Cartesian Multipole Hierarchy for the Voxel\\[4pt]
 \large Closed-Form Single-Site $T$-Matrices, and the Error of Elastic\\
 Volume-Integral Scattering Isolated on a Space-Filling Layer of Cubes}
 \author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
@@ -62,53 +62,27 @@ Volume-Integral Scattering Isolated on a Space-Filling Layer of Cubes}
 
 \begin{abstract}
 \noindent
-Volume-integral (coupled-dipole) methods model elastic waves in a heterogeneous medium by dividing it
-into cubic voxels, each carrying a single-site $T$-matrix (its scattering response) and coupled to the
-others through the Green's tensor of the background. Each voxel must represent two things: the medium
-within it and the wavefield within it. We ask which basis each needs, and what error a given choice
-leaves. The question matters because such schemes are built for realistically complicated media, which
-have no exact solution: there the error cannot be measured, and a refinement study can converge
-smoothly to the wrong limit. We answer it where the answer can be checked, on a layer of voxels.
-Because cubes tile space, $n$ planes of voxels of side $d=D/n$ are the layer of thickness $D$ itself
-for every $n$, with no shape or modelling error, so the difference from the exact solution is the
-discretisation error alone. Three properties of the cube make the experiment clean. Its lateral form
-factor vanishes on the reciprocal lattice, so the source-cell-averaged coupling is \emph{exactly} the
-continuum's. Its single-site $T$-matrix follows from distributional moments of the Green's tensor, with
-no polarisability to choose. And that $T$-matrix's self term cancels the kernel's, so the simplest
-scheme is a collocation of the continuum equation. With the wavefield expanded to Legendre degree $p$
-and the medium's contrast to degree $r$ in each voxel, the findings are these. (i) The scheme converges
-at order $\min(2p+2,2r+2)$: a contrast held constant in each cell caps every voxel at second order,
-however rich its field. (ii) The leading error is in closed form, $c_p(kd)^{2p+2}$ with $k$ the
-wavenumber and $c_0=1/12$, $c_1=1/720$, $c_2=1/100800$, and the orders $2$, $4$ and $6$ of
-$p=0$, $1$ and $2$ hold for incident P, SV and SH waves at normal and oblique incidence; for the
-collocation scheme it is $+(kd)^2/8$ in
-reflection and $-(kd)^2/24$ in transmission, opposite signs that no scalar correction of the single
-site can remove. (iii) What remains is the error of the single-site $T$-matrix. It sums the rescattering
-within a voxel exactly, but only for the medium as the voxel represents it; at second order in the
-contrast its error equals the \emph{relative projection error} of the medium, the fraction of the squared norm of its profile that polynomials of degree
-$\min(p,r)$ on the cells cannot represent: exactly in the long-wave limit, and to within $1.3\%$ at
-$kD=0.12$. The two bases must therefore be matched, and the error is known from the medium and the
-grid before anything is solved. (iv) Where the medium is piecewise constant on the voxels that error
-vanishes and the degree of the field alone sets the order: in a randomly stratified layer one
-first-moment voxel per model layer reaches an accuracy of $10^{-6}$, where the uniform-field voxel
-needs about forty. (v) In a plane-stratified background, two half-spaces or three layers, with the
-voxels clear of the interfaces or against them, the orders are unchanged for P, SV and SH waves at
-normal and oblique incidence: the background changes the field the voxels must represent, not how well
-they represent it. (vi) A sphere whose contrast falls smoothly to zero at its surface converges at
-second order against its exact solution, the order the layer predicts for the mean-only voxel; a sharp
-sphere does not, because its staircase changes with the grid. (vii) The single site is the first
-member of a hierarchy in the gradients of the field at the voxel's centre, which extends the Taylor
-form of the equivalent inclusion method of Moschovidis and Mura to elastic waves and to bodies that
-are not ellipsoids, and whose coefficients are
-moments of the Green's tensor over the cube, each in closed form on the four constants $1$, $\sqrt3$,
-$\pi$ and $\log(2-\sqrt3)$. Its blocks gain accuracy in pairs, the second gradients completing the
-density channel and the third the stiffness channel: with third gradients the single site is three
-hundred times more accurate than the uniform-strain closure against the exact sphere, and as a voxel
-scheme it is fourth order and matches the first-moment voxel on a smoothly graded sphere. It is a
-single-site $T$-matrix derived entirely from the physics: nothing in it is fitted, its singular
-self-interaction and its radiation damping are exact, and its error is known before anything is
-solved. Every result
-is derived symbolically and checked against an independent implementation or an exact solution.
+Volume-integral (coupled-dipole) methods divide a heterogeneous elastic medium into cubic voxels, each
+carrying a single-site $T$-matrix, coupled through the background Green's tensor. Each voxel must represent the medium within it and the wavefield within it.
+We ask which basis each needs, and what error a given choice leaves: such schemes are built for media
+with no exact solution, where the error cannot be measured. We answer on a layer of voxels. Because
+cubes tile space, $n$ planes of voxels are the layer itself for every $n$, and its exact solution
+isolates the discretisation error. With the wavefield expanded to Legendre degree $p$ and the medium's
+contrast to degree $r$ in each voxel, the scheme converges at order $\min(2p+2,2r+2)$, with leading
+error $c_p(kd)^{2p+2}$ in closed form ($c_0=1/12$, $c_1=1/720$, $c_2=1/100800$, $k$ the wavenumber and
+$d$ the voxel side), for incident P, SV and SH waves at normal and oblique incidence. At second order in
+the contrast the error of the single-site $T$-matrix equals the relative projection error of the
+medium, the fraction of the squared norm of its profile that polynomials of degree $\min(p,r)$ on the
+cells cannot represent: the two bases must be matched, and the error is known from the medium and the
+grid before anything is solved. In a plane-stratified background the orders persist, and a sphere whose
+contrast falls smoothly to zero converges at the order the layer predicts. The single site is the first
+member of a Cartesian multipole hierarchy: each voxel radiates through the Cartesian multipole moments
+of its source and receives the field through its gradients at its centre, the integrals over the source
+cube being exact at every separation. Its coefficients are moments of the Green's tensor over the cube,
+in closed form on four constants, and nothing in it is fitted. With third gradients it is three hundred
+times more accurate than the uniform-strain closure against the exact sphere, and as a voxel scheme it
+is fourth order. Every result is derived symbolically and checked against an independent
+implementation or an exact solution.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -257,7 +231,7 @@ approximation and the second in arbitrary anisotropic elastic media with a nine-
 ordered as the experiment is built. \S\S\ref{sec:setting}--\ref{sec:continuum} set out the discrete
 medium and the continuous layer it must reproduce; \S\ref{sec:point} shows why the point coupling
 fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly. \S\ref{sec:single}
-derives the single-site $T$-matrix as the first member of a moment hierarchy in closed form, and sets
+derives the single-site $T$-matrix as the first member of a Cartesian multipole hierarchy in closed form, and sets
 out what that gives (\S\ref{sec:whyclosed}). \S\S\ref{sec:convergence}--\ref{sec:fourth} take up
 the wavefield basis, \S\ref{sec:hetero} the medium basis and its projection error,
 \S\ref{sec:sphere} the sphere, and \S\ref{sec:gradvoxel} the hierarchy as a voxel scheme.
@@ -605,6 +579,51 @@ compatible with the lattice, and the moments over the cube provide it. The const
 approximation of a voxel explicit rather than implicit: it derives the cube's $T$-matrix from
 the moments of the elastodynamic Green's tensor over the cube, with the uniform-strain closure as the
 first truncation of a hierarchy.
+
+\paragraph{A Cartesian multipole hierarchy.} We call the construction the Cartesian multipole
+hierarchy (Fig.~\ref{fig:multipole}). The contrast acting on the voxel's field is a source: the density
+contrast a body force $\omega^2\Delta\rho\,\mathbf{u}$, the stiffness contrast a stress
+$\delta\mathbf{c}:\boldsymbol\varepsilon$. Each voxel radiates through the Cartesian multipole moments of
+these sources over the cube, a force monopole and a stress dipole from the uniform field (the cell of the
+coupled-dipole method) and higher multipoles from the field's gradients, and receives the field through
+its gradients at its centre. The name needs one caution. A multipole expansion usually expands the kernel
+or the field about a centre and truncates it, which holds only for well-separated cells or outside a
+circumscribing sphere: in the fast multipole method \citep{CarrierGreengardRokhlin1988}, whose
+elastodynamic form leaves adjacent cells to direct integration \citep{ChaillatBonnetSemblat2007}, in the
+spherical-wave $T$-matrix of \citet{Waterman1976}, and in the force-dipole description of a point defect,
+an expansion of the Green's function far from it \citep{Clouet2018}. Here the Green's tensor is never
+expanded. Only the source is resolved into Cartesian moments, and the integral over the source cube is
+exact at every separation, so there is no radius of convergence, and touching voxels and the self term,
+a distribution in closed form, are included. The source side is shared with the multipole extensions of
+the coupled-dipole method in optics \citep{Evlyukhin2011,Ustimenko2022} and with Cartesian multipole
+decompositions of a source \citep{Riccardi2022}. The word hierarchy has its sense in kinetic theory and
+cosmology \citep{MaBertschinger1995}: a chain of coupled moment equations closed by truncation at a
+chosen order, whose truncation error is here in closed form.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_multipole.pdf}
+\caption{The Cartesian multipole hierarchy. (a) The source voxel radiates through the Cartesian
+multipole moments of its source: a force monopole from the density contrast, a stress dipole from the
+stiffness contrast, and higher multipoles from the field's gradients. The receiver voxel takes the field
+through its value and gradients at its centre $\mathbf x_c$. The two are coupled by the integral of the
+derivatives of the Green's tensor over the whole source cube, Eq.~\eqref{eq:gradkernel}, which is exact
+at every separation because the Green's tensor is not expanded. (b) The cases a multipole expansion of
+the Green's tensor cannot reach are therefore included: touching voxels, by the same integral, and the
+voxel's own self term, a distribution in closed form.}
+\label{fig:multipole}
+\par\smallskip{\footnotesize\textit{Alt text:} Two panels. In the upper panel a shaded cube on the left,
+labelled source voxel, contains three small symbols: a single arrow labelled force monopole, a pair of
+opposed arrows labelled stress dipole, and a cross of four arrows labelled higher multipoles, from the
+gradients. A long arrow runs from it to the centre of an unshaded cube on the right, labelled
+receiver voxel, where a dot with three short arrows marks the field and its gradients at the centre.
+Above the arrow is the coupling integral of the derivatives of the Green's tensor over the source cube,
+and below it the words exact at every separation: G is not expanded, so there is no radius of
+convergence. In the lower panel, on the left, a shaded square touches a dashed square whose centre is
+marked by a dot, with an arrow from the shaded square to the dot, labelled touching voxels: the same
+integral, still exact; on the right a single shaded square has a dot at its centre and two dotted arrows
+pointing to it from within, labelled the voxel's own self term: a distribution, in closed form.}
+\end{figure}
 
 \paragraph{Its origin in the equivalent inclusion method.} In its static form the construction is the
 equivalent inclusion method with polynomial eigenstrains of \citet{Moschovidis1975}: the eigenstrain
@@ -1092,76 +1111,42 @@ the closure scheme.
 
 \subsection{What a closed-form single-site $T$-matrix gives}\label{sec:whyclosed}
 
-The moment hierarchy costs more to set up than the alternatives: moments of the Green's tensor to
-fourth derivatives, evaluated as distributions and reduced to closed form. This subsection collects
-what that buys. Each point is a property of the $T$-matrix that follows from the physics, the
-Lippmann--Schwinger equation of one body, rather than from a model fitted to it, and each rests on a
-result of this section.
-
-\paragraph{One derivation, from first principles.} The whole single site comes from one construction:
-the Lippmann--Schwinger equation of the body, the Green's tensor of the background, and the truncation
-of the internal field at a stated degree. The static depolarisation, its dynamic corrections, the
-radiation damping and every higher block are consequences of that one equation, evaluated by one engine
-(\S\ref{sec:distributions}); none is taken from a separate theory and joined to the others. Because
-each piece follows from the same equation, the pieces cannot be inconsistent with one another, and the
-limits below (the static, the spherical and the low-frequency) are results of the construction rather
-than conditions imposed on it. The equivalent inclusion method rests on the same foundation
-\citep{Moschovidis1975,FuMura1983}; what the hierarchy adds is that, for a body that is not an
-ellipsoid and at finite frequency, every coefficient is in closed form and the error of each truncation
-is known.
-
-\paragraph{Nothing is fitted.} Every coefficient of Eq.~\eqref{eq:hierarchy} is a moment of the
-background Green's tensor over the body. There is no polarisability to choose and no depolarisation
-factor to calibrate: as in the equivalent inclusion method, the single site is derived, with the
-uniform-strain closure as its first member (\S\ref{sec:parity}), where other routes import it from the
-ellipsoid \citep{Eshelby1957,Mura1987} or close the volume integral equation with an effective field
-\citep{MalKnopoff1967,Kanaun2008}.
-
-\paragraph{The singular self-interaction is exact, and is not added by hand.} The $\delta$-function
-content of the inclusion problem, which a quadrature misses, is part of the moments from the start
-(\S\ref{sec:distributions}): the sum rule of Eq.~\eqref{eq:sumrule} holds exactly, and the traces of
-Eq.~\eqref{eq:gates} hold at every grade. The same moments with a spherical exclusion give no
-depolarisation at all; the whole static response of a sphere is the $\delta$ term
-(\S\ref{sec:parity}).
-
-\paragraph{The exact limits are built in.} The dilatational channel of the cube equals the sphere's
-exactly, because it depends on the moments only through a contraction that does not depend on the
-shape, and the cube's isotropic shear average equals the sphere's exactly; both are confirmed against
-the exact Mie solution, to $2\times10^{-10}$ and $10^{-8}$ (\S\ref{sec:parity}). At finite frequency
-the closure departs from Mie only through a real term of order $(ka)^2$, and the imaginary $(ka)^3$
-terms, the radiation damping, agree with Mie exactly in all three channels
-(Eq.~\eqref{eq:spheredynamic}).
-
-\paragraph{The error is stated before anything is solved.} A truncation of the hierarchy is a
-statement of which blocks are omitted, so its error is a property of the omitted blocks and can be
-predicted. The predictions hold: the orders come in parity pairs, all thirty-six on the layer and all
-nine on the sphere as predicted (Tables~\ref{tab:hierlayer} and \ref{tab:hiersphere}); the leading error
-factor is in closed form, Eq.~\eqref{eq:taylorfactor}; and the separation into an even and an odd
-system (\S\ref{sec:hierarchy}) says which channel each block improves.
-
-\paragraph{It improves block by block, on fixed constants.} Raising the degree adds moments; it adds no
-numerical integration. The scalar moments are a power of the body's width times
-Eq.~\eqref{eq:fourconstants}, evaluated once and stored (through $\ell=5$ for the kernels $r^{-1}$ and
-$r$, and through $\ell=3$ for the extra derivatives of the second term of Eq.~\eqref{eq:Gdecomp}), and
-are confirmed by a second route that shares nothing with the first (\S\ref{sec:distributions}). The accuracy of the single site is therefore set
-by its degree, not by a quadrature: against the exact sphere at $k_Sa=0.4$ the error falls from
-$1.4\%$ for the uniform-strain closure to $0.0046\%$ with third gradients, three hundred times smaller,
-from a system of sixty equations with a condition number of $5.9$ (Table~\ref{tab:hiersphere}). That
-each degree improves on the one below is shown here for one sphere and one cube, not in general: in the
-Taylor form of the equivalent inclusion method, for interacting inhomogeneities, a higher degree need
-not improve the solution and the system need not be invertible \citep{RodinHwang1991,Brisard2014}.
-
-\paragraph{It says what a body's shape does.} The construction resolves the response into the
-irreducible channels of the body's symmetry. For the cube it shows that, at the order of the
-uniform-strain closure, a cube is a sphere plus a pure cubic anisotropy, which splits the deviatoric
-channel about the sphere's value in the ratio $3:2$ (Eq.~\eqref{eq:shearsplit}), and the higher blocks
-measure what the corners cost (Table~\ref{tab:hiercube}).
-
-\paragraph{It describes a scatterer, not only a cell.} The assembly of Eq.~\eqref{eq:hierarchy} is the
-same for every centrosymmetric body; only the scalar moments change, as the ball and the cube of
-\S\ref{sec:singlesite} show. The result is the $T$-matrix of one heterogeneity, which enters a
-multiple-scattering solve as it stands, and the same moments are the self block of a voxel scheme, whose
-singular work they then do once and in closed form (\S\ref{sec:gradvoxel}).
+The Cartesian multipole hierarchy costs more to set up than the alternatives: moments of the Green's
+tensor to fourth derivatives, evaluated as distributions and reduced to closed form. What that buys
+follows from the Lippmann--Schwinger equation of one body rather than from a model fitted to it.
+\emph{One derivation.} The static depolarisation, its dynamic corrections, the radiation damping and
+every higher block come from that one equation and one engine (\S\ref{sec:distributions}), so they
+cannot be inconsistent with one another, and the static, spherical and low-frequency limits are results
+of the construction rather than conditions imposed on it. \emph{Nothing is fitted.} Every coefficient of
+Eq.~\eqref{eq:hierarchy} is a moment of the background Green's tensor over the body: there is no
+polarisability to choose and no depolarisation factor to calibrate, where other routes import the single
+site from the ellipsoid \citep{Eshelby1957,Mura1987} or close the volume integral equation with an
+effective field \citep{MalKnopoff1967,Kanaun2008}. As in the equivalent inclusion method
+\citep{Moschovidis1975,FuMura1983}, the uniform-strain closure is the first member (\S\ref{sec:parity});
+what the hierarchy adds is the closed form at finite frequency for a body that is not an ellipsoid, with
+the error of each truncation known. \emph{The singular self-interaction is exact}: the $\delta$-function
+content that a quadrature misses is part of the moments from the start, and the sum
+rule~\eqref{eq:sumrule} and the traces~\eqref{eq:gates} hold at every grade (\S\ref{sec:distributions}).
+\emph{The exact limits are built in}: the cube's dilatational channel and its isotropic shear average
+equal the sphere's, confirmed against the exact Mie solution to $2\times10^{-10}$ and $10^{-8}$
+(\S\ref{sec:parity}), and at finite frequency the closure departs from Mie only through a real term of
+order $(ka)^2$, the radiation damping agreeing exactly in all three channels
+(Eq.~\eqref{eq:spheredynamic}). \emph{The error is stated before anything is solved}: a truncation is a
+statement of which blocks are omitted; the orders come in the predicted parity pairs, all thirty-six on
+the layer and all nine on the sphere (Tables~\ref{tab:hierlayer} and~\ref{tab:hiersphere}), and the
+leading error factor is in closed form, Eq.~\eqref{eq:taylorfactor}. \emph{It improves block by block,
+on fixed constants}: raising the degree adds moments, confirmed by a second route that shares nothing
+with the first (\S\ref{sec:distributions}), and no quadrature; against the exact sphere at $k_Sa=0.4$
+the error falls from $1.4\%$ for the uniform-strain closure to $0.0046\%$ with third gradients, from a
+system of sixty equations with a condition number of $5.9$ (Table~\ref{tab:hiersphere}). That each degree
+improves on the one below is shown here for one sphere and one cube, not in general: in the Taylor form
+of the equivalent inclusion method, for interacting inhomogeneities, a higher degree need not improve
+the solution and the system need not be invertible \citep{RodinHwang1991,Brisard2014}. \emph{It says
+what a body's shape does}: at the order of the uniform-strain closure a cube is a sphere plus a pure
+cubic anisotropy, which splits the deviatoric channel about the sphere's value in the ratio $3:2$
+(Eq.~\eqref{eq:shearsplit}). \emph{It describes a scatterer, not only a cell}: the assembly is the same
+for every centrosymmetric body, only the scalar moments changing (\S\ref{sec:singlesite}), and the same
+moments are the self block of a voxel scheme (\S\ref{sec:gradvoxel}).
 
 \paragraph{What it does not give.} A polynomial about the centre cannot follow the edge and corner
 concentrations of an isolated cube's internal field, so each truncation there has a floor that does
@@ -1751,7 +1736,7 @@ surface does not converge: its error tracks the volume of its staircase, which c
 (Table~\ref{tab:sphereraw}); the smooth sphere, like the layer, measures the scheme.
 
 \FloatBarrier
-\section{The gradient hierarchy as a voxel scheme}\label{sec:gradvoxel}
+\section{The Cartesian multipole hierarchy as a voxel scheme}\label{sec:gradvoxel}
 
 The Legendre voxels of \S\ref{sec:fourth} represent the field of a voxel by its moments over the
 voxel. The hierarchy of \S\ref{sec:single} represents it by its gradients at the centre. Both are
@@ -1820,7 +1805,7 @@ voxels. That rate is the body's and not the scheme's, for the mean-only Legendre
 homogeneous cube has edges and corners, whose fields no polynomial follows. The uniform-strain closure
 and the mean-only voxel agree on one cell, as they must, being the same approximation. And the
 first-moment Legendre voxel is far ahead: one cell of $36$ unknowns is more accurate than eight voxels
-of the third-gradient hierarchy with $480$. A projection, which the Legendre voxel is, follows a field
+of the hierarchy of degree three with $480$. A projection, which the Legendre voxel is, follows a field
 that is not polynomial better than an expansion about a point: the advantage of a Galerkin over a Taylor
 discretisation of the Lippmann--Schwinger equation that \citet{Brisard2014} established for the static
 equivalent inclusion method.
@@ -1978,14 +1963,11 @@ single site's closure) leaves a local term that does not vanish as the voxels sh
 voxel volume. A scheme built that way converges to the wrong limit, and refinement cannot reveal
 it, because the error is scale-invariant.
 
-\paragraph{What the single site is.} The moment hierarchy of \S\ref{sec:single} turns the
+\paragraph{What the single site is.} The Cartesian multipole hierarchy of \S\ref{sec:single} turns the
 uniform-field single site from a modelling choice into a derived object with a stated error
-(\S\ref{sec:whyclosed} collects what that gives). Its
-static part is exact for a sphere, and for a cube it differs from the sphere's only by the cubic
-split of Eq.~\eqref{eq:shearsplit}. Its dynamic part departs from exact scattering by a sphere only
-through the real $(ka)^2$ term of Eq.~\eqref{eq:spheredynamic}; the radiation damping is exact.
-That term and the collocation error of Eq.~\eqref{eq:errorR} have the same origin, the variation of
-the field across the scatterer, and the same remedy, a richer internal field. In a lattice the
+(\S\ref{sec:whyclosed}). Its one departure from exact scattering by a sphere, the real $(ka)^2$ term of
+Eq.~\eqref{eq:spheredynamic}, and the collocation error of Eq.~\eqref{eq:errorR} have the same origin,
+the variation of the field across the scatterer, and the same remedy, a richer internal field. In a lattice the
 remedy is cheap: the field a voxel must represent is the smooth continuum field, not the field of an
 isolated cube, with its concentrations at the edges and corners.
 
@@ -2082,7 +2064,8 @@ The single site is derived rather than assumed. Three properties of the cube mak
 exact: the source-cell-averaged coupling is the continuum's cell integral exactly, the moments of the
 Green's tensor over the cube give the single site with no polarisability to choose, and its self term
 cancels the kernel's, so the simplest scheme is a collocation of the continuum equation. The
-uniform-strain closure is the first member of a moment hierarchy, the elastodynamic extension of the
+uniform-strain closure is the first member of a Cartesian multipole hierarchy, the elastodynamic
+extension of the
 Taylor form of the equivalent inclusion method \citep{Moschovidis1975} to bodies that are not
 ellipsoids, whose moments are in closed form on four constants. Its blocks gain accuracy in pairs,
 with the error of each truncation in closed form: as a single site the third-gradient system is three
@@ -2111,7 +2094,7 @@ model one first-moment voxel per layer reaches $10^{-6}$ where the uniform-field
 Whether the error of a body with three-dimensional structure can be known in advance in the same way is
 the question taken up in a following paper \citep{NestorOctree2026}, where it decides where the cells of an adaptive grid are placed.
 That paper continues the paper's first strand, the two bases and their error, with the Legendre voxels.
-The second strand, the moment hierarchy, whose coefficients are integrals of the Green's tensor over the
+The second strand, the Cartesian multipole hierarchy, whose coefficients are integrals of the Green's tensor over the
 cube, is taken further in a paper on the coupling integrals of polynomial cubes in closed form, of which
 it is the worked application.
 
