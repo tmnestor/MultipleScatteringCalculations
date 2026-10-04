@@ -28,22 +28,24 @@ at +-2h, with kinks at 0 and +-2h.
   or at distance >= 2h (tensor Gauss).
 """
 
+import functools
 import itertools
 import math
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import cache, lru_cache
 
 import numpy as np
 import sympy as sp
-from numpy.polynomial import Polynomial
+from numpy.polynomial import Polynomial, legendre
 from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
 from .basis import SOURCE_EXPONENTS, field_in_monomials, monomials, source_exponents
-from .kernel import kernel_9x9, power_F, radial_component, static_b2, voigt_maps
-from .moments import box_integral, face_integral
+from .derivatives import derivative_terms
+from .kernel import _assemble, falling, kernel_9x9, power_F, radial_component, static_b2, voigt_maps
+from .legendre_moments import box_moments
 
 
 @lru_cache(maxsize=8)
@@ -283,59 +285,211 @@ def static_term_integral(
 
 
 # ---------------------------------------------------------------------------
-# The static terms in closed form
+# The static terms in closed form, evaluated stably
 # ---------------------------------------------------------------------------
 
-_SIDES = (0, 2, 4)  # |t| at the corners of the pieces, in units of h, measured from the singular point
+#: Legendre degrees beyond a piece's own polynomial degree kept in the moment systems (truncation margin)
+LEGENDRE_MARGIN = 16
+#: Legendre coefficients kept per face axis for the polynomial a pyramid leaves on its far face
+PYRAMID_DEGREE = 16
+#: Gauss points per face axis projecting that polynomial onto Legendre polynomials (exact for its degree)
+PYRAMID_GAUSS = 24
 
 
-@cache
-def _box_table(m: int, e_max: int) -> NDArray:
-    """T[x, y, z, i, j, k] = int over [0, a] x [0, b] x [0, c] of t0^i t1^j t2^k |t|^m, with the sides
-    a, b, c = _SIDES[x], _SIDES[y], _SIDES[z].
+def _holds_sstar(kinds: list[Part], sstar: list[float]) -> bool:
+    """Whether the closure of a piece of W (or a plane-delta face) holds the singular point s*.
 
-    Zero when a side is zero; NaN where the integral diverges (never read with a non-zero coefficient).
+    Raises:
+        ValueError: when s* lies inside a piece without being a vertex (the pieces' corners sit on the
+            breakpoints {-2, 0, 2}, so this cannot happen for touching cells).
     """
-    tab = np.zeros((3, 3, 3, e_max, e_max, e_max))
-    for x, y, z in itertools.product((1, 2), repeat=3):
-        for i, j, k in itertools.product(range(e_max), repeat=3):
-            tab[x, y, z, i, j, k] = (
-                float(box_integral(i, j, k, _SIDES[x], _SIDES[y], _SIDES[z], m))
-                if i + j + k + m > -3
-                else np.nan
-            )
-    return tab
+    for kind, s in zip(kinds, sstar, strict=True):
+        lo, hi = kind[1], kind[2]
+        if not lo <= s <= hi:
+            return False
+        if kind[0] != "delta" and s not in (lo, hi):
+            raise ValueError("_holds_sstar: the singular point lies inside a piece, not at a vertex")
+    return True
 
 
-@cache
-def _face_table(m: int, a: int, e_max: int) -> NDArray:
-    """T[y, z, j, k] = int over [0, b] x [0, c] of t1^j t2^k (a^2 + t1^2 + t2^2)^(m/2), with the sides
-    b, c = _SIDES[y], _SIDES[z]."""
-    tab = np.zeros((3, 3, e_max, e_max))
-    for y, z in itertools.product((1, 2), repeat=2):
-        for j, k in itertools.product(range(e_max), repeat=2):
-            tab[y, z, j, k] = (
-                float(face_integral(j, k, a, _SIDES[y], _SIDES[z], m))
-                if (a > 0 or j + k + m > -2)
-                else np.nan
-            )
-    return tab
+def _padded(c: NDArray, size: int) -> NDArray:
+    out = np.zeros(size)
+    out[: min(len(c), size)] = c[:size]
+    return out
 
 
-def _anchored(poly_t: NDArray, lo: float, hi: float, alpha: int, e_max: int) -> NDArray:
-    """V[side, e]: int_lo^hi t^e g(t) dt = sum_side V[side, e] int_0^side t^e g(t) dt, for an integrand
-    whose total power of t on this axis is e + alpha (g even in t apart from that power).
+def _far_piece(
+    kinds: list[Part],
+    choice: tuple[int, ...],
+    parts: dict,
+    axis_exps: list[tuple[int, int]],
+    tst: Sequence[tuple[int, int, int]],
+    src: Sequence[tuple[int, int, int]],
+    sstar: list[float],
+    kernel: list[tuple[float, tuple[int, int, int], int]],
+    n_leg: int,
+) -> NDArray:
+    """A piece of W (or plane-delta face) away from the singular point, by Legendre modified moments.
 
-    int_lo^hi = F(hi) - F(lo), F(v) = int_0^v; for v < 0, F(v) = (-1)^(e + alpha + 1) int_0^|v|.
+    In t = sigma - s* the piece is a box of side 2 in one orthant (or a plane at |t_i| = |b - s*_i|);
+    reflected to t >= 0 and scaled by t = 2 t~, it is the unit box prod [l_j, l_j + 1]. The weight
+    w_j(sigma) on each free axis is written as a Legendre series in that box's own coordinate
+    x_j = 2 (t~_j - l_j) - 1, the kernel monomial t^alpha |t|^n by multiplying it in the Legendre basis by
+    t~_j^alpha_j, and the integral is the contraction with ``legendre_moments.box_moments`` of S^n,
+    S^2 = c2 + |t~_free|^2.
     """
-    out = np.zeros((3, e_max))
-    for v, end_sign in ((hi, 1.0), (lo, -1.0)):
-        if v == 0:
-            continue
-        side = _SIDES.index(round(abs(v)))
-        for e, coef in enumerate(poly_t):
-            parity = 1.0 if v > 0 else (-1.0) ** (e + alpha + 1)
-            out[side, e] += end_sign * parity * coef
+    n_test, n_source = len(tst), len(src)
+    free = [i for i in range(3) if kinds[i][0] != "delta"]
+    fixed = [i for i in range(3) if kinds[i][0] == "delta"]
+    sign: dict[int, float] = {}
+    low: dict[int, float] = {}
+    for i in free:
+        a, b = kinds[i][1] - sstar[i], kinds[i][2] - sstar[i]
+        sign[i] = 1.0 if a >= 0 else -1.0
+        low[i] = min(abs(a), abs(b)) / 2.0
+    t_fixed = {i: kinds[i][1] - sstar[i] for i in fixed}
+    c2 = sum((t_fixed[i] / 2.0) ** 2 for i in fixed)
+    wleg: dict[tuple[int, int, int], NDArray] = {}
+    for i in free:
+        to_x = Polynomial([sstar[i] + sign[i] * (2.0 * low[i] + 1.0), sign[i]])  # sigma as a function of x
+        for et, es in axis_exps:
+            poly = parts[(i, et, es)][choice[i]][3]
+            wleg[(i, et, es)] = _padded(legendre.poly2leg(poly(to_x).coef), n_leg)
+    fixed_val = np.ones((n_test, n_source))
+    for i in fixed:
+        fixed_val = fixed_val * np.array(
+            [[float(parts[(i, ta[i], sc[i])][choice[i]][3]) for sc in src] for ta in tst]
+        )
+    out = np.zeros((n_test, n_source))
+    for coef, alpha, n in kernel:
+        lam = box_moments(tuple(low[i] for i in free), c2, n, n_leg)
+        scale = coef * 2.0 ** (n + len(free))  # |t|^n = 2^n |t~|^n, dt = 2^d dt~
+        for i in fixed:
+            scale *= t_fixed[i] ** alpha[i]
+        vecs = []
+        for i in free:
+            tpow = legendre.poly2leg((Polynomial([low[i] + 0.5, 0.5]) ** alpha[i]).coef)
+            fac = (2.0 * sign[i]) ** alpha[i]
+            vecs.append(
+                np.array(
+                    [
+                        [_padded(legendre.legmul(wleg[(i, ta[i], sc[i])], tpow), n_leg) * fac for sc in src]
+                        for ta in tst
+                    ]
+                )
+            )
+        if len(free) == 3:
+            val = np.einsum("acx,acy,acz,xyz->ac", *vecs, lam)
+        else:
+            val = np.einsum("acx,acy,xy->ac", *vecs, lam)
+        out += scale * fixed_val * val
+    return out
+
+
+def _vertex_piece(
+    kinds: list[Part],
+    choice: tuple[int, ...],
+    parts: dict,
+    axis_exps: list[tuple[int, int]],
+    tst: Sequence[tuple[int, int, int]],
+    src: Sequence[tuple[int, int, int]],
+    sstar: list[float],
+    kernel: list[tuple[float, tuple[int, int, int], int]],
+    orders: tuple[int, int, int],
+) -> NDArray:
+    """A piece of W (or plane-delta face) with a corner at the singular point, by Duffy pyramids about it.
+
+    Reflected and scaled (t = 2 t~), the piece is [0,1]^d with d = 3 free axes, or d = 2 for a plane-delta
+    face through the singular point. Pyramid k: t~_k = rho, t~_j = rho v_j, v in [0,1]^(d-1),
+    dt~ = rho^(d-1) d rho dv and |t~|^n = rho^n (1 + |v|^2)^(n/2), so
+
+        int P(t~) |t~|^n dt~ = sum_k int_v (1 + |v|^2)^(n/2) G_k(v) dv,
+        G_k(v) = sum_p c_p(v) / (p + n + d),
+
+    c_p(v) the coefficient of rho^p in P(rho e_k(v)), formed by exact polynomial products at the nodes v.
+    The radial integral is exact; G_k is a polynomial on the far face of the pyramid, at distance 1 from
+    the singular point, projected onto Legendre polynomials by an exact Gauss rule and contracted with the
+    face moments ``box_moments((0,) * (d - 1), 1, n)``. The coefficients of rho^p that vanish because W
+    vanishes at the vertex (an outer end sigma = +-2 of the piece, to order 1 - n_der) are set exactly to
+    zero, so p + n + d > 0 wherever c_p is not zero.
+
+    Raises:
+        ValueError: if a non-zero c_p meets p + n + d <= 0 (a divergent radial integral).
+    """
+    n_test, n_source = len(tst), len(src)
+    free = [i for i in range(3) if kinds[i][0] != "delta"]
+    fixed = [i for i in range(3) if kinds[i][0] == "delta"]
+    d = len(free)
+    sign: dict[int, float] = {}
+    vanish: dict[int, int] = {}
+    for i in free:
+        sign[i] = 1.0 if kinds[i][2] - sstar[i] > 0 else -1.0
+        vanish[i] = max(0, 1 - orders[i]) if abs(sstar[i]) == 2.0 else 0
+    wpow: dict[tuple[int, int, int], NDArray] = {}
+    for i in free:
+        to_t = Polynomial([sstar[i], 2.0 * sign[i]])  # sigma = s* + 2 s t~
+        for et, es in axis_exps:
+            c = parts[(i, et, es)][choice[i]][3](to_t).coef.copy()
+            c[: vanish[i]] = 0.0
+            wpow[(i, et, es)] = c
+    fixed_val = np.ones((n_test, n_source))
+    for i in fixed:
+        fixed_val = fixed_val * np.array(
+            [[float(parts[(i, ta[i], sc[i])][choice[i]][3]) for sc in src] for ta in tst]
+        )
+    v_nodes, v_wts = _gauss01(PYRAMID_GAUSS)
+    p_at = np.array(
+        [legendre.legval(2.0 * v_nodes - 1.0, np.eye(PYRAMID_DEGREE)[k]) for k in range(PYRAMID_DEGREE)]
+    )
+    norm = 2.0 * np.arange(PYRAMID_DEGREE) + 1.0
+    out = np.zeros((n_test, n_source))
+    for coef, alpha, n in kernel:
+        if any(alpha[i] > 0 for i in fixed):
+            continue  # t_i = 0 on a plane-delta face through the singular point
+        scale = coef * 2.0 ** (n + sum(alpha[i] for i in free) + d)
+        for i in free:
+            scale *= sign[i] ** alpha[i]
+        fco: dict[int, NDArray] = {}
+        for i in free:
+            size = max(len(wpow[(i, et, es)]) for et, es in axis_exps) + alpha[i]
+            arr = np.zeros((n_test, n_source, size))
+            for a, ta in enumerate(tst):
+                for c, sc in enumerate(src):
+                    w = wpow[(i, ta[i], sc[i])]
+                    arr[a, c, alpha[i] : alpha[i] + len(w)] = w
+            fco[i] = arr
+        lam = box_moments((0.0,) * (d - 1), 1.0, n, PYRAMID_DEGREE + LEGENDRE_MARGIN)
+        total = np.zeros((n_test, n_source))
+        for apex in free:
+            others = [i for i in free if i != apex]
+            grids = np.meshgrid(*([v_nodes] * len(others)), indexing="ij")
+            vv = [g.ravel() for g in grids]
+            poly = fco[apex][:, :, None, :] * np.ones((1, 1, len(vv[0]), 1))
+            for j, v in zip(others, vv, strict=True):
+                fj = fco[j][:, :, None, :] * (v[None, None, :, None] ** np.arange(fco[j].shape[2]))
+                p1, p2 = poly.shape[3], fj.shape[3]
+                prod = np.zeros(poly.shape[:3] + (p1 + p2 - 1,))
+                for q in range(p2):
+                    prod[..., q : q + p1] += poly * fj[..., q : q + 1]
+                poly = prod
+            denom = np.arange(poly.shape[3]) + n + d
+            ok = denom > 0
+            if np.any(poly[..., ~ok] != 0.0):
+                raise ValueError(
+                    f"_vertex_piece: a non-zero rho^p with p + n + d <= 0 (n = {n}, d = {d}): the radial "
+                    "integral diverges; the vanishing order of W at the vertex is wrong for this piece."
+                )
+            g = (poly[..., ok] / denom[ok]).sum(axis=3)  # (a, c, nodes)
+            if len(others) == 1:
+                g_leg = np.einsum("acg,kg,g->ack", g, p_at, v_wts) * norm
+                total += np.einsum("ack,k->ac", g_leg, lam[:PYRAMID_DEGREE])
+            else:
+                gr = g.reshape(n_test, n_source, PYRAMID_GAUSS, PYRAMID_GAUSS)
+                g_leg = np.einsum("acgh,kg,lh,g,h->ackl", gr, p_at, p_at, v_wts, v_wts) * np.outer(
+                    norm, norm
+                )
+                total += np.einsum("ackl,kl->ac", g_leg, lam[:PYRAMID_DEGREE, :PYRAMID_DEGREE])
+        out += scale * fixed_val * total
     return out
 
 
@@ -347,19 +501,30 @@ def static_term_integral_closed(
     n_source: int = 10,
     n_test: int = 4,
 ) -> NDArray:
-    """``static_term_integral`` with no quadrature: every piece from the master integrals of ``moments``.
+    """``static_term_integral`` with no quadrature of the kernel: every piece in closed form, stably.
 
     Valid for every odd m >= -1 (the static terms are m = -1 and m = 1; the odd terms of the dynamic series
-    are m = 1, 3, 5, ...).  After the moves the kernel d^rest r^m is a sum of monomials times odd powers
-    |t|^n, n >= -3 (``radial_monomials``), t = (R + s) / h measured from the singular point: 1/r for
-    m = -1, delta_ij / r - t_i t_j / r^3 for m = 1.  Each piece of
-    W is a polynomial on a box with corners at t_i in {0, +-2, +-4}; per axis it is the difference of two
-    integrals from the origin, so the piece is a signed sum of origin-anchored box integrals.  A plane
-    delta fixes one coordinate at t_i = x0 and leaves a face integral at distance |x0|.
+    are m = 1, 3, 5, ...). After the moves the kernel d^rest r^m is a sum of monomials times odd powers
+    |t|^n (``radial_monomials``), t = (R + s) / h measured from the singular point. Each piece of W is a
+    polynomial on a box with corners on the breakpoints, or (a plane delta) on a face of one:
+
+    * a piece whose closure holds the singular point (a corner of it) by Duffy pyramids about that corner:
+      the radial integral exactly, the rest by Legendre moments on a face at distance 1 (``_vertex_piece``);
+    * every other piece by Legendre modified moments on its own box (``_far_piece``,
+      ``legendre_moments.box_moments``).
+
+    WHY NOT THE ORIGIN-ANCHORED MASTER INTEGRALS. The master integrals of ``moments`` are anchored at the
+    singular point; a piece away from it is then a signed sum of origin-anchored boxes, with W expanded in
+    powers of t about the singular point. Both cancel: the power moments reach 1e19 against a piece of order
+    one, and in double precision the static block lost 4 to 5 digits (1.7e-11 for a quadratic field at the
+    corner neighbour against the 40-digit reference of Mathematica/GradedVoxel_CornerReference.wl). The
+    Legendre moments are well conditioned, and the pyramid leaves only a face away from the singular point.
+    The blocks now agree with that reference to round-off (3e-15 quadratic, 1e-15 linear), as quadrature
+    does.
 
     Raises:
         ValueError: when the offset does not touch (the closed forms are tabulated for the near cells), or
-            the term is not one of the static table's.
+            the term needs more than two derivatives moved onto W, or two plane deltas meet on one piece.
     """
     if max(abs(o) for o in offset) > 1:
         raise ValueError(f"static_term_integral_closed: offset {offset} does not touch; use coupling_block")
@@ -380,55 +545,21 @@ def static_term_integral_closed(
     )
     parts = {(i, et, es): _axis_parts(et, es, orders[i], h) for i in range(3) for et, es in axis_exps}
     shape = [len(parts[(i, *axis_exps[0])]) for i in range(3)]
-    sstar = [-2 * o for o in offset]  # the singular point in sigma = s / h
+    sstar = [-2.0 * o for o in offset]  # the singular point in sigma = s / h
     deg = max(len(pl[3].coef) for plist in parts.values() for pl in plist if isinstance(pl[3], Polynomial))
-    e_max = deg + 2
-    pad = 4  # the kernel's monomials raise an exponent by at most len(rest) <= 4
+    n_leg = deg + 4 + LEGENDRE_MARGIN  # W's degree + the kernel monomial's (|alpha| <= 4) + the margin
     out = np.zeros((n_test, n_source))
     for choice in itertools.product(*[range(n) for n in shape]):
         kinds = [parts[(i, *axis_exps[0])][choice[i]] for i in range(3)]
-        fixed = [i for i in range(3) if kinds[i][0] == "delta"]
-        if len(fixed) > 1:
+        n_fixed = sum(1 for kind in kinds if kind[0] == "delta")
+        if n_fixed > 1:
             raise ValueError("static_term_integral_closed: two plane deltas on one piece")
-        free = [i for i in range(3) if i not in fixed]
-        for coef, alpha, power in kernel:
-            factors = []
-            x0 = 0
-            for i in range(3):
-                vals: dict[tuple[int, int], NDArray | float] = {}
-                for et, es in axis_exps:
-                    kind = parts[(i, et, es)][choice[i]]
-                    poly = kind[3]
-                    if not isinstance(poly, Polynomial):
-                        x0 = round(kind[1]) - sstar[i]
-                        vals[(et, es)] = float(poly) * float(x0) ** alpha[i]
-                    else:
-                        shifted = poly(Polynomial([sstar[i], 1.0])).coef  # sigma = t + sigma*
-                        vals[(et, es)] = _anchored(
-                            shifted, kind[1] - sstar[i], kind[2] - sstar[i], alpha[i], e_max
-                        )
-                factors.append(np.array([[vals[(ta[i], sc[i])] for sc in src] for ta in tst]))
-            if fixed:
-                f = fixed[0]
-                if x0 == 0 and alpha[f] > 0:
-                    continue
-                j, j2 = free
-                tab = _face_table(power, abs(x0), e_max + pad)[
-                    :, :, alpha[j] : alpha[j] + e_max, alpha[j2] : alpha[j2] + e_max
-                ]
-                term = np.einsum("ac,acyj,aczk,yzjk->ac", factors[f], factors[j], factors[j2], tab)
-            else:
-                tab = _box_table(power, e_max + pad)[
-                    :,
-                    :,
-                    :,
-                    alpha[0] : alpha[0] + e_max,
-                    alpha[1] : alpha[1] + e_max,
-                    alpha[2] : alpha[2] + e_max,
-                ]
-                term = np.einsum("acxi,acyj,aczk,xyzijk->ac", factors[0], factors[1], factors[2], tab)
-            # physical units: h per free axis, and d^rest r^m is h^(m - |rest|) times its value in t
-            out += coef * h ** (len(free) + m - len(rest)) * term
+        if _holds_sstar(kinds, sstar):
+            piece = _vertex_piece(kinds, choice, parts, axis_exps, tst, src, sstar, kernel, orders)
+        else:
+            piece = _far_piece(kinds, choice, parts, axis_exps, tst, src, sstar, kernel, n_leg)
+        # physical units: h per free axis, and d^rest r^m is h^(m - |rest|) times its value in t
+        out += h ** (3 - n_fixed + m - len(rest)) * piece
     return (-1) ** k * out
 
 
@@ -547,8 +678,10 @@ def near_block_series(
         K = sum_{m >= -1} sum_idx (c1(m) TA[idx] + c2(m) TB[idx]) h^(6 + m - |idx|) U(m, idx, offset),
 
     c from ``series_weights``, TA and TB from ``family_tables``, U from ``universal_moment``.  The series
-    is that of exp(i k r) and converges for every k; it is summed until its terms fall below ``tol``
-    relative to the first, with (k_S * 4 sqrt(3) h)^t / t! as the bound on term t.
+    is that of exp(i k r) and converges for every k. The weight c2 loses two powers of k to the division
+    by k_S^2, so its term m is as large as the c1 term m - 2 (the radiation part at order k comes from
+    m = 0 and m = 2 together); summed through m = 3 at least, and until the bound
+    (k_S * 4 sqrt(3) h)^(m - 1) / (m - 1)! falls below ``tol`` relative to the first term.
 
     Raises:
         ValueError: when the offset does not touch.
@@ -568,7 +701,7 @@ def near_block_series(
                 u = universal_moment(m, idx, offset, n_source, n_test)
                 out += weight * h ** (6 + m - len(idx)) * u[:, :, None, None] * coef[None, None]
         m += 1
-        if m > 1 and reach ** (m + 1) / math.factorial(m + 1) < tol:
+        if m > 3 and reach ** (m - 1) / math.factorial(m - 1) < tol:
             break
     return _to_field_rows(out)
 
@@ -630,6 +763,131 @@ def near_block(
     out = _to_field_rows(out)
     _NEAR_CACHE[key] = out
     return out
+
+
+# ---------------------------------------------------------------------------
+# Far blocks as a series in the wavenumber
+# ---------------------------------------------------------------------------
+
+#: the highest power t of k kept in ``far_series_coefficients``
+FAR_SERIES_T_MAX = 48
+#: powers t taken through one s-form at a time (bounds the kernel array of a piece)
+_FAR_T_CHUNK = 8
+
+
+def _power_derivative_tensors(X: NDArray, m: int) -> list[NDArray]:
+    """d^a r^m at separations X for |a| = 0 .. 4, tensors of shape (N,), (N, 3) .. (N, 3, 3, 3, 3)."""
+    r = np.linalg.norm(X, axis=1)
+    values: dict[tuple[int, int, int], NDArray] = {}
+    out = []
+    for order in range(5):
+        tensor = np.zeros((len(X),) + (3,) * order)
+        for idx in itertools.product(range(3), repeat=order):
+            a = (idx.count(0), idx.count(1), idx.count(2))
+            if a not in values:
+                acc = np.zeros(len(X))
+                for coef, (e0, e1, e2), q in derivative_terms(a):
+                    c = coef * falling(m, q)
+                    if c != 0.0:
+                        acc += c * X[:, 0] ** e0 * X[:, 1] ** e1 * X[:, 2] ** e2 * r ** float(m - 2 * q)
+                values[a] = acc
+            tensor[(slice(None), *idx)] = values[a]  # type: ignore[index]
+        out.append(tensor)
+    return out
+
+
+def _far_family_kernels(X: NDArray, ts: range) -> NDArray:
+    """The 9 x 9 propagator of the two families G = delta_ij r^(t-1) and G = d_i d_j r^(t-1), (N, Z).
+
+    Z runs over (t, family, 81) for t in ts; ``kernel._assemble`` is linear in (G, d G, d d G).
+    """
+    eye = np.eye(3)
+    cols = []
+    for t in ts:
+        f0, f1, f2, f3, f4 = _power_derivative_tensors(X, t - 1)
+        g_a = (
+            eye * f0[:, None, None],
+            eye[None, :, :, None] * f1[:, None, None, :],
+            eye[None, :, :, None, None] * f2[:, None, None, :, :],
+        )
+        g_b = (f2, f3, f4)
+        for g, gd, gdd in (g_a, g_b):
+            cols.append(_assemble(g, gd, gdd).real.reshape(len(X), 81))
+    return np.concatenate(cols, axis=1)
+
+
+@cache
+def _far_component_order() -> NDArray:
+    """The number of derivatives of G in each of the 81 components of the 9 x 9 propagator."""
+    e = np.zeros((9, 9))
+    e[:3, 3:] = e[3:, :3] = 1.0
+    e[3:, 3:] = 2.0
+    return e.ravel()
+
+
+@cache
+def far_series_coefficients(offset: tuple[int, int, int], n_source: int = 10, n_test: int = 4) -> NDArray:
+    """S[t, family, a, c, z]: the s-form on the UNIT half-side (h = 1) of the two families of
+    ``_far_family_kernels``, for t = 0 .. FAR_SERIES_T_MAX, shape (T + 1, 2, n_test, n_source, 81).
+
+    Independent of the frequency and of the cell size, so computed once per offset. Taken with the Gauss
+    rule of ``gauss_order``: quadrature is linear in the kernel, so the series summed with these
+    coefficients equals the Gauss block of ``coupling_block`` up to the truncation of the series.
+
+    Raises:
+        ValueError: when the offset touches (``gauss_order``).
+    """
+    n_q = gauss_order(offset)
+    t_all = FAR_SERIES_T_MAX + 1
+    out = np.zeros((t_all, 2, n_test, n_source, 81))
+    for t0 in range(0, t_all, _FAR_T_CHUNK):
+        ts = range(t0, min(t0 + _FAR_T_CHUNK, t_all))
+        kernel_at = functools.partial(_far_family_kernels, ts=ts)
+        part = _sform(offset, 1.0, (0, 0, 0), kernel_at, n_q, n_source, n_test)
+        out[t0 : ts.stop] = np.moveaxis(part.real.reshape(n_test, n_source, len(ts), 2, 81), (2, 3), (0, 1))
+    return out
+
+
+def far_block_series(
+    offset: tuple[int, int, int],
+    h: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+    tol: float = 1e-14,
+) -> NDArray:
+    """K[a, c] of a non-touching offset as the power series of the propagator in the wavenumber.
+
+        K = sum_t [ c1(t) S_A(t) + c2(t) S_B(t) ],   S(t; h) = h^(6 + (t - 1) - |a|) S(t; 1),
+
+    c1 and c2 the weights of ``series_weights`` (m = t - 1), S the coefficients of
+    ``far_series_coefficients`` and |a| the number of derivatives on r^(t - 1) in each component (two more
+    for the family d_i d_j). Each further frequency costs only this sum. The weight c2 loses two powers of k
+    to the division by k_S^2, so its term t is as large as the c1 term t - 2: summed through t = 4 at least,
+    and until (k_S r_max)^(t - 2) / (t - 2)! falls below tol, r_max the largest separation of two points of
+    the cells.
+
+    Raises:
+        ValueError: when the offset touches, or FAR_SERIES_T_MAX terms do not reach tol at this frequency.
+    """
+    coeffs = far_series_coefficients(tuple(offset), n_source, n_test)
+    r_max = (2.0 * float(np.linalg.norm(offset)) + 2.0 * np.sqrt(3.0)) * h
+    k_s = omega / ref.beta
+    n_terms = None
+    for t in range(FAR_SERIES_T_MAX + 1):
+        if t > 4 and (abs(k_s) * r_max) ** (t - 2) / math.factorial(t - 2) < tol:
+            n_terms = t
+            break
+    if n_terms is None:
+        raise ValueError(
+            f"far_block_series: k_S r = {abs(k_s) * r_max:.2f} needs more than {FAR_SERIES_T_MAX} terms "
+            f"for tol = {tol:g}. Fix: use coupling_block (Gauss) at this frequency."
+        )
+    w = np.array([series_weights(t - 1, omega, ref) for t in range(n_terms)])  # (T, 2)
+    w = w * (h ** (5.0 + np.arange(n_terms)))[:, None] * np.array([1.0, h**-2])[None, :]
+    out = np.tensordot(w, coeffs[:n_terms], axes=([0, 1], [0, 1])) * h ** (-_far_component_order())
+    return _to_field_rows(out.reshape(n_test, n_source, 9, 9))
 
 
 def coupling_block(
