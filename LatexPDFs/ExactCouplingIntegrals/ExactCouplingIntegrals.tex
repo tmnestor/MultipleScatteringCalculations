@@ -97,7 +97,7 @@ step with the evaluation.
 %   6. Accuracy and cost                                                             [WRITTEN]
 %   7. Frequency-independent coefficients, and the frequency sweep                   [WRITTEN]
 %   To come:
-%   Distant cells: the two-centre multipole series (graded_voxel/multipole.py)        [WRITTEN, quadratic to fill]
+%   Distant cells: the two-centre multipole series (graded_voxel/multipole.py)        [WRITTEN]
 %   The single cell: reduction on the irreducible representations of the cube group; static blocks on
 %     five constants.
 %   The worked application: the Cartesian multipole hierarchy's cell-to-cell tables (Paper 1's second strand),
@@ -610,7 +610,12 @@ one property the others lack: it is exact term by term, with no restriction on $
 independent check of the other two, and it is the form a fast multipole method would use for cells far
 apart (\S\ref{sec:fmm}).
 
-% QUADRATIC FIELD: TO FILL from scripts/measure_distant_cell_blocks.py quadratic quick.
+\paragraph{A quadratic field.} The same comparison for a quadratic field ($10$ test functions, $35$
+source monomials), at offsets $(2,0,0)$, $(2,1,1)$, $(4,3,2)$ and $(16,0,0)$ and at $k_Sh=10^{-4}$,
+$0.5$ and $2$, puts every route at round-off again: the largest error is $2\times10^{-14}$, the Gauss
+rule at sixteen cells and $k_Sh=2$. The costs rise with the block: $25$ to $93$\,ms for the Gauss rule,
+$53$\,ms to $3.1$\,s for the multipole series, $1$ to $172$\,s for its piecewise form, and $1.8$ to
+$5.5$\,ms for the series in $k$ where it converges. The ranking of the routes is unchanged.
 
 \section{Frequency-independent coefficients, and the frequency sweep}\label{sec:sweep}
 
