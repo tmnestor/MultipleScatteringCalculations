@@ -587,12 +587,39 @@ decompositions of a source \citep{Riccardi2022}. The word hierarchy has its sens
 cosmology \citep{MaBertschinger1995}: a chain of coupled moment equations closed by truncation at a
 chosen order, whose truncation error is here in closed form.
 
+\paragraph{The multipole orders} A hierarchy of degree $\ell$ holds the force density $\omega^2\Delta\rho\,
+\mathbf{u}$ to degree $\ell$ and the stress $\delta\mathbf{c}:\boldsymbol\varepsilon$ to degree $\ell-1$.
+A stress moment of degree $n$ acts on the medium through its divergence, as a force multipole of order
+$n+1$, so both channels carry the force multipoles through order $\ell$ (Table~\ref{tab:multipoles}).
+Here a multipole is the primitive Cartesian moment, which keeps its traces, rather than the irreducible
+one \citep{Riccardi2022}. What sets the order of convergence is each channel's first omitted source
+term, counted in its own degree (\S\ref{sec:blocks}): fourth order needs the force quadrupole for a
+density contrast, but the second-degree stress moments, a force octupole, for a stiffness contrast.
+
+\begin{table}[htbp]
+\centering
+\caption{The force multipoles a hierarchy of degree $\ell$ carries, and the order of convergence it
+reaches for each contrast on the layer (Table~\ref{tab:hierlayer}).}\label{tab:multipoles}
+\small
+\begin{tabular}{@{}cllcc@{}}
+\toprule
+$\ell$ & density channel & stiffness channel & \multicolumn{2}{c}{order reached}\\
+ & (force moments) & (stress moments) & density & stiffness\\
+\midrule
+$1$ & monopole, dipole & dipole & $2$ & $2$\\
+$2$ & to the quadrupole & dipole, quadrupole & $4$ & $2$\\
+$3$ & to the octupole & to the octupole & $4$ & $4$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=\linewidth]{../figures/fig_multipole.pdf}
 \caption{The Cartesian multipole hierarchy. (a) The source voxel radiates through the Cartesian
 multipole moments of its source: a force monopole from the density contrast, a stress dipole from the
-stiffness contrast, and higher multipoles from the field's gradients. The receiver voxel takes the field
+stiffness contrast, and the quadrupoles, octupoles and higher multipoles from the field's
+gradients. The receiver voxel takes the field
 through its value and gradients at its centre $\mathbf x_c$. The two are coupled by the integral of the
 derivatives of the Green's tensor over the whole source cube, Eq.~\eqref{eq:gradkernel}, which is exact
 at every separation because the Green's tensor is not expanded. (b) The cases a multipole expansion of
@@ -601,8 +628,8 @@ voxel's own self term, a distribution in closed form.}
 \label{fig:multipole}
 \par\smallskip{\footnotesize\textit{Alt text:} Two panels. In the upper panel a shaded cube on the left,
 labelled source voxel, contains three small symbols: a single arrow labelled force monopole, a pair of
-opposed arrows labelled stress dipole, and a cross of four arrows labelled higher multipoles, from the
-gradients. A long arrow runs from it to the centre of an unshaded cube on the right, labelled
+opposed arrows labelled stress dipole, and a cross of four arrows labelled quadrupole, octupole, and so on,
+from the gradients. A long arrow runs from it to the centre of an unshaded cube on the right, labelled
 receiver voxel, where a dot with three short arrows marks the field and its gradients at the centre.
 Above the arrow is the coupling integral of the derivatives of the Green's tensor over the source cube,
 and below it the words exact at every separation: G is not expanded, so there is no radius of
