@@ -1848,8 +1848,10 @@ the cube, the others following exactly, and every point value of the Green's ten
 from the same compiled radial ladder, the hierarchy's tables are the cheaper: $0.6$, $1.9$ and
 $4.5$\,s for $6$, $10$ and $14$ voxels across, against $4.0$, $9.3$ and $23.3$\,s for the first-moment
 Legendre voxel, with eight times fewer kernel evaluations. Both have a one-off cost besides, the
-hierarchy's larger ($13$\,s against $3$\,s), which is the closed-form constants of its self block
-(\path{scripts/measure_hierarchy_table_cost.py}; one machine, five threads). And the hierarchy is, in
+hierarchy's the smaller ($0.3$\,s against $2.2$\,s): the moments of its self block depend on neither
+the frequency nor the cell size, and are computed once and stored
+(\path{scripts/build_cube_unit_moments.py}; \path{scripts/measure_hierarchy_table_cost.py}; one machine,
+five threads). And the hierarchy is, in
 addition, a single-site $T$-matrix in closed form, whose accuracy improves block by block
 (\S\ref{sec:singlesite}), which no voxel defined by moments over the cell provides. The lattice results
 of this section come from one implementation, checked against exact solutions and, where it can be,
@@ -3104,10 +3106,21 @@ The author declares no known competing financial interests or personal relations
 appeared to influence the work reported in this paper.
 
 \section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
-During the preparation of this work, the author used Claude (Anthropic) in order to check the existing
-Mathematica notebooks, Python and Fortran code, to build tests to ensure their correctness, to write
-the TikZ code of the diagrams, and to help redraft the paper into more coherent sections for
-readability. After using this tool, the author reviewed and edited the content
+\paragraph{Software development.} Software development followed a human-directed, AI-assisted
+workflow. The author designed the software originally, but only directed and validated recent
+improvements, which build on the author's original Fortran implementation (the
+\texttt{PhD\_fortran\_code}
+folder of the repository given under Data availability) and an extensive library of Mathematica notebooks, developed and extended since 1992, that carry out and verify the symbolic
+derivations; an agentic
+coding assistant (Anthropic Claude, Opus 5.5) operated under human-in-the-loop supervision to implement
+specified changes and diagnostic tests. The design, the choice of numerical methods, and the resolution
+of the principal technical difficulties were the author's. All AI-generated changes were subject to code
+review by the author and validated by automated tests and independent physical checks such as
+reciprocity, optical theorem, Hamiltonian symmetry, analytic limits and convergence.
+
+\paragraph{Manuscript preparation.} During the preparation of this work, the author used Claude
+(Anthropic) in order to search for relevant open-access research, to write the TikZ code of the
+diagrams and to help redraft the paper into more coherent sections for readability. After using this tool, the author reviewed and edited the content
 as needed and takes full responsibility for the content of the published article.
 
 \section*{Data availability}
