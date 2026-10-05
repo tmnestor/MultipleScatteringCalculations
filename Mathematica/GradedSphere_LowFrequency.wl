@@ -36,7 +36,12 @@ dC = {2 10^9, 1 10^9, 100};   (* the gate contrast: d lambda, d mu, d rho *)
 aR = 10;                        (* radius *)
 wp = 90;                        (* working precision: a graded T-matrix is good to wp/2 digits *)
 omOf[w_] := w alpha/aR;         (* w = k_P a *)
-smooth[x_] := 10 x^3 - 15 x^4 + 6 x^5;
+(* the profile across the shell, x = (a - r)/(a - b): "smoothstep" (the paper's, vanishing like x^3 at the
+   surface), "sin2" = sin^2(pi x / 2) (like x^2) or "smoother" = 35x^4 - 84x^5 + 70x^6 - 20x^7 (like x^4),
+   chosen by the first command-line argument *)
+profileName = If[Length[$ScriptCommandLine] > 1, $ScriptCommandLine[[2]], "smoothstep"];
+smooth[x_] := Which[profileName === "sin2", Sin[Pi x/2]^2,
+   profileName === "smoother", 35 x^4 - 84 x^5 + 70 x^6 - 20 x^7, True, 10 x^3 - 15 x^4 + 6 x^5];
 material[f_] := {Function[x, bg[[1]] + dC[[1]] f[x]], Function[x, bg[[2]] + dC[[2]] f[x]], Function[x, bg[[3]] + dC[[3]] f[x]]};
 graded[b_] := material[Function[x, Piecewise[{{1, x < b}}, smooth[(aR - x)/(aR - b)]]]];
 uniform = material[1 &];
@@ -109,9 +114,14 @@ Module[{lead, rows = {}},
    chk[And @@ Thread[Abs[rows[[1 ;; 2, 2]]/rows[[2 ;; 3, 2]] - 10] < 1]]]];
 
 (* export *)
-Module[{out = FileNameJoin[{DirectoryName[$InputFileName], "GradedSphere_LowFrequency.json"}], cpx, data},
-  cpx[z_] := {N[Re[z], 30], N[Im[z], 30]};
-  data = <|"body" -> <|"a" -> aR, "core" -> aR/10, "profile" -> "smoothstep 10x^3-15x^4+6x^5, x=(a-r)/(a-b)",
+Module[{out = FileNameJoin[{DirectoryName[$InputFileName],
+      If[profileName === "smoothstep", "GradedSphere_LowFrequency.json", "GradedSphere_LowFrequency_" <> profileName <> ".json"]}],
+   cpx, data},
+  (* zeros as plain 0: Mathematica writes a zero of finite precision as "0.e-94", which is not valid JSON *)
+  (* a zero of low accuracy ("0.e-79") compares undecidedly with a threshold, so test it with PossibleZeroQ *)
+  cpx[z_] := Map[If[PossibleZeroQ[#], 0, N[#, 30]] &, {Re[z], Im[z]}];
+  data = <|"body" -> <|"a" -> aR, "core" -> aR/10,
+       "profile" -> Which[profileName === "sin2", "sin2 sin(pi x/2)^2", profileName === "smoother", "smoother 35x^4-84x^5+70x^6-20x^7", True, "smoothstep 10x^3-15x^4+6x^5"] <> ", x=(a-r)/(a-b)",
        "background" -> {alpha, beta, rho}, "contrast" -> dC, "w" -> "k_P a"|>,
      "orders" -> Table[<|"n" -> n, "Tpsv" -> Table[Map[cpx, gradedCoeffs[[n + 1, k + 1, 1]], {2}], {k, 0, kMax}],
          "Tsh" -> Table[cpx[gradedCoeffs[[n + 1, k + 1, 2]]], {k, 0, kMax}]|>, {n, 0, 4}]|>;

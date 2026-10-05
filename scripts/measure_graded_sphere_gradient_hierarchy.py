@@ -62,6 +62,9 @@ R_FAR = 5.0e8 * RADIUS
 #:   "smoothstep"  10 x^3 - 15 x^4 + 6 x^5, the paper's: twice differentiable at both ends of the shell,
 #:                 a polynomial of degree five whose higher derivatives are large;
 #:   "sin2"        sin^2(pi x / 2): analytic inside the shell, once differentiable at its ends, gentle.
+#:   "smoother"    35 x^4 - 84 x^5 + 70 x^6 - 20 x^7: vanishes like x^4 at the surface (three times
+#:                 differentiable at both ends), to test how the profile's behaviour at the surface sets
+#:                 the convergence.
 PROFILE = "smoothstep"
 
 
@@ -69,6 +72,8 @@ def shape(x):
     """The profile as a function of x = (a - r)/(a - core), 0 at the surface and 1 at the core."""
     if PROFILE == "sin2":
         return np.sin(0.5 * np.pi * x) ** 2
+    if PROFILE == "smoother":
+        return 35 * x**4 - 84 * x**5 + 70 * x**6 - 20 * x**7
     return 10 * x**3 - 15 * x**4 + 6 * x**5
 
 
