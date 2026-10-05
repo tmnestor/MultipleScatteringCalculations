@@ -91,6 +91,8 @@ step with the evaluation.
 % are to be written from code that exists and is tested (cubic_scattering/graded_voxel/):
 %   1. Introduction                                                                  [WRITTEN, draft]
 %   2. The coupling blocks of polynomial cubes                                      [WRITTEN]
+%      2.1 Does the two-centre multipole series work for cells that touch? (why the paper exists;
+%          fig:twocentre, tab:twocentre)                                          [WRITTEN]
 %   3. The closed forms, and why they fail in double precision                       [WRITTEN]
 %   4. A forty-digit reference                                                       [WRITTEN]
 %   5. A stable evaluation                                                           [WRITTEN]
@@ -104,6 +106,7 @@ step with the evaluation.
 %     reproducing Paper 1's graded-sphere table, with accuracy and cost against quadrature.
 %   Multipoles for elastic waves (required section; where the word first appears)   [WRITTEN]
 %   Relation to the fast multipole method (verified sources only)                 [WRITTEN]
+%   Why the coefficients are evaluated in closed form (sec:why)                   [WRITTEN, draft]
 %   Declarations, worded as in Paper 1, before submission.
 % =====================================================================================================
 
@@ -120,6 +123,24 @@ handles it, but it must be repeated for every frequency, and its accuracy has to
 case. Closed forms avoid both: the singular integrals are a power series in the wavenumber whose
 coefficients are universal numbers, independent of the frequency, the cell size and the medium, each a
 finite sum of elementary master integrals reduced from volume to faces to edges.
+
+The cells here fill space. That choice is what makes the touching integrals unavoidable. Methods that
+leave gaps between their scatterers couple them through expansions about each scatterer's own centre,
+which converge when the scatterers are far enough apart: superposition $T$-matrix methods state the
+condition that the circumscribing spheres do not overlap \citep{MishchenkoTravisLacis2002}, and
+point-scatterer models of the Foldy type approximate each small obstacle by a point scatterer
+\citep{Foldy1945,BendaliCocquetTordeux2016}. In a space-filling tessellation every cell touches $26$
+neighbours, and the same expansion fails for all of them (\S\ref{sec:twocentre}). The interaction between
+neighbours, which in a continuous medium is the coupling of adjacent material, therefore needs the integrals
+themselves. This paper follows for that interaction the programme that \citet{NestorContinuum2026} carried
+out for a single cell, whose complete self-consistent response was obtained there by closed-form
+integration: here the complete interaction between cells is obtained the same way. With both in closed
+form and accurate to round-off, the errors that \citet{NestorContinuum2026} measures are those of the
+discretisation alone, with no quadrature error mixed into them. The closest prior work we know is the
+analytical integration of the Green's tensor over cuboids for the electromagnetic discrete dipole
+approximation \citep{YurkinSmunev2023}, which neglects terms of fourth order in $kd$; the integrals here
+are elastic, exact at every order through a series in the wavenumber, and over cells that carry
+polynomials.
 
 This paper is about a property of those closed forms that the formulas themselves do not show. Evaluated
 as written in double precision they are much less accurate than quadrature (\S\ref{sec:failure}). We
@@ -209,7 +230,147 @@ moment is therefore an integral of a polynomial in $\bt$ times $\bt^{\balpha}|\b
 whose corners lie on the breakpoints, or over a face of one when a plane delta fixes a coordinate. This is
 the object every route below evaluates; they differ only in how.
 
+\subsection{Does the two-centre multipole series work for cells that touch?}\label{sec:twocentre}
+
+\paragraph{The two-centre expansion.} The block \eqref{eq:sform} depends on the two cells only through the
+separation $\bR+\bs$ of a field point and a source point. Expanding the propagator about the separation of
+the centres, $\bP(\bR+\bs)=\sum_{\boldsymbol\gamma}\bs^{\boldsymbol\gamma}\partial^{\boldsymbol\gamma}\bP(\bR)
+/\boldsymbol\gamma!$, and integrating term by term over the two cells gives
+\begin{equation}\label{eq:twocentre}
+  \bK_{ac}(\bR)=\sum_{\boldsymbol\gamma}\frac{h^{\,6+|\boldsymbol\gamma|}}{\boldsymbol\gamma!}\,
+  \mu^{\boldsymbol\gamma}_{ac}\,\partial^{\boldsymbol\gamma}\bP(\bR),\qquad
+  \mu^{\boldsymbol\gamma}_{ac}=\int\!\!\int\bxi^{\mathbf e_a}(\bxi-\bxi')^{\boldsymbol\gamma}\,
+  \bxi'^{\,\mathbf e_c}\,\dd^3\xi\,\dd^3\xi',
+\end{equation}
+with the multi-index $\boldsymbol\gamma$ running over all orders. The pair moments
+$\mu^{\boldsymbol\gamma}_{ac}$ are products of one-dimensional integrals of monomials, rational numbers, and
+the separation enters only through the derivatives of the propagator at one point, which are elementary.
+No singular integral appears: the two cells are replaced by their multipole moments about their own
+centres (Figure~\ref{fig:twocentre}(a)). Equation~\eqref{eq:twocentre} is the Cartesian counterpart of the
+translation addition theorem by which superposition $T$-matrix methods couple scatterers, each represented
+about its own origin \citep{MishchenkoTravisLacis2002}, and it is the series used for distant cells in
+\S\ref{sec:distant}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_twocentre.pdf}
+\caption{The two-centre expansion, in a section through the cell centres. (a) Two cells in face contact,
+centres $\mathbf x_n$ and $\mathbf x_m$ a distance $|\bR|=2h$ apart, with a source point $\mathbf x'$ and a
+field point $\mathbf x$; the dashed circles are the sections of the circumscribing spheres, of radius
+$\sqrt3\,h$, which overlap. (b) Cells two widths apart, $|\bR|=4h>2\sqrt3\,h$: the spheres are disjoint.
+(c) The separation $\bs=(\mathbf x-\mathbf x_m)-(\mathbf x'-\mathbf x_n)$ for face contact: the shaded square
+is the support of the pair's cross-correlation $W$ (four of its eight pieces in this section), the dashed
+circle the disc
+$|\bs|<|\bR|$ on which the Taylor series of $\bP(\bR+\bs)$ about $\bs=0$ converges, and the ringed point the
+singular point $\bs^*=-\bR$, on the boundary of the support. The support reaches beyond the disc, to
+$|\bs|=2\sqrt3\,h$ at its corners in three dimensions.}
+\label{fig:twocentre}
+\end{figure}
+
+\paragraph{The condition, and why every neighbour violates it.} The Taylor series of $\bP(\bR+\bs)$ about
+$\bs=0$ converges for $|\bs|<|\bR|$, the distance from the expansion point to the singular point
+$\bs^*=-\bR$. The separation ranges over the support of $W$, $|s_i|\le2h$, as far as $|\bs|=2\sqrt3\,h$,
+the sum of the radii of the two cells' circumscribing spheres. The series is therefore assured to converge
+only when $2\sqrt3\,h<|\bR|$, that is when the circumscribing spheres do not overlap
+(Figure~\ref{fig:twocentre}(b)). Superposition $T$-matrix methods state the same condition: the smallest
+circumscribing spheres of the components must not overlap \citep[\S5.9]{MishchenkoTravisLacis2002}, and
+each particle's circumscribing sphere must not intersect its neighbours \citep{TheobaldEgelGomardLemmer2017}.
+The condition is sufficient rather than necessary: for adjacent spheroids, results converge well beyond it,
+although extreme overlap needed quadruple precision \citep{SchebarchovLeRuGrandAuguie2019}. A space-filling
+tessellation violates it for each of a cell's $26$ neighbours (Figure~\ref{fig:neighbours}), with the ratio $\rho=2\sqrt3\,h/|\bR|$ equal
+to $\sqrt3$, $\sqrt{3/2}$ and $1$ at face, edge and corner contact, and for touching cells the singular point
+lies on the boundary of the support (Figure~\ref{fig:twocentre}(c)). Whether the series converges there
+anyway is a question of fact, and it decides whether the closed forms of this paper are needed at all.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/fig_neighbours.pdf}
+\caption{A cell of a space-filling tessellation and its $26$ neighbours, drawn apart so that the cell
+(darkest) can be seen, with the nine cubes of the front layer see-through. The neighbours touch it across
+a face ($6$), an edge ($12$) or a corner ($8$); for each the ratio $\rho=2\sqrt3\,h/|\mathbf R|$ of the
+two circumscribing radii to the distance of the centres is at least one, so none satisfies the condition
+under which the two-centre series is assured to converge (Table~\ref{tab:twocentre}).}
+\label{fig:neighbours}
+\end{figure}
+
+\paragraph{The experiment.} The quantity tested is the coupling moment of the kernel $1/r$,
+$U_{ac}(\bo)=\int\!\int\bxi^{\mathbf e_a}\,|\mathbf x-\mathbf x'|^{-1}\,\bxi'^{\,\mathbf e_c}$, for cells
+of half-width $h=1$ carrying a linear field (four test monomials and ten source monomials). The kernel
+$1/r$ is the static singular part that every family of the propagator shares (the term $m=-1$ of
+Eq.~\eqref{eq:series}), so its behaviour is the behaviour of the series for every block. The exact value
+is, for cells that touch, the stable closed form of \S\ref{sec:stable}, accurate to round-off against the
+forty-digit reference of \S\ref{sec:reference}; for cells apart, Gauss rules of $32$ points per axis on
+each of the eight pieces of the $s$-form, which reach round-off because the integrand is then smooth. The
+series \eqref{eq:twocentre} is summed in $60$-digit arithmetic, with the pair moments exact as rationals
+and the derivatives of $1/r$ at $\bR$ from their Hermite-type expansion with integer coefficients, so that
+divergence cannot be mistaken for rounding. The partial sums $S_N$, over all $|\boldsymbol\gamma|\le N$,
+are compared with the exact value; the same sums in double precision give the condition number
+$\kappa_N=\sum|\text{terms}|/|S_N|$ over the entries larger than $10^{-6}$ of the largest
+(\path{scripts/measure_touching_multipole_series.py}).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+offset $\bo$ & $\rho$ & $N=8$ & $N=16$ & $N=32$ & $N=48$ & $\kappa_{48}$ \\
+\midrule
+$(1,0,0)$, face   & $1.73$ & $1.0\times10^{-2}$ & $1.5\times10^{-2}$ & $1.5$ & $1.2\times10^{3}$ & $2.2\times10^{12}$ \\
+$(1,1,0)$, edge   & $1.22$ & $3.5\times10^{-4}$ & $5.2\times10^{-5}$ & $3.1\times10^{-5}$ & $6.6\times10^{-5}$ & $1.0\times10^{6}$ \\
+$(1,1,1)$, corner & $1.00$ & $8.8\times10^{-5}$ & $6.3\times10^{-6}$ & $3.4\times10^{-7}$ & $5.4\times10^{-8}$ & $4.6\times10^{2}$ \\
+$(2,0,0)$         & $0.87$ & $1.2\times10^{-5}$ & $1.6\times10^{-7}$ & $3.2\times10^{-10}$ & $2.6\times10^{-12}$ & $3.5$ \\
+$(2,1,1)$         & $0.71$ & $2.1\times10^{-6}$ & $4.6\times10^{-9}$ & $3.2\times10^{-13}$ & $7.4\times10^{-16}$ & $6.5$ \\
+$(3,0,0)$         & $0.58$ & $3.7\times10^{-7}$ & $1.6\times10^{-10}$ & $1.3\times10^{-15}$ & $1.0\times10^{-15}$ & $1.4$ \\
+\bottomrule
+\end{tabular}
+\caption{The two-centre series \eqref{eq:twocentre} for the kernel $1/r$: error of the partial sum $S_N$,
+summed in $60$-digit arithmetic, relative to the largest entry of the exact moment, and the condition
+number of the sum in double precision at $N=48$. $\rho=2\sqrt3\,h/|\bR|$ is the ratio of the two
+circumscribing radii to the distance of the centres.}
+\label{tab:twocentre}
+\end{table}
+
+\paragraph{What it shows.} The answer is no (Table~\ref{tab:twocentre}). At face contact the series
+diverges: at every fourth order from $0$ to $48$ its error is at least $10^{-2}$, the smallest at $N=4$
+and $8$, and from $N=12$ it grows, to $1.2\times10^{3}$ at $N=48$. At edge contact it reaches
+$1.3\times10^{-5}$ at $N=24$ and then grows again, to $6.6\times10^{-5}$ at $N=48$, without converging. At corner contact, where
+the circumscribing spheres just touch, it converges, but only algebraically, to $5\times10^{-8}$ at $N=48$.
+Cells that do not touch converge geometrically, the faster the smaller $\rho$, as the condition predicts;
+at the offset $(3,0,0)$ the series reaches round-off by $N=32$. Precision does not change this: at the three touching
+geometries the $60$-digit and double-precision sums agree to every digit shown, so the failure is the
+series', not the arithmetic's, and the remedy that rescued adjacent spheroids, more digits, does nothing
+here. The condition number of the sum tells the same story from the other side: $\kappa_{48}$ is
+$2\times10^{12}$ at face contact and of order one for the separated cells.
+
+\paragraph{Subdivision does not rescue it.} For cells that do not touch, the series can be made to converge
+faster by cutting the support into boxes and expanding about each box's own centre (\S\ref{sec:distant}).
+For cells that touch it cannot: a box whose closure holds the singular point $\bs^*$ has its centre within
+one half-diagonal of it, so its own ratio is at least one, however finely the support is cut, and such a box
+always exists because $\bs^*$ lies on the boundary of the support. The interaction of a cell with its
+neighbours, which in a space-filling medium is where the coupling of the continuum lives, is therefore out
+of reach of the expansion that methods leaving gaps between their scatterers rely on. That is the reason
+for the closed forms of the rest of this paper.
+
 \section{The closed forms, and why they fail in double precision}\label{sec:failure}
+
+\paragraph{Measuring the loss.} Every evaluation below ends in a sum, $S=\sum_na_n$, of terms computed to
+a relative accuracy near the unit round-off $\varepsilon$. Its rounding error is then at most about
+$\varepsilon\sum_n|a_n|$, so that the sum loses about $\log_{10}\kappa$ significant digits, with
+\begin{equation}\label{eq:kappa}
+  \kappa=\frac{\sum_n|a_n|}{\bigl|\sum_na_n\bigr|}
+\end{equation}
+its condition number \citep{Higham2002}; $\kappa=10^{8}$ leaves about eight good digits in double
+precision. An integral has a condition number of its own,
+$\kappa_{\mathord{\int}}(f)=\int|f|\,\big/\,\bigl|\int f\bigr|$, and it is the floor below which no method that works from
+the values of the integrand can be expected to go. If the integrand is perturbed by $\delta f$ with
+$|\delta f|\le\varepsilon|f|$ at every point, then $|\int\delta f|\le\varepsilon\int|f|$, so the relative
+change of the integral is at most $\varepsilon\,\kappa_{\mathord{\int}}(f)$, and the perturbation
+$\delta f=\varepsilon|f|\operatorname{sgn}\int f$ attains it. A Gauss rule with positive weights computes
+$\sum_iw_if(\mathbf x_i)$, whose condition number tends to $\kappa_{\mathord{\int}}(f)$ as the rule converges, because
+the same weights integrate $|f|$; quadrature therefore loses about as many digits as the problem itself
+forces. A closed form instead writes the integral as a sum of its own choosing, and its condition number
+$\kappa$ can be far larger than $\kappa_{\mathord{\int}}$: that excess, and nothing else, is what an evaluation in
+closed form has to remove. The rest of this section measures it.
 
 \paragraph{The closed forms as written.} The integrand $\bt^{\balpha}|\bt|^n$ is homogeneous about the
 singular point, and three master integrals anchored there are elementary:
@@ -504,7 +665,7 @@ series for distant cells of \S\ref{sec:distant}. The second is what the fast mul
 \citep{CarrierGreengardRokhlin1988}; four things make it different for elastic waves and polynomial cubes.
 
 \paragraph{Two wave speeds.} The Green's tensor \eqref{eq:series} is a shear term plus the gradient of a
-difference of a shear and a compressional term divided by $k_S^2$, and that difference is finite at
+difference of a shear and a compressional term divided by $k_S^2$ \citep{WuAki1985}, and that difference is finite at
 small distance only by cancellation. No single addition theorem serves, and the cancellation has to be
 removed analytically rather than numerically: evaluated as the difference of the two spherical-Hankel
 forms, the derivatives of $(g_S-g_P)/k_S^2$ lose accuracy as $\varepsilon/(kR)^2$, $\varepsilon$ the
@@ -531,13 +692,9 @@ $\kappa=2\sqrt3\,k_Sh$. There is no restriction on $k_SR$, but the series needs 
 \section{Distant cells}\label{sec:distant}
 
 For two cells that do not touch, the kernel is analytic over the whole range of the separation $\bs$,
-and the block \eqref{eq:block} can be had without quadrature as a multipole series about the centre
-separation $\bR$:
-\begin{equation}\label{eq:multipoleseries}
-  \bK_{ac}(\bR)=\sum_{\boldsymbol\gamma}\frac{h^{\,6+|\boldsymbol\gamma|}}{\boldsymbol\gamma!}\,
-  \mu^{\boldsymbol\gamma}_{ac}\,\partial^{\boldsymbol\gamma}\bP(\bR),
-\end{equation}
-with the two cells' moments $\mu^{\boldsymbol\gamma}_{ac}$ of \S\ref{sec:multipoles} and the derivatives
+and the block \eqref{eq:block} can be had without quadrature as the two-centre series
+\eqref{eq:twocentre} of \S\ref{sec:twocentre}, which converges when the circumscribing spheres of the two
+cells do not overlap, with the two cells' moments $\mu^{\boldsymbol\gamma}_{ac}$ of \S\ref{sec:multipoles} and the derivatives
 of the propagator at $\bR$ from those of the two radial scalars. The derivatives of $g_k$ are spherical
 Hankel functions, $F_q=\mathrm{i}(-1)^qk^{q+1}h_q(kr)/r^q$; those of $(g_S-g_P)/k_S^2$ come from its power
 series for $k_Sr\le1$ and from the difference of the two Hankel forms beyond
@@ -561,7 +718,7 @@ $k_Sh=10^{-4}$, $0.0625$, $0.5$ and $2$, every route was compared with the $s$-f
 rules of $32$ points per axis on each of its eight pieces; that reference agrees with $24$ points to
 $2\times10^{-15}$ (to $10^{-14}$ at $k_Sh=2$). Four routes were timed per block, warm, the one-off
 moments and coefficients excluded: the $s$-form with the package's Gauss rule, the series
-\eqref{eq:multipoleseries}, its piecewise form, and the frequency-independent series in $k$ of
+\eqref{eq:twocentre}, its piecewise form, and the frequency-independent series in $k$ of
 \S\ref{sec:sweep} (\path{scripts/measure_distant_cell_blocks.py}).
 
 \paragraph{Accuracy.} After the corrections below, every route is at round-off wherever it applies: the
@@ -905,6 +1062,63 @@ operations, so the expansions of \S\ref{sec:distant} are needed for exact entrie
 divides into eight cubes, so cubic cells are the leaves of an octree, the tree of the fast multipole
 method in three dimensions; if cells are refined where the medium varies fastest, the tree becomes the
 natural structure, and its coupling blocks are those of this paper. That is an outlook, not a result.
+
+\section{Why the coefficients are evaluated in closed form}\label{sec:why}
+
+Evaluating every coefficient in closed form costs far more effort than quadrature. The series in the
+wavenumber of \S\ref{sec:sweep} does not by itself justify it: coefficients computed by Gauss rules are
+just as independent of the frequency, and over a sweep they cost as little per frequency. What justifies
+it is what quadrature cannot provide, and each point below rests on a measurement.
+
+\paragraph{Cells that touch.} For a space-filling tessellation the coupling of a cell with its $26$
+neighbours cannot be had from the expansion about the cell centres at all (\S\ref{sec:twocentre}): at face
+contact the two-centre series diverges, and more digits do not help. Those blocks need the integrals,
+singular for touching cells, and the closed forms give them with the singularity treated exactly rather
+than resolved by a quadrature.
+
+\paragraph{Quadrature fails silently outside its calibration.} A Gauss rule is accurate where its order was
+chosen by measurement, and nothing warns when it is used outside that range. Three cases met in this work
+show it. The Gauss order of the blocks of distant cells, chosen by distance alone, left them wrong by
+$3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:distant}). The coefficients of the
+hierarchy's series in the wavenumber, computed with a rule calibrated for powers up to $t=19$, were wrong at
+$t=48$ by $2\times10^{-13}$ of their largest entry and by $10^{-11}$ of some entries' own size at the
+offset $(2,1,0)$; the closed form, which has no order to choose, was accurate there to $2.3\times10^{-16}$
+of the largest entry. And for the face block of the static strain coupling of two uniform cells, a tensor
+Gauss rule whose two cells share one set of lateral nodes moved monotonically through $8.45$, $9.20$,
+$9.59$, $9.85$ and $10.02\times10^{-12}$ as its order rose from $4$ to $12$, with steps that shrank as if it
+were converging, towards about $1.05\times10^{-11}$; the exact value is $3.009\times10^{-12}$, obtained by a
+subdivision fixed point and by a reduction to smooth integrals that agree to $10^{-13}$
+(\path{scripts/face_s_rederivation.py}). Refinement does not reveal such a limit; an independent exact
+value does.
+
+\paragraph{Each coefficient carries its own error estimate.} A closed form is a sum whose terms are known,
+so the magnitude $M$ on which its rounding acts can be carried through every step of the evaluation, as
+in a running error analysis \citep{Higham2002}, and $\varepsilon M$ is then an estimate of the error of each
+coefficient, and $M/|U|$ its condition number \eqref{eq:kappa}. For the coefficients of the hierarchy's
+series, against the forty-digit reference at the face, edge and corner neighbours and the offset
+$(2,1,0)$, for the powers $t=0$, $2$ and $48$ (and $4$ and $6$ at the face), the actual error of every
+coefficient was at most $3.7\,\varepsilon M$. Quadrature gives no such estimate without a convergence
+study, and the last case above is one in which a convergence study misleads.
+
+\paragraph{An independent check that has found defects.} The project's standard is two independent
+evaluations that agree. The closed forms share no step with quadrature, and comparing the two has found
+defects in each: the cancellation of the two radial scalars in the multipole blocks at low frequency,
+wrong by up to $9\times10^{-5}$ (\S\ref{sec:multipoles}, \S\ref{sec:distant}); the Gauss order that
+ignored the frequency, and the calibration that ignored the power, above; and, in the other direction,
+the loss of four to five digits in the closed forms as written (\S\ref{sec:failure}), found by the
+forty-digit reference.
+
+\paragraph{Universal tables.} The coefficients depend on neither the frequency, the cell size nor the
+medium. Computed in closed form and checked once, they can be tabulated and reused for every model, with no
+rule to choose and no calibration to trust for each new one. The one-off cost, minutes per offset for the
+hierarchy's coefficients, is paid once for all models and all frequencies.
+
+\paragraph{Cost over a sweep.} With the measured costs of Table~\ref{tab:sweep}, $1024$ frequencies cost
+the Legendre cell $6.1$, $7.7$ and $13.4$\,min by its series in the wavenumber, one-off cost included,
+against $34$, $51$ and $89$\,min for quadrature at each frequency ($n=6$, $10$ and $14$); the hierarchy
+$0.4$, $1.6$ and $3.6$\,min against $5.5$, $14.5$ and $30$\,min for its Gauss tables. The gain is the
+series'; the closed forms are what make the series exact for the touching blocks, at a one-off cost that
+over such a sweep does not matter.
 
 \section{Discussion}\label{sec:discussion}
 
