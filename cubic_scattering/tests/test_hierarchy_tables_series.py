@@ -67,3 +67,27 @@ def test_wavenumber_series_coefficients_are_reused_across_frequencies_and_sizes(
     for side, ks_side in ((2.0, 0.1), (0.5, 0.4), (7.0, 1.0)):
         gd.moment_table_kseries((1, 1, 0), side, ks_side * REF.beta / side, REF, D_LIST, W_LIST, tol=1e-12)
     assert gd.kseries_coefficients.cache_info().misses == 1
+
+
+def test_wavenumber_series_coefficients_are_accurate_at_every_power() -> None:
+    """The Gauss rule of the coefficients must integrate the steep high powers too, not only t <= 19.
+
+    At t = 48 the integrand d^a r^47 xi^W behaves like a polynomial of degree about 51 per axis, beyond the
+    reach of the 12 points that were calibrated for distant offsets over t <= 19: against 40 points the
+    coefficients at (2, 1, 0) were wrong by 2e-13 of each order's largest entry.
+    """
+    offset = (2, 1, 0)
+    d_list, w_list = tuple(D_LIST), tuple(W_LIST)
+    gd.kseries_coefficients.cache_clear()
+    production, _ = gd.kseries_coefficients(offset, d_list, w_list)
+    saved = gd.kseries_gauss_points
+    gd.kseries_coefficients.cache_clear()
+    gd.kseries_gauss_points = lambda _o: 40  # type: ignore[assignment]
+    try:
+        reference, _ = gd.kseries_coefficients(offset, d_list, w_list)
+    finally:
+        gd.kseries_gauss_points = saved  # type: ignore[assignment]
+        gd.kseries_coefficients.cache_clear()
+    for t in range(40, gd.KSERIES_T_MAX + 1):
+        err = np.abs(production[t] - reference[t]).max() / np.abs(reference[t]).max()
+        assert err < 1e-14, (t, err)

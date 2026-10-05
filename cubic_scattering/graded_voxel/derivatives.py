@@ -33,14 +33,23 @@ exactly (``table_for_offset``).
 
 import itertools
 import math
-from functools import cache
+from collections.abc import Callable
+from functools import cache, lru_cache
 
 import numpy as np
+from numpy.polynomial import Polynomial, legendre
 from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
 from .kernel import N_SERIES, SERIES_LIMIT, falling, point_kernel_backend
+from .legendre_moments import (
+    box_moment_derivative_magnitudes,
+    box_moment_derivatives,
+    box_moments,
+    point_derivative,
+    point_derivative_magnitude,
+)
 
 AXES = (0, 1, 2)
 Index = tuple[int, int, int]
@@ -334,6 +343,10 @@ KSERIES_T_MAX = 48
 #: neighbours, then every cell farther away. Each reaches 1e-14 against 36 points over t = 0 .. 19 and every
 #: D, W of the third-gradient system (|D|, |W| <= 4): the face neighbour, whose field point is half a cell
 #: from the source cube, converges slowest (2e-12 at 24 points); (2, 1, 0) and beyond are at 5e-15 with 12.
+#: That calibration covers t <= 19 only: the high powers are steep, d^a r^(t - 1) xi^W behaving like a
+#: polynomial of degree about t - 1 + max W per axis, so the rule is also never smaller than the one exact
+#: for that degree (``kseries_gauss_order``). Without that bound the 12 points left the coefficients at
+#: (2, 1, 0) wrong by 2e-13 of each order's largest entry at t = 48.
 KSERIES_GAUSS = {"face": 28, "edge": 20, "corner": 14, "far": 12}
 
 
@@ -345,6 +358,13 @@ def kseries_gauss_points(offset_units: Index) -> int:
     return KSERIES_GAUSS[("face", "edge", "corner")[sum(a) - 1]]
 
 
+def kseries_gauss_order(offset_units: Index, w_list: tuple[Index, ...]) -> int:
+    """Gauss points per axis for the k-series coefficients: the calibrated rule of the offset, and at least
+    the rule exact for the polynomial degree KSERIES_T_MAX - 1 + max W of the steepest power."""
+    max_w = max(max(w) for w in w_list)
+    return max(kseries_gauss_points(offset_units), (KSERIES_T_MAX - 1 + max_w) // 2 + 1)
+
+
 @cache
 def kseries_coefficients(
     offset_units: Index, d_list: tuple[Index, ...], w_list: tuple[Index, ...]
@@ -353,11 +373,12 @@ def kseries_coefficients(
 
     For t = 0 .. KSERIES_T_MAX and every multi-index a of order up to max |D| + 2 (the extra two are the
     derivatives that turn B into the Green's tensor). The integrand is smooth for two different cells, and
-    a tensor Gauss rule of ``kseries_gauss_points(offset)`` points integrates it to round-off. Independent
-    of the frequency and of the cell size, so computed once per offset. Returns (U, the list of a).
+    a tensor Gauss rule of ``kseries_gauss_order(offset, w_list)`` points integrates it to round-off.
+    Independent of the frequency and of the cell size, so computed once per offset. Returns (U, the list of
+    a).
     """
     o = np.asarray(offset_units, dtype=float)
-    pts, wts = cell_rule(1.0, kseries_gauss_points(offset_units))
+    pts, wts = cell_rule(1.0, kseries_gauss_order(offset_units, w_list))
     x = o[None, :] - pts
     r = np.linalg.norm(x, axis=1)
     max_a = max(sum(d) for d in d_list) + 2
@@ -382,6 +403,380 @@ def kseries_coefficients(
             fields[ia] = acc
         out[t] = fields @ monos.T
     return out, a_list
+
+
+#: Legendre indices kept beyond the degree of the weight in the closed coefficients' box moments, as for
+#: the touching Galerkin pieces (``blocks.LEGENDRE_MARGIN``) ...
+KSERIES_LEGENDRE_MARGIN = 8
+#: ... plus one more for every KSERIES_LEGENDRE_GROWTH of the power m: a steep power such as |x|^47 needs a
+#: longer truncation of the boundary-value system (at 13 indices its face moments are wrong by 4.5e-9, at 23
+#: they are at round-off; |x|^21 is at round-off with 13)
+KSERIES_LEGENDRE_GROWTH = 4
+#: ... and KSERIES_LEGENDRE_PER_DERIVATIVE more for each derivative left on the fixed axes, which sharpens
+#: the kernel: on the near face of the face neighbour the moments of d_z^4 (1/r) are wrong by 5e-12 at 13
+#: indices and at round-off at 24; d_z^5 (1/r) by 6e-10 at 13 and 2e-14 at 24 and at 36
+KSERIES_LEGENDRE_PER_DERIVATIVE = 3
+
+
+@cache
+def _free_moments(
+    offset_units: Index,
+    free: tuple[int, ...],
+    z_fixed: tuple[float, ...],
+    b_fixed: tuple[int, ...],
+    m: int,
+    max_w: int,
+) -> tuple[NDArray, NDArray]:
+    """J[w] = int over the free axes of [-1/2, 1/2]^d of (d^b |x|^m) prod_j xi_j^(w_j), (max_w + 1,)^d.
+
+    x = o - xi on the free axes; the fixed axes hold the coordinates z_fixed, and the derivatives b_fixed
+    act along them only. The free axes are cut at xi_j = 0 into half-cubes that never straddle x_j = 0;
+    each, reflected to x_j >= 0 and scaled by x = t / 2, is the unit box prod [l_j, l_j + 1], on which
+    xi_j^w is expanded exactly in Legendre polynomials of the box coordinate u_j = 2 (t_j - l_j) - 1 and
+    contracted with the Legendre moments of d_z^b S^m, S^2 = |z|^2 + |t|^2, z = 2 z_fixed
+    (``legendre_moments.box_moment_derivatives``): the derivative is carried by the relation, never
+    expanded into its terms. Returns (J, its running error magnitude), the second from
+    ``legendre_moments.box_moment_derivative_magnitudes`` contracted with the absolute weights.
+    """
+    d = len(free)
+    if d == 0:
+        return (
+            np.array(point_derivative(z_fixed, b_fixed, m)),
+            np.array(point_derivative_magnitude(z_fixed, b_fixed, m)),
+        )
+    n_leg = (
+        max_w
+        + 1
+        + KSERIES_LEGENDRE_MARGIN
+        + max(0, m) // KSERIES_LEGENDRE_GROWTH
+        + KSERIES_LEGENDRE_PER_DERIVATIVE * sum(b_fixed)
+    )
+    z_box = tuple(2.0 * v for v in z_fixed)
+    out = np.zeros((max_w + 1,) * d)
+    mag = np.zeros((max_w + 1,) * d)
+    spec = {1: "ax,x->a", 2: "ax,by,xy->ab", 3: "ax,by,cz,xyz->abc"}[d]
+    for half in itertools.product((-1, 1), repeat=d):
+        lows, legs = [], []
+        for j, side in zip(free, half, strict=True):
+            o = offset_units[j]
+            ends = (o - 0.5 * (side > 0), o + 0.5 * (side < 0))  # x_j over this half
+            sign = 1.0 if ends[0] >= 0 else -1.0
+            low = 2.0 * min(abs(ends[0]), abs(ends[1]))
+            lows.append(low)
+            x_of_u = Polynomial([sign * (2.0 * low + 1.0) / 4.0, sign / 4.0])
+            xi_of_u = o - x_of_u
+            leg = np.zeros((max_w + 1, n_leg))
+            for w in range(max_w + 1):
+                coefs = legendre.poly2leg((xi_of_u**w).coef)
+                leg[w, : len(coefs)] = coefs
+            legs.append(leg)
+        lam = box_moment_derivatives(tuple(lows), z_box, b_fixed, m, n_leg)
+        lam_mag = box_moment_derivative_magnitudes(tuple(lows), z_box, b_fixed, m, n_leg)
+        # d_x^b |x|^m = 2^|b| d_z^b (S / 2)^m, d xi = 2^-d dt
+        scale = 2.0 ** (sum(b_fixed) - m - d)
+        out += scale * np.einsum(spec, *legs, lam, optimize=True)
+        mag += scale * np.einsum(spec, *[np.abs(g) for g in legs], lam_mag, optimize=True)
+    return out, mag
+
+
+@cache
+def _reduced_integral(
+    offset_units: Index,
+    free: tuple[tuple[int, int], ...],
+    fixed: tuple[tuple[int, float, int], ...],
+    m: int,
+    max_w: int,
+) -> tuple[float, float]:
+    """int over the free axes of d^b r^m prod xi_k^(w_k), with the normal derivatives reduced first.
+
+    ``free`` holds (axis, w) for each free axis, ``fixed`` holds (axis, z, b): the coordinate x = z of a
+    fixed axis and the b derivatives along it. A normal derivative of high order is a small difference of
+    the terms the Legendre relation subtracts (d_z^5 S vanishes at the foot of the normal), so before the
+    relation is used the family r^m is reduced by its Laplacian, nabla^2 r^m = m (m + 1) r^(m - 2):
+
+        d_f^2 r^m = m (m + 1) r^(m - 2) - sum_(g fixed, g != f) d_g^2 r^m - sum_(k free) d_k^2 r^m.
+
+    Each tangential d_k^2 is moved onto xi_k^w by parts over xi_k in [-h, h] (with d/d xi_k = -d/d x_k):
+
+        int (d_k^2 F) xi^w = -[(d_k F) xi^w] - w [F xi^(w-1)] + w (w - 1) int F xi^(w-2),
+
+    the brackets being edges or corners with one or no derivative along k. The reduction is applied to the
+    fixed axis f of largest order b_f >= 2 when every other fixed axis has b_g <= b_f - 3, so that the
+    exchange term d_g^2 lowers the largest order and the recursion ends; what is left goes to the relation
+    (``_free_moments``), and a point (no free axis) to its value.
+
+    Returns (value, running error magnitude): the magnitude is the sum of |coefficient| times the
+    magnitude of each term, down to the moments, so that its ratio to |value| counts every cancellation of
+    the evaluation, not only the outermost one.
+    """
+    h = 0.5
+    z_fixed = tuple(z for _, z, _ in fixed)
+    b_fixed = tuple(b for _, _, b in fixed)
+    if not free:
+        return point_derivative(z_fixed, b_fixed, m), point_derivative_magnitude(z_fixed, b_fixed, m)
+    f = int(np.argmax(b_fixed)) if fixed else 0
+    b_f = b_fixed[f] if fixed else 0
+    if b_f >= 2 and all(b <= b_f - 3 for i, b in enumerate(b_fixed) if i != f):
+        base = list(fixed)
+        base[f] = (fixed[f][0], fixed[f][1], b_f - 2)
+        terms: list[tuple[float, tuple[float, float]]] = []
+        if m * (m + 1) != 0:
+            terms.append((m * (m + 1), _reduced_integral(offset_units, free, tuple(base), m - 2, max_w)))
+        for g in range(len(fixed)):
+            if g != f:
+                swapped = list(base)
+                swapped[g] = (fixed[g][0], fixed[g][1], fixed[g][2] + 2)
+                terms.append((-1.0, _reduced_integral(offset_units, free, tuple(swapped), m, max_w)))
+        for q, (k, w) in enumerate(free):
+            rest = free[:q] + free[q + 1 :]
+            if w >= 2:
+                lowered = free[:q] + ((k, w - 2),) + free[q + 1 :]
+                terms.append(
+                    (-w * (w - 1), _reduced_integral(offset_units, lowered, tuple(base), m, max_w))
+                )
+            for side in (1, -1):
+                z_k = offset_units[k] - side * h
+                with_d = tuple(sorted((*base, (k, z_k, 1))))
+                terms.append(
+                    (side * (side * h) ** w, _reduced_integral(offset_units, rest, with_d, m, max_w))
+                )
+                if w >= 1:
+                    plain = tuple(sorted((*base, (k, z_k, 0))))
+                    terms.append(
+                        (
+                            side * w * (side * h) ** (w - 1),
+                            _reduced_integral(offset_units, rest, plain, m, max_w),
+                        )
+                    )
+        value = sum(c * v for c, (v, _) in terms)
+        magnitude = sum(abs(c) * mg for c, (_, mg) in terms)
+        return value, magnitude
+    axes = tuple(k for k, _ in free)
+    weights = tuple(w for _, w in free)
+    j_val, j_mag = _free_moments(offset_units, axes, z_fixed, b_fixed, m, max_w)
+    return float(j_val[weights]), float(j_mag[weights])
+
+
+#: pieces of the expanded form kept at once: one offset needs at most 8 half-cubes x 31 powers, and each
+#: piece holds (max_a + 1)^3 (max_w + 1)^3 numbers, so an unbounded cache would grow with every offset
+EXPANDED_PIECE_CACHE = 256
+
+
+@lru_cache(maxsize=EXPANDED_PIECE_CACHE)
+def _expanded_piece(
+    offset_units: Index, half: tuple[int, ...], p: int, max_a: int, max_w: int
+) -> tuple[NDArray, NDArray]:
+    """R[e0, w0, e1, w1, e2, w2] = int over one half-cube of prod_j x_j^e_j xi_j^w_j |x|^p, in units of
+    the box (t = 2 x), by the Legendre moments of S^p.
+
+    The truncation is set by the power p of the function whose moments are taken, so that every t whose
+    derivative needs |x|^p shares this one solve.
+    """
+    n_leg = max_a + max_w + 1 + KSERIES_LEGENDRE_MARGIN + max(0, p) // KSERIES_LEGENDRE_GROWTH
+    lows, legs = [], []
+    for j in AXES:
+        ends = (offset_units[j] - 0.5 * (half[j] > 0), offset_units[j] + 0.5 * (half[j] < 0))
+        sign = 1.0 if ends[0] >= 0 else -1.0
+        low = 2.0 * min(abs(ends[0]), abs(ends[1]))
+        lows.append(low)
+        x_of_u = Polynomial([sign * (2.0 * low + 1.0) / 4.0, sign / 4.0])
+        xi_of_u = offset_units[j] - x_of_u
+        leg = np.zeros((max_a + 1, max_w + 1, n_leg))
+        for e in range(max_a + 1):
+            for w in range(max_w + 1):
+                coefs = legendre.poly2leg((x_of_u**e * xi_of_u**w).coef)
+                leg[e, w, : len(coefs)] = coefs
+        legs.append(leg)
+    lam = box_moments(tuple(lows), 0.0, p, n_leg)
+    # the relation gives every moment to round-off of the LARGEST one, not of itself, so the magnitude that
+    # its rounding acts on is that scale for every index
+    lam_mag = np.full_like(lam, np.abs(lam).max())
+    spec = "abx,cdy,efz,xyz->abcdef"
+    value = np.einsum(spec, legs[0], legs[1], legs[2], lam, optimize=True)
+    magnitude = np.einsum(spec, *[np.abs(g) for g in legs], lam_mag, optimize=True)
+    return value, magnitude
+
+
+def _expanded_coefficients(
+    offset_units: Index, a_list: tuple[Index, ...], w_list: tuple[Index, ...], m: int
+) -> tuple[NDArray, NDArray]:
+    """U[a, W] for an odd m with the derivative expanded into its terms, and the sum of |terms|.
+
+    d^a r^m = sum (coefficient) x^e |x|^p (``derivative_terms``), each term integrated over the eight
+    half-cubes by Legendre moments of |x|^p (``legendre_moments.box_moments``), the factor x^e being part of
+    the polynomial weight. No integration by parts, so no boundary terms; but the terms of a high derivative
+    of a singular power cancel. Returns (U, sum of |terms|), both (n_a, n_W): their ratio is the condition
+    number of this representation.
+    """
+    max_a = max(sum(a) for a in a_list)
+    max_w = max(max(w) for w in w_list)
+    w_arr = np.array(w_list)
+    val = np.zeros((len(a_list), len(w_list)))
+    mag = np.zeros((len(a_list), len(w_list)))
+    for half in itertools.product((-1, 1), repeat=3):
+        for ia, a in enumerate(a_list):
+            for coef, e, q in derivative_terms(a):
+                c = coef * falling(m, q)
+                if c == 0.0:
+                    continue
+                p = m - 2 * q
+                moments, moments_mag = _expanded_piece(offset_units, half, p, max_a, max_w)
+                pick = (e[0], w_arr[:, 0], e[1], w_arr[:, 1], e[2], w_arr[:, 2])
+                scale = c * 2.0 ** (-p - 3)
+                val[ia] += scale * moments[pick]
+                mag[ia] += abs(scale) * moments_mag[pick]
+    return val, mag
+
+
+def _polynomial_coefficients(
+    offset_units: Index, a_list: tuple[Index, ...], w_list: tuple[Index, ...], m: int
+) -> tuple[NDArray, NDArray]:
+    """U[a, W] = int_cube d^a r^m (o - xi) xi^W d xi for an even m >= 0, exactly: shape (n_a, n_W).
+
+    r^m is then a polynomial, and d^a r^m xi^W has degree at most m + max W on each axis, so a Gauss rule of
+    (m + max W) // 2 + 1 points integrates it exactly (as the even terms of the touching blocks). Evaluated
+    from derivative_terms at the nodes, d^a r^m vanishes identically for |a| > m through the falling
+    factorial: those zeros are exact, which matters because the weight of the B family at t = 1 grows like
+    1 / k and would multiply any round-off left in them. Returns (U, sum of |terms|), both (n_a, n_W).
+    """
+    max_w = max(max(w) for w in w_list)
+    nodes, wts = leggauss((m + max_w) // 2 + 1)
+    nodes, wts = nodes / 2.0, wts / 2.0
+    xi = np.stack(np.meshgrid(nodes, nodes, nodes, indexing="ij"), -1).reshape(-1, 3)
+    wt = np.einsum("i,j,k->ijk", wts, wts, wts).ravel()
+    x = np.asarray(offset_units, dtype=float)[None, :] - xi
+    r2 = np.sum(x * x, axis=1)
+    monos = np.stack([wt * np.prod(xi ** np.array(w, float), axis=1) for w in w_list])  # (n_W, G)
+    fields = np.zeros((len(a_list), len(wt)))
+    fields_abs = np.zeros((len(a_list), len(wt)))
+    for ia, a in enumerate(a_list):
+        for coef, e, q in derivative_terms(a):
+            c = coef * falling(m, q)
+            if c != 0.0:
+                term = c * np.prod(x ** np.array(e, float), axis=1) * r2 ** ((m - 2 * q) // 2)
+                fields[ia] += term
+                fields_abs[ia] += np.abs(term)
+    return fields @ monos.T, fields_abs @ np.abs(monos).T
+
+
+@cache
+def kseries_coefficients_closed(
+    offset_units: Index, d_list: tuple[Index, ...], w_list: tuple[Index, ...]
+) -> tuple[NDArray, tuple[Index, ...]]:
+    """The values of ``kseries_coefficients_certified``, with the signature of ``kseries_coefficients``."""
+    values, _, a_list = kseries_coefficients_certified(offset_units, d_list, w_list)
+    return values, a_list
+
+
+@cache
+def kseries_coefficients_certified(
+    offset_units: Index, d_list: tuple[Index, ...], w_list: tuple[Index, ...]
+) -> tuple[NDArray, NDArray, tuple[Index, ...]]:
+    """The coefficients of ``kseries_coefficients`` in closed form: no approximate quadrature.
+
+    EVEN POWERS (t odd, m = t - 1 even) are polynomials and are integrated exactly by
+    ``_polynomial_coefficients``; the derivatives of r^m vanish identically for |a| > m, exactly.
+
+    MOVING THE DERIVATIVES (odd m). With x = o - xi, (d^a r^m)(o - xi) = (-1)^|a| d_xi^a [r^m(o - xi)], and
+    along each axis n = a_j derivatives are integrated by parts onto the monomial xi_j^w:
+
+        int_{-h}^{h} d^n g . xi^w = sum_{s <= min(n - 1, w)} (-1)^s [d^(n-1-s) g . (xi^w)^(s)]_{-h}^{h}
+                                    + (-1)^n int g . (xi^w)^(n),        h = 1/2.
+
+    Each axis is then either interior, with no derivative of the kernel left on it and the monomial
+    differentiated, or fixed at a face xi_j = +-h with b_j = n - 1 - s derivatives left along it. The kernel
+    that remains, d^b r^m with b only on the fixed axes, is integrated over the free axes. Written out
+    (``derivative_terms``) it is a sum of x^e |x|^(m - 2q) whose x^e involves only the fixed coordinates,
+    constants; so the expansion that a sixth derivative of 1/r would need, and whose terms cancel by up to
+    1e5 once integrated, is never formed, and in the all-interior term the kernel is r^m itself.
+
+    THE INTEGRALS over the free axes are ``_free_moments``: the field point o is never in the closure of
+    the source cube for two different cells (o integer, o != 0), and at least one fixed axis keeps the
+    lifted distance c2 > 0, so every box lies away from the singular point and its Legendre moments come
+    from corner values by the sparse boundary-value solve of ``legendre_moments.box_moments``.
+
+    TWO REPRESENTATIONS, CHOSEN BY THEIR CONDITION NUMBERS. The integration by parts removes the
+    cancellation among the terms of a high derivative of a singular power, but against a monomial of high
+    degree along the same axis its own boundary terms cancel instead; the expanded form
+    (``_expanded_coefficients``) has the opposite strengths. Each is a sum whose condition number
+    kappa = sum |terms| / |sum| is computed from its terms, and each entry is taken from the representation
+    with the smaller one. At the face neighbour, against a 40-digit reference, every entry is then as
+    accurate as Gauss quadrature or more, the remaining loss being the integral's own conditioning
+    int |f| / |int f|, which no route avoids.
+
+    Independent of the frequency and of the cell size. Returns (U, M, the list of a): M is the running error
+    magnitude of each coefficient, the sum of |terms| down to the moments, so that eps M is an estimate of
+    its rounding error and M / |U| its condition number.
+
+    Raises:
+        ValueError: for the self cell, where the integral is a distribution.
+    """
+    if not any(offset_units):
+        raise ValueError(
+            "kseries_coefficients_closed: offset (0, 0, 0) is the self cell, a distribution given by the "
+            "hierarchy's closed-form moments; these coefficients are for two different cells."
+        )
+    h = 0.5
+    max_a = max(sum(d) for d in d_list) + 2
+    max_w = max(max(w) for w in w_list)
+    a_list = multi_indices(max_a)
+    # the options of one axis after the integration by parts: interior with the monomial of degree w', or
+    # fixed at xi_j = side h with b_j derivatives of the kernel left along it
+    options: list[tuple] = [("i", w) for w in range(max_w + 1)]
+    options += [("b", side, b) for side in (1, -1) for b in range(max_a)]
+    pos = {o: k for k, o in enumerate(options)}
+    # M[n, w, option]: the coefficient of each option for n derivatives against xi^w, with (-1)^n of
+    # d^a = (-1)^|a| d_xi^a and (-1)^b of d_xi^b = (-1)^|b| d^b folded in
+    mmat = np.zeros((max_a + 1, max_w + 1, len(options)))
+    for n in range(max_a + 1):
+        for w in range(max_w + 1):
+            if n == 0:
+                mmat[n, w, pos[("i", w)]] = 1.0
+                continue
+            for s in range(min(n - 1, w) + 1):
+                for side in (1, -1):
+                    deriv = math.factorial(w) / math.factorial(w - s) * (side * h) ** (w - s)
+                    b = n - 1 - s
+                    mmat[n, w, pos[("b", side, b)]] += (-1.0) ** (n + b + s) * side * deriv
+            if n <= w:
+                mmat[n, w, pos[("i", w - n)]] += (
+                    (-1.0) ** (2 * n) * math.factorial(w) / math.factorial(w - n)
+                )
+    out = np.zeros((KSERIES_T_MAX + 1, len(a_list), len(w_list)))
+    out_mag = np.zeros_like(out)
+    a_arr, w_arr = np.array(a_list), np.array(w_list)
+    for t in range(KSERIES_T_MAX + 1):
+        m = t - 1
+        if m >= 0 and m % 2 == 0:
+            out[t], out_mag[t] = _polynomial_coefficients(offset_units, a_list, w_list, m)
+            continue
+        kern = np.zeros((len(options),) * 3)
+        kern_mag = np.zeros((len(options),) * 3)
+        for combo in itertools.product(range(len(options)), repeat=3):
+            opts = [options[k] for k in combo]
+            fixed = [j for j in AXES if opts[j][0] == "b"]
+            b_vec = tuple(opts[j][2] if opts[j][0] == "b" else 0 for j in AXES)
+            if sum(b_vec) > max_a - len(fixed):  # never reached: each fixed axis used one derivative
+                continue
+            free = tuple(j for j in AXES if opts[j][0] == "i")
+            fixed_spec = tuple((j, offset_units[j] - opts[j][1] * h, b_vec[j]) for j in fixed)
+            free_spec = tuple((j, opts[j][1]) for j in free)
+            kern[combo], kern_mag[combo] = _reduced_integral(offset_units, free_spec, fixed_spec, m, max_w)
+        # U[a, W] = sum over the options of every axis of prod_j M[a_j, W_j, o_j] K[o_0, o_1, o_2]
+        m0 = mmat[a_arr[:, 0]][:, w_arr[:, 0]]  # (n_a, n_W, n_opt)
+        m1 = mmat[a_arr[:, 1]][:, w_arr[:, 1]]
+        m2 = mmat[a_arr[:, 2]][:, w_arr[:, 2]]
+        moved = np.einsum("awx,awy,awz,xyz->aw", m0, m1, m2, kern, optimize=True)
+        moved_abs = np.einsum(
+            "awx,awy,awz,xyz->aw", np.abs(m0), np.abs(m1), np.abs(m2), kern_mag, optimize=True
+        )
+        expanded, expanded_abs = _expanded_coefficients(offset_units, a_list, w_list, m)
+        # each entry from the representation with the smaller condition number sum |terms| / |sum|, which is
+        # computed from the terms themselves: comparing the two sums of |terms| compares the two kappas
+        use_expanded = expanded_abs <= moved_abs
+        out[t] = np.where(use_expanded, expanded, moved)
+        out_mag[t] = np.where(use_expanded, expanded_abs, moved_abs)
+    return out, out_mag, a_list
 
 
 @cache
@@ -409,6 +804,7 @@ def moment_table_kseries(
     d_list: list[Index],
     w_list: list[Index],
     tol: float,
+    coefficients: Callable[..., tuple[NDArray, tuple[Index, ...]]] = kseries_coefficients,
 ) -> NDArray:
     """The hierarchy's table between two different cells as a power series in the wavenumber.
 
@@ -423,7 +819,8 @@ def moment_table_kseries(
     division by k_S^2, so its term t is as large as the Green term t - 2 (the radiation part at order k
     comes from t = 1 and t = 3 together). Summed through t = 4 at least, and until the bound
     (|k_S| r_max)^(t - 2) / (t - 2)! falls below tol, r_max the largest distance from the field point to
-    the source cube.
+    the source cube. coefficients chooses how U is obtained: by Gauss rules
+    (kseries_coefficients) or in closed form (kseries_coefficients_closed).
 
     Raises:
         ValueError: for the self cell, or a frequency for which KSERIES_T_MAX terms do not reach tol.
@@ -433,7 +830,7 @@ def moment_table_kseries(
             "moment_table_kseries: offset (0, 0, 0) is the self cell, a distribution given by the "
             "hierarchy's closed-form moments; this series is for two different cells."
         )
-    u_all, a_list = kseries_coefficients(tuple(offset_units), tuple(d_list), tuple(w_list))
+    u_all, a_list = coefficients(tuple(offset_units), tuple(d_list), tuple(w_list))
     k_s, k_p = omega / ref.beta, omega / ref.alpha
     r_max = (np.linalg.norm(np.asarray(offset_units, float)) + np.sqrt(3.0) / 2.0) * side
     n_terms = None
