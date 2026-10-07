@@ -1087,7 +1087,7 @@ used here twice: to ask whether the errors that paper measures on it contain any
 obtain from the closed coefficients something that only a series with exact coefficients provides, the
 cell model's scattering expanded in powers of $ka$, compared order by order with the exact sphere's. The
 cell model is the Cartesian multipole hierarchy of third gradients with a contrast linear in each cell, as
-in that paper's comparison of the two schemes.
+in that paper's comparison of the two schemes, and then with a contrast quadratic in each cell.
 
 \paragraph{The exact series.} The sphere's per-order $T$-matrix $T_n(w)$, $w=k_Pa$, is analytic near
 $w=0$. Its Taylor coefficients are obtained by Cauchy's formula on a circle in the complex $w$-plane, at
@@ -1157,20 +1157,60 @@ $2\times10^{-16}$ of the leading term. The last row is each coefficient's size a
 
 \paragraph{What the powers show.} The leading term and the powers $(ka)^5$ and $(ka)^6$ converge at fourth
 order, as the full solution does (Table~\ref{tab:sphereseries}), and the cell model reproduces the exact
-zero of the $(ka)^3$ coefficient to round-off. The coefficients of $(ka)^4$ and $(ka)^7$ do not: their
-apparent orders are $2.4$ to $2.6$ from $6$ cells on, and that of $(ka)^4$ is still falling at $14$ cells
-($2.54$, $2.51$, $2.37$). The fixed-frequency solves of \citet{NestorContinuum2026} could not see this,
-because there the leading term dominates the error; at $12$ cells and $k_Sa=0.5$ the $(ka)^4$ term already
-carries about a tenth of it, and converging more slowly it would eventually set the order. Two variations
-locate part of the cause, without settling it. A contrast quadratic in each cell instead of linear lowers
-every error and raises the apparent orders of $(ka)^4$ and $(ka)^7$ to $3.4$ and $3.5$ between $6$ and
-$8$ cells. And the profile matters through the way it vanishes at the surface: between $10$ and $12$ cells
-the order of $(ka)^4$ is $2.12$ for $\sin^2$, which vanishes like $x^2$ (with $x$ the fraction of the shell
-measured from the surface), $2.51$ for the smoothstep ($x^3$) and $2.72$ for $35x^4-84x^5+70x^6-20x^7$
-($x^4$), the first and last still falling. A simple law in the rate of vanishing does not fit these
-numbers, and whether the three approach a common order, perhaps two, needs finer grids than were run.
-That question could not have been asked of a solve at one frequency; it is asked here because each power
-of the cell model's response is available on its own, exactly.
+zero of the $(ka)^3$ coefficient to round-off. With the linear contrast the coefficients of $(ka)^4$ and
+$(ka)^7$ do not: their apparent orders are $2.4$ to $2.6$ from $6$ cells on, and that of $(ka)^4$ is still
+falling at $14$ cells ($2.54$, $2.51$, $2.37$). The fixed-frequency solves of \citet{NestorContinuum2026}
+could not see this, because there the leading term dominates the error; at $12$ cells and $k_Sa=0.5$ the
+$(ka)^4$ term already carries about a tenth of it, and converging more slowly it would eventually set the
+order. With the linear contrast the profile matters through the way it vanishes at the surface: between
+$10$ and $12$ cells the order of $(ka)^4$ is $2.12$ for $\sin^2$, which vanishes like $x^2$ (with $x$ the
+fraction of the shell measured from the surface), $2.51$ for the smoothstep ($x^3$) and $2.72$ for
+$35x^4-84x^5+70x^6-20x^7$ ($x^4$), the first and last still falling. A simple law in the rate of vanishing
+does not fit these numbers.
+
+\paragraph{A quadratic contrast.} With the contrast quadratic in each cell instead of linear, the order of
+every coefficient approaches four (Table~\ref{tab:sphereseriesquad};
+\path{scripts/measure_graded_sphere_frequency_series.py} with \path{--rc=2}, and for $16$ to $20$ cells
+\path{scratch/graded_sphere_ka4/split_test.py}, which holds the blocks of the higher powers on disk). The apparent order of $(ka)^4$
+rises from $3.41$ between $6$ and $8$ cells to $3.96$ between $12$ and $14$, and holds at $3.92$, $3.98$
+and $3.99$ out to $20$ cells; that of $(ka)^7$ takes the same course, $3.48$ between $6$ and $8$ cells and
+$3.85$ between $12$ and $14$, and has not been followed to finer grids, whose blocks for seven powers
+exceed the memory used here. At $14$ cells the quadratic contrast is $5.4$ times more accurate than the
+linear one for $(ka)^4$, $3.9$ times for $(ka)^7$ and $21$ times for the static term. The slow convergence
+of $(ka)^4$ and $(ka)^7$ with the linear contrast is therefore a property of the contrast's representation,
+not of the coupling: carried to one degree more, the contrast restores fourth order in $(ka)^4$ and brings
+$(ka)^7$ to the same course. Whether the $\sin^2$ and $x^4$ profiles also reach fourth order with the quadratic
+contrast has not been run. These questions could not have been asked of a solve at one frequency; they are
+asked here because each power of the cell model's response is available on its own, exactly.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rcccccc}
+\toprule
+cells across & $(ka)^2$ & $(ka)^3$ & $(ka)^4$ & $(ka)^5$ & $(ka)^6$ & $(ka)^7$ \\
+\midrule
+$4$  & $1.7\times10^{-5}$ & $0$ & $2.5\times10^{-4}$ & $1.2\times10^{-5}$ & $1.9\times10^{-3}$ & $1.7\times10^{-4}$ \\
+$6$  & $4.2\times10^{-6}$ & $0$ & $4.8\times10^{-5}$ & $5.9\times10^{-6}$ & $3.8\times10^{-4}$ & $3.7\times10^{-5}$ \\
+$8$  & $1.2\times10^{-6}$ & $0$ & $1.8\times10^{-5}$ & $1.7\times10^{-6}$ & $1.2\times10^{-4}$ & $1.4\times10^{-5}$ \\
+$10$ & $4.4\times10^{-7}$ & $0$ & $7.6\times10^{-6}$ & $6.2\times10^{-7}$ & $5.0\times10^{-5}$ & $6.0\times10^{-6}$ \\
+$12$ & $1.8\times10^{-7}$ & $0$ & $3.7\times10^{-6}$ & $2.6\times10^{-7}$ & $2.4\times10^{-5}$ & $3.0\times10^{-6}$ \\
+$14$ & $8.9\times10^{-8}$ & $0$ & $2.0\times10^{-6}$ & $1.3\times10^{-7}$ & $1.3\times10^{-5}$ & $1.7\times10^{-6}$ \\
+$16$ & $5.0\times10^{-8}$ & $0$ & $1.2\times10^{-6}$ & & & \\
+$18$ & $3.2\times10^{-8}$ & $0$ & $7.5\times10^{-7}$ & & & \\
+$20$ & $2.1\times10^{-8}$ & $0$ & $5.0\times10^{-7}$ & & & \\
+\midrule
+order $12\to14$ & $4.73$ & & $3.96$ & $4.69$ & $4.00$ & $3.85$ \\
+order $18\to20$ & $3.84$ & & $3.99$ & & & \\
+\bottomrule
+\end{tabular}
+\caption{As Table~\ref{tab:sphereseries}, with the contrast quadratic in each cell and every orbit's tables
+from the Gauss coefficients. The rows at $16$ to $20$ cells are from the series truncated after $k_S^3$,
+which gives the $(ka)^2$ and $(ka)^4$ coefficients only; on $4$ to $14$ cells the two truncations agree to
+$3\times10^{-9}$ of each error, the tolerance of the solves. The $(ka)^3$ coefficient is again zero to
+$2\times10^{-16}$ of the leading term.}
+\label{tab:sphereseriesquad}
+\end{table}
 
 \section{Why the coefficients are evaluated in closed form}\label{sec:why}
 
