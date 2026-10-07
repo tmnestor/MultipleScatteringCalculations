@@ -1,0 +1,395 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Mathematics (must precede unicode-math) ---
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+% --- Fonts (lualatex) ---
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=25mm, top=30mm, bottom=30mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape The Single-Site T-Matrix of a Legendre Cell}
+\fancyhead[R]{\small\itshape Nestor (2026)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% --- Macros ---
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bN}{\mathbf{N}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bs}{\mathbf{s}}
+\newcommand{\bD}{\boldsymbol{\Delta}}
+\newcommand{\biota}{\boldsymbol{\iota}}
+\newcommand{\bxi}{\boldsymbol{\xi}}
+% the differential of every integral and derivative is upright: \dd z, \dd^3x, \frac{\dd}{\dd z}
+\newcommand{\dd}{\mathrm{d}}
+
+\title{\bfseries The Single-Site T-Matrix of a Legendre Cell in Closed Form\\[4pt]
+\large Elastic Waves, Every Power of the Frequency on Six Constants}
+\author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
+\date{Draft, 7 October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A volume-integral method for elastic waves divides a heterogeneous medium into cells, each with a
+single-site $T$-matrix that maps the field incident on it to the sources it radiates. The governing
+equation is written in displacement; how the strain inside a cell is represented is a modelling
+decision, and the original approximation takes it as uniform. We take the cell whose displacement and
+strain are independent Legendre expansions over the cube, tested against the same polynomials (a Galerkin
+cell), because of the representations in use it gives the most accurate coupling between cells: its
+interactions are exact double integrals over both cells, where an expansion about the cell's centre treats
+the receiving cell as a point. For the linear Legendre cell with a uniform contrast we give the single-site
+$T$-matrix in closed form at every power of the wavenumber. Its self-interaction is a power series in
+$k_Sh$, $h$ the half-width, whose coefficients are moments of powers of the distance over the cell. Every
+coefficient is exact: an even power of $k_Sh$ is a combination with rational coefficients of six constants,
+$1$, $\pi$, $\sqrt2$, $\sqrt3$, $\ln(1+\sqrt2)$ and $\operatorname{arsinh}(1/\sqrt2)$, and an odd power,
+which carries the radiation, is rational. The first of these is the radiation damping of a point force,
+recovered exactly. On the irreducible representations of the cube group the $36$ unknowns of the cell
+separate into blocks of at most four, and the $T$-matrix becomes a handful of closed-form matrices per
+power of $k_Sh$. Through $(k_Sh)^6$ the closed form reproduces the $T$-matrix computed by quadrature to
+$3.5\times10^{-9}$ at $k_Sh=0.2$, falling as $(k_Sh)^7$ as the next term predicts, and each of its $223$
+moments to $1.7\times10^{-15}$.
+\end{abstract}
+
+% =====================================================================================================
+% DRAFT STATUS (7 October 2026). Written from the derivation in scripts/derive_legendre_cell_dynamic.py,
+% whose checks all pass, and from the single-cell section of the coupling paper (Paper 2, sec:site and
+% app:blocks), which this paper takes over. Scope as planned in docs/2026-10-07-three-paper-split-plan.md
+% (decision D7). To come: the graded contrast in the cell; the quadratic field; the comparison with the
+% collocated (hierarchy) single site, condensed from the earlier Paper 1; declarations as in Papers 1-2.
+% =====================================================================================================
+
+\section{Introduction}\label{sec:intro}
+
+A volume-integral method for elastic scattering replaces a heterogeneous medium by cells, here cubes, and
+couples them through the Green's tensor of the background. Each cell is characterised by its single-site
+$T$-matrix: the map from the field incident on it to the sources it radiates when it is alone. The coupled
+system is then the multiple-scattering problem of the cells
+\citep{Foldy1945,Lax1951,Waterman1976,MishchenkoTravisLacis2002}, and everything that a cell contributes to
+the solution, beyond its coupling to the others, is in its $T$-matrix.
+
+How the field inside a cell is represented decides what that $T$-matrix is. The governing equation is
+written in displacement, and the strain enters it only through the stiffness contrast; how the strain is
+represented within a cell is therefore a modelling decision. The original approximation, of the
+equivalent-inclusion method \citep{Eshelby1957,Mura1987} and of the coupled-dipole method for elastic
+waves \citep{Nestor1996}, takes it as uniform. That approximation can be relaxed in two ways. In the
+first, the displacement is expanded about the cell's centre and the strain derived from it; the equation
+and its derivatives are imposed at the centre, which is natural for a single scatterer, whose $T$-matrix is
+then a property of the body alone \citep{NestorContinuum2026}. In the second, the strain is an unknown in
+its own right, with its own polynomial expansion over the cell, and the equation is tested against the
+cell's polynomials (a Galerkin cell). A strain derived from each cell's projected displacement would jump
+across the faces between cells and leave a spurious source there; an independent strain does not.
+
+This paper takes the second, because it gives the more accurate representation of the coupling between
+cells. Its interactions are exact double integrals over both cells, which are evaluated to round-off even
+for cells that touch \citep{NestorCoupling2026}; an expansion about the centre treats the receiving cell as
+a point. On a cube cut into $n^3$ cells, where the field follows the corners, the first-moment Legendre
+cell of $36$ unknowns is seven to twelve times more accurate than the third-gradient expansion about the
+centre with $60$; on a smoothly graded sphere both converge at fourth order, and the Legendre cell is the
+more accurate for a given number of unknowns \citep{NestorContinuum2026}. And a Galerkin cell holds the
+projection of the field and of the medium, which is what makes its error a projection error, known before
+the solve \citep{NestorError2026}.
+
+The single-site $T$-matrix of the linear Legendre cell was given in \citet{NestorCoupling2026} in its
+static limit, entry by entry on five constants. Here it is given at every power of the frequency. The
+self-interaction of the cell is a power series in $k_Sh$ whose coefficients are universal moments of powers
+of the distance over the cell \citep{NestorCoupling2026}; we evaluate every one of them exactly
+(\S\ref{sec:moments}), find that each power of $k_Sh$ is a combination with rational coefficients of the
+same six constants, and that each odd power, which carries the radiation, is rational
+(\S\ref{sec:constants}). The cube group reduces the $36$ unknowns to blocks of at most four
+(\S\ref{sec:group}), on which the $T$-matrix is a few closed-form matrices per power. Section
+\ref{sec:checks} gives the checks, each against an evaluation that shares no step with the closed form.
+
+\section{The cell and its single-site matrix}\label{sec:cell}
+
+\paragraph{The governing equation.} With time dependence $\mathrm e^{-\mathrm i\omega t}$, split the
+density and the stiffness into the background and the contrast, $\rho=\rho_0+\Delta\rho$ and
+$c=c^0+\delta c$, $\delta c_{bcde}=\Delta\lambda\,\delta_{bc}\delta_{de}
++\Delta\mu(\delta_{bd}\delta_{ce}+\delta_{be}\delta_{cd})$. The contrast acts on the background as a body
+force, $\omega^2\Delta\rho\,u_b+\partial_cm_{bc}$ with $m_{bc}=\delta c_{bcde}\varepsilon_{de}$, and with
+$\bG$ the background's Green's tensor the displacement is
+\begin{equation}\label{eq:ls}
+  u_a(\bx)=u^0_a(\bx)+\int G_{ab}(\bx-\by)\,\omega^2\Delta\rho\,u_b(\by)\,\dd^3y
+  +\int\frac{\partial G_{ab}}{\partial x_c}(\bx-\by)\,m_{bc}(\by)\,\dd^3y ,
+\end{equation}
+the moment radiating through the receiver derivative of $\bG$ \citep{NestorContinuum2026}. The strain
+enters only through $m$. Differentiating Eq.~\eqref{eq:ls} gives the strain at $\bx$, and the pair
+$\psi=(u,\varepsilon)$, nine components with the strain in engineering Voigt form, satisfies one
+Lippmann--Schwinger equation with a $9\times9$ kernel and the contrast operator
+$\bD=\operatorname{blockdiag}(\omega^2\Delta\rho\,\bI_3,\Delta\mathcal C)$, $\Delta\mathcal C$ the Voigt
+form of $\delta c$ \citep{NestorContinuum2026}.
+
+\paragraph{The strain model.} Table~\ref{tab:strainmodel} sets out the three representations of the strain
+that this series meets. They differ in the unknowns, and the test of the equation follows from the
+unknowns: derivatives at a point are fixed by imposing the equation and its derivatives there, moments over
+a cell by testing against the cell's own polynomials. This paper is about the third.
+
+\begin{table}[htbp]
+\centering
+\caption{How the strain is represented within a cell, and the test that follows. The words
+\emph{collocation} and \emph{Galerkin} describe only the test.}\label{tab:strainmodel}
+\small
+\begin{tabular}{@{}p{3.1cm}p{4.3cm}p{3.9cm}p{3.2cm}@{}}
+\toprule
+strain model & unknowns of a cell & strain and displacement & test \\
+\midrule
+uniform (the original approximation) & displacement and strain at the centre & strain uniform & at the
+centre \\
+derived & $\partial^Pu$ at the centre, $|P|\le\ell$ & strain the gradient of a Taylor displacement, degree
+$\ell-1$ & the equation and its derivatives at the centre \\
+independent (this paper) & Legendre moments of displacement and strain to degree $p$ & independent, both
+degree $p$ & against the cell's polynomials (Galerkin) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The linear Legendre cell.} A cube $[-h,h]^3$ with local coordinates $\bxi=(\bx-\bx_c)/h$ carries
+$\psi(\bx)=\sum_b\psi_bL_b(\bxi)$ over the four functions $L_b\in\{1,\xi_0,\xi_1,\xi_2\}$, each $\psi_b$ a
+nine-component vector: $36$ unknowns. With the contrast uniform in the cell the source density
+$\bD\psi$ is a polynomial on the same four functions. Testing Eq.~\eqref{eq:ls} and its derivative against
+each $L_a$ gives the single-site equation \citep{NestorCoupling2026}
+\begin{equation}\label{eq:sitels}
+  \bigl(\bM-\bK\bD\bigr)\psi=\langle L,\psi^0\rangle,\qquad \bM_{ab}=\langle L_a,L_b\rangle\,\bI_9,
+\end{equation}
+with $\bM=\operatorname{diag}(8h^3,\tfrac83h^3,\tfrac83h^3,\tfrac83h^3)\otimes\bI_9$ and $\bK$ the self block,
+the kernel integrated against $L_a$ over the cell as receiver and $L_c$ over the cell as source. The
+single-site matrix maps the Legendre coefficients of the incident field to the source moments
+$\sigma_a=\langle L_a,\bD\psi\rangle$, the mean force and stress and their first moments,
+\begin{equation}\label{eq:t36}
+  \bT_{36}=\bM\bD\bigl(\bM-\bK\bD\bigr)^{-1}\bM=\bM\bD\bigl(\bI-\bN\bD\bigr)^{-1},\qquad\bN=\bM^{-1}\bK .
+\end{equation}
+Everything specific to the cube is in $\bN$; the contrast enters only through $\bD$.
+
+\section{The self block as a series in the wavenumber}\label{sec:series}
+
+\paragraph{The series.} The Green's tensor is $\bG=(4\pi\mu)^{-1}[\delta_{ij}g_S+k_S^{-2}\partial_i\partial_j
+(g_S-g_P)]$ with $g_k=\mathrm e^{\mathrm ikr}/r=\sum_t(\mathrm ik)^tr^{t-1}/t!$, so it is a sum over the
+powers $r^m$, $m\ge-1$, of two families, $\delta_{ij}r^m$ and $\partial_i\partial_jr^m$
+\citep{NestorCoupling2026}. The propagator adds up to two derivatives. Each entry of the self block is
+therefore a combination, with $9\times9$ tables $\mathsf{TA}_{\biota}$ and $\mathsf{TB}_{\biota}$ fixed by the
+propagator's structure, of the universal moments of the self cell
+\begin{equation}\label{eq:umoment}
+  U_{ac}(m,\biota)=\int W_{ac}(\bs)\,\partial^{\biota}r^m\big|_{\bs}\,\dd^3s ,\qquad h=1,
+\end{equation}
+$W_{ac}$ the cross-correlation of $L_a$ and $L_c$ over the cell, $\bs$ the separation of a receiving and a
+radiating point, and $\biota$ a multi-index of at most four derivatives. Collecting the powers of the
+wavenumber,
+\begin{equation}\label{eq:kseries}
+  \bK=\sum_{n\ge0}(k_Sh)^n\bK_n,\qquad
+  4\pi\mu\,\bK_n=\mathrm i^n\Bigl[\frac{\mathbf A_n}{n!}-\bigl(1-\gamma^{n+2}\bigr)\frac{\mathbf B_n}{(n+2)!}\Bigr],
+  \qquad \gamma=\frac{k_P}{k_S}=\frac{\beta}{\alpha},
+\end{equation}
+\begin{equation}\label{eq:anbn}
+  \mathbf A_n=\sum_{\biota}\mathsf{TA}_{\biota}\,h^{5-|\biota|}\,U(n-1,\biota),\qquad
+  \mathbf B_n=\sum_{\biota}\mathsf{TB}_{\biota}\,h^{7-|\biota|}\,U(n+1,\biota).
+\end{equation}
+The term $n=0$ is the static (Kelvin) block. The series is that of $\mathrm e^{\mathrm ikr}$ and converges
+for every $k$; at $k_Sh\le0.2$ seven terms leave less than $4\times10^{-9}$ of the $T$-matrix
+(\S\ref{sec:checks}).
+An entry of row type $r$ and column type $c$ ($0$ for displacement or force, $1$ for strain or moment)
+scales as $h^{5-r-c}$, so the coefficients need be computed once, at $h=1$.
+
+\paragraph{The moments, exactly.}\label{sec:moments} For odd $m$ the kernel $r^m$ is singular or not smooth
+at $\bs=0$, which for the self cell is the centre of the support. The integral of Eq.~\eqref{eq:umoment}
+is then reduced, exactly as for two cells that touch \citep{NestorCoupling2026}: the derivatives that make
+the kernel a distribution are moved onto $W$, whose second derivative carries plane deltas at its kinks;
+$W$ is a polynomial on each of the eight boxes $[0,\pm2]^3$ that meet at the singular point; and each
+piece is a box or face integral of a monomial times a power of the distance, reduced from volume to faces to
+edges by recurrences whose base cases are elementary. Carried out in exact arithmetic, every such moment is
+a closed form. For even $m$ the kernel is a polynomial, $\partial^{\biota}r^m=0$ for $|\biota|>m$, and the
+box integrals are rational. Through $(k_Sh)^6$ the self block needs $223$ moments, $m=-1$ to $7$; each is
+derived symbolically (\path{scripts/derive_legendre_cell_dynamic.py}).
+
+\section{Six constants, and a rational radiation}\label{sec:constants}
+
+The moments of Eq.~\eqref{eq:umoment} for odd $m$ are built from the master integrals of the self cell's
+boxes, whose sides are $2$ and whose corners lie at $0$ and $\pm2$. Their recurrences only multiply powers
+of $\sqrt{a^2+b^2+c^2}$ with $a,b,c\in\{0,2\}$, which gives $\sqrt2$ and $\sqrt3$, and end in three base
+cases: $\operatorname{arsinh}(c/\sqrt{a^2+b^2})$, which gives $\operatorname{arsinh}1=\ln(1+\sqrt2)$ and
+$\operatorname{arsinh}(1/\sqrt2)$, and $\arctan\bigl(bc/a\sqrt{a^2+b^2+c^2}\bigr)=\pi/6$. So for every
+odd $m$, and for every derivative, $U(m,\biota)$ is a combination with rational coefficients of
+\begin{equation}\label{eq:sixconstants}
+  1,\qquad \pi,\qquad \sqrt2,\qquad \sqrt3,\qquad \ln\bigl(1+\sqrt2\bigr),\qquad
+  \operatorname{arsinh}\frac{1}{\sqrt2} .
+\end{equation}
+By Eq.~\eqref{eq:anbn}, $\bK_n$ draws on $m=n-1$ and $n+1$. An even power of $k_Sh$ therefore uses odd
+$m$ and is a combination of the six constants; an odd power uses even $m$, polynomial kernels, and is
+rational. Divided by the $4\pi$ of Eq.~\eqref{eq:kseries}, an even power is a rational combination of
+$1/\pi$, $1$, $\sqrt2/\pi$, $\sqrt3/\pi$, $\ln(1+\sqrt2)/\pi$ and $\operatorname{arsinh}(1/\sqrt2)/\pi$, and an
+odd power a rational multiple of $1/\pi$. The derivation confirms both through the highest power computed:
+the constants that occur in $\bK_0$, $\bK_2$, $\bK_4$ and $\bK_6$ are exactly the six, and every entry of
+$\bK_1$, $\bK_3$ and $\bK_5$ is rational. In the static strain blocks the two logarithms occur only in the combination
+$\Lambda=[\ln(1+\sqrt2)-\operatorname{arsinh}(1/\sqrt2)]/\pi$ of \citet{NestorCoupling2026}; in the
+displacement blocks and at the dynamic orders they occur separately.
+
+\paragraph{The radiation.} The odd powers are the radiation of the cell. The first, $n=1$, has a single
+non-zero entry: the uniform displacement against the mean force, the cell's monopole. In the reduced form
+of \S\ref{sec:group} it is
+\begin{equation}\label{eq:radiation}
+  N_{T_{1u},1}[u,u]=\frac{\mathrm i}{\mu}\Bigl[\frac{2}{\pi}-\bigl(1-\gamma^3\bigr)\frac{4}{3!\,\pi}\Bigr]
+  =\frac{2\mathrm i\,(2+\gamma^3)}{3\pi\mu},
+\end{equation}
+so that the term $k_Sh\,h^2N_{T_{1u},1}$ of $\bM^{-1}\bK$ is $8h^3$ times
+$\mathrm i\,k_S(2+\gamma^3)/(12\pi\mu)$, the imaginary part of $\bG(0)$: the radiation damping of a point
+force carrying the cell's total force, as it must be at lowest order. The next odd power, $n=3$, is
+again rational; it enters $A_{1g}$, $E_g$, $T_{1g}$, $T_{2g}$ and $T_{1u}$, and vanishes on $T_{2u}$,
+$A_{2u}$ and $E_u$; the fifth enters every representation.
+
+\section{The cube group}\label{sec:group}
+
+With the contrast uniform in the cell, $\bM-\bK\bD$ commutes with the $48$ signed permutations of the cube,
+acting on the $36$ unknowns as the product of their action on the four functions and on the nine
+components, and it reduces on the irreducible representations of $O_h$ \citep{NestorCoupling2026}. The
+displacement's first moments $\xi_iu_j$ ($9$) span $A_{1g}+E_g+T_{1g}+T_{2g}$; the uniform strain ($6$)
+spans $A_{1g}+E_g+T_{2g}$; the uniform displacement ($3$) spans $T_{1u}$; and the strain's first moments
+($18$) span $3T_{1u}+2T_{2u}+A_{2u}+E_u$. Altogether $15$ even unknowns,
+$2A_{1g}+2E_g+T_{1g}+2T_{2g}$, and $21$ odd, $4T_{1u}+2T_{2u}+A_{2u}+E_u$. On a representation $\Gamma$ of
+multiplicity $n_\Gamma$ the operator is one $n_\Gamma\times n_\Gamma$ block repeated for each row of
+$\Gamma$; the largest is $T_{1u}$, $4\times4$. Table~\ref{tab:vectors} gives one row of each, as integer
+vectors. The partners are chosen so that each set transforms as the same row of $\Gamma$; the reduction
+is then exact, $\bK V_\Gamma=V_\Gamma\bK_\Gamma$ with no residual at any power (\S\ref{sec:checks}).
+
+\begin{table}[htbp]
+\centering
+\caption{One row of each irreducible representation, as combinations of the unknowns $\xi_iu_j$ ($L_b=\xi_i$
+times the displacement component $j$), $u_j$, $\varepsilon_{ij}$ and $\xi_i\varepsilon_{jk}$, axes
+$0,1,2$.}\label{tab:vectors}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+$\Gamma$ & vectors & $M_\Gamma/h^3$ \\
+\midrule
+$A_{1g}$ & $\xi_0u_0+\xi_1u_1+\xi_2u_2$; \ $\varepsilon_{00}+\varepsilon_{11}+\varepsilon_{22}$ & $\tfrac83,8$\\
+$E_g$ & $2\xi_0u_0-\xi_1u_1-\xi_2u_2$; \ $2\varepsilon_{00}-\varepsilon_{11}-\varepsilon_{22}$ & $\tfrac83,8$\\
+$T_{1g}$ & $\xi_1u_2-\xi_2u_1$ & $\tfrac83$\\
+$T_{2g}$ & $\xi_1u_2+\xi_2u_1$; \ $2\varepsilon_{12}$ & $\tfrac83,8$\\
+$T_{1u}$ & $u_0$; \ $\xi_0\varepsilon_{00}$; \ $\xi_0(\varepsilon_{11}+\varepsilon_{22})$; \
+$2(\xi_1\varepsilon_{01}+\xi_2\varepsilon_{02})$ & $8,\tfrac83,\tfrac83,\tfrac83$\\
+$T_{2u}$ & $\xi_0(\varepsilon_{11}-\varepsilon_{22})$; \ $2(\xi_1\varepsilon_{01}-\xi_2\varepsilon_{02})$ & $\tfrac83,\tfrac83$\\
+$A_{2u}$ & $2(\xi_0\varepsilon_{12}+\xi_1\varepsilon_{02}+\xi_2\varepsilon_{01})$ & $\tfrac83$\\
+$E_u$ & $2(\xi_1\varepsilon_{02}-\xi_2\varepsilon_{01})$ & $\tfrac83$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On each representation
+\begin{equation}\label{eq:tgamma}
+  \bT_\Gamma=M_\Gamma\bD_\Gamma\bigl(\bI-\bN_\Gamma\bD_\Gamma\bigr)^{-1},\qquad
+  \bN_\Gamma=\frac1\mu\sum_{n\ge0}(k_Sh)^n\,\mathrm i^n\Bigl[\frac{\mathbf P_{\Gamma,n}}{n!}
+  -\bigl(1-\gamma^{n+2}\bigr)\frac{\mathbf Q_{\Gamma,n}}{(n+2)!}\Bigr],
+\end{equation}
+with $\bD_\Gamma$ the contrast on the vectors of $\Gamma$, which is $\omega^2\Delta\rho$ on a displacement
+vector and a combination of $\Delta\lambda$ and $\Delta\mu$ on a strain vector, and $\mathbf P_{\Gamma,n}$,
+$\mathbf Q_{\Gamma,n}$ the reduced forms of $\mathbf A_n$ and $\mathbf B_n$ divided by $4\pi M_\Gamma$. Each
+of their entries is a rational vector on the six constants (\S\ref{sec:constants}); all of them, through
+the highest power computed, are in \path{data/self_blocks_irreps.txt}. As an example, the uniform
+dilatation ($A_{1g}$, the strain vector) has $P_{0}=-\tfrac13$ and $Q_{0}=-\tfrac23$, so that its static
+entry is $\mu N=-\tfrac13+\tfrac12(1-\gamma^2)\tfrac23=-\gamma^2/3$, that is
+$N=-1/[3(\lambda+2\mu)]$, the value for every shape \citep{NestorCoupling2026}; all $36$ static entries
+of the uniform and linear strain reproduce those of \citet{NestorCoupling2026}, coefficient by coefficient
+on its five constants. Its first
+dynamic correction is
+\begin{equation}\label{eq:a1gdyn}
+  \mu N_{A_{1g},2}[\varepsilon,\varepsilon]=-\frac{1}{2}\Bigl[P_2-\frac{1-\gamma^4}{12}Q_2\Bigr],\qquad
+  \pi P_2=\tfrac4{15}-\tfrac49\pi+\tfrac4{15}\sqrt2-\tfrac8{15}\sqrt3+\tfrac43\ln(1+\sqrt2)
+  +\tfrac83\operatorname{arsinh}\tfrac1{\sqrt2},
+\end{equation}
+and likewise for $Q_2$ (the data file); $(k_Sh)^2$ times this is the leading change with frequency of
+the cell's dilatational self-interaction.
+
+\section{Checks}\label{sec:checks}
+
+Every step is checked against an evaluation that shares none of it
+(\path{scripts/derive_legendre_cell_dynamic.py}), with the background $\alpha=5000$\,m\,s$^{-1}$,
+$\beta=3000$\,m\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$ and the contrast $\Delta\lambda=2$\,GPa,
+$\Delta\mu=1$\,GPa, $\Delta\rho=100$\,kg\,m$^{-3}$. Table~\ref{tab:checks} gives the results.
+
+\begin{table}[htbp]
+\centering
+\caption{Checks of the closed form through $(k_Sh)^6$. The reference for the series is the package's
+series of the self block (master integrals at forty digits for odd $m$, Gauss rules for even $m$), which
+itself agrees with quadrature of the singular integrals to $1.4\times10^{-15}$.}\label{tab:checks}
+\small
+\begin{tabular}{@{}p{8.6cm}l@{}}
+\toprule
+check & result \\
+\midrule
+$223$ exact moments, $m=-1$ to $7$, against the package's & $1.7\times10^{-15}$ \\
+self block, exact series to $n=6$, against the full series, $k_Sh=0.02,0.05,0.1,0.2$ &
+$1.1\times10^{-14}$, $6.6\times10^{-12}$, $8.4\times10^{-10}$, $1.1\times10^{-7}$ \\
+\quad apparent order of that difference & $7.00$ \\
+$\bT_{36}$ from the exact series against $\bT_{36}$ by quadrature, $k_Sh=0.05,0.1,0.2$ &
+$2.1\times10^{-13}$, $2.7\times10^{-11}$, $3.5\times10^{-9}$ \\
+\quad apparent order & $7.00$ \\
+\quad the same truncated at $n=4$ & $5.9\times10^{-10}$, $1.9\times10^{-8}$, $6.1\times10^{-7}$; order $5.00$ \\
+invariance of every representation's span under every $\bK_n$ & exact (no residual) \\
+$\bT_{36}V_\Gamma=V_\Gamma\bT_\Gamma$, Eq.~\eqref{eq:tgamma}, worst over $\Gamma$, $k_Sh=0.05,0.1,0.2$ &
+$4.4\times10^{-13}$, $5.6\times10^{-11}$, $7.2\times10^{-9}$ \\
+static uniform dilatation & $-1/[3(\lambda+2\mu)]$ exactly \\
+the $36$ static strain entries against \citet{NestorCoupling2026} & identical coefficients \\
+radiation at $n=1$ & $\mathrm{Im}\,\bG(0)$ exactly, Eq.~\eqref{eq:radiation} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The differences fall as $(k_Sh)^7$, the first power omitted (and as $(k_Sh)^5$ when the series stops at
+$n=4$), so they are the truncation of the series and
+not an error of its terms. The closed form is that of the exact self block: what it omits at a given order
+is stated by the next term, which is itself in closed form.
+
+\section{Discussion}\label{sec:discussion}
+
+The single-site $T$-matrix of the linear Legendre cell is now known in closed form at every power of the
+frequency, on six constants, with its radiation rational and its first radiative term the point force's.
+Two things are not yet covered. The contrast here is uniform in the cell; a graded contrast couples the
+even and odd unknowns and leaves only the operations that fix its gradient
+\citep{NestorCoupling2026}, so the reduction is weaker, though the moments are the same and the closed
+form carries over. And the field is linear; the quadratic cell of $90$ unknowns needs the moments of
+monomials to degree four, which the same derivation provides. The comparison with the single site of the
+expansion about the centre, whose self-interaction is taken at the centre rather than averaged over the
+cell \citep{NestorContinuum2026,NestorCoupling2026}, is to be condensed here from the earlier paper.
+
+\section*{Data availability}
+The derivation and its checks are \path{scripts/derive_legendre_cell_dynamic.py}, which writes
+\path{data/self_moments_exact.pkl} (every moment, exact) and \path{data/self_blocks_irreps.txt} (every
+reduced entry, on the six constants), in the repository
+\url{https://github.com/tmnestor/MultipleScatteringCalculations}. The static blocks are
+\path{scripts/derive_graded_voxel_site_blocks.py}.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}
