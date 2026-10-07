@@ -31,48 +31,48 @@
 \begin{tikzpicture}[>=Stealth, x=0.78cm, y=0.78cm, font=\small]
   % ---------------------------------------------------------------- (a) the two cells and the integrand
   \begin{scope}
-    \node at (-2.2,4.6) {(a)};
+    \node at (-2.6,4.2) {(a)};
     \cell{0}{0}{0}{black!22}
     \cell{4}{0}{2}{black!8}
-    \node[font=\footnotesize, anchor=north] at \pt{0}{-1}{-1.15} {source cell $V_n$};
+    \node[font=\footnotesize, anchor=east] at \pt{-1.15}{-1}{-0.55} {source cell $V_n$};
     \node[font=\footnotesize, anchor=south] at \pt{4}{1}{3.1} {field cell $V_m$};
     % side 2h, along the bottom front edge of the source cell
     \draw[decorate, decoration={brace, mirror, amplitude=3pt}] \pt{-1}{-1}{-1.12} -- \pt{1}{-1}{-1.12};
-    \node[font=\footnotesize, anchor=north west, inner sep=1pt] at \pt{1}{-1}{-1.2} {$2h$};
+    \node[font=\footnotesize, anchor=north, inner sep=1pt] at \pt{0}{-1}{-1.32} {$2h$};
     % centres and their separation R = x_m - x_n = 2h o
     \fill \pt{0}{0}{0} circle (1.6pt);
     \node[font=\footnotesize, anchor=north east, inner sep=1.5pt] at \pt{0}{0}{0} {$\bx_n$};
     \fill \pt{4}{0}{2} circle (1.6pt);
     \node[font=\footnotesize, anchor=north west, inner sep=1.5pt] at \pt{4}{0}{2} {$\bx_m$};
     \draw[->, very thick] \pt{0}{0}{0} -- \pt{3.93}{0}{1.965};
-    \node[font=\footnotesize, fill=white, fill opacity=0.8, text opacity=1, inner sep=1pt]
-      at \pt{1.75}{0}{1.25} {$\bR=\bx_m-\bx_n=2h\,\bo$};
+    \node[font=\footnotesize, align=left, anchor=north west, fill=white, fill opacity=0.85, text opacity=1,
+      inner sep=1pt] at \pt{2.0}{0}{0.62} {$\bR=\bx_m-\bx_n$\\ $\phantom{\bR}=2h\,\bo$};
     % local coordinates of the field cell: xi = (x - x_m)/h in [-1, 1]^3
     \draw[->, black!70] \pt{4}{0}{2} -- \pt{4.85}{0}{2} node[right, font=\scriptsize, inner sep=1pt] {$\xi_0$};
     \draw[->, black!70] \pt{4}{0}{2} -- \pt{4}{0.95}{2} node[above right, font=\scriptsize, inner sep=0pt] {$\xi_1$};
     \draw[->, black!70] \pt{4}{0}{2} -- \pt{4}{0}{2.75} node[above, font=\scriptsize, inner sep=1pt] {$\xi_2$};
     % a source point x' = x_n + h xi' and a field point x = x_m + h xi
-    \draw[->, thin] \pt{0}{0}{0} -- \pt{0.55}{-0.4}{0.65};
-    \fill \pt{0.55}{-0.4}{0.65} circle (1.4pt);
-    \node[font=\footnotesize, anchor=east, inner sep=2pt] at \pt{0.55}{-0.4}{0.65} {$\bx'$};
-    \draw[->, thin] \pt{4}{0}{2} -- \pt{3.35}{-0.5}{1.35};
-    \fill \pt{3.35}{-0.5}{1.35} circle (1.4pt);
-    \node[font=\footnotesize, anchor=north, inner sep=2pt] at \pt{3.35}{-0.5}{1.25} {$\bx$};
+    \draw[->, thin] \pt{0}{0}{0} -- \pt{0.3}{-0.5}{0.75};
+    \fill \pt{0.3}{-0.5}{0.75} circle (1.4pt);
+    \node[font=\footnotesize, anchor=north east, inner sep=1.5pt] at \pt{0.3}{-0.5}{0.75} {$\bx'$};
+    \draw[->, thin] \pt{4}{0}{2} -- \pt{3.25}{-0.5}{2.75};
+    \fill \pt{3.25}{-0.5}{2.75} circle (1.4pt);
+    \node[font=\footnotesize, anchor=south, inner sep=2pt] at \pt{3.25}{-0.5}{2.8} {$\bx$};
     % the point propagator from the source point to the field point
     \draw[->, thick, decorate, decoration={snake, amplitude=1.3pt, segment length=6pt, post length=4pt}]
-      \pt{0.62}{-0.4}{0.68} -- \pt{3.27}{-0.5}{1.32};
-    \node[font=\footnotesize, anchor=north west, inner sep=1pt] at \pt{1.95}{-0.45}{0.85} {$\bP(\bx-\bx')$};
+      \pt{0.38}{-0.5}{0.8} -- \pt{3.17}{-0.5}{2.7};
+    \node[font=\footnotesize, anchor=south east, inner sep=1pt] at \pt{1.6}{-0.5}{1.85} {$\bP(\bx-\bx')$};
     % what each point carries
-    \node[font=\footnotesize, align=left, anchor=east] (src) at \pt{-1.6}{-0.4}{1.9}
+    \node[font=\footnotesize, align=left, anchor=east] (src) at \pt{-1.4}{-0.5}{2.3}
       {source density\\ $m_c(\bxi')$, $\bxi'=(\bx'-\bx_n)/h$};
-    \draw[->, black!60, shorten >=3pt] (src.south east) -- \pt{0.5}{-0.4}{0.7};
-    \node[font=\footnotesize, align=left, anchor=west] (fld) at \pt{5.6}{-0.5}{0.35}
+    \draw[->, black!60, shorten >=3pt] (src.south east) -- \pt{0.25}{-0.5}{0.8};
+    \node[font=\footnotesize, align=left, anchor=west] (fld) at \pt{5.9}{-0.5}{3.75}
       {test function\\ $L_a(\bxi)$, $\bxi=(\bx-\bx_m)/h$};
-    \draw[->, black!60, shorten >=3pt] (fld.west) -- \pt{3.4}{-0.5}{1.3};
+    \draw[->, black!60, shorten >=3pt] (fld.west) -- \pt{3.3}{-0.5}{2.78};
   \end{scope}
   % ---------------------------------------------------------------- (b) cells that touch: x - x' -> 0
-  \begin{scope}[xshift=11.0cm, yshift=0.55cm]
-    \node at (-1.9,3.95) {(b)};
+  \begin{scope}[xshift=10.6cm, yshift=0.55cm]
+    \node at (-1.9,3.4) {(b)};
     \fill[black!22] (-1,0) rectangle (1,2);
     \fill[black!8] (1,0) rectangle (3,2);
     \draw (-1,0) rectangle (1,2);
