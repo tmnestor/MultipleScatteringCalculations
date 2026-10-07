@@ -339,20 +339,23 @@ def irrep_t(r: dict, values: dict, kh: float, gamma: float, mu: float, delta9: n
     return m_g @ d_g @ np.linalg.inv(np.eye(k) - n_g @ d_g)
 
 
-PI_BASIS = ["1/pi", "1", "sqrt2/pi", "sqrt3/pi", "ln(1+sqrt2)/pi", "arsinh(1/sqrt2)/pi"]
+#: arsinh(1/sqrt2) = ln((1 + sqrt3)/sqrt2) = ln(2 + sqrt3) / 2: both logarithms are of fundamental units,
+#: of Q(sqrt2) and of Q(sqrt3)
+PI_BASIS = ["1/pi", "1", "sqrt2/pi", "sqrt3/pi", "ln(1+sqrt2)/pi", "ln(2+sqrt3)/pi"]
 
 
 def _on_pi_basis(x: Lin) -> list[sp.Rational]:
-    """x / (4 pi) as rational coefficients on PI_BASIS."""
+    """x / (4 pi) as rational coefficients on PI_BASIS, arsinh(1/sqrt2) written as ln(2 + sqrt3) / 2."""
     l1, l2 = sp.log(1 + sp.sqrt(2)), sp.asinh(sp.sqrt(2) / 2)
     keys = {sp.Integer(1): 0, sp.pi: 1, sp.sqrt(2): 2, sp.sqrt(3): 3, l1: 4, l2: 5}
     out = [sp.Integer(0)] * 6
     for mono, coef in x.items():
-        out[keys[mono]] += coef / 4
+        out[keys[mono]] += coef / 4 * (sp.Rational(1, 2) if mono == l2 else 1)
     return out
 
 
 def write_blocks(reduced: dict, n_max: int) -> None:
+    assert abs(float(sp.N(sp.asinh(sp.sqrt(2) / 2) - sp.log(2 + sp.sqrt(3)) / 2, 50))) < 1e-45
     lines = [
         "The single-site blocks of the linear Legendre cell, uniform contrast, power by power in k_S h.",
         "N_Gamma = (1/mu) sum_n (k_S h)^n i^n [ P_n / n! - (1 - gamma^(n+2)) Q_n / (n+2)! ],  gamma = beta/alpha,",
