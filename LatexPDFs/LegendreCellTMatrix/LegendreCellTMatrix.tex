@@ -75,7 +75,8 @@ the receiving cell as a point. For the linear Legendre cell with a uniform contr
 $T$-matrix in closed form at every power of the wavenumber. Its self-interaction is a power series in
 $k_Sh$, $h$ the half-width, whose coefficients are moments of powers of the distance over the cell. Every
 coefficient is exact: an even power of $k_Sh$ is a combination with rational coefficients of six constants,
-$1$, $\pi$, $\sqrt2$, $\sqrt3$, $\ln(1+\sqrt2)$ and $\operatorname{arsinh}(1/\sqrt2)$, and an odd power,
+$1$, $\pi$, $\sqrt2$, $\sqrt3$, $\ln(1+\sqrt2)$ and $\ln(2+\sqrt3)$, the last two the logarithms of the
+fundamental units of $\mathbb Q(\sqrt2)$ and $\mathbb Q(\sqrt3)$, and an odd power,
 which carries the radiation, is rational. The first of these is the radiation damping of a point force,
 recovered exactly. On the irreducible representations of the cube group the $36$ unknowns of the cell
 separate into blocks of at most four, and the $T$-matrix becomes a handful of closed-form matrices per
@@ -239,20 +240,29 @@ The moments of Eq.~\eqref{eq:umoment} for odd $m$ are built from the master inte
 boxes, whose sides are $2$ and whose corners lie at $0$ and $\pm2$. Their recurrences only multiply powers
 of $\sqrt{a^2+b^2+c^2}$ with $a,b,c\in\{0,2\}$, which gives $\sqrt2$ and $\sqrt3$, and end in three base
 cases: $\operatorname{arsinh}(c/\sqrt{a^2+b^2})$, which gives $\operatorname{arsinh}1=\ln(1+\sqrt2)$ and
-$\operatorname{arsinh}(1/\sqrt2)$, and $\arctan\bigl(bc/a\sqrt{a^2+b^2+c^2}\bigr)=\pi/6$. So for every
+\begin{equation}\label{eq:arsinh}
+  \operatorname{arsinh}\frac1{\sqrt2}=\ln\frac{1+\sqrt3}{\sqrt2}=\tfrac12\ln\bigl(2+\sqrt3\bigr),
+\end{equation}
+since $(1+\sqrt3)^2/2=2+\sqrt3$, and $\arctan\bigl(bc/a\sqrt{a^2+b^2+c^2}\bigr)=\pi/6$. So for every
 odd $m$, and for every derivative, $U(m,\biota)$ is a combination with rational coefficients of
 \begin{equation}\label{eq:sixconstants}
-  1,\qquad \pi,\qquad \sqrt2,\qquad \sqrt3,\qquad \ln\bigl(1+\sqrt2\bigr),\qquad
-  \operatorname{arsinh}\frac{1}{\sqrt2} .
+  1,\qquad \pi,\qquad \sqrt2,\qquad \sqrt3,\qquad \ln\bigl(1+\sqrt2\bigr),\qquad \ln\bigl(2+\sqrt3\bigr).
 \end{equation}
+The two logarithms are those of the fundamental units $1+\sqrt2$ and $2+\sqrt3$ of the real quadratic fields
+$\mathbb Q(\sqrt2)$ and $\mathbb Q(\sqrt3)$, the fields of the face and body diagonals of the cube; the
+second is the $-\ln(2-\sqrt3)$ of the moments of the expansion about the centre \citep{NestorContinuum2026}.
+We write it as $\ln(2+\sqrt3)$ because that form is the better conditioned in floating point: $2-\sqrt3$ is
+formed by a cancellation that magnifies the rounding of $\sqrt3$ by $\sqrt3/(2-\sqrt3)\approx6.5$, while
+$2+\sqrt3$ involves none. In double precision $\tfrac12\ln(2+\sqrt3)$ is correct to $1.0\times10^{-16}$ and
+$-\tfrac12\ln(2-\sqrt3)$ to $2.7\times10^{-16}$.
 By Eq.~\eqref{eq:anbn}, $\bK_n$ draws on $m=n-1$ and $n+1$. An even power of $k_Sh$ therefore uses odd
 $m$ and is a combination of the six constants; an odd power uses even $m$, polynomial kernels, and is
 rational. Divided by the $4\pi$ of Eq.~\eqref{eq:kseries}, an even power is a rational combination of
-$1/\pi$, $1$, $\sqrt2/\pi$, $\sqrt3/\pi$, $\ln(1+\sqrt2)/\pi$ and $\operatorname{arsinh}(1/\sqrt2)/\pi$, and an
+$1/\pi$, $1$, $\sqrt2/\pi$, $\sqrt3/\pi$, $\ln(1+\sqrt2)/\pi$ and $\ln(2+\sqrt3)/\pi$, and an
 odd power a rational multiple of $1/\pi$. The derivation confirms both through the highest power computed:
 the constants that occur in $\bK_0$, $\bK_2$, $\bK_4$ and $\bK_6$ are exactly the six, and every entry of
 $\bK_1$, $\bK_3$ and $\bK_5$ is rational. In the static strain blocks the two logarithms occur only in the combination
-$\Lambda=[\ln(1+\sqrt2)-\operatorname{arsinh}(1/\sqrt2)]/\pi$ of \citet{NestorCoupling2026}; in the
+$\Lambda=[\ln(1+\sqrt2)-\tfrac12\ln(2+\sqrt3)]/\pi$ of \citet{NestorCoupling2026}; in the
 displacement blocks and at the dynamic orders they occur separately.
 
 \paragraph{The radiation.} The odd powers are the radiation of the cell. The first, $n=1$, has a single
@@ -270,17 +280,77 @@ $A_{2u}$ and $E_u$; the fifth enters every representation.
 
 \section{The cube group}\label{sec:group}
 
-With the contrast uniform in the cell, $\bM-\bK\bD$ commutes with the $48$ signed permutations of the cube,
-acting on the $36$ unknowns as the product of their action on the four functions and on the nine
-components, and it reduces on the irreducible representations of $O_h$ \citep{NestorCoupling2026}. The
-displacement's first moments $\xi_iu_j$ ($9$) span $A_{1g}+E_g+T_{1g}+T_{2g}$; the uniform strain ($6$)
-spans $A_{1g}+E_g+T_{2g}$; the uniform displacement ($3$) spans $T_{1u}$; and the strain's first moments
-($18$) span $3T_{1u}+2T_{2u}+A_{2u}+E_u$. Altogether $15$ even unknowns,
-$2A_{1g}+2E_g+T_{1g}+2T_{2g}$, and $21$ odd, $4T_{1u}+2T_{2u}+A_{2u}+E_u$. On a representation $\Gamma$ of
-multiplicity $n_\Gamma$ the operator is one $n_\Gamma\times n_\Gamma$ block repeated for each row of
-$\Gamma$; the largest is $T_{1u}$, $4\times4$. Table~\ref{tab:vectors} gives one row of each, as integer
-vectors. The partners are chosen so that each set transforms as the same row of $\Gamma$; the reduction
-is then exact, $\bK V_\Gamma=V_\Gamma\bK_\Gamma$ with no residual at any power (\S\ref{sec:checks}).
+The $36\times36$ system of Eq.~\eqref{eq:sitels} is small, but its structure is worth exposing: the
+symmetry of the cube splits it exactly into blocks of at most four unknowns, and it is this splitting that
+makes the closed form readable. The tool is Schur's lemma from the representation theory of finite groups
+\citep{Tinkham1964,Dresselhaus2008}. Because it is less familiar outside solid-state physics, we state what
+it needs and why each condition holds here.
+
+\paragraph{The group, and how it acts on the unknowns.} The symmetries of the cube about its centre are
+the $48$ signed permutation matrices $Q$: the $3!$ permutations of the axes combined with the $2^3$
+choices of sign, rotations and reflections together, the group $O_h$. A symmetry $Q$ moves the point
+$\bxi$ of the cell to $Q\bxi$ and acts on what the cell carries. The four functions transform as
+$1\mapsto1$ and $\xi_i\mapsto(Q\bxi)_i$, by the matrix $T(Q)=1\oplus Q$. The displacement is a vector,
+$u\mapsto Qu$, and the strain a symmetric tensor, $\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$; on the
+nine components this is $S(Q)=Q\oplus\Sigma(Q)$, with $\Sigma(Q)$ the $6\times6$ matrix of
+$\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$ in Voigt form. On the $36$ unknowns of the cell
+\begin{equation}\label{eq:rep}
+  D(Q)=T(Q)\otimes S(Q),\qquad D(Q_1)D(Q_2)=D(Q_1Q_2),
+\end{equation}
+a \emph{representation} of the group. For a signed permutation, $Q\varepsilon Q^{\mathsf T}$ permutes the
+strain components with signs and sends shears to shears, so $\Sigma(Q)$, and with it $D(Q)$, is itself a
+signed permutation matrix: orthogonal, $D(Q)^{-1}=D(Q)^{\mathsf T}$.
+
+\paragraph{Why the cell's matrices commute with it.} Three facts make
+\begin{equation}\label{eq:commute}
+  D(Q)\,\bK\,D(Q)^{\mathsf T}=\bK,\qquad D(Q)\,\bM\,D(Q)^{\mathsf T}=\bM,\qquad D(Q)\,\bD\,D(Q)^{\mathsf T}=\bD
+  \qquad\text{for all $48$ }Q.
+\end{equation}
+\emph{The domain is invariant}: $Q$ maps the cube onto itself. \emph{The kernel is covariant}: the
+background is isotropic, so its Green's tensor satisfies $\bG(Q\mathbf r)=Q\,\bG(\mathbf r)\,Q^{\mathsf T}$
+for every orthogonal $Q$, reflections included, and its derivatives transform as tensors of the
+corresponding rank; changing variables $\bx\mapsto Q\bx$, $\by\mapsto Q\by$ in the double integral of
+$\bK$ then gives the first identity. \emph{The contrast is invariant}: uniform in the cell, $\omega^2\Delta\rho$ is a
+scalar and $\delta c$ an isotropic tensor, so $\bD$ commutes with $S(Q)$; and the Gram matrix $\bM$ only
+weights the functions $1$ and $\xi_i$, which $Q$ permutes among themselves with equal weights. The system
+matrix $\bM-\bK\bD$, its inverse, and $\bT_{36}$ of Eq.~\eqref{eq:t36} therefore commute with every
+$D(Q)$. Nothing here requires $\bK$ to be Hermitian or real: the identities hold for the complex self block
+at every frequency, radiation included, and power by power for each $\bK_n$.
+
+\paragraph{Schur's lemma.} A representation is \emph{irreducible} when no subspace other than $0$ and the
+whole is mapped into itself by every $D(Q)$. Schur's lemma states that a linear map between two irreducible
+representations that commutes with the group action is zero if the representations are inequivalent, and a
+multiple of the identity if they are the same. The $36$-dimensional representation of Eq.~\eqref{eq:rep} is
+not irreducible; it is a direct sum of copies of the ten irreducible representations of $O_h$, labelled by
+their dimension ($A$: $1$, $E$: $2$, $T$: $3$) and by their parity under the inversion $\bxi\mapsto-\bxi$
+($g$ even, $u$ odd). How many copies $n_\Gamma$ of each $\Gamma$ occur follows from the characters, the
+traces of the representation matrices: $n_\Gamma=\tfrac1{48}\sum_Q\chi_\Gamma(Q)\operatorname{tr}D(Q)$, with
+$\operatorname{tr}D(Q)=\operatorname{tr}T(Q)\operatorname{tr}S(Q)$. Every irreducible representation of $O_h$
+can be written with real matrices and has real characters, so the lemma holds over the real numbers, and
+applies to the real and imaginary parts of $\bK$ alike. Applied to an operator that commutes with $D(Q)$, it
+has two consequences. First, the operator does not couple unknowns of different $\Gamma$. Second, within the
+$n_\Gamma$ copies of a $\Gamma$ of dimension $d_\Gamma$, if a basis is chosen in which every copy is
+represented by the \emph{same} matrices (each basis vector a \emph{partner}, transforming as a given row of
+$\Gamma$), the operator acts as an $n_\Gamma\times n_\Gamma$ matrix on the multiplicity index and as the
+identity on the row index:
+\begin{equation}\label{eq:schur}
+  \bK=\bigoplus_\Gamma\bigl(\bK_\Gamma\otimes\bI_{d_\Gamma}\bigr),
+\end{equation}
+and likewise for $\bM$, $\bD$, $\bM-\bK\bD$ and $\bT_{36}$. The block $\bK_\Gamma$ is then found from any one
+row: with $V_\Gamma$ the $36\times n_\Gamma$ matrix whose columns are the partners of that row,
+$\bK V_\Gamma=V_\Gamma\bK_\Gamma$. Inverting the $36\times36$ system reduces to inverting $n_\Gamma\times
+n_\Gamma$ blocks, and since $n_\Gamma\le4$ each is written down by hand.
+
+\paragraph{The blocks of the cell.} The displacement's first moments $\xi_iu_j$ ($9$ unknowns) span
+$A_{1g}+E_g+T_{1g}+T_{2g}$; the uniform strain ($6$) spans $A_{1g}+E_g+T_{2g}$; the uniform displacement
+($3$) spans $T_{1u}$; and the strain's first moments ($18$) span $3T_{1u}+2T_{2u}+A_{2u}+E_u$. Altogether
+$15$ even unknowns, $2A_{1g}+2E_g+T_{1g}+2T_{2g}$, and $21$ odd, $4T_{1u}+2T_{2u}+A_{2u}+E_u$, as the
+characters confirm \citep{NestorCoupling2026}; the largest block is $T_{1u}$, $4\times4$. Even and odd
+unknowns never couple, which is the parity of the cube. Table~\ref{tab:vectors} gives the partners of one
+row of each $\Gamma$ as integer vectors. They are chosen so that within each $\Gamma$ they transform alike:
+the displacement's first moment $\xi_1u_2+\xi_2u_1$ and the shear $2\varepsilon_{12}$, for instance, both
+transform as the $(1,2)$ row of $T_{2g}$. The reduction is then exact: $\bK_nV_\Gamma=V_\Gamma\bK_{\Gamma,n}$
+with no residual at any power computed (\S\ref{sec:checks}).
 
 \begin{table}[htbp]
 \centering
@@ -325,7 +395,7 @@ dynamic correction is
 \begin{equation}\label{eq:a1gdyn}
   \mu N_{A_{1g},2}[\varepsilon,\varepsilon]=-\frac{1}{2}\Bigl[P_2-\frac{1-\gamma^4}{12}Q_2\Bigr],\qquad
   \pi P_2=\tfrac4{15}-\tfrac49\pi+\tfrac4{15}\sqrt2-\tfrac8{15}\sqrt3+\tfrac43\ln(1+\sqrt2)
-  +\tfrac83\operatorname{arsinh}\tfrac1{\sqrt2},
+  +\tfrac43\ln(2+\sqrt3),
 \end{equation}
 and likewise for $Q_2$ (the data file); $(k_Sh)^2$ times this is the leading change with frequency of
 the cell's dilatational self-interaction.
