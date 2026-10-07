@@ -1,0 +1,286 @@
+# Re-scoping the voxel series into three papers: section-by-section move plan
+
+**Status:** a plan for review. No `.tex` file has been changed.
+**Line numbers** refer to commit `0cad309` on `claude/practical-tesla-a2hpru`, which is the state you will pull.
+
+| File | Lines | PDF pages | Short name below |
+|---|---|---|---|
+| `LatexPDFs/ContinuumLimit/ContinuumLimit.tex` | 3192 | 72 | **CL** |
+| `LatexPDFs/ExactCouplingIntegrals/ExactCouplingIntegrals.tex` | 1340 | 29 | **EC** |
+| `LatexPDFs/AdaptiveOctree/AdaptiveOctree.tex` | 947 | 21 | **AO** |
+
+## 1. The new scopes
+
+| Paper | Subject | Working title (proposal) | Home directory |
+|---|---|---|---|
+| **P1** | The single-site T-matrix of a cubic voxel, by closed-form integration | *The Single-Site T-Matrix of an Elastic Cube in Closed Form: a Cartesian Multipole Hierarchy* | `ContinuumLimit/` (rename later if you want; renaming now breaks paths in scripts and the JCP builder) |
+| **P2** | The coupling between two cubic voxels, by closed-form integration | Unchanged: *The Coupling Integrals of Polynomial Cubes in Closed Form* | `ExactCouplingIntegrals/` |
+| **P3** | Error analysis: the convergence law, its constants, the projection-error law, 3D and the octree | *The Error of Polynomial Voxels for Elastic Waves: a Law Isolated on a Layer, Carried to Three Dimensions and Used to Refine an Octree* | `AdaptiveOctree/` |
+
+**Rough sizes after the move.** These are estimates from the current page map, not measurements.
+
+| Paper | Estimate | Comment |
+|---|---|---|
+| P1 | about 25–28 pp | Down from 72 |
+| P2 | about 28–30 pp | Gains the hierarchy-as-a-voxel-scheme section, loses the single cell |
+| P3 | about 60–65 pp | **This is the new long paper.** See decision D6 (§6) |
+
+## 2. Paper 1, `ContinuumLimit.tex` (CL)
+
+Each row gives where the text goes and why. **ALL** means each of the three papers needs its own version of it.
+
+### Front matter and introduction
+
+| CL lines | Content | To | Notes |
+|---|---|---|---|
+| 1–52 | Preamble, macros | ALL | Copy verbatim. P3 drops `\bA` and P1 drops `\sinc` only if unused (see §5). |
+| 54–58 | Title, running head | P1 | Retitle |
+| 63–86 | Abstract | P1 rewritten | 65–77 (two bases, the layer, order law, c_p, projection-error law) → P3's abstract. 78–83 (hierarchy, four constants, 300× against Mie) stay in P1. 83–84 ("as a voxel scheme it is fourth order") → P2. |
+| 90–97 | The VIE / T-matrix / Foldy–Lax problem | ALL | Shared opening paragraph |
+| 99–112 | The two bases; Chobanyan, Georgakis | P3 | |
+| 114–120 | Why the error can't be measured | P3 | |
+| 122–138 | The layer method; patch test | P3 | |
+| 140–165 | "The answer" (1)–(6) | P3 | Item (6) mentions `sec:gradvoxel`; cite P2 there |
+| 167–172 | (a) exact coupling, tiling | P3 | |
+| 172–184 | (b) no polarisability, moments as distributions, Eshelby δ, cubic anisotropy; (c) nine-component state | **P1** | |
+| 186–198 | Coupled-dipole history and the polarisability literature | **P1** | |
+| 198–203 | Coupling literature (integrated/filtered Green tensor, periodic) | **P2** | |
+| 203–216 | DDA convergence (Yurkin, Kahnert, Costabel); "what this paper adds" | P3 | |
+| 218–228 | Elastic counterparts (Gubernatis, Nestor 1996, Kanaun, …) | P1 (copy the relevant ones to P3) | |
+| 230–240 | Roadmap | Rewrite per paper | |
+
+### §2 Setting (`sec:setting`, 242–378)
+
+| CL lines | Content | To |
+|---|---|---|
+| 244–260 | Medium, state ψ, Foldy–Lax (`eq:foldylax`) | ALL |
+| 262–296 | Body force, the 9×9 kernel, Δ (`eq:bodyforce`, `eq:byparts`, `eq:delta`); `fig:kernel` 298–322 | **P1** (P2 needs the kernel's block structure: one paragraph plus a citation) |
+| 324–340 | Three kinds of averaging; collocation against receiver test | P3 (P2 needs the source-cell-average definition) |
+| 342–352 | The layer as n planes, specular sums (`eq:specsum`); `fig:lattice` 354–372 | P3 |
+| 374–378 | Implementations (`cubic_scattering`) | ALL |
+
+### §§3–5: the continuous layer, the specular sums, the tiling identity
+
+| CL lines | Content | To | Notes |
+|---|---|---|---|
+| 380–416 `sec:continuum` | Exact layer R/T, thin-layer series (`eq:thin`, `eq:thin1`) | P3 | P1's `sec:blocks` needs a two-line exact-layer reference (D1) |
+| 418–476 `sec:point` | Specular sums; "converges to the wrong limit" (`eq:poisson`, `fig:poisson`) | P3 | Alternative: P2 (D3) |
+| 478–540 `sec:tiling` | Tiling identity, exact same-plane kernel (`eq:between`, `eq:tiling`, `eq:exactkernel`, `fig:tiling`) | P3 | Alternative: P2 (D3) |
+| 542–552 | "Cell integrals without quadrature": the Kelvin tensor by face/corner sums, the self term | **P1** | `sec:distributions` (L841) depends on it |
+
+### §6 The single site (554–1203): the core of the new P1
+
+| CL lines | Content | To | Notes |
+|---|---|---|---|
+| 554–675 `sec:single` | Literature; naming the hierarchy; multipole orders; `tab:multipoles`, `fig:multipole` | **P1** | Reword L556 ("every error … is made at the single site (§discussion)") as a citation of P3. **`fig:multipole`'s caption (L637) cites `eq:gradkernel`, which goes to P2**: cite P2 there, or redraw panel (a) for one cell. |
+| 677–812 `sec:hierarchy` | The closed ℓ = 3 system, `eq:hierarchy`, grades, parity separation | **P1** | Self-contained |
+| 814–881 `sec:distributions` | Moments as distributions; 4224 closed forms on four constants | **P1** | Uses the corner sums of 542–552 (kept in P1) |
+| 883–978 `sec:parity` | O_h channels; closed-form concentrations; cube against sphere; Mie to 2e-10 | **P1** | L895–898 and L964–968 point to `sec:convergence`/`sec:fourth`: cite P3 instead. L952 takes ν = 7/32 from `sec:convergence`: state the background locally (copy CL 1209–1212). |
+| 980–1046 `sec:blocks` | The hierarchy on the 1D layer: 36 orders, truncation factor `eq:taylorfactor` | **P1** (D1) | Needs the exact layer (restate 382–386 in two lines). The link to `eq:errorR` (L1045) becomes a P3 citation. |
+| 1048–1123 `sec:singlesite` | Sphere (300×) and cube against references | **P1** | Its cube reference uses the Legendre voxels of `sec:fourth` (L1093): cite P3, or describe it as a converged subdivided-cube Galerkin solution. Contrast parameters from `sec:convergence` (L1057): state them locally. |
+| 1127–1134 `sec:closure` (first part) | The uniform-field closure T-matrix (`eq:closure`) | **P1** | |
+| 1135–1146 | Self-term cancellation: the closure as an exact collocation of the continuum (`eq:collocation`) | P3 | Uses the tiling results. P1 keeps one sentence citing P3. |
+| 1148–1155 | Package cube T against the closure; missing even-power self terms | **P1** | The last sentence ("by `eq:collocation` that error cannot enter") → P3 |
+| 1157–1203 `sec:whyclosed` | What a closed-form single site gives | **P1** | Trim 1196–1202 (lattice economy against Legendre) to a pointer to P2 and P3 |
+
+### §§7–10: the error analysis, all to P3
+
+| CL lines | Content | To | Notes |
+|---|---|---|---|
+| 1204–1273 `sec:convergence` | Canonical experiment; order 2.000; (kd)²/8 and −(kd)²/24; `eq:errorR` | P3 | **Copy** the medium parameters 1209–1212 into P1 as well |
+| 1275–1426 `sec:fourth` | Legendre voxels; orders 4, 6, 8; c_p (`eq:cp`, `tab:ratio`, `tab:fourth1d`, `tab:higher`) | P3 | The lateral form-factor paragraph 1403–1416 is cited from P2 |
+| 1430–1655 `sec:hetero` | Heterogeneous layer; min(2p+2, 2r+2); projection-error law (`eq:defectlaw`); stratified background | P3 | |
+| 1658–1781 `sec:sphere` | Graded sphere in 3D; orders 2.0 and 4.0; `fig:sphere` | P3 | Joins the graded-sphere series study from EC (§3) |
+
+### §11 The hierarchy as a voxel scheme (1784–1933)
+
+| CL lines | Content | To | Notes |
+|---|---|---|---|
+| 1786–1825 | Scheme, coupling block `eq:gradkernel`, self block = moment, checks | **P2** | This is cell-to-cell coupling of hierarchy cells. CL's conclusions (2142–2144) already call P2 its worked application. |
+| 1827–1856 | Subdivided homogeneous cube, `tab:hiersub` | **P2** | |
+| 1858–1907 | Graded sphere: hierarchy against Legendre orders, `tab:hiergraded` | P3 (D2) | A convergence comparison; P2 is the alternative |
+| 1909–1930 | Cost of the tables | **P2** | |
+
+### Discussion and conclusions
+
+| CL lines | Content | To |
+|---|---|---|
+| 1936–1974 | `fig:convergence` | P3 |
+| 1976–2009 | What each basis is for; where the error lives | P3 |
+| 2011–2017 | What the single site is | **P1** |
+| 2019–2025 | Relation to other methods (pointer) | P3 |
+| 2027–2045 | Two-error tension | P3 (2027–2039 also useful in P2) |
+| 2047–2066 | Cost, fast solver, limitations, graded voxel | P3 |
+| 2066–2071 | Contrast range, k_S h ≤ 0.3 | P3; the single-site validity sentence also goes to P1 |
+| 2071–2076 | Single-site dynamic error in closed form only for a sphere | **P1** |
+| 2077–2082 | Hierarchy as a voxel scheme: 3.8 not 4; fifth gradient not assembled | **P2** |
+| 2082–2089 | Extensions (3D solver, stratified, finite body) | P3 |
+| 2093–2106 | Conclusions: bases, order law, projection-error law, sphere | P3 |
+| 2108–2116 | The cube's three properties; hierarchy; 300× against Mie | **P1** (the first and last clauses of 2108–2111 → P3) |
+| 2117–2119 | "As a voxel scheme it is fourth order" | **P2** |
+| 2122–2140 | Error known in advance; `NestorOctree2026` | P3 (now its own content) |
+| 2141–2144 | Series roadmap | Rewrite for all three |
+
+### Appendices
+
+| CL appendix | Lines | To | Notes |
+|---|---|---|---|
+| A `app:engine` (moment gates, second route) | 2148–2173 | **P1** | |
+| B `app:legendre` (oblique, incident S, degree 2) | 2174–2285 | P3 | |
+| C `app:strat` (stratified background) | 2286–2487 | P3 | |
+| D `app:sphere` (near field, impedance march, sharp sphere) | 2488–2671 | P3 | Fix: L2575 attributes `eq:riccati` to §hetero, but it is in `app:strat` |
+| E `app:solver` (3D voxel solver) | 2672–2744 | **SPLIT** (D4) | The Galerkin block construction 2686–2713 → **P2**; the solver (FFT, GMRES, overlap, orders) → P3. AO L98 already points readers here. |
+| F `app:closuremie` (closure against exact sphere) | 2745–2781 | **P1** | L2775 links to `sec:convergence`: cite P3 |
+| G `app:borndefect` (scattering series, projection-error law) | 2782–2935 | P3 | |
+| H `app:related` (coupled-dipole, spectral-element) | 2936–3013 | P3 | P1 borrows 2940–2948 (polarisability against a derived single site), condensed |
+| I `app:cost` (cost of higher order, fast solver) | 3014–3074 | P3 | Items 3 and 5 (3052–3069) are also relevant to P2 |
+| J `app:evidence` (`tab:evidence`) | 3075–3166 | **SPLIT by row** | P1: rows 3123–3128, 3130, 3155–3159 and the CubeMoment* / Mie / hierarchy scripts. P2: row 3160. P3: everything else. |
+| Acknowledgments, AI declaration | 3167–3187 | ALL | The AI declaration refers to "the repository given under Data availability" (L3176), **but CL has no Data availability section**. Add one to P1 and P3 (P2 has one). |
+
+## 3. Paper 2, `ExactCouplingIntegrals.tex` (EC)
+
+Everything stays except the rows below.
+
+| EC lines | Content | To | Notes |
+|---|---|---|---|
+| 885–914 `sec:site` | Single-cell Lippmann–Schwinger, T36 (`eq:sitels`, `eq:t36`) | **P1** | |
+| 916–974 | Cube-group Schur reduction (`tab:irreps`); graded contrast in one cell | **P1** | |
+| 976–983 | Born limit with a gradient, slopes 2.0001/2.0004 (cites the min(2p+2, 2r+2) rule) | P1 (D5) | A single-cell view of the convergence law; P3 is the alternative |
+| 985–1038 | Static blocks in closed form on five constants (`eq:tblock`, `eq:fiveconstants`, `eq:uniformblocks`, `eq:c1`, `eq:c0`); averaged against collocated | **P1** | |
+| 1040–1050 | Checks against `blocks.near_block`, T36 | **P1** | Keep one sentence of 1043–1045 (the 41 self moments against the stable evaluation, 1.8e-15) in EC `sec:results`, as a check of P2's method |
+| 1052–1061 | Reciprocity of every touching block | **stays P2** | Move into `sec:blocks` or `sec:results` |
+| 1082–1091 `sec:sphereseries` intro | | P2, rewritten | |
+| 1092–1105 | Exact series of the sphere by a Cauchy contour (`GradedSphere_LowFrequency.wl`) | P3 | P2 keeps a pointer. **`eq:farseries` is defined twice (L805 and L1101): rename one.** |
+| 1107–1112 | No quadrature error in the static term: closed and Gauss tables agree | **stays P2** | |
+| 1112–1114 | Apparent order falls 4.2 → 3.2 | P3 | |
+| 1116–1129 | Cell model as a power series in k (`eq:seriessolve`); agrees with direct solves to 6e-11 | **stays P2** | An application of the frequency-independent coefficients |
+| 1130–1173 | `tab:sphereseries`, per-power orders; profile dependence | P3 | **Out of date:** the text says the quadratic contrast raises (ka)⁴ and (ka)⁷ to 3.4–3.5. The runs of 7 October give 3.99 at 20 cells for (ka)⁴ and 3.79 at 12 cells for (ka)⁷ (`scratch/graded_sphere_ka4/`). Rewrite with the new results when it moves. |
+| 1264 | Data availability: the single-cell clause | P1 | |
+| 1266–1333 `app:blocks` | Static blocks of the linear strain (`tab:blocks`) | **P1** | |
+| 63–87 | Abstract | Rewrite | It is already stale: it does not mention `sec:twocentre`, `sec:distant`, `sec:sweep`, `sec:fmm` or `sec:why` |
+| `data/site_blocks_exact.txt`, `data/site_moments_exact.txt` | | **P1** | Move with `sec:site` |
+
+**Gains from CL:** §11 (1786–1856 and 1909–1930), the block construction of `app:solver` (2686–2713), intro 198–203, discussion 2077–2082, and conclusion 2117–2119.
+
+**Gains from AO:** the unequal-leaf blocks as exact sums of equal-cell blocks, and the O_h orbit reduction (AO 174–187). This is coupling material and fits as a short subsection or remark; AO keeps a summary and cites P2.
+
+## 4. Paper 3, `AdaptiveOctree.tex` (AO), as the error-analysis paper
+
+### Proposed structure
+
+| Part | Content | Source |
+|---|---|---|
+| **I. The law on a layer** | Setting (averaging, the layer as planes); continuous layer; specular sums and tiling (D3); convergence and c_p; Legendre voxels and orders 4, 6, 8; heterogeneous layer; projection-error law | CL 324–352, 380–540, 1135–1146, 1204–1655; apps B, C, G |
+| **II. Three dimensions** | Graded sphere at fixed frequency; graded sphere power by power in ka (the matched-contrast result); hierarchy against Legendre orders | CL 1658–1781, app D, the solver part of app E, 1858–1907; EC 1092–1105, 1112–1114, 1130–1173 |
+| **III. The octree** | The current AO body | AO 154–856 |
+| Discussion and appendices | | CL discussion (P3 rows), apps H and I; AO `sec:status`, `app:experiments` |
+
+### Citations of P1 that become internal references
+
+Each of these currently cites `NestorContinuum2026` (or the uncited "companion paper"). Rewrite it as `\S\ref{…}` to the absorbed section.
+
+| AO line | What it takes from P1 |
+|---|---|
+| 92–98 | Order law, projection error |
+| 244 | The constants c₀, c₁, c₂ |
+| 300 | The layer law |
+| 310 | The T₂ error equals the projection error |
+| 492 | Layer higher orders, 0.90–0.94 |
+| 505–514 | "The companion paper" |
+| 728 | Matched bases |
+| 874 | Exact sphere reference |
+| 935–942 | "The companion paper" |
+
+**Retarget to P2:** AO 172 (the coupling blocks), and AO 98 (the 3D voxel blocks, which go to P2 under D4).
+**Keep as P1 citations:** AO 100–104 (the gradient-hierarchy single site).
+
+### Inconsistencies to fix
+
+- AO L186 says "344 leaves of three sizes" and L805 says "four sizes".
+- AO's abstract does not mention `sec:higher`.
+
+## 5. Cross-references that break
+
+The table below was generated by script from the line assignment above. Each row is a `\ref`/`\eqref` whose text and target label land in different papers. These must become citations, for example "(Ref. [P3], §x)", or the target must be restated locally. Shared (ALL) and the row-split evidence table are excluded.
+
+### ContinuumLimit.tex
+
+**P1 text → label now in P2 (3)**
+- `eq:gradkernel` (L1802) ← L637 (`fig:multipole` caption)
+- `sec:gradvoxel` (L1784) ← L1194, L1201
+
+**P1 text → label now in P3 (17)**
+- `sec:discussion` (L1934) ← L556
+- `sec:tiling` (L478) ← L841. This one goes away if L841 is re-pointed at the corner sums 542–552, which stay in P1.
+- `sec:convergence` (L1204) ← L896, L952, L967, L985, L1057, L2073, L2775
+- `sec:fourth` (L1275) ← L897, L967, L1093, L1199, L2073
+- `eq:errorR` (L1257) ← L1045, L2014
+- `eq:collocation` (L1137) ← L1154
+
+**P2 text (from CL §11, app E) → label now in P1 (7)**
+- `sec:single` ← L1787
+- `sec:blocks` ← L1788
+- `eq:taylorfield` ← L1793
+- `sec:singlesite` ← L1823, L1827, L1925
+- `sec:distributions` ← L1912
+
+**P2 text → label now in P3 (3)**
+- `sec:fourth` ← L1786
+- `sec:hetero` ← L1816
+- `sec:setting` ← L2691
+
+**P3 text → label now in P1 (10)**
+- `sec:single` ← L233, L1317, L1945
+- `sec:whyclosed` ← L235
+- `sec:closure` ← L1671
+- `sec:blocks` ← L1859, L1862, L1899
+- `sec:parity` ← L2065
+- `eq:delta` ← L2498
+
+**P3 text → label now in P2 (5)**
+- `sec:gradvoxel` ← L165, L237, L2061, L2674
+- `tab:hiersub` ← L1906
+
+### ExactCouplingIntegrals.tex
+
+**P1 text (`sec:site`) → label staying in P2 (6)**
+- `sec:blocks` (L163) ← L887
+- `eq:series` (L213) ← L996, L1050
+- `eq:umoment` (L222) ← L999
+- `sec:failure` (L370) ← L1001
+- `sec:stable` (L499) ← L1044
+
+These six are the dependency behind decision D5.
+
+### Citations of P1 in EC to retarget
+
+- **To P3** (the convergence law, the sphere, the measured errors): L120, L139, L848, L983, L1084, L1162, and the phrases "that paper" at L1086, L1090, L1109, L1119.
+- **Keep as P1:** L136, L169, L677, L799, L854, L914, L1032.
+
+### Bibliography keys
+
+The series is cited as `NestorContinuum2026` (P1), `NestorOctree2026` and `NestorGraded2026`. Under the new scopes, give each paper a key that names its subject, so the retargeting is visible in the source. For example: `NestorSingleSite2026`, `NestorCoupling2026`, `NestorError2026`. Each directory has its own `references.bib`, so the entries must be updated in all three.
+
+## 6. Decisions for you
+
+| | Decision | Recommendation | Alternative |
+|---|---|---|---|
+| **D1** | Where the hierarchy-on-the-layer validation (`sec:blocks`, `tab:hierlayer`, `eq:taylorfactor`) goes | **P1.** It is what validates the hierarchy's truncation order by order, and `tab:multipoles` and the P1 abstract depend on it. Cost: a two-line exact-layer reference in P1 and a citation of P3 for `eq:errorR`. | P3, which leaves P1 without its order-pair validation |
+| **D2** | Hierarchy against Legendre orders on the graded sphere (CL 1858–1907) | **P3**, a convergence comparison | P2, as the worked application of the hierarchy's coupling |
+| **D3** | The specular sums and the tiling identity (CL 418–540) | **P3.** They make the layer exact, which is the layer law's foundation. | P2. They concern lattice coupling, but P2 is about pairwise blocks. |
+| **D4** | `app:solver` | **Split:** the Galerkin block construction → P2, the solver → P3 | Keep it whole in P3 and cite P2 for the blocks |
+| **D5** | The ordering circularity between P1 and P2. `sec:site` is the single site of the **Galerkin Legendre voxel**. Its self block is the double integral `eq:block` at offset zero, evaluated with P2's machinery (`eq:series`, `eq:umoment`, the reductions of `sec:failure`, the stable evaluation). P1's own moment engine (`sec:distributions`) gives *single* integrals of the Green's tensor over the cube, which is what the hierarchy's single site needs. **It does not by itself give the Galerkin self block, so this needs checking before deciding.** | **Move `sec:site` to P1 and cite P2 for the self-block integrals, submitting P1 and P2 together.** The cube-group reduction, the five constants and the comparison with the hierarchy's collocated values (EC 1028–1038) are single-site results. | Keep `sec:site` in P2 as "the self block, applied to one cell", so that P1 is only the hierarchy's single site and needs nothing from P2 |
+| **D6** | P3's length (estimated at 60–65 pages) | Keep it as one paper for now, in three parts (§4), and decide after the move whether Part III (the octree) stands alone | Split now: P3 = the error law (layer plus 3D), P4 = the octree |
+
+## 7. Suggested order of work, once the plan is agreed
+
+1. **Build P3 first.** Copy (do not yet delete) the CL error material and the EC sphere study into `AdaptiveOctree.tex` as Parts I–II. Then convert AO's citations of P1 into internal references.
+2. **Move `sec:site` and `app:blocks` from EC to P1,** along with `data/site_*.txt`. Resolve D5 there.
+3. **Move CL §11 and the app E blocks to EC.**
+4. **Prune CL down to the P1 rows,** and write P1's title, abstract, introduction and conclusions.
+5. **Work through §5's list,** then rename the bibliography keys.
+6. **Split `tab:evidence` by row,** and add Data availability sections.
+7. **Build all three PDFs** with LuaLaTeX and check:
+   - no undefined references;
+   - no duplicate labels (`eq:farseries`);
+   - the JCP builder (`ContinuumLimit/JCP/make_jcp.py`) still runs.
