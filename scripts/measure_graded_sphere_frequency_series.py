@@ -32,7 +32,11 @@ Run:  python -u scripts/measure_graded_sphere_frequency_series.py [--gauss] [--r
 import itertools
 import json
 import math
+import multiprocessing
+import os
+import pickle
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -55,6 +59,12 @@ AXES = (0, 1, 2)
 REF, CONTRAST = hier.REF, hier.CONTRAST
 MU = REF.rho * REF.beta**2
 RATIO = REF.beta / REF.alpha  # k_P / k_S
+#: k-series coefficients computed ahead (``prefetch_kseries``): {canonical offset: (u_all[:J + 3], a_list)}.
+#: Only the first J + 3 powers are kept, against the 49 that ``kseries_coefficients`` caches per offset.
+KSERIES: dict = {}
+#: if set, a directory to which each power's transformed blocks are written as they are built and from which
+#: they are read through a memory map; only B_0, which GMRES applies at every iteration, is then held in RAM
+SPILL_DIR: Path | None = None
 
 
 # ------------------------------------------------------------------ per-power tables
@@ -62,6 +72,8 @@ def table_powers(units: tuple[int, int, int], side: float, d_list, w_list) -> li
     """T_j[i, n, D, W], the coefficient of k_S^j of the table between two different cells, j = 0..J."""
     if max(abs(u) for u in units) <= lowf.NEAR:
         u_all, a_list = lowf.closed_coefficients(units)
+    elif units in KSERIES:
+        u_all, a_list = KSERIES[units]
     else:
         u_all, a_list = gd.kseries_coefficients(units, tuple(d_list), tuple(w_list))
     rows_d, rows_b = gd._kseries_rows(tuple(d_list), a_list)
@@ -111,6 +123,45 @@ def self_powers(side: float, d_list, w_list) -> list[np.ndarray]:
     return out
 
 
+THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
+
+
+def _kseries_one(job):
+    rep, d_exp, w_exp = job
+    u_all, a_list = gd.kseries_coefficients.__wrapped__(rep, d_exp, w_exp)
+    return rep, (u_all[: J + 3].copy(), a_list)
+
+
+def prefetch_kseries(n_sub: int, d_list, w_list, workers: int, cache: Path | None = None) -> None:
+    """Fill ``KSERIES`` for every orbit of an n_sub grid farther than ``lowf.NEAR``, in parallel.
+
+    The coefficients are on the unit cube, so they do not depend on the grid: ``cache`` (a pickle per
+    contrast degree and J) carries them from one grid to the next.
+    """
+    d_exp = tuple(gd.as_exponents(d) for d in d_list)
+    w_exp = tuple(gd.as_exponents(w) for w in w_list)
+    if cache is not None and cache.exists() and not KSERIES:
+        KSERIES.update(pickle.loads(cache.read_bytes()))
+    reps = {gd.canonical_offset(k) for k in itertools.product(range(n_sub), repeat=3)}
+    todo = sorted(r for r in reps if max(r) > lowf.NEAR and r not in KSERIES)
+    if not todo:
+        return
+    # fresh single-threaded workers: one BLAS thread each, so that they do not oversubscribe the cores
+    saved = {v: os.environ.get(v) for v in THREAD_VARS}
+    os.environ.update({v: "1" for v in THREAD_VARS})
+    try:
+        with ProcessPoolExecutor(workers, mp_context=multiprocessing.get_context("spawn")) as pool:
+            KSERIES.update(pool.map(_kseries_one, [(r, d_exp, w_exp) for r in todo], chunksize=4))
+    finally:
+        for v, val in saved.items():
+            if val is None:
+                os.environ.pop(v, None)
+            else:
+                os.environ[v] = val
+    if cache is not None:
+        cache.write_bytes(pickle.dumps(KSERIES, protocol=pickle.HIGHEST_PROTOCOL))
+
+
 # ------------------------------------------------------------------ the series solve
 def solve_series(n_sub: int):
     side, centres, coefs, grid = gs.build_cells(n_sub, gfft.R_C)
@@ -147,14 +198,25 @@ def solve_series(n_sub: int):
     # only one power are held: the peak memory is then set by the transformed blocks themselves
     for j in range(J + 1):
         octant = {key: power_at(key, j) for key in itertools.product(range(n_sub), repeat=3)}
-        bo = np.zeros((n_v, k_half, k_half, k_half, nu3, nu3), dtype=complex)
+        for blocks in canon.values():  # this power's blocks now live in the octant
+            blocks[j] = None
+        shape = (n_v, k_half, k_half, k_half, nu3, nu3)
+        if SPILL_DIR is None:
+            bo = np.zeros(shape, dtype=complex)
+        else:
+            bo = np.lib.format.open_memmap(SPILL_DIR / f"b_oct_{j}.npy", mode="w+", dtype=complex, shape=shape)
         for vi in range(n_v):
             for r0 in range(0, nu3, nu3 // 3):
                 rows = slice(r0, r0 + nu3 // 3)
                 spatial = gfft._place(octant, n_fft, d, s, vi, rows, n_v)
                 bo[vi, ..., rows, :] = np.fft.fftn(spatial, axes=(0, 1, 2))[:k_half, :k_half, :k_half]
         del octant, spatial
+        if SPILL_DIR is not None:
+            bo.flush()
         b_oct.append(bo)
+    canon.clear()
+    if SPILL_DIR is not None:
+        b_oct[0] = np.array(b_oct[0])  # applied at every GMRES iteration: held in RAM
     patterns = []
     for sig in itertools.product((1, -1), repeat=3):
         tgt, src, dd, sv = [], [], np.ones(nu3), np.ones(n_v)
