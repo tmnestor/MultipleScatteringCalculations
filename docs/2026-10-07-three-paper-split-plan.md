@@ -284,3 +284,98 @@ The series is cited as `NestorContinuum2026` (P1), `NestorOctree2026` and `Nesto
    - no undefined references;
    - no duplicate labels (`eq:farseries`);
    - the JCP builder (`ContinuumLimit/JCP/make_jcp.py`) still runs.
+
+## 8. Collocation and Galerkin: disambiguation, and why both are presented
+
+### 8.1 The problem
+
+The words are used for **several different things**, and some schemes carry **three names each**. A reader meets them all in CL, and after the split would meet them across all three papers.
+
+**Senses of "collocation":**
+
+| Sense | Where | What it actually means |
+|---|---|---|
+| **C1. Point test** | CL 328–330, `sec:closure` (`eq:collocation`), `tab:ratio`, `fig:convergence`; CL 178, 191, 2944–2946 (Lakhtakia) | Uniform field per cell, with the equation imposed at the centre. This is the coupled-dipole / DDA scheme. |
+| **C2. Hermite (Taylor) collocation** | `sec:gradvoxel` (`eq:gradlattice`); AO 102 ("a voxel scheme collocated at the centres") | The equation **and its derivatives to order ℓ** imposed at the centre, on a Taylor field. The hierarchy, which CL 665 and CL 1854 call the "Taylor form". |
+| **C3. Centre value of the self-interaction** | EC 1028–1038 ("Averaged and collocated") | Not a scheme: the self-interaction strain taken at the cube's centre rather than averaged over it. |
+| **C4. Centre-sampled contrast** | CL 1750–1761, 1956–1958, 1971–1973 ("the collocation voxel with the contrast sampled at the cell centre") | A property of the **medium's** representation (sampled against projected), which has nothing to do with the test |
+
+**Senses of "Galerkin":**
+
+| Sense | Where |
+|---|---|
+| **G1. Mean-only voxel** = the Galerkin scheme of degree 0 (cell-average test) | CL 330–332 |
+| **G2. Legendre voxel of degree p** | `eq:galerkin`, `app:solver`; all of AO; EC's `measure_galerkin_*` scripts |
+
+**One scheme, several names:**
+
+| Scheme | Names used |
+|---|---|
+| The C1 scheme | "collocation", "collocation closure", "uniform-strain closure" (CL 83, 580, 710, 762, 1026), "the collocation voxel", and in part "the package T-matrix" |
+| The G1 scheme | "mean-only voxel", "Legendre, mean only", "Galerkin of degree zero" |
+| The G2 scheme with p = 1 | "first-moment voxel", "Legendre voxel", "mean and first moment" |
+| Both C1 and G1 | "uniform-field voxels" |
+
+**A claim to check.** CL 1851 says the uniform-strain closure and the mean-only voxel "agree on one cell, as they must, being the same approximation". In `tab:hiersub` they do agree at n = 1 (5.4e-3). But EC 1028–1038 shows that the centre value and the cell average of a cube's self-interaction differ (0.5929 / 0.4314 against 0.4535 / 0.5243). So the two single-cell T-matrices are **not** the same approximation. They share the uniform field, not the test. The agreement in the table is likely only to the digits shown at this weak contrast. **This sentence is exactly the confusion to remove, and its claim should be checked.**
+
+### 8.2 Proposed terminology
+
+The idea is to name a scheme by its two independent choices, and to never use either word for the medium.
+
+| Axis | Choices | Words to use |
+|---|---|---|
+| **Trial (the field in a cell)** | Uniform; Legendre to degree p (moments over the cell); Taylor to degree ℓ (gradients at the centre) | "uniform", "Legendre degree p", "Taylor degree ℓ" |
+| **Test (where and how the equation is imposed)** | At the centre (C1), or at the centre with derivatives (C2) | **collocation** (point / Hermite) |
+| | Against the cell's own trial functions (G1, G2) | **Galerkin** |
+| **Medium (the contrast in a cell)** | Sampled at the centre, or projected onto degree r | "sampled", "projected (degree r)". **Never "collocation".** |
+| **Self-interaction value (C3)** | Centre value, or cell average | "centre value", "cell average" |
+
+Under that scheme the names become:
+
+| Current name | Proposed name |
+|---|---|
+| collocation, uniform-strain closure | **point-collocated uniform voxel** |
+| mean-only voxel | **Galerkin voxel, p = 0** |
+| first-moment voxel | **Galerkin voxel, p = 1** |
+| the hierarchy | **Hermite-collocated Taylor voxel of degree ℓ**, or "the hierarchy of degree ℓ", defined once as a Hermite collocation |
+| the collocation voxel with the contrast sampled at the centre | **point-collocated uniform voxel with sampled contrast** |
+
+"Uniform-strain closure" can be kept for the single-site sense only (the Eshelby / equivalent-inclusion lineage, CL 580 and 710), with one sentence saying it equals the point-collocated uniform voxel on one cell.
+
+Put a short **notation table in each paper's Setting**, with the same rows in all three. Then the reader of any one paper meets one vocabulary.
+
+### 8.3 Why both are presented: the justification
+
+The two answer **different questions**, and the new split lines up with them.
+
+- **The T-matrix of one scatterer (P1): collocation is natural.**
+  - In multiple-scattering theory a T-matrix maps the incident field, expanded about the scatterer's centre, to the radiated field. A Taylor expansion about the centre is the Cartesian form of that regular expansion. Imposing the equation and its derivatives at the centre (Hermite collocation) is therefore what defines a single-site T-matrix as a property of the cube alone, independent of its neighbours.
+  - That is why it can be checked against Mie for a sphere and why it holds for any centrosymmetric body.
+  - It is also the lineage of the equivalent-inclusion method (Eshelby, Moschovidis, Fu–Mura) and of the coupled-dipole method (Purcell–Pennypacker, Draine), whose point collocation (Lakhtakia 1992) is its degree-zero member.
+  - P1 needs it because it is what the literature calls a T-matrix.
+- **The discretisation of a continuous medium (P3): Galerkin is natural.**
+  - A Galerkin cell holds the L² projection of the field and of the medium. That is what makes the error law possible:
+    - the first-order error is a projection error (CL `eq:ratio`; AO `sec:born`);
+    - the second-order error is the relative projection error of the medium (`eq:defectlaw`);
+    - a scattered amplitude, being a functional of the field, converges at twice the order of the field (CL 2978).
+  - Galerkin also follows non-polynomial fields better than an expansion about a point, and gives an invertible system at every degree (Brisard 2014, CL 1852–1856 and 665).
+  - P3 needs it because its results are statements about projections.
+- **The comparison is itself a result, and it belongs where both are present.** In a lattice:
+  - the point-collocated and Galerkin uniform voxels converge at the same order, with different constants: (kd)²/8 and −(kd)²/24 against ±(kd)²/12 (`tab:ratio`);
+  - the Taylor hierarchy of degree 3 and the Galerkin voxel of degree 1 are both fourth order, at 60 against 36 unknowns.
+
+  That comparison tells a reader using a coupled-dipole code what they would gain by changing the test, and it is the bridge between P1 and P3.
+
+**A paragraph each paper could carry, adapted:**
+
+> Two discretisations of the same Lippmann–Schwinger equation appear in this series, and they answer different questions. A *collocated* cell imposes the equation at its centre, and in the hierarchy also its derivatives there, on a field expanded about that centre. This makes its single-site T-matrix a property of the cell alone, the Cartesian counterpart of the T-matrix of multiple-scattering theory and of the coupled-dipole method's polarisability. A *Galerkin* cell imposes the equation against its own Legendre polynomials and so holds the L² projection of the field and of the medium. This is what makes its error a projection error, known before the solve. Paper 1 derives the single-site T-matrix in the collocated form; Paper 3 analyses the error of the Galerkin form; Paper 2 supplies the coupling integrals both need: single integrals of the Green's tensor for the collocated hierarchy, double integrals for the Galerkin cells.
+
+### 8.4 Consequences for the move plan
+
+- **This bears on D5.** If P1 is framed as the T-matrix of one scatterer in collocated form, then EC `sec:site` (the **Galerkin** single cell, T36) fits P1 less naturally than the plan assumed.
+  - It could stay in P2 as "the Galerkin self block applied to one cell", which also removes P1's dependence on P2.
+  - Or it could go to P1 as the Galerkin counterpart of the single site, with the comparison of centre values and averages (EC 1028–1038) as the bridge.
+
+  Decide D5 together with this section.
+- **D2 and the comparison material.** CL `tab:hiersub` and `tab:hiergraded`, which compare the hierarchy against Legendre voxels, are where the two meet. The plan sends them to P2 and P3 respectively. Whichever paper carries them should carry the justification paragraph above in full.
+- **Renaming pass.** About 45 uses of "collocat" and 38 of "mean-only" in CL, plus EC 1028–1038 and AO 102–105, need the new names. Doing this pass during the move (step 4 of §7), rather than before, avoids editing text twice.
