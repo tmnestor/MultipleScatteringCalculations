@@ -124,7 +124,7 @@ def solve_series(n_sub: int):
     # blocks per power: B_j = S(T_j) + beta^2 Drho D(T_(j-2)), D(T) = blocks_r(T) - blocks_s(T)
     canon: dict[tuple[int, int, int], list[np.ndarray]] = {}
 
-    def powers_at(key):
+    def power_at(key, j):
         rep = gd.canonical_offset(key)
         if rep not in canon:
             tabs = (
@@ -134,24 +134,26 @@ def solve_series(n_sub: int):
             )
             strain = [asm_s.blocks(t) for t in tabs]
             dens = [asm_r.blocks(t) - s for t, s in zip(tabs, strain, strict=True)]
-            canon[rep] = [strain[j] + (dens[j - 2] if j >= 2 else 0.0) for j in range(J + 1)]
+            canon[rep] = [strain[t] + (dens[t - 2] if t >= 2 else 0.0) for t in range(J + 1)]
         if key == (0, 0, 0):
-            return canon[rep]
+            return canon[rep][j]
         pi, sigma = gd.mapping_to(key)
-        return [gd.transform_block(b, pi, sigma, v_exp, u_exp) for b in canon[rep]]
+        return gd.transform_block(canon[rep][j], pi, sigma, v_exp, u_exp)
 
-    octants = [dict() for _ in range(J + 1)]
-    for key in itertools.product(range(n_sub), repeat=3):
-        for j, b in enumerate(powers_at(key)):
-            octants[j][key] = b
     d, s = gfft.parity_signs(asm_s)
     k_half = n_fft // 2 + 1
     b_oct = []
+    # one power at a time, and the FFT a third of the rows at a time, so that the real-space blocks of
+    # only one power are held: the peak memory is then set by the transformed blocks themselves
     for j in range(J + 1):
+        octant = {key: power_at(key, j) for key in itertools.product(range(n_sub), repeat=3)}
         bo = np.zeros((n_v, k_half, k_half, k_half, nu3, nu3), dtype=complex)
         for vi in range(n_v):
-            spatial = gfft._place(octants[j], n_fft, d, s, vi, slice(0, nu3), n_v)
-            bo[vi] = np.fft.fftn(spatial, axes=(0, 1, 2))[:k_half, :k_half, :k_half]
+            for r0 in range(0, nu3, nu3 // 3):
+                rows = slice(r0, r0 + nu3 // 3)
+                spatial = gfft._place(octant, n_fft, d, s, vi, rows, n_v)
+                bo[vi, ..., rows, :] = np.fft.fftn(spatial, axes=(0, 1, 2))[:k_half, :k_half, :k_half]
+        del octant, spatial
         b_oct.append(bo)
     patterns = []
     for sig in itertools.product((1, -1), repeat=3):
