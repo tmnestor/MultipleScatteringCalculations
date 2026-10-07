@@ -285,97 +285,104 @@ The series is cited as `NestorContinuum2026` (P1), `NestorOctree2026` and `Nesto
    - no duplicate labels (`eq:farseries`);
    - the JCP builder (`ContinuumLimit/JCP/make_jcp.py`) still runs.
 
-## 8. Collocation and Galerkin: disambiguation, and why both are presented
+## 8. The strain model, and collocation versus Galerkin
 
-### 8.1 The problem
+### 8.1 The organising principle: the strain model
 
-The words are used for **several different things**, and some schemes carry **three names each**. A reader meets them all in CL, and after the split would meet them across all three papers.
+The governing equation is written in **displacement**. CL `eq:bodyforce` and `eq:byparts` give
+
+u = u⁰ + ∫ G (ω²Δρ u) + ∫ ∂G (δc : ε).
+
+Strain enters only through the stiffness contrast, as the moment δc : ε. **How the strain field is represented is a modelling decision.** The original approximation, from the PhD work, the coupled-dipole method and Eshelby's inclusion, was to take the strain as **uniform in each cell**. The series relaxes that approximation in two different ways:
+
+| Strain model | Scheme | Unknowns | How strain relates to displacement | Test that follows | Where |
+|---|---|---|---|---|---|
+| **Uniform strain** (the original approximation) | Uniform-strain closure; the hierarchy at ℓ = 1 (CL 762) | Displacement and strain at the centre | Uniform in the cell | At the centre | CL `sec:parity`, `sec:closure`; the "collocation" rows of `tab:ratio`, `fig:convergence` |
+| **Derived strain**: the gradient of a Taylor displacement | The hierarchy of degree ℓ ≥ 2 | ∂^P u at the centre, \|P\| ≤ ℓ | Derived: strain to degree ℓ − 1, consistent with the displacement inside the cell | The equation and its derivatives at the centre (Hermite collocation) | CL `sec:hierarchy`, `sec:gradvoxel` (`eq:hierarchy`, `eq:gradlattice`) |
+| **Independent strain** | The Legendre cell of degree p | Legendre moments of displacement *and* strain to degree p | Independent. CL 2679–2681 gives the reason: "a strain derived from a cell's projected displacement jumps across the faces between cells and leaves a spurious source there". | Against the cell's own polynomials (Galerkin) | CL `eq:galerkin`, `app:solver`; all of AO; EC `sec:site` |
+
+**Collocation versus Galerkin is not a free choice in this series: it follows from the strain model.**
+- Unknowns that are derivatives at a point are determined by imposing the equation and its derivatives at that point.
+- Unknowns that are moments over a cell are determined by testing against the cell's own polynomials.
+
+The single place where the test is the *only* difference is at the bottom. There, the uniform-strain closure (centre test) and the Legendre cell of degree 0 (cell-average test) share the uniform state and differ in the constant of their (kd)² error: (kd)²/8 and −(kd)²/24 against ±(kd)²/12 (`tab:ratio`).
+
+**Recommendation for the text.** Each paper's Setting should:
+1. start from the displacement equation;
+2. state that the representation of strain is a modelling decision;
+3. give the three rows above as a short table, identical in all three papers.
+
+Each scheme is then introduced by its strain model, with its test as a consequence. The words "collocation" and "Galerkin" then describe only how a given scheme's equation is imposed, never which scheme it is.
+
+### 8.2 How the text names things now
+
+The current text names schemes mainly by their **test**, which hides the strain model.
 
 **Senses of "collocation":**
 
-| Sense | Where | What it actually means |
+| Sense | Where | What it means |
 |---|---|---|
-| **C1. Point test** | CL 328–330, `sec:closure` (`eq:collocation`), `tab:ratio`, `fig:convergence`; CL 178, 191, 2944–2946 (Lakhtakia) | Uniform field per cell, with the equation imposed at the centre. This is the coupled-dipole / DDA scheme. |
-| **C2. Hermite (Taylor) collocation** | `sec:gradvoxel` (`eq:gradlattice`); AO 102 ("a voxel scheme collocated at the centres") | The equation **and its derivatives to order ℓ** imposed at the centre, on a Taylor field. The hierarchy, which CL 665 and CL 1854 call the "Taylor form". |
-| **C3. Centre value of the self-interaction** | EC 1028–1038 ("Averaged and collocated") | Not a scheme: the self-interaction strain taken at the cube's centre rather than averaged over it. |
-| **C4. Centre-sampled contrast** | CL 1750–1761, 1956–1958, 1971–1973 ("the collocation voxel with the contrast sampled at the cell centre") | A property of the **medium's** representation (sampled against projected), which has nothing to do with the test |
+| **C1. Point test of the uniform-strain cell** | CL 328–330, `sec:closure` (`eq:collocation`), `tab:ratio`, `fig:convergence`; CL 178, 191, 2944–2946 (Lakhtakia) | The uniform-strain closure, imposed at the centre |
+| **C2. Hermite collocation** | CL `sec:gradvoxel`; AO 102 ("a voxel scheme collocated at the centres") | The derived-strain hierarchy. CL 665 and 1854 call it the "Taylor form". |
+| **C3. Centre value of the self-interaction** | EC 1028–1038 ("Averaged and collocated") | Not a scheme: the self-interaction at the cube's centre against its cell average |
+| **C4. Centre-sampled contrast** | CL 1750–1761, 1956–1958, 1971–1973 | The **medium's** representation (sampled against projected), unrelated to the test |
 
-**Senses of "Galerkin":**
-
-| Sense | Where |
-|---|---|
-| **G1. Mean-only voxel** = the Galerkin scheme of degree 0 (cell-average test) | CL 330–332 |
-| **G2. Legendre voxel of degree p** | `eq:galerkin`, `app:solver`; all of AO; EC's `measure_galerkin_*` scripts |
+"Galerkin" means the Legendre cell, at p = 0 (the "mean-only voxel", CL 330–332) or at degree p (`eq:galerkin`, AO throughout).
 
 **One scheme, several names:**
+- The uniform-strain closure is also called "collocation", "collocation closure", "the collocation voxel" and "uniform-field voxel".
+- The Legendre cell of degree 0 is also "mean-only voxel", "Legendre, mean only" and "Galerkin of degree zero".
+- At degree 1 it is "first-moment voxel", "Legendre voxel" and "mean and first moment".
 
-| Scheme | Names used |
-|---|---|
-| The C1 scheme | "collocation", "collocation closure", "uniform-strain closure" (CL 83, 580, 710, 762, 1026), "the collocation voxel", and in part "the package T-matrix" |
-| The G1 scheme | "mean-only voxel", "Legendre, mean only", "Galerkin of degree zero" |
-| The G2 scheme with p = 1 | "first-moment voxel", "Legendre voxel", "mean and first moment" |
-| Both C1 and G1 | "uniform-field voxels" |
+**A claim to check.** CL 1851 says the uniform-strain closure and the mean-only voxel "agree on one cell, as they must, being the same approximation". In `tab:hiersub` they agree at n = 1 (5.4e-3), but they are not the same approximation:
+- **They differ in the test.** EC 1028–1038 shows that the cube's self-interaction at the centre and its cell average differ (0.5929 / 0.4314 against 0.4535 / 0.5243).
+- **They may differ in the trial too.** The hierarchy at ℓ = 1 carries 12 unknowns (displacement and its full gradient) against the Legendre cell's 9.
 
-**A claim to check.** CL 1851 says the uniform-strain closure and the mean-only voxel "agree on one cell, as they must, being the same approximation". In `tab:hiersub` they do agree at n = 1 (5.4e-3). But EC 1028–1038 shows that the centre value and the cell average of a cube's self-interaction differ (0.5929 / 0.4314 against 0.4535 / 0.5243). So the two single-cell T-matrices are **not** the same approximation. They share the uniform field, not the test. The agreement in the table is likely only to the digits shown at this weak contrast. **This sentence is exactly the confusion to remove, and its claim should be checked.**
+The agreement is likely only to the digits shown at this weak contrast. The sentence should be corrected once that is checked.
 
-### 8.2 Proposed terminology
+### 8.3 Proposed names
 
-The idea is to name a scheme by its two independent choices, and to never use either word for the medium.
-
-| Axis | Choices | Words to use |
+| Current name(s) | Proposed name | Strain model |
 |---|---|---|
-| **Trial (the field in a cell)** | Uniform; Legendre to degree p (moments over the cell); Taylor to degree ℓ (gradients at the centre) | "uniform", "Legendre degree p", "Taylor degree ℓ" |
-| **Test (where and how the equation is imposed)** | At the centre (C1), or at the centre with derivatives (C2) | **collocation** (point / Hermite) |
-| | Against the cell's own trial functions (G1, G2) | **Galerkin** |
-| **Medium (the contrast in a cell)** | Sampled at the centre, or projected onto degree r | "sampled", "projected (degree r)". **Never "collocation".** |
-| **Self-interaction value (C3)** | Centre value, or cell average | "centre value", "cell average" |
+| uniform-strain closure, collocation, collocation closure, collocation voxel | **uniform-strain closure** (one name, kept) | Uniform |
+| the hierarchy of degree ℓ, Taylor form | **the hierarchy of degree ℓ** (derived strain), defined once as a Hermite collocation | Derived |
+| mean-only voxel; first-moment voxel; Legendre voxel | **Legendre cell of degree p** (p = 0: "mean only", p = 1: "first moment", as nicknames after the definition) | Independent |
+| the collocation voxel with the contrast sampled at the centre | **uniform-strain closure with sampled contrast** | — |
 
-Under that scheme the names become:
+In addition:
+- The medium is "sampled" or "projected (degree r)", never "collocated".
+- The self-interaction is the "centre value" or the "cell average", never "collocated".
 
-| Current name | Proposed name |
-|---|---|
-| collocation, uniform-strain closure | **point-collocated uniform voxel** |
-| mean-only voxel | **Galerkin voxel, p = 0** |
-| first-moment voxel | **Galerkin voxel, p = 1** |
-| the hierarchy | **Hermite-collocated Taylor voxel of degree ℓ**, or "the hierarchy of degree ℓ", defined once as a Hermite collocation |
-| the collocation voxel with the contrast sampled at the centre | **point-collocated uniform voxel with sampled contrast** |
+### 8.4 Why both relaxations are presented
 
-"Uniform-strain closure" can be kept for the single-site sense only (the Eshelby / equivalent-inclusion lineage, CL 580 and 710), with one sentence saying it equals the point-collocated uniform voxel on one cell.
+They start from the same original approximation and relax it for **different purposes**, which the new split separates.
 
-Put a short **notation table in each paper's Setting**, with the same rows in all three. Then the reader of any one paper meets one vocabulary.
-
-### 8.3 Why both are presented: the justification
-
-The two answer **different questions**, and the new split lines up with them.
-
-- **The T-matrix of one scatterer (P1): collocation is natural.**
-  - In multiple-scattering theory a T-matrix maps the incident field, expanded about the scatterer's centre, to the radiated field. A Taylor expansion about the centre is the Cartesian form of that regular expansion. Imposing the equation and its derivatives at the centre (Hermite collocation) is therefore what defines a single-site T-matrix as a property of the cube alone, independent of its neighbours.
-  - That is why it can be checked against Mie for a sphere and why it holds for any centrosymmetric body.
-  - It is also the lineage of the equivalent-inclusion method (Eshelby, Moschovidis, Fu–Mura) and of the coupled-dipole method (Purcell–Pennypacker, Draine), whose point collocation (Lakhtakia 1992) is its degree-zero member.
-  - P1 needs it because it is what the literature calls a T-matrix.
-- **The discretisation of a continuous medium (P3): Galerkin is natural.**
-  - A Galerkin cell holds the L² projection of the field and of the medium. That is what makes the error law possible:
-    - the first-order error is a projection error (CL `eq:ratio`; AO `sec:born`);
+- **Derived strain: the T-matrix of one scatterer (P1).**
+  - For a single body there are no faces between cells. A Taylor displacement about the centre, with its strain derived from it, is consistent everywhere inside the body.
+  - The Taylor expansion about the centre is the Cartesian form of the regular-wave expansion in which multiple-scattering theory defines a T-matrix. Imposing the equation and its derivatives there makes the single-site T-matrix a property of the cube alone. That is why it can be checked against Mie for a sphere and applies to any centrosymmetric body.
+  - It is the equivalent-inclusion lineage (Eshelby, Moschovidis, Fu–Mura), and the coupled-dipole method's point dipole is its lowest member.
+- **Independent strain: the discretisation of a medium (P3).**
+  - When cells tile space, a strain derived from each cell's projected displacement jumps across the faces and leaves a spurious surface source (CL 2679–2681). Making strain an independent unknown removes it.
+  - Testing against the cell's own polynomials makes the cell hold the L² projection of the field and of the medium. That is what makes the error law possible:
+    - the first-order error is a projection error (CL `eq:ratio`, AO `sec:born`);
     - the second-order error is the relative projection error of the medium (`eq:defectlaw`);
-    - a scattered amplitude, being a functional of the field, converges at twice the order of the field (CL 2978).
-  - Galerkin also follows non-polynomial fields better than an expansion about a point, and gives an invertible system at every degree (Brisard 2014, CL 1852–1856 and 665).
-  - P3 needs it because its results are statements about projections.
-- **The comparison is itself a result, and it belongs where both are present.** In a lattice:
-  - the point-collocated and Galerkin uniform voxels converge at the same order, with different constants: (kd)²/8 and −(kd)²/24 against ±(kd)²/12 (`tab:ratio`);
-  - the Taylor hierarchy of degree 3 and the Galerkin voxel of degree 1 are both fourth order, at 60 against 36 unknowns.
-
-  That comparison tells a reader using a coupled-dipole code what they would gain by changing the test, and it is the bridge between P1 and P3.
+    - functionals converge at twice the order of the field (CL 2978).
+  - It also follows non-polynomial fields, edges and corners better than an expansion about a point (Brisard 2014; CL 665, 1852–1856).
+- **The comparison is a result where both are present.**
+  - At the bottom, the two tests of the uniform-strain cell differ only in their error constant (`tab:ratio`).
+  - At fourth order, the hierarchy of degree 3 and the Legendre cell of degree 1 are both fourth order, with 60 against 36 unknowns (`tab:hiergraded`). On a body with corners, the Legendre cell is far ahead (`tab:hiersub`).
 
 **A paragraph each paper could carry, adapted:**
 
-> Two discretisations of the same Lippmann–Schwinger equation appear in this series, and they answer different questions. A *collocated* cell imposes the equation at its centre, and in the hierarchy also its derivatives there, on a field expanded about that centre. This makes its single-site T-matrix a property of the cell alone, the Cartesian counterpart of the T-matrix of multiple-scattering theory and of the coupled-dipole method's polarisability. A *Galerkin* cell imposes the equation against its own Legendre polynomials and so holds the L² projection of the field and of the medium. This is what makes its error a projection error, known before the solve. Paper 1 derives the single-site T-matrix in the collocated form; Paper 3 analyses the error of the Galerkin form; Paper 2 supplies the coupling integrals both need: single integrals of the Green's tensor for the collocated hierarchy, double integrals for the Galerkin cells.
+> The governing equation is written in displacement; strain enters through the stiffness contrast, and how it is represented within a cell is a modelling decision. The original approximation takes it as uniform. This series relaxes that approximation in two ways. In the first, the displacement is expanded about the cell's centre and its strain derived from it; the equation and its derivatives are imposed at the centre, and the cell's single-site T-matrix is then a property of the cell alone (Paper 1). In the second, the strain is an independent unknown with its own Legendre expansion, because a strain derived from a cell's projected displacement would jump across the faces between cells. The equation is tested against the cell's own polynomials, so the cell holds the projection of the field and of the medium, and its error is a projection error known before the solve (Paper 3). Paper 2 supplies the coupling integrals both need.
 
-### 8.4 Consequences for the move plan
+### 8.5 Consequences for the move plan
 
-- **This bears on D5.** If P1 is framed as the T-matrix of one scatterer in collocated form, then EC `sec:site` (the **Galerkin** single cell, T36) fits P1 less naturally than the plan assumed.
-  - It could stay in P2 as "the Galerkin self block applied to one cell", which also removes P1's dependence on P2.
-  - Or it could go to P1 as the Galerkin counterpart of the single site, with the comparison of centre values and averages (EC 1028–1038) as the bridge.
+- **D5 (where EC `sec:site` goes).** `sec:site` is the single cell of the **independent-strain** Legendre cell (T36), whose self block is P2's double integral.
+  - If P1 is the T-matrix of one scatterer in the derived-strain form, `sec:site` fits P1 only as its independent-strain counterpart. In that case, EC 1028–1038 (centre value against cell average) is the bridge, and P1 depends on P2.
+  - If `sec:site` stays in P2, P1 is self-contained.
 
   Decide D5 together with this section.
-- **D2 and the comparison material.** CL `tab:hiersub` and `tab:hiergraded`, which compare the hierarchy against Legendre voxels, are where the two meet. The plan sends them to P2 and P3 respectively. Whichever paper carries them should carry the justification paragraph above in full.
-- **Renaming pass.** About 45 uses of "collocat" and 38 of "mean-only" in CL, plus EC 1028–1038 and AO 102–105, need the new names. Doing this pass during the move (step 4 of §7), rather than before, avoids editing text twice.
+- **D2.** The comparison tables (`tab:hiersub`, `tab:hiergraded`) are where the two relaxations meet. Whichever paper carries them should carry the paragraph above in full.
+- **Renaming pass.** CL has about 45 uses of "collocat" and 38 of "mean-only"; EC 1028–1038 and AO 102–105 need the same treatment. Do this during the move (step 4 of §7).
+- **Settings.** Rewrite each paper's Setting to open from the displacement equation and the strain-model table (§8.1).
