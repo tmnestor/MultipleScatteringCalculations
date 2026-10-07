@@ -386,3 +386,37 @@ They start from the same original approximation and relax it for **different pur
 - **D2.** The comparison tables (`tab:hiersub`, `tab:hiergraded`) are where the two relaxations meet. Whichever paper carries them should carry the paragraph above in full.
 - **Renaming pass.** CL has about 45 uses of "collocat" and 38 of "mean-only"; EC 1028–1038 and AO 102–105 need the same treatment. Do this during the move (step 4 of §7).
 - **Settings.** Rewrite each paper's Setting to open from the displacement equation and the strain-model table (§8.1).
+
+## 9. Decision D7: the formulation adopted (stated 7 October)
+
+**Decision (author):** adopt the T-matrix formulation with the most accurate cell-to-cell representation.
+
+### 9.1 Which formulation that is
+
+The evidence already in the papers identifies the **Legendre cell** (independent strain, Galerkin).
+
+| Comparison | Legendre cell, p = 1 (36 unknowns) | Hierarchy, ℓ = 3 (60 unknowns) | Source |
+|---|---|---|---|
+| How the coupling is represented | The receiver is a volume. The block is the exact double integral over both cells, to round-off (about 1e-15) for touching cells. | The receiver is a point. The source cube is integrated exactly; the receiver's field is a Taylor expansion about its centre. | EC `sec:results`; CL `sec:gradvoxel` |
+| Body with corners (cube cut into n³) | 4.8e-5 at n = 1, 6.0e-6 at n = 2 | 3.4e-4 and 7.0e-5: 7–12× worse, with more unknowns | CL `tab:hiersub` |
+| Smooth body (graded sphere, shell 9 m) | Order 3.92 and 4.02 | Order 3.80 and 3.84. Error a fifth to a quarter smaller per grid, but larger per unknown. | CL `tab:hiergraded` |
+| Error known in advance | Yes: projection error | No | CL `sec:hetero`; AO |
+
+The hierarchy keeps three advantages, none of which is cell-to-cell accuracy:
+- cheaper tables (4.5 s against 23.3 s at 14 cells);
+- a self block in closed form on four constants;
+- a single-site T-matrix of a *scatterer* that can be checked against Mie.
+
+### 9.2 Consequences, to confirm
+
+1. **P1's subject becomes the single-site T-matrix of the Legendre cell.** That is EC `sec:site` and `app:blocks`: Lippmann–Schwinger of one cell, T36, the cube-group reduction (15 even and 21 odd unknowns), and the static blocks on five constants.
+   - **This resolves D5:** they move to P1.
+   - The hierarchy material of CL §6 (about 13 pages) shrinks to a section or appendix of P1: the uniform-strain lineage, the Mie check, and the comparison of centre value against cell average (EC 1028–1038). How much of it to keep is open.
+2. **P3's graded-sphere series study** (`tab:sphereseries`, `tab:sphereseriesquad`, 7 October) was computed with the **hierarchy** cell model, because `scripts/measure_graded_sphere_frequency_series.py` is built on it. For consistency with D7 it should be recomputed with Legendre cells.
+   - EC `sec:sweep` already has frequency-independent coefficients for the Legendre cell.
+   - The series solve (the analogue of EC `eq:seriessolve`) would need writing for it.
+3. **§8 simplifies.**
+   - The independent-strain Legendre cell is the series' formulation.
+   - The uniform-strain closure is the original approximation it relaxes.
+   - The derived-strain hierarchy is the comparison: what a Taylor closure about the centre gives, and why the series does not use it (corners; per-unknown accuracy; no error law).
+4. **D2:** `tab:hiergraded` and `tab:hiersub` become the evidence for D7. They belong wherever D7 is justified, most naturally in P1 when it introduces the formulation, or in P3.
