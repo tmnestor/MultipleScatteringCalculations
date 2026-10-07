@@ -175,10 +175,25 @@ through the blocks
   \bK_{ac}(\bR)=\int_{V_m}\!\int_{V_n}L_a(\bxi)\,\bP(\mathbf{x}-\mathbf{x}')\,m_c(\bxi')\,
   \dd^3x\,\dd^3x',\qquad \bR=\mathbf{x}_m-\mathbf{x}_n,
 \end{equation}
-$L_a$ a test function of the field cell. They are computed with test monomials and recombined into the
-orthogonal $L_a$. The integer offset between the cells is $\bo=\bR/2h$; the cells touch when
+$L_a$ a test function of the field cell (Figure~\ref{fig:block}). They are computed with test monomials and
+recombined into the orthogonal $L_a$. The integer offset between the cells is $\bo=\bR/2h$; the cells touch when
 $\max_i|o_i|\le1$, and the self cell and its $26$ neighbours fall into four geometries up to the
 symmetries of the cube: self, face, edge and corner contact.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_block.pdf}
+\caption{The geometry of the coupling block, Eq.~\eqref{eq:block}. (a) A source cell $V_n$ and a field cell
+$V_m$, cubes of side $2h$ with centres $\mathbf x_n$ and $\mathbf x_m$ and integer offset
+$\bo=\bR/2h$, here $(2,0,1)$. Each point is located by its cell's local coordinates, $\bxi'$ and
+$\bxi$ in $[-1,1]^3$ (the field cell's axes shown). The source density $m_c(\bxi')$ at a source point
+$\mathbf x'$ radiates through the point propagator $\bP(\mathbf x-\mathbf x')$ to a field point $\mathbf x$,
+where it is weighted by the test function $L_a(\bxi)$; the block is this product integrated over both
+cells. (b) A section through two cells in face contact: on the shared face (thick) the field and source
+points coincide, so the integrand is singular there. For edge and corner contact the cells share an edge or a
+vertex, and the self block has $\mathbf x=\mathbf x'$ throughout the cell.}
+\label{fig:block}
+\end{figure}
 
 \paragraph{The $s$-form.} With $\mathbf{x}=\mathbf{x}_m+\bu$ and $\mathbf{x}'=\mathbf{x}_n+\bu'$ the kernel
 sees $\bR+\bs$, $\bs=\bu-\bu'\in[-2h,2h]^3$, and
