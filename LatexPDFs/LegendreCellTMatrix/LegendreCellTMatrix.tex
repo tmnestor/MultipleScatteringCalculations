@@ -431,10 +431,12 @@ matrix whatever the cell's material, from Table~\ref{tab:vectors} and the contra
 \end{equation}
 With $\mathbf X_\Gamma=\bN_\Gamma\bD_\Gamma$, Eq.~\eqref{eq:tgamma} is inverted by Cramer's rule,
 \begin{equation}\label{eq:cramer}
+\begin{gathered}
   \bT_\Gamma=\frac{M_\Gamma\bD_\Gamma\operatorname{adj}(\bI-\mathbf X_\Gamma)}{\det(\bI-\mathbf X_\Gamma)},
-  \qquad\text{for instance}\qquad
+  \qquad\text{for instance}\\[4pt]
   (\bI-\mathbf X)^{-1}=\frac{1}{(1-X_{11})(1-X_{22})-X_{12}X_{21}}
   \begin{pmatrix}1-X_{22}&X_{12}\\X_{21}&1-X_{11}\end{pmatrix}
+\end{gathered}
 \end{equation}
 for a block of order two, and $M\Delta/(1-N\Delta)$ for a block of order one; the block of order four,
 $T_{1u}$, has a determinant of degree four in the contrast. Three things follow, none of which a numerical
@@ -480,7 +482,36 @@ $\varepsilon$, the inverse follows from the Schur complement on that single unkn
 where $a$ is a number and $\mathbf X_{\varepsilon u}=\bN_{\varepsilon u}\,\omega^2\Delta\rho$, the only route by
 which the displacement reaches the strain, is of order $(k_Sh)^2$. What remains to invert is the strain
 matrix $\mathbf S$: a number for $A_{1g}$, $E_g$, $T_{2g}$, $A_{2u}$ and $E_u$, a $2\times2$ matrix for
-$T_{2u}$ and a $3\times3$ one for $T_{1u}$, while $T_{1g}$ is the displacement alone. In the static limit
+$T_{2u}$ and a $3\times3$ one for $T_{1u}$, while $T_{1g}$ is the displacement alone
+(Table~\ref{tab:inverse}).
+
+\begin{table}[htbp]
+\centering
+\caption{What each block leaves to invert. A block of size $n_\Gamma\times n_\Gamma$ is repeated $d_\Gamma$
+times (Eq.~\eqref{eq:t36blocks}); $\bD_\Gamma$ is its contrast, Eq.~\eqref{eq:deltagamma}; $a=1-X_{uu}$ is
+the number of Eq.~\eqref{eq:schurcomplement} for its displacement vector, and $\mathbf S$ the strain matrix.
+In the static limit ($k_Sh\to0$, $\omega^2\Delta\rho\to0$) every displacement drops out.}\label{tab:inverse}
+\small
+\begin{tabular}{@{}llllp{3.9cm}@{}}
+\toprule
+$\Gamma$ & block ($\times d_\Gamma$) & contrast $\bD_\Gamma$ & left to invert & static limit \\
+\midrule
+$A_{1g}$ & $2\times2$ & $\operatorname{diag}(\omega^2\Delta\rho,\,3\Delta\lambda+2\Delta\mu)$ & $a$; $\mathbf S$ a number &
+Eq.~\eqref{eq:scalarchannel}, Eshelby's sphere \\
+$E_g$ & $2\times2$ ($\times2$) & $\operatorname{diag}(\omega^2\Delta\rho,\,2\Delta\mu)$ & $a$; $\mathbf S$ a number &
+Eq.~\eqref{eq:scalarchannel} \\
+$T_{1g}$ & $1\times1$ ($\times3$) & $\omega^2\Delta\rho$ & $a$ alone & vanishes (rotation) \\
+$T_{2g}$ & $2\times2$ ($\times3$) & $\operatorname{diag}(\omega^2\Delta\rho,\,2\Delta\mu)$ & $a$; $\mathbf S$ a number &
+Eq.~\eqref{eq:scalarchannel} \\
+$T_{1u}$ & $4\times4$ ($\times3$) & $\omega^2\Delta\rho\oplus(2\times2)\oplus2\Delta\mu$ & $a$; $\mathbf S$ $3\times3$ &
+the $3\times3$ strain block \\
+$T_{2u}$ & $2\times2$ ($\times3$) & $2\Delta\mu\,\bI_2$ & $2\times2$: two scalar channels &
+two channels of Eq.~\eqref{eq:scalarchannel}'s form \\
+$A_{2u}$ & $1\times1$ & $2\Delta\mu$ & a number & Eq.~\eqref{eq:scalarchannel} \\
+$E_u$ & $1\times1$ ($\times2$) & $2\Delta\mu$ & a number & Eq.~\eqref{eq:scalarchannel} \\
+\bottomrule
+\end{tabular}
+\end{table} In the static limit
 $\mathbf c=0$, the displacement drops out, and the five uniform-strain and scalar channels are each of the
 form of Eq.~\eqref{eq:eshelby},
 \begin{equation}\label{eq:scalarchannel}
