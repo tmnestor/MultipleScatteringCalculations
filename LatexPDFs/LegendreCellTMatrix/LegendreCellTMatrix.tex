@@ -114,8 +114,10 @@ first, the displacement is expanded about the cell's centre and the strain deriv
 and its derivatives are imposed at the centre, which is natural for a single scatterer, whose $T$-matrix is
 then a property of the body alone \citep{NestorContinuum2026}. In the second, the strain is an unknown in
 its own right, with its own polynomial expansion over the cell, and the equation is tested against the
-cell's polynomials (a Galerkin cell). A strain derived from each cell's projected displacement would jump
-across the faces between cells and leave a spurious source there; an independent strain does not.
+cell's polynomials (a Galerkin cell). Which of the two a tiling of cells needs is measured on a layer, which
+has an exact solution (Table~\ref{tab:strainlayer}): with polynomials of degree $p$, an independent strain
+converges at order $2p+2$, while a strain derived from each cell's displacement converges at order $2$, $2$
+and $4$ for $p=1$, $2$ and $3$.
 
 This paper takes the second, because it gives the more accurate representation of the coupling between
 cells. Its interactions are exact double integrals over both cells, which are evaluated to round-off even
@@ -185,6 +187,42 @@ degree $p$ & against the cell's polynomials (Galerkin) \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Derived against independent strain, on a layer of thickness $D$ with an exact solution (P wave at
+normal incidence, $k_PD=0.6$, $\Delta(\lambda+2\mu)=4$\,GPa, $\Delta\rho=100$\,kg\,m$^{-3}$): relative error of
+the reflected displacement with $16$ and $32$ cells, and the order between them. All three schemes use
+Legendre polynomials of degree $p$ in each cell, tested against the same. \emph{Independent}: displacement
+and strain each of degree $p$. \emph{Derived}: displacement of degree $p$, strain its derivative in each cell.
+\emph{Derived, with faces}: the same, with the jumps of the displacement across the faces between cells added
+to the stiffness source as plane deltas, which makes the derivative that of a distribution.}\label{tab:strainlayer}
+\small
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{independent} & \multicolumn{3}{c}{derived} & \multicolumn{3}{c}{derived, with faces} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(l){8-10}
+$p$ & $n=16$ & $32$ & order & $16$ & $32$ & order & $16$ & $32$ & order \\
+\midrule
+$1$ & $2.6\times10^{-9}$ & $1.6\times10^{-10}$ & $4.00$ & $9.0\times10^{-5}$ & $2.2\times10^{-5}$ & $2.00$ &
+$1.4\times10^{-4}$ & $3.6\times10^{-5}$ & $1.98$ \\
+$2$ & $2.6\times10^{-14}$ & round-off & $6.00^{\,a}$ & $1.4\times10^{-5}$ & $3.5\times10^{-6}$ & $2.00$ &
+$7.7\times10^{-7}$ & $9.5\times10^{-8}$ & $3.01$ \\
+$3$ & round-off & round-off & $7.96^{\,b}$ & $8.2\times10^{-10}$ & $5.1\times10^{-11}$ & $4.00$ &
+$1.4\times10^{-9}$ & $8.8\times10^{-11}$ & $3.98$ \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize $^a$ from $4$ to $8$ cells. $^b$ from $2$ to $4$ cells; finer grids are at round-off.}
+\end{table}
+
+The derived strain loses most of the order: at $16$ cells its errors are $3\times10^4$ times those of the
+independent strain for $p=1$ and $5\times10^8$ times for $p=2$
+(\path{scripts/measure_derived_vs_independent_strain.py}). Restoring the jumps of the cellwise displacement across the faces does not recover
+it, so the loss is not the faces' alone; with the strain an unknown of its own, tested against the same
+polynomials as the displacement, the scheme reaches the order $2p+2$ that a Galerkin scheme gives a
+functional of its solution \citep{NestorContinuum2026}.
 
 \paragraph{The linear Legendre cell.} A cube $[-h,h]^3$ with local coordinates $\bxi=(\bx-\bx_c)/h$ carries
 $\psi(\bx)=\sum_b\psi_bL_b(\bxi)$ over the four functions $L_b\in\{1,\xi_0,\xi_1,\xi_2\}$, each $\psi_b$ a
