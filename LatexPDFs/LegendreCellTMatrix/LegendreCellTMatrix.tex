@@ -392,20 +392,71 @@ The splitting of \S\ref{sec:group} rests on Schur's lemma from the representatio
 \citep{Tinkham1964,Dresselhaus2008}. This appendix sets out the group's action on the unknowns of the cell,
 why the cell's matrices commute with it, and the form the lemma then gives them.
 
-\paragraph{The group, and how it acts on the unknowns.} The symmetries of the cube about its centre are
-the $48$ signed permutation matrices $Q$: the $3!$ permutations of the axes combined with the $2^3$
-choices of sign, rotations and reflections together, the group $O_h$. A symmetry $Q$ moves the point
-$\bxi$ of the cell to $Q\bxi$ and acts on what the cell carries. The four functions transform as
-$1\mapsto1$ and $\xi_i\mapsto(Q\bxi)_i$, by the matrix $T(Q)=1\oplus Q$. The displacement is a vector,
-$u\mapsto Qu$, and the strain a symmetric tensor, $\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$; on the
-nine components this is $S(Q)=Q\oplus\Sigma(Q)$, with $\Sigma(Q)$ the $6\times6$ matrix of
-$\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$ in Voigt form. On the $36$ unknowns of the cell
-\begin{equation}\label{eq:rep}
-  D(Q)=T(Q)\otimes S(Q),\qquad D(Q_1)D(Q_2)=D(Q_1Q_2),
+\paragraph{Symmetries of the cube.} A \emph{symmetry} of the cube is a linear map $\bxi\mapsto Q\bxi$ of
+space that preserves distances and maps the cube $[-1,1]^3$ onto itself; it fixes the centre, and $Q$ is an
+orthogonal matrix, $Q^{\mathsf T}Q=\bI$. Such a map must send the six face centres $\pm\mathbf e_j$ to face
+centres, so each column of $Q$ is some $\pm\mathbf e_i$: $Q$ is a \emph{signed permutation matrix}, a
+permutation of the three axes combined with a choice of sign for each. There are $3!\times2^3=48$ of them,
+the rotations of the cube ($\det Q=+1$) and their products with the inversion $\bxi\mapsto-\bxi$
+($\det Q=-1$), which include the reflections in the coordinate and diagonal planes. The product of two
+symmetries and the inverse $Q^{-1}=Q^{\mathsf T}$ of one are again symmetries, so they form a group, the
+octahedral group $O_h$. For example, the quarter turn about axis $0$ and the reflection in the plane
+$\xi_0=0$ are
+\begin{equation}\label{eq:qexample}
+  Q_{\mathrm{turn}}=\begin{pmatrix}1&0&0\\0&0&-1\\0&1&0\end{pmatrix},\qquad
+  Q_{\mathrm{refl}}=\begin{pmatrix}-1&0&0\\0&1&0\\0&0&1\end{pmatrix}.
 \end{equation}
-a \emph{representation} of the group. For a signed permutation, $Q\varepsilon Q^{\mathsf T}$ permutes the
-strain components with signs and sends shears to shears, so $\Sigma(Q)$, and with it $D(Q)$, is itself a
-signed permutation matrix: orthogonal, $D(Q)^{-1}=D(Q)^{\mathsf T}$.
+
+\paragraph{How a symmetry acts on the field of the cell.} Applying $Q$ to a field carries the value at
+$\bxi$ to $Q\bxi$ and turns its components with it: the displacement is a vector, $u\mapsto Qu$, and the
+strain a symmetric tensor, $\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$, that is
+$\varepsilon'_{ij}=\sum_{k,l}Q_{ik}Q_{jl}\varepsilon_{kl}$. On the nine components $\psi=(u,\varepsilon)$
+this is the $9\times9$ matrix
+\begin{equation}\label{eq:sq}
+  S(Q)=\begin{pmatrix}Q&0\\0&\Sigma(Q)\end{pmatrix},
+\end{equation}
+with $\Sigma(Q)$ the $6\times6$ matrix of $\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$ in Voigt form. The
+transformed field is $\psi'(\bxi)=S(Q)\,\psi(Q^{\mathsf T}\bxi)$. For the cell's field
+$\psi(\bxi)=\sum_b\psi_bL_b(\bxi)$ the functions are moved as well: $1$ is unchanged, and
+$L_{k}(Q^{\mathsf T}\bxi)=(Q^{\mathsf T}\bxi)_k=\sum_jQ_{jk}\,\xi_j$ for the linear functions
+$L_k=\xi_k$. So the four functions are mixed by the $4\times4$ matrix
+\begin{equation}\label{eq:tq}
+  T(Q)=\begin{pmatrix}1&0\\0&Q\end{pmatrix},
+\end{equation}
+and the coefficients of the transformed field are
+\begin{equation}\label{eq:coefmap}
+  \psi'_a=\sum_{b=0}^{3}T_{ab}(Q)\,S(Q)\,\psi_b ,\qquad a=0,\dots,3.
+\end{equation}
+Two things happen at once and independently: $T(Q)$ mixes \emph{which function} carries the field, and
+$S(Q)$ mixes \emph{which component} of the field it is.
+
+\paragraph{The Kronecker product.} Stack the $36$ unknowns as one column,
+$\Psi=(\psi_0,\psi_1,\psi_2,\psi_3)$, each $\psi_b$ nine components, so that the unknown with function
+index $a$ and component $i$ sits in row $9a+i$. Eq.~\eqref{eq:coefmap} is then $\Psi'=D(Q)\Psi$ with the
+$36\times36$ matrix
+\begin{equation}\label{eq:rep}
+  D(Q)=T(Q)\otimes S(Q)=\begin{pmatrix}
+    T_{00}S&T_{01}S&T_{02}S&T_{03}S\\
+    T_{10}S&T_{11}S&T_{12}S&T_{13}S\\
+    T_{20}S&T_{21}S&T_{22}S&T_{23}S\\
+    T_{30}S&T_{31}S&T_{32}S&T_{33}S
+  \end{pmatrix},\qquad
+  D(Q)_{9a+i,\,9b+j}=T_{ab}(Q)\,S_{ij}(Q),
+\end{equation}
+the Kronecker product: the $4\times4$ array of $9\times9$ blocks whose block $(a,b)$ is $S(Q)$ scaled by
+the number $T_{ab}(Q)$. It is the matrix of a map that acts on the function index by $T$ and on the
+component index by $S$, each without regard to the other. For the reflection of Eq.~\eqref{eq:qexample},
+$T=\operatorname{diag}(1,-1,1,1)$, and $S$ is diagonal with $-1$ on $u_0$ and on the shears
+$\varepsilon_{01}$ and $\varepsilon_{02}$, which change sign with $\xi_0$, and $+1$ elsewhere; so $D$ is
+diagonal, and the sign of the unknown $\xi_0u_0$, for instance, is $T_{11}S_{00}=(-1)(-1)=+1$. Because the
+Kronecker product satisfies $(A\otimes B)(C\otimes F)=AC\otimes BF$, and $T$ and $S$ each respect products,
+\begin{equation}\label{eq:homomorphism}
+  D(Q_1)\,D(Q_2)=D(Q_1Q_2)\qquad\text{for all }Q_1,Q_2\in O_h:
+\end{equation}
+the assignment $Q\mapsto D(Q)$ turns composition of symmetries into multiplication of matrices, which is
+what is meant by a \emph{representation} of the group. For a signed permutation, $Q\varepsilon Q^{\mathsf T}$
+permutes the strain components with signs and sends shears to shears, so $\Sigma(Q)$, $S(Q)$, $T(Q)$ and
+$D(Q)$ are all signed permutation matrices, and orthogonal: $D(Q)^{-1}=D(Q)^{\mathsf T}=D(Q^{\mathsf T})$.
 
 \paragraph{Why the cell's matrices commute with it.} Three facts make
 \begin{equation}\label{eq:commute}
