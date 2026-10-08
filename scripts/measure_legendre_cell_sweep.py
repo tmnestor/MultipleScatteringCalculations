@@ -3,8 +3,9 @@
 
 The closed form of ``derive_legendre_cell_dynamic.py`` gives the self block as K = sum_n (k_S h)^n K_n with
 coefficients that depend on neither the frequency, the cell size nor the medium. A sweep then costs, per
-frequency, a matrix polynomial and a 36 x 36 solve (or eight solves of at most 4 x 4 on the irreducible
-representations). Measured here, per frequency, against
+frequency, a matrix polynomial and the inverse: one 36 x 36 solve, or, on the eight irreducible
+representations, the closed-form inverse of each block (the Schur complement on its displacement unknown, the
+complement of order at most three inverted by Cramer's rule). Measured here, per frequency, against
 
   quadrature: ``blocks.near_block`` (Duffy and Gauss rules for the singular static terms, Gauss rules for
               the dynamic remainder), recomputed at each frequency, then ``site.single_site_t36``;
@@ -28,6 +29,7 @@ import sympy as sp
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT), str(ROOT / "scripts")]
 from derive_legendre_cell_dynamic import (  # noqa: E402
+    BASIS,
     OUT,
     REF,
     irrep_t,
@@ -85,15 +87,48 @@ def main() -> int:
     # the reduced blocks as numbers, once: N_Gamma = sum_n (k_S h)^n [w_A(n) NA_n + w_B(n) NB_n] / (4 pi mu)
     from derive_legendre_cell_dynamic import lin_value
 
+    def inv_small(s: np.ndarray) -> np.ndarray:
+        """Inverse of a 1 x 1, 2 x 2 or 3 x 3 matrix by Cramer's rule (adjugate over determinant)."""
+        k = len(s)
+        if k == 1:
+            return 1.0 / s
+        if k == 2:
+            return np.array([[s[1, 1], -s[0, 1]], [-s[1, 0], s[0, 0]]]) / (s[0, 0] * s[1, 1] - s[0, 1] * s[1, 0])
+        adj = np.array([[s[(j + 1) % 3, (i + 1) % 3] * s[(j + 2) % 3, (i + 2) % 3]
+                         - s[(j + 1) % 3, (i + 2) % 3] * s[(j + 2) % 3, (i + 1) % 3] for j in range(3)]
+                        for i in range(3)])
+        return adj / (s[0] @ adj[:, 0])
+
+    def schur_inverse(x: np.ndarray, o: list[int], has_disp: bool) -> np.ndarray:
+        """(I - X)^-1 by the Schur complement on the displacement unknown o[0] (Eq. schurcomplement), the
+        complement S inverted by Cramer's rule; with no displacement unknown, Cramer's rule on I - X."""
+        k = len(x)
+        if not has_disp:
+            return inv_small(np.eye(k) - x)
+        xo = x[np.ix_(o, o)]
+        a, b, c = 1.0 - xo[0, 0], -xo[0, 1:], -xo[1:, 0]
+        if k == 1:
+            return np.array([[1.0 / a]])
+        s_inv = inv_small(np.eye(k - 1) - xo[1:, 1:] - np.outer(c, b) / a)
+        sc, bs = s_inv @ c, b @ s_inv
+        inv = np.empty((k, k), dtype=complex)
+        inv[0, 0] = 1.0 / a + b @ sc / a**2
+        inv[0, 1:], inv[1:, 0], inv[1:, 1:] = -bs / a, -sc / a, s_inv
+        back = np.empty_like(inv)
+        back[np.ix_(o, o)] = inv
+        return back
+
     num = []
-    for r in reduced.values():
+    for name, r in reduced.items():
         k = len(r["M"])
+        disp = [i for i, vec in enumerate(BASIS[name]) if all(c < 3 for _, c in vec)]
+        order = disp + [i for i in range(k) if i not in disp]  # the displacement unknown first, if any
         na = np.array([[[lin_value(r["NA"][n][i][j], values) for j in range(k)] for i in range(k)]
                        for n in range(n_max + 1)])
         nb = np.array([[[lin_value(r["NB"][n][i][j], values) for j in range(k)] for i in range(k)]
                        for n in range(n_max + 1)])
         v = r["V"]
-        num.append((na, nb, np.diag([float(x) for x in r["M"]]), np.linalg.solve(v.T @ v, v.T), v))
+        num.append((na, nb, np.diag([float(x) for x in r["M"]]), np.linalg.solve(v.T @ v, v.T), v, order, bool(disp)))
     pw = np.arange(n_max + 1)
     fact = np.array([float(sp.factorial(n)) for n in pw])
     fact2 = np.array([float(sp.factorial(n + 2)) for n in pw])
@@ -103,10 +138,10 @@ def main() -> int:
         wa = (1j * kh) ** pw / fact
         wb = -((1j * kh) ** pw) * (1.0 - gamma ** (pw + 2)) / fact2
         out = []
-        for na, nb, m_g, pinv, v in num:
+        for na, nb, m_g, pinv, v, order, has_disp in num:
             n_g = (np.tensordot(wa, na, 1) + np.tensordot(wb, nb, 1)) / (4.0 * np.pi * REF.mu)
             d_g = pinv @ d36 @ v
-            out.append(m_g @ d_g @ np.linalg.inv(np.eye(len(m_g)) - n_g @ d_g))
+            out.append(m_g @ d_g @ schur_inverse(n_g @ d_g, order, has_disp))
         return out
 
     worst = max(np.abs(a - b).max() for a, b in zip(
@@ -141,7 +176,7 @@ def main() -> int:
     t0 = time.perf_counter()
     for i in range(reps):
         t_irreps(0.01 + 0.29 * i / reps)
-    rows.append((f"closed form, irreducible blocks (n <= {n_max})", (time.perf_counter() - t0) / reps))
+    rows.append((f"closed form, irreducible blocks, Schur + Cramer (n <= {n_max})", (time.perf_counter() - t0) / reps))
     base = rows[0][1]
     print("cost per frequency:")
     for name, sec in rows:

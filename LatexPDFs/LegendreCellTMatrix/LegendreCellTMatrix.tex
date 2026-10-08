@@ -640,18 +640,42 @@ in exact arithmetic, and stored. Each frequency then takes two steps: evaluate e
 polynomial in $k_Sh$ with stored coefficients (Eq.~\eqref{eq:kseries} reduced to the representation); then evaluate each block's $T$-matrix
 from its closed-form inverse, Eqs.~\eqref{eq:tgamma} and~\eqref{eq:schurcomplement}. Nothing singular is
 integrated and nothing larger than $4\times4$ is inverted at any frequency. Measured on one machine
-(\path{scripts/measure_legendre_cell_sweep.py}), one frequency costs $0.8$\,ms by the eight block formulas
-against $2.0$\,s by quadrature of the singular self integrals, a factor of about $2400$, and against
-$16$\,ms by the package's numerical series of the same moments. (Assembling the blocks into the full
-$36\times36$ matrix and solving it with a library routine takes $0.29$\,ms: at this size the cost is
-interpreter overhead, not arithmetic, and the gain of the block formulas is the explicit dependence on the
-contrast and the frequency, not speed.) The one-off cost of the closed form, the $223$ exact moments and their assembly and reduction
-through $(k_Sh)^6$, is $30$\,s on four cores, paid once for every cell, frequency and medium; against
-quadrature it is recovered after about fifteen frequencies, and a sweep of a thousand frequencies that
-quadrature would take half an hour to tabulate costs half a minute in all. The coupling between cells has
+(\path{scripts/measure_legendre_cell_sweep.py}), one frequency costs $0.43$\,ms by the eight block formulas,
+each the Schur complement on its displacement unknown with the complement inverted by Cramer's rule,
+against $1.2$\,s by quadrature of the singular self integrals, a factor of about $2800$, and against
+$9.4$\,ms by the package's numerical series of the same moments. The one-off cost of the closed form, the
+$223$ exact moments and their assembly and reduction through $(k_Sh)^6$, is $30$\,s on four cores, paid
+once for every cell, frequency and medium; against quadrature it is recovered after about twenty-five
+frequencies, and a sweep of a thousand frequencies that quadrature would take twenty minutes to tabulate
+costs half a minute in all. The coupling between cells has
 the same structure \citep{NestorCoupling2026}: its coefficients too are universal and computed once, and over
 $1024$ frequencies its series costs $6$ to $13$\,min against $34$ to $89$\,min by quadrature on the grids
 measured there. With both, a model of cells is assembled at any frequency from stored numbers.
+
+\paragraph{What the closed-form inverse buys.} The block formulas are not the fastest way to a number:
+assembling $\bK$ and handing the $36\times36$ system to a library solver takes $0.14$\,ms, a third of their
+cost, because at this size the time goes to the interpreter, not the arithmetic. They cost more code as
+well: the partner vectors of Table~\ref{tab:vectors}, the reduction of each $\bK_n$, and one inverse
+formula per representation. What that code buys is that $\bT$ stops being a number and becomes a function,
+with three consequences that a solver cannot supply (\S\ref{sec:group}).
+\begin{itemize}
+\item \emph{The material enters last and cheaply.} $\bN_\Gamma$ depends only on the background and the
+frequency. In an inversion for the medium, where the contrast changes at every iteration and the background
+and frequencies do not, $\bN_\Gamma$ is evaluated once per frequency and every later $\bT$ is a handful of
+scalar operations on the new contrast; its derivatives with respect to $\Delta\lambda$, $\Delta\mu$ and
+$\Delta\rho$, the cell's sensitivities, are those of explicit rational functions, with no finite differences
+and no adjoint solve.
+\item \emph{Each channel says what it sees.} The uniform dilatation ($A_{1g}$) responds to the bulk
+contrast only; $E_g$, $T_{2g}$, $A_{2u}$, $E_u$ and $T_{2u}$ to the shear contrast only; $T_{1u}$ alone
+mixes the two. The density enters only the blocks that hold a displacement unknown, and there through the
+single number $a$ of Eq.~\eqref{eq:schurcomplement}. Which elastic parameter is visible in which scattering channel is read from
+the formula, not inferred from computed patterns.
+\item \emph{Resonance and convergence are written down.} Each block's poles are the zeros of
+$\det(\bI-\mathbf X_\Gamma)=a\det\mathbf S$, explicit in the contrast and the frequency, and the cell's Born series converges exactly
+when the eigenvalues of a matrix of order at most four lie inside the unit circle. Near a resonance the
+ill-conditioning sits in these scalar denominators, where it can be monitored, rather than spread through a
+$36\times36$ solve.
+\end{itemize}
 
 \paragraph{The range of the truncated series.} The series converges for every $k_Sh$, but a sweep
 evaluates it truncated. The figures that follow are for the single-site $T$-matrix of one cell, compared entry
