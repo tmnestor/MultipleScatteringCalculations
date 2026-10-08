@@ -72,9 +72,10 @@ strain are independent Legendre expansions over the cube, tested against the sam
 cell), because of the representations in use it gives the most accurate coupling between cells: its
 interactions are exact double integrals over both cells, where an expansion about the cell's centre treats
 the receiving cell as a point. For the linear Legendre cell with a uniform contrast we give the single-site
-$T$-matrix in closed form at every power of the wavenumber. Its self-interaction is a power series in
-$k_Sh$, $h$ the half-width, whose coefficients are moments of powers of the distance over the cell. Every
-coefficient is exact: an even power of $k_Sh$ is a combination with rational coefficients of six constants,
+$T$-matrix in closed form at every power of the wavenumber. Its self-interaction is a power series,
+$\mathbf K=\sum_n(k_Sh)^n\mathbf K_n$ with $h$ the half-width, whose coefficients $\mathbf K_n$ are moments of
+powers of the distance over the cell and depend on neither the frequency, the cell size nor the medium.
+Every coefficient is exact: an even power of $k_Sh$ is a combination with rational coefficients of six constants,
 $1$, $\pi$, $\sqrt2$, $\sqrt3$, $\ln(1+\sqrt2)$ and $\ln(2+\sqrt3)$, the last two the logarithms of the
 fundamental units of $\mathbb Q(\sqrt2)$ and $\mathbb Q(\sqrt3)$, and an odd power,
 which carries the radiation, is rational. The first of these is the radiation damping of a point force,
@@ -128,11 +129,17 @@ the solve \citep{NestorError2026}.
 
 The single-site $T$-matrix of the linear Legendre cell was given in \citet{NestorCoupling2026} in its
 static limit, entry by entry on five constants. Here it is given at every power of the frequency. The
-self-interaction of the cell is a power series in $k_Sh$ whose coefficients are universal moments of powers
-of the distance over the cell \citep{NestorCoupling2026}; we evaluate every one of them exactly
-(\S\ref{sec:moments}), find that each power of $k_Sh$ is a combination with rational coefficients of the
-same six constants, and that each odd power, which carries the radiation, is rational
-(\S\ref{sec:constants}). The cube group reduces the $36$ unknowns to blocks of at most four
+central result is that the self-interaction of the cell, the only part of its $T$-matrix that is an
+integral, is
+\begin{equation}\label{eq:centralresult}
+  \bK=\sum_{n\ge0}(k_Sh)^n\,\bK_n ,\qquad \bK_n\ \text{exact for every }n,
+\end{equation}
+a power series in $k_Sh$ whose coefficients are universal moments of powers of the distance over the cell
+\citep{NestorCoupling2026}, independent of the frequency, the cell size and the medium. We evaluate every one
+of them exactly (\S\ref{sec:moments}), and find that each even power of $k_Sh$ is a combination with
+rational coefficients of the same six constants and that each odd power, which carries the radiation, is
+rational (\S\ref{sec:constants}). Computed once and stored, the $\bK_n$ give the $T$-matrix at any frequency
+without an integral (\S\ref{sec:discussion}). The cube group reduces the $36$ unknowns to blocks of at most four
 (\S\ref{sec:group}), on which the $T$-matrix is a few closed-form matrices per power. Section
 \ref{sec:checks} gives the checks, each against an evaluation that shares no step with the closed form.
 
@@ -387,7 +394,11 @@ $1024$ frequencies its series costs $6$ to $13$\,min against $34$ to $89$\,min b
 measured there. With both, a model of cells is assembled at any frequency from stored numbers.
 
 \paragraph{The range of the truncated series.} The series converges for every $k_Sh$, but a sweep
-evaluates it truncated. Through $(k_Sh)^6$ the $T$-matrix is accurate to $3.5\times10^{-9}$ at $k_Sh=0.2$,
+evaluates it truncated. The figures that follow are for the single-site $T$-matrix of one cell, compared entry
+by entry (largest difference relative to the largest entry) with the same $T$-matrix built on the self block
+by quadrature. The cell's interaction with its own field is summed exactly by the inverse in
+Eq.~\eqref{eq:t36}, and no other cell is involved: the truncation is only that of the series in the frequency
+of the self block. Through $(k_Sh)^6$ the $T$-matrix is accurate to $3.5\times10^{-9}$ at $k_Sh=0.2$,
 $5.9\times10^{-8}$ at $0.3$, $2.1\times10^{-6}$ at $0.5$ and $2.6\times10^{-4}$ at $1$, against quadrature
 that agrees with the package's series to $10^{-16}$; stopping at $(k_Sh)^4$ instead loses three orders of
 magnitude at $k_Sh=0.05$ and less than one at $k_Sh=1$. A discretisation with ten cells to the shear
