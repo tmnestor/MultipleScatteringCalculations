@@ -299,7 +299,7 @@ Strain enters only through the stiffness contrast, as the moment δc : ε. **How
 |---|---|---|---|---|---|
 | **Uniform strain** (the original approximation) | Uniform-strain closure; the hierarchy at ℓ = 1 (CL 762) | Displacement and strain at the centre | Uniform in the cell | At the centre | CL `sec:parity`, `sec:closure`; the "collocation" rows of `tab:ratio`, `fig:convergence` |
 | **Derived strain**: the gradient of a Taylor displacement | The hierarchy of degree ℓ ≥ 2 | ∂^P u at the centre, \|P\| ≤ ℓ | Derived: strain to degree ℓ − 1, consistent with the displacement inside the cell | The equation and its derivatives at the centre (Hermite collocation) | CL `sec:hierarchy`, `sec:gradvoxel` (`eq:hierarchy`, `eq:gradlattice`) |
-| **Independent strain** | The Legendre cell of degree p | Legendre moments of displacement *and* strain to degree p | Independent. CL 2679–2681 gives the reason: "a strain derived from a cell's projected displacement jumps across the faces between cells and leaves a spurious source there". | Against the cell's own polynomials (Galerkin) | CL `eq:galerkin`, `app:solver`; all of AO; EC `sec:site` |
+| **Independent strain** | The Legendre cell of degree p | Legendre moments of displacement *and* strain to degree p | Independent. CL 2679–2681 attributes this to a spurious face source, without evidence; measured on the exact layer (`scripts/measure_derived_vs_independent_strain.py`, Paper 1 draft Table 2), the independent strain gives order 2p+2 and a derived one 2, 2, 4 for p = 1, 2, 3, and adding the face jumps does not restore it, so the face explanation is not the cause. | Against the cell's own polynomials (Galerkin) | CL `eq:galerkin`, `app:solver`; all of AO; EC `sec:site` |
 
 **Collocation versus Galerkin is not a free choice in this series: it follows from the strain model.**
 - Unknowns that are derivatives at a point are determined by imposing the equation and its derivatives at that point.
@@ -362,7 +362,7 @@ They start from the same original approximation and relax it for **different pur
   - The Taylor expansion about the centre is the Cartesian form of the regular-wave expansion in which multiple-scattering theory defines a T-matrix. Imposing the equation and its derivatives there makes the single-site T-matrix a property of the cube alone. That is why it can be checked against Mie for a sphere and applies to any centrosymmetric body.
   - It is the equivalent-inclusion lineage (Eshelby, Moschovidis, Fu–Mura), and the coupled-dipole method's point dipole is its lowest member.
 - **Independent strain: the discretisation of a medium (P3).**
-  - When cells tile space, a strain derived from each cell's projected displacement jumps across the faces and leaves a spurious surface source (CL 2679–2681). Making strain an independent unknown removes it.
+  - When cells tile space, the strain must be an independent unknown: on the exact layer it gives order 2p+2 (4, 6, 8), where a strain derived from each cell's displacement gives 2, 2, 4, and adding the displacement's face jumps as sources does not recover it (Paper 1 draft, Table 2). The explanation in CL 2679–2681, a spurious face source, is therefore not supported and should not be repeated.
   - Testing against the cell's own polynomials makes the cell hold the L² projection of the field and of the medium. That is what makes the error law possible:
     - the first-order error is a projection error (CL `eq:ratio`, AO `sec:born`);
     - the second-order error is the relative projection error of the medium (`eq:defectlaw`);
