@@ -529,6 +529,25 @@ def main() -> int:
             worst_inv = max(worst_inv, np.abs(back - direct).max() / np.abs(direct).max())
     check("7. the displacement column of X vanishes statically; the Schur complement gives every inverse",
           worst_col < 1e-12 and worst_inv < 1e-13, f"column {worst_col:.1e}, inverse {worst_inv:.1e}")
+    # 8. the uniform-shear channels E_g (dimension 2) and T_2g (dimension 3) average to the sphere's shear
+    #    constant, exactly and for every Poisson ratio: (2 N_Eg + 3 N_T2g) / 5 = -(4 - 5 nu) / [15 mu (1 - nu)].
+    #    Static 4 pi mu N = A_0 - (1 - g^2) B_0 / 2 on the uniform-strain vector, g = beta / alpha symbolic.
+    g = sp.Symbol("g", positive=True)
+
+    def static_n(name: str) -> sp.Expr:
+        r = reduced[name]
+        i = next(j for j, vec in enumerate(BASIS[name]) if all(a == 0 and c >= 3 for a, c in vec))
+        return (lin_expr(r["NA"][0][i][i]) - (1 - g**2) / 2 * lin_expr(r["NB"][0][i][i])) / (4 * sp.pi)
+
+    nu = (1 - 2 * g**2) / (2 * (1 - g**2))
+    avg = (2 * static_n("Eg") + 3 * static_n("T2g")) / 5
+    sphere = -(4 - 5 * nu) / (15 * (1 - nu))
+    resid = sp.simplify(sp.expand_log(sp.expand(avg - sphere), force=True))
+    print(f"   mu N_Eg = {float(static_n('Eg').subs(g, gamma)):.6f}, mu N_T2g = "
+          f"{float(static_n('T2g').subs(g, gamma)):.6f}, average {float(avg.subs(g, gamma)):.7f}, "
+          f"sphere {float(sphere.subs(g, gamma)):.7f}")
+    check("8. (2 N_Eg + 3 N_T2g) / 5 equals the sphere's Eshelby shear constant, exactly for every nu",
+          resid == 0, f"residual {resid}")
     write_blocks(reduced, n_max)
 
     print(f"{sum(ok)}/{len(ok)} checks passed")
