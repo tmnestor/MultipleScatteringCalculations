@@ -81,8 +81,10 @@ fundamental units of $\mathbb Q(\sqrt2)$ and $\mathbb Q(\sqrt3)$, and an odd pow
 which carries the radiation, is rational. The first of these is the radiation damping of a point force,
 recovered exactly. On the irreducible representations of the cube group the $36$ unknowns of the cell
 separate into blocks of at most four, each inverted in closed form: the $T$-matrix is an explicit
-rational function of the contrast and of $k_Sh$, whose poles are written down, and whose static
-dilatational block is Eshelby's result for a sphere. Through $(k_Sh)^6$ the closed form reproduces the $T$-matrix computed by quadrature to
+rational function of the contrast and of $k_Sh$, whose poles are written down. In the static limit the
+cell separates into independent scalar channels, each of Eshelby's form $MD/(1-ND)$ with one closed-form
+constant $N$ per channel; the dilatational channel is Eshelby's sphere exactly, and the two shear channels
+average to the sphere's. Through $(k_Sh)^6$ the closed form reproduces the $T$-matrix computed by quadrature to
 $3.5\times10^{-9}$ at $k_Sh=0.2$, falling as $(k_Sh)^7$ as the next term predicts, and each of its $223$
 moments to $1.7\times10^{-15}$. Because the coefficients depend on neither the frequency, the cell size nor
 the medium, a frequency sweep integrates nothing at any frequency: the $T$-matrix costs $0.3$\,ms per frequency
@@ -144,7 +146,8 @@ rational coefficients of the same six constants and that each odd power, which c
 rational (\S\ref{sec:constants}). Computed once and stored, the $\bK_n$ give the $T$-matrix at any frequency
 without an integral (\S\ref{sec:discussion}). The cube group reduces the $36$ unknowns to blocks of at most four
 (\S\ref{sec:group}, Figure~\ref{fig:blocks}), on which the $T$-matrix is a few closed-form matrices per
-power. Section
+power, each inverted in closed form; in the static limit the cell is a set of independent channels of
+Eshelby's form, one constant each (Table~\ref{tab:channels}). Section
 \ref{sec:checks} gives the checks, each against an evaluation that shares no step with the closed form.
 
 \section{The cell and its single-site matrix}\label{sec:cell}
@@ -525,6 +528,59 @@ need a $3\times3$ inverse. The structure is exact: the displacement column of $\
 round-off as $k_Sh\to0$, and Eq.~\eqref{eq:schurcomplement} reproduces the numerical inverse of every block
 to $4.4\times10^{-16}$ for $k_Sh$ up to $0.3$.
 
+\paragraph{The static cell is a set of Eshelby channels.} Put together, the static single-site
+$T$-matrix of the cube is, apart from the three coupled strain moments of $T_{1u}$, a set of independent
+scalar channels,
+\begin{equation}\label{eq:eshelbychannels}
+  \boxed{\;T_\Gamma=\frac{M_\Gamma D_\Gamma}{1-N_\Gamma D_\Gamma}\;}
+\end{equation}
+each with the contrast $D_\Gamma$ that acts on it and one constant $N_\Gamma$, the cube's counterpart of
+Eshelby's tensor for that channel (Table~\ref{tab:channels}). This is the form Eshelby found for an
+ellipsoid \citep{Eshelby1957}, where the self-interaction of a uniform eigenstrain is uniform; the cube's
+is not, and it has more channels, but each keeps the form, with its constant in closed form. For the
+dilatation the constant is the sphere's, as it is for every shape. The strain's first moments add the
+channels $A_{2u}$, $E_u$ and the two of $T_{2u}$, the cube's counterparts of the linear eigenstrains of an
+ellipsoid \citep{Mura1987}.
+
+\paragraph{The cube's two shear channels average to the sphere's.} A sphere has one uniform-shear channel,
+five-dimensional. The cube splits it into $E_g$ (two dimensions) and $T_{2g}$ (three), with different
+constants, $-0.2268$ and $-0.2622$ in units of $1/\mu$. Weighted by their dimensions they average exactly to
+the sphere's constant:
+\begin{equation}\label{eq:shearaverage}
+  \boxed{\;\tfrac15\bigl(2N_{E_g}+3N_{T_{2g}}\bigr)=-\frac{4-5\nu}{15\mu(1-\nu)}\;}
+\end{equation}
+for every Poisson ratio. From Table~\ref{tab:channels},
+$\mu(2N_{E_g}+3N_{T_{2g}})=-\tfrac53+b_2\bigl(6\chi_1-\tfrac43-6\chi_1\bigr)=-\tfrac53-\tfrac43b_2$: the cube's
+constant $\chi_1$ cancels, and with $1-\beta^2/\alpha^2=1/[2(1-\nu)]$ what remains is the sphere's value. At
+$\nu=7/32$ both sides are $-0.2480$. The reason is that the sum over all five shear directions is the
+trace of the operator on the deviatoric strains, and that trace sees only the isotropic part of the
+self-interaction, which is the same for every shape of the same volume; the cube's anisotropy only moves
+the constant from one shear channel to the other. The derivation script verifies
+Eq.~\eqref{eq:shearaverage} symbolically, with $\beta/\alpha$ left free (Table~\ref{tab:checks}).
+
+\begin{table}[htbp]
+\centering
+\caption{The static channels of the linear Legendre cell, Eq.~\eqref{eq:eshelbychannels}. $N_\Gamma$ is the
+static entry of $\bN_\Gamma$ on the channel, $\mu N_\Gamma=p+b_2q$ with $b_2=-\tfrac12(1-\beta^2/\alpha^2)$, on
+the constants $\chi_1$, $\chi_0$ and $\Lambda$ of \citet{NestorCoupling2026}; the values are for
+$\beta/\alpha=3/5$ ($\nu=7/32$). The $q$ of $A_{2u}$, $E_u$ and $T_{2u}$ is in the data file of the Data
+availability section. The sphere's shear constant at this $\nu$ is
+$\mu N=-(4-5\nu)/[15(1-\nu)]=-0.2480$.}\label{tab:channels}
+\small
+\begin{tabular}{@{}lllll@{}}
+\toprule
+$\Gamma$ & unknowns & $D_\Gamma$ & $\mu N_\Gamma$ & value \\
+\midrule
+$A_{1g}$ & uniform dilatation & $3\Delta\lambda+2\Delta\mu$ & $-\tfrac13-\tfrac23b_2=-\tfrac13\beta^2/\alpha^2$ & $-0.1200$ \\
+$E_g$ & uniform deviatoric normal strain & $2\Delta\mu$ & $-\tfrac13+b_2(3\chi_1-\tfrac23)$ & $-0.2268$ \\
+$T_{2g}$ & uniform shear & $2\Delta\mu$ & $-\tfrac13-2b_2\chi_1$ & $-0.2622$ \\
+$A_{2u}$ & first moments of shear & $2\Delta\mu$ & $-\tfrac12+6\chi_0+b_2q$ & $-0.2135$ \\
+$E_u$ & first moments of shear & $2\Delta\mu$ & $-\tfrac14+3\chi_0+b_2q$ & $-0.1296$ \\
+$T_{2u}$ & first moments, two channels & $2\Delta\mu$ & eigenvalues of $\mu\bN_{T_{2u}}$ & $-0.1183$, $-0.3097$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Checks}\label{sec:checks}
 
 Every step is checked against an evaluation that shares none of it
@@ -556,6 +612,8 @@ $4.4\times10^{-13}$, $5.6\times10^{-11}$, $7.2\times10^{-9}$ \\
 static uniform dilatation & $-1/[3(\lambda+2\mu)]$ exactly \\
 static dilatational block of $\bT_{36}$ against Eshelby's sphere, Eq.~\eqref{eq:eshelby} & $1.1\times10^{-15}$ \\
 Schur-complement inverse of every block, Eq.~\eqref{eq:schurcomplement}, $k_Sh\le0.3$ & $4.4\times10^{-16}$ \\
+dimension-weighted mean of the static $E_g$ and $T_{2g}$ constants against the sphere's shear constant,
+Eq.~\eqref{eq:shearaverage}, $\beta/\alpha$ free & exact (no residual) \\
 the $36$ static strain entries against \citet{NestorCoupling2026} & identical coefficients \\
 radiation at $n=1$ & $\mathrm{Im}\,\bG(0)$ exactly, Eq.~\eqref{eq:radiation} \\
 \bottomrule
@@ -597,6 +655,14 @@ that agrees with the package's series to $10^{-16}$; stopping at $(k_Sh)^4$ inst
 magnitude at $k_Sh=0.05$ and less than one at $k_Sh=1$. A discretisation with ten cells to the shear
 wavelength has $k_Sh=\pi/10\approx0.31$, where the truncation through $(k_Sh)^6$ leaves $8.2\times10^{-8}$. Beyond that, the next powers are in closed form like the
 first, from the same derivation, at a one-off cost that grows with the number of moments.
+
+\paragraph{Eshelby's form, extended to the cube.} The static cell is a set of independent channels of
+Eshelby's form, Eq.~\eqref{eq:eshelbychannels}, with one closed-form constant each (Table~\ref{tab:channels}).
+The static self-interaction of a cuboid inclusion is known in closed form point by point
+\citep{Chiu1977,Nozaki2001}; it is not uniform, so a uniform-strain closure for the cube depends on where it is
+imposed. The Galerkin cell imposes it on average over the cell, and its constants are those averages, exact,
+channel by channel; the strain's first moments add channels of the same form. The dynamic $T$-matrix keeps the structure, with the displacement entering each
+channel through the single number $a$ of Eq.~\eqref{eq:schurcomplement}.
 
 \paragraph{What is not yet covered.} Two things. The contrast here is uniform in the cell; a graded contrast couples the
 even and odd unknowns and leaves only the operations that fix its gradient
