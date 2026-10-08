@@ -142,7 +142,8 @@ of them exactly (\S\ref{sec:moments}), and find that each even power of $k_Sh$ i
 rational coefficients of the same six constants and that each odd power, which carries the radiation, is
 rational (\S\ref{sec:constants}). Computed once and stored, the $\bK_n$ give the $T$-matrix at any frequency
 without an integral (\S\ref{sec:discussion}). The cube group reduces the $36$ unknowns to blocks of at most four
-(\S\ref{sec:group}), on which the $T$-matrix is a few closed-form matrices per power. Section
+(\S\ref{sec:group}, Figure~\ref{fig:blocks}), on which the $T$-matrix is a few closed-form matrices per
+power. Section
 \ref{sec:checks} gives the checks, each against an evaluation that shares no step with the closed form.
 
 \section{The cell and its single-site matrix}\label{sec:cell}
@@ -342,7 +343,45 @@ first moments $\xi_iu_j$ ($9$ unknowns) span $A_{1g}+E_g+T_{1g}+T_{2g}$; the uni
 $A_{1g}+E_g+T_{2g}$; the uniform displacement ($3$) spans $T_{1u}$; and the strain's first moments ($18$)
 span $3T_{1u}+2T_{2u}+A_{2u}+E_u$. Altogether there are $15$ even unknowns,
 $2A_{1g}+2E_g+T_{1g}+2T_{2g}$, and $21$ odd, $4T_{1u}+2T_{2u}+A_{2u}+E_u$; even and odd never couple, and the
-largest block is $T_{1u}$, $4\times4$. Appendix~\ref{app:group} gives the group's action on the unknowns,
+largest block is $T_{1u}$, $4\times4$. Written out, with $V$ the matrix whose columns are the partner
+vectors (Appendix~\ref{app:group}),
+\begin{equation}\label{eq:t36blocks}
+\begin{aligned}
+  V^{-1}\,\bT_{36}\,V={}&\underbrace{\bT_{A_{1g}}}_{2\times2}\oplus
+  \bigl(\underbrace{\bT_{E_g}}_{2\times2}\otimes\bI_2\bigr)\oplus
+  \bigl(\underbrace{\bT_{T_{1g}}}_{1\times1}\otimes\bI_3\bigr)\oplus
+  \bigl(\underbrace{\bT_{T_{2g}}}_{2\times2}\otimes\bI_3\bigr)
+  &&\text{(even, $15$)}\\
+  &\oplus\bigl(\underbrace{\bT_{T_{1u}}}_{4\times4}\otimes\bI_3\bigr)\oplus
+  \bigl(\underbrace{\bT_{T_{2u}}}_{2\times2}\otimes\bI_3\bigr)\oplus
+  \underbrace{\bT_{A_{2u}}}_{1\times1}\oplus
+  \bigl(\underbrace{\bT_{E_u}}_{1\times1}\otimes\bI_2\bigr)
+  &&\text{(odd, $21$)},
+\end{aligned}
+\end{equation}
+each block given by Eq.~\eqref{eq:tgamma} below and $\bI_d$ repeating it once for each row of its
+representation. The reduction does not make the matrix hold fewer numbers: in the natural ordering the
+$180$ non-zero entries of $\bM-\bK\bD$ take only $25$ distinct values up to sign, the symmetry of the cube
+repeating them within and between the blocks of the four functions, while the eight blocks hold $35$
+entries, combinations of those values in the partner basis. What it changes is the coupling: the $36$
+unknowns, coupled through those entries in one $36\times36$ system, separate into independent systems of at
+most four unknowns (Figure~\ref{fig:blocks}), each inverted on its own, which is what lets $\bT_{36}$ be
+written out in closed form.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_blocks.pdf}
+\caption{The single-site system before and after the change to the partner basis. Left: the non-zero
+entries of $\bM-\bK\bD$ (dark) in the natural ordering, the four functions $1,\xi_0,\xi_1,\xi_2$ each
+carrying the nine components, at $k_Sh=0.1$; $180$ of the $1296$ entries are non-zero, and they take only
+$25$ distinct values up to sign, the symmetry of the cube repeating them within and between the blocks of
+the functions. Right: the same matrix in the basis of partner vectors (Table~\ref{tab:vectors}),
+by Schur's lemma block diagonal, Eq.~\eqref{eq:t36blocks}: each irreducible representation gives one block,
+of size its multiplicity, repeated once for each of its rows; the $15$ even unknowns (darker) never couple
+to the $21$ odd (lighter). The same structure holds at every frequency and for every power of $k_Sh$, and
+for $\bT_{36}$.}
+\label{fig:blocks}
+\end{figure} Appendix~\ref{app:group} gives the group's action on the unknowns,
 why the commutation holds, Schur's lemma and what it requires, and the vectors that span one row of each
 block (Table~\ref{tab:vectors}); the reduction is exact, with no residual at any power computed
 (\S\ref{sec:checks}).
