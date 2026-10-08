@@ -27,10 +27,22 @@ import sympy as sp
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT), str(ROOT / "scripts")]
-from derive_legendre_cell_dynamic import OUT, REF, numeric_k, reduce_on_irreps, irrep_t  # noqa: E402
+from derive_legendre_cell_dynamic import (  # noqa: E402
+    OUT,
+    REF,
+    irrep_t,
+    numeric_k,
+    reduce_on_irreps,
+)
 
-from cubic_scattering.graded_voxel.blocks import near_block, near_block_series  # noqa: E402
-from cubic_scattering.graded_voxel.site import contrast_operator, single_site_t36  # noqa: E402
+from cubic_scattering.graded_voxel.blocks import (  # noqa: E402
+    near_block,
+    near_block_series,
+)
+from cubic_scattering.graded_voxel.site import (  # noqa: E402
+    contrast_operator,
+    single_site_t36,
+)
 
 H = 1.0
 DLAM, DMU, DRHO = 2.0e9, 1.0e9, 100.0
@@ -141,11 +153,11 @@ def main() -> int:
         omega = kh * REF.beta
         t_q = single_site_t36(H, delta_at(omega), near_block((0, 0, 0), H, omega, REF, n_q=14))
         t_s = single_site_t36(H, delta_at(omega), near_block_series((0, 0, 0), H, omega, REF, n_source=10, n_test=4))
-        k = lambda top: sum(kh**n * k_n[n] for n in range(top + 1))  # noqa: E731
         dl = np.kron(np.eye(4), delta_at(omega)[0])
         errs = []
         for top in (n_max, 4):
-            t_c = gram @ dl @ np.linalg.solve(gram - k(top) @ dl, gram)
+            k_top = sum(kh**n * k_n[n] for n in range(top + 1))
+            t_c = gram @ dl @ np.linalg.solve(gram - k_top @ dl, gram)
             errs.append(np.abs(t_c - t_q).max() / np.abs(t_q).max())
         print(f"   k_S h = {kh:<4}: n <= {n_max} {errs[0]:.1e}   n <= 4 {errs[1]:.1e}   "
               f"(package series against quadrature {np.abs(t_s - t_q).max() / np.abs(t_q).max():.1e})")
