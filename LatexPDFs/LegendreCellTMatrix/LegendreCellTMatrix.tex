@@ -280,100 +280,25 @@ $A_{2u}$ and $E_u$; the fifth enters every representation.
 
 \section{The cube group}\label{sec:group}
 
-The $36\times36$ system of Eq.~\eqref{eq:sitels} is small, but its structure is worth exposing: the
-symmetry of the cube splits it exactly into blocks of at most four unknowns, and it is this splitting that
-makes the closed form readable. The tool is Schur's lemma from the representation theory of finite groups
-\citep{Tinkham1964,Dresselhaus2008}. Because it is less familiar outside solid-state physics, we state what
-it needs and why each condition holds here.
-
-\paragraph{The group, and how it acts on the unknowns.} The symmetries of the cube about its centre are
-the $48$ signed permutation matrices $Q$: the $3!$ permutations of the axes combined with the $2^3$
-choices of sign, rotations and reflections together, the group $O_h$. A symmetry $Q$ moves the point
-$\bxi$ of the cell to $Q\bxi$ and acts on what the cell carries. The four functions transform as
-$1\mapsto1$ and $\xi_i\mapsto(Q\bxi)_i$, by the matrix $T(Q)=1\oplus Q$. The displacement is a vector,
-$u\mapsto Qu$, and the strain a symmetric tensor, $\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$; on the
-nine components this is $S(Q)=Q\oplus\Sigma(Q)$, with $\Sigma(Q)$ the $6\times6$ matrix of
-$\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$ in Voigt form. On the $36$ unknowns of the cell
-\begin{equation}\label{eq:rep}
-  D(Q)=T(Q)\otimes S(Q),\qquad D(Q_1)D(Q_2)=D(Q_1Q_2),
-\end{equation}
-a \emph{representation} of the group. For a signed permutation, $Q\varepsilon Q^{\mathsf T}$ permutes the
-strain components with signs and sends shears to shears, so $\Sigma(Q)$, and with it $D(Q)$, is itself a
-signed permutation matrix: orthogonal, $D(Q)^{-1}=D(Q)^{\mathsf T}$.
-
-\paragraph{Why the cell's matrices commute with it.} Three facts make
-\begin{equation}\label{eq:commute}
-  D(Q)\,\bK\,D(Q)^{\mathsf T}=\bK,\qquad D(Q)\,\bM\,D(Q)^{\mathsf T}=\bM,\qquad D(Q)\,\bD\,D(Q)^{\mathsf T}=\bD
-  \qquad\text{for all $48$ }Q.
-\end{equation}
-\emph{The domain is invariant}: $Q$ maps the cube onto itself. \emph{The kernel is covariant}: the
-background is isotropic, so its Green's tensor satisfies $\bG(Q\mathbf r)=Q\,\bG(\mathbf r)\,Q^{\mathsf T}$
-for every orthogonal $Q$, reflections included, and its derivatives transform as tensors of the
-corresponding rank; changing variables $\bx\mapsto Q\bx$, $\by\mapsto Q\by$ in the double integral of
-$\bK$ then gives the first identity. \emph{The contrast is invariant}: uniform in the cell, $\omega^2\Delta\rho$ is a
-scalar and $\delta c$ an isotropic tensor, so $\bD$ commutes with $S(Q)$; and the Gram matrix $\bM$ only
-weights the functions $1$ and $\xi_i$, which $Q$ permutes among themselves with equal weights. The system
-matrix $\bM-\bK\bD$, its inverse, and $\bT_{36}$ of Eq.~\eqref{eq:t36} therefore commute with every
-$D(Q)$. Nothing here requires $\bK$ to be Hermitian or real: the identities hold for the complex self block
-at every frequency, radiation included, and power by power for each $\bK_n$.
-
-\paragraph{Schur's lemma.} A representation is \emph{irreducible} when no subspace other than $0$ and the
-whole is mapped into itself by every $D(Q)$. Schur's lemma states that a linear map between two irreducible
-representations that commutes with the group action is zero if the representations are inequivalent, and a
-multiple of the identity if they are the same. The $36$-dimensional representation of Eq.~\eqref{eq:rep} is
-not irreducible; it is a direct sum of copies of the ten irreducible representations of $O_h$, labelled by
-their dimension ($A$: $1$, $E$: $2$, $T$: $3$) and by their parity under the inversion $\bxi\mapsto-\bxi$
-($g$ even, $u$ odd). How many copies $n_\Gamma$ of each $\Gamma$ occur follows from the characters, the
-traces of the representation matrices: $n_\Gamma=\tfrac1{48}\sum_Q\chi_\Gamma(Q)\operatorname{tr}D(Q)$, with
-$\operatorname{tr}D(Q)=\operatorname{tr}T(Q)\operatorname{tr}S(Q)$. Every irreducible representation of $O_h$
-can be written with real matrices and has real characters, so the lemma holds over the real numbers, and
-applies to the real and imaginary parts of $\bK$ alike. Applied to an operator that commutes with $D(Q)$, it
-has two consequences. First, the operator does not couple unknowns of different $\Gamma$. Second, within the
-$n_\Gamma$ copies of a $\Gamma$ of dimension $d_\Gamma$, if a basis is chosen in which every copy is
-represented by the \emph{same} matrices (each basis vector a \emph{partner}, transforming as a given row of
-$\Gamma$), the operator acts as an $n_\Gamma\times n_\Gamma$ matrix on the multiplicity index and as the
-identity on the row index:
+With the contrast uniform in the cell, the $48$ symmetries of the cube (the signed permutations of its
+axes, the group $O_h$) act on the $36$ unknowns, and the self block, the Gram matrix and the contrast all
+commute with that action: the cube is mapped onto itself, the isotropic Green's tensor is covariant, and the
+uniform contrast is invariant. By Schur's lemma the single-site system then splits exactly into independent
+blocks, one for each irreducible representation $\Gamma$ of $O_h$ that occurs,
 \begin{equation}\label{eq:schur}
   \bK=\bigoplus_\Gamma\bigl(\bK_\Gamma\otimes\bI_{d_\Gamma}\bigr),
 \end{equation}
-and likewise for $\bM$, $\bD$, $\bM-\bK\bD$ and $\bT_{36}$. The block $\bK_\Gamma$ is then found from any one
-row: with $V_\Gamma$ the $36\times n_\Gamma$ matrix whose columns are the partners of that row,
-$\bK V_\Gamma=V_\Gamma\bK_\Gamma$. Inverting the $36\times36$ system reduces to inverting $n_\Gamma\times
-n_\Gamma$ blocks, and since $n_\Gamma\le4$ each is written down by hand.
-
-\paragraph{The blocks of the cell.} The displacement's first moments $\xi_iu_j$ ($9$ unknowns) span
-$A_{1g}+E_g+T_{1g}+T_{2g}$; the uniform strain ($6$) spans $A_{1g}+E_g+T_{2g}$; the uniform displacement
-($3$) spans $T_{1u}$; and the strain's first moments ($18$) span $3T_{1u}+2T_{2u}+A_{2u}+E_u$. Altogether
-$15$ even unknowns, $2A_{1g}+2E_g+T_{1g}+2T_{2g}$, and $21$ odd, $4T_{1u}+2T_{2u}+A_{2u}+E_u$, as the
-characters confirm \citep{NestorCoupling2026}; the largest block is $T_{1u}$, $4\times4$. Even and odd
-unknowns never couple, which is the parity of the cube. Table~\ref{tab:vectors} gives the partners of one
-row of each $\Gamma$ as integer vectors. They are chosen so that within each $\Gamma$ they transform alike:
-the displacement's first moment $\xi_1u_2+\xi_2u_1$ and the shear $2\varepsilon_{12}$, for instance, both
-transform as the $(1,2)$ row of $T_{2g}$. The reduction is then exact: $\bK_nV_\Gamma=V_\Gamma\bK_{\Gamma,n}$
-with no residual at any power computed (\S\ref{sec:checks}).
-
-\begin{table}[htbp]
-\centering
-\caption{One row of each irreducible representation, as combinations of the unknowns $\xi_iu_j$ ($L_b=\xi_i$
-times the displacement component $j$), $u_j$, $\varepsilon_{ij}$ and $\xi_i\varepsilon_{jk}$, axes
-$0,1,2$.}\label{tab:vectors}
-\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-$\Gamma$ & vectors & $M_\Gamma/h^3$ \\
-\midrule
-$A_{1g}$ & $\xi_0u_0+\xi_1u_1+\xi_2u_2$; \ $\varepsilon_{00}+\varepsilon_{11}+\varepsilon_{22}$ & $\tfrac83,8$\\
-$E_g$ & $2\xi_0u_0-\xi_1u_1-\xi_2u_2$; \ $2\varepsilon_{00}-\varepsilon_{11}-\varepsilon_{22}$ & $\tfrac83,8$\\
-$T_{1g}$ & $\xi_1u_2-\xi_2u_1$ & $\tfrac83$\\
-$T_{2g}$ & $\xi_1u_2+\xi_2u_1$; \ $2\varepsilon_{12}$ & $\tfrac83,8$\\
-$T_{1u}$ & $u_0$; \ $\xi_0\varepsilon_{00}$; \ $\xi_0(\varepsilon_{11}+\varepsilon_{22})$; \
-$2(\xi_1\varepsilon_{01}+\xi_2\varepsilon_{02})$ & $8,\tfrac83,\tfrac83,\tfrac83$\\
-$T_{2u}$ & $\xi_0(\varepsilon_{11}-\varepsilon_{22})$; \ $2(\xi_1\varepsilon_{01}-\xi_2\varepsilon_{02})$ & $\tfrac83,\tfrac83$\\
-$A_{2u}$ & $2(\xi_0\varepsilon_{12}+\xi_1\varepsilon_{02}+\xi_2\varepsilon_{01})$ & $\tfrac83$\\
-$E_u$ & $2(\xi_1\varepsilon_{02}-\xi_2\varepsilon_{01})$ & $\tfrac83$\\
-\bottomrule
-\end{tabular}
-\end{table}
+an $n_\Gamma\times n_\Gamma$ block, $n_\Gamma$ the number of times $\Gamma$ occurs, repeated for each of the
+$d_\Gamma$ rows of $\Gamma$; likewise for $\bM$, $\bD$ and $\bT_{36}$. The commutation holds for the complex
+self block at every frequency, radiation included, so the splitting holds power by power. The displacement's
+first moments $\xi_iu_j$ ($9$ unknowns) span $A_{1g}+E_g+T_{1g}+T_{2g}$; the uniform strain ($6$) spans
+$A_{1g}+E_g+T_{2g}$; the uniform displacement ($3$) spans $T_{1u}$; and the strain's first moments ($18$)
+span $3T_{1u}+2T_{2u}+A_{2u}+E_u$. Altogether there are $15$ even unknowns,
+$2A_{1g}+2E_g+T_{1g}+2T_{2g}$, and $21$ odd, $4T_{1u}+2T_{2u}+A_{2u}+E_u$; even and odd never couple, and the
+largest block is $T_{1u}$, $4\times4$. Appendix~\ref{app:group} gives the group's action on the unknowns,
+why the commutation holds, Schur's lemma and what it requires, and the vectors that span one row of each
+block (Table~\ref{tab:vectors}); the reduction is exact, with no residual at any power computed
+(\S\ref{sec:checks}).
 
 On each representation
 \begin{equation}\label{eq:tgamma}
@@ -458,6 +383,95 @@ The derivation and its checks are \path{scripts/derive_legendre_cell_dynamic.py}
 reduced entry, on the six constants), in the repository
 \url{https://github.com/tmnestor/MultipleScatteringCalculations}. The static blocks are
 \path{scripts/derive_graded_voxel_site_blocks.py}.
+
+\appendix
+
+\section{The cube group and Schur's lemma}\label{app:group}
+
+The splitting of \S\ref{sec:group} rests on Schur's lemma from the representation theory of finite groups
+\citep{Tinkham1964,Dresselhaus2008}. This appendix sets out the group's action on the unknowns of the cell,
+why the cell's matrices commute with it, and the form the lemma then gives them.
+
+\paragraph{The group, and how it acts on the unknowns.} The symmetries of the cube about its centre are
+the $48$ signed permutation matrices $Q$: the $3!$ permutations of the axes combined with the $2^3$
+choices of sign, rotations and reflections together, the group $O_h$. A symmetry $Q$ moves the point
+$\bxi$ of the cell to $Q\bxi$ and acts on what the cell carries. The four functions transform as
+$1\mapsto1$ and $\xi_i\mapsto(Q\bxi)_i$, by the matrix $T(Q)=1\oplus Q$. The displacement is a vector,
+$u\mapsto Qu$, and the strain a symmetric tensor, $\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$; on the
+nine components this is $S(Q)=Q\oplus\Sigma(Q)$, with $\Sigma(Q)$ the $6\times6$ matrix of
+$\varepsilon\mapsto Q\varepsilon Q^{\mathsf T}$ in Voigt form. On the $36$ unknowns of the cell
+\begin{equation}\label{eq:rep}
+  D(Q)=T(Q)\otimes S(Q),\qquad D(Q_1)D(Q_2)=D(Q_1Q_2),
+\end{equation}
+a \emph{representation} of the group. For a signed permutation, $Q\varepsilon Q^{\mathsf T}$ permutes the
+strain components with signs and sends shears to shears, so $\Sigma(Q)$, and with it $D(Q)$, is itself a
+signed permutation matrix: orthogonal, $D(Q)^{-1}=D(Q)^{\mathsf T}$.
+
+\paragraph{Why the cell's matrices commute with it.} Three facts make
+\begin{equation}\label{eq:commute}
+  D(Q)\,\bK\,D(Q)^{\mathsf T}=\bK,\qquad D(Q)\,\bM\,D(Q)^{\mathsf T}=\bM,\qquad D(Q)\,\bD\,D(Q)^{\mathsf T}=\bD
+  \qquad\text{for all $48$ }Q.
+\end{equation}
+\emph{The domain is invariant}: $Q$ maps the cube onto itself. \emph{The kernel is covariant}: the
+background is isotropic, so its Green's tensor satisfies $\bG(Q\mathbf r)=Q\,\bG(\mathbf r)\,Q^{\mathsf T}$
+for every orthogonal $Q$, reflections included, and its derivatives transform as tensors of the
+corresponding rank; changing variables $\bx\mapsto Q\bx$, $\by\mapsto Q\by$ in the double integral of
+$\bK$ then gives the first identity. \emph{The contrast is invariant}: uniform in the cell, $\omega^2\Delta\rho$ is a
+scalar and $\delta c$ an isotropic tensor, so $\bD$ commutes with $S(Q)$; and the Gram matrix $\bM$ only
+weights the functions $1$ and $\xi_i$, which $Q$ permutes among themselves with equal weights. The system
+matrix $\bM-\bK\bD$, its inverse, and $\bT_{36}$ of Eq.~\eqref{eq:t36} therefore commute with every
+$D(Q)$. Nothing here requires $\bK$ to be Hermitian or real: the identities hold for the complex self block
+at every frequency, radiation included, and power by power for each $\bK_n$.
+
+\paragraph{Schur's lemma.} A representation is \emph{irreducible} when no subspace other than $0$ and the
+whole is mapped into itself by every $D(Q)$. Schur's lemma states that a linear map between two irreducible
+representations that commutes with the group action is zero if the representations are inequivalent, and a
+multiple of the identity if they are the same. The $36$-dimensional representation of Eq.~\eqref{eq:rep} is
+not irreducible; it is a direct sum of copies of the ten irreducible representations of $O_h$, labelled by
+their dimension ($A$: $1$, $E$: $2$, $T$: $3$) and by their parity under the inversion $\bxi\mapsto-\bxi$
+($g$ even, $u$ odd). How many copies $n_\Gamma$ of each $\Gamma$ occur follows from the characters, the
+traces of the representation matrices: $n_\Gamma=\tfrac1{48}\sum_Q\chi_\Gamma(Q)\operatorname{tr}D(Q)$, with
+$\operatorname{tr}D(Q)=\operatorname{tr}T(Q)\operatorname{tr}S(Q)$. Every irreducible representation of $O_h$
+can be written with real matrices and has real characters, so the lemma holds over the real numbers, and
+applies to the real and imaginary parts of $\bK$ alike. Applied to an operator that commutes with $D(Q)$, it
+has two consequences. First, the operator does not couple unknowns of different $\Gamma$. Second, within the
+$n_\Gamma$ copies of a $\Gamma$ of dimension $d_\Gamma$, if a basis is chosen in which every copy is
+represented by the \emph{same} matrices (each basis vector a \emph{partner}, transforming as a given row of
+$\Gamma$), the operator acts as an $n_\Gamma\times n_\Gamma$ matrix on the multiplicity index and as the
+identity on the row index, which is Eq.~\eqref{eq:schur}, and likewise for $\bM$, $\bD$, $\bM-\bK\bD$ and $\bT_{36}$. The block $\bK_\Gamma$ is then found from any one
+row: with $V_\Gamma$ the $36\times n_\Gamma$ matrix whose columns are the partners of that row,
+$\bK V_\Gamma=V_\Gamma\bK_\Gamma$. Inverting the $36\times36$ system reduces to inverting $n_\Gamma\times
+n_\Gamma$ blocks, of size at most $4\times4$.
+
+\paragraph{The partners.} Table~\ref{tab:vectors} gives the partners of one
+row of each $\Gamma$ as integer vectors. They are chosen so that within each $\Gamma$ they transform alike:
+the displacement's first moment $\xi_1u_2+\xi_2u_1$ and the shear $2\varepsilon_{12}$, for instance, both
+transform as the $(1,2)$ row of $T_{2g}$. The reduction is then exact: $\bK_nV_\Gamma=V_\Gamma\bK_{\Gamma,n}$
+with no residual at any power computed (\S\ref{sec:checks}).
+
+\begin{table}[htbp]
+\centering
+\caption{One row of each irreducible representation, as combinations of the unknowns $\xi_iu_j$ ($L_b=\xi_i$
+times the displacement component $j$), $u_j$, $\varepsilon_{ij}$ and $\xi_i\varepsilon_{jk}$, axes
+$0,1,2$.}\label{tab:vectors}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+$\Gamma$ & vectors & $M_\Gamma/h^3$ \\
+\midrule
+$A_{1g}$ & $\xi_0u_0+\xi_1u_1+\xi_2u_2$; \ $\varepsilon_{00}+\varepsilon_{11}+\varepsilon_{22}$ & $\tfrac83,8$\\
+$E_g$ & $2\xi_0u_0-\xi_1u_1-\xi_2u_2$; \ $2\varepsilon_{00}-\varepsilon_{11}-\varepsilon_{22}$ & $\tfrac83,8$\\
+$T_{1g}$ & $\xi_1u_2-\xi_2u_1$ & $\tfrac83$\\
+$T_{2g}$ & $\xi_1u_2+\xi_2u_1$; \ $2\varepsilon_{12}$ & $\tfrac83,8$\\
+$T_{1u}$ & $u_0$; \ $\xi_0\varepsilon_{00}$; \ $\xi_0(\varepsilon_{11}+\varepsilon_{22})$; \
+$2(\xi_1\varepsilon_{01}+\xi_2\varepsilon_{02})$ & $8,\tfrac83,\tfrac83,\tfrac83$\\
+$T_{2u}$ & $\xi_0(\varepsilon_{11}-\varepsilon_{22})$; \ $2(\xi_1\varepsilon_{01}-\xi_2\varepsilon_{02})$ & $\tfrac83,\tfrac83$\\
+$A_{2u}$ & $2(\xi_0\varepsilon_{12}+\xi_1\varepsilon_{02}+\xi_2\varepsilon_{01})$ & $\tfrac83$\\
+$E_u$ & $2(\xi_1\varepsilon_{02}-\xi_2\varepsilon_{01})$ & $\tfrac83$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
