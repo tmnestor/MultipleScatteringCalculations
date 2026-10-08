@@ -493,6 +493,42 @@ def main() -> int:
     err = abs(t_a1g / eshelby - 1)
     check("6. static uniform dilatation of T36 equals Eshelby's sphere result in closed form", err < 1e-12,
           f"{err:.1e}")
+    # 7. each block holds at most one displacement vector; its column of X = N Delta vanishes as k_S h -> 0, and
+    #    the Schur complement on it, (a, b, c, S), reproduces the inverse of I - X
+    worst_inv, worst_col = 0.0, 0.0
+    for kh in (1e-6, 0.1, 0.3):
+        d9 = contrast_operator(dlam, dmu, drho, kh * REF.beta)
+        for name, r in reduced.items():
+            k = len(r["M"])
+            n_g = np.zeros((k, k), dtype=complex)
+            for n in range(n_max + 1):
+                wa = 1j**n / float(sp.factorial(n))
+                wb = -(1j**n) * (1.0 - gamma ** (n + 2)) / float(sp.factorial(n + 2))
+                n_g += kh**n * np.array([[wa * lin_value(r["NA"][n][i][j], values)
+                                          + wb * lin_value(r["NB"][n][i][j], values) for j in range(k)]
+                                         for i in range(k)])
+            n_g /= 4.0 * np.pi * REF.mu
+            v = r["V"]
+            x = n_g @ np.linalg.solve(v.T @ v, v.T @ np.kron(np.eye(4), d9) @ v)
+            disp = [i for i, vec in enumerate(BASIS[name]) if all(c < 3 for _, c in vec)]
+            assert len(disp) <= 1
+            if not disp or k == 1:
+                continue
+            if kh == 1e-6:
+                worst_col = max(worst_col, np.abs(x[:, disp[0]]).max() / np.abs(x).max())
+            o = disp + [i for i in range(k) if i not in disp]
+            xo = x[np.ix_(o, o)]
+            a, b, c = 1 - xo[0, 0], -xo[0, 1:], -xo[1:, 0]
+            s_inv = np.linalg.inv(np.eye(k - 1) - xo[1:, 1:] - np.outer(c, b) / a)
+            inv = np.empty((k, k), dtype=complex)
+            inv[0, 0] = 1 / a + b @ s_inv @ c / a**2
+            inv[0, 1:], inv[1:, 0], inv[1:, 1:] = -b @ s_inv / a, -s_inv @ c / a, s_inv
+            back = np.empty_like(inv)
+            back[np.ix_(o, o)] = inv
+            direct = np.linalg.inv(np.eye(k) - x)
+            worst_inv = max(worst_inv, np.abs(back - direct).max() / np.abs(direct).max())
+    check("7. the displacement column of X vanishes statically; the Schur complement gives every inverse",
+          worst_col < 1e-12 and worst_inv < 1e-13, f"column {worst_col:.1e}, inverse {worst_inv:.1e}")
     write_blocks(reduced, n_max)
 
     print(f"{sum(ok)}/{len(ok)} checks passed")
