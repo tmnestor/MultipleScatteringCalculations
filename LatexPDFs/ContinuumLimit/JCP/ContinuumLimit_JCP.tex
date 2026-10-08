@@ -2664,8 +2664,11 @@ of \S\ref{sec:fourth} on a cubic grid, with the following construction
 
 \paragraph{The voxel} Each cell carries the nine-component state of \S\ref{sec:setting}, displacement
 and engineering strain, with the strain an \emph{independent} unknown and not the gradient of the
-displacement: a strain derived from a cell's projected displacement jumps across the faces between
-cells and leaves a spurious source there (\S\ref{sec:fourth}). The state is expanded in the Legendre
+displacement. On the exact layer the difference is measured: with Legendre degree $p$ an independent
+strain converges at order $2p+2$, while a strain derived from each cell's displacement converges at
+order $2$, $2$ and $4$ for $p=1$, $2$ and $3$, and adding the jumps of the displacement across the faces
+between cells as sources does not recover the order
+(\path{scripts/measure_derived_vs_independent_strain.py}). The state is expanded in the Legendre
 products of degree at most $p$ in the cell's local coordinates $\boldsymbol\xi\in[-1,1]^3$, and the
 contrast operator $\bD$ in those of degree at most $r$, its coefficients the $L^2$ projection of the
 medium; $p=r=1$ gives the first-moment voxel of $36$ weights. The source $\bD\psi$ is then a polynomial
