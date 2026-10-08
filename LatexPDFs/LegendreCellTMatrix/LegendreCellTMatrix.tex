@@ -82,7 +82,9 @@ recovered exactly. On the irreducible representations of the cube group the $36$
 separate into blocks of at most four, and the $T$-matrix becomes a handful of closed-form matrices per
 power of $k_Sh$. Through $(k_Sh)^6$ the closed form reproduces the $T$-matrix computed by quadrature to
 $3.5\times10^{-9}$ at $k_Sh=0.2$, falling as $(k_Sh)^7$ as the next term predicts, and each of its $223$
-moments to $1.7\times10^{-15}$.
+moments to $1.7\times10^{-15}$. Because the coefficients depend on neither the frequency, the cell size nor
+the medium, a frequency sweep integrates nothing at any frequency: the $T$-matrix costs $0.3$\,ms per frequency
+against $2$\,s by quadrature, after a one-off derivation of $30$\,s.
 \end{abstract}
 
 % =====================================================================================================
@@ -367,9 +369,32 @@ is stated by the next term, which is itself in closed form.
 
 \section{Discussion}\label{sec:discussion}
 
-The single-site $T$-matrix of the linear Legendre cell is now known in closed form at every power of the
-frequency, on six constants, with its radiation rational and its first radiative term the point force's.
-Two things are not yet covered. The contrast here is uniform in the cell; a graded contrast couples the
+\paragraph{A frequency sweep with no integral at any frequency.} The single-site $T$-matrix of the linear
+Legendre cell is now known in closed form at every power of the frequency, and what that buys is a sweep. The
+coefficients $\bK_n$ depend on neither the frequency, the cell size nor the medium: they are computed once,
+in exact arithmetic, and stored. At each frequency the self block is then the polynomial
+$\sum_n(k_Sh)^n\bK_n$, scaled to the cell by Eq.~\eqref{eq:kseries}, and the $T$-matrix one $36\times36$
+solve, or eight solves of at most $4\times4$ on the irreducible representations. Nothing singular is
+integrated at any frequency. Measured on one machine (\path{scripts/measure_legendre_cell_sweep.py}),
+one frequency costs $0.29$\,ms by the closed form against $2.0$\,s by quadrature of the singular self
+integrals, a factor of about $7000$, and against $16$\,ms by the package's numerical series of the same
+moments. The one-off cost of the closed form, the $223$ exact moments and their assembly and reduction
+through $(k_Sh)^6$, is $30$\,s on four cores, paid once for every cell, frequency and medium; against
+quadrature it is recovered after about fifteen frequencies, and a sweep of a thousand frequencies that
+quadrature would take half an hour to tabulate costs half a minute in all. The coupling between cells has
+the same structure \citep{NestorCoupling2026}: its coefficients too are universal and computed once, and over
+$1024$ frequencies its series costs $6$ to $13$\,min against $34$ to $89$\,min by quadrature on the grids
+measured there. With both, a model of cells is assembled at any frequency from stored numbers.
+
+\paragraph{The range of the truncated series.} The series converges for every $k_Sh$, but a sweep
+evaluates it truncated. Through $(k_Sh)^6$ the $T$-matrix is accurate to $3.5\times10^{-9}$ at $k_Sh=0.2$,
+$5.9\times10^{-8}$ at $0.3$, $2.1\times10^{-6}$ at $0.5$ and $2.6\times10^{-4}$ at $1$, against quadrature
+that agrees with the package's series to $10^{-16}$; stopping at $(k_Sh)^4$ instead loses three orders of
+magnitude at $k_Sh=0.05$ and less than one at $k_Sh=1$. A discretisation with ten cells to the shear
+wavelength has $k_Sh=\pi/10\approx0.31$, where the truncation through $(k_Sh)^6$ leaves $8.2\times10^{-8}$. Beyond that, the next powers are in closed form like the
+first, from the same derivation, at a one-off cost that grows with the number of moments.
+
+\paragraph{What is not yet covered.} Two things. The contrast here is uniform in the cell; a graded contrast couples the
 even and odd unknowns and leaves only the operations that fix its gradient
 \citep{NestorCoupling2026}, so the reduction is weaker, though the moments are the same and the closed
 form carries over. And the field is linear; the quadratic cell of $90$ unknowns needs the moments of
@@ -381,7 +406,8 @@ cell \citep{NestorContinuum2026,NestorCoupling2026}, is to be condensed here fro
 The derivation and its checks are \path{scripts/derive_legendre_cell_dynamic.py}, which writes
 \path{data/self_moments_exact.pkl} (every moment, exact) and \path{data/self_blocks_irreps.txt} (every
 reduced entry, on the six constants), in the repository
-\url{https://github.com/tmnestor/MultipleScatteringCalculations}. The static blocks are
+\url{https://github.com/tmnestor/MultipleScatteringCalculations}. The cost of a sweep and the range of the
+truncated series are measured by \path{scripts/measure_legendre_cell_sweep.py}. The static blocks are
 \path{scripts/derive_graded_voxel_site_blocks.py}.
 
 \appendix
