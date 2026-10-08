@@ -3,7 +3,8 @@
 % Build: pdflatex fig_blocks.tex; the paper includes the PDF. Grey scale only.
 % One unit is one unknown. Left: the non-zero pattern of M - K Delta in the natural ordering (four functions
 % of nine components each), computed from the closed form at k_S h = 0.1. Right: block diagonal; each irreducible representation Gamma gives an n_Gamma x n_Gamma
-% block repeated d_Gamma times (n the multiplicity, d the dimension), even representations first.
+% block repeated d_Gamma times (n the multiplicity, d the dimension), even representations first; in the
+% blocks that hold a displacement vector its row and column are drawn lighter.
 \documentclass[border=2pt]{standalone}
 \input{fig_preamble}
 \begin{document}
@@ -33,13 +34,21 @@
   \begin{scope}[xshift=8.1cm]
     \draw[black!35, very thin] (0,0) rectangle (36,36);
     % name / size n / copies d / shade / first row / label row
-    \foreach \name/\n/\d/\shade/\start/\ly in {
-        A_{1g}/2/1/55/0/1, E_g/2/2/55/2/4.3, T_{1g}/1/3/55/6/7.6, T_{2g}/2/3/55/9/12,
-        T_{1u}/4/3/30/15/21, T_{2u}/2/3/30/27/28.6, A_{2u}/1/1/30/33/31.9, E_u/1/2/30/34/35.2} {
+    \foreach \name/\n/\d/\shade/\start/\ly/\disp in {
+        A_{1g}/2/1/55/0/1/1, E_g/2/2/55/2/4.3/1, T_{1g}/1/3/55/6/7.6/1, T_{2g}/2/3/55/9/12/1,
+        T_{1u}/4/3/30/15/21/1, T_{2u}/2/3/30/27/28.6/0, A_{2u}/1/1/30/33/31.9/0, E_u/1/2/30/34/35.2/0} {
       \foreach \c in {1,...,\d} {
         \pgfmathsetmacro{\lo}{\start + (\c-1)*\n}
         \pgfmathsetmacro{\hi}{\lo + \n}
         \fill[black!\shade] (\lo,\lo) rectangle (\hi,\hi);
+        % the block's displacement row and column (first index), in the blocks that hold one
+        \pgfmathtruncatemacro{\light}{\shade/3}
+        \ifnum\disp=1
+          \ifnum\n>1
+            \fill[black!\light] (\lo,\lo) rectangle (\hi,\lo+1);
+            \fill[black!\light] (\lo,\lo) rectangle (\lo+1,\hi);
+          \fi
+        \fi
         \draw[line width=0.3pt] (\lo,\lo) rectangle (\hi,\hi);
       }
       \pgfmathsetmacro{\mid}{\start + \n*\d/2}
@@ -55,7 +64,7 @@
       node[midway, left=3pt, font=\footnotesize, align=right] {odd\\$21$};
     \node[align=center, anchor=north] at (18,37.5)
       {$\bigoplus_\Gamma\bigl(\,\cdot\,\bigr)_\Gamma\otimes\mathbf I_{d_\Gamma}$\\[1pt]
-       \footnotesize blocks of at most $4\times4$};
+       \footnotesize blocks of at most $4\times4$; light: the displacement row and column};
   \end{scope}
 \end{tikzpicture}
 \end{document}
