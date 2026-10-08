@@ -80,8 +80,9 @@ $1$, $\pi$, $\sqrt2$, $\sqrt3$, $\ln(1+\sqrt2)$ and $\ln(2+\sqrt3)$, the last tw
 fundamental units of $\mathbb Q(\sqrt2)$ and $\mathbb Q(\sqrt3)$, and an odd power,
 which carries the radiation, is rational. The first of these is the radiation damping of a point force,
 recovered exactly. On the irreducible representations of the cube group the $36$ unknowns of the cell
-separate into blocks of at most four, and the $T$-matrix becomes a handful of closed-form matrices per
-power of $k_Sh$. Through $(k_Sh)^6$ the closed form reproduces the $T$-matrix computed by quadrature to
+separate into blocks of at most four, each inverted in closed form: the $T$-matrix is an explicit
+rational function of the contrast and of $k_Sh$, whose poles are written down, and whose static
+dilatational block is Eshelby's result for a sphere. Through $(k_Sh)^6$ the closed form reproduces the $T$-matrix computed by quadrature to
 $3.5\times10^{-9}$ at $k_Sh=0.2$, falling as $(k_Sh)^7$ as the next term predicts, and each of its $223$
 moments to $1.7\times10^{-15}$. Because the coefficients depend on neither the frequency, the cell size nor
 the medium, a frequency sweep integrates nothing at any frequency: the $T$-matrix costs $0.3$\,ms per frequency
@@ -411,6 +412,55 @@ dynamic correction is
 and likewise for $Q_2$ (the data file); $(k_Sh)^2$ times this is the leading change with frequency of
 the cell's dilatational self-interaction.
 
+\paragraph{Inversion in closed form.} The reduction matters because of what it does to the inverse in
+Eq.~\eqref{eq:t36}. A $36\times36$ inverse is computed numerically, one contrast and one frequency at a time;
+an inverse of order at most four is written down. On each representation the contrast is the same simple
+matrix whatever the cell's material, from Table~\ref{tab:vectors} and the contrast operator of
+\S\ref{sec:cell}:
+\begin{equation}\label{eq:deltagamma}
+\begin{gathered}
+  \bD_{T_{1g}}=\omega^2\Delta\rho,\qquad \bD_{A_{2u}}=\bD_{E_u}=2\Delta\mu,\qquad
+  \bD_{T_{2u}}=2\Delta\mu\,\bI_2,\\
+  \bD_{A_{1g}}=\operatorname{diag}\bigl(\omega^2\Delta\rho,\;3\Delta\lambda+2\Delta\mu\bigr),\qquad
+  \bD_{E_g}=\bD_{T_{2g}}=\operatorname{diag}\bigl(\omega^2\Delta\rho,\;2\Delta\mu\bigr),\\
+  \bD_{T_{1u}}=\omega^2\Delta\rho\oplus
+  \begin{pmatrix}\Delta\lambda+2\Delta\mu&2\Delta\lambda\\ \Delta\lambda&2\Delta\lambda+2\Delta\mu\end{pmatrix}
+  \oplus2\Delta\mu .
+\end{gathered}
+\end{equation}
+With $\mathbf X_\Gamma=\bN_\Gamma\bD_\Gamma$, Eq.~\eqref{eq:tgamma} is inverted by Cramer's rule,
+\begin{equation}\label{eq:cramer}
+  \bT_\Gamma=\frac{M_\Gamma\bD_\Gamma\operatorname{adj}(\bI-\mathbf X_\Gamma)}{\det(\bI-\mathbf X_\Gamma)},
+  \qquad\text{for instance}\qquad
+  (\bI-\mathbf X)^{-1}=\frac{1}{(1-X_{11})(1-X_{22})-X_{12}X_{21}}
+  \begin{pmatrix}1-X_{22}&X_{12}\\X_{21}&1-X_{11}\end{pmatrix}
+\end{equation}
+for a block of order two, and $M\Delta/(1-N\Delta)$ for a block of order one; the block of order four,
+$T_{1u}$, has a determinant of degree four in the contrast. Three things follow, none of which a numerical
+inverse gives.
+
+\emph{The $T$-matrix is an explicit function of the contrast.} Each entry of $\bT_\Gamma$ is a ratio of
+polynomials in $\Delta\lambda$, $\Delta\mu$ and $\omega^2\Delta\rho$, of degree at most $n_\Gamma$, with
+coefficients the entries of $\bN_\Gamma$, which carry the frequency through Eq.~\eqref{eq:tgamma} and nothing
+else of the material. A new contrast needs no new solve, and the derivatives of $\bT$ with respect to the
+contrast, which an inversion for the medium needs, are those of explicit rational functions.
+
+\emph{Its poles are written down.} $\bT_\Gamma$ is singular where $\det(\bI-\bN_\Gamma\bD_\Gamma)=0$, one
+condition per representation, explicit in the contrast; and the expansion of $(\bI-\mathbf X_\Gamma)^{-1}$
+in powers of the contrast, the Born series of the cell, converges exactly when the eigenvalues of the at most
+$4\times4$ matrix $\mathbf X_\Gamma$ lie inside the unit circle.
+
+\emph{Classical results appear as special cases.} In the static limit the uniform dilatation decouples
+($\omega^2\Delta\rho\to0$ removes the displacement row of $A_{1g}$), $N=-1/[3(\lambda+2\mu)]$, and with
+$D=3\Delta\lambda+2\Delta\mu=3\Delta K$, $K=\lambda+\tfrac23\mu$ the bulk modulus and $K'=K+\Delta K$,
+\begin{equation}\label{eq:eshelby}
+  T_{A_{1g}}=\frac{8h^3D}{1+D/[3(\lambda+2\mu)]}
+  =8h^3\,3\Delta K\,\frac{K+\tfrac43\mu}{K'+\tfrac43\mu},
+\end{equation}
+Eshelby's dilatational result for a sphere \citep{Eshelby1957}, with its pole at $K'=-\tfrac43\mu$; the
+closed form agrees with the numerical $\bT_{36}$ to $1.1\times10^{-15}$ (\S\ref{sec:checks}). The two shear channels $E_g$ and $T_{2g}$
+take the same form with the cube's constants of \citet{NestorCoupling2026} in place of the sphere's.
+
 \section{Checks}\label{sec:checks}
 
 Every step is checked against an evaluation that shares none of it
@@ -440,6 +490,7 @@ invariance of every representation's span under every $\bK_n$ & exact (no residu
 $\bT_{36}V_\Gamma=V_\Gamma\bT_\Gamma$, Eq.~\eqref{eq:tgamma}, worst over $\Gamma$, $k_Sh=0.05,0.1,0.2$ &
 $4.4\times10^{-13}$, $5.6\times10^{-11}$, $7.2\times10^{-9}$ \\
 static uniform dilatation & $-1/[3(\lambda+2\mu)]$ exactly \\
+static dilatational block of $\bT_{36}$ against Eshelby's sphere, Eq.~\eqref{eq:eshelby} & $1.1\times10^{-15}$ \\
 the $36$ static strain entries against \citet{NestorCoupling2026} & identical coefficients \\
 radiation at $n=1$ & $\mathrm{Im}\,\bG(0)$ exactly, Eq.~\eqref{eq:radiation} \\
 \bottomrule

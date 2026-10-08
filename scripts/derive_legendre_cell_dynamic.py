@@ -478,6 +478,21 @@ def main() -> int:
             worst = err
         print(f"   k_S h = {kh:<5}: T36 against the irrep blocks of the series, worst over irreps {err:.1e}")
     check("5c. T36 V = V T_Gamma for every irrep, to the truncation of the series", worst < 1e-8, f"{worst:.1e}")
+    # 6. the static dilatation in closed form is Eshelby's sphere result: T = 8 h^3 D / (1 + D / 3(lambda + 2 mu)),
+    #    D = 3 dlambda + 2 dmu = 3 dK, i.e. 8 h^3 3 dK (K + 4 mu / 3) / (K' + 4 mu / 3)
+    lam = REF.rho * (REF.alpha**2 - 2 * REF.beta**2)
+    om = 1e-3
+    delta = np.zeros((4, 9, 9), dtype=complex)
+    delta[0] = contrast_operator(dlam, dmu, drho, om)
+    t36 = single_site_t36(1.0, delta, near_block((0, 0, 0), 1.0, om, REF, n_q=14))
+    v = reduced["A1g"]["V"]
+    t_a1g = np.linalg.solve(v.T @ v, v.T @ t36 @ v)[1, 1].real
+    d_bulk = 3 * dlam + 2 * dmu
+    k_bulk = lam + 2 * REF.mu / 3
+    eshelby = 8.0 * 3 * (d_bulk / 3) * (k_bulk + 4 * REF.mu / 3) / (k_bulk + d_bulk / 3 + 4 * REF.mu / 3)
+    err = abs(t_a1g / eshelby - 1)
+    check("6. static uniform dilatation of T36 equals Eshelby's sphere result in closed form", err < 1e-12,
+          f"{err:.1e}")
     write_blocks(reduced, n_max)
 
     print(f"{sum(ok)}/{len(ok)} checks passed")
