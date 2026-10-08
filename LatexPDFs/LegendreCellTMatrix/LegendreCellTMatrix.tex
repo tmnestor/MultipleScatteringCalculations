@@ -636,14 +636,16 @@ is stated by the next term, which is itself in closed form.
 \paragraph{A frequency sweep with no integral at any frequency.} The single-site $T$-matrix of the linear
 Legendre cell is now known in closed form at every power of the frequency, and what that buys is a sweep. The
 coefficients $\bK_n$ depend on neither the frequency, the cell size nor the medium: they are computed once,
-in exact arithmetic, and stored. Each frequency then takes two steps: evaluate the self block as the
-polynomial $\sum_n(k_Sh)^n\bK_n$, scaled to the cell by Eq.~\eqref{eq:kseries}; then obtain the $T$-matrix
-from Eq.~\eqref{eq:t36} with one $36\times36$ solve, or with eight solves of at most $4\times4$, one per
-irreducible representation. Nothing singular is
-integrated at any frequency. Measured on one machine (\path{scripts/measure_legendre_cell_sweep.py}),
-one frequency costs $0.29$\,ms by the closed form against $2.0$\,s by quadrature of the singular self
-integrals, a factor of about $7000$, and against $16$\,ms by the package's numerical series of the same
-moments. The one-off cost of the closed form, the $223$ exact moments and their assembly and reduction
+in exact arithmetic, and stored. Each frequency then takes two steps: evaluate each block $\bN_\Gamma$ as a
+polynomial in $k_Sh$ with stored coefficients (Eq.~\eqref{eq:kseries} reduced to the representation); then evaluate each block's $T$-matrix
+from its closed-form inverse, Eqs.~\eqref{eq:tgamma} and~\eqref{eq:schurcomplement}. Nothing singular is
+integrated and nothing larger than $4\times4$ is inverted at any frequency. Measured on one machine
+(\path{scripts/measure_legendre_cell_sweep.py}), one frequency costs $0.8$\,ms by the eight block formulas
+against $2.0$\,s by quadrature of the singular self integrals, a factor of about $2400$, and against
+$16$\,ms by the package's numerical series of the same moments. (Assembling the blocks into the full
+$36\times36$ matrix and solving it with a library routine takes $0.29$\,ms: at this size the cost is
+interpreter overhead, not arithmetic, and the gain of the block formulas is the explicit dependence on the
+contrast and the frequency, not speed.) The one-off cost of the closed form, the $223$ exact moments and their assembly and reduction
 through $(k_Sh)^6$, is $30$\,s on four cores, paid once for every cell, frequency and medium; against
 quadrature it is recovered after about fifteen frequencies, and a sweep of a thousand frequencies that
 quadrature would take half an hour to tabulate costs half a minute in all. The coupling between cells has
