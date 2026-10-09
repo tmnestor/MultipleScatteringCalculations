@@ -67,11 +67,10 @@
 A volume-integral method for elastic waves divides a heterogeneous medium into cells, each with a
 single-site $T$-matrix that maps the field incident on it to the sources it radiates. The governing
 equation is written in displacement; how the strain inside a cell is represented is a modelling
-decision, and the original approximation takes it as uniform. We take the cell whose displacement and
-strain are independent Legendre expansions over the cube, tested against the same polynomials (a Galerkin
-cell), because of the representations in use it gives the most accurate coupling between cells: its
-interactions are exact double integrals over both cells, where an expansion about the cell's centre treats
-the receiving cell as a point. For the linear Legendre cell with a uniform contrast we give the single-site
+decision, and the original approximation takes it as uniform. We expand the displacement and the strain
+independently in Legendre polynomials over the cube and test against the same polynomials: a Galerkin
+cell. We choose it because it couples cells most accurately. Its interactions are exact double integrals
+over both cells, whereas an expansion about the cell's centre treats the receiving cell as a point. For the linear Legendre cell with a uniform contrast we give the single-site
 $T$-matrix in closed form at every power of the wavenumber. Its self-interaction is a power series,
 $\mathbf K=\sum_n(k_Sh)^n\mathbf K_n$ with $h$ the half-width, whose coefficients $\mathbf K_n$ are moments of
 powers of the distance over the cell and depend on neither the frequency, the cell size nor the medium.
