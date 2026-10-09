@@ -102,7 +102,11 @@ def main() -> int:
     a = gs.RADIUS
     na, n_field, _, n_source = field_sizes(p, p)
     omegas = (np.arange(nw) + 1) * kmax * REF.beta / a / nw
-    slow = np.linspace(0.0, 1.5 / REF.beta, n_p)
+    # cell-centred samples, so that no slowness falls on a branch point (p = 1/alpha or 1/beta, where k_z = 0
+    # and the spectrum's 1/k_z is singular; the singularity is integrable, the sample is not)
+    slow = (np.arange(n_p) + 0.5) * 1.5 / REF.beta / n_p
+    for pb in (1 / REF.alpha, 1 / REF.beta):
+        assert np.abs(slow - pb).min() > 0.1 * 1.5 / REF.beta / n_p, "a slowness sample falls on a branch point"
 
     def prof(pos) -> float:
         return float(gs.smoothstep(np.array([np.linalg.norm(pos)]))[0])
