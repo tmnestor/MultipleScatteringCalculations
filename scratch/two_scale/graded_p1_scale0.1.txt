@@ -1,1 +1,7 @@
 two-scale Galerkin: p = 1, r = 1, k_S a = 0.5, contrast x 0.1, graded sphere
+  n  4 ->  8: coarse cells 64, fine 512;  y_h = S x_H + e_med + e_fld to 1.2e-13,  far-field split to 8.0e-14
+     |S^T r_h| / |S^T b_h| = 3.03e-06,  |r_fld| / |b_h| = 4.69e-04
+     |F_h - F_H| = 2.796e-05 of |F_h|:  medium solve 4.220e-06, field solve 2.601e-05, medium radiation 1.972e-05
+     local estimate (block-diagonal A_h per child): medium 4.222e-06, field 2.601e-05; error of the estimated F_h - F_H 2.23e-04 of it
+     two-level estimate (local + one coarse solve): medium 4.221e-06, field 2.601e-05; error of the estimated F_h - F_H 2.75e-04 of it
+     against the exact sphere: coarse 3.057e-05, fine 2.282e-06 (order 3.74);  F_H - F_exact = F_H - F_h to 7.47e-02 of it
