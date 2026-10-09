@@ -111,6 +111,41 @@ def far(centres, grid_idx, h, omega, delta, psi, p, r, dirs, dist):
     return np.concatenate([up, us])  # P amplitudes over the directions, then S
 
 
+def far_cells(centres, grid_idx, h, omega, delta, psi, p, r, dirs, n_gauss=6):
+    """Far field at r = 1 of each cell's sources separately, shape (cells, 2 * directions * 3)."""
+    from cubic_scattering.graded_voxel.farfield import _node_sources
+    from cubic_scattering.sphere_scattering import _voigt_to_tensor
+
+    na, n_field, _, _ = field_sizes(p, r)
+    full = np.zeros((len(centres), n_field, 9), dtype=complex)
+    full[:, :na] = psi
+    res = GradedVoxelResult(centres, grid_idx, h, omega, REF, delta, full, p, r)
+    pts, srcs = _node_sources(res, n_gauss)
+    g = n_gauss**3
+    forces = srcs[:, :3]
+    sig = np.array([_voigt_to_tensor(v[3:]) for v in srcs])
+    k_p, k_s = omega / REF.alpha, omega / REF.beta
+    out_p, out_s = [], []
+    for rh in dirs:
+        proj = pts @ rh
+        gp = np.exp(-1j * k_p * proj) / (4 * np.pi * REF.rho * REF.alpha**2)
+        gsh = np.exp(-1j * k_s * proj) / (4 * np.pi * REF.rho * REF.beta**2)
+        sr = sig @ rh
+        qp = (forces @ rh + 1j * k_p * (sr @ rh)) * gp
+        out_p.append((qp.reshape(-1, g).sum(1))[:, None] * rh[None, :])
+        qs = forces + 1j * k_s * sr
+        qs = (qs - np.outer(qs @ rh, rh)) * gsh[:, None]
+        out_s.append(qs.reshape(-1, g, 3).sum(1))
+    return np.concatenate([np.stack(out_p, 1), np.stack(out_s, 1)], 1).reshape(len(centres), -1)
+
+
+def ranking(est, true, frac=0.2):
+    """Share of the true total |eta| held by the top `frac` of cells chosen by `est`, and by the best choice."""
+    k = max(1, int(round(frac * len(true))))
+    t = np.abs(true)
+    return t[np.argsort(-np.abs(est))[:k]].sum() / t.sum(), t[np.argsort(-t)[:k]].sum() / t.sum()
+
+
 def main() -> int:
     args = sys.argv[1:]
     opts = dict(a[2:].split("=") for a in args if a.startswith("--") and "=" in a)
@@ -209,6 +244,33 @@ def main() -> int:
         print(f"     two-level estimate (local + one coarse solve): medium "
               f"{np.abs(F['med_2l']).max() / scale_f:.3e}, field {np.abs(F['fld_2l']).max() / scale_f:.3e}; "
               f"error of the estimated F_h - F_H {tl:.2e} of it", flush=True)  # fmt: skip
+        # the share of each coarse cell: its children's error sources plus its own medium-detail radiation
+        def per_parent(cells_fine):
+            return sum(cells_fine[child[d]] for d in range(8))
+
+        rad_cells = per_parent(far_cells(cf, gf, h, omega, delta_f, psi_H, p, r, dirs)) - far_cells(
+            cH, gH, H, omega, res_h.delta, xH, p, r, dirs)
+        eta_true = per_parent(far_cells(cf, gf, h, omega, delta_f, e_med + e_fld, p, r, dirs)) + rad_cells
+        eta_est = per_parent(far_cells(cf, gf, h, omega, delta_f, two_level(r_med) + two_level(r_fld), p, r, dirs)) + rad_cells
+        # the far field of all cells, summed over the 2 x directions x 3 components: sum of shares = F_h - F_H
+        sum_err = np.abs(eta_true.sum(0) - diff).max() / np.abs(diff).max()
+        nt, ne = np.linalg.norm(eta_true, axis=1), np.linalg.norm(eta_est, axis=1)
+        shares = np.abs(ne - nt).sum() / nt.sum()
+        # a rule on the medium alone: each coarse cell's contrast detail |Delta_h - Delta_H|, from the children's
+        # projected contrast against the parent's re-expanded on them (Frobenius norm over the 9 x 9 operator)
+        cfull = [field_reexpansion(len(res_h.delta[0]), 0.5, tuple(float(v) for v in sv)) for sv in CHILD_SHIFTS]
+        med = np.zeros(nH)
+        for d in range(8):
+            dd = delta_f[child[d]] - np.einsum("ab,nbij->naij", cfull[d], res_h.delta)
+            med += np.einsum("naij->n", np.abs(dd) ** 2)
+        med = np.sqrt(med)
+        top_est, top_best = ranking(ne, nt)
+        top_med, _ = ranking(med, nt)
+        conc = np.searchsorted(np.cumsum(np.sort(nt)[::-1]) / nt.sum(), 0.9) + 1
+        print(f"     cell shares: sum = F_h - F_H to {sum_err:.1e}; two-level shares off by {shares:.2e} in total; "
+              f"90% of the error in {conc} of {nH} cells", flush=True)  # fmt: skip
+        print(f"     top 20% of cells hold {top_best:.3f} of the error; chosen by the two-level indicator {top_est:.3f}, "
+              f"by the medium's detail alone {top_med:.3f}", flush=True)  # fmt: skip
         if exact is not None:
             fh = far(cf, gf, h, omega, delta_f, y_h, p, r, obs / gs.R_FAR, gs.R_FAR)
             fH = far(cH, gH, H, omega, res_h.delta, xH, p, r, obs / gs.R_FAR, gs.R_FAR)
