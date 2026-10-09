@@ -67,7 +67,8 @@
 A volume-integral method for elastic waves divides a heterogeneous medium into cells, each with a
 single-site $T$-matrix that maps the field incident on it to the sources it radiates. The governing
 equation is written in displacement; how the strain inside a cell is represented is a modelling
-decision, and the original approximation takes it as uniform. We expand the displacement and the strain
+decision. The classical approximation, of Eshelby's equivalent-inclusion method and of the coupled-dipole
+method for elastic waves, takes it as uniform in the cell. We expand the displacement and the strain
 independently in Legendre polynomials over the cube and test against the same polynomials: a Galerkin
 cell. We choose it because it couples cells most accurately. Its interactions are exact double integrals
 over both cells, whereas an expansion about the cell's centre treats the receiving cell as a point. For the degree-one Legendre cell, whose expansions hold the constant and the three linear
@@ -110,7 +111,7 @@ the solution, beyond its coupling to the others, is in its $T$-matrix.
 
 How the field inside a cell is represented decides what that $T$-matrix is. The governing equation is
 written in displacement, and the strain enters it only through the stiffness contrast; how the strain is
-represented within a cell is therefore a modelling decision. The original approximation, of the
+represented within a cell is therefore a modelling decision. The classical approximation, of the
 equivalent-inclusion method \citep{Eshelby1957,Mura1987} and of the coupled-dipole method for elastic
 waves \citep{Nestor1996}, takes it as uniform. That approximation can be relaxed in two ways. In the
 first, the displacement is expanded about the cell's centre and the strain derived from it; the equation
@@ -183,7 +184,7 @@ a cell by testing against the cell's own polynomials. This paper is about the th
 \toprule
 strain model & unknowns of a cell & strain and displacement & test \\
 \midrule
-uniform (the original approximation) & displacement and strain at the centre & strain uniform & at the
+uniform (the classical approximation) & displacement and strain at the centre & strain uniform & at the
 centre \\
 derived & $\partial^Pu$ at the centre, $|P|\le\ell$ & strain the gradient of a Taylor displacement, degree
 $\ell-1$ & the equation and its derivatives at the centre \\
