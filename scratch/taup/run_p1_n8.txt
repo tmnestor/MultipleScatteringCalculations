@@ -1,8 +1,1 @@
-Traceback (most recent call last):
-  File "/home/user/MultipleScatteringCalculations/scripts/taup_graded_sphere.py", line 185, in <module>
-    sys.exit(main())
-             ~~~~^^
-  File "/home/user/MultipleScatteringCalculations/scripts/taup_graded_sphere.py", line 109, in main
-    assert np.abs(slow - pb).min() > 0.1 * 1.5 / REF.beta / n_p, "a slowness sample falls on a branch point"
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: a slowness sample falls on a branch point
+tau-p, graded sphere: cells of degree 1, 8 across; 128 frequencies to k_S a = 3.0; 60 slownesses to 1.5/beta; receivers 1.5 a above the centre
