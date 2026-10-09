@@ -181,6 +181,16 @@ def main() -> int:
         F["rad"] = far(cf, gf, h, omega, delta_f, psi_H, p, r, dirs, 1.0) - F["H"]
         F["med_loc"] = far(cf, gf, h, omega, delta_f, op.local_solve(r_med), p, r, dirs, 1.0)
         F["fld_loc"] = far(cf, gf, h, omega, delta_f, op.local_solve(r_fld), p, r, dirs, 1.0)
+        # two-level estimate: the local inverse for the detail, one coarse solve for the smooth remainder,
+        #   e2 = L r + S A_H^-1 S^T (r - A_h L r)        (no fine solve; one fine matvec)
+        op_H = GridOperator(cH, gH, H, res_h.delta, n, omega, p, r)
+
+        def two_level(rv):
+            lr = op.local_solve(rv)
+            return lr + prolong(op_H.solve(restrict(rv - op.apply(lr))))
+
+        F["med_2l"] = far(cf, gf, h, omega, delta_f, two_level(r_med), p, r, dirs, 1.0)
+        F["fld_2l"] = far(cf, gf, h, omega, delta_f, two_level(r_fld), p, r, dirs, 1.0)
         diff = F["h"] - F["H"]
         scale_f = np.abs(F["h"]).max()
         ident = np.abs(diff - F["med"] - F["fld"] - F["rad"]).max() / scale_f
@@ -195,6 +205,10 @@ def main() -> int:
         loc = np.abs(F["med_loc"] + F["fld_loc"] + F["rad"] - diff).max() / np.abs(diff).max()
         print(f"     local estimate (block-diagonal A_h per child): medium {rel['med_loc']:.3e}, field "
               f"{rel['fld_loc']:.3e}; error of the estimated F_h - F_H {loc:.2e} of it", flush=True)  # fmt: skip
+        tl = np.abs(F["med_2l"] + F["fld_2l"] + F["rad"] - diff).max() / np.abs(diff).max()
+        print(f"     two-level estimate (local + one coarse solve): medium "
+              f"{np.abs(F['med_2l']).max() / scale_f:.3e}, field {np.abs(F['fld_2l']).max() / scale_f:.3e}; "
+              f"error of the estimated F_h - F_H {tl:.2e} of it", flush=True)  # fmt: skip
         if exact is not None:
             fh = far(cf, gf, h, omega, delta_f, y_h, p, r, obs / gs.R_FAR, gs.R_FAR)
             fH = far(cH, gH, H, omega, res_h.delta, xH, p, r, obs / gs.R_FAR, gs.R_FAR)

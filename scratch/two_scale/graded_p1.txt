@@ -1,0 +1,1 @@
+two-scale Galerkin: p = 1, r = 1, k_S a = 0.5, contrast x 1.0, graded sphere
