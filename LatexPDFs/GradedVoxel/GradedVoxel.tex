@@ -2,7 +2,7 @@
 % RETIRED, 3 October 2026. This companion is no longer maintained and is not part of any release.
 % Its content has moved:
 %   - the three-dimensional voxel solver (blocks, s-form, cube-group orbits, FFT) and its weak-contrast
-%     orders: the continuum-limit paper (LatexPDFs/ContinuumLimit/), appendix on the voxel solver;
+%     orders: the error paper (LatexPDFs/PolynomialVoxelError/), appendix on the voxel solver;
 %   - fourth order on the graded sphere: the same paper, sections 10 and 11;
 %   - the projection-error law in three dimensions, the quadratic cells and the second-order term T2:
 %     the error paper (LatexPDFs/PolynomialVoxelError/; its octree material is in LatexPDFs/OctreeRefinementArchive/), whose uniform grids are its depth-zero case;
@@ -102,7 +102,7 @@ consistently with the coupling kernel; a factor of two there is invisible at Bor
 A voxel scheme for elastic scattering replaces a heterogeneous body by cubic cells, each carrying a
 single-site $T$-matrix and coupled through the background Green's tensor. In a layer of such cells the
 scheme converges at second order when each cell carries a uniform internal field, and a cell that also
-carries the first moment of its field converges at fourth order \citep{NestorContinuum2026}. That paper
+carries the first moment of its field converges at fourth order \citep{NestorError2026}. That paper
 also showed that where the medium varies within a cell, a contrast sampled as constant caps every
 voxel at second order, and that the rule for a cell whose field has Legendre degree $p$ and whose
 contrast has degree $r$ is $\min(2p+2,2r+2)$. All of that is one-dimensional, or three-dimensional only
@@ -129,7 +129,7 @@ engineering strain $\boldsymbol{\varepsilon}$ in Voigt order $(zz,xx,yy,2xy,2zy,
 \emph{independent} unknown, not the gradient of $\mathbf{u}$. A basis whose strain is derived from its
 displacement leaves a spurious source at every face between cells, because each cell's projected
 displacement jumps across the face; in a layer that scheme converges at second or third order however
-rich the basis \citep{NestorContinuum2026}. The quadratic 27-mode cube $T$-matrix is of that kind and is
+rich the basis \citep{NestorError2026}. The quadratic 27-mode cube $T$-matrix is of that kind and is
 not considered further.
 
 The state is expanded in the Legendre polynomials of degree at most one,
@@ -151,7 +151,7 @@ of degree at most two,
   \bD(\boldsymbol{\xi})\,L_b(\boldsymbol{\xi})=\sum_{c=0}^{9}\bE_{cb}\,m_c(\boldsymbol{\xi}),
 \end{equation}
 where $\bE_{cb}$ collects the $9\times9$ coefficients: the Legendre linearisation of the one-dimensional
-construction \citep{NestorContinuum2026}, with no new kernel object. The Lippmann--Schwinger equation
+construction \citep{NestorError2026}, with no new kernel object. The Lippmann--Schwinger equation
 $\psi=\psi^0+\int\bP(\mathbf{x}-\mathbf{x}')\,\bD\psi\,\dd^3x'$, with $\psi^0$ the incident state and
 $\bP$ the $9\times9$ point propagator $[[\mathbf{G},\mathbf{C}],[\mathbf{H},\mathbf{S}]]$ built from the
 elastodynamic Green's tensor and its derivatives, is tested with each $L_a$ over each cell (Galerkin).
@@ -297,7 +297,7 @@ source $\langle L_a,(\mathbf{g}\cdot\boldsymbol{\xi})\psi^0\rangle$ needs the in
 the incident wavenumber: measured slopes $2.0001$ and $2.0004$ for $kh=0.025\to0.05\to0.1$, where it
 reaches $8.9\times10^{-5}$ at $gh=0.2$ (these and the parity numbers: \path{scripts/measure_graded_voxel_site.py}).
 It is the single site's view of the rule
-$\min(2p+2,2r+2)$ for a field of degree $p$ and a contrast of degree $r$ \citep{NestorContinuum2026}.
+$\min(2p+2,2r+2)$ for a field of degree $p$ and a contrast of degree $r$ \citep{NestorError2026}.
 
 \paragraph{An isolated cube has an error floor that refinement in $k$ does not remove.} In the static
 limit a cube of contrast $\Delta\mathbf{C}$ under a uniform remote strain has the internal strain
@@ -372,7 +372,7 @@ polynomials instead of onto $W$: one derivative onto each cell, each move either
 polynomial or producing a face term, which leaves $1/r$ kernels over cell$\times$cell, face$\times$cell
 and face$\times$face, all absolutely convergent. Built in Mathematica on its own (\path{GradedVoxel_WeakKernel.wl}),
 this reproduces the sum rule and the Coulomb energy, and, as the source cell shrinks to a point, the
-distributional single average of the moment engine \citep{NestorContinuum2026}; all to $10^{-14}$ or
+distributional single average of the cube's moments (\path{Mathematica/CubeMomentCore.wl}); all to $10^{-14}$ or
 better.
 
 \section{The moment integrals in closed form}\label{sec:moments}
@@ -462,7 +462,7 @@ $r<a/2$ with the contrast $\Delta\lambda=2$\,GPa, $\Delta\mu=1$\,GPa, $\Delta\rh
 background $\alpha=5$\,km\,s$^{-1}$, $\beta=3$\,km\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$. Across the shell
 $a/2<r<a$ the contrast is multiplied by the smoothstep $10x^3-15x^4+6x^5$, $x=(a-r)/(a/2)$, so it vanishes
 like $(a-r)^3$ at the surface: there is no staircase. Its per-order $T$-matrices are exact (Takeuchi--Saito
-integration, two implementations agreeing to $2\times10^{-11}$) \citep{NestorContinuum2026}. The incident
+integration, two implementations agreeing to $2\times10^{-11}$) \citep{NestorError2026}. The incident
 wave is a P wave along $z$, at $k_Sa=0.5$ and $1$.
 
 \paragraph{Arms and measurement.} At the same cell size, on a grid of $n^3$ cells across the bounding
@@ -710,7 +710,7 @@ or on the smoothness of the profile. The error of the multiple-scattering term i
 static quantity three orders of magnitude above the Born term's error at these frequencies.
 
 \paragraph{Galerkin and collocation.} With the lattice couplings then available, a uniform-field Galerkin
-cell was measured several times worse than the collocation cell \citep{NestorContinuum2026}. Here, with every
+cell was measured several times worse than the collocation cell \citep{NestorError2026}. Here, with every
 block computed exactly, the uniform-field Galerkin voxel is comparable to the collocation voxel at second
 order, and the graded Galerkin voxel is far better. The double average is the route to fourth order when
 the coupling is exact.

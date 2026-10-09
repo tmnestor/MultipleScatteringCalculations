@@ -104,7 +104,7 @@ cells of degree one.
 % =====================================================================================================
 % Paper 2 of three: 1. the single-site T-matrix of a Legendre cell (LegendreCellTMatrix), 2. the coupling
 % between cells (this paper), 3. the error of polynomial voxels (PolynomialVoxelError). The single cell and the
-% Cartesian multipole hierarchy were moved out on 9 October 2026; the graded-sphere series was recomputed
+% Cartesian multipole hierarchy (superseded by the Legendre expansion, archived) were moved out on 9 October 2026; the graded-sphere series was recomputed
 % with Legendre cells (scripts/measure_graded_sphere_legendre_series.py).
 % =====================================================================================================
 
@@ -868,7 +868,7 @@ early at low frequency: the touching blocks' imaginary part is then wrong by $7\
 $k_Sh=10^{-4}$, and the whole block by $10^{-12}$, and the imaginary part violates its low-frequency law,
 $O(k)$ with an $O(k^3)$ correction, which the rule above preserves.
 
-\paragraph{The sweep.} On the grid of the graded sphere of \citet{NestorContinuum2026} ($n$ cells across a
+\paragraph{The sweep.} On the grid of the graded sphere of \citet{NestorError2026} ($n$ cells across a
 sphere of radius $a$), all the blocks of one frequency were formed for the Legendre cell with a field and a contrast of degree
 one, at $256$
 frequencies $k_Sa=0.5\,j/256$. The cost per frequency was timed at $j=1$, $64$, $160$ and $256$, and the
@@ -923,7 +923,7 @@ natural structure, and its coupling blocks are those of this paper. That is an o
 The frequency-independent coefficients make possible something that a quadrature at each frequency does
 not: the scattering of a cell model expanded in powers of the frequency, each power obtained on its own
 and exactly, and compared power by power with the exact body's. The body is the graded sphere of
-\citet{NestorContinuum2026}: radius $a=10$\,m, a homogeneous core of radius $a/10$, and a shell across which the
+\citet{NestorError2026} with its core reduced: radius $a=10$\,m, a homogeneous core of radius $a/10$, and a shell across which the
 contrast ($\Delta\lambda=2$\,GPa, $\Delta\mu=1$\,GPa, $\Delta\rho=100$\,kg\,m$^{-3}$, in the background
 $\alpha=5000$\,m\,s$^{-1}$, $\beta=3000$\,m\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$) falls to zero with the
 smoothstep profile $10x^3-15x^4+6x^5$, $x$ the fraction of the shell measured from the surface, so that a

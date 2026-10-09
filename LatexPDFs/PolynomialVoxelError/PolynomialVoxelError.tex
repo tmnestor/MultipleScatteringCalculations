@@ -188,7 +188,7 @@ factor vanishes on the reciprocal lattice (the tiling identity, \S\ref{sec:tilin
 incidence the lattice kernel is in closed form with no lattice sum. (b) \emph{No polarisability to
 choose.} The polarisability, a modelling choice in the coupled-dipole method, is here a derived object:
 the moments of the Green's tensor over the cube, taken as distributions, are in closed form
-\citep{NestorContinuum2026}, and the self term the single site carries is the one the averaged kernel
+\citep{NestorLegendre2026}, and the self term the single site carries is the one the averaged kernel
 omits, so the discrete system is a collocation of the continuum equation (\S\ref{sec:tiling}). (c) \emph{The elastic state.} A voxel
 carries a force (through its density contrast) and a moment (through its stiffness contrast), so its
 state has nine components, displacement and strain, the coupling is a $9\times9$ tensor, and the single
@@ -592,7 +592,7 @@ depolarisation \citep{Chiu1977,Nozaki2001} to machine precision.
 \paragraph{The collocation scheme.} The simplest voxel takes its internal field as uniform. Its
 single-site $T$-matrix is then the uniform-strain closure $\bT=d^3\,\bD\bigl(\bI-\bS_{\text{self}}\bD\bigr)^{-1}$,
 with $\bS_{\text{self}}$ the nine-component self term of the cube, whose moments of the Green's tensor are
-in closed form \citep{NestorContinuum2026}; for internal state $e$ the voxel's own field at its centre is
+in closed form (\nb{Mathematica/CubeMomentCore.wl}); for internal state $e$ the voxel's own field at its centre is
 $\bS_{\text{self}}\bD\,e$, and $e=\psi+\bS_{\text{self}}\bD e$.
 With the kernel \eqref{eq:exactkernel} the self term cancels. Substituting
 $\psi=(\bI-\bS_{\text{self}}\bD)e$ into Eq.~\eqref{eq:foldylax},
@@ -609,7 +609,7 @@ $\bS_{\text{self}}$ at all.
 
 The package's cube $T$-matrix is this closure statically, to $2\times10^{-5}$ at $k_Sh=0.01$, and departs
 dynamically by about $0.25(kh)^2$ through its far-field form-factor corrections
-\citep{NestorContinuum2026}; by Eq.~\eqref{eq:collocation} that departure cannot enter the closure scheme.
+(\nb{ContinuumLimit\_CubeT.wl}); by Eq.~\eqref{eq:collocation} that departure cannot enter the closure scheme.
 
 \section{Convergence, and the closed-form error}\label{sec:convergence}
 
@@ -1070,17 +1070,12 @@ background and for every wave type (Table~\ref{tab:obliquelaw}).
 
 \section{Galerkin cells in three dimensions}\label{sec:cells3d}
 
-\paragraph{Which cells.} The single site of a cube can also be derived from a hierarchy in the gradients
-of the field, whose coefficients are moments of the Green's tensor in closed form, and built into a voxel
-scheme collocated at the centres of the cells \citep{NestorContinuum2026}. The cells here are the other
-kind, the Legendre voxels of \S\ref{sec:fourth} on a cubic grid (Appendix~\ref{app:solver}), which are
-Galerkin: each holds the $L^2$ projection
-of the field and of the contrast onto its own polynomials. Two of the results below rest on that. The
-term of first order needs no solve because a Galerkin cell holds the projection of the incident wave
-(\S\ref{sec:born}); and the second term is governed by the projection error of the medium because the
-cells hold its $L^2$ projection (\S\S\ref{sec:rest}--\ref{sec:higher}). Cells of the hierarchy hold
-Taylor coefficients matched at their centres instead, and would need a first-order term and an error
-law of their own, which are not derived here.
+\paragraph{Which cells.} The cells of Part~II are the Legendre voxels of \S\ref{sec:fourth} on a cubic grid
+(Appendix~\ref{app:solver}), whose single site is that of \citet{NestorLegendre2026}. They are Galerkin:
+each holds the $L^2$ projection of the field and of the contrast onto its own polynomials. Two of the
+results below rest on that. The term of first order needs no solve because a Galerkin cell holds the
+projection of the incident wave (\S\ref{sec:born}); and the second term is governed by the projection
+error of the medium because the cells hold its $L^2$ projection (\S\S\ref{sec:rest}--\ref{sec:higher}).
 
 \paragraph{Cells.} The body is covered by cubes: cell $\ell$ has centre $\bx_\ell$ and half-width $h_\ell$
 (side $d_\ell=2h_\ell$). The tests below use uniform grids, $h_\ell=h$; nothing in the error law requires
@@ -1807,11 +1802,11 @@ first-moment voxel in a full three-dimensional solver, where the gradient channe
 the evanescent lattice orders (\S\ref{sec:fourth}) and the tiling identity holds only to
 $O(k_\parallel h)$. The smoothly graded sphere of \S\ref{sec:sphere} shows the mean-only
 voxel converging at second order on a laterally heterogeneous body against an exact solution, and the
-first-moment voxel converges at fourth order there \citep{NestorContinuum2026}.
+first-moment voxel converges at fourth order there \citep{NestorCoupling2026}.
 A contrast that varies within a cell, which \S\ref{sec:hetero} shows is needed beyond second order in a
 smoothly varying medium, has a further consequence in three dimensions: its linear part is odd about
 the cell's centre, so it couples the single site's uniform-field and first-moment blocks, which parity
-keeps apart for a homogeneous cube \citep{NestorContinuum2026}. A graded voxel therefore needs at least the
+keeps apart for a homogeneous cube \citep{NestorLegendre2026}. A graded voxel therefore needs at least the
 first-moment block; that voxel is the degree-one cell of Part~II (\S\ref{sec:cells3d}). The numerical evidence is at moderate, physically typical contrasts (up to
 $15\%$ in density and moduli) and at $k_Sh\le0.3$, the range in which the single-site $T$-matrix is
 validated; the closed forms are first order in the contrast, and the departures from them at the

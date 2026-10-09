@@ -96,8 +96,9 @@ against $2$\,s by quadrature, after a one-off derivation of $30$\,s.
 % DRAFT STATUS (7 October 2026). Written from the derivation in scripts/derive_legendre_cell_dynamic.py,
 % whose checks all pass, and from the single-cell section of the coupling paper (Paper 2, sec:site and
 % app:blocks), which this paper takes over. Scope as planned in docs/2026-10-07-three-paper-split-plan.md
-% (decision D7). To come: the graded contrast in the cell; the degree-two cell; the comparison with the
-% collocated (hierarchy) single site, condensed from the earlier Paper 1; declarations as in Papers 1-2.
+% (decision D7). To come: the graded contrast in the cell; the degree-two cell. The Cartesian multipole
+% hierarchy (expansion about the centre) is superseded by the Legendre expansion and archived in
+% LatexPDFs/CartesianMultipoleHierarchyArchive/.
 % =====================================================================================================
 
 \section{Introduction}\label{sec:intro}
@@ -144,12 +145,11 @@ How the field inside a cell is represented decides what that $T$-matrix is. The 
 written in displacement, and the strain enters it only through the stiffness contrast; how the strain is
 represented within a cell is therefore a modelling decision. The classical approximation, of the
 equivalent-inclusion method \citep{Eshelby1957,Mura1987} and of the coupled-dipole method for elastic
-waves \citep{Nestor1996}, takes it as uniform. That approximation can be relaxed in two ways. In the
-first, the displacement is expanded about the cell's centre and the strain derived from it; the equation
-and its derivatives are imposed at the centre, which is natural for a single scatterer, whose $T$-matrix is
-then a property of the body alone \citep{NestorContinuum2026}. In the second, the strain is an unknown in
-its own right, with its own polynomial expansion over the cell, and the equation is tested against the
-cell's polynomials (a Galerkin cell). Which strain a tiling of cells needs is measured on a layer, which has an exact
+waves \citep{Nestor1996}, takes it as uniform. That approximation is relaxed here by expanding the field in
+each cell in Legendre polynomials and testing the equation against the same polynomials (a Galerkin cell).
+The strain can then be represented in two ways: as the derivative of each cell's displacement polynomial,
+or as an unknown in its own right, with its own Legendre expansion over the cell. Which strain a tiling of
+cells needs is measured on a layer, which has an exact
 solution (Table~\ref{tab:strainlayer}). Both schemes there are Galerkin, with the displacement a polynomial
 of degree $p$ in each cell; they differ only in the strain. The error in the reflected wave is followed as
 the cells are refined, and its order is the power of the cell size $h$ at which it falls. With the strain
@@ -158,12 +158,8 @@ $p=1$, $2$ and $3$. With the strain taken as the derivative of each cell's displ
 only as $h^2$, $h^2$ and $h^4$, so that raising the degree from one to two gains nothing.
 
 This paper takes the second way, the Galerkin cell whose strain is an independent unknown expanded in
-Legendre polynomials, because it gives the more accurate representation of the coupling between cells. Its interactions are exact double integrals over both cells, which are evaluated to round-off even
-for cells that touch \citep{NestorCoupling2026}; an expansion about the centre treats the receiving cell as
-a point. On a cube cut into $n^3$ cells, where the field follows the corners, the first-moment Legendre
-cell of $36$ unknowns is seven to twelve times more accurate than the third-gradient expansion about the
-centre with $60$; on a smoothly graded sphere both converge at fourth order, and the Legendre cell is the
-more accurate for a given number of unknowns \citep{NestorContinuum2026}. And a Galerkin cell holds the
+Legendre polynomials. Its interactions are exact double integrals over both cells, which are evaluated to
+round-off even for cells that touch \citep{NestorCoupling2026}. And a Galerkin cell holds the
 projection of the field and of the medium, which is what makes its error a projection error, known before
 the solve \citep{NestorError2026}.
 
@@ -198,11 +194,11 @@ $\bG$ the background's Green's tensor the displacement is
   u_a(\bx)=u^0_a(\bx)+\int G_{ab}(\bx-\by)\,\omega^2\Delta\rho\,u_b(\by)\,\dd^3y
   +\int\frac{\partial G_{ab}}{\partial x_c}(\bx-\by)\,m_{bc}(\by)\,\dd^3y ,
 \end{equation}
-the moment radiating through the receiver derivative of $\bG$ \citep{NestorContinuum2026}. The strain
+the moment radiating through the receiver derivative of $\bG$ \citep{NestorError2026}. The strain
 enters only through $m$. Differentiating Eq.~\eqref{eq:ls} gives the strain at $\bx$, and the pair
 $\psi=(\mathbf u,\boldsymbol\varepsilon)$, nine components with the strain in engineering Voigt form
 (the three normal strains, then the three shears), satisfies one Lippmann--Schwinger equation
-\citep{NestorContinuum2026}:
+\citep{NestorError2026}:
 \begin{equation}\label{eq:ls9}
   \underbrace{\begin{pmatrix}\mathbf u\\[1pt]\boldsymbol\varepsilon\end{pmatrix}\!(\bx)}_{\psi,\ 3+6}
   =\begin{pmatrix}\mathbf u^0\\[1pt]\boldsymbol\varepsilon^0\end{pmatrix}\!(\bx)
@@ -218,7 +214,7 @@ $\psi=(\mathbf u,\boldsymbol\varepsilon)$, nine components with the strain in en
     \mathbf 0&\mathbf 0\end{pmatrix}+2\Delta\mu\,\bI_6,\qquad
   \mathbf 1=(1,1,1)^{\mathsf T},
 \end{equation}
-the Voigt form of $\delta c$ in the convention of \citet{NestorContinuum2026}, with $2\Delta\mu$ on the
+the Voigt form of $\delta c$ in the convention of \citet{NestorError2026}, with $2\Delta\mu$ on the
 whole diagonal; the factor $\tfrac12$ that engineering shear needs is carried by the kernel.
 Figure~\ref{fig:ls9} shows the structure. The contrast is block diagonal and turns the state into the
 sources it induces: a force $\omega^2\Delta\rho\,\mathbf u$ from the displacement and a moment
@@ -270,8 +266,8 @@ strain model & unknowns of a cell & strain and displacement & test \\
 \midrule
 uniform (the classical approximation) & displacement and strain at the centre & strain uniform & at the
 centre \\
-derived & $\partial^Pu$ at the centre, $|P|\le\ell$ & strain the gradient of a Taylor displacement, degree
-$\ell-1$ & the equation and its derivatives at the centre \\
+derived & Legendre moments of displacement to degree $p$ & strain the derivative of each cell's
+displacement polynomial, degree $p-1$ & against the cell's polynomials (Galerkin) \\
 independent (this paper) & Legendre moments of displacement and strain to degree $p$ & independent, both
 degree $p$ & against the cell's polynomials (Galerkin) \\
 \bottomrule
@@ -312,7 +308,7 @@ independent strain for $p=1$ and $5\times10^8$ times for $p=2$
 (\path{scripts/measure_derived_vs_independent_strain.py}). Restoring the jumps of the cellwise displacement across the faces does not recover
 it, so the loss is not the faces' alone; with the strain an unknown of its own, tested against the same
 polynomials as the displacement, the scheme reaches the order $2p+2$ that a Galerkin scheme gives a
-functional of its solution \citep{NestorContinuum2026}.
+functional of its solution \citep{NestorError2026}.
 
 \paragraph{The degree-one Legendre cell.} A cube $[-h,h]^3$ with local coordinates $\bxi=(\bx-\bx_c)/h$ carries
 $\psi(\bx)=\sum_b\psi_bL_b(\bxi)$ over the four functions $L_b\in\{1,\xi_0,\xi_1,\xi_2\}$, each $\psi_b$ a
@@ -388,7 +384,7 @@ odd $m$, and for every derivative, $U(m,\biota)$ is a combination with rational 
 \end{equation}
 The two logarithms come from the geometry of the cube: $\ln(1+\sqrt2)=\operatorname{arsinh}1$ from its faces,
 whose diagonal is $\sqrt2$ times the side, and $\ln(2+\sqrt3)=2\operatorname{arsinh}(1/\sqrt2)$ from the cube
-itself, whose body diagonal is $\sqrt3$ times the side. The second is the $-\ln(2-\sqrt3)$ of the moments of the expansion about the centre \citep{NestorContinuum2026}.
+itself, whose body diagonal is $\sqrt3$ times the side. It appears elsewhere as $-\ln(2-\sqrt3)$, the same number.
 We write it as $\ln(2+\sqrt3)$, which avoids the cancellation in $2-\sqrt3$ and is the better conditioned in
 floating point.
 By Eq.~\eqref{eq:anbn}, $\bK_n$ draws on $m=n-1$ and $n+1$. An even power of $k_Sh$ therefore uses odd
@@ -794,9 +790,7 @@ few independent channels, each with one constant and one resonance, $1-N_\Gamma 
 even and odd unknowns and leaves only the operations that fix its gradient
 \citep{NestorCoupling2026}, so the reduction is weaker, though the moments are the same and the closed
 form carries over. And the cell is of degree one; the degree-two cell, whose expansions add the six quadratic Legendre polynomials, $P_2(\xi_i)$ and $\xi_i\xi_j$ ($i<j$), to the four of degree one ($10$ functions, $90$ unknowns), needs the moments of
-monomials to degree four, which the same derivation provides. The comparison with the single site of the
-expansion about the centre, whose self-interaction is taken at the centre rather than averaged over the
-cell \citep{NestorContinuum2026,NestorCoupling2026}, is to be condensed here from the earlier paper.
+monomials to degree four, which the same derivation provides.
 
 \section*{Data availability}
 The derivation and its checks are \path{scripts/derive_legendre_cell_dynamic.py}, which writes
