@@ -67,7 +67,7 @@ Green's tensor against the polynomials that the cells carry. For cells that touc
 singular, and their closed forms are known: a power series in the wavenumber whose coefficients are
 universal numbers, each built from elementary master integrals reduced from volume to faces to edges. We
 show that these closed forms, evaluated as written in double precision, lose four to five digits: against
-a forty-digit reference the coupling block of a cell carrying a quadratic field and its corner neighbour
+a forty-digit reference the coupling block of a cell carrying a degree-two field and its corner neighbour
 is wrong by $1.7\times10^{-11}$, where quadrature reaches $1.9\times10^{-15}$. The cause is not the
 formulas but their basis. Every piece of the integration domain away from the singular point becomes a
 signed sum of boxes anchored at that point, with the polynomial weight expanded in powers of the
@@ -80,8 +80,8 @@ transcendental function is evaluated, and every moment comes out to full relativ
 band of geometries close to the singular point where marching the recurrence in either direction is
 unstable. Pieces holding the singular point are split into Duffy pyramids, whose radial integral is
 exact and whose far face lies at unit distance, where the same Legendre moments apply. Against the
-reference the coupling blocks are then accurate to $1.0\times10^{-15}$ and $9.7\times10^{-16}$ for a linear
-field and $3.7\times10^{-15}$ and $4.3\times10^{-15}$ for a quadratic field, at corner and edge contact,
+reference the coupling blocks are then accurate to $1.0\times10^{-15}$ and $9.7\times10^{-16}$ for a degree-one
+field and $3.7\times10^{-15}$ and $4.3\times10^{-15}$ for a degree-two field, at corner and edge contact,
 the same round-off floor as quadrature. The reference is a direct forty-digit integration that shares no
 step with the evaluation.
 \end{abstract}
@@ -117,7 +117,7 @@ A volume-integral method for elastic scattering represents a heterogeneous mediu
 each carrying a polynomial field, and couples every pair of cells through the integral of the
 elastodynamic Green's tensor against the two cells' polynomials. Higher-order cells are worth having only
 if these coupling integrals are accurate: a cell whose field converges at fourth order in the cell size
-\citep{NestorContinuum2026} needs couplings correct to a matching tolerance, and in practice to
+\citep{NestorError2026} needs couplings correct to a matching tolerance, and in practice to
 round-off, because errors in the touching blocks are not reduced by refinement. For cells that touch, the
 integrand is singular. Quadrature with Duffy's transformation \citep{Duffy1982} at the singular vertex
 handles it, but it must be repeated for every frequency, and its accuracy has to be established case by
@@ -133,11 +133,11 @@ point-scatterer models of the Foldy type approximate each small obstacle by a po
 \citep{Foldy1945,BendaliCocquetTordeux2016}. In a space-filling tessellation every cell touches $26$
 neighbours, and the same expansion fails for all of them (\S\ref{sec:twocentre}). The interaction between
 neighbours, which in a continuous medium is the coupling of adjacent material, therefore needs the integrals
-themselves. This paper follows for that interaction the programme that \citet{NestorContinuum2026} carried
-out for a single cell, whose complete self-consistent response was obtained there by closed-form
-integration: here the complete interaction between cells is obtained the same way. With both in closed
-form and accurate to round-off, the errors that \citet{NestorContinuum2026} measures are those of the
-discretisation alone, with no quadrature error mixed into them. The closest prior work we know is the
+themselves. This paper follows for that interaction the programme that \citet{NestorLegendre2026} carried
+out for a single cell, whose single-site $T$-matrix was obtained there in closed form at every power of the
+frequency: here the interaction between cells is obtained the same way. With both in closed form and
+accurate to round-off, the errors that \citet{NestorError2026} measures are those of the discretisation
+alone, with no quadrature error mixed into them. The closest prior work we know is the
 analytical integration of the Green's tensor over cuboids for the electromagnetic discrete dipole
 approximation \citep{YurkinSmunev2023}, which neglects terms of fourth order in $kd$; the integrals here
 are elastic, exact at every order through a series in the wavenumber, and over cells that carry
@@ -165,8 +165,8 @@ touching coupling block within its reach.
 \paragraph{Cells and fields.} A cell is a cube $[-h,h]^3$ of half-width $h$ centred at $\mathbf{x}_c$, with
 local coordinates $\bxi=(\mathbf{x}-\mathbf{x}_c)/h\in[-1,1]^3$. It carries the nine-component state, the
 displacement and an independent engineering strain, as a polynomial in $\bxi$: its Legendre moments of
-degree at most one (four functions, a linear field) or two (ten, a quadratic field)
-\citep{NestorContinuum2026}. The source density, the contrast times the state, is a polynomial in the
+degree at most one (four functions: the degree-one cell) or two (ten: the degree-two cell)
+\citep{NestorLegendre2026}. The source density, the contrast times the state, is a polynomial in the
 source cell's coordinates $\bxi'$, written in the monomials $m_c(\bxi')=\xi_0'^{\,e_0}\xi_1'^{\,e_1}
 \xi_2'^{\,e_2}$ of degree at most two or four ($10$ or $35$ of them). With $\bP$ the $9\times9$ point
 propagator, built from the Green's tensor and up to two of its derivatives, the cells $m$ and $n$ couple
@@ -311,7 +311,7 @@ under which the two-centre series is assured to converge (Table~\ref{tab:twocent
 
 \paragraph{The experiment.} The quantity tested is the coupling moment of the kernel $1/r$,
 $U_{ac}(\bo)=\int\!\int\bxi^{\mathbf e_a}\,|\mathbf x-\mathbf x'|^{-1}\,\bxi'^{\,\mathbf e_c}$, for cells
-of half-width $h=1$ carrying a linear field (four test monomials and ten source monomials). The kernel
+of half-width $h=1$ carrying a degree-one field (four test monomials and ten source monomials). The kernel
 $1/r$ is the static singular part that every family of the propagator shares (the term $m=-1$ of
 Eq.~\eqref{eq:series}), so its behaviour is the behaviour of the series for every block. The exact value
 is, for cells that touch, the stable closed form of \S\ref{sec:stable}, accurate to round-off against the
@@ -410,17 +410,17 @@ integral. The master integrals, rounded to double precision, were then contracte
 weights in double precision.
 
 \paragraph{How large the loss is.} Against the forty-digit reference of \S\ref{sec:reference}, the static
-coupling block assembled this way is wrong by $2.3\times10^{-13}$ (linear field, corner contact),
-$9.4\times10^{-14}$ (linear, edge), $1.7\times10^{-11}$ (quadratic, corner) and $5.5\times10^{-12}$
-(quadratic, edge), relative error in the Frobenius norm over all entries of the block. Quadrature of the
+coupling block assembled this way is wrong by $2.3\times10^{-13}$ (degree-one field, corner contact),
+$9.4\times10^{-14}$ (degree one, edge), $1.7\times10^{-11}$ (degree two, corner) and $5.5\times10^{-12}$
+(degree two, edge), relative error in the Frobenius norm over all entries of the block. Quadrature of the
 same block (Duffy pyramids at the singular vertex and tensor Gauss rules of $20$ points per axis on the
 pieces) is accurate to $1.1\times10^{-15}$, $1.8\times10^{-15}$, $1.9\times10^{-15}$ and $2.7\times10^{-15}$.
-The closed forms, exact on paper, are worse than quadrature by two orders of magnitude for a linear field
-and four for a quadratic one. The loss went unnoticed because the closed forms had been checked against
+The closed forms, exact on paper, are worse than quadrature by two orders of magnitude for a degree-one field
+and four for a degree-two one. The loss went unnoticed because the closed forms had been checked against
 quadrature to $10^{-9}$ only.
 
 \paragraph{Where it is lost.} Each block is a sum over the pieces of $W$. Taking one term, $m=1$ with
-$\biota=(0,2,2)$, at corner contact with a linear field, and evaluating the same algorithm once in double
+$\biota=(0,2,2)$, at corner contact with a degree-one field, and evaluating the same algorithm once in double
 precision and once with every step at forty digits, the difference piece by piece is $2.1\times10^{-12}$
 (relative to the largest entry of the term) on the piece farthest from the singular point, the box
 $\bt\in[2,4]^3$, and at most $1.2\times10^{-15}$ on the piece that has the singular point as a vertex.
@@ -445,7 +445,7 @@ the same piece at forty digits with exact rational weights:
 Inclusion-exclusion accounts for a factor of four (A against B). The rest is the power basis about the
 singular point: the moments reach $2\times10^{19}$ against a piece of order one, so that the rounding of
 the weights alone (C) costs three digits. A basis local to the piece removes the loss entirely (D). At
-quadratic degree the local power basis is itself not quite enough: with exact moments the far piece is
+degree two the local power basis is itself not quite enough: with exact moments the far piece is
 accurate to $4.9\times10^{-15}$ in local powers and to $1.9\times10^{-16}$ in Legendre polynomials of the
 local coordinate, and the piece at the singular point to $4.0\times10^{-15}$ and $2.4\times10^{-16}$. The
 basis the evaluation needs is therefore the Legendre basis of each piece. This is the classical
@@ -454,9 +454,9 @@ conditioning contrast between power moments and orthogonal-polynomial (modified)
 
 \paragraph{Quadrature on the smooth pieces is not enough.} A natural alternative keeps the closed forms only
 on the pieces that hold the singular point and integrates the others, which are smooth, by Gauss rules.
-It cures the linear field ($9.1\times10^{-16}$ and $1.6\times10^{-15}$ at corner and edge) but not the
-quadratic one ($5.9\times10^{-15}$ and $1.1\times10^{-14}$, insensitive to the Gauss order between $12$ and
-$20$), because at quadratic degree the pieces at the singular point lose digits too, to the power basis
+It cures the degree-one field ($9.1\times10^{-16}$ and $1.6\times10^{-15}$ at corner and edge) but not the
+degree-two one ($5.9\times10^{-15}$ and $1.1\times10^{-14}$, insensitive to the Gauss order between $12$ and
+$20$), because at degree two the pieces at the singular point lose digits too, to the power basis
 on $[0,2]$. The same switch is the remedy adopted for analytic boundary-element integrals
 \citep{KanekoGumerovDuraiswami2024,GumerovKanekoDuraiswami2024}; here it does not reach round-off, and
 it gives up the frequency-independent coefficients only on part of the domain while keeping the
@@ -487,14 +487,14 @@ rational weights and the medium's constants in exact arithmetic. Three gates che
   $\int W\,\partial_2F=-\int(\partial_2W)\,F$, the boundary terms vanishing because $W$ is continuous and
   zero on the boundary of its support. The two sides have different integrands and agree only if the
   singular integration is accurate. They agree to $1.4\times10^{-24}$ (corner) and $2.4\times10^{-24}$
-  (edge) for the linear field and $3.9\times10^{-24}$ and $3.5\times10^{-24}$ for the quadratic one.
+  (edge) for the degree-one field and $3.9\times10^{-24}$ and $3.5\times10^{-24}$ for the degree-two one.
   \item[(c)] Convergence: the rule at $20$ and at $28$ points per axis agree to better than
   $10^{-23}$ in every case ($3\times10^{-25}$ to $2\times10^{-24}$ where the value was recorded). Each piece
   converges by about five digits per four points.
 \end{itemize}
 Pointwise identities such as $\nabla^2(1/r)=0$, which hold at every node of the rule, would pass whatever
 the integration did, and are not used as gates. The reference took $78$ to $93$\,s per geometry for the
-linear field and $502$ to $593$\,s for the quadratic one, at $20$ points per axis.
+degree-one field and $502$ to $593$\,s for the degree-two one, at $20$ points per axis.
 
 \section{A stable evaluation}\label{sec:stable}
 
@@ -622,19 +622,19 @@ reference as follows (relative Frobenius error, implementation
 \small
 \begin{tabular}{lcccc}
 \toprule
- & linear, corner & linear, edge & quadratic, corner & quadratic, edge \\
+ & degree one, corner & degree one, edge & degree two, corner & degree two, edge \\
 \midrule
 closed forms as written (\S\ref{sec:failure}) & $2.3\times10^{-13}$ & $9.4\times10^{-14}$ & $1.7\times10^{-11}$ & $5.5\times10^{-12}$\\
 stable evaluation (\S\ref{sec:stable}) & $1.0\times10^{-15}$ & $9.7\times10^{-16}$ & $3.7\times10^{-15}$ & $4.3\times10^{-15}$\\
 quadrature, $20$ points & $1.1\times10^{-15}$ & $1.8\times10^{-15}$ & $1.9\times10^{-15}$ & $2.7\times10^{-15}$\\
 \bottomrule
 \end{tabular}
-\caption{The static coupling block against the forty-digit reference. A linear field has $4$ test
-functions and $10$ source monomials, a quadratic one $10$ and $35$; each block has $81$ entries per pair.}
+\caption{The static coupling block against the forty-digit reference. A degree-one field has $4$ test
+functions and $10$ source monomials, a degree-two one $10$ and $35$; each block has $81$ entries per pair.}
 \label{tab:accuracy}
 \end{table}
 
-The remaining gap to quadrature for the quadratic field, a factor of $1.3$ to $1.6$, is round-off, not a
+The remaining gap to quadrature for the degree-two field, a factor of $1.3$ to $1.6$, is round-off, not a
 residual defect. Term by term, quadrature's own worst moments are in error by $2$ to $3\times10^{-14}$
 relative to the largest entry of the term and the stable evaluation's by about $5\times10^{-14}$, with a
 median of about $10^{-15}$ for both. Forming the weights' power coefficients in exact rational arithmetic
@@ -643,7 +643,7 @@ before rounding gains only $15$ to $20\%$.
 \paragraph{Self and face contact.} The reference does not cover self and face contact, where the static
 terms are distributions. There the stable evaluation is compared with quadrature, which the reference
 shows to be accurate at corner and edge contact. At $h=1.25$, for all $41$ static terms and all pairs of
-the linear field, the two agree to a worst term of $4.2\times10^{-15}$ (self), $9.9\times10^{-15}$ (face),
+the degree-one field, the two agree to a worst term of $4.2\times10^{-15}$ (self), $9.9\times10^{-15}$ (face),
 $3.3\times10^{-14}$ (edge) and $1.8\times10^{-14}$ (corner), with medians of $1.0$ to $1.7\times10^{-15}$.
 These comparisons are made at $h\ne1$ on purpose: they also check the physical scaling of each piece by
 powers of $h$, which a reference at $h=1$ cannot see.
@@ -651,8 +651,8 @@ powers of $h$, which a reference at $h=1$ cannot see.
 \paragraph{The complete blocks.} With the dynamic terms of the series \eqref{eq:series} added, the
 whole touching block, static and dynamic, is the series summed term by term, each term a universal moment
 times $h^{\,6+m-|\biota|}$ and the weights $c_1$, $c_2$. At $k_Sh=0.0625$ it agrees with the quadrature
-block at $20$ points per axis to about $10^{-15}$ for the linear field at all four contact geometries, and
-to $2$ to $4\times10^{-15}$ for the quadratic field; with the closed forms as written the quadratic field's
+block at $20$ points per axis to about $10^{-15}$ for the degree-one field at all four contact geometries, and
+to $2$ to $4\times10^{-15}$ for the degree-two field; with the closed forms as written the degree-two field's
 blocks had stalled at $9\times10^{-15}$ to $2\times10^{-11}$ (\path{scripts/measure_galerkin_near_blocks.py}).
 
 \paragraph{Cost.} The universal moments are computed once for each contact geometry and cell degree: they
@@ -660,22 +660,32 @@ depend on neither the frequency nor the cell size. For all four geometries and b
 series carried to the powers that $k_Sh=0.0625$ needs, that one-off step took $3745$\,s on one machine,
 against $998$\,s for the closed forms as written: about $0.75$\,s per term against $0.3$\,s, over some
 $2600$ terms. Stability has a price, and it is paid once. Each block thereafter costs the assembly of the
-series alone, $5$\,ms for the linear field and $33$\,ms for the quadratic one, against $0.4$ to $13$\,s for
+series alone, $5$\,ms for the degree-one field and $33$\,ms for the degree-two one, against $0.4$ to $13$\,s for
 a quadrature block at the number of points (14 to 20 per axis) that reaches $10^{-15}$. One frequency
-needs all eight blocks: $17.4$\,s by quadrature at $14$ points ($2.3$\,s for the linear field, $15.1$\,s
-for the quadratic), $0.15$\,s by the series. The one-off cost is therefore recovered after about $220$
+needs all eight blocks: $17.4$\,s by quadrature at $14$ points ($2.3$\,s for the degree-one field, $15.1$\,s
+for the degree-two field), $0.15$\,s by the series. The one-off cost is therefore recovered after about $220$
 frequencies, and a synthetic over $256$ frequencies is already cheaper by the series
 (\S\ref{sec:sweep}). Two measures brought the one-off cost down by a factor of $2.3$ without
 changing any block beyond round-off: a truncation margin of $8$ Legendre degrees instead of $16$ (the blocks
 are the same to the digits shown for margins from $4$ to $16$), and one truncation shared by every term
 of a cell degree, so that the sparse systems are solved once and reused.
 
+\paragraph{Reciprocity.} Two further symmetries hold for every touching block, not only the self block.
+The propagator satisfies $\mathbf{W}\bP(\mathbf{r})$ symmetric at every $\mathbf{r}$, with
+$\mathbf{W}=\operatorname{diag}(\mathbf{I}_6,\tfrac12\mathbf{I}_3)$ (the factor $\tfrac12$ on the three
+engineering shears), and $\bP(-\mathbf{r})=\boldsymbol\Pi\bP(\mathbf{r})\boldsymbol\Pi$ with
+$\boldsymbol\Pi=\operatorname{diag}(-\mathbf{I}_3,\mathbf{I}_6)$. Every block between test functions is
+therefore $\mathbf{W}$-symmetric, $(\mathbf{W}\bK_{ab})^{\mathsf T}=\mathbf{W}\bK_{ab}$, and the self
+block obeys $\bK_{ba}(0)=\boldsymbol\Pi\bK_{ab}(0)\boldsymbol\Pi$, by exchanging the two points of the
+cell. At the self, face, edge and corner geometries, by quadrature and by the series in $k$ of
+\S\ref{sec:sweep} alike, the first holds to $3\times10^{-21}$ of the largest entry and the second to
+$6\times10^{-17}$.
+
 \section{Multipoles for elastic waves}\label{sec:multipoles}
 
 The word multipole is used in two senses in what follows, and the difference matters. In the first, a
-source is resolved into its Cartesian moments while the Green's tensor is integrated exactly: the
-Cartesian multipole hierarchy of \citet{NestorContinuum2026}, whose cell-to-cell tables
-(\S\ref{sec:sweep}) are exact at every separation. In the second, the usual one, the kernel itself is
+source is resolved into its polynomial moments while the Green's tensor is integrated exactly: the
+coupling blocks of the cells (\S\ref{sec:blocks}), which are exact at every separation. In the second, the usual one, the kernel itself is
 expanded about a centre and truncated, which converges only when the cells are far enough apart: the
 series for distant cells of \S\ref{sec:distant}. The second is what the fast multipole method rests on
 \citep{CarrierGreengardRokhlin1988}; four things make it different for elastic waves and polynomial cubes.
@@ -729,7 +739,7 @@ order $48$ to $56$ without bisection stalled at $6\times10^{-13}$ to $2\times10^
 at order $36$ to $40$ reached $10^{-15}$ to $4\times10^{-15}$. The rounding of a series that long grows
 with its order, so the order is capped at $40$ and a plan that needs more bisects instead.
 
-\paragraph{The experiment.} For a linear field, at offsets from two to sixty-four cells and at
+\paragraph{The experiment.} For a degree-one field, at offsets from two to sixty-four cells and at
 $k_Sh=10^{-4}$, $0.0625$, $0.5$ and $2$, every route was compared with the $s$-form integrated by Gauss
 rules of $32$ points per axis on each of its eight pieces; that reference agrees with $24$ points to
 $2\times10^{-15}$ (to $10^{-14}$ at $k_Sh=2$). Four routes were timed per block, warm, the one-off
@@ -766,7 +776,7 @@ $(8,0,0)$ & $8$\,ms & $0.29$\,s & $0.49$\,s & refused \\
 $(64,0,0)$ & $8$\,ms & $0.12$\,s & $0.38$\,s & refused \\
 \bottomrule
 \end{tabular}
-\caption{Cost per block for a linear field at $k_Sh=0.5$, every route accurate to round-off. At
+\caption{Cost per block for a degree-one field at $k_Sh=0.5$, every route accurate to round-off. At
 $k_Sh=2$ the Gauss rule costs $11$ to $32$\,ms, the two multipole forms $1.5$ to $50$\,s, and the series
 in $k$ is refused at every offset; at $k_Sh=10^{-4}$ the multipole series falls to $15$\,ms at sixty-four
 cells.}
@@ -783,7 +793,7 @@ one property the others lack: it is exact term by term, with no restriction on $
 independent check of the other two, and it is the form a fast multipole method would use for cells far
 apart (\S\ref{sec:fmm}).
 
-\paragraph{A quadratic field.} The same comparison for a quadratic field ($10$ test functions, $35$
+\paragraph{A degree-two field.} The same comparison for a degree-two field ($10$ test functions, $35$
 source monomials), at offsets $(2,0,0)$, $(2,1,1)$, $(4,3,2)$ and $(16,0,0)$ and at $k_Sh=10^{-4}$,
 $0.5$ and $2$, puts every route at round-off again: the largest error is $2\times10^{-14}$, the Gauss
 rule at sixteen cells and $k_Sh=2$. The costs rise with the block: $25$ to $93$\,ms for the Gauss rule,
@@ -795,9 +805,7 @@ $5.5$\,ms for the series in $k$ where it converges. The ranking of the routes is
 A synthetic seismogram needs the coupling blocks at every frequency of a sweep, at least $256$ of them.
 What can be computed once, for the geometry alone, and what must be computed again at each frequency,
 decides the cost. The universal moments of the touching blocks are of the first kind. The same structure
-serves the blocks between cells that do not touch, and the cell-to-cell tables of the Cartesian multipole hierarchy of
-\citet{NestorContinuum2026}, whose integrals are never singular (the field point is a cell centre, at least
-half a cell outside the source cube).
+serves the blocks between cells that do not touch.
 
 \paragraph{The series for cells that do not touch.} For two cells that do not touch, the kernel is smooth
 on every piece of $W$, and the series \eqref{eq:series} applies term by term with coefficients obtained by
@@ -814,28 +822,6 @@ truncation of the series. It agrees with the Gauss block to $10^{-15}$ to $10^{-
 to five cells and $k_Sh$ from $10^{-6}$ to $0.5$, and costs $0.3$\,ms per block and frequency against
 $9$\,ms for the Gauss block (\path{blocks.far_block_series}).
 
-\paragraph{The hierarchy's tables.} The Cartesian multipole hierarchy couples cells through the tables
-\begin{equation}\label{eq:hiertable}
-  T_{in}[\mathbf{D},\mathbf{W}](\bo)=\int_{\text{cube}}\partial^{\mathbf{D}}\bG_{in}(\bo-\bxi)\,
-  \bxi^{\mathbf{W}}\,\dd^3\xi,
-\end{equation}
-the derivatives of the Green's tensor at the field cell's centre against the source cube's monomials. The
-same expansion gives
-\begin{equation}\label{eq:hierseries}
-  T_{in}[\mathbf{D},\mathbf{W}]=\frac{1}{4\pi\mu}\sum_{t\ge0}\Bigl[c_1(t)\,\delta_{in}\,
-  U(t;\mathbf{D},\mathbf{W})+c_2(t)\,U(t;\mathbf{D}+\mathbf{e}_i+\mathbf{e}_n,\mathbf{W})\Bigr],
-\end{equation}
-now with $c_1(t)=(\mathrm{i}k_S)^t/t!$ and $c_2(t)=((\mathrm{i}k_S)^t-(\mathrm{i}k_P)^t)/(t!\,k_S^2)$, and
-$U(t;\mathbf{a},\mathbf{W})=\int\partial^{\mathbf{a}}r^{t-1}(\bo-\bxi)\,\bxi^{\mathbf{W}}\dd^3\xi$ on the
-unit cube, scaled to a cube of side $d$ by $d^{\,(t-1)-|\mathbf{a}|+|\mathbf{W}|+3}$. The $U$ are computed
-once per offset by a Gauss rule chosen by the offset's shape: $28$ points per axis for a face neighbour,
-$20$ for an edge neighbour, $14$ for a corner neighbour and $12$ beyond, each measured to reach $10^{-14}$
-against $36$ points for every derivative and weight of the third-gradient hierarchy. Each frequency then
-costs one weighted sum. The series agrees with Gauss quadrature at $36$ points to $10^{-15}$ to
-$6\times10^{-14}$ from $k_Sd=10^{-6}$ to $3$ (\path{derivatives.moment_table_kseries}); at $48$ terms
-it covers $k_S r$ up to about $14$, $r$ the largest distance from the field point to the source cube, and
-beyond that it refuses, with the Gauss table as the route.
-
 \paragraph{The stopping rule.} The weight $c_2$ carries $k_S^{-2}$: its term $t$ is of order $k^{t-2}$, as
 large as the $c_1$ term $t-2$, and the radiation (imaginary) part at order $k$ comes from $t=1$ of the first
 family and $t=3$ of the second together. Each series is therefore summed through $t=4$ at least, and until
@@ -846,219 +832,35 @@ and the whole block by $10^{-12}$. Tests of the imaginary part's low-frequency l
 $O(k^3)$ correction, fail on the old rule and pass on the new.
 
 \paragraph{The sweep.} On the grid of the graded sphere of \citet{NestorContinuum2026} ($n$ cells across a
-sphere of radius $a$), all the tables or blocks of one frequency were formed for the third-gradient
-hierarchy with a linear contrast, and for the Legendre cell with a linear field and contrast, at $256$
+sphere of radius $a$), all the blocks of one frequency were formed for the Legendre cell with a field and a contrast of degree
+one, at $256$
 frequencies $k_Sa=0.5\,j/256$. The cost per frequency was timed at $j=1$, $64$, $160$ and $256$, and the
 total is the one-off cost plus $256$ times their mean (one machine, eight threads,
-\path{scripts/measure_frequency_sweep_cost.py}). The hierarchy's self table, in closed form
-\citep{NestorContinuum2026}, costs $0.05$ to $0.07$\,s per frequency and is included in its totals.
+\path{scripts/measure_frequency_sweep_cost.py}).
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{rcccc}
+\begin{tabular}{rcc}
 \toprule
-$n$ & hierarchy, Gauss & hierarchy, series & Legendre, quadrature & Legendre, series \\
+$n$ & quadrature & series \\
 \midrule
-$6$  & $1.6$ & $0.5$ & $8.5$  & $5.7$ \\
-$10$ & $3.9$ & $0.8$ & $12.8$ & $7.0$ \\
-$14$ & $7.7$ & $1.6$ & $22.2$ & $11.9$ \\
+$6$  & $8.5$  & $5.7$ \\
+$10$ & $12.8$ & $7.0$ \\
+$14$ & $22.2$ & $11.9$ \\
 \bottomrule
 \end{tabular}
-\caption{Minutes for the tables or blocks of $256$ frequencies, one-off cost included. The hierarchy's
-series costs $4.6$, $16$ and $40$\,s once and $0.02$, $0.08$ and $0.17$\,s per frequency; its Gauss tables
-$0.32$, $0.85$ and $1.75$\,s per frequency. The Legendre series costs $336$, $403$ and $684$\,s once (the
-universal moments of the touching blocks and the coefficients of every other offset) and $0.03$, $0.06$
-and $0.12$\,s per frequency; its quadrature $2.0$, $3.0$ and $5.2$\,s per frequency.}
+\caption{Minutes for the blocks of $256$ frequencies, one-off cost included. The series costs $336$, $403$
+and $684$\,s once (the universal moments of the touching blocks and the coefficients of every other
+offset) and $0.03$, $0.06$ and $0.12$\,s per frequency; quadrature $2.0$, $3.0$ and $5.2$\,s per
+frequency.}
 \label{tab:sweep}
 \end{table}
 
-Over the sweep the series is the cheaper route for both kinds of cell, by a factor of $3$ to $5$ for the
-hierarchy and $1.5$ to $1.9$ for the Legendre cell, whose one-off cost the stable evaluation of
-\S\ref{sec:stable} has raised by $14$ to $94\%$ (from $173$, $302$ and $601$\,s). The hierarchy's
-tables are the cheaper of the two by a factor of $7$ to $12$ at equal grids. The two series agree with the Gauss tables to $6\times10^{-12}$ to
-$1.2\times10^{-11}$ (hierarchy) and to round-off (Legendre); the hierarchy's difference is the tolerance of
-its calibrated Gauss tables ($10^{-10}$), not of the series. The comparison is of the tables alone: the
-solve, repeated at each frequency, is not included, and neither is accuracy per unknown, so it does not
-say which scheme is the better discretisation.
-
-\section{The single cell}\label{sec:site}
-
-The self block $\bK(0)$ of \S\ref{sec:blocks} is all that an isolated cell needs, and for a cell whose
-contrast is uniform the symmetry of the cube reduces it far enough that its static part can be written
-down entry by entry. This section does so for the linear field, the four test functions $1$ and $\xi_i$.
-
-\paragraph{The single-site matrix.} The cell carries the state $\psi(\mathbf{x})=\sum_b\psi_bL_b(\bxi)$,
-each $\psi_b$ a nine-component vector. The contrast $\boldsymbol\Delta$ is the $9\times9$ operator per
-unit volume that turns the state into the source density: $\omega^2\Delta\rho$ on the displacement, at
-angular frequency $\omega$, and the stiffness contrast, with Lam\'e contrasts $\Delta\lambda$ and
-$\Delta\mu$, on the strain. The source density is a polynomial in the cell's coordinates,
-$\boldsymbol\Delta(\bxi)\psi=\sum_c\bigl(\sum_b\mathbf{E}_{cb}\psi_b\bigr)m_c(\bxi)$, with
-$9\times9$ coefficients $\mathbf{E}_{cb}$ on the monomials $m_c$. Tested against the $L_a$, the
-Lippmann--Schwinger equation of one cell in an incident field $\psi^0$ is
-\begin{equation}\label{eq:sitels}
-  \bigl(\mathbf{M}-\bK(0)\,\mathbf{E}\bigr)\psi=\langle L,\psi^0\rangle,\qquad
-  \mathbf{M}_{ab}=\langle L_a,L_b\rangle\,\mathbf{I}_9,\qquad
-  \bigl(\bK(0)\mathbf{E}\bigr)_{ab}=\sum_c\bK_{ac}(0)\,\mathbf{E}_{cb},
-\end{equation}
-with $\langle f,g\rangle=\int_Vfg\,\dd^3x$ over the cell. What the cell radiates is set by its source
-moments $\sigma_a=\langle L_a,\boldsymbol\Delta\psi\rangle=\sum_b\mathbf{F}_{ab}\psi_b$,
-$\mathbf{F}_{ab}=\sum_c\langle L_a,m_c\rangle\mathbf{E}_{cb}$, the force and stress means and their first
-moments. The single-site matrix
-\begin{equation}\label{eq:t36}
-  \mathbf{T}_{36}=\mathbf{F}\,\bigl(\mathbf{M}-\bK(0)\,\mathbf{E}\bigr)^{-1}\mathbf{M}
-\end{equation}
-maps the Legendre coefficients of the incident field, $\mathbf{M}^{-1}\langle L,\psi^0\rangle$, to the
-source moments; it is $36\times36$, four functions of nine components each
-(\path{graded_voxel.site.single_site_t36}). The first moment of the force, which a cell carrying a
-uniform field cannot hold, is part of it \citep{NestorContinuum2026}.
-
-\paragraph{The cube group.} The cube is unchanged by $48$ orthogonal maps, the signed permutations
-$\mathbf{Q}$ of the three axes; they form the group $O_h$ \citep{Tinkham1964,Dresselhaus2008}. Each acts
-on the $36$ unknowns by $\mathbf{D}(\mathbf{Q})=\mathbf{T}(\mathbf{Q})\otimes\mathbf{S}(\mathbf{Q})$:
-$\mathbf{T}$ leaves the function $1$ alone and maps $\xi_i$ as the coordinates, $\bxi\to\mathbf{Q}\bxi$,
-and $\mathbf{S}$ maps the displacement as a vector, $\bu\to\mathbf{Q}\bu$, and the strain as a tensor,
-$\boldsymbol\varepsilon\to\mathbf{Q}\boldsymbol\varepsilon\mathbf{Q}^{\mathsf T}$. The self block is an
-integral over the cube against itself, so it is unchanged by every $\mathbf{Q}$, and with a contrast
-uniform in the cell so is $\mathbf{A}=\mathbf{M}-\bK(0)\mathbf{E}$: it commutes with all $48$ matrices
-$\mathbf{D}(\mathbf{Q})$. Group theory then fixes how far $\mathbf{A}$ can be simplified. The $36$
-unknowns split into irreducible representations of $O_h$, the smallest sets that the $48$ maps mix only
-among themselves; $A$, $E$ and $T$ label those of dimension $d=1$, $2$ and $3$, and the subscripts $g$ and
-$u$ (\emph{gerade} and \emph{ungerade}) those even and odd under the inversion $\bxi\to-\bxi$. By Schur's
-lemma $\mathbf{A}$ has no entries between different representations, and on a representation that occurs
-$n$ times it is one $n\times n$ block, repeated $d$ times, once for each of the $d$ partners. The inverse
-in Eq.~\eqref{eq:t36} is the inverse of those blocks.
-
-\paragraph{The reduction.} Under inversion the displacement is odd, the strain even and $\xi_i$ odd. The
-$15$ even unknowns are the uniform strain, $1\times\boldsymbol\varepsilon$, which is $A_{1g}+E_g+T_{2g}$
-(the dilatation, the two traceless combinations of the diagonal strains, and the three shears), and the
-linear displacement, $\xi_i u_j$, which is $A_{1g}+E_g+T_{1g}+T_{2g}$: the same three, which are the strain
-of a linear displacement, and the rigid rotation $T_{1g}$. Each strain therefore pairs with its own linear
-displacement in a $2\times2$ block, and the rotation stands alone. The $21$ odd unknowns are the mean
-displacement, $T_{1u}$, and the eighteen linear strains, $\xi_i\varepsilon_{jk}$, which are
-$3T_{1u}+2T_{2u}+A_{2u}+E_u$. Table~\ref{tab:irreps} collects the multiplicities. No block is larger than
-$4\times4$. The multiplicities follow from the characters of $O_h$, and the reduction was checked
-numerically on the matrix of Eq.~\eqref{eq:t36} at $k_Sh=0.0625$
-(\path{scripts/check_graded_voxel_site_symmetry.py}): $\mathbf{A}$ commutes with all $48$ maps to
-$6\times10^{-17}$ of its largest entry; on each representation it has $n$ distinct eigenvalues, each
-$d$-fold; and the inverse assembled from the blocks equals the $36\times36$ inverse to
-$6\times10^{-16}$, and $\mathbf{T}_{36}$ from it to $3\times10^{-16}$.
-
-\begin{table}[h]
-\centering\small
-\setlength{\tabcolsep}{7pt}
-\begin{tabular}{@{}lcccccccc@{}}
-\toprule
- & \multicolumn{4}{c}{even ($15$)} & \multicolumn{4}{c}{odd ($21$)} \\
-\cmidrule(lr){2-5}\cmidrule(lr){6-9}
-representation & $A_{1g}$ & $E_g$ & $T_{1g}$ & $T_{2g}$ & $A_{2u}$ & $E_u$ & $T_{1u}$ & $T_{2u}$ \\
-\midrule
-dimension $d$ & $1$ & $2$ & $3$ & $3$ & $1$ & $2$ & $3$ & $3$ \\
-multiplicity $n$ (block $n\times n$) & $2$ & $2$ & $1$ & $2$ & $1$ & $1$ & $4$ & $2$ \\
-\bottomrule
-\end{tabular}
-\caption{The single-site matrix $\mathbf{A}=\mathbf{M}-\bK(0)\mathbf{E}$ of a cell with uniform contrast
-and a linear field, reduced on the irreducible representations of the cube group: $\sum nd=36$.}
-\label{tab:irreps}
-\end{table}
-
-\paragraph{A graded contrast.} A contrast that varies linearly in the cell,
-$\boldsymbol\Delta(\mathbf{x})=\boldsymbol\Delta_0\bigl[1+\mathbf{g}\cdot(\mathbf{x}-\mathbf{x}_c)\bigr]$,
-is odd about the centre, and it couples the even and odd sets. With $\mathbf{g}=0$ the largest entry of
-$\mathbf{T}_{36}$ between them is $4\times10^{-18}$ of its largest entry; with $\mathbf{g}$ along an axis it
-is $0.325\,gh$ at $gh=0.05$, $0.1$ and $0.2$, linear in the gradient
-(\path{scripts/measure_graded_voxel_site.py}). A gradient along an axis leaves the symmetry of the eight
-maps that fix that axis, and exactly those eight commute with $\mathbf{A}$; the reduction is then on the
-representations of that smaller group. In a general direction no map is left, but covariance remains:
-$\mathbf{D}(\mathbf{Q})\mathbf{A}(\mathbf{g})\mathbf{D}(\mathbf{Q})^{\mathsf T}=\mathbf{A}(\mathbf{Q}\mathbf{g})$,
-to $6\times10^{-17}$, so cells whose gradients are related by a symmetry of the cube share one inverse.
-
-\paragraph{The Born limit.} Without a gradient $\mathbf{T}_{36}$ is exact at first order in the contrast
-for any incident field: the source moments are then $\boldsymbol\Delta_0\langle L_a,\psi^0\rangle$. With a
-gradient the first-order source $\langle L_a,(\mathbf{g}\cdot(\mathbf{x}-\mathbf{x}_c))\psi^0\rangle$ needs
-the incident field's quadratic moments, which a linear field drops. The error is then
-$O\bigl(\Delta\,gh\,(kh)^2\bigr)$, with $k$ the incident wavenumber: at $gh=0.2$ it is $5.5\times10^{-6}$,
-$2.2\times10^{-5}$ and $8.9\times10^{-5}$ at $kh=0.025$, $0.05$ and $0.1$, slopes $2.0001$ and $2.0004$. It
-is the single cell's view of the rule that a field of degree $p$ and a contrast of degree $r$ converge at
-order $\min(2p+2,2r+2)$ \citep{NestorContinuum2026}.
-
-\paragraph{The static blocks in closed form.} As $\omega\to0$ the contrast acts on the strain alone, so
-the displacement-type functions drop out of $\mathbf{A}^{-1}$ wherever it meets $\boldsymbol\Delta$, and
-$\mathbf{T}_{36}$ is carried by the strain-type functions: the uniform strain ($A_{1g}+E_g+T_{2g}$) and
-the linear strain ($3T_{1u}+2T_{2u}+A_{2u}+E_u$). On each representation $\Gamma$,
-\begin{equation}\label{eq:tblock}
-  \mathbf{T}_\Gamma=M_\Gamma\,\boldsymbol\Delta_\Gamma\bigl(\mathbf{I}-\mathbf{N}_\Gamma
-  \boldsymbol\Delta_\Gamma\bigr)^{-1},\qquad
-  \mathbf{N}_\Gamma=M_\Gamma^{-1}\bK_\Gamma=\frac{1}{\mu}\bigl(\mathbf{p}_\Gamma+b_2\,\mathbf{q}_\Gamma\bigr),
-\end{equation}
-with $M_\Gamma=\langle1,1\rangle=8h^3$ for the uniform strain and $\langle\xi_i,\xi_i\rangle=8h^3/3$ for
-the linear, $\bK_\Gamma$ the static self block on $\Gamma$, and $\boldsymbol\Delta_\Gamma$ the contrast
-on it. The two families of Eq.~\eqref{eq:series} give the two parts: $\mathbf{p}_\Gamma$ is the part of
-$\delta_{ij}/r$ ($c_1=1$ at $m=-1$) and $\mathbf{q}_\Gamma$ that of $\partial_i\partial_jr$, whose static
-weight is $b_2=c_2(1)=-\tfrac12(1-\beta^2/\alpha^2)$, $\alpha$ and $\beta$ the compressional and shear
-speeds. Both scale as $h^3$ (the factor $h^{6+m-|\biota|}$ of Eq.~\eqref{eq:umoment} with $m=-1$,
-$|\biota|=2$ and $m=1$, $|\biota|=4$), so $\mathbf{N}_\Gamma$ does not depend on $h$. Carried out in exact
-arithmetic, the reductions from volume to faces to edges of \S\ref{sec:failure} make every entry of
-$\mathbf{p}_\Gamma$ and $\mathbf{q}_\Gamma$ a combination with rational coefficients of five constants,
-\begin{equation}\label{eq:fiveconstants}
-  1,\qquad \frac1\pi,\qquad \frac{\sqrt2}{\pi},\qquad \frac{\sqrt3}{\pi},\qquad
-  \Lambda=\frac{1}{\pi}\Bigl[\ln\bigl(1+\sqrt2\bigr)-\operatorname{arsinh}\frac{1}{\sqrt2}\Bigr]=0.070950.
-\end{equation}
-For the uniform strain,
-\begin{equation}\label{eq:uniformblocks}
-  N_{A_{1g}}=-\frac{1+2b_2}{3\mu}=-\frac{1}{3(\lambda+2\mu)},\qquad
-  N_{E_g}=-\frac{1}{3\mu}+\frac{b_2}{\mu}\Bigl(3\chi_1-\frac23\Bigr),\qquad
-  N_{T_{2g}}=-\frac{1}{3\mu}-\frac{2b_2\chi_1}{\mu},
-\end{equation}
-with $\lambda$ and $\mu$ the background's Lam\'e constants and
-\begin{equation}\label{eq:c1}
-  \chi_1=\frac{1-2\sqrt2+\sqrt3}{\pi}+2\Lambda=0.111222 .
-\end{equation}
-The dilatation is the same for every shape, since the static Green's tensor has
-$\partial_i\partial_nG_{in}=-\delta(\mathbf{r})/(\lambda+2\mu)$. The two shear entries satisfy $2q_{E_g}+3q_{T_{2g}}=-\tfrac43$,
-which is five times $-\tfrac4{15}$, the value of a sphere on each of its five deviators: the cube splits
-the sphere's single shear channel into two and three dimensions, about the sphere's value. The linear
-strain needs one more constant in the first family,
-\begin{equation}\label{eq:c0}
-  \chi_0=\frac{2-3\sqrt2+\sqrt3}{5\pi}+\Lambda=0.038444 ;
-\end{equation}
-the vectors that span each representation, the contrast on them, and every entry of the $3\times3$ and
-$2\times2$ blocks are in Appendix~\ref{app:blocks}.
-
-\paragraph{Averaged and collocated.} The entries \eqref{eq:uniformblocks} are averages over the cell:
-$\bK_\Gamma/M_\Gamma$ for the uniform strain is the mean over the cube of its static self-interaction, the
-strain produced at a point by a unit uniform eigenstress in the cell. A single site collocated at the
-centre takes the value there instead, and the two differ. The point values are in closed form in
-\citep{NestorContinuum2026}, and at the background used there and here ($\beta^2/\alpha^2=9/25$) they are
-$2\mu|N|=0.5929$ for the diagonal deviators ($E_g$) and $0.4314$ for the shears ($T_{2g}$); the averages of
-Eq.~\eqref{eq:uniformblocks} are $0.4535$ and $0.5243$. Both pairs average, with the weights $2$ and $3$,
-to the sphere's $0.4960$, whose self-interaction is uniform inside it \citep{Eshelby1957} and the same
-either way. The order of the two cubic channels is reversed: at the centre the diagonal deviators are the
-more depolarised, on average over the cell the shears are. The self-interaction of a cube is not uniform,
-and averaging and collocation weight it differently.
-
-\paragraph{The checks.} The derivation is in \path{scripts/derive_graded_voxel_site_blocks.py}, which
-writes the exact moments and blocks to \path{LatexPDFs/ExactCouplingIntegrals/data/}. It re-derives the
-master integrals in exact arithmetic by the same three reductions, and they agree with the package's
-values to the last bit. The $41$ static moments $U_{ac}(m,\biota;\mathbf{0})$ that the self block needs,
-each a $4\times4$ matrix, agree in exact arithmetic with the stable evaluation of \S\ref{sec:stable} to
-$1.8\times10^{-15}$, an independent check of that evaluation at the self geometry. The exact static
-strain block equals the block of \path{blocks.near_block} as $\omega\to0$ to $1.2\times10^{-15}$, vectors
-of different representations do not couple, and $\mathbf{T}_{36}$ assembled from the closed-form blocks
-by Eq.~\eqref{eq:tblock} equals the $36\times36$ single site as $\omega\to0$ to $5\times10^{-16}$. At
-finite frequency the displacement-type functions enter at order $(k_Sh)^2$, through the terms $m\ge0$ of
-Eq.~\eqref{eq:series}, built from the same moments; those entries are not tabulated here.
-
-\paragraph{Reciprocity.} Two further symmetries hold for every touching block, not only the self block.
-The propagator satisfies $\mathbf{W}\bP(\mathbf{r})$ symmetric at every $\mathbf{r}$, with
-$\mathbf{W}=\operatorname{diag}(\mathbf{I}_6,\tfrac12\mathbf{I}_3)$ (the factor $\tfrac12$ on the three
-engineering shears), and $\bP(-\mathbf{r})=\boldsymbol\Pi\bP(\mathbf{r})\boldsymbol\Pi$ with
-$\boldsymbol\Pi=\operatorname{diag}(-\mathbf{I}_3,\mathbf{I}_6)$. Every block between test functions is
-therefore $\mathbf{W}$-symmetric, $(\mathbf{W}\bK_{ab})^{\mathsf T}=\mathbf{W}\bK_{ab}$, and the self
-block obeys $\bK_{ba}(0)=\boldsymbol\Pi\bK_{ab}(0)\boldsymbol\Pi$, by exchanging the two points of the
-cell. At the self, face, edge and corner geometries, by quadrature and by the series in $k$ of
-\S\ref{sec:sweep} alike, the first holds to $3\times10^{-21}$ of the largest entry and the second to
-$6\times10^{-17}$.
+Over the sweep the series is the cheaper route by a factor of $1.5$ to $1.9$, although the stable
+evaluation of \S\ref{sec:stable} has raised its one-off cost by $14$ to $94\%$ (from $173$, $302$ and
+$601$\,s), and it agrees with the quadrature blocks to round-off. The comparison is of the blocks alone:
+the solve, repeated at each frequency, is not included.
 
 \section{Relation to the fast multipole method}\label{sec:fmm}
 
@@ -1226,13 +1028,9 @@ singular for touching cells, and the closed forms give them with the singularity
 than resolved by a quadrature.
 
 \paragraph{Quadrature fails silently outside its calibration.} A Gauss rule is accurate where its order was
-chosen by measurement, and nothing warns when it is used outside that range. Three cases met in this work
+chosen by measurement, and nothing warns when it is used outside that range. Two cases met in this work
 show it. The Gauss order of the blocks of distant cells, chosen by distance alone, left them wrong by
-$3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:distant}). The coefficients of the
-hierarchy's series in the wavenumber, computed with a rule calibrated for powers up to $t=19$, were wrong at
-$t=48$ by $2\times10^{-13}$ of their largest entry and by $10^{-11}$ of some entries' own size at the
-offset $(2,1,0)$; the closed form, which has no order to choose, was accurate there to $2.3\times10^{-16}$
-of the largest entry. And for the face block of the static strain coupling of two uniform cells, a tensor
+$3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:distant}). And for the face block of the static strain coupling of two uniform cells, a tensor
 Gauss rule whose two cells share one set of lateral nodes moved monotonically through $8.45$, $9.20$,
 $9.59$, $9.85$ and $10.02\times10^{-12}$ as its order rose from $4$ to $12$, with steps that shrank as if it
 were converging, towards about $1.05\times10^{-11}$; the exact value is $3.009\times10^{-12}$, obtained by a
@@ -1243,29 +1041,25 @@ value does.
 \paragraph{Each coefficient carries its own error estimate.} A closed form is a sum whose terms are known,
 so the magnitude $M$ on which its rounding acts can be carried through every step of the evaluation, as
 in a running error analysis \citep{Higham2002}, and $\varepsilon M$ is then an estimate of the error of each
-coefficient, and $M/|U|$ its condition number \eqref{eq:kappa}. For the coefficients of the hierarchy's
-series, against the forty-digit reference at the face, edge and corner neighbours and the offset
-$(2,1,0)$, for the powers $t=0$, $2$ and $48$ (and $4$ and $6$ at the face), the actual error of every
-coefficient was at most $3.7\,\varepsilon M$. Quadrature gives no such estimate without a convergence
+coefficient, and $M/|U|$ its condition number \eqref{eq:kappa}. Quadrature gives no such estimate without a convergence
 study, and the last case above is one in which a convergence study misleads.
 
 \paragraph{An independent check that has found defects.} The project's standard is two independent
 evaluations that agree. The closed forms share no step with quadrature, and comparing the two has found
 defects in each: the cancellation of the two radial scalars in the multipole blocks at low frequency,
 wrong by up to $9\times10^{-5}$ (\S\ref{sec:multipoles}, \S\ref{sec:distant}); the Gauss order that
-ignored the frequency, and the calibration that ignored the power, above; and, in the other direction,
+ignored the frequency, above; and, in the other direction,
 the loss of four to five digits in the closed forms as written (\S\ref{sec:failure}), found by the
 forty-digit reference.
 
 \paragraph{Universal tables.} The coefficients depend on neither the frequency, the cell size nor the
 medium. Computed in closed form and checked once, they can be tabulated and reused for every model, with no
-rule to choose and no calibration to trust for each new one. The one-off cost, minutes per offset for the
-hierarchy's coefficients, is paid once for all models and all frequencies.
+rule to choose and no calibration to trust for each new one. The one-off cost, $6$ to $11$ minutes for every
+offset of the grids of Table~\ref{tab:sweep}, is paid once for all models and all frequencies.
 
 \paragraph{Cost over a sweep.} With the measured costs of Table~\ref{tab:sweep}, $1024$ frequencies cost
 the Legendre cell $6.1$, $7.7$ and $13.4$\,min by its series in the wavenumber, one-off cost included,
-against $34$, $51$ and $89$\,min for quadrature at each frequency ($n=6$, $10$ and $14$); the hierarchy
-$0.4$, $1.6$ and $3.6$\,min against $5.5$, $14.5$ and $30$\,min for its Gauss tables. The gain is the
+against $34$, $51$ and $89$\,min for quadrature at each frequency ($n=6$, $10$ and $14$). The gain is the
 series'; the closed forms are what make the series exact for the touching blocks, at a one-off cost that
 over such a sweep does not matter.
 
@@ -1287,7 +1081,7 @@ quadrature intact: coefficients computed once, for every frequency.
 The boundary-element literature reached a different conclusion for the analytic integration of layer
 potentials, switching to quadrature away from the singularity
 \citep{KanekoGumerovDuraiswami2024,GumerovKanekoDuraiswami2024}. For the integrals of this paper that
-switch is not enough at quadratic degree (\S\ref{sec:failure}). Whether the Legendre relation would serve
+switch is not enough at degree two (\S\ref{sec:failure}). Whether the Legendre relation would serve
 those integrals too we have not examined. We have not found the relation \eqref{eq:relation}, or the
 use of Legendre moments by a truncated boundary-value problem for integrals over boxes, in the literature
 we searched; the search was limited, and this is a statement of what we did not find.
@@ -1301,70 +1095,7 @@ test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalcul
 \path{cubic_scattering/graded_voxel/legendre_moments.py}, the blocks
 \path{cubic_scattering/graded_voxel/blocks.py}, and the tests
 \path{cubic_scattering/tests/test_legendre_moments.py} and
-\path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}; for the single cell, \path{scripts/check_graded_voxel_site_symmetry.py}, \path{scripts/derive_graded_voxel_site_blocks.py} and \path{scripts/measure_graded_voxel_site.py}, with the exact moments and blocks in \path{LatexPDFs/ExactCouplingIntegrals/data/}.\par}
-
-\appendix
-
-\section{The static blocks of the linear strain}\label{app:blocks}
-
-This appendix completes \S\ref{sec:site}: the vectors that span each irreducible representation, the
-contrast on them, and the entries of $\mathbf{N}_\Gamma=(\mathbf{p}_\Gamma+b_2\mathbf{q}_\Gamma)/\mu$ of
-Eq.~\eqref{eq:tblock} for the linear strain. With $\gamma_{ij}$ the engineering shear on the axes $i$ and
-$j$, the representations are spanned, for the partner along axis $0$, by
-\begin{equation*}
-\begin{array}{@{}ll@{\qquad}ll@{}}
-  A_{1g}: & \varepsilon_{00}+\varepsilon_{11}+\varepsilon_{22}, & E_g: & 2\varepsilon_{00}-\varepsilon_{11}-\varepsilon_{22},\\[2pt]
-  T_{2g}: & \gamma_{12}, & A_{2u}: & \xi_0\gamma_{12}+\xi_1\gamma_{02}+\xi_2\gamma_{01},\\[2pt]
-  T_{1u}: & \multicolumn{3}{@{}l@{}}{v_1=\xi_0\varepsilon_{00},\quad v_2=\xi_0(\varepsilon_{11}+\varepsilon_{22}),\quad
-            v_3=\xi_1\gamma_{01}+\xi_2\gamma_{02},}\\[2pt]
-  T_{2u}: & \multicolumn{3}{@{}l@{}}{w_1=\xi_0(\varepsilon_{11}-\varepsilon_{22}),\quad w_2=\xi_1\gamma_{01}-\xi_2\gamma_{02},}\\[2pt]
-  E_u: & \xi_1\gamma_{02}-\xi_2\gamma_{01}, & &
-\end{array}
-\end{equation*}
-and the blocks are the matrices of the operators in these vectors. The vectors are not normalised, so the
-blocks are not symmetric. The contrast is $\boldsymbol\Delta=3\Delta\lambda+2\Delta\mu$ on $A_{1g}$,
-$2\Delta\mu$ on every other one-dimensional block and on $T_{2u}$, and on $T_{1u}$
-\begin{equation}
-  \boldsymbol\Delta_{T_{1u}}=\begin{pmatrix}\Delta\lambda+2\Delta\mu&2\Delta\lambda&0\\
-  \Delta\lambda&2\Delta\lambda+2\Delta\mu&0\\0&0&2\Delta\mu\end{pmatrix}.
-\end{equation}
-Table~\ref{tab:blocks} lists every entry of the linear strain, with $\chi_0$ of Eq.~\eqref{eq:c0}. The first
-family, $\mathbf{p}$, is $\chi_0$ and rationals throughout; the second needs all five constants of
-Eq.~\eqref{eq:fiveconstants}.
-
-\begin{table}[h]
-\centering\small
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}llcrrrrr@{}}
-\toprule
- & & & \multicolumn{5}{c}{$q$: coefficient of} \\
-\cmidrule(lr){4-8}
-block & entry & $p$ & $1$ & $1/\pi$ & $\sqrt2/\pi$ & $\sqrt3/\pi$ & $\Lambda$ \\
-\midrule
-$T_{1u}$ & $(1,1)$ & $-\tfrac13-8\chi_0$ & $-\tfrac23$ & $-\tfrac{14}{5}$ & $\tfrac{36}{5}$ & $-\tfrac{22}{5}$ & $-4$ \\
- & $(1,2)$ & $0$ & $0$ & $-\tfrac{18}{5}$ & $\tfrac{12}{5}$ & $\tfrac65$ & $-12$ \\
- & $(1,3)$ & $-\tfrac16+2\chi_0$ & $-\tfrac23$ & $\tfrac{22}{5}$ & $-\tfrac{48}{5}$ & $\tfrac{26}{5}$ & $8$ \\
- & $(2,1)$ & $0$ & $0$ & $-\tfrac95$ & $\tfrac65$ & $\tfrac35$ & $-6$ \\
- & $(2,2)$ & $-\tfrac13+4\chi_0$ & $-\tfrac23$ & $5$ & $-6$ & $1$ & $14$ \\
- & $(2,3)$ & $-\tfrac1{12}+\chi_0$ & $0$ & $-\tfrac35$ & $\tfrac{12}{5}$ & $-\tfrac95$ & $0$ \\
- & $(3,1)$ & $-\tfrac16+2\chi_0$ & $-\tfrac23$ & $\tfrac{22}{5}$ & $-\tfrac{48}{5}$ & $\tfrac{26}{5}$ & $8$ \\
- & $(3,2)$ & $-\tfrac16+2\chi_0$ & $0$ & $-\tfrac65$ & $\tfrac{24}{5}$ & $-\tfrac{18}{5}$ & $0$ \\
- & $(3,3)$ & $-\tfrac5{12}-\chi_0$ & $\tfrac23$ & $-\tfrac{46}{5}$ & $\tfrac{84}{5}$ & $-\tfrac{38}{5}$ & $-20$ \\
-\midrule
-$T_{2u}$ & $(1,1)$ & $-\tfrac13+4\chi_0$ & $-\tfrac23$ & $\tfrac{233}{15}$ & $-\tfrac{422}{15}$ & $\tfrac{63}{5}$ & $18$ \\
- & $(1,2)$ & $-\tfrac1{12}+\chi_0$ & $-\tfrac23$ & $5$ & $-12$ & $7$ & $8$ \\
- & $(2,1)$ & $-\tfrac16+2\chi_0$ & $-\tfrac43$ & $10$ & $-24$ & $14$ & $16$ \\
- & $(2,2)$ & $-\tfrac14-3\chi_0$ & $-\tfrac23$ & $2$ & $-12$ & $10$ & $-4$ \\
-\midrule
-$A_{2u}$ & & $-\tfrac12+6\chi_0$ & $\tfrac43$ & $-\tfrac{326}{15}$ & $\tfrac{764}{15}$ & $-\tfrac{146}{5}$ & $-20$ \\
-$E_u$ & & $-\tfrac14+3\chi_0$ & $-\tfrac23$ & $-\tfrac{74}{15}$ & $\tfrac{116}{15}$ & $-\tfrac{14}{5}$ & $4$ \\
-\bottomrule
-\end{tabular}
-\caption{The static blocks of the linear strain in closed form:
-$\mathbf{N}_\Gamma=(\mathbf{p}+b_2\mathbf{q})/\mu$, with $q$ given by its rational coefficients on the
-constants of Eq.~\eqref{eq:fiveconstants}. Rows and columns of $T_{1u}$ are $(v_1,v_2,v_3)$, of $T_{2u}$
-$(w_1,w_2)$.}\label{tab:blocks}
-\end{table}
+\path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}.\par}
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
