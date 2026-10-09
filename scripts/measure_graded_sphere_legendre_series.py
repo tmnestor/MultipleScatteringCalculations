@@ -293,9 +293,12 @@ def far_series(sol, obs, J):
     n_pow = J + 2
     out = {m: np.zeros((n_pow, len(obs), 3), dtype=complex) for m in ("P", "S")}
     # sources per order: s_j = E_0 psi_j + beta^2 E_1 psi_(j-2), at the Gauss nodes
+    # s_(J+1) is kept too: its force, beta^2 E_1 psi_(J-1), radiates at k_S^(J+1); its stress E_0 psi_(J+1)
+    # only from k_S^(J+2) on, beyond the powers kept, so psi_(J+1) is not needed
     srcs = []
-    for j in range(len(sol["psi"])):
-        sc = np.einsum("ncbij,nbj->nci", sol["e0"], sol["psi"][j])
+    n_psi = len(sol["psi"])
+    for j in range(n_psi + 1):
+        sc = np.einsum("ncbij,nbj->nci", sol["e0"], sol["psi"][j]) if j < n_psi else 0.0
         if j >= 2:
             sc = sc + REF.beta**2 * np.einsum("ncbij,nbj->nci", sol["e1"], sol["psi"][j - 2])
         srcs.append(np.einsum("cg,nci->ngi", ms, sc) * wq[None, :, None])  # (N, G, 9)

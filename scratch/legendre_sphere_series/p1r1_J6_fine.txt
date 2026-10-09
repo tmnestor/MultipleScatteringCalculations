@@ -1,0 +1,4 @@
+Legendre cell p = 1, contrast degree r = 1, powers of k_S kept J = 6
+  n 16 cells  2776: (ka)^2: 1.381e-06 [1.0e+00]  (ka)^3: 8.685e-17 [2.9e-48]  (ka)^4: 2.076e-06 [8.8e-02]  (ka)^5: 1.408e-06 [1.9e-03]  (ka)^6: 5.045e-04 [4.0e-03]  (ka)^7: 2.063e-06 [3.9e-04]   (far coefficients 21 s, blocks 254 s, solves 92 s)
+  n 18 cells  3888: (ka)^2: 8.669e-07 [1.0e+00]  (ka)^3: 1.442e-16 [2.9e-48]  (ka)^4: 1.306e-06 [8.8e-02]  (ka)^5: 8.831e-07 [1.9e-03]  (ka)^6: 3.150e-04 [4.0e-03]  (ka)^7: 1.308e-06 [3.9e-04]   (far coefficients 24 s, blocks 116 s, solves 149 s)
+  n 20 cells  5256: (ka)^2: 5.712e-07 [1.0e+00]  (ka)^3: 1.334e-16 [2.9e-48]  (ka)^4: 8.600e-07 [8.8e-02]  (ka)^5: 5.820e-07 [1.9e-03]  (ka)^6: 2.066e-04 [4.0e-03]  (ka)^7: 8.607e-07 [3.9e-04]   (far coefficients 30 s, blocks 167 s, solves 222 s)
