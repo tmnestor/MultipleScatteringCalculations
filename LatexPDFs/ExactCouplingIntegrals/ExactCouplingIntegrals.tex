@@ -62,28 +62,30 @@
 
 \begin{abstract}
 \noindent
-Volume-integral methods for elastic waves couple cubic cells through integrals of the elastodynamic
-Green's tensor against the polynomials that the cells carry. For cells that touch, the integrals are
-singular, and their closed forms are known: a power series in the wavenumber whose coefficients are
-universal numbers, each built from elementary master integrals reduced from volume to faces to edges. We
-show that these closed forms, evaluated as written in double precision, lose four to five digits: against
-a forty-digit reference the coupling block of a cell carrying a degree-two field and its corner neighbour
-is wrong by $1.7\times10^{-11}$, where quadrature reaches $1.9\times10^{-15}$. The cause is not the
-formulas but their basis. Every piece of the integration domain away from the singular point becomes a
-signed sum of boxes anchored at that point, with the polynomial weight expanded in powers of the
-distance from it; the moments reach $10^{19}$ against a piece of order one. We give an evaluation that is
-exact in the same sense and accurate to round-off. Pieces away from the singular point are expanded in
-Legendre polynomials of their own coordinates, and their moments are obtained from a banded relation,
-derived from the Legendre identity $(2k+1)P_k=P'_{k+1}-P'_{k-1}$ and posed as a truncated boundary-value
-problem: the only data are the values of a power of the distance at the corners of the box, no
-transcendental function is evaluated, and every moment comes out to full relative accuracy, including in a
-band of geometries close to the singular point where marching the recurrence in either direction is
-unstable. Pieces holding the singular point are split into Duffy pyramids, whose radial integral is
-exact and whose far face lies at unit distance, where the same Legendre moments apply. Against the
-reference the coupling blocks are then accurate to $1.0\times10^{-15}$ and $9.7\times10^{-16}$ for a degree-one
-field and $3.7\times10^{-15}$ and $4.3\times10^{-15}$ for a degree-two field, at corner and edge contact,
-the same round-off floor as quadrature. The reference is a direct forty-digit integration that shares no
-step with the evaluation.
+Volume-integral methods for elastic waves divide a heterogeneous medium into cubic cells and couple every
+pair of cells through the integral of the elastodynamic Green's tensor against the polynomials that the two
+cells carry. We obtain these coupling blocks in closed form, exact for elastic waves and accurate to
+round-off in double precision. For cells that touch, the expansion about the two cell centres that couples
+separated scatterers diverges, so the integrals themselves are needed; they are singular, and their closed
+forms are a power series in the wavenumber whose coefficients are universal numbers, independent of the
+frequency, the cell size and the medium, each built from elementary master integrals. Evaluated as written
+in double precision these closed forms lose four to five digits: against a forty-digit reference, the block
+of a cell carrying a degree-two field and its corner neighbour is wrong by $1.7\times10^{-11}$, where
+quadrature reaches $1.9\times10^{-15}$. The cause is the basis in which the polynomial weight meets the
+kernel. We give an evaluation that is exact in the same sense and accurate to round-off: the pieces of the
+integration domain away from the singular point are expanded in Legendre polynomials of their own
+coordinates, whose moments follow from a banded relation posed as a truncated boundary-value problem, with
+no transcendental function evaluated; the pieces at the singular point are split into Duffy pyramids. The
+touching blocks are then accurate to $9.7\times10^{-16}$ to $4.3\times10^{-15}$ for fields of degree one and
+two. Cells that do not touch are coupled by the same series with coefficients computed once per offset, and
+distant cells also by a two-centre multipole series where it converges. Every block at every frequency is
+then a weighted sum of stored numbers, and over $256$ frequencies the series costs $1.5$ to $1.9$ times less
+than quadrature, its one-off cost included. Because the coefficients are exact, the response of a whole
+cell model can be expanded in powers of the frequency, each power by one solve with the static operator.
+For a graded sphere modelled by Legendre cells of degree one, every coefficient of the far field from
+$(ka)^2$ to $(ka)^7$ converges at fourth order in the cell size, the apparent orders reaching $3.96$ to
+$4.00$ at $20$ cells across, and the exact zero of the $(ka)^3$ coefficient is reproduced to round-off.
+%%ABSTRACT_DEGREE2%%
 \end{abstract}
 
 % =====================================================================================================
@@ -159,6 +161,16 @@ is dominated by another solution cannot be marched, but can be solved as a trunc
 problem \citep{Gautschi1967,Olver1967}. What is new is the relation that gives the Legendre moments of a
 power of the distance over a box in any dimension, and the decomposition that brings every piece of a
 touching coupling block within its reach.
+
+The paper is organised as follows. Section~\ref{sec:blocks} defines the blocks and their series in the
+wavenumber, and shows that the two-centre expansion fails for every pair of touching cells.
+Sections~\ref{sec:failure} to~\ref{sec:results} measure the loss of the closed forms, build the forty-digit
+reference, give the stable evaluation and its accuracy and cost. Section~\ref{sec:multipoles} fixes what
+\emph{multipole} means here, \S\ref{sec:distant} couples cells that do not touch, and \S\ref{sec:sweep}
+separates what is computed once from what each frequency costs. Section~\ref{sec:fmm} relates the work to
+the fast multipole method. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
+model of a graded sphere in powers of the frequency, and \S\ref{sec:why} sets out why the coefficients are
+evaluated in closed form rather than by quadrature.
 
 \section{The coupling blocks of polynomial cubes}\label{sec:blocks}
 
@@ -883,13 +895,16 @@ natural structure, and its coupling blocks are those of this paper. That is an o
 
 \section{The graded sphere, power by power in the frequency}\label{sec:sphereseries}
 
-The graded sphere of \citet{NestorContinuum2026} is a homogeneous core of radius $a/10$ whose contrast falls
-to zero across a shell with the smoothstep profile, so that a cell model of it has no staircase. It is
-used here twice: to ask whether the errors that paper measures on it contain any quadrature error, and to
-obtain from the closed coefficients something that only a series with exact coefficients provides, the
-cell model's scattering expanded in powers of $ka$, compared order by order with the exact sphere's. The
-cell model is the Cartesian multipole hierarchy of third gradients with a contrast linear in each cell, as
-in that paper's comparison of the two schemes, and then with a contrast quadratic in each cell.
+The frequency-independent coefficients make possible something that a quadrature at each frequency does
+not: the scattering of a cell model expanded in powers of the frequency, each power obtained on its own
+and exactly, and compared power by power with the exact body's. The body is the graded sphere of
+\citet{NestorError2026}: radius $a=10$\,m, a homogeneous core of radius $a/10$, and a shell across which the
+contrast ($\Delta\lambda=2$\,GPa, $\Delta\mu=1$\,GPa, $\Delta\rho=100$\,kg\,m$^{-3}$, in the background
+$\alpha=5000$\,m\,s$^{-1}$, $\beta=3000$\,m\,s$^{-1}$, $\rho=2500$\,kg\,m$^{-3}$) falls to zero with the
+smoothstep profile $10x^3-15x^4+6x^5$, $x$ the fraction of the shell measured from the surface, so that a
+cell model of it has no staircase. A plane P wave is incident along an axis, and the far field is taken at
+nine angles in a plane that contains it. The cells are Legendre cells \citep{NestorLegendre2026}, of degree
+one and of degree two, every cell that overlaps the sphere being kept.
 
 \paragraph{The exact series.} The sphere's per-order $T$-matrix $T_n(w)$, $w=k_Pa$, is analytic near
 $w=0$. Its Taylor coefficients are obtained by Cauchy's formula on a circle in the complex $w$-plane, at
@@ -900,119 +915,86 @@ radius $0.2$ and $0.3$ and of $48$ and $64$ points agree to $8\times10^{-41}$; t
 reproduces the direct $T$-matrix at $w=0.01$ and $0.05$ to $4\times10^{-33}$; and as the shell narrows, the
 coefficients approach the homogeneous sphere's in proportion to its width. The far-field amplitudes follow
 in closed form,
-\begin{equation}\label{eq:farseries}
+\begin{equation}\label{eq:spherefar}
   r\,\mathrm{e}^{-\mathrm{i}k_Pr}u_r=-\frac{\mathrm{i}}{k_P}\sum_n(2n+1)\,T^{PP}_n(w)\,P_n(\cos\theta),\qquad
   r\,\mathrm{e}^{-\mathrm{i}k_Sr}u_\theta=-\frac{\mathrm{i}}{k_P}\sum_n(2n+1)\,T^{SP}_n(w)\,\frac{\dd P_n}{\dd\theta},
 \end{equation}
 from $h_n(z)\sim(-\mathrm{i})^{n+1}\mathrm{e}^{\mathrm{i}z}/z$ and the plane wave's $(2n+1)\mathrm{i}^n/(\mathrm{i}k_P)$.
 
-\paragraph{No quadrature error in the static term.} At $k_Sa=0.005$ and $0.01$ the far field is its static
-term to $O((ka)^2)$. Computed with the touching and near tables (Chebyshev distance up to two) from the
-closed coefficients, and with the Gauss tables of that paper, the relative errors against the exact sphere
-are the same to every digit shown on every grid: $2.280\times10^{-4}$, $4.185\times10^{-5}$,
-$1.411\times10^{-5}$, $6.172\times10^{-6}$, $3.222\times10^{-6}$ and $1.957\times10^{-6}$ for $4$ to $14$
-cells across (\path{scripts/measure_graded_sphere_low_frequency.py}). The apparent order falls from $4.2$ to
-$3.2$ between $4\to6$ and $12\to14$ cells; since the closed tables do not change it, that fall is the cell
-model's own, not quadrature.
-
-\paragraph{The cell model as a series.} Every table is a power series in $k_S$ with the frequency-independent
-coefficients of \S\ref{sec:sweep}, the density contrast enters as $\beta^2\Delta\rho\,k_S^2$, and the
-incident wave's derivatives at the cell centres are a power series in $k_P=(\beta/\alpha)k_S$. The system
-$\psi-\mathsf M(\mathbf B*\psi)=\psi^0$ of that paper is therefore a power series in $k_S$, and so is its
-solution, $\psi=\sum_jk_S^j\psi_j$, each order one solve with the static operator,
-\begin{equation}\label{eq:seriessolve}
-  \bigl(\mathsf I-\mathsf M\,\mathbf B_0*\bigr)\psi_j=\psi^0_j+\sum_{i=1}^{j}\mathsf M\,\mathbf B_i*\psi_{j-i}.
+\paragraph{The cell model as a series.} Every coupling block is a power series in $k_S$ with the
+frequency-independent coefficients of \S\ref{sec:sweep}. By Eq.~\eqref{eq:series} the coefficient of
+$k_S^j$ is
+\begin{equation}\label{eq:blockpowers}
+  \bK_j=\frac1{4\pi\mu}\Bigl[\frac{\mathrm i^j}{j!}\,\mathbf A\bigl(r^{j-1}\bigr)
+  +\frac{\mathrm i^{j+2}\bigl(1-\gamma^{j+2}\bigr)}{(j+2)!}\,\mathbf B\bigl(r^{j+1}\bigr)\Bigr],
+  \qquad\gamma=\frac{\beta}{\alpha},
 \end{equation}
-The far field is expanded the same way, through $\mathrm{e}^{-\mathrm{i}k\mathbf x\cdot\hat{\mathbf r}}$ and
-the $\omega^2$ force, so every power of the cell model's amplitude is obtained directly: no frequency is
-sampled and nothing is fitted (\path{scripts/measure_graded_sphere_frequency_series.py}). Summed, the series
-equals the direct solve at $k_Sa=0.02$ and $0.01$ to $6\times10^{-11}$ and $3\times10^{-11}$, the direct
-solve's own tolerance, and its truncation after $k^1$ and $k^3$ leaves $4\times10^{-5}$ and
-$2.4\times10^{-10}$, so each order is the one the direct solve contains.
+with $\mathbf A(r^m)$ and $\mathbf B(r^m)$ the blocks of $\delta_{ij}r^m$ and of $\partial_i\partial_jr^m$: the
+universal moments for cells that touch and the coefficients of Eq.~\eqref{eq:farseries} for the others. The
+contrast is $\bD=\bD_0+\beta^2k_S^2\bD_1$, the density entering through $\omega^2\Delta\rho$, and the incident
+wave's Legendre moments are a power series in $k_P=\gamma k_S$. The Galerkin system
+$(\mathbf M-\bK\bD)\psi=\psi^0$ of the cells \citep{NestorLegendre2026} is therefore a power series in $k_S$,
+and so is its solution, $\psi=\sum_jk_S^j\psi_j$, each order one solve with the static operator,
+\begin{equation}\label{eq:seriessolve}
+  \bigl(\mathbf M-\bK_0\bD_0\bigr)\psi_j=\psi^0_j+\sum_{i=1}^{j}\bK_i\bD_0\,\psi_{j-i}
+  +\beta^2\sum_{i=0}^{j-2}\bK_i\bD_1\,\psi_{j-2-i}.
+\end{equation}
+The far field is expanded the same way, through $\mathrm e^{-\mathrm ik\mathbf x\cdot\hat{\mathbf r}}$ and the
+source, so every power of the cell model's amplitude is obtained directly: no frequency is sampled and
+nothing is fitted (\path{scripts/measure_graded_sphere_legendre_series.py}). The blocks are applied by fast
+Fourier transforms on the grid, and since every reflection of the cube changes only the signs of a block's
+entries, an eighth of the transformed blocks is stored. Two checks. Summed at $k_Sh=10^{-4}$, the
+$\bK_j$ reproduce the package's series blocks to $2\times10^{-16}$ at the self, face and corner offsets and
+at two distant ones. And on $4$ cells across, the summed series of the far field equals a direct solve at
+$k_Sa=0.02$ and $0.05$ to $4\times10^{-12}$ and $6\times10^{-11}$ of the amplitude.
 
+\paragraph{No quadrature error.} Every block in these solves is accurate to about $10^{-14}$ or better: the
+touching ones in closed form by the stable evaluation of \S\ref{sec:stable}, the others by the Gauss orders of
+\S\ref{sec:distant}. The errors against the exact sphere below are $10^{-4}$ to
+$10^{-7}$ of each coefficient, five or more orders above the agreement of the series with a direct solve:
+they are the cell model's own, with no quadrature error in them.
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{rcccccc}
+\begin{tabular}{rrcccccc}
 \toprule
-cells across & $(ka)^2$ & $(ka)^3$ & $(ka)^4$ & $(ka)^5$ & $(ka)^6$ & $(ka)^7$ \\
+cells across & cells & $(ka)^2$ & $(ka)^3$ & $(ka)^4$ & $(ka)^5$ & $(ka)^6$ & $(ka)^7$ \\
 \midrule
-$4$  & $2.5\times10^{-4}$ & $0$ & $4.6\times10^{-4}$ & $2.0\times10^{-4}$ & $1.5\times10^{-1}$ & $1.8\times10^{-4}$ \\
-$6$  & $4.7\times10^{-5}$ & $0$ & $8.8\times10^{-5}$ & $3.4\times10^{-5}$ & $2.8\times10^{-2}$ & $5.6\times10^{-5}$ \\
-$8$  & $1.6\times10^{-5}$ & $0$ & $4.4\times10^{-5}$ & $1.1\times10^{-5}$ & $8.6\times10^{-3}$ & $2.7\times10^{-5}$ \\
-$10$ & $6.8\times10^{-6}$ & $0$ & $2.5\times10^{-5}$ & $4.7\times10^{-6}$ & $3.5\times10^{-3}$ & $1.5\times10^{-5}$ \\
-$12$ & $3.4\times10^{-6}$ & $0$ & $1.6\times10^{-5}$ & $2.4\times10^{-6}$ & $1.7\times10^{-3}$ & $9.5\times10^{-6}$ \\
-$14$ & $1.9\times10^{-6}$ & $0$ & $1.1\times10^{-5}$ & $1.3\times10^{-6}$ & $9.1\times10^{-4}$ & $6.5\times10^{-6}$ \\
+$4$  & $64$   & $2.8\times10^{-4}$ & $0$ & $3.2\times10^{-4}$ & $2.8\times10^{-4}$ & $1.4\times10^{-1}$ & $4.2\times10^{-5}$ \\
+$6$  & $208$  & $5.9\times10^{-5}$ & $0$ & $8.5\times10^{-5}$ & $6.0\times10^{-5}$ & $2.6\times10^{-2}$ & $5.7\times10^{-5}$ \\
+$8$  & $408$  & $2.0\times10^{-5}$ & $0$ & $3.0\times10^{-5}$ & $2.1\times10^{-5}$ & $8.1\times10^{-3}$ & $2.7\times10^{-5}$ \\
+$10$ & $768$  & $8.7\times10^{-6}$ & $0$ & $1.3\times10^{-5}$ & $8.9\times10^{-6}$ & $3.3\times10^{-3}$ & $1.2\times10^{-5}$ \\
+$12$ & $1280$ & $4.3\times10^{-6}$ & $0$ & $6.4\times10^{-6}$ & $4.4\times10^{-6}$ & $1.6\times10^{-3}$ & $6.2\times10^{-6}$ \\
+$14$ & $1912$ & $2.3\times10^{-6}$ & $0$ & $3.5\times10^{-6}$ & $2.4\times10^{-6}$ & $8.6\times10^{-4}$ & $3.4\times10^{-6}$ \\
+$16$ & $2776$ & $1.4\times10^{-6}$ & $0$ & $2.1\times10^{-6}$ & $1.4\times10^{-6}$ & $5.0\times10^{-4}$ & $2.1\times10^{-6}$ \\
+$18$ & $3888$ & $8.7\times10^{-7}$ & $0$ & $1.3\times10^{-6}$ & $8.8\times10^{-7}$ & $3.2\times10^{-4}$ & $1.3\times10^{-6}$ \\
+$20$ & $5256$ & $5.7\times10^{-7}$ & $0$ & $8.6\times10^{-7}$ & $5.8\times10^{-7}$ & $2.1\times10^{-4}$ & $8.6\times10^{-7}$ \\
 \midrule
-order $12\to14$ & $3.81$ & & $2.37$ & $3.78$ & $4.00$ & $2.52$ \\
-size & $1$ & $0$ & $8.8\times10^{-2}$ & $1.9\times10^{-3}$ & $4.0\times10^{-3}$ & $3.9\times10^{-4}$ \\
+order $6\to8$   & & $3.70$ & & $3.60$ & $3.70$ & $4.04$ & $2.67$ \\
+order $12\to14$ & & $3.92$ & & $3.90$ & $3.93$ & $4.01$ & $3.81$ \\
+order $18\to20$ & & $3.96$ & & $3.97$ & $3.96$ & $4.00$ & $3.97$ \\
+size & & $1$ & $0$ & $8.8\times10^{-2}$ & $1.9\times10^{-3}$ & $4.0\times10^{-3}$ & $3.9\times10^{-4}$ \\
 \bottomrule
 \end{tabular}
-\caption{The graded sphere's far-field amplitude, power by power in $k_Sa$: relative error of each coefficient
-of the cell model (third-gradient hierarchy, linear contrast, closed tables for the near orbits; the row at
-$14$ cells with the Gauss coefficients, which give the same numbers on every coarser grid) against the
-exact series. The $(ka)^3$ coefficient is zero for the exact sphere and for the cell model alike, to
-$2\times10^{-16}$ of the leading term. The last row is each coefficient's size against the leading one.}
+\caption{The graded sphere's far-field amplitude, power by power in $k_Sa$: the relative error of each
+coefficient of the degree-one Legendre cell model against the exact series, the largest over the P and S
+amplitudes and the nine angles. The $(ka)^3$ coefficient is zero for the exact sphere and for the cell
+model alike, to $2\times10^{-16}$ of the leading term. The last row is each coefficient's size against the
+leading one.}
 \label{tab:sphereseries}
 \end{table}
 
-\paragraph{What the powers show.} The leading term and the powers $(ka)^5$ and $(ka)^6$ converge at fourth
-order, as the full solution does (Table~\ref{tab:sphereseries}), and the cell model reproduces the exact
-zero of the $(ka)^3$ coefficient to round-off. With the linear contrast the coefficients of $(ka)^4$ and
-$(ka)^7$ do not: their apparent orders are $2.4$ to $2.6$ from $6$ cells on, and that of $(ka)^4$ is still
-falling at $14$ cells ($2.54$, $2.51$, $2.37$). The fixed-frequency solves of \citet{NestorContinuum2026}
-could not see this, because there the leading term dominates the error; at $12$ cells and $k_Sa=0.5$ the
-$(ka)^4$ term already carries about a tenth of it, and converging more slowly it would eventually set the
-order. With the linear contrast the profile matters through the way it vanishes at the surface: between
-$10$ and $12$ cells the order of $(ka)^4$ is $2.12$ for $\sin^2$, which vanishes like $x^2$ (with $x$ the
-fraction of the shell measured from the surface), $2.51$ for the smoothstep ($x^3$) and $2.72$ for
-$35x^4-84x^5+70x^6-20x^7$ ($x^4$), the first and last still falling. A simple law in the rate of vanishing
-does not fit these numbers.
+\paragraph{What the powers show.} With the degree-one cell every coefficient converges at fourth order
+(Table~\ref{tab:sphereseries}): between $18$ and $20$ cells across the apparent orders are $3.96$ to $4.00$,
+and the cell model reproduces the exact zero of the $(ka)^3$ coefficient to round-off. The orders approach
+four from below, and not at the same pace: the $(ka)^6$ coefficient is at $4.0$ from $6$ cells on, while that
+of $(ka)^7$ starts at $2.7$ and reaches $3.97$ only on the finest grids. The $(ka)^6$ coefficient carries the
+largest relative error, $1.4\times10^{-1}$ on $4$ cells and $2\times10^{-4}$ on $20$, but it is small, four
+thousandths of the leading term, so in a solve at one frequency it is hidden in the total. A solve at one
+frequency sees only the sum; here each power is measured on its own.
 
-\paragraph{A quadratic contrast.} With the contrast quadratic in each cell instead of linear, the order of
-every coefficient approaches four (Table~\ref{tab:sphereseriesquad};
-\path{scripts/measure_graded_sphere_frequency_series.py} with \path{--rc=2}, and for $16$ to $20$ cells
-\path{scratch/graded_sphere_ka4/split_test.py}, which holds the blocks of the higher powers on disk). The apparent order of $(ka)^4$
-rises from $3.41$ between $6$ and $8$ cells to $3.96$ between $12$ and $14$, and holds at $3.92$, $3.98$
-and $3.99$ out to $20$ cells; that of $(ka)^7$ takes the same course, $3.48$ between $6$ and $8$ cells and
-$3.85$ between $12$ and $14$, and has not been followed to finer grids, whose blocks for seven powers
-exceed the memory used here. At $14$ cells the quadratic contrast is $5.4$ times more accurate than the
-linear one for $(ka)^4$, $3.9$ times for $(ka)^7$ and $21$ times for the static term. The slow convergence
-of $(ka)^4$ and $(ka)^7$ with the linear contrast is therefore a property of the contrast's representation,
-not of the coupling: carried to one degree more, the contrast restores fourth order in $(ka)^4$ and brings
-$(ka)^7$ to the same course. Whether the $\sin^2$ and $x^4$ profiles also reach fourth order with the quadratic
-contrast has not been run. These questions could not have been asked of a solve at one frequency; they are
-asked here because each power of the cell model's response is available on its own, exactly.
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{rcccccc}
-\toprule
-cells across & $(ka)^2$ & $(ka)^3$ & $(ka)^4$ & $(ka)^5$ & $(ka)^6$ & $(ka)^7$ \\
-\midrule
-$4$  & $1.7\times10^{-5}$ & $0$ & $2.5\times10^{-4}$ & $1.2\times10^{-5}$ & $1.9\times10^{-3}$ & $1.7\times10^{-4}$ \\
-$6$  & $4.2\times10^{-6}$ & $0$ & $4.8\times10^{-5}$ & $5.9\times10^{-6}$ & $3.8\times10^{-4}$ & $3.7\times10^{-5}$ \\
-$8$  & $1.2\times10^{-6}$ & $0$ & $1.8\times10^{-5}$ & $1.7\times10^{-6}$ & $1.2\times10^{-4}$ & $1.4\times10^{-5}$ \\
-$10$ & $4.4\times10^{-7}$ & $0$ & $7.6\times10^{-6}$ & $6.2\times10^{-7}$ & $5.0\times10^{-5}$ & $6.0\times10^{-6}$ \\
-$12$ & $1.8\times10^{-7}$ & $0$ & $3.7\times10^{-6}$ & $2.6\times10^{-7}$ & $2.4\times10^{-5}$ & $3.0\times10^{-6}$ \\
-$14$ & $8.9\times10^{-8}$ & $0$ & $2.0\times10^{-6}$ & $1.3\times10^{-7}$ & $1.3\times10^{-5}$ & $1.7\times10^{-6}$ \\
-$16$ & $5.0\times10^{-8}$ & $0$ & $1.2\times10^{-6}$ & & & \\
-$18$ & $3.2\times10^{-8}$ & $0$ & $7.5\times10^{-7}$ & & & \\
-$20$ & $2.1\times10^{-8}$ & $0$ & $5.0\times10^{-7}$ & & & \\
-\midrule
-order $12\to14$ & $4.73$ & & $3.96$ & $4.69$ & $4.00$ & $3.85$ \\
-order $18\to20$ & $3.84$ & & $3.99$ & & & \\
-\bottomrule
-\end{tabular}
-\caption{As Table~\ref{tab:sphereseries}, with the contrast quadratic in each cell and every orbit's tables
-from the Gauss coefficients. The rows at $16$ to $20$ cells are from the series truncated after $k_S^3$,
-which gives the $(ka)^2$ and $(ka)^4$ coefficients only; on $4$ to $14$ cells the two truncations agree to
-$3\times10^{-9}$ of each error, the tolerance of the solves. The $(ka)^3$ coefficient is again zero to
-$2\times10^{-16}$ of the leading term.}
-\label{tab:sphereseriesquad}
-\end{table}
+%%DEGREE2%%
 
 \section{Why the coefficients are evaluated in closed form}\label{sec:why}
 
