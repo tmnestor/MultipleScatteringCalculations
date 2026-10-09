@@ -33,12 +33,18 @@ def main() -> int:
     d = np.load(ROOT / "scratch" / "taup" / f"taup_{tag}.npz")
     tau, slow = d["tau"], d["slow"]
     ex, vx = d[f"exact_{comp}"], d[f"cells_{comp}"]
+    # the FFT period is circular: intercept times past half the period are negative times, wrapped
+    period = tau[1] - tau[0] + tau[-1]
+    order = np.argsort(np.where(tau > period / 2, tau - period, tau))
+    tau = np.where(tau > period / 2, tau - period, tau)[order]
+    ex, vx = ex[order], vx[order]
     peak = np.abs(ex).max()
     ex, vx = ex / peak, vx / peak
     # the time window: where the exact section carries energy, padded
     env = np.abs(ex).max(axis=1)
     live = np.where(env > 1e-3)[0]
-    i0, i1 = max(live[0] - 20, 0), min(live[-1] + 20, len(tau) - 1)
+    pad = max(10, (live[-1] - live[0]) // 6)
+    i0, i1 = max(live[0] - pad, 0), min(live[-1] + pad, len(tau) - 1)
     t_ms = tau[i0 : i1 + 1] * 1e3
     ex, vx = ex[i0 : i1 + 1], vx[i0 : i1 + 1]
     diff = vx - ex
@@ -80,7 +86,7 @@ def main() -> int:
     for a in axes:
         a.tick_params(length=3)
     fig.suptitle(f"Plane P wave on the graded sphere: τ-p section of the {name} displacement 1.5a above the "
-                 f"centre ({tag.replace('_', ', ')} across)", color=INK, fontsize=11)  # fmt: skip
+                 f"centre (cells of degree {tag.split('_')[0][1:]}, {tag.split('_')[1][1:]} across)", color=INK, fontsize=11)  # fmt: skip
     out = ROOT / "scratch" / "taup" / f"taup_{tag}_{comp}.png"
     fig.savefig(out, dpi=150)
     print(f"wrote {out}; difference max {np.abs(diff).max():.2e} of the exact peak")
