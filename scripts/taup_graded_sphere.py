@@ -22,7 +22,7 @@ THE SEISMOGRAM. On the receiver plane z = -z_r, at horizontal slowness p (in the
 slant stack of the vertical and horizontal displacement is (2 pi)^2 [c_P e_P e^{i k_z^P z_r} + c_SV e_SV
 e^{i k_z^S z_r}] at k = omega p. Times a Ricker wavelet and transformed to time it is u(tau, p).
 
-Run:  python -u scripts/taup_graded_sphere.py [--p=1] [--n=8] [--nw=128] [--kmax=3] [--k0=1] [--zr=1.5] [--np=61]
+Run:  python -u scripts/taup_graded_sphere.py [--p=1] [--n=8] [--nw=128] [--kmax=3] [--k0=1] [--zr=1.5] [--np=60]
 """
 
 import math
@@ -96,7 +96,7 @@ def main() -> int:
     opts = dict(a[2:].split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a)
     p, n = int(opts.get("p", 1)), int(opts.get("n", 8))
     nw, kmax, k0 = int(opts.get("nw", 128)), float(opts.get("kmax", 3.0)), float(opts.get("k0", 1.0))
-    zr, n_p = float(opts.get("zr", 1.5)), int(opts.get("np", 61))
+    zr, n_p = float(opts.get("zr", 1.5)), int(opts.get("np", 60))
     gs.CORE = 0.1 * gs.RADIUS
     gs.set_profile("smoothstep")
     a = gs.RADIUS
