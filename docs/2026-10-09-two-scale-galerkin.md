@@ -74,3 +74,50 @@ dual-weighted residual: each cell's share of the error is explicit.
    law (Born error, and nonlinear fraction × medium projection error).
 5. A local estimate of e, without the fine solve (block-diagonal inverse of A_h per child, or per
    parent), as the refinement indicator.
+
+## 5. Results (9 October; `scripts/derive_two_scale_galerkin.py`, logs in `scratch/two_scale/`)
+
+Degree-one cells (p = r = 1), graded sphere of Paper 2 (core a/10, smoothstep shell), k_S a = 0.5.
+
+**The identities hold.** y_h = S x_H + e_med + e_fld holds to 1e-13–3e-13 at 4→8, 6→12 and 8→16 cells
+across. The far-field split (4) holds to 5e-14. In a medium with no detail (a contrast constant over the
+bounding cube), S^T r_h = 7e-13: the medium part of the residual vanishes, as (2) says.
+
+**Saturation.** F_H − F_exact equals F_H − F_h to 7.5%, 7.2% and 6.8% at 4, 6 and 8 cells, as fourth-order
+convergence predicts (coarse errors 2.9e-4, 6.4e-5, 2.2e-5; apparent orders 3.75, 3.79, 3.88).
+
+**The orders in the contrast.** The relative sizes of the three terms of (4), against |F_h|:
+
+| contrast | \|F_h − F_H\| | R(δΔ ψ_H) | field (solve) | medium (solve) |
+|---|---|---|---|---|
+| 1     | 2.7e-4 | 1.7e-5 | 2.5e-4 | 4.1e-5 |
+| 0.1   | 2.8e-5 | 2.0e-5 | 2.6e-5 | 4.2e-6 |
+| 0.01  | 1.8e-5 | 2.0e-5 | 2.8e-6 | 4.2e-7 |
+
+- **First order (the Born error):** the medium's detail radiating with the coarse field, R(δΔ ψ_H). For
+  degree-one cells the incident wave's own detail adds almost nothing at first order.
+- **Second order, two parts:** the medium's detail propagated by the solve (r_med), and the detail of the
+  field scattered inside the body (the part of r_fld beyond first order). At full contrast the second
+  dominates, 2.5e-4 against 4e-5. The octree paper's second term, ν × projection error × F, lumped them;
+  here each has its own residual.
+
+**Estimates without a fine solve.**
+- Block-diagonal inverse per child: F_h − F_H to 0.18–0.29% on the graded sphere, but 59% off in the
+  uniform medium.
+- Two-level estimate, ê = L r + S A_H⁻¹ S^T (r − A_h L r): to 0.03–0.14% on the graded sphere, 0.005% at
+  weak contrast, and 0.65% in the uniform medium. It needs one coarse solve and one fine matvec.
+
+**The indicator, cell by cell.** Each coarse cell's share of F_h − F_H is its children's error sources plus
+its own medium-detail radiation. The shares sum to F_h − F_H to 2e-10. The two-level shares are off by
+6e-4 to 8e-4 of the total (3e-6 at weak contrast). The top 20% of cells chosen by the two-level indicator
+hold exactly the largest possible share of the error: 0.558 and 0.673 at full contrast, 0.567 and 0.597 at
+0.01. The same number of cells chosen by the medium's detail alone hold 0.415, 0.556, 0.413 and 0.395.
+
+## 6. Next
+
+- The octree. The formulation holds for any tree, refining every leaf into its eight children. But the
+  fine operator cannot be assembled densely for trees of useful size: 8× the leaves, ~10⁵ unknowns. A fine
+  matvec is needed. One option is the FFT on the finest uniform grid with leaves as unions of finest
+  cells. Another is to apply the residual leaf by leaf, from the coarse solution's prolongation and the
+  equal-cell blocks.
+- Part III text: the derivation (sections 1–3), the checks and the table above, the indicator.

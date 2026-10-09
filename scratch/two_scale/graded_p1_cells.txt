@@ -1,1 +1,17 @@
 two-scale Galerkin: p = 1, r = 1, k_S a = 0.5, contrast x 1.0, graded sphere
+  n  4 ->  8: coarse cells 64, fine 512;  y_h = S x_H + e_med + e_fld to 1.3e-13,  far-field split to 4.5e-14
+     |S^T r_h| / |S^T b_h| = 3.02e-05,  |r_fld| / |b_h| = 4.80e-04
+     |F_h - F_H| = 2.664e-04 of |F_h|:  medium solve 4.093e-05, field solve 2.509e-04, medium radiation 1.678e-05
+     local estimate (block-diagonal A_h per child): medium 4.110e-05, field 2.512e-04; error of the estimated F_h - F_H 1.83e-03 of it
+     two-level estimate (local + one coarse solve): medium 4.103e-05, field 2.511e-04; error of the estimated F_h - F_H 1.43e-03 of it
+     cell shares: sum = F_h - F_H to 3.5e-02; two-level shares off by 8.14e-04 in total; 90% of the error in 31 of 64 cells
+     top 20% of cells hold 0.558 of the error; chosen by the two-level indicator 0.558, by the medium's detail alone 0.415
+     against the exact sphere: coarse 2.947e-04, fine 2.198e-05 (order 3.75);  F_H - F_exact = F_H - F_h to 7.46e-02 of it
+  n  6 -> 12: coarse cells 208, fine 1664;  y_h = S x_H + e_med + e_fld to 1.9e-13,  far-field split to 4.9e-14
+     |S^T r_h| / |S^T b_h| = 1.71e-05,  |r_fld| / |b_h| = 2.20e-04
+     |F_h - F_H| = 5.673e-05 of |F_h|:  medium solve 9.742e-06, field solve 5.347e-05, medium radiation 4.605e-06
+     local estimate (block-diagonal A_h per child): medium 9.768e-06, field 5.359e-05; error of the estimated F_h - F_H 2.94e-03 of it
+     two-level estimate (local + one coarse solve): medium 9.766e-06, field 5.351e-05; error of the estimated F_h - F_H 1.30e-03 of it
+     cell shares: sum = F_h - F_H to 3.7e-02; two-level shares off by 6.29e-04 in total; 90% of the error in 83 of 208 cells
+     top 20% of cells hold 0.673 of the error; chosen by the two-level indicator 0.673, by the medium's detail alone 0.556
+     against the exact sphere: coarse 6.395e-05, fine 4.617e-06 (order 3.79);  F_H - F_exact = F_H - F_h to 7.22e-02 of it

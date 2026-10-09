@@ -128,8 +128,9 @@ def far_cells(centres, grid_idx, h, omega, delta, psi, p, r, dirs, n_gauss=6):
     out_p, out_s = [], []
     for rh in dirs:
         proj = pts @ rh
-        gp = np.exp(-1j * k_p * proj) / (4 * np.pi * REF.rho * REF.alpha**2)
-        gsh = np.exp(-1j * k_s * proj) / (4 * np.pi * REF.rho * REF.beta**2)
+        # as ``farfield.radiate`` at r = 1: the phase e^(i k (1 - x.r_hat)) / (4 pi rho c^2)
+        gp = np.exp(1j * k_p * (1.0 - proj)) / (4 * np.pi * REF.rho * REF.alpha**2)
+        gsh = np.exp(1j * k_s * (1.0 - proj)) / (4 * np.pi * REF.rho * REF.beta**2)
         sr = sig @ rh
         qp = (forces @ rh + 1j * k_p * (sr @ rh)) * gp
         out_p.append((qp.reshape(-1, g).sum(1))[:, None] * rh[None, :])
