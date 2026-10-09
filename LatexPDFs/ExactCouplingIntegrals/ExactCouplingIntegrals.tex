@@ -52,6 +52,10 @@
 \newcommand{\bD}{\boldsymbol{\Delta}}
 % the differential of every integral and derivative is upright: \dd z, \dd^3x, \frac{\dd}{\dd z}
 \newcommand{\dd}{\mathrm{d}}
+% a hat centred over an upright bold letter (the accent otherwise sits to its right): the box under the
+% accent is narrowed by 3mu and the width restored after it, so spacing and subscripts are unchanged
+\newcommand{\uvec}[1]{{\hat{\mathbf{#1}\mkern-3mu}\mkern3mu}}
+\newcommand{\uhat}[1]{{\hat{#1\mkern-2mu}\mkern2mu}}
 
 \title{\bfseries The Coupling Integrals of Polynomial Cubes in Closed Form\\[4pt]
 \large Exact for Elastic Waves, and Accurate in Double Precision}
@@ -537,13 +541,13 @@ Legendre identity $(2k+1)P_k=P'_{k+1}-P'_{k-1}$ and an integration by parts in $
 $g=S^{m+2}=(c^2+\sum_jt_j^2)\,S^m$, whose derivative is $\partial g/\partial x_i=\frac{m+2}{2}\,t_iS^m$, give
 \begin{equation}\label{eq:relation}
   (2k_i+1)\int P_{\mathbf{k}}\Bigl(c^2+\sum_jt_j^2\Bigr)S^m
-  +\frac{m+2}{2}\int\bigl(P_{k_i+1}-P_{k_i-1}\bigr)(x_i)\,t_i\,P_{\hat{\mathbf{k}}}\,S^m=0,\qquad k_i\ge1,
+  +\frac{m+2}{2}\int\bigl(P_{k_i+1}-P_{k_i-1}\bigr)(x_i)\,t_i\,P_{\uvec{k}}\,S^m=0,\qquad k_i\ge1,
 \end{equation}
-where $P_{\mathbf{k}}=\prod_jP_{k_j}(x_j)$ and $\hat{\mathbf{k}}$ collects the other axes. The boundary
+where $P_{\mathbf{k}}=\prod_jP_{k_j}(x_j)$ and $\uvec{k}$ collects the other axes. The boundary
 terms vanish because $P_{k_i+1}-P_{k_i-1}$ is zero at $x_i=\pm1$. For $k_i=0$, with $P_0=P_1'$,
 \begin{equation}\label{eq:relation0}
-  \int P_{\mathbf{k}}\Bigl(c^2+\sum_jt_j^2\Bigr)S^m+\frac{m+2}{2}\int P_1(x_i)\,t_i\,P_{\hat{\mathbf{k}}}\,S^m
-  =\tfrac12\Bigl(\Lambda_{d-1}\bigl[\hat{\mathbf{k}};c^2+(l_i+1)^2\bigr]+\Lambda_{d-1}\bigl[\hat{\mathbf{k}};
+  \int P_{\mathbf{k}}\Bigl(c^2+\sum_jt_j^2\Bigr)S^m+\frac{m+2}{2}\int P_1(x_i)\,t_i\,P_{\uvec{k}}\,S^m
+  =\tfrac12\Bigl(\Lambda_{d-1}\bigl[\uvec{k};c^2+(l_i+1)^2\bigr]+\Lambda_{d-1}\bigl[\uvec{k};
   c^2+l_i^2\bigr]\Bigr),
 \end{equation}
 the right side being the moments of $S^{m+2}$ on the two faces normal to axis $i$, one dimension down,
@@ -940,7 +944,7 @@ and so is its solution, $\psi=\sum_jk_S^j\psi_j$, each order one solve with the 
   \bigl(\mathbf M-\bK_0\bD_0\bigr)\psi_j=\psi^0_j+\sum_{i=1}^{j}\bK_i\bD_0\,\psi_{j-i}
   +\beta^2\sum_{i=0}^{j-2}\bK_i\bD_1\,\psi_{j-2-i}.
 \end{equation}
-The far field is expanded the same way, through $\mathrm e^{-\mathrm ik\mathbf x\cdot\hat{\mathbf r}}$ and the
+The far field is expanded the same way, through $\mathrm e^{-\mathrm ik\mathbf x\cdot\uvec{r}}$ and the
 source, so every power of the cell model's amplitude is obtained directly: no frequency is sampled and
 nothing is fitted (\path{scripts/measure_graded_sphere_legendre_series.py}). The blocks are applied by fast
 Fourier transforms on the grid, and since every reflection of the cube changes only the signs of a block's
@@ -1064,18 +1068,19 @@ $\sin\theta=|\mathbf k|/k$ holds on either branch, so no complex root is taken.
 $\mathrm e^{\mathrm ikr}/r=(\mathrm i/2\pi)\int\dd^2k\,\mathrm e^{\mathrm i(\mathbf k\cdot\boldsymbol\rho+k_z|z|)}/k_z$,
 applied to the Green's tensor, gives the amplitudes of any bounded source as
 \begin{equation}\label{eq:weylamp}
-  c_P(\mathbf k)=\frac{\mathrm i}{2\pi k_z^P}\,\mathcal A_P(\hat{\mathbf k}_P),\qquad
-  c_{SV}(\mathbf k)=\frac{\mathrm i}{2\pi k_z^S}\,\mathcal A_{SV}(\hat{\mathbf k}_S),\qquad
-  \hat{\mathbf k}_{P,S}=\frac{(\mathbf k,-k_z^{P,S})}{k_{P,S}},
+  c_P(\mathbf k)=\frac{\mathrm i}{2\pi k_z^P}\,\mathcal A_P(\uvec{k}_P),\qquad
+  c_{SV}(\mathbf k)=\frac{\mathrm i}{2\pi k_z^S}\,\mathcal A_{SV}(\uvec{k}_S),\qquad
+  \uvec{k}_{P,S}=\frac{\mathbf k-k_z^{P,S}\,\uvec{z}}{k_{P,S}},
 \end{equation}
 where $\mathcal A$ is the radiation pattern, $r\,\mathrm e^{-\mathrm ikr}\bu$ as $r\to\infty$, taken at the unit
-vector $\hat{\mathbf k}$ of the upgoing wave. For a propagating wave $\hat{\mathbf k}$ is real and $\mathcal A$ is
-the far-field amplitude. For an evanescent wave $\hat{\mathbf k}$ is complex, and the pattern is continued there
+vector $\uvec{k}$ of the upgoing wave ($\uvec{z}$ points down).
+It is a unit vector in the sense $\uvec{k}\cdot\uvec{k}=1$, since $|\mathbf k|^2+(k_z)^2=k^2$ on either branch. For a propagating wave $\uvec{k}$ is real and $\mathcal A$ is
+the far-field amplitude. For an evanescent wave $\uvec{k}$ is complex, and the pattern is continued there
 exactly. The cells take that continuation directly. The pattern is a sum over cells of the moments of each
 cell's polynomial source $\mathbf s$ against the plane wave,
 \begin{equation}\label{eq:cellmoment}
-  \int_{\text{cell}}\mathbf s(\mathbf y)\,\mathrm e^{-\mathrm ik\hat{\mathbf k}\cdot\mathbf y}\,\dd^3y
-  =\mathrm e^{-\mathrm ik\hat{\mathbf k}\cdot\mathbf y_c}\,h^3\sum_c\mathbf s_c\prod_{i=1}^3F_{e_{ci}}(-k\hat k_ih),\qquad
+  \int_{\text{cell}}\mathbf s(\mathbf y)\,\mathrm e^{-\mathrm ik\uvec{k}\cdot\mathbf y}\,\dd^3y
+  =\mathrm e^{-\mathrm ik\uvec{k}\cdot\mathbf y_c}\,h^3\sum_c\mathbf s_c\prod_{i=1}^3F_{e_{ci}}(-k\uhat{k}_ih),\qquad
   F_n(q)=\int_{-1}^1\xi^n\mathrm e^{\mathrm iq\xi}\,\dd\xi=\sum_{l\le n}a_{nl}\,2\,\mathrm i^l j_l(q),
 \end{equation}
 with $\mathbf y_c$ the cell's centre, $\mathbf s_c$ the coefficients of its monomials $\xi^{\mathbf e_c}$, and
@@ -1086,14 +1091,14 @@ direction (\path{cubic_scattering/graded_voxel/farfield.py}, \texttt{source\_mom
 with a $40$-digit quadrature of $F_n$ to $2\times10^{-15}$, and on a solved cell model with a ten-point Gauss
 rule per cell to $3\times10^{-15}$.
 
-\paragraph{3. The seismogram.} At horizontal slowness $p$ in the plane of incidence, $\mathbf k=\omega p\,\hat{\mathbf x}$,
+\paragraph{3. The seismogram.} At horizontal slowness $p$ in the plane of incidence, $\mathbf k=\omega p\,\uvec{x}$,
 the slant stack of the displacement on the receiver plane is the spectrum itself, carried up from the centre:
 \begin{equation}\label{eq:taup}
   \bu(\tau,p)=\frac{(2\pi)^2}{\pi}\operatorname{Re}\int_0^\infty\dd\omega\,W(\omega)
   \Bigl[c_P\,\mathbf e_P\,\mathrm e^{\mathrm ik_z^Pz_c}+c_{SV}\,\mathbf e_{SV}\,\mathrm e^{\mathrm ik_z^Sz_c}\Bigr]
   \mathrm e^{\mathrm i\omega z_c/\alpha}\,\mathrm e^{-\mathrm i\omega\tau},
 \end{equation}
-with $\mathbf e_P=(\hat{\mathbf x}p\omega-\hat{\mathbf z}k_z^P)/k_P$ and $\mathbf e_{SV}=-(\hat{\mathbf x}k_z^S+\hat{\mathbf z}p\omega)/k_S$
+with $\mathbf e_P=(\uvec{x}p\omega-\uvec{z}k_z^P)/k_P$ and $\mathbf e_{SV}=-(\uvec{x}k_z^S+\uvec{z}p\omega)/k_S$
 and $W(\omega)=(\omega/\omega_0)^2\mathrm e^{-(\omega/\omega_0)^2}\mathrm e^{\mathrm i\omega t_d}$ a Ricker wavelet,
 delayed by $t_d=6.3/\omega_0=21$\,ms so that it is causal: before $\tau=0$ it stays below $10^{-3}$ of its peak. The factor
 $\mathrm e^{\mathrm i\omega z_c/\alpha}$ counts time from the incident wave's crossing of the receiver plane, so
