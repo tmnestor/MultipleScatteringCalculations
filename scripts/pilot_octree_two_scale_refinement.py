@@ -323,6 +323,35 @@ def main() -> int:
                   f"error {true_error(tree, x, body, exact, peak):.4e}", flush=True)  # fmt: skip
         return 0
     rows = []
+    if "theta" in opts:  # Doerfler marking: refine the fewest leaves that hold a fraction theta of sum |eta|
+        theta, max_leaves = float(opts["theta"]), int(opts.get("max", 800))
+        tols = []
+        cc, hh = uniform_leaves(RADIUS, 2)
+        it = 0
+        while True:
+            tree = Tree(fin, cc, hh, body.omega, p, p)
+            x = tree.solve(tree.b)
+            err = true_error(tree, x, body, exact, peak)
+            share, _ = two_scale_shares(fin, tree, x, body.omega, p, p, dirs)
+            fpeak = np.abs(far_leaves(tree, x, dirs).sum(0)).max()
+            eta = np.abs(share).max(axis=1) / fpeak
+            predicted = float(np.abs(share.sum(0)).max() / fpeak)
+            sizes = {float(h): int((hh == h).sum()) for h in np.unique(hh)}
+            print(f"   theta {theta:g} it {it}: leaves {len(hh):5d}, error {err:.3e}, two-scale difference "
+                  f"{predicted:.3e}; {sizes}   [{time.perf_counter() - t0:.0f} s]", flush=True)  # fmt: skip
+            rows.append({"theta": theta, "it": it, "cells": len(hh), "error": err, "difference": predicted,
+                         "sizes": sizes})  # fmt: skip
+            order = np.argsort(-eta)
+            cum = np.cumsum(eta[order])
+            if cum[-1] <= 0.0:
+                break
+            flag = np.zeros(len(hh), dtype=bool)
+            flag[order[: int(np.searchsorted(cum, theta * cum[-1])) + 1]] = True
+            flag &= eta > 0.0
+            if len(hh) + 7 * flag.sum() > max_leaves:
+                break
+            cc, hh = refine_leaves(cc, hh, flag)
+            it += 1
     for tol in tols:
         cc, hh = uniform_leaves(RADIUS, 2)
         it = 0
@@ -343,7 +372,8 @@ def main() -> int:
                 break
             cc, hh = refine_leaves(cc, hh, flag)
             it += 1
-    out = ROOT / "scratch" / "two_scale" / f"octree_refinement_localised_p{p}.json"
+    tag = f"_theta{opts['theta']}" if "theta" in opts else ""
+    out = ROOT / "scratch" / "two_scale" / f"octree_refinement_localised_p{p}{tag}.json"
     out.write_text(json.dumps({"ka_s": ka, "p": p, "h0": h0, "rows": rows}, indent=2) + "\n")
     print(f"   wrote {out}")
     return 0
