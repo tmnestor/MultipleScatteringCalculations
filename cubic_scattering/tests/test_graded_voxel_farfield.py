@@ -119,3 +119,44 @@ def test_graded_field_tends_to_the_graded_far_field():
     up, us = graded_far_field(res, dirs, rdist, khat, khat, "P")
     u, _ = graded_field(res, dirs * rdist)
     assert np.abs(u - (up + us)).max() / np.abs(u).max() < 1e-4
+
+
+def test_monomial_fourier_closed_form():
+    # int xi^n exp(i q xi) over [-1, 1] through the spherical Bessel functions, for real and complex q,
+    # including q -> 0 where the elementary forms cancel
+    from numpy.polynomial.legendre import leggauss
+
+    from cubic_scattering.graded_voxel.farfield import monomial_fourier
+
+    x, w = leggauss(40)
+    for n in range(5):
+        for q in (1e-5, 0.4, 2.0, 0.3 + 0.5j, -0.7j):
+            want = np.sum(w * x**n * np.exp(1j * q * x))
+            # the Gauss sum cancels for odd n as q -> 0, so the tolerance is set by the integrand's size
+            scale = np.sum(w * np.abs(x**n * np.exp(1j * q * x)))
+            assert abs(monomial_fourier(n, q) - want) <= 5e-14 * scale
+
+
+def test_source_moments_match_the_node_sources_at_complex_wave_vectors():
+    # the closed-form moments of the cells' polynomial sources equal those of a converged Gauss rule, for a
+    # real wave vector and for a complex one (an evanescent direction), at degrees one and two
+    from cubic_scattering.graded_voxel.farfield import _node_sources, source_moments
+
+    rng = np.random.default_rng(3)
+    for nf, nd in ((4, 4), (10, 10)):
+        res = GradedVoxelResult(
+            centres=np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, -1.0, 1.0]]),
+            grid_idx=np.array([[0, 0, 0], [1, 0, 0], [0, -1, 1]]),
+            h=0.5,
+            omega=OMEGA,
+            ref=REF,
+            delta=rng.normal(size=(3, nd, 9, 9)) * 1e9,
+            psi=rng.normal(size=(3, nf, 9)) + 1j * rng.normal(size=(3, nf, 9)),
+            p=1 if nf == 4 else 2,
+            r=1 if nd == 4 else 2,
+        )
+        pts, srcs = _node_sources(res, 12)
+        for k_vec in (np.array([0.3, -0.5, 0.8]), np.array([-1.1j, 0.9, 0.2])):
+            want = np.exp(-1j * (pts @ k_vec)) @ srcs
+            got = source_moments(res, k_vec)
+            assert np.abs(got - want).max() <= 1e-12 * np.abs(want).max()
