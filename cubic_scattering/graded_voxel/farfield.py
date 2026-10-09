@@ -7,13 +7,19 @@ by k h <= 0.25 across a cell).  Two readouts share those sources:
 * ``graded_far_field`` keeps the 1/r term only.  Its point-source formula is that of
   ``foldy_lax_far_field``: force and Voigt stress with the same sign, u_P = G_P r (r.F + i k_P r.sigma.r),
   u_S = G_S (F + i k_S sigma.r)_perp.
+* ``source_moments`` integrates the sources against exp(-i k.x) in closed form, for any complex k: the
+  amplitudes of the plane-wave (Weyl) spectrum, evanescent waves included, need the radiation pattern at
+  complex directions.
 * ``graded_field`` evaluates the field at a finite distance with the propagator the solve itself uses
   (``kernel.kernel_9x9``), near-field terms included.
 """
 
+from functools import cache
+
 import numpy as np
-from numpy.polynomial.legendre import leggauss
+from numpy.polynomial.legendre import leggauss, poly2leg
 from numpy.typing import NDArray
+from scipy.special import spherical_jn
 
 from ..effective_contrasts import ReferenceMedium
 from ..sphere_scattering import _voigt_to_tensor
@@ -43,8 +49,12 @@ def radiate(
     for o, direction in enumerate(np.asarray(directions, dtype=float)):
         rh = direction / np.linalg.norm(direction)
         proj = points @ rh
-        gp = np.exp(1j * k_p * (r_distance - proj)) / (4 * np.pi * ref.rho * ref.alpha**2 * r_distance)
-        gs = np.exp(1j * k_s * (r_distance - proj)) / (4 * np.pi * ref.rho * ref.beta**2 * r_distance)
+        gp = np.exp(1j * k_p * (r_distance - proj)) / (
+            4 * np.pi * ref.rho * ref.alpha**2 * r_distance
+        )
+        gs = np.exp(1j * k_s * (r_distance - proj)) / (
+            4 * np.pi * ref.rho * ref.beta**2 * r_distance
+        )
         sr = sig @ rh
         qp = forces @ rh + 1j * k_p * (sr @ rh)
         u_p[o] = (gp * qp).sum() * rh
@@ -77,6 +87,62 @@ def radiate_exact(
     return out[:, :3], out[:, 3:]
 
 
+@cache
+def _monomial_legendre(n: int) -> tuple[float, ...]:
+    """Coefficients of xi^n in the Legendre polynomials P_0 .. P_n."""
+    return tuple(poly2leg([0.0] * n + [1.0]))
+
+
+def monomial_fourier(n: int, q: NDArray) -> NDArray:
+    """int_{-1}^{1} xi^n exp(i q xi) d xi for complex q, in closed form.
+
+    xi^n is a combination of P_0 .. P_n, and int P_l exp(i q xi) = 2 i^l j_l(q): the sinc of n = 0
+    (j_0(q) = sin q / q) and its derivatives. Through the spherical Bessel functions, not their elementary
+    forms, which cancel as q -> 0; ``scipy.special.spherical_jn`` takes complex arguments.
+    """
+    q = np.asarray(q, dtype=complex)
+    return sum(
+        c * 2.0 * 1j**l * spherical_jn(l, q)
+        for l, c in enumerate(_monomial_legendre(n))
+        if c != 0.0
+    )
+
+
+def cell_source_coefficients(res: GradedVoxelResult) -> NDArray:
+    """S[cell, c, :]: each cell's source as sum_c S_c m_c(xi), shape (N, n_source, 9)."""
+    return np.array(
+        [
+            np.einsum("cbij,bj->ci", source_expansion(d, psi.shape[0]), psi)
+            for d, psi in zip(res.delta, res.psi, strict=True)
+        ]
+    )
+
+
+def source_moments(
+    res: GradedVoxelResult, k_vec: NDArray, coef: NDArray | None = None
+) -> NDArray:
+    """Int s(x) exp(-i k.x) d^3x over every cell, summed: the 9 entries (force, Voigt stress) for a complex
+    wave vector k_vec. Exact for the cells' polynomial sources, with no quadrature.
+
+    A cell's source is sum_c S_c m_c(xi), x = centre + h xi, so its moment is
+    exp(-i k.centre) h^3 sum_c S_c prod_i F_{e_ci}(-k_i h), F = ``monomial_fourier``. ``coef`` is
+    ``cell_source_coefficients(res)``, passed when many wave vectors share one solution.
+    """
+    k_vec = np.asarray(k_vec, dtype=complex)
+    coef = cell_source_coefficients(res) if coef is None else coef
+    exps = SOURCE_EXPONENTS_QUARTIC[: coef.shape[1]]
+    f1 = {
+        (i, e): monomial_fourier(e, -k_vec[i] * res.h)
+        for i in range(3)
+        for e in range(5)
+    }
+    mono = (
+        np.array([f1[0, e[0]] * f1[1, e[1]] * f1[2, e[2]] for e in exps]) * res.h**3
+    )  # (n_source,)
+    phase = np.exp(-1j * (np.asarray(res.centres) @ k_vec))  # (N,)
+    return mono @ np.einsum("n,nci->ci", phase, coef)
+
+
 def _node_sources(res: GradedVoxelResult, n_gauss: int) -> tuple[NDArray, NDArray]:
     """The cells' polynomial sources as point sources at Gauss nodes: positions (N, 3), sources (N, 9)."""
     x, w = leggauss(n_gauss)
@@ -85,7 +151,9 @@ def _node_sources(res: GradedVoxelResult, n_gauss: int) -> tuple[NDArray, NDArra
     ms = monomials(SOURCE_EXPONENTS_QUARTIC, xi)  # (35, G)
     pts, srcs = [], []
     for c, d, psi in zip(res.centres, res.delta, res.psi, strict=True):
-        coef = np.einsum("cbij,bj->ci", source_expansion(d, psi.shape[0]), psi)  # (n_source, 9)
+        coef = np.einsum(
+            "cbij,bj->ci", source_expansion(d, psi.shape[0]), psi
+        )  # (n_source, 9)
         srcs.append((ms[: len(coef)].T @ coef) * (ww * res.h**3)[:, None])
         pts.append(c + res.h * xi)
     return np.concatenate(pts), np.concatenate(srcs)
@@ -106,7 +174,9 @@ def graded_far_field(
     return radiate(pts, srcs, res.omega, res.ref, directions, r_distance)
 
 
-def graded_field(res: GradedVoxelResult, obs_points: NDArray, n_gauss: int = 4) -> tuple[NDArray, NDArray]:
+def graded_field(
+    res: GradedVoxelResult, obs_points: NDArray, n_gauss: int = 4
+) -> tuple[NDArray, NDArray]:
     """Scattered displacement (M, 3) and engineering strain (M, 6) of the solved graded voxels at
     `obs_points`, at any distance outside the cells.
 
