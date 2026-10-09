@@ -70,8 +70,8 @@ equation is written in displacement; how the strain inside a cell is represented
 decision, and the original approximation takes it as uniform. We expand the displacement and the strain
 independently in Legendre polynomials over the cube and test against the same polynomials: a Galerkin
 cell. We choose it because it couples cells most accurately. Its interactions are exact double integrals
-over both cells, whereas an expansion about the cell's centre treats the receiving cell as a point. For the linear Legendre cell, whose expansions stop at degree one (the constant and the three
-linear polynomials, $36$ unknowns), with a uniform contrast we give the single-site
+over both cells, whereas an expansion about the cell's centre treats the receiving cell as a point. For the degree-one Legendre cell, whose expansions hold the constant and the three linear
+polynomials ($36$ unknowns), with a uniform contrast we give the single-site
 $T$-matrix in closed form at every power of the wavenumber. Its self-interaction is a power series,
 $\mathbf K=\sum_n(k_Sh)^n\mathbf K_n$ with $h$ the half-width, whose coefficients $\mathbf K_n$ are moments of
 powers of the distance over the cell and depend on neither the frequency, the cell size nor the medium.
@@ -95,7 +95,7 @@ against $2$\,s by quadrature, after a one-off derivation of $30$\,s.
 % DRAFT STATUS (7 October 2026). Written from the derivation in scripts/derive_legendre_cell_dynamic.py,
 % whose checks all pass, and from the single-cell section of the coupling paper (Paper 2, sec:site and
 % app:blocks), which this paper takes over. Scope as planned in docs/2026-10-07-three-paper-split-plan.md
-% (decision D7). To come: the graded contrast in the cell; the quadratic field; the comparison with the
+% (decision D7). To come: the graded contrast in the cell; the degree-two cell; the comparison with the
 % collocated (hierarchy) single site, condensed from the earlier Paper 1; declarations as in Papers 1-2.
 % =====================================================================================================
 
@@ -132,7 +132,7 @@ more accurate for a given number of unknowns \citep{NestorContinuum2026}. And a 
 projection of the field and of the medium, which is what makes its error a projection error, known before
 the solve \citep{NestorError2026}.
 
-The single-site $T$-matrix of the linear Legendre cell was given in \citet{NestorCoupling2026} in its
+The single-site $T$-matrix of the degree-one Legendre cell was given in \citet{NestorCoupling2026} in its
 static limit, entry by entry on five constants. Here it is given at every power of the frequency. The
 central result is that the self-interaction of the cell, the only part of its $T$-matrix that is an
 integral, is
@@ -229,7 +229,7 @@ it, so the loss is not the faces' alone; with the strain an unknown of its own, 
 polynomials as the displacement, the scheme reaches the order $2p+2$ that a Galerkin scheme gives a
 functional of its solution \citep{NestorContinuum2026}.
 
-\paragraph{The linear Legendre cell.} A cube $[-h,h]^3$ with local coordinates $\bxi=(\bx-\bx_c)/h$ carries
+\paragraph{The degree-one Legendre cell.} A cube $[-h,h]^3$ with local coordinates $\bxi=(\bx-\bx_c)/h$ carries
 $\psi(\bx)=\sum_b\psi_bL_b(\bxi)$ over the four functions $L_b\in\{1,\xi_0,\xi_1,\xi_2\}$, each $\psi_b$ a
 nine-component vector: $36$ unknowns. With the contrast uniform in the cell the source density
 $\bD\psi$ is a polynomial on the same four functions. Testing Eq.~\eqref{eq:ls} and its derivative against
@@ -566,7 +566,7 @@ Eq.~\eqref{eq:shearaverage} symbolically, with $\beta/\alpha$ left free (Table~\
 
 \begin{table}[htbp]
 \centering
-\caption{The static channels of the linear Legendre cell, Eq.~\eqref{eq:eshelbychannels}. $N_\Gamma$ is the
+\caption{The static channels of the degree-one Legendre cell, Eq.~\eqref{eq:eshelbychannels}. $N_\Gamma$ is the
 static entry of $\bN_\Gamma$ on the channel, $\mu N_\Gamma=p+b_2q$ with $b_2=-\tfrac12(1-\beta^2/\alpha^2)$, on
 the constants $\chi_1$, $\chi_0$ and $\Lambda$ of \citet{NestorCoupling2026}; the values are for
 $\beta/\alpha=3/5$ ($\nu=7/32$). The $q$ of $A_{2u}$, $E_u$ and $T_{2u}$ is in the data file of the Data
@@ -633,7 +633,7 @@ is stated by the next term, which is itself in closed form.
 
 \section{Discussion}\label{sec:discussion}
 
-\paragraph{A frequency sweep with no integral at any frequency.} The single-site $T$-matrix of the linear
+\paragraph{A frequency sweep with no integral at any frequency.} The single-site $T$-matrix of the degree-one
 Legendre cell is now known in closed form at every power of the frequency, and what that buys is a sweep. The
 coefficients $\bK_n$ depend on neither the frequency, the cell size nor the medium: they are computed once,
 in exact arithmetic, and stored. Each frequency then takes two steps: evaluate each block $\bN_\Gamma$ as a
@@ -703,7 +703,7 @@ few independent channels, each with one constant and one resonance, $1-N_\Gamma 
 \paragraph{What is not yet covered.} Two things. The contrast here is uniform in the cell; a graded contrast couples the
 even and odd unknowns and leaves only the operations that fix its gradient
 \citep{NestorCoupling2026}, so the reduction is weaker, though the moments are the same and the closed
-form carries over. And the field is linear; the quadratic cell of $90$ unknowns needs the moments of
+form carries over. And the cell is of degree one; the degree-two cell of $90$ unknowns needs the moments of
 monomials to degree four, which the same derivation provides. The comparison with the single site of the
 expansion about the centre, whose self-interaction is taken at the centre rather than averaged over the
 cell \citep{NestorContinuum2026,NestorCoupling2026}, is to be condensed here from the earlier paper.
