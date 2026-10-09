@@ -86,7 +86,8 @@ cell model can be expanded in powers of the frequency, each power by one solve w
 For a graded sphere modelled by Legendre cells of degree one, every coefficient of the far field from
 $(ka)^2$ to $(ka)^7$ converges at fourth order in the cell size, the apparent orders reaching $3.96$ to
 $4.00$ at $20$ cells across, and the exact zero of the $(ka)^3$ coefficient is reproduced to round-off.
-%%ABSTRACT_DEGREE2%%
+With cells of degree two the same coefficients are $43$ to $8100$ times more accurate at $12$ cells across,
+and converge faster still.
 \end{abstract}
 
 % =====================================================================================================
@@ -979,7 +980,45 @@ largest relative error, $1.4\times10^{-1}$ on $4$ cells and $2\times10^{-4}$ on 
 thousandths of the leading term, so in a solve at one frequency it is hidden in the total. A solve at one
 frequency sees only the sum; here each power is measured on its own.
 
-%%DEGREE2%%
+\paragraph{Cells of degree two.} With field and contrast of degree two in each cell, every coefficient is
+an order of magnitude or more smaller on every grid, and the apparent orders run above four
+(Table~\ref{tab:sphereseriesquad}): between $10$ and $12$ cells across they are $6.2$ to $7.5$, not yet settled
+at the order $\min(2p+2,2r+2)=6$ expected of a cell of degree two \citep{NestorError2026}, which finer grids
+would show. At $12$ cells the degree-two cell is $43$ to $54$ times more accurate than the
+degree-one cell for every coefficient but $(ka)^6$, and $8100$ times for that one. It is also the better
+cell per unknown: on $10$ cells across, with $69{,}120$ unknowns, its leading coefficient is accurate to
+$2.4\times10^{-7}$, where the degree-one cell needs $20$ cells and $189{,}216$ unknowns for
+$5.7\times10^{-7}$. The degree-two blocks cost more once: their near coefficients took $66$\,min, against
+three for degree one, and are then reused for every grid and frequency.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rrcccccc}
+\toprule
+cells across & cells & $(ka)^2$ & $(ka)^3$ & $(ka)^4$ & $(ka)^5$ & $(ka)^6$ & $(ka)^7$ \\
+\midrule
+$4$  & $64$   & $2.9\times10^{-5}$ & $0$ & $4.2\times10^{-5}$ & $3.2\times10^{-5}$ & $4.3\times10^{-4}$ & $3.3\times10^{-5}$ \\
+$6$  & $208$  & $3.6\times10^{-6}$ & $0$ & $4.3\times10^{-6}$ & $3.5\times10^{-6}$ & $3.4\times10^{-5}$ & $4.8\times10^{-6}$ \\
+$8$  & $408$  & $7.9\times10^{-7}$ & $0$ & $1.4\times10^{-6}$ & $8.1\times10^{-7}$ & $4.1\times10^{-6}$ & $1.6\times10^{-6}$ \\
+$10$ & $768$  & $2.4\times10^{-7}$ & $0$ & $4.3\times10^{-7}$ & $2.9\times10^{-7}$ & $7.7\times10^{-7}$ & $5.2\times10^{-7}$ \\
+$12$ & $1280$ & $7.9\times10^{-8}$ & $0$ & $1.2\times10^{-7}$ & $8.3\times10^{-8}$ & $2.0\times10^{-7}$ & $1.4\times10^{-7}$ \\
+\midrule
+order $6\to8$   & & $5.26$ & & $3.82$ & $5.15$ & $7.33$ & $3.72$ \\
+order $10\to12$ & & $6.16$ & & $6.86$ & $6.82$ & $7.50$ & $7.07$ \\
+\bottomrule
+\end{tabular}
+\caption{As Table~\ref{tab:sphereseries}, for the cell model of Legendre cells of degree two (field and
+contrast in the ten polynomials of degree at most two, $90$ unknowns per cell). The $(ka)^3$ coefficient is
+again zero to $3\times10^{-16}$ of the leading term.}
+\label{tab:sphereseriesquad}
+\end{table}
+
+\paragraph{What the series gives that a solve does not.} Each power of the cell model's response is
+available on its own, exactly, and can be set against the same power of the exact body. Whether a
+coefficient converges more slowly than the rest, and whether the degree of the cell cures it, are questions
+that a solve at one frequency, which sees only their sum, cannot ask. They can be asked here because the
+coupling coefficients are exact and independent of the frequency.
 
 \section{Why the coefficients are evaluated in closed form}\label{sec:why}
 
