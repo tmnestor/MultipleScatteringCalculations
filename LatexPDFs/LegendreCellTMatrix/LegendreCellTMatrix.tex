@@ -109,6 +109,37 @@ system is then the multiple-scattering problem of the cells
 \citep{Foldy1945,Lax1951,Waterman1976,MishchenkoTravisLacis2002}, and everything that a cell contributes to
 the solution, beyond its coupling to the others, is in its $T$-matrix.
 
+\paragraph{Why an integral equation.} The volume-integral equation (the Lippmann--Schwinger equation of
+elastodynamics) does not solve for the wave in the heterogeneous medium directly. It treats the
+heterogeneity as a set of secondary sources radiating into a background whose response is known: a
+density contrast acts as a body force proportional to the local displacement, a stiffness contrast as a
+stress source proportional to the local strain, and the scattered field is the background's response to
+these sources \citep{Gubernatis1977,WuAki1985}. Each step of a solution then has a physical reading. The
+first term in the contrast is single scattering, the Born approximation; the following terms count the
+interactions between parts of the body; and a cell's $T$-matrix is its equivalent source, a force and a
+moment tensor of the kind used to describe earthquakes \citep{Aki2002}, so the cell's scattering can be
+read channel by channel, as \S\ref{sec:group} does. The radiation condition is built into the Green's
+tensor, so only the heterogeneous region is discretised, with no absorbing boundary to tune; and the
+transition operator that results is the natural object for inversion, where the contrast is the unknown
+\citep{Jakobsen2012,Jakobsen2020}.
+
+\paragraph{What it costs.} The same formulation has difficulties of its own, and they shape this series
+of papers. The Green's tensor is singular where source and receiver meet, and its second derivatives,
+which carry the strain, are hypersingular: the interaction of a cell with itself and with its neighbours
+is a singular integral that ordinary quadrature cannot evaluate \citep{Duffy1982}, and it is the largest
+entry of the system. Every cell interacts with every other, so the system is dense, and its cost grows as
+the square of the number of cells unless a fast method is used: fast Fourier transforms on regular grids
+\citep{Yang2008,Touhei2011}, their corrected and adaptive forms \citep{Phillips1997,Bleszynski1996}, or
+fast multipoles \citep{Chaillat2008}. The discretisation of a strongly singular operator is not
+automatically stable \citep{Costabel2023}, and at high contrast the multiple-scattering series diverges,
+so the equation must be solved rather than expanded. The background must have a Green's tensor in usable
+form, which in practice means a homogeneous or layered medium. Cubes represent curved boundaries by
+staircases. And the method works at one frequency at a time, so a broadband calculation repeats the
+singular integrals at every frequency. This paper removes the first and the last of these for the single
+cell: its self-interaction is obtained in closed form, at every power of the frequency, once.
+\citet{NestorCoupling2026} does the same for the coupling between cells, and \citet{NestorError2026}
+treats the error of the discretisation.
+
 How the field inside a cell is represented decides what that $T$-matrix is. The governing equation is
 written in displacement, and the strain enters it only through the stiffness contrast; how the strain is
 represented within a cell is therefore a modelling decision. The classical approximation, of the
