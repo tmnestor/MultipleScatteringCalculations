@@ -215,17 +215,33 @@ $\psi=(\mathbf u,\boldsymbol\varepsilon)$, nine components with the strain in en
 \end{equation}
 \begin{equation}\label{eq:voigtcontrast}
   \Delta\mathcal C=\Delta\lambda\begin{pmatrix}\mathbf 1\mathbf 1^{\mathsf T}&\mathbf 0\\
-    \mathbf 0&\mathbf 0\end{pmatrix}+\Delta\mu\,\operatorname{diag}(2,2,2,1,1,1),\qquad
+    \mathbf 0&\mathbf 0\end{pmatrix}+2\Delta\mu\,\bI_6,\qquad
   \mathbf 1=(1,1,1)^{\mathsf T},
 \end{equation}
-the Voigt form of $\delta c$. Figure~\ref{fig:ls9} shows the structure. The contrast is block diagonal and
-turns the state into the sources it induces: a force $\omega^2\Delta\rho\,\mathbf u$ from the displacement
-and a moment $\Delta\mathcal C\boldsymbol\varepsilon$ from the strain. The kernel's four blocks are the
-background's response to them, read as displacement or as strain: $\mathcal G_{uu}=\bG$ ($3\times3$), the
-two off-diagonal blocks one derivative of $\bG$ ($3\times6$ and $6\times3$), and $\mathcal
-G_{\varepsilon\varepsilon}$ two derivatives ($6\times6$). Each derivative raises the singularity at
-$\bx=\by$ by one power of $1/r$, from $1/r$ to $1/r^3$; the last is integrable only as a principal value
-with a local term, and it is why the self-interaction of a cell needs the care of \S\ref{sec:series}.
+the Voigt form of $\delta c$ in the convention of \citet{NestorContinuum2026}, with $2\Delta\mu$ on the
+whole diagonal; the factor $\tfrac12$ that engineering shear needs is carried by the kernel.
+Figure~\ref{fig:ls9} shows the structure. The contrast is block diagonal and turns the state into the
+sources it induces: a force $\omega^2\Delta\rho\,\mathbf u$ from the displacement and a moment
+$\Delta\mathcal C\boldsymbol\varepsilon$ from the strain. The kernel's four blocks are the background's
+response to them, read as displacement or as strain. The moment radiates through the receiver derivative
+of $\bG$, with a plus sign (the last term of Eq.~\eqref{eq:ls}), and the strain is the symmetrised receiver
+derivative of the displacement. With $\partial_c=\partial/\partial x_c$, a Voigt row index $I$ standing for
+the pair $(a,d)$ of strain components and a Voigt column index $J$ for the pair $(b,c)$ of moment
+components (equal indices for a normal component, unequal for a shear), the blocks are
+\begin{equation}\label{eq:kernelblocks}
+\begin{aligned}
+  \mathcal G_{uu,ab}&=G_{ab}, &
+  \mathcal G_{u\varepsilon,aJ}&=\tfrac12\bigl(\partial_cG_{ab}+\partial_bG_{ac}\bigr),\\
+  \mathcal G_{\varepsilon u,Ib}&=\tfrac{\eta_I}2\bigl(\partial_dG_{ab}+\partial_aG_{db}\bigr), &
+  \mathcal G_{\varepsilon\varepsilon,IJ}&=\tfrac{\eta_I}4\bigl(\partial_d\partial_cG_{ab}+\partial_d\partial_bG_{ac}
+    +\partial_a\partial_cG_{db}+\partial_a\partial_bG_{dc}\bigr),
+\end{aligned}
+\end{equation}
+with $\eta_I=1$ on a normal row and $2$ on a shear row, which makes the strain the engineering strain; all
+are evaluated at $\bx-\by$. They are $3\times3$, $3\times6$, $6\times3$ and $6\times6$, and carry zero,
+one, one and two derivatives of $\bG$. Each derivative raises the singularity at $\bx=\by$ by one power of
+$1/r$, from $1/r$ to $1/r^3$; the last is integrable only as a principal value with a local term, and it
+is why the self-interaction of a cell needs the care of \S\ref{sec:series}.
 
 \begin{figure}[t]
 \centering
