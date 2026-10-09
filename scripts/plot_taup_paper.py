@@ -2,7 +2,7 @@
 """The tau-p figure of Paper 2 (``LatexPDFs/ExactCouplingIntegrals/figures/fig_taup.pdf``).
 
 Two rows (vertical and horizontal displacement on the receiver plane) by four columns (the exact sphere, the
-Legendre cells, their difference magnified, and traces at a few slownesses), from the sections written by
+Legendre cells, their difference magnified, and every trace of the section), from the sections written by
 ``taup_graded_sphere.py``. Variable density on a diverging scale (blue <-> red about a neutral grey), one
 symmetric scale per row, time running down.
 
@@ -38,7 +38,7 @@ def main() -> int:
                          "ytick.color": INK2, "axes.titlecolor": INK, "axes.linewidth": 0.6,
                          "xtick.major.width": 0.6, "ytick.major.width": 0.6, "pdf.fonttype": 42})  # fmt: skip
     fig, axes = plt.subplots(2, 4, figsize=(7.1, 5.4), constrained_layout=True, sharey=True,
-                             gridspec_kw={"width_ratios": [1, 1, 1, 0.9]})  # fmt: skip
+                             gridspec_kw={"width_ratios": [1, 1, 1, 1.3]})  # fmt: skip
     window = (-25.0, 25.0)  # intercept time (ms) shown
     for row, comp in enumerate(("uz", "ux")):
         tau, slow, ex, vx = load(tag, comp)
@@ -65,20 +65,23 @@ def main() -> int:
                 ax.set_xlabel("slowness $p$ (s/km)")
         axes[row, 0].set_ylabel("intercept time $\\tau$ (ms)")
         ax = axes[row, 3]
-        picks = np.unique(np.linspace(2, len(slow) - 3, 7).astype(int))
-        gap = p_skm[picks[1]] - p_skm[picks[0]]
-        for j in picks:
-            ax.plot(p_skm[j] + 0.45 * gap * ex[:, j], t_ms, color=INK, lw=0.8)
-            ax.plot(p_skm[j] + 0.45 * gap * vx[:, j], t_ms, color="#2a78d6", lw=0.9, ls=(0, (2.5, 1.5)))
+        gap = p_skm[1] - p_skm[0]  # one trace per slowness sample
+        gain = 2.5 * gap  # deflection of the section's peak, in slowness units; neighbours may overlap
+        for j in range(len(slow)):
+            ax.fill_betweenx(t_ms, p_skm[j], p_skm[j] + gain * ex[:, j], where=ex[:, j] > 0, color=INK, lw=0)  # fmt: skip
+            ax.plot(p_skm[j] + gain * ex[:, j], t_ms, color=INK, lw=0.4)
+            ax.plot(p_skm[j] + gain * vx[:, j], t_ms, color="#2a78d6", lw=0.3)
+        for pb in (1e3 / ALPHA, 1e3 / BETA):
+            ax.axvline(pb, color=MUTED, lw=0.6, ls=(0, (3, 2)))
         ax.set_title(f"{name}: traces", fontsize=8)
-        ax.set_xlim(0, p_skm[-1] + 0.02)
+        ax.set_xlim(p_skm[0] - gap, p_skm[-1] + 2 * gap)
         ax.set_ylim(window[1], window[0])
         if row == 1:
             ax.set_xlabel("slowness $p$ (s/km)")
             ax.plot([], [], color=INK, lw=0.8, label="exact")
-            ax.plot([], [], color="#2a78d6", lw=0.9, ls=(0, (2.5, 1.5)), label="cells")
+            ax.plot([], [], color="#2a78d6", lw=0.9, label="cells")
             ax.legend(loc="lower right", frameon=False, fontsize=7, labelcolor=INK2)
-    cb = fig.colorbar(im, ax=axes[:, :3], shrink=0.6, pad=0.01, aspect=30)
+    cb = fig.colorbar(im, ax=axes[:, :3], location="bottom", shrink=0.6, pad=0.01, aspect=40)
     cb.set_label("displacement / peak of the exact section", color=INK2)
     cb.outline.set_edgecolor(MUTED)
     cb.outline.set_linewidth(0.6)
