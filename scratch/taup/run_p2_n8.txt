@@ -1,0 +1,9 @@
+tau-p, graded sphere: cells of degree 2, 8 across; 32 frequencies to k_S a = 3.0; 60 slownesses to 1.5/beta; receivers 1.5 a above the centre
+   k_S a = 0.094: c_P (propagating) off by 1.79e-06   [323 s]
+   k_S a = 0.844: c_P (propagating) off by 1.83e-06   [615 s]
+   k_S a = 1.594: c_P (propagating) off by 1.84e-06   [906 s]
+   k_S a = 2.344: c_P (propagating) off by 1.25e-06   [1202 s]
+   k_S a = 3.000: c_P (propagating) off by 2.57e-06   [1466 s]
+   u_z(tau, p): cells against exact, max over tau, relative to the section's peak: P propagating (p < 1/alpha): 2.67e-07; S only (1/alpha < p < 1/beta): 5.36e-07; evanescent (p > 1/beta): 4.15e-07
+   u_x(tau, p): cells against exact, max over tau, relative to the section's peak: P propagating (p < 1/alpha): 1.73e-06; S only (1/alpha < p < 1/beta): 1.65e-06; evanescent (p > 1/beta): 1.54e-07
+   wrote /home/user/MultipleScatteringCalculations/scratch/taup/taup_p2_n8.npz   [1466 s]

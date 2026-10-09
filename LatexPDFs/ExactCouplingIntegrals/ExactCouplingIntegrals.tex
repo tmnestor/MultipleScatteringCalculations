@@ -91,9 +91,10 @@ For a graded sphere modelled by Legendre cells of degree one, every coefficient 
 $(ka)^2$ to $(ka)^7$ converges at fourth order in the cell size, the apparent orders reaching $3.96$ to
 $4.00$ at $20$ cells across, and the exact zero of the $(ka)^3$ coefficient is reproduced to round-off.
 With cells of degree two the same coefficients are $43$ to $8100$ times more accurate at $12$ cells across,
-and converge faster still. Summed at each of $128$ frequencies, the same coefficients give the
-$\tau$--$p$ section of the sphere on a plane at $1.5$ radii from its centre, evanescent waves included, within
-$1.2\times10^{-4}$ of the exact section's peak.
+and converge faster still. Summed at each frequency of a sweep, the same coefficients give the
+$\tau$--$p$ section of the sphere on a plane at $1.5$ radii from its centre, evanescent waves included, with no
+far-field approximation: within $1.2\times10^{-4}$ of the exact section's peak with cells of degree one, and
+$1.7\times10^{-6}$ with cells of degree two.
 \end{abstract}
 
 % =====================================================================================================
@@ -1124,9 +1125,10 @@ Eq.~\eqref{eq:farseries}, the Gauss block standing in only where the far series 
 it holds. For cells of degree two the far blocks are summed the same way, and the four touching orbits are
 integrated at each frequency: the universal moments to the order that $k_Sa=3$ needs would cost hours once,
 the integration of those four blocks $13$\,s per frequency. The system is solved by GMRES to $10^{-11}$, with
-the blocks applied by fast Fourier transforms (\S\ref{sec:sphereseries}). For degree one the sweep took $37$\,min, the exact sphere included (\path{scripts/taup_graded_sphere.py}); the
-sweep for degree two is running at $32$ of the same frequencies, every fourth, which the section's $60$\,ms
-of signal allows (its period in time is then $0.22$\,s).
+the blocks applied by fast Fourier transforms (\S\ref{sec:sphereseries}). For degree one the sweep took $37$\,min, the exact sphere included (\path{scripts/taup_graded_sphere.py}); for degree two,
+at $32$ of the same frequencies (every fourth, which the section's $60$\,ms of signal allows, its period in
+time being then $0.22$\,s), it took $24$\,min, $5$\,min of it once for the far coefficients and $37$\,s per
+frequency after that.
 
 \begin{figure}[t]
 \centering
@@ -1134,8 +1136,8 @@ of signal allows (its period in time is then $0.22$\,s).
 \caption{The $\tau$--$p$ section of the graded sphere (Figure~\ref{fig:sphere}): plane P wave incident from
 above, receivers on the plane $z=0$, the centre at depth $1.5a$; vertical ($u_z$, top) and horizontal ($u_x$,
 bottom) displacement. From the left: the exact sphere; the cell model of $8$ Legendre cells of degree one
-across; the difference of the cells of degree one from the exact section, magnified as marked (the panel for
-cells of degree two follows when its run completes); and the $60$ traces of the section, one per slowness (exact in black with positive lobes filled,
+across; the difference of the cells of degree one and of degree two from the exact section, each magnified as
+marked; and the $60$ traces of the section, one per slowness (exact in black with positive lobes filled,
 cells of degree one dashed over them). Variable density on one grey scale per row, white negative and black
 positive, the displacement divided by the peak of the exact section and clipped at half of it. Time runs
 from the incident wave's crossing of the receiver plane, with the wavelet delayed by $t_d=21$\,ms to be causal. The dashed verticals are the branch points
@@ -1155,13 +1157,14 @@ cells & & $p<1/\alpha$ & $1/\alpha<p<1/\beta$ & $p>1/\beta$ \\
 degree one & $u_z(\tau,p)$ & $1.9\times10^{-5}$ & $1.2\times10^{-4}$ & $6.0\times10^{-5}$ \\
            & $u_x(\tau,p)$ & $8.9\times10^{-5}$ & $6.6\times10^{-5}$ & $2.2\times10^{-5}$ \\
 \midrule
-degree two & $u_z(\tau,p)$ & \multicolumn{3}{c}{\emph{run in progress}} \\
-           & $u_x(\tau,p)$ & \multicolumn{3}{c}{\emph{run in progress}} \\
+degree two & $u_z(\tau,p)$ & $2.7\times10^{-7}$ & $5.4\times10^{-7}$ & $4.2\times10^{-7}$ \\
+           & $u_x(\tau,p)$ & $1.7\times10^{-6}$ & $1.7\times10^{-6}$ & $1.5\times10^{-7}$ \\
 \bottomrule
 \end{tabular}
 \caption{The $\tau$--$p$ section of the cell model, $8$ cells across, against the exact sphere
 (Figure~\ref{fig:taup}): the largest difference over $\tau$ and over the slownesses of each band, relative to the
-peak of the exact section of the same component.}
+peak of the exact section of the same component. The cells of degree two were run at $32$ of the
+$128$ frequencies, and are measured against the exact section on the same frequencies.}
 \label{tab:taup}
 \end{table}
 
@@ -1176,8 +1179,10 @@ that upper band small in the section. The sphere has no staircase in this cell m
 (\S\ref{sec:sphereseries}): the cells carry the smooth profile as a polynomial, and the error is that of the
 cells' polynomials, with no quadrature error in the blocks. The evanescent band, which only a plane in the
 near field records, tests the cells' sources and the coupling blocks at every frequency of the sweep, all of
-them from the same coefficients. At the lowest frequency the cells of degree two reduce the error of $c_P$
-from $4.5\times10^{-5}$ to $1.8\times10^{-6}$.
+them from the same coefficients. The cells of degree two do far better. Their section differs from the exact one by $1.5\times10^{-7}$ to
+$1.7\times10^{-6}$ of the peak, $40$ to $220$ times less than the cells of degree one, band by band. Their
+error in $c_P$ is $1.3\times10^{-6}$ to $1.8\times10^{-6}$ up to $k_Sa\approx2.3$ and $2.6\times10^{-6}$ at
+$k_Sa=3$: flat across the band, where that of the cells of degree one grows tenfold.
 
 \section{Why the coefficients are evaluated in closed form}\label{sec:why}
 

@@ -65,10 +65,10 @@ def main() -> int:
         ex, vx = ex / peak, vx / peak
         panels = [(ex, "exact sphere"), (vx, "cells, degree one")]
         for tag, label in ((tag1, "one"), (tag2, "two"))[: 2 if have2 else 1]:
-            _, _, e2, v2, _ = load(tag, comp)
-            diff = (v2[keep] - e2[keep]) / peak
+            tau2, _, e2, v2, _ = load(tag, comp)  # each run has its own time grid (the period is 2 pi / d omega)
+            diff = np.array([np.interp(t_ms, tau2 * 1e3, (v2 - e2)[:, j]) for j in range(e2.shape[1])]).T / peak
             mag = 10 ** np.ceil(np.log10(0.5 * CLIP / np.abs(diff).max()))
-            panels.append((diff * mag, f"degree {label} $-$ exact, {sup(mag)}"))
+            panels.append((diff * mag, f"degree {label} $-$ exact\n{sup(mag)}"))
         p_skm = slow * 1e3
         extent = (p_skm[0], p_skm[-1], t_ms[-1], t_ms[0])
         name = {"uz": "$u_z$", "ux": "$u_x$"}[comp]
