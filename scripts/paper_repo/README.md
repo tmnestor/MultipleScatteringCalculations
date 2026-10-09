@@ -3,7 +3,7 @@
 This repository contains everything needed to reproduce the paper
 
 * *A Moment Hierarchy for the Voxel: Closed-Form Single-Site T-Matrices, and the Error of Elastic
-  Volume-Integral Scattering Isolated on a Space-Filling Layer of Cubes* (`LatexPDFs/ContinuumLimit/`),
+  Volume-Integral Scattering Isolated on a Space-Filling Layer of Cubes* (`LatexPDFs/CartesianMultipoleHierarchyArchive/`),
 
 by T. M. Nestor. It is assembled from the author's research repository by
 `scripts/assemble_paper_repo.py`, which records exactly which files a release contains.
@@ -15,7 +15,7 @@ by T. M. Nestor. It is assembled from the author's research repository by
 | `cubic_scattering/` | The Python package under test: the cube T-matrix, the cell-averaged lattice kernel, the sphere solvers and the graded voxel, with its test suite |
 | `scripts/` | The cross-checks, gates, pilots and figure scripts the papers cite |
 | `Mathematica/` | The symbolic derivations, as Wolfram Language scripts, with their saved outputs (`*.json`) |
-| `LatexPDFs/` | The paper as compiled PDFs (`ContinuumLimit.pdf`, `JCP/ContinuumLimit_JCP.pdf`), with LaTeX source, bibliography, figures and figure data |
+| `LatexPDFs/` | The paper as compiled PDFs (`CartesianMultipoleHierarchyArchive.pdf`, and the earlier combined version `JCP/ContinuumLimit_JCP.pdf`), with LaTeX source, bibliography, figures and figure data |
 
 ## Environment
 
@@ -132,9 +132,9 @@ in the papers without Mathematica.
 
 ## Building the papers
 
-    cd LatexPDFs/ContinuumLimit && lualatex ContinuumLimit && bibtex ContinuumLimit && lualatex ContinuumLimit && lualatex ContinuumLimit
+    cd LatexPDFs/CartesianMultipoleHierarchyArchive && lualatex CartesianMultipoleHierarchyArchive && bibtex CartesianMultipoleHierarchyArchive && lualatex CartesianMultipoleHierarchyArchive && lualatex ContinuumLimit
 
-The journal version is generated from the same source by `LatexPDFs/ContinuumLimit/JCP/make_jcp.py`.
+The journal version is generated from the same source by `LatexPDFs/CartesianMultipoleHierarchyArchive/JCP/make_jcp.py`.
 
 ## Tests
 
