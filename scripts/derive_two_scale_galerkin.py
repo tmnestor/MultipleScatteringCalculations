@@ -253,7 +253,7 @@ def main() -> int:
         eta_true = per_parent(far_cells(cf, gf, h, omega, delta_f, e_med + e_fld, p, r, dirs)) + rad_cells
         eta_est = per_parent(far_cells(cf, gf, h, omega, delta_f, two_level(r_med) + two_level(r_fld), p, r, dirs)) + rad_cells
         # the far field of all cells, summed over the 2 x directions x 3 components: sum of shares = F_h - F_H
-        sum_err = np.abs(eta_true.sum(0) - diff).max() / np.abs(diff).max()
+        sum_err = np.abs(eta_true.sum(0) - diff.ravel()).max() / np.abs(diff).max()
         nt, ne = np.linalg.norm(eta_true, axis=1), np.linalg.norm(eta_est, axis=1)
         shares = np.abs(ne - nt).sum() / nt.sum()
         # a rule on the medium alone: each coarse cell's contrast detail |Delta_h - Delta_H|, from the children's
