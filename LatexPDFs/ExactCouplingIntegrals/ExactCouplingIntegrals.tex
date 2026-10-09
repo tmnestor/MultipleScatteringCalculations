@@ -87,7 +87,9 @@ For a graded sphere modelled by Legendre cells of degree one, every coefficient 
 $(ka)^2$ to $(ka)^7$ converges at fourth order in the cell size, the apparent orders reaching $3.96$ to
 $4.00$ at $20$ cells across, and the exact zero of the $(ka)^3$ coefficient is reproduced to round-off.
 With cells of degree two the same coefficients are $43$ to $8100$ times more accurate at $12$ cells across,
-and converge faster still.
+and converge faster still. Summed at each of $128$ frequencies, the same coefficients give the
+$\tau$--$p$ section of the sphere on a plane at $1.5$ radii from its centre, evanescent waves included, within
+$1.2\times10^{-4}$ of the exact section's peak.
 \end{abstract}
 
 % =====================================================================================================
@@ -153,7 +155,8 @@ reference, give the stable evaluation and its accuracy and cost. Section~\ref{se
 \emph{multipole} means here, \S\ref{sec:distant} couples cells that do not touch, and \S\ref{sec:sweep}
 separates what is computed once from what each frequency costs. Section~\ref{sec:fmm} relates the work to
 the fast multipole method. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
-model of a graded sphere in powers of the frequency, and \S\ref{sec:why} sets out why the coefficients are
+model of a graded sphere in powers of the frequency, \S\ref{sec:taup} sums them over a band of frequencies
+into a $\tau$--$p$ seismogram of the same sphere, and \S\ref{sec:why} sets out why the coefficients are
 evaluated in closed form rather than by quadrature.
 
 \section{The coupling blocks of polynomial cubes}\label{sec:blocks}
@@ -1020,6 +1023,103 @@ coefficient converges more slowly than the rest, and whether the degree of the c
 that a solve at one frequency, which sees only their sum, cannot ask. They can be asked here because the
 coupling coefficients are exact and independent of the frequency.
 
+\section{A \texorpdfstring{$\tau$--$p$}{tau-p} section of the graded sphere}\label{sec:taup}
+
+The same coefficients give the blocks at any frequency for the price of a weighted sum, so a broadband
+response costs one solve per frequency and no quadrature. We use this to compute a seismogram: the $\tau$--$p$
+section of the graded sphere of \S\ref{sec:sphereseries}, recorded on a plane close to the body, and compare it
+with the exact sphere's.
+
+\paragraph{The plane-wave spectrum.} A plane P wave travels down, along $+z$, onto the sphere. Above the body,
+$z<-a$, the scattered displacement is a superposition of upgoing plane waves (the Weyl representation),
+\begin{equation}\label{eq:weyl}
+  \bu(\mathbf x)=\int\dd^2k\,\Bigl[c_P(\mathbf k)\,\mathbf e_P\,\mathrm e^{\mathrm i(\mathbf k\cdot\boldsymbol\rho+k_z^P|z|)}
+  +c_{SV}(\mathbf k)\,\mathbf e_{SV}\,\mathrm e^{\mathrm i(\mathbf k\cdot\boldsymbol\rho+k_z^S|z|)}\Bigr],\qquad
+  k_z^{P,S}=\bigl(k_{P,S}^2-|\mathbf k|^2\bigr)^{1/2},\ \operatorname{Im}k_z\ge0,
+\end{equation}
+with $\mathbf k$ the horizontal wavenumber. Where $|\mathbf k|>k_{P}$ or $k_S$ the wave is evanescent and decays
+away from the body. Eq.~\eqref{eq:weyl} is exact on every plane above the body, at any distance from it: a far
+field is not needed, and on a plane at $1.5a$ from the centre, where the receivers are placed here, the
+evanescent part is present in the section. From $\mathrm e^{\mathrm ikr}/r=(\mathrm i/2\pi)\int\dd^2k\,
+\mathrm e^{\mathrm i(\mathbf k\cdot\boldsymbol\rho+k_z|z|)}/k_z$, applied to the Green's tensor, the amplitudes are
+\begin{equation}\label{eq:weylamp}
+  c_P(\mathbf k)=\frac{\mathrm i}{2\pi k_z^P}\,\mathcal A_P(\hat{\mathbf k}_P),\qquad
+  c_{SV}(\mathbf k)=\frac{\mathrm i}{2\pi k_z^S}\,\mathcal A_{SV}(\hat{\mathbf k}_S),\qquad
+  \hat{\mathbf k}_{P,S}=\frac{(-k_z^{P,S},\mathbf k)}{k_{P,S}},
+\end{equation}
+where $\mathcal A$ is the radiation pattern of the scatterer, $r\,\mathrm e^{-\mathrm ikr}\bu$ at $r\to\infty$, taken at
+the unit vector $\hat{\mathbf k}$. For an evanescent wave $\hat{\mathbf k}$ is complex. The radiation pattern of the
+cells is a sum over cells of the moments of their polynomial sources against
+$\mathrm e^{-\mathrm ik\mathbf x\cdot\hat{\mathbf k}}$, and it continues to complex directions as written; it is
+evaluated by a six-point Gauss rule per cell. The exact amplitudes follow from the graded sphere's
+coefficients of the outgoing P and S potentials, by the same transform term by term, with
+$\sin\theta=|\mathbf k|/k$ exactly on either branch so that no complex root is taken.
+
+\paragraph{The seismogram.} On the receiver plane $z=-z_r$, at horizontal slowness $p$ in the plane of
+incidence, $\mathbf k=\omega p\,\hat{\mathbf x}$, the slant stack of the displacement is the spectrum itself,
+\begin{equation}\label{eq:taup}
+  \bu(\tau,p)=\frac{(2\pi)^2}{\pi}\operatorname{Re}\int_0^\infty\dd\omega\,W(\omega)
+  \Bigl[c_P\,\mathbf e_P\,\mathrm e^{\mathrm ik_z^Pz_r}+c_{SV}\,\mathbf e_{SV}\,\mathrm e^{\mathrm ik_z^Sz_r}\Bigr]
+  \mathrm e^{-\mathrm i\omega\tau},
+\end{equation}
+with $\mathbf e_P=(\hat{\mathbf x}p\omega-\hat{\mathbf z}k_z^P)/k_P$ and $\mathbf e_{SV}=-(\hat{\mathbf x}k_z^S+\hat{\mathbf z}p\omega)/k_S$
+upward, and $W(\omega)=(\omega/\omega_0)^2\mathrm e^{-(\omega/\omega_0)^2}$ a Ricker wavelet, centred at
+$k_Sa=\omega_0a/\beta=1$ ($48$\,Hz). The integral is sampled at $128$ frequencies up to $k_Sa=3$
+($143$\,Hz), and the section at $60$ slownesses up to $1.5/\beta$, centred in equal intervals so that none falls on
+the branch points $p=1/\alpha$ and $1/\beta$, where $k_z=0$ and the $1/k_z$ of Eq.~\eqref{eq:weylamp} is singular. Three bands result:
+$p<1/\alpha$, where P and S both propagate; $1/\alpha<p<1/\beta$, where only S does; and $p>1/\beta$, where
+both are evanescent.
+
+\paragraph{The cells.} The cell model is $8$ Legendre cells of degree one across the sphere, $408$ cells and
+$14{,}688$ unknowns, with the same profile and contrast as \S\ref{sec:sphereseries}. At each frequency every
+coupling block is summed from the stored coefficients, the touching ones from the universal moments and the
+others from those of Eq.~\eqref{eq:farseries}, the Gauss block standing in only where the far series would
+need more terms than it holds. The system is solved by GMRES to $10^{-11}$ with the blocks applied by fast
+Fourier transforms (\S\ref{sec:sphereseries}). The whole sweep, the exact sphere included, took $37$\,min
+(\path{scripts/taup_graded_sphere.py}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_taup.pdf}
+\caption{The $\tau$--$p$ section of the graded sphere, plane P wave incident from above, receivers on a plane
+$1.5a$ above the centre: vertical ($u_z$, top) and horizontal ($u_x$, bottom) displacement. From the left:
+the exact sphere, the cell model of $8$ Legendre cells of degree one across, their difference magnified
+$10^4$ times, and traces at seven slownesses (exact solid, cells dashed). One colour scale per row, the
+displacement divided by the peak of the exact section; the dashed lines are the branch points $p=1/\alpha$
+and $1/\beta$. Time is measured from the passage of the incident wave through the centre of the sphere;
+the wavelet has zero phase and the shell above the centre scatters early, so $\tau$ takes both signs.}
+\label{fig:taup}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+ & P and S propagate & S only & evanescent \\
+ & $p<1/\alpha$ & $1/\alpha<p<1/\beta$ & $p>1/\beta$ \\
+\midrule
+$u_z(\tau,p)$ & $1.9\times10^{-5}$ & $1.2\times10^{-4}$ & $6.0\times10^{-5}$ \\
+$u_x(\tau,p)$ & $8.9\times10^{-5}$ & $6.6\times10^{-5}$ & $2.2\times10^{-5}$ \\
+\bottomrule
+\end{tabular}
+\caption{The $\tau$--$p$ section of the cell model against the exact sphere (Figure~\ref{fig:taup}): the largest
+difference over $\tau$ and over the slownesses of each band, relative to the peak of the exact section of
+the same component.}
+\label{tab:taup}
+\end{table}
+
+\paragraph{What the section shows.} The two sections are indistinguishable at the scale of the plot
+(Figure~\ref{fig:taup}); their difference is at most $1.2\times10^{-4}$ of the peak in every band
+(Table~\ref{tab:taup}), the evanescent band included. In the spectrum, the error of $c_P$ in the propagating
+band is $4.5\times10^{-5}$ of its largest value from the lowest frequency to $k_Sa\approx2$, and rises to
+$4.6\times10^{-4}$ at $k_Sa=3$, where a cell is an eighth of an S wavelength across; the
+wavelet's taper keeps that upper band small in the section. The sphere has no staircase in this cell model,
+as in \S\ref{sec:sphereseries}: the cells carry the smooth profile as a polynomial, and the error is that of
+the cells' polynomials, with no quadrature error in the blocks. That the section of a near-field plane is reproduced to this
+accuracy in the evanescent band as well is a test of the cells' sources, which only the near field sees, and
+of the coupling blocks at every frequency of the sweep, all of them from the same coefficients.
+
 \section{Why the coefficients are evaluated in closed form}\label{sec:why}
 
 Evaluating every coefficient in closed form costs far more effort than quadrature. The series in the
@@ -1107,7 +1207,9 @@ test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalcul
 sweep, \path{scripts/measure_frequency_sweep_cost.py}; and the graded sphere power by power,
 \path{scripts/measure_graded_sphere_legendre_series.py}, with the exact series
 \path{Mathematica/GradedSphere_LowFrequency.wl} and the outputs of the runs reported in
-\path{scratch/legendre_sphere_series/}.\par}
+\path{scratch/legendre_sphere_series/}; and the $\tau$--$p$ section, \path{scripts/taup_graded_sphere.py} and
+\path{scripts/plot_taup_paper.py}, with the exact plane-wave spectrum
+\path{scripts/gate_sphere_plane_wave_spectrum.py} and the outputs in \path{scratch/taup/}.\par}
 
 \section*{Acknowledgments}
 This work began thirty years ago in the author's doctoral research at the Research School of Earth
