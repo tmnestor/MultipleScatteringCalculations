@@ -75,11 +75,12 @@ assured to converge only when the cells' circumscribing spheres do not overlap, 
 every pair of touching cells violates, and at face and edge contact it fails. Evaluated in closed form, the
 coupling integrals need no such condition. They are singular for cells that touch, and their closed
 forms are a power series in the wavenumber whose coefficients are universal numbers, independent of the
-frequency, the cell size and the medium, each built from elementary master integrals. Evaluated as written
-in double precision these closed forms lose four to five digits: against a forty-digit reference, the block
-of a cell carrying a degree-two field and its corner neighbour is wrong by $1.7\times10^{-11}$, where
-quadrature reaches $1.9\times10^{-15}$. The cause is the basis in which the polynomial weight meets the
-kernel. We give an evaluation that is exact in the same sense and accurate to round-off: the pieces of the
+frequency, the cell size and the medium, each built from elementary master integrals. Written in powers
+of the coordinates about the singular point, as the master integrals naturally are, they inherit the
+classical ill-conditioning of power moments and lose four to five digits in double precision: against a
+forty-digit reference, the block of a cell carrying a degree-two field and its corner neighbour is then
+wrong by $1.7\times10^{-11}$, where quadrature reaches $1.9\times10^{-15}$. We evaluate the same exact
+integrals in a Legendre basis instead, accurate to round-off: the pieces of the
 integration domain away from the singular point are expanded in Legendre polynomials of their own
 coordinates, whose moments follow from a banded relation posed as a truncated boundary-value problem, with
 no transcendental function evaluated; the pieces at the singular point are split into Duffy pyramids. The
@@ -141,11 +142,12 @@ approximation \citep{YurkinSmunev2023}, which neglects terms of fourth order in 
 are elastic, exact at every order through a series in the wavenumber, and over cells that carry
 polynomials.
 
-This paper is about a property of those closed forms that the formulas themselves do not show. Evaluated
-as written in double precision they are much less accurate than quadrature (\S\ref{sec:failure}). We
-measure by how much against a reference computed at forty digits by a route that shares nothing with
-them (\S\ref{sec:reference}), locate the loss, and give an evaluation of the same exact integrals that is
-accurate to round-off (\S\ref{sec:stable}), with the experiments that led to it. The loss is a known
+This paper is about evaluating those closed forms to round-off. Written in powers of the coordinates
+about the singular point, as the master integrals naturally are, they inherit the known ill-conditioning of
+power moments \citep{Gautschi1970}, and in double precision they are much less accurate than quadrature
+(\S\ref{sec:conditioning}). We measure by how much against a reference computed at forty digits by a route
+that shares nothing with them (\S\ref{sec:reference}), locate where the digits go, and evaluate the same
+exact integrals in a Legendre basis that is accurate to round-off (\S\ref{sec:stable}). The loss is a known
 phenomenon in another setting: in boundary-element methods the analytic integration of layer potentials
 over flat elements loses accuracy away from the singularity and with the order of the element, and the
 remedy adopted there is to switch to quadrature beyond some distance
@@ -161,8 +163,8 @@ touching coupling block within its reach.
 The paper is organised as follows. Section~\ref{sec:blocks} defines the blocks and their series in the
 wavenumber, and shows that the two-centre expansion is not assured to converge for any pair of touching
 cells, and fails at face and edge contact.
-Sections~\ref{sec:failure} to~\ref{sec:results} measure the loss of the closed forms, build the forty-digit
-reference, give the stable evaluation and its accuracy and cost. Section~\ref{sec:multipoles} fixes what
+Sections~\ref{sec:conditioning} to~\ref{sec:results} measure the cost of the power basis, build the
+forty-digit reference, and give the evaluation in a Legendre basis with its accuracy and cost. Section~\ref{sec:multipoles} fixes what
 \emph{multipole} means here, \S\ref{sec:distant} couples cells that do not touch, and \S\ref{sec:sweep}
 separates what is computed once from what each frequency costs. Section~\ref{sec:fmm} relates the work to
 the fast multipole method. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
@@ -390,9 +392,16 @@ block at every contact to round-off, against the forty-digit reference at edge a
 against quadrature at face contact (\S\ref{sec:results}). The condition belongs to
 the expansion, not to the problem.
 
-\section{The closed forms, and why they fail in double precision}\label{sec:failure}
+\section{The master integrals, and the conditioning of power moments}\label{sec:conditioning}
 
-\paragraph{Measuring the loss.} Every evaluation below ends in a sum, $S=\sum_na_n$, of terms computed to
+The closed forms reduce every moment to master integrals of monomials against a power of the distance,
+anchored at the singular point. Written so, a moment is a sum over power moments of the polynomial weight,
+and that power (ordinary) moments are ill-conditioned while moments of orthogonal polynomials (modified
+moments) are well conditioned is classical \citep{Gautschi1970}. This section measures what the power basis
+costs for the coupling integrals, and where the cost arises, so that the evaluation of \S\ref{sec:stable}
+can be judged against it.
+
+\paragraph{Measuring the conditioning.} Every evaluation below ends in a sum, $S=\sum_na_n$, of terms computed to
 a relative accuracy near the unit round-off $\varepsilon$. Its rounding error is then at most about
 $\varepsilon\sum_n|a_n|$, so that the sum loses about $\log_{10}\kappa$ significant digits, with
 \begin{equation}\label{eq:kappa}
@@ -407,11 +416,11 @@ change of the integral is at most $\varepsilon\,\kappa_{\mathord{\int}}(f)$, and
 $\delta f=\varepsilon|f|\operatorname{sgn}\int f$ attains it. A Gauss rule with positive weights computes
 $\sum_iw_if(\mathbf x_i)$, whose condition number tends to $\kappa_{\mathord{\int}}(f)$ as the rule converges, because
 the same weights integrate $|f|$; quadrature therefore loses about as many digits as the problem itself
-forces. A closed form instead writes the integral as a sum of its own choosing, and its condition number
-$\kappa$ can be far larger than $\kappa_{\mathord{\int}}$: that excess, and nothing else, is what an evaluation in
-closed form has to remove. The rest of this section measures it.
+forces. A closed form instead writes the integral as a sum in a basis of its own choosing, and its condition
+number $\kappa$ can be far larger than $\kappa_{\mathord{\int}}$: that excess, and nothing else, is what the
+choice of basis decides. The rest of this section measures it for the power basis.
 
-\paragraph{The closed forms as written.} The integrand $\bt^{\balpha}|\bt|^n$ is homogeneous about the
+\paragraph{The master integrals.} The integrand $\bt^{\balpha}|\bt|^n$ is homogeneous about the
 singular point, and three master integrals anchored there are elementary:
 \begin{align}
   I[p,q,r;a,b,c;n]&=\int_0^a\!\!\int_0^b\!\!\int_0^c x^py^qz^r\,(x^2+y^2+z^2)^{n/2}\,\dd z\,\dd y\,\dd x,
@@ -429,32 +438,31 @@ and they were evaluated at forty digits. To use them for a box that is not ancho
 two steps are needed. On each axis an integral from $l$ to $u$ is the difference of two integrals from the
 origin (the singular point), so a box at a distance becomes a signed sum of eight anchored boxes of sides
 $2$ and $4$. And the polynomial weight is expanded in powers of $\bt$, so that each term is a master
-integral. The master integrals, rounded to double precision, were then contracted with the expanded
-weights in double precision.
+integral. Evaluated in this power basis, the master integrals are rounded to double precision and
+contracted with the expanded weights in double precision.
 
-\paragraph{How large the loss is.} Against the forty-digit reference of \S\ref{sec:reference}, the static
+\paragraph{What the power basis costs.} Against the forty-digit reference of \S\ref{sec:reference}, the static
 coupling block assembled this way is wrong by $2.3\times10^{-13}$ (degree-one field, corner contact),
 $9.4\times10^{-14}$ (degree one, edge), $1.7\times10^{-11}$ (degree two, corner) and $5.5\times10^{-12}$
 (degree two, edge), relative error in the Frobenius norm over all entries of the block. Quadrature of the
 same block (Duffy pyramids at the singular vertex and tensor Gauss rules of $20$ points per axis on the
 pieces) is accurate to $1.1\times10^{-15}$, $1.8\times10^{-15}$, $1.9\times10^{-15}$ and $2.7\times10^{-15}$.
-The closed forms, exact on paper, are worse than quadrature by two orders of magnitude for a degree-one field
-and four for a degree-two one. The loss went unnoticed because the closed forms had been checked against
-quadrature to $10^{-9}$ only.
+In the power basis the closed forms, exact as they are, are less accurate than quadrature by two orders
+of magnitude for a degree-one field and four for a degree-two one.
 
-\paragraph{Where it is lost.} Each block is a sum over the pieces of $W$. Taking one term, $m=1$ with
+\paragraph{Where the cost arises.} Each block is a sum over the pieces of $W$. Taking one term, $m=1$ with
 $\biota=(0,2,2)$, at corner contact with a degree-one field, and evaluating the same algorithm once in double
 precision and once with every step at forty digits, the difference piece by piece is $2.1\times10^{-12}$
 (relative to the largest entry of the term) on the piece farthest from the singular point, the box
 $\bt\in[2,4]^3$, and at most $1.2\times10^{-15}$ on the piece that has the singular point as a vertex.
 The loss is in the pieces away from the singular point.
 
-\paragraph{Why it is lost.} On such a piece two cancellations act together: the inclusion-exclusion of
+\paragraph{Why.} On such a piece two cancellations act together: the inclusion-exclusion of
 anchored boxes, and the power basis about a point outside the piece. They can be separated. On the far
 piece of the corner contact, for the same term, the integral was computed four ways, each compared with
 the same piece at forty digits with exact rational weights:
 \begin{itemize}
-  \item[A] as written: anchored master integrals rounded to double precision, inclusion-exclusion and
+  \item[A] the power basis about the singular point: anchored master integrals rounded to double precision, inclusion-exclusion and
   contraction in double precision. Error $2.6\times10^{-13}$.
   \item[B] the moments of the far box itself, $\int_{\text{box}}\bt^{\mathbf{e}}|\bt|^n$, exact
   (inclusion-exclusion at forty digits) and then rounded; the contraction with the power-basis weights in
@@ -471,9 +479,8 @@ the weights alone (C) costs three digits. A basis local to the piece removes the
 degree two the local power basis is itself not quite enough: with exact moments the far piece is
 accurate to $4.9\times10^{-15}$ in local powers and to $1.9\times10^{-16}$ in Legendre polynomials of the
 local coordinate, and the piece at the singular point to $4.0\times10^{-15}$ and $2.4\times10^{-16}$. The
-basis the evaluation needs is therefore the Legendre basis of each piece. This is the classical
-conditioning contrast between power moments and orthogonal-polynomial (modified) moments
-\citep{Gautschi1970}.
+basis the evaluation needs is therefore the Legendre basis of each piece, as the classical contrast between
+power and modified moments leads one to expect \citep{Gautschi1970}.
 
 \paragraph{Quadrature on the smooth pieces is not enough.} A natural alternative keeps the closed forms only
 on the pieces that hold the singular point and integrates the others, which are smooth, by Gauss rules.
@@ -523,7 +530,7 @@ degree-one field and $502$ to $593$\,s for the degree-two one, at $20$ points pe
 
 \subsection{Marching the recurrences}\label{sec:marching}
 
-The reductions of \S\ref{sec:failure} can be re-anchored at the corner of each piece, so that the
+The reductions of \S\ref{sec:conditioning} can be re-anchored at the corner of each piece, so that the
 weights are local. In one dimension the edge moments $E[r]=\int_l^{l+L}u^r(A^2+t^2)^{n/2}\dd t$, with
 $t=u+l$, satisfy at fixed $n$ the three-term recurrence
 \begin{equation}\label{eq:edgerec}
@@ -586,7 +593,7 @@ edge moments come out to full relative accuracy, the high-order ones included: f
 errors relative to $\Lambda[0]$ are $10^{-20}$ to $10^{-35}$ while the moments themselves fall to
 $10^{-13}$ to $10^{-21}$ of $\Lambda[0]$, at $\rho=1$, $\sqrt2$, $\sqrt3$, $\sqrt6$ and $3$ and for
 $m=-3$, $-1$ and $1$. The face moments are accurate to $9\times10^{-18}$ to $3\times10^{-16}$ relative to
-$\Lambda[0,0]$, including the faces at $\rho=\sqrt2$ and $\rho=1$ where marching failed. The truncation
+$\Lambda[0,0]$, including the faces at $\rho=\sqrt2$ and $\rho=1$ where marching is unstable. The truncation
 margin used in these tests is $16$ Legendre degrees beyond the highest needed; in the coupling blocks
 $8$ suffices (\S\ref{sec:results}).
 
@@ -649,8 +656,8 @@ reference as follows (relative Frobenius error, implementation
 \cmidrule(lr){2-3}\cmidrule(l){4-5}
  & corner & edge & corner & edge \\
 \midrule
-closed forms as written (\S\ref{sec:failure}) & $2.3\times10^{-13}$ & $9.4\times10^{-14}$ & $1.7\times10^{-11}$ & $5.5\times10^{-12}$\\
-stable evaluation (\S\ref{sec:stable}) & $1.0\times10^{-15}$ & $9.7\times10^{-16}$ & $3.7\times10^{-15}$ & $4.3\times10^{-15}$\\
+power basis (\S\ref{sec:conditioning}) & $2.3\times10^{-13}$ & $9.4\times10^{-14}$ & $1.7\times10^{-11}$ & $5.5\times10^{-12}$\\
+Legendre basis (\S\ref{sec:stable}) & $1.0\times10^{-15}$ & $9.7\times10^{-16}$ & $3.7\times10^{-15}$ & $4.3\times10^{-15}$\\
 quadrature, $20$ points & $1.1\times10^{-15}$ & $1.8\times10^{-15}$ & $1.9\times10^{-15}$ & $2.7\times10^{-15}$\\
 \bottomrule
 \end{tabular}
@@ -677,23 +684,23 @@ powers of $h$, which a reference at $h=1$ cannot see.
 whole touching block, static and dynamic, is the series summed term by term, each term a universal moment
 times $h^{\,6+m-|\biota|}$ and the weights $c_1$, $c_2$. At $k_Sh=0.0625$ it agrees with the quadrature
 block at $20$ points per axis to about $10^{-15}$ for the degree-one field at all four contact geometries, and
-to $2$ to $4\times10^{-15}$ for the degree-two field; with the closed forms as written the degree-two field's
-blocks had stalled at $9\times10^{-15}$ to $2\times10^{-11}$ (\path{scripts/measure_galerkin_near_blocks.py}).
+to $2$ to $4\times10^{-15}$ for the degree-two field; in the power basis the degree-two field's
+blocks stall at $9\times10^{-15}$ to $2\times10^{-11}$ (\path{scripts/measure_galerkin_near_blocks.py}).
 
 \paragraph{Cost.} The universal moments are computed once for each contact geometry and cell degree: they
 depend on neither the frequency nor the cell size. For all four geometries and both degrees, with the
 series carried to the powers that $k_Sh=0.0625$ needs, that one-off step took $3745$\,s on one machine,
-against $998$\,s for the closed forms as written: about $0.75$\,s per term against $0.3$\,s, over some
+against $998$\,s in the power basis: about $0.75$\,s per term against $0.3$\,s, over some
 $2600$ terms. Stability has a price, and it is paid once. Each block thereafter costs the assembly of the
 series alone, $5$\,ms for the degree-one field and $33$\,ms for the degree-two one, against $0.4$ to $13$\,s for
 a quadrature block at the number of points (14 to 20 per axis) that reaches $10^{-15}$. One frequency
 needs all eight blocks: $17.4$\,s by quadrature at $14$ points ($2.3$\,s for the degree-one field, $15.1$\,s
 for the degree-two field), $0.15$\,s by the series. The one-off cost is therefore recovered after about $220$
 frequencies, and a synthetic over $256$ frequencies is already cheaper by the series
-(\S\ref{sec:sweep}). Two measures brought the one-off cost down by a factor of $2.3$ without
-changing any block beyond round-off: a truncation margin of $8$ Legendre degrees instead of $16$ (the blocks
-are the same to the digits shown for margins from $4$ to $16$), and one truncation shared by every term
-of a cell degree, so that the sparse systems are solved once and reused.
+(\S\ref{sec:sweep}). Two choices keep the one-off cost down, by a factor of $2.3$, without changing any
+block beyond round-off: a truncation margin of $8$ Legendre degrees (the blocks are the same to the digits
+shown for margins from $4$ to $16$), and one truncation shared by every term of a cell degree, so that the
+sparse systems are solved once and reused.
 
 \paragraph{Reciprocity.} Two further symmetries hold for every touching block, not only the self block.
 The propagator satisfies $\mathbf{W}\bP(\mathbf{r})$ symmetric at every $\mathbf{r}$, with
@@ -759,9 +766,9 @@ eight boxes of its support, so each box can be expanded about its own centre $\b
 those of a polynomial over a box, exact, and the ratio becoming the box's half-diagonal over
 $|\bR+\bs_B|$: $0.52$ at two cells apart, and $0.33$ after one bisection of the boxes, each bisection
 halving it (\path{multipole.piecewise_multipole_block}). The order is chosen with the bisection level to
-minimise the cost, subject to one constraint found by measurement: at the offset $(2,1,1)$ a plan of
-order $48$ to $56$ without bisection stalled at $6\times10^{-13}$ to $2\times10^{-12}$, while one bisection
-at order $36$ to $40$ reached $10^{-15}$ to $4\times10^{-15}$. The rounding of a series that long grows
+minimise the cost, subject to one constraint: at the offset $(2,1,1)$ a plan of order $48$ to $56$
+without bisection stalls at $6\times10^{-13}$ to $2\times10^{-12}$, while one bisection at order $36$ to $40$
+reaches $10^{-15}$ to $4\times10^{-15}$. The rounding of a series that long grows
 with its order, so the order is capped at $40$ and a plan that needs more bisects instead.
 
 \paragraph{The experiment.} For a degree-one field, at offsets from two to sixty-four cells and at
@@ -772,16 +779,16 @@ moments and coefficients excluded: the $s$-form with the package's Gauss rule, t
 \eqref{eq:twocentre}, its piecewise form, and the frequency-independent series in $k$ of
 \S\ref{sec:sweep} (\path{scripts/measure_distant_cell_blocks.py}).
 
-\paragraph{Accuracy.} After the corrections below, every route is at round-off wherever it applies: the
+\paragraph{Accuracy.} With the two choices below, every route is at round-off wherever it applies: the
 largest relative error over all offsets and frequencies is $9\times10^{-15}$ for the Gauss rule and
 $10^{-14}$ for the two multipole forms, the same as the reference's own agreement between $24$ and $32$
 points. The series in $k$ is at round-off where it converges, and loses accuracy as $k_Sr$ grows,
 $5\times10^{-13}$ at sixty-four cells for $k_Sh=0.0625$, because its terms grow like $(k_Sr)^t/t!$ before
-they fall; beyond about $k_Sr=14$ it refuses. Two defects were found and corrected by this experiment.
-The first is the cancellation of \S\ref{sec:multipoles}: with the derivatives of $(g_S-g_P)/k_S^2$ taken
-as a difference of Hankel forms, the multipole blocks at $k_Sh=10^{-4}$ were wrong by $3\times10^{-9}$ to
-$10^{-12}$, and the piecewise form near contact by up to $9\times10^{-5}$. The second is in the Gauss rule
-itself: its order had been chosen by distance alone, eight points per axis beyond four cells, which
+they fall; beyond about $k_Sr=14$ it refuses. Two choices are needed for this. The derivatives of
+$(g_S-g_P)/k_S^2$ are taken from its power series for $k_Sr\le1$ (\S\ref{sec:multipoles}): as a difference
+of Hankel forms they cancel, and the multipole blocks at $k_Sh=10^{-4}$ would be wrong by $3\times10^{-9}$
+to $10^{-12}$, the piecewise form near contact by up to $9\times10^{-5}$. And the order of the Gauss rule
+must grow with the frequency: an order set by distance alone, eight points per axis beyond four cells,
 leaves the blocks wrong by $3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$. Measured against
 forty points, the order that reaches about $10^{-14}$ is the larger of the distance rule and
 $8+2\lceil k_Sh-1\rceil$, for offsets from two to thirty-two cells and $k_Sh$ up to $4$.
@@ -851,10 +858,10 @@ $9$\,ms for the Gauss block (\path{blocks.far_block_series}).
 large as the $c_1$ term $t-2$, and the radiation (imaginary) part at order $k$ comes from $t=1$ of the first
 family and $t=3$ of the second together. Each series is therefore summed through $t=4$ at least, and until
 $(k_Sr_{\max})^{t-2}/(t-2)!$ falls below the tolerance, $r_{\max}$ the largest separation of two points of
-the cells. A rule that bounded term $t$ by $(k_Sr_{\max})^t/t!$, ignoring the $k_S^{-2}$, stopped two powers
-early at low frequency: the touching blocks' imaginary part was wrong by $7\times10^{-9}$ at $k_Sh=10^{-4}$,
-and the whole block by $10^{-12}$. Tests of the imaginary part's low-frequency law, which is $O(k)$ with an
-$O(k^3)$ correction, fail on the old rule and pass on the new.
+the cells. A rule that bounds term $t$ by $(k_Sr_{\max})^t/t!$, ignoring the $k_S^{-2}$, stops two powers
+early at low frequency: the touching blocks' imaginary part is then wrong by $7\times10^{-9}$ at
+$k_Sh=10^{-4}$, and the whole block by $10^{-12}$, and the imaginary part violates its low-frequency law,
+$O(k)$ with an $O(k^3)$ correction, which the rule above preserves.
 
 \paragraph{The sweep.} On the grid of the graded sphere of \citet{NestorContinuum2026} ($n$ cells across a
 sphere of radius $a$), all the blocks of one frequency were formed for the Legendre cell with a field and a contrast of degree
@@ -1227,9 +1234,9 @@ singular for touching cells, and the closed forms give them with the singularity
 than resolved by a quadrature.
 
 \paragraph{Quadrature fails silently outside its calibration.} A Gauss rule is accurate where its order was
-chosen by measurement, and nothing warns when it is used outside that range. Two cases met in this work
-show it. The Gauss order of the blocks of distant cells, chosen by distance alone, left them wrong by
-$3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:distant}). And for the face block of the static strain coupling of two uniform cells, a tensor
+chosen by measurement, and nothing warns when it is used outside that range. Two cases show it. A Gauss
+order for the blocks of distant cells set by distance alone leaves them wrong by $3\times10^{-11}$ at
+$k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:distant}). And for the face block of the static strain coupling of two uniform cells, a tensor
 Gauss rule whose two cells share one set of lateral nodes moved monotonically through $8.45$, $9.20$,
 $9.59$, $9.85$ and $10.02\times10^{-12}$ as its order rose from $4$ to $12$, with steps that shrank as if it
 were converging, towards about $1.05\times10^{-11}$; the exact value is $3.009\times10^{-12}$, obtained by a
@@ -1243,13 +1250,11 @@ in a running error analysis \citep{Higham2002}, and $\varepsilon M$ is then an e
 coefficient, and $M/|U|$ its condition number \eqref{eq:kappa}. Quadrature gives no such estimate without a convergence
 study, and the last case above is one in which a convergence study misleads.
 
-\paragraph{An independent check that has found defects.} The project's standard is two independent
-evaluations that agree. The closed forms share no step with quadrature, and comparing the two has found
-defects in each: the cancellation of the two radial scalars in the multipole blocks at low frequency,
-wrong by up to $9\times10^{-5}$ (\S\ref{sec:multipoles}, \S\ref{sec:distant}); the Gauss order that
-ignored the frequency, above; and, in the other direction,
-the loss of four to five digits in the closed forms as written (\S\ref{sec:failure}), found by the
-forty-digit reference.
+\paragraph{An independent check.} The closed forms share no step with quadrature, so the agreement of the
+two checks each, and exposes errors that either alone would hide: the cancellation of the two radial
+scalars in the multipole blocks at low frequency, up to $9\times10^{-5}$ (\S\ref{sec:multipoles},
+\S\ref{sec:distant}); a Gauss order that ignores the frequency, above; and, in the other direction, the four
+to five digits that the closed forms lose in the power basis (\S\ref{sec:conditioning}).
 
 \paragraph{Universal tables.} The coefficients depend on neither the frequency, the cell size nor the
 medium. Computed in closed form and checked once, they can be tabulated and reused for every model, with no
@@ -1264,11 +1269,10 @@ over such a sweep does not matter.
 
 \section{Discussion}\label{sec:discussion}
 
-The closed forms of the touching blocks were never wrong: evaluated at forty digits they agree with the
-reference. What failed was their evaluation in double precision, and the failure has a single cause,
-the basis in which the polynomial weight meets the kernel. The classical results on moments
-\citep{Gautschi1970} and on minimal solutions of recurrences \citep{Gautschi1967,Olver1967} say both why
-and what to do: use moments of orthogonal polynomials, and obtain them from their recurrence posed as a
+The closed forms of the touching blocks are exact: evaluated at forty digits they agree with the
+reference. Their accuracy in double precision is set by the basis in which the polynomial weight meets the
+kernel, and the classical results on moments \citep{Gautschi1970} and on minimal solutions of recurrences
+\citep{Gautschi1967,Olver1967} say which basis and how to obtain it: use moments of orthogonal polynomials, and obtain them from their recurrence posed as a
 boundary-value problem rather than marched. The relation \eqref{eq:relation} makes this possible for a
 power of the distance over a box in any dimension, and the pyramids of \S\ref{sec:pyramids} reduce the
 pieces at the singular point to faces where it applies. Two consequences are worth stating. The evaluation
@@ -1280,7 +1284,7 @@ quadrature intact: coefficients computed once, for every frequency.
 The boundary-element literature reached a different conclusion for the analytic integration of layer
 potentials, switching to quadrature away from the singularity
 \citep{KanekoGumerovDuraiswami2024,GumerovKanekoDuraiswami2024}. For the integrals of this paper that
-switch is not enough at degree two (\S\ref{sec:failure}). Whether the Legendre relation would serve
+switch is not enough at degree two (\S\ref{sec:conditioning}). Whether the Legendre relation would serve
 those integrals too we have not examined. We have not found the relation \eqref{eq:relation}, or the
 use of Legendre moments by a truncated boundary-value problem for integrals over boxes, in the literature
 we searched; the search was limited, and this is a statement of what we did not find.
