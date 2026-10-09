@@ -1,9 +1,11 @@
 % Standalone source of the figure fig:neighbours of the coupling-integrals paper.
 % Build: pdflatex fig_neighbours.tex; the paper includes the PDF. Grey scale only.
-% An exploded 3 x 3 x 3 block of cells: the central cell and its 26 neighbours, shaded by the kind of
-% contact (6 face, 12 edge, 8 corner). Oblique projection, receding axis to the upper right, so the
-% front, top and right faces of each cube are visible; cubes are drawn back to front (far to near, low to
-% high, left to right), so that nearer cubes hide farther ones; the front layer is see-through.
+% The 3 x 3 x 3 block of a space-filling tessellation, packed face to face: the central cell and its 26
+% neighbours, shaded by the kind of contact (6 face, 12 edge, 8 corner). Oblique projection, receding axis
+% to the upper right, so the front, top and right faces of each cube are visible; cubes are drawn back to
+% front (far to near, low to high, left to right), so that nearer cubes hide farther ones. The seven
+% neighbours in front of, above and to the right of the cell (the octant i >= 0, j <= 0, k >= 0) are cut
+% away so that the cell shows; the block they fill is outlined dashed.
 \documentclass[border=2pt]{standalone}
 \input{fig_preamble}
 % projection of the cube corner (x, y, z): x to the right, y receding to the upper right, z up
@@ -23,31 +25,35 @@
 \colorlet{edge}{black!25}
 \colorlet{corner}{white}
 \begin{document}
-\begin{tikzpicture}[x=0.95cm, y=0.95cm, font=\footnotesize]
-  \def\gap{1.8}
+\begin{tikzpicture}[x=1.25cm, y=1.25cm, font=\footnotesize]
   \foreach \j in {1,0,-1}{
     \foreach \k in {-1,0,1}{
       \foreach \i in {-1,0,1}{
         \pgfmathtruncatemacro{\kind}{abs(\i) + abs(\j) + abs(\k)}
-        \pgfmathsetmacro{\x}{\gap*\i}
-        \pgfmathsetmacro{\y}{\gap*\j}
-        \pgfmathsetmacro{\z}{\gap*\k}
-        % the nine cubes of the front layer are drawn see-through, so the cell behind them shows
-        \ifnum\j<0 \renewcommand{\cubeopacity}{0.35}\else\renewcommand{\cubeopacity}{1}\fi
-        \ifcase\kind
-          \cube{\x}{\y}{\z}{centre}
-        \or
-          \cube{\x}{\y}{\z}{face}
-        \or
-          \cube{\x}{\y}{\z}{edge}
-        \or
-          \cube{\x}{\y}{\z}{corner}
+        % the cut-away octant: in front of (j <= 0), above (k >= 0) and right of (i >= 0) the cell
+        \pgfmathtruncatemacro{\cut}{(\i >= 0) && (\j <= 0) && (\k >= 0) && (\kind > 0)}
+        \ifnum\cut=0
+          \ifcase\kind
+            \cube{\i}{\j}{\k}{centre}
+          \or
+            \cube{\i}{\j}{\k}{face}
+          \or
+            \cube{\i}{\j}{\k}{edge}
+          \or
+            \cube{\i}{\j}{\k}{corner}
+          \fi
         \fi
       }
     }
   }
+  % the outline of the cut-away block, x in [0, 2], y in [-1, 1], z in [0, 2]
+  \begin{scope}[densely dashed, thin]
+    \draw \pt{0}{-1}{0} -- \pt{2}{-1}{0} -- \pt{2}{-1}{2} -- \pt{0}{-1}{2} -- cycle;
+    \draw \pt{0}{-1}{2} -- \pt{0}{1}{2} -- \pt{2}{1}{2} -- \pt{2}{-1}{2};
+    \draw \pt{2}{-1}{0} -- \pt{2}{1}{0} -- \pt{2}{1}{2};
+  \end{scope}
   % legend
-  \begin{scope}[xshift=7.2cm, yshift=3.0cm]
+  \begin{scope}[xshift=6.6cm, yshift=3.4cm]
     \foreach \col/\lab [count=\r] in {centre/{the cell},
         face/{6 face neighbours, $\rho=\sqrt3$},
         edge/{12 edge neighbours, $\rho=\sqrt{3/2}$},
