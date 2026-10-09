@@ -70,8 +70,10 @@
 Volume-integral methods for elastic waves divide a heterogeneous medium into cubic cells and couple every
 pair of cells through the integral of the elastodynamic Green's tensor against the polynomials that the two
 cells carry. We obtain these coupling blocks in closed form, exact for elastic waves and accurate to
-round-off in double precision. For cells that touch, the expansion about the two cell centres that couples
-separated scatterers diverges, so the integrals themselves are needed; they are singular, and their closed
+round-off in double precision. The expansion about the two cell centres that couples separated scatterers is
+assured to converge only when the cells' circumscribing spheres do not overlap, a sufficient condition that
+every pair of touching cells violates, and at face and edge contact it fails. Evaluated in closed form, the
+coupling integrals need no such condition. They are singular for cells that touch, and their closed
 forms are a power series in the wavenumber whose coefficients are universal numbers, independent of the
 frequency, the cell size and the medium, each built from elementary master integrals. Evaluated as written
 in double precision these closed forms lose four to five digits: against a forty-digit reference, the block
@@ -120,13 +122,16 @@ finite sum of elementary master integrals reduced from volume to faces to edges.
 
 The cells here fill space. That choice is what makes the touching integrals unavoidable. Methods that
 leave gaps between their scatterers couple them through expansions about each scatterer's own centre,
-which converge when the scatterers are far enough apart: superposition $T$-matrix methods state the
-condition that the circumscribing spheres do not overlap \citep{MishchenkoTravisLacis2002}, and
+which are assured to converge when the scatterers are far enough apart: the circumscribing spheres must
+not overlap, a sufficient condition for the convergence of the translation series
+\citep{GumerovDuraiswami2004} that superposition $T$-matrix methods adopt \citep{MishchenkoTravisLacis2002}, and
 point-scatterer models of the Foldy type approximate each small obstacle by a point scatterer
 \citep{Foldy1945,BendaliCocquetTordeux2016}. In a space-filling tessellation every cell touches $26$
-neighbours, and the same expansion fails for all of them (\S\ref{sec:twocentre}). The interaction between
-neighbours, which in a continuous medium is the coupling of adjacent material, therefore needs the integrals
-themselves. This paper follows for that interaction the programme that \citet{NestorLegendre2026} carried
+neighbours, and the condition fails for all of them; the expansion itself fails at face and edge contact
+(\S\ref{sec:twocentre}). The interaction between neighbours, which in a continuous medium is the coupling of
+adjacent material, therefore needs the integrals themselves. Evaluated in closed form they need no
+condition on the geometry, so the condition, sufficient for the expansion, is not necessary for coupling
+the cells. This paper follows for that interaction the programme that \citet{NestorLegendre2026} carried
 out for a single cell, whose single-site $T$-matrix was obtained there in closed form at every power of the
 frequency: here the interaction between cells is obtained the same way. With both in closed form and
 accurate to round-off, the errors that \citet{NestorError2026} measures are those of the discretisation
@@ -154,7 +159,8 @@ power of the distance over a box in any dimension, and the decomposition that br
 touching coupling block within its reach.
 
 The paper is organised as follows. Section~\ref{sec:blocks} defines the blocks and their series in the
-wavenumber, and shows that the two-centre expansion fails for every pair of touching cells.
+wavenumber, and shows that the two-centre expansion is not assured to converge for any pair of touching
+cells, and fails at face and edge contact.
 Sections~\ref{sec:failure} to~\ref{sec:results} measure the loss of the closed forms, build the forty-digit
 reference, give the stable evaluation and its accuracy and cost. Section~\ref{sec:multipoles} fixes what
 \emph{multipole} means here, \S\ref{sec:distant} couples cells that do not touch, and \S\ref{sec:sweep}
@@ -292,10 +298,12 @@ $\bs=0$ converges for $|\bs|<|\bR|$, the distance from the expansion point to th
 $\bs^*=-\bR$. The separation ranges over the support of $W$, $|s_i|\le2h$, as far as $|\bs|=2\sqrt3\,h$,
 the sum of the radii of the two cells' circumscribing spheres. The series is therefore assured to converge
 only when $2\sqrt3\,h<|\bR|$, that is when the circumscribing spheres do not overlap
-(Figure~\ref{fig:twocentre}(b)). Superposition $T$-matrix methods state the same condition: the smallest
+(Figure~\ref{fig:twocentre}(b)); this is the sufficient condition for the convergence of the translation
+(addition) theorems of the Laplace and Helmholtz kernels \citep{GumerovDuraiswami2004}. Superposition
+$T$-matrix methods state the same condition: the smallest
 circumscribing spheres of the components must not overlap \citep[\S5.9]{MishchenkoTravisLacis2002}, and
 each particle's circumscribing sphere must not intersect its neighbours \citep{TheobaldEgelGomardLemmer2017}.
-The condition is sufficient rather than necessary: for adjacent spheroids, results converge well beyond it,
+The condition is sufficient, not necessary: for adjacent spheroids, results converge well beyond it,
 although extreme overlap needed quadruple precision \citep{SchebarchovLeRuGrandAuguie2019}. A space-filling
 tessellation violates it for each of a cell's $26$ neighbours (Figure~\ref{fig:neighbours}), with the ratio $\rho=2\sqrt3\,h/|\bR|$ equal
 to $\sqrt3$, $\sqrt{3/2}$ and $1$ at face, edge and corner contact, and for touching cells the singular point
@@ -369,8 +377,14 @@ For cells that touch it cannot: a box whose closure holds the singular point $\b
 one half-diagonal of it, so its own ratio is at least one, however finely the support is cut, and such a box
 always exists because $\bs^*$ lies on the boundary of the support. The interaction of a cell with its
 neighbours, which in a space-filling medium is where the coupling of the continuum lives, is therefore out
-of reach of the expansion that methods leaving gaps between their scatterers rely on. That is the reason
-for the closed forms of the rest of this paper.
+of reach of the expansion that methods leaving gaps between their scatterers rely on. Two statements
+should be kept apart. For the series, the condition is not necessary but it is not idle either: the series
+converges at corner contact, where the spheres just touch, and fails at face and edge contact however its
+terms are evaluated, since here the pair moments are exact and the sums carried to $60$ digits. For the
+coupling, the condition is not necessary at all: the closed forms of the rest of this paper give the
+block at every contact to round-off, against the forty-digit reference at edge and corner contact and
+against quadrature at face contact (\S\ref{sec:results}). The condition belongs to
+the expansion, not to the problem.
 
 \section{The closed forms, and why they fail in double precision}\label{sec:failure}
 
@@ -1203,8 +1217,8 @@ just as independent of the frequency, and over a sweep they cost as little per f
 it is what quadrature cannot provide, and each point below rests on a measurement.
 
 \paragraph{Cells that touch.} For a space-filling tessellation the coupling of a cell with its $26$
-neighbours cannot be had from the expansion about the cell centres at all (\S\ref{sec:twocentre}): at face
-contact the two-centre series diverges, and more digits do not help. Those blocks need the integrals,
+neighbours cannot be had from the expansion about the cell centres (\S\ref{sec:twocentre}): at face
+contact the two-centre series diverges, at edge contact it stalls, and more digits do not help. Those blocks need the integrals,
 singular for touching cells, and the closed forms give them with the singularity treated exactly rather
 than resolved by a quadrature.
 
