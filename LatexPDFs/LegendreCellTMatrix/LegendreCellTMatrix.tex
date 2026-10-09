@@ -488,11 +488,16 @@ the cell's dilatational self-interaction.
 Eq.~\eqref{eq:t36}. On the irreducible representations the $36\times36$ matrix to be inverted becomes eight
 blocks of order at most four, and each block's inverse is an explicit formula in the contrast and in
 $k_Sh$: the $T$-matrix is a closed-form function of the material and the frequency, not a number obtained
-for one contrast and one frequency at a time. The author first found a closed-form inverse of this kind, and the
-physical reading it gives of the cell's scattering, for the cell with derived strain (the strain the
-derivative of the cell's displacement, \S\ref{sec:cell}) in unpublished notebooks \citep{NestorNotebooks2012};
-it is derived here for the Legendre cell, whose strain is an unknown of its own, at every power of $k_Sh$,
-with each step checked. On each representation the contrast is the same simple
+for one contrast and one frequency at a time. The structure is not peculiar to the Galerkin cell. The author first found it, with a closed-form
+inverse and the physical reading that follows, for the cell with derived strain, the displacement expanded
+about the centre to its second gradients (\S\ref{sec:cell}), in an unpublished notebook
+\citep{NestorNotebooks2012}. There too the system splits by parity: the first gradients form a block of
+their own, while the displacement couples only to the second gradients; the displacement follows from a
+Schur complement, $\mathbf u=(\mathbf A_{11}-\mathbf A_{13}\mathbf A_{33}^{-1}\mathbf A_{31})^{-1}(\cdots)$,
+the counterpart of Eq.~\eqref{eq:schurcomplement}; and in the static limit the strain is
+$(\bI-\mathsf M\,\delta c)^{-1}$ times the incident strain, with $\mathsf M$ the integral of the second
+derivatives of $\bG$ over the cell: Eshelby's form. It is derived here for the
+Legendre cell, whose strain is an unknown of its own, at every power of $k_Sh$, with each step checked. On each representation the contrast is the same simple
 matrix whatever the cell's material, from Table~\ref{tab:vectors} and the contrast operator of
 \S\ref{sec:cell}:
 \begin{equation}\label{eq:deltagamma}
@@ -764,7 +769,8 @@ The static self-interaction of a cuboid inclusion is known in closed form point 
 imposed. The Galerkin cell imposes it on average over the cell, and its constants are those averages, exact,
 channel by channel; the strain's first moments add channels of the same form. The dynamic $T$-matrix keeps the structure, with the displacement entering each
 channel through the single number $a$ of Eq.~\eqref{eq:schurcomplement}. The closed-form inverse makes the physics
-visible, as it did for the derived-strain cell in the author's earlier notebooks \citep{NestorNotebooks2012}.
+visible, as it did for the derived-strain cell in the author's earlier notebook \citep{NestorNotebooks2012},
+which has the same block structure.
 The Legendre cell scatters through a
 few independent channels, each with one constant and one resonance, $1-N_\Gamma D_\Gamma=0$.
 
