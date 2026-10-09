@@ -73,13 +73,14 @@ projection error of the medium, times a factor of order one that we derive in cl
 a layer, and in three dimensions it depends on the background and the direction of scattering through the
 axes of the cells; the nonlinear fraction itself follows from two products with the matrix of a
 coarse tree, to $1.4\%$, with no solve. On a sphere with a thin graded shell, against its exact solution, the
-second term has one constant ($0.015$) for constant and for linear cells, on uniform grids and on
+second term has one constant ($0.015$) for constant cells and for degree-one cells (field and contrast expanded in the constant and the three
+linear Legendre polynomials of each cell), on uniform grids and on
 trees, where the raw ratio of error to projection error varies by a factor of two. Refining by both
-terms, a tree of linear cells reaches the accuracy of a uniform grid with a quarter of the cells on a
+terms, a tree of degree-one cells reaches the accuracy of a uniform grid with a quarter of the cells on a
 body whose variation fills $3\%$ of its volume. Which basis suits the medium depends on the medium.
 Where it varies smoothly the two degrees must be matched, and a constant contrast with a richer field
 is worse than a constant field. Where it is piecewise constant on the leaves, a constant contrast is
-exact, and a linear field on the tree has $65$ times less error than the uniform grid of constant cells
+exact, and a degree-one field on the tree has $65$ times less error than the uniform grid of constant cells
 with the same number of unknowns. This draft records what is established and what is not.
 \end{abstract}
 
@@ -128,7 +129,7 @@ Poisson, Stokes and low-frequency Helmholtz problems, at up to $10^{10}$ unknown
 cells of a dyadic tree are the multiwavelets of \citet{Alpert1993}, in which integral operators are
 sparse \citep{Alpert1993b}. In electromagnetics, large volume elements carry fields of high polynomial
 order \citep{Chobanyan2013}, with the material represented to an order of its own \citep{Chobanyan2015},
-and voxels with a linear field are solved with fast Fourier transforms \citep{Georgakis2020}. Where
+and voxels with a degree-one field are solved with fast Fourier transforms \citep{Georgakis2020}. Where
 error is estimated for such methods it is estimated \emph{a posteriori}, from a computed solution that
 is then refined and solved again \citep{Beilina2022}. For elastic waves the volume integral equation is
 solved on uniform grids at low order \citep{Shekhar2023}, and fast multipole methods exist for boundary
@@ -160,7 +161,9 @@ nine-component state (displacement and strain) in the Legendre products
 $Q_a(\boldsymbol\xi)=P_{a_1}(\xi_1)P_{a_2}(\xi_2)P_{a_3}(\xi_3)$ of total degree $|a|=a_1+a_2+a_3\le p_\ell$,
 which is $1$, $4$ or $10$ functions for $p_\ell=0$, $1$ or $2$, and the contrast in the same products to
 degree $r_\ell$. The two degrees may differ from leaf to leaf. A leaf with $p=r=0$ is a Haar cell: a
-constant medium and a constant field.
+constant medium and a constant field. We call it a constant cell, a leaf with $p=r=1$ a degree-one cell
+(the constant and the three linear polynomials, $\xi_1$, $\xi_2$, $\xi_3$), and a leaf with $p=r=2$ a
+degree-two cell (those four and the six quadratic products, $P_2(\xi_i)$ and $\xi_i\xi_j$ with $i<j$; ten in all).
 
 \paragraph{The system.} Tested with the same functions, the volume integral equation becomes
 \begin{equation}\label{eq:system}
@@ -212,7 +215,7 @@ separates the same way.
 At first order in the contrast Eq.~\eqref{eq:system} is $M_\ell\psi_\ell=\langle Q,\psi^0\rangle_\ell$:
 each leaf holds the $L^2$ projection of the incident wave onto its field functions. The scheme's Born
 term is therefore known from one pass over the leaves, with no system to solve, and its difference from
-the Born term of a finer representation (each leaf's eight children with quadratic cells) is the
+the Born term of a finer representation (each leaf's eight children with degree-two cells) is the
 first-order error of the tree, leaf by leaf. On a tree of two leaf sizes this projected Born term equals
 the weak-contrast limit of the full solver to $10^{-5}$ of its size.
 
@@ -285,7 +288,7 @@ constant ($p=r=0$) & uniform & $64$   & $8.17\times10^{-3}$ & $0.0309$ & $0.0149
  & tree    & $1360$ & $6.03\times10^{-4}$ & $0.0210$ & $0.0151$ \\
  & tree    & $1696$ & $5.75\times10^{-4}$ & $0.0222$ & $0.0151$ \\
 \midrule
-linear ($p=r=1$) & uniform & $64$  & $8.99\times10^{-4}$ & $0.0147$ & $0.0148$ \\
+degree one ($p=r=1$) & uniform & $64$  & $8.99\times10^{-4}$ & $0.0147$ & $0.0148$ \\
  & uniform & $184$ & $4.62\times10^{-4}$ & $0.0146$ & $0.0146$ \\
  & uniform & $408$ & $2.20\times10^{-4}$ & $0.0146$ & $0.0146$ \\
  & tree    & $184$ & $5.16\times10^{-4}$ & $0.0142$ & $0.0148$ \\
@@ -295,11 +298,11 @@ linear ($p=r=1$) & uniform & $64$  & $8.99\times10^{-4}$ & $0.0147$ & $0.0148$ \
 \end{table}
 For constant cells the ratio of error to projection error varies by a factor of $1.93$ across the
 grids; the rest over the projection error varies by $1.06$, and it is $0.0151$ to $0.0152$ on all four
-trees. For linear cells the first-order error is small and both ratios are near $0.0146$. The constant
+trees. For degree-one cells the first-order error is small and both ratios are near $0.0146$. The constant
 is close to the nonlinear fraction of the exact response, $\nu=\lvert u-T_1\rvert/\lvert u\rvert=0.0151$.
 This is the law of the layer \citep{NestorContinuum2026} carried to three dimensions: the error of the
 nonlinear part is that part times the relative projection error of the medium, times a factor of order
-one that \S\ref{sec:factor3d} derives. It holds for constant cells as it does for linear ones, once the
+one that \S\ref{sec:factor3d} derives. It holds for constant cells as it does for degree-one cells, once the
 first-order error is accounted for; without that, constant cells appear not to follow it.
 
 \subsection{The factor of the second term in three dimensions}\label{sec:factor3d}
@@ -354,7 +357,7 @@ g\rVert^2$, with $m_{\mathrm{ax}}$ the mean of $m$ over the three cube axes. Hen
 The cell enters through its axes: a residual arranged along them sees the operator along them, while the
 body sees it averaged over all directions.
 
-\paragraph{Linear cells.} The residual is the quadratic part of $f$ less its projection,
+\paragraph{Degree-one cells.} The residual is the quadratic part of $f$ less its projection,
 $\tfrac12\sum_iH_{ii}(x_i^2-h^2/3)+\sum_{i<j}H_{ij}x_ix_j$ with $H$ the second derivatives of $f$.
 Its energy is $\sum_iH_{ii}^2h^4/45+\sum_{i<j}H_{ij}^2h^4/9$ per unit volume, and its second moments,
 $2h^4/45$ on the diagonal and $h^4/9$ off it, give its transform at small wavenumbers as
@@ -393,12 +396,12 @@ directly, by fast Fourier transform on a grid finer than the cells (\path{script
 \begin{table}[htbp]
 \centering
 \caption{The factor $F$ of Eq.~\eqref{eq:t2factor}: the scheme on $8$ cells across, the direct
-evaluation on finer grids ($32$ cells for constant, $24$ for linear), and the limit,
+evaluation on finer grids ($32$ cells for constant, $24$ for degree one), and the limit,
 Eqs.~\eqref{eq:F0}--\eqref{eq:Fps}.}\label{tab:t2factor}
 \small
 \begin{tabular}{@{}lcccccc@{}}
 \toprule
- & \multicolumn{3}{c}{constant cells} & \multicolumn{3}{c}{linear cells} \\
+ & \multicolumn{3}{c}{constant cells} & \multicolumn{3}{c}{degree-one cells} \\
 outgoing wave & scheme & direct & limit & scheme & direct & limit \\
 \midrule
 P at $0.2$\,rad & $1.074$ & $1.092$ & $1.101$ & $1.073$ & $1.067$ & $1.066$ \\
@@ -411,7 +414,7 @@ On $8$ cells the scheme and the direct evaluation agree to $1\%$ where both are 
 grid, which confirms Eq.~\eqref{eq:t2factor}. As the cells shrink both approach the limit: for constant
 cells $\langle g,Kg\rangle/(\bar m\lVert g\rVert^2)$ goes $0.926$, $0.909$, $0.902$ on $8$, $16$ and
 $32$ cells against its limit $m_{\mathrm{ax}}/\bar m=0.899$ (outgoing P at $0.2$\,rad), slowly, the
-distance falling as about $h^{1.7}$; for linear cells the factor is within $0.4\%$ of the limit by $24$
+distance falling as about $h^{1.7}$; for degree-one cells the factor is within $0.4\%$ of the limit by $24$
 cells. The scheme on $8$ cells is three quarters of the way to the limit
 for constant cells.
 
@@ -419,7 +422,7 @@ for constant cells.
 response times the relative projection error times $F$, a factor of order one that depends on the
 background, the direction of scattering and the type of wave, and on the cells through their axes, not
 on the grid. For this background and contrast it lies between $0.92$ and $1.52$ for constant cells and
-between $0.95$ and $1.34$ for linear cells, and it is one in a layer, which is why the layer's law is an
+between $0.95$ and $1.34$ for degree-one cells, and it is one in a layer, which is why the layer's law is an
 equality. The constant of Table~\ref{tab:twoterm}, formed from the largest error over the angles and
 with every order above the first included, is $0.96$ to $1.05$ times $\nu$, inside that range. The second term is therefore known before
 the solve to within $F$, and in closed form once the direction of observation is chosen. The derivation
@@ -451,7 +454,7 @@ with $T_n$ the far fields of the scheme's terms on the coarse tree and the facto
 \S\ref{sec:factor3d} taken as one.
 
 \paragraph{The result.} Table~\ref{tab:nu} sets the estimates against the exact nonlinear fraction on
-the three bodies of the paper, for constant and linear cells, the coarse tree being that of the
+the three bodies of the paper, for constant and degree-one cells, the coarse tree being that of the
 refinement experiments (the rule on the medium alone at a tolerance of $10^{-2}$ from a tree of eight
 leaves; \path{scripts/measure_octree_nu_estimate.py}; Appendix~\ref{app:experiments}).
 \begin{table}[htbp]
@@ -465,11 +468,11 @@ tree's projection error $\cE$.}\label{tab:nu}
 body & cells & leaves & $\cE$ & exact $\nu$ & solve & $T_2/(1-\cE)$ & Eq.~\eqref{eq:nuest} \\
 \midrule
 thin shell, $k_Sa=0.5$ & constant & $64$ & $0.264$ & $0.0151$ & $0.746$ & $1.047$ & $1.014$ \\
- & linear & $64$ & $0.061$ & & $0.940$ & $1.039$ & $1.000$ \\
+ & degree one & $64$ & $0.061$ & & $0.940$ & $1.039$ & $1.000$ \\
 feature $0.2a$--$0.5a$, $k_Sa=1$ & constant & $120$ & $0.175$ & $0.0107$ & $0.816$ & $1.017$ & $0.990$ \\
- & linear & $120$ & $0.036$ & & $0.963$ & $1.028$ & $0.999$ \\
+ & degree one & $120$ & $0.036$ & & $0.963$ & $1.028$ & $0.999$ \\
 feature $0.1a$--$0.3a$, $k_Sa=1$ & constant & $176$ & $0.145$ & $0.0059$ & $0.854$ & $1.025$ & $1.000$ \\
- & linear & $176$ & $0.015$ & & $0.985$ & $1.027$ & $0.999$ \\
+ & degree one & $176$ & $0.015$ & & $0.985$ & $1.027$ & $0.999$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -504,7 +507,7 @@ of $\boldsymbol\varepsilon=\boldsymbol\varepsilon_0+c\,f\boldsymbol\varepsilon$ 
 on that cell's polynomials: the error of the whole nonlinear part is the single site's, in closed form.
 On the layer of the companion paper (profile $1+\tfrac12\sin(2\pi z/D)$) at
 $\omega=30$\,rad\,s$^{-1}$ the scheme's $T_3$ has the error $e_3$ of Eq.~\eqref{eq:en} to $10^{-4}$, for
-constant, linear and quadratic cells on $4$ to $16$ cells, in reflection and in transmission, and to
+constant, degree-one and degree-two cells on $4$ to $16$ cells, in reflection and in transmission, and to
 $0.5\%$ at $\omega=300$\,rad\,s$^{-1}$; $e_3/\cE=2.455$ on every grid, which is
 $3\,\langle f\rangle_{g^2}\int f^2\,\dd z/\int f^3\,\dd z$ with $\langle f\rangle_{g^2}$ the mean of the profile weighted
 by the squared residual. Because $T_3/T_2=-0.078$, the second and third terms together have $0.877$ times
@@ -560,7 +563,7 @@ computed directly with $\boldsymbol\Gamma$ applied by fast Fourier transform
 (\path{scripts/measure_t3_tensor_forms.py}). On $4$ cells across the last two agree to $0.3\%$ for the
 outgoing P wave. The details of every measurement are in Appendix~\ref{app:experiments}.
 
-\paragraph{Linear cells.} With the field and the contrast in $1,x_1,x_2,x_3$ the projection on the
+\paragraph{Degree-one cells.} With the field and the contrast in $1,x_1,x_2,x_3$ the projection on the
 outgoing side can be moved onto the profile, and the scheme's term is
 $\int\Pi f\,\mathbf{U}_{\mathbf{a}}:\Delta\mathbf{C}:\Pi\mathbf{U}_{\mathbf{b}}\,\dd V$, with one
 projection, on the incident side; for constant cells it is the form above. The residual is now the
@@ -603,14 +606,14 @@ $\pi/2$\,rad and $1.892$ for the SV wave, and its value of $F_1$ for the second 
 the exact $1.0659$. The direct evaluation on cells approaches it at second order in the cell size, and
 extrapolated from $16$ and $24$ cells gives $1.475$, $1.436$, $1.404$ and $1.874$. The scheme on $8$
 cells gives $1.350$, $1.299$, $1.254$ and $1.79$, which the direct evaluation on $8$ cells reproduces
-($1.351$, $1.264$ and $1.79$): for linear cells $F_3$, unlike $F_1$, is still far from its limit on $8$
+($1.351$, $1.264$ and $1.79$): for degree-one cells $F_3$, unlike $F_1$, is still far from its limit on $8$
 cells.
 
 \begin{table}[htbp]
 \centering
 \caption{The factors of the second and third terms and of the whole nonlinear part, $k_Sa=0.125$: the
 scheme on $8$ cells across, the direct evaluation of $F_3$ (constant cells: $32$ cells, outgoing P, the SV
-wave not converged; linear cells: extrapolated from $16$ and $24$), and the closed forms,
+wave not converged; degree-one cells: extrapolated from $16$ and $24$), and the closed forms,
 Eqs.~\eqref{eq:F3} and \eqref{eq:F3lin}.}\label{tab:higher}
 \small
 \setlength{\tabcolsep}{4pt}
@@ -622,7 +625,7 @@ outgoing wave & $F$ (scheme) & $F_3$ (scheme) & $F_3$ (direct) & $F_3$ (closed f
 P at $0.2$\,rad & $1.073$ & $1.600$ & $1.586$ & $1.594$ & $-0.036$ & $1.054$ \\
 P at $\pi/2$    & $0.944$ & $1.494$ & $1.417$ & $1.410$ & $-0.042$ & $0.921$ \\
 SV at $0.2$\,rad & $1.375$ & $2.145$ & & $2.46$ & $-0.021$ & $1.358$ \\
-\multicolumn{7}{@{}l}{linear cells} \\
+\multicolumn{7}{@{}l}{degree-one cells} \\
 P at $0.2$\,rad & $1.066$ & $1.350$ & $1.475$ & $1.475$ & $-0.036$ & $1.056$ \\
 P at $\pi/2$    & $0.948$ & $1.254$ & $1.404$ & $1.387$ & $-0.042$ & $0.935$ \\
 SV at $0.2$\,rad & $1.341$ & $1.79$ & $1.874$ & $1.892$ & $-0.021$ & $1.332$ \\
@@ -641,7 +644,7 @@ nonlinear part is their mean weighted by the terms. Where the contrast is modera
 dominates ($\lvert T_3/T_2\rvert$ is $0.02$ to $0.04$ here) and the nonlinear part's factor is $F$ to
 within $\lvert T_3/T_2\rvert(F_3-F)$, two percent here; the estimate of \S\ref{sec:nu} already carries the
 third term. In the layer the whole series is derived; in three dimensions the factor of the third
-term is derived in closed form for constant and for linear cells, Eqs.~\eqref{eq:F3} and \eqref{eq:F3lin},
+term is derived in closed form for constant and for degree-one cells, Eqs.~\eqref{eq:F3} and \eqref{eq:F3lin},
 and those of the higher terms are measured.
 
 \section{Refinement by the two terms}\label{sec:refine}
@@ -668,7 +671,7 @@ its share of the projection error exceeds a tolerance.
 \centering
 \caption{The localised feature: leaves, the error predicted without a reference, and the error against
 the exact solution. The nonlinear fraction estimated on a coarse tree by Eq.~\eqref{eq:nuest} is
-$0.0059$ for constant and for linear cells, the exact value; the earlier estimate from a solve was
+$0.0059$ for constant and for degree-one cells, the exact value; the earlier estimate from a solve was
 $0.0051$ for constant cells.}\label{tab:refine}
 \small
 \begin{tabular}{@{}llrcc@{}}
@@ -685,7 +688,7 @@ constant & uniform & $408$ & $1.15\times10^{-2}$ & $7.15\times10^{-3}$ \\
  & two terms & $752$ & $4.53\times10^{-3}$ & $3.78\times10^{-3}$ \\
  & two terms & $1780$ & $2.22\times10^{-3}$ & $1.75\times10^{-3}$ \\
 \midrule
-linear & uniform & $184$ & $2.86\times10^{-3}$ & $2.73\times10^{-3}$ \\
+degree one & uniform & $184$ & $2.86\times10^{-3}$ & $2.73\times10^{-3}$ \\
  & uniform & $408$ & $8.36\times10^{-4}$ & $6.77\times10^{-4}$ \\
  & medium alone & $176$ & $2.44\times10^{-4}$ & $2.47\times10^{-4}$ \\
  & medium alone & $344$ & $1.95\times10^{-4}$ & $1.96\times10^{-4}$ \\
@@ -705,21 +708,21 @@ at the coarse end and an error $15$ to $20\%$ lower at the fine end. The saving 
 reason is the cell: a constant field has a second-order error in every leaf, so the halo needs cells
 however smooth its medium is.
 
-\paragraph{Linear cells.} Here the tree pays. The tree of $176$ leaves has eleven times less error than
+\paragraph{Degree-one cells.} Here the tree pays. The tree of $176$ leaves has eleven times less error than
 the uniform grid of $184$ cells. By the trend of the two uniform grids its error would need about $730$
 uniform cells, four times as many, and that of the tree of $452$ leaves about $1130$; these uniform
-equivalents are extrapolated, not computed. The fourth-order error of a linear field lets the halo stay
+equivalents are extrapolated, not computed. The fourth-order error of a degree-one field lets the halo stay
 coarse, and the tree then follows the medium. The two-term rule improves on the medium alone by about
 $15\%$ at about $340$ leaves.
 
 \paragraph{The prediction.} The predicted error is above the true error on all eleven grids of constant
-cells computed for this body (nine of them in Table~\ref{tab:refine}), by $3\%$ to $61\%$. For linear
+cells computed for this body (nine of them in Table~\ref{tab:refine}), by $3\%$ to $61\%$. For degree-one
 cells the ratio of predicted to true is $0.95$ to $1.23$ on nine grids: close, but not a bound.
 
 \section{Which basis for the medium}\label{sec:which}
 
 \paragraph{A smooth medium: the degrees must be matched.} On the body of \S\ref{sec:refine}, hold the
-contrast constant in every leaf and raise the field to linear. The error rises, at four times the
+contrast constant in every leaf and raise the field to degree one. The error rises, at four times the
 unknowns: from $7.15\times10^{-3}$ to $8.31\times10^{-3}$ on the uniform grid of $408$ cells, and from
 $7.18\times10^{-3}$ to $8.32\times10^{-3}$ on the tree of $260$ leaves. The prediction, made without a
 solve, says so beforehand ($1.11\times10^{-2}$ against $1.34\times10^{-2}$ on the uniform grid). On a
@@ -734,12 +737,12 @@ half-side $B$ with a uniform contrast a quarter of the central value, holding at
 half-side $B/4$ with the full contrast, at $k_SB=2$. A tree of $120$ leaves represents it exactly with
 one constant per leaf ($\cE_0=0$): $56$ leaves of half-width $B/4$ and $64$ of half-width $B/8$. The
 uniform grid that does the same has $512$ cells. No exact solution is known for this body; the
-reference is the tree with quadratic fields, whose own first-order error is predicted to be
+reference is the tree with degree-two fields, whose own first-order error is predicted to be
 $2\times10^{-7}$ (Table~\ref{tab:blocky}).
 \begin{table}[htbp]
 \centering
 \caption{A cube within a cube, the contrast constant in every leaf. The first-order error is predicted
-without a solve; the error is against the tree with quadratic fields. In the last two rows the faces of
+without a solve; the error is against the tree with degree-two fields. In the last two rows the faces of
 the inner cube fall inside the cells of the grid.}\label{tab:blocky}
 \small
 \begin{tabular}{@{}lrrcc@{}}
@@ -747,22 +750,22 @@ the inner cube fall inside the cells of the grid.}\label{tab:blocky}
 grid and field & cells & unknowns & predicted & error \\
 \midrule
 tree, constant field & $120$ & $1080$ & $1.54\times10^{-2}$ & $1.53\times10^{-2}$ \\
-tree, linear in the $56$ large leaves & $120$ & $2592$ & $3.24\times10^{-3}$ & $3.21\times10^{-3}$ \\
-tree, linear field & $120$ & $4320$ & $8.07\times10^{-5}$ & $8.42\times10^{-5}$ \\
+tree, degree one in the $56$ large leaves & $120$ & $2592$ & $3.24\times10^{-3}$ & $3.21\times10^{-3}$ \\
+tree, degree-one field & $120$ & $4320$ & $8.07\times10^{-5}$ & $8.42\times10^{-5}$ \\
 uniform, constant field & $512$ & $4608$ & $5.54\times10^{-3}$ & $5.51\times10^{-3}$ \\
-uniform, linear field & $512$ & $18432$ & $8.17\times10^{-6}$ & $9.25\times10^{-6}$ \\
+uniform, degree-one field & $512$ & $18432$ & $8.17\times10^{-6}$ & $9.25\times10^{-6}$ \\
 \midrule
 uniform, constant field & $64$ & $576$ & $1.81\times10^{-2}$ & $1.79\times10^{-2}$ \\
-uniform, linear field & $64$ & $2304$ & $3.01\times10^{-2}$ & $2.92\times10^{-2}$ \\
+uniform, degree-one field & $64$ & $2304$ & $3.01\times10^{-2}$ & $2.92\times10^{-2}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 With the medium exact there is no second term, and the first-order prediction is within $13\%$ of the
-measured error in all seven cases and within $4\%$ in five. The tree with a linear field has an error
+measured error in all seven cases and within $4\%$ in five. The tree with a degree-one field has an error
 of $8.4\times10^{-5}$ with $4320$ unknowns; the uniform grid of constant cells has $5.5\times10^{-3}$
-with $4608$: $65$ times more. Raising the field to linear in the large leaves alone lowers the tree's
+with $4608$: $65$ times more. Raising the field to degree one in the large leaves alone lowers the tree's
 error from $1.5\times10^{-2}$ to $3.2\times10^{-3}$: a large leaf needs a richer basis for the
-wavefield, not for the medium. And where the faces of the inner cube fall inside cells, the linear
+wavefield, not for the medium. And where the faces of the inner cube fall inside cells, the degree-one
 field is worse than the constant one, as on the smooth body; for the scalar problem
 \citet{Anderson2026} likewise find that high order is lost at jumps of the medium unless the grid
 follows them.
@@ -781,7 +784,7 @@ derivation and an independent numerical implementation, and both against the sol
 (Table~\ref{tab:twoterm}) and the refinement results (Table~\ref{tab:refine}): one frequency each, two
 bodies, both spheres with radial profiles.
 \item \emph{Self-consistent only.} The cube within a cube (Table~\ref{tab:blocky}) has no exact
-solution; its reference is the same scheme with quadratic fields. The field near the edges and corners
+solution; its reference is the same scheme with degree-two fields. The field near the edges and corners
 of the cubes is not smooth, and an independent solution is needed before the figure of $65$ is relied
 on.
 \item \emph{Derived, and established twice.} The factor of the second term, Eqs.~\eqref{eq:t2factor}
@@ -790,18 +793,18 @@ to \eqref{eq:Fps}: a symbolic derivation, and the scheme and a direct evaluation
 body with an isotropic spectrum.
 \item \emph{Established against exact solutions, by one implementation.} The nonlinear fraction from
 two products with the matrix of a coarse tree, Eq.~\eqref{eq:nuest}: within $1.4\%$ on three bodies,
-for constant and linear cells (Table~\ref{tab:nu}). The refinement experiments of \S\ref{sec:refine}
+for constant and degree-one cells (Table~\ref{tab:nu}). The refinement experiments of \S\ref{sec:refine}
 use it; with the earlier estimate their trees and errors are the same.
 \item \emph{Derived in the layer; measured twice in three dimensions.} The terms of third and higher
 order (\S\ref{sec:higher}): in the layer each term's error and the whole series in closed form, the
 latter the cell-by-cell Galerkin solution of the local problem; in three dimensions the third term's
 factor for constant cells in closed form, Eq.~\eqref{eq:F3}, verified symbolically and against the
-scheme and a direct evaluation, and for linear cells, Eq.~\eqref{eq:F3lin}, likewise. The factors of the
+scheme and a direct evaluation, and for degree-one cells, Eq.~\eqref{eq:F3lin}, likewise. The factors of the
 fourth and higher terms are not derived.
 \item \emph{Not a bound.} The predicted error exceeded the true error for constant cells in every case,
-but fell $5\%$ below it for linear cells.
+but fell $5\%$ below it for degree-one cells.
 \item \emph{Size.} The solver is dense and stops near $20\,000$ unknowns: about $2200$ constant leaves
-or $550$ linear ones. The saving in cells is therefore shown on small bodies. An equal-cell block costs
+or $550$ degree-one leaves. The saving in cells is therefore shown on small bodies. An equal-cell block costs
 about $50$\,ms, and a tree of $344$ leaves of four sizes is assembled and solved in about three
 minutes.
 \item \emph{Earlier work.} The survey behind \S\ref{sec:intro} found no statement of the two-term law,
@@ -820,10 +823,10 @@ medium, times a factor of order one that is one in a layer and in three dimensio
 on the background and the direction of scattering through the axes of the cells; the nonlinear
 fraction comes from two products with the matrix of a coarse tree, so neither term needs a solve. The
 closed form of the first term reduces in one dimension to the constants of the layer. A refinement rule built
-on both terms places cells where a rule built on the medium alone cannot, and with linear cells a tree
+on both terms places cells where a rule built on the medium alone cannot, and with degree-one cells a tree
 reaches the accuracy of a uniform grid with a quarter of the cells on a body whose variation is
 localised. A constant contrast in each leaf is the right basis for a medium that is piecewise constant
-on the leaves, where a linear field on the tree outperforms the uniform grid of constant cells
+on the leaves, where a degree-one field on the tree outperforms the uniform grid of constant cells
 sixty-five-fold at equal unknowns in a self-consistent test, and the wrong one for a smooth medium,
 where the two degrees must be matched. What remains before the method models a realistic medium
 is a solver whose cost does not grow as the square of the number of leaves. Its parts are published:
@@ -891,7 +894,7 @@ negligible there). Each
 carries a truncation error of order $d^2$ times the ratio of the next term of its parity, and a
 cancellation: $T_3$ is recovered from the odd part through a fraction $3d^2T_3/T_1$ of it, about
 $10^{-7}$ at $d=10^{-2}$. For constant cells, whose $\cE$ is about $0.06$ on $8$ cells, $d=10^{-2}$
-suffices. For linear cells, whose $\cE$ is $5\times10^{-3}$, the error to be measured in $T_3$ is a few
+suffices. For degree-one cells, whose $\cE$ is $5\times10^{-3}$, the error to be measured in $T_3$ is a few
 parts in $10^3$, and $d=10^{-2}$ gave a factor that was not symmetric about $\pi/2$ (which the static
 derivation requires) and that worsened at lower frequency: the cancellation, not the physics. With
 $d=0.05$, $0.1$ and $0.2$ the factor is symmetric, its truncation falls as $d^2$ (successive differences
@@ -912,10 +915,10 @@ a periodic box larger than the body by a padding factor, with $\boldsymbol\Gamma
 to its average over directions. The cell projection is the discrete one on the samples, which keeps the
 residual orthogonal to the cell's functions on them and converges as $1/s$; the exact $L^2$ projection,
 sampled, leaves spurious low moments in the residual that are harmless for constant cells and large for
-the small residual of linear cells. For the second term the exact $\langle f,Kf\rangle=\bar m\lVert
+the small residual of degree-one cells. For the second term the exact $\langle f,Kf\rangle=\bar m\lVert
 f\rVert^2$ of a radial profile replaces the transform's own value, which carries a small-wavevector error
 of $1\%$ to $10\%$. The grids run from $s=4$ to $32$ and $4$ to $32$ cells across, on boxes of up to
-$480^3$ points; for linear cells $s=4$ is too coarse and is not used.
+$480^3$ points; for degree-one cells $s=4$ is too coarse and is not used.
 
 {\sloppy\paragraph{The closed forms.} Equations~\eqref{eq:F0}, \eqref{eq:F1} and \eqref{eq:Fps} are evaluated
 exactly (\path{Mathematica/AdaptiveOctree_T2Factor.wl}). Equations~\eqref{eq:F3} and \eqref{eq:F3lin}
