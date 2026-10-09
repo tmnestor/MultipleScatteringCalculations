@@ -157,8 +157,8 @@ an independent polynomial of degree $p$, the error falls as $h^{2p+2}$: as $h^4$
 $p=1$, $2$ and $3$. With the strain taken as the derivative of each cell's displacement polynomial, it falls
 only as $h^2$, $h^2$ and $h^4$, so that raising the degree from one to two gains nothing.
 
-This paper takes the second, because it gives the more accurate representation of the coupling between
-cells. Its interactions are exact double integrals over both cells, which are evaluated to round-off even
+This paper takes the second way, the Galerkin cell whose strain is an independent unknown expanded in
+Legendre polynomials, because it gives the more accurate representation of the coupling between cells. Its interactions are exact double integrals over both cells, which are evaluated to round-off even
 for cells that touch \citep{NestorCoupling2026}; an expansion about the centre treats the receiving cell as
 a point. On a cube cut into $n^3$ cells, where the field follows the corners, the first-moment Legendre
 cell of $36$ unknowns is seven to twelve times more accurate than the third-gradient expansion about the
