@@ -1,1 +1,14 @@
 localised feature (core 0.1a, to 0.3a, halo 0.05), k_S a = 1.0, p = r = 1, finest h0 = a/32
+   finest-grid operator: 32^3 grid   [94 s]
+   tol 0.0001 it 0: leaves     8, error 4.430e-02, two-scale difference 2.765e-02; {5.0: 8}   [290 s]
+   tol 0.0001 it 1: leaves    64, error 7.250e-03, two-scale difference 4.963e-03; {2.5: 64}   [504 s]
+   tol 0.0001 it 2: leaves   120, error 6.806e-04, two-scale difference 5.925e-04; {1.25: 64, 2.5: 56}   [759 s]
+   tol 3e-05 it 0: leaves     8, error 4.430e-02, two-scale difference 2.765e-02; {5.0: 8}   [953 s]
+   tol 3e-05 it 1: leaves    64, error 7.250e-03, two-scale difference 4.963e-03; {2.5: 64}   [1163 s]
+   tol 3e-05 it 2: leaves   204, error 6.767e-04, two-scale difference 5.549e-04; {1.25: 160, 2.5: 44}   [1433 s]
+   tol 3e-05 it 3: leaves   260, error 1.677e-04, two-scale difference 1.641e-04; {0.625: 64, 1.25: 152, 2.5: 44}   [1728 s]
+   tol 1e-05 it 0: leaves     8, error 4.430e-02, two-scale difference 2.765e-02; {5.0: 8}   [1918 s]
+   tol 1e-05 it 1: leaves    64, error 7.250e-03, two-scale difference 4.963e-03; {2.5: 64}   [2137 s]
+   tol 1e-05 it 2: leaves   288, error 6.803e-04, two-scale difference 5.546e-04; {1.25: 256, 2.5: 32}   [2399 s]
+   tol 1e-05 it 3: leaves   344, error 1.658e-04, two-scale difference 1.187e-04; {0.625: 64, 1.25: 248, 2.5: 32}   [2710 s]
+   wrote /home/user/MultipleScatteringCalculations/scratch/two_scale/octree_refinement_localised_p1.json
