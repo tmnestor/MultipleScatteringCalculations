@@ -121,3 +121,26 @@ hold exactly the largest possible share of the error: 0.558 and 0.673 at full co
   cells. Another is to apply the residual leaf by leaf, from the coarse solution's prolongation and the
   equal-cell blocks.
 - Part III text: the derivation (sections 1–3), the checks and the table above, the indicator.
+
+## 7. The octree (9 October; `scripts/pilot_octree_two_scale_refinement.py`, logs in `scratch/two_scale/`)
+
+**The finest-grid operator.** Leaf sources re-expand onto the finest cells (half-width a/32), are convolved
+by FFT, and are tested back with each leaf's polynomials. On a uniform tree it reproduces the dense octree
+solve to 5e-13 (error 7.2499e-3, as stored). The one-off cost is 100–130 s.
+
+**Refinement on the localised feature** (degree one, k_S a = 1, leaves ≥ a/32), against the octree paper's
+stored trees:
+
+| leaves | two-scale, tolerance per leaf | two-scale, Dörfler θ = 0.5 | two-term (paper) | medium alone (paper) | uniform (paper) |
+|---|---|---|---|---|---|
+| ~120–180 | 120: 6.8e-4 | 134: 5.4e-4 | — | 176: 2.47e-4 | 184: 2.73e-3 |
+| ~220–260 | 260: 1.677e-4 | 218: 2.9e-4 | 260: 1.677e-4 | — | — |
+| ~340 | 344: 1.658e-4 | 337: 1.74e-4 | 336: 1.658e-4 | 344: 1.96e-4 | — |
+| ~450–530 | — | 533: 1.19e-4 | 452: 1.14e-4 | — | 408: 6.8e-4 |
+
+- The two-scale indicator with a tolerance per leaf builds the two-term rule's trees. Dörfler marking reaches
+  the same band. Neither improves on the two-term rule on this body.
+- The two-scale difference, which needs no reference, is 73–97% of the true error on the trees above 100
+  leaves.
+- Cost: each step needs a coarse solve, a fine matvec and a second coarse solve, 4–5 min here. The two-term
+  rule needs no solve.

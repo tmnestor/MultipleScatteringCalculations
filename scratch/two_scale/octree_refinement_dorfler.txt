@@ -1,1 +1,13 @@
 localised feature (core 0.1a, to 0.3a, halo 0.05), k_S a = 1.0, p = r = 1, finest h0 = a/32
+   finest-grid operator: 32^3 grid   [101 s]
+   theta 0.5 it 0: leaves     8, error 4.430e-02, two-scale difference 2.765e-02; {5.0: 8}   [300 s]
+   theta 0.5 it 1: leaves    29, error 1.763e-02, two-scale difference 1.619e-02; {2.5: 24, 5.0: 5}   [497 s]
+   theta 0.5 it 2: leaves    43, error 1.139e-02, two-scale difference 1.075e-02; {2.5: 40, 5.0: 3}   [707 s]
+   theta 0.5 it 3: leaves    64, error 7.250e-03, two-scale difference 4.963e-03; {2.5: 64}   [909 s]
+   theta 0.5 it 4: leaves    85, error 2.968e-03, two-scale difference 2.872e-03; {1.25: 24, 2.5: 61}   [1174 s]
+   theta 0.5 it 5: leaves   106, error 1.493e-03, two-scale difference 1.424e-03; {1.25: 48, 2.5: 58}   [1420 s]
+   theta 0.5 it 6: leaves   134, error 5.408e-04, two-scale difference 4.819e-04; {0.625: 16, 1.25: 62, 2.5: 56}   [1694 s]
+   theta 0.5 it 7: leaves   218, error 2.945e-04, two-scale difference 2.615e-04; {0.625: 48, 1.25: 122, 2.5: 48}   [1993 s]
+   theta 0.5 it 8: leaves   337, error 1.742e-04, two-scale difference 1.266e-04; {0.3125: 24, 0.625: 61, 1.25: 216, 2.5: 36}   [2294 s]
+   theta 0.5 it 9: leaves   533, error 1.188e-04, two-scale difference 9.944e-05; {0.3125: 88, 0.625: 53, 1.25: 376, 2.5: 16}   [2613 s]
+   wrote /home/user/MultipleScatteringCalculations/scratch/two_scale/octree_refinement_localised_p1_theta0.5.json
