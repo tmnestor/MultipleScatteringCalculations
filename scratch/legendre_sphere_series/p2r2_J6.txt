@@ -1,0 +1,1 @@
+Legendre cell p = 2, contrast degree r = 2, powers of k_S kept J = 6
