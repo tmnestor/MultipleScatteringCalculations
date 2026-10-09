@@ -1073,11 +1073,21 @@ applied to the Green's tensor, gives the amplitudes of any bounded source as
   c_{SV}(\mathbf k)=\frac{\mathrm i}{2\pi k_z^S}\,\mathcal A_{SV}(\uvec{k}_S),\qquad
   \uvec{k}_{P,S}=\frac{\mathbf k-k_z^{P,S}\,\uvec{z}}{k_{P,S}},
 \end{equation}
-where $\mathcal A$ is the radiation pattern, $r\,\mathrm e^{-\mathrm ikr}\bu$ as $r\to\infty$, taken at the unit
-vector $\uvec{k}$ of the upgoing wave ($\uvec{z}$ points down).
-It is a unit vector in the sense $\uvec{k}\cdot\uvec{k}=1$, since $|\mathbf k|^2+(k_z)^2=k^2$ on either branch. For a propagating wave $\uvec{k}$ is real and $\mathcal A$ is
-the far-field amplitude. For an evanescent wave $\uvec{k}$ is complex, and the pattern is continued there
-exactly. The cells take that continuation directly. The pattern is a sum over cells of the moments of each
+where $\uvec{z}$ points down, so that $\uvec{k}_{P,S}$ is the direction of the upgoing wave. $\mathcal A_P$ and
+$\mathcal A_{SV}$ are the radiation patterns of the P and SV waves: along a real unit vector $\uvec{r}$,
+\[
+  \mathcal A_P(\uvec{r})=\lim_{r\to\infty}r\,\mathrm e^{-\mathrm ik_Pr}\,\uvec{r}\cdot\bu,\qquad
+  \mathcal A_{SV}(\uvec{r})=\lim_{r\to\infty}r\,\mathrm e^{-\mathrm ik_Sr}\,\mathbf e_{SV}\cdot\bu,
+\]
+with $\mathbf e_{SV}$ the SV polarisation, perpendicular to $\uvec{r}$ in the plane of incidence
+(Eq.~\eqref{eq:taup}): each wave projected on its own polarisation, since the two carry different phases. For a propagating wave
+$\uvec{k}$ is a real unit vector and $\mathcal A(\uvec{k})$ is the far-field amplitude in that direction. For an
+evanescent wave $k_z$ is imaginary and $\uvec{k}$ is complex. It is then not a unit vector,
+$|\mathbf k|^2+|k_z|^2>k^2$, and no limit $r\to\infty$ defines $\mathcal A$ there; only
+$\uvec{k}\cdot\uvec{k}=(|\mathbf k|^2+k_z^2)/k^2=1$ survives. The pattern is the analytic continuation from
+real directions. For a bounded source it is an entire function of the components of $\uvec{k}$, so the
+continuation is unique, and it is the same expression evaluated at the complex vector. The cells take it
+directly. Their pattern is a sum over cells of the moments of each
 cell's polynomial source $\mathbf s$ against the plane wave,
 \begin{equation}\label{eq:cellmoment}
   \int_{\text{cell}}\mathbf s(\mathbf y)\,\mathrm e^{-\mathrm ik\uvec{k}\cdot\mathbf y}\,\dd^3y
