@@ -77,8 +77,8 @@ $T$-matrix in closed form at every power of the wavenumber. Its self-interaction
 $\mathbf K=\sum_n(k_Sh)^n\mathbf K_n$ with $k_S=\omega/\beta$ the shear wavenumber of the background ($\omega$ the angular frequency, $\beta$ the shear-wave speed) and $h$ the half-width of the cubic cell, whose coefficients $\mathbf K_n$ are moments of
 powers of the distance over the cell and depend on neither the frequency, the cell size nor the medium.
 Every coefficient is exact: an even power of $k_Sh$ is a combination with rational coefficients of six constants,
-$1$, $\pi$, $\sqrt2$, $\sqrt3$, $\ln(1+\sqrt2)$ and $\ln(2+\sqrt3)$, the last two the logarithms of the
-fundamental units of $\mathbb Q(\sqrt2)$ and $\mathbb Q(\sqrt3)$, and an odd power,
+$1$, $\pi$, $\sqrt2$, $\sqrt3$, $\ln(1+\sqrt2)$ and $\ln(2+\sqrt3)$, the logarithms coming from the
+diagonals of the cube's faces and of the cube itself, and an odd power,
 which carries the radiation, is rational. The first of these is the radiation damping of a point force,
 recovered exactly. On the irreducible representations of the cube group the $36$ unknowns of the cell
 separate into blocks of at most four, each inverted in closed form: the $T$-matrix is an explicit
@@ -303,9 +303,9 @@ odd $m$, and for every derivative, $U(m,\biota)$ is a combination with rational 
 \begin{equation}\label{eq:sixconstants}
   1,\qquad \pi,\qquad \sqrt2,\qquad \sqrt3,\qquad \ln\bigl(1+\sqrt2\bigr),\qquad \ln\bigl(2+\sqrt3\bigr).
 \end{equation}
-The two logarithms are those of the fundamental units $1+\sqrt2$ and $2+\sqrt3$ of the real quadratic fields
-$\mathbb Q(\sqrt2)$ and $\mathbb Q(\sqrt3)$, the fields of the face and body diagonals of the cube; the
-second is the $-\ln(2-\sqrt3)$ of the moments of the expansion about the centre \citep{NestorContinuum2026}.
+The two logarithms come from the geometry of the cube: $\ln(1+\sqrt2)=\operatorname{arsinh}1$ from its faces,
+whose diagonal is $\sqrt2$ times the side, and $\ln(2+\sqrt3)=2\operatorname{arsinh}(1/\sqrt2)$ from the cube
+itself, whose body diagonal is $\sqrt3$ times the side. The second is the $-\ln(2-\sqrt3)$ of the moments of the expansion about the centre \citep{NestorContinuum2026}.
 We write it as $\ln(2+\sqrt3)$ because that form is the better conditioned in floating point: $2-\sqrt3$ is
 formed by a cancellation that magnifies the rounding of $\sqrt3$ by $\sqrt3/(2-\sqrt3)\approx6.5$, while
 $2+\sqrt3$ involves none. In double precision $\tfrac12\ln(2+\sqrt3)$ is correct to $1.0\times10^{-16}$ and
