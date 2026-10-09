@@ -149,10 +149,13 @@ first, the displacement is expanded about the cell's centre and the strain deriv
 and its derivatives are imposed at the centre, which is natural for a single scatterer, whose $T$-matrix is
 then a property of the body alone \citep{NestorContinuum2026}. In the second, the strain is an unknown in
 its own right, with its own polynomial expansion over the cell, and the equation is tested against the
-cell's polynomials (a Galerkin cell). Which of the two a tiling of cells needs is measured on a layer, which
-has an exact solution (Table~\ref{tab:strainlayer}): with polynomials of degree $p$, an independent strain
-converges at order $2p+2$, while a strain derived from each cell's displacement converges at order $2$, $2$
-and $4$ for $p=1$, $2$ and $3$.
+cell's polynomials (a Galerkin cell). Which strain a tiling of cells needs is measured on a layer, which has an exact
+solution (Table~\ref{tab:strainlayer}). Both schemes there are Galerkin, with the displacement a polynomial
+of degree $p$ in each cell; they differ only in the strain. The error in the reflected wave is followed as
+the cells are refined, and its order is the power of the cell size $h$ at which it falls. With the strain
+an independent polynomial of degree $p$, the error falls as $h^{2p+2}$: as $h^4$, $h^6$ and $h^8$ for
+$p=1$, $2$ and $3$. With the strain taken as the derivative of each cell's displacement polynomial, it falls
+only as $h^2$, $h^2$ and $h^4$, so that raising the degree from one to two gains nothing.
 
 This paper takes the second, because it gives the more accurate representation of the coupling between
 cells. Its interactions are exact double integrals over both cells, which are evaluated to round-off even
