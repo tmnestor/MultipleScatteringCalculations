@@ -1,0 +1,1 @@
+localised feature (core 0.1a, to 0.3a, halo 0.05), k_S a = 1.0, p = r = 1, finest h0 = a/32
