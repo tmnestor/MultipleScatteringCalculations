@@ -373,10 +373,8 @@ odd $m$, and for every derivative, $U(m,\biota)$ is a combination with rational 
 The two logarithms come from the geometry of the cube: $\ln(1+\sqrt2)=\operatorname{arsinh}1$ from its faces,
 whose diagonal is $\sqrt2$ times the side, and $\ln(2+\sqrt3)=2\operatorname{arsinh}(1/\sqrt2)$ from the cube
 itself, whose body diagonal is $\sqrt3$ times the side. The second is the $-\ln(2-\sqrt3)$ of the moments of the expansion about the centre \citep{NestorContinuum2026}.
-We write it as $\ln(2+\sqrt3)$ because that form is the better conditioned in floating point: $2-\sqrt3$ is
-formed by a cancellation that magnifies the rounding of $\sqrt3$ by $\sqrt3/(2-\sqrt3)\approx6.5$, while
-$2+\sqrt3$ involves none. In double precision $\tfrac12\ln(2+\sqrt3)$ is correct to $1.0\times10^{-16}$ and
-$-\tfrac12\ln(2-\sqrt3)$ to $2.7\times10^{-16}$.
+We write it as $\ln(2+\sqrt3)$, which avoids the cancellation in $2-\sqrt3$ and is the better conditioned in
+floating point.
 By Eq.~\eqref{eq:anbn}, $\bK_n$ draws on $m=n-1$ and $n+1$. An even power of $k_Sh$ therefore uses odd
 $m$ and is a combination of the six constants; an odd power uses even $m$, polynomial kernels, and is
 rational. Divided by the $4\pi$ of Eq.~\eqref{eq:kseries}, an even power is a rational combination of
