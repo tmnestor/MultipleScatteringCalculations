@@ -1,1 +1,2 @@
 tau-p, graded sphere: cells of degree 1, 8 across; 128 frequencies to k_S a = 3.0; 60 slownesses to 1.5/beta; receivers 1.5 a above the centre
+   k_S a = 0.023: c_P (propagating) off by 4.54e-05   [435 s]
