@@ -90,14 +90,15 @@ distant cells also by a two-centre multipole series where it converges. Every bl
 then a weighted sum of stored numbers, and over $256$ frequencies the series costs $1.5$ to $1.9$ times less
 than quadrature, its one-off cost included. Because the coefficients are exact, the response of a whole
 cell model can be expanded in powers of the frequency, each power by one solve with the static operator.
-For a graded sphere modelled by Legendre cells of degree one, every coefficient of the far field from
-$(ka)^2$ to $(ka)^7$ converges at fourth order in the cell size, the apparent orders reaching $3.96$ to
-$4.00$ at $20$ cells across, and the exact zero of the $(ka)^3$ coefficient is reproduced to round-off.
-With cells of degree two the same coefficients are $43$ to $8100$ times more accurate at $12$ cells across,
-and converge faster still. Summed at each frequency of a sweep, the same coefficients give the
-$\tau$--$p$ section of the sphere on a plane at $1.5$ radii from its centre, evanescent waves included, with no
-far-field approximation: within $1.2\times10^{-4}$ of the exact section's peak with cells of degree one, and
-$1.7\times10^{-6}$ with cells of degree two.
+For a graded sphere modelled by Legendre cells of degree two, every coefficient of the far field from
+$(ka)^2$ to $(ka)^7$ is accurate to $8\times10^{-8}$ to $2\times10^{-7}$ at $12$ cells across, with apparent
+orders of $6.2$ to $7.5$ in the cell size. Cells of degree one converge at fourth order, the apparent orders
+reaching $3.96$ to $4.00$ at $20$ cells across, and at $12$ cells are $43$ to $8100$ times less accurate.
+Both reproduce the exact zero of the $(ka)^3$ coefficient to round-off. Summed at each frequency of a
+sweep, the same coefficients give the $\tau$--$p$ section of the sphere on a plane at $1.5$ radii from its
+centre, evanescent waves included, with no far-field approximation: the largest difference from the exact
+section, relative to its peak, is $1.7\times10^{-6}$ with cells of degree two and $1.2\times10^{-4}$ with
+cells of degree one.
 \end{abstract}
 
 % =====================================================================================================
