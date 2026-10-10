@@ -15,16 +15,31 @@ columns carry -d': -d'_x = d_rho_x, -d'_z = -d/dzp + d_zeta.
 
 Checked: the 81 entries against direct differentiation of the spatial kernel, 3e-15.
 
-Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py
+Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | transmitted]
 """
 
 import json
+import sys
 from pathlib import Path
 
 import sympy as sp
 
 ROOT = Path(__file__).resolve().parent.parent
-J = json.loads((ROOT / "Mathematica" / "StaticInterfaceImage.json").read_text())
+#: "reflected" (receiver and source in A, zeta = -(z + zp)) or "transmitted" (source in A, receiver in B,
+#: zeta = z - zp).  The transmitted spectrum is read from Mathematica's output when it exists, else from the
+#: sympy twin's (scripts/derive_static_interface_transmission.py).
+KIND = sys.argv[1] if len(sys.argv) > 1 else "reflected"
+if KIND == "reflected":
+    SOURCE = ROOT / "Mathematica" / "StaticInterfaceImage.json"
+    OUT = ROOT / "scripts" / "data" / "interface_image_terms.json"
+elif KIND == "transmitted":
+    SOURCE = ROOT / "Mathematica" / "StaticInterfaceTransmission.json"
+    if not SOURCE.exists():
+        SOURCE = ROOT / "scripts" / "data" / "static_interface_transmission.json"
+    OUT = ROOT / "scripts" / "data" / "interface_transmission_terms.json"
+else:
+    raise SystemExit(f"kind must be 'reflected' or 'transmitted', got {KIND!r}")
+J = json.loads(SOURCE.read_text())
 q = sp.Symbol("q", positive=True)
 z, zp = sp.symbols("z zp", real=True)
 lamA, muA, lamB, muB = sp.symbols("lamA muA lamB muB", positive=True)
@@ -43,7 +58,7 @@ ent = [
     [sp.sympify(s.replace("^", "**"), locals=loc) for s in row] for row in J["entries"]
 ]
 a, b, c, d, e = ent[0][0], ent[0][1], ent[1][0], ent[1][1], ent[2][2]
-X = sp.exp(q * (z + zp))
+X = sp.exp(q * (z + zp)) if KIND == "reflected" else sp.exp(-q * (z - zp))
 
 
 def qpoly(f):
@@ -105,7 +120,12 @@ def d_rec(t, i):
         return dlat(t, 0)
     if i == 2:
         return dlat(t, 1)
-    return add({k: sp.diff(v, z) for k, v in t.items()}, dzeta(t), -1)
+    # d/dz of zeta: -1 for the image (zeta = -(z + zp)), +1 across the interface (zeta = z - zp)
+    return add(
+        {k: sp.diff(v, z) for k, v in t.items()},
+        dzeta(t),
+        -1 if KIND == "reflected" else 1,
+    )
 
 
 def d_src(t, i):  # -d'
@@ -187,7 +207,7 @@ for r in range(9):
                 )
         out_row.append(terms)
     out.append(out_row)
-path = ROOT / "scripts" / "data" / "interface_image_terms.json"
+path = OUT
 path.write_text(
     json.dumps({"variables": ["lamA", "muA", "lamB", "muB"], "terms": out}, indent=0)
 )

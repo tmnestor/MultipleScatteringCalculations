@@ -306,3 +306,29 @@ def reflected_spectrum(
     left = states[:, :, 3:] * e_rec[:, None, :]
     right = np.swapaxes(states[:, :, :3], -1, -2) * e_src[:, :, None] * SOURCE_PAIRING
     return left @ r_d @ right
+
+
+def transmitted_spectrum(
+    kx: NDArray,
+    ky: NDArray,
+    omega: complex,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    z_rec: float,
+    z_src: float,
+) -> NDArray:
+    """The 9 x 9 spectral kernel from a source above the interface z = 0 to a receiver below it.
+
+    sum_{m, n down} d_m^B e^{i k_z,m^B z_rec} T_d[m, n] e^{i k_z,n^A |z_src|} w_n^A d_n^A^T M, shape (N, 9, 9):
+    the whole coupling across the interface, the transmission in place of the direct propagation.
+    """
+    if z_rec <= 0.0 or z_src >= 0.0:
+        raise ValueError("transmitted_spectrum: the source must lie above the interface (z < 0), the receiver below.")
+    st_a, _, w_a, kz_a = mode_matrices(kx, ky, omega, above)
+    st_b, _, _, kz_b = mode_matrices(kx, ky, omega, below)
+    t_d = interface_rt(kx, ky, omega, above, below)["T_d"]
+    e_src = w_a[:, :3] * np.exp(1j * kz_a[:, :3] * abs(z_src))
+    e_rec = np.exp(1j * kz_b[:, :3] * z_rec)
+    left = st_b[:, :, :3] * e_rec[:, None, :]
+    right = np.swapaxes(st_a[:, :, :3], -1, -2) * e_src[:, :, None] * SOURCE_PAIRING
+    return left @ t_d @ right

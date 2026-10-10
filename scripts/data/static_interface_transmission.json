@@ -1,0 +1,112 @@
+{
+ "order": "rows u_(z,x,y), columns force (z,x,y); frame x along the lateral wavevector; source in A (zp < 0), receiver in B (z > 0)",
+ "entries": [
+  [
+   "(lamA*lamB*muA*q*z - lamA*lamB*muA*q*zp + lamA*lamB*muA + lamA*lamB*muB*q*z - lamA*lamB*muB*q*zp + lamA*lamB*muB + lamA*muA*muB*q*z - 3*lamA*muA*muB*q*zp + 3*lamA*muA*muB + lamA*muB**2*q*z - lamA*muB**2*q*zp + 2*lamA*muB**2 + lamB*muA**2*q*z - lamB*muA**2*q*zp + 2*lamB*muA**2 + 3*lamB*muA*muB*q*z - lamB*muA*muB*q*zp + 3*lamB*muA*muB + muA**2*muB*q*z - 3*muA**2*muB*q*zp + 6*muA**2*muB + 3*muA*muB**2*q*z - muA*muB**2*q*zp + 6*muA*muB**2)*exp(q*(-z + zp))/(2*q*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))",
+   "I*(-lamA*lamB*muA*q*z + lamA*lamB*muA*q*zp - lamA*lamB*muB*q*z + lamA*lamB*muB*q*zp - lamA*muA*muB*q*z + 3*lamA*muA*muB*q*zp - lamA*muB**2*q*z + lamA*muB**2*q*zp - lamA*muB**2 - lamB*muA**2*q*z + lamB*muA**2*q*zp + lamB*muA**2 - 3*lamB*muA*muB*q*z + lamB*muA*muB*q*zp - muA**2*muB*q*z + 3*muA**2*muB*q*zp + 3*muA**2*muB - 3*muA*muB**2*q*z + muA*muB**2*q*zp - 3*muA*muB**2)*exp(q*(-z + zp))/(2*q*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))",
+   "0"
+  ],
+  [
+   "I*(-lamA*lamB*muA*q*z + lamA*lamB*muA*q*zp - lamA*lamB*muB*q*z + lamA*lamB*muB*q*zp - lamA*muA*muB*q*z + 3*lamA*muA*muB*q*zp - lamA*muB**2*q*z + lamA*muB**2*q*zp + lamA*muB**2 - lamB*muA**2*q*z + lamB*muA**2*q*zp - lamB*muA**2 - 3*lamB*muA*muB*q*z + lamB*muA*muB*q*zp - muA**2*muB*q*z + 3*muA**2*muB*q*zp - 3*muA**2*muB - 3*muA*muB**2*q*z + muA*muB**2*q*zp + 3*muA*muB**2)*exp(q*(-z + zp))/(2*q*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))",
+   "(-lamA*lamB*muA*q*z + lamA*lamB*muA*q*zp + lamA*lamB*muA - lamA*lamB*muB*q*z + lamA*lamB*muB*q*zp + lamA*lamB*muB - lamA*muA*muB*q*z + 3*lamA*muA*muB*q*zp + 3*lamA*muA*muB - lamA*muB**2*q*z + lamA*muB**2*q*zp + 2*lamA*muB**2 - lamB*muA**2*q*z + lamB*muA**2*q*zp + 2*lamB*muA**2 - 3*lamB*muA*muB*q*z + lamB*muA*muB*q*zp + 3*lamB*muA*muB - muA**2*muB*q*z + 3*muA**2*muB*q*zp + 6*muA**2*muB - 3*muA*muB**2*q*z + muA*muB**2*q*zp + 6*muA*muB**2)*exp(q*(-z + zp))/(2*q*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))",
+   "0"
+  ],
+  [
+   "0",
+   "0",
+   "exp(q*(-z + zp))/(q*(muA + muB))"
+  ]
+ ],
+ "tests": [
+  [
+   2.3,
+   0.4,
+   -0.9,
+   1.7,
+   1.1,
+   2.6,
+   1.9
+  ],
+  [
+   11.0,
+   0.05,
+   -0.12,
+   0.6,
+   0.9,
+   1.4,
+   2.2
+  ]
+ ],
+ "values_re": [
+  [
+   [
+    0.012335189692088055,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.0028580489560266226,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.007288034307766941
+   ]
+  ],
+  [
+   [
+    0.00572433097348607,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0006674280161371013,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.004519755478449602
+   ]
+  ]
+ ],
+ "values_im": [
+  [
+   [
+    0.0,
+    -0.007990177187457528,
+    0.0
+   ],
+   [
+    -0.00720306146065715,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    0.0,
+    -0.003039249757194583,
+    0.0
+   ],
+   [
+    -0.002017653200154387,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ]
+ ]
+}
