@@ -1055,8 +1055,11 @@ $\rho_y=b$, away from the singular point, until two base integrals remain,
   B_2=\int_0^a\!\!\int_0^b\!\!\int_c^\infty\rho_x\rho_y\,R^{-5}\,\dd t\,\dd\rho_y\,\dd\rho_x .
 \end{equation}
 In polar coordinates their radial integrals are elementary, $\log(c+\sqrt{r^2+c^2})$ and
-$c/(3\sqrt{r^2+c^2})+\tfrac23\log(c+\sqrt{r^2+c^2})$, leaving one smooth angular integral each. These two
-are evaluated by quadrature at forty digits; every other moment is elementary. All the moments are
+$c/(3\sqrt{r^2+c^2})+\tfrac23\log(c+\sqrt{r^2+c^2})$, leaving one smooth angular integral each. For $B_1$ Mathematica reduces it to Catalan's constant and
+dilogarithms at complex arguments, with one angular integral,
+$\int_{\pi/4}^{\pi/2}\log\bigl(\tfrac12(1+\sqrt{1+\csc^2\theta})\bigr)\,\dd\theta$, left unevaluated; for
+$B_2$ it finds no closed form. These two are therefore evaluated by quadrature at forty digits; every other
+moment is elementary. All the moments are
 universal numbers, computed once at forty digits and stored.
 
 \paragraph{Accuracy.} The pieces were checked against routes that share nothing with them.
@@ -1067,7 +1070,15 @@ universal numbers, computed once at forty digits and stored.
   $4.8\times10^{-14}$ over seven cases. The closed forms against that reduction, for all $53\,352$ moments
   of the $61$ families with monomials of degree up to $(6,6,8)$: $1.2\times10^{-15}$, measured on the
   scale $2^{p+q+r}$ of each monomial. $B_1$ and $B_2$ against direct three-dimensional tanh-sinh
-  quadrature: twenty digits.
+  quadrature: twenty digits. Against an independent evaluation in Mathematica, thirteen corner moments
+  (all three potentials, up to four derivatives, three of the degenerate columns) and $B_2$: $4.9\times10^{-23}$
+  to $1.6\times10^{-16}$, and $B_1$, by its partial closed form, $6\times10^{-32}$. The residual differences
+  are those of the references: the one with a known exact value, a master integral of $1/R$ over the box,
+  is off by $1.4\times10^{-17}$, while the closed forms do not change between forty and seventy digits. The
+  references integrate one coordinate exactly before a two-dimensional quadrature with Duffy coordinates at
+  the corner; a direct three-dimensional quadrature with the singular point at a corner, or over the
+  semi-infinite column, missed its precision goal without warning, by up to $5\times10^{-7}$, the failure
+  that \S\ref{sec:why} describes.
   \item[(b)] Blocks of cells that do not touch the singular point, against a tensor Gauss rule over both
   cells of the canonical kernel: $3\times10^{-15}$ to $8.5\times10^{-15}$ for four pairs (vertical,
   lateral and diagonal offsets; degree-one and degree-two fields, $10$ and $20$ source monomials).
@@ -1087,7 +1098,9 @@ Legendre basis of \S\ref{sec:stable} has not yet been applied to the image piece
 
 \paragraph{Cells on opposite sides.} For a source in A and a field cell in B the static coupling is the field
 transmitted into B, the whole of it, with no direct part. In the lateral-wavenumber domain every entry is
-$\mathrm e^{-q(z-z')}/q$ times a polynomial in $qz$ and $qz'$, so the same potentials
+$\mathrm e^{-q(z-z')}/q$ times a polynomial in $qz$ and $qz'$ (derived independently in Mathematica and in
+Python, agreeing to $4.2\times10^{-16}$, and its spatial form checked against the Fourier integral to
+$3.9\times10^{-16}$), so the same potentials
 \eqref{eq:potentials} apply with $\zeta=z-z'=|z|+|z'|$, the singular point being where the two cells
 touch at the interface. The transmitted field has $275$ canonical terms in $46$ families, integrable at
 that point as the image's are. In the $s$-form the vertical weight is now a cross-correlation in
