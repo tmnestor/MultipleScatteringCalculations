@@ -1,0 +1,127 @@
+{
+	"order":"rows u_(z,x,y), columns force (z,x,y), package axes; zeta = -(z + zp)",
+	"entries":[
+		[
+			"(muA^2*(5*lamB*muA^2 + 15*muA^2*muB - 9*lamB*muB^2 - 6*muA*muB^2 - 9*muB^3) + 2*lamA*muA*(2*lamB*muA^2 + 6*muA^2*muB - 3*lamB*muB^2 - muA*muB^2 - 3*muB^3) + lamA^2*(3*muA^2*muB - muB^3 + lamB*(muA^2 - muB^2)))\/(8*muA*(lamA + 2*muA)*(lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*Sqrt[rx^2 + ry^2 + zeta^2]) + ((lamA + muA)^2*(muA - muB)*z*((3*zeta^2)\/(rx^2 + ry^2 + zeta^2)^(5\/2) - (rx^2 + ry^2 + zeta^2)^(-3\/2))*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*zeta*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2))",
+			"-1\/4*((lamB*muA^2 - muB*(-3*muA^2 + lamA*muB + 3*muA*muB))*rx)\/((lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx*(z - zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)) + (3*(lamA + muA)^2*(muA - muB)*rx*z*zeta*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2))",
+			"-1\/4*((lamB*muA^2 - muB*(-3*muA^2 + lamA*muB + 3*muA*muB))*ry)\/((lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*ry*(z - zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)) + (3*(lamA + muA)^2*(muA - muB)*ry*z*zeta*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2))"
+		],
+		[
+			"-1\/4*((-(lamB*muA^2) + muB*(-3*muA^2 + lamA*muB + 3*muA*muB))*rx)\/((lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx*(z - zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)) - (3*(lamA + muA)^2*(muA - muB)*rx*z*zeta*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2))",
+			"(muA - muB)\/(2*(2*muA^2 + 2*muA*muB)*Pi*Sqrt[rx^2 + ry^2 + zeta^2]) - ((-((muA - muB)\/(2*muA^2 + 2*muA*muB)) + (muA^2*(5*lamB*muA^2 + 15*muA^2*muB - 9*lamB*muB^2 - 6*muA*muB^2 - 9*muB^3) + 2*lamA*muA*(2*lamB*muA^2 + 6*muA^2*muB - 3*lamB*muB^2 - muA*muB^2 - 3*muB^3) + lamA^2*(3*muA^2*muB - muB^3 + lamB*(muA^2 - muB^2)))\/(4*muA*(lamA + 2*muA)*(lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))))*(rx^2\/(rx^2 + ry^2 + zeta^2)^(3\/2) - 1\/Sqrt[rx^2 + ry^2 + zeta^2] - (rx^2*zeta)\/((rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - (rx^2*zeta)\/((rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + zeta\/(Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))))\/(2*Pi) - (3*(lamA + muA)^2*(muA - muB)*rx^2*z*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2)) + ((lamA + muA)^2*(muA - muB)*z*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx^2*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx^2*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))",
+			"-1\/2*((-((muA - muB)\/(2*muA^2 + 2*muA*muB)) + (muA^2*(5*lamB*muA^2 + 15*muA^2*muB - 9*lamB*muB^2 - 6*muA*muB^2 - 9*muB^3) + 2*lamA*muA*(2*lamB*muA^2 + 6*muA^2*muB - 3*lamB*muB^2 - muA*muB^2 - 3*muB^3) + lamA^2*(3*muA^2*muB - muB^3 + lamB*(muA^2 - muB^2)))\/(4*muA*(lamA + 2*muA)*(lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))))*((rx*ry)\/(rx^2 + ry^2 + zeta^2)^(3\/2) - (rx*ry*zeta)\/((rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - (rx*ry*zeta)\/((rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))))\/Pi - (3*(lamA + muA)^2*(muA - muB)*rx*ry*z*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2)) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx*ry*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx*ry*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))"
+		],
+		[
+			"-1\/4*((-(lamB*muA^2) + muB*(-3*muA^2 + lamA*muB + 3*muA*muB))*ry)\/((lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*ry*(z - zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)) - (3*(lamA + muA)^2*(muA - muB)*ry*z*zeta*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2))",
+			"-1\/2*((-((muA - muB)\/(2*muA^2 + 2*muA*muB)) + (muA^2*(5*lamB*muA^2 + 15*muA^2*muB - 9*lamB*muB^2 - 6*muA*muB^2 - 9*muB^3) + 2*lamA*muA*(2*lamB*muA^2 + 6*muA^2*muB - 3*lamB*muB^2 - muA*muB^2 - 3*muB^3) + lamA^2*(3*muA^2*muB - muB^3 + lamB*(muA^2 - muB^2)))\/(4*muA*(lamA + 2*muA)*(lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))))*((rx*ry)\/(rx^2 + ry^2 + zeta^2)^(3\/2) - (rx*ry*zeta)\/((rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - (rx*ry*zeta)\/((rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))))\/Pi - (3*(lamA + muA)^2*(muA - muB)*rx*ry*z*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2)) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx*ry*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*rx*ry*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))",
+			"(muA - muB)\/(2*(2*muA^2 + 2*muA*muB)*Pi*Sqrt[rx^2 + ry^2 + zeta^2]) - ((-((muA - muB)\/(2*muA^2 + 2*muA*muB)) + (muA^2*(5*lamB*muA^2 + 15*muA^2*muB - 9*lamB*muB^2 - 6*muA*muB^2 - 9*muB^3) + 2*lamA*muA*(2*lamB*muA^2 + 6*muA^2*muB - 3*lamB*muB^2 - muA*muB^2 - 3*muB^3) + lamA^2*(3*muA^2*muB - muB^3 + lamB*(muA^2 - muB^2)))\/(4*muA*(lamA + 2*muA)*(lamB*(muA + muB) + muB*(3*muA + muB))*(lamA*(muA + muB) + muA*(muA + 3*muB))))*(ry^2\/(rx^2 + ry^2 + zeta^2)^(3\/2) - 1\/Sqrt[rx^2 + ry^2 + zeta^2] - (ry^2*zeta)\/((rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - (ry^2*zeta)\/((rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + zeta\/(Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))))\/(2*Pi) - (3*(lamA + muA)^2*(muA - muB)*ry^2*z*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(5\/2)) + ((lamA + muA)^2*(muA - muB)*z*zp)\/(4*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*ry^2*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])^2) - ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*ry^2*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*(rx^2 + ry^2 + zeta^2)^(3\/2)*(zeta + Sqrt[rx^2 + ry^2 + zeta^2])) + ((lamA^2 + 4*lamA*muA + 3*muA^2)*(muA - muB)*(z + zp))\/(8*muA*(lamA + 2*muA)*(lamA*(muA + muB) + muA*(muA + 3*muB))*Pi*Sqrt[rx^2 + ry^2 + zeta^2]*(zeta + Sqrt[rx^2 + ry^2 + zeta^2]))"
+		]
+	],
+	"test_args":[
+		"rx",
+		"ry",
+		"zeta",
+		"z",
+		"zp",
+		"lamA",
+		"muA",
+		"lamB",
+		"muB"
+	],
+	"tests":[
+		[
+			0.4,
+			-0.2,
+			0.8,
+			-0.3,
+			-0.5,
+			1.7,
+			1.1,
+			2.6,
+			1.9
+		],
+		[
+			2.0e-2,
+			3.0e-2,
+			0.15,
+			-0.1,
+			-5.0e-2,
+			0.6,
+			0.9,
+			1.4,
+			2.2
+		]
+	],
+	"values_re":[
+		[
+			[
+				-2.21437235040935e-2,
+				-2.188961488559638e-3,
+				1.094480744279819e-3
+			],
+			[
+				4.7286665730010254e-4,
+				-1.4970474378308318e-2,
+				3.181484998570575e-4
+			],
+			[
+				-2.3643332865005127e-4,
+				3.181484998570575e-4,
+				-1.4493251628522729e-2
+			]
+		],
+		[
+			[
+				-0.2743803827061259,
+				-2.2334877056827494e-4,
+				-3.3502315585241457e-4
+			],
+			[
+				7.722573167109219e-3,
+				-0.17261824165634662,
+				-9.11415735555058e-4
+			],
+			[
+				1.158385975066383e-2,
+				-9.11415735555058e-4,
+				-0.17337775476930917
+			]
+		]
+	],
+	"values_im":[
+		[
+			[
+				0,
+				0,
+				0
+			],
+			[
+				0,
+				0,
+				0
+			],
+			[
+				0,
+				0,
+				0
+			]
+		],
+		[
+			[
+				0,
+				0,
+				0
+			],
+			[
+				0,
+				0,
+				0
+			],
+			[
+				0,
+				0,
+				0
+			]
+		]
+	]
+}
