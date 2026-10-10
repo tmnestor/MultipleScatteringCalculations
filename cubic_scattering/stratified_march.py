@@ -215,3 +215,94 @@ def mode_integral_block(
             sc = source_moments_local(k, h, n_source)
             out += np.einsum("n,na,nc,ni,nj->acij", coef, ra, sc, d, d * SOURCE_PAIRING)
     return out
+
+
+# ---------------------------------------------------------------------------
+# A welded interface between two isotropic media
+# ---------------------------------------------------------------------------
+
+
+def traction_rows(states: NDArray, ref: ReferenceMedium) -> NDArray:
+    """(u, t) on a z-plane from the (u, engineering strain) 9-state, shape (..., 6).
+
+    t = (sigma_zz, sigma_xz, sigma_yz): lambda tr(eps) + 2 mu eps_zz, mu gamma_zx, mu gamma_zy, in the
+    Voigt order (zz, xx, yy, xy, zy, zx) of the state.
+    """
+    eps = states[..., 3:]
+    out = np.empty(states.shape[:-1] + (6,), dtype=complex)
+    out[..., :3] = states[..., :3]
+    out[..., 3] = ref.lam * (eps[..., 0] + eps[..., 1] + eps[..., 2]) + 2.0 * ref.mu * eps[..., 0]
+    out[..., 4] = ref.mu * eps[..., 5]
+    out[..., 5] = ref.mu * eps[..., 4]
+    return out
+
+
+def mode_matrices(
+    kx: NDArray, ky: NDArray, omega: complex, ref: ReferenceMedium
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+    """Mode states and their (u, t) at many (k_x, k_y), down-going (P, SV, SH) then up-going.
+
+    Returns:
+        states (N, 9, 6), ut (N, 6, 6), weights (N, 6), k_z (N, 6) (Im >= 0, the propagation wavenumber).
+    """
+    cols, ws, kzs = [], [], []
+    for sign in (1.0, -1.0):
+        for wave in ("P", "S"):
+            for k, d, w in mode_family(kx, ky, omega, ref, wave, sign):
+                cols.append(d)
+                ws.append(w)
+                kzs.append(sign * k[:, 0])
+    states = np.stack(cols, axis=-1)
+    return states, traction_rows(np.moveaxis(states, -1, -2), ref).swapaxes(-1, -2), np.stack(ws, -1), np.stack(kzs, -1)
+
+
+def interface_rt(
+    kx: NDArray, ky: NDArray, omega: complex, above: ReferenceMedium, below: ReferenceMedium
+) -> dict[str, NDArray]:
+    """Mode reflection and transmission at a welded interface, amplitudes referred to the interface.
+
+    Amplitudes are those of ``mode_family`` (bilinear-unit polarisations), in mode order (P, SV, SH):
+    a down-going wave of amplitude a in ``above`` gives R_d a up-going in ``above`` and T_d a down-going in
+    ``below``; an up-going wave in ``below`` gives R_u a down-going in ``below`` and T_u a up-going in
+    ``above``.  Continuity of (u, t) across the interface, a 6 x 6 solve per wavenumber.
+
+    Returns:
+        {"R_d", "T_d", "R_u", "T_u"}, each (N, 3, 3).
+    """
+    _, ut_a, _, _ = mode_matrices(kx, ky, omega, above)
+    _, ut_b, _, _ = mode_matrices(kx, ky, omega, below)
+    dn, up = slice(0, 3), slice(3, 6)
+    # From above:  ut_a[dn] a + ut_a[up] r = ut_b[dn] t
+    lhs = np.concatenate([ut_a[:, :, up], -ut_b[:, :, dn]], axis=-1)
+    sol = np.linalg.solve(lhs, -ut_a[:, :, dn])
+    out = {"R_d": sol[:, :3], "T_d": sol[:, 3:]}
+    # From below:  ut_b[up] a + ut_b[dn] r = ut_a[up] t
+    lhs = np.concatenate([ut_b[:, :, dn], -ut_a[:, :, up]], axis=-1)
+    sol = np.linalg.solve(lhs, -ut_b[:, :, up])
+    out.update({"R_u": sol[:, :3], "T_u": sol[:, 3:]})
+    return out
+
+
+def reflected_spectrum(
+    kx: NDArray,
+    ky: NDArray,
+    omega: complex,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    z_rec: float,
+    z_src: float,
+) -> NDArray:
+    """The reflected part of the 9 x 9 spectral kernel, source and receiver both above an interface at z = 0.
+
+    sum_{m up, n down} d_m e^{i k_z,m |z_rec|} R_d[m, n] e^{i k_z,n |z_src|} w_n d_n^T M, shape (N, 9, 9):
+    the same factorisation as the whole-space spectrum (G1), with the reflection in place of the identity.
+    """
+    if z_rec >= 0.0 or z_src >= 0.0:
+        raise ValueError("reflected_spectrum: source and receiver must both lie above the interface (z < 0).")
+    states, _, w, kz = mode_matrices(kx, ky, omega, above)
+    r_d = interface_rt(kx, ky, omega, above, below)["R_d"]
+    e_src = w[:, :3] * np.exp(1j * kz[:, :3] * abs(z_src))
+    e_rec = np.exp(1j * kz[:, 3:] * abs(z_rec))
+    left = states[:, :, 3:] * e_rec[:, None, :]
+    right = np.swapaxes(states[:, :, :3], -1, -2) * e_src[:, :, None] * SOURCE_PAIRING
+    return left @ r_d @ right
