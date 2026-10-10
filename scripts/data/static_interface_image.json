@@ -1,0 +1,112 @@
+{
+ "order": "rows u_(z,x,y), columns force (z,x,y); frame x along the lateral wavevector",
+ "entries": [
+  [
+   "-((lamA + muA)*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(-lamA**2*lamB*muA**2*q*zp + lamA**2*lamB*muB**2*q*zp - 3*lamA**2*muA**2*muB*q*zp + 2*lamA**2*muA*muB**2*q*zp - 2*lamA**2*muA*muB**2 + lamA**2*muB**3*q*zp - 4*lamA*lamB*muA**3*q*zp + 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2*q*zp - 12*lamA*muA**3*muB*q*zp + 6*lamA*muA**3*muB + 8*lamA*muA**2*muB**2*q*zp - 10*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3*q*zp - 3*lamB*muA**4*q*zp + 4*lamB*muA**4 + 3*lamB*muA**2*muB**2*q*zp - 9*muA**4*muB*q*zp + 12*muA**4*muB + 6*muA**3*muB**2*q*zp - 12*muA**3*muB**2 + 3*muA**2*muB**3*q*zp) + (lamA + 3*muA - q*z*(lamA + muA))*(2*lamA**2*muA*q*zp - lamA**2*muA - 2*lamA**2*muB*q*zp + lamA**2*muB + 4*lamA*muA**2*q*zp - 4*lamA*muA**2 - 4*lamA*muA*muB*q*zp + 4*lamA*muA*muB + 2*muA**3*q*zp - 3*muA**3 - 2*muA**2*muB*q*zp + 3*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))*exp(q*(z + zp))/(4*muA*q*(lamA + muA)*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))",
+   "I*((lamA + muA)*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(-lamA**2*lamB*muA**2*q*zp - lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2*q*zp + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB*q*zp - 3*lamA**2*muA**2*muB + 2*lamA**2*muA*muB**2*q*zp + lamA**2*muB**3*q*zp + lamA**2*muB**3 - 4*lamA*lamB*muA**3*q*zp - 4*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2*q*zp + 6*lamA*lamB*muA*muB**2 - 12*lamA*muA**3*muB*q*zp - 12*lamA*muA**3*muB + 8*lamA*muA**2*muB**2*q*zp + 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3*q*zp + 6*lamA*muA*muB**3 - 3*lamB*muA**4*q*zp - 5*lamB*muA**4 + 3*lamB*muA**2*muB**2*q*zp + 9*lamB*muA**2*muB**2 - 9*muA**4*muB*q*zp - 15*muA**4*muB + 6*muA**3*muB**2*q*zp + 6*muA**3*muB**2 + 3*muA**2*muB**3*q*zp + 9*muA**2*muB**3) + (lamA + 3*muA - q*z*(lamA + muA))*(2*lamA**2*muA*q*zp + lamA**2*muA - 2*lamA**2*muB*q*zp - lamA**2*muB + 4*lamA*muA**2*q*zp + 4*lamA*muA**2 - 4*lamA*muA*muB*q*zp - 4*lamA*muA*muB + 2*muA**3*q*zp + 3*muA**3 - 2*muA**2*muB*q*zp - 3*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))*exp(q*(z + zp))/(4*muA*q*(lamA + muA)*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))",
+   "0"
+  ],
+  [
+   "I*(q*z*(2*lamA**2*muA*q*zp - lamA**2*muA - 2*lamA**2*muB*q*zp + lamA**2*muB + 4*lamA*muA**2*q*zp - 4*lamA*muA**2 - 4*lamA*muA*muB*q*zp + 4*lamA*muA*muB + 2*muA**3*q*zp - 3*muA**3 - 2*muA**2*muB*q*zp + 3*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3) - (lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(-lamA**2*lamB*muA**2*q*zp + lamA**2*lamB*muB**2*q*zp - 3*lamA**2*muA**2*muB*q*zp + 2*lamA**2*muA*muB**2*q*zp - 2*lamA**2*muA*muB**2 + lamA**2*muB**3*q*zp - 4*lamA*lamB*muA**3*q*zp + 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2*q*zp - 12*lamA*muA**3*muB*q*zp + 6*lamA*muA**3*muB + 8*lamA*muA**2*muB**2*q*zp - 10*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3*q*zp - 3*lamB*muA**4*q*zp + 4*lamB*muA**4 + 3*lamB*muA**2*muB**2*q*zp - 9*muA**4*muB*q*zp + 12*muA**4*muB + 6*muA**3*muB**2*q*zp - 12*muA**3*muB**2 + 3*muA**2*muB**3*q*zp))*exp(q*(z + zp))/(4*muA*q*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))",
+   "(q*z*(2*lamA**2*muA*q*zp + lamA**2*muA - 2*lamA**2*muB*q*zp - lamA**2*muB + 4*lamA*muA**2*q*zp + 4*lamA*muA**2 - 4*lamA*muA*muB*q*zp - 4*lamA*muA*muB + 2*muA**3*q*zp + 3*muA**3 - 2*muA**2*muB*q*zp - 3*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3) - (lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(-lamA**2*lamB*muA**2*q*zp - lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2*q*zp + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB*q*zp - 3*lamA**2*muA**2*muB + 2*lamA**2*muA*muB**2*q*zp + lamA**2*muB**3*q*zp + lamA**2*muB**3 - 4*lamA*lamB*muA**3*q*zp - 4*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2*q*zp + 6*lamA*lamB*muA*muB**2 - 12*lamA*muA**3*muB*q*zp - 12*lamA*muA**3*muB + 8*lamA*muA**2*muB**2*q*zp + 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3*q*zp + 6*lamA*muA*muB**3 - 3*lamB*muA**4*q*zp - 5*lamB*muA**4 + 3*lamB*muA**2*muB**2*q*zp + 9*lamB*muA**2*muB**2 - 9*muA**4*muB*q*zp - 15*muA**4*muB + 6*muA**3*muB**2*q*zp + 6*muA**3*muB**2 + 3*muA**2*muB**3*q*zp + 9*muA**2*muB**3))*exp(q*(z + zp))/(4*muA*q*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB)*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))",
+   "0"
+  ],
+  [
+   "0",
+   "0",
+   "(muA - muB)*exp(q*(z + zp))/(2*muA*q*(muA + muB))"
+  ]
+ ],
+ "tests": [
+  [
+   2.3,
+   -0.4,
+   -0.9,
+   1.7,
+   1.1,
+   2.6,
+   1.9
+  ],
+  [
+   11.0,
+   -0.05,
+   -0.12,
+   0.6,
+   0.9,
+   1.4,
+   2.2
+  ]
+ ],
+ "values_re": [
+  [
+   [
+    -0.007443345068073365,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.0006598588790259461,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    -0.0026501942937334324
+   ]
+  ],
+  [
+   [
+    -0.005222036582235581,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.000689097390010161,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    -0.0032642678455469354
+   ]
+  ]
+ ],
+ "values_im": [
+  [
+   [
+    0.0,
+    0.0033304716930608585,
+    0.0
+   ],
+   [
+    -0.0007214385434272366,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    0.0,
+    0.0012223843538013866,
+    0.0
+   ],
+   [
+    0.0006441200194679049,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ]
+ ]
+}
