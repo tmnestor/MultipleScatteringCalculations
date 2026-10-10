@@ -21,8 +21,13 @@
         B2 = Sum over the two triangles of Integrate[Cos Sin (G2[r] - G2[0]), theta],
              G2[r] = c/(3 Sqrt[r^2 + c^2]) + 2/3 Log[c + Sqrt[r^2 + c^2]],
       with r = a Sec[theta] on [0, ArcTan[b/a]] and r = b Csc[theta] on [ArcTan[b/a], Pi/2].
-      Their closed forms (expected to involve dilogarithms) are attempted here; the Python twin uses a
-      40-digit quadrature of the angular integral until they are in hand.
+      For the cube, a = b = c (both are scale-free), they are
+        B1 = (5/4) Cl2(Pi/3) - Catalan,          Cl2(x) = Im PolyLog[2, Exp[I x]],
+        B2 = (1/3) Log[(1 + Sqrt[2])^2 / (2 (1 + Sqrt[3]))].
+      B1: the two triangles are equal by symmetry, and Kummer's formula for Im Li2(r e^(i theta)), at
+      r = 1/Sqrt[2] and theta = Pi/12, 7Pi/12 (both with omega = Pi/6), plus the duplication formula of Cl2,
+      collapses Mathematica's dilogarithms.  B2: with v = Cos[theta]^2 the angular integral is elementary.
+      Both are checked below against Mathematica's own reduction and against NIntegrate.
 
    3. REFERENCES.  A sample of corner moments by NIntegrate at 30 digits, among them the degree-zero
       Mindlin cases, for the twin to compare.
@@ -77,6 +82,16 @@ b1num = NIntegrate[tB1, {x, 0, 2}, {y, 0, 2}, WorkingPrecision -> 40, PrecisionG
 b2num = NIntegrate[tB2, {x, 0, 2}, {y, 0, 2}, WorkingPrecision -> 40, PrecisionGoal -> 30, MaxRecursion -> 40];
 Print["B1 closed: ", b1closed, "  = ", If[b1closed === $Failed, "-", N[b1closed, 30]], "   NIntegrate: ", b1num];
 Print["B2 closed: ", b2closed, "  = ", If[b2closed === $Failed, "-", N[b2closed, 30]], "   NIntegrate: ", b2num];
+cl2[x_] := Im[PolyLog[2, Exp[I x]]];
+b1simple = 5/4 cl2[Pi/3] - Catalan;
+b2simple = Log[(1 + Sqrt[2])^2/(2 (1 + Sqrt[3]))]/3;
+(* the angular integrals of B1 and B2 for the cube, exactly as the twin derives them *)
+b1polar = 2 NIntegrate[Log[(1 + Sqrt[1 + Sec[th]^2])/2], {th, 0, Pi/4}, WorkingPrecision -> 60, PrecisionGoal -> 50];
+b2v = Integrate[Sqrt[v/(v + 1)]/3 + 2/3 Log[1 + Sqrt[(v + 1)/v]] - 1/3 - 2/3 Log[2], {v, 1/2, 1}];
+b1simpleCheck = {N[b1simple - b1polar, 50], N[b1simple - b1num, 40]};
+b2simpleCheck = {N[b2simple - b2v, 50], FullSimplify[b2simple - b2v], N[b2simple - b2num, 40]};
+Print["B1 = (5/4) Cl2(Pi/3) - Catalan = ", N[b1simple, 40], "   minus angular integral, minus NIntegrate: ", b1simpleCheck];
+Print["B2 = (1/3) Log[(1+Sqrt2)^2/(2(1+Sqrt3))] = ", N[b2simple, 40], "   minus v integral (N, exact), minus NIntegrate: ", b2simpleCheck];
 
 (* 3. reference corner moments: {j, alpha, {p, q, r}, signs {sx, sy}} on sides {2, 2, 2} *)
 cases = {
@@ -114,5 +129,7 @@ Export[FileNameJoin[{dir, "ImageCornerMoments.json"}],
     "B1" -> ToString[N[If[b1closed === $Failed, b1num, b1closed], 30], InputForm],
     "B2" -> ToString[N[If[b2closed === $Failed, b2num, b2closed], 30], InputForm],
     "B1_nintegrate" -> ToString[b1num, InputForm], "B2_nintegrate" -> ToString[b2num, InputForm],
+    "B1_simple" -> ToString[N[b1simple, 50], InputForm], "B2_simple" -> ToString[N[b2simple, 50], InputForm],
+    "B1_simple_check" -> ToString[b1simpleCheck, InputForm], "B2_simple_check" -> ToString[b2simpleCheck, InputForm],
     "cases" -> cases, "references" -> (ToString[#, InputForm] & /@ refs)|>, "JSON"];
 Print["written ImageCornerMoments.json"];

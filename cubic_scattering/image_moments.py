@@ -249,8 +249,11 @@ def _polar(a: int, b: int, g) -> mp.mpf:
 @cache
 def base_b1(a: int, b: int, c: int) -> mp.mpf:
     """B1 = int over [0, a] x [0, b] x [c, oo) of R^-3: the radial integral is log(c + sqrt(r^2 + c^2)) - log(2c),
-    leaving one smooth angular integral (here by quadrature at 40 digits; its closed form is the Mathematica phase)."""
+    leaving one smooth angular integral.  B1 is scale-free; for the cube, a = b = c, it is (5/4) Cl2(pi/3) - G
+    (Catalan's G), else the angular integral by quadrature at 40 digits."""
     with mp.workdps(DPS):
+        if a == b == c:
+            return 5 * mp.clsin(2, mp.pi / 3) / 4 - mp.catalan
         c = mp.mpf(c)
         return _polar(
             a, b, lambda th, rr: mp.log(c + mp.sqrt(rr * rr + c * c)) - mp.log(2 * c)
@@ -260,8 +263,11 @@ def base_b1(a: int, b: int, c: int) -> mp.mpf:
 @cache
 def base_b2(a: int, b: int, c: int) -> mp.mpf:
     """B2 = int over [0, a] x [0, b] x [c, oo) of x y R^-5: radial antiderivative c/(3 rho) + (2/3) log(c + rho),
-    rho = sqrt(r^2 + c^2), times cos sin, leaving one smooth angular integral (quadrature at 40 digits)."""
+    rho = sqrt(r^2 + c^2), times cos sin, leaving one smooth angular integral.  B2 is scale-free; for the cube,
+    a = b = c, it is elementary, (1/3) log((1 + sqrt 2)^2 / (2 (1 + sqrt 3))), else quadrature at 40 digits."""
     with mp.workdps(DPS):
+        if a == b == c:
+            return mp.log((1 + mp.sqrt(2)) ** 2 / (2 * (1 + mp.sqrt(3)))) / 3
         c = mp.mpf(c)
 
         def g2(rr):
