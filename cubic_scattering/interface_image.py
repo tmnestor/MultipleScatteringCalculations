@@ -48,12 +48,14 @@ from .effective_contrasts import ReferenceMedium
 from .graded_voxel.basis import SOURCE_EXPONENTS_QUARTIC
 from .image_moments import corner_moment
 
-_TERMS_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "scripts"
-    / "data"
-    / "interface_image_terms.json"
-)
+_DATA = Path(__file__).resolve().parent.parent / "scripts" / "data"
+#: Canonical terms per kind: the image (both cells in A) and the transmission (source in A, receiver in B).
+_TERMS_PATH = {
+    "reflected": _DATA / "interface_image_terms.json",
+    "transmitted": _DATA / "interface_transmission_terms.json",
+}
+#: The 9-state under the mirror z -> -z: u_z, gamma_zy and gamma_zx change sign (Voigt order zz, xx, yy, xy, zy, zx).
+MIRROR_9 = np.array([-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0])
 _DEG0 = {0: -1, 1: 0, 2: 1}
 
 Poly = tuple[Fraction, ...]  # ascending coefficients
@@ -65,9 +67,9 @@ Poly = tuple[Fraction, ...]  # ascending coefficients
 
 
 @cache
-def _terms() -> tuple:
-    """The canonical terms, with each material coefficient compiled: ((row, col, j, alpha, A, B, fn), ...)."""
-    data = json.loads(_TERMS_PATH.read_text())
+def _terms(kind: str = "reflected") -> tuple:
+    """The canonical terms of one kind, each material coefficient compiled: ((row, col, j, alpha, A, B, fn), ...)."""
+    data = json.loads(_TERMS_PATH[kind].read_text())
     lam_a, mu_a, lam_b, mu_b = sp.symbols("lamA muA lamB muB", positive=True)
     loc = {"lamA": lam_a, "muA": mu_a, "lamB": lam_b, "muB": mu_b}
     out = []
@@ -171,9 +173,16 @@ def _lateral_weight(e_field: int, f_source: int) -> tuple[Poly, Poly]:
 
 
 def _vertical_weight(
-    e_field: int, f_source: int, a_pow: int, b_pow: int, cz: int, czp: int
+    e_field: int,
+    f_source: int,
+    a_pow: int,
+    b_pow: int,
+    cz: int,
+    czp: int,
+    kind: str = "vert",
 ) -> tuple[Poly, Poly]:
-    """Vertical weight of P_e(v) (cz + v)^A against v'^f (czp + v')^B, centres in units of h."""
+    """Vertical weight of P_e(v) (cz + v)^A against v'^f (czp + v')^B, centres in units of h: a convolution in
+    tau = v + v' (kind 'vert', the image) or a correlation in sigma = v - v' (kind 'lat', the transmission)."""
     left = _pmul(
         _legendre_monomials(e_field), _ppow((Fraction(cz), Fraction(1)), a_pow)
     )
@@ -186,7 +195,7 @@ def _vertical_weight(
         for big_f, cr in enumerate(right):
             if cl == 0 or cr == 0:
                 continue
-            w = _weight_1d(big_e, big_f, "vert")
+            w = _weight_1d(big_e, big_f, kind)
             out = [_padd(out[k], w[k], cl * cr) for k in range(2)]
     return out[0], out[1]
 
@@ -287,13 +296,18 @@ def image_block(
     n_gauss: int = 32,
     closed: bool = True,
 ) -> NDArray:
-    """The static image block K[a, c] between two cells in medium A (above the interface z = 0).
+    """The static interface block K[a, c] between two cells: the image when both lie on one side of the
+    interface z = 0, the transmission when they lie on opposite sides.
+
+    Cells in A (z < 0) use the image's terms; a receiver in B with a source in A uses the transmission's.
+    The other two arrangements are mirrored (z -> -z, media exchanged) onto these: the 9-state changes sign
+    in u_z, gamma_zy, gamma_zx (``MIRROR_9``), and each cell polynomial by (-1)^(its power of xi_z).
 
     Args:
-        rec_centre: Receiver cell centre in units of h, (z, x, y); z odd and negative (z = -1 touches).
+        rec_centre: Receiver cell centre in units of h, (z, x, y); z odd (z = -1 or 1 touches the interface).
         src_centre: Source cell centre in units of h, likewise.
         h: Cell half-width, km.
-        above: Medium A (z < 0), which holds both cells.
+        above: Medium A (z < 0).
         below: Medium B (z > 0).
         n_source: Source monomials (10, 20 or 35).
         n_test: Field functions (4 or 10).
@@ -308,27 +322,46 @@ def image_block(
         ValueError: when a cell is not in medium A, or a divergent monomial would be needed.
     """
     cz, czp = rec_centre[0], src_centre[0]
-    if cz >= 0 or czp >= 0:
+    if cz % 2 == 0 or czp % 2 == 0:
         raise ValueError(
-            "image_block: both cells must lie in medium A, z < 0 (centres in units of h)."
+            "image_block: cell centres must have odd z in units of h (cells lie on one side)."
         )
-    dx, dy = rec_centre[1] - src_centre[1], rec_centre[2] - src_centre[2]
-    z0 = -(cz + czp)
-    mats = (above.lam, above.mu, below.lam, below.mu)
     exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
+    if czp > 0:
+        # mirror z -> -z, exchanging the media, onto a source in A
+        mirrored = image_block(
+            (-cz, rec_centre[1], rec_centre[2]),
+            (-czp, src_centre[1], src_centre[2]),
+            h,
+            below,
+            above,
+            n_source,
+            n_test,
+            n_gauss,
+            closed,
+        )
+        sa = np.array([(-1.0) ** e[0] for e in exps_f])
+        sc = np.array([(-1.0) ** e[0] for e in exps_s])
+        return np.einsum("a,c,i,j,acij->acij", sa, sc, MIRROR_9, MIRROR_9, mirrored)
+    kind = "reflected" if cz < 0 else "transmitted"
+    dx, dy = rec_centre[1] - src_centre[1], rec_centre[2] - src_centre[2]
+    z0 = -(cz + czp) if kind == "reflected" else cz - czp
+    mats = (above.lam, above.mu, below.lam, below.mu)
     out = np.zeros((n_test, n_source, 9, 9))
 
     # pieces along each axis, in the separation coordinates: lateral rho = D + sigma, vertical zeta = z0 - tau
     lat_x = [(dx - 2, dx), (dx, dx + 2)]
     lat_y = [(dy - 2, dy), (dy, dy + 2)]
-    ver = [
-        (z0, z0 + 2),
-        (z0 - 2, z0),
-    ]  # tau in [-2, 0] -> zeta in [z0, z0 + 2]; tau in [0, 2] -> [z0 - 2, z0]
+    if kind == "reflected":
+        # zeta = z0 - tau: tau in [-2, 0] -> zeta in [z0, z0 + 2]; tau in [0, 2] -> [z0 - 2, z0]
+        ver = [(z0, z0 + 2), (z0 - 2, z0)]
+    else:
+        # zeta = z0 + sigma: sigma in [-2, 0] -> zeta in [z0 - 2, z0]; sigma in [0, 2] -> [z0, z0 + 2]
+        ver = [(z0 - 2, z0), (z0, z0 + 2)]
 
     groups: dict = {}
-    for r, c, j, alpha, a_pow, b_pow, fn in _terms():
+    for r, c, j, alpha, a_pow, b_pow, fn in _terms(kind):
         groups.setdefault((j, alpha, a_pow, b_pow), []).append((r, c, fn(*mats)))
 
     for (j, alpha, a_pow, b_pow), entries in groups.items():
@@ -354,12 +387,20 @@ def image_block(
         wz = {}
         for ef in {e[0] for e in exps_f}:
             for fs in {e[0] for e in exps_s}:
-                p0, p1 = _vertical_weight(ef, fs, a_pow, b_pow, cz, czp)
-                # tau = z0 - zeta
-                wz[ef, fs] = [
-                    _shift(p0, Fraction(z0), Fraction(-1)),
-                    _shift(p1, Fraction(z0), Fraction(-1)),
-                ]
+                if kind == "reflected":
+                    p0, p1 = _vertical_weight(ef, fs, a_pow, b_pow, cz, czp, "vert")
+                    # tau = z0 - zeta
+                    wz[ef, fs] = [
+                        _shift(p0, Fraction(z0), Fraction(-1)),
+                        _shift(p1, Fraction(z0), Fraction(-1)),
+                    ]
+                else:
+                    p0, p1 = _vertical_weight(ef, fs, a_pow, b_pow, cz, czp, "lat")
+                    # sigma = zeta - z0
+                    wz[ef, fs] = [
+                        _shift(p0, Fraction(-z0), Fraction(1)),
+                        _shift(p1, Fraction(-z0), Fraction(1)),
+                    ]
         deg = (
             max(len(p) for v in wx.values() for p in v) - 1,
             max(len(p) for v in wy.values() for p in v) - 1,
