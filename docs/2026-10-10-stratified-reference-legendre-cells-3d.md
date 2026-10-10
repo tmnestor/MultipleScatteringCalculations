@@ -82,8 +82,18 @@ away from interfaces.
   - **Touching block end to end.** Against the 2-D Fourier integral of the Mathematica static spectrum, the
     reference approaches the engine as it is refined: 7.9e-6 at Qh = 320, then 1.6e-6, 4.5e-7 and 2.3e-8 at
     Qh = 20480. The engine does not move.
+- **The face closed forms** (`cubic_scattering/image_moments.py`, twin of `Mathematica/ImageCornerMoments.wl`).
+  - **Φ₀ families.** Paper 2's master integrals (box, face, edge), extended down to `R⁻⁹`.
+  - **Mindlin families, by a line of images.** `∂^αΦ₁ = ∫_ζ^∞ ∂^αΦ₀ dt` and
+    `∂^αΦ₂ = ∫_ζ^∞ (t−ζ) ∂^αΦ₀ dt`. Every term is then a box or semi-infinite-column master integral, the
+    edge integrals to infinity in Beta functions.
+  - **Degree-zero columns** (Euler's pole) are reduced by integration by parts, to two base integrals B₁, B₂
+    (one angular integral each). These are quadrature at 40 digits until the `.wl` gives their closed forms.
+  - **Checks.** All 53,352 corner moments (61 families, monomials to (6, 6, 8), both orientations) against
+    the Euler + Gauss reduction: 1.2e-15. B₁ and B₂ against direct 3-D tanh-sinh: 20 digits. Touching blocks
+    with closed corners against the Gauss version: 1.8e-15 and 2.6e-15.
 - **Next.**
-  1. Closed forms for the face integrals (`.wl`), which replace the Gauss rules on the faces.
+  1. Closed forms of B₁ and B₂ (`ImageCornerMoments.wl`).
   2. Speed. About 25–40 s per block now; the inner loops are Python.
   3. The transmitted static image.
   4. The production apply: march over all pairs, plus a local correction `closed(static) − grid(static)`
