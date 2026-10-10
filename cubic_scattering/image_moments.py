@@ -190,7 +190,85 @@ def box(
 def column(p: int, q: int, r: int, a: int, b: int, c: int, m: int) -> mp.mpf:
     """int over [0, a] x [0, b] x [c, oo) of x^p y^q z^r R^m: the semi-infinite box less the finite one,
     each by Euler's identity (finite parts where the degree is negative)."""
-    return box(p, q, r, a, b, None, m, True) - box(p, q, r, a, b, c, m, True)
+    try:
+        return box(p, q, r, a, b, None, m, True) - box(p, q, r, a, b, c, m, True)
+    except EulerPole:
+        return _column_degree_zero(p, q, r, a, b, c, m)
+
+
+def _strip(q: int, a: int, b: int, c: int, m: int) -> mp.mpf:
+    """int_0^b int_c^oo y^q (a^2 + y^2 + t^2)^(m/2) dt dy, a > 0."""
+    return face(q, 0, a, b, None, m) - face(q, 0, a, b, c, m)
+
+
+@cache
+def _column_degree_zero(
+    p: int, q: int, r: int, a: int, b: int, c: int, m: int
+) -> mp.mpf:
+    """The column when p + q + r + m + 3 = 0, where Euler's identity is degenerate.
+
+    Integration by parts in t (from c to infinity) lowers r by two, its boundary a rectangle at height c;
+    then in x and in y, the boundaries strips at x = a or y = b (never through the origin).  What is left
+    is one of two base integrals, B1 = column of R^-3 and B2 = column of x y R^-5.
+    """
+    with mp.workdps(DPS):
+        if r >= 2:
+            return (
+                -(mp.mpf(c) ** (r - 1)) * face(p, q, c, a, b, m + 2)
+                - (r - 1) * column(p, q, r - 2, a, b, c, m + 2)
+            ) / (m + 2)
+        if r == 1:
+            return -face(p, q, c, a, b, m + 2) / (m + 2)
+        if p >= 2:
+            return (
+                mp.mpf(a) ** (p - 1) * _strip(q, a, b, c, m + 2)
+                - (p - 1) * column(p - 2, q, 0, a, b, c, m + 2)
+            ) / (m + 2)
+        if q >= 2:
+            return (
+                mp.mpf(b) ** (q - 1) * _strip(p, b, a, c, m + 2)
+                - (q - 1) * column(p, q - 2, 0, a, b, c, m + 2)
+            ) / (m + 2)
+        if (p, q, m) == (0, 0, -3):
+            return base_b1(a, b, c)
+        if (p, q, m) == (1, 1, -5):
+            return base_b2(a, b, c)
+        raise ValueError(
+            f"_column_degree_zero: no reduction for p={p}, q={q}, r={r}, m={m}"
+        )
+
+
+def _polar(a: int, b: int, g) -> mp.mpf:
+    """int over the rectangle [0, a] x [0, b] in polar form: sum over its two triangles of int g(theta, R(theta))."""
+    th0 = mp.atan2(b, a)
+    return mp.quad(lambda th: g(th, a / mp.cos(th)), [0, th0]) + mp.quad(
+        lambda th: g(th, b / mp.sin(th)), [th0, mp.pi / 2]
+    )
+
+
+@cache
+def base_b1(a: int, b: int, c: int) -> mp.mpf:
+    """B1 = int over [0, a] x [0, b] x [c, oo) of R^-3: the radial integral is log(c + sqrt(r^2 + c^2)) - log(2c),
+    leaving one smooth angular integral (here by quadrature at 40 digits; its closed form is the Mathematica phase)."""
+    with mp.workdps(DPS):
+        c = mp.mpf(c)
+        return _polar(
+            a, b, lambda th, rr: mp.log(c + mp.sqrt(rr * rr + c * c)) - mp.log(2 * c)
+        )
+
+
+@cache
+def base_b2(a: int, b: int, c: int) -> mp.mpf:
+    """B2 = int over [0, a] x [0, b] x [c, oo) of x y R^-5: radial antiderivative c/(3 rho) + (2/3) log(c + rho),
+    rho = sqrt(r^2 + c^2), times cos sin, leaving one smooth angular integral (quadrature at 40 digits)."""
+    with mp.workdps(DPS):
+        c = mp.mpf(c)
+
+        def g2(rr):
+            rho = mp.sqrt(rr * rr + c * c)
+            return c / (3 * rho) + 2 * mp.log(c + rho) / 3
+
+        return _polar(a, b, lambda th, rr: mp.cos(th) * mp.sin(th) * (g2(rr) - g2(0)))
 
 
 # ---------------------------------------------------------------------------

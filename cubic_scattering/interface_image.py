@@ -46,8 +46,14 @@ from numpy.typing import NDArray
 
 from .effective_contrasts import ReferenceMedium
 from .graded_voxel.basis import SOURCE_EXPONENTS_QUARTIC
+from .image_moments import corner_moment
 
-_TERMS_PATH = Path(__file__).resolve().parent.parent / "scripts" / "data" / "interface_image_terms.json"
+_TERMS_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "scripts"
+    / "data"
+    / "interface_image_terms.json"
+)
 _DEG0 = {0: -1, 1: 0, 2: 1}
 
 Poly = tuple[Fraction, ...]  # ascending coefficients
@@ -70,7 +76,9 @@ def _terms() -> tuple:
             for t in terms:
                 expr = sp.sympify(t["coef"], locals=loc)
                 fn = sp.lambdify((lam_a, mu_a, lam_b, mu_b), expr, "numpy")
-                out.append((r, c, t["j"], tuple(t["alpha"]), t["z_power"], t["zp_power"], fn))
+                out.append(
+                    (r, c, t["j"], tuple(t["alpha"]), t["z_power"], t["zp_power"], fn)
+                )
     return tuple(out)
 
 
@@ -84,7 +92,9 @@ def kernel_function(j: int, alpha: tuple[int, int, int]):
         1: -sp.log(r + zeta) / (2 * sp.pi),
         2: (zeta * sp.log(r + zeta) - r) / (2 * sp.pi),
     }[j]
-    expr = sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2]) if sum(alpha) else phi
+    expr = (
+        sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2]) if sum(alpha) else phi
+    )
     # No simplify: on a fourth derivative it takes about a minute; common subexpressions suffice.
     return sp.lambdify((rx, ry, zeta), expr, "numpy", cse=True)
 
@@ -109,7 +119,9 @@ def _pmul(a: Poly, b: Poly) -> Poly:
 
 def _padd(a: Poly, b: Poly, s: Fraction = Fraction(1)) -> Poly:
     n = max(len(a), len(b))
-    return tuple((a[i] if i < len(a) else 0) + s * (b[i] if i < len(b) else 0) for i in range(n))
+    return tuple(
+        (a[i] if i < len(a) else 0) + s * (b[i] if i < len(b) else 0) for i in range(n)
+    )
 
 
 def _ppow(a: Poly, n: int) -> Poly:
@@ -133,7 +145,11 @@ def _weight_1d(e: int, f: int, kind: str) -> tuple[Poly, Poly]:
     for lo, hi in lims:
         expr = sp.expand(sp.integrate(g, (v, lo, hi)))
         coeffs = sp.Poly(expr, s).all_coeffs()[::-1] if expr != 0 else [0]
-        pieces.append(tuple(Fraction(int(sp.Rational(c).p), int(sp.Rational(c).q)) for c in coeffs))
+        pieces.append(
+            tuple(
+                Fraction(int(sp.Rational(c).p), int(sp.Rational(c).q)) for c in coeffs
+            )
+        )
     return pieces[0], pieces[1]
 
 
@@ -154,10 +170,17 @@ def _lateral_weight(e_field: int, f_source: int) -> tuple[Poly, Poly]:
     return out[0], out[1]
 
 
-def _vertical_weight(e_field: int, f_source: int, a_pow: int, b_pow: int, cz: int, czp: int) -> tuple[Poly, Poly]:
+def _vertical_weight(
+    e_field: int, f_source: int, a_pow: int, b_pow: int, cz: int, czp: int
+) -> tuple[Poly, Poly]:
     """Vertical weight of P_e(v) (cz + v)^A against v'^f (czp + v')^B, centres in units of h."""
-    left = _pmul(_legendre_monomials(e_field), _ppow((Fraction(cz), Fraction(1)), a_pow))
-    right = _pmul(tuple(Fraction(int(k == f_source)) for k in range(f_source + 1)), _ppow((Fraction(czp), Fraction(1)), b_pow))
+    left = _pmul(
+        _legendre_monomials(e_field), _ppow((Fraction(cz), Fraction(1)), a_pow)
+    )
+    right = _pmul(
+        tuple(Fraction(int(k == f_source)) for k in range(f_source + 1)),
+        _ppow((Fraction(czp), Fraction(1)), b_pow),
+    )
     out: list[Poly] = [(Fraction(0),), (Fraction(0),)]
     for big_e, cl in enumerate(left):
         for big_f, cr in enumerate(right):
@@ -187,7 +210,9 @@ def _gauss(n: int, lo: float, hi: float) -> tuple[NDArray, NDArray]:
     return lo + (hi - lo) * (x + 1) / 2, w * (hi - lo) / 2
 
 
-def _regular_moments(f, box: tuple, centre: tuple, deg: tuple[int, int, int], n: int) -> NDArray:
+def _regular_moments(
+    f, box: tuple, centre: tuple, deg: tuple[int, int, int], n: int
+) -> NDArray:
     """int_box prod_i (s_i - centre_i)^p_i f(s) for p_i <= deg_i, by a tensor Gauss rule."""
     rules = [_gauss(n, lo, hi) for lo, hi in box]
     sx, sy, sz = np.meshgrid(rules[0][0], rules[1][0], rules[2][0], indexing="ij")
@@ -198,7 +223,9 @@ def _regular_moments(f, box: tuple, centre: tuple, deg: tuple[int, int, int], n:
     return np.einsum("ijk,ia,jb,kc->abc", fw, px, py, pz)
 
 
-def _corner_moments(f, d: int, box: tuple, deg: tuple[int, int, int], n: int) -> NDArray:
+def _corner_moments(
+    f, d: int, box: tuple, deg: tuple[int, int, int], n: int
+) -> NDArray:
     """int_box s^p f(s) for a box with a corner at the origin (the singular point), by Euler's identity."""
     far = [lo if hi == 0 else hi for lo, hi in box]  # the coordinate of each far face
     m = np.zeros((deg[0] + 1, deg[1] + 1, deg[2] + 1))
@@ -215,11 +242,33 @@ def _corner_moments(f, d: int, box: tuple, deg: tuple[int, int, int], n: int) ->
         face = np.einsum("ab,ap,bq->pq", fw, v1, v2)  # (deg_o0 + 1, deg_o1 + 1)
         ai = np.array([abs(far[i]) * far[i] ** p for p in range(deg[i] + 1)])
         contrib = np.einsum("k,pq->kpq", ai, face)
-        m += np.moveaxis(contrib, 0, i) if i == 0 else np.moveaxis(contrib, [0, 1, 2], [i, *others])
-    total = np.add.outer(np.add.outer(np.arange(deg[0] + 1), np.arange(deg[1] + 1)), np.arange(deg[2] + 1))
+        m += (
+            np.moveaxis(contrib, 0, i)
+            if i == 0
+            else np.moveaxis(contrib, [0, 1, 2], [i, *others])
+        )
+    total = np.add.outer(
+        np.add.outer(np.arange(deg[0] + 1), np.arange(deg[1] + 1)),
+        np.arange(deg[2] + 1),
+    )
     denom = 3 + total + d
     with np.errstate(divide="ignore", invalid="ignore"):
         return np.where(denom > 0, m / np.where(denom == 0, 1, denom), np.nan)
+
+
+def _corner_moments_closed(
+    j: int, alpha: tuple[int, int, int], d: int, box: tuple, deg: tuple[int, int, int]
+) -> NDArray:
+    """``_corner_moments`` in closed form (``image_moments.corner_moment``): the same array, NaN where divergent."""
+    sides = tuple(int(max(abs(lo), abs(hi))) for lo, hi in box)
+    signs = tuple(-1 if lo < 0 else 1 for lo, _ in box[:2])
+    m = np.full((deg[0] + 1, deg[1] + 1, deg[2] + 1), np.nan)
+    for p in range(deg[0] + 1):
+        for q in range(deg[1] + 1):
+            for r in range(deg[2] + 1):
+                if 3 + p + q + r + d > 0:
+                    m[p, q, r] = float(corner_moment(j, alpha, (p, q, r), sides, signs))
+    return m
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +285,7 @@ def image_block(
     n_source: int = 10,
     n_test: int = 4,
     n_gauss: int = 32,
+    closed: bool = True,
 ) -> NDArray:
     """The static image block K[a, c] between two cells in medium A (above the interface z = 0).
 
@@ -247,7 +297,9 @@ def image_block(
         below: Medium B (z > 0).
         n_source: Source monomials (10, 20 or 35).
         n_test: Field functions (4 or 10).
-        n_gauss: Gauss nodes per dimension on regular pieces and on faces.
+        n_gauss: Gauss nodes per dimension on regular pieces (and on the far faces when not closed).
+        closed: Corner pieces in closed form (``image_moments``); False uses Euler's reduction to the far
+            faces with Gauss rules there (the two agree to 1e-15).
 
     Returns:
         K, shape (n_test, n_source, 9, 9), as ``graded_voxel.blocks.coupling_block``.
@@ -257,7 +309,9 @@ def image_block(
     """
     cz, czp = rec_centre[0], src_centre[0]
     if cz >= 0 or czp >= 0:
-        raise ValueError("image_block: both cells must lie in medium A, z < 0 (centres in units of h).")
+        raise ValueError(
+            "image_block: both cells must lie in medium A, z < 0 (centres in units of h)."
+        )
     dx, dy = rec_centre[1] - src_centre[1], rec_centre[2] - src_centre[2]
     z0 = -(cz + czp)
     mats = (above.lam, above.mu, below.lam, below.mu)
@@ -268,7 +322,10 @@ def image_block(
     # pieces along each axis, in the separation coordinates: lateral rho = D + sigma, vertical zeta = z0 - tau
     lat_x = [(dx - 2, dx), (dx, dx + 2)]
     lat_y = [(dy - 2, dy), (dy, dy + 2)]
-    ver = [(z0, z0 + 2), (z0 - 2, z0)]  # tau in [-2, 0] -> zeta in [z0, z0 + 2]; tau in [0, 2] -> [z0 - 2, z0]
+    ver = [
+        (z0, z0 + 2),
+        (z0 - 2, z0),
+    ]  # tau in [-2, 0] -> zeta in [z0, z0 + 2]; tau in [0, 2] -> [z0 - 2, z0]
 
     groups: dict = {}
     for r, c, j, alpha, a_pow, b_pow, fn in _terms():
@@ -282,18 +339,27 @@ def image_block(
         for ef in {e[1] for e in exps_f}:
             for fs in {e[1] for e in exps_s}:
                 p0, p1 = _lateral_weight(ef, fs)
-                wx[ef, fs] = [_shift(p0, Fraction(-dx), Fraction(1)), _shift(p1, Fraction(-dx), Fraction(1))]
+                wx[ef, fs] = [
+                    _shift(p0, Fraction(-dx), Fraction(1)),
+                    _shift(p1, Fraction(-dx), Fraction(1)),
+                ]
         wy = {}
         for ef in {e[2] for e in exps_f}:
             for fs in {e[2] for e in exps_s}:
                 p0, p1 = _lateral_weight(ef, fs)
-                wy[ef, fs] = [_shift(p0, Fraction(-dy), Fraction(1)), _shift(p1, Fraction(-dy), Fraction(1))]
+                wy[ef, fs] = [
+                    _shift(p0, Fraction(-dy), Fraction(1)),
+                    _shift(p1, Fraction(-dy), Fraction(1)),
+                ]
         wz = {}
         for ef in {e[0] for e in exps_f}:
             for fs in {e[0] for e in exps_s}:
                 p0, p1 = _vertical_weight(ef, fs, a_pow, b_pow, cz, czp)
                 # tau = z0 - zeta
-                wz[ef, fs] = [_shift(p0, Fraction(z0), Fraction(-1)), _shift(p1, Fraction(z0), Fraction(-1))]
+                wz[ef, fs] = [
+                    _shift(p0, Fraction(z0), Fraction(-1)),
+                    _shift(p1, Fraction(z0), Fraction(-1)),
+                ]
         deg = (
             max(len(p) for v in wx.values() for p in v) - 1,
             max(len(p) for v in wy.values() for p in v) - 1,
@@ -307,17 +373,29 @@ def image_block(
                     singular = all(lo <= 0 <= hi for lo, hi in box)
                     if singular:
                         if any(lo < 0 < hi for lo, hi in box):
-                            raise ValueError("image_block: the singular point lies inside a piece, not at a corner.")
+                            raise ValueError(
+                                "image_block: the singular point lies inside a piece, not at a corner."
+                            )
                         centre = (0.0, 0.0, 0.0)
-                        mom = _corner_moments(f, d, box, deg, n_gauss)
+                        mom = (
+                            _corner_moments_closed(j, alpha, d, box, deg)
+                            if closed
+                            else _corner_moments(f, d, box, deg, n_gauss)
+                        )
                     else:
                         centre = tuple((lo + hi) / 2 for lo, hi in box)
                         mom = _regular_moments(f, box, centre, deg, n_gauss)
                     for a, ef in enumerate(exps_f):
                         for cc, es in enumerate(exps_s):
-                            px = _shift(wx[ef[1], es[1]][ix], Fraction(centre[0]), Fraction(1))
-                            py = _shift(wy[ef[2], es[2]][iy], Fraction(centre[1]), Fraction(1))
-                            pz = _shift(wz[ef[0], es[0]][iz], Fraction(centre[2]), Fraction(1))
+                            px = _shift(
+                                wx[ef[1], es[1]][ix], Fraction(centre[0]), Fraction(1)
+                            )
+                            py = _shift(
+                                wy[ef[2], es[2]][iy], Fraction(centre[1]), Fraction(1)
+                            )
+                            pz = _shift(
+                                wz[ef[0], es[0]][iz], Fraction(centre[2]), Fraction(1)
+                            )
                             nzx = [k for k, x in enumerate(px) if x]
                             nzy = [k for k, x in enumerate(py) if x]
                             nzz = [k for k, x in enumerate(pz) if x]
