@@ -85,7 +85,8 @@ def kernel_function(j: int, alpha: tuple[int, int, int]):
         2: (zeta * sp.log(r + zeta) - r) / (2 * sp.pi),
     }[j]
     expr = sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2]) if sum(alpha) else phi
-    return sp.lambdify((rx, ry, zeta), sp.simplify(expr), "numpy")
+    # No simplify: on a fourth derivative it takes about a minute; common subexpressions suffice.
+    return sp.lambdify((rx, ry, zeta), expr, "numpy", cse=True)
 
 
 def kernel_degree(j: int, alpha: tuple[int, int, int]) -> int:
