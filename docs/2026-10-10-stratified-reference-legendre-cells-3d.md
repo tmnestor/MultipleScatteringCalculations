@@ -92,12 +92,24 @@ away from interfaces.
   - **Checks.** All 53,352 corner moments (61 families, monomials to (6, 6, 8), both orientations) against
     the Euler + Gauss reduction: 1.2e-15. B₁ and B₂ against direct 3-D tanh-sinh: 20 digits. Touching blocks
     with closed corners against the Gauss version: 1.8e-15 and 2.6e-15.
+- **The transmitted static image** (`scripts/derive_static_interface_transmission.py`, twin
+  `Mathematica/StaticInterfaceTransmission.wl`; terms by `derive_interface_image_terms.py transmitted`).
+  - **The field.** For a source in A and a receiver in B, the whole static coupling is
+    `e^{−q(z−z′)}/q × poly`, the same potentials with `ζ = z − z′`. It has 275 terms in 46 families,
+    integrable at the touching corner.
+  - **The blocks.** The vertical weight is a correlation. The other two arrangements (receiver in A with a
+    source in B, and both cells in B) are the mirror `z → −z` with the media exchanged.
+  - **Identical media.** Against Paper 2's touching blocks: 1.9e-15 – 7.6e-15 (face, edge, corner, mirrored,
+    p = 2, 35 sources). The image is identically zero.
+  - **Different media.** Against 2-D Fourier integration: 7.8e-13 and 6.6e-13. Against brute-force 6-D Gauss:
+    1.7e-13 – 5.0e-13.
+  - **The dynamic limit.** The dynamic transmitted kernel tends to the static one as `(ω/βq)²`.
+  - Gates T1 and T2 are in `scripts/gate_interface_image.py`, and Paper 2 §11 is updated.
 - **Next.**
   1. Closed forms of B₁ and B₂ (`ImageCornerMoments.wl`).
   2. Speed. About 25–40 s per block now; the inner loops are Python.
-  3. The transmitted static image.
-  4. The production apply: march over all pairs, plus a local correction `closed(static) − grid(static)`
-     for the touching image pairs.
+  3. The production apply: march over all pairs, plus a local correction `closed(static) − grid(static)`
+     for the touching image and transmission pairs.
 
 ## 1. Goal
 

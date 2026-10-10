@@ -100,7 +100,8 @@ centre, evanescent waves included, with no far-field approximation: the largest 
 section, relative to its peak, is $1.7\times10^{-6}$ with cells of degree two and $1.2\times10^{-4}$ with
 cells of degree one. The blocks extend to cells at a welded interface between two media: the
 static image of the interface, Kelvin's image with Mindlin's logarithmic terms written as a line of
-images, gives their singular part in closed form, and the plane waves carry the remainder.
+images, and the static field transmitted across it give their singular part in closed form, and the plane
+waves carry the remainder.
 \end{abstract}
 
 % =====================================================================================================
@@ -171,7 +172,8 @@ forty-digit reference, and give the evaluation in a Legendre basis with its accu
 \emph{multipole} means here, \S\ref{sec:distant} couples cells that do not touch, and \S\ref{sec:sweep}
 separates what is computed once from what each frequency costs. Section~\ref{sec:fmm} relates the work to
 the fast multipole method. Section~\ref{sec:interface} extends the blocks to cells at a welded
-interface, through the static image of the interface in closed form. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
+interface, through the static image of the interface and the static field transmitted across it, both in
+closed form. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
 model of a graded sphere in powers of the frequency, \S\ref{sec:taup} sums them over a band of frequencies
 into a $\tau$--$p$ seismogram of the same sphere, and \S\ref{sec:why} sets out why the coefficients are
 evaluated in closed form rather than by quadrature.
@@ -922,7 +924,7 @@ divides into eight cubes, so cubic cells are the leaves of an octree, the tree o
 method in three dimensions; if cells are refined where the medium varies fastest, the tree becomes the
 natural structure, and its coupling blocks are those of this paper. That is an outlook, not a result.
 
-\section{Cells at a welded interface: the static image}\label{sec:interface}
+\section{Cells at a welded interface}\label{sec:interface}
 
 In a stratified reference medium the Green's tensor of a layer is that of a homogeneous medium plus the
 waves reflected and transmitted at the interfaces. Away from the interfaces the added part is smooth, and
@@ -1083,9 +1085,27 @@ contraction of the corner moments with the weights in the power basis about the 
 touching blocks reaches $2.3\times10^{-8}$, limited by the slow convergence of the Fourier integral. The
 Legendre basis of \S\ref{sec:stable} has not yet been applied to the image pieces.
 
-\paragraph{What remains.} The transmitted image, for cells touching across the interface, follows the same
-route with the field in B; it has not been carried out. The dynamic remainder of the reflected kernel, the
-reflected kernel less its static image, is smooth, and is left to the plane waves of
+\paragraph{Cells on opposite sides.} For a source in A and a field cell in B the static coupling is the field
+transmitted into B, the whole of it, with no direct part. In the lateral-wavenumber domain every entry is
+$\mathrm e^{-q(z-z')}/q$ times a polynomial in $qz$ and $qz'$, so the same potentials
+\eqref{eq:potentials} apply with $\zeta=z-z'=|z|+|z'|$, the singular point being where the two cells
+touch at the interface. The transmitted field has $275$ canonical terms in $46$ families, integrable at
+that point as the image's are. In the $s$-form the vertical weight is now a cross-correlation in
+$v-v'$, like the lateral ones, and the corner moments are those above. A field cell in A with a source in
+B, and two cells in B, are the same problems mirrored in $z$ with the media exchanged: the
+displacement $u_z$ and the shear strains $\gamma_{zx}$, $\gamma_{zy}$ change sign, and each cell
+polynomial by $(-1)$ to its power of $\xi_z$. For identical media the transmitted field is Kelvin's, and
+the blocks across the interface must then be the touching blocks of this paper. They are, to
+$1.9\times10^{-15}$, $3.1\times10^{-15}$ and $6.7\times10^{-15}$ at face, edge and corner contact, to
+$4.3\times10^{-15}$ mirrored, and to $7.6\times10^{-15}$ and $3.9\times10^{-15}$ with degree-two fields and
+$20$ and $35$ source monomials, while the image vanishes identically. For different media the canonical
+terms agree with direct Fourier integration of the spectral kernel to $7.8\times10^{-13}$ and
+$6.6\times10^{-13}$, and the blocks of cells that do not touch with a tensor Gauss rule over both cells to
+$1.7\times10^{-13}$ to $5.0\times10^{-13}$, the accuracy of that rule. The dynamic transmitted kernel,
+computed from the transmission coefficients, tends to the static one as $(\omega/\beta q)^2$.
+
+\paragraph{What remains.} The dynamic remainder of the reflected and transmitted kernels, each less its
+static part, is smooth, and is left to the plane waves of
 \eqref{eq:modeblock}, whose interface operators are those of a stratified reference
 \citep{Kennett1983}. Applied over a stack of layers by recursion, as in the reflectivity method, they give
 the coupling of every cell with every other through the stratified reference medium without tabulating its
@@ -1489,7 +1509,8 @@ sweep, \path{scripts/measure_frequency_sweep_cost.py}; and the graded sphere pow
 \path{cubic_scattering/graded_voxel/farfield.py} and the exact plane-wave spectrum
 \path{scripts/gate_sphere_plane_wave_spectrum.py} and the outputs in \path{scratch/taup/}; and the interface
 image, \path{Mathematica/StaticInterfaceImage.wl}, \path{Mathematica/StaticImageSpace.wl} and
-\path{Mathematica/ImageCornerMoments.wl} with their Python twins \path{scripts/derive_static_interface_image.py},
+\path{Mathematica/ImageCornerMoments.wl} and \path{Mathematica/StaticInterfaceTransmission.wl} with their
+Python twins \path{scripts/derive_static_interface_transmission.py}, \path{scripts/derive_static_interface_image.py},
 \path{scripts/derive_static_image_space.py}, \path{scripts/derive_interface_image_terms.py} and
 \path{scripts/derive_image_corner_moments.py}, the blocks \path{cubic_scattering/interface_image.py} and
 \path{cubic_scattering/image_moments.py}, the plane-wave form \path{cubic_scattering/stratified_march.py}, and

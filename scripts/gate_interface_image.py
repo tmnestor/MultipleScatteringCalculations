@@ -22,6 +22,16 @@ I3  THE TOUCHING BLOCK, END TO END (recorded, not re-run: an hour).  A cell touc
     while the engine does not move (face rule of order 32 or 64).  An earlier 4e-4 was the reference's own
     64-point azimuth rule.
 
+T1  THE TRANSMISSION, IDENTICAL MEDIA.  With A = B the transmitted static field is Kelvin's, so a block across
+    the interface must be Paper 2's static block (``graded_voxel.blocks.coupling_block`` at omega = 1e-6, real
+    part) -- the touching corner at the interface included.  Measured, 10 October 2026:
+        face 1.9e-15, edge 3.1e-15, corner 6.7e-15 (receiver below, p<=1, 10 sources); receiver above (the
+        mirror) 4.3e-15; mirror, corner, p=2, 20 sources 7.6e-15; face, p=2, 35 sources 3.9e-15.
+    And the image vanishes identically for A = B, on both sides.
+T2  THE TRANSMISSION, DIFFERENT MEDIA.  The canonical kernel against direct 2-D Fourier integration of the
+    spectral one (scripts/data/static_interface_transmission.json): 7.8e-13 and 6.6e-13.  Non-touching blocks
+    against brute-force 6-D Gauss (order 10): 2.1e-13, 1.7e-13, 5.0e-13.
+
 By default one case of each is run; ``--full`` runs all of them (tanh-sinh at 15 digits takes up to an hour
 for the fourth derivatives).
 
@@ -95,7 +105,9 @@ def gate_corner(case: tuple) -> bool:
     return ok
 
 
-def brute_block(rc: tuple, sc: tuple, n_source: int, n_test: int, n: int) -> np.ndarray:
+def brute_block(
+    rc: tuple, sc: tuple, n_source: int, n_test: int, n: int, kind: str = "reflected"
+) -> np.ndarray:
     """The block by a tensor Gauss rule of order n over both cells (non-touching cells only)."""
     x, w = leggauss(n)
     v = np.stack(np.meshgrid(x, x, x, indexing="ij"), -1).reshape(-1, 3)
@@ -103,7 +115,7 @@ def brute_block(rc: tuple, sc: tuple, n_source: int, n_test: int, n: int) -> np.
     xr = np.array(rc, float) * H + H * v
     xs = np.array(sc, float) * H + H * v
     z, zp = xr[:, 0][:, None], xs[:, 0][None, :]
-    zeta = -(z + zp)
+    zeta = -(z + zp) if kind == "reflected" else z - zp
     rx = xr[:, 1][:, None] - xs[:, 1][None, :]
     ry = xr[:, 2][:, None] - xs[:, 2][None, :]
     fa = np.array(
@@ -121,7 +133,7 @@ def brute_block(rc: tuple, sc: tuple, n_source: int, n_test: int, n: int) -> np.
     mats = (A.lam, A.mu, B.lam, B.mu)
     out = np.zeros((n_test, n_source, 9, 9))
     cache = {}
-    for r, c, j, alpha, ap, bp, fn in _terms():
+    for r, c, j, alpha, ap, bp, fn in _terms(kind):
         key = (j, alpha, ap, bp)
         if key not in cache:
             k = kernel_function(j, alpha)(rx, ry, zeta) * z**ap * zp**bp
@@ -143,8 +155,43 @@ def gate_block(case: tuple) -> bool:
     return ok
 
 
+def gate_transmission_identical(
+    rc: tuple, sc: tuple, ns: int = 10, nt: int = 4
+) -> bool:
+    """T1 for one pair across the interface, with identical media."""
+    from cubic_scattering.graded_voxel.blocks import coupling_block
+
+    off = tuple((a - b) // 2 for a, b in zip(rc, sc, strict=True))
+    got = image_block(rc, sc, H, A, A, n_source=ns, n_test=nt)
+    ref = coupling_block(off, H, 1e-6, A, n_source=ns, n_test=nt).real
+    err = np.abs(got - ref).max() / np.abs(ref).max()
+    ok = err < 1e-13
+    print(f"T1  identical media {rc} <- {sc}: {err:.1e}  {'PASS' if ok else 'FAIL'}")
+    return ok
+
+
+def gate_transmission_brute(rc: tuple, sc: tuple, ns: int = 10, nt: int = 4) -> bool:
+    """T2 for one non-touching pair across the interface, different media."""
+    got = image_block(rc, sc, H, A, B, n_source=ns, n_test=nt)
+    ref = brute_block(rc, sc, ns, nt, 10, kind="transmitted")
+    err = np.abs(got - ref).max() / np.abs(ref).max()
+    ok = err < 1e-11
+    print(
+        f"T2  {rc} <- {sc}, {nt} field x {ns} source: {err:.1e}  {'PASS' if ok else 'FAIL'}"
+    )
+    return ok
+
+
 if __name__ == "__main__":
     full = "--full" in sys.argv
     results = [gate_corner(c) for c in (CORNERS if full else CORNERS[:1])]
     results += [gate_block(b) for b in (BLOCKS if full else BLOCKS[:1])]
+    results += [gate_transmission_identical((1, 0, 0), (-1, 0, 0))]
+    results += [gate_transmission_brute((1, 0, 0), (-3, 0, 0))]
+    if full:
+        results += [
+            gate_transmission_identical((1, 0, 0), (-1, 2, -2)),
+            gate_transmission_identical((-1, 0, 0), (1, 0, 0)),
+        ]
+        results += [gate_transmission_brute((3, 2, 0), (-1, 0, 0))]
     print("ALL PASS" if all(results) else "FAILURES")
