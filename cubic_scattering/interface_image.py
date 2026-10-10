@@ -41,7 +41,7 @@ from pathlib import Path
 
 import numpy as np
 import sympy as sp
-from numpy.polynomial.legendre import leggauss, leg2poly
+from numpy.polynomial.legendre import leg2poly, leggauss
 from numpy.typing import NDArray
 
 from .effective_contrasts import ReferenceMedium
