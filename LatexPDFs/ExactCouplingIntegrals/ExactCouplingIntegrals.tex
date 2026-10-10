@@ -939,8 +939,8 @@ exact. Written mode by mode it reads
 over the P, SV and SH waves travelling from the source plane to the field plane, with
 $\mathbf k_m=(\pm k_{z,m},\mathbf k)$, $\mathbf d_m$ the displacement and engineering strain of the wave of
 unit polarisation (unit in the bilinear sense, $\mathbf e\cdot\mathbf e=1$, which continues into the
-evanescent range), and $\mathbf M=\operatorname{diag}(1,1,1,1,1,1,\tfrac12,\tfrac12,\tfrac12)$ the pairing
-of the engineering-stress source entries with the engineering-strain state. The source factor is the field
+evanescent range), and $\mathbf M$ the diagonal pairing of the engineering-stress source entries with the
+engineering-strain state, $1$ on the first six entries and $\tfrac12$ on the three shears. The source factor is the field
 factor transposed, as reciprocity requires. Against the residue form of the plane-to-plane kernel the
 spectrum in \eqref{eq:modeblock} agrees to $3\times10^{-15}$, evanescent waves and complex frequencies
 included; and integrated over $\mathbf k$, it reproduces the blocks of this paper between cells in
@@ -981,8 +981,10 @@ the distance to the image point, the transform to space follows from
 \begin{equation}\label{eq:imagetransform}
   \frac{1}{4\pi^2}\int\dd^2k\;\mathrm e^{\mathrm i\mathbf k\cdot\boldsymbol\rho}\,q^{m}\mathrm e^{-q\zeta}
   =\begin{cases}(-\partial_\zeta)^{m+1}\Phi_0,&m\ge-1,\\ \Phi_1,&m=-2,\\ \Phi_2,&m=-3,\end{cases}
-  \qquad
-  \Phi_0=\frac{1}{2\pi R},\quad\Phi_1=-\frac{\log(R+\zeta)}{2\pi},\quad\Phi_2=\frac{\zeta\log(R+\zeta)-R}{2\pi},
+\end{equation}
+with the three potentials
+\begin{equation}\label{eq:potentials}
+  \Phi_0=\frac{1}{2\pi R},\qquad\Phi_1=-\frac{\log(R+\zeta)}{2\pi},\qquad\Phi_2=\frac{\zeta\log(R+\zeta)-R}{2\pi},
 \end{equation}
 each potential the $\zeta$-antiderivative of the one before ($\partial_\zeta\Phi_1=-\Phi_0$,
 $\partial_\zeta\Phi_2=-\Phi_1$), with a factor $\mathrm i\hat k_h$ becoming $\partial_{\rho_h}$ on the
