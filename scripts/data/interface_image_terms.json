@@ -1,0 +1,4106 @@
+{
+"variables": [
+"lamA",
+"muA",
+"lamB",
+"muB"
+],
+"terms": [
+[
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**2 - lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB - lamA**2*muB**3 + 4*lamA*lamB*muA**3 - 6*lamA*lamB*muA*muB**2 + 12*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 - 6*lamA*muA*muB**3 + 5*lamB*muA**4 - 9*lamB*muA**2*muB**2 + 15*muA**4*muB - 6*muA**3*muB**2 - 9*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA*muB**2 + lamB*muA**2 + 3*muA**2*muB - 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA*muB**2 + lamB*muA**2 + 3*muA**2*muB - 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*muB**2 - lamA*lamB*muB**2 + 3*lamA*muA*muB**2 - lamA*muB**3 + lamB*muA**3 - 3*lamB*muA*muB**2 + 3*muA**3*muB - 3*muA*muB**3)/(2*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+3
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA*muB**2 + lamB*muA**2 + 3*muA**2*muB - 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA*muB**2 + lamB*muA**2 + 3*muA**2*muB - 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA*muB**2 + lamB*muA**2 + 3*muA**2*muB - 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(2*lamA**2*muB**2 - lamA*lamB*muA**2 - lamA*lamB*muB**2 - 3*lamA*muA**2*muB + 8*lamA*muA*muB**2 - lamA*muB**3 - lamB*muA**3 - 3*lamB*muA*muB**2 - 3*muA**3*muB + 6*muA**2*muB**2 - 3*muA*muB**3)/(4*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(2*lamA**2*muB**2 - lamA*lamB*muA**2 - lamA*lamB*muB**2 - 3*lamA*muA**2*muB + 8*lamA*muA*muB**2 - lamA*muB**3 - lamB*muA**3 - 3*lamB*muA*muB**2 - 3*muA**3*muB + 6*muA**2*muB**2 - 3*muA*muB**3)/(4*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA*muB**2 - lamB*muA**2 - 3*muA**2*muB + 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA*muB**2 - lamB*muA**2 - 3*muA**2*muB + 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*muB**2 + lamA*lamB*muB**2 - 3*lamA*muA*muB**2 + lamA*muB**3 - lamB*muA**3 + 3*lamB*muA*muB**2 - 3*muA**3*muB + 3*muA*muB**3)/(2*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+3
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 + 2*lamA*lamB*muA*muB**2 - 6*lamA*muA**2*muB**2 + 2*lamA*muA*muB**3 - lamB*muA**4 + 5*lamB*muA**2*muB**2 - 3*muA**4*muB - 2*muA**3*muB**2 + 5*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+3
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+3
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+0,
+4
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - lamA*lamB*muA**3 + 3*lamA*lamB*muA*muB**2 - 3*lamA*muA**3*muB - 4*lamA*muA**2*muB**2 + 3*lamA*muA*muB**3 + 4*lamB*muA**2*muB**2 - 4*muA**3*muB**2 + 4*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+3
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - lamA*lamB*muA**3 + 3*lamA*lamB*muA*muB**2 - 3*lamA*muA**3*muB - 4*lamA*muA**2*muB**2 + 3*lamA*muA*muB**3 + 4*lamB*muA**2*muB**2 - 4*muA**3*muB**2 + 4*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+3
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA*muB**2 - lamB*muA**2 - 3*muA**2*muB + 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+4,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+4,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+4,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+4,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA*muB**2 - lamB*muA**2 - 3*muA**2*muB + 3*muA*muB**2)/(2*(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(4*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+4,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+4,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+4,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+0,
+4,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(4*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(2*(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4))"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA*muB**2 - lamB*muA**2 - 3*muA**2*muB + 3*muA*muB**2)/(lamA*lamB*muA**2 + 2*lamA*lamB*muA*muB + lamA*lamB*muB**2 + 3*lamA*muA**2*muB + 4*lamA*muA*muB**2 + lamA*muB**3 + lamB*muA**3 + 4*lamB*muA**2*muB + 3*lamB*muA*muB**2 + 3*muA**3*muB + 10*muA**2*muB**2 + 3*muA*muB**3)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(2*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(2*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-lamA**2*lamB*muA**2 + lamA**2*lamB*muB**2 - 3*lamA**2*muA**2*muB + lamA**2*muB**3 - 2*lamA*lamB*muA**3 + 4*lamA*lamB*muA*muB**2 - 6*lamA*muA**3*muB - 2*lamA*muA**2*muB**2 + 4*lamA*muA*muB**3 + lamB*muA**4 + 3*lamB*muA**2*muB**2 + 3*muA**4*muB - 6*muA**3*muB**2 + 3*muA**2*muB**3)/(2*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+3,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(2*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+1,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(2*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 2,
+"alpha": [
+2,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB - lamA**2*muA**2*muB**2 - 5*lamA**2*muA*muB**3 - lamA**2*muB**4 + 2*lamA*lamB*muA**4 + 6*lamA*lamB*muA**3*muB - 4*lamA*lamB*muA*muB**3 + 6*lamA*muA**4*muB + 8*lamA*muA**3*muB**2 - 18*lamA*muA**2*muB**3 - 4*lamA*muA*muB**4 - lamB*muA**5 + 7*lamB*muA**4*muB + 5*lamB*muA**3*muB**2 - 3*lamB*muA**2*muB**3 - 3*muA**5*muB + 19*muA**4*muB**2 - 13*muA**3*muB**3 - 3*muA**2*muB**4)/(2*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(muA - muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(lamA*muA*muB + lamA*muB**2 - lamB*muA**2 - lamB*muA*muB - 2*muA**2*muB + 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(2*lamA**2*muB**2 - lamA*lamB*muA**2 - lamA*lamB*muB**2 - 3*lamA*muA**2*muB + 8*lamA*muA*muB**2 - lamA*muB**3 - lamB*muA**3 - 3*lamB*muA*muB**2 - 3*muA**3*muB + 6*muA**2*muB**2 - 3*muA*muB**3)/(2*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**2 - lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB - lamA**2*muB**3 + lamA*lamB*muA**3 - 3*lamA*lamB*muA*muB**2 + 3*lamA*muA**3*muB + 4*lamA*muA**2*muB**2 - 3*lamA*muA*muB**3 - 4*lamB*muA**2*muB**2 + 4*muA**3*muB**2 - 4*muA**2*muB**3)/(2*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+2
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+1,
+3
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+3,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+0,
+3,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 5*lamA**2*muA**2*muB**2 + lamA**2*muA*muB**3 - lamA**2*muB**4 + lamA*lamB*muA**4 - lamA*lamB*muA**3*muB - 5*lamA*lamB*muA**2*muB**2 - 3*lamA*lamB*muA*muB**3 + 3*lamA*muA**4*muB + 7*lamA*muA**3*muB**2 + 9*lamA*muA**2*muB**3 - 3*lamA*muA*muB**4 - 4*lamB*muA**4*muB - 8*lamB*muA**3*muB**2 - 4*lamB*muA**2*muB**3 - 4*muA**4*muB**2 + 8*muA**3*muB**3 - 4*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+0,
+2,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 5*lamA**2*muA**2*muB**2 + lamA**2*muA*muB**3 - lamA**2*muB**4 + lamA*lamB*muA**4 - lamA*lamB*muA**3*muB - 5*lamA*lamB*muA**2*muB**2 - 3*lamA*lamB*muA*muB**3 + 3*lamA*muA**4*muB + 7*lamA*muA**3*muB**2 + 9*lamA*muA**2*muB**3 - 3*lamA*muA*muB**4 - 4*lamB*muA**4*muB - 8*lamB*muA**3*muB**2 - 4*lamB*muA**2*muB**3 - 4*muA**4*muB**2 + 8*muA**3*muB**3 - 4*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+]
+],
+[
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(2*lamA**2*muB**2 - lamA*lamB*muA**2 - lamA*lamB*muB**2 - 3*lamA*muA**2*muB + 8*lamA*muA*muB**2 - lamA*muB**3 - lamB*muA**3 - 3*lamB*muA*muB**2 - 3*muA**3*muB + 6*muA**2*muB**2 - 3*muA*muB**3)/(2*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(lamA**2*muA - lamA**2*muB + 4*lamA*muA**2 - 4*lamA*muA*muB + 3*muA**3 - 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**2 - lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB - lamA**2*muB**3 + lamA*lamB*muA**3 - 3*lamA*lamB*muA*muB**2 + 3*lamA*muA**3*muB + 4*lamA*muA**2*muB**2 - 3*lamA*muA*muB**3 - 4*lamB*muA**2*muB**2 + 4*muA**3*muB**2 - 4*muA**2*muB**3)/(2*muA*(lamA**2*lamB*muA**2 + 2*lamA**2*lamB*muA*muB + lamA**2*lamB*muB**2 + 3*lamA**2*muA**2*muB + 4*lamA**2*muA*muB**2 + lamA**2*muB**3 + 3*lamA*lamB*muA**3 + 8*lamA*lamB*muA**2*muB + 5*lamA*lamB*muA*muB**2 + 9*lamA*muA**3*muB + 18*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + 2*lamB*muA**4 + 8*lamB*muA**3*muB + 6*lamB*muA**2*muB**2 + 6*muA**4*muB + 20*muA**3*muB**2 + 6*muA**2*muB**3))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB + muA**3 - muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+2
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+0,
+3
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(2*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+3,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+3,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+2,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+1,
+2,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 4*lamA*muA**2 + 4*lamA*muA*muB - 3*muA**3 + 3*muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 1,
+"alpha": [
+2,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "muB*(-lamA*muA*muB - lamA*muB**2 + lamB*muA**2 + lamB*muA*muB + 2*muA**2*muB - 2*muA*muB**2)/(lamA*lamB*muA**3 + 3*lamA*lamB*muA**2*muB + 3*lamA*lamB*muA*muB**2 + lamA*lamB*muB**3 + 3*lamA*muA**3*muB + 7*lamA*muA**2*muB**2 + 5*lamA*muA*muB**3 + lamA*muB**4 + lamB*muA**4 + 5*lamB*muA**3*muB + 7*lamB*muA**2*muB**2 + 3*lamB*muA*muB**3 + 3*muA**4*muB + 13*muA**3*muB**2 + 13*muA**2*muB**3 + 3*muA*muB**4)"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+1,
+1,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 5*lamA**2*muA**2*muB**2 + lamA**2*muA*muB**3 - lamA**2*muB**4 + lamA*lamB*muA**4 - lamA*lamB*muA**3*muB - 5*lamA*lamB*muA**2*muB**2 - 3*lamA*lamB*muA*muB**3 + 3*lamA*muA**4*muB + 7*lamA*muA**3*muB**2 + 9*lamA*muA**2*muB**3 - 3*lamA*muA*muB**4 - 4*lamB*muA**4*muB - 8*lamB*muA**3*muB**2 - 4*lamB*muA**2*muB**3 - 4*muA**4*muB**2 + 8*muA**3*muB**3 - 4*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+1,
+1,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+],
+[
+{
+"j": 0,
+"alpha": [
+0,
+0,
+2
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(-muA + muB)/(4*muA*(muA + muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+0
+],
+"z_power": 0,
+"zp_power": 0,
+"coef": "(lamA**2*lamB*muA**3 + lamA**2*lamB*muA**2*muB - lamA**2*lamB*muA*muB**2 - lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 5*lamA**2*muA**2*muB**2 + lamA**2*muA*muB**3 - lamA**2*muB**4 + lamA*lamB*muA**4 - lamA*lamB*muA**3*muB - 5*lamA*lamB*muA**2*muB**2 - 3*lamA*lamB*muA*muB**3 + 3*lamA*muA**4*muB + 7*lamA*muA**3*muB**2 + 9*lamA*muA**2*muB**3 - 3*lamA*muA*muB**4 - 4*lamB*muA**4*muB - 8*lamB*muA**3*muB**2 - 4*lamB*muA**2*muB**3 - 4*muA**4*muB**2 + 8*muA**3*muB**3 - 4*muA**2*muB**4)/(4*muA*(lamA**2*lamB*muA**3 + 3*lamA**2*lamB*muA**2*muB + 3*lamA**2*lamB*muA*muB**2 + lamA**2*lamB*muB**3 + 3*lamA**2*muA**3*muB + 7*lamA**2*muA**2*muB**2 + 5*lamA**2*muA*muB**3 + lamA**2*muB**4 + 3*lamA*lamB*muA**4 + 11*lamA*lamB*muA**3*muB + 13*lamA*lamB*muA**2*muB**2 + 5*lamA*lamB*muA*muB**3 + 9*lamA*muA**4*muB + 27*lamA*muA**3*muB**2 + 23*lamA*muA**2*muB**3 + 5*lamA*muA*muB**4 + 2*lamB*muA**5 + 10*lamB*muA**4*muB + 14*lamB*muA**3*muB**2 + 6*lamB*muA**2*muB**3 + 6*muA**5*muB + 26*muA**4*muB**2 + 26*muA**3*muB**3 + 6*muA**2*muB**4))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 1,
+"zp_power": 0,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+1
+],
+"z_power": 0,
+"zp_power": 1,
+"coef": "(-lamA**2*muA + lamA**2*muB - 2*lamA*muA**2 + 2*lamA*muA*muB - muA**3 + muA**2*muB)/(2*muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+},
+{
+"j": 0,
+"alpha": [
+2,
+0,
+2
+],
+"z_power": 1,
+"zp_power": 1,
+"coef": "(lamA**2*muA - lamA**2*muB + 2*lamA*muA**2 - 2*lamA*muA*muB + muA**3 - muA**2*muB)/(muA*(lamA**2*muA + lamA**2*muB + 3*lamA*muA**2 + 5*lamA*muA*muB + 2*muA**3 + 6*muA**2*muB))"
+}
+]
+]
+]
+}
