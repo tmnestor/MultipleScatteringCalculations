@@ -36,6 +36,29 @@ it. So `K^rev` is not smooth for any cell adjacent to an interface, and the mode
 those pairs (§3, "The risk", is wider than stated there). This needs a near-interface treatment,
 decided before step 3.
 
+**Decision (user, 10 October): option 1, static images in closed form.** No restriction keeping contrast
+away from interfaces.
+
+**10 October, later: interface R/T and the static image** (commit d341856):
+- **Interface R/T.** `interface_rt` and `reflected_spectrum` in the 9-state modes, checked by value: the
+  SH reflection `(μ₁k_z1 − μ₂k_z2)/(μ₁k_z1 + μ₂k_z2)` at oblique incidence to 4e-16, the normal-incidence
+  P impedance formulas, and the identity for equal media.
+- **The static image.** The reflected kernel of a welded interface (Rongved's problem, in the
+  lateral-wavenumber domain) is derived by sympy in `scripts/derive_static_interface_image.py`, twin of
+  `Mathematica/StaticInterfaceImage.wl`. The dynamic reflected kernel tends to it as `(ω/βq)²`.
+- **The measurement that decided it.** For a cell touching the interface coupled to its own image (p = 0),
+  the change in the wavenumber integral between successive fourfold cutoffs was:
+  - **total:** 7.5e-3 (Qh 10 → 40), then 1.1e-4 (40 → 160). Algebraic, about `Q⁻³`.
+  - **static subtracted:** 4.8e-5, then 5.1e-8. About `Q⁻⁵`; 1e-10 near `Qh ≈ 400`.
+- **Still to measure:** p = 1, 2; the strain–strain rows; transmission across the interface.
+
+**Next: the Mathematica phase.**
+1. Transform the static image kernel to space: `1/R̄` terms (Paper 2's master integrals) and Mindlin-type
+   `1/(R̄ + ζ)` terms, which need new master integrals.
+2. Integrate it over a cell × the mirror image of a cell in closed form, with Paper 2's s-form. The
+   factors of `z` and `z′` that multiply the image terms are absorbed into the cell polynomials.
+3. The same for the transmitted static field.
+
 ## 1. Goal
 
 Solve the Legendre-cell voxel scheme of Papers 1 and 2 with a **stratified** reference medium. This is
