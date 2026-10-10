@@ -59,6 +59,35 @@ away from interfaces.
    factors of `z` and `z′` that multiply the image terms are absorbed into the cell polynomials.
 3. The same for the transmitted static field.
 
+**Route A (user, 10 October): new master integrals for the Mindlin potentials.**
+
+**10 October, later: the static image in space, and its blocks.**
+- **In space** (`scripts/derive_static_image_space.py`, twin of `Mathematica/StaticImageSpace.wl`).
+  Derivatives of `Φ₀ = 1/(2πR̄)`, `Φ₁ = −log(R̄+ζ)/(2π)` and `Φ₂ = (ζ log(R̄+ζ) − R̄)/(2π)`,
+  `ζ = −(z+z′)`, with polynomial factors in `z`, `z′`. Checked against direct 2-D Fourier integration of
+  the Mathematica spectral kernel to 7e-13 – 1.3e-12.
+- **As canonical terms** (`scripts/derive_interface_image_terms.py`). 356 terms
+  `c(materials) z^A z′^B ∂^α Φ_j` in 61 kernel families: Φ₀ under up to four derivatives, and Φ₁, Φ₂ under
+  lateral derivatives only (ζ-derivatives step them down). All homogeneous. Checked against direct
+  differentiation to 3e-15. At the touching corner every term is integrable: the weight vanishes as
+  `ζ^(1+A+B)`, and the worst integrand is `O(R̄⁻²)`.
+- **The block engine** (`cubic_scattering/interface_image.py`, gate `scripts/gate_interface_image.py`).
+  - **Method.** The s-form with exact rational weights. On the piece holding the singular corner, Euler's
+    identity reduces the volume to the three far faces, which are smooth. Every other piece uses Gauss
+    rules in centred coordinates.
+  - **Corner check.** Against tanh-sinh quadrature of the singular volume integral: 6e-16 – 4.8e-14, over
+    7 cases (all three potentials, up to fourth derivatives, both box orientations).
+  - **Block check.** Whole non-touching blocks against brute-force 6-D Gauss: 3e-15 – 8.5e-15, over 4
+    pairs (p = 0, 1, 2; vertical, lateral, diagonal offsets).
+  - **Still running:** a touching block end to end, against the 2-D Fourier integral of the static
+    spectrum.
+- **Next.**
+  1. Closed forms for the face integrals (`.wl`), which replace the Gauss rules on the faces.
+  2. Speed. About 25–40 s per block now; the inner loops are Python.
+  3. The transmitted static image.
+  4. The production apply: march over all pairs, plus a local correction `closed(static) − grid(static)`
+     for the touching image pairs.
+
 ## 1. Goal
 
 Solve the Legendre-cell voxel scheme of Papers 1 and 2 with a **stratified** reference medium. This is
