@@ -118,8 +118,10 @@ away from interfaces.
       three independent routes that agree with ours to 30 digits: Paper 2's master integral, the closed form,
       and exact 1-D integration plus 2-D tanh-sinh. The cause is a direct 3-D `NIntegrate` with the singular
       point at a corner, or over a semi-infinite column, silently missing its goal.
-    - The `.wl` now integrates one variable exactly first and uses Duffy coordinates. The run's JSON is not
-      committed and awaits the rerun.
+    - The `.wl` now integrates one variable exactly first and uses Duffy coordinates.
+  - **`ImageCornerMoments.wl`, rerun.** All 13 references and B₂ agree with ours to 1.6e-16 – 4.9e-23,
+    and B₁ to 6e-32. That is `NIntegrate`'s accuracy: the exactly known reference is off by 1.4e-17, while
+    ours do not move between 40 and 70 digits (1e-39).
 - **Next.**
   1. Closed forms of B₁ and B₂ (`ImageCornerMoments.wl`).
   2. Speed. About 25–40 s per block now; the inner loops are Python.
