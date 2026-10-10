@@ -105,6 +105,21 @@ away from interfaces.
     1.7e-13 – 5.0e-13.
   - **The dynamic limit.** The dynamic transmitted kernel tends to the static one as `(ω/βq)²`.
   - Gates T1 and T2 are in `scripts/gate_interface_image.py`, and Paper 2 §11 is updated.
+- **The Mathematica runs.**
+  - **`StaticInterfaceTransmission.wl`.** Spectral kernel against sympy: 4.2e-16. Its spatial form against
+    `NIntegrate` of the Fourier integral: 3.9e-16. The transmitted terms regenerated from it are identical
+    to the sympy-derived ones (275 terms, coefficient difference exactly 0).
+  - **`ImageCornerMoments.wl`, first run.**
+    - The line-of-images identities hold symbolically.
+    - B₁ came out as Catalan's constant and dilogarithms, plus one remaining angular integral
+      `∫_{π/4}^{π/2} log((1+√(1+csc²θ))/2) dθ`. Its value agrees with ours to 20 digits.
+    - B₂ gave no closed form.
+    - **Its `NIntegrate` references were wrong** (1e-12 to 5e-7), and so was B₂ (1.7e-8). Against them stand
+      three independent routes that agree with ours to 30 digits: Paper 2's master integral, the closed form,
+      and exact 1-D integration plus 2-D tanh-sinh. The cause is a direct 3-D `NIntegrate` with the singular
+      point at a corner, or over a semi-infinite column, silently missing its goal.
+    - The `.wl` now integrates one variable exactly first and uses Duffy coordinates. The run's JSON is not
+      committed and awaits the rerun.
 - **Next.**
   1. Closed forms of B₁ and B₂ (`ImageCornerMoments.wl`).
   2. Speed. About 25–40 s per block now; the inner loops are Python.

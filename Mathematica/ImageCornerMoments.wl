@@ -69,8 +69,12 @@ b1closed = TimeConstrained[
 b2closed = TimeConstrained[
    Simplify[polar[Function[{th, r}, Cos[th] Sin[th] (g2[r, c] - g2[0, c])], a, b] /. {a -> 2, b -> 2, c -> 2}],
    1800, $Failed];
-b1num = NIntegrate[R[x, y, z]^-3, {x, 0, 2}, {y, 0, 2}, {z, 2, Infinity}, WorkingPrecision -> 40, PrecisionGoal -> 30];
-b2num = NIntegrate[x y R[x, y, z]^-5, {x, 0, 2}, {y, 0, 2}, {z, 2, Infinity}, WorkingPrecision -> 40, PrecisionGoal -> 30];
+(* The t integral exactly first: a direct three-dimensional NIntegrate over the semi-infinite column misses
+   its precision goal silently (B2 was wrong at 1.7e-8 in the first run, B1 at 1.5e-15). *)
+tB1 = Simplify[Integrate[(x^2 + y^2 + t^2)^(-3/2), {t, 2, Infinity}], x > 0 && y > 0];
+tB2 = Simplify[Integrate[x y (x^2 + y^2 + t^2)^(-5/2), {t, 2, Infinity}], x > 0 && y > 0];
+b1num = NIntegrate[tB1, {x, 0, 2}, {y, 0, 2}, WorkingPrecision -> 40, PrecisionGoal -> 30, MaxRecursion -> 40];
+b2num = NIntegrate[tB2, {x, 0, 2}, {y, 0, 2}, WorkingPrecision -> 40, PrecisionGoal -> 30, MaxRecursion -> 40];
 Print["B1 closed: ", b1closed, "  = ", If[b1closed === $Failed, "-", N[b1closed, 30]], "   NIntegrate: ", b1num];
 Print["B2 closed: ", b2closed, "  = ", If[b2closed === $Failed, "-", N[b2closed, 30]], "   NIntegrate: ", b2num];
 
@@ -89,11 +93,19 @@ cases = {
    {2, {2, 0, 0}, {0, 0, 0}, {1, 1}},       (* a degree-zero column *)
    {2, {4, 0, 0}, {0, 0, 2}, {1, 1}},
    {2, {2, 2, 0}, {1, 1, 1}, {1, 1}}};
-refval[{j_, al_, {p_, q_, r_}, {sx_, sy_}}] := Module[{f},
+(* The zeta integral exactly first, then two dimensions with a Duffy singularity handler at the corner: a
+   direct three-dimensional NIntegrate with the singular point at a corner missed its precision goal silently
+   in the first run (errors from 1e-12 to 5e-7 against three independent routes that agree to 30 digits). *)
+refval[{j_, al_, {p_, q_, r_}, {sx_, sy_}}] := Module[{f, inner},
    f = dphi[j, al] /. {x -> sx u, y -> sy v};
-   NIntegrate[(sx u)^p (sy v)^q zeta^r f, {u, 0, 2}, {v, 0, 2}, {zeta, 0, 2},
-    WorkingPrecision -> 40, PrecisionGoal -> 28, MaxRecursion -> 30]];
+   inner = Simplify[Integrate[zeta^r f, {zeta, 0, 2}, Assumptions -> u > 0 && v > 0], u > 0 && v > 0];
+   NIntegrate[(sx u)^p (sy v)^q inner, {u, 0, 2}, {v, 0, 2},
+    Method -> {"GlobalAdaptive", "SingularityHandler" -> "DuffyCoordinates"},
+    WorkingPrecision -> 40, PrecisionGoal -> 28, MaxRecursion -> 40]];
 refs = refval /@ cases;
+(* the simplest reference has an independent closed form: Paper 2's master integral, 1/(2 Pi) times
+   int over [0,2]^3 of 1/R; graded_voxel.moments.box_integral gives 0.757602154836948200068335430129... *)
+Print["reference 1 (Phi0, no derivative, s^0): ", N[refs[[1]], 30], "  (expected 0.757602154836948200068335430129)"];
 Print["references done"];
 
 Export[FileNameJoin[{dir, "ImageCornerMoments.json"}],
