@@ -1088,11 +1088,23 @@ $\rho_y=b$, away from the singular point, until two base integrals remain,
   B_2=\int_0^a\!\!\int_0^b\!\!\int_c^\infty\rho_x\rho_y\,R^{-5}\,\dd t\,\dd\rho_y\,\dd\rho_x .
 \end{equation}
 In polar coordinates their radial integrals are elementary, $\log(c+\sqrt{r^2+c^2})$ and
-$c/(3\sqrt{r^2+c^2})+\tfrac23\log(c+\sqrt{r^2+c^2})$, leaving one smooth angular integral each. For $B_1$ Mathematica reduces it to Catalan's constant and
-dilogarithms at complex arguments, with one angular integral,
-$\int_{\pi/4}^{\pi/2}\log\bigl(\tfrac12(1+\sqrt{1+\csc^2\theta})\bigr)\,\dd\theta$, left unevaluated; for
-$B_2$ it finds no closed form. These two are therefore evaluated by quadrature at forty digits; every other
-moment is elementary. All the moments are
+$c/(3\sqrt{r^2+c^2})+\tfrac23\log(c+\sqrt{r^2+c^2})$, leaving one smooth angular integral each. Both are of degree zero, so they depend only on the ratios of
+the sides, and the corner boxes here are cubes, $a=b=c$. The two triangles of the square then give equal
+integrals, and
+\begin{equation}\label{eq:B12closed}
+  B_1=\tfrac54\,\mathrm{Cl}_2\bigl(\tfrac\pi3\bigr)-G,\qquad
+  B_2=\tfrac13\log\frac{(1+\sqrt2)^2}{2(1+\sqrt3)},
+\end{equation}
+with $G$ Catalan's constant and $\mathrm{Cl}_2(\theta)=\operatorname{Im}\mathrm{Li}_2(\mathrm e^{\mathrm i\theta})$
+Clausen's function. For $B_1$, $2\int_0^{\pi/4}\log\bigl(\tfrac12(1+\sqrt{1+\sec^2\theta})\bigr)\,\dd\theta$,
+Mathematica returns Catalan's constant and dilogarithms at $\mathrm e^{\pm\mathrm i\pi/12}/\sqrt2$ and
+$\mathrm e^{\pm7\mathrm i\pi/12}/\sqrt2$. Kummer's formula for $\operatorname{Im}\mathrm{Li}_2(r\mathrm e^{\mathrm i\theta})$
+in Clausen functions has the auxiliary angle $\arctan\bigl(r\sin\theta/(1-r\cos\theta)\bigr)=\pi/6$ at both
+points, which leaves $\mathrm{Cl}_2$ at $\pi/6$, $\pi/3$, $\pi/2$ and $5\pi/6$ \citep{Lewin1981}; with
+$\mathrm{Cl}_2(\pi/2)=G$ and the duplication formula $\mathrm{Cl}_2(2\theta)=2\mathrm{Cl}_2(\theta)-2\mathrm{Cl}_2(\pi-\theta)$
+these collapse to Eq.~\eqref{eq:B12closed}. For $B_2$ the substitution $v=\cos^2\theta$ makes the angular
+integral elementary. Both agree with forty-digit quadrature to $10^{-40}$, so every moment is
+elementary apart from the two constants $G$ and $\mathrm{Cl}_2(\pi/3)$. All the moments are
 universal numbers, computed once at forty digits and stored.
 
 \paragraph{Accuracy.} The pieces were checked against routes that share nothing with them.
@@ -1105,7 +1117,7 @@ universal numbers, computed once at forty digits and stored.
   scale $2^{p+q+r}$ of each monomial. $B_1$ and $B_2$ against direct three-dimensional tanh-sinh
   quadrature: twenty digits. Against an independent evaluation in Mathematica, thirteen corner moments
   (all three potentials, up to four derivatives, three of the degenerate columns) and $B_2$: $4.9\times10^{-23}$
-  to $1.6\times10^{-16}$, and $B_1$, by its partial closed form, $6\times10^{-32}$. The residual differences
+  to $1.6\times10^{-16}$, and $B_1$, by Mathematica's reduction to dilogarithms, $6\times10^{-32}$. The residual differences
   are those of the references: the one with a known exact value, a master integral of $1/R$ over the box,
   is off by $1.4\times10^{-17}$, while the closed forms do not change between forty and seventy digits. The
   references integrate one coordinate exactly before a two-dimensional quadrature with Duffy coordinates at

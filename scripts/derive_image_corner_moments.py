@@ -14,6 +14,11 @@ accuracy, 1e-15.  Measured, 10 October 2026: all 13 references and B2 agree to 1
 Mathematica value is a partial closed form, Catalan's constant and dilogarithms with one angular integral left)
 to 6e-32.
 
+Closed forms for the cube (a = b = c; both are scale-free), derived in the session and now used by
+``image_moments``:  B1 = (5/4) Cl2(pi/3) - G  (Catalan's G; Mathematica's dilogarithms collapse by Kummer's
+formula and the duplication formula of Cl2), and the elementary  B2 = (1/3) log((1 + sqrt 2)^2 / (2 (1 + sqrt 3))).
+Both agree with the 40-digit angular quadratures to 1e-40; the .wl checks them on its side.
+
 Run:  PYTHONPATH=. python scripts/derive_image_corner_moments.py
 """
 
@@ -54,6 +59,13 @@ def main() -> None:
         err = abs(mine - _num(m[name])) / abs(mine)
         ok &= err < 1e-15
         print(f"{name}: {mp.nstr(err, 3)}  {'PASS' if err < 1e-15 else 'FAIL'}")
+        if f"{name}_simple" in m:  # the simplified closed forms, (5/4) Cl2(pi/3) - G and the elementary B2
+            err = abs(mine - _num(m[f"{name}_simple"])) / abs(mine)
+            ok &= err < 1e-28
+            print(
+                f"{name} simplified closed form: {mp.nstr(err, 3)}  {'PASS' if err < 1e-28 else 'FAIL'}"
+                f"   (Mathematica's own checks: {m[f'{name}_simple_check']})"
+            )
     for case, ref in zip(m["cases"], m["references"], strict=True):
         j, alpha, n, signs = case
         mine = corner_moment(j, tuple(alpha), tuple(n), (2, 2, 2), tuple(signs))
