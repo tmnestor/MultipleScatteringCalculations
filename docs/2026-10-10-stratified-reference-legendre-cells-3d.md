@@ -79,8 +79,9 @@ away from interfaces.
     7 cases (all three potentials, up to fourth derivatives, both box orientations).
   - **Block check.** Whole non-touching blocks against brute-force 6-D Gauss: 3e-15 – 8.5e-15, over 4
     pairs (p = 0, 1, 2; vertical, lateral, diagonal offsets).
-  - **Still running:** a touching block end to end, against the 2-D Fourier integral of the static
-    spectrum.
+  - **Touching block end to end.** Against the 2-D Fourier integral of the Mathematica static spectrum, the
+    reference approaches the engine as it is refined: 7.9e-6 at Qh = 320, then 1.6e-6, 4.5e-7 and 2.3e-8 at
+    Qh = 20480. The engine does not move.
 - **Next.**
   1. Closed forms for the face integrals (`.wl`), which replace the Gauss rules on the faces.
   2. Speed. About 25–40 s per block now; the inner loops are Python.

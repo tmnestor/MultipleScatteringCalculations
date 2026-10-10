@@ -14,6 +14,14 @@ I2  THE BLOCK.  Whole blocks between non-touching cells against brute-force 6-D 
         (-3,0,0) <- (-1,2,-2) p=2,  20 sources  4.9e-15        (-1,0,0) <- (-1,4,0)   p<=1, 10 sources  3.3e-15
     (brute force converged to 1e-13 between orders 10 and 12).
 
+I3  THE TOUCHING BLOCK, END TO END (recorded, not re-run: an hour).  A cell touching the interface with its
+    own image, entry (field 1, source 1), against the 2-D Fourier integral of the Mathematica static spectral
+    kernel (StaticInterfaceImage.json) times the cells' plane-wave moments, which converges only
+    algebraically.  Refining cutoff and rules together, the reference approaches the engine:
+        Qh = 320: 7.9e-6,   1280: 1.6e-6,   5120: 4.5e-7,   20480: 2.3e-8,
+    while the engine does not move (face rule of order 32 or 64).  An earlier 4e-4 was the reference's own
+    64-point azimuth rule.
+
 By default one case of each is run; ``--full`` runs all of them (tanh-sinh at 15 digits takes up to an hour
 for the fourth derivatives).
 
