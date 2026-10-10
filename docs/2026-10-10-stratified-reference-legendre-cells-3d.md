@@ -11,6 +11,31 @@ wavenumber on `Im ≥ 0`, z = axis 0 (down), x = 1, y = 2, mode order (P↓, SV�
 
 ---
 
+## Progress
+
+**10 October 2026: G1 and G2 pass** (`scripts/gate_march_modes.py`, module
+`cubic_scattering/stratified_march.py`). Mathematica is not installed in the session container; these
+were verified numerically against existing exact arbiters, and the symbolic derivation of §5.1 is still
+owed.
+
+- **G1.** The whole-space plane-to-plane spectrum is exactly `Σ_m w_m e^{ik_z,m|dz|} d_m d_mᵀ M`, with
+  `d_m = mode_state(k_m, e_m)`, `w = i/(2ρc²k_z)` and `M = diag(1,…,1, ½, ½, ½)`. So the source map is
+  the receiver map transposed, as reciprocity says, with no other factor (`W = diag w`). The worst error
+  is 3e-15 against `vertical_kernel_9x9`, over 20 cases, evanescent and complex ω included.
+- **G2.** With Paper 2's closed-form moments on both ends (Legendre field moments `2 iˡ j_l`, monomial
+  moments `F_e(−kh)`), the mode integral reproduces Paper 2's exact blocks (`coupling_block`) to
+  2–6e-13. This holds for p = 0, 1 and 2, with 10, 20 and 35 source monomials, for cells in different,
+  non-touching planes.
+- **Recorded: touching planes do not converge** (errors O(10²)). Once the Galerkin moments are taken
+  there is no exponential decay left, because the moments grow as `e^{κh}` on each side against
+  `e^{−2κh}` of propagation.
+
+**The consequence.** The same holds wherever a cell touches an interface, not only across it. The
+reflection of such a cell, back to itself and to its neighbours, comes from an image cell that **touches**
+it. So `K^rev` is not smooth for any cell adjacent to an interface, and the mode integral cannot carry
+those pairs (§3, "The risk", is wider than stated there). This needs a near-interface treatment,
+decided before step 3.
+
 ## 1. Goal
 
 Solve the Legendre-cell voxel scheme of Papers 1 and 2 with a **stratified** reference medium. This is
