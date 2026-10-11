@@ -4,8 +4,10 @@ Validates:
   1. The vertical exponential moments against direct quadrature, on both branches and both signs
   2. The harmonic form of the 9-state rotation, at azimuths it was not sampled at
   3. The radial rule integrates a square-root branch point to rounding
-  4. Identical media: a transmitted block equals Paper 2's homogeneous block (slow)
-  5. A source in B (mirrored onto A) equals Paper 2's block at the opposite offset (slow)
+  4. The Chebyshev table of the lateral harmonics S_n against direct evaluation, between its nodes
+  5. The frame-and-harmonics route of D against the mode sum at every (q, phi), reflected and transmitted
+  6. Identical media: a transmitted block equals Paper 2's homogeneous block (slow)
+  7. A source in B (mirrored onto A) equals Paper 2's block at the opposite offset (slow)
 """
 
 import mpmath as mp
@@ -46,6 +48,27 @@ def test_radial_rule_branch_point():
     # int_0^3 1/sqrt|q - 1| dq = 2 + 2 sqrt(2)
     x, w = isp.radial_rule(3.0, [1.0], width=0.5)
     assert abs(np.sum(w / np.sqrt(np.abs(x - 1.0))) - (2 + 2 * np.sqrt(2))) < 1e-12
+
+
+@pytest.mark.parametrize("off", [(0, 0), (2, 0), (2, -4)])
+def test_lateral_table(off):
+    tab = isp.lateral_harmonics([off], H, 10.0, n_source=10, n_test=4)
+    qh = np.array([0.0, 0.37, 1.9, 4.444, 7.01, 9.99])
+    got = isp._interpolate(tab[off], qh)
+    exps_f, exps_s = (
+        isp.SOURCE_EXPONENTS_QUARTIC[:4],
+        isp.SOURCE_EXPONENTS_QUARTIC[:10],
+    )
+    ref = np.stack([isp._lateral_harmonics_at(x, off, H, exps_f, exps_s) for x in qh])
+    assert np.abs(got - ref).max() < 1e-13 * np.abs(ref).max()
+
+
+@pytest.mark.parametrize("pair", [((-1, 2, 0), (-1, 0, 0)), ((1, 2, 2), (-1, 0, 0))])
+def test_frame_route_against_direct(pair):
+    new = isp.truncated_blocks([pair], H, 10.0, A, B, q0h=10.0)[0]
+    old = isp._truncated_blocks_direct([pair], H, 10.0, A, B, q0h=10.0)[0]
+    # the reflected mode sums carry ~2e-11 of rounding (P and SV cancel), in either route
+    assert np.abs(new - old).max() < 1e-10 * np.abs(old).max()
 
 
 @pytest.mark.slow

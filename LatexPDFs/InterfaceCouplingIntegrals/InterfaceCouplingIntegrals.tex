@@ -577,6 +577,17 @@ and~\ref{tab:omega2} to $3.6\times10^{-10}$ and $2.2\times10^{-10}$ at the lower
 $5.9\times10^{-11}$ and $3.9\times10^{-11}$ at the higher, the remainders of Table~\ref{tab:omega2} and of
 the transmitted sweep.
 
+The integral below $Q_0$, the only part evaluated at each frequency, is cheapest in the same frame. Its
+integrand is the dynamic frame kernel, rotated, times the cells' lateral moments and phase; the rotation holds
+nine harmonics, so the integral is a sum over radial nodes of the harmonics of the frame kernel, one $6\times6$
+interface solve per node with the cells' vertical moments in closed form, against the azimuthal integrals
+$S_n(q)$ of the lateral moments and phase. These depend on neither the frequency, the media nor the depths of
+the cells: they are tabulated once for each lateral offset, as piecewise Chebyshev series, and interpolated
+to the radial rule of each frequency, whose panel ends follow the branch points $q=\omega/c$. The result agrees
+with the mode sum evaluated at every point of the polar grid to $3\times10^{-15}$ to $2\times10^{-11}$ (the
+latter the rounding of the reflected mode sums, which both routes share) and costs a twentieth to a fiftieth
+of its time.
+
 \begin{table}[h]
 \centering
 \small
@@ -725,8 +736,9 @@ integral converge slowly.
 The split also preserves what makes a frequency sweep cheap in a homogeneous medium, where the closed-form
 blocks are set up once and each frequency costs little. Here the static blocks $\bK^{R}_0$ and the
 coefficients $\bK^{R}_1(Q_0)$ of the $\omega^2$ term are computed once for each arrangement of cells, and at
-each frequency only the remainder is integrated, over $qh<Q_0h$, with reflection coefficients evaluated on a
-grid of lateral wavenumbers that every block shares. Terms of order $\omega^4$ and beyond could be derived
+each frequency only the remainder is integrated, over $qh<Q_0h$, with one interface solve per radial node
+and the angular integrals of the cells' lateral moments tabulated once, so that a frequency costs tens of
+milliseconds per block at $\omega h/\beta=1/6$ and a few hundred at $\omega h/\beta=1$. Terms of order $\omega^4$ and beyond could be derived
 the same way, each a polynomial two degrees higher; but with the cutoff already where double precision
 holds, the next gain would be in the cost of the remainder, not in its accuracy.
 

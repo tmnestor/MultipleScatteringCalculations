@@ -22,7 +22,13 @@ S3  DIFFERENT MEDIA, AGAINST 40 DIGITS.  Entry (field 1, source 1) of the reflec
     the reference does not hold, from the package's static integrand, checked in S1).  Expected: the dropped remainder, 4e-10
     (R) and 2e-10 (T) at omega h/beta = 1/6, Q0 h = 10; 6e-11 and 4e-11 at omega h/beta = 1, Q0 h = 40.
 
-By default S1, S2 at offset (1,0,0) and its mirror, and S3 run (about 10 minutes); ``--full`` adds the
+S4  THE TWO ROUTES OF D.  The frame-and-harmonics route (``truncated_blocks``: one interface solve per radial
+    node, the lateral harmonics S_n tabulated once) against the mode sum at every (q, phi), five blocks
+    (reflected and transmitted, lateral offsets, a deeper cell), whole 4 x 10 x 9 x 9 blocks, different media.
+    Measured: 3e-15 .. 1.9e-11 at omega h/beta = 1/6 (the reflected mode sums' rounding, in either route),
+    3e-15 .. 3.6e-13 at omega h/beta = 1; 0.4 s against 8 s, and 0.9 s against 49 s.
+
+By default S1, S2 at offset (1,0,0) and its mirror, S3 and S4 run (about 10 minutes); ``--full`` adds the
 lateral neighbours of S2.
 
 Run:  PYTHONPATH=.:scripts python scripts/gate_interface_spectral.py [--full]
@@ -85,8 +91,9 @@ def gate_identical(rec, src, tol=(1e-9, 2e-10)) -> bool:
     for (om, q0), t in zip(CASES, tol, strict=True):
         t0 = time.time()
         parts = isp.frequency_independent_parts(rec, src, H, A, A, q0h=q0)
+        table = isp.lateral_harmonics([(rec[1] - src[1], rec[2] - src[2])], H, q0)
         t1 = time.time()
-        k = isp.interface_block(rec, src, H, om, A, A, q0h=q0, parts=parts)
+        k = isp.interface_block(rec, src, H, om, A, A, q0h=q0, parts=parts, table=table)
         t2 = time.time()
         ref = coupling_block(off, H, om, A)
         err = np.abs(k - ref).max() / np.abs(ref).max()
@@ -94,7 +101,39 @@ def gate_identical(rec, src, tol=(1e-9, 2e-10)) -> bool:
         ok &= good
         print(
             f"S2 {rec} <- {src}, omega h/beta = {om * H / A.beta:.3f}, Q0 h = {q0:g}: {err:.1e}"
-            f"  (once {t1 - t0:.0f} s, per frequency {t2 - t1:.1f} s)  {'PASS' if good else 'FAIL'}",
+            f"  (once {t1 - t0:.0f} s, per frequency {1e3 * (t2 - t1):.0f} ms)  {'PASS' if good else 'FAIL'}",
+            flush=True,
+        )
+    return ok
+
+
+PAIRS = [
+    ((-1, 0, 0), (-1, 0, 0)),
+    ((-1, 2, 0), (-1, 0, 0)),
+    ((1, 0, 0), (-1, 0, 0)),
+    ((1, 2, 2), (-1, 0, 0)),
+    ((-3, 0, 0), (-1, 2, 0)),
+]
+
+
+def gate_routes(tol=1e-10) -> bool:
+    ok = True
+    offsets = [(r[1] - s[1], r[2] - s[2]) for r, s in PAIRS]
+    for om, q0 in CASES:
+        table = isp.lateral_harmonics(offsets, H, q0)
+        t0 = time.time()
+        new = isp.truncated_blocks(PAIRS, H, om, A, B, q0h=q0, table=table)
+        t1 = time.time()
+        old = isp._truncated_blocks_direct(PAIRS, H, om, A, B, q0h=q0)
+        t2 = time.time()
+        err = max(
+            np.abs(a - b).max() / np.abs(b).max() for a, b in zip(new, old, strict=True)
+        )
+        good = err < tol
+        ok &= good
+        print(
+            f"S4 {len(PAIRS)} blocks, omega h/beta = {om * H / A.beta:.3f}, Q0 h = {q0:g}: {err:.1e}"
+            f"  (frame route {t1 - t0:.2f} s, every-point route {t2 - t1:.1f} s)  {'PASS' if good else 'FAIL'}",
             flush=True,
         )
     return ok
@@ -152,6 +191,7 @@ def main() -> None:
         ok &= gate_identical((1, 2, 2), (-1, 0, 0))
     ok &= gate_reference("R")
     ok &= gate_reference("T")
+    ok &= gate_routes()
     print("ALL PASS" if ok else "SOME FAILED")
 
 
