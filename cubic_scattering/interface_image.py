@@ -438,7 +438,7 @@ def image_block(
     n_test: int = 4,
     n_gauss: int = 32,
     closed: bool = True,
-    basis: str = "power",
+    basis: str = "legendre",
 ) -> NDArray:
     """The static interface block K[a, c] between two cells: the image when both lie on one side of the
     interface z = 0, the transmission when they lie on opposite sides.
@@ -458,11 +458,12 @@ def image_block(
         n_gauss: Gauss nodes per dimension on regular pieces (and on the far faces when not closed).
         closed: With basis 'power', corner pieces in closed form (``image_moments``); False uses Euler's
             reduction to the far faces with Gauss rules there (the two agree to 1e-15).
-        basis: 'legendre': every piece in a well-conditioned basis, regular pieces by Legendre
+        basis: 'legendre' (default): every piece in a well-conditioned basis, regular pieces by Legendre
             moments of their own coordinates, corner pieces by Duffy pyramids with the weights' zeros at the
-            corner factored out exactly and the rest in Legendre form.  'power': the moments in powers about
-            each piece's centre or the singular corner, contracted with the weights' power coefficients
-            (the default until the Legendre route is validated against the extended-precision reference).
+            corner factored out exactly and the rest in Legendre form: 4e-16 to 1.2e-15 against an
+            extended-precision reference, degree one and two (scripts/measure_interface_image_bases.py).
+            'power': the moments in powers about each piece's centre or the singular corner, contracted
+            with the weights' power coefficients: the same at degree one, up to 1e-14 at degree two.
 
     Returns:
         K, shape (n_test, n_source, 9, 9), as ``graded_voxel.blocks.coupling_block``.
@@ -595,7 +596,7 @@ def family_geometry(
 
 
 def family_integrals(
-    geo: dict, n_gauss: int = 32, closed: bool = True, basis: str = "power"
+    geo: dict, n_gauss: int = 32, closed: bool = True, basis: str = "legendre"
 ) -> dict:
     """The (n_test, n_source) integrals of each kernel family over the pieces, in units of h (no material
     coefficient, no power of h): {(j, alpha, A, B): array}."""

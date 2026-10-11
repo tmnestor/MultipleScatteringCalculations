@@ -429,6 +429,24 @@ $\mathrm{Cl}_2(2\theta)=2\mathrm{Cl}_2(\theta)-2\mathrm{Cl}_2(\pi-\theta)$ at $\
 Every corner moment is therefore elementary apart from the two constants $G$ and $\mathrm{Cl}_2(\pi/3)$. All
 of them are universal numbers, computed once and stored.
 
+\paragraph{A well-conditioned evaluation.} The corner moments are monomial moments about the singular corner,
+and contracting them with the weights expanded in powers about that corner is ill-conditioned in the way the
+power moments of a homogeneous medium are \citep{NestorCoupling2026}: at degree two it loses about a digit
+(Table~\ref{tab:bases}). The blocks are therefore evaluated in a well-conditioned basis, and the corner
+moments serve as an independent check. On a box away from the singular point the weights are written,
+exactly, in Legendre polynomials of the box's own coordinates and contracted with the Legendre moments of
+the kernel, which a tensor Gauss rule gives. A box anchored at the singular point is split into three Duffy
+pyramids about it \citep{Duffy1982}. In pyramid $k$, with $t_k=\varrho$ and $t_j=\varrho v_j$ for the other two
+axes in units of the box's sides, every kernel $\partial^{\balpha}\Phi_j$ is $\varrho^{d}$ times its value on
+the far face, $d$ its degree of homogeneity, and each one-dimensional weight is $(A_i\varrho w_i)^{m_i}r_i(A_i\varrho
+w_i)$, its zero of order $m_i$ at the corner factored out exactly and $r_i$ written in Legendre polynomials.
+The radial integrand is then $\varrho^{2+d+\sum m_i}$ times a polynomial, integrated exactly, and the face
+integrand is smooth, the far face lying at a distance of two half-widths from the singular point. Two details
+decide the last digit. The Gauss weights are taken from a $30$-digit table, since those of standard library
+routines carry relative errors growing with the order, of $4\times10^{-15}$ at $32$ points and up to
+$7\times10^{-13}$ at $40$; and the tensor-product sums are carried out one axis at a time, since a single
+running sum over the $32^3$ nodes of a box loses about $2\times10^{-15}$.
+
 \section{Cells on opposite sides of the interface}\label{sec:transmission}
 
 For a source cell in A and a field cell in B the static coupling is the transmitted field, the whole of it,
@@ -511,12 +529,39 @@ integral by its algebraic convergence.}
 \label{tab:verification}
 \end{table}
 
-Two remarks qualify the table. The touching reflected blocks agree with the face-quadrature route to
-$5\times10^{-15}$, but both routes contract the corner moments with the weights expanded in powers about
-the singular corner, which in the homogeneous medium costs about one digit at degree two
-\citep{NestorCoupling2026}; the only fully independent check of these blocks, the plane-wave integral, is
-limited to $2.3\times10^{-8}$ by its own convergence. And with identical media the image vanishes
-identically, to the last bit, on both sides of the interface.
+The accuracy of the touching blocks themselves is measured against a reference that removes the rounding
+of the double-precision routes: the power-basis route carried out in $80$-bit extended arithmetic (unit
+round-off $1.1\times10^{-19}$), with the corner moments in closed form at $40$ digits, Gauss rules refined to
+extended precision, and the kernels and exact weights rounded to extended precision only. Its own rounding,
+bounded by the unit round-off times the sum of the magnitudes of its terms, is below $6\times10^{-17}$ of the
+blocks. Against it (Table~\ref{tab:bases}) the well-conditioned evaluation is at round-off for both field
+degrees, $3\times10^{-16}$ to $1.2\times10^{-15}$, and the power basis is the same at degree one but loses up to
+a digit at degree two. The fully independent check of these blocks, the plane-wave integral, is limited to
+$2.3\times10^{-8}$ by its own convergence. With identical media the image vanishes identically, to the last
+bit, on both sides of the interface.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+cells & field & power basis & well-conditioned \\
+\midrule
+reflected, cell with its own image & degree one & $9.2\times10^{-16}$ & $8.2\times10^{-16}$ \\
+reflected, lateral neighbour       & degree one & $6.8\times10^{-16}$ & $7.3\times10^{-16}$ \\
+reflected, diagonal neighbour      & degree one & $6.6\times10^{-16}$ & $4.0\times10^{-16}$ \\
+transmitted, face contact          & degree one & $1.2\times10^{-15}$ & $1.2\times10^{-15}$ \\
+transmitted, corner contact        & degree one & $3.4\times10^{-16}$ & $4.0\times10^{-16}$ \\
+reflected, cell with its own image & degree two & $9.6\times10^{-15}$ & $9.2\times10^{-16}$ \\
+reflected, diagonal neighbour      & degree two & $1.7\times10^{-15}$ & $6.5\times10^{-16}$ \\
+transmitted, face contact          & degree two & $9.6\times10^{-15}$ & $4.1\times10^{-16}$ \\
+\bottomrule
+\end{tabular}
+\caption{The touching blocks against the extended-precision reference: for each kernel family, the largest
+error over the field and source functions relative to the largest entry, and the largest over the
+families. Degree one: $4$ field functions and $10$ source monomials; degree two: $10$ and $35$.}
+\label{tab:bases}
+\end{table}
 
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
@@ -538,12 +583,8 @@ up- and down-going factorisation alone, without tabulating the stratified Green'
 storage advantage that motivates the approach; a two-way march in depth that applies the volume operator in
 this way is the subject of further work.
 
-Two limitations remain. The corner moments are contracted with the weights in the power basis about the
-singular corner; the Legendre basis that restores full double-precision accuracy in the homogeneous medium
-\citep{NestorCoupling2026} has not yet been applied to the image boxes, and the touching reflected blocks are
-correspondingly expected to lose about one digit at degree two. And the closed form of the base integrals
-is stated for cubic corner boxes, $a=b=c$, which is all a grid of cubes requires; for unequal sides the
-angular integrals are evaluated by quadrature.
+One limitation remains: the closed form of the base integrals is stated for cubic corner boxes, $a=b=c$,
+which is all a grid of cubes requires; for unequal sides the angular integrals are evaluated by quadrature.
 
 \section*{Data availability}
 {\sloppy
