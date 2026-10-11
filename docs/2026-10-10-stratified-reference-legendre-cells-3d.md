@@ -104,7 +104,7 @@ away from interfaces.
   - **Different media.** Against 2-D Fourier integration: 7.8e-13 and 6.6e-13. Against brute-force 6-D Gauss:
     1.7e-13 – 5.0e-13.
   - **The dynamic limit.** The dynamic transmitted kernel tends to the static one as `(ω/βq)²`.
-  - Gates T1 and T2 are in `scripts/gate_interface_image.py`, and Paper 2 §11 is updated.
+  - Gates T1 and T2 are in `scripts/gate_interface_image.py`, and the material is written up (first in Paper 2 §11, since 11 October 2026 in its own paper, `LatexPDFs/InterfaceCouplingIntegrals`).
 - **The Mathematica runs.**
   - **`StaticInterfaceTransmission.wl`.** Spectral kernel against sympy: 4.2e-16. Its spatial form against
     `NIntegrate` of the Fourier integral: 3.9e-16. The transmitted terms regenerated from it are identical
