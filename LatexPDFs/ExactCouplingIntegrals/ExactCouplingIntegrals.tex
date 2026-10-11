@@ -60,7 +60,7 @@
 \title{\bfseries The Coupling Integrals of Polynomial Cubes in Closed Form\\[4pt]
 \large Exact for Elastic Waves, and Accurate in Double Precision}
 \author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
-\date{Draft, 9 October 2026}
+\date{Draft, 11 October 2026}
 
 \begin{document}
 \maketitle
@@ -106,7 +106,10 @@ cells of degree one.
 % between cells (this paper), 3. the error of polynomial voxels (PolynomialVoxelError), 4. cells at a welded
 % interface (InterfaceCouplingIntegrals, split out of this paper's former section 11 on 11 October 2026). The single cell and the
 % Cartesian multipole hierarchy (superseded by the Legendre expansion, archived) were moved out on 9 October 2026; the graded-sphere series was recomputed
-% with Legendre cells (scripts/measure_graded_sphere_legendre_series.py).
+% with Legendre cells (scripts/measure_graded_sphere_legendre_series.py). Restructured as a journal submission on
+% 11 October 2026: contributions listed, the reference and accuracy merged into one verification section, the
+% multipole, distant-cell and sweep sections merged, the two applications grouped, and the fast-multipole and
+% closed-form-versus-quadrature sections folded into the discussion; code paths only under Data availability.
 % =====================================================================================================
 
 \section{Introduction}\label{sec:intro}
@@ -162,17 +165,36 @@ problem \citep{Gautschi1967,Olver1967}. What is new is the relation that gives t
 power of the distance over a box in any dimension, and the decomposition that brings every piece of a
 touching coupling block within its reach.
 
-The paper is organised as follows. Section~\ref{sec:blocks} defines the blocks and their series in the
-wavenumber, and shows that the two-centre expansion is not assured to converge for any pair of touching
-cells, and fails at face and edge contact.
-Sections~\ref{sec:conditioning} to~\ref{sec:results} measure the cost of the power basis, build the
-forty-digit reference, and give the evaluation in a Legendre basis with its accuracy and cost. Section~\ref{sec:multipoles} fixes what
-\emph{multipole} means here, \S\ref{sec:distant} couples cells that do not touch, and \S\ref{sec:sweep}
-separates what is computed once from what each frequency costs. Section~\ref{sec:fmm} relates the work to
-the fast multipole method. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
-model of a graded sphere in powers of the frequency, \S\ref{sec:taup} sums them over a band of frequencies
-into a $\tau$--$p$ seismogram of the same sphere, and \S\ref{sec:why} sets out why the coefficients are
-evaluated in closed form rather than by quadrature.
+The contributions are the following.
+\begin{enumerate}
+  \item For cells that touch, the two-centre expansion that couples separated scatterers diverges at face
+  contact, stalls at edge contact and converges only algebraically at corner contact, whatever the
+  precision of the arithmetic; and no subdivision of the cells can restore it (\S\ref{sec:twocentre}).
+  \item The touching blocks are a power series in the wavenumber with universal coefficients, each a finite
+  sum of elementary master integrals; assembled in powers about the singular point they lose four to five
+  digits, and the loss is located in the pieces away from the singular point and traced to the power basis
+  (\S\ref{sec:conditioning}).
+  \item A banded relation for the Legendre moments of a power of the distance over a box in any dimension,
+  solved as a truncated boundary-value problem, together with a Duffy decomposition of the pieces at the
+  singular point, evaluates the same exact integrals to round-off (\S\ref{sec:stable}); the blocks agree
+  with an independent forty-digit reference to $10^{-15}$ (\S\ref{sec:results}).
+  \item Cells that do not touch are coupled to round-off by the same series with coefficients computed once
+  per offset, and the whole operator over a frequency sweep costs less than quadrature at every frequency
+  (\S\ref{sec:distant}).
+  \item Because the coefficients are exact and independent of the frequency, the response of a cell model
+  can be expanded in powers of the frequency, each power by one solve; for a graded sphere every power is
+  compared with the exact one, and summed over a sweep the same coefficients give a $\tau$--$p$ section
+  in the near field (\S\ref{sec:applications}).
+\end{enumerate}
+
+The paper is organised as follows. Section~\ref{sec:blocks} defines the blocks, their separation form
+and their series in the wavenumber. Section~\ref{sec:twocentre} shows why the touching blocks cannot be had
+from the two-centre expansion. Section~\ref{sec:conditioning} gives the closed forms and their
+conditioning in the power basis, \S\ref{sec:stable} the stable evaluation in a Legendre basis, and
+\S\ref{sec:results} the forty-digit reference and the accuracy of the blocks. Section~\ref{sec:distant}
+treats cells that do not touch and the cost of a frequency sweep, \S\ref{sec:applications} the graded
+sphere, and \S\ref{sec:discussion} the relation to quadrature, to boundary-element practice and to the
+fast multipole method.
 
 \section{The coupling blocks of polynomial cubes}\label{sec:blocks}
 
@@ -260,7 +282,7 @@ moment is therefore an integral of a polynomial in $\bt$ times $\bt^{\balpha}|\b
 whose corners lie on the breakpoints, or over a face of one when a plane delta fixes a coordinate. This is
 the object every route below evaluates; they differ only in how.
 
-\subsection{Does the two-centre multipole series work for cells that touch?}\label{sec:twocentre}
+\section{The two-centre expansion for cells that touch}\label{sec:twocentre}
 
 \paragraph{The two-centre expansion.} The block \eqref{eq:sform} depends on the two cells only through the
 separation $\bR+\bs$ of a field point and a source point. Expanding the propagator about the separation of
@@ -330,7 +352,7 @@ under which the two-centre series is assured to converge (Table~\ref{tab:twocent
 \label{fig:neighbours}
 \end{figure}
 
-\paragraph{The experiment.} The quantity tested is the coupling moment of the kernel $1/r$,
+\paragraph{The test.} We test the series on the coupling moment of the kernel $1/r$,
 $U_{ac}(\bo)=\int\!\int\bxi^{\mathbf e_a}\,|\mathbf x-\mathbf x'|^{-1}\,\bxi'^{\,\mathbf e_c}$, for cells
 of half-width $h=1$ carrying a degree-one field (four test monomials and ten source monomials). The kernel
 $1/r$ is the static singular part that every family of the propagator shares (the term $m=-1$ of
@@ -342,8 +364,7 @@ series \eqref{eq:twocentre} is summed in $60$-digit arithmetic, with the pair mo
 and the derivatives of $1/r$ at $\bR$ from their Hermite-type expansion with integer coefficients, so that
 divergence cannot be mistaken for rounding. The partial sums $S_N$, over all $|\boldsymbol\gamma|\le N$,
 are compared with the exact value; the same sums in double precision give the condition number
-$\kappa_N=\sum|\text{terms}|/|S_N|$ over the entries larger than $10^{-6}$ of the largest
-(\path{scripts/measure_touching_multipole_series.py}).
+$\kappa_N=\sum|\text{terms}|/|S_N|$ over the entries larger than $10^{-6}$ of the largest.
 
 \begin{table}[h]
 \centering
@@ -367,7 +388,7 @@ circumscribing radii to the distance of the centres.}
 \label{tab:twocentre}
 \end{table}
 
-\paragraph{What it shows.} The answer is no (Table~\ref{tab:twocentre}). At face contact the series
+\paragraph{The result.} The series fails for touching cells (Table~\ref{tab:twocentre}). At face contact it
 diverges: at every fourth order from $0$ to $48$ its error is at least $10^{-2}$, the smallest at $N=4$
 and $8$, and from $N=12$ it grows, to $1.2\times10^{3}$ at $N=48$. At edge contact it reaches
 $1.3\times10^{-5}$ at $N=24$ and then grows again, to $6.6\times10^{-5}$ at $N=48$, without converging. At corner contact, where
@@ -380,7 +401,7 @@ here. The condition number of the sum tells the same story from the other side: 
 $2\times10^{12}$ at face contact and of order one for the separated cells.
 
 \paragraph{Subdivision does not rescue it.} For cells that do not touch, the series can be made to converge
-faster by cutting the support into boxes and expanding about each box's own centre (\S\ref{sec:distant}).
+faster by cutting the support into boxes and expanding about each box's own centre (\S\ref{sec:routes}).
 For cells that touch it cannot: a box whose closure holds the singular point $\bs^*$ has its centre within
 one half-diagonal of it, so its own ratio is at least one, however finely the support is cut, and such a box
 always exists because $\bs^*$ lies on the boundary of the support. The interaction of a cell with its
@@ -399,7 +420,7 @@ block at every contact to round-off, against the forty-digit reference at edge a
 against quadrature at face contact (\S\ref{sec:results}). The condition belongs to
 the expansion, not to the problem.
 
-\section{The master integrals, and the conditioning of power moments}\label{sec:conditioning}
+\section{Closed forms, and the conditioning of power moments}\label{sec:conditioning}
 
 The closed forms reduce every moment to master integrals of monomials against a power of the distance,
 anchored at the singular point. Written so, a moment is a sum over power moments of the polynomial weight,
@@ -425,7 +446,7 @@ $\sum_iw_if(\mathbf x_i)$, whose condition number tends to $\kappa_{\mathord{\in
 the same weights integrate $|f|$; quadrature therefore loses about as many digits as the problem itself
 forces. A closed form instead writes the integral as a sum in a basis of its own choosing, and its condition
 number $\kappa$ can be far larger than $\kappa_{\mathord{\int}}$: that excess, and nothing else, is what the
-choice of basis decides. The rest of this section measures it for the power basis.
+choice of basis decides. The rest of this section gives the closed forms and measures that excess for the power basis.
 
 \paragraph{The master integrals.} The integrand $\bt^{\balpha}|\bt|^n$ is homogeneous about the
 singular point, and three master integrals anchored there are elementary:
@@ -464,7 +485,7 @@ precision and once with every step at forty digits, the difference piece by piec
 $\bt\in[2,4]^3$, and at most $1.2\times10^{-15}$ on the piece that has the singular point as a vertex.
 The loss is in the pieces away from the singular point.
 
-\paragraph{Why.} On such a piece two cancellations act together: the inclusion-exclusion of
+\paragraph{The cause.} On such a piece two cancellations act together: the inclusion-exclusion of
 anchored boxes, and the power basis about a point outside the piece. They can be separated. On the far
 piece of the corner contact, for the same term, the integral was computed four ways, each compared with
 the same piece at forty digits with exact rational weights:
@@ -499,40 +520,6 @@ on $[0,2]$. The same switch is the remedy adopted for analytic boundary-element 
 it gives up the frequency-independent coefficients only on part of the domain while keeping the
 ill-conditioned basis on the rest.
 
-\section{A forty-digit reference}\label{sec:reference}
-
-A reference must share no step with the routes it judges. For corner and edge contact one exists that is
-also simple. There the singular point is a vertex of the pieces it touches, and $W_{ac}$ vanishes there as
-$\rho^3$ (corner) or $\rho^2$ (edge), $\rho$ the distance from the singular point. The most singular static
-term, $\partial^4r\sim\rho^{-3}$, is then absolutely integrable, and so is every other: the block is an
-ordinary integral, with no distribution, no moved derivative and no master integral.
-\texttt{Mathematica/GradedVoxel\_CornerReference.wl} evaluates
-\begin{equation}\label{eq:reference}
-  \int_{[-2,2]^3}W_{ac}(\bs)\,\partial^{\biota} r^m(\bR+\bs)\,\dd^3s
-\end{equation}
-for each of the $41$ static terms ($m=-1$ and $m=1$) at forty digits, at $h=1$. The factors of $W_{ac}$
-are integrated exactly from their definition. The domain is cut into its $8$ pieces; on a piece with the
-singular point at a vertex, three Duffy pyramids \citep{Duffy1982} about that vertex make the integrand
-$u_1^{\,k}$ times a smooth function, with $k\ge0$ an integer, so a tensor Gauss rule converges
-exponentially; the other pieces are smooth. The terms are assembled into the static block with exact
-rational weights and the medium's constants in exact arithmetic. Three gates check it.
-\begin{itemize}
-  \item[(a)] A polynomial kernel, $|\bR+\bs|^2$, for which Mathematica gives the six-dimensional integral
-  of Eq.~\eqref{eq:block} exactly. The reference reproduces it to $10^{-35}$, which checks $W$, the
-  pieces, the Duffy map and the weights.
-  \item[(b)] Integration by parts on the hardest term: with $F=\partial_0\partial_0\partial_1r$,
-  $\int W\,\partial_2F=-\int(\partial_2W)\,F$, the boundary terms vanishing because $W$ is continuous and
-  zero on the boundary of its support. The two sides have different integrands and agree only if the
-  singular integration is accurate. They agree to $1.4\times10^{-24}$ (corner) and $2.4\times10^{-24}$
-  (edge) for the degree-one field and $3.9\times10^{-24}$ and $3.5\times10^{-24}$ for the degree-two one.
-  \item[(c)] Convergence: the rule at $20$ and at $28$ points per axis agree to better than
-  $10^{-23}$ in every case ($3\times10^{-25}$ to $2\times10^{-24}$ where the value was recorded). Each piece
-  converges by about five digits per four points.
-\end{itemize}
-Pointwise identities such as $\nabla^2(1/r)=0$, which hold at every node of the rule, would pass whatever
-the integration did, and are not used as gates. The reference took $78$ to $93$\,s per geometry for the
-degree-one field and $502$ to $593$\,s for the degree-two one, at $20$ points per axis.
-
 \section{A stable evaluation}\label{sec:stable}
 
 \subsection{Marching the recurrences}\label{sec:marching}
@@ -548,7 +535,7 @@ solutions grow like $\rho^r$, with $\rho=\sqrt{A^2+l^2}$ the distance from the s
 end of the edge, while the wanted moments grow like $L^r$. Away from the singular point ($\rho>L$) the
 wanted solution is the minimal one, forward recursion amplifies the rounding errors, and backward
 recursion from zero values at a high degree converges to it, the error falling like $(L/\rho)^{R-r}$
-\citep{Gautschi1967,Olver1967}. Measured against forty-digit quadrature, forward recursion loses up to
+\citep{Gautschi1967,Olver1967}. Against forty-digit quadrature, forward recursion loses up to
 $10^{-7}$ by degree $20$ when $\rho/L=2.45$, and backward recursion is at round-off ($2\times10^{-16}$) for
 every $\rho/L$ tested, from $1.41$ to $2.45$, including $n=-3$, where the forward recursion fails at once on a zero
 divisor. Backward recursion needs no transcendental starting value, only the end terms of
@@ -647,12 +634,50 @@ coefficients), which here only manipulates polynomials and never integrates the 
 contracted with the face moments $\Lambda$ of $(1+|\bv|^2)^{n/2}$ from \S\ref{sec:legendre}, with $c^2=1$
 and $\mathbf{l}=0$.
 
-\section{Accuracy and cost}\label{sec:results}
+\section{Verification and accuracy}\label{sec:results}
+
+The closed forms are judged against a reference that shares no step with them, and where no such
+reference exists, against quadrature that the reference has shown to be accurate.
+
+\subsection{A forty-digit reference}\label{sec:reference}
+
+A reference must share no step with the routes it judges. For corner and edge contact one exists that is
+also simple. There the singular point is a vertex of the pieces it touches, and $W_{ac}$ vanishes there as
+$\rho^3$ (corner) or $\rho^2$ (edge), $\rho$ the distance from the singular point. The most singular static
+term, $\partial^4r\sim\rho^{-3}$, is then absolutely integrable, and so is every other: the block is an
+ordinary integral, with no distribution, no moved derivative and no master integral.
+The reference evaluates
+\begin{equation}\label{eq:reference}
+  \int_{[-2,2]^3}W_{ac}(\bs)\,\partial^{\biota} r^m(\bR+\bs)\,\dd^3s
+\end{equation}
+for each of the $41$ static terms ($m=-1$ and $m=1$) at forty digits, at $h=1$. The factors of $W_{ac}$
+are integrated exactly from their definition. The domain is cut into its $8$ pieces; on a piece with the
+singular point at a vertex, three Duffy pyramids \citep{Duffy1982} about that vertex make the integrand
+$u_1^{\,k}$ times a smooth function, with $k\ge0$ an integer, so a tensor Gauss rule converges
+exponentially; the other pieces are smooth. The terms are assembled into the static block with exact
+rational weights and the medium's constants in exact arithmetic. Three independent checks establish its
+accuracy.
+\begin{itemize}
+  \item[(a)] A polynomial kernel, $|\bR+\bs|^2$, for which Mathematica gives the six-dimensional integral
+  of Eq.~\eqref{eq:block} exactly. The reference reproduces it to $10^{-35}$, which checks $W$, the
+  pieces, the Duffy map and the weights.
+  \item[(b)] Integration by parts on the hardest term: with $F=\partial_0\partial_0\partial_1r$,
+  $\int W\,\partial_2F=-\int(\partial_2W)\,F$, the boundary terms vanishing because $W$ is continuous and
+  zero on the boundary of its support. The two sides have different integrands and agree only if the
+  singular integration is accurate. They agree to $1.4\times10^{-24}$ (corner) and $2.4\times10^{-24}$
+  (edge) for the degree-one field and $3.9\times10^{-24}$ and $3.5\times10^{-24}$ for the degree-two one.
+  \item[(c)] Convergence: the rule at $20$ and at $28$ points per axis agree to better than
+  $10^{-23}$ in every case ($3\times10^{-25}$ to $2\times10^{-24}$ where the value was recorded). Each piece
+  converges by about five digits per four points.
+\end{itemize}
+Pointwise identities such as $\nabla^2(1/r)=0$, which hold at every node of the rule, would pass whatever
+the integration did, and are not used as checks.
+
+\subsection{Accuracy of the blocks}\label{sec:accuracy}
 
 \paragraph{Blocks against the reference.} With pieces away from the singular point by
 Eq.~\eqref{eq:farpiece} and pieces at it by Eq.~\eqref{eq:pyramid}, the static blocks agree with the
-reference as follows (relative Frobenius error, implementation
-\path{cubic_scattering/graded_voxel/blocks.static_term_integral_closed}):
+reference as in Table~\ref{tab:accuracy} (relative error in the Frobenius norm).
 
 \begin{table}[h]
 \centering
@@ -692,22 +717,7 @@ whole touching block, static and dynamic, is the series summed term by term, eac
 times $h^{\,6+m-|\biota|}$ and the weights $c_1$, $c_2$. At $k_Sh=0.0625$ it agrees with the quadrature
 block at $20$ points per axis to about $10^{-15}$ for the degree-one field at all four contact geometries, and
 to $2$ to $4\times10^{-15}$ for the degree-two field; in the power basis the degree-two field's
-blocks stall at $9\times10^{-15}$ to $2\times10^{-11}$ (\path{scripts/measure_galerkin_near_blocks.py}).
-
-\paragraph{Cost.} The universal moments are computed once for each contact geometry and cell degree: they
-depend on neither the frequency nor the cell size. For all four geometries and both degrees, with the
-series carried to the powers that $k_Sh=0.0625$ needs, that one-off step took $3745$\,s on one machine,
-against $998$\,s in the power basis: about $0.75$\,s per term against $0.3$\,s, over some
-$2600$ terms. Stability has a price, and it is paid once. Each block thereafter costs the assembly of the
-series alone, $5$\,ms for the degree-one field and $33$\,ms for the degree-two one, against $0.4$ to $13$\,s for
-a quadrature block at the number of points (14 to 20 per axis) that reaches $10^{-15}$. One frequency
-needs all eight blocks: $17.4$\,s by quadrature at $14$ points ($2.3$\,s for the degree-one field, $15.1$\,s
-for the degree-two field), $0.15$\,s by the series. The one-off cost is therefore recovered after about $220$
-frequencies, and a synthetic over $256$ frequencies is already cheaper by the series
-(\S\ref{sec:sweep}). Two choices keep the one-off cost down, by a factor of $2.3$, without changing any
-block beyond round-off: a truncation margin of $8$ Legendre degrees (the blocks are the same to the digits
-shown for margins from $4$ to $16$), and one truncation shared by every term of a cell degree, so that the
-sparse systems are solved once and reused.
+blocks stall at $9\times10^{-15}$ to $2\times10^{-11}$.
 
 \paragraph{Reciprocity.} Two further symmetries hold for every touching block, not only the self block.
 The propagator satisfies $\mathbf{W}\bP(\mathbf{r})$ symmetric at every $\mathbf{r}$, with
@@ -720,13 +730,20 @@ cell. At the self, face, edge and corner geometries, by quadrature and by the se
 \S\ref{sec:sweep} alike, the first holds to $3\times10^{-21}$ of the largest entry and the second to
 $6\times10^{-17}$.
 
-\section{Multipoles for elastic waves}\label{sec:multipoles}
+\section{Cells that do not touch, and the frequency sweep}\label{sec:distant}
+
+For two cells that do not touch the kernel is smooth over both cells, and the block can be obtained
+without a singular integral, either by the two-centre series of \S\ref{sec:twocentre}, which now converges,
+or by quadrature of the $s$-form. This section compares the routes, and then separates what is computed
+once from what each frequency costs.
+
+\subsection{The two-centre series for elastic waves}\label{sec:multipoles}
 
 The word multipole is used in two senses in what follows, and the difference matters. In the first, a
 source is resolved into its polynomial moments while the Green's tensor is integrated exactly: the
 coupling blocks of the cells (\S\ref{sec:blocks}), which are exact at every separation. In the second, the usual one, the kernel itself is
 expanded about a centre and truncated, which converges only when the cells are far enough apart: the
-series for distant cells of \S\ref{sec:distant}. The second is what the fast multipole method rests on
+series for distant cells of \S\ref{sec:routes}. The second is what the fast multipole method rests on
 \citep{CarrierGreengardRokhlin1988}; four things make it different for elastic waves and polynomial cubes.
 
 \paragraph{Two wave speeds.} The Green's tensor \eqref{eq:series} is a shear term plus the gradient of a
@@ -734,7 +751,7 @@ difference of a shear and a compressional term divided by $k_S^2$ \citep{WuAki19
 small distance only by cancellation. No single addition theorem serves, and the cancellation has to be
 removed analytically rather than numerically: evaluated as the difference of the two spherical-Hankel
 forms, the derivatives of $(g_S-g_P)/k_S^2$ lose accuracy as $\varepsilon/(kR)^2$, $\varepsilon$ the
-machine precision. Measured, the blocks of cells $3$ to $64$ cells apart at $k_Sh=10^{-4}$ were wrong by
+machine precision. The blocks of cells $3$ to $64$ cells apart at $k_Sh=10^{-4}$ are then wrong by
 $3\times10^{-9}$ to $10^{-12}$, as that law predicts; with the derivatives taken from the power series of
 the difference for $k_Sr\le1$, they are accurate to $10^{-15}$ to $8\times10^{-15}$.
 
@@ -754,37 +771,35 @@ $\rho=2\sqrt3\,h/R$, the extent of both cells over their distance, and the waven
 the derivatives at $\bR$: the term of order $n$ is bounded by $\sum_j\rho^{\,n-j}\kappa^j/j!$ with
 $\kappa=2\sqrt3\,k_Sh$. There is no restriction on $k_SR$, but the series needs $\rho<1$.
 
-\section{Distant cells}\label{sec:distant}
+\subsection{Routes for cells that do not touch}\label{sec:routes}
 
-For two cells that do not touch, the kernel is analytic over the whole range of the separation $\bs$,
-and the block \eqref{eq:block} can be had without quadrature as the two-centre series
-\eqref{eq:twocentre} of \S\ref{sec:twocentre}, which converges when the circumscribing spheres of the two
-cells do not overlap, with the two cells' moments $\mu^{\boldsymbol\gamma}_{ac}$ of \S\ref{sec:multipoles} and the derivatives
+The two-centre series \eqref{eq:twocentre} converges when the circumscribing spheres of the two cells do
+not overlap. It is built from the two cells' moments $\mu^{\boldsymbol\gamma}_{ac}$ of \S\ref{sec:multipoles} and the derivatives
 of the propagator at $\bR$ from those of the two radial scalars. The derivatives of $g_k$ are spherical
 Hankel functions, $F_q=\mathrm{i}(-1)^qk^{q+1}h_q(kr)/r^q$; those of $(g_S-g_P)/k_S^2$ come from its power
 series for $k_Sr\le1$ and from the difference of the two Hankel forms beyond
 (\S\ref{sec:multipoles}). The series converges geometrically in $\rho=2\sqrt3\,h/R$ and is refused for
 $\rho>0.6$, about three cells apart; it is truncated at the order where the bound of
-\S\ref{sec:multipoles} falls below the tolerance (\path{multipole.far_block_multipole}).
+\S\ref{sec:multipoles} falls below the tolerance.
 
 \paragraph{Every pair that does not touch.} Close to contact the series about the cell centres converges
 too slowly: at two cells apart $\rho=0.87$. The cross-correlation $W_{ac}$ is a polynomial on each of the
 eight boxes of its support, so each box can be expanded about its own centre $\bs_B$, the moments being
 those of a polynomial over a box, exact, and the ratio becoming the box's half-diagonal over
 $|\bR+\bs_B|$: $0.52$ at two cells apart, and $0.33$ after one bisection of the boxes, each bisection
-halving it (\path{multipole.piecewise_multipole_block}). The order is chosen with the bisection level to
+halving it. The order is chosen with the bisection level to
 minimise the cost, subject to one constraint: at the offset $(2,1,1)$ a plan of order $48$ to $56$
 without bisection stalls at $6\times10^{-13}$ to $2\times10^{-12}$, while one bisection at order $36$ to $40$
 reaches $10^{-15}$ to $4\times10^{-15}$. The rounding of a series that long grows
 with its order, so the order is capped at $40$ and a plan that needs more bisects instead.
 
-\paragraph{The experiment.} For a degree-one field, at offsets from two to sixty-four cells and at
+\paragraph{Comparison.} For a degree-one field, at offsets from two to sixty-four cells and at
 $k_Sh=10^{-4}$, $0.0625$, $0.5$ and $2$, every route was compared with the $s$-form integrated by Gauss
 rules of $32$ points per axis on each of its eight pieces; that reference agrees with $24$ points to
 $2\times10^{-15}$ (to $10^{-14}$ at $k_Sh=2$). Four routes were timed per block, warm, the one-off
-moments and coefficients excluded: the $s$-form with the package's Gauss rule, the series
+moments and coefficients excluded: the $s$-form with a Gauss rule, the series
 \eqref{eq:twocentre}, its piecewise form, and the frequency-independent series in $k$ of
-\S\ref{sec:sweep} (\path{scripts/measure_distant_cell_blocks.py}).
+\S\ref{sec:sweep}.
 
 \paragraph{Accuracy.} With the two choices below, every route is at round-off wherever it applies: the
 largest relative error over all offsets and frequencies is $9\times10^{-15}$ for the Gauss rule and
@@ -796,7 +811,7 @@ $(g_S-g_P)/k_S^2$ are taken from its power series for $k_Sr\le1$ (\S\ref{sec:mul
 of Hankel forms they cancel, and the multipole blocks at $k_Sh=10^{-4}$ would be wrong by $3\times10^{-9}$
 to $10^{-12}$, the piecewise form near contact by up to $9\times10^{-5}$. And the order of the Gauss rule
 must grow with the frequency: an order set by distance alone, eight points per axis beyond four cells,
-leaves the blocks wrong by $3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$. Measured against
+leaves the blocks wrong by $3\times10^{-11}$ at $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$. Against
 forty points, the order that reaches about $10^{-14}$ is the larger of the distance rule and
 $8+2\lceil k_Sh-1\rceil$, for offsets from two to thirty-two cells and $k_Sh$ up to $4$.
 
@@ -830,7 +845,7 @@ small enough for it, which is the touching and near cells of a sweep at low freq
 (\S\ref{sec:sweep}). The multipole series is the slowest, by one to four orders of magnitude, and it has
 one property the others lack: it is exact term by term, with no restriction on $k_SR$, so it is the
 independent check of the other two, and it is the form a fast multipole method would use for cells far
-apart (\S\ref{sec:fmm}).
+apart (\S\ref{sec:discussion}).
 
 \paragraph{A degree-two field.} The same comparison for a degree-two field ($10$ test functions, $35$
 source monomials), at offsets $(2,0,0)$, $(2,1,1)$, $(4,3,2)$ and $(16,0,0)$ and at $k_Sh=10^{-4}$,
@@ -839,7 +854,7 @@ rule at sixteen cells and $k_Sh=2$. The costs rise with the block: $25$ to $93$\
 $53$\,ms to $3.1$\,s for the multipole series, $1$ to $172$\,s for its piecewise form, and $1.8$ to
 $5.5$\,ms for the series in $k$ where it converges. The ranking of the routes is unchanged.
 
-\section{Frequency-independent coefficients, and the frequency sweep}\label{sec:sweep}
+\subsection{Frequency-independent coefficients, and the frequency sweep}\label{sec:sweep}
 
 A synthetic seismogram needs the coupling blocks at every frequency of a sweep, at least $256$ of them.
 What can be computed once, for the geometry alone, and what must be computed again at each frequency,
@@ -859,7 +874,7 @@ derivatives on $r^{t-1}$ in each of the $81$ entries (two more for the second fa
 linear in the kernel, the series summed with these coefficients equals the Gauss block exactly, up to the
 truncation of the series. It agrees with the Gauss block to $10^{-15}$ to $10^{-13}$ for offsets from two
 to five cells and $k_Sh$ from $10^{-6}$ to $0.5$, and costs $0.3$\,ms per block and frequency against
-$9$\,ms for the Gauss block (\path{blocks.far_block_series}).
+$9$\,ms for the Gauss block.
 
 \paragraph{The stopping rule.} The weight $c_2$ carries $k_S^{-2}$: its term $t$ is of order $k^{t-2}$, as
 large as the $c_1$ term $t-2$, and the radiation (imaginary) part at order $k$ comes from $t=1$ of the first
@@ -870,12 +885,25 @@ early at low frequency: the touching blocks' imaginary part is then wrong by $7\
 $k_Sh=10^{-4}$, and the whole block by $10^{-12}$, and the imaginary part violates its low-frequency law,
 $O(k)$ with an $O(k^3)$ correction, which the rule above preserves.
 
+\paragraph{The cost of the touching blocks.} The universal moments are computed once for each contact geometry and cell degree: they
+depend on neither the frequency nor the cell size. For all four geometries and both degrees, with the
+series carried to the powers that $k_Sh=0.0625$ needs, that one-off step took $3745$\,s on one machine,
+against $998$\,s in the power basis: about $0.75$\,s per term against $0.3$\,s, over some
+$2600$ terms. Stability has a price, and it is paid once. Each block thereafter costs the assembly of the
+series alone, $5$\,ms for the degree-one field and $33$\,ms for the degree-two one, against $0.4$ to $13$\,s for
+a quadrature block at the number of points (14 to 20 per axis) that reaches $10^{-15}$. One frequency
+needs all eight blocks: $17.4$\,s by quadrature at $14$ points ($2.3$\,s for the degree-one field, $15.1$\,s
+for the degree-two field), $0.15$\,s by the series. The one-off cost is therefore recovered after about $220$
+frequencies, and a synthetic over $256$ frequencies is already cheaper by the series. Two choices keep the one-off cost down, by a factor of $2.3$, without changing any
+block beyond round-off: a truncation margin of $8$ Legendre degrees (the blocks are the same to the digits
+shown for margins from $4$ to $16$), and one truncation shared by every term of a cell degree, so that the
+sparse systems are solved once and reused.
+
 \paragraph{The sweep.} On the grid of the graded sphere of \citet{NestorError2026} ($n$ cells across a
 sphere of radius $a$), all the blocks of one frequency were formed for the Legendre cell with a field and a contrast of degree
 one, at $256$
 frequencies $k_Sa=0.5\,j/256$. The cost per frequency was timed at $j=1$, $64$, $160$ and $256$, and the
-total is the one-off cost plus $256$ times their mean (one machine, eight threads,
-\path{scripts/measure_frequency_sweep_cost.py}).
+total is the one-off cost plus $256$ times their mean, on one machine with eight threads.
 
 \begin{table}[h]
 \centering
@@ -901,26 +929,18 @@ evaluation of \S\ref{sec:stable} has raised its one-off cost by $14$ to $94\%$ (
 $601$\,s), and it agrees with the quadrature blocks to round-off. The comparison is of the blocks alone:
 the solve, repeated at each frequency, is not included.
 
-\section{Relation to the fast multipole method}\label{sec:fmm}
+\paragraph{Longer sweeps.} With the costs of Table~\ref{tab:sweep}, $1024$ frequencies cost
+the Legendre cell $6.1$, $7.7$ and $13.4$\,min by its series in the wavenumber, one-off cost included,
+against $34$, $51$ and $89$\,min for quadrature at each frequency ($n=6$, $10$ and $14$). The gain is the
+series'; the closed forms are what make the series exact for the touching blocks, at a one-off cost that
+over such a sweep does not matter.
 
-The fast multipole method and this paper answer different questions. The method accelerates the
-application of the whole operator to a chosen tolerance without forming its entries: it groups sources
-in a hierarchy of boxes, represents each group by a truncated multipole expansion, converts it to a local
-(Taylor) expansion about a distant box, and evaluates interactions by expansions only between sets that
-are well separated \citep{CarrierGreengardRokhlin1988}. Its elastodynamic form writes the Green's tensor
-through an addition theorem truncated at an order adjusted to the level of the tree, uses the expansions
-only between non-adjacent cells, and leaves adjacent cells to direct boundary-element integration
-\citep{ChaillatBonnetSemblat2007,Chaillat2008}. This paper computes the entries themselves, and the
-entries it is most concerned with, those of touching cells, are exactly the ones a fast multipole method
-leaves to direct integration. The two are therefore complementary: on an irregular or very large body the
-closed forms of \S\ref{sec:stable} could supply the near field of such a method. On a regular grid of
-cubes the operator is a convolution, and the fast Fourier transform applies it in $O(N\log N)$
-operations, so the expansions of \S\ref{sec:distant} are needed for exact entries, not for speed. A cube
-divides into eight cubes, so cubic cells are the leaves of an octree, the tree of the fast multipole
-method in three dimensions; if cells are refined where the medium varies fastest, the tree becomes the
-natural structure, and its coupling blocks are those of this paper. That is an outlook, not a result.
+\section{Applications to a graded sphere}\label{sec:applications}
 
-\section{The graded sphere, power by power in the frequency}\label{sec:sphereseries}
+Two applications use what is special about the coefficients: that they are exact, and that they do
+not depend on the frequency.
+
+\subsection{The graded sphere, power by power in the frequency}\label{sec:sphereseries}
 
 The frequency-independent coefficients make possible something that a quadrature at each frequency does
 not: the scattering of a cell model expanded in powers of the frequency, each power obtained on its own
@@ -948,7 +968,7 @@ the shell, $x$ the fraction of the shell measured from the surface.}
 \paragraph{The exact series.} The sphere's per-order $T$-matrix $T_n(w)$, $w=k_Pa$, is analytic near
 $w=0$. Its Taylor coefficients are obtained by Cauchy's formula on a circle in the complex $w$-plane, at
 $90$ digits from the radial (Takeuchi--Saito) integration of the graded shell, with no difference
-quotient in the frequency (\path{Mathematica/GradedSphere_LowFrequency.wl}). Four checks: for the homogeneous sphere the
+quotient in the frequency. Four checks: for the homogeneous sphere the
 contour coefficients equal its exact symbolic series to every digit; for the graded sphere, contours of
 radius $0.2$ and $0.3$ and of $48$ and $64$ points agree to $8\times10^{-41}$; the series to $w^{24}$
 reproduces the direct $T$-matrix at $w=0.01$ and $0.05$ to $4\times10^{-33}$; and as the shell narrows, the
@@ -980,10 +1000,10 @@ and so is its solution, $\psi=\sum_jk_S^j\psi_j$, each order one solve with the 
 \end{equation}
 The far field is expanded the same way, through $\mathrm e^{-\mathrm ik\mathbf x\cdot\uvec{r}}$ and the
 source, so every power of the cell model's amplitude is obtained directly: no frequency is sampled and
-nothing is fitted (\path{scripts/measure_graded_sphere_legendre_series.py}). The blocks are applied by fast
+nothing is fitted. The blocks are applied by fast
 Fourier transforms on the grid, and since every reflection of the cube changes only the signs of a block's
 entries, an eighth of the transformed blocks is stored. Two checks. Summed at $k_Sh=10^{-4}$, the
-$\bK_j$ reproduce the package's series blocks to $2\times10^{-16}$ at the self, face and corner offsets and
+$\bK_j$ reproduce the series blocks of \S\ref{sec:sweep} to $2\times10^{-16}$ at the self, face and corner offsets and
 at two distant ones. And on $4$ cells across, the summed series of the far field equals a direct solve at
 $k_Sa=0.02$ and $0.05$ to $4\times10^{-12}$ and $6\times10^{-11}$ of the amplitude.
 
@@ -1073,7 +1093,7 @@ coefficient converges more slowly than the rest, and whether the degree of the c
 that a solve at one frequency, which sees only their sum, cannot ask. They can be asked here because the
 coupling coefficients are exact and independent of the frequency.
 
-\section{A \texorpdfstring{$\tau$--$p$}{tau-p} section of the graded sphere}\label{sec:taup}
+\subsection{A \texorpdfstring{$\tau$--$p$}{tau-p} section of the graded sphere}\label{sec:taup}
 
 The coefficients give the blocks at any frequency for the price of a weighted sum, so a broadband response
 costs one solve per frequency. We use this to compute a seismogram with no far-field approximation: the
@@ -1131,8 +1151,8 @@ cell's polynomial source $\mathbf s$ against the plane wave,
 with $\mathbf y_c$ the cell's centre, $\mathbf s_c$ the coefficients of its monomials $\xi^{\mathbf e_c}$, and
 $a_{nl}$ the Legendre coefficients of $\xi^n$. The master functions are the sinc, $j_0(q)=\sin q/q$, and its
 relatives $j_l$, which hold for complex $q$, and are evaluated as spherical Bessel functions rather than in
-elementary form, which cancels as $q\to0$. The far-field routine needs only this one change, a complex unit
-direction (\path{cubic_scattering/graded_voxel/farfield.py}, \texttt{source\_moments}). The closed form agrees
+elementary form, which cancels as $q\to0$. A far-field routine therefore needs only one change, a complex
+unit direction. The closed form agrees
 with a $40$-digit quadrature of $F_n$ to $2\times10^{-15}$, and on a solved cell model with a ten-point Gauss
 rule per cell to $3\times10^{-15}$.
 
@@ -1169,7 +1189,7 @@ Eq.~\eqref{eq:farseries}, the Gauss block standing in only where the far series 
 it holds. For cells of degree two the far blocks are summed the same way, and the four touching orbits are
 integrated at each frequency: the universal moments to the order that $k_Sa=3$ needs would cost hours once,
 the integration of those four blocks $13$\,s per frequency. The system is solved by GMRES to $10^{-11}$, with
-the blocks applied by fast Fourier transforms (\S\ref{sec:sphereseries}). For degree one the sweep took $37$\,min, the exact sphere included (\path{scripts/taup_graded_sphere.py}); for degree two,
+the blocks applied by fast Fourier transforms (\S\ref{sec:sphereseries}). For degree one the sweep took $37$\,min, the exact sphere included; for degree two,
 at $32$ of the same frequencies (every fourth, which the section's $60$\,ms of signal allows, its period in
 time being then $0.22$\,s), it took $24$\,min, $5$\,min of it once for the far coefficients and $37$\,s per
 frequency after that.
@@ -1228,53 +1248,6 @@ $1.7\times10^{-6}$ of the peak, $40$ to $220$ times less than the cells of degre
 error in $c_P$ is $1.3\times10^{-6}$ to $1.8\times10^{-6}$ up to $k_Sa\approx2.3$ and $2.6\times10^{-6}$ at
 $k_Sa=3$: flat across the band, where that of the cells of degree one grows tenfold.
 
-\section{Why the coefficients are evaluated in closed form}\label{sec:why}
-
-Evaluating every coefficient in closed form costs far more effort than quadrature. The series in the
-wavenumber of \S\ref{sec:sweep} does not by itself justify it: coefficients computed by Gauss rules are
-just as independent of the frequency, and over a sweep they cost as little per frequency. What justifies
-it is what quadrature cannot provide, and each point below rests on a measurement.
-
-\paragraph{Cells that touch.} For a space-filling tessellation the coupling of a cell with its $26$
-neighbours cannot be had from the expansion about the cell centres (\S\ref{sec:twocentre}): at face
-contact the two-centre series diverges, at edge contact it stalls, and more digits do not help. Those blocks need the integrals,
-singular for touching cells, and the closed forms give them with the singularity treated exactly rather
-than resolved by a quadrature.
-
-\paragraph{Quadrature fails silently outside its calibration.} A Gauss rule is accurate where its order was
-chosen by measurement, and nothing warns when it is used outside that range. Two cases show it. A Gauss
-order for the blocks of distant cells set by distance alone leaves them wrong by $3\times10^{-11}$ at
-$k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:distant}). And for the face block of the static strain coupling of two uniform cells, a tensor
-Gauss rule whose two cells share one set of lateral nodes moved monotonically through $8.45$, $9.20$,
-$9.59$, $9.85$ and $10.02\times10^{-12}$ as its order rose from $4$ to $12$, with steps that shrank as if it
-were converging, towards about $1.05\times10^{-11}$; the exact value is $3.009\times10^{-12}$, obtained by a
-subdivision fixed point and by a reduction to smooth integrals that agree to $10^{-13}$
-(\path{scripts/face_s_rederivation.py}). Refinement does not reveal such a limit; an independent exact
-value does.
-
-\paragraph{Each coefficient carries its own error estimate.} A closed form is a sum whose terms are known,
-so the magnitude $M$ on which its rounding acts can be carried through every step of the evaluation, as
-in a running error analysis \citep{Higham2002}, and $\varepsilon M$ is then an estimate of the error of each
-coefficient, and $M/|U|$ its condition number \eqref{eq:kappa}. Quadrature gives no such estimate without a convergence
-study, and the last case above is one in which a convergence study misleads.
-
-\paragraph{An independent check.} The closed forms share no step with quadrature, so the agreement of the
-two checks each, and exposes errors that either alone would hide: the cancellation of the two radial
-scalars in the multipole blocks at low frequency, up to $9\times10^{-5}$ (\S\ref{sec:multipoles},
-\S\ref{sec:distant}); a Gauss order that ignores the frequency, above; and, in the other direction, the four
-to five digits that the closed forms lose in the power basis (\S\ref{sec:conditioning}).
-
-\paragraph{Universal tables.} The coefficients depend on neither the frequency, the cell size nor the
-medium. Computed in closed form and checked once, they can be tabulated and reused for every model, with no
-rule to choose and no calibration to trust for each new one. The one-off cost, $6$ to $11$ minutes for every
-offset of the grids of Table~\ref{tab:sweep}, is paid once for all models and all frequencies.
-
-\paragraph{Cost over a sweep.} With the measured costs of Table~\ref{tab:sweep}, $1024$ frequencies cost
-the Legendre cell $6.1$, $7.7$ and $13.4$\,min by its series in the wavenumber, one-off cost included,
-against $34$, $51$ and $89$\,min for quadrature at each frequency ($n=6$, $10$ and $14$). The gain is the
-series'; the closed forms are what make the series exact for the touching blocks, at a one-off cost that
-over such a sweep does not matter.
-
 \section{Discussion}\label{sec:discussion}
 
 The closed forms of the touching blocks are exact: evaluated at forty digits they agree with the
@@ -1297,6 +1270,56 @@ those integrals too we have not examined. We have not found the relation \eqref{
 use of Legendre moments by a truncated boundary-value problem for integrals over boxes, in the literature
 we searched; the search was limited, and this is a statement of what we did not find.
 
+\paragraph{Closed forms or quadrature.} Coefficients computed by Gauss rules are as independent of the
+frequency as the closed forms, and over a sweep they cost as little per frequency, so the series in the
+wavenumber does not by itself justify the closed forms. Four properties do.
+\begin{itemize}
+\item \emph{Quadrature fails silently outside its calibration.} A Gauss rule is accurate where its order was
+chosen by measurement, and nothing warns when it is used outside that range. Two cases show it. A Gauss
+order for the blocks of distant cells set by distance alone leaves them wrong by $3\times10^{-11}$ at
+$k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:routes}). And for the face block of the static strain coupling of two uniform cells, a tensor
+Gauss rule whose two cells share one set of lateral nodes moved monotonically through $8.45$, $9.20$,
+$9.59$, $9.85$ and $10.02\times10^{-12}$ as its order rose from $4$ to $12$, with steps that shrank as if it
+were converging, towards about $1.05\times10^{-11}$; the exact value is $3.009\times10^{-12}$, obtained by a
+subdivision fixed point and by a reduction to smooth integrals that agree to $10^{-13}$. Refinement does not reveal such a limit; an independent exact
+value does.
+
+\item \emph{Each coefficient carries its own error estimate.} A closed form is a sum whose terms are known,
+so the magnitude $M$ on which its rounding acts can be carried through every step of the evaluation, as
+in a running error analysis \citep{Higham2002}, and $\varepsilon M$ is then an estimate of the error of each
+coefficient, and $M/|U|$ its condition number \eqref{eq:kappa}. Quadrature gives no such estimate without a convergence
+study, and the last case above is one in which a convergence study misleads.
+
+\item \emph{An independent check.} The closed forms share no step with quadrature, so the agreement of the
+two checks each, and exposes errors that either alone would hide: the cancellation of the two radial
+scalars in the multipole blocks at low frequency, up to $9\times10^{-5}$ (\S\ref{sec:multipoles},
+\S\ref{sec:routes}); a Gauss order that ignores the frequency, above; and, in the other direction, the four
+to five digits that the closed forms lose in the power basis (\S\ref{sec:conditioning}).
+
+\item \emph{Universal tables.} The coefficients depend on neither the frequency, the cell size nor the
+medium. Computed in closed form and checked once, they can be tabulated and reused for every model, with no
+rule to choose and no calibration to trust for each new one. The one-off cost, $6$ to $11$ minutes for every
+offset of the grids of Table~\ref{tab:sweep}, is paid once for all models and all frequencies.
+\end{itemize}
+
+\paragraph{Relation to the fast multipole method.} The fast multipole method and this paper answer different
+questions. The method accelerates the
+application of the whole operator to a chosen tolerance without forming its entries: it groups sources
+in a hierarchy of boxes, represents each group by a truncated multipole expansion, converts it to a local
+(Taylor) expansion about a distant box, and evaluates interactions by expansions only between sets that
+are well separated \citep{CarrierGreengardRokhlin1988}. Its elastodynamic form writes the Green's tensor
+through an addition theorem truncated at an order adjusted to the level of the tree, uses the expansions
+only between non-adjacent cells, and leaves adjacent cells to direct boundary-element integration
+\citep{ChaillatBonnetSemblat2007,Chaillat2008}. This paper computes the entries themselves, and the
+entries it is most concerned with, those of touching cells, are exactly the ones a fast multipole method
+leaves to direct integration. The two are therefore complementary: on an irregular or very large body the
+closed forms of \S\ref{sec:stable} could supply the near field of such a method. On a regular grid of
+cubes the operator is a convolution, and the fast Fourier transform applies it in $O(N\log N)$
+operations, so the expansions of \S\ref{sec:multipoles} are needed for exact entries, not for speed. A cube
+divides into eight cubes, so cubic cells are the leaves of an octree, the tree of the fast multipole
+method in three dimensions; if cells are refined where the medium varies fastest, the tree becomes the
+natural structure, and its coupling blocks are those of this paper. That is an outlook, not a result.
+
 \section*{Data availability}
 {\sloppy
 The Mathematica notebooks and Python scripts that derive and check every result, and the package they
@@ -1306,8 +1329,9 @@ test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalcul
 \path{cubic_scattering/graded_voxel/legendre_moments.py}, the blocks
 \path{cubic_scattering/graded_voxel/blocks.py}, and the tests
 \path{cubic_scattering/tests/test_legendre_moments.py} and
-\path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}; the two-centre series at contact,
-\path{scripts/measure_touching_multipole_series.py}; the distant blocks,
+\path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}; the near blocks and their cost, \path{scripts/measure_galerkin_near_blocks.py}; the two-centre series at contact,
+\path{scripts/measure_touching_multipole_series.py}; a face block checked by an exact reduction,
+\path{scripts/face_s_rederivation.py}; the distant blocks,
 \path{cubic_scattering/graded_voxel/multipole.py} and \path{scripts/measure_distant_cell_blocks.py}; the
 sweep, \path{scripts/measure_frequency_sweep_cost.py}; and the graded sphere power by power,
 \path{scripts/measure_graded_sphere_legendre_series.py}, with the exact series
