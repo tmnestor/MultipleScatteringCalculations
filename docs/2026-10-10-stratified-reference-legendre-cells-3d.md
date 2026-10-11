@@ -1,6 +1,6 @@
 # The Stratified Reference in Three Dimensions for the Legendre-Cell Voxel — Plan
 
-**10 October 2026.** Status: plan, no code yet. This replaces the first version of this file, written
+**10 October 2026.** Status: in progress (see Progress); the next steps are at the end of Progress. This replaces the first version of this file, written
 earlier the same day. That version was built on the stage-1 sweep: one point 9-vector per voxel, at a
 fixed `k_y`, over two dimensions. **This plan is three-dimensional, and its unknowns are those of
 Papers 1 and 2.**
@@ -127,6 +127,89 @@ away from interfaces.
   2. Speed. About 25–40 s per block now; the inner loops are Python.
   3. The production apply: march over all pairs, plus a local correction `closed(static) − grid(static)`
      for the touching image and transmission pairs.
+
+**11 October 2026: beyond the static image, and the frequency sweep.**
+- **Convergence, corrected.** The plane-wave remainder of a touching block converges as `Q⁻²` without the
+  static image and `Q⁻⁴` with it (the earlier `Q⁻³ → Q⁻⁵` was the change between fourfold cutoffs, not
+  the order). Six-shell sweep at 40 digits: `scripts/measure_interface_static_subtraction.py`.
+- **The `O(ω²)` term.** `G = G0 + ω² G1 + O(ω⁴)` at large q, by perturbation of the static problem
+  (`Mathematica/InterfaceOmega2.wl`, twin `scripts/derive_interface_omega2.py`). Checks: identical media;
+  the residual against the 50-digit exact kernels falls 16× per halving of ω; the two derivations agree to
+  5e-51. Its spatial form would need Φ₃, Φ₄ (finite parts only), so it is used in the wavenumber domain.
+- **The split.** `K(ω) = D(ω) + A0 + ω² A1`, with
+  - `D = ∫_{q<Q0} Y`, per frequency, in double precision;
+  - `A0 = K0 − ∫_{q<Q0} Y0` and `A1 = ∫_{q>Q0} Y1`, once per arrangement of cells.
+
+  The dropped remainder converges as `Q0⁻⁶`. For the measurements, reflected and transmitted, see
+  `scripts/measure_interface_omega2_subtraction.py [R|T]`: Q0h = 10 leaves 4e-10 at ωh/β = 1/6, and
+  Q0h = 40 leaves 6e-11 at ωh/β = 1.
+- **The package.** `cubic_scattering/interface_spectral.py`:
+  - **API.** `frequency_independent_parts`, `lateral_harmonics`, `truncated_blocks`, `interface_block` and
+    `sweep`.
+  - **Structure.** The static and `ω²` integrands are Laurent polynomials in q times elementary vertical
+    moments. The rotation to the wave direction has nine harmonics only. The azimuthal integrals `S_n(q)` of
+    the cells' lateral moments are tabulated once per lateral offset (Chebyshev). Each frequency costs one
+    6 × 6 interface solve per radial node.
+  - **Cost.** 10–300 ms per block per frequency, against 1–16 s for the mode sum at every (q, φ), which is
+    kept as `_truncated_blocks_direct`.
+- **Gates.** `scripts/gate_interface_spectral.py --full`:
+  - double frames against 40 digits;
+  - identical media against Paper 2's `coupling_block`: 3e-10 and 5e-11 (face, edge, corner, mirrored);
+  - different media against the 40-digit references (`scripts/data/interface_omega2_reference_{R,T}.json`):
+    R 3.6e-10 / 5.9e-11, T 2.2e-10 / 3.9e-11;
+  - the two routes of D.
+
+  Unit tests: `cubic_scattering/tests/test_interface_spectral.py`.
+- **Cost still to fix.** A0 and A1 take about 10–17 s per pair, and every touching pair needs them at
+  every lateral offset. That does not scale to a grid along the interface (step 1 below).
+
+**Next (decided 11 October): step 1, then step 2.**
+
+**Step 1 — make the near-interface corrections local.**
+- **Why.** A0 and A1 are high-pass parts of kernels that are smooth away from the touching point. With the
+  sharp cutoff `θ(q − Q0)` they ring in space (Gibbs) and decay slowly with lateral offset.
+- **The change.** Replace the cutoff by a smooth window `χ(q)` (0 below `Q0/2`, 1 above `Q0`, `C^∞` or a
+  high-order polynomial ramp), in both A0/A1 and D, so that `D + A0 + ω² A1` is unchanged:
+  - `K = ∫ [Y − χ (Y0 + ω² Y1)] + (K0 − ∫ (1 − χ) Y0) + ω² ∫ χ Y1`.
+- **Measure.**
+  - the decay of A0 and A1 with lateral offset (0 … 16 cells), sharp against smooth window;
+  - the remainder `E` against the window width: the window must not spoil the `Q0⁻⁶` law;
+  - hence the radius beyond which no correction is needed at a given tolerance.
+- **Then.**
+  - Corrections only for pairs within that radius. D for every offset at once on the shared lateral grid
+    (FFT in (k_x, k_y), or the polar `S_n` route per offset if the radius is small).
+  - Gate: the full gate unchanged; plus a row of cells along the interface against per-pair
+    `interface_block`.
+- **Deliverables.** A windowed `frequency_independent_parts` and `truncated_blocks`; the measurement script
+  `scripts/measure_interface_correction_locality.py`; the gate extended.
+
+**Step 2 — a scattering solve near an interface.**
+- **The problem.** A Legendre-cell scatterer (Paper 1's single-site T-matrix, Paper 2's direct blocks)
+  touching or near a welded interface. The reflected and transmitted couplings come from step 1. Solve with
+  GMRES (Stage A below) over a frequency sweep: setup once, then each frequency.
+- **Checks.**
+  - **Identical media:** the solution equals the homogeneous solver's to its tolerance.
+  - **A weak scatterer, different media:** against the Born approximation computed independently with the
+    reflectivity plane waves (`kennett_layers` / `stratified_march` spectra).
+  - **Convergence in p** (0, 1, 2) at Paper 3's order.
+  - **Cost** per frequency against setup.
+- **Then.** Stage A/B below (layer stacks: reflections from interfaces the cells do not touch are smooth
+  and go to the plane waves), the two-way march.
+
+**Paper status (`LatexPDFs/InterfaceCouplingIntegrals`, 18 pp; to be resumed later).**
+- **Contents.** Static image and transmission in closed form (356 / 275 terms, B₁, B₂), Legendre/pyramid
+  blocks, Table 1 (Q⁻² → Q⁻⁴), the `ω²` section with Table 4 (Q⁻⁶, two frequencies, reflected and
+  transmitted), the sweep implementation and its verification rows.
+- **Open for the paper.**
+  - step 1's locality result, which belongs in the ω² section or the Discussion;
+  - whether to include step 2's end-to-end solve as an application section;
+  - one stated limitation (base integrals for cubic corner boxes only).
+- **Older open items.**
+  - Scan Papers 1 and 3 for conclusions resting on numpy `leggauss` weights.
+  - The same-sign ~1e-15 bias in Paper 2's 3-D pieces.
+  - An Ooura–Mori check of the touching-image block.
+
+---
 
 ## 1. Goal
 
