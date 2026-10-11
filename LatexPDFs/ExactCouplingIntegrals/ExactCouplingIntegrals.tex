@@ -98,15 +98,13 @@ Both reproduce the exact zero of the $(ka)^3$ coefficient to round-off. Summed a
 sweep, the same coefficients give the $\tau$--$p$ section of the sphere on a plane at $1.5$ radii from its
 centre, evanescent waves included, with no far-field approximation: the largest difference from the exact
 section, relative to its peak, is $1.7\times10^{-6}$ with cells of degree two and $1.2\times10^{-4}$ with
-cells of degree one. The blocks extend to cells at a welded interface between two media: the
-static image of the interface, Kelvin's image with Mindlin's logarithmic terms written as a line of
-images, and the static field transmitted across it give their singular part in closed form, and the plane
-waves carry the remainder.
+cells of degree one.
 \end{abstract}
 
 % =====================================================================================================
-% Paper 2 of three: 1. the single-site T-matrix of a Legendre cell (LegendreCellTMatrix), 2. the coupling
-% between cells (this paper), 3. the error of polynomial voxels (PolynomialVoxelError). The single cell and the
+% Paper 2 of the series: 1. the single-site T-matrix of a Legendre cell (LegendreCellTMatrix), 2. the coupling
+% between cells (this paper), 3. the error of polynomial voxels (PolynomialVoxelError), 4. cells at a welded
+% interface (InterfaceCouplingIntegrals, split out of this paper's former section 11 on 11 October 2026). The single cell and the
 % Cartesian multipole hierarchy (superseded by the Legendre expansion, archived) were moved out on 9 October 2026; the graded-sphere series was recomputed
 % with Legendre cells (scripts/measure_graded_sphere_legendre_series.py).
 % =====================================================================================================
@@ -171,9 +169,7 @@ Sections~\ref{sec:conditioning} to~\ref{sec:results} measure the cost of the pow
 forty-digit reference, and give the evaluation in a Legendre basis with its accuracy and cost. Section~\ref{sec:multipoles} fixes what
 \emph{multipole} means here, \S\ref{sec:distant} couples cells that do not touch, and \S\ref{sec:sweep}
 separates what is computed once from what each frequency costs. Section~\ref{sec:fmm} relates the work to
-the fast multipole method. Section~\ref{sec:interface} extends the blocks to cells at a welded
-interface, through the static image of the interface and the static field transmitted across it, both in
-closed form. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
+the fast multipole method. Section~\ref{sec:sphereseries} uses the exact coefficients to expand a whole cell
 model of a graded sphere in powers of the frequency, \S\ref{sec:taup} sums them over a band of frequencies
 into a $\tau$--$p$ seismogram of the same sphere, and \S\ref{sec:why} sets out why the coefficients are
 evaluated in closed form rather than by quadrature.
@@ -393,8 +389,8 @@ reach of the expansion that methods leaving gaps between their scatterers rely o
 reference medium it is also where the coupling is strongest. In a stratified one, reflections and guided
 waves couple distant cells as strongly, but the singular part of the Green's tensor is still that of a
 homogeneous medium with the local properties, so the touching blocks need these integrals whatever the
-reference; next to an interface the reflected part is singular as well, and is taken in closed form in
-\S\ref{sec:interface}. Two statements
+reference; next to an interface the reflected part is singular as well, and is treated separately
+\citep{NestorInterface2026}. Two statements
 should be kept apart. For the series, the condition is not necessary but it is not idle either: the series
 converges at corner contact, where the spheres just touch, and fails at face and edge contact however its
 terms are evaluated, since here the pair moments are exact and the sums carried to $60$ digits. For the
@@ -924,252 +920,6 @@ divides into eight cubes, so cubic cells are the leaves of an octree, the tree o
 method in three dimensions; if cells are refined where the medium varies fastest, the tree becomes the
 natural structure, and its coupling blocks are those of this paper. That is an outlook, not a result.
 
-\section{Cells at a welded interface}\label{sec:interface}
-
-In a stratified reference medium the Green's tensor of a layer is that of a homogeneous medium plus the
-waves reflected and transmitted at the interfaces. Away from the interfaces the added part is smooth, and
-the coupling it brings is carried by plane waves. We first state the plane-wave (Weyl) representation of
-the homogeneous-medium blocks, with the closed-form cell moments of Eq.~\eqref{eq:cellmoment} at both
-ends. Take coordinates in the order $(z,x,y)$, $z$ the depth, and a lateral wavenumber
-$\mathbf k=(k_x,k_y)\in\mathbb R^2$. For each wave $\nu\in\{\mathrm P,\mathrm{SV},\mathrm{SH}\}$, with speed
-$c_\nu$ ($c_{\mathrm P}=\alpha$, $c_{\mathrm{SV}}=c_{\mathrm{SH}}=\beta$), let
-\[
-  k_{z,\nu}(\mathbf k)=\bigl(\omega^2/c_\nu^2-|\mathbf k|^2\bigr)^{1/2},\quad \operatorname{Im}k_{z,\nu}\ge0,\qquad
-  \mathbf k_\nu^\sigma=(\sigma k_{z,\nu},k_x,k_y),\quad \sigma=\pm1,
-\]
-the wave vector travelling down ($\sigma=+1$) or up ($\sigma=-1$); $\mathbf k_\nu^\sigma\cdot\mathbf k_\nu^\sigma
-=\omega^2/c_\nu^2$ for every $\mathbf k$. Its polarisations are
-\[
-  \mathbf e_{\mathrm P}^\sigma=\frac{c_{\mathrm P}}{\omega}\,\mathbf k_{\mathrm P}^\sigma,\qquad
-  \mathbf e_{\mathrm{SH}}=\frac{(0,-k_y,k_x)}{|\mathbf k|},\qquad
-  \mathbf e_{\mathrm{SV}}^\sigma=\frac{c_{\mathrm{SV}}}{\omega}\,\mathbf k_{\mathrm{SV}}^\sigma\times\mathbf e_{\mathrm{SH}},
-\]
-($\mathbf e_{\mathrm{SH}}=(0,1,0)$ at $\mathbf k=\mathbf 0$), each unit in the bilinear sense,
-$\mathbf e\cdot\mathbf e=1$, which, unlike $\mathbf e\cdot\bar{\mathbf e}=1$, continues analytically into the
-evanescent range. The state of the wave is the $9$-vector $\mathbf d_\nu^\sigma=(\mathbf e,\boldsymbol\varepsilon)$ of
-its displacement and engineering strain, $\varepsilon_{ij}=\tfrac{\mathrm i}{2}(k_ie_j+k_je_i)$ with
-$\mathbf k=\mathbf k_\nu^\sigma$ and the three shears doubled, and
-$\mathbf M=\operatorname{diag}(1,1,1,1,1,1,\tfrac12,\tfrac12,\tfrac12)$ pairs the engineering-stress source
-entries with the engineering-strain state. Then, for $\sigma(z-z')>0$,
-\begin{equation}\label{eq:modeprop}
-  \bP(\mathbf x-\mathbf x')=\frac{1}{4\pi^2}\int_{\mathbb R^2}\sum_\nu w_\nu(\mathbf k)\,
-  \mathbf d_\nu^\sigma(\mathbf k)\,\mathbf d_\nu^\sigma(\mathbf k)^{\mathsf T}\mathbf M\,
-  \mathrm e^{\mathrm i\mathbf k_\nu^\sigma\cdot(\mathbf x-\mathbf x')}\,\dd^2k,\qquad
-  w_\nu(\mathbf k)=\frac{\mathrm i}{2\rho c_\nu^2k_{z,\nu}(\mathbf k)}.
-\end{equation}
-Let the cells lie in planes that do not touch, $|R_z|\ge4h$, and set $\sigma=\operatorname{sgn}R_z$, so that
-$\sigma(z-z')\ge0$ for every $\mathbf x\in V_m$, $\mathbf x'\in V_n$. With $\mathbf x=\mathbf x_m+h\bxi$ and
-$\mathbf x'=\mathbf x_n+h\bxi'$, Eq.~\eqref{eq:block} becomes
-\begin{equation}\label{eq:modeblock}
-  \bK_{ac}(\bR)=\frac{1}{4\pi^2}\int_{\mathbb R^2}\sum_\nu w_\nu(\mathbf k)\,
-  \Lambda_a\bigl(\mathbf k_\nu^\sigma\bigr)\,\mu_c\bigl(-\mathbf k_\nu^\sigma\bigr)\,
-  \mathbf d_\nu^\sigma(\mathbf k)\,\mathbf d_\nu^\sigma(\mathbf k)^{\mathsf T}\mathbf M\,
-  \mathrm e^{\mathrm i\mathbf k_\nu^\sigma\cdot\bR}\,\dd^2k,
-\end{equation}
-with the scalar moments of the two cells, both in closed form for complex arguments,
-\begin{align*}
-  \Lambda_a(\boldsymbol\kappa)&=h^3\!\int_{[-1,1]^3}\!L_a(\bxi)\,\mathrm e^{\mathrm ih\boldsymbol\kappa\cdot\bxi}\,\dd^3\xi
-  =h^3\prod_{i}2\,\mathrm i^{l_{a,i}}j_{l_{a,i}}(h\kappa_i),\\
-  \mu_c(\boldsymbol\kappa)&=h^3\!\int_{[-1,1]^3}\!m_c(\bxi')\,\mathrm e^{\mathrm ih\boldsymbol\kappa\cdot\bxi'}\,\dd^3\xi'
-  =h^3\prod_iF_{e_{c,i}}(h\kappa_i),
-\end{align*}
-$L_a(\bxi)=\prod_iP_{l_{a,i}}(\xi_i)$ and $F_n$ of Eq.~\eqref{eq:cellmoment}. The source enters through
-$\mathbf d_\nu^{\sigma\mathsf T}\mathbf M$ and the field through $\mathbf d_\nu^\sigma$, the same vector, as
-reciprocity requires. Summed over $\nu$, the integrand of Eq.~\eqref{eq:modeprop} agrees with the residue
-form of the plane-to-plane kernel to $3\times10^{-15}$, evanescent waves and complex frequencies included;
-and Eq.~\eqref{eq:modeblock} reproduces the blocks of this paper between cells in
-different planes that do not touch to $2\times10^{-13}$ to $6\times10^{-13}$, for degree-one and degree-two
-fields and $10$, $20$ and $35$ source monomials. For cells in touching planes, $|R_z|=2h$, the integral does not converge: on the evanescent branch
-$k_{z,\nu}=\mathrm i\kappa$, $\kappa\to\infty$, the moments $\Lambda_a$ and $\mu_c$ grow as
-$\mathrm e^{\kappa h}$ each and cancel the decay $\mathrm e^{-2\kappa h}$ of
-$\mathrm e^{\mathrm i\mathbf k_\nu^\sigma\cdot\bR}$. Those blocks are the closed forms
-of the preceding sections.
-
-At an interface the same failure reaches further. A cell whose face lies on the interface is coupled to
-itself, and to its neighbours along the interface, through its own reflection, and the reflection of a cell
-in a plane comes from its mirror image, a cell that touches it. The reflected coupling of every cell next
-to an interface is therefore singular in the same way as the coupling of touching cells, and the plane-wave
-form \eqref{eq:modeblock}, with the reflection coefficients in place of the direct propagation, converges
-only algebraically. For a cell touching the interface, coupled to its own image, the change of the
-integral between successive fourfold cutoffs of the lateral wavenumber is $7.5\times10^{-3}$ and then
-$1.1\times10^{-4}$ (cutoffs $Qh=10$, $40$, $160$). The cure is the one that served the touching blocks:
-take the singular part in closed form. Its singular part is the reflection of the static field, because
-at large lateral wavenumber $q=|\mathbf k|$ the reflected kernel depends on the frequency only through
-$\omega/\beta q$. Subtracting it, the same integral changes by $4.8\times10^{-5}$ and then
-$5.1\times10^{-8}$: the remainder converges about as $Q^{-5}$ instead of $Q^{-3}$, and is left to the
-plane waves. This section obtains the static image of a welded interface in closed form and integrates
-it over a cell and the mirror image of a cell.
-
-\paragraph{The static image.} Let medium A, with Lam\'e constants $\lambda_A$, $\mu_A$, fill $z<0$ and
-medium B fill $z>0$ ($z$ is depth), welded at $z=0$, with a unit point force in A. In the frame whose $x$
-axis lies along the lateral wavevector the static Navier equations have the solutions
-$(a+bz)\,\mathrm e^{\pm qz}$, the double root of the isotropic medium; the field in A is Kelvin's plus a
-reflected field regular as $z\to-\infty$, the field in B is transmitted, and the displacement and the
-traction on planes $z=\text{const}$ are continuous. This is \citet{Rongved1955}'s problem, here solved in the
-lateral-wavenumber domain: every entry of the reflected tensor is $\mathrm e^{q(z+z')}/q$ times a polynomial
-of degree at most one in each of $qz$ and $qz'$. It was derived independently in Mathematica and in Python
-(sympy), the two agreeing to $5\times10^{-16}$, and the dynamic reflected kernel, computed from the
-reflection coefficients of the P, SV and SH waves at the same interface, tends to it as
-$(\omega/\beta q)^2$ (its difference falls a hundredfold for each tenfold decrease of $\omega/\beta q$).
-With $\zeta=-(z+z')>0$, $\boldsymbol\rho$ the lateral separation and $R=(|\boldsymbol\rho|^2+\zeta^2)^{1/2}$
-the distance to the image point, the transform to space follows from
-\begin{equation}\label{eq:imagetransform}
-  \frac{1}{4\pi^2}\int\dd^2k\;\mathrm e^{\mathrm i\mathbf k\cdot\boldsymbol\rho}\,q^{m}\mathrm e^{-q\zeta}
-  =\begin{cases}(-\partial_\zeta)^{m+1}\Phi_0,&m\ge-1,\\ \Phi_1,&m=-2,\\ \Phi_2,&m=-3,\end{cases}
-\end{equation}
-with the three potentials
-\begin{equation}\label{eq:potentials}
-  \Phi_0=\frac{1}{2\pi R},\qquad\Phi_1=-\frac{\log(R+\zeta)}{2\pi},\qquad\Phi_2=\frac{\zeta\log(R+\zeta)-R}{2\pi},
-\end{equation}
-each potential the $\zeta$-antiderivative of the one before ($\partial_\zeta\Phi_1=-\Phi_0$,
-$\partial_\zeta\Phi_2=-\Phi_1$), with a factor $\mathrm i\hat k_h$ becoming $\partial_{\rho_h}$ on the
-transform of the entry divided by $q$. The logarithmic potentials are the terms that \citet{Mindlin1936}
-found for the half-space; at a welded interface they are present for any pair of media, with coefficients
-that vanish only when the media coincide. The spatial form agrees with direct two-dimensional Fourier
-integration of the spectral kernel to $7\times10^{-13}$ to $1.3\times10^{-12}$, and the Mathematica and
-Python derivations agree to $2\times10^{-16}$.
-
-\paragraph{Canonical terms.} With the derivatives of the point propagator (a receiver derivative
-$\partial_z=\partial/\partial z-\partial_\zeta$, a source derivative $-\partial_{z'}=-\partial/\partial
-z'+\partial_\zeta$, lateral ones $\pm\partial_{\rho_h}$), the $9\times9$ static image is a sum of $356$ terms
-\begin{equation}\label{eq:imageterms}
-  c(\lambda_A,\mu_A,\lambda_B,\mu_B)\;z^{A}z'^{B}\;\partial_{\rho_x}^{\alpha_x}\partial_{\rho_y}^{\alpha_y}
-  \partial_\zeta^{\alpha_z}\Phi_j(\boldsymbol\rho,\zeta),
-\end{equation}
-in $61$ families $(j,\balpha)$: $\Phi_0$ with up to four derivatives, and $\Phi_1$ and $\Phi_2$ under
-lateral derivatives only (one to four, and two to four), a $\zeta$-derivative of a logarithmic potential
-being reduced to the potential below it. Against direct differentiation of the spatial kernel the terms
-agree to $3\times10^{-15}$. Every kernel $\partial^{\balpha}\Phi_j$ is homogeneous in $(\boldsymbol\rho,\zeta)$,
-of degree $-1-|\balpha|$, $-|\balpha|$ and $1-|\balpha|$ for $j=0,1,2$.
-
-\paragraph{The blocks.} For two cells in A the $s$-form of \eqref{eq:sform} holds with one change: the
-image kernel depends on the lateral differences $\rho_h=(x_h-x'_h)$ but on the vertical sum $\zeta=-(z+z')$.
-The lateral weights are the cross-correlations $w$ of \S\ref{sec:blocks}; the vertical weight is the
-convolution $u_{\alpha\beta}(\tau)=\int v^\alpha(\tau-v)^\beta\,\dd v$ in $\tau=v+v'$, into which the factors
-$z^A$ and $z'^B$ are expanded. The weights are computed exactly in rational arithmetic. The singular point
-$\boldsymbol\rho=0$, $\zeta=0$ is reached only when both cells touch the interface and each other
-laterally, and then at a vertex of the pieces that hold it. There the vertical weight vanishes as
-$\zeta^{1+A+B}$, and for every one of the $356$ terms the integrand is then at worst $O(R^{-2})$:
-absolutely integrable, with no distribution and no moved derivative. Pieces away from the singular point
-are smooth and are integrated by Gauss rules in coordinates centred on each piece.
-
-\paragraph{Corner moments in closed form.} On a piece with the singular point at a vertex, reflected onto the
-positive octant and of sides $a$, $b$, $c$ (here $2$ in units of $h$), every term needs the moments
-$\int_{\text{box}}\rho_x^p\rho_y^q\zeta^r\,\partial^{\balpha}\Phi_j$. For $j=0$,
-$\partial^{\balpha}R^{-1}=P_{\balpha}(\boldsymbol\rho,\zeta)\,R^{-2|\balpha|-1}$ with $P_{\balpha}$ a
-homogeneous polynomial of degree $|\balpha|$, so the moments are the master integrals \eqref{eq:boxI},
-needed here down to $n=-9$; the recursions of \S\ref{sec:conditioning} extend to them unchanged, with the
-face base case $J[0,0;-3]$ continued downward by the same derivative identity. For the logarithmic
-potentials a line of images replaces the logarithm. Since $\partial_\zeta\Phi_1=-\Phi_0$,
-$\partial_\zeta\Phi_2=-\Phi_1$, and every logarithmic term carries a lateral derivative and so vanishes as
-$\zeta\to\infty$,
-\begin{equation}\label{eq:lineofimages}
-  \partial^{\balpha}\Phi_1(\boldsymbol\rho,\zeta)=\int_\zeta^\infty\partial^{\balpha}\Phi_0(\boldsymbol\rho,t)\,\dd t,\qquad
-  \partial^{\balpha}\Phi_2(\boldsymbol\rho,\zeta)=\int_\zeta^\infty(t-\zeta)\,\partial^{\balpha}\Phi_0(\boldsymbol\rho,t)\,\dd t:
-\end{equation}
-Mindlin's terms are the Kelvin image spread along the vertical half-line below the image point. Doing the
-$\zeta$ integral of the box first leaves $\Phi_0$ against a polynomial weight in $t$, over the box and over
-the semi-infinite column $[0,a]\times[0,b]\times[c,\infty)$ above it: on $[0,c]$ the weight is
-$t^{r+1}/(r+1)$ ($j=1$) or $t^{r+2}/((r+1)(r+2))$ ($j=2$), and on the column $c^{r+1}/(r+1)$ or
-$t\,c^{r+1}/(r+1)-c^{r+2}/(r+2)$. Euler's identity holds on the semi-infinite box, the face at infinity
-carrying no flux, and its strip faces reduce to edge integrals to infinity,
-\begin{equation}\label{eq:lineinf}
-  \int_0^\infty z^r(A^2+z^2)^{n/2}\,\dd z=\tfrac12\,A^{\,r+n+1}\,\mathrm B\Bigl(\tfrac{r+1}{2},-\tfrac{r+n+1}{2}\Bigr),
-\end{equation}
-Beta functions at half-integers. The column is the semi-infinite box less the finite one. Where Euler's degree
-$p+q+r+n+3$ of a column term is negative, each of the two boxes holds a divergent integral at the singular
-corner; Euler's identity then gives Hadamard's finite part, and the two finite parts differ by the exact
-integral over the column, because their singular contributions at the shared corner are equal. Where the
-degree is zero the identity is degenerate. Those columns are reduced by integration by parts in $t$, then in
-$\rho_x$ and $\rho_y$, whose boundary terms are rectangles at height $c$ and strips at $\rho_x=a$ or
-$\rho_y=b$, away from the singular point, until two base integrals remain,
-\begin{equation}\label{eq:B12}
-  B_1=\int_0^a\!\!\int_0^b\!\!\int_c^\infty R^{-3}\,\dd t\,\dd\rho_y\,\dd\rho_x,\qquad
-  B_2=\int_0^a\!\!\int_0^b\!\!\int_c^\infty\rho_x\rho_y\,R^{-5}\,\dd t\,\dd\rho_y\,\dd\rho_x .
-\end{equation}
-In polar coordinates their radial integrals are elementary, $\log(c+\sqrt{r^2+c^2})$ and
-$c/(3\sqrt{r^2+c^2})+\tfrac23\log(c+\sqrt{r^2+c^2})$, leaving one smooth angular integral each. Both are of degree zero, so they depend only on the ratios of
-the sides, and the corner boxes here are cubes, $a=b=c$. The two triangles of the square then give equal
-integrals, and
-\begin{equation}\label{eq:B12closed}
-  B_1=\tfrac54\,\mathrm{Cl}_2\bigl(\tfrac\pi3\bigr)-G,\qquad
-  B_2=\tfrac13\log\frac{(1+\sqrt2)^2}{2(1+\sqrt3)},
-\end{equation}
-with $G$ Catalan's constant and $\mathrm{Cl}_2(\theta)=\operatorname{Im}\mathrm{Li}_2(\mathrm e^{\mathrm i\theta})$
-Clausen's function. For $B_1$, $2\int_0^{\pi/4}\log\bigl(\tfrac12(1+\sqrt{1+\sec^2\theta})\bigr)\,\dd\theta$,
-Mathematica returns Catalan's constant and dilogarithms at $\mathrm e^{\pm\mathrm i\pi/12}/\sqrt2$ and
-$\mathrm e^{\pm7\mathrm i\pi/12}/\sqrt2$. Kummer's formula for $\operatorname{Im}\mathrm{Li}_2(r\mathrm e^{\mathrm i\theta})$
-in Clausen functions has the auxiliary angle $\arctan\bigl(r\sin\theta/(1-r\cos\theta)\bigr)=\pi/6$ at both
-points, which leaves $\mathrm{Cl}_2$ at $\pi/6$, $\pi/3$, $\pi/2$ and $5\pi/6$ \citep{Lewin1981}; with
-$\mathrm{Cl}_2(\pi/2)=G$ and the duplication formula $\mathrm{Cl}_2(2\theta)=2\mathrm{Cl}_2(\theta)-2\mathrm{Cl}_2(\pi-\theta)$
-these collapse to Eq.~\eqref{eq:B12closed}. For $B_2$ the substitution $v=\cos^2\theta$ makes the angular
-integral elementary. Both agree with forty-digit quadrature to $10^{-40}$, so every moment is
-elementary apart from the two constants $G$ and $\mathrm{Cl}_2(\pi/3)$. All the moments are
-universal numbers, computed once at forty digits and stored.
-
-\paragraph{Accuracy.} The pieces were checked against routes that share nothing with them.
-\begin{itemize}
-  \item[(a)] Corner moments. Euler's reduction to the far faces with Gauss rules on the faces, against
-  tanh-sinh quadrature of the singular volume integral itself, for $\Phi_0$, $\Phi_1$ and $\Phi_2$ with up to
-  four derivatives and boxes on both sides of the singular point: $6\times10^{-16}$ to
-  $4.8\times10^{-14}$ over seven cases. The closed forms against that reduction, for all $53\,352$ moments
-  of the $61$ families with monomials of degree up to $(6,6,8)$: $1.2\times10^{-15}$, measured on the
-  scale $2^{p+q+r}$ of each monomial. $B_1$ and $B_2$ against direct three-dimensional tanh-sinh
-  quadrature: twenty digits. Against an independent evaluation in Mathematica, thirteen corner moments
-  (all three potentials, up to four derivatives, three of the degenerate columns) and $B_2$: $4.9\times10^{-23}$
-  to $1.6\times10^{-16}$, and $B_1$, by Mathematica's reduction to dilogarithms, $6\times10^{-32}$. The residual differences
-  are those of the references: the one with a known exact value, a master integral of $1/R$ over the box,
-  is off by $1.4\times10^{-17}$, while the closed forms do not change between forty and seventy digits. The
-  references integrate one coordinate exactly before a two-dimensional quadrature with Duffy coordinates at
-  the corner; a direct three-dimensional quadrature with the singular point at a corner, or over the
-  semi-infinite column, missed its precision goal without warning, by up to $5\times10^{-7}$, the failure
-  that \S\ref{sec:why} describes.
-  \item[(b)] Blocks of cells that do not touch the singular point, against a tensor Gauss rule over both
-  cells of the canonical kernel: $3\times10^{-15}$ to $8.5\times10^{-15}$ for four pairs (vertical,
-  lateral and diagonal offsets; degree-one and degree-two fields, $10$ and $20$ source monomials).
-  \item[(c)] The touching block of a cell with its own image, against the two-dimensional Fourier integral
-  of the spectral kernel \eqref{eq:imagetransform} times the plane-wave moments of the two cells, which
-  converges only algebraically: refining its cutoff and its rules together, it approaches the block as
-  $7.9\times10^{-6}$, $1.6\times10^{-6}$, $4.5\times10^{-7}$ and $2.3\times10^{-8}$ at $Qh=320$, $1280$,
-  $5120$ and $20480$, while the block does not change when the Gauss order on its faces is doubled.
-\end{itemize}
-The touching blocks with corner moments in closed form agree with those by Gauss rules on the faces to
-$1.8\times10^{-15}$, $2.6\times10^{-15}$ and $5.3\times10^{-15}$ (the cell with its image, its lateral
-neighbour, and a diagonal neighbour with a degree-two field and $35$ source monomials). Those two share the
-contraction of the corner moments with the weights in the power basis about the singular corner, which
-\S\ref{sec:conditioning} found to cost about one digit at degree two; the independent check (c) of the
-touching blocks reaches $2.3\times10^{-8}$, limited by the slow convergence of the Fourier integral. The
-Legendre basis of \S\ref{sec:stable} has not yet been applied to the image pieces.
-
-\paragraph{Cells on opposite sides.} For a source in A and a field cell in B the static coupling is the field
-transmitted into B, the whole of it, with no direct part. In the lateral-wavenumber domain every entry is
-$\mathrm e^{-q(z-z')}/q$ times a polynomial in $qz$ and $qz'$ (derived independently in Mathematica and in
-Python, agreeing to $4.2\times10^{-16}$, and its spatial form checked against the Fourier integral to
-$3.9\times10^{-16}$), so the same potentials
-\eqref{eq:potentials} apply with $\zeta=z-z'=|z|+|z'|$, the singular point being where the two cells
-touch at the interface. The transmitted field has $275$ canonical terms in $46$ families, integrable at
-that point as the image's are. In the $s$-form the vertical weight is now a cross-correlation in
-$v-v'$, like the lateral ones, and the corner moments are those above. A field cell in A with a source in
-B, and two cells in B, are the same problems mirrored in $z$ with the media exchanged: the
-displacement $u_z$ and the shear strains $\gamma_{zx}$, $\gamma_{zy}$ change sign, and each cell
-polynomial by $(-1)$ to its power of $\xi_z$. For identical media the transmitted field is Kelvin's, and
-the blocks across the interface must then be the touching blocks of this paper. They are, to
-$1.9\times10^{-15}$, $3.1\times10^{-15}$ and $6.7\times10^{-15}$ at face, edge and corner contact, to
-$4.3\times10^{-15}$ mirrored, and to $7.6\times10^{-15}$ and $3.9\times10^{-15}$ with degree-two fields and
-$20$ and $35$ source monomials, while the image vanishes identically. For different media the canonical
-terms agree with direct Fourier integration of the spectral kernel to $7.8\times10^{-13}$ and
-$6.6\times10^{-13}$, and the blocks of cells that do not touch with a tensor Gauss rule over both cells to
-$1.7\times10^{-13}$ to $5.0\times10^{-13}$, the accuracy of that rule. The dynamic transmitted kernel,
-computed from the transmission coefficients, tends to the static one as $(\omega/\beta q)^2$.
-
-\paragraph{What remains.} The dynamic remainder of the reflected and transmitted kernels, each less its
-static part, is smooth, and is left to the plane waves of
-\eqref{eq:modeblock}, whose interface operators are those of a stratified reference
-\citep{Kennett1983}. Applied over a stack of layers by recursion, as in the reflectivity method, they give
-the coupling of every cell with every other through the stratified reference medium without tabulating its
-Green's tensor; that construction, and its use as the reference of the voxel scheme, are the subject of
-further work.
-
 \section{The graded sphere, power by power in the frequency}\label{sec:sphereseries}
 
 The frequency-independent coefficients make possible something that a quadrature at each frequency does
@@ -1565,14 +1315,7 @@ sweep, \path{scripts/measure_frequency_sweep_cost.py}; and the graded sphere pow
 \path{scratch/legendre_sphere_series/}; the diagram of the sphere, \path{scripts/plot_graded_sphere_diagram.py}; and the $\tau$--$p$ section,
 \path{scripts/taup_graded_sphere.py} and \path{scripts/plot_taup_paper.py}, with the closed-form moments
 \path{cubic_scattering/graded_voxel/farfield.py} and the exact plane-wave spectrum
-\path{scripts/gate_sphere_plane_wave_spectrum.py} and the outputs in \path{scratch/taup/}; and the interface
-image, \path{Mathematica/StaticInterfaceImage.wl}, \path{Mathematica/StaticImageSpace.wl} and
-\path{Mathematica/ImageCornerMoments.wl} and \path{Mathematica/StaticInterfaceTransmission.wl} with their
-Python twins \path{scripts/derive_static_interface_transmission.py}, \path{scripts/derive_static_interface_image.py},
-\path{scripts/derive_static_image_space.py}, \path{scripts/derive_interface_image_terms.py} and
-\path{scripts/derive_image_corner_moments.py}, the blocks \path{cubic_scattering/interface_image.py} and
-\path{cubic_scattering/image_moments.py}, the plane-wave form \path{cubic_scattering/stratified_march.py}, and
-the gates \path{scripts/gate_march_modes.py} and \path{scripts/gate_interface_image.py}.\par}
+\path{scripts/gate_sphere_plane_wave_spectrum.py} and the outputs in \path{scratch/taup/}.\par}
 
 \section*{Acknowledgments}
 This work began thirty years ago in the author's doctoral research at the Research School of Earth
