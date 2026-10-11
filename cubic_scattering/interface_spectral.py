@@ -18,7 +18,21 @@ depending on omega.  With a cutoff Q0,
 
 For a cell touching the interface with its own image, measured against 40-digit references
 (scripts/gate_interface_spectral.py): E ~ 4e-10 of the block at Q0 h = 10 when omega h / beta = 1/6, and
-~ 6e-11 at Q0 h = 40 when omega h / beta = 1, while the double-precision mode sums of D stay below 1e-11.
+~ 6e-11 at Q0 h = 40 when omega h / beta = 1, while the rounding of D's double-precision mode sums (their P and
+SV terms cancel) is 1e-11 to 3e-11 at the lower frequency and below 1e-12 at the higher.
+
+THE SWEEP.  D is evaluated in the same frame: Y(q, phi) = T(phi) Y(q, 0) M^-1 T(phi)^T M times the cells'
+lateral moments and phase, and the rotation holds only the harmonics e^{i n phi}, |n| <= 4.  So
+
+    D = sum over radial nodes  w q  sum_n  R_n(q; omega) . S_n(q),
+
+R_n the harmonics of the dynamic frame kernel (one 6 x 6 interface solve per radial node, the cells' vertical
+moments in closed form) and S_n the azimuthal integrals of the lateral moments and phase, which depend on
+neither the frequency, the media nor the depths.  S_n is tabulated once per lateral offset as piecewise
+Chebyshev series (``lateral_harmonics``) and interpolated to each frequency's radial rule, whose panel ends
+follow the branch points omega / c.  Per block and frequency this costs tens of milliseconds, against seconds
+for the mode sum at every (q, phi) (``_truncated_blocks_direct``, kept as its reference: the two agree to
+3e-15 .. 2e-11, the latter the rounding above).
 
 THE STATIC AND OMEGA^2 INTEGRANDS.  In the frame whose x axis lies along k, both kernels are X times a
 polynomial in (z, zp) with coefficients that are Laurent polynomials in q, X = e^{q(z + zp)} (reflected) or
@@ -373,6 +387,13 @@ def _harmonic_rotation() -> NDArray:
     return np.einsum("nk,kadbc->nadbc", np.exp(-1j * np.outer(_HARM, phi)) / n, K)
 
 
+def _rotate_harmonics(g: NDArray) -> NDArray:
+    """The nine angular harmonics of T(phi) g T(phi)^T M for frame kernels g (N, 9, 9): shape (N, 9, 81)."""
+    harm = _harmonic_rotation().reshape(9 * 81, 81)
+    out = (g.reshape(len(g), 81) @ harm.T).reshape(len(g), 9, 9, 9)
+    return (out * SOURCE_PAIRING).reshape(len(g), 9, 81)
+
+
 def _static_integral(
     order: int,
     kind: str,
@@ -403,7 +424,6 @@ def _static_integral(
     Vs = {e: _vertical_moments(p, zs, h, 1, q, C.shape[3] - 1) for e, p in ps.items()}
     qpow = q[None, :] ** (m0 + np.arange(C.shape[4]))[:, None]  # (nm, Nq)
     Cq = np.einsum("ijabm,mn->nijab", C, qpow)  # (Nq, 9, 9, na, nb)
-    harm = _harmonic_rotation()
     groups, rot = {}, {}
     for l in pf:
         for e in ps:
@@ -411,9 +431,7 @@ def _static_integral(
             sc = [c for c, x in enumerate(exps_s) if x[0] == e]
             groups[l, e] = (np.array(fa), np.array(sc))
             g = np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV
-            rot[l, e] = (
-                np.einsum("hadbc,nbc->nhad", harm, g) * SOURCE_PAIRING
-            ).reshape(len(q), 9, 81)
+            rot[l, e] = _rotate_harmonics(g)
     dx, dy = (rec[1] - src[1]) * h, (rec[2] - src[2]) * h
     reach = np.hypot(rec[1] - src[1], rec[2] - src[2])
     idx, kx, ky, wt = _grid(qh, wqh, h, reach)
@@ -529,7 +547,195 @@ def frequency_independent_parts(
     return a0, a1
 
 
+# ---------------------------------------------------------------------------
+# The per-frequency integral in the frame of k
+# ---------------------------------------------------------------------------
+
+
+def _lateral_harmonics_at(
+    qh: float, dxy: tuple, h: float, exps_f: tuple, exps_s: tuple
+) -> NDArray:
+    """S_n(q) = (1/4 pi^2) int dphi  lateral_a lateral_c e^{i k.Delta} e^{i n phi}, shape (9, n_test, n_source)."""
+    reach = float(np.hypot(*dxy))
+    n = _n_phi(qh, reach)
+    phi = 2 * np.pi * np.arange(n) / n
+    q = qh / h
+    kx, ky = q * np.cos(phi), q * np.sin(phi)
+    coef = (
+        np.exp(1j * (kx * dxy[0] + ky * dxy[1]) * h) * (2 * np.pi / n) / (4 * np.pi**2)
+    )
+    lf = _lateral(kx, ky, h, exps_f, True) * coef[:, None]
+    ls = _lateral(kx, ky, h, exps_s, False)
+    x = (lf[:, :, None] * np.exp(1j * np.outer(phi, _HARM))[:, None, :]).reshape(n, -1)
+    return (x.T @ ls).reshape(len(exps_f), 9, len(exps_s)).transpose(1, 0, 2)
+
+
+def _radial_width(reach: float) -> float:
+    """Panel width in q h: the lateral moments oscillate with period pi, the phase with 2 pi / reach."""
+    return np.pi / 2 / max(1.0, reach / 4)
+
+
+def lateral_harmonics(
+    offsets: list[tuple[int, int]],
+    h: float,
+    q0h: float,
+    n_source: int = 10,
+    n_test: int = 4,
+    order: int = 20,
+) -> dict:
+    """The angular harmonics S_n(q) of the cells' lateral moments, once for a frequency sweep.
+
+    For each lateral offset (in units of h) of receiver from source, S_n(q), |n| <= 4, on [0, Q0] as
+    piecewise Chebyshev series of ``order`` terms on panels of the radial rule's width.  S_n is entire in q
+    (the lateral moments are), so the series reach rounding; it depends on neither the frequency nor the
+    media nor the depths of the cells.
+
+    Returns:
+        {"q0h", "n_source", "n_test", "order", offset: (edges, coeffs)}, coeffs shape
+        (n_panels, order, 9, n_test, n_source).
+    """
+    exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
+    exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
+    x = np.cos(np.pi * (np.arange(order) + 0.5) / order)
+    vinv = np.linalg.inv(np.polynomial.chebyshev.chebvander(x, order - 1))
+    out: dict = {"q0h": q0h, "n_source": n_source, "n_test": n_test, "order": order}
+    for off in {tuple(o) for o in offsets}:
+        width = _radial_width(float(np.hypot(*off)))
+        n_pan = max(1, int(np.ceil(q0h / width)))
+        edges = np.linspace(0.0, q0h, n_pan + 1)
+        coeffs = []
+        for e0, e1 in itertools.pairwise(edges):
+            vals = np.stack(
+                [
+                    _lateral_harmonics_at(
+                        e0 + (e1 - e0) * (t + 1) / 2, off, h, exps_f, exps_s
+                    )
+                    for t in x
+                ]
+            )
+            coeffs.append(np.einsum("kj,j...->k...", vinv, vals))
+        out[off] = (edges, np.stack(coeffs))
+    return out
+
+
+def _interpolate(table_entry: tuple, qh: NDArray) -> NDArray:
+    """S_n at the radial nodes, shape (N, 9, n_test, n_source)."""
+    edges, coeffs = table_entry
+    i = np.clip(np.searchsorted(edges, qh, side="right") - 1, 0, len(edges) - 2)
+    x = 2 * (qh - edges[i]) / (edges[i + 1] - edges[i]) - 1
+    v = np.polynomial.chebyshev.chebvander(x, coeffs.shape[1] - 1)
+    return np.einsum("rk,rk...->r...", v, coeffs[i])
+
+
+def _dynamic_frames(
+    q: NDArray,
+    omega: float,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    rec: tuple,
+    src: tuple,
+    h: float,
+    lz: list,
+    ez: list,
+) -> dict:
+    """The dynamic frame kernel at k = (q, 0) with the cells' vertical moments, {(l, e): (N, 9, 9)}.
+
+    Columns paired as the plane-wave integrand (engineering stress weighted by SOURCE_PAIRING); lateral
+    moments excluded.
+    """
+    zero = np.zeros_like(q)
+    st_a, _, w_a, kz_a = mode_matrices(q, zero, omega, above)
+    rt = interface_rt(q, zero, omega, above, below)
+    if rec[0] < 0:  # reflected: up-going in A
+        states, kzw, amp = st_a[:, :, 3:], -kz_a[:, 3:], rt["R_d"]
+    else:  # transmitted: down-going in B
+        st_b, _, _, kz_b = mode_matrices(q, zero, omega, below)
+        states, kzw, amp = st_b[:, :, :3], kz_b[:, :3], rt["T_d"]
+    zr, zs = rec[0] * h, src[0] * h
+    kzs = kz_a[:, :3]
+    vf = {
+        l: h * np.exp(1j * kzw * zr) * 2.0 * 1j**l * spherical_jn(l, kzw * h)
+        for l in lz
+    }
+    vs = {e: h * np.exp(-1j * kzs * zs) * monomial_fourier(e, -kzs * h) for e in ez}
+    right = (
+        st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING
+    )  # (N, n, j)
+    out = {}
+    for l in lz:
+        left = states * vf[l][:, None, :]  # (N, i, m)
+        mid = left @ amp  # (N, i, n)
+        for e in ez:
+            out[l, e] = mid @ (right * vs[e][:, :, None])
+    return out
+
+
 def truncated_blocks(
+    pairs: list[tuple[tuple[int, int, int], tuple[int, int, int]]],
+    h: float,
+    omega: float,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+    q0h: float = 10.0,
+    table: dict | None = None,
+) -> list[NDArray]:
+    """D = (1/4 pi^2) int_{q < Q0} Y d^2k for many pairs (receiver, source) with sources in A (a source in B
+    is mirrored onto A by ``interface_block``).
+
+    In the frame of k: per radial node one 6 x 6 interface solve and the dynamic frame kernel with the
+    cells' vertical moments in closed form, split into its nine angular harmonics; the azimuthal integral
+    is the table S_n(q) of ``lateral_harmonics``, shared by every frequency.  The radial rule has the branch
+    points of both media as panel ends, so it changes with the frequency; S_n is interpolated to it.
+
+    Args:
+        table: ``lateral_harmonics`` for the pairs' lateral offsets with the same q0h, n_source, n_test;
+            built here when absent (pass it when sweeping frequency).
+
+    Returns:
+        One block per pair, shape (n_test, n_source, 9, 9), complex.
+    """
+    for rec, src in pairs:
+        _check(rec, src)
+    offsets = [(r[1] - s[1], r[2] - s[2]) for r, s in pairs]
+    if table is None:
+        table = lateral_harmonics(offsets, h, q0h, n_source, n_test)
+    if (table["q0h"], table["n_source"], table["n_test"]) != (q0h, n_source, n_test):
+        raise ValueError(
+            "truncated_blocks: the table was built for another q0h, n_source or n_test."
+        )
+    exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
+    exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
+    lz = sorted({e[0] for e in exps_f})
+    ez = sorted({e[0] for e in exps_s})
+    fa = {l: np.array([a for a, x in enumerate(exps_f) if x[0] == l]) for l in lz}
+    sc = {e: np.array([c for c, x in enumerate(exps_s) if x[0] == e]) for e in ez}
+    branch = [omega * h / c for m in (above, below) for c in (m.alpha, m.beta)]
+    rules: dict = {}
+    frames: dict = {}
+    out = []
+    for (rec, src), off in zip(pairs, offsets, strict=True):
+        width = _radial_width(float(np.hypot(*off)))
+        if width not in rules:
+            rules[width] = radial_rule(q0h, branch, width)
+        qh, w = rules[width]
+        key = (width, rec[0], src[0])
+        if key not in frames:
+            fr = _dynamic_frames(qh / h, omega, above, below, rec, src, h, lz, ez)
+            frames[key] = {k: _rotate_harmonics(v @ _M_INV) for k, v in fr.items()}
+        S = _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
+        blk = np.zeros((n_test, n_source, 81), dtype=complex)
+        for (l, e), rot in frames[key].items():
+            sub = S[:, :, fa[l]][:, :, :, sc[e]].reshape(-1, len(fa[l]) * len(sc[e]))
+            blk[np.ix_(fa[l], sc[e])] += (sub.T @ rot.reshape(-1, 81)).reshape(
+                len(fa[l]), len(sc[e]), 81
+            )
+        out.append(blk.reshape(n_test, n_source, 9, 9))
+    return out
+
+
+def _truncated_blocks_direct(
     pairs: list[tuple[tuple[int, int, int], tuple[int, int, int]]],
     h: float,
     omega: float,
@@ -540,12 +746,10 @@ def truncated_blocks(
     q0h: float = 10.0,
     chunk: int = 20000,
 ) -> list[NDArray]:
-    """D = (1/4 pi^2) int_{q < Q0} Y d^2k for many pairs (receiver, source) with sources in A, on one grid
-    (a source in B is mirrored onto A by ``interface_block``).
+    """D by the mode sum at every point of a polar grid: the reference for ``truncated_blocks``.
 
-    The reflection and transmission coefficients and the mode states are computed once per point of a
-    polar grid that every pair shares (radial nodes with the branch points of both media as panel ends;
-    the azimuthal rule set by the widest lateral offset).
+    The reflection and transmission coefficients, the mode states and the cells' 3-D moments are evaluated
+    at each (q, phi); everything is recomputed at each frequency.
 
     Returns:
         One block per pair, shape (n_test, n_source, 9, 9), complex.
@@ -619,10 +823,12 @@ def interface_block(
     q0h: float = 10.0,
     q1h: float = 160.0,
     parts: tuple[NDArray, NDArray] | None = None,
+    table: dict | None = None,
 ) -> NDArray:
     """The reflected (cells on one side) or transmitted (opposite sides) block at one frequency: D + A0 + w^2 A1.
 
-    ``parts`` = ``frequency_independent_parts(...)`` with the same arguments, passed when sweeping frequency.
+    ``parts`` = ``frequency_independent_parts(...)`` and ``table`` = ``lateral_harmonics(...)`` for the pair's
+    lateral offset, with the same arguments: both independent of the frequency, passed when sweeping it.
     """
     rec, src = tuple(rec_centre), tuple(src_centre)
     a0, a1 = (
@@ -643,10 +849,43 @@ def interface_block(
                 n_source,
                 n_test,
                 q0h,
+                table,
             )[0]
         )
     else:
         d = truncated_blocks(
-            [(rec, src)], h, omega, above, below, n_source, n_test, q0h
+            [(rec, src)], h, omega, above, below, n_source, n_test, q0h, table
         )[0]
     return d + a0 + omega**2 * a1
+
+
+def sweep(
+    rec_centre: tuple[int, int, int],
+    src_centre: tuple[int, int, int],
+    h: float,
+    omegas: list[float],
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+    q0h: float = 10.0,
+    q1h: float = 160.0,
+) -> list[NDArray]:
+    """The block at each frequency, with A0, A1 and the table S_n computed once.
+
+    Q0 must suit the highest frequency: Q0 h = 10 gives about 4e-10 of the block at omega h / beta = 1/6 and
+    Q0 h = 40 about 6e-11 at omega h / beta = 1 (the remainder falls as (omega / beta Q0)^4 Q0^-2).
+    """
+    rec, src = tuple(rec_centre), tuple(src_centre)
+    parts = frequency_independent_parts(
+        rec, src, h, above, below, n_source, n_test, q0h, q1h
+    )
+    table = lateral_harmonics(
+        [(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test
+    )
+    return [
+        interface_block(
+            rec, src, h, om, above, below, n_source, n_test, q0h, q1h, parts, table
+        )
+        for om in omegas
+    ]
