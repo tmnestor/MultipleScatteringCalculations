@@ -254,6 +254,8 @@ def q_powers(expr, kind):
     e = sp.expand(sp.powsimp(sp.expand(expr / x), combine="exp"))
     assert not e.has(sp.exp), e
     out: dict = {}
+    if e == 0:
+        return out
     for term in sp.Add.make_args(e):
         pa, pb = sp.degree(term, z), sp.degree(term, zp)
         rest = _clean(term / (z**pa * zp**pb))
