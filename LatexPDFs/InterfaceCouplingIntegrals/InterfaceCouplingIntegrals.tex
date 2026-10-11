@@ -86,7 +86,11 @@ $B_1=\tfrac54\mathrm{Cl}_2(\pi/3)-G$ and $B_2=\tfrac13\log[(1+\sqrt2)^2/(2(1+\sq
 is elementary apart from Catalan's constant and one value of Clausen's function. The corner moments and
 the blocks agree with independent routes to $10^{-15}$ and $10^{-13}$ or better, coincide with the blocks of the homogeneous medium
 to $2$ to $8\times10^{-15}$ when the two media are the same, and with the static part subtracted the
-plane-wave remainder converges as $Q^{-4}$ in the cutoff $Q$ instead of $Q^{-2}$.
+plane-wave remainder converges as $Q^{-4}$ in the cutoff $Q$ instead of $Q^{-2}$. The next term of the
+kernels, of order $\omega^2$ with a coefficient that does not depend on the frequency, is derived in the
+wavenumber domain; subtracted as well, it leaves a remainder that converges as $Q^{-6}$, so that a
+double-precision plane-wave integral truncated at $Qh=10$ gives the block of a touching cell to
+$4\times10^{-10}$ at $\omega h/\beta=1/6$.
 \end{abstract}
 
 % =====================================================================================================
@@ -131,6 +135,10 @@ This paper removes that obstacle. Its contributions are the following.
   \item The coupling blocks of these fields in closed form: the moments over a box with the singular point at a
   vertex reduce to elementary functions and two constants, $B_1$ and $B_2$, which we evaluate in closed
   form (Sections~\ref{sec:blocks} and~\ref{sec:transmission}).
+  \item The term of order $\omega^2$ of the reflected and transmitted kernels, by perturbation of the static
+  problem, and its subtraction in the wavenumber domain with a frequency-independent coefficient; the
+  remainder then converges as $Q^{-6}$, and a cutoff low enough for double-precision mode sums suffices
+  (Section~\ref{sec:omega2}).
   \item Verification of each step against routes that share no step with it (Section~\ref{sec:verification}).
 \end{enumerate}
 The dynamic remainder, smooth by construction, is left to the plane waves; Section~\ref{sec:discussion}
@@ -262,9 +270,9 @@ bilinear-unit polarisations grow as $cq/\omega$ while their sum tends to the fin
 precision the reflected kernel is then in error by $6\times10^{-7}$ at $qh=20$ for the cell of
 Table~\ref{tab:subtraction}, and above $qh\approx100$ the remainder after the subtraction is mostly rounding
 error. Table~\ref{tab:subtraction} was therefore computed with the kernels in $40$-digit arithmetic, which agree
-with $60$ digits to $3\times10^{-16}$ at $qh=640$. A production evaluation needs either a cutoff below
-$qh\approx20$, which the subtraction makes accurate enough, or a form of the remainder in which the cancellation
-has been carried out analytically.
+with $60$ digits to $3\times10^{-16}$ at $qh=640$. A production evaluation in double precision therefore needs a cutoff below
+$qh\approx20$; Section~\ref{sec:omega2} removes the next term of the expansion so that such a cutoff is
+accurate enough.
 
 \begin{table}[h]
 \centering
@@ -477,6 +485,103 @@ by $\operatorname{diag}(-1,1,1,1,1,1,1,-1,-1)$ in the order $(u_z,u_x,u_y,\varep
 \varepsilon_{yy},\gamma_{xy},\gamma_{zx},\gamma_{zy})$, and each cell polynomial is multiplied by $(-1)$ to
 its power of $\xi_z$.
 
+\section{The next term: the order \texorpdfstring{$\omega^2$}{omega squared}}\label{sec:omega2}
+
+The static image removes the part of the reflected integrand that does not decay. What remains decays as the
+square of the frequency over the wavenumber, and its leading term can be removed the same way. Let the
+reflected displacement tensor of Section~\ref{sec:static}, in the frame of $\bk$, be expanded at fixed
+$(q,z,z')$ in powers of the frequency,
+\begin{equation}\label{eq:omegaexpansion}
+  \mathbf G^{R}(q;z,z';\omega)=\mathbf G^{R}_0+\omega^2\,\mathbf G^{R}_1+O(\omega^4),
+\end{equation}
+with $\mathbf G^{R}_0$ the static image. With $\mathbf u=\mathbf u_0+\omega^2\mathbf u_1+\dots$ the Navier
+equations $\nabla\cdot\boldsymbol\sigma(\mathbf u)+\rho\,\omega^2\mathbf u+\mathbf F\delta=\mathbf 0$ give, at
+order $\omega^2$,
+\begin{equation}\label{eq:omega2navier}
+  \nabla\cdot\boldsymbol\sigma(\mathbf u_1)=-\rho\,\mathbf u_0,
+\end{equation}
+with no source: $\mathbf u_1$ and its traction are continuous at $z=z'$ and at $z=0$. In each region the
+static field $\mathbf u_0$ is a polynomial times $\ee^{\pm qz}$, the exponential being a double root of the
+static operator, so a particular solution of Eq.~\eqref{eq:omega2navier} is a polynomial of degree two higher
+times the same exponential. To it are added the static solutions $(a+bz)\ee^{\pm qz}$ regular in the region.
+The whole-space problem is solved first; its $\omega^2$ term, that of Kelvin's field, then forces the
+interface conditions that fix the reflected term $\mathbf G^{R}_1$ and the transmitted term $\mathbf G^{T}_1$.
+Every entry of $\mathbf G^{R}_1$ is $\ee^{q(z+z')}$ times a polynomial in $z$ and $z'$, of degree at most two
+in each and three in all, with coefficients rational in $q$ and in the Lam\'e constants and densities of the
+two media. The point propagator follows from $\mathbf G^{R}_1$ by the derivatives of
+Section~\ref{sec:static}, and its vertical moments over a cell are elementary.
+
+Three checks confirm the result. When the media coincide, $\mathbf G^{R}_1=\mathbf 0$ and
+$\mathbf G^{T}_1$ is the $\omega^2$ term of Kelvin's field. Against the exact kernels, evaluated in $50$-digit
+arithmetic, the residual $\mathbf G-\mathbf G_0-\omega^2\mathbf G_1$ falls sixteenfold each time $\omega$ is
+halved, as an $O(\omega^4)$ remainder must. And the derivation done independently in two computer-algebra
+systems, one with symbolic and one with rational material constants, agrees to $5\times10^{-51}$.
+
+In space the term is not needed, and does not come cheaply. The divisions by $q$ that turn a rotated entry
+into a lateral derivative (Section~\ref{sec:static}) take the lowest power of $q$ in $\mathbf G^{R}_1$ to
+$q^{-5}\ee^{-q\zeta}$, whose transform, like that of $q^{-4}\ee^{-q\zeta}$, exists only as a finite part:
+two potentials beyond $\Phi_2$ would be needed, and the moments of their finite parts. We use the term where
+it is simple, in the wavenumber domain. With $\mathbf Y(\bk;\omega)$ the integrand of the reflected block, so
+that $\bK^{R}=(4\pi^2)^{-1}\int\mathbf Y\,\dd^2k$, and $\mathbf Y_0$, $\mathbf Y_1$ the integrands built in the
+same way from $\mathbf G^{R}_0$ and $\mathbf G^{R}_1$,
+\begin{equation}\label{eq:omega2split}
+  \bK^{R}=\bK^{R}_0+\omega^2\,\bK^{R}_1(Q_0)
+  +\frac{1}{4\pi^2}\int_{\mathbb R^2}\bigl[\mathbf Y-\mathbf Y_0-\omega^2\,\mathbf Y_1\,\theta(q-Q_0)\bigr]\dd^2k,
+  \qquad
+  \bK^{R}_1(Q_0)=\frac{1}{4\pi^2}\int_{q>Q_0}\mathbf Y_1\,\dd^2k.
+\end{equation}
+Neither $\bK^{R}_0$ nor $\bK^{R}_1(Q_0)$ depends on the frequency: both are computed once for each
+arrangement of cells, the first in closed form (Section~\ref{sec:blocks}) and the second as a plane-wave
+integral of a closed-form integrand, which needs no reflection coefficients. Only the last integral is
+evaluated at each frequency, and beyond $Q_0$ its integrand falls by two more powers of $q$ than with the
+static image alone.
+
+Table~\ref{tab:omega2} shows the effect for the block of Table~\ref{tab:subtraction}, at $\omega h/\beta=1/6$
+and at $\omega h/\beta=1$, the frequency at which a shear wavelength spans about three cells. The remainder
+now converges as $Q^{-6}$. Truncated at $Qh=10$ it leaves $3.6\times10^{-10}$ of the block at the lower
+frequency, where the static subtraction alone leaves $1.3\times10^{-6}$ and needs $Qh\approx160$ to do as well;
+at $\omega h/\beta=1$ it leaves $3\times10^{-7}$ at $Qh=10$ and $6\times10^{-11}$ at $Qh=40$, where the static
+subtraction alone leaves $3\times10^{-5}$ and $1\times10^{-7}$.
+
+The lower cutoff also settles the precision of the mode sums. Below $Qh=10$ the cancellation between the P and
+SV terms (Section~\ref{sec:planewaves}) is mild: evaluated in double precision, the integral over $qh<10$
+differs from its $40$-digit value by $7\times10^{-12}$ of the block at $\omega h/\beta=1/6$ and by
+$5\times10^{-13}$ at $\omega h/\beta=1$, and the shell $10<qh<20$ by $6\times10^{-11}$ and $2\times10^{-14}$. With
+the $\omega^2$ term subtracted, a double-precision plane-wave integral therefore gives the reflected block of a
+touching cell to about $4\times10^{-10}$ with the cutoff at $Qh=10$ when $\omega h/\beta=1/6$, and to about
+$10^{-10}$ with the cutoff at $Qh=40$ when $\omega h/\beta=1$; with the static image alone the same accuracy
+needs cutoffs at which double precision fails. The frequency-independent integral $\bK^{R}_1(Q_0)$ is the slowly convergent one, with an integrand that falls as
+$\mathbf Y-\mathbf Y_0$ does; it is evaluated once, in extended precision, to a cutoff $Q_1$ at which
+$\omega_{\max}^2$ times its tail is below the target, $Q_1h\approx250$ for $10^{-10}$ at
+$\omega_{\max}h/\beta=1$.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rcccccccc}
+\toprule
+ & \multicolumn{4}{c}{$\omega h/\beta=1/6$} & \multicolumn{4}{c}{$\omega h/\beta=1$} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-9}
+ & \multicolumn{2}{c}{less $\mathbf Y_0$} & \multicolumn{2}{c}{less $\mathbf Y_0+\omega^2\mathbf Y_1$}
+ & \multicolumn{2}{c}{less $\mathbf Y_0$} & \multicolumn{2}{c}{less $\mathbf Y_0+\omega^2\mathbf Y_1$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(l){8-9}
+shell $qh$ & contr. & order & contr. & order & contr. & order & contr. & order \\
+\midrule
+$10$--$20$   & $1.2\times10^{-6}$  &        & $3.5\times10^{-10}$ &        & $2.9\times10^{-5}$  &        & $3.0\times10^{-7}$  &        \\
+$20$--$40$   & $7.7\times10^{-8}$  & $4.00$ & $5.5\times10^{-12}$ & $6.00$ & $1.8\times10^{-6}$  & $4.01$ & $4.7\times10^{-9}$  & $6.01$ \\
+$40$--$80$   & $4.3\times10^{-9}$  & $4.17$ & $7.2\times10^{-14}$ & $6.25$ & $1.0\times10^{-7}$  & $4.18$ & $6.2\times10^{-11}$ & $6.25$ \\
+$80$--$160$  & $2.8\times10^{-10}$ & $3.90$ & $1.2\times10^{-15}$ & $5.87$ & $6.7\times10^{-9}$  & $3.90$ & $1.1\times10^{-12}$ & $5.87$ \\
+$160$--$320$ & $1.8\times10^{-11}$ & $4.01$ & $1.9\times10^{-17}$ & $6.03$ & $4.2\times10^{-10}$ & $4.01$ & $1.6\times10^{-14}$ & $6.02$ \\
+\bottomrule
+\end{tabular}
+\caption{The block of Table~\ref{tab:subtraction} with the static image subtracted, and with the static
+image and the $\omega^2$ term subtracted, at two frequencies: the contribution of each shell of the lateral
+wavenumber, relative to the block, and the local order. All kernels in $40$-digit arithmetic; halving the
+radial panels and doubling the azimuthal rule changes the shell $160$--$320$ of the second remainder by
+$8\times10^{-20}$ and $5\times10^{-20}$ of the block.}
+\label{tab:omega2}
+\end{table}
+
 \section{Verification}\label{sec:verification}
 
 Each step was checked against a route that shares no step with it; Table~\ref{tab:verification} collects the
@@ -587,6 +692,14 @@ remainder is smooth, and the plane waves of Section~\ref{sec:planewaves} carry i
 depend on how close the cells are to the interface, since the subtraction has removed what made the
 integral converge slowly.
 
+The split also preserves what makes a frequency sweep cheap in a homogeneous medium, where the closed-form
+blocks are set up once and each frequency costs little. Here the static blocks $\bK^{R}_0$ and the
+coefficients $\bK^{R}_1(Q_0)$ of the $\omega^2$ term are computed once for each arrangement of cells, and at
+each frequency only the remainder is integrated, over $qh<Q_0h$, with reflection coefficients evaluated on a
+grid of lateral wavenumbers that every block shares. Terms of order $\omega^4$ and beyond could be derived
+the same way, each a polynomial two degrees higher; but with the cutoff already where double precision
+holds, the next gain would be in the cost of the remainder, not in its accuracy.
+
 For a stack of layers the same construction applies interface by interface. The singular part of the
 reflected and transmitted couplings comes only from the interface that the cells touch, and is the static
 image of that interface; reflections from other interfaces reach a cell after travelling at least one layer
@@ -611,9 +724,13 @@ transmitted field, \path{Mathematica/StaticInterfaceImage.wl}, \path{Mathematica
 \path{scripts/derive_interface_image_terms.py}; the corner moments and base integrals,
 \path{Mathematica/ImageCornerMoments.wl}, \path{scripts/derive_image_corner_moments.py} and
 \path{cubic_scattering/image_moments.py}; the blocks, \path{cubic_scattering/interface_image.py}; the
-plane-wave representation, reflection and transmission, \path{cubic_scattering/stratified_march.py}; and
+plane-wave representation, reflection and transmission, \path{cubic_scattering/stratified_march.py};
 the checks of Table~\ref{tab:verification}, \path{scripts/gate_march_modes.py} and
-\path{scripts/gate_interface_image.py}.\par}
+\path{scripts/gate_interface_image.py}; the term of order $\omega^2$,
+\path{Mathematica/InterfaceOmega2.wl} and \path{scripts/derive_interface_omega2.py}; and the convergence
+studies of Tables~\ref{tab:subtraction} and~\ref{tab:omega2},
+\path{scripts/measure_interface_static_subtraction.py} and
+\path{scripts/measure_interface_omega2_subtraction.py}.\par}
 
 \section*{Acknowledgments}
 This work began thirty years ago in the author's doctoral research at the Research School of Earth
