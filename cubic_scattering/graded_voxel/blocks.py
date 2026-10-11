@@ -38,13 +38,23 @@ from functools import cache, lru_cache
 import numpy as np
 import sympy as sp
 from numpy.polynomial import Polynomial, legendre
-from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
+from ..gauss_rules import (
+    gauss_legendre as leggauss,  # numpy's leggauss weights are wrong to 7e-13 (see gauss_rules)
+)
 from .basis import SOURCE_EXPONENTS, field_in_monomials, monomials, source_exponents
 from .derivatives import derivative_terms
-from .kernel import _assemble, falling, kernel_9x9, power_F, radial_component, static_b2, voigt_maps
+from .kernel import (
+    _assemble,
+    falling,
+    kernel_9x9,
+    power_F,
+    radial_component,
+    static_b2,
+    voigt_maps,
+)
 from .legendre_moments import box_moments
 
 
