@@ -79,12 +79,12 @@ frequency, the cell size and the medium, each built from elementary master integ
 of the coordinates about the singular point, as the master integrals naturally are, they inherit the
 classical ill-conditioning of power moments and lose four to five digits in double precision: against a
 forty-digit reference, the block of a cell carrying a degree-two field and its corner neighbour is then
-wrong by $1.7\times10^{-11}$, where quadrature reaches $1.9\times10^{-15}$. We evaluate the same exact
+wrong by $1.7\times10^{-11}$, where quadrature reaches $1.1\times10^{-15}$. We evaluate the same exact
 integrals in a Legendre basis instead, accurate to round-off: the pieces of the
 integration domain away from the singular point are expanded in Legendre polynomials of their own
 coordinates, whose moments follow from a banded relation posed as a truncated boundary-value problem, with
 no transcendental function evaluated; the pieces at the singular point are split into Duffy pyramids. The
-touching blocks are then accurate to $9.7\times10^{-16}$ to $4.3\times10^{-15}$ for fields of degree one and
+touching blocks are then accurate to $5.4\times10^{-16}$ to $3.6\times10^{-15}$ for fields of degree one and
 two. Cells that do not touch are coupled by the same series with coefficients computed once per offset, and
 distant cells also by a two-centre multipole series where it converges. Every block at every frequency is
 then a weighted sum of stored numbers, and over $256$ frequencies the series costs $1.5$ to $1.9$ times less
@@ -474,7 +474,7 @@ coupling block assembled this way is wrong by $2.3\times10^{-13}$ (degree-one fi
 $9.4\times10^{-14}$ (degree one, edge), $1.7\times10^{-11}$ (degree two, corner) and $5.5\times10^{-12}$
 (degree two, edge), relative error in the Frobenius norm over all entries of the block. Quadrature of the
 same block (Duffy pyramids at the singular vertex and tensor Gauss rules of $20$ points per axis on the
-pieces) is accurate to $1.1\times10^{-15}$, $1.8\times10^{-15}$, $1.9\times10^{-15}$ and $2.7\times10^{-15}$.
+pieces) is accurate to $5.4\times10^{-16}$, $6.6\times10^{-16}$, $1.1\times10^{-15}$ and $1.3\times10^{-15}$.
 In the power basis the closed forms, exact as they are, are less accurate than quadrature by two orders
 of magnitude for a degree-one field and four for a degree-two one.
 
@@ -512,10 +512,10 @@ power and modified moments leads one to expect \citep{Gautschi1970}.
 
 \paragraph{Quadrature on the smooth pieces is not enough.} A natural alternative keeps the closed forms only
 on the pieces that hold the singular point and integrates the others, which are smooth, by Gauss rules.
-It cures the degree-one field ($9.1\times10^{-16}$ and $1.6\times10^{-15}$ at corner and edge) but not the
-degree-two one ($5.9\times10^{-15}$ and $1.1\times10^{-14}$, insensitive to the Gauss order between $12$ and
-$20$), because at degree two the pieces at the singular point lose digits too, to the power basis
-on $[0,2]$. The same switch is the remedy adopted for analytic boundary-element integrals
+It cures the degree-one field but not the degree-two one, because at degree two the pieces at the singular
+point lose digits too, to the power basis on $[0,2]$: with exact moments, $4.0\times10^{-15}$ against
+$2.4\times10^{-16}$ in Legendre polynomials (above), a floor that no Gauss rule on the other pieces can
+lower. The same switch is the remedy adopted for analytic boundary-element integrals
 \citep{KanekoGumerovDuraiswami2024,GumerovKanekoDuraiswami2024}; here it does not reach round-off, and
 it gives up the frequency-independent coefficients only on part of the domain while keeping the
 ill-conditioned basis on the rest.
@@ -689,8 +689,8 @@ reference as in Table~\ref{tab:accuracy} (relative error in the Frobenius norm).
  & corner & edge & corner & edge \\
 \midrule
 power basis (\S\ref{sec:conditioning}) & $2.3\times10^{-13}$ & $9.4\times10^{-14}$ & $1.7\times10^{-11}$ & $5.5\times10^{-12}$\\
-Legendre basis (\S\ref{sec:stable}) & $1.0\times10^{-15}$ & $9.7\times10^{-16}$ & $3.7\times10^{-15}$ & $4.3\times10^{-15}$\\
-quadrature, $20$ points & $1.1\times10^{-15}$ & $1.8\times10^{-15}$ & $1.9\times10^{-15}$ & $2.7\times10^{-15}$\\
+Legendre basis (\S\ref{sec:stable}) & $5.4\times10^{-16}$ & $6.3\times10^{-16}$ & $3.1\times10^{-15}$ & $3.6\times10^{-15}$\\
+quadrature, $20$ points & $5.4\times10^{-16}$ & $6.6\times10^{-16}$ & $1.1\times10^{-15}$ & $1.3\times10^{-15}$\\
 \bottomrule
 \end{tabular}
 \caption{The static coupling block against the forty-digit reference. A degree-one field has $4$ test
@@ -698,17 +698,27 @@ functions and $10$ source monomials, a degree-two one $10$ and $35$; each block 
 \label{tab:accuracy}
 \end{table}
 
-The remaining gap to quadrature for the degree-two field, a factor of $1.3$ to $1.6$, is round-off, not a
-residual defect. Term by term, quadrature's own worst moments are in error by $2$ to $3\times10^{-14}$
-relative to the largest entry of the term and the stable evaluation's by about $5\times10^{-14}$, with a
-median of about $10^{-15}$ for both. Forming the weights' power coefficients in exact rational arithmetic
-before rounding gains only $15$ to $20\%$.
+For the degree-one field the stable evaluation and quadrature are both at round-off. For the degree-two
+field quadrature is the more accurate, by a factor of about three. Term by term, the stable evaluation's
+worst moments are in error by up to $4\times10^{-14}$ relative to the largest entry of the term, quadrature's
+by up to $1.3\times10^{-14}$, with medians of $4\times10^{-15}$ and $8\times10^{-16}$. The worst terms are those
+with two derivatives moved onto $W$ (Eq.~\eqref{eq:monomials}): their pieces, the plane-delta faces among
+them, are of order one where the moment is of order $10^{-2}$, and cancel by a factor of about $600$, so that
+an error of $10^{-15}$ in a piece becomes $10^{-13}$ in the moment. The Legendre moments themselves are not the
+cause: against an extended-precision Gauss rule those of Eq.~\eqref{eq:lam} are accurate to
+$7\times10^{-17}$ to $5\times10^{-16}$ of their largest value, and forming the weights in exact rational
+arithmetic changes nothing. The two routes rest on the same decomposition, and quadrature, whose errors on
+the pieces are smaller and of random sign, is the less affected. The Gauss rules here are taken from a
+$30$-digit table: with the weights of standard library routines, whose relative errors grow with the
+order to $10^{-14}$ at $20$ to $24$ points, quadrature stalls at $3.5$ to $3.7\times10^{-15}$ for the
+degree-one field and $10^{-14}$ for the degree-two field.
 
 \paragraph{Self and face contact.} The reference does not cover self and face contact, where the static
 terms are distributions. There the stable evaluation is compared with quadrature, which the reference
 shows to be accurate at corner and edge contact. At $h=1.25$, for all $41$ static terms and all pairs of
-the degree-one field, the two agree to a worst term of $4.2\times10^{-15}$ (self), $9.9\times10^{-15}$ (face),
-$3.3\times10^{-14}$ (edge) and $1.8\times10^{-14}$ (corner), with medians of $1.0$ to $1.7\times10^{-15}$.
+the degree-one field, the two agree to a worst term of $1.9\times10^{-15}$ (self), $8.3\times10^{-15}$ (face),
+$1.3\times10^{-14}$ (edge) and $1.4\times10^{-14}$ (corner), with medians of $5$ to $9\times10^{-16}$; the worst
+terms are again those with two derivatives moved onto $W$.
 These comparisons are made at $h\ne1$ on purpose: they also check the physical scaling of each piece by
 powers of $h$, which a reference at $h=1$ cannot see.
 
@@ -1258,9 +1268,12 @@ boundary-value problem rather than marched. The relation \eqref{eq:relation} mak
 power of the distance over a box in any dimension, and the pyramids of \S\ref{sec:pyramids} reduce the
 pieces at the singular point to faces where it applies. Two consequences are worth stating. The evaluation
 uses no transcendental function, only corner values and a sparse solve, so it is as easy to carry to
-other kernels homogeneous about a point as the closed forms were. And the accuracy is now that of
-quadrature, so the closed forms can be the default for the touching blocks, with their one advantage over
-quadrature intact: coefficients computed once, for every frequency.
+other kernels homogeneous about a point as the closed forms were. And the accuracy is now close to that of
+quadrature, equal to it for the degree-one field and within a factor of three for the degree-two one, so the
+closed forms can be the default for the touching blocks, with their one advantage over quadrature intact:
+coefficients computed once, for every frequency. Both routes depend for their last digit on accurate Gauss
+weights: the weights of standard library routines carry relative errors that grow with the order, and
+limited the quadrature compared here to $10^{-14}$ until they were replaced.
 
 The boundary-element literature reached a different conclusion for the analytic integration of layer
 potentials, switching to quadrature away from the singularity
