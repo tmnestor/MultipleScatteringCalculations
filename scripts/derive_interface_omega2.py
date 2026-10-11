@@ -40,7 +40,12 @@ import sympy as sp
 
 z, zp = sp.symbols("z zp", real=True)
 q = sp.Symbol("q", positive=True)
-lamA, muA, rhoA, lamB, muB, rhoB = sp.symbols("lamA muA rhoA lamB muB rhoB", positive=True)
+SYM = sp.symbols("lamA muA rhoA lamB muB rhoB", positive=True)
+#: The materials, exact rationals (the first test point of Mathematica/InterfaceOmega2.wl).  With symbolic
+#: materials SymPy's solve and simplify exceed 13 GB; Mathematica's general result is checked at these values.
+MATS = dict(zip(SYM, (sp.Rational(17, 10), sp.Rational(11, 10), sp.Rational(5, 2), sp.Rational(13, 5),
+                      sp.Rational(19, 10), sp.Rational(14, 5)), strict=True))
+lamA, muA, rhoA, lamB, muB, rhoB = MATS.values()
 COMPS = ("x", "y", "z")
 
 
@@ -78,7 +83,7 @@ def homogeneous(lam, mu, s, names):
     eqs = navier(u, lam, mu)
     coeffs = []
     for k in ("x", "z"):
-        coeffs += sp.Poly(sp.expand(sp.simplify(eqs[k] * sp.exp(-s * q * z))), z).coeffs()
+        coeffs += sp.Poly(_poly_part(eqs[k], s), z).coeffs()
     sol = sp.solve(coeffs, [c, d], dict=True)[0]
     c1, c2, c3 = names
     out = {k: sp.Integer(0) for k in COMPS}
@@ -89,11 +94,15 @@ def homogeneous(lam, mu, s, names):
     return out
 
 
+def _clean(e):
+    """Expand and merge exponentials (no simplify: it is what exhausts memory)."""
+    return sp.expand(sp.powsimp(sp.expand(e), combine="exp"))
+
+
 def _poly_part(expr, s):
     """expr * e^{-s q z} with the exponential in z cancelled exactly: a polynomial in z."""
-    e = sp.powsimp(sp.expand(sp.simplify(expr * sp.exp(-s * q * z))), combine="exp")
-    e = sp.expand(sp.simplify(e))
-    assert not e.has(sp.exp(q * z)) and z not in sp.exp(q).free_symbols, e
+    e = _clean(expr * sp.exp(-s * q * z))
+    assert not any(z in a.free_symbols for a in e.atoms(sp.exp)), e
     return e
 
 
@@ -128,16 +137,16 @@ def solve_force(f):
     eqs = [(below[k] - above[k]).subs(z, zp) for k in COMPS]
     eqs += [(tb[k] - ta[k]).subs(z, zp) + F[k] for k in COMPS]
     sol = sp.solve(eqs, list(sp.symbols("kb0:3")) + list(sp.symbols("ka0:3")), dict=True)[0]
-    k0b = {k: sp.simplify(below[k].subs(sol)) for k in COMPS}
-    k0a = {k: sp.simplify(above[k].subs(sol)) for k in COMPS}
+    k0b = {k: _clean(below[k].subs(sol)) for k in COMPS}
+    k0a = {k: _clean(above[k].subs(sol)) for k in COMPS}
     r0 = homogeneous(lamA, muA, 1, sp.symbols("r0:3"))
     t0 = homogeneous(lamB, muB, -1, sp.symbols("t0:3"))
     tk, tr, tt = traction(k0b, lamA, muA), traction(r0, lamA, muA), traction(t0, lamB, muB)
     eqs = [(k0b[k] + r0[k] - t0[k]).subs(z, 0) for k in COMPS]
     eqs += [(tk[k] + tr[k] - tt[k]).subs(z, 0) for k in COMPS]
     sol = sp.solve(eqs, list(sp.symbols("r0:3")) + list(sp.symbols("t0:3")), dict=True)[0]
-    r0 = {k: sp.simplify(r0[k].subs(sol)) for k in COMPS}
-    t0 = {k: sp.simplify(t0[k].subs(sol)) for k in COMPS}
+    r0 = {k: _clean(r0[k].subs(sol)) for k in COMPS}
+    t0 = {k: _clean(t0[k].subs(sol)) for k in COMPS}
     # order omega^2: Kelvin's term, no source, continuous across zp
     k1b = add(particular(k0b, lamA, muA, rhoA, -1), homogeneous(lamA, muA, -1, sp.symbols("lb0:3")))
     k1a = add(particular(k0a, lamA, muA, rhoA, 1), homogeneous(lamA, muA, 1, sp.symbols("la0:3")))
@@ -145,7 +154,7 @@ def solve_force(f):
     eqs = [(k1b[k] - k1a[k]).subs(z, zp) for k in COMPS]
     eqs += [(tb[k] - ta[k]).subs(z, zp) for k in COMPS]
     sol = sp.solve(eqs, list(sp.symbols("lb0:3")) + list(sp.symbols("la0:3")), dict=True)[0]
-    k1b = {k: sp.simplify(k1b[k].subs(sol)) for k in COMPS}
+    k1b = {k: _clean(k1b[k].subs(sol)) for k in COMPS}
     # the reflected and transmitted omega^2 terms
     r1 = add(particular(r0, lamA, muA, rhoA, 1), homogeneous(lamA, muA, 1, sp.symbols("s0:3")))
     t1 = add(particular(t0, lamB, muB, rhoB, -1), homogeneous(lamB, muB, -1, sp.symbols("u0:3")))
@@ -153,15 +162,19 @@ def solve_force(f):
     eqs = [(k1b[k] + r1[k] - t1[k]).subs(z, 0) for k in COMPS]
     eqs += [(tk[k] + tr[k] - tt[k]).subs(z, 0) for k in COMPS]
     sol = sp.solve(eqs, list(sp.symbols("s0:3")) + list(sp.symbols("u0:3")), dict=True)[0]
-    r1 = {k: sp.simplify(r1[k].subs(sol)) for k in COMPS}
-    t1 = {k: sp.simplify(t1[k].subs(sol)) for k in COMPS}
+    r1 = {k: _clean(r1[k].subs(sol)) for k in COMPS}
+    t1 = {k: _clean(t1[k].subs(sol)) for k in COMPS}
     return r0, r1, t0, t1, k0b, k1b
 
 
 IDX = {"z": 0, "x": 1, "y": 2}
 
 
-def tensors():
+def tensors(values=None):
+    """R0, R1, T0, T1, K0, K1 as 3 x 3 sympy matrices in (q, z, zp), for the given material values."""
+    global lamA, muA, rhoA, lamB, muB, rhoB
+    if values is not None:
+        lamA, muA, rhoA, lamB, muB, rhoB = values
     mats = {name: sp.zeros(3, 3) for name in ("R0", "R1", "T0", "T1", "K0", "K1")}
     for f in COMPS:
         cols = solve_force(f)
@@ -243,7 +256,7 @@ def q_powers(expr, kind):
     out: dict = {}
     for term in sp.Add.make_args(e):
         pa, pb = sp.degree(term, z), sp.degree(term, zp)
-        rest = sp.simplify(term / (z**pa * zp**pb))
+        rest = _clean(term / (z**pa * zp**pb))
         num, den = sp.fraction(sp.together(rest))
         m = sp.degree(num, q) - sp.degree(den, q)
         out.setdefault((int(pa), int(pb)), set()).add(int(m))
@@ -257,22 +270,23 @@ def _values(fn, t):
 
 
 def main() -> None:
-    mats = tensors()
+    from sympy.parsing.mathematica import parse_mathematica
+
+    base = list(MATS.values())
+    mats = tensors(base)
+    same = tensors(base[:3] + base[:3])
     print("identical media: R0 = 0, R1 = 0:",
-          all(sp.simplify(mats[n].subs({lamB: lamA, muB: muA, rhoB: rhoA})) == sp.zeros(3, 3) for n in ("R0", "R1")))
-    print("identical media: T1 = Kelvin's omega^2 term:",
-          sp.simplify(mats["T1"].subs({lamB: lamA, muB: muA, rhoB: rhoA}) - mats["K1"]) == sp.zeros(3, 3))
+          all(_clean(same[n]) == sp.zeros(3, 3) for n in ("R0", "R1")))
+    print("identical media: T1 = Kelvin's omega^2 term:", _clean(same["T1"] - same["K1"]) == sp.zeros(3, 3))
+    tensors(base)
 
     # against the exact kernels at 50 digits: residual / omega^4 tends to a constant
     mp.mp.dps = 50
-    pars = {lamA: 1.7, muA: 1.1, rhoA: 2.5, lamB: 2.6, muB: 1.9, rhoB: 2.8}
-    ma, mb = _med(1.7, 1.1, 2.5), _med(2.6, 1.9, 2.8)
-    syms = (q, z, zp, lamA, muA, rhoA, lamB, muB, rhoB)
-    vals = (1.7, 1.1, 2.5, 2.6, 1.9, 2.8)
-    fns = {n: sp.lambdify(syms, mats[n], "mpmath") for n in ("R0", "R1", "T0", "T1")}
+    ma, mb = _med(*[float(v) for v in base[:3]]), _med(*[float(v) for v in base[3:]])
+    fns = {n: sp.lambdify((q, z, zp), mats[n], "mpmath") for n in ("R0", "R1", "T0", "T1")}
     for kind, (qq, zr, zs) in (("R", (3.0, -0.4, -0.7)), ("T", (3.0, 0.4, -0.7))):
-        g0 = mp.matrix(fns[kind + "0"](mp.mpf(qq), mp.mpf(zr), mp.mpf(zs), *map(mp.mpf, vals)))
-        g1 = mp.matrix(fns[kind + "1"](mp.mpf(qq), mp.mpf(zr), mp.mpf(zs), *map(mp.mpf, vals)))
+        g0 = mp.matrix(fns[kind + "0"](mp.mpf(qq), mp.mpf(zr), mp.mpf(zs)))
+        g1 = mp.matrix(fns[kind + "1"](mp.mpf(qq), mp.mpf(zr), mp.mpf(zs)))
         prev = None
         print(f"{kind}: q = {qq}, z = {zr}, zp = {zs}")
         for om in (0.4, 0.2, 0.1, 0.05):
@@ -282,47 +296,49 @@ def main() -> None:
             ratio = "" if prev is None else f"  residual ratio {mp.nstr(prev / res, 4)}"
             print(f"  omega {om:5.2f}: |G - G0|/|G0| {mp.nstr(first, 3)}   |G - G0 - w^2 G1|/|G0| {mp.nstr(res, 3)}{ratio}")
             prev = res
-    del pars
 
+    # against Mathematica's general result, at these materials, at random points
+    wl = Path(__file__).resolve().parent.parent / "Mathematica" / "InterfaceOmega2.json"
+    general = None
+    if wl.exists():
+        m = json.loads(wl.read_text())
+        loc = dict(zip([str(v) for v in SYM], SYM, strict=True))
+        loc.update({"q": q, "z": z, "zp": zp})
+        general = {n: sp.Matrix([[parse_mathematica(e).subs({sp.Symbol(k): v for k, v in loc.items()})
+                                  for e in row] for row in m[n]]) for n in ("R1", "T1")}
+        worst = mp.mpf(0)
+        for n, pts in (("R1", [(2.3, -0.4, -0.9), (0.7, -0.05, -1.3)]), ("T1", [(2.3, 0.4, -0.9), (0.7, 1.1, -0.2)])):
+            mine = sp.lambdify((q, z, zp), mats[n], "mpmath")
+            theirs = sp.lambdify((q, z, zp), general[n].subs(MATS), "mpmath")
+            for pt in pts:
+                a, b = mp.matrix(mine(*map(mp.mpf, pt))), mp.matrix(theirs(*map(mp.mpf, pt)))
+                worst = max(worst, mp.mnorm(a - b, 1) / mp.mnorm(b, 1))
+        print(f"against Mathematica's general R1, T1 at these materials: {mp.nstr(worst, 3)}",
+              "PASS" if worst < mp.mpf(10) ** -40 else "FAIL")
+    else:
+        print("Mathematica/InterfaceOmega2.json not found: run the .wl to compare (SKIPPED, not PASS)")
+
+    # the powers of q, from the general result when available
+    src = general if general is not None else {"R1": mats["R1"], "T1": mats["T1"]}
     powers = {
-        "R1": [[q_powers(mats["R1"][i, j], "R") for j in range(3)] for i in range(3)],
-        "T1": [[q_powers(mats["T1"][i, j], "T") for j in range(3)] for i in range(3)],
+        "R1": [[q_powers(src["R1"][i, j], "R") for j in range(3)] for i in range(3)],
+        "T1": [[q_powers(src["T1"][i, j], "T") for j in range(3)] for i in range(3)],
     }
-    lowest = {n: min(m for row in powers[n] for d in row for ms in d.values() for m in ms) for n in powers}
-    print("lowest power of q (after the exponential and the z, zp monomials):", lowest)
+    lowest = {n: min(mm for row in powers[n] for d in row for ms in d.values() for mm in ms) for n in powers}
+    print("powers of q (after the exponential and the z, zp monomials), lowest:", lowest,
+          "(q^m e^-q zeta with m = -3 is Phi2; m <= -4 needs Phi3, ...)")
 
-    tests = [(2.3, -0.4, -0.9, 1.7, 1.1, 2.5, 2.6, 1.9, 2.8), (11.0, -0.05, -0.12, 0.6, 0.9, 2.2, 1.4, 2.2, 2.6)]
-    tests_t = [(2.3, 0.4, -0.9, *t[3:]) for t in tests]
     out = {
         "order": "rows u_(z,x,y), columns force (z,x,y); frame x along the lateral wavevector; G = G0 + omega^2 G1",
-        "symbols": [str(s) for s in syms],
+        "materials": {str(k): str(v) for k, v in MATS.items()},
         "R1": [[str(mats["R1"][i, j]) for j in range(3)] for i in range(3)],
         "T1": [[str(mats["T1"][i, j]) for j in range(3)] for i in range(3)],
-        "tests_R": tests,
-        "tests_T": tests_t,
-        "R1_values": [_values(fns["R1"], t) for t in tests],
-        "T1_values": [_values(fns["T1"], t) for t in tests_t],
         "q_powers": {n: [[{f"{a},{b}": ms for (a, b), ms in d.items()} for d in row] for row in powers[n]]
                      for n in powers},
     }
     path = Path(__file__).resolve().parent / "data" / "interface_omega2.json"
     path.write_text(json.dumps(out, indent=1))
     print("written", path.name)
-
-    wl = Path(__file__).resolve().parent.parent / "Mathematica" / "InterfaceOmega2.json"
-    if not wl.exists():
-        print("Mathematica/InterfaceOmega2.json not found: run the .wl to compare (SKIPPED, not PASS)")
-        return
-    m = json.loads(wl.read_text())
-    worst = 0.0
-    for name, key in (("R1", "R1_values"), ("T1", "T1_values")):
-        for k, mine in enumerate(out[key]):
-            ref = [[complex(float(m[name + "_re"][k][i][j]), float(m[name + "_im"][k][i][j])) for j in range(3)]
-                   for i in range(3)]
-            got = [[complex(float(mine[i][j][0]), float(mine[i][j][1])) for j in range(3)] for i in range(3)]
-            scale = max(abs(x) for row in ref for x in row)
-            worst = max(worst, max(abs(got[i][j] - ref[i][j]) for i in range(3) for j in range(3)) / scale)
-    print(f"against Mathematica: {worst:.1e}", "PASS" if worst < 1e-14 else "FAIL")
 
 
 if __name__ == "__main__":
