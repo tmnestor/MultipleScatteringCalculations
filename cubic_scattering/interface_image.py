@@ -39,13 +39,13 @@ from fractions import Fraction
 from functools import cache
 from pathlib import Path
 
-import mpmath as mp
 import numpy as np
 import sympy as sp
-from numpy.polynomial.legendre import leg2poly, leggauss, legval, legvander
+from numpy.polynomial.legendre import leg2poly, legval, legvander
 from numpy.typing import NDArray
 
 from .effective_contrasts import ReferenceMedium
+from .gauss_rules import gauss_interval
 from .graded_voxel.basis import SOURCE_EXPONENTS_QUARTIC
 from .image_moments import corner_moment
 
@@ -256,38 +256,18 @@ def _corner_factor(p: Poly, far: Fraction) -> tuple[int, NDArray]:
 # ---------------------------------------------------------------------------
 
 
-@cache
-def gauss_legendre(n: int) -> tuple[NDArray, NDArray]:
-    """Gauss-Legendre nodes and weights on [-1, 1], correct to double precision.
-
-    ``numpy.polynomial.legendre.leggauss`` (and ``scipy.special.roots_legendre``) return weights with relative
-    errors growing with n: 4e-15 at n = 32, up to 7e-13 at n = 40 in the small weights near the ends, which
-    limited the image blocks to about 5e-15.  Here the nodes are refined by Newton's method at 30 digits and
-    the weights formed there, 2 / ((1 - x^2) P_n'(x)^2), then rounded.
-    """
-    x0, _ = leggauss(n)
-    with mp.workdps(30):
-        xs, ws = [], []
-        for t in x0:
-            x = mp.mpf(float(t))
-            for _ in range(6):
-                p0, p1 = mp.mpf(1), x
-                for k in range(2, n + 1):
-                    p0, p1 = p1, ((2 * k - 1) * x * p1 - (k - 1) * p0) / k
-                dp = n * (x * p1 - p0) / (x * x - 1)
-                x = x - p1 / dp
-            p0, p1 = mp.mpf(1), x
-            for k in range(2, n + 1):
-                p0, p1 = p1, ((2 * k - 1) * x * p1 - (k - 1) * p0) / k
-            dp = n * (x * p1 - p0) / (x * x - 1)
-            xs.append(float(x))
-            ws.append(float(2 / ((1 - x * x) * dp * dp)))
-    return np.array(xs), np.array(ws)
+def _contract3(fw: NDArray, a: NDArray, b: NDArray, c: NDArray) -> NDArray:
+    """sum_ijk fw[i,j,k] a[i,p] b[j,q] c[k,r], one axis at a time: a single einsum loop accumulates all n^3
+    terms in one running sum and loses about 2e-15 at n = 32; three sums of n terms lose about 2e-16."""
+    t = np.tensordot(fw, c, axes=(2, 0))  # (i, j, r)
+    t = np.tensordot(t, b, axes=(1, 0))  # (i, r, q)
+    t = np.tensordot(t, a, axes=(0, 0))  # (r, q, p)
+    return np.transpose(t, (2, 1, 0))
 
 
 def _gauss(n: int, lo: float, hi: float) -> tuple[NDArray, NDArray]:
-    x, w = gauss_legendre(n)
-    return lo + (hi - lo) * (x + 1) / 2, w * (hi - lo) / 2
+    # not numpy's leggauss, whose weights are wrong by up to 7e-13 at n = 40 (see gauss_rules)
+    return gauss_interval(n, lo, hi)
 
 
 def _regular_moments(
@@ -300,7 +280,7 @@ def _regular_moments(
     px = np.vander(rules[0][0] - centre[0], deg[0] + 1, increasing=True)
     py = np.vander(rules[1][0] - centre[1], deg[1] + 1, increasing=True)
     pz = np.vander(rules[2][0] - centre[2], deg[2] + 1, increasing=True)
-    return np.einsum("ijk,ia,jb,kc->abc", fw, px, py, pz)
+    return _contract3(fw, px, py, pz)
 
 
 def _corner_moments(
@@ -319,7 +299,8 @@ def _corner_moments(
         fw = f(*pts) * np.outer(r1[1], r2[1])
         v1 = np.vander(r1[0], deg[others[0]] + 1, increasing=True)
         v2 = np.vander(r2[0], deg[others[1]] + 1, increasing=True)
-        face = np.einsum("ab,ap,bq->pq", fw, v1, v2)  # (deg_o0 + 1, deg_o1 + 1)
+        face = (fw @ v2).T @ v1  # (deg_o1 + 1, deg_o0 + 1), one axis at a time
+        face = face.T
         ai = np.array([abs(far[i]) * far[i] ** p for p in range(deg[i] + 1)])
         contrib = np.einsum("k,pq->kpq", ai, face)
         m += (
@@ -361,7 +342,7 @@ def _regular_legendre_moments(
     lx, ly, lz = (
         legvander(rules[i][0] - (box[i][0] + box[i][1]) / 2, deg[i]) for i in range(3)
     )
-    return np.einsum("ijk,ia,jb,kc->abc", fw, lx, ly, lz)
+    return _contract3(fw, lx, ly, lz)
 
 
 def _corner_pyramids(
@@ -432,8 +413,9 @@ def _corner_pyramids(
                 continue
             fk = (keys[j1], keys[j2])
             if fk not in cache_face:
-                cache_face[fk] = np.einsum(
-                    "ab,ra,rb->r", face, on_j[0][keys[j1]], on_j[1][keys[j2]]
+                # sum_ab face[a, b] A[r, a] B[r, b], one axis at a time
+                cache_face[fk] = np.sum(
+                    (on_j[0][keys[j1]] @ face) * on_j[1][keys[j2]], axis=1
                 )
             inner = cache_face[fk]
             scale = float(np.prod([far[i] ** fac[i][keys[i]][0] for i in range(3)]))
