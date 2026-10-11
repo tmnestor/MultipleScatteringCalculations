@@ -812,10 +812,11 @@ moments and coefficients excluded: the $s$-form with a Gauss rule, the series
 \S\ref{sec:sweep}.
 
 \paragraph{Accuracy.} With the two choices below, every route is at round-off wherever it applies: the
-largest relative error over all offsets and frequencies is $9\times10^{-15}$ for the Gauss rule and
-$10^{-14}$ for the two multipole forms, the same as the reference's own agreement between $24$ and $32$
-points. The series in $k$ is at round-off where it converges, and loses accuracy as $k_Sr$ grows,
-$5\times10^{-13}$ at sixty-four cells for $k_Sh=0.0625$, because its terms grow like $(k_Sr)^t/t!$ before
+largest relative error over the offsets and frequencies is $10^{-15}$ for the Gauss rule, $8\times10^{-15}$
+for the multipole series and $3\times10^{-15}$ for its piecewise form, against a reference that agrees with
+itself between $24$ and $32$ points to $2\times10^{-16}$ to $2\times10^{-15}$ (with Gauss weights correct to
+double precision; see \S\ref{sec:accuracy}). The series in $k$ is at round-off where it converges, and loses
+accuracy as $k_Sr$ grows, $2\times10^{-13}$ at sixty-four cells for $k_Sh=0.0625$, because its terms grow like $(k_Sr)^t/t!$ before
 they fall; beyond about $k_Sr=14$ it refuses. Two choices are needed for this. The derivatives of
 $(g_S-g_P)/k_S^2$ are taken from its power series for $k_Sr\le1$ (\S\ref{sec:multipoles}): as a difference
 of Hankel forms they cancel, and the multipole blocks at $k_Sh=10^{-4}$ would be wrong by $3\times10^{-9}$
