@@ -2951,7 +2951,10 @@ Sciences of the Australian National University, Canberra \citep{Nestor1996}.
 
 \section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
 \paragraph{Software development.} Software development followed a human-directed, AI-assisted
-workflow. The author designed the software originally, but only directed and validated recent
+workflow, organised as a Test Driven Hypothesis Acceptance cycle: each derivation, implementation or
+numerical claim was stated as a hypothesis together with a test designed to refute it (an independent
+route, an exact limit, a high-precision reference or a convergence study), and was accepted only when
+the test passed; a failed test returned the hypothesis for diagnosis, never the test for adjustment. The author designed the software originally, but only directed and validated recent
 improvements, which build on the author's original Fortran implementation (the
 \href{https://github.com/tmnestor/MultipleScatteringCalculations/tree/main/PhD_fortran_code}{\texttt{PhD\_fortran\_code}}
 folder of the repository given under Data availability) and an extensive library of Mathematica notebooks, developed and extended since 1992, that carry out and verify the symbolic
