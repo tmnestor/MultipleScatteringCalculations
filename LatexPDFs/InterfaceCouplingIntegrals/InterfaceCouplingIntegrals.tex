@@ -86,7 +86,7 @@ $B_1=\tfrac54\mathrm{Cl}_2(\pi/3)-G$ and $B_2=\tfrac13\log[(1+\sqrt2)^2/(2(1+\sq
 is elementary apart from Catalan's constant and one value of Clausen's function. The corner moments and
 the blocks agree with independent routes to $10^{-15}$ and $10^{-13}$ or better, coincide with the blocks of the homogeneous medium
 to $2$ to $8\times10^{-15}$ when the two media are the same, and with the static part subtracted the
-plane-wave remainder converges as $Q^{-5}$ in the cutoff $Q$ instead of $Q^{-3}$.
+plane-wave remainder converges as $Q^{-4}$ in the cutoff $Q$ instead of $Q^{-2}$.
 \end{abstract}
 
 % =====================================================================================================
@@ -124,8 +124,8 @@ This paper removes that obstacle. Its contributions are the following.
   transmitted couplings with the cells' moments in closed form (Section~\ref{sec:planewaves}).
   \item The identification of the singular part of the reflected and transmitted couplings as the static
   field of a point force at a welded interface (Rongved's problem), with the dynamic kernels tending to it
-  as $(\omega/\beta q)^2$; subtracting it changes the convergence of the plane-wave remainder from $Q^{-3}$ to
-  $Q^{-5}$ (Sections~\ref{sec:planewaves} and~\ref{sec:static}).
+  as $(\omega/\beta q)^2$; subtracting it changes the convergence of the plane-wave remainder from $Q^{-2}$ to
+  $Q^{-4}$ (Sections~\ref{sec:planewaves} and~\ref{sec:static}).
   \item The static image and the transmitted static field in space, as $356$ and $275$ canonical terms on
   three potentials, with Mindlin's logarithmic terms written as a line of images (Section~\ref{sec:static}).
   \item The coupling blocks of these fields in closed form: the moments over a box with the singular point at a
@@ -241,31 +241,54 @@ phase. In the reflected coupling the relevant distance is that from the image, $
 for any two cells that touch the interface, and the same cancellation occurs (Figure~\ref{fig:interface}a).
 The integrand then decays only algebraically in $q$, and so does the error of a truncated integral.
 Table~\ref{tab:subtraction} shows it for a cell that touches the interface, coupled to its own image: the
-change of the integral between successive fourfold cutoffs $Q$ falls by a factor of $68$, close to the
-$4^3=64$ of convergence as $Q^{-3}$.
+contribution of each shell $Q<qh<2Q$ falls by a factor of four from one shell to the next, so the error of an
+integral truncated at $Q$ falls as $Q^{-2}$.
 
 The singular part of the integrand is its behaviour at large $q$. There $k_{z,\nu}=\ii q\,[1-\omega^2/(2c_\nu^2q^2)
-+O(q^{-4})]$, and the reflected and transmitted kernels depend on the frequency only through $(\omega/c_\nu
-q)^2$. Their limit is the static kernel of Section~\ref{sec:static}, and the difference falls as
-$(\omega/\beta q)^2$. Writing $\bK^{R}=\bK^{R}_0+(\bK^{R}-\bK^{R}_0)$, with $\bK^{R}_0$ the block of the static
-image, the first term is obtained in closed form (Section~\ref{sec:blocks}) and the second by the
-plane-wave integral with the static spectrum subtracted under the integral sign. The remainder converges
-as $Q^{-5}$ (Table~\ref{tab:subtraction}), and the same holds for the transmitted coupling.
++O(q^{-4})]$, and the reflected and transmitted kernels tend to the static kernel of Section~\ref{sec:static}.
+At fixed depths the difference is of relative order $\omega^2\zeta/(c^2q)$, since the correction to $k_{z,\nu}$
+multiplies the depth $\zeta$ in the phase; in the block of cells that touch the interface the depths that
+matter are of order $1/q$, and the difference of the integrands is of relative order $(\omega/\beta q)^2$
+(about $2(\omega/\beta q)^2$ for the cell of Table~\ref{tab:subtraction}, from $qh=20$ to $1280$). Writing
+$\bK^{R}=\bK^{R}_0+(\bK^{R}-\bK^{R}_0)$, with $\bK^{R}_0$ the block of the static image, the first term is obtained
+in closed form (Section~\ref{sec:blocks}) and the second by the plane-wave integral with the static spectrum
+subtracted under the integral sign. The remainder converges as $Q^{-4}$ (Table~\ref{tab:subtraction}): the
+subtraction gains exactly the two orders of $(\omega/\beta q)^2$, and at $Qh=10$ it leaves $1.3\times10^{-6}$ of the
+block where the truncated integral leaves $8\times10^{-3}$.
+
+The kernels must be evaluated with care at large $q$. Written as a sum over the modes $\nu$, as in
+Eqs.~\eqref{eq:reflected} and \eqref{eq:transmitted}, the P and SV terms cancel as $(cq/\omega)^4$, because their
+bilinear-unit polarisations grow as $cq/\omega$ while their sum tends to the finite static kernel. In double
+precision the reflected kernel is then in error by $6\times10^{-7}$ at $qh=20$ for the cell of
+Table~\ref{tab:subtraction}, and above $qh\approx100$ the remainder after the subtraction is mostly rounding
+error. Table~\ref{tab:subtraction} was therefore computed with the kernels in $40$-digit arithmetic, which agree
+with $60$ digits to $3\times10^{-16}$ at $qh=640$. A production evaluation needs either a cutoff below
+$qh\approx20$, which the subtraction makes accurate enough, or a form of the remainder in which the cancellation
+has been carried out analytically.
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lcc}
+\begin{tabular}{rcccc}
 \toprule
- & $Qh=10\to40$ & $Qh=40\to160$ \\
+ & \multicolumn{2}{c}{reflected kernel} & \multicolumn{2}{c}{less its static part} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+shell $qh$ & contribution & order & contribution & order \\
 \midrule
-reflected kernel & $7.5\times10^{-3}$ & $1.1\times10^{-4}$ \\
-reflected kernel less its static part & $4.8\times10^{-5}$ & $5.1\times10^{-8}$ \\
+$10$--$20$   & $5.8\times10^{-3}$  &        & $1.2\times10^{-6}$  &        \\
+$20$--$40$   & $1.4\times10^{-3}$  & $2.02$ & $7.7\times10^{-8}$  & $4.00$ \\
+$40$--$80$   & $3.3\times10^{-4}$  & $2.13$ & $4.3\times10^{-9}$  & $4.17$ \\
+$80$--$160$  & $8.5\times10^{-5}$  & $1.95$ & $2.8\times10^{-10}$ & $3.90$ \\
+$160$--$320$ & $2.1\times10^{-5}$  & $2.01$ & $1.8\times10^{-11}$ & $4.01$ \\
+$320$--$640$ & $5.3\times10^{-6}$  & $2.00$ & $1.1\times10^{-12}$ & $4.00$ \\
 \bottomrule
 \end{tabular}
 \caption{The plane-wave integral of the reflected block of a cell touching the interface, coupled to its own
-image: the change between successive fourfold cutoffs of the lateral wavenumber, relative to the block. The
-ratios of successive changes, $68$ and $940$, are those of convergence as $Q^{-3}$ and $Q^{-5}$.}
+image (field function $1$, source monomial $1$, media of Section~\ref{sec:verification}, $\omega h/\beta=0.17$):
+the contribution of each shell of the lateral wavenumber, relative to the block, and the local order
+$\log_2$ of the ratio of successive contributions. The kernels are evaluated in $40$-digit arithmetic, the
+azimuthal integral by a trapezoid rule of $4qh+64$ points and the radial one by Gauss rules on fixed panels;
+halving the panels and doubling the azimuthal rule changes the shell $160$--$320$ by $6\times10^{-20}$.}
 \label{tab:subtraction}
 \end{table}
 
@@ -459,7 +482,7 @@ blocks \eqref{eq:modeblock}, planes not touching & closed-form blocks \citep{Nes
 \midrule
 \multicolumn{3}{l}{\emph{Static image}}\\
 reflected spectral tensor & second computer-algebra derivation & $5\times10^{-16}$ \\
-dynamic reflected kernel, $\omega/\beta q\to0$ & static kernel & $\propto(\omega/\beta q)^2$ \\
+dynamic reflected integrand of a touching block, $qh=20$--$1280$ & static integrand & $\approx2(\omega/\beta q)^2$ \\
 spatial form & Fourier integral of the spectrum & $7\times10^{-13}$--$1.3\times10^{-12}$ \\
 canonical terms \eqref{eq:imageterms} & direct differentiation of the spatial kernel & $3\times10^{-15}$ \\
 \midrule
