@@ -38,10 +38,12 @@ from functools import cache, lru_cache
 
 import numpy as np
 from numpy.polynomial import Polynomial, legendre
-from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
 
 from ..effective_contrasts import ReferenceMedium
+from ..gauss_rules import (
+    gauss_legendre as leggauss,  # numpy's leggauss weights are wrong to 7e-13 (see gauss_rules)
+)
 from .kernel import N_SERIES, SERIES_LIMIT, falling, point_kernel_backend
 from .legendre_moments import (
     box_moment_derivative_magnitudes,
@@ -149,7 +151,9 @@ def scalar_derivative_fields(
             "origin; its cube moments come from the closed forms of the hierarchy, never from point values."
         )
     if point_kernel_backend() == "fortran":
-        from .derivatives_fortran import scalar_derivative_fields_fortran  # local: it imports this module
+        from .derivatives_fortran import (
+            scalar_derivative_fields_fortran,  # local: it imports this module
+        )
 
         return scalar_derivative_fields_fortran(X, omega, ref, n_s, n_b)
     return scalar_derivative_fields_python(X, omega, ref, n_s, n_b)
