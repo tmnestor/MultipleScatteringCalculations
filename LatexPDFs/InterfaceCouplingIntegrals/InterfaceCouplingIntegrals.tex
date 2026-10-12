@@ -680,6 +680,8 @@ $\mathbf G^{R}_1$, $\mathbf G^{T}_1$ & second computer-algebra derivation & $5\t
 frame integrands $\mathbf Y_0$, $\mathbf Y_1$ in double precision, $qh=0.5$--$160$ & $40$-digit kernels & $2\times10^{-14}$, $1.2\times10^{-12}$ \\
 identical media, touching across the interface, $3$ contacts, mirrored & homogeneous-medium blocks \citep{NestorCoupling2026} & $1.7\times10^{-12}$--$3.2\times10^{-10}$ \\
 different media, reflected and transmitted touching blocks & $40$-digit plane-wave integrals & $3.9\times10^{-11}$--$3.6\times10^{-10}$ \\
+split with a smooth window, Eq.~\eqref{eq:windowsplit}, rows of $5$ cells, reflected and transmitted & split with the sharp cutoff, pair by pair & $3.9\times10^{-14}$--$1.9\times10^{-11}$ \\
+azimuthal integrals $S_n$ by Eq.~\eqref{eq:jacobianger}, offsets to $40h$ & direct azimuthal rule & $4\times10^{-16}$--$3\times10^{-13}$ \\
 \bottomrule
 \end{tabular}
 \caption{Independent checks. The last entry of each group of blocks is limited by the accuracy of the
@@ -699,6 +701,34 @@ degrees, $3\times10^{-16}$ to $1.2\times10^{-15}$, and the power basis is the sa
 a digit at degree two. The fully independent check of these blocks, the plane-wave integral, is limited to
 $2.3\times10^{-8}$ by its own convergence. With identical media the image vanishes identically, to the last
 bit, on both sides of the interface.
+
+The plane-wave route, which shares no step with the closed forms, has to reach every pair of cells near the
+interface, not only the touching ones. Two devices make it do so; both belong to the reference, not to the
+method. First, the cutoff $\theta(q-Q_0)$ of Eq.~\eqref{eq:omega2split} makes the frequency-independent
+corrections $\bK^{R}_0-(4\pi^2)^{-1}\int_{q<Q_0}\mathbf Y_0$ and $\bK^{R}_1(Q_0)$ ring in space, so that they
+decay with the cells' lateral offset $d$ only as about $d^{-3/2}$: for a row of cells touching the interface at
+$\omega h/\beta=1/6$ and $Q_0h=10$ the first is still $1.4\times10^{-5}$ of the touching block at $d=32h$. A
+smooth window $\chi(q)$, zero below $Q_0/4$, one above $Q_0$, and $\ee^{-1/t}/(\ee^{-1/t}+\ee^{-1/(1-t)})$ on the
+ramp between ($t$ the position on the ramp), moves the ramp integrals from the plane-wave part to the
+corrections,
+\begin{equation}\label{eq:windowsplit}
+  \bK^{R}=\frac{1}{4\pi^2}\int_{q<Q_0}\bigl[\mathbf Y-\chi(\mathbf Y_0+\omega^2\mathbf Y_1)\bigr]\dd^2k
+  +\Bigl(\bK^{R}_0-\frac{1}{4\pi^2}\int(1-\chi)\,\mathbf Y_0\,\dd^2k\Bigr)
+  +\frac{\omega^2}{4\pi^2}\int\chi\,\mathbf Y_1\,\dd^2k+\mathbf E,
+\end{equation}
+with the same remainder $\mathbf E$ beyond $Q_0$; the corrections then decay faster than any power of $d$,
+to $1.2\times10^{-6}$, $5.9\times10^{-9}$, $9.1\times10^{-11}$ and $4.7\times10^{-12}$ of the touching block at
+$d=8h$, $16h$, $24h$ and $32h$, reflected and transmitted alike. Second, the azimuthal integrals of the cells'
+lateral moments $L_aL_c$ against the phase $\ee^{\ii\bk\cdot\boldsymbol\Delta}$ of a lateral offset
+$\boldsymbol\Delta$ and the nine harmonics of the rotation need no rule that grows with $q|\boldsymbol\Delta|$:
+by the Jacobi--Anger expansion of the phase,
+\begin{equation}\label{eq:jacobianger}
+  S_n(q;\boldsymbol\Delta)=\frac{1}{2\pi}\sum_p\ii^pJ_p(q|\boldsymbol\Delta|)\,\ee^{-\ii p\phi_\Delta}\,
+  c_{-n-p}(q),
+\end{equation}
+where $c_m(q)$ are the azimuthal Fourier coefficients of $L_aL_c$. These are band-limited by the cell, not by
+the offset ($|m|\le13$, $51$ and $148$ above $10^{-12}$ at $qh=1$, $10$ and $40$), so they are computed once for
+every offset.
 
 \begin{table}[h]
 \centering

@@ -219,6 +219,42 @@ away from interfaces.
 - **Still open in step 1.** D for every offset at once (FFT on the shared lateral grid, or the `S_n` route per
   offset); A1 only within its own, smaller radius (and A0 alone beyond); whether a still wider ramp (start
   0.1, the lowest the branch points allow at Q0h = 10, ωh/β = 1/6) shrinks the radius further.
+- **Checked, not built: the Jacobi–Anger form of S_n.** With `e^{ik·Δ} = Σ_p i^p J_p(q|Δ|) e^{ip(φ−φ_Δ)}`,
+  `S_n(q; Δ) = (1/2π) Σ_p i^p J_p(q|Δ|) e^{−ipφ_Δ} c_{−n−p}(q)`, `c_m` the azimuthal Fourier coefficients of
+  the cells' lateral moments, band-limited by the cell (|m| ≤ 3.5qh + 20 at 1e-12, qh = 1 … 40), not by the offset. Against
+  the direct azimuthal rule, 4e-16 … 3e-13 for qh = 0.7 … 9.9 and offsets to 40 h. No per-offset tables.
+
+**Decision (user, 12 October): analytic first, as in Paper 2.** The wavenumber split (Q0, D, A0, A1, the
+window, Jacobi–Anger) departs from the master-integral approach of the rest of the codebase; it began when
+the ω² term was moved to the wavenumber domain because its spatial form needs Φ₃, Φ₄ (11 October). It is
+retired from production and kept as the **verification route** (it shares no step with the closed forms).
+The structure is Paper 2's (`graded_voxel/blocks.py`):
+- **Touching image and transmission pairs:** `K0 + ω² K1` in closed form by master integrals; K0 done
+  (`interface_image.image_block`, 356 / 275 terms); the remainder `G − G0 − ω² G1`, bounded at the touching
+  point, by Gauss / Duffy in space, as Paper 2's dynamic remainder.
+- **Non-touching pairs:** Gauss quadrature in space of the full reflected / transmitted kernel. With P–S
+  conversion the reflected kernel depends on z and z′ separately (not z + z′ only): tensor Gauss in (u, u′)
+  as `far_block`, not the 3-D s-form.
+- **The kernel at a point** has no closed form: a 1-D Sommerfeld integral in q (the existing `interface_rt`
+  and mode states), the counterpart of `e^{ikr}/r` in Paper 2: a kernel evaluation, not a cell integration.
+- **The paper.** Jacobi–Anger and the window's locality go in the Verification section, as part of the
+  independent wavenumber route, not as the method; the ω² section is restructured once K1 is in closed form.
+
+**Next: K1 in space (the Mathematica phase, with Python twins).**
+1. **The families.** Rotate G1's frame kernel to fixed axes and list the terms
+   `c z^A z′^B ∂^α Φ_j` as for K0: which j (now up to 4: `q^{−4}`, `q^{−5}`) and with how many lateral
+   derivatives. The transform of `q^m e^{−qζ}` for m ≤ −2 exists only up to a polynomial in (ρ, ζ); with
+   enough lateral derivatives the polynomial is annihilated (as for Φ₁, Φ₂ in K0, which occur only under one
+   to four and two to four lateral derivatives).
+2. **Φ₃, Φ₄.** The next ζ-antiderivatives (`∂_ζ Φ_{j+1} = −Φ_j`), closed forms in R, ζ, log(R + ζ), the
+   finite-part convention fixed once. Where a family's lateral derivatives do not annihilate the ambiguity,
+   the leftover is a polynomial, smooth, and belongs to the remainder: the singular content of G1 is closed
+   form whatever the convention, provided the remainder uses the same one.
+3. **Their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
+   Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
+4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole
+   block against `interface_spectral` (sharp cutoff, `--full`).
+5. **Then step 2** (the scattering solve), on these blocks.
 
 **Step 2 — a scattering solve near an interface.**
 - **The problem.** A Legendre-cell scatterer (Paper 1's single-site T-matrix, Paper 2's direct blocks)
