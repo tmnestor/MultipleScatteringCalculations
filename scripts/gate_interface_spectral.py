@@ -28,7 +28,14 @@ S4  THE TWO ROUTES OF D.  The frame-and-harmonics route (``truncated_blocks``: o
     Measured: 3e-15 .. 1.9e-11 at omega h/beta = 1/6 (the reflected mode sums' rounding, in either route),
     3e-15 .. 3.6e-13 at omega h/beta = 1; 0.4 s against 8 s, and 0.9 s against 49 s.
 
-By default S1, S2 at offset (1,0,0) and its mirror, S3 and S4 run (about 10 minutes); ``--full`` adds the
+S5  A ROW ALONG THE INTERFACE, WINDOWED.  Five cells touching the interface in a row along x (offsets 0 .. 8 h),
+    reflected (row with itself) and transmitted (row to the mirrored row), with the C-infinity window
+    (start 0.25): D for all pairs in one call of ``truncated_blocks``, A0 and A1 per offset, against the
+    sharp-cutoff ``interface_block`` of each pair.  (a) With every correction: the same blocks, to D's rounding.
+    (b) Without the corrections beyond 4 h: the error is the dropped |A0| + omega^2 |A1|, below 2e-4 of
+    max |K0(0)| as measured by scripts/measure_interface_correction_locality.py (1.4e-4 at 6 h).
+
+By default S1, S2 at offset (1,0,0) and its mirror, S3, S4 and S5 run (about 15 minutes); ``--full`` adds the
 lateral neighbours of S2.
 
 Run:  PYTHONPATH=.:scripts python scripts/gate_interface_spectral.py [--full]
@@ -139,6 +146,58 @@ def gate_routes(tol=1e-10) -> bool:
     return ok
 
 
+ROW = (0, 2, 4, 6, 8)
+
+
+def gate_row(tol=(1e-10, 2e-4), radius=4) -> bool:
+    om, q0 = CASES[0]
+    win = isp.Window(0.25, "cinf")
+    ok = True
+    for kind in "RT":
+        z = -1 if kind == "R" else 1
+        pairs = [((z, d, 0), (-1, 0, 0)) for d in ROW]
+        t0 = time.time()
+        sharp = {
+            d: isp.frequency_independent_parts(r, s, H, A, B, q0h=q0)
+            for (r, s), d in zip(pairs, ROW, strict=True)
+        }
+        ref = [
+            isp.interface_block(r, s, H, om, A, B, q0h=q0, parts=sharp[d])
+            for (r, s), d in zip(pairs, ROW, strict=True)
+        ]
+        t1 = time.time()
+        d_win = isp.truncated_blocks(pairs, H, om, A, B, q0h=q0, window=win)
+        corr = {}
+        for (r, s), d in zip(pairs, ROW, strict=True):
+            r0, r1 = isp.window_parts(r, s, H, A, B, win, q0h=q0)
+            corr[d] = sharp[d][0] + r0 + om**2 * (sharp[d][1] + r1)
+        t2 = time.time()
+        scale = np.abs(image_block(*pairs[0], H, A, B)).max()
+        full = (
+            max(
+                np.abs(dw + corr[d] - k).max()
+                for dw, d, k in zip(d_win, ROW, ref, strict=True)
+            )
+            / scale
+        )
+        local = (
+            max(
+                np.abs(dw + (corr[d] if d <= radius else 0.0) - k).max()
+                for dw, d, k in zip(d_win, ROW, ref, strict=True)
+            )
+            / scale
+        )
+        good = full < tol[0] and local < tol[1]
+        ok &= good
+        print(
+            f"S5 {kind} row of {len(ROW)}, omega h/beta = {om * H / A.beta:.3f}: all corrections {full:.1e},"
+            f" none beyond {radius} h {local:.1e}  (sharp per pair {t1 - t0:.0f} s, windowed row"
+            f" {t2 - t1:.0f} s)  {'PASS' if good else 'FAIL'}",
+            flush=True,
+        )
+    return ok
+
+
 def _unpack(d):
     return np.array(d["re"]) + 1j * np.array(d["im"])
 
@@ -192,6 +251,7 @@ def main() -> None:
     ok &= gate_reference("R")
     ok &= gate_reference("T")
     ok &= gate_routes()
+    ok &= gate_row()
     print("ALL PASS" if ok else "SOME FAILED")
 
 
