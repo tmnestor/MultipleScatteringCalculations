@@ -15,7 +15,13 @@ columns carry -d': -d'_x = d_rho_x, -d'_z = -d/dzp + d_zeta.
 
 Checked: the 81 entries against direct differentiation of the spatial kernel, 3e-15.
 
-Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | transmitted]
+ORDER 1: the omega^2 term G1 (Mathematica/InterfaceOmega2.json, keys R1 and T1; densities enter), written to
+scripts/data/interface_omega2_terms_{reflected,transmitted}.json.  Its lowest powers q^-4, q^-5 give
+Phi3 and Phi4 (Phi_j for q^(-1-j)), whose transforms exist only as finite parts.  A term with n_lat lateral
+derivatives has an integrand ~ q^(n_lat - 1 - j) at q -> 0, integrable in the plane (no finite part) iff
+n_lat >= j; the summary printed at the end lists every family and flags those with n_lat < j.
+
+Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | transmitted] [0 | 1]
 """
 
 import json
@@ -29,20 +35,27 @@ ROOT = Path(__file__).resolve().parent.parent
 #: zeta = z - zp).  The transmitted spectrum is read from Mathematica's output when it exists, else from the
 #: sympy twin's (scripts/derive_static_interface_transmission.py).
 KIND = sys.argv[1] if len(sys.argv) > 1 else "reflected"
-if KIND == "reflected":
+ORDER = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+if ORDER not in (0, 1):
+    raise SystemExit(f"order must be 0 or 1, got {ORDER}")
+if KIND not in ("reflected", "transmitted"):
+    raise SystemExit(f"kind must be 'reflected' or 'transmitted', got {KIND!r}")
+if ORDER == 1:
+    SOURCE = ROOT / "Mathematica" / "InterfaceOmega2.json"
+    OUT = ROOT / "scripts" / "data" / f"interface_omega2_terms_{KIND}.json"
+elif KIND == "reflected":
     SOURCE = ROOT / "Mathematica" / "StaticInterfaceImage.json"
     OUT = ROOT / "scripts" / "data" / "interface_image_terms.json"
-elif KIND == "transmitted":
+else:
     SOURCE = ROOT / "Mathematica" / "StaticInterfaceTransmission.json"
     if not SOURCE.exists():
         SOURCE = ROOT / "scripts" / "data" / "static_interface_transmission.json"
     OUT = ROOT / "scripts" / "data" / "interface_transmission_terms.json"
-else:
-    raise SystemExit(f"kind must be 'reflected' or 'transmitted', got {KIND!r}")
 J = json.loads(SOURCE.read_text())
 q = sp.Symbol("q", positive=True)
 z, zp = sp.symbols("z zp", real=True)
 lamA, muA, lamB, muB = sp.symbols("lamA muA lamB muB", positive=True)
+rhoA, rhoB = sp.symbols("rhoA rhoB", positive=True)
 loc = {
     "q": q,
     "z": z,
@@ -54,16 +67,34 @@ loc = {
     "E": sp.E,
     "I": sp.I,
 }
-ent = [
-    [sp.sympify(s.replace("^", "**"), locals=loc) for s in row] for row in J["entries"]
-]
+if ORDER == 1:
+    from sympy.parsing.mathematica import parse_mathematica
+
+    subs = {
+        sp.Symbol(k): v
+        for k, v in {**loc, "rhoA": rhoA, "rhoB": rhoB}.items()
+        if k not in ("E", "I")
+    }
+    ent = [
+        [parse_mathematica(s).subs(subs) for s in row]
+        for row in J["R1" if KIND == "reflected" else "T1"]
+    ]
+else:
+    ent = [
+        [sp.sympify(s.replace("^", "**"), locals=loc) for s in row]
+        for row in J["entries"]
+    ]
 a, b, c, d, e = ent[0][0], ent[0][1], ent[1][0], ent[1][1], ent[2][2]
 X = sp.exp(q * (z + zp)) if KIND == "reflected" else sp.exp(-q * (z - zp))
 
 
+#: Powers of q down to q^-(N_SHIFT) are admitted (G0 has q^-1, G1 lower).
+N_SHIFT = 1 if ORDER == 0 else 8
+
+
 def qpoly(f):
-    P = sp.Poly(sp.expand(sp.simplify(f / X * q)), q)
-    return {m[0] - 1: co for m, co in zip(P.monoms(), P.coeffs())}
+    P = sp.Poly(sp.expand(sp.simplify(f / X * q) * q ** (N_SHIFT - 1)), q)
+    return {m[0] - N_SHIFT: co for m, co in zip(P.monoms(), P.coeffs())}
 
 
 # a term: dict key (j, ax, ay, az) -> coefficient (poly in z, zp, materials)
@@ -208,8 +239,31 @@ for r in range(9):
         out_row.append(terms)
     out.append(out_row)
 path = OUT
-path.write_text(
-    json.dumps({"variables": ["lamA", "muA", "lamB", "muB"], "terms": out}, indent=0)
-)
+variables = ["lamA", "muA", "lamB", "muB"] + (["rhoA", "rhoB"] if ORDER == 1 else [])
+path.write_text(json.dumps({"variables": variables, "terms": out}, indent=0))
 n = sum(len(t) for row in out for t in row)
 print(f"written {path.relative_to(ROOT)}: {n} terms")
+
+# the families (j, alpha) and the lateral derivatives each potential occurs under
+fam: dict = {}
+for row_ in out:
+    for terms_ in row_:
+        for t in terms_:
+            key = (t["j"], *t["alpha"])
+            fam[key] = fam.get(key, 0) + 1
+print(f"{len(fam)} families (j, alpha):")
+for j in sorted({k[0] for k in fam}):
+    lat = sorted({k[1] + k[2] for k in fam if k[0] == j})
+    az = sorted({k[3] for k in fam if k[0] == j})
+    nt = sum(v for k, v in fam.items() if k[0] == j)
+    bad = [k for k in fam if k[0] == j and j > 0 and k[1] + k[2] < j]
+    nb = sum(fam[k] for k in bad)
+    print(
+        f"  Phi{j}: {nt} terms in {sum(1 for k in fam if k[0] == j)} families; lateral derivatives {lat},"
+        f" zeta derivatives {az}"
+        + (
+            f"; finite part needed (n_lat < {j}): {nb} terms in {len(bad)} families {sorted(bad)}"
+            if bad
+            else ""
+        )
+    )
