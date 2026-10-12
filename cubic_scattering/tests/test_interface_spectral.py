@@ -6,6 +6,8 @@ Validates:
   3. The radial rule integrates a square-root branch point to rounding
   4. The Chebyshev table of the lateral harmonics S_n against direct evaluation, between its nodes
   5. The frame-and-harmonics route of D against the mode sum at every (q, phi), reflected and transmitted
+  5a. The smooth windows: 0 below the ramp, 1 above Q0, monotone; the radial rule's plain breaks
+  5b. The windowed split moves exactly the ramp integrals from D to A0, A1: D - D_chi = int chi (Y0 + w^2 Y1)
   6. Identical media: a transmitted block equals Paper 2's homogeneous block (slow)
   7. A source in B (mirrored onto A) equals Paper 2's block at the opposite offset (slow)
 """
@@ -69,6 +71,67 @@ def test_frame_route_against_direct(pair):
     old = isp._truncated_blocks_direct([pair], H, 10.0, A, B, q0h=10.0)[0]
     # the reflected mode sums carry ~2e-11 of rounding (P and SV cancel), in either route
     assert np.abs(new - old).max() < 1e-10 * np.abs(old).max()
+
+
+@pytest.mark.parametrize(
+    "win",
+    [isp.Window(0.5, "cinf"), isp.Window(0.25, "cinf"), isp.Window(0.5, "poly", 3)],
+)
+def test_window_shape(win):
+    qh = np.linspace(0.0, 12.0, 1201)
+    chi = win(qh, 10.0)
+    assert np.all(chi[qh <= win.start * 10.0] == 0.0)
+    assert np.all(chi[qh >= 10.0] == 1.0)
+    assert np.all(np.diff(chi) >= 0.0)
+    # symmetric about the middle of the ramp
+    mid = (1 + win.start) / 2 * 10.0
+    d = np.linspace(0.0, (1 - win.start) / 2 * 10.0, 7)
+    assert np.allclose(win(mid + d, 10.0) + win(mid - d, 10.0), 1.0, atol=1e-15)
+
+
+def test_window_rejects_bad_arguments():
+    with pytest.raises(ValueError):
+        isp.Window(1.0)
+    with pytest.raises(ValueError):
+        isp.Window(0.5, "gauss")
+
+
+def test_window_ramp_must_clear_the_branch_points():
+    # omega h / beta = 1 puts the last branch-point panel at q h = 2 > 0.15 * 10
+    with pytest.raises(ValueError):
+        isp.truncated_blocks(
+            [((-1, 0, 0), (-1, 0, 0))], H, 60.0, A, B, window=isp.Window(0.15)
+        )
+
+
+def test_radial_rule_breaks():
+    x, w = isp.radial_rule(10.0, [0.5], width=2.0, breaks=(5.0, 0.2))
+    # a kink at 5 is integrated exactly by panels that end there
+    assert abs(np.sum(w * np.abs(x - 5.0)) - 25.0) < 1e-12
+    assert abs(np.sum(w) - 10.0) < 1e-13
+
+
+@pytest.mark.parametrize(
+    "pair", [((-1, 0, 0), (-1, 0, 0)), ((1, 2, 0), (-1, 0, 0)), ((-1, 0, 0), (1, 2, 0))]
+)
+@pytest.mark.parametrize("win", [isp.Window(0.5, "cinf"), isp.Window(0.5, "poly", 3)])
+def test_window_moves_the_ramp(pair, win):
+    rec, src = pair
+    om, q0 = 60.0, 10.0  # omega h / beta = 1: D's mode sums carry little rounding
+    args = (H, om, A, B, 10, 4, q0)
+    # a source in B goes through interface_block, which mirrors it onto A (A0 = A1 = 0 isolates D)
+    if src[0] > 0:
+        sharp = isp.interface_block(rec, src, H, om, A, B, q0h=q0, parts=(0, 0))
+        win_d = isp.interface_block(
+            rec, src, H, om, A, B, q0h=q0, parts=(0, 0), window=win
+        )
+    else:
+        sharp = isp.truncated_blocks([pair], *args)[0]
+        win_d = isp.truncated_blocks([pair], *args, window=win)[0]
+    r0, r1 = isp.window_parts(rec, src, H, A, B, win, q0h=q0)
+    moved = r0 + om**2 * r1
+    assert np.abs(moved).max() > 1e-3 * np.abs(sharp).max()  # the test is not vacuous
+    assert np.abs(sharp - win_d - moved).max() < 1e-11 * np.abs(sharp).max()
 
 
 @pytest.mark.slow

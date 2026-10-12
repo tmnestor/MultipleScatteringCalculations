@@ -21,6 +21,16 @@ For a cell touching the interface with its own image, measured against 40-digit 
 ~ 6e-11 at Q0 h = 40 when omega h / beta = 1, while the rounding of D's double-precision mode sums (their P and
 SV terms cancel) is 1e-11 to 3e-11 at the lower frequency and below 1e-12 at the higher.
 
+THE WINDOW.  With a smooth high-pass window chi (``Window``: 0 below start Q0, 1 above Q0) in place of the
+sharp cutoff,
+
+    D  = (1/4 pi^2) int_{q < Q0} [Y - chi (Y0 + omega^2 Y1)] d^2k,
+    A0 = K0 - (1/4 pi^2) int (1 - chi) Y0 d^2k,     A1 = (1/4 pi^2) int chi Y1 d^2k,
+
+the same sum with the same remainder E (chi = 1 beyond Q0): the ramp integrals (``window_parts``) move from D
+to A0, A1.  The sharp cutoff makes A0, A1 ring in space and decay slowly with the cells' lateral offset; the
+smooth window makes them local (scripts/measure_interface_correction_locality.py).
+
 THE SWEEP.  D is evaluated in the same frame: Y(q, phi) = T(phi) Y(q, 0) M^-1 T(phi)^T M times the cells'
 lateral moments and phase, and the rotation holds only the harmonics e^{i n phi}, |n| <= 4.  So
 
@@ -47,6 +57,7 @@ Conventions as ``stratified_march``: axes z = 0 (down), x = 1, y = 2; medium A (
 
 import itertools
 import json
+from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
@@ -55,7 +66,7 @@ import sympy as sp
 from numpy.polynomial import legendre as npleg
 from numpy.polynomial import polynomial as nppoly
 from numpy.typing import NDArray
-from scipy.special import spherical_jn
+from scipy.special import betainc, spherical_jn
 
 from .effective_contrasts import ReferenceMedium
 from .gauss_rules import gauss_interval, gauss_legendre
@@ -286,10 +297,15 @@ def _panels(
 
 
 def radial_rule(
-    qh_max: float, branch_qh: list, width: float, order: int = 24
+    qh_max: float,
+    branch_qh: list,
+    width: float,
+    order: int = 24,
+    breaks: tuple = (),
 ) -> tuple[NDArray, NDArray]:
     """Nodes and weights in q h on [0, qh_max] with the branch points as panel ends, the square-root
-    singularity at each removed by a quadratic map, then panels of at most ``width``."""
+    singularity at each removed by a quadratic map, then panels of at most ``width``, split also at
+    ``breaks`` (plain panel ends, e.g. the start of a window's ramp; ignored among the branch points)."""
     bp = sorted(b for b in set(branch_qh) if 0 < b < qh_max)
     x, w = gauss_legendre(order)
     u, wu = (x + 1) / 2, w / 2
@@ -308,10 +324,63 @@ def radial_rule(
     else:
         end = 0.0
     if end < qh_max:
-        n2, w2 = _panels(end, qh_max, width)
-        nodes.append(n2)
-        wts.append(w2)
+        ends = [end, *sorted(b for b in breaks if end < b < qh_max), qh_max]
+        for e0, e1 in itertools.pairwise(ends):
+            n2, w2 = _panels(e0, e1, width)
+            nodes.append(n2)
+            wts.append(w2)
     return np.concatenate(nodes), np.concatenate(wts)
+
+
+@dataclass(frozen=True)
+class Window:
+    """A smooth high-pass window chi(q): 0 for q < start Q0, 1 for q >= Q0, rising on the ramp between.
+
+    With it the split is K = D + A0 + omega^2 A1 with D = int_{q < Q0} [Y - chi (Y0 + omega^2 Y1)],
+    A0 = K0 - int (1 - chi) Y0 and A1 = int chi Y1: the same sum, the same dropped remainder (beyond Q0,
+    where chi = 1), but A0 and A1 are high-pass parts with no sharp edge, so they decay quickly with the
+    cells' lateral offset instead of ringing (the sharp cutoff, ``window=None``, is the Gibbs case).
+
+    Attributes:
+        start: The ramp starts at start * Q0 (0 < start < 1).
+        shape: "cinf", the C-infinity step e^{-1/t} / (e^{-1/t} + e^{-1/(1-t)}); or "poly", the polynomial
+            step of degree 2 order + 1 (the regularised incomplete beta I_t(order + 1, order + 1)), C^order.
+        order: Smoothness of the "poly" step.
+    """
+
+    start: float = 0.5
+    shape: str = "cinf"
+    order: int = 3
+
+    def __post_init__(self) -> None:
+        if not 0.0 < self.start < 1.0:
+            raise ValueError("Window: start must lie in (0, 1).")
+        if self.shape not in ("cinf", "poly"):
+            raise ValueError("Window: shape must be 'cinf' or 'poly'.")
+
+    def __call__(self, qh: NDArray, q0h: float) -> NDArray:
+        t = np.clip((np.asarray(qh, float) / q0h - self.start) / (1 - self.start), 0, 1)
+        if self.shape == "poly":
+            return betainc(self.order + 1, self.order + 1, t)
+        with np.errstate(divide="ignore"):
+            a = np.where(t > 0, np.exp(-1 / np.where(t > 0, t, 1)), 0.0)
+            b = np.where(t < 1, np.exp(-1 / np.where(t < 1, 1 - t, 1)), 0.0)
+        return a / (a + b)
+
+    def ramp_edges(self, q0h: float) -> NDArray:
+        """Panel ends on the ramp [start Q0, Q0]: 16 panels, enough for the C-infinity step's steep flanks
+        (order-12 Gauss on panels of a quarter of the ramp leaves ~5e-11; on a sixteenth, rounding)."""
+        return np.linspace(self.start * q0h, q0h, 17)
+
+    def ramp_rule(self, q0h: float) -> tuple[NDArray, NDArray]:
+        """Nodes and weights in q h on the ramp [start Q0, Q0], weights times chi."""
+        parts = [
+            gauss_interval(24, e0, e1)
+            for e0, e1 in itertools.pairwise(self.ramp_edges(q0h))
+        ]
+        qh = np.concatenate([x for x, _ in parts])
+        w = np.concatenate([w for _, w in parts])
+        return qh, w * self(qh, q0h)
 
 
 def _n_phi(qh: float, reach: float) -> int:
@@ -394,6 +463,38 @@ def _rotate_harmonics(g: NDArray) -> NDArray:
     return (out * SOURCE_PAIRING).reshape(len(g), 9, 81)
 
 
+def _static_frames(
+    order: int,
+    kind: str,
+    rec: tuple,
+    src: tuple,
+    h: float,
+    above: tuple,
+    below: tuple,
+    q: NDArray,
+    exps_f: tuple,
+    exps_s: tuple,
+) -> dict:
+    """The angular harmonics of the static (order 0) or omega^2 (order 1) frame kernel at wavenumbers q,
+    with the cells' vertical moments, {(l, e): (N, 9, 81)}: the form of the dynamic frames of
+    ``truncated_blocks``."""
+    C, m0 = frame_laurent(kind, order, above, below)
+    s = 1 if kind == "R" else -1
+    pf, ps = _vertical_polys(exps_f, True), _vertical_polys(exps_s, False)
+    zr, zs = rec[0] * h, src[0] * h
+    Vr = {l: _vertical_moments(p, zr, h, s, q, C.shape[2] - 1) for l, p in pf.items()}
+    Vs = {e: _vertical_moments(p, zs, h, 1, q, C.shape[3] - 1) for e, p in ps.items()}
+    qpow = q[None, :] ** (m0 + np.arange(C.shape[4]))[:, None]  # (nm, Nq)
+    Cq = np.einsum("ijabm,mn->nijab", C, qpow)  # (Nq, 9, 9, na, nb)
+    return {
+        (l, e): _rotate_harmonics(
+            np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV
+        )
+        for l in pf
+        for e in ps
+    }
+
+
 def _static_integral(
     order: int,
     kind: str,
@@ -413,25 +514,17 @@ def _static_integral(
     The frame kernel at each radial node is split into its nine angular harmonics once; the azimuthal rule
     then only sums the cells' lateral moments against e^{i n phi}.
     """
-    C, m0 = frame_laurent(kind, order, above, below)
-    s = 1 if kind == "R" else -1
     exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
-    pf, ps = _vertical_polys(exps_f, True), _vertical_polys(exps_s, False)
+    rot = _static_frames(order, kind, rec, src, h, above, below, qh / h, exps_f, exps_s)
+    groups = {
+        (l, e): (
+            np.array([a for a, x in enumerate(exps_f) if x[0] == l]),
+            np.array([c for c, x in enumerate(exps_s) if x[0] == e]),
+        )
+        for l, e in rot
+    }
     q = qh / h
-    zr, zs = rec[0] * h, src[0] * h
-    Vr = {l: _vertical_moments(p, zr, h, s, q, C.shape[2] - 1) for l, p in pf.items()}
-    Vs = {e: _vertical_moments(p, zs, h, 1, q, C.shape[3] - 1) for e, p in ps.items()}
-    qpow = q[None, :] ** (m0 + np.arange(C.shape[4]))[:, None]  # (nm, Nq)
-    Cq = np.einsum("ijabm,mn->nijab", C, qpow)  # (Nq, 9, 9, na, nb)
-    groups, rot = {}, {}
-    for l in pf:
-        for e in ps:
-            fa = [a for a, x in enumerate(exps_f) if x[0] == l]
-            sc = [c for c, x in enumerate(exps_s) if x[0] == e]
-            groups[l, e] = (np.array(fa), np.array(sc))
-            g = np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV
-            rot[l, e] = _rotate_harmonics(g)
     dx, dy = (rec[1] - src[1]) * h, (rec[2] - src[2]) * h
     reach = np.hypot(rec[1] - src[1], rec[2] - src[2])
     idx, kx, ky, wt = _grid(qh, wqh, h, reach)
@@ -502,11 +595,13 @@ def frequency_independent_parts(
     n_test: int = 4,
     q0h: float = 10.0,
     q1h: float = 160.0,
+    window: Window | None = None,
 ) -> tuple[NDArray, NDArray]:
     """(A0, A1) of the split, computed once per arrangement of cells and reused at every frequency.
 
     A0 = K0 - (1/4 pi^2) int_{q < Q0} Y0, K0 the closed-form static block; A1 = (1/4 pi^2) int_{q > Q0} Y1, to
-    Q1 by the plane-wave rule and beyond by the q^-4 law of its last octave.
+    Q1 by the plane-wave rule and beyond by the q^-4 law of its last octave.  With a ``window`` chi, A0 and A1
+    gain the ramp integrals of ``window_parts``: A0 = K0 - int (1 - chi) Y0, A1 = int chi Y1.
 
     Args:
         rec_centre: Receiver cell centre in units of h, (z, x, y); z odd.
@@ -518,6 +613,7 @@ def frequency_independent_parts(
         n_test: Field functions (4 or 10).
         q0h: The cutoff Q0 h.
         q1h: The plane-wave rule of A1 ends at Q1 h, a power-of-two multiple of Q0 h.
+        window: The smooth window (None: the sharp cutoff at Q0).  ``truncated_blocks`` must use the same.
 
     Returns:
         (A0, A1), each shape (n_test, n_source, 9, 9), complex.
@@ -525,7 +621,16 @@ def frequency_independent_parts(
     rec, src = tuple(rec_centre), tuple(src_centre)
     if src[0] > 0:
         a0, a1 = frequency_independent_parts(
-            _mirrored(rec), _mirrored(src), h, below, above, n_source, n_test, q0h, q1h
+            _mirrored(rec),
+            _mirrored(src),
+            h,
+            below,
+            above,
+            n_source,
+            n_test,
+            q0h,
+            q1h,
+            window,
         )
         return _mirror(a0), _mirror(a1)
     kind = _check(rec, src)
@@ -544,7 +649,52 @@ def frequency_independent_parts(
         )
         lo *= 2
     a1 = sum(octaves) + octaves[-1] / 15.0
+    if window is not None:
+        r0, r1 = window_parts(rec, src, h, above, below, window, n_source, n_test, q0h)
+        a0, a1 = a0 + r0, a1 + r1
     return a0, a1
+
+
+def window_parts(
+    rec_centre: tuple[int, int, int],
+    src_centre: tuple[int, int, int],
+    h: float,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    window: Window,
+    n_source: int = 10,
+    n_test: int = 4,
+    q0h: float = 10.0,
+) -> tuple[NDArray, NDArray]:
+    """The ramp integrals (1/4 pi^2) int chi Y0 and (1/4 pi^2) int chi Y1 over start Q0 < q < Q0.
+
+    They turn the sharp-cutoff parts into the windowed ones (A0 + int chi Y0, A1 + int chi Y1) and are taken
+    from D, so the block is unchanged; cheap, since q < Q0.
+
+    Returns:
+        Two arrays of shape (n_test, n_source, 9, 9), complex.
+    """
+    rec, src = tuple(rec_centre), tuple(src_centre)
+    if src[0] > 0:
+        r0, r1 = window_parts(
+            _mirrored(rec),
+            _mirrored(src),
+            h,
+            below,
+            above,
+            window,
+            n_source,
+            n_test,
+            q0h,
+        )
+        return _mirror(r0), _mirror(r1)
+    kind = _check(rec, src)
+    ka, kb = _key(above), _key(below)
+    qh, w = window.ramp_rule(q0h)
+    return tuple(
+        _static_integral(order, kind, rec, src, h, ka, kb, qh, w, n_source, n_test)
+        for order in (0, 1)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -680,6 +830,7 @@ def truncated_blocks(
     n_test: int = 4,
     q0h: float = 10.0,
     table: dict | None = None,
+    window: Window | None = None,
 ) -> list[NDArray]:
     """D = (1/4 pi^2) int_{q < Q0} Y d^2k for many pairs (receiver, source) with sources in A (a source in B
     is mirrored onto A by ``interface_block``).
@@ -689,9 +840,13 @@ def truncated_blocks(
     is the table S_n(q) of ``lateral_harmonics``, shared by every frequency.  The radial rule has the branch
     points of both media as panel ends, so it changes with the frequency; S_n is interpolated to it.
 
+    With a ``window`` chi, D = (1/4 pi^2) int_{q < Q0} [Y - chi (Y0 + omega^2 Y1)] d^2k: the static and omega^2
+    frame kernels, in the same harmonics, are subtracted on the ramp.
+
     Args:
         table: ``lateral_harmonics`` for the pairs' lateral offsets with the same q0h, n_source, n_test;
             built here when absent (pass it when sweeping frequency).
+        window: The window of ``frequency_independent_parts`` (None: the sharp cutoff).
 
     Returns:
         One block per pair, shape (n_test, n_source, 9, 9), complex.
@@ -712,18 +867,44 @@ def truncated_blocks(
     fa = {l: np.array([a for a, x in enumerate(exps_f) if x[0] == l]) for l in lz}
     sc = {e: np.array([c for c, x in enumerate(exps_s) if x[0] == e]) for e in ez}
     branch = [omega * h / c for m in (above, below) for c in (m.alpha, m.beta)]
+    if window is not None and window.start * q0h < max(1.0, 2 * max(branch)):
+        raise ValueError(
+            "truncated_blocks: the window's ramp must start beyond the branch-point panels "
+            "(start Q0 h >= max(1, 2 omega h / beta)); raise Q0 or the window's start."
+        )
     rules: dict = {}
     frames: dict = {}
     out = []
     for (rec, src), off in zip(pairs, offsets, strict=True):
         width = _radial_width(float(np.hypot(*off)))
         if width not in rules:
-            rules[width] = radial_rule(q0h, branch, width)
+            breaks = () if window is None else tuple(window.ramp_edges(q0h))
+            rules[width] = radial_rule(q0h, branch, width, breaks=breaks)
         qh, w = rules[width]
         key = (width, rec[0], src[0])
         if key not in frames:
             fr = _dynamic_frames(qh / h, omega, above, below, rec, src, h, lz, ez)
             frames[key] = {k: _rotate_harmonics(v @ _M_INV) for k, v in fr.items()}
+            if window is not None:
+                chi = window(qh, q0h)
+                on = chi > 0
+                stat = [
+                    _static_frames(
+                        order,
+                        _check(rec, src),
+                        rec,
+                        src,
+                        h,
+                        _key(above),
+                        _key(below),
+                        qh[on] / h,
+                        exps_f,
+                        exps_s,
+                    )
+                    for order in (0, 1)
+                ]
+                for k, v in frames[key].items():
+                    v[on] -= chi[on, None, None] * (stat[0][k] + omega**2 * stat[1][k])
         S = _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
         blk = np.zeros((n_test, n_source, 81), dtype=complex)
         for (l, e), rot in frames[key].items():
@@ -824,18 +1005,20 @@ def interface_block(
     q1h: float = 160.0,
     parts: tuple[NDArray, NDArray] | None = None,
     table: dict | None = None,
+    window: Window | None = None,
 ) -> NDArray:
     """The reflected (cells on one side) or transmitted (opposite sides) block at one frequency: D + A0 + w^2 A1.
 
     ``parts`` = ``frequency_independent_parts(...)`` and ``table`` = ``lateral_harmonics(...)`` for the pair's
-    lateral offset, with the same arguments: both independent of the frequency, passed when sweeping it.
+    lateral offset, with the same arguments (``window`` included): both independent of the frequency, passed
+    when sweeping it.
     """
     rec, src = tuple(rec_centre), tuple(src_centre)
     a0, a1 = (
         parts
         if parts is not None
         else frequency_independent_parts(
-            rec, src, h, above, below, n_source, n_test, q0h, q1h
+            rec, src, h, above, below, n_source, n_test, q0h, q1h, window
         )
     )
     if src[0] > 0:
@@ -850,11 +1033,12 @@ def interface_block(
                 n_test,
                 q0h,
                 table,
+                window,
             )[0]
         )
     else:
         d = truncated_blocks(
-            [(rec, src)], h, omega, above, below, n_source, n_test, q0h, table
+            [(rec, src)], h, omega, above, below, n_source, n_test, q0h, table, window
         )[0]
     return d + a0 + omega**2 * a1
 
@@ -870,6 +1054,7 @@ def sweep(
     n_test: int = 4,
     q0h: float = 10.0,
     q1h: float = 160.0,
+    window: Window | None = None,
 ) -> list[NDArray]:
     """The block at each frequency, with A0, A1 and the table S_n computed once.
 
@@ -878,14 +1063,26 @@ def sweep(
     """
     rec, src = tuple(rec_centre), tuple(src_centre)
     parts = frequency_independent_parts(
-        rec, src, h, above, below, n_source, n_test, q0h, q1h
+        rec, src, h, above, below, n_source, n_test, q0h, q1h, window
     )
     table = lateral_harmonics(
         [(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test
     )
     return [
         interface_block(
-            rec, src, h, om, above, below, n_source, n_test, q0h, q1h, parts, table
+            rec,
+            src,
+            h,
+            om,
+            above,
+            below,
+            n_source,
+            n_test,
+            q0h,
+            q1h,
+            parts,
+            table,
+            window,
         )
         for om in omegas
     ]
