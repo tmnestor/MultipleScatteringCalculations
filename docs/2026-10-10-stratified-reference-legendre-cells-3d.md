@@ -243,13 +243,34 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
 **Next: K1 in space (the Mathematica phase, with Python twins).**
 1. **The families.** Rotate G1's frame kernel to fixed axes and list the terms
    `c z^A z′^B ∂^α Φ_j` as for K0: which j (now up to 4: `q^{−4}`, `q^{−5}`) and with how many lateral
-   derivatives. The transform of `q^m e^{−qζ}` for m ≤ −2 exists only up to a polynomial in (ρ, ζ); with
-   enough lateral derivatives the polynomial is annihilated (as for Φ₁, Φ₂ in K0, which occur only under one
-   to four and two to four lateral derivatives).
-2. **Φ₃, Φ₄.** The next ζ-antiderivatives (`∂_ζ Φ_{j+1} = −Φ_j`), closed forms in R, ζ, log(R + ζ), the
-   finite-part convention fixed once. Where a family's lateral derivatives do not annihilate the ambiguity,
-   the leftover is a polynomial, smooth, and belongs to the remainder: the singular content of G1 is closed
-   form whatever the convention, provided the remainder uses the same one.
+   derivatives. A term with n_lat < j has an integrand ~ q^{n_lat−1−j} at q → 0: its transform is a finite
+   part (item 2). `derive_interface_image_terms.py <kind> 1` (order 0 reproduces the K0 data byte for byte);
+   checked by `check_interface_terms_spectrum.py` (exact on K0; an injected 1e-3 coefficient error shows).
+2. **Φ_j as Hadamard finite parts — done (12 October).** The series' theme (user, 12 October): finite parts
+   are evaluated analytically, so that no asymptotic wavenumber tail is ever integrated; nothing is left to a
+   cutoff or pushed into a numerical remainder. With the Laplace–Hankel transform
+   `(1/2π)∫ q^{m+1} e^{−qζ} J₀(qρ) dq = Γ(m+2) R^{−m−2} P_{m+1}(ζ/R)/2π`, Φ_j (m = −1−j) is the ε⁰ Laurent
+   coefficient at the pole of Γ: the analytic continuation in the power of q, as `image_moments.box`
+   continues in the degree. With n = j−1,
+   `Φ_j = (−1)ⁿ/(n! 2π) {[ψ(j) − 2(ψ(2n+1) − ψ(n+1)) − log((R+ζ)/2)] RⁿP_n(ζ/R) − 2 Σ_{k<n} (−1)^{n+k}(2k+1)/((n−k)(n+k+1)) RⁿP_k(ζ/R)}`:
+   polynomial in (R, ζ) times log(R + ζ), plus a polynomial. The residue is the solid harmonic RⁿP_n(ζ/R), the
+   ambiguity a cutoff would leave free; the finite part fixes its coefficient (γ, log 2).
+   - `scripts/derive_finite_part_potentials.py` (twin `Mathematica/FinitePartPotentials.wl`, which takes the
+     Laurent coefficient itself, no degree-derivative formula supplied; not yet run): the ladder
+     `∂_ζ Φ_{j+1} = −Φ_j` and harmonicity symbolically, j ≤ 6; against the finite part computed from the
+     integral itself (Taylor series of the entire head, quadrature of the tail), 0 … 3e-40 at 40 digits.
+     Data: `scripts/data/finite_part_potentials.json`.
+   - The paper's Φ₁, Φ₂ differ by `(log 2 − γ)/2π` and `ζ (γ − log 2)/2π`, annihilated by every K0 term's
+     lateral derivatives (n_lat ≥ j): K0 unchanged.
+   - **Recorded:** the degree derivative of P_ν at an integer needs the diagonal term
+     `2(ψ(2n+1) − ψ(n+1)) P_n`; without it Φ₂ … Φ₄ were wrong by 20–50 %. Checked against the numerical
+     ν-derivative to 2e-41. And mpmath's `legenp` near a negative integer degree is not a usable reference
+     (errors 1e-11 that move with the precision); the finite part from the integral is.
+   - **Consistency.** `K = FP∫Y0 + ω² FP∫Y1 + FP∫(Y − Y0 − ω²Y1)`: the finite part of a convergent integral is
+     the integral and the finite part is linear, so the split is exact with **no cutoff Q0**, provided the
+     remainder's small-q finite part uses the same continuation (its subtracted Laurent terms are integrated
+     analytically near q = 0). The first two terms are closed form for every pair; the Gibbs problem of the
+     window step does not arise.
 3. **Their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
    Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
 4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole
