@@ -1,0 +1,25 @@
+{
+ "variables": [
+  "R",
+  "zeta"
+ ],
+ "definition": "Hadamard finite part (continuation in the power of q) of the lateral transform of q^(-1-j) e^(-q zeta)",
+ "phi": [
+  "1/(2*pi*R)",
+  "-log(R/2 + zeta/2)/(2*pi) - EulerGamma/(2*pi)",
+  "-R/(2*pi) + zeta*log(R/2 + zeta/2)/(2*pi) + EulerGamma*zeta/(2*pi)",
+  "R**2*log(R/2 + zeta/2)/(8*pi) - R**2/(8*pi) + EulerGamma*R**2/(8*pi) + 3*R*zeta/(8*pi) - 3*zeta**2*log(R/2 + zeta/2)/(8*pi) - 3*EulerGamma*zeta**2/(8*pi) + zeta**2/(8*pi)",
+  "R**3/(18*pi) - R**2*zeta*log(R/2 + zeta/2)/(8*pi) - EulerGamma*R**2*zeta/(8*pi) + R**2*zeta/(8*pi) - 5*R*zeta**2/(24*pi) + 5*zeta**3*log(R/2 + zeta/2)/(24*pi) - zeta**3/(8*pi) + 5*EulerGamma*zeta**3/(24*pi)",
+  "-R**4*log(R/2 + zeta/2)/(128*pi) - EulerGamma*R**4/(128*pi) + 3*R**4/(256*pi) - 55*R**3*zeta/(1152*pi) + 5*R**2*zeta**2*log(R/2 + zeta/2)/(64*pi) - 11*R**2*zeta**2/(128*pi) + 5*EulerGamma*R**2*zeta**2/(64*pi) + 35*R*zeta**3/(384*pi) - 35*zeta**4*log(R/2 + zeta/2)/(384*pi) - 35*EulerGamma*zeta**4/(384*pi) + 19*zeta**4/(256*pi)",
+  "-R**5/(450*pi) + R**4*zeta*log(R/2 + zeta/2)/(128*pi) - 3*R**4*zeta/(256*pi) + EulerGamma*R**4*zeta/(128*pi) + 49*R**3*zeta**2/(1920*pi) - 7*R**2*zeta**3*log(R/2 + zeta/2)/(192*pi) - 7*EulerGamma*R**2*zeta**3/(192*pi) + 17*R**2*zeta**3/(384*pi) - 21*R*zeta**4/(640*pi) + 21*zeta**5*log(R/2 + zeta/2)/(640*pi) - 25*zeta**5/(768*pi) + 21*EulerGamma*zeta**5/(640*pi)"
+ ],
+ "phi_wl": [
+  "(1/2)/(Pi*R)",
+  "-1/2*Log[(1/2)*R + (1/2)*zeta]/Pi - 1/2*EulerGamma/Pi",
+  "-1/2*R/Pi + (1/2)*zeta*Log[(1/2)*R + (1/2)*zeta]/Pi + (1/2)*EulerGamma*zeta/Pi",
+  "(1/8)*R^2*Log[(1/2)*R + (1/2)*zeta]/Pi - 1/8*R^2/Pi + (1/8)*EulerGamma*R^2/Pi + (3/8)*R*zeta/Pi - 3/8*zeta^2*Log[(1/2)*R + (1/2)*zeta]/Pi - 3/8*EulerGamma*zeta^2/Pi + (1/8)*zeta^2/Pi",
+  "(1/18)*R^3/Pi - 1/8*R^2*zeta*Log[(1/2)*R + (1/2)*zeta]/Pi - 1/8*EulerGamma*R^2*zeta/Pi + (1/8)*R^2*zeta/Pi - 5/24*R*zeta^2/Pi + (5/24)*zeta^3*Log[(1/2)*R + (1/2)*zeta]/Pi - 1/8*zeta^3/Pi + (5/24)*EulerGamma*zeta^3/Pi",
+  "-1/128*R^4*Log[(1/2)*R + (1/2)*zeta]/Pi - 1/128*EulerGamma*R^4/Pi + (3/256)*R^4/Pi - 55/1152*R^3*zeta/Pi + (5/64)*R^2*zeta^2*Log[(1/2)*R + (1/2)*zeta]/Pi - 11/128*R^2*zeta^2/Pi + (5/64)*EulerGamma*R^2*zeta^2/Pi + (35/384)*R*zeta^3/Pi - 35/384*zeta^4*Log[(1/2)*R + (1/2)*zeta]/Pi - 35/384*EulerGamma*zeta^4/Pi + (19/256)*zeta^4/Pi",
+  "-1/450*R^5/Pi + (1/128)*R^4*zeta*Log[(1/2)*R + (1/2)*zeta]/Pi - 3/256*R^4*zeta/Pi + (1/128)*EulerGamma*R^4*zeta/Pi + (49/1920)*R^3*zeta^2/Pi - 7/192*R^2*zeta^3*Log[(1/2)*R + (1/2)*zeta]/Pi - 7/192*EulerGamma*R^2*zeta^3/Pi + (17/384)*R^2*zeta^3/Pi - 21/640*R*zeta^4/Pi + (21/640)*zeta^5*Log[(1/2)*R + (1/2)*zeta]/Pi - 25/768*zeta^5/Pi + (21/640)*EulerGamma*zeta^5/Pi"
+ ]
+}
