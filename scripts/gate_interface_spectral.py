@@ -32,8 +32,10 @@ S5  A ROW ALONG THE INTERFACE, WINDOWED.  Five cells touching the interface in a
     reflected (row with itself) and transmitted (row to the mirrored row), with the C-infinity window
     (start 0.25): D for all pairs in one call of ``truncated_blocks``, A0 and A1 per offset, against the
     sharp-cutoff ``interface_block`` of each pair.  (a) With every correction: the same blocks, to D's rounding.
-    (b) Without the corrections beyond 4 h: the error is the dropped |A0| + omega^2 |A1|, below 2e-4 of
-    max |K0(0)| as measured by scripts/measure_interface_correction_locality.py (1.4e-4 at 6 h).
+    (b) Without the corrections beyond 4 h: the error is the dropped |A0| + omega^2 |A1|, the A0 at 6 h that
+    scripts/measure_interface_correction_locality.py gives (1.0e-5 R, 1.3e-5 T of max |K0(0)|).
+    Measured, 12 October 2026: (a) R 1.9e-11, T 3.9e-14; (b) R 1.0e-5, T 1.3e-5; the windowed row 16 s
+    against 130-145 s for the sharp parts pair by pair.
 
 By default S1, S2 at offset (1,0,0) and its mirror, S3, S4 and S5 run (about 15 minutes); ``--full`` adds the
 lateral neighbours of S2.
@@ -149,7 +151,7 @@ def gate_routes(tol=1e-10) -> bool:
 ROW = (0, 2, 4, 6, 8)
 
 
-def gate_row(tol=(1e-10, 2e-4), radius=4) -> bool:
+def gate_row(tol=(1e-10, 2e-5), radius=4) -> bool:
     om, q0 = CASES[0]
     win = isp.Window(0.25, "cinf")
     ok = True
