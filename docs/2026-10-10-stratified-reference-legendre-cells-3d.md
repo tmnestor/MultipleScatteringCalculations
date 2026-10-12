@@ -163,7 +163,7 @@ away from interfaces.
 - **Cost still to fix.** A0 and A1 take about 10–17 s per pair, and every touching pair needs them at
   every lateral offset. That does not scale to a grid along the interface (step 1 below).
 
-**Next (decided 11 October): step 1, then step 2.**
+**Next (decided 11 October): step 1, then step 2.** Step 1's window and locality measurement are done (12 October, below the step 1 plan).
 
 **Step 1 — make the near-interface corrections local.**
 - **Why.** A0 and A1 are high-pass parts of kernels that are smooth away from the touching point. With the
@@ -182,6 +182,41 @@ away from interfaces.
     `interface_block`.
 - **Deliverables.** A windowed `frequency_independent_parts` and `truncated_blocks`; the measurement script
   `scripts/measure_interface_correction_locality.py`; the gate extended.
+
+**12 October 2026: step 1, the window and its locality.**
+- **The code.** `interface_spectral.Window(start, shape)` (C^∞ step `e^{−1/t}/(e^{−1/t} + e^{−1/(1−t)})`, or
+  the polynomial step `I_t(m+1, m+1)`), accepted by `truncated_blocks`, `frequency_independent_parts`,
+  `interface_block` and `sweep` (default: the sharp cutoff, unchanged). The windowed parts are the sharp ones
+  plus the ramp integrals `∫χY0`, `∫χY1` (`window_parts`, cheap: q < Q0), which D gives back; so the window
+  costs nothing beyond the sharp parts, and E is the same by construction (the `Q0⁻⁶` law cannot be spoiled).
+- **Quadrature.** Order-12 Gauss on D's panels left 5e-11 on the C^∞ flanks; the ramp is now 16 panels in D
+  and in `window_parts` (rounding). A ramp starting inside the branch-point panels is refused.
+- **Identity.** Windowed against sharp blocks: 1e-14 at ωh/β = 1; at ωh/β = 1/6, 3e-11 (R, D's known
+  rounding, now on different nodes) and 8e-14 (T). Unit test: D − D_χ = ramp integrals to 1e-11.
+- **Locality** (`scripts/measure_interface_correction_locality.py`, cached in
+  `scripts/data/interface_correction_locality.json`). Row of cells touching the interface, offset d along x,
+  full 4 × 10 × 9 × 9 blocks, Q0h = 10, ωh/β = 1/6, relative to max |K0| of the touching pair:
+
+  | d/h | sharp A0 | C^∞ 0.5 A0 | C^∞ 0.25 A0 | C^∞ 0.25 ω²A1 | poly3 0.5 A0 |
+  |---|---|---|---|---|---|
+  | 4 | 2.7e-4 | 9.8e-5 | 1.2e-4 | 2.7e-7 | 7.9e-5 |
+  | 8 | 1.0e-4 | 1.7e-6 | 1.2e-6 | 5.1e-9 | 5.4e-7 |
+  | 16 | 3.2e-5 | 1.5e-8 | 5.9e-9 | 2.7e-11 | 9.8e-9 |
+  | 24 | 2.4e-5 | 5.5e-10 | 9.1e-11 | 4.4e-13 | 8.8e-10 |
+  | 32 | 1.4e-5 | 3.2e-11 | 4.7e-12 | 3.8e-14 | 1.4e-10 |
+
+  (Reflected shown; transmitted within a factor 1.3.) The sharp cutoff decays as about `d^−1.5` (Gibbs); the
+  C^∞ windows decay faster than any power, the wider ramp (start 0.25) faster; the polynomial step is
+  algebraic and stalls near 1e-10. **Radius** (C^∞ 0.25, beyond which |A0| + ω²|A1| < tol): 12 h for 1e-6,
+  16 h for 1e-8, 24 h for 1e-10 (6, 8 and 12 cells), R and T alike.
+- **The cost consequence.** ω²A1, the expensive part (octaves to Q1, azimuthal work ∝ q × offset: 25 s at
+  d = 0, 540–820 s at 32 h for the sharp parts), is below 1e-10 beyond 12 h; farther out only A0 is needed,
+  which is the closed-form K0 and an integral below Q0. A0, A1 depend only on the two depths and the lateral
+  offset, so a grid along the interface needs them once per (depth pair, offset within the radius).
+- **Gate S5** (`scripts/gate_interface_spectral.py`): a row of five cells along the interface, windowed, against per-pair sharp blocks (result to be recorded).
+- **Still open in step 1.** D for every offset at once (FFT on the shared lateral grid, or the `S_n` route per
+  offset); A1 only within its own, smaller radius (and A0 alone beyond); whether a still wider ramp (start
+  0.1, the lowest the branch points allow at Q0h = 10, ωh/β = 1/6) shrinks the radius further.
 
 **Step 2 — a scattering solve near an interface.**
 - **The problem.** A Legendre-cell scatterer (Paper 1's single-site T-matrix, Paper 2's direct blocks)
