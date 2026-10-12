@@ -213,7 +213,9 @@ away from interfaces.
   d = 0, 540–820 s at 32 h for the sharp parts), is below 1e-10 beyond 12 h; farther out only A0 is needed,
   which is the closed-form K0 and an integral below Q0. A0, A1 depend only on the two depths and the lateral
   offset, so a grid along the interface needs them once per (depth pair, offset within the radius).
-- **Gate S5** (`scripts/gate_interface_spectral.py`): a row of five cells along the interface, windowed, against per-pair sharp blocks (result to be recorded).
+- **Gate S5** (`scripts/gate_interface_spectral.py`): a row of five cells along the interface (0 … 8 h), D for all pairs in one call, against per-pair sharp
+  blocks: with every correction R 1.9e-11, T 3.9e-14; without the corrections beyond 4 h R 1.0e-5,
+  T 1.3e-5 (the measured A0 at 6 h). The windowed row 16 s, the sharp parts pair by pair 130–145 s.
 - **Still open in step 1.** D for every offset at once (FFT on the shared lateral grid, or the `S_n` route per
   offset); A1 only within its own, smaller radius (and A0 alone beyond); whether a still wider ramp (start
   0.1, the lowest the branch points allow at Q0h = 10, ωh/β = 1/6) shrinks the radius further.
