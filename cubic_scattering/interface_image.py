@@ -52,12 +52,16 @@ from .image_moments import corner_moment
 _DATA = Path(__file__).resolve().parent.parent / "scripts" / "data"
 #: Canonical terms per kind: the image (both cells in A) and the transmission (source in A, receiver in B).
 _TERMS_PATH = {
-    "reflected": _DATA / "interface_image_terms.json",
-    "transmitted": _DATA / "interface_transmission_terms.json",
+    ("reflected", 0): _DATA / "interface_image_terms.json",
+    ("transmitted", 0): _DATA / "interface_transmission_terms.json",
+    ("reflected", 1): _DATA / "interface_omega2_terms_reflected.json",
+    ("transmitted", 1): _DATA / "interface_omega2_terms_transmitted.json",
 }
+#: The potentials Phi_j, j >= 1, as Hadamard finite parts (scripts/derive_finite_part_potentials.py).
+_FP_PATH = _DATA / "finite_part_potentials.json"
 #: The 9-state under the mirror z -> -z: u_z, gamma_zy and gamma_zx change sign (Voigt order zz, xx, yy, xy, zy, zx).
 MIRROR_9 = np.array([-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0])
-_DEG0 = {0: -1, 1: 0, 2: 1}
+_DEG0 = {0: -1, 1: 0, 2: 1, 3: 2, 4: 3}
 
 Poly = tuple[Fraction, ...]  # ascending coefficients
 
@@ -68,42 +72,89 @@ Poly = tuple[Fraction, ...]  # ascending coefficients
 
 
 @cache
-def _terms(kind: str = "reflected") -> tuple:
-    """The canonical terms of one kind, each material coefficient compiled: ((row, col, j, alpha, A, B, fn), ...)."""
-    data = json.loads(_TERMS_PATH[kind].read_text())
-    lam_a, mu_a, lam_b, mu_b = sp.symbols("lamA muA lamB muB", positive=True)
-    loc = {"lamA": lam_a, "muA": mu_a, "lamB": lam_b, "muB": mu_b}
+def _terms(kind: str = "reflected", order: int = 0) -> tuple:
+    """The canonical terms of one kind and order (0: the static field; 1: the omega^2 term, whose coefficients
+    also hold the densities), each material coefficient compiled: ((row, col, j, alpha, A, B, fn), ...); fn
+    takes the materials in the order of the file's "variables"."""
+    data = json.loads(_TERMS_PATH[kind, order].read_text())
+    names = data.get("variables", ["lamA", "muA", "lamB", "muB"])
+    syms = sp.symbols(" ".join(names), positive=True)
+    loc = dict(zip(names, syms, strict=True))
     out = []
     for r, row in enumerate(data["terms"]):
         for c, terms in enumerate(row):
             for t in terms:
                 expr = sp.sympify(t["coef"], locals=loc)
-                fn = sp.lambdify((lam_a, mu_a, lam_b, mu_b), expr, "numpy")
+                fn = sp.lambdify(syms, expr, "numpy")
                 out.append(
                     (r, c, t["j"], tuple(t["alpha"]), t["z_power"], t["zp_power"], fn)
                 )
     return tuple(out)
 
 
+_RX, _RY, _ZETA = sp.symbols("rx ry zeta", real=True)
+_R3 = sp.sqrt(_RX**2 + _RY**2 + _ZETA**2)
+
+
+@cache
+def _potential(j: int) -> sp.Expr:
+    """Phi_j in (rx, ry, zeta): Phi0 = 1/(2 pi R); for j >= 1 Hadamard's finite part of the transform of
+    q^(-1-j) e^(-q zeta), the continuation in the power of q.  Phi1, Phi2 differ from Mindlin's
+    -log(R + zeta)/2pi, (zeta log(R + zeta) - R)/2pi by a constant and a multiple of zeta, which every static
+    term annihilates by its lateral derivatives; the omega^2 term needs the finite parts themselves."""
+    if j == 0:
+        return 1 / (2 * sp.pi * _R3)
+    r_, z_ = sp.symbols("R zeta", positive=True)
+    text = json.loads(_FP_PATH.read_text())["phi"][j]
+    return sp.sympify(text, locals={"R": r_, "zeta": z_}).subs({r_: _R3, z_: _ZETA})
+
+
 @cache
 def kernel_function(j: int, alpha: tuple[int, int, int]):
     """d^alpha Phi_j as a vectorised function of (rho_x, rho_y, zeta)."""
-    rx, ry, zeta = sp.symbols("rx ry zeta", real=True)
-    r = sp.sqrt(rx**2 + ry**2 + zeta**2)
-    phi = {
-        0: 1 / (2 * sp.pi * r),
-        1: -sp.log(r + zeta) / (2 * sp.pi),
-        2: (zeta * sp.log(r + zeta) - r) / (2 * sp.pi),
-    }[j]
+    phi = _potential(j)
     expr = (
-        sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2]) if sum(alpha) else phi
+        sp.diff(phi, _RX, alpha[0], _RY, alpha[1], _ZETA, alpha[2])
+        if sum(alpha)
+        else phi
     )
     # No simplify: on a fourth derivative it takes about a minute; common subexpressions suffice.
-    return sp.lambdify((rx, ry, zeta), expr, "numpy", cse=True)
+    return sp.lambdify((_RX, _RY, _ZETA), expr, "numpy", cse=True)
+
+
+@cache
+def _log_coefficient_expr(j: int, alpha: tuple[int, int, int]) -> sp.Expr:
+    """g = d^alpha g0, g0 = -(-1)^n R^n P_n(zeta/R) / (2 pi n!), n = j - 1: Phi_j(lam x) = lam^n Phi_j(x)
+    + lam^n log(lam) g0(x), so d^alpha Phi_j is homogeneous of degree d up to log(lam) d^alpha g0 (a homogeneous
+    polynomial of degree d, zero whenever the lateral derivatives annihilate the solid harmonic)."""
+    if j == 0:
+        return sp.Integer(0)
+    n = j - 1
+    g0 = sp.cancel(
+        sp.expand(
+            -((-1) ** n)
+            * _R3**n
+            * sp.legendre(n, _ZETA / _R3)
+            / (2 * sp.pi * sp.factorial(n))
+        )
+    )
+    return sp.expand(
+        sp.diff(g0, _RX, alpha[0], _RY, alpha[1], _ZETA, alpha[2]) if sum(alpha) else g0
+    )
+
+
+@cache
+def kernel_log_coefficient(j: int, alpha: tuple[int, int, int]):
+    """g of d^alpha Phi_j (f(lam x) = lam^d [f(x) + log(lam) g(x)]) as a vectorised function, or None if zero."""
+    g = _log_coefficient_expr(j, alpha)
+    if g == 0:
+        return None
+    fn = sp.lambdify((_RX, _RY, _ZETA), g, "numpy")
+    return lambda x, y, z: fn(x, y, z) + 0.0 * x  # broadcast a constant polynomial
 
 
 def kernel_degree(j: int, alpha: tuple[int, int, int]) -> int:
-    """Degree of homogeneity of d^alpha Phi_j in (rho, zeta)."""
+    """Degree of homogeneity of d^alpha Phi_j in (rho, zeta) (up to the log term of ``kernel_log_coefficient``)."""
     return _DEG0[j] - sum(alpha)
 
 
@@ -284,9 +335,13 @@ def _regular_moments(
 
 
 def _corner_moments(
-    f, d: int, box: tuple, deg: tuple[int, int, int], n: int
+    f, d: int, box: tuple, deg: tuple[int, int, int], n: int, g=None
 ) -> NDArray:
-    """int_box s^p f(s) for a box with a corner at the origin (the singular point), by Euler's identity."""
+    """int_box s^p f(s) for a box with a corner at the origin (the singular point), by Euler's identity.
+
+    With a log term (f(lam s) = lam^d [f(s) + log(lam) g(s)], g a polynomial), s.grad f = d f + g, and the
+    identity gains -int_box s^p g, integrated exactly by Gauss.
+    """
     far = [lo if hi == 0 else hi for lo, hi in box]  # the coordinate of each far face
     m = np.zeros((deg[0] + 1, deg[1] + 1, deg[2] + 1))
     for i in range(3):
@@ -307,6 +362,19 @@ def _corner_moments(
             np.moveaxis(contrib, 0, i)
             if i == 0
             else np.moveaxis(contrib, [0, 1, 2], [i, *others])
+        )
+    if g is not None:
+        ng = sum(deg) + max(d, 0) + 2
+        (x0, w0), (x1, w1), (x2, w2) = (_gauss(ng, *box[i]) for i in range(3))
+        gx = g(*np.meshgrid(x0, x1, x2, indexing="ij")) * np.einsum(
+            "i,j,k->ijk", w0, w1, w2
+        )
+        m -= np.einsum(
+            "ijk,ip,jq,kr->pqr",
+            gx,
+            np.vander(x0, deg[0] + 1, increasing=True),
+            np.vander(x1, deg[1] + 1, increasing=True),
+            np.vander(x2, deg[2] + 1, increasing=True),
         )
     total = np.add.outer(
         np.add.outer(np.arange(deg[0] + 1), np.arange(deg[1] + 1)),
@@ -345,8 +413,17 @@ def _regular_legendre_moments(
     return _contract3(fw, lx, ly, lz)
 
 
+@cache
+def _log_rho_moment(e: int, k: int) -> float:
+    """int_0^1 rho^e log(rho) P_k(2 rho - 1) d rho, exactly (int rho^m log rho = -1/(m+1)^2), in floating point."""
+    coeffs = sp.Poly(
+        sp.legendre(k, 2 * sp.Symbol("t") - 1), sp.Symbol("t")
+    ).all_coeffs()[::-1]
+    return float(sum(-sp.Rational(c) / (e + m + 1) ** 2 for m, c in enumerate(coeffs)))
+
+
 def _corner_pyramids(
-    f, d: int, box: tuple, weights: list[dict], pairs: list[tuple], n: int
+    f, d: int, box: tuple, weights: list[dict], pairs: list[tuple], n: int, g=None
 ) -> NDArray:
     """int_box W f for each pair of weights, the box anchored at the singular corner, by three Duffy pyramids.
 
@@ -363,6 +440,9 @@ def _corner_pyramids(
         weights: Per axis, {key: Poly in s about the corner}.
         pairs: (key_x, key_y, key_z) per output.
         n: Gauss nodes per face dimension.
+        g: The log coefficient (``kernel_log_coefficient``), or None.  Then f(s) = rho^d [f(A e_k(v)) +
+            log(rho) g(A e_k(v))] in each pyramid; the rho integrand of the log part is a polynomial P(rho) times
+            rho^e log(rho), integrated exactly from P's shifted-Legendre coefficients (``_log_rho_moment``).
 
     Returns:
         The integrals, shape (len(pairs),).
@@ -376,7 +456,15 @@ def _corner_pyramids(
     ]
     max_deg = sum(max(len(p) for p in w.values()) - 1 for w in weights)
     n_rho = max(1, (3 + max(d, 0) + max_deg) // 2 + 2)
+    if g is not None:
+        n_rho = max(
+            n_rho, max_deg + 1
+        )  # P(rho) of degree <= max_deg: its Legendre coefficients exactly
     rho, w_rho = _gauss(n_rho, 0.0, 1.0)
+    if g is not None:
+        leg_rho = np.stack(
+            [legval(2 * rho - 1, np.eye(n_rho)[k]) for k in range(n_rho)]
+        )  # (k, node)
     v, w_v = _gauss(n, 0.0, 1.0)
     vol = abs(float(far[0] * far[1] * far[2]))
     out = np.zeros(len(pairs))
@@ -387,6 +475,8 @@ def _corner_pyramids(
         pts[k] = np.full_like(g1, float(far[k]))
         pts[j1], pts[j2] = float(far[j1]) * g1, float(far[j2]) * g2
         face = f(*pts) * np.outer(w_v, w_v)  # (n, n)
+        face_g = None if g is None else g(*pts) * np.outer(w_v, w_v)
+        cache_face_g: dict = {}
         # per key: r_k(A_k rho) on the pyramid axis; v^m r_j(A_j rho v) on the other two
         on_k = {key: legval(2 * rho - 1, c) for key, (m, c) in fac[k].items()}
         on_j = [
@@ -420,6 +510,18 @@ def _corner_pyramids(
             inner = cache_face[fk]
             scale = float(np.prod([far[i] ** fac[i][keys[i]][0] for i in range(3)]))
             out[idx] += vol * scale * np.sum(w_rho * rho**e * on_k[keys[k]] * inner)
+            if face_g is not None:
+                if fk not in cache_face_g:
+                    cache_face_g[fk] = np.sum(
+                        (on_j[0][keys[j1]] @ face_g) * on_j[1][keys[j2]], axis=1
+                    )
+                poly = on_k[keys[k]] * cache_face_g[fk]  # P(rho) at the nodes
+                c = (2 * np.arange(n_rho) + 1) * (leg_rho @ (w_rho * poly))
+                out[idx] += (
+                    vol
+                    * scale
+                    * sum(c[kk] * _log_rho_moment(e, kk) for kk in range(n_rho))
+                )
     return out
 
 
@@ -439,9 +541,11 @@ def image_block(
     n_gauss: int = 32,
     closed: bool = True,
     basis: str = "legendre",
+    order: int = 0,
 ) -> NDArray:
     """The static interface block K[a, c] between two cells: the image when both lie on one side of the
-    interface z = 0, the transmission when they lie on opposite sides.
+    interface z = 0, the transmission when they lie on opposite sides.  With ``order=1``, the block K1 of the
+    omega^2 term instead (K = K0 + omega^2 K1 + ...), from the omega^2 terms with the finite-part potentials.
 
     Cells in A (z < 0) use the image's terms; a receiver in B with a source in A uses the transmission's.
     The other two arrangements are mirrored (z -> -z, media exchanged) onto these: the 9-state changes sign
@@ -491,6 +595,7 @@ def image_block(
             n_gauss,
             closed,
             basis,
+            order,
         )
         sa = np.array([(-1.0) ** e[0] for e in exps_f])
         sc = np.array([(-1.0) ** e[0] for e in exps_s])
@@ -499,14 +604,20 @@ def image_block(
         raise ValueError(
             f"image_block: basis must be 'legendre' or 'power', got {basis!r}"
         )
-    geo = family_geometry(rec_centre, src_centre, n_source, n_test)
+    geo = family_geometry(rec_centre, src_centre, n_source, n_test, order)
     mats = (above.lam, above.mu, below.lam, below.mu)
+    if order == 1:
+        mats += (above.rho, below.rho)
     groups: dict = {}
-    for r, c, j, alpha, a_pow, b_pow, fn in _terms(geo["kind"]):
+    for r, c, j, alpha, a_pow, b_pow, fn in _terms(geo["kind"], order):
         groups.setdefault((j, alpha, a_pow, b_pow), []).append((r, c, fn(*mats)))
+    logs = family_log_integrals(geo, n_gauss)
     out = np.zeros((n_test, n_source, 9, 9))
     for key, val in family_integrals(geo, n_gauss, closed, basis).items():
         scale = h ** (6 + kernel_degree(key[0], key[1]) + key[2] + key[3])
+        if key in logs:
+            # a finite-part family is homogeneous only up to log: f(h s) = h^d [f(s) + log(h) g(s)]
+            val = val + np.log(h) * logs[key]
         for r, c, coef in groups[key]:
             out[:, :, r, c] += scale * coef * val
     return out
@@ -517,6 +628,7 @@ def family_geometry(
     src_centre: tuple[int, int, int],
     n_source: int,
     n_test: int,
+    order: int = 0,
 ) -> dict:
     """The pieces and the exact weights of every kernel family, for a source in A (src_centre[0] < 0).
 
@@ -541,7 +653,7 @@ def family_geometry(
         # zeta = z0 + sigma: sigma in [-2, 0] -> zeta in [z0 - 2, z0]; sigma in [0, 2] -> [z0, z0 + 2]
         ver = [(z0 - 2, z0), (z0, z0 + 2)]
     families = {}
-    for _, _, j, alpha, a_pow, b_pow, _ in _terms(kind):
+    for _, _, j, alpha, a_pow, b_pow, _ in _terms(kind, order):
         key = (j, alpha, a_pow, b_pow)
         if key in families:
             continue
@@ -586,6 +698,7 @@ def family_geometry(
         families[key] = (wx, wy, wz, deg)
     return {
         "kind": kind,
+        "order": order,
         "lat_x": lat_x,
         "lat_y": lat_y,
         "ver": ver,
@@ -606,11 +719,15 @@ def family_integrals(
     for (j, alpha, a_pow, b_pow), (wx, wy, wz, deg) in geo["families"].items():
         f = kernel_function(j, alpha)
         d = kernel_degree(j, alpha)
+        g = kernel_log_coefficient(j, alpha)
         if basis == "legendre":
             out[j, alpha, a_pow, b_pow] = _block_legendre(
-                f, d, wx, wy, wz, exps_f, exps_s, lat_x, lat_y, ver, deg, n_gauss
+                f, d, wx, wy, wz, exps_f, exps_s, lat_x, lat_y, ver, deg, n_gauss, g
             )
             continue
+        # image_moments' closed forms use the line of images: valid for j <= 2 with enough lateral
+        # derivatives (it is another finite-part convention otherwise; scripts/derive_finite_part_potentials.py)
+        closed_here = closed and j <= 2 and (j == 0 or alpha[0] + alpha[1] >= j)
         val = np.zeros((len(exps_f), len(exps_s)))
         for ix in range(2):
             for iy in range(2):
@@ -625,8 +742,8 @@ def family_integrals(
                         centre = (0.0, 0.0, 0.0)
                         mom = (
                             _corner_moments_closed(j, alpha, d, box, deg)
-                            if closed
-                            else _corner_moments(f, d, box, deg, n_gauss)
+                            if closed_here
+                            else _corner_moments(f, d, box, deg, n_gauss, g)
                         )
                     else:
                         centre = tuple((lo + hi) / 2 for lo, hi in box)
@@ -661,10 +778,54 @@ def family_integrals(
     return out
 
 
+def family_log_integrals(geo: dict, n_gauss: int = 32) -> dict:
+    """For each family with a log term, the integral of its log coefficient g (a polynomial) against the weights
+    over the pieces, in units of h: {(j, alpha, A, B): array}.  The block of such a family scales as
+    h^(6 + d + A + B) [int f + log(h) int g], f(h s) = h^d [f(s) + log(h) g(s)]."""
+    out = {}
+    for (j, alpha, a_pow, b_pow), (wx, wy, wz, deg) in geo["families"].items():
+        g = kernel_log_coefficient(j, alpha)
+        if g is None:
+            continue
+        out[j, alpha, a_pow, b_pow] = _block_legendre(
+            g,
+            0,
+            wx,
+            wy,
+            wz,
+            geo["exps_f"],
+            geo["exps_s"],
+            geo["lat_x"],
+            geo["lat_y"],
+            geo["ver"],
+            deg,
+            n_gauss,
+            regular_only=True,
+        )
+    return out
+
+
 def _block_legendre(
-    f, d, wx, wy, wz, exps_f, exps_s, lat_x, lat_y, ver, deg, n_gauss
+    f,
+    d,
+    wx,
+    wy,
+    wz,
+    exps_f,
+    exps_s,
+    lat_x,
+    lat_y,
+    ver,
+    deg,
+    n_gauss,
+    g=None,
+    regular_only=False,
 ) -> NDArray:
-    """One kernel family's (n_test, n_source) integrals in the Legendre basis of each piece."""
+    """One kernel family's (n_test, n_source) integrals in the Legendre basis of each piece.
+
+    ``g``: the family's log coefficient, passed to the corner pyramids.  ``regular_only``: every piece by Gauss
+    rules (for a polynomial kernel, exact).
+    """
     val = np.zeros((len(exps_f), len(exps_s)))
     pair_keys = [
         ((ef[1], es[1]), (ef[2], es[2]), (ef[0], es[0]))
@@ -680,14 +841,14 @@ def _block_legendre(
                     {k: v[iy] for k, v in wy.items()},
                     {k: v[iz] for k, v in wz.items()},
                 ]
-                if all(lo <= 0 <= hi for lo, hi in box):
+                if not regular_only and all(lo <= 0 <= hi for lo, hi in box):
                     if any(lo < 0 < hi for lo, hi in box):
                         raise ValueError(
                             "image_block: the singular point lies inside a piece, not at a corner."
                         )
-                    val += _corner_pyramids(f, d, box, ws, pair_keys, n_gauss).reshape(
-                        val.shape
-                    )
+                    val += _corner_pyramids(
+                        f, d, box, ws, pair_keys, n_gauss, g
+                    ).reshape(val.shape)
                     continue
                 centre = [Fraction(lo + hi, 2) for lo, hi in box]
                 mom = _regular_legendre_moments(f, box, deg, n_gauss)
