@@ -641,8 +641,10 @@ def frequency_independent_parts(
     q1h: float = 160.0,
     window: Window | None = None,
     a1_route: str = "closed",
-) -> tuple[NDArray, NDArray]:
-    """(A0, A1) of the split, computed once per arrangement of cells and reused at every frequency.
+    omega4: bool = False,
+) -> tuple:
+    """(A0, A1) of the split, or (A0, A1, A2) with ``omega4``, computed once per arrangement of cells and reused
+    at every frequency.
 
     A0 = K0 - (1/4 pi^2) int_{q < Q0} Y0, K0 the closed-form static block; A1 = (1/4 pi^2) int_{q > Q0} Y1, to
     Q1 by the plane-wave rule and beyond by the q^-4 law of its last octave.  With a ``window`` chi, A0 and A1
@@ -661,13 +663,20 @@ def frequency_independent_parts(
         window: The smooth window (None: the sharp cutoff at Q0).  ``truncated_blocks`` must use the same.
         a1_route: "closed" (default): A1 = K1 - FP int_{q < Q0} Y1, K1 from ``interface_image.image_block(...,
             order=1)``, exact; "octaves": the plane-wave octaves to Q1 and the q^-4 law of the last (``q1h``).
+        omega4: Also A2 = (1/4 pi^2) FP int_{q > Q0} Y2 = K2 - FP int_{q < Q0} Y2, K2 the closed-form omega^4 block
+            (``image_block(..., order=2)``; for the media the omega^4 term was derived for), so that the dropped
+            remainder falls as Q0^-8 instead of Q0^-6.  Not with a window.
 
     Returns:
-        (A0, A1), each shape (n_test, n_source, 9, 9), complex.
+        (A0, A1) or (A0, A1, A2), each shape (n_test, n_source, 9, 9), complex.
     """
+    if omega4 and window is not None:
+        raise ValueError(
+            "frequency_independent_parts: omega4 with a window is not implemented."
+        )
     rec, src = tuple(rec_centre), tuple(src_centre)
     if src[0] > 0:
-        a0, a1 = frequency_independent_parts(
+        parts_m = frequency_independent_parts(
             _mirrored(rec),
             _mirrored(src),
             h,
@@ -679,8 +688,9 @@ def frequency_independent_parts(
             q1h,
             window,
             a1_route,
+            omega4,
         )
-        return _mirror(a0), _mirror(a1)
+        return tuple(_mirror(a) for a in parts_m)
     kind = _check(rec, src)
     ka, kb = _key(above), _key(below)
     reach = np.hypot(rec[1] - src[1], rec[2] - src[2])
@@ -705,18 +715,27 @@ def frequency_independent_parts(
     if window is not None:
         r0, r1 = window_parts(rec, src, h, above, below, window, n_source, n_test, q0h)
         a0, a1 = a0 + r0, a1 + r1
+    if omega4:
+        k2 = image_block(rec, src, h, above, below, n_source, n_test, order=2)
+        a2 = k2 - fp_low_integral(2, kind, rec, src, h, ka, kb, q0h, n_source, n_test)
+        return a0, a1, a2
     return a0, a1
 
 
 @cache
-def _cheb_mode_moments(n: int) -> tuple:
-    """For T_k(2t - 1), k < n: (sum_{l != 1} a_kl / (l - 1), a_k1), the finite parts of int_0^1 t^(l-2)."""
+def _cheb_mode_moments(n: int, n_sing: int = 2) -> tuple:
+    """For T_k(2t - 1), k < n: (sum_{l != N-1} a_kl / (l - N + 1), a_k,N-1), N = n_sing: the finite parts of
+    int_0^1 t^(l - N), and the coefficient of the logarithm."""
     t = sp.Symbol("t")
     out = []
     for k in range(n):
         co = sp.Poly(sp.chebyshevt(k, 2 * t - 1), t).all_coeffs()[::-1]
-        pw = sum(sp.Rational(c) / (j - 1) for j, c in enumerate(co) if j != 1)
-        lg = sp.Rational(co[1]) if len(co) > 1 else sp.Integer(0)
+        pw = sum(
+            sp.Rational(c) / (j - n_sing + 1)
+            for j, c in enumerate(co)
+            if j != n_sing - 1
+        )
+        lg = sp.Rational(co[n_sing - 1]) if len(co) > n_sing - 1 else sp.Integer(0)
         out.append((float(pw), float(lg)))
     return tuple(out)
 
@@ -732,16 +751,27 @@ def fp_low_integral(
     q0h: float,
     n_source: int,
     n_test: int,
-    qsh: float = 0.5,
-    n_cheb: int = 24,
+    qsh: float | None = None,
+    n_cheb: int | None = None,
 ) -> NDArray:
-    """(1/4 pi^2) FP int_{q < Q0} Y0 or Y1 d^2k, the finite part by continuation in the power of q (the convention
-    of the potentials Phi_j of ``interface_image``), shape (n_test, n_source, 9, 9).
+    """(1/4 pi^2) FP int_{q < Q0} Y_order d^2k (Y0, Y1 or Y2), the finite part by continuation in the power of q
+    (the convention of the potentials Phi_j of ``interface_image``), shape (n_test, n_source, 9, 9).
 
-    The radial integrand behaves as q^-2 times an entire function at q -> 0: on [0, q_s] that function is sampled
-    at Chebyshev nodes and each mode integrated against q^-2 exactly (the q^-1 term giving log q_s, q in km^-1);
-    Gauss panels on [q_s, Q0].  Checked against the closed forms (scripts/gate_interface_omega2_blocks.py).
+    The radial integrand behaves as q^-N times an entire function at q -> 0, N = -(1 + the frame kernel's lowest
+    power of q) (2 for the static and omega^2 terms, 4 for omega^4): on [0, q_s] that function is sampled at
+    Chebyshev nodes and each mode integrated against q^-N exactly (the q^-1 term giving log q_s, q in km^-1);
+    Gauss panels on [q_s, Q0].  q_s h = 0.5 for N = 2 and 3 for N = 4, with 24 and 40 nodes (the sampling's
+    rounding is amplified by q_s^(1-N); for N = 4 the window is narrow: 4e-11 of K2 at 40 nodes, 6e-9 at 24 and
+    5e-10 at 48).  An analytic head (power series of the vertical and lateral moments) would remove the window.
     """
+    _, m0 = frame_laurent(kind, order, above, below)
+    n_sing = -(m0 + 1)
+    if qsh is None:
+        qsh = 0.5 if n_sing <= 2 else 3.0
+    if n_cheb is None:
+        # q^-4 (omega^4): the head over [0, 3/h] needs 40 nodes (24 left 6e-9 of K2, 48 lose 5e-10 to the
+        # q_s^(1-N) amplification of the modes' rounding); measured against K2 and the octaves of Y2
+        n_cheb = 24 if n_sing <= 2 else 40
     qs = qsh / h
     x = np.cos(np.pi * (np.arange(n_cheb) + 0.5) / n_cheb)
     q = qs * (x + 1) / 2
@@ -761,7 +791,7 @@ def fp_low_integral(
                 n_source,
                 n_test,
             )
-            * v**2
+            * v**n_sing
             for v in q
         ]
     )
@@ -770,11 +800,11 @@ def fp_low_integral(
         np.linalg.inv(np.polynomial.chebyshev.chebvander(x, n_cheb - 1)),
         vals,
     )
-    mom = _cheb_mode_moments(n_cheb)
+    mom = _cheb_mode_moments(n_cheb, n_sing)
     head = (
         np.einsum("k,k...->...", np.array([m[0] for m in mom]), coef)
         + np.log(qs) * np.einsum("k,k...->...", np.array([m[1] for m in mom]), coef)
-    ) / qs
+    ) * qs ** (1 - n_sing)
     width = _radial_width(np.hypot(rec[1] - src[1], rec[2] - src[2]))
     qh, w = _panels(qsh, q0h, min(width, 0.5), 20)
     return head + _static_integral(
@@ -1141,13 +1171,15 @@ def interface_block(
     when sweeping it.
     """
     rec, src = tuple(rec_centre), tuple(src_centre)
-    a0, a1 = (
+    parts = (
         parts
         if parts is not None
         else frequency_independent_parts(
             rec, src, h, above, below, n_source, n_test, q0h, q1h, window
         )
     )
+    a0, a1 = parts[0], parts[1]
+    a2 = parts[2] if len(parts) > 2 else None  # with omega4: the omega^4 correction
     if src[0] > 0:
         d = _mirror(
             truncated_blocks(
@@ -1167,7 +1199,10 @@ def interface_block(
         d = truncated_blocks(
             [(rec, src)], h, omega, above, below, n_source, n_test, q0h, table, window
         )[0]
-    return d + a0 + omega**2 * a1
+    out = d + a0 + omega**2 * a1
+    if a2 is not None:
+        out = out + omega**4 * a2
+    return out
 
 
 def sweep(
