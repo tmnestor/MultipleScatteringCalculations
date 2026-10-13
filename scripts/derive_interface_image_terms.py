@@ -31,6 +31,7 @@ Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | t
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -242,7 +243,32 @@ def entry(r: int, cc: int) -> dict:
     return scale(add(strain_of(m, n), strain_of(n, m)), sp.Rational(1, 2))
 
 
-K = [[canon(entry(r, cc)) for cc in range(9)] for r in range(9)]
+#: Optional checkpoint directory (environment DERIVE_CHECKPOINT): each reduced entry is written there as it is
+#: finished (sympy srepr) and read back on a rerun, so a long symbolic run survives a restart.
+CHECKPOINT = os.environ.get("DERIVE_CHECKPOINT")
+
+
+def reduced(r: int, cc: int) -> dict:
+    if CHECKPOINT is None:
+        return canon(entry(r, cc))
+    path = Path(CHECKPOINT) / f"{KIND}_order{ORDER}_{MEDIA}_{r}_{cc}.txt"
+    if path.exists():
+        return {
+            tuple(json.loads(k)): sp.sympify(v)
+            for k, v in json.loads(path.read_text()).items()
+        }
+    out = canon(entry(r, cc))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(
+        json.dumps({json.dumps(list(k)): sp.srepr(v) for k, v in out.items()})
+    )
+    tmp.replace(path)  # atomic: a restart never sees a half-written entry
+    print(f"entry ({r}, {cc}) done", flush=True)
+    return out
+
+
+K = [[reduced(r, cc) for cc in range(9)] for r in range(9)]
 
 out = []
 for r in range(9):
