@@ -332,6 +332,51 @@ potentials. They are the terms that \citet{Mindlin1936} found for the half-space
 welded interface they are present for every pair of media, with coefficients that vanish only when the
 media coincide.
 
+\paragraph{The potentials as finite parts.} The ladder continues below $m=-3$, and the next order in the
+frequency (Section~\ref{sec:omega2}) needs it. For $m>-2$ the transform is the Laplace transform of a Bessel
+function \citep{GradshteynRyzhik2007},
+\begin{equation}\label{eq:laplacehankel}
+  \frac{1}{2\pi}\int_0^\infty q^{m+1}\ee^{-q\zeta}J_0(q\rho)\,\dd q
+  =\frac{\Gamma(m+2)}{2\pi}\,R^{-m-2}\,P_{m+1}\!\Bigl(\frac{\zeta}{R}\Bigr),
+\end{equation}
+$P_\nu$ the Legendre function of the first kind, and at $m=-1$ it is $\Phi_0$. At $m=-1-j$, $j\ge1$, the
+integral diverges at $q=0$ and $\Gamma$ has a pole. We define $\Phi_j$ as Hadamard's finite part, the
+coefficient of $\varepsilon^0$ in the Laurent series of Eq.~\eqref{eq:laplacehankel} at $m=-1-j+\varepsilon$:
+the analytic continuation in the power of $q$, the same convention by which Euler's identity continues the
+corner moments in the degree (Section~\ref{sec:blocks}). With $n=j-1$, $P_{-j+\varepsilon}=P_{n-\varepsilon}$
+and the derivative of $P_\nu$ in its degree at an integer,
+\begin{equation}\label{eq:legendredegree}
+  \frac{\partial P_\nu(x)}{\partial\nu}\Big|_{\nu=n}
+  =P_n(x)\Bigl[\log\frac{1+x}{2}+2\psi(2n+1)-2\psi(n+1)\Bigr]
+  +2\sum_{k=0}^{n-1}(-1)^{n+k}\frac{2k+1}{(n-k)(n+k+1)}\,P_k(x),
+\end{equation}
+the finite part is
+\begin{equation}\label{eq:fppotentials}
+  \Phi_j=\frac{(-1)^n}{2\pi\,n!}\Bigl\{\Bigl[c_j-\log\frac{R+\zeta}{2}\Bigr]R^nP_n\Bigl(\frac{\zeta}{R}\Bigr)
+  -2\sum_{k=0}^{n-1}(-1)^{n+k}\frac{2k+1}{(n-k)(n+k+1)}\,R^nP_k\Bigl(\frac{\zeta}{R}\Bigr)\Bigr\},
+  \qquad c_j=3\psi(j)-2\psi(2j-1),
+\end{equation}
+$\psi$ the digamma function. Each $R^nP_k(\zeta/R)$ is a polynomial in $R$ and $\zeta$, so every potential is
+a polynomial times $\log(R+\zeta)$ plus a polynomial; for instance
+\begin{equation}\label{eq:phi34}
+\begin{aligned}
+  2\pi\,\Phi_3&=\Bigl(\tfrac14R^2-\tfrac34\zeta^2\Bigr)\Bigl(\log\tfrac{R+\zeta}{2}+\gamma\Bigr)
+  -\tfrac14R^2+\tfrac34R\zeta+\tfrac14\zeta^2,\\
+  2\pi\,\Phi_4&=\Bigl(\tfrac{5}{12}\zeta^3-\tfrac14R^2\zeta\Bigr)\Bigl(\log\tfrac{R+\zeta}{2}+\gamma\Bigr)
+  +\tfrac19R^3+\tfrac14R^2\zeta-\tfrac{5}{12}R\zeta^2-\tfrac14\zeta^3,
+\end{aligned}
+\end{equation}
+$\gamma$ Euler's constant. The ladder $\partial_\zeta\Phi_{j+1}=-\Phi_j$ holds for the finite parts, since
+differentiation under the integral commutes with the continuation, and every $\Phi_j$ is harmonic. The residue
+at the pole is $(-1)^nR^nP_n(\zeta/R)/(2\pi\,n!)$, a solid harmonic: it is exactly the freedom that a cutoff
+at small $q$ would leave in the transform, and the finite part fixes its coefficient. The potentials of
+Eq.~\eqref{eq:potentials} differ from these only by such harmonics: the finite parts are
+$\Phi_1+(\log2-\gamma)/2\pi$ and $\Phi_2-\zeta(\log2-\gamma)/2\pi$. Since $\Phi_1$ and $\Phi_2$ occur in the
+static field only under at least one and two lateral derivatives respectively, which annihilate the
+difference, the static blocks are the same with either. A term $\partial^{\balpha}\Phi_j$ needs the finite part at all only
+when its lateral derivatives are fewer than $j$: its integrand then behaves as $q^{\alpha_x+\alpha_y-1-j}$ at
+small $q$ and is not integrable in the plane.
+
 \paragraph{Canonical terms.} The point propagator differentiates the Green's tensor: a receiver derivative
 $\partial_z$ acts on the explicit $z$ and on $\zeta$, as $\partial/\partial z-\partial_\zeta$ for the image and
 $\partial/\partial z+\partial_\zeta$ for the transmitted field, and similarly for source derivatives and the
@@ -517,11 +562,15 @@ arithmetic, the residual $\mathbf G-\mathbf G_0-\omega^2\mathbf G_1$ falls sixte
 halved, as an $O(\omega^4)$ remainder must. And the derivation done independently in two computer-algebra
 systems, one with symbolic and one with rational material constants, agrees to $5\times10^{-51}$.
 
-In space the term is not needed, and does not come cheaply. The divisions by $q$ that turn a rotated entry
-into a lateral derivative (Section~\ref{sec:static}) take the lowest power of $q$ in $\mathbf G^{R}_1$ to
-$q^{-5}\ee^{-q\zeta}$, whose transform, like that of $q^{-4}\ee^{-q\zeta}$, exists only as a finite part:
-two potentials beyond $\Phi_2$ would be needed, and the moments of their finite parts. We use the term where
-it is simple, in the wavenumber domain. With $\mathbf Y(\bk;\omega)$ the integrand of the reflected block, so
+In space the term needs more of the ladder. The divisions by $q$ that turn a rotated entry into a lateral
+derivative (Section~\ref{sec:static}) take the lowest power of $q$ in $\mathbf G^{R}_1$ to
+$q^{-5}\ee^{-q\zeta}$, whose transform, like that of $q^{-4}\ee^{-q\zeta}$, exists only as a finite part: the
+potentials $\Phi_3$ and $\Phi_4$ of Eq.~\eqref{eq:fppotentials}. With them the term has a closed spatial
+form, and since the finite part of a convergent integral is the integral and the finite part is linear,
+$\bK^R=\mathrm{FP}\!\int\mathbf Y_0+\omega^2\,\mathrm{FP}\!\int\mathbf Y_1
++\mathrm{FP}\!\int(\mathbf Y-\mathbf Y_0-\omega^2\mathbf Y_1)$ holds exactly, with no cutoff, when every
+finite part is taken by the same continuation. The cell moments of $\Phi_3$ and $\Phi_4$ are the subject of
+further work; here the term is used where it is simple, in the wavenumber domain. With $\mathbf Y(\bk;\omega)$ the integrand of the reflected block, so
 that $\bK^{R}=(4\pi^2)^{-1}\int\mathbf Y\,\dd^2k$, and $\mathbf Y_0$, $\mathbf Y_1$ the integrands built in the
 same way from $\mathbf G^{R}_0$ and $\mathbf G^{R}_1$,
 \begin{equation}\label{eq:omega2split}
@@ -661,6 +710,11 @@ Euler's reduction, $7$ cases, up to $4$ derivatives & tanh-sinh quadrature of th
 closed forms, all $53\,352$ moments, monomials to degree $(6,6,8)$ & Euler's reduction with Gauss rules on the faces & $1.2\times10^{-15}$ \\
 $13$ moments, all potentials, $3$ degenerate columns & thirty-digit evaluation & $5\times10^{-23}$--$1.6\times10^{-16}$ \\
 $B_1$, $B_2$, Eq.~\eqref{eq:B12closed} & forty-digit angular quadrature & $10^{-40}$ \\
+\midrule
+\multicolumn{3}{l}{\emph{Finite-part potentials}}\\
+degree derivative \eqref{eq:legendredegree}, $n\le5$ & numerical derivative in $\nu$ & $2\times10^{-41}$ \\
+$\Phi_1$--$\Phi_4$, Eq.~\eqref{eq:fppotentials} & finite part of the integral \eqref{eq:laplacehankel} itself, $40$ digits & $3\times10^{-40}$ \\
+$\Phi_1$--$\Phi_6$: ladder, harmonicity & symbolic & exact \\
 \midrule
 \multicolumn{3}{l}{\emph{Reflected blocks}}\\
 cells away from the singular point, $4$ pairs, degree-one and degree-two fields & tensor Gauss rule over both cells & $3\times10^{-15}$--$8.5\times10^{-15}$ \\
