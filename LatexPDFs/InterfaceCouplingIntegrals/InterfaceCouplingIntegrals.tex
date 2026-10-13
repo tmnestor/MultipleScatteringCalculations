@@ -565,12 +565,67 @@ systems, one with symbolic and one with rational material constants, agrees to $
 In space the term needs more of the ladder. The divisions by $q$ that turn a rotated entry into a lateral
 derivative (Section~\ref{sec:static}) take the lowest power of $q$ in $\mathbf G^{R}_1$ to
 $q^{-5}\ee^{-q\zeta}$, whose transform, like that of $q^{-4}\ee^{-q\zeta}$, exists only as a finite part: the
-potentials $\Phi_3$ and $\Phi_4$ of Eq.~\eqref{eq:fppotentials}. With them the term has a closed spatial
-form, and since the finite part of a convergent integral is the integral and the finite part is linear,
-$\bK^R=\mathrm{FP}\!\int\mathbf Y_0+\omega^2\,\mathrm{FP}\!\int\mathbf Y_1
-+\mathrm{FP}\!\int(\mathbf Y-\mathbf Y_0-\omega^2\mathbf Y_1)$ holds exactly, with no cutoff, when every
-finite part is taken by the same continuation. The cell moments of $\Phi_3$ and $\Phi_4$ are the subject of
-further work; here the term is used where it is simple, in the wavenumber domain. With $\mathbf Y(\bk;\omega)$ the integrand of the reflected block, so
+potentials $\Phi_3$ and $\Phi_4$ of Eq.~\eqref{eq:fppotentials}. Since the finite part of a convergent integral
+is the integral, and the finite part is linear,
+\begin{equation}\label{eq:fpsplit}
+  \bK^R=\bK^R_0+\omega^2\bK^R_1+\frac{1}{4\pi^2}\,\mathrm{FP}\!\int_{\mathbb R^2}
+  \bigl(\mathbf Y-\mathbf Y_0-\omega^2\mathbf Y_1\bigr)\dd^2k,\qquad
+  \bK^R_1=\frac{1}{4\pi^2}\,\mathrm{FP}\!\int_{\mathbb R^2}\mathbf Y_1\,\dd^2k,
+\end{equation}
+with $\mathbf Y$, $\mathbf Y_0$, $\mathbf Y_1$ the integrands of the block built from the dynamic kernel,
+$\mathbf G^R_0$ and $\mathbf G^R_1$, holds exactly, with no cutoff, when every finite part is taken by the
+same continuation in the power of $q$.
+
+\paragraph{The $\omega^2$ block in closed form.} Collected as in Section~\ref{sec:static}, the $9\times9$
+$\omega^2$ term of the reflected field is a sum of $744$ terms $c\,z^Az'^B\partial^{\balpha}\Phi_j$ in $76$
+families, and that of the transmitted field of $582$ terms in $61$ families, with $j$ up to $4$ and the
+% the transmitted counts are from the rational-media derivations (media1, media2, identical structure); the
+% symbolic transmitted run was in progress on 13 October 2026, as was the transmitted K1 gate
+coefficients rational in the Lam\'e constants and densities of both media. In each, $81$ terms in $16$ families
+carry fewer lateral derivatives than their index $j$: $\Phi_1$ with none, $\Phi_2$ with at most one,
+$\Phi_3$ with at most two and $\Phi_4$ with at most three. For these the derivatives do not annihilate the
+solid harmonic of the residue, and the finite parts of Eq.~\eqref{eq:fppotentials} are needed as they stand.
+Their kernels are of degree $d=j-1-|\balpha|\ge0$, bounded at the singular point, but they are homogeneous
+only up to a logarithm. Under $\mathbf x\to\lambda\mathbf x$ the potential becomes
+$\Phi_j(\lambda\mathbf x)=\lambda^{j-1}\bigl[\Phi_j(\mathbf x)+\log\lambda\;g_0(\mathbf x)\bigr]$, with
+$g_0=-(-1)^nR^nP_n(\zeta/R)/(2\pi\,n!)$ minus the residue, so that every kernel $f=\partial^{\balpha}\Phi_j$
+satisfies
+\begin{equation}\label{eq:loghomogeneous}
+  f(\lambda\mathbf x)=\lambda^{d}\bigl[f(\mathbf x)+\log\lambda\;g(\mathbf x)\bigr],\qquad
+  \mathbf x\cdot\nabla f=d\,f+g,\qquad g=\partial^{\balpha}g_0,
+\end{equation}
+$g$ a homogeneous polynomial of degree $d$. It vanishes whenever the lateral derivatives annihilate the solid
+harmonic: for every term of the static field, and for $8$ of the $16$ finite-part families. Two of the steps
+of Section~\ref{sec:blocks} change. Euler's identity on a box anchored at the singular point acquires a
+polynomial moment,
+\begin{equation}\label{eq:eulerlog}
+  \bigl(3+p+q+r+d\bigr)\int_{\rm box}\rho_x^p\rho_y^q\zeta^r f
+  =\sum_{\text{far faces}}\bigl|A_i\bigr|A_i^{n_i}\int_{\rm face}\rho^{\mathbf n\setminus i}f
+  -\int_{\rm box}\rho_x^p\rho_y^q\zeta^r g,
+\end{equation}
+and, since $d\ge0$, its factor never vanishes. In a Duffy pyramid the kernel is
+$\varrho^d[f+\log\varrho\;g]$ on the far face, so the radial integrand gains a polynomial times
+$\varrho^e\log\varrho$, which is integrated exactly from the polynomial's coefficients in shifted Legendre
+polynomials and $\int_0^1\varrho^m\log\varrho\,\dd\varrho=-1/(m+1)^2$. Finally, the scaling of a block with the
+cell size gains a term: in units of $h$ a family contributes $h^{6+d+A+B}\bigl[\int f+\log h\int g\bigr]$. A
+finite part depends on the unit of length, here the kilometre, and the plane-wave remainder of
+Eq.~\eqref{eq:fpsplit}, whose finite part at small $q$ is taken in the same unit, depends on it in the opposite
+way, so that their sum does not. The line of images of Eq.~\eqref{eq:lineofimages}, with its divergence at
+$t\to\infty$ dropped, is a different convention: it differs from Eq.~\eqref{eq:fppotentials} by polynomials,
+$-\gamma/2\pi$ and $\gamma\zeta/2\pi$ for $j=1,2$ and, for $j=3,4$, quadratics and cubics that are not even
+harmonic, so its closed forms are used only where the lateral derivatives annihilate the difference.
+
+The closed form is checked against Eq.~\eqref{eq:fpsplit} itself. The radial integrand of
+$\mathrm{FP}\!\int\mathbf Y_1$, the azimuthal integral done, behaves as $q^{-2}$ times an entire function at
+small $q$; on $[0,q_s]$ that function is sampled at Chebyshev nodes and each mode is integrated against
+$q^{-2}$ exactly, the $q^{-1}$ term giving $\log q_s$, and above $q_s$ Gauss rules are used. For two reflected
+pairs whose images do not touch, over every field function and source monomial, the closed-form $\bK^R_1$ and
+the finite part of its plane-wave integral agree to $5.1\times10^{-14}$ and $6.0\times10^{-14}$; moving $q_s$
+from $h^{-1}/4$ to $h^{-1}/2$ changes the latter by less than $10^{-13}$. The two corner routes, Duffy pyramids
+and Eq.~\eqref{eq:eulerlog}, agree to $9\times10^{-16}$ on the blocks of touching cells, and for identical media
+$\bK^R_1$ vanishes. Until the closed form was available the term was used in the wavenumber domain, and that
+route is kept as the independent reference.
+With $\mathbf Y(\bk;\omega)$ the integrand of the reflected block, so
 that $\bK^{R}=(4\pi^2)^{-1}\int\mathbf Y\,\dd^2k$, and $\mathbf Y_0$, $\mathbf Y_1$ the integrands built in the
 same way from $\mathbf G^{R}_0$ and $\mathbf G^{R}_1$,
 \begin{equation}\label{eq:omega2split}
@@ -734,6 +789,10 @@ $\mathbf G^{R}_1$, $\mathbf G^{T}_1$ & second computer-algebra derivation & $5\t
 frame integrands $\mathbf Y_0$, $\mathbf Y_1$ in double precision, $qh=0.5$--$160$ & $40$-digit kernels & $2\times10^{-14}$, $1.2\times10^{-12}$ \\
 identical media, touching across the interface, $3$ contacts, mirrored & homogeneous-medium blocks \citep{NestorCoupling2026} & $1.7\times10^{-12}$--$3.2\times10^{-10}$ \\
 different media, reflected and transmitted touching blocks & $40$-digit plane-wave integrals & $3.9\times10^{-11}$--$3.6\times10^{-10}$ \\
+$\omega^2$ terms \eqref{eq:imageterms}, $744$ and $582$, reflected and transmitted & transform of each term against the rotated, differentiated spectrum, $30$ digits & exact \\
+finite-part kernels: Eq.~\eqref{eq:loghomogeneous}, $16$ families & direct evaluation, $30$ digits & exact \\
+corner boxes, Eq.~\eqref{eq:eulerlog} and Duffy pyramids, $\Phi_1$, $\Phi_2$ families with $g\ne0$ & $25$-digit Duffy quadrature, tanh-sinh in $\varrho$ & $0$--$8\times10^{-16}$ \\
+$\bK^R_1$, two pairs not touching their images & finite part of the plane-wave integral of $\mathbf Y_1$ & $5.1$--$6.0\times10^{-14}$ \\
 split with a smooth window, Eq.~\eqref{eq:windowsplit}, rows of $5$ cells, reflected and transmitted & split with the sharp cutoff, pair by pair & $3.9\times10^{-14}$--$1.9\times10^{-11}$ \\
 azimuthal integrals $S_n$ by Eq.~\eqref{eq:jacobianger}, offsets to $40h$ & direct azimuthal rule & $4\times10^{-16}$--$3\times10^{-13}$ \\
 \bottomrule
