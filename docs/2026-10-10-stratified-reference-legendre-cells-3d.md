@@ -356,9 +356,17 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
      R, ωh/β = 1/6: Q0h 10 3.6e-10 → 1.1e-11; ωh/β = 1: Q0h 10 3.1e-7 → 3.1e-9, 20 4.8e-9 → 5.4e-11, 40 6.3e-11 → 4.6e-11.
      T, ωh/β = 1/6: Q0h 10 2.2e-10 → 1.4e-13, 20 3.5e-12 → 8.0e-14; ωh/β = 1: 10 2.0e-7 → 1.5e-9, 20 3.2e-9 → 6.9e-11,
      40 4.2e-11 → 6.5e-11. The ~5e-11 floor at ωh/β = 1 is the head's: ω⁴K2 ≈ 4 K there, so 4e-11 of K2 shows.
-   - **Next:** an analytic small-q head (the series theme): vertical moments as exact power series in q, the
-     frame's Laurent series, the lateral moments by the Bessel series of `lateral_head` — every term's finite
-     part exact, no sampling; then the floor should go, and the same head can replace the order-0/1 sampling.
+   - **The analytic small-q head — done (13 October).** `cubic_scattering/interface_lateral.py`: the frame's
+     Laurent polynomial × the vertical moments as exact power series in q × the lateral moments by the Bessel series
+     against the exact weights; every power and harmonic's finite part exact; q_s = min(1/h, 4/R) so the series lose
+     few digits. Default in `fp_low_integral` (`head="sampled"` kept). Checks: order 0 (integrable) against plain
+     Gauss 1.6e-15, 1.4e-14; order 1 against the sampled head 3e-14 … 6e-14; **order 2: K2 = analytic low + octaves
+     of Y2 to 1.9e-15 (R), 1.2e-15 (T) of K2** (sampled: 4e-11 at best, 6e-9 at 24 nodes).
+     Found: the sampled head's order-0 case read the log coefficient from co[-1] (N = 0); fixed (never on the
+     production path, where A0 uses plain panels).
+   - **Against the 40-digit references, to ω⁴ with the analytic head:** ωh/β = 1: R Q0h 10 3.1e-9, 20 1.2e-11,
+     40 8.8e-13; T 1.6e-9, 6.1e-12, 8.1e-14 — the floor gone and the Q0⁻⁸ law (×260 per doubling of Q0).
+     ωh/β = 1/6: T 6.3e-14, 1.2e-14; R 1.1e-11, 2.6e-11, the known rounding of D's mode sums at that frequency.
 6. **Then step 2** (the scattering solve), on these blocks.
 
 **Step 2 — a scattering solve near an interface.**
