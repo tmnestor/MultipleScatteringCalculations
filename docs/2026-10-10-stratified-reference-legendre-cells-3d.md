@@ -316,7 +316,17 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
    - **Transmitted (13 October).** The symbolic transmitted terms (582 in 61 families; about 3.5 h, checkpointed,
      after one run was lost to a container restart): spectral check exact on all 81 entries, structure identical
      to the rational runs. Gate: (3,0,0) ← (−1,0,0) **5.4e-14**, (3,2,0) ← (−1,0,0) **3.6e-14**.
-   - **Open:** touching pairs against the plane-wave route (needs its high-q tail treated).
+   - **Touching pairs (13 October), the high-q tail analytically** (`scripts/gate_interface_touching_blocks.py`).
+     The vertical moments split exactly, `E_k(c) = P_k(1/c) + e^{−2c} Q_k(1/c)`; only cells on the interface have an
+     O(1) prefactor, so `Y = Y_alg + O(e^{−2qh})` with `Y_alg = Σ_p q^p Σ_n e^{inφ} H_p[n] × lateral × phase` (p from
+     −8 to 1). `FP∫Y_alg` over the whole plane in closed form: Weber–Schafheitlin
+     `(1/4π²)FP∫ q^p e^{inφ} e^{ik·ρ} = (iⁿe^{inθ}/2π) 2^{p+1}Γ((|n|+p+2)/2)/Γ((|n|−p)/2) ρ^{−p−2}` (continuation in p),
+     then the lateral s-form weights in 2-D, polar about the touching corner, the radial integral exact with its pole /
+     log, the Laurent series of Γ-ratio, radial integral and h^{−ε} multiplied and the constant term taken. Its head
+     below q_s also in closed form (Taylor series of J_n; the Chebyshev version lost 3e-10 to a cancellation of two
+     terms 20× the block). Y − Y_alg by Gauss to qh = 24. No step shared with the 3-D closed form.
+     **K0 and K1, four touching pairs** (self-image, edge, corner, across), full blocks: 3.4e-14 … 4.9e-13, each at
+     the reference's own precision (q_s moved: 3.8e-14 … 4.3e-13).
 4. **Previously: their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
    Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
 4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole
