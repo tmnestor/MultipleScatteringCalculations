@@ -596,6 +596,7 @@ def frequency_independent_parts(
     q0h: float = 10.0,
     q1h: float = 160.0,
     window: Window | None = None,
+    a1_route: str = "closed",
 ) -> tuple[NDArray, NDArray]:
     """(A0, A1) of the split, computed once per arrangement of cells and reused at every frequency.
 
@@ -614,6 +615,8 @@ def frequency_independent_parts(
         q0h: The cutoff Q0 h.
         q1h: The plane-wave rule of A1 ends at Q1 h, a power-of-two multiple of Q0 h.
         window: The smooth window (None: the sharp cutoff at Q0).  ``truncated_blocks`` must use the same.
+        a1_route: "closed" (default): A1 = K1 - FP int_{q < Q0} Y1, K1 from ``interface_image.image_block(...,
+            order=1)``, exact; "octaves": the plane-wave octaves to Q1 and the q^-4 law of the last (``q1h``).
 
     Returns:
         (A0, A1), each shape (n_test, n_source, 9, 9), complex.
@@ -631,6 +634,7 @@ def frequency_independent_parts(
             q0h,
             q1h,
             window,
+            a1_route,
         )
         return _mirror(a0), _mirror(a1)
     kind = _check(rec, src)
@@ -640,19 +644,98 @@ def frequency_independent_parts(
     k0 = image_block(rec, src, h, above, below, n_source, n_test)
     qh, w = _panels(0.0, q0h, width, 16)
     a0 = k0 - _static_integral(0, kind, rec, src, h, ka, kb, qh, w, n_source, n_test)
-    octaves = []
-    lo = q0h
-    while lo < q1h * (1 - 1e-12):
-        qh, w = _panels(lo, 2 * lo, width)
-        octaves.append(
-            _static_integral(1, kind, rec, src, h, ka, kb, qh, w, n_source, n_test)
-        )
-        lo *= 2
-    a1 = sum(octaves) + octaves[-1] / 15.0
+    if a1_route == "closed":
+        # A1 = int_{q > Q0} Y1 = K1 - FP int_{q < Q0} Y1, K1 the closed-form omega^2 block: no asymptotic tail
+        k1 = image_block(rec, src, h, above, below, n_source, n_test, order=1)
+        a1 = k1 - fp_low_integral(1, kind, rec, src, h, ka, kb, q0h, n_source, n_test)
+    else:  # the plane-wave octaves to Q1 and the q^-4 law of the last (the earlier route, kept to compare)
+        octaves = []
+        lo = q0h
+        while lo < q1h * (1 - 1e-12):
+            qh, w = _panels(lo, 2 * lo, width)
+            octaves.append(
+                _static_integral(1, kind, rec, src, h, ka, kb, qh, w, n_source, n_test)
+            )
+            lo *= 2
+        a1 = sum(octaves) + octaves[-1] / 15.0
     if window is not None:
         r0, r1 = window_parts(rec, src, h, above, below, window, n_source, n_test, q0h)
         a0, a1 = a0 + r0, a1 + r1
     return a0, a1
+
+
+@cache
+def _cheb_mode_moments(n: int) -> tuple:
+    """For T_k(2t - 1), k < n: (sum_{l != 1} a_kl / (l - 1), a_k1), the finite parts of int_0^1 t^(l-2)."""
+    t = sp.Symbol("t")
+    out = []
+    for k in range(n):
+        co = sp.Poly(sp.chebyshevt(k, 2 * t - 1), t).all_coeffs()[::-1]
+        pw = sum(sp.Rational(c) / (j - 1) for j, c in enumerate(co) if j != 1)
+        lg = sp.Rational(co[1]) if len(co) > 1 else sp.Integer(0)
+        out.append((float(pw), float(lg)))
+    return tuple(out)
+
+
+def fp_low_integral(
+    order: int,
+    kind: str,
+    rec: tuple,
+    src: tuple,
+    h: float,
+    above: tuple,
+    below: tuple,
+    q0h: float,
+    n_source: int,
+    n_test: int,
+    qsh: float = 0.5,
+    n_cheb: int = 24,
+) -> NDArray:
+    """(1/4 pi^2) FP int_{q < Q0} Y0 or Y1 d^2k, the finite part by continuation in the power of q (the convention
+    of the potentials Phi_j of ``interface_image``), shape (n_test, n_source, 9, 9).
+
+    The radial integrand behaves as q^-2 times an entire function at q -> 0: on [0, q_s] that function is sampled
+    at Chebyshev nodes and each mode integrated against q^-2 exactly (the q^-1 term giving log q_s, q in km^-1);
+    Gauss panels on [q_s, Q0].  Checked against the closed forms (scripts/gate_interface_omega2_blocks.py).
+    """
+    qs = qsh / h
+    x = np.cos(np.pi * (np.arange(n_cheb) + 0.5) / n_cheb)
+    q = qs * (x + 1) / 2
+    vals = np.stack(
+        [
+            h
+            * _static_integral(
+                order,
+                kind,
+                rec,
+                src,
+                h,
+                above,
+                below,
+                np.array([v * h]),
+                np.array([1.0]),
+                n_source,
+                n_test,
+            )
+            * v**2
+            for v in q
+        ]
+    )
+    coef = np.einsum(
+        "kn,n...->k...",
+        np.linalg.inv(np.polynomial.chebyshev.chebvander(x, n_cheb - 1)),
+        vals,
+    )
+    mom = _cheb_mode_moments(n_cheb)
+    head = (
+        np.einsum("k,k...->...", np.array([m[0] for m in mom]), coef)
+        + np.log(qs) * np.einsum("k,k...->...", np.array([m[1] for m in mom]), coef)
+    ) / qs
+    width = _radial_width(np.hypot(rec[1] - src[1], rec[2] - src[2]))
+    qh, w = _panels(qsh, q0h, min(width, 0.5), 20)
+    return head + _static_integral(
+        order, kind, rec, src, h, above, below, qh, w, n_source, n_test
+    )
 
 
 def window_parts(
