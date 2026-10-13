@@ -284,6 +284,14 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
      remainder's small-q finite part uses the same continuation (its subtracted Laurent terms are integrated
      analytically near q = 0). The first two terms are closed form for every pair; the Gibbs problem of the
      window step does not arise.
+   - **The line of images is another convention (13 October).** For a finite-part family the line
+     `∫_ζ^∞ (t−ζ)^{j−1}/(j−1)! ∂^αΦ₀ dt` diverges at t → ∞; its finite part there differs from Φ_j by a
+     polynomial H_j: `H1 = −γ/2π`, `H2 = γζ/2π`, `H3 = ((2γ−3)ρ² − 4γζ²)/16π`,
+     `H4 = −ζ((6γ−9)ρ² − 4γζ²)/48π` — for j ≥ 3 not harmonic, so not a potential. Moments built on
+     `image_moments`' line of images would be silently wrong for these families unless ∂^αH_j is added.
+   - **The finite-part kernels are bounded.** Every finite-part family has |α| = n_lat ≤ j − 1, so
+     ∂^αΦ_j has degree j − 1 − |α| ≥ 0: no corner singularity, only log(R + ζ). Their box moments are ordinary
+     integrals of explicit closed forms, and 40-digit cubature of the closed form is a direct reference.
 3. **Their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
    Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
 4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole

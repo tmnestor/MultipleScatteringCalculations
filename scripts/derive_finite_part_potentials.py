@@ -30,6 +30,14 @@ CHECKS (printed):
      series of the entire e^{-q zeta} J0(q rho), sum over k != n of c_k / (k - n); the tail int_1^oo by quadrature).
      Measured 12 October 2026: 0 .. 8e-41 at zeta = 0.45 and 1.3 (rho = 0.7), j = 1 .. 4;
   4. Phi1, Phi2 against the paper's, the differences (log 2 - gamma)/2 pi and a multiple of zeta.
+  5. THE LINE OF IMAGES IS ANOTHER CONVENTION.  int_zeta^oo (t - zeta)^n / n! Phi0(rho, t) dt diverges at
+     t -> oo when the lateral derivatives are too few; its finite part there (dropping the powers of T and
+     log T) differs from Phi_j by a polynomial H_j = Phi_j - FP_oo(line):
+         H1 = -gamma/2pi,  H2 = gamma zeta/2pi,  H3 = ((2 gamma - 3) rho^2 - 4 gamma zeta^2)/16pi,
+         H4 = -zeta ((6 gamma - 9) rho^2 - 4 gamma zeta^2)/48pi;
+     for j >= 3 not harmonic (the dropped divergent terms are not harmonic on their own), so the line's finite
+     part at infinity is not a potential.  Phi_j (the continuation in q) is the convention of the wavenumber
+     remainder; moments built on the line of images must add the moments of d^alpha H_j.
 Writes scripts/data/finite_part_potentials.json: Phi_j, j = 0 .. 6, in R, zeta, as sympy and as
 Mathematica strings (the latter read by the twin).  Parse the sympy strings with
 locals={'R': R, 'zeta': zeta}: a bare 'zeta' is sympy's Riemann zeta function.
@@ -83,6 +91,24 @@ def fp_from_integral(j: int, rv: mp.mpf, zv: mp.mpf) -> mp.mpf:
     return (head + tail) / (2 * mp.pi)
 
 
+def line_difference(j: int) -> sp.Expr:
+    """H_j = Phi_j - (finite part at infinity of the line of images), in rho and zeta."""
+    t, u = sp.symbols("t u", positive=True)
+    n = j - 1
+    line = sp.integrate(
+        (t - zeta) ** n / sp.factorial(n) / sp.sqrt(rho**2 + t**2), (t, zeta, 1 / u)
+    )
+    ser = sp.series(sp.expand_log(line.rewrite(sp.log), force=True), u, 0, 1).removeO()
+    finite = sum(
+        a
+        for a in sp.Add.make_args(sp.expand(sp.expand_log(ser, force=True)))
+        if not a.has(u)
+    )
+    return sp.factor(
+        sp.simplify(sp.expand_log(in_rho(phi(j)) - finite / (2 * sp.pi), force=True))
+    )
+
+
 def main() -> None:
     phis = [phi(j) for j in range(J_MAX + 1)]
     for j in range(J_MAX):
@@ -125,6 +151,12 @@ def main() -> None:
         "Phi2 - paper's Phi2 =",
         sp.simplify(sp.expand_log(phis[2] - paper2, force=True)),
     )
+    for j in range(1, 5):
+        h = line_difference(j)
+        lap = sp.simplify(
+            sp.diff(h, rho, 2) + sp.diff(h, rho) / rho + sp.diff(h, zeta, 2)
+        )
+        print(f"H{j} = Phi{j} - FP_oo(line of images) = {h}   Laplacian {lap}")
     OUT.write_text(
         json.dumps(
             {
