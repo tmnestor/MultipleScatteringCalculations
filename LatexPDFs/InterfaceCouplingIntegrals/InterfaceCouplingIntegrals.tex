@@ -621,8 +621,21 @@ pairs whose images do not touch, over every field function and source monomial, 
 the finite part of its plane-wave integral agree to $5.1\times10^{-14}$ and $6.0\times10^{-14}$, and for two
 transmitted pairs two half-widths apart across the interface the transmitted $\omega^2$ block agrees to
 $5.4\times10^{-14}$ and $3.6\times10^{-14}$; moving $q_s$ from $h^{-1}/4$ to $h^{-1}/2$ changes the latter by
-about $10^{-13}$. The two corner routes, Duffy pyramids
-and Eq.~\eqref{eq:eulerlog}, agree to $9\times10^{-16}$ on the blocks of touching cells, and for identical media
+about $10^{-13}$. For cells touching the interface the integrand decays only algebraically, and its tail is integrated
+analytically. The vertical moments $\int v^k\ee^{c(v-1)}\dd v$, $c=qh$, split exactly into a polynomial in $1/c$
+and $\ee^{-2c}$ times another, and only a cell on the interface has a prefactor of order one, so that
+$\mathbf Y=\mathbf Y_{\rm alg}+O(\ee^{-2qh})$ with $\mathbf Y_{\rm alg}$ a finite sum of powers $q^p$ times the nine
+angular harmonics $\ee^{\ii n\phi}$ times the cells' lateral moments. Each power is integrated over the whole
+plane in closed form by the Weber--Schafheitlin integral,
+$(4\pi^2)^{-1}\mathrm{FP}\!\int q^p\ee^{\ii n\phi}\ee^{\ii\bk\cdot\brho}\dd^2k=(\ii^n\ee^{\ii n\theta}/2\pi)\,
+2^{p+1}\Gamma(\tfrac{|n|+p+2}{2})/\Gamma(\tfrac{|n|-p}{2})\,\rho^{-p-2}$, continued in $p$, and then against the
+lateral weights in two dimensions, in polar coordinates about the touching corner, where the radial integral is
+exact and the poles of the Gamma ratio and of the radial integral give the logarithms; the remainder
+$\mathbf Y-\mathbf Y_{\rm alg}$ falls exponentially. This route shares no step with the closed form. For the
+static and the $\omega^2$ blocks of a cell with its own image, of lateral neighbours along an edge and at a
+corner, and of two cells touching across the interface, the two agree to $3.4\times10^{-14}$ to
+$4.9\times10^{-13}$, each at the precision of the reference itself. The two corner routes, Duffy pyramids and
+Eq.~\eqref{eq:eulerlog}, agree to $9\times10^{-16}$ on the blocks of touching cells, and for identical media
 $\bK^R_1$ vanishes. Until the closed form was available the term was used in the wavenumber domain, and that
 route is kept as the independent reference.
 With $\mathbf Y(\bk;\omega)$ the integrand of the reflected block, so
@@ -793,6 +806,7 @@ $\omega^2$ terms \eqref{eq:imageterms}, $744$ and $582$, reflected and transmitt
 finite-part kernels: Eq.~\eqref{eq:loghomogeneous}, $16$ families & direct evaluation, $30$ digits & exact \\
 corner boxes, Eq.~\eqref{eq:eulerlog} and Duffy pyramids, $26$ moments, $9$ families, $\Phi_0$--$\Phi_4$, $d=-3$ to $1$, with and without $g$ & $25$-digit Duffy quadrature, tanh-sinh in $\varrho$ & $8.3\times10^{-16}$, $4.3\times10^{-16}$ \\
 $\omega^2$ blocks, two reflected pairs not touching their images, two transmitted pairs & finite part of the plane-wave integral of $\mathbf Y_1$ & $3.6$--$6.0\times10^{-14}$ \\
+static and $\omega^2$ blocks of touching cells: own image, edge, corner, across the interface & plane-wave integral, algebraic tail in closed form (Weber--Schafheitlin, 2-D lateral finite parts) & $3.4\times10^{-14}$--$4.9\times10^{-13}$ \\
 split with a smooth window, Eq.~\eqref{eq:windowsplit}, rows of $5$ cells, reflected and transmitted & split with the sharp cutoff, pair by pair & $3.9\times10^{-14}$--$1.9\times10^{-11}$ \\
 azimuthal integrals $S_n$ by Eq.~\eqref{eq:jacobianger}, offsets to $40h$ & direct azimuthal rule & $4\times10^{-16}$--$3\times10^{-13}$ \\
 \bottomrule
