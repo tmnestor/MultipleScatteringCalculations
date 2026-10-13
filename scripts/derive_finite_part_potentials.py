@@ -31,7 +31,8 @@ CHECKS (printed):
      Measured 12 October 2026: 0 .. 8e-41 at zeta = 0.45 and 1.3 (rho = 0.7), j = 1 .. 4;
   4. Phi1, Phi2 against the paper's, the differences (log 2 - gamma)/2 pi and a multiple of zeta.
 Writes scripts/data/finite_part_potentials.json: Phi_j, j = 0 .. 6, in R, zeta, as sympy and as
-Mathematica strings (the latter read by the twin).
+Mathematica strings (the latter read by the twin).  Parse the sympy strings with
+locals={'R': R, 'zeta': zeta}: a bare 'zeta' is sympy's Riemann zeta function.
 
 Run:  PYTHONPATH=. python scripts/derive_finite_part_potentials.py
 """
