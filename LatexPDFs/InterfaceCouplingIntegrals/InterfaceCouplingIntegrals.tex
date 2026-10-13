@@ -579,8 +579,6 @@ same continuation in the power of $q$.
 \paragraph{The $\omega^2$ block in closed form.} Collected as in Section~\ref{sec:static}, the $9\times9$
 $\omega^2$ term of the reflected field is a sum of $744$ terms $c\,z^Az'^B\partial^{\balpha}\Phi_j$ in $76$
 families, and that of the transmitted field of $582$ terms in $61$ families, with $j$ up to $4$ and the
-% the transmitted counts are from the rational-media derivations (media1, media2, identical structure); the
-% symbolic transmitted run was in progress on 13 October 2026, as was the transmitted K1 gate
 coefficients rational in the Lam\'e constants and densities of both media. In each, $81$ terms in $16$ families
 carry fewer lateral derivatives than their index $j$: $\Phi_1$ with none, $\Phi_2$ with at most one,
 $\Phi_3$ with at most two and $\Phi_4$ with at most three. For these the derivatives do not annihilate the
@@ -620,8 +618,10 @@ $\mathrm{FP}\!\int\mathbf Y_1$, the azimuthal integral done, behaves as $q^{-2}$
 small $q$; on $[0,q_s]$ that function is sampled at Chebyshev nodes and each mode is integrated against
 $q^{-2}$ exactly, the $q^{-1}$ term giving $\log q_s$, and above $q_s$ Gauss rules are used. For two reflected
 pairs whose images do not touch, over every field function and source monomial, the closed-form $\bK^R_1$ and
-the finite part of its plane-wave integral agree to $5.1\times10^{-14}$ and $6.0\times10^{-14}$; moving $q_s$
-from $h^{-1}/4$ to $h^{-1}/2$ changes the latter by less than $10^{-13}$. The two corner routes, Duffy pyramids
+the finite part of its plane-wave integral agree to $5.1\times10^{-14}$ and $6.0\times10^{-14}$, and for two
+transmitted pairs two half-widths apart across the interface the transmitted $\omega^2$ block agrees to
+$5.4\times10^{-14}$ and $3.6\times10^{-14}$; moving $q_s$ from $h^{-1}/4$ to $h^{-1}/2$ changes the latter by
+about $10^{-13}$. The two corner routes, Duffy pyramids
 and Eq.~\eqref{eq:eulerlog}, agree to $9\times10^{-16}$ on the blocks of touching cells, and for identical media
 $\bK^R_1$ vanishes. Until the closed form was available the term was used in the wavenumber domain, and that
 route is kept as the independent reference.
@@ -792,7 +792,7 @@ different media, reflected and transmitted touching blocks & $40$-digit plane-wa
 $\omega^2$ terms \eqref{eq:imageterms}, $744$ and $582$, reflected and transmitted & transform of each term against the rotated, differentiated spectrum, $30$ digits & exact \\
 finite-part kernels: Eq.~\eqref{eq:loghomogeneous}, $16$ families & direct evaluation, $30$ digits & exact \\
 corner boxes, Eq.~\eqref{eq:eulerlog} and Duffy pyramids, $26$ moments, $9$ families, $\Phi_0$--$\Phi_4$, $d=-3$ to $1$, with and without $g$ & $25$-digit Duffy quadrature, tanh-sinh in $\varrho$ & $8.3\times10^{-16}$, $4.3\times10^{-16}$ \\
-$\bK^R_1$, two pairs not touching their images & finite part of the plane-wave integral of $\mathbf Y_1$ & $5.1$--$6.0\times10^{-14}$ \\
+$\omega^2$ blocks, two reflected pairs not touching their images, two transmitted pairs & finite part of the plane-wave integral of $\mathbf Y_1$ & $3.6$--$6.0\times10^{-14}$ \\
 split with a smooth window, Eq.~\eqref{eq:windowsplit}, rows of $5$ cells, reflected and transmitted & split with the sharp cutoff, pair by pair & $3.9\times10^{-14}$--$1.9\times10^{-11}$ \\
 azimuthal integrals $S_n$ by Eq.~\eqref{eq:jacobianger}, offsets to $40h$ & direct azimuthal rule & $4\times10^{-16}$--$3\times10^{-13}$ \\
 \bottomrule

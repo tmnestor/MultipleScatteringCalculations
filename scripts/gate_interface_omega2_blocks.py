@@ -16,7 +16,9 @@ length, and the closed form uses km.  On [q_s, Q] Gauss panels; beyond Q nothing
 not touching (the integrand falls as e^{-q zeta_min}, zeta_min >= 2 h).
 
 PAIRS.  Reflected, cells not touching their images: (-3, 0, 0) <- (-1, 0, 0) (zeta >= 2h) and
-(-3, 2, 0) <- (-1, 0, 0); full 4 x 10 x 9 x 9 blocks.  Also checked: the head's Chebyshev order and q_s.
+(-3, 2, 0) <- (-1, 0, 0); transmitted, cells 2h apart across the interface: (3, 0, 0) <- (-1, 0, 0) and
+(3, 2, 0) <- (-1, 0, 0); full 4 x 10 x 9 x 9 blocks.  Also checked: the head's Chebyshev order and q_s.
+Measured 13 October 2026: R 5.1e-14, 6.0e-14; T 5.4e-14, 3.6e-14.
 
 Run:  PYTHONPATH=. python scripts/gate_interface_omega2_blocks.py
 """
@@ -35,7 +37,12 @@ from cubic_scattering.interface_image import image_block
 A = ReferenceMedium(5.0, 3.0, 2.5)
 B = ReferenceMedium(6.5, 3.6, 2.8)
 H = 0.05
-PAIRS = [((-3, 0, 0), (-1, 0, 0)), ((-3, 2, 0), (-1, 0, 0))]
+PAIRS = [
+    ((-3, 0, 0), (-1, 0, 0)),
+    ((-3, 2, 0), (-1, 0, 0)),
+    ((3, 0, 0), (-1, 0, 0)),
+    ((3, 2, 0), (-1, 0, 0)),
+]
 
 
 @cache
