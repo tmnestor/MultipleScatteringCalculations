@@ -118,6 +118,47 @@ def _general(kind: str, order: int) -> sp.Matrix:
     return sp.Matrix([[parse_mathematica(e).subs(subs) for e in row] for row in rows])
 
 
+def _canon_exp(kind: str):
+    """exp(a) -> exp(q (s z + zp)) when a equals it (frame_coefficients compares the exponent structurally)."""
+    target = _Q * ((1 if kind == "R" else -1) * _Z + _ZP)
+
+    def f(a):
+        if sp.expand(a - target) != 0:
+            raise ValueError(f"_omega4_kernel: unexpected exponential exp({a})")
+        return sp.exp(target)
+
+    return f
+
+
+def _omega4_kernel(kind: str, above: tuple, below: tuple) -> sp.Matrix:
+    """The omega^4 term G2 for exact rational media (scripts/derive_interface_omega4.py, which writes
+    scripts/data/interface_omega4_<media>.json; the symbolic result is Mathematica/InterfaceOmega4.wl's)."""
+    data = json.loads(
+        (_ROOT / "scripts" / "data" / "interface_omega4_gate.json").read_text()
+    )
+    mats = _materials(above, below)
+    have = [sp.Rational(v) for t in ("A", "B") for v in data["media"][t]]
+    want = [mats[_MSYM[n + t]] for t in ("A", "B") for n in ("lam", "mu", "rho")]
+    if have != want:
+        raise ValueError(
+            "frame_laurent: the omega^4 term was derived for other media; run "
+            "scripts/derive_interface_omega4.py for these."
+        )
+    loc = {"z": _Z, "zp": _ZP, "q": _Q}
+    # stored as e^{qz} e^{qzp}: one exponential, as frame_coefficients expects
+    return sp.Matrix(
+        [
+            [
+                sp.powsimp(sp.expand(sp.sympify(e, locals=loc)), combine="exp").replace(
+                    sp.exp, _canon_exp(kind)
+                )
+                for e in row
+            ]
+            for row in data[kind + "2"]
+        ]
+    )
+
+
 def _materials(above: tuple, below: tuple) -> dict:
     """Exact rationals of the media's binary values, keyed by the sympy symbols."""
     out = {}
@@ -183,7 +224,10 @@ def frame_laurent(
     Returns:
         (C, m0): C[i, j, a, b, m] complex, shape (9, 9, na, nb, nm), the coefficient of q^(m0 + m) z^a zp^b X.
     """
-    G = _general(kind, order).subs(_materials(above, below))
+    if order == 2:
+        G = _omega4_kernel(kind, above, below)
+    else:
+        G = _general(kind, order).subs(_materials(above, below))
     co = frame_coefficients(G, 1 if kind == "R" else -1)
     terms = {}
     for (a, b), mat in co.items():

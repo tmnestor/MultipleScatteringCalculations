@@ -457,12 +457,15 @@ def _alg_exp_moments(n_max, c):
 
 
 def fp_head_full(order, kind, rec, src, qsh: float, n_cheb: int = 24) -> np.ndarray:
-    """FP int_0^{q_s} I dq: I = q^-2 x entire."""
+    """FP int_0^{q_s} I dq: I = q^-N x entire, N = -(1 + the frame kernel's lowest power of q) (2 for the static
+    and omega^2 terms, 4 for omega^4)."""
+    _, m0 = isp.frame_laurent(kind, order, isp._key(A), isp._key(B))
+    n_sing = -(m0 + 1)
     qs = qsh / H
     x = np.cos(np.pi * (np.arange(n_cheb) + 0.5) / n_cheb)
     q = qs * (x + 1) / 2
-    vals = radial(order, kind, rec, src, q * H) * (q**2)[:, None, None, None, None]
-    return _chebyshev_fp(vals, x, qs, [-2])[-2]
+    vals = radial(order, kind, rec, src, q * H) * (q**n_sing)[:, None, None, None, None]
+    return _chebyshev_fp(vals, x, qs, [-n_sing])[-n_sing]
 
 
 def body(order, kind, rec, src, qsh: float, qmax_h: float) -> np.ndarray:

@@ -56,12 +56,14 @@ _TERMS_PATH = {
     ("transmitted", 0): _DATA / "interface_transmission_terms.json",
     ("reflected", 1): _DATA / "interface_omega2_terms_reflected.json",
     ("transmitted", 1): _DATA / "interface_omega2_terms_transmitted.json",
+    ("reflected", 2): _DATA / "interface_omega4_terms_reflected.json",
+    ("transmitted", 2): _DATA / "interface_omega4_terms_transmitted.json",
 }
 #: The potentials Phi_j, j >= 1, as Hadamard finite parts (scripts/derive_finite_part_potentials.py).
 _FP_PATH = _DATA / "finite_part_potentials.json"
 #: The 9-state under the mirror z -> -z: u_z, gamma_zy and gamma_zx change sign (Voigt order zz, xx, yy, xy, zy, zx).
 MIRROR_9 = np.array([-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0])
-_DEG0 = {0: -1, 1: 0, 2: 1, 3: 2, 4: 3}
+_DEG0 = {0: -1, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}
 
 Poly = tuple[Fraction, ...]  # ascending coefficients
 
@@ -78,8 +80,11 @@ def _terms(kind: str = "reflected", order: int = 0) -> tuple:
     takes the materials in the order of the file's "variables"."""
     data = json.loads(_TERMS_PATH[kind, order].read_text())
     names = data.get("variables", ["lamA", "muA", "lamB", "muB"])
-    syms = sp.symbols(" ".join(names), positive=True)
+    syms = sp.symbols(" ".join(names), positive=True) if names else ()  # omega^4: media already in
     loc = dict(zip(names, syms, strict=True))
+    syms = syms if isinstance(syms, tuple) else (syms,)
+    if not names:
+        syms = ()
     out = []
     for r, row in enumerate(data["terms"]):
         for c, terms in enumerate(row):
@@ -608,6 +613,17 @@ def image_block(
     mats = (above.lam, above.mu, below.lam, below.mu)
     if order == 1:
         mats += (above.rho, below.rho)
+    elif order == 2:
+        # the omega^4 terms hold their media (exact rationals, scripts/derive_interface_omega4.py): only those
+        held = json.loads(_TERMS_PATH[geo["kind"], 2].read_text())["media"]
+        want = [(m.lam, m.mu, m.rho) for m in (above, below)]
+        have = [tuple(float(sp.Rational(v)) for v in held[t]) for t in ("A", "B")]
+        if not np.allclose(np.array(want), np.array(have), rtol=1e-13):
+            raise ValueError(
+                "image_block: the omega^4 terms were derived for other media; run "
+                "scripts/derive_interface_omega4.py for these (or use the symbolic Mathematica result)."
+            )
+        mats = ()
     groups: dict = {}
     for r, c, j, alpha, a_pow, b_pow, fn in _terms(geo["kind"], order):
         groups.setdefault((j, alpha, a_pow, b_pow), []).append((r, c, fn(*mats)))

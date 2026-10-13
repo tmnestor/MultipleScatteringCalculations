@@ -43,8 +43,8 @@ ROOT = Path(__file__).resolve().parent.parent
 #: sympy twin's (scripts/derive_static_interface_transmission.py).
 KIND = sys.argv[1] if len(sys.argv) > 1 else "reflected"
 ORDER = int(sys.argv[2]) if len(sys.argv) > 2 else 0
-if ORDER not in (0, 1):
-    raise SystemExit(f"order must be 0 or 1, got {ORDER}")
+if ORDER not in (0, 1, 2):
+    raise SystemExit(f"order must be 0, 1 or 2, got {ORDER}")
 if KIND not in ("reflected", "transmitted"):
     raise SystemExit(f"kind must be 'reflected' or 'transmitted', got {KIND!r}")
 MEDIA = sys.argv[3] if len(sys.argv) > 3 else "symbolic"
@@ -55,9 +55,16 @@ MEDIA_SETS = {
     ),
     "media2": ((4, sp.Rational(9, 4), 2), (7, 4, 3)),
 }
-if MEDIA != "symbolic" and MEDIA not in MEDIA_SETS:
+if ORDER == 2:
+    # the omega^4 term exists for exact rational media only (scripts/derive_interface_omega4.py <media>); its
+    # symbolic form is Mathematica/InterfaceOmega4.wl's
+    MEDIA = sys.argv[3] if len(sys.argv) > 3 else "gate"
+elif MEDIA != "symbolic" and MEDIA not in MEDIA_SETS:
     raise SystemExit(f"media must be 'symbolic', 'media1' or 'media2', got {MEDIA!r}")
-if ORDER == 1:
+if ORDER == 2:
+    SOURCE = ROOT / "scripts" / "data" / f"interface_omega4_{MEDIA}.json"
+    OUT = ROOT / "scripts" / "data" / f"interface_omega4_terms_{KIND}.json"
+elif ORDER == 1:
     SOURCE = ROOT / "Mathematica" / "InterfaceOmega2.json"
     OUT = ROOT / "scripts" / "data" / f"interface_omega2_terms_{KIND}.json"
 elif KIND == "reflected":
@@ -68,7 +75,7 @@ else:
     if not SOURCE.exists():
         SOURCE = ROOT / "scripts" / "data" / "static_interface_transmission.json"
     OUT = ROOT / "scripts" / "data" / "interface_transmission_terms.json"
-if MEDIA != "symbolic":
+if MEDIA != "symbolic" and ORDER < 2:
     OUT = OUT.with_name(f"{OUT.stem}_{MEDIA}.json")
 J = json.loads(SOURCE.read_text())
 q = sp.Symbol("q", positive=True)
@@ -86,7 +93,12 @@ loc = {
     "E": sp.E,
     "I": sp.I,
 }
-if ORDER == 1:
+if ORDER == 2:
+    ent = [
+        [sp.sympify(x, locals={"q": q, "z": z, "zp": zp}) for x in row]
+        for row in J["R2" if KIND == "reflected" else "T2"]
+    ]
+elif ORDER == 1:
     from sympy.parsing.mathematica import parse_mathematica
 
     subs = {
@@ -103,7 +115,7 @@ else:
         [sp.sympify(s.replace("^", "**"), locals=loc) for s in row]
         for row in J["entries"]
     ]
-if MEDIA != "symbolic":
+if MEDIA != "symbolic" and ORDER < 2:
     vals = {}
     for tag, (al, be, rh) in zip("AB", MEDIA_SETS[MEDIA], strict=True):
         vals[{"A": lamA, "B": lamB}[tag]] = rh * (al**2 - 2 * be**2)
@@ -115,7 +127,7 @@ X = sp.exp(q * (z + zp)) if KIND == "reflected" else sp.exp(-q * (z - zp))
 
 
 #: Powers of q down to q^-(N_SHIFT) are admitted (G0 has q^-1, G1 lower).
-N_SHIFT = 1 if ORDER == 0 else 8
+N_SHIFT = {0: 1, 1: 8, 2: 12}[ORDER]
 
 
 def qpoly(f):
@@ -290,8 +302,15 @@ for r in range(9):
         out_row.append(terms)
     out.append(out_row)
 path = OUT
-variables = ["lamA", "muA", "lamB", "muB"] + (["rhoA", "rhoB"] if ORDER == 1 else [])
-path.write_text(json.dumps({"variables": variables, "terms": out}, indent=0))
+variables = (
+    []
+    if ORDER == 2
+    else ["lamA", "muA", "lamB", "muB"] + (["rhoA", "rhoB"] if ORDER == 1 else [])
+)
+meta = {"variables": variables, "terms": out}
+if ORDER == 2:
+    meta["media"] = J["media"]  # the coefficients hold these media
+path.write_text(json.dumps(meta, indent=0))
 n = sum(len(t) for row in out for t in row)
 print(f"written {path.relative_to(ROOT)}: {n} terms")
 
