@@ -331,7 +331,20 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
    Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
 4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole
    block against `interface_spectral` (sharp cutoff, `--full`).
-5. **Then step 2** (the scattering solve), on these blocks.
+5. **The remainder R(ω) = FP∫(Y − Y0 − ω²Y1) (started 13 October).** For pairs that do not touch, the block
+   converges exponentially in q and the split adds nothing; R matters for touching pairs. Self-image pair,
+   R / K = 1.3e-2 at ωh/β = 1/6 and 1.17 at ωh/β = 1; truncating R's tail at Q0h = 10 / 20 changes it by
+   3.5e-10 / 6e-11 of K (ωh/β = 1/6) and 3e-7 / 5e-9 (ωh/β = 1): the Q0⁻⁶ law of the dropped E.
+   **Decision (user): k-space, the tail carried by the ω⁴ term.**
+   - **Done: A1 exact.** `frequency_independent_parts(..., a1_route="closed")` (default):
+     `A1 = K1 − FP∫_{q<Q0} Y1` (`fp_low_integral`: Chebyshev head with exact modal finite parts, Gauss panels to
+     Q0). The octave route (to Q1, then the q⁻⁴ law) converges to it: 4.8e-7 → 8.0e-10 of A1 for Q1h 160 → 640
+     (self-image), so the old A1 carried ~5e-7 of itself (6e-13 of K at ωh/β = 1/6, 2e-11 at 1). Gate S3 unchanged
+     (3.6e-10, 6.3e-11; T 2.2e-10, 4.2e-11): what remains is the dropped E.
+   - **Next:** G2, the ω⁴ term (perturbation of the static problem, as G1; symbolic, checkpointed), its canonical
+     terms and spectral check; then ω⁴ FP∫_{q>Q0} Y2 analytically (the algebraic split and the 2-D lateral
+     finite parts of `gate_interface_touching_blocks.py`, moved into the package), leaving a Q0⁻⁸ truncation.
+6. **Then step 2** (the scattering solve), on these blocks.
 
 **Step 2 — a scattering solve near an interface.**
 - **The problem.** A Legendre-cell scatterer (Paper 1's single-site T-matrix, Paper 2's direct blocks)
