@@ -735,7 +735,8 @@ def _cheb_mode_moments(n: int, n_sing: int = 2) -> tuple:
             for j, c in enumerate(co)
             if j != n_sing - 1
         )
-        lg = sp.Rational(co[n_sing - 1]) if len(co) > n_sing - 1 else sp.Integer(0)
+        # no logarithm without a q^-1 term (n_sing = 0: co[-1] would be the last coefficient)
+        lg = sp.Rational(co[n_sing - 1]) if 1 <= n_sing <= len(co) else sp.Integer(0)
         out.append((float(pw), float(lg)))
     return tuple(out)
 
@@ -753,6 +754,7 @@ def fp_low_integral(
     n_test: int,
     qsh: float | None = None,
     n_cheb: int | None = None,
+    head: str = "analytic",
 ) -> NDArray:
     """(1/4 pi^2) FP int_{q < Q0} Y_order d^2k (Y0, Y1 or Y2), the finite part by continuation in the power of q
     (the convention of the potentials Phi_j of ``interface_image``), shape (n_test, n_source, 9, 9).
@@ -762,8 +764,20 @@ def fp_low_integral(
     Chebyshev nodes and each mode integrated against q^-N exactly (the q^-1 term giving log q_s, q in km^-1);
     Gauss panels on [q_s, Q0].  q_s h = 0.5 for N = 2 and 3 for N = 4, with 24 and 40 nodes (the sampling's
     rounding is amplified by q_s^(1-N); for N = 4 the window is narrow: 4e-11 of K2 at 40 nodes, 6e-9 at 24 and
-    5e-10 at 48).  An analytic head (power series of the vertical and lateral moments) would remove the window.
+    5e-10 at 48).  ``head="analytic"`` (default) replaces the sampling: ``interface_lateral.head``, power series
+    of the frame, vertical and lateral moments, every term's finite part exact, with q_s = ``qs_for``.
     """
+    if head == "analytic":
+        # power series throughout (interface_lateral.head); no sampling
+        from .interface_lateral import head as fp_head
+        from .interface_lateral import qs_for
+
+        qs_a = qs_for(rec, src, h) if qsh is None else qsh / h
+        out = fp_head(order, kind, rec, src, h, above, below, qs_a, n_source, n_test)
+        qh, w = _panels(qs_a * h, q0h, 0.5, 20)
+        return out + _static_integral(
+            order, kind, rec, src, h, above, below, qh, w, n_source, n_test
+        )
     _, m0 = frame_laurent(kind, order, above, below)
     n_sing = -(m0 + 1)
     if qsh is None:
