@@ -341,9 +341,24 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
      Q0). The octave route (to Q1, then the q⁻⁴ law) converges to it: 4.8e-7 → 8.0e-10 of A1 for Q1h 160 → 640
      (self-image), so the old A1 carried ~5e-7 of itself (6e-13 of K at ωh/β = 1/6, 2e-11 at 1). Gate S3 unchanged
      (3.6e-10, 6.3e-11; T 2.2e-10, 4.2e-11): what remains is the dropped E.
-   - **Next:** G2, the ω⁴ term (perturbation of the static problem, as G1; symbolic, checkpointed), its canonical
-     terms and spectral check; then ω⁴ FP∫_{q>Q0} Y2 analytically (the algebraic split and the 2-D lateral
-     finite parts of `gate_interface_touching_blocks.py`, moved into the package), leaving a Q0⁻⁸ truncation.
+   - **The ω⁴ term (13 October).** `scripts/derive_interface_omega4.py` (any order; exact rational media, 17 s;
+     symbolic twin `Mathematica/InterfaceOmega4.wl`, not run here): residual after ω⁴ falls 64× per halving of ω;
+     identical media R_n = 0, T_n = Kelvin's. Canonical terms (order 2): R 1245 in 91 families, T 1002 in 76,
+     potentials to Φ₆, ~550 finite-part terms each; spectral check exact. `frame_laurent(kind, 2)` and
+     `image_block(order=2)` for the media the term was derived for (refused otherwise).
+   - **K2 gate.** Touching pairs against the plane waves (order 2): reference-limited, 5.4e-12 at q_s h = 3.
+   - **A2 and the split to ω⁴.** `frequency_independent_parts(..., omega4=True)` → (A0, A1, A2),
+     `A2 = K2 − FP∫_{q<Q0}Y2`; `interface_block` adds ω⁴A2. A2 is ~1e-7 of K2 (seven digits cancel). The small-q
+     head is q⁻⁴ × entire: **the sampled head has a narrow window** (q_s h = 3: 24 nodes left 6e-9 of K2, 40 nodes
+     4e-11, 48 nodes 5e-10); found because K2 − low disagreed with the octaves of Y2 by 5% of A2 while K2 agreed
+     with the touching gate, whose head shared the same 24-node sampling. Default now 40 nodes for N = 4.
+   - **Against the 40-digit references**, to ω² → to ω⁴ (relative to the block):
+     R, ωh/β = 1/6: Q0h 10 3.6e-10 → 1.1e-11; ωh/β = 1: Q0h 10 3.1e-7 → 3.1e-9, 20 4.8e-9 → 5.4e-11, 40 6.3e-11 → 4.6e-11.
+     T, ωh/β = 1/6: Q0h 10 2.2e-10 → 1.4e-13, 20 3.5e-12 → 8.0e-14; ωh/β = 1: 10 2.0e-7 → 1.5e-9, 20 3.2e-9 → 6.9e-11,
+     40 4.2e-11 → 6.5e-11. The ~5e-11 floor at ωh/β = 1 is the head's: ω⁴K2 ≈ 4 K there, so 4e-11 of K2 shows.
+   - **Next:** an analytic small-q head (the series theme): vertical moments as exact power series in q, the
+     frame's Laurent series, the lateral moments by the Bessel series of `lateral_head` — every term's finite
+     part exact, no sampling; then the floor should go, and the same head can replace the order-0/1 sampling.
 6. **Then step 2** (the scattering solve), on these blocks.
 
 **Step 2 — a scattering solve near an interface.**
