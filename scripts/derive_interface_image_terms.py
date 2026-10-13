@@ -21,7 +21,13 @@ Phi3 and Phi4 (Phi_j for q^(-1-j)), whose transforms exist only as finite parts.
 derivatives has an integrand ~ q^(n_lat - 1 - j) at q -> 0, integrable in the plane (no finite part) iff
 n_lat >= j; the summary printed at the end lists every family and flags those with n_lat < j.
 
-Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | transmitted] [0 | 1]
+MEDIA (optional third argument): "symbolic" (default) keeps the Lame constants and densities as symbols;
+"media1" or "media2" substitutes exact rational media first, (alpha, beta, rho) = (5, 3, 5/2) over
+(13/2, 18/5, 14/5), or (4, 9/4, 2) over (7, 4, 3).  The algebra is then far lighter (minutes, not hours, at
+order 1), and the families are those of the symbolic kernel unless a coefficient happens to vanish for those
+media, which two unrelated media guard against.  Written to ..._{media}.json.
+
+Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | transmitted] [0 | 1] [media]
 """
 
 import json
@@ -40,6 +46,16 @@ if ORDER not in (0, 1):
     raise SystemExit(f"order must be 0 or 1, got {ORDER}")
 if KIND not in ("reflected", "transmitted"):
     raise SystemExit(f"kind must be 'reflected' or 'transmitted', got {KIND!r}")
+MEDIA = sys.argv[3] if len(sys.argv) > 3 else "symbolic"
+MEDIA_SETS = {
+    "media1": (
+        (5, 3, sp.Rational(5, 2)),
+        (sp.Rational(13, 2), sp.Rational(18, 5), sp.Rational(14, 5)),
+    ),
+    "media2": ((4, sp.Rational(9, 4), 2), (7, 4, 3)),
+}
+if MEDIA != "symbolic" and MEDIA not in MEDIA_SETS:
+    raise SystemExit(f"media must be 'symbolic', 'media1' or 'media2', got {MEDIA!r}")
 if ORDER == 1:
     SOURCE = ROOT / "Mathematica" / "InterfaceOmega2.json"
     OUT = ROOT / "scripts" / "data" / f"interface_omega2_terms_{KIND}.json"
@@ -51,6 +67,8 @@ else:
     if not SOURCE.exists():
         SOURCE = ROOT / "scripts" / "data" / "static_interface_transmission.json"
     OUT = ROOT / "scripts" / "data" / "interface_transmission_terms.json"
+if MEDIA != "symbolic":
+    OUT = OUT.with_name(f"{OUT.stem}_{MEDIA}.json")
 J = json.loads(SOURCE.read_text())
 q = sp.Symbol("q", positive=True)
 z, zp = sp.symbols("z zp", real=True)
@@ -84,6 +102,13 @@ else:
         [sp.sympify(s.replace("^", "**"), locals=loc) for s in row]
         for row in J["entries"]
     ]
+if MEDIA != "symbolic":
+    vals = {}
+    for tag, (al, be, rh) in zip("AB", MEDIA_SETS[MEDIA], strict=True):
+        vals[{"A": lamA, "B": lamB}[tag]] = rh * (al**2 - 2 * be**2)
+        vals[{"A": muA, "B": muB}[tag]] = rh * be**2
+        vals[{"A": rhoA, "B": rhoB}[tag]] = rh
+    ent = [[e_.subs(vals) for e_ in row_] for row_ in ent]
 a, b, c, d, e = ent[0][0], ent[0][1], ent[1][0], ent[1][1], ent[2][2]
 X = sp.exp(q * (z + zp)) if KIND == "reflected" else sp.exp(-q * (z - zp))
 
