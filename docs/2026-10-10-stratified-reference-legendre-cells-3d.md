@@ -309,9 +309,12 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
      above), no step shared: **5.1e-14, 6.0e-14** (full 4 × 10 × 9 × 9 blocks, two pairs whose images do not
      touch). q_s moved: 6e-14, 9e-14.
    - Identical media: reflected K1 = 0 to 2e-17 relative.
-   - **In progress:** corner moments of the finite-part kernels against 25-digit mpmath cubature (first two:
-     4e-16); touching pairs against the plane-wave route (needs its tail); transmitted K1 (symbolic terms
-     running).
+   - **Corner moments** (`scripts/gate_finite_part_corner_moments.py`, ~5 CPU-hours, run in 4 workers):
+     26 moments in 9 families (Φ₀–Φ₄, d = −3 … 1, with and without a log term, two static-type controls)
+     against 25-digit Duffy quadrature with tanh-sinh in ρ: worst 8.3e-16 (Euler), 4.3e-16 (pyramids). A
+     monomial with 3 + |n| + d ≤ 0 has no integral; both routes refuse it (Euler NaN, pyramids raise).
+   - **Open:** touching pairs against the plane-wave route (needs its tail); transmitted K1 (symbolic terms
+     running, checkpointed in DERIVE_CHECKPOINT; one run was lost to a container restart).
 4. **Previously: their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
    Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
 4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole
