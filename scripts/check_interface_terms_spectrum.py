@@ -84,6 +84,18 @@ def frame_kernel() -> sp.Matrix:
                 for r in rows
             ]
         )
+    elif (
+        ORDER == 2
+    ):  # rational media already in (scripts/derive_interface_omega4.py gate)
+        rows = json.loads((DATA / "interface_omega4_gate.json").read_text())[
+            "R2" if KIND == "reflected" else "T2"
+        ]
+        return sp.Matrix(
+            [
+                [sp.sympify(e, locals={"q": q, "z": z, "zp": zp}) for e in r]
+                for r in rows
+            ]
+        )
     else:
         rows = json.loads((ROOT / "Mathematica" / "InterfaceOmega2.json").read_text())[
             "R1" if KIND == "reflected" else "T1"
@@ -164,8 +176,10 @@ def main() -> None:
         )
         if ORDER == 0
         else f"interface_omega2_terms_{KIND}"
+        if ORDER == 1
+        else f"interface_omega4_terms_{KIND}"
     )
-    if MEDIA_NAME != "symbolic":
+    if MEDIA_NAME != "symbolic" and ORDER < 2:
         name += f"_{MEDIA_NAME}"
     entries = json.loads((DATA / f"{name}.json").read_text())["terms"]
     G = frame_kernel()
