@@ -313,8 +313,10 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
      26 moments in 9 families (Φ₀–Φ₄, d = −3 … 1, with and without a log term, two static-type controls)
      against 25-digit Duffy quadrature with tanh-sinh in ρ: worst 8.3e-16 (Euler), 4.3e-16 (pyramids). A
      monomial with 3 + |n| + d ≤ 0 has no integral; both routes refuse it (Euler NaN, pyramids raise).
-   - **Open:** touching pairs against the plane-wave route (needs its tail); transmitted K1 (symbolic terms
-     running, checkpointed in DERIVE_CHECKPOINT; one run was lost to a container restart).
+   - **Transmitted (13 October).** The symbolic transmitted terms (582 in 61 families; about 3.5 h, checkpointed,
+     after one run was lost to a container restart): spectral check exact on all 81 entries, structure identical
+     to the rational runs. Gate: (3,0,0) ← (−1,0,0) **5.4e-14**, (3,2,0) ← (−1,0,0) **3.6e-14**.
+   - **Open:** touching pairs against the plane-wave route (needs its high-q tail treated).
 4. **Previously: their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
    Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
 4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole
