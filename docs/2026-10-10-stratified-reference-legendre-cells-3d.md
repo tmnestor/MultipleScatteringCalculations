@@ -292,7 +292,27 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
    - **The finite-part kernels are bounded.** Every finite-part family has |α| = n_lat ≤ j − 1, so
      ∂^αΦ_j has degree j − 1 − |α| ≥ 0: no corner singularity, only log(R + ζ). Their box moments are ordinary
      integrals of explicit closed forms, and 40-digit cubature of the closed form is a direct reference.
-3. **Their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
+3. **K1 blocks — first version done (13 October), direct route (user's choice).**
+   `interface_image.image_block(..., order=1)` gives K1 (K = K0 + ω²K1 + …) from the ω² terms
+   (`interface_omega2_terms_*.json`, symbolic coefficients, densities included) and the finite-part potentials:
+   - `kernel_function` uses Φ_j^FP for j ≥ 1 (to j = 4); K0 is unchanged to 5.7e-16 (7 pairs, both bases,
+     both corner routes, against the previous module).
+   - **Log-homogeneity.** ∂^αΦ_j(λx) = λ^d [∂^αΦ_j(x) + log λ · g(x)], g = ∂^α g₀,
+     g₀ = −(−1)ⁿRⁿP_n(ζ/R)/(2π n!) (`kernel_log_coefficient`; zero for every K0 family and for 8 of the 16
+     finite-part families). Corner pieces: the Duffy pyramids add ∫₀¹ ρ^e log ρ P(ρ) dρ exactly (shifted-Legendre
+     coefficients of P, `∫ρ^m log ρ = −1/(m+1)²`); Euler's identity (power basis) adds −∫xⁿg. The two routes
+     agree to 7e-16 … 9e-16 on K1 blocks. The block's h-scaling gains log h ∫g (`family_log_integrals`): a
+     finite part depends on the unit of length (km), as does the wavenumber remainder's.
+   - `image_moments`' closed forms (line of images) are used only where they apply (j ≤ 2, n_lat ≥ j).
+   - **Gate** `scripts/gate_interface_omega2_blocks.py`: K1 against FP∫Y1 d²k from `interface_spectral`'s ω²
+     integrand (q⁻² × entire at q → 0: Chebyshev head with exact modal moments and log q_s; Gauss panels
+     above), no step shared: **5.1e-14, 6.0e-14** (full 4 × 10 × 9 × 9 blocks, two pairs whose images do not
+     touch). q_s moved: 6e-14, 9e-14.
+   - Identical media: reflected K1 = 0 to 2e-17 relative.
+   - **In progress:** corner moments of the finite-part kernels against 25-digit mpmath cubature (first two:
+     4e-16); touching pairs against the plane-wave route (needs its tail); transmitted K1 (symbolic terms
+     running).
+4. **Previously: their cell moments.** Extend `image_block`'s master integrals (homogeneity, the line of images) to
    Φ₃, Φ₄. Gate against the 40-digit wavenumber integrals of `∫ Y1` (the verification route).
 4. **The remainder and the far pairs** in space (pointwise Sommerfeld kernel, Gauss / Duffy); gate the whole
    block against `interface_spectral` (sharp cutoff, `--full`).
