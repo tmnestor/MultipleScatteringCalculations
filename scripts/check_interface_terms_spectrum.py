@@ -14,7 +14,7 @@ engineering strain, columns force and engineering stress, the stress columns hal
 At random wavenumbers, depths and rational media, every one of the 81 entries; error relative to the largest
 entry of the reference.  Expected: rounding (the comparison is in 30-digit arithmetic).
 
-Run:  PYTHONPATH=. python scripts/check_interface_terms_spectrum.py [reflected | transmitted] [0 | 1]
+Run:  PYTHONPATH=. python scripts/check_interface_terms_spectrum.py [reflected | transmitted] [0 | 1] [media]
 """
 
 import json
@@ -38,11 +38,19 @@ q, z, zp = (
 )
 NAMES = ("lamA", "muA", "lamB", "muB", "rhoA", "rhoB")
 SYM = {n: sp.Symbol(n, positive=True) for n in NAMES}
-#: rational media (alpha, beta, rho) = (5, 3, 5/2) above, (13/2, 18/5, 14/5) below
+#: "symbolic" checks the symbolic-coefficient terms (at media1); "media1" / "media2" the terms derived with those
+#: rational media (derive_interface_image_terms.py ... media1), at the same media.
+MEDIA_NAME = sys.argv[3] if len(sys.argv) > 3 else "symbolic"
+MEDIA_SETS = {
+    "media1": (
+        (5, 3, sp.Rational(5, 2)),
+        (sp.Rational(13, 2), sp.Rational(18, 5), sp.Rational(14, 5)),
+    ),
+    "media2": ((4, sp.Rational(9, 4), 2), (7, 4, 3)),
+}
 MEDIA = {}
-for tag, (al, be, rho) in (
-    ("A", (5, 3, sp.Rational(5, 2))),
-    ("B", (sp.Rational(13, 2), sp.Rational(18, 5), sp.Rational(14, 5))),
+for tag, (al, be, rho) in zip(
+    "AB", MEDIA_SETS["media1" if MEDIA_NAME == "symbolic" else MEDIA_NAME], strict=True
 ):
     MEDIA[SYM["lam" + tag]] = rho * (al**2 - 2 * be**2)
     MEDIA[SYM["mu" + tag]] = rho * be**2
@@ -157,6 +165,8 @@ def main() -> None:
         if ORDER == 0
         else f"interface_omega2_terms_{KIND}"
     )
+    if MEDIA_NAME != "symbolic":
+        name += f"_{MEDIA_NAME}"
     entries = json.loads((DATA / f"{name}.json").read_text())["terms"]
     G = frame_kernel()
     mp.mp.dps = 30
@@ -200,7 +210,7 @@ def main() -> None:
             f"  k = ({kx}, {ky}), z = {zv}, zp = {zpv}: {err / scale:.1e}", flush=True
         )
     print(
-        f"{KIND}, order {ORDER}: 81 entries, worst {worst:.1e}  {'PASS' if worst < 1e-13 else 'FAIL'}"
+        f"{KIND}, order {ORDER}, {MEDIA_NAME}: 81 entries, worst {worst:.1e}  {'PASS' if worst < 1e-13 else 'FAIL'}"
     )
 
 

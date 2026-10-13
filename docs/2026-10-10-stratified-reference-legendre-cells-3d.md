@@ -246,6 +246,19 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
    derivatives. A term with n_lat < j has an integrand ~ q^{n_lat−1−j} at q → 0: its transform is a finite
    part (item 2). `derive_interface_image_terms.py <kind> 1` (order 0 reproduces the K0 data byte for byte);
    checked by `check_interface_terms_spectrum.py` (exact on K0; an injected 1e-3 coefficient error shows).
+   **Done (13 October), with rational media** (`... <kind> 1 media1|media2`, 13–21 s; the symbolic run,
+   six material symbols under `sympy.simplify`, had not finished after an hour). Both media give the same
+   families, so none is an accident of the media:
+
+   | G1 | terms | families | under Φ₀ / Φ₁ / Φ₂ / Φ₃ / Φ₄ | finite part needed (n_lat < j) |
+   |---|---|---|---|---|
+   | reflected | 744 | 76 | 235 / 232 / 172 / 80 / 25 | 81 terms, 16 families |
+   | transmitted | 582 | 61 | 123 / 182 / 172 / 80 / 25 | 81 terms, 16 families |
+
+   The finite-part families: Φ₁ with no lateral derivative (12 terms); Φ₂ with α = (0,0), (0,1), (1,0) (27);
+   Φ₃ with |α| ≤ 2 (26 terms, 5 families); Φ₄ with |α| ≤ 3 (16 terms, 7 families); the same in both kinds.
+   So the finite parts are genuinely needed, and the closed forms of item 2 carry them. The spectral check
+   passes exactly on all 81 entries, both kinds, both media.
 2. **Φ_j as Hadamard finite parts — done (12 October).** The series' theme (user, 12 October): finite parts
    are evaluated analytically, so that no asymptotic wavenumber tail is ever integrated; nothing is left to a
    cutoff or pushed into a numerical remainder. With the Laplace–Hankel transform
