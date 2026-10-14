@@ -997,7 +997,42 @@ corrections,
 \end{equation}
 with the same remainder $\mathbf E$ beyond $Q_0$; the corrections then decay faster than any power of $d$,
 to $1.2\times10^{-6}$, $5.9\times10^{-9}$, $9.1\times10^{-11}$ and $4.7\times10^{-12}$ of the touching block at
-$d=8h$, $16h$, $24h$ and $32h$, reflected and transmitted alike. Second, the azimuthal integrals of the cells'
+$d=8h$, $16h$, $24h$ and $32h$, reflected and transmitted alike (Table~\ref{tab:locality}). The window costs
+nothing: the corrections are the sharp ones plus integrals of $\chi\mathbf Y_0$ and $\chi\mathbf Y_1$ over the
+ramp, below $Q_0$, which the plane-wave part gives back, and the windowed and sharp blocks agree to the
+rounding of the plane-wave part. The wider the ramp, the faster the decay: a ramp from $Q_0/2$ gives $3.2\times10^{-11}$ at $32h$
+instead of $4.7\times10^{-12}$, and a polynomial step, smooth only to finite order, decays algebraically and
+stalls near $10^{-10}$. The $\omega^2$ correction decays alike and is two to three orders smaller at this
+frequency: $2.7\times10^{-11}$ of the touching block at $16h$. So the corrections are local: beyond $12h$,
+$16h$ and $24h$ (six, eight and twelve cells) they fall below $10^{-6}$, $10^{-8}$ and $10^{-10}$ of the
+touching block, and the block is the windowed plane-wave integral below $Q_0$ alone. Within that radius they depend
+only on the two depths and the lateral offset, so a row or grid of cells along the interface needs them once
+per pair of depths and offset, and the costly $\omega^2$ part only within its own, smaller radius.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rccccc}
+\toprule
+window & sharp & $C^\infty$ from $Q_0/2$ & $C^\infty$ from $Q_0/4$ & $C^\infty$ from $Q_0/4$ & polynomial from $Q_0/2$ \\
+$d/h$ & $\mathbf A_0$ & $\mathbf A_0$ & $\mathbf A_0$ & $\omega^2\mathbf A_1$ & $\mathbf A_0$ \\
+\midrule
+$4$  & $2.7\times10^{-4}$ & $9.8\times10^{-5}$  & $1.2\times10^{-4}$  & $2.7\times10^{-7}$  & $7.9\times10^{-5}$ \\
+$8$  & $1.0\times10^{-4}$ & $1.7\times10^{-6}$  & $1.2\times10^{-6}$  & $5.1\times10^{-9}$  & $5.4\times10^{-7}$ \\
+$16$ & $3.2\times10^{-5}$ & $1.5\times10^{-8}$  & $5.9\times10^{-9}$  & $2.7\times10^{-11}$ & $9.8\times10^{-9}$ \\
+$24$ & $2.4\times10^{-5}$ & $5.5\times10^{-10}$ & $9.1\times10^{-11}$ & $4.4\times10^{-13}$ & $8.8\times10^{-10}$ \\
+$32$ & $1.4\times10^{-5}$ & $3.2\times10^{-11}$ & $4.7\times10^{-12}$ & $3.8\times10^{-14}$ & $1.4\times10^{-10}$ \\
+\bottomrule
+\end{tabular}
+\caption{Locality of the frequency-independent corrections: a row of cells touching the interface at lateral
+offset $d$ from a touching cell, full $4\times10\times9\times9$ blocks, $Q_0h=10$, $\omega h/\beta=1/6$, the
+largest entry relative to the largest of the touching static block. Reflected; transmitted within a factor
+$1.3$. With the sharp cutoff the decay is about $d^{-3/2}$; with the $C^\infty$ window, faster than any power;
+with the polynomial step $I_t(4,4)$, algebraic.}
+\label{tab:locality}
+\end{table}
+
+Second, the azimuthal integrals of the cells'
 lateral moments $L_aL_c$ against the phase $\ee^{\ii\bk\cdot\boldsymbol\Delta}$ of a lateral offset
 $\boldsymbol\Delta$ and the nine harmonics of the rotation need no rule that grows with $q|\boldsymbol\Delta|$:
 by the Jacobi--Anger expansion of the phase,
