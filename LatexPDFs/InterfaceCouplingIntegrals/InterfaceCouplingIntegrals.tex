@@ -748,8 +748,11 @@ needs cutoffs at which double precision fails. The frequency-independent integra
 $\mathbf Y-\mathbf Y_0$ does. Its integrand needs no mode sum: written in the frame of $\bk$ it is
 $\ee^{q(z+z')}$ times a polynomial in $z$ and $z'$ whose coefficients are Laurent polynomials in $q$, and in
 double precision it agrees with the $40$-digit kernel to $10^{-12}$, an error that enters multiplied by
-$\omega^2$. It is integrated once, to $Q_1h=160$, and the tail beyond $Q_1$ is taken from the $q^{-4}$ law of
-the last octave. The angular dependence costs little: the rotation of the frame kernel to the direction of
+$\omega^2$. It is not integrated to infinity: by Eq.~\eqref{eq:fpsplit},
+$\bK^{R}_1(Q_0)=\bK^{R}_1-(4\pi^2)^{-1}\mathrm{FP}\!\int_{q<Q_0}\mathbf Y_1\,\dd^2k$, the closed-form block less
+the finite part below $Q_0$, so that no tail is left. (Integrated by octaves to $Q_1h=160$ with the tail taken from
+the $q^{-4}$ law of the last octave, as before the closed form existed, it carried $5\times10^{-7}$ of itself;
+by octaves to $Q_1h=640$, $8\times10^{-10}$.) The angular dependence costs little: the rotation of the frame kernel to the direction of
 $\bk$ contains only the harmonics $\ee^{\ii n\phi}$ with $|n|\le4$, so at each $q$ the azimuthal rule only sums
 the cells' lateral moments against nine harmonics.
 
@@ -775,6 +778,72 @@ to the radial rule of each frequency, whose panel ends follow the branch points 
 with the mode sum evaluated at every point of the polar grid to $3\times10^{-15}$ to $2\times10^{-11}$ (the
 latter the rounding of the reflected mode sums, which both routes share) and costs a twentieth to a fiftieth
 of its time.
+
+\paragraph{The next order.} The perturbation of the static problem continues: at order $\omega^4$,
+$\nabla\cdot\boldsymbol\sigma(\mathbf u_2)=-\rho\,\mathbf u_1$ with no source, and $\mathbf u_2$ is a polynomial
+two degrees higher than $\mathbf u_1$ times the same exponential, plus the regular homogeneous solutions; Kelvin's
+term and the reflected and transmitted terms $\mathbf G^{R}_2$, $\mathbf G^{T}_2$ follow from the conditions at
+$z'$ and at the interface as before. Against the exact kernels at $50$ digits the residual
+$\mathbf G-\mathbf G_0-\omega^2\mathbf G_1-\omega^4\mathbf G_2$ falls $64$-fold each time $\omega$ is halved, and for
+identical media $\mathbf G^{R}_2=\mathbf 0$ and $\mathbf G^{T}_2$ is Kelvin's $\omega^4$ term. Its lowest power of
+$q$ in the frame is $q^{-5}$, and collected as in Section~\ref{sec:static} the $9\times9$ term is a sum of $1245$
+(reflected) and $1002$ (transmitted) canonical terms with potentials up to $\Phi_6$, about $550$ of them finite
+parts. Their closed-form block $\bK_2$ is formed as $\bK_1$ is, and the split becomes
+\begin{equation}\label{eq:omega4split}
+  \bK=\mathbf D(\omega;Q_0)+\mathbf A_0+\omega^2\mathbf A_1+\omega^4\mathbf A_2+\mathbf E,\qquad
+  \mathbf A_n=\bK_n-\frac{1}{4\pi^2}\,\mathrm{FP}\!\int_{q<Q_0}\mathbf Y_n\,\dd^2k,
+\end{equation}
+$\mathbf D$ the plane-wave integral of $\mathbf Y$ below $Q_0$ at each frequency and
+$\mathbf E=(4\pi^2)^{-1}\int_{q>Q_0}(\mathbf Y-\mathbf Y_0-\omega^2\mathbf Y_1-\omega^4\mathbf Y_2)\dd^2k$ the dropped
+remainder, which now falls as $Q_0^{-8}$. Each $\mathbf A_n$ is the part of the closed-form block beyond $Q_0$,
+obtained without integrating any tail. For $\mathbf A_2$ the subtraction cancels about seven digits, since the
+part of $\bK_2$ beyond $Q_0$ is about $10^{-7}$ of it: the finite part below $Q_0$ must be as accurate as the closed
+form.
+
+\paragraph{The finite part at small $q$ in closed form.} Near $q=0$ the integrands $\mathbf Y_n$ behave as
+$q^{-2}$ ($n=0,1$) and $q^{-4}$ ($n=2$) times entire functions. A finite part taken from samples of the entire
+function, at Chebyshev nodes with each mode integrated exactly, is limited by the rounding of the samples, which
+the factor $q_s^{1-N}$ amplifies: for $q^{-4}$ it has a narrow window, $6\times10^{-9}$ of $\bK_2$ with $24$ nodes
+on $[0,3/h]$, $4\times10^{-11}$ with $40$ and $5\times10^{-10}$ with $48$. It is taken instead in closed form, with
+every factor of the integrand an exact power series in $q$: the frame kernel's Laurent polynomial; the vertical
+moments,
+\begin{equation}\label{eq:verticalseries}
+  \int_{\rm cell}f(v)\,z^{a}\ee^{sqz}\,\dd z=\sum_{n\ge0}\frac{(sq)^n}{n!}\int_{\rm cell}f(v)\,z^{a+n}\,\dd z,
+\end{equation}
+exact polynomial moments; and the lateral moments with the phase, for each harmonic, by the series of the Bessel
+function against the exact lateral weights, Eq.~\eqref{eq:headseries}. Their product is a Laurent series
+$\sum_pq^p\,\mathbf R_{p,n}$ for each harmonic, and each term's finite part on $[0,q_s]$ is a power of $q_s$, or
+$\log q_s$ at the power $-1$. The series converge for every $q$, but lose digits as $q_s$ times the largest distance
+$R$ within the pair grows, so $q_s=\min(1/h,4/R)$; above $q_s$ Gauss rules are used. At order zero, whose
+integrand is integrable at $q=0$, the closed form agrees with plain integration to $1.6\times10^{-15}$ and
+$1.4\times10^{-14}$; and $\bK_2$ less the closed-form finite part below $Q_0$ agrees with the integral of
+$\mathbf Y_2$ beyond $Q_0$ by octaves (whose shells fall as $q^{-6}$) to $1.9\times10^{-15}$ (reflected) and
+$1.2\times10^{-15}$ (transmitted) of $\bK_2$. With it, Eq.~\eqref{eq:omega4split} reproduces the $40$-digit
+references to the size of $\mathbf E$ (Table~\ref{tab:omega4}): a factor of about $2^8$ per doubling of $Q_0$, and
+below $10^{-12}$ at $Q_0h=40$ when $\omega h/\beta=1$.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+ & \multicolumn{2}{c}{$\omega h/\beta=1/6$} & \multicolumn{3}{c}{$\omega h/\beta=1$} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-6}
+ & $Q_0h=10$ & $20$ & $Q_0h=10$ & $20$ & $40$ \\
+\midrule
+reflected, to $\omega^2$   & $3.6\times10^{-10}$ & $2.9\times10^{-11}$ & $3.1\times10^{-7}$ & $4.8\times10^{-9}$ & $6.3\times10^{-11}$ \\
+reflected, to $\omega^4$   & $1.1\times10^{-11}$ & $2.6\times10^{-11}$ & $3.1\times10^{-9}$ & $1.2\times10^{-11}$ & $8.8\times10^{-13}$ \\
+transmitted, to $\omega^2$ & $2.2\times10^{-10}$ & $3.5\times10^{-12}$ & $2.0\times10^{-7}$ & $3.2\times10^{-9}$ & $4.2\times10^{-11}$ \\
+transmitted, to $\omega^4$ & $6.3\times10^{-14}$ & $1.2\times10^{-14}$ & $1.6\times10^{-9}$ & $6.1\times10^{-12}$ & $8.1\times10^{-14}$ \\
+\bottomrule
+\end{tabular}
+\caption{The block of a cell with its own image (reflected) and of two cells touching across the interface
+(transmitted) by the split Eq.~\eqref{eq:omega4split}, against the $40$-digit plane-wave references, relative to
+the block: with the asymptotic terms to $\omega^2$ and to $\omega^4$, the finite parts below $Q_0$ in closed form.
+The reflected entries at $\omega h/\beta=1/6$ with $\omega^4$ are the rounding of the double-precision mode sums
+below $Q_0$, whose P and SV terms cancel at that frequency.}
+\label{tab:omega4}
+\end{table}
 
 \begin{table}[h]
 \centering
@@ -877,6 +946,10 @@ $\omega^2$ terms \eqref{eq:imageterms}, $744$ and $582$, reflected and transmitt
 finite-part kernels: Eq.~\eqref{eq:loghomogeneous}, $16$ families & direct evaluation, $30$ digits & exact \\
 corner boxes, Eq.~\eqref{eq:eulerlog} and Duffy pyramids, $26$ moments, $9$ families, $\Phi_0$--$\Phi_4$, $d=-3$ to $1$, with and without $g$ & $25$-digit Duffy quadrature, tanh-sinh in $\varrho$ & $8.3\times10^{-16}$, $4.3\times10^{-16}$ \\
 $\omega^2$ blocks, two reflected pairs not touching their images, two transmitted pairs & finite part of the plane-wave integral of $\mathbf Y_1$ & $3.6$--$6.0\times10^{-14}$ \\
+$\mathbf G^{R}_2$, $\mathbf G^{T}_2$ & exact kernels at $50$ digits, $\omega$ halved & residual falls $64$-fold \\
+$\omega^4$ terms, $1245$ and $1002$ & transform of each term against the rotated, differentiated spectrum & exact \\
+$\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
+finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
 static and $\omega^2$ blocks of touching cells: own image, edge, corner, across the interface & plane-wave integral, algebraic tail in closed form (Weber--Schafheitlin, 2-D lateral finite parts) & $3.4\times10^{-14}$--$4.9\times10^{-13}$ \\
 split with a smooth window, Eq.~\eqref{eq:windowsplit}, rows of $5$ cells, reflected and transmitted & split with the sharp cutoff, pair by pair & $3.9\times10^{-14}$--$1.9\times10^{-11}$ \\
 azimuthal integrals $S_n$ by Eq.~\eqref{eq:jacobianger}, offsets to $40h$ & direct azimuthal rule & $4\times10^{-16}$--$3\times10^{-13}$ \\
