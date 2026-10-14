@@ -304,6 +304,24 @@ def assemble(
     return a
 
 
+def apply_coupling(
+    grid: InterfaceGrid, blocks: dict, delta: NDArray, x: NDArray, p: int, r: int
+) -> NDArray:
+    """sum_n K_mn E^(n) x_n for coefficients x of shape (N, na, 9): the coupling term of the system, without
+    forming it (the matvec of an iterative solve, or the right-hand side of the scattered-field system)."""
+    n = len(grid.idx)
+    na, n_field, _, n_source = field_sizes(p, r)
+    ex = np.stack(
+        [np.einsum("cbij,bj->ci", source_expansion(delta[col], n_field)[:, :na], x[col]) for col in range(n)]
+    )  # (N, n_source, 9)
+    return np.stack(
+        [
+            sum(np.einsum("acij,cj->ai", blocks[row, col][:na, :n_source], ex[col]) for col in range(n))
+            for row in range(n)
+        ]
+    )
+
+
 def solve_interface(
     couplings: InterfaceCouplings,
     omega: float,
