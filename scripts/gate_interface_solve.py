@@ -174,7 +174,7 @@ def check_born() -> bool:
     s2 = scattered(iso.solve_interface(c, OMEGA, contrasts(grid, 2 * eps), KX, KY, "P", p=1, blocks=blocks), 4)
     solve = (4 * s1 - s2) / (2 * eps)
     # Born with the mode-route couplings
-    unit = iso.cell_contrasts(grid, OMEGA, contrasts(grid, 1.0), 0)
+    unit = iso.cell_contrasts(grid, OMEGA, contrasts(grid, 1e-3), 0) / 1e-3  # linear in the contrast
     ref = iso.reference_moments(grid, OMEGA, KX, KY, "P", 4)
     m = np.diag(gram_test(H, 4))
     psi0 = ref / m[None, :, None]
