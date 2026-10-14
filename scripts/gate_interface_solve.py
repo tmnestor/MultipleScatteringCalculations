@@ -91,7 +91,9 @@ def mode_block(grid, r, s, n_source, n_test, n_phi=192):
     qh, wq = radial_rule(qh_max, branch, 1.0, order=24)
     phi = 2 * np.pi * np.arange(n_phi) / n_phi
     qq, pp = np.meshgrid(qh / H, phi, indexing="ij")
-    weight = (np.repeat((wq / H * qh / H)[:, None], n_phi, 1) / (2 * np.pi * n_phi)).ravel()
+    weight = (
+        np.repeat((wq / H * qh / H)[:, None], n_phi, 1) / (2 * np.pi * n_phi)
+    ).ravel()
     kx, ky = (qq * np.cos(pp)).ravel(), (qq * np.sin(pp)).ravel()
     cr, cs = grid.centres[r], grid.centres[s]
     rt = interface_rt(kx, ky, OMEGA, A, B)
@@ -107,13 +109,17 @@ def mode_block(grid, r, s, n_source, n_test, n_phi=192):
     src_to_if = _modes(kx, ky, src_med, s_sign_to_interface)
     paths = []  # (receiver modes, coupling (N, 3, 3) or None for direct, source modes)
     if r_in_a == s_in_a:
-        rec_from_if = _modes(kx, ky, rec_med, -s_sign_to_interface)  # back away from the interface
+        rec_from_if = _modes(
+            kx, ky, rec_med, -s_sign_to_interface
+        )  # back away from the interface
         coupling = rt["R_d"] if s_in_a else rt["R_u"]
         paths.append((rec_from_if, coupling, src_to_if))
         direct = _modes(kx, ky, src_med, float(np.sign(zr - zs)))
         paths.append((direct, None, direct))
     else:
-        rec_from_if = _modes(kx, ky, rec_med, s_sign_to_interface)  # onward through the interface
+        rec_from_if = _modes(
+            kx, ky, rec_med, s_sign_to_interface
+        )  # onward through the interface
         coupling = rt["T_d"] if s_in_a else rt["T_u"]
         paths.append((rec_from_if, coupling, src_to_if))
     for rec_modes, coupling, src_modes in paths:
@@ -125,7 +131,9 @@ def mode_block(grid, r, s, n_source, n_test, n_phi=192):
                 c = 1.0 if coupling is None else coupling[:, m, n]
                 ra, drv = side(kr, dr, cr, n_test, True)
                 coef = weight * ws * c
-                out += np.einsum("n,na,nc,ni,nj->acij", coef, ra, sc, drv, dsv * SOURCE_PAIRING)
+                out += np.einsum(
+                    "n,na,nc,ni,nj->acij", coef, ra, sc, drv, dsv * SOURCE_PAIRING
+                )
     return out
 
 
@@ -145,21 +153,28 @@ def check_identical() -> bool:
     res = iso.solve_interface(c, OMEGA, contrasts(grid, 0.1), KX, KY, "P", p=1)
     # the homogeneous solve: Paper 2's blocks, the incident plane wave
     blocks = {
-        (m, n): coupling_block(tuple(int(v) for v in grid.idx[m] - grid.idx[n]), H, OMEGA, A, 10, 4)
+        (m, n): coupling_block(
+            tuple(int(v) for v in grid.idx[m] - grid.idx[n]), H, OMEGA, A, 10, 4
+        )
         for m in range(len(SCATTERER))
         for n in range(len(SCATTERER))
     }
     a = iso.assemble(grid, blocks, res.delta, 1, 0)
     k_vec = np.array([np.sqrt((OMEGA / A.alpha) ** 2 - KX**2 - KY**2), KX, KY])
     k_hat = k_vec / np.linalg.norm(k_vec)
-    amp = np.concatenate([k_hat + 0j, _plane_wave_strain_voigt(k_hat, k_hat, OMEGA / A.alpha)])
+    amp = np.concatenate(
+        [k_hat + 0j, _plane_wave_strain_voigt(k_hat, k_hat, OMEGA / A.alpha)]
+    )
     rhs = plane_wave_moments(grid.centres, H, k_vec, amp, 4)
     psi = np.linalg.solve(a, rhs.ravel()).reshape(res.psi.shape)
     ref_err = np.abs(res.reference - rhs).max() / np.abs(rhs).max()
     err = np.abs(res.psi - psi).max() / np.abs(psi).max()
     ok = err < 1e-8 and ref_err < 1e-14
-    print(f"1. identical media: reference field {ref_err:.1e}, solution vs homogeneous solve {err:.1e}"
-          f"  {'PASS' if ok else 'FAIL'}", flush=True)
+    print(
+        f"1. identical media: reference field {ref_err:.1e}, solution vs homogeneous solve {err:.1e}"
+        f"  {'PASS' if ok else 'FAIL'}",
+        flush=True,
+    )
     return ok
 
 
@@ -184,7 +199,9 @@ def check_born() -> bool:
 
     solve = 2 * s_over_eps(eps) - s_over_eps(2 * eps)
     # Born with the mode-route couplings
-    unit = iso.cell_contrasts(grid, OMEGA, contrasts(grid, 1e-3), 0) / 1e-3  # linear in the contrast
+    unit = (
+        iso.cell_contrasts(grid, OMEGA, contrasts(grid, 1e-3), 0) / 1e-3
+    )  # linear in the contrast
     psi0 = iso.reference_moments(grid, OMEGA, KX, KY, "P", 4) / m[None, :, None]
     worst = 0.0
     for i, r in enumerate(range(len(SCATTERER), len(grid.idx))):
@@ -195,12 +212,18 @@ def check_born() -> bool:
             born += np.einsum("acij,cbjk,bk->ai", k, e, psi0[n])
             if i == 0 and n == 0:
                 kb = blocks[r, n]
-                print(f"   block ({RECEIVERS[0]} <- {SCATTERER[0]}): mode route vs solver's "
-                      f"{np.abs(k - kb).max() / np.abs(kb).max():.1e}", flush=True)
+                print(
+                    f"   block ({RECEIVERS[0]} <- {SCATTERER[0]}): mode route vs solver's "
+                    f"{np.abs(k - kb).max() / np.abs(kb).max():.1e}",
+                    flush=True,
+                )
         born /= m[:, None]
         err = np.abs(solve[r] - born).max() / np.abs(born).max()
         worst = max(worst, err)
-        print(f"   receiver {RECEIVERS[i]}: solve (eps -> 0) vs Born by plane waves {err:.1e}", flush=True)
+        print(
+            f"   receiver {RECEIVERS[i]}: solve (eps -> 0) vs Born by plane waves {err:.1e}",
+            flush=True,
+        )
     ok = worst < 1e-8
     print(f"2. Born: worst {worst:.1e}  {'PASS' if ok else 'FAIL'}", flush=True)
     return ok
@@ -217,22 +240,31 @@ def check_p() -> bool:
     out = {}
     for p in (0, 1, 2):
         ts = time.time()
-        res = iso.solve_interface(c, OMEGA, contrasts(grid, 0.1), KX, KY, "P", p=p, blocks=blocks)
-        out[p] = scattered(res, 1)[len(SCATTERER):, 0]  # the receivers' cell means
+        res = iso.solve_interface(
+            c, OMEGA, contrasts(grid, 0.1), KX, KY, "P", p=p, blocks=blocks
+        )
+        out[p] = scattered(res, 1)[len(SCATTERER) :, 0]  # the receivers' cell means
         print(f"   p = {p}: solve {time.time() - ts:.2f} s", flush=True)
     d01 = np.abs(out[0] - out[2]).max() / np.abs(out[2]).max()
     d12 = np.abs(out[1] - out[2]).max() / np.abs(out[2]).max()
-    print(f"3. convergence in p: receivers' mean scattered field, |p0 - p2| {d01:.1e}, |p1 - p2| {d12:.1e}"
-          f"  {'PASS' if d12 < d01 else 'FAIL'}", flush=True)
-    print(f"4. cost: set-up {t1 - t0:.0f} s ({len(c.classes)} classes, n_source {n_source}, n_test {n_field});"
-          f" one frequency: blocks {t2 - t1:.1f} s + solve (above)", flush=True)
+    print(
+        f"3. convergence in p: receivers' mean scattered field, |p0 - p2| {d01:.1e}, |p1 - p2| {d12:.1e}"
+        f"  {'PASS' if d12 < d01 else 'FAIL'}",
+        flush=True,
+    )
+    print(
+        f"4. cost: set-up {t1 - t0:.0f} s ({len(c.classes)} classes, n_source {n_source}, n_test {n_field});"
+        f" one frequency: blocks {t2 - t1:.1f} s + solve (above)",
+        flush=True,
+    )
     return d12 < d01
 
 
 def main() -> None:
     which = sys.argv[1:] or ["identical", "born", "p"]
     checks = {"identical": check_identical, "born": check_born, "p": check_p}
-    ok = all([checks[w]() for w in which])
+    results = [checks[w]() for w in which]  # every check runs, none short-circuits
+    ok = all(results)
     print("ALL PASS" if ok else "SOME FAILED")
 
 
