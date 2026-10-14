@@ -54,6 +54,8 @@ def compose(c: np.ndarray, delta: float) -> np.ndarray:
 @cache
 def rect_poly_moments(x0, x1, y0, y1, deg: int) -> np.ndarray:
     """int over the rectangle of u_x^i u_y^j, i, j <= deg, exactly."""
+    # floats: numpy integer corners would raise to high powers in int64 and wrap silently
+    x0, x1, y0, y1 = (float(v) for v in (x0, x1, y0, y1))
     ix = np.array([(x1 ** (i + 1) - x0 ** (i + 1)) / (i + 1) for i in range(deg + 1)])
     iy = np.array([(y1 ** (j + 1) - y0 ** (j + 1)) / (j + 1) for j in range(deg + 1)])
     return np.outer(ix, iy)
