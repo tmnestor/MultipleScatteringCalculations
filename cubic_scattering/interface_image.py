@@ -35,6 +35,7 @@ exponentially convergent.
 """
 
 import json
+import re
 from fractions import Fraction
 from functools import cache
 from pathlib import Path
@@ -73,21 +74,33 @@ Poly = tuple[Fraction, ...]  # ascending coefficients
 # ---------------------------------------------------------------------------
 
 
+_IDENT = re.compile(r"[A-Za-z_]\w*")
+
+
+def _coefficient(text: str, names: tuple, syms: tuple):
+    """A material coefficient (sympy's str of a rational function of the media) as a function of the media.
+    Compiled as a Python expression when it names only the media (every file does): the same float arithmetic
+    as lambdify, in milliseconds instead of sympy's parsing, which takes about a second for a coefficient of the
+    omega^4 terms.  Anything else goes through sympy."""
+    if set(_IDENT.findall(text)) <= set(names):
+        code = compile(text, "<coefficient>", "eval")
+        return lambda *m: eval(code, {"__builtins__": {}}, dict(zip(names, m)))
+    return sp.lambdify(syms, sp.sympify(text, locals=dict(zip(names, syms))), "numpy")
+
+
 @cache
 def _terms(kind: str = "reflected", order: int = 0) -> tuple:
     """The canonical terms of one kind and order (0: the static field; 1, 2: the omega^2, omega^4 terms, whose
     coefficients also hold the densities), each material coefficient compiled: ((row, col, j, alpha, A, B, fn),
     ...); fn takes the materials in the order of the file's "variables"."""
     data = json.loads(_TERMS_PATH[kind, order].read_text())
-    names = data.get("variables", ["lamA", "muA", "lamB", "muB"])
+    names = tuple(data.get("variables", ["lamA", "muA", "lamB", "muB"]))
     syms = tuple(sp.symbols(" ".join(names), positive=True))
-    loc = dict(zip(names, syms, strict=True))
     out = []
     for r, row in enumerate(data["terms"]):
         for c, terms in enumerate(row):
             for t in terms:
-                expr = sp.sympify(t["coef"], locals=loc)
-                fn = sp.lambdify(syms, expr, "numpy")
+                fn = _coefficient(t["coef"], names, syms)
                 out.append(
                     (r, c, t["j"], tuple(t["alpha"]), t["z_power"], t["zp_power"], fn)
                 )
