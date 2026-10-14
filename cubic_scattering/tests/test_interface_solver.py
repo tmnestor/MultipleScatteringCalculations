@@ -67,3 +67,17 @@ def test_solve_refuses_too_small_couplings():
     c = iso.InterfaceCouplings(g, workers=1)
     with pytest.raises(ValueError, match="p = 2"):
         iso.solve_interface(c, OMEGA, [None], 0.0, 0.0, "P", p=2)
+
+
+def test_apply_coupling_is_the_assembled_coupling():
+    """M x - apply_coupling(x) equals the assembled matrix times x."""
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0], [0, 1, 0]]), H, A, B)
+    c = iso.InterfaceCouplings(g, workers=1)
+    ctr = [MaterialContrast(0.1 * A.lam, 0.1 * A.mu, 0.1 * A.rho), MaterialContrast(0.1 * B.lam, 0.0, 0.1 * B.rho)]
+    delta = iso.cell_contrasts(g, OMEGA, ctr, 1)
+    blocks = c.blocks(OMEGA)
+    x = np.random.default_rng(3).standard_normal((2, 4, 9)) + 0j
+    m = np.diag(iso.gram_test(H, 4))
+    got = m[None, :, None] * x - iso.apply_coupling(g, blocks, delta, x, 1, 1)
+    want = (iso.assemble(g, blocks, delta, 1, 1) @ x.ravel()).reshape(x.shape)
+    assert np.abs(got - want).max() < 1e-13 * np.abs(want).max()
