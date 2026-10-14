@@ -22,6 +22,10 @@ CHECKS.
 3. CONVERGENCE IN p.  The scattered field at the receivers for p = 0, 1, 2 (r = 0).
 4. COST.  The set-up (frequency-independent parts, once) against one frequency (blocks and solve).
 
+Measured 14 October 2026: identical media 3.1e-12 (reference field 2.9e-15); Born 4.9e-11 ... 5.6e-11 (the block
+<- (-1, 0, 0) 1.7e-12); p: |p0 - p2| 8.1e-3, |p1 - p2| 2.2e-4; cost (n_source 20, n_test 10, 78 classes, 4
+workers): set-up 871 s, first frequency 48 s, each further 29 s, solves 0.1-0.3 s.
+
 Run:  PYTHONPATH=. python scripts/gate_interface_solve.py [checks...]   (default: all; e.g. "identical born")
 """
 
