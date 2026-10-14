@@ -365,20 +365,41 @@ if WORKER is not None:
 
 K = [[reduced(r, cc) for cc in range(9)] for r in range(9)]
 
+if COMMON_DEN:
+    RMAT = ring(list(MATERIALS), sp.QQ_I)[0]
+    DEN_CONST, DEN_FACTORS = sp.factor_list(DEN)
+    DEN_FACTORS = [(RMAT.from_expr(f), f, k) for f, k in DEN_FACTORS]
+
+
+def over_den(terms: dict) -> sp.Expr:
+    """numerator (a dict of media monomials) / DEN, cancelled by exact division by DEN's irreducible factors
+    (sympy's cancel and factor are far too slow at this size); the numerator must be real."""
+    num = RMAT.from_dict(terms)
+    den = sp.Integer(DEN_CONST)
+    for fr, fe, k in DEN_FACTORS:
+        left = k
+        while left:
+            qt, rm = num.div(fr)
+            if rm:
+                break
+            num, left = qt, left - 1
+        den *= fe**left
+    expr = num.as_expr()
+    assert not expr.has(sp.I), "complex coefficient"
+    return expr / den
+
+
 out = []
 for r in range(9):
     out_row = []
     for cc in range(9):
         terms = []
         for (j, ax, ay, az), v in sorted(K[r][cc].items()):
-            if COMMON_DEN:  # group the ring element by its powers of z, zp
+            if COMMON_DEN:  # group the ring element by its powers of z, zp; each over DEN, cancelled
                 byzz: dict = {}
                 for m, c_ in v.terms():
-                    byzz.setdefault(m[:2], []).append(
-                        RING.domain.to_sympy(c_)
-                        * sp.Mul(*(x**k for x, k in zip(MATERIALS, m[2:])))
-                    )
-                pairs = [(k, sp.Add(*t)) for k, t in sorted(byzz.items())]
+                    byzz.setdefault(m[:2], {})[m[2:]] = c_
+                pairs = [(k, over_den(t)) for k, t in sorted(byzz.items())]
             else:
                 poly = sp.Poly(sp.expand(v), z, zp)
                 pairs = list(zip(poly.monoms(), poly.coeffs(), strict=True))
@@ -389,11 +410,7 @@ for r in range(9):
                         "alpha": [ax, ay, az],
                         "z_power": pa_,
                         "zp_power": pb_,
-                        "coef": str(
-                            sp.factor(sp.cancel(co / DEN))
-                            if COMMON_DEN
-                            else sp.simplify(co)
-                        ),
+                        "coef": str(co if COMMON_DEN else sp.simplify(co)),
                     }
                 )
         out_row.append(terms)
