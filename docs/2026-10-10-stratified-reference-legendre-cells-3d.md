@@ -344,8 +344,8 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
    - **The ω⁴ term (13 October).** `scripts/derive_interface_omega4.py` (any order; exact rational media, 17 s;
      symbolic twin `Mathematica/InterfaceOmega4.wl`, not run here): residual after ω⁴ falls 64× per halving of ω;
      identical media R_n = 0, T_n = Kelvin's. Canonical terms (order 2): R 1245 in 91 families, T 1002 in 76,
-     potentials to Φ₆, ~550 finite-part terms each; spectral check exact. `frame_laurent(kind, 2)` and
-     `image_block(order=2)` for the media the term was derived for (refused otherwise).
+     potentials to Φ₆, ~550 finite-part terms each; spectral check exact. (Then for the gate media only; any
+     media since 14 October, below.)
    - **K2 gate.** Touching pairs against the plane waves (order 2): reference-limited, 5.4e-12 at q_s h = 3.
    - **A2 and the split to ω⁴.** `frequency_independent_parts(..., omega4=True)` → (A0, A1, A2),
      `A2 = K2 − FP∫_{q<Q0}Y2`; `interface_block` adds ω⁴A2. A2 is ~1e-7 of K2 (seven digits cancel). The small-q
@@ -367,6 +367,18 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
    - **Against the 40-digit references, to ω⁴ with the analytic head:** ωh/β = 1: R Q0h 10 3.1e-9, 20 1.2e-11,
      40 8.8e-13; T 1.6e-9, 6.1e-12, 8.1e-14 — the floor gone and the Q0⁻⁸ law (×260 per doubling of Q0).
      ωh/β = 1/6: T 6.3e-14, 1.2e-14; R 1.1e-11, 2.6e-11, the known rounding of D's mode sums at that frequency.
+   - **The ω⁴ term with symbolic media — done (14 October).** `Mathematica/InterfaceOmega4.wl` run by the user;
+     `InterfaceOmega4.json` agrees **identically** with the python twin at its rational media (all 18 entries,
+     exact difference 0; the twin's medium B is the binary rational of 6.5, 3.6, 2.8, hence ~2e-17 at 13/2, 18/5,
+     14/5), and R2 = 0 for identical media. Each entry is X·poly/(q⁵ D_e), D_e a product of μ_A, μ_B, λ+2μ,
+     μ_A+μ_B and two mixed factors: `derive_interface_image_terms.py ... 2` (symbolic) collects the terms over the
+     common denominator on sparse rings over QQ_I (Expr `diff` was hours), cancelling at the end by exact division
+     (sympy `factor`/`cancel` timed out at 60 min); 5 min per kind on four workers. Same 1245/1002 terms as the
+     gate's; spectrum check exact for both kinds. `_general(kind, 2)` reads it; the media guards are gone; the gate
+     term files kept as `*_gate.json`. **`scripts/gate_interface_omega4_blocks.py`**: K2 closed form vs analytic
+     head + Gauss panels, gate media and (4, 2.25, 2)/(7, 4, 3): 4.6e-16 … 2.5e-15, ALL PASS.
+     Coefficient loading compiled directly (`interface_image._coefficient`): 1.3 s instead of ~12 min per ω⁴ kind,
+     equal to lambdify to 2.7e-16.
 6. **Then step 2** (the scattering solve), on these blocks.
 
 **Step 2 — a scattering solve near an interface.**

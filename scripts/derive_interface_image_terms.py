@@ -27,7 +27,17 @@ MEDIA (optional third argument): "symbolic" (default) keeps the Lame constants a
 order 1), and the families are those of the symbolic kernel unless a coefficient happens to vanish for those
 media, which two unrelated media guard against.  Written to ..._{media}.json.
 
-Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | transmitted] [0 | 1] [media]
+ORDER 2: the omega^4 term G2.  MEDIA "symbolic" (default) reads Mathematica/InterfaceOmega4.json (symbolic
+Lame constants and densities); "gate" the python twin's exact rational media (scripts/derive_interface_omega4.py),
+written to ..._gate.json and kept as a check.  The symbolic route runs on a common denominator: every entry is
+X poly / (q^5 D_e), D_e a product of a few media factors, so over their common multiple the algebra is
+polynomial arithmetic on the numerators (sparse rings over the Gaussian rationals; sympy's Expr algebra is
+far too slow at this size), each coefficient cancelled at the end by exact division by the denominator's
+factors.  About 5 minutes per kind on four workers (DERIVE_CHECKPOINT, DERIVE_WORKER = "i/n"), then one
+assembling run.  Measured 14 October 2026: 1245 and 1002 terms, the same structure as the gate's, and exact
+against the spectrum (scripts/check_interface_terms_spectrum.py ... 2).
+
+Run:  PYTHONPATH=. python scripts/derive_interface_image_terms.py [reflected | transmitted] [0 | 1 | 2] [media]
 """
 
 import json
@@ -146,6 +156,7 @@ if COMMON_DEN:
         num, den = sp.fraction(sp.together(f))
         nd.append((num, sp.factor(den).as_independent(q, as_Add=False)))
     DEN = sp.factor(sp.lcm([dm for _, (dm, _) in nd]))
+
     def strip(num):  # the one exponential, X, to 1
         assert {sp.expand(x.args[0] - X.args[0]) for x in num.atoms(sp.exp)} <= {0}
         return num.replace(sp.exp, lambda _: sp.Integer(1))
@@ -326,9 +337,7 @@ def _dump(v):
 def _load(v):
     if COMMON_DEN:
         dom = RING.domain
-        return RING.from_dict(
-            {tuple(m): dom(sp.QQ(x), sp.QQ(y)) for m, x, y in v}
-        )
+        return RING.from_dict({tuple(m): dom(sp.QQ(x), sp.QQ(y)) for m, x, y in v})
     return sp.sympify(v)
 
 
