@@ -51,7 +51,9 @@ MEDIA_SETS = {
 }
 MEDIA = {}
 for tag, (al, be, rho) in zip(
-    "AB", MEDIA_SETS["media1" if MEDIA_NAME in ("symbolic", "gate") else MEDIA_NAME], strict=True
+    "AB",
+    MEDIA_SETS["media1" if MEDIA_NAME in ("symbolic", "gate") else MEDIA_NAME],
+    strict=True,
 ):
     MEDIA[SYM["lam" + tag]] = rho * (al**2 - 2 * be**2)
     MEDIA[SYM["mu" + tag]] = rho * be**2
