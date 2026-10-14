@@ -53,7 +53,9 @@ def test_identical_media_solve_is_the_homogeneous_one():
     kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
     res = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1)
     blocks = {
-        (m, n): coupling_block(tuple(int(v) for v in g.idx[m] - g.idx[n]), H, OMEGA, A, 10, 4)
+        (m, n): coupling_block(
+            tuple(int(v) for v in g.idx[m] - g.idx[n]), H, OMEGA, A, 10, 4
+        )
         for m in range(2)
         for n in range(2)
     }
@@ -73,7 +75,10 @@ def test_apply_coupling_is_the_assembled_coupling():
     """M x - apply_coupling(x) equals the assembled matrix times x."""
     g = iso.InterfaceGrid(np.array([[-1, 0, 0], [0, 1, 0]]), H, A, B)
     c = iso.InterfaceCouplings(g, workers=1)
-    ctr = [MaterialContrast(0.1 * A.lam, 0.1 * A.mu, 0.1 * A.rho), MaterialContrast(0.1 * B.lam, 0.0, 0.1 * B.rho)]
+    ctr = [
+        MaterialContrast(0.1 * A.lam, 0.1 * A.mu, 0.1 * A.rho),
+        MaterialContrast(0.1 * B.lam, 0.0, 0.1 * B.rho),
+    ]
     delta = iso.cell_contrasts(g, OMEGA, ctr, 1)
     blocks = c.blocks(OMEGA)
     x = np.random.default_rng(3).standard_normal((2, 4, 9)) + 0j
@@ -81,3 +86,27 @@ def test_apply_coupling_is_the_assembled_coupling():
     got = m[None, :, None] * x - iso.apply_coupling(g, blocks, delta, x, 1, 1)
     want = (iso.assemble(g, blocks, delta, 1, 1) @ x.ravel()).reshape(x.shape)
     assert np.abs(got - want).max() < 1e-13 * np.abs(want).max()
+
+
+def test_blocks_match_the_direct_blocks():
+    """The batched per-frequency blocks (series, symmetry, mirroring) equal the blocks pair by pair:
+    Paper 2's Gauss block plus ``interface_block``, or ``interface_block`` alone across the interface."""
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0], [0, 1, 0], [-2, -1, 1]]), H, A, B)
+    c = iso.InterfaceCouplings(g)
+    got = c.blocks(OMEGA)
+    u = g.units
+    for (m, n), k in got.items():
+        want = isp.interface_block(
+            tuple(int(v) for v in u[m]),
+            tuple(int(v) for v in u[n]),
+            H,
+            OMEGA,
+            A,
+            B,
+            10,
+            4,
+        )
+        if g.in_above[m] == g.in_above[n]:
+            off = tuple(int(v) for v in g.idx[m] - g.idx[n])
+            want = want + coupling_block(off, H, OMEGA, g.medium(m), 10, 4)
+        assert np.abs(k - want).max() < 1e-11 * np.abs(want).max(), (m, n)

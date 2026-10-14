@@ -24,6 +24,7 @@ Each frequency then costs one truncated plane-wave integral per class and one wh
 """
 
 import itertools
+import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
@@ -40,7 +41,7 @@ from .graded_voxel.basis import (
     gram_test,
     source_expansion,
 )
-from .graded_voxel.blocks import coupling_block
+from .graded_voxel.blocks import coupling_block, far_block_series, near_block_series
 from .graded_voxel.fft import _transform, signed_permutations
 from .graded_voxel.site import cell_contrast_coefficients
 from .graded_voxel.solver import field_sizes
@@ -96,13 +97,20 @@ _MODE = {"P": 0, "SV": 1, "SH": 2}
 
 
 def reference_waves(
-    kx: float, ky: float, omega: float, above: ReferenceMedium, below: ReferenceMedium, wave: str
+    kx: float,
+    ky: float,
+    omega: float,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    wave: str,
 ) -> list[tuple[bool, NDArray, NDArray]]:
     """The plane waves of the reference medium's field for a down-going ``wave`` ("P", "SV", "SH") of unit
     amplitude in A with lateral wavenumber (kx, ky): (in A, wave vector (3,) complex, 9-state (9,)), the phases
     referred to the interface z = 0, the amplitudes those of ``mode_family`` (bilinear-unit polarisations)."""
     if wave not in _MODE:
-        raise ValueError(f"reference_waves: wave must be 'P', 'SV' or 'SH', got {wave!r}")
+        raise ValueError(
+            f"reference_waves: wave must be 'P', 'SV' or 'SH', got {wave!r}"
+        )
     kxa, kya = np.array([kx], float), np.array([ky], float)
     rt = interface_rt(kxa, kya, omega, above, below)
     n = _MODE[wave]
@@ -110,13 +118,17 @@ def reference_waves(
     def modes(ref, sign):
         out = []
         for w in ("P", "S"):
-            out += [(k[0], d[0]) for k, d, _ in mode_family(kxa, kya, omega, ref, w, sign)]
+            out += [
+                (k[0], d[0]) for k, d, _ in mode_family(kxa, kya, omega, ref, w, sign)
+            ]
         return out  # (P, SV, SH)
 
     down_a, up_a, down_b = modes(above, 1.0), modes(above, -1.0), modes(below, 1.0)
     waves = [(True, *down_a[n])]
     waves += [(True, up_a[m][0], rt["R_d"][0, m, n] * up_a[m][1]) for m in range(3)]
-    waves += [(False, down_b[m][0], rt["T_d"][0, m, n] * down_b[m][1]) for m in range(3)]
+    waves += [
+        (False, down_b[m][0], rt["T_d"][0, m, n] * down_b[m][1]) for m in range(3)
+    ]
     return waves
 
 
@@ -155,7 +167,9 @@ def _parts_job(args):
     parts = isp.frequency_independent_parts(
         rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4=omega4
     )
-    table = isp.lateral_harmonics([(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test)
+    table = isp.lateral_harmonics(
+        [(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test
+    )
     return parts, table
 
 
@@ -193,13 +207,28 @@ class InterfaceCouplings:
         keys = sorted(keys)
         g = self.grid
         jobs = [
-            ((zr, a, b), (zs, 0, 0), g.h, g.above, g.below, self.n_source, self.n_test, self.q0h,
-             self.q1h, self.window, self.omega4)
+            (
+                (zr, a, b),
+                (zs, 0, 0),
+                g.h,
+                g.above,
+                g.below,
+                self.n_source,
+                self.n_test,
+                self.q0h,
+                self.q1h,
+                self.window,
+                self.omega4,
+            )
             for zr, zs, a, b in keys
         ]
         workers = self.workers or os.cpu_count() or 1
         if workers > 1 and len(jobs) > 1:
-            with ProcessPoolExecutor(max_workers=min(workers, len(jobs))) as ex:
+            # spawn: forking a process whose BLAS runs threads can deadlock
+            ctx = multiprocessing.get_context("spawn")
+            with ProcessPoolExecutor(
+                max_workers=min(workers, len(jobs)), mp_context=ctx
+            ) as ex:
                 results = list(ex.map(_parts_job, jobs))
         else:
             results = [_parts_job(j) for j in jobs]
@@ -213,38 +242,118 @@ class InterfaceCouplings:
         parts, table = self.classes[zr, zs, a, b]
         g = self.grid
         blk = isp.interface_block(
-            (zr, a, b), (zs, 0, 0), g.h, omega, g.above, g.below, self.n_source, self.n_test,
-            self.q0h, self.q1h, parts, table, self.window,
+            (zr, a, b),
+            (zs, 0, 0),
+            g.h,
+            omega,
+            g.above,
+            g.below,
+            self.n_source,
+            self.n_test,
+            self.q0h,
+            self.q1h,
+            parts,
+            table,
+            self.window,
         )
         return _transform(q, blk)
 
+    def interface_canonical(self, omega: float) -> dict[tuple, NDArray]:
+        """The interface block of every symmetry class at one frequency: the truncated plane-wave integrals D
+        batched (one interface solve and frame per radial node and pair of depths, shared by every lateral
+        offset; sources in B mirrored onto A with the media exchanged), plus the class's A0 + w^2 A1 (+ w^4 A2)."""
+        g = self.grid
+        table = dict(next(iter(self.classes.values()))[1])
+        for _, t in self.classes.values():
+            table.update({k: v for k, v in t.items() if isinstance(k, tuple)})
+        keys = list(self.classes)
+        d: dict = {}
+        for from_a in (True, False):
+            sel = [k for k in keys if (k[1] < 0) == from_a]
+            if not sel:
+                continue
+            pairs = [((zr, a, b), (zs, 0, 0)) for zr, zs, a, b in sel]
+            if from_a:
+                got = isp.truncated_blocks(
+                    pairs,
+                    g.h,
+                    omega,
+                    g.above,
+                    g.below,
+                    self.n_source,
+                    self.n_test,
+                    self.q0h,
+                    table,
+                    self.window,
+                )
+            else:
+                got = [
+                    isp._mirror(x)
+                    for x in isp.truncated_blocks(
+                        [(isp._mirrored(r), isp._mirrored(s)) for r, s in pairs],
+                        g.h,
+                        omega,
+                        g.below,
+                        g.above,
+                        self.n_source,
+                        self.n_test,
+                        self.q0h,
+                        table,
+                        self.window,
+                    )
+                ]
+            d.update(zip(sel, got, strict=True))
+        out = {}
+        for key in keys:
+            parts = self.classes[key][0]
+            blk = d[key] + parts[0] + omega**2 * parts[1]
+            if len(parts) > 2:
+                blk = blk + omega**4 * parts[2]
+            out[key] = blk
+        return out
+
     def blocks(self, omega: float) -> dict[tuple[int, int], NDArray]:
         """K_mn for every pair at one frequency: the whole-space block of the side plus the reflection, or the
-        transmission."""
+        transmission.  The whole-space blocks are Paper 2's frequency series (``near_block_series``,
+        ``far_block_series``; Gauss ``coupling_block`` where the far series would need too many terms), one per
+        cube-group orbit and side, mapped by the signed permutation."""
         g = self.grid
-        n_cells = len(g.idx)
-        ws: dict = {}
-        canon: dict = {}
-        out = {}
         u = g.units
-        for m, n in itertools.product(range(n_cells), repeat=2):
+        canon = self.interface_canonical(omega)
+        ws: dict = {}
+        out = {}
+        for m, n in itertools.product(range(len(g.idx)), repeat=2):
             (a, b), q = _canonical(int(u[m, 1] - u[n, 1]), int(u[m, 2] - u[n, 2]))
-            key = (int(u[m, 0]), int(u[n, 0]), a, b)
-            if key not in canon:
-                parts, table = self.classes[key]
-                canon[key] = isp.interface_block(
-                    (key[0], a, b), (key[1], 0, 0), g.h, omega, g.above, g.below, self.n_source,
-                    self.n_test, self.q0h, self.q1h, parts, table, self.window,
-                )
-            k = _transform(q, canon[key])
+            k = _transform(q, canon[int(u[m, 0]), int(u[n, 0]), a, b])
             if g.in_above[m] == g.in_above[n]:
-                off = tuple(int(v) for v in g.idx[m] - g.idx[n])
-                wkey = (off, bool(g.in_above[m]))
-                if wkey not in ws:
-                    ws[wkey] = coupling_block(off, g.h, omega, g.medium(m), self.n_source, self.n_test)  # type: ignore[arg-type]
-                k = k + ws[wkey]
+                k = k + _whole_space(
+                    tuple(int(v) for v in g.idx[m] - g.idx[n]),
+                    g.h,
+                    omega,
+                    g.medium(m),
+                    self.n_source,
+                    self.n_test,
+                    ws,
+                )
             out[m, n] = k
         return out
+
+
+def _whole_space(off, h, omega, ref, n_source, n_test, cache) -> NDArray:
+    """Paper 2's block for a grid offset: the orbit's canonical block (frequency series) mapped to it."""
+    c = tuple(sorted((abs(o) for o in off), reverse=True))
+    key = (c, ref.alpha, ref.beta, ref.rho)
+    if key not in cache:
+        if max(c) <= 1:
+            cache[key] = near_block_series(c, h, omega, ref, n_source, n_test)
+        else:
+            try:
+                cache[key] = far_block_series(c, h, omega, ref, n_source, n_test)
+            except ValueError:  # too many series terms at this frequency: Gauss
+                cache[key] = coupling_block(c, h, omega, ref, n_source, n_test)  # type: ignore[arg-type]
+    cv, target = np.array(c, dtype=float), np.array(off, dtype=float)
+    q = next(q for q in signed_permutations() if np.array_equal(q @ cv, target))
+    return _transform(q, cache[key])
 
 
 # ---------------------------------------------------------------------------
@@ -296,11 +405,17 @@ def assemble(
         en = source_expansion(delta[col], n_field)[:, :na]
         en = en.transpose(0, 2, 1, 3).reshape(n_source * 9, na * 9)
         for row in range(n):
-            k = blocks[row, col][:na, :n_source].transpose(0, 2, 1, 3).reshape(na * 9, n_source * 9)
+            k = (
+                blocks[row, col][:na, :n_source]
+                .transpose(0, 2, 1, 3)
+                .reshape(na * 9, n_source * 9)
+            )
             blk = -(k @ en)
             if row == col:
                 blk = blk + m9
-            a[row * na * 9 : (row + 1) * na * 9, col * na * 9 : (col + 1) * na * 9] = blk
+            a[row * na * 9 : (row + 1) * na * 9, col * na * 9 : (col + 1) * na * 9] = (
+                blk
+            )
     return a
 
 
@@ -312,11 +427,19 @@ def apply_coupling(
     n = len(grid.idx)
     na, n_field, _, n_source = field_sizes(p, r)
     ex = np.stack(
-        [np.einsum("cbij,bj->ci", source_expansion(delta[col], n_field)[:, :na], x[col]) for col in range(n)]
+        [
+            np.einsum(
+                "cbij,bj->ci", source_expansion(delta[col], n_field)[:, :na], x[col]
+            )
+            for col in range(n)
+        ]
     )  # (N, n_source, 9)
     return np.stack(
         [
-            sum(np.einsum("acij,cj->ai", blocks[row, col][:na, :n_source], ex[col]) for col in range(n))
+            sum(
+                np.einsum("acij,cj->ai", blocks[row, col][:na, :n_source], ex[col])
+                for col in range(n)
+            )
             for row in range(n)
         ]
     )
@@ -356,7 +479,9 @@ def solve_interface(
     blocks = couplings.blocks(omega) if blocks is None else blocks
     a = assemble(grid, blocks, delta, p, r)
     ref = reference_moments(grid, omega, kx, ky, wave, n_field)
-    psi = scipy.linalg.solve(a, ref[:, :na].ravel(), check_finite=False).reshape(len(grid.idx), na, 9)
+    psi = scipy.linalg.solve(a, ref[:, :na].ravel(), check_finite=False).reshape(
+        len(grid.idx), na, 9
+    )
     full = np.zeros((len(grid.idx), n_field, 9), dtype=complex)
     full[:, :na] = psi
     return InterfaceResult(grid, omega, delta, ref, full, p, r)
