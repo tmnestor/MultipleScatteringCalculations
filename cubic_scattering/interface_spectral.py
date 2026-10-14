@@ -100,7 +100,9 @@ def _general(kind: str, order: int) -> sp.Matrix:
     """The 3 x 3 displacement kernel (rows u_(z,x,y), columns force (z,x,y)) in general materials, sympy.
 
     order 0: the static image (R) or transmitted static field (T), scripts/data/static_interface_*.json;
-    order 1: the omega^2 term, Mathematica/InterfaceOmega2.json.
+    order 1: the omega^2 term, Mathematica/InterfaceOmega2.json;
+    order 2: the omega^4 term, Mathematica/InterfaceOmega4.json (checked exactly against the python twin
+    scripts/derive_interface_omega4.py at its rational media).
     """
     loc = {"z": _Z, "zp": _ZP, "q": _Q, **_MSYM}
     if order == 0:
@@ -111,11 +113,22 @@ def _general(kind: str, order: int) -> sp.Matrix:
         return sp.Matrix([[sp.sympify(e, locals=loc) for e in row] for row in rows])
     from sympy.parsing.mathematica import parse_mathematica
 
-    rows = json.loads((_ROOT / "Mathematica" / "InterfaceOmega2.json").read_text())[
-        kind + "1"
-    ]
+    name = {1: "InterfaceOmega2.json", 2: "InterfaceOmega4.json"}[order]
+    rows = json.loads((_ROOT / "Mathematica" / name).read_text())[kind + str(order)]
     subs = {sp.Symbol(k): v for k, v in loc.items()}
-    return sp.Matrix([[parse_mathematica(e).subs(subs) for e in row] for row in rows])
+    canon = _canon_exp(kind)
+    # one exponential in the form frame_coefficients expects, exp(q (s z + zp))
+    return sp.Matrix(
+        [
+            [
+                sp.powsimp(parse_mathematica(e).subs(subs), combine="exp").replace(
+                    sp.exp, canon
+                )
+                for e in row
+            ]
+            for row in rows
+        ]
+    )
 
 
 def _canon_exp(kind: str):
@@ -124,39 +137,10 @@ def _canon_exp(kind: str):
 
     def f(a):
         if sp.expand(a - target) != 0:
-            raise ValueError(f"_omega4_kernel: unexpected exponential exp({a})")
+            raise ValueError(f"_general: unexpected exponential exp({a})")
         return sp.exp(target)
 
     return f
-
-
-def _omega4_kernel(kind: str, above: tuple, below: tuple) -> sp.Matrix:
-    """The omega^4 term G2 for exact rational media (scripts/derive_interface_omega4.py, which writes
-    scripts/data/interface_omega4_<media>.json; the symbolic result is Mathematica/InterfaceOmega4.wl's)."""
-    data = json.loads(
-        (_ROOT / "scripts" / "data" / "interface_omega4_gate.json").read_text()
-    )
-    mats = _materials(above, below)
-    have = [sp.Rational(v) for t in ("A", "B") for v in data["media"][t]]
-    want = [mats[_MSYM[n + t]] for t in ("A", "B") for n in ("lam", "mu", "rho")]
-    if have != want:
-        raise ValueError(
-            "frame_laurent: the omega^4 term was derived for other media; run "
-            "scripts/derive_interface_omega4.py for these."
-        )
-    loc = {"z": _Z, "zp": _ZP, "q": _Q}
-    # stored as e^{qz} e^{qzp}: one exponential, as frame_coefficients expects
-    return sp.Matrix(
-        [
-            [
-                sp.powsimp(sp.expand(sp.sympify(e, locals=loc)), combine="exp").replace(
-                    sp.exp, _canon_exp(kind)
-                )
-                for e in row
-            ]
-            for row in data[kind + "2"]
-        ]
-    )
 
 
 def _materials(above: tuple, below: tuple) -> dict:
@@ -224,10 +208,7 @@ def frame_laurent(
     Returns:
         (C, m0): C[i, j, a, b, m] complex, shape (9, 9, na, nb, nm), the coefficient of q^(m0 + m) z^a zp^b X.
     """
-    if order == 2:
-        G = _omega4_kernel(kind, above, below)
-    else:
-        G = _general(kind, order).subs(_materials(above, below))
+    G = _general(kind, order).subs(_materials(above, below))
     co = frame_coefficients(G, 1 if kind == "R" else -1)
     terms = {}
     for (a, b), mat in co.items():
@@ -664,7 +645,7 @@ def frequency_independent_parts(
         a1_route: "closed" (default): A1 = K1 - FP int_{q < Q0} Y1, K1 from ``interface_image.image_block(...,
             order=1)``, exact; "octaves": the plane-wave octaves to Q1 and the q^-4 law of the last (``q1h``).
         omega4: Also A2 = (1/4 pi^2) FP int_{q > Q0} Y2 = K2 - FP int_{q < Q0} Y2, K2 the closed-form omega^4 block
-            (``image_block(..., order=2)``; for the media the omega^4 term was derived for), so that the dropped
+            (``image_block(..., order=2)``, any media), so that the dropped
             remainder falls as Q0^-8 instead of Q0^-6.  Not with a window.
 
     Returns:
