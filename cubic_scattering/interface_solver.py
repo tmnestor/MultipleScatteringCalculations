@@ -41,7 +41,7 @@ from .graded_voxel.basis import (
     gram_test,
     source_expansion,
 )
-from .graded_voxel.blocks import coupling_block, far_block_series, near_block_series
+from .graded_voxel.blocks import coupling_block, far_block_series
 from .graded_voxel.fft import _transform, signed_permutations
 from .graded_voxel.site import cell_contrast_coefficients
 from .graded_voxel.solver import field_sizes
@@ -314,9 +314,8 @@ class InterfaceCouplings:
 
     def blocks(self, omega: float) -> dict[tuple[int, int], NDArray]:
         """K_mn for every pair at one frequency: the whole-space block of the side plus the reflection, or the
-        transmission.  The whole-space blocks are Paper 2's frequency series (``near_block_series``,
-        ``far_block_series``; Gauss ``coupling_block`` where the far series would need too many terms), one per
-        cube-group orbit and side, mapped by the signed permutation."""
+        transmission.  The whole-space blocks are Paper 2's (``_whole_space``), one per cube-group orbit and side,
+        mapped by the signed permutation."""
         g = self.grid
         u = g.units
         canon = self.interface_canonical(omega)
@@ -340,12 +339,15 @@ class InterfaceCouplings:
 
 
 def _whole_space(off, h, omega, ref, n_source, n_test, cache) -> NDArray:
-    """Paper 2's block for a grid offset: the orbit's canonical block (frequency series) mapped to it."""
+    """Paper 2's block for a grid offset: the orbit's canonical block mapped to it.  Touching offsets by
+    ``coupling_block`` (1.5-3 s; ``near_block_series`` costs minutes the first time and more than that per
+    frequency after), the others by ``far_block_series`` (its coefficients once, then each frequency a short
+    sum), Gauss where the far series would need too many terms."""
     c = tuple(sorted((abs(o) for o in off), reverse=True))
     key = (c, ref.alpha, ref.beta, ref.rho)
     if key not in cache:
         if max(c) <= 1:
-            cache[key] = near_block_series(c, h, omega, ref, n_source, n_test)
+            cache[key] = coupling_block(c, h, omega, ref, n_source, n_test)  # type: ignore[arg-type]
         else:
             try:
                 cache[key] = far_block_series(c, h, omega, ref, n_source, n_test)
