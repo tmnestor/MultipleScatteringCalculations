@@ -14,6 +14,8 @@ cells not touching their images (the integrand falls as e^{-q zeta_min}, zeta_mi
 MEDIA.  "gate", (alpha, beta, rho) = (5, 3, 2.5) over (6.5, 3.6, 2.8), the media the omega^4 term was first
 derived for (scripts/derive_interface_omega4.py); "other", (4, 2.25, 2) over (7, 4, 3), which only the symbolic
 G2 reaches.  Both arrangements, the pairs of gate_interface_omega2_blocks.py; full 4 x 10 x 9 x 9 blocks.
+Measured 14 October 2026: gate 2.1e-15, 2.5e-15, 1.7e-15, 2.9e-15; other 1.4e-15, 1.9e-15, 4.6e-16, 1.9e-15
+(about 20 s per closed-form block, 12-140 s per plane-wave route).
 
 Run:  PYTHONPATH=. python scripts/gate_interface_omega4_blocks.py
 """

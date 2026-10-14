@@ -376,7 +376,7 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
      (sympy `factor`/`cancel` timed out at 60 min); 5 min per kind on four workers. Same 1245/1002 terms as the
      gate's; spectrum check exact for both kinds. `_general(kind, 2)` reads it; the media guards are gone; the gate
      term files kept as `*_gate.json`. **`scripts/gate_interface_omega4_blocks.py`**: K2 closed form vs analytic
-     head + Gauss panels, gate media and (4, 2.25, 2)/(7, 4, 3): 4.6e-16 … 2.5e-15, ALL PASS.
+     head + Gauss panels, gate media and (4, 2.25, 2)/(7, 4, 3): 4.6e-16 … 2.9e-15, ALL PASS.
      Coefficient loading compiled directly (`interface_image._coefficient`): 1.3 s instead of ~12 min per ω⁴ kind,
      equal to lambdify to 2.7e-16.
 6. **Then step 2** (the scattering solve), on these blocks.
