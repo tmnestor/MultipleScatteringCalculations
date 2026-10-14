@@ -237,6 +237,8 @@ def check_p() -> bool:
     t1 = time.time()
     blocks = c.blocks(OMEGA)
     t2 = time.time()
+    c.blocks(1.1 * OMEGA)  # a second frequency: what each further one costs
+    t3 = time.time()
     out = {}
     for p in (0, 1, 2):
         ts = time.time()
@@ -254,7 +256,7 @@ def check_p() -> bool:
     )
     print(
         f"4. cost: set-up {t1 - t0:.0f} s ({len(c.classes)} classes, n_source {n_source}, n_test {n_field});"
-        f" one frequency: blocks {t2 - t1:.1f} s + solve (above)",
+        f" first frequency: blocks {t2 - t1:.1f} s, each further {t3 - t2:.1f} s, + solve (above)",
         flush=True,
     )
     return d12 < d01
