@@ -399,7 +399,8 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
   blocks, Table 1 (Q⁻² → Q⁻⁴), the `ω²` section with Table 4 (Q⁻⁶, two frequencies, reflected and
   transmitted), the sweep implementation and its verification rows.
 - **Open for the paper.**
-  - step 1's locality result, which belongs in the ω² section or the Discussion;
+  - ~~step 1's locality result~~ — done 14 October: Table tab:locality and the radius (12/16/24 h for
+    1e-6/1e-8/1e-10) in the plane-wave-route paragraph of the Verification section;
   - whether to include step 2's end-to-end solve as an application section;
   - one stated limitation (base integrals for cubic corner boxes only).
 - **Older open items.**
