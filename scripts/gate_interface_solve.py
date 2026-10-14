@@ -169,16 +169,23 @@ def check_born() -> bool:
     c = iso.InterfaceCouplings(grid)
     print(f"   set-up {time.time() - t0:.0f} s, {len(c.classes)} classes", flush=True)
     blocks = c.blocks(OMEGA)
-    eps = 1e-6
-    s1 = scattered(iso.solve_interface(c, OMEGA, contrasts(grid, eps), KX, KY, "P", p=1, blocks=blocks), 4)
-    s2 = scattered(iso.solve_interface(c, OMEGA, contrasts(grid, 2 * eps), KX, KY, "P", p=1, blocks=blocks), 4)
-    solve = (4 * s1 - s2) / (2 * eps)
+    # the scattered field s solves (M - K E) s = K E psi0, psi0 = M^-1 <Q, u_ref>: no cancellation against the
+    # reference field; s(eps) / eps = b + eps c + ..., the eps term removed by Richardson
+    m = np.diag(gram_test(H, 4))
+    eps = 1e-5
+
+    def s_over_eps(e):
+        delta = iso.cell_contrasts(grid, OMEGA, contrasts(grid, e), 0)
+        ref = iso.reference_moments(grid, OMEGA, KX, KY, "P", 4)
+        psi0 = ref / m[None, :, None]
+        a = iso.assemble(grid, blocks, delta, 1, 0)
+        rhs = iso.apply_coupling(grid, blocks, delta, psi0, 1, 0)
+        return np.linalg.solve(a, rhs.ravel()).reshape(psi0.shape) / e
+
+    solve = 2 * s_over_eps(eps) - s_over_eps(2 * eps)
     # Born with the mode-route couplings
     unit = iso.cell_contrasts(grid, OMEGA, contrasts(grid, 1e-3), 0) / 1e-3  # linear in the contrast
-    ref = iso.reference_moments(grid, OMEGA, KX, KY, "P", 4)
-    m = np.diag(gram_test(H, 4))
-    psi0 = ref / m[None, :, None]
-    ok = True
+    psi0 = iso.reference_moments(grid, OMEGA, KX, KY, "P", 4) / m[None, :, None]
     worst = 0.0
     for i, r in enumerate(range(len(SCATTERER), len(grid.idx))):
         born = np.zeros((4, 9), dtype=complex)
