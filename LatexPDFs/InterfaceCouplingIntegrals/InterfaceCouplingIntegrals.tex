@@ -785,10 +785,16 @@ two degrees higher than $\mathbf u_1$ times the same exponential, plus the regul
 term and the reflected and transmitted terms $\mathbf G^{R}_2$, $\mathbf G^{T}_2$ follow from the conditions at
 $z'$ and at the interface as before. Against the exact kernels at $50$ digits the residual
 $\mathbf G-\mathbf G_0-\omega^2\mathbf G_1-\omega^4\mathbf G_2$ falls $64$-fold each time $\omega$ is halved, and for
-identical media $\mathbf G^{R}_2=\mathbf 0$ and $\mathbf G^{T}_2$ is Kelvin's $\omega^4$ term. Its lowest power of
+identical media $\mathbf G^{R}_2=\mathbf 0$ and $\mathbf G^{T}_2$ is Kelvin's $\omega^4$ term. Derived with the Lam\'e
+constants and densities as symbols, each entry is the exponential times a polynomial in $q$, $z$, $z'$ and the
+media over $q^5$ and a product of $\mu_A$, $\mu_B$, $\lambda_A+2\mu_A$, $\lambda_B+2\mu_B$, $\mu_A+\mu_B$ and the two
+factors coupling the media, $\lambda_A(\mu_A+\mu_B)+\mu_A^2+3\mu_A\mu_B$ and $\lambda_B(\mu_A+\mu_B)+3\mu_A\mu_B+\mu_B^2$; at
+rational media it agrees identically with an independent derivation in a second computer-algebra system. Its lowest power of
 $q$ in the frame is $q^{-5}$, and collected as in Section~\ref{sec:static} the $9\times9$ term is a sum of $1245$
 (reflected) and $1002$ (transmitted) canonical terms with potentials up to $\Phi_6$, about $550$ of them finite
-parts. Their closed-form block $\bK_2$ is formed as $\bK_1$ is, and the split becomes
+parts, each coefficient a polynomial in $z$, $z'$ with coefficients rational in the media. Over the common
+denominator the collection is polynomial arithmetic on the numerators alone, and the factors of the denominator
+are cancelled by exact division at the end. Their closed-form block $\bK_2$ is formed as $\bK_1$ is, and the split becomes
 \begin{equation}\label{eq:omega4split}
   \bK=\mathbf D(\omega;Q_0)+\mathbf A_0+\omega^2\mathbf A_1+\omega^4\mathbf A_2+\mathbf E,\qquad
   \mathbf A_n=\bK_n-\frac{1}{4\pi^2}\,\mathrm{FP}\!\int_{q<Q_0}\mathbf Y_n\,\dd^2k,
@@ -947,7 +953,8 @@ finite-part kernels: Eq.~\eqref{eq:loghomogeneous}, $16$ families & direct evalu
 corner boxes, Eq.~\eqref{eq:eulerlog} and Duffy pyramids, $26$ moments, $9$ families, $\Phi_0$--$\Phi_4$, $d=-3$ to $1$, with and without $g$ & $25$-digit Duffy quadrature, tanh-sinh in $\varrho$ & $8.3\times10^{-16}$, $4.3\times10^{-16}$ \\
 $\omega^2$ blocks, two reflected pairs not touching their images, two transmitted pairs & finite part of the plane-wave integral of $\mathbf Y_1$ & $3.6$--$6.0\times10^{-14}$ \\
 $\mathbf G^{R}_2$, $\mathbf G^{T}_2$ & exact kernels at $50$ digits, $\omega$ halved & residual falls $64$-fold \\
-$\omega^4$ terms, $1245$ and $1002$ & transform of each term against the rotated, differentiated spectrum & exact \\
+$\mathbf G^{R}_2$, $\mathbf G^{T}_2$ with symbolic media & second computer-algebra derivation at rational media & identical \\
+$\omega^4$ terms, $1245$ and $1002$, symbolic media & transform of each term against the rotated, differentiated spectrum, $30$ digits & exact \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
 static and $\omega^2$ blocks of touching cells: own image, edge, corner, across the interface & plane-wave integral, algebraic tail in closed form (Weber--Schafheitlin, 2-D lateral finite parts) & $3.4\times10^{-14}$--$4.9\times10^{-13}$ \\
@@ -1039,9 +1046,10 @@ blocks are set up once and each frequency costs little. Here the static blocks $
 coefficients $\bK^{R}_1(Q_0)$ of the $\omega^2$ term are computed once for each arrangement of cells, and at
 each frequency only the remainder is integrated, over $qh<Q_0h$, with one interface solve per radial node
 and the angular integrals of the cells' lateral moments tabulated once, so that a frequency costs tens of
-milliseconds per block at $\omega h/\beta=1/6$ and a few hundred at $\omega h/\beta=1$. Terms of order $\omega^4$ and beyond could be derived
-the same way, each a polynomial two degrees higher; but with the cutoff already where double precision
-holds, the next gain would be in the cost of the remainder, not in its accuracy.
+milliseconds per block at $\omega h/\beta=1/6$ and a few hundred at $\omega h/\beta=1$. With the $\omega^4$ term,
+Eq.~\eqref{eq:omega4split}, also in closed form for any media, the dropped remainder falls as $Q_0^{-8}$, so a
+lower cutoff, and fewer radial nodes per frequency, reach the same accuracy; higher orders follow the same way,
+each a polynomial two degrees higher, but the gain is then in the cost of the remainder, not in its accuracy.
 
 For a stack of layers the same construction applies interface by interface. The singular part of the
 reflected and transmitted couplings comes only from the interface that the cells touch, and is the static
