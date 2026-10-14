@@ -382,6 +382,27 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
 6. **Then step 2** (the scattering solve), on these blocks.
 
 **Step 2 — a scattering solve near an interface.**
+- **Done (14 October): the dense solve and its gate.** `cubic_scattering/interface_solver.py`:
+  `InterfaceGrid` (cells (iz, ix, iy), centres h(2iz+1, 2ix, 2iy), A for iz < 0), `InterfaceCouplings`
+  (frequency-independent parts once per lateral symmetry class — signed permutations fixing z, `fft._transform` —
+  in parallel), `blocks(ω)` (interface D batched by `truncated_blocks`, sources in B mirrored; whole-space blocks
+  per cube orbit: Gauss for touching, `far_block_series` otherwise), `reference_waves` / `reference_moments`
+  (incident + R_d in A, T_d in B, complex k), `cell_contrasts` (each cell against its own side), `assemble`,
+  `apply_coupling` (the matvec), `solve_interface`. Tests `test_interface_solver.py` (9): reference field
+  continuous (P, SV, SH), symmetry map vs direct 8e-16, batched blocks vs pair by pair 1e-11, identical-media
+  solve, matvec vs assembled.
+  **Gate `scripts/gate_interface_solve.py`** (8 cells straddling the interface, 10% contrast, 4 receiver cells,
+  ωh/β_A = 1/6, oblique P): identical media vs Paper 2's homogeneous solve 3.1e-12 (reference field 2.9e-15);
+  Born — scattered field solved directly, (M − KE)s = KEψ₀, Richardson in ε — against couplings by an independent
+  plane-wave (mode) integral from `interface_rt` alone: 4.9–5.6e-11 (one block 1.7e-12); p: |p0 − p2| 8.1e-3,
+  |p1 − p2| 2.2e-4; cost (n_source 20, n_test 10, 78 classes): set-up 871 s on 4 workers, first frequency 48 s,
+  each further 29 s (≈16 s touching whole-space Gauss blocks, ≈13 s interface D), solves 0.1–0.3 s.
+  Found on the way: `interface_lateral.rect_poly_moments` wrapped in int64 for numpy-integer corners (callers with
+  Python ints unaffected); `frame_laurent` failed on an identically zero kernel (identical media);
+  `near_block_series` is slower than Gauss per frequency (8–21 s vs 1.5–3 s; minutes on first use).
+- **Next in step 2.** The per-frequency cost (touching whole-space blocks: Paper 2's frequency-independent near
+  parts; interface D: fewer radial nodes with the ω⁴ split's lower Q0); GMRES with `apply_coupling` and a
+  block-Jacobi preconditioner for larger scatterers; then Stage A (layer partition).
 - **The problem.** A Legendre-cell scatterer (Paper 1's single-site T-matrix, Paper 2's direct blocks)
   touching or near a welded interface. The reflected and transmitted couplings come from step 1. Solve with
   GMRES (Stage A below) over a frequency sweep: setup once, then each frequency.
