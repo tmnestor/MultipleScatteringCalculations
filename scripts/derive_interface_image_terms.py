@@ -55,14 +55,18 @@ MEDIA_SETS = {
     ),
     "media2": ((4, sp.Rational(9, 4), 2), (7, 4, 3)),
 }
-if ORDER == 2:
-    # the omega^4 term exists for exact rational media only (scripts/derive_interface_omega4.py <media>); its
-    # symbolic form is Mathematica/InterfaceOmega4.wl's
-    MEDIA = sys.argv[3] if len(sys.argv) > 3 else "gate"
-elif MEDIA != "symbolic" and MEDIA not in MEDIA_SETS:
+if ORDER == 2 and MEDIA not in ("symbolic", "gate"):
+    # symbolic: Mathematica/InterfaceOmega4.wl's G2; gate: the exact rational media of the python twin
+    # (scripts/derive_interface_omega4.py), kept as an independent check
+    raise SystemExit(f"order 2 media must be 'symbolic' or 'gate', got {MEDIA!r}")
+elif ORDER < 2 and MEDIA != "symbolic" and MEDIA not in MEDIA_SETS:
     raise SystemExit(f"media must be 'symbolic', 'media1' or 'media2', got {MEDIA!r}")
 if ORDER == 2:
-    SOURCE = ROOT / "scripts" / "data" / f"interface_omega4_{MEDIA}.json"
+    SOURCE = (
+        ROOT / "Mathematica" / "InterfaceOmega4.json"
+        if MEDIA == "symbolic"
+        else ROOT / "scripts" / "data" / "interface_omega4_gate.json"
+    )
     OUT = ROOT / "scripts" / "data" / f"interface_omega4_terms_{KIND}.json"
 elif ORDER == 1:
     SOURCE = ROOT / "Mathematica" / "InterfaceOmega2.json"
@@ -75,7 +79,7 @@ else:
     if not SOURCE.exists():
         SOURCE = ROOT / "scripts" / "data" / "static_interface_transmission.json"
     OUT = ROOT / "scripts" / "data" / "interface_transmission_terms.json"
-if MEDIA != "symbolic" and ORDER < 2:
+if MEDIA != "symbolic":
     OUT = OUT.with_name(f"{OUT.stem}_{MEDIA}.json")
 J = json.loads(SOURCE.read_text())
 q = sp.Symbol("q", positive=True)
@@ -93,12 +97,12 @@ loc = {
     "E": sp.E,
     "I": sp.I,
 }
-if ORDER == 2:
+if ORDER == 2 and MEDIA == "gate":
     ent = [
         [sp.sympify(x, locals={"q": q, "z": z, "zp": zp}) for x in row]
         for row in J["R2" if KIND == "reflected" else "T2"]
     ]
-elif ORDER == 1:
+elif ORDER >= 1:
     from sympy.parsing.mathematica import parse_mathematica
 
     subs = {
@@ -108,7 +112,7 @@ elif ORDER == 1:
     }
     ent = [
         [parse_mathematica(s).subs(subs) for s in row]
-        for row in J["R1" if KIND == "reflected" else "T1"]
+        for row in J[("R" if KIND == "reflected" else "T") + str(ORDER)]
     ]
 else:
     ent = [
@@ -124,14 +128,59 @@ if MEDIA != "symbolic" and ORDER < 2:
     ent = [[e_.subs(vals) for e_ in row_] for row_ in ent]
 a, b, c, d, e = ent[0][0], ent[0][1], ent[1][0], ent[1][1], ent[2][2]
 X = sp.exp(q * (z + zp)) if KIND == "reflected" else sp.exp(-q * (z - zp))
-
+MATERIALS = (lamA, muA, lamB, muB, rhoA, rhoB)
 
 #: Powers of q down to q^-(N_SHIFT) are admitted (G0 has q^-1, G1 lower).
 N_SHIFT = {0: 1, 1: 8, 2: 12}[ORDER]
 
+#: COMMON DENOMINATOR (symbolic omega^4).  Each entry of Mathematica's G2 is X poly(q, z, zp, media) / (q^5 D_e),
+#: D_e a product of a few polynomials in the media.  Over the common multiple D of D_a .. D_e every coefficient
+#: below is a polynomial in z, zp and the media divided by D, and every step after this (z, zp derivatives, sums)
+#: keeps it so: the algebra runs on numerators alone (expand, no simplify), and D is restored, cancelled, at the
+#: end.  The rational routes (orders 0, 1, the gate) keep the general simplify path.
+COMMON_DEN = ORDER == 2 and MEDIA == "symbolic"
+DEN = sp.Integer(1)
+if COMMON_DEN:
+    nd = []
+    for f in (a, b, c, d, e):
+        num, den = sp.fraction(sp.together(f))
+        nd.append((num, sp.factor(den).as_independent(q, as_Add=False)))
+    DEN = sp.lcm([dm for _, (dm, _) in nd])
+    def strip(num):  # the one exponential, X, to 1
+        assert {sp.expand(x.args[0] - X.args[0]) for x in num.atoms(sp.exp)} <= {0}
+        return num.replace(sp.exp, lambda _: sp.Integer(1))
+
+    a, b, c, d, e = (
+        sp.expand(strip(num) * sp.cancel(DEN / dm)) / dq for num, (dm, dq) in nd
+    )
+    assert all(not f.has(sp.exp) for f in (a, b, c, d, e))
+    print(f"common denominator {DEN}", flush=True)
+    # the numerators as sparse polynomials in (z, zp, media) over the Gaussian rationals: sympy's Expr algebra
+    # (diff above all) is far too slow at this size
+    from sympy.polys.rings import ring
+
+    RING, RZ, RZP, *_ = ring([z, zp, *MATERIALS], sp.QQ_I)
+
+
+def cst(x):
+    """A number as the coefficients' type: a ring constant on the common-denominator route."""
+    return RING.domain.from_sympy(sp.sympify(x)) if COMMON_DEN else x
+
+
+def ddz(v, var):
+    if COMMON_DEN:
+        return v.diff(RZ if var == z else RZP) if v else v
+    return sp.diff(v, var)
+
 
 def qpoly(f):
-    P = sp.Poly(sp.expand(sp.simplify(f / X * q) * q ** (N_SHIFT - 1)), q)
+    if COMMON_DEN:  # a Laurent polynomial in q already
+        P = sp.Poly(sp.expand(f * q**N_SHIFT), q)
+        return {
+            m[0] - N_SHIFT: RING.from_expr(co) for m, co in zip(P.monoms(), P.coeffs())
+        }
+    else:
+        P = sp.Poly(sp.expand(sp.simplify(f / X * q) * q ** (N_SHIFT - 1)), q)
     return {m[0] - N_SHIFT: co for m, co in zip(P.monoms(), P.coeffs())}
 
 
@@ -168,8 +217,8 @@ pdm = {k: pd.get(k, 0) - pe.get(k, 0) for k in set(pd) | set(pe)}
 G = [[{} for _ in range(3)] for _ in range(3)]
 G[0][0] = tsum(pa)
 for hh in (1, 2):
-    G[0][hh] = dlat(tsum({k: v / sp.I for k, v in pb.items()}, -1), hh - 1)
-    G[hh][0] = dlat(tsum({k: v / sp.I for k, v in pc.items()}, -1), hh - 1)
+    G[0][hh] = dlat(tsum({k: v * cst(-sp.I) for k, v in pb.items()}, -1), hh - 1)
+    G[hh][0] = dlat(tsum({k: v * cst(-sp.I) for k, v in pc.items()}, -1), hh - 1)
     for h2 in (1, 2):
         G[hh][h2] = add(
             tsum(pe) if hh == h2 else {}, dlat(dlat(tsum(pdm, -2), hh - 1), h2 - 1), -1
@@ -191,7 +240,7 @@ def d_rec(t, i):
         return dlat(t, 1)
     # d/dz of zeta: -1 for the image (zeta = -(z + zp)), +1 across the interface (zeta = z - zp)
     return add(
-        {k: sp.diff(v, z) for k, v in t.items()},
+        {k: ddz(v, z) for k, v in t.items()},
         dzeta(t),
         -1 if KIND == "reflected" else 1,
     )
@@ -202,7 +251,7 @@ def d_src(t, i):  # -d'
         return dlat(t, 0)
     if i == 2:
         return dlat(t, 1)
-    return add({k: -sp.diff(v, zp) for k, v in t.items()}, dzeta(t), 1)
+    return add({k: -ddz(v, zp) for k, v in t.items()}, dzeta(t), 1)
 
 
 def canon(t):
@@ -212,6 +261,8 @@ def canon(t):
         while az > 0 and j > 0:
             j, az, v = j - 1, az - 1, -v
         out[(j, ax, ay, az)] = out.get((j, ax, ay, az), 0) + v
+    if COMMON_DEN:  # numerators over DEN, ring elements: zero is zero
+        return {k: v for k, v in out.items() if v}
     return {k: sp.factor(sp.expand(v)) for k, v in out.items() if sp.simplify(v) != 0}
 
 
@@ -225,7 +276,7 @@ def column(gi: list, cc: int) -> dict:
     m, n = VP[cc - 3]
     if m == n:
         return d_src(gi[m], n)
-    return scale(add(d_src(gi[m], n), d_src(gi[n], m)), sp.Rational(1, 2))
+    return scale(add(d_src(gi[m], n), d_src(gi[n], m)), cst(sp.Rational(1, 2)))
 
 
 def row(r: int) -> list:
@@ -252,12 +303,27 @@ def entry(r: int, cc: int) -> dict:
     m, n = VP[cc - 3]
     if m == n:
         return strain_of(m, n)
-    return scale(add(strain_of(m, n), strain_of(n, m)), sp.Rational(1, 2))
+    return scale(add(strain_of(m, n), strain_of(n, m)), cst(sp.Rational(1, 2)))
 
 
 #: Optional checkpoint directory (environment DERIVE_CHECKPOINT): each reduced entry is written there as it is
 #: finished (sympy srepr) and read back on a rerun, so a long symbolic run survives a restart.
 CHECKPOINT = os.environ.get("DERIVE_CHECKPOINT")
+
+
+def _dump(v):
+    if COMMON_DEN:  # [[monomial, re, im], ...] exactly
+        return [[list(m), str(c.x), str(c.y)] for m, c in v.terms()]
+    return sp.srepr(v)
+
+
+def _load(v):
+    if COMMON_DEN:
+        dom = RING.domain
+        return RING.from_dict(
+            {tuple(m): dom(sp.QQ(x), sp.QQ(y)) for m, x, y in v}
+        )
+    return sp.sympify(v)
 
 
 def reduced(r: int, cc: int) -> dict:
@@ -266,19 +332,30 @@ def reduced(r: int, cc: int) -> dict:
     path = Path(CHECKPOINT) / f"{KIND}_order{ORDER}_{MEDIA}_{r}_{cc}.txt"
     if path.exists():
         return {
-            tuple(json.loads(k)): sp.sympify(v)
+            tuple(json.loads(k)): _load(v)
             for k, v in json.loads(path.read_text()).items()
         }
     out = canon(entry(r, cc))
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(
-        json.dumps({json.dumps(list(k)): sp.srepr(v) for k, v in out.items()})
+        json.dumps({json.dumps(list(k)): _dump(v) for k, v in out.items()})
     )
     tmp.replace(path)  # atomic: a restart never sees a half-written entry
     print(f"entry ({r}, {cc}) done", flush=True)
     return out
 
+
+#: Optional worker share (environment DERIVE_WORKER = "i/n", with DERIVE_CHECKPOINT): reduce only the entries
+#: r * 9 + cc = i mod n into the checkpoints and stop; a final run without it assembles them.
+WORKER = os.environ.get("DERIVE_WORKER")
+if WORKER is not None:
+    if CHECKPOINT is None:
+        raise SystemExit("DERIVE_WORKER needs DERIVE_CHECKPOINT")
+    wi, wn = map(int, WORKER.split("/"))
+    for idx in range(wi, 81, wn):
+        reduced(*divmod(idx, 9))
+    raise SystemExit(0)
 
 K = [[reduced(r, cc) for cc in range(9)] for r in range(9)]
 
@@ -288,15 +365,29 @@ for r in range(9):
     for cc in range(9):
         terms = []
         for (j, ax, ay, az), v in sorted(K[r][cc].items()):
-            poly = sp.Poly(sp.expand(v), z, zp)
-            for (pa_, pb_), co in zip(poly.monoms(), poly.coeffs(), strict=True):
+            if COMMON_DEN:  # group the ring element by its powers of z, zp
+                byzz: dict = {}
+                for m, c_ in v.terms():
+                    byzz.setdefault(m[:2], []).append(
+                        RING.domain.to_sympy(c_)
+                        * sp.Mul(*(x**k for x, k in zip(MATERIALS, m[2:])))
+                    )
+                pairs = [(k, sp.Add(*t)) for k, t in sorted(byzz.items())]
+            else:
+                poly = sp.Poly(sp.expand(v), z, zp)
+                pairs = list(zip(poly.monoms(), poly.coeffs(), strict=True))
+            for (pa_, pb_), co in pairs:
                 terms.append(
                     {
                         "j": j,
                         "alpha": [ax, ay, az],
                         "z_power": pa_,
                         "zp_power": pb_,
-                        "coef": str(sp.simplify(co)),
+                        "coef": str(
+                            sp.factor(sp.cancel(co / DEN))
+                            if COMMON_DEN
+                            else sp.simplify(co)
+                        ),
                     }
                 )
         out_row.append(terms)
@@ -304,11 +395,11 @@ for r in range(9):
 path = OUT
 variables = (
     []
-    if ORDER == 2
-    else ["lamA", "muA", "lamB", "muB"] + (["rhoA", "rhoB"] if ORDER == 1 else [])
+    if ORDER == 2 and MEDIA == "gate"
+    else ["lamA", "muA", "lamB", "muB"] + (["rhoA", "rhoB"] if ORDER >= 1 else [])
 )
 meta = {"variables": variables, "terms": out}
-if ORDER == 2:
+if ORDER == 2 and MEDIA == "gate":
     meta["media"] = J["media"]  # the coefficients hold these media
 path.write_text(json.dumps(meta, indent=0))
 n = sum(len(t) for row in out for t in row)

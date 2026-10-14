@@ -75,16 +75,13 @@ Poly = tuple[Fraction, ...]  # ascending coefficients
 
 @cache
 def _terms(kind: str = "reflected", order: int = 0) -> tuple:
-    """The canonical terms of one kind and order (0: the static field; 1: the omega^2 term, whose coefficients
-    also hold the densities), each material coefficient compiled: ((row, col, j, alpha, A, B, fn), ...); fn
-    takes the materials in the order of the file's "variables"."""
+    """The canonical terms of one kind and order (0: the static field; 1, 2: the omega^2, omega^4 terms, whose
+    coefficients also hold the densities), each material coefficient compiled: ((row, col, j, alpha, A, B, fn),
+    ...); fn takes the materials in the order of the file's "variables"."""
     data = json.loads(_TERMS_PATH[kind, order].read_text())
     names = data.get("variables", ["lamA", "muA", "lamB", "muB"])
-    syms = sp.symbols(" ".join(names), positive=True) if names else ()  # omega^4: media already in
+    syms = tuple(sp.symbols(" ".join(names), positive=True))
     loc = dict(zip(names, syms, strict=True))
-    syms = syms if isinstance(syms, tuple) else (syms,)
-    if not names:
-        syms = ()
     out = []
     for r, row in enumerate(data["terms"]):
         for c, terms in enumerate(row):
@@ -611,19 +608,8 @@ def image_block(
         )
     geo = family_geometry(rec_centre, src_centre, n_source, n_test, order)
     mats = (above.lam, above.mu, below.lam, below.mu)
-    if order == 1:
+    if order >= 1:  # the omega^2 and omega^4 coefficients also hold the densities
         mats += (above.rho, below.rho)
-    elif order == 2:
-        # the omega^4 terms hold their media (exact rationals, scripts/derive_interface_omega4.py): only those
-        held = json.loads(_TERMS_PATH[geo["kind"], 2].read_text())["media"]
-        want = [(m.lam, m.mu, m.rho) for m in (above, below)]
-        have = [tuple(float(sp.Rational(v)) for v in held[t]) for t in ("A", "B")]
-        if not np.allclose(np.array(want), np.array(have), rtol=1e-13):
-            raise ValueError(
-                "image_block: the omega^4 terms were derived for other media; run "
-                "scripts/derive_interface_omega4.py for these (or use the symbolic Mathematica result)."
-            )
-        mats = ()
     groups: dict = {}
     for r, c, j, alpha, a_pow, b_pow, fn in _terms(geo["kind"], order):
         groups.setdefault((j, alpha, a_pow, b_pow), []).append((r, c, fn(*mats)))
