@@ -225,6 +225,8 @@ def frame_laurent(
                 (dk,), dc = dpoly.terms()[0]
                 for (nk,), nc in sp.Poly(sp.expand(num), _Q).terms():
                     terms[i, j, a, b, nk - dk] = complex(sp.N(nc / dc, 30))
+    if not terms:  # the reflection vanishes identically (identical media)
+        return np.zeros((9, 9, 1, 1, 1), dtype=complex), 0
     na = 1 + max(k[2] for k in terms)
     nb = 1 + max(k[3] for k in terms)
     m0 = min(k[4] for k in terms)
