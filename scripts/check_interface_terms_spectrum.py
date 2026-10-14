@@ -14,7 +14,7 @@ engineering strain, columns force and engineering stress, the stress columns hal
 At random wavenumbers, depths and rational media, every one of the 81 entries; error relative to the largest
 entry of the reference.  Expected: rounding (the comparison is in 30-digit arithmetic).
 
-Run:  PYTHONPATH=. python scripts/check_interface_terms_spectrum.py [reflected | transmitted] [0 | 1] [media]
+Run:  PYTHONPATH=. python scripts/check_interface_terms_spectrum.py [reflected | transmitted] [0 | 1 | 2] [media]
 """
 
 import json
@@ -39,7 +39,8 @@ q, z, zp = (
 NAMES = ("lamA", "muA", "lamB", "muB", "rhoA", "rhoB")
 SYM = {n: sp.Symbol(n, positive=True) for n in NAMES}
 #: "symbolic" checks the symbolic-coefficient terms (at media1); "media1" / "media2" the terms derived with those
-#: rational media (derive_interface_image_terms.py ... media1), at the same media.
+#: rational media (derive_interface_image_terms.py ... media1), at the same media.  Order 2: "symbolic" (the
+#: Mathematica kernel and terms) or "gate" (the python twin's rational media, scripts/derive_interface_omega4.py).
 MEDIA_NAME = sys.argv[3] if len(sys.argv) > 3 else "symbolic"
 MEDIA_SETS = {
     "media1": (
@@ -50,7 +51,7 @@ MEDIA_SETS = {
 }
 MEDIA = {}
 for tag, (al, be, rho) in zip(
-    "AB", MEDIA_SETS["media1" if MEDIA_NAME == "symbolic" else MEDIA_NAME], strict=True
+    "AB", MEDIA_SETS["media1" if MEDIA_NAME in ("symbolic", "gate") else MEDIA_NAME], strict=True
 ):
     MEDIA[SYM["lam" + tag]] = rho * (al**2 - 2 * be**2)
     MEDIA[SYM["mu" + tag]] = rho * be**2
@@ -84,9 +85,8 @@ def frame_kernel() -> sp.Matrix:
                 for r in rows
             ]
         )
-    elif (
-        ORDER == 2
-    ):  # rational media already in (scripts/derive_interface_omega4.py gate)
+    elif ORDER == 2 and MEDIA_NAME == "gate":
+        # rational media already in (scripts/derive_interface_omega4.py)
         rows = json.loads((DATA / "interface_omega4_gate.json").read_text())[
             "R2" if KIND == "reflected" else "T2"
         ]
@@ -97,9 +97,9 @@ def frame_kernel() -> sp.Matrix:
             ]
         )
     else:
-        rows = json.loads((ROOT / "Mathematica" / "InterfaceOmega2.json").read_text())[
-            "R1" if KIND == "reflected" else "T1"
-        ]
+        rows = json.loads(
+            (ROOT / "Mathematica" / f"InterfaceOmega{2 * ORDER}.json").read_text()
+        )[("R" if KIND == "reflected" else "T") + str(ORDER)]
         subs = {sp.Symbol(k): v for k, v in loc.items()}
         G = sp.Matrix([[parse_mathematica(e).subs(subs) for e in r] for r in rows])
     return G.subs(MEDIA)
@@ -179,7 +179,7 @@ def main() -> None:
         if ORDER == 1
         else f"interface_omega4_terms_{KIND}"
     )
-    if MEDIA_NAME != "symbolic" and ORDER < 2:
+    if MEDIA_NAME != "symbolic":
         name += f"_{MEDIA_NAME}"
     entries = json.loads((DATA / f"{name}.json").read_text())["terms"]
     G = frame_kernel()
