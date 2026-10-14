@@ -709,22 +709,38 @@ def near_block_series(
     """
     if max(abs(o) for o in offset) > 1:
         raise ValueError(f"near_block_series: offset {offset} does not touch; use coupling_block")
-    ta, tb = family_tables()
+    offset = tuple(int(o) for o in offset)
     reach = omega / ref.beta * 4.0 * np.sqrt(3.0) * h
     out = np.zeros((n_test, n_source, 9, 9), dtype=complex)
     m = -1
     while True:
         c1, c2 = series_weights(m, omega, ref)
-        for table, weight in ((ta, c1), (tb, c2)):
-            if weight == 0:
-                continue
-            for idx, coef in table.items():
-                u = universal_moment(m, idx, offset, n_source, n_test)
-                out += weight * h ** (6 + m - len(idx)) * u[:, :, None, None] * coef[None, None]
+        s = near_series_coefficients(m, offset, n_source, n_test)  # (d, family, a, c, 9, 9)
+        hp = h ** (6.0 + m - np.arange(len(s)))
+        out += np.tensordot(hp, c1 * s[:, 0] + c2 * s[:, 1], axes=1)
         m += 1
         if m > 3 and reach ** (m - 1) / math.factorial(m - 1) < tol:
             break
     return _to_field_rows(out)
+
+
+@cache
+def near_series_coefficients(
+    m: int, offset: tuple[int, int, int], n_source: int = 10, n_test: int = 4
+) -> NDArray:
+    """The term m of ``near_block_series`` on the unit half-side, contracted over the families:
+    S[d, f] = sum_{|idx| = d} T_f[idx] U(m, idx, offset), f = 0 (TA) and 1 (TB), shape (5, 2, n_test, n_source,
+    9, 9), d the number of derivatives (the block scales as h^(6 + m - d)).  Independent of the frequency, the
+    medium and the cell size: each frequency is then a short sum (the contraction over the families, done per
+    frequency, cost seconds per block)."""
+    out = np.zeros((5, 2, n_test, n_source, 9, 9))
+    for f, table in enumerate(family_tables()):
+        if f == 1 and m == -1:  # c2 vanishes at m = -1 for every frequency (and d^4 r^-1 is never needed)
+            continue
+        for idx, coef in table.items():
+            u = universal_moment(m, idx, offset, n_source, n_test)
+            out[len(idx), f] += u[:, :, None, None] * coef[None, None]
+    return out
 
 
 _NEAR_CACHE: dict[tuple, NDArray] = {}
