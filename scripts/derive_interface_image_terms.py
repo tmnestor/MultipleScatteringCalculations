@@ -145,21 +145,30 @@ if COMMON_DEN:
     for f in (a, b, c, d, e):
         num, den = sp.fraction(sp.together(f))
         nd.append((num, sp.factor(den).as_independent(q, as_Add=False)))
-    DEN = sp.lcm([dm for _, (dm, _) in nd])
+    DEN = sp.factor(sp.lcm([dm for _, (dm, _) in nd]))
     def strip(num):  # the one exponential, X, to 1
         assert {sp.expand(x.args[0] - X.args[0]) for x in num.atoms(sp.exp)} <= {0}
         return num.replace(sp.exp, lambda _: sp.Integer(1))
 
-    a, b, c, d, e = (
-        sp.expand(strip(num) * sp.cancel(DEN / dm)) / dq for num, (dm, dq) in nd
-    )
-    assert all(not f.has(sp.exp) for f in (a, b, c, d, e))
-    print(f"common denominator {DEN}", flush=True)
-    # the numerators as sparse polynomials in (z, zp, media) over the Gaussian rationals: sympy's Expr algebra
-    # (diff above all) is far too slow at this size
+    # the numerators as sparse polynomials in (z, zp, media) over the Gaussian rationals, one per power of q:
+    # sympy's Expr algebra (expand, diff) is far too slow at this size
     from sympy.polys.rings import ring
 
     RING, RZ, RZP, *_ = ring([z, zp, *MATERIALS], sp.QQ_I)
+    RINGQ = ring([q, z, zp, *MATERIALS], sp.QQ_I)[0]
+
+    def laurent(num, dm, dq):
+        """{power of q: ring element} of X^-1 num / (dm dq) times DEN."""
+        k = sp.degree(dq, q)
+        coef = sp.cancel(DEN / dm / (dq / q**k))
+        pn = RINGQ.from_expr(strip(num)) * RINGQ.from_expr(coef)
+        out: dict = {}
+        for m, c_ in pn.terms():
+            out.setdefault(m[0] - k, {})[m[1:]] = c_
+        return {e_: RING.from_dict(t) for e_, t in out.items()}
+
+    a, b, c, d, e = (laurent(num, dm, dq) for num, (dm, dq) in nd)
+    print(f"common denominator {DEN}", flush=True)
 
 
 def cst(x):
@@ -174,11 +183,8 @@ def ddz(v, var):
 
 
 def qpoly(f):
-    if COMMON_DEN:  # a Laurent polynomial in q already
-        P = sp.Poly(sp.expand(f * q**N_SHIFT), q)
-        return {
-            m[0] - N_SHIFT: RING.from_expr(co) for m, co in zip(P.monoms(), P.coeffs())
-        }
+    if COMMON_DEN:  # {power of q: numerator} already
+        return f
     else:
         P = sp.Poly(sp.expand(sp.simplify(f / X * q) * q ** (N_SHIFT - 1)), q)
     return {m[0] - N_SHIFT: co for m, co in zip(P.monoms(), P.coeffs())}
@@ -339,7 +345,7 @@ def reduced(r: int, cc: int) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(
-        json.dumps({json.dumps(list(k)): _dump(v) for k, v in out.items()})
+        json.dumps({json.dumps([int(x) for x in k]): _dump(v) for k, v in out.items()})
     )
     tmp.replace(path)  # atomic: a restart never sees a half-written entry
     print(f"entry ({r}, {cc}) done", flush=True)
