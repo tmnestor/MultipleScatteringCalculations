@@ -14,6 +14,12 @@ km, omega h / beta_A = 1/6, Q0 h = 10, the C-infinity window from Q0 / 4, a P wa
 beyond it.  Measured: the largest change of any block relative to the largest block, and of the solution.
 Expected from tab:locality: about 1e-6, 1e-8, 1e-10.
 
+Measured 15 October 2026 (relative to the largest block of the system, the whole-space self block, hence below
+tab:locality's figures, which are relative to the touching static image block): radius 12 h: 28 of 56 classes
+with corrections, blocks 3.8e-9, solution 6.4e-10; 16 h: 36, 5.1e-10, 8.3e-11; 24 h: 52, 8.7e-12, 8.4e-13.  A
+radius-16 h set-up computes parts identical to the full one's, in 402 s against 607 s (four workers; the classes
+beyond the radius still build their lateral tables, which are cheap).
+
 Run:  PYTHONPATH=. python scripts/gate_interface_locality_solve.py
 """
 

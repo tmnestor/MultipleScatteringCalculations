@@ -422,6 +422,13 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
   split's gain (block error 3.5e-10 → 5e-11 at ωh/β = 1/6) is 10⁴–10⁶ below the discretisation error (p1 vs p2
   2.2e-4), and where it would grow (ωh/β → 1) the cells are coarse (2h ≈ λ_S/3) and the discretisation error grows
   faster; it costs ~2.5× the set-up (2062 s vs ~800 s). `omega4=True` remains for reference-quality blocks.
+- **The locality-bounded set-up (15 October).** `InterfaceCouplings(window=Window(0.25), radius=r)`: beyond the
+  lateral radius r (in h) the corrections A0, A1 are dropped and the block is the windowed D alone, so the set-up
+  grows with the radius, not the grid (a radius without a window is refused: the sharp cutoff rings, d^−3/2).
+  Gate `scripts/gate_interface_locality_solve.py` (rows of 2 × 14 cells, offsets to 26 h, against the full
+  windowed set-up): r = 12 h blocks 3.8e-9, solution 6.4e-10 (28 of 56 classes); 16 h 5.1e-10, 8.3e-11 (36);
+  24 h 8.7e-12, 8.4e-13 (52); the real r = 16 h set-up's parts are identical, 402 s vs 607 s. On a 2-D grid the
+  classes within r stay fixed while the grid grows. **Default suggestion: r = 16 h** (solution 1e-10).
 - **Next in step 2.** The per-frequency cost (touching whole-space blocks: Paper 2's frequency-independent near
   parts; interface D: fewer radial nodes with the ω⁴ split's lower Q0); GMRES with `apply_coupling` and a
   block-Jacobi preconditioner for larger scatterers; then Stage A (layer partition).
