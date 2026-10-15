@@ -4,16 +4,16 @@ Plan: docs/2026-10-10-stratified-reference-legendre-cells-3d.md (15 October: the
 
 WHAT.  U(m, idx, offset) = int W(s) d^idx r^m (R + s) ds on the unit half-side, for the touching orbits
 (0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1), every derivative multi-index of ``family_tables`` (TB from m = 1: its
-weight vanishes at m = -1), odd m from -1 to M, at the largest basis (n_source 35, n_test 10; the smaller bases
-are its leading slices).  Odd m only: those go through the closed master integrals (seconds to tens of seconds
-each), while even m are polynomials that a Gauss rule integrates exactly in milliseconds.  The moments depend on
-neither the medium, the cell size nor the frequency: computed once, never again.
+weight vanishes at m = -1), m from -1 to M, at the largest basis (n_source 35, n_test 10; the smaller bases are
+its leading slices).  Odd m go through the closed master integrals (seconds to tens of seconds each); even m are
+polynomials that a Gauss rule of order 6 + m / 2 integrates exactly (a fraction of a second, rising with m).
+The moments depend on neither the medium, the cell size nor the frequency: computed once, never again.
 
 COVERAGE.  ``near_block_series`` sums m until (k_S 4 sqrt(3) h)^(m - 1) / (m - 1)! < 1e-17: M = 31 covers
 omega h / beta <= 1/2.  Higher orders, or other offsets, are computed on the fly as before.
 
-Resumable: each moment is checkpointed (NEAR_CHECKPOINT, default ~/.cache/cubic_scattering/near_moments); a final run assembles
-scripts/data/near_series_moments.npz.
+Resumable: each moment is checkpointed (NEAR_CHECKPOINT, default ~/.cache/cubic_scattering/near_moments); the
+run ends by assembling scripts/data/near_series_moments.npz.
 
 Run:  PYTHONPATH=. python scripts/build_near_series_moments.py [M] [workers]
 """
@@ -46,10 +46,12 @@ def jobs(m_max: int) -> list:
 
     ta, tb = family_tables()
     out = []
-    for m in range(-1, m_max + 1, 2):
+    for m in range(-1, m_max + 1):
         idxs = sorted(
             set(ta) | (set(tb) if m > -1 else set()), key=lambda i: (len(i), i)
         )
+        if m % 2 == 0:  # even m: d^idx r^m vanishes when |idx| > m
+            idxs = [i for i in idxs if len(i) <= m]
         out += [(m, idx, off) for off in ORBITS for idx in idxs]
     return out
 
@@ -88,7 +90,7 @@ def main() -> None:
     data["meta"] = np.array([m_max, N_SOURCE, N_TEST])
     np.savez_compressed(OUT, **data)
     print(
-        f"written {OUT.relative_to(ROOT)}: {len(todo)} moments, odd m to {m_max}, {OUT.stat().st_size / 1e6:.1f} MB"
+        f"written {OUT.relative_to(ROOT)}: {len(todo)} moments, m to {m_max}, {OUT.stat().st_size / 1e6:.1f} MB"
     )
 
 
