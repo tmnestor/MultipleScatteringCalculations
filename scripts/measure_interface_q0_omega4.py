@@ -13,6 +13,11 @@ the interface (1, 0, 0) <- (-1, 0, 0), and a lateral neighbour (-1, 2, 0) <- (-1
 over B (6.5, 3.6, 2.8), h = 0.05 km, omega h / beta_A = 1/6 and 1/2.  Cached in
 scripts/data/interface_q0_omega4.json (the frequency-independent parts are the cost: minutes per pair and Q0).
 
+Measured 15 October 2026: D costs 0.03-0.06 s per pair whatever Q0 h (3 ... 10): its per-frequency work is
+fixed (interface solves, frames, the lateral table), not panels in Q0, so lowering Q0 saves no time.  The
+omega^4 split buys accuracy instead: worst of the three pairs at omega h / beta = 1/6, Q0 h = 10: omega^2 3.5e-10,
+omega^4 4.8e-11 (the rounding floor, reached already at Q0 h = 5); at 1/2, Q0 h = 10: 2.5e-8 against 6.2e-11.
+
 Run:  PYTHONPATH=. python scripts/measure_interface_q0_omega4.py
 """
 
