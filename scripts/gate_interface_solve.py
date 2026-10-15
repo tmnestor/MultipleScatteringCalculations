@@ -22,11 +22,10 @@ CHECKS.
 3. CONVERGENCE IN p.  The scattered field at the receivers for p = 0, 1, 2 (r = 0).
 4. COST.  The set-up (frequency-independent parts, once) against one frequency (blocks and solve).
 
-Measured 14-15 October 2026 (the omega^4 split, the solver's default): identical media 3.1e-12 (reference field
+Measured 14-15 October 2026 (the omega^2 split, the solver's default): identical media 3.1e-12 (reference field
 2.9e-15); Born 4.9e-11 ... 5.6e-11 (the block <- (-1, 0, 0) 1.7e-12); p: |p0 - p2| 8.1e-3, |p1 - p2| 2.2e-4;
-cost (n_source 20, n_test 10, 78 classes, 4 workers): set-up 2062 s, first frequency 24 s, each further 3.5 s,
-solves 0.1-0.3 s.  (The omega^2 split: set-up 804 s, each further frequency 13.4 s before the lateral harmonics
-were shared.)
+cost (n_source 20, n_test 10, 78 classes, 4 workers): set-up ~800 s, each further frequency 3.5 s (measured with
+the omega^4 split, whose set-up is 2062 s; the per-frequency work is the same), solves 0.1-0.3 s.
 
 Run:  PYTHONPATH=. python scripts/gate_interface_solve.py [checks...]   (default: all; e.g. "identical born")
 """

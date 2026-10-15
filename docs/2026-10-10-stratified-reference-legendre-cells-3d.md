@@ -417,8 +417,11 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
   depend on Q0** (0.03–0.06 s for Q0h = 3 … 10: fixed work, not radial panels), so lowering Q0 saves nothing. The
   ω⁴ split buys accuracy at the same Q0 (worst of three pairs, Q0h = 10: ωh/β = 1/6 3.5e-10 → 4.8e-11, the rounding
   floor, reached at Q0h = 5; 1/2: 2.5e-8 → 6.2e-11). The time was in `_interpolate` (S_n at the radial nodes, per
-  pair): now once per (lateral offset, rule) and one matrix product per panel. `InterfaceCouplings` defaults to the
-  ω⁴ split (no window). **Gate: set-up 2062 s, first frequency 24 s, each further 3.5 s**; Born, p unchanged.
+  pair): now once per (lateral offset, rule) and one matrix product per panel. **Gate: each further frequency
+  3.5 s** (was 13.4); Born, p unchanged. **Decision (user): the ω² split stays the solver's default** — the ω⁴
+  split's gain (block error 3.5e-10 → 5e-11 at ωh/β = 1/6) is 10⁴–10⁶ below the discretisation error (p1 vs p2
+  2.2e-4), and where it would grow (ωh/β → 1) the cells are coarse (2h ≈ λ_S/3) and the discretisation error grows
+  faster; it costs ~2.5× the set-up (2062 s vs ~800 s). `omega4=True` remains for reference-quality blocks.
 - **Next in step 2.** The per-frequency cost (touching whole-space blocks: Paper 2's frequency-independent near
   parts; interface D: fewer radial nodes with the ω⁴ split's lower Q0); GMRES with `apply_coupling` and a
   block-Jacobi preconditioner for larger scatterers; then Stage A (layer partition).
