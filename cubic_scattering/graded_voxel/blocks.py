@@ -34,6 +34,7 @@ import math
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from functools import cache, lru_cache
+from pathlib import Path
 
 import numpy as np
 import sympy as sp
@@ -647,16 +648,41 @@ def family_tables() -> tuple[dict[tuple[int, ...], NDArray], dict[tuple[int, ...
     return dict(ta), dict(tb)
 
 
+#: The stored universal moments (scripts/build_near_series_moments.py): odd m, the touching orbits, the
+#: largest basis (n_source 35, n_test 10), of which every smaller basis is the leading slice.
+_NEAR_STORE = Path(__file__).resolve().parents[2] / "scripts" / "data" / "near_series_moments.npz"
+
+
+@cache
+def _near_store() -> dict | None:
+    if not _NEAR_STORE.exists():
+        return None
+    with np.load(_NEAR_STORE) as z:
+        return {k: z[k] for k in z.files}
+
+
 @cache
 def universal_moment(
     m: int, idx: tuple[int, ...], offset: tuple[int, int, int], n_source: int = 10, n_test: int = 4
 ) -> NDArray:
     """U[a, c] = int W_ac(s) d^idx r^m (R + s) ds for cells of half-width 1: a pure number per (a, c).
 
-    For half-width h the moment is h^(6 + m - |idx|) U.  Odd m: the master integrals
-    (``static_term_integral_closed``).  Even m: r^m is a polynomial, and a Gauss rule of sufficient order
-    on the pieces of W is exact.  a runs over the test monomials.
+    For half-width h the moment is h^(6 + m - |idx|) U; a runs over the test monomials.  Read from the store
+    when it holds the moment (odd m of the touching orbits: the costly ones), else ``universal_moment_direct``.
     """
+    store = _near_store()
+    if store is not None and m % 2:
+        key = f"{m}|{','.join(map(str, idx))}|{','.join(map(str, offset))}"
+        if key in store and n_test <= store[key].shape[0] and n_source <= store[key].shape[1]:
+            return store[key][:n_test, :n_source]
+    return universal_moment_direct(m, idx, offset, n_source, n_test)
+
+
+def universal_moment_direct(
+    m: int, idx: tuple[int, ...], offset: tuple[int, int, int], n_source: int = 10, n_test: int = 4
+) -> NDArray:
+    """``universal_moment`` computed: odd m by the master integrals (``static_term_integral_closed``, seconds
+    each); even m, where r^m is a polynomial, by a Gauss rule of sufficient order on the pieces of W (exact)."""
     if m % 2:
         return static_term_integral_closed(m, idx, offset, 1.0, n_source, n_test)
     if len(idx) > m:
