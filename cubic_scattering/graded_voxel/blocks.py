@@ -648,8 +648,8 @@ def family_tables() -> tuple[dict[tuple[int, ...], NDArray], dict[tuple[int, ...
     return dict(ta), dict(tb)
 
 
-#: The stored universal moments (scripts/build_near_series_moments.py): odd m, the touching orbits, the
-#: largest basis (n_source 35, n_test 10), of which every smaller basis is the leading slice.
+#: The stored universal moments (scripts/build_near_series_moments.py): m to 31 (omega h / beta <= 1/2), the
+#: touching orbits, the largest basis (n_source 35, n_test 10), of which every smaller basis is the leading slice.
 _NEAR_STORE = Path(__file__).resolve().parents[2] / "scripts" / "data" / "near_series_moments.npz"
 
 
@@ -668,10 +668,10 @@ def universal_moment(
     """U[a, c] = int W_ac(s) d^idx r^m (R + s) ds for cells of half-width 1: a pure number per (a, c).
 
     For half-width h the moment is h^(6 + m - |idx|) U; a runs over the test monomials.  Read from the store
-    when it holds the moment (odd m of the touching orbits: the costly ones), else ``universal_moment_direct``.
+    when it holds the moment (the touching orbits to m = 31), else ``universal_moment_direct``.
     """
     store = _near_store()
-    if store is not None and m % 2:
+    if store is not None:
         key = f"{m}|{','.join(map(str, idx))}|{','.join(map(str, offset))}"
         if key in store and n_test <= store[key].shape[0] and n_source <= store[key].shape[1]:
             return store[key][:n_test, :n_source]
