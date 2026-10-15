@@ -116,3 +116,9 @@ def test_window_needs_the_omega2_split():
     g = iso.InterfaceGrid(np.array([[-1, 0, 0]]), H, A, B)
     with pytest.raises(ValueError, match="omega4=False"):
         iso.InterfaceCouplings(g, window=isp.Window(0.5), omega4=True, workers=1)
+
+
+def test_radius_needs_a_window():
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0]]), H, A, B)
+    with pytest.raises(ValueError, match="smooth window"):
+        iso.InterfaceCouplings(g, radius=16.0, workers=1)
