@@ -520,3 +520,182 @@ def solve_interface(
     full = np.zeros((len(grid.idx), n_field, 9), dtype=complex)
     full[:, :na] = psi
     return InterfaceResult(grid, omega, delta, ref, full, p, r)
+
+
+# ---------------------------------------------------------------------------
+# The iterative solve: lateral FFT products and GMRES
+# ---------------------------------------------------------------------------
+
+
+class LateralOperator:
+    """The coupling of a grid at one frequency as lateral convolutions, one per pair of depth layers.
+
+    Every block depends on the two layers and the lateral offset only: K(iz_r, iz_s; dx, dy) is Paper 2's block of
+    the side plus the reflection (same side) or the transmission (opposite sides).  For each pair of layers the
+    blocks over the offsets of the grid's lateral box are transformed once (zero padding to 2 n - 1); a product
+    then costs one 2-D FFT per source layer, one inverse per receiver layer, and a contraction per pair of
+    layers in the transformed domain.  Offsets no pair of the grid's cells realises are zero (they only reach
+    positions without cells, whose outputs are discarded).  No block of a single pair is formed.
+
+    Args:
+        couplings: The grid's set-up.
+        omega: Angular frequency.
+        p, r: Field and contrast degree (``field_sizes``).
+    """
+
+    def __init__(
+        self, couplings: InterfaceCouplings, omega: float, p: int = 1, r: int = 0
+    ) -> None:
+        g = couplings.grid
+        self.grid, self.p, self.r = g, p, r
+        na, n_field, _, n_source = field_sizes(p, r)
+        if couplings.n_source < n_source or couplings.n_test < n_field:
+            raise ValueError(
+                f"LateralOperator: p = {p}, r = {r} need n_source >= {n_source}, n_test >= {n_field}."
+            )
+        self.na, self.n_field, self.n_source = na, n_field, n_source
+        idx = g.idx
+        self.layers = sorted(set(idx[:, 0].tolist()))
+        lo = idx[:, 1:].min(axis=0)
+        self.pos = idx[:, 1:] - lo  # lateral position in the box
+        nx, ny = (idx[:, 1:].max(axis=0) - lo + 1).tolist()
+        self.shape = (2 * nx - 1, 2 * ny - 1)
+        rows, cols = na * 9, n_source * 9
+        canon = couplings.interface_canonical(omega)
+        ws_cache: dict = {}
+        by_layer = {z: np.flatnonzero(idx[:, 0] == z) for z in self.layers}
+        realised: dict = {}
+        for zr, zs in itertools.product(self.layers, repeat=2):
+            pr, ps = self.pos[by_layer[zr]], self.pos[by_layer[zs]]
+            d = (pr[:, None, :] - ps[None, :, :]).reshape(-1, 2)
+            realised[zr, zs] = {tuple(v) for v in np.unique(d, axis=0).tolist()}
+        self.kernels: dict = {}
+        self.self_blocks: dict = {}  # K_mm per layer, for the preconditioner
+        for (zr, zs), offs in realised.items():
+            kh = np.zeros((rows, cols) + self.shape, dtype=complex)
+            same = (zr < 0) == (zs < 0)
+            ur, us = 2 * zr + 1, 2 * zs + 1
+            for dx, dy in offs:
+                (a, b), q = _canonical(2 * dx, 2 * dy)
+                k = _transform(q, canon[ur, us, a, b])
+                if same:
+                    k = k + _whole_space(
+                        (zr - zs, dx, dy),
+                        g.h,
+                        omega,
+                        g.above if zr < 0 else g.below,
+                        couplings.n_source,
+                        couplings.n_test,
+                        ws_cache,
+                    )
+                kh[:, :, dx % self.shape[0], dy % self.shape[1]] = (
+                    k[:na, :n_source].transpose(0, 2, 1, 3).reshape(rows, cols)
+                )
+                if dx == 0 and dy == 0 and zr == zs:
+                    self.self_blocks[zr] = k[:na, :n_source]
+            self.kernels[zr, zs] = np.fft.fft2(kh, axes=(2, 3)).reshape(rows, cols, -1)
+        self.by_layer = by_layer
+        self.m9 = gram_test(g.h, n_field)[:na, :na]
+
+    def coupling(self, delta: NDArray, x: NDArray) -> NDArray:
+        """sum_n K_mn E^(n) x_n, x of shape (N, na, 9): as ``apply_coupling``, by the lateral FFTs."""
+        na, n_source = self.na, self.n_source
+        e = np.array([source_expansion(d, self.n_field)[:n_source, :na] for d in delta])
+        src = np.einsum("ncbij,nbj->nci", e, x).reshape(len(x), n_source * 9)
+        return self._convolve(src)
+
+    def _convolve(self, src: NDArray) -> NDArray:
+        rows = self.na * 9
+        out = np.zeros((len(src), rows), dtype=complex)
+        spec = {}
+        for zs, cells in self.by_layer.items():
+            grid = np.zeros((src.shape[1],) + self.shape, dtype=complex)
+            grid[:, self.pos[cells, 0], self.pos[cells, 1]] = src[cells].T
+            spec[zs] = np.fft.fft2(grid, axes=(1, 2)).reshape(src.shape[1], -1)
+        for zr, cells in self.by_layer.items():
+            acc = np.zeros((rows, spec[zr].shape[1]), dtype=complex)
+            for zs in self.by_layer:
+                acc += np.einsum("rcf,cf->rf", self.kernels[zr, zs], spec[zs])
+            y = np.fft.ifft2(acc.reshape((rows,) + self.shape), axes=(1, 2))
+            out[cells] = y[:, self.pos[cells, 0], self.pos[cells, 1]].T
+        return out.reshape(len(src), self.na, 9)
+
+
+def solve_interface_gmres(
+    couplings: InterfaceCouplings,
+    omega: float,
+    contrasts: list[MaterialContrast | None],
+    kx: float,
+    ky: float,
+    wave: str,
+    p: int = 1,
+    r: int = 0,
+    operator: LateralOperator | None = None,
+    tol: float = 1e-11,
+    restart: int = 100,
+    max_cycles: int = 20,
+) -> tuple[InterfaceResult, int]:
+    """``solve_interface`` by GMRES with the lateral FFT products and a block-Jacobi preconditioner
+    (M - K_mm E_m)^-1, K_mm the self block with its own image.  Returns the result and the iteration count.
+
+    Raises:
+        RuntimeError: when GMRES does not reach ``tol`` within restart * max_cycles iterations.
+    """
+    from scipy.sparse.linalg import LinearOperator, gmres
+
+    grid = couplings.grid
+    op = LateralOperator(couplings, omega, p, r) if operator is None else operator
+    na, n_field, n_source = op.na, op.n_field, op.n_source
+    n = len(grid.idx)
+    delta = cell_contrasts(grid, omega, contrasts, r)
+    e = np.array([source_expansion(d, n_field)[:n_source, :na] for d in delta])
+    rows = na * 9
+    m9 = op.m9
+
+    def matvec(v: NDArray) -> NDArray:
+        x = v.reshape(n, na, 9)
+        src = np.einsum("ncbij,nbj->nci", e, x).reshape(n, n_source * 9)
+        return (np.einsum("ab,nbi->nai", m9, x) - op._convolve(src)).ravel()
+
+    m_full = np.kron(m9, np.eye(9))
+    pre = np.array(
+        [
+            np.linalg.inv(
+                m_full
+                - np.einsum(
+                    "acij,cbjk->aibk", op.self_blocks[grid.idx[m, 0]], e[m]
+                ).reshape(rows, rows)
+            )
+            for m in range(n)
+        ]
+    )
+
+    def precondition(v: NDArray) -> NDArray:
+        return np.einsum("nij,nj->ni", pre, v.reshape(n, rows)).ravel()
+
+    ref = reference_moments(grid, omega, kx, ky, wave, n_field)
+    rhs = ref[:, :na].ravel()
+    dim = n * rows
+    count = [0]
+
+    def counted(v):
+        count[0] += 1
+        return matvec(v)
+
+    sol, info = gmres(
+        LinearOperator((dim, dim), matvec=counted, dtype=complex),
+        rhs,
+        x0=precondition(rhs),
+        M=LinearOperator((dim, dim), matvec=precondition, dtype=complex),
+        rtol=tol,
+        atol=0.0,
+        restart=restart,
+        maxiter=max_cycles,
+    )
+    if info != 0:
+        raise RuntimeError(
+            f"solve_interface_gmres: GMRES did not reach rtol {tol:g} in {restart * max_cycles} iterations."
+        )
+    full = np.zeros((n, n_field, 9), dtype=complex)
+    full[:, :na] = sol.reshape(n, na, 9)
+    return InterfaceResult(grid, omega, delta, ref, full, p, r), count[0]

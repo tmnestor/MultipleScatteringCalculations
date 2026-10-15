@@ -122,3 +122,32 @@ def test_radius_needs_a_window():
     g = iso.InterfaceGrid(np.array([[-1, 0, 0]]), H, A, B)
     with pytest.raises(ValueError, match="smooth window"):
         iso.InterfaceCouplings(g, radius=16.0, workers=1)
+
+
+def test_lateral_fft_product_and_gmres_match_the_dense_solve():
+    """Cells scattered in a box with gaps, on both sides: the FFT product equals ``apply_coupling`` and the GMRES
+    solve equals the dense one."""
+    g = iso.InterfaceGrid(
+        np.array([[-1, 0, 0], [0, 1, 0], [-2, -1, 1], [1, 2, 2], [0, 0, 0]]), H, A, B
+    )
+    c = iso.InterfaceCouplings(g)
+    ctr = [
+        MaterialContrast(
+            0.1 * g.medium(m).lam, 0.1 * g.medium(m).mu, 0.1 * g.medium(m).rho
+        )
+        for m in range(5)
+    ]
+    ctr[3] = None  # a cell of the reference medium
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    op = iso.LateralOperator(c, OMEGA, p=1, r=1)
+    delta = iso.cell_contrasts(g, OMEGA, ctr, 1)
+    x = np.random.default_rng(5).standard_normal((5, 4, 9)) + 0j
+    blocks = c.blocks(OMEGA)
+    want = iso.apply_coupling(g, blocks, delta, x, 1, 1)
+    assert np.abs(op.coupling(delta, x) - want).max() < 1e-12 * np.abs(want).max()
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=1, blocks=blocks)
+    it, n_it = iso.solve_interface_gmres(
+        c, OMEGA, ctr, kx, ky, "P", p=1, r=1, operator=op
+    )
+    assert np.abs(it.psi - dense.psi).max() < 1e-10 * np.abs(dense.psi).max()
+    assert n_it < 50
