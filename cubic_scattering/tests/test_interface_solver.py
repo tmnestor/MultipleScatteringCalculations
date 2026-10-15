@@ -92,7 +92,9 @@ def test_blocks_match_the_direct_blocks():
     """The batched per-frequency blocks (series, symmetry, mirroring) equal the blocks pair by pair:
     Paper 2's Gauss block plus ``interface_block``, or ``interface_block`` alone across the interface."""
     g = iso.InterfaceGrid(np.array([[-1, 0, 0], [0, 1, 0], [-2, -1, 1]]), H, A, B)
-    c = iso.InterfaceCouplings(g)
+    c = iso.InterfaceCouplings(
+        g, omega4=False
+    )  # the split of ``interface_block``'s default
     got = c.blocks(OMEGA)
     u = g.units
     for (m, n), k in got.items():
@@ -110,3 +112,9 @@ def test_blocks_match_the_direct_blocks():
             off = tuple(int(v) for v in g.idx[m] - g.idx[n])
             want = want + coupling_block(off, H, OMEGA, g.medium(m), 10, 4)
         assert np.abs(k - want).max() < 1e-11 * np.abs(want).max(), (m, n)
+
+
+def test_window_needs_the_omega2_split():
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0]]), H, A, B)
+    with pytest.raises(ValueError, match="omega4=False"):
+        iso.InterfaceCouplings(g, window=isp.Window(0.5), workers=1)
