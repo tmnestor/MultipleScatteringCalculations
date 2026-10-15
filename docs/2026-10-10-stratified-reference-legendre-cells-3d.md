@@ -407,8 +407,12 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
   (51) pass. **But a higher frequency needs more terms m**, and each new odd m costs minutes per touching orbit:
   even m are polynomials (Gauss exact, ms), odd m go through the closed master integrals (3–10 s per derivative
   multi-index, ~41 per m). Gate cost with the series (n_source 20, n_test 10): first frequency 3683 s, a 10%
-  higher one 387 s. The moments are universal (no medium, h or ω): computed once they need never be computed
-  again — a store (package data for n_source 35, n_test 10, sliced; or a local cache) is the open decision.
+  higher one 387 s. The moments are universal (no medium, h or ω). **Decision (user): package data.**
+  `scripts/build_near_series_moments.py` (resumable, 4 workers, ~2 h) writes `scripts/data/near_series_moments.npz`:
+  4284 moments, m to 31 (ωh/β ≤ 1/2), the four touching orbits, n_source 35 / n_test 10 (smaller bases are exact
+  slices), 5.1 MB; `universal_moment` reads it, else computes (`universal_moment_direct`). Store vs computed
+  1.4e-15; the four orbits at n_source 20 cost 0.3–0.55 s per frequency from the first one. **Gate cost now:
+  set-up 804 s, first frequency 31 s, each further 13.4 s** (was 29 s) — the rest is the interface D.
 - **Next in step 2.** The per-frequency cost (touching whole-space blocks: Paper 2's frequency-independent near
   parts; interface D: fewer radial nodes with the ω⁴ split's lower Q0); GMRES with `apply_coupling` and a
   block-Jacobi preconditioner for larger scatterers; then Stage A (layer partition).
