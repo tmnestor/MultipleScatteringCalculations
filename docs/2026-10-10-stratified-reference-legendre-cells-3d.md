@@ -413,6 +413,12 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
   slices), 5.1 MB; `universal_moment` reads it, else computes (`universal_moment_direct`). Store vs computed
   1.4e-15; the four orbits at n_source 20 cost 0.3–0.55 s per frequency from the first one. **Gate cost now:
   set-up 804 s, first frequency 31 s, each further 13.4 s** (was 29 s) — the rest is the interface D.
+- **The ω⁴ split and Q0 (15 October).** `scripts/measure_interface_q0_omega4.py`: **D's time per pair does not
+  depend on Q0** (0.03–0.06 s for Q0h = 3 … 10: fixed work, not radial panels), so lowering Q0 saves nothing. The
+  ω⁴ split buys accuracy at the same Q0 (worst of three pairs, Q0h = 10: ωh/β = 1/6 3.5e-10 → 4.8e-11, the rounding
+  floor, reached at Q0h = 5; 1/2: 2.5e-8 → 6.2e-11). The time was in `_interpolate` (S_n at the radial nodes, per
+  pair): now once per (lateral offset, rule) and one matrix product per panel. `InterfaceCouplings` defaults to the
+  ω⁴ split (no window). **Gate: set-up 2062 s, first frequency 24 s, each further 3.5 s**; Born, p unchanged.
 - **Next in step 2.** The per-frequency cost (touching whole-space blocks: Paper 2's frequency-independent near
   parts; interface D: fewer radial nodes with the ω⁴ split's lower Q0); GMRES with `apply_coupling` and a
   block-Jacobi preconditioner for larger scatterers; then Stage A (layer partition).
