@@ -451,7 +451,14 @@ with the Duffy quadrature of \S\ref{sec:coupling} to $10^{-9}$ for all pairs $(a
 at face, edge and corner neighbours, and the complete blocks, static and dynamic, agree with the
 quadrature blocks to $10^{-10}$ at $k_Sh=0.0625$ and $0.5$ for the linear field and at $k_Sh=0.25$ for the
 quadratic field of \S\ref{sec:voxel} (\path{cubic_scattering/graded_voxel/moments.py},
-\path{blocks.near_block_series}). For cells that do not touch the kernel is smooth and the Gauss rule of
+\path{blocks.near_block_series}). Each term $m$ of the series is a set of universal moments contracted with fixed
+$9\times9$ tables, independent of the medium, the cell size and the frequency, so it is contracted once and a
+frequency then costs a short weighted sum, a few milliseconds per touching block. The odd orders need the master
+integrals, seconds to tens of seconds per moment, and are therefore computed once and stored: for the four
+touching orbits up to the order $m=31$ that $k_Sh\le1/2$ requires, $4284$ moments at field degree two, of which a
+smaller basis is the leading slice (\path{scripts/build_near_series_moments.py}). From the stored moments the four
+touching blocks of a frequency cost $0.3$ to $0.6$\,s together at field degree two, against about $8$\,s by
+quadrature, and agree with the moments computed afresh to $1.4\times10^{-15}$. For cells that do not touch the kernel is smooth and the Gauss rule of
 \S\ref{sec:coupling} is used; the same closed forms apply there with longer boxes, and have not been
 tabulated.
 
