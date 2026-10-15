@@ -956,6 +956,8 @@ $\mathbf G^{R}_2$, $\mathbf G^{T}_2$ & exact kernels at $50$ digits, $\omega$ ha
 $\mathbf G^{R}_2$, $\mathbf G^{T}_2$ with symbolic media & second computer-algebra derivation at rational media & identical \\
 $\omega^4$ terms, $1245$ and $1002$, symbolic media & transform of each term against the rotated, differentiated spectrum, $30$ digits & exact \\
 $\omega^4$ blocks, two pairs of media, two reflected pairs not touching their images, two transmitted pairs & finite part of the plane-wave integral of $\mathbf Y_2$: closed form below $q_s$, Gauss panels above & $4.6\times10^{-16}$--$2.9\times10^{-15}$ \\
+Galerkin solve, $8$ cells straddling the interface, identical media & the homogeneous solve & $3.1\times10^{-12}$ \\
+Galerkin solve, different media, scattered field at $4$ receiver cells, vanishing contrast & Born field, every coupling by the plane-wave integral of the interface coefficients & $4.9$--$5.6\times10^{-11}$ \\
 split to $\omega^2$ and to $\omega^4$ at $Q_0h=3$--$10$, self-image, across and lateral pairs, $\omega h/\beta=1/6$, $1/2$ & split to $\omega^4$ at $Q_0h=20$ & at $Q_0h=10$: $3.5\times10^{-10}$, $2.5\times10^{-8}$ ($\omega^2$); $4.8\times10^{-11}$, $6.2\times10^{-11}$ ($\omega^4$) \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
@@ -1068,6 +1070,26 @@ families. Degree one: $4$ field functions and $10$ source monomials; degree two:
 \label{tab:bases}
 \end{table}
 
+\paragraph{The blocks in a solve.} The blocks enter the Galerkin system of the homogeneous medium unchanged in
+form, $(\mathbf M-\bK\mathbf E)\boldsymbol\psi=\langle\mathbf Q,\mathbf u_{\mathrm{ref}}\rangle$
+\citep{NestorLegendre2026,NestorCoupling2026}, with the coupling of the two half-spaces: for cells on one side the
+whole-space block of that side's medium plus the reflected block, for cells on opposite sides the transmitted block
+alone. Each cell's contrast is taken against its own side's medium, and the right-hand side is the field of the
+two half-spaces for an incident plane wave, the incident and reflected waves above the interface and the
+transmitted ones below it. Eight cells straddle the interface, four on each side, each with a contrast of $10\%$
+of its medium's $\lambda$, $\mu$ and $\rho$; $h=50$\,m, $\omega h/\beta_A=1/6$, and a P wave with lateral slowness
+$(0.3,0.1)/\alpha_A$. With identical media the solve reproduces the homogeneous one, assembled from the whole-space
+blocks alone with the incident wave as right-hand side, to $3.1\times10^{-12}$. With different media, four
+receiver cells without contrast, two above the interface and two below, in planes clear of the scatterer's, carry
+the scattered field; solved for directly, $(\mathbf M-\bK\mathbf E)\mathbf s=\bK\mathbf E\boldsymbol\psi_0$, and
+taken to vanishing contrast, it agrees to $4.9$--$5.6\times10^{-11}$ with the Born field whose every coupling,
+direct, reflected or transmitted, is the plane-wave integral of the mode reflection and transmission
+coefficients of the interface, sharing no step with the closed forms or the split. The scattered field at the
+receivers changes by $8.1\times10^{-3}$ from cells of degree zero to degree two and by $2.2\times10^{-4}$ from
+degree one to two. The frequency-independent parts are computed once for each class of pairs under the lateral
+symmetries of the interface ($78$ classes, about $800$\,s on four processes); each further frequency then costs
+$3.5$\,s for all the blocks and a fraction of a second for the solve.
+
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
 
@@ -1090,7 +1112,7 @@ lateral neighbour) is then exact to $4.8\times10^{-11}$ at $\omega h/\beta=1/6$ 
 against $3.5\times10^{-10}$ and $2.5\times10^{-8}$ with the $\omega^2$ term alone. A lower cutoff would not make a
 frequency cheaper: the plane-wave part costs $0.03$ to $0.06$\,s per pair at every $Q_0h$ from $3$ to $10$, its
 work being the interface solve and the cells' moments at each radial node, not the length of the range. Nor does
-a solution see the gain: in a Galerkin solve of eight cells straddling the interface at $\omega h/\beta=1/6$ the
+a solution see the gain: in the Galerkin solve of Section~\ref{sec:verification}, at $\omega h/\beta=1/6$, the
 scattered field of degree-one and degree-two cells differs by $2\times10^{-4}$, four or more orders above the
 error the $\omega^2$ term leaves in the blocks, and toward $\omega h/\beta=1$, where the gain grows, the cells are
 three per shear wavelength and the discretisation error grows faster. The $\omega^4$ term is therefore a
