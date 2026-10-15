@@ -400,6 +400,15 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
   Found on the way: `interface_lateral.rect_poly_moments` wrapped in int64 for numpy-integer corners (callers with
   Python ints unaffected); `frame_laurent` failed on an identically zero kernel (identical media);
   `near_block_series` is slower than Gauss per frequency (8–21 s vs 1.5–3 s; minutes on first use).
+- **The near series per frequency (15 October).** `near_block_series` re-contracted the family tables with the
+  universal moments at every frequency (8–21 s per block); now `near_series_coefficients(m, offset, …)` contracts
+  each term once (grouped by derivative count, h^(6+m−d)), and a frequency is a weighted sum: 5.8 ms (self),
+  8.3 ms (edge) once its terms exist; new vs old ≤ 5.2e-15, vs Gauss 1.2e-15, 4.3e-15; Paper 2's series tests
+  (51) pass. **But a higher frequency needs more terms m**, and each new odd m costs minutes per touching orbit:
+  even m are polynomials (Gauss exact, ms), odd m go through the closed master integrals (3–10 s per derivative
+  multi-index, ~41 per m). Gate cost with the series (n_source 20, n_test 10): first frequency 3683 s, a 10%
+  higher one 387 s. The moments are universal (no medium, h or ω): computed once they need never be computed
+  again — a store (package data for n_source 35, n_test 10, sliced; or a local cache) is the open decision.
 - **Next in step 2.** The per-frequency cost (touching whole-space blocks: Paper 2's frequency-independent near
   parts; interface D: fewer radial nodes with the ω⁴ split's lower Q0); GMRES with `apply_coupling` and a
   block-Jacobi preconditioner for larger scatterers; then Stage A (layer partition).
