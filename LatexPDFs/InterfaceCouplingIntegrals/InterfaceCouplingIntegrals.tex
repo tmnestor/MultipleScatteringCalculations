@@ -956,6 +956,7 @@ $\mathbf G^{R}_2$, $\mathbf G^{T}_2$ & exact kernels at $50$ digits, $\omega$ ha
 $\mathbf G^{R}_2$, $\mathbf G^{T}_2$ with symbolic media & second computer-algebra derivation at rational media & identical \\
 $\omega^4$ terms, $1245$ and $1002$, symbolic media & transform of each term against the rotated, differentiated spectrum, $30$ digits & exact \\
 $\omega^4$ blocks, two pairs of media, two reflected pairs not touching their images, two transmitted pairs & finite part of the plane-wave integral of $\mathbf Y_2$: closed form below $q_s$, Gauss panels above & $4.6\times10^{-16}$--$2.9\times10^{-15}$ \\
+split to $\omega^2$ and to $\omega^4$ at $Q_0h=3$--$10$, self-image, across and lateral pairs, $\omega h/\beta=1/6$, $1/2$ & split to $\omega^4$ at $Q_0h=20$ & at $Q_0h=10$: $3.5\times10^{-10}$, $2.5\times10^{-8}$ ($\omega^2$); $4.8\times10^{-11}$, $6.2\times10^{-11}$ ($\omega^4$) \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
 static and $\omega^2$ blocks of touching cells: own image, edge, corner, across the interface & plane-wave integral, algebraic tail in closed form (Weber--Schafheitlin, 2-D lateral finite parts) & $3.4\times10^{-14}$--$4.9\times10^{-13}$ \\
@@ -1083,9 +1084,19 @@ coefficients $\bK^{R}_1(Q_0)$ of the $\omega^2$ term are computed once for each 
 each frequency only the remainder is integrated, over $qh<Q_0h$, with one interface solve per radial node
 and the angular integrals of the cells' lateral moments tabulated once, so that a frequency costs tens of
 milliseconds per block at $\omega h/\beta=1/6$ and a few hundred at $\omega h/\beta=1$. With the $\omega^4$ term,
-Eq.~\eqref{eq:omega4split}, also in closed form for any media, the dropped remainder falls as $Q_0^{-8}$, so a
-lower cutoff, and fewer radial nodes per frequency, reach the same accuracy; higher orders follow the same way,
-each a polynomial two degrees higher, but the gain is then in the cost of the remainder, not in its accuracy.
+Eq.~\eqref{eq:omega4split}, also in closed form for any media, the dropped remainder falls as $Q_0^{-8}$: at
+$Q_0h=10$ the worst of three pairs near the interface (the self-image pair, the pair touching across it and a
+lateral neighbour) is then exact to $4.8\times10^{-11}$ at $\omega h/\beta=1/6$ and $6.2\times10^{-11}$ at $1/2$,
+against $3.5\times10^{-10}$ and $2.5\times10^{-8}$ with the $\omega^2$ term alone. A lower cutoff would not make a
+frequency cheaper: the plane-wave part costs $0.03$ to $0.06$\,s per pair at every $Q_0h$ from $3$ to $10$, its
+work being the interface solve and the cells' moments at each radial node, not the length of the range. Nor does
+a solution see the gain: in a Galerkin solve of eight cells straddling the interface at $\omega h/\beta=1/6$ the
+scattered field of degree-one and degree-two cells differs by $2\times10^{-4}$, four or more orders above the
+error the $\omega^2$ term leaves in the blocks, and toward $\omega h/\beta=1$, where the gain grows, the cells are
+three per shear wavelength and the discretisation error grows faster. The $\omega^4$ term is therefore a
+reference, for blocks exact to rounding at the cost of a closed-form $\bK_2$ per arrangement of cells, not a
+default; higher orders follow the same way, each a polynomial two degrees higher, and are not needed for the
+same reason.
 
 For a stack of layers the same construction applies interface by interface. The singular part of the
 reflected and transmitted couplings comes only from the interface that the cells touch, and is the static
