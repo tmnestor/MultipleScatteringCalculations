@@ -181,10 +181,13 @@ class InterfaceCouplings:
         grid: The cells.
         n_source: Source monomials (10 for p <= 1 with r <= 1, ``field_sizes``).
         n_test: Field functions (4 or 10).
-        q0h: The split's cutoff Q0 h (``interface_spectral.sweep``: 10 suits omega h / beta <= 1/6, 40 to 1).
+        q0h: The split's cutoff Q0 h.  With the omega^4 split the dropped remainder at Q0 h = 10 is ~5e-11 of the
+            block to omega h / beta = 1/2 (scripts/measure_interface_q0_omega4.py); D's cost per frequency does not
+            depend on Q0, so a lower cutoff saves no time.
         q1h: Kept for ``frequency_independent_parts``.
         window: Optional smooth window of the split.
-        omega4: Also the omega^4 correction A2 (no window).
+        omega4: The omega^4 split (default): also A2, set up once, so the remainder falls as Q0^-8 (with the
+            omega^2 split alone, ~2e-8 at omega h / beta = 1/2, Q0 h = 10).  Not with a window.
         workers: Processes for the set-up (default: the CPUs).
     """
 
@@ -194,7 +197,7 @@ class InterfaceCouplings:
     q0h: float = 10.0
     q1h: float = 160.0
     window: isp.Window | None = None
-    omega4: bool = False
+    omega4: bool = True
     workers: int | None = None
     classes: dict = field(default_factory=dict, init=False)
 
