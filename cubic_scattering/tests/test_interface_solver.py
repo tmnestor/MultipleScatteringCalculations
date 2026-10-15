@@ -39,7 +39,7 @@ def test_symmetry_map_matches_the_direct_block():
     """A pair with lateral offset (-2, 1) cells across the interface: its block by the lateral symmetry from the
     canonical one equals the block computed directly."""
     g = iso.InterfaceGrid(np.array([[0, -2, 1], [-1, 0, 0]]), H, A, B)
-    c = iso.InterfaceCouplings(g, workers=1)
+    c = iso.InterfaceCouplings(g, workers=1, omega4=False)  # the split of ``interface_block``'s default
     got = c.interface_block(0, 1, OMEGA)
     direct = isp.interface_block((1, -4, 2), (-1, 0, 0), H, OMEGA, A, B, 10, 4)
     assert np.abs(got - direct).max() < 1e-13 * np.abs(direct).max()
