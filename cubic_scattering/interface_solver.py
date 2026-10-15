@@ -202,6 +202,10 @@ class InterfaceCouplings:
     classes: dict = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
+        if self.window is not None and self.omega4:
+            raise ValueError(
+                "InterfaceCouplings: the omega^4 split has no windowed form; pass omega4=False with a window."
+            )
         u = self.grid.units
         keys = set()
         for m, n in itertools.product(range(len(u)), repeat=2):
