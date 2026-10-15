@@ -444,7 +444,9 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
 - **Open for the paper.**
   - ~~step 1's locality result~~ — done 14 October: Table tab:locality and the radius (12/16/24 h for
     1e-6/1e-8/1e-10) in the plane-wave-route paragraph of the Verification section;
-  - whether to include step 2's end-to-end solve as an application section;
+  - ~~step 2's end-to-end solve~~ — decided 15 October: a short paragraph, "The blocks in a solve", at the end
+    of the Verification section (identical media, Born against plane waves, p, cost) with two verification rows;
+    the full application is left for the Stage A paper;
   - one stated limitation (base integrals for cubic corner boxes only).
 - **Older open items.**
   - Scan Papers 1 and 3 for conclusions resting on numpy `leggauss` weights.
