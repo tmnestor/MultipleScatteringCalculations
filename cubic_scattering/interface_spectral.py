@@ -928,7 +928,13 @@ def _interpolate(table_entry: tuple, qh: NDArray) -> NDArray:
     i = np.clip(np.searchsorted(edges, qh, side="right") - 1, 0, len(edges) - 2)
     x = 2 * (qh - edges[i]) / (edges[i + 1] - edges[i]) - 1
     v = np.polynomial.chebyshev.chebvander(x, coeffs.shape[1] - 1)
-    return np.einsum("rk,rk...->r...", v, coeffs[i])
+    # one matrix product per panel (no gathered copy of the coefficients per node)
+    out = np.empty((len(qh),) + coeffs.shape[2:], dtype=coeffs.dtype)
+    flat = coeffs.reshape(coeffs.shape[0], coeffs.shape[1], -1)
+    for p in np.unique(i):
+        sel = i == p
+        out[sel] = (v[sel] @ flat[p]).reshape((-1,) + coeffs.shape[2:])
+    return out
 
 
 def _dynamic_frames(
@@ -1028,6 +1034,7 @@ def truncated_blocks(
         )
     rules: dict = {}
     frames: dict = {}
+    harmonics: dict = {}
     out = []
     for (rec, src), off in zip(pairs, offsets, strict=True):
         width = _radial_width(float(np.hypot(*off)))
@@ -1059,7 +1066,9 @@ def truncated_blocks(
                 ]
                 for k, v in frames[key].items():
                     v[on] -= chi[on, None, None] * (stat[0][k] + omega**2 * stat[1][k])
-        S = _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
+        if (off, width) not in harmonics:  # S_n depends on the lateral offset and the rule, not on the depths
+            harmonics[off, width] = _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
+        S = harmonics[off, width]
         blk = np.zeros((n_test, n_source, 81), dtype=complex)
         for (l, e), rot in frames[key].items():
             sub = S[:, :, fa[l]][:, :, :, sc[e]].reshape(-1, len(fa[l]) * len(sc[e]))
