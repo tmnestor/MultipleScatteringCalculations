@@ -163,9 +163,13 @@ def _canonical(du: int, dv: int) -> tuple[tuple[int, int], NDArray]:
 
 
 def _parts_job(args):
-    rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4 = args
-    parts = isp.frequency_independent_parts(
-        rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4=omega4
+    rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4, local = args
+    parts = (
+        isp.frequency_independent_parts(
+            rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4=omega4
+        )
+        if local
+        else None  # beyond the radius: the block is the windowed D alone
     )
     table = isp.lateral_harmonics(
         [(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test
@@ -190,6 +194,11 @@ class InterfaceCouplings:
             Q0 h = 10): for reference-quality blocks.  It changes no per-frequency cost but about 2.5x the set-up
             (the closed-form K2), and the solution does not see it below the discretisation error.  Not with a
             window.
+        radius: Lateral distance between cell centres (in h) beyond which the frequency-independent corrections
+            A0, A1 are dropped and the block is the windowed plane-wave part D alone; needs a smooth ``window``.
+            With the C-infinity window from Q0 / 4 the corrections fall below 1e-6, 1e-8 and 1e-10 of the touching
+            block beyond 12 h, 16 h and 24 h (cells touching the interface, the slowest case; the paper's
+            tab:locality), so the set-up grows with the radius, not with the grid.  None: every class.
         workers: Processes for the set-up (default: the CPUs).
     """
 
@@ -200,6 +209,7 @@ class InterfaceCouplings:
     q1h: float = 160.0
     window: isp.Window | None = None
     omega4: bool = False
+    radius: float | None = None
     workers: int | None = None
     classes: dict = field(default_factory=dict, init=False)
 
@@ -207,6 +217,11 @@ class InterfaceCouplings:
         if self.window is not None and self.omega4:
             raise ValueError(
                 "InterfaceCouplings: the omega^4 split has no windowed form; pass omega4=False with a window."
+            )
+        if self.radius is not None and self.window is None:
+            raise ValueError(
+                "InterfaceCouplings: a radius needs a smooth window; with the sharp cutoff the corrections ring and\n"
+                "  decay only as d^-3/2.  Pass window=interface_spectral.Window(0.25)."
             )
         u = self.grid.units
         keys = set()
@@ -228,6 +243,7 @@ class InterfaceCouplings:
                 self.q1h,
                 self.window,
                 self.omega4,
+                self.radius is None or np.hypot(a, b) <= self.radius,
             )
             for zr, zs, a, b in keys
         ]
@@ -243,12 +259,17 @@ class InterfaceCouplings:
             results = [_parts_job(j) for j in jobs]
         self.classes = dict(zip(keys, results, strict=True))
 
+    def _zero_parts(self) -> tuple:
+        z = np.zeros((self.n_test, self.n_source, 9, 9), dtype=complex)
+        return (z, z)
+
     def interface_block(self, m: int, n: int, omega: float) -> NDArray:
         """The reflected (same side) or transmitted (opposite sides) block of receiver m, source n."""
         u = self.grid.units
         (a, b), q = _canonical(int(u[m, 1] - u[n, 1]), int(u[m, 2] - u[n, 2]))
         zr, zs = int(u[m, 0]), int(u[n, 0])
         parts, table = self.classes[zr, zs, a, b]
+        parts = self._zero_parts() if parts is None else parts
         g = self.grid
         blk = isp.interface_block(
             (zr, a, b),
@@ -315,6 +336,9 @@ class InterfaceCouplings:
         out = {}
         for key in keys:
             parts = self.classes[key][0]
+            if parts is None:  # beyond the radius
+                out[key] = d[key]
+                continue
             blk = d[key] + parts[0] + omega**2 * parts[1]
             if len(parts) > 2:
                 blk = blk + omega**4 * parts[2]
