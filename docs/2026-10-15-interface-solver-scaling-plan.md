@@ -149,8 +149,11 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     and a depth radius of 4 h: corrections are dropped for a total gap g ≥ 4 h, the same as at 1e-6 (S2).
   - **D2: keep K1** (the ω² closed form) in production. With the set-up bounded by both radii, dropping it
     would save a few minutes once, and would need the unmeasured Q0h = 40 check.
-  - **The depth radius is built:** `InterfaceCouplings(depth_radius=4.0)`, gate
-    `scripts/gate_interface_depth_radius.py`.
+  - **The depth radius is built:** `InterfaceCouplings(depth_radius=4.0)`. Gate
+    `scripts/gate_interface_depth_radius.py`: six layers (iz = −3 … 2) × 2 cells, against the full set-up.
+    At 4 h, 24 of 72 classes keep their corrections; blocks 1.8e-10 (relative to the largest block), solution
+    2.7e-11, PASS. At 6 h: 48 classes, 1.8e-13, 1.9e-14. The real 4 h set-up gives parts identical to the full
+    set-up's, in 175 s against 469 s.
 
 ### S4. D in the wavenumber domain (≈ 3–4 days)
 - Today D is a radial quadrature per class, put onto the lateral grid and then FFT'd. Instead, **sample

@@ -14,6 +14,10 @@ h = 0.05 km, omega h / beta_A = 1/6, Q0 h = 10, the C-infinity window from Q0 / 
 block of the system (as scripts/gate_interface_locality_solve.py), and of the solution.  Then the depth-bounded
 set-up itself: its parts are the full set-up's, and its time.
 
+Measured 16 October 2026 (four workers): the full set-up 72 classes, 469 s; depth radius 4 h: 24 classes with
+corrections, blocks 1.8e-10, solution 2.7e-11; 6 h: 48, 1.8e-13, 1.9e-14.  The depth radius 4 h set-up computes parts
+identical to the full one's, in 175 s.
+
 Run:  PYTHONPATH=. python scripts/gate_interface_depth_radius.py
 """
 
