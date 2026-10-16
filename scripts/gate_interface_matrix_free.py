@@ -9,18 +9,22 @@ same set-up (split, C-infinity window from Q0 / 4, radius 16 h, depth radius 4 h
 the largest difference of the products relative to the largest entry, and the time of each operator's set-up for
 the frequency and of one product.
 
-Boxes 2 x 5 x 5 (50 cells) and 2 x 12 x 12 (288) straddling the interface; media A (5, 3, 2.5) over B
+Boxes 2 x 5 x 5 (50 cells), 6 x 4 x 4 (96, three layers each side: the whole-space march) and 2 x 12 x 12 (288)
+straddling the interface; media A (5, 3, 2.5) over B
 (6.5, 3.6, 2.8), h = 0.05 km, omega h / beta_A = 1/6, p = 1.  PASS below 1e-10 (the high band's mode cancellation
 leaves ~1e-11 of a block at 1/6; D1 is 1e-8).
 
 Measured 16 October 2026 (four workers): 50 cells, products 7.3e-13 apart, stored kernels 54 s + 0.01 s per
 product, matrix-free 30 s + 11.6 s; 288 cells, 2.1e-12, stored 53 s + 0.04 s, matrix-free 38 s + 15.9 s; peak memory
-of the process (both operators) 2.6 and 5.7 GB.
+of the process (both operators) 2.6 and 5.7 GB.  With the whole-space march (planes two or more apart; stored kernels
+for planes 0 and 1 apart): 50 cells 7.3e-13 again; 96 cells in six layers 3.6e-11, stored 149 s + 0.03 s, matrix-free
+179 s + 39.4 s, peak 12.8 GB (the cached factors).
 
-Run:  PYTHONPATH=. python scripts/gate_interface_matrix_free.py
+Run:  PYTHONPATH=. python scripts/gate_interface_matrix_free.py [box indices, default all]
 """
 
 import resource
+import sys
 import time
 
 import numpy as np
@@ -34,12 +38,16 @@ B = ReferenceMedium(6.5, 3.6, 2.8)
 H = 0.05
 OMEGA = A.beta / (6 * H)
 TOL = 1e-10
+#: (layers, cells per side): two layers (no march), six layers (the whole-space march between planes two or more
+#: apart), and the 288-cell box.
+BOXES = [((-1, 0), 5), (tuple(range(-3, 3)), 4), ((-1, 0), 12)]
 
 
 def main() -> None:
     ok = True
-    for n in (5, 12):
-        cells = [(iz, ix, iy) for iz in (-1, 0) for ix in range(n) for iy in range(n)]
+    picked = [int(a) for a in sys.argv[1:]] or range(len(BOXES))
+    for layers, n in (BOXES[i] for i in picked):
+        cells = [(iz, ix, iy) for iz in layers for ix in range(n) for iy in range(n)]
         grid = iso.InterfaceGrid(np.array(cells), H, A, B)
         t0 = time.time()
         c = iso.InterfaceCouplings(
@@ -66,7 +74,7 @@ def main() -> None:
         good = err < TOL
         ok &= good
         print(
-            f"{2 * n * n} cells (set-up {t_setup:.0f} s): products differ by {err:.1e}  {'PASS' if good else 'FAIL'};"
+            f"{len(cells)} cells, {len(layers)} layers (set-up {t_setup:.0f} s): products differ by {err:.1e}  {'PASS' if good else 'FAIL'};"
             f" stored kernels {t_lat:.0f} s + {p_lat:.2f} s per product, matrix-free {t_mf:.0f} s + {p_mf:.2f} s;"
             f" peak memory {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6:.1f} GB",
             flush=True,

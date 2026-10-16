@@ -789,10 +789,13 @@ class MatrixFreeOperator:
       period); per wavenumber three mode amplitudes per source side, plus the window's static pseudo-modes.
       The factors are computed once per frequency.
     - **The corrections** A0 + w^2 A1, local within the lateral and depth radii, as stencils.
-    - **The whole-space blocks**, Paper 2's, by a three-dimensional FFT on each side (translation-invariant in
-      depth there): (2 L_side - 1)(2 nx - 1)(2 ny - 1) blocks per side, linear in the layers.
+    - **The whole-space blocks**, Paper 2's: for planes 0 and 1 apart, stored lateral kernels, 3 (2 nx - 1)(2 ny - 1)
+      blocks per side whatever the number of layers; for planes at least two apart, the plane-wave march in depth
+      (``stratified_apply.WholeSpaceMarch``, the low band's nodes and the box's lattice to q h = 16).
 
-    Needs ``InterfaceCouplings(split=True)``.  The interface ``self_blocks`` (for the preconditioner) are the
+    ``cache``: keep the plane-wave factors between products (each later product is then the NUFFTs and the
+    contractions alone; ~23 kB per node for D with six layers, ~12 kB per node for the march), or recompute them in
+    each product (memory of the lateral kernels only).  Needs ``InterfaceCouplings(split=True)``.  The interface ``self_blocks`` (for the preconditioner) are the
     classes' own.
     """
 
@@ -803,6 +806,7 @@ class MatrixFreeOperator:
         p: int = 1,
         r: int = 0,
         eps: float = 1e-13,
+        cache: bool = True,
     ) -> None:
         if not couplings.split:
             raise ValueError(
@@ -847,6 +851,7 @@ class MatrixFreeOperator:
             band,
             None,
             eps,
+            cache=cache,
         )
         reach = max(max(k[2], k[3]) for k in couplings.classes) // 2
         n_grid = scipy.fft.next_fast_len(reach + 1 + couplings.split_pad)
@@ -867,6 +872,7 @@ class MatrixFreeOperator:
             couplings.q0h,
             couplings.window,
             eps,
+            cache=cache,
         )
 
         # the corrections: a stencil per pair of layers, over the offsets whose class carries them
@@ -888,45 +894,70 @@ class MatrixFreeOperator:
             if st:
                 self.stencils[zr, zs] = st
 
-        # the whole-space blocks, by a 3-D FFT on each side
+        # the whole-space blocks on each side: stored lateral kernels for planes 0 and 1 apart (independent of the
+        # number of layers), the plane-wave march (stratified_apply.WholeSpaceMarch) for planes at least two apart
         ws_cache: dict = {}
         self.sides = []
+        lat = (2 * nx - 1, 2 * ny - 1)
         for side in (
             [z for z in self.layers if z < 0],
             [z for z in self.layers if z >= 0],
         ):
             if not side:
                 continue
-            z0, nz = side[0], side[-1] - side[0] + 1
-            shape3 = (2 * nz - 1, 2 * nx - 1, 2 * ny - 1)
-            kh = np.zeros((na * 9, n_source * 9) + shape3, dtype=complex)
             medium = above if side[0] < 0 else below
-            for dz, dx, dy in itertools.product(
-                range(-(nz - 1), nz), range(-(nx - 1), nx), range(-(ny - 1), ny)
-            ):
-                k = _whole_space(
-                    (dz, dx, dy),
+            kernels = {}
+            for dz in (-1, 0, 1):
+                if dz and side[-1] - side[0] < 1:
+                    continue
+                kh = np.zeros((na * 9, n_source * 9) + lat, dtype=complex)
+                for dx, dy in itertools.product(
+                    range(-(nx - 1), nx), range(-(ny - 1), ny)
+                ):
+                    k = _whole_space(
+                        (dz, dx, dy),
+                        h,
+                        omega,
+                        medium,
+                        couplings.n_source,
+                        couplings.n_test,
+                        ws_cache,
+                        couplings.far_coeffs,
+                    )
+                    kh[:, :, dx % lat[0], dy % lat[1]] = (
+                        k[:na, :n_source]
+                        .transpose(0, 2, 1, 3)
+                        .reshape(na * 9, n_source * 9)
+                    )
+                kernels[dz] = np.fft.fft2(kh, axes=(2, 3)).reshape(
+                    na * 9, n_source * 9, -1
+                )
+            march = None
+            if side[-1] - side[0] >= 2:
+                kx, ky, w = sap.whole_space_nodes(
+                    2.0 * float(np.hypot(nx - 1, ny - 1)),
+                    n_grid,
                     h,
                     omega,
                     medium,
-                    couplings.n_source,
-                    couplings.n_test,
-                    ws_cache,
-                    couplings.far_coeffs,
+                    band,
+                    lp,
                 )
-                kh[:, :, dz % shape3[0], dx % shape3[1], dy % shape3[2]] = (
-                    k[:na, :n_source]
-                    .transpose(0, 2, 1, 3)
-                    .reshape(na * 9, n_source * 9)
-                )
-            self.sides.append(
-                (
+                march = sap.WholeSpaceMarch(
                     side,
-                    z0,
-                    shape3,
-                    np.fft.fftn(kh, axes=(2, 3, 4)).reshape(na * 9, n_source * 9, -1),
+                    self.shape,
+                    kx,
+                    ky,
+                    w,
+                    h,
+                    omega,
+                    medium,
+                    n_source,
+                    na,
+                    eps,
+                    cache=cache,
                 )
-            )
+            self.sides.append((side, kernels, march))
 
         # the preconditioner's self blocks: the self class's interface block plus the whole-space self block
         self_keys = [(2 * z + 1, 2 * z + 1, 0, 0) for z in self.layers]
@@ -981,21 +1012,29 @@ class MatrixFreeOperator:
                     slice(max(0, -dy), min(ny, ny - dy)),
                 )
                 y[rx, ry] += np.einsum("acij,xycj->xyai", blk, x[sx, sy])
-        for side, z0, shape3, kf in self.sides:
-            g3 = np.zeros((n_source * 9,) + shape3, dtype=complex)
+        lat = (2 * nx - 1, 2 * ny - 1)
+        spec = {
+            z: np.fft.fft2(
+                np.pad(
+                    g.reshape(nx, ny, -1).transpose(2, 0, 1),
+                    ((0, 0), (0, nx - 1), (0, ny - 1)),
+                ),
+                axes=(1, 2),
+            ).reshape(n_source * 9, -1)
+            for z, g in grids.items()
+        }
+        for side, kernels, march in self.sides:
             for z in side:
-                g3[:, z - z0, :nx, :ny] = (
-                    grids[z].reshape(nx, ny, -1).transpose(2, 0, 1)
-                )
-            spec = np.fft.fftn(g3, axes=(1, 2, 3)).reshape(n_source * 9, -1)
-            y3 = np.fft.ifftn(
-                np.einsum("rcf,cf->rf", kf, spec).reshape((na * 9,) + shape3),
-                axes=(1, 2, 3),
-            )
-            for z in side:
-                out_g[z] += (
-                    y3[:, z - z0, :nx, :ny].transpose(1, 2, 0).reshape(nx, ny, na, 9)
-                )
+                acc = np.zeros((na * 9, lat[0] * lat[1]), dtype=complex)
+                for dz, kf in kernels.items():
+                    if z - dz in spec and (z - dz) in side:
+                        acc += np.einsum("rcf,cf->rf", kf, spec[z - dz])
+                y = np.fft.ifft2(acc.reshape((na * 9,) + lat), axes=(1, 2))
+                out_g[z] += y[:, :nx, :ny].transpose(1, 2, 0).reshape(nx, ny, na, 9)
+            if march is not None:
+                got = march.apply({z: grids[z] for z in side})
+                for z in side:
+                    out_g[z] += got[z]
         out = np.zeros((len(src), na, 9), dtype=complex)
         for z, cells in self.by_layer.items():
             out[cells] = out_g[z][self.pos[cells, 0], self.pos[cells, 1]]
