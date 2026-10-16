@@ -30,6 +30,7 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 
 import numpy as np
+import scipy.fft
 import scipy.linalg
 from numpy.typing import NDArray
 
@@ -212,6 +213,13 @@ class InterfaceCouplings:
             1e-8 of the touching static block for g >= 4 h, below 1e-10 for g >= 6 h
             (scripts/measure_interface_depth_locality.py), so only the layers nearest the interface carry them and
             the set-up does not grow with the number of layers.  None: every depth.
+        split: D = D_low + D_high (scaling plan S4; needs a smooth ``window``).  D_low, the band below the window's
+            ramp (q h < window.start Q0 h) that holds the branch points and D's slow ~h/r tail, stays a per-offset
+            radial integral, with tables over that short band only; D_high, smooth in k, is sampled on the FFT
+            grid of a periodic box (``interface_spectral.high_band_blocks``), with no per-offset work.
+        split_pad: Cells between the box's farthest offset and the first periodic image of D_high.  D_high
+            decays faster than any power: below 1e-8 of the touching static block at ~26 cells (omega h / beta =
+            1/6) to ~34 (1/2), 1e-10 at ~40 to ~55.
         workers: Processes for the set-up (default: the CPUs).
     """
 
@@ -224,6 +232,8 @@ class InterfaceCouplings:
     omega4: bool = False
     radius: float | None = None
     depth_radius: float | None = None
+    split: bool = False
+    split_pad: int = 40
     workers: int | None = None
     classes: dict = field(default_factory=dict, init=False)
 
@@ -239,6 +249,10 @@ class InterfaceCouplings:
                 "InterfaceCouplings: a radius needs a smooth window; with the sharp cutoff the corrections ring and\n"
                 "  decay only as d^-3/2.  Pass window=interface_spectral.Window(0.25)."
             )
+        if self.split and self.window is None:
+            raise ValueError(
+                "InterfaceCouplings: split needs a smooth window (its band ends where the window's ramp starts)."
+            )
         u = self.grid.units
         keys = set()
         for m, n in itertools.product(range(len(u)), repeat=2):
@@ -251,8 +265,10 @@ class InterfaceCouplings:
         # S_n(q) depends on the lateral offset alone, not on the depths or media: one table per offset,
         # shared by its classes.  Its cost grows as the reach squared, so the farthest go first.
         offsets = sorted({k[2:] for k in keys}, key=lambda o: -np.hypot(*o))
+        # with the split, D's per-offset part is the low band alone: tables over q h < band_qh only
+        table_qh = self.band_qh if self.split else self.q0h
         jobs = [
-            ("table", (o, g.h, self.q0h, self.n_source, self.n_test)) for o in offsets
+            ("table", (o, g.h, table_qh, self.n_source, self.n_test)) for o in offsets
         ] + [
             (
                 "parts",
@@ -286,6 +302,26 @@ class InterfaceCouplings:
         parts = dict(zip(local, results[len(offsets) :], strict=True))
         self.classes = {k: (parts.get(k), tables[k[2:]]) for k in keys}
 
+    @property
+    def band_qh(self) -> float:
+        """The upper end of the split's low band: where the window's ramp starts."""
+        return self.window.start * self.q0h
+
+    def low_pass(self, omega: float) -> isp.Window:
+        """The split's band at a frequency: its ramp from twice the highest branch point (at least 0.35 / h; a
+        wider ramp makes D_high decay faster) to ``band_qh``."""
+        g = self.grid
+        top = max(
+            omega * g.h / c for m in (g.above, g.below) for c in (m.alpha, m.beta)
+        )
+        lo = max(0.35, 2 * top)
+        if lo >= self.band_qh:
+            raise ValueError(
+                f"InterfaceCouplings: the split's band [{lo:g}, {self.band_qh:g}] (q h) is empty at this frequency;"
+                " raise q0h or the window's start."
+            )
+        return isp.Window(lo / self.band_qh)
+
     def corrected(self, key: tuple) -> bool:
         """Whether the class (zr, zs, a, b) carries A0, A1: within the lateral radius and the depth radius."""
         zr, zs, a, b = key
@@ -299,6 +335,10 @@ class InterfaceCouplings:
 
     def interface_block(self, m: int, n: int, omega: float) -> NDArray:
         """The reflected (same side) or transmitted (opposite sides) block of receiver m, source n."""
+        if self.split:
+            raise NotImplementedError(
+                "InterfaceCouplings.interface_block: with split the blocks come from interface_canonical."
+            )
         u = self.grid.units
         (a, b), q = _canonical(int(u[m, 1] - u[n, 1]), int(u[m, 2] - u[n, 2]))
         zr, zs = int(u[m, 0]), int(u[n, 0])
@@ -331,41 +371,63 @@ class InterfaceCouplings:
         for _, t in self.classes.values():
             table.update({k: v for k, v in t.items() if isinstance(k, tuple)})
         keys = list(self.classes)
+        if self.split:
+            lp = self.low_pass(omega)
+            # D's per-offset part: the low band, below the window
+            qh_d, window_d, extra = self.band_qh, None, {"low_pass": lp}
+        else:
+            qh_d, window_d, extra = self.q0h, self.window, {}
         d: dict = {}
         for from_a in (True, False):
             sel = [k for k in keys if (k[1] < 0) == from_a]
             if not sel:
                 continue
             pairs = [((zr, a, b), (zs, 0, 0)) for zr, zs, a, b in sel]
-            if from_a:
-                got = isp.truncated_blocks(
+            # a source in B: the mirrored cells (z -> -z, media exchanged), mapped back
+            media = (g.above, g.below) if from_a else (g.below, g.above)
+            back = (lambda x: x) if from_a else isp._mirror
+            if not from_a:
+                pairs = [(isp._mirrored(r), isp._mirrored(s)) for r, s in pairs]
+            got = [
+                back(x)
+                for x in isp.truncated_blocks(
                     pairs,
                     g.h,
                     omega,
-                    g.above,
-                    g.below,
+                    *media,
                     self.n_source,
                     self.n_test,
-                    self.q0h,
+                    qh_d,
                     table,
-                    self.window,
+                    window_d,
+                    **extra,
                 )
-            else:
-                got = [
-                    isp._mirror(x)
-                    for x in isp.truncated_blocks(
-                        [(isp._mirrored(r), isp._mirrored(s)) for r, s in pairs],
+            ]
+            if self.split:
+                # D_high: one periodic grid per pair of depths, shared by every lateral offset
+                reach = max(max(k[2], k[3]) for k in sel) // 2  # cells
+                n_grid = scipy.fft.next_fast_len(reach + 1 + self.split_pad)
+                for zr, zs in sorted({k[:2] for k in sel}):
+                    rz, sz = (zr, zs) if from_a else (-zr, -zs)
+                    hi = isp.high_band_blocks(
+                        rz,
+                        sz,
+                        n_grid,
                         g.h,
                         omega,
-                        g.below,
-                        g.above,
+                        *media,
                         self.n_source,
                         self.n_test,
                         self.q0h,
-                        table,
-                        self.window,
+                        window=self.window,
+                        low_pass=lp,
+                        band_qh=self.band_qh,
                     )
-                ]
+                    for i, k in enumerate(sel):
+                        if k[:2] == (zr, zs):
+                            got[i] = got[i] + back(
+                                hi[(k[2] // 2) % n_grid, (k[3] // 2) % n_grid]
+                            )
             d.update(zip(sel, got, strict=True))
         out = {}
         for key in keys:
