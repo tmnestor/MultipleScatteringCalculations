@@ -183,9 +183,8 @@ def _table_job(args):
 
 def _setup_job(job):
     kind, args = job
-    if (
-        kind == "far"
-    ):  # Paper 2's whole-space series coefficients of an orbit (frequency-independent)
+    if kind == "far":
+        # Paper 2's whole-space series coefficients of an orbit (frequency-independent)
         return far_series_coefficients(*args)
     return _parts_job(args) if kind == "parts" else _table_job(args)
 
@@ -209,76 +208,6 @@ def _one_blas_thread():
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
-
-
-def _started(_):
-    return os.getpid()
-
-
-#: The lateral tables, in a worker of the per-frequency pool (sent once, by its initializer).
-_TABLES: dict = {}
-
-
-def _set_tables(table: dict) -> None:
-    _TABLES.clear()
-    _TABLES.update(table)
-
-
-def _d_job(args):
-    """D for the classes of one pair of depths (the source in A; a source in B mirrored by the caller): the
-    radial integral per offset, plus with the split the high band on the FFT grid."""
-    (
-        zr,
-        zs,
-        offs,
-        h,
-        omega,
-        above,
-        below,
-        n_source,
-        n_test,
-        q0h,
-        qh_d,
-        window_d,
-        low_pass,
-        window,
-        n_grid,
-        table,
-    ) = args
-    pairs = [((zr, a, b), (zs, 0, 0)) for a, b in offs]
-    got = isp.truncated_blocks(
-        pairs,
-        h,
-        omega,
-        above,
-        below,
-        n_source,
-        n_test,
-        qh_d,
-        table or _TABLES,
-        window_d,
-        low_pass=low_pass,
-    )
-    if n_grid:
-        # the canonical offsets alone, by the lateral symmetries (an eighth of the wavenumbers)
-        hi = isp.high_band_blocks(
-            zr,
-            zs,
-            n_grid,
-            h,
-            omega,
-            above,
-            below,
-            n_source,
-            n_test,
-            q0h,
-            window=window,
-            low_pass=low_pass,
-            band_qh=qh_d,
-            offsets=[(a // 2, b // 2) for a, b in offs],
-        )
-        got = [x + y for x, y in zip(got, hi, strict=True)]
-    return got
 
 
 def interface_gap(zr: int, zs: int) -> int:
@@ -321,10 +250,10 @@ class InterfaceCouplings:
         split_pad: Cells between the box's farthest offset and the first periodic image of D_high.  D_high
             decays faster than any power: below 1e-8 of the touching static block at ~26 cells (omega h / beta =
             1/6) to ~34 (1/2), 1e-10 at ~40 to ~55.
-        workers: Processes for the set-up and for each frequency's interface blocks (default: the CPUs), one
-            BLAS thread each.  The set-up also computes the whole-space blocks' series coefficients of every orbit
-            the grid needs (``far_coeffs``), so a frequency is only their short sums.  A frequency's D runs on a
-            pool kept between frequencies, one task per pair of depths (``close()`` ends it).
+        workers: Processes for the set-up (default: the CPUs), one BLAS thread each.  The set-up also computes the
+            whole-space blocks' series coefficients of every orbit the grid needs (``far_coeffs``), so a frequency
+            is only their short sums.  A frequency runs in this process, where BLAS threads use the CPUs (a pool of
+            one task per pair of depths was slower: 77 s against 23 s per frequency at 288 cells, split).
     """
 
     grid: InterfaceGrid
@@ -341,9 +270,6 @@ class InterfaceCouplings:
     workers: int | None = None
     classes: dict = field(default_factory=dict, init=False)
     far_coeffs: dict = field(default_factory=dict, init=False, repr=False)
-    _pool: ProcessPoolExecutor | None = field(
-        default=None, init=False, repr=False, compare=False
-    )
 
     def __post_init__(self) -> None:
         if self.window is not None and self.omega4:
@@ -431,31 +357,6 @@ class InterfaceCouplings:
         self.far_coeffs = dict(zip(far_keys, results[n_t + n_p :], strict=True))
         self.classes = {k: (parts.get(k), tables[k[2:]]) for k in keys}
 
-    def close(self) -> None:
-        """End the per-frequency worker pool (it also ends with the process)."""
-        if self._pool is not None:
-            self._pool.shutdown()
-            self._pool = None
-
-    def _frequency_pool(self, table: dict) -> ProcessPoolExecutor | None:
-        """The per-frequency pool, started once with the lateral tables and kept, so its workers' caches (the
-        symbolic frame kernels, ~45 s per process) stay warm between frequencies.  None with one worker."""
-        workers = self.workers or os.cpu_count() or 1
-        if workers <= 1:
-            return None
-        if self._pool is None:
-            ctx = multiprocessing.get_context("spawn")
-            self._pool = ProcessPoolExecutor(
-                max_workers=workers,
-                mp_context=ctx,
-                initializer=_set_tables,
-                initargs=(table,),
-            )
-            with _one_blas_thread():
-                # spawn starts workers on demand: start them all while the environment holds
-                list(self._pool.map(_started, range(workers)))
-        return self._pool
-
     @property
     def band_qh(self) -> float:
         """The upper end of the split's low band: where the window's ramp starts."""
@@ -531,50 +432,58 @@ class InterfaceCouplings:
             qh_d, window_d, extra = self.band_qh, None, {"low_pass": lp}
         else:
             qh_d, window_d, extra = self.q0h, self.window, {}
-        jobs, owners = [], []
+        d: dict = {}
         for from_a in (True, False):
             sel = [k for k in keys if (k[1] < 0) == from_a]
             if not sel:
                 continue
+            pairs = [((zr, a, b), (zs, 0, 0)) for zr, zs, a, b in sel]
             # a source in B: the mirrored cells (z -> -z, media exchanged), mapped back
             media = (g.above, g.below) if from_a else (g.below, g.above)
             back = (lambda x: x) if from_a else isp._mirror
-            n_grid = 0
+            if not from_a:
+                pairs = [(isp._mirrored(r), isp._mirrored(s)) for r, s in pairs]
+            got = [
+                back(x)
+                for x in isp.truncated_blocks(
+                    pairs,
+                    g.h,
+                    omega,
+                    *media,
+                    self.n_source,
+                    self.n_test,
+                    qh_d,
+                    table,
+                    window_d,
+                    **extra,
+                )
+            ]
             if self.split:
                 # D_high: one periodic grid per pair of depths, shared by every lateral offset
                 reach = max(max(k[2], k[3]) for k in sel) // 2  # cells
                 n_grid = scipy.fft.next_fast_len(reach + 1 + self.split_pad)
-            for zr, zs in sorted({k[:2] for k in sel}):
-                group = [k for k in sel if k[:2] == (zr, zs)]
-                rz, sz = (zr, zs) if from_a else (-zr, -zs)
-                jobs.append(
-                    (
+                for zr, zs in sorted({k[:2] for k in sel}):
+                    rz, sz = (zr, zs) if from_a else (-zr, -zs)
+                    at = [i for i, k in enumerate(sel) if k[:2] == (zr, zs)]
+                    # the canonical offsets alone, by the lateral symmetries (an eighth of the wavenumbers)
+                    hi = isp.high_band_blocks(
                         rz,
                         sz,
-                        [k[2:] for k in group],
+                        n_grid,
                         g.h,
                         omega,
                         *media,
                         self.n_source,
                         self.n_test,
                         self.q0h,
-                        qh_d,
-                        window_d,
-                        extra.get("low_pass"),
-                        self.window,
-                        n_grid,
-                        None,
+                        window=self.window,
+                        low_pass=lp,
+                        band_qh=self.band_qh,
+                        offsets=[(sel[i][2] // 2, sel[i][3] // 2) for i in at],
                     )
-                )
-                owners.append((group, back))
-        pool = self._frequency_pool(table) if len(jobs) > 1 else None
-        if pool is None:
-            results = [_d_job(j[:-1] + (table,)) for j in jobs]
-        else:
-            results = list(pool.map(_d_job, jobs))
-        d: dict = {}
-        for (group, back), got in zip(owners, results, strict=True):
-            d.update({k: back(x) for k, x in zip(group, got, strict=True)})
+                    for i, blk in zip(at, hi, strict=True):
+                        got[i] = got[i] + back(blk)
+            d.update(zip(sel, got, strict=True))
         out = {}
         for key in keys:
             parts = self.classes[key][0]
