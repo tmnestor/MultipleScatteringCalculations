@@ -387,6 +387,12 @@ class InterfaceCouplings:
         self.far_coeffs = dict(zip(far_keys, results[n_t + n_p :], strict=True))
         self.classes = {k: (parts.get(k), tables.get(k[2:])) for k in keys}
 
+    def release_far_coeffs(self) -> None:
+        """Drop the whole-space series coefficients (~2.5 MB per orbit: 3.3 GB at 36 x 36 cells, 10 GB at 64 x 64).
+        They are needed only while an operator for a frequency is built; call this after the last one.  A later
+        operator recomputes the coefficients it needs, serially (~3 s per orbit)."""
+        self.far_coeffs = {}
+
     @property
     def band_qh(self) -> float:
         """The upper end of the split's low band: where the window's ramp starts."""
@@ -869,6 +875,12 @@ class MatrixFreeOperator:
         zu = [2 * z + 1 for z in self.layers]  # centres' z in h
         h, above, below = g.h, g.above, g.below
 
+        # the window's symbolic frame kernels, once per process (~30 s), for both orders of the media (a source in B
+        # is the mirrored problem), so that no product pays for them
+        for kind, order, media in itertools.product(
+            "RT", (0, 1), ((above, below), (below, above))
+        ):
+            isp.frame_laurent(kind, order, isp._key(media[0]), isp._key(media[1]))
         # D: the low band (non-periodic) and the high band (the period of interface_canonical)
         lp, band = couplings.low_pass(omega), couplings.band_qh
         kx, ky, w = sap.low_band_nodes(
