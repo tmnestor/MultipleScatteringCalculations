@@ -142,6 +142,26 @@ def test_one_lateral_table_per_offset():
         assert all((p is None) == (off != (0, 0)) for p, _ in group)
 
 
+def test_depth_radius_drops_the_corrections_far_from_the_interface():
+    """Cells at iz = -1 (touching) and -3 (4 h clear): with depth radius 4 h only the touching pair keeps A0, A1;
+    the kept parts are the full set-up's.  A depth radius needs a window."""
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0], [-3, 0, 0]]), H, A, B)
+    with pytest.raises(ValueError, match="smooth window"):
+        iso.InterfaceCouplings(g, depth_radius=4.0, workers=1)
+    c = iso.InterfaceCouplings(g, window=isp.Window(0.25), depth_radius=4.0)
+    assert {k: p is not None for k, (p, _) in c.classes.items()} == {
+        (-1, -1, 0, 0): True,  # g = 0
+        (-1, -5, 0, 0): False,  # g = 4
+        (-5, -1, 0, 0): False,
+        (-5, -5, 0, 0): False,  # g = 8
+    }
+    want = isp.frequency_independent_parts(
+        (-1, 0, 0), (-1, 0, 0), H, A, B, c.n_source, c.n_test, c.q0h, window=c.window
+    )
+    got = c.classes[-1, -1, 0, 0][0]
+    assert all(np.array_equal(x, y) for x, y in zip(got, want, strict=True))
+
+
 def test_lateral_fft_product_and_gmres_match_the_dense_solve():
     """Cells scattered in a box with gaps, on both sides: the FFT product equals ``apply_coupling`` and the GMRES
     solve equals the dense one."""
