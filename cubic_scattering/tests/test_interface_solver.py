@@ -124,6 +124,24 @@ def test_radius_needs_a_window():
         iso.InterfaceCouplings(g, radius=16.0, workers=1)
 
 
+def test_one_lateral_table_per_offset():
+    """The classes of an offset share one S_n table, built as for the offset alone; beyond the radius a class has
+    no corrections."""
+    g = iso.InterfaceGrid(
+        np.array([[-1, 0, 0], [-1, 1, 0], [0, 0, 0], [0, 1, 0]]), H, A, B
+    )
+    c = iso.InterfaceCouplings(g, window=isp.Window(0.25), radius=1.0)
+    assert len(c.classes) == 8  # four depth pairs, offsets (0, 0) and (2, 0)
+    for off in ((0, 0), (2, 0)):
+        group = [v for k, v in c.classes.items() if k[2:] == off]
+        assert len(group) == 4
+        assert all(t is group[0][1] for _, t in group)
+        want = isp.lateral_harmonics([off], H, c.q0h, c.n_source, c.n_test)
+        e, co = group[0][1][off]
+        assert np.array_equal(e, want[off][0]) and np.array_equal(co, want[off][1])
+        assert all((p is None) == (off != (0, 0)) for p, _ in group)
+
+
 def test_lateral_fft_product_and_gmres_match_the_dense_solve():
     """Cells scattered in a box with gaps, on both sides: the FFT product equals ``apply_coupling`` and the GMRES
     solve equals the dense one."""

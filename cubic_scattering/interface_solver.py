@@ -163,18 +163,20 @@ def _canonical(du: int, dv: int) -> tuple[tuple[int, int], NDArray]:
 
 
 def _parts_job(args):
-    rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4, local = args
-    parts = (
-        isp.frequency_independent_parts(
-            rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4=omega4
-        )
-        if local
-        else None  # beyond the radius: the block is the windowed D alone
+    rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4 = args
+    return isp.frequency_independent_parts(
+        rec, src, h, above, below, n_source, n_test, q0h, q1h, window, omega4=omega4
     )
-    table = isp.lateral_harmonics(
-        [(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test
-    )
-    return parts, table
+
+
+def _table_job(args):
+    offset, h, q0h, n_source, n_test = args
+    return isp.lateral_harmonics([offset], h, q0h, n_source, n_test)
+
+
+def _setup_job(job):
+    kind, args = job
+    return _parts_job(args) if kind == "parts" else _table_job(args)
 
 
 @dataclass
@@ -230,22 +232,35 @@ class InterfaceCouplings:
             keys.add((int(u[m, 0]), int(u[n, 0]), a, b))
         keys = sorted(keys)
         g = self.grid
+        # beyond the radius a class has no corrections: its block is the windowed D alone
+        local = [
+            k
+            for k in keys
+            if self.radius is None or np.hypot(k[2], k[3]) <= self.radius
+        ]
+        # S_n(q) depends on the lateral offset alone, not on the depths or media: one table per offset,
+        # shared by its classes.  Its cost grows as the reach squared, so the farthest go first.
+        offsets = sorted({k[2:] for k in keys}, key=lambda o: -np.hypot(*o))
         jobs = [
+            ("table", (o, g.h, self.q0h, self.n_source, self.n_test)) for o in offsets
+        ] + [
             (
-                (zr, a, b),
-                (zs, 0, 0),
-                g.h,
-                g.above,
-                g.below,
-                self.n_source,
-                self.n_test,
-                self.q0h,
-                self.q1h,
-                self.window,
-                self.omega4,
-                self.radius is None or np.hypot(a, b) <= self.radius,
+                "parts",
+                (
+                    (zr, a, b),
+                    (zs, 0, 0),
+                    g.h,
+                    g.above,
+                    g.below,
+                    self.n_source,
+                    self.n_test,
+                    self.q0h,
+                    self.q1h,
+                    self.window,
+                    self.omega4,
+                ),
             )
-            for zr, zs, a, b in keys
+            for zr, zs, a, b in local
         ]
         workers = self.workers or os.cpu_count() or 1
         if workers > 1 and len(jobs) > 1:
@@ -254,10 +269,12 @@ class InterfaceCouplings:
             with ProcessPoolExecutor(
                 max_workers=min(workers, len(jobs)), mp_context=ctx
             ) as ex:
-                results = list(ex.map(_parts_job, jobs))
+                results = list(ex.map(_setup_job, jobs))
         else:
-            results = [_parts_job(j) for j in jobs]
-        self.classes = dict(zip(keys, results, strict=True))
+            results = [_setup_job(j) for j in jobs]
+        tables = dict(zip(offsets, results[: len(offsets)], strict=True))
+        parts = dict(zip(local, results[len(offsets) :], strict=True))
+        self.classes = {k: (parts.get(k), tables[k[2:]]) for k in keys}
 
     def _zero_parts(self) -> tuple:
         z = np.zeros((self.n_test, self.n_source, 9, 9), dtype=complex)
