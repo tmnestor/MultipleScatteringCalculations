@@ -25,6 +25,7 @@
 
 \setcounter{secnumdepth}{3}
 \usepackage{booktabs}
+\usepackage{longtable}
 \usepackage{array}
 \usepackage{graphicx}
 \usepackage{placeins}
@@ -901,14 +902,24 @@ computed by an unrelated method, and the image must vanish; and the touching blo
 image must be the limit of the plane-wave integral \eqref{eq:reflected} of the static spectrum as the
 cutoff grows.
 
-\begin{table}[t]
-\centering
+% a longtable: the checks run past a page
+\begingroup
 \small
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{p{0.40\textwidth}p{0.30\textwidth}l}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.39\textwidth}>{\raggedright\arraybackslash}p{0.29\textwidth}>{\raggedright\arraybackslash}p{0.26\textwidth}}
 \toprule
 quantity & compared with & agreement \\
 \midrule
+\endfirsthead
+\multicolumn{3}{l}{\emph{Table~\ref{tab:verification}, continued}}\\
+\toprule
+quantity & compared with & agreement \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\emph{continued}}\\
+\endfoot
+\endlastfoot
 \multicolumn{3}{l}{\emph{Plane-wave representation}}\\
 integrand of Eq.~\eqref{eq:modeprop} & residue form of the plane-to-plane kernel & $3\times10^{-15}$ \\
 blocks \eqref{eq:modeblock}, planes not touching & closed-form blocks \citep{NestorCoupling2026} & $2$--$6\times10^{-13}$ \\
@@ -960,6 +971,10 @@ Galerkin solve, $8$ cells straddling the interface, identical media & the homoge
 Galerkin solve, different media, scattered field at $4$ receiver cells, vanishing contrast & Born field, every coupling by the plane-wave integral of the interface coefficients & $4.9$--$5.6\times10^{-11}$ \\
 lateral radius $16h$ of the corrections, $C^\infty$ window, row of $28$ cells & full windowed set-up & $8.3\times10^{-11}$ (solution) \\
 GMRES with lateral FFT products, $2\times5\times5$ cells, $10\%$ contrast & dense solve from the same blocks & $4.6\times10^{-12}$ \\
+depth radius $4h$ of the corrections, six layers of two cells & full windowed set-up & $1.8\times10^{-10}$ (blocks), $2.7\times10^{-11}$ (solution) \\
+$\mathbf D$ of touching cells at $8$--$64h$ by the frame route & polar sum over the modes & $\le7\times10^{-12}$ of the touching block \\
+$\mathbf D_{\mathrm{high}}$ on the wedge by the lateral symmetries & the whole periodic grid & $2.4\times10^{-16}$ \\
+$\mathbf D_{\mathrm{low}}+\mathbf D_{\mathrm{high}}$, $2\times4\times4$ cells, every class & unsplit $\mathbf D$ & $1.3\times10^{-10}$, $2.9\times10^{-9}$ of the touching block \\
 split to $\omega^2$ and to $\omega^4$ at $Q_0h=3$--$10$, self-image, across and lateral pairs, $\omega h/\beta=1/6$, $1/2$ & split to $\omega^4$ at $Q_0h=20$ & at $Q_0h=10$: $3.5\times10^{-10}$, $2.5\times10^{-8}$ ($\omega^2$); $4.8\times10^{-11}$, $6.2\times10^{-11}$ ($\omega^4$) \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
@@ -967,13 +982,13 @@ static and $\omega^2$ blocks of touching cells: own image, edge, corner, across 
 split with a smooth window, Eq.~\eqref{eq:windowsplit}, rows of $5$ cells, reflected and transmitted & split with the sharp cutoff, pair by pair & $3.9\times10^{-14}$--$1.9\times10^{-11}$ \\
 azimuthal integrals $S_n$ by Eq.~\eqref{eq:jacobianger}, offsets to $40h$ & direct azimuthal rule & $4\times10^{-16}$--$3\times10^{-13}$ \\
 \bottomrule
-\end{tabular}
 \caption{Independent checks. The last entry of each group of blocks is limited by the accuracy of the
 comparison route: the Gauss rule over both cells at order $10$ to about $10^{-13}$, and the static plane-wave
 integral by its algebraic convergence; those of the split are the remainder it drops, at $Q_0h=10$
 ($\omega h/\beta=1/6$) and $Q_0h=40$ ($\omega h/\beta=1$).}
 \label{tab:verification}
-\end{table}
+\end{longtable}
+\endgroup
 
 The accuracy of the touching blocks themselves is measured against a reference that removes the rounding
 of the double-precision routes: the power-basis route carried out in $80$-bit extended arithmetic (unit
@@ -1106,9 +1121,45 @@ agrees with the dense solve from the same blocks to $4.6\times10^{-12}$. On $2\t
 takes $9$ products and $0.7$\,s, so the iteration count barely grows with the grid at this contrast. The cost is
 elsewhere: the set-up takes $1477$\,s on four processes ($312$ classes, $128$ of them within the radius; $364$\,s
 for the $60$ classes of the smaller box), and the transformed kernels of one frequency take $183$\,s and
-$110$\,MB ($92$\,s and $17$\,MB). The kernels grow as the square of the number of layers times $(2n-1)^2$, and
-reducing that cost, by the depth locality of the corrections and by the mode structure of the reflected and
-transmitted parts, is left for the application to layered media.
+$110$\,MB ($92$\,s and $17$\,MB). Little of the set-up is the closed forms: the tables $S_n$ of the lateral
+harmonics take $43\%$ of it, and the cost of a table grows as the square of its lateral reach. A table depends on
+the offset alone, so one per offset suffices, not one per pair of layers.
+
+\paragraph{Locality in depth.} The corrections are local in depth as well. For two cells at lateral offset zero
+with a total gap $g=d_r+d_s$ between them and the interface, $|\mathbf A_0+\omega^2\mathbf A_1|$ falls to
+$2.4\times10^{-2}$, $2.6\times10^{-6}$, $3.7\times10^{-9}$ and $3.7\times10^{-12}$ of the touching static block at
+$g=0$, $2h$, $4h$ and $6h$. This is about $10^{-4}$ per $2h$, alike for reflection on either side and for
+transmission: the $C^\infty$ step is negligible early on its ramp, so the window effectively opens near $Q_0/2$.
+Beyond $g=4h$ the corrections fall below $10^{-8}$, and only the three layers nearest the interface on each side
+carry them, whatever the number of layers. On six layers of two cells, dropping them from $g=4h$ keeps the
+corrections of $24$ of the $72$ classes and moves the blocks by $1.8\times10^{-10}$ of the largest and the
+solution by $2.7\times10^{-11}$; the set-up then takes $175$\,s instead of $469$\,s.
+
+\paragraph{The plane-wave part on the FFT grid.} With the corrections bounded in both directions, the plane-wave
+part $\mathbf D$ is the cost of each frequency, and it is not local. For two touching cells it is still
+$5.3\times10^{-3}$ of the touching static block at a lateral offset of $32h$, $5.6\times10^{-3}$ at $64h$ and
+$1.1\times10^{-2}$ at $128h$ ($\omega h/\beta_A=1/6$). This is the far field of the waves along the interface,
+decaying as about $h/r$, with the P and S phases beating. It is not an artefact of the quadrature: the frame route
+agrees with the polar sum over the modes to $10^{-12}$ of the touching block at $8h$, $32h$ and $64h$. Sampling
+the spectrum of $\mathbf D$ on the wavenumbers of a periodic box would therefore add the images of this tail, an
+error of about $h/P$ for a period $P$. Instead $\mathbf D$ is split by a $C^\infty$ high-pass $\psi(q)$, which
+rises from twice the highest branch point (and at least $0.35/h$) to the start of the window, $Q_0/4$:
+\begin{equation}\label{eq:dsplit}
+  \mathbf D=\frac{1}{4\pi^2}\int(1-\psi)\,\mathbf Y\,\dd^2k
+  +\frac{1}{4\pi^2}\int_{q<Q_0}\psi\,\bigl[\mathbf Y-\chi(\mathbf Y_0+\omega^2\mathbf Y_1)\bigr]\dd^2k
+  =\mathbf D_{\mathrm{low}}+\mathbf D_{\mathrm{high}}.
+\end{equation}
+$\mathbf D_{\mathrm{low}}$ holds the branch points and the tail. It remains the radial integral of
+Section~\ref{sec:verification} for each offset, but over $qh<2.5$ only, with tables over that band.
+$\mathbf D_{\mathrm{high}}$ has a spectrum smooth in $\bk$, so it decays faster than any power of the offset:
+below $10^{-8}$ of the touching block beyond $24$ to $34$ cells, and below $10^{-10}$ beyond $40$ to $55$ (the
+narrower band, $[1,2.5]/h$ at $\omega h/\beta_A=1/2$, decays more slowly than $[0.35,2.5]/h$ at $1/6$). It is
+sampled at the wavenumbers $2\pi\mathbf m/(2Nh)$ of a periodic box of $N$ cells and folded onto the box's offsets by
+Poisson's summation formula, on the wedge $0\le k_y\le k_x$ alone: the eight signed permutations fixing $z$ map
+the integrand as they map the blocks, which gives the rest of the grid exact to rounding. On $2\times4\times4$
+cells, with sources on both sides, the split reproduces every block to $1.3\times10^{-10}$
+($\omega h/\beta_A=1/6$) and $2.9\times10^{-9}$ ($1/2$) of the touching static block, and the GMRES solution to
+$7.4\times10^{-12}$.
 
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
