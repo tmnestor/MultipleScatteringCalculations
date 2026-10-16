@@ -975,6 +975,9 @@ depth radius $4h$ of the corrections, six layers of two cells & full windowed se
 $\mathbf D$ of touching cells at $8$--$64h$ by the frame route & polar sum over the modes & $\le7\times10^{-12}$ of the touching block \\
 $\mathbf D_{\mathrm{high}}$ on the wedge by the lateral symmetries & the whole periodic grid & $2.4\times10^{-16}$ \\
 $\mathbf D_{\mathrm{low}}+\mathbf D_{\mathrm{high}}$, $2\times4\times4$ cells, every class & unsplit $\mathbf D$ & $1.3\times10^{-10}$, $2.9\times10^{-9}$ of the touching block \\
+mode factors of $\mathbf D$'s integrand, reflected and transmitted, on the ramp & the integrand point by point & rounding of the modes' cancellation \\
+whole-space march, planes $\ge2$ apart, $5$ layers & Paper~2's blocks & $3.9\times10^{-10}$, $3.6\times10^{-9}$ (high band's images) \\
+coupling product without stored kernels, $50$, $288$, $96$ cells (six layers) & stored-kernel product & $7.3\times10^{-13}$, $2.1\times10^{-12}$, $3.6\times10^{-11}$ \\
 split to $\omega^2$ and to $\omega^4$ at $Q_0h=3$--$10$, self-image, across and lateral pairs, $\omega h/\beta=1/6$, $1/2$ & split to $\omega^4$ at $Q_0h=20$ & at $Q_0h=10$: $3.5\times10^{-10}$, $2.5\times10^{-8}$ ($\omega^2$); $4.8\times10^{-11}$, $6.2\times10^{-11}$ ($\omega^4$) \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
@@ -1163,6 +1166,30 @@ $7.4\times10^{-12}$. On $288$ cells, measured in one process, the set-up takes $
 tables span $q<Q_0$), and each further frequency's kernels take $25$\,s against $67$\,s unsplit. The
 frequency-independent series coefficients of the whole-space blocks are computed with the set-up, so the first
 frequency costs about the same.
+
+\paragraph{Without stored kernels.} The transformed kernels of each pair of layers still grow as the square of the
+number of layers times $(2n-1)^2$. At a lateral wavenumber $\bk$, however, the integrand of $\mathbf D$ separates
+in the two cells' depths. For a source in A it is the receiver's moments times the outgoing mode states, times the
+$3\times3$ matrix $\mathbf R_d$ or $\mathbf T_d$, times the three down-going modes' states and the source's
+moments. The window's static and $\omega^2$ parts separate too, through the cells' vertical moments, with at
+most three orders on each side. Each factor is a cell's lateral moments times a mode map times its layer's phase
+$\ee^{\mp\ii k_zz}$, so only the layer-independent pieces are kept. A product then needs three amplitudes per
+wavenumber and source side, summed over the source layers and reconstructed at each receiver layer, and no block
+of a pair of layers is formed. The low band is applied at its polar quadrature nodes by non-uniform FFTs, which
+keeps it exact and non-periodic; the high band at the wavenumbers of the periodic box, each alias its own node. In
+the same medium, cells in planes at least two apart couple through the modes of the whole space, factorised the
+same way about each cell's own centre and marched layer by layer with the step $\ee^{\ii k_z2h}$, $|\cdot|\le1$.
+Only the whole-space blocks of planes $0$ and $1$ apart stay stored, $3(2n-1)^2$ per side whatever the number of
+layers. Against Paper~2's blocks the march agrees to $3.9\times10^{-10}$ ($\omega h/\beta_A=1/6$) and
+$3.6\times10^{-9}$ ($1/2$), the periodic images of its high band $40$ cells away ($5.5\times10^{-11}$ at $1/2$
+with $60$). Products from the same set-up agree with those of the stored kernels to $7.3\times10^{-13}$ ($50$
+cells), $2.1\times10^{-12}$ ($288$) and $3.6\times10^{-11}$ ($96$ cells in six layers, where the march acts).
+The memory no longer grows with the number of layers: $2.8$ and $2.9$\,GB for $24\times24$ cells in four and
+eight layers, where the stored kernels would take $1.8$ and $7.3$\,GB. Time is the price. A product takes $42$\,s
+for $12\times12$ cells in four layers and $377$\,s for $24\times24$ in eight ($31$ and $139$\,s with the
+factors kept, at $2.5$ and $7.2$\,GB), against hundredths of a second for the stored kernels where they fit. The
+cost is set by the number of wavenumbers, which is fixed by the padding of the high band and by the march's
+cutoff at $qh=16$.
 
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
