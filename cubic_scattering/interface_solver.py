@@ -409,6 +409,8 @@ class InterfaceCouplings:
                 n_grid = scipy.fft.next_fast_len(reach + 1 + self.split_pad)
                 for zr, zs in sorted({k[:2] for k in sel}):
                     rz, sz = (zr, zs) if from_a else (-zr, -zs)
+                    at = [i for i, k in enumerate(sel) if k[:2] == (zr, zs)]
+                    # the canonical offsets alone, by the lateral symmetries (an eighth of the wavenumbers)
                     hi = isp.high_band_blocks(
                         rz,
                         sz,
@@ -422,12 +424,10 @@ class InterfaceCouplings:
                         window=self.window,
                         low_pass=lp,
                         band_qh=self.band_qh,
+                        offsets=[(sel[i][2] // 2, sel[i][3] // 2) for i in at],
                     )
-                    for i, k in enumerate(sel):
-                        if k[:2] == (zr, zs):
-                            got[i] = got[i] + back(
-                                hi[(k[2] // 2) % n_grid, (k[3] // 2) % n_grid]
-                            )
+                    for i, blk in zip(at, hi, strict=True):
+                        got[i] = got[i] + back(blk)
             d.update(zip(sel, got, strict=True))
         out = {}
         for key in keys:

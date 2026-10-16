@@ -201,3 +201,19 @@ def test_bands_refuse_bad_arguments():
         isp.high_band_blocks(
             -1, -1, 8, H, omega, A, B, low_pass=isp.Window(0.1), band_qh=2.5
         )
+
+
+def test_high_band_by_symmetry_is_the_whole_grid():
+    """The wedge 0 <= ky <= kx and the eight lateral symmetries give the whole grid's D_high, at canonical and
+    other offsets, reflected and transmitted."""
+    omega = A.beta / (6 * H)
+    kw = {"window": isp.Window(0.25), "low_pass": isp.Window(0.4), "band_qh": 2.5}
+    offs = [(0, 0), (1, 0), (2, 1), (3, 3), (5, 2), (-2, 1), (1, -4)]
+    for zr in (-1, 1):
+        whole = isp.high_band_blocks(zr, -1, 16, H, omega, A, B, 10, 4, 10.0, **kw)
+        wedge = isp.high_band_blocks(
+            zr, -1, 16, H, omega, A, B, 10, 4, 10.0, offsets=offs, **kw
+        )
+        scale = np.abs(whole).max()
+        for (a, b), blk in zip(offs, wedge, strict=True):
+            assert np.abs(blk - whole[a % 16, b % 16]).max() < 1e-13 * scale
