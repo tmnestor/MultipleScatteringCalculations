@@ -1095,6 +1095,87 @@ def truncated_blocks(
     return out
 
 
+def integrand_points(
+    rec_z: int,
+    src_z: int,
+    kx: NDArray,
+    ky: NDArray,
+    h: float,
+    omega: float,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+    q0h: float = 10.0,
+    window: Window | None = None,
+) -> NDArray:
+    """The integrand of D at lateral wavenumbers (kx, ky), cells at lateral offset zero: the dynamic frame
+    kernel less the window's static and omega^2 parts, rotated to k's direction, times the cells' lateral
+    moments.  D(Delta) = (1/4 pi^2) int F(k) e^{i k . Delta h} d^2k over q < Q0.
+
+    Args:
+        rec_z, src_z: The cells' centres' z in h (odd); the source in A (mirror first).
+
+    Returns:
+        Shape (P, n_test, n_source, 81), complex.
+    """
+    rec, src = (rec_z, 0, 0), (src_z, 0, 0)
+    kind = _check(rec, src)
+    exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
+    exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
+    lz = sorted({e[0] for e in exps_f})
+    ez = sorted({e[0] for e in exps_s})
+    pairs_le = [(l, e) for l in lz for e in ez]
+    # block[a, c]: the (l, e) of field function a and source monomial c
+    block = np.array(
+        [
+            [pairs_le.index((exps_f[a][0], exps_s[c][0])) for c in range(n_source)]
+            for a in range(n_test)
+        ]
+    )
+    qh = np.hypot(kx, ky) * h
+    q = qh / h
+    # the frame kernel in the frame of k (times M^-1), less the window's static and omega^2 parts
+    fr = {
+        k: v @ _M_INV
+        for k, v in _dynamic_frames(q, omega, above, below, rec, src, h, lz, ez).items()
+    }
+    if window is not None:
+        chi = window(qh, q0h)
+        ramp = chi > 0
+        if np.any(ramp):
+            stat = [
+                _static_frames(
+                    order,
+                    kind,
+                    rec,
+                    src,
+                    h,
+                    _key(above),
+                    _key(below),
+                    q[ramp],
+                    exps_f,
+                    exps_s,
+                    rotate=False,
+                )
+                for order in (0, 1)
+            ]
+            for k, v in fr.items():
+                v[ramp] -= chi[ramp, None, None] * (stat[0][k] + omega**2 * stat[1][k])
+    # rotated to k's direction, T G T^T, columns paired (as _rotate_harmonics at phi)
+    T = rotation(np.arctan2(ky, kx))
+    g = np.stack(
+        [T @ fr[l, e] @ T.swapaxes(1, 2) * SOURCE_PAIRING for l, e in pairs_le], 1
+    )
+    lf = _lateral(kx, ky, h, exps_f, True)
+    ls = _lateral(kx, ky, h, exps_s, False)
+    return (
+        lf[:, :, None, None]
+        * ls[:, None, :, None]
+        * g[:, block].reshape(len(q), n_test, n_source, 81)
+    )
+
+
 def high_band_blocks(
     rec_z: int,
     src_z: int,
@@ -1135,8 +1216,7 @@ def high_band_blocks(
         offset (dx, dy) cells (2h each) of receiver from source.  With ``offsets``: (len(offsets), n_test,
         n_source, 9, 9), in their order.
     """
-    rec, src = (rec_z, 0, 0), (src_z, 0, 0)
-    kind = _check(rec, src)
+    _check((rec_z, 0, 0), (src_z, 0, 0))
     if low_pass is None:
         raise ValueError("high_band_blocks: pass the low band (low_pass).")
     branch = [omega * h / c for m in (above, below) for c in (m.alpha, m.beta)]
@@ -1153,18 +1233,6 @@ def high_band_blocks(
                 else ")."
             )
         )
-    exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
-    exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
-    lz = sorted({e[0] for e in exps_f})
-    ez = sorted({e[0] for e in exps_s})
-    pairs_le = [(l, e) for l in lz for e in ez]
-    # block[a, c]: the (l, e) of field function a and source monomial c
-    block = np.array(
-        [
-            [pairs_le.index((exps_f[a][0], exps_s[c][0])) for c in range(n_source)]
-            for a in range(n_test)
-        ]
-    )
     dk = 2 * np.pi / (n_grid * 2 * h)
     tiles = int(np.ceil(q0h / h / dk / n_grid)) + 1
     acc = np.zeros((n_grid * n_grid, n_test, n_source, 81), dtype=complex)
@@ -1186,56 +1254,27 @@ def high_band_blocks(
         for i0 in range(0, len(on), chunk):
             sel = on[i0 : i0 + chunk]
             qx, qy, qh = kx[sel], ky[sel], qh_all[sel]
-            q = qh / h
-            # the frame kernel in the frame of k (times M^-1), less the window's static and omega^2 parts
-            fr = {
-                k: v @ _M_INV
-                for k, v in _dynamic_frames(
-                    q, omega, above, below, rec, src, h, lz, ez
-                ).items()
-            }
-            if window is not None:
-                chi = window(qh, q0h)
-                ramp = chi > 0
-                if np.any(ramp):
-                    stat = [
-                        _static_frames(
-                            order,
-                            kind,
-                            rec,
-                            src,
-                            h,
-                            _key(above),
-                            _key(below),
-                            q[ramp],
-                            exps_f,
-                            exps_s,
-                            rotate=False,
-                        )
-                        for order in (0, 1)
-                    ]
-                    for k, v in fr.items():
-                        v[ramp] -= chi[ramp, None, None] * (
-                            stat[0][k] + omega**2 * stat[1][k]
-                        )
-            # rotated to k's direction, T G T^T, columns paired (as _rotate_harmonics at phi)
-            T = rotation(np.arctan2(qy, qx))
-            g = np.stack(
-                [T @ fr[l, e] @ T.swapaxes(1, 2) * SOURCE_PAIRING for l, e in pairs_le],
-                1,
-            )
             wgt = low_pass(qh, band_qh) * dk**2 / (4 * np.pi**2)
             if wedge:
                 wgt = wgt * edge[sel]
-            lf = _lateral(qx, qy, h, exps_f, True) * wgt[:, None]
-            ls = _lateral(qx, qy, h, exps_s, False)
-            idx = (mx.ravel()[sel] % n_grid) * n_grid + (my.ravel()[sel] % n_grid)
-            # residues are distinct within a tile
-            acc[idx] += (
-                lf[:, :, None, None]
-                * ls[:, None, :, None]
-                * g[:, block].reshape(len(sel), n_test, n_source, 81)
+            vals = integrand_points(
+                rec_z,
+                src_z,
+                qx,
+                qy,
+                h,
+                omega,
+                above,
+                below,
+                n_source,
+                n_test,
+                q0h,
+                window,
             )
+            idx = (mx.ravel()[sel] % n_grid) * n_grid + (my.ravel()[sel] % n_grid)
+            acc[idx] += (
+                wgt[:, None, None, None] * vals
+            )  # residues are distinct within a tile
     # sum_m F(k_m) e^{i k_m . 2 d h} over the residues m = j (mod n_grid): an inverse DFT
     out = np.fft.ifft2(acc.reshape(n_grid, n_grid, -1), axes=(0, 1)) * n_grid**2
     out = out.reshape(n_grid, n_grid, n_test, n_source, 9, 9)
