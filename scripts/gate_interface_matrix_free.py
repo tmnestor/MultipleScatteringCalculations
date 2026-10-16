@@ -13,6 +13,10 @@ Boxes 2 x 5 x 5 (50 cells) and 2 x 12 x 12 (288) straddling the interface; media
 (6.5, 3.6, 2.8), h = 0.05 km, omega h / beta_A = 1/6, p = 1.  PASS below 1e-10 (the high band's mode cancellation
 leaves ~1e-11 of a block at 1/6; D1 is 1e-8).
 
+Measured 16 October 2026 (four workers): 50 cells, products 7.3e-13 apart, stored kernels 54 s + 0.01 s per
+product, matrix-free 30 s + 11.6 s; 288 cells, 2.1e-12, stored 53 s + 0.04 s, matrix-free 38 s + 15.9 s; peak memory
+of the process (both operators) 2.6 and 5.7 GB.
+
 Run:  PYTHONPATH=. python scripts/gate_interface_matrix_free.py
 """
 

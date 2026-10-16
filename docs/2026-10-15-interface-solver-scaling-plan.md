@@ -243,6 +243,26 @@ Each step has a gate. Profiling and measurement come before any rewrite.
   - **Whole-space blocks** by Paper 2's 3-D FFT per side; the corrections A0, A1 (within the lateral and
     depth radii) as sparse local blocks.
   - finufft at eps = 1e-14 reaches 1.1e-14 (type 2, 24² grid, 2·10⁴ nodes).
+- **Built (16 October).** `stratified_apply` (`mode_factors`, `NodeProduct` / `TwoSidedProduct`,
+  `apply_low_band`, `apply_high_band`) and `interface_solver.MatrixFreeOperator`.
+  - **Pieces, against today's per-offset products:** the factors rebuild `integrand_points` (to the rounding
+    of the modes' cancellation, ~1e-19 absolute); D_low 9.3e-14 / 1.7e-14 (ωh/β = 1/6, 1/2); D_high
+    1.2e-11 / 2.1e-13. The terms at large q reach ~1e5 of the sum, which sets the high band's rounding.
+  - **Gate `scripts/gate_interface_matrix_free.py`: PASS.** The products agree with `LateralOperator`'s to
+    7.3e-13 (50 cells) and 2.1e-12 (288 cells), from the same split set-up with radius 16 h and depth radius 4 h.
+  - **Cost:** the operator for a frequency takes 30–38 s (factors kept), but **each product 12–16 s against
+    0.01–0.04 s** stored. The product is the NUFFTs: ~55 ms per 4096 nodes × 90 components, whatever the box.
+    The high band's nodes number π(Q0 N h/π)², N = box + 41 cells, so at these sizes the padding sets the
+    count (~93k per side at 288 cells).
+  - **Memory:** the first 288-cell run was killed. The cached rotated static kernels cost ~83 kB per node;
+    now only their q-polynomial coefficients are kept, and peak memory is 5.7 GB with both operators.
+  - **The trade.** At these sizes the stored kernels are far faster per product. The matrix-free product's
+    memory grows as nodes × layers, not L²(2n)², which is what the 0.8 TB wall needs; its time per product
+    grows as nodes × layers × components. The rest of S5's gate, memory and time against n = 12 … 64 and
+    L = 2 … 16, is still to measure.
+  - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
+    64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
+    touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
 - **Storage.** Per lateral wavenumber, the interface part is rank ≤ 6 (the modes P, SV, SH, up and down):
   K^rev(zr, zs; k) = Σ_m r_m(zr, k) R_m(k) s_m(zs, k). So a product can be done in three steps, with
   memory O(n² · modes · moments) and no L²:
