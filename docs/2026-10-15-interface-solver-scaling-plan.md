@@ -84,6 +84,32 @@ Each step has a gate. Profiling and measurement come before any rewrite.
 - Time A0, A1 and `lateral_harmonics` per class on the 288-cell box, against lateral offset and depth pair.
 - **Gate:** a table that splits the 1477 s. Decide whether the classes beyond the radius need a cheaper
   table (Jacobi–Anger was checked on 12 October and needs no per-offset tables).
+- **Done (16 October), `scripts/profile_interface_setup.py`** → `scripts/data/profile_interface_setup.json`.
+  Wall 1443 s on 4 workers, 5733 CPU-s summed over the 312 jobs (the pieces sum to each job's time; the first
+  job per worker pays 157 s of one-off caches in all).
+
+  | CPU-s | K0 | Y0 < Q0 | K1 | FP Y1 | window | lateral | total |
+  |---|---|---|---|---|---|---|---|
+  | 128 classes within 16 h | 514 | 215 | 1173 | 717 | 648 | 323 | 3591 |
+  | 184 classes beyond | — | — | — | — | — | 2142 | 2142 |
+
+  - **The lateral tables are 43 % of the set-up (2465 s), and each is built four times.** `lateral_harmonics`
+    depends on the lateral offset only, but `_parts_job` builds it per class (zr, zs, a, b). The four depth
+    pairs of an offset agree in time to 5 %; 78 offsets, 312 tables.
+  - **A table's cost grows as the square of the reach** (log-log slope 2.07; 0.4 s at ≤ 4 h, 4.3 s at 12–16 h,
+    16.6 s at 24–32 h): panels ∝ reach (`_radial_width`) × azimuthal nodes ∝ reach (`_n_phi`). This answers §0's
+    open point: the classes beyond the radius are not cheap, and their cost grows with offset. Extrapolated to
+    100 × 100, one table per offset is **~690 CPU-h**, before the ×L² of the per-class keying. Tables, not
+    corrections, are then the set-up's wall.
+  - **The corrections cost 19–30 CPU-s per class** and grow only mildly with reach. The ω² part (K1 + FP Y1)
+    is 58 % of them, K0 16 %, the window 20 % (which grows with reach, 2 → 7 s). Within the radius there are
+    32 offsets whatever the grid, so 32 L² classes × ~25 s: 100 × 100 × 20 ≈ 90 CPU-h (≈ 22 h on 4) unless S2
+    bounds the depth pairs.
+  - **No depth asymmetry:** the four depth pairs cost the same (1367–1453 s).
+  - **Decision for S3.** (a) One table per offset, not per class: behaviour-identical, saves ~1850 CPU-s
+    (32 %) here, and makes the tables independent of L. (b) The reach² growth: Jacobi–Anger (checked
+    12 October, no per-offset tables), or S4, which samples D on the FFT grid and needs no S_n at all. If S4
+    goes ahead, Jacobi–Anger would only be interim.
 
 ### S2. Depth locality of the corrections (≈ 1 day)
 - **Hypothesis.** A0 and A1 are the q > Q0 part of the reflected/transmitted kernel. They should decay
