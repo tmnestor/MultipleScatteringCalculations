@@ -23,6 +23,7 @@ is the canonical one (lateral offset (a, b), a >= b >= 0) mapped by the signed p
 Each frequency then costs one truncated plane-wave integral per class and one whole-space block per offset.
 """
 
+import contextlib
 import itertools
 import multiprocessing
 import os
@@ -42,7 +43,12 @@ from .graded_voxel.basis import (
     gram_test,
     source_expansion,
 )
-from .graded_voxel.blocks import coupling_block, far_block_series, near_block_series
+from .graded_voxel.blocks import (
+    coupling_block,
+    far_block_series,
+    far_series_coefficients,
+    near_block_series,
+)
 from .graded_voxel.fft import _transform, signed_permutations
 from .graded_voxel.site import cell_contrast_coefficients
 from .graded_voxel.solver import field_sizes
@@ -177,7 +183,102 @@ def _table_job(args):
 
 def _setup_job(job):
     kind, args = job
+    if (
+        kind == "far"
+    ):  # Paper 2's whole-space series coefficients of an orbit (frequency-independent)
+        return far_series_coefficients(*args)
     return _parts_job(args) if kind == "parts" else _table_job(args)
+
+
+_BLAS_THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
+
+
+@contextlib.contextmanager
+def _one_blas_thread():
+    """Workers started meanwhile inherit one BLAS / OpenMP thread each: a process per CPU, each with a BLAS
+    thread per CPU, would oversubscribe the CPUs.  Set in the parent's environment while the workers start,
+    since a spawned worker imports numpy (and its BLAS) before any initializer runs; the parent's own BLAS,
+    already loaded, is unaffected."""
+    old = {k: os.environ.get(k) for k in _BLAS_THREAD_VARS}
+    os.environ.update(dict.fromkeys(_BLAS_THREAD_VARS, "1"))
+    try:
+        yield
+    finally:
+        for k, v in old.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+def _started(_):
+    return os.getpid()
+
+
+#: The lateral tables, in a worker of the per-frequency pool (sent once, by its initializer).
+_TABLES: dict = {}
+
+
+def _set_tables(table: dict) -> None:
+    _TABLES.clear()
+    _TABLES.update(table)
+
+
+def _d_job(args):
+    """D for the classes of one pair of depths (the source in A; a source in B mirrored by the caller): the
+    radial integral per offset, plus with the split the high band on the FFT grid."""
+    (
+        zr,
+        zs,
+        offs,
+        h,
+        omega,
+        above,
+        below,
+        n_source,
+        n_test,
+        q0h,
+        qh_d,
+        window_d,
+        low_pass,
+        window,
+        n_grid,
+        table,
+    ) = args
+    pairs = [((zr, a, b), (zs, 0, 0)) for a, b in offs]
+    got = isp.truncated_blocks(
+        pairs,
+        h,
+        omega,
+        above,
+        below,
+        n_source,
+        n_test,
+        qh_d,
+        table or _TABLES,
+        window_d,
+        low_pass=low_pass,
+    )
+    if n_grid:
+        # the canonical offsets alone, by the lateral symmetries (an eighth of the wavenumbers)
+        hi = isp.high_band_blocks(
+            zr,
+            zs,
+            n_grid,
+            h,
+            omega,
+            above,
+            below,
+            n_source,
+            n_test,
+            q0h,
+            window=window,
+            low_pass=low_pass,
+            band_qh=qh_d,
+            offsets=[(a // 2, b // 2) for a, b in offs],
+        )
+        got = [x + y for x, y in zip(got, hi, strict=True)]
+    return got
 
 
 def interface_gap(zr: int, zs: int) -> int:
@@ -220,7 +321,10 @@ class InterfaceCouplings:
         split_pad: Cells between the box's farthest offset and the first periodic image of D_high.  D_high
             decays faster than any power: below 1e-8 of the touching static block at ~26 cells (omega h / beta =
             1/6) to ~34 (1/2), 1e-10 at ~40 to ~55.
-        workers: Processes for the set-up (default: the CPUs).
+        workers: Processes for the set-up and for each frequency's interface blocks (default: the CPUs), one
+            BLAS thread each.  The set-up also computes the whole-space blocks' series coefficients of every orbit
+            the grid needs (``far_coeffs``), so a frequency is only their short sums.  A frequency's D runs on a
+            pool kept between frequencies, one task per pair of depths (``close()`` ends it).
     """
 
     grid: InterfaceGrid
@@ -236,6 +340,10 @@ class InterfaceCouplings:
     split_pad: int = 40
     workers: int | None = None
     classes: dict = field(default_factory=dict, init=False)
+    far_coeffs: dict = field(default_factory=dict, init=False, repr=False)
+    _pool: ProcessPoolExecutor | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if self.window is not None and self.omega4:
@@ -288,19 +396,65 @@ class InterfaceCouplings:
             )
             for zr, zs, a, b in local
         ]
+        # the whole-space blocks' orbits (same side, not touching): their series coefficients, once
+        idx = g.idx
+        far: set = set()
+        for side in (g.in_above, ~g.in_above):
+            sub = idx[side]
+            if len(sub):
+                d = np.unique(
+                    np.abs(sub[:, None, :] - sub[None, :, :]).reshape(-1, 3), axis=0
+                )
+                far |= {
+                    c
+                    for c in (tuple(sorted(map(int, r), reverse=True)) for r in d)
+                    if max(c) > 1
+                }
+        far_keys = sorted(far)
+        jobs += [("far", (c, self.n_source, self.n_test)) for c in far_keys]
         workers = self.workers or os.cpu_count() or 1
         if workers > 1 and len(jobs) > 1:
             # spawn: forking a process whose BLAS runs threads can deadlock
             ctx = multiprocessing.get_context("spawn")
-            with ProcessPoolExecutor(
-                max_workers=min(workers, len(jobs)), mp_context=ctx
-            ) as ex:
+            with (
+                _one_blas_thread(),
+                ProcessPoolExecutor(
+                    max_workers=min(workers, len(jobs)), mp_context=ctx
+                ) as ex,
+            ):
                 results = list(ex.map(_setup_job, jobs))
         else:
             results = [_setup_job(j) for j in jobs]
-        tables = dict(zip(offsets, results[: len(offsets)], strict=True))
-        parts = dict(zip(local, results[len(offsets) :], strict=True))
+        n_t, n_p = len(offsets), len(local)
+        tables = dict(zip(offsets, results[:n_t], strict=True))
+        parts = dict(zip(local, results[n_t : n_t + n_p], strict=True))
+        self.far_coeffs = dict(zip(far_keys, results[n_t + n_p :], strict=True))
         self.classes = {k: (parts.get(k), tables[k[2:]]) for k in keys}
+
+    def close(self) -> None:
+        """End the per-frequency worker pool (it also ends with the process)."""
+        if self._pool is not None:
+            self._pool.shutdown()
+            self._pool = None
+
+    def _frequency_pool(self, table: dict) -> ProcessPoolExecutor | None:
+        """The per-frequency pool, started once with the lateral tables and kept, so its workers' caches (the
+        symbolic frame kernels, ~45 s per process) stay warm between frequencies.  None with one worker."""
+        workers = self.workers or os.cpu_count() or 1
+        if workers <= 1:
+            return None
+        if self._pool is None:
+            ctx = multiprocessing.get_context("spawn")
+            self._pool = ProcessPoolExecutor(
+                max_workers=workers,
+                mp_context=ctx,
+                initializer=_set_tables,
+                initargs=(table,),
+            )
+            with _one_blas_thread():
+                # spawn starts workers on demand: start them all while the environment holds
+                list(self._pool.map(_started, range(workers)))
+        return self._pool
 
     @property
     def band_qh(self) -> float:
@@ -377,58 +531,50 @@ class InterfaceCouplings:
             qh_d, window_d, extra = self.band_qh, None, {"low_pass": lp}
         else:
             qh_d, window_d, extra = self.q0h, self.window, {}
-        d: dict = {}
+        jobs, owners = [], []
         for from_a in (True, False):
             sel = [k for k in keys if (k[1] < 0) == from_a]
             if not sel:
                 continue
-            pairs = [((zr, a, b), (zs, 0, 0)) for zr, zs, a, b in sel]
             # a source in B: the mirrored cells (z -> -z, media exchanged), mapped back
             media = (g.above, g.below) if from_a else (g.below, g.above)
             back = (lambda x: x) if from_a else isp._mirror
-            if not from_a:
-                pairs = [(isp._mirrored(r), isp._mirrored(s)) for r, s in pairs]
-            got = [
-                back(x)
-                for x in isp.truncated_blocks(
-                    pairs,
-                    g.h,
-                    omega,
-                    *media,
-                    self.n_source,
-                    self.n_test,
-                    qh_d,
-                    table,
-                    window_d,
-                    **extra,
-                )
-            ]
+            n_grid = 0
             if self.split:
                 # D_high: one periodic grid per pair of depths, shared by every lateral offset
                 reach = max(max(k[2], k[3]) for k in sel) // 2  # cells
                 n_grid = scipy.fft.next_fast_len(reach + 1 + self.split_pad)
-                for zr, zs in sorted({k[:2] for k in sel}):
-                    rz, sz = (zr, zs) if from_a else (-zr, -zs)
-                    at = [i for i, k in enumerate(sel) if k[:2] == (zr, zs)]
-                    # the canonical offsets alone, by the lateral symmetries (an eighth of the wavenumbers)
-                    hi = isp.high_band_blocks(
+            for zr, zs in sorted({k[:2] for k in sel}):
+                group = [k for k in sel if k[:2] == (zr, zs)]
+                rz, sz = (zr, zs) if from_a else (-zr, -zs)
+                jobs.append(
+                    (
                         rz,
                         sz,
-                        n_grid,
+                        [k[2:] for k in group],
                         g.h,
                         omega,
                         *media,
                         self.n_source,
                         self.n_test,
                         self.q0h,
-                        window=self.window,
-                        low_pass=lp,
-                        band_qh=self.band_qh,
-                        offsets=[(sel[i][2] // 2, sel[i][3] // 2) for i in at],
+                        qh_d,
+                        window_d,
+                        extra.get("low_pass"),
+                        self.window,
+                        n_grid,
+                        None,
                     )
-                    for i, blk in zip(at, hi, strict=True):
-                        got[i] = got[i] + back(blk)
-            d.update(zip(sel, got, strict=True))
+                )
+                owners.append((group, back))
+        pool = self._frequency_pool(table) if len(jobs) > 1 else None
+        if pool is None:
+            results = [_d_job(j[:-1] + (table,)) for j in jobs]
+        else:
+            results = list(pool.map(_d_job, jobs))
+        d: dict = {}
+        for (group, back), got in zip(owners, results, strict=True):
+            d.update({k: back(x) for k, x in zip(group, got, strict=True)})
         out = {}
         for key in keys:
             parts = self.classes[key][0]
@@ -462,12 +608,13 @@ class InterfaceCouplings:
                     self.n_source,
                     self.n_test,
                     ws,
+                    self.far_coeffs,
                 )
             out[m, n] = k
         return out
 
 
-def _whole_space(off, h, omega, ref, n_source, n_test, cache) -> NDArray:
+def _whole_space(off, h, omega, ref, n_source, n_test, cache, far=None) -> NDArray:
     """Paper 2's block for a grid offset: the orbit's canonical block mapped to it.  Touching offsets by
     ``near_block_series`` (its universal moments once per process, minutes; then milliseconds per frequency),
     the others by ``far_block_series`` (its coefficients once, then each frequency a short sum), Gauss where
@@ -479,7 +626,9 @@ def _whole_space(off, h, omega, ref, n_source, n_test, cache) -> NDArray:
             cache[key] = near_block_series(c, h, omega, ref, n_source, n_test)
         else:
             try:
-                cache[key] = far_block_series(c, h, omega, ref, n_source, n_test)
+                cache[key] = far_block_series(
+                    c, h, omega, ref, n_source, n_test, coeffs=(far or {}).get(c)
+                )
             except ValueError:  # too many series terms at this frequency: Gauss
                 cache[key] = coupling_block(c, h, omega, ref, n_source, n_test)  # type: ignore[arg-type]
     cv, target = np.array(c, dtype=float), np.array(off, dtype=float)
@@ -683,6 +832,7 @@ class LateralOperator:
                         couplings.n_source,
                         couplings.n_test,
                         ws_cache,
+                        couplings.far_coeffs,
                     )
                 kh[:, :, dx % self.shape[0], dy % self.shape[1]] = (
                     k[:na, :n_source].transpose(0, 2, 1, 3).reshape(rows, cols)

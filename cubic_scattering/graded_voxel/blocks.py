@@ -919,6 +919,7 @@ def far_block_series(
     n_source: int = 10,
     n_test: int = 4,
     tol: float = 1e-14,
+    coeffs: NDArray | None = None,
 ) -> NDArray:
     """K[a, c] of a non-touching offset as the power series of the propagator in the wavenumber.
 
@@ -931,10 +932,14 @@ def far_block_series(
     and until (k_S r_max)^(t - 2) / (t - 2)! falls below tol, r_max the largest separation of two points of
     the cells.
 
+    ``coeffs``: ``far_series_coefficients(offset, n_source, n_test)`` when already at hand (e.g. computed in
+    parallel elsewhere); None computes them (cached per process).
+
     Raises:
         ValueError: when the offset touches, or FAR_SERIES_T_MAX terms do not reach tol at this frequency.
     """
-    coeffs = far_series_coefficients(tuple(offset), n_source, n_test)
+    if coeffs is None:
+        coeffs = far_series_coefficients(tuple(offset), n_source, n_test)
     r_max = (2.0 * float(np.linalg.norm(offset)) + 2.0 * np.sqrt(3.0)) * h
     k_s = omega / ref.beta
     n_terms = None
