@@ -260,6 +260,17 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     memory grows as nodes × layers, not L²(2n)², which is what the 0.8 TB wall needs; its time per product
     grows as nodes × layers × components. The rest of S5's gate, memory and time against n = 12 … 64 and
     L = 2 … 16, is still to measure.
+  - **Item (a) done (16 October, user: "Item 2"): the whole-space coupling between planes two or more apart by
+    a march in depth** (`stratified_apply.WholeSpaceMarch`). G2's factorisation, each cell's moments about its own
+    centre, so the factors do not depend on the layer; the vertical phase steps layer by layer (|p| ≤ 1);
+    nodes: the low band's polar quadrature and the box's lattice to q h = 16. Stored lateral kernels remain only
+    for planes 0 and 1 apart: 3 (2n − 1)² blocks per side, whatever L.
+    - **Against Paper 2's blocks** (5 layers × 3 × 2): 3.9e-10 (1/6), 3.6e-9 (1/2). This is the lattice's
+      images 40 cells away, as for the split D: 5.5e-11 at 1/2 with 60 cells.
+    - **Full product against `LateralOperator`:** 96 cells in six layers, 3.6e-11; 50 cells, 7.3e-13; PASS.
+    - **Memory now sits in the cached factors:** ~23 kB per node for D with six layers, ~12 kB per node for the
+      march; 12.8 GB peak at 96 cells with both operators. `MatrixFreeOperator(cache=False)` recomputes them
+      in each product instead. At 64 × 64 × 8 the nodes number ~10⁶, so there the factors are not cached.
   - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
     64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
     touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
