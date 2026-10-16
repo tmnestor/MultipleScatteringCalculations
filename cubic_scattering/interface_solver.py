@@ -251,6 +251,10 @@ class InterfaceCouplings:
         split_pad: Cells between the box's farthest offset and the first periodic image of D_high.  D_high
             decays faster than any power: below 1e-8 of the touching static block at ~26 cells (omega h / beta =
             1/6) to ~34 (1/2), 1e-10 at ~40 to ~55.
+        matrix_free: Build only what ``MatrixFreeOperator`` uses: the self offset's lateral table (D itself comes
+            from the plane-wave modes) and the whole-space series coefficients of planes 0 and 1 apart (farther
+            planes go through the march).  ``LateralOperator`` and the full ``interface_canonical`` then refuse.
+            Needs ``split``.
         workers: Processes for the set-up (default: the CPUs), one BLAS thread each.  The set-up also computes the
             whole-space blocks' series coefficients of every orbit the grid needs (``far_coeffs``), so a frequency
             is only their short sums.  A frequency runs in this process, where BLAS threads use the CPUs (a pool of
@@ -268,6 +272,7 @@ class InterfaceCouplings:
     depth_radius: float | None = None
     split: bool = False
     split_pad: int = 40
+    matrix_free: bool = False
     workers: int | None = None
     classes: dict = field(default_factory=dict, init=False)
     far_coeffs: dict = field(default_factory=dict, init=False, repr=False)
@@ -284,22 +289,35 @@ class InterfaceCouplings:
                 "InterfaceCouplings: a radius needs a smooth window; with the sharp cutoff the corrections ring and\n"
                 "  decay only as d^-3/2.  Pass window=interface_spectral.Window(0.25)."
             )
+        if self.matrix_free and not self.split:
+            raise ValueError(
+                "InterfaceCouplings: matrix_free needs split=True (MatrixFreeOperator's D)."
+            )
         if self.split and self.window is None:
             raise ValueError(
                 "InterfaceCouplings: split needs a smooth window (its band ends where the window's ramp starts)."
             )
-        u = self.grid.units
-        keys = set()
-        for m, n in itertools.product(range(len(u)), repeat=2):
-            (a, b), _ = _canonical(int(u[m, 1] - u[n, 1]), int(u[m, 2] - u[n, 2]))
-            keys.add((int(u[m, 0]), int(u[n, 0]), a, b))
-        keys = sorted(keys)
         g = self.grid
+        # the classes: per pair of layers, the canonical lateral offsets (a >= b >= 0, in h) its cells realise
+        lat = {z: g.idx[g.idx[:, 0] == z, 1:] for z in np.unique(g.idx[:, 0])}
+        keys = set()
+        for zr, zs in itertools.product(lat, repeat=2):
+            d = np.abs(lat[zr][:, None, :] - lat[zs][None, :, :]).reshape(-1, 2)
+            ab = np.unique(np.sort(d, axis=1)[:, ::-1], axis=0)
+            keys |= {
+                (2 * int(zr) + 1, 2 * int(zs) + 1, 2 * int(a), 2 * int(b))
+                for a, b in ab
+            }
+        keys = sorted(keys)
         # beyond either radius a class has no corrections: its block is the windowed D alone
         local = [k for k in keys if self.corrected(k)]
         # S_n(q) depends on the lateral offset alone, not on the depths or media: one table per offset,
         # shared by its classes.  Its cost grows as the reach squared, so the farthest go first.
         offsets = sorted({k[2:] for k in keys}, key=lambda o: -np.hypot(*o))
+        if (
+            self.matrix_free
+        ):  # D comes from the plane-wave modes: only the self blocks' table is used
+            offsets = [(0, 0)]
         # with the split, D's per-offset part is the low band alone: tables over q h < band_qh only
         table_qh = self.band_qh if self.split else self.q0h
         jobs = [
@@ -328,13 +346,24 @@ class InterfaceCouplings:
         far: set = set()
         for side in (g.in_above, ~g.in_above):
             sub = idx[side]
-            if len(sub):
-                d = np.unique(
-                    np.abs(sub[:, None, :] - sub[None, :, :]).reshape(-1, 3), axis=0
-                )
+            if not len(sub):
+                continue
+            # |offsets| between the side's cells: lateral differences of its positions, times the layer differences
+            pos = np.unique(sub[:, 1:], axis=0)
+            dxy = np.unique(
+                np.abs(pos[:, None, :] - pos[None, :, :]).reshape(-1, 2), axis=0
+            )
+            zs = np.unique(sub[:, 0])
+            dz = np.unique(np.abs(zs[:, None] - zs[None, :]))
+            if (
+                self.matrix_free
+            ):  # the stored whole-space kernels are those of planes 0 and 1 apart
+                dz = dz[dz <= 1]
+            for z in dz:
+                rows = np.column_stack([np.full(len(dxy), z), dxy])
                 far |= {
                     c
-                    for c in (tuple(sorted(map(int, r), reverse=True)) for r in d)
+                    for c in (tuple(sorted(map(int, r), reverse=True)) for r in rows)
                     if max(c) > 1
                 }
         far_keys = sorted(far)
@@ -356,7 +385,7 @@ class InterfaceCouplings:
         tables = dict(zip(offsets, results[:n_t], strict=True))
         parts = dict(zip(local, results[n_t : n_t + n_p], strict=True))
         self.far_coeffs = dict(zip(far_keys, results[n_t + n_p :], strict=True))
-        self.classes = {k: (parts.get(k), tables[k[2:]]) for k in keys}
+        self.classes = {k: (parts.get(k), tables.get(k[2:])) for k in keys}
 
     @property
     def band_qh(self) -> float:
@@ -426,10 +455,16 @@ class InterfaceCouplings:
         by every lateral offset; sources in B mirrored onto A with the media exchanged), plus the class's
         A0 + w^2 A1 (+ w^4 A2)."""
         g = self.grid
-        table = dict(next(iter(self.classes.values()))[1])
-        for _, t in self.classes.values():
-            table.update({k: v for k, v in t.items() if isinstance(k, tuple)})
         keys = list(self.classes) if keys is None else list(keys)
+        tables = [self.classes[k][1] for k in keys]
+        if any(t is None for t in tables):
+            raise ValueError(
+                "InterfaceCouplings.interface_canonical: the set-up has no lateral tables for these classes\n"
+                "  (matrix_free=True keeps the self offset's only); use MatrixFreeOperator."
+            )
+        table = dict(tables[0])
+        for t in tables:
+            table.update({k: v for k, v in t.items() if isinstance(k, tuple)})
         if self.split:
             lp = self.low_pass(omega)
             # D's per-offset part: the low band, below the window
@@ -704,6 +739,10 @@ class LateralOperator:
     def __init__(
         self, couplings: InterfaceCouplings, omega: float, p: int = 1, r: int = 0
     ) -> None:
+        if couplings.matrix_free:
+            raise ValueError(
+                "LateralOperator: the set-up was built for MatrixFreeOperator (matrix_free=True)."
+            )
         g = couplings.grid
         self.grid, self.p, self.r = g, p, r
         na, n_field, _, n_source = field_sizes(p, r)
