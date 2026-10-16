@@ -39,31 +39,94 @@ _M_INV = np.diag(1.0 / SOURCE_PAIRING)
 
 @dataclass
 class ModeFactors:
-    """The factors of D's integrand at P lateral wavenumbers, for sources in A.
+    """The factors of D's integrand at P lateral wavenumbers, for sources in A, kept factored: each is a cell's
+    lateral moments times a mode map times its layer's phase e^{-+i k_z z}, so only the layer-independent pieces are
+    stored and the phase is applied per layer (``src_amp``, ``rec_out``).
 
     Attributes:
-        src: {z_s: (P, 3, n_source, 9)} the source layer's map from its cells' coefficients (at k) to the
-            amplitudes of the three down-going modes.
-        rec: {z_r: (P, n_test, 9, 3)} the receiver layer's map from the three outgoing modes to its cells'
-            coefficients (reflected up-going in A, or transmitted down-going in B).
+        lf, ls: (P, n_test), (P, n_source), the cells' lateral moments.
+        l_of, e_of: The field functions' and source monomials' vertical exponents, as indices into the unique ones.
+        v0: (P, n_e, 3, 9) per source vertical exponent e, the map from a source's coefficients onto the three
+            down-going modes without the layer's phase: (diag(h F_e(-k_z h)) right M^-1 T^T) * pairing.
+        kzs: (P, 3) the down-going modes' k_z in A.
+        u0: {"R", "T"}: (P, n_l, 9, 3) per field vertical exponent l, the outgoing modes onto a receiver without the
+            layer's phase: T states diag(h 2 i^l j_l(k_z h)).
+        kzw: {"R", "T"}: (P, 3), the outgoing modes' k_z (as in the receiver's phase e^{i k_z z}).
         mid: {"R": R_d, "T": T_d}, each (P, 3, 3).
-        src_stat: {(kind, order): {z_s: (P, n_beta, n_source)}} the static pseudo-modes' source maps, with the
-            window's weight -chi (and omega^2 for order 1).
-        rec_stat: {(kind, order): {z_r: (P, n_test, n_alpha)}}.
+        weight: {(kind, order): (P,)} the window's weight of the static parts, -chi (times omega^2 for order 1).
+        vs: {(kind, order): {z_s: (P, n_e, n_beta)}} the sources' vertical moments of the static parts.
+        vr: {(kind, order): {z_r: (P, n_l, n_alpha)}} the receivers'.
         mid_stat: {(kind, order): (C, q^powers)}: the static kernel in the frame of k (times M^-1) is the polynomial
-            sum_m C[i, j, alpha, beta, m] q^(m0 + m), depth-independent, so only C (9, 9, n_alpha, n_beta, n_m) and the
-            powers (n_m, P) are kept; the rotation to k's direction, T C T^T with columns paired, is applied to the
-            vectors (``stat_apply``), not formed.
+            sum_m C[i, j, alpha, beta, m] q^(m0 + m), depth-independent; the rotation to k's direction is applied to
+            the vectors (``stat_apply``), not formed.
         rot: (P, 9, 9), T.
+        h: The cell half-width.
     """
 
-    src: dict
-    rec: dict
+    lf: NDArray
+    ls: NDArray
+    l_of: NDArray
+    e_of: NDArray
+    v0: NDArray
+    kzs: NDArray
+    u0: dict
+    kzw: dict
     mid: dict
-    src_stat: dict
-    rec_stat: dict
+    weight: dict
+    vs: dict
+    vr: dict
     mid_stat: dict
     rot: NDArray
+    h: float
+
+    def by_exponent(self, xh: NDArray) -> NDArray:
+        """Y[p, e, j] = sum over the source monomials c of vertical exponent e of ls[p, c] xh[p, c, j]."""
+        one_hot = np.eye(self.v0.shape[1])[self.e_of]  # (n_source, n_e)
+        return np.einsum("pc,ce,pcj->pej", self.ls, one_hot, xh, optimize=True)
+
+    def src_amp(self, zs: int, y: NDArray) -> NDArray:
+        """The three down-going modes' amplitudes from a source layer's ``by_exponent`` sums, (P, 3)."""
+        return np.einsum("pemj,pej->pm", self.v0, y, optimize=True) * np.exp(
+            -1j * self.kzs * zs * self.h
+        )
+
+    def rec_out(self, zr: int, amp: NDArray) -> NDArray:
+        """A receiver layer's coefficients from the incoming down-going amplitudes (P, 3), (P, n_test, 9)."""
+        kind = "R" if zr < 0 else "T"
+        b = np.einsum("pmn,pn->pm", self.mid[kind], amp) * np.exp(
+            1j * self.kzw[kind] * zr * self.h
+        )
+        g = np.einsum("plim,pm->pli", self.u0[kind], b, optimize=True)
+        return self.lf[:, :, None] * g[:, self.l_of, :]
+
+    def stat_src_amp(self, key: tuple, zs: int, y: NDArray) -> NDArray:
+        """The static pseudo-modes' amplitudes from a source layer's ``by_exponent`` sums, (P, n_beta, 9)."""
+        return self.weight[key][:, None, None] * np.einsum(
+            "pex,pej->pxj", self.vs[key][zs], y, optimize=True
+        )
+
+    def stat_rec_out(self, key: tuple, zr: int, w: NDArray) -> NDArray:
+        """A receiver layer's coefficients from the static kernel applied to the amplitudes (``stat_apply``),
+        (P, n_test, 9)."""
+        g = np.einsum("plx,pix->pli", self.vr[key][zr], w, optimize=True)
+        return self.lf[:, :, None] * g[:, self.l_of, :]
+
+    def src_full(self, zs: int) -> NDArray:
+        """The expanded source map, (P, 3, n_source, 9) (for checks)."""
+        v = (
+            self.v0[:, self.e_of]
+            * np.exp(-1j * self.kzs * zs * self.h)[:, None, :, None]
+        )  # (P, c, 3, 9)
+        return (self.ls[:, :, None, None] * v).transpose(0, 2, 1, 3)
+
+    def rec_full(self, zr: int) -> NDArray:
+        """The expanded receiver map, (P, n_test, 9, 3) (for checks)."""
+        kind = "R" if zr < 0 else "T"
+        u = (
+            self.u0[kind][:, self.l_of]
+            * np.exp(1j * self.kzw[kind] * zr * self.h)[:, None, None, :]
+        )
+        return self.lf[:, :, None, None] * u
 
     def rotated_stat(self, key: tuple) -> NDArray:
         """The static kernel rotated to k's direction, (P, 9, 9, n_alpha, n_beta) (for checks)."""
@@ -114,8 +177,10 @@ def mode_factors(
         )
     exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
-    lz = np.array([e[0] for e in exps_f])
-    ez = np.array([e[0] for e in exps_s])
+    lu = sorted({e[0] for e in exps_f})
+    eu = sorted({e[0] for e in exps_s})
+    l_of = np.array([lu.index(e[0]) for e in exps_f])
+    e_of = np.array([eu.index(e[0]) for e in exps_s])
     q = np.hypot(kx, ky)
     zero = np.zeros_like(q)
     T = isp.rotation(np.arctan2(ky, kx))
@@ -129,42 +194,40 @@ def mode_factors(
     right = (
         st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING
     )  # (P, 3, 9)
-    src = {}
-    for zs in src_zs:
-        v = {
-            e: h * np.exp(-1j * kzs * zs * h) * monomial_fourier(e, -kzs * h)
-            for e in set(ez)
-        }
-        ve = {
-            e: (v[e][:, :, None] * right) @ _M_INV @ T.swapaxes(1, 2) * SOURCE_PAIRING
-            for e in v
-        }
-        src[zs] = ls[:, None, :, None] * np.stack(
-            [ve[e] for e in ez], 2
-        )  # (P, 3, n_source, 9)
-    rec, sides = {}, {}
+    v0 = np.stack(
+        [
+            ((h * monomial_fourier(e, -kzs * h))[:, :, None] * right)
+            @ _M_INV
+            @ T.swapaxes(1, 2)
+            * SOURCE_PAIRING
+            for e in eu
+        ],
+        1,
+    )  # (P, n_e, 3, 9)
+    u0, kzw, sides = {}, {}, set()
     if any(z < 0 for z in rec_zs):
-        sides["R"] = (st_a[:, :, 3:], -kz_a[:, 3:])
+        sides.add("R")
+        u0["R"], kzw["R"] = st_a[:, :, 3:], -kz_a[:, 3:]
     if any(z > 0 for z in rec_zs):
+        sides.add("T")
         st_b, _, _, kz_b = mode_matrices(q, zero, omega, below)
-        sides["T"] = (st_b[:, :, :3], kz_b[:, :3])
-    for zr in rec_zs:
-        states, kzw = sides["R" if zr < 0 else "T"]
-        u = {
-            l: h * np.exp(1j * kzw * zr * h) * 2.0 * 1j**l * spherical_jn(l, kzw * h)
-            for l in set(lz)
-        }
-        ul = {l: T @ (states * u[l][:, None, :]) for l in u}  # (P, 9, 3)
-        rec[zr] = lf[:, :, None, None] * np.stack(
-            [ul[l] for l in lz], 1
-        )  # (P, n_test, 9, 3)
+        u0["T"], kzw["T"] = st_b[:, :, :3], kz_b[:, :3]
+    for kind in sides:
+        states, kz = u0[kind], kzw[kind]
+        u0[kind] = np.stack(
+            [
+                T @ (states * (h * 2.0 * 1j**l * spherical_jn(l, kz * h))[:, None, :])
+                for l in lu
+            ],
+            1,
+        )  # (P, n_l, 9, 3)
     mid = {"R": rt["R_d"], "T": rt["T_d"]}
 
-    src_stat, rec_stat, mid_stat = {}, {}, {}
+    weight, vs, vr, mid_stat = {}, {}, {}, {}
     if window is not None:
         chi = window(q * h, q0h)
         pf, ps = isp._vertical_polys(exps_f, True), isp._vertical_polys(exps_s, False)
-        for kind in [k for k in ("R", "T") if k in sides]:
+        for kind in sorted(sides):
             s = 1 if kind == "R" else -1
             for order in (0, 1):
                 C, m0 = isp.frame_laurent(kind, order, isp._key(above), isp._key(below))
@@ -174,36 +237,35 @@ def mode_factors(
                     C * (1.0 / SOURCE_PAIRING)[None, :, None, None, None],
                     qpow,
                 )
-                weight = -chi * (omega**2 if order == 1 else 1.0)
-                src_stat[kind, order] = {
-                    zs: weight[:, None, None]
-                    * ls[:, None, :]
-                    * np.stack(
+                weight[kind, order] = -chi * (omega**2 if order == 1 else 1.0)
+                vs[kind, order] = {
+                    zs: np.stack(
                         [
                             isp._vertical_moments(
                                 ps[e], zs * h, h, 1, q, C.shape[3] - 1
                             ).T
-                            for e in ez
+                            for e in eu
                         ],
-                        2,
+                        1,
                     )
                     for zs in src_zs
                 }
-                rec_stat[kind, order] = {
-                    zr: lf[:, :, None]
-                    * np.stack(
+                vr[kind, order] = {
+                    zr: np.stack(
                         [
                             isp._vertical_moments(
                                 pf[l], zr * h, h, s, q, C.shape[2] - 1
                             ).T
-                            for l in lz
+                            for l in lu
                         ],
                         1,
                     )
                     for zr in rec_zs
                     if (zr < 0) == (kind == "R")
                 }
-    return ModeFactors(src, rec, mid, src_stat, rec_stat, mid_stat, T)
+    return ModeFactors(
+        lf, ls, l_of, e_of, v0, kzs, u0, kzw, mid, weight, vs, vr, mid_stat, T, h
+    )
 
 
 def integrand_from_factors(f: ModeFactors, zr: int, zs: int) -> NDArray:
@@ -211,16 +273,22 @@ def integrand_from_factors(f: ModeFactors, zr: int, zs: int) -> NDArray:
     reference against ``interface_spectral.integrand_points``."""
     kind = "R" if zr < 0 else "T"
     out = np.einsum(
-        "paim,pmn,pncj->pacij", f.rec[zr], f.mid[kind], f.src[zs], optimize=True
+        "paim,pmn,pncj->pacij",
+        f.rec_full(zr),
+        f.mid[kind],
+        f.src_full(zs),
+        optimize=True,
     )
-    for k, order in f.mid_stat:
-        if k == kind:
+    for key in f.mid_stat:
+        if key[0] == kind:
+            ur = f.lf[:, :, None] * f.vr[key][zr][:, f.l_of]  # (P, n_test, n_alpha)
+            us = (
+                f.weight[key][:, None, None]
+                * f.ls[:, None, :]
+                * f.vs[key][zs][:, f.e_of].transpose(0, 2, 1)
+            )
             out = out + np.einsum(
-                "pax,pijxy,pyc->pacij",
-                f.rec_stat[k, order][zr],
-                f.rotated_stat((k, order)),
-                f.src_stat[k, order][zs],
-                optimize=True,
+                "pax,pijxy,pyc->pacij", ur, f.rotated_stat(key), us, optimize=True
             )
     return out.reshape(out.shape[0], out.shape[1], out.shape[2], 81)
 
@@ -301,28 +369,19 @@ class NodeProduct:
             amp = np.zeros((len(qx), 3), dtype=complex)
             amp_stat = {key: 0.0 for key in f.mid_stat}
             for zs, g in grids.items():
-                xh = (to_k.execute(g) * shift).T.reshape(-1, n_source, 9)
-                amp += np.einsum("pmcj,pcj->pm", f.src[zs], xh)
+                y = f.by_exponent((to_k.execute(g) * shift).T.reshape(-1, n_source, 9))
+                amp += f.src_amp(zs, y)
                 for key in f.mid_stat:
-                    amp_stat[key] = amp_stat[key] + np.einsum(
-                        "pyc,pcj->pyj", f.src_stat[key][zs], xh
-                    )
+                    amp_stat[key] = amp_stat[key] + f.stat_src_amp(key, zs, y)
             stat_cache: dict = {}  # the static kernel on the amplitudes, shared by the receiver layers
             for zr in self.rec_zs:
                 kind = "R" if zr < 0 else "T"
-                b = np.einsum(
-                    "paim,pmn,pn->pai", f.rec[zr], f.mid[kind], amp, optimize=True
-                )
+                b = f.rec_out(zr, amp)
                 for key in f.mid_stat:
                     if key[0] == kind:
                         if key not in stat_cache:
                             stat_cache[key] = f.stat_apply(key, amp_stat[key])
-                        b = b + np.einsum(
-                            "pax,pix->pai",
-                            f.rec_stat[key][zr],
-                            stat_cache[key],
-                            optimize=True,
-                        )
+                        b = b + f.stat_rec_out(key, zr, stat_cache[key])
                 c = np.ascontiguousarray(
                     (b * (w / shift)[:, None, None]).reshape(len(qx), -1).T
                 )
@@ -567,17 +626,36 @@ class WholeSpaceModes:
     Between cells in planes at least two apart, receiver at depth offset dz (in cells) from the source, the
     integrand is sum_m w_m R_a(k_m) d_m[i] S_c(k_m) (d_m M)[j] e^{i k_m . r}, the modes m (P, SV, SH) going down
     (dz > 0) or up (dz < 0), each cell's moments about its own centre.  So the factors do not depend on the layer,
-    and the vertical phase is p^|dz|, p = e^{i k_z 2h} per mode.
+    and the vertical phase is p^|dz|, p = e^{i k_z 2h} per mode.  Kept factored (the cells' moments and the mode
+    states apart).
 
     Attributes:
-        rec: {+1: down-going, -1: up-going}, (P, n_test, 9, 3).
-        src: {+1, -1}, (P, 3, n_source, 9), the weight w_m and the pairing included.
+        ra: {+1: down-going, -1: up-going}, (P, 3, n_test), the receiver's moments R_a(k_m).
+        ws: {+1, -1}, (P, 3, n_source), w_m S_c(k_m).
+        d: {+1, -1}, (P, 3, 9), the mode states.
         step: (P, 3), p.
     """
 
-    rec: dict
-    src: dict
+    ra: dict
+    ws: dict
+    d: dict
     step: NDArray
+
+    def src_amp(self, sign: int, xh: NDArray) -> NDArray:
+        """beta_m = sum_{c, j} w_m S_c (d_m M)_j xh[c, j], (P, 3)."""
+        return np.einsum(
+            "pmc,pmj,pcj->pm",
+            self.ws[sign],
+            self.d[sign] * SOURCE_PAIRING,
+            xh,
+            optimize=True,
+        )
+
+    def rec_out(self, sign: int, amp: NDArray) -> NDArray:
+        """sum_m R_a(k_m) d_m[i] amp_m, (P, n_test, 9)."""
+        return np.einsum(
+            "pma,pmi,pm->pai", self.ra[sign], self.d[sign], amp, optimize=True
+        )
 
 
 def whole_space_modes(
@@ -592,33 +670,24 @@ def whole_space_modes(
     """The factors of ``WholeSpaceModes`` at lateral wavenumbers (kx, ky)."""
     from .stratified_march import mode_family, receiver_moments, source_moments_local
 
-    rec, src = {}, {}
+    ra, ws, d = {}, {}, {}
     step = None
     for sign in (1.0, -1.0):
         modes = mode_family(kx, ky, omega, ref, "P", sign) + mode_family(
             kx, ky, omega, ref, "S", sign
         )
-        rec[int(sign)] = np.stack(
-            [
-                receiver_moments(k, h, n_test)[:, :, None] * d[:, None, :]
-                for k, d, _ in modes
-            ],
-            3,
+        ra[int(sign)] = np.stack(
+            [receiver_moments(k, h, n_test) for k, _, _ in modes], 1
         )
-        src[int(sign)] = np.stack(
-            [
-                w[:, None, None]
-                * source_moments_local(k, h, n_source)[:, :, None]
-                * (d * SOURCE_PAIRING)[:, None, :]
-                for k, d, w in modes
-            ],
-            1,
+        ws[int(sign)] = np.stack(
+            [w[:, None] * source_moments_local(k, h, n_source) for k, _, w in modes], 1
         )
+        d[int(sign)] = np.stack([dm for _, dm, _ in modes], 1)
         if step is None:
             step = np.stack(
                 [np.exp(1j * k[:, 0] * sign * 2 * h) for k, _, _ in modes], 1
             )
-    return WholeSpaceModes(rec, src, step)
+    return WholeSpaceModes(ra, ws, d, step)
 
 
 class WholeSpaceMarch:
@@ -688,7 +757,7 @@ class WholeSpaceMarch:
                 if z in grids:
                     xh = (to_k.execute(grids[z]) * shift).T.reshape(-1, n_source, 9)
                     for s in (1, -1):
-                        beta[s][i] = np.einsum("pmcj,pcj->pm", f.src[s], xh)
+                        beta[s][i] = f.src_amp(s, xh)
             p1, p2 = f.step, f.step**2
             down = np.zeros(
                 (n_l, p, 3), dtype=complex
@@ -701,9 +770,7 @@ class WholeSpaceMarch:
             for i in range(n_l - 3, -1, -1):
                 up[i] = p1 * up[i + 1] + p2 * beta[-1][i + 2]
             for i, z in enumerate(self.layers):
-                b = np.einsum("paim,pm->pai", f.rec[1], down[i]) + np.einsum(
-                    "paim,pm->pai", f.rec[-1], up[i]
-                )
+                b = f.rec_out(1, down[i]) + f.rec_out(-1, up[i])
                 c = np.ascontiguousarray(
                     (b * (w / shift)[:, None, None]).reshape(p, -1).T
                 )
