@@ -120,6 +120,25 @@ Each step has a gate. Profiling and measurement come before any rewrite.
 - **Gate:** a depth radius at 1e-6 / 1e-8 / 1e-10, like tab:locality's lateral one. If it holds, the
   set-up is O(R² · constant) independent of L. Only the layers near the interface carry analytic work,
   and the rest are plane waves.
+- **Done (16 October), `scripts/measure_interface_depth_locality.py`** → `scripts/data/interface_depth_locality.json`.
+  Lateral offset 0, z = ±1 … ±7 h, reflected in A and in B and transmitted, relative to the family's touching
+  K0 (worst of the pairs at each total gap g = d_r + d_s):
+
+  | g / h | 0 | 2 | 4 | 6 | 8 | 10 |
+  |---|---|---|---|---|---|---|
+  | \|A0 + ω²A1\| | 2.4e-2 | 2.6e-6 | 3.7e-9 | 3.7e-12 | 6.2e-15 | 1.0e-15 |
+  | ω²\|A1\| | 1.2e-5 | 1.1e-8 | 2.8e-11 | 4.6e-14 | 1.0e-16 | 1.8e-17 |
+
+  - **The hypothesis holds, at a different rate:** about 10⁻⁴ per 2 h of gap, e^{−4.6 g/h}, alike for
+    reflection and transmission and on both sides. That is neither e^{−Q0 g} (the plan's guess, e^{−10 g/h})
+    nor e^{−start·Q0 g} (e^{−2.5 g/h}, the window's first rise). The C^∞ step is negligible early on its ramp,
+    so it effectively turns on near Q0/2. The floor is ~1e-15 (two cells at 7 h: 1.8e-14, rounding of D).
+  - **Depth radius:** the corrections fall below 1e-6 and 1e-8 for g ≥ 4 h, and below 1e-10 for g ≥ 6 h. At
+    1e-10, only pairs with g ≤ 4 h carry corrections: both cells in the three layers nearest the interface on
+    their side. So the set-up within the radii is O(R² · 3² · 4) whatever L, and the rest of the blocks are
+    D alone. With change 1 (one table per offset) the tables are independent of L as well.
+  - **Not yet built:** the depth radius in `InterfaceCouplings` (it drops A0, A1 for pairs beyond it, as the
+    lateral radius does). It is a decision for S3, together with D1.
 
 ### S3. Decide the budget (user, after S1–S2)
 - D1: the block tolerance (1e-6 proposed) and with it the lateral radius (12 h at 1e-6) and the depth
