@@ -188,6 +188,7 @@ dependencies:
       - defusedxml==0.7.1
       - devito==4.8.21
       - execnet==2.1.2
+      - finufft==2.5.1
       - fastjsonschema==2.21.2
       - iniconfig==2.3.0
       - jsonschema==4.26.0
