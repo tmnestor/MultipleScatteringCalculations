@@ -271,6 +271,31 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     - **Memory now sits in the cached factors:** ~23 kB per node for D with six layers, ~12 kB per node for the
       march; 12.8 GB peak at 96 cells with both operators. `MatrixFreeOperator(cache=False)` recomputes them
       in each product instead. At 64 × 64 × 8 the nodes number ~10⁶, so there the factors are not cached.
+  - **Scaling (16 October, `scripts/measure_interface_matrix_free_scaling.py`** → `scripts/data/
+    interface_matrix_free_scaling.jsonl`; a fresh process per box). The run stopped at the 2 h limit before n = 36,
+    L = 8; cached factors at n = 12, L = 8 ran out of memory.
+
+    | n × n, L | product, uncached | peak, uncached | product, cached | peak, cached | stored kernels |
+    |---|---|---|---|---|---|
+    | 12, 2 | 47 s | 0.8 GB | 16 s | 3.6 GB | 0.1 GB |
+    | 12, 4 | 67 s | 1.2 GB | 26 s | 6.3 GB | 0.4 GB |
+    | 12, 8 | 243 s | 1.2 GB | killed | — | 1.8 GB |
+    | 24, 2 | 67 s | 1.7 GB | 24 s | 6.1 GB | 0.5 GB |
+    | 24, 4 | 95 s | 2.8 GB | | | 1.8 GB |
+    | 24, 8 | 377 s | 2.9 GB | | | 7.3 GB |
+    | 36, 2 | 90 s | 3.1 GB | | | 1.0 GB |
+    | 36, 4 | 138 s | 5.7 GB | | | 4.2 GB |
+
+    - **Memory:** uncached, it is set by n, not L (L = 4 → 8 at n = 24: 2.8 → 2.9 GB); the stored kernels grow as
+      L² n². Most of it is the whole-space series coefficients kept in the set-up (~1300 orbits × 2.5 MB = 3.3 GB at
+      n = 36; 10 GB at 64), which are needed only to build the stored kernels of planes 0 and 1 apart
+      (3 (2n − 1)² per side: 1.6 GB at 36, 5 GB at 64). Dropping the coefficients once the kernels are built
+      would leave those kernels plus the grids.
+    - **Time per product:** 47 s → 377 s, set by the wavenumber nodes (D: 0.26 M at n = 12 to 0.74 M at 36, the
+      padded lattice) and, with the march (from L = 6), its lattice to q h = 16 (0.54 M at 12, 0.84 M at 24), times
+      the layers. That is minutes per product, so a GMRES solve takes about an hour at n = 24, L = 8. **The
+      product's cost is now the obstacle, not memory.**
+    - **Set-up:** 130 s → 895 s (n = 36, L = 4), mostly the whole-space coefficients of the near planes (∝ n²).
   - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
     64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
     touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
