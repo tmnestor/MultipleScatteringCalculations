@@ -13,6 +13,9 @@ Q0 / 4, radius 16 h): the same jobs as ``InterfaceCouplings``, each timed in its
 Each piece is timed exclusively (a timed function called inside another counts toward the outer one).  The
 first job of each worker also pays the process's one-off caches; those are reported separately.
 
+Every class builds its lateral table here, as the set-up did when this profile was taken (16 October); since
+then ``InterfaceCouplings`` builds one table per lateral offset, shared by the offset's classes.
+
 Writes scripts/data/profile_interface_setup.json (one row per class).
 
 Run:  PYTHONPATH=. python scripts/profile_interface_setup.py [n]      (n = 12 by default)
@@ -79,7 +82,11 @@ def _job(args):
     _instrument()
     _acc.clear()
     t0, c0 = time.perf_counter(), time.process_time()
-    iso._parts_job(args)
+    *parts_args, local = args
+    if local:
+        iso._parts_job(tuple(parts_args))
+    rec, src, h, _, _, n_source, n_test, q0h = parts_args[:8]
+    iso._table_job(((rec[1] - src[1], rec[2] - src[2]), h, q0h, n_source, n_test))
     return (
         os.getpid(),
         time.perf_counter() - t0,
@@ -121,7 +128,10 @@ def jobs_of(n: int) -> list:
 
 def _table(title: str, groups: dict) -> None:
     print(f"\n{title}")
-    print(f"  {'':>14} {'classes':>7} {'wall s':>8} " + " ".join(f"{p:>8}" for p in PIECES))
+    print(
+        f"  {'':>14} {'classes':>7} {'wall s':>8} "
+        + " ".join(f"{p:>8}" for p in PIECES)
+    )
     for label, rows in groups.items():
         tot = {p: sum(r["pieces"][p] for r in rows) for p in PIECES}
         print(
@@ -155,24 +165,44 @@ def main() -> None:
             }
         )
         seen.add(pid)
-    OUT.write_text(json.dumps({"n": n, "wall": wall, "workers": workers, "rows": rows}, indent=1))
+    OUT.write_text(
+        json.dumps({"n": n, "wall": wall, "workers": workers, "rows": rows}, indent=1)
+    )
 
     warm = [r for r in rows if not r["first_in_worker"]]
     first = [r for r in rows if r["first_in_worker"]]
-    print(f"set-up wall {wall:.0f} s; sum over jobs {sum(r['wall'] for r in rows):.0f} s "
-          f"(cpu {sum(r['cpu'] for r in rows):.0f} s); first job per worker {sum(r['wall'] for r in first):.0f} s")
-    _table("by radius (all jobs)", {
-        "within 16 h": [r for r in rows if r["local"]],
-        "beyond 16 h": [r for r in rows if not r["local"]],
-    })
-    pair = {(-1, -1): "A <- A (refl)", (1, 1): "B <- B (refl)", (-1, 1): "A <- B (trans)", (1, -1): "B <- A (trans)"}
-    _table("by depth pair (warm jobs)", {
-        lbl: [r for r in warm if tuple(r["key"][:2]) == zz] for zz, lbl in pair.items()
-    })
+    print(
+        f"set-up wall {wall:.0f} s; sum over jobs {sum(r['wall'] for r in rows):.0f} s "
+        f"(cpu {sum(r['cpu'] for r in rows):.0f} s); first job per worker {sum(r['wall'] for r in first):.0f} s"
+    )
+    _table(
+        "by radius (all jobs)",
+        {
+            "within 16 h": [r for r in rows if r["local"]],
+            "beyond 16 h": [r for r in rows if not r["local"]],
+        },
+    )
+    pair = {
+        (-1, -1): "A <- A (refl)",
+        (1, 1): "B <- B (refl)",
+        (-1, 1): "A <- B (trans)",
+        (1, -1): "B <- A (trans)",
+    }
+    _table(
+        "by depth pair (warm jobs)",
+        {
+            lbl: [r for r in warm if tuple(r["key"][:2]) == zz]
+            for zz, lbl in pair.items()
+        },
+    )
     bins = [(-1, 4), (4, 8), (8, 12), (12, 16), (16, 24), (24, 32)]
-    _table("by lateral reach |d|/h (warm jobs)", {
-        f"({max(lo, 0)}, {hi}]": [r for r in warm if lo < r["reach"] <= hi] for lo, hi in bins
-    })
+    _table(
+        "by lateral reach |d|/h (warm jobs)",
+        {
+            f"({max(lo, 0)}, {hi}]": [r for r in warm if lo < r["reach"] <= hi]
+            for lo, hi in bins
+        },
+    )
     _table("first job of each worker", {"first": first})
 
 
