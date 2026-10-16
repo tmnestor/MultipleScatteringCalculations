@@ -1,7 +1,7 @@
 # Scaling the Interface Solver to Realistic Sizes — Plan
 
 **15 October 2026.** Status: proposed. To start **after** the current GMRES gate and the TeX update of
-`LatexPDFs/InterfaceCouplingIntegrals` are done. It follows step 2 of
+`LatexPDFs/InterfaceCouplingIntegrals` are done (both done 16 October: paragraph "Larger scatterers"). It follows step 2 of
 `docs/2026-10-10-stratified-reference-legendre-cells-3d.md` and leads into that plan's Stage A/B.
 
 Conventions as in the parent plan. n × n cells laterally, L depth layers, N = n²L cells, R the lateral
