@@ -19,11 +19,8 @@ fi
 
 python3 -m pip install --quiet --root-user-action=ignore -r envs/requirements-cloud.txt
 
-# The extensions are untracked (*.so); build them unless both are already there.
-if [ "$(ls cubic_scattering/fortran/_point_kernel*.so cubic_scattering/fortran/_green_derivatives*.so 2>/dev/null | wc -l)" -lt 2 ]; then
-  log=$(mktemp)
-  python3 -m cubic_scattering.fortran.build >"$log" 2>&1 || { cat "$log" >&2; exit 1; }
-fi
+# The extensions are untracked (*.so): built when missing or older than their sources.
+envs/build_kernels_if_stale.sh
 
 # Scripts are run as `PYTHONPATH=. python scripts/<name>.py`.
 echo 'export PYTHONPATH="'"$CLAUDE_PROJECT_DIR"'"' >> "$CLAUDE_ENV_FILE"

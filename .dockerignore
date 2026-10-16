@@ -1,0 +1,14 @@
+# The image needs the Python package, its scripts and data; the rest is mounted at run time when wanted.
+.git
+**/__pycache__
+**/*.so
+**/.ipynb_checkpoints
+.pytest_cache
+.ruff_cache
+.venv
+venv
+scratch
+Mathematica
+LatexPDFs
+PhD_fortran_code
+reference_papers
