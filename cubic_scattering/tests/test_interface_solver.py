@@ -189,3 +189,32 @@ def test_lateral_fft_product_and_gmres_match_the_dense_solve():
     )
     assert np.abs(it.psi - dense.psi).max() < 1e-10 * np.abs(dense.psi).max()
     assert n_it < 50
+
+
+def test_parallel_frequency_matches_serial():
+    """A frequency's interface blocks on the worker pool (one task per pair of depths) equal the serial ones, and
+    the set-up's whole-space series coefficients equal Paper 2's per-process ones."""
+    from cubic_scattering.graded_voxel.blocks import far_series_coefficients
+
+    g = iso.InterfaceGrid(
+        np.array([[-1, 0, 0], [-1, 2, 1], [0, 0, 0], [0, 3, 0]]), H, A, B
+    )
+    c = iso.InterfaceCouplings(g, window=isp.Window(0.25), split=True, workers=2)
+    try:
+        pooled = c.interface_canonical(OMEGA)
+        assert c._pool is not None
+        c.workers = 1
+        serial = c.interface_canonical(OMEGA)
+    finally:
+        c.close()
+    # the workers run one BLAS thread, the parent several: equal to rounding (measured 1e-17)
+    scale = max(np.abs(v).max() for v in serial.values())
+    assert all(np.abs(pooled[k] - serial[k]).max() < 1e-14 * scale for k in serial)
+    assert set(c.far_coeffs) == {
+        (2, 1, 0),
+        (3, 0, 0),
+    }  # orbits, |offsets| in descending order
+    for key, v in c.far_coeffs.items():
+        want = far_series_coefficients(key, c.n_source, c.n_test)
+        # computed in a worker with one BLAS thread: equal to rounding (measured 1e-16 to 4e-16)
+        assert np.abs(v - want).max() < 1e-13 * np.abs(want).max()
