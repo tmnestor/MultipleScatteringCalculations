@@ -150,3 +150,54 @@ def test_mirror_identical_media():
     )
     ref = coupling_block((-1, 0, 0), H, 10.0, A, n_source=10, n_test=1)
     assert np.abs(k - ref).max() < 1e-9 * np.abs(ref).max()
+
+
+@pytest.mark.parametrize("zr", [-1, 1])
+def test_low_and_high_bands_make_up_d(zr):
+    """D_low (per offset, band below the window) + D_high (sampled on a periodic grid) = D, reflected and
+    transmitted, at offsets to 4 cells; the images of the 40-cell grid are 36 cells away."""
+    omega = A.beta / (6 * H)
+    window, low = isp.Window(0.25), isp.Window(0.35 / 2.5)
+    offs = [(0, 0), (1, 0), (2, 1), (4, 3)]
+    pairs = [((zr, 2 * a, 2 * b), (-1, 0, 0)) for a, b in offs]
+    full = isp.truncated_blocks(pairs, H, omega, A, B, 10, 4, 10.0, window=window)
+    table = isp.lateral_harmonics([(2 * a, 2 * b) for a, b in offs], H, 2.5, 10, 4)
+    d_low = isp.truncated_blocks(
+        pairs, H, omega, A, B, 10, 4, 2.5, table=table, low_pass=low
+    )
+    d_high = isp.high_band_blocks(
+        zr,
+        -1,
+        40,
+        H,
+        omega,
+        A,
+        B,
+        10,
+        4,
+        10.0,
+        window=window,
+        low_pass=low,
+        band_qh=2.5,
+    )
+    k0 = np.abs(isp.image_block((zr, 0, 0), (-1, 0, 0), H, A, B, 10, 4)).max()
+    for (a, b), f, lo in zip(offs, full, d_low, strict=True):
+        assert np.abs(lo + d_high[a, b] - f).max() < 1e-8 * k0
+
+
+def test_bands_refuse_bad_arguments():
+    omega = A.beta / (2 * H)  # branch points to omega h / beta_A = 0.5
+    with pytest.raises(ValueError, match="low_pass"):
+        isp.truncated_blocks(
+            [((-1, 0, 0), (-1, 0, 0))],
+            H,
+            omega,
+            A,
+            B,
+            window=isp.Window(0.25),
+            low_pass=isp.Window(0.4),
+        )
+    with pytest.raises(ValueError, match="branch points"):
+        isp.high_band_blocks(
+            -1, -1, 8, H, omega, A, B, low_pass=isp.Window(0.1), band_qh=2.5
+        )
