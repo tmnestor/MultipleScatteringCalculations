@@ -553,3 +553,179 @@ def apply_high_band(
         eps,
         chunk,
     )
+
+
+# ---------------------------------------------------------------------------
+# The whole-space coupling between planes that do not touch
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class WholeSpaceModes:
+    """The whole-space integrand's factors at P lateral wavenumbers, for one medium (gate G2's factorisation).
+
+    Between cells in planes at least two apart, receiver at depth offset dz (in cells) from the source, the
+    integrand is sum_m w_m R_a(k_m) d_m[i] S_c(k_m) (d_m M)[j] e^{i k_m . r}, the modes m (P, SV, SH) going down
+    (dz > 0) or up (dz < 0), each cell's moments about its own centre.  So the factors do not depend on the layer,
+    and the vertical phase is p^|dz|, p = e^{i k_z 2h} per mode.
+
+    Attributes:
+        rec: {+1: down-going, -1: up-going}, (P, n_test, 9, 3).
+        src: {+1, -1}, (P, 3, n_source, 9), the weight w_m and the pairing included.
+        step: (P, 3), p.
+    """
+
+    rec: dict
+    src: dict
+    step: NDArray
+
+
+def whole_space_modes(
+    kx: NDArray,
+    ky: NDArray,
+    h: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+) -> WholeSpaceModes:
+    """The factors of ``WholeSpaceModes`` at lateral wavenumbers (kx, ky)."""
+    from .stratified_march import mode_family, receiver_moments, source_moments_local
+
+    rec, src = {}, {}
+    step = None
+    for sign in (1.0, -1.0):
+        modes = mode_family(kx, ky, omega, ref, "P", sign) + mode_family(
+            kx, ky, omega, ref, "S", sign
+        )
+        rec[int(sign)] = np.stack(
+            [
+                receiver_moments(k, h, n_test)[:, :, None] * d[:, None, :]
+                for k, d, _ in modes
+            ],
+            3,
+        )
+        src[int(sign)] = np.stack(
+            [
+                w[:, None, None]
+                * source_moments_local(k, h, n_source)[:, :, None]
+                * (d * SOURCE_PAIRING)[:, None, :]
+                for k, d, w in modes
+            ],
+            1,
+        )
+        if step is None:
+            step = np.stack(
+                [np.exp(1j * k[:, 0] * sign * 2 * h) for k, _, _ in modes], 1
+            )
+    return WholeSpaceModes(rec, src, step)
+
+
+class WholeSpaceMarch:
+    """The whole-space coupling of one side's cells between planes at least two apart, by a march in depth at
+    non-uniform lateral nodes: type-2 NUFFTs of each layer, the source factors, a downsweep and an upsweep of three
+    mode amplitudes per node (alpha_i = p alpha_{i-1} + p^2 beta_{i-2}, and the mirror), the receiver factors,
+    type-1 NUFFTs onto each layer.  |p| <= 1 in every step.  Planes 0 and 1 apart are left to the stored kernels.
+
+    Args:
+        layers: The side's layer indices (cells), contiguous (an empty layer has zero coefficients).
+        cache: Keep the factors between products (they depend on the nodes and the frequency only).
+    """
+
+    def __init__(
+        self,
+        layers: list[int],
+        shape: tuple[int, int],
+        kx: NDArray,
+        ky: NDArray,
+        wts: NDArray,
+        h: float,
+        omega: float,
+        ref: ReferenceMedium,
+        n_source: int = 10,
+        n_test: int = 4,
+        eps: float = 1e-13,
+        chunk: int = 4096,
+        cache: bool = True,
+    ) -> None:
+        self.layers = list(range(min(layers), max(layers) + 1))
+        self.shape, self.n_source, self.n_test, self.eps = shape, n_source, n_test, eps
+        self._args = (h, omega, ref, n_source, n_test)
+        nx, ny = shape
+        self.chunks = []
+        for i0 in range(0, len(kx), chunk):
+            qx, qy, w = kx[i0 : i0 + chunk], ky[i0 : i0 + chunk], wts[i0 : i0 + chunk]
+            t1 = np.mod(2 * h * qx + np.pi, 2 * np.pi) - np.pi
+            t2 = np.mod(2 * h * qy + np.pi, 2 * np.pi) - np.pi
+            shift = np.exp(-1j * (t1 * (nx // 2) + t2 * (ny // 2)))
+            f = whole_space_modes(qx, qy, *self._args) if cache else None
+            self.chunks.append((qx, qy, w, t1, t2, shift, f))
+
+    def apply(self, x_grids: dict) -> dict:
+        import finufft
+
+        nx, ny = self.shape
+        n_source, n_test, eps = self.n_source, self.n_test, self.eps
+        n_l = len(self.layers)
+        out = {z: np.zeros((nx, ny, n_test, 9), dtype=complex) for z in self.layers}
+        if n_l < 3:
+            return out
+        to_k = finufft.Plan(2, (nx, ny), n_trans=n_source * 9, eps=eps, isign=-1)
+        to_grid = finufft.Plan(1, (nx, ny), n_trans=n_test * 9, eps=eps, isign=1)
+        grids = {
+            z: np.ascontiguousarray(x_grids[z].reshape(nx, ny, -1).transpose(2, 0, 1))
+            for z in self.layers
+            if z in x_grids
+        }
+        for qx, qy, w, t1, t2, shift, f in self.chunks:
+            if f is None:
+                f = whole_space_modes(qx, qy, *self._args)
+            to_k.setpts(t1, t2)
+            to_grid.setpts(t1, t2)
+            p = len(qx)
+            beta = {s: np.zeros((n_l, p, 3), dtype=complex) for s in (1, -1)}
+            for i, z in enumerate(self.layers):
+                if z in grids:
+                    xh = (to_k.execute(grids[z]) * shift).T.reshape(-1, n_source, 9)
+                    for s in (1, -1):
+                        beta[s][i] = np.einsum("pmcj,pcj->pm", f.src[s], xh)
+            p1, p2 = f.step, f.step**2
+            down = np.zeros(
+                (n_l, p, 3), dtype=complex
+            )  # from the planes at least two above
+            up = np.zeros(
+                (n_l, p, 3), dtype=complex
+            )  # from the planes at least two below
+            for i in range(2, n_l):
+                down[i] = p1 * down[i - 1] + p2 * beta[1][i - 2]
+            for i in range(n_l - 3, -1, -1):
+                up[i] = p1 * up[i + 1] + p2 * beta[-1][i + 2]
+            for i, z in enumerate(self.layers):
+                b = np.einsum("paim,pm->pai", f.rec[1], down[i]) + np.einsum(
+                    "paim,pm->pai", f.rec[-1], up[i]
+                )
+                c = np.ascontiguousarray(
+                    (b * (w / shift)[:, None, None]).reshape(p, -1).T
+                )
+                out[z] += (
+                    to_grid.execute(c).transpose(1, 2, 0).reshape(nx, ny, n_test, 9)
+                )
+        return out
+
+
+def whole_space_nodes(
+    reach: float,
+    n_grid: int,
+    h: float,
+    omega: float,
+    ref: ReferenceMedium,
+    band_qh: float,
+    low_pass: isp.Window,
+    qmax_h: float = 16.0,
+) -> tuple[NDArray, NDArray, NDArray]:
+    """The whole-space march's nodes: the low band's polar quadrature (as D's, the medium's branch points) and the
+    periodic box's lattice above it to q h = qmax_h (between planes two apart the integrand falls as e^{-2 q h}:
+    ~1e-14 at 16)."""
+    lo = low_band_nodes(reach, h, omega, ref, ref, band_qh, low_pass)
+    hi = high_band_nodes(n_grid, h, qmax_h, band_qh, low_pass)
+    return tuple(np.concatenate([a, b]) for a, b in zip(lo, hi, strict=True))
