@@ -50,7 +50,9 @@ class ModeFactors:
         src_stat: {(kind, order): {z_s: (P, n_beta, n_source)}} the static pseudo-modes' source maps, with the
             window's weight -chi (and omega^2 for order 1).
         rec_stat: {(kind, order): {z_r: (P, n_test, n_alpha)}}.
-        mid_stat: {(kind, order): (P, 9, 9, n_alpha, n_beta)}.
+        mid_stat: {(kind, order): (P, 9, 9, n_alpha, n_beta)} in the frame of k (times M^-1): the rotation to k's
+            direction, T C T^T with columns paired, is applied to the vectors (``stat_apply``), not formed.
+        rot: (P, 9, 9), T.
     """
 
     src: dict
@@ -59,6 +61,20 @@ class ModeFactors:
     src_stat: dict
     rec_stat: dict
     mid_stat: dict
+    rot: NDArray
+
+    def rotated_stat(self, key: tuple) -> NDArray:
+        """The static kernel rotated to k's direction, (P, 9, 9, n_alpha, n_beta) (for checks)."""
+        t = self.rot
+        out = np.einsum("pik,pklab,pjl->pijab", t, self.mid_stat[key], t, optimize=True)
+        return out * SOURCE_PAIRING[None, None, :, None, None]
+
+    def stat_apply(self, key: tuple, amp: NDArray) -> NDArray:
+        """sum_{j, beta} (T C T^T)[i, j, alpha, beta] P_j amp[beta, j], (P, 9, n_alpha), with T on the vectors."""
+        t = self.rot
+        v = np.einsum("pjl,pyj->pyl", t, amp * SOURCE_PAIRING, optimize=True)
+        u = np.einsum("pklxy,pyl->pkx", self.mid_stat[key], v, optimize=True)
+        return np.einsum("pik,pkx->pix", t, u, optimize=True)
 
 
 def mode_factors(
@@ -147,10 +163,8 @@ def mode_factors(
                     np.einsum("ijabm,mn->nijab", C, qpow)
                     * (1.0 / SOURCE_PAIRING)[None, None, :, None, None]
                 )
-                # rotated as the dynamic frame: T (C M^-1) T^T, columns paired
                 mid_stat[kind, order] = (
-                    np.einsum("pik,pklab,pjl->pijab", T, cq, T)
-                    * SOURCE_PAIRING[None, None, :, None, None]
+                    cq  # rotated on the vectors (ModeFactors.stat_apply)
                 )
                 weight = -chi * (omega**2 if order == 1 else 1.0)
                 src_stat[kind, order] = {
@@ -181,21 +195,24 @@ def mode_factors(
                     for zr in rec_zs
                     if (zr < 0) == (kind == "R")
                 }
-    return ModeFactors(src, rec, mid, src_stat, rec_stat, mid_stat)
+    return ModeFactors(src, rec, mid, src_stat, rec_stat, mid_stat, T)
 
 
 def integrand_from_factors(f: ModeFactors, zr: int, zs: int) -> NDArray:
     """D's integrand for receiver layer z_r and source layer z_s from the factors, (P, n_test, n_source, 81): the
     reference against ``interface_spectral.integrand_points``."""
     kind = "R" if zr < 0 else "T"
-    out = np.einsum("paim,pmn,pncj->pacij", f.rec[zr], f.mid[kind], f.src[zs])
-    for (k, order), m in f.mid_stat.items():
+    out = np.einsum(
+        "paim,pmn,pncj->pacij", f.rec[zr], f.mid[kind], f.src[zs], optimize=True
+    )
+    for k, order in f.mid_stat:
         if k == kind:
             out = out + np.einsum(
                 "pax,pijxy,pyc->pacij",
                 f.rec_stat[k, order][zr],
-                m,
+                f.rotated_stat((k, order)),
                 f.src_stat[k, order][zs],
+                optimize=True,
             )
     return out.reshape(out.shape[0], out.shape[1], out.shape[2], 81)
 
@@ -205,73 +222,159 @@ def integrand_from_factors(f: ModeFactors, zr: int, zs: int) -> NDArray:
 # ---------------------------------------------------------------------------
 
 
-def _apply_at_nodes(
-    src_grids: dict,
-    rec_zs: list[int],
-    shape: tuple[int, int],
-    kx: NDArray,
-    ky: NDArray,
-    wts: NDArray,
-    h: float,
-    omega: float,
-    above: ReferenceMedium,
-    below: ReferenceMedium,
-    n_source: int,
-    n_test: int,
-    q0h: float,
-    window: isp.Window | None,
-    eps: float,
-    chunk: int,
-) -> dict:
+class NodeProduct:
     """sum_k wts_k F(k) e^{i k . (x_r - x_s)} x_s over non-uniform nodes, sources in A: type-2 NUFFTs of the source
-    layers, the mode factors, type-1 NUFFTs onto the receiver layers.  Grids (nx, ny, n_source or n_test, 9)."""
-    import finufft
+    layers, the mode factors, type-1 NUFFTs onto the receiver layers.  Grids (nx, ny, n_source or n_test, 9).
 
-    nx, ny = shape
-    out = {zr: np.zeros((nx, ny, n_test, 9), dtype=complex) for zr in rec_zs}
-    srcs = sorted(src_grids)
-    for i0 in range(0, len(kx), chunk):
-        qx, qy, w = kx[i0 : i0 + chunk], ky[i0 : i0 + chunk], wts[i0 : i0 + chunk]
-        # e^{-i k . 2h (ix, iy)}: points t = 2h k, modes ix - nx//2 (finufft's centred order)
-        t1, t2 = (
-            np.mod(2 * h * qx + np.pi, 2 * np.pi) - np.pi,
-            np.mod(2 * h * qy + np.pi, 2 * np.pi) - np.pi,
-        )
-        shift = np.exp(-1j * (t1 * (nx // 2) + t2 * (ny // 2)))
-        f = mode_factors(
-            rec_zs, srcs, qx, qy, h, omega, above, below, n_source, n_test, q0h, window
-        )
-        amp = np.zeros((len(qx), 3), dtype=complex)
-        amp_stat = {key: 0.0 for key in f.mid_stat}
-        for zs in srcs:
-            g = np.ascontiguousarray(
+    The factors depend on the nodes and the frequency only, so with ``cache`` they are computed once and every
+    later product (a GMRES iteration) costs the NUFFTs and the contractions alone.
+    """
+
+    def __init__(
+        self,
+        src_zs: list[int],
+        rec_zs: list[int],
+        shape: tuple[int, int],
+        kx: NDArray,
+        ky: NDArray,
+        wts: NDArray,
+        h: float,
+        omega: float,
+        above: ReferenceMedium,
+        below: ReferenceMedium,
+        n_source: int,
+        n_test: int,
+        q0h: float,
+        window: isp.Window | None,
+        eps: float = 1e-14,
+        chunk: int = 4096,
+        cache: bool = True,
+    ) -> None:
+        self.src_zs, self.rec_zs, self.shape = sorted(src_zs), list(rec_zs), shape
+        self.n_source, self.n_test, self.eps, self.cache = n_source, n_test, eps, cache
+        self._args = (h, omega, above, below, n_source, n_test, q0h, window)
+        nx, ny = shape
+        self.chunks = []
+        for i0 in range(0, len(kx), chunk):
+            qx, qy, w = kx[i0 : i0 + chunk], ky[i0 : i0 + chunk], wts[i0 : i0 + chunk]
+            # e^{-i k . 2h (ix, iy)}: points t = 2h k, modes ix - nx//2 (finufft's centred order)
+            t1 = np.mod(2 * h * qx + np.pi, 2 * np.pi) - np.pi
+            t2 = np.mod(2 * h * qy + np.pi, 2 * np.pi) - np.pi
+            shift = np.exp(-1j * (t1 * (nx // 2) + t2 * (ny // 2)))
+            f = self._factors(qx, qy) if cache else None
+            self.chunks.append((qx, qy, w, t1, t2, shift, f))
+
+    def _factors(self, qx: NDArray, qy: NDArray) -> ModeFactors:
+        return mode_factors(self.rec_zs, self.src_zs, qx, qy, *self._args)
+
+    def apply(self, src_grids: dict) -> dict:
+        import finufft
+
+        nx, ny = self.shape
+        n_source, n_test, eps = self.n_source, self.n_test, self.eps
+        out = {zr: np.zeros((nx, ny, n_test, 9), dtype=complex) for zr in self.rec_zs}
+        grids = {
+            zs: np.ascontiguousarray(
                 src_grids[zs].reshape(nx, ny, -1).transpose(2, 0, 1)
             )
-            xh = (finufft.nufft2d2(t1, t2, g, isign=-1, eps=eps) * shift).T.reshape(
-                -1, n_source, 9
-            )
-            amp += np.einsum("pmcj,pcj->pm", f.src[zs], xh)
-            for key in f.mid_stat:
-                amp_stat[key] = amp_stat[key] + np.einsum(
-                    "pyc,pcj->pyj", f.src_stat[key][zs], xh
+            for zs in self.src_zs
+            if zs in src_grids
+        }
+        for qx, qy, w, t1, t2, shift, f in self.chunks:
+            if f is None:
+                f = self._factors(qx, qy)
+            amp = np.zeros((len(qx), 3), dtype=complex)
+            amp_stat = {key: 0.0 for key in f.mid_stat}
+            for zs, g in grids.items():
+                xh = (finufft.nufft2d2(t1, t2, g, isign=-1, eps=eps) * shift).T.reshape(
+                    -1, n_source, 9
                 )
-        for zr in rec_zs:
-            kind = "R" if zr < 0 else "T"
-            b = np.einsum("paim,pmn,pn->pai", f.rec[zr], f.mid[kind], amp)
-            for (k, order), m in f.mid_stat.items():
-                if k == kind:
-                    b = b + np.einsum(
-                        "pax,pijxy,pyj->pai",
-                        f.rec_stat[k, order][zr],
-                        m,
-                        amp_stat[k, order],
+                amp += np.einsum("pmcj,pcj->pm", f.src[zs], xh)
+                for key in f.mid_stat:
+                    amp_stat[key] = amp_stat[key] + np.einsum(
+                        "pyc,pcj->pyj", f.src_stat[key][zs], xh
                     )
-            c = np.ascontiguousarray(
-                (b * (w / shift)[:, None, None]).reshape(len(qx), -1).T
-            )
-            got = finufft.nufft2d1(t1, t2, c, (nx, ny), isign=1, eps=eps)
-            out[zr] += got.transpose(1, 2, 0).reshape(nx, ny, n_test, 9)
-    return out
+            stat_cache: dict = {}  # the static kernel on the amplitudes, shared by the receiver layers
+            for zr in self.rec_zs:
+                kind = "R" if zr < 0 else "T"
+                b = np.einsum(
+                    "paim,pmn,pn->pai", f.rec[zr], f.mid[kind], amp, optimize=True
+                )
+                for key in f.mid_stat:
+                    if key[0] == kind:
+                        if key not in stat_cache:
+                            stat_cache[key] = f.stat_apply(key, amp_stat[key])
+                        b = b + np.einsum(
+                            "pax,pix->pai",
+                            f.rec_stat[key][zr],
+                            stat_cache[key],
+                            optimize=True,
+                        )
+                c = np.ascontiguousarray(
+                    (b * (w / shift)[:, None, None]).reshape(len(qx), -1).T
+                )
+                got = finufft.nufft2d1(t1, t2, c, (nx, ny), isign=1, eps=eps)
+                out[zr] += got.transpose(1, 2, 0).reshape(nx, ny, n_test, 9)
+        return out
+
+
+class TwoSidedProduct:
+    """``NodeProduct`` for sources on both sides: sources in A directly, sources in B by the mirrored problem
+    (z -> -z, media exchanged), with the signs of ``interface_spectral._mirror`` on the coefficients going in and
+    coming out."""
+
+    def __init__(
+        self,
+        src_zs,
+        rec_zs,
+        shape,
+        kx,
+        ky,
+        wts,
+        h,
+        omega,
+        above,
+        below,
+        n_source,
+        n_test,
+        q0h,
+        window,
+        eps=1e-14,
+        chunk=4096,
+        cache=True,
+    ) -> None:
+        exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
+        exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
+        self.sa = np.array([(-1.0) ** e[0] for e in exps_f])[:, None] * isp.MIRROR_9
+        self.sc = np.array([(-1.0) ** e[0] for e in exps_s])[:, None] * isp.MIRROR_9
+        self.rec_zs, self.shape, self.n_test = list(rec_zs), shape, n_test
+        common = (shape, kx, ky, wts, h, omega)
+        rest = (n_source, n_test, q0h, window, eps, chunk, cache)
+        in_a = [z for z in src_zs if z < 0]
+        in_b = [-z for z in src_zs if z > 0]
+        self.a = (
+            NodeProduct(in_a, rec_zs, *common, above, below, *rest) if in_a else None
+        )
+        self.b = (
+            NodeProduct(in_b, [-z for z in rec_zs], *common, below, above, *rest)
+            if in_b
+            else None
+        )
+
+    def apply(self, x_grids: dict) -> dict:
+        out = {
+            zr: np.zeros(self.shape + (self.n_test, 9), dtype=complex)
+            for zr in self.rec_zs
+        }
+        if self.a is not None:
+            got = self.a.apply({z: g for z, g in x_grids.items() if z < 0})
+            for zr in self.rec_zs:
+                out[zr] += got[zr]
+        if self.b is not None:
+            got = self.b.apply({-z: g * self.sc for z, g in x_grids.items() if z > 0})
+            for zr in self.rec_zs:
+                out[zr] += got[-zr] * self.sa
+        return out
 
 
 def low_band_nodes(
@@ -358,49 +461,26 @@ def _apply_both_sides(
     eps,
     chunk,
 ) -> dict:
-    """Sources in A directly; sources in B by the mirrored problem (z -> -z, media exchanged), with the signs of
-    ``interface_spectral._mirror`` on the coefficients going in and coming out."""
-    exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
-    exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
-    sa = np.array([(-1.0) ** e[0] for e in exps_f])
-    sc = np.array([(-1.0) ** e[0] for e in exps_s])
-    out = {zr: np.zeros(shape + (n_test, 9), dtype=complex) for zr in rec_zs}
-    in_a = {z: g for z, g in x_grids.items() if z < 0}
-    in_b = {-z: g * sc[:, None] * isp.MIRROR_9 for z, g in x_grids.items() if z > 0}
-    common = (shape, kx, ky, wts, h, omega)
-    if in_a:
-        got = _apply_at_nodes(
-            in_a,
-            rec_zs,
-            *common,
-            above,
-            below,
-            n_source,
-            n_test,
-            q0h,
-            window,
-            eps,
-            chunk,
-        )
-        for zr in rec_zs:
-            out[zr] += got[zr]
-    if in_b:
-        got = _apply_at_nodes(
-            in_b,
-            [-z for z in rec_zs],
-            *common,
-            below,
-            above,
-            n_source,
-            n_test,
-            q0h,
-            window,
-            eps,
-            chunk,
-        )
-        for zr in rec_zs:
-            out[zr] += got[-zr] * sa[:, None] * isp.MIRROR_9
-    return out
+    """One product, factors not kept (``TwoSidedProduct`` keeps them for repeated products)."""
+    return TwoSidedProduct(
+        list(x_grids),
+        rec_zs,
+        shape,
+        kx,
+        ky,
+        wts,
+        h,
+        omega,
+        above,
+        below,
+        n_source,
+        n_test,
+        q0h,
+        window,
+        eps,
+        chunk,
+        cache=False,
+    ).apply(x_grids)
 
 
 def high_band_nodes(
