@@ -1109,6 +1109,7 @@ def high_band_blocks(
     window: Window | None = None,
     low_pass: Window | None = None,
     band_qh: float = 2.5,
+    offsets: list[tuple[int, int]] | None = None,
     chunk: int = 4096,
 ) -> NDArray:
     """D_high, the part of D above the low band, for every lateral offset of a periodic grid of n_grid cells.
@@ -1124,10 +1125,15 @@ def high_band_blocks(
         n_grid: Cells of the periodic grid along x and y; its images lie n_grid cells apart.
         window: The split's window (as ``truncated_blocks``); its ramp must start at or above band_qh.
         low_pass: The band: its ramp from low_pass.start * band_qh to band_qh.
+        offsets: Only these lateral offsets (cells), by the lateral symmetries: the integrand is sampled on the
+            wedge 0 <= ky <= kx alone (an eighth of the grid), F(Q k) = T_Q F(k) for the eight signed permutations
+            Q fixing z, so D_high(x) = sum_Q T_Q D_W(Q^T x), D_W the wedge's sum (points on its edges weighted 1/2).
+            None: every offset of the grid, from the whole grid (the reference).
 
     Returns:
         Shape (n_grid, n_grid, n_test, n_source, 9, 9): [dx % n_grid, dy % n_grid] holds the block of lateral
-        offset (dx, dy) cells (2h each) of receiver from source.
+        offset (dx, dy) cells (2h each) of receiver from source.  With ``offsets``: (len(offsets), n_test,
+        n_source, 9, 9), in their order.
     """
     rec, src = (rec_z, 0, 0), (src_z, 0, 0)
     kind = _check(rec, src)
@@ -1163,11 +1169,20 @@ def high_band_blocks(
     tiles = int(np.ceil(q0h / h / dk / n_grid)) + 1
     acc = np.zeros((n_grid * n_grid, n_test, n_source, 81), dtype=complex)
     j = np.arange(n_grid)
-    for tx, ty in itertools.product(range(-tiles, tiles), repeat=2):
+    wedge = offsets is not None
+    span = range(tiles) if wedge else range(-tiles, tiles)
+    for tx, ty in itertools.product(span, repeat=2):
+        if wedge and ty > tx:
+            continue  # wholly above the diagonal
         mx, my = np.meshgrid(tx * n_grid + j, ty * n_grid + j, indexing="ij")
         kx, ky = (mx * dk).ravel(), (my * dk).ravel()
         qh_all = np.hypot(kx, ky) * h
-        on = np.flatnonzero((qh_all > lo) & (qh_all < q0h))
+        keep = (qh_all > lo) & (qh_all < q0h)
+        if wedge:
+            keep &= mx.ravel() >= my.ravel()
+            # the wedge's edges (ky = 0, ky = kx) are shared with a neighbouring wedge
+            edge = 1.0 - 0.5 * (my.ravel() == 0) - 0.5 * (mx.ravel() == my.ravel())
+        on = np.flatnonzero(keep)
         for i0 in range(0, len(on), chunk):
             sel = on[i0 : i0 + chunk]
             qx, qy, qh = kx[sel], ky[sel], qh_all[sel]
@@ -1210,6 +1225,8 @@ def high_band_blocks(
                 1,
             )
             wgt = low_pass(qh, band_qh) * dk**2 / (4 * np.pi**2)
+            if wedge:
+                wgt = wgt * edge[sel]
             lf = _lateral(qx, qy, h, exps_f, True) * wgt[:, None]
             ls = _lateral(qx, qy, h, exps_s, False)
             idx = (mx.ravel()[sel] % n_grid) * n_grid + (my.ravel()[sel] % n_grid)
@@ -1221,7 +1238,18 @@ def high_band_blocks(
             )
     # sum_m F(k_m) e^{i k_m . 2 d h} over the residues m = j (mod n_grid): an inverse DFT
     out = np.fft.ifft2(acc.reshape(n_grid, n_grid, -1), axes=(0, 1)) * n_grid**2
-    return out.reshape(n_grid, n_grid, n_test, n_source, 9, 9)
+    out = out.reshape(n_grid, n_grid, n_test, n_source, 9, 9)
+    if not wedge:
+        return out
+    from .graded_voxel.fft import _transform, signed_permutations
+
+    lateral = [q for q in signed_permutations() if q[0, 0] == 1.0]
+    res = np.zeros((len(offsets), n_test, n_source, 9, 9), dtype=complex)
+    for i, x in enumerate(offsets):
+        for q in lateral:
+            y = q[1:, 1:].T @ np.asarray(x, float)
+            res[i] += _transform(q, out[int(y[0]) % n_grid, int(y[1]) % n_grid])
+    return res
 
 
 def _truncated_blocks_direct(
