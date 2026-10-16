@@ -144,6 +144,13 @@ Each step has a gate. Profiling and measurement come before any rewrite.
 - D1: the block tolerance (1e-6 proposed) and with it the lateral radius (12 h at 1e-6) and the depth
   radius from S2.
 - D2: K1 in production or not (§1). If not, measure D's cost and accuracy at Q0h = 20, 40 with K0 only.
+- **Decided (user, 16 October).**
+  - **D1: block tolerance 1e-8** (not the 1e-6 proposed). This gives a lateral radius of 16 h (tab:locality)
+    and a depth radius of 4 h: corrections are dropped for a total gap g ≥ 4 h, the same as at 1e-6 (S2).
+  - **D2: keep K1** (the ω² closed form) in production. With the set-up bounded by both radii, dropping it
+    would save a few minutes once, and would need the unmeasured Q0h = 40 check.
+  - **The depth radius is built:** `InterfaceCouplings(depth_radius=4.0)`, gate
+    `scripts/gate_interface_depth_radius.py`.
 
 ### S4. D in the wavenumber domain (≈ 3–4 days)
 - Today D is a radial quadrature per class, put onto the lateral grid and then FFT'd. Instead, **sample
