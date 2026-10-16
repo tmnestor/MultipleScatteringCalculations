@@ -191,6 +191,29 @@ Each step has a gate. Profiling and measurement come before any rewrite.
       radial integral, over [0, q_p] instead of [0, Q0]: about 10× fewer panels. Its S_n come from
       Jacobi–Anger (|m| ≤ 3.5 qh + 20, so ~24 terms at qh ≤ 1), with no per-offset tables.
     - Cost per frequency: D_high O(L² n² log n); D_low O(L² n² × the low rule's nodes) with a small constant.
+- **Built (16 October, user: "build S4 with the split").** `interface_spectral.high_band_blocks`,
+  `truncated_blocks(low_pass=...)`, `InterfaceCouplings(split=True, split_pad=40)`. The band runs from twice the
+  highest branch point (at least 0.35/h) to the window's start (2.5/h).
+  - **D_high's decay** (`|D_high|` relative to K0, by cells along x):
+
+    | band | 8 | 16 | 24 | 32 | 40 | 48 |
+    |---|---|---|---|---|---|---|
+    | [1, 2.5] (needed at ωh/β = 1/2) | 1.1e-4 | 2.3e-6 | 1.1e-7 | 1.7e-8 | 2.8e-9 | 7.5e-10 |
+    | [0.35, 2.5] (ωh/β = 1/6) | 3.8e-5 | 4.3e-7 | 1.7e-8 | 1.2e-9 | 1.1e-10 | 1.4e-11 |
+
+  - **Gate `scripts/gate_interface_split.py`: PASS.**
+    - **Blocks:** every class of 2 × 4 × 4 cells, sources on both sides, against the unsplit D: 1.3e-10 of K0 at
+      ωh/β = 1/6, 2.9e-9 at 1/2.
+    - **Solution:** GMRES, split against unsplit, 7.4e-12.
+    - **288 cells:** the set-up takes 931 s (S1: 1443 s), since the tables cover the low band only. **But one
+      frequency's kernels take 321 s against 183 s**: D_high costs ~0.35 ms per grid point, and with the 40-cell
+      padding the grid is 54² cells × ~93k wavenumbers per depth pair. Unsplit D grows as ~n³ per frequency
+      (n² offsets × rule nodes ∝ reach), the split as L²(n + pad)², so the crossover should be near n ≈ 20.
+      This is not yet measured.
+  - **Open.** (a) The high band's constant: the k-grid's 8-fold symmetry (signed permutations of kx, ky, as
+    `_transform` maps the blocks), and the lateral moments and rotation shared by the depth pairs, for perhaps
+    ~5–10×. (b) Measure the crossover at n = 24, 48 (the unsplit set-up at n = 24 alone is hours, because of its
+    reach² tables). (c) Jacobi–Anger for the low band's tables, now cheap anyway.
 
 ### S5. Matrix-free in depth (≈ 1 week; this is Stage A's machinery)
 - **Storage.** Per lateral wavenumber, the interface part is rank ≤ 6 (the modes P, SV, SH, up and down):
