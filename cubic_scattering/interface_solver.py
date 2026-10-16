@@ -179,6 +179,12 @@ def _setup_job(job):
     return _parts_job(args) if kind == "parts" else _table_job(args)
 
 
+def interface_gap(zr: int, zs: int) -> int:
+    """The two cells' distances from the interface summed, in h, from their centres' z in h (odd): 0 for two
+    touching cells."""
+    return abs(zr) - 1 + abs(zs) - 1
+
+
 @dataclass
 class InterfaceCouplings:
     """The frequency-independent parts of every interface block of a grid, one per symmetry class.
@@ -201,6 +207,11 @@ class InterfaceCouplings:
             With the C-infinity window from Q0 / 4 the corrections fall below 1e-6, 1e-8 and 1e-10 of the touching
             block beyond 12 h, 16 h and 24 h (cells touching the interface, the slowest case; the paper's
             tab:locality), so the set-up grows with the radius, not with the grid.  None: every class.
+        depth_radius: Total gap g = d_r + d_s (in h) of the two cells from the interface at and beyond which A0, A1 are
+            dropped likewise; needs a smooth ``window``.  The corrections fall by ~1e-4 per 2 h of g: below 1e-6 and
+            1e-8 of the touching static block for g >= 4 h, below 1e-10 for g >= 6 h
+            (scripts/measure_interface_depth_locality.py), so only the layers nearest the interface carry them and
+            the set-up does not grow with the number of layers.  None: every depth.
         workers: Processes for the set-up (default: the CPUs).
     """
 
@@ -212,6 +223,7 @@ class InterfaceCouplings:
     window: isp.Window | None = None
     omega4: bool = False
     radius: float | None = None
+    depth_radius: float | None = None
     workers: int | None = None
     classes: dict = field(default_factory=dict, init=False)
 
@@ -220,7 +232,9 @@ class InterfaceCouplings:
             raise ValueError(
                 "InterfaceCouplings: the omega^4 split has no windowed form; pass omega4=False with a window."
             )
-        if self.radius is not None and self.window is None:
+        if (
+            self.radius is not None or self.depth_radius is not None
+        ) and self.window is None:
             raise ValueError(
                 "InterfaceCouplings: a radius needs a smooth window; with the sharp cutoff the corrections ring and\n"
                 "  decay only as d^-3/2.  Pass window=interface_spectral.Window(0.25)."
@@ -232,12 +246,8 @@ class InterfaceCouplings:
             keys.add((int(u[m, 0]), int(u[n, 0]), a, b))
         keys = sorted(keys)
         g = self.grid
-        # beyond the radius a class has no corrections: its block is the windowed D alone
-        local = [
-            k
-            for k in keys
-            if self.radius is None or np.hypot(k[2], k[3]) <= self.radius
-        ]
+        # beyond either radius a class has no corrections: its block is the windowed D alone
+        local = [k for k in keys if self.corrected(k)]
         # S_n(q) depends on the lateral offset alone, not on the depths or media: one table per offset,
         # shared by its classes.  Its cost grows as the reach squared, so the farthest go first.
         offsets = sorted({k[2:] for k in keys}, key=lambda o: -np.hypot(*o))
@@ -275,6 +285,13 @@ class InterfaceCouplings:
         tables = dict(zip(offsets, results[: len(offsets)], strict=True))
         parts = dict(zip(local, results[len(offsets) :], strict=True))
         self.classes = {k: (parts.get(k), tables[k[2:]]) for k in keys}
+
+    def corrected(self, key: tuple) -> bool:
+        """Whether the class (zr, zs, a, b) carries A0, A1: within the lateral radius and the depth radius."""
+        zr, zs, a, b = key
+        lateral = self.radius is None or np.hypot(a, b) <= self.radius
+        depth = self.depth_radius is None or interface_gap(zr, zs) < self.depth_radius
+        return lateral and depth
 
     def _zero_parts(self) -> tuple:
         z = np.zeros((self.n_test, self.n_source, 9, 9), dtype=complex)
