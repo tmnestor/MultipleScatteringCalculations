@@ -296,6 +296,15 @@ Each step has a gate. Profiling and measurement come before any rewrite.
       the layers. That is minutes per product, so a GMRES solve takes about an hour at n = 24, L = 8. **The
       product's cost is now the obstacle, not memory.**
     - **Set-up:** 130 s → 895 s (n = 36, L = 4), mostly the whole-space coefficients of the near planes (∝ n²).
+  - **Done (16 October): items 1 and part of 2.** `release_far_coeffs()` drops the coefficients after the last
+    operator. The factors are now kept factored (lateral moments, mode maps and layer phases apart), and the
+    window's frame kernels are warmed when the operator is built. Re-measured:
+
+    | n × n, L | uncached before | uncached after | cached before | cached after |
+    |---|---|---|---|---|
+    | 12, 4 | 67 s, 1.2 GB | 42 s, 1.2 GB | 26 s, 6.3 GB | 31 s, 2.5 GB |
+    | 12, 8 | 243 s | | killed | 84 s, 3.8 GB |
+    | 24, 8 | 377 s, 2.9 GB | | — | 139 s, 7.2 GB |
   - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
     64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
     touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
