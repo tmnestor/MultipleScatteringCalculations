@@ -36,6 +36,7 @@ import scipy.linalg
 from numpy.typing import NDArray
 
 from . import interface_spectral as isp
+from . import stratified_apply as sap
 from .effective_contrasts import MaterialContrast, ReferenceMedium
 from .graded_voxel.basis import (
     SOURCE_EXPONENTS,
@@ -417,15 +418,18 @@ class InterfaceCouplings:
         )
         return _transform(q, blk)
 
-    def interface_canonical(self, omega: float) -> dict[tuple, NDArray]:
-        """The interface block of every symmetry class at one frequency: the truncated plane-wave integrals D
-        batched (one interface solve and frame per radial node and pair of depths, shared by every lateral
-        offset; sources in B mirrored onto A with the media exchanged), plus the class's A0 + w^2 A1 (+ w^4 A2)."""
+    def interface_canonical(
+        self, omega: float, keys: list | None = None
+    ) -> dict[tuple, NDArray]:
+        """The interface block of every symmetry class at one frequency (or of ``keys`` only): the truncated
+        plane-wave integrals D batched (one interface solve and frame per radial node and pair of depths, shared
+        by every lateral offset; sources in B mirrored onto A with the media exchanged), plus the class's
+        A0 + w^2 A1 (+ w^4 A2)."""
         g = self.grid
         table = dict(next(iter(self.classes.values()))[1])
         for _, t in self.classes.values():
             table.update({k: v for k, v in t.items() if isinstance(k, tuple)})
-        keys = list(self.classes)
+        keys = list(self.classes) if keys is None else list(keys)
         if self.split:
             lp = self.low_pass(omega)
             # D's per-offset part: the low band, below the window
@@ -776,6 +780,228 @@ class LateralOperator:
         return out.reshape(len(src), self.na, 9)
 
 
+class MatrixFreeOperator:
+    """``LateralOperator``'s product with no kernel stored per pair of depth layers (scaling plan S5).
+
+    - **D**, the plane-wave part of every interface block, through the plane-wave modes
+      (``stratified_apply``): the low band by NUFFTs over its polar quadrature (exact, non-periodic), the high
+      band at the wavenumbers of the periodic box of ``InterfaceCouplings.interface_canonical`` (the same
+      period); per wavenumber three mode amplitudes per source side, plus the window's static pseudo-modes.
+      The factors are computed once per frequency.
+    - **The corrections** A0 + w^2 A1, local within the lateral and depth radii, as stencils.
+    - **The whole-space blocks**, Paper 2's, by a three-dimensional FFT on each side (translation-invariant in
+      depth there): (2 L_side - 1)(2 nx - 1)(2 ny - 1) blocks per side, linear in the layers.
+
+    Needs ``InterfaceCouplings(split=True)``.  The interface ``self_blocks`` (for the preconditioner) are the
+    classes' own.
+    """
+
+    def __init__(
+        self,
+        couplings: InterfaceCouplings,
+        omega: float,
+        p: int = 1,
+        r: int = 0,
+        eps: float = 1e-13,
+    ) -> None:
+        if not couplings.split:
+            raise ValueError(
+                "MatrixFreeOperator: needs InterfaceCouplings(split=True)."
+            )
+        g = couplings.grid
+        self.grid, self.p, self.r = g, p, r
+        na, n_field, _, n_source = field_sizes(p, r)
+        if couplings.n_source < n_source or couplings.n_test < n_field:
+            raise ValueError(
+                f"MatrixFreeOperator: p = {p}, r = {r} need n_source >= {n_source}, n_test >= {n_field}."
+            )
+        self.na, self.n_field, self.n_source = na, n_field, n_source
+        idx = g.idx
+        self.layers = sorted(set(idx[:, 0].tolist()))
+        lo = idx[:, 1:].min(axis=0)
+        self.pos = idx[:, 1:] - lo
+        nx, ny = (idx[:, 1:].max(axis=0) - lo + 1).tolist()
+        self.shape = (nx, ny)
+        self.by_layer = {z: np.flatnonzero(idx[:, 0] == z) for z in self.layers}
+        zu = [2 * z + 1 for z in self.layers]  # centres' z in h
+        h, above, below = g.h, g.above, g.below
+
+        # D: the low band (non-periodic) and the high band (the period of interface_canonical)
+        lp, band = couplings.low_pass(omega), couplings.band_qh
+        kx, ky, w = sap.low_band_nodes(
+            2.0 * float(np.hypot(nx - 1, ny - 1)), h, omega, above, below, band, lp
+        )
+        self.low = sap.TwoSidedProduct(
+            zu,
+            zu,
+            self.shape,
+            kx,
+            ky,
+            w,
+            h,
+            omega,
+            above,
+            below,
+            n_source,
+            na,
+            band,
+            None,
+            eps,
+        )
+        reach = max(max(k[2], k[3]) for k in couplings.classes) // 2
+        n_grid = scipy.fft.next_fast_len(reach + 1 + couplings.split_pad)
+        kx, ky, w = sap.high_band_nodes(n_grid, h, couplings.q0h, band, lp)
+        self.high = sap.TwoSidedProduct(
+            zu,
+            zu,
+            self.shape,
+            kx,
+            ky,
+            w,
+            h,
+            omega,
+            above,
+            below,
+            n_source,
+            na,
+            couplings.q0h,
+            couplings.window,
+            eps,
+        )
+
+        # the corrections: a stencil per pair of layers, over the offsets whose class carries them
+        self.stencils: dict = {}
+        for zr, zs in itertools.product(self.layers, repeat=2):
+            st = []
+            for dx in range(-(nx - 1), nx):
+                for dy in range(-(ny - 1), ny):
+                    (a, b), q = _canonical(2 * dx, 2 * dy)
+                    parts = couplings.classes.get(
+                        (2 * zr + 1, 2 * zs + 1, a, b), (None, None)
+                    )[0]
+                    if parts is None:
+                        continue
+                    blk = parts[0] + omega**2 * parts[1]
+                    if len(parts) > 2:
+                        blk = blk + omega**4 * parts[2]
+                    st.append((dx, dy, _transform(q, blk)[:na, :n_source]))
+            if st:
+                self.stencils[zr, zs] = st
+
+        # the whole-space blocks, by a 3-D FFT on each side
+        ws_cache: dict = {}
+        self.sides = []
+        for side in (
+            [z for z in self.layers if z < 0],
+            [z for z in self.layers if z >= 0],
+        ):
+            if not side:
+                continue
+            z0, nz = side[0], side[-1] - side[0] + 1
+            shape3 = (2 * nz - 1, 2 * nx - 1, 2 * ny - 1)
+            kh = np.zeros((na * 9, n_source * 9) + shape3, dtype=complex)
+            medium = above if side[0] < 0 else below
+            for dz, dx, dy in itertools.product(
+                range(-(nz - 1), nz), range(-(nx - 1), nx), range(-(ny - 1), ny)
+            ):
+                k = _whole_space(
+                    (dz, dx, dy),
+                    h,
+                    omega,
+                    medium,
+                    couplings.n_source,
+                    couplings.n_test,
+                    ws_cache,
+                    couplings.far_coeffs,
+                )
+                kh[:, :, dz % shape3[0], dx % shape3[1], dy % shape3[2]] = (
+                    k[:na, :n_source]
+                    .transpose(0, 2, 1, 3)
+                    .reshape(na * 9, n_source * 9)
+                )
+            self.sides.append(
+                (
+                    side,
+                    z0,
+                    shape3,
+                    np.fft.fftn(kh, axes=(2, 3, 4)).reshape(na * 9, n_source * 9, -1),
+                )
+            )
+
+        # the preconditioner's self blocks: the self class's interface block plus the whole-space self block
+        self_keys = [(2 * z + 1, 2 * z + 1, 0, 0) for z in self.layers]
+        canon = couplings.interface_canonical(omega, keys=self_keys)
+        self.self_blocks = {}
+        for z in self.layers:
+            medium = above if z < 0 else below
+            ws = _whole_space(
+                (0, 0, 0),
+                h,
+                omega,
+                medium,
+                couplings.n_source,
+                couplings.n_test,
+                ws_cache,
+                couplings.far_coeffs,
+            )
+            self.self_blocks[z] = (canon[2 * z + 1, 2 * z + 1, 0, 0] + ws)[
+                :na, :n_source
+            ]
+        self.m9 = gram_test(h, n_field)[:na, :na]
+
+    def coupling(self, delta: NDArray, x: NDArray) -> NDArray:
+        """sum_n K_mn E^(n) x_n, x of shape (N, na, 9): as ``apply_coupling``."""
+        na, n_source = self.na, self.n_source
+        e = np.array([source_expansion(d, self.n_field)[:n_source, :na] for d in delta])
+        src = np.einsum("ncbij,nbj->nci", e, x).reshape(len(x), n_source * 9)
+        return self._convolve(src)
+
+    def _convolve(self, src: NDArray) -> NDArray:
+        na, n_source = self.na, self.n_source
+        nx, ny = self.shape
+        grids = {}
+        for z, cells in self.by_layer.items():
+            gz = np.zeros((nx, ny, n_source, 9), dtype=complex)
+            gz[self.pos[cells, 0], self.pos[cells, 1]] = src[cells].reshape(
+                -1, n_source, 9
+            )
+            grids[z] = gz
+        zu = {2 * z + 1: grids[z] for z in self.layers}
+        lo, hi = self.low.apply(zu), self.high.apply(zu)
+        out_g = {z: lo[2 * z + 1] + hi[2 * z + 1] for z in self.layers}
+        for (zr, zs), st in self.stencils.items():
+            y, x = out_g[zr], grids[zs]
+            for dx, dy, blk in st:
+                rx, ry = (
+                    slice(max(0, dx), min(nx, nx + dx)),
+                    slice(max(0, dy), min(ny, ny + dy)),
+                )
+                sx, sy = (
+                    slice(max(0, -dx), min(nx, nx - dx)),
+                    slice(max(0, -dy), min(ny, ny - dy)),
+                )
+                y[rx, ry] += np.einsum("acij,xycj->xyai", blk, x[sx, sy])
+        for side, z0, shape3, kf in self.sides:
+            g3 = np.zeros((n_source * 9,) + shape3, dtype=complex)
+            for z in side:
+                g3[:, z - z0, :nx, :ny] = (
+                    grids[z].reshape(nx, ny, -1).transpose(2, 0, 1)
+                )
+            spec = np.fft.fftn(g3, axes=(1, 2, 3)).reshape(n_source * 9, -1)
+            y3 = np.fft.ifftn(
+                np.einsum("rcf,cf->rf", kf, spec).reshape((na * 9,) + shape3),
+                axes=(1, 2, 3),
+            )
+            for z in side:
+                out_g[z] += (
+                    y3[:, z - z0, :nx, :ny].transpose(1, 2, 0).reshape(nx, ny, na, 9)
+                )
+        out = np.zeros((len(src), na, 9), dtype=complex)
+        for z, cells in self.by_layer.items():
+            out[cells] = out_g[z][self.pos[cells, 0], self.pos[cells, 1]]
+        return out
+
+
 def solve_interface_gmres(
     couplings: InterfaceCouplings,
     omega: float,
@@ -785,7 +1011,7 @@ def solve_interface_gmres(
     wave: str,
     p: int = 1,
     r: int = 0,
-    operator: LateralOperator | None = None,
+    operator: "LateralOperator | MatrixFreeOperator | None" = None,
     tol: float = 1e-11,
     restart: int = 100,
     max_cycles: int = 20,

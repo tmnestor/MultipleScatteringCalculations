@@ -50,8 +50,10 @@ class ModeFactors:
         src_stat: {(kind, order): {z_s: (P, n_beta, n_source)}} the static pseudo-modes' source maps, with the
             window's weight -chi (and omega^2 for order 1).
         rec_stat: {(kind, order): {z_r: (P, n_test, n_alpha)}}.
-        mid_stat: {(kind, order): (P, 9, 9, n_alpha, n_beta)} in the frame of k (times M^-1): the rotation to k's
-            direction, T C T^T with columns paired, is applied to the vectors (``stat_apply``), not formed.
+        mid_stat: {(kind, order): (C, q^powers)}: the static kernel in the frame of k (times M^-1) is the polynomial
+            sum_m C[i, j, alpha, beta, m] q^(m0 + m), depth-independent, so only C (9, 9, n_alpha, n_beta, n_m) and the
+            powers (n_m, P) are kept; the rotation to k's direction, T C T^T with columns paired, is applied to the
+            vectors (``stat_apply``), not formed.
         rot: (P, 9, 9), T.
     """
 
@@ -66,14 +68,22 @@ class ModeFactors:
     def rotated_stat(self, key: tuple) -> NDArray:
         """The static kernel rotated to k's direction, (P, 9, 9, n_alpha, n_beta) (for checks)."""
         t = self.rot
-        out = np.einsum("pik,pklab,pjl->pijab", t, self.mid_stat[key], t, optimize=True)
+        c, qpow = self.mid_stat[key]
+        cq = np.einsum("ijabm,mp->pijab", c, qpow, optimize=True)
+        out = np.einsum("pik,pklab,pjl->pijab", t, cq, t, optimize=True)
         return out * SOURCE_PAIRING[None, None, :, None, None]
 
     def stat_apply(self, key: tuple, amp: NDArray) -> NDArray:
         """sum_{j, beta} (T C T^T)[i, j, alpha, beta] P_j amp[beta, j], (P, 9, n_alpha), with T on the vectors."""
         t = self.rot
         v = np.einsum("pjl,pyj->pyl", t, amp * SOURCE_PAIRING, optimize=True)
-        u = np.einsum("pklxy,pyl->pkx", self.mid_stat[key], v, optimize=True)
+        c, qpow = self.mid_stat[key]
+        u = np.einsum(
+            "pkxm,mp->pkx",
+            np.einsum("klxym,pyl->pkxm", c, v, optimize=True),
+            qpow,
+            optimize=True,
+        )
         return np.einsum("pik,pkx->pix", t, u, optimize=True)
 
 
@@ -159,12 +169,10 @@ def mode_factors(
             for order in (0, 1):
                 C, m0 = isp.frame_laurent(kind, order, isp._key(above), isp._key(below))
                 qpow = q[None, :] ** (m0 + np.arange(C.shape[4]))[:, None]
-                cq = (
-                    np.einsum("ijabm,mn->nijab", C, qpow)
-                    * (1.0 / SOURCE_PAIRING)[None, None, :, None, None]
-                )
+                # C M^-1, kept with the powers of q (ModeFactors.stat_apply rotates on the vectors)
                 mid_stat[kind, order] = (
-                    cq  # rotated on the vectors (ModeFactors.stat_apply)
+                    C * (1.0 / SOURCE_PAIRING)[None, :, None, None, None],
+                    qpow,
                 )
                 weight = -chi * (omega**2 if order == 1 else 1.0)
                 src_stat[kind, order] = {
@@ -246,7 +254,7 @@ class NodeProduct:
         n_test: int,
         q0h: float,
         window: isp.Window | None,
-        eps: float = 1e-14,
+        eps: float = 1e-13,
         chunk: int = 4096,
         cache: bool = True,
     ) -> None:
@@ -280,15 +288,20 @@ class NodeProduct:
             for zs in self.src_zs
             if zs in src_grids
         }
+        if not grids:
+            return out
+        # one plan per type, its points set once per chunk and shared by the layers
+        to_k = finufft.Plan(2, (nx, ny), n_trans=n_source * 9, eps=eps, isign=-1)
+        to_grid = finufft.Plan(1, (nx, ny), n_trans=n_test * 9, eps=eps, isign=1)
         for qx, qy, w, t1, t2, shift, f in self.chunks:
             if f is None:
                 f = self._factors(qx, qy)
+            to_k.setpts(t1, t2)
+            to_grid.setpts(t1, t2)
             amp = np.zeros((len(qx), 3), dtype=complex)
             amp_stat = {key: 0.0 for key in f.mid_stat}
             for zs, g in grids.items():
-                xh = (finufft.nufft2d2(t1, t2, g, isign=-1, eps=eps) * shift).T.reshape(
-                    -1, n_source, 9
-                )
+                xh = (to_k.execute(g) * shift).T.reshape(-1, n_source, 9)
                 amp += np.einsum("pmcj,pcj->pm", f.src[zs], xh)
                 for key in f.mid_stat:
                     amp_stat[key] = amp_stat[key] + np.einsum(
@@ -313,8 +326,9 @@ class NodeProduct:
                 c = np.ascontiguousarray(
                     (b * (w / shift)[:, None, None]).reshape(len(qx), -1).T
                 )
-                got = finufft.nufft2d1(t1, t2, c, (nx, ny), isign=1, eps=eps)
-                out[zr] += got.transpose(1, 2, 0).reshape(nx, ny, n_test, 9)
+                out[zr] += (
+                    to_grid.execute(c).transpose(1, 2, 0).reshape(nx, ny, n_test, 9)
+                )
         return out
 
 
@@ -339,7 +353,7 @@ class TwoSidedProduct:
         n_test,
         q0h,
         window,
-        eps=1e-14,
+        eps=1e-13,
         chunk=4096,
         cache=True,
     ) -> None:
@@ -414,7 +428,7 @@ def apply_low_band(
     low_pass: isp.Window,
     n_source: int = 10,
     n_test: int = 4,
-    eps: float = 1e-14,
+    eps: float = 1e-13,
     chunk: int = 4096,
 ) -> dict:
     """D_low x for a lateral box of shape (nx, ny) cells: every source layer's cells (coefficients x_grids[z_s],
@@ -514,7 +528,7 @@ def apply_high_band(
     low_pass: isp.Window,
     n_source: int = 10,
     n_test: int = 4,
-    eps: float = 1e-14,
+    eps: float = 1e-13,
     chunk: int = 4096,
 ) -> dict:
     """D_high x for a lateral box of shape (nx, ny) cells, with the window's static parts: at the wavenumbers of a
