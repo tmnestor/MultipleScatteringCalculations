@@ -17,6 +17,10 @@ sampled on the grid of a periodic box (``interface_spectral.high_band_blocks``).
 Media A (5, 3, 2.5) over B (6.5, 3.6, 2.8), h = 0.05 km, Q0 h = 10, the C-infinity window from Q0 / 4, p = 1, a P
 wave with lateral slowness (0.3, 0.1) / alpha_A.
 
+Measured 16 October 2026 (four workers): 1. 40 classes; blocks 1.3e-10 of K0 at 1/6, 2.9e-9 at 1/2 (the band is
+narrower there, [1, 2.5] against [0.35, 2.5]); set-up 517 s split, 458 s unsplit.  2. GMRES 7.4e-12.  3. 288 cells:
+set-up 931 s (S1: 1443 s), kernels of one frequency 321 s (S1: 183 s), 9 products.
+
 Run:  PYTHONPATH=. python scripts/gate_interface_split.py
 """
 
