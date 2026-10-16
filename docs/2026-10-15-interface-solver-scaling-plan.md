@@ -165,6 +165,32 @@ Each step has a gate. Profiling and measurement come before any rewrite.
   the padding grows.
 - **Gate:** the 288-cell kernels to 1e-10 (or to D1). Time per frequency O(L² · n² log n) with a small
   constant. Check n = 12, 24, 48.
+- **Measured first (16 October): the wrap-around rules out padding alone.**
+  `scripts/measure_interface_d_decay.py` → `scripts/data/interface_d_decay.json`. Max |D| / max |K0| for the
+  touching pairs:
+
+  | offset / h | 0 | 4 | 8 | 16 | 32 | 64 | 128 |
+  |---|---|---|---|---|---|---|---|
+  | reflected, ωh/β = 1/6 | 1.0 | 0.13 | 2.8e-2 | 1.1e-2 | 5.3e-3 | 5.6e-3 | 1.1e-2 |
+  | reflected, 1/2 | 1.2 | 0.23 | 0.13 | 0.11 | 0.11 | 8.1e-2 | 3.3e-2 |
+  | transmitted, 1/6 | 0.97 | 0.19 | 3.0e-2 | 8.6e-3 | 3.2e-3 | 1.5e-3 | 9.1e-3 |
+  | transmitted, 1/2 | 0.95 | 0.26 | 0.10 | 4.3e-2 | 2.5e-2 | 9.5e-3 | 2.7e-3 |
+
+  - **This is physics, not quadrature.** Against the independent polar mode sum (`_truncated_blocks_direct`,
+    sharp cutoff), D agrees to 7e-12, 1.7e-12 and 1e-12 of K0 at 8, 32 and 64 h. No Stoneley pole: |R_d| is
+    smooth beyond 1/β_A and peaks only at the branch points. D is the far field of the waves along the
+    interface, ~h/r, and the P and S phases beat (hence the rise from 64 h to 128 h).
+  - **So a periodic image at distance P costs ~h/P,** and D1 (1e-8) would need P ~ 10⁸ h. A smooth taper
+    does not help either: it changes the kernel the solve needs.
+  - **Proposed revision (to decide): split D's spectrum at q_p ≈ 1/h** with a smooth partition ψ(q),
+    D = D_low + D_high.
+    - **D_high**, the part above q_p (q_p above every branch point; ωh/c ≤ 1/2 here), is smooth in k, so its
+      kernel decays faster than any power of r. It is sampled on the FFT grid (with the Brillouin-zone
+      aliases q < Q0) with modest padding, gated to 1e-8.
+    - **D_low**, the part below q_p, carries the branch points and the h/r tail. It stays a per-offset
+      radial integral, over [0, q_p] instead of [0, Q0]: about 10× fewer panels. Its S_n come from
+      Jacobi–Anger (|m| ≤ 3.5 qh + 20, so ~24 terms at qh ≤ 1), with no per-offset tables.
+    - Cost per frequency: D_high O(L² n² log n); D_low O(L² n² × the low rule's nodes) with a small constant.
 
 ### S5. Matrix-free in depth (≈ 1 week; this is Stage A's machinery)
 - **Storage.** Per lateral wavenumber, the interface part is rank ≤ 6 (the modes P, SV, SH, up and down):
