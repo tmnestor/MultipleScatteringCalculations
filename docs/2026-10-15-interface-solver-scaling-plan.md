@@ -229,6 +229,20 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     reach² tables). (c) Jacobi–Anger for the low band's tables, now cheap anyway.
 
 ### S5. Matrix-free in depth (≈ 1 week; this is Stage A's machinery)
+- **Decided (user, 16 October).** D3: built as Stage A's machinery, in `stratified_march`. D_low is applied by
+  non-uniform FFTs (finufft) over its polar quadrature: exact and non-periodic.
+- **Revised, after S4.** A uniform k-grid cannot carry D_low: it decays only as ~h/r (S4), and the grid wraps
+  that tail. So:
+  - **D_low** (q h < 2.5): project each source layer onto the modes at its polar quadrature nodes, by a
+    type-2 NUFFT of the layer's source coefficients (cells on the lateral grid, nodes non-uniform); apply
+    R/T; reconstruct at each receiver layer by a type-1 NUFFT. 3 amplitudes per node and source side.
+  - **D_high**: the same on the uniform grid of the periodic box, each Brillouin-zone alias κ + G its own
+    node, so the product stays rank 3 per node (the alias sum of S4 has rank ~3 × 37).
+  - **The window's static parts** (χ(Y0 + ω²Y1) in D_high) are separable in depth through their vertical
+    moments: pseudo-modes, one per moment order.
+  - **Whole-space blocks** by Paper 2's 3-D FFT per side; the corrections A0, A1 (within the lateral and
+    depth radii) as sparse local blocks.
+  - finufft at eps = 1e-14 reaches 1.1e-14 (type 2, 24² grid, 2·10⁴ nodes).
 - **Storage.** Per lateral wavenumber, the interface part is rank ≤ 6 (the modes P, SV, SH, up and down):
   K^rev(zr, zs; k) = Σ_m r_m(zr, k) R_m(k) s_m(zs, k). So a product can be done in three steps, with
   memory O(n² · modes · moments) and no L²:
