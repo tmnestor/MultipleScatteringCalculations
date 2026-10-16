@@ -1,0 +1,12 @@
+{
+  // VS Code / Codespaces: the project's Dockerfile.  The editor offers a rebuild when the Dockerfile or
+  // envs/requirements-cloud.txt changes; the kernels are checked at every start.
+  "name": "Multiple Scattering",
+  "build": { "dockerfile": "../Dockerfile", "context": ".." },
+  "workspaceFolder": "/work",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/work,type=bind",
+  "postStartCommand": "PYTHON=python envs/build_kernels_if_stale.sh",
+  "customizations": {
+    "vscode": { "extensions": ["ms-python.python", "charliermarsh.ruff"] }
+  }
+}
