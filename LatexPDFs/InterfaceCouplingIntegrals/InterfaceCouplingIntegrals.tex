@@ -958,6 +958,8 @@ $\omega^4$ terms, $1245$ and $1002$, symbolic media & transform of each term aga
 $\omega^4$ blocks, two pairs of media, two reflected pairs not touching their images, two transmitted pairs & finite part of the plane-wave integral of $\mathbf Y_2$: closed form below $q_s$, Gauss panels above & $4.6\times10^{-16}$--$2.9\times10^{-15}$ \\
 Galerkin solve, $8$ cells straddling the interface, identical media & the homogeneous solve & $3.1\times10^{-12}$ \\
 Galerkin solve, different media, scattered field at $4$ receiver cells, vanishing contrast & Born field, every coupling by the plane-wave integral of the interface coefficients & $4.9$--$5.6\times10^{-11}$ \\
+lateral radius $16h$ of the corrections, $C^\infty$ window, row of $28$ cells & full windowed set-up & $8.3\times10^{-11}$ (solution) \\
+GMRES with lateral FFT products, $2\times5\times5$ cells, $10\%$ contrast & dense solve from the same blocks & $4.6\times10^{-12}$ \\
 split to $\omega^2$ and to $\omega^4$ at $Q_0h=3$--$10$, self-image, across and lateral pairs, $\omega h/\beta=1/6$, $1/2$ & split to $\omega^4$ at $Q_0h=20$ & at $Q_0h=10$: $3.5\times10^{-10}$, $2.5\times10^{-8}$ ($\omega^2$); $4.8\times10^{-11}$, $6.2\times10^{-11}$ ($\omega^4$) \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
@@ -1089,6 +1091,24 @@ receivers changes by $8.1\times10^{-3}$ from cells of degree zero to degree two 
 degree one to two. The frequency-independent parts are computed once for each class of pairs under the lateral
 symmetries of the interface ($78$ classes, about $800$\,s on four processes); each further frequency then costs
 $3.5$\,s for all the blocks and a fraction of a second for the solve.
+
+\paragraph{Larger scatterers.} Every block depends only on the two depth layers and the lateral offset, so for
+each pair of layers the coupling of a grid of cells is a lateral convolution. Its blocks over the offsets of the
+grid's lateral box are transformed once per frequency, with zero padding to $2n-1$ for $n$ cells; a product then
+costs one two-dimensional FFT per source layer, one inverse per receiver layer and a contraction per pair of
+layers, and no block of a single pair is formed. GMRES solves the system with these products, preconditioned
+block by block with $(\mathbf M-\bK_{mm}\mathbf E_m)^{-1}$, $\bK_{mm}$ the self block with its own image. The
+set-up keeps the corrections only within the radius $16h$ of Table~\ref{tab:locality}, with the $C^\infty$ window
+from $Q_0/4$, which moves the solution by $8.3\times10^{-11}$ on a row of $28$ cells. On a box of
+$2\times5\times5$ cells straddling the interface, each with a contrast of $10\%$ of its medium, in the media,
+frequency and incident wave above, at degree one, GMRES with relative tolerance $10^{-11}$ takes $8$ products and
+agrees with the dense solve from the same blocks to $4.6\times10^{-12}$. On $2\times12\times12$ cells ($288$) it
+takes $9$ products and $0.7$\,s, so the iteration count barely grows with the grid at this contrast. The cost is
+elsewhere: the set-up takes $1477$\,s on four processes ($312$ classes, $128$ of them within the radius; $364$\,s
+for the $60$ classes of the smaller box), and the transformed kernels of one frequency take $183$\,s and
+$110$\,MB ($92$\,s and $17$\,MB). The kernels grow as the square of the number of layers times $(2n-1)^2$, and
+reducing that cost, by the depth locality of the corrections and by the mode structure of the reflected and
+transmitted parts, is left for the application to layered media.
 
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}

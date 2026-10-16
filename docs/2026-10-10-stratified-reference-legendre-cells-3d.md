@@ -454,6 +454,9 @@ The structure is Paper 2's (`graded_voxel/blocks.py`):
   - ~~step 2's end-to-end solve~~ — decided 15 October: a short paragraph, "The blocks in a solve", at the end
     of the Verification section (identical media, Born against plane waves, p, cost) with two verification rows;
     the full application is left for the Stage A paper;
+  - ~~the iterative solve~~ — done 16 October: a paragraph, "Larger scatterers", after "The blocks in a solve"
+    (lateral FFT products, block-Jacobi GMRES, radius 16 h; vs dense 4.6e-12 on 50 cells; 9 products and the
+    set-up and kernel cost on 288 cells) with two verification rows (radius, GMRES vs dense);
   - one stated limitation (base integrals for cubic corner boxes only).
 - **Older open items.**
   - Scan Papers 1 and 3 for conclusions resting on numpy `leggauss` weights.
