@@ -152,13 +152,6 @@ from .slab_scattering import (
     slab_weyl_amplitudes,
     uniform_slab_material,
 )
-from .slab_scattering_gpu import compute_slab_scattering_gpu
-from .solver_config import (
-    ScatteringConfig,
-    load_config,
-    run_from_config,
-    validate_config,
-)
 from .sphere_scattering import (
     MieEffectiveContrasts,
     MieResult,
@@ -173,14 +166,12 @@ from .sphere_scattering import (
     sphere_sub_cell_centres,
 )
 from .sphere_scattering_fft import compute_sphere_foldy_lax_fft
-from .sphere_scattering_fft_gpu import compute_sphere_foldy_lax_fft_gpu
 from .tmatrix_assembly import (
     assemble_tmatrix_27,
     assemble_tmatrix_57,
     tmatrix_27_to_voigt_6x6,
     tmatrix_57_to_voigt_6x6,
 )
-from .torch_gmres import get_device, select_dtype, torch_gmres
 from .voigt_tmatrix import (
     effective_stiffness_voigt,
     scattered_stress_voigt,
@@ -190,6 +181,35 @@ from .voigt_tmatrix import (
     voigt_tmatrix_6x6,
     voigt_tmatrix_from_result,
 )
+
+# The PyTorch modules are imported on first use (PEP 562), so that the rest of the package does not need
+# torch installed and does not pay for importing it.
+_LAZY = {
+    "compute_slab_scattering_gpu": "slab_scattering_gpu",
+    "ScatteringConfig": "solver_config",
+    "load_config": "solver_config",
+    "run_from_config": "solver_config",
+    "validate_config": "solver_config",
+    "compute_sphere_foldy_lax_fft_gpu": "sphere_scattering_fft_gpu",
+    "get_device": "torch_gmres",
+    "select_dtype": "torch_gmres",
+    "torch_gmres": "torch_gmres",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY:
+        import importlib
+
+        value = getattr(importlib.import_module(f".{_LAZY[name]}", __name__), name)
+        globals()[name] = value  # later lookups bypass __getattr__
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(_LAZY))
+
 
 __all__ = [
     # ── Rayleigh regime ──────────────────────────────────────────────────
