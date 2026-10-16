@@ -501,10 +501,11 @@ def _static_frames(
     q: NDArray,
     exps_f: tuple,
     exps_s: tuple,
+    rotate: bool = True,
 ) -> dict:
     """The angular harmonics of the static (order 0) or omega^2 (order 1) frame kernel at wavenumbers q,
     with the cells' vertical moments, {(l, e): (N, 9, 81)}: the form of the dynamic frames of
-    ``truncated_blocks``."""
+    ``truncated_blocks``.  ``rotate=False``: the kernel in the frame of k, times M^-1, {(l, e): (N, 9, 9)}."""
     C, m0 = frame_laurent(kind, order, above, below)
     s = 1 if kind == "R" else -1
     pf, ps = _vertical_polys(exps_f, True), _vertical_polys(exps_s, False)
@@ -513,13 +514,12 @@ def _static_frames(
     Vs = {e: _vertical_moments(p, zs, h, 1, q, C.shape[3] - 1) for e, p in ps.items()}
     qpow = q[None, :] ** (m0 + np.arange(C.shape[4]))[:, None]  # (nm, Nq)
     Cq = np.einsum("ijabm,mn->nijab", C, qpow)  # (Nq, 9, 9, na, nb)
-    return {
-        (l, e): _rotate_harmonics(
-            np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV
-        )
+    frames = {
+        (l, e): np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV
         for l in pf
         for e in ps
     }
+    return {k: _rotate_harmonics(v) for k, v in frames.items()} if rotate else frames
 
 
 def _static_integral(
@@ -991,6 +991,7 @@ def truncated_blocks(
     q0h: float = 10.0,
     table: dict | None = None,
     window: Window | None = None,
+    low_pass: Window | None = None,
 ) -> list[NDArray]:
     """D = (1/4 pi^2) int_{q < Q0} Y d^2k for many pairs (receiver, source) with sources in A (a source in B
     is mirrored onto A by ``interface_block``).
@@ -1007,12 +1008,19 @@ def truncated_blocks(
         table: ``lateral_harmonics`` for the pairs' lateral offsets with the same q0h, n_source, n_test;
             built here when absent (pass it when sweeping frequency).
         window: The window of ``frequency_independent_parts`` (None: the sharp cutoff).
+        low_pass: The low band of the split D = D_low + D_high (``high_band_blocks``): the integrand times
+            psi = 1 - low_pass(q h, q0h), so it ends smoothly on low_pass's ramp at q0h (here the band's upper end,
+            not the split's Q0).  Not with a window: the band lies below it.
 
     Returns:
         One block per pair, shape (n_test, n_source, 9, 9), complex.
     """
     for rec, src in pairs:
         _check(rec, src)
+    if low_pass is not None and window is not None:
+        raise ValueError(
+            "truncated_blocks: low_pass is the band below the window; pass one or the other."
+        )
     offsets = [(r[1] - s[1], r[2] - s[2]) for r, s in pairs]
     if table is None:
         table = lateral_harmonics(offsets, h, q0h, n_source, n_test)
@@ -1039,8 +1047,12 @@ def truncated_blocks(
     for (rec, src), off in zip(pairs, offsets, strict=True):
         width = _radial_width(float(np.hypot(*off)))
         if width not in rules:
-            breaks = () if window is None else tuple(window.ramp_edges(q0h))
-            rules[width] = radial_rule(q0h, branch, width, breaks=breaks)
+            ramp = window if window is not None else low_pass
+            breaks = () if ramp is None else tuple(ramp.ramp_edges(q0h))
+            qh_r, w_r = radial_rule(q0h, branch, width, breaks=breaks)
+            if low_pass is not None:
+                w_r = w_r * (1.0 - low_pass(qh_r, q0h))
+            rules[width] = (qh_r, w_r)
         qh, w = rules[width]
         key = (width, rec[0], src[0])
         if key not in frames:
@@ -1066,8 +1078,12 @@ def truncated_blocks(
                 ]
                 for k, v in frames[key].items():
                     v[on] -= chi[on, None, None] * (stat[0][k] + omega**2 * stat[1][k])
-        if (off, width) not in harmonics:  # S_n depends on the lateral offset and the rule, not on the depths
-            harmonics[off, width] = _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
+        if (
+            (off, width) not in harmonics
+        ):  # S_n depends on the lateral offset and the rule, not on the depths
+            harmonics[off, width] = (
+                _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
+            )
         S = harmonics[off, width]
         blk = np.zeros((n_test, n_source, 81), dtype=complex)
         for (l, e), rot in frames[key].items():
@@ -1077,6 +1093,135 @@ def truncated_blocks(
             )
         out.append(blk.reshape(n_test, n_source, 9, 9))
     return out
+
+
+def high_band_blocks(
+    rec_z: int,
+    src_z: int,
+    n_grid: int,
+    h: float,
+    omega: float,
+    above: ReferenceMedium,
+    below: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+    q0h: float = 10.0,
+    window: Window | None = None,
+    low_pass: Window | None = None,
+    band_qh: float = 2.5,
+    chunk: int = 4096,
+) -> NDArray:
+    """D_high, the part of D above the low band, for every lateral offset of a periodic grid of n_grid cells.
+
+    D = D_low + D_high, with D_low = ``truncated_blocks(..., q0h=band_qh, low_pass=low_pass)`` and D_high the
+    integrand times low_pass(q h, band_qh) (0 below the band, 1 above it) on q < Q0.  The band lies above every
+    branch point, so D_high's spectrum is smooth and its kernel decays faster than any power of the offset; it
+    is sampled at the wavenumbers of the periodic grid, 2 pi m / (n_grid 2h), and summed onto the grid's offsets
+    (Poisson: the periodised kernel, sum over images of D_high(d + j n_grid)).
+
+    Args:
+        rec_z, src_z: The cells' centres' z in h (odd); the source in A (mirror first, as ``interface_block``).
+        n_grid: Cells of the periodic grid along x and y; its images lie n_grid cells apart.
+        window: The split's window (as ``truncated_blocks``); its ramp must start at or above band_qh.
+        low_pass: The band: its ramp from low_pass.start * band_qh to band_qh.
+
+    Returns:
+        Shape (n_grid, n_grid, n_test, n_source, 9, 9): [dx % n_grid, dy % n_grid] holds the block of lateral
+        offset (dx, dy) cells (2h each) of receiver from source.
+    """
+    rec, src = (rec_z, 0, 0), (src_z, 0, 0)
+    kind = _check(rec, src)
+    if low_pass is None:
+        raise ValueError("high_band_blocks: pass the low band (low_pass).")
+    branch = [omega * h / c for m in (above, below) for c in (m.alpha, m.beta)]
+    lo = low_pass.start * band_qh
+    if lo < max(branch) * (1 + 1e-9) or (
+        window is not None and window.start * q0h < band_qh
+    ):
+        raise ValueError(
+            "high_band_blocks: the band must lie above the branch points and below the window's ramp\n"
+            f"  (band from {lo:g} to {band_qh:g}; branch points to {max(branch):g}"
+            + (
+                f"; window from {window.start * q0h:g})."
+                if window is not None
+                else ")."
+            )
+        )
+    exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
+    exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
+    lz = sorted({e[0] for e in exps_f})
+    ez = sorted({e[0] for e in exps_s})
+    pairs_le = [(l, e) for l in lz for e in ez]
+    # block[a, c]: the (l, e) of field function a and source monomial c
+    block = np.array(
+        [
+            [pairs_le.index((exps_f[a][0], exps_s[c][0])) for c in range(n_source)]
+            for a in range(n_test)
+        ]
+    )
+    dk = 2 * np.pi / (n_grid * 2 * h)
+    tiles = int(np.ceil(q0h / h / dk / n_grid)) + 1
+    acc = np.zeros((n_grid * n_grid, n_test, n_source, 81), dtype=complex)
+    j = np.arange(n_grid)
+    for tx, ty in itertools.product(range(-tiles, tiles), repeat=2):
+        mx, my = np.meshgrid(tx * n_grid + j, ty * n_grid + j, indexing="ij")
+        kx, ky = (mx * dk).ravel(), (my * dk).ravel()
+        qh_all = np.hypot(kx, ky) * h
+        on = np.flatnonzero((qh_all > lo) & (qh_all < q0h))
+        for i0 in range(0, len(on), chunk):
+            sel = on[i0 : i0 + chunk]
+            qx, qy, qh = kx[sel], ky[sel], qh_all[sel]
+            q = qh / h
+            # the frame kernel in the frame of k (times M^-1), less the window's static and omega^2 parts
+            fr = {
+                k: v @ _M_INV
+                for k, v in _dynamic_frames(
+                    q, omega, above, below, rec, src, h, lz, ez
+                ).items()
+            }
+            if window is not None:
+                chi = window(qh, q0h)
+                ramp = chi > 0
+                if np.any(ramp):
+                    stat = [
+                        _static_frames(
+                            order,
+                            kind,
+                            rec,
+                            src,
+                            h,
+                            _key(above),
+                            _key(below),
+                            q[ramp],
+                            exps_f,
+                            exps_s,
+                            rotate=False,
+                        )
+                        for order in (0, 1)
+                    ]
+                    for k, v in fr.items():
+                        v[ramp] -= chi[ramp, None, None] * (
+                            stat[0][k] + omega**2 * stat[1][k]
+                        )
+            # rotated to k's direction, T G T^T, columns paired (as _rotate_harmonics at phi)
+            T = rotation(np.arctan2(qy, qx))
+            g = np.stack(
+                [T @ fr[l, e] @ T.swapaxes(1, 2) * SOURCE_PAIRING for l, e in pairs_le],
+                1,
+            )
+            wgt = low_pass(qh, band_qh) * dk**2 / (4 * np.pi**2)
+            lf = _lateral(qx, qy, h, exps_f, True) * wgt[:, None]
+            ls = _lateral(qx, qy, h, exps_s, False)
+            idx = (mx.ravel()[sel] % n_grid) * n_grid + (my.ravel()[sel] % n_grid)
+            # residues are distinct within a tile
+            acc[idx] += (
+                lf[:, :, None, None]
+                * ls[:, None, :, None]
+                * g[:, block].reshape(len(sel), n_test, n_source, 81)
+            )
+    # sum_m F(k_m) e^{i k_m . 2 d h} over the residues m = j (mod n_grid): an inverse DFT
+    out = np.fft.ifft2(acc.reshape(n_grid, n_grid, -1), axes=(0, 1)) * n_grid**2
+    return out.reshape(n_grid, n_grid, n_test, n_source, 9, 9)
 
 
 def _truncated_blocks_direct(
