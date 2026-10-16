@@ -210,6 +210,19 @@ Each step has a gate. Profiling and measurement come before any rewrite.
       padding the grid is 54² cells × ~93k wavenumbers per depth pair. Unsplit D grows as ~n³ per frequency
       (n² offsets × rule nodes ∝ reach), the split as L²(n + pad)², so the crossover should be near n ≈ 20.
       This is not yet measured.
+  - **Measured in one process (16 October, `scripts/measure_interface_split_cost.py`).** The gate times the
+    first frequency in a process, which also paid the whole-space blocks' per-process series coefficients
+    (~246 s at 288 cells). Those coefficients are now computed in the set-up, in parallel with one BLAS thread
+    per worker (`far_coeffs`). The high band uses the lateral symmetries (an eighth of the wavenumbers).
+
+    | 288 cells | set-up | first frequency | each further frequency |
+    |---|---|---|---|
+    | unsplit | 839 s | 79 s | 67 s |
+    | split | 823 s | 27 s | **25 s** |
+
+    The run-to-run spread of the set-up on this container is ~±40 s. A pool of one task per pair of depths
+    for each frequency was slower (77 s split, 144 s unsplit): the serial route already uses the CPUs through
+    BLAS threads, so it was removed.
   - **Open.** (a) The high band's constant: the k-grid's 8-fold symmetry (signed permutations of kx, ky, as
     `_transform` maps the blocks), and the lateral moments and rotation shared by the depth pairs, for perhaps
     ~5–10×. (b) Measure the crossover at n = 24, 48 (the unsplit set-up at n = 24 alone is hours, because of its
