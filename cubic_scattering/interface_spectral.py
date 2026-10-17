@@ -1043,9 +1043,17 @@ def truncated_blocks(
     rules: dict = {}
     frames: dict = {}
     harmonics: dict = {}
-    out = []
-    for (rec, src), off in zip(pairs, offsets, strict=True):
-        width = _radial_width(float(np.hypot(*off)))
+    out: list = [None] * len(pairs)
+    widths = [_radial_width(float(np.hypot(*off))) for off in offsets]
+    # by radial rule: the frames and harmonics of one rule are reused within it and dropped after it (kept for every
+    # rule at once they grew as rules x pairs of depths x nodes: 13 GB for 576 cells in four layers)
+    current = None
+    for i in sorted(range(len(pairs)), key=lambda n: widths[n]):
+        (rec, src), off, width = pairs[i], offsets[i], widths[i]
+        if width != current:
+            frames.clear()
+            harmonics.clear()
+            current = width
         if width not in rules:
             ramp = window if window is not None else low_pass
             breaks = () if ramp is None else tuple(ramp.ramp_edges(q0h))
@@ -1091,7 +1099,7 @@ def truncated_blocks(
             blk[np.ix_(fa[l], sc[e])] += (sub.T @ rot.reshape(-1, 81)).reshape(
                 len(fa[l]), len(sc[e]), 81
             )
-        out.append(blk.reshape(n_test, n_source, 9, 9))
+        out[i] = blk.reshape(n_test, n_source, 9, 9)
     return out
 
 
