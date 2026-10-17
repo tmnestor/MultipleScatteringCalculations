@@ -311,6 +311,13 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     (58k against 176k on 5 layers × 3 × 2), and against Paper 2 it agrees to 3.4e-10 / 1.6e-9 (1/6, 1/2). The
     NUFFT tolerance is now 1e-11. Gate, 96 cells in six layers: products 7.0e-13 apart (was 3.6e-11); operator
     22 s (was 179 s), product 24.7 s (was 39.4 s), peak 4.2 GB (was 12.8 GB). 50 cells: 8.3e-13.
+  - **Done (17 October): the lattice nodes by FFT.** The nodes of D_high and the march's nodes above the low band
+    lie on the periodic box's lattice, k = 2πm/(N·2h), so they need no NUFFT: one zero-padded N × N FFT per layer
+    gives all of them (aliases included), and the way back folds by m mod N and takes one inverse FFT per layer.
+    Exact, so it adds no error (against the dense product it sits at the modes' cancellation, ~1e-11, as the NUFFT
+    at 1e-13 does). Lattice share of the nodes: all of D_high, 65–70 % of the march's at n = 12. n = 24: D_high
+    47 s → 11 s, march (6 layers) 14 s → 8 s. Gate: 50 cells 6.3e-13, product 11.4 s → 4.0 s; 96 cells in six
+    layers 6.3e-13, product 24.7 s → 9.3 s, peak 4.2 → 2.7 GB. The polar low band is now the NUFFT's only use.
   - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
     64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
     touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
