@@ -42,6 +42,15 @@ from .interface_solver import (
     reference_moments,
 )
 
+#: The preconditioner's own coarse nodes (``MatrixFreeDownUp(coarse=...)``): D's low band and the march at a coarse
+#: low-band rule, NUFFT eps 1e-6, the march's lattice to q h = 4.  On 8 x 6 x 6 at omega h / beta = 1/2 it takes the
+#: outer counts of the exact preconditioner (9 and 12 at 30 and 50 %) at ~1/4 of a product per application.
+COARSE = (
+    sap.LowBandRule(ramp_panels=4, panel_order=6, phi_margin=8, branch_order=12),
+    1e-6,
+    4.0,
+)
+
 
 def fgmres(
     matvec,

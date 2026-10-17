@@ -429,6 +429,25 @@ preconditioner of a flexible GMRES. Decided (17 October): split by direction; ea
   product shares one pass over the chunks among all layers. So the iteration count halves (and with three passes
   no longer grows with the layers) but the time does not yet: the pass must cost well under a product. Next:
   profile the pass, then a cheaper pass (coarser wavenumbers for the preconditioner, which need not be exact).
+- **A cheaper pass (17 October).** Profile of one application (8 x 6 x 6, 38 s against 12.8 s per product): D's
+  amplitudes 15 s and fields 8 s, summing amplitude lists 4 s (now kept running), the march 1 s, the planes'
+  solves 0.4 s. So the preconditioner's D and march get nodes of their own (`MatrixFreeDownUp(coarse=...)`,
+  `interface_downup.COARSE`): D's low band only (the high band is local), a coarse low-band rule (3.6k nodes
+  against the product's 14.9k), NUFFT eps 1e-6, the march's lattice to q h = 4. None of it changes the outer
+  count. Matrix-free, 8 x 6 x 6 at 1/2, one product 12 s:
+
+  | | 30 % | 50 % |
+  |---|---|---|
+  | block-Jacobi | 16 outer, 191 s | 21 outer, 247 s |
+  | DownUp, product's D (1 pass) | 9 outer, 342 s | 12 outer, 460 s |
+  | DownUp, D's low band only | 9 outer, 222 s | 12 outer, 298 s |
+  | DownUp, coarse D | 9 outer, 167 s | 12 outer, 220 s |
+  | DownUp, coarse D and march (`COARSE`) | 9 outer, 138 s | 12 outer, 185 s |
+  | the same, 3 passes | 8 outer, 181 s | 8 outer, 176 s |
+
+  An application now costs ~1/4 of a product: DownUp is 25-28 % faster than block-Jacobi on eight layers, and
+  the margin should grow with the layers, where block-Jacobi's count grows. With D's low band alone three passes
+  give 8 outer, not the 6 of the full D: its high band matters to the later passes.
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
