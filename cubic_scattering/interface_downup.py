@@ -278,6 +278,8 @@ class MatrixFreeDownUp:
         passes: DownUp passes per application (the later ones lag R x + U x of the one before, as ``DownUp``).
         bands: "both", D through its low and high bands as in the product; or "low", the low band alone (the
             branch points and the long-range tail; D_high is local), a coarser and cheaper preconditioner.
+        coarse: (``stratified_apply.LowBandRule``, NUFFT eps): D's low band at nodes of its own, coarser than the
+            product's (implies ``bands="low"``).
     """
 
     def __init__(
@@ -289,6 +291,7 @@ class MatrixFreeDownUp:
         self_reflection: str = "exact",
         passes: int = 1,
         bands: str = "both",
+        coarse: tuple | None = None,
     ) -> None:
         self.passes = passes
         if bands not in ("both", "low"):
@@ -313,6 +316,42 @@ class MatrixFreeDownUp:
             z: (side, kern, march) for side, kern, march in op.sides for z in side
         }
         self.products = (op.low, op.high) if bands == "both" else (op.low,)
+        if (
+            coarse is not None
+        ):  # D's low band on its own, coarser nodes (the preconditioner need not be exact)
+            rule, eps = coarse
+            g, cpl = op.grid, op.couplings
+            lp, band = cpl.low_pass(op.omega), cpl.band_qh
+            kx, ky, w = sap.low_band_nodes(
+                2.0 * float(np.hypot(nx - 1, ny - 1)),
+                g.h,
+                op.omega,
+                g.above,
+                g.below,
+                band,
+                lp,
+                rule,
+            )
+            zu = [2 * z + 1 for z in self.layers]
+            self.products = (
+                sap.TwoSidedProduct(
+                    zu,
+                    zu,
+                    op.shape,
+                    kx,
+                    ky,
+                    w,
+                    g.h,
+                    op.omega,
+                    g.above,
+                    g.below,
+                    op.n_source,
+                    op.na,
+                    band,
+                    None,
+                    eps,
+                ),
+            )
         m_full = np.kron(op.m9, np.eye(9))
         self.jacobi = np.array(
             [
@@ -579,6 +618,7 @@ def solve_interface_fgmres(
     preconditioner: str = "downup",
     self_reflection: str = "exact",
     bands: str = "both",
+    coarse: tuple | None = None,
     tol: float = 1e-10,
     inner_tol: float = 1e-3,
     passes: int = 1,
@@ -620,6 +660,7 @@ def solve_interface_fgmres(
             self_reflection=self_reflection,
             passes=passes,
             bands=bands,
+            coarse=coarse,
         )
     elif preconditioner == "jacobi":
         m_full = np.kron(op.m9, np.eye(9))
