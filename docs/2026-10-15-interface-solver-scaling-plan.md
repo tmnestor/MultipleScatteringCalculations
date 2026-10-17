@@ -325,6 +325,14 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     error against the stored kernels (96 cells): 6e-13 / 7e-12 / 2e-12 / 2e-11 at eps 1e-11 / 1e-9 / 1e-8 / 1e-7.
     Default now 1e-9: ~1e-11 from the stored product, below GMRES's 1e-10 (72 cells at 1/2, 50 %: 16 products
     with either operator). Layers are not stacked into n_trans: chunking makes no difference, so neither would that.
+  - **Done (17 October): the low band's quadrature (8.4).** `stratified_apply.LowBandRule`: the matrix-free product's
+    low band (D's and the march's) uses Gauss of order 8 on the plain radial panels (was 12) and an azimuthal margin
+    of 16 beyond the phase's bandwidth (was 64); the stored kernels keep the reference rule. Scanned on 4 × 4 to
+    24 × 24 boxes at 1/6 and 1/2: 33–56 % of the nodes, the low band's product within 1.3e-12 of the reference's.
+    What does not survive: the branch panels' order below 24 (4e-8 at 20, the square-root map), and fewer ramp panels
+    with order 8 on narrow boxes (6 panels: 8e-10 at n = 4, 5, where the width rule allows wide panels). Gate:
+    1.7e-11 on both boxes (was ~6e-12), product 3.7 → 2.6 s (50 cells), 9.6 → 6.9 s (96 cells); GMRES on 72 cells
+    at 1/2, 50 %: 16 products with either operator, solutions 1.5e-11 apart.
   - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
     64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
     touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
