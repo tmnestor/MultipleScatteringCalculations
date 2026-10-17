@@ -50,6 +50,11 @@ COARSE = (
     1e-6,
     4.0,
 )
+#: ``COARSE`` with its nodes bounded independently of the box: the low band's polar rule built for a reach of at
+#: most 32 h (16 cells), and the march's lattice period the box plus 8 cells.  The preconditioner's D is then
+#: accurate only between nearby cells (D decays as ~h / rho); the product is unchanged, so only the outer count
+#: can suffer.
+COARSE_BOUNDED = COARSE + (32.0,)
 
 
 def fgmres(
@@ -288,9 +293,10 @@ class MatrixFreeDownUp:
         passes: DownUp passes per application (the later ones lag R x + U x of the one before, as ``DownUp``).
         bands: "both", D through its low and high bands as in the product; or "low", the low band alone (the
             branch points and the long-range tail; D_high is local), a coarser and cheaper preconditioner.
-        coarse: (``stratified_apply.LowBandRule``, NUFFT eps[, qmax_h]): D's low band at nodes of its own, coarser
-            than the product's (implies ``bands="low"``); with qmax_h, the march's nodes too (that rule's low band
-            and the lattice to q h = qmax_h).
+        coarse: (``stratified_apply.LowBandRule``, NUFFT eps[, qmax_h[, reach]]): D's low band at nodes of its own,
+            coarser than the product's (implies ``bands="low"``); with qmax_h, the march's nodes too (that rule's low
+            band and the lattice to q h = qmax_h); with reach (in h), the node bound: the low band's rule built for a
+            reach of at most that, and the march's lattice period the box plus reach / 4 cells.
     """
 
     def __init__(
@@ -330,10 +336,13 @@ class MatrixFreeDownUp:
         if coarse is not None:
             # D's low band on its own, coarser nodes (the preconditioner need not be exact)
             rule, eps = coarse[:2]
+            # the node bound: the rule's reach capped (coarse[3], in h), whatever the box
+            box_reach = 2.0 * float(np.hypot(nx - 1, ny - 1))
+            reach_d = min(box_reach, coarse[3]) if len(coarse) > 3 else box_reach
             g, cpl = op.grid, op.couplings
             lp, band = cpl.low_pass(op.omega), cpl.band_qh
             kx, ky, w = sap.low_band_nodes(
-                2.0 * float(np.hypot(nx - 1, ny - 1)),
+                reach_d,
                 g.h,
                 op.omega,
                 g.above,
@@ -365,14 +374,19 @@ class MatrixFreeDownUp:
             if len(coarse) > 2:
                 # and the march's nodes: the coarse low band and the lattice to q h = qmax_h
                 qmax_h = coarse[2]
-                reach = max(max(k[2], k[3]) for k in cpl.classes) // 2
-                n_grid = scipy.fft.next_fast_len(reach + 1 + cpl.split_pad)
+                if (
+                    len(coarse) > 3
+                ):  # the lattice's period: the box and half the capped reach beyond it
+                    n_grid = scipy.fft.next_fast_len(max(nx, ny) + int(coarse[3] / 4))
+                else:
+                    reach = max(max(k[2], k[3]) for k in cpl.classes) // 2
+                    n_grid = scipy.fft.next_fast_len(reach + 1 + cpl.split_pad)
                 ws = {}
                 for side, kern, march in op.sides:
                     if march is not None:
                         medium = g.above if side[0] < 0 else g.below
                         kx, ky, w, lat = sap.whole_space_nodes(
-                            2.0 * float(np.hypot(nx - 1, ny - 1)),
+                            reach_d,
                             n_grid,
                             g.h,
                             op.omega,
