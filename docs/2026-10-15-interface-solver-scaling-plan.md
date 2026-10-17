@@ -401,6 +401,26 @@ preconditioner of a flexible GMRES. Decided (17 October): split by direction; ea
 - **Gate:** against block-Jacobi on the S6 boxes and on boxes with more planes (2 ... 8 layers): outer
   iterations, in-plane products and time to 1e-10. The march preconditioner should make the outer count
   nearly independent of the number of layers, where block-Jacobi's grows (+5 from two to four layers at 1/2).
+- **Measured (17 October), stored kernels, 6 x 6 cells per plane** (`scripts/measure_interface_downup.py`,
+  `scripts/data/interface_downup.jsonl`; one pass, inner tolerance 1e-2). Outer products, block-Jacobi / DownUp,
+  at 10 / 30 / 50 %:
+
+  | layers | 1/6 | 1/2 |
+  |---|---|---|
+  | 2 | 8/10/12 / 4/6/6 | 9/13/16 / 5/7/7 |
+  | 4 | 8/10/12 / 5/6/7 | 10/14/19 / 6/8/9 |
+  | 6 | 8/11/12 / 5/6/7 | 10/15/20 / 6/9/11 |
+  | 8 | 8/11/13 / 5/6/7 | 10/16/21 / 6/9/12 |
+
+  At 1/6 one pass makes the count independent of the layers. At 1/2 it grows with them, from the backscatter
+  lagged once: more passes remove the growth (8 layers, 50 %: 12 / 8 / 6 outer with 1 / 2 / 3 passes; 2 layers:
+  7 / 6 / 6), a tighter inner solve does not (1e-4: 12). With three passes the outer count is 6 on 2 and on 8
+  layers, against block-Jacobi's 16 and 21. Solutions agree with block-Jacobi's to the tolerance.
+- **Recursion version** (`MatrixFreeDownUp`, `scripts/gate_interface_downup_recursion.py`): the same application
+  to 1.5e-12 (1/6) and 1.9e-11 (1/2) on 8 x 2 x 2, where the march acts. Its cost is the planes' own systems:
+  with a plane's own reflection D in K_0 each inner product runs the plane-wave D over every wavenumber
+  (~3.5 s), so one application costs ~8 full products. The option `self_reflection="lagged"` moves that D into R,
+  leaving K_0 the plane's stored whole-space kernel and corrections (lateral FFTs); being measured.
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
