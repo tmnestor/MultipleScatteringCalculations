@@ -1349,26 +1349,36 @@ reflection lagged with the others, $\mathbf A_i$ is the plane's stored whole-spa
 the inner products are lateral FFTs; and the preconditioner's $\mathbf D$ and march get nodes of their own, the low
 band alone (the high band is local) at a coarse rule, non-uniform FFTs to $10^{-6}$ and the march's lattice to
 $qh=4$. None of this changes the outer count, and a pass then costs about a quarter of a product.
-Table~\ref{tab:downup} gives the time to $10^{-10}$ with the matrix-free operator: with one pass the march takes
-$24$ to $28\%$ less time than block-Jacobi; three passes cost more per product saved at $30\%$, but at $50\%$
-their count is the same on sixteen layers as on eight, and they take $29\%$ and $38\%$ less time.
+Table~\ref{tab:downup} gives the time to $10^{-10}$ with the matrix-free operator. On $6\times6$ cells per plane,
+one pass takes $24$ to $28\%$ less time than block-Jacobi; three passes cost more per product saved at $30\%$,
+but at $50\%$ their count is the same on sixteen layers as on eight, and they take $29\%$ and $38\%$ less time.
+On $12\times12$ cells per plane block-Jacobi's count grows with the area as well ($27$ products at $50\%$
+against $21$), while three passes of the march still take $8$; but the saving in time narrows to $14$ to $15\%$
+with one pass and $11\%$ with three at $50\%$. The preconditioner's coarse low band grows with the lateral reach
+($9.0$ thousand nodes against $3.6$ thousand, its azimuthal count proportional to the reach), so a pass costs
+about half a product instead of a quarter; for larger boxes its nodes must be bounded independently of the
+reach, which a preconditioner, unlike the product, permits.
 
 \begin{table}[htbp]
 \centering
 \caption{Matrix-free FGMRES to $10^{-10}$ at $\omega h/\beta_A=1/2$: outer products and time with block-Jacobi
-and with the two-way march (coarse nodes of its own, one or three passes), for $L\times6\times6$ cells at
-contrasts of $30\%$ and $50\%$; one product takes $12$\,s ($L=8$) and $25$\,s ($L=16$).}
+and with the two-way march (coarse nodes of its own, one or three passes), for boxes of $L\times n\times n$ cells
+at contrasts of $30\%$ and $50\%$; one product takes $12$\,s ($8\times6\times6$), $25$\,s ($16\times6\times6$) and
+$19$\,s ($8\times12\times12$).}
 \label{tab:downup}
 \begin{tabular}{llcc}
 \toprule
-$L$ & preconditioner & $30\%$ & $50\%$ \\
+box & preconditioner & $30\%$ & $50\%$ \\
 \midrule
-$8$ & block-Jacobi & $16$, $191$\,s & $21$, $247$\,s \\
+$8\times6\times6$ & block-Jacobi & $16$, $191$\,s & $21$, $247$\,s \\
  & march, one pass & $9$, $138$\,s & $12$, $185$\,s \\
  & march, three passes & $8$, $181$\,s & $8$, $176$\,s \\
-$16$ & block-Jacobi & $17$, $404$\,s & $24$, $542$\,s \\
+$16\times6\times6$ & block-Jacobi & $17$, $404$\,s & $24$, $542$\,s \\
  & march, one pass & $10$, $294$\,s & $14$, $414$\,s \\
  & march, three passes & $7$, $303$\,s & $8$, $337$\,s \\
+$8\times12\times12$ & block-Jacobi & $19$, $343$\,s & $27$, $486$\,s \\
+ & march, one pass & $10$, $295$\,s & $14$, $414$\,s \\
+ & march, three passes & $7$, $374$\,s & $8$, $433$\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
