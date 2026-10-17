@@ -1,0 +1,103 @@
+"""Tests of the two-way march preconditioner (``interface_downup``)."""
+
+import numpy as np
+import pytest
+
+from cubic_scattering import interface_downup as idu
+from cubic_scattering import interface_solver as iso
+from cubic_scattering.effective_contrasts import MaterialContrast, ReferenceMedium
+from cubic_scattering.graded_voxel.basis import source_expansion
+
+A = ReferenceMedium(5.0, 3.0, 2.5)
+B = ReferenceMedium(6.5, 3.6, 2.8)
+H = 0.05
+OMEGA = A.beta / (2 * H)
+
+
+def test_fgmres_solves_a_complex_system():
+    rng = np.random.default_rng(1)
+    n = 60
+    a = np.eye(n) * 4 + rng.standard_normal((n, n)) / np.sqrt(n) * (1 + 1j)
+    b = rng.standard_normal(n) + 1j * rng.standard_normal(n)
+    want = np.linalg.solve(a, b)
+    x, n_mv, hist = idu.fgmres(lambda v: a @ v, lambda v: v, b, tol=1e-12, restart=7)
+    assert np.abs(x - want).max() < 1e-10 * np.abs(want).max()
+    assert hist[-1] <= 1e-12 or np.linalg.norm(a @ x - b) <= 1e-12 * np.linalg.norm(b)
+    inv = np.linalg.inv(a)
+    x, n_mv, _ = idu.fgmres(lambda v: a @ v, lambda v: inv @ v, b, tol=1e-12)
+    assert n_mv <= 3 and np.abs(x - want).max() < 1e-10 * np.abs(want).max()
+
+
+@pytest.fixture(scope="module")
+def box():
+    """Four planes (two each side) of 2 x 2 cells, a gap in one, at omega h / beta_A = 1/2."""
+    cells = [
+        (iz, ix, iy) for iz in (-2, -1, 0, 1) for ix in range(2) for iy in range(2)
+    ]
+    cells.remove((0, 1, 1))
+    g = iso.InterfaceGrid(np.array(cells), H, A, B)
+    c = iso.InterfaceCouplings(g)
+    op = iso.LateralOperator(c, OMEGA, p=1, r=0, parts=True)
+    return g, c, op
+
+
+def _contrasts(g, f):
+    return [
+        MaterialContrast(f * g.medium(m).lam, f * g.medium(m).mu, f * g.medium(m).rho)
+        for m in range(len(g.idx))
+    ]
+
+
+def test_the_split_adds_up_to_the_coupling(box):
+    g, _, op = box
+    e = np.zeros((len(g.idx), op.n_source, op.na, 9, 9), dtype=complex)
+    du = idu.DownUp(op, e)
+    for zr in op.layers:
+        for zs in op.layers:
+            got = sum(parts.get((zr, zs), 0) for parts in (du.lo, du.up, du.refl)) + (
+                du.k0[zr] if zr == zs else 0
+            )
+            assert (
+                np.abs(got - op.kernels[zr, zs]).max()
+                <= 1e-12 * np.abs(op.kernels[zr, zs]).max()
+            )
+    # forward is downward in L, upward in U; R stays on one side and off the diagonal
+    assert all(zs < zr for zr, zs in du.lo) and all(zs > zr for zr, zs in du.up)
+    assert all((zr < 0) == (zs < 0) and zr != zs for zr, zs in du.refl)
+
+
+def test_downup_passes_converge_to_the_dense_solve(box):
+    """As a stationary iteration with exact plane solves, DownUp converges to the solution at small contrast."""
+    g, c, op = box
+    ctr = _contrasts(g, 0.1)
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
+    delta = iso.cell_contrasts(g, OMEGA, ctr, 0)
+    e = np.array(
+        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
+    )
+    rhs = iso.reference_moments(g, OMEGA, kx, ky, "P", op.n_field)[:, : op.na]
+    du = idu.DownUp(op, e, inner_tol=1e-14)
+    got = du(rhs.ravel()).reshape(rhs.shape)
+    err1 = np.abs(got - dense.psi[:, : op.na]).max()
+    du.passes = 8
+    got = du(rhs.ravel()).reshape(rhs.shape)
+    err8 = np.abs(got - dense.psi[:, : op.na]).max()
+    scale = np.abs(dense.psi).max()
+    assert err8 < 1e-9 * scale
+    assert err8 < 1e-3 * err1
+
+
+@pytest.mark.parametrize("pre", ["downup", "jacobi"])
+def test_fgmres_matches_the_dense_solve(box, pre):
+    g, c, op = box
+    ctr = _contrasts(g, 0.5)
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
+    got, stats = idu.solve_interface_fgmres(
+        c, OMEGA, ctr, kx, ky, "P", p=1, r=0, operator=op, preconditioner=pre, tol=1e-11
+    )
+    assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+    assert stats["outer"] < 60
+    if pre == "downup":
+        assert stats["planes"] > 0 and stats["inner"] >= stats["planes"]
