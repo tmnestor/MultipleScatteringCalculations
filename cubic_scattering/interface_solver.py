@@ -739,10 +739,17 @@ class LateralOperator:
         couplings: The grid's set-up.
         omega: Angular frequency.
         p, r: Field and contrast degree (``field_sizes``).
+        parts: Also keep the whole-space and the interface kernels of each pair apart (``ws_kernels``,
+            ``if_kernels``), for preconditioners that split them (``interface_downup``).
     """
 
     def __init__(
-        self, couplings: InterfaceCouplings, omega: float, p: int = 1, r: int = 0
+        self,
+        couplings: InterfaceCouplings,
+        omega: float,
+        p: int = 1,
+        r: int = 0,
+        parts: bool = False,
     ) -> None:
         if couplings.matrix_free:
             raise ValueError(
@@ -772,16 +779,19 @@ class LateralOperator:
             d = (pr[:, None, :] - ps[None, :, :]).reshape(-1, 2)
             realised[zr, zs] = {tuple(v) for v in np.unique(d, axis=0).tolist()}
         self.kernels: dict = {}
+        self.ws_kernels: dict = {}  # with parts: the whole-space kernel of each same-side pair
+        self.if_kernels: dict = {}  # with parts: the interface kernel (reflection or transmission) of each pair
         self.self_blocks: dict = {}  # K_mm per layer, for the preconditioner
         for (zr, zs), offs in realised.items():
             kh = np.zeros((rows, cols) + self.shape, dtype=complex)
+            kw = np.zeros_like(kh) if parts else None
             same = (zr < 0) == (zs < 0)
             ur, us = 2 * zr + 1, 2 * zs + 1
             for dx, dy in offs:
                 (a, b), q = _canonical(2 * dx, 2 * dy)
                 k = _transform(q, canon[ur, us, a, b])
                 if same:
-                    k = k + _whole_space(
+                    w = _whole_space(
                         (zr - zs, dx, dy),
                         g.h,
                         omega,
@@ -791,12 +801,26 @@ class LateralOperator:
                         ws_cache,
                         couplings.far_coeffs,
                     )
+                    if parts:
+                        kw[:, :, dx % self.shape[0], dy % self.shape[1]] = (
+                            w[:na, :n_source].transpose(0, 2, 1, 3).reshape(rows, cols)
+                        )
+                    k = k + w
                 kh[:, :, dx % self.shape[0], dy % self.shape[1]] = (
                     k[:na, :n_source].transpose(0, 2, 1, 3).reshape(rows, cols)
                 )
                 if dx == 0 and dy == 0 and zr == zs:
                     self.self_blocks[zr] = k[:na, :n_source]
             self.kernels[zr, zs] = np.fft.fft2(kh, axes=(2, 3)).reshape(rows, cols, -1)
+            if parts:
+                if same:
+                    self.ws_kernels[zr, zs] = np.fft.fft2(kw, axes=(2, 3)).reshape(
+                        rows, cols, -1
+                    )
+                    kh = kh - kw
+                self.if_kernels[zr, zs] = np.fft.fft2(kh, axes=(2, 3)).reshape(
+                    rows, cols, -1
+                )
         self.by_layer = by_layer
         self.m9 = gram_test(g.h, n_field)[:na, :na]
 
