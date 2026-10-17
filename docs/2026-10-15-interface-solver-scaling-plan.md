@@ -452,6 +452,13 @@ preconditioner of a flexible GMRES. Decided (17 October): split by direction; ea
   DownUp (`COARSE`) one pass 10 / 14 outer, 294 / 414 s; three passes 7 / 8 outer, 303 / 337 s. With three passes
   the outer count at 50 % is 8 on eight and on sixteen layers, block-Jacobi's 21 and 24: the saving in time grows
   with the layers (29 % on eight, 38 % on sixteen).
+- **A larger lateral box** (8 x 12 x 12 at 1/2, one product 19.1 s, peak 3.2 GB): block-Jacobi 19 / 27 outer,
+  343 / 486 s (30 / 50 %); DownUp (`COARSE`) one pass 10 / 14 outer, 295 / 414 s (-14 / -15 %); three passes 7 / 8
+  outer, 374 / 433 s (+9 / -11 %). The counts hold (block-Jacobi grows with the area too, 21 -> 27 at 50 %, three
+  passes stay at 8), but the time saving narrows: the coarse low band grows with the reach (9.0k nodes against
+  3.6k; the azimuthal count is proportional to the reach), so a pass costs ~1/2 product. Next: bound the
+  preconditioner's nodes independently of the reach (e.g. a fixed azimuthal count, accepting a less exact D far
+  away), then S7.
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
