@@ -1,0 +1,15 @@
+{"layers": 2, "n": 6, "cells": 72, "freq": "1/6", "contrast": 0.1, "products": 8, "converged": true, "solve_s": 0.5114102363586426, "operator_s": 42.28561735153198, "setup_s": 319.2489695549011}
+{"layers": 2, "n": 6, "cells": 72, "freq": "1/6", "contrast": 0.3, "products": 10, "converged": true, "solve_s": 0.15834927558898926, "operator_s": 42.28561735153198, "setup_s": 319.2489695549011}
+{"layers": 2, "n": 6, "cells": 72, "freq": "1/6", "contrast": 0.5, "products": 12, "converged": true, "solve_s": 0.17136096954345703, "operator_s": 42.28561735153198, "setup_s": 319.2489695549011}
+{"layers": 2, "n": 6, "cells": 72, "freq": "1/2", "contrast": 0.1, "products": 9, "converged": true, "solve_s": 0.17975401878356934, "operator_s": 14.509492635726929, "setup_s": 319.2489695549011}
+{"layers": 2, "n": 6, "cells": 72, "freq": "1/2", "contrast": 0.3, "products": 13, "converged": true, "solve_s": 0.18364644050598145, "operator_s": 14.509492635726929, "setup_s": 319.2489695549011}
+{"layers": 2, "n": 6, "cells": 72, "freq": "1/2", "contrast": 0.5, "products": 16, "converged": true, "solve_s": 0.19867229461669922, "operator_s": 14.509492635726929, "setup_s": 319.2489695549011}
+{"layers": 2, "n": 12, "cells": 288, "freq": "1/6", "contrast": 0.1, "products": 8, "converged": true, "solve_s": 0.667504072189331, "operator_s": 30.38806438446045, "setup_s": 487.82241129875183}
+{"layers": 2, "n": 12, "cells": 288, "freq": "1/6", "contrast": 0.3, "products": 11, "converged": true, "solve_s": 0.8244194984436035, "operator_s": 30.38806438446045, "setup_s": 487.82241129875183}
+{"layers": 2, "n": 12, "cells": 288, "freq": "1/6", "contrast": 0.5, "products": 13, "converged": true, "solve_s": 0.7938051223754883, "operator_s": 30.38806438446045, "setup_s": 487.82241129875183}
+{"layers": 2, "n": 12, "cells": 288, "freq": "1/2", "contrast": 0.1, "products": 10, "converged": true, "solve_s": 0.726172924041748, "operator_s": 37.94358515739441, "setup_s": 487.82241129875183}
+{"layers": 2, "n": 12, "cells": 288, "freq": "1/2", "contrast": 0.3, "products": 15, "converged": true, "solve_s": 0.9193079471588135, "operator_s": 37.94358515739441, "setup_s": 487.82241129875183}
+{"layers": 2, "n": 12, "cells": 288, "freq": "1/2", "contrast": 0.5, "products": 19, "converged": true, "solve_s": 0.996715784072876, "operator_s": 37.94358515739441, "setup_s": 487.82241129875183}
+{"layers": 4, "n": 12, "cells": 576, "freq": "1/6", "contrast": 0.1, "products": 8, "converged": true, "solve_s": 1.5552327632904053, "operator_s": 120.74346542358398, "setup_s": 1328.0535793304443}
+{"layers": 4, "n": 12, "cells": 576, "freq": "1/6", "contrast": 0.3, "products": 11, "converged": true, "solve_s": 1.8519103527069092, "operator_s": 120.74346542358398, "setup_s": 1328.0535793304443}
+{"layers": 4, "n": 12, "cells": 576, "freq": "1/6", "contrast": 0.5, "products": 14, "converged": true, "solve_s": 2.1439032554626465, "operator_s": 120.74346542358398, "setup_s": 1328.0535793304443}
