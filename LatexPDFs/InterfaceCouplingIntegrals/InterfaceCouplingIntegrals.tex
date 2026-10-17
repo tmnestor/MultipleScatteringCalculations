@@ -1177,19 +1177,55 @@ $\ee^{\mp\ii k_zz}$, so only the layer-independent pieces are kept. A product th
 wavenumber and source side, summed over the source layers and reconstructed at each receiver layer, and no block
 of a pair of layers is formed. The low band is applied at its polar quadrature nodes by non-uniform FFTs, which
 keeps it exact and non-periodic; the high band at the wavenumbers of the periodic box, each alias its own node. In
-the same medium, cells in planes at least two apart couple through the modes of the whole space, factorised the
-same way about each cell's own centre and marched layer by layer with the step $\ee^{\ii k_z2h}$, $|\cdot|\le1$.
-Only the whole-space blocks of planes $0$ and $1$ apart stay stored, $3(2n-1)^2$ per side whatever the number of
-layers. Against Paper~2's blocks the march agrees to $3.9\times10^{-10}$ ($\omega h/\beta_A=1/6$) and
-$3.6\times10^{-9}$ ($1/2$), the periodic images of its high band $40$ cells away ($5.5\times10^{-11}$ at $1/2$
-with $60$). Products from the same set-up agree with those of the stored kernels to $7.3\times10^{-13}$ ($50$
-cells), $2.1\times10^{-12}$ ($288$) and $3.6\times10^{-11}$ ($96$ cells in six layers, where the march acts).
-The memory no longer grows with the number of layers: $2.8$ and $2.9$\,GB for $24\times24$ cells in four and
-eight layers, where the stored kernels would take $1.8$ and $7.3$\,GB. Time is the price. A product takes $42$\,s
-for $12\times12$ cells in four layers and $377$\,s for $24\times24$ in eight ($31$ and $139$\,s with the
-factors kept, at $2.5$ and $7.2$\,GB), against hundredths of a second for the stored kernels where they fit. The
-cost is set by the number of wavenumbers, which is fixed by the padding of the high band and by the march's
-cutoff at $qh=16$.
+the same medium, cells in planes at least three apart couple through the modes of the whole space, factorised the
+same way about each cell's own centre and marched layer by layer with the step $\ee^{\ii k_z2h}$, $|\cdot|\le1$;
+between planes $g$ apart the integrand falls as $\ee^{-2(g-1)qh}$, so the march's wavenumbers stop at $qh=8$.
+Only the whole-space blocks of planes $0$, $1$ and $2$ apart stay stored, $5(2n-1)^2$ per side whatever the
+number of layers. Against Paper~2's blocks the march agrees to $3.4\times10^{-10}$ ($\omega h/\beta_A=1/6$) and
+$1.6\times10^{-9}$ ($1/2$). The memory no longer grows with the number of layers: $2.8$ and $2.9$\,GB for
+$24\times24$ cells in four and eight layers, where the stored kernels would take $1.8$ and $7.3$\,GB.
+
+Time is the price, and it is set by the number of wavenumbers. Three measures reduce it. First, the high band's
+nodes and the march's above the low band lie on the periodic box's lattice, $\bk=2\pi\mathbf m/(2Nh)$, where
+$\ee^{-\ii\bk\cdot\bx}$ over the cells is a discrete Fourier kernel: one zero-padded $N\times N$ FFT per layer gives
+every lattice node, aliases included, and the way back folds the nodes by $\mathbf m\bmod N$ and takes one inverse
+FFT. This is exact and needs no tolerance; it makes $\mathbf D_{\mathrm{high}}$ $4.3$ times and the march $1.8$
+times faster for $24\times24$ cells. Only the polar nodes of the low band still need non-uniform FFTs. Second,
+their tolerance follows the error budget: at $10^{-9}$ a product stays within $10^{-11}$ of the stored kernels',
+and the transforms are $1.5$ to $1.8$ times faster than at $10^{-11}$; larger transforms or a smaller upsampling
+factor gain nothing. Third, the low band's quadrature is tuned against the reference rule of
+Section~\ref{sec:verification}: Gauss of order $8$ instead of $12$ on the plain radial panels and an azimuthal
+margin of $16$ instead of $64$ beyond the phase's bandwidth keep $33$ to $56\%$ of the nodes on $4\times4$ to
+$24\times24$ cells, the low band's product within $1.3\times10^{-12}$. The panels at the branch points keep
+order $24$, which their square-root map needs, and the window's ramp its $16$ panels, which narrow boxes need.
+With all three, products from the same set-up agree with those of the stored kernels to $1.7\times10^{-11}$ on
+$2\times5\times5$ cells and on $96$ cells in six layers, where the march acts, and take $2.6$ and $6.9$\,s
+($11.4$ and $24.7$\,s before; peak memory $2.4$\,GB).
+
+\paragraph{The iteration.} Table~\ref{tab:gmres} gives the products GMRES needs with the block preconditioner
+above, at relative tolerance $10^{-10}$, for boxes straddling the interface with every cell at $10$, $30$ or $50\%$
+of its own medium's $\lambda$, $\mu$ and $\rho$, and the P wave above. At $\omega h/\beta_A=1/6$ the count does not
+grow with the box; at $1/2$ and $50\%$ it grows from $16$ to $22$ over sixteen times the lateral area, and more
+with depth than with width: four layers add more products than four times the area. Every case converged, and the
+matrix-free operator takes the same number of products as the stored kernels ($16$ on $72$ cells at $1/2$ and
+$50\%$, the solutions $1.5\times10^{-11}$ apart).
+
+\begin{table}[htbp]
+\centering
+\caption{GMRES products (block-Jacobi, relative tolerance $10^{-10}$) for boxes of layers $\times\,n\times n$
+cells straddling the interface, at contrasts of $10/30/50\%$.}
+\label{tab:gmres}
+\begin{tabular}{lrcc}
+\toprule
+box & cells & $\omega h/\beta_A=1/6$ & $\omega h/\beta_A=1/2$ \\
+\midrule
+$2\times6\times6$ & $72$ & $8/10/12$ & $9/13/16$ \\
+$2\times12\times12$ & $288$ & $8/11/13$ & $10/15/19$ \\
+$4\times12\times12$ & $576$ & $8/11/14$ & $11/17/24$ \\
+$2\times24\times24$ & $1152$ & $8/11/14$ & $10/16/22$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
