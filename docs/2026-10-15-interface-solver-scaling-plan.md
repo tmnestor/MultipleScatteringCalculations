@@ -318,6 +318,13 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     at 1e-13 does). Lattice share of the nodes: all of D_high, 65–70 % of the march's at n = 12. n = 24: D_high
     47 s → 11 s, march (6 layers) 14 s → 8 s. Gate: 50 cells 6.3e-13, product 11.4 s → 4.0 s; 96 cells in six
     layers 6.3e-13, product 24.7 s → 9.3 s, peak 4.2 → 2.7 GB. The polar low band is now the NUFFT's only use.
+  - **Done (17 October): the NUFFT tolerance and the transforms' sizes (8.2, 8.3).** Only the polar low band still
+    uses the NUFFT. On its nodes alone (one source and one receiver layer, n_trans 90 and 36): eps 1e-8 is 1.5–1.8×
+    faster than 1e-11 at n = 12, 24, 48; upsampfac 1.25 is slower at every size; one large chunk instead of 4096-node
+    chunks is no better (0.6–1.6×). Per product the NUFFT is ~47 % at 12 × 12 × 2 (contractions ~25 %). Product
+    error against the stored kernels (96 cells): 6e-13 / 7e-12 / 2e-12 / 2e-11 at eps 1e-11 / 1e-9 / 1e-8 / 1e-7.
+    Default now 1e-9: ~1e-11 from the stored product, below GMRES's 1e-10 (72 cells at 1/2, 50 %: 16 products
+    with either operator). Layers are not stacked into n_trans: chunking makes no difference, so neither would that.
   - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
     64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
     touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
