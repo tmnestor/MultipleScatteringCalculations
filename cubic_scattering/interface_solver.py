@@ -925,6 +925,7 @@ class MatrixFreeOperator:
             couplings.window,
             eps,
             cache=cache,
+            lattice=sap.lattice_of(kx, ky, h, n_grid),
         )
 
         # the corrections: a stencil per pair of layers, over the offsets whose class carries them
@@ -986,7 +987,7 @@ class MatrixFreeOperator:
                 )
             march = None
             if side[-1] - side[0] > stored_planes:
-                kx, ky, w = sap.whole_space_nodes(
+                kx, ky, w, lattice = sap.whole_space_nodes(
                     2.0 * float(np.hypot(nx - 1, ny - 1)),
                     n_grid,
                     h,
@@ -1010,6 +1011,7 @@ class MatrixFreeOperator:
                     eps,
                     cache=cache,
                     min_gap=stored_planes + 1,
+                    lattice=lattice,
                 )
             self.sides.append((side, kernels, march))
 

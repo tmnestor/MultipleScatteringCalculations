@@ -132,6 +132,29 @@ def test_high_band_at_the_box_wavenumbers_is_the_periodic_kernel():
     assert all(np.abs(got[z] - ref[z]).max() < 1e-10 * scale for z in layers)
 
 
+def test_lattice_nodes_by_fft_are_the_nufft():
+    """The lattice nodes applied by zero-padded FFTs (gather on the way in, fold by m mod N on the way out) give
+    the NUFFT's product on a box shorter than the lattice, and do not depend on how the nodes are chunked (aliases
+    split between chunks)."""
+    shape, layers, n = (3, 2), [-3, -1, 1], 12
+    rng = np.random.default_rng(6)
+    x = {
+        z: rng.standard_normal(shape + (10, 9))
+        + 1j * rng.standard_normal(shape + (10, 9))
+        for z in layers
+    }
+    kx, ky, w = sa.high_band_nodes(n, H, 10.0, 2.5, LOW)
+    lattice = sa.lattice_of(kx, ky, H, n)
+    args = (layers, layers, shape, kx, ky, w, H, OMEGA, A, B, 10, 4, 10.0, WINDOW)
+    want = sa.TwoSidedProduct(*args, eps=1e-13).apply(x)
+    got = sa.TwoSidedProduct(*args, chunk=500, lattice=lattice).apply(x)
+    whole = sa.TwoSidedProduct(*args, chunk=10**6, lattice=lattice).apply(x)
+    scale = {z: np.abs(want[z]).max() for z in layers}
+    # both at the modes' cancellation (as in the high-band test); the chunking at rounding
+    assert all(np.abs(got[z] - want[z]).max() < 1e-10 * scale[z] for z in layers)
+    assert all(np.abs(got[z] - whole[z]).max() < 1e-14 * scale[z] for z in layers)
+
+
 @pytest.mark.parametrize(("gap", "qmax_h"), [(2, 16.0), (3, 8.0)])
 def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
     """The march in depth over the low band's nodes and the box's lattice reproduces Paper 2's blocks between
@@ -148,7 +171,7 @@ def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
         + 1j * rng.standard_normal(shape + (10, 9))
         for z in layers
     }
-    kx, ky, w = sa.whole_space_nodes(
+    kx, ky, w, lattice = sa.whole_space_nodes(
         2.0 * np.hypot(1, 1),
         next_fast_len(2 + 40),
         H,
@@ -158,9 +181,9 @@ def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
         LOW,
         qmax_h=qmax_h,
     )
-    got = sa.WholeSpaceMarch(layers, shape, kx, ky, w, H, OMEGA, A, min_gap=gap).apply(
-        x
-    )
+    got = sa.WholeSpaceMarch(
+        layers, shape, kx, ky, w, H, OMEGA, A, min_gap=gap, lattice=lattice
+    ).apply(x)
     ref = {z: np.zeros(shape + (4, 9), dtype=complex) for z in layers}
     for zr, zs in itertools.product(layers, repeat=2):
         if abs(zr - zs) < gap:
