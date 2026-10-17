@@ -18,7 +18,8 @@ Measured 16 October 2026 (four workers): 50 cells, products 7.3e-13 apart, store
 product, matrix-free 30 s + 11.6 s; 288 cells, 2.1e-12, stored 53 s + 0.04 s, matrix-free 38 s + 15.9 s; peak memory
 of the process (both operators) 2.6 and 5.7 GB.  With the whole-space march (planes two or more apart; stored kernels
 for planes 0 and 1 apart): 50 cells 7.3e-13 again; 96 cells in six layers 3.6e-11, stored 149 s + 0.03 s, matrix-free
-179 s + 39.4 s, peak 12.8 GB (the cached factors).
+179 s + 39.4 s, peak 12.8 GB (the cached factors).  With planes up to 2 apart stored (the march from gap 3, to
+q h = 8) and NUFFT eps 1e-11: 50 cells 8.3e-13; 96 cells 7.0e-13, matrix-free 22 s + 24.7 s, peak 4.2 GB.
 
 Run:  PYTHONPATH=. python scripts/gate_interface_matrix_free.py [box indices, default all]
 """

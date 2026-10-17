@@ -305,6 +305,12 @@ Each step has a gate. Profiling and measurement come before any rewrite.
     | 12, 4 | 67 s, 1.2 GB | 42 s, 1.2 GB | 26 s, 6.3 GB | 31 s, 2.5 GB |
     | 12, 8 | 243 s | | killed | 84 s, 3.8 GB |
     | 24, 8 | 377 s, 2.9 GB | | — | 139 s, 7.2 GB |
+  - **Done (17 October): the rest of the speed work.** `MatrixFreeOperator(stored_planes=2)` (the default) stores the
+    whole-space kernels of planes up to 2 apart (5 (2n − 1)² per side, 5/3 of before), so the march starts at
+    gap 3, where the integrand falls as e^{−4qh}, and its lattice stops at q h = 8. That is a third of the nodes
+    (58k against 176k on 5 layers × 3 × 2), and against Paper 2 it agrees to 3.4e-10 / 1.6e-9 (1/6, 1/2). The
+    NUFFT tolerance is now 1e-11. Gate, 96 cells in six layers: products 7.0e-13 apart (was 3.6e-11); operator
+    22 s (was 179 s), product 24.7 s (was 39.4 s), peak 4.2 GB (was 12.8 GB). 50 cells: 8.3e-13.
   - **Next limits.** (a) Paper 2's whole-space kernels: (2L − 1)(2n − 1)² blocks per side (~12 GB per side at
     64 × 64 × 8). Non-touching depth offsets could go through the same modes (G2), keeping FFT kernels only for
     touching planes. (b) The NUFFT cost per product: eps 1e-11, or fewer components per transform.
