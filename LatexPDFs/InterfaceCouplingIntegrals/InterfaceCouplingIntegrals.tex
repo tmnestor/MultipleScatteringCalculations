@@ -1355,9 +1355,7 @@ but at $50\%$ their count is the same on sixteen layers as on eight, and they ta
 On $12\times12$ cells per plane block-Jacobi's count grows with the area as well ($27$ products at $50\%$
 against $21$), while three passes of the march still take $8$; but the saving in time narrows to $14$ to $15\%$
 with one pass and $11\%$ with three at $50\%$. The preconditioner's coarse low band grows with the lateral reach
-($9.0$ thousand nodes against $3.6$ thousand, its azimuthal count proportional to the reach), so a pass costs
-about half a product instead of a quarter; for larger boxes its nodes must be bounded independently of the
-reach, which a preconditioner, unlike the product, permits.
+($9.0$ thousand nodes against $3.6$ thousand), so a pass costs about half a product instead of a quarter.
 
 \begin{table}[htbp]
 \centering
@@ -1382,6 +1380,26 @@ $8\times12\times12$ & block-Jacobi & $19$, $343$\,s & $27$, $486$\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\paragraph{Why the nodes grow with the box, and why the preconditioner may bound them.} Every application of
+$\mathbf D$, in the product and in the preconditioner, is a quadrature of its plane-wave integral,
+$\mathbf D(\brho)\approx\sum_m w_m\,\mathbf F(\bk_m)\,\ee^{\ii\bk_m\cdot\brho}$ over lateral wavenumbers $\bk_m$,
+the nodes, and a pass of the march costs work at every node: the mode amplitudes, the non-uniform transforms and
+the contractions. The low band's nodes form a polar grid, and the rule must integrate the phase
+$\ee^{\ii\bk\cdot\brho}$ exactly for every lateral offset $\brho$ in the box, up to the largest, the reach
+$\rho_{\max}\approx2\sqrt2\,(n-1)h$ for $n\times n$ cells. Around a circle of radius $q$ the phase oscillates about
+$q\rho_{\max}$ times, so the azimuthal trapezoid rule needs $n_\varphi\approx2q\rho_{\max}$ points plus a margin;
+along $q$ it oscillates with period $2\pi/\rho_{\max}$, so the radial panels narrow as the reach grows. The number
+of nodes therefore grows with the box, towards the square of the reach: from $14.9$ to $24.6$ thousand for the
+product's low band, and from $3.6$ to $9.0$ thousand for the preconditioner's coarse one, from $6\times6$ to
+$12\times12$ cells. The product cannot shed these nodes, since a rule too coarse for the reach aliases the field of
+a distant cell onto the wrong offsets and changes the solution. The preconditioner can. Its nodes may be held at
+the count for a fixed reach, whatever the box: its $\mathbf D$ is then accurate only between nearby cells, and in
+error for distant ones, where $\mathbf D$ itself is small (it decays as about $h/\rho$, to $5\times10^{-3}$ of the
+touching block at an offset of $32h$). An inexact preconditioner can cost outer iterations but cannot change the answer,
+which the product fixes; so the bound trades the cost of a pass, then independent of the width, against the outer
+count. The coarsenings above left the count unchanged, which suggests the room to do so; whether a bound at a reach
+of $16$ cells holds it on wider boxes is the measurement that decides the march for wide, shallow targets.
 
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
