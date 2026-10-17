@@ -26,6 +26,7 @@ With the lattice nodes by FFT (17 October): 50 cells 6.3e-13, matrix-free 11 s +
 NUFFT eps 1e-9 (the default since): 50 cells 4.9e-12, 12 s + 3.7 s; 96 cells 6.9e-12, 21 s + 9.6 s (boxes this small
 are the contractions' cost; the NUFFTs gain 1.5-1.8x at n = 12 ... 48).
 The tuned low-band rule (stratified_apply.TUNED_RULE): 50 cells 1.7e-11, 11 s + 2.6 s; 96 cells 1.7e-11, 20 s + 6.9 s.
+8 x 3 x 3 (72 cells, the march acting): 1.5e-11, matrix-free 35 s + 8.2 s, peak 1.8 GB.
 
 Run:  PYTHONPATH=. python scripts/gate_interface_matrix_free.py [box indices, default all]
 """
