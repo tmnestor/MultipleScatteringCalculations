@@ -252,8 +252,8 @@ class InterfaceCouplings:
             decays faster than any power: below 1e-8 of the touching static block at ~26 cells (omega h / beta =
             1/6) to ~34 (1/2), 1e-10 at ~40 to ~55.
         matrix_free: Build only what ``MatrixFreeOperator`` uses: the self offset's lateral table (D itself comes
-            from the plane-wave modes) and the whole-space series coefficients of planes 0 and 1 apart (farther
-            planes go through the march).  ``LateralOperator`` and the full ``interface_canonical`` then refuse.
+            from the plane-wave modes) and the whole-space series coefficients of planes up to 2 apart (the
+            default ``stored_planes``; farther planes go through the march).  ``LateralOperator`` and the full ``interface_canonical`` then refuse.
             Needs ``split``.
         workers: Processes for the set-up (default: the CPUs), one BLAS thread each.  The set-up also computes the
             whole-space blocks' series coefficients of every orbit the grid needs (``far_coeffs``), so a frequency
@@ -355,10 +355,9 @@ class InterfaceCouplings:
             )
             zs = np.unique(sub[:, 0])
             dz = np.unique(np.abs(zs[:, None] - zs[None, :]))
-            if (
-                self.matrix_free
-            ):  # the stored whole-space kernels are those of planes 0 and 1 apart
-                dz = dz[dz <= 1]
+            if self.matrix_free:
+                # the stored whole-space kernels: planes up to MatrixFreeOperator's default stored_planes (2) apart
+                dz = dz[dz <= 2]
             for z in dz:
                 rows = np.column_stack([np.full(len(dxy), z), dxy])
                 far |= {
@@ -834,9 +833,10 @@ class MatrixFreeOperator:
       period); per wavenumber three mode amplitudes per source side, plus the window's static pseudo-modes.
       The factors are computed once per frequency.
     - **The corrections** A0 + w^2 A1, local within the lateral and depth radii, as stencils.
-    - **The whole-space blocks**, Paper 2's: for planes 0 and 1 apart, stored lateral kernels, 3 (2 nx - 1)(2 ny - 1)
-      blocks per side whatever the number of layers; for planes at least two apart, the plane-wave march in depth
-      (``stratified_apply.WholeSpaceMarch``, the low band's nodes and the box's lattice to q h = 16).
+    - **The whole-space blocks**, Paper 2's: for planes up to ``stored_planes`` apart, stored lateral kernels,
+      (2 s + 1)(2 nx - 1)(2 ny - 1) blocks per side whatever the number of layers; for planes farther apart, the
+      plane-wave march in depth (``stratified_apply.WholeSpaceMarch``, the low band's nodes and the box's lattice to
+      q h = 16 / s: s = 2, the default, needs a quarter of the wavenumbers of s = 1).
 
     ``cache``: keep the plane-wave factors between products (each later product is then the NUFFTs and the
     contractions alone; ~23 kB per node for D with six layers, ~12 kB per node for the march), or recompute them in
@@ -850,8 +850,9 @@ class MatrixFreeOperator:
         omega: float,
         p: int = 1,
         r: int = 0,
-        eps: float = 1e-13,
+        eps: float = 1e-11,
         cache: bool = True,
+        stored_planes: int = 2,
     ) -> None:
         if not couplings.split:
             raise ValueError(
@@ -945,8 +946,8 @@ class MatrixFreeOperator:
             if st:
                 self.stencils[zr, zs] = st
 
-        # the whole-space blocks on each side: stored lateral kernels for planes 0 and 1 apart (independent of the
-        # number of layers), the plane-wave march (stratified_apply.WholeSpaceMarch) for planes at least two apart
+        # the whole-space blocks on each side: stored lateral kernels for planes up to stored_planes apart
+        # (independent of the number of layers), the plane-wave march (stratified_apply.WholeSpaceMarch) beyond
         ws_cache: dict = {}
         self.sides = []
         lat = (2 * nx - 1, 2 * ny - 1)
@@ -958,8 +959,8 @@ class MatrixFreeOperator:
                 continue
             medium = above if side[0] < 0 else below
             kernels = {}
-            for dz in (-1, 0, 1):
-                if dz and side[-1] - side[0] < 1:
+            for dz in range(-stored_planes, stored_planes + 1):
+                if abs(dz) > side[-1] - side[0]:
                     continue
                 kh = np.zeros((na * 9, n_source * 9) + lat, dtype=complex)
                 for dx, dy in itertools.product(
@@ -984,7 +985,7 @@ class MatrixFreeOperator:
                     na * 9, n_source * 9, -1
                 )
             march = None
-            if side[-1] - side[0] >= 2:
+            if side[-1] - side[0] > stored_planes:
                 kx, ky, w = sap.whole_space_nodes(
                     2.0 * float(np.hypot(nx - 1, ny - 1)),
                     n_grid,
@@ -993,6 +994,7 @@ class MatrixFreeOperator:
                     medium,
                     band,
                     lp,
+                    qmax_h=16.0 / stored_planes,
                 )
                 march = sap.WholeSpaceMarch(
                     side,
@@ -1007,6 +1009,7 @@ class MatrixFreeOperator:
                     na,
                     eps,
                     cache=cache,
+                    min_gap=stored_planes + 1,
                 )
             self.sides.append((side, kernels, march))
 

@@ -322,7 +322,7 @@ class NodeProduct:
         n_test: int,
         q0h: float,
         window: isp.Window | None,
-        eps: float = 1e-13,
+        eps: float = 1e-11,
         chunk: int = 4096,
         cache: bool = True,
     ) -> None:
@@ -412,7 +412,7 @@ class TwoSidedProduct:
         n_test,
         q0h,
         window,
-        eps=1e-13,
+        eps=1e-11,
         chunk=4096,
         cache=True,
     ) -> None:
@@ -487,7 +487,7 @@ def apply_low_band(
     low_pass: isp.Window,
     n_source: int = 10,
     n_test: int = 4,
-    eps: float = 1e-13,
+    eps: float = 1e-11,
     chunk: int = 4096,
 ) -> dict:
     """D_low x for a lateral box of shape (nx, ny) cells: every source layer's cells (coefficients x_grids[z_s],
@@ -587,7 +587,7 @@ def apply_high_band(
     low_pass: isp.Window,
     n_source: int = 10,
     n_test: int = 4,
-    eps: float = 1e-13,
+    eps: float = 1e-11,
     chunk: int = 4096,
 ) -> dict:
     """D_high x for a lateral box of shape (nx, ny) cells, with the window's static parts: at the wavenumbers of a
@@ -694,7 +694,8 @@ class WholeSpaceMarch:
     """The whole-space coupling of one side's cells between planes at least two apart, by a march in depth at
     non-uniform lateral nodes: type-2 NUFFTs of each layer, the source factors, a downsweep and an upsweep of three
     mode amplitudes per node (alpha_i = p alpha_{i-1} + p^2 beta_{i-2}, and the mirror), the receiver factors,
-    type-1 NUFFTs onto each layer.  |p| <= 1 in every step.  Planes 0 and 1 apart are left to the stored kernels.
+    type-1 NUFFTs onto each layer.  |p| <= 1 in every step.  Planes fewer than ``min_gap`` apart are left to the
+    stored kernels (alpha_i = p alpha_{i-1} + p^g beta_{i-g}, g = min_gap).
 
     Args:
         layers: The side's layer indices (cells), contiguous (an empty layer has zero coefficients).
@@ -713,12 +714,14 @@ class WholeSpaceMarch:
         ref: ReferenceMedium,
         n_source: int = 10,
         n_test: int = 4,
-        eps: float = 1e-13,
+        eps: float = 1e-11,
         chunk: int = 4096,
         cache: bool = True,
+        min_gap: int = 2,
     ) -> None:
         self.layers = list(range(min(layers), max(layers) + 1))
         self.shape, self.n_source, self.n_test, self.eps = shape, n_source, n_test, eps
+        self.min_gap = min_gap
         self._args = (h, omega, ref, n_source, n_test)
         nx, ny = shape
         self.chunks = []
@@ -737,7 +740,8 @@ class WholeSpaceMarch:
         n_source, n_test, eps = self.n_source, self.n_test, self.eps
         n_l = len(self.layers)
         out = {z: np.zeros((nx, ny, n_test, 9), dtype=complex) for z in self.layers}
-        if n_l < 3:
+        g = self.min_gap
+        if n_l <= g:
             return out
         to_k = finufft.Plan(2, (nx, ny), n_trans=n_source * 9, eps=eps, isign=-1)
         to_grid = finufft.Plan(1, (nx, ny), n_trans=n_test * 9, eps=eps, isign=1)
@@ -758,17 +762,17 @@ class WholeSpaceMarch:
                     xh = (to_k.execute(grids[z]) * shift).T.reshape(-1, n_source, 9)
                     for s in (1, -1):
                         beta[s][i] = f.src_amp(s, xh)
-            p1, p2 = f.step, f.step**2
+            p1, pg = f.step, f.step**g
             down = np.zeros(
                 (n_l, p, 3), dtype=complex
             )  # from the planes at least two above
             up = np.zeros(
                 (n_l, p, 3), dtype=complex
             )  # from the planes at least two below
-            for i in range(2, n_l):
-                down[i] = p1 * down[i - 1] + p2 * beta[1][i - 2]
-            for i in range(n_l - 3, -1, -1):
-                up[i] = p1 * up[i + 1] + p2 * beta[-1][i + 2]
+            for i in range(g, n_l):
+                down[i] = p1 * down[i - 1] + pg * beta[1][i - g]
+            for i in range(n_l - 1 - g, -1, -1):
+                up[i] = p1 * up[i + 1] + pg * beta[-1][i + g]
             for i, z in enumerate(self.layers):
                 b = f.rec_out(1, down[i]) + f.rec_out(-1, up[i])
                 c = np.ascontiguousarray(
@@ -791,8 +795,8 @@ def whole_space_nodes(
     qmax_h: float = 16.0,
 ) -> tuple[NDArray, NDArray, NDArray]:
     """The whole-space march's nodes: the low band's polar quadrature (as D's, the medium's branch points) and the
-    periodic box's lattice above it to q h = qmax_h (between planes two apart the integrand falls as e^{-2 q h}:
-    ~1e-14 at 16)."""
+    periodic box's lattice above it to q h = qmax_h.  Between planes g apart the integrand falls as
+    e^{-2 (g - 1) q h}, ~1e-14 at q h = 16 / (g - 1): 16 for the march from g = 2, 8 from g = 3."""
     lo = low_band_nodes(reach, h, omega, ref, ref, band_qh, low_pass)
     hi = high_band_nodes(n_grid, h, qmax_h, band_qh, low_pass)
     return tuple(np.concatenate([a, b]) for a, b in zip(lo, hi, strict=True))
