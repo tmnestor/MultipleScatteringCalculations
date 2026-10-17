@@ -272,11 +272,24 @@ class MatrixFreeDownUp:
         op: ``MatrixFreeOperator`` (with ``cache=True``).
         e: (N, n_source, na, 9, 9), each cell's source expansion E.
         inner_tol: The planes' inner GMRES tolerance.
+        self_reflection: "exact", a plane's own reflection (its D with itself) in its system K_0, as ``DownUp``;
+            or "lagged", with the other reflections in R, so that K_0 is the plane's stored whole-space kernel and
+            its corrections (the static image's near field) and the inner products are lateral FFTs alone.
     """
 
     def __init__(
-        self, op, e: NDArray, inner_tol: float = 1e-3, inner_restart: int = 50
+        self,
+        op,
+        e: NDArray,
+        inner_tol: float = 1e-3,
+        inner_restart: int = 50,
+        self_reflection: str = "exact",
     ) -> None:
+        if self_reflection not in ("exact", "lagged"):
+            raise ValueError(
+                "MatrixFreeDownUp: self_reflection is 'exact' or 'lagged'."
+            )
+        self.self_reflection = self_reflection
         self.op, self.e, self.inner_tol, self.inner_restart = (
             op,
             e,
@@ -382,9 +395,10 @@ class MatrixFreeDownUp:
         )
 
     def _k0(self, z: int, g: NDArray) -> NDArray:
-        y = self._d_field(z, self._d_amps(z, g), self._side(z))
-        y = y + self._stored(z, {z: self._spec(g)})
-        return y + self._stencils(z, {z: g})
+        y = self._stored(z, {z: self._spec(g)}) + self._stencils(z, {z: g})
+        if self.self_reflection == "exact":
+            y = y + self._d_field(z, self._d_amps(z, g), self._side(z))
+        return y
 
     def _solve_plane(self, z: int, rhs: NDArray) -> NDArray:
         cells, n = self.cells[z], len(self.cells[z])
@@ -481,7 +495,12 @@ class MatrixFreeDownUp:
         refl = {}
         for z in layers:
             sd = self._side(z)
-            y = self._d_field(z, self._d_add(tot[sd], dn["d"][z], -1.0), sd)
+            others = (
+                self._d_add(tot[sd], dn["d"][z], -1.0)
+                if self.self_reflection == "exact"
+                else tot[sd]
+            )
+            y = self._d_field(z, others, sd)
             refl[z] = y + self._stencils(
                 z,
                 {
@@ -526,8 +545,9 @@ def solve_interface_fgmres(
     wave: str,
     p: int = 1,
     r: int = 0,
-    operator: LateralOperator | None = None,
+    operator=None,
     preconditioner: str = "downup",
+    self_reflection: str = "exact",
     tol: float = 1e-10,
     inner_tol: float = 1e-3,
     passes: int = 1,
@@ -536,6 +556,8 @@ def solve_interface_fgmres(
 ) -> tuple[InterfaceResult, dict]:
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
     (``preconditioner="downup"``) or by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``).
+    With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``), else
+    ``DownUp`` on ``LateralOperator(parts=True)``.
 
     Returns the result and the counts: ``outer`` (products with the whole operator), ``inner`` (products with a
     plane's own operator), ``planes`` (in-plane solves) and ``seconds``.
@@ -557,8 +579,14 @@ def solve_interface_fgmres(
         src = np.einsum("ncbij,nbj->nci", e, x).reshape(n, n_source * 9)
         return (np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)).ravel()
 
-    if preconditioner == "downup":
+    if preconditioner == "downup" and isinstance(op, LateralOperator):
         pre = DownUp(op, e, inner_tol=inner_tol, passes=passes)
+    elif preconditioner == "downup":
+        if passes != 1:
+            raise ValueError("solve_interface_fgmres: MatrixFreeDownUp makes one pass.")
+        pre = MatrixFreeDownUp(
+            op, e, inner_tol=inner_tol, self_reflection=self_reflection
+        )
     elif preconditioner == "jacobi":
         m_full = np.kron(op.m9, np.eye(9))
         inv = np.array(
