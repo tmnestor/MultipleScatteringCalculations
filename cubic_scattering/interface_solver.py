@@ -887,7 +887,14 @@ class MatrixFreeOperator:
         # D: the low band (non-periodic) and the high band (the period of interface_canonical)
         lp, band = couplings.low_pass(omega), couplings.band_qh
         kx, ky, w = sap.low_band_nodes(
-            2.0 * float(np.hypot(nx - 1, ny - 1)), h, omega, above, below, band, lp
+            2.0 * float(np.hypot(nx - 1, ny - 1)),
+            h,
+            omega,
+            above,
+            below,
+            band,
+            lp,
+            sap.TUNED_RULE,
         )
         self.low = sap.TwoSidedProduct(
             zu,
@@ -998,6 +1005,7 @@ class MatrixFreeOperator:
                     band,
                     lp,
                     qmax_h=16.0 / stored_planes,
+                    rule=sap.TUNED_RULE,
                 )
                 march = sap.WholeSpaceMarch(
                     side,
