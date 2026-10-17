@@ -22,6 +22,8 @@ for planes 0 and 1 apart): 50 cells 7.3e-13 again; 96 cells in six layers 3.6e-1
 q h = 8) and NUFFT eps 1e-11: 50 cells 8.3e-13; 96 cells 7.0e-13, matrix-free 22 s + 24.7 s, peak 4.2 GB.
 With the lattice nodes by FFT (17 October): 50 cells 6.3e-13, matrix-free 11 s + 4.0 s; 96 cells 6.3e-13,
 21 s + 9.3 s, peak 2.7 GB.
+NUFFT eps 1e-9 (the default since): 50 cells 4.9e-12, 12 s + 3.7 s; 96 cells 6.9e-12, 21 s + 9.6 s (boxes this small
+are the contractions' cost; the NUFFTs gain 1.5-1.8x at n = 12 ... 48).
 
 Run:  PYTHONPATH=. python scripts/gate_interface_matrix_free.py [box indices, default all]
 """

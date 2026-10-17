@@ -840,7 +840,9 @@ class MatrixFreeOperator:
 
     ``cache``: keep the plane-wave factors between products (each later product is then the NUFFTs and the
     contractions alone; ~23 kB per node for D with six layers, ~12 kB per node for the march), or recompute them in
-    each product (memory of the lateral kernels only).  Needs ``InterfaceCouplings(split=True)``.  The interface ``self_blocks`` (for the preconditioner) are the
+    each product (memory of the lateral kernels only).  ``eps``: the NUFFTs' tolerance, which now only the polar low-band
+    nodes use (the lattice nodes go by FFT, exactly): 1e-9 leaves the product ~1e-11 from the stored kernels', below
+    GMRES's 1e-10 and far below D1's 1e-8, and makes the NUFFTs ~1.4x faster than 1e-11.  Needs ``InterfaceCouplings(split=True)``.  The interface ``self_blocks`` (for the preconditioner) are the
     classes' own.
     """
 
@@ -850,7 +852,7 @@ class MatrixFreeOperator:
         omega: float,
         p: int = 1,
         r: int = 0,
-        eps: float = 1e-11,
+        eps: float = 1e-9,
         cache: bool = True,
         stored_planes: int = 2,
     ) -> None:
