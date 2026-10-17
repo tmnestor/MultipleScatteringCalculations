@@ -420,7 +420,15 @@ preconditioner of a flexible GMRES. Decided (17 October): split by direction; ea
   to 1.5e-12 (1/6) and 1.9e-11 (1/2) on 8 x 2 x 2, where the march acts. Its cost is the planes' own systems:
   with a plane's own reflection D in K_0 each inner product runs the plane-wave D over every wavenumber
   (~3.5 s), so one application costs ~8 full products. The option `self_reflection="lagged"` moves that D into R,
-  leaving K_0 the plane's stored whole-space kernel and corrections (lateral FFTs); being measured.
+  leaving K_0 the plane's stored whole-space kernel and corrections (lateral FFTs). Measured on 4 x 6 x 6: the
+  same outer counts as the exact K_0 (5/6/7 at 1/6, 6/8/9 at 1/2). Several passes: gated to 1.9e-11 (2 passes).
+- **Cost, matrix-free, 8 x 6 x 6 at 1/2** (one product 13.5 s). 30 %: block-Jacobi 16 outer, 221 s; DownUp
+  1 / 2 / 3 passes 9 / 6 / 5 outer, 388 / 429 / 490 s. 50 %: block-Jacobi 21 outer, 264 s; DownUp 12 / 8 / 6
+  outer, 476 / 565 / 563 s. A pass costs ~2 products: each plane's amplitudes (both sweeps), the transmitted and
+  reflected fields and the march fields each run one layer at a time over every wavenumber chunk, where a full
+  product shares one pass over the chunks among all layers. So the iteration count halves (and with three passes
+  no longer grows with the layers) but the time does not yet: the pass must cost well under a product. Next:
+  profile the pass, then a cheaper pass (coarser wavenumbers for the preconditioner, which need not be exact).
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
