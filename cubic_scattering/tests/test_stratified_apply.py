@@ -132,7 +132,8 @@ def test_high_band_at_the_box_wavenumbers_is_the_periodic_kernel():
     assert all(np.abs(got[z] - ref[z]).max() < 1e-10 * scale for z in layers)
 
 
-def test_whole_space_march_is_paper_2_between_planes_apart():
+@pytest.mark.parametrize(("gap", "qmax_h"), [(2, 16.0), (3, 8.0)])
+def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
     """The march in depth over the low band's nodes and the box's lattice reproduces Paper 2's blocks between
     planes two or more apart (planes 0 and 1 apart are left out), to D1: the lattice's images 40 cells away cost
     ~1e-10 at this band."""
@@ -140,7 +141,7 @@ def test_whole_space_march_is_paper_2_between_planes_apart():
 
     from cubic_scattering.graded_voxel.blocks import coupling_block
 
-    shape, layers = (2, 2), [-4, -3, -2, -1]
+    shape, layers = (2, 2), [-5, -4, -3, -2, -1]
     rng = np.random.default_rng(5)
     x = {
         z: rng.standard_normal(shape + (10, 9))
@@ -148,12 +149,21 @@ def test_whole_space_march_is_paper_2_between_planes_apart():
         for z in layers
     }
     kx, ky, w = sa.whole_space_nodes(
-        2.0 * np.hypot(1, 1), next_fast_len(2 + 40), H, OMEGA, A, 2.5, LOW
+        2.0 * np.hypot(1, 1),
+        next_fast_len(2 + 40),
+        H,
+        OMEGA,
+        A,
+        2.5,
+        LOW,
+        qmax_h=qmax_h,
     )
-    got = sa.WholeSpaceMarch(layers, shape, kx, ky, w, H, OMEGA, A).apply(x)
+    got = sa.WholeSpaceMarch(layers, shape, kx, ky, w, H, OMEGA, A, min_gap=gap).apply(
+        x
+    )
     ref = {z: np.zeros(shape + (4, 9), dtype=complex) for z in layers}
     for zr, zs in itertools.product(layers, repeat=2):
-        if abs(zr - zs) < 2:
+        if abs(zr - zs) < gap:
             continue
         for (ir, jr), (i_s, j_s) in itertools.product(
             itertools.product(range(2), range(2)), repeat=2
