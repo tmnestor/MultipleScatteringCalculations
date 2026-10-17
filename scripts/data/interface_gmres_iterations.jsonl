@@ -13,3 +13,12 @@
 {"layers": 4, "n": 12, "cells": 576, "freq": "1/6", "contrast": 0.1, "products": 8, "converged": true, "solve_s": 1.5552327632904053, "operator_s": 120.74346542358398, "setup_s": 1328.0535793304443}
 {"layers": 4, "n": 12, "cells": 576, "freq": "1/6", "contrast": 0.3, "products": 11, "converged": true, "solve_s": 1.8519103527069092, "operator_s": 120.74346542358398, "setup_s": 1328.0535793304443}
 {"layers": 4, "n": 12, "cells": 576, "freq": "1/6", "contrast": 0.5, "products": 14, "converged": true, "solve_s": 2.1439032554626465, "operator_s": 120.74346542358398, "setup_s": 1328.0535793304443}
+{"layers": 4, "n": 12, "cells": 576, "freq": "1/2", "contrast": 0.1, "products": 11, "converged": true, "solve_s": 1.999466896057129, "operator_s": 138.91616821289062, "setup_s": 1282.9572222232819}
+{"layers": 4, "n": 12, "cells": 576, "freq": "1/2", "contrast": 0.3, "products": 17, "converged": true, "solve_s": 3.044764757156372, "operator_s": 138.91616821289062, "setup_s": 1282.9572222232819}
+{"layers": 4, "n": 12, "cells": 576, "freq": "1/2", "contrast": 0.5, "products": 24, "converged": true, "solve_s": 3.521850109100342, "operator_s": 138.91616821289062, "setup_s": 1282.9572222232819}
+{"layers": 2, "n": 24, "cells": 1152, "freq": "1/6", "contrast": 0.1, "products": 8, "converged": true, "solve_s": 3.1294968128204346, "operator_s": 528.2723999023438, "setup_s": 664.7727115154266}
+{"layers": 2, "n": 24, "cells": 1152, "freq": "1/6", "contrast": 0.3, "products": 11, "converged": true, "solve_s": 3.8830413818359375, "operator_s": 528.2723999023438, "setup_s": 664.7727115154266}
+{"layers": 2, "n": 24, "cells": 1152, "freq": "1/6", "contrast": 0.5, "products": 14, "converged": true, "solve_s": 4.43645453453064, "operator_s": 528.2723999023438, "setup_s": 664.7727115154266}
+{"layers": 2, "n": 24, "cells": 1152, "freq": "1/2", "contrast": 0.1, "products": 10, "converged": true, "solve_s": 3.7310047149658203, "operator_s": 400.96058654785156, "setup_s": 664.7727115154266}
+{"layers": 2, "n": 24, "cells": 1152, "freq": "1/2", "contrast": 0.3, "products": 16, "converged": true, "solve_s": 5.503824234008789, "operator_s": 400.96058654785156, "setup_s": 664.7727115154266}
+{"layers": 2, "n": 24, "cells": 1152, "freq": "1/2", "contrast": 0.5, "products": 22, "converged": true, "solve_s": 7.200085878372192, "operator_s": 400.96058654785156, "setup_s": 664.7727115154266}
