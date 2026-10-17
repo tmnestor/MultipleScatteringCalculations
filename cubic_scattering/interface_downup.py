@@ -275,6 +275,7 @@ class MatrixFreeDownUp:
         self_reflection: "exact", a plane's own reflection (its D with itself) in its system K_0, as ``DownUp``;
             or "lagged", with the other reflections in R, so that K_0 is the plane's stored whole-space kernel and
             its corrections (the static image's near field) and the inner products are lateral FFTs alone.
+        passes: DownUp passes per application (the later ones lag R x + U x of the one before, as ``DownUp``).
     """
 
     def __init__(
@@ -284,7 +285,9 @@ class MatrixFreeDownUp:
         inner_tol: float = 1e-3,
         inner_restart: int = 50,
         self_reflection: str = "exact",
+        passes: int = 1,
     ) -> None:
+        self.passes = passes
         if self_reflection not in ("exact", "lagged"):
             raise ValueError(
                 "MatrixFreeDownUp: self_reflection is 'exact' or 'lagged'."
@@ -452,87 +455,113 @@ class MatrixFreeDownUp:
                 break
         return march.field(z, state[z], sign)
 
-    # -- one application -------------------------------------------------------------------------------------
+    # -- the passes -----------------------------------------------------------------------------------------
 
-    def __call__(self, v: NDArray) -> NDArray:
-        op, layers = self.op, self.layers
-        full = v.reshape(len(self.e), op.na, 9)
-        b = {z: full[c] for z, c in self.cells.items()}
+    def _state(self, z: int, x: NDArray, store: dict) -> None:
+        """A solved plane's grid, spectrum, D amplitudes and march amplitudes, into ``store``."""
+        g = self._grid(z, x)
+        store["grid"][z], store["spec"][z] = g, self._spec(g)
+        store["d"][z] = self._d_amps(z, g)
+        march = self.ws[z][2]
+        if march is not None:
+            store["betas"][z] = march.betas(z, g)
 
-        def solved_state(z, x, store):
-            g = self._grid(z, x)
-            store["grid"][z], store["spec"][z] = g, self._spec(g)
-            store["d"][z] = self._d_amps(z, g)
-            march = self.ws[z][2]
-            if march is not None:
-                store["betas"][z] = march.betas(z, g)
-
-        # down: L from the planes above, solved in this sweep
-        dn = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
-        march_state: dict = {}
-        l_field, tot_a = {}, None
-        for z in layers:
-            side = self.ws[z][0]
-            above = [zs for zs in dn["grid"] if zs in side]
-            y = self._stored(z, {zs: dn["spec"][zs] for zs in above})
-            y = y + self._march_field(z, dn["betas"], march_state, 1)
-            if z >= 0 and tot_a is not None:
-                y = y + self._d_field(z, tot_a, "A")
-                y = y + self._stencils(
-                    z, {zs: dn["grid"][zs] for zs in dn["grid"] if zs < 0}
-                )
-            l_field[z] = y
-            x = self._solve_plane(
-                z, b[z] + (self._gather(z, y) if not np.isscalar(y) else 0.0)
-            )
-            solved_state(z, x, dn)
-            if z < 0:
-                tot_a = self._d_add(tot_a, dn["d"][z])
-        # the backscatter, lagged: each side's reflections from its other planes
+    def _reflections(self, st: dict) -> dict:
+        """R x for a whole vector's states: each side's reflections from its other planes (with
+        ``self_reflection="lagged"``, from all its planes) and the corrections of its other planes."""
         tot = {"A": None, "B": None}
-        for z in layers:
-            tot[self._side(z)] = self._d_add(tot[self._side(z)], dn["d"][z])
+        for z in self.layers:
+            tot[self._side(z)] = self._d_add(tot[self._side(z)], st["d"][z])
         refl = {}
-        for z in layers:
+        for z in self.layers:
             sd = self._side(z)
             others = (
-                self._d_add(tot[sd], dn["d"][z], -1.0)
+                self._d_add(tot[sd], st["d"][z], -1.0)
                 if self.self_reflection == "exact"
                 else tot[sd]
             )
-            y = self._d_field(z, others, sd)
-            refl[z] = y + self._stencils(
+            refl[z] = self._d_field(z, others, sd) + self._stencils(
                 z,
                 {
                     zs: g
-                    for zs, g in dn["grid"].items()
+                    for zs, g in st["grid"].items()
                     if zs != z and self._side(zs) == sd
                 },
             )
-        # up: U from the planes below, solved in this sweep
-        up = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
-        march_state = {}
-        out = np.zeros_like(full)
-        tot_b = None
-        for z in reversed(layers):
-            side = self.ws[z][0]
-            below = [zs for zs in up["grid"] if zs in side]
-            y = (
-                l_field[z]
-                + refl[z]
-                + self._stored(z, {zs: up["spec"][zs] for zs in below})
-            )
-            y = y + self._march_field(z, up["betas"], march_state, -1)
-            if z < 0 and tot_b is not None:
+        return refl
+
+    def _from_below(self, z: int, st: dict, march_state: dict) -> NDArray:
+        """U x at z from the planes below in ``st``: the side's stored kernels and march, and for z in A the
+        transmission from B's summed amplitudes and the corrections of B's planes."""
+        side = self.ws[z][0]
+        y = self._stored(
+            z, {zs: st["spec"][zs] for zs in st["grid"] if zs in side and zs > z}
+        )
+        y = y + self._march_field(z, st["betas"], march_state, -1)
+        if z < 0:
+            b_planes = [zs for zs in st["grid"] if zs >= 0]
+            if b_planes:
+                tot_b = None
+                for zs in b_planes:
+                    tot_b = self._d_add(tot_b, st["d"][zs])
                 y = y + self._d_field(z, tot_b, "B")
-                y = y + self._stencils(
-                    z, {zs: up["grid"][zs] for zs in up["grid"] if zs >= 0}
-                )
-            x = self._solve_plane(z, b[z] + self._gather(z, y))
-            out[self.cells[z]] = x
-            solved_state(z, x, up)
-            if z >= 0:
-                tot_b = self._d_add(tot_b, up["d"][z])
+                y = y + self._stencils(z, {zs: st["grid"][zs] for zs in b_planes})
+        return y
+
+    def _from_above(self, z: int, st: dict, march_state: dict) -> NDArray:
+        """L x at z from the planes above in ``st`` (the mirror of ``_from_below``)."""
+        side = self.ws[z][0]
+        y = self._stored(
+            z, {zs: st["spec"][zs] for zs in st["grid"] if zs in side and zs < z}
+        )
+        y = y + self._march_field(z, st["betas"], march_state, 1)
+        if z >= 0:
+            a_planes = [zs for zs in st["grid"] if zs < 0]
+            if a_planes:
+                tot_a = None
+                for zs in a_planes:
+                    tot_a = self._d_add(tot_a, st["d"][zs])
+                y = y + self._d_field(z, tot_a, "A")
+                y = y + self._stencils(z, {zs: st["grid"][zs] for zs in a_planes})
+        return y
+
+    def one_pass(self, b: dict, prev: dict | None) -> tuple[dict, dict]:
+        """One DownUp pass from the states of x (None: zero).  Returns x'' by plane and its states."""
+        layers = self.layers
+        lag: dict = {}
+        if prev is not None:  # the down sweep's lagged part, R x + U x
+            refl, ms = self._reflections(prev), {}
+            for z in reversed(layers):
+                lag[z] = refl[z] + self._from_below(z, prev, ms)
+        # down: L from the planes above, solved in this sweep
+        dn = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
+        ms, l_field = {}, {}
+        for z in layers:
+            y = self._from_above(z, dn, ms)
+            l_field[z] = y
+            if z in lag:
+                y = y + lag[z]
+            rhs = b[z] + (self._gather(z, y) if not np.isscalar(y) else 0.0)
+            self._state(z, self._solve_plane(z, rhs), dn)
+        # the backscatter, lagged from the down sweep; up: U from the planes below, solved in this sweep
+        refl = self._reflections(dn)
+        up = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
+        ms, out = {}, {}
+        for z in reversed(layers):
+            y = l_field[z] + refl[z] + self._from_below(z, up, ms)
+            out[z] = self._solve_plane(z, b[z] + self._gather(z, y))
+            self._state(z, out[z], up)
+        return out, up
+
+    def __call__(self, v: NDArray) -> NDArray:
+        full = v.reshape(len(self.e), self.op.na, 9)
+        b = {z: full[c] for z, c in self.cells.items()}
+        st = None
+        for _ in range(self.passes):
+            x, st = self.one_pass(b, st)
+        out = np.zeros_like(full)
+        for z, c in self.cells.items():
+            out[c] = x[z]
         return out.ravel()
 
 
@@ -582,10 +611,8 @@ def solve_interface_fgmres(
     if preconditioner == "downup" and isinstance(op, LateralOperator):
         pre = DownUp(op, e, inner_tol=inner_tol, passes=passes)
     elif preconditioner == "downup":
-        if passes != 1:
-            raise ValueError("solve_interface_fgmres: MatrixFreeDownUp makes one pass.")
         pre = MatrixFreeDownUp(
-            op, e, inner_tol=inner_tol, self_reflection=self_reflection
+            op, e, inner_tol=inner_tol, self_reflection=self_reflection, passes=passes
         )
     elif preconditioner == "jacobi":
         m_full = np.kron(op.m9, np.eye(9))
