@@ -688,7 +688,8 @@ def solve_interface_fgmres(
     max_iter: int = 1000,
 ) -> tuple[InterfaceResult, dict]:
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
-    (``preconditioner="downup"``) or by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``).
+    (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``) or not at
+    all (``"none"``, the benchmark).
     With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
     ``DownUp`` on ``LateralOperator(parts=True)``.
 
@@ -740,6 +741,11 @@ def solve_interface_fgmres(
 
         def pre(v):
             return np.einsum("nij,nj->ni", inv, v.reshape(n, rows)).ravel()
+    elif preconditioner == "none":  # the benchmark: no preconditioning at all
+
+        def pre(v):
+            return v
+
     else:
         raise ValueError(
             f"solve_interface_fgmres: unknown preconditioner {preconditioner!r}."
