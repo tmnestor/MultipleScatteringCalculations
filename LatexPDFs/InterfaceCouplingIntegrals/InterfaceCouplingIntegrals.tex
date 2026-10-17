@@ -1401,6 +1401,45 @@ which the product fixes; so the bound trades the cost of a pass, then independen
 count. The coarsenings above left the count unchanged, which suggests the room to do so; whether a bound at a reach
 of $16$ cells holds it on wider boxes is the measurement that decides the march for wide, shallow targets.
 
+\paragraph{Storage against time, over frequencies and sources.} The matrix-free product exists to save memory,
+and it pays in time. A study over $N_f$ frequencies with $N_s$ right-hand sides each (incidence angles or
+sources) costs
+\begin{equation}\label{eq:costmodel}
+  T=S+N_f\bigl(B+N_s\,m\,t\bigr),
+\end{equation}
+with $S$ the frequency-independent set-up, $B$ the operator's build for a frequency, $m$ the outer products of a
+solve and $t$ the time of one (plus the preconditioner's applications). Only $S$ is amortised over the
+frequencies; $B$ is paid at each frequency, and $m\,t$ for each source. The stored kernels and the matrix-free
+operator divide $B$ and $t$ oppositely (Table~\ref{tab:storagetime}): stored kernels take longer to build, every
+pair of planes transformed, but a product costs hundredths of a second; the matrix-free operator builds in a
+fraction of the time, but a product costs seconds, a few hundred times more. With $m\approx10$ the two are even at
+about one source per frequency, $N_s^\ast=(B_{\rm s}-B_{\rm mf})/(m\,(t_{\rm mf}-t_{\rm s}))\approx1$ to $2$ on
+these boxes; with more sources, as reflection studies have, the stored kernels win by a factor that grows with
+$N_s$. The matrix-free operator therefore does not make a frequency faster wherever the stored kernels fit; it is
+what makes a box fit at all. The stored kernels take $L^2(2n-1)^2$ blocks of $36\times90$ at degree one,
+$16L^2(2n-1)^2\cdot3240$ bytes: $0.4$\,GB for $8\times6\times6$ cells, $1.8$\,GB for $8\times12\times12$,
+$6.4$\,GB for $32\times6\times6$ and $54$\,GB for $64\times64\times8$. The matrix-free operator's memory does not
+grow with the number of layers; what it keeps is the whole-space kernels of touching planes, $5(2n-1)^2$ blocks per
+side, $8.4$\,GB for $64\times64$ cells, and the plane-wave factors. This is also
+why the preconditioner matters most here: each outer product it saves is worth seconds, not hundredths, at
+every frequency and for every source.
+
+\begin{table}[htbp]
+\centering
+\caption{The two operators from the same set-up at $\omega h/\beta_A=1/6$: the set-up $S$ (once), the build $B$
+for a frequency and the time $t$ of one product, stored kernels against matrix-free.}
+\label{tab:storagetime}
+\begin{tabular}{lrcc}
+\toprule
+box & $S$ & $B$: stored / matrix-free & $t$: stored / matrix-free \\
+\midrule
+$2\times5\times5$ & $243$\,s & $42$\,s / $11$\,s & $<0.01$\,s / $2.6$\,s \\
+$6\times4\times4$ & $412$\,s & $94$\,s / $20$\,s & $0.03$\,s / $6.9$\,s \\
+$8\times3\times3$ & $247$\,s & $167$\,s / $35$\,s & $0.02$\,s / $8.2$\,s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \FloatBarrier
 \section{Discussion}\label{sec:discussion}
 
