@@ -371,8 +371,36 @@ Each step has a gate. Profiling and measurement come before any rewrite.
   The gate holds: at 1/6 the count is flat in N; at 1/2 it grows by 3 at 50 % over 16× the cells laterally
   (72 → 1152). Depth costs more than width: doubling the layers (288 → 576) adds more products at 1/2 (+5 at 50 %) than
   quadrupling the lateral area (+3). All converged; the 1152-cell run peaked at 3.1 GB (stored-kernel operator).
-  So the layer-wise preconditioner is not needed at these sizes; it is worth trying only if S7's 8 layers at
-  1/2 and 50 % go beyond ~40 products.
+  This is the baseline. The layer recursion as the preconditioner is the point of the approach, so it is built
+  and measured against it (S6b), not held in reserve.
+
+### S6b. The layer recursion as the preconditioner (DownUp)
+
+The thesis's two-way march (Eqs. 5.60-5.62, `phasescreen.f`'s `DownUp`) for the Legendre cells, as the
+preconditioner of a flexible GMRES. Decided (17 October): split by direction; each plane solved by an inner GMRES.
+
+- **The splitting.** K = K_0 + L + U + R, by depth plane:
+  - K_0, a plane with itself: the whole-space self plane, the interface blocks (reflection) and corrections of
+    the plane with itself;
+  - L, from planes above: the whole-space coupling (stored kernels for touching planes, the march beyond) and
+    the transmission A -> B (interface blocks of opposite sides, source in A);
+  - U, from planes below: the mirror (whole-space from below, transmission B -> A);
+  - R, the reflections between different planes of one side (interface blocks, D and corrections, same side,
+    z_r != z_s): the backscatter.
+- **One application** to b, from zero: a down sweep, plane by plane from the top, x'_i = A_i^-1 (b_i + sum_{j<i}
+  L_ij x'_j), with A_i = M - K_0,ii E the plane's own system; then the backscatter r = R x' (lagged); then an
+  up sweep from the bottom, x''_i = A_i^-1 (b_i + r_i + sum_{j<i} L_ij x'_j + sum_{j>i} U_ij x''_j). Forward
+  scattering is exact within each sweep, backscatter is lagged once. Optionally several DownUp passes.
+- **The planes' solves.** Inner GMRES on A_i (lateral FFT products of the plane, block-Jacobi), to a loose
+  tolerance; the outer solve is FGMRES (right preconditioning, restarted), since the preconditioner varies.
+- **Two implementations.** (1) On the stored kernels (`LateralOperator` keeping the whole-space and interface
+  kernels apart): L, U, R per pair of planes, O(L^2) per application; it answers the question, how many outer
+  iterations, and at what total cost. (2) On the recursions (`MatrixFreeOperator`): L and U through the
+  march's amplitudes and the transmitted modes in one pass down and one up, R through the reflected modes from
+  the down sweep's amplitudes, O(L) per application; gated against (1) to ~1e-10.
+- **Gate:** against block-Jacobi on the S6 boxes and on boxes with more planes (2 ... 8 layers): outer
+  iterations, in-plane products and time to 1e-10. The march preconditioner should make the outer count
+  nearly independent of the number of layers, where block-Jacobi's grows (+5 from two to four layers at 1/2).
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
