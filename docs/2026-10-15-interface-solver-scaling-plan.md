@@ -448,6 +448,10 @@ preconditioner of a flexible GMRES. Decided (17 October): split by direction; ea
   An application now costs ~1/4 of a product: DownUp is 25-28 % faster than block-Jacobi on eight layers, and
   the margin should grow with the layers, where block-Jacobi's count grows. With D's low band alone three passes
   give 8 outer, not the 6 of the full D: its high band matters to the later passes.
+- **Sixteen layers** (16 x 6 x 6 at 1/2, one product 25.2 s): block-Jacobi 17 / 24 outer, 404 / 542 s (30 / 50 %);
+  DownUp (`COARSE`) one pass 10 / 14 outer, 294 / 414 s; three passes 7 / 8 outer, 303 / 337 s. With three passes
+  the outer count at 50 % is 8 on eight and on sixteen layers, block-Jacobi's 21 and 24: the saving in time grows
+  with the layers (29 % on eight, 38 % on sixteen).
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
