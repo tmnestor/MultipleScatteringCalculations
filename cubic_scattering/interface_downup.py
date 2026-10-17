@@ -30,6 +30,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse.linalg import LinearOperator, gmres
 
+from . import stratified_apply as sap
 from .effective_contrasts import MaterialContrast
 from .graded_voxel.basis import source_expansion
 from .interface_solver import (
@@ -251,6 +252,268 @@ class DownUp:
         out = np.zeros_like(full)
         for z, c in self.cells.items():
             out[c] = x[z]
+        return out.ravel()
+
+
+class MatrixFreeDownUp:
+    """The two-way march preconditioner on the recursions: the splitting of ``DownUp`` applied by
+    ``MatrixFreeOperator``'s pieces, O(L) per pass.
+
+    - L and U, the whole-space part: the stored kernels for touching planes (within ``stored_planes``) from the
+      planes already solved in the sweep, and the march beyond, alpha_i = p alpha_{i-1} + p^g beta_{i-g} (down)
+      and its mirror (up), from their amplitudes.
+    - L and U, the transmission: the summed mode amplitudes of the side solved first (A in the down sweep, B in
+      the up sweep) onto each plane of the other, and the corrections of opposite sides.
+    - R, the reflections: each side's summed amplitudes less the receiver plane's own, from the down sweep, and
+      the corrections of the side's other planes.
+    - K_0: the plane's own amplitudes onto itself, its stored whole-space kernel and its corrections.
+
+    Args:
+        op: ``MatrixFreeOperator`` (with ``cache=True``).
+        e: (N, n_source, na, 9, 9), each cell's source expansion E.
+        inner_tol: The planes' inner GMRES tolerance.
+    """
+
+    def __init__(
+        self, op, e: NDArray, inner_tol: float = 1e-3, inner_restart: int = 50
+    ) -> None:
+        self.op, self.e, self.inner_tol, self.inner_restart = (
+            op,
+            e,
+            inner_tol,
+            inner_restart,
+        )
+        self.layers = list(op.layers)
+        self.cells = {z: op.by_layer[z] for z in self.layers}
+        nx, ny = op.shape
+        self.lat = (2 * nx - 1, 2 * ny - 1)
+        self.rows = op.na * 9
+        self.ws = {
+            z: (side, kern, march) for side, kern, march in op.sides for z in side
+        }
+        self.products = (op.low, op.high)
+        m_full = np.kron(op.m9, np.eye(9))
+        self.jacobi = np.array(
+            [
+                np.linalg.inv(
+                    m_full
+                    - np.einsum(
+                        "acij,cbjk->aibk", op.self_blocks[op.grid.idx[m, 0]], e[m]
+                    ).reshape(self.rows, self.rows)
+                )
+                for m in range(len(e))
+            ]
+        )
+        self.inner_products = 0
+        self.inner_solves = 0
+
+    # -- the pieces ------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def _side(z: int) -> str:
+        return "A" if z < 0 else "B"
+
+    def _grid(self, z: int, x: NDArray) -> NDArray:
+        """The plane's E x on the lateral box, (nx, ny, n_source, 9)."""
+        op, cells = self.op, self.cells[z]
+        g = np.zeros(op.shape + (op.n_source, 9), dtype=complex)
+        g[op.pos[cells, 0], op.pos[cells, 1]] = np.einsum(
+            "ncbij,nbj->nci", self.e[cells], x
+        )
+        return g
+
+    def _gather(self, z: int, y: NDArray) -> NDArray:
+        cells = self.cells[z]
+        return y[self.op.pos[cells, 0], self.op.pos[cells, 1]]
+
+    def _spec(self, g: NDArray) -> NDArray:
+        nx, ny = self.op.shape
+        return np.fft.fft2(
+            np.pad(
+                g.reshape(nx, ny, -1).transpose(2, 0, 1),
+                ((0, 0), (0, nx - 1), (0, ny - 1)),
+            ),
+            axes=(1, 2),
+        ).reshape(g.shape[2] * 9, -1)
+
+    def _stored(self, zr: int, sources: dict) -> NDArray:
+        """The stored whole-space kernels onto zr from the planes in ``sources`` ({z_s: spectrum}), (nx, ny, na, 9)."""
+        op = self.op
+        nx, ny = op.shape
+        side, kernels, _ = self.ws[zr]
+        acc = None
+        for zs, spec in sources.items():
+            dz = zr - zs
+            if dz in kernels and zs in side:
+                t = np.einsum("rcf,cf->rf", kernels[dz], spec)
+                acc = t if acc is None else acc + t
+        if acc is None:
+            return 0.0
+        y = np.fft.ifft2(acc.reshape((self.rows,) + self.lat), axes=(1, 2))
+        return y[:, :nx, :ny].transpose(1, 2, 0).reshape(nx, ny, op.na, 9)
+
+    def _stencils(self, zr: int, sources: dict) -> NDArray:
+        """The corrections onto zr from the planes in ``sources`` ({z_s: grid}), (nx, ny, na, 9)."""
+        op = self.op
+        nx, ny = op.shape
+        y = np.zeros((nx, ny, op.na, 9), dtype=complex)
+        for zs, x in sources.items():
+            for dx, dy, blk in op.stencils.get((zr, zs), ()):
+                rx = slice(max(0, dx), min(nx, nx + dx))
+                ry = slice(max(0, dy), min(ny, ny + dy))
+                sx = slice(max(0, -dx), min(nx, nx - dx))
+                sy = slice(max(0, -dy), min(ny, ny - dy))
+                y[rx, ry] += np.einsum("acij,xycj->xyai", blk, x[sx, sy])
+        return y
+
+    def _d_amps(self, z: int, g: NDArray) -> list:
+        return [p.amplitudes(2 * z + 1, g) for p in self.products]
+
+    @staticmethod
+    def _d_add(a: list | None, b: list, sign: float = 1.0) -> list:
+        if a is None:
+            return [sap.add_amplitudes(None, x, sign) for x in b]
+        return [sap.add_amplitudes(x, y, sign) for x, y in zip(a, b, strict=True)]
+
+    def _d_field(self, zr: int, amps: list, source_side: str) -> NDArray:
+        return sum(
+            p.fields(2 * zr + 1, a, source_side)
+            for p, a in zip(self.products, amps, strict=True)
+        )
+
+    def _k0(self, z: int, g: NDArray) -> NDArray:
+        y = self._d_field(z, self._d_amps(z, g), self._side(z))
+        y = y + self._stored(z, {z: self._spec(g)})
+        return y + self._stencils(z, {z: g})
+
+    def _solve_plane(self, z: int, rhs: NDArray) -> NDArray:
+        cells, n = self.cells[z], len(self.cells[z])
+        na, rows, m9 = self.op.na, self.rows, self.op.m9
+        pre = self.jacobi[cells]
+
+        def matvec(v):
+            self.inner_products += 1
+            x = v.reshape(n, na, 9)
+            ky = self._gather(z, self._k0(z, self._grid(z, x)))
+            return (np.einsum("ab,nbi->nai", m9, x) - ky).ravel()
+
+        def jac(v):
+            return np.einsum("nij,nj->ni", pre, v.reshape(n, rows)).ravel()
+
+        b = rhs.ravel()
+        sol, _ = gmres(
+            LinearOperator((b.size, b.size), matvec=matvec, dtype=complex),
+            b,
+            x0=jac(b),
+            M=LinearOperator((b.size, b.size), matvec=jac, dtype=complex),
+            rtol=self.inner_tol,
+            atol=0.0,
+            restart=self.inner_restart,
+            maxiter=20,
+        )
+        self.inner_solves += 1
+        return sol.reshape(n, na, 9)
+
+    def _march_field(self, z: int, betas: dict, state: dict, sign: int) -> NDArray:
+        """The march's field at z from the planes at least g away on the side the sweep came from: the recursion
+        alpha_i = p alpha_{i -+ 1} + p^g beta_{i -+ g}, advanced over the side's contiguous layers ({z: amps})."""
+        march = self.ws[z][2]
+        if march is None:
+            return 0.0
+        state = state.setdefault(id(march), {})  # each side its own recursion
+        g, steps = march.min_gap, march.steps()
+        lay = march.layers if sign == 1 else march.layers[::-1]
+        for zz in lay:
+            if zz in state:
+                continue
+            prev, src = zz - sign, zz - sign * g
+            amps = []
+            for c, p in enumerate(steps):
+                a = state[prev][c] * p if prev in state else 0.0
+                if src in betas and src in march.layers:  # the march stays on its side
+                    a = a + p**g * betas[src][c][sign]
+                amps.append(np.zeros_like(p) + a)
+            state[zz] = amps
+            if zz == z:
+                break
+        return march.field(z, state[z], sign)
+
+    # -- one application -------------------------------------------------------------------------------------
+
+    def __call__(self, v: NDArray) -> NDArray:
+        op, layers = self.op, self.layers
+        full = v.reshape(len(self.e), op.na, 9)
+        b = {z: full[c] for z, c in self.cells.items()}
+
+        def solved_state(z, x, store):
+            g = self._grid(z, x)
+            store["grid"][z], store["spec"][z] = g, self._spec(g)
+            store["d"][z] = self._d_amps(z, g)
+            march = self.ws[z][2]
+            if march is not None:
+                store["betas"][z] = march.betas(z, g)
+
+        # down: L from the planes above, solved in this sweep
+        dn = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
+        march_state: dict = {}
+        l_field, tot_a = {}, None
+        for z in layers:
+            side = self.ws[z][0]
+            above = [zs for zs in dn["grid"] if zs in side]
+            y = self._stored(z, {zs: dn["spec"][zs] for zs in above})
+            y = y + self._march_field(z, dn["betas"], march_state, 1)
+            if z >= 0 and tot_a is not None:
+                y = y + self._d_field(z, tot_a, "A")
+                y = y + self._stencils(
+                    z, {zs: dn["grid"][zs] for zs in dn["grid"] if zs < 0}
+                )
+            l_field[z] = y
+            x = self._solve_plane(
+                z, b[z] + (self._gather(z, y) if not np.isscalar(y) else 0.0)
+            )
+            solved_state(z, x, dn)
+            if z < 0:
+                tot_a = self._d_add(tot_a, dn["d"][z])
+        # the backscatter, lagged: each side's reflections from its other planes
+        tot = {"A": None, "B": None}
+        for z in layers:
+            tot[self._side(z)] = self._d_add(tot[self._side(z)], dn["d"][z])
+        refl = {}
+        for z in layers:
+            sd = self._side(z)
+            y = self._d_field(z, self._d_add(tot[sd], dn["d"][z], -1.0), sd)
+            refl[z] = y + self._stencils(
+                z,
+                {
+                    zs: g
+                    for zs, g in dn["grid"].items()
+                    if zs != z and self._side(zs) == sd
+                },
+            )
+        # up: U from the planes below, solved in this sweep
+        up = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
+        march_state = {}
+        out = np.zeros_like(full)
+        tot_b = None
+        for z in reversed(layers):
+            side = self.ws[z][0]
+            below = [zs for zs in up["grid"] if zs in side]
+            y = (
+                l_field[z]
+                + refl[z]
+                + self._stored(z, {zs: up["spec"][zs] for zs in below})
+            )
+            y = y + self._march_field(z, up["betas"], march_state, -1)
+            if z < 0 and tot_b is not None:
+                y = y + self._d_field(z, tot_b, "B")
+                y = y + self._stencils(
+                    z, {zs: up["grid"][zs] for zs in up["grid"] if zs >= 0}
+                )
+            x = self._solve_plane(z, b[z] + self._gather(z, y))
+            out[self.cells[z]] = x
+            solved_state(z, x, up)
+            if z >= 0:
+                tot_b = self._d_add(tot_b, up["d"][z])
         return out.ravel()
 
 

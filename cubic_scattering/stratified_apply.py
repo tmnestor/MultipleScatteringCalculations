@@ -477,6 +477,64 @@ class NodeProduct:
             tr.finish(zr, out[zr])
         return {zr: o.reshape(nx, ny, n_test, 9) for zr, o in out.items()}
 
+    # -- one layer at a time (the two-way march, ``interface_downup``) -----------------------------------------
+
+    def _transforms(self) -> "_Transforms":
+        """The transforms for a one-layer call: the NUFFT plans made once and kept, the lattice caches emptied."""
+        if getattr(self, "_tr", None) is None:
+            self._tr = _Transforms(
+                self.shape, self.n_source * 9, self.n_test * 9, self.eps, self.n_grid
+            )
+        self._tr.spec.clear()
+        self._tr.fold.clear()
+        return self._tr
+
+    def amplitudes(self, zs: int, grid: NDArray) -> list:
+        """One source layer's mode amplitudes, per chunk (amp (P, 3), {key: static (P, n_beta, 9)}): linear in the
+        source, so the amplitudes of any set of layers are the sums of theirs (``add_amplitudes``)."""
+        nx, ny = self.shape
+        g = np.ascontiguousarray(grid.reshape(nx, ny, -1).transpose(2, 0, 1))
+        tr = self._transforms()
+        out = []
+        for ch, f in zip(self.chunks, self.factors, strict=True):
+            if f is None:
+                f = self._factors(ch.qx, ch.qy)
+            tr.chunk(ch)
+            y = f.by_exponent(tr.to_nodes(zs, g).reshape(-1, self.n_source, 9))
+            out.append(
+                (f.src_amp(zs, y), {k: f.stat_src_amp(k, zs, y) for k in f.mid_stat})
+            )
+        return out
+
+    def fields(self, zr: int, amps: list) -> NDArray:
+        """A receiver layer's coefficients from amplitudes (``amplitudes``, summed over any set of source layers):
+        the reflection for a receiver on the sources' side, the transmission across.  (nx, ny, n_test, 9)."""
+        nx, ny = self.shape
+        out = np.zeros((nx, ny, self.n_test * 9), dtype=complex)
+        tr = self._transforms()
+        kind = "R" if zr < 0 else "T"
+        for ch, f, (amp, stat) in zip(self.chunks, self.factors, amps, strict=True):
+            if f is None:
+                f = self._factors(ch.qx, ch.qy)
+            tr.chunk(ch)
+            b = f.rec_out(zr, amp)
+            for key in f.mid_stat:
+                if key[0] == kind:
+                    b = b + f.stat_rec_out(key, zr, f.stat_apply(key, stat[key]))
+            tr.to_grid_add(zr, (b * ch.w[:, None, None]).reshape(len(ch.qx), -1), out)
+        tr.finish(zr, out)
+        return out.reshape(nx, ny, self.n_test, 9)
+
+
+def add_amplitudes(a: list | None, b: list, sign: float = 1.0) -> list:
+    """a + sign b, chunk by chunk, for amplitudes of ``NodeProduct.amplitudes`` (a None: zero)."""
+    if a is None:
+        return [(sign * amp, {k: sign * v for k, v in st.items()}) for amp, st in b]
+    return [
+        (amp_a + sign * amp_b, {k: st_a[k] + sign * st_b[k] for k in st_a})
+        for (amp_a, st_a), (amp_b, st_b) in zip(a, b, strict=True)
+    ]
+
 
 class TwoSidedProduct:
     """``NodeProduct`` for sources on both sides: sources in A directly, sources in B by the mirrored problem
@@ -521,6 +579,19 @@ class TwoSidedProduct:
             if in_b
             else None
         )
+
+    def amplitudes(self, zs: int, grid: NDArray) -> list:
+        """One source layer's amplitudes (``NodeProduct.amplitudes``): of the direct problem for a source in A, of
+        the mirrored one for a source in B (amplitudes of layers on opposite sides do not add)."""
+        if zs < 0:
+            return self.a.amplitudes(zs, grid)
+        return self.b.amplitudes(-zs, grid * self.sc)
+
+    def fields(self, zr: int, amps: list, source_side: str) -> NDArray:
+        """A receiver layer's coefficients from the summed amplitudes of sources on ``source_side`` ("A" or "B")."""
+        if source_side == "A":
+            return self.a.fields(zr, amps)
+        return self.b.fields(-zr, amps) * self.sa
 
     def apply(self, x_grids: dict) -> dict:
         out = {
@@ -895,6 +966,53 @@ class WholeSpaceMarch:
         for z in self.layers:
             tr.finish(z, out[z])
         return {z: o.reshape(nx, ny, n_test, 9) for z, o in out.items()}
+
+    # -- one layer at a time (the two-way march, ``interface_downup``) -----------------------------------------
+
+    def _transforms(self) -> "_Transforms":
+        """The transforms for a one-layer call: the NUFFT plans made once and kept, the lattice caches emptied."""
+        if getattr(self, "_tr", None) is None:
+            self._tr = _Transforms(
+                self.shape, self.n_source * 9, self.n_test * 9, self.eps, self.n_grid
+            )
+        self._tr.spec.clear()
+        self._tr.fold.clear()
+        return self._tr
+
+    def betas(self, z: int, grid: NDArray) -> list:
+        """One layer's source amplitudes, per chunk {+1: down-going, -1: up-going} (P, 3)."""
+        nx, ny = self.shape
+        g = np.ascontiguousarray(grid.reshape(nx, ny, -1).transpose(2, 0, 1))
+        tr = self._transforms()
+        out = []
+        for ch, f in zip(self.chunks, self.factors, strict=True):
+            if f is None:
+                f = whole_space_modes(ch.qx, ch.qy, *self._args)
+            tr.chunk(ch)
+            xh = tr.to_nodes(z, g).reshape(-1, self.n_source, 9)
+            out.append({s: f.src_amp(s, xh) for s in (1, -1)})
+        return out
+
+    def steps(self) -> list:
+        """Per chunk, p = e^{i k_z 2h} of each mode (P, 3); needs ``cache``."""
+        if any(f is None for f in self.factors):
+            raise ValueError("WholeSpaceMarch.steps: needs cache=True.")
+        return [f.step for f in self.factors]
+
+    def field(self, z: int, amps: list, sign: int) -> NDArray:
+        """A layer's coefficients from the arriving amplitudes of one direction (+1 down-going, -1 up-going), per
+        chunk (P, 3).  (nx, ny, n_test, 9)."""
+        nx, ny = self.shape
+        out = np.zeros((nx, ny, self.n_test * 9), dtype=complex)
+        tr = self._transforms()
+        for ch, f, amp in zip(self.chunks, self.factors, amps, strict=True):
+            if f is None:
+                f = whole_space_modes(ch.qx, ch.qy, *self._args)
+            tr.chunk(ch)
+            b = f.rec_out(sign, amp)
+            tr.to_grid_add(z, (b * ch.w[:, None, None]).reshape(len(ch.qx), -1), out)
+        tr.finish(z, out)
+        return out.reshape(nx, ny, self.n_test, 9)
 
 
 def whole_space_nodes(

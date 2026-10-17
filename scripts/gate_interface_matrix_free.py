@@ -9,8 +9,9 @@ same set-up (split, C-infinity window from Q0 / 4, radius 16 h, depth radius 4 h
 the largest difference of the products relative to the largest entry, and the time of each operator's set-up for
 the frequency and of one product.
 
-Boxes 2 x 5 x 5 (50 cells), 6 x 4 x 4 (96, three layers each side: the whole-space march) and 2 x 12 x 12 (288)
-straddling the interface; media A (5, 3, 2.5) over B
+Boxes 2 x 5 x 5 (50 cells), 6 x 4 x 4 (96, three layers each side: with the default stored_planes = 2 every
+whole-space coupling is a stored kernel), 2 x 12 x 12 (288) and 8 x 3 x 3 (72, four layers each side: the march
+acts between planes three apart) straddling the interface; media A (5, 3, 2.5) over B
 (6.5, 3.6, 2.8), h = 0.05 km, omega h / beta_A = 1/6, p = 1.  PASS below 1e-10 (the high band's mode cancellation
 leaves ~1e-11 of a block at 1/6; D1 is 1e-8).
 
@@ -44,9 +45,14 @@ B = ReferenceMedium(6.5, 3.6, 2.8)
 H = 0.05
 OMEGA = A.beta / (6 * H)
 TOL = 1e-10
-#: (layers, cells per side): two layers (no march), six layers (the whole-space march between planes two or more
-#: apart), and the 288-cell box.
-BOXES = [((-1, 0), 5), (tuple(range(-3, 3)), 4), ((-1, 0), 12)]
+#: (layers, cells per side): two layers (no march), six layers (the march only with stored_planes = 1), the 288-cell
+#: box, and eight layers (the march between planes three or more apart).
+BOXES = [
+    ((-1, 0), 5),
+    (tuple(range(-3, 3)), 4),
+    ((-1, 0), 12),
+    (tuple(range(-4, 4)), 3),
+]
 
 
 def main() -> None:
