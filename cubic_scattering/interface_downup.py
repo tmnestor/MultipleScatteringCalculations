@@ -27,6 +27,7 @@ products per pass; the recursion (O(L) per pass) applies the same operator.
 import time
 
 import numpy as np
+import scipy.fft
 from numpy.typing import NDArray
 from scipy.sparse.linalg import LinearOperator, gmres
 
@@ -278,8 +279,9 @@ class MatrixFreeDownUp:
         passes: DownUp passes per application (the later ones lag R x + U x of the one before, as ``DownUp``).
         bands: "both", D through its low and high bands as in the product; or "low", the low band alone (the
             branch points and the long-range tail; D_high is local), a coarser and cheaper preconditioner.
-        coarse: (``stratified_apply.LowBandRule``, NUFFT eps): D's low band at nodes of its own, coarser than the
-            product's (implies ``bands="low"``).
+        coarse: (``stratified_apply.LowBandRule``, NUFFT eps[, qmax_h]): D's low band at nodes of its own, coarser
+            than the product's (implies ``bands="low"``); with qmax_h, the march's nodes too (that rule's low band
+            and the lattice to q h = qmax_h).
     """
 
     def __init__(
@@ -316,10 +318,9 @@ class MatrixFreeDownUp:
             z: (side, kern, march) for side, kern, march in op.sides for z in side
         }
         self.products = (op.low, op.high) if bands == "both" else (op.low,)
-        if (
-            coarse is not None
-        ):  # D's low band on its own, coarser nodes (the preconditioner need not be exact)
-            rule, eps = coarse
+        if coarse is not None:
+            # D's low band on its own, coarser nodes (the preconditioner need not be exact)
+            rule, eps = coarse[:2]
             g, cpl = op.grid, op.couplings
             lp, band = cpl.low_pass(op.omega), cpl.band_qh
             kx, ky, w = sap.low_band_nodes(
@@ -352,6 +353,44 @@ class MatrixFreeDownUp:
                     eps,
                 ),
             )
+            if len(coarse) > 2:
+                # and the march's nodes: the coarse low band and the lattice to q h = qmax_h
+                qmax_h = coarse[2]
+                reach = max(max(k[2], k[3]) for k in cpl.classes) // 2
+                n_grid = scipy.fft.next_fast_len(reach + 1 + cpl.split_pad)
+                ws = {}
+                for side, kern, march in op.sides:
+                    if march is not None:
+                        medium = g.above if side[0] < 0 else g.below
+                        kx, ky, w, lat = sap.whole_space_nodes(
+                            2.0 * float(np.hypot(nx - 1, ny - 1)),
+                            n_grid,
+                            g.h,
+                            op.omega,
+                            medium,
+                            band,
+                            lp,
+                            qmax_h=qmax_h,
+                            rule=rule,
+                        )
+                        march = sap.WholeSpaceMarch(
+                            side,
+                            op.shape,
+                            kx,
+                            ky,
+                            w,
+                            g.h,
+                            op.omega,
+                            medium,
+                            op.n_source,
+                            op.na,
+                            eps,
+                            min_gap=march.min_gap,
+                            lattice=lat,
+                        )
+                    for z in side:
+                        ws[z] = (side, kern, march)
+                self.ws = ws
         m_full = np.kron(op.m9, np.eye(9))
         self.jacobi = np.array(
             [
