@@ -11,11 +11,11 @@ C-infinity window from Q0 / 4, radius 16 h, depth radius 4 h; media A (5, 3, 2.5
 h = 0.05 km, p = 1.  PASS below 1e-9 relative (the matrix-free product is ~2e-11 from the stored one, and the
 march's high band ~1e-9 from Paper 2's blocks at 1/2).
 
-Measured 17 October 2026 (8 x 2 x 2): 1.5e-12 (1/6), 1.9e-11 (1/2) PASS.  Time: stored 0.1 s, recursion 620 and
+Measured 17 October 2026 (8 x 2 x 2): 1.5e-12 (1/6), 1.9e-11 (1/2) PASS; with --passes 2, 1.9e-11 at 1/2.  Time: stored 0.1 s, recursion 620 and
 830 s, ~3.5 s per plane product: each plane's own D goes through every wavenumber of the band (185k for the high
 band's padded lattice alone), which is the cost to remove.
 
-Run:  PYTHONPATH=. python scripts/gate_interface_downup_recursion.py [box indices, default all]
+Run:  PYTHONPATH=. python scripts/gate_interface_downup_recursion.py [box indices, default all] [--passes N]
 """
 
 import sys
@@ -39,7 +39,13 @@ FREQS = {"1/6": A.beta / (6 * H), "1/2": A.beta / (2 * H)}
 
 def main() -> None:
     ok = True
-    picked = [int(a) for a in sys.argv[1:]] or range(len(BOXES))
+    args = sys.argv[1:]
+    passes = 1
+    if "--passes" in args:
+        k = args.index("--passes")
+        passes = int(args[k + 1])
+        del args[k : k + 2]
+    picked = [int(a) for a in args] or range(len(BOXES))
     for layers, n in (BOXES[i] for i in picked):
         cells = [(iz, ix, iy) for iz in layers for ix in range(n) for iy in range(n)]
         grid = iso.InterfaceGrid(np.array(cells), H, A, B)
@@ -62,9 +68,9 @@ def main() -> None:
             )
             v = np.random.default_rng(3).standard_normal(len(cells) * lat.na * 9) + 0j
             t0 = time.time()
-            want = idu.DownUp(lat, e, inner_tol=1e-13)(v)
+            want = idu.DownUp(lat, e, inner_tol=1e-13, passes=passes)(v)
             t_s = time.time() - t0
-            du = idu.MatrixFreeDownUp(mf, e, inner_tol=1e-13)
+            du = idu.MatrixFreeDownUp(mf, e, inner_tol=1e-13, passes=passes)
             t0 = time.time()
             got = du(v)
             t_m = time.time() - t0
@@ -72,7 +78,7 @@ def main() -> None:
             good = err < TOL
             ok &= good
             print(
-                f"{len(cells)} cells, {len(layers)} layers, {f}: applications differ by {err:.1e}"
+                f"{len(cells)} cells, {len(layers)} layers, {f}, {passes} pass(es): applications differ by {err:.1e}"
                 f"  {'PASS' if good else 'FAIL'}; stored {t_s:.1f} s, recursion {t_m:.1f} s"
                 f" ({du.inner_products} plane products)",
                 flush=True,
