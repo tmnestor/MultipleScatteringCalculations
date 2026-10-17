@@ -335,6 +335,22 @@ Each step has a gate. Profiling and measurement come before any rewrite.
   block-Jacobi preconditioner. Then with a layer-wise preconditioner: Stage B's two-way march as the
   preconditioner, as the parent plan already proposes.
 - **Gate:** a table of products. Products should grow sublinearly with N at fixed contrast.
+- **Done (17 October): block-Jacobi.** `scripts/measure_interface_gmres_iterations.py`, relative tolerance 1e-10,
+  P wave at lateral slowness (0.3, 0.1)/α_A, every cell at the contrast of its own medium; products
+  (`scripts/data/interface_gmres_iterations.jsonl`):
+
+  | box (layers × n × n) | cells | ωh/β = 1/6: 10 / 30 / 50 % | ωh/β = 1/2: 10 / 30 / 50 % |
+  |---|---|---|---|
+  | 2 × 6 × 6 | 72 | 8 / 10 / 12 | 9 / 13 / 16 |
+  | 2 × 12 × 12 | 288 | 8 / 11 / 13 | 10 / 15 / 19 |
+  | 4 × 12 × 12 | 576 | 8 / 11 / 14 | 11 / 17 / 24 |
+  | 2 × 24 × 24 | 1152 | 8 / 11 / 14 | 10 / 16 / 22 |
+
+  The gate holds: at 1/6 the count is flat in N; at 1/2 it grows by 3 at 50 % over 16× the cells laterally
+  (72 → 1152). Depth costs more than width: doubling the layers (288 → 576) adds as many products at 1/2 as
+  quadrupling the lateral area. All converged; the 1152-cell run peaked at 3.1 GB (stored-kernel operator).
+  So the layer-wise preconditioner is not needed at these sizes; it is worth trying only if S7's 8 layers at
+  1/2 and 50 % go beyond ~40 products.
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
