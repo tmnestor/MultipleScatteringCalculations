@@ -329,10 +329,12 @@ def radial_rule(
     width: float,
     order: int = 24,
     breaks: tuple = (),
+    panel_order: int = 12,
 ) -> tuple[NDArray, NDArray]:
     """Nodes and weights in q h on [0, qh_max] with the branch points as panel ends, the square-root
     singularity at each removed by a quadratic map, then panels of at most ``width``, split also at
-    ``breaks`` (plain panel ends, e.g. the start of a window's ramp; ignored among the branch points)."""
+    ``breaks`` (plain panel ends, e.g. the start of a window's ramp; ignored among the branch points), Gauss of
+    ``panel_order`` on each."""
     bp = sorted(b for b in set(branch_qh) if 0 < b < qh_max)
     x, w = gauss_legendre(order)
     u, wu = (x + 1) / 2, w / 2
@@ -353,7 +355,7 @@ def radial_rule(
     if end < qh_max:
         ends = [end, *sorted(b for b in breaks if end < b < qh_max), qh_max]
         for e0, e1 in itertools.pairwise(ends):
-            n2, w2 = _panels(e0, e1, width)
+            n2, w2 = _panels(e0, e1, width, panel_order)
             nodes.append(n2)
             wts.append(w2)
     return np.concatenate(nodes), np.concatenate(wts)
@@ -394,10 +396,10 @@ class Window:
             b = np.where(t < 1, np.exp(-1 / np.where(t < 1, 1 - t, 1)), 0.0)
         return a / (a + b)
 
-    def ramp_edges(self, q0h: float) -> NDArray:
+    def ramp_edges(self, q0h: float, panels: int = 16) -> NDArray:
         """Panel ends on the ramp [start Q0, Q0]: 16 panels, enough for the C-infinity step's steep flanks
         (order-12 Gauss on panels of a quarter of the ramp leaves ~5e-11; on a sixteenth, rounding)."""
-        return np.linspace(self.start * q0h, q0h, 17)
+        return np.linspace(self.start * q0h, q0h, panels + 1)
 
     def ramp_rule(self, q0h: float) -> tuple[NDArray, NDArray]:
         """Nodes and weights in q h on the ramp [start Q0, Q0], weights times chi."""
@@ -410,18 +412,19 @@ class Window:
         return qh, w * self(qh, q0h)
 
 
-def _n_phi(qh: float, reach: float) -> int:
-    """Azimuthal trapezoid nodes at q h: the cells' lateral moments and the phase over ``reach`` (in h)."""
-    return int(4 * np.ceil((4 * qh + 2 * qh * reach + 64) / 4))
+def _n_phi(qh: float, reach: float, margin: int = 64) -> int:
+    """Azimuthal trapezoid nodes at q h: the cells' lateral moments and the phase over ``reach`` (in h), plus
+    ``margin`` for the Bessel tail."""
+    return int(4 * np.ceil((4 * qh + 2 * qh * reach + margin) / 4))
 
 
 def _grid(
-    qh: NDArray, wqh: NDArray, h: float, reach: float
+    qh: NDArray, wqh: NDArray, h: float, reach: float, margin: int = 64
 ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """Flattened polar points: (index of the radial node, kx, ky, weight of (1/4 pi^2) d^2k)."""
     idx, kx, ky, wt = [], [], [], []
     for i, (x, w) in enumerate(zip(qh, wqh, strict=True)):
-        n = _n_phi(x, reach)
+        n = _n_phi(x, reach, margin)
         phi = 2 * np.pi * np.arange(n) / n
         q = x / h
         idx.append(np.full(n, i))

@@ -538,6 +538,26 @@ class TwoSidedProduct:
         return out
 
 
+@dataclass(frozen=True)
+class LowBandRule:
+    """The low band's quadrature: ``ramp_panels`` panels on the band's ramp, Gauss of ``panel_order`` on the
+    plain panels (the branch points' panels keep order 24: their square-root map needs it), and the azimuthal
+    trapezoid's ``phi_margin`` beyond the phase's bandwidth.  The defaults are ``truncated_blocks``' rule."""
+
+    ramp_panels: int = 16
+    panel_order: int = 12
+    phi_margin: int = 64
+
+
+#: ``truncated_blocks``' rule (the stored kernels').
+REFERENCE_RULE = LowBandRule()
+
+#: The matrix-free product's rule, tuned against the reference (scaling plan, 8.4): on 4 x 4 ... 24 x 24 boxes at
+#: omega h / beta = 1/6 and 1/2, 33-56 % of the reference's nodes, the low band's product within 1.3e-12 of its.
+#: The ramp keeps its 16 panels: with 6, order 8 on narrow boxes (wide panels) leaves 8e-10.
+TUNED_RULE = LowBandRule(panel_order=8, phi_margin=16)
+
+
 def low_band_nodes(
     reach: float,
     h: float,
@@ -546,20 +566,22 @@ def low_band_nodes(
     below: ReferenceMedium,
     band_qh: float,
     low_pass: isp.Window,
+    rule: LowBandRule = REFERENCE_RULE,
 ) -> tuple[NDArray, NDArray, NDArray]:
     """The polar quadrature of the low band, (kx, ky, weights of (1/4 pi^2) d^2k times 1 - low_pass): the radial
     rule of ``truncated_blocks`` (branch points as panel ends, the band's ramp as breaks) for lateral offsets up to
-    ``reach`` (in h), and the azimuthal trapezoid rule of ``interface_spectral._grid``."""
+    ``reach`` (in h), and the azimuthal trapezoid rule of ``interface_spectral._grid``; ``rule`` coarsens them."""
     branch = [omega * h / c for m in (above, below) for c in (m.alpha, m.beta)]
     qh, w = isp.radial_rule(
         band_qh,
         branch,
         isp._radial_width(reach),
-        breaks=tuple(low_pass.ramp_edges(band_qh)),
+        breaks=tuple(low_pass.ramp_edges(band_qh, rule.ramp_panels)),
+        panel_order=rule.panel_order,
     )
     w = w * (1.0 - low_pass(qh, band_qh))
     keep = w != 0
-    _, kx, ky, wt = isp._grid(qh[keep], w[keep], h, reach)
+    _, kx, ky, wt = isp._grid(qh[keep], w[keep], h, reach, rule.phi_margin)
     return kx, ky, wt
 
 
@@ -884,12 +906,13 @@ def whole_space_nodes(
     band_qh: float,
     low_pass: isp.Window,
     qmax_h: float = 16.0,
+    rule: LowBandRule = REFERENCE_RULE,
 ) -> tuple[NDArray, NDArray, NDArray, tuple]:
     """The whole-space march's nodes: the low band's polar quadrature (as D's, the medium's branch points) and the
     periodic box's lattice above it to q h = qmax_h.  Between planes g apart the integrand falls as
     e^{-2 (g - 1) q h}, ~1e-14 at q h = 16 / (g - 1): 16 for the march from g = 2, 8 from g = 3.  Returns
     (kx, ky, weights, lattice): the lattice nodes last, ``lattice`` their indices (``lattice_of``)."""
-    lo = low_band_nodes(reach, h, omega, ref, ref, band_qh, low_pass)
+    lo = low_band_nodes(reach, h, omega, ref, ref, band_qh, low_pass, rule)
     hi = high_band_nodes(n_grid, h, qmax_h, band_qh, low_pass)
     kx, ky, w = (np.concatenate([a, b]) for a, b in zip(lo, hi, strict=True))
     return kx, ky, w, lattice_of(hi[0], hi[1], h, n_grid)
