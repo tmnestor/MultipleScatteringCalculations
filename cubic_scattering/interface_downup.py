@@ -276,6 +276,8 @@ class MatrixFreeDownUp:
             or "lagged", with the other reflections in R, so that K_0 is the plane's stored whole-space kernel and
             its corrections (the static image's near field) and the inner products are lateral FFTs alone.
         passes: DownUp passes per application (the later ones lag R x + U x of the one before, as ``DownUp``).
+        bands: "both", D through its low and high bands as in the product; or "low", the low band alone (the
+            branch points and the long-range tail; D_high is local), a coarser and cheaper preconditioner.
     """
 
     def __init__(
@@ -286,8 +288,11 @@ class MatrixFreeDownUp:
         inner_restart: int = 50,
         self_reflection: str = "exact",
         passes: int = 1,
+        bands: str = "both",
     ) -> None:
         self.passes = passes
+        if bands not in ("both", "low"):
+            raise ValueError("MatrixFreeDownUp: bands is 'both' or 'low'.")
         if self_reflection not in ("exact", "lagged"):
             raise ValueError(
                 "MatrixFreeDownUp: self_reflection is 'exact' or 'lagged'."
@@ -307,7 +312,7 @@ class MatrixFreeDownUp:
         self.ws = {
             z: (side, kern, march) for side, kern, march in op.sides for z in side
         }
-        self.products = (op.low, op.high)
+        self.products = (op.low, op.high) if bands == "both" else (op.low,)
         m_full = np.kron(op.m9, np.eye(9))
         self.jacobi = np.array(
             [
@@ -462,6 +467,10 @@ class MatrixFreeDownUp:
         g = self._grid(z, x)
         store["grid"][z], store["spec"][z] = g, self._spec(g)
         store["d"][z] = self._d_amps(z, g)
+        tot = store.setdefault(
+            "tot", {"A": None, "B": None}
+        )  # each side's summed amplitudes, kept running
+        tot[self._side(z)] = self._d_add(tot[self._side(z)], store["d"][z])
         march = self.ws[z][2]
         if march is not None:
             store["betas"][z] = march.betas(z, g)
@@ -469,9 +478,7 @@ class MatrixFreeDownUp:
     def _reflections(self, st: dict) -> dict:
         """R x for a whole vector's states: each side's reflections from its other planes (with
         ``self_reflection="lagged"``, from all its planes) and the corrections of its other planes."""
-        tot = {"A": None, "B": None}
-        for z in self.layers:
-            tot[self._side(z)] = self._d_add(tot[self._side(z)], st["d"][z])
+        tot = st["tot"]
         refl = {}
         for z in self.layers:
             sd = self._side(z)
@@ -500,11 +507,8 @@ class MatrixFreeDownUp:
         y = y + self._march_field(z, st["betas"], march_state, -1)
         if z < 0:
             b_planes = [zs for zs in st["grid"] if zs >= 0]
-            if b_planes:
-                tot_b = None
-                for zs in b_planes:
-                    tot_b = self._d_add(tot_b, st["d"][zs])
-                y = y + self._d_field(z, tot_b, "B")
+            if b_planes:  # B lies wholly below an A plane: its summed amplitudes
+                y = y + self._d_field(z, st["tot"]["B"], "B")
                 y = y + self._stencils(z, {zs: st["grid"][zs] for zs in b_planes})
         return y
 
@@ -517,11 +521,8 @@ class MatrixFreeDownUp:
         y = y + self._march_field(z, st["betas"], march_state, 1)
         if z >= 0:
             a_planes = [zs for zs in st["grid"] if zs < 0]
-            if a_planes:
-                tot_a = None
-                for zs in a_planes:
-                    tot_a = self._d_add(tot_a, st["d"][zs])
-                y = y + self._d_field(z, tot_a, "A")
+            if a_planes:  # A lies wholly above a B plane: its summed amplitudes
+                y = y + self._d_field(z, st["tot"]["A"], "A")
                 y = y + self._stencils(z, {zs: st["grid"][zs] for zs in a_planes})
         return y
 
@@ -577,6 +578,7 @@ def solve_interface_fgmres(
     operator=None,
     preconditioner: str = "downup",
     self_reflection: str = "exact",
+    bands: str = "both",
     tol: float = 1e-10,
     inner_tol: float = 1e-3,
     passes: int = 1,
@@ -585,7 +587,7 @@ def solve_interface_fgmres(
 ) -> tuple[InterfaceResult, dict]:
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
     (``preconditioner="downup"``) or by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``).
-    With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``), else
+    With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
     ``DownUp`` on ``LateralOperator(parts=True)``.
 
     Returns the result and the counts: ``outer`` (products with the whole operator), ``inner`` (products with a
@@ -612,7 +614,12 @@ def solve_interface_fgmres(
         pre = DownUp(op, e, inner_tol=inner_tol, passes=passes)
     elif preconditioner == "downup":
         pre = MatrixFreeDownUp(
-            op, e, inner_tol=inner_tol, self_reflection=self_reflection, passes=passes
+            op,
+            e,
+            inner_tol=inner_tol,
+            self_reflection=self_reflection,
+            passes=passes,
+            bands=bands,
         )
     elif preconditioner == "jacobi":
         m_full = np.kron(op.m9, np.eye(9))
