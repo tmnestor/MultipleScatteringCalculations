@@ -1199,8 +1199,9 @@ margin of $16$ instead of $64$ beyond the phase's bandwidth keep $33$ to $56\%$ 
 $24\times24$ cells, the low band's product within $1.3\times10^{-12}$. The panels at the branch points keep
 order $24$, which their square-root map needs, and the window's ramp its $16$ panels, which narrow boxes need.
 With all three, products from the same set-up agree with those of the stored kernels to $1.7\times10^{-11}$ on
-$2\times5\times5$ cells and on $96$ cells in six layers, where the march acts, and take $2.6$ and $6.9$\,s
-($11.4$ and $24.7$\,s before; peak memory $2.4$\,GB).
+$2\times5\times5$ cells and on $96$ cells in six layers (all whole-space couplings stored), and take $2.6$ and
+$6.9$\,s ($11.4$ and $24.7$\,s before; peak memory $2.4$\,GB); on $8\times3\times3$ cells, where the march acts
+between planes three or more apart, to $1.5\times10^{-11}$, $8.2$\,s per product.
 
 \paragraph{The iteration.} Table~\ref{tab:gmres} gives the products GMRES needs with the block preconditioner
 above, at relative tolerance $10^{-10}$, for boxes straddling the interface with every cell at $10$, $30$ or $50\%$
@@ -1223,6 +1224,60 @@ $2\times6\times6$ & $72$ & $8/10/12$ & $9/13/16$ \\
 $2\times12\times12$ & $288$ & $8/11/13$ & $10/15/19$ \\
 $4\times12\times12$ & $576$ & $8/11/14$ & $11/17/24$ \\
 $2\times24\times24$ & $1152$ & $8/11/14$ & $10/16/22$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The two-way march as the preconditioner.} Block-Jacobi ignores every coupling between planes, and its
+count grows with the number of layers. The plane-wave factorisation that applies the operator also gives a
+preconditioner that carries that coupling: the two-way march of the reflectivity method, read as a Gauss--Seidel
+iteration over the planes. The coupling is split by the direction in which it travels,
+$\bK=\bK_0+\mathbf L+\mathbf U+\mathbf R$: a plane with itself; from the planes above, the whole-space coupling
+of the side and the transmission from A into B; from the planes below, its mirror; and the reflections between
+different planes of one side. A down sweep solves the planes from the top, each with the field of the planes
+above already solved, $\mathbf x'_i=\mathbf A_i^{-1}(\mathbf b_i+\sum_{j<i}\mathbf L_{ij}\mathbf E\mathbf x'_j)$
+with $\mathbf A_i=\mathbf M-\bK_{0,ii}\mathbf E$; the reflections of the result, $\mathbf R\mathbf E\mathbf x'$,
+are then evaluated once; and an up sweep solves the planes from the bottom with them, the down sweep's field from
+above and the up sweep's from below. Forward scattering is therefore exact within each sweep and the backscatter
+is lagged, as in the thesis's two-way march; further passes iterate the backscatter. The sweeps are the
+recursions already in the product: the march's amplitudes $\boldsymbol\alpha_i=p\,\boldsymbol\alpha_{i-1}+
+p^g\boldsymbol\beta_{i-g}$ carry the whole-space coupling down and up one plane at a time, the summed mode
+amplitudes of the side solved first carry the transmission, and each side's summed amplitudes carry its
+reflections, so a pass costs $O(L)$. Each plane's system is solved by an inner GMRES with the plane's lateral
+products to $10^{-2}$, so the preconditioner varies slightly between applications and the outer iteration is
+flexible GMRES. Applied with the stored kernels of every pair of planes and through the recursions, the
+preconditioner agrees to $1.5\times10^{-12}$ ($\omega h/\beta_A=1/6$) and $1.9\times10^{-11}$ ($1/2$) on
+$8\times2\times2$ cells, where the march acts.
+
+On $6\times6$ cells per plane, one pass halves the outer count: at $\omega h/\beta_A=1/6$ it is $5/6/7$ products
+for $10/30/50\%$ on two to eight layers, against block-Jacobi's $8/10/12$ to $8/11/13$; at $1/2$ and $50\%$ it
+grows from $7$ to $12$ on two to eight layers, from the backscatter lagged once, and three passes remove the
+growth ($6$ products on two and on eight layers, block-Jacobi $16$ and $21$). A preconditioner need not be exact,
+and its cost is set by the planes' own reflection and by the wavenumbers of $\mathbf D$. With each plane's own
+reflection lagged with the others, $\mathbf A_i$ is the plane's stored whole-space kernel and corrections, so
+the inner products are lateral FFTs; and the preconditioner's $\mathbf D$ and march get nodes of their own, the low
+band alone (the high band is local) at a coarse rule, non-uniform FFTs to $10^{-6}$ and the march's lattice to
+$qh=4$. None of this changes the outer count, and a pass then costs about a quarter of a product.
+Table~\ref{tab:downup} gives the time to $10^{-10}$ with the matrix-free operator: with one pass the march takes
+$24$ to $28\%$ less time than block-Jacobi; three passes cost more per product saved at $30\%$, but at $50\%$
+their count is the same on sixteen layers as on eight, and they take $29\%$ and $38\%$ less time.
+
+\begin{table}[htbp]
+\centering
+\caption{Matrix-free FGMRES to $10^{-10}$ at $\omega h/\beta_A=1/2$: outer products and time with block-Jacobi
+and with the two-way march (coarse nodes of its own, one or three passes), for $L\times6\times6$ cells at
+contrasts of $30\%$ and $50\%$; one product takes $12$\,s ($L=8$) and $25$\,s ($L=16$).}
+\label{tab:downup}
+\begin{tabular}{llcc}
+\toprule
+$L$ & preconditioner & $30\%$ & $50\%$ \\
+\midrule
+$8$ & block-Jacobi & $16$, $191$\,s & $21$, $247$\,s \\
+ & march, one pass & $9$, $138$\,s & $12$, $185$\,s \\
+ & march, three passes & $8$, $181$\,s & $8$, $176$\,s \\
+$16$ & block-Jacobi & $17$, $404$\,s & $24$, $542$\,s \\
+ & march, one pass & $10$, $294$\,s & $14$, $414$\,s \\
+ & march, three passes & $7$, $303$\,s & $8$, $337$\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1264,8 +1319,9 @@ thickness and are smooth. The plane-wave representation extends to the stack thr
 transmission matrices of the layered medium, composed by the recursions of the reflectivity method
 \citep{FuchsMuller1971,Kennett1983}. The coupling of every cell with every other is then available from the
 up- and down-going factorisation alone, without tabulating the stratified Green's tensor, which is the
-storage advantage that motivates the approach; a two-way march in depth that applies the volume operator in
-this way is the subject of further work.
+storage advantage that motivates the approach. The same factorisation gives the preconditioner: the two-way march
+in depth, forward scattering exact within each sweep and backscatter lagged, makes the iteration count nearly
+independent of the number of layers where block-Jacobi's grows, at a fraction of a product per pass.
 
 One limitation remains: the closed form of the base integrals is stated for cubic corner boxes, $a=b=c$,
 which is all a grid of cubes requires; for unequal sides the angular integrals are evaluated by quadrature.
