@@ -347,8 +347,8 @@ Each step has a gate. Profiling and measurement come before any rewrite.
   | 2 × 24 × 24 | 1152 | 8 / 11 / 14 | 10 / 16 / 22 |
 
   The gate holds: at 1/6 the count is flat in N; at 1/2 it grows by 3 at 50 % over 16× the cells laterally
-  (72 → 1152). Depth costs more than width: doubling the layers (288 → 576) adds as many products at 1/2 as
-  quadrupling the lateral area. All converged; the 1152-cell run peaked at 3.1 GB (stored-kernel operator).
+  (72 → 1152). Depth costs more than width: doubling the layers (288 → 576) adds more products at 1/2 (+5 at 50 %) than
+  quadrupling the lateral area (+3). All converged; the 1152-cell run peaked at 3.1 GB (stored-kernel operator).
   So the layer-wise preconditioner is not needed at these sizes; it is worth trying only if S7's 8 layers at
   1/2 and 50 % go beyond ~40 products.
 
