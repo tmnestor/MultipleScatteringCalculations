@@ -612,12 +612,14 @@ class TwoSidedProduct:
 @dataclass(frozen=True)
 class LowBandRule:
     """The low band's quadrature: ``ramp_panels`` panels on the band's ramp, Gauss of ``panel_order`` on the
-    plain panels (the branch points' panels keep order 24: their square-root map needs it), and the azimuthal
-    trapezoid's ``phi_margin`` beyond the phase's bandwidth.  The defaults are ``truncated_blocks``' rule."""
+    plain panels, Gauss of ``branch_order`` on the branch points' panels (24 for the product: their square-root
+    map needs it), and the azimuthal trapezoid's ``phi_margin`` beyond the phase's bandwidth.  The defaults are
+    ``truncated_blocks``' rule."""
 
     ramp_panels: int = 16
     panel_order: int = 12
     phi_margin: int = 64
+    branch_order: int = 24
 
 
 #: ``truncated_blocks``' rule (the stored kernels').
@@ -647,6 +649,7 @@ def low_band_nodes(
         band_qh,
         branch,
         isp._radial_width(reach),
+        order=rule.branch_order,
         breaks=tuple(low_pass.ramp_edges(band_qh, rule.ramp_panels)),
         panel_order=rule.panel_order,
     )

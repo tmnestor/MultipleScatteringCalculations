@@ -898,6 +898,10 @@ class MatrixFreeOperator:
         self.pos = idx[:, 1:] - lo
         nx, ny = (idx[:, 1:].max(axis=0) - lo + 1).tolist()
         self.shape = (nx, ny)
+        self.couplings, self.omega = (
+            couplings,
+            omega,
+        )  # for preconditioners that build their own nodes
         self.by_layer = {z: np.flatnonzero(idx[:, 0] == z) for z in self.layers}
         zu = [2 * z + 1 for z in self.layers]  # centres' z in h
         h, above, below = g.h, g.above, g.below
