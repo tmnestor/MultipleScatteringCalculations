@@ -28,6 +28,8 @@
 \usepackage{longtable}
 \usepackage{array}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,decorations.pathreplacing}
 \usepackage{placeins}
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage[font=small, labelfont=bf, labelsep=period]{caption}
@@ -1228,10 +1230,94 @@ $2\times24\times24$ & $1152$ & $8/11/14$ & $10/16/22$ \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize, >={Stealth[length=1.6mm]},
+  plane/.style={draw, minimum width=22mm, minimum height=3.2mm, inner sep=0pt},
+  solved/.style={plane, fill=blue!12},
+  solvedup/.style={plane, fill=green!15},
+  current/.style={plane, fill=orange!35, very thick},
+  waiting/.style={plane, fill=white},
+  fwd/.style={->, thick, blue!70!black},
+  fwdup/.style={->, thick, green!45!black},
+  back/.style={->, thick, red!70!black, dashed},
+  stale/.style={->, thick, black!45},
+  sweep/.style={-{Stealth[length=2.6mm]}, line width=1.4pt, black!70}]
+% planes z = -3 ... 2 at y = 1.2 - 0.6 z; the interface (dash-dotted) at y = 1.5, A above, B below
+\newcommand{\planes}[3]{% #1: name, #2: x of the column, #3: z/style pairs
+  \foreach \z/\st in {#3} {
+    \pgfmathsetmacro{\y}{1.2 - 0.6*\z}
+    \node[\st] (#1\z) at (#2, \y) {};
+  }
+  \draw[densely dashdotted, thick] (#2-1.75, 1.5) -- (#2+1.75, 1.5);
+}
+% ---- (a) the down sweep, at plane i = 2 ----
+\planes{pa}{0}{-3/solved, -2/solved, -1/solved, 0/solved, 1/solved, 2/current}
+\draw[sweep] (-2.75, 3.2) -- (-2.75, -0.2);
+\node[rotate=90, anchor=south] at (-2.8, 1.5) {down sweep};
+\node at (0, 0.0) {$\mathbf x'_i$};
+% the whole-space coupling of the side (stored kernels for touching planes, the march beyond)
+\draw[fwd] ($(pa0.west)+(-0.05,0)$) to[out=180, in=180, looseness=1.2] node[left, align=right] {whole-\\space:\\stored,\\$\boldsymbol\alpha$} ($(pa2.west)+(-0.05,0.03)$);
+\draw[fwd] ($(pa1.west)+(-0.05,0)$) to[out=180, in=180, looseness=1.6] ($(pa2.west)+(-0.05,-0.03)$);
+% the transmission A -> B from the summed amplitudes of A
+\draw[fwd] ($(pa-2.east)+(0.05,0)$) to[out=0, in=0, looseness=1.1] node[right, pos=0.3] {$\mathbf T$: $\sum_{j\in A}$} ($(pa2.east)+(0.05,0.0)$);
+\node[anchor=north] at (0, -0.45) {(a) planes from the top};
+% ---- (b) the backscatter, once, from x' ----
+\planes{pb}{4.9}{-3/solved, -2/solved, -1/solved, 0/solved, 1/solved, 2/solved}
+\draw[back] ($(pb-3.east)+(0.05,0)$) -- (6.65, 1.5) -- ($(pb-1.east)+(0.05,0)$);
+\draw[back] ($(pb2.west)+(-0.05,0)$) -- (3.15, 1.5) -- ($(pb0.west)+(-0.05,0)$);
+\fill[red!70!black] (6.65, 1.5) circle (0.8pt) (3.15, 1.5) circle (0.8pt);
+\node[red!70!black] at (6.6, 2.55) {$\mathbf R$};
+\node[red!70!black] at (3.2, 0.45) {$\mathbf R$};
+\node[black!60, anchor=west] at (6.78, 1.68) {A};
+\node[black!60, anchor=west] at (6.78, 1.32) {B};
+\node[anchor=north, align=center] at (4.9, -0.45) {(b) reflections $\mathbf R\mathbf E\mathbf x'$,\\ evaluated once (lagged)};
+% ---- (c) the up sweep, at plane i = -2 ----
+\planes{pc}{9.8}{-3/solved, -2/current, -1/solvedup, 0/solvedup, 1/solvedup, 2/solvedup}
+\draw[sweep] (7.8, -0.2) -- (7.8, 3.2);
+\node[rotate=90, anchor=south] at (7.75, 1.5) {up sweep};
+\node at (9.8, 2.4) {$\mathbf x''_i$};
+\draw[fwdup] ($(pc-1.east)+(0.05,0)$) to[out=0, in=0, looseness=1.4] node[right] {$\mathbf U$} ($(pc-2.east)+(0.05,-0.03)$);
+\draw[fwdup] ($(pc1.east)+(0.05,0)$) to[out=0, in=-10, looseness=0.7] node[right, pos=0.3] {$\mathbf T$: $\sum_{j\in B}$} ($(pc-2.east)+(0.05,-0.1)$);
+\draw[stale] ($(pc-3.west)+(-0.05,0)$) to[out=180, in=180, looseness=1.4] node[left] {$\mathbf L\mathbf x'$} ($(pc-2.west)+(-0.05,0.04)$);
+\draw[back] (8.05, 1.5) -- ($(pc-2.west)+(-0.05,-0.06)$);
+\node[red!70!black] at (7.95, 2.0) {$\mathbf R$};
+\node[anchor=north] at (9.8, -0.45) {(c) planes from the bottom};
+% ---- (d) the intraplane step ----
+\begin{scope}[shift={(-1.6,-4.9)}]
+  \node[anchor=south west] at (-0.1, 2.75) {(d) the plane's own system, $\mathbf A_i\mathbf x_i=\mathbf M\mathbf x_i-\bK_{0,ii}\mathbf E\mathbf x_i$};
+  \foreach \i in {0,...,6} \foreach \j in {0,...,6}
+    \draw[fill=orange!10] (0.36*\i, 0.36*\j) rectangle ++(0.36, 0.36);
+  \foreach \i/\j in {2/3,3/3,4/3,3/2,3/4,2/2,4/4,2/4,4/2}
+    \draw[fill=orange!45] (0.36*\i, 0.36*\j) rectangle ++(0.36, 0.36);
+  \draw[fill=orange!90!black] (0.36*3, 0.36*3) rectangle ++(0.36, 0.36);
+  \draw[decorate, decoration={brace, amplitude=4pt, mirror}] (0, -0.08) -- node[below=4pt] {$n\times n$ cells} (2.52, -0.08);
+  \node[anchor=north west, align=left, text width=10.6cm] at (3.0, 2.6) {%
+    \textbf{whole plane} (light): the whole-space self kernel of the side, one lateral convolution applied by
+    zero-padded 2-D FFTs;\\[2pt]
+    \textbf{near cells} (darker): the corrections $\mathbf A_0+\omega^2\mathbf A_1$, a local stencil within the
+    lateral radius;\\[2pt]
+    \textbf{the plane's own reflection}: lagged with $\mathbf R$, so $\mathbf A_i$ needs no plane waves;\\[2pt]
+    solved by an inner GMRES to $10^{-2}$, preconditioned cell by cell with $(\mathbf M-\bK_{mm}\mathbf E_m)^{-1}$;
+    the right-hand side is $\mathbf b_i$ plus the fields of (a)--(c).};
+\end{scope}
+\end{tikzpicture}
+\caption{One pass of the two-way march preconditioner, in a vertical section of planes of cells (A above the
+interface, dash-dotted; B below). (a) The down sweep solves the planes from the top; plane $i$ receives the
+forward field of the planes already solved above it: the whole-space coupling of its side (stored kernels for
+touching planes, the march's amplitudes $\boldsymbol\alpha_i=p\,\boldsymbol\alpha_{i-1}+p^g\boldsymbol\beta_{i-g}$
+beyond) and, in B, the transmission from all of A. (b) The reflections between different planes of one side, the
+backscatter, are evaluated once from the down sweep's solution. (c) The up sweep solves the planes from the
+bottom with the forward field from below, the transmission from B into A, the down sweep's field from above
+(stored) and the lagged reflections. (d) Each solve is the plane's own system, a lateral problem.}
+\label{fig:downup}
+\end{figure}
+
 \paragraph{The two-way march as the preconditioner.} Block-Jacobi ignores every coupling between planes, and its
 count grows with the number of layers. The plane-wave factorisation that applies the operator also gives a
 preconditioner that carries that coupling: the two-way march of the reflectivity method, read as a Gauss--Seidel
-iteration over the planes. The coupling is split by the direction in which it travels,
+iteration over the planes (Fig.~\ref{fig:downup}). The coupling is split by the direction in which it travels,
 $\bK=\bK_0+\mathbf L+\mathbf U+\mathbf R$: a plane with itself; from the planes above, the whole-space coupling
 of the side and the transmission from A into B; from the planes below, its mirror; and the reflections between
 different planes of one side. A down sweep solves the planes from the top, each with the field of the planes
@@ -1243,9 +1329,14 @@ is lagged, as in the thesis's two-way march; further passes iterate the backscat
 recursions already in the product: the march's amplitudes $\boldsymbol\alpha_i=p\,\boldsymbol\alpha_{i-1}+
 p^g\boldsymbol\beta_{i-g}$ carry the whole-space coupling down and up one plane at a time, the summed mode
 amplitudes of the side solved first carry the transmission, and each side's summed amplitudes carry its
-reflections, so a pass costs $O(L)$. Each plane's system is solved by an inner GMRES with the plane's lateral
-products to $10^{-2}$, so the preconditioner varies slightly between applications and the outer iteration is
-flexible GMRES. Applied with the stored kernels of every pair of planes and through the recursions, the
+reflections, so a pass costs $O(L)$. Each solve is the intraplane step of Fig.~\ref{fig:downup}(d): the plane's
+own system $\mathbf A_i$ couples only the cells of one plane, so it is a lateral problem. With the plane's own
+reflection lagged with the others (below), its product is the whole-space self kernel of the side, one lateral convolution applied by zero-padded two-dimensional FFTs, plus
+the corrections $\mathbf A_0+\omega^2\mathbf A_1$ of the plane with itself, a local stencil; it is solved by an
+inner GMRES to $10^{-2}$, preconditioned cell by cell with $(\mathbf M-\bK_{mm}\mathbf E_m)^{-1}$, the right-hand
+side carrying the fields that the sweeps deliver to the plane. The inexact inner solve makes the preconditioner
+vary slightly between applications, so the outer iteration is flexible GMRES, which keeps the preconditioned
+vectors and needs no fixed preconditioner. Applied with the stored kernels of every pair of planes and through the recursions, the
 preconditioner agrees to $1.5\times10^{-12}$ ($\omega h/\beta_A=1/6$) and $1.9\times10^{-11}$ ($1/2$) on
 $8\times2\times2$ cells, where the march acts.
 
