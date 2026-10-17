@@ -298,12 +298,109 @@ def integrand_from_factors(f: ModeFactors, zr: int, zs: int) -> NDArray:
 # ---------------------------------------------------------------------------
 
 
+class _Chunk:
+    """A chunk of nodes: on the box's lattice (``idx``: m mod N flattened) or not (``t1``, ``t2``, ``shift``: the
+    NUFFT's points and the centring phase)."""
+
+    def __init__(self, qx, qy, w, h, shape, idx=None, lattice_n=0):
+        self.qx, self.qy, self.w, self.idx = qx, qy, w, idx
+        if idx is not None:
+            import scipy.sparse
+
+            n_sq = lattice_n * lattice_n
+            # the fold: node p onto bin idx[p] (aliases share a bin)
+            self.fold = scipy.sparse.csr_matrix(
+                (np.ones(len(idx)), (idx, np.arange(len(idx)))), shape=(n_sq, len(idx))
+            )
+        else:
+            nx, ny = shape
+            # e^{-i k . 2h (ix, iy)}: points t = 2h k, modes ix - nx//2 (finufft's centred order)
+            self.t1 = np.mod(2 * h * qx + np.pi, 2 * np.pi) - np.pi
+            self.t2 = np.mod(2 * h * qy + np.pi, 2 * np.pi) - np.pi
+            self.shift = np.exp(-1j * (self.t1 * (nx // 2) + self.t2 * (ny // 2)))
+
+
+def _chunks(kx, ky, wts, h, shape, chunk, lattice):
+    """The chunks of the nodes; ``lattice`` = (mx, my, n_grid) for the last len(mx) nodes, which lie at
+    k = 2 pi m / (n_grid 2h): those chunks are applied by FFTs, not NUFFTs."""
+    n_polar = len(kx) - (0 if lattice is None else len(lattice[0]))
+    out = []
+    for lo, hi in ((0, n_polar), (n_polar, len(kx))):
+        for i0 in range(lo, hi, chunk):
+            sl = slice(i0, min(i0 + chunk, hi))
+            idx, n = None, 0
+            if lo == n_polar and lattice is not None:
+                mx, my, n = lattice
+                j = slice(sl.start - n_polar, sl.stop - n_polar)
+                idx = (mx[j] % n) * n + (my[j] % n)
+            out.append(_Chunk(kx[sl], ky[sl], wts[sl], h, shape, idx, n))
+    return out
+
+
+class _Transforms:
+    """Grid to nodes and nodes to grid for one product.  Off the lattice: NUFFT plans (type 2 and 1), their points
+    set once per chunk.  On the lattice: e^{-2 pi i m j / N} on the cell grid, so one zero-padded N x N FFT per layer
+    gives every lattice node exactly (aliases m and m + N alike), and the way back folds the nodes by m mod N and
+    takes one inverse FFT per layer: no spreading and no tolerance."""
+
+    def __init__(self, shape, n_in, n_out, eps, n_grid):
+        import finufft
+
+        self.shape, self.n_in, self.n_out, self.n = shape, n_in, n_out, n_grid
+        assert n_grid is None or n_grid >= max(shape), (
+            "the lattice's box holds the grid"
+        )
+        self.to_k = finufft.Plan(2, shape, n_trans=n_in, eps=eps, isign=-1)
+        self.to_grid = finufft.Plan(1, shape, n_trans=n_out, eps=eps, isign=1)
+        self.spec: dict = {}
+        self.fold: dict = {}
+        self.current = None
+
+    def chunk(self, ch: _Chunk) -> None:
+        self.current = ch
+        if ch.idx is None:
+            self.to_k.setpts(ch.t1, ch.t2)
+            self.to_grid.setpts(ch.t1, ch.t2)
+
+    def to_nodes(self, z, g: NDArray) -> NDArray:
+        """(n_in, nx, ny) grid -> (P, n_in) at the current chunk's nodes."""
+        ch = self.current
+        if ch.idx is None:
+            return (self.to_k.execute(g) * ch.shift).T
+        if z not in self.spec:
+            n, (nx, ny) = self.n, self.shape
+            self.spec[z] = np.fft.fft2(
+                np.pad(g, ((0, 0), (0, n - nx), (0, n - ny))), axes=(1, 2)
+            ).reshape(self.n_in, -1)
+        return self.spec[z][:, ch.idx].T
+
+    def to_grid_add(self, z, c: NDArray, out: NDArray) -> None:
+        """(P, n_out) node values (weights included) -> added onto out (nx, ny, n_out) or folded for ``finish``."""
+        ch = self.current
+        if ch.idx is None:
+            got = self.to_grid.execute(np.ascontiguousarray((c / ch.shift[:, None]).T))
+            out += got.transpose(1, 2, 0)
+            return
+        if z not in self.fold:
+            self.fold[z] = np.zeros((self.n * self.n, self.n_out), dtype=complex)
+        self.fold[z] += ch.fold @ c
+
+    def finish(self, z, out: NDArray) -> None:
+        """The folded lattice nodes onto the grid: y_j = sum_m c_m e^{2 pi i m j / N} = N^2 ifft2(fold)."""
+        if z not in self.fold:
+            return
+        n, (nx, ny) = self.n, self.shape
+        y = np.fft.ifft2(self.fold[z].reshape(n, n, -1), axes=(0, 1)) * n * n
+        out += y[:nx, :ny]
+
+
 class NodeProduct:
     """sum_k wts_k F(k) e^{i k . (x_r - x_s)} x_s over non-uniform nodes, sources in A: type-2 NUFFTs of the source
     layers, the mode factors, type-1 NUFFTs onto the receiver layers.  Grids (nx, ny, n_source or n_test, 9).
 
     The factors depend on the nodes and the frequency only, so with ``cache`` they are computed once and every
-    later product (a GMRES iteration) costs the NUFFTs and the contractions alone.
+    later product (a GMRES iteration) costs the NUFFTs and the contractions alone.  ``lattice`` (``lattice_of``)
+    marks the last nodes as the periodic box's lattice: those go by FFTs of the zero-padded layers instead.
     """
 
     def __init__(
@@ -325,30 +422,24 @@ class NodeProduct:
         eps: float = 1e-11,
         chunk: int = 4096,
         cache: bool = True,
+        lattice: tuple | None = None,
     ) -> None:
         self.src_zs, self.rec_zs, self.shape = sorted(src_zs), list(rec_zs), shape
         self.n_source, self.n_test, self.eps, self.cache = n_source, n_test, eps, cache
         self._args = (h, omega, above, below, n_source, n_test, q0h, window)
-        nx, ny = shape
-        self.chunks = []
-        for i0 in range(0, len(kx), chunk):
-            qx, qy, w = kx[i0 : i0 + chunk], ky[i0 : i0 + chunk], wts[i0 : i0 + chunk]
-            # e^{-i k . 2h (ix, iy)}: points t = 2h k, modes ix - nx//2 (finufft's centred order)
-            t1 = np.mod(2 * h * qx + np.pi, 2 * np.pi) - np.pi
-            t2 = np.mod(2 * h * qy + np.pi, 2 * np.pi) - np.pi
-            shift = np.exp(-1j * (t1 * (nx // 2) + t2 * (ny // 2)))
-            f = self._factors(qx, qy) if cache else None
-            self.chunks.append((qx, qy, w, t1, t2, shift, f))
+        self.n_grid = None if lattice is None else lattice[2]
+        self.chunks = _chunks(kx, ky, wts, h, shape, chunk, lattice)
+        self.factors = [
+            self._factors(ch.qx, ch.qy) if cache else None for ch in self.chunks
+        ]
 
     def _factors(self, qx: NDArray, qy: NDArray) -> ModeFactors:
         return mode_factors(self.rec_zs, self.src_zs, qx, qy, *self._args)
 
     def apply(self, src_grids: dict) -> dict:
-        import finufft
-
         nx, ny = self.shape
-        n_source, n_test, eps = self.n_source, self.n_test, self.eps
-        out = {zr: np.zeros((nx, ny, n_test, 9), dtype=complex) for zr in self.rec_zs}
+        n_source, n_test = self.n_source, self.n_test
+        out = {zr: np.zeros((nx, ny, n_test * 9), dtype=complex) for zr in self.rec_zs}
         grids = {
             zs: np.ascontiguousarray(
                 src_grids[zs].reshape(nx, ny, -1).transpose(2, 0, 1)
@@ -357,19 +448,16 @@ class NodeProduct:
             if zs in src_grids
         }
         if not grids:
-            return out
-        # one plan per type, its points set once per chunk and shared by the layers
-        to_k = finufft.Plan(2, (nx, ny), n_trans=n_source * 9, eps=eps, isign=-1)
-        to_grid = finufft.Plan(1, (nx, ny), n_trans=n_test * 9, eps=eps, isign=1)
-        for qx, qy, w, t1, t2, shift, f in self.chunks:
+            return {zr: o.reshape(nx, ny, n_test, 9) for zr, o in out.items()}
+        tr = _Transforms(self.shape, n_source * 9, n_test * 9, self.eps, self.n_grid)
+        for ch, f in zip(self.chunks, self.factors, strict=True):
             if f is None:
-                f = self._factors(qx, qy)
-            to_k.setpts(t1, t2)
-            to_grid.setpts(t1, t2)
-            amp = np.zeros((len(qx), 3), dtype=complex)
+                f = self._factors(ch.qx, ch.qy)
+            tr.chunk(ch)
+            amp = np.zeros((len(ch.qx), 3), dtype=complex)
             amp_stat = {key: 0.0 for key in f.mid_stat}
             for zs, g in grids.items():
-                y = f.by_exponent((to_k.execute(g) * shift).T.reshape(-1, n_source, 9))
+                y = f.by_exponent(tr.to_nodes(zs, g).reshape(-1, n_source, 9))
                 amp += f.src_amp(zs, y)
                 for key in f.mid_stat:
                     amp_stat[key] = amp_stat[key] + f.stat_src_amp(key, zs, y)
@@ -382,13 +470,12 @@ class NodeProduct:
                         if key not in stat_cache:
                             stat_cache[key] = f.stat_apply(key, amp_stat[key])
                         b = b + f.stat_rec_out(key, zr, stat_cache[key])
-                c = np.ascontiguousarray(
-                    (b * (w / shift)[:, None, None]).reshape(len(qx), -1).T
+                tr.to_grid_add(
+                    zr, (b * ch.w[:, None, None]).reshape(len(ch.qx), -1), out[zr]
                 )
-                out[zr] += (
-                    to_grid.execute(c).transpose(1, 2, 0).reshape(nx, ny, n_test, 9)
-                )
-        return out
+        for zr in self.rec_zs:
+            tr.finish(zr, out[zr])
+        return {zr: o.reshape(nx, ny, n_test, 9) for zr, o in out.items()}
 
 
 class TwoSidedProduct:
@@ -415,6 +502,7 @@ class TwoSidedProduct:
         eps=1e-11,
         chunk=4096,
         cache=True,
+        lattice=None,
     ) -> None:
         exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
         exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
@@ -422,7 +510,7 @@ class TwoSidedProduct:
         self.sc = np.array([(-1.0) ** e[0] for e in exps_s])[:, None] * isp.MIRROR_9
         self.rec_zs, self.shape, self.n_test = list(rec_zs), shape, n_test
         common = (shape, kx, ky, wts, h, omega)
-        rest = (n_source, n_test, q0h, window, eps, chunk, cache)
+        rest = (n_source, n_test, q0h, window, eps, chunk, cache, lattice)
         in_a = [z for z in src_zs if z < 0]
         in_b = [-z for z in src_zs if z > 0]
         self.a = (
@@ -533,6 +621,7 @@ def _apply_both_sides(
     window,
     eps,
     chunk,
+    lattice=None,
 ) -> dict:
     """One product, factors not kept (``TwoSidedProduct`` keeps them for repeated products)."""
     return TwoSidedProduct(
@@ -553,6 +642,7 @@ def _apply_both_sides(
         eps,
         chunk,
         cache=False,
+        lattice=lattice,
     ).apply(x_grids)
 
 
@@ -570,6 +660,15 @@ def high_band_nodes(
     w = low_pass(qh, band_qh) * dk**2 / (4 * np.pi**2)
     keep = (w > 0) & (qh < q0h)
     return kx[keep], ky[keep], w[keep]
+
+
+def lattice_of(kx: NDArray, ky: NDArray, h: float, n_grid: int) -> tuple:
+    """(mx, my, n_grid) of nodes on the periodic box's lattice, k = 2 pi m / (n_grid 2h): the ``lattice`` argument
+    of ``NodeProduct`` and ``WholeSpaceMarch``, which then apply those nodes by FFTs."""
+    dk = 2 * np.pi / (n_grid * 2 * h)
+    mx, my = np.rint(kx / dk).astype(int), np.rint(ky / dk).astype(int)
+    assert np.allclose(mx * dk, kx) and np.allclose(my * dk, ky)
+    return mx, my, n_grid
 
 
 def apply_high_band(
@@ -611,6 +710,7 @@ def apply_high_band(
         window,
         eps,
         chunk,
+        lattice_of(kx, ky, h, n_grid),
     )
 
 
@@ -718,48 +818,42 @@ class WholeSpaceMarch:
         chunk: int = 4096,
         cache: bool = True,
         min_gap: int = 2,
+        lattice: tuple | None = None,
     ) -> None:
         self.layers = list(range(min(layers), max(layers) + 1))
         self.shape, self.n_source, self.n_test, self.eps = shape, n_source, n_test, eps
         self.min_gap = min_gap
         self._args = (h, omega, ref, n_source, n_test)
-        nx, ny = shape
-        self.chunks = []
-        for i0 in range(0, len(kx), chunk):
-            qx, qy, w = kx[i0 : i0 + chunk], ky[i0 : i0 + chunk], wts[i0 : i0 + chunk]
-            t1 = np.mod(2 * h * qx + np.pi, 2 * np.pi) - np.pi
-            t2 = np.mod(2 * h * qy + np.pi, 2 * np.pi) - np.pi
-            shift = np.exp(-1j * (t1 * (nx // 2) + t2 * (ny // 2)))
-            f = whole_space_modes(qx, qy, *self._args) if cache else None
-            self.chunks.append((qx, qy, w, t1, t2, shift, f))
+        self.n_grid = None if lattice is None else lattice[2]
+        self.chunks = _chunks(kx, ky, wts, h, shape, chunk, lattice)
+        self.factors = [
+            whole_space_modes(ch.qx, ch.qy, *self._args) if cache else None
+            for ch in self.chunks
+        ]
 
     def apply(self, x_grids: dict) -> dict:
-        import finufft
-
         nx, ny = self.shape
-        n_source, n_test, eps = self.n_source, self.n_test, self.eps
+        n_source, n_test = self.n_source, self.n_test
         n_l = len(self.layers)
-        out = {z: np.zeros((nx, ny, n_test, 9), dtype=complex) for z in self.layers}
+        out = {z: np.zeros((nx, ny, n_test * 9), dtype=complex) for z in self.layers}
         g = self.min_gap
         if n_l <= g:
-            return out
-        to_k = finufft.Plan(2, (nx, ny), n_trans=n_source * 9, eps=eps, isign=-1)
-        to_grid = finufft.Plan(1, (nx, ny), n_trans=n_test * 9, eps=eps, isign=1)
+            return {z: o.reshape(nx, ny, n_test, 9) for z, o in out.items()}
+        tr = _Transforms(self.shape, n_source * 9, n_test * 9, self.eps, self.n_grid)
         grids = {
             z: np.ascontiguousarray(x_grids[z].reshape(nx, ny, -1).transpose(2, 0, 1))
             for z in self.layers
             if z in x_grids
         }
-        for qx, qy, w, t1, t2, shift, f in self.chunks:
+        for ch, f in zip(self.chunks, self.factors, strict=True):
             if f is None:
-                f = whole_space_modes(qx, qy, *self._args)
-            to_k.setpts(t1, t2)
-            to_grid.setpts(t1, t2)
-            p = len(qx)
+                f = whole_space_modes(ch.qx, ch.qy, *self._args)
+            tr.chunk(ch)
+            p = len(ch.qx)
             beta = {s: np.zeros((n_l, p, 3), dtype=complex) for s in (1, -1)}
             for i, z in enumerate(self.layers):
                 if z in grids:
-                    xh = (to_k.execute(grids[z]) * shift).T.reshape(-1, n_source, 9)
+                    xh = tr.to_nodes(z, grids[z]).reshape(-1, n_source, 9)
                     for s in (1, -1):
                         beta[s][i] = f.src_amp(s, xh)
             p1, pg = f.step, f.step**g
@@ -775,13 +869,10 @@ class WholeSpaceMarch:
                 up[i] = p1 * up[i + 1] + pg * beta[-1][i + g]
             for i, z in enumerate(self.layers):
                 b = f.rec_out(1, down[i]) + f.rec_out(-1, up[i])
-                c = np.ascontiguousarray(
-                    (b * (w / shift)[:, None, None]).reshape(p, -1).T
-                )
-                out[z] += (
-                    to_grid.execute(c).transpose(1, 2, 0).reshape(nx, ny, n_test, 9)
-                )
-        return out
+                tr.to_grid_add(z, (b * ch.w[:, None, None]).reshape(p, -1), out[z])
+        for z in self.layers:
+            tr.finish(z, out[z])
+        return {z: o.reshape(nx, ny, n_test, 9) for z, o in out.items()}
 
 
 def whole_space_nodes(
@@ -793,10 +884,12 @@ def whole_space_nodes(
     band_qh: float,
     low_pass: isp.Window,
     qmax_h: float = 16.0,
-) -> tuple[NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray, NDArray, tuple]:
     """The whole-space march's nodes: the low band's polar quadrature (as D's, the medium's branch points) and the
     periodic box's lattice above it to q h = qmax_h.  Between planes g apart the integrand falls as
-    e^{-2 (g - 1) q h}, ~1e-14 at q h = 16 / (g - 1): 16 for the march from g = 2, 8 from g = 3."""
+    e^{-2 (g - 1) q h}, ~1e-14 at q h = 16 / (g - 1): 16 for the march from g = 2, 8 from g = 3.  Returns
+    (kx, ky, weights, lattice): the lattice nodes last, ``lattice`` their indices (``lattice_of``)."""
     lo = low_band_nodes(reach, h, omega, ref, ref, band_qh, low_pass)
     hi = high_band_nodes(n_grid, h, qmax_h, band_qh, low_pass)
-    return tuple(np.concatenate([a, b]) for a, b in zip(lo, hi, strict=True))
+    kx, ky, w = (np.concatenate([a, b]) for a, b in zip(lo, hi, strict=True))
+    return kx, ky, w, lattice_of(hi[0], hi[1], h, n_grid)
