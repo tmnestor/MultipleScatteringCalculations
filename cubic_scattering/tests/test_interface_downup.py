@@ -101,3 +101,36 @@ def test_fgmres_matches_the_dense_solve(box, pre):
     assert stats["outer"] < 60
     if pre == "downup":
         assert stats["planes"] > 0 and stats["inner"] >= stats["planes"]
+
+
+def test_averaged_sweep_is_the_gram_inverse_at_zero_contrast(box):
+    """With no contrast the averaged system is M alone: Algorithm 5.1's sweep applies M^-1 cell by cell."""
+    g, _, op = box
+    e = np.zeros((len(g.idx), op.n_source, op.na, 9, 9), dtype=complex)
+    pre = idu.AveragedSweep(op, e)
+    v = np.random.default_rng(2).standard_normal((len(g.idx), op.na, 9)) + 0j
+    want = np.einsum("ab,nbi->nai", np.linalg.inv(op.m9), v)
+    got = pre(v.ravel()).reshape(v.shape)
+    assert np.abs(got - want).max() < 1e-12 * np.abs(want).max()
+
+
+def test_fgmres_with_the_averaged_sweep_matches_the_dense_solve(box):
+    g, c, op = box
+    ctr = _contrasts(g, 0.5)
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
+    got, stats = idu.solve_interface_fgmres(
+        c,
+        OMEGA,
+        ctr,
+        kx,
+        ky,
+        "P",
+        p=1,
+        r=0,
+        operator=op,
+        preconditioner="averaged",
+        tol=1e-11,
+    )
+    assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+    assert stats["outer"] < 60

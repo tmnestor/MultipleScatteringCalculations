@@ -460,6 +460,25 @@ preconditioner of a flexible GMRES. Decided (17 October): split by direction; ea
   preconditioner's nodes independently of the reach (e.g. a fixed azimuthal count, accepting a less exact D far
   away), then S7.
 
+### S6c. Algorithm 5.1 for the plane-averaged contrast (decided 18 October)
+
+The thesis's exact up/down sweep (Alg. 5.1, A = UL, Eq. 5.49, pivots Kennett's net reflection operators,
+5.50-5.51) for the medium in which each plane's contrast is its lateral mean: then M - K E is invariant under
+lateral translations within each plane and separates by lateral wavenumber (on the stored kernels' padded grid,
+the circulant approximation), and at each bin the depth system over the planes is solved exactly, so the
+backscatter between planes of the averaged medium is exact and only the lateral fluctuations are left to the
+outer iteration. `interface_downup.AveragedSweep`: on the stored kernels a dense LU per bin is the same inverse;
+the Riccati form is needed for the matrix-free operator and many planes.
+
+Future (noted by the thesis's author, 18 October):
+- **The homogenised layer** in place of the plane's mean contrast (the next step of the PhD development, left
+  out for time): each plane's effective layer by the layer law (Paper 3, gate G7, `kennett_layers`), its net
+  R/T per wavenumber as the pivots.
+- **The Dirichlet-to-Neumann version of Algorithm 5.1, solved partially.** The Schur complement S_z is the
+  discrete DtN map of the half-domain above plane z; with the laterally varying contrast it is dense per plane,
+  but FGMRES accepts a preconditioner that varies between applications, so an inexact (partial) DtN solve,
+  e.g. an iterative solve of S_z or a low-rank or banded approximation, can stand in for the exact one.
+
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
   frequency and per incidence, and convergence in p on a subset.
