@@ -984,6 +984,8 @@ two-way march preconditioner through the recursions, $8\times2\times2$ cells, $\
 Algorithm~5.1, Dirichlet-to-Neumann form, one plane, contrast varying & the plane's system & $2.8\times10^{-14}$ (inverse) \\
 its window operator over all planes, $15$ cells in $4$ planes & true system on the padded grid, assembled from the stored kernels & $5.3\times10^{-16}$ \\
 FGMRES with the march, Algorithm~5.1 averaged, DtN ($w=0$, all), $15$ cells, contrast varying & dense solve & $1.6$, $9.7$, $8.3$, $7.8\times10^{-12}$ \\
+Algorithm~5.1 with approximate solves of the true system, windows of all the planes above, solved to $10^{-13}$, $15$ cells, contrast varying & the vector the system was applied to & $3.6\times10^{-14}$ (inverse) \\
+FGMRES with it, $w=0$, all, $15$ cells, contrast varying & dense solve & $2.0\times10^{-13}$, $1.2\times10^{-14}$ \\
 split to $\omega^2$ and to $\omega^4$ at $Q_0h=3$--$10$, self-image, across and lateral pairs, $\omega h/\beta=1/6$, $1/2$ & split to $\omega^4$ at $Q_0h=20$ & at $Q_0h=10$: $3.5\times10^{-10}$, $2.5\times10^{-8}$ ($\omega^2$); $4.8\times10^{-11}$, $6.2\times10^{-11}$ ($\omega^4$) \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
