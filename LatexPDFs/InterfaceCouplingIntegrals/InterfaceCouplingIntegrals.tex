@@ -1340,43 +1340,110 @@ vectors and needs no fixed preconditioner. Applied with the stored kernels of ev
 preconditioner agrees to $1.5\times10^{-12}$ ($\omega h/\beta_A=1/6$) and $1.9\times10^{-11}$ ($1/2$) on
 $8\times2\times2$ cells, where the march acts.
 
-On $6\times6$ cells per plane, one pass halves the outer count: at $\omega h/\beta_A=1/6$ it is $5/6/7$ products
-for $10/30/50\%$ on two to eight layers, against block-Jacobi's $8/10/12$ to $8/11/13$; at $1/2$ and $50\%$ it
-grows from $7$ to $12$ on two to eight layers, from the backscatter lagged once, and three passes remove the
-growth ($6$ products on two and on eight layers, block-Jacobi $16$ and $21$). A preconditioner need not be exact,
-and its cost is set by the planes' own reflection and by the wavenumbers of $\mathbf D$. With each plane's own
-reflection lagged with the others, $\mathbf A_i$ is the plane's stored whole-space kernel and corrections, so
-the inner products are lateral FFTs; and the preconditioner's $\mathbf D$ and march get nodes of their own, the low
-band alone (the high band is local) at a coarse rule, non-uniform FFTs to $10^{-6}$ and the march's lattice to
-$qh=4$. None of this changes the outer count, and a pass then costs about a quarter of a product.
-Table~\ref{tab:downup} gives the time to $10^{-10}$ with the matrix-free operator. On $6\times6$ cells per plane,
-one pass takes $24$ to $28\%$ less time than block-Jacobi; three passes cost more per product saved at $30\%$,
-but at $50\%$ their count is the same on sixteen layers as on eight, and they take $29\%$ and $38\%$ less time.
-On $12\times12$ cells per plane block-Jacobi's count grows with the area as well ($27$ products at $50\%$
-against $21$), while three passes of the march still take $8$; but the saving in time narrows to $14$ to $15\%$
-with one pass and $11\%$ with three at $50\%$. The preconditioner's coarse low band grows with the lateral reach
-($9.0$ thousand nodes against $3.6$ thousand), so a pass costs about half a product instead of a quarter.
+Table~\ref{tab:precond} gives the outer products to $10^{-10}$ with four preconditioners, from the same stored
+kernels: none at all, the benchmark; block-Jacobi; the march, one pass; and Algorithm~5.1 for the plane-averaged
+contrast (below). Block-Jacobi gains less than it seems. Against no preconditioner it saves $5$ to $9$ products
+at $\omega h/\beta_A=1/6$, but at $1/2$ and $50\%$ only $8$ on two layers and $3$ on sixteen ($24$ against $27$);
+on $8\times12\times12$ cells $2$ ($27$ against $29$). The march takes a third to a half of the unpreconditioned
+count throughout. At $1/6$ one pass makes it independent of the number of layers ($4$ to $8$ products); at $1/2$
+it grows from $7$ to $14$ on two to sixteen layers, from the backscatter lagged once, and further passes remove
+the growth ($6$ products on two and on eight layers with three passes, on $6\times6$ cells). A preconditioner need
+not be exact, and its cost is set by the planes' own reflection and by the wavenumbers of $\mathbf D$. With each
+plane's own reflection lagged with the others, $\mathbf A_i$ is the plane's stored whole-space kernel and
+corrections, so the inner products are lateral FFTs; and the preconditioner's $\mathbf D$ and march get nodes of
+their own, the low band alone (the high band is local) at a coarse rule, non-uniform FFTs to $10^{-6}$ and the
+march's lattice to $qh=4$. None of this changes the outer count, and a pass then costs about a quarter of a
+product on $6\times6$ cells.
 
 \begin{table}[htbp]
 \centering
-\caption{Matrix-free FGMRES to $10^{-10}$ at $\omega h/\beta_A=1/2$: outer products and time with block-Jacobi
-and with the two-way march (coarse nodes of its own, one or three passes), for boxes of $L\times n\times n$ cells
-at contrasts of $30\%$ and $50\%$; one product takes $12$\,s ($8\times6\times6$), $25$\,s ($16\times6\times6$) and
-$19$\,s ($8\times12\times12$).}
+\caption{Outer products of FGMRES to $10^{-10}$ on the stored kernels, at contrasts of $10/30/50\%$, for boxes of
+$L\times n\times n$ cells: no preconditioner, block-Jacobi, the two-way march (one pass) and Algorithm~5.1 for the
+plane-averaged contrast.}
+\label{tab:precond}
+\begin{tabular}{llcccc}
+\toprule
+$\omega h/\beta_A$ & box & none & block-Jacobi & march & Alg.~5.1 \\
+\midrule
+$1/6$ & $2\times6\times6$ & $14/18/21$ & $8/10/12$ & $4/6/6$ & $5/6/6$ \\
+ & $4\times6\times6$ & $14/18/21$ & $8/10/12$ & $5/6/7$ & $5/6/7$ \\
+ & $8\times6\times6$ & $14/18/21$ & $8/11/13$ & $5/6/7$ & $5/7/8$ \\
+ & $16\times6\times6$ & $14/19/22$ & $8/12/14$ & $5/7/8$ & $5/7/8$ \\
+ & $8\times12\times12$ & $14/19/22$ & $9/12/15$ & $5/7/8$ & $5/7/9$ \\
+$1/2$ & $2\times6\times6$ & $15/20/24$ & $9/13/16$ & $5/7/7$ & $5/7/8$ \\
+ & $4\times6\times6$ & $15/21/25$ & $10/14/19$ & $6/8/9$ & $6/8/10$ \\
+ & $8\times6\times6$ & $15/21/26$ & $10/16/21$ & $6/9/12$ & $6/9/13$ \\
+ & $16\times6\times6$ & $16/22/27$ & $11/17/24$ & $6/10/14$ & $7/11/16$ \\
+ & $8\times12\times12$ & $16/23/29$ & $11/19/27$ & $6/10/14$ & $6/10/15$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Algorithm 5.1 for the plane-averaged contrast.} The march lags the backscatter; the thesis also gives
+the exact up/down sweep, its Algorithm~5.1, which factorises the depth problem, $\mathcal A=\mathcal U\mathcal L$,
+with Kennett's net reflection operators as pivots, so that a Riccati down-sweep forms the Schur complements
+$\mathbf S_z=\mathbf D_z-\mathbf L_z\mathbf S_{z-1}^{-1}\mathbf U_{z-1}$ and back-substitution goes up. $\mathbf S_z$
+is the discrete Dirichlet-to-Neumann map of the half-domain above plane $z$: the backscatter of everything above,
+exactly. With a laterally varying contrast it is dense within each plane, but in a medium whose contrast varies
+in depth only it is diagonal in the lateral wavenumber. So each plane's contrast is replaced by its lateral mean,
+$\bar{\mathbf E}_z$: then $\mathbf M-\bK\bar{\mathbf E}$ is invariant under lateral translations within each plane,
+separates by wavenumber on the stored kernels' padded grid (the circulant approximation of the box's
+convolutions), and at each wavenumber the depth system over the planes is solved exactly, here by a dense LU per
+bin, which is the same inverse. The backscatter of the averaged medium between planes is then exact, and only the
+lateral fluctuation of the contrast about its mean is left to the outer iteration. An application is an FFT per
+plane, a solve per wavenumber and an inverse FFT per plane, with no inner iteration. Its outer counts
+(Table~\ref{tab:precond}) are those of the march to within one or two products, the march somewhat better at
+$1/2$ and $50\%$, where the lateral fluctuation is largest: the two preconditioners carry complementary halves of
+the coupling, the march the true contrast with the backscatter lagged, Algorithm~5.1 the backscatter exactly for
+the averaged contrast. Two refinements follow the thesis's own line of development and are left for later: a
+homogenised layer, by the layer law, in place of each plane's mean contrast; and the Dirichlet-to-Neumann form of
+Algorithm~5.1 with the true contrast, its dense $\mathbf S_z$ solved only partially, which flexible GMRES accepts
+since the preconditioner may vary between applications.
+
+Table~\ref{tab:downup} gives the time to $10^{-10}$ with the matrix-free operator, where each outer product costs
+$12$ to $41$\,s, for five boxes of three shapes. On the deep, narrow box ($32\times6\times6$, the shape of a
+teleseismic target) the march takes $27$ and $25\%$ less time than block-Jacobi with one pass and $37\%$ less with
+three, and $42$ to $48\%$ less than no preconditioner; block-Jacobi there is barely better than none at $50\%$
+($27$ products against $29$). On boxes of moderate depth and width one pass saves $14$ to $28\%$, and three passes
+beat one only at $50\%$ on $6\times6$ cells per plane. On the wide, shallow box ($4\times24\times24$, the shape of a reflection survey) the march
+saves outer products as everywhere ($10$ and $14$ against $19$ and $28$) but no time: one pass is level with
+block-Jacobi ($406$ against $387$\,s, $578$ against $589$\,s) and three passes are slower. With four planes there is
+little coupling in depth for the march to carry and much within each plane, and a pass grows with the plane's
+width; the node bound below removes most of that growth but not the balance.
+
+\begin{table}[htbp]
+\centering
+\caption{Matrix-free FGMRES to $10^{-10}$ at $\omega h/\beta_A=1/2$: outer products and time with no
+preconditioner, block-Jacobi and the two-way march (coarse nodes of its own, one or three passes), for boxes of
+$L\times n\times n$ cells at contrasts of $30\%$ and $50\%$. One product takes $12$\,s ($8\times6\times6$), $25$\,s
+($16\times6\times6$), $19$\,s ($8\times12\times12$), $41$\,s ($32\times6\times6$) and $20$\,s ($4\times24\times24$).
+$^\dagger$Outer products only, from the stored kernels (Table~\ref{tab:precond}). $^\ddagger$With the node bound
+(on $6\times6$ cells it changes only the march's lattice).}
 \label{tab:downup}
 \begin{tabular}{llcc}
 \toprule
 box & preconditioner & $30\%$ & $50\%$ \\
 \midrule
-$8\times6\times6$ & block-Jacobi & $16$, $191$\,s & $21$, $247$\,s \\
+$8\times6\times6$ & none & $21^\dagger$ & $26^\dagger$ \\
+ & block-Jacobi & $16$, $191$\,s & $21$, $247$\,s \\
  & march, one pass & $9$, $138$\,s & $12$, $185$\,s \\
  & march, three passes & $8$, $181$\,s & $8$, $176$\,s \\
-$16\times6\times6$ & block-Jacobi & $17$, $404$\,s & $24$, $542$\,s \\
+$16\times6\times6$ & none & $22^\dagger$ & $27^\dagger$ \\
+ & block-Jacobi & $17$, $404$\,s & $24$, $542$\,s \\
  & march, one pass & $10$, $294$\,s & $14$, $414$\,s \\
  & march, three passes & $7$, $303$\,s & $8$, $337$\,s \\
-$8\times12\times12$ & block-Jacobi & $19$, $343$\,s & $27$, $486$\,s \\
+$8\times12\times12$ & none & $23^\dagger$ & $29^\dagger$ \\
+ & block-Jacobi & $19$, $343$\,s & $27$, $486$\,s \\
  & march, one pass & $10$, $295$\,s & $14$, $414$\,s \\
  & march, three passes & $7$, $374$\,s & $8$, $433$\,s \\
+$32\times6\times6$ & none & $23$, $1026$\,s & $29$, $1237$\,s \\
+ & block-Jacobi & $19$, $847$\,s & $27$, $1133$\,s \\
+ & march, one pass & $11$, $615$\,s & $15$, $853$\,s \\
+ & march, three passes$^\ddagger$ & $7$, $530$\,s & $9$, $717$\,s \\
+$4\times24\times24$ & none & $25$, $510$\,s & $32$, $647$\,s \\
+ & block-Jacobi & $19$, $387$\,s & $28$, $589$\,s \\
+ & march, one pass$^\ddagger$ & $10$, $406$\,s & $14$, $578$\,s \\
+ & march, three passes$^\ddagger$ & $7$, $617$\,s & $9$, $808$\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1398,8 +1465,10 @@ the count for a fixed reach, whatever the box: its $\mathbf D$ is then accurate 
 error for distant ones, where $\mathbf D$ itself is small (it decays as about $h/\rho$, to $5\times10^{-3}$ of the
 touching block at an offset of $32h$). An inexact preconditioner can cost outer iterations but cannot change the answer,
 which the product fixes; so the bound trades the cost of a pass, then independent of the width, against the outer
-count. The coarsenings above left the count unchanged, which suggests the room to do so; whether a bound at a reach
-of $16$ cells holds it on wider boxes is the measurement that decides the march for wide, shallow targets.
+count. The coarsenings above left the count
+unchanged, which suggested the room to do so, and the measurement bears it out: on $4\times24\times24$ cells a bound
+at a reach of $32h$ ($16$ cells) cuts the preconditioner's low band from $28.2$ to $9.3$ thousand nodes with the
+outer count unchanged ($10$ and $14$ products at $30$ and $50\%$), and the solve's time by $10$ to $13\%$.
 
 \paragraph{Storage against time, over frequencies and sources.} The matrix-free product exists to save memory,
 and it pays in time. A study over $N_f$ frequencies with $N_s$ right-hand sides each (incidence angles or

@@ -470,6 +470,20 @@ backscatter between planes of the averaged medium is exact and only the lateral 
 outer iteration. `interface_downup.AveragedSweep`: on the stored kernels a dense LU per bin is the same inverse;
 the Riccati form is needed for the matrix-free operator and many planes.
 
+Measured (18 October, `scripts/measure_interface_preconditioners.py`, `scripts/data/interface_preconditioners.jsonl`),
+outer products on the stored kernels at 1/2, 10 / 30 / 50 %, none / block-Jacobi / march (one pass) / Alg. 5.1:
+2 x 6 x 6: 15/20/24, 9/13/16, 5/7/7, 5/7/8; 16 x 6 x 6: 16/22/27, 11/17/24, 6/10/14, 7/11/16; 8 x 12 x 12:
+16/23/29, 11/19/27, 6/10/14, 6/10/15 (all boxes in the paper's Table 9). Algorithm 5.1 for the averaged contrast
+matches the march to one or two products; block-Jacobi saves only 2-3 products over none at 1/2, 50 % on deep or
+wide boxes.
+
+Box shapes, matrix-free at 1/2 (30 / 50 %): 32 x 6 x 6 (one product 41 s): none 23 / 29 outer, 1026 / 1237 s;
+block-Jacobi 19 / 27, 847 / 1133 s; march one pass 11 / 15, 615 / 853 s; three passes (bounded) 7 / 9, 530 / 717 s,
+37 % less than block-Jacobi. 4 x 24 x 24 (one product 20.5 s): none 25 / 32, 510 / 647 s; block-Jacobi 19 / 28,
+387 / 589 s; march one pass (bounded) 10 / 14, 406 / 578 s, level with block-Jacobi; three passes slower. The node
+bound (`COARSE_BOUNDED`) cuts the coarse low band 28.2k -> 9.3k nodes there, counts unchanged, time -10-13 %. So the
+march pays on deep targets (teleseismic), and on wide shallow ones (reflection) it only matches block-Jacobi.
+
 Future (noted by the thesis's author, 18 October):
 - **The homogenised layer** in place of the plane's mean contrast (the next step of the PhD development, left
   out for time): each plane's effective layer by the layer law (Paper 3, gate G7, `kennett_layers`), its net
