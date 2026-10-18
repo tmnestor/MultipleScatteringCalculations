@@ -14,6 +14,7 @@ boundary.
 Coordinates: z = axis 0 (down), x = axis 1 (right), y = axis 2 (out).
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -507,25 +508,289 @@ def sweep_y(sources: NDArray, grid: SweepGrid, cache: G0Cache) -> NDArray:
         "         held fixed on the SweepGrid and integrated over afterwards.\n"
         "  Fix:   for a y-invariant model, solve once per k_y with\n"
         "         solve_sweep_foldy_lax and integrate. For a model that VARIES in y,\n"
-        "         use the three-dimensional operator instead: build_g0_cache_3d and\n"
-        "         apply_g0_3d, below. There is no spectral in-out sweep and there\n"
-        "         will not be one -- see the note on that function for the measured\n"
-        "         reason. Do NOT simply drop this term: omitting it silently\n"
-        "         discards all out-of-plane coupling."
+        "         the in-out sweep is three-dimensional: sweep_y_3d, with sweep_x_3d\n"
+        "         for the left-right pairs (the in-plane sweeps of the thesis's\n"
+        "         Algorithm 5.2), or the real-space tables of build_g0_cache_3d and\n"
+        "         apply_g0_3d, below. Do NOT simply drop this term: omitting it\n"
+        "         silently discards all out-of-plane coupling."
     )
     raise NotImplementedError(msg) from None
+
+
+# =============================================================================
+#  The in-plane sweeps in three dimensions (the thesis's Algorithm 5.2)
+#
+#  Same-depth coupling as two running sweeps, as in stage 1, but with a 2-D
+#  transverse rule. The LEFT-RIGHT sweep runs along x over every pair with
+#  dx != 0, the transverse wavenumber k_y carried by a transform over the
+#  column; the IN-OUT sweep runs along y over the pairs with dx = 0, by the
+#  exchange x <-> y (PI9) of the same machinery. Together they reach every
+#  distinct pair of a plane exactly once and never the self-site.
+#
+#  THE MEMORY. Stage 2 measured the accumulator of a sweep that holds every
+#  transverse node at once: (n_z, n_x, n_k, 9), 68 GB at 16^3
+#  (scripts/measure_sweep3d_cost.py). The quadrature is a SUM over nodes, so
+#  the sweep is run chunk by chunk of nodes and the chunks' fields added: the
+#  result is the same to round-off, and the memory is (lines, chunk, 9) per
+#  accumulator. The cost is not reduced -- every node still meets every column
+#  -- and the real-space table (same_depth_table) remains the cheaper route for
+#  the whole-space same-depth coupling; the sweeps are the thesis's algorithm,
+#  gated against that table (scripts/gate_in_plane_sweeps_3d.py).
+#
+#  omega must be COMPLEX: the post-residue kernel's 1/k_x branch points lie on
+#  the circles |k_perp| = kP, kS inside the transverse domain.
+# =============================================================================
+
+#: The state permutation of the exchange x <-> y (the thesis's Pi_9): u_x <-> u_y,
+#: e_xx <-> e_yy and 2e_zy <-> 2e_zx, with 2e_xy its own image. No signs: the
+#: exchange is a reflection of the axes, under which an isotropic medium is
+#: invariant. Its own inverse.
+PI9 = np.array([0, 2, 1, 3, 5, 4, 6, 8, 7])
+
+
+@dataclass(frozen=True)
+class TransverseNodes:
+    """The 2-D transverse rule of a 3-D lateral sweep, as flattened node pairs.
+
+    Attributes:
+        kt: In-plane transverse wavenumber of each node (k_y for the left-right
+            sweep, k_x for the in-out sweep), 1/km, shape (n_nodes,).
+        kz: Vertical wavenumber of each node, 1/km, shape (n_nodes,).
+        weights: Quadrature weights INCLUDING the 1/(2 pi)^2, shape (n_nodes,).
+    """
+
+    kt: NDArray
+    kz: NDArray
+    weights: NDArray
+
+
+def make_transverse_nodes(kr_max: float, n_axis: int) -> TransverseNodes:
+    """Midpoint tensor rule in (k_t, k_z), radially masked to |k| <= kr_max.
+
+    The mask keeps the radial economy of a polar rule while every node stays a
+    tensor-product node (scripts/measure_sweep3d_cost.py, METHOD NOTE). The
+    converged rule measured there is kr_max * pitch = 30 with spacing 0.156/km
+    (3.2e-7); kr_max * pitch = 20 with 1024 nodes per axis gives 1.3e-6.
+
+    Args:
+        kr_max: Radial cutoff, 1/km (> 0).
+        n_axis: Nodes per axis across [-kr_max, kr_max] (>= 2).
+
+    Returns:
+        The masked rule.
+
+    Raises:
+        ValueError: on a non-positive cutoff or too few nodes.
+    """
+    if kr_max <= 0.0 or n_axis < 2:
+        msg = (
+            f"need kr_max > 0 and n_axis >= 2, got kr_max={kr_max!r}, n_axis={n_axis!r}.\n"
+            "  Where: cubic_scattering/directional_sweeps.py, make_transverse_nodes\n"
+            "  Valid: e.g. kr_max=30/pitch, n_axis=1536 (the converged rule)\n"
+            "  Fix:   refine cutoff and spacing together; both bind (measure_sweep3d_cost.py)."
+        )
+        raise ValueError(msg) from None
+    edge = np.linspace(-kr_max, kr_max, n_axis + 1)
+    k = 0.5 * (edge[:-1] + edge[1:])
+    dk = float(edge[1] - edge[0])
+    kt, kz = np.meshgrid(k, k, indexing="ij")
+    keep = kt**2 + kz**2 <= kr_max**2
+    kt, kz = kt[keep], kz[keep]
+    return TransverseNodes(kt=kt, kz=kz, weights=np.full(kt.size, dk * dk / (2 * np.pi) ** 2))
+
+
+def _sweep_lines(
+    sources: NDArray,
+    pitch: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    nodes: TransverseNodes,
+    chunk: int,
+) -> NDArray:
+    """Right and left sweeps along axis 1 of (n_lines, n_along, n_trans, 9), one medium.
+
+    Pairs on a line with different positions along it couple at every
+    transverse offset; the transverse axis is transformed onto the nodes'
+    k_t before the sweep and synthesised after it. The accumulator is read
+    BEFORE the local source is added, so the self-site is never formed.
+    """
+    n_lines, n_along, n_trans, _ = sources.shape
+    out = np.zeros(sources.shape, dtype=complex)
+    pos = np.arange(n_trans) * pitch
+    for start in range(0, nodes.kt.size, chunk):
+        kt = nodes.kt[start : start + chunk]
+        kz = nodes.kz[start : start + chunk]
+        w = nodes.weights[start : start + chunk]
+        forward = np.exp(-1j * np.outer(kt, pos))  # (c, n_trans): onto the nodes
+        synth = np.exp(1j * np.outer(pos, kt)) * w  # (n_trans, c): back, weighted
+        for direction, order in (("right", range(n_along)), ("left", range(n_along - 1, -1, -1))):
+            split = lateral_split_9x9(kt, kz, pitch, omega, ref, direction=direction)
+            acc_p = np.zeros((n_lines, kt.size, 9), dtype=complex)
+            acc_s = np.zeros_like(acc_p)
+            for i in order:
+                read = np.einsum("abc,lcb->lca", split.amp_p, acc_p)
+                read += np.einsum("abc,lcb->lca", split.amp_s, acc_s)
+                out[:, i] += np.einsum("ec,lca->lea", synth, read)
+                spec = np.einsum("ce,leb->lcb", forward, sources[:, i])
+                acc_p = (acc_p + spec) * split.phase_p[None, :, None]
+                acc_s = (acc_s + spec) * split.phase_s[None, :, None]
+    return out
+
+
+def _check_sweep3d(sources: NDArray, refs: Sequence[ReferenceMedium], chunk: int, where: str) -> None:
+    if sources.ndim != 4 or sources.shape[3] != 9:
+        msg = (
+            f"sources has shape {sources.shape}, expected (n_z, n_x, n_y, 9).\n"
+            f"  Where: cubic_scattering/directional_sweeps.py, {where}(sources=...)\n"
+            "  Valid: a complex array of shape (n_z, n_x, n_y, 9)\n"
+            "  Fix:   the trailing axis is the 9-component (u, e_Voigt) state."
+        )
+        raise ValueError(msg) from None
+    if len(refs) != sources.shape[0]:
+        msg = (
+            f"{len(refs)} plane media for {sources.shape[0]} planes.\n"
+            f"  Where: cubic_scattering/directional_sweeps.py, {where}(refs=...)\n"
+            "  Valid: one ReferenceMedium per depth plane, e.g. [ref] * n_z\n"
+            "  Fix:   each plane sweeps in its own medium's whole space; pass the\n"
+            "         medium of every plane (plane_reference_medium for a LayerModel)."
+        )
+        raise ValueError(msg) from None
+    if chunk < 1:
+        msg = (
+            f"chunk must be >= 1, got {chunk!r}.\n"
+            f"  Where: cubic_scattering/directional_sweeps.py, {where}(chunk=...)\n"
+            "  Valid: the number of transverse nodes per pass, e.g. chunk=4096\n"
+            "  Fix:   memory per accumulator is lines x chunk x 9 complex numbers."
+        )
+        raise ValueError(msg) from None
+
+
+def _by_medium(refs: Sequence[ReferenceMedium]) -> list[tuple[ReferenceMedium, list[int]]]:
+    """The planes grouped by medium, so that each kernel is built once per chunk."""
+    groups: list[tuple[ReferenceMedium, list[int]]] = []
+    for z, ref in enumerate(refs):
+        for known, members in groups:
+            if known == ref:
+                members.append(z)
+                break
+        else:
+            groups.append((ref, [z]))
+    return groups
+
+
+def sweep_x_3d(
+    sources: NDArray,
+    pitch: float,
+    omega: complex,
+    refs: Sequence[ReferenceMedium],
+    nodes: TransverseNodes,
+    *,
+    chunk: int,
+) -> NDArray:
+    """Left-right sweeps within each plane: every same-depth pair with dx != 0.
+
+    Args:
+        sources: Source 9-vectors, shape (n_z, n_x, n_y, 9).
+        pitch: Voxel pitch, km.
+        omega: Complex angular frequency, rad/s.
+        refs: The medium of each plane, length n_z.
+        nodes: The (k_y, k_z) transverse rule.
+        chunk: Transverse nodes per pass.
+
+    Returns:
+        The field at every site, shape (n_z, n_x, n_y, 9).
+
+    Raises:
+        ValueError: on a wrong source shape, a media list of the wrong length,
+            or a non-positive chunk.
+    """
+    _check_sweep3d(sources, refs, chunk, "sweep_x_3d")
+    out = np.zeros(sources.shape, dtype=complex)
+    for ref, planes in _by_medium(refs):
+        out[planes] = _sweep_lines(sources[planes], pitch, omega, ref, nodes, chunk)
+    return out
+
+
+def sweep_y_3d(
+    sources: NDArray,
+    pitch: float,
+    omega: complex,
+    refs: Sequence[ReferenceMedium],
+    nodes: TransverseNodes,
+    *,
+    chunk: int,
+) -> NDArray:
+    """In-out sweeps along each column: the same-depth pairs with dx = 0, dy != 0.
+
+    The left-right machinery under the exchange x <-> y: the state is permuted
+    by PI9, each column (fixed z and x) becomes a line along the swept axis
+    with a single transverse site, and the field is permuted back. The rule's
+    k_t is then k_x.
+
+    Args:
+        sources: Source 9-vectors, shape (n_z, n_x, n_y, 9).
+        pitch: Voxel pitch, km.
+        omega: Complex angular frequency, rad/s.
+        refs: The medium of each plane, length n_z.
+        nodes: The (k_x, k_z) transverse rule.
+        chunk: Transverse nodes per pass.
+
+    Returns:
+        The field at every site, shape (n_z, n_x, n_y, 9).
+
+    Raises:
+        ValueError: as sweep_x_3d.
+    """
+    _check_sweep3d(sources, refs, chunk, "sweep_y_3d")
+    n_z, n_x, n_y, _ = sources.shape
+    swapped = sources[..., PI9]
+    out = np.zeros(sources.shape, dtype=complex)
+    for ref, planes in _by_medium(refs):
+        lines = swapped[planes].reshape(len(planes) * n_x, n_y, 1, 9)
+        field = _sweep_lines(lines, pitch, omega, ref, nodes, chunk)
+        out[planes] = field.reshape(len(planes), n_x, n_y, 9)[..., PI9]
+    return out
+
+
+def in_plane_sweeps_3d(
+    sources: NDArray,
+    pitch: float,
+    omega: complex,
+    refs: Sequence[ReferenceMedium],
+    nodes: TransverseNodes,
+    *,
+    chunk: int,
+) -> NDArray:
+    """All same-depth whole-space coupling by the two sweeps of Algorithm 5.2.
+
+    Args:
+        sources: Source 9-vectors, shape (n_z, n_x, n_y, 9).
+        pitch: Voxel pitch, km.
+        omega: Complex angular frequency, rad/s.
+        refs: The medium of each plane, length n_z.
+        nodes: The transverse rule, used for both sweeps.
+        chunk: Transverse nodes per pass.
+
+    Returns:
+        The field at every site, shape (n_z, n_x, n_y, 9).
+    """
+    return sweep_x_3d(sources, pitch, omega, refs, nodes, chunk=chunk) + sweep_y_3d(
+        sources, pitch, omega, refs, nodes, chunk=chunk
+    )
 
 
 # =============================================================================
 #  Three-dimensional operator
 #
 #  NOT a third sweep. The stage-2 design originally called for an in-out k_y
-#  sweep completing six direction-pure passes; that was measured and abandoned.
+#  sweep completing six direction-pure passes; that was measured and set aside.
 #  A sweep carries a running accumulator indexed by its transverse quadrature
 #  nodes, which in 3-D is (n_z, n_x, n_k, 9): 68 GB on a 16^3 lattice at the
-#  converged rule, two live at once, and 615 GB for the inter-plane stack
-#  (scripts/measure_sweep3d_cost.py). The same operators tabulated in real
-#  space are 1.2 MB and 149 MB.
+#  converged rule if every node is held at once, and 615 GB for the inter-plane
+#  stack (scripts/measure_sweep3d_cost.py). The same operators tabulated in real
+#  space are 1.2 MB and 149 MB. (The in-plane sweeps were later built with the
+#  nodes taken chunk by chunk, which bounds their memory: sweep_x_3d and
+#  sweep_y_3d, above. The tables remain this operator's route.)
 #
 #  So in 3-D the coupling is split by DEPTH SEPARATION rather than by
 #  direction: the whole-space part comes from the closed-form propagator at
