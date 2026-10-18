@@ -305,3 +305,32 @@ def test_fgmres_with_the_true_sweep_matches_the_dense_solve(box):
     )
     assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
     assert stats["outer"] < 60
+
+
+def test_leading_sweep_is_the_exact_inverse(box):
+    """Route A of the matrix-free true sweep, run here on the stored kernels: the leading systems solved
+    tightly, the solved planes entering through the true coupling, invert A (contrast varying within the
+    planes)."""
+    g, _, op = box
+    delta = iso.cell_contrasts(g, OMEGA, _varying(g, 13), 0)
+    e = np.array([source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta])
+    x = np.random.default_rng(6).standard_normal((len(g.idx), op.na, 9)) + 0j
+    src = np.einsum("ncbij,nbj->nci", e, x).reshape(len(g.idx), -1)
+    ax = np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)
+    sweep = idu.LeadingSweep(op, e, inner_tol=1e-13)
+    got = sweep(ax.ravel()).reshape(x.shape)
+    assert np.abs(got - x).max() < 1e-9 * np.abs(x).max()
+    assert sweep.inner_solves == len(op.layers)  # one leading solve per plane
+    assert sweep.outer_products == len(op.layers) - 1  # one coupling product per solved plane
+
+
+def test_fgmres_with_the_leading_sweep_matches_the_dense_solve(box):
+    g, c, op = box
+    ctr = _varying(g, 8)
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
+    got, stats = idu.solve_interface_fgmres(
+        c, OMEGA, ctr, kx, ky, "P", p=1, r=0, operator=op, preconditioner="leading", tol=1e-11
+    )
+    assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+    assert stats["outer"] < 30
