@@ -257,3 +257,51 @@ def test_fgmres_with_full_dtn_windows_matches_the_dense_solve(box):
     )
     assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
     assert stats["outer"] < 60
+
+
+def _varying(g, seed):
+    rng = np.random.default_rng(seed)
+    return [
+        MaterialContrast(f * g.medium(m).lam, f * g.medium(m).mu, f * g.medium(m).rho)
+        for m, f in enumerate(rng.uniform(0.1, 0.5, len(g.idx)))
+    ]
+
+
+def test_true_sweep_with_full_windows_is_the_exact_inverse(box):
+    """The leading solves of the true system, each over all the planes above and solved tightly: the block LDU
+    solve of the true system, so the preconditioner inverts A (contrast varying within the planes)."""
+    g, _, op = box
+    delta = iso.cell_contrasts(g, OMEGA, _varying(g, 13), 0)
+    e = np.array(
+        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
+    )
+    x = np.random.default_rng(6).standard_normal((len(g.idx), op.na, 9)) + 0j
+    src = np.einsum("ncbij,nbj->nci", e, x).reshape(len(g.idx), -1)
+    ax = np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)
+    got = idu.TrueSweep(op, e, inner_tol=1e-13, window=None)(ax.ravel()).reshape(
+        x.shape
+    )
+    assert np.abs(got - x).max() < 1e-9 * np.abs(x).max()
+
+
+def test_fgmres_with_the_true_sweep_matches_the_dense_solve(box):
+    g, c, op = box
+    ctr = _varying(g, 8)
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
+    got, stats = idu.solve_interface_fgmres(
+        c,
+        OMEGA,
+        ctr,
+        kx,
+        ky,
+        "P",
+        p=1,
+        r=0,
+        operator=op,
+        preconditioner="true-sweep",
+        dtn_window=0,
+        tol=1e-11,
+    )
+    assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+    assert stats["outer"] < 60

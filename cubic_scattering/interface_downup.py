@@ -485,16 +485,17 @@ class DtNSweep:
             r[a] = ra
         return r
 
-    def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
-        """The pivot's inverse with the true contrast of the plane and of the ``window`` planes above it: the plane's
-        component of the window's system, solved for a source on the plane, the planes above the window entering
-        through the averaged medium's Dirichlet-to-Neumann map.  By GMRES on the padded grid, preconditioned with
-        the window's averaged factorisation."""
+    def _window(self, i: int) -> list:
         lo_plane = 0 if self.window is None else max(0, i - self.window)
-        win = list(range(lo_plane, i + 1))
+        return list(range(lo_plane, i + 1))
+
+    def _window_solve(self, win: list, rhs: list) -> list:
+        """The window's system, the averaged trailing system (the planes above the window through the averaged
+        medium's Dirichlet-to-Neumann map) less the true contrast fluctuation on the window's planes, solved for
+        ``rhs`` by GMRES on the padded grid, preconditioned with the window's averaged factorisation."""
         zs = [self.layers[a] for a in win]
-        n, shape = len(win), wh.shape
-        size = wh.size
+        n, shape = len(win), rhs[0].shape
+        size = rhs[0].size
 
         def split(u):
             return [u[a * size : (a + 1) * size].reshape(shape) for a in range(n)]
@@ -516,7 +517,7 @@ class DtNSweep:
                 [o.ravel() for o in self._trailing_solve(win, split(u))]
             )
 
-        b = np.concatenate([np.zeros(size * (n - 1), dtype=complex), wh.ravel()])
+        b = np.concatenate([r.ravel() for r in rhs])
         sol, _ = gmres(
             LinearOperator((b.size, b.size), matvec=matvec, dtype=complex),
             b,
@@ -528,7 +529,14 @@ class DtNSweep:
             maxiter=20,
         )
         self.inner_solves += 1
-        return sol[size * (n - 1) :].reshape(shape)
+        return split(sol)
+
+    def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
+        """The pivot's inverse with the true contrast of the plane and of the ``window`` planes above it: the plane's
+        component of the window's system solved for a source on the plane."""
+        win = self._window(i)
+        rhs = [np.zeros_like(wh) for _ in win[:-1]] + [wh]
+        return self._window_solve(win, rhs)[-1]
 
     def __call__(self, v: NDArray) -> NDArray:
         op, n_l = self.op, len(self.layers)
@@ -553,6 +561,71 @@ class DtNSweep:
             for j in range(k + 1, n_l):
                 xk -= np.einsum("frs,sf->rf", self.up[k, j], x[j])
             x[k] = xk
+        out = np.zeros_like(full)
+        for i, z in enumerate(self.layers):
+            out[self.cells[z]] = self._at_cells(z, x[i]).reshape(
+                len(self.cells[z]), op.na, 9
+            )
+        return out.ravel()
+
+
+class TrueSweep(DtNSweep):
+    """Algorithm 5.1 for the true medium, solved approximately: the block LDU solve of the true system written as
+    solves of leading systems, each approximated in a window.
+
+    Eliminated from the top, the exact solve is, plane by plane from the bottom,
+        x_z = [ (A_{<=z})^-1 (b_{<=z} - A_{<=z, >z} x_{>z}) ]_z,
+    the plane's component of the leading system of planes 1 to z, the planes below (already solved) entering through
+    the true coupling.  Each leading solve is approximated as in ``DtNSweep``: the plane and ``window`` planes above
+    it with their true contrast, the planes above the window through the averaged medium's Dirichlet-to-Neumann map
+    (their right-hand sides carried by the averaged forward substitution), by an inner GMRES to ``inner_tol``.  No
+    averaged triangular factor couples solved planes to unsolved ones: the coupling from below is the true one,
+    accumulated as each plane is solved (O(L^2) plane couplings per application).  With ``window=None`` (all the
+    planes above) and a tight inner solve it is the exact inverse of the true system.
+    """
+
+    def _true_coupling(self, zr: int, zs: int, xh: NDArray) -> NDArray:
+        """A_{zr zs} x for zr != zs: -K_{zr zs} E x, the true contrast at zs's cells only, transformed (rows, F)."""
+        op, cells = self.op, self.cells[zs]
+        ug = np.fft.ifft2(xh.reshape((xh.shape[0],) + op.shape), axes=(1, 2))
+        src = np.zeros((self.cols,) + op.shape, dtype=complex)
+        src[:, op.pos[cells, 0], op.pos[cells, 1]] = np.einsum(
+            "ncr,rn->cn", self.e_cells[zs], ug[:, op.pos[cells, 0], op.pos[cells, 1]]
+        )
+        srch = np.fft.fft2(src, axes=(1, 2)).reshape(self.cols, -1)
+        return -np.einsum("rcf,cf->rf", op.kernels[zr, zs], srch)
+
+    def __call__(self, v: NDArray) -> NDArray:
+        op, n_l = self.op, len(self.layers)
+        full = v.reshape(len(self.e), op.na, 9)
+        bh = [
+            self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1))
+            for z in self.layers
+        ]
+        acc = [
+            np.zeros_like(b) for b in bh
+        ]  # sum over the solved planes k of A_{jk} x_k
+        x = [None] * n_l
+        for i in reversed(range(n_l)):
+            r = [bh[j] - acc[j] for j in range(i + 1)]
+            win = self._window(i)
+            # the planes above the window, eliminated in the averaged medium: their right-hand sides forward
+            f = []
+            for k in range(win[0]):
+                fk = r[k].copy()
+                for m in range(k):
+                    fk -= np.einsum("frs,sf->rf", self.lo[k, m], f[m])
+                f.append(fk)
+            rhs = []
+            for j in win:
+                rj = r[j].copy()
+                for m in range(win[0]):
+                    rj -= np.einsum("frs,sf->rf", self.lo[j, m], f[m])
+                rhs.append(rj)
+            x[i] = self._window_solve(win, rhs)[-1]
+            zi = self.layers[i]
+            for j in range(i):
+                acc[j] += self._true_coupling(self.layers[j], zi, x[i])
         out = np.zeros_like(full)
         for i, z in enumerate(self.layers):
             out[self.cells[z]] = self._at_cells(z, x[i]).reshape(
@@ -1049,6 +1122,14 @@ def solve_interface_fgmres(
                 "solve_interface_fgmres: 'dtn' needs the stored kernels (LateralOperator)."
             )
         pre = DtNSweep(op, e, inner_tol=inner_tol, window=dtn_window)
+    elif (
+        preconditioner == "true-sweep"
+    ):  # Algorithm 5.1 for the true medium, the leading solves approximated
+        if not isinstance(op, LateralOperator):
+            raise ValueError(
+                "solve_interface_fgmres: 'true-sweep' needs the stored kernels (LateralOperator)."
+            )
+        pre = TrueSweep(op, e, inner_tol=inner_tol, window=dtn_window)
     elif preconditioner == "none":  # the benchmark: no preconditioning at all
 
         def pre(v):
