@@ -504,6 +504,18 @@ and nothing with the contrast varying, even with w = all (10 against the march's
 8 x 12 x 12). The limit is the averaged triangular factors, not the pivots. Next (proposed): the sweeping form,
 DtN pivots with the true coupling in the substitutions down and up.
 
+**Approximate solves of the true system (`TrueSweep`, 18 October).** The exact block solve written as leading-system
+solves, x_z = [(A_{<=z})^-1 (b_{<=z} - A_{<=z,>z} x_{>z})]_z, plane by plane from the bottom; the true coupling
+from below accumulated as each plane is solved, each leading solve in a window of w planes above (averaged DtN map
+beyond), inner GMRES to 1e-2. Full windows, tight inner: the exact inverse to 3.6e-14. Measured
+(`scripts/measure_interface_true_sweep.py`, `scripts/data/interface_true_sweep.jsonl`, 1/2), outer products
+march / DtN w0 / true w0 / w1 / w2 / all:
+  - 50 %: 2x6 7/8/7/5/5/5; 4x6 9/10/9/8/7/5; 8x6 12/12/10/10/9/5; 16x6 14/15/11/11/11/5; 8x12 14/15/11/10/10/5.
+  - varying 0-50 %: 6/8/6/5/5/5; 7/9/7/6/6/5; 8/10/8/7/7/5; 9/10/9/8/8/5; 9/10/9/8/7/5.
+w = all: 5 on every box, independent of depth (the inner tolerance sets it). Cost: an inner product acts on w + 1
+planes, so time grows with the window: 16x6 at 50 % 22 s (march), 36 s (w0), 174 s (all); 8x12 29 / 36 / 97 s.
+w0 is 1.2-2.4x the march's time. Next: a cheaper inner solve of the windows, by the recursions in depth.
+
 Future (noted by the thesis's author, 18 October):
 - **The homogenised layer** in place of the plane's mean contrast (the next step of the PhD development, left
   out for time): each plane's effective layer by the layer law (Paper 3, gate G7, `kennett_layers`), its net
