@@ -1435,7 +1435,42 @@ inner GMRES preconditioned with the window's averaged factorisation; $w=0$ is th
 the planes above gives the exact pivots of the true medium, solved partially. Over all the planes the window's
 operator, the averaged trailing system less the contrast fluctuation, is the true system
 $\mathbf M-\bK\mathbf E$ on the padded grid; assembled independently from the stored kernels it agrees to
-$5.3\times10^{-16}$.
+$5.3\times10^{-16}$. Table~\ref{tab:dtnwindow} gives the outer products with windows of $0$, $1$, $2$ and all the planes above.
+The window gains at most one product, and only with the contrast uniform in each plane ($8\times12\times12$ at
+$50\%$: $15$ with $w=0$, $14$ with $w\ge1$, as the march); with the contrast varying from cell to cell it gains
+nothing on any box, even with the exact pivots of all the planes above ($10$ against the march's $9$ on
+$16\times6\times6$ and $8\times12\times12$). So the pivots are not what limits the Dirichlet-to-Neumann form: the
+triangular factors $\bar{\mathcal L}$ and $\bar{\mathcal U}$, the coupling between planes in the substitutions
+down and up, are still the averaged medium's, and exact pivots cannot correct them. The march, which carries the
+true coupling in its sweeps, keeps its lead. The step this points to is the sweeping form: the Dirichlet-to-Neumann
+pivots with the true coupling in the substitutions, $\mathbf u_z=\tilde{\mathbf S}_z^{-1}(\mathbf b_z-\sum_{k<z}
+\mathcal A_{zk}\mathbf u_k)$ down and $\mathbf x_z=\mathbf u_z-\tilde{\mathbf S}_z^{-1}\sum_{k>z}\mathcal A_{zk}
+\mathbf x_k$ up, exact for a block-tridiagonal operator and approximate for the dense coupling in depth here.
+
+\begin{table}[htbp]
+\centering
+\caption{Outer products of FGMRES to $10^{-10}$ on the stored kernels at $\omega h/\beta_A=1/2$, the two-way march
+against the Dirichlet-to-Neumann form of Algorithm~5.1 with pivots carrying the true contrast of the plane and of
+$w$ planes above it ($w=$ all: the exact pivots of the true medium, solved partially), with every cell at $50\%$
+of its medium or at a fraction uniform on $[0,50]\%$ varying from cell to cell.}
+\label{tab:dtnwindow}
+\begin{tabular}{llccccc}
+\toprule
+box & contrast & march & $w=0$ & $w=1$ & $w=2$ & $w=$ all \\
+\midrule
+$2\times6\times6$ & $50\%$ & $7$ & $8$ & $7$ & $7$ & $7$ \\
+ & varying & $6$ & $8$ & $8$ & $8$ & $8$ \\
+$4\times6\times6$ & $50\%$ & $9$ & $10$ & $10$ & $10$ & $10$ \\
+ & varying & $7$ & $9$ & $9$ & $9$ & $9$ \\
+$8\times6\times6$ & $50\%$ & $12$ & $12$ & $12$ & $12$ & $12$ \\
+ & varying & $8$ & $10$ & $10$ & $10$ & $10$ \\
+$16\times6\times6$ & $50\%$ & $14$ & $15$ & $15$ & $15$ & $15$ \\
+ & varying & $9$ & $10$ & $10$ & $10$ & $10$ \\
+$8\times12\times12$ & $50\%$ & $14$ & $15$ & $14$ & $14$ & $14$ \\
+ & varying & $9$ & $10$ & $10$ & $10$ & $10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{table}[htbp]
 \centering
