@@ -16,13 +16,15 @@ MEASURED (2 x 3 x 4 voxels, pitch 0.25 km, omega = 2 pi 6 Hz (1 + 0.03 i)), rela
           20    1024   823592     1.65e-06  9.58e-07  2.01e-06   30
           30    1536  1853028     1.49e-06  7.94e-07  1.93e-06   71
           20    2048  3294288                         1.13e-06  125
+          30    3072  7412064                         8.82e-10  288
 
 BOTH CONSTRAINTS BIND near 1e-6, as stage 2 found for the same kernel. Raising the cutoff from 20
 to 30 at a spacing of 0.156/km barely moves the error (the spacing limits it: this lattice has
 offsets of up to three pitches, which oscillate faster across the transverse plane than the single
 one-pitch offset at which scripts/measure_sweep3d_cost.py measured 3.2e-7); halving the spacing at
-kr*pitch = 20 takes it only to 1.1e-6 (the cutoff limits it, as measured there: 1.3e-6). Below
-1e-6, cutoff and spacing must be refined together.
+kr*pitch = 20 takes it only to 1.1e-6 (the cutoff limits it, as measured there: 1.3e-6). Refined
+together, kr*pitch = 30 at a spacing of 0.078/km, the error falls to 8.8e-10: the sweeps converge
+to the closed form, and the plateau near 1e-6 is the rule's, not the method's.
 
 The vacuity control: a uniform source would also be matched by an implementation that summed the
 wrong pairs symmetrically, so the gate uses random sources, and a support count checks that a unit
