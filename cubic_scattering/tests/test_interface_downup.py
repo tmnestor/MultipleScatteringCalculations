@@ -134,3 +134,55 @@ def test_fgmres_with_the_averaged_sweep_matches_the_dense_solve(box):
     )
     assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
     assert stats["outer"] < 60
+
+
+def test_dtn_sweep_inverts_a_single_plane():
+    """One plane: no coupling between planes to average, so the DtN form with a tight inner solve is the plane's
+    exact inverse, its box's edges and its varying contrast included."""
+    cells = [(-1, ix, iy) for ix in range(3) for iy in range(2)]
+    g = iso.InterfaceGrid(np.array(cells), H, A, B)
+    c = iso.InterfaceCouplings(g, workers=1)
+    op = iso.LateralOperator(c, OMEGA, p=1, r=0)
+    f = np.random.default_rng(9).uniform(0.1, 0.5, len(cells))
+    ctr = [
+        MaterialContrast(
+            fm * g.medium(m).lam, fm * g.medium(m).mu, fm * g.medium(m).rho
+        )
+        for m, fm in enumerate(f)
+    ]
+    delta = iso.cell_contrasts(g, OMEGA, ctr, 0)
+    e = np.array(
+        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
+    )
+    x = np.random.default_rng(5).standard_normal((len(cells), op.na, 9)) + 0j
+    src = np.einsum("ncbij,nbj->nci", e, x).reshape(len(cells), -1)
+    ax = np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)
+    got = idu.DtNSweep(op, e, inner_tol=1e-13)(ax.ravel()).reshape(x.shape)
+    assert np.abs(got - x).max() < 1e-9 * np.abs(x).max()
+
+
+def test_fgmres_with_the_dtn_sweep_matches_the_dense_solve(box):
+    """A contrast that varies within the planes: the pivots carry the fluctuation."""
+    g, c, op = box
+    rng = np.random.default_rng(8)
+    ctr = [
+        MaterialContrast(f * g.medium(m).lam, f * g.medium(m).mu, f * g.medium(m).rho)
+        for m, f in enumerate(rng.uniform(0.1, 0.5, len(g.idx)))
+    ]
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
+    got, stats = idu.solve_interface_fgmres(
+        c,
+        OMEGA,
+        ctr,
+        kx,
+        ky,
+        "P",
+        p=1,
+        r=0,
+        operator=op,
+        preconditioner="dtn",
+        tol=1e-11,
+    )
+    assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+    assert stats["outer"] < 60 and stats["planes"] > 0
