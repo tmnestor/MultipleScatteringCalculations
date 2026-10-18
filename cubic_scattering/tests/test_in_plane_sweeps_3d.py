@@ -7,6 +7,7 @@ from cubic_scattering import directional_sweeps as ds
 from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.pair_propagators import same_depth_table, separation_index
 from cubic_scattering.sweep_kernels import lateral_split_9x9
+from cubic_scattering.sweep_solver import solve_foldy_lax_3d
 
 PITCH = 0.25
 OMEGA = 2 * np.pi * 6.0 * (1.0 + 0.03j)
@@ -119,3 +120,39 @@ def test_sweeps_3d_refuse_bad_input() -> None:
         ds.sweep_x_3d(src, PITCH, OMEGA, REFS, nodes, chunk=0)
     with pytest.raises(ValueError, match="kr_max > 0"):
         ds.make_transverse_nodes(0.0, 16)
+
+
+def _solve_setup(scale: float):
+    """The 3-D Foldy-Lax set-up of test_sweep_solver_3d: one medium, 2 x 3 x 2 voxels at pitch 0.5."""
+    grid = ds.SweepGrid3D(n_z=2, n_x=3, n_y=2, pitch=0.5)
+    cache = ds.build_g0_cache_3d(grid, REFS[0], OMEGA)
+    rng = np.random.default_rng(20260914)
+    n = (grid.n_z, grid.n_x, grid.n_y)
+    t0 = scale * (rng.normal(size=(*n, 9, 9)) + 1j * rng.normal(size=(*n, 9, 9)))
+    psi = rng.normal(size=(*n, 9)) + 1j * rng.normal(size=(*n, 9))
+    sweeps = ds.InPlaneSweeps(
+        OMEGA, (REFS[0],) * grid.n_z, ds.make_transverse_nodes(20.0 / 0.5, 512), CHUNK
+    )
+    return grid, cache, t0, psi, sweeps
+
+
+def test_g0_with_the_sweeps_is_g0_with_the_table() -> None:
+    """The sweeps replace only the same-depth table: the whole G0 agrees to the quadrature's error."""
+    grid, cache, _, _, sweeps = _solve_setup(0.1)
+    src = _sources(11)[:, : grid.n_x, : grid.n_y]
+    table = ds.apply_g0_3d(src, cache)
+    swept = ds.apply_g0_3d(src, cache, in_plane=sweeps)
+    assert np.abs(swept - table).max() < 1e-3 * np.abs(table).max()
+    with pytest.raises(ValueError, match="plane media"):
+        ds.apply_g0_3d(src, cache, in_plane=ds.InPlaneSweeps(OMEGA, (REFS[0],), sweeps.nodes, CHUNK))
+
+
+@pytest.mark.slow
+def test_a_solve_with_the_sweeps_matches_the_solve_with_the_table() -> None:
+    """GMRES through the sweeps reaches the table route's solution, within the operator's error amplified
+    by the solve."""
+    _, cache, t0, psi, sweeps = _solve_setup(0.1)
+    table = solve_foldy_lax_3d(cache, t0, psi, tol=1e-10)
+    swept = solve_foldy_lax_3d(cache, t0, psi, tol=1e-10, in_plane=sweeps)
+    assert np.abs(swept.psi - table.psi).max() < 1e-3 * np.abs(table.psi).max()
+    assert abs(swept.n_matvec - table.n_matvec) <= 2
