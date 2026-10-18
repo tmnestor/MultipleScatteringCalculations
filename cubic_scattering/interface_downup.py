@@ -634,6 +634,113 @@ class TrueSweep(DtNSweep):
         return out.ravel()
 
 
+class LeadingSweep:
+    """``TrueSweep`` with whole windows, on any operator's product: the leading systems solved in full.
+
+    Eliminated from the top, the exact solve is, plane by plane from the bottom,
+        x_z = [ (A_{<=z})^-1 (b_{<=z} - A_{<=z, >z} x_{>z}) ]_z,
+    the plane's component of the leading system of planes 1 to z, the planes below (already solved)
+    entering through the true coupling.  ``TrueSweep(window=None)`` is the same solve on the stored
+    kernels, its inner GMRES preconditioned by the plane-averaged factorisation; here nothing averaged
+    enters, so the class needs only the operator's product (``_convolve``, ``m9``) and runs on
+    ``MatrixFreeOperator`` (route A of the matrix-free sweep: the window's planes above are the true
+    ones).  Each leading system is solved by an inner GMRES to ``inner_tol``, its products restricted to
+    the leading planes, preconditioned cell by cell (block-Jacobi); the coupling from the solved planes
+    below is one product with those planes as sources.  With a tight inner solve it is the exact inverse.
+
+    Args:
+        op: ``LateralOperator`` or ``MatrixFreeOperator``.
+        e: (N, n_source, na, 9, 9), each cell's source expansion E.
+        inner_tol: The leading systems' inner GMRES tolerance.
+        inner_restart: Its restart.
+        inner_maxiter: Its cap on restart cycles.
+    """
+
+    def __init__(
+        self,
+        op,
+        e: NDArray,
+        inner_tol: float = 1e-2,
+        inner_restart: int = 50,
+        inner_maxiter: int = 20,
+    ) -> None:
+        self.op, self.e = op, e
+        self.inner_tol, self.inner_restart, self.inner_maxiter = inner_tol, inner_restart, inner_maxiter
+        self.layers = list(op.layers)
+        self.cells = {z: op.by_layer[z] for z in self.layers}
+        self.rows = op.na * 9
+        m_full = np.kron(op.m9, np.eye(9))
+        self.jacobi = np.array(
+            [
+                np.linalg.inv(
+                    m_full
+                    - np.einsum("acij,cbjk->aibk", op.self_blocks[op.grid.idx[m, 0]], e[m]).reshape(
+                        self.rows, self.rows
+                    )
+                )
+                for m in range(len(e))
+            ]
+        )
+        self.inner_products = 0
+        self.inner_solves = 0
+        self.outer_products = 0
+
+    def _coupling(self, x: NDArray, sources: NDArray) -> NDArray:
+        """K E x with x nonzero only at the cells ``sources``: (N, na, 9), every cell's field."""
+        op = self.op
+        src = np.zeros((len(self.e), op.n_source * 9), dtype=complex)
+        src[sources] = np.einsum("ncbij,nbj->nci", self.e[sources], x[sources]).reshape(
+            len(sources), op.n_source * 9
+        )
+        return op._convolve(src)
+
+    def _leading_solve(self, cells: NDArray, rhs: NDArray) -> NDArray:
+        """A_{<=z}^-1 rhs on the leading planes' cells by GMRES, block-Jacobi preconditioned: (n, na, 9)."""
+        op, n_all, n = self.op, len(self.e), len(cells)
+        pre = self.jacobi[cells]
+
+        def matvec(u):
+            self.inner_products += 1
+            x = np.zeros((n_all, op.na, 9), dtype=complex)
+            x[cells] = u.reshape(n, op.na, 9)
+            y = np.einsum("ab,nbi->nai", op.m9, x[cells]) - self._coupling(x, cells)[cells]
+            return y.ravel()
+
+        def jac(u):
+            return np.einsum("nij,nj->ni", pre, u.reshape(n, self.rows)).ravel()
+
+        b = rhs.ravel()
+        sol, _ = gmres(
+            LinearOperator((b.size, b.size), matvec=matvec, dtype=complex),
+            b,
+            x0=jac(b),
+            M=LinearOperator((b.size, b.size), matvec=jac, dtype=complex),
+            rtol=self.inner_tol,
+            atol=0.0,
+            restart=self.inner_restart,
+            maxiter=self.inner_maxiter,
+        )
+        self.inner_solves += 1
+        return sol.reshape(n, op.na, 9)
+
+    def __call__(self, v: NDArray) -> NDArray:
+        op = self.op
+        full = v.reshape(len(self.e), op.na, 9)
+        x = np.zeros_like(full)
+        solved = np.zeros(0, dtype=int)
+        for i in reversed(range(len(self.layers))):
+            lead = np.concatenate([self.cells[z] for z in self.layers[: i + 1]])
+            rhs = full[lead].copy()
+            if solved.size:  # the true coupling from the solved planes below: one product
+                self.outer_products += 1
+                rhs = rhs + self._coupling(x, solved)[lead]
+            y = self._leading_solve(lead, rhs)
+            here = self.cells[self.layers[i]]
+            x[here] = y[len(lead) - len(here) :]  # plane i's cells are the leading set's last block
+            solved = np.concatenate([solved, here])
+        return x.ravel()
+
+
 class MatrixFreeDownUp:
     """The two-way march preconditioner on the recursions: the splitting of ``DownUp`` applied by
     ``MatrixFreeOperator``'s pieces, O(L) per pass.
@@ -1056,7 +1163,9 @@ def solve_interface_fgmres(
     (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``) or not at
     all (``"none"``, the benchmark), or by Algorithm 5.1 for the plane-averaged contrast (``"averaged"``,
     ``AveragedSweep``, stored kernels) or in its Dirichlet-to-Neumann form with the true contrast, the pivots
-    solved partially (``"dtn"``, ``DtNSweep``, stored kernels).
+    solved partially (``"dtn"``, ``DtNSweep``, stored kernels).  ``"true-sweep"`` (``TrueSweep``, stored
+    kernels) solves the true system's leading systems in windows; ``"leading"`` (``LeadingSweep``, either
+    operator, matrix-free included) solves them over all the planes above.
     With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
     ``DownUp`` on ``LateralOperator(parts=True)``.
 
@@ -1130,6 +1239,8 @@ def solve_interface_fgmres(
                 "solve_interface_fgmres: 'true-sweep' needs the stored kernels (LateralOperator)."
             )
         pre = TrueSweep(op, e, inner_tol=inner_tol, window=dtn_window)
+    elif preconditioner == "leading":  # the true sweep with whole windows, on either operator (route A)
+        pre = LeadingSweep(op, e, inner_tol=inner_tol)
     elif preconditioner == "none":  # the benchmark: no preconditioning at all
 
         def pre(v):
