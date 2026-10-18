@@ -270,6 +270,27 @@ class DownUp:
         return out.ravel()
 
 
+def _averaged_system(op: LateralOperator, e: NDArray) -> tuple[NDArray, dict]:
+    """The plane-averaged system at every lateral bin of the stored kernels' padded grid, (F, L rows, L rows), and
+    each plane's mean contrast as a matrix (n_source 9) x (na 9): src[(c, i)] = sum ebar[c, b, i, j] x[(b, j)]."""
+    layers = list(op.layers)
+    rows, cols = op.na * 9, op.n_source * 9
+    ebar = {
+        z: e[c].mean(axis=0).transpose(0, 2, 1, 3).reshape(cols, rows)
+        for z, c in ((z, op.by_layer[z]) for z in layers)
+    }
+    m_full = np.kron(op.m9, np.eye(9))
+    n_f = op.kernels[layers[0], layers[0]].shape[-1]
+    a = np.zeros((n_f, len(layers) * rows, len(layers) * rows), dtype=complex)
+    for i, zr in enumerate(layers):
+        a[:, i * rows : (i + 1) * rows, i * rows : (i + 1) * rows] += m_full
+        for j, zs in enumerate(layers):
+            a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows] -= np.einsum(
+                "rcf,cb->frb", op.kernels[zr, zs], ebar[zs]
+            )
+    return a, ebar
+
+
 class AveragedSweep:
     """Algorithm 5.1 of the thesis for the plane-averaged contrast, on the stored kernels.
 
@@ -292,28 +313,11 @@ class AveragedSweep:
         self.op, self.e = op, e
         self.layers = list(op.layers)
         self.cells = {z: op.by_layer[z] for z in self.layers}
-        na, ns = op.na, op.n_source
-        rows, cols = na * 9, ns * 9
-        L = len(self.layers)
-        # each plane's mean contrast as a matrix (n_source 9) x (na 9): src[(c, i)] = sum ebar[c, b, i, j] x[(b, j)]
-        ebar = {
-            z: e[c].mean(axis=0).transpose(0, 2, 1, 3).reshape(cols, rows)
-            for z, c in self.cells.items()
-        }
-        m_full = np.kron(op.m9, np.eye(9))
-        n_f = op.kernels[self.layers[0], self.layers[0]].shape[-1]
-        a = np.zeros((n_f, L * rows, L * rows), dtype=complex)
-        for i, zr in enumerate(self.layers):
-            a[:, i * rows : (i + 1) * rows, i * rows : (i + 1) * rows] += m_full
-            for j, zs in enumerate(self.layers):
-                kz = op.kernels[zr, zs]  # (rows, cols, F)
-                a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows] -= np.einsum(
-                    "rcf,cb->frb", kz, ebar[zs]
-                )
+        a, _ = _averaged_system(op, e)
         self.inv = np.linalg.inv(
             a
         )  # (F, L rows, L rows): the exact depth solve at each lateral bin
-        self.rows = rows
+        self.rows = op.na * 9
 
     def __call__(self, v: NDArray) -> NDArray:
         op, rows = self.op, self.rows
@@ -336,6 +340,163 @@ class AveragedSweep:
             )
             out[cells] = y[:, op.pos[cells, 0], op.pos[cells, 1]].T.reshape(
                 len(cells), op.na, 9
+            )
+        return out.ravel()
+
+
+class DtNSweep:
+    """Algorithm 5.1 in its Dirichlet-to-Neumann form with the true contrast, the pivots solved partially, on the
+    stored kernels.
+
+    The exact factorisation in depth, eliminated from the top, is A = L S U with unit block-triangular L and U
+    and pivots S_z, the discrete Dirichlet-to-Neumann maps of the half-domains above each plane; with a laterally
+    varying contrast S_z is dense within its plane.  Here the factors come from the plane-averaged medium
+    (``AveragedSweep``), where at each lateral wavenumber (the stored kernels' padded grid) the block LDU of the
+    depth system is exact: L, U and the averaged pivots S_z.  Each pivot then takes the plane's own contrast back,
+    D_z = S_z + Delta A_zz, Delta A_zz = -K_zz (E - E_z) the plane's fluctuation about its mean on the whole padded
+    grid (E = E_m at the cells and 0 at the grid's points outside the box), so the backscatter from above is the
+    averaged medium's and the plane's own contrast, its box's edges included, is exact.  One application is
+    x = U^-1 D^-1 L^-1 b: L and U at each wavenumber, and each D_z^-1 by an inner GMRES preconditioned with S_z^-1
+    to ``inner_tol`` -- a partial solve, which flexible GMRES accepts since the preconditioner may then vary.  With
+    one plane it is the plane's exact inverse (to ``inner_tol``).
+
+    Args:
+        op: ``LateralOperator``.
+        e: (N, n_source, na, 9, 9), each cell's source expansion E.
+        inner_tol: The pivots' inner GMRES tolerance.
+    """
+
+    def __init__(
+        self,
+        op: LateralOperator,
+        e: NDArray,
+        inner_tol: float = 1e-2,
+        inner_restart: int = 30,
+    ) -> None:
+        self.op, self.e, self.inner_tol, self.inner_restart = (
+            op,
+            e,
+            inner_tol,
+            inner_restart,
+        )
+        self.layers = list(op.layers)
+        self.cells = {z: op.by_layer[z] for z in self.layers}
+        rows, cols = op.na * 9, op.n_source * 9
+        self.rows, self.cols = rows, cols
+        n_l = len(self.layers)
+        a, ebar = _averaged_system(op, e)
+        blk = [
+            [
+                a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows].copy()
+                for j in range(n_l)
+            ]
+            for i in range(n_l)
+        ]
+        # the exact block LDU of the averaged depth system at every wavenumber (right-looking elimination)
+        self.lo, self.up, self.s, self.s_inv = {}, {}, [], []
+        for k in range(n_l):
+            sk = blk[k][k]
+            sk_inv = np.linalg.inv(sk)
+            self.s.append(sk)
+            self.s_inv.append(sk_inv)
+            for i in range(k + 1, n_l):
+                self.lo[i, k] = blk[i][k] @ sk_inv
+            for j in range(k + 1, n_l):
+                self.up[k, j] = sk_inv @ blk[k][j]
+            for i in range(k + 1, n_l):
+                for j in range(k + 1, n_l):
+                    blk[i][j] -= self.lo[i, k] @ blk[k][j]
+        # each cell's contrast fluctuation about its plane's mean, (n_source 9) x (na 9)
+        # each cell's contrast, and the plane's mean, as matrices (n_source 9) x (na 9); the true contrast is zero at
+        # the padded grid's points outside the box, so the fluctuation there is -E_z
+        self.e_cells = {
+            z: e[c].transpose(0, 1, 3, 2, 4).reshape(len(c), cols, rows)
+            for z, c in self.cells.items()
+        }
+        self.ebar = ebar
+        self.inner_products = 0
+        self.inner_solves = 0
+
+    def _to_grid(self, z: int, x: NDArray) -> NDArray:
+        """A plane's cell vectors (n_z, k) onto the padded grid, transformed: (k, F)."""
+        op, cells = self.op, self.cells[z]
+        g = np.zeros((x.shape[1],) + op.shape, dtype=complex)
+        g[:, op.pos[cells, 0], op.pos[cells, 1]] = x.T
+        return np.fft.fft2(g, axes=(1, 2)).reshape(x.shape[1], -1)
+
+    def _at_cells(self, z: int, xh: NDArray) -> NDArray:
+        """A transformed grid vector (k, F) at the plane's cells: (n_z, k)."""
+        op, cells = self.op, self.cells[z]
+        y = np.fft.ifft2(xh.reshape((xh.shape[0],) + op.shape), axes=(1, 2))
+        return y[:, op.pos[cells, 0], op.pos[cells, 1]].T
+
+    def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
+        """D_z^-1 w by GMRES on the padded grid, preconditioned with the averaged pivot S_z^-1."""
+        z = self.layers[i]
+        s, s_inv = self.s[i], self.s_inv[i]
+        e_c, ebar = self.e_cells[z], self.ebar[z]
+        op, cells = self.op, self.cells[z]
+        kzz = self.op.kernels[z, z]
+        shape = wh.shape
+
+        def matvec(u):
+            self.inner_products += 1
+            uh = u.reshape(shape)
+            out = np.einsum("frs,sf->rf", s, uh)
+            # the fluctuation's sources on the whole padded grid: E_m u at the cells, less E_z u everywhere
+            ug = np.fft.ifft2(uh.reshape((uh.shape[0],) + op.shape), axes=(1, 2))
+            src = -np.einsum("cr,rxy->cxy", ebar, ug)
+            src[:, op.pos[cells, 0], op.pos[cells, 1]] += np.einsum(
+                "ncr,rn->cn", e_c, ug[:, op.pos[cells, 0], op.pos[cells, 1]]
+            )
+            srch = np.fft.fft2(src, axes=(1, 2)).reshape(src.shape[0], -1)
+            out -= np.einsum("rcf,cf->rf", kzz, srch)
+            return out.ravel()
+
+        def pre(u):
+            return np.einsum("frs,sf->rf", s_inv, u.reshape(shape)).ravel()
+
+        b = wh.ravel()
+        sol, _ = gmres(
+            LinearOperator((b.size, b.size), matvec=matvec, dtype=complex),
+            b,
+            x0=pre(b),
+            M=LinearOperator((b.size, b.size), matvec=pre, dtype=complex),
+            rtol=self.inner_tol,
+            atol=0.0,
+            restart=self.inner_restart,
+            maxiter=20,
+        )
+        self.inner_solves += 1
+        return sol.reshape(shape)
+
+    def __call__(self, v: NDArray) -> NDArray:
+        op, n_l = self.op, len(self.layers)
+        full = v.reshape(len(self.e), op.na, 9)
+        bh = [
+            self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1))
+            for z in self.layers
+        ]
+        # L^-1: down, at each wavenumber
+        w = []
+        for i in range(n_l):
+            wi = bh[i].copy()
+            for k in range(i):
+                wi -= np.einsum("frs,sf->rf", self.lo[i, k], w[k])
+            w.append(wi)
+        # D^-1: each pivot, partially
+        y = [self._pivot_solve(i, w[i]) for i in range(n_l)]
+        # U^-1: up, at each wavenumber
+        x = [None] * n_l
+        for k in reversed(range(n_l)):
+            xk = y[k].copy()
+            for j in range(k + 1, n_l):
+                xk -= np.einsum("frs,sf->rf", self.up[k, j], x[j])
+            x[k] = xk
+        out = np.zeros_like(full)
+        for i, z in enumerate(self.layers):
+            out[self.cells[z]] = self._at_cells(z, x[i]).reshape(
+                len(self.cells[z]), op.na, 9
             )
         return out.ravel()
 
@@ -760,7 +921,8 @@ def solve_interface_fgmres(
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
     (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``) or not at
     all (``"none"``, the benchmark), or by Algorithm 5.1 for the plane-averaged contrast (``"averaged"``,
-    ``AveragedSweep``, stored kernels).
+    ``AveragedSweep``, stored kernels) or in its Dirichlet-to-Neumann form with the true contrast, the pivots
+    solved partially (``"dtn"``, ``DtNSweep``, stored kernels).
     With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
     ``DownUp`` on ``LateralOperator(parts=True)``.
 
@@ -818,6 +980,14 @@ def solve_interface_fgmres(
                 "solve_interface_fgmres: 'averaged' needs the stored kernels (LateralOperator)."
             )
         pre = AveragedSweep(op, e)
+    elif (
+        preconditioner == "dtn"
+    ):  # Algorithm 5.1, Dirichlet-to-Neumann form, pivots solved partially
+        if not isinstance(op, LateralOperator):
+            raise ValueError(
+                "solve_interface_fgmres: 'dtn' needs the stored kernels (LateralOperator)."
+            )
+        pre = DtNSweep(op, e, inner_tol=inner_tol)
     elif preconditioner == "none":  # the benchmark: no preconditioning at all
 
         def pre(v):
