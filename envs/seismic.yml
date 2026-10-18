@@ -34,6 +34,10 @@ dependencies:
   - decorator=5.2.1
   - executing=2.2.1
   - filelock=3.24.3
+  # finufft from conda-forge, NOT pip: the macOS pip wheel bundles its own libomp, and two OpenMP runtimes in
+  # one process (it and llvm-openmp below) deadlock in finufft_setpts's parallel region. This build links
+  # llvm-openmp, so the process loads one runtime.
+  - finufft=2.5.1
   - fmt=12.1.0
   - fonttools=4.61.1
   - freetype=2.14.1
@@ -188,7 +192,6 @@ dependencies:
       - defusedxml==0.7.1
       - devito==4.8.21
       - execnet==2.1.2
-      - finufft==2.5.1
       - fastjsonschema==2.21.2
       - iniconfig==2.3.0
       - jsonschema==4.26.0
