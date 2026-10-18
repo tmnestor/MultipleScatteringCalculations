@@ -7,7 +7,7 @@ tolerance 1e-10, with no preconditioner, block-Jacobi, the two-way march (one pa
 plane-averaged contrast and its Dirichlet-to-Neumann form with the true contrast (``DtNSweep``, the pivots solved
 to 1e-2).  Boxes straddling the interface of L x n x n cells; omega h / beta_A = 1/2; three contrasts: every cell
 at 30 % or at 50 % of its own medium's lambda, mu and rho, and a contrast varying from cell to cell, uniform on
-[0, 60] % (seeded).  P wave with lateral slowness (0.3, 0.1) / alpha_A; set-up as S6.
+[0, 50] % (seeded; the cell fit allows up to 52 %).  P wave with lateral slowness (0.3, 0.1) / alpha_A; set-up as S6.
 
 Recorded per solve: outer and inner products and seconds.  Resumable.  Writes scripts/data/interface_dtn.jsonl.
 
@@ -31,13 +31,13 @@ B = ReferenceMedium(6.5, 3.6, 2.8)
 H = 0.05
 OUT = Path(__file__).parent / "data" / "interface_dtn.jsonl"
 OMEGA = A.beta / (2 * H)
-PATTERNS = ("30%", "50%", "random 0-60%")
+PATTERNS = ("30%", "50%", "random 0-50%")
 PRECONDITIONERS = ("none", "jacobi", "downup", "averaged", "dtn")
 
 
 def contrast_factors(pattern: str, n_cells: int) -> np.ndarray:
-    if pattern == "random 0-60%":
-        return np.random.default_rng(11).uniform(0.0, 0.6, n_cells)
+    if pattern == "random 0-50%":
+        return np.random.default_rng(11).uniform(0.0, 0.5, n_cells)
     return np.full(n_cells, float(pattern.rstrip("%")) / 100)
 
 
