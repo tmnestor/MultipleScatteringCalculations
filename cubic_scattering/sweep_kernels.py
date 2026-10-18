@@ -148,7 +148,7 @@ def _assemble_9x9(g_total: NDArray, g_parts: list[NDArray], k_parts: list[list[N
 
 
 def lateral_split_9x9(
-    ky: float,
+    ky: float | NDArray,
     kz_arr: NDArray,
     pitch: float,
     omega: complex,
@@ -164,8 +164,13 @@ def lateral_split_9x9(
     interchangeable by relabelling: k_z sits at index 0 of the k-vector and k_y
     at index 2.
 
+    In 3-D the sweep integrates over a 2-D transverse rule in (k_y, k_z), so
+    ``ky`` may instead be an array of the same shape as ``kz_arr``: one (k_y,
+    k_z) pair per node. A scalar ``ky`` is the 2.5-D case and is unchanged.
+
     Args:
-        ky: Lateral wavenumber out of the plane (the 2.5-D parameter), 1/km.
+        ky: Lateral wavenumber out of the plane, 1/km: a scalar (the 2.5-D
+            parameter) or one value per node, shape (n_kz,).
         kz_arr: Quadrature nodes in k_z, shape (n_kz,), 1/km.
         pitch: Voxel pitch along x, km. Must be > 0.
         omega: Angular complex frequency, rad/s.
@@ -210,6 +215,17 @@ def lateral_split_9x9(
 
     kz = np.asarray(kz_arr, dtype=float)
     n_kz = kz.size
+    ky_arr = np.asarray(ky, dtype=float)
+    if ky_arr.ndim != 0 and ky_arr.shape != kz.shape:
+        msg = (
+            f"ky has shape {ky_arr.shape} but kz_arr has shape {kz.shape}.\n"
+            "  Where: cubic_scattering/sweep_kernels.py, lateral_split_9x9(ky=...)\n"
+            "  Valid: a scalar ky (2.5-D), or one ky per node, e.g. both shape (n_nodes,)\n"
+            "  Fix:   pass the flattened (k_y, k_z) node arrays of the transverse rule\n"
+            "         together; do not pass a k_y axis against a k_z axis."
+        )
+        raise ValueError(msg) from None
+    ky = np.broadcast_to(ky_arr, kz.shape)
     rho, alpha, beta = ref.rho, ref.alpha, ref.beta
     kp2 = (omega / alpha) ** 2
     ks2 = (omega / beta) ** 2
@@ -222,8 +238,8 @@ def lateral_split_9x9(
     # k-vectors in seismological order (z, x, y). The x component carries the
     # propagation sign: every odd x-derivative in the C and H blocks flips with
     # it, which is exactly what distinguishes the left sweep from the right.
-    kvec_p = [kz.astype(complex), sign * kx_p, np.full(n_kz, ky, dtype=complex)]
-    kvec_s = [kz.astype(complex), sign * kx_s, np.full(n_kz, ky, dtype=complex)]
+    kvec_p = [kz.astype(complex), sign * kx_p, ky.astype(complex)]
+    kvec_s = [kz.astype(complex), sign * kx_s, ky.astype(complex)]
 
     # Scalar coefficients with the exponential REMOVED -- that is the whole point.
     c_s_iso = (1j / (2 * rho)) / (beta**2 * kx_s)
