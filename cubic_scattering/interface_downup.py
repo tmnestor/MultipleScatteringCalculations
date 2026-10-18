@@ -270,6 +270,76 @@ class DownUp:
         return out.ravel()
 
 
+class AveragedSweep:
+    """Algorithm 5.1 of the thesis for the plane-averaged contrast, on the stored kernels.
+
+    Each plane's cells take the plane's mean contrast, E_z = mean over its cells of E_m, so the system
+    M - K E is invariant under lateral translations within each plane.  On the stored kernels' padded lateral
+    grid (the circulant approximation of the box's convolutions) it then separates by lateral wavenumber: at each
+    bin, a system over the L planes, M - sum_s K_hat(z_r, z_s) E_s.  Algorithm 5.1 solves that depth system
+    exactly by the up/down Riccati sweep (pivots Kennett's net reflection operators); with the stored kernels a
+    dense LU per bin is the same inverse, so the backscatter between planes of the averaged medium is exact and
+    only the lateral fluctuations of the contrast are left to the outer iteration.  One application: an FFT per
+    plane, a solve per bin, an inverse FFT per plane.  (A homogenised layer in place of the plane's mean contrast
+    is the natural refinement.)
+
+    Args:
+        op: ``LateralOperator``.
+        e: (N, n_source, na, 9, 9), each cell's source expansion E.
+    """
+
+    def __init__(self, op: LateralOperator, e: NDArray) -> None:
+        self.op, self.e = op, e
+        self.layers = list(op.layers)
+        self.cells = {z: op.by_layer[z] for z in self.layers}
+        na, ns = op.na, op.n_source
+        rows, cols = na * 9, ns * 9
+        L = len(self.layers)
+        # each plane's mean contrast as a matrix (n_source 9) x (na 9): src[(c, i)] = sum ebar[c, b, i, j] x[(b, j)]
+        ebar = {
+            z: e[c].mean(axis=0).transpose(0, 2, 1, 3).reshape(cols, rows)
+            for z, c in self.cells.items()
+        }
+        m_full = np.kron(op.m9, np.eye(9))
+        n_f = op.kernels[self.layers[0], self.layers[0]].shape[-1]
+        a = np.zeros((n_f, L * rows, L * rows), dtype=complex)
+        for i, zr in enumerate(self.layers):
+            a[:, i * rows : (i + 1) * rows, i * rows : (i + 1) * rows] += m_full
+            for j, zs in enumerate(self.layers):
+                kz = op.kernels[zr, zs]  # (rows, cols, F)
+                a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows] -= np.einsum(
+                    "rcf,cb->frb", kz, ebar[zs]
+                )
+        self.inv = np.linalg.inv(
+            a
+        )  # (F, L rows, L rows): the exact depth solve at each lateral bin
+        self.rows = rows
+
+    def __call__(self, v: NDArray) -> NDArray:
+        op, rows = self.op, self.rows
+        full = v.reshape(len(self.e), op.na, 9)
+        spec = []
+        for z in self.layers:
+            cells = self.cells[z]
+            g = np.zeros((rows,) + op.shape, dtype=complex)
+            g[:, op.pos[cells, 0], op.pos[cells, 1]] = (
+                full[cells].reshape(len(cells), rows).T
+            )
+            spec.append(np.fft.fft2(g, axes=(1, 2)).reshape(rows, -1))
+        rhs = np.concatenate(spec, axis=0)  # (L rows, F)
+        sol = np.einsum("fij,jf->if", self.inv, rhs)
+        out = np.zeros_like(full)
+        for i, z in enumerate(self.layers):
+            cells = self.cells[z]
+            y = np.fft.ifft2(
+                sol[i * rows : (i + 1) * rows].reshape((rows,) + op.shape), axes=(1, 2)
+            )
+            out[cells] = y[:, op.pos[cells, 0], op.pos[cells, 1]].T.reshape(
+                len(cells), op.na, 9
+            )
+        return out.ravel()
+
+
 class MatrixFreeDownUp:
     """The two-way march preconditioner on the recursions: the splitting of ``DownUp`` applied by
     ``MatrixFreeOperator``'s pieces, O(L) per pass.
@@ -689,7 +759,8 @@ def solve_interface_fgmres(
 ) -> tuple[InterfaceResult, dict]:
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
     (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``) or not at
-    all (``"none"``, the benchmark).
+    all (``"none"``, the benchmark), or by Algorithm 5.1 for the plane-averaged contrast (``"averaged"``,
+    ``AveragedSweep``, stored kernels).
     With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
     ``DownUp`` on ``LateralOperator(parts=True)``.
 
@@ -741,6 +812,12 @@ def solve_interface_fgmres(
 
         def pre(v):
             return np.einsum("nij,nj->ni", inv, v.reshape(n, rows)).ravel()
+    elif preconditioner == "averaged":  # Algorithm 5.1 for the plane-averaged contrast
+        if not isinstance(op, LateralOperator):
+            raise ValueError(
+                "solve_interface_fgmres: 'averaged' needs the stored kernels (LateralOperator)."
+            )
+        pre = AveragedSweep(op, e)
     elif preconditioner == "none":  # the benchmark: no preconditioning at all
 
         def pre(v):
