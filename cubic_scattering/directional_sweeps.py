@@ -779,6 +779,25 @@ def in_plane_sweeps_3d(
     )
 
 
+@dataclass(frozen=True)
+class InPlaneSweeps:
+    """The in-plane sweeps standing in for the same-depth table of apply_g0_3d.
+
+    Attributes:
+        omega: Complex angular frequency, rad/s; the cache's.
+        refs: The medium of each plane, length n_z: the media the cache's
+            same-depth tables were built from (plane_reference_medium for a
+            LayerModel, else the reference medium for every plane).
+        nodes: The transverse rule.
+        chunk: Transverse nodes per pass.
+    """
+
+    omega: complex
+    refs: tuple[ReferenceMedium, ...]
+    nodes: TransverseNodes
+    chunk: int
+
+
 # =============================================================================
 #  Three-dimensional operator
 #
@@ -915,7 +934,7 @@ def _shift_slices(d: int, n: int) -> tuple[slice, slice]:
     return slice(0, n + d), slice(-d, n)
 
 
-def apply_g0_3d(sources: NDArray, cache: G0Cache3D) -> NDArray:
+def apply_g0_3d(sources: NDArray, cache: G0Cache3D, *, in_plane: InPlaneSweeps | None = None) -> NDArray:
     """Apply the full three-dimensional G0.
 
     A pure forward summation: no inversion, no embedding. Every order of
@@ -929,15 +948,22 @@ def apply_g0_3d(sources: NDArray, cache: G0Cache3D) -> NDArray:
     separation is kept because the self-return off a layer boundary is not
     inside T0.
 
+    With ``in_plane`` the same-depth pairs are carried instead by the in-plane
+    sweeps of the thesis's Algorithm 5.2 (in_plane_sweeps_3d), which never form
+    the self-site either; the layered blocks are unchanged.
+
     Args:
         sources: Source 9-vectors, shape (n_z, n_x, n_y, 9).
         cache: Precomputed tables from build_g0_cache_3d.
+        in_plane: The sweeps to use for the same-depth pairs, or None for the
+            closed-form table.
 
     Returns:
         The field at every site, shape (n_z, n_x, n_y, 9).
 
     Raises:
-        ValueError: on a source array of the wrong shape.
+        ValueError: on a source array of the wrong shape, or sweeps given a
+            media list of the wrong length.
     """
     g = cache.grid
     want = (g.n_z, g.n_x, g.n_y, 9)
@@ -963,14 +989,33 @@ def apply_g0_3d(sources: NDArray, cache: G0Cache3D) -> NDArray:
         )
         raise ValueError(msg) from None
 
-    out = np.zeros_like(sources, dtype=complex)
+    if in_plane is None:
+        out = np.zeros_like(sources, dtype=complex)
+    else:
+        if len(in_plane.refs) != g.n_z:
+            msg = (
+                f"in_plane has {len(in_plane.refs)} plane media for {g.n_z} planes.\n"
+                "  Where: cubic_scattering/directional_sweeps.py, apply_g0_3d(in_plane=...)\n"
+                "  Valid: InPlaneSweeps(refs=...) with one medium per plane, the cache's own\n"
+                "  Fix:   pass the media the cache's same-depth tables were built from\n"
+                "         (plane_reference_medium per plane for a LayerModel)."
+            )
+            raise ValueError(msg) from None
+        out = in_plane_sweeps_3d(
+            np.asarray(sources, dtype=complex),
+            g.pitch,
+            in_plane.omega,
+            in_plane.refs,
+            in_plane.nodes,
+            chunk=in_plane.chunk,
+        )
     for dx in range(-(g.n_x - 1), g.n_x):
         tx, sx = _shift_slices(dx, g.n_x)
         for dy in range(-(g.n_y - 1), g.n_y):
             ty, sy = _shift_slices(dy, g.n_y)
             i, j = dx + g.n_x - 1, dy + g.n_y - 1
 
-            if not (dx == 0 and dy == 0):
+            if in_plane is None and not (dx == 0 and dy == 0):
                 # Same depth, whole space. The zero separation is the poisoned
                 # entry and belongs to T0.
                 out[:, tx, ty, :] += np.einsum(

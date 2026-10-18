@@ -16,7 +16,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse.linalg import LinearOperator, gmres
 
-from .directional_sweeps import G0Cache, G0Cache3D, apply_g0, apply_g0_3d
+from .directional_sweeps import G0Cache, G0Cache3D, InPlaneSweeps, apply_g0, apply_g0_3d
 
 
 @dataclass(frozen=True)
@@ -120,6 +120,7 @@ def solve_foldy_lax_3d(
     *,
     tol: float = 1e-8,
     max_iter: int = 500,
+    in_plane: InPlaneSweeps | None = None,
 ) -> SweepSolveResult:
     """Solve (I - G0 T0) psi = psi_inc by GMRES, three-dimensionally.
 
@@ -134,6 +135,8 @@ def solve_foldy_lax_3d(
         psi_inc: Incident field, shape (n_z, n_x, n_y, 9).
         tol: Relative residual tolerance.
         max_iter: Iteration cap.
+        in_plane: Carry the same-depth coupling by the in-plane sweeps
+            (apply_g0_3d's ``in_plane``) instead of the closed-form table.
 
     Returns:
         A SweepSolveResult whose ``psi`` has shape (n_z, n_x, n_y, 9).
@@ -168,7 +171,8 @@ def solve_foldy_lax_3d(
     def matvec(v: NDArray) -> NDArray:
         count["n"] += 1
         psi = v.reshape(shape)
-        return (psi - apply_g0_3d(np.einsum("zxyab,zxyb->zxya", t0_blocks, psi), cache)).ravel()
+        sources = np.einsum("zxyab,zxyb->zxya", t0_blocks, psi)
+        return (psi - apply_g0_3d(sources, cache, in_plane=in_plane)).ravel()
 
     op = LinearOperator((size, size), matvec=matvec, dtype=complex)
     b = psi_inc.ravel()
