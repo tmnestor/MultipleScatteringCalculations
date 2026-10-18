@@ -1444,10 +1444,33 @@ nothing on any box, even with the exact pivots of all the planes above ($10$ aga
 $16\times6\times6$ and $8\times12\times12$). So the pivots are not what limits the Dirichlet-to-Neumann form: the
 triangular factors $\bar{\mathcal L}$ and $\bar{\mathcal U}$, the coupling between planes in the substitutions
 down and up, are still the averaged medium's, and exact pivots cannot correct them. The march, which carries the
-true coupling in its sweeps, keeps its lead. The step this points to is the sweeping form: the Dirichlet-to-Neumann
-pivots with the true coupling in the substitutions, $\mathbf u_z=\tilde{\mathbf S}_z^{-1}(\mathbf b_z-\sum_{k<z}
-\mathcal A_{zk}\mathbf u_k)$ down and $\mathbf x_z=\mathbf u_z-\tilde{\mathbf S}_z^{-1}\sum_{k>z}\mathcal A_{zk}
-\mathbf x_k$ up, exact for a block-tridiagonal operator and approximate for the dense coupling in depth here.
+true coupling in its sweeps, keeps its lead.
+
+\paragraph{Algorithm 5.1 with approximate solves of the true system.} The triangular factors are removed by writing
+the exact block solve, eliminated from the top, as solves of leading systems: plane by plane from the bottom,
+\begin{equation}\label{eq:truesweep}
+  \mathbf x_z=\Bigl[(\mathcal A_{\le z})^{-1}\bigl(\mathbf b_{\le z}-\mathcal A_{\le z,>z}\,\mathbf x_{>z}\bigr)\Bigr]_z ,
+\end{equation}
+the plane's component of the leading system of planes $1$ to $z$, the planes below, already solved, entering
+through the true coupling $\mathcal A_{kj}=-\bK_{kj}\mathbf E_j$. Each leading solve is approximated as the
+pivots were: the plane and $w$ planes above it with their true contrast, the planes above the window through the
+averaged medium's Dirichlet-to-Neumann map (their right-hand sides carried by the averaged forward substitution),
+by an inner GMRES to $10^{-2}$ preconditioned with the window's averaged factorisation. No averaged factor now
+couples a solved plane to an unsolved one: the coupling from below is the true one, accumulated as each plane is
+solved, $O(L^2)$ plane couplings per application. With $w=$ all and a tight inner solve it is the exact inverse of
+the true system ($3.6\times10^{-14}$, Table~\ref{tab:verification}). Table~\ref{tab:truesweep} gives the outer
+products on the boxes of Table~\ref{tab:dtnwindow}. The true coupling from below alone, $w=0$, already
+beats the averaged factors, where the march's count grows with depth: with every cell at $50\%$ it needs $10$
+or $11$ products on the deep boxes against the march's $12$ to $14$ and the Dirichlet-to-Neumann form's $12$ to
+$15$, and with the contrast varying it equals the march. A window of one or two planes gains up to two products more,
+and with all the planes above every box converges in $5$ products, independent of its depth and width, for
+the inner tolerance alone sets the count when the preconditioner is the true inverse solved partially. The outer
+products are not the cost, however: an inner product acts on the whole window, $w+1$ planes, so the work per
+application grows with the window, and with the planes above it as $L^2$. On $16\times6\times6$ at $50\%$ the
+solve takes $22$\,s with the march, $36$\,s with $w=0$ and $174$\,s with all the planes above; on
+$8\times12\times12$, $29$, $36$ and $97$\,s. Of the windowed forms only $w=0$, at $1.2$ to $2.4$ times the
+march's time, comes close; what would make the full window pay is a cheaper inner solve, the window's
+leading systems themselves solved by the recursions in depth.
 
 \begin{table}[htbp]
 \centering
@@ -1470,6 +1493,34 @@ $16\times6\times6$ & $50\%$ & $14$ & $15$ & $15$ & $15$ & $15$ \\
  & varying & $9$ & $10$ & $10$ & $10$ & $10$ \\
 $8\times12\times12$ & $50\%$ & $14$ & $15$ & $14$ & $14$ & $14$ \\
  & varying & $9$ & $10$ & $10$ & $10$ & $10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Outer products of FGMRES to $10^{-10}$ on the stored kernels at $\omega h/\beta_A=1/2$, the two-way march
+and the Dirichlet-to-Neumann form ($w=0$) against Algorithm~5.1 with approximate solves of the true system,
+equation~\eqref{eq:truesweep}, the true coupling from below and windows of $w$ planes above ($w=$ all: the true
+inverse, solved partially), inner solves to $10^{-2}$; contrasts as Table~\ref{tab:dtnwindow}. Last column: seconds
+of the march's and of the full window's solves.}
+\label{tab:truesweep}
+\begin{tabular}{llccccccc}
+\toprule
+ & & & DtN & \multicolumn{4}{c}{true system} & seconds \\
+\cmidrule(lr){5-8}
+box & contrast & march & $w=0$ & $w=0$ & $w=1$ & $w=2$ & $w=$ all & march / all \\
+\midrule
+$2\times6\times6$ & $50\%$ & $7$ & $8$ & $7$ & $5$ & $5$ & $5$ & $0.6/0.7$ \\
+ & varying & $6$ & $8$ & $6$ & $5$ & $5$ & $5$ & $0.5/0.7$ \\
+$4\times6\times6$ & $50\%$ & $9$ & $10$ & $9$ & $8$ & $7$ & $5$ & $1.6/3.1$ \\
+ & varying & $7$ & $9$ & $7$ & $6$ & $6$ & $5$ & $1.2/2.9$ \\
+$8\times6\times6$ & $50\%$ & $12$ & $12$ & $10$ & $10$ & $9$ & $5$ & $5/19$ \\
+ & varying & $8$ & $10$ & $8$ & $7$ & $7$ & $5$ & $3/14$ \\
+$16\times6\times6$ & $50\%$ & $14$ & $15$ & $11$ & $11$ & $11$ & $5$ & $22/174$ \\
+ & varying & $9$ & $10$ & $9$ & $8$ & $8$ & $5$ & $15/102$ \\
+$8\times12\times12$ & $50\%$ & $14$ & $15$ & $11$ & $10$ & $10$ & $5$ & $29/97$ \\
+ & varying & $9$ & $10$ & $9$ & $8$ & $7$ & $5$ & $19/68$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1647,7 +1698,10 @@ transmission matrices of the layered medium, composed by the recursions of the r
 up- and down-going factorisation alone, without tabulating the stratified Green's tensor, which is the
 storage advantage that motivates the approach. The same factorisation gives the preconditioner: the two-way march
 in depth, forward scattering exact within each sweep and backscatter lagged, makes the iteration count nearly
-independent of the number of layers where block-Jacobi's grows, at a fraction of a product per pass.
+independent of the number of layers where block-Jacobi's grows, at a fraction of a product per pass. Written as
+solves of the leading systems with the true coupling from below, the exact factorisation of Algorithm~5.1 solved
+approximately converges in $5$ products on every box, independent of depth; its cost is now the inner solve of
+the windows, which the recursions in depth are placed to make cheap.
 
 One limitation remains: the closed form of the base integrals is stated for cubic corner boxes, $a=b=c$,
 which is all a grid of cubes requires; for unequal sides the angular integrals are evaluated by quadrature.
