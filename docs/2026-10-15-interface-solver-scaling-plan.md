@@ -496,6 +496,14 @@ cell to cell on [0, 50] %: averaged 11-12 (near block-Jacobi's 12-17), DtN 8-10,
 from above, still the averaged medium's: next, the pivots with the true contrast of the planes above as well.
 (Also: the contended deep-box solve rerun clean, 32 x 6 x 6 bounded one pass at 30 %: 11 outer, 613 s.)
 
+**The pivots with the true contrast above (window w, 18 October).** `DtNSweep(window=...)`: each pivot's inverse
+from a window's system (the plane and w planes above, true contrast; above it the averaged DtN map). Window
+operator = true padded system to 5.3e-16. Measured (`scripts/measure_interface_dtn_window.py`,
+`scripts/data/interface_dtn_window.jsonl`, 1/2): the window gains at most one product, only at uniform contrast,
+and nothing with the contrast varying, even with w = all (10 against the march's 9 on 16 x 6 x 6 and
+8 x 12 x 12). The limit is the averaged triangular factors, not the pivots. Next (proposed): the sweeping form,
+DtN pivots with the true coupling in the substitutions down and up.
+
 Future (noted by the thesis's author, 18 October):
 - **The homogenised layer** in place of the plane's mean contrast (the next step of the PhD development, left
   out for time): each plane's effective layer by the layer law (Paper 3, gate G7, `kennett_layers`), its net
