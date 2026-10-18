@@ -978,8 +978,12 @@ $\mathbf D$ of touching cells at $8$--$64h$ by the frame route & polar sum over 
 $\mathbf D_{\mathrm{high}}$ on the wedge by the lateral symmetries & the whole periodic grid & $2.4\times10^{-16}$ \\
 $\mathbf D_{\mathrm{low}}+\mathbf D_{\mathrm{high}}$, $2\times4\times4$ cells, every class & unsplit $\mathbf D$ & $1.3\times10^{-10}$, $2.9\times10^{-9}$ of the touching block \\
 mode factors of $\mathbf D$'s integrand, reflected and transmitted, on the ramp & the integrand point by point & rounding of the modes' cancellation \\
-whole-space march, planes $\ge2$ apart, $5$ layers & Paper~2's blocks & $3.9\times10^{-10}$, $3.6\times10^{-9}$ (high band's images) \\
-coupling product without stored kernels, $50$, $288$, $96$ cells (six layers) & stored-kernel product & $7.3\times10^{-13}$, $2.1\times10^{-12}$, $3.6\times10^{-11}$ \\
+whole-space march, planes $\ge3$ apart (planes $0$ to $2$ apart stored), $\omega h/\beta_A=1/6$, $1/2$ & Paper~2's blocks & $3.4\times10^{-10}$, $1.6\times10^{-9}$ \\
+coupling product without stored kernels (lattice nodes by FFT, tuned low band), $50$ and $96$ cells; $8\times3\times3$, the march acting & stored-kernel product & $1.7\times10^{-11}$; $1.5\times10^{-11}$ \\
+two-way march preconditioner through the recursions, $8\times2\times2$ cells, $\omega h/\beta_A=1/6$, $1/2$ & the same on the stored kernels of every pair of planes & $1.5\times10^{-12}$, $1.9\times10^{-11}$ \\
+Algorithm~5.1, Dirichlet-to-Neumann form, one plane, contrast varying & the plane's system & $2.8\times10^{-14}$ (inverse) \\
+its window operator over all planes, $15$ cells in $4$ planes & true system on the padded grid, assembled from the stored kernels & $5.3\times10^{-16}$ \\
+FGMRES with the march, Algorithm~5.1 averaged, DtN ($w=0$, all), $15$ cells, contrast varying & dense solve & $1.6$, $9.7$, $8.3$, $7.8\times10^{-12}$ \\
 split to $\omega^2$ and to $\omega^4$ at $Q_0h=3$--$10$, self-image, across and lateral pairs, $\omega h/\beta=1/6$, $1/2$ & split to $\omega^4$ at $Q_0h=20$ & at $Q_0h=10$: $3.5\times10^{-10}$, $2.5\times10^{-8}$ ($\omega^2$); $4.8\times10^{-11}$, $6.2\times10^{-11}$ ($\omega^4$) \\
 $\bK_2$ less the finite part below $Q_0$ in closed form & octaves of $\mathbf Y_2$ beyond $Q_0$ & $1.2$--$1.9\times10^{-15}$ of $\bK_2$ \\
 finite part at small $q$ in closed form, order zero & plain integration (integrable) & $1.4\times10^{-14}$ \\
@@ -1419,8 +1423,19 @@ from cell to cell, uniform on $[0,50]\%$. Where the contrast is uniform, the Dir
 most one product on the averaged one and is within one of the march. Where it varies, the averaged form degrades to $11$ or
 $12$ products, close to block-Jacobi's $12$ to $17$, the Dirichlet-to-Neumann form recovers most of the loss
 ($8$ to $10$), and the march, which carries the true contrast everywhere, stays best ($6$ to $9$). What separates
-the Dirichlet-to-Neumann form from the march is then the backscatter from above, still the averaged medium's; a
-partial solve of the pivots with the true contrast of the planes above as well is the next step.
+the Dirichlet-to-Neumann form from the march is then the backscatter from above, still the averaged medium's.
+
+The true pivot carries the planes above as well: $\mathbf S_z^{-1}$ is the block $(z,z)$ of
+$(\mathcal A_{\le z})^{-1}$, the inverse of the leading system of planes $1$ to $z$. Solved exactly for every $z$
+it costs a full solve, so it is solved in a window, in the manner of sweeping preconditioners: the plane and the
+$w$ planes above it with their true contrast, and the planes above the window through the averaged medium's
+Dirichlet-to-Neumann map, which is the trailing part of the averaged factorisation and costs nothing more. The
+pivot's inverse is then the plane's component of the window's system solved for a source on the plane, by an
+inner GMRES preconditioned with the window's averaged factorisation; $w=0$ is the form above, and a window of all
+the planes above gives the exact pivots of the true medium, solved partially. Over all the planes the window's
+operator, the averaged trailing system less the contrast fluctuation, is the true system
+$\mathbf M-\bK\mathbf E$ on the padded grid; assembled independently from the stored kernels it agrees to
+$5.3\times10^{-16}$.
 
 \begin{table}[htbp]
 \centering
