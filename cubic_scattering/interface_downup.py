@@ -364,6 +364,9 @@ class DtNSweep:
         op: ``LateralOperator``.
         e: (N, n_source, na, 9, 9), each cell's source expansion E.
         inner_tol: The pivots' inner GMRES tolerance.
+        window: The planes above each plane whose true contrast its pivot carries: 0, the plane's own alone; None,
+            all the planes above (the exact pivot S_z of the true medium, solved partially); between, the window's
+            planes true and those above it through the averaged medium's Dirichlet-to-Neumann map.
     """
 
     def __init__(
@@ -372,7 +375,9 @@ class DtNSweep:
         e: NDArray,
         inner_tol: float = 1e-2,
         inner_restart: int = 30,
+        window: int | None = 0,
     ) -> None:
+        self.window = window
         self.op, self.e, self.inner_tol, self.inner_restart = (
             op,
             e,
@@ -430,33 +435,88 @@ class DtNSweep:
         y = np.fft.ifft2(xh.reshape((xh.shape[0],) + op.shape), axes=(1, 2))
         return y[:, op.pos[cells, 0], op.pos[cells, 1]].T
 
-    def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
-        """D_z^-1 w by GMRES on the padded grid, preconditioned with the averaged pivot S_z^-1."""
-        z = self.layers[i]
-        s, s_inv = self.s[i], self.s_inv[i]
-        e_c, ebar = self.e_cells[z], self.ebar[z]
+    def _fluctuation(self, z: int, uh: NDArray) -> NDArray:
+        """The plane's contrast fluctuation on the whole padded grid acting on uh (rows, F): the sources
+        (E - E_z) u, E_m at the cells and 0 elsewhere, transformed (cols, F)."""
         op, cells = self.op, self.cells[z]
-        kzz = self.op.kernels[z, z]
-        shape = wh.shape
+        ug = np.fft.ifft2(uh.reshape((uh.shape[0],) + op.shape), axes=(1, 2))
+        src = -np.einsum("cr,rxy->cxy", self.ebar[z], ug)
+        src[:, op.pos[cells, 0], op.pos[cells, 1]] += np.einsum(
+            "ncr,rn->cn", self.e_cells[z], ug[:, op.pos[cells, 0], op.pos[cells, 1]]
+        )
+        return np.fft.fft2(src, axes=(1, 2)).reshape(src.shape[0], -1)
+
+    def _trailing(self, win: list, v: list) -> list:
+        """The averaged medium's trailing system on the planes ``win`` (those above eliminated: its Dirichlet-to-
+        Neumann boundary) applied at each wavenumber, L_W S_W U_W v."""
+        n = len(win)
+        u = [
+            v[a]
+            + sum(
+                np.einsum("frs,sf->rf", self.up[win[a], win[b]], v[b])
+                for b in range(a + 1, n)
+            )
+            for a in range(n)
+        ]
+        t = [np.einsum("frs,sf->rf", self.s[win[a]], u[a]) for a in range(n)]
+        return [
+            t[a]
+            + sum(
+                np.einsum("frs,sf->rf", self.lo[win[a], win[b]], t[b]) for b in range(a)
+            )
+            for a in range(n)
+        ]
+
+    def _trailing_solve(self, win: list, v: list) -> list:
+        """(L_W S_W U_W)^-1 v at each wavenumber."""
+        n = len(win)
+        p = []
+        for a in range(n):
+            pa = v[a].copy()
+            for b in range(a):
+                pa -= np.einsum("frs,sf->rf", self.lo[win[a], win[b]], p[b])
+            p.append(pa)
+        q = [np.einsum("frs,sf->rf", self.s_inv[win[a]], p[a]) for a in range(n)]
+        r = [None] * n
+        for a in reversed(range(n)):
+            ra = q[a].copy()
+            for b in range(a + 1, n):
+                ra -= np.einsum("frs,sf->rf", self.up[win[a], win[b]], r[b])
+            r[a] = ra
+        return r
+
+    def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
+        """The pivot's inverse with the true contrast of the plane and of the ``window`` planes above it: the plane's
+        component of the window's system, solved for a source on the plane, the planes above the window entering
+        through the averaged medium's Dirichlet-to-Neumann map.  By GMRES on the padded grid, preconditioned with
+        the window's averaged factorisation."""
+        lo_plane = 0 if self.window is None else max(0, i - self.window)
+        win = list(range(lo_plane, i + 1))
+        zs = [self.layers[a] for a in win]
+        n, shape = len(win), wh.shape
+        size = wh.size
+
+        def split(u):
+            return [u[a * size : (a + 1) * size].reshape(shape) for a in range(n)]
 
         def matvec(u):
             self.inner_products += 1
-            uh = u.reshape(shape)
-            out = np.einsum("frs,sf->rf", s, uh)
-            # the fluctuation's sources on the whole padded grid: E_m u at the cells, less E_z u everywhere
-            ug = np.fft.ifft2(uh.reshape((uh.shape[0],) + op.shape), axes=(1, 2))
-            src = -np.einsum("cr,rxy->cxy", ebar, ug)
-            src[:, op.pos[cells, 0], op.pos[cells, 1]] += np.einsum(
-                "ncr,rn->cn", e_c, ug[:, op.pos[cells, 0], op.pos[cells, 1]]
-            )
-            srch = np.fft.fft2(src, axes=(1, 2)).reshape(src.shape[0], -1)
-            out -= np.einsum("rcf,cf->rf", kzz, srch)
-            return out.ravel()
+            v = split(u)
+            out = self._trailing(win, v)
+            src = [self._fluctuation(z, va) for z, va in zip(zs, v, strict=True)]
+            for a in range(n):
+                for b in range(n):
+                    out[a] = out[a] - np.einsum(
+                        "rcf,cf->rf", self.op.kernels[zs[a], zs[b]], src[b]
+                    )
+            return np.concatenate([o.ravel() for o in out])
 
         def pre(u):
-            return np.einsum("frs,sf->rf", s_inv, u.reshape(shape)).ravel()
+            return np.concatenate(
+                [o.ravel() for o in self._trailing_solve(win, split(u))]
+            )
 
-        b = wh.ravel()
+        b = np.concatenate([np.zeros(size * (n - 1), dtype=complex), wh.ravel()])
         sol, _ = gmres(
             LinearOperator((b.size, b.size), matvec=matvec, dtype=complex),
             b,
@@ -468,7 +528,7 @@ class DtNSweep:
             maxiter=20,
         )
         self.inner_solves += 1
-        return sol.reshape(shape)
+        return sol[size * (n - 1) :].reshape(shape)
 
     def __call__(self, v: NDArray) -> NDArray:
         op, n_l = self.op, len(self.layers)
@@ -912,6 +972,7 @@ def solve_interface_fgmres(
     self_reflection: str = "exact",
     bands: str = "both",
     coarse: tuple | None = None,
+    dtn_window: int | None = 0,
     tol: float = 1e-10,
     inner_tol: float = 1e-3,
     passes: int = 1,
@@ -987,7 +1048,7 @@ def solve_interface_fgmres(
             raise ValueError(
                 "solve_interface_fgmres: 'dtn' needs the stored kernels (LateralOperator)."
             )
-        pre = DtNSweep(op, e, inner_tol=inner_tol)
+        pre = DtNSweep(op, e, inner_tol=inner_tol, window=dtn_window)
     elif preconditioner == "none":  # the benchmark: no preconditioning at all
 
         def pre(v):

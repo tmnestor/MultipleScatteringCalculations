@@ -186,3 +186,74 @@ def test_fgmres_with_the_dtn_sweep_matches_the_dense_solve(box):
     )
     assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
     assert stats["outer"] < 60 and stats["planes"] > 0
+
+
+def test_dtn_window_system_is_the_true_padded_system(box):
+    """The window's operator, the averaged trailing system less the contrast fluctuation, is the true system
+    M - K E on the padded grid (E zero outside the cells): over all the planes it is assembled independently."""
+    g, _, op = box
+    rng = np.random.default_rng(12)
+    ctr = [
+        MaterialContrast(f * g.medium(m).lam, f * g.medium(m).mu, f * g.medium(m).rho)
+        for m, f in enumerate(rng.uniform(0.1, 0.5, len(g.idx)))
+    ]
+    delta = iso.cell_contrasts(g, OMEGA, ctr, 0)
+    e = np.array(
+        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
+    )
+    du = idu.DtNSweep(op, e)
+    win = list(range(len(op.layers)))
+    rows, nf = op.na * 9, op.kernels[op.layers[0], op.layers[0]].shape[-1]
+    v = [
+        rng.standard_normal((rows, nf)) + 1j * rng.standard_normal((rows, nf))
+        for _ in win
+    ]
+    got = du._trailing(win, v)
+    for a, za in enumerate(op.layers):
+        for b, zb in enumerate(op.layers):
+            got[a] = got[a] - np.einsum(
+                "rcf,cf->rf", op.kernels[za, zb], du._fluctuation(zb, v[b])
+            )
+    m_full = np.kron(op.m9, np.eye(9))
+    for a, za in enumerate(op.layers):
+        want = m_full @ v[a]
+        for b, zb in enumerate(op.layers):
+            src = np.zeros((op.n_source * 9,) + op.shape, dtype=complex)
+            cells = op.by_layer[zb]
+            ug = np.fft.ifft2(v[b].reshape((rows,) + op.shape), axes=(1, 2))
+            src[:, op.pos[cells, 0], op.pos[cells, 1]] = np.einsum(
+                "ncr,rn->cn", du.e_cells[zb], ug[:, op.pos[cells, 0], op.pos[cells, 1]]
+            )
+            want = want - np.einsum(
+                "rcf,cf->rf",
+                op.kernels[za, zb],
+                np.fft.fft2(src, axes=(1, 2)).reshape(src.shape[0], -1),
+            )
+        assert np.abs(got[a] - want).max() < 1e-10 * np.abs(want).max()
+
+
+def test_fgmres_with_full_dtn_windows_matches_the_dense_solve(box):
+    g, c, op = box
+    rng = np.random.default_rng(8)
+    ctr = [
+        MaterialContrast(f * g.medium(m).lam, f * g.medium(m).mu, f * g.medium(m).rho)
+        for m, f in enumerate(rng.uniform(0.1, 0.5, len(g.idx)))
+    ]
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
+    got, stats = idu.solve_interface_fgmres(
+        c,
+        OMEGA,
+        ctr,
+        kx,
+        ky,
+        "P",
+        p=1,
+        r=0,
+        operator=op,
+        preconditioner="dtn",
+        dtn_window=None,
+        tol=1e-11,
+    )
+    assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+    assert stats["outer"] < 60
