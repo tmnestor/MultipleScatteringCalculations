@@ -1392,13 +1392,60 @@ convolutions), and at each wavenumber the depth system over the planes is solved
 bin, which is the same inverse. The backscatter of the averaged medium between planes is then exact, and only the
 lateral fluctuation of the contrast about its mean is left to the outer iteration. An application is an FFT per
 plane, a solve per wavenumber and an inverse FFT per plane, with no inner iteration. Its outer counts
-(Table~\ref{tab:precond}) are those of the march to within one or two products, the march somewhat better at
-$1/2$ and $50\%$, where the lateral fluctuation is largest: the two preconditioners carry complementary halves of
-the coupling, the march the true contrast with the backscatter lagged, Algorithm~5.1 the backscatter exactly for
-the averaged contrast. Two refinements follow the thesis's own line of development and are left for later: a
-homogenised layer, by the layer law, in place of each plane's mean contrast; and the Dirichlet-to-Neumann form of
-Algorithm~5.1 with the true contrast, its dense $\mathbf S_z$ solved only partially, which flexible GMRES accepts
-since the preconditioner may vary between applications.
+(Table~\ref{tab:precond}) are those of the march to within one or two products. In those boxes every cell of a
+plane has the same contrast, so the plane's mean is its contrast, and what separates Algorithm~5.1 from an exact
+solve is the box itself: the averaged medium fills the periodic grid, the cells only $n\times n$ of its
+$(2n-1)^2$ points. A homogenised layer, by the layer law, in place of each plane's mean contrast is the refinement
+that follows the thesis's own line of development, and is left for later.
+
+\paragraph{Algorithm 5.1 in its Dirichlet-to-Neumann form.} The exact factorisation of the depth problem,
+eliminated from the top, is $\mathcal A=\mathcal L\,\mathcal S\,\mathcal U$ with unit block-triangular factors
+and pivots $\mathbf S_z$, the Dirichlet-to-Neumann maps of the half-domains above. With the true contrast the
+pivots are dense within each plane; but a preconditioner may approximate them, and flexible GMRES accepts a
+preconditioner that is itself solved only partially. So the factors are taken from the plane-averaged medium,
+where at each wavenumber the block factorisation is exact and gives $\bar{\mathcal L}$, $\bar{\mathcal U}$ and the
+averaged pivots $\bar{\mathbf S}_z$, and each pivot takes the plane's own contrast back,
+\begin{equation}\label{eq:dtnpivot}
+  \tilde{\mathbf S}_z=\bar{\mathbf S}_z-\bK_{zz}\bigl(\mathbf E-\bar{\mathbf E}_z\bigr),
+\end{equation}
+with $\mathbf E$ the true contrast on the whole padded grid, $\mathbf E_m$ at the cells and zero at the points
+outside the box. The plane's contrast, and the box's edges, are then exact in its pivot, and only the backscatter
+from the planes above is the averaged medium's. An application is
+$\bar{\mathcal U}^{-1}\tilde{\mathcal S}^{-1}\bar{\mathcal L}^{-1}$: the triangular factors at each wavenumber,
+and each $\tilde{\mathbf S}_z^{-1}$ by an inner GMRES to $10^{-2}$, preconditioned with $\bar{\mathbf S}_z^{-1}$.
+For a single plane, with a tight inner solve, it is the exact inverse. Table~\ref{tab:dtn} compares the five
+preconditioners at $\omega h/\beta_A=1/2$, with the contrast uniform in each plane and with a contrast varying
+from cell to cell, uniform on $[0,50]\%$. Where the contrast is uniform, the Dirichlet-to-Neumann form gains at
+most one product on the averaged one and is within one of the march. Where it varies, the averaged form degrades to $11$ or
+$12$ products, close to block-Jacobi's $12$ to $17$, the Dirichlet-to-Neumann form recovers most of the loss
+($8$ to $10$), and the march, which carries the true contrast everywhere, stays best ($6$ to $9$). What separates
+the Dirichlet-to-Neumann form from the march is then the backscatter from above, still the averaged medium's; a
+partial solve of the pivots with the true contrast of the planes above as well is the next step.
+
+\begin{table}[htbp]
+\centering
+\caption{Outer products of FGMRES to $10^{-10}$ on the stored kernels at $\omega h/\beta_A=1/2$, for boxes of
+$L\times n\times n$ cells with every cell at $30\%$ or $50\%$ of its medium, or at a fraction uniform on
+$[0,50]\%$ varying from cell to cell: no preconditioner, block-Jacobi, the two-way march (one pass), and
+Algorithm~5.1 for the plane-averaged contrast and in its Dirichlet-to-Neumann form (pivots to $10^{-2}$).}
+\label{tab:dtn}
+\begin{tabular}{llccccc}
+\toprule
+box & contrast & none & block-Jacobi & march & Alg.~5.1, averaged & Alg.~5.1, DtN \\
+\midrule
+$2\times6\times6$ & $30/50\%$ & $20/24$ & $13/16$ & $7/7$ & $7/8$ & $6/8$ \\
+ & varying & $21$ & $12$ & $6$ & $11$ & $8$ \\
+$4\times6\times6$ & $30/50\%$ & $21/25$ & $14/19$ & $8/9$ & $8/10$ & $8/10$ \\
+ & varying & $22$ & $14$ & $7$ & $11$ & $9$ \\
+$8\times6\times6$ & $30/50\%$ & $21/26$ & $16/21$ & $9/12$ & $9/13$ & $9/12$ \\
+ & varying & $23$ & $15$ & $8$ & $11$ & $10$ \\
+$16\times6\times6$ & $30/50\%$ & $22/27$ & $17/24$ & $10/14$ & $11/16$ & $10/15$ \\
+ & varying & $24$ & $16$ & $9$ & $12$ & $10$ \\
+$8\times12\times12$ & $30/50\%$ & $23/29$ & $19/27$ & $10/14$ & $10/15$ & $10/15$ \\
+ & varying & $25$ & $17$ & $9$ & $12$ & $10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 Table~\ref{tab:downup} gives the time to $10^{-10}$ with the matrix-free operator, where each outer product costs
 $12$ to $41$\,s, for five boxes of three shapes. On the deep, narrow box ($32\times6\times6$, the shape of a

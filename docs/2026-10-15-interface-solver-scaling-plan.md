@@ -484,6 +484,18 @@ block-Jacobi 19 / 27, 847 / 1133 s; march one pass 11 / 15, 615 / 853 s; three p
 bound (`COARSE_BOUNDED`) cuts the coarse low band 28.2k -> 9.3k nodes there, counts unchanged, time -10-13 %. So the
 march pays on deep targets (teleseismic), and on wide shallow ones (reflection) it only matches block-Jacobi.
 
+**The Dirichlet-to-Neumann form, partial (built 18 October, `DtNSweep`, `preconditioner="dtn"`).** The averaged
+medium's exact block LDU per wavenumber (L, U, pivots S_z the DtN maps above), each pivot with the plane's own
+true contrast back (on the whole padded grid, zero outside the box), solved by inner GMRES to 1e-2 preconditioned
+with S_z^-1. Single plane: the exact inverse. Measured (`scripts/measure_interface_dtn.py`,
+`scripts/data/interface_dtn.jsonl`, 1/2), outer products none / block-Jacobi / march / averaged / DtN:
+uniform contrast (every cell of a plane alike, so the mean is the contrast and only the box's edges separate the
+averaged form from exact): DtN within one of the march, at most one better than averaged; contrast varying from
+cell to cell on [0, 50] %: averaged 11-12 (near block-Jacobi's 12-17), DtN 8-10, march 6-9 (e.g. 16 x 6 x 6:
+24 / 16 / 9 / 12 / 10; 8 x 12 x 12: 25 / 17 / 9 / 12 / 10). The remaining gap to the march is the backscatter
+from above, still the averaged medium's: next, the pivots with the true contrast of the planes above as well.
+(Also: the contended deep-box solve rerun clean, 32 x 6 x 6 bounded one pass at 30 %: 11 outer, 613 s.)
+
 Future (noted by the thesis's author, 18 October):
 - **The homogenised layer** in place of the plane's mean contrast (the next step of the PhD development, left
   out for time): each plane's effective layer by the layer law (Paper 3, gate G7, `kennett_layers`), its net
