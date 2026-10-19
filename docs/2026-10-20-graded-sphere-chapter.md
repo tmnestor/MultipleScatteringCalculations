@@ -93,8 +93,8 @@ realistically large number of voxels, accepting long runs.
 9. **The figures are drawn with pgfplots** from tables in the thesis's `EpsFiles/data`, as the thesis's other
    data figures are, so that type and colours match the text (Okabe-Ito: exact black, voxel vermillion
    dashed, the magnified difference blue).
-10. **The record section's results** (, the traces in
-    ): seventeen frequencies in 2.7 h (solve 7 min, readout 2.6 min
+10. **The record section's results** (`scripts/data/graded_sphere_record_n32.jsonl`, the traces in
+    `graded_sphere_record_n32_traces.npz`): seventeen frequencies in 2.7 h (solve 7 min, readout 2.6 min
     each); the error on the line grows as (k_S a)^3.7 from 2.7e-6 at k_S a = 2.1 to 6.6e-4 at 8.9 and levels
     near 1e-6 below 1.6; over the whole section the voxel traces are within 2.0e-5 of the exact ones, the
     largest difference 2.5e-5 of the largest trace. The figure shows every third receiver (21 traces
@@ -102,7 +102,7 @@ realistically large number of voxels, accepting long runs.
     the P wave back-scattered by the upper shell (2.9 ms after the pulse's delay on the axis), the SV it
     converts to there (dominant at wide offsets and on u_x), the P back-scattered by the lower shell
     (8.4 ms near the axis on u_x) and its converted SV (12.7 to 15.6 ms beyond 1.5a on u_z).
-11. **Chapter 7 committed** on  (343c358, 21 October): the chapter, its figures' tables, six
+11. **Chapter 7 committed** on `voxel-3d` (343c358, 21 October): the chapter, its figures' tables, six
     references, the Glossary block, the edition note, and the build and split scripts in the thesis's
-    . The low-frequency floor's cause is being measured ( test at k_S a = 1.05: GMRES
+    `tools/`. The low-frequency floor's cause is being measured (a test at k_S a = 1.05: GMRES
     tolerance 1e-8 against 1e-11, readout 6 against 8 Gauss nodes).
