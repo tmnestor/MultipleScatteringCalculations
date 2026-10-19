@@ -376,6 +376,13 @@ class DtNSweep:
         window: The planes above each plane whose true contrast its pivot carries: 0, the plane's own alone; None,
             all the planes above (the exact pivot S_z of the true medium, solved partially); between, the window's
             planes true and those above it through the averaged medium's Dirichlet-to-Neumann map.
+        inner_iterations: None, each pivot solved to ``inner_tol``; or exactly this many inner iterations, a
+            fixed cost per pivot (0: S_z^-1 alone, so that the whole is ``AveragedSweep``).
+        depth_band: None, the averaged system's coupling between all the planes; or only between planes
+            at most this many apart, the rest dropped before the factorisation.  A block-banded system
+            factorises with no fill outside its band, so the build is O(L b^2) blocks and an application
+            O(L b), where the full one is O(L^3) and O(L^2).  ``DtNSweep`` alone (``TrueSweep`` reads the
+            factors at every depth).
     """
 
     def __init__(
@@ -385,8 +392,20 @@ class DtNSweep:
         inner_tol: float = 1e-2,
         inner_restart: int = 30,
         window: int | None = 0,
+        inner_iterations: int | None = None,
+        depth_band: int | None = None,
     ) -> None:
+        if depth_band is not None and type(self) is not DtNSweep:
+            raise ValueError(
+                f"{type(self).__name__}: depth_band applies to DtNSweep alone, whose factors are read"
+                " within the band; leave it None here."
+            )
+        if inner_iterations is not None and inner_iterations < 0:
+            raise ValueError(
+                f"DtNSweep: inner_iterations is None or a count >= 0, not {inner_iterations}."
+            )
         self.window = window
+        self.inner_iterations = inner_iterations
         self.op, self.e, self.inner_tol, self.inner_restart = (
             op,
             e,
@@ -398,27 +417,33 @@ class DtNSweep:
         rows, cols = op.na * 9, op.n_source * 9
         self.rows, self.cols = rows, cols
         n_l = len(self.layers)
+        # the band: planes within b of each other (all of them by default)
+        self.band = n_l - 1 if depth_band is None else min(depth_band, n_l - 1)
         a, ebar = _averaged_system(op, e)
         blk = [
             [
                 a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows].copy()
+                if abs(i - j) <= self.band
+                else None
                 for j in range(n_l)
             ]
             for i in range(n_l)
         ]
-        # the exact block LDU of the averaged depth system at every wavenumber (right-looking elimination)
+        # the exact block LDU of the averaged depth system (within the band) at every wavenumber,
+        # right-looking elimination; a block-banded system has no fill outside its band
         self.lo, self.up, self.s, self.s_inv = {}, {}, [], []
         for k in range(n_l):
             sk = blk[k][k]
             sk_inv = np.linalg.inv(sk)
             self.s.append(sk)
             self.s_inv.append(sk_inv)
-            for i in range(k + 1, n_l):
+            below = range(k + 1, min(n_l, k + self.band + 1))
+            for i in below:
                 self.lo[i, k] = blk[i][k] @ sk_inv
-            for j in range(k + 1, n_l):
+            for j in below:
                 self.up[k, j] = sk_inv @ blk[k][j]
-            for i in range(k + 1, n_l):
-                for j in range(k + 1, n_l):
+            for i in below:
+                for j in below:
                     blk[i][j] -= self.lo[i, k] @ blk[k][j]
         # each cell's contrast fluctuation about its plane's mean, (n_source 9) x (na 9)
         # each cell's contrast, and the plane's mean, as matrices (n_source 9) x (na 9); the true contrast is zero at
@@ -458,12 +483,12 @@ class DtNSweep:
     def _trailing(self, win: list, v: list) -> list:
         """The averaged medium's trailing system on the planes ``win`` (those above eliminated: its Dirichlet-to-
         Neumann boundary) applied at each wavenumber, L_W S_W U_W v."""
-        n = len(win)
+        n, band = len(win), self.band  # the window's planes are consecutive
         u = [
             v[a]
             + sum(
                 np.einsum("frs,sf->rf", self.up[win[a], win[b]], v[b])
-                for b in range(a + 1, n)
+                for b in range(a + 1, min(n, a + band + 1))
             )
             for a in range(n)
         ]
@@ -471,25 +496,26 @@ class DtNSweep:
         return [
             t[a]
             + sum(
-                np.einsum("frs,sf->rf", self.lo[win[a], win[b]], t[b]) for b in range(a)
+                np.einsum("frs,sf->rf", self.lo[win[a], win[b]], t[b])
+                for b in range(max(0, a - band), a)
             )
             for a in range(n)
         ]
 
     def _trailing_solve(self, win: list, v: list) -> list:
         """(L_W S_W U_W)^-1 v at each wavenumber."""
-        n = len(win)
+        n, band = len(win), self.band
         p = []
         for a in range(n):
             pa = v[a].copy()
-            for b in range(a):
+            for b in range(max(0, a - band), a):
                 pa -= np.einsum("frs,sf->rf", self.lo[win[a], win[b]], p[b])
             p.append(pa)
         q = [np.einsum("frs,sf->rf", self.s_inv[win[a]], p[a]) for a in range(n)]
         r = [None] * n
         for a in reversed(range(n)):
             ra = q[a].copy()
-            for b in range(a + 1, n):
+            for b in range(a + 1, min(n, a + band + 1)):
                 ra -= np.einsum("frs,sf->rf", self.up[win[a], win[b]], r[b])
             r[a] = ra
         return r
@@ -527,17 +553,21 @@ class DtNSweep:
             )
 
         b = np.concatenate([r.ravel() for r in rhs])
+        self.inner_solves += 1
+        k = self.inner_iterations
+        if k == 0:  # the averaged factorisation's solve alone
+            return split(pre(b))
         sol, _ = gmres(
             LinearOperator((b.size, b.size), matvec=matvec, dtype=complex),
             b,
             x0=pre(b),
             M=LinearOperator((b.size, b.size), matvec=pre, dtype=complex),
-            rtol=self.inner_tol,
+            # a tolerance, or exactly k iterations: one cycle of k, never stopped by a tolerance
+            rtol=self.inner_tol if k is None else 0.0,
             atol=0.0,
-            restart=self.inner_restart,
-            maxiter=20,
+            restart=self.inner_restart if k is None else k,
+            maxiter=20 if k is None else 1,
         )
-        self.inner_solves += 1
         return split(sol)
 
     def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
@@ -554,11 +584,12 @@ class DtNSweep:
             self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1))
             for z in self.layers
         ]
+        band = self.band
         # L^-1: down, at each wavenumber
         w = []
         for i in range(n_l):
             wi = bh[i].copy()
-            for k in range(i):
+            for k in range(max(0, i - band), i):
                 wi -= np.einsum("frs,sf->rf", self.lo[i, k], w[k])
             w.append(wi)
         # D^-1: each pivot, partially
@@ -567,7 +598,7 @@ class DtNSweep:
         x = [None] * n_l
         for k in reversed(range(n_l)):
             xk = y[k].copy()
-            for j in range(k + 1, n_l):
+            for j in range(k + 1, min(n_l, k + band + 1)):
                 xk -= np.einsum("frs,sf->rf", self.up[k, j], x[j])
             x[k] = xk
         out = np.zeros_like(full)
