@@ -61,3 +61,28 @@ realistically large number of voxels, accepting long runs.
    Built: `graded_voxel.fft.canonical_blocks`, `transformed_kernel`, and `solve_graded_sphere_fft(kernel_dtype=,
    kernel_path=)`; the former path (`blocks=`, every offset's block) gives the same solution to 1e-12, the
    memory-mapped kernel likewise.
+
+   With the kernel in single precision on disk (`--c64 --disk`), k_S a = 4:
+
+   | n across | cells | unknowns | solve | readout | error on the line |
+   |---|---|---|---|---|---|
+   | 24 | 8 816 | 317 376 | 111 s | 1.0 s / receiver | 5.85e-5 (as in memory) |
+   | 32 | 19 760 | 711 360 | 495 s | 6.1 s / receiver | 1.86e-5 (order 3.98) |
+
+   The reported peak (5.9, 11.8 GB) counts the kernel file's pages in the page cache, which the system
+   evicts under pressure. At n = 40 the kernel file (12.8 GB) no longer fits beside the rest, and each GMRES
+   iteration reads it from disk. The ladder is stopped after n = 40: n = 48 is not needed.
+6. **The record section's model: n = 32** (19 760 voxels, 711 360 unknowns). The record needs ~20 solves;
+   at n = 32 they take ~10-15 min each (8 min at k_S a = 4) and finish overnight, where n = 40 (the kernel
+   read from disk each iteration) would take about a day. The error at n = 32 (2e-5 at k_S a = 4) is far
+   below what a record section shows.
+7. **The record section's parameters** (`scripts/record_graded_sphere.py`): a Ricker pulse peaking at
+   k_S a = 3 (wavelength ~2a, so the top and the bottom of the body are resolved), its spectrum used to
+   3 x the peak (k_S a = 9); a record of T = 12 a / beta = 40 ms, which holds every arrival on the line to
+   x = 3a (the latest, S converted at the far side, by ~17 ms) after the pulse's causal delay of 1.5 periods
+   (10.5 ms): 17 frequencies, k_S a = 0.52 to 8.9; 31 receivers at 0.1a on z = -1.25a, x = 0 to 3a, the
+   figure every other one, mirrored; time from the incident wave's crossing of the receivers' plane. GMRES
+   to 1e-8 (the discretisation error is ~1e-4 and below), the kernel in single precision on disk.
+8. **The figures are drawn with pgfplots** from tables in the thesis's `EpsFiles/data`, as the thesis's other
+   data figures are, so that type and colours match the text (Okabe-Ito: exact black, voxel vermillion
+   dashed, the 100x difference blue).
