@@ -6,13 +6,16 @@ The experiment of ``measure_interface_dtn.py``: FGMRES to 1e-10 at omega h / bet
 kernels (``LateralOperator(parts=True)``), every cell at 50 % of its medium's lambda, mu and rho or at a
 fraction uniform on [0, 50] % (seed 11), a P wave with lateral slowness (0.3, 0.1) / alpha_A. The
 Dirichlet-to-Neumann form (``DtNSweep``, window 0) approximated in three ways, each cheaper than the
-published form (pivots to 1e-2):
+published form (pivots to 1e-2), and its pivots widened in a fourth:
 
 - the pivots' inner solve: to 1e-1 or 3e-1, or a fixed k = 0, 1, 2, 3 iterations (k = 0: S_z^-1 alone, the
   averaged sweep);
 - the depth coupling of the averaged factors: only between planes at most b = 1, 2, 4 apart, a block-banded
   factorisation, O(L b^2) to build and O(L b) to apply against O(L^3) and O(L^2);
-- both: b = 2 with k = 1.
+- both: b = 2 with k = 1;
+- the pivots' window: the sweep on the true system (``TrueSweep``), each leading solve over the plane
+  and w = 0, 2 or all the planes above, to 1e-2 or with k = 1, the form that reaches 5 outer products
+  whatever the depth.
 
 Against the march (``DownUp``, one pass, inner 1e-2) and block-Jacobi. Each cost is recorded with what
 shares it: the couplings (``InterfaceCouplings``, corrections as A0 + omega^2 A1) every frequency; the
@@ -50,7 +53,9 @@ OUT = DATA / "interface_dtn_approximations.jsonl"
 MATRIX_FREE = DATA / "interface_matrix_free_downup.jsonl"
 OMEGA = A.beta / (2 * H)
 PATTERNS = ("50%", "random 0-50%")
-#: (label, preconditioner, DtNSweep keywords); the DtN rows are built here and passed as ``precondition``
+#: (label, preconditioner, keywords of DtNSweep or, for "true-sweep", TrueSweep); those rows are built
+#: here and passed as ``precondition``.  The windowed pivots last: the sweep on the true system, its leading
+#: solves over the plane and w planes above (None: all of them), the averaged medium's map beyond
 RUNS = [
     ("block-Jacobi", "jacobi", None),
     ("march", "downup", None),
@@ -65,6 +70,12 @@ RUNS = [
     ("DtN b=2", "dtn", {"inner_tol": 1e-2, "depth_band": 2}),
     ("DtN b=4", "dtn", {"inner_tol": 1e-2, "depth_band": 4}),
     ("DtN b=2, k=1", "dtn", {"inner_iterations": 1, "depth_band": 2}),
+    ("true w=0 1e-2", "true-sweep", {"inner_tol": 1e-2, "window": 0}),
+    ("true w=0 k=1", "true-sweep", {"inner_iterations": 1, "window": 0}),
+    ("true w=2 1e-2", "true-sweep", {"inner_tol": 1e-2, "window": 2}),
+    ("true w=2 k=1", "true-sweep", {"inner_iterations": 1, "window": 2}),
+    ("true all 1e-2", "true-sweep", {"inner_tol": 1e-2, "window": None}),
+    ("true all k=1", "true-sweep", {"inner_iterations": 1, "window": None}),
 ]
 
 
@@ -127,7 +138,7 @@ def main() -> None:
             built = None
             if kwargs is not None:
                 e = idu.source_expansions(op, iso.cell_contrasts(grid, OMEGA, ctr, 0))
-                built = idu.DtNSweep(op, e, **kwargs)
+                built = (idu.TrueSweep if pre == "true-sweep" else idu.DtNSweep)(op, e, **kwargs)
             t_built = time.time() - t0
             t0 = time.time()
             _, st = idu.solve_interface_fgmres(
