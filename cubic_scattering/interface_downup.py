@@ -64,20 +64,29 @@ def fgmres(
     tol: float = 1e-10,
     restart: int = 50,
     max_iter: int = 1000,
+    x0: NDArray | None = None,
 ) -> tuple[NDArray, int, list[float]]:
-    """Flexible GMRES (Saad, Alg. 9.6), right-preconditioned and restarted, from x = 0.
+    """Flexible GMRES (Saad, Alg. 9.6), right-preconditioned and restarted, from x = 0 or from ``x0``.
 
-    Returns the solution, the number of products with the operator and the relative residual after each.
+    Returns the solution, the number of products with the operator (with ``x0``, its residual's product
+    included) and the relative residual after each.
 
     Raises:
         RuntimeError: when the relative residual does not reach ``tol`` within ``max_iter`` products.
     """
     b = np.asarray(b, dtype=complex)
-    x = np.zeros_like(b)
     bnorm = np.linalg.norm(b)
     if bnorm == 0:
-        return x, 0, []
-    r, n_mv, history = b.copy(), 0, []
+        return np.zeros_like(b), 0, []
+    if x0 is None:
+        x = np.zeros_like(b)
+        r, n_mv, history = b.copy(), 0, []
+    else:
+        x = np.array(x0, dtype=complex).ravel()
+        r, n_mv = b - matvec(x), 1
+        history = [np.linalg.norm(r) / bnorm]
+        if history[-1] <= tol:
+            return x, n_mv, history
     while True:
         beta = np.linalg.norm(r)
         v = np.zeros((restart + 1, b.size), dtype=complex)
@@ -1138,6 +1147,14 @@ class MatrixFreeDownUp:
         return out.ravel()
 
 
+def source_expansions(op, delta: list) -> NDArray:
+    """Each cell's source expansion E, (N, n_source, na, 9, 9), from its contrast ``delta``
+    (``cell_contrasts``) for the field sizes of ``op``: what a preconditioner is built from."""
+    return np.array(
+        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
+    )
+
+
 def solve_interface_fgmres(
     couplings: InterfaceCouplings,
     omega: float,
@@ -1158,6 +1175,8 @@ def solve_interface_fgmres(
     passes: int = 1,
     restart: int = 50,
     max_iter: int = 1000,
+    precondition=None,
+    x0: NDArray | None = None,
 ) -> tuple[InterfaceResult, dict]:
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
     (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``) or not at
@@ -1169,8 +1188,13 @@ def solve_interface_fgmres(
     With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
     ``DownUp`` on ``LateralOperator(parts=True)``.
 
+    ``precondition``, a preconditioner already built (any of the above, or a callable), is used as it is in
+    place of ``preconditioner``: one built at another frequency, for instance, since FGMRES accepts an
+    inexact preconditioner.  ``x0`` (N, n_field, 9), a previous solution's ``psi`` (at a neighbouring
+    frequency, say), starts the iteration; its residual's product is counted in ``outer``.
+
     Returns the result and the counts: ``outer`` (products with the whole operator), ``inner`` (products with a
-    plane's own operator), ``planes`` (in-plane solves) and ``seconds``.
+    plane's own operator), ``planes`` (in-plane solves) and ``seconds``, those of this solve alone.
     """
     grid = couplings.grid
     op = (
@@ -1181,7 +1205,7 @@ def solve_interface_fgmres(
     na, n_field, n_source = op.na, op.n_field, op.n_source
     n = len(grid.idx)
     delta = cell_contrasts(grid, omega, contrasts, r)
-    e = np.array([source_expansion(d, n_field)[:n_source, :na] for d in delta])
+    e = source_expansions(op, delta)
     rows = na * 9
 
     def matvec(v: NDArray) -> NDArray:
@@ -1189,7 +1213,9 @@ def solve_interface_fgmres(
         src = np.einsum("ncbij,nbj->nci", e, x).reshape(n, n_source * 9)
         return (np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)).ravel()
 
-    if preconditioner == "downup" and isinstance(op, LateralOperator):
+    if precondition is not None:
+        pre = precondition
+    elif preconditioner == "downup" and isinstance(op, LateralOperator):
         pre = DownUp(op, e, inner_tol=inner_tol, passes=passes)
     elif preconditioner == "downup":
         pre = MatrixFreeDownUp(
@@ -1252,14 +1278,23 @@ def solve_interface_fgmres(
         )
 
     ref = reference_moments(grid, omega, kx, ky, wave, n_field)
+    # a preconditioner used before keeps counting: this solve's counts are the increments
+    inner0 = getattr(pre, "inner_products", 0)
+    planes0 = getattr(pre, "inner_solves", 0)
     t0 = time.time()
     sol, n_outer, history = fgmres(
-        matvec, pre, ref[:, :na].ravel(), tol=tol, restart=restart, max_iter=max_iter
+        matvec,
+        pre,
+        ref[:, :na].ravel(),
+        tol=tol,
+        restart=restart,
+        max_iter=max_iter,
+        x0=None if x0 is None else np.asarray(x0)[:, :na],
     )
     stats = {
         "outer": n_outer,
-        "inner": getattr(pre, "inner_products", 0),
-        "planes": getattr(pre, "inner_solves", 0),
+        "inner": getattr(pre, "inner_products", 0) - inner0,
+        "planes": getattr(pre, "inner_solves", 0) - planes0,
         "seconds": time.time() - t0,
         "history": history,
     }

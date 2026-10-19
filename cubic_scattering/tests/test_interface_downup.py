@@ -334,3 +334,55 @@ def test_fgmres_with_the_leading_sweep_matches_the_dense_solve(box):
     )
     assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
     assert stats["outer"] < 30
+
+
+def test_fgmres_from_an_initial_guess():
+    """An exact x0 costs its residual's product alone; a near one fewer products than from zero."""
+    rng = np.random.default_rng(2)
+    n = 60
+    a = np.eye(n) * 4 + rng.standard_normal((n, n)) / np.sqrt(n) * (1 + 1j)
+    b = rng.standard_normal(n) + 1j * rng.standard_normal(n)
+    want = np.linalg.solve(a, b)
+    x, n_mv, hist = idu.fgmres(lambda v: a @ v, lambda v: v, b, tol=1e-12, x0=want)
+    assert n_mv == 1 and hist[0] <= 1e-12 and np.array_equal(x, want)
+    _, n_cold, _ = idu.fgmres(lambda v: a @ v, lambda v: v, b, tol=1e-12)
+    near = want + 1e-6 * np.abs(want).max() * rng.standard_normal(n)
+    x, n_warm, _ = idu.fgmres(lambda v: a @ v, lambda v: v, b, tol=1e-12, x0=near)
+    assert n_warm < n_cold and np.abs(x - want).max() < 1e-10 * np.abs(want).max()
+
+
+def test_a_preconditioner_built_once_serves_other_solves_and_frequencies(box):
+    """A DtNSweep built at omega, passed as ``precondition``: the dense solution at omega and at 0.95 omega,
+    the counts of each solve its own; and the solution at omega as x0 needs only its residual's product."""
+    g, c, op = box
+    ctr = _varying(g, 8)
+    e = idu.source_expansions(op, iso.cell_contrasts(g, OMEGA, ctr, 0))
+    pre = idu.DtNSweep(op, e, inner_tol=1e-2)
+    counts = []
+    for omega in (OMEGA, 0.95 * OMEGA):
+        kx, ky = 0.3 * omega / A.alpha, 0.1 * omega / A.alpha
+        dense = iso.solve_interface(c, omega, ctr, kx, ky, "P", p=1, r=0)
+        got, stats = idu.solve_interface_fgmres(
+            c,
+            omega,
+            ctr,
+            kx,
+            ky,
+            "P",
+            p=1,
+            r=0,
+            operator=op if omega == OMEGA else None,
+            precondition=pre,
+            tol=1e-11,
+        )
+        assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+        counts.append(stats["planes"])
+        if omega == OMEGA:
+            first = got
+    assert counts[0] > 0 and counts[1] > 0 and pre.inner_solves == sum(counts)
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    again, stats = idu.solve_interface_fgmres(
+        c, OMEGA, ctr, kx, ky, "P", p=1, r=0, operator=op, precondition=pre, tol=1e-9, x0=first.psi
+    )
+    assert stats["outer"] == 1 and stats["planes"] == 0
+    assert np.abs(again.psi - first.psi).max() == 0
