@@ -1551,13 +1551,13 @@ $8\times12\times12$ & $30/50\%$ & $23/29$ & $19/27$ & $10/14$ & $10/15$ & $10/15
 \end{table}
 
 Table~\ref{tab:downup} gives the time to $10^{-10}$ with the matrix-free operator, where each outer product costs
-$12$ to $41$\,s, for five boxes of three shapes. On the deep, narrow box ($32\times6\times6$, the shape of a
-teleseismic target) the march takes $27$ and $25\%$ less time than block-Jacobi with one pass and $37\%$ less with
-three, and $42$ to $48\%$ less than no preconditioner; block-Jacobi there is barely better than none at $50\%$
-($27$ products against $29$). On boxes of moderate depth and width one pass saves $14$ to $28\%$, and three passes
+$4$ to $16$\,s, for five boxes of three shapes. On the deep, narrow box ($32\times6\times6$, the shape of a
+teleseismic target) the march takes $30$ and $34\%$ less time than block-Jacobi with one pass and $40$ and $50\%$ less with
+three, and $39$ to $54\%$ less than no preconditioner; block-Jacobi there is barely better than none at $50\%$
+($27$ products against $29$). On boxes of moderate depth and width one pass saves $20$ to $35\%$, and three passes
 beat one only at $50\%$ on $6\times6$ cells per plane. On the wide, shallow box ($4\times24\times24$, the shape of a reflection survey) the march
-saves outer products as everywhere ($10$ and $14$ against $19$ and $28$) but no time: one pass is level with
-block-Jacobi ($406$ against $387$\,s, $578$ against $589$\,s) and three passes are slower. With four planes there is
+saves outer products as everywhere ($10$ and $14$ against $19$ and $28$) but costs time: one pass is $28$ and $21\%$
+slower than block-Jacobi ($229$ against $179$\,s, $316$ against $262$\,s) and three passes slower still. With four planes there is
 little coupling in depth for the march to carry and much within each plane, and a pass grows with the plane's
 width; the node bound below removes most of that growth but not the balance.
 
@@ -1565,8 +1565,8 @@ width; the node bound below removes most of that growth but not the balance.
 \centering
 \caption{Matrix-free FGMRES to $10^{-10}$ at $\omega h/\beta_A=1/2$: outer products and time with no
 preconditioner, block-Jacobi and the two-way march (coarse nodes of its own, one or three passes), for boxes of
-$L\times n\times n$ cells at contrasts of $30\%$ and $50\%$. One product takes $12$\,s ($8\times6\times6$), $25$\,s
-($16\times6\times6$), $19$\,s ($8\times12\times12$), $41$\,s ($32\times6\times6$) and $20$\,s ($4\times24\times24$).
+$L\times n\times n$ cells at contrasts of $30\%$ and $50\%$, timed on one machine, where one product takes $4.3$\,s ($8\times6\times6$),
+$8.1$\,s ($16\times6\times6$), $7.1$\,s ($8\times12\times12$), $15.6$\,s ($32\times6\times6$) and $9.7$\,s ($4\times24\times24$).
 $^\dagger$Outer products only, from the stored kernels (Table~\ref{tab:precond}). $^\ddagger$With the node bound
 (on $6\times6$ cells it changes only the march's lattice).}
 \label{tab:downup}
@@ -1575,25 +1575,84 @@ $^\dagger$Outer products only, from the stored kernels (Table~\ref{tab:precond})
 box & preconditioner & $30\%$ & $50\%$ \\
 \midrule
 $8\times6\times6$ & none & $21^\dagger$ & $26^\dagger$ \\
- & block-Jacobi & $16$, $191$\,s & $21$, $247$\,s \\
- & march, one pass & $9$, $138$\,s & $12$, $185$\,s \\
- & march, three passes & $8$, $181$\,s & $8$, $176$\,s \\
+ & block-Jacobi & $16$, $69$\,s & $21$, $91$\,s \\
+ & march, one pass & $9$, $45$\,s & $12$, $62$\,s \\
+ & march, three passes & $8$, $57$\,s & $8$, $57$\,s \\
 $16\times6\times6$ & none & $22^\dagger$ & $27^\dagger$ \\
- & block-Jacobi & $17$, $404$\,s & $24$, $542$\,s \\
- & march, one pass & $10$, $294$\,s & $14$, $414$\,s \\
- & march, three passes & $7$, $303$\,s & $8$, $337$\,s \\
+ & block-Jacobi & $17$, $135$\,s & $24$, $191$\,s \\
+ & march, one pass & $10$, $93$\,s & $14$, $134$\,s \\
+ & march, three passes & $7$, $92$\,s & $8$, $103$\,s \\
 $8\times12\times12$ & none & $23^\dagger$ & $29^\dagger$ \\
- & block-Jacobi & $19$, $343$\,s & $27$, $486$\,s \\
- & march, one pass & $10$, $295$\,s & $14$, $414$\,s \\
- & march, three passes & $7$, $374$\,s & $8$, $433$\,s \\
-$32\times6\times6$ & none & $23$, $1026$\,s & $29$, $1237$\,s \\
- & block-Jacobi & $19$, $847$\,s & $27$, $1133$\,s \\
- & march, one pass & $11$, $615$\,s & $15$, $853$\,s \\
- & march, three passes$^\ddagger$ & $7$, $530$\,s & $9$, $717$\,s \\
-$4\times24\times24$ & none & $25$, $510$\,s & $32$, $647$\,s \\
- & block-Jacobi & $19$, $387$\,s & $28$, $589$\,s \\
- & march, one pass$^\ddagger$ & $10$, $406$\,s & $14$, $578$\,s \\
- & march, three passes$^\ddagger$ & $7$, $617$\,s & $9$, $808$\,s \\
+ & block-Jacobi & $19$, $129$\,s & $27$, $183$\,s \\
+ & march, one pass & $10$, $101$\,s & $14$, $146$\,s \\
+ & march, three passes & $7$, $125$\,s & $8$, $150$\,s \\
+$32\times6\times6$ & none & $23$, $360$\,s & $29$, $456$\,s \\
+ & block-Jacobi & $19$, $277$\,s & $27$, $421$\,s \\
+ & march, one pass & $11$, $195$\,s & $15$, $276$\,s \\
+ & march, three passes$^\ddagger$ & $7$, $166$\,s & $9$, $211$\,s \\
+$4\times24\times24$ & none & $25$, $234$\,s & $32$, $347$\,s \\
+ & block-Jacobi & $19$, $179$\,s & $28$, $262$\,s \\
+ & march, one pass$^\ddagger$ & $10$, $229$\,s & $14$, $316$\,s \\
+ & march, three passes$^\ddagger$ & $7$, $360$\,s & $9$, $481$\,s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Approximate Dirichlet-to-Neumann preconditioners, projected onto the matrix-free product.} On the stored
+kernels block-Jacobi is the fastest preconditioner throughout, a product costing a fraction of a second. With the
+matrix-free product, at $4$ to $16$\,s, a solve costs its outer products at that price, the preconditioner's
+applications and its build, and the Dirichlet-to-Neumann forms can be approximated to cheapen the last two. One
+inner iteration per pivot in place of a tolerance cuts a form's applications by $8$ to $46\%$ and keeps its outer
+count to within one, except with the whole window, which loses $2$ to $4$ products by it. Truncating the averaged
+factors' coupling in depth to planes at most $b$ apart costs outer products on every box ($19$ against $15$ on
+$16\times6\times6$ at $50\%$ with $b=4$): the averaged medium's coupling is long-ranged, carried by propagating
+waves, so a cheaper build must come from the recursion of Algorithm~5.1 on the plane-wave modes, not from a band.
+The build depends on the frequency and the contrast but not on the incident wave, so it adds to $B$ in
+\eqref{eq:costmodel} and is shared by every source; nor need it be rebuilt at every frequency. Built at
+$\omega_0$ and used at $\omega_0(1-\delta)$ (\texttt{scripts/data/interface\_frequency\_reuse.jsonl}), it costs the
+Dirichlet-to-Neumann form no outer products down to $\delta=5\%$ on $8\times6\times6$ and $16\times6\times6$ cells,
+at both contrasts, and one or two more at $10\%$; the sweep on the true system with a two-plane window none down to
+$1\%$ and one or two by $5\%$, a fair trade where its build costs more than a product; the whole window, an almost
+exact inverse, loses products from the first per cent and is best built afresh. A record of length $T$ up to
+$f_{\max}$ has some $Tf_{\max}$ frequencies $1/T$ apart; those below $20/T$ are more than $5\%$ apart and each
+needs a factorisation of its own, and above, one every $5\%$ serves, about $20[1+\ln(Tf_{\max}/20)]$ in all ($70$
+against $240$ frequencies for a record of $4$\,s to $60$\,Hz), so that the build all but leaves $B$. The march,
+whose build is a fraction of a second, has nothing to share; the neighbouring frequency's solution as the starting
+guess saves at most two products for either. Table~\ref{tab:dtnapprox} projects each solve onto the
+matrix-free product: the outer products at its measured time on each box, the applications as measured on the
+stored kernels. The Dirichlet-to-Neumann form on the averaged factors is level with the march where the contrast is
+uniform and $5$ to $23\%$ behind where it varies, held back by its outer count; the sweep on the true system is
+ahead on every box, with a window of two planes and one inner iteration by $6$ to $27\%$, and with the whole
+window, $5$ products whatever the depth, by $15$ to $45\%$ on eight planes but only $2$ to $13\%$ on sixteen, where
+its leading solves grow as the square of the depth. The projection assumes that the leading solves cost on the
+matrix-free operator what they cost on the stored kernels; as yet each inner product there is a full matrix-free
+product. Realising it needs what the window needs: the stored kernels of nearby planes, which the matrix-free
+operator keeps, the averaged factors on the plane-wave modes, and the coupling of distant planes by the march's
+recursions.
+
+\begin{table}[htbp]
+\centering
+\caption{Approximate Dirichlet-to-Neumann preconditioners against the two-way march, projected onto the
+matrix-free product: outer products of FGMRES to $10^{-10}$ at $\omega h/\beta_A=1/2$ and the seconds of a solve,
+the outer products at the matrix-free product's measured time on each box (Table~\ref{tab:downup}) and the
+preconditioner's applications as measured on the stored kernels, its build, shared by every source, left out; in
+parentheses, the percentage difference from the march. The Dirichlet-to-Neumann form on the averaged factors with
+its pivots to $10^{-2}$, and the sweep on the true system with a window of $w$ planes, its leading solves by one
+inner iteration ($k=1$) or, over all the planes above, to $10^{-2}$; contrasts as Table~\ref{tab:dtnwindow}.}
+\label{tab:dtnapprox}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llccccc}
+\toprule
+ & & & DtN & \multicolumn{3}{c}{true system} \\
+\cmidrule(lr){5-7}
+box & contrast & march & $w=0$ & $w=0$, $k=1$ & $w=2$, $k=1$ & all \\
+\midrule
+$8\times6\times6$ & $50\%$ & $12$, $54$ & $12$, $52$ ($-2$) & $10$, $44$ ($-18$) & $9$, $41$ ($-23$) & $5$, $29$ ($-45$) \\
+ & random & $8$, $35$ & $10$, $44$ (${+}23$) & $8$, $35$ ($-1$) & $7$, $32$ ($-10$) & $5$, $26$ ($-26$) \\
+$16\times6\times6$ & $50\%$ & $14$, $121$ & $15$, $124$ (${+}2$) & $11$, $92$ ($-24$) & $10$, $89$ ($-27$) & $5$, $106$ ($-13$) \\
+ & random & $9$, $78$ & $10$, $82$ (${+}6$) & $9$, $76$ ($-3$) & $8$, $72$ ($-8$) & $5$, $76$ ($-2$) \\
+$8\times12\times12$ & $50\%$ & $14$, $112$ & $15$, $114$ (${+}2$) & $11$, $83$ ($-26$) & $10$, $85$ ($-25$) & $5$, $76$ ($-32$) \\
+ & random & $9$, $72$ & $10$, $75$ (${+}5$) & $9$, $68$ ($-5$) & $8$, $68$ ($-6$) & $5$, $61$ ($-15$) \\
 \bottomrule
 \end{tabular}
 \end{table}

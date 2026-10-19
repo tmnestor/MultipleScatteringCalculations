@@ -64,20 +64,29 @@ def fgmres(
     tol: float = 1e-10,
     restart: int = 50,
     max_iter: int = 1000,
+    x0: NDArray | None = None,
 ) -> tuple[NDArray, int, list[float]]:
-    """Flexible GMRES (Saad, Alg. 9.6), right-preconditioned and restarted, from x = 0.
+    """Flexible GMRES (Saad, Alg. 9.6), right-preconditioned and restarted, from x = 0 or from ``x0``.
 
-    Returns the solution, the number of products with the operator and the relative residual after each.
+    Returns the solution, the number of products with the operator (with ``x0``, its residual's product
+    included) and the relative residual after each.
 
     Raises:
         RuntimeError: when the relative residual does not reach ``tol`` within ``max_iter`` products.
     """
     b = np.asarray(b, dtype=complex)
-    x = np.zeros_like(b)
     bnorm = np.linalg.norm(b)
     if bnorm == 0:
-        return x, 0, []
-    r, n_mv, history = b.copy(), 0, []
+        return np.zeros_like(b), 0, []
+    if x0 is None:
+        x = np.zeros_like(b)
+        r, n_mv, history = b.copy(), 0, []
+    else:
+        x = np.array(x0, dtype=complex).ravel()
+        r, n_mv = b - matvec(x), 1
+        history = [np.linalg.norm(r) / bnorm]
+        if history[-1] <= tol:
+            return x, n_mv, history
     while True:
         beta = np.linalg.norm(r)
         v = np.zeros((restart + 1, b.size), dtype=complex)
@@ -367,6 +376,13 @@ class DtNSweep:
         window: The planes above each plane whose true contrast its pivot carries: 0, the plane's own alone; None,
             all the planes above (the exact pivot S_z of the true medium, solved partially); between, the window's
             planes true and those above it through the averaged medium's Dirichlet-to-Neumann map.
+        inner_iterations: None, each pivot solved to ``inner_tol``; or exactly this many inner iterations, a
+            fixed cost per pivot (0: S_z^-1 alone, so that the whole is ``AveragedSweep``).
+        depth_band: None, the averaged system's coupling between all the planes; or only between planes
+            at most this many apart, the rest dropped before the factorisation.  A block-banded system
+            factorises with no fill outside its band, so the build is O(L b^2) blocks and an application
+            O(L b), where the full one is O(L^3) and O(L^2).  ``DtNSweep`` alone (``TrueSweep`` reads the
+            factors at every depth).
     """
 
     def __init__(
@@ -376,8 +392,20 @@ class DtNSweep:
         inner_tol: float = 1e-2,
         inner_restart: int = 30,
         window: int | None = 0,
+        inner_iterations: int | None = None,
+        depth_band: int | None = None,
     ) -> None:
+        if depth_band is not None and type(self) is not DtNSweep:
+            raise ValueError(
+                f"{type(self).__name__}: depth_band applies to DtNSweep alone, whose factors are read"
+                " within the band; leave it None here."
+            )
+        if inner_iterations is not None and inner_iterations < 0:
+            raise ValueError(
+                f"DtNSweep: inner_iterations is None or a count >= 0, not {inner_iterations}."
+            )
         self.window = window
+        self.inner_iterations = inner_iterations
         self.op, self.e, self.inner_tol, self.inner_restart = (
             op,
             e,
@@ -389,27 +417,33 @@ class DtNSweep:
         rows, cols = op.na * 9, op.n_source * 9
         self.rows, self.cols = rows, cols
         n_l = len(self.layers)
+        # the band: planes within b of each other (all of them by default)
+        self.band = n_l - 1 if depth_band is None else min(depth_band, n_l - 1)
         a, ebar = _averaged_system(op, e)
         blk = [
             [
                 a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows].copy()
+                if abs(i - j) <= self.band
+                else None
                 for j in range(n_l)
             ]
             for i in range(n_l)
         ]
-        # the exact block LDU of the averaged depth system at every wavenumber (right-looking elimination)
+        # the exact block LDU of the averaged depth system (within the band) at every wavenumber,
+        # right-looking elimination; a block-banded system has no fill outside its band
         self.lo, self.up, self.s, self.s_inv = {}, {}, [], []
         for k in range(n_l):
             sk = blk[k][k]
             sk_inv = np.linalg.inv(sk)
             self.s.append(sk)
             self.s_inv.append(sk_inv)
-            for i in range(k + 1, n_l):
+            below = range(k + 1, min(n_l, k + self.band + 1))
+            for i in below:
                 self.lo[i, k] = blk[i][k] @ sk_inv
-            for j in range(k + 1, n_l):
+            for j in below:
                 self.up[k, j] = sk_inv @ blk[k][j]
-            for i in range(k + 1, n_l):
-                for j in range(k + 1, n_l):
+            for i in below:
+                for j in below:
                     blk[i][j] -= self.lo[i, k] @ blk[k][j]
         # each cell's contrast fluctuation about its plane's mean, (n_source 9) x (na 9)
         # each cell's contrast, and the plane's mean, as matrices (n_source 9) x (na 9); the true contrast is zero at
@@ -421,6 +455,40 @@ class DtNSweep:
         self.ebar = ebar
         self.inner_products = 0
         self.inner_solves = 0
+
+    def sharing(self, cls: type | None = None, **settings) -> "DtNSweep":
+        """A sweep that shares this one's averaged factorisation, its build (per frequency and contrast, the
+        expensive part), with settings of its own: ``window``, ``inner_tol``, ``inner_restart`` and
+        ``inner_iterations``; ``cls`` ``TrueSweep`` for the sweep on the true system (default this class).
+        Its counts start from zero; the factors are shared, not copied.
+
+        Raises:
+            ValueError: for a setting other than those four, ``cls`` not a ``DtNSweep``, or a ``TrueSweep``
+                from a factorisation within a depth band (it reads the factors at every depth).
+        """
+        cls = type(self) if cls is None else cls
+        if not (isinstance(cls, type) and issubclass(cls, DtNSweep)):
+            raise ValueError(f"DtNSweep.sharing: cls is DtNSweep or a subclass, not {cls!r}.")
+        unknown = set(settings) - {"window", "inner_tol", "inner_restart", "inner_iterations"}
+        if unknown:
+            raise ValueError(
+                f"DtNSweep.sharing: unknown settings {sorted(unknown)}; the factorisation's own"
+                " (depth_band) cannot change without a new build."
+            )
+        if cls is not DtNSweep and self.band < len(self.layers) - 1:
+            raise ValueError(
+                f"DtNSweep.sharing: {cls.__name__} needs the full factorisation, this one is within"
+                f" depth_band={self.band}."
+            )
+        k = settings.get("inner_iterations")
+        if k is not None and k < 0:
+            raise ValueError(f"DtNSweep: inner_iterations is None or a count >= 0, not {k}.")
+        new = cls.__new__(cls)
+        new.__dict__.update(self.__dict__)
+        new.__dict__.update(settings)
+        new.inner_products = 0
+        new.inner_solves = 0
+        return new
 
     def _to_grid(self, z: int, x: NDArray) -> NDArray:
         """A plane's cell vectors (n_z, k) onto the padded grid, transformed: (k, F)."""
@@ -449,12 +517,12 @@ class DtNSweep:
     def _trailing(self, win: list, v: list) -> list:
         """The averaged medium's trailing system on the planes ``win`` (those above eliminated: its Dirichlet-to-
         Neumann boundary) applied at each wavenumber, L_W S_W U_W v."""
-        n = len(win)
+        n, band = len(win), self.band  # the window's planes are consecutive
         u = [
             v[a]
             + sum(
                 np.einsum("frs,sf->rf", self.up[win[a], win[b]], v[b])
-                for b in range(a + 1, n)
+                for b in range(a + 1, min(n, a + band + 1))
             )
             for a in range(n)
         ]
@@ -462,25 +530,26 @@ class DtNSweep:
         return [
             t[a]
             + sum(
-                np.einsum("frs,sf->rf", self.lo[win[a], win[b]], t[b]) for b in range(a)
+                np.einsum("frs,sf->rf", self.lo[win[a], win[b]], t[b])
+                for b in range(max(0, a - band), a)
             )
             for a in range(n)
         ]
 
     def _trailing_solve(self, win: list, v: list) -> list:
         """(L_W S_W U_W)^-1 v at each wavenumber."""
-        n = len(win)
+        n, band = len(win), self.band
         p = []
         for a in range(n):
             pa = v[a].copy()
-            for b in range(a):
+            for b in range(max(0, a - band), a):
                 pa -= np.einsum("frs,sf->rf", self.lo[win[a], win[b]], p[b])
             p.append(pa)
         q = [np.einsum("frs,sf->rf", self.s_inv[win[a]], p[a]) for a in range(n)]
         r = [None] * n
         for a in reversed(range(n)):
             ra = q[a].copy()
-            for b in range(a + 1, n):
+            for b in range(a + 1, min(n, a + band + 1)):
                 ra -= np.einsum("frs,sf->rf", self.up[win[a], win[b]], r[b])
             r[a] = ra
         return r
@@ -518,17 +587,21 @@ class DtNSweep:
             )
 
         b = np.concatenate([r.ravel() for r in rhs])
+        self.inner_solves += 1
+        k = self.inner_iterations
+        if k == 0:  # the averaged factorisation's solve alone
+            return split(pre(b))
         sol, _ = gmres(
             LinearOperator((b.size, b.size), matvec=matvec, dtype=complex),
             b,
             x0=pre(b),
             M=LinearOperator((b.size, b.size), matvec=pre, dtype=complex),
-            rtol=self.inner_tol,
+            # a tolerance, or exactly k iterations: one cycle of k, never stopped by a tolerance
+            rtol=self.inner_tol if k is None else 0.0,
             atol=0.0,
-            restart=self.inner_restart,
-            maxiter=20,
+            restart=self.inner_restart if k is None else k,
+            maxiter=20 if k is None else 1,
         )
-        self.inner_solves += 1
         return split(sol)
 
     def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
@@ -545,11 +618,12 @@ class DtNSweep:
             self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1))
             for z in self.layers
         ]
+        band = self.band
         # L^-1: down, at each wavenumber
         w = []
         for i in range(n_l):
             wi = bh[i].copy()
-            for k in range(i):
+            for k in range(max(0, i - band), i):
                 wi -= np.einsum("frs,sf->rf", self.lo[i, k], w[k])
             w.append(wi)
         # D^-1: each pivot, partially
@@ -558,7 +632,7 @@ class DtNSweep:
         x = [None] * n_l
         for k in reversed(range(n_l)):
             xk = y[k].copy()
-            for j in range(k + 1, n_l):
+            for j in range(k + 1, min(n_l, k + band + 1)):
                 xk -= np.einsum("frs,sf->rf", self.up[k, j], x[j])
             x[k] = xk
         out = np.zeros_like(full)
@@ -1138,6 +1212,14 @@ class MatrixFreeDownUp:
         return out.ravel()
 
 
+def source_expansions(op, delta: list) -> NDArray:
+    """Each cell's source expansion E, (N, n_source, na, 9, 9), from its contrast ``delta``
+    (``cell_contrasts``) for the field sizes of ``op``: what a preconditioner is built from."""
+    return np.array(
+        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
+    )
+
+
 def solve_interface_fgmres(
     couplings: InterfaceCouplings,
     omega: float,
@@ -1158,6 +1240,8 @@ def solve_interface_fgmres(
     passes: int = 1,
     restart: int = 50,
     max_iter: int = 1000,
+    precondition=None,
+    x0: NDArray | None = None,
 ) -> tuple[InterfaceResult, dict]:
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
     (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``) or not at
@@ -1169,8 +1253,13 @@ def solve_interface_fgmres(
     With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
     ``DownUp`` on ``LateralOperator(parts=True)``.
 
+    ``precondition``, a preconditioner already built (any of the above, or a callable), is used as it is in
+    place of ``preconditioner``: one built at another frequency, for instance, since FGMRES accepts an
+    inexact preconditioner.  ``x0`` (N, n_field, 9), a previous solution's ``psi`` (at a neighbouring
+    frequency, say), starts the iteration; its residual's product is counted in ``outer``.
+
     Returns the result and the counts: ``outer`` (products with the whole operator), ``inner`` (products with a
-    plane's own operator), ``planes`` (in-plane solves) and ``seconds``.
+    plane's own operator), ``planes`` (in-plane solves) and ``seconds``, those of this solve alone.
     """
     grid = couplings.grid
     op = (
@@ -1181,7 +1270,7 @@ def solve_interface_fgmres(
     na, n_field, n_source = op.na, op.n_field, op.n_source
     n = len(grid.idx)
     delta = cell_contrasts(grid, omega, contrasts, r)
-    e = np.array([source_expansion(d, n_field)[:n_source, :na] for d in delta])
+    e = source_expansions(op, delta)
     rows = na * 9
 
     def matvec(v: NDArray) -> NDArray:
@@ -1189,7 +1278,9 @@ def solve_interface_fgmres(
         src = np.einsum("ncbij,nbj->nci", e, x).reshape(n, n_source * 9)
         return (np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)).ravel()
 
-    if preconditioner == "downup" and isinstance(op, LateralOperator):
+    if precondition is not None:
+        pre = precondition
+    elif preconditioner == "downup" and isinstance(op, LateralOperator):
         pre = DownUp(op, e, inner_tol=inner_tol, passes=passes)
     elif preconditioner == "downup":
         pre = MatrixFreeDownUp(
@@ -1252,14 +1343,23 @@ def solve_interface_fgmres(
         )
 
     ref = reference_moments(grid, omega, kx, ky, wave, n_field)
+    # a preconditioner used before keeps counting: this solve's counts are the increments
+    inner0 = getattr(pre, "inner_products", 0)
+    planes0 = getattr(pre, "inner_solves", 0)
     t0 = time.time()
     sol, n_outer, history = fgmres(
-        matvec, pre, ref[:, :na].ravel(), tol=tol, restart=restart, max_iter=max_iter
+        matvec,
+        pre,
+        ref[:, :na].ravel(),
+        tol=tol,
+        restart=restart,
+        max_iter=max_iter,
+        x0=None if x0 is None else np.asarray(x0)[:, :na],
     )
     stats = {
         "outer": n_outer,
-        "inner": getattr(pre, "inner_products", 0),
-        "planes": getattr(pre, "inner_solves", 0),
+        "inner": getattr(pre, "inner_products", 0) - inner0,
+        "planes": getattr(pre, "inner_solves", 0) - planes0,
         "seconds": time.time() - t0,
         "history": history,
     }

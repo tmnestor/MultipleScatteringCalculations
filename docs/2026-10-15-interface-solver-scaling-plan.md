@@ -525,6 +525,41 @@ Future (noted by the thesis's author, 18 October):
   but FGMRES accepts a preconditioner that varies between applications, so an inexact (partial) DtN solve,
   e.g. an iterative solve of S_z or a low-rank or banded approximation, can stand in for the exact one.
 
+**Reruns after the spherical_jn fix, and approximate DtN preconditioners (19 October).**
+- *Matrix-free box shapes rerun* (`scripts/measure_interface_matrix_free_downup.py`,
+  `scripts/data/interface_matrix_free_downup.jsonl`), all five boxes on one machine: every outer count as before
+  (the signed-zero error in the march between planes three or more apart did not move them), every solution within
+  5e-11 to 5.5e-10 of block-Jacobi's. A product 4.3 to 15.6 s (12 to 41 s before). Deep box 32 x 6 x 6: the
+  march 30 to 50 % faster than block-Jacobi; moderate boxes one pass 20 to 35 %; wide box 4 x 24 x 24 one pass
+  21 to 28 % slower (was level). Paper Table 13 and thesis Table 6.3 updated.
+- *Approximate DtN* (`DtNSweep(inner_iterations=, depth_band=)`, `scripts/measure_interface_dtn_approximations.py`,
+  `scripts/data/interface_dtn_approximations.jsonl`), projected onto the matrix-free product (outer products at
+  its measured time, applications as on the stored kernels, the build, shared by every source, left out):
+  - one inner iteration per pivot keeps the outer count (to within one) of every form but the whole window, at
+    8 to 46 % less per application; the whole window loses 2 to 4 products by it;
+  - a depth band on the averaged factors always costs products (16 x 6 x 6, 50 %: b = 4 needs 19 against 15):
+    the averaged coupling is long-ranged, so a cheaper build must come from the mode recursion (route B);
+  - the window-0 DtN form is level with the march (uniform contrast) or 5 to 23 % behind (random);
+  - **the sweep on the true system is ahead on every box**: window 2 with k = 1 by 6 to 27 %, the whole window
+    (5 products) by 15 to 45 % on eight planes, 2 to 13 % on sixteen (its leading solves grow as L^2).
+  The projection assumes the leading solves at stored-kernel cost on the matrix-free operator; as yet each inner
+  product there is a full matrix-free product. Next: a matrix-free true sweep with window 2 (the stored kernels of
+  planes up to two apart, the averaged factors on the modes, the far coupling by the march's recursions). Paper
+  Table 14, thesis Table 6.6.
+- *Frequency reuse* (`solve_interface_fgmres(precondition=, x0=)`, `scripts/measure_interface_frequency_reuse.py`,
+  `scripts/data/interface_frequency_reuse.jsonl`): DtN built at omega_0 and used at omega_0 (1 - delta) costs no
+  outer products down to delta = 5 % on 8 x 6 x 6 and 16 x 6 x 6, both contrasts, and one or two more at 10 %
+  (+3 to +4 at 20 %). The sweep on the true system from the same factorisation (`DtNSweep.sharing`): window 2
+  with k = 1 none down to 1 % (to 2 % but on 16 x 6 x 6 at 50 %), one or two by 5 %, worth it where its build
+  (15 s on sixteen planes) exceeds a matrix-free product (8 s); the whole window, almost an exact inverse, loses
+  products from 0.5 to 1 % (16 x 6 x 6, 50 %: 6, 7, 8, 10 at 0.5, 1, 2, 5 %, against 5 fresh) and is best built
+  afresh. A record of length T up to f_max has ~T f_max frequencies 1 / T apart; those below 20 / T are more
+  than 5 % apart, each its own factorisation, and above, one every 5 % serves: about 20 [1 + ln(T f_max / 20)],
+  70 against 240 frequencies for 4 s to 60 Hz. The march has no build to share and degrades faster when reused
+  (16 x 6 x 6, 50 %, delta = 20 %: 18 against 12 fresh). The neighbouring frequency's solution as x0 saves at
+  most two products: the incident wave's phase across the box moves with omega (rescaling x0 by it is untried).
+  Only frequencies below omega_0 measured. In the paper and the thesis (Ch. 6).
+
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per
   frequency and per incidence, and convergence in p on a subset.

@@ -334,3 +334,144 @@ def test_fgmres_with_the_leading_sweep_matches_the_dense_solve(box):
     )
     assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
     assert stats["outer"] < 30
+
+
+def test_fgmres_from_an_initial_guess():
+    """An exact x0 costs its residual's product alone; a near one fewer products than from zero."""
+    rng = np.random.default_rng(2)
+    n = 60
+    a = np.eye(n) * 4 + rng.standard_normal((n, n)) / np.sqrt(n) * (1 + 1j)
+    b = rng.standard_normal(n) + 1j * rng.standard_normal(n)
+    want = np.linalg.solve(a, b)
+    x, n_mv, hist = idu.fgmres(lambda v: a @ v, lambda v: v, b, tol=1e-12, x0=want)
+    assert n_mv == 1 and hist[0] <= 1e-12 and np.array_equal(x, want)
+    _, n_cold, _ = idu.fgmres(lambda v: a @ v, lambda v: v, b, tol=1e-12)
+    near = want + 1e-6 * np.abs(want).max() * rng.standard_normal(n)
+    x, n_warm, _ = idu.fgmres(lambda v: a @ v, lambda v: v, b, tol=1e-12, x0=near)
+    assert n_warm < n_cold and np.abs(x - want).max() < 1e-10 * np.abs(want).max()
+
+
+def test_a_preconditioner_built_once_serves_other_solves_and_frequencies(box):
+    """A DtNSweep built at omega, passed as ``precondition``: the dense solution at omega and at 0.95 omega,
+    the counts of each solve its own; and the solution at omega as x0 needs only its residual's product."""
+    g, c, op = box
+    ctr = _varying(g, 8)
+    e = idu.source_expansions(op, iso.cell_contrasts(g, OMEGA, ctr, 0))
+    pre = idu.DtNSweep(op, e, inner_tol=1e-2)
+    counts = []
+    for omega in (OMEGA, 0.95 * OMEGA):
+        kx, ky = 0.3 * omega / A.alpha, 0.1 * omega / A.alpha
+        dense = iso.solve_interface(c, omega, ctr, kx, ky, "P", p=1, r=0)
+        got, stats = idu.solve_interface_fgmres(
+            c,
+            omega,
+            ctr,
+            kx,
+            ky,
+            "P",
+            p=1,
+            r=0,
+            operator=op if omega == OMEGA else None,
+            precondition=pre,
+            tol=1e-11,
+        )
+        assert np.abs(got.psi - dense.psi).max() < 1e-9 * np.abs(dense.psi).max()
+        counts.append(stats["planes"])
+        if omega == OMEGA:
+            first = got
+    assert counts[0] > 0 and counts[1] > 0 and pre.inner_solves == sum(counts)
+    kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
+    again, stats = idu.solve_interface_fgmres(
+        c, OMEGA, ctr, kx, ky, "P", p=1, r=0, operator=op, precondition=pre, tol=1e-9, x0=first.psi
+    )
+    assert stats["outer"] == 1 and stats["planes"] == 0
+    assert np.abs(again.psi - first.psi).max() == 0
+
+
+def _varying_e(g, op, seed):
+    return idu.source_expansions(op, iso.cell_contrasts(g, OMEGA, _varying(g, seed), 0))
+
+
+def test_dtn_sweep_with_no_inner_iterations_is_the_averaged_sweep(box):
+    """S_z^-1 alone as each pivot's inverse: U^-1 S^-1 L^-1 is the averaged system's inverse."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    want = idu.AveragedSweep(op, e)(v)
+    pre = idu.DtNSweep(op, e, inner_iterations=0)
+    got = pre(v)
+    assert np.abs(got - want).max() < 1e-11 * np.abs(want).max()
+    assert pre.inner_products == 0 and pre.inner_solves == len(op.layers)
+
+
+def test_dtn_sweep_depth_band(box):
+    """A band over every plane is the full factorisation; band 1 is the exact inverse of the averaged system
+    with its blocks between planes more than one apart dropped, assembled and inverted independently."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    n_l = len(op.layers)
+    full = idu.DtNSweep(op, e, inner_tol=1e-6)(v)
+    for band in (n_l - 1, n_l + 2):
+        assert np.array_equal(idu.DtNSweep(op, e, inner_tol=1e-6, depth_band=band)(v), full)
+    a, _ = idu._averaged_system(op, e)
+    rows = op.na * 9
+    for i in range(n_l):
+        for j in range(n_l):
+            if abs(i - j) > 1:
+                a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows] = 0
+    want_pre = idu.AveragedSweep(op, e)
+    want_pre.inv = np.linalg.inv(a)
+    want = want_pre(v)
+    got = idu.DtNSweep(op, e, inner_iterations=0, depth_band=1)(v)
+    assert np.abs(got - want).max() < 1e-11 * np.abs(want).max()
+    assert np.abs(want - idu.AveragedSweep(op, e)(v)).max() > 1e-6 * np.abs(want).max()  # the band matters
+
+
+def test_dtn_sweep_fixed_inner_iterations(box):
+    """k inner iterations per pivot: the work grows with k, and many iterations approach the tight solve."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    tight = idu.DtNSweep(op, e, inner_tol=1e-12)(v)
+    products, errors = [], []
+    for k in (1, 2, 4, 24):
+        pre = idu.DtNSweep(op, e, inner_iterations=k)
+        got = pre(v)
+        products.append(pre.inner_products)
+        errors.append(np.abs(got - tight).max() / np.abs(tight).max())
+    assert products == sorted(products) and products[0] < products[-1]
+    assert errors[-1] < 1e-8 and errors[0] > errors[-1]
+    with pytest.raises(ValueError, match="inner_iterations"):
+        idu.DtNSweep(op, e, inner_iterations=-1)
+
+
+def test_true_sweep_refuses_a_depth_band(box):
+    g, _, op = box
+    with pytest.raises(ValueError, match="depth_band applies to DtNSweep alone"):
+        idu.TrueSweep(op, _varying_e(g, op, 3), depth_band=1)
+
+
+def test_sweeps_sharing_one_factorisation_are_the_sweeps_built_alone(box):
+    """``sharing``: the same factors, settings of its own, counts from zero; equal to building it afresh."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    base = idu.DtNSweep(op, e, inner_tol=1e-2)
+    base(v)
+    for cls, settings in [
+        (idu.TrueSweep, {"window": None, "inner_tol": 1e-2}),
+        (idu.TrueSweep, {"window": 1, "inner_iterations": 1}),
+        (None, {"inner_iterations": 0}),
+    ]:
+        shared = base.sharing(cls, **settings)
+        alone = (cls or idu.DtNSweep)(op, e, **settings)
+        assert type(shared) is type(alone) and shared.inner_products == 0
+        assert np.array_equal(shared(v), alone(v))
+        assert shared.inner_products == alone.inner_products
+        assert shared.lo is base.lo  # shared, not copied
+    assert base.window == 0 and base.inner_iterations is None  # the original is untouched
+    with pytest.raises(ValueError, match="unknown settings"):
+        base.sharing(depth_band=1)
+    with pytest.raises(ValueError, match="needs the full factorisation"):
+        idu.DtNSweep(op, e, depth_band=1).sharing(idu.TrueSweep)
