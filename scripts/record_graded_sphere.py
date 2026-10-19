@@ -161,6 +161,34 @@ def synthesise(s: dict, rows: dict, alpha: float, beta: float, radius: float) ->
     return out
 
 
+#: the figure's traces: every STRIDE-th receiver, mirrored to x < 0; the difference magnified MAGNIFY times
+STRIDE, MAGNIFY, N_SAMPLES = 2, 100.0, 256
+
+
+def wiggles(s: dict, tr: dict, comp: int) -> str:
+    """A pgfplots table of one component's section: columns t (ms) and, per trace, the receiver's offset
+    (in radii) plus the exact, the voxel and the magnified difference displacement, one gain for the whole
+    section (true relative amplitudes, the largest excursion 0.9 of the traces' spacing); traces separated
+    by a row of nan (``unbounded coords=jump``). Mirrored to x < 0: u_z is even in x, u_x odd."""
+    x = np.linspace(0.0, X_MAX, s["nrec"])
+    keep = np.arange(0, s["nrec"], STRIDE)
+    step = max(1, len(tr["t"]) // N_SAMPLES)
+    t_ms = tr["t"][::step] * 1e3
+    exact, voxel = tr["exact"][:, comp, ::step], tr["voxel"][:, comp, ::step]
+    gain = 0.9 * (x[STRIDE] - x[0]) / np.abs(exact[keep]).max()
+    lines = ["t xe xv xd"]
+    parity = -1.0 if comp == 1 else 1.0
+    traces = [(-x[i], i, parity) for i in keep[::-1] if i != 0] + [(x[i], i, 1.0) for i in keep]
+    for x0, i, f in traces:
+        for j, tj in enumerate(t_ms):
+            e, v = f * exact[i, j], f * voxel[i, j]
+            lines.append(
+                f"{tj:.4f} {x0 + gain * e:.6f} {x0 + gain * v:.6f} {x0 + gain * MAGNIFY * (v - e):.6f}"
+            )
+        lines.append("nan nan nan nan")
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     s = settings(sys.argv[1:])
     from gate_sphere_cell_average_vs_mie import REF
@@ -173,6 +201,10 @@ def main() -> int:
         np.savez(DATA / f"graded_sphere_record_n{s['n']}_traces.npz", **tr)
         err = np.linalg.norm(tr["voxel"] - tr["exact"]) / np.linalg.norm(tr["exact"])
         print(f"traces written; voxel against exact over the section: {err:.2e}", flush=True)
+        for comp, name in ((0, "z"), (1, "x")):
+            out = DATA / f"graded_sphere_record_n{s['n']}_{name}.dat"
+            out.write_text(wiggles(s, tr, comp))
+            print(f"  {out.name}", flush=True)
         return 0
     omegas = frequencies(s, REF.beta, RADIUS)
     print(
