@@ -66,7 +66,7 @@ import sympy as sp
 from numpy.polynomial import legendre as npleg
 from numpy.polynomial import polynomial as nppoly
 from numpy.typing import NDArray
-from scipy.special import betainc, spherical_jn
+from scipy.special import betainc
 
 from .effective_contrasts import ReferenceMedium
 from .gauss_rules import gauss_interval, gauss_legendre
@@ -74,6 +74,7 @@ from .graded_voxel.basis import SOURCE_EXPONENTS_QUARTIC
 from .graded_voxel.farfield import monomial_fourier
 from .interface_image import MIRROR_9, image_block
 from .resonance_tmatrix import VOIGT_PAIRS
+from .special import spherical_jn
 from .stratified_march import (
     SOURCE_PAIRING,
     interface_rt,

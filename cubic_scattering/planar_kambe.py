@@ -34,7 +34,9 @@ from collections.abc import Callable
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.special import sph_harm_y, spherical_jn, wofz
+from scipy.special import sph_harm_y, wofz
+
+from .special import spherical_jn
 
 
 def _erfc_scaled(u: NDArray) -> NDArray:
