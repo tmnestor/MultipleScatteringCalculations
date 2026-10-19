@@ -27,12 +27,12 @@ Conventions: seismic units, time e^{-i omega t}, every k_z on Im >= 0, axes z = 
 import numpy as np
 from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
-from scipy.special import spherical_jn
 
 from .effective_contrasts import ReferenceMedium
 from .graded_voxel.basis import SOURCE_EXPONENTS_QUARTIC
 from .graded_voxel.farfield import monomial_fourier
 from .resonance_tmatrix import VOIGT_PAIRS
+from .special import spherical_jn
 from .sweep_kernels import _branch
 
 #: Pairing of the engineering-stress source entries with the engineering-strain state.
