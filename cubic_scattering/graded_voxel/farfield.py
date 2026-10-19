@@ -19,9 +19,9 @@ from functools import cache
 import numpy as np
 from numpy.polynomial.legendre import leggauss, poly2leg
 from numpy.typing import NDArray
-from scipy.special import spherical_jn
 
 from ..effective_contrasts import ReferenceMedium
+from ..special import spherical_jn
 from ..sphere_scattering import _voigt_to_tensor
 from .basis import SOURCE_EXPONENTS_QUARTIC, monomials, source_expansion
 from .kernel import kernel_9x9
