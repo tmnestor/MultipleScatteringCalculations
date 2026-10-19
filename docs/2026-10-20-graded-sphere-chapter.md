@@ -68,6 +68,10 @@ realistically large number of voxels, accepting long runs.
    |---|---|---|---|---|---|
    | 24 | 8 816 | 317 376 | 111 s | 1.0 s / receiver | 5.85e-5 (as in memory) |
    | 32 | 19 760 | 711 360 | 495 s | 6.1 s / receiver | 1.86e-5 (order 3.98) |
+   | 40 | 37 920 | 1 365 120 | 1 810 s | 97 s / receiver | 7.64e-6 (order 3.99) |
+
+   At n = 40 the readout's 97 s per receiver (6 s at n = 32) is the memory under pressure from the kernel's
+   pages, not the readout's own cost.
 
    The reported peak (5.9, 11.8 GB) counts the kernel file's pages in the page cache, which the system
    evicts under pressure. At n = 40 the kernel file (12.8 GB) no longer fits beside the rest, and each GMRES
@@ -83,6 +87,9 @@ realistically large number of voxels, accepting long runs.
    (10.5 ms): 17 frequencies, k_S a = 0.52 to 8.9; 31 receivers at 0.1a on z = -1.25a, x = 0 to 3a, the
    figure every other one, mirrored; time from the incident wave's crossing of the receivers' plane. GMRES
    to 1e-8 (the discretisation error is ~1e-4 and below), the kernel in single precision on disk.
-8. **The figures are drawn with pgfplots** from tables in the thesis's `EpsFiles/data`, as the thesis's other
+8. **Timing conditions.** The size ladders up to n = 32 ran while the slow test suite (`pytest -m slow`,
+   two threads) shared the machine, so their times are slightly pessimistic. From 03.50 on 21 October the
+   slow tests are paused (SIGSTOP) during the timed runs, n = 40 and the record section, and resumed after.
+9. **The figures are drawn with pgfplots** from tables in the thesis's `EpsFiles/data`, as the thesis's other
    data figures are, so that type and colours match the text (Okabe-Ito: exact black, voxel vermillion
    dashed, the 100x difference blue).
