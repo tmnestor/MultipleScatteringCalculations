@@ -15,7 +15,11 @@ The body, medium and contrast are those of ``measure_graded_sphere_planes.py``.
 
 Writes scripts/data/graded_sphere_size.jsonl.
 
-Run:  python -u scripts/measure_graded_sphere_size.py --ka=4 --p=1 8 12 16 24 32 40 48
+--c64 stores the transformed kernel in single precision; --disk=DIR memory-maps it to a file in DIR (deleted
+after the run), so that the size is bounded by the disk.
+
+Run:  python -u scripts/measure_graded_sphere_size.py --ka=4 --p=1 8 12 16 24
+      python -u scripts/measure_graded_sphere_size.py --ka=4 --p=1 --c64 --disk=/tmp 32 40 48
 """
 
 import json
@@ -37,8 +41,9 @@ N_REC = 11
 UNKNOWNS = {0: 9, 1: 36, 2: 90}
 
 
-def one(n_sub: int, ka_s: float, p: int) -> dict:
-    """One resolution, in this process."""
+def one(n_sub: int, ka_s: float, p: int, kernel: str, disk: str) -> dict:
+    """One resolution, in this process; ``kernel`` "c128" or "c64", ``disk`` a directory for the
+    memory-mapped kernel or "-" (in memory)."""
     from crosscheck_graded_sphere import graded_mie_result
     from cubic_scattering.graded_voxel.farfield import graded_field
     from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft
@@ -50,6 +55,7 @@ def one(n_sub: int, ka_s: float, p: int) -> dict:
     rec = np.array([[-GAP * RADIUS, x * RADIUS, 0.0] for x in np.linspace(0.0, X_MAX, N_REC)])
     n_max = max(8, int(np.ceil(ka_s + 4 * ka_s ** (1 / 3) + 6)))
     exact = mie_scattered_displacement(graded_mie_result(omega, RADIUS, CORE, REF, CONTRAST, n_max), rec)
+    path = None if disk == "-" else Path(disk) / f"graded_sphere_kh_{n_sub}.npy"
     t0 = time.perf_counter()
     res = solve_graded_sphere_fft(
         omega,
@@ -63,8 +69,14 @@ def one(n_sub: int, ka_s: float, p: int) -> dict:
         "P",
         p=p,
         r=p,
+        kernel_dtype=np.complex64 if kernel == "c64" else np.complex128,
+        kernel_path=path,
     )
     t_solve = time.perf_counter() - t0
+    kernel_gb = None
+    if path is not None:
+        kernel_gb = path.stat().st_size / 1e9
+        path.unlink()
     t0 = time.perf_counter()
     u, _ = graded_field(res, rec, n_gauss=6)
     t_read = time.perf_counter() - t0
@@ -72,6 +84,8 @@ def one(n_sub: int, ka_s: float, p: int) -> dict:
         "n_sub": n_sub,
         "ka_s": ka_s,
         "p": p,
+        "kernel": kernel,
+        "kernel_on_disk_GB": kernel_gb,
         "cells": len(res.centres),
         "unknowns": len(res.centres) * UNKNOWNS[p],
         "solve_s": t_solve,
@@ -82,12 +96,18 @@ def one(n_sub: int, ka_s: float, p: int) -> dict:
 
 
 def main() -> int:
-    if len(sys.argv) == 5 and sys.argv[1] == "--child":
-        print(json.dumps(one(int(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]))), flush=True)
+    if len(sys.argv) == 7 and sys.argv[1] == "--child":
+        n, ka, p, kernel, disk = sys.argv[2:]
+        print(json.dumps(one(int(n), float(ka), int(p), kernel, disk)), flush=True)
         return 0
     ka_s, p, max_gb, max_hours, ladder = 4.0, 1, 12.0, 3.0, []
+    kernel, disk = "c128", "-"
     for a in sys.argv[1:]:
-        if a.startswith("--ka="):
+        if a == "--c64":
+            kernel = "c64"
+        elif a.startswith("--disk="):
+            disk = a.split("=", 1)[1]
+        elif a.startswith("--ka="):
             ka_s = float(a.split("=", 1)[1])
         elif a.startswith("--p="):
             p = int(a.split("=", 1)[1])
@@ -97,11 +117,15 @@ def main() -> int:
             max_hours = float(a.split("=", 1)[1])
         else:
             ladder.append(int(a))
-    print(f"graded sphere size ladder: k_S a = {ka_s}, p = r = {p}", flush=True)
+    print(
+        f"graded sphere size ladder: k_S a = {ka_s}, p = r = {p}, kernel {kernel}"
+        f" {'in memory' if disk == '-' else 'on disk in ' + disk}",
+        flush=True,
+    )
     for n in ladder:
         try:
             got = subprocess.run(
-                [sys.executable, "-u", __file__, "--child", str(n), str(ka_s), str(p)],
+                [sys.executable, "-u", __file__, "--child", str(n), str(ka_s), str(p), kernel, disk],
                 capture_output=True,
                 text=True,
                 timeout=max_hours * 3600,
