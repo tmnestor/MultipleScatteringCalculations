@@ -6,16 +6,17 @@ A time-domain record of length T up to f_max takes ~T f_max frequencies, Delta f
 source at each. FGMRES accepts an inexact preconditioner, so a preconditioner built at omega_0 may serve the
 frequencies near it, its build then paid once per band; and the solution at a neighbouring frequency is a
 starting guess. Here, on the stored kernels (``LateralOperator(parts=True)``), the Dirichlet-to-Neumann form
-(``DtNSweep``, window 0) and the march (``DownUp``, one pass), both with inner solves to 1e-2, are built at
-omega_0 h / beta_A = 1/2 and used at omega = omega_0 (1 - delta): each solve to 1e-10 with the
-preconditioner built at omega ("fresh"), with the one from omega_0 ("reused"), and with the solution at
-omega_0 as x0 ("warm"). Every cell at 50 % of its medium's lambda, mu and rho, or at a fraction uniform on
-[0, 50] % (seed 11); a P wave with lateral slowness (0.3, 0.1) / alpha_A. Set-up as S6: split, C-infinity
-window from Q0 / 4, radius 16 h, depth radius 4 h; media A (5, 3, 2.5) over B (6.5, 3.6, 2.8), h = 0.05 km,
-p = 1. Recorded per solve: outer and inner products, the preconditioner's build and the iteration's seconds,
-and the solution's difference from the fresh DtN solve's; per frequency, the operator's build; the process's
-peak memory. Resumable (rows already in the output are skipped). Writes
-scripts/data/interface_frequency_reuse.jsonl.
+(``DtNSweep``, window 0), the sweep on the true system from the same factorisation (``TrueSweep`` by
+``DtNSweep.sharing``: a window of two planes with one inner iteration, and the whole window to 1e-2) and the
+march (``DownUp``, one pass), inner solves to 1e-2, are built at omega_0 h / beta_A = 1/2 and used at omega
+= omega_0 (1 - delta): each solve to 1e-10 with the preconditioner built at omega ("fresh"), with the one
+from omega_0 ("reused"), and with the solution at omega_0 as x0 ("warm"). Every cell at 50 % of its medium's
+lambda, mu and rho, or at a fraction uniform on [0, 50] % (seed 11); a P wave with lateral slowness (0.3,
+0.1) / alpha_A. Set-up as S6: split, C-infinity window from Q0 / 4, radius 16 h, depth radius 4 h; media A
+(5, 3, 2.5) over B (6.5, 3.6, 2.8), h = 0.05 km, p = 1. Recorded per solve: outer and inner products, the
+preconditioner's build and the iteration's seconds, and the solution's difference from the fresh DtN
+solve's; per frequency, the operator's build; the process's peak memory. Resumable (rows already in the
+output are skipped). Writes scripts/data/interface_frequency_reuse.jsonl.
 
 Run:  PYTHONPATH=. python scripts/measure_interface_frequency_reuse.py 8x6 16x6
 """
@@ -40,7 +41,7 @@ OMEGA0 = A.beta / (2 * H)
 DELTAS = (0.0, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2)
 PATTERNS = ("50%", "random 0-50%")
 INNER_TOL = 1e-2
-#: (label, preconditioner, built at omega_0, x0 from omega_0); the fresh DtN solve first, the reference
+#: (label, kind, built at omega_0, x0 from omega_0)
 RUNS = [
     ("dtn fresh", "dtn", False, False),
     ("dtn reused", "dtn", True, False),
@@ -49,7 +50,17 @@ RUNS = [
     ("march reused", "downup", True, False),
     ("march fresh, warm", "downup", False, True),
     ("march reused, warm", "downup", True, True),
+    ("true w=2 k=1 fresh", "true w=2 k=1", False, False),
+    ("true w=2 k=1 reused", "true w=2 k=1", True, False),
+    ("true all fresh", "true all", False, False),
+    ("true all reused", "true all", True, False),
 ]
+#: the sweep on the true system, from the DtN form's averaged factorisation (``DtNSweep.sharing``): the two
+#: forms that led the approximations study (``measure_interface_dtn_approximations.py``)
+TRUE = {
+    "true w=2 k=1": {"window": 2, "inner_iterations": 1},
+    "true all": {"window": None, "inner_tol": INNER_TOL},
+}
 
 
 def contrast_factors(pattern: str, n_cells: int) -> np.ndarray:
@@ -108,6 +119,9 @@ def main() -> None:
         t0 = time.time()
         op0 = iso.LateralOperator(c, OMEGA0, p=1, r=0, parts=True)
         t_op0 = time.time() - t0
+        # per pattern: its contrast, the preconditioners built at omega_0 and the solution there (x0 of the
+        # warm solves); kept for every frequency, so that each frequency's operator serves both patterns
+        at0 = {}
         for pattern in PATTERNS:
             if not any(todo[pattern, d] for d in DELTAS):
                 continue
@@ -116,42 +130,61 @@ def main() -> None:
                 MaterialContrast(fm * m.lam, fm * m.mu, fm * m.rho)
                 for fm, m in zip(f, (grid.medium(i) for i in range(len(cells))), strict=True)
             ]
-            # the preconditioners at omega_0, and the solution there (x0 of the warm solves)
             e0 = idu.source_expansions(op0, iso.cell_contrasts(grid, OMEGA0, ctr, 0))
             t0 = time.time()
             built0 = {"dtn": idu.DtNSweep(op0, e0, inner_tol=INNER_TOL)}
             t_build0 = {"dtn": time.time() - t0}
+            for kind, settings in TRUE.items():  # the same factorisation, shared
+                built0[kind] = built0["dtn"].sharing(idu.TrueSweep, **settings)
+                t_build0[kind] = t_build0["dtn"]
             t0 = time.time()
             built0["downup"] = idu.DownUp(op0, e0, inner_tol=INNER_TOL)
             t_build0["downup"] = time.time() - t0
             psi0, _, _ = solve(c, OMEGA0, ctr, op0, "dtn", built0["dtn"], None)
-            psi0 = psi0.psi
+            at0[pattern] = (ctr, built0, t_build0, psi0.psi)
             print(
                 f"  {pattern}: at omega_0 operator {t_op0:.1f} s, DtN build {t_build0['dtn']:.1f} s,"
                 f" march build {t_build0['downup']:.1f} s",
                 flush=True,
             )
-            for delta in DELTAS:
+        for delta in DELTAS:
+            if not any(todo[p, delta] for p in at0):
+                continue
+            omega = OMEGA0 * (1.0 - delta)
+            t0 = time.time()
+            op = op0 if delta == 0 else iso.LateralOperator(c, omega, p=1, r=0, parts=True)
+            t_op = 0.0 if delta == 0 else time.time() - t0
+            for pattern, (ctr, built0, t_build0, psi0) in at0.items():
                 runs = todo[pattern, delta]
                 if not runs:
                     continue
-                omega = OMEGA0 * (1.0 - delta)
+                # the DtN factorisation at omega, and the reference solution with it
+                e = idu.source_expansions(op, iso.cell_contrasts(grid, omega, ctr, 0))
                 t0 = time.time()
-                op = op0 if delta == 0 else iso.LateralOperator(c, omega, p=1, r=0, parts=True)
-                t_op = 0.0 if delta == 0 else time.time() - t0
-                reference = None
-                for label, pre_name, reuse, warm in runs:
-                    res, st, wall = solve(
-                        c,
-                        omega,
-                        ctr,
-                        op,
-                        pre_name,
-                        built0[pre_name] if reuse else None,
-                        psi0 if warm else None,
-                    )
-                    if label == "dtn fresh":
-                        reference = res.psi
+                dtn = idu.DtNSweep(op, e, inner_tol=INNER_TOL)
+                t_fresh = time.time() - t0
+                ref_res, ref_st, ref_wall = solve(c, omega, ctr, op, "dtn", dtn.sharing(), None)
+                reference = ref_res.psi
+                for label, kind, reuse, warm in runs:
+                    if label == "dtn fresh":  # the reference solve itself
+                        res, st, wall, built_s = ref_res, ref_st, ref_wall, t_fresh
+                    else:
+                        if reuse:
+                            pre = built0[kind]
+                        elif kind in TRUE:
+                            pre = dtn.sharing(idu.TrueSweep, **TRUE[kind])
+                        else:
+                            pre = None  # the march, built in the solve
+                        res, st, wall = solve(
+                            c,
+                            omega,
+                            ctr,
+                            op,
+                            "downup" if kind == "downup" else "dtn",
+                            pre,
+                            psi0 if warm else None,
+                        )
+                        built_s = t_fresh if (kind in TRUE and not reuse) else 0.0
                     row = {
                         "layers": n_layers,
                         "n": n,
@@ -163,11 +196,11 @@ def main() -> None:
                         "outer": st["outer"],
                         "inner": st["inner"],
                         "planes": st["planes"],
-                        "total_s": wall,
-                        "build_s": wall - st["seconds"],
+                        "total_s": built_s + wall,
+                        "build_s": built_s + wall - st["seconds"],
                         "iteration_s": st["seconds"],
                         "operator_s": t_op,
-                        "build0_s": t_build0[pre_name] if reuse else None,
+                        "build0_s": t_build0[kind] if reuse else None,
                         "peak_GB": peak_gb(),
                     }
                     if reference is not None and label != "dtn fresh":
@@ -183,7 +216,8 @@ def main() -> None:
                         f" peak {row['peak_GB']:.1f} GB",
                         flush=True,
                     )
-                del op
+                del dtn
+            del op
 
 
 if __name__ == "__main__":

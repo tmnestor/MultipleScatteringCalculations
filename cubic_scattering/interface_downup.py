@@ -456,6 +456,40 @@ class DtNSweep:
         self.inner_products = 0
         self.inner_solves = 0
 
+    def sharing(self, cls: type | None = None, **settings) -> "DtNSweep":
+        """A sweep that shares this one's averaged factorisation, its build (per frequency and contrast, the
+        expensive part), with settings of its own: ``window``, ``inner_tol``, ``inner_restart`` and
+        ``inner_iterations``; ``cls`` ``TrueSweep`` for the sweep on the true system (default this class).
+        Its counts start from zero; the factors are shared, not copied.
+
+        Raises:
+            ValueError: for a setting other than those four, ``cls`` not a ``DtNSweep``, or a ``TrueSweep``
+                from a factorisation within a depth band (it reads the factors at every depth).
+        """
+        cls = type(self) if cls is None else cls
+        if not (isinstance(cls, type) and issubclass(cls, DtNSweep)):
+            raise ValueError(f"DtNSweep.sharing: cls is DtNSweep or a subclass, not {cls!r}.")
+        unknown = set(settings) - {"window", "inner_tol", "inner_restart", "inner_iterations"}
+        if unknown:
+            raise ValueError(
+                f"DtNSweep.sharing: unknown settings {sorted(unknown)}; the factorisation's own"
+                " (depth_band) cannot change without a new build."
+            )
+        if cls is not DtNSweep and self.band < len(self.layers) - 1:
+            raise ValueError(
+                f"DtNSweep.sharing: {cls.__name__} needs the full factorisation, this one is within"
+                f" depth_band={self.band}."
+            )
+        k = settings.get("inner_iterations")
+        if k is not None and k < 0:
+            raise ValueError(f"DtNSweep: inner_iterations is None or a count >= 0, not {k}.")
+        new = cls.__new__(cls)
+        new.__dict__.update(self.__dict__)
+        new.__dict__.update(settings)
+        new.inner_products = 0
+        new.inner_solves = 0
+        return new
+
     def _to_grid(self, z: int, x: NDArray) -> NDArray:
         """A plane's cell vectors (n_z, k) onto the padded grid, transformed: (k, F)."""
         op, cells = self.op, self.cells[z]
