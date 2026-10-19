@@ -15,9 +15,9 @@ from dataclasses import dataclass
 import numpy as np
 import scipy.linalg
 from numpy.typing import NDArray
-from scipy.special import spherical_jn
 
 from ..effective_contrasts import MaterialContrast, ReferenceMedium
+from ..special import spherical_jn
 from ..sphere_scattering import _plane_wave_strain_voigt
 from ..sphere_scattering_fft import _build_grid_index_map
 from .basis import SOURCE_EXPONENTS, gram_test, source_expansion, source_size

@@ -48,9 +48,10 @@ from functools import cache
 import numpy as np
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
-from scipy.special import spherical_jn, spherical_yn
+from scipy.special import spherical_yn
 
 from ..effective_contrasts import ReferenceMedium
+from ..special import spherical_jn
 from .basis import SOURCE_EXPONENTS, moment_1d, source_exponents
 from .blocks import _to_field_rows, autocorrelation_1d, family_tables
 from .kernel import falling

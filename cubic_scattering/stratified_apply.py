@@ -26,12 +26,12 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.special import spherical_jn
 
 from . import interface_spectral as isp
 from .effective_contrasts import ReferenceMedium
 from .graded_voxel.basis import SOURCE_EXPONENTS_QUARTIC
 from .graded_voxel.farfield import monomial_fourier
+from .special import spherical_jn
 from .stratified_march import SOURCE_PAIRING, interface_rt, mode_matrices
 
 _M_INV = np.diag(1.0 / SOURCE_PAIRING)

@@ -42,9 +42,10 @@ from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.special import sph_harm_y, spherical_jn
+from scipy.special import sph_harm_y
 
 from .effective_contrasts import MaterialContrast, ReferenceMedium
+from .special import spherical_jn
 from .sphere_scattering import mie_tmatrix_psv, mie_tmatrix_sh
 
 #: Orders beyond N_max kept when the coupling is formed and projected.  The
