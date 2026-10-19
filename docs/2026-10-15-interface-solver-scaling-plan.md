@@ -544,8 +544,17 @@ Future (noted by the thesis's author, 18 October):
     (5 products) by 15 to 45 % on eight planes, 2 to 13 % on sixteen (its leading solves grow as L^2).
   The projection assumes the leading solves at stored-kernel cost on the matrix-free operator; as yet each inner
   product there is a full matrix-free product. Next: a matrix-free true sweep with window 2 (the stored kernels of
-  planes up to two apart, the averaged factors on the modes, the far coupling by the march's recursions), and the
-  frequency reuse (`scripts/measure_interface_frequency_reuse.py`). Paper Table 14, thesis Table 6.6.
+  planes up to two apart, the averaged factors on the modes, the far coupling by the march's recursions). Paper
+  Table 14, thesis Table 6.6.
+- *Frequency reuse* (`solve_interface_fgmres(precondition=, x0=)`, `scripts/measure_interface_frequency_reuse.py`,
+  `scripts/data/interface_frequency_reuse.jsonl`): DtN built at omega_0 and used at omega_0 (1 - delta) costs no
+  outer products down to delta = 5 % on 8 x 6 x 6 and 16 x 6 x 6, both contrasts, and one or two more at 10 %
+  (+3 to +4 at 20 %); so a time-domain record needs a factorisation only every 5 % in frequency, about
+  20 ln(f_max / f_min) of them against ~T f_max frequencies, and its build (3.3 s on eight planes, 14 to 16 s on
+  sixteen) leaves the per-frequency cost. The march has no build to share and degrades faster when reused (16 x 6 x
+  6, 50 %, delta = 20 %: 18 against 12 fresh). The neighbouring frequency's solution as x0 saves at most two
+  products: the incident wave's phase across the box moves with omega (rescaling x0 by it is untried). Only
+  frequencies below omega_0 measured. Next: the same for the true sweep, whose build is the same factorisation.
 
 ### S7. A realistic size (≈ 1 day)
 - For example 64 × 64 × 8 (32k cells, ~300k unknowns at p = 1) on 4 workers and < 16 GB: set-up, time per

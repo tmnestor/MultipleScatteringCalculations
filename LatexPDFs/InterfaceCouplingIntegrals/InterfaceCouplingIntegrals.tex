@@ -1608,7 +1608,13 @@ factors' coupling in depth to planes at most $b$ apart costs outer products on e
 $16\times6\times6$ at $50\%$ with $b=4$): the averaged medium's coupling is long-ranged, carried by propagating
 waves, so a cheaper build must come from the recursion of Algorithm~5.1 on the plane-wave modes, not from a band.
 The build depends on the frequency and the contrast but not on the incident wave, so it adds to $B$ in
-\eqref{eq:costmodel} and is shared by every source. Table~\ref{tab:dtnapprox} projects each solve onto the
+\eqref{eq:costmodel} and is shared by every source; nor need it be rebuilt at every frequency. Built at
+$\omega_0$ and used at $\omega_0(1-\delta)$ (\texttt{scripts/data/interface\_frequency\_reuse.jsonl}), it costs
+no outer products down to $\delta=5\%$ on $8\times6\times6$ and $16\times6\times6$ cells, at both contrasts,
+and one or two more at $10\%$; so a record of length $T$ up to $f_{\max}$, some $Tf_{\max}$ frequencies, needs a
+factorisation only every $5\%$ in frequency, about $20\ln(f_{\max}/f_{\min})$ of them, and its build leaves $B$.
+The march, whose build is a fraction of a second, has nothing to share; the neighbouring frequency's solution as
+the starting guess saves at most two products for either. Table~\ref{tab:dtnapprox} projects each solve onto the
 matrix-free product: the outer products at its measured time on each box, the applications as measured on the
 stored kernels. The Dirichlet-to-Neumann form on the averaged factors is level with the march where the contrast is
 uniform and $5$ to $23\%$ behind where it varies, held back by its outer count; the sweep on the true system is
