@@ -450,3 +450,28 @@ def test_true_sweep_refuses_a_depth_band(box):
     g, _, op = box
     with pytest.raises(ValueError, match="depth_band applies to DtNSweep alone"):
         idu.TrueSweep(op, _varying_e(g, op, 3), depth_band=1)
+
+
+def test_sweeps_sharing_one_factorisation_are_the_sweeps_built_alone(box):
+    """``sharing``: the same factors, settings of its own, counts from zero; equal to building it afresh."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    base = idu.DtNSweep(op, e, inner_tol=1e-2)
+    base(v)
+    for cls, settings in [
+        (idu.TrueSweep, {"window": None, "inner_tol": 1e-2}),
+        (idu.TrueSweep, {"window": 1, "inner_iterations": 1}),
+        (None, {"inner_iterations": 0}),
+    ]:
+        shared = base.sharing(cls, **settings)
+        alone = (cls or idu.DtNSweep)(op, e, **settings)
+        assert type(shared) is type(alone) and shared.inner_products == 0
+        assert np.array_equal(shared(v), alone(v))
+        assert shared.inner_products == alone.inner_products
+        assert shared.lo is base.lo  # shared, not copied
+    assert base.window == 0 and base.inner_iterations is None  # the original is untouched
+    with pytest.raises(ValueError, match="unknown settings"):
+        base.sharing(depth_band=1)
+    with pytest.raises(ValueError, match="needs the full factorisation"):
+        idu.DtNSweep(op, e, depth_band=1).sharing(idu.TrueSweep)
