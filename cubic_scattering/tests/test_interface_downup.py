@@ -386,3 +386,67 @@ def test_a_preconditioner_built_once_serves_other_solves_and_frequencies(box):
     )
     assert stats["outer"] == 1 and stats["planes"] == 0
     assert np.abs(again.psi - first.psi).max() == 0
+
+
+def _varying_e(g, op, seed):
+    return idu.source_expansions(op, iso.cell_contrasts(g, OMEGA, _varying(g, seed), 0))
+
+
+def test_dtn_sweep_with_no_inner_iterations_is_the_averaged_sweep(box):
+    """S_z^-1 alone as each pivot's inverse: U^-1 S^-1 L^-1 is the averaged system's inverse."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    want = idu.AveragedSweep(op, e)(v)
+    pre = idu.DtNSweep(op, e, inner_iterations=0)
+    got = pre(v)
+    assert np.abs(got - want).max() < 1e-11 * np.abs(want).max()
+    assert pre.inner_products == 0 and pre.inner_solves == len(op.layers)
+
+
+def test_dtn_sweep_depth_band(box):
+    """A band over every plane is the full factorisation; band 1 is the exact inverse of the averaged system
+    with its blocks between planes more than one apart dropped, assembled and inverted independently."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    n_l = len(op.layers)
+    full = idu.DtNSweep(op, e, inner_tol=1e-6)(v)
+    for band in (n_l - 1, n_l + 2):
+        assert np.array_equal(idu.DtNSweep(op, e, inner_tol=1e-6, depth_band=band)(v), full)
+    a, _ = idu._averaged_system(op, e)
+    rows = op.na * 9
+    for i in range(n_l):
+        for j in range(n_l):
+            if abs(i - j) > 1:
+                a[:, i * rows : (i + 1) * rows, j * rows : (j + 1) * rows] = 0
+    want_pre = idu.AveragedSweep(op, e)
+    want_pre.inv = np.linalg.inv(a)
+    want = want_pre(v)
+    got = idu.DtNSweep(op, e, inner_iterations=0, depth_band=1)(v)
+    assert np.abs(got - want).max() < 1e-11 * np.abs(want).max()
+    assert np.abs(want - idu.AveragedSweep(op, e)(v)).max() > 1e-6 * np.abs(want).max()  # the band matters
+
+
+def test_dtn_sweep_fixed_inner_iterations(box):
+    """k inner iterations per pivot: the work grows with k, and many iterations approach the tight solve."""
+    g, _, op = box
+    e = _varying_e(g, op, 3)
+    v = np.random.default_rng(4).standard_normal(len(g.idx) * op.na * 9) + 0j
+    tight = idu.DtNSweep(op, e, inner_tol=1e-12)(v)
+    products, errors = [], []
+    for k in (1, 2, 4, 24):
+        pre = idu.DtNSweep(op, e, inner_iterations=k)
+        got = pre(v)
+        products.append(pre.inner_products)
+        errors.append(np.abs(got - tight).max() / np.abs(tight).max())
+    assert products == sorted(products) and products[0] < products[-1]
+    assert errors[-1] < 1e-8 and errors[0] > errors[-1]
+    with pytest.raises(ValueError, match="inner_iterations"):
+        idu.DtNSweep(op, e, inner_iterations=-1)
+
+
+def test_true_sweep_refuses_a_depth_band(box):
+    g, _, op = box
+    with pytest.raises(ValueError, match="depth_band applies to DtNSweep alone"):
+        idu.TrueSweep(op, _varying_e(g, op, 3), depth_band=1)
