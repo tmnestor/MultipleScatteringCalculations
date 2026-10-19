@@ -1,0 +1,6 @@
+{"n_sub": 4, "ka_s": 1.0, "p": 1, "cells": 64, "unknowns": 2304, "solve_s": 2.937693875050172, "readout_s_per_receiver": 0.007427011362530969, "peak_GB": 0.343343104, "error_line": 0.005693838287831129}
+{"n_sub": 6, "ka_s": 1.0, "p": 1, "cells": 208, "unknowns": 7488, "solve_s": 3.6205169579479843, "readout_s_per_receiver": 0.02426669319075617, "peak_GB": 0.476495872, "error_line": 0.0009258524221275468}
+{"n_sub": 8, "ka_s": 4.0, "p": 1, "cells": 408, "unknowns": 14688, "solve_s": 4.519190707942471, "readout_s_per_receiver": 0.047184769000688735, "peak_GB": 0.743555072, "error_line": 0.004607142362772966}
+{"n_sub": 12, "ka_s": 4.0, "p": 1, "cells": 1280, "unknowns": 46080, "solve_s": 10.800304624950513, "readout_s_per_receiver": 0.15998718563721262, "peak_GB": 1.931935744, "error_line": 0.0009114395450665428}
+{"n_sub": 16, "ka_s": 4.0, "p": 1, "cells": 2776, "unknowns": 99936, "solve_s": 24.165319165913388, "readout_s_per_receiver": 0.27989530681886454, "peak_GB": 3.415277568, "error_line": 0.000291674370107064}
+{"n_sub": 24, "ka_s": 4.0, "p": 1, "cells": 8816, "unknowns": 317376, "solve_s": 113.27589199994691, "readout_s_per_receiver": 0.9067060833542862, "peak_GB": 6.805880832, "error_line": 5.84544818178206e-05}

@@ -24,6 +24,7 @@ total number of iterations is bounded explicitly as restart * max_cycles.
 import itertools
 from collections.abc import Callable
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
@@ -147,20 +148,81 @@ def offset_blocks(
     n_test: int = 4,
 ) -> dict[tuple[int, int, int], NDArray]:
     """K(o) for every offset o in [-(n-1), n-1]^3: one ``coupling_block`` per cube-group orbit."""
+    canonical = canonical_blocks(n_sub, h, omega, ref, n_source, n_test)
+    return {off: _transform(q, canonical[c]) for off, c, q in _orbit_map(n_sub)}
+
+
+def canonical_blocks(
+    n_sub: int,
+    h: float,
+    omega: float,
+    ref: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+) -> dict[tuple[int, int, int], NDArray]:
+    """One ``coupling_block`` per cube-group orbit of the offsets in [-(n-1), n-1]^3, keyed by the orbit's
+    canonical offset (a >= b >= d >= 0): about 1/48 of the offsets, so the kernel need not be held per
+    offset (``transformed_kernel``)."""
+    rng = range(n_sub)
+    return {
+        c: coupling_block(c, h, omega, ref, n_source, n_test)
+        for c in itertools.product(rng, rng, rng)
+        if c[0] >= c[1] >= c[2]
+    }
+
+
+@lru_cache(maxsize=4)
+def _orbit_map(n_sub: int) -> tuple[tuple, ...]:
+    """(offset, canonical offset, the signed permutation taking the one to the other) for every offset."""
     qs = signed_permutations()
-    canonical: dict[tuple[int, int, int], NDArray] = {}
-    out: dict[tuple[int, int, int], NDArray] = {}
+    out = []
     rng = range(-(n_sub - 1), n_sub)
     for off in itertools.product(rng, rng, rng):
-        a, b, d = sorted((abs(o) for o in off), reverse=True)
-        c = (a, b, d)
-        if c not in canonical:
-            canonical[c] = coupling_block(c, h, omega, ref, n_source, n_test)
-        cv = np.array(c, dtype=float)
-        target = np.array(off, dtype=float)
-        q = next(q for q in qs if np.array_equal(q @ cv, target))
-        out[off] = _transform(q, canonical[c])
-    return out
+        c = tuple(sorted((abs(o) for o in off), reverse=True))
+        cv, target = np.array(c, dtype=float), np.array(off, dtype=float)
+        out.append((off, c, next(q for q in qs if np.array_equal(q @ cv, target))))
+    return tuple(out)
+
+
+def transformed_kernel(
+    canonical: dict[tuple[int, int, int], NDArray],
+    n_sub: int,
+    na: int,
+    nc: int,
+    dtype: type = np.complex128,
+    path: Path | None = None,
+    budget_bytes: float = 2e9,
+) -> NDArray:
+    """The coupling's kernel on the (2n - 1)^3 circular embedding, transformed: kh[row, col, i, j, k] with
+    row = (a, i9) of the test functions and col = (c, j9) of the source monomials, as the FFT solve uses it.
+
+    Built a group of rows at a time from the canonical blocks (``canonical_blocks``), each group's
+    real-space kernel assembled by the cube's symmetry, transformed in double precision and stored in
+    ``dtype``; the group's size keeps its working arrays within ``budget_bytes``.  In memory, or
+    memory-mapped at ``path`` (created, overwritten), so that the model's size is bounded by the disk, not
+    the memory.
+    """
+    npad = 2 * n_sub - 1
+    rows, cols = na * 9, nc * 9
+    shape = (rows, cols, npad, npad, npad)
+    if path is None:
+        kh = np.empty(shape, dtype=dtype)
+    else:
+        kh = np.lib.format.open_memmap(path, mode="w+", dtype=dtype, shape=shape)
+    per_row = 2 * cols * npad**3 * 16  # the group's real-space array and its transform, complex128
+    group = max(1, min(rows, int(budget_bytes // per_row)))
+    orbits = _orbit_map(n_sub)
+    for r0 in range(0, rows, group):
+        sel = slice(r0, min(rows, r0 + group))
+        real = np.zeros((sel.stop - sel.start, cols, npad, npad, npad), dtype=complex)
+        for off, c, q in orbits:
+            blk = _transform(q, canonical[c])[:na, :nc].transpose(0, 2, 1, 3).reshape(rows, cols)
+            real[:, :, off[0] % npad, off[1] % npad, off[2] % npad] = blk[sel]
+        kh[sel] = np.fft.fftn(real, axes=(2, 3, 4))
+        del real
+    if path is not None:
+        kh.flush()
+    return kh
 
 
 def solve_graded_sphere_fft(
@@ -179,11 +241,17 @@ def solve_graded_sphere_fft(
     restart: int = 100,
     max_cycles: int = 20,
     blocks: dict | None = None,
+    kernel_dtype: type = np.complex128,
+    kernel_path: Path | None = None,
 ) -> GradedVoxelResult:
     """The graded-voxel solve of ``solver.solve_graded_sphere``, with an FFT matvec and GMRES.
 
     Same cells, contrast projection and right-hand side as the dense solver (every cell overlapping the
-    sphere is kept).
+    sphere is kept).  The transformed kernel is built from the canonical blocks (``transformed_kernel``),
+    stored in ``kernel_dtype`` (complex64 halves its memory; the product is then that of a fixed operator
+    perturbed by ~1e-7, so GMRES converges as before and the solution moves by about that) and, with
+    ``kernel_path``, memory-mapped to that file rather than held in memory.  ``blocks`` (every offset's
+    block, ``offset_blocks``) is the former path, kept.
 
     Raises:
         RuntimeError: when GMRES does not reach ``gmres_tol`` within restart * max_cycles iterations.
@@ -206,20 +274,24 @@ def solve_graded_sphere_fft(
     e_cells = np.array(
         [source_expansion(d, n_field)[:nc, :na] for d in delta]
     )  # (N, nc, na, 9, 9)
-    blocks = (
-        offset_blocks(n_sub, h, omega, ref, n_source, n_field)
-        if blocks is None
-        else blocks
-    )
     npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
-    kh = np.zeros((rows, cols, npad, npad, npad), dtype=complex)
-    for off, blk in blocks.items():
-        kh[:, :, off[0] % npad, off[1] % npad, off[2] % npad] = (
-            blk[:na, :nc].transpose(0, 2, 1, 3).reshape(rows, cols)
-        )
-    for row in range(rows):
-        kh[row] = np.fft.fftn(kh[row], axes=(1, 2, 3))
+    if blocks is None:
+        # the canonical blocks alone; the kernel assembled from them a group of rows at a time
+        canonical = canonical_blocks(n_sub, h, omega, ref, n_source, n_field)
+        kh = transformed_kernel(canonical, n_sub, na, nc, kernel_dtype, kernel_path)
+        k0 = canonical[(0, 0, 0)][:na, :nc]
+        del canonical
+    else:
+        kh = np.zeros((rows, cols, npad, npad, npad), dtype=complex)
+        for off, blk in blocks.items():
+            kh[:, :, off[0] % npad, off[1] % npad, off[2] % npad] = (
+                blk[:na, :nc].transpose(0, 2, 1, 3).reshape(rows, cols)
+            )
+        for row in range(rows):
+            kh[row] = np.fft.fftn(kh[row], axes=(1, 2, 3))
+        kh = kh.astype(kernel_dtype, copy=False)
+        k0 = blocks[(0, 0, 0)][:na, :nc]
     g0, g1, g2 = grid_idx[:, 0], grid_idx[:, 1], grid_idx[:, 2]
     m9 = gram_test(h, n_field)[:na, :na]
 
@@ -231,13 +303,12 @@ def solve_graded_sphere_fft(
         sh = np.fft.fftn(grid, axes=(1, 2, 3)).reshape(cols, -1)
         yh = np.empty((rows, sh.shape[1]), dtype=complex)
         for row in range(rows):
-            yh[row] = np.einsum("cf,cf->f", kh[row].reshape(cols, -1), sh)
+            yh[row] = np.einsum("cf,cf->f", np.asarray(kh[row]).reshape(cols, -1), sh)
         y = np.fft.ifftn(yh.reshape(rows, npad, npad, npad), axes=(1, 2, 3))[
             :, g0, g1, g2
         ].T
         return (np.einsum("ab,nbi->nai", m9, psi).reshape(n, rows) - y).ravel()
 
-    k0 = blocks[(0, 0, 0)][:na, :nc]
     pre = np.array(
         [
             np.linalg.inv(

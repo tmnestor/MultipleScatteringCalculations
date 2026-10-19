@@ -5,10 +5,12 @@ import numpy as np
 from cubic_scattering import MaterialContrast, ReferenceMedium
 from cubic_scattering.graded_voxel.blocks import coupling_block
 from cubic_scattering.graded_voxel.fft import (
+    canonical_blocks,
     offset_blocks,
     signed_permutations,
     solve_graded_sphere_fft,
     symmetry_reps,
+    transformed_kernel,
 )
 from cubic_scattering.graded_voxel.kernel import kernel_9x9
 from cubic_scattering.graded_voxel.solver import solve_graded_sphere
@@ -59,3 +61,44 @@ def test_fft_solve_equals_the_dense_solve():
         np.testing.assert_array_equal(fft.centres, dense.centres)
         rel = np.linalg.norm(fft.psi - dense.psi) / np.linalg.norm(dense.psi)
         assert rel < 1e-10, (p, rel)
+
+
+def test_kernel_from_the_canonical_blocks_equals_the_kernel_from_every_offset():
+    """``transformed_kernel`` (a group of rows at a time, from one block per orbit) is the kernel the former
+    path built from every offset's block, in memory and memory-mapped, and in any grouping of the rows."""
+    n_sub, na, nc = 4, 4, 10
+    npad = 2 * n_sub - 1
+    rows, cols = na * 9, nc * 9
+    want = np.zeros((rows, cols, npad, npad, npad), dtype=complex)
+    for off, blk in offset_blocks(n_sub, H, OMEGA, REF).items():
+        want[:, :, off[0] % npad, off[1] % npad, off[2] % npad] = (
+            blk[:na, :nc].transpose(0, 2, 1, 3).reshape(rows, cols)
+        )
+    want = np.fft.fftn(want, axes=(2, 3, 4))
+    canonical = canonical_blocks(n_sub, H, OMEGA, REF)
+    assert len(canonical) == 20  # the orbits of [-3, 3]^3: a >= b >= d >= 0
+    one_row = 2 * cols * npad**3 * 16
+    for budget in (1e12, 5 * one_row, one_row):  # all rows at once, groups of five, one row at a time
+        got = transformed_kernel(canonical, n_sub, na, nc, budget_bytes=budget)
+        assert np.abs(got - want).max() <= 1e-13 * np.abs(want).max(), budget
+    single = transformed_kernel(canonical, n_sub, na, nc, dtype=np.complex64)
+    assert single.dtype == np.complex64
+    assert np.abs(single - want).max() <= 1e-7 * np.abs(want).max()
+
+
+def test_kernel_on_disk_and_in_single_precision(tmp_path):
+    """The solve with the kernel memory-mapped equals the solve with it in memory; in complex64 it moves by
+    the single-precision rounding of the kernel, far below the discretisation error."""
+    args = (OMEGA, 10.0, REF, CON, 4, _profile, KHAT, KHAT, "P")
+    ref = solve_graded_sphere_fft(*args, p=1, r=1, gmres_tol=1e-13)
+    former = solve_graded_sphere_fft(
+        *args, p=1, r=1, gmres_tol=1e-13, blocks=offset_blocks(4, ref.h, OMEGA, REF)
+    )
+    assert np.linalg.norm(former.psi - ref.psi) / np.linalg.norm(ref.psi) < 1e-12
+    path = tmp_path / "kh.npy"
+    disk = solve_graded_sphere_fft(*args, p=1, r=1, gmres_tol=1e-13, kernel_path=path)
+    assert path.exists()
+    assert np.linalg.norm(disk.psi - ref.psi) / np.linalg.norm(ref.psi) < 1e-12
+    single = solve_graded_sphere_fft(*args, p=1, r=1, gmres_tol=1e-13, kernel_dtype=np.complex64)
+    rel = np.linalg.norm(single.psi - ref.psi) / np.linalg.norm(ref.psi)
+    assert rel < 1e-7, rel  # measured 8e-11: the coupling is a small part of M - K E at this contrast
