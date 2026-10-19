@@ -161,8 +161,10 @@ def synthesise(s: dict, rows: dict, alpha: float, beta: float, radius: float) ->
     return out
 
 
-#: the figure's traces: every STRIDE-th receiver, mirrored to x < 0; the difference magnified MAGNIFY times
-STRIDE, MAGNIFY, N_SAMPLES = 2, 100.0, 256
+#: the figure's traces: every STRIDE-th receiver (0.3a apart), mirrored to x < 0; the difference
+#: magnified MAGNIFY times
+#: (1e4: the largest difference is 2.5e-5 of the largest trace, so shown at a quarter of it)
+STRIDE, MAGNIFY, N_SAMPLES = 3, 1.0e4, 256
 
 
 def wiggles(s: dict, tr: dict, comp: int) -> str:
