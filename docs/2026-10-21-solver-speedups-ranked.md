@@ -545,13 +545,13 @@ and were rerun). Selected rows (all in `scripts/data/point_vs_galerkin.jsonl`):
 
 **What it shows.**
 
-- Per unknown the point formulation is about seven times cheaper (1.24 million unknowns in 35 to 43 s
-  against 1.37 million in 244 to 252 s), as the simpler T-matrix, the 9 x 9 propagator and its symmetry
-  predict. Its peak memory at a given unknown count is similar (8.5 to 9.3 GB at n = 64 against 6 to 8 GB
-  at Galerkin n = 40).
+- Per unknown the point formulation is about six times cheaper (5.4 to 6.4 over the four cases: 1.24
+  million unknowns in 35 to 43 s against 1.37 million in 244 to 252 s), as the simpler T-matrix, the 9 x 9 propagator and its symmetry
+  predict. Its peak memory at a given unknown count is similar (8.5 to 9.3 GB at n = 64 against 6.2 to 7.7
+  GB at Galerkin n = 40).
 - On the smooth body the orders decide it: the point voxel converges at second order (1.9 to 2.0 between
   n = 16 and 64), the Galerkin at fourth (4.0 between n = 32 and 40). The point arm is cheaper only at
-  coarse accuracy (about 1e-4 and above at k_S a = 0.5, about 2e-2 and above at k_S a = 4); at 1.5e-5 the
+  coarse accuracy (about 1e-4 and above at k_S a = 0.5, about 1e-2 and above at k_S a = 4); at 1.5e-5 the
   Galerkin is six times faster (5.8 against 35 s) and at 8e-4 for k_S a = 4 seven and a half times faster
   (5.7 against 43 s), and it reaches errors (1e-7, 7e-6) the point arm cannot reach on 16 GB.
 - On the sharp body neither converges cleanly: both errors move irregularly with n, the staircase of the
@@ -560,5 +560,9 @@ and were rerun). Selected rows (all in `scripts/data/point_vs_galerkin.jsonl`):
   (1.9 against 11 s); at k_S a = 4 the two cross near 1e-3, where the point arm is the cheaper (39 against
   249 s for 1.2e-3 and 1.0e-3). The Galerkin sharp-sphere errors include its Gauss projection of a step,
   so they bound its staircase error from above.
-- The Galerkin setup (blocks, kernel and its transforms) is 80 to 85% of its wall time from n = 24 up:
-  that, not GMRES, is the next target for the Galerkin arm.
+- The setup (blocks, kernel and its transforms) is 72 to 88% of the wall time in both arms from n = 24
+  up: that, not GMRES, is the next target. (The commit that recorded these results says seven times
+  cheaper per unknown; six is right.)
+
+Written up in the thesis's Chapter 7, section 7.7 (the point and the Galerkin voxel), with the figure of
+error against wall time.
