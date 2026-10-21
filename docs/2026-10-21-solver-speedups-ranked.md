@@ -601,3 +601,11 @@ error in the sine sum fails 8 of its tests. Kernel stage: 20.8 s to 0.63 s at n 
 n = 32, 132 s to 3.4 s at n = 40. The block-Jacobi preconditioner (`_block_jacobi`, one batched product
 and one stacked inverse): 8.96 s to 1.12 s at n = 32. Setup at n = 32: 69 s to 39 s, of which the
 canonical blocks are now 19.7 s and the contrast projection 14.5 s (11c, 11d).
+
+**11c done (22 October 2026).** `coupling_blocks_far_lattice`: every canonical non-touching block from one
+kernel lattice shared by neighbouring offsets (the lower Gauss piece of o is the upper piece of o - 1),
+contracted axis by axis with the separable piece weights, slab by slab in o0 (which fixes the Gauss
+order). Equal to `coupling_blocks_far` to 1e-13 at every distance band, a raised order, a complex
+frequency and the 20- and 35-monomial bases. Blocks: 19.7 s to 8.8 s at n = 32, 36.7 s to 15.2 s at
+n = 40. Of the 8.5 s left at n = 32: kernel evaluations 3.1 s (7.3 million points), contractions 3.5 s,
+array building 2.0 s. The contrast projection (14.5 s) is now the largest stage (11d).

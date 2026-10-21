@@ -41,7 +41,7 @@ from .basis import (
     source_expansion,
     source_exponents,
 )
-from .blocks import NEAR_STORE_MAX_KH, coupling_block, coupling_blocks_far, near_block_series
+from .blocks import NEAR_STORE_MAX_KH, coupling_block, coupling_blocks_far_lattice, near_block_series
 from .kernel import point_kernel_backend
 from .site import cell_contrast_coefficients_all
 from .solver import GradedVoxelResult, field_sizes, plane_wave_moments
@@ -162,22 +162,19 @@ def canonical_blocks(
     and its neighbours) by ``near_block_series`` within its stored moments (k_S h <= 1/2; ``near_block``
     beyond), the wavenumber series over universal moments, equal to
     ``near_block`` to about 1e-15 and 2 to 6 ms against 350 to 740 ms a block; the rest by
-    ``coupling_blocks_far``, ``coupling_block``'s own s-form Gauss rule batched over the offsets (about 66 s
-    to a few seconds at N = 32), equal to round-off.
+    ``coupling_blocks_far_lattice``, ``coupling_block``'s own s-form Gauss rule with the kernel evaluated
+    once on a lattice shared by neighbouring offsets and contracted axis by axis (``coupling_blocks_far``,
+    the same rule offset by offset, took 17.5 s at N = 32), equal to round-off.
     """
     rng = range(n_sub)
     canon = [c for c in itertools.product(rng, rng, rng) if c[0] >= c[1] >= c[2]]
     touching = [c for c in canon if c[0] <= 1]
-    far = [c for c in canon if c[0] > 1]
     if abs(omega) / ref.beta * h <= NEAR_STORE_MAX_KH:  # the stored moments: milliseconds a block
         out = {c: near_block_series(c, h, omega, ref, n_source, n_test) for c in touching}
     else:  # beyond the store the series would compute its moments, minutes each: Gauss, as before
         out = {c: coupling_block(c, h, omega, ref, n_source, n_test) for c in touching}
-    if far:
-        for c, blk in zip(
-            far, coupling_blocks_far(np.array(far), h, omega, ref, n_source, n_test), strict=True
-        ):
-            out[c] = blk
+    if n_sub > 2:
+        out.update(coupling_blocks_far_lattice(n_sub, h, omega, ref, n_source, n_test))
     return dict(sorted(out.items()))
 
 

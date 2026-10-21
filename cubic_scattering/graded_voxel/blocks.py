@@ -35,6 +35,7 @@ from collections import defaultdict
 from collections.abc import Callable, Sequence
 from functools import cache, lru_cache
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import sympy as sp
@@ -1070,3 +1071,87 @@ def coupling_blocks_far(
     if n_test == 4:
         return blocks
     return np.einsum("am,km...->ka...", field_in_monomials(n_test), blocks)
+
+
+def coupling_blocks_far_lattice(
+    n_sub: int,
+    h: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+) -> dict[tuple[int, int, int], NDArray]:
+    """Every canonical NON-TOUCHING block of an n_sub grid (o0 >= o1 >= o2 >= 0, o0 >= 2), keyed by offset,
+    each (n_test, n_source, 9, 9): ``coupling_blocks_far``'s blocks, from one kernel lattice.
+
+    THE SHARED LATTICE.  ``coupling_blocks_far`` evaluates the kernel at R + h sigma for each offset, sigma
+    on the s-form's Gauss pieces [-2, 0] and [0, 2] along each axis. In units of h the lower piece of
+    offset o sits at 2(o - 1) + 2t_j and the upper at 2o + 2t_j (t_j the Gauss nodes on [0, 1], symmetric),
+    so the lower piece of o and the upper piece of o - 1 are the same points: every kernel value is shared
+    by up to eight offsets, and the kernel is evaluated once on the lattice h (2m + 2t_j). The pieces'
+    weights are products over the axes of a polynomial in sigma for each (test, source) exponent pair on
+    that axis (``_axis_parts``, ``autocorrelation_1d``), so each block is the lattice contracted axis by
+    axis: along each axis the lower weights at interval o - 1 plus the upper weights at interval o.
+
+    The grid is taken in slabs of fixed o0, which fixes the distance max |o_i| = o0 of every canonical
+    offset in it and so its Gauss order (``gauss_order``); within a slab, the kernel is evaluated one row
+    of intervals m1 at a time, over m0 in {o0 - 1, o0} and m2 <= m1 + 1 (o2 <= o1), and each row is
+    contracted along axis 0, then 2, then 1 into the offsets that use it. At n_sub = 32 that is about 5.6
+    million kernel evaluations against 24.5 million, and products of six weights per axis against one
+    40 x 4,096 matrix per offset. The same Gauss rule as ``coupling_blocks_far``, so the same blocks to
+    round-off (``tests/test_graded_voxel_blocks_lattice.py``).
+    """
+    src = source_exponents(n_source)
+    tst = SOURCE_EXPONENTS[:n_test]
+    pairs = sorted(
+        {(tst[a][i], src[c][i]) for a in range(n_test) for c in range(n_source) for i in range(3)}
+    )
+    index = {p: k for k, p in enumerate(pairs)}
+    e_of = np.array(
+        [
+            [[index[(tst[a][i], src[c][i])] for i in range(3)] for c in range(n_source)]
+            for a in range(n_test)
+        ]
+    )  # (n_test, n_source, 3): each (a, c)'s exponent pair on each axis
+    # the pieces on [-2, 0] and [0, 2], polynomials in sigma (n_der = 0 has no delta parts)
+    lower = [cast(Callable[[NDArray], NDArray], _axis_parts(et, es, 0, h)[0][3]) for et, es in pairs]
+    upper = [cast(Callable[[NDArray], NDArray], _axis_parts(et, es, 0, h)[1][3]) for et, es in pairs]
+    k_s_h = abs(omega) / ref.beta * h
+    out: dict[tuple[int, int, int], NDArray] = {}
+    for o0 in range(2, n_sub):
+        n_q = gauss_order((o0, 0, 0), k_s_h)
+        t, wt = _gauss01(n_q)
+        # per axis: (hi - lo) w_j, the factor h of the Jacobian h^3, and the piece's polynomial
+        w_lo = np.array([h * 2.0 * wt * p(-2.0 + 2.0 * t) for p in lower])  # (E, n_q)
+        w_hi = np.array([h * 2.0 * wt * p(2.0 * t) for p in upper])
+        n_e, n_o = len(pairs), o0 + 1
+        acc = np.zeros((n_o, n_e, n_o, n_e, n_e, 81), dtype=complex)  # [o1, e0, o2, e2, e1, z]
+        x0 = h * (2.0 * np.array([o0 - 1.0, o0])[:, None] + 2.0 * t[None, :])  # (2, n_q): m0 = o0 - 1, o0
+        for m1 in range(-1, o0 + 1):
+            top = min(m1 + 1, o0)  # the largest o2 this row serves
+            m2 = np.arange(-1, top + 1)
+            x1 = h * (2.0 * m1 + 2.0 * t)
+            x2 = h * (2.0 * m2[:, None] + 2.0 * t[None, :])
+            X = np.stack(np.meshgrid(x0.ravel(), x1, x2.ravel(), indexing="ij"), -1).reshape(-1, 3)
+            P = kernel_9x9(X, omega, ref).reshape(2, n_q, n_q, len(m2), n_q, 81)  # [lh0, j0, j1, m2, j2, z]
+            # axis 0: the lower piece of o0 at m0 = o0 - 1, the upper at m0 = o0
+            A = np.tensordot(w_lo, P[0], axes=(1, 0)) + np.tensordot(
+                w_hi, P[1], axes=(1, 0)
+            )  # [e0, j1, m2, j2, z]
+            # axis 2: o2's lower piece at m2 = o2 - 1 (index o2), its upper at m2 = o2 (index o2 + 1)
+            b_lo = np.einsum("fk,ebmkz->ebmfz", w_lo, A, optimize=True)  # [e0, j1, m2, e2, z]
+            b_hi = np.einsum("fk,ebmkz->ebmfz", w_hi, A, optimize=True)
+            C = b_lo[:, :, : top + 1] + b_hi[:, :, 1 : top + 2]  # [e0, j1, o2, e2, z], o2 = 0 .. top
+            # axis 1: this row is the lower piece of o1 = m1 + 1 and the upper piece of o1 = m1
+            if m1 + 1 <= o0:
+                acc[m1 + 1, :, : top + 1] += np.einsum("gj,ejofz->eofgz", w_lo, C, optimize=True)
+            if m1 >= 0:
+                acc[m1, :, : top + 1] += np.einsum("gj,ejofz->eofgz", w_hi, C, optimize=True)
+        for o1 in range(o0 + 1):
+            for o2 in range(o1 + 1):
+                blk = acc[o1, e_of[..., 0], o2, e_of[..., 2], e_of[..., 1]]  # (n_test, n_source, 81)
+                out[(o0, o1, o2)] = blk.reshape(n_test, n_source, 9, 9)
+    if n_test != 4:
+        to_field = field_in_monomials(n_test)
+        out = {k: np.einsum("am,m...->a...", to_field, v) for k, v in out.items()}
+    return dict(sorted(out.items()))
