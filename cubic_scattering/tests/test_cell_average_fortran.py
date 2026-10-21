@@ -22,6 +22,7 @@ from cubic_scattering.cell_average_fortran import (
     averaged_tensors_fortran,
 )
 from cubic_scattering.effective_contrasts import ReferenceMedium
+from cubic_scattering.tests.numerics_yaml import cell_average_yaml
 
 REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
 OFFSETS = np.array(
@@ -221,10 +222,7 @@ def test_missing_or_invalid_key(config_file, text: str) -> None:
 @pytest.mark.slow
 @pytest.mark.parametrize("backend", ["python", "fortran"])
 def test_dispatch_follows_the_configuration(config_file, backend: str) -> None:
-    config_file.write_text(
-        f"cell_average:\n  backend: {backend}\n  route: quadrature\n  kseries_tol: 1.0e-15\n"
-        "  kseries_store: unused.npy\n"
-    )
+    config_file.write_text(cell_average_yaml(backend=backend, route="quadrature"))
     omega = _omega(0.3, 0.0)
     S = OFFSETS[:3] * D
     CAP.clear_block_cache()

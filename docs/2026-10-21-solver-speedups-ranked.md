@@ -28,7 +28,7 @@ own process with one thread (`OMP_NUM_THREADS=1`, `torch.set_num_threads(1)`), s
 | 5b. Point-major FFT kernel (one 9 x 9 per Fourier point, contiguous; `sphere_scattering_fft_gpu._point_major`) | **Done** (new) | pointwise multiply 5.2 ms to 2.3 ms per product at `n_sub = 25`; identical results |
 | 6. complex64 GMRES | Available now (`dtype=torch.complex64`, `gmres_tol >= 1e-5`); not yet the default | 1.6 to 1.8 times faster GMRES |
 | 7. Block GMRES (one Krylov space shared by the 18 right-hand sides) | Not started; uncertain | could cut the number of products; each solve already takes only 5 to 9 iterations |
-| 8. Frequency-amortised analytic cell averages | **Stage 1 done** (`cell_average_kseries.py`, `fortran/kseries_moments.f90`, `cell_average.route: kseries`); stage 2 next. Plan and results below | `n_sub = 25`: 0.31 s per frequency against 1.22 s by quadrature, and about 1e-13 accurate against 1e-8; one-off coefficient build 29 s, store 40 MB |
+| 8. Frequency-amortised analytic cell averages | **Stages 1 and 2 done** (`cell_average_kseries.py`, `fortran/kseries_moments.f90`, `cell_average_far.py`; `cell_average.route: kseries`). Plan and results below | `n_sub = 25`: 0.31 to 0.85 s per frequency against 1.2 s by quadrature, 1.2e-13 or better at every offset from k_S R = 1 to 12 against up to 1.9e-8; one-off coefficient build 29 s, store 40 MB |
 
 **The FFTs are at their floor on this CPU.** Of the 30 ms one product takes at `n_sub = 25`
 (complex128), 22 ms is the forward and inverse FFT. The padded size 49 is already the fastest (50, 54,
@@ -150,7 +150,50 @@ average that ``cell_average.f90`` computes by quadrature has the same structure.
   differed from the kernel by the quadrature's own 1e-8 error, and the test (at 1e-10) failed: the same
   "two different operators" trap its docstring records from an earlier change.
 
-**Stage 2: far offsets by the expansion about the cell centre.**
+**Correction to stage 1 (found in stage 2): the series' accuracy depends on its reach.** Checking the
+whole route on 400 random offsets showed errors up to 1.1e-11, all from the SERIES, at offsets near the
+edge of its reach, against a converged reference (24- and 40-point rules agreeing to 4e-14). The terms
+grow to about e^(k r) / sqrt(2 pi k r) before cancelling, which magnifies the coefficients' own ~1e-14;
+the truncation bound does not see it. Measured against a 32-point rule:
+
+| \|k_S\| r_max | 0-1 | 1-2 | 2-3 | 3-4 | 4-5 | 5-6 | 6-7 | 7-8 | 8-9 |
+|---|---|---|---|---|---|---|---|---|---|
+| worst error | 2.8e-14 | 5.3e-14 | 7.7e-14 | 1.8e-13 | 4.7e-13 | 9.6e-13 | 3.5e-12 | 8.4e-12 | 1.4e-11 |
+
+So "about 1e-13 at every offset" was true only within |k_S| r_max of about 3. The series now takes only
+offsets within ``cell_average.kseries_max_reach`` (3), and stage 2's expansion takes the distant ones.
+Raising the reach to 5 or 6 would move more offsets back to the amortised series, at up to 9.6e-13: a
+speed-for-accuracy choice, made in the YAML.
+
+**Stage 2 results (21 October 2026, `n_sub = 25`, 8 threads; error the worst of 400 random offsets
+against a 32-point rule).**
+
+| k_S R (k_S d) | Route per frequency | Series | Expansion | Quadrature (24 points) | Quadrature alone | Worst error |
+|---|---|---|---|---|---|---|
+| 1 (0.08) | 0.31 s | 98.7% | 1.3% | 0% | 1.20 s | 7.5e-14 |
+| 3 (0.24) | 0.53 s | 5.6% | 94.4% | 0% | 1.21 s | 8.2e-14 |
+| 5 (0.40) | 0.60 s | 1.1% | 98.9% | 0% | 1.20 s | 1.2e-13 |
+| 8 (0.64) | 0.77 s | 0.2% | 99.8% | 0% | 1.20 s | 6.8e-14 |
+| 12 (0.96) | 0.85 s | 0% | 99.8% | 0.2% | 1.19 s | 6.8e-14 |
+
+- The expansion is ``moment_table_series`` (weight W = 0, one sub-cube) vectorised: one call of the
+  compiled derivative ladder per distinct truncation order (a close offset needing a high order must not
+  impose it on the distant ones), then a weighted sum with the cube's moments. Tested equal to
+  ``moment_table_series`` offset by offset, and to a 24-point rule.
+- It applies from about 2.9 cells out (``RHO_MAX`` = 0.3), so close cells beyond the series' reach (only
+  at |k_S| d above about 0.8) go to the quadrature, at the converged order ``fallback_n_gauss`` (24): the
+  automatic orders gave 8.4e-10 there. ``route: quadrature`` keeps the automatic orders unchanged.
+- The expansion is analytic but not amortised: its derivatives depend on the frequency. At production
+  frequencies (k_S R of 3 to 8) it takes almost every offset, so the per-frequency cost is 0.5 to 0.8 s,
+  against 0.31 s where the series dominates.
+- New YAML keys, all required with full diagnostics: ``kseries_max_reach``, ``far_expansion``,
+  ``far_tol``, ``far_max_order``, ``fallback_n_gauss``. A float written without a decimal point
+  (``1e-15``) is read by PyYAML as text; the diagnostic now says so and shows ``1.0e-15``.
+- Tests build their configuration blocks with ``tests/numerics_yaml.cell_average_yaml``, which writes
+  every key at its production value unless a test overrides or omits it, so a new key no longer means
+  editing every test's YAML.
+
+**Stage 2: far offsets by the expansion about the cell centre (the plan as written).**
 
 - <f>(s) = sum_{a,b,c even} h^(a+b+c) d_x^a d_y^b d_z^c f(s) / ((a+1)! (b+1)! (c+1)!): the cube's
   moments (frequency-independent) times derivatives of f at the cell centre (closed form, from the

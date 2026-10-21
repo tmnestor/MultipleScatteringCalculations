@@ -19,14 +19,23 @@ coefficients in place of its own (``kseries_coefficients``, which this table equ
 weight W = 0 its table is the cube-averaged Green's tensor and its first and second derivatives, which is
 what the 9 x 9 block is assembled from.
 
-IT IS ALSO THE ACCURATE ROUTE. The series agrees with a 24- and a 32-point quadrature to about 1e-13 at
-every offset. The production quadrature's automatic Gauss orders (``cell_averaged_pair.auto_n_gauss``) are
-good to about 1e-8 only, worst in the second shell: see that function for the measured table.
+ITS ACCURACY DEPENDS ON ITS REACH (measured 21 October 2026). Against a 32-point quadrature, by
+|k_S| r_max (r_max the distance from the source to the far side of the cell):
 
-WHERE IT DOES NOT APPLY. The series refuses when |k_S| r_max needs more than 48 powers (about
-|k_S| r_max > 9 at tol 1e-15, r_max the distance to the far side of the cell): distant cells at high
-frequency. Those offsets, and any separation that is not a lattice offset, are returned as not covered,
-and ``cell_averaged_pair.averaged_pair_blocks_9x9`` computes them by the quadrature.
+    |k_S| r_max   0-1     1-2     2-3     3-4     4-5     5-6     6-7     7-8     8-9
+    worst error   2.8e-14 5.3e-14 7.7e-14 1.8e-13 4.7e-13 9.6e-13 3.5e-12 8.4e-12 1.4e-11
+
+The terms grow to about e^(k r) / sqrt(2 pi k r) before they cancel, so the coefficients' own ~1e-14 is
+magnified as the reach grows; the truncation bound of ``moment_table_kseries`` does not see this. So the
+series takes only offsets with |k_S| r_max <= ``cell_average.kseries_max_reach`` (3 in production, about
+1e-13), and the expansion about the cell centre (``cell_average_far``) takes the distant ones, where it
+is accurate. Even at its edge the series is far better than the production quadrature's automatic Gauss
+orders (``cell_averaged_pair.auto_n_gauss``), good to about 1e-8 only, worst in the second shell.
+
+WHERE IT DOES NOT APPLY. Beyond ``max_reach``; where 48 powers cannot reach the tolerance (about
+|k_S| r_max > 9 at tol 1e-15); and at any separation that is not a lattice offset. Those are returned as
+not covered, and ``cell_averaged_pair.averaged_pair_blocks_9x9`` takes them by the expansion about the
+cell centre or, failing that, a converged quadrature (``cell_average.fallback_n_gauss``).
 
 THE STORE (a quirk worth knowing). The coefficients live in ONE file outside the repository, named by
 ``cell_average.kseries_store`` in ``numerics.yml`` (by default under ~/.cache). It is created on first use
@@ -204,7 +213,7 @@ def _coefficients_for(canonical: list[tuple[int, int, int]]) -> dict[tuple[int, 
 
 
 def averaged_pair_blocks_9x9_kseries(
-    S: NDArray, omega: complex, ref: ReferenceMedium, d: float, *, tol: float
+    S: NDArray, omega: complex, ref: ReferenceMedium, d: float, *, tol: float, max_reach: float
 ) -> tuple[NDArray, NDArray]:
     """The averaged 9 x 9 blocks at separations S (N, 3) by the wavenumber series, where it applies.
 
@@ -214,10 +223,14 @@ def averaged_pair_blocks_9x9_kseries(
         ref: Background medium.
         d: Cell side.
         tol: Truncation tolerance of the series (``cell_average.kseries_tol``).
+        max_reach: The largest |k_S| r_max the series takes (``cell_average.kseries_max_reach``): beyond it
+            the series loses digits to cancellation (see the module docstring), and the offset is left
+            to the caller.
 
     Returns:
         (blocks (N, 9, 9), covered (N,)): covered is False for a separation that is not a non-zero lattice
-        offset, or whose series needs more than T_MAX powers; its block is zero, for the caller to fill.
+        offset, beyond max_reach, or whose series needs more than T_MAX powers; its block is zero, for
+        the caller to fill.
     """
     S = np.atleast_2d(np.asarray(S, dtype=float))
     offsets = np.rint(S / d).astype(int)
@@ -229,15 +242,22 @@ def averaged_pair_blocks_9x9_kseries(
         return blocks, covered
 
     canonical, inverse, pinv, sign = cube_maps(offsets[rows])
-    keys = [(int(c[0]), int(c[1]), int(c[2])) for c in canonical]
-    table = _coefficients_for(keys)
-    U = np.stack([table[k] for k in keys])  # (K, T + 1, n_a), gathered from the mapped store
-    G, Gd, Gdd, ok = canonical_greens(canonical, U, omega, ref, d, tol)
+    # beyond max_reach the cancellation costs digits: those offsets are neither computed nor stored
+    r_max = (np.linalg.norm(canonical.astype(float), axis=1) + np.sqrt(3.0) / 2.0) * d
+    near = np.flatnonzero(abs(omega / ref.beta) * r_max <= max_reach)
+    ok = np.zeros(len(canonical), dtype=bool)
+    blocks_c = np.zeros((len(canonical), 9, 9), dtype=complex)
+    if len(near):
+        keys = [(int(c[0]), int(c[1]), int(c[2])) for c in canonical[near]]
+        table = _coefficients_for(keys)
+        U = np.stack([table[k] for k in keys])  # (K, T + 1, n_a), gathered from the mapped store
+        G, Gd, Gdd, ok_near = canonical_greens(canonical[near], U, omega, ref, d, tol)
+        ok[near] = ok_near
+        done = near[ok_near]
+        blocks_c[done] = assemble_from_greens(G[ok_near], Gd[ok_near], Gdd[ok_near])  # once per canonical
     use = ok[inverse]
     if not use.any():
         return blocks, covered
-    blocks_c = np.zeros((len(keys), 9, 9), dtype=complex)
-    blocks_c[ok] = assemble_from_greens(G[ok], Gd[ok], Gdd[ok])  # assembled once per canonical offset
     target = rows[use]
     blocks[target] = cube_image_blocks(blocks_c, inverse[use], pinv[use], sign[use])
     covered[target] = True

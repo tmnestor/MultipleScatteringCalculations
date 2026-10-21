@@ -21,19 +21,41 @@ cell_average:
   # route:
   #   kseries     the frequency-amortised wavenumber series (cell_average_kseries.py): universal
   #               coefficients computed once and stored (kseries_store), then a short sum per offset at
-  #               each frequency. Accurate to about 1e-13. Offsets it cannot reach (|k_S| r beyond about 9:
-  #               distant cells at high frequency) fall back to the quadrature below.
+  #               each frequency, for offsets within kseries_max_reach. Beyond it, the expansion about the
+  #               cell centre (far_expansion), then a converged quadrature (fallback_n_gauss) for what
+  #               neither takes. About 1.2e-13 at every offset, k_S R = 1 to 12 at n_sub = 25.
   #   quadrature  the quadrature for every offset, at the automatic Gauss orders: about 1e-8 at worst, in
   #               the second shell (see cell_averaged_pair.auto_n_gauss for the measured table).
   # An explicit n_gauss in a call always means the quadrature at that order.
   route: kseries
   # kseries_tol: the series' truncation tolerance (graded_voxel.derivatives.moment_table_kseries).
   kseries_tol: 1.0e-15
+  # kseries_max_reach: the largest |k_S| r_max (r_max the distance to the far side of the cell) the series
+  # takes. Its terms grow to about e^(k r) / sqrt(2 pi k r) before cancelling, which costs digits; measured
+  # against a 32-point rule (21 October 2026):
+  #   |k_S| r_max   0-1     1-2     2-3     3-4     4-5     5-6     6-7     7-8     8-9
+  #   worst error   2.8e-14 5.3e-14 7.7e-14 1.8e-13 4.7e-13 9.6e-13 3.5e-12 8.4e-12 1.4e-11
+  # Offsets beyond it go to the far expansion (below), which is accurate there.
+  kseries_max_reach: 3.0
   # kseries_store: the file of universal coefficients, a .npy array opened memory-mapped, so the parallel
   # workers of a sweep share one copy. Created on first use and grown by the offsets each run needs (about a
   # minute of CPU for n_sub = 25 the first time, compiled); never stale for a frequency, cell size or
   # medium. Delete it only if loading reports a layout mismatch.
   kseries_store: ~/.cache/cubic_scattering/receiver_kseries.npy
+  # far_expansion: with route kseries, take the offsets the series cannot reach (distant cells at high
+  # frequency) by the expansion about the receiver cell's centre (cell_average_far.py): the cube's moments
+  # times the derivatives at the centre, about 1e-14 accurate, applicable once r >= about 2.9 cells.
+  # false sends them to the quadrature instead.
+  far_expansion: true
+  # far_tol: the expansion's truncation tolerance (graded_voxel.derivatives.moment_table_series' rule).
+  far_tol: 1.0e-15
+  # far_max_order: the highest truncation order; an offset needing more goes to the quadrature.
+  far_max_order: 24
+  # fallback_n_gauss: with route kseries, the Gauss order for the few offsets neither the series nor the
+  # expansion takes (cells under about 2.9 cells away, at |k_S| r_max above kseries_max_reach: close cells
+  # at high frequency, none below |k_S| d of about 0.8). A converged rule, not the automatic orders, which
+  # give only about 1e-9 there; there are few such offsets, so it costs little.
+  fallback_n_gauss: 24
 
   # backend: which implementation evaluates the receiver-cell average of the pair propagator
   # (cell_averaged_pair.averaged_pair_blocks_9x9), used by the sphere FFT kernel

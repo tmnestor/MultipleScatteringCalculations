@@ -13,8 +13,8 @@ every on-lattice separation computed here is stored in it, under the same key.
 the same orders (``tests/test_cell_average_fortran.py``), which certifies the transcription only. The
 automatic orders themselves (``auto_n_gauss``) leave the second shell wrong by up to 1.9e-8 (offset
 (2, 0, 0)) and fall to 4e-13 only from about (5, 3, 2) outward: see ``auto_n_gauss`` for the measured
-table. The frequency-amortised series (``cell_average_kseries``) is accurate to about 1e-13 where it
-applies.
+table. The default route (``cell_average.route: kseries``, series then expansion about the cell centre
+then a converged quadrature) is accurate to about 1.2e-13 at every offset.
 
 There is no fallback: if the extension has not been built, the import fails with the instruction to
 build it.

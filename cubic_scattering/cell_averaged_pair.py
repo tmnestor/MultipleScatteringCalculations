@@ -99,7 +99,12 @@ _EXAMPLE = (
     "  backend: fortran      # the quadrature; one of: python, fortran\n"
     "  route: kseries        # one of: kseries, quadrature\n"
     "  kseries_tol: 1.0e-15  # a positive number\n"
-    "  kseries_store: ~/.cache/cubic_scattering/receiver_kseries.npy"
+    "  kseries_max_reach: 3.0  # a positive number: the largest |k_S| r_max the series takes\n"
+    "  kseries_store: ~/.cache/cubic_scattering/receiver_kseries.npy\n"
+    "  far_expansion: true   # true or false\n"
+    "  far_tol: 1.0e-15      # a positive number\n"
+    "  far_max_order: 24     # an integer of at least 2\n"
+    "  fallback_n_gauss: 24  # an integer of at least 4"
 )
 
 
@@ -112,13 +117,29 @@ class CellAverageConfig:
         route: 'kseries' (the frequency-amortised series, with the quadrature for the offsets it cannot
             reach) or 'quadrature' (the quadrature for every offset).
         kseries_tol: The series' truncation tolerance.
+        kseries_max_reach: The largest |k_S| r_max the series takes. Its error grows like e^(k r) as it
+            cancels (measured 7.7e-14 at 2 to 3, 1.4e-11 at 8 to 9), so offsets beyond go to the
+            expansion about the cell centre or the quadrature.
         kseries_store: The file holding the series' universal coefficients (``~`` allowed).
+        far_expansion: With route 'kseries', whether the offsets the series cannot reach are taken by the
+            expansion about the cell centre (``cell_average_far``) before the quadrature.
+        far_tol: The expansion's truncation tolerance.
+        far_max_order: The highest truncation order of the expansion; offsets needing more go to the
+            quadrature.
+        fallback_n_gauss: With route 'kseries', the Gauss order of the quadrature for the few offsets
+            neither the series nor the expansion takes (close cells at high frequency). A converged rule,
+            not the automatic orders, which there give only about 1e-9.
     """
 
     backend: str
     route: str
     kseries_tol: float
+    kseries_max_reach: float
     kseries_store: str
+    far_expansion: bool
+    far_tol: float
+    far_max_order: int
+    fallback_n_gauss: int
 
 
 def _config_error(key: str, problem: str) -> ValueError:
@@ -154,19 +175,48 @@ def cell_average_config() -> CellAverageConfig:
     def found(key: str) -> str:
         return "is missing" if section.get(key) is None else f"is {section.get(key)!r}"
 
+    def positive(key: str) -> float:
+        value = section.get(key)
+        if not isinstance(value, bool) and isinstance(value, int | float) and value > 0:
+            return float(value)
+        hint = ""
+        if isinstance(value, str):
+            try:
+                float(value)
+                hint = (
+                    f" It was read as TEXT: YAML 1.1 (PyYAML) needs a decimal point in a float, so write"
+                    f" {float(value):.1e} rather than {value}."
+                )
+            except ValueError:
+                pass
+        raise _config_error(key, f"{found(key)}; it must be a positive number.{hint}")
+
     backend = section.get("backend")
     if backend not in _BACKENDS:
         raise _config_error("backend", f"{found('backend')}; it must be one of {', '.join(_BACKENDS)}.")
     route = section.get("route")
     if route not in _ROUTES:
         raise _config_error("route", f"{found('route')}; it must be one of {', '.join(_ROUTES)}.")
-    tol = section.get("kseries_tol")
-    if isinstance(tol, bool) or not isinstance(tol, int | float) or not tol > 0:
-        raise _config_error("kseries_tol", f"{found('kseries_tol')}; it must be a positive number.")
+    tol = positive("kseries_tol")
+    reach = positive("kseries_max_reach")
     store = section.get("kseries_store")
     if not isinstance(store, str) or not store:
         raise _config_error("kseries_store", f"{found('kseries_store')}; it must be a file path.")
-    return CellAverageConfig(str(backend), str(route), float(tol), store)
+    far = section.get("far_expansion")
+    if not isinstance(far, bool):
+        raise _config_error("far_expansion", f"{found('far_expansion')}; it must be true or false.")
+    far_tol = positive("far_tol")
+    far_order = section.get("far_max_order")
+    if isinstance(far_order, bool) or not isinstance(far_order, int) or far_order < 2:
+        raise _config_error(
+            "far_max_order", f"{found('far_max_order')}; it must be an integer of at least 2."
+        )
+    fallback = section.get("fallback_n_gauss")
+    if isinstance(fallback, bool) or not isinstance(fallback, int) or fallback < 4:
+        raise _config_error(
+            "fallback_n_gauss", f"{found('fallback_n_gauss')}; it must be an integer of at least 4."
+        )
+    return CellAverageConfig(str(backend), str(route), tol, reach, store, far, far_tol, far_order, fallback)
 
 
 def cell_average_backend() -> str:
@@ -210,9 +260,11 @@ def auto_n_gauss(s_vec: NDArray, d: float) -> int:
 
     The SECOND shell is the weak one: (2, 0, 0) sits exactly at q = 1.5, the
     threshold, so it falls to the base order, while its integrand is still
-    sharply peaked.  The frequency-amortised series route
-    (``cell_average_kseries``) agrees with the 24- and 32-point rules to 1e-13
-    at every offset, so where both are available it is the accurate one.  The
+    sharply peaked.  The default route (``cell_average.route: kseries``: the
+    wavenumber series within its reach, the expansion about the cell centre
+    beyond, a 24-point rule for what neither takes) agrees with a 32-point
+    rule to about 1.2e-13 at every offset, from k_S R = 1 to 12 at n_sub = 25,
+    so it is the accurate one.  The
     compiled quadrature (``cell_average_fortran``) reproduces THIS function's
     orders, and its tests compare it with the Python quadrature at the same
     orders: they certify the transcription, not the accuracy.
@@ -453,8 +505,10 @@ def averaged_pair_blocks_9x9(
     The route is ``cell_average.route`` in ``cubic_scattering/numerics.yml``:
 
     * ``kseries``: the frequency-amortised wavenumber series (``cell_average_kseries``) for every lattice
-      offset it reaches, accurate to about 1e-13; the quadrature for the rest (distant cells at high
-      frequency, separations off the lattice).
+      offset within ``kseries_max_reach``; then, with ``far_expansion: true``, the expansion about the
+      cell centre (``cell_average_far``) for the distant offsets beyond it; then the quadrature at the
+      converged order ``fallback_n_gauss`` for whatever is left (close cells at high frequency,
+      separations off the lattice). About 1.2e-13 at every offset, measured from k_S R = 1 to 12.
     * ``quadrature``: the quadrature everywhere, at the automatic Gauss orders (about 1e-8 at worst: see
       ``auto_n_gauss``).
 
@@ -472,9 +526,20 @@ def averaged_pair_blocks_9x9(
     if cfg.route == "kseries" and n_gauss is None:
         from .cell_average_kseries import averaged_pair_blocks_9x9_kseries  # local: it imports this module
 
-        blocks, covered = averaged_pair_blocks_9x9_kseries(S, omega, ref, d, tol=cfg.kseries_tol)
+        blocks, covered = averaged_pair_blocks_9x9_kseries(
+            S, omega, ref, d, tol=cfg.kseries_tol, max_reach=cfg.kseries_max_reach
+        )
+        if cfg.far_expansion and not covered.all():
+            from .cell_average_far import averaged_pair_blocks_9x9_far
+
+            rest = np.flatnonzero(~covered)
+            far, far_covered = averaged_pair_blocks_9x9_far(
+                S[rest], omega, ref, d, tol=cfg.far_tol, max_order=cfg.far_max_order
+            )
+            blocks[rest[far_covered]] = far[far_covered]
+            covered[rest[far_covered]] = True
         if not covered.all():
-            blocks[~covered] = _quadrature_blocks(S[~covered], omega, ref, d, None)
+            blocks[~covered] = _quadrature_blocks(S[~covered], omega, ref, d, cfg.fallback_n_gauss)
         return blocks
     return _quadrature_blocks(S, omega, ref, d, n_gauss)
 
