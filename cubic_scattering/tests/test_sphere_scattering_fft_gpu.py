@@ -20,8 +20,8 @@ from cubic_scattering.sphere_scattering_fft import (
 )
 from cubic_scattering.sphere_scattering_fft_gpu import (
     _matvec_fft_gpu,
-    _point_major,
     _pack_gpu,
+    _point_major,
     _unpack_gpu,
     compute_sphere_foldy_lax_fft_gpu,
 )
