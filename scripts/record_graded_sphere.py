@@ -8,9 +8,10 @@ axis the section is the same on the other side. At each frequency of the record 
 there is computed twice: exactly (``crosscheck_graded_sphere.graded_mie_result``, the per-order T-matrices
 of the radial equations, and ``sphere_scattering.mie_scattered_displacement`` at the receivers' finite
 distance), and by graded voxels of degree p = r = 1 with n cells across the sphere
-(``graded_voxel.fft.solve_graded_sphere_fft``, its kernel in single precision and memory-mapped to --disk,
-and ``graded_field`` at the receivers). Each frequency is a row of
-scripts/data/graded_sphere_record_n<n>.jsonl, so the run resumes where it stopped.
+(``graded_voxel.fft.solve_graded_sphere_fft``, its kernel at the canonical wavenumbers only, 0.3 GB in
+double precision at n = 32, in memory or memory-mapped to --disk, and ``graded_field`` at the receivers).
+Each frequency is a row of scripts/data/graded_sphere_record_n<n>.jsonl, so the run resumes where it
+stopped.
 
 THE TIME DOMAIN. Time dependence e^{-i omega t}. The record has length T (--T, in a / beta), so the
 frequencies are omega_k = k 2 pi / T, k = 1 ... N, up to --fmax times the wavelet's peak. The wavelet is a
@@ -21,7 +22,7 @@ multiplied by exp(-i omega z_r / alpha), z_r = -GAP a. The traces are
     u(x, t) = (1 / pi) Re sum_k W(omega_k) u(x, omega_k) exp(-i omega_k t) d omega,
 the exact and the voxel ones alike (``synthesise``).
 
-Run:  python -u scripts/record_graded_sphere.py --n=32 --disk=/tmp [--k0=3] [--fmax=3] [--T=12]
+Run:  python -u scripts/record_graded_sphere.py --n=32 [--disk=/tmp] [--k0=3] [--fmax=3] [--T=12]
       python -u scripts/record_graded_sphere.py --n=32 --synth    (the traces, from the rows computed)
 """
 
@@ -99,7 +100,6 @@ def one_frequency(omega: float, s: dict) -> dict:
         p=1,
         r=1,
         gmres_tol=1e-8,
-        kernel_dtype=np.complex64,
         kernel_path=path,
     )
     t_solve = time.perf_counter() - t0
