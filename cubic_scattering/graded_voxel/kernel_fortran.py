@@ -61,6 +61,37 @@ def kernel_9x9_fortran(
     return np.ascontiguousarray(np.moveaxis(p, 2, 0))
 
 
+def _apply_hat(kh_f: NDArray, sh_f: NDArray, single: bool) -> NDArray:
+    """The compiled product on Fortran-ordered views (kh (F, cols, rows), sh (F, cols)); yh (F, rows)."""
+    from ..fortran._kernel_apply import kernel_apply
+
+    return (kernel_apply.apply_hat_c64 if single else kernel_apply.apply_hat_c128)(kh_f, sh_f)
+
+
+def apply_hat_fortran(kh: NDArray, sh: NDArray) -> NDArray:
+    """yh[row, f] = sum_c kh[row, c, f] sh[c, f], shape (rows, F) complex128: the FFT solve's product.
+
+    kh is the transformed kernel as ``fft.transformed_kernel`` stores it, (rows, cols, ...) with the
+    Fourier points last (complex64 or complex128, in memory or memory-mapped), passed to Fortran as it lies:
+    never copied, which matters at 6.5 GB. sh is (cols, F). Accumulated in double precision.
+
+    Raises:
+        ValueError: if kh is not C-contiguous, or its dtype is neither complex64 nor complex128.
+    """
+    rows, cols = kh.shape[0], kh.shape[1]
+    if not kh.flags["C_CONTIGUOUS"]:
+        raise ValueError(
+            "apply_hat_fortran: the kernel must be C-contiguous (as transformed_kernel stores it)."
+        )
+    if kh.dtype not in (np.complex64, np.complex128):
+        raise ValueError(
+            f"apply_hat_fortran: the kernel's dtype is {kh.dtype}; it must be complex64 or 128."
+        )
+    kh_f = np.asarray(kh).reshape(rows, cols, -1).T  # (F, cols, rows), Fortran-ordered: a view, no copy
+    sh_f = np.ascontiguousarray(np.asarray(sh, dtype=complex)).T  # (F, cols), Fortran-ordered
+    return _apply_hat(kh_f, sh_f, kh.dtype == np.complex64).T
+
+
 def apply_9x9_fortran(
     obs: NDArray, points: NDArray, sources: NDArray, omega: complex, ref: ReferenceMedium, *, rows: int
 ) -> NDArray:

@@ -41,6 +41,7 @@ from .basis import (
     source_exponents,
 )
 from .blocks import NEAR_STORE_MAX_KH, coupling_block, coupling_blocks_far, near_block_series
+from .kernel import point_kernel_backend
 from .site import cell_contrast_coefficients_all
 from .solver import GradedVoxelResult, field_sizes, plane_wave_moments
 
@@ -402,6 +403,10 @@ def solve_graded_sphere_fft(
         k0 = blocks[(0, 0, 0)][:na, :nc]
     g0, g1, g2 = grid_idx[:, 0], grid_idx[:, 1], grid_idx[:, 2]
     m9 = gram_test(h, n_field)[:na, :na]
+    # the kernel product follows point_kernel.backend: the compiled one, or the NumPy reference
+    compiled_product = point_kernel_backend() == "fortran" and kh.flags["C_CONTIGUOUS"]
+    if compiled_product:
+        from .kernel_fortran import apply_hat_fortran  # local: kernel_fortran imports kernel
 
     def matvec(x: NDArray) -> NDArray:
         psi = x.reshape(n, na, 9)
@@ -409,9 +414,12 @@ def solve_graded_sphere_fft(
         grid = np.zeros((cols, npad, npad, npad), dtype=complex)
         grid[:, g0, g1, g2] = src.T
         sh = np.fft.fftn(grid, axes=(1, 2, 3)).reshape(cols, -1)
-        yh = np.empty((rows, sh.shape[1]), dtype=complex)
-        for row in range(rows):
-            yh[row] = np.einsum("cf,cf->f", np.asarray(kh[row]).reshape(cols, -1), sh)
+        if compiled_product:  # one pass over the kernel by all threads, as it lies (kernel_apply.f90)
+            yh = apply_hat_fortran(kh, sh)
+        else:
+            yh = np.empty((rows, sh.shape[1]), dtype=complex)
+            for row in range(rows):
+                yh[row] = np.einsum("cf,cf->f", np.asarray(kh[row]).reshape(cols, -1), sh)
         y = np.fft.ifftn(yh.reshape(rows, npad, npad, npad), axes=(1, 2, 3))[:, g0, g1, g2].T
         return (np.einsum("ab,nbi->nai", m9, psi).reshape(n, rows) - y).ravel()
 

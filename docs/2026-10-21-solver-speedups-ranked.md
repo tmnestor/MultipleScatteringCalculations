@@ -386,11 +386,22 @@ contrast projection paid once; readout 8.7 s), against 784 s at the start.
 
 **Next.**
 
-5. **GMRES** (now the largest cost, 54 s: 6 products of about 9 s). Each product reads the whole
-   disk-mapped complex64 kernel (6.5 GB) a row at a time and contracts it with a single-threaded
-   `einsum` over the 90 columns at every Fourier point (`fft.py`, the matvec). First: the same product
-   with the kernel in memory, to separate the disk from the layout. Then, if it is the layout: store the
-   transformed kernel point-major (a 36 x 90 matrix per Fourier point) and apply it as one batched
-   matrix product, as item 5b did for the sphere solver.
+5. **GMRES** (done; 54 s to 9.3 s). Each product read the whole complex64 kernel (6.5 GB) a row at a
+   time through a single-threaded `einsum`: 9 s a product from disk, 3.4 s in memory. The stored layout,
+   kh[row, col, Fourier point], already puts the Fourier points contiguous, so the kernel was NOT
+   re-laid out point-major (which would have changed the stored format and needed a second 6.5 GB copy
+   to convert): a compiled product over the existing layout (`fortran/kernel_apply.f90`, OpenMP over
+   blocks of Fourier points, the kernel read in place without a copy, accumulated in double precision as
+   the `einsum` did; `kernel_fortran.apply_hat_fortran`) reads it once, in order, by all threads. Equal to
+   the NumPy product to 1e-14, independent of the thread count. With it the disk barely matters: 9.3 s
+   from disk, 8.0 s in memory, so `--disk` stays and larger grids keep working.
+
+One frequency at N = 32 in a sweep, kernel on disk: about 82 s (solve 96 s at the first frequency, 23 s
+of it the contrast projection paid once; readout 8.9 s), against 784 s at the start: about 9.5 times
+faster. A 34-frequency record: about 47 minutes, against about 5.3 hours with the original code.
+
+What is left at N = 32: the kernel's assembly and transform (28 to 34 s, about half of it FFTs), the
+canonical blocks (about 20 s, half compiled kernel evaluations, half the batched product), and GMRES
+(about 9 s).
 6. **Frequencies in parallel**: independent, but each holds a 6.5 GB kernel; on 16 GB at most two at a
    time.
