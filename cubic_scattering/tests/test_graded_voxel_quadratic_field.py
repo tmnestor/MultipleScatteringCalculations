@@ -78,6 +78,7 @@ def test_plane_wave_moments_of_the_quadratic_field_match_quadrature():
     np.testing.assert_allclose(got[:, :4], plane_wave_moments(centres, H, k, amp), rtol=1e-14)
 
 
+@pytest.mark.slow
 def test_the_linear_field_rows_are_unchanged():
     for off in ((0, 0, 0), (1, 0, -1), (2, 1, 0)):
         k4 = coupling_block(off, H, OMEGA, REF, n_source=20)
@@ -86,6 +87,7 @@ def test_the_linear_field_rows_are_unchanged():
         assert np.linalg.norm(k10[:4, :20] - k4) / np.linalg.norm(k4) < 1e-12
 
 
+@pytest.mark.slow
 def test_quadratic_rows_match_the_6d_reference_beyond_contact():
     for off in ((2, 0, 0), (2, -2, 1)):
         a = near_block(off, H, OMEGA, REF, n_q=14, n_source=35, n_test=10)
@@ -105,6 +107,7 @@ def _reexpand(values, n_out, sigma):
     return np.linalg.lstsq(sub.T, big.T, rcond=None)[0].T
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("off", [(0, 0, 0), (1, 0, 0), (1, 1, 1)])
 def test_subdivision_identity_with_a_quadratic_field(off):
     sigmas = list(itertools.product((-1, 1), repeat=3))
@@ -127,6 +130,7 @@ def test_subdivision_identity_with_a_quadratic_field(off):
     assert worst < 1e-7, worst
 
 
+@pytest.mark.slow
 def test_symmetry_generated_blocks_with_a_quadratic_field_equal_direct_ones():
     blocks = offset_blocks(3, H, OMEGA, REF, n_source=35, n_test=10)
     for off in ((1, 0, -1), (-1, 1, 1), (2, -1, 0), (0, -2, 1)):
@@ -138,6 +142,7 @@ def _profile(pos):
     return 1.0 - 0.004 * float(pos @ pos)
 
 
+@pytest.mark.slow
 def test_fft_solve_equals_the_dense_solve_with_a_quadratic_field():
     dense = solve_graded_sphere(OMEGA, 10.0, REF, CON, 3, _profile, KHAT, KHAT, "P", p=2, r=2)
     fft = solve_graded_sphere_fft(

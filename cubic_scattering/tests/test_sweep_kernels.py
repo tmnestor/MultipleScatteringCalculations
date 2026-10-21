@@ -158,6 +158,7 @@ def test_left_and_right_amplitudes_actually_differ() -> None:
     assert diff > 1e-2
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("dz", [0.25, -0.5])
 def test_vertical_kernel_integrates_to_the_exact_propagator(dz: float) -> None:
     """RUNG 3: the k_z-residue kernel, integrated over (kx, ky), is the

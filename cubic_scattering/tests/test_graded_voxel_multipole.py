@@ -138,6 +138,7 @@ def test_piece_moments_match_quadrature():
                 assert abs(mom[sub, g] - ref) < 1e-13 * max(1.0, abs(ref)), (e_t, e_s, sub, g)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("off", [(2, 0, 0), (2, 1, 1), (2, -2, 2), (3, 1, 0), (5, -2, 1)])
 def test_piecewise_multipole_block_equals_the_quadrature_block(off):
     # every non-touching offset, including the nearest ones, where the series about the cell centres fails
@@ -147,6 +148,7 @@ def test_piecewise_multipole_block_equals_the_quadrature_block(off):
         assert np.linalg.norm(got - want) / np.linalg.norm(want) < 2e-9, (off, omega)
 
 
+@pytest.mark.slow
 def test_piecewise_multipole_block_with_a_quadratic_field():
     off = (2, 1, 0)
     want = coupling_block(off, H, 600.0, REF, n_source=35, n_test=10)
@@ -192,6 +194,7 @@ def test_multipole_block_at_low_frequency(off):
     assert np.linalg.norm(got - want) / np.linalg.norm(want) < 1e-13
 
 
+@pytest.mark.slow
 def test_piecewise_block_bisects_rather_than_raise_the_order():
     # (2, 1, 1) at k_S h = 0.5: the unbisected plan of order 48 stalled at 2.2e-12
     from cubic_scattering.graded_voxel.blocks import _sform, _to_field_rows

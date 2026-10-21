@@ -99,6 +99,7 @@ def _direct(fam: str, n: int, m: int, k_p: float, k_s: float, pts: np.ndarray) -
     return lk.n_field(n, m, k_s, pts, "h")
 
 
+@pytest.mark.slow
 def test_one_translation_reconstructs_every_family() -> None:
     """A single site at R (out of plane): its outgoing L, M, N fields near the origin."""
     k_p, k_s = 0.9, 1.5
@@ -123,6 +124,7 @@ def test_one_translation_reconstructs_every_family() -> None:
     assert worst < 1e-8, f"worst single-translation reconstruction error {worst:.2e}"
 
 
+@pytest.mark.slow
 def test_damped_lattice_matches_the_direct_vector_sum() -> None:
     """Ewald-based coupling against the plain damped lattice sum of the vector fields."""
     a_l, kpar = 2.0, np.array([0.2, 0.1])

@@ -74,6 +74,7 @@ def test_a_unit_source_reaches_exactly_the_other_sites_of_its_plane() -> None:
         assert np.array_equal(reached_y, want_y)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("part", ["x", "y"])
 def test_each_sweep_converges_to_the_closed_form(part: str) -> None:
     """Distinct sources, two plane media: the error is the quadrature's and falls as the rule is refined."""
@@ -136,6 +137,7 @@ def _solve_setup(scale: float):
     return grid, cache, t0, psi, sweeps
 
 
+@pytest.mark.slow
 def test_g0_with_the_sweeps_is_g0_with_the_table() -> None:
     """The sweeps replace only the same-depth table: the whole G0 agrees to the quadrature's error."""
     grid, cache, _, _, sweeps = _solve_setup(0.1)

@@ -1,6 +1,7 @@
 """The graded voxel's FFT solver: symmetry-generated blocks and the FFT matrix-vector product."""
 
 import numpy as np
+import pytest
 
 from cubic_scattering import MaterialContrast, ReferenceMedium
 from cubic_scattering.graded_voxel.blocks import coupling_block
@@ -52,6 +53,7 @@ def test_symmetry_generated_blocks_equal_direct_ones():
         assert np.linalg.norm(blocks[off] - direct) / np.linalg.norm(direct) < 1e-11, off
 
 
+@pytest.mark.slow
 def test_fft_solve_equals_the_dense_solve():
     for p in (0, 1):
         dense = solve_graded_sphere(OMEGA, 10.0, REF, CON, 4, _profile, KHAT, KHAT, "P", p=p, r=p)
@@ -63,6 +65,7 @@ def test_fft_solve_equals_the_dense_solve():
         assert rel < 1e-10, (p, rel)
 
 
+@pytest.mark.slow
 def test_kernel_from_the_canonical_blocks_equals_the_kernel_from_every_offset():
     """``transformed_kernel`` (a group of rows at a time, from one block per orbit) is the kernel the former
     path built from every offset's block, in memory and memory-mapped, and in any grouping of the rows."""
@@ -86,6 +89,7 @@ def test_kernel_from_the_canonical_blocks_equals_the_kernel_from_every_offset():
     assert np.abs(single - want).max() <= 1e-7 * np.abs(want).max()
 
 
+@pytest.mark.slow
 def test_kernel_on_disk_and_in_single_precision(tmp_path):
     """The solve with the kernel memory-mapped equals the solve with it in memory; in complex64 it moves by
     the single-precision rounding of the kernel, far below the discretisation error."""

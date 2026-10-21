@@ -84,6 +84,7 @@ def test_a_quadratic_profile_is_projected_exactly():
     np.testing.assert_allclose(delta[:4], lin, rtol=1e-13)
 
 
+@pytest.mark.slow
 def test_default_blocks_are_unchanged_and_are_the_first_ten_columns():
     for off in ((0, 0, 0), (1, 0, -1), (2, 1, 0)):
         k10 = coupling_block(off, H, OMEGA, REF)
@@ -93,6 +94,7 @@ def test_default_blocks_are_unchanged_and_are_the_first_ten_columns():
         assert np.linalg.norm(k20[:, :10] - k10) / np.linalg.norm(k10) < 1e-13
 
 
+@pytest.mark.slow
 def test_cubic_columns_match_the_6d_reference_beyond_contact():
     for off in ((2, 0, 0), (2, -2, 1)):
         a = near_block(off, H, OMEGA, REF, n_q=14, n_source=20)
@@ -115,6 +117,7 @@ def _expand_on_sub(exps, sigma):
     return out
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("off", [(0, 0, 0), (1, 0, 0), (1, 1, 1)])
 def test_subdivision_identity_with_cubic_sources(off):
     # a block between cells of half-width h is the sum of the blocks between their 2^3 sub-cells, with the
@@ -138,6 +141,7 @@ def test_subdivision_identity_with_cubic_sources(off):
     assert worst < 1e-7, worst
 
 
+@pytest.mark.slow
 def test_symmetry_generated_blocks_with_cubic_sources_equal_direct_ones():
     blocks = offset_blocks(3, H, OMEGA, REF, n_source=20)
     for off in ((1, 0, -1), (-1, 1, 1), (2, -1, 0), (0, -2, 1)):
@@ -149,6 +153,7 @@ def _profile(pos):
     return 1.0 - 0.004 * float(pos @ pos)
 
 
+@pytest.mark.slow
 def test_fft_solve_equals_the_dense_solve_with_a_quadratic_contrast():
     dense = solve_graded_sphere(OMEGA, 10.0, REF, CON, 4, _profile, KHAT, KHAT, "P", p=1, r=2)
     fft = solve_graded_sphere_fft(
@@ -159,6 +164,7 @@ def test_fft_solve_equals_the_dense_solve_with_a_quadratic_contrast():
     assert rel < 1e-10, rel
 
 
+@pytest.mark.slow
 def test_a_quadratic_profile_solved_with_r2_differs_from_r1():
     # _profile is exactly quadratic: r = 2 represents it exactly, r = 1 does not
     r1 = solve_graded_sphere_fft(OMEGA, 10.0, REF, CON, 4, _profile, KHAT, KHAT, "P", p=1, r=1)

@@ -176,6 +176,7 @@ def test_origin_z_parity_and_bloch_phase_signature() -> None:
         assert np.abs(origin[order]).max() / np.abs(origin[order - 1]).max() > 1e-3
 
 
+@pytest.mark.slow
 def test_block_9x9_dispatches_to_the_origin_limit_at_zero() -> None:
     """r = 0 must be finite -- the un-regularised path would divide by zero."""
     blk = lattice_block_9x9(np.zeros(3), OMEGA, REF, ETA1, RC, GC, A_L, K_PAR)
@@ -184,6 +185,7 @@ def test_block_9x9_dispatches_to_the_origin_limit_at_zero() -> None:
     assert np.abs(blk - other).max() / np.abs(blk).max() < 1e-10
 
 
+@pytest.mark.slow
 def test_bloch_kernel_matches_the_ewald_route_away_from_gamma() -> None:
     """The two routes are independent constructions and must agree.
 
@@ -202,6 +204,7 @@ def test_bloch_kernel_matches_the_ewald_route_away_from_gamma() -> None:
         assert np.abs(ker[n1, n2] - ewald).max() / np.abs(ewald).max() < 1e-6
 
 
+@pytest.mark.slow
 def test_bloch_kernel_is_finite_and_has_the_kernel_hat_shape() -> None:
     """It is written straight into kernel_hat, so the shape is load-bearing."""
     ref = ReferenceMedium(5000.0, 3000.0, 2500.0)
@@ -219,6 +222,7 @@ def test_ewald_kernel_requires_periodic_with_a_diagnostic() -> None:
         build_slab_kernels(geom, 60.0, ref, periodic=False, lattice_ewald=True)
 
 
+@pytest.mark.slow
 def test_ewald_kernel_differs_from_the_truncated_one() -> None:
     """Guard against the flag silently doing nothing."""
     geom = SlabGeometry(M=4, N_z=1, a=0.25)

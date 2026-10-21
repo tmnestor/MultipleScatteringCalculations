@@ -1,6 +1,7 @@
 """Coupling blocks of the graded voxel."""
 
 import numpy as np
+import pytest
 
 from cubic_scattering import ReferenceMedium
 from cubic_scattering.graded_voxel.blocks import far_block
@@ -60,6 +61,7 @@ def test_coulomb_self_energy():
     assert abs(got / (c * (2 * H) ** 5) - 1) < 1e-11
 
 
+@pytest.mark.slow
 def test_sform_equals_gauss_beyond_contact():
     # the s-form machinery (moved derivatives, deltas, pieces) on an offset where Gauss is also valid
     for off in ((2, 0, 0), (2, 1, 1), (2, -2, 1)):
@@ -68,6 +70,7 @@ def test_sform_equals_gauss_beyond_contact():
         assert np.linalg.norm(a - b) / np.linalg.norm(b) < 1e-9, off
 
 
+@pytest.mark.slow
 def test_near_block_converges():
     for off in ((0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)):
         a, b = near_block(off, H, OMEGA, REF, 12), near_block(off, H, OMEGA, REF, 16)
@@ -94,6 +97,7 @@ def test_self_block_parity():
             assert np.linalg.norm(k[b, a] - want) / np.linalg.norm(k[0, 0]) < 1e-11
 
 
+@pytest.mark.slow
 def test_coupling_block_beyond_contact_matches_the_6d_reference():
     # Review Focus 3, and the s-form far-block ruling: the one-cell-gap and a distant offset
     for off in ((2, 0, 0), (2, 2, 2), (5, -1, 3)):

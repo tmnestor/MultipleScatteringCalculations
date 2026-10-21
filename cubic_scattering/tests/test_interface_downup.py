@@ -48,6 +48,7 @@ def _contrasts(g, f):
     ]
 
 
+@pytest.mark.slow
 def test_the_split_adds_up_to_the_coupling(box):
     g, _, op = box
     e = np.zeros((len(g.idx), op.n_source, op.na, 9, 9), dtype=complex)
@@ -66,6 +67,7 @@ def test_the_split_adds_up_to_the_coupling(box):
     assert all((zr < 0) == (zs < 0) and zr != zs for zr, zs in du.refl)
 
 
+@pytest.mark.slow
 def test_downup_passes_converge_to_the_dense_solve(box):
     """As a stationary iteration with exact plane solves, DownUp converges to the solution at small contrast."""
     g, c, op = box
@@ -88,6 +90,7 @@ def test_downup_passes_converge_to_the_dense_solve(box):
     assert err8 < 1e-3 * err1
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("pre", ["downup", "jacobi"])
 def test_fgmres_matches_the_dense_solve(box, pre):
     g, c, op = box
@@ -103,6 +106,7 @@ def test_fgmres_matches_the_dense_solve(box, pre):
         assert stats["planes"] > 0 and stats["inner"] >= stats["planes"]
 
 
+@pytest.mark.slow
 def test_averaged_sweep_is_the_gram_inverse_at_zero_contrast(box):
     """With no contrast the averaged system is M alone: Algorithm 5.1's sweep applies M^-1 cell by cell."""
     g, _, op = box
@@ -114,6 +118,7 @@ def test_averaged_sweep_is_the_gram_inverse_at_zero_contrast(box):
     assert np.abs(got - want).max() < 1e-12 * np.abs(want).max()
 
 
+@pytest.mark.slow
 def test_fgmres_with_the_averaged_sweep_matches_the_dense_solve(box):
     g, c, op = box
     ctr = _contrasts(g, 0.5)
@@ -136,6 +141,7 @@ def test_fgmres_with_the_averaged_sweep_matches_the_dense_solve(box):
     assert stats["outer"] < 60
 
 
+@pytest.mark.slow
 def test_dtn_sweep_inverts_a_single_plane():
     """One plane: no coupling between planes to average, so the DtN form with a tight inner solve is the plane's
     exact inverse, its box's edges and its varying contrast included."""
@@ -161,6 +167,7 @@ def test_dtn_sweep_inverts_a_single_plane():
     assert np.abs(got - x).max() < 1e-9 * np.abs(x).max()
 
 
+@pytest.mark.slow
 def test_fgmres_with_the_dtn_sweep_matches_the_dense_solve(box):
     """A contrast that varies within the planes: the pivots carry the fluctuation."""
     g, c, op = box
@@ -188,6 +195,7 @@ def test_fgmres_with_the_dtn_sweep_matches_the_dense_solve(box):
     assert stats["outer"] < 60 and stats["planes"] > 0
 
 
+@pytest.mark.slow
 def test_dtn_window_system_is_the_true_padded_system(box):
     """The window's operator, the averaged trailing system less the contrast fluctuation, is the true system
     M - K E on the padded grid (E zero outside the cells): over all the planes it is assembled independently."""
@@ -232,6 +240,7 @@ def test_dtn_window_system_is_the_true_padded_system(box):
         assert np.abs(got[a] - want).max() < 1e-10 * np.abs(want).max()
 
 
+@pytest.mark.slow
 def test_fgmres_with_full_dtn_windows_matches_the_dense_solve(box):
     g, c, op = box
     rng = np.random.default_rng(8)
@@ -267,6 +276,7 @@ def _varying(g, seed):
     ]
 
 
+@pytest.mark.slow
 def test_true_sweep_with_full_windows_is_the_exact_inverse(box):
     """The leading solves of the true system, each over all the planes above and solved tightly: the block LDU
     solve of the true system, so the preconditioner inverts A (contrast varying within the planes)."""
@@ -284,6 +294,7 @@ def test_true_sweep_with_full_windows_is_the_exact_inverse(box):
     assert np.abs(got - x).max() < 1e-9 * np.abs(x).max()
 
 
+@pytest.mark.slow
 def test_fgmres_with_the_true_sweep_matches_the_dense_solve(box):
     g, c, op = box
     ctr = _varying(g, 8)
@@ -307,6 +318,7 @@ def test_fgmres_with_the_true_sweep_matches_the_dense_solve(box):
     assert stats["outer"] < 60
 
 
+@pytest.mark.slow
 def test_leading_sweep_is_the_exact_inverse(box):
     """Route A of the matrix-free true sweep, run here on the stored kernels: the leading systems solved
     tightly, the solved planes entering through the true coupling, invert A (contrast varying within the
@@ -324,6 +336,7 @@ def test_leading_sweep_is_the_exact_inverse(box):
     assert sweep.outer_products == len(op.layers) - 1  # one coupling product per solved plane
 
 
+@pytest.mark.slow
 def test_fgmres_with_the_leading_sweep_matches_the_dense_solve(box):
     g, c, op = box
     ctr = _varying(g, 8)
@@ -351,6 +364,7 @@ def test_fgmres_from_an_initial_guess():
     assert n_warm < n_cold and np.abs(x - want).max() < 1e-10 * np.abs(want).max()
 
 
+@pytest.mark.slow
 def test_a_preconditioner_built_once_serves_other_solves_and_frequencies(box):
     """A DtNSweep built at omega, passed as ``precondition``: the dense solution at omega and at 0.95 omega,
     the counts of each solve its own; and the solution at omega as x0 needs only its residual's product."""
@@ -392,6 +406,7 @@ def _varying_e(g, op, seed):
     return idu.source_expansions(op, iso.cell_contrasts(g, OMEGA, _varying(g, seed), 0))
 
 
+@pytest.mark.slow
 def test_dtn_sweep_with_no_inner_iterations_is_the_averaged_sweep(box):
     """S_z^-1 alone as each pivot's inverse: U^-1 S^-1 L^-1 is the averaged system's inverse."""
     g, _, op = box
@@ -404,6 +419,7 @@ def test_dtn_sweep_with_no_inner_iterations_is_the_averaged_sweep(box):
     assert pre.inner_products == 0 and pre.inner_solves == len(op.layers)
 
 
+@pytest.mark.slow
 def test_dtn_sweep_depth_band(box):
     """A band over every plane is the full factorisation; band 1 is the exact inverse of the averaged system
     with its blocks between planes more than one apart dropped, assembled and inverted independently."""
@@ -428,6 +444,7 @@ def test_dtn_sweep_depth_band(box):
     assert np.abs(want - idu.AveragedSweep(op, e)(v)).max() > 1e-6 * np.abs(want).max()  # the band matters
 
 
+@pytest.mark.slow
 def test_dtn_sweep_fixed_inner_iterations(box):
     """k inner iterations per pivot: the work grows with k, and many iterations approach the tight solve."""
     g, _, op = box
@@ -446,12 +463,14 @@ def test_dtn_sweep_fixed_inner_iterations(box):
         idu.DtNSweep(op, e, inner_iterations=-1)
 
 
+@pytest.mark.slow
 def test_true_sweep_refuses_a_depth_band(box):
     g, _, op = box
     with pytest.raises(ValueError, match="depth_band applies to DtNSweep alone"):
         idu.TrueSweep(op, _varying_e(g, op, 3), depth_band=1)
 
 
+@pytest.mark.slow
 def test_sweeps_sharing_one_factorisation_are_the_sweeps_built_alone(box):
     """``sharing``: the same factors, settings of its own, counts from zero; equal to building it afresh."""
     g, _, op = box

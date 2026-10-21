@@ -135,6 +135,7 @@ class TestSphereDecomposition:
             f"Diagonal spread = {diag_spread / np.mean(np.abs(diag)):.3f}"
         )
 
+    @pytest.mark.slow
     def test_sphere_decomposition_convergence(self):
         """Per-unit-volume Drho_eff converges to Mie-extracted Drho_star.
 
@@ -607,6 +608,7 @@ class TestCrossComparison:
             "design, but it should not get poorer."
         )
 
+    @pytest.mark.slow
     def test_convergence_study(self):
         """Foldy-Lax T-matrix per unit volume converges to Mie as n_sub increases.
 

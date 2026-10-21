@@ -19,6 +19,7 @@ WINDOW = isp.Window(0.25)
 LOW = isp.Window(0.35 / 2.5)  # the band [0.35, 2.5] / h at omega h / beta_A = 1/6
 
 
+@pytest.mark.slow
 def test_factors_rebuild_the_integrand():
     """The mode and static pseudo-mode factors give ``integrand_points`` (reflected and transmitted, in the band
     and on the window's ramp), to the rounding of the modes' cancellation (the terms reach ~1e5 of the sum)."""
@@ -49,6 +50,7 @@ def _dense(blocks_of, x, layers, shape):
     return out
 
 
+@pytest.mark.slow
 def test_low_band_by_nufft_is_the_per_offset_product():
     """D_low x by NUFFTs over the band's polar quadrature equals the product of the per-offset blocks of
     ``truncated_blocks(low_pass=...)``, sources on both sides."""
@@ -101,6 +103,7 @@ def test_low_band_by_nufft_is_the_per_offset_product():
     assert all(np.abs(got[z] - ref[z]).max() < 1e-12 * scale for z in layers)
 
 
+@pytest.mark.slow
 def test_high_band_at_the_box_wavenumbers_is_the_periodic_kernel():
     """D_high x at the wavenumbers of a periodic box (every alias a node) equals the product of
     ``high_band_blocks`` on that box, sources on both sides."""
@@ -132,6 +135,7 @@ def test_high_band_at_the_box_wavenumbers_is_the_periodic_kernel():
     assert all(np.abs(got[z] - ref[z]).max() < 1e-10 * scale for z in layers)
 
 
+@pytest.mark.slow
 def test_lattice_nodes_by_fft_are_the_nufft():
     """The lattice nodes applied by zero-padded FFTs (gather on the way in, fold by m mod N on the way out) give
     the NUFFT's product on a box shorter than the lattice, and do not depend on how the nodes are chunked (aliases
@@ -155,6 +159,7 @@ def test_lattice_nodes_by_fft_are_the_nufft():
     assert all(np.abs(got[z] - whole[z]).max() < 1e-14 * scale[z] for z in layers)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(("gap", "qmax_h"), [(2, 16.0), (3, 8.0)])
 def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
     """The march in depth over the low band's nodes and the box's lattice reproduces Paper 2's blocks between

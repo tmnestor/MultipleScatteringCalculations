@@ -106,6 +106,7 @@ def _g0LL(n, m, nu, mu, Dfun):
     return 4 * math.pi * (-1) ** m * tot
 
 
+@pytest.mark.slow
 def test_L_block_matches(dump):
     par = dump["params"]
     aL, kx, ky, kP, eta, rho0 = (

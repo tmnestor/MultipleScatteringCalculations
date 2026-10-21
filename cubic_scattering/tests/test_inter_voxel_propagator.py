@@ -2409,6 +2409,7 @@ class TestFaceSBlockArbiter:
         red = _load_face_rederivation()
         return red.subdivision_tables(ng=6)
 
+    @pytest.mark.slow
     def test_face_full_tensor_matches_subdivision_arbiter(self, subdivision_tables):
         """All 81 Gdd components match the subdivision fixed point.
 
@@ -2428,6 +2429,7 @@ class TestFaceSBlockArbiter:
             err_msg="face Gdd tensor deviates from the subdivision arbiter",
         )
 
+    @pytest.mark.slow
     def test_edge_corner_cross_validated_by_subdivision(self, subdivision_tables):
         """The same fixed point reproduces the edge/corner module tables
         (diagonal entries, where the P and Gdd index conventions agree),
@@ -2630,6 +2632,7 @@ _FIX5_BLOCKS = {
 class TestRadiationImaginaryPart:
     """Fix 5: the imaginary (radiation) part of the volume-averaged propagator."""
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("ka", [0.1, 0.3, 0.5])
     @pytest.mark.parametrize("name", ["face", "edge", "corner"])
     @pytest.mark.parametrize("block", ["G", "C", "S"])

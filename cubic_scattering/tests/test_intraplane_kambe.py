@@ -108,6 +108,7 @@ def _Dstruct_proj(field, q, s, kappa, rho0):
     return (-1) ** s * integ / (1j * kappa * spherical_jn(q, kappa * rho0))
 
 
+@pytest.mark.slow
 def test_undamped_eta_independence(dump):
     par = dump["params"]
     aL, kx, ky, k = par["aL"], par["kx"], par["ky"], par["kappa"]
@@ -130,6 +131,7 @@ def test_undamped_eta_independence(dump):
             assert abs(d1 - d2) < 1e-5, f"D[{q},{s}] eta-dependent"
 
 
+@pytest.mark.slow
 def test_matches_mathematica(dump):
     par = dump["params"]
     aL, kx, ky, k = par["aL"], par["kx"], par["ky"], par["kappa"]

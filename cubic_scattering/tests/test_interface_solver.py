@@ -35,6 +35,7 @@ def test_grid_units_and_sides():
         iso.InterfaceGrid(np.array([[0, 0, 0], [0, 0, 0]]), H, A, B)
 
 
+@pytest.mark.slow
 def test_symmetry_map_matches_the_direct_block():
     """A pair with lateral offset (-2, 1) cells across the interface: its block by the lateral symmetry from the
     canonical one equals the block computed directly."""
@@ -45,6 +46,7 @@ def test_symmetry_map_matches_the_direct_block():
     assert np.abs(got - direct).max() < 1e-13 * np.abs(direct).max()
 
 
+@pytest.mark.slow
 def test_identical_media_solve_is_the_homogeneous_one():
     """A = B: two cells touching across the interface solve as in the whole space (Paper 2's blocks)."""
     g = iso.InterfaceGrid(np.array([[-1, 0, 0], [0, 0, 0]]), H, A, A)
@@ -64,6 +66,7 @@ def test_identical_media_solve_is_the_homogeneous_one():
     assert np.abs(res.psi - psi).max() < 1e-8 * np.abs(psi).max()
 
 
+@pytest.mark.slow
 def test_solve_refuses_too_small_couplings():
     g = iso.InterfaceGrid(np.array([[-1, 0, 0]]), H, A, B)
     c = iso.InterfaceCouplings(g, workers=1)
@@ -71,6 +74,7 @@ def test_solve_refuses_too_small_couplings():
         iso.solve_interface(c, OMEGA, [None], 0.0, 0.0, "P", p=2)
 
 
+@pytest.mark.slow
 def test_apply_coupling_is_the_assembled_coupling():
     """M x - apply_coupling(x) equals the assembled matrix times x."""
     g = iso.InterfaceGrid(np.array([[-1, 0, 0], [0, 1, 0]]), H, A, B)
@@ -88,6 +92,7 @@ def test_apply_coupling_is_the_assembled_coupling():
     assert np.abs(got - want).max() < 1e-13 * np.abs(want).max()
 
 
+@pytest.mark.slow
 def test_blocks_match_the_direct_blocks():
     """The batched per-frequency blocks (series, symmetry, mirroring) equal the blocks pair by pair:
     Paper 2's Gauss block plus ``interface_block``, or ``interface_block`` alone across the interface."""
@@ -124,6 +129,7 @@ def test_radius_needs_a_window():
         iso.InterfaceCouplings(g, radius=16.0, workers=1)
 
 
+@pytest.mark.slow
 def test_one_lateral_table_per_offset():
     """The classes of an offset share one S_n table, built as for the offset alone; beyond the radius a class has
     no corrections."""
@@ -142,6 +148,7 @@ def test_one_lateral_table_per_offset():
         assert all((p is None) == (off != (0, 0)) for p, _ in group)
 
 
+@pytest.mark.slow
 def test_depth_radius_drops_the_corrections_far_from_the_interface():
     """Cells at iz = -1 (touching) and -3 (4 h clear): with depth radius 4 h only the touching pair keeps A0, A1;
     the kept parts are the full set-up's.  A depth radius needs a window."""
@@ -162,6 +169,7 @@ def test_depth_radius_drops_the_corrections_far_from_the_interface():
     assert all(np.array_equal(x, y) for x, y in zip(got, want, strict=True))
 
 
+@pytest.mark.slow
 def test_lateral_fft_product_and_gmres_match_the_dense_solve():
     """Cells scattered in a box with gaps, on both sides: the FFT product equals ``apply_coupling`` and the GMRES
     solve equals the dense one."""
@@ -191,6 +199,7 @@ def test_lateral_fft_product_and_gmres_match_the_dense_solve():
     assert n_it < 50
 
 
+@pytest.mark.slow
 def test_setup_computes_the_whole_space_coefficients():
     """The set-up's whole-space series coefficients (computed in parallel, one BLAS thread per worker) are Paper
     2's per-process ones, for every orbit the grid needs: same side, not touching."""

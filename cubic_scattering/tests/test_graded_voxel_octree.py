@@ -76,6 +76,7 @@ def _gauss_block(c_t, h_t, c_s, h_s, n_test, n_source, n=8):
     return out.reshape(n_test, n_source, 9, 9)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     ("h_t", "c_s", "h_s"),
     [
@@ -91,6 +92,7 @@ def test_unequal_cells_match_six_dimensional_quadrature(h_t, c_s, h_s):
     assert np.linalg.norm(got - want) / np.linalg.norm(want) < 1e-9
 
 
+@pytest.mark.slow
 def test_unequal_cells_with_a_quadratic_field():
     c_t, h_t, c_s, h_s = (0.0, 0.0, 0.0), 2 * H, (7 * H, -H, H), H
     got = octree_block(c_t, h_t, c_s, h_s, OMEGA, REF, n_source=35, n_test=10)
@@ -104,6 +106,7 @@ def test_equal_cells_are_the_ordinary_block():
     np.testing.assert_array_equal(got, want)
 
 
+@pytest.mark.slow
 def test_touching_unequal_cells_agree_with_one_more_level_of_subdivision():
     # a large cell and a small one sharing part of a face: no quadrature reference exists for the singular
     # integral, so the block is rebuilt from the cells' own children, a level finer on both sides
@@ -139,6 +142,7 @@ def _profile(pos):
     return 1.0 - 0.004 * float(pos @ pos)
 
 
+@pytest.mark.slow
 def test_uniform_leaves_are_the_uniform_grid():
     centres, hs = uniform_leaves(RADIUS, 4)
     ref = solve_graded_sphere(OMEGA, RADIUS, REF, CON, 4, _profile, KHAT, KHAT, "P")
@@ -155,6 +159,7 @@ def test_refining_every_leaf_gives_the_finer_uniform_grid():
     assert key(c4) == key(want)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(("p", "r"), [(0, 0), (1, 1)])
 def test_octree_solver_on_a_uniform_tree_equals_the_uniform_solver(p, r):
     centres, hs = uniform_leaves(RADIUS, 3)
@@ -168,6 +173,7 @@ def test_octree_solver_on_a_uniform_tree_equals_the_uniform_solver(p, r):
         assert np.abs(g - w).max() / np.abs(w).max() < 1e-11
 
 
+@pytest.mark.slow
 def test_a_mixed_tree_is_closer_to_the_fine_grid_than_the_coarse_grid_is():
     # refine every second leaf of the coarse grid: leaves of two sizes in one system
     c2, h2 = uniform_leaves(RADIUS, 2)
@@ -227,6 +233,7 @@ def test_adapt_leaves_refines_where_the_profile_varies_and_drops_empty_leaves():
     assert len(c0) == len(centres) and np.all(h0 == hs)
 
 
+@pytest.mark.slow
 def test_one_degree_per_leaf_equals_the_single_degree():
     centres, hs = uniform_leaves(RADIUS, 2)
     one = solve_graded_octree(OMEGA, REF, CON, centres, hs, _profile, KHAT, KHAT, "P", p=1, r=0)
@@ -248,6 +255,7 @@ def test_one_degree_per_leaf_equals_the_single_degree():
     assert np.linalg.norm(one.psi - ref.psi) / np.linalg.norm(ref.psi) < 1e-11
 
 
+@pytest.mark.slow
 def test_leaves_of_different_field_degree_share_one_system():
     # constant contrast everywhere; a linear field in the large leaves, a constant field in the small ones
     c2, h2 = uniform_leaves(RADIUS, 2)
@@ -294,6 +302,7 @@ def test_wave_factor_is_symmetric_and_exact_when_either_wave_is_uniform():
         assert born_wave_factor(np.zeros(3), K_OUT, 3.0, p) == pytest.approx(1.0, abs=1e-14)
 
 
+@pytest.mark.slow
 def test_wave_factor_is_the_born_term_of_a_single_constant_cell():
     # one cell, weak contrast: far field over (1 + E_0) equals that of a quadratic field over (1 + E_2)
     omega, h = 300.0, 5.0
@@ -318,6 +327,7 @@ def test_wave_factor_is_the_born_term_of_a_single_constant_cell():
         assert np.abs(out[0][w] - out[2][w]).max() > 1e-3 * np.abs(b).max()
 
 
+@pytest.mark.slow
 def test_born_octree_is_the_weak_contrast_limit_of_the_solver():
     # a tree of two leaf sizes on the graded sphere, linear cells: no solve against a central difference
     c2, h2 = uniform_leaves(RADIUS, 2)
@@ -338,6 +348,7 @@ def test_born_octree_is_the_weak_contrast_limit_of_the_solver():
     assert np.abs(direct - by_difference).max() < 1e-5 * np.abs(direct).max()
 
 
+@pytest.mark.slow
 def test_born_series_first_term_is_born_octree_and_its_sum_is_the_solve():
     # a tree of two leaf sizes, linear cells: term 1 is the projected incident wave, and the partial sums
     # of the series converge to the dense solve (the contrast is weak enough for the series to converge)
@@ -366,6 +377,7 @@ def test_born_series_needs_one_term():
         born_series_octree(OMEGA, REF, CON, c2, h2, _profile, KHAT, KHAT, "P", 0)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("n_source, n_test", [(10, 4), (20, 4)])
 def test_tree_blocks_by_symmetry_equal_the_blocks_computed_directly(n_source, n_test):
     # cells two sizes apart at relative positions that are images of one another under the cube group:

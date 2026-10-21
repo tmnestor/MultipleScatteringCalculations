@@ -111,6 +111,7 @@ def test_radial_rule_breaks():
     assert abs(np.sum(w) - 10.0) < 1e-13
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "pair", [((-1, 0, 0), (-1, 0, 0)), ((1, 2, 0), (-1, 0, 0)), ((-1, 0, 0), (1, 2, 0))]
 )
@@ -152,6 +153,7 @@ def test_mirror_identical_media():
     assert np.abs(k - ref).max() < 1e-9 * np.abs(ref).max()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("zr", [-1, 1])
 def test_low_and_high_bands_make_up_d(zr):
     """D_low (per offset, band below the window) + D_high (sampled on a periodic grid) = D, reflected and
@@ -203,6 +205,7 @@ def test_bands_refuse_bad_arguments():
         )
 
 
+@pytest.mark.slow
 def test_high_band_by_symmetry_is_the_whole_grid():
     """The wedge 0 <= ky <= kx and the eight lateral symmetries give the whole grid's D_high, at canonical and
     other offsets, reflected and transmitted."""

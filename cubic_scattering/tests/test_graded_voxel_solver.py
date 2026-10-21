@@ -1,6 +1,7 @@
 """The graded voxel's global solve."""
 
 import numpy as np
+import pytest
 
 from cubic_scattering import MaterialContrast, ReferenceMedium
 from cubic_scattering.graded_voxel.basis import TEST_EXPONENTS, monomials
@@ -23,6 +24,7 @@ def test_plane_wave_moments_match_quadrature():
     np.testing.assert_allclose(got, want[:, None] * amp[None, :], rtol=1e-13)
 
 
+@pytest.mark.slow
 def test_zero_contrast_cells_carry_no_source():
     # Review Focus 1: a profile that vanishes on part of the grid
     def half(pos):
@@ -34,6 +36,7 @@ def test_zero_contrast_cells_carry_no_source():
     assert np.all(np.isfinite(res.psi))
 
 
+@pytest.mark.slow
 def test_cell_order_does_not_matter():
     # Review Focus 2: permuting the cells permutes the solution (offset signs are consistent)
     def prof(pos):
@@ -45,6 +48,7 @@ def test_cell_order_does_not_matter():
     np.testing.assert_allclose(b.psi, a.psi[perm], rtol=1e-10, atol=1e-10 * np.abs(a.psi).max())
 
 
+@pytest.mark.slow
 def test_p0_born_far_field_matches_the_package():
     # the p = 0, r = 0 arm at weak contrast agrees with the package's T9 sphere solver to O((kh)^2)
     from cubic_scattering.graded_voxel.farfield import graded_far_field
@@ -79,6 +83,7 @@ def test_p0_born_far_field_matches_the_package():
     assert np.abs(tot_g - tot_f).max() / np.abs(tot_f).max() < 1e-3
 
 
+@pytest.mark.slow
 def test_every_cell_holding_contrast_is_kept():
     # a Galerkin cell carries the exact projection of its contrast, so a cell whose centre lies outside the
     # sphere but which overlaps it must be kept (dropping it truncates real contrast: G4b, 2026-09-29)

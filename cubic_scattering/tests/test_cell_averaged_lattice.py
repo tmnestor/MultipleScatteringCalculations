@@ -36,6 +36,7 @@ K_TAIL = np.array([1e-6, 0.0])
 class TestAnalyticTail:
     """R0 splits the sum; a correct tail makes that split invisible."""
 
+    @pytest.mark.slow
     def test_r0_independence(self):
         """THE sharp test: a wrong tail drifts with R0, a right one cannot.
 
@@ -144,6 +145,7 @@ class TestExactAtNormalIncidence:
         assert abs(p[3, 3] + 1.0 / m_p) < 1e-6 / m_p
         assert abs(p[8, 8] + 1.0 / (2.0 * mu)) < 1e-6 / mu
 
+    @pytest.mark.slow
     def test_continuous_with_the_oblique_route(self):
         """At a tiny oblique k_par the tail route must agree, to its own measured accuracy.
 
@@ -226,6 +228,7 @@ class TestExactCellAverageWiring:
     def _geom(self):
         return SlabGeometry(M=2, N_z=2, a=0.5)
 
+    @pytest.mark.slow
     def test_auto_turns_it_on_where_it_exists(self):
         """The DEFAULT is now the exact route on the Bloch path.
 
@@ -238,6 +241,7 @@ class TestExactCellAverageWiring:
         on = build_slab_kernels(g, OMEGA, REF, **self.EWALD_KW, exact_cell_average=True)
         assert_allclose(auto, on, rtol=0, atol=0)
 
+    @pytest.mark.slow
     def test_explicit_false_still_gives_the_old_kernel(self):
         """The previous behaviour stays reachable, and genuinely differs."""
         g = self._geom()
@@ -252,6 +256,7 @@ class TestExactCellAverageWiring:
         b = build_slab_kernels(g, OMEGA, REF, periodic=True, volume_averaged=True, exact_cell_average=False)
         assert_allclose(a, b, rtol=0, atol=0)
 
+    @pytest.mark.slow
     def test_auto_defers_to_an_explicit_va_all(self):
         """An explicit request for the old route is honoured, not overridden.
 

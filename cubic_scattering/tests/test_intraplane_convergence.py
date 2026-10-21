@@ -152,6 +152,7 @@ def test_mie_spectrum_decay(ref):
     print(f"\n  Mie ||T0(n)||_F: peak={s.max():.2e}, n={len(s) - 1} -> {s[-1]:.2e}")
 
 
+@pytest.mark.slow
 def test_closedform_monopole_crosscheck(ref, recomputed):
     """[B] Python closed-form collective monopole matches the .wl dump at all (aL, Nmax)."""
     worst = float(np.max(np.abs(recomputed - ref["monoc"])))

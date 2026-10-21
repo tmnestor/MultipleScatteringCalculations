@@ -18,6 +18,7 @@ D_LIST = list(gd.multi_indices(4))
 W_LIST = list(gd.multi_indices(4))
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "offset", [(1, 0, 0), (1, 1, 0), (1, 1, 1), (2, 1, 0), (3, 0, 0), (5, 2, 1), (13, 5, 3)]
 )

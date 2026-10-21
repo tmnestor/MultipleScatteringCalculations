@@ -85,6 +85,7 @@ def test_matches_the_phase3b_mathematica_dump() -> None:
     assert worst < 1e-4, f"worst |D - Mathematica| = {worst:.2e}"
 
 
+@pytest.mark.slow
 def test_damped_matches_the_direct_lattice_sum_without_ewald() -> None:
     """At Im(kappa) > 0 the plain sum converges; project it and compare, to q = 12."""
     a_l, kpar = 2.0, np.array([0.2, 0.1])
@@ -97,6 +98,7 @@ def test_damped_matches_the_direct_lattice_sum_without_ewald() -> None:
     assert worst < 1e-8, f"worst |Ewald - direct|, relative to the q-shell = {worst:.2e}"
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("kappa", [KP_TARGET, KS_TARGET], ids=["kP", "kS"])
 def test_independent_of_the_projection_radius_to_q20(kappa: float) -> None:
     kpar = np.array([0.0, 0.0])
@@ -106,6 +108,7 @@ def test_independent_of_the_projection_radius_to_q20(kappa: float) -> None:
     assert worst < 1e-8, f"worst radius dependence, relative to the q-shell = {worst:.2e}"
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("kappa", [KP_TARGET, KS_TARGET], ids=["kP", "kS"])
 def test_independent_of_the_ewald_parameter(kappa: float) -> None:
     kpar = np.array([0.0, 0.0])

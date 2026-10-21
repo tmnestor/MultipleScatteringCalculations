@@ -214,6 +214,7 @@ dependencies:
       - py-cpuinfo==9.0.0
       - pygments==2.19.2
       - pytest==9.0.2
+      - pytest-testmon==2.2.0
       - pytest-xdist==3.8.0
       - pytools==2025.2.5
       - referencing==0.37.0

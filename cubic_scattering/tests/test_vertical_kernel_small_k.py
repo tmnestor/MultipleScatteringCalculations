@@ -73,6 +73,7 @@ def _roughness(kernel, dz: float) -> float:
     return max(float(np.max(np.abs(k2[rc] - interp[rc])) / np.max(np.abs(k2[rc]))) for rc in PARTS)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("dz", [A, -A, 2.0 * A])
 def test_kernel_is_smooth_in_omega_squared(dz: float) -> None:
     rough = _roughness(_new, dz)

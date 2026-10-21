@@ -11,6 +11,7 @@ tqdm==4.67.3
 rich==14.3.3
 typer==0.24.1
 pytest==9.0.2
+pytest-testmon==2.2.0
 pytest-xdist==3.8.0
 ruff==0.17.1
 finufft==2.5.1  # non-uniform FFTs: the low band of the interface operator (S5)

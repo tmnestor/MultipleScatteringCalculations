@@ -84,6 +84,7 @@ def _plain_cases():
     ]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("kpar_index", [0, 1])
 @pytest.mark.parametrize("ka", [1e-3, 1e-2, 0.03])
 @pytest.mark.parametrize("case", range(2))
@@ -136,6 +137,7 @@ def test_difference_matches_subtraction_where_benign(kpar_index: int) -> None:
         assert _spread([plain, got]) < 2e-12
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("kpar_index", [0, 1])
 @pytest.mark.parametrize("ka", [1e-3, 0.03])
 def test_ewald_block_is_eta_independent(ka: float, kpar_index: int) -> None:

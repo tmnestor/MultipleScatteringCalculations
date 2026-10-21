@@ -208,6 +208,7 @@ def test_family_tables_rebuild_the_static_table():
     assert len(static) == len(ta) + len(tb)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("off", [(0, 0, 0), (1, 0, 0), (1, 1, -1)])
 def test_series_near_block_equals_the_quadrature_block(off):
     # static and dynamic parts both from the universal moments, against Duffy and Gauss quadrature

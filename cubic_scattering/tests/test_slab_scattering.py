@@ -1189,6 +1189,7 @@ class TestVaAllReachIsExposed:
         other = self._shell_sum(reach + 1)
         assert np.max(np.abs(expected - other)) > 1e-12 * np.max(np.abs(expected))
 
+    @pytest.mark.slow
     def test_reach_threads_from_the_public_builder(self):
         """build_slab_kernels must forward it -- not silently drop it."""
         geom = SlabGeometry(M=self.M, N_z=self.N_Z, a=A)
@@ -1205,6 +1206,7 @@ class TestVaAllReachIsExposed:
             "va_all_reach does not reach the kernel from build_slab_kernels"
         )
 
+    @pytest.mark.slow
     def test_reach_is_inert_without_va_all(self):
         """With va_all off the reach must do nothing at all."""
         geom = SlabGeometry(M=self.M, N_z=self.N_Z, a=A)

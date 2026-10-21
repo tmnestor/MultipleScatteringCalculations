@@ -13,6 +13,7 @@ def _rel(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.linalg.norm(a - b) / np.linalg.norm(b))
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("off", [(2, 0, 0), (2, 1, -1), (3, 1, 0), (5, 4, 2)])
 @pytest.mark.parametrize("ks_h", [1e-6, 0.05, 0.25, 0.5])
 def test_far_series_equals_the_gauss_block(off, ks_h):
@@ -24,6 +25,7 @@ def test_far_series_equals_the_gauss_block(off, ks_h):
     assert _rel(series, gauss) < 1e-12, (off, ks_h)
 
 
+@pytest.mark.slow
 def test_far_series_with_a_quadratic_field():
     h, omega = 1.25, 0.3 * REF.beta / 1.25
     series = blocks.far_block_series((2, 1, 0), h, omega, REF, n_source=35, n_test=10)
@@ -31,6 +33,7 @@ def test_far_series_with_a_quadratic_field():
     assert _rel(series, gauss) < 1e-12
 
 
+@pytest.mark.slow
 def test_far_series_imaginary_part_follows_the_low_frequency_law():
     # Im K / k tends to its limit with an O(k^2) correction: the step 1e-5 -> 1e-4 is 100x the step
     # 1e-6 -> 1e-5 (a truncation two powers early would leave the first step at O(1))
@@ -41,6 +44,7 @@ def test_far_series_imaginary_part_follows_the_low_frequency_law():
     assert 80.0 < step_large / step_small < 120.0
 
 
+@pytest.mark.slow
 def test_far_series_coefficients_serve_every_frequency_and_cell_size():
     blocks.far_series_coefficients.cache_clear()
     off = (2, 2, 1)

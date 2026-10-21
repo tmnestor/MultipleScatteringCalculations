@@ -267,6 +267,7 @@ def test_exact_greens_ref_kwarg(ref, omega):
 # ── Test: Spectral 9×9 via horizontal residues ──────────────────
 
 
+@pytest.mark.slow
 def test_spectral_9x9_vs_spatial():
     """Horizontal-residue spectral 9×9 matches spatial 9×9."""
     M = 4
@@ -285,6 +286,7 @@ def test_spectral_9x9_vs_spatial():
             assert err < 2e-3, f"({n1},{n2}): err={err:.2e}"
 
 
+@pytest.mark.slow
 def test_hybrid_9x9_vs_spatial():
     """Hybrid 9×9 near-field should be exact where spatial is used."""
     M = 4
@@ -315,6 +317,7 @@ def test_hybrid_9x9_vs_spatial():
                 assert err < 2e-3, f"far ({n1},{n2}): err={err:.2e}"
 
 
+@pytest.mark.slow
 def test_fcc_9x9_routes_to_spectral():
     """compute_fcc(block_size=9) should produce same result as compute_spectral(block_size=9)."""
     M = 3
