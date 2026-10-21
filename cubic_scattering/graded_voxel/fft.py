@@ -72,9 +72,7 @@ def _voigt_rep(q: NDArray) -> NDArray:
     return rep
 
 
-def symmetry_reps(
-    q: NDArray, n_source: int = 10, n_test: int = 4
-) -> tuple[NDArray, NDArray, NDArray]:
+def symmetry_reps(q: NDArray, n_source: int = 10, n_test: int = 4) -> tuple[NDArray, NDArray, NDArray]:
     """(T, U, S): the field-function (n_test square), source-monomial (n_source square) and 9-component
     (9 x 9) representations of Q."""
     key = (q.tobytes(), n_source, n_test)
@@ -86,9 +84,7 @@ def symmetry_reps(
 _REPS: dict[tuple, tuple[NDArray, NDArray, NDArray]] = {}
 
 
-def _symmetry_reps(
-    q: NDArray, n_source: int, n_test: int
-) -> tuple[NDArray, NDArray, NDArray]:
+def _symmetry_reps(q: NDArray, n_source: int, n_test: int) -> tuple[NDArray, NDArray, NDArray]:
     rng = np.random.default_rng(12345)
     eta = rng.uniform(-1.0, 1.0, (96, 3))
     fa = contrast_values(eta @ q.T)[:n_test]  # Q_a(Q eta_k); the first four are L_a
@@ -109,11 +105,7 @@ def _signed_permutation(m: NDArray) -> tuple[NDArray, NDArray] | None:
     """(perm, sign) with m[i, perm[i]] = sign[i] the only nonzero of row i, or None if m is not one."""
     perm = np.argmax(np.abs(m), axis=1)
     sign = m[np.arange(len(m)), perm]
-    if not (
-        np.all(np.abs(sign) == 1.0)
-        and np.count_nonzero(m) == len(m)
-        and len(set(perm)) == len(m)
-    ):
+    if not (np.all(np.abs(sign) == 1.0) and np.count_nonzero(m) == len(m) and len(set(perm)) == len(m)):
         return None
     return perm, sign
 
@@ -211,18 +203,117 @@ def transformed_kernel(
         kh = np.lib.format.open_memmap(path, mode="w+", dtype=dtype, shape=shape)
     per_row = 2 * cols * npad**3 * 16  # the group's real-space array and its transform, complex128
     group = max(1, min(rows, int(budget_bytes // per_row)))
-    orbits = _orbit_map(n_sub)
+    offsets, inverse, q_index, keys = _orbit_arrays(n_sub)
+    stack = np.stack([canonical[k] for k in keys])  # (K, n_test, n_source, 9, 9)
+    maps = _signed_maps(stack.shape[2], stack.shape[1])
+    wrapped = (offsets[:, 0] % npad, offsets[:, 1] % npad, offsets[:, 2] % npad)
     for r0 in range(0, rows, group):
         sel = slice(r0, min(rows, r0 + group))
         real = np.zeros((sel.stop - sel.start, cols, npad, npad, npad), dtype=complex)
-        for off, c, q in orbits:
-            blk = _transform(q, canonical[c])[:na, :nc].transpose(0, 2, 1, 3).reshape(rows, cols)
-            real[:, :, off[0] % npad, off[1] % npad, off[2] % npad] = blk[sel]
+        _fill_rows(real, sel, stack, inverse, q_index, maps, na, nc, wrapped)
         kh[sel] = np.fft.fftn(real, axes=(2, 3, 4))
         del real
     if path is not None:
         kh.flush()
     return kh
+
+
+#: offsets placed into a row group per gather, bounding the gather's temporary arrays
+_FILL_CHUNK = 16384
+
+
+@lru_cache(maxsize=8)
+def _orbit_arrays(n_sub: int) -> tuple[NDArray, NDArray, NDArray, tuple[tuple[int, int, int], ...]]:
+    """``_orbit_map`` as arrays, built without a Python loop over the offsets.
+
+    Returns (offsets (N, 3), inverse (N,), q_index (N,), keys): every offset of [-(n-1), n-1]^3 in
+    ``_orbit_map``'s order, the canonical offset each belongs to (an index into ``keys``, the canonical
+    offsets a >= b >= d >= 0 in sorted order), and the signed permutation taking that canonical offset to it
+    (an index into ``signed_permutations``). The permutation is the FIRST of the 48 that does so, as
+    ``_orbit_map`` chooses it, so the two give identical kernels.
+    """
+    span = np.arange(-(n_sub - 1), n_sub)
+    offsets = np.stack(np.meshgrid(span, span, span, indexing="ij"), -1).reshape(-1, 3)
+    canonical = -np.sort(-np.abs(offsets), axis=1)
+    keys_arr, inverse = np.unique(canonical, axis=0, return_inverse=True)
+    qs = np.stack(signed_permutations())  # (48, 3, 3)
+    images = np.einsum("qij,nj->nqi", qs, canonical.astype(float))  # (N, 48, 3)
+    match = np.all(images == offsets[:, None, :], axis=2)
+    q_index = np.argmax(match, axis=1)  # the first match, as next(...) in _orbit_map
+    keys = tuple((int(k[0]), int(k[1]), int(k[2])) for k in keys_arr)
+    return offsets, inverse.ravel(), q_index, keys
+
+
+@lru_cache(maxsize=8)
+def _signed_maps(n_source: int, n_test: int) -> tuple[NDArray, ...] | None:
+    """The 48 symmetries' representations as (perm, sign) arrays: PT, ST (48, n_test), PU, SU
+    (48, n_source), PS, SS (48, 9); None if any representation is not a signed permutation (then
+    ``_fill_rows`` uses the dense transform)."""
+    pt: list[NDArray] = []
+    st: list[NDArray] = []
+    pu: list[NDArray] = []
+    su: list[NDArray] = []
+    ps: list[NDArray] = []
+    ss: list[NDArray] = []
+    for q in signed_permutations():
+        t, u, s = symmetry_reps(q, n_source, n_test)
+        sp = [_signed_permutation(m) for m in (t, u, s)]
+        if any(x is None for x in sp):
+            return None
+        (a, b), (c, e), (f, g) = sp  # type: ignore[misc]
+        for store, value in zip((pt, st, pu, su, ps, ss), (a, b, c, e, f, g), strict=True):
+            store.append(value)
+    return tuple(np.array(x) for x in (pt, st, pu, su, ps, ss))
+
+
+def _fill_rows(
+    real: NDArray,
+    sel: slice,
+    stack: NDArray,
+    inverse: NDArray,
+    q_index: NDArray,
+    maps: tuple[NDArray, ...] | None,
+    na: int,
+    nc: int,
+    wrapped: tuple[NDArray, NDArray, NDArray],
+) -> None:
+    """Place rows ``sel`` of every offset's block into ``real`` (rows, cols, npad, npad, npad), vectorised.
+
+    Row r of a block is (test function a, component i) = divmod(r, 9), column (source c, component l), and
+    the block at an offset is its canonical block re-indexed with signs:
+
+        K_o[a, c, i, l] = st[a] su[c] ss[i] ss[l] K_canonical[pt[a], pu[c], ps[i], ps[l]],
+
+    (pt, st), (pu, su), (ps, ss) the signed permutations of the offset's symmetry (``_transform``'s fast
+    path, the same products in a gather over all offsets at once).
+    """
+    rows = np.arange(sel.start, sel.stop)
+    a_g, i_g = rows // 9, rows % 9
+    if maps is None:  # a representation that is not a signed permutation: the dense transform
+        qs = signed_permutations()
+        for n in range(len(inverse)):
+            blk = _transform(qs[q_index[n]], stack[inverse[n]])[:na, :nc].transpose(0, 2, 1, 3)
+            blk = blk.reshape(na * 9, nc * 9)
+            real[:, :, wrapped[0][n], wrapped[1][n], wrapped[2][n]] = blk[sel]
+        return
+    pt, st, pu, su, ps, ss = maps
+    for n0 in range(0, len(inverse), _FILL_CHUNK):
+        sl = slice(n0, min(len(inverse), n0 + _FILL_CHUNK))
+        q, inv = q_index[sl], inverse[sl]
+        # index arrays broadcast to (g, nc, 9, n): rows, source monomials, column components, offsets
+        i0 = inv[None, None, None, :]
+        i1 = pt[q][:, a_g].T[:, None, None, :]
+        i2 = pu[q][:, :nc].T[None, :, None, :]
+        i3 = ps[q][:, i_g].T[:, None, None, :]
+        i4 = ps[q].T[None, None, :, :]
+        sign = (
+            st[q][:, a_g].T[:, None, None, :]
+            * su[q][:, :nc].T[None, :, None, :]
+            * ss[q][:, i_g].T[:, None, None, :]
+            * ss[q].T[None, None, :, :]
+        )
+        val = sign * stack[i0, i1, i2, i3, i4]  # (g, nc, 9, n)
+        real[:, :, wrapped[0][sl], wrapped[1][sl], wrapped[2][sl]] = val.reshape(len(rows), nc * 9, -1)
 
 
 def solve_graded_sphere_fft(
@@ -266,14 +357,9 @@ def solve_graded_sphere_fft(
     na, n_field, _, n_source = field_sizes(p, r)
     nc = 1 if (p == 0 and r == 0) else n_source
     delta = np.array(
-        [
-            cell_contrast_coefficients(profile, c, h, contrast, ref, omega, degree=r)
-            for c in centres
-        ]
+        [cell_contrast_coefficients(profile, c, h, contrast, ref, omega, degree=r) for c in centres]
     )
-    e_cells = np.array(
-        [source_expansion(d, n_field)[:nc, :na] for d in delta]
-    )  # (N, nc, na, 9, 9)
+    e_cells = np.array([source_expansion(d, n_field)[:nc, :na] for d in delta])  # (N, nc, na, 9, 9)
     npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
     if blocks is None:
@@ -304,17 +390,12 @@ def solve_graded_sphere_fft(
         yh = np.empty((rows, sh.shape[1]), dtype=complex)
         for row in range(rows):
             yh[row] = np.einsum("cf,cf->f", np.asarray(kh[row]).reshape(cols, -1), sh)
-        y = np.fft.ifftn(yh.reshape(rows, npad, npad, npad), axes=(1, 2, 3))[
-            :, g0, g1, g2
-        ].T
+        y = np.fft.ifftn(yh.reshape(rows, npad, npad, npad), axes=(1, 2, 3))[:, g0, g1, g2].T
         return (np.einsum("ab,nbi->nai", m9, psi).reshape(n, rows) - y).ravel()
 
     pre = np.array(
         [
-            np.linalg.inv(
-                np.kron(m9, np.eye(9))
-                - np.einsum("acij,cbjk->aibk", k0, en).reshape(rows, rows)
-            )
+            np.linalg.inv(np.kron(m9, np.eye(9)) - np.einsum("acij,cbjk->aibk", k0, en).reshape(rows, rows))
             for en in e_cells
         ]
     )
@@ -327,9 +408,7 @@ def solve_graded_sphere_fft(
     m_op = LinearOperator((dim, dim), matvec=precondition, dtype=complex)
     k_mag = omega / (ref.alpha if wave_type == "P" else ref.beta)
     k_hat = np.asarray(k_hat, dtype=float) / np.linalg.norm(k_hat)
-    amp = np.concatenate(
-        [np.asarray(pol, dtype=complex), _plane_wave_strain_voigt(k_hat, pol, k_mag)]
-    )
+    amp = np.concatenate([np.asarray(pol, dtype=complex), _plane_wave_strain_voigt(k_hat, pol, k_mag)])
     rhs = plane_wave_moments(centres, h, k_mag * k_hat, amp, n_field)[:, :na].ravel()
     sol, info = gmres(
         a_op,

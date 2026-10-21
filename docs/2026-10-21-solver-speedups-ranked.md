@@ -322,3 +322,61 @@ Measured at 1.5 to 2 times faster on CPU, with half the memory. The gain is larg
 
 The FFTs (torch and NumPy), the dense linear algebra (BLAS and LAPACK) and the GMRES loop are already
 compiled library code, and together they take about 1% of the time. Rewriting them would gain little.
+
+## The thesis's Chapter 7 calculation (graded sphere): a different solver
+
+**The items above sped up the point-collocation sphere solver (`sphere_scattering_fft`), which Chapter 7
+does not use.** Chapter 7's record section (`scripts/record_graded_sphere.py`) runs the GRADED-VOXEL
+Galerkin solver: polynomial cells of degree p = r = 1 (36 unknowns each), Galerkin coupling blocks
+K[a, c] at the canonical offsets, an FFT on the (2N - 1)^3 embedding, GMRES to 1e-8 with each voxel's
+block as the preconditioner, and the field at 31 receivers from each cell's polynomial source radiated
+from its Gauss nodes. Its logged cost at N = 32 (19,760 voxels, 711,360 unknowns): 370 to 480 s of solve
+and 73 to 243 s of readout per frequency, 17 frequencies, 2.7 hours. The Galerkin formulation is kept
+throughout: every change below is a faster route to the same Galerkin blocks and the same readout.
+
+**Where one frequency went (N = 32, k_S a = 3, kernel in single precision memory-mapped from disk; 8 threads).**
+
+| Stage | Before | Why |
+|---|---|---|
+| Expanding canonical blocks to every offset (`fft._transform`) | 326 s | 4.5 million Python calls: every offset re-indexed again for each of 18 row groups |
+| Field at the receivers (`farfield.radiate_exact`) | 198 to 336 s | per receiver, the 9 x 9 block of every one of 4.3 million Gauss nodes built at once (about 5.5 GB), then contracted; on 16 GB the memory pressure made the time vary threefold |
+| Canonical coupling blocks by Gauss quadrature (`coupling_block` -> `_sform`) | 66 s | per frequency, although amortised series routes exist |
+| GMRES (6 products, kernel read from disk) | 23 to 67 s | |
+| Contrast projection (`site.cell_contrast_coefficients`) | 23 s | independent of the frequency, yet redone at each |
+
+**Done (21 October 2026).**
+
+1. **Vectorised kernel assembly** (`fft.transformed_kernel`, with `_orbit_arrays`, `_signed_maps`,
+   `_fill_rows`): the 48 symmetries' index maps computed once, each offset's symmetry found by one array
+   operation (the same first match ``_orbit_map`` takes), each row group filled by one gather. The same
+   numbers (the existing test against the every-offset path, at three row groupings, in memory and in
+   single precision, to 1e-13). The solve: 584 s to 158 s; the kernel assembly 417 s to 33 s.
+2. **Fused compiled readout** (`fortran/point_kernel.f90`: `apply_9x9`; `kernel_fortran.apply_9x9_fortran`;
+   `farfield.radiate_exact` and `graded_field(..., strain=False)`): the propagator applied to each
+   source as it is evaluated, never stored, one receiver per thread, so the result does not depend on the
+   thread count. Displacement only (rows 1 to 3) skips the second derivatives, the larger part of the
+   work; the record section uses displacement only. The per-point evaluation is shared with `kernel_9x9`
+   (`point_block`), whose existing tests (against Python, a 50-digit reference, thread count) pass
+   unchanged. Equal to the former loop to 1e-13 (`tests/test_apply_kernel_fortran.py`).
+
+**Two pitfalls met on the way.**
+
+- **f2py and derived types.** A first version passed the point-independent tables as a Fortran derived
+  type. f2py exposes a module's derived types in its interface even when private, and the result built
+  without complaint, then returned zeros (and crashed when called directly). The tables are now private
+  module variables of intrinsic types, which makes a call not re-entrant (documented in the file).
+- **Build only with `python -m cubic_scattering.fortran.build`.** Calling `numpy.f2py -c` by hand in a
+  scratch directory produced a broken library even from the ORIGINAL source; the project's build script
+  does not. The cause was not run down.
+
+**Next, by measured cost.**
+
+3. **Contrast projection once per sweep** (23 s per frequency): the projection does not depend on the
+   frequency; only the contrast operator does.
+4. **Canonical blocks by the amortised Galerkin series** (66 s per frequency): touching offsets by
+   `blocks.near_block_series`, the rest by `blocks.far_block_series` within a cancellation-safe reach
+   (the edge effect found in item 8 applies to it too), distant cells by `multipole.far_block_multipole`
+   or `piecewise_multipole_block`, Gauss only as the fallback; as `interface_solver._whole_space` does.
+5. **GMRES** (23 to 67 s): measured again once the rest is done.
+6. **Frequencies in parallel**: independent, but each holds a 6.5 GB kernel; on 16 GB at most two at a
+   time.

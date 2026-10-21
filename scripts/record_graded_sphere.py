@@ -104,7 +104,7 @@ def one_frequency(omega: float, s: dict) -> dict:
     )
     t_solve = time.perf_counter() - t0
     t0 = time.perf_counter()
-    voxel, _ = graded_field(res, rec, n_gauss=6)
+    voxel, _ = graded_field(res, rec, n_gauss=6, strain=False)  # the record section uses displacement only
     t_read = time.perf_counter() - t0
     if path is not None:
         path.unlink()
@@ -196,15 +196,20 @@ def main() -> int:
     from gate_sphere_cell_average_vs_mie import REF
     from pilot_graded_sphere_vs_exact import RADIUS
 
+    # The rows (one per frequency) are shared by every record length: a frequency's solution does not depend
+    # on T, and omega_k = 2 pi k / T puts every frequency of a record of length T among those of 2T. The
+    # synthesised traces do depend on T, so for any T but the thesis's 12 a / beta (Chapter 7) they carry it
+    # in their names, and the published files are not overwritten.
     path = DATA / f"graded_sphere_record_n{s['n']}.jsonl"
     rows = load(path)
+    tag = f"n{s['n']}" if s["T"] == 12.0 else f"n{s['n']}_T{s['T']:g}"
     if s["synth"]:
         tr = synthesise(s, rows, REF.alpha, REF.beta, RADIUS)
-        np.savez(DATA / f"graded_sphere_record_n{s['n']}_traces.npz", **tr)
+        np.savez(DATA / f"graded_sphere_record_{tag}_traces.npz", **tr)
         err = np.linalg.norm(tr["voxel"] - tr["exact"]) / np.linalg.norm(tr["exact"])
         print(f"traces written; voxel against exact over the section: {err:.2e}", flush=True)
         for comp, name in ((0, "z"), (1, "x")):
-            out = DATA / f"graded_sphere_record_n{s['n']}_{name}.dat"
+            out = DATA / f"graded_sphere_record_{tag}_{name}.dat"
             out.write_text(wiggles(s, tr, comp))
             print(f"  {out.name}", flush=True)
         return 0

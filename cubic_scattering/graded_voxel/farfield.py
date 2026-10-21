@@ -24,7 +24,7 @@ from ..effective_contrasts import ReferenceMedium
 from ..special import spherical_jn
 from ..sphere_scattering import _voigt_to_tensor
 from .basis import SOURCE_EXPONENTS_QUARTIC, monomials, source_expansion
-from .kernel import kernel_9x9
+from .kernel import kernel_9x9, point_kernel_backend
 from .solver import GradedVoxelResult
 
 
@@ -49,12 +49,8 @@ def radiate(
     for o, direction in enumerate(np.asarray(directions, dtype=float)):
         rh = direction / np.linalg.norm(direction)
         proj = points @ rh
-        gp = np.exp(1j * k_p * (r_distance - proj)) / (
-            4 * np.pi * ref.rho * ref.alpha**2 * r_distance
-        )
-        gs = np.exp(1j * k_s * (r_distance - proj)) / (
-            4 * np.pi * ref.rho * ref.beta**2 * r_distance
-        )
+        gp = np.exp(1j * k_p * (r_distance - proj)) / (4 * np.pi * ref.rho * ref.alpha**2 * r_distance)
+        gs = np.exp(1j * k_s * (r_distance - proj)) / (4 * np.pi * ref.rho * ref.beta**2 * r_distance)
         sr = sig @ rh
         qp = forces @ rh + 1j * k_p * (sr @ rh)
         u_p[o] = (gp * qp).sum() * rh
@@ -70,21 +66,33 @@ def radiate_exact(
     omega: float,
     ref: ReferenceMedium,
     obs_points: NDArray,
-) -> tuple[NDArray, NDArray]:
+    *,
+    strain: bool = True,
+) -> tuple[NDArray, NDArray | None]:
     """Displacement (M, 3) and engineering strain (M, 6) at `obs_points` of point sources at `points`.
 
     The field is the propagator applied to each source, summed: nothing is dropped, so it holds at any
-    distance from the sources.
+    distance from the sources. With ``strain=False`` the strain is not computed (and returned as None).
+
+    With ``point_kernel.backend: fortran`` (numerics.yml) the propagator is applied as it is evaluated
+    (``kernel_fortran.apply_9x9_fortran``), never stored; the Python route below builds every point's
+    9 x 9 block per observer (about 5.5 GB per observer for the record section of the thesis's Chapter 7).
+    The two agree to round-off (``tests/test_apply_kernel_fortran.py``).
 
     Raises:
         ValueError: when an observation point coincides with a source point, where the propagator is a
             distribution.
     """
     obs = np.atleast_2d(np.asarray(obs_points, dtype=float))
+    if point_kernel_backend() == "fortran":
+        from .kernel_fortran import apply_9x9_fortran  # local: kernel_fortran imports kernel
+
+        out = apply_9x9_fortran(obs, points, sources, omega, ref, rows=9 if strain else 3)
+        return out[:, :3], (out[:, 3:] if strain else None)
     out = np.zeros((len(obs), 9), dtype=complex)
     for o, x in enumerate(obs):
         out[o] = np.einsum("nab,nb->a", kernel_9x9(x - points, omega, ref), sources)
-    return out[:, :3], out[:, 3:]
+    return out[:, :3], (out[:, 3:] if strain else None)
 
 
 @cache
@@ -102,9 +110,7 @@ def monomial_fourier(n: int, q: NDArray) -> NDArray:
     """
     q = np.asarray(q, dtype=complex)
     return sum(
-        c * 2.0 * 1j**l * spherical_jn(l, q)
-        for l, c in enumerate(_monomial_legendre(n))
-        if c != 0.0
+        c * 2.0 * 1j**l * spherical_jn(l, q) for l, c in enumerate(_monomial_legendre(n)) if c != 0.0
     )
 
 
@@ -118,9 +124,7 @@ def cell_source_coefficients(res: GradedVoxelResult) -> NDArray:
     )
 
 
-def source_moments(
-    res: GradedVoxelResult, k_vec: NDArray, coef: NDArray | None = None
-) -> NDArray:
+def source_moments(res: GradedVoxelResult, k_vec: NDArray, coef: NDArray | None = None) -> NDArray:
     """Int s(x) exp(-i k.x) d^3x over every cell, summed: the 9 entries (force, Voigt stress) for a complex
     wave vector k_vec. Exact for the cells' polynomial sources, with no quadrature.
 
@@ -131,14 +135,8 @@ def source_moments(
     k_vec = np.asarray(k_vec, dtype=complex)
     coef = cell_source_coefficients(res) if coef is None else coef
     exps = SOURCE_EXPONENTS_QUARTIC[: coef.shape[1]]
-    f1 = {
-        (i, e): monomial_fourier(e, -k_vec[i] * res.h)
-        for i in range(3)
-        for e in range(5)
-    }
-    mono = (
-        np.array([f1[0, e[0]] * f1[1, e[1]] * f1[2, e[2]] for e in exps]) * res.h**3
-    )  # (n_source,)
+    f1 = {(i, e): monomial_fourier(e, -k_vec[i] * res.h) for i in range(3) for e in range(5)}
+    mono = np.array([f1[0, e[0]] * f1[1, e[1]] * f1[2, e[2]] for e in exps]) * res.h**3  # (n_source,)
     phase = np.exp(-1j * (np.asarray(res.centres) @ k_vec))  # (N,)
     return mono @ np.einsum("n,nci->ci", phase, coef)
 
@@ -151,9 +149,7 @@ def _node_sources(res: GradedVoxelResult, n_gauss: int) -> tuple[NDArray, NDArra
     ms = monomials(SOURCE_EXPONENTS_QUARTIC, xi)  # (35, G)
     pts, srcs = [], []
     for c, d, psi in zip(res.centres, res.delta, res.psi, strict=True):
-        coef = np.einsum(
-            "cbij,bj->ci", source_expansion(d, psi.shape[0]), psi
-        )  # (n_source, 9)
+        coef = np.einsum("cbij,bj->ci", source_expansion(d, psi.shape[0]), psi)  # (n_source, 9)
         srcs.append((ms[: len(coef)].T @ coef) * (ww * res.h**3)[:, None])
         pts.append(c + res.h * xi)
     return np.concatenate(pts), np.concatenate(srcs)
@@ -175,14 +171,17 @@ def graded_far_field(
 
 
 def graded_field(
-    res: GradedVoxelResult, obs_points: NDArray, n_gauss: int = 4
-) -> tuple[NDArray, NDArray]:
+    res: GradedVoxelResult, obs_points: NDArray, n_gauss: int = 4, *, strain: bool = True
+) -> tuple[NDArray, NDArray | None]:
     """Scattered displacement (M, 3) and engineering strain (M, 6) of the solved graded voxels at
     `obs_points`, at any distance outside the cells.
 
     The Gauss rule integrates the propagator over each cell.  It is exact for the cell's polynomial source
     but not for the propagator, which is singular at the observer: for an observer within about a cell's
     width of a cell that carries contrast, raise `n_gauss` until the value settles.
+
+    ``strain=False`` computes the displacement only (the strain is returned as None): with the compiled
+    readout it skips the propagator's second derivatives, the larger part of the work.
     """
     pts, srcs = _node_sources(res, n_gauss)
-    return radiate_exact(pts, srcs, res.omega, res.ref, obs_points)
+    return radiate_exact(pts, srcs, res.omega, res.ref, obs_points, strain=strain)

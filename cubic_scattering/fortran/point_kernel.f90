@@ -115,10 +115,32 @@
 module point_kernel
   implicit none
   private
-  public :: kernel_9x9
+  public :: kernel_9x9, apply_9x9
 
   integer, parameter :: dp = kind(1.0d0)                                ! double precision
   real(dp), parameter :: pi = 3.14159265358979323846264338327950288_dp
+  integer, parameter :: max_series = 64       ! longest series supported (Python's N_SERIES is 24)
+  integer, parameter :: max_c = 4             ! most non-zero Voigt-map weights for any one output
+
+  ! The tables that do not depend on the point, set by prepare at the start of each call and only READ
+  ! after that, by point_block, including from every thread of the parallel loop: the wavenumbers, the
+  ! series coefficients a_t = (i k_b)^t / t! and b_t = ((i k_b)^t - (i k_a)^t) / (t! k_b^2) with the
+  ! terms kept, the ladder of each power, and the sparse Voigt maps (for output (i, a) of C, c_n(i, a)
+  ! non-zero weights c_w at entries c_z of gd; likewise h_* for H and s_* for S).
+  !
+  ! They are module variables of intrinsic types, not a derived type passed as an argument, because f2py
+  ! exposes a module's derived types in its interface and does not handle them reliably (a derived-type
+  ! version of this file built, then returned zeros and crashed). As shared module state they make a call
+  ! not re-entrant: two calls must not run concurrently in one process (Python calls one at a time).
+  complex(dp) :: t_ka, t_kb
+  real(dp) :: t_b2
+  logical :: t_use_static, t_use_dynamic
+  complex(dp) :: t_a_coef(0:max_series - 1), t_b_coef(0:max_series - 1)
+  logical :: t_use_a(0:max_series - 1), t_use_b(0:max_series - 1)
+  real(dp) :: t_fall(0:max_series - 1, 0:4)                  ! t_fall(t, q) = falling(t - 1, q)
+  integer :: t_c_n(3, 6), t_c_z(max_c, 3, 6), t_h_n(6, 3), t_h_z(max_c, 6, 3)
+  integer :: t_s_n(6, 6), t_s_z(max_c, 6, 6)
+  real(dp) :: t_c_w(max_c, 3, 6), t_h_w(max_c, 6, 3), t_s_w(max_c, 6, 6)
 
 contains
 
@@ -240,148 +262,216 @@ contains
     real(dp), intent(in) :: mc(3, 6, 27), mh(6, 3, 27), ms(6, 6, 81)
     complex(dp), intent(out) :: p(9, 9, n)
 
-    complex(dp), parameter :: iu = (0.0_dp, 1.0_dp)     ! the imaginary unit i
-    integer, parameter :: max_c = 4                      ! most non-zero map weights for any one output
+    integer :: ip
 
-    ! Wavenumbers and the ladders. fa: of g_b (the delta part); fb: of f_b = (g_b - g_a) / k_b^2.
-    ! ga, gb: scratch ladders (closed forms of g_a and g_b, then reused for the static parts).
-    complex(dp) :: ka, kb, fa(0:4), fb(0:4), fa_tot(0:4), fb_tot(0:4), ga(0:4), gb(0:4)
-    ! G (3 x 3), its first derivatives d_k G_ij (27) and second derivatives d_k d_l G_ij (81), the
-    ! derivatives flattened in C (row-major) order of (i, j, k[, l]), because that is the order in which
-    ! Python built the Voigt maps.
-    complex(dp) :: gmat(3, 3), gd(27), gdd(81), acc
-    ! Series coefficients of the delta part (a) and the difference part (b), term t = 0 .. n_series - 1:
-    !   a_t = (i k_b)^t / t!,   b_t = ((i k_b)^t - (i k_a)^t) / (t! k_b^2).
-    complex(dp) :: a_coef(0:n_series - 1), b_coef(0:n_series - 1)
-    real(dp) :: r, xp(3), b2, fac, pw(0:4), rt, r2inv(0:4)
-    real(dp) :: fall(0:n_series - 1, 0:4)                ! fall(t, q) = falling(t - 1, q)
-    logical :: use_a(0:n_series - 1), use_b(0:n_series - 1)   ! which series terms are included
-    ! Sparse Voigt maps: for output (i, a) of C, c_n(i, a) non-zero weights c_w(1:c_n, i, a) at entries
-    ! c_z(1:c_n, i, a) of gd; likewise h_* for H (from gd) and s_* for S (from gdd).
-    integer :: c_n(3, 6), c_z(max_c, 3, 6), h_n(6, 3), h_z(max_c, 6, 3), s_n(6, 6), s_z(max_c, 6, 6)
-    real(dp) :: c_w(max_c, 3, 6), h_w(max_c, 6, 3), s_w(max_c, 6, 6)
-    integer :: ip, t, q, i, j, k, l, a, b, z, idx(4), c
+    call prepare(omega, alpha, beta, use_static, use_dynamic, n_series, mc, mh, ms)
 
-    ka = omega / alpha
-    kb = omega / beta
-    b2 = -(1.0_dp - beta**2 / alpha**2) / 2.0_dp        ! the static Kelvin coefficient of d_i d_j r
+    ! The points, in parallel. Each iteration reads only x(:, ip) and the shared tables, and writes only
+    ! p(:, :, ip), so there is nothing to synchronise and no race.
+    !$omp parallel do default(none) schedule(static) shared(x, n, p, series_limit, n_series, mu) &
+    !$omp private(ip)
+    do ip = 1, n
+      call point_block(x(:, ip), series_limit, n_series, mu, 9, p(:, :, ip))
+    end do
+    !$omp end parallel do
+  end subroutine kernel_9x9
 
-    ! ---- 1a. Series coefficients, which do not depend on the point. -------------------------------
-    ! Which terms are kept (Python: use_a / use_b in kernel.greens_tensors):
-    !   delta part:      t = 0 is static (1/r), t >= 1 dynamic;
-    !   difference part: t = 0 and t = 1 never (t = 0 cancels exactly; t = 1 is a constant, which every
-    !                    derivative removes), t = 2 static (b2 r), t >= 3 dynamic.
+  !-----------------------------------------------------------------------------------------------------
+  ! apply_9x9: the field at m observers of n point sources, out(:, io) = sum_ip P(obs_io - x_ip) src_ip.
+  !
+  ! The same propagator as kernel_9x9, applied to the sources as it is evaluated, so the 9 x 9 blocks of
+  ! every pair are never stored: the caller (graded_voxel.farfield.radiate_exact) had built them for all
+  ! n points at once, about 5.5 GB per observer for the record section of the thesis's Chapter 7
+  ! (19,760 voxels x 216 Gauss nodes). With rows = 3 only the displacement rows [G, C] are formed, and the
+  ! second derivatives that the strain rows [H, S] need are not computed at all.
+  !
+  ! Each observer is summed by one thread, over the points in order, so the result does not depend on the
+  ! number of threads.
+  !-----------------------------------------------------------------------------------------------------
+  subroutine apply_9x9(obs, m, x, n, src, omega, alpha, beta, mu, series_limit, n_series, mc, mh, ms, &
+                       rows, out, n_zero)
+    integer, intent(in) :: m, n, n_series, rows
+    real(dp), intent(in) :: obs(3, m), x(3, n), alpha, beta, mu, series_limit
+    complex(dp), intent(in) :: src(9, n), omega
+    real(dp), intent(in) :: mc(3, 6, 27), mh(6, 3, 27), ms(6, 6, 81)
+    complex(dp), intent(out) :: out(rows, m)
+    integer, intent(out) :: n_zero(m)           ! per observer: sources at zero separation (skipped)
+
+    complex(dp) :: blk(9, 9), acc(9)
+    real(dp) :: sep(3)
+    integer :: io, ip
+
+    call prepare(omega, alpha, beta, .true., .true., n_series, mc, mh, ms)
+
+    !$omp parallel do default(none) schedule(dynamic) &
+    !$omp shared(obs, m, x, n, src, series_limit, n_series, mu, rows, out, n_zero) &
+    !$omp private(io, ip, blk, acc, sep)
+    do io = 1, m
+      acc = (0.0_dp, 0.0_dp)
+      n_zero(io) = 0
+      do ip = 1, n
+        sep = obs(:, io) - x(:, ip)
+        if (all(sep == 0.0_dp)) then           ! the propagator is a distribution there: the caller raises
+          n_zero(io) = n_zero(io) + 1
+          cycle
+        end if
+        call point_block(sep, series_limit, n_series, mu, rows, blk)
+        acc(1:rows) = acc(1:rows) + matmul(blk(1:rows, :), src(:, ip))
+      end do
+      out(:, io) = acc(1:rows)
+    end do
+    !$omp end parallel do
+  end subroutine apply_9x9
+
+  !-----------------------------------------------------------------------------------------------------
+  ! prepare: the tables that do not depend on the point (once per call).
+  !   1a. The series coefficients. Which terms are kept (Python: use_a / use_b in kernel.greens_tensors):
+  !       delta part:      t = 0 is static (1/r), t >= 1 dynamic;
+  !       difference part: t = 0 and t = 1 never (t = 0 cancels exactly; t = 1 is a constant, which every
+  !                        derivative removes), t = 2 static (b2 r), t >= 3 dynamic.
+  !   1b. The Voigt maps as index lists of their non-zero weights.
+  !-----------------------------------------------------------------------------------------------------
+  subroutine prepare(omega, alpha, beta, use_static, use_dynamic, n_series, mc, mh, ms)
+    complex(dp), intent(in) :: omega
+    real(dp), intent(in) :: alpha, beta
+    logical, intent(in) :: use_static, use_dynamic
+    integer, intent(in) :: n_series
+    real(dp), intent(in) :: mc(3, 6, 27), mh(6, 3, 27), ms(6, 6, 81)
+    complex(dp), parameter :: iu = (0.0_dp, 1.0_dp)
+    real(dp) :: fac
+    integer :: t, q, a, b, i, z
+
+    if (n_series > max_series) error stop "point_kernel: n_series exceeds max_series"
+    t_ka = omega / alpha
+    t_kb = omega / beta
+    t_b2 = -(1.0_dp - beta**2 / alpha**2) / 2.0_dp     ! the static Kelvin coefficient of d_i d_j r
+    t_use_static = use_static
+    t_use_dynamic = use_dynamic
     fac = 1.0_dp
     do t = 0, n_series - 1
       if (t > 0) fac = fac * real(t, dp)                ! fac = t!
-      a_coef(t) = (iu * kb)**t / fac
-      b_coef(t) = ((iu * kb)**t - (iu * ka)**t) / (fac * kb**2)
-      use_a(t) = merge(use_static, use_dynamic, t == 0)
-      use_b(t) = merge(use_static, (t >= 2) .and. use_dynamic, t == 2)
+      t_a_coef(t) = (iu * t_kb)**t / fac
+      t_b_coef(t) = ((iu * t_kb)**t - (iu * t_ka)**t) / (fac * t_kb**2)
+      t_use_a(t) = merge(use_static, use_dynamic, t == 0)
+      t_use_b(t) = merge(use_static, (t >= 2) .and. use_dynamic, t == 2)
       do q = 0, 4
-        fall(t, q) = falling(t - 1, q)                  ! term t is the power r^(t - 1)
+        t_fall(t, q) = falling(t - 1, q)               ! term t is the power r^(t - 1)
       end do
     end do
 
-    ! ---- 1b. The Voigt maps as index lists of their non-zero weights. -----------------------------
-    c_n = 0; h_n = 0; s_n = 0                            ! whole-array assignment: all counts to zero
+    t_c_n = 0; t_h_n = 0; t_s_n = 0                  ! whole-array assignment: all counts to zero
     do a = 1, 6
       do i = 1, 3
         do z = 1, 27
           if (mc(i, a, z) /= 0.0_dp) then
-            c_n(i, a) = c_n(i, a) + 1; c_z(c_n(i, a), i, a) = z; c_w(c_n(i, a), i, a) = mc(i, a, z)
+            t_c_n(i, a) = t_c_n(i, a) + 1
+            t_c_z(t_c_n(i, a), i, a) = z; t_c_w(t_c_n(i, a), i, a) = mc(i, a, z)
           end if
           if (mh(a, i, z) /= 0.0_dp) then
-            h_n(a, i) = h_n(a, i) + 1; h_z(h_n(a, i), a, i) = z; h_w(h_n(a, i), a, i) = mh(a, i, z)
+            t_h_n(a, i) = t_h_n(a, i) + 1
+            t_h_z(t_h_n(a, i), a, i) = z; t_h_w(t_h_n(a, i), a, i) = mh(a, i, z)
           end if
         end do
       end do
       do b = 1, 6
         do z = 1, 81
           if (ms(a, b, z) /= 0.0_dp) then
-            s_n(a, b) = s_n(a, b) + 1; s_z(s_n(a, b), a, b) = z; s_w(s_n(a, b), a, b) = ms(a, b, z)
+            t_s_n(a, b) = t_s_n(a, b) + 1
+            t_s_z(t_s_n(a, b), a, b) = z; t_s_w(t_s_n(a, b), a, b) = ms(a, b, z)
           end if
         end do
       end do
     end do
+  end subroutine prepare
 
-    ! ---- 2. The points, in parallel. Each iteration reads only x(:, ip) and the shared tables, and
-    ! writes only p(:, :, ip), so there is nothing to synchronise and no race.
-    !$omp parallel do default(none) schedule(static) &
-    !$omp shared(x, n, ka, kb, b2, use_static, use_dynamic, series_limit, n_series, mu, p, a_coef, b_coef, &
-    !$omp        use_a, use_b, fall, c_n, c_z, c_w, h_n, h_z, h_w, s_n, s_z, s_w) &
-    !$omp private(ip, r, xp, fa, fb, fa_tot, fb_tot, ga, gb, pw, rt, r2inv, t, q, &
-    !$omp         gmat, gd, gdd, i, j, k, l, a, b, z, idx, c, acc)
-    do ip = 1, n
-      xp = x(:, ip)                                     ! this point's separation
-      r = sqrt(xp(1)**2 + xp(2)**2 + xp(3)**2)
-      fa = (0.0_dp, 0.0_dp)
-      fb = (0.0_dp, 0.0_dp)
+  !-----------------------------------------------------------------------------------------------------
+  ! point_block: rows 1 .. nrow of the 9 x 9 block [[G, C], [H, S]] at one separation xp (non-zero).
+  ! nrow = 9: the whole block (kernel_9x9); nrow = 3: the displacement rows [G, C] only, and the second
+  ! derivatives, needed only by [H, S], are not formed (apply_9x9 for displacement). Rows beyond nrow
+  ! are left zero.
+  !-----------------------------------------------------------------------------------------------------
+  pure subroutine point_block(xp, series_limit, n_series, mu, nrow, p)
+    real(dp), intent(in) :: xp(3), series_limit, mu
+    integer, intent(in) :: n_series, nrow
+    complex(dp), intent(out) :: p(9, 9)
 
-      if (abs(kb) * r <= series_limit) then
-        ! ---- 2a. Small |k| r: the ladders from the series. ------------------------------------------
-        ! The ladder is linear in the series, so the terms' ladders are summed and the tensors built once.
-        ! Term t is the power r^(t - 1), with ladder fall(t, q) r^(t - 1 - 2q). Rather than calling **
-        ! 120 times, r^(t - 1) is kept as a running product rt, and r^(-2q) is the fixed table r2inv(q).
-        r2inv(0) = 1.0_dp
-        do q = 1, 4
-          r2inv(q) = r2inv(q - 1) / (r * r)
-        end do
-        rt = 1.0_dp / r                                 ! r^(t - 1) at t = 0
-        do t = 0, n_series - 1
-          if (use_a(t) .or. use_b(t)) then
-            pw = fall(t, :) * rt * r2inv                ! pw(q) = ladder of r^(t - 1), q = 0..4
-            if (use_a(t)) fa = fa + a_coef(t) * pw
-            if (use_b(t)) fb = fb + b_coef(t) * pw
-          end if
-          rt = rt * r
-        end do
+    ! fa: ladder of g_b (the delta part); fb: of f_b = (g_b - g_a) / k_b^2. ga, gb: scratch ladders.
+    complex(dp) :: fa(0:4), fb(0:4), fa_tot(0:4), fb_tot(0:4), ga(0:4), gb(0:4)
+    ! G (3 x 3), d_k G_ij (27) and d_k d_l G_ij (81), the derivatives flattened in C (row-major) order of
+    ! (i, j, k[, l]), the order in which Python built the Voigt maps.
+    complex(dp) :: gmat(3, 3), gd(27), gdd(81), acc
+    real(dp) :: r, pw(0:4), rt, r2inv(0:4)
+    integer :: t, q, i, j, k, l, a, b, z, idx(4), c
+
+    r = sqrt(xp(1)**2 + xp(2)**2 + xp(3)**2)
+    fa = (0.0_dp, 0.0_dp)
+    fb = (0.0_dp, 0.0_dp)
+
+    if (abs(t_kb) * r <= series_limit) then
+      ! ---- 2a. Small |k| r: the ladders from the series. --------------------------------------------
+      ! The ladder is linear in the series, so the terms' ladders are summed and the tensors built once.
+      ! Term t is the power r^(t - 1), with ladder fall(t, q) r^(t - 1 - 2q): r^(t - 1) is kept as a
+      ! running product rt, and r^(-2q) is the fixed table r2inv(q).
+      r2inv(0) = 1.0_dp
+      do q = 1, 4
+        r2inv(q) = r2inv(q - 1) / (r * r)
+      end do
+      rt = 1.0_dp / r                                   ! r^(t - 1) at t = 0
+      do t = 0, n_series - 1
+        if (t_use_a(t) .or. t_use_b(t)) then
+          pw = t_fall(t, :) * rt * r2inv               ! pw(q) = ladder of r^(t - 1), q = 0..4
+          if (t_use_a(t)) fa = fa + t_a_coef(t) * pw
+          if (t_use_b(t)) fb = fb + t_b_coef(t) * pw
+        end if
+        rt = rt * r
+      end do
+    else
+      ! ---- 2b. Large |k| r: the closed forms. -----------------------------------------------------
+      call closed_ladder(t_kb, r, gb)
+      call closed_ladder(t_ka, r, ga)
+      fa_tot = gb
+      fb_tot = (gb - ga) / t_kb**2                     ! safe here: |k| r > 0.5, the loss is at most 4x
+      if (t_use_static .and. t_use_dynamic) then
+        fa = fa_tot
+        fb = fb_tot
       else
-        ! ---- 2b. Large |k| r: the closed forms. ---------------------------------------------------
-        call closed_ladder(kb, r, gb)
-        call closed_ladder(ka, r, ga)
-        fa_tot = gb
-        fb_tot = (gb - ga) / kb**2                      ! safe here: |k| r > 0.5, the loss is at most 4x
-        if (use_static .and. use_dynamic) then
-          fa = fa_tot
-          fb = fb_tot
-        else
-          ! The static Kelvin part, to keep or to remove: the ladder of 1/r for the delta part and of
-          ! b2 r for the difference part. (ga and gb are reused as scratch from here.)
-          do q = 0, 4
-            pw(q) = falling(-1, q) * r**(-1 - 2 * q)
-          end do
-          ga = pw
-          do q = 0, 4
-            pw(q) = b2 * falling(1, q) * r**(1 - 2 * q)
-          end do
-          gb = pw
-          if (use_static) then
-            fa = ga
-            fb = gb
-          else if (use_dynamic) then
-            fa = fa_tot - ga
-            fb = fb_tot - gb
-          end if
+        ! The static Kelvin part, to keep or to remove: the ladder of 1/r for the delta part and of b2 r
+        ! for the difference part. (ga and gb are reused as scratch from here.)
+        do q = 0, 4
+          pw(q) = falling(-1, q) * r**(-1 - 2 * q)
+        end do
+        ga = pw
+        do q = 0, 4
+          pw(q) = t_b2 * falling(1, q) * r**(1 - 2 * q)
+        end do
+        gb = pw
+        if (t_use_static) then
+          fa = ga
+          fb = gb
+        else if (t_use_dynamic) then
+          fa = fa_tot - ga
+          fb = fb_tot - gb
         end if
       end if
+    end if
 
-      ! ---- 2c. G, d_k G_ij and d_k d_l G_ij from the two ladders. -----------------------------------
-      !   G_ij        = delta_ij fa      + d_i d_j fb
-      !   d_k G_ij    = delta_ij d_k fa  + d_i d_j d_k fb
-      !   d_k d_l G_ij = delta_ij d_k d_l fa + d_i d_j d_k d_l fb
-      ! (the 1 / 4 pi mu is applied at the end). z is the C-order flat index of (i, j, k) or (i, j, k, l),
-      ! counting from 1: Python's reshape of a (3, 3, 3) array to 27, plus one.
-      do i = 1, 3
-        do j = 1, 3
-          idx = [i, j, 0, 0]
-          gmat(i, j) = dl(i, j) * fa(0) + radial_component(fb, xp, idx, 2)
-          do k = 1, 3
-            z = ((i - 1) * 3 + (j - 1)) * 3 + k
-            idx = [k, 0, 0, 0]
-            gd(z) = dl(i, j) * radial_component(fa, xp, idx, 1)
-            idx = [i, j, k, 0]
-            gd(z) = gd(z) + radial_component(fb, xp, idx, 3)
+    ! ---- 2c. G, d_k G_ij and (for the strain rows) d_k d_l G_ij from the two ladders. ---------------
+    !   G_ij         = delta_ij fa         + d_i d_j fb
+    !   d_k G_ij     = delta_ij d_k fa     + d_i d_j d_k fb
+    !   d_k d_l G_ij = delta_ij d_k d_l fa + d_i d_j d_k d_l fb
+    ! (the 1 / 4 pi mu is applied at the end). z is the C-order flat index of (i, j, k) or (i, j, k, l),
+    ! counting from 1: Python's reshape of a (3, 3, 3) array to 27, plus one.
+    do i = 1, 3
+      do j = 1, 3
+        idx = [i, j, 0, 0]
+        gmat(i, j) = dl(i, j) * fa(0) + radial_component(fb, xp, idx, 2)
+        do k = 1, 3
+          z = ((i - 1) * 3 + (j - 1)) * 3 + k
+          idx = [k, 0, 0, 0]
+          gd(z) = dl(i, j) * radial_component(fa, xp, idx, 1)
+          idx = [i, j, k, 0]
+          gd(z) = gd(z) + radial_component(fb, xp, idx, 3)
+          if (nrow > 3) then
             do l = 1, 3
               z = (((i - 1) * 3 + (j - 1)) * 3 + (k - 1)) * 3 + l
               idx = [k, l, 0, 0]
@@ -389,37 +479,40 @@ contains
               idx = [i, j, k, l]
               gdd(z) = gdd(z) + radial_component(fb, xp, idx, 4)
             end do
-          end do
+          end if
         end do
       end do
+    end do
 
-      ! ---- 2d. Assemble [[G, C], [H, S]] with the sparse Voigt maps, then scale by 1 / (4 pi mu). -----
-      p(:, :, ip) = (0.0_dp, 0.0_dp)
-      p(1:3, 1:3, ip) = gmat                            ! the G block: rows 1-3, columns 1-3
-      do a = 1, 6
-        do i = 1, 3
-          acc = (0.0_dp, 0.0_dp)
-          do c = 1, c_n(i, a)                           ! C_i,a: displacement i from stress a
-            acc = acc + c_w(c, i, a) * gd(c_z(c, i, a))
-          end do
-          p(i, 3 + a, ip) = acc
-          acc = (0.0_dp, 0.0_dp)
-          do c = 1, h_n(a, i)                           ! H_a,i: strain a from force i
-            acc = acc + h_w(c, a, i) * gd(h_z(c, a, i))
-          end do
-          p(3 + a, i, ip) = acc
+    ! ---- 2d. Assemble the rows of [[G, C], [H, S]] with the sparse Voigt maps, scaled by 1/(4 pi mu). --
+    p = (0.0_dp, 0.0_dp)
+    p(1:3, 1:3) = gmat                                  ! the G block: rows 1-3, columns 1-3
+    do a = 1, 6
+      do i = 1, 3
+        acc = (0.0_dp, 0.0_dp)
+        do c = 1, t_c_n(i, a)                          ! C_i,a: displacement i from stress a
+          acc = acc + t_c_w(c, i, a) * gd(t_c_z(c, i, a))
         end do
+        p(i, 3 + a) = acc
+        if (nrow > 3) then
+          acc = (0.0_dp, 0.0_dp)
+          do c = 1, t_h_n(a, i)                        ! H_a,i: strain a from force i
+            acc = acc + t_h_w(c, a, i) * gd(t_h_z(c, a, i))
+          end do
+          p(3 + a, i) = acc
+        end if
+      end do
+      if (nrow > 3) then
         do b = 1, 6
           acc = (0.0_dp, 0.0_dp)
-          do c = 1, s_n(a, b)                           ! S_a,b: strain a from stress b
-            acc = acc + s_w(c, a, b) * gdd(s_z(c, a, b))
+          do c = 1, t_s_n(a, b)                        ! S_a,b: strain a from stress b
+            acc = acc + t_s_w(c, a, b) * gdd(t_s_z(c, a, b))
           end do
-          p(3 + a, 3 + b, ip) = acc
+          p(3 + a, 3 + b) = acc
         end do
-      end do
-      p(:, :, ip) = p(:, :, ip) / (4.0_dp * pi * mu)
+      end if
     end do
-    !$omp end parallel do
-  end subroutine kernel_9x9
+    p = p / (4.0_dp * pi * mu)
+  end subroutine point_block
 
 end module point_kernel
