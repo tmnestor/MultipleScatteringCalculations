@@ -92,6 +92,44 @@ def apply_hat_fortran(kh: NDArray, sh: NDArray) -> NDArray:
     return _apply_hat(kh_f, sh_f, kh.dtype == np.complex64).T
 
 
+def apply_canonical_fortran(khc: NDArray, sh: NDArray, tables: tuple[NDArray, ...]) -> NDArray:
+    """yh[f, row] through the kernel stored at the canonical k only, shape (F, rows) complex128.
+
+    khc is ``fft.canonical_transformed_kernel`` (K, cols, rows), complex64 or complex128; sh the
+    transformed sources POINT-MAJOR, (F, cols); tables ``fft.fourier_symmetry_tables``. At each point the
+    sources are re-indexed with signs into the canonical frame, the canonical block applied, and the result
+    re-indexed back (``kernel_apply.f90``). Accumulated in double precision.
+
+    Raises:
+        ValueError: if khc is not C-contiguous, or its dtype is neither complex64 nor complex128.
+    """
+    if not khc.flags["C_CONTIGUOUS"]:
+        raise ValueError(
+            "apply_canonical_fortran: the kernel must be C-contiguous (as canonical_transformed_kernel "
+            "stores it)."
+        )
+    if khc.dtype not in (np.complex64, np.complex128):
+        raise ValueError(
+            f"apply_canonical_fortran: the kernel's dtype is {khc.dtype}; it must be complex64 or 128."
+        )
+    from ..fortran._kernel_apply import kernel_apply
+
+    q_f, k_f, order, pr, sr, pc, sc = tables
+    routine = kernel_apply.apply_canon_c64 if khc.dtype == np.complex64 else kernel_apply.apply_canon_c128
+    yh = routine(
+        np.asarray(khc).T,  # (rows, cols, K) Fortran-ordered: a view, no copy
+        np.ascontiguousarray(np.asarray(sh, dtype=complex)).T,  # (cols, F)
+        q_f,
+        k_f,
+        order,
+        pr.T,
+        sr.T,
+        pc.T,
+        sc.T,
+    )
+    return yh.T  # (F, rows), C-ordered
+
+
 def apply_9x9_fortran(
     obs: NDArray, points: NDArray, sources: NDArray, omega: complex, ref: ReferenceMedium, *, rows: int
 ) -> NDArray:

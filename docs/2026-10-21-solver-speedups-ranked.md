@@ -404,4 +404,72 @@ What is left at N = 32: the kernel's assembly and transform (28 to 34 s, about h
 canonical blocks (about 20 s, half compiled kernel evaluations, half the batched product), and GMRES
 (about 9 s).
 6. **Frequencies in parallel**: independent, but each holds a 6.5 GB kernel; on 16 GB at most two at a
-   time.
+   time. (Item 9 removes the obstacle: a 0.3 GB kernel.)
+
+**Measured, the rerun with all of the above (21 October 2026).** The 34-frequency record at N = 32: solve
+64 to 90 s (mean 71 s), readout 8.2 to 9.6 s, 45 minutes in all; every frequency's error equal to the
+stored one. The ladder at k_S a = 4: solve 2.0, 5.9, 13.4 and 48.3 s for N = 8 to 24 (kernel in memory,
+double precision), 101.7 and 418.7 s for N = 32 and 40 (single precision, from disk); the lean path at
+N = 24, 46.5 s and 5.5 GB peak against 48.3 s and 8.9 GB.
+
+## Item 9: the cube group in Fourier space (plan)
+
+**The identity.** The real-space kernel satisfies K(Q o) = R(Q) K(o) R(Q)^T for the 48 signed permutations
+Q, with R the signed permutation T x S on the 36 rows and U x S on the 90 columns. Q is orthogonal and
+maps the circular grid to itself (npad = 2N - 1 is odd, so the centred representatives k in
+[-(N-1), N-1]^3 are unique and Q k stays among them), so the transform inherits it:
+
+    K^(Q k) = sum_o K(o) exp(-2 pi i (Q k).o / npad) = sum_o' K(Q o') exp(-2 pi i k.o' / npad)
+            = R(Q) K^(k) R(Q)^T.
+
+Checked numerically before any code (n_sub = 4, all 48 Q, every k): 1.0e-16 relative in Fourier space,
+4.1e-16 in real space. The k-orbits are exactly the offsets' orbits, so the canonical k are the canonical
+offsets (a >= b >= d >= 0), C(N + 2, 3) of them: 5,984 at N = 32 against 250,047 points, 1/42.
+
+**What it saves.** The kernel is stored at the canonical k only: 36 x 90 x 5,984 complex numbers, 0.31 GB
+in double precision at N = 32 (6.5 GB single, 13 GB double, before), 0.60 GB at N = 40 (12.8 GB single
+before). So the kernel is always held in memory in double precision: no disk, no single-precision
+rounding, and frequencies can run side by side.
+
+**The product.** At a point k = Q k_c, with (pr, sr) the row and (pc, sc) the column signed permutations
+of Q:
+
+    yh[r, k] = sr[r] sum_j K^(k_c)[pr[r], j] s'[j],     s'[pc[c]] = sc[c] sh[c, k],
+
+a gather with signs of the 90 sources, one canonical 36 x 90 block, a scatter with signs of the 36
+results. The arithmetic is unchanged; the kernel read per GMRES step falls 42-fold and each block (51 KB)
+is reused by the 24 to 48 points of its orbit. In Fortran (`kernel_apply.f90`), OpenMP over the Fourier
+points, the sources and results point-major so that each point's 90 values are contiguous; the
+symmetries' index tables built once in Python.
+
+**The assembly.** Unchanged up to the transform (row groups, real-space fill by the cube group, FFT in
+double precision); only the canonical k of each group's transform are kept. The FFTs remain (about half of
+the 28 to 34 s); they are the next target.
+
+**Tests.** The canonical kernel equals the full kernel at the canonical k; the canonical product equals
+the full product to round-off (both precisions) and does not depend on the thread count; the solve with
+it equals the former solve.
+
+**Done (21 October 2026).** `fft.canonical_transformed_kernel`, `fft.fourier_symmetry_tables`,
+`kernel_fortran.apply_canonical_fortran` (`apply_canon_c64`, `apply_canon_c128` in `kernel_apply.f90`);
+the solve takes this path whenever the compiled backend is selected, and the full kernel with the reference
+backend or with every offset's blocks. Tests: `tests/test_graded_voxel_fourier_symmetry.py` (the
+canonical kernel equals the full one at the canonical k exactly, in any row grouping; the product equals
+the full product to 1e-13 in both precisions and is independent of the thread count; the solve equals the
+full-kernel solve to 1e-12).
+
+Measured, the ladder at k_S a = 4, now always double precision in memory, the same errors to three
+figures:
+
+| N | solve before | solve now | peak before | peak now |
+|---|---|---|---|---|
+| 24 | 48.3 s (c128, memory) | 44.3 s | 8.9 GB | 4.4 GB |
+| 32 | 101.7 s (c64, disk) | 71.5 s | 8.8 GB | 4.9 GB |
+| 40 | 418.7 s (c64, disk) | 244.7 s | 9.5 GB | 6.0 GB |
+
+The single-precision rounding (8e-11) is gone with it, and N = 32 no longer needs the disk. What is left of
+the solve is the assembly (the canonical blocks and the full FFTs of every row group), which item 9 does
+not touch.
+
+**Next, the same for the point solver.** The 9 x 9 point kernel has the same structure (R = S x S on 9
+rows and columns).

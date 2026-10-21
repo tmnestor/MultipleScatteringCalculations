@@ -214,6 +214,7 @@ def transformed_kernel(
     npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
     shape = (rows, cols, npad, npad, npad)
+    kh: NDArray
     if path is None:
         kh = np.empty(shape, dtype=dtype)
     else:
@@ -230,9 +231,101 @@ def transformed_kernel(
         _fill_rows(real, sel, stack, inverse, q_index, maps, na, nc, wrapped)
         kh[sel] = np.fft.fftn(real, axes=(2, 3, 4))
         del real
-    if path is not None:
+    if isinstance(kh, np.memmap):
         kh.flush()
     return kh
+
+
+def canonical_transformed_kernel(
+    canonical: dict[tuple[int, int, int], NDArray],
+    n_sub: int,
+    na: int,
+    nc: int,
+    dtype: type = np.complex128,
+    path: Path | None = None,
+    budget_bytes: float = 2e9,
+) -> NDArray:
+    """The transformed kernel at the canonical k only: khc[k, col, row], k over the canonical offsets
+    a >= b >= d >= 0 in sorted order (``canonical``'s keys), equal to ``transformed_kernel``'s
+    kh[row, col, k] there.
+
+    THE CUBE GROUP IN FOURIER SPACE.  K(Q o) = R K(o) R^T, R the signed permutation of Q on the rows and on
+    the columns, and Q is orthogonal and maps the circular grid to itself (2n - 1 is odd, so the centred
+    k in [-(n-1), n-1]^3 are unique), so K^(Q k) = R K^(k) R^T: the k-orbits are the offsets' orbits, and
+    the kernel at one k per orbit (1/42 of the points at n = 32: 0.3 GB in double precision, against 13 GB)
+    determines it everywhere (``fourier_symmetry_tables``, ``kernel_fortran.apply_canonical_fortran``).
+
+    Built as ``transformed_kernel`` builds the full kernel, a group of rows at a time, keeping each group's
+    transform at the canonical k; in memory, or memory-mapped at ``path`` (created, overwritten).
+    """
+    npad = 2 * n_sub - 1
+    rows, cols = na * 9, nc * 9
+    _, inverse, q_index, keys = _orbit_arrays(n_sub)
+    at = np.array([(a * npad + b) * npad + d for a, b, d in keys])  # each canonical k's flat index
+    shape = (len(keys), cols, rows)
+    khc: NDArray
+    if path is None:
+        khc = np.empty(shape, dtype=dtype)
+    else:
+        khc = np.lib.format.open_memmap(path, mode="w+", dtype=dtype, shape=shape)
+    per_row = 2 * cols * npad**3 * 16
+    group = max(1, min(rows, int(budget_bytes // per_row)))
+    stack = np.stack([canonical[k] for k in keys])
+    maps = _signed_maps(stack.shape[2], stack.shape[1])
+    offsets = _orbit_arrays(n_sub)[0]
+    wrapped = (offsets[:, 0] % npad, offsets[:, 1] % npad, offsets[:, 2] % npad)
+    for r0 in range(0, rows, group):
+        sel = slice(r0, min(rows, r0 + group))
+        real = np.zeros((sel.stop - sel.start, cols, npad, npad, npad), dtype=complex)
+        _fill_rows(real, sel, stack, inverse, q_index, maps, na, nc, wrapped)
+        hat = np.fft.fftn(real, axes=(2, 3, 4)).reshape(sel.stop - sel.start, cols, -1)
+        khc[:, :, sel] = hat[:, :, at].transpose(2, 1, 0)
+        del real, hat
+    if isinstance(khc, np.memmap):
+        khc.flush()
+    return khc
+
+
+@lru_cache(maxsize=8)
+def fourier_symmetry_tables(
+    n_sub: int, na: int, nc: int, n_source: int, n_test: int
+) -> tuple[NDArray, ...]:
+    """The index tables of the product through the canonical kernel, 0-based, int32 and float64.
+
+    Returns (q_f, k_f, order, pr, sr, pc, sc): for every Fourier point f (C order of the (2n - 1)^3 grid)
+    the symmetry q_f[f] taking its canonical k (index k_f[f] into the canonical kernel) to it; ``order``,
+    the points grouped by canonical k; and for each of the 48 symmetries the row map (pr, sr) (48, na * 9)
+    and the column map (pc, sc) (48, nc * 9):
+
+        K^(f)[r, c] = sr[q, r] sc[q, c] K^(k_f)[pr[q, r], pc[q, c]],
+
+    ``_fill_rows``'s re-indexing, row r = (a, i) = divmod(r, 9), column (c, l) likewise.
+
+    Raises:
+        ValueError: if a representation is not a signed permutation (then only the full kernel applies).
+    """
+    npad = 2 * n_sub - 1
+    offsets, inverse, q_index, _ = _orbit_arrays(n_sub)
+    maps = _signed_maps(n_source, n_test)  # the canonical blocks' own bases, as _fill_rows takes them
+    if maps is None:
+        raise ValueError(
+            "fourier_symmetry_tables: a representation of the cube group is not a signed permutation, so "
+            "the kernel cannot be stored at the canonical k. Fix: use the full kernel "
+            "(transformed_kernel) with point_kernel.backend: python."
+        )
+    pt, st, pu, su, ps, ss = maps
+    flat = ((offsets[:, 0] % npad) * npad + offsets[:, 1] % npad) * npad + offsets[:, 2] % npad
+    q_f = np.empty(npad**3, dtype=np.int32)
+    k_f = np.empty(npad**3, dtype=np.int32)
+    q_f[flat], k_f[flat] = q_index, inverse
+    order = np.argsort(k_f, kind="stable").astype(np.int32)
+    a, i = np.divmod(np.arange(na * 9), 9)
+    c, l9 = np.divmod(np.arange(nc * 9), 9)
+    pr = (pt[:, a] * 9 + ps[:, i]).astype(np.int32)
+    sr = (st[:, a] * ss[:, i]).astype(float)
+    pc = (pu[:, c] * 9 + ps[:, l9]).astype(np.int32)
+    sc = (su[:, c] * ss[:, l9]).astype(float)
+    return q_f, k_f, order, pr, sr, pc, sc
 
 
 #: offsets placed into a row group per gather, bounding the gather's temporary arrays
@@ -385,7 +478,16 @@ def solve_graded_sphere_fft(
     e_cells = np.array([source_expansion(d, n_field)[:nc, :na] for d in delta])  # (N, nc, na, 9, 9)
     npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
-    if blocks is None:
+    # the compiled backend stores the kernel at the canonical k only (the cube group in Fourier space);
+    # the reference backend, and the every-offset path, the full kernel
+    canonical_k = blocks is None and point_kernel_backend() == "fortran"
+    if canonical_k:
+        canonical = canonical_blocks(n_sub, h, omega, ref, n_source, n_field)
+        kh = canonical_transformed_kernel(canonical, n_sub, na, nc, kernel_dtype, kernel_path)
+        tables = fourier_symmetry_tables(n_sub, na, nc, n_source, n_field)
+        k0 = canonical[(0, 0, 0)][:na, :nc]
+        del canonical
+    elif blocks is None:
         # the canonical blocks alone; the kernel assembled from them a group of rows at a time
         canonical = canonical_blocks(n_sub, h, omega, ref, n_source, n_field)
         kh = transformed_kernel(canonical, n_sub, na, nc, kernel_dtype, kernel_path)
@@ -406,11 +508,19 @@ def solve_graded_sphere_fft(
     # the kernel product follows point_kernel.backend: the compiled one, or the NumPy reference
     compiled_product = point_kernel_backend() == "fortran" and kh.flags["C_CONTIGUOUS"]
     if compiled_product:
-        from .kernel_fortran import apply_hat_fortran  # local: kernel_fortran imports kernel
+        # local: kernel_fortran imports kernel
+        from .kernel_fortran import apply_canonical_fortran, apply_hat_fortran
 
     def matvec(x: NDArray) -> NDArray:
         psi = x.reshape(n, na, 9)
         src = np.einsum("ncbij,nbj->nci", e_cells, psi).reshape(n, cols)
+        m9psi = np.einsum("ab,nbi->nai", m9, psi).reshape(n, rows)
+        if canonical_k:  # point-major, so that each Fourier point's sources and results are contiguous
+            grid = np.zeros((npad, npad, npad, cols), dtype=complex)
+            grid[g0, g1, g2] = src
+            sh = np.fft.fftn(grid, axes=(0, 1, 2)).reshape(-1, cols)
+            yh = apply_canonical_fortran(kh, sh, tables).reshape(npad, npad, npad, rows)
+            return (m9psi - np.fft.ifftn(yh, axes=(0, 1, 2))[g0, g1, g2]).ravel()
         grid = np.zeros((cols, npad, npad, npad), dtype=complex)
         grid[:, g0, g1, g2] = src.T
         sh = np.fft.fftn(grid, axes=(1, 2, 3)).reshape(cols, -1)
@@ -421,7 +531,7 @@ def solve_graded_sphere_fft(
             for row in range(rows):
                 yh[row] = np.einsum("cf,cf->f", np.asarray(kh[row]).reshape(cols, -1), sh)
         y = np.fft.ifftn(yh.reshape(rows, npad, npad, npad), axes=(1, 2, 3))[:, g0, g1, g2].T
-        return (np.einsum("ab,nbi->nai", m9, psi).reshape(n, rows) - y).ravel()
+        return (m9psi - y).ravel()
 
     pre = np.array(
         [

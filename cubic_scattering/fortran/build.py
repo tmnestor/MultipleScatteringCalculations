@@ -21,7 +21,10 @@ SOURCES = {
     "_green_derivatives": ("green_derivatives.f90", ["scalar_derivative_fields"]),
     "_cell_average": ("cell_average.f90", ["averaged_tensors"]),
     "_kseries_moments": ("kseries_moments.f90", ["kseries_moments"]),
-    "_kernel_apply": ("kernel_apply.f90", ["apply_hat_c64", "apply_hat_c128"]),
+    "_kernel_apply": (
+        "kernel_apply.f90",
+        ["apply_hat_c64", "apply_hat_c128", "apply_canon_c64", "apply_canon_c128"],
+    ),
 }
 
 
