@@ -37,25 +37,33 @@ def _flat(k, npad):
     return (k[0] * npad + k[1]) * npad + k[2]
 
 
-def test_the_canonical_kernel_is_the_full_kernel_at_the_canonical_k(kernels) -> None:
-    canonical, full = kernels
-    npad = 2 * N_SUB - 1
-    rows, cols = NA * 9, NC * 9
-    khc = canonical_transformed_kernel(canonical, N_SUB, NA, NC)
+def _check_canonical(canonical, full, n_sub, na, nc, **kw) -> None:
+    """The canonical kernel equals the full kernel at the canonical k, to round-off: it is built from one
+    array per orbit of index pairs, on the non-negative octant, by cosine and sine sums, not by the FFT."""
+    npad = 2 * n_sub - 1
+    rows, cols = na * 9, nc * 9
+    khc = canonical_transformed_kernel(canonical, n_sub, na, nc, **kw)
     keys = sorted(canonical)
     assert khc.shape == (len(keys), cols, rows) and khc.dtype == np.complex128
     flat = full.reshape(rows, cols, -1)
-    for i, k in enumerate(keys):
-        np.testing.assert_array_equal(khc[i], flat[:, :, _flat(k, npad)].T)
+    want = np.stack([flat[:, :, _flat(k, npad)].T for k in keys])
+    assert np.abs(khc - want).max() <= 1e-13 * np.abs(want).max()
 
 
-def test_the_canonical_kernel_in_any_grouping_of_the_rows(kernels) -> None:
-    canonical, _ = kernels
-    cols, npad = NC * 9, 2 * N_SUB - 1
-    want = canonical_transformed_kernel(canonical, N_SUB, NA, NC)
-    one_row = 2 * cols * npad**3 * 16
-    got = canonical_transformed_kernel(canonical, N_SUB, NA, NC, budget_bytes=one_row)
-    np.testing.assert_array_equal(got, want)
+def test_the_canonical_kernel_is_the_full_kernel_at_the_canonical_k(kernels) -> None:
+    canonical, full = kernels
+    _check_canonical(canonical, full, N_SUB, NA, NC)
+
+
+def test_the_canonical_kernel_in_any_grouping_of_the_arrays(kernels) -> None:
+    canonical, full = kernels
+    _check_canonical(canonical, full, N_SUB, NA, NC, budget_bytes=1.0)  # one array orbit at a time
+
+
+@pytest.mark.parametrize(("n_sub", "na", "nc"), [(5, 4, 10), (5, 1, 1), (3, 4, 4)])
+def test_the_canonical_kernel_for_odd_grids_and_other_degrees(n_sub, na, nc) -> None:
+    canonical = canonical_blocks(n_sub, H, OMEGA, REF)
+    _check_canonical(canonical, transformed_kernel(canonical, n_sub, na, nc), n_sub, na, nc)
 
 
 def test_the_tables_cover_every_point_with_its_orbit() -> None:
@@ -128,3 +136,22 @@ def test_the_solve_reports_its_stage_timings() -> None:
     )
     assert set(timings) == {"kernel_s", "solve_s", "products"}
     assert timings["products"] >= 1 and timings["kernel_s"] > 0 and timings["solve_s"] > 0
+
+
+def test_the_block_jacobi_inverses_equal_the_cell_by_cell_ones() -> None:
+    from cubic_scattering.graded_voxel import fft as F
+
+    rng = np.random.default_rng(2)
+    na, nc, n = 4, 10, 37
+    m9 = np.diag(rng.uniform(1.0, 2.0, na))
+    k0 = rng.normal(size=(na, nc, 9, 9)) + 1j * rng.normal(size=(na, nc, 9, 9))
+    e_cells = 0.1 * (rng.normal(size=(n, nc, na, 9, 9)) + 1j * rng.normal(size=(n, nc, na, 9, 9)))
+    rows = na * 9
+    want = np.array(
+        [
+            np.linalg.inv(np.kron(m9, np.eye(9)) - np.einsum("acij,cbjk->aibk", k0, en).reshape(rows, rows))
+            for en in e_cells
+        ]
+    )
+    got = F._block_jacobi(m9, k0, e_cells)
+    assert np.abs(got - want).max() <= 1e-13 * np.abs(want).max()

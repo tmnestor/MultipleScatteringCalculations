@@ -566,3 +566,38 @@ and were rerun). Selected rows (all in `scripts/data/point_vs_galerkin.jsonl`):
 
 Written up in the thesis's Chapter 7, section 7.7 (the point and the Galerkin voxel), with the figure of
 error against wall time.
+
+## Item 11: the Galerkin setup (plan, 22 October 2026)
+
+Measured, the setup of `solve_graded_sphere_fft` stage by stage (the same at k_S a = 0.5 and 4):
+
+| stage | n = 24 | n = 32 | n = 40 |
+|---|---|---|---|
+| kernel: real-space fill and FFTs, canonical k kept | 20.8 s | 24.4 s | 132.0 s |
+| canonical blocks | 9.0 s | 19.1 s | 36.7 s |
+| contrast projection (Python profile calls, once a sweep) | 6.6 s | 14.8 s | 28.0 s |
+| preconditioner (a 36 x 36 inverse per cell, Python loop) | 4.0 s | 8.9 s | 17.6 s |
+| the rest | 0.8 s | 1.8 s | 3.5 s |
+
+**11a. The kernel by the group again, in real space.** Every one of the 3,240 real-space arrays (row,
+column) is transformed in full, and 1/42 of each transform kept. The arrays are related: an axis
+permutation Q maps array (r, c) to (p_r(r), p_c(c)) with a sign, so K^(k_c)[r, c] = s K^(Q^T k_c)[r0, c0]
+and one array per orbit of index pairs suffices: 576 orbits (sizes 3 and 6). And an axis flip maps every
+index to itself with a sign, so each array is even or odd along each axis: its transform at the
+non-negative wavenumbers is a cosine or sine sum over the non-negative octant of offsets, N^3 values
+instead of (2N - 1)^3, applied as three N x N matrix products (BLAS) rather than an FFT. Q a pure
+permutation keeps Q^T k_c in that octant. Expected: the 24 to 132 s stage to a few seconds. Tested against
+the full kernel at the canonical k (to round-off, no longer bit for bit).
+
+**11b. The preconditioner batched.** One stacked inverse of (M - K(0) E_n) over all cells.
+
+**11c. The canonical blocks** and **11d. the contrast projection** (vectorised profiles) next, measured
+again first.
+
+**11a and 11b done (22 October 2026).** `canonical_transformed_kernel` now fills one array per orbit of
+index pairs on the non-negative octant and transforms it by the even and odd octant sums; it equals the
+full kernel at the canonical k to 1e-13 (n = 3, 4 and 5, p = r = 1 and p = r = 0), and a deliberate sign
+error in the sine sum fails 8 of its tests. Kernel stage: 20.8 s to 0.63 s at n = 24, 24.4 s to 1.6 s at
+n = 32, 132 s to 3.4 s at n = 40. The block-Jacobi preconditioner (`_block_jacobi`, one batched product
+and one stacked inverse): 8.96 s to 1.12 s at n = 32. Setup at n = 32: 69 s to 39 s, of which the
+canonical blocks are now 19.7 s and the contrast projection 14.5 s (11c, 11d).

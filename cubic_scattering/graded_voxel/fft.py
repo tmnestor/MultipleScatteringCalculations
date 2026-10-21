@@ -248,7 +248,7 @@ def canonical_transformed_kernel(
 ) -> NDArray:
     """The transformed kernel at the canonical k only: khc[k, col, row], k over the canonical offsets
     a >= b >= d >= 0 in sorted order (``canonical``'s keys), equal to ``transformed_kernel``'s
-    kh[row, col, k] there.
+    kh[row, col, k] there to round-off.
 
     THE CUBE GROUP IN FOURIER SPACE.  K(Q o) = R K(o) R^T, R the signed permutation of Q on the rows and on
     the columns, and Q is orthogonal and maps the circular grid to itself (2n - 1 is odd, so the centred
@@ -256,32 +256,102 @@ def canonical_transformed_kernel(
     the kernel at one k per orbit (1/42 of the points at n = 32: 0.3 GB in double precision, against 13 GB)
     determines it everywhere (``fourier_symmetry_tables``, ``kernel_fortran.apply_canonical_fortran``).
 
-    Built as ``transformed_kernel`` builds the full kernel, a group of rows at a time, keeping each group's
-    transform at the canonical k; in memory, or memory-mapped at ``path`` (created, overwritten).
+    BUILT BY THE GROUP AGAIN, WITHOUT AN FFT.  Element by element the identity reads
+    K^(Q k)[r, c] = sr_Q[r] sc_Q[c] K^(k)[pr_Q[r], pc_Q[c]], and the group does two things to the 36 x 90
+    scalar arrays K[r, c](o):
+
+    * an axis permutation Q moves array (r, c) to array (pr_Q[r], pc_Q[c]), so with Q chosen to take
+      (r, c) to the representative (r0, c0) of its orbit,
+      K^(k_c)[r, c] = sr_Q[r] sc_Q[c] K^(Q^T k_c)[r0, c0]: one array per orbit of index pairs is
+      transformed, 576 of the 3,240 for p = r = 1 (orbits of 3 and 6); a pure permutation keeps Q^T k_c
+      in the non-negative octant;
+    * an axis flip maps every index to itself with a sign, so each array is even or odd along each axis,
+      and its transform at the non-negative wavenumbers is a cosine or a sine sum over the non-negative
+      octant of offsets, sum_o w_o f(o) cos(2 pi k o / n) (w_0 = 1, w_o = 2) or -2i sum_o f(o)
+      sin(2 pi k o / n): N^3 values, not (2N - 1)^3, transformed by three N x N matrix products.
+
+    So the real-space kernel is filled only for the representatives on the octant, from the canonical
+    blocks (``_fill_rows``'s re-indexing), transformed by those products, and every entry of the canonical
+    kernel gathered from them. At n = 32 this replaces 3,240 FFTs of 250,047 points by 576 octant
+    transforms of 32,768 (24 s to a few). The representatives are transformed a batch at a time and the
+    result gathered a batch of k at a time, each batch's working arrays within ``budget_bytes``. In memory,
+    or memory-mapped at ``path`` (created, overwritten).
+
+    Raises:
+        ValueError: if a representation of the cube group is not a signed permutation
+            (``fourier_symmetry_tables``).
     """
     npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
-    _, inverse, q_index, keys = _orbit_arrays(n_sub)
-    at = np.array([(a * npad + b) * npad + d for a, b, d in keys])  # each canonical k's flat index
+    offsets, inverse, q_index, keys = _orbit_arrays(n_sub)
+    stack = np.stack([canonical[k] for k in keys])  # (K, n_test, n_source, 9, 9): [a, c, i, l]
+    blocks = (
+        stack[:, :na, :nc].transpose(0, 1, 3, 2, 4).reshape(len(keys), rows, cols)
+    )  # [k, (a, i), (c, l)]
+    _, _, _, pr, sr, pc, sc = fourier_symmetry_tables(n_sub, na, nc, stack.shape[2], stack.shape[1])
+    qs = np.stack(signed_permutations())
+    # the orbits of index pairs under the axis permutations, and the permutation taking each pair to its
+    # orbit's representative (the smallest flat index (r0 * cols + c0) of the orbit)
+    perm_q = np.array([q for q in range(len(qs)) if np.all(qs[q] >= 0)])
+    pair_key = pr[perm_q][:, :, None] * cols + pc[perm_q][:, None, :]  # (6, rows, cols)
+    best = np.argmin(pair_key, axis=0)  # (rows, cols): which permutation
+    reps, rep_of = np.unique(np.take_along_axis(pair_key, best[None], 0)[0], return_inverse=True)
+    rep_of = rep_of.reshape(rows, cols)
+    r0, c0 = np.divmod(reps, cols)
+    q_star = perm_q[best]
+    sign = sr[q_star, np.arange(rows)[:, None]] * sc[q_star, np.arange(cols)[None, :]]
+    # each representative's parity along each axis, from the flip of that axis
+    parity = np.empty((len(reps), 3))
+    for axis in range(3):
+        flip = int(
+            next(
+                q
+                for q in range(len(qs))
+                if np.array_equal(qs[q], np.diag(np.where(np.arange(3) == axis, -1.0, 1.0)))
+            )
+        )
+        assert np.array_equal(pr[flip], np.arange(rows)) and np.array_equal(pc[flip], np.arange(cols))
+        parity[:, axis] = sr[flip, r0] * sc[flip, c0]
+    # the octant transforms: the even and the odd sum along one axis, k and o in 0 .. N - 1
+    o = np.arange(n_sub)
+    phase = 2.0 * np.pi * np.outer(o, o) / npad
+    even = np.cos(phase) * np.where(o == 0, 1.0, 2.0)[None, :]
+    odd = -2j * np.sin(phase)
+    octant = np.flatnonzero(np.all(offsets >= 0, axis=1))  # (N^3,), lexicographic: reshapes to (N, N, N)
+    q_o, i_o = q_index[octant], inverse[octant]
+    hat = np.empty((len(reps), n_sub**3), dtype=complex)
+    batch = max(1, int(budget_bytes // (4 * 16 * n_sub**3)))
+    for pattern in {tuple(p) for p in parity}:
+        members = np.flatnonzero(np.all(parity == pattern, axis=1))
+        m0, m1, m2 = (even if p > 0 else odd for p in pattern)
+        for start in range(0, len(members), batch):
+            sel = members[start : start + batch]
+            rr, cc = r0[sel][:, None], c0[sel][:, None]
+            f = (
+                sr[q_o[None, :], rr]
+                * sc[q_o[None, :], cc]
+                * blocks[i_o[None, :], pr[q_o[None, :], rr], pc[q_o[None, :], cc]]
+            )
+            f = f.reshape(len(sel), n_sub, n_sub, n_sub)
+            f = f @ m2.T  # (r, a, b, m)
+            f = (f.transpose(0, 1, 3, 2) @ m1.T).transpose(0, 1, 3, 2)  # (r, a, l, m)
+            f = (f.transpose(0, 2, 3, 1) @ m0.T).transpose(0, 3, 1, 2)  # (r, k, l, m)
+            hat[sel] = f.reshape(len(sel), -1)
+    # gather: khc[k, c, r] = sign[r, c] hat[rep_of[r, c], Q^T k], Q = perm_q[best[r, c]]
+    key_arr = np.array(keys)
+    moved = np.stack([key_arr @ qs[q] for q in perm_q]).astype(np.int64)  # (6, K, 3): Q^T k as rows
+    at = (moved[..., 0] * n_sub + moved[..., 1]) * n_sub + moved[..., 2]  # (6, K) into the octant
     shape = (len(keys), cols, rows)
     khc: NDArray
     if path is None:
         khc = np.empty(shape, dtype=dtype)
     else:
         khc = np.lib.format.open_memmap(path, mode="w+", dtype=dtype, shape=shape)
-    per_row = 2 * cols * npad**3 * 16
-    group = max(1, min(rows, int(budget_bytes // per_row)))
-    stack = np.stack([canonical[k] for k in keys])
-    maps = _signed_maps(stack.shape[2], stack.shape[1])
-    offsets = _orbit_arrays(n_sub)[0]
-    wrapped = (offsets[:, 0] % npad, offsets[:, 1] % npad, offsets[:, 2] % npad)
-    for r0 in range(0, rows, group):
-        sel = slice(r0, min(rows, r0 + group))
-        real = np.zeros((sel.stop - sel.start, cols, npad, npad, npad), dtype=complex)
-        _fill_rows(real, sel, stack, inverse, q_index, maps, na, nc, wrapped)
-        hat = np.fft.fftn(real, axes=(2, 3, 4)).reshape(sel.stop - sel.start, cols, -1)
-        khc[:, :, sel] = hat[:, :, at].transpose(2, 1, 0)
-        del real, hat
+    k_batch = max(1, int(budget_bytes // (32 * rows * cols)))
+    for k0 in range(0, len(keys), k_batch):
+        ks = slice(k0, min(len(keys), k0 + k_batch))
+        vals = sign[..., None] * hat[rep_of[..., None], at[best][..., ks]]  # (rows, cols, k)
+        khc[ks] = vals.transpose(2, 1, 0)
     if isinstance(khc, np.memmap):
         khc.flush()
     return khc
@@ -427,6 +497,17 @@ def _fill_rows(
         real[:, :, wrapped[0][sl], wrapped[1][sl], wrapped[2][sl]] = val.reshape(len(rows), nc * 9, -1)
 
 
+def _block_jacobi(m9: NDArray, k0: NDArray, e_cells: NDArray) -> NDArray:
+    """Each cell's own (M - K(0) E_n)^-1, (N, rows, rows): the block-Jacobi preconditioner of the solve.
+
+    All cells at once, one batched product and one stacked inverse, where a loop over the cells formed and
+    inverted each 36 x 36 matrix in turn (8.9 s at n = 32, 17.6 s at n = 40).
+    """
+    na, rows = m9.shape[0], m9.shape[0] * 9
+    ke = np.einsum("acij,ncbjk->naibk", k0, e_cells, optimize=True).reshape(len(e_cells), rows, rows)
+    return np.linalg.inv(np.kron(m9, np.eye(9))[None] - ke)
+
+
 def solve_graded_sphere_fft(
     omega: float,
     radius: float,
@@ -541,12 +622,7 @@ def solve_graded_sphere_fft(
         y = np.fft.ifftn(yh.reshape(rows, npad, npad, npad), axes=(1, 2, 3))[:, g0, g1, g2].T
         return (m9psi - y).ravel()
 
-    pre = np.array(
-        [
-            np.linalg.inv(np.kron(m9, np.eye(9)) - np.einsum("acij,cbjk->aibk", k0, en).reshape(rows, rows))
-            for en in e_cells
-        ]
-    )
+    pre = _block_jacobi(m9, k0, e_cells)
 
     def precondition(x: NDArray) -> NDArray:
         return np.einsum("nij,nj->ni", pre, x.reshape(n, rows)).ravel()
