@@ -18,7 +18,7 @@ from cubic_scattering import (
     MaterialContrast,
     ReferenceMedium,
 )
-from cubic_scattering.cell_averaged_pair import averaged_pair_block_9x9
+from cubic_scattering.cell_averaged_pair import averaged_pair_blocks_9x9
 from cubic_scattering.effective_contrasts import compute_cube_tmatrix
 from cubic_scattering.resonance_tmatrix import (
     _propagator_block_9x9,
@@ -277,7 +277,9 @@ class TestFFTMatvec:
     def test_fft_matvec_vs_dense(self, cell_average: bool) -> None:
         """The FFT convolution reproduces the dense assembly of the SAME operator.
 
-        Both propagators are exercised.  The test previously built the kernel
+        Both propagators are exercised, each through the route the kernel uses
+        (``averaged_pair_blocks_9x9``, which follows ``cell_average.route``).  The test previously built
+        the kernel
         through ``_build_fft_kernel`` while assembling the dense reference from
         the point propagator explicitly; once the single cell average became the
         default for the kernel, the two sides were different operators and the
@@ -302,7 +304,7 @@ class TestFFTMatvec:
                 if m != n:
                     r_vec = centres[m] - centres[n]
                     P = (
-                        averaged_pair_block_9x9(r_vec, OMEGA, REF, pitch)
+                        averaged_pair_blocks_9x9(r_vec[None], OMEGA, REF, pitch)[0]  # as the kernel
                         if cell_average
                         else _propagator_block_9x9(r_vec, OMEGA, REF)
                     )

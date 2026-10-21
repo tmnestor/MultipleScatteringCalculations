@@ -15,7 +15,27 @@ point_kernel:
   backend: fortran
 
 cell_average:
-  # Which implementation evaluates the receiver-cell average of the pair propagator
+  # How the receiver-cell average of the pair propagator is evaluated
+  # (cell_averaged_pair.averaged_pair_blocks_9x9), for the sphere FFT kernel and the dense sphere solver.
+  #
+  # route:
+  #   kseries     the frequency-amortised wavenumber series (cell_average_kseries.py): universal
+  #               coefficients computed once and stored (kseries_store), then a short sum per offset at
+  #               each frequency. Accurate to about 1e-13. Offsets it cannot reach (|k_S| r beyond about 9:
+  #               distant cells at high frequency) fall back to the quadrature below.
+  #   quadrature  the quadrature for every offset, at the automatic Gauss orders: about 1e-8 at worst, in
+  #               the second shell (see cell_averaged_pair.auto_n_gauss for the measured table).
+  # An explicit n_gauss in a call always means the quadrature at that order.
+  route: kseries
+  # kseries_tol: the series' truncation tolerance (graded_voxel.derivatives.moment_table_kseries).
+  kseries_tol: 1.0e-15
+  # kseries_store: the file of universal coefficients, a .npy array opened memory-mapped, so the parallel
+  # workers of a sweep share one copy. Created on first use and grown by the offsets each run needs (about a
+  # minute of CPU for n_sub = 25 the first time, compiled); never stale for a frequency, cell size or
+  # medium. Delete it only if loading reports a layout mismatch.
+  kseries_store: ~/.cache/cubic_scattering/receiver_kseries.npy
+
+  # backend: which implementation evaluates the receiver-cell average of the pair propagator
   # (cell_averaged_pair.averaged_pair_blocks_9x9), used by the sphere FFT kernel
   # (sphere_scattering_fft._build_fft_kernel): a cubed Gauss rule per separation, the dominant cost of
   # building that kernel.

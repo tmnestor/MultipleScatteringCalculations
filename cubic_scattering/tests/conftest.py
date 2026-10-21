@@ -7,7 +7,29 @@ skipped rather than failing at collection.
 
 import importlib.util
 
+import pytest
+
 from cubic_scattering.tests.time_budget import *  # noqa: F403
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _private_kseries_store(tmp_path_factory):
+    """Keep the tests out of the user's coefficient store (``cell_average.kseries_store``).
+
+    The default route builds and grows that store on first use, so any test reaching a sphere kernel would
+    otherwise write into ~/.cache, and parallel workers would write the same file. Each session (each xdist
+    worker) gets its own store in a temporary directory instead.
+    """
+    from cubic_scattering import cell_average_kseries as ck
+
+    path = tmp_path_factory.mktemp("kseries") / "receiver_kseries.npy"
+    original = ck.store_path
+    ck.store_path = lambda: path
+    ck.clear_loaded_store()
+    yield path
+    ck.store_path = original
+    ck.clear_loaded_store()
+
 
 collect_ignore = (
     []

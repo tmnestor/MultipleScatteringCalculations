@@ -20,6 +20,7 @@ SOURCES = {
     "_point_kernel": ("point_kernel.f90", ["kernel_9x9"]),
     "_green_derivatives": ("green_derivatives.f90", ["scalar_derivative_fields"]),
     "_cell_average": ("cell_average.f90", ["averaged_tensors"]),
+    "_kseries_moments": ("kseries_moments.f90", ["kseries_moments"]),
 }
 
 

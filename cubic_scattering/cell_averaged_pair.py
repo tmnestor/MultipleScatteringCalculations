@@ -61,6 +61,7 @@ Conventions inherited: (z, x, y) ordering, time ``e^{-i omega t}``, outgoing
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -83,45 +84,97 @@ __all__ = [
     "averaged_pair_blocks_9x9",
     "averaged_pair_difference_tensors",
     "averaged_pair_scalar_tensors",
+    "CellAverageConfig",
     "cell_average_backend",
+    "cell_average_config",
     "tail_pair_block_9x9",
 ]
 
-#: The numerics configuration: which implementation evaluates the receiver-cell quadrature.
+#: The numerics configuration: how the receiver-cell average is evaluated.
 NUMERICS_YAML = Path(__file__).resolve().parent / "numerics.yml"
 _BACKENDS = ("python", "fortran")
+_ROUTES = ("kseries", "quadrature")
+_EXAMPLE = (
+    "cell_average:\n"
+    "  backend: fortran      # the quadrature; one of: python, fortran\n"
+    "  route: kseries        # one of: kseries, quadrature\n"
+    "  kseries_tol: 1.0e-15  # a positive number\n"
+    "  kseries_store: ~/.cache/cubic_scattering/receiver_kseries.npy"
+)
+
+
+@dataclass(frozen=True)
+class CellAverageConfig:
+    """The ``cell_average`` block of ``numerics.yml``; every key is required.
+
+    Attributes:
+        backend: The quadrature's implementation, 'python' or 'fortran'.
+        route: 'kseries' (the frequency-amortised series, with the quadrature for the offsets it cannot
+            reach) or 'quadrature' (the quadrature for every offset).
+        kseries_tol: The series' truncation tolerance.
+        kseries_store: The file holding the series' universal coefficients (``~`` allowed).
+    """
+
+    backend: str
+    route: str
+    kseries_tol: float
+    kseries_store: str
+
+
+def _config_error(key: str, problem: str) -> ValueError:
+    return ValueError(
+        f"cell_average.{key} {problem}\n"
+        f"  Where: {NUMERICS_YAML}, key cell_average.{key}\n"
+        f"  Valid:\n{_EXAMPLE}\n"
+        "  Fix:   set the key as in the block above, at the top level of that file (backend fortran needs\n"
+        "         conda run -n seismic python -m cubic_scattering.fortran.build)."
+    )
 
 
 @lru_cache(maxsize=1)
-def cell_average_backend() -> str:
-    """``cell_average.backend`` from ``cubic_scattering/numerics.yml``: 'python' or 'fortran'.
+def cell_average_config() -> CellAverageConfig:
+    """The ``cell_average`` block of ``cubic_scattering/numerics.yml``, validated.
 
-    Read once per process. There is no default: a missing file, key or unknown value is an error.
+    Read once per process. There is no default: a missing file, key or invalid value is an error.
 
     Raises:
         ValueError: with what is wrong, where to fix it, a valid example, and how to recover.
     """
-    example = "cell_average:\n  backend: fortran   # one of: python, fortran"
     if not NUMERICS_YAML.is_file():
         raise ValueError(
             "the numerics configuration file is missing.\n"
             f"  Where: {NUMERICS_YAML}\n"
-            f"  Valid:\n{example}\n"
+            f"  Valid:\n{_EXAMPLE}\n"
             "  Fix:   create that file with the block above."
         )
     cfg = yaml.safe_load(NUMERICS_YAML.read_text()) or {}
     section = cfg.get("cell_average") if isinstance(cfg, dict) else None
-    backend = section.get("backend") if isinstance(section, dict) else None
+    section = section if isinstance(section, dict) else {}
+
+    def found(key: str) -> str:
+        return "is missing" if section.get(key) is None else f"is {section.get(key)!r}"
+
+    backend = section.get("backend")
     if backend not in _BACKENDS:
-        found = "missing" if backend is None else repr(backend)
-        raise ValueError(
-            f"cell_average.backend is {found}; it must be one of {', '.join(_BACKENDS)}.\n"
-            f"  Where: {NUMERICS_YAML}, key cell_average.backend\n"
-            f"  Valid:\n{example}\n"
-            "  Fix:   add the block above under the top level of that file (fortran needs\n"
-            "         conda run -n seismic python -m cubic_scattering.fortran.build)."
-        )
-    return str(backend)
+        raise _config_error("backend", f"{found('backend')}; it must be one of {', '.join(_BACKENDS)}.")
+    route = section.get("route")
+    if route not in _ROUTES:
+        raise _config_error("route", f"{found('route')}; it must be one of {', '.join(_ROUTES)}.")
+    tol = section.get("kseries_tol")
+    if isinstance(tol, bool) or not isinstance(tol, int | float) or not tol > 0:
+        raise _config_error("kseries_tol", f"{found('kseries_tol')}; it must be a positive number.")
+    store = section.get("kseries_store")
+    if not isinstance(store, str) or not store:
+        raise _config_error("kseries_store", f"{found('kseries_store')}; it must be a file path.")
+    return CellAverageConfig(str(backend), str(route), float(tol), store)
+
+
+def cell_average_backend() -> str:
+    """``cell_average.backend`` from ``numerics.yml``: the quadrature's implementation."""
+    return cell_average_config().backend
+
+
+cell_average_backend.cache_clear = cell_average_config.cache_clear  # type: ignore[attr-defined]
 
 
 def auto_n_gauss(s_vec: NDArray, d: float) -> int:
@@ -145,6 +198,24 @@ def auto_n_gauss(s_vec: NDArray, d: float) -> int:
     The thresholds below are read off that table, not guessed.  Only the six
     face and twelve edge neighbours are expensive, so the adaptive rule costs
     almost nothing: every other separation is smooth and takes the base order.
+
+    ⚠ ACCURACY: THESE ORDERS GIVE ABOUT 1e-8, NOT ROUND-OFF.  The table above
+    calibrates the nearest shells only.  Measured on 21 October 2026, the whole
+    9 x 9 block at each order against a 32-point rule, worst over |k_S| d = 1e-3,
+    0.3, 1, 2 and damping 0 and 0.05 (d = 0.25):
+
+        offset     (1,0,0) (1,1,0) (1,1,1) (2,0,0) (2,1,0) (2,2,1) (3,2,1) (5,3,2)
+        n_gauss       16      12       8       6       6       6       6       6
+        rel error  4.1e-11 1.2e-11 1.6e-10 1.9e-8  4.3e-9  5.8e-11 4.1e-12 4.0e-13
+
+    The SECOND shell is the weak one: (2, 0, 0) sits exactly at q = 1.5, the
+    threshold, so it falls to the base order, while its integrand is still
+    sharply peaked.  The frequency-amortised series route
+    (``cell_average_kseries``) agrees with the 24- and 32-point rules to 1e-13
+    at every offset, so where both are available it is the accurate one.  The
+    compiled quadrature (``cell_average_fortran``) reproduces THIS function's
+    orders, and its tests compare it with the Python quadrature at the same
+    orders: they certify the transcription, not the accuracy.
 
     Args:
         s_vec: Separation, shape (3,).
@@ -377,19 +448,41 @@ def averaged_pair_blocks_9x9(
     *,
     n_gauss: int | None = None,
 ) -> NDArray:
-    """``averaged_pair_block_9x9`` at every separation of S (N, 3), shape (N, 9, 9).
+    """The receiver-cell averaged block at every separation of S (N, 3), shape (N, 9, 9).
 
-    Evaluated by the implementation that ``cubic_scattering/numerics.yml`` names
-    (``cell_average.backend``): the per-separation Python quadrature above, or its compiled
-    transcription, ``cell_average_fortran.averaged_pair_blocks_9x9_fortran``, which averages every
-    separation in one call. The two agree to round-off (``tests/test_cell_average_fortran.py``) and share
-    the memo.
+    The route is ``cell_average.route`` in ``cubic_scattering/numerics.yml``:
+
+    * ``kseries``: the frequency-amortised wavenumber series (``cell_average_kseries``) for every lattice
+      offset it reaches, accurate to about 1e-13; the quadrature for the rest (distant cells at high
+      frequency, separations off the lattice).
+    * ``quadrature``: the quadrature everywhere, at the automatic Gauss orders (about 1e-8 at worst: see
+      ``auto_n_gauss``).
+
+    An explicit ``n_gauss`` always means the quadrature at that order: it is how the convergence gates ask
+    for a particular rule. The quadrature itself is ``cell_average.backend``: the per-separation Python
+    rule above, or its compiled transcription (``cell_average_fortran``), equal to round-off at the same
+    orders.
 
     Raises:
         ValueError: If a receiver cell reaches its source, or if the configuration is invalid.
-        ImportError: If the configuration asks for the compiled quadrature and it has not been built.
+        ImportError: If the configuration asks for compiled code that has not been built.
     """
     S = np.atleast_2d(np.asarray(S, dtype=float))
+    cfg = cell_average_config()
+    if cfg.route == "kseries" and n_gauss is None:
+        from .cell_average_kseries import averaged_pair_blocks_9x9_kseries  # local: it imports this module
+
+        blocks, covered = averaged_pair_blocks_9x9_kseries(S, omega, ref, d, tol=cfg.kseries_tol)
+        if not covered.all():
+            blocks[~covered] = _quadrature_blocks(S[~covered], omega, ref, d, None)
+        return blocks
+    return _quadrature_blocks(S, omega, ref, d, n_gauss)
+
+
+def _quadrature_blocks(
+    S: NDArray, omega: complex, ref: ReferenceMedium, d: float, n_gauss: int | None
+) -> NDArray:
+    """The blocks by the quadrature of ``cell_average.backend``."""
     if cell_average_backend() == "fortran":
         from .cell_average_fortran import averaged_pair_blocks_9x9_fortran  # local: it imports this module
 

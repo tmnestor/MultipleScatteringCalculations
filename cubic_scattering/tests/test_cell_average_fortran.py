@@ -16,7 +16,11 @@ import numpy as np
 import pytest
 
 from cubic_scattering import cell_averaged_pair as CAP
-from cubic_scattering.cell_average_fortran import averaged_pair_blocks_9x9_fortran, averaged_tensors_fortran
+from cubic_scattering.cell_average_fortran import (
+    auto_n_gauss_many,
+    averaged_pair_blocks_9x9_fortran,
+    averaged_tensors_fortran,
+)
 from cubic_scattering.effective_contrasts import ReferenceMedium
 
 REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
@@ -91,6 +95,49 @@ def test_explicit_gauss_order_is_honoured(n_gauss: int) -> None:
     CAP.clear_block_cache()
     for i, s in enumerate(S):
         assert _rel(got[i], CAP.averaged_pair_block_9x9(s, omega, REF, D, n_gauss=n_gauss)) < 1e-12
+
+
+def _cube_images(offset: tuple[int, int, int]) -> np.ndarray:
+    """All signed permutations of an offset (48 for a generic one; repeats removed)."""
+    import itertools
+
+    images = {
+        tuple(sign * offset[p] for sign, p in zip(signs, perm, strict=True))
+        for perm in itertools.permutations(range(3))
+        for signs in itertools.product((1, -1), repeat=3)
+    }
+    return np.array(sorted(images), dtype=float)
+
+
+@pytest.mark.parametrize("offset", [(3, -1, 2), (4, 0, 4)])
+def test_every_cube_image_equals_its_own_direct_quadrature(offset: tuple[int, int, int]) -> None:
+    """The tensors at the 48 images come from one canonical quadrature, permuted and signed.
+
+    (3, -1, 2) has 48 distinct images; (4, 0, 4) has a zero and a tie, where the permutation is not
+    unique and the sign of the zero component is arbitrary.
+    """
+    omega = _omega(1.0, 0.05)
+    kp, ks = omega / REF.alpha, omega / REF.beta
+    S = _cube_images(offset) * D
+    ng = np.array([CAP.auto_n_gauss(s, D) for s in S])
+    dd2, dd3, dd4, ds0, ds1, ds2 = averaged_tensors_fortran(S, kp, ks, D, ng)
+    for i, s in enumerate(S):
+        want_d = CAP.averaged_pair_difference_tensors(s, kp, ks, D)
+        want_s = CAP.averaged_pair_scalar_tensors(s, ks, D)
+        for got, want in [(dd2[i], want_d[2]), (dd3[i], want_d[3]), (dd4[i], want_d[4])]:
+            assert _rel(got, want) < 1e-12
+        for got, want in [(ds0[i], want_s[0]), (ds1[i], want_s[1]), (ds2[i], want_s[2])]:
+            assert _rel(got, want) < 1e-12
+
+
+def test_vectorised_gauss_order_equals_the_scalar_rule_everywhere() -> None:
+    n = 13
+    span = np.arange(-(n - 1), n)
+    off = np.stack(np.meshgrid(span, span, span, indexing="ij"), -1).reshape(-1, 3)
+    S = np.concatenate([off[np.any(off != 0, axis=1)] * D, (OFFSETS + 0.37) * D])
+    want = np.array([CAP.auto_n_gauss(s, D) for s in S])
+    np.testing.assert_array_equal(auto_n_gauss_many(S, D), want)
+    assert set(want) == {6, 8, 12, 16}  # every branch of the rule is exercised
 
 
 def test_off_lattice_separation_is_computed_not_cached() -> None:
@@ -174,7 +221,10 @@ def test_missing_or_invalid_key(config_file, text: str) -> None:
 @pytest.mark.slow
 @pytest.mark.parametrize("backend", ["python", "fortran"])
 def test_dispatch_follows_the_configuration(config_file, backend: str) -> None:
-    config_file.write_text(f"cell_average:\n  backend: {backend}\n")
+    config_file.write_text(
+        f"cell_average:\n  backend: {backend}\n  route: quadrature\n  kseries_tol: 1.0e-15\n"
+        "  kseries_store: unused.npy\n"
+    )
     omega = _omega(0.3, 0.0)
     S = OFFSETS[:3] * D
     CAP.clear_block_cache()

@@ -24,6 +24,25 @@
 ! _tensors_from_ladder), and tests/test_cell_average_fortran.py checks that the two agree to round-off.
 ! If you change one, change the other.
 !
+! WHY THIS STEP MOVED FROM PYTHON TO FORTRAN (21 October 2026)
+! ------------------------------------------------------------
+! The sphere FFT kernel needs one averaged block per distinct offset between cells (9,260 offsets at
+! n_sub = 11, 117,648 at n_sub = 25), and each average is a cubed Gauss rule of 216 to 4,096 nodes. The
+! Python reference evaluates every node through a Python call that builds lists of small tensors:
+! measured at about 270 microseconds per node, whatever the offset. That made the kernel build 99% of
+! the solve: 619 s at n_sub = 11 against 1 to 2 s of GMRES, and more than 25 minutes at n_sub = 17,
+! for every frequency. Production sweeps many frequencies, and the build is repeated at each one.
+!
+! The arithmetic per node is a few hundred floating-point operations; the cost was the interpreter. A
+! compiled loop with OpenMP over offsets brought n_sub = 11 to 2.2 s on one core and 0.8 s on eight,
+! n_sub = 17 to 3.2 s. NumPy vectorisation over the nodes was the alternative: it removes most of the
+! call overhead but materialises (nodes x 81) complex fourth-derivative tensors per offset and still
+! loops in Python over offsets; the compiled kernels already in this directory (point_kernel.f90,
+! green_derivatives.f90) set the pattern, with a Python reference kept beside each.
+!
+! The Python implementation stays: it is the golden reference this file is checked against, and
+! numerics.yml (cell_average.backend) selects either. A change here must be made there too.
+!
 ! THE TWO BRANCHES OF THE DIFFERENCE LADDER
 ! -----------------------------------------
 ! F_q = ((1/r) d/dr)^q f.  D's two ladders cancel their leading 1/r terms against each other, so
