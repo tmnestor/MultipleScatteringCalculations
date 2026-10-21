@@ -61,8 +61,11 @@ Conventions inherited: (z, x, y) ordering, time ``e^{-i omega t}``, outgoing
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
+import yaml
 from numpy.typing import NDArray
 
 from .cell_averaged_lattice import _cell_nodes
@@ -77,10 +80,48 @@ from .kupradze_derivatives import (
 __all__ = [
     "auto_n_gauss",
     "averaged_pair_block_9x9",
+    "averaged_pair_blocks_9x9",
     "averaged_pair_difference_tensors",
     "averaged_pair_scalar_tensors",
+    "cell_average_backend",
     "tail_pair_block_9x9",
 ]
+
+#: The numerics configuration: which implementation evaluates the receiver-cell quadrature.
+NUMERICS_YAML = Path(__file__).resolve().parent / "numerics.yml"
+_BACKENDS = ("python", "fortran")
+
+
+@lru_cache(maxsize=1)
+def cell_average_backend() -> str:
+    """``cell_average.backend`` from ``cubic_scattering/numerics.yml``: 'python' or 'fortran'.
+
+    Read once per process. There is no default: a missing file, key or unknown value is an error.
+
+    Raises:
+        ValueError: with what is wrong, where to fix it, a valid example, and how to recover.
+    """
+    example = "cell_average:\n  backend: fortran   # one of: python, fortran"
+    if not NUMERICS_YAML.is_file():
+        raise ValueError(
+            "the numerics configuration file is missing.\n"
+            f"  Where: {NUMERICS_YAML}\n"
+            f"  Valid:\n{example}\n"
+            "  Fix:   create that file with the block above."
+        )
+    cfg = yaml.safe_load(NUMERICS_YAML.read_text()) or {}
+    section = cfg.get("cell_average") if isinstance(cfg, dict) else None
+    backend = section.get("backend") if isinstance(section, dict) else None
+    if backend not in _BACKENDS:
+        found = "missing" if backend is None else repr(backend)
+        raise ValueError(
+            f"cell_average.backend is {found}; it must be one of {', '.join(_BACKENDS)}.\n"
+            f"  Where: {NUMERICS_YAML}, key cell_average.backend\n"
+            f"  Valid:\n{example}\n"
+            "  Fix:   add the block above under the top level of that file (fortran needs\n"
+            "         conda run -n seismic python -m cubic_scattering.fortran.build)."
+        )
+    return str(backend)
 
 
 def auto_n_gauss(s_vec: NDArray, d: float) -> int:
@@ -273,7 +314,7 @@ def clear_block_cache() -> None:
 
 def averaged_pair_block_9x9(
     s_vec: NDArray,
-    omega: float,
+    omega: complex,
     ref: ReferenceMedium,
     d: float,
     *,
@@ -299,15 +340,8 @@ def averaged_pair_block_9x9(
         corrupting the cache.
     """
     s = np.asarray(s_vec, dtype=float)
-    offset = (
-        int(round(float(s[0]) / d)),
-        int(round(float(s[1]) / d)),
-        int(round(float(s[2]) / d)),
-    )
-    on_lattice = float(np.max(np.abs(s - d * np.array(offset)))) <= 1.0e-9 * d
-
-    if on_lattice:
-        key = (offset, float(d), complex(omega), ref.alpha, ref.beta, ref.rho, n_gauss)
+    key = _lattice_key(s, omega, ref, d, n_gauss)
+    if key is not None:
         hit = _BLOCK_CACHE.get(key)
         if hit is not None:
             return hit.copy()
@@ -316,9 +350,51 @@ def averaged_pair_block_9x9(
     d_s = averaged_pair_scalar_tensors(s, omega / ref.beta, d, n_gauss=n_gauss)
     block = _assemble(d_diff, d_s, omega, ref)
 
-    if on_lattice and len(_BLOCK_CACHE) < _CACHE_MAX:
+    if key is not None and len(_BLOCK_CACHE) < _CACHE_MAX:
         _BLOCK_CACHE[key] = block
     return block.copy()
+
+
+def _lattice_key(
+    s: NDArray, omega: complex, ref: ReferenceMedium, d: float, n_gauss: int | None
+) -> tuple | None:
+    """The memo key of an on-lattice separation, or None for one that is not a lattice multiple of d."""
+    offset = (
+        int(round(float(s[0]) / d)),
+        int(round(float(s[1]) / d)),
+        int(round(float(s[2]) / d)),
+    )
+    if float(np.max(np.abs(s - d * np.array(offset)))) > 1.0e-9 * d:
+        return None
+    return (offset, float(d), complex(omega), ref.alpha, ref.beta, ref.rho, n_gauss)
+
+
+def averaged_pair_blocks_9x9(
+    S: NDArray,
+    omega: complex,
+    ref: ReferenceMedium,
+    d: float,
+    *,
+    n_gauss: int | None = None,
+) -> NDArray:
+    """``averaged_pair_block_9x9`` at every separation of S (N, 3), shape (N, 9, 9).
+
+    Evaluated by the implementation that ``cubic_scattering/numerics.yml`` names
+    (``cell_average.backend``): the per-separation Python quadrature above, or its compiled
+    transcription, ``cell_average_fortran.averaged_pair_blocks_9x9_fortran``, which averages every
+    separation in one call. The two agree to round-off (``tests/test_cell_average_fortran.py``) and share
+    the memo.
+
+    Raises:
+        ValueError: If a receiver cell reaches its source, or if the configuration is invalid.
+        ImportError: If the configuration asks for the compiled quadrature and it has not been built.
+    """
+    S = np.atleast_2d(np.asarray(S, dtype=float))
+    if cell_average_backend() == "fortran":
+        from .cell_average_fortran import averaged_pair_blocks_9x9_fortran  # local: it imports this module
+
+        return averaged_pair_blocks_9x9_fortran(S, omega, ref, d, n_gauss=n_gauss)
+    return np.stack([averaged_pair_block_9x9(s, omega, ref, d, n_gauss=n_gauss) for s in S])
 
 
 def tail_pair_block_9x9(

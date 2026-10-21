@@ -25,7 +25,7 @@ from scipy.special import hankel1, jv, lpmv
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-from .cell_averaged_pair import averaged_pair_block_9x9
+from .cell_averaged_pair import averaged_pair_blocks_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
@@ -207,7 +207,7 @@ def compute_sphere_foldy_lax(
 
     def _blocks(R: NDArray) -> NDArray:
         if cell_average:
-            return np.stack([averaged_pair_block_9x9(r, omega, ref, pitch, n_gauss=n_gauss) for r in R])
+            return averaged_pair_blocks_9x9(R, omega, ref, pitch, n_gauss=n_gauss)
         return _propagator_blocks_9x9(R, omega, ref)
 
     # The propagator depends only on the separation, and the centres lie on a

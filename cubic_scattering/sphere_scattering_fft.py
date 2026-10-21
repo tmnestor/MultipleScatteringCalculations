@@ -27,7 +27,7 @@ from scipy.sparse.linalg import LinearOperator, gmres
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-from .cell_averaged_pair import averaged_pair_block_9x9
+from .cell_averaged_pair import averaged_pair_blocks_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
@@ -136,7 +136,7 @@ def _build_fft_kernel(
     offsets = offsets[np.any(offsets != 0, axis=1)]
     R = offsets.astype(float) * dd
     P_blocks = (
-        np.stack([averaged_pair_block_9x9(r, omega, ref, dd, n_gauss=n_gauss) for r in R])
+        averaged_pair_blocks_9x9(R, omega, ref, dd, n_gauss=n_gauss)
         if cell_average
         else _propagator_blocks_9x9(R, omega, ref)
     )

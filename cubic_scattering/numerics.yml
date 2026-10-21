@@ -13,3 +13,14 @@ point_kernel:
   #            tests/test_green_derivatives.py). Build them first with
   #            conda run -n seismic python -m cubic_scattering.fortran.build
   backend: fortran
+
+cell_average:
+  # Which implementation evaluates the receiver-cell average of the pair propagator
+  # (cell_averaged_pair.averaged_pair_blocks_9x9), used by the sphere FFT kernel
+  # (sphere_scattering_fft._build_fft_kernel): a cubed Gauss rule per separation, the dominant cost of
+  # building that kernel.
+  #   python   cell_averaged_pair.averaged_pair_block_9x9, one separation at a time: the NumPy reference.
+  #   fortran  cubic_scattering/fortran/cell_average.f90, a term-for-term transcription of it (OpenMP over
+  #            separations), equal to round-off (tests/test_cell_average_fortran.py). Build it first with
+  #            conda run -n seismic python -m cubic_scattering.fortran.build
+  backend: fortran

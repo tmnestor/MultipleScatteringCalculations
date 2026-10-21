@@ -8,7 +8,7 @@ py=${PYTHON:-python3}
 suffix=$("$py" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
 dir=cubic_scattering/fortran
 stale=0
-for module in _point_kernel _green_derivatives; do  # as SOURCES in cubic_scattering/fortran/build.py
+for module in _point_kernel _green_derivatives _cell_average; do  # as SOURCES in cubic_scattering/fortran/build.py
   so="$dir/$module$suffix"
   if [ ! -f "$so" ]; then
     stale=1
