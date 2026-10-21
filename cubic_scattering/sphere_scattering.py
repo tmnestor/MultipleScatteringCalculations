@@ -1426,6 +1426,81 @@ def _voigt_to_tensor(voigt_6: NDArray) -> NDArray:
     return T
 
 
+def point_far_field(
+    centres: NDArray[np.floating],
+    sources: NDArray[np.complexfloating],
+    omega: float,
+    ref: ReferenceMedium,
+    r_hat_arr: NDArray[np.floating],
+    r_distance: float,
+) -> tuple[NDArray[np.complexfloating], NDArray[np.complexfloating]]:
+    """The far field of point sources at the cell centres: force and stress dipole, vectorised.
+
+    Each cell carries the source s_n = T_n psi_n, [force_3, Voigt stress dipole_6] (the Voigt off-diagonal
+    entries doubled), and radiates through the far-field Green's tensor and its source derivative,
+        u_P = G_P^far r_hat [(r_hat . F) + i k_P (r_hat . sigma . r_hat)],
+        u_S = G_S^far [(F + i k_S sigma . r_hat)_perp],
+    summed over the cells (``foldy_lax_far_field`` builds the sources and calls this).
+
+    Args:
+        centres: Cell centres (N, 3).
+        sources: Their sources (N, 9).
+        omega: Angular frequency.
+        ref: Background medium.
+        r_hat_arr: Observation directions (M, 3).
+        r_distance: Distance from the origin to the observation points (m).
+
+    Returns:
+        (u_P, u_S), each (M, 3).
+    """
+    r_hat_arr = np.asarray(r_hat_arr, dtype=float)
+    centres = np.asarray(centres, dtype=float)
+    kP, kS, r = omega / ref.alpha, omega / ref.beta, r_distance
+    force = sources[:, :3]
+    sigma = np.zeros((len(sources), 3, 3), dtype=complex)  # the dipole tensor, off-diagonals halved
+    for v, (i, j) in enumerate(((0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1))):
+        scale = 1.0 if i == j else 0.5
+        sigma[:, i, j] = sigma[:, j, i] = scale * sources[:, 3 + v]
+    proj = r_hat_arr @ centres.T  # (M, N): r_hat . x_n
+    g_p = np.exp(1j * kP * (r - proj)) / (4.0 * np.pi * ref.rho * ref.alpha**2 * r)
+    g_s = np.exp(1j * kS * (r - proj)) / (4.0 * np.pi * ref.rho * ref.beta**2 * r)
+    sigma_r = np.einsum("nij,mj->mni", sigma, r_hat_arr)  # (M, N, 3): sigma . r_hat
+    sigma_rr = np.einsum("mi,mni->mn", r_hat_arr, sigma_r)
+    # ⚠ THE SIGNS HERE WERE WRONG, IN A WAY THAT CANCELLED AGAINST MIE.
+    #
+    # This block used to read
+    #     Q_P = (r_hat.F) - i k_P sigma_rr ;   u_P -= G_far_P Q_P r_hat
+    # justified by a comment asserting that the Lippmann-Schwinger body
+    # force is "-ω²δρ u".  It is "+ω²δρ u".  Expanded, the old code
+    # computed  u_P = G[-(r_hat.F) + i k sigma_rr]: the FORCE term
+    # negated and the dipole term correct.  Scored channel by channel at
+    # the backscattering axis against the Born amplitude derived
+    # independently in Mathematica/ElasticBornBackscatter.wl:
+    #
+    #     density only   0.9862 at -180.00 deg     <- inverted
+    #     lambda  only   0.9995 at   -0.00 deg     <- correct
+    #
+    # The correct assembly follows from u_i = G_ij f_j - (d'_k G_ij)m_jk
+    # with d' = -d, i.e. the SOURCE derivative, which in the far field is
+    # d'_k G ~ -i k r_hat_k G.  Hence the dipole enters as +i k, with the
+    # same overall sign as the force, and the propagator's own C block
+    # already uses +dG, so the old form was inconsistent with the solve
+    # it was extracting from.
+    #
+    # This error paired with the (-1)^n that used to sit in
+    # compute_elastic_mie: the two agreed with each other and neither
+    # agreed with physics.  The invariant that catches it either way is
+    # TestImpedanceNull: a sphere with no impedance contrast cannot
+    # backscatter at normal incidence.
+    q_p = r_hat_arr @ force.T + 1j * kP * sigma_rr  # (M, N)
+    u_P = np.sum(g_p * q_p, axis=1)[:, None] * r_hat_arr
+    # S-wave: the same convention, force and dipole with the same sign
+    q_s = force[None, :, :] + 1j * kS * sigma_r
+    q_s_perp = q_s - np.einsum("mni,mi->mn", q_s, r_hat_arr)[:, :, None] * r_hat_arr[:, None, :]
+    u_S = np.einsum("mn,mni->mi", g_s, q_s_perp)
+    return u_P, u_S
+
+
 def decompose_SV_SH(
     u_S: NDArray[np.complexfloating],
     r_hat_arr: NDArray[np.floating],
@@ -1565,63 +1640,11 @@ def foldy_lax_far_field(
     inc_vec[:3] = pol
     inc_vec[3:] = eps_inc_voigt
 
-    for obs_idx in range(M):
-        r_hat = r_hat_arr[obs_idx]
-
-        for n in range(N):
-            # Scattered source at cell n
-            psi_n = psi_exc[9 * n : 9 * n + 9, :] @ inc_vec
-            source = (T_loc if t_local is None else t_local[n]) @ psi_n  # [force_3, stress_dipole_6]
-
-            force = source[:3]
-            sigma = _voigt_to_tensor(source[3:])  # 3x3 stress dipole tensor
-
-            # Phase from cell position to observation point
-            phase_out_P = np.exp(1j * kP * (r - np.dot(r_hat, centres[n])))
-            phase_out_S = np.exp(1j * kS * (r - np.dot(r_hat, centres[n])))
-
-            G_far_P = phase_out_P / (4.0 * np.pi * ref.rho * ref.alpha**2 * r)
-            G_far_S = phase_out_S / (4.0 * np.pi * ref.rho * ref.beta**2 * r)
-
-            # Stress dipole contractions with r_hat
-            sigma_r = sigma @ r_hat  # sigma . r_hat (vector)
-            sigma_rr = np.dot(r_hat, sigma_r)  # r_hat . sigma . r_hat (scalar)
-
-            # ⚠ THE SIGNS HERE WERE WRONG, IN A WAY THAT CANCELLED AGAINST MIE.
-            #
-            # This block used to read
-            #     Q_P = (r_hat.F) - i k_P sigma_rr ;   u_P -= G_far_P Q_P r_hat
-            # justified by a comment asserting that the Lippmann-Schwinger body
-            # force is "-ω²δρ u".  It is "+ω²δρ u".  Expanded, the old code
-            # computed  u_P = G[-(r_hat.F) + i k sigma_rr]: the FORCE term
-            # negated and the dipole term correct.  Scored channel by channel at
-            # the backscattering axis against the Born amplitude derived
-            # independently in Mathematica/ElasticBornBackscatter.wl:
-            #
-            #     density only   0.9862 at -180.00 deg     <- inverted
-            #     lambda  only   0.9995 at   -0.00 deg     <- correct
-            #
-            # The correct assembly follows from u_i = G_ij f_j - (d'_k G_ij)m_jk
-            # with d' = -d, i.e. the SOURCE derivative, which in the far field is
-            # d'_k G ~ -i k r_hat_k G.  Hence the dipole enters as +i k, with the
-            # same overall sign as the force -- and the propagator's own C block
-            # already uses +dG, so the old form was inconsistent with the solve
-            # it was extracting from.
-            #
-            # This error paired with the (-1)^n that used to sit in
-            # compute_elastic_mie: the two agreed with each other and neither
-            # agreed with physics.  The invariant that catches it either way is
-            # TestImpedanceNull -- a sphere with no impedance contrast cannot
-            # backscatter at normal incidence.
-            Q_P = np.dot(r_hat, force) + 1j * kP * sigma_rr
-            u_P[obs_idx] += G_far_P * Q_P * r_hat
-
-            # S-wave: same convention -- force and dipole with the same sign.
-            Q_S = force + 1j * kS * sigma_r
-            Q_S_perp = Q_S - np.dot(r_hat, Q_S) * r_hat
-            u_S[obs_idx] += G_far_S * Q_S_perp
-
-    return u_P, u_S
+    # the plane wave's exciting field in every cell, and the sources it drives: [force_3, stress_dipole_6]
+    psi = psi_exc.reshape(N, 9, 9) @ inc_vec
+    t_cells = np.broadcast_to(T_loc, (N, 9, 9)) if t_local is None else t_local
+    sources = np.einsum("nij,nj->ni", t_cells, psi)
+    return point_far_field(centres, sources, omega, ref, r_hat_arr, r)
 
 
 def _plane_wave_strain_voigt(

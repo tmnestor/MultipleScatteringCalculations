@@ -9,7 +9,8 @@ support complex on MPS).
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -33,7 +34,7 @@ from .sphere_scattering import SphereDecompositionResult
 from .sphere_scattering_fft import _build_fft_kernel, _build_grid_index_map
 from .torch_gmres import get_device, select_dtype, to_numpy, to_torch, torch_gmres
 
-__all__ = ["compute_sphere_foldy_lax_fft_gpu"]
+__all__ = ["compute_sphere_foldy_lax_fft_gpu", "point_wave_far_field", "solve_point_plane_wave"]
 
 
 def _pack_gpu(
@@ -213,14 +214,14 @@ def _apply_canonical(ck: CanonicalKernel, w_pm: torch.Tensor) -> torch.Tensor:
     return torch.cat([z, -z])[ck.idx_out].reshape(-1, 9)
 
 
-def _matvec_fft_canonical(
+def _conv_fft_canonical(
     w_flat: torch.Tensor,
     ck: CanonicalKernel,
     grid_idx: torch.Tensor,
     nP: int,
     nC: int,
 ) -> torch.Tensor:
-    """(I - P*T)*w via FFT convolution, the kernel applied through its canonical blocks.
+    """The convolution of the stored kernel with w alone, through its canonical blocks.
 
     Args:
         w_flat: Input vector, shape (9*nC,).
@@ -230,7 +231,7 @@ def _matvec_fft_canonical(
         nC: Number of active cells.
 
     Returns:
-        Result vector, shape (9*nC,).
+        The convolution, shape (9*nC,).
     """
     # point-major throughout, (nP, nP, nP, 9), so that the product needs no transposed copies
     i0, i1, i2 = grid_idx[:, 0], grid_idx[:, 1], grid_idx[:, 2]
@@ -239,7 +240,14 @@ def _matvec_fft_canonical(
     w_hat = torch.fft.fftn(grids, dim=(0, 1, 2))
     y_pm = _apply_canonical(ck, w_hat.reshape(-1, 9))
     y_grids = torch.fft.ifftn(y_pm.reshape(nP, nP, nP, 9), dim=(0, 1, 2))
-    return w_flat + y_grids[i0, i1, i2].reshape(-1)
+    return y_grids[i0, i1, i2].reshape(-1)
+
+
+def _matvec_fft_canonical(
+    w_flat: torch.Tensor, ck: CanonicalKernel, grid_idx: torch.Tensor, nP: int, nC: int
+) -> torch.Tensor:
+    """(I - P*T)*w via FFT convolution, the kernel (-P T) applied through its canonical blocks."""
+    return w_flat + _conv_fft_canonical(w_flat, ck, grid_idx, nP, nC)
 
 
 def _column_orbits(qs: Sequence[NDArray]) -> tuple[list[int], list[tuple[int, int, NDArray, float]]]:
@@ -473,3 +481,139 @@ def compute_sphere_foldy_lax_fft_gpu(
         contrast=contrast,
         psi_pw=psi_pw,
     )
+
+
+@dataclass(frozen=True)
+class PointWaveResult:
+    """The point formulation's exciting field for one incident plane wave (``solve_point_plane_wave``).
+
+    Attributes:
+        centres: Cell centres (N, 3).
+        psi: The exciting field in each cell (N, 9): displacement, then Voigt strain.
+        t_cells: Each cell's 9 x 9 T-matrix (N, 9, 9).
+        omega: Angular frequency.
+        ref: Background medium.
+        a_sub: Cell half-width (m).
+    """
+
+    centres: NDArray[np.floating]
+    psi: NDArray[np.complexfloating]
+    t_cells: NDArray[np.complexfloating]
+    omega: float
+    ref: ReferenceMedium
+    a_sub: float
+
+
+def solve_point_plane_wave(
+    omega: float,
+    radius: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    n_sub: int,
+    k_hat: NDArray,
+    pol: NDArray,
+    wave_type: str,
+    *,
+    profile: Callable[[NDArray[np.floating]], float] | None,
+    gmres_tol: float,
+    device: torch.device,
+    dtype: torch.dtype,
+    gmres_maxiter: int = 500,
+    timings: dict[str, float] | None = None,
+) -> PointWaveResult:
+    """The point formulation for one incident plane wave: one GMRES solve on the canonical kernel.
+
+    The scattered field of one wave needs only its own right-hand side, the plane wave
+    exp(i k.x) [p, eps] at every cell, not the eighteen columns of ``compute_sphere_foldy_lax_fft_gpu``
+    (the composite T-matrix and the plane-wave basis). A uniform contrast folds the cube's T into the
+    kernel, -P T; a graded one (``profile``: the cell centred at x carries profile(x) times ``contrast``,
+    as ``compute_sphere_foldy_lax_fft``'s ``contrast_profile``) applies each cell's T before the
+    convolution with -P alone, w + conv(-P, T w). Both kernels are equivariant under the cube group, so
+    both are stored at the canonical k only (``CanonicalKernel``).
+
+    Args:
+        omega: Angular frequency (rad/s).
+        radius: Sphere radius (m).
+        ref: Background medium.
+        contrast: Material contrast (scaled by ``profile`` when given).
+        n_sub: Cells per edge of the bounding cube; cells whose centre is inside the sphere are kept.
+        k_hat: Incident direction.
+        pol: Incident polarisation.
+        wave_type: 'P' or 'S'.
+        profile: The contrast profile, or None for a uniform contrast.
+        gmres_tol: GMRES relative tolerance.
+        device: Torch device.
+        dtype: Torch complex dtype.
+        gmres_maxiter: GMRES iteration bound.
+        timings: When given, filled with kernel_s (cell T-matrices, kernel and its canonical blocks),
+            solve_s (GMRES) and iterations.
+
+    Raises:
+        RuntimeError: if GMRES does not reach ``gmres_tol`` within ``gmres_maxiter`` iterations.
+    """
+    from .resonance_tmatrix import _plane_wave_k_vec
+    from .sphere_scattering import _plane_wave_strain_voigt
+
+    t0 = time.perf_counter()
+    grid_idx_np, centres, a_sub = _build_grid_index_map(radius, n_sub)
+    n_c, n_p = len(centres), 2 * n_sub - 1
+
+    def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
+        return _sub_cell_tmatrix_9x9(compute_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
+
+    if profile is None:
+        t_loc = cell_tmatrix(contrast)
+        t_cells = np.broadcast_to(t_loc, (n_c, 9, 9))
+        kernel_hat = _build_fft_kernel(n_sub, a_sub, t_loc, omega, ref)
+    else:
+        cache: dict[float, NDArray[np.complexfloating]] = {}
+        t_list = []
+        for pos in centres:
+            g = float(profile(pos))
+            if g not in cache:
+                cache[g] = cell_tmatrix(
+                    MaterialContrast(
+                        Dlambda=g * contrast.Dlambda, Dmu=g * contrast.Dmu, Drho=g * contrast.Drho
+                    )
+                )
+            t_list.append(cache[g])
+        t_cells = np.array(t_list)
+        kernel_hat = _build_fft_kernel(n_sub, a_sub, np.eye(9, dtype=complex), omega, ref)
+    kernel_c = _canonical_kernel(kernel_hat, n_sub, device, dtype)
+    del kernel_hat
+    grid_idx = torch.from_numpy(grid_idx_np.copy()).long().to(device)
+    t_dev = None if profile is None else to_torch(t_cells, device, dtype)
+    t1 = time.perf_counter()
+
+    def matvec(w: torch.Tensor) -> torch.Tensor:
+        if t_dev is None:
+            return w + _conv_fft_canonical(w, kernel_c, grid_idx, n_p, n_c)
+        tw = torch.einsum("nij,nj->ni", t_dev, w.reshape(n_c, 9)).reshape(-1)
+        return w + _conv_fft_canonical(tw, kernel_c, grid_idx, n_p, n_c)
+
+    k_vec = _plane_wave_k_vec(omega, ref, k_hat, wave_type)
+    pol = np.asarray(pol, dtype=float)
+    k_mag = float(np.linalg.norm(k_vec))
+    inc = np.concatenate([pol, _plane_wave_strain_voigt(k_vec / k_mag, pol, k_mag)])
+    rhs = (np.exp(1j * (centres @ k_vec))[:, None] * inc[None, :]).ravel()
+    b = to_torch(rhs, device, dtype)
+    x, n_iter, rel_res = torch_gmres(matvec, b, x0=b.clone(), tol=gmres_tol, maxiter=gmres_maxiter)
+    if rel_res > gmres_tol:
+        raise RuntimeError(
+            f"solve_point_plane_wave: GMRES reached a relative residual of {rel_res:.2e} after {n_iter} "
+            f"iterations, above gmres_tol = {gmres_tol:g} (n_sub = {n_sub}). Fix: raise gmres_maxiter or "
+            "loosen gmres_tol."
+        )
+    if timings is not None:
+        timings.update(kernel_s=t1 - t0, solve_s=time.perf_counter() - t1, iterations=float(n_iter))
+    return PointWaveResult(centres, to_numpy(x).reshape(n_c, 9), np.asarray(t_cells), omega, ref, a_sub)
+
+
+def point_wave_far_field(
+    res: PointWaveResult, r_hat_arr: NDArray[np.floating], r_distance: float
+) -> tuple[NDArray[np.complexfloating], NDArray[np.complexfloating]]:
+    """(u_P, u_S) far fields of ``solve_point_plane_wave``'s solution: ``point_far_field`` of T_n psi_n."""
+    from .sphere_scattering import point_far_field
+
+    sources = np.einsum("nij,nj->ni", res.t_cells, res.psi)
+    return point_far_field(res.centres, sources, res.omega, res.ref, r_hat_arr, r_distance)

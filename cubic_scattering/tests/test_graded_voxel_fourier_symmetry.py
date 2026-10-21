@@ -117,3 +117,14 @@ def test_the_solve_through_the_canonical_kernel_equals_the_full_kernel_solve(mon
     monkeypatch.setattr(F, "point_kernel_backend", lambda: "python")
     full = F.solve_graded_sphere_fft(*args, p=1, r=1, gmres_tol=1e-13)
     assert np.linalg.norm(canon.psi - full.psi) / np.linalg.norm(full.psi) < 1e-12
+
+
+def test_the_solve_reports_its_stage_timings() -> None:
+    from cubic_scattering.graded_voxel import fft as F
+
+    timings: dict[str, float] = {}
+    F.solve_graded_sphere_fft(
+        OMEGA, 10.0, REF, CON, 3, _profile, KHAT, KHAT, "P", p=1, r=1, gmres_tol=1e-9, timings=timings
+    )
+    assert set(timings) == {"kernel_s", "solve_s", "products"}
+    assert timings["products"] >= 1 and timings["kernel_s"] > 0 and timings["solve_s"] > 0

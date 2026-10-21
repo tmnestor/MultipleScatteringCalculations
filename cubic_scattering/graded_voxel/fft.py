@@ -22,6 +22,7 @@ total number of iterations is bounded explicitly as restart * max_cycles.
 """
 
 import itertools
+import time
 from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
@@ -444,6 +445,7 @@ def solve_graded_sphere_fft(
     blocks: dict | None = None,
     kernel_dtype: type = np.complex128,
     kernel_path: Path | None = None,
+    timings: dict[str, float] | None = None,
 ) -> GradedVoxelResult:
     """The graded-voxel solve of ``solver.solve_graded_sphere``, with an FFT matvec and GMRES.
 
@@ -452,11 +454,14 @@ def solve_graded_sphere_fft(
     stored in ``kernel_dtype`` (complex64 halves its memory; the product is then that of a fixed operator
     perturbed by ~1e-7, so GMRES converges as before and the solution moves by about that) and, with
     ``kernel_path``, memory-mapped to that file rather than held in memory.  ``blocks`` (every offset's
-    block, ``offset_blocks``) is the former path, kept.
+    block, ``offset_blocks``) is the former path, kept.  ``timings``, when given, is filled with kernel_s
+    (the contrast projection, the blocks, the kernel and the preconditioner), solve_s (GMRES) and products
+    (the number of matrix-vector products).
 
     Raises:
         RuntimeError: when GMRES does not reach ``gmres_tol`` within restart * max_cycles iterations.
     """
+    t_start = time.perf_counter()
     h_cell = radius / n_sub
     grid_idx, centres, h = _build_grid_index_map(
         radius,
@@ -511,7 +516,10 @@ def solve_graded_sphere_fft(
         # local: kernel_fortran imports kernel
         from .kernel_fortran import apply_canonical_fortran, apply_hat_fortran
 
+    products = [0]
+
     def matvec(x: NDArray) -> NDArray:
+        products[0] += 1
         psi = x.reshape(n, na, 9)
         src = np.einsum("ncbij,nbj->nci", e_cells, psi).reshape(n, cols)
         m9psi = np.einsum("ab,nbi->nai", m9, psi).reshape(n, rows)
@@ -550,6 +558,7 @@ def solve_graded_sphere_fft(
     k_hat = np.asarray(k_hat, dtype=float) / np.linalg.norm(k_hat)
     amp = np.concatenate([np.asarray(pol, dtype=complex), _plane_wave_strain_voigt(k_hat, pol, k_mag)])
     rhs = plane_wave_moments(centres, h, k_mag * k_hat, amp, n_field)[:, :na].ravel()
+    t_solve = time.perf_counter()
     sol, info = gmres(
         a_op,
         rhs,
@@ -566,6 +575,10 @@ def solve_graded_sphere_fft(
             f"within {restart * max_cycles} iterations (restart {restart} x {max_cycles} cycles; "
             f"info {info}) at n_sub = {n_sub}. Fix: raise "
             "max_cycles or restart, or loosen gmres_tol."
+        )
+    if timings is not None:
+        timings.update(
+            kernel_s=t_solve - t_start, solve_s=time.perf_counter() - t_solve, products=float(products[0])
         )
     full = np.zeros((n, n_field, 9), dtype=complex)
     full[:, :na] = sol.reshape(n, na, 9)

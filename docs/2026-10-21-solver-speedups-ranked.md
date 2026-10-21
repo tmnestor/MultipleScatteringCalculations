@@ -506,3 +506,59 @@ T_comp to round-off. Whole point solve at k_S R = 3:
 
 Less than the factor two in solves, because the kernel's construction is paid once either way. Both are
 written up in the thesis's Chapter 7, section 7.4 (the cube group in the solution).
+
+## Item 10: the point formulation against the Galerkin voxel (set up 22 October 2026)
+
+**The question.** At equal accuracy, which formulation is cheaper? The Galerkin voxel (p = r = 1) converges
+at fourth order on a smooth body against the point voxel's second, but it carries 36 unknowns a cell against
+9, a 36 x 90 kernel against 9 x 9, and Galerkin blocks against a closed-form T-matrix and one
+receiver-averaged propagator; and on a body with a sharp surface the staircase error of the voxelised shape
+may cap both orders. Measured, not argued: error against wall time, on a smooth and on a sharp body.
+
+**Fairness.** Each arm by its fastest route and for the one incident wave the scattered field needs
+(`solve_point_plane_wave`, new: the single right-hand side on the canonical-k kernel, uniform or graded
+contrast; `solve_graded_sphere_fft`); the same GMRES tolerance (1e-10), complex128 on the CPU, the same
+far-field measure (max |u - exact| / peak, nine angles at 5e8 radii, as the pilots), and the readout
+vectorised for the point arm (`point_far_field`, equal to the former loop to 5e-16). Each run is a child
+process, so its peak memory is its own. The new point arm reproduces the pilot's stored errors exactly
+(1.035e-1 and 4.655e-3 at n = 4 and 6 on the graded sphere at k_S a = 0.5), as does the Galerkin arm
+(5.465e-4 at n = 4).
+
+**Runs.** `scripts/compare_point_galerkin.py`: bodies graded (smoothstep shell, exact
+`graded_mie_result`) and sharp (homogeneous, exact Mie), k_S a = 0.5 and 4, point ladder n = 4 to 64, Galerkin
+ladder n = 4 to 40; rows in `scripts/data/point_vs_galerkin.jsonl`, the table by `--report`.
+
+**Caveat on the sharp sphere.** The Galerkin cell carries the L2 projection of its contrast, computed with a
+six-point Gauss rule per axis; for a step in the contrast the rule integrates a discontinuous function, so
+part of the Galerkin arm's sharp-sphere error is the projection's, not the staircase's.
+
+**Measured (22 October 2026).** Wall time includes setup, GMRES and readout; every run from a warm
+coefficient store (the first point runs at k_S a = 0.5 and n >= 32 paid its one-off build, 34 to 291 s,
+and were rerun). Selected rows (all in `scripts/data/point_vs_galerkin.jsonl`):
+
+| body, k_S a | point: n, error, wall | Galerkin: n, error, wall |
+|---|---|---|
+| graded, 0.5 | 12: 6.4e-4, 0.2 s; 24: 1.0e-4, 1.8 s; 64: 1.5e-5, 35 s | 4: 5.5e-4, 0.7 s; 12: 1.5e-5, 5.8 s; 40: 1.3e-7, 250 s |
+| graded, 4 | 8: 5.1e-2, 0.9 s; 32: 3.3e-3, 3.3 s; 64: 8.3e-4, 43 s | 8: 3.7e-3, 1.9 s; 12: 7.7e-4, 5.7 s; 40: 6.5e-6, 252 s |
+| sharp, 0.5 | 12: 7.2e-3, 0.3 s; 48: 8.9e-4, 11 s; 64: 8.0e-4, 37 s | 8: 1.2e-3, 1.9 s; 24: 2.9e-4, 46 s; 40: 1.7e-4, 244 s |
+| sharp, 4 | 32: 7.0e-3, 3.3 s; 48: 5.2e-3, 12 s; 64: 1.2e-3, 39 s | 8: 5.3e-3, 1.7 s; 24: 1.7e-3, 45 s; 40: 1.0e-3, 249 s |
+
+**What it shows.**
+
+- Per unknown the point formulation is about seven times cheaper (1.24 million unknowns in 35 to 43 s
+  against 1.37 million in 244 to 252 s), as the simpler T-matrix, the 9 x 9 propagator and its symmetry
+  predict. Its peak memory at a given unknown count is similar (8.5 to 9.3 GB at n = 64 against 6 to 8 GB
+  at Galerkin n = 40).
+- On the smooth body the orders decide it: the point voxel converges at second order (1.9 to 2.0 between
+  n = 16 and 64), the Galerkin at fourth (4.0 between n = 32 and 40). The point arm is cheaper only at
+  coarse accuracy (about 1e-4 and above at k_S a = 0.5, about 2e-2 and above at k_S a = 4); at 1.5e-5 the
+  Galerkin is six times faster (5.8 against 35 s) and at 8e-4 for k_S a = 4 seven and a half times faster
+  (5.7 against 43 s), and it reaches errors (1e-7, 7e-6) the point arm cannot reach on 16 GB.
+- On the sharp body neither converges cleanly: both errors move irregularly with n, the staircase of the
+  surface. The Galerkin cell carries the fraction of its volume inside the surface (through its projected
+  contrast), the point cell all or nothing, and at k_S a = 0.5 the Galerkin is the cheaper at about 1e-3
+  (1.9 against 11 s); at k_S a = 4 the two cross near 1e-3, where the point arm is the cheaper (39 against
+  249 s for 1.2e-3 and 1.0e-3). The Galerkin sharp-sphere errors include its Gauss projection of a step,
+  so they bound its staircase error from above.
+- The Galerkin setup (blocks, kernel and its transforms) is 80 to 85% of its wall time from n = 24 up:
+  that, not GMRES, is the next target for the Galerkin arm.
