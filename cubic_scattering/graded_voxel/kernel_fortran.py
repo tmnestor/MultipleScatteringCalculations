@@ -93,12 +93,14 @@ def apply_hat_fortran(kh: NDArray, sh: NDArray) -> NDArray:
 
 
 def apply_canonical_fortran(khc: NDArray, sh: NDArray, tables: tuple[NDArray, ...]) -> NDArray:
-    """yh[f, row] through the kernel stored at the canonical k only, shape (F, rows) complex128.
+    """yh[f, row] through the kernel stored at the canonical k only, shape (F, rows).
 
     khc is ``fft.canonical_transformed_kernel`` (K, cols, rows), complex64 or complex128; sh the
     transformed sources POINT-MAJOR, (F, cols); tables ``fft.fourier_symmetry_tables``. At each point the
     sources are re-indexed with signs into the canonical frame, the canonical block applied, and the result
-    re-indexed back (``kernel_apply.f90``). Accumulated in double precision.
+    re-indexed back (``kernel_apply.f90``). Accumulated in double precision. The result is complex128,
+    except when the kernel and the sources are both complex64 (the point solver's single-precision GMRES):
+    then everything stays complex64, with no conversion on the way in or out.
 
     Raises:
         ValueError: if khc is not C-contiguous, or its dtype is neither complex64 nor complex128.
@@ -115,10 +117,17 @@ def apply_canonical_fortran(khc: NDArray, sh: NDArray, tables: tuple[NDArray, ..
     from ..fortran._kernel_apply import kernel_apply
 
     q_f, k_f, order, pr, sr, pc, sc = tables
-    routine = kernel_apply.apply_canon_c64 if khc.dtype == np.complex64 else kernel_apply.apply_canon_c128
+    single = khc.dtype == np.complex64 and np.asarray(sh).dtype == np.complex64
+    sh_dtype: type
+    if single:
+        routine, sh_dtype = kernel_apply.apply_canon_c64s, np.complex64
+    elif khc.dtype == np.complex64:
+        routine, sh_dtype = kernel_apply.apply_canon_c64, np.complex128
+    else:
+        routine, sh_dtype = kernel_apply.apply_canon_c128, np.complex128
     yh = routine(
         np.asarray(khc).T,  # (rows, cols, K) Fortran-ordered: a view, no copy
-        np.ascontiguousarray(np.asarray(sh, dtype=complex)).T,  # (cols, F)
+        np.ascontiguousarray(np.asarray(sh, dtype=sh_dtype)).T,  # (cols, F); no copy when already so
         q_f,
         k_f,
         order,

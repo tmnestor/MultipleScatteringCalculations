@@ -40,7 +40,7 @@
 module kernel_apply
   implicit none
   private
-  public :: apply_hat_c64, apply_hat_c128, apply_canon_c64, apply_canon_c128
+  public :: apply_hat_c64, apply_hat_c128, apply_canon_c64, apply_canon_c64s, apply_canon_c128
 
   integer, parameter :: sp = kind(1.0), dp = kind(1.0d0)
   integer, parameter :: block = 2048          ! Fourier points per unit of parallel work
@@ -114,6 +114,35 @@ contains
     end do
     !$omp end parallel do
   end subroutine apply_canon_c64
+
+  ! the canonical kernel, sources and results all in single precision (the point solver's complex64 GMRES),
+  ! accumulated in double: no conversion of the sources or results on the way in or out
+  subroutine apply_canon_c64s(kc, nr, nc, nk, sh, nf, qf, kf, order, pr, sr, pc, sc, nq, yh)
+    integer, intent(in) :: nr, nc, nk, nf, nq
+    complex(sp), intent(in) :: kc(nr, nc, nk)
+    complex(sp), intent(in) :: sh(nc, nf)
+    integer, intent(in) :: qf(nf), kf(nf), order(nf), pr(nr, nq), pc(nc, nq)
+    real(dp), intent(in) :: sr(nr, nq), sc(nc, nq)
+    complex(sp), intent(out) :: yh(nr, nf)
+    complex(dp) :: s(nc), z(nr)
+    integer :: i, f, q, k, c
+    !$omp parallel do default(none) schedule(static) &
+    !$omp   shared(kc, sh, qf, kf, order, pr, sr, pc, sc, yh, nr, nc, nf) private(i, f, q, k, c, s, z)
+    do i = 1, nf
+      f = order(i) + 1
+      q = qf(f) + 1
+      k = kf(f) + 1
+      do c = 1, nc
+        s(pc(c, q) + 1) = sc(c, q) * cmplx(sh(c, f), kind=dp)
+      end do
+      z = (0.0_dp, 0.0_dp)
+      do c = 1, nc
+        z = z + cmplx(kc(:, c, k), kind=dp) * s(c)
+      end do
+      yh(:, f) = cmplx(sr(:, q) * z(pr(:, q) + 1), kind=sp)
+    end do
+    !$omp end parallel do
+  end subroutine apply_canon_c64s
 
   ! the canonical kernel in double precision: the production path (0.3 GB at N = 32)
   subroutine apply_canon_c128(kc, nr, nc, nk, sh, nf, qf, kf, order, pr, sr, pc, sc, nq, yh)

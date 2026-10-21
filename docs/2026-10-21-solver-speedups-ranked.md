@@ -471,5 +471,38 @@ The single-precision rounding (8e-11) is gone with it, and N = 32 no longer need
 the solve is the assembly (the canonical blocks and the full FFTs of every row group), which item 9 does
 not touch.
 
-**Next, the same for the point solver.** The 9 x 9 point kernel has the same structure (R = S x S on 9
-rows and columns).
+**The point solver (done, 22 October 2026).** The torch solver (`sphere_scattering_fft_gpu`, the
+production path) now stores its 9 x 9 kernel -P T at the canonical k only (`CanonicalKernel`,
+`_canonical_kernel`, `_apply_canonical`, `_matvec_fft_canonical`). The identity needs S T S^T = T for
+the cube's T-matrix, checked exact; the kernel identity holds to 6.7e-15 with T folded in, 8.7e-16 for P
+alone. Two routes give the same product: on the CPU with the compiled backend, `apply_canon_*` (a new
+all-single-precision variant, `apply_canon_c64s`, avoids converting complex64 sources and results);
+elsewhere (a GPU) gathers and one batched matmul, with the signs folded into the gather indices, since
+MPS has no complex scatter. A first pure-torch version on the CPU was 1.5 times slower than the full
+product (random gathers cost more than reading the kernel), hence the compiled route there; the grids are
+also packed point-major, so that no transposed copy is needed.
+
+| n_sub | full kernel | canonical | product c128, full / canonical | c64, full / canonical |
+|---|---|---|---|---|
+| 17 | 46.6 MB | 1.7 MB | 8.4 / 8.6 ms | 5.0 / 5.5 ms |
+| 25 | 152.5 MB | 5.2 MB | 27.8 / 26.6 ms | 15.4 / 14.7 ms |
+| 32 | 324.1 MB | 10.8 MB | 61.8 / 62.9 ms | 34.0 / 35.0 ms |
+
+On a CPU the saving is memory only; it is what bounds the grid on a GPU.
+
+**Right-hand-side orbits (done, 22 October 2026).** (I - P T) commutes with U_Q, (U_Q psi)(Q x) = S psi(x),
+on the centred sphere grid. A column with U_Q b_c = sigma b_p has psi_p = sigma U_Q psi_c, so one GMRES per
+orbit: the 9 Taylor columns under all 48 symmetries in 3 orbits (displacements, normal strains, shear
+strains), the 9 plane-wave columns under the symmetries fixing k (8 on an axis: 6 orbits; generically only
+the identity: 9). 18 solves become 9 on an axis, 12 otherwise (`_column_orbits`, `_cell_permutation`,
+`_apply_symmetry`). The generated columns equal solving every column to 1e-9 at a tolerance of 1e-12;
+T_comp to round-off. Whole point solve at k_S R = 3:
+
+| n_sub | c128, all 18 / orbits | c64, all 18 / orbits |
+|---|---|---|
+| 17 | 1.51 / 1.47 s | 0.92 / 0.68 s |
+| 25 | 4.64 / 3.25 s | 2.63 / 1.98 s |
+| 32 | 10.38 / 7.04 s | 5.83 / 4.18 s |
+
+Less than the factor two in solves, because the kernel's construction is paid once either way. Both are
+written up in the thesis's Chapter 7, section 7.4 (the cube group in the solution).

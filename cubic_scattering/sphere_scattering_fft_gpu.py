@@ -9,6 +9,8 @@ support complex on MPS).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -106,6 +108,206 @@ def _point_major(kernel_hat: torch.Tensor) -> torch.Tensor:
     return kernel_hat.permute(2, 3, 4, 0, 1).contiguous()
 
 
+@dataclass(frozen=True)
+class CanonicalKernel:
+    """The FFT kernel at the canonical k only, with what applies it at every Fourier point.
+
+    THE CUBE GROUP IN FOURIER SPACE.  The point kernel -P(r) T is equivariant, -P(Q r) T = S (-P(r) T) S^T
+    for the 48 signed permutations Q (S = diag(Q, R6(Q)), and S T S^T = T for the cube's T-matrix), and Q
+    maps the circular grid to itself, so K^(Q k) = S K^(k) S^T: one 9 x 9 block per orbit of k, the
+    canonical k1 >= k2 >= k3 >= 0, determines the kernel (C(n + 2, 3) blocks: 1/42 of the points at
+    n = 32). See ``graded_voxel.fft.canonical_transformed_kernel`` for the Galerkin kernel.
+
+    TWO ROUTES TO THE SAME PRODUCT.  On the CPU with ``point_kernel.backend: fortran`` the compiled
+    ``kernel_apply.apply_canon_*`` (``graded_voxel.kernel_fortran.apply_canonical_fortran``) does each point
+    in one pass: the sources re-indexed with signs, the canonical block applied, the result re-indexed
+    back. Elsewhere (a GPU, or the reference backend) the same product is three gathers-and-multiply steps,
+    device-agnostic and without a scatter (MPS supports none for complex): the points of each orbit are
+    listed with their canonical block, padded to the largest orbit (48) with a zero point, the sources are
+    gathered into each point's canonical frame from [w, -w] (the sign folded into the index), multiplied
+    by the stored blocks in one batched matmul, and the results gathered back from [z, -z]. On the CPU the
+    gathers cost more than reading the full kernel does (measured 1.5 times slower per matvec at n = 32),
+    hence the compiled route there.
+
+    Attributes:
+        kc: The canonical blocks (K, 9, 9).
+        shape: (K, M): canonical blocks, and the points listed per block (the largest orbit).
+        idx_in: (K * M * 9,) index into [w, -w, 0] flattened, w the point-major sources (F, 9).
+        idx_out: (F * 9,) index into [z, -z] flattened, z the products (K, M, 9).
+        compiled: The compiled route (the CPU with the compiled backend).
+        khc: For the compiled route, the blocks as ``apply_canonical_fortran`` takes them, (K, col, row).
+        tables: For the compiled route, ``graded_voxel.fft.fourier_symmetry_tables`` for 9 components.
+    """
+
+    kc: torch.Tensor
+    shape: tuple[int, int]
+    idx_in: torch.Tensor
+    idx_out: torch.Tensor
+    compiled: bool
+    khc: NDArray[np.complexfloating] | None
+    tables: tuple[NDArray, ...] | None
+
+
+def _canonical_kernel(
+    kernel_hat: NDArray[np.complexfloating], n_sub: int, device: torch.device, dtype: torch.dtype
+) -> CanonicalKernel:
+    """The canonical blocks of ``_build_fft_kernel``'s kernel (9, 9, nP, nP, nP) and their index tables.
+
+    The re-indexing at a point f = Q k_c is ``graded_voxel.fft.fourier_symmetry_tables`` with one test
+    function and one source monomial (the constant, which every symmetry fixes): rows and columns are the
+    9 components, K^(f)[r, c] = sr[r] sc[c] K^(k_c)[pr[r], pc[c]].
+    """
+    from .graded_voxel.fft import _orbit_arrays, fourier_symmetry_tables
+    from .graded_voxel.kernel import point_kernel_backend
+
+    n_p = 2 * n_sub - 1
+    n_f = n_p**3
+    keys = _orbit_arrays(n_sub)[3]
+    tables = fourier_symmetry_tables(n_sub, 1, 1, 10, 4)
+    q_f, k_f, order, pr, sr, pc, sc = tables
+    at = np.array([(a * n_p + b) * n_p + d for a, b, d in keys])
+    kc = np.ascontiguousarray(kernel_hat.reshape(9, 9, n_f)[:, :, at].transpose(2, 0, 1))
+    n_k = len(keys)
+    counts = np.bincount(k_f, minlength=n_k)
+    m = int(counts.max())
+    start = np.concatenate([[0], np.cumsum(counts)[:-1]])
+    slot = np.empty(n_f, dtype=np.int64)
+    slot[order] = np.arange(n_f) - start[k_f[order]]  # each point's place in its orbit's list
+    members = np.full((n_k, m), n_f, dtype=np.int64)  # n_f: the zero point that pads short orbits
+    members[k_f, slot] = np.arange(n_f)
+    q_m = np.where(members < n_f, q_f[np.minimum(members, n_f - 1)], 0)  # symmetry 0 is the identity
+    inv_pc = np.argsort(pc, axis=1)  # the source column that lands on each canonical column
+    src = inv_pc[q_m]  # (K, M, 9)
+    negative = np.take_along_axis(sc[q_m], src, axis=2) < 0
+    # [w, -w, 0]: w at rows 0 .. F - 1, -w at F .. 2F - 1, the zero point at 2F
+    rows = np.where(members < n_f, members, 2 * n_f)[:, :, None] + n_f * negative
+    idx_in = rows * 9 + src
+    idx_out = (k_f[:, None] * m + slot[:, None]) * 9 + pr[q_f] + n_k * m * 9 * (sr[q_f] < 0)
+    compiled = device.type == "cpu" and point_kernel_backend() == "fortran"
+    return CanonicalKernel(
+        kc=to_torch(kc, device, dtype),
+        shape=(n_k, m),
+        idx_in=torch.from_numpy(idx_in.ravel().astype(np.int64)).to(device),
+        idx_out=torch.from_numpy(idx_out.ravel().astype(np.int64)).to(device),
+        compiled=compiled,
+        khc=np.ascontiguousarray(kc.transpose(0, 2, 1)).astype(_NUMPY_DTYPE[dtype]) if compiled else None,
+        tables=tables if compiled else None,
+    )
+
+
+#: the NumPy dtype of each torch complex dtype, for the compiled route
+_NUMPY_DTYPE = {torch.complex128: np.complex128, torch.complex64: np.complex64}
+
+
+def _apply_canonical(ck: CanonicalKernel, w_pm: torch.Tensor) -> torch.Tensor:
+    """y[f] = K^(f) w[f] at every Fourier point through the canonical blocks; w_pm, y point-major (F, 9)."""
+    if ck.compiled:
+        from .graded_voxel.kernel_fortran import apply_canonical_fortran  # local: imports the kernel
+
+        assert ck.khc is not None and ck.tables is not None
+        y = apply_canonical_fortran(ck.khc, w_pm.numpy(), ck.tables)  # (F, 9), in w_pm's precision
+        return torch.from_numpy(y).to(w_pm.dtype)  # no copy: the dtypes already agree
+    zero = torch.zeros(1, 9, device=w_pm.device, dtype=w_pm.dtype)
+    s = torch.cat([w_pm, -w_pm, zero]).reshape(-1)[ck.idx_in].reshape(*ck.shape, 9)
+    z = torch.matmul(s, ck.kc.transpose(1, 2)).reshape(-1)  # z[k, m, i] = sum_j kc[k, i, j] s[k, m, j]
+    return torch.cat([z, -z])[ck.idx_out].reshape(-1, 9)
+
+
+def _matvec_fft_canonical(
+    w_flat: torch.Tensor,
+    ck: CanonicalKernel,
+    grid_idx: torch.Tensor,
+    nP: int,
+    nC: int,
+) -> torch.Tensor:
+    """(I - P*T)*w via FFT convolution, the kernel applied through its canonical blocks.
+
+    Args:
+        w_flat: Input vector, shape (9*nC,).
+        ck: The canonical kernel (``_canonical_kernel``).
+        grid_idx: Grid indices, shape (nC, 3).
+        nP: Padded grid size.
+        nC: Number of active cells.
+
+    Returns:
+        Result vector, shape (9*nC,).
+    """
+    # point-major throughout, (nP, nP, nP, 9), so that the product needs no transposed copies
+    i0, i1, i2 = grid_idx[:, 0], grid_idx[:, 1], grid_idx[:, 2]
+    grids = torch.zeros(nP, nP, nP, 9, device=w_flat.device, dtype=w_flat.dtype)
+    grids[i0, i1, i2] = w_flat.reshape(nC, 9)
+    w_hat = torch.fft.fftn(grids, dim=(0, 1, 2))
+    y_pm = _apply_canonical(ck, w_hat.reshape(-1, 9))
+    y_grids = torch.fft.ifftn(y_pm.reshape(nP, nP, nP, 9), dim=(0, 1, 2))
+    return w_flat + y_grids[i0, i1, i2].reshape(-1)
+
+
+def _column_orbits(qs: Sequence[NDArray]) -> tuple[list[int], list[tuple[int, int, NDArray, float]]]:
+    """The orbits of the 9 incident columns e_c under the symmetries ``qs`` (signed permutations).
+
+    THE RIGHT-HAND SIDES BY THE CUBE GROUP.  (I - P T) commutes with U_Q, (U_Q psi)(Q x) = S psi(x), for
+    every Q that maps the grid of cells to itself (the centred sphere grid: all 48), since the kernel is
+    equivariant and S T S^T = T. An incident column whose field transforms as U_Q b_c = S[p, c] b_p, with
+    p the component that S takes c to, therefore has the solution psi_p = S[p, c] U_Q psi_c. The Taylor
+    patterns (uniform displacement, linear strain about the centre) transform so under every Q: three
+    orbits, displacements, normal strains and shear strains. The plane-wave columns e_c exp(i k.x) do
+    under the Q with Q k = k: on a coordinate axis eight of them, and six orbits.
+
+    Returns:
+        (reps, derived): the column solved for each orbit, in increasing order, and for every other column
+        (c, rep, Q, sign) with psi_c = sign U_Q psi_rep.
+    """
+    from .graded_voxel.fft import symmetry_reps
+
+    reps: list[int] = []
+    derived: list[tuple[int, int, NDArray, float]] = []
+    seen: set[int] = set()
+    for c in range(9):
+        if c in seen:
+            continue
+        reps.append(c)
+        seen.add(c)
+        for q in qs:
+            s = symmetry_reps(q)[2]
+            p = int(np.argmax(np.abs(s[:, c])))
+            if p not in seen:
+                seen.add(p)
+                derived.append((p, c, q, float(s[p, c])))
+    return reps, derived
+
+
+def _cell_permutation(grid_idx: NDArray[np.intp], n_sub: int, q: NDArray) -> NDArray[np.intp]:
+    """perm[n]: the cell at Q x_n, for the cells of the centred grid of ``_build_grid_index_map``.
+
+    Raises:
+        ValueError: if Q does not map the cells to themselves (a shape without the cube's symmetry).
+    """
+    half = (n_sub - 1) / 2.0
+    image = np.rint((grid_idx - half) @ q.T + half).astype(np.intp)
+    lookup = np.full((n_sub,) * 3, -1, dtype=np.intp)
+    lookup[grid_idx[:, 0], grid_idx[:, 1], grid_idx[:, 2]] = np.arange(len(grid_idx))
+    inside = np.all((image >= 0) & (image < n_sub), axis=1)
+    perm = np.full(len(grid_idx), -1, dtype=np.intp)
+    perm[inside] = lookup[image[inside, 0], image[inside, 1], image[inside, 2]]
+    if np.any(perm < 0):
+        raise ValueError(
+            "_cell_permutation: a symmetry of the cube maps a cell outside the scatterer, so the incident "
+            "columns cannot be generated by symmetry. The shape must be mapped to itself by the cube group "
+            "(the centred sphere of _build_grid_index_map is)."
+        )
+    return perm
+
+
+def _apply_symmetry(psi: NDArray, grid_idx: NDArray[np.intp], n_sub: int, q: NDArray) -> NDArray:
+    """(U_Q psi): the field of every cell n carried to the cell at Q x_n, its components rotated by S."""
+    from .graded_voxel.fft import symmetry_reps
+
+    s = symmetry_reps(q)[2]
+    out = np.empty((len(grid_idx), 9), dtype=complex)
+    out[_cell_permutation(grid_idx, n_sub, q)] = psi.reshape(-1, 9) @ s.T
+    return out.ravel()
+
+
 def _matvec_fft_gpu(
     w_flat: torch.Tensor,
     kernel_pm: torch.Tensor,
@@ -192,8 +394,9 @@ def compute_sphere_foldy_lax_fft_gpu(
 
     kernel_hat_np = _build_fft_kernel(n_sub, a_sub, T_loc, omega, ref)
 
-    # Step 2: Transfer to GPU
-    kernel_hat_gpu = _point_major(to_torch(kernel_hat_np, device, dtype))
+    # Step 2: Transfer to GPU, the kernel at the canonical k only (1/42 of it at n_sub = 32)
+    kernel_c = _canonical_kernel(kernel_hat_np, n_sub, device, dtype)
+    del kernel_hat_np
     grid_idx_gpu = torch.from_numpy(grid_idx_np.copy()).long().to(device)
 
     # Step 3: Build incident field on CPU
@@ -202,16 +405,25 @@ def compute_sphere_foldy_lax_fft_gpu(
     # the plane-wave basis for the far field: it shares no column with the Taylor patterns psi_inc
     pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
 
-    # Step 4: Solve the 9 Taylor columns and the 9 plane-wave columns via GPU GMRES
+    # Step 4: Solve one column per orbit of the cube group via GPU GMRES (``_column_orbits``): the Taylor
+    # columns under all 48 symmetries (3 solves for 9), the plane-wave columns under those fixing k (6 for 9
+    # on an axis); the other columns follow exactly by the cell permutation and the signs
     dim = 9 * nC
     psi_exc = np.zeros((dim, 9), dtype=complex)
     psi_pw = np.zeros((dim, 9), dtype=complex)
 
     def matvec(w: torch.Tensor) -> torch.Tensor:
-        return _matvec_fft_gpu(w, kernel_hat_gpu, grid_idx_gpu, nP, nC)
+        return _matvec_fft_canonical(w, kernel_c, grid_idx_gpu, nP, nC)
 
-    jobs = [("exc", col, psi_inc[:, col]) for col in range(9)] + [
-        ("pw", col, pw_inc[:, col]) for col in range(9)
+    from .graded_voxel.fft import signed_permutations
+    from .resonance_tmatrix import _plane_wave_k_vec
+
+    qs = signed_permutations()
+    k_vec = _plane_wave_k_vec(omega, ref, k_hat, wave_type)
+    fixing_k = [q for q in qs if np.allclose(q @ k_vec, k_vec, rtol=0.0, atol=1e-14 * np.abs(k_vec).max())]
+    orbits = {"exc": _column_orbits(qs), "pw": _column_orbits(fixing_k)}
+    jobs = [("exc", col, psi_inc[:, col]) for col in orbits["exc"][0]] + [
+        ("pw", col, pw_inc[:, col]) for col in orbits["pw"][0]
     ]
     for which, col, rhs_np in jobs:
         b = to_torch(rhs_np, device, dtype)
@@ -234,6 +446,10 @@ def compute_sphere_foldy_lax_fft_gpu(
             )
 
         (psi_exc if which == "exc" else psi_pw)[:, col] = to_numpy(x)
+
+    for which, psi in (("exc", psi_exc), ("pw", psi_pw)):
+        for col, rep, q, sign in orbits[which][1]:  # psi_col = sign U_Q psi_rep
+            psi[:, col] = sign * _apply_symmetry(psi[:, rep], grid_idx_np, n_sub, q)
 
     # Step 5: Extract composite T-matrix
     T_comp = np.zeros((9, 9), dtype=complex)

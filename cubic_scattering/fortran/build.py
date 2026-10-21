@@ -23,7 +23,7 @@ SOURCES = {
     "_kseries_moments": ("kseries_moments.f90", ["kseries_moments"]),
     "_kernel_apply": (
         "kernel_apply.f90",
-        ["apply_hat_c64", "apply_hat_c128", "apply_canon_c64", "apply_canon_c128"],
+        ["apply_hat_c64", "apply_hat_c128", "apply_canon_c64", "apply_canon_c64s", "apply_canon_c128"],
     ),
 }
 
