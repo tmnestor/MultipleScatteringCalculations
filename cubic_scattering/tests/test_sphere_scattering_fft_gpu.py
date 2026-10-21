@@ -20,6 +20,7 @@ from cubic_scattering.sphere_scattering_fft import (
 )
 from cubic_scattering.sphere_scattering_fft_gpu import (
     _matvec_fft_gpu,
+    _point_major,
     _pack_gpu,
     _unpack_gpu,
     compute_sphere_foldy_lax_fft_gpu,
@@ -98,7 +99,7 @@ class TestMatvecGPU:
         k_t = to_torch(kernel_hat, device, dtype)
         gi_t = torch.from_numpy(grid_idx.copy()).long()
 
-        result_gpu = _matvec_fft_gpu(w_t, k_t, gi_t, nP, nC)
+        result_gpu = _matvec_fft_gpu(w_t, _point_major(k_t), gi_t, nP, nC)
 
         assert_allclose(to_numpy(result_gpu), result_cpu, rtol=1e-10)
 
@@ -117,7 +118,7 @@ class TestMatvecGPU:
         k_t = to_torch(kernel_hat, device, dtype)
         gi_t = torch.from_numpy(grid_idx.copy()).long().to(device)
 
-        result_gpu = _matvec_fft_gpu(w_t, k_t, gi_t, nP, nC)
+        result_gpu = _matvec_fft_gpu(w_t, _point_major(k_t), gi_t, nP, nC)
 
         assert_allclose(to_numpy(result_gpu), result_cpu, rtol=1e-4)
 
