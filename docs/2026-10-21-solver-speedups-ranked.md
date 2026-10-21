@@ -620,3 +620,11 @@ errors reproduce). Contrast projection: 14.5 s to 0.18 s at n = 32.
 **Setup after 11a to 11d** (k_S a = 4): n = 32, 69 s to 14.7 s; n = 40, 218 s to 34.9 s. What is left:
 the canonical blocks, 9.5 s and 23 s (two-thirds), then the kernel (1.8 s, 3.9 s), the preconditioner
 (1.3 s, 3.6 s) and the per-cell source expansion (1.2 s, 2.8 s).
+
+**11e. Fast FFT sizes (done, 22 October 2026).** The embedding needs at least 2N - 1 points per axis, and
+that is often prime (79 at N = 40, 127 at 64), which puts the FFT on its general-length algorithm: 66 ns a
+point at 79 against 15.5 ns at 81. Both solvers now embed in `sphere_scattering_fft.fast_odd_size`, the
+smallest odd size >= 2N - 1 with factors 3, 5 and 7 only (odd, so the centred wavenumbers stay unique and
+the canonical-k tables hold), the kernel built for the effective N' = (size + 1) / 2 with zero blocks
+beyond the real offsets. Equal solves to round-off (N = 6, 15 points against 11, both solvers). Galerkin at
+N = 40: GMRES 39 s to 14 s, the whole 74 s to 50 s; point at N = 64: GMRES 10.7 s to 6.0 s.

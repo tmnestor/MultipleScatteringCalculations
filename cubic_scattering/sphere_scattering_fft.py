@@ -89,6 +89,26 @@ def _build_grid_index_map(
     return grid_idx, centres, a_sub
 
 
+def fast_odd_size(n_min: int) -> int:
+    """The smallest odd n >= n_min whose only prime factors are 3, 5 and 7: a fast FFT length.
+
+    The circular embedding of an n_sub grid needs at least 2 n_sub - 1 points per axis, and any larger
+    size only adds zero padding. 2 n_sub - 1 itself is often prime (79 at n_sub = 40, 127 at 64), and a
+    prime length forces the FFT onto its general-length algorithm: 66 ns a point at 79 against 15.5 at 81
+    (90 arrays, NumPy). The size is kept odd so that the centred wavenumbers stay unique, which the
+    canonical-k storage of the kernel relies on.
+    """
+    n = n_min if n_min % 2 else n_min + 1
+    while True:
+        rest = n
+        for p in (3, 5, 7):
+            while rest % p == 0:
+                rest //= p
+        if rest == 1:
+            return n
+        n += 2
+
+
 def _build_fft_kernel(
     n_sub: int,
     a_sub: float,
@@ -98,6 +118,7 @@ def _build_fft_kernel(
     *,
     cell_average: bool = True,
     n_gauss: int | None = None,
+    n_pad: int | None = None,
 ) -> NDArray[np.complexfloating]:
     """Build FFT kernel for the propagator convolution.
 
@@ -121,13 +142,20 @@ def _build_fft_kernel(
             ``cell_averaged_pair`` and
             ``scripts/gate_sphere_cell_average_vs_mie.py``.
         n_gauss: Gauss points per axis; ``None`` picks it from the separation.
+        n_pad: Points per axis of the embedding, at least 2 * n_sub - 1 (the default); a larger one
+            (``fast_odd_size``) only zero-pads the kernel.
 
     Returns:
         kernel_hat: shape (9, 9, nP, nP, nP), complex. FFT of the
             circularly-embedded kernel.
     """
     dd = 2.0 * a_sub
-    nP = 2 * n_sub - 1
+    nP = 2 * n_sub - 1 if n_pad is None else n_pad
+    if nP < 2 * n_sub - 1:
+        raise ValueError(
+            f"_build_fft_kernel: n_pad = {nP} is below 2 * n_sub - 1 = {2 * n_sub - 1}, so the circular "
+            "embedding would wrap distant cells onto near ones. Fix: pass n_pad >= 2 * n_sub - 1, or None."
+        )
 
     kernel = np.zeros((9, 9, nP, nP, nP), dtype=complex)
 

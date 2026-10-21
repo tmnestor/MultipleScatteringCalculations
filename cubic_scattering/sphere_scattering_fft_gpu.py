@@ -31,7 +31,7 @@ from .resonance_tmatrix import (
     _sub_cell_tmatrix_9x9,
 )
 from .sphere_scattering import SphereDecompositionResult
-from .sphere_scattering_fft import _build_fft_kernel, _build_grid_index_map
+from .sphere_scattering_fft import _build_fft_kernel, _build_grid_index_map, fast_odd_size
 from .torch_gmres import get_device, select_dtype, to_numpy, to_torch, torch_gmres
 
 __all__ = ["compute_sphere_foldy_lax_fft_gpu", "point_wave_far_field", "solve_point_plane_wave"]
@@ -395,15 +395,15 @@ def compute_sphere_foldy_lax_fft_gpu(
     # Step 1: Build grid and kernel on CPU (reuse existing code)
     grid_idx_np, centres, a_sub = _build_grid_index_map(radius, n_sub)
     nC = len(centres)
-    nP = 2 * n_sub - 1
+    nP = fast_odd_size(2 * n_sub - 1)  # a fast FFT length, at least 2 n_sub - 1 (zero-padded)
 
     rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
-    kernel_hat_np = _build_fft_kernel(n_sub, a_sub, T_loc, omega, ref)
+    kernel_hat_np = _build_fft_kernel(n_sub, a_sub, T_loc, omega, ref, n_pad=nP)
 
     # Step 2: Transfer to GPU, the kernel at the canonical k only (1/42 of it at n_sub = 32)
-    kernel_c = _canonical_kernel(kernel_hat_np, n_sub, device, dtype)
+    kernel_c = _canonical_kernel(kernel_hat_np, (nP + 1) // 2, device, dtype)
     del kernel_hat_np
     grid_idx_gpu = torch.from_numpy(grid_idx_np.copy()).long().to(device)
 
@@ -556,7 +556,7 @@ def solve_point_plane_wave(
 
     t0 = time.perf_counter()
     grid_idx_np, centres, a_sub = _build_grid_index_map(radius, n_sub)
-    n_c, n_p = len(centres), 2 * n_sub - 1
+    n_c, n_p = len(centres), fast_odd_size(2 * n_sub - 1)  # a fast FFT length (zero-padded)
 
     def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
         return _sub_cell_tmatrix_9x9(compute_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
@@ -564,7 +564,7 @@ def solve_point_plane_wave(
     if profile is None:
         t_loc = cell_tmatrix(contrast)
         t_cells = np.broadcast_to(t_loc, (n_c, 9, 9))
-        kernel_hat = _build_fft_kernel(n_sub, a_sub, t_loc, omega, ref)
+        kernel_hat = _build_fft_kernel(n_sub, a_sub, t_loc, omega, ref, n_pad=n_p)
     else:
         from .graded_voxel.site import BatchProfile
 
@@ -583,8 +583,8 @@ def solve_point_plane_wave(
                 )
             t_list.append(cache[g])
         t_cells = np.array(t_list)
-        kernel_hat = _build_fft_kernel(n_sub, a_sub, np.eye(9, dtype=complex), omega, ref)
-    kernel_c = _canonical_kernel(kernel_hat, n_sub, device, dtype)
+        kernel_hat = _build_fft_kernel(n_sub, a_sub, np.eye(9, dtype=complex), omega, ref, n_pad=n_p)
+    kernel_c = _canonical_kernel(kernel_hat, (n_p + 1) // 2, device, dtype)
     del kernel_hat
     grid_idx = torch.from_numpy(grid_idx_np.copy()).long().to(device)
     t_dev = None if profile is None else to_torch(t_cells, device, dtype)

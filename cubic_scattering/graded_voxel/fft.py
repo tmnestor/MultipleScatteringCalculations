@@ -33,7 +33,7 @@ from scipy.sparse.linalg import LinearOperator, gmres
 
 from ..effective_contrasts import MaterialContrast, ReferenceMedium
 from ..sphere_scattering import _plane_wave_strain_voigt
-from ..sphere_scattering_fft import _build_grid_index_map
+from ..sphere_scattering_fft import _build_grid_index_map, fast_odd_size
 from .basis import (
     contrast_values,
     gram_test,
@@ -565,10 +565,17 @@ def solve_graded_sphere_fft(
     # the reference backend, and the every-offset path, the full kernel
     canonical_k = blocks is None and point_kernel_backend() == "fortran"
     if canonical_k:
+        # embedded in the next fast odd size (``fast_odd_size``: 81 rather than the prime 79 at n_sub = 40),
+        # as a grid of n_eff cells whose blocks beyond the real offsets are zero
+        npad = fast_odd_size(2 * n_sub - 1)
+        n_eff = (npad + 1) // 2
         canonical = canonical_blocks(n_sub, h, omega, ref, n_source, n_field)
-        kh = canonical_transformed_kernel(canonical, n_sub, na, nc, kernel_dtype, kernel_path)
-        tables = fourier_symmetry_tables(n_sub, na, nc, n_source, n_field)
         k0 = canonical[(0, 0, 0)][:na, :nc]
+        zero = np.zeros_like(canonical[(0, 0, 0)])
+        for key in _orbit_arrays(n_eff)[3]:
+            canonical.setdefault(key, zero)
+        kh = canonical_transformed_kernel(canonical, n_eff, na, nc, kernel_dtype, kernel_path)
+        tables = fourier_symmetry_tables(n_eff, na, nc, n_source, n_field)
         del canonical
     elif blocks is None:
         # the canonical blocks alone; the kernel assembled from them a group of rows at a time
