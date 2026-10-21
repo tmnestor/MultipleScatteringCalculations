@@ -532,7 +532,8 @@ ladder n = 4 to 40; rows in `scripts/data/point_vs_galerkin.jsonl`, the table by
 six-point Gauss rule per axis; for a step in the contrast the rule integrates a discontinuous function, so
 part of the Galerkin arm's sharp-sphere error is the projection's, not the staircase's.
 
-**Measured (22 October 2026).** Wall time includes setup, GMRES and readout; every run from a warm
+**Measured (22 October 2026), before item 11; superseded by the remeasurement at the end of item 11,
+which changes the conclusions.** Wall time includes setup, GMRES and readout; every run from a warm
 coefficient store (the first point runs at k_S a = 0.5 and n >= 32 paid its one-off build, 34 to 291 s,
 and were rerun). Selected rows (all in `scripts/data/point_vs_galerkin.jsonl`):
 
@@ -628,3 +629,21 @@ smallest odd size >= 2N - 1 with factors 3, 5 and 7 only (odd, so the centred wa
 the canonical-k tables hold), the kernel built for the effective N' = (size + 1) / 2 with zero blocks
 beyond the real offsets. Equal solves to round-off (N = 6, 15 points against 11, both solvers). Galerkin at
 N = 40: GMRES 39 s to 14 s, the whole 74 s to 50 s; point at N = 64: GMRES 10.7 s to 6.0 s.
+
+**Item 10 remeasured after item 11 (22 October 2026).** Every error unchanged (to 9e-11); the Galerkin
+times fall, and the conclusions change. The Galerkin voxel now costs only 1.30 to 1.34 times the point
+voxel per unknown (n = 40: 45 to 51 s for 1.37 million unknowns; point n = 64: 31 to 34 s for 1.24 million).
+Galerkin setup is 55 to 61% of its wall time (point: 79 to 85%). The size ladder solves in 1, 2, 4, 10, 20
+and 42 s for n = 8 to 40; the 34-frequency record takes 17 minutes (each solve about 20 s).
+
+| body, k_S a | point cheaper above | then, at equal error (Galerkin against point) |
+|---|---|---|
+| graded, 0.5 | about 3e-4 (both under a second) | 1e-4: 0.9 against 2.9 s; 1.5e-5: 2.0 against 32 s |
+| graded, 4 | a tie near 3e-2 | 3e-3: 2.1 against 13 s; 1e-3: 2.1 against 34 s |
+| sharp, 0.5 | about 1e-2 (both under a second) | 3e-3: 0.9 against 11.5 s |
+| sharp, 4 | a tie near 3e-2 | 3e-3: 2.2 against 34 s; 1.2e-3: 24 against 34 s |
+
+The Galerkin voxel is the method for both bodies below about 3e-4 at long wavelengths and 1e-2 at short
+ones; the point voxel only at the coarsest accuracies. Chapter 7 (sections 7.3, 7.4, 7.5, 7.7, Table 7.1
+and Figure 7.4) is updated to these numbers, with the kernel's construction by pair orbits and parity, the
+shared lattice and the fast embedding size written into section 7.4.
