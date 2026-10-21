@@ -686,8 +686,9 @@ def universal_moment(
 def universal_moment_direct(
     m: int, idx: tuple[int, ...], offset: tuple[int, int, int], n_source: int = 10, n_test: int = 4
 ) -> NDArray:
-    """``universal_moment`` computed: odd m by the master integrals (``static_term_integral_closed``, seconds
-    each); even m, where r^m is a polynomial, by a Gauss rule of sufficient order on the pieces of W (exact)."""
+    """``universal_moment`` computed: odd m by the master integrals (``static_term_integral_closed``,
+    seconds each); even m, where r^m is a polynomial, by a Gauss rule of sufficient order on the pieces of
+    W (exact)."""
     if m % 2:
         return static_term_integral_closed(m, idx, offset, 1.0, n_source, n_test)
     if len(idx) > m:
@@ -760,10 +761,10 @@ def near_series_coefficients(
     m: int, offset: tuple[int, int, int], n_source: int = 10, n_test: int = 4
 ) -> NDArray:
     """The term m of ``near_block_series`` on the unit half-side, contracted over the families:
-    S[d, f] = sum_{|idx| = d} T_f[idx] U(m, idx, offset), f = 0 (TA) and 1 (TB), shape (5, 2, n_test, n_source,
-    9, 9), d the number of derivatives (the block scales as h^(6 + m - d)).  Independent of the frequency, the
-    medium and the cell size: each frequency is then a short sum (the contraction over the families, done per
-    frequency, cost seconds per block)."""
+    S[d, f] = sum_{|idx| = d} T_f[idx] U(m, idx, offset), f = 0 (TA) and 1 (TB), shape
+    (5, 2, n_test, n_source, 9, 9), d the number of derivatives (the block scales as h^(6 + m - d)).
+    Independent of the frequency, the medium and the cell size: each frequency is then a short sum (the
+    contraction over the families, done per frequency, cost seconds per block)."""
     out = np.zeros((5, 2, n_test, n_source, 9, 9))
     for f, table in enumerate(family_tables()):
         if f == 1 and m == -1:  # c2 vanishes at m = -1 for every frequency (and d^4 r^-1 is never needed)

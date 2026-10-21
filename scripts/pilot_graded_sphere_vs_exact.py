@@ -28,6 +28,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_graded_sphere import graded_mie_result, smoothstep  # noqa: E402
+from cubic_scattering.graded_voxel.site import BatchProfile  # noqa: E402
 from cubic_scattering.sphere_scattering import foldy_lax_far_field, mie_scattered_displacement  # noqa: E402
 from cubic_scattering.sphere_scattering_fft import compute_sphere_foldy_lax_fft  # noqa: E402
 from gate_sphere_cell_average_vs_mie import CONTRAST, R_MULT, REF, obs_points  # noqa: E402
@@ -39,14 +40,15 @@ POL = np.array([1.0, 0.0, 0.0])
 THETA = np.linspace(0.2, np.pi - 0.2, 9)
 
 
-def profile(pos: np.ndarray) -> float:
-    """The contrast factor at a point: 1 in the core, the smoothstep across the shell, 0 outside."""
-    r = float(np.linalg.norm(pos))
-    if r <= CORE:
-        return 1.0
-    if r >= RADIUS:
-        return 0.0
-    return smoothstep((RADIUS - r) / (RADIUS - CORE))
+def _profile_values(pts: np.ndarray) -> np.ndarray:
+    """The contrast factor at points (M, 3): 1 in the core, the smoothstep across the shell, 0 outside."""
+    r = np.linalg.norm(pts, axis=1)
+    x = np.clip((RADIUS - r) / (RADIUS - CORE), 0.0, 1.0)
+    return np.where(r <= CORE, 1.0, np.where(r >= RADIUS, 0.0, smoothstep(x)))
+
+
+#: the profile, evaluated at many points in one call by the Galerkin projection (and at one point as before)
+profile = BatchProfile(_profile_values)
 
 
 def main() -> int:

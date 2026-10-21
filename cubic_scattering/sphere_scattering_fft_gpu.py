@@ -566,10 +566,15 @@ def solve_point_plane_wave(
         t_cells = np.broadcast_to(t_loc, (n_c, 9, 9))
         kernel_hat = _build_fft_kernel(n_sub, a_sub, t_loc, omega, ref)
     else:
+        from .graded_voxel.site import BatchProfile
+
         cache: dict[float, NDArray[np.complexfloating]] = {}
         t_list = []
-        for pos in centres:
-            g = float(profile(pos))
+        # a BatchProfile at every centre in one call; a plain profile point by point
+        factors = (
+            profile.batch(centres) if isinstance(profile, BatchProfile) else [profile(x) for x in centres]
+        )
+        for g in map(float, factors):
             if g not in cache:
                 cache[g] = cell_tmatrix(
                     MaterialContrast(

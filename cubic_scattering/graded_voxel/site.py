@@ -102,6 +102,73 @@ def _cell_projection(
     return coeff
 
 
+class BatchProfile:
+    """A contrast profile evaluated at many points in one call: ``batch(points (M, 3)) -> (M,)``.
+
+    ``cell_contrast_coefficients_all`` projects a plain profile point by point, 216 Python calls a cell
+    (4.3 million at N = 32, about 15 s); given a ``BatchProfile`` it evaluates every cell's Gauss points in
+    one call and projects them in one product. The wrapper still answers a single point, so it can be
+    passed wherever a profile of one position is expected.
+    """
+
+    def __init__(self, batch: Callable[[NDArray], NDArray]) -> None:
+        self.batch = batch
+
+    def __call__(self, x: NDArray) -> float:
+        return float(self.batch(np.asarray(x, dtype=float)[None, :])[0])
+
+
+def _projection_all(
+    profile: BatchProfile,
+    centres: NDArray,
+    h: float,
+    contrast: MaterialContrast,
+    ref: ReferenceMedium,
+    degree: int,
+) -> NDArray:
+    """``_cell_projection`` for every cell at once, through the profile's batch call: (N, 4 or 10).
+
+    Raises:
+        ValueError: as ``_cell_projection``: a degree other than 0, 1 or 2, a batch call that does not
+            return one value per point, or a fit that leaves the physical range (naming the first cell).
+    """
+    if degree not in (0, 1, 2):
+        raise ValueError(f"cell_contrast_coefficients: degree must be 0, 1 or 2, got {degree}")
+    x, w = leggauss(6)
+    xi = np.stack(np.meshgrid(x, x, x, indexing="ij"), -1).reshape(-1, 3)
+    ww = np.einsum("i,j,k->ijk", w, w, w).ravel()
+    pts = (centres[:, None, :] + h * xi[None, :, :]).reshape(-1, 3)
+    f = np.asarray(profile.batch(pts), dtype=float)
+    if f.shape != (len(pts),):
+        raise ValueError(
+            f"BatchProfile: the batch call returned shape {f.shape} for {len(pts)} points; it must "
+            "return one value per point, shape (M,), for points of shape (M, 3). Fix: make the function "
+            "vectorised over the first axis of its argument."
+        )
+    f = f.reshape(len(centres), len(xi))
+    n_keep = (1, 4, 10)[degree]
+    coeff = np.zeros((len(centres), 10 if degree == 2 else 4))
+    coeff[:, :n_keep] = f @ (contrast_values(xi)[:n_keep] * ww).T / np.array(CONTRAST_NORMS[:n_keep])
+    probes = np.array([[s0, s1, s2] for s0 in (-1, 0, 1) for s1 in (-1, 0, 1) for s2 in (-1, 0, 1)])
+    corners = coeff @ contrast_values(probes)[: coeff.shape[1]]  # (N, 27)
+    for name, value, background in (
+        ("Dlambda", contrast.Dlambda, ref.lam),
+        ("Dmu", contrast.Dmu, ref.mu),
+        ("Drho", contrast.Drho, ref.rho),
+    ):
+        worst = np.max(np.abs(corners * value), axis=1) / background
+        bad = np.flatnonzero(worst >= PHYSICAL_LIMIT)
+        if bad.size:
+            n = int(bad[0])
+            raise ValueError(
+                f"cell_contrast_coefficients: the degree-{degree} fit of the profile reaches "
+                f"{worst[n]:.0%} of the background {name} inside the cell (cell centre {centres[n]} m, "
+                f"half-width {h} m); the allowed range is below 52% of the background. Fix: refine the "
+                "grid (smaller h) or pass a gentler profile or contrast."
+            )
+    return coeff
+
+
 #: frequency-independent projections kept across calls: (key) -> (N, 4 or 10); the last few only
 _PROJECTIONS: OrderedDict[tuple, NDArray] = OrderedDict()
 _PROJECTIONS_MAX = 4
@@ -122,7 +189,8 @@ def cell_contrast_coefficients_all(
     basis (216 profile values per cell, 4.3 million Python calls at N = 32, about 23 s) and the
     physical-range check do not. They are computed on the first call and kept, keyed on the profile, the
     cells, the contrast and the medium, so every further frequency of a sweep only multiplies by its
-    contrast operator. Equal to the per-cell function exactly (the same products).
+    contrast operator. Equal to the per-cell function exactly (the same products). A ``BatchProfile`` is
+    evaluated at every cell's Gauss points in one call and projected in one product, equal to round-off.
 
     The profile must be a pure function of position: one whose values change between calls with the same
     key would be served its old projection.
@@ -142,7 +210,10 @@ def cell_contrast_coefficients_all(
     )
     coeff = _PROJECTIONS.get(key)
     if coeff is None:
-        coeff = np.array([_cell_projection(profile, c, h, contrast, ref, degree) for c in centres])
+        if isinstance(profile, BatchProfile):  # every Gauss point of every cell in one call
+            coeff = _projection_all(profile, centres, h, contrast, ref, degree)
+        else:
+            coeff = np.array([_cell_projection(profile, c, h, contrast, ref, degree) for c in centres])
         _PROJECTIONS[key] = coeff
         while len(_PROJECTIONS) > _PROJECTIONS_MAX:
             _PROJECTIONS.popitem(last=False)

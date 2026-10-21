@@ -609,3 +609,14 @@ order). Equal to `coupling_blocks_far` to 1e-13 at every distance band, a raised
 frequency and the 20- and 35-monomial bases. Blocks: 19.7 s to 8.8 s at n = 32, 36.7 s to 15.2 s at
 n = 40. Of the 8.5 s left at n = 32: kernel evaluations 3.1 s (7.3 million points), contractions 3.5 s,
 array building 2.0 s. The contrast projection (14.5 s) is now the largest stage (11d).
+
+**11d done (22 October 2026).** `graded_voxel.site.BatchProfile`: a profile evaluated at many points in one
+call (and still at one). The projection then evaluates every cell's 216 Gauss points in one call and
+projects them in one product (equal to the point-by-point projection to 1e-14; the range check still
+names the cell); the point solver evaluates its per-cell factors the same way. The scripts' graded and
+sharp profiles are batch profiles (equal to the former scalar ones to 1.6e-15; the recorded comparison
+errors reproduce). Contrast projection: 14.5 s to 0.18 s at n = 32.
+
+**Setup after 11a to 11d** (k_S a = 4): n = 32, 69 s to 14.7 s; n = 40, 218 s to 34.9 s. What is left:
+the canonical blocks, 9.5 s and 23 s (two-thirds), then the kernel (1.8 s, 3.9 s), the preconditioner
+(1.3 s, 3.6 s) and the per-cell source expansion (1.2 s, 2.8 s).

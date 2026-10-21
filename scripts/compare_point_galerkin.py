@@ -37,6 +37,9 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from cubic_scattering.graded_voxel.site import BatchProfile  # noqa: E402
+from pilot_graded_sphere_vs_exact import profile as pilot_profile  # noqa: E402
+
 OUT = Path(__file__).parent / "data" / "point_vs_galerkin.jsonl"
 RADIUS = 10.0
 CORE = RADIUS / 2
@@ -46,21 +49,14 @@ THETA = np.linspace(0.2, np.pi - 0.2, 9)
 R_MULT = 5.0e8  # the asymptotic far fields against the exact displacement: near-field residue ~1e-8
 
 
-def graded_profile(pos: np.ndarray) -> float:
-    """1 in the core, the C2 smoothstep across the shell, 0 outside."""
-    from crosscheck_graded_sphere import smoothstep
-
-    r = float(np.linalg.norm(pos))
-    if r <= CORE:
-        return 1.0
-    if r >= RADIUS:
-        return 0.0
-    return smoothstep((RADIUS - r) / (RADIUS - CORE))
+def _sharp_values(pts: np.ndarray) -> np.ndarray:
+    """The homogeneous sphere at points (M, 3): 1 inside, 0 outside."""
+    return (np.linalg.norm(pts, axis=1) < RADIUS).astype(float)
 
 
-def sharp_profile(pos: np.ndarray) -> float:
-    """The homogeneous sphere: 1 inside, 0 outside."""
-    return 1.0 if float(np.linalg.norm(pos)) < RADIUS else 0.0
+#: the two bodies' profiles, each evaluated at many points in one call (``graded_voxel.site.BatchProfile``)
+graded_profile = pilot_profile
+sharp_profile = BatchProfile(_sharp_values)
 
 
 def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:

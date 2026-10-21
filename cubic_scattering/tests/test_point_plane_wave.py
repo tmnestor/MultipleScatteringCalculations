@@ -106,3 +106,20 @@ def test_the_vectorised_far_field_equals_the_loop() -> None:
     got = point_far_field(centres, sources, OMEGA, REF, _obs(), r)
     for a, b in zip(got, want, strict=True):
         assert np.abs(a - b).max() <= 1e-13 * np.abs(b).max()
+
+
+def test_a_batch_profile_is_evaluated_once_for_all_cells() -> None:
+    from cubic_scattering.graded_voxel.site import BatchProfile
+
+    calls = []
+
+    def batch(pts):
+        calls.append(len(pts))
+        return 1.0 - 0.004 * np.einsum("ni,ni->n", pts, pts)
+
+    kw = dict(profile=None, gmres_tol=1e-12, device=CPU, dtype=torch.complex128)
+    args = (OMEGA, RADIUS, REF, CONTRAST, N_SUB, K_HAT, POL, "P")
+    got = solve_point_plane_wave(*args, **{**kw, "profile": BatchProfile(batch)})
+    want = solve_point_plane_wave(*args, **{**kw, "profile": _graded})
+    assert calls == [len(got.centres)]
+    assert np.abs(got.psi - want.psi).max() <= 1e-12 * np.abs(want.psi).max()
