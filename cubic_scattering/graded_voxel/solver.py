@@ -22,7 +22,7 @@ from ..sphere_scattering import _plane_wave_strain_voigt
 from ..sphere_scattering_fft import _build_grid_index_map
 from .basis import SOURCE_EXPONENTS, gram_test, source_expansion, source_size
 from .blocks import coupling_block
-from .site import cell_contrast_coefficients
+from .site import cell_contrast_coefficients_all
 
 
 def _j(e: int, q: float) -> complex:
@@ -132,8 +132,8 @@ def solve_graded_sphere(
         grid_idx, centres = grid_idx[_order], centres[_order]
     n = len(centres)
     na, n_field, _, n_source = field_sizes(p, r)
-    delta = np.array(
-        [cell_contrast_coefficients(profile, c, h, contrast, ref, omega, degree=r) for c in centres]
+    delta = cell_contrast_coefficients_all(
+        profile, centres, h, contrast, ref, omega, degree=r  # the projection once per sweep
     )
     blocks = {} if blocks is None else blocks
     dim = n * na * 9

@@ -79,7 +79,8 @@ def test_graded_field_through_the_fused_readout_is_unchanged(monkeypatch) -> Non
     from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft
     from cubic_scattering.tests.test_graded_voxel_fft import CON, KHAT, _profile
 
-    res = solve_graded_sphere_fft(1200.0, 10.0, REF, CON, 4, _profile, KHAT, KHAT, "P", p=1, r=1)
+    # k_S h = 1/2: within the stored near-series moments
+    res = solve_graded_sphere_fft(600.0, 10.0, REF, CON, 4, _profile, KHAT, KHAT, "P", p=1, r=1)
     obs = np.array([[-12.5, x, 0.0] for x in np.linspace(0.0, 30.0, 4)])
     u_fused, e_fused = FF.graded_field(res, obs, n_gauss=4)
     u_disp, e_none = FF.graded_field(res, obs, n_gauss=4, strain=False)

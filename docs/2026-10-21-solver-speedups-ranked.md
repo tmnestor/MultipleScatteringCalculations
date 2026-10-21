@@ -369,14 +369,28 @@ throughout: every change below is a faster route to the same Galerkin blocks and
   scratch directory produced a broken library even from the ORIGINAL source; the project's build script
   does not. The cause was not run down.
 
-**Next, by measured cost.**
+3. **Contrast projection once per sweep** (done): `site.cell_contrast_coefficients_all` keeps the
+   frequency-independent projection (216 profile values per cell, 4.3 million Python calls, 23 s) and
+   multiplies by each frequency's contrast operator; equal to the per-cell function exactly.
+4. **Canonical blocks** (done; 70 s to 17.7 s). Touching offsets by `blocks.near_block_series` (2 to 6 ms
+   against 350 to 740 ms a block, 1e-15), within its stored moments (k_S h <= 1/2, `NEAR_STORE_MAX_KH`;
+   beyond, the series computes its moments, minutes each, so Gauss is kept there). The rest by
+   `blocks.coupling_blocks_far`: the same s-form Gauss rule, its offset-independent nodes and weights
+   built once per order (`_far_rule`), the kernel for many offsets in one compiled call, one batched
+   product; equal to `coupling_block` to 1e-13. The amortised far series was measured and NOT used: its
+   coefficients cost 1 to 5 s per offset, about 100 minutes for the grid's 5,980 canonical offsets, and it
+   loses digits at long reach (4.8e-13 at k_S a = 8.9, refused at the far corner), the edge effect of item 8.
 
-3. **Contrast projection once per sweep** (23 s per frequency): the projection does not depend on the
-   frequency; only the contrast operator does.
-4. **Canonical blocks by the amortised Galerkin series** (66 s per frequency): touching offsets by
-   `blocks.near_block_series`, the rest by `blocks.far_block_series` within a cancellation-safe reach
-   (the edge effect found in item 8 applies to it too), distant cells by `multipole.far_block_multipole`
-   or `piecewise_multipole_block`, Gauss only as the fallback; as `interface_solver._whole_space` does.
-5. **GMRES** (23 to 67 s): measured again once the rest is done.
+One frequency at N = 32 in a sweep: about 125 s (solve 139 s at the first frequency, 22 s of it the
+contrast projection paid once; readout 8.7 s), against 784 s at the start.
+
+**Next.**
+
+5. **GMRES** (now the largest cost, 54 s: 6 products of about 9 s). Each product reads the whole
+   disk-mapped complex64 kernel (6.5 GB) a row at a time and contracts it with a single-threaded
+   `einsum` over the 90 columns at every Fourier point (`fft.py`, the matvec). First: the same product
+   with the kernel in memory, to separate the disk from the layout. Then, if it is the layout: store the
+   transformed kernel point-major (a 36 x 90 matrix per Fourier point) and apply it as one batched
+   matrix product, as item 5b did for the sphere solver.
 6. **Frequencies in parallel**: independent, but each holds a 6.5 GB kernel; on 16 GB at most two at a
    time.

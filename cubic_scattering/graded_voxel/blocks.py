@@ -649,8 +649,12 @@ def family_tables() -> tuple[dict[tuple[int, ...], NDArray], dict[tuple[int, ...
 
 
 #: The stored universal moments (scripts/build_near_series_moments.py): m to 31 (omega h / beta <= 1/2), the
-#: touching orbits, the largest basis (n_source 35, n_test 10), of which every smaller basis is the leading slice.
+#: touching orbits, the largest basis (n_source 35, n_test 10), of which every smaller basis is the leading
+#: slice.
 _NEAR_STORE = Path(__file__).resolve().parents[2] / "scripts" / "data" / "near_series_moments.npz"
+#: The k_S h the store covers. Beyond it ``near_block_series`` computes the missing moments, minutes each
+#: (measured: 278 s for one small solve at k_S h = 1), so a caller choosing it for speed stays within this.
+NEAR_STORE_MAX_KH = 0.5
 
 
 @cache
@@ -979,3 +983,90 @@ def coupling_block(
         n_test,
     )
     return _to_field_rows(out.reshape(n_test, n_source, 9, 9))
+
+
+@lru_cache(maxsize=16)
+def _far_rule(h: float, n_q: int, n_source: int, n_test: int) -> tuple[NDArray, NDArray]:
+    """The s-form's nodes and weights for a NON-TOUCHING offset: ``_sform``'s loop without the kernel.
+
+    For a non-touching offset the singular point lies outside every piece, so no piece needs the Duffy
+    rule, and the nodes (in units of h, relative to the centre separation R) and the weights depend only
+    on (h, n_q), not on the offset and not on the frequency. Returns (sig (P, 3), W (n_test * n_source, P))
+    such that ``_sform(offset, h, (0, 0, 0), kernel_at, n_q, ...)`` is ``W @ kernel_at(R + h sig)``: the
+    same pieces, nodes and products as ``_sform``, summed over the pieces in one product rather than piece
+    by piece (round-off only).
+    """
+    src = source_exponents(n_source)
+    tst = SOURCE_EXPONENTS[:n_test]
+    axis_exps = sorted(
+        {(tst[a][i], src[c][i]) for a in range(n_test) for c in range(n_source) for i in range(3)}
+    )
+    parts = {(i, et, es): _axis_parts(et, es, 0, h) for i in range(3) for et, es in axis_exps}
+    shape = [len(parts[(i, *axis_exps[0])]) for i in range(3)]
+    sig_all, w_all = [], []
+    for choice in itertools.product(*[range(s) for s in shape]):
+        kinds = [parts[(i, *axis_exps[0])][choice[i]] for i in range(3)]
+        lo = np.array([kinds[i][1] for i in range(3)])
+        hi = np.array([kinds[i][2] for i in range(3)])
+        sig, w = _box_rule(lo, hi, None, n_q)
+        jac = w * h**3
+        val = np.broadcast_to(jac, (n_test, n_source, len(jac))).copy()
+        for i in range(3):
+            vals = {(et, es): parts[(i, et, es)][choice[i]][3](sig[:, i]) for et, es in axis_exps}  # type: ignore[operator]
+            val *= np.array([[vals[(ta[i], sc[i])] for sc in src] for ta in tst])
+        sig_all.append(sig)
+        w_all.append(val.reshape(n_test * n_source, -1))
+    return np.concatenate(sig_all), np.concatenate(w_all, axis=1)
+
+
+def coupling_blocks_far(
+    offsets: NDArray,
+    h: float,
+    omega: complex,
+    ref: ReferenceMedium,
+    n_source: int = 10,
+    n_test: int = 4,
+    *,
+    chunk_points: int = 500_000,
+) -> NDArray:
+    """``coupling_block`` for many NON-TOUCHING offsets at once, shape (K, n_test, n_source, 9, 9).
+
+    WHY. ``coupling_block`` rebuilds the s-form's offset-independent nodes and weights for every block, in
+    Python, at every frequency: about 10 ms a block, 66 s for the 5,980 non-touching canonical offsets of
+    the thesis's Chapter 7 grid (N = 32), while the kernel evaluations behind a block take well under a
+    millisecond. Here the weights are built once per Gauss order (``_far_rule``), the offsets are grouped
+    by their order (``gauss_order``, the same as ``coupling_block``'s), and each group's kernel is evaluated
+    over many offsets in one compiled call, then contracted by one batched product. The same Gauss rule, so
+    the same blocks to round-off (``tests/test_graded_voxel_blocks_batched.py``).
+
+    Args:
+        offsets: Integer offsets (K, 3), none touching (max |o_i| >= 2).
+        h: Cell half-width.
+        omega: Angular frequency.
+        ref: Background medium.
+        n_source: Source monomials.
+        n_test: Test functions.
+        chunk_points: Kernel evaluations per compiled call, bounding the (points, 81) complex temporary
+            (500,000 points is about 650 MB).
+
+    Raises:
+        ValueError: when an offset touches (use ``near_block`` or ``near_block_series``).
+    """
+    offsets = np.atleast_2d(np.asarray(offsets, dtype=int))
+    k_s_h = abs(omega) / ref.beta * h
+    orders = np.array([gauss_order((int(o[0]), int(o[1]), int(o[2])), k_s_h) for o in offsets])
+    out = np.empty((len(offsets), n_test * n_source, 81), dtype=complex)
+    for n_q in sorted(set(orders.tolist())):
+        sig, W = _far_rule(h, n_q, n_source, n_test)
+        rows = np.flatnonzero(orders == n_q)
+        per_chunk = max(1, chunk_points // len(sig))
+        for c0 in range(0, len(rows), per_chunk):
+            sel = rows[c0 : c0 + per_chunk]
+            R = 2.0 * h * offsets[sel].astype(float)  # the centre separations
+            X = (R[:, None, :] + h * sig[None, :, :]).reshape(-1, 3)
+            kv = kernel_9x9(X, omega, ref).reshape(len(sel), len(sig), 81)
+            out[sel] = np.matmul(W[None, :, :], kv)
+    blocks = out.reshape(len(offsets), n_test, n_source, 9, 9)
+    if n_test == 4:
+        return blocks
+    return np.einsum("am,km...->ka...", field_in_monomials(n_test), blocks)

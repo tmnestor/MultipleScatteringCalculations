@@ -46,6 +46,7 @@ def test_kernel_is_equivariant_under_the_cube_group():
             np.testing.assert_allclose(pq[k], s @ p[k] @ s.T, atol=1e-12 * np.abs(p[k]).max())
 
 
+@pytest.mark.slow  # 10 to 12 s under parallel load: over the budget twice (21 October 2026)
 def test_symmetry_generated_blocks_equal_direct_ones():
     blocks = offset_blocks(4, H, OMEGA, REF)
     for off in ((1, 0, -1), (-1, 1, 1), (2, -1, 0), (-3, 2, 1), (0, -2, 3)):

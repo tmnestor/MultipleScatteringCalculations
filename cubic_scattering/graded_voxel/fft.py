@@ -40,8 +40,8 @@ from .basis import (
     source_expansion,
     source_exponents,
 )
-from .blocks import coupling_block
-from .site import cell_contrast_coefficients
+from .blocks import NEAR_STORE_MAX_KH, coupling_block, coupling_blocks_far, near_block_series
+from .site import cell_contrast_coefficients_all
 from .solver import GradedVoxelResult, field_sizes, plane_wave_moments
 
 VOIGT_PAIRS = ((0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1))
@@ -152,15 +152,31 @@ def canonical_blocks(
     n_source: int = 10,
     n_test: int = 4,
 ) -> dict[tuple[int, int, int], NDArray]:
-    """One ``coupling_block`` per cube-group orbit of the offsets in [-(n-1), n-1]^3, keyed by the orbit's
+    """One coupling block per cube-group orbit of the offsets in [-(n-1), n-1]^3, keyed by the orbit's
     canonical offset (a >= b >= d >= 0): about 1/48 of the offsets, so the kernel need not be held per
-    offset (``transformed_kernel``)."""
+    offset (``transformed_kernel``).
+
+    The same Galerkin blocks as ``coupling_block``, by faster routes: the touching offsets (the self cell
+    and its neighbours) by ``near_block_series`` within its stored moments (k_S h <= 1/2; ``near_block``
+    beyond), the wavenumber series over universal moments, equal to
+    ``near_block`` to about 1e-15 and 2 to 6 ms against 350 to 740 ms a block; the rest by
+    ``coupling_blocks_far``, ``coupling_block``'s own s-form Gauss rule batched over the offsets (about 66 s
+    to a few seconds at N = 32), equal to round-off.
+    """
     rng = range(n_sub)
-    return {
-        c: coupling_block(c, h, omega, ref, n_source, n_test)
-        for c in itertools.product(rng, rng, rng)
-        if c[0] >= c[1] >= c[2]
-    }
+    canon = [c for c in itertools.product(rng, rng, rng) if c[0] >= c[1] >= c[2]]
+    touching = [c for c in canon if c[0] <= 1]
+    far = [c for c in canon if c[0] > 1]
+    if abs(omega) / ref.beta * h <= NEAR_STORE_MAX_KH:  # the stored moments: milliseconds a block
+        out = {c: near_block_series(c, h, omega, ref, n_source, n_test) for c in touching}
+    else:  # beyond the store the series would compute its moments, minutes each: Gauss, as before
+        out = {c: coupling_block(c, h, omega, ref, n_source, n_test) for c in touching}
+    if far:
+        for c, blk in zip(
+            far, coupling_blocks_far(np.array(far), h, omega, ref, n_source, n_test), strict=True
+        ):
+            out[c] = blk
+    return dict(sorted(out.items()))
 
 
 @lru_cache(maxsize=4)
@@ -356,8 +372,14 @@ def solve_graded_sphere_fft(
     n = len(centres)
     na, n_field, _, n_source = field_sizes(p, r)
     nc = 1 if (p == 0 and r == 0) else n_source
-    delta = np.array(
-        [cell_contrast_coefficients(profile, c, h, contrast, ref, omega, degree=r) for c in centres]
+    delta = cell_contrast_coefficients_all(
+        profile,
+        centres,
+        h,
+        contrast,
+        ref,
+        omega,
+        degree=r,  # the projection once per sweep
     )
     e_cells = np.array([source_expansion(d, n_field)[:nc, :na] for d in delta])  # (N, nc, na, 9, 9)
     npad = 2 * n_sub - 1

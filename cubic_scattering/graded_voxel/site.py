@@ -10,6 +10,7 @@ M = gram_test (x) I_9 and (K E)_ab = sum_c K_ac(0) E_cb.  The source moments are
 maps the incident field's Legendre coefficients to the source moments.  Index order: 9 * a + i.
 """
 
+from collections import OrderedDict
 from collections.abc import Callable
 
 import numpy as np
@@ -58,6 +59,21 @@ def cell_contrast_coefficients(
         ValueError: when the degree is not 0, 1 or 2, or when the fitted contrast leaves the physical
             range at a corner, edge midpoint, face centre or the centre of the cell.
     """
+    coeff = _cell_projection(profile, centre, h, contrast, ref, degree)
+    base = contrast_operator(contrast.Dlambda, contrast.Dmu, contrast.Drho, omega)
+    return np.array([c * base for c in coeff])
+
+
+def _cell_projection(
+    profile: Callable[[NDArray], float],
+    centre: NDArray,
+    h: float,
+    contrast: MaterialContrast,
+    ref: ReferenceMedium,
+    degree: int,
+) -> NDArray:
+    """The frequency-independent part of ``cell_contrast_coefficients``: the profile's L2 projection onto
+    the cell's contrast basis (4 or 10 numbers), after the physical-range check."""
     x, w = leggauss(6)
     xi = np.stack(np.meshgrid(x, x, x, indexing="ij"), -1).reshape(-1, 3)
     ww = np.einsum("i,j,k->ijk", w, w, w).ravel()
@@ -83,8 +99,57 @@ def cell_contrast_coefficients(
                 f"half-width {h} m); the allowed range is below 52% of the background. Fix: refine the "
                 "grid (smaller h) or pass a gentler profile or contrast."
             )
+    return coeff
+
+
+#: frequency-independent projections kept across calls: (key) -> (N, 4 or 10); the last few only
+_PROJECTIONS: OrderedDict[tuple, NDArray] = OrderedDict()
+_PROJECTIONS_MAX = 4
+
+
+def cell_contrast_coefficients_all(
+    profile: Callable[[NDArray], float],
+    centres: NDArray,
+    h: float,
+    contrast: MaterialContrast,
+    ref: ReferenceMedium,
+    omega: float,
+    degree: int,
+) -> NDArray:
+    """``cell_contrast_coefficients`` for every cell, shape (N, 4 or 10, 9, 9); the projection once a sweep.
+
+    Only the contrast operator depends on the frequency: the projection of the profile onto each cell's
+    basis (216 profile values per cell, 4.3 million Python calls at N = 32, about 23 s) and the
+    physical-range check do not. They are computed on the first call and kept, keyed on the profile, the
+    cells, the contrast and the medium, so every further frequency of a sweep only multiplies by its
+    contrast operator. Equal to the per-cell function exactly (the same products).
+
+    The profile must be a pure function of position: one whose values change between calls with the same
+    key would be served its old projection.
+
+    Raises:
+        ValueError: as ``cell_contrast_coefficients``.
+    """
+    centres = np.ascontiguousarray(np.asarray(centres, dtype=float))
+    key = (
+        profile,
+        float(h),
+        int(degree),
+        centres.shape,
+        centres.tobytes(),
+        (contrast.Dlambda, contrast.Dmu, contrast.Drho),
+        (ref.alpha, ref.beta, ref.rho),
+    )
+    coeff = _PROJECTIONS.get(key)
+    if coeff is None:
+        coeff = np.array([_cell_projection(profile, c, h, contrast, ref, degree) for c in centres])
+        _PROJECTIONS[key] = coeff
+        while len(_PROJECTIONS) > _PROJECTIONS_MAX:
+            _PROJECTIONS.popitem(last=False)
+    else:
+        _PROJECTIONS.move_to_end(key)
     base = contrast_operator(contrast.Dlambda, contrast.Dmu, contrast.Drho, omega)
-    return np.array([c * base for c in coeff])
+    return coeff[:, :, None, None] * base[None, None, :, :]
 
 
 def single_site_t36(h: float, delta: NDArray, self_block: NDArray) -> NDArray:
