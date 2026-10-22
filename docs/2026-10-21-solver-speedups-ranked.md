@@ -690,3 +690,11 @@ equal to evaluating then contracting to 1e-14, independent of the thread count; 
 keeps the evaluate-then-contract route, equal to 1e-13). Blocks: 9.1 s to 5.3 s at n = 32, 15.2 s to
 9.3 s at n = 40. Tried and dropped: reordering the lattice points and merging the paired contractions
 (7.1 and 8.0 to 8.5 s against 6.8 to 7.1 s, three fresh runs each).
+
+**After item 13, remeasured (22 October 2026).** Errors unchanged (to 1.3e-11). Size ladder: 0.7, 1.5, 2.9,
+7.4, 15.7 and 34.0 s for n = 8 to 40 (peak 6.4 GB at 40); the 34-frequency record 13 minutes (each solve
+about 15 s). Comparison: the point voxel 4.0 to 4.9 times cheaper per unknown; the Galerkin voxel the
+cheaper below a few parts in 1e4 (smooth, k_S a = 0.5: 1e-4 in 0.7 against 0.95 s) and from about 1e-2
+(smooth, 4: 1e-3 in 1.7 against 9.5 s); on the sharp body a tie near 1e-3 at 0.5 (3.2 against 3.4 s) and
+the point voxel cheaper there at 4 (9.0 against 19.5 s). The Galerkin setup is 46 to 52% of its time.
+Chapter 7 updated (sections 7.3, 7.4, 7.5, 7.7, Table 7.1, Figure 7.4).
