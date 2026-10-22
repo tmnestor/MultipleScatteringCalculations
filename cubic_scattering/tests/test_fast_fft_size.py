@@ -66,3 +66,18 @@ def test_the_point_solve_through_a_padded_embedding() -> None:
         dtype=torch.complex128,
     )
     assert np.abs(got.psi - want).max() <= 1e-9 * np.abs(want).max()
+
+
+@pytest.mark.parametrize("n_sub", [1, 4, 7, 12])
+def test_the_vectorised_sphere_grid_equals_the_cell_by_cell_one(n_sub: int) -> None:
+    """The default (sphere) cell selection, vectorised, against the cell-by-cell test it replaces."""
+    from cubic_scattering.sphere_scattering_fft import _build_grid_index_map
+
+    radius = 10.0
+    got_idx, got_c, got_a = _build_grid_index_map(radius, n_sub)
+    want_idx, want_c, want_a = _build_grid_index_map(
+        radius, n_sub, lambda pos: bool(np.linalg.norm(pos) < radius)
+    )
+    np.testing.assert_array_equal(got_idx, want_idx)
+    np.testing.assert_array_equal(got_c, want_c)
+    assert got_a == want_a

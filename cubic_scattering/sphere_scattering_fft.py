@@ -72,14 +72,21 @@ def _build_grid_index_map(
     # Grid coordinates (matching Mathematica: halfG = (-n/2 + 0.5 + i) * dd)
     coords_1d = np.array([(-n_sub / 2.0 + 0.5 + i) * dd for i in range(n_sub)])
 
-    # Build full grid and filter to sphere
+    if inside is None:
+        # the sphere: every cell at once (the loop below, one cell at a time, took 0.5 s at n_sub = 64)
+        idx = np.stack(np.meshgrid(*([np.arange(n_sub)] * 3), indexing="ij"), -1).reshape(-1, 3)
+        pos = coords_1d[idx]
+        keep_all = np.linalg.norm(pos, axis=1) < radius
+        return idx[keep_all].astype(np.intp), pos[keep_all], a_sub
+
+    # Build full grid and filter by the given shape
     grid_indices = []
     centres_list = []
     for i0 in range(n_sub):
         for i1 in range(n_sub):
             for i2 in range(n_sub):
                 pos = np.array([coords_1d[i0], coords_1d[i1], coords_1d[i2]])
-                keep = np.linalg.norm(pos) < radius if inside is None else inside(pos)
+                keep = inside(pos)
                 if keep:
                     grid_indices.append([i0, i1, i2])
                     centres_list.append(pos)
