@@ -698,3 +698,11 @@ cheaper below a few parts in 1e4 (smooth, k_S a = 0.5: 1e-4 in 0.7 against 0.95 
 (smooth, 4: 1e-3 in 1.7 against 9.5 s); on the sharp body a tie near 1e-3 at 0.5 (3.2 against 3.4 s) and
 the point voxel cheaper there at 4 (9.0 against 19.5 s). The Galerkin setup is 46 to 52% of its time.
 Chapter 7 updated (sections 7.3, 7.4, 7.5, 7.7, Table 7.1, Figure 7.4).
+
+**A regression found and fixed (22 October 2026).** Checking the thesis's figures against new runs: the
+canonical kernel at N = 40 took 6.4 s, not the 3.4 s recorded, after the fast embedding size moved its
+octant from 40 to 41 values a side. NumPy's stacked matrix product splits the octant sums into thousands of
+N x N products, which the BLAS threads past N = 40 at a loss (36 ns a value at 40, 115 at 41). Each axis
+is now one matrix product, the axis brought last by a contiguous copy: the same numbers bit for bit, the
+kernel 6.4 s to 3.35 s at N = 40 and 1.74 s to 1.27 s at N = 32 (and the octant products 2.6 times
+faster at the point solver's 68).

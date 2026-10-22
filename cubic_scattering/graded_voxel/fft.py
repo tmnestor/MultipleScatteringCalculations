@@ -349,11 +349,16 @@ def _canonical_hat_from_blocks(
                 * sc[q_o[None, :], cc]
                 * blocks[i_o[None, :], pr[q_o[None, :], rr], pc[q_o[None, :], cc]]
             )
-            f = f.reshape(len(sel), n_sub, n_sub, n_sub)
-            f = f @ m2.T  # (r, a, b, m)
-            f = (f.transpose(0, 1, 3, 2) @ m1.T).transpose(0, 1, 3, 2)  # (r, a, l, m)
-            f = (f.transpose(0, 2, 3, 1) @ m0.T).transpose(0, 3, 1, 2)  # (r, k, l, m)
-            hat[sel] = f.reshape(len(sel), -1)
+            # each axis as ONE matrix product, the axis brought last by a contiguous copy: a stacked
+            # product splits into thousands of N x N products, which the BLAS threads past N = 40 at a
+            # loss (2.3 s against 0.3 s at N = 41, the same numbers)
+            nr, n = len(sel), n_sub
+            f = (f.reshape(-1, n) @ m2.T).reshape(nr, n, n, n)  # (r, a, b, m)
+            f = (np.ascontiguousarray(f.transpose(0, 1, 3, 2)).reshape(-1, n) @ m1.T).reshape(nr, n, n, n)
+            f = f.transpose(0, 1, 3, 2)  # (r, a, l, m)
+            f = (np.ascontiguousarray(f.transpose(0, 2, 3, 1)).reshape(-1, n) @ m0.T).reshape(nr, n, n, n)
+            f = f.transpose(0, 3, 1, 2)  # (r, k, l, m)
+            hat[sel] = f.reshape(nr, -1)
     # gather: khc[k, c, r] = sign[r, c] hat[rep_of[r, c], Q^T k], Q = perm_q[best[r, c]]
     key_arr = np.array(keys)
     moved = np.stack([key_arr @ qs[q] for q in perm_q]).astype(np.int64)  # (6, K, 3): Q^T k as rows
