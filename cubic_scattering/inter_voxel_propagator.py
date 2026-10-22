@@ -343,8 +343,8 @@ def _build_B_tensor(b_dict: dict[tuple[int, int, int, int], float]) -> NDArray:
     from itertools import permutations
 
     B = np.zeros((3, 3, 3, 3))
-    for (i, j, k, l), val in b_dict.items():
-        for perm in set(permutations((i, j, k, l))):
+    for (i, j, k, ell), val in b_dict.items():
+        for perm in set(permutations((i, j, k, ell))):
             B[perm] = val
     return B
 
@@ -896,23 +896,23 @@ def _rotate_voigt6(S: NDArray, R: NDArray) -> NDArray:
     # Voigt -> tensor
     P = np.zeros((3, 3, 3, 3), dtype=S.dtype)
     for alpha, (i, j) in enumerate(_VOIGT_PAIRS):
-        for beta, (k, l) in enumerate(_VOIGT_PAIRS):
+        for beta, (k, ell) in enumerate(_VOIGT_PAIRS):
             # Undo the Voigt factors
             val = S[alpha, beta]
             if beta >= 3:
                 val *= 2.0  # undo shear column halving
             mult_ij = 2 if i != j else 1
-            if k != l:
+            if k != ell:
                 # S_αβ was formed as mult_ij * (P_ijkl + P_ijlk)
                 # For symmetric P, P_ijkl = P_ijlk, so val = mult_ij * 2 * P_ijkl
-                P[i, j, k, l] = val / (mult_ij * 2.0)
-                P[i, j, l, k] = val / (mult_ij * 2.0)
+                P[i, j, k, ell] = val / (mult_ij * 2.0)
+                P[i, j, ell, k] = val / (mult_ij * 2.0)
             else:
-                P[i, j, k, l] = val / mult_ij
+                P[i, j, k, ell] = val / mult_ij
             if i != j:
-                P[j, i, k, l] = P[i, j, k, l]
-                if k != l:
-                    P[j, i, l, k] = P[i, j, l, k]
+                P[j, i, k, ell] = P[i, j, k, ell]
+                if k != ell:
+                    P[j, i, ell, k] = P[i, j, ell, k]
     # Rotate
     P_rot = _rotate_tensor4(P, R)
     # Tensor -> Voigt

@@ -446,10 +446,10 @@ def G_ij_poly(i, j):
     return phi_poly * d(i, j) + psi_poly * xx[i] * xx[j]
 
 
-def G_ij_kl_poly(i, j, k, l):
+def G_ij_kl_poly(i, j, k, ell):
     """G_{ij,kl} = d^2 G_{ij} / dx_k dx_l as polynomial."""
     expr = G_ij_poly(i, j)
-    deriv = diff(diff(expr, xx[k]), xx[l])
+    deriv = diff(diff(expr, xx[k]), xx[ell])
     return sp.expand(deriv)
 
 
@@ -542,11 +542,11 @@ print("-" * 70)
 # This is getting complex. Let me just compute T numerically via the tensor.
 
 
-def I_tensor(i, j, k, l):
+def I_tensor(i, j, k, ell):
     """The integral tensor, using the A, B, C decomposition."""
-    iso = A_cube * d(i, j) * d(k, l) + B_cube * (d(i, k) * d(j, l) + d(i, l) * d(j, k))
+    iso = A_cube * d(i, j) * d(k, ell) + B_cube * (d(i, k) * d(j, ell) + d(i, ell) * d(j, k))
     # Cubic part: E_ijkl = 1 if i=j=k=l, else 0
-    cubic = C_cube * d(i, j) * d(j, k) * d(k, l)
+    cubic = C_cube * d(i, j) * d(j, k) * d(k, ell)
     return iso + cubic
 
 
@@ -555,14 +555,14 @@ def S_tensor(m, n, j, k):
     return Rational(1, 2) * (I_tensor(m, j, k, n) + I_tensor(n, j, k, m))
 
 
-def Dc_tensor(j, k, l, p):
+def Dc_tensor(j, k, ell, p):
     """Isotropic stiffness contrast."""
-    return Dlambda * d(j, k) * d(l, p) + Dmu * (d(j, l) * d(k, p) + d(j, p) * d(k, l))
+    return Dlambda * d(j, k) * d(ell, p) + Dmu * (d(j, ell) * d(k, p) + d(j, p) * d(k, ell))
 
 
-def T_tensor(m, n, l, p):
+def T_tensor(m, n, ell, p):
     """T_{mnlp} = sum_{jk} S_{mnjk} Dc_{jklp}."""
-    return sum(S_tensor(m, n, j, k) * Dc_tensor(j, k, l, p) for j in range(3) for k in range(3))
+    return sum(S_tensor(m, n, j, k) * Dc_tensor(j, k, ell, p) for j in range(3) for k in range(3))
 
 
 # Compute independent components

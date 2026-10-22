@@ -31,9 +31,7 @@ def test_fgmres_solves_a_complex_system():
 @pytest.fixture(scope="module")
 def box():
     """Four planes (two each side) of 2 x 2 cells, a gap in one, at omega h / beta_A = 1/2."""
-    cells = [
-        (iz, ix, iy) for iz in (-2, -1, 0, 1) for ix in range(2) for iy in range(2)
-    ]
+    cells = [(iz, ix, iy) for iz in (-2, -1, 0, 1) for ix in range(2) for iy in range(2)]
     cells.remove((0, 1, 1))
     g = iso.InterfaceGrid(np.array(cells), H, A, B)
     c = iso.InterfaceCouplings(g)
@@ -58,10 +56,7 @@ def test_the_split_adds_up_to_the_coupling(box):
             got = sum(parts.get((zr, zs), 0) for parts in (du.lo, du.up, du.refl)) + (
                 du.k0[zr] if zr == zs else 0
             )
-            assert (
-                np.abs(got - op.kernels[zr, zs]).max()
-                <= 1e-12 * np.abs(op.kernels[zr, zs]).max()
-            )
+            assert np.abs(got - op.kernels[zr, zs]).max() <= 1e-12 * np.abs(op.kernels[zr, zs]).max()
     # forward is downward in L, upward in U; R stays on one side and off the diagonal
     assert all(zs < zr for zr, zs in du.lo) and all(zs > zr for zr, zs in du.up)
     assert all((zr < 0) == (zs < 0) and zr != zs for zr, zs in du.refl)
@@ -69,15 +64,14 @@ def test_the_split_adds_up_to_the_coupling(box):
 
 @pytest.mark.slow
 def test_downup_passes_converge_to_the_dense_solve(box):
-    """As a stationary iteration with exact plane solves, DownUp converges to the solution at small contrast."""
+    """As a stationary iteration with exact plane solves, DownUp converges to the solution at small
+    contrast."""
     g, c, op = box
     ctr = _contrasts(g, 0.1)
     kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
     dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=0)
     delta = iso.cell_contrasts(g, OMEGA, ctr, 0)
-    e = np.array(
-        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
-    )
+    e = np.array([source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta])
     rhs = iso.reference_moments(g, OMEGA, kx, ky, "P", op.n_field)[:, : op.na]
     du = idu.DownUp(op, e, inner_tol=1e-14)
     got = du(rhs.ravel()).reshape(rhs.shape)
@@ -143,23 +137,19 @@ def test_fgmres_with_the_averaged_sweep_matches_the_dense_solve(box):
 
 @pytest.mark.slow
 def test_dtn_sweep_inverts_a_single_plane():
-    """One plane: no coupling between planes to average, so the DtN form with a tight inner solve is the plane's
-    exact inverse, its box's edges and its varying contrast included."""
+    """One plane: no coupling between planes to average, so the DtN form with a tight inner solve is the
+    plane's exact inverse, its box's edges and its varying contrast included."""
     cells = [(-1, ix, iy) for ix in range(3) for iy in range(2)]
     g = iso.InterfaceGrid(np.array(cells), H, A, B)
     c = iso.InterfaceCouplings(g, workers=1)
     op = iso.LateralOperator(c, OMEGA, p=1, r=0)
     f = np.random.default_rng(9).uniform(0.1, 0.5, len(cells))
     ctr = [
-        MaterialContrast(
-            fm * g.medium(m).lam, fm * g.medium(m).mu, fm * g.medium(m).rho
-        )
+        MaterialContrast(fm * g.medium(m).lam, fm * g.medium(m).mu, fm * g.medium(m).rho)
         for m, fm in enumerate(f)
     ]
     delta = iso.cell_contrasts(g, OMEGA, ctr, 0)
-    e = np.array(
-        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
-    )
+    e = np.array([source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta])
     x = np.random.default_rng(5).standard_normal((len(cells), op.na, 9)) + 0j
     src = np.einsum("ncbij,nbj->nci", e, x).reshape(len(cells), -1)
     ax = np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)
@@ -198,7 +188,8 @@ def test_fgmres_with_the_dtn_sweep_matches_the_dense_solve(box):
 @pytest.mark.slow
 def test_dtn_window_system_is_the_true_padded_system(box):
     """The window's operator, the averaged trailing system less the contrast fluctuation, is the true system
-    M - K E on the padded grid (E zero outside the cells): over all the planes it is assembled independently."""
+    M - K E on the padded grid (E zero outside the cells): over all the planes it is assembled
+    independently."""
     g, _, op = box
     rng = np.random.default_rng(12)
     ctr = [
@@ -206,22 +197,15 @@ def test_dtn_window_system_is_the_true_padded_system(box):
         for m, f in enumerate(rng.uniform(0.1, 0.5, len(g.idx)))
     ]
     delta = iso.cell_contrasts(g, OMEGA, ctr, 0)
-    e = np.array(
-        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
-    )
+    e = np.array([source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta])
     du = idu.DtNSweep(op, e)
     win = list(range(len(op.layers)))
     rows, nf = op.na * 9, op.kernels[op.layers[0], op.layers[0]].shape[-1]
-    v = [
-        rng.standard_normal((rows, nf)) + 1j * rng.standard_normal((rows, nf))
-        for _ in win
-    ]
+    v = [rng.standard_normal((rows, nf)) + 1j * rng.standard_normal((rows, nf)) for _ in win]
     got = du._trailing(win, v)
     for a, za in enumerate(op.layers):
         for b, zb in enumerate(op.layers):
-            got[a] = got[a] - np.einsum(
-                "rcf,cf->rf", op.kernels[za, zb], du._fluctuation(zb, v[b])
-            )
+            got[a] = got[a] - np.einsum("rcf,cf->rf", op.kernels[za, zb], du._fluctuation(zb, v[b]))
     m_full = np.kron(op.m9, np.eye(9))
     for a, za in enumerate(op.layers):
         want = m_full @ v[a]
@@ -278,19 +262,15 @@ def _varying(g, seed):
 
 @pytest.mark.slow
 def test_true_sweep_with_full_windows_is_the_exact_inverse(box):
-    """The leading solves of the true system, each over all the planes above and solved tightly: the block LDU
-    solve of the true system, so the preconditioner inverts A (contrast varying within the planes)."""
+    """The leading solves of the true system, each over all the planes above and solved tightly: the block
+    LDU solve of the true system, so the preconditioner inverts A (contrast varying within the planes)."""
     g, _, op = box
     delta = iso.cell_contrasts(g, OMEGA, _varying(g, 13), 0)
-    e = np.array(
-        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
-    )
+    e = np.array([source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta])
     x = np.random.default_rng(6).standard_normal((len(g.idx), op.na, 9)) + 0j
     src = np.einsum("ncbij,nbj->nci", e, x).reshape(len(g.idx), -1)
     ax = np.einsum("ab,nbi->nai", op.m9, x) - op._convolve(src)
-    got = idu.TrueSweep(op, e, inner_tol=1e-13, window=None)(ax.ravel()).reshape(
-        x.shape
-    )
+    got = idu.TrueSweep(op, e, inner_tol=1e-13, window=None)(ax.ravel()).reshape(x.shape)
     assert np.abs(got - x).max() < 1e-9 * np.abs(x).max()
 
 

@@ -132,9 +132,9 @@ def greens_deriv(i, j, k):
     return sp.diff(greens_cart(i, j), x_vec[k])
 
 
-def greens_deriv2(i, j, k, l):
+def greens_deriv2(i, j, k, ell):
     """G_{ij,kl} = d^2 G_{ij} / (dx_k dx_l) in Cartesian."""
-    return sp.diff(greens_cart(i, j), x_vec[k], x_vec[l])
+    return sp.diff(greens_cart(i, j), x_vec[k], x_vec[ell])
 
 
 # ================================================================

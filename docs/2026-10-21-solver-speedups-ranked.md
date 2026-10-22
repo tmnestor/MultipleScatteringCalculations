@@ -41,6 +41,7 @@ this section for the current state.
 | Sharp bodies: project each cell's contrast exactly (its volume fraction) rather than by a 6-point Gauss rule of a step | Accuracy, not speed: part of the Galerkin voxel's sharp-sphere error is that rule's |
 | The full test suite (slow tests included) | Not run since 22 October's changes; each commit passed the gate and the slow tests of the code it touched |
 | mypy over the whole package | **Done (22 October 2026)**: 136 errors to none in 194 files, types only (annotations, narrowing, fixed-length tuples), no `type: ignore`; the gate and the touched modules' slow tests pass |
+| ruff over the whole package | **Done (22 October 2026)**: 356 issues to none (311 long docstring and comment lines rewrapped with their wording unchanged, `l` renamed in its own scope, assigned lambdas made functions, unused lambda arguments underscored, `zip` strictness made explicit); no `noqa`. The 567 in `scripts/` are left |
 
 ## Summary (21 October 2026, at the start, before any of the work below)
 

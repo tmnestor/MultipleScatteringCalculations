@@ -116,32 +116,18 @@ def receiver_moments(k_vec: NDArray, h: float, n_field: int) -> NDArray:
     The field functions are the products of Legendre polynomials of degrees SOURCE_EXPONENTS[a], as in
     ``graded_voxel.solver.plane_wave_moments``; here for complex k.
     """
-    j = {
-        (i, e): 2.0 * 1j**e * spherical_jn(e, k_vec[:, i] * h)
-        for i in range(3)
-        for e in range(3)
-    }
+    j = {(i, e): 2.0 * 1j**e * spherical_jn(e, k_vec[:, i] * h) for i in range(3) for e in range(3)}
     return np.stack(
-        [
-            h**3 * j[0, e[0]] * j[1, e[1]] * j[2, e[2]]
-            for e in SOURCE_EXPONENTS_QUARTIC[:n_field]
-        ],
+        [h**3 * j[0, e[0]] * j[1, e[1]] * j[2, e[2]] for e in SOURCE_EXPONENTS_QUARTIC[:n_field]],
         -1,
     )
 
 
 def source_moments_local(k_vec: NDArray, h: float, n_source: int) -> NDArray:
     """int m_c(xi) exp(-i k.(x - c)) d^3x over a cell of half-width h, shape (N, n_source)."""
-    f = {
-        (i, e): monomial_fourier(e, -k_vec[:, i] * h)
-        for i in range(3)
-        for e in range(5)
-    }
+    f = {(i, e): monomial_fourier(e, -k_vec[:, i] * h) for i in range(3) for e in range(5)}
     return np.stack(
-        [
-            h**3 * f[0, e[0]] * f[1, e[1]] * f[2, e[2]]
-            for e in SOURCE_EXPONENTS_QUARTIC[:n_source]
-        ],
+        [h**3 * f[0, e[0]] * f[1, e[1]] * f[2, e[2]] for e in SOURCE_EXPONENTS_QUARTIC[:n_source]],
         -1,
     )
 
@@ -184,8 +170,10 @@ def mode_integral_block(
     """
     if offset[0] == 0:
         raise ValueError(
-            "mode_integral_block: offset[0] == 0 puts both cells in one plane, where the z-separation has no\n"
-            "  sign and the mode integral does not exist. Same-plane blocks come from Paper 2's closed forms."
+            "mode_integral_block: offset[0] == 0 puts both cells in one plane, where the z-separation "
+            "has no\n"
+            "  sign and the mode integral does not exist. Same-plane blocks come from Paper 2's "
+            "closed forms."
         )
     r_vec = 2.0 * h * np.asarray(offset, dtype=float)
     sign = float(np.sign(r_vec[0]))
@@ -253,7 +241,12 @@ def mode_matrices(
                 ws.append(w)
                 kzs.append(sign * k[:, 0])
     states = np.stack(cols, axis=-1)
-    return states, traction_rows(np.moveaxis(states, -1, -2), ref).swapaxes(-1, -2), np.stack(ws, -1), np.stack(kzs, -1)
+    return (
+        states,
+        traction_rows(np.moveaxis(states, -1, -2), ref).swapaxes(-1, -2),
+        np.stack(ws, -1),
+        np.stack(kzs, -1),
+    )
 
 
 def interface_rt(
@@ -292,13 +285,16 @@ def reflected_spectrum(
     z_rec: float,
     z_src: float,
 ) -> NDArray:
-    """The reflected part of the 9 x 9 spectral kernel, source and receiver both above an interface at z = 0.
+    """The reflected part of the 9 x 9 spectral kernel, source and receiver both above an interface
+    at z = 0.
 
     sum_{m up, n down} d_m e^{i k_z,m |z_rec|} R_d[m, n] e^{i k_z,n |z_src|} w_n d_n^T M, shape (N, 9, 9):
     the same factorisation as the whole-space spectrum (G1), with the reflection in place of the identity.
     """
     if z_rec >= 0.0 or z_src >= 0.0:
-        raise ValueError("reflected_spectrum: source and receiver must both lie above the interface (z < 0).")
+        raise ValueError(
+            "reflected_spectrum: source and receiver must both lie above the interface (z < 0)."
+        )
     states, _, w, kz = mode_matrices(kx, ky, omega, above)
     r_d = interface_rt(kx, ky, omega, above, below)["R_d"]
     e_src = w[:, :3] * np.exp(1j * kz[:, :3] * abs(z_src))
@@ -319,11 +315,13 @@ def transmitted_spectrum(
 ) -> NDArray:
     """The 9 x 9 spectral kernel from a source above the interface z = 0 to a receiver below it.
 
-    sum_{m, n down} d_m^B e^{i k_z,m^B z_rec} T_d[m, n] e^{i k_z,n^A |z_src|} w_n^A d_n^A^T M, shape (N, 9, 9):
-    the whole coupling across the interface, the transmission in place of the direct propagation.
+    sum_{m, n down} d_m^B e^{i k_z,m^B z_rec} T_d[m, n] e^{i k_z,n^A |z_src|} w_n^A d_n^A^T M, shape (N, 9,
+    9): the whole coupling across the interface, the transmission in place of the direct propagation.
     """
     if z_rec <= 0.0 or z_src >= 0.0:
-        raise ValueError("transmitted_spectrum: the source must lie above the interface (z < 0), the receiver below.")
+        raise ValueError(
+            "transmitted_spectrum: the source must lie above the interface (z < 0), the receiver below."
+        )
     st_a, _, w_a, kz_a = mode_matrices(kx, ky, omega, above)
     st_b, _, _, kz_b = mode_matrices(kx, ky, omega, below)
     t_d = interface_rt(kx, ky, omega, above, below)["T_d"]

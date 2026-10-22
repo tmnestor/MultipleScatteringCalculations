@@ -21,8 +21,9 @@ LOW = isp.Window(0.35 / 2.5)  # the band [0.35, 2.5] / h at omega h / beta_A = 1
 
 @pytest.mark.slow
 def test_factors_rebuild_the_integrand():
-    """The mode and static pseudo-mode factors give ``integrand_points`` (reflected and transmitted, in the band
-    and on the window's ramp), to the rounding of the modes' cancellation (the terms reach ~1e5 of the sum)."""
+    """The mode and static pseudo-mode factors give ``integrand_points`` (reflected and transmitted, in the
+    band and on the window's ramp), to the rounding of the modes' cancellation (the terms reach ~1e5 of the
+    sum)."""
     rng = np.random.default_rng(1)
     qh = np.concatenate([rng.uniform(0.4, 2.5, 20), rng.uniform(2.5, 10.0, 40)])
     phi = rng.uniform(0, 2 * np.pi, len(qh))
@@ -41,12 +42,8 @@ def _dense(blocks_of, x, layers, shape):
     out = {z: np.zeros((nx, ny, 4, 9), dtype=complex) for z in layers}
     for zr, zs in itertools.product(layers, repeat=2):
         k = blocks_of(zr, zs)
-        for (ir, jr), (i_s, j_s) in itertools.product(
-            itertools.product(range(nx), range(ny)), repeat=2
-        ):
-            out[zr][ir, jr] += np.einsum(
-                "acij,cj->ai", k(ir - i_s, jr - j_s), x[zs][i_s, j_s]
-            )
+        for (ir, jr), (i_s, j_s) in itertools.product(itertools.product(range(nx), range(ny)), repeat=2):
+            out[zr][ir, jr] += np.einsum("acij,cj->ai", k(ir - i_s, jr - j_s), x[zs][i_s, j_s])
     return out
 
 
@@ -57,9 +54,7 @@ def test_low_band_by_nufft_is_the_per_offset_product():
     shape, layers = (3, 2), [-1, 1]
     rng = np.random.default_rng(3)
     x = {
-        z: rng.standard_normal(shape + (10, 9))
-        + 1j * rng.standard_normal(shape + (10, 9))
-        for z in layers
+        z: rng.standard_normal(shape + (10, 9)) + 1j * rng.standard_normal(shape + (10, 9)) for z in layers
     }
     got = sa.apply_low_band(x, layers, shape, H, OMEGA, A, B, 2.5, LOW)
     offs = [(a, b) for a in range(-2, 3) for b in range(-1, 2)]
@@ -110,23 +105,15 @@ def test_high_band_at_the_box_wavenumbers_is_the_periodic_kernel():
     shape, layers, n = (3, 2), [-1, 1], 12
     rng = np.random.default_rng(4)
     x = {
-        z: rng.standard_normal(shape + (10, 9))
-        + 1j * rng.standard_normal(shape + (10, 9))
-        for z in layers
+        z: rng.standard_normal(shape + (10, 9)) + 1j * rng.standard_normal(shape + (10, 9)) for z in layers
     }
-    got = sa.apply_high_band(
-        x, layers, shape, n, H, OMEGA, A, B, 10.0, WINDOW, 2.5, LOW
-    )
+    got = sa.apply_high_band(x, layers, shape, n, H, OMEGA, A, B, 10.0, WINDOW, 2.5, LOW)
 
     def blocks_of(zr, zs):
         if zs < 0:
-            g = isp.high_band_blocks(
-                zr, zs, n, H, OMEGA, A, B, 10, 4, 10.0, window=WINDOW, low_pass=LOW
-            )
+            g = isp.high_band_blocks(zr, zs, n, H, OMEGA, A, B, 10, 4, 10.0, window=WINDOW, low_pass=LOW)
             return lambda a, b: g[a % n, b % n]
-        g = isp.high_band_blocks(
-            -zr, -zs, n, H, OMEGA, B, A, 10, 4, 10.0, window=WINDOW, low_pass=LOW
-        )
+        g = isp.high_band_blocks(-zr, -zs, n, H, OMEGA, B, A, 10, 4, 10.0, window=WINDOW, low_pass=LOW)
         return lambda a, b: isp._mirror(g[a % n, b % n])
 
     ref = _dense(blocks_of, x, layers, shape)
@@ -137,15 +124,13 @@ def test_high_band_at_the_box_wavenumbers_is_the_periodic_kernel():
 
 @pytest.mark.slow
 def test_lattice_nodes_by_fft_are_the_nufft():
-    """The lattice nodes applied by zero-padded FFTs (gather on the way in, fold by m mod N on the way out) give
-    the NUFFT's product on a box shorter than the lattice, and do not depend on how the nodes are chunked (aliases
-    split between chunks)."""
+    """The lattice nodes applied by zero-padded FFTs (gather on the way in, fold by m mod N on the way out)
+    give the NUFFT's product on a box shorter than the lattice, and do not depend on how the nodes are
+    chunked (aliases split between chunks)."""
     shape, layers, n = (3, 2), [-3, -1, 1], 12
     rng = np.random.default_rng(6)
     x = {
-        z: rng.standard_normal(shape + (10, 9))
-        + 1j * rng.standard_normal(shape + (10, 9))
-        for z in layers
+        z: rng.standard_normal(shape + (10, 9)) + 1j * rng.standard_normal(shape + (10, 9)) for z in layers
     }
     kx, ky, w = sa.high_band_nodes(n, H, 10.0, 2.5, LOW)
     lattice = sa.lattice_of(kx, ky, H, n)
@@ -162,9 +147,9 @@ def test_lattice_nodes_by_fft_are_the_nufft():
 @pytest.mark.slow
 @pytest.mark.parametrize(("gap", "qmax_h"), [(2, 16.0), (3, 8.0)])
 def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
-    """The march in depth over the low band's nodes and the box's lattice reproduces Paper 2's blocks between
-    planes two or more apart (planes 0 and 1 apart are left out), to D1: the lattice's images 40 cells away cost
-    ~1e-10 at this band."""
+    """The march in depth over the low band's nodes and the box's lattice reproduces Paper 2's blocks
+    between planes two or more apart (planes 0 and 1 apart are left out), to D1: the lattice's images 40
+    cells away cost ~1e-10 at this band."""
     from scipy.fft import next_fast_len
 
     from cubic_scattering.graded_voxel.blocks import coupling_block
@@ -172,9 +157,7 @@ def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
     shape, layers = (2, 2), [-5, -4, -3, -2, -1]
     rng = np.random.default_rng(5)
     x = {
-        z: rng.standard_normal(shape + (10, 9))
-        + 1j * rng.standard_normal(shape + (10, 9))
-        for z in layers
+        z: rng.standard_normal(shape + (10, 9)) + 1j * rng.standard_normal(shape + (10, 9)) for z in layers
     }
     kx, ky, w, lattice = sa.whole_space_nodes(
         2.0 * np.hypot(1, 1),
@@ -186,16 +169,12 @@ def test_whole_space_march_is_paper_2_between_planes_apart(gap, qmax_h):
         LOW,
         qmax_h=qmax_h,
     )
-    got = sa.WholeSpaceMarch(
-        layers, shape, kx, ky, w, H, OMEGA, A, min_gap=gap, lattice=lattice
-    ).apply(x)
+    got = sa.WholeSpaceMarch(layers, shape, kx, ky, w, H, OMEGA, A, min_gap=gap, lattice=lattice).apply(x)
     ref = {z: np.zeros(shape + (4, 9), dtype=complex) for z in layers}
     for zr, zs in itertools.product(layers, repeat=2):
         if abs(zr - zs) < gap:
             continue
-        for (ir, jr), (i_s, j_s) in itertools.product(
-            itertools.product(range(2), range(2)), repeat=2
-        ):
+        for (ir, jr), (i_s, j_s) in itertools.product(itertools.product(range(2), range(2)), repeat=2):
             k = coupling_block((zr - zs, ir - i_s, jr - j_s), H, OMEGA, A, 10, 4)
             ref[zr][ir, jr] += np.einsum("acij,cj->ai", k, x[zs][i_s, j_s])
     scale = max(np.abs(ref[z]).max() for z in layers)

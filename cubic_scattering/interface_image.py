@@ -2,36 +2,39 @@
 
 Plan: ``docs/2026-10-10-stratified-reference-legendre-cells-3d.md``, option 1, route A.
 
-THE KERNEL.  Medium A fills z < 0, medium B z > 0, welded at z = 0 (z down).  For receiver and source both in A,
-the reflected static 9 x 9 kernel (rows u, engineering strain; columns force, engineering stress, as
-``graded_voxel.kernel.kernel_9x9``) is a sum of canonical terms (``scripts/derive_interface_image_terms.py``)
+THE KERNEL.  Medium A fills z < 0, medium B z > 0, welded at z = 0 (z down).  For receiver and source both
+in A, the reflected static 9 x 9 kernel (rows u, engineering strain; columns force, engineering stress, as
+``graded_voxel.kernel.kernel_9x9``) is a sum of canonical terms
+(``scripts/derive_interface_image_terms.py``)
 
-    c_t(lamA, muA, lamB, muB)  z^A zp^B  d^alpha Phi_j(rho_x, rho_y, zeta),   zeta = -(z + zp) >= 0,  rho = x - x',
+    c_t(lamA, muA, lamB, muB)  z^A zp^B  d^alpha Phi_j(rho_x, rho_y, zeta),
+        zeta = -(z + zp) >= 0,  rho = x - x',
 
-with Phi0 = 1/(2 pi R), Phi1 = -log(R + zeta)/(2 pi), Phi2 = (zeta log(R + zeta) - R)/(2 pi), R^2 = rho^2 + zeta^2.
-Every d^alpha Phi_j that occurs is homogeneous in (rho, zeta), of degree -1 - |alpha|, -|alpha|, 1 - |alpha|.
+with Phi0 = 1/(2 pi R), Phi1 = -log(R + zeta)/(2 pi), Phi2 = (zeta log(R + zeta) - R)/(2 pi),
+R^2 = rho^2 + zeta^2.  Every d^alpha Phi_j that occurs is homogeneous in (rho, zeta), of degree
+-1 - |alpha|, -|alpha|, 1 - |alpha|.
 
-THE S-FORM.  With x = c + h v and x' = c' + h v' per axis (v, v' in [-1, 1]), the six-fold integral of a field
-function, a source monomial and a term is a three-fold integral over the separation, against weights that
-are piecewise polynomials, computed exactly:
+THE S-FORM.  With x = c + h v and x' = c' + h v' per axis (v, v' in [-1, 1]), the six-fold integral of a
+field function, a source monomial and a term is a three-fold integral over the separation, against weights
+that are piecewise polynomials, computed exactly:
     lateral   rho = (c - c') + h sigma,  sigma = v - v',  w(sigma) = int v^E (v - sigma)^F dv;
     vertical  zeta = Z0 - h tau,  Z0 = -(c_z + c'_z),  tau = v + v',  u(tau) = int v^E (tau - v)^F dv,
 each on the two pieces [-2, 0], [0, 2].  The factors z^A, zp^B are expanded into the vertical weights.  All
 lengths are in units of h; the block scales as h^(6 + degree + A + B).
 
 THE PIECES.  The singular point rho = 0, zeta = 0 is reached only when both cells touch the interface and
-touch laterally, and then it is a corner of the pieces that contain it.  On such a piece Euler's identity for
-a homogeneous kernel f of degree d, with the box anchored at the singular corner,
+touch laterally, and then it is a corner of the pieces that contain it.  On such a piece Euler's identity
+for a homogeneous kernel f of degree d, with the box anchored at the singular corner,
 
     (3 + |n| + d) int_box s^n f = sum over the three FAR faces  |A_i| A_i^(n_i) int_face s^(n without i) f,
 
 turns the volume integral into face integrals of a smooth integrand (the faces lie at distance >= 2 from the
-singular point, and the region zeta >= 0 meets the logarithm's singular ray R + zeta = 0 only at the corner).
-The weight is expanded about the corner in exact rationals, so the low powers of zeta that vanish (the
-vertical weight vanishes as zeta^(1 + A + B) at the touching corner) are exact zeros and no divergent monomial
-is ever formed.  Every other piece is smooth and is integrated by Gauss rules in coordinates centred on it.
-The face integrals are where the closed forms of the Mathematica phase enter; here they are Gauss rules,
-exponentially convergent.
+singular point, and the region zeta >= 0 meets the logarithm's singular ray R + zeta = 0 only at the
+corner). The weight is expanded about the corner in exact rationals, so the low powers of zeta that vanish
+(the vertical weight vanishes as zeta^(1 + A + B) at the touching corner) are exact zeros and no divergent
+monomial is ever formed.  Every other piece is smooth and is integrated by Gauss rules in coordinates
+centred on it. The face integrals are where the closed forms of the Mathematica phase enter; here they are
+Gauss rules, exponentially convergent.
 """
 
 import json
@@ -62,7 +65,8 @@ _TERMS_PATH = {
 }
 #: The potentials Phi_j, j >= 1, as Hadamard finite parts (scripts/derive_finite_part_potentials.py).
 _FP_PATH = _DATA / "finite_part_potentials.json"
-#: The 9-state under the mirror z -> -z: u_z, gamma_zy and gamma_zx change sign (Voigt order zz, xx, yy, xy, zy, zx).
+#: The 9-state under the mirror z -> -z: u_z, gamma_zy and gamma_zx change sign (Voigt order
+#: zz, xx, yy, xy, zy, zx).
 MIRROR_9 = np.array([-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0])
 _DEG0 = {0: -1, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}
 
@@ -79,20 +83,20 @@ _IDENT = re.compile(r"[A-Za-z_]\w*")
 
 def _coefficient(text: str, names: tuple, syms: tuple):
     """A material coefficient (sympy's str of a rational function of the media) as a function of the media.
-    Compiled as a Python expression when it names only the media (every file does): the same float arithmetic
-    as lambdify, in milliseconds instead of sympy's parsing, which takes about a second for a coefficient of the
-    omega^4 terms.  Anything else goes through sympy."""
+    Compiled as a Python expression when it names only the media (every file does): the same float
+    arithmetic as lambdify, in milliseconds instead of sympy's parsing, which takes about a second for a
+    coefficient of the omega^4 terms.  Anything else goes through sympy."""
     if set(_IDENT.findall(text)) <= set(names):
         code = compile(text, "<coefficient>", "eval")
-        return lambda *m: eval(code, {"__builtins__": {}}, dict(zip(names, m)))
-    return sp.lambdify(syms, sp.sympify(text, locals=dict(zip(names, syms))), "numpy")
+        return lambda *m: eval(code, {"__builtins__": {}}, dict(zip(names, m, strict=False)))
+    return sp.lambdify(syms, sp.sympify(text, locals=dict(zip(names, syms, strict=True))), "numpy")
 
 
 @cache
 def _terms(kind: str = "reflected", order: int = 0) -> tuple:
-    """The canonical terms of one kind and order (0: the static field; 1, 2: the omega^2, omega^4 terms, whose
-    coefficients also hold the densities), each material coefficient compiled: ((row, col, j, alpha, A, B, fn),
-    ...); fn takes the materials in the order of the file's "variables"."""
+    """The canonical terms of one kind and order (0: the static field; 1, 2: the omega^2, omega^4 terms,
+    whose coefficients also hold the densities), each material coefficient compiled:
+    ((row, col, j, alpha, A, B, fn), ...); fn takes the materials in the order of the file's "variables"."""
     data = json.loads(_TERMS_PATH[kind, order].read_text())
     names = tuple(data.get("variables", ["lamA", "muA", "lamB", "muB"]))
     syms = tuple(sp.symbols(" ".join(names), positive=True))
@@ -113,8 +117,9 @@ _R3 = sp.sqrt(_RX**2 + _RY**2 + _ZETA**2)
 def _potential(j: int) -> sp.Expr:
     """Phi_j in (rx, ry, zeta): Phi0 = 1/(2 pi R); for j >= 1 Hadamard's finite part of the transform of
     q^(-1-j) e^(-q zeta), the continuation in the power of q.  Phi1, Phi2 differ from Mindlin's
-    -log(R + zeta)/2pi, (zeta log(R + zeta) - R)/2pi by a constant and a multiple of zeta, which every static
-    term annihilates by its lateral derivatives; the omega^2 term needs the finite parts themselves."""
+    -log(R + zeta)/2pi, (zeta log(R + zeta) - R)/2pi by a constant and a multiple of zeta, which every
+    static term annihilates by its lateral derivatives; the omega^2 term needs the finite parts
+    themselves."""
     if j == 0:
         return 1 / (2 * sp.pi * _R3)
     r_, z_ = sp.symbols("R zeta", positive=True)
@@ -134,8 +139,9 @@ def kernel_function(j: int, alpha: tuple[int, int, int]):
 @cache
 def _log_coefficient_expr(j: int, alpha: tuple[int, int, int]) -> sp.Expr:
     """g = d^alpha g0, g0 = -(-1)^n R^n P_n(zeta/R) / (2 pi n!), n = j - 1: Phi_j(lam x) = lam^n Phi_j(x)
-    + lam^n log(lam) g0(x), so d^alpha Phi_j is homogeneous of degree d up to log(lam) d^alpha g0 (a homogeneous
-    polynomial of degree d, zero whenever the lateral derivatives annihilate the solid harmonic)."""
+    + lam^n log(lam) g0(x), so d^alpha Phi_j is homogeneous of degree d up to log(lam) d^alpha g0 (a
+    homogeneous polynomial of degree d, zero whenever the lateral derivatives annihilate the solid
+    harmonic)."""
     if j == 0:
         return sp.Integer(0)
     n = j - 1
@@ -147,7 +153,8 @@ def _log_coefficient_expr(j: int, alpha: tuple[int, int, int]) -> sp.Expr:
 
 @cache
 def kernel_log_coefficient(j: int, alpha: tuple[int, int, int]):
-    """g of d^alpha Phi_j (f(lam x) = lam^d [f(x) + log(lam) g(x)]) as a vectorised function, or None if zero."""
+    """g of d^alpha Phi_j (f(lam x) = lam^d [f(x) + log(lam) g(x)]) as a vectorised function, or None if
+    zero."""
     g = _log_coefficient_expr(j, alpha)
     if g == 0:
         return None
@@ -156,7 +163,8 @@ def kernel_log_coefficient(j: int, alpha: tuple[int, int, int]):
 
 
 def kernel_degree(j: int, alpha: tuple[int, int, int]) -> int:
-    """Degree of homogeneity of d^alpha Phi_j in (rho, zeta) (up to the log term of ``kernel_log_coefficient``)."""
+    """Degree of homogeneity of d^alpha Phi_j in (rho, zeta) (up to the log term of
+    ``kernel_log_coefficient``)."""
     return _DEG0[j] - sum(alpha)
 
 
@@ -188,7 +196,8 @@ def _ppow(a: Poly, n: int) -> Poly:
 @cache
 def _weight_1d(e: int, f: int, kind: str) -> tuple[Poly, Poly]:
     """w(sigma) = int v^e (v - sigma)^f dv (kind 'lat'), or u(tau) = int v^e (tau - v)^f dv (kind 'vert'),
-    over v in [-1, 1] intersected with the second cell, on the pieces [-2, 0] and [0, 2]; exact rationals."""
+    over v in [-1, 1] intersected with the second cell, on the pieces [-2, 0] and [0, 2]; exact
+    rationals."""
     v, s = sp.symbols("v s")
     g = v**e * ((v - s) ** f if kind == "lat" else (s - v) ** f)
     if kind == "lat":
@@ -229,8 +238,9 @@ def _vertical_weight(
     czp: int,
     kind: str = "vert",
 ) -> tuple[Poly, Poly]:
-    """Vertical weight of P_e(v) (cz + v)^A against v'^f (czp + v')^B, centres in units of h: a convolution in
-    tau = v + v' (kind 'vert', the image) or a correlation in sigma = v - v' (kind 'lat', the transmission)."""
+    """Vertical weight of P_e(v) (cz + v)^A against v'^f (czp + v')^B, centres in units of h: a convolution
+    in tau = v + v' (kind 'vert', the image) or a correlation in sigma = v - v' (kind 'lat', the
+    transmission)."""
     left = _pmul(_legendre_monomials(e_field), _ppow((Fraction(cz), Fraction(1)), a_pow))
     right = _pmul(
         tuple(Fraction(int(k == f_source)) for k in range(f_source + 1)),
@@ -257,16 +267,17 @@ def _shift(p: Poly, a: Fraction, b: Fraction) -> Poly:
 
 @cache
 def _mono_to_legendre(n: int) -> tuple[tuple[Fraction, ...], ...]:
-    """x^j = sum_l M[j][l] P_l(x) on [-1, 1], exactly, for j < n (from x P_l = ((l+1) P_{l+1} + l P_{l-1})/(2l+1))."""
+    """x^j = sum_l M[j][l] P_l(x) on [-1, 1], exactly, for j < n
+    (from x P_l = ((l+1) P_{l+1} + l P_{l-1})/(2l+1))."""
     rows: list[tuple[Fraction, ...]] = [(Fraction(1),)]
     for _ in range(1, n):
         prev = rows[-1]
         nxt = [Fraction(0)] * (len(prev) + 1)
-        for l, c in enumerate(prev):
+        for ell, c in enumerate(prev):
             if c:
-                nxt[l + 1] += c * Fraction(l + 1, 2 * l + 1)
-                if l:
-                    nxt[l - 1] += c * Fraction(l, 2 * l + 1)
+                nxt[ell + 1] += c * Fraction(ell + 1, 2 * ell + 1)
+                if ell:
+                    nxt[ell - 1] += c * Fraction(ell, 2 * ell + 1)
         rows.append(tuple(nxt))
     return tuple(rows)
 
@@ -278,14 +289,14 @@ def _legendre_coeffs(p: Poly, a: Fraction = Fraction(0), b: Fraction = Fraction(
     out = [Fraction(0)] * len(q)
     for j, c in enumerate(q):
         if c:
-            for l, m in enumerate(table[j]):
-                out[l] += c * m
+            for ell, m in enumerate(table[j]):
+                out[ell] += c * m
     return np.array([float(c) for c in out])
 
 
 def _corner_factor(p: Poly, far: Fraction) -> tuple[int, NDArray]:
-    """p(s) on [0, far] (or [far, 0]) written as (far t)^m r(far t), t in [0, 1], r(0) != 0: the order m of the
-    zero at the corner, exact, and the Legendre coefficients of r(far t) in x = 2 t - 1."""
+    """p(s) on [0, far] (or [far, 0]) written as (far t)^m r(far t), t in [0, 1], r(0) != 0: the order m of
+    the zero at the corner, exact, and the Legendre coefficients of r(far t) in x = 2 t - 1."""
     m = next((k for k, c in enumerate(p) if c), None)
     if m is None:
         return 0, np.zeros(1)
@@ -370,7 +381,8 @@ def _corner_moments(f, d: int, box: tuple, deg: tuple[int, int, int], n: int, g=
 def _corner_moments_closed(
     j: int, alpha: tuple[int, int, int], d: int, box: tuple, deg: tuple[int, int, int]
 ) -> NDArray:
-    """``_corner_moments`` in closed form (``image_moments.corner_moment``): the same array, NaN where divergent."""
+    """``_corner_moments`` in closed form (``image_moments.corner_moment``): the same array, NaN where
+    divergent."""
     half = [int(max(abs(lo), abs(hi))) for lo, hi in box]
     sides = (half[0], half[1], half[2])
     signs = (-1 if box[0][0] < 0 else 1, -1 if box[1][0] < 0 else 1)
@@ -384,7 +396,8 @@ def _corner_moments_closed(
 
 
 def _regular_legendre_moments(f, box: tuple, deg: tuple[int, int, int], n: int) -> NDArray:
-    """int_box P_a(x) P_b(y) P_c(z) f for a box of side 2 with local coordinates x = s - centre in [-1, 1]."""
+    """int_box P_a(x) P_b(y) P_c(z) f for a box of side 2 with local coordinates x = s - centre in
+    [-1, 1]."""
     rules = [_gauss(n, lo, hi) for lo, hi in box]
     sx, sy, sz = np.meshgrid(rules[0][0], rules[1][0], rules[2][0], indexing="ij")
     fw = f(sx, sy, sz) * np.einsum("i,j,k->ijk", rules[0][1], rules[1][1], rules[2][1])
@@ -394,7 +407,8 @@ def _regular_legendre_moments(f, box: tuple, deg: tuple[int, int, int], n: int) 
 
 @cache
 def _log_rho_moment(e: int, k: int) -> float:
-    """int_0^1 rho^e log(rho) P_k(2 rho - 1) d rho, exactly (int rho^m log rho = -1/(m+1)^2), in floating point."""
+    """int_0^1 rho^e log(rho) P_k(2 rho - 1) d rho, exactly (int rho^m log rho = -1/(m+1)^2), in floating
+    point."""
     coeffs = sp.Poly(sp.legendre(k, 2 * sp.Symbol("t") - 1), sp.Symbol("t")).all_coeffs()[::-1]
     return float(sum(-sp.Rational(c) / (e + m + 1) ** 2 for m, c in enumerate(coeffs)))
 
@@ -402,13 +416,14 @@ def _log_rho_moment(e: int, k: int) -> float:
 def _corner_pyramids(
     f, d: int, box: tuple, weights: list[dict], pairs: list[tuple], n: int, g=None
 ) -> NDArray:
-    """int_box W f for each pair of weights, the box anchored at the singular corner, by three Duffy pyramids.
+    """int_box W f for each pair of weights, the box anchored at the singular corner, by three Duffy
+    pyramids.
 
     The box is {s_i = A_i t_i, t in [0, 1]^3}, A_i = +-2 the far coordinates.  In pyramid k, t_k = rho and
-    t_j = rho v_j, so f(s) = rho^d f(A e_k(v)) and each 1-D weight is (A_i rho w_i)^m_i r_i(A_i rho w_i), its zero
-    at the corner of order m_i factored out exactly and r_i evaluated in its Legendre basis.  The rho integrand is
-    then a polynomial times rho^(2 + d + sum m_i), integrated exactly by Gauss; the face integrand is smooth (the
-    far face lies at distance 2 from the singular point).
+    t_j = rho v_j, so f(s) = rho^d f(A e_k(v)) and each 1-D weight is (A_i rho w_i)^m_i r_i(A_i rho w_i),
+    its zero at the corner of order m_i factored out exactly and r_i evaluated in its Legendre basis.  The
+    rho integrand is then a polynomial times rho^(2 + d + sum m_i), integrated exactly by Gauss; the face
+    integrand is smooth (the far face lies at distance 2 from the singular point).
 
     Args:
         f: The kernel d^alpha Phi_j.
@@ -418,8 +433,9 @@ def _corner_pyramids(
         pairs: (key_x, key_y, key_z) per output.
         n: Gauss nodes per face dimension.
         g: The log coefficient (``kernel_log_coefficient``), or None.  Then f(s) = rho^d [f(A e_k(v)) +
-            log(rho) g(A e_k(v))] in each pyramid; the rho integrand of the log part is a polynomial P(rho) times
-            rho^e log(rho), integrated exactly from P's shifted-Legendre coefficients (``_log_rho_moment``).
+            log(rho) g(A e_k(v))] in each pyramid; the rho integrand of the log part is a polynomial P(rho)
+            times rho^e log(rho), integrated exactly from P's shifted-Legendre coefficients
+            (``_log_rho_moment``).
 
     Returns:
         The integrals, shape (len(pairs),).
@@ -500,15 +516,17 @@ def image_block(
     order: int = 0,
 ) -> NDArray:
     """The static interface block K[a, c] between two cells: the image when both lie on one side of the
-    interface z = 0, the transmission when they lie on opposite sides.  With ``order=1``, the block K1 of the
-    omega^2 term instead (K = K0 + omega^2 K1 + ...), from the omega^2 terms with the finite-part potentials.
+    interface z = 0, the transmission when they lie on opposite sides.  With ``order=1``, the block K1 of
+    the omega^2 term instead (K = K0 + omega^2 K1 + ...), from the omega^2 terms with the finite-part
+    potentials.
 
     Cells in A (z < 0) use the image's terms; a receiver in B with a source in A uses the transmission's.
     The other two arrangements are mirrored (z -> -z, media exchanged) onto these: the 9-state changes sign
     in u_z, gamma_zy, gamma_zx (``MIRROR_9``), and each cell polynomial by (-1)^(its power of xi_z).
 
     Args:
-        rec_centre: Receiver cell centre in units of h, (z, x, y); z odd (z = -1 or 1 touches the interface).
+        rec_centre: Receiver cell centre in units of h, (z, x, y); z odd (z = -1 or 1 touches the
+            interface).
         src_centre: Source cell centre in units of h, likewise.
         h: Cell half-width, km.
         above: Medium A (z < 0).
@@ -585,9 +603,9 @@ def family_geometry(
     """The pieces and the exact weights of every kernel family, for a source in A (src_centre[0] < 0).
 
     Returns:
-        {"kind", "lat_x", "lat_y", "ver", "exps_f", "exps_s", "families": {(j, alpha, A, B): (wx, wy, wz, deg)}},
-        the weights per (field exponent, source exponent) as exact polynomials in the separation coordinate,
-        one per piece of the axis.
+        {"kind", "lat_x", "lat_y", "ver", "exps_f", "exps_s",
+        "families": {(j, alpha, A, B): (wx, wy, wz, deg)}}, the weights per (field exponent, source
+        exponent) as exact polynomials in the separation coordinate, one per piece of the axis.
     """
     cz, czp = rec_centre[0], src_centre[0]
     exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
@@ -595,7 +613,8 @@ def family_geometry(
     kind = "reflected" if cz < 0 else "transmitted"
     dx, dy = rec_centre[1] - src_centre[1], rec_centre[2] - src_centre[2]
     z0 = -(cz + czp) if kind == "reflected" else cz - czp
-    # pieces along each axis, in the separation coordinates: lateral rho = D + sigma, vertical zeta = z0 - tau
+    # pieces along each axis, in the separation coordinates: lateral rho = D + sigma, vertical
+    # zeta = z0 - tau
     lat_x = [(dx - 2, dx), (dx, dx + 2)]
     lat_y = [(dy - 2, dy), (dy, dy + 2)]
     if kind == "reflected":
@@ -676,7 +695,8 @@ def family_integrals(geo: dict, n_gauss: int = 32, closed: bool = True, basis: s
             )
             continue
         # image_moments' closed forms use the line of images: valid for j <= 2 with enough lateral
-        # derivatives (it is another finite-part convention otherwise; scripts/derive_finite_part_potentials.py)
+        # derivatives (it is another finite-part convention otherwise;
+        # scripts/derive_finite_part_potentials.py)
         closed_here = closed and j <= 2 and (j == 0 or alpha[0] + alpha[1] >= j)
         val = np.zeros((len(exps_f), len(exps_s)))
         for ix in range(2):
@@ -723,8 +743,8 @@ def family_integrals(geo: dict, n_gauss: int = 32, closed: bool = True, basis: s
 
 
 def family_log_integrals(geo: dict, n_gauss: int = 32) -> dict:
-    """For each family with a log term, the integral of its log coefficient g (a polynomial) against the weights
-    over the pieces, in units of h: {(j, alpha, A, B): array}.  The block of such a family scales as
+    """For each family with a log term, the integral of its log coefficient g (a polynomial) against the
+    weights over the pieces, in units of h: {(j, alpha, A, B): array}.  The block of such a family scales as
     h^(6 + d + A + B) [int f + log(h) int g], f(h s) = h^d [f(s) + log(h) g(s)]."""
     out = {}
     for (j, alpha, a_pow, b_pow), (wx, wy, wz, deg) in geo["families"].items():
@@ -767,8 +787,8 @@ def _block_legendre(
 ) -> NDArray:
     """One kernel family's (n_test, n_source) integrals in the Legendre basis of each piece.
 
-    ``g``: the family's log coefficient, passed to the corner pyramids.  ``regular_only``: every piece by Gauss
-    rules (for a polynomial kernel, exact).
+    ``g``: the family's log coefficient, passed to the corner pyramids.  ``regular_only``: every piece by
+    Gauss rules (for a polynomial kernel, exact).
     """
     val = np.zeros((len(exps_f), len(exps_s)))
     pair_keys = [((ef[1], es[1]), (ef[2], es[2]), (ef[0], es[0])) for ef in exps_f for es in exps_s]

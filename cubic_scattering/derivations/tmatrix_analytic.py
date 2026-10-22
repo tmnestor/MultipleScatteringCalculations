@@ -266,12 +266,12 @@ def S_func(m, n, j, k, Av, Bv):
     )
 
 
-def Dc_func(j, k, l, p):
-    return Dlambda * d(j, k) * d(l, p) + Dmu * (d(j, l) * d(k, p) + d(j, p) * d(k, l))
+def Dc_func(j, k, ell, p):
+    return Dlambda * d(j, k) * d(ell, p) + Dmu * (d(j, ell) * d(k, p) + d(j, p) * d(k, ell))
 
 
-def T_func(m, n, l, p, Av, Bv):
-    return sum(S_func(m, n, j, k, Av, Bv) * Dc_func(j, k, l, p) for j in range(3) for k in range(3))
+def T_func(m, n, ell, p, Av, Bv):
+    return sum(S_func(m, n, j, k, Av, Bv) * Dc_func(j, k, ell, p) for j in range(3) for k in range(3))
 
 
 T1 = simplify(T_func(0, 0, 1, 1, A_exact, B_exact))

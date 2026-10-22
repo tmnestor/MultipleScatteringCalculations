@@ -9,7 +9,8 @@ THE SPLITTING.  The coupling, by depth plane (z points down, so "above" is the s
     K_0  a plane with itself (whole-space self plane, its reflection and corrections);
     L    from planes above: the whole-space coupling of the side, and the transmission A -> B;
     U    from planes below: the whole-space coupling of the side, and the transmission B -> A;
-    R    the reflections between different planes of one side (interface blocks, same side): the backscatter.
+    R    the reflections between different planes of one side (interface blocks, same side): the
+         backscatter.
 Forward scattering (L in the down sweep, U in the up sweep) is exact within each sweep; the backscatter R is
 lagged, evaluated once per sweep from the latest whole vector.
 
@@ -42,18 +43,19 @@ from .interface_solver import (
     reference_moments,
 )
 
-#: The preconditioner's own coarse nodes (``MatrixFreeDownUp(coarse=...)``): D's low band and the march at a coarse
-#: low-band rule, NUFFT eps 1e-6, the march's lattice to q h = 4.  On 8 x 6 x 6 at omega h / beta = 1/2 it takes the
-#: outer counts of the exact preconditioner (9 and 12 at 30 and 50 %) at ~1/4 of a product per application.
+#: The preconditioner's own coarse nodes (``MatrixFreeDownUp(coarse=...)``): D's low band and the march at a
+#: coarse low-band rule, NUFFT eps 1e-6, the march's lattice to q h = 4.  On 8 x 6 x 6 at omega h / beta =
+#: 1/2 it takes the outer counts of the exact preconditioner (9 and 12 at 30 and 50 %) at ~1/4 of a product
+#: per application.
 COARSE = (
     sap.LowBandRule(ramp_panels=4, panel_order=6, phi_margin=8, branch_order=12),
     1e-6,
     4.0,
 )
-#: ``COARSE`` with its nodes bounded independently of the box: the low band's polar rule built for a reach of at
-#: most 32 h (16 cells), and the march's lattice period the box plus 8 cells.  The preconditioner's D is then
-#: accurate only between nearby cells (D decays as ~h / rho); the product is unchanged, so only the outer count
-#: can suffer.
+#: ``COARSE`` with its nodes bounded independently of the box: the low band's polar rule built for a reach
+#: of at most 32 h (16 cells), and the march's lattice period the box plus 8 cells.  The preconditioner's D
+#: is then accurate only between nearby cells (D decays as ~h / rho); the product is unchanged, so only the
+#: outer count can suffer.
 COARSE_BOUNDED = COARSE + (32.0,)
 
 
@@ -121,7 +123,8 @@ def fgmres(
             return x, n_mv, history
         if n_mv >= max_iter:
             raise RuntimeError(
-                f"fgmres: relative residual {np.linalg.norm(r) / bnorm:.2e} after {n_mv} products (tol {tol:g})."
+                f"fgmres: relative residual {np.linalg.norm(r) / bnorm:.2e} after {n_mv} products "
+                f"(tol {tol:g})."
             )
 
 
@@ -183,7 +186,7 @@ class DownUp:
         self.inner_products = 0
         self.inner_solves = 0
 
-    # -- the pieces ------------------------------------------------------------------------------------------
+    # -- the pieces ----------------------------------------------------------------------------------------
 
     def _spectrum(self, z: int, x: NDArray) -> NDArray:
         """The plane's E x on the padded lateral grid, transformed: (n_source 9, F)."""
@@ -236,7 +239,7 @@ class DownUp:
         self.inner_solves += 1
         return sol.reshape(n, self.op.na, 9)
 
-    # -- the passes ------------------------------------------------------------------------------------------
+    # -- the passes ----------------------------------------------------------------------------------------
 
     def one_pass(self, b: dict, x: dict | None) -> dict:
         """One DownUp pass from x (None: zero); b and x by plane, (n_z, na, 9)."""
@@ -283,8 +286,9 @@ class DownUp:
 
 
 def _averaged_system(op: LateralOperator, e: NDArray) -> tuple[NDArray, dict]:
-    """The plane-averaged system at every lateral bin of the stored kernels' padded grid, (F, L rows, L rows), and
-    each plane's mean contrast as a matrix (n_source 9) x (na 9): src[(c, i)] = sum ebar[c, b, i, j] x[(b, j)]."""
+    """The plane-averaged system at every lateral bin of the stored kernels' padded grid,
+    (F, L rows, L rows), and each plane's mean contrast as a matrix (n_source 9) x (na 9):
+    src[(c, i)] = sum ebar[c, b, i, j] x[(b, j)]."""
     layers = list(op.layers)
     rows, cols = op.na * 9, op.n_source * 9
     ebar = {
@@ -307,14 +311,14 @@ class AveragedSweep:
     """Algorithm 5.1 of the thesis for the plane-averaged contrast, on the stored kernels.
 
     Each plane's cells take the plane's mean contrast, E_z = mean over its cells of E_m, so the system
-    M - K E is invariant under lateral translations within each plane.  On the stored kernels' padded lateral
-    grid (the circulant approximation of the box's convolutions) it then separates by lateral wavenumber: at each
-    bin, a system over the L planes, M - sum_s K_hat(z_r, z_s) E_s.  Algorithm 5.1 solves that depth system
-    exactly by the up/down Riccati sweep (pivots Kennett's net reflection operators); with the stored kernels a
-    dense LU per bin is the same inverse, so the backscatter between planes of the averaged medium is exact and
-    only the lateral fluctuations of the contrast are left to the outer iteration.  One application: an FFT per
-    plane, a solve per bin, an inverse FFT per plane.  (A homogenised layer in place of the plane's mean contrast
-    is the natural refinement.)
+    M - K E is invariant under lateral translations within each plane.  On the stored kernels' padded
+    lateral grid (the circulant approximation of the box's convolutions) it then separates by lateral
+    wavenumber: at each bin, a system over the L planes, M - sum_s K_hat(z_r, z_s) E_s.  Algorithm 5.1
+    solves that depth system exactly by the up/down Riccati sweep (pivots Kennett's net reflection
+    operators); with the stored kernels a dense LU per bin is the same inverse, so the backscatter between
+    planes of the averaged medium is exact and only the lateral fluctuations of the contrast are left to the
+    outer iteration.  One application: an FFT per plane, a solve per bin, an inverse FFT per plane.  (A
+    homogenised layer in place of the plane's mean contrast is the natural refinement.)
 
     Args:
         op: ``LateralOperator``.
@@ -349,28 +353,30 @@ class AveragedSweep:
 
 
 class DtNSweep:
-    """Algorithm 5.1 in its Dirichlet-to-Neumann form with the true contrast, the pivots solved partially, on the
-    stored kernels.
+    """Algorithm 5.1 in its Dirichlet-to-Neumann form with the true contrast, the pivots solved partially,
+    on the stored kernels.
 
-    The exact factorisation in depth, eliminated from the top, is A = L S U with unit block-triangular L and U
-    and pivots S_z, the discrete Dirichlet-to-Neumann maps of the half-domains above each plane; with a laterally
-    varying contrast S_z is dense within its plane.  Here the factors come from the plane-averaged medium
-    (``AveragedSweep``), where at each lateral wavenumber (the stored kernels' padded grid) the block LDU of the
-    depth system is exact: L, U and the averaged pivots S_z.  Each pivot then takes the plane's own contrast back,
-    D_z = S_z + Delta A_zz, Delta A_zz = -K_zz (E - E_z) the plane's fluctuation about its mean on the whole padded
-    grid (E = E_m at the cells and 0 at the grid's points outside the box), so the backscatter from above is the
-    averaged medium's and the plane's own contrast, its box's edges included, is exact.  One application is
-    x = U^-1 D^-1 L^-1 b: L and U at each wavenumber, and each D_z^-1 by an inner GMRES preconditioned with S_z^-1
-    to ``inner_tol`` -- a partial solve, which flexible GMRES accepts since the preconditioner may then vary.  With
-    one plane it is the plane's exact inverse (to ``inner_tol``).
+    The exact factorisation in depth, eliminated from the top, is A = L S U with unit block-triangular L and
+    U and pivots S_z, the discrete Dirichlet-to-Neumann maps of the half-domains above each plane; with a
+    laterally varying contrast S_z is dense within its plane.  Here the factors come from the plane-averaged
+    medium (``AveragedSweep``), where at each lateral wavenumber (the stored kernels' padded grid) the block
+    LDU of the depth system is exact: L, U and the averaged pivots S_z.  Each pivot then takes the plane's
+    own contrast back, D_z = S_z + Delta A_zz, Delta A_zz = -K_zz (E - E_z) the plane's fluctuation about
+    its mean on the whole padded grid (E = E_m at the cells and 0 at the grid's points outside the box), so
+    the backscatter from above is the averaged medium's and the plane's own contrast, its box's edges
+    included, is exact.  One application is x = U^-1 D^-1 L^-1 b: L and U at each wavenumber, and each
+    D_z^-1 by an inner GMRES preconditioned with S_z^-1 to ``inner_tol`` -- a partial solve, which flexible
+    GMRES accepts since the preconditioner may then vary.  With one plane it is the plane's exact inverse
+    (to ``inner_tol``).
 
     Args:
         op: ``LateralOperator``.
         e: (N, n_source, na, 9, 9), each cell's source expansion E.
         inner_tol: The pivots' inner GMRES tolerance.
-        window: The planes above each plane whose true contrast its pivot carries: 0, the plane's own alone; None,
-            all the planes above (the exact pivot S_z of the true medium, solved partially); between, the window's
-            planes true and those above it through the averaged medium's Dirichlet-to-Neumann map.
+        window: The planes above each plane whose true contrast its pivot carries: 0, the plane's own alone;
+            None, all the planes above (the exact pivot S_z of the true medium, solved partially); between,
+            the window's planes true and those above it through the averaged medium's Dirichlet-to-Neumann
+            map.
         inner_iterations: None, each pivot solved to ``inner_tol``; or exactly this many inner iterations, a
             fixed cost per pivot (0: S_z^-1 alone, so that the whole is ``AveragedSweep``).
         depth_band: None, the averaged system's coupling between all the planes; or only between planes
@@ -446,8 +452,8 @@ class DtNSweep:
                     assert bij is not None and bkj is not None  # within the band
                     bij -= self.lo[i, k] @ bkj
         # each cell's contrast fluctuation about its plane's mean, (n_source 9) x (na 9)
-        # each cell's contrast, and the plane's mean, as matrices (n_source 9) x (na 9); the true contrast is zero at
-        # the padded grid's points outside the box, so the fluctuation there is -E_z
+        # each cell's contrast, and the plane's mean, as matrices (n_source 9) x (na 9); the true contrast
+        # is zero at the padded grid's points outside the box, so the fluctuation there is -E_z
         self.e_cells = {
             z: e[c].transpose(0, 1, 3, 2, 4).reshape(len(c), cols, rows) for z, c in self.cells.items()
         }
@@ -514,8 +520,8 @@ class DtNSweep:
         return np.fft.fft2(src, axes=(1, 2)).reshape(src.shape[0], -1)
 
     def _trailing(self, win: list, v: list) -> list:
-        """The averaged medium's trailing system on the planes ``win`` (those above eliminated: its Dirichlet-to-
-        Neumann boundary) applied at each wavenumber, L_W S_W U_W v."""
+        """The averaged medium's trailing system on the planes ``win`` (those above eliminated:
+        its Dirichlet-to-Neumann boundary) applied at each wavenumber, L_W S_W U_W v."""
         n, band = len(win), self.band  # the window's planes are consecutive
         u = [
             v[a]
@@ -559,9 +565,10 @@ class DtNSweep:
         return list(range(lo_plane, i + 1))
 
     def _window_solve(self, win: list, rhs: list) -> list:
-        """The window's system, the averaged trailing system (the planes above the window through the averaged
-        medium's Dirichlet-to-Neumann map) less the true contrast fluctuation on the window's planes, solved for
-        ``rhs`` by GMRES on the padded grid, preconditioned with the window's averaged factorisation."""
+        """The window's system, the averaged trailing system (the planes above the window through the
+        averaged medium's Dirichlet-to-Neumann map) less the true contrast fluctuation on the window's
+        planes, solved for ``rhs`` by GMRES on the padded grid, preconditioned with the window's averaged
+        factorisation."""
         zs = [self.layers[a] for a in win]
         n, shape = len(win), rhs[0].shape
         size = rhs[0].size
@@ -601,8 +608,8 @@ class DtNSweep:
         return split(sol)
 
     def _pivot_solve(self, i: int, wh: NDArray) -> NDArray:
-        """The pivot's inverse with the true contrast of the plane and of the ``window`` planes above it: the plane's
-        component of the window's system solved for a source on the plane."""
+        """The pivot's inverse with the true contrast of the plane and of the ``window`` planes above it:
+        the plane's component of the window's system solved for a source on the plane."""
         win = self._window(i)
         rhs = [np.zeros_like(wh) for _ in win[:-1]] + [wh]
         return self._window_solve(win, rhs)[-1]
@@ -639,22 +646,24 @@ class DtNSweep:
 
 
 class TrueSweep(DtNSweep):
-    """Algorithm 5.1 for the true medium, solved approximately: the block LDU solve of the true system written as
-    solves of leading systems, each approximated in a window.
+    """Algorithm 5.1 for the true medium, solved approximately: the block LDU solve of the true system
+    written as solves of leading systems, each approximated in a window.
 
     Eliminated from the top, the exact solve is, plane by plane from the bottom,
         x_z = [ (A_{<=z})^-1 (b_{<=z} - A_{<=z, >z} x_{>z}) ]_z,
-    the plane's component of the leading system of planes 1 to z, the planes below (already solved) entering through
-    the true coupling.  Each leading solve is approximated as in ``DtNSweep``: the plane and ``window`` planes above
-    it with their true contrast, the planes above the window through the averaged medium's Dirichlet-to-Neumann map
-    (their right-hand sides carried by the averaged forward substitution), by an inner GMRES to ``inner_tol``.  No
-    averaged triangular factor couples solved planes to unsolved ones: the coupling from below is the true one,
-    accumulated as each plane is solved (O(L^2) plane couplings per application).  With ``window=None`` (all the
-    planes above) and a tight inner solve it is the exact inverse of the true system.
+    the plane's component of the leading system of planes 1 to z, the planes below (already solved) entering
+    through the true coupling.  Each leading solve is approximated as in ``DtNSweep``: the plane and
+    ``window`` planes above it with their true contrast, the planes above the window through the averaged
+    medium's Dirichlet-to-Neumann map (their right-hand sides carried by the averaged forward substitution),
+    by an inner GMRES to ``inner_tol``.  No averaged triangular factor couples solved planes to unsolved
+    ones: the coupling from below is the true one, accumulated as each plane is solved (O(L^2) plane
+    couplings per application).  With ``window=None`` (all the planes above) and a tight inner solve it is
+    the exact inverse of the true system.
     """
 
     def _true_coupling(self, zr: int, zs: int, xh: NDArray) -> NDArray:
-        """A_{zr zs} x for zr != zs: -K_{zr zs} E x, the true contrast at zs's cells only, transformed (rows, F)."""
+        """A_{zr zs} x for zr != zs: -K_{zr zs} E x, the true contrast at zs's cells only, transformed
+        (rows, F)."""
         op, cells = self.op, self.cells[zs]
         ug = np.fft.ifft2(xh.reshape((xh.shape[0],) + op.shape), axes=(1, 2))
         src = np.zeros((self.cols,) + op.shape, dtype=complex)
@@ -809,29 +818,32 @@ class MatrixFreeDownUp:
     """The two-way march preconditioner on the recursions: the splitting of ``DownUp`` applied by
     ``MatrixFreeOperator``'s pieces, O(L) per pass.
 
-    - L and U, the whole-space part: the stored kernels for touching planes (within ``stored_planes``) from the
-      planes already solved in the sweep, and the march beyond, alpha_i = p alpha_{i-1} + p^g beta_{i-g} (down)
-      and its mirror (up), from their amplitudes.
-    - L and U, the transmission: the summed mode amplitudes of the side solved first (A in the down sweep, B in
-      the up sweep) onto each plane of the other, and the corrections of opposite sides.
-    - R, the reflections: each side's summed amplitudes less the receiver plane's own, from the down sweep, and
-      the corrections of the side's other planes.
+    - L and U, the whole-space part: the stored kernels for touching planes (within ``stored_planes``) from
+      the planes already solved in the sweep, and the march beyond, alpha_i = p alpha_{i-1} + p^g beta_{i-g}
+      (down) and its mirror (up), from their amplitudes.
+    - L and U, the transmission: the summed mode amplitudes of the side solved first (A in the down sweep, B
+      in the up sweep) onto each plane of the other, and the corrections of opposite sides.
+    - R, the reflections: each side's summed amplitudes less the receiver plane's own, from the down sweep,
+      and the corrections of the side's other planes.
     - K_0: the plane's own amplitudes onto itself, its stored whole-space kernel and its corrections.
 
     Args:
         op: ``MatrixFreeOperator`` (with ``cache=True``).
         e: (N, n_source, na, 9, 9), each cell's source expansion E.
         inner_tol: The planes' inner GMRES tolerance.
-        self_reflection: "exact", a plane's own reflection (its D with itself) in its system K_0, as ``DownUp``;
-            or "lagged", with the other reflections in R, so that K_0 is the plane's stored whole-space kernel and
-            its corrections (the static image's near field) and the inner products are lateral FFTs alone.
-        passes: DownUp passes per application (the later ones lag R x + U x of the one before, as ``DownUp``).
+        self_reflection: "exact", a plane's own reflection (its D with itself) in its system K_0, as
+            ``DownUp``; or "lagged", with the other reflections in R, so that K_0 is the plane's stored
+            whole-space kernel and its corrections (the static image's near field) and the inner products
+            are lateral FFTs alone.
+        passes: DownUp passes per application (the later ones lag R x + U x of the one before, as
+            ``DownUp``).
         bands: "both", D through its low and high bands as in the product; or "low", the low band alone (the
             branch points and the long-range tail; D_high is local), a coarser and cheaper preconditioner.
-        coarse: (``stratified_apply.LowBandRule``, NUFFT eps[, qmax_h[, reach]]): D's low band at nodes of its own,
-            coarser than the product's (implies ``bands="low"``); with qmax_h, the march's nodes too (that rule's low
-            band and the lattice to q h = qmax_h); with reach (in h), the node bound: the low band's rule built for a
-            reach of at most that, and the march's lattice period the box plus reach / 4 cells.
+        coarse: (``stratified_apply.LowBandRule``, NUFFT eps[, qmax_h[, reach]]): D's low band at nodes of
+            its own, coarser than the product's (implies ``bands="low"``); with qmax_h, the march's nodes
+            too (that rule's low band and the lattice to q h = qmax_h); with reach (in h), the node bound:
+            the low band's rule built for a reach of at most that, and the march's lattice period the box
+            plus reach / 4 cells.
     """
 
     def __init__(
@@ -958,7 +970,7 @@ class MatrixFreeDownUp:
         self.inner_products = 0
         self.inner_solves = 0
 
-    # -- the pieces ------------------------------------------------------------------------------------------
+    # -- the pieces ----------------------------------------------------------------------------------------
 
     @staticmethod
     def _side(z: int) -> str:
@@ -986,7 +998,8 @@ class MatrixFreeDownUp:
         ).reshape(g.shape[2] * 9, -1)
 
     def _stored(self, zr: int, sources: dict) -> NDArray | float:
-        """The stored whole-space kernels onto zr from the planes in ``sources`` ({z_s: spectrum}), (nx, ny, na, 9)."""
+        """The stored whole-space kernels onto zr from the planes in ``sources`` ({z_s: spectrum}),
+        (nx, ny, na, 9)."""
         op = self.op
         nx, ny = op.shape
         side, kernels, _ = self.ws[zr]
@@ -1062,8 +1075,9 @@ class MatrixFreeDownUp:
         return sol.reshape(n, na, 9)
 
     def _march_field(self, z: int, betas: dict, state: dict, sign: int) -> NDArray | float:
-        """The march's field at z from the planes at least g away on the side the sweep came from: the recursion
-        alpha_i = p alpha_{i -+ 1} + p^g beta_{i -+ g}, advanced over the side's contiguous layers ({z: amps})."""
+        """The march's field at z from the planes at least g away on the side the sweep came from: the
+        recursion alpha_i = p alpha_{i -+ 1} + p^g beta_{i -+ g}, advanced over the side's contiguous layers
+        ({z: amps})."""
         march = self.ws[z][2]
         if march is None:
             return 0.0
@@ -1085,7 +1099,7 @@ class MatrixFreeDownUp:
                 break
         return march.field(z, state[z], sign)
 
-    # -- the passes -----------------------------------------------------------------------------------------
+    # -- the passes ----------------------------------------------------------------------------------------
 
     def _state(self, z: int, x: NDArray, store: dict) -> None:
         """A solved plane's grid, spectrum, D amplitudes and march amplitudes, into ``store``."""
@@ -1209,22 +1223,22 @@ def solve_interface_fgmres(
     x0: NDArray | None = None,
 ) -> tuple[InterfaceResult, dict]:
     """``solve_interface`` by FGMRES with the lateral FFT products, preconditioned by the two-way march
-    (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``) or not at
-    all (``"none"``, the benchmark), or by Algorithm 5.1 for the plane-averaged contrast (``"averaged"``,
-    ``AveragedSweep``, stored kernels) or in its Dirichlet-to-Neumann form with the true contrast, the pivots
-    solved partially (``"dtn"``, ``DtNSweep``, stored kernels).  ``"true-sweep"`` (``TrueSweep``, stored
-    kernels) solves the true system's leading systems in windows; ``"leading"`` (``LeadingSweep``, either
-    operator, matrix-free included) solves them over all the planes above.
-    With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``, ``bands``), else
-    ``DownUp`` on ``LateralOperator(parts=True)``.
+    (``preconditioner="downup"``), by block-Jacobi (``"jacobi"``, the baseline of ``solve_interface_gmres``)
+    or not at all (``"none"``, the benchmark), or by Algorithm 5.1 for the plane-averaged contrast
+    (``"averaged"``, ``AveragedSweep``, stored kernels) or in its Dirichlet-to-Neumann form with the true
+    contrast, the pivots solved partially (``"dtn"``, ``DtNSweep``, stored kernels).  ``"true-sweep"``
+    (``TrueSweep``, stored kernels) solves the true system's leading systems in windows; ``"leading"``
+    (``LeadingSweep``, either operator, matrix-free included) solves them over all the planes above.
+    With ``operator`` a ``MatrixFreeOperator`` the march is ``MatrixFreeDownUp`` (``self_reflection``,
+    ``bands``), else ``DownUp`` on ``LateralOperator(parts=True)``.
 
     ``precondition``, a preconditioner already built (any of the above, or a callable), is used as it is in
     place of ``preconditioner``: one built at another frequency, for instance, since FGMRES accepts an
     inexact preconditioner.  ``x0`` (N, n_field, 9), a previous solution's ``psi`` (at a neighbouring
     frequency, say), starts the iteration; its residual's product is counted in ``outer``.
 
-    Returns the result and the counts: ``outer`` (products with the whole operator), ``inner`` (products with a
-    plane's own operator), ``planes`` (in-plane solves) and ``seconds``, those of this solve alone.
+    Returns the result and the counts: ``outer`` (products with the whole operator), ``inner`` (products
+    with a plane's own operator), ``planes`` (in-plane solves) and ``seconds``, those of this solve alone.
     """
     grid = couplings.grid
     op = (

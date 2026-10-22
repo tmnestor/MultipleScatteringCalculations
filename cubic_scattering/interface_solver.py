@@ -1,26 +1,29 @@
 """Galerkin scattering by Legendre cells near a welded interface between two half-spaces (step 2).
 
 Plan: docs/2026-10-10-stratified-reference-legendre-cells-3d.md (step 2).
-Blocks: ``interface_image`` (closed forms) and ``interface_spectral`` (the split K = D + A0 + w^2 A1 [+ w^4 A2]).
+Blocks: ``interface_image`` (closed forms) and ``interface_spectral`` (the split K = D + A0 + w^2 A1 [+ w^4
+A2]).
 
-THE GRID.  Cells of half-width h at integer indices (iz, ix, iy), centres h (2 iz + 1, 2 ix, 2 iy): the interface
-z = 0 is a plane of cell faces, medium A (``above``) for iz < 0 and B (``below``) for iz >= 0 (z points down, axes
-(z, x, y) as everywhere in the package).  In the units of ``interface_spectral`` (centres in h) a cell is
-(2 iz + 1, 2 ix, 2 iy).
+THE GRID.  Cells of half-width h at integer indices (iz, ix, iy), centres h (2 iz + 1, 2 ix, 2 iy): the
+interface z = 0 is a plane of cell faces, medium A (``above``) for iz < 0 and B (``below``) for iz >= 0 (z
+points down, axes (z, x, y) as everywhere in the package).  In the units of ``interface_spectral`` (centres
+in h) a cell is (2 iz + 1, 2 ix, 2 iy).
 
 THE SYSTEM.  As ``graded_voxel.solver`` (Paper 2):
     A[(m, a, i), (n, b, j)] = delta_mn M_ab delta_ij - sum_c K_mn[a, c][i, :] E^(n)_cb[:, j],
 with the coupling of the stratified reference medium in place of the whole-space one:
-    same side:      K_mn = K^ws_side(o_mn) + K^refl_mn     (Paper 2's block in that side's medium, plus the reflection)
+    same side:      K_mn = K^ws_side(o_mn) + K^refl_mn     (Paper 2's block in that side's medium, plus the
+                                                           reflection)
     opposite sides: K_mn = K^trans_mn                      (the whole coupling across the interface)
 Each cell's contrast is taken against its own side's medium.  The right-hand side is the reference medium's
 field for an incident plane wave from A: the incident and reflected waves in A, the transmitted ones in B
 (``stratified_march.interface_rt``), their cell moments in closed form for complex wave vectors.
 
-THE SWEEP.  The interface blocks' frequency-independent parts (A0, A1) and lateral tables are set up once per
-symmetry class of pairs: the interface keeps the lateral symmetries x -> -x, y -> -y, x <-> y, so a pair's block
-is the canonical one (lateral offset (a, b), a >= b >= 0) mapped by the signed permutation (``fft._transform``).
-Each frequency then costs one truncated plane-wave integral per class and one whole-space block per offset.
+THE SWEEP.  The interface blocks' frequency-independent parts (A0, A1) and lateral tables are set up once
+per symmetry class of pairs: the interface keeps the lateral symmetries x -> -x, y -> -y, x <-> y, so a
+pair's block is the canonical one (lateral offset (a, b), a >= b >= 0) mapped by the signed permutation
+(``fft._transform``). Each frequency then costs one truncated plane-wave integral per class and one
+whole-space block per offset.
 """
 
 import contextlib
@@ -111,8 +114,9 @@ def reference_waves(
     wave: str,
 ) -> list[tuple[bool, NDArray, NDArray]]:
     """The plane waves of the reference medium's field for a down-going ``wave`` ("P", "SV", "SH") of unit
-    amplitude in A with lateral wavenumber (kx, ky): (in A, wave vector (3,) complex, 9-state (9,)), the phases
-    referred to the interface z = 0, the amplitudes those of ``mode_family`` (bilinear-unit polarisations)."""
+    amplitude in A with lateral wavenumber (kx, ky): (in A, wave vector (3,) complex, 9-state (9,)), the
+    phases referred to the interface z = 0, the amplitudes those of ``mode_family`` (bilinear-unit
+    polarisations)."""
     if wave not in _MODE:
         raise ValueError(f"reference_waves: wave must be 'P', 'SV' or 'SH', got {wave!r}")
     kxa, kya = np.array([kx], float), np.array([ky], float)
@@ -219,38 +223,42 @@ class InterfaceCouplings:
         n_test: Field functions (4 or 10).
         q0h: The split's cutoff Q0 h.  The dropped remainder at Q0 h = 10 is ~3.5e-10 of a touching block at
             omega h / beta = 1/6 and ~2.5e-8 at 1/2 (scripts/measure_interface_q0_omega4.py), far below the
-            discretisation error (p = 1 against p = 2: ~2e-4 at 1/6); D's cost per frequency does not depend on Q0.
+            discretisation error (p = 1 against p = 2: ~2e-4 at 1/6); D's cost per frequency does not depend
+            on Q0.
         q1h: Kept for ``frequency_independent_parts``.
         window: Optional smooth window of the split.
-        omega4: Also the omega^4 correction A2, so the remainder falls as Q0^-8 (~5e-11 to omega h / beta = 1/2 at
-            Q0 h = 10): for reference-quality blocks.  It changes no per-frequency cost but about 2.5x the set-up
-            (the closed-form K2), and the solution does not see it below the discretisation error.  Not with a
-            window.
-        radius: Lateral distance between cell centres (in h) beyond which the frequency-independent corrections
-            A0, A1 are dropped and the block is the windowed plane-wave part D alone; needs a smooth ``window``.
-            With the C-infinity window from Q0 / 4 the corrections fall below 1e-6, 1e-8 and 1e-10 of the touching
-            block beyond 12 h, 16 h and 24 h (cells touching the interface, the slowest case; the paper's
-            tab:locality), so the set-up grows with the radius, not with the grid.  None: every class.
-        depth_radius: Total gap g = d_r + d_s (in h) of the two cells from the interface at and beyond which A0, A1 are
-            dropped likewise; needs a smooth ``window``.  The corrections fall by ~1e-4 per 2 h of g: below 1e-6 and
-            1e-8 of the touching static block for g >= 4 h, below 1e-10 for g >= 6 h
-            (scripts/measure_interface_depth_locality.py), so only the layers nearest the interface carry them and
-            the set-up does not grow with the number of layers.  None: every depth.
-        split: D = D_low + D_high (scaling plan S4; needs a smooth ``window``).  D_low, the band below the window's
-            ramp (q h < window.start Q0 h) that holds the branch points and D's slow ~h/r tail, stays a per-offset
-            radial integral, with tables over that short band only; D_high, smooth in k, is sampled on the FFT
-            grid of a periodic box (``interface_spectral.high_band_blocks``), with no per-offset work.
+        omega4: Also the omega^4 correction A2, so the remainder falls as Q0^-8 (~5e-11 to omega h / beta =
+            1/2 at Q0 h = 10): for reference-quality blocks.  It changes no per-frequency cost but about
+            2.5x the set-up (the closed-form K2), and the solution does not see it below the discretisation
+            error.  Not with a window.
+        radius: Lateral distance between cell centres (in h) beyond which the frequency-independent
+            corrections A0, A1 are dropped and the block is the windowed plane-wave part D alone; needs a
+            smooth ``window``. With the C-infinity window from Q0 / 4 the corrections fall below 1e-6, 1e-8
+            and 1e-10 of the touching block beyond 12 h, 16 h and 24 h (cells touching the interface, the
+            slowest case; the paper's tab:locality), so the set-up grows with the radius, not with the grid.
+            None: every class.
+        depth_radius: Total gap g = d_r + d_s (in h) of the two cells from the interface at and beyond which
+            A0, A1 are dropped likewise; needs a smooth ``window``.  The corrections fall by ~1e-4 per 2 h
+            of g: below 1e-6 and 1e-8 of the touching static block for g >= 4 h, below 1e-10 for g >= 6 h
+            (scripts/measure_interface_depth_locality.py), so only the layers nearest the interface carry
+            them and the set-up does not grow with the number of layers.  None: every depth.
+        split: D = D_low + D_high (scaling plan S4; needs a smooth ``window``).  D_low, the band below the
+            window's ramp (q h < window.start Q0 h) that holds the branch points and D's slow ~h/r tail,
+            stays a per-offset radial integral, with tables over that short band only; D_high, smooth in k,
+            is sampled on the FFT grid of a periodic box (``interface_spectral.high_band_blocks``), with no
+            per-offset work.
         split_pad: Cells between the box's farthest offset and the first periodic image of D_high.  D_high
-            decays faster than any power: below 1e-8 of the touching static block at ~26 cells (omega h / beta =
-            1/6) to ~34 (1/2), 1e-10 at ~40 to ~55.
-        matrix_free: Build only what ``MatrixFreeOperator`` uses: the self offset's lateral table (D itself comes
-            from the plane-wave modes) and the whole-space series coefficients of planes up to 2 apart (the
-            default ``stored_planes``; farther planes go through the march).  ``LateralOperator`` and the full ``interface_canonical`` then refuse.
-            Needs ``split``.
-        workers: Processes for the set-up (default: the CPUs), one BLAS thread each.  The set-up also computes the
-            whole-space blocks' series coefficients of every orbit the grid needs (``far_coeffs``), so a frequency
-            is only their short sums.  A frequency runs in this process, where BLAS threads use the CPUs (a pool of
-            one task per pair of depths was slower: 77 s against 23 s per frequency at 288 cells, split).
+            decays faster than any power: below 1e-8 of the touching static block at ~26 cells (omega h /
+            beta = 1/6) to ~34 (1/2), 1e-10 at ~40 to ~55.
+        matrix_free: Build only what ``MatrixFreeOperator`` uses: the self offset's lateral table (D itself
+            comes from the plane-wave modes) and the whole-space series coefficients of planes up to 2 apart
+            (the default ``stored_planes``; farther planes go through the march).  ``LateralOperator`` and
+            the full ``interface_canonical`` then refuse. Needs ``split``.
+        workers: Processes for the set-up (default: the CPUs), one BLAS thread each.  The set-up also
+            computes the whole-space blocks' series coefficients of every orbit the grid needs
+            (``far_coeffs``), so a frequency is only their short sums.  A frequency runs in this process,
+            where BLAS threads use the CPUs (a pool of one task per pair of depths was slower: 77 s against
+            23 s per frequency at 288 cells, split).
     """
 
     grid: InterfaceGrid
@@ -272,21 +280,25 @@ class InterfaceCouplings:
     def __post_init__(self) -> None:
         if self.window is not None and self.omega4:
             raise ValueError(
-                "InterfaceCouplings: the omega^4 split has no windowed form; pass omega4=False with a window."
+                "InterfaceCouplings: the omega^4 split has no windowed form; pass omega4=False with a "
+                "window."
             )
         if (self.radius is not None or self.depth_radius is not None) and self.window is None:
             raise ValueError(
-                "InterfaceCouplings: a radius needs a smooth window; with the sharp cutoff the corrections ring and\n"
+                "InterfaceCouplings: a radius needs a smooth window; with the sharp cutoff the corrections "
+                "ring and\n"
                 "  decay only as d^-3/2.  Pass window=interface_spectral.Window(0.25)."
             )
         if self.matrix_free and not self.split:
             raise ValueError("InterfaceCouplings: matrix_free needs split=True (MatrixFreeOperator's D).")
         if self.split and self.window is None:
             raise ValueError(
-                "InterfaceCouplings: split needs a smooth window (its band ends where the window's ramp starts)."
+                "InterfaceCouplings: split needs a smooth window (its band ends where the window's ramp "
+                "starts)."
             )
         g = self.grid
-        # the classes: per pair of layers, the canonical lateral offsets (a >= b >= 0, in h) its cells realise
+        # the classes: per pair of layers, the canonical lateral offsets (a >= b >= 0, in h) its cells
+        # realise
         lat = {z: g.idx[g.idx[:, 0] == z, 1:] for z in np.unique(g.idx[:, 0])}
         key_set: set[tuple[int, int, int, int]] = set()
         for zr, zs in itertools.product(lat, repeat=2):
@@ -331,13 +343,15 @@ class InterfaceCouplings:
             sub = idx[side]
             if not len(sub):
                 continue
-            # |offsets| between the side's cells: lateral differences of its positions, times the layer differences
+            # |offsets| between the side's cells: lateral differences of its positions, times the layer
+            # differences
             pos = np.unique(sub[:, 1:], axis=0)
             dxy = np.unique(np.abs(pos[:, None, :] - pos[None, :, :]).reshape(-1, 2), axis=0)
             zs = np.unique(sub[:, 0])
             dz = np.unique(np.abs(zs[:, None] - zs[None, :]))
             if self.matrix_free:
-                # the stored whole-space kernels: planes up to MatrixFreeOperator's default stored_planes (2) apart
+                # the stored whole-space kernels: planes up to MatrixFreeOperator's default stored_planes
+                # (2) apart
                 dz = dz[dz <= 2]
             for z in dz:
                 rows = np.column_stack([np.full(len(dxy), z), dxy])
@@ -362,9 +376,9 @@ class InterfaceCouplings:
         self.classes = {k: (parts.get(k), tables.get(k[2:])) for k in keys}
 
     def release_far_coeffs(self) -> None:
-        """Drop the whole-space series coefficients (~2.5 MB per orbit: 3.3 GB at 36 x 36 cells, 10 GB at 64 x 64).
-        They are needed only while an operator for a frequency is built; call this after the last one.  A later
-        operator recomputes the coefficients it needs, serially (~3 s per orbit)."""
+        """Drop the whole-space series coefficients (~2.5 MB per orbit: 3.3 GB at 36 x 36 cells, 10 GB at 64
+        x 64). They are needed only while an operator for a frequency is built; call this after the last
+        one.  A later operator recomputes the coefficients it needs, serially (~3 s per orbit)."""
         self.far_coeffs = {}
 
     @property
@@ -374,20 +388,22 @@ class InterfaceCouplings:
         return self.window.start * self.q0h
 
     def low_pass(self, omega: float) -> isp.Window:
-        """The split's band at a frequency: its ramp from twice the highest branch point (at least 0.35 / h; a
-        wider ramp makes D_high decay faster) to ``band_qh``."""
+        """The split's band at a frequency: its ramp from twice the highest branch point (at least 0.35 / h;
+        a wider ramp makes D_high decay faster) to ``band_qh``."""
         g = self.grid
         top = max(omega * g.h / c for m in (g.above, g.below) for c in (m.alpha, m.beta))
         lo = max(0.35, 2 * top)
         if lo >= self.band_qh:
             raise ValueError(
-                f"InterfaceCouplings: the split's band [{lo:g}, {self.band_qh:g}] (q h) is empty at this frequency;"
+                f"InterfaceCouplings: the split's band [{lo:g}, {self.band_qh:g}] (q h) is empty at this "
+                "frequency;"
                 " raise q0h or the window's start."
             )
         return isp.Window(lo / self.band_qh)
 
     def corrected(self, key: tuple) -> bool:
-        """Whether the class (zr, zs, a, b) carries A0, A1: within the lateral radius and the depth radius."""
+        """Whether the class (zr, zs, a, b) carries A0, A1: within the lateral radius and the depth
+        radius."""
         zr, zs, a, b = key
         lateral = self.radius is None or np.hypot(a, b) <= self.radius
         depth = self.depth_radius is None or interface_gap(zr, zs) < self.depth_radius
@@ -428,15 +444,16 @@ class InterfaceCouplings:
 
     def interface_canonical(self, omega: float, keys: list | None = None) -> dict[tuple, NDArray]:
         """The interface block of every symmetry class at one frequency (or of ``keys`` only): the truncated
-        plane-wave integrals D batched (one interface solve and frame per radial node and pair of depths, shared
-        by every lateral offset; sources in B mirrored onto A with the media exchanged), plus the class's
-        A0 + w^2 A1 (+ w^4 A2)."""
+        plane-wave integrals D batched (one interface solve and frame per radial node and pair of depths,
+        shared by every lateral offset; sources in B mirrored onto A with the media exchanged), plus the
+        class's A0 + w^2 A1 (+ w^4 A2)."""
         g = self.grid
         keys = list(self.classes) if keys is None else list(keys)
         tables = [self.classes[k][1] for k in keys]
         if any(t is None for t in tables):
             raise ValueError(
-                "InterfaceCouplings.interface_canonical: the set-up has no lateral tables for these classes\n"
+                "InterfaceCouplings.interface_canonical: the set-up has no lateral tables for these "
+                "classes\n"
                 "  (matrix_free=True keeps the self offset's only); use MatrixFreeOperator."
             )
         table = dict(tables[0])
@@ -513,9 +530,9 @@ class InterfaceCouplings:
         return out
 
     def blocks(self, omega: float) -> dict[tuple[int, int], NDArray]:
-        """K_mn for every pair at one frequency: the whole-space block of the side plus the reflection, or the
-        transmission.  The whole-space blocks are Paper 2's (``_whole_space``), one per cube-group orbit and side,
-        mapped by the signed permutation."""
+        """K_mn for every pair at one frequency: the whole-space block of the side plus the reflection, or
+        the transmission.  The whole-space blocks are Paper 2's (``_whole_space``), one per cube-group orbit
+        and side, mapped by the signed permutation."""
         g = self.grid
         u = g.units
         canon = self.interface_canonical(omega)
@@ -541,9 +558,9 @@ class InterfaceCouplings:
 
 def _whole_space(off, h, omega, ref, n_source, n_test, cache, far=None) -> NDArray:
     """Paper 2's block for a grid offset: the orbit's canonical block mapped to it.  Touching offsets by
-    ``near_block_series`` (its universal moments once per process, minutes; then milliseconds per frequency),
-    the others by ``far_block_series`` (its coefficients once, then each frequency a short sum), Gauss where
-    the far series would need too many terms."""
+    ``near_block_series`` (its universal moments once per process, minutes; then milliseconds per
+    frequency), the others by ``far_block_series`` (its coefficients once, then each frequency a short sum),
+    Gauss where the far series would need too many terms."""
     c = tuple(sorted((abs(o) for o in off), reverse=True))
     key = (c, ref.alpha, ref.beta, ref.rho)
     if key not in cache:
@@ -577,7 +594,7 @@ def cell_contrasts(
     for m, (c, ctr) in enumerate(zip(grid.centres, contrasts, strict=True)):
         if ctr is not None:
             out[m] = cell_contrast_coefficients(
-                lambda x: 1.0, c, grid.h, ctr, grid.medium(m), omega, degree=r
+                lambda _x: 1.0, c, grid.h, ctr, grid.medium(m), omega, degree=r
             )
     return out
 
@@ -662,7 +679,8 @@ def solve_interface(
     na, n_field, _, n_source = field_sizes(p, r)
     if couplings.n_source < n_source or couplings.n_test < n_field:
         raise ValueError(
-            f"solve_interface: p = {p}, r = {r} need n_source >= {n_source}, n_test >= {n_field}; the couplings"
+            f"solve_interface: p = {p}, r = {r} need n_source >= {n_source}, n_test >= {n_field}; the "
+            "couplings"
             f" have {couplings.n_source}, {couplings.n_test}."
         )
     delta = cell_contrasts(grid, omega, contrasts, r)
@@ -683,12 +701,13 @@ def solve_interface(
 class LateralOperator:
     """The coupling of a grid at one frequency as lateral convolutions, one per pair of depth layers.
 
-    Every block depends on the two layers and the lateral offset only: K(iz_r, iz_s; dx, dy) is Paper 2's block of
-    the side plus the reflection (same side) or the transmission (opposite sides).  For each pair of layers the
-    blocks over the offsets of the grid's lateral box are transformed once (zero padding to 2 n - 1); a product
-    then costs one 2-D FFT per source layer, one inverse per receiver layer, and a contraction per pair of
-    layers in the transformed domain.  Offsets no pair of the grid's cells realises are zero (they only reach
-    positions without cells, whose outputs are discarded).  No block of a single pair is formed.
+    Every block depends on the two layers and the lateral offset only: K(iz_r, iz_s; dx, dy) is Paper 2's
+    block of the side plus the reflection (same side) or the transmission (opposite sides).  For each pair
+    of layers the blocks over the offsets of the grid's lateral box are transformed once (zero padding to 2
+    n - 1); a product then costs one 2-D FFT per source layer, one inverse per receiver layer, and a
+    contraction per pair of layers in the transformed domain.  Offsets no pair of the grid's cells realises
+    are zero (they only reach positions without cells, whose outputs are discarded).  No block of a single
+    pair is formed.
 
     Args:
         couplings: The grid's set-up.
@@ -735,7 +754,8 @@ class LateralOperator:
             realised[zr, zs] = {tuple(v) for v in np.unique(d, axis=0).tolist()}
         self.kernels: dict = {}
         self.ws_kernels: dict = {}  # with parts: the whole-space kernel of each same-side pair
-        self.if_kernels: dict = {}  # with parts: the interface kernel (reflection or transmission) of each pair
+        # with parts: the interface kernel (reflection or transmission) of each pair
+        self.if_kernels: dict = {}
         self.self_blocks: dict = {}  # K_mm per layer, for the preconditioner
         for (zr, zs), offs in realised.items():
             kh = np.zeros((rows, cols) + self.shape, dtype=complex)
@@ -805,22 +825,24 @@ class MatrixFreeOperator:
     """``LateralOperator``'s product with no kernel stored per pair of depth layers (scaling plan S5).
 
     - **D**, the plane-wave part of every interface block, through the plane-wave modes
-      (``stratified_apply``): the low band by NUFFTs over its polar quadrature (exact, non-periodic), the high
-      band at the wavenumbers of the periodic box of ``InterfaceCouplings.interface_canonical`` (the same
-      period); per wavenumber three mode amplitudes per source side, plus the window's static pseudo-modes.
-      The factors are computed once per frequency.
+      (``stratified_apply``): the low band by NUFFTs over its polar quadrature (exact, non-periodic), the
+      high band at the wavenumbers of the periodic box of ``InterfaceCouplings.interface_canonical`` (the
+      same period); per wavenumber three mode amplitudes per source side, plus the window's static
+      pseudo-modes. The factors are computed once per frequency.
     - **The corrections** A0 + w^2 A1, local within the lateral and depth radii, as stencils.
-    - **The whole-space blocks**, Paper 2's: for planes up to ``stored_planes`` apart, stored lateral kernels,
-      (2 s + 1)(2 nx - 1)(2 ny - 1) blocks per side whatever the number of layers; for planes farther apart, the
-      plane-wave march in depth (``stratified_apply.WholeSpaceMarch``, the low band's nodes and the box's lattice to
-      q h = 16 / s: s = 2, the default, needs a quarter of the wavenumbers of s = 1).
+    - **The whole-space blocks**, Paper 2's: for planes up to ``stored_planes`` apart, stored lateral
+      kernels, (2 s + 1)(2 nx - 1)(2 ny - 1) blocks per side whatever the number of layers; for planes
+      farther apart, the plane-wave march in depth (``stratified_apply.WholeSpaceMarch``, the low band's
+      nodes and the box's lattice to q h = 16 / s: s = 2, the default, needs a quarter of the wavenumbers of
+      s = 1).
 
     ``cache``: keep the plane-wave factors between products (each later product is then the NUFFTs and the
-    contractions alone; ~23 kB per node for D with six layers, ~12 kB per node for the march), or recompute them in
-    each product (memory of the lateral kernels only).  ``eps``: the NUFFTs' tolerance, which now only the polar low-band
-    nodes use (the lattice nodes go by FFT, exactly): 1e-9 leaves the product ~1e-11 from the stored kernels', below
-    GMRES's 1e-10 and far below D1's 1e-8, and makes the NUFFTs ~1.4x faster than 1e-11.  Needs ``InterfaceCouplings(split=True)``.  The interface ``self_blocks`` (for the preconditioner) are the
-    classes' own.
+    contractions alone; ~23 kB per node for D with six layers, ~12 kB per node for the march), or recompute
+    them in each product (memory of the lateral kernels only).  ``eps``: the NUFFTs' tolerance, which now
+    only the polar low-band nodes use (the lattice nodes go by FFT, exactly): 1e-9 leaves the product ~1e-11
+    from the stored kernels', below GMRES's 1e-10 and far below D1's 1e-8, and makes the NUFFTs ~1.4x faster
+    than 1e-11.  Needs ``InterfaceCouplings(split=True)``.  The interface ``self_blocks`` (for the
+    preconditioner) are the classes' own.
     """
 
     def __init__(
@@ -857,8 +879,8 @@ class MatrixFreeOperator:
         zu = [2 * z + 1 for z in self.layers]  # centres' z in h
         h, above, below = g.h, g.above, g.below
 
-        # the window's symbolic frame kernels, once per process (~30 s), for both orders of the media (a source in B
-        # is the mirrored problem), so that no product pays for them
+        # the window's symbolic frame kernels, once per process (~30 s), for both orders of the media (a
+        # source in B is the mirrored problem), so that no product pays for them
         for kind, order, media in itertools.product("RT", (0, 1), ((above, below), (below, above))):
             isp.frame_laurent(kind, order, isp._key(media[0]), isp._key(media[1]))
         # D: the low band (non-periodic) and the high band (the period of interface_canonical)
@@ -932,7 +954,8 @@ class MatrixFreeOperator:
                 self.stencils[zr, zs] = st
 
         # the whole-space blocks on each side: stored lateral kernels for planes up to stored_planes apart
-        # (independent of the number of layers), the plane-wave march (stratified_apply.WholeSpaceMarch) beyond
+        # (independent of the number of layers), the plane-wave march (stratified_apply.WholeSpaceMarch)
+        # beyond
         ws_cache: dict = {}
         self.sides = []
         lat = (2 * nx - 1, 2 * ny - 1)

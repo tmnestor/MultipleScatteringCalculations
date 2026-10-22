@@ -7,7 +7,8 @@ Validates:
   4. The Chebyshev table of the lateral harmonics S_n against direct evaluation, between its nodes
   5. The frame-and-harmonics route of D against the mode sum at every (q, phi), reflected and transmitted
   5a. The smooth windows: 0 below the ramp, 1 above Q0, monotone; the radial rule's plain breaks
-  5b. The windowed split moves exactly the ramp integrals from D to A0, A1: D - D_chi = int chi (Y0 + w^2 Y1)
+  5b. The windowed split moves exactly the ramp integrals from D to A0, A1:
+      D - D_chi = int chi (Y0 + w^2 Y1)
   6. Identical media: a transmitted block equals Paper 2's homogeneous block (slow)
   7. A source in B (mirrored onto A) equals Paper 2's block at the opposite offset (slow)
 """
@@ -99,9 +100,7 @@ def test_window_rejects_bad_arguments():
 def test_window_ramp_must_clear_the_branch_points():
     # omega h / beta = 1 puts the last branch-point panel at q h = 2 > 0.15 * 10
     with pytest.raises(ValueError):
-        isp.truncated_blocks(
-            [((-1, 0, 0), (-1, 0, 0))], H, 60.0, A, B, window=isp.Window(0.15)
-        )
+        isp.truncated_blocks([((-1, 0, 0), (-1, 0, 0))], H, 60.0, A, B, window=isp.Window(0.15))
 
 
 def test_radial_rule_breaks():
@@ -123,9 +122,7 @@ def test_window_moves_the_ramp(pair, win):
     # a source in B goes through interface_block, which mirrors it onto A (A0 = A1 = 0 isolates D)
     if src[0] > 0:
         sharp = isp.interface_block(rec, src, H, om, A, B, q0h=q0, parts=(0, 0))
-        win_d = isp.interface_block(
-            rec, src, H, om, A, B, q0h=q0, parts=(0, 0), window=win
-        )
+        win_d = isp.interface_block(rec, src, H, om, A, B, q0h=q0, parts=(0, 0), window=win)
     else:
         sharp = isp.truncated_blocks([pair], *args)[0]
         win_d = isp.truncated_blocks([pair], *args, window=win)[0]
@@ -146,9 +143,7 @@ def test_identical_media_transmitted():
 @pytest.mark.slow
 def test_mirror_identical_media():
     # a source in B, mirrored onto A by the code, against Paper 2's block at the opposite offset
-    k = isp.interface_block(
-        (-1, 0, 0), (1, 0, 0), H, 10.0, A, A, n_source=10, n_test=1, q0h=10.0
-    )
+    k = isp.interface_block((-1, 0, 0), (1, 0, 0), H, 10.0, A, A, n_source=10, n_test=1, q0h=10.0)
     ref = coupling_block((-1, 0, 0), H, 10.0, A, n_source=10, n_test=1)
     assert np.abs(k - ref).max() < 1e-9 * np.abs(ref).max()
 
@@ -164,9 +159,7 @@ def test_low_and_high_bands_make_up_d(zr):
     pairs = [((zr, 2 * a, 2 * b), (-1, 0, 0)) for a, b in offs]
     full = isp.truncated_blocks(pairs, H, omega, A, B, 10, 4, 10.0, window=window)
     table = isp.lateral_harmonics([(2 * a, 2 * b) for a, b in offs], H, 2.5, 10, 4)
-    d_low = isp.truncated_blocks(
-        pairs, H, omega, A, B, 10, 4, 2.5, table=table, low_pass=low
-    )
+    d_low = isp.truncated_blocks(pairs, H, omega, A, B, 10, 4, 2.5, table=table, low_pass=low)
     d_high = isp.high_band_blocks(
         zr,
         -1,
@@ -200,23 +193,19 @@ def test_bands_refuse_bad_arguments():
             low_pass=isp.Window(0.4),
         )
     with pytest.raises(ValueError, match="branch points"):
-        isp.high_band_blocks(
-            -1, -1, 8, H, omega, A, B, low_pass=isp.Window(0.1), band_qh=2.5
-        )
+        isp.high_band_blocks(-1, -1, 8, H, omega, A, B, low_pass=isp.Window(0.1), band_qh=2.5)
 
 
 @pytest.mark.slow
 def test_high_band_by_symmetry_is_the_whole_grid():
-    """The wedge 0 <= ky <= kx and the eight lateral symmetries give the whole grid's D_high, at canonical and
-    other offsets, reflected and transmitted."""
+    """The wedge 0 <= ky <= kx and the eight lateral symmetries give the whole grid's D_high, at canonical
+    and other offsets, reflected and transmitted."""
     omega = A.beta / (6 * H)
     kw = {"window": isp.Window(0.25), "low_pass": isp.Window(0.4), "band_qh": 2.5}
     offs = [(0, 0), (1, 0), (2, 1), (3, 3), (5, 2), (-2, 1), (1, -4)]
     for zr in (-1, 1):
         whole = isp.high_band_blocks(zr, -1, 16, H, omega, A, B, 10, 4, 10.0, **kw)
-        wedge = isp.high_band_blocks(
-            zr, -1, 16, H, omega, A, B, 10, 4, 10.0, offsets=offs, **kw
-        )
+        wedge = isp.high_band_blocks(zr, -1, 16, H, omega, A, B, 10, 4, 10.0, offsets=offs, **kw)
         scale = np.abs(whole).max()
         for (a, b), blk in zip(offs, wedge, strict=True):
             assert np.abs(blk - whole[a % 16, b % 16]).max() < 1e-13 * scale

@@ -1,7 +1,8 @@
 """Tests for the finite-part potentials in the interface blocks (``interface_image``, order 0 and 1).
 
 Validates:
-  1. Each finite-part kernel d^alpha Phi_j is homogeneous up to its log term: f(lam x) = lam^d [f(x) + log(lam) g(x)]
+  1. Each finite-part kernel d^alpha Phi_j is homogeneous up to its log term: f(lam x) =
+     lam^d [f(x) + log(lam) g(x)]
   2. g vanishes for every static (K0-type) family, whose lateral derivatives annihilate the solid harmonic
   3. Corner boxes with a log term: Duffy pyramids (exact rho^e log rho moments) and Euler's identity (with
      -int x^n g) agree, two routes sharing only the kernel
@@ -71,10 +72,7 @@ def test_corner_routes_agree(fam):
     box = ((0, 2), (-2, 0), (0, 2))
     deg = (2, 2, 2)
     euler = ii._corner_moments(f, d, box, deg, 40, g)
-    ws = [
-        {m: tuple(Fraction(int(i == m)) for i in range(m + 1)) for m in range(3)}
-        for _ in range(3)
-    ]
+    ws = [{m: tuple(Fraction(int(i == m)) for i in range(m + 1)) for m in range(3)} for _ in range(3)]
     pairs = [(0, 0, 0), (1, 0, 2), (2, 1, 1), (2, 2, 2)]
     pyr = ii._corner_pyramids(f, d, box, ws, pairs, 40, g)
     for p, v in zip(pairs, pyr, strict=True):

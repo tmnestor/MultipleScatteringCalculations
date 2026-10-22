@@ -60,10 +60,7 @@ def line(r: int, a2: int, c: int, s: int) -> mp.mpf:
         if s % 2 == 0 and s >= 0:
             k = s // 2
             return mp.fsum(
-                mp.binomial(k, i)
-                * a2m ** (k - i)
-                * mp.mpf(c) ** (r + 2 * i + 1)
-                / (r + 2 * i + 1)
+                mp.binomial(k, i) * a2m ** (k - i) * mp.mpf(c) ** (r + 2 * i + 1) / (r + 2 * i + 1)
                 for i in range(k + 1)
             )
         if r >= 2:
@@ -71,8 +68,7 @@ def line(r: int, a2: int, c: int, s: int) -> mp.mpf:
             if s == -2:
                 return line(r - 2, a2, c, 0) - a2m * line(r - 2, a2, c, -2)
             return (
-                mp.mpf(c) ** (r - 1) * top ** (mp.mpf(s + 2) / 2)
-                - (r - 1) * line(r - 2, a2, c, s + 2)
+                mp.mpf(c) ** (r - 1) * top ** (mp.mpf(s + 2) / 2) - (r - 1) * line(r - 2, a2, c, s + 2)
             ) / (s + 2)
         if r == 1:
             if s == -2:
@@ -85,9 +81,7 @@ def line(r: int, a2: int, c: int, s: int) -> mp.mpf:
             return mp.atan(c / mp.sqrt(a2m)) / mp.sqrt(a2m)
         if s < -2:
             # (s+3) L[s+2] = c top^((s+2)/2) + (s+2) a2 L[s]
-            return (
-                (s + 3) * line(0, a2, c, s + 2) - c * top ** (mp.mpf(s + 2) / 2)
-            ) / ((s + 2) * a2m)
+            return ((s + 3) * line(0, a2, c, s + 2) - c * top ** (mp.mpf(s + 2) / 2)) / ((s + 2) * a2m)
         # s >= 1 odd: (s+1) L[s] = c top^(s/2) + s a2 L[s-2]
         return (c * top ** (mp.mpf(s) / 2) + s * a2m * line(0, a2, c, s - 2)) / (s + 1)
 
@@ -109,7 +103,8 @@ def line_inf(r: int, a2: int, s: int) -> mp.mpf:
 
 @cache
 def face(q: int, r: int, a: int, b: int, c: int | None, m: int) -> mp.mpf:
-    """int_0^b int_0^c y^q z^r (a^2 + y^2 + z^2)^(m/2) dz dy, m odd; c = None means z to infinity (a > 0)."""
+    """int_0^b int_0^c y^q z^r (a^2 + y^2 + z^2)^(m/2) dz dy, m odd; c = None means z to infinity
+    (a > 0)."""
     with mp.workdps(DPS):
         if c is None:
             # z first, to infinity: (a^2 + y^2)^((r+m+1)/2) B(...) / 2, then y over [0, b]
@@ -122,8 +117,7 @@ def face(q: int, r: int, a: int, b: int, c: int | None, m: int) -> mp.mpf:
             if deg <= 0:
                 raise ValueError("face: diverges at the origin of a face through it")
             return (
-                mp.mpf(b) ** (q + 1) * line(r, b * b, c, m)
-                + mp.mpf(c) ** (r + 1) * line(q, c * c, b, m)
+                mp.mpf(b) ** (q + 1) * line(r, b * b, c, m) + mp.mpf(c) ** (r + 1) * line(q, c * c, b, m)
             ) / deg
         if q >= 1:
             edge = mp.mpf(b) ** (q - 1) * line(r, a * a + b * b, c, m + 2)
@@ -133,18 +127,14 @@ def face(q: int, r: int, a: int, b: int, c: int | None, m: int) -> mp.mpf:
         if r >= 1:
             return face(r, q, a, c, b, m)
         if m == -3:
-            return (
-                mp.atan(mp.mpf(b * c) / (a * mp.sqrt(mp.mpf(a * a + b * b + c * c))))
-                / a
-            )
-        edges = lambda mm: (
-            b * line(0, a * a + b * b, c, mm) + c * line(0, a * a + c * c, b, mm)
-        )
+            return mp.atan(mp.mpf(b * c) / (a * mp.sqrt(mp.mpf(a * a + b * b + c * c)))) / a
+
+        def edges(mm):
+            return b * line(0, a * a + b * b, c, mm) + c * line(0, a * a + c * c, b, mm)
+
         if m < -3:
             # (m+4) J[m+2] = (m+2) a^2 J[m] + edges(m+2)
-            return ((m + 4) * face(0, 0, a, b, c, m + 2) - edges(m + 2)) / (
-                (m + 2) * a * a
-            )
+            return ((m + 4) * face(0, 0, a, b, c, m + 2) - edges(m + 2)) / ((m + 2) * a * a)
         return (m * a * a * face(0, 0, a, b, c, m - 2) + edges(m)) / (m + 2)
 
 
@@ -178,9 +168,9 @@ def box(
     if c is None and r + m + 1 >= 0:
         raise ValueError(f"box: z^{r} R^{m} does not decay to infinity")
     with mp.workdps(DPS):
-        total = mp.mpf(a) ** (p + 1) * face(q, r, a, b, c, m) + mp.mpf(b) ** (
-            q + 1
-        ) * face(p, r, b, a, c, m)
+        total = mp.mpf(a) ** (p + 1) * face(q, r, a, b, c, m) + mp.mpf(b) ** (q + 1) * face(
+            p, r, b, a, c, m
+        )
         if c is not None:
             total += mp.mpf(c) ** (r + 1) * face(p, q, c, a, b, m)
         return total / deg
@@ -202,9 +192,7 @@ def _strip(q: int, a: int, b: int, c: int, m: int) -> mp.mpf:
 
 
 @cache
-def _column_degree_zero(
-    p: int, q: int, r: int, a: int, b: int, c: int, m: int
-) -> mp.mpf:
+def _column_degree_zero(p: int, q: int, r: int, a: int, b: int, c: int, m: int) -> mp.mpf:
     """The column when p + q + r + m + 3 = 0, where Euler's identity is degenerate.
 
     Integration by parts in t (from c to infinity) lowers r by two, its boundary a rectangle at height c;
@@ -233,13 +221,12 @@ def _column_degree_zero(
             return base_b1(a, b, c)
         if (p, q, m) == (1, 1, -5):
             return base_b2(a, b, c)
-        raise ValueError(
-            f"_column_degree_zero: no reduction for p={p}, q={q}, r={r}, m={m}"
-        )
+        raise ValueError(f"_column_degree_zero: no reduction for p={p}, q={q}, r={r}, m={m}")
 
 
 def _polar(a: int, b: int, g) -> mp.mpf:
-    """int over the rectangle [0, a] x [0, b] in polar form: sum over its two triangles of int g(theta, R(theta))."""
+    """int over the rectangle [0, a] x [0, b] in polar form: sum over its two triangles of
+    int g(theta, R(theta))."""
     th0 = mp.atan2(b, a)
     return mp.quad(lambda th: g(th, a / mp.cos(th)), [0, th0]) + mp.quad(
         lambda th: g(th, b / mp.sin(th)), [th0, mp.pi / 2]
@@ -248,23 +235,22 @@ def _polar(a: int, b: int, g) -> mp.mpf:
 
 @cache
 def base_b1(a: int, b: int, c: int) -> mp.mpf:
-    """B1 = int over [0, a] x [0, b] x [c, oo) of R^-3: the radial integral is log(c + sqrt(r^2 + c^2)) - log(2c),
-    leaving one smooth angular integral.  B1 is scale-free; for the cube, a = b = c, it is (5/4) Cl2(pi/3) - G
-    (Catalan's G), else the angular integral by quadrature at 40 digits."""
+    """B1 = int over [0, a] x [0, b] x [c, oo) of R^-3: the radial integral is log(c + sqrt(r^2 + c^2)) -
+    log(2c), leaving one smooth angular integral.  B1 is scale-free; for the cube, a = b = c, it is (5/4)
+    Cl2(pi/3) - G (Catalan's G), else the angular integral by quadrature at 40 digits."""
     with mp.workdps(DPS):
         if a == b == c:
             return 5 * mp.clsin(2, mp.pi / 3) / 4 - mp.catalan
         c = mp.mpf(c)
-        return _polar(
-            a, b, lambda th, rr: mp.log(c + mp.sqrt(rr * rr + c * c)) - mp.log(2 * c)
-        )
+        return _polar(a, b, lambda _th, rr: mp.log(c + mp.sqrt(rr * rr + c * c)) - mp.log(2 * c))
 
 
 @cache
 def base_b2(a: int, b: int, c: int) -> mp.mpf:
-    """B2 = int over [0, a] x [0, b] x [c, oo) of x y R^-5: radial antiderivative c/(3 rho) + (2/3) log(c + rho),
-    rho = sqrt(r^2 + c^2), times cos sin, leaving one smooth angular integral.  B2 is scale-free; for the cube,
-    a = b = c, it is elementary, (1/3) log((1 + sqrt 2)^2 / (2 (1 + sqrt 3))), else quadrature at 40 digits."""
+    """B2 = int over [0, a] x [0, b] x [c, oo) of x y R^-5: radial antiderivative c/(3 rho) + (2/3) log(c +
+    rho), rho = sqrt(r^2 + c^2), times cos sin, leaving one smooth angular integral.  B2 is scale-free; for
+    the cube, a = b = c, it is elementary, (1/3) log((1 + sqrt 2)^2 / (2 (1 + sqrt 3))), else quadrature at
+    40 digits."""
     with mp.workdps(DPS):
         if a == b == c:
             return mp.log((1 + mp.sqrt(2)) ** 2 / (2 * (1 + mp.sqrt(3)))) / 3
@@ -292,10 +278,7 @@ def phi0_derivative(
     n = sum(alpha)
     expr = sp.diff(1 / r, x, alpha[0], y, alpha[1], z, alpha[2]) if n else 1 / r
     poly = sp.Poly(sp.expand(sp.simplify(expr * r ** (2 * n + 1))), x, y, z)
-    return tuple(
-        (mon, sp.Rational(co))
-        for mon, co in zip(poly.monoms(), poly.coeffs(), strict=True)
-    )
+    return tuple((mon, sp.Rational(co)) for mon, co in zip(poly.monoms(), poly.coeffs(), strict=True))
 
 
 def corner_moment(
@@ -318,34 +301,28 @@ def corner_moment(
         The moment, 40 digits.
     """
     if j > 0 and alpha[2]:
-        raise ValueError(
-            "corner_moment: a zeta derivative of a Mindlin potential is to be reduced first"
-        )
+        raise ValueError("corner_moment: a zeta derivative of a Mindlin potential is to be reduced first")
     p, q, r = n
     a, b, c = sides
     m = -(2 * sum(alpha) + 1)
     total = mp.mpf(0)
     with mp.workdps(DPS):
-        for (i, k, l), co in phi0_derivative(alpha):
+        for (i, k, ell), co in phi0_derivative(alpha):
             # reflect: rho_x = sx u, rho_y = sy v; the monomial and P_alpha pick up the signs
             sgn = signs[0] ** (p + i) * signs[1] ** (q + k)
             coef = mp.mpf(co.p) / co.q * sgn
             pp, qq = p + i, q + k
             if j == 0:
-                val = box(pp, qq, r + l, a, b, c, m)
+                val = box(pp, qq, r + ell, a, b, c, m)
             elif j == 1:
                 val = (
-                    box(pp, qq, r + 1 + l, a, b, c, m)
-                    + mp.mpf(c) ** (r + 1) * column(pp, qq, l, a, b, c, m)
+                    box(pp, qq, r + 1 + ell, a, b, c, m)
+                    + mp.mpf(c) ** (r + 1) * column(pp, qq, ell, a, b, c, m)
                 ) / (r + 1)
             else:
-                inner = box(pp, qq, r + 2 + l, a, b, c, m) / ((r + 1) * (r + 2))
-                col1 = column(pp, qq, l + 1, a, b, c, m)
-                col0 = column(pp, qq, l, a, b, c, m)
-                val = (
-                    inner
-                    + mp.mpf(c) ** (r + 1) / (r + 1) * col1
-                    - mp.mpf(c) ** (r + 2) / (r + 2) * col0
-                )
+                inner = box(pp, qq, r + 2 + ell, a, b, c, m) / ((r + 1) * (r + 2))
+                col1 = column(pp, qq, ell + 1, a, b, c, m)
+                col0 = column(pp, qq, ell, a, b, c, m)
+                val = inner + mp.mpf(c) ** (r + 1) / (r + 1) * col1 - mp.mpf(c) ** (r + 2) / (r + 2) * col0
             total += coef * val
         return total / (2 * mp.pi)

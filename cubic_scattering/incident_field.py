@@ -136,14 +136,14 @@ def cube_overlap_integrals(k_vec: np.ndarray, pol: np.ndarray, a: float) -> np.n
     k1, k2, k3 = k_vec
 
     # Precompute all needed 1D integrals: I_m(k_j, a) for m=0,1,2 and j=1,2,3
-    I = np.zeros((3, 3), dtype=complex)  # I[m, axis]
+    I1d = np.zeros((3, 3), dtype=complex)  # I1d[m, axis]
     for axis, kj in enumerate([k1, k2, k3]):
         for m in range(3):
-            I[m, axis] = _monomial_fourier_1d(m, kj, a)
+            I1d[m, axis] = _monomial_fourier_1d(m, kj, a)
 
     # Shorthand: product of three 1D integrals
     def prod3(m1, m2, m3):
-        return I[m1, 0] * I[m2, 1] * I[m3, 2]
+        return I1d[m1, 0] * I1d[m2, 1] * I1d[m3, 2]
 
     c = np.zeros(27, dtype=complex)
 
@@ -204,13 +204,13 @@ def cube_overlap_integrals_57(k_vec: np.ndarray, pol: np.ndarray, a: float) -> n
     k1, k2, k3 = k_vec
 
     # Precompute all needed 1D integrals: I_m(k_j, a) for m=0,1,2,3 and j=1,2,3
-    I = np.zeros((4, 3), dtype=complex)  # I[m, axis]
+    I1d = np.zeros((4, 3), dtype=complex)  # I1d[m, axis]
     for axis, kj in enumerate([k1, k2, k3]):
         for m in range(4):
-            I[m, axis] = _monomial_fourier_1d(m, kj, a)
+            I1d[m, axis] = _monomial_fourier_1d(m, kj, a)
 
     def prod3(m1, m2, m3):
-        return I[m1, 0] * I[m2, 1] * I[m3, 2]
+        return I1d[m1, 0] * I1d[m2, 1] * I1d[m3, 2]
 
     c = np.zeros(57, dtype=complex)
 

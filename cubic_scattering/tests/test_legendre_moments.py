@@ -15,13 +15,13 @@ from cubic_scattering.graded_voxel.legendre_moments import (
 mp.mp.dps = 30
 
 
-def _edge_exact(k: int, a2: float, l: float, m: int) -> float:
-    f = lambda t: mp.legendre(k, 2 * (t - l) - 1) * (a2 + t * t) ** (mp.mpf(m) / 2)  # noqa: E731
-    return float(mp.quad(f, [l, l + 1]))
+def _edge_exact(k: int, a2: float, low: float, m: int) -> float:
+    f = lambda t: mp.legendre(k, 2 * (t - low) - 1) * (a2 + t * t) ** (mp.mpf(m) / 2)  # noqa: E731
+    return float(mp.quad(f, [low, low + 1]))
 
 
 @pytest.mark.parametrize(
-    ("a2", "l", "m"),
+    ("a2", "low", "m"),
     [
         (2.0, 1.0, -1),  # rho = sqrt(3): backward marching would do
         (1.0, 1.0, 1),  # rho = sqrt(2): both marching directions fail for the face analogue
@@ -32,11 +32,11 @@ def _edge_exact(k: int, a2: float, l: float, m: int) -> float:
         (8.0, 1.0, 1),
     ],
 )
-def test_edge_moments_to_full_relative_accuracy(a2, l, m):
+def test_edge_moments_to_full_relative_accuracy(a2, low, m):
     # every moment, the tiny high-order ones included, to round-off of its own size
-    lam = box_moments((l,), a2, m, 32)
+    lam = box_moments((low,), a2, m, 32)
     for k in range(17):
-        ex = _edge_exact(k, a2, l, m)
+        ex = _edge_exact(k, a2, low, m)
         err = abs(lam[k] - ex)
         assert err <= 5e-15 * abs(lam[0]) and err <= 1e-10 * abs(ex) + 1e-30, (k, ex)
 
@@ -140,7 +140,7 @@ def test_derivative_moments_equal_high_precision_quadrature(lows, z, b, m, tol) 
         for idx in itertools.product(range(len(xs)), repeat=d):
             u = [xs[i] for i in idx]
             w = mp.fprod(ws[i] / 2 for i in idx)
-            t = [mp.mpf(l) + (uj + 1) / 2 for l, uj in zip(lows, u, strict=True)]
+            t = [mp.mpf(low) + (uj + 1) / 2 for low, uj in zip(lows, u, strict=True)]
             leg = mp.fprod(mp.legendre(kj, uj) for kj, uj in zip(k, u, strict=True))
             exact += w * leg * f(z, sum(tj * tj for tj in t))
         if k == (0,) * d:

@@ -1,25 +1,26 @@
-"""Blocks of cells near a welded interface at many frequencies: a short plane-wave integral per frequency and
-two corrections computed once.
+"""Blocks of cells near a welded interface at many frequencies: a short plane-wave integral per frequency
+and two corrections computed once.
 
 Paper: LatexPDFs/InterfaceCouplingIntegrals, Section "The next term: the order omega^2".
 
-THE SPLIT.  For the reflected coupling of two cells in medium A, or the transmitted coupling of a cell in A to
-one in B, the block is K = (1/4 pi^2) int Y(k; omega) d^2k, Y the integrand of the plane-wave representation
-(the mode sum against the cells' moments).  At large q = |k|, Y = Y0 + omega^2 Y1 + O(omega^4 / q^4 relative),
-Y0 the static field (Rongved's problem) and Y1 the next term (Mathematica/InterfaceOmega2.wl), neither
-depending on omega.  With a cutoff Q0,
+THE SPLIT.  For the reflected coupling of two cells in medium A, or the transmitted coupling of a cell in A
+to one in B, the block is K = (1/4 pi^2) int Y(k; omega) d^2k, Y the integrand of the plane-wave
+representation (the mode sum against the cells' moments).  At large q = |k|, Y = Y0 + omega^2 Y1 + O(omega^4
+/ q^4 relative), Y0 the static field (Rongved's problem) and Y1 the next term
+(Mathematica/InterfaceOmega2.wl), neither depending on omega.  With a cutoff Q0,
 
     K(omega) = D(omega) + A0 + omega^2 A1 + E,
     D  = (1/4 pi^2) int_{q < Q0} Y d^2k                     per frequency, double-precision mode sums;
     A0 = K0 - (1/4 pi^2) int_{q < Q0} Y0 d^2k               once: K0 the static block in closed form
                                                             (``interface_image.image_block``);
-    A1 = (1/4 pi^2) int_{q > Q0} Y1 d^2k                    once: to Q1, and the tail beyond Q1 by its q^-4 law;
+    A1 = (1/4 pi^2) int_{q > Q0} Y1 d^2k                    once: to Q1, and the tail beyond Q1 by its q^-4
+                                                            law;
     E  = (1/4 pi^2) int_{q > Q0} (Y - Y0 - omega^2 Y1) d^2k  dropped; it converges as Q0^-6.
 
 For a cell touching the interface with its own image, measured against 40-digit references
 (scripts/gate_interface_spectral.py): E ~ 4e-10 of the block at Q0 h = 10 when omega h / beta = 1/6, and
-~ 6e-11 at Q0 h = 40 when omega h / beta = 1, while the rounding of D's double-precision mode sums (their P and
-SV terms cancel) is 1e-11 to 3e-11 at the lower frequency and below 1e-12 at the higher.
+~ 6e-11 at Q0 h = 40 when omega h / beta = 1, while the rounding of D's double-precision mode sums (their P
+and SV terms cancel) is 1e-11 to 3e-11 at the lower frequency and below 1e-12 at the higher.
 
 THE WINDOW.  With a smooth high-pass window chi (``Window``: 0 below start Q0, 1 above Q0) in place of the
 sharp cutoff,
@@ -27,22 +28,22 @@ sharp cutoff,
     D  = (1/4 pi^2) int_{q < Q0} [Y - chi (Y0 + omega^2 Y1)] d^2k,
     A0 = K0 - (1/4 pi^2) int (1 - chi) Y0 d^2k,     A1 = (1/4 pi^2) int chi Y1 d^2k,
 
-the same sum with the same remainder E (chi = 1 beyond Q0): the ramp integrals (``window_parts``) move from D
-to A0, A1.  The sharp cutoff makes A0, A1 ring in space and decay slowly with the cells' lateral offset; the
-smooth window makes them local (scripts/measure_interface_correction_locality.py).
+the same sum with the same remainder E (chi = 1 beyond Q0): the ramp integrals (``window_parts``) move from
+D to A0, A1.  The sharp cutoff makes A0, A1 ring in space and decay slowly with the cells' lateral offset;
+the smooth window makes them local (scripts/measure_interface_correction_locality.py).
 
 THE SWEEP.  D is evaluated in the same frame: Y(q, phi) = T(phi) Y(q, 0) M^-1 T(phi)^T M times the cells'
 lateral moments and phase, and the rotation holds only the harmonics e^{i n phi}, |n| <= 4.  So
 
     D = sum over radial nodes  w q  sum_n  R_n(q; omega) . S_n(q),
 
-R_n the harmonics of the dynamic frame kernel (one 6 x 6 interface solve per radial node, the cells' vertical
-moments in closed form) and S_n the azimuthal integrals of the lateral moments and phase, which depend on
-neither the frequency, the media nor the depths.  S_n is tabulated once per lateral offset as piecewise
-Chebyshev series (``lateral_harmonics``) and interpolated to each frequency's radial rule, whose panel ends
-follow the branch points omega / c.  Per block and frequency this costs tens of milliseconds, against seconds
-for the mode sum at every (q, phi) (``_truncated_blocks_direct``, kept as its reference: the two agree to
-3e-15 .. 2e-11, the latter the rounding above).
+R_n the harmonics of the dynamic frame kernel (one 6 x 6 interface solve per radial node, the cells'
+vertical moments in closed form) and S_n the azimuthal integrals of the lateral moments and phase, which
+depend on neither the frequency, the media nor the depths.  S_n is tabulated once per lateral offset as
+piecewise Chebyshev series (``lateral_harmonics``) and interpolated to each frequency's radial rule, whose
+panel ends follow the branch points omega / c.  Per block and frequency this costs tens of milliseconds,
+against seconds for the mode sum at every (q, phi) (``_truncated_blocks_direct``, kept as its reference: the
+two agree to 3e-15 .. 2e-11, the latter the rounding above).
 
 THE STATIC AND OMEGA^2 INTEGRANDS.  In the frame whose x axis lies along k, both kernels are X times a
 polynomial in (z, zp) with coefficients that are Laurent polynomials in q, X = e^{q(z + zp)} (reflected) or
@@ -129,7 +130,8 @@ def _general(kind: str, order: int) -> sp.Matrix:
 
 
 def _canon_exp(kind: str):
-    """exp(a) -> exp(q (s z + zp)) when a equals it (frame_coefficients compares the exponent structurally)."""
+    """exp(a) -> exp(q (s z + zp)) when a equals it (frame_coefficients compares the exponent
+    structurally)."""
     target = _Q * ((1 if kind == "R" else -1) * _Z + _ZP)
 
     def f(a):
@@ -157,11 +159,20 @@ def frame_coefficients(G: sp.Matrix, s: int) -> dict:
     x = _Q * (s * _Z + _ZP)
     for e in G:
         assert {a.args[0] for a in e.atoms(sp.exp)} <= {x}, e
-    P = G.applyfunc(lambda e: sp.cancel(e.replace(sp.exp, lambda a: sp.Integer(1))))
-    dz = lambda e: s * _Q * e + sp.diff(e, _Z)
-    dzp = lambda e: _Q * e + sp.diff(e, _ZP)
-    drec = lambda e, j: [dz(e), sp.I * _Q * e, sp.Integer(0)][j]
-    dsrc = lambda e, l: [-dzp(e), sp.I * _Q * e, sp.Integer(0)][l]
+    P = G.applyfunc(lambda e: sp.cancel(e.replace(sp.exp, lambda _a: sp.Integer(1))))
+
+    def dz(e):
+        return s * _Q * e + sp.diff(e, _Z)
+
+    def dzp(e):
+        return _Q * e + sp.diff(e, _ZP)
+
+    def drec(e, j):
+        return [dz(e), sp.I * _Q * e, sp.Integer(0)][j]
+
+    def dsrc(e, ell):
+        return [-dzp(e), sp.I * _Q * e, sp.Integer(0)][ell]
+
     out = sp.zeros(9, 9)
     for i in range(3):
         for k in range(3):
@@ -174,7 +185,9 @@ def frame_coefficients(G: sp.Matrix, s: int) -> dict:
             out[3 + a, k] = drec(P[p, k], p) if p == r else drec(P[r, k], p) + drec(P[p, k], r)
 
         def term(mm, nn, p=p, r=r):
-            e = lambda j, i: drec(dsrc(P[i, mm], nn), j)
+            def e(j, i):
+                return drec(dsrc(P[i, mm], nn), j)
+
             return e(p, p) if p == r else e(p, r) + e(r, p)
 
         for b, (m, n) in enumerate(VOIGT_PAIRS):
@@ -195,7 +208,8 @@ def frame_laurent(kind: str, order: int, above: tuple, below: tuple) -> tuple[ND
     """The frame kernel's coefficients as Laurent polynomials in q, for media (alpha, beta, rho).
 
     Returns:
-        (C, m0): C[i, j, a, b, m] complex, shape (9, 9, na, nb, nm), the coefficient of q^(m0 + m) z^a zp^b X.
+        (C, m0): C[i, j, a, b, m] complex, shape (9, 9, na, nb, nm), the coefficient of q^(m0 + m) z^a zp^b
+            X.
     """
     G = _general(kind, order).subs(_materials(above, below))
     co = frame_coefficients(G, 1 if kind == "R" else -1)
@@ -312,8 +326,8 @@ def radial_rule(
 ) -> tuple[NDArray, NDArray]:
     """Nodes and weights in q h on [0, qh_max] with the branch points as panel ends, the square-root
     singularity at each removed by a quadratic map, then panels of at most ``width``, split also at
-    ``breaks`` (plain panel ends, e.g. the start of a window's ramp; ignored among the branch points), Gauss of
-    ``panel_order`` on each."""
+    ``breaks`` (plain panel ends, e.g. the start of a window's ramp; ignored among the branch points), Gauss
+    of ``panel_order`` on each."""
     bp = sorted(b for b in set(branch_qh) if 0 < b < qh_max)
     x, w = gauss_legendre(order)
     u, wu = (x + 1) / 2, w / 2
@@ -389,8 +403,8 @@ class Window:
 
 
 def _n_phi(qh: float, reach: float, margin: int = 64) -> int:
-    """Azimuthal trapezoid nodes at q h: the cells' lateral moments and the phase over ``reach`` (in h), plus
-    ``margin`` for the Bessel tail."""
+    """Azimuthal trapezoid nodes at q h: the cells' lateral moments and the phase over ``reach`` (in h),
+    plus ``margin`` for the Bessel tail."""
     return int(4 * np.ceil((4 * qh + 2 * qh * reach + margin) / 4))
 
 
@@ -433,9 +447,9 @@ def _vertical_polys(exps: tuple, field: bool) -> dict:
     """{vertical exponent: power coefficients in v} of P_l(v) (field) or v^e (source)."""
     out = {}
     for e in exps:
-        l = e[0]
-        if l not in out:
-            out[l] = npleg.leg2poly([0] * l + [1]) if field else np.eye(l + 1)[l]
+        ell = e[0]
+        if ell not in out:
+            out[ell] = npleg.leg2poly([0] * ell + [1]) if field else np.eye(ell + 1)[ell]
     return out
 
 
@@ -476,16 +490,19 @@ def _static_frames(
 ) -> dict:
     """The angular harmonics of the static (order 0) or omega^2 (order 1) frame kernel at wavenumbers q,
     with the cells' vertical moments, {(l, e): (N, 9, 81)}: the form of the dynamic frames of
-    ``truncated_blocks``.  ``rotate=False``: the kernel in the frame of k, times M^-1, {(l, e): (N, 9, 9)}."""
+    ``truncated_blocks``.  ``rotate=False``: the kernel in the frame of k, times M^-1, {(l, e): (N, 9,
+    9)}."""
     C, m0 = frame_laurent(kind, order, above, below)
     s = 1 if kind == "R" else -1
     pf, ps = _vertical_polys(exps_f, True), _vertical_polys(exps_s, False)
     zr, zs = rec[0] * h, src[0] * h
-    Vr = {l: _vertical_moments(p, zr, h, s, q, C.shape[2] - 1) for l, p in pf.items()}
+    Vr = {ell: _vertical_moments(p, zr, h, s, q, C.shape[2] - 1) for ell, p in pf.items()}
     Vs = {e: _vertical_moments(p, zs, h, 1, q, C.shape[3] - 1) for e, p in ps.items()}
     qpow = q[None, :] ** (m0 + np.arange(C.shape[4]))[:, None]  # (nm, Nq)
     Cq = np.einsum("ijabm,mn->nijab", C, qpow)  # (Nq, 9, 9, na, nb)
-    frames = {(l, e): np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV for l in pf for e in ps}
+    frames = {
+        (ell, e): np.einsum("nijab,an,bn->nij", Cq, Vr[ell], Vs[e]) @ _M_INV for ell in pf for e in ps
+    }
     return {k: _rotate_harmonics(v) for k, v in frames.items()} if rotate else frames
 
 
@@ -503,7 +520,8 @@ def _static_integral(
     n_test: int,
     chunk: int = 50000,
 ) -> NDArray:
-    """(1/4 pi^2) int Y0 or Y1 d^2k over the radial nodes ``qh`` (with weights), shape (n_test, n_source, 9, 9).
+    """(1/4 pi^2) int Y0 or Y1 d^2k over the radial nodes ``qh`` (with weights), shape (n_test, n_source, 9,
+    9).
 
     The frame kernel at each radial node is split into its nine angular harmonics once; the azimuthal rule
     then only sums the cells' lateral moments against e^{i n phi}.
@@ -512,11 +530,11 @@ def _static_integral(
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
     rot = _static_frames(order, kind, rec, src, h, above, below, qh / h, exps_f, exps_s)
     groups = {
-        (l, e): (
-            np.array([a for a, x in enumerate(exps_f) if x[0] == l]),
+        (ell, e): (
+            np.array([a for a, x in enumerate(exps_f) if x[0] == ell]),
             np.array([c for c, x in enumerate(exps_s) if x[0] == e]),
         )
-        for l, e in rot
+        for ell, e in rot
     }
     q = qh / h
     dx, dy = (rec[1] - src[1]) * h, (rec[2] - src[2]) * h
@@ -573,7 +591,8 @@ def _mirrored(c: Sequence[int]) -> tuple[int, int, int]:
 
 
 def _mirror(m: NDArray) -> NDArray:
-    """A block computed for the mirrored cells (z -> -z, media exchanged) mapped back, as ``image_block``."""
+    """A block computed for the mirrored cells (z -> -z, media exchanged) mapped back, as
+    ``image_block``."""
     n_test, n_source = m.shape[:2]
     sa = np.array([(-1.0) ** e[0] for e in SOURCE_EXPONENTS_QUARTIC[:n_test]])
     sc = np.array([(-1.0) ** e[0] for e in SOURCE_EXPONENTS_QUARTIC[:n_source]])
@@ -594,12 +613,12 @@ def frequency_independent_parts(
     a1_route: str = "closed",
     omega4: bool = False,
 ) -> tuple:
-    """(A0, A1) of the split, or (A0, A1, A2) with ``omega4``, computed once per arrangement of cells and reused
-    at every frequency.
+    """(A0, A1) of the split, or (A0, A1, A2) with ``omega4``, computed once per arrangement of cells and
+    reused at every frequency.
 
-    A0 = K0 - (1/4 pi^2) int_{q < Q0} Y0, K0 the closed-form static block; A1 = (1/4 pi^2) int_{q > Q0} Y1, to
-    Q1 by the plane-wave rule and beyond by the q^-4 law of its last octave.  With a ``window`` chi, A0 and A1
-    gain the ramp integrals of ``window_parts``: A0 = K0 - int (1 - chi) Y0, A1 = int chi Y1.
+    A0 = K0 - (1/4 pi^2) int_{q < Q0} Y0, K0 the closed-form static block; A1 = (1/4 pi^2) int_{q > Q0} Y1,
+    to Q1 by the plane-wave rule and beyond by the q^-4 law of its last octave.  With a ``window`` chi, A0
+    and A1 gain the ramp integrals of ``window_parts``: A0 = K0 - int (1 - chi) Y0, A1 = int chi Y1.
 
     Args:
         rec_centre: Receiver cell centre in units of h, (z, x, y); z odd.
@@ -612,10 +631,11 @@ def frequency_independent_parts(
         q0h: The cutoff Q0 h.
         q1h: The plane-wave rule of A1 ends at Q1 h, a power-of-two multiple of Q0 h.
         window: The smooth window (None: the sharp cutoff at Q0).  ``truncated_blocks`` must use the same.
-        a1_route: "closed" (default): A1 = K1 - FP int_{q < Q0} Y1, K1 from ``interface_image.image_block(...,
-            order=1)``, exact; "octaves": the plane-wave octaves to Q1 and the q^-4 law of the last (``q1h``).
-        omega4: Also A2 = (1/4 pi^2) FP int_{q > Q0} Y2 = K2 - FP int_{q < Q0} Y2, K2 the closed-form omega^4 block
-            (``image_block(..., order=2)``, any media), so that the dropped
+        a1_route: "closed" (default): A1 = K1 - FP int_{q < Q0} Y1, K1 from
+            ``interface_image.image_block(..., order=1)``, exact; "octaves": the plane-wave octaves to Q1
+            and the q^-4 law of the last (``q1h``).
+        omega4: Also A2 = (1/4 pi^2) FP int_{q > Q0} Y2 = K2 - FP int_{q < Q0} Y2, K2 the closed-form
+            omega^4 block (``image_block(..., order=2)``, any media), so that the dropped
             remainder falls as Q0^-8 instead of Q0^-6.  Not with a window.
 
     Returns:
@@ -648,7 +668,8 @@ def frequency_independent_parts(
     qh, w = _panels(0.0, q0h, width, 16)
     a0 = k0 - _static_integral(0, kind, rec, src, h, ka, kb, qh, w, n_source, n_test)
     if a1_route == "closed":
-        # A1 = int_{q > Q0} Y1 = K1 - FP int_{q < Q0} Y1, K1 the closed-form omega^2 block: no asymptotic tail
+        # A1 = int_{q > Q0} Y1 = K1 - FP int_{q < Q0} Y1, K1 the closed-form omega^2 block: no asymptotic
+        # tail
         k1 = image_block(rec, src, h, above, below, n_source, n_test, order=1)
         a1 = k1 - fp_low_integral(1, kind, rec, src, h, ka, kb, q0h, n_source, n_test)
     else:  # the plane-wave octaves to Q1 and the q^-4 law of the last (the earlier route, kept to compare)
@@ -699,16 +720,17 @@ def fp_low_integral(
     n_cheb: int | None = None,
     head: str = "analytic",
 ) -> NDArray:
-    """(1/4 pi^2) FP int_{q < Q0} Y_order d^2k (Y0, Y1 or Y2), the finite part by continuation in the power of q
-    (the convention of the potentials Phi_j of ``interface_image``), shape (n_test, n_source, 9, 9).
+    """(1/4 pi^2) FP int_{q < Q0} Y_order d^2k (Y0, Y1 or Y2), the finite part by continuation in the power
+    of q (the convention of the potentials Phi_j of ``interface_image``), shape (n_test, n_source, 9, 9).
 
-    The radial integrand behaves as q^-N times an entire function at q -> 0, N = -(1 + the frame kernel's lowest
-    power of q) (2 for the static and omega^2 terms, 4 for omega^4): on [0, q_s] that function is sampled at
-    Chebyshev nodes and each mode integrated against q^-N exactly (the q^-1 term giving log q_s, q in km^-1);
-    Gauss panels on [q_s, Q0].  q_s h = 0.5 for N = 2 and 3 for N = 4, with 24 and 40 nodes (the sampling's
-    rounding is amplified by q_s^(1-N); for N = 4 the window is narrow: 4e-11 of K2 at 40 nodes, 6e-9 at 24 and
-    5e-10 at 48).  ``head="analytic"`` (default) replaces the sampling: ``interface_lateral.head``, power series
-    of the frame, vertical and lateral moments, every term's finite part exact, with q_s = ``qs_for``.
+    The radial integrand behaves as q^-N times an entire function at q -> 0, N = -(1 + the frame kernel's
+    lowest power of q) (2 for the static and omega^2 terms, 4 for omega^4): on [0, q_s] that function is
+    sampled at Chebyshev nodes and each mode integrated against q^-N exactly (the q^-1 term giving log q_s,
+    q in km^-1); Gauss panels on [q_s, Q0].  q_s h = 0.5 for N = 2 and 3 for N = 4, with 24 and 40 nodes
+    (the sampling's rounding is amplified by q_s^(1-N); for N = 4 the window is narrow: 4e-11 of K2 at 40
+    nodes, 6e-9 at 24 and 5e-10 at 48).  ``head="analytic"`` (default) replaces the sampling:
+    ``interface_lateral.head``, power series of the frame, vertical and lateral moments, every term's finite
+    part exact, with q_s = ``qs_for``.
     """
     if head == "analytic":
         # power series throughout (interface_lateral.head); no sampling
@@ -813,7 +835,8 @@ def window_parts(
 
 
 def _lateral_harmonics_at(qh: float, dxy: tuple, h: float, exps_f: tuple, exps_s: tuple) -> NDArray:
-    """S_n(q) = (1/4 pi^2) int dphi  lateral_a lateral_c e^{i k.Delta} e^{i n phi}, shape (9, n_test, n_source)."""
+    """S_n(q) = (1/4 pi^2) int dphi  lateral_a lateral_c e^{i k.Delta} e^{i n phi}, shape (9, n_test,
+    n_source)."""
     reach = float(np.hypot(*dxy))
     n = _n_phi(qh, reach)
     phi = 2 * np.pi * np.arange(n) / n
@@ -910,15 +933,15 @@ def _dynamic_frames(
         states, kzw, amp = st_b[:, :, :3], kz_b[:, :3], rt["T_d"]
     zr, zs = rec[0] * h, src[0] * h
     kzs = kz_a[:, :3]
-    vf = {l: h * np.exp(1j * kzw * zr) * 2.0 * 1j**l * spherical_jn(l, kzw * h) for l in lz}
+    vf = {ell: h * np.exp(1j * kzw * zr) * 2.0 * 1j**ell * spherical_jn(ell, kzw * h) for ell in lz}
     vs = {e: h * np.exp(-1j * kzs * zs) * monomial_fourier(e, -kzs * h) for e in ez}
     right = st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING  # (N, n, j)
     out = {}
-    for l in lz:
-        left = states * vf[l][:, None, :]  # (N, i, m)
+    for ell in lz:
+        left = states * vf[ell][:, None, :]  # (N, i, m)
         mid = left @ amp  # (N, i, n)
         for e in ez:
-            out[l, e] = mid @ (right * vs[e][:, :, None])
+            out[ell, e] = mid @ (right * vs[e][:, :, None])
     return out
 
 
@@ -943,16 +966,16 @@ def truncated_blocks(
     is the table S_n(q) of ``lateral_harmonics``, shared by every frequency.  The radial rule has the branch
     points of both media as panel ends, so it changes with the frequency; S_n is interpolated to it.
 
-    With a ``window`` chi, D = (1/4 pi^2) int_{q < Q0} [Y - chi (Y0 + omega^2 Y1)] d^2k: the static and omega^2
-    frame kernels, in the same harmonics, are subtracted on the ramp.
+    With a ``window`` chi, D = (1/4 pi^2) int_{q < Q0} [Y - chi (Y0 + omega^2 Y1)] d^2k: the static and
+    omega^2 frame kernels, in the same harmonics, are subtracted on the ramp.
 
     Args:
         table: ``lateral_harmonics`` for the pairs' lateral offsets with the same q0h, n_source, n_test;
             built here when absent (pass it when sweeping frequency).
         window: The window of ``frequency_independent_parts`` (None: the sharp cutoff).
         low_pass: The low band of the split D = D_low + D_high (``high_band_blocks``): the integrand times
-            psi = 1 - low_pass(q h, q0h), so it ends smoothly on low_pass's ramp at q0h (here the band's upper end,
-            not the split's Q0).  Not with a window: the band lies below it.
+            psi = 1 - low_pass(q h, q0h), so it ends smoothly on low_pass's ramp at q0h (here the band's
+            upper end, not the split's Q0).  Not with a window: the band lies below it.
 
     Returns:
         One block per pair, shape (n_test, n_source, 9, 9), complex.
@@ -970,7 +993,7 @@ def truncated_blocks(
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
     lz = sorted({e[0] for e in exps_f})
     ez = sorted({e[0] for e in exps_s})
-    fa = {l: np.array([a for a, x in enumerate(exps_f) if x[0] == l]) for l in lz}
+    fa = {ell: np.array([a for a, x in enumerate(exps_f) if x[0] == ell]) for ell in lz}
     sc = {e: np.array([c for c, x in enumerate(exps_s) if x[0] == e]) for e in ez}
     branch = [omega * h / c for m in (above, below) for c in (m.alpha, m.beta)]
     if window is not None and window.start * q0h < max(1.0, 2 * max(branch)):
@@ -983,8 +1006,9 @@ def truncated_blocks(
     harmonics: dict = {}
     out: list = [None] * len(pairs)
     widths = [_radial_width(float(np.hypot(*off))) for off in offsets]
-    # by radial rule: the frames and harmonics of one rule are reused within it and dropped after it (kept for every
-    # rule at once they grew as rules x pairs of depths x nodes: 13 GB for 576 cells in four layers)
+    # by radial rule: the frames and harmonics of one rule are reused within it and dropped after it (kept
+    # for every rule at once they grew as rules x pairs of depths x nodes: 13 GB for 576 cells in four
+    # layers)
     current = None
     for i in sorted(range(len(pairs)), key=lambda n: widths[n]):
         (rec, src), off, width = pairs[i], offsets[i], widths[i]
@@ -1031,9 +1055,11 @@ def truncated_blocks(
             harmonics[off, width] = _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
         S = harmonics[off, width]
         blk = np.zeros((n_test, n_source, 81), dtype=complex)
-        for (l, e), rot in frames[key].items():
-            sub = S[:, :, fa[l]][:, :, :, sc[e]].reshape(-1, len(fa[l]) * len(sc[e]))
-            blk[np.ix_(fa[l], sc[e])] += (sub.T @ rot.reshape(-1, 81)).reshape(len(fa[l]), len(sc[e]), 81)
+        for (ell, e), rot in frames[key].items():
+            sub = S[:, :, fa[ell]][:, :, :, sc[e]].reshape(-1, len(fa[ell]) * len(sc[e]))
+            blk[np.ix_(fa[ell], sc[e])] += (sub.T @ rot.reshape(-1, 81)).reshape(
+                len(fa[ell]), len(sc[e]), 81
+            )
         out[i] = blk.reshape(n_test, n_source, 9, 9)
     return out
 
@@ -1068,7 +1094,7 @@ def integrand_points(
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
     lz = sorted({e[0] for e in exps_f})
     ez = sorted({e[0] for e in exps_s})
-    pairs_le = [(l, e) for l in lz for e in ez]
+    pairs_le = [(ell, e) for ell in lz for e in ez]
     # block[a, c]: the (l, e) of field function a and source monomial c
     block = np.array(
         [[pairs_le.index((exps_f[a][0], exps_s[c][0])) for c in range(n_source)] for a in range(n_test)]
@@ -1101,7 +1127,7 @@ def integrand_points(
                 v[ramp] -= chi[ramp, None, None] * (stat[0][k] + omega**2 * stat[1][k])
     # rotated to k's direction, T G T^T, columns paired (as _rotate_harmonics at phi)
     T = rotation(np.arctan2(ky, kx))
-    g = np.stack([T @ fr[l, e] @ T.swapaxes(1, 2) * SOURCE_PAIRING for l, e in pairs_le], 1)
+    g = np.stack([T @ fr[ell, e] @ T.swapaxes(1, 2) * SOURCE_PAIRING for ell, e in pairs_le], 1)
     lf = _lateral(kx, ky, h, exps_f, True)
     ls = _lateral(kx, ky, h, exps_s, False)
     return lf[:, :, None, None] * ls[:, None, :, None] * g[:, block].reshape(len(q), n_test, n_source, 81)
@@ -1124,28 +1150,30 @@ def high_band_blocks(
     offsets: list[tuple[int, int]] | None = None,
     chunk: int = 4096,
 ) -> NDArray:
-    """D_high, the part of D above the low band, for every lateral offset of a periodic grid of n_grid cells.
+    """D_high, the part of D above the low band, for every lateral offset of a periodic grid of n_grid
+    cells.
 
-    D = D_low + D_high, with D_low = ``truncated_blocks(..., q0h=band_qh, low_pass=low_pass)`` and D_high the
-    integrand times low_pass(q h, band_qh) (0 below the band, 1 above it) on q < Q0.  The band lies above every
-    branch point, so D_high's spectrum is smooth and its kernel decays faster than any power of the offset; it
-    is sampled at the wavenumbers of the periodic grid, 2 pi m / (n_grid 2h), and summed onto the grid's offsets
-    (Poisson: the periodised kernel, sum over images of D_high(d + j n_grid)).
+    D = D_low + D_high, with D_low = ``truncated_blocks(..., q0h=band_qh, low_pass=low_pass)`` and D_high
+    the integrand times low_pass(q h, band_qh) (0 below the band, 1 above it) on q < Q0.  The band lies
+    above every branch point, so D_high's spectrum is smooth and its kernel decays faster than any power of
+    the offset; it is sampled at the wavenumbers of the periodic grid, 2 pi m / (n_grid 2h), and summed onto
+    the grid's offsets (Poisson: the periodised kernel, sum over images of D_high(d + j n_grid)).
 
     Args:
-        rec_z, src_z: The cells' centres' z in h (odd); the source in A (mirror first, as ``interface_block``).
+        rec_z, src_z: The cells' centres' z in h (odd); the source in A (mirror first, as
+            ``interface_block``).
         n_grid: Cells of the periodic grid along x and y; its images lie n_grid cells apart.
         window: The split's window (as ``truncated_blocks``); its ramp must start at or above band_qh.
         low_pass: The band: its ramp from low_pass.start * band_qh to band_qh.
-        offsets: Only these lateral offsets (cells), by the lateral symmetries: the integrand is sampled on the
-            wedge 0 <= ky <= kx alone (an eighth of the grid), F(Q k) = T_Q F(k) for the eight signed permutations
-            Q fixing z, so D_high(x) = sum_Q T_Q D_W(Q^T x), D_W the wedge's sum (points on its edges weighted 1/2).
-            None: every offset of the grid, from the whole grid (the reference).
+        offsets: Only these lateral offsets (cells), by the lateral symmetries: the integrand is sampled on
+            the wedge 0 <= ky <= kx alone (an eighth of the grid), F(Q k) = T_Q F(k) for the eight signed
+            permutations Q fixing z, so D_high(x) = sum_Q T_Q D_W(Q^T x), D_W the wedge's sum (points on its
+            edges weighted 1/2). None: every offset of the grid, from the whole grid (the reference).
 
     Returns:
-        Shape (n_grid, n_grid, n_test, n_source, 9, 9): [dx % n_grid, dy % n_grid] holds the block of lateral
-        offset (dx, dy) cells (2h each) of receiver from source.  With ``offsets``: (len(offsets), n_test,
-        n_source, 9, 9), in their order.
+        Shape (n_grid, n_grid, n_test, n_source, 9, 9): [dx % n_grid, dy % n_grid] holds the block of
+        lateral offset (dx, dy) cells (2h each) of receiver from source.  With ``offsets``: (len(offsets),
+        n_test, n_source, 9, 9), in their order.
     """
     _check((rec_z, 0, 0), (src_z, 0, 0))
     if low_pass is None:
@@ -1291,11 +1319,12 @@ def interface_block(
     table: dict | None = None,
     window: Window | None = None,
 ) -> NDArray:
-    """The reflected (cells on one side) or transmitted (opposite sides) block at one frequency: D + A0 + w^2 A1.
+    """The reflected (cells on one side) or transmitted (opposite sides) block at one frequency: D + A0 +
+    w^2 A1.
 
-    ``parts`` = ``frequency_independent_parts(...)`` and ``table`` = ``lateral_harmonics(...)`` for the pair's
-    lateral offset, with the same arguments (``window`` included): both independent of the frequency, passed
-    when sweeping it.
+    ``parts`` = ``frequency_independent_parts(...)`` and ``table`` = ``lateral_harmonics(...)`` for the
+    pair's lateral offset, with the same arguments (``window`` included): both independent of the frequency,
+    passed when sweeping it.
     """
     rec, src = _cell(rec_centre), _cell(src_centre)
     parts = (

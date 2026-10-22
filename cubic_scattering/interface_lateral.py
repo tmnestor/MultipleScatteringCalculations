@@ -3,19 +3,19 @@
 Plan: docs/2026-10-10-stratified-reference-legendre-cells-3d.md (13 October: the analytic small-q head).
 Paper: LatexPDFs/InterfaceCouplingIntegrals, Eq. (headseries) and the omega^2 section.
 
-THE HEAD.  FP int_{q < q_s} Y_order d^2k, Y_order the static (0), omega^2 (1) or omega^4 (2) integrand of a block
-(``interface_spectral``), with the finite part by continuation in the power of q (the convention of the potentials
-Phi_j).  Near q = 0 every factor of the integrand is an exact power series in q:
+THE HEAD.  FP int_{q < q_s} Y_order d^2k, Y_order the static (0), omega^2 (1) or omega^4 (2) integrand of a
+block (``interface_spectral``), with the finite part by continuation in the power of q (the convention of
+the potentials Phi_j).  Near q = 0 every factor of the integrand is an exact power series in q:
   * the frame kernel, a Laurent polynomial q^(m0+m) (``interface_spectral.frame_laurent``);
   * the vertical moments int_cell f(v) z^a e^{s q z} dz = sum_n (s q)^n / n! int_cell f(v) z^(a+n) dz, exact
     polynomial moments (entire in q);
-  * the lateral moments with the phase, for each harmonic e^{i n phi}: the Bessel series of J_|n|(q rho) against
-    the exact lateral weights w(sigma) = int P_E(v) (v - sigma)^F dv (``lateral_head``).
+  * the lateral moments with the phase, for each harmonic e^{i n phi}: the Bessel series of J_|n|(q rho)
+    against the exact lateral weights w(sigma) = int P_E(v) (v - sigma)^F dv (``lateral_head``).
 The product is a Laurent series sum_p R_p[n] q^p; each power and harmonic is integrated exactly,
     FP int_0^{q_s} q^(p+1) S_n(q) dq = sum_k c_k ... q_s^(e+1)/(e+1)   (log q_s at e = -1),
-and the sum truncated where the series' terms fall below rounding.  The series converge for every q (entire), but
-lose digits as q_s times the largest distance of the pair grows: q_s is taken as min(1/h, 4/R), R that distance.
-q is in km^-1: a finite part depends on the unit of length, as the closed forms do.
+and the sum truncated where the series' terms fall below rounding.  The series converge for every q
+(entire), but lose digits as q_s times the largest distance of the pair grows: q_s is taken as min(1/h,
+4/R), R that distance.  q is in km^-1: a finite part depends on the unit of length, as the closed forms do.
 """
 
 from functools import cache
@@ -32,14 +32,14 @@ from numpy.polynomial import polynomial as nppoly
 
 @cache
 def weight(E: int, F: int) -> tuple:
-    """w(sigma) = int P_E(v) (v - sigma)^F dv on the two pieces [-2, 0], [0, 2]: power coefficients in sigma."""
+    """w(sigma) = int P_E(v) (v - sigma)^F dv on the two pieces [-2, 0], [0, 2]: power coefficients in
+    sigma."""
     v, sg = sp.symbols("v sigma")
     pe = sp.legendre(E, v)
     lo = sp.integrate(pe * (v - sg) ** F, (v, -1, sg + 1))
     hi = sp.integrate(pe * (v - sg) ** F, (v, sg - 1, 1))
     return tuple(
-        np.array([float(c) for c in sp.Poly(sp.expand(x), sg).all_coeffs()[::-1]])
-        for x in (lo, hi)
+        np.array([float(c) for c in sp.Poly(sp.expand(x), sg).all_coeffs()[::-1]]) for x in (lo, hi)
     )
 
 
@@ -85,9 +85,7 @@ def _poly_moments(n: int, k: int, ea: tuple, ec: tuple, delta: tuple) -> complex
     pieces_y = [compose(c, float(delta[1])) for c in weight(ea[2], ec[2])]
     poly = bessel_poly(n, k)
     mom = 0.0
-    for (x0, x1), cx in zip(
-        ((delta[0] - 2, delta[0]), (delta[0], delta[0] + 2)), pieces_x, strict=True
-    ):
+    for (x0, x1), cx in zip(((delta[0] - 2, delta[0]), (delta[0], delta[0] + 2)), pieces_x, strict=True):
         for (y0, y1), cy in zip(
             ((delta[1] - 2, delta[1]), (delta[1], delta[1] + 2)), pieces_y, strict=True
         ):
@@ -107,8 +105,8 @@ def _poly_moments(n: int, k: int, ea: tuple, ec: tuple, delta: tuple) -> complex
 def lateral_head(
     p: int, n: int, ea: tuple, ec: tuple, delta: tuple, qs: float, h: float, kmax: int
 ) -> complex:
-    """(1/4 pi^2) FP int_{q < q_s} d^2k q^p e^{i n phi} L_a L_c e^{i k.Delta h}, exactly: J_|n|(q rho) by its
-    Taylor series, FP int_0^{q_s} q^e dq = q_s^(e+1)/(e+1) (log q_s at e = -1), the polynomials
+    """(1/4 pi^2) FP int_{q < q_s} d^2k q^p e^{i n phi} L_a L_c e^{i k.Delta h}, exactly: J_|n|(q rho) by
+    its Taylor series, FP int_0^{q_s} q^e dq = q_s^(e+1)/(e+1) (log q_s at e = -1), the polynomials
     rho^(|n|+2k) e^{i n theta} against the lateral weights.  q_s in km^-1, h in km."""
     nu = abs(n)
     pref = 1j**n * (-1.0) ** (nu if n < 0 else 0) / (2 * np.pi)
@@ -126,9 +124,7 @@ def lateral_head(
 # ---------------------------------------------------------------------------
 
 
-def _vertical_series(
-    poly, zc: float, h: float, s: int, a_max: int, n_terms: int
-) -> np.ndarray:
+def _vertical_series(poly, zc: float, h: float, s: int, a_max: int, n_terms: int) -> np.ndarray:
     """V[a] = int_cell f(v) z^a e^{s q z} dz = sum_n (s q)^n / n! int f(v) z^(a+n) dz: coefficients of q^n,
     shape (a_max + 1, n_terms).  f has power coefficients ``poly`` in v, z = zc + h v."""
     poly = np.asarray(poly, float)
@@ -137,9 +133,7 @@ def _vertical_series(
     moments = []
     for _ in range(a_max + n_terms):
         prod = nppoly.polymul(poly, zp)
-        moments.append(
-            h * sum(c * (1 - (-1) ** (i + 1)) / (i + 1) for i, c in enumerate(prod))
-        )
+        moments.append(h * sum(c * (1 - (-1) ** (i + 1)) / (i + 1) for i, c in enumerate(prod)))
         zp = nppoly.polymul(zp, [zc, h])
     for a in range(a_max + 1):
         for nn in range(n_terms):
@@ -179,9 +173,9 @@ def head(
         kmax += 1
     na, nb, nm = C.shape[2], C.shape[3], C.shape[4]
     out = np.zeros((n_test, n_source, 81), dtype=complex)
-    for l, polyl in pf.items():
+    for ell, polyl in pf.items():
         vr = _vertical_series(polyl, zr, h, s, na - 1, n_terms)
-        fa = np.array([a for a, x in enumerate(exps_f) if x[0] == l])
+        fa = np.array([a for a, x in enumerate(exps_f) if x[0] == ell])
         for e, polye in ps.items():
             vs = _vertical_series(polye, zs, h, 1, nb - 1, n_terms)
             sc = np.array([c for c, x in enumerate(exps_s) if x[0] == e])
@@ -190,9 +184,7 @@ def head(
             for m in range(nm):
                 for n1 in range(n_terms - m):
                     n2 = np.arange(n_terms - m - n1)
-                    g[m + n1 + n2] += np.einsum(
-                        "ijab,a,bn->nij", C[:, :, :, :, m], vr[:, n1], vs[:, n2]
-                    )
+                    g[m + n1 + n2] += np.einsum("ijab,a,bn->nij", C[:, :, :, :, m], vr[:, n1], vs[:, n2])
             rot = isp._rotate_harmonics(g @ isp._M_INV)  # (t, 9 harmonics, 81)
             for t in range(n_terms):
                 if not np.any(rot[t]):
@@ -203,21 +195,12 @@ def head(
                     for c in sc:
                         ec = exps_s[c]
                         for k, n in enumerate(isp._HARM):
-                            out[a, c] += (
-                                lateral_head(p, int(n), ea, ec, delta, qs, h, kmax)
-                                * rot[t, k]
-                            )
+                            out[a, c] += lateral_head(p, int(n), ea, ec, delta, qs, h, kmax) * rot[t, k]
     return out.reshape(n_test, n_source, 9, 9)
 
 
 def qs_for(rec: tuple, src: tuple, h: float) -> float:
-    """The split point q_s (km^-1): min(1/h, 4/R), R the largest distance between points of the two cells (or of
-    the receiver and the source's image), so that q_s R <= 4 and the series lose few digits."""
-    dist = h * (
-        np.hypot(rec[1] - src[1], rec[2] - src[2])
-        + 2 * np.sqrt(2)
-        + abs(rec[0])
-        + abs(src[0])
-        + 2
-    )
+    """The split point q_s (km^-1): min(1/h, 4/R), R the largest distance between points of the two cells
+    (or of the receiver and the source's image), so that q_s R <= 4 and the series lose few digits."""
+    dist = h * (np.hypot(rec[1] - src[1], rec[2] - src[2]) + 2 * np.sqrt(2) + abs(rec[0]) + abs(src[0]) + 2)
     return min(1.0 / h, 4.0 / dist)

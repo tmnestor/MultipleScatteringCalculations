@@ -1,14 +1,14 @@
 """Gauss-Legendre rules correct to double precision, from a stored 30-digit table.
 
-Use this, not ``numpy.polynomial.legendre.leggauss`` or ``scipy.special.roots_legendre``: their weights carry
-relative errors that grow with n (4e-15 at n = 32, up to 7e-13 at n = 40, 6e-14 at n = 48, against 30-digit
-mpmath), which limit any integral built on them to a few times 1e-15.  The table
-(scripts/data/gauss_legendre.json, n = 1 .. 100) is produced and checked by scripts/derive_gauss_legendre.py;
-other n are computed the same way in mpmath on demand.
+Use this, not ``numpy.polynomial.legendre.leggauss`` or ``scipy.special.roots_legendre``: their weights
+carry relative errors that grow with n (4e-15 at n = 32, up to 7e-13 at n = 40, 6e-14 at n = 48, against
+30-digit mpmath), which limit any integral built on them to a few times 1e-15.  The table
+(scripts/data/gauss_legendre.json, n = 1 .. 100) is produced and checked by
+scripts/derive_gauss_legendre.py; other n are computed the same way in mpmath on demand.
 
-Also: sum a tensor-product rule one axis at a time (``numpy.tensordot`` or successive matrix products), not in a
-single ``numpy.einsum`` over all n^3 nodes, which accumulates every term in one running sum and loses about
-2e-15 at n = 32 where three sums of n terms lose about 2e-16.
+Also: sum a tensor-product rule one axis at a time (``numpy.tensordot`` or successive matrix products), not
+in a single ``numpy.einsum`` over all n^3 nodes, which accumulates every term in one running sum and loses
+about 2e-15 at n = 32 where three sums of n terms lose about 2e-16.
 """
 
 import json
@@ -20,9 +20,7 @@ import numpy as np
 from numpy.polynomial.legendre import leggauss
 from numpy.typing import NDArray
 
-_TABLE = (
-    Path(__file__).resolve().parent.parent / "scripts" / "data" / "gauss_legendre.json"
-)
+_TABLE = Path(__file__).resolve().parent.parent / "scripts" / "data" / "gauss_legendre.json"
 
 
 @cache
@@ -31,7 +29,8 @@ def _table() -> dict:
 
 
 def _compute(n: int) -> tuple[NDArray, NDArray]:
-    """The rule in mpmath at 30 digits: Newton on P_n from the numpy nodes, weights 2 / ((1 - x^2) P_n'^2)."""
+    """The rule in mpmath at 30 digits: Newton on P_n from the numpy nodes,
+    weights 2 / ((1 - x^2) P_n'^2)."""
     x0, _ = leggauss(n)
     xs, ws = [], []
     with mp.workdps(30):
@@ -54,7 +53,8 @@ def _compute(n: int) -> tuple[NDArray, NDArray]:
 
 @cache
 def gauss_legendre(n: int) -> tuple[NDArray, NDArray]:
-    """Nodes (ascending) and weights of the n-point Gauss-Legendre rule on [-1, 1], correct to double precision.
+    """Nodes (ascending) and weights of the n-point Gauss-Legendre rule on [-1, 1], correct to double
+    precision.
 
     Args:
         n: Number of nodes, >= 1.

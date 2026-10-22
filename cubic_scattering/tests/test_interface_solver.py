@@ -37,8 +37,8 @@ def test_grid_units_and_sides():
 
 @pytest.mark.slow
 def test_symmetry_map_matches_the_direct_block():
-    """A pair with lateral offset (-2, 1) cells across the interface: its block by the lateral symmetry from the
-    canonical one equals the block computed directly."""
+    """A pair with lateral offset (-2, 1) cells across the interface: its block by the lateral symmetry from
+    the canonical one equals the block computed directly."""
     g = iso.InterfaceGrid(np.array([[0, -2, 1], [-1, 0, 0]]), H, A, B)
     c = iso.InterfaceCouplings(g, workers=1)
     got = c.interface_block(0, 1, OMEGA)
@@ -55,9 +55,7 @@ def test_identical_media_solve_is_the_homogeneous_one():
     kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
     res = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1)
     blocks = {
-        (m, n): coupling_block(
-            tuple(int(v) for v in g.idx[m] - g.idx[n]), H, OMEGA, A, 10, 4
-        )
+        (m, n): coupling_block(tuple(int(v) for v in g.idx[m] - g.idx[n]), H, OMEGA, A, 10, 4)
         for m in range(2)
         for n in range(2)
     }
@@ -131,11 +129,9 @@ def test_radius_needs_a_window():
 
 @pytest.mark.slow
 def test_one_lateral_table_per_offset():
-    """The classes of an offset share one S_n table, built as for the offset alone; beyond the radius a class has
-    no corrections."""
-    g = iso.InterfaceGrid(
-        np.array([[-1, 0, 0], [-1, 1, 0], [0, 0, 0], [0, 1, 0]]), H, A, B
-    )
+    """The classes of an offset share one S_n table, built as for the offset alone; beyond the radius a
+    class has no corrections."""
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0], [-1, 1, 0], [0, 0, 0], [0, 1, 0]]), H, A, B)
     c = iso.InterfaceCouplings(g, window=isp.Window(0.25), radius=1.0)
     assert len(c.classes) == 8  # four depth pairs, offsets (0, 0) and (2, 0)
     for off in ((0, 0), (2, 0)):
@@ -150,8 +146,8 @@ def test_one_lateral_table_per_offset():
 
 @pytest.mark.slow
 def test_depth_radius_drops_the_corrections_far_from_the_interface():
-    """Cells at iz = -1 (touching) and -3 (4 h clear): with depth radius 4 h only the touching pair keeps A0, A1;
-    the kept parts are the full set-up's.  A depth radius needs a window."""
+    """Cells at iz = -1 (touching) and -3 (4 h clear): with depth radius 4 h only the touching pair keeps
+    A0, A1; the kept parts are the full set-up's.  A depth radius needs a window."""
     g = iso.InterfaceGrid(np.array([[-1, 0, 0], [-3, 0, 0]]), H, A, B)
     with pytest.raises(ValueError, match="smooth window"):
         iso.InterfaceCouplings(g, depth_radius=4.0, workers=1)
@@ -171,16 +167,12 @@ def test_depth_radius_drops_the_corrections_far_from_the_interface():
 
 @pytest.mark.slow
 def test_lateral_fft_product_and_gmres_match_the_dense_solve():
-    """Cells scattered in a box with gaps, on both sides: the FFT product equals ``apply_coupling`` and the GMRES
-    solve equals the dense one."""
-    g = iso.InterfaceGrid(
-        np.array([[-1, 0, 0], [0, 1, 0], [-2, -1, 1], [1, 2, 2], [0, 0, 0]]), H, A, B
-    )
+    """Cells scattered in a box with gaps, on both sides: the FFT product equals ``apply_coupling`` and the
+    GMRES solve equals the dense one."""
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0], [0, 1, 0], [-2, -1, 1], [1, 2, 2], [0, 0, 0]]), H, A, B)
     c = iso.InterfaceCouplings(g)
     ctr = [
-        MaterialContrast(
-            0.1 * g.medium(m).lam, 0.1 * g.medium(m).mu, 0.1 * g.medium(m).rho
-        )
+        MaterialContrast(0.1 * g.medium(m).lam, 0.1 * g.medium(m).mu, 0.1 * g.medium(m).rho)
         for m in range(5)
     ]
     ctr[3] = None  # a cell of the reference medium
@@ -192,22 +184,18 @@ def test_lateral_fft_product_and_gmres_match_the_dense_solve():
     want = iso.apply_coupling(g, blocks, delta, x, 1, 1)
     assert np.abs(op.coupling(delta, x) - want).max() < 1e-12 * np.abs(want).max()
     dense = iso.solve_interface(c, OMEGA, ctr, kx, ky, "P", p=1, r=1, blocks=blocks)
-    it, n_it = iso.solve_interface_gmres(
-        c, OMEGA, ctr, kx, ky, "P", p=1, r=1, operator=op
-    )
+    it, n_it = iso.solve_interface_gmres(c, OMEGA, ctr, kx, ky, "P", p=1, r=1, operator=op)
     assert np.abs(it.psi - dense.psi).max() < 1e-10 * np.abs(dense.psi).max()
     assert n_it < 50
 
 
 @pytest.mark.slow
 def test_setup_computes_the_whole_space_coefficients():
-    """The set-up's whole-space series coefficients (computed in parallel, one BLAS thread per worker) are Paper
-    2's per-process ones, for every orbit the grid needs: same side, not touching."""
+    """The set-up's whole-space series coefficients (computed in parallel, one BLAS thread per worker) are
+    Paper 2's per-process ones, for every orbit the grid needs: same side, not touching."""
     from cubic_scattering.graded_voxel.blocks import far_series_coefficients
 
-    g = iso.InterfaceGrid(
-        np.array([[-1, 0, 0], [-1, 2, 1], [0, 0, 0], [0, 3, 0]]), H, A, B
-    )
+    g = iso.InterfaceGrid(np.array([[-1, 0, 0], [-1, 2, 1], [0, 0, 0], [0, 3, 0]]), H, A, B)
     c = iso.InterfaceCouplings(g, window=isp.Window(0.25), split=True, workers=2)
     assert set(c.far_coeffs) == {
         (2, 1, 0),

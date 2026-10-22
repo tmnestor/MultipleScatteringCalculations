@@ -508,24 +508,24 @@ def _compute_T123(
     where S_{mnjk} = (I_{mjkn} + I_{njkm}) / 2.
     """
 
-    def I_tens(i, j, k, l):
+    def I_tens(i, j, k, ell):
         """I_{ijkl} = Ac δ_{ij}δ_{kl} + Bc(δ_{ik}δ_{jl}+δ_{il}δ_{jk}) + Cc E_{ijkl}."""
-        iso = Ac * (1 if i == j else 0) * (1 if k == l else 0) + Bc * (
-            (1 if i == k else 0) * (1 if j == l else 0) + (1 if i == l else 0) * (1 if j == k else 0)
+        iso = Ac * (1 if i == j else 0) * (1 if k == ell else 0) + Bc * (
+            (1 if i == k else 0) * (1 if j == ell else 0) + (1 if i == ell else 0) * (1 if j == k else 0)
         )
-        cubic = Cc * (1 if i == j == k == l else 0)
+        cubic = Cc * (1 if i == j == k == ell else 0)
         return iso + cubic
 
     def S_tens(m, n, j, k):
         return 0.5 * (I_tens(m, j, k, n) + I_tens(n, j, k, m))
 
-    def Dc(j, k, l, p):
-        return Dlambda * (1 if j == k else 0) * (1 if l == p else 0) + Dmu * (
-            (1 if j == l else 0) * (1 if k == p else 0) + (1 if j == p else 0) * (1 if k == l else 0)
+    def Dc(j, k, ell, p):
+        return Dlambda * (1 if j == k else 0) * (1 if ell == p else 0) + Dmu * (
+            (1 if j == ell else 0) * (1 if k == p else 0) + (1 if j == p else 0) * (1 if k == ell else 0)
         )
 
-    def T_tens(m, n, l, p):
-        return sum(S_tens(m, n, j, k) * Dc(j, k, l, p) for j in range(3) for k in range(3))
+    def T_tens(m, n, ell, p):
+        return sum(S_tens(m, n, j, k) * Dc(j, k, ell, p) for j in range(3) for k in range(3))
 
     T1c = T_tens(0, 0, 1, 1)
     T2c = T_tens(0, 1, 0, 1)
