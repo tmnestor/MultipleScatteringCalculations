@@ -664,3 +664,13 @@ monomial; equal to the full transform's canonical blocks to 1e-13 (T folded in o
 n = 6; a dropped sign fails it). (c) The gather tables of the device route are built only for that route.
 Point setup: 2.8 s to 0.75 s at n = 32, 10.5 s to 2.0 s at n = 48, 28.2 s to 3.9 s at n = 64; the whole
 run at n = 64, 34 s to 10 s, errors unchanged. GMRES (6 s at n = 64) is now the larger part.
+
+**The comparison after item 12 (22 October 2026).** Point arm rerun, errors unchanged (to 9e-12). The point
+voxel is again much the cheaper per unknown, 4.7 to 5.2 times (n = 64 in 8 to 9.5 s), its setup now 34 to
+40% of its time at n = 64. Smooth body: the point voxel is the cheaper down to about 1e-4 at k_S a = 0.5
+(a tie at about a second) and 1e-2 at k_S a = 4; below, the Galerkin voxel, 2 to 5 times faster over the
+measured range (1.5e-5 at 0.5: 2.0 against 8.3 s; 1e-3 at 4: 2.1 against 9.5 s) and alone below. Sharp
+body: the Galerkin voxel the cheaper at a few parts in 1e3, the point voxel near 1e-3 (3.4 against 3.9 s at
+0.5; 9.0 against 24 s at 4), the Galerkin voxel alone below about 8e-4. Chapter 7 (sections 7.4 and 7.7,
+Figure 7.4) updated. The point solve at n = 64 is now about 60% GMRES, at its FFT floor (0.46 s of each
+0.6 s product); the Galerkin setup, chiefly its canonical blocks, is the larger remaining cost.
