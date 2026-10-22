@@ -706,3 +706,10 @@ N x N products, which the BLAS threads past N = 40 at a loss (36 ns a value at 4
 is now one matrix product, the axis brought last by a contiguous copy: the same numbers bit for bit, the
 kernel 6.4 s to 3.35 s at N = 40 and 1.74 s to 1.27 s at N = 32 (and the octant products 2.6 times
 faster at the point solver's 68).
+
+**Thesis audit (22 October 2026).** Every timing in Chapter 7 checked against new runs. Three section 7.4
+figures predated later work and are updated (the kernel at N = 32, 1.3 s; the point set-up at N = 64, 3.0 to
+3.4 s; the point solve with the column orbits at N = 32, 5.8 against 8.5 s in double precision and 2.3
+against 4.0 s in single); the check also found the N = 40 kernel regression above. The ladder and the
+Galerkin arm rerun after the fix: N = 40 solves in 35 s; repeated runs at N = 40 vary by about 10%,
+chiefly in GMRES (10 to 16 s), which the chapter now states.
