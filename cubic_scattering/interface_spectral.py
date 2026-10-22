@@ -57,6 +57,7 @@ Conventions as ``stratified_march``: axes z = 0 (down), x = 1, y = 2; medium A (
 
 import itertools
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
@@ -108,9 +109,9 @@ def _general(kind: str, order: int) -> sp.Matrix:
     loc = {"z": _Z, "zp": _ZP, "q": _Q, **_MSYM}
     if order == 0:
         name = "image" if kind == "R" else "transmission"
-        rows = json.loads(
-            (_ROOT / "scripts" / "data" / f"static_interface_{name}.json").read_text()
-        )["entries"]
+        rows = json.loads((_ROOT / "scripts" / "data" / f"static_interface_{name}.json").read_text())[
+            "entries"
+        ]
         return sp.Matrix([[sp.sympify(e, locals=loc) for e in row] for row in rows])
     from sympy.parsing.mathematica import parse_mathematica
 
@@ -121,12 +122,7 @@ def _general(kind: str, order: int) -> sp.Matrix:
     # one exponential in the form frame_coefficients expects, exp(q (s z + zp))
     return sp.Matrix(
         [
-            [
-                sp.powsimp(parse_mathematica(e).subs(subs), combine="exp").replace(
-                    sp.exp, canon
-                )
-                for e in row
-            ]
+            [sp.powsimp(parse_mathematica(e).subs(subs), combine="exp").replace(sp.exp, canon) for e in row]
             for row in rows
         ]
     )
@@ -172,16 +168,10 @@ def frame_coefficients(G: sp.Matrix, s: int) -> dict:
             out[i, k] = P[i, k]
     for b, (m, n) in enumerate(VOIGT_PAIRS):
         for i in range(3):
-            out[i, 3 + b] = (
-                dsrc(P[i, m], n)
-                if m == n
-                else (dsrc(P[i, m], n) + dsrc(P[i, n], m)) / 2
-            )
+            out[i, 3 + b] = dsrc(P[i, m], n) if m == n else (dsrc(P[i, m], n) + dsrc(P[i, n], m)) / 2
     for a, (p, r) in enumerate(VOIGT_PAIRS):
         for k in range(3):
-            out[3 + a, k] = (
-                drec(P[p, k], p) if p == r else drec(P[r, k], p) + drec(P[p, k], r)
-            )
+            out[3 + a, k] = drec(P[p, k], p) if p == r else drec(P[r, k], p) + drec(P[p, k], r)
 
         def term(mm, nn, p=p, r=r):
             e = lambda j, i: drec(dsrc(P[i, mm], nn), j)
@@ -201,9 +191,7 @@ def frame_coefficients(G: sp.Matrix, s: int) -> dict:
 
 
 @cache
-def frame_laurent(
-    kind: str, order: int, above: tuple, below: tuple
-) -> tuple[NDArray, int]:
+def frame_laurent(kind: str, order: int, above: tuple, below: tuple) -> tuple[NDArray, int]:
     """The frame kernel's coefficients as Laurent polynomials in q, for media (alpha, beta, rho).
 
     Returns:
@@ -220,9 +208,7 @@ def frame_laurent(
                     continue
                 num, den = sp.fraction(e)
                 dpoly = sp.Poly(den, _Q)
-                assert len(dpoly.terms()) == 1, (
-                    f"frame_laurent: denominator not a power of q: {den}"
-                )
+                assert len(dpoly.terms()) == 1, f"frame_laurent: denominator not a power of q: {den}"
                 (dk,), dc = dpoly.terms()[0]
                 for (nk,), nc in sp.Poly(sp.expand(num), _Q).terms():
                     terms[i, j, a, b, nk - dk] = complex(sp.N(nc / dc, 30))
@@ -268,9 +254,7 @@ def _exp_moments(n_max: int, c: NDArray) -> NDArray:
     return out
 
 
-def _vertical_moments(
-    poly: NDArray, zc: float, h: float, s: int, q: NDArray, a_max: int
-) -> NDArray:
+def _vertical_moments(poly: NDArray, zc: float, h: float, s: int, q: NDArray, a_max: int) -> NDArray:
     """V[a] = int_cell f(v) z^a e^{s q z} dz, z = zc + h v, for a = 0 .. a_max, shape (a_max + 1, N).
 
     f has power coefficients ``poly`` in v; the exponential is referred to the cell's edge nearest the
@@ -281,11 +265,7 @@ def _vertical_moments(
     scale = h * np.exp(s * q * zc + q * h)
     out = np.empty((a_max + 1, len(q)))
     for a in range(a_max + 1):
-        p = (
-            nppoly.polymul(poly, nppoly.polypow([zc, h], a))
-            if a
-            else np.asarray(poly, float)
-        )
+        p = nppoly.polymul(poly, nppoly.polypow([zc, h], a)) if a else np.asarray(poly, float)
         out[a] = scale * (p @ E[: len(p)])
     return out
 
@@ -315,9 +295,7 @@ def rotation(phi: NDArray) -> NDArray:
 # ---------------------------------------------------------------------------
 
 
-def _panels(
-    a: float, b: float, width: float, order: int = 12
-) -> tuple[NDArray, NDArray]:
+def _panels(a: float, b: float, width: float, order: int = 12) -> tuple[NDArray, NDArray]:
     n = max(1, int(np.ceil((b - a) / width)))
     edges = np.linspace(a, b, n + 1)
     parts = [gauss_interval(order, e0, e1) for e0, e1 in itertools.pairwise(edges)]
@@ -404,10 +382,7 @@ class Window:
 
     def ramp_rule(self, q0h: float) -> tuple[NDArray, NDArray]:
         """Nodes and weights in q h on the ramp [start Q0, Q0], weights times chi."""
-        parts = [
-            gauss_interval(24, e0, e1)
-            for e0, e1 in itertools.pairwise(self.ramp_edges(q0h))
-        ]
+        parts = [gauss_interval(24, e0, e1) for e0, e1 in itertools.pairwise(self.ramp_edges(q0h))]
         qh = np.concatenate([x for x, _ in parts])
         w = np.concatenate([w for _, w in parts])
         return qh, w * self(qh, q0h)
@@ -448,17 +423,9 @@ def _grid(
 def _lateral(kx: NDArray, ky: NDArray, h: float, exps: tuple, field: bool) -> NDArray:
     """The lateral (x, y) factor of each field function (Legendre) or source monomial, shape (N, n)."""
     if field:
-        f = {
-            (i, e): 2.0 * 1j**e * spherical_jn(e, k * h)
-            for i, k in ((1, kx), (2, ky))
-            for e in range(3)
-        }
+        f = {(i, e): 2.0 * 1j**e * spherical_jn(e, k * h) for i, k in ((1, kx), (2, ky)) for e in range(3)}
     else:
-        f = {
-            (i, e): monomial_fourier(e, -k * h)
-            for i, k in ((1, kx), (2, ky))
-            for e in range(5)
-        }
+        f = {(i, e): monomial_fourier(e, -k * h) for i, k in ((1, kx), (2, ky)) for e in range(5)}
     return np.stack([h**2 * f[1, e[1]] * f[2, e[2]] for e in exps], -1)
 
 
@@ -518,11 +485,7 @@ def _static_frames(
     Vs = {e: _vertical_moments(p, zs, h, 1, q, C.shape[3] - 1) for e, p in ps.items()}
     qpow = q[None, :] ** (m0 + np.arange(C.shape[4]))[:, None]  # (nm, Nq)
     Cq = np.einsum("ijabm,mn->nijab", C, qpow)  # (Nq, 9, 9, na, nb)
-    frames = {
-        (l, e): np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV
-        for l in pf
-        for e in ps
-    }
+    frames = {(l, e): np.einsum("nijab,an,bn->nij", Cq, Vr[l], Vs[e]) @ _M_INV for l in pf for e in ps}
     return {k: _rotate_harmonics(v) for k, v in frames.items()} if rotate else frames
 
 
@@ -594,17 +557,18 @@ def _key(m: ReferenceMedium) -> tuple:
 
 def _check(rec: tuple, src: tuple) -> str:
     if rec[0] % 2 == 0 or src[0] % 2 == 0:
-        raise ValueError(
-            "interface_spectral: cell centres must have odd z in units of h."
-        )
+        raise ValueError("interface_spectral: cell centres must have odd z in units of h.")
     if src[0] > 0:
-        raise ValueError(
-            "interface_spectral: internal routines take a source in A; mirror first."
-        )
+        raise ValueError("interface_spectral: internal routines take a source in A; mirror first.")
     return "R" if rec[0] < 0 else "T"
 
 
-def _mirrored(c: tuple) -> tuple:
+def _cell(c: Sequence[int]) -> tuple[int, int, int]:
+    """A cell centre (z, x, y) as a fixed-length tuple, the elements unchanged."""
+    return (c[0], c[1], c[2])
+
+
+def _mirrored(c: Sequence[int]) -> tuple[int, int, int]:
     return (-c[0], c[1], c[2])
 
 
@@ -658,10 +622,8 @@ def frequency_independent_parts(
         (A0, A1) or (A0, A1, A2), each shape (n_test, n_source, 9, 9), complex.
     """
     if omega4 and window is not None:
-        raise ValueError(
-            "frequency_independent_parts: omega4 with a window is not implemented."
-        )
-    rec, src = tuple(rec_centre), tuple(src_centre)
+        raise ValueError("frequency_independent_parts: omega4 with a window is not implemented.")
+    rec, src = _cell(rec_centre), _cell(src_centre)
     if src[0] > 0:
         parts_m = frequency_independent_parts(
             _mirrored(rec),
@@ -694,9 +656,7 @@ def frequency_independent_parts(
         lo = q0h
         while lo < q1h * (1 - 1e-12):
             qh, w = _panels(lo, 2 * lo, width)
-            octaves.append(
-                _static_integral(1, kind, rec, src, h, ka, kb, qh, w, n_source, n_test)
-            )
+            octaves.append(_static_integral(1, kind, rec, src, h, ka, kb, qh, w, n_source, n_test))
             lo *= 2
         a1 = sum(octaves) + octaves[-1] / 15.0
     if window is not None:
@@ -717,11 +677,7 @@ def _cheb_mode_moments(n: int, n_sing: int = 2) -> tuple:
     out = []
     for k in range(n):
         co = sp.Poly(sp.chebyshevt(k, 2 * t - 1), t).all_coeffs()[::-1]
-        pw = sum(
-            sp.Rational(c) / (j - n_sing + 1)
-            for j, c in enumerate(co)
-            if j != n_sing - 1
-        )
+        pw = sum(sp.Rational(c) / (j - n_sing + 1) for j, c in enumerate(co) if j != n_sing - 1)
         # no logarithm without a q^-1 term (n_sing = 0: co[-1] would be the last coefficient)
         lg = sp.Rational(co[n_sing - 1]) if 1 <= n_sing <= len(co) else sp.Integer(0)
         out.append((float(pw), float(lg)))
@@ -762,9 +718,7 @@ def fp_low_integral(
         qs_a = qs_for(rec, src, h) if qsh is None else qsh / h
         out = fp_head(order, kind, rec, src, h, above, below, qs_a, n_source, n_test)
         qh, w = _panels(qs_a * h, q0h, 0.5, 20)
-        return out + _static_integral(
-            order, kind, rec, src, h, above, below, qh, w, n_source, n_test
-        )
+        return out + _static_integral(order, kind, rec, src, h, above, below, qh, w, n_source, n_test)
     _, m0 = frame_laurent(kind, order, above, below)
     n_sing = -(m0 + 1)
     if qsh is None:
@@ -808,9 +762,7 @@ def fp_low_integral(
     ) * qs ** (1 - n_sing)
     width = _radial_width(np.hypot(rec[1] - src[1], rec[2] - src[2]))
     qh, w = _panels(qsh, q0h, min(width, 0.5), 20)
-    return head + _static_integral(
-        order, kind, rec, src, h, above, below, qh, w, n_source, n_test
-    )
+    return head + _static_integral(order, kind, rec, src, h, above, below, qh, w, n_source, n_test)
 
 
 def window_parts(
@@ -832,7 +784,7 @@ def window_parts(
     Returns:
         Two arrays of shape (n_test, n_source, 9, 9), complex.
     """
-    rec, src = tuple(rec_centre), tuple(src_centre)
+    rec, src = _cell(rec_centre), _cell(src_centre)
     if src[0] > 0:
         r0, r1 = window_parts(
             _mirrored(rec),
@@ -849,9 +801,9 @@ def window_parts(
     kind = _check(rec, src)
     ka, kb = _key(above), _key(below)
     qh, w = window.ramp_rule(q0h)
-    return tuple(
-        _static_integral(order, kind, rec, src, h, ka, kb, qh, w, n_source, n_test)
-        for order in (0, 1)
+    return (
+        _static_integral(0, kind, rec, src, h, ka, kb, qh, w, n_source, n_test),
+        _static_integral(1, kind, rec, src, h, ka, kb, qh, w, n_source, n_test),
     )
 
 
@@ -860,18 +812,14 @@ def window_parts(
 # ---------------------------------------------------------------------------
 
 
-def _lateral_harmonics_at(
-    qh: float, dxy: tuple, h: float, exps_f: tuple, exps_s: tuple
-) -> NDArray:
+def _lateral_harmonics_at(qh: float, dxy: tuple, h: float, exps_f: tuple, exps_s: tuple) -> NDArray:
     """S_n(q) = (1/4 pi^2) int dphi  lateral_a lateral_c e^{i k.Delta} e^{i n phi}, shape (9, n_test, n_source)."""
     reach = float(np.hypot(*dxy))
     n = _n_phi(qh, reach)
     phi = 2 * np.pi * np.arange(n) / n
     q = qh / h
     kx, ky = q * np.cos(phi), q * np.sin(phi)
-    coef = (
-        np.exp(1j * (kx * dxy[0] + ky * dxy[1]) * h) * (2 * np.pi / n) / (4 * np.pi**2)
-    )
+    coef = np.exp(1j * (kx * dxy[0] + ky * dxy[1]) * h) * (2 * np.pi / n) / (4 * np.pi**2)
     lf = _lateral(kx, ky, h, exps_f, True) * coef[:, None]
     ls = _lateral(kx, ky, h, exps_s, False)
     x = (lf[:, :, None] * np.exp(1j * np.outer(phi, _HARM))[:, None, :]).reshape(n, -1)
@@ -907,19 +855,14 @@ def lateral_harmonics(
     x = np.cos(np.pi * (np.arange(order) + 0.5) / order)
     vinv = np.linalg.inv(np.polynomial.chebyshev.chebvander(x, order - 1))
     out: dict = {"q0h": q0h, "n_source": n_source, "n_test": n_test, "order": order}
-    for off in {tuple(o) for o in offsets}:
+    for off in {(o[0], o[1]) for o in offsets}:
         width = _radial_width(float(np.hypot(*off)))
         n_pan = max(1, int(np.ceil(q0h / width)))
         edges = np.linspace(0.0, q0h, n_pan + 1)
         coeffs = []
         for e0, e1 in itertools.pairwise(edges):
             vals = np.stack(
-                [
-                    _lateral_harmonics_at(
-                        e0 + (e1 - e0) * (t + 1) / 2, off, h, exps_f, exps_s
-                    )
-                    for t in x
-                ]
+                [_lateral_harmonics_at(e0 + (e1 - e0) * (t + 1) / 2, off, h, exps_f, exps_s) for t in x]
             )
             coeffs.append(np.einsum("kj,j...->k...", vinv, vals))
         out[off] = (edges, np.stack(coeffs))
@@ -967,14 +910,9 @@ def _dynamic_frames(
         states, kzw, amp = st_b[:, :, :3], kz_b[:, :3], rt["T_d"]
     zr, zs = rec[0] * h, src[0] * h
     kzs = kz_a[:, :3]
-    vf = {
-        l: h * np.exp(1j * kzw * zr) * 2.0 * 1j**l * spherical_jn(l, kzw * h)
-        for l in lz
-    }
+    vf = {l: h * np.exp(1j * kzw * zr) * 2.0 * 1j**l * spherical_jn(l, kzw * h) for l in lz}
     vs = {e: h * np.exp(-1j * kzs * zs) * monomial_fourier(e, -kzs * h) for e in ez}
-    right = (
-        st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING
-    )  # (N, n, j)
+    right = st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING  # (N, n, j)
     out = {}
     for l in lz:
         left = states * vf[l][:, None, :]  # (N, i, m)
@@ -1022,16 +960,12 @@ def truncated_blocks(
     for rec, src in pairs:
         _check(rec, src)
     if low_pass is not None and window is not None:
-        raise ValueError(
-            "truncated_blocks: low_pass is the band below the window; pass one or the other."
-        )
+        raise ValueError("truncated_blocks: low_pass is the band below the window; pass one or the other.")
     offsets = [(r[1] - s[1], r[2] - s[2]) for r, s in pairs]
     if table is None:
         table = lateral_harmonics(offsets, h, q0h, n_source, n_test)
     if (table["q0h"], table["n_source"], table["n_test"]) != (q0h, n_source, n_test):
-        raise ValueError(
-            "truncated_blocks: the table was built for another q0h, n_source or n_test."
-        )
+        raise ValueError("truncated_blocks: the table was built for another q0h, n_source or n_test.")
     exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
     lz = sorted({e[0] for e in exps_f})
@@ -1091,18 +1025,15 @@ def truncated_blocks(
                 for k, v in frames[key].items():
                     v[on] -= chi[on, None, None] * (stat[0][k] + omega**2 * stat[1][k])
         if (
-            (off, width) not in harmonics
-        ):  # S_n depends on the lateral offset and the rule, not on the depths
-            harmonics[off, width] = (
-                _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
-            )
+            off,
+            width,
+        ) not in harmonics:  # S_n depends on the lateral offset and the rule, not on the depths
+            harmonics[off, width] = _interpolate(table[off], qh) * (w / h * qh / h)[:, None, None, None]
         S = harmonics[off, width]
         blk = np.zeros((n_test, n_source, 81), dtype=complex)
         for (l, e), rot in frames[key].items():
             sub = S[:, :, fa[l]][:, :, :, sc[e]].reshape(-1, len(fa[l]) * len(sc[e]))
-            blk[np.ix_(fa[l], sc[e])] += (sub.T @ rot.reshape(-1, 81)).reshape(
-                len(fa[l]), len(sc[e]), 81
-            )
+            blk[np.ix_(fa[l], sc[e])] += (sub.T @ rot.reshape(-1, 81)).reshape(len(fa[l]), len(sc[e]), 81)
         out[i] = blk.reshape(n_test, n_source, 9, 9)
     return out
 
@@ -1140,18 +1071,12 @@ def integrand_points(
     pairs_le = [(l, e) for l in lz for e in ez]
     # block[a, c]: the (l, e) of field function a and source monomial c
     block = np.array(
-        [
-            [pairs_le.index((exps_f[a][0], exps_s[c][0])) for c in range(n_source)]
-            for a in range(n_test)
-        ]
+        [[pairs_le.index((exps_f[a][0], exps_s[c][0])) for c in range(n_source)] for a in range(n_test)]
     )
     qh = np.hypot(kx, ky) * h
     q = qh / h
     # the frame kernel in the frame of k (times M^-1), less the window's static and omega^2 parts
-    fr = {
-        k: v @ _M_INV
-        for k, v in _dynamic_frames(q, omega, above, below, rec, src, h, lz, ez).items()
-    }
+    fr = {k: v @ _M_INV for k, v in _dynamic_frames(q, omega, above, below, rec, src, h, lz, ez).items()}
     if window is not None:
         chi = window(qh, q0h)
         ramp = chi > 0
@@ -1176,16 +1101,10 @@ def integrand_points(
                 v[ramp] -= chi[ramp, None, None] * (stat[0][k] + omega**2 * stat[1][k])
     # rotated to k's direction, T G T^T, columns paired (as _rotate_harmonics at phi)
     T = rotation(np.arctan2(ky, kx))
-    g = np.stack(
-        [T @ fr[l, e] @ T.swapaxes(1, 2) * SOURCE_PAIRING for l, e in pairs_le], 1
-    )
+    g = np.stack([T @ fr[l, e] @ T.swapaxes(1, 2) * SOURCE_PAIRING for l, e in pairs_le], 1)
     lf = _lateral(kx, ky, h, exps_f, True)
     ls = _lateral(kx, ky, h, exps_s, False)
-    return (
-        lf[:, :, None, None]
-        * ls[:, None, :, None]
-        * g[:, block].reshape(len(q), n_test, n_source, 81)
-    )
+    return lf[:, :, None, None] * ls[:, None, :, None] * g[:, block].reshape(len(q), n_test, n_source, 81)
 
 
 def high_band_blocks(
@@ -1233,17 +1152,11 @@ def high_band_blocks(
         raise ValueError("high_band_blocks: pass the low band (low_pass).")
     branch = [omega * h / c for m in (above, below) for c in (m.alpha, m.beta)]
     lo = low_pass.start * band_qh
-    if lo < max(branch) * (1 + 1e-9) or (
-        window is not None and window.start * q0h < band_qh
-    ):
+    if lo < max(branch) * (1 + 1e-9) or (window is not None and window.start * q0h < band_qh):
         raise ValueError(
             "high_band_blocks: the band must lie above the branch points and below the window's ramp\n"
             f"  (band from {lo:g} to {band_qh:g}; branch points to {max(branch):g}"
-            + (
-                f"; window from {window.start * q0h:g})."
-                if window is not None
-                else ")."
-            )
+            + (f"; window from {window.start * q0h:g})." if window is not None else ").")
         )
     dk = 2 * np.pi / (n_grid * 2 * h)
     tiles = int(np.ceil(q0h / h / dk / n_grid)) + 1
@@ -1284,9 +1197,7 @@ def high_band_blocks(
                 window,
             )
             idx = (mx.ravel()[sel] % n_grid) * n_grid + (my.ravel()[sel] % n_grid)
-            acc[idx] += (
-                wgt[:, None, None, None] * vals
-            )  # residues are distinct within a tile
+            acc[idx] += wgt[:, None, None, None] * vals  # residues are distinct within a tile
     # sum_m F(k_m) e^{i k_m . 2 d h} over the residues m = j (mod n_grid): an inverse DFT
     out = np.fft.ifft2(acc.reshape(n_grid, n_grid, -1), axes=(0, 1)) * n_grid**2
     out = out.reshape(n_grid, n_grid, n_test, n_source, 9, 9)
@@ -1295,6 +1206,7 @@ def high_band_blocks(
     from .graded_voxel.fft import _transform, signed_permutations
 
     lateral = [q for q in signed_permutations() if q[0, 0] == 1.0]
+    assert offsets is not None  # wedge is offsets is not None
     res = np.zeros((len(offsets), n_test, n_source, 9, 9), dtype=complex)
     for i, x in enumerate(offsets):
         for q in lateral:
@@ -1343,9 +1255,7 @@ def _truncated_blocks_direct(
         k_dn_a = [lat + np.outer(kz_a[:, m], [1, 0, 0]) for m in range(3)]
         k_up_a = [lat - np.outer(kz_a[:, m], [1, 0, 0]) for m in range(3)]
         k_dn_b = [lat + np.outer(kz_b[:, m], [1, 0, 0]) for m in range(3)]
-        src_right = (
-            st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING
-        )  # (n, 3 modes, 9)
+        src_right = st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING  # (n, 3 modes, 9)
         for (rec, src), acc in zip(pairs, out, strict=True):
             cr, cs = np.array(rec, float) * h, np.array(src, float) * h
             if rec[0] < 0:
@@ -1353,29 +1263,16 @@ def _truncated_blocks_direct(
             else:
                 k_rec, states, amp = k_dn_b, st_b[:, :, :3], rt["T_d"]
             fm = np.stack(
-                [
-                    receiver_moments(k, h, n_test) * np.exp(1j * (k @ cr))[:, None]
-                    for k in k_rec
-                ],
+                [receiver_moments(k, h, n_test) * np.exp(1j * (k @ cr))[:, None] for k in k_rec],
                 1,
             )  # (n, 3, a)
             sm = np.stack(
-                [
-                    source_moments_local(k, h, n_source)
-                    * np.exp(-1j * (k @ cs))[:, None]
-                    for k in k_dn_a
-                ],
+                [source_moments_local(k, h, n_source) * np.exp(-1j * (k @ cs))[:, None] for k in k_dn_a],
                 1,
             )  # (n, 3, c)
-            left = np.einsum("pma,pim->pmai", fm * wt[:, None, None], states).reshape(
-                n * 3, -1
-            )
-            right = np.einsum("pmn,pnc,pnj->pmcj", amp, sm, src_right).reshape(
-                n * 3, -1
-            )
-            acc += (
-                (left.T @ right).reshape(n_test, 9, n_source, 9).transpose(0, 2, 1, 3)
-            )
+            left = np.einsum("pma,pim->pmai", fm * wt[:, None, None], states).reshape(n * 3, -1)
+            right = np.einsum("pmn,pnc,pnj->pmcj", amp, sm, src_right).reshape(n * 3, -1)
+            acc += (left.T @ right).reshape(n_test, 9, n_source, 9).transpose(0, 2, 1, 3)
     return out
 
 
@@ -1400,13 +1297,11 @@ def interface_block(
     lateral offset, with the same arguments (``window`` included): both independent of the frequency, passed
     when sweeping it.
     """
-    rec, src = tuple(rec_centre), tuple(src_centre)
+    rec, src = _cell(rec_centre), _cell(src_centre)
     parts = (
         parts
         if parts is not None
-        else frequency_independent_parts(
-            rec, src, h, above, below, n_source, n_test, q0h, q1h, window
-        )
+        else frequency_independent_parts(rec, src, h, above, below, n_source, n_test, q0h, q1h, window)
     )
     a0, a1 = parts[0], parts[1]
     a2 = parts[2] if len(parts) > 2 else None  # with omega4: the omega^4 correction
@@ -1426,9 +1321,7 @@ def interface_block(
             )[0]
         )
     else:
-        d = truncated_blocks(
-            [(rec, src)], h, omega, above, below, n_source, n_test, q0h, table, window
-        )[0]
+        d = truncated_blocks([(rec, src)], h, omega, above, below, n_source, n_test, q0h, table, window)[0]
     out = d + a0 + omega**2 * a1
     if a2 is not None:
         out = out + omega**4 * a2
@@ -1453,13 +1346,9 @@ def sweep(
     Q0 must suit the highest frequency: Q0 h = 10 gives about 4e-10 of the block at omega h / beta = 1/6 and
     Q0 h = 40 about 6e-11 at omega h / beta = 1 (the remainder falls as (omega / beta Q0)^4 Q0^-2).
     """
-    rec, src = tuple(rec_centre), tuple(src_centre)
-    parts = frequency_independent_parts(
-        rec, src, h, above, below, n_source, n_test, q0h, q1h, window
-    )
-    table = lateral_harmonics(
-        [(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test
-    )
+    rec, src = _cell(rec_centre), _cell(src_centre)
+    parts = frequency_independent_parts(rec, src, h, above, below, n_source, n_test, q0h, q1h, window)
+    table = lateral_harmonics([(rec[1] - src[1], rec[2] - src[2])], h, q0h, n_source, n_test)
     return [
         interface_block(
             rec,

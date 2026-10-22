@@ -11,6 +11,7 @@ transpose, or the T0 derivative were wrong.
 """
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -32,7 +33,7 @@ OMEGA = 2 * np.pi * (1.0 + 0.03j)
 PITCH = 0.25
 KY = 0.6
 N_Z, N_X = 2, 3
-SOLVE = {"tol": 1e-12, "max_iter": 500}
+SOLVE: dict[str, Any] = {"tol": 1e-12, "max_iter": 500}
 STEP = np.array([1e-2, 1e-2, 1e-3])  # Richardson base steps for (Dlambda, Dmu, Drho)
 
 

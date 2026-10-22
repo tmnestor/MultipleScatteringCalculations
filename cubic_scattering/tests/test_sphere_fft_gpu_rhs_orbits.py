@@ -43,7 +43,12 @@ def test_the_cell_permutation_maps_the_sphere_grid_to_itself() -> None:
 def test_the_orbit_solutions_equal_solving_every_column(monkeypatch, k_hat, n_solves) -> None:
     calls = []
     real = G.torch_gmres
-    monkeypatch.setattr(G, "torch_gmres", lambda *a, **k: calls.append(1) or real(*a, **k))
+
+    def counted(*a, **k):
+        calls.append(1)
+        return real(*a, **k)
+
+    monkeypatch.setattr(G, "torch_gmres", counted)
     kw = dict(
         omega=OMEGA, radius=RADIUS, ref=REF, contrast=CONTRAST, n_sub=N_SUB, k_hat=k_hat, wave_type="P"
     )

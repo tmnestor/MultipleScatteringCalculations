@@ -21,7 +21,8 @@ N_SUB, H = 7, 10.0 / 7
 
 
 def _far(n_sub: int) -> list[tuple[int, int, int]]:
-    return [c for c in itertools.product(range(n_sub), repeat=3) if c[0] >= c[1] >= c[2] and c[0] > 1]
+    cells = itertools.product(range(n_sub), range(n_sub), range(n_sub))
+    return [c for c in cells if c[0] >= c[1] >= c[2] and c[0] > 1]
 
 
 @pytest.mark.parametrize(

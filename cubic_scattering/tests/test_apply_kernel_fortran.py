@@ -86,6 +86,7 @@ def test_graded_field_through_the_fused_readout_is_unchanged(monkeypatch) -> Non
     u_disp, e_none = FF.graded_field(res, obs, n_gauss=4, strain=False)
     monkeypatch.setattr(FF, "point_kernel_backend", lambda: "python")
     u_loop, e_loop = FF.graded_field(res, obs, n_gauss=4)
+    assert e_fused is not None and e_loop is not None  # strain=True by default
     assert np.abs(u_fused - u_loop).max() / np.abs(u_loop).max() < 1e-13
     assert np.abs(e_fused - e_loop).max() / np.abs(e_loop).max() < 1e-13
     assert e_none is None and np.abs(u_disp - u_loop).max() / np.abs(u_loop).max() < 1e-13

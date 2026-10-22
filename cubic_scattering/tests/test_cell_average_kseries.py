@@ -91,7 +91,7 @@ def test_vectorised_sum_equals_moment_table_kseries_offset_by_offset(kd: float) 
     d_list = list(gd.multi_indices(2))
     pos = {a: k for k, a in enumerate(d_list)}
     for j, c in enumerate(canonical):
-        key = tuple(int(v) for v in c)
+        key = (int(c[0]), int(c[1]), int(c[2]))
         try:
             T = (
                 gd.moment_table_kseries(
@@ -226,6 +226,7 @@ def test_the_store_is_memory_mapped(store) -> None:
     CK.averaged_pair_blocks_9x9_kseries(
         np.array([[1.0, 0, 0]]) * D, _omega(0.3, 0.0), REF, D, tol=1e-15, max_reach=REACH
     )
+    assert CK._LOADED is not None
     rows, _ = CK._LOADED
     assert isinstance(rows, np.memmap) and not rows.flags.writeable
 

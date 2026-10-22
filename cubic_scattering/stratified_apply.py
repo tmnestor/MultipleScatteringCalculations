@@ -86,16 +86,12 @@ class ModeFactors:
 
     def src_amp(self, zs: int, y: NDArray) -> NDArray:
         """The three down-going modes' amplitudes from a source layer's ``by_exponent`` sums, (P, 3)."""
-        return np.einsum("pemj,pej->pm", self.v0, y, optimize=True) * np.exp(
-            -1j * self.kzs * zs * self.h
-        )
+        return np.einsum("pemj,pej->pm", self.v0, y, optimize=True) * np.exp(-1j * self.kzs * zs * self.h)
 
     def rec_out(self, zr: int, amp: NDArray) -> NDArray:
         """A receiver layer's coefficients from the incoming down-going amplitudes (P, 3), (P, n_test, 9)."""
         kind = "R" if zr < 0 else "T"
-        b = np.einsum("pmn,pn->pm", self.mid[kind], amp) * np.exp(
-            1j * self.kzw[kind] * zr * self.h
-        )
+        b = np.einsum("pmn,pn->pm", self.mid[kind], amp) * np.exp(1j * self.kzw[kind] * zr * self.h)
         g = np.einsum("plim,pm->pli", self.u0[kind], b, optimize=True)
         return self.lf[:, :, None] * g[:, self.l_of, :]
 
@@ -113,19 +109,13 @@ class ModeFactors:
 
     def src_full(self, zs: int) -> NDArray:
         """The expanded source map, (P, 3, n_source, 9) (for checks)."""
-        v = (
-            self.v0[:, self.e_of]
-            * np.exp(-1j * self.kzs * zs * self.h)[:, None, :, None]
-        )  # (P, c, 3, 9)
+        v = self.v0[:, self.e_of] * np.exp(-1j * self.kzs * zs * self.h)[:, None, :, None]  # (P, c, 3, 9)
         return (self.ls[:, :, None, None] * v).transpose(0, 2, 1, 3)
 
     def rec_full(self, zr: int) -> NDArray:
         """The expanded receiver map, (P, n_test, 9, 3) (for checks)."""
         kind = "R" if zr < 0 else "T"
-        u = (
-            self.u0[kind][:, self.l_of]
-            * np.exp(1j * self.kzw[kind] * zr * self.h)[:, None, None, :]
-        )
+        u = self.u0[kind][:, self.l_of] * np.exp(1j * self.kzw[kind] * zr * self.h)[:, None, None, :]
         return self.lf[:, :, None, None] * u
 
     def rotated_stat(self, key: tuple) -> NDArray:
@@ -172,9 +162,7 @@ def mode_factors(
         window: The split's window (None: no static parts).
     """
     if any(z >= 0 for z in src_zs):
-        raise ValueError(
-            "mode_factors: sources in A only (mirror a source in B first)."
-        )
+        raise ValueError("mode_factors: sources in A only (mirror a source in B first).")
     exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
     lu = sorted({e[0] for e in exps_f})
@@ -191,9 +179,7 @@ def mode_factors(
     rt = interface_rt(q, zero, omega, above, below)
     kzs = kz_a[:, :3]
     # the source modes, columns paired as the integrand, then rotated: (diag(v_e) right M^-1 T^T) * pairing
-    right = (
-        st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING
-    )  # (P, 3, 9)
+    right = st_a[:, :, :3].swapaxes(1, 2) * w_a[:, :3, None] * SOURCE_PAIRING  # (P, 3, 9)
     v0 = np.stack(
         [
             ((h * monomial_fourier(e, -kzs * h))[:, :, None] * right)
@@ -215,10 +201,7 @@ def mode_factors(
     for kind in sides:
         states, kz = u0[kind], kzw[kind]
         u0[kind] = np.stack(
-            [
-                T @ (states * (h * 2.0 * 1j**l * spherical_jn(l, kz * h))[:, None, :])
-                for l in lu
-            ],
+            [T @ (states * (h * 2.0 * 1j**l * spherical_jn(l, kz * h))[:, None, :]) for l in lu],
             1,
         )  # (P, n_l, 9, 3)
     mid = {"R": rt["R_d"], "T": rt["T_d"]}
@@ -240,32 +223,20 @@ def mode_factors(
                 weight[kind, order] = -chi * (omega**2 if order == 1 else 1.0)
                 vs[kind, order] = {
                     zs: np.stack(
-                        [
-                            isp._vertical_moments(
-                                ps[e], zs * h, h, 1, q, C.shape[3] - 1
-                            ).T
-                            for e in eu
-                        ],
+                        [isp._vertical_moments(ps[e], zs * h, h, 1, q, C.shape[3] - 1).T for e in eu],
                         1,
                     )
                     for zs in src_zs
                 }
                 vr[kind, order] = {
                     zr: np.stack(
-                        [
-                            isp._vertical_moments(
-                                pf[l], zr * h, h, s, q, C.shape[2] - 1
-                            ).T
-                            for l in lu
-                        ],
+                        [isp._vertical_moments(pf[l], zr * h, h, s, q, C.shape[2] - 1).T for l in lu],
                         1,
                     )
                     for zr in rec_zs
                     if (zr < 0) == (kind == "R")
                 }
-    return ModeFactors(
-        lf, ls, l_of, e_of, v0, kzs, u0, kzw, mid, weight, vs, vr, mid_stat, T, h
-    )
+    return ModeFactors(lf, ls, l_of, e_of, v0, kzs, u0, kzw, mid, weight, vs, vr, mid_stat, T, h)
 
 
 def integrand_from_factors(f: ModeFactors, zr: int, zs: int) -> NDArray:
@@ -287,9 +258,7 @@ def integrand_from_factors(f: ModeFactors, zr: int, zs: int) -> NDArray:
                 * f.ls[:, None, :]
                 * f.vs[key][zs][:, f.e_of].transpose(0, 2, 1)
             )
-            out = out + np.einsum(
-                "pax,pijxy,pyc->pacij", ur, f.rotated_stat(key), us, optimize=True
-            )
+            out = out + np.einsum("pax,pijxy,pyc->pacij", ur, f.rotated_stat(key), us, optimize=True)
     return out.reshape(out.shape[0], out.shape[1], out.shape[2], 81)
 
 
@@ -347,9 +316,7 @@ class _Transforms:
         import finufft
 
         self.shape, self.n_in, self.n_out, self.n = shape, n_in, n_out, n_grid
-        assert n_grid is None or n_grid >= max(shape), (
-            "the lattice's box holds the grid"
-        )
+        assert n_grid is None or n_grid >= max(shape), "the lattice's box holds the grid"
         self.to_k = finufft.Plan(2, shape, n_trans=n_in, eps=eps, isign=-1)
         self.to_grid = finufft.Plan(1, shape, n_trans=n_out, eps=eps, isign=1)
         self.spec: dict = {}
@@ -369,9 +336,9 @@ class _Transforms:
             return (self.to_k.execute(g) * ch.shift).T
         if z not in self.spec:
             n, (nx, ny) = self.n, self.shape
-            self.spec[z] = np.fft.fft2(
-                np.pad(g, ((0, 0), (0, n - nx), (0, n - ny))), axes=(1, 2)
-            ).reshape(self.n_in, -1)
+            self.spec[z] = np.fft.fft2(np.pad(g, ((0, 0), (0, n - nx), (0, n - ny))), axes=(1, 2)).reshape(
+                self.n_in, -1
+            )
         return self.spec[z][:, ch.idx].T
 
     def to_grid_add(self, z, c: NDArray, out: NDArray) -> None:
@@ -429,9 +396,7 @@ class NodeProduct:
         self._args = (h, omega, above, below, n_source, n_test, q0h, window)
         self.n_grid = None if lattice is None else lattice[2]
         self.chunks = _chunks(kx, ky, wts, h, shape, chunk, lattice)
-        self.factors = [
-            self._factors(ch.qx, ch.qy) if cache else None for ch in self.chunks
-        ]
+        self.factors = [self._factors(ch.qx, ch.qy) if cache else None for ch in self.chunks]
 
     def _factors(self, qx: NDArray, qy: NDArray) -> ModeFactors:
         return mode_factors(self.rec_zs, self.src_zs, qx, qy, *self._args)
@@ -441,9 +406,7 @@ class NodeProduct:
         n_source, n_test = self.n_source, self.n_test
         out = {zr: np.zeros((nx, ny, n_test * 9), dtype=complex) for zr in self.rec_zs}
         grids = {
-            zs: np.ascontiguousarray(
-                src_grids[zs].reshape(nx, ny, -1).transpose(2, 0, 1)
-            )
+            zs: np.ascontiguousarray(src_grids[zs].reshape(nx, ny, -1).transpose(2, 0, 1))
             for zs in self.src_zs
             if zs in src_grids
         }
@@ -455,7 +418,7 @@ class NodeProduct:
                 f = self._factors(ch.qx, ch.qy)
             tr.chunk(ch)
             amp = np.zeros((len(ch.qx), 3), dtype=complex)
-            amp_stat = {key: 0.0 for key in f.mid_stat}
+            amp_stat: dict = {key: 0.0 for key in f.mid_stat}  # each 0.0 becomes an array below
             for zs, g in grids.items():
                 y = f.by_exponent(tr.to_nodes(zs, g).reshape(-1, n_source, 9))
                 amp += f.src_amp(zs, y)
@@ -470,9 +433,7 @@ class NodeProduct:
                         if key not in stat_cache:
                             stat_cache[key] = f.stat_apply(key, amp_stat[key])
                         b = b + f.stat_rec_out(key, zr, stat_cache[key])
-                tr.to_grid_add(
-                    zr, (b * ch.w[:, None, None]).reshape(len(ch.qx), -1), out[zr]
-                )
+                tr.to_grid_add(zr, (b * ch.w[:, None, None]).reshape(len(ch.qx), -1), out[zr])
         for zr in self.rec_zs:
             tr.finish(zr, out[zr])
         return {zr: o.reshape(nx, ny, n_test, 9) for zr, o in out.items()}
@@ -482,9 +443,7 @@ class NodeProduct:
     def _transforms(self) -> "_Transforms":
         """The transforms for a one-layer call: the NUFFT plans made once and kept, the lattice caches emptied."""
         if getattr(self, "_tr", None) is None:
-            self._tr = _Transforms(
-                self.shape, self.n_source * 9, self.n_test * 9, self.eps, self.n_grid
-            )
+            self._tr = _Transforms(self.shape, self.n_source * 9, self.n_test * 9, self.eps, self.n_grid)
         self._tr.spec.clear()
         self._tr.fold.clear()
         return self._tr
@@ -501,9 +460,7 @@ class NodeProduct:
                 f = self._factors(ch.qx, ch.qy)
             tr.chunk(ch)
             y = f.by_exponent(tr.to_nodes(zs, g).reshape(-1, self.n_source, 9))
-            out.append(
-                (f.src_amp(zs, y), {k: f.stat_src_amp(k, zs, y) for k in f.mid_stat})
-            )
+            out.append((f.src_amp(zs, y), {k: f.stat_src_amp(k, zs, y) for k in f.mid_stat}))
         return out
 
     def fields(self, zr: int, amps: list) -> NDArray:
@@ -571,33 +528,28 @@ class TwoSidedProduct:
         rest = (n_source, n_test, q0h, window, eps, chunk, cache, lattice)
         in_a = [z for z in src_zs if z < 0]
         in_b = [-z for z in src_zs if z > 0]
-        self.a = (
-            NodeProduct(in_a, rec_zs, *common, above, below, *rest) if in_a else None
-        )
-        self.b = (
-            NodeProduct(in_b, [-z for z in rec_zs], *common, below, above, *rest)
-            if in_b
-            else None
-        )
+        self.a = NodeProduct(in_a, rec_zs, *common, above, below, *rest) if in_a else None
+        self.b = NodeProduct(in_b, [-z for z in rec_zs], *common, below, above, *rest) if in_b else None
 
     def amplitudes(self, zs: int, grid: NDArray) -> list:
         """One source layer's amplitudes (``NodeProduct.amplitudes``): of the direct problem for a source in A, of
         the mirrored one for a source in B (amplitudes of layers on opposite sides do not add)."""
         if zs < 0:
+            assert self.a is not None  # a source layer in A exists
             return self.a.amplitudes(zs, grid)
+        assert self.b is not None  # a source layer in B exists
         return self.b.amplitudes(-zs, grid * self.sc)
 
     def fields(self, zr: int, amps: list, source_side: str) -> NDArray:
         """A receiver layer's coefficients from the summed amplitudes of sources on ``source_side`` ("A" or "B")."""
         if source_side == "A":
+            assert self.a is not None  # amplitudes from A imply a source layer in A
             return self.a.fields(zr, amps)
+        assert self.b is not None  # amplitudes from B imply a source layer in B
         return self.b.fields(-zr, amps) * self.sa
 
     def apply(self, x_grids: dict) -> dict:
-        out = {
-            zr: np.zeros(self.shape + (self.n_test, 9), dtype=complex)
-            for zr in self.rec_zs
-        }
+        out = {zr: np.zeros(self.shape + (self.n_test, 9), dtype=complex) for zr in self.rec_zs}
         if self.a is not None:
             got = self.a.apply({z: g for z, g in x_grids.items() if z < 0})
             for zr in self.rec_zs:
@@ -849,9 +801,7 @@ class WholeSpaceModes:
 
     def rec_out(self, sign: int, amp: NDArray) -> NDArray:
         """sum_m R_a(k_m) d_m[i] amp_m, (P, n_test, 9)."""
-        return np.einsum(
-            "pma,pmi,pm->pai", self.ra[sign], self.d[sign], amp, optimize=True
-        )
+        return np.einsum("pma,pmi,pm->pai", self.ra[sign], self.d[sign], amp, optimize=True)
 
 
 def whole_space_modes(
@@ -869,20 +819,15 @@ def whole_space_modes(
     ra, ws, d = {}, {}, {}
     step = None
     for sign in (1.0, -1.0):
-        modes = mode_family(kx, ky, omega, ref, "P", sign) + mode_family(
-            kx, ky, omega, ref, "S", sign
-        )
-        ra[int(sign)] = np.stack(
-            [receiver_moments(k, h, n_test) for k, _, _ in modes], 1
-        )
+        modes = mode_family(kx, ky, omega, ref, "P", sign) + mode_family(kx, ky, omega, ref, "S", sign)
+        ra[int(sign)] = np.stack([receiver_moments(k, h, n_test) for k, _, _ in modes], 1)
         ws[int(sign)] = np.stack(
             [w[:, None] * source_moments_local(k, h, n_source) for k, _, w in modes], 1
         )
         d[int(sign)] = np.stack([dm for _, dm, _ in modes], 1)
         if step is None:
-            step = np.stack(
-                [np.exp(1j * k[:, 0] * sign * 2 * h) for k, _, _ in modes], 1
-            )
+            step = np.stack([np.exp(1j * k[:, 0] * sign * 2 * h) for k, _, _ in modes], 1)
+    assert step is not None  # set on the first pass of the loop
     return WholeSpaceModes(ra, ws, d, step)
 
 
@@ -923,8 +868,7 @@ class WholeSpaceMarch:
         self.n_grid = None if lattice is None else lattice[2]
         self.chunks = _chunks(kx, ky, wts, h, shape, chunk, lattice)
         self.factors = [
-            whole_space_modes(ch.qx, ch.qy, *self._args) if cache else None
-            for ch in self.chunks
+            whole_space_modes(ch.qx, ch.qy, *self._args) if cache else None for ch in self.chunks
         ]
 
     def apply(self, x_grids: dict) -> dict:
@@ -953,12 +897,8 @@ class WholeSpaceMarch:
                     for s in (1, -1):
                         beta[s][i] = f.src_amp(s, xh)
             p1, pg = f.step, f.step**g
-            down = np.zeros(
-                (n_l, p, 3), dtype=complex
-            )  # from the planes at least two above
-            up = np.zeros(
-                (n_l, p, 3), dtype=complex
-            )  # from the planes at least two below
+            down = np.zeros((n_l, p, 3), dtype=complex)  # from the planes at least two above
+            up = np.zeros((n_l, p, 3), dtype=complex)  # from the planes at least two below
             for i in range(g, n_l):
                 down[i] = p1 * down[i - 1] + pg * beta[1][i - g]
             for i in range(n_l - 1 - g, -1, -1):
@@ -975,9 +915,7 @@ class WholeSpaceMarch:
     def _transforms(self) -> "_Transforms":
         """The transforms for a one-layer call: the NUFFT plans made once and kept, the lattice caches emptied."""
         if getattr(self, "_tr", None) is None:
-            self._tr = _Transforms(
-                self.shape, self.n_source * 9, self.n_test * 9, self.eps, self.n_grid
-            )
+            self._tr = _Transforms(self.shape, self.n_source * 9, self.n_test * 9, self.eps, self.n_grid)
         self._tr.spec.clear()
         self._tr.fold.clear()
         return self._tr
@@ -1000,7 +938,7 @@ class WholeSpaceMarch:
         """Per chunk, p = e^{i k_z 2h} of each mode (P, 3); needs ``cache``."""
         if any(f is None for f in self.factors):
             raise ValueError("WholeSpaceMarch.steps: needs cache=True.")
-        return [f.step for f in self.factors]
+        return [f.step for f in self.factors if f is not None]  # none is None, checked above
 
     def field(self, z: int, amps: list, sign: int) -> NDArray:
         """A layer's coefficients from the arriving amplitudes of one direction (+1 down-going, -1 up-going), per

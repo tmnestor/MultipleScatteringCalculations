@@ -101,9 +101,7 @@ def _terms(kind: str = "reflected", order: int = 0) -> tuple:
         for c, terms in enumerate(row):
             for t in terms:
                 fn = _coefficient(t["coef"], names, syms)
-                out.append(
-                    (r, c, t["j"], tuple(t["alpha"]), t["z_power"], t["zp_power"], fn)
-                )
+                out.append((r, c, t["j"], tuple(t["alpha"]), t["z_power"], t["zp_power"], fn))
     return tuple(out)
 
 
@@ -128,11 +126,7 @@ def _potential(j: int) -> sp.Expr:
 def kernel_function(j: int, alpha: tuple[int, int, int]):
     """d^alpha Phi_j as a vectorised function of (rho_x, rho_y, zeta)."""
     phi = _potential(j)
-    expr = (
-        sp.diff(phi, _RX, alpha[0], _RY, alpha[1], _ZETA, alpha[2])
-        if sum(alpha)
-        else phi
-    )
+    expr = sp.diff(phi, _RX, alpha[0], _RY, alpha[1], _ZETA, alpha[2]) if sum(alpha) else phi
     # No simplify: on a fourth derivative it takes about a minute; common subexpressions suffice.
     return sp.lambdify((_RX, _RY, _ZETA), expr, "numpy", cse=True)
 
@@ -146,16 +140,9 @@ def _log_coefficient_expr(j: int, alpha: tuple[int, int, int]) -> sp.Expr:
         return sp.Integer(0)
     n = j - 1
     g0 = sp.cancel(
-        sp.expand(
-            -((-1) ** n)
-            * _R3**n
-            * sp.legendre(n, _ZETA / _R3)
-            / (2 * sp.pi * sp.factorial(n))
-        )
+        sp.expand(-((-1) ** n) * _R3**n * sp.legendre(n, _ZETA / _R3) / (2 * sp.pi * sp.factorial(n)))
     )
-    return sp.expand(
-        sp.diff(g0, _RX, alpha[0], _RY, alpha[1], _ZETA, alpha[2]) if sum(alpha) else g0
-    )
+    return sp.expand(sp.diff(g0, _RX, alpha[0], _RY, alpha[1], _ZETA, alpha[2]) if sum(alpha) else g0)
 
 
 @cache
@@ -188,9 +175,7 @@ def _pmul(a: Poly, b: Poly) -> Poly:
 
 def _padd(a: Poly, b: Poly, s: Fraction = Fraction(1)) -> Poly:
     n = max(len(a), len(b))
-    return tuple(
-        (a[i] if i < len(a) else 0) + s * (b[i] if i < len(b) else 0) for i in range(n)
-    )
+    return tuple((a[i] if i < len(a) else 0) + s * (b[i] if i < len(b) else 0) for i in range(n))
 
 
 def _ppow(a: Poly, n: int) -> Poly:
@@ -214,18 +199,14 @@ def _weight_1d(e: int, f: int, kind: str) -> tuple[Poly, Poly]:
     for lo, hi in lims:
         expr = sp.expand(sp.integrate(g, (v, lo, hi)))
         coeffs = sp.Poly(expr, s).all_coeffs()[::-1] if expr != 0 else [0]
-        pieces.append(
-            tuple(
-                Fraction(int(sp.Rational(c).p), int(sp.Rational(c).q)) for c in coeffs
-            )
-        )
+        pieces.append(tuple(Fraction(int(sp.Rational(c).p), int(sp.Rational(c).q)) for c in coeffs))
     return pieces[0], pieces[1]
 
 
 @cache
 def _legendre_monomials(e: int) -> Poly:
     """P_e(v) in ascending monomials."""
-    return tuple(Fraction(c).limit_denominator(10**6) for c in leg2poly([0] * e + [1]))
+    return tuple(Fraction(float(c)).limit_denominator(10**6) for c in leg2poly([0] * e + [1]))
 
 
 def _lateral_weight(e_field: int, f_source: int) -> tuple[Poly, Poly]:
@@ -250,9 +231,7 @@ def _vertical_weight(
 ) -> tuple[Poly, Poly]:
     """Vertical weight of P_e(v) (cz + v)^A against v'^f (czp + v')^B, centres in units of h: a convolution in
     tau = v + v' (kind 'vert', the image) or a correlation in sigma = v - v' (kind 'lat', the transmission)."""
-    left = _pmul(
-        _legendre_monomials(e_field), _ppow((Fraction(cz), Fraction(1)), a_pow)
-    )
+    left = _pmul(_legendre_monomials(e_field), _ppow((Fraction(cz), Fraction(1)), a_pow))
     right = _pmul(
         tuple(Fraction(int(k == f_source)) for k in range(f_source + 1)),
         _ppow((Fraction(czp), Fraction(1)), b_pow),
@@ -279,7 +258,7 @@ def _shift(p: Poly, a: Fraction, b: Fraction) -> Poly:
 @cache
 def _mono_to_legendre(n: int) -> tuple[tuple[Fraction, ...], ...]:
     """x^j = sum_l M[j][l] P_l(x) on [-1, 1], exactly, for j < n (from x P_l = ((l+1) P_{l+1} + l P_{l-1})/(2l+1))."""
-    rows = [(Fraction(1),)]
+    rows: list[tuple[Fraction, ...]] = [(Fraction(1),)]
     for _ in range(1, n):
         prev = rows[-1]
         nxt = [Fraction(0)] * (len(prev) + 1)
@@ -292,9 +271,7 @@ def _mono_to_legendre(n: int) -> tuple[tuple[Fraction, ...], ...]:
     return tuple(rows)
 
 
-def _legendre_coeffs(
-    p: Poly, a: Fraction = Fraction(0), b: Fraction = Fraction(1)
-) -> NDArray:
+def _legendre_coeffs(p: Poly, a: Fraction = Fraction(0), b: Fraction = Fraction(1)) -> NDArray:
     """Legendre coefficients in x of p(a + b x), computed exactly and then rounded."""
     q = _shift(p, a, b)
     table = _mono_to_legendre(len(q))
@@ -336,9 +313,7 @@ def _gauss(n: int, lo: float, hi: float) -> tuple[NDArray, NDArray]:
     return gauss_interval(n, lo, hi)
 
 
-def _regular_moments(
-    f, box: tuple, centre: tuple, deg: tuple[int, int, int], n: int
-) -> NDArray:
+def _regular_moments(f, box: tuple, centre: tuple, deg: tuple[int, int, int], n: int) -> NDArray:
     """int_box prod_i (s_i - centre_i)^p_i f(s) for p_i <= deg_i, by a tensor Gauss rule."""
     rules = [_gauss(n, lo, hi) for lo, hi in box]
     sx, sy, sz = np.meshgrid(rules[0][0], rules[1][0], rules[2][0], indexing="ij")
@@ -349,9 +324,7 @@ def _regular_moments(
     return _contract3(fw, px, py, pz)
 
 
-def _corner_moments(
-    f, d: int, box: tuple, deg: tuple[int, int, int], n: int, g=None
-) -> NDArray:
+def _corner_moments(f, d: int, box: tuple, deg: tuple[int, int, int], n: int, g=None) -> NDArray:
     """int_box s^p f(s) for a box with a corner at the origin (the singular point), by Euler's identity.
 
     With a log term (f(lam s) = lam^d [f(s) + log(lam) g(s)], g a polynomial), s.grad f = d f + g, and the
@@ -373,17 +346,11 @@ def _corner_moments(
         face = face.T
         ai = np.array([abs(far[i]) * far[i] ** p for p in range(deg[i] + 1)])
         contrib = np.einsum("k,pq->kpq", ai, face)
-        m += (
-            np.moveaxis(contrib, 0, i)
-            if i == 0
-            else np.moveaxis(contrib, [0, 1, 2], [i, *others])
-        )
+        m += np.moveaxis(contrib, 0, i) if i == 0 else np.moveaxis(contrib, [0, 1, 2], [i, *others])
     if g is not None:
         ng = sum(deg) + max(d, 0) + 2
         (x0, w0), (x1, w1), (x2, w2) = (_gauss(ng, *box[i]) for i in range(3))
-        gx = g(*np.meshgrid(x0, x1, x2, indexing="ij")) * np.einsum(
-            "i,j,k->ijk", w0, w1, w2
-        )
+        gx = g(*np.meshgrid(x0, x1, x2, indexing="ij")) * np.einsum("i,j,k->ijk", w0, w1, w2)
         m -= np.einsum(
             "ijk,ip,jq,kr->pqr",
             gx,
@@ -404,8 +371,9 @@ def _corner_moments_closed(
     j: int, alpha: tuple[int, int, int], d: int, box: tuple, deg: tuple[int, int, int]
 ) -> NDArray:
     """``_corner_moments`` in closed form (``image_moments.corner_moment``): the same array, NaN where divergent."""
-    sides = tuple(int(max(abs(lo), abs(hi))) for lo, hi in box)
-    signs = tuple(-1 if lo < 0 else 1 for lo, _ in box[:2])
+    half = [int(max(abs(lo), abs(hi))) for lo, hi in box]
+    sides = (half[0], half[1], half[2])
+    signs = (-1 if box[0][0] < 0 else 1, -1 if box[1][0] < 0 else 1)
     m = np.full((deg[0] + 1, deg[1] + 1, deg[2] + 1), np.nan)
     for p in range(deg[0] + 1):
         for q in range(deg[1] + 1):
@@ -415,25 +383,19 @@ def _corner_moments_closed(
     return m
 
 
-def _regular_legendre_moments(
-    f, box: tuple, deg: tuple[int, int, int], n: int
-) -> NDArray:
+def _regular_legendre_moments(f, box: tuple, deg: tuple[int, int, int], n: int) -> NDArray:
     """int_box P_a(x) P_b(y) P_c(z) f for a box of side 2 with local coordinates x = s - centre in [-1, 1]."""
     rules = [_gauss(n, lo, hi) for lo, hi in box]
     sx, sy, sz = np.meshgrid(rules[0][0], rules[1][0], rules[2][0], indexing="ij")
     fw = f(sx, sy, sz) * np.einsum("i,j,k->ijk", rules[0][1], rules[1][1], rules[2][1])
-    lx, ly, lz = (
-        legvander(rules[i][0] - (box[i][0] + box[i][1]) / 2, deg[i]) for i in range(3)
-    )
+    lx, ly, lz = (legvander(rules[i][0] - (box[i][0] + box[i][1]) / 2, deg[i]) for i in range(3))
     return _contract3(fw, lx, ly, lz)
 
 
 @cache
 def _log_rho_moment(e: int, k: int) -> float:
     """int_0^1 rho^e log(rho) P_k(2 rho - 1) d rho, exactly (int rho^m log rho = -1/(m+1)^2), in floating point."""
-    coeffs = sp.Poly(
-        sp.legendre(k, 2 * sp.Symbol("t") - 1), sp.Symbol("t")
-    ).all_coeffs()[::-1]
+    coeffs = sp.Poly(sp.legendre(k, 2 * sp.Symbol("t") - 1), sp.Symbol("t")).all_coeffs()[::-1]
     return float(sum(-sp.Rational(c) / (e + m + 1) ** 2 for m, c in enumerate(coeffs)))
 
 
@@ -466,20 +428,14 @@ def _corner_pyramids(
         ValueError: when a pair's weight does not vanish fast enough for the integral to exist.
     """
     far = [Fraction(lo if hi == 0 else hi) for lo, hi in box]
-    fac = [
-        {k: _corner_factor(p, far[i]) for k, p in weights[i].items()} for i in range(3)
-    ]
+    fac = [{k: _corner_factor(p, far[i]) for k, p in weights[i].items()} for i in range(3)]
     max_deg = sum(max(len(p) for p in w.values()) - 1 for w in weights)
     n_rho = max(1, (3 + max(d, 0) + max_deg) // 2 + 2)
     if g is not None:
-        n_rho = max(
-            n_rho, max_deg + 1
-        )  # P(rho) of degree <= max_deg: its Legendre coefficients exactly
+        n_rho = max(n_rho, max_deg + 1)  # P(rho) of degree <= max_deg: its Legendre coefficients exactly
     rho, w_rho = _gauss(n_rho, 0.0, 1.0)
     if g is not None:
-        leg_rho = np.stack(
-            [legval(2 * rho - 1, np.eye(n_rho)[k]) for k in range(n_rho)]
-        )  # (k, node)
+        leg_rho = np.stack([legval(2 * rho - 1, np.eye(n_rho)[k]) for k in range(n_rho)])  # (k, node)
     v, w_v = _gauss(n, 0.0, 1.0)
     vol = abs(float(far[0] * far[1] * far[2]))
     out = np.zeros(len(pairs))
@@ -495,20 +451,13 @@ def _corner_pyramids(
         # per key: r_k(A_k rho) on the pyramid axis; v^m r_j(A_j rho v) on the other two
         on_k = {key: legval(2 * rho - 1, c) for key, (m, c) in fac[k].items()}
         on_j = [
-            {
-                key: v[None, :] ** m * legval(2 * np.outer(rho, v) - 1, c)
-                for key, (m, c) in fac[i].items()
-            }
+            {key: v[None, :] ** m * legval(2 * np.outer(rho, v) - 1, c) for key, (m, c) in fac[i].items()}
             for i in (j1, j2)
         ]
         cache_face: dict = {}
         for idx, keys in enumerate(pairs):
             m_tot = sum(fac[i][keys[i]][0] for i in range(3))
-            if (
-                fac[0][keys[0]][1].any()
-                and fac[1][keys[1]][1].any()
-                and fac[2][keys[2]][1].any()
-            ):
+            if fac[0][keys[0]][1].any() and fac[1][keys[1]][1].any() and fac[2][keys[2]][1].any():
                 e = 2 + d + m_tot
                 if e < 0:
                     raise ValueError(
@@ -519,24 +468,16 @@ def _corner_pyramids(
             fk = (keys[j1], keys[j2])
             if fk not in cache_face:
                 # sum_ab face[a, b] A[r, a] B[r, b], one axis at a time
-                cache_face[fk] = np.sum(
-                    (on_j[0][keys[j1]] @ face) * on_j[1][keys[j2]], axis=1
-                )
+                cache_face[fk] = np.sum((on_j[0][keys[j1]] @ face) * on_j[1][keys[j2]], axis=1)
             inner = cache_face[fk]
-            scale = float(np.prod([far[i] ** fac[i][keys[i]][0] for i in range(3)]))
+            scale = float(np.prod(np.array([far[i] ** fac[i][keys[i]][0] for i in range(3)], dtype=object)))
             out[idx] += vol * scale * np.sum(w_rho * rho**e * on_k[keys[k]] * inner)
             if face_g is not None:
                 if fk not in cache_face_g:
-                    cache_face_g[fk] = np.sum(
-                        (on_j[0][keys[j1]] @ face_g) * on_j[1][keys[j2]], axis=1
-                    )
+                    cache_face_g[fk] = np.sum((on_j[0][keys[j1]] @ face_g) * on_j[1][keys[j2]], axis=1)
                 poly = on_k[keys[k]] * cache_face_g[fk]  # P(rho) at the nodes
                 c = (2 * np.arange(n_rho) + 1) * (leg_rho @ (w_rho * poly))
-                out[idx] += (
-                    vol
-                    * scale
-                    * sum(c[kk] * _log_rho_moment(e, kk) for kk in range(n_rho))
-                )
+                out[idx] += vol * scale * sum(c[kk] * _log_rho_moment(e, kk) for kk in range(n_rho))
     return out
 
 
@@ -592,9 +533,7 @@ def image_block(
     """
     cz, czp = rec_centre[0], src_centre[0]
     if cz % 2 == 0 or czp % 2 == 0:
-        raise ValueError(
-            "image_block: cell centres must have odd z in units of h (cells lie on one side)."
-        )
+        raise ValueError("image_block: cell centres must have odd z in units of h (cells lie on one side).")
     exps_f = SOURCE_EXPONENTS_QUARTIC[:n_test]
     exps_s = SOURCE_EXPONENTS_QUARTIC[:n_source]
     if czp > 0:
@@ -616,11 +555,9 @@ def image_block(
         sc = np.array([(-1.0) ** e[0] for e in exps_s])
         return np.einsum("a,c,i,j,acij->acij", sa, sc, MIRROR_9, MIRROR_9, mirrored)
     if basis not in ("legendre", "power"):
-        raise ValueError(
-            f"image_block: basis must be 'legendre' or 'power', got {basis!r}"
-        )
+        raise ValueError(f"image_block: basis must be 'legendre' or 'power', got {basis!r}")
     geo = family_geometry(rec_centre, src_centre, n_source, n_test, order)
-    mats = (above.lam, above.mu, below.lam, below.mu)
+    mats: tuple[float, ...] = (above.lam, above.mu, below.lam, below.mu)
     if order >= 1:  # the omega^2 and omega^4 coefficients also hold the densities
         mats += (above.rho, below.rho)
     groups: dict = {}
@@ -723,9 +660,7 @@ def family_geometry(
     }
 
 
-def family_integrals(
-    geo: dict, n_gauss: int = 32, closed: bool = True, basis: str = "legendre"
-) -> dict:
+def family_integrals(geo: dict, n_gauss: int = 32, closed: bool = True, basis: str = "legendre") -> dict:
     """The (n_test, n_source) integrals of each kernel family over the pieces, in units of h (no material
     coefficient, no power of h): {(j, alpha, A, B): array}."""
     lat_x, lat_y, ver = geo["lat_x"], geo["lat_y"], geo["ver"]
@@ -765,15 +700,9 @@ def family_integrals(
                         mom = _regular_moments(f, box, centre, deg, n_gauss)
                     for a, ef in enumerate(exps_f):
                         for cc, es in enumerate(exps_s):
-                            px = _shift(
-                                wx[ef[1], es[1]][ix], Fraction(centre[0]), Fraction(1)
-                            )
-                            py = _shift(
-                                wy[ef[2], es[2]][iy], Fraction(centre[1]), Fraction(1)
-                            )
-                            pz = _shift(
-                                wz[ef[0], es[0]][iz], Fraction(centre[2]), Fraction(1)
-                            )
+                            px = _shift(wx[ef[1], es[1]][ix], Fraction(centre[0]), Fraction(1))
+                            py = _shift(wy[ef[2], es[2]][iy], Fraction(centre[1]), Fraction(1))
+                            pz = _shift(wz[ef[0], es[0]][iz], Fraction(centre[2]), Fraction(1))
                             nzx = [k for k, x in enumerate(px) if x]
                             nzy = [k for k, x in enumerate(py) if x]
                             nzz = [k for k, x in enumerate(pz) if x]
@@ -842,11 +771,7 @@ def _block_legendre(
     rules (for a polynomial kernel, exact).
     """
     val = np.zeros((len(exps_f), len(exps_s)))
-    pair_keys = [
-        ((ef[1], es[1]), (ef[2], es[2]), (ef[0], es[0]))
-        for ef in exps_f
-        for es in exps_s
-    ]
+    pair_keys = [((ef[1], es[1]), (ef[2], es[2]), (ef[0], es[0])) for ef in exps_f for es in exps_s]
     for ix in range(2):
         for iy in range(2):
             for iz in range(2):
@@ -861,16 +786,11 @@ def _block_legendre(
                         raise ValueError(
                             "image_block: the singular point lies inside a piece, not at a corner."
                         )
-                    val += _corner_pyramids(
-                        f, d, box, ws, pair_keys, n_gauss, g
-                    ).reshape(val.shape)
+                    val += _corner_pyramids(f, d, box, ws, pair_keys, n_gauss, g).reshape(val.shape)
                     continue
                 centre = [Fraction(lo + hi, 2) for lo, hi in box]
                 mom = _regular_legendre_moments(f, box, deg, n_gauss)
-                leg = [
-                    {k: _legendre_coeffs(p, centre[i]) for k, p in ws[i].items()}
-                    for i in range(3)
-                ]
+                leg = [{k: _legendre_coeffs(p, centre[i]) for k, p in ws[i].items()} for i in range(3)]
                 for idx, keys in enumerate(pair_keys):
                     cx, cy, cz_ = (leg[i][keys[i]] for i in range(3))
                     sub = mom[: len(cx), : len(cy), : len(cz_)]

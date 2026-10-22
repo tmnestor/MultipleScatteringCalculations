@@ -119,7 +119,12 @@ def test_the_solve_through_the_canonical_kernel_equals_the_full_kernel_solve(mon
     args = (OMEGA, 10.0, REF, CON, N_SUB, _profile, KHAT, KHAT, "P")
     built = []
     real = F.canonical_transformed_kernel
-    monkeypatch.setattr(F, "canonical_transformed_kernel", lambda *a, **k: built.append(1) or real(*a, **k))
+
+    def counted(*a, **k):
+        built.append(1)
+        return real(*a, **k)
+
+    monkeypatch.setattr(F, "canonical_transformed_kernel", counted)
     canon = F.solve_graded_sphere_fft(*args, p=1, r=1, gmres_tol=1e-13)
     assert built == [1]  # the compiled backend took the canonical path
     monkeypatch.setattr(F, "point_kernel_backend", lambda: "python")

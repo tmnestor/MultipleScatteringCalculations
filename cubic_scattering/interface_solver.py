@@ -84,9 +84,7 @@ class InterfaceGrid:
     @property
     def units(self) -> NDArray:
         """Centres in units of h: (2 iz + 1, 2 ix, 2 iy), the convention of ``interface_spectral``."""
-        return np.stack(
-            [2 * self.idx[:, 0] + 1, 2 * self.idx[:, 1], 2 * self.idx[:, 2]], -1
-        )
+        return np.stack([2 * self.idx[:, 0] + 1, 2 * self.idx[:, 1], 2 * self.idx[:, 2]], -1)
 
     @property
     def in_above(self) -> NDArray:
@@ -116,9 +114,7 @@ def reference_waves(
     amplitude in A with lateral wavenumber (kx, ky): (in A, wave vector (3,) complex, 9-state (9,)), the phases
     referred to the interface z = 0, the amplitudes those of ``mode_family`` (bilinear-unit polarisations)."""
     if wave not in _MODE:
-        raise ValueError(
-            f"reference_waves: wave must be 'P', 'SV' or 'SH', got {wave!r}"
-        )
+        raise ValueError(f"reference_waves: wave must be 'P', 'SV' or 'SH', got {wave!r}")
     kxa, kya = np.array([kx], float), np.array([ky], float)
     rt = interface_rt(kxa, kya, omega, above, below)
     n = _MODE[wave]
@@ -126,17 +122,13 @@ def reference_waves(
     def modes(ref, sign):
         out = []
         for w in ("P", "S"):
-            out += [
-                (k[0], d[0]) for k, d, _ in mode_family(kxa, kya, omega, ref, w, sign)
-            ]
+            out += [(k[0], d[0]) for k, d, _ in mode_family(kxa, kya, omega, ref, w, sign)]
         return out  # (P, SV, SH)
 
     down_a, up_a, down_b = modes(above, 1.0), modes(above, -1.0), modes(below, 1.0)
     waves = [(True, *down_a[n])]
     waves += [(True, up_a[m][0], rt["R_d"][0, m, n] * up_a[m][1]) for m in range(3)]
-    waves += [
-        (False, down_b[m][0], rt["T_d"][0, m, n] * down_b[m][1]) for m in range(3)
-    ]
+    waves += [(False, down_b[m][0], rt["T_d"][0, m, n] * down_b[m][1]) for m in range(3)]
     return waves
 
 
@@ -282,17 +274,13 @@ class InterfaceCouplings:
             raise ValueError(
                 "InterfaceCouplings: the omega^4 split has no windowed form; pass omega4=False with a window."
             )
-        if (
-            self.radius is not None or self.depth_radius is not None
-        ) and self.window is None:
+        if (self.radius is not None or self.depth_radius is not None) and self.window is None:
             raise ValueError(
                 "InterfaceCouplings: a radius needs a smooth window; with the sharp cutoff the corrections ring and\n"
                 "  decay only as d^-3/2.  Pass window=interface_spectral.Window(0.25)."
             )
         if self.matrix_free and not self.split:
-            raise ValueError(
-                "InterfaceCouplings: matrix_free needs split=True (MatrixFreeOperator's D)."
-            )
+            raise ValueError("InterfaceCouplings: matrix_free needs split=True (MatrixFreeOperator's D).")
         if self.split and self.window is None:
             raise ValueError(
                 "InterfaceCouplings: split needs a smooth window (its band ends where the window's ramp starts)."
@@ -300,27 +288,22 @@ class InterfaceCouplings:
         g = self.grid
         # the classes: per pair of layers, the canonical lateral offsets (a >= b >= 0, in h) its cells realise
         lat = {z: g.idx[g.idx[:, 0] == z, 1:] for z in np.unique(g.idx[:, 0])}
-        keys = set()
+        key_set: set[tuple[int, int, int, int]] = set()
         for zr, zs in itertools.product(lat, repeat=2):
             d = np.abs(lat[zr][:, None, :] - lat[zs][None, :, :]).reshape(-1, 2)
             ab = np.unique(np.sort(d, axis=1)[:, ::-1], axis=0)
-            keys |= {
-                (2 * int(zr) + 1, 2 * int(zs) + 1, 2 * int(a), 2 * int(b))
-                for a, b in ab
-            }
-        keys = sorted(keys)
+            key_set |= {(2 * int(zr) + 1, 2 * int(zs) + 1, 2 * int(a), 2 * int(b)) for a, b in ab}
+        keys = sorted(key_set)
         # beyond either radius a class has no corrections: its block is the windowed D alone
         local = [k for k in keys if self.corrected(k)]
         # S_n(q) depends on the lateral offset alone, not on the depths or media: one table per offset,
         # shared by its classes.  Its cost grows as the reach squared, so the farthest go first.
         offsets = sorted({k[2:] for k in keys}, key=lambda o: -np.hypot(*o))
-        if (
-            self.matrix_free
-        ):  # D comes from the plane-wave modes: only the self blocks' table is used
+        if self.matrix_free:  # D comes from the plane-wave modes: only the self blocks' table is used
             offsets = [(0, 0)]
         # with the split, D's per-offset part is the low band alone: tables over q h < band_qh only
         table_qh = self.band_qh if self.split else self.q0h
-        jobs = [
+        jobs: list[tuple[str, tuple]] = [
             ("table", (o, g.h, table_qh, self.n_source, self.n_test)) for o in offsets
         ] + [
             (
@@ -350,9 +333,7 @@ class InterfaceCouplings:
                 continue
             # |offsets| between the side's cells: lateral differences of its positions, times the layer differences
             pos = np.unique(sub[:, 1:], axis=0)
-            dxy = np.unique(
-                np.abs(pos[:, None, :] - pos[None, :, :]).reshape(-1, 2), axis=0
-            )
+            dxy = np.unique(np.abs(pos[:, None, :] - pos[None, :, :]).reshape(-1, 2), axis=0)
             zs = np.unique(sub[:, 0])
             dz = np.unique(np.abs(zs[:, None] - zs[None, :]))
             if self.matrix_free:
@@ -360,11 +341,7 @@ class InterfaceCouplings:
                 dz = dz[dz <= 2]
             for z in dz:
                 rows = np.column_stack([np.full(len(dxy), z), dxy])
-                far |= {
-                    c
-                    for c in (tuple(sorted(map(int, r), reverse=True)) for r in rows)
-                    if max(c) > 1
-                }
+                far |= {c for c in (tuple(sorted(map(int, r), reverse=True)) for r in rows) if max(c) > 1}
         far_keys = sorted(far)
         jobs += [("far", (c, self.n_source, self.n_test)) for c in far_keys]
         workers = self.workers or os.cpu_count() or 1
@@ -373,9 +350,7 @@ class InterfaceCouplings:
             ctx = multiprocessing.get_context("spawn")
             with (
                 _one_blas_thread(),
-                ProcessPoolExecutor(
-                    max_workers=min(workers, len(jobs)), mp_context=ctx
-                ) as ex,
+                ProcessPoolExecutor(max_workers=min(workers, len(jobs)), mp_context=ctx) as ex,
             ):
                 results = list(ex.map(_setup_job, jobs))
         else:
@@ -395,15 +370,14 @@ class InterfaceCouplings:
     @property
     def band_qh(self) -> float:
         """The upper end of the split's low band: where the window's ramp starts."""
+        assert self.window is not None  # the split needs a window, checked in __post_init__
         return self.window.start * self.q0h
 
     def low_pass(self, omega: float) -> isp.Window:
         """The split's band at a frequency: its ramp from twice the highest branch point (at least 0.35 / h; a
         wider ramp makes D_high decay faster) to ``band_qh``."""
         g = self.grid
-        top = max(
-            omega * g.h / c for m in (g.above, g.below) for c in (m.alpha, m.beta)
-        )
+        top = max(omega * g.h / c for m in (g.above, g.below) for c in (m.alpha, m.beta))
         lo = max(0.35, 2 * top)
         if lo >= self.band_qh:
             raise ValueError(
@@ -452,9 +426,7 @@ class InterfaceCouplings:
         )
         return _transform(q, blk)
 
-    def interface_canonical(
-        self, omega: float, keys: list | None = None
-    ) -> dict[tuple, NDArray]:
+    def interface_canonical(self, omega: float, keys: list | None = None) -> dict[tuple, NDArray]:
         """The interface block of every symmetry class at one frequency (or of ``keys`` only): the truncated
         plane-wave integrals D batched (one interface solve and frame per radial node and pair of depths, shared
         by every lateral offset; sources in B mirrored onto A with the media exchanged), plus the class's
@@ -473,9 +445,9 @@ class InterfaceCouplings:
         if self.split:
             lp = self.low_pass(omega)
             # D's per-offset part: the low band, below the window
-            qh_d, window_d, extra = self.band_qh, None, {"low_pass": lp}
+            qh_d, window_d, low_pass_d = self.band_qh, None, lp
         else:
-            qh_d, window_d, extra = self.q0h, self.window, {}
+            qh_d, window_d, low_pass_d = self.q0h, self.window, None
         d: dict = {}
         for from_a in (True, False):
             sel = [k for k in keys if (k[1] < 0) == from_a]
@@ -499,7 +471,7 @@ class InterfaceCouplings:
                     qh_d,
                     table,
                     window_d,
-                    **extra,
+                    low_pass=low_pass_d,
                 )
             ]
             if self.split:
@@ -579,9 +551,7 @@ def _whole_space(off, h, omega, ref, n_source, n_test, cache, far=None) -> NDArr
             cache[key] = near_block_series(c, h, omega, ref, n_source, n_test)
         else:
             try:
-                cache[key] = far_block_series(
-                    c, h, omega, ref, n_source, n_test, coeffs=(far or {}).get(c)
-                )
+                cache[key] = far_block_series(c, h, omega, ref, n_source, n_test, coeffs=(far or {}).get(c))
             except ValueError:  # too many series terms at this frequency: Gauss
                 cache[key] = coupling_block(c, h, omega, ref, n_source, n_test)  # type: ignore[arg-type]
     cv, target = np.array(c, dtype=float), np.array(off, dtype=float)
@@ -625,9 +595,7 @@ class InterfaceResult:
     r: int
 
 
-def assemble(
-    grid: InterfaceGrid, blocks: dict, delta: NDArray, p: int, r: int
-) -> NDArray:
+def assemble(grid: InterfaceGrid, blocks: dict, delta: NDArray, p: int, r: int) -> NDArray:
     """The dense system matrix, (N na 9) square."""
     n = len(grid.idx)
     na, n_field, _, n_source = field_sizes(p, r)
@@ -638,17 +606,11 @@ def assemble(
         en = source_expansion(delta[col], n_field)[:, :na]
         en = en.transpose(0, 2, 1, 3).reshape(n_source * 9, na * 9)
         for row in range(n):
-            k = (
-                blocks[row, col][:na, :n_source]
-                .transpose(0, 2, 1, 3)
-                .reshape(na * 9, n_source * 9)
-            )
+            k = blocks[row, col][:na, :n_source].transpose(0, 2, 1, 3).reshape(na * 9, n_source * 9)
             blk = -(k @ en)
             if row == col:
                 blk = blk + m9
-            a[row * na * 9 : (row + 1) * na * 9, col * na * 9 : (col + 1) * na * 9] = (
-                blk
-            )
+            a[row * na * 9 : (row + 1) * na * 9, col * na * 9 : (col + 1) * na * 9] = blk
     return a
 
 
@@ -661,18 +623,13 @@ def apply_coupling(
     na, n_field, _, n_source = field_sizes(p, r)
     ex = np.stack(
         [
-            np.einsum(
-                "cbij,bj->ci", source_expansion(delta[col], n_field)[:, :na], x[col]
-            )
+            np.einsum("cbij,bj->ci", source_expansion(delta[col], n_field)[:, :na], x[col])
             for col in range(n)
         ]
     )  # (N, n_source, 9)
     return np.stack(
         [
-            sum(
-                np.einsum("acij,cj->ai", blocks[row, col][:na, :n_source], ex[col])
-                for col in range(n)
-            )
+            sum(np.einsum("acij,cj->ai", blocks[row, col][:na, :n_source], ex[col]) for col in range(n))
             for row in range(n)
         ]
     )
@@ -712,9 +669,7 @@ def solve_interface(
     blocks = couplings.blocks(omega) if blocks is None else blocks
     a = assemble(grid, blocks, delta, p, r)
     ref = reference_moments(grid, omega, kx, ky, wave, n_field)
-    psi = scipy.linalg.solve(a, ref[:, :na].ravel(), check_finite=False).reshape(
-        len(grid.idx), na, 9
-    )
+    psi = scipy.linalg.solve(a, ref[:, :na].ravel(), check_finite=False).reshape(len(grid.idx), na, 9)
     full = np.zeros((len(grid.idx), n_field, 9), dtype=complex)
     full[:, :na] = psi
     return InterfaceResult(grid, omega, delta, ref, full, p, r)
@@ -802,6 +757,7 @@ class LateralOperator:
                         couplings.far_coeffs,
                     )
                     if parts:
+                        assert kw is not None  # allocated whenever parts is set
                         kw[:, :, dx % self.shape[0], dy % self.shape[1]] = (
                             w[:na, :n_source].transpose(0, 2, 1, 3).reshape(rows, cols)
                         )
@@ -813,14 +769,11 @@ class LateralOperator:
                     self.self_blocks[zr] = k[:na, :n_source]
             self.kernels[zr, zs] = np.fft.fft2(kh, axes=(2, 3)).reshape(rows, cols, -1)
             if parts:
+                assert kw is not None  # allocated whenever parts is set
                 if same:
-                    self.ws_kernels[zr, zs] = np.fft.fft2(kw, axes=(2, 3)).reshape(
-                        rows, cols, -1
-                    )
+                    self.ws_kernels[zr, zs] = np.fft.fft2(kw, axes=(2, 3)).reshape(rows, cols, -1)
                     kh = kh - kw
-                self.if_kernels[zr, zs] = np.fft.fft2(kh, axes=(2, 3)).reshape(
-                    rows, cols, -1
-                )
+                self.if_kernels[zr, zs] = np.fft.fft2(kh, axes=(2, 3)).reshape(rows, cols, -1)
         self.by_layer = by_layer
         self.m9 = gram_test(g.h, n_field)[:na, :na]
 
@@ -881,9 +834,7 @@ class MatrixFreeOperator:
         stored_planes: int = 2,
     ) -> None:
         if not couplings.split:
-            raise ValueError(
-                "MatrixFreeOperator: needs InterfaceCouplings(split=True)."
-            )
+            raise ValueError("MatrixFreeOperator: needs InterfaceCouplings(split=True).")
         g = couplings.grid
         self.grid, self.p, self.r = g, p, r
         na, n_field, _, n_source = field_sizes(p, r)
@@ -908,9 +859,7 @@ class MatrixFreeOperator:
 
         # the window's symbolic frame kernels, once per process (~30 s), for both orders of the media (a source in B
         # is the mirrored problem), so that no product pays for them
-        for kind, order, media in itertools.product(
-            "RT", (0, 1), ((above, below), (below, above))
-        ):
+        for kind, order, media in itertools.product("RT", (0, 1), ((above, below), (below, above))):
             isp.frame_laurent(kind, order, isp._key(media[0]), isp._key(media[1]))
         # D: the low band (non-periodic) and the high band (the period of interface_canonical)
         lp, band = couplings.low_pass(omega), couplings.band_qh
@@ -972,9 +921,7 @@ class MatrixFreeOperator:
             for dx in range(-(nx - 1), nx):
                 for dy in range(-(ny - 1), ny):
                     (a, b), q = _canonical(2 * dx, 2 * dy)
-                    parts = couplings.classes.get(
-                        (2 * zr + 1, 2 * zs + 1, a, b), (None, None)
-                    )[0]
+                    parts = couplings.classes.get((2 * zr + 1, 2 * zs + 1, a, b), (None, None))[0]
                     if parts is None:
                         continue
                     blk = parts[0] + omega**2 * parts[1]
@@ -1001,9 +948,7 @@ class MatrixFreeOperator:
                 if abs(dz) > side[-1] - side[0]:
                     continue
                 kh = np.zeros((na * 9, n_source * 9) + lat, dtype=complex)
-                for dx, dy in itertools.product(
-                    range(-(nx - 1), nx), range(-(ny - 1), ny)
-                ):
+                for dx, dy in itertools.product(range(-(nx - 1), nx), range(-(ny - 1), ny)):
                     k = _whole_space(
                         (dz, dx, dy),
                         h,
@@ -1015,13 +960,9 @@ class MatrixFreeOperator:
                         couplings.far_coeffs,
                     )
                     kh[:, :, dx % lat[0], dy % lat[1]] = (
-                        k[:na, :n_source]
-                        .transpose(0, 2, 1, 3)
-                        .reshape(na * 9, n_source * 9)
+                        k[:na, :n_source].transpose(0, 2, 1, 3).reshape(na * 9, n_source * 9)
                     )
-                kernels[dz] = np.fft.fft2(kh, axes=(2, 3)).reshape(
-                    na * 9, n_source * 9, -1
-                )
+                kernels[dz] = np.fft.fft2(kh, axes=(2, 3)).reshape(na * 9, n_source * 9, -1)
             march = None
             if side[-1] - side[0] > stored_planes:
                 kx, ky, w, lattice = sap.whole_space_nodes(
@@ -1069,9 +1010,7 @@ class MatrixFreeOperator:
                 ws_cache,
                 couplings.far_coeffs,
             )
-            self.self_blocks[z] = (canon[2 * z + 1, 2 * z + 1, 0, 0] + ws)[
-                :na, :n_source
-            ]
+            self.self_blocks[z] = (canon[2 * z + 1, 2 * z + 1, 0, 0] + ws)[:na, :n_source]
         self.m9 = gram_test(h, n_field)[:na, :na]
 
     def coupling(self, delta: NDArray, x: NDArray) -> NDArray:
@@ -1087,9 +1026,7 @@ class MatrixFreeOperator:
         grids = {}
         for z, cells in self.by_layer.items():
             gz = np.zeros((nx, ny, n_source, 9), dtype=complex)
-            gz[self.pos[cells, 0], self.pos[cells, 1]] = src[cells].reshape(
-                -1, n_source, 9
-            )
+            gz[self.pos[cells, 0], self.pos[cells, 1]] = src[cells].reshape(-1, n_source, 9)
             grids[z] = gz
         zu = {2 * z + 1: grids[z] for z in self.layers}
         lo, hi = self.low.apply(zu), self.high.apply(zu)
@@ -1176,9 +1113,7 @@ def solve_interface_gmres(
         [
             np.linalg.inv(
                 m_full
-                - np.einsum(
-                    "acij,cbjk->aibk", op.self_blocks[grid.idx[m, 0]], e[m]
-                ).reshape(rows, rows)
+                - np.einsum("acij,cbjk->aibk", op.self_blocks[grid.idx[m, 0]], e[m]).reshape(rows, rows)
             )
             for m in range(n)
         ]

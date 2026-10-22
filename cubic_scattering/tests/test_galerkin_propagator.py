@@ -221,7 +221,7 @@ def test_gram_diagonal_is_the_integral_of_phi_dot_phi() -> None:
     assert g.shape == (27,)
     for alpha in range(27):
         want = sum(
-            ca * cb * _moment(tuple(x + y for x, y in zip(ea, eb, strict=True)), A)
+            ca * cb * _moment((ea[0] + eb[0], ea[1] + eb[1], ea[2] + eb[2]), A)
             for ca, ea, da in basis_terms(alpha)
             for cb, eb, db in basis_terms(alpha)
             if da == db
@@ -241,7 +241,7 @@ def test_far_field_moment_is_the_lowest_surviving_moment() -> None:
         _, e, _ = basis_terms(alpha)[0]
         for order in range(3):
             vals = [
-                _moment(tuple(e[k] + sum(1 for i in idx if i == k) for k in range(3)), A)
+                _moment((e[0] + idx.count(0), e[1] + idx.count(1), e[2] + idx.count(2)), A)
                 for idx in np.ndindex(*(3,) * order)
             ]
             if any(abs(v) > 0 for v in vals):

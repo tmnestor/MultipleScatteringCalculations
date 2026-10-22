@@ -200,9 +200,9 @@ def assert_diagnostic_error(message: str, where: str) -> None:
 def config_file(tmp_path, monkeypatch):
     path = tmp_path / "numerics.yml"
     monkeypatch.setattr(CAP, "NUMERICS_YAML", path)
-    CAP.cell_average_backend.cache_clear()
+    CAP.cell_average_config.cache_clear()
     yield path
-    CAP.cell_average_backend.cache_clear()
+    CAP.cell_average_config.cache_clear()
 
 
 def test_missing_file(config_file) -> None:
@@ -237,7 +237,7 @@ def test_dispatch_follows_the_configuration(config_file, backend: str) -> None:
 
 
 def test_the_shipped_configuration_is_valid() -> None:
-    CAP.cell_average_backend.cache_clear()
+    CAP.cell_average_config.cache_clear()
     assert CAP.cell_average_backend() in ("python", "fortran")
 
 

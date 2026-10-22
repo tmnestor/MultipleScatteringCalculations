@@ -88,7 +88,12 @@ def test_the_canonical_matvec_on_mps() -> None:
 def test_the_solver_takes_the_canonical_path(monkeypatch) -> None:
     built = []
     real = G._point_canonical_kernel
-    monkeypatch.setattr(G, "_point_canonical_kernel", lambda *a, **k: built.append(1) or real(*a, **k))
+
+    def counted(*a, **k):
+        built.append(1)
+        return real(*a, **k)
+
+    monkeypatch.setattr(G, "_point_canonical_kernel", counted)
     G.compute_sphere_foldy_lax_fft_gpu(
         omega=150.0,
         radius=0.5,

@@ -75,7 +75,9 @@ def test_analytic_n_field_is_the_curl_of_m() -> None:
     assert worst < 1e-7, f"worst |curl M - N| = {worst:.2e}"
 
 
-def _reconstruct(g0: dict, idx: list, src: tuple, k_p: float, k_s: float, pts: np.ndarray) -> np.ndarray:
+def _reconstruct(
+    g0: dict, idx: list, src: tuple, k_p: complex, k_s: complex, pts: np.ndarray
+) -> np.ndarray:
     """Regular-multipole field of the coupling column for one source."""
     out = np.zeros((len(pts), 3), dtype=complex)
     for fam_t, (nu, mu) in idx:
@@ -91,7 +93,7 @@ def _reconstruct(g0: dict, idx: list, src: tuple, k_p: float, k_s: float, pts: n
     return out
 
 
-def _direct(fam: str, n: int, m: int, k_p: float, k_s: float, pts: np.ndarray) -> np.ndarray:
+def _direct(fam: str, n: int, m: int, k_p: complex, k_s: complex, pts: np.ndarray) -> np.ndarray:
     if fam == "L":
         return lk.l_field(n, m, k_p, pts, "h")
     if fam == "M":

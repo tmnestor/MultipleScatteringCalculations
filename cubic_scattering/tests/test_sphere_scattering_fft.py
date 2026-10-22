@@ -10,6 +10,7 @@ Validates internal correctness:
 from __future__ import annotations
 
 import copy
+from typing import Any
 
 import numpy as np
 import pytest
@@ -237,12 +238,13 @@ class TestPlaneWaveFarField:
         """
         big = 10.0
         omega = 1.0 * REF.beta / big  # k_S a = 1
-        kw = dict(n_sub=3, k_hat=np.array([1.0, 0.0, 0.0]), wave_type="P")
+        kw: dict[str, Any] = dict(n_sub=3, k_hat=np.array([1.0, 0.0, 0.0]), wave_type="P")
         dense = compute_sphere_foldy_lax(omega, big, REF, CONTRAST, **kw)
         per_cell = compute_sphere_foldy_lax_fft(
             omega, big, REF, CONTRAST, contrast_profile=lambda _p: 1.0, gmres_tol=1e-12, **kw
         )
         for got, want in ((per_cell.psi_exc, dense.psi_exc), (per_cell.psi_pw, dense.psi_pw)):
+            assert got is not None and want is not None
             for col in range(9):
                 _assert_close_in_norm(got[:, col], want[:, col], 1e-8)
 

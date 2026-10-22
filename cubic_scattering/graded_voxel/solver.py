@@ -31,7 +31,7 @@ def _j(e: int, q: float) -> complex:
     The spherical Bessel functions, not (sin q - q cos q)/q^2, which cancels as q -> 0 (relative error
     eps/q^2: 2e-13 at q = 0.026).
     """
-    return 2.0 * 1j**e * spherical_jn(e, q)
+    return complex(2.0 * 1j**e * spherical_jn(e, q))
 
 
 def field_sizes(p: int, r: int) -> tuple[int, int, int, int]:
@@ -133,7 +133,13 @@ def solve_graded_sphere(
     n = len(centres)
     na, n_field, _, n_source = field_sizes(p, r)
     delta = cell_contrast_coefficients_all(
-        profile, centres, h, contrast, ref, omega, degree=r  # the projection once per sweep
+        profile,
+        centres,
+        h,
+        contrast,
+        ref,
+        omega,
+        degree=r,  # the projection once per sweep
     )
     blocks = {} if blocks is None else blocks
     dim = n * na * 9

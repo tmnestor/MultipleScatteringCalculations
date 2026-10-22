@@ -78,13 +78,14 @@ def fgmres(
     bnorm = np.linalg.norm(b)
     if bnorm == 0:
         return np.zeros_like(b), 0, []
+    history: list[float] = []
     if x0 is None:
         x = np.zeros_like(b)
-        r, n_mv, history = b.copy(), 0, []
+        r, n_mv = b.copy(), 0
     else:
         x = np.array(x0, dtype=complex).ravel()
         r, n_mv = b - matvec(x), 1
-        history = [np.linalg.norm(r) / bnorm]
+        history = [float(np.linalg.norm(r) / bnorm)]
         if history[-1] <= tol:
             return x, n_mv, history
     while True:
@@ -110,7 +111,7 @@ def fgmres(
             # the small least-squares problem, solved directly (at most restart + 1 by restart)
             y, *_ = np.linalg.lstsq(hess[: k + 2, : k + 1], rhs[: k + 2], rcond=None)
             res = np.linalg.norm(rhs[: k + 2] - hess[: k + 2, : k + 1] @ y)
-            history.append(res / bnorm)
+            history.append(float(res / bnorm))
             if history[-1] <= tol or n_mv >= max_iter or hess[k + 1, k] == 0:
                 break
         x = x + y @ z[: len(y)]
@@ -152,7 +153,10 @@ class DownUp:
         self.rows = na * 9
         self.m_full = np.kron(op.m9, np.eye(9))
         # the split, by pair of planes
-        self.k0, self.lo, self.up, self.refl = {}, {}, {}, {}
+        self.k0: dict[int, NDArray] = {}
+        self.lo: dict[tuple[int, int], NDArray] = {}
+        self.up: dict[tuple[int, int], NDArray] = {}
+        self.refl: dict[tuple[int, int], NDArray] = {}
         for zr in self.layers:
             for zs in self.layers:
                 if zr == zs:
@@ -169,9 +173,9 @@ class DownUp:
             [
                 np.linalg.inv(
                     self.m_full
-                    - np.einsum(
-                        "acij,cbjk->aibk", op.self_blocks[op.grid.idx[m, 0]], e[m]
-                    ).reshape(self.rows, self.rows)
+                    - np.einsum("acij,cbjk->aibk", op.self_blocks[op.grid.idx[m, 0]], e[m]).reshape(
+                        self.rows, self.rows
+                    )
                 )
                 for m in range(len(e))
             ]
@@ -212,9 +216,7 @@ class DownUp:
         def matvec(v):
             self.inner_products += 1
             x = v.reshape(n, self.op.na, 9)
-            ky = self._field(
-                z, np.einsum("rcf,cf->rf", self.k0[z], self._spectrum(z, x))
-            )
+            ky = self._field(z, np.einsum("rcf,cf->rf", self.k0[z], self._spectrum(z, x)))
             return (np.einsum("ab,nbi->nai", m9, x) - ky).ravel()
 
         def jac(v):
@@ -245,7 +247,8 @@ class DownUp:
 
         # down: the lagged R x + U x, then the planes from the top with L of the fresh ones
         spec = {z: self._spectrum(z, x[z]) for z in layers} if x is not None else {}
-        down, down_spec = {}, {}
+        down: dict[int, NDArray] = {}
+        down_spec: dict[int, NDArray] = {}
         for z in layers:
             acc = zeros()
             if spec:
@@ -255,11 +258,10 @@ class DownUp:
             down[z] = self._solve_plane(z, b[z] + self._field(z, acc))
             down_spec[z] = self._spectrum(z, down[z])
         # up: the lagged R x' + L x', then the planes from the bottom with U of the fresh ones
-        out, up_spec = {}, {}
+        out: dict[int, NDArray] = {}
+        up_spec: dict[int, NDArray] = {}
         for z in reversed(layers):
-            acc = self._apply(self.refl, down_spec, z) + self._apply(
-                self.lo, down_spec, z
-            )
+            acc = self._apply(self.refl, down_spec, z) + self._apply(self.lo, down_spec, z)
             if up_spec:
                 acc += self._apply(self.up, up_spec, z)
             out[z] = self._solve_plane(z, b[z] + self._field(z, acc))
@@ -273,6 +275,7 @@ class DownUp:
         x = None
         for _ in range(self.passes):
             x = self.one_pass(b, x)
+        assert x is not None  # passes >= 1
         out = np.zeros_like(full)
         for z, c in self.cells.items():
             out[c] = x[z]
@@ -323,9 +326,7 @@ class AveragedSweep:
         self.layers = list(op.layers)
         self.cells = {z: op.by_layer[z] for z in self.layers}
         a, _ = _averaged_system(op, e)
-        self.inv = np.linalg.inv(
-            a
-        )  # (F, L rows, L rows): the exact depth solve at each lateral bin
+        self.inv = np.linalg.inv(a)  # (F, L rows, L rows): the exact depth solve at each lateral bin
         self.rows = op.na * 9
 
     def __call__(self, v: NDArray) -> NDArray:
@@ -335,21 +336,15 @@ class AveragedSweep:
         for z in self.layers:
             cells = self.cells[z]
             g = np.zeros((rows,) + op.shape, dtype=complex)
-            g[:, op.pos[cells, 0], op.pos[cells, 1]] = (
-                full[cells].reshape(len(cells), rows).T
-            )
+            g[:, op.pos[cells, 0], op.pos[cells, 1]] = full[cells].reshape(len(cells), rows).T
             spec.append(np.fft.fft2(g, axes=(1, 2)).reshape(rows, -1))
         rhs = np.concatenate(spec, axis=0)  # (L rows, F)
         sol = np.einsum("fij,jf->if", self.inv, rhs)
         out = np.zeros_like(full)
         for i, z in enumerate(self.layers):
             cells = self.cells[z]
-            y = np.fft.ifft2(
-                sol[i * rows : (i + 1) * rows].reshape((rows,) + op.shape), axes=(1, 2)
-            )
-            out[cells] = y[:, op.pos[cells, 0], op.pos[cells, 1]].T.reshape(
-                len(cells), op.na, 9
-            )
+            y = np.fft.ifft2(sol[i * rows : (i + 1) * rows].reshape((rows,) + op.shape), axes=(1, 2))
+            out[cells] = y[:, op.pos[cells, 0], op.pos[cells, 1]].T.reshape(len(cells), op.na, 9)
         return out.ravel()
 
 
@@ -401,9 +396,7 @@ class DtNSweep:
                 " within the band; leave it None here."
             )
         if inner_iterations is not None and inner_iterations < 0:
-            raise ValueError(
-                f"DtNSweep: inner_iterations is None or a count >= 0, not {inner_iterations}."
-            )
+            raise ValueError(f"DtNSweep: inner_iterations is None or a count >= 0, not {inner_iterations}.")
         self.window = window
         self.inner_iterations = inner_iterations
         self.op, self.e, self.inner_tol, self.inner_restart = (
@@ -434,23 +427,29 @@ class DtNSweep:
         self.lo, self.up, self.s, self.s_inv = {}, {}, [], []
         for k in range(n_l):
             sk = blk[k][k]
+            assert sk is not None  # within the band
             sk_inv = np.linalg.inv(sk)
             self.s.append(sk)
             self.s_inv.append(sk_inv)
             below = range(k + 1, min(n_l, k + self.band + 1))
             for i in below:
-                self.lo[i, k] = blk[i][k] @ sk_inv
+                bik = blk[i][k]
+                assert bik is not None  # within the band
+                self.lo[i, k] = bik @ sk_inv
             for j in below:
-                self.up[k, j] = sk_inv @ blk[k][j]
+                bkj = blk[k][j]
+                assert bkj is not None  # within the band
+                self.up[k, j] = sk_inv @ bkj
             for i in below:
                 for j in below:
-                    blk[i][j] -= self.lo[i, k] @ blk[k][j]
+                    bij, bkj = blk[i][j], blk[k][j]
+                    assert bij is not None and bkj is not None  # within the band
+                    bij -= self.lo[i, k] @ bkj
         # each cell's contrast fluctuation about its plane's mean, (n_source 9) x (na 9)
         # each cell's contrast, and the plane's mean, as matrices (n_source 9) x (na 9); the true contrast is zero at
         # the padded grid's points outside the box, so the fluctuation there is -E_z
         self.e_cells = {
-            z: e[c].transpose(0, 1, 3, 2, 4).reshape(len(c), cols, rows)
-            for z, c in self.cells.items()
+            z: e[c].transpose(0, 1, 3, 2, 4).reshape(len(c), cols, rows) for z, c in self.cells.items()
         }
         self.ebar = ebar
         self.inner_products = 0
@@ -530,8 +529,7 @@ class DtNSweep:
         return [
             t[a]
             + sum(
-                np.einsum("frs,sf->rf", self.lo[win[a], win[b]], t[b])
-                for b in range(max(0, a - band), a)
+                np.einsum("frs,sf->rf", self.lo[win[a], win[b]], t[b]) for b in range(max(0, a - band), a)
             )
             for a in range(n)
         ]
@@ -539,18 +537,20 @@ class DtNSweep:
     def _trailing_solve(self, win: list, v: list) -> list:
         """(L_W S_W U_W)^-1 v at each wavenumber."""
         n, band = len(win), self.band
-        p = []
+        p: list[NDArray] = []
         for a in range(n):
             pa = v[a].copy()
             for b in range(max(0, a - band), a):
                 pa -= np.einsum("frs,sf->rf", self.lo[win[a], win[b]], p[b])
             p.append(pa)
         q = [np.einsum("frs,sf->rf", self.s_inv[win[a]], p[a]) for a in range(n)]
-        r = [None] * n
+        r: list[NDArray | None] = [None] * n
         for a in reversed(range(n)):
             ra = q[a].copy()
             for b in range(a + 1, min(n, a + band + 1)):
-                ra -= np.einsum("frs,sf->rf", self.up[win[a], win[b]], r[b])
+                rb = r[b]
+                assert rb is not None  # solved earlier in the back substitution
+                ra -= np.einsum("frs,sf->rf", self.up[win[a], win[b]], rb)
             r[a] = ra
         return r
 
@@ -576,15 +576,11 @@ class DtNSweep:
             src = [self._fluctuation(z, va) for z, va in zip(zs, v, strict=True)]
             for a in range(n):
                 for b in range(n):
-                    out[a] = out[a] - np.einsum(
-                        "rcf,cf->rf", self.op.kernels[zs[a], zs[b]], src[b]
-                    )
+                    out[a] = out[a] - np.einsum("rcf,cf->rf", self.op.kernels[zs[a], zs[b]], src[b])
             return np.concatenate([o.ravel() for o in out])
 
         def pre(u):
-            return np.concatenate(
-                [o.ravel() for o in self._trailing_solve(win, split(u))]
-            )
+            return np.concatenate([o.ravel() for o in self._trailing_solve(win, split(u))])
 
         b = np.concatenate([r.ravel() for r in rhs])
         self.inner_solves += 1
@@ -614,13 +610,10 @@ class DtNSweep:
     def __call__(self, v: NDArray) -> NDArray:
         op, n_l = self.op, len(self.layers)
         full = v.reshape(len(self.e), op.na, 9)
-        bh = [
-            self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1))
-            for z in self.layers
-        ]
+        bh = [self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1)) for z in self.layers]
         band = self.band
         # L^-1: down, at each wavenumber
-        w = []
+        w: list[NDArray] = []
         for i in range(n_l):
             wi = bh[i].copy()
             for k in range(max(0, i - band), i):
@@ -629,17 +622,19 @@ class DtNSweep:
         # D^-1: each pivot, partially
         y = [self._pivot_solve(i, w[i]) for i in range(n_l)]
         # U^-1: up, at each wavenumber
-        x = [None] * n_l
+        x: list[NDArray | None] = [None] * n_l
         for k in reversed(range(n_l)):
             xk = y[k].copy()
             for j in range(k + 1, min(n_l, k + band + 1)):
-                xk -= np.einsum("frs,sf->rf", self.up[k, j], x[j])
+                xj = x[j]
+                assert xj is not None  # solved earlier in the back substitution
+                xk -= np.einsum("frs,sf->rf", self.up[k, j], xj)
             x[k] = xk
         out = np.zeros_like(full)
         for i, z in enumerate(self.layers):
-            out[self.cells[z]] = self._at_cells(z, x[i]).reshape(
-                len(self.cells[z]), op.na, 9
-            )
+            xi = x[i]
+            assert xi is not None  # every plane solved
+            out[self.cells[z]] = self._at_cells(z, xi).reshape(len(self.cells[z]), op.na, 9)
         return out.ravel()
 
 
@@ -672,19 +667,14 @@ class TrueSweep(DtNSweep):
     def __call__(self, v: NDArray) -> NDArray:
         op, n_l = self.op, len(self.layers)
         full = v.reshape(len(self.e), op.na, 9)
-        bh = [
-            self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1))
-            for z in self.layers
-        ]
-        acc = [
-            np.zeros_like(b) for b in bh
-        ]  # sum over the solved planes k of A_{jk} x_k
-        x = [None] * n_l
+        bh = [self._to_grid(z, full[self.cells[z]].reshape(len(self.cells[z]), -1)) for z in self.layers]
+        acc = [np.zeros_like(b) for b in bh]  # sum over the solved planes k of A_{jk} x_k
+        x: list[NDArray | None] = [None] * n_l
         for i in reversed(range(n_l)):
             r = [bh[j] - acc[j] for j in range(i + 1)]
             win = self._window(i)
             # the planes above the window, eliminated in the averaged medium: their right-hand sides forward
-            f = []
+            f: list[NDArray] = []
             for k in range(win[0]):
                 fk = r[k].copy()
                 for m in range(k):
@@ -696,15 +686,15 @@ class TrueSweep(DtNSweep):
                 for m in range(win[0]):
                     rj -= np.einsum("frs,sf->rf", self.lo[j, m], f[m])
                 rhs.append(rj)
-            x[i] = self._window_solve(win, rhs)[-1]
+            xi = x[i] = self._window_solve(win, rhs)[-1]
             zi = self.layers[i]
             for j in range(i):
-                acc[j] += self._true_coupling(self.layers[j], zi, x[i])
+                acc[j] += self._true_coupling(self.layers[j], zi, xi)
         out = np.zeros_like(full)
         for i, z in enumerate(self.layers):
-            out[self.cells[z]] = self._at_cells(z, x[i]).reshape(
-                len(self.cells[z]), op.na, 9
-            )
+            xs = x[i]
+            assert xs is not None  # every plane solved
+            out[self.cells[z]] = self._at_cells(z, xs).reshape(len(self.cells[z]), op.na, 9)
         return out.ravel()
 
 
@@ -859,9 +849,7 @@ class MatrixFreeDownUp:
         if bands not in ("both", "low"):
             raise ValueError("MatrixFreeDownUp: bands is 'both' or 'low'.")
         if self_reflection not in ("exact", "lagged"):
-            raise ValueError(
-                "MatrixFreeDownUp: self_reflection is 'exact' or 'lagged'."
-            )
+            raise ValueError("MatrixFreeDownUp: self_reflection is 'exact' or 'lagged'.")
         self.self_reflection = self_reflection
         self.op, self.e, self.inner_tol, self.inner_restart = (
             op,
@@ -874,9 +862,7 @@ class MatrixFreeDownUp:
         nx, ny = op.shape
         self.lat = (2 * nx - 1, 2 * ny - 1)
         self.rows = op.na * 9
-        self.ws = {
-            z: (side, kern, march) for side, kern, march in op.sides for z in side
-        }
+        self.ws = {z: (side, kern, march) for side, kern, march in op.sides for z in side}
         self.products = (op.low, op.high) if bands == "both" else (op.low,)
         if coarse is not None:
             # D's low band on its own, coarser nodes (the preconditioner need not be exact)
@@ -919,9 +905,7 @@ class MatrixFreeDownUp:
             if len(coarse) > 2:
                 # and the march's nodes: the coarse low band and the lattice to q h = qmax_h
                 qmax_h = coarse[2]
-                if (
-                    len(coarse) > 3
-                ):  # the lattice's period: the box and half the capped reach beyond it
+                if len(coarse) > 3:  # the lattice's period: the box and half the capped reach beyond it
                     n_grid = scipy.fft.next_fast_len(max(nx, ny) + int(coarse[3] / 4))
                 else:
                     reach = max(max(k[2], k[3]) for k in cpl.classes) // 2
@@ -964,9 +948,9 @@ class MatrixFreeDownUp:
             [
                 np.linalg.inv(
                     m_full
-                    - np.einsum(
-                        "acij,cbjk->aibk", op.self_blocks[op.grid.idx[m, 0]], e[m]
-                    ).reshape(self.rows, self.rows)
+                    - np.einsum("acij,cbjk->aibk", op.self_blocks[op.grid.idx[m, 0]], e[m]).reshape(
+                        self.rows, self.rows
+                    )
                 )
                 for m in range(len(e))
             ]
@@ -984,9 +968,7 @@ class MatrixFreeDownUp:
         """The plane's E x on the lateral box, (nx, ny, n_source, 9)."""
         op, cells = self.op, self.cells[z]
         g = np.zeros(op.shape + (op.n_source, 9), dtype=complex)
-        g[op.pos[cells, 0], op.pos[cells, 1]] = np.einsum(
-            "ncbij,nbj->nci", self.e[cells], x
-        )
+        g[op.pos[cells, 0], op.pos[cells, 1]] = np.einsum("ncbij,nbj->nci", self.e[cells], x)
         return g
 
     def _gather(self, z: int, y: NDArray) -> NDArray:
@@ -1003,7 +985,7 @@ class MatrixFreeDownUp:
             axes=(1, 2),
         ).reshape(g.shape[2] * 9, -1)
 
-    def _stored(self, zr: int, sources: dict) -> NDArray:
+    def _stored(self, zr: int, sources: dict) -> NDArray | float:
         """The stored whole-space kernels onto zr from the planes in ``sources`` ({z_s: spectrum}), (nx, ny, na, 9)."""
         op = self.op
         nx, ny = op.shape
@@ -1043,10 +1025,7 @@ class MatrixFreeDownUp:
         return [sap.add_amplitudes(x, y, sign) for x, y in zip(a, b, strict=True)]
 
     def _d_field(self, zr: int, amps: list, source_side: str) -> NDArray:
-        return sum(
-            p.fields(2 * zr + 1, a, source_side)
-            for p, a in zip(self.products, amps, strict=True)
-        )
+        return sum(p.fields(2 * zr + 1, a, source_side) for p, a in zip(self.products, amps, strict=True))
 
     def _k0(self, z: int, g: NDArray) -> NDArray:
         y = self._stored(z, {z: self._spec(g)}) + self._stencils(z, {z: g})
@@ -1082,7 +1061,7 @@ class MatrixFreeDownUp:
         self.inner_solves += 1
         return sol.reshape(n, na, 9)
 
-    def _march_field(self, z: int, betas: dict, state: dict, sign: int) -> NDArray:
+    def _march_field(self, z: int, betas: dict, state: dict, sign: int) -> NDArray | float:
         """The march's field at z from the planes at least g away on the side the sweep came from: the recursion
         alpha_i = p alpha_{i -+ 1} + p^g beta_{i -+ g}, advanced over the side's contiguous layers ({z: amps})."""
         march = self.ws[z][2]
@@ -1113,9 +1092,7 @@ class MatrixFreeDownUp:
         g = self._grid(z, x)
         store["grid"][z], store["spec"][z] = g, self._spec(g)
         store["d"][z] = self._d_amps(z, g)
-        tot = store.setdefault(
-            "tot", {"A": None, "B": None}
-        )  # each side's summed amplitudes, kept running
+        tot = store.setdefault("tot", {"A": None, "B": None})  # each side's summed amplitudes, kept running
         tot[self._side(z)] = self._d_add(tot[self._side(z)], store["d"][z])
         march = self.ws[z][2]
         if march is not None:
@@ -1128,28 +1105,18 @@ class MatrixFreeDownUp:
         refl = {}
         for z in self.layers:
             sd = self._side(z)
-            others = (
-                self._d_add(tot[sd], st["d"][z], -1.0)
-                if self.self_reflection == "exact"
-                else tot[sd]
-            )
+            others = self._d_add(tot[sd], st["d"][z], -1.0) if self.self_reflection == "exact" else tot[sd]
             refl[z] = self._d_field(z, others, sd) + self._stencils(
                 z,
-                {
-                    zs: g
-                    for zs, g in st["grid"].items()
-                    if zs != z and self._side(zs) == sd
-                },
+                {zs: g for zs, g in st["grid"].items() if zs != z and self._side(zs) == sd},
             )
         return refl
 
-    def _from_below(self, z: int, st: dict, march_state: dict) -> NDArray:
+    def _from_below(self, z: int, st: dict, march_state: dict) -> NDArray | float:
         """U x at z from the planes below in ``st``: the side's stored kernels and march, and for z in A the
         transmission from B's summed amplitudes and the corrections of B's planes."""
         side = self.ws[z][0]
-        y = self._stored(
-            z, {zs: st["spec"][zs] for zs in st["grid"] if zs in side and zs > z}
-        )
+        y = self._stored(z, {zs: st["spec"][zs] for zs in st["grid"] if zs in side and zs > z})
         y = y + self._march_field(z, st["betas"], march_state, -1)
         if z < 0:
             b_planes = [zs for zs in st["grid"] if zs >= 0]
@@ -1158,12 +1125,10 @@ class MatrixFreeDownUp:
                 y = y + self._stencils(z, {zs: st["grid"][zs] for zs in b_planes})
         return y
 
-    def _from_above(self, z: int, st: dict, march_state: dict) -> NDArray:
+    def _from_above(self, z: int, st: dict, march_state: dict) -> NDArray | float:
         """L x at z from the planes above in ``st`` (the mirror of ``_from_below``)."""
         side = self.ws[z][0]
-        y = self._stored(
-            z, {zs: st["spec"][zs] for zs in st["grid"] if zs in side and zs < z}
-        )
+        y = self._stored(z, {zs: st["spec"][zs] for zs in st["grid"] if zs in side and zs < z})
         y = y + self._march_field(z, st["betas"], march_state, 1)
         if z >= 0:
             a_planes = [zs for zs in st["grid"] if zs < 0]
@@ -1177,22 +1142,24 @@ class MatrixFreeDownUp:
         layers = self.layers
         lag: dict = {}
         if prev is not None:  # the down sweep's lagged part, R x + U x
-            refl, ms = self._reflections(prev), {}
+            refl = self._reflections(prev)
+            ms: dict[int, dict] = {}
             for z in reversed(layers):
                 lag[z] = refl[z] + self._from_below(z, prev, ms)
         # down: L from the planes above, solved in this sweep
-        dn = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
+        dn: dict[str, dict] = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
         ms, l_field = {}, {}
         for z in layers:
             y = self._from_above(z, dn, ms)
             l_field[z] = y
             if z in lag:
                 y = y + lag[z]
-            rhs = b[z] + (self._gather(z, y) if not np.isscalar(y) else 0.0)
+            # y is the scalar 0.0 when no plane above contributes, else an array
+            rhs = b[z] + (self._gather(z, y) if isinstance(y, np.ndarray) else 0.0)
             self._state(z, self._solve_plane(z, rhs), dn)
         # the backscatter, lagged from the down sweep; up: U from the planes below, solved in this sweep
         refl = self._reflections(dn)
-        up = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
+        up: dict[str, dict] = {"grid": {}, "spec": {}, "d": {}, "betas": {}}
         ms, out = {}, {}
         for z in reversed(layers):
             y = l_field[z] + refl[z] + self._from_below(z, up, ms)
@@ -1212,12 +1179,10 @@ class MatrixFreeDownUp:
         return out.ravel()
 
 
-def source_expansions(op, delta: list) -> NDArray:
+def source_expansions(op, delta: NDArray) -> NDArray:
     """Each cell's source expansion E, (N, n_source, na, 9, 9), from its contrast ``delta``
     (``cell_contrasts``) for the field sizes of ``op``: what a preconditioner is built from."""
-    return np.array(
-        [source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta]
-    )
+    return np.array([source_expansion(d, op.n_field)[: op.n_source, : op.na] for d in delta])
 
 
 def solve_interface_fgmres(
@@ -1298,9 +1263,7 @@ def solve_interface_fgmres(
             [
                 np.linalg.inv(
                     m_full
-                    - np.einsum(
-                        "acij,cbjk->aibk", op.self_blocks[grid.idx[m, 0]], e[m]
-                    ).reshape(rows, rows)
+                    - np.einsum("acij,cbjk->aibk", op.self_blocks[grid.idx[m, 0]], e[m]).reshape(rows, rows)
                 )
                 for m in range(n)
             ]
@@ -1314,13 +1277,9 @@ def solve_interface_fgmres(
                 "solve_interface_fgmres: 'averaged' needs the stored kernels (LateralOperator)."
             )
         pre = AveragedSweep(op, e)
-    elif (
-        preconditioner == "dtn"
-    ):  # Algorithm 5.1, Dirichlet-to-Neumann form, pivots solved partially
+    elif preconditioner == "dtn":  # Algorithm 5.1, Dirichlet-to-Neumann form, pivots solved partially
         if not isinstance(op, LateralOperator):
-            raise ValueError(
-                "solve_interface_fgmres: 'dtn' needs the stored kernels (LateralOperator)."
-            )
+            raise ValueError("solve_interface_fgmres: 'dtn' needs the stored kernels (LateralOperator).")
         pre = DtNSweep(op, e, inner_tol=inner_tol, window=dtn_window)
     elif (
         preconditioner == "true-sweep"
@@ -1338,9 +1297,7 @@ def solve_interface_fgmres(
             return v
 
     else:
-        raise ValueError(
-            f"solve_interface_fgmres: unknown preconditioner {preconditioner!r}."
-        )
+        raise ValueError(f"solve_interface_fgmres: unknown preconditioner {preconditioner!r}.")
 
     ref = reference_moments(grid, omega, kx, ky, wave, n_field)
     # a preconditioner used before keeps counting: this solve's counts are the increments

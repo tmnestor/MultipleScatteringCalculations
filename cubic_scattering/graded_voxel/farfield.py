@@ -109,8 +109,13 @@ def monomial_fourier(n: int, q: NDArray) -> NDArray:
     forms, which cancel as q -> 0; ``scipy.special.spherical_jn`` takes complex arguments.
     """
     q = np.asarray(q, dtype=complex)
-    return sum(
-        c * 2.0 * 1j**l * spherical_jn(l, q) for l, c in enumerate(_monomial_legendre(n)) if c != 0.0
+    # np.asarray only narrows the type: sum() of arrays is already an array (mypy sees a possible 0).
+    return np.asarray(
+        sum(
+            c * 2.0 * 1j**ell * spherical_jn(ell, q)
+            for ell, c in enumerate(_monomial_legendre(n))
+            if c != 0.0
+        )
     )
 
 

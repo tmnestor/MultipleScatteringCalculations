@@ -120,7 +120,7 @@ def test_tables_by_symmetry_equal_tables_integrated_directly() -> None:
 
 
 def test_canonical_offset_and_mapping() -> None:
-    for off in itertools.product(range(-3, 4), repeat=3):
+    for off in itertools.product(range(-3, 4), range(-3, 4), range(-3, 4)):
         pi, sigma = gd.mapping_to(off)
         assert gd.apply(pi, sigma, gd.canonical_offset(off)) == off
 

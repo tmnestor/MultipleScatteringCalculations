@@ -742,7 +742,7 @@ def near_block_series(
     """
     if max(abs(o) for o in offset) > 1:
         raise ValueError(f"near_block_series: offset {offset} does not touch; use coupling_block")
-    offset = tuple(int(o) for o in offset)
+    offset = (int(offset[0]), int(offset[1]), int(offset[2]))
     reach = omega / ref.beta * 4.0 * np.sqrt(3.0) * h
     out = np.zeros((n_test, n_source, 9, 9), dtype=complex)
     m = -1
@@ -782,7 +782,7 @@ _NEAR_CACHE: dict[tuple, NDArray] = {}
 def near_block(
     offset: tuple[int, int, int],
     h: float,
-    omega: float,
+    omega: complex,
     ref: ReferenceMedium,
     n_q: int = 12,
     n_source: int = 10,
@@ -968,7 +968,7 @@ def far_block_series(
 def coupling_block(
     offset: tuple[int, int, int],
     h: float,
-    omega: float,
+    omega: complex,
     ref: ReferenceMedium,
     n_source: int = 10,
     n_test: int = 4,

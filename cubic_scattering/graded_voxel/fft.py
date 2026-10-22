@@ -119,11 +119,11 @@ def _transform(q: NDArray, block: NDArray) -> NDArray:
     no arithmetic beyond the signs (the dense einsum it replaces cost 0.05 s per offset at degree two).
     """
     t, u, s = symmetry_reps(q, block.shape[1], block.shape[0])
-    sp = [_signed_permutation(m) for m in (t, u, s)]
-    if any(x is None for x in sp):
+    sp_t, sp_u, sp_s = (_signed_permutation(m) for m in (t, u, s))
+    if sp_t is None or sp_u is None or sp_s is None:
         tmp = np.einsum("ij,bdjk,lk->bdil", s, block, s)
         return np.einsum("ab,cd,bdil->acil", t, u, tmp)
-    (pt, st), (pu, su), (ps, ss) = sp
+    (pt, st), (pu, su), (ps, ss) = sp_t, sp_u, sp_s
     out = block[np.ix_(pt, pu, ps, ps)]
     return out * (
         st[:, None, None, None]
