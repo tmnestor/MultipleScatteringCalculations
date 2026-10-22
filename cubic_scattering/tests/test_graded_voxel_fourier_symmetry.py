@@ -155,3 +155,20 @@ def test_the_block_jacobi_inverses_equal_the_cell_by_cell_ones() -> None:
     )
     got = F._block_jacobi(m9, k0, e_cells)
     assert np.abs(got - want).max() <= 1e-13 * np.abs(want).max()
+
+
+@pytest.mark.parametrize("n_sub", [2, 4, 5])
+def test_the_orbit_arrays_match_the_offset_by_offset_map(n_sub) -> None:
+    """Every offset, its canonical offset, and the FIRST signed permutation taking one to the other."""
+    from cubic_scattering.graded_voxel import fft as F
+
+    F._orbit_arrays.cache_clear()
+    offsets, inverse, q_index, keys = F._orbit_arrays(n_sub)
+    qs = F.signed_permutations()
+    by_key = {k: i for i, k in enumerate(keys)}
+    rows = F._orbit_map(n_sub)
+    assert len(rows) == len(offsets) and list(keys) == sorted(keys)
+    for n, (off, canon, q) in enumerate(rows):
+        assert tuple(offsets[n]) == off
+        assert inverse[n] == by_key[canon]
+        np.testing.assert_array_equal(qs[q_index[n]], q)

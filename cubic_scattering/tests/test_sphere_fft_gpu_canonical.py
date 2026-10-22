@@ -87,8 +87,8 @@ def test_the_canonical_matvec_on_mps() -> None:
 
 def test_the_solver_takes_the_canonical_path(monkeypatch) -> None:
     built = []
-    real = G._canonical_kernel
-    monkeypatch.setattr(G, "_canonical_kernel", lambda *a, **k: built.append(1) or real(*a, **k))
+    real = G._point_canonical_kernel
+    monkeypatch.setattr(G, "_point_canonical_kernel", lambda *a, **k: built.append(1) or real(*a, **k))
     G.compute_sphere_foldy_lax_fft_gpu(
         omega=150.0,
         radius=0.5,
@@ -100,3 +100,24 @@ def test_the_solver_takes_the_canonical_path(monkeypatch) -> None:
         dtype=torch.complex128,
     )
     assert built == [1]
+
+
+@pytest.mark.parametrize("n_sub", [5, 6])
+@pytest.mark.parametrize("fold_t", [True, False])
+def test_the_canonical_point_kernel_from_canonical_offsets_only(n_sub, fold_t) -> None:
+    """The propagator at the canonical offsets alone, through the pair-orbit and octant construction,
+    gives the canonical blocks of the full kernel's transform (n_sub = 6 embeds in 15 points, not 11)."""
+    from cubic_scattering.sphere_scattering_fft import fast_odd_size
+
+    _, centres, a_sub = _build_grid_index_map(10.0, n_sub)
+    omega = 0.8 * REF.beta / a_sub
+    t = _sub_cell_tmatrix_9x9(compute_cube_tmatrix(omega, a_sub, REF, CONTRAST), omega, a_sub)
+    t = t if fold_t else np.eye(9, dtype=complex)
+    n_p = fast_odd_size(2 * n_sub - 1)
+    want = G._canonical_kernel(
+        _build_fft_kernel(n_sub, a_sub, t, omega, REF, n_pad=n_p), (n_p + 1) // 2, CPU, torch.complex128
+    )
+    got = G._point_canonical_kernel(n_sub, n_p, a_sub, t, omega, REF, CPU, torch.complex128)
+    w, g = to_numpy(want.kc), to_numpy(got.kc)
+    assert g.shape == w.shape
+    assert np.abs(g - w).max() <= 1e-13 * np.abs(w).max()

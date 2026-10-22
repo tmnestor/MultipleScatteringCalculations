@@ -20,6 +20,7 @@ import torch
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+from .cell_averaged_pair import averaged_pair_blocks_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
@@ -31,7 +32,7 @@ from .resonance_tmatrix import (
     _sub_cell_tmatrix_9x9,
 )
 from .sphere_scattering import SphereDecompositionResult
-from .sphere_scattering_fft import _build_fft_kernel, _build_grid_index_map, fast_odd_size
+from .sphere_scattering_fft import _build_grid_index_map, fast_odd_size
 from .torch_gmres import get_device, select_dtype, to_numpy, to_torch, torch_gmres
 
 __all__ = ["compute_sphere_foldy_lax_fft_gpu", "point_wave_far_field", "solve_point_plane_wave"]
@@ -156,21 +157,80 @@ def _canonical_kernel(
 
     The re-indexing at a point f = Q k_c is ``graded_voxel.fft.fourier_symmetry_tables`` with one test
     function and one source monomial (the constant, which every symmetry fixes): rows and columns are the
-    9 components, K^(f)[r, c] = sr[r] sc[c] K^(k_c)[pr[r], pc[c]].
+    9 components, K^(f)[r, c] = sr[r] sc[c] K^(k_c)[pr[r], pc[c]]. The reference route: the solvers build
+    the canonical blocks directly (``_point_canonical_kernel``).
     """
-    from .graded_voxel.fft import _orbit_arrays, fourier_symmetry_tables
-    from .graded_voxel.kernel import point_kernel_backend
+    from .graded_voxel.fft import _orbit_arrays
 
     n_p = 2 * n_sub - 1
-    n_f = n_p**3
     keys = _orbit_arrays(n_sub)[3]
+    at = np.array([(a * n_p + b) * n_p + d for a, b, d in keys])
+    kc = np.ascontiguousarray(kernel_hat.reshape(9, 9, n_p**3)[:, :, at].transpose(2, 0, 1))
+    return _canonical_kernel_from_blocks(kc, n_sub, device, dtype)
+
+
+def _point_canonical_kernel(
+    n_sub: int,
+    n_p: int,
+    a_sub: float,
+    t_mat: NDArray[np.complexfloating],
+    omega: float,
+    ref: ReferenceMedium,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> CanonicalKernel:
+    """The point kernel -P(r) t_mat at the canonical wavenumbers, from the canonical offsets alone.
+
+    ``_build_fft_kernel`` evaluates the cell-averaged propagator at every offset of the grid, places
+    -P t_mat on the n_p^3 embedding, transforms all 81 components in full and keeps 1/42 of the result
+    (33 s at n_sub = 64). The kernel is equivariant under the cube group (S t_mat S^T = t_mat for the cube's
+    T-matrix, or t_mat the identity), so the propagator is needed only at the canonical offsets
+    o1 >= o2 >= o3 >= 0 of the n_sub grid, about 1/48 of them, and the canonical kernel follows by the
+    Galerkin kernel's construction (``graded_voxel.fft._canonical_hat_from_blocks``: one array per orbit
+    of index pairs, cosine and sine sums on the non-negative octant), as the 9 x 9 block of a cell with one
+    test function and one source monomial. The embedding has n_p >= 2 n_sub - 1 points along each axis
+    (odd; ``fast_odd_size``), the blocks of the canonical offsets beyond the grid zero.
+    """
+    from .graded_voxel.fft import _canonical_hat_from_blocks, _orbit_arrays, fourier_symmetry_tables
+
+    n_eff = (n_p + 1) // 2
+    keys = np.array(_orbit_arrays(n_eff)[3])
+    inside = np.flatnonzero((keys[:, 0] < n_sub) & np.any(keys != 0, axis=1))  # the grid's, but o = 0
+    dd = 2.0 * a_sub
+    blocks = np.zeros((len(keys), 9, 9), dtype=complex)
+    p_blocks = averaged_pair_blocks_9x9(keys[inside].astype(float) * dd, omega, ref, dd)
+    blocks[inside] = -np.einsum("kab,bc->kac", p_blocks, t_mat)
+    maps = fourier_symmetry_tables(n_eff, 1, 1, 10, 4)[3:]
+    khc = _canonical_hat_from_blocks(blocks, n_eff, maps, np.complex128, None, 2e9)  # (K, col, row)
+    return _canonical_kernel_from_blocks(np.ascontiguousarray(khc.transpose(0, 2, 1)), n_eff, device, dtype)
+
+
+def _canonical_kernel_from_blocks(
+    kc: NDArray[np.complexfloating], n_sub: int, device: torch.device, dtype: torch.dtype
+) -> CanonicalKernel:
+    """``CanonicalKernel`` from the transformed kernel at the canonical k, kc (K, row, col), of an n_sub
+    embedding (2 n_sub - 1 points along each axis). The compiled route needs only the blocks and the
+    symmetry tables; the gather indices of the device route are built only for that route."""
+    from .graded_voxel.fft import fourier_symmetry_tables
+    from .graded_voxel.kernel import point_kernel_backend
+
+    n_f = (2 * n_sub - 1) ** 3
     tables = fourier_symmetry_tables(n_sub, 1, 1, 10, 4)
     q_f, k_f, order, pr, sr, pc, sc = tables
-    at = np.array([(a * n_p + b) * n_p + d for a, b, d in keys])
-    kc = np.ascontiguousarray(kernel_hat.reshape(9, 9, n_f)[:, :, at].transpose(2, 0, 1))
-    n_k = len(keys)
+    n_k = len(kc)
     counts = np.bincount(k_f, minlength=n_k)
     m = int(counts.max())
+    compiled = device.type == "cpu" and point_kernel_backend() == "fortran"
+    if compiled:
+        return CanonicalKernel(
+            kc=to_torch(kc, device, dtype),
+            shape=(n_k, m),
+            idx_in=torch.empty(0, dtype=torch.int64),
+            idx_out=torch.empty(0, dtype=torch.int64),
+            compiled=True,
+            khc=np.ascontiguousarray(kc.transpose(0, 2, 1)).astype(_NUMPY_DTYPE[dtype]),
+            tables=tables,
+        )
     start = np.concatenate([[0], np.cumsum(counts)[:-1]])
     slot = np.empty(n_f, dtype=np.int64)
     slot[order] = np.arange(n_f) - start[k_f[order]]  # each point's place in its orbit's list
@@ -184,15 +244,14 @@ def _canonical_kernel(
     rows = np.where(members < n_f, members, 2 * n_f)[:, :, None] + n_f * negative
     idx_in = rows * 9 + src
     idx_out = (k_f[:, None] * m + slot[:, None]) * 9 + pr[q_f] + n_k * m * 9 * (sr[q_f] < 0)
-    compiled = device.type == "cpu" and point_kernel_backend() == "fortran"
     return CanonicalKernel(
         kc=to_torch(kc, device, dtype),
         shape=(n_k, m),
         idx_in=torch.from_numpy(idx_in.ravel().astype(np.int64)).to(device),
         idx_out=torch.from_numpy(idx_out.ravel().astype(np.int64)).to(device),
-        compiled=compiled,
-        khc=np.ascontiguousarray(kc.transpose(0, 2, 1)).astype(_NUMPY_DTYPE[dtype]) if compiled else None,
-        tables=tables if compiled else None,
+        compiled=False,
+        khc=None,
+        tables=None,
     )
 
 
@@ -400,11 +459,8 @@ def compute_sphere_foldy_lax_fft_gpu(
     rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
-    kernel_hat_np = _build_fft_kernel(n_sub, a_sub, T_loc, omega, ref, n_pad=nP)
-
-    # Step 2: Transfer to GPU, the kernel at the canonical k only (1/42 of it at n_sub = 32)
-    kernel_c = _canonical_kernel(kernel_hat_np, (nP + 1) // 2, device, dtype)
-    del kernel_hat_np
+    # Step 2: the kernel at the canonical k only (1/42 of it at n_sub = 32), from the canonical offsets
+    kernel_c = _point_canonical_kernel(n_sub, nP, a_sub, T_loc, omega, ref, device, dtype)
     grid_idx_gpu = torch.from_numpy(grid_idx_np.copy()).long().to(device)
 
     # Step 3: Build incident field on CPU
@@ -564,7 +620,7 @@ def solve_point_plane_wave(
     if profile is None:
         t_loc = cell_tmatrix(contrast)
         t_cells = np.broadcast_to(t_loc, (n_c, 9, 9))
-        kernel_hat = _build_fft_kernel(n_sub, a_sub, t_loc, omega, ref, n_pad=n_p)
+        t_kernel = t_loc
     else:
         from .graded_voxel.site import BatchProfile
 
@@ -583,9 +639,8 @@ def solve_point_plane_wave(
                 )
             t_list.append(cache[g])
         t_cells = np.array(t_list)
-        kernel_hat = _build_fft_kernel(n_sub, a_sub, np.eye(9, dtype=complex), omega, ref, n_pad=n_p)
-    kernel_c = _canonical_kernel(kernel_hat, (n_p + 1) // 2, device, dtype)
-    del kernel_hat
+        t_kernel = np.eye(9, dtype=complex)
+    kernel_c = _point_canonical_kernel(n_sub, n_p, a_sub, t_kernel, omega, ref, device, dtype)
     grid_idx = torch.from_numpy(grid_idx_np.copy()).long().to(device)
     t_dev = None if profile is None else to_torch(t_cells, device, dtype)
     t1 = time.perf_counter()

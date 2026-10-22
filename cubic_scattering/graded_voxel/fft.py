@@ -278,14 +278,34 @@ def canonical_transformed_kernel(
         ValueError: if a representation of the cube group is not a signed permutation
             (``fourier_symmetry_tables``).
     """
-    npad = 2 * n_sub - 1
     rows, cols = na * 9, nc * 9
-    offsets, inverse, q_index, keys = _orbit_arrays(n_sub)
+    keys = _orbit_arrays(n_sub)[3]
     stack = np.stack([canonical[k] for k in keys])  # (K, n_test, n_source, 9, 9): [a, c, i, l]
     blocks = (
         stack[:, :na, :nc].transpose(0, 1, 3, 2, 4).reshape(len(keys), rows, cols)
     )  # [k, (a, i), (c, l)]
-    _, _, _, pr, sr, pc, sc = fourier_symmetry_tables(n_sub, na, nc, stack.shape[2], stack.shape[1])
+    maps = fourier_symmetry_tables(n_sub, na, nc, stack.shape[2], stack.shape[1])[3:]
+    return _canonical_hat_from_blocks(blocks, n_sub, maps, dtype, path, budget_bytes)
+
+
+def _canonical_hat_from_blocks(
+    blocks: NDArray,
+    n_sub: int,
+    maps: tuple[NDArray, ...],
+    dtype: type,
+    path: Path | None,
+    budget_bytes: float,
+) -> NDArray:
+    """``canonical_transformed_kernel``'s construction from the canonical blocks as matrices: blocks
+    (K, rows, cols) at the canonical offsets of ``_orbit_arrays(n_sub)``, and the symmetries' row and
+    column maps (pr, sr, pc, sc) of ``fourier_symmetry_tables``. Returns khc (K, cols, rows). Shared by
+    the Galerkin kernel (36 x 90 blocks) and the point kernel (9 x 9: one test function and one source
+    monomial, the constant that every symmetry fixes).
+    """
+    rows, cols = blocks.shape[1], blocks.shape[2]
+    pr, sr, pc, sc = maps
+    npad = 2 * n_sub - 1
+    offsets, inverse, q_index, keys = _orbit_arrays(n_sub)
     qs = np.stack(signed_permutations())
     # the orbits of index pairs under the axis permutations, and the permutation taking each pair to its
     # orbit's representative (the smallest flat index (r0 * cols + c0) of the orbit)
@@ -409,17 +429,29 @@ def _orbit_arrays(n_sub: int) -> tuple[NDArray, NDArray, NDArray, tuple[tuple[in
     offsets a >= b >= d >= 0 in sorted order), and the signed permutation taking that canonical offset to it
     (an index into ``signed_permutations``). The permutation is the FIRST of the 48 that does so, as
     ``_orbit_map`` chooses it, so the two give identical kernels.
+
+    Computed directly rather than by comparing every offset with its 48 images (5.5 s at n = 68):
+    ``signed_permutations`` lists the axis permutations pi in ``itertools.permutations`` order, each with
+    its eight sign patterns in ``itertools.product((1, -1), ...)`` order, and Q c = o needs
+    c[pi(i)] = |o_i| and the signs of o, a zero component taking +1, the first. So the first match is the
+    first pi that fits, with the signs of o, at index 8 pi + (4, 2, 1).(o < 0).
     """
     span = np.arange(-(n_sub - 1), n_sub)
     offsets = np.stack(np.meshgrid(span, span, span, indexing="ij"), -1).reshape(-1, 3)
-    canonical = -np.sort(-np.abs(offsets), axis=1)
-    keys_arr, inverse = np.unique(canonical, axis=0, return_inverse=True)
-    qs = np.stack(signed_permutations())  # (48, 3, 3)
-    images = np.einsum("qij,nj->nqi", qs, canonical.astype(float))  # (N, 48, 3)
-    match = np.all(images == offsets[:, None, :], axis=2)
-    q_index = np.argmax(match, axis=1)  # the first match, as next(...) in _orbit_map
+    absval = np.abs(offsets)
+    canonical = -np.sort(-absval, axis=1)
+    rng = range(n_sub)
+    keys_arr = np.array([c for c in itertools.product(rng, rng, rng) if c[0] >= c[1] >= c[2]])  # sorted
+    code = (canonical[:, 0] * n_sub + canonical[:, 1]) * n_sub + canonical[:, 2]
+    key_code = (keys_arr[:, 0] * n_sub + keys_arr[:, 1]) * n_sub + keys_arr[:, 2]  # increasing
+    inverse = np.searchsorted(key_code, code)
+    sign_index = (offsets < 0) @ np.array([4, 2, 1])
+    q_index = np.full(len(offsets), -1)
+    for p, perm in enumerate(itertools.permutations(range(3))):
+        fits = np.all(canonical[:, list(perm)] == absval, axis=1) & (q_index < 0)
+        q_index[fits] = 8 * p + sign_index[fits]
     keys = tuple((int(k[0]), int(k[1]), int(k[2])) for k in keys_arr)
-    return offsets, inverse.ravel(), q_index, keys
+    return offsets, inverse, q_index, keys
 
 
 @lru_cache(maxsize=8)

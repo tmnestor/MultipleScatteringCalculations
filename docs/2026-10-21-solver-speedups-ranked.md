@@ -647,3 +647,20 @@ The Galerkin voxel is the method for both bodies below about 3e-4 at long wavele
 ones; the point voxel only at the coarsest accuracies. Chapter 7 (sections 7.3, 7.4, 7.5, 7.7, Table 7.1
 and Figure 7.4) is updated to these numbers, with the kernel's construction by pair orbits and parity, the
 shared lattice and the fast embedding size written into section 7.4.
+
+## Item 12: the point solver setup (22 October 2026)
+
+Measured first, at n = 64 (k_S a = 4, 135-point embedding): setup 33 s, of which the cell-averaged
+propagator at all 2.05 million offsets 12.4 s, the canonical extraction and its tables 8.2 s (5.5 s of it
+`_orbit_arrays`, comparing every offset with its 48 images), placing -P T on the grid 6.4 s, the 81 full
+FFTs 5.7 s.
+
+**Done.** (a) `_orbit_arrays` computed directly: the first matching symmetry is the first axis permutation
+that fits the sorted absolute values, with the signs of the offset (pinned against the offset-by-offset
+map; 5.46 s to 0.53 s at n = 68). (b) `_point_canonical_kernel`: the averaged propagator at the canonical
+offsets only (about 1/48), times T, through the Galerkin construction (`_canonical_hat_from_blocks`,
+split out to take plain (K, rows, cols) blocks) as a 9 x 9 cell with one test function and one source
+monomial; equal to the full transform's canonical blocks to 1e-13 (T folded in or not, n = 5 and the padded
+n = 6; a dropped sign fails it). (c) The gather tables of the device route are built only for that route.
+Point setup: 2.8 s to 0.75 s at n = 32, 10.5 s to 2.0 s at n = 48, 28.2 s to 3.9 s at n = 64; the whole
+run at n = 64, 34 s to 10 s, errors unchanged. GMRES (6 s at n = 64) is now the larger part.
