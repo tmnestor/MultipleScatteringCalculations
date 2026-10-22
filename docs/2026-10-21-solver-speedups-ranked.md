@@ -5,7 +5,44 @@ Measured on the M1 Pro (8 performance cores), CPU only, with the torch solvers
 `slab_scattering_gpu.compute_slab_scattering_gpu` run on `torch.device("cpu")`. Each case ran in its
 own process with one thread (`OMP_NUM_THREADS=1`, `torch.set_num_threads(1)`), seven cases in parallel.
 
-## Summary
+## Where things stand (22 October 2026)
+
+Everything below this section is the record of how it got here, item by item, in the order done; read
+this section for the current state.
+
+- **The Galerkin voxel (the thesis's Chapter 7, p = r = 1, k_S a = 4).** Solve, setup included: 0.7, 1.5,
+  3.1, 7.8, 16.3 and 34.9 s for N = 8, 12, 16, 24, 32 and 40 (peak 6.1 GB at 40), against 784 s a
+  frequency at N = 32 at the start. The 34-frequency record at N = 32 takes 13 minutes (about 15 s a
+  solve, 8 s of readout), against an estimated 5.3 hours with the code of 21 October. The kernel is held
+  at the canonical wavenumbers only (0.31 GB at N = 32, 0.64 GB at 40) in double precision. Setup is about
+  half of a solve, chiefly the canonical blocks (5.3 s at N = 32).
+- **The point voxel (the torch solver, CPU).** One incident wave at N = 64 (1.24 million unknowns) in 8 to
+  9.5 s: setup 3.0 to 3.4 s, GMRES the rest, at its FFT floor (0.46 s of each 0.6 s product). The kernel is
+  7.8 MB at N = 32 against 324 MB, and the composite T-matrix needs 9 GMRES solves on an axis (12 off it)
+  rather than 18.
+- **The two compared (item 10).** The point voxel is about four times cheaper per unknown; on a smooth body
+  the Galerkin voxel is the faster below a few parts in 1e4 (long waves) and about 1e-2 (short), by a
+  margin that grows with the accuracy asked; on a sharp body the two are close near 1e-3. Written up in
+  Chapter 7, section 7.7.
+- **Every result is unchanged by the work** (every error reproduced to 1e-10 or better), and Chapter 7 was
+  audited against the current code on 22 October. Repeated runs vary by about 10%, chiefly in GMRES.
+
+**Open.**
+
+| Item | Status |
+|---|---|
+| Frequencies in parallel | Not started; now feasible, the kernel being 0.3 GB rather than 6.5 GB. Likely the largest gain left for production sweeps |
+| 6. complex64 GMRES as the point solver's default | A decision: 1.6 to 1.8 times faster GMRES, but needs gmres_tol >= 1e-5 |
+| Galerkin blocks: fold the second contraction into the compiled routine | About 1 s at N = 32; small |
+| Point setup: the averaged propagator at the canonical offsets | 2.3 s at N = 64 |
+| 7. Block GMRES | Less value now: the orbits already halve the right-hand sides |
+| 4. Kernel cache on disk | Low value (see the table below) |
+| The GPU route of the canonical point kernel | Correct on MPS; never timed on a GPU |
+| Sharp bodies: project each cell's contrast exactly (its volume fraction) rather than by a 6-point Gauss rule of a step | Accuracy, not speed: part of the Galerkin voxel's sharp-sphere error is that rule's |
+| The full test suite (slow tests included) | Not run since 22 October's changes; each commit passed the gate and the slow tests of the code it touched |
+| mypy over the whole package | 136 errors in 23 files, almost all older than this work |
+
+## Summary (21 October 2026, at the start, before any of the work below)
 
 - **The time is in building the sphere kernel, not in the solve.** At `n_sub = 11` the cold build takes
   619 s and the 18 GMRES solves take 1 to 2 s. Over 99% of the time is in `averaged_pair_block_9x9`.
@@ -15,7 +52,7 @@ own process with one thread (`OMP_NUM_THREADS=1`, `torch.set_num_threads(1)`), s
 - **complex128 stays where it is needed:** the kernel construction (catastrophic cancellation as
   `k r -> 0`) and the validation gates (1e-15 agreement, GMRES tolerance 1e-11).
 
-## Progress (updated 21 October 2026)
+## Progress (updated 22 October 2026)
 
 | Item | Status | Measured effect |
 |---|---|---|
@@ -27,8 +64,17 @@ own process with one thread (`OMP_NUM_THREADS=1`, `torch.set_num_threads(1)`), s
 | 5. All right-hand sides in one solve | **Measured: does not pay on CPU.** One FFT product over all 18 vectors is 1.4 to 2 times SLOWER than 18 separate ones (`n_sub` 17 and 25, both precisions): the batched grids leave the cache. Revisit on a GPU | none on CPU |
 | 5b. Point-major FFT kernel (one 9 x 9 per Fourier point, contiguous; `sphere_scattering_fft_gpu._point_major`) | **Done** (new) | pointwise multiply 5.2 ms to 2.3 ms per product at `n_sub = 25`; identical results |
 | 6. complex64 GMRES | Available now (`dtype=torch.complex64`, `gmres_tol >= 1e-5`); not yet the default | 1.6 to 1.8 times faster GMRES |
-| 7. Block GMRES (one Krylov space shared by the 18 right-hand sides) | Not started; uncertain | could cut the number of products; each solve already takes only 5 to 9 iterations |
+| 7. Block GMRES (one Krylov space shared by the 18 right-hand sides) | Not started; less value since item 9's column orbits (18 solves to 9 or 12) | could cut the number of products; each solve already takes only 5 to 9 iterations |
 | 8. Frequency-amortised analytic cell averages | **Stages 1 and 2 done** (`cell_average_kseries.py`, `fortran/kseries_moments.f90`, `cell_average_far.py`; `cell_average.route: kseries`). Plan and results below | `n_sub = 25`: 0.31 to 0.85 s per frequency against 1.2 s by quadrature, 1.2e-13 or better at every offset from k_S R = 1 to 12 against up to 1.9e-8; one-off coefficient build 29 s, store 40 MB |
+| Ch7 1 to 5. The Galerkin solve of Chapter 7: vectorised kernel assembly, fused compiled readout, contrast projection once a sweep, canonical blocks by series and batched Gauss, compiled kernel product in GMRES | **Done** (section on Chapter 7 below) | one frequency at N = 32: 784 s to about 82 s |
+| 9. The cube group in Fourier space: the Galerkin kernel at the canonical k only | **Done** (`fft.canonical_transformed_kernel`, `kernel_apply.f90` `apply_canon_*`) | kernel 13 GB to 0.31 GB at N = 32; ladder N = 32 102 s to 72 s, N = 40 419 s to 245 s |
+| 9b. The same for the point solver | **Done** (`sphere_scattering_fft_gpu.CanonicalKernel`) | kernel 324 MB to 7.8 MB at N = 32, the same product time |
+| 9c. The point solver's right-hand sides by orbit | **Done** (`_column_orbits`) | 18 GMRES solves to 9 (axis) or 12; point solve at N = 32 now 5.8 s against 8.5 s |
+| 10. The point voxel against the Galerkin voxel | **Done** (`scripts/compare_point_galerkin.py`; Chapter 7, section 7.7) | see "Where things stand" |
+| 11a to 11e. The Galerkin setup: kernel by pair orbits and octant sums, batched preconditioner, far blocks on a shared lattice, batch profiles, fast FFT sizes | **Done** | setup at N = 32 69 s to 14.7 s, N = 40 218 s to 34.9 s |
+| 12. The point setup from the canonical offsets only | **Done** (`_point_canonical_kernel`, direct `_orbit_arrays`, vectorised grid) | setup at N = 64 28 s to 3.0 to 3.4 s |
+| 13. The Galerkin blocks folded into their first contraction | **Done** (`point_kernel.f90` `lattice_axis0`) | blocks at N = 32 9.1 s to 5.3 s, N = 40 15.2 s to 9.3 s |
+| 13b. The octant sums as one product per axis (a regression found in the thesis audit) | **Done** | kernel at N = 40 6.4 s back to 3.35 s |
 
 **The FFTs are at their floor on this CPU.** Of the 30 ms one product takes at `n_sub = 25`
 (complex128), 22 ms is the forward and inverse FFT. The padded size 49 is already the fastest (50, 54,
@@ -384,7 +430,7 @@ throughout: every change below is a faster route to the same Galerkin blocks and
 One frequency at N = 32 in a sweep: about 125 s (solve 139 s at the first frequency, 22 s of it the
 contrast projection paid once; readout 8.7 s), against 784 s at the start.
 
-**Next.**
+**Next.** (As of 21 October; everything listed here was since done, in items 5 and 6 below and 9 to 13.)
 
 5. **GMRES** (done; 54 s to 9.3 s). Each product read the whole complex64 kernel (6.5 GB) a row at a
    time through a single-threaded `einsum`: 9 s a product from disk, 3.4 s in memory. The stored layout,
@@ -402,7 +448,7 @@ faster. A 34-frequency record: about 47 minutes, against about 5.3 hours with th
 
 What is left at N = 32: the kernel's assembly and transform (28 to 34 s, about half of it FFTs), the
 canonical blocks (about 20 s, half compiled kernel evaluations, half the batched product), and GMRES
-(about 9 s).
+(about 9 s). [Since done: the kernel in item 11a, the blocks in items 11c and 13.]
 6. **Frequencies in parallel**: independent, but each holds a 6.5 GB kernel; on 16 GB at most two at a
    time. (Item 9 removes the obstacle: a 0.3 GB kernel.)
 
@@ -444,7 +490,7 @@ symmetries' index tables built once in Python.
 
 **The assembly.** Unchanged up to the transform (row groups, real-space fill by the cube group, FFT in
 double precision); only the canonical k of each group's transform are kept. The FFTs remain (about half of
-the 28 to 34 s); they are the next target.
+the 28 to 34 s); they are the next target. [Since done: item 11a replaces them.]
 
 **Tests.** The canonical kernel equals the full kernel at the canonical k; the canonical product equals
 the full product to round-off (both precisions) and does not depend on the thread count; the solve with
@@ -469,7 +515,7 @@ figures:
 
 The single-precision rounding (8e-11) is gone with it, and N = 32 no longer needs the disk. What is left of
 the solve is the assembly (the canonical blocks and the full FFTs of every row group), which item 9 does
-not touch.
+not touch. [Since done: items 11 and 13.]
 
 **The point solver (done, 22 October 2026).** The torch solver (`sphere_scattering_fft_gpu`, the
 production path) now stores its 9 x 9 kernel -P T at the canonical k only (`CanonicalKernel`,
@@ -563,7 +609,7 @@ and were rerun). Selected rows (all in `scripts/data/point_vs_galerkin.jsonl`):
   so they bound its staircase error from above.
 - The setup (blocks, kernel and its transforms) is 72 to 88% of the wall time in both arms from n = 24
   up: that, not GMRES, is the next target. (The commit that recorded these results says seven times
-  cheaper per unknown; six is right.)
+  cheaper per unknown; six is right.) [Since done: items 11 to 13; these figures are superseded.]
 
 Written up in the thesis's Chapter 7, section 7.7 (the point and the Galerkin voxel), with the figure of
 error against wall time.
@@ -620,7 +666,7 @@ errors reproduce). Contrast projection: 14.5 s to 0.18 s at n = 32.
 
 **Setup after 11a to 11d** (k_S a = 4): n = 32, 69 s to 14.7 s; n = 40, 218 s to 34.9 s. What is left:
 the canonical blocks, 9.5 s and 23 s (two-thirds), then the kernel (1.8 s, 3.9 s), the preconditioner
-(1.3 s, 3.6 s) and the per-cell source expansion (1.2 s, 2.8 s).
+(1.3 s, 3.6 s) and the per-cell source expansion (1.2 s, 2.8 s). [Since done: the blocks in item 13.]
 
 **11e. Fast FFT sizes (done, 22 October 2026).** The embedding needs at least 2N - 1 points per axis, and
 that is often prime (79 at N = 40, 127 at 64), which puts the FFT on its general-length algorithm: 66 ns a
