@@ -30,9 +30,20 @@ except ImportError as err:
 
 
 def kernel_9x9_fortran(
-    X: NDArray, omega: complex, ref: ReferenceMedium, *, static: bool = True, dynamic: bool = True
+    X: NDArray,
+    omega: complex,
+    ref: ReferenceMedium,
+    *,
+    static: bool = True,
+    dynamic: bool = True,
+    transposed: bool = False,
 ) -> NDArray:
     """The propagator at separations X = x - x' (N, 3), shape (N, 9, 9), as ``kernel.kernel_9x9``.
+
+    The routine fills p(9, 9, N) in Fortran order, each point's 81 values together, so its transpose is
+    already a contiguous (N, 9, 9) array of the blocks transposed: ``transposed`` returns that view, and the
+    default copies it into the blocks themselves (about 1 s for the 7 million points of the n = 32
+    lattice of ``blocks.coupling_blocks_far_lattice``, which therefore asks for the transposed blocks).
 
     Raises:
         ValueError: at r = 0, where the propagator is a distribution.
@@ -58,7 +69,36 @@ def kernel_9x9_fortran(
         np.asfortranarray(mh),
         np.asfortranarray(ms),
     )
+    if transposed:
+        return p.T  # (N, 9, 9) C-contiguous: block ip transposed, no copy
     return np.ascontiguousarray(np.moveaxis(p, 2, 0))
+
+
+def lattice_axis0_fortran(
+    x0: NDArray, x1: NDArray, x2: NDArray, w: NDArray, omega: complex, ref: ReferenceMedium
+) -> NDArray:
+    """sum_i0 w[e, i0] P(x0[i0], x1[i1], x2[i2]) as (E, N1, N2, 81), the 81 entries of each block
+    transposed (``kernel_9x9(..., transposed=True)``'s order): the propagator on the lattice x0 x x1 x x2,
+    contracted along its first axis as it is evaluated, never stored (``point_kernel.f90``,
+    ``lattice_axis0``; ``blocks.coupling_blocks_far_lattice``). No point may be at r = 0.
+    """
+    mc, mh, ms = voigt_maps()
+    a = _compiled.lattice_axis0(
+        np.asarray(x0, dtype=float),
+        np.asarray(x1, dtype=float),
+        np.asarray(x2, dtype=float),
+        np.asfortranarray(np.asarray(w, dtype=float)),
+        complex(omega),
+        float(ref.alpha),
+        float(ref.beta),
+        float(ref.mu),
+        float(SERIES_LIMIT),
+        int(N_SERIES),
+        np.asfortranarray(mc),
+        np.asfortranarray(mh),
+        np.asfortranarray(ms),
+    )
+    return a.T  # (E, N1, N2, 81), C-contiguous: a view of the Fortran (81, N2, N1, E)
 
 
 def _apply_hat(kh_f: NDArray, sh_f: NDArray, single: bool) -> NDArray:

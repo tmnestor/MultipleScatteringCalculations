@@ -115,7 +115,7 @@
 module point_kernel
   implicit none
   private
-  public :: kernel_9x9, apply_9x9
+  public :: kernel_9x9, apply_9x9, lattice_axis0
 
   integer, parameter :: dp = kind(1.0d0)                                ! double precision
   real(dp), parameter :: pi = 3.14159265358979323846264338327950288_dp
@@ -322,6 +322,52 @@ contains
     end do
     !$omp end parallel do
   end subroutine apply_9x9
+
+  !-----------------------------------------------------------------------------------------------------
+  ! lattice_axis0: the propagator on a lattice of points, contracted along its first axis as it is
+  ! evaluated, a(:, i2, i1, e) = sum_i0 w(e, i0) P(x0(i0), x1(i1), x2(i2)) with the 81 entries of each
+  ! block in Fortran order (the block transposed, as kernel_9x9's p(:, :, ip) read in C order).
+  !
+  ! WHY. graded_voxel.blocks.coupling_blocks_far_lattice evaluates the Galerkin far blocks on a lattice
+  ! of Gauss points and contracts it axis by axis. Evaluated by kernel_9x9 and contracted afterwards, the
+  ! 81 values of every point were written to memory and read straight back, 9.5 GB at N = 32, which was
+  ! about half of that routine's time. Here each point's block is folded into its axis-0 sums at once and
+  ! never stored. Each (i1, i2) is summed by one thread over i0 in order, so the result does not depend on
+  ! the number of threads. The lattice never contains r = 0 (the blocks are of cells that do not touch).
+  !-----------------------------------------------------------------------------------------------------
+  subroutine lattice_axis0(x0, n0, x1, n1, x2, n2, w, ne, omega, alpha, beta, mu, series_limit, n_series, &
+                           mc, mh, ms, a)
+    integer, intent(in) :: n0, n1, n2, ne, n_series
+    real(dp), intent(in) :: x0(n0), x1(n1), x2(n2), w(ne, n0), alpha, beta, mu, series_limit
+    complex(dp), intent(in) :: omega
+    real(dp), intent(in) :: mc(3, 6, 27), mh(6, 3, 27), ms(6, 6, 81)
+    complex(dp), intent(out) :: a(81, n2, n1, ne)
+
+    complex(dp) :: blk(9, 9), flat(81), loc(81, ne)
+    integer :: i0, i1, i2, e
+
+    call prepare(omega, alpha, beta, .true., .true., n_series, mc, mh, ms)
+
+    !$omp parallel do collapse(2) default(none) schedule(static) &
+    !$omp shared(x0, n0, x1, n1, x2, n2, w, ne, series_limit, n_series, mu, a) &
+    !$omp private(i0, i1, i2, e, blk, flat, loc)
+    do i1 = 1, n1
+      do i2 = 1, n2
+        loc = (0.0_dp, 0.0_dp)
+        do i0 = 1, n0
+          call point_block([x0(i0), x1(i1), x2(i2)], series_limit, n_series, mu, 9, blk)
+          flat = reshape(blk, [81])
+          do e = 1, ne
+            loc(:, e) = loc(:, e) + w(e, i0) * flat
+          end do
+        end do
+        do e = 1, ne
+          a(:, i2, i1, e) = loc(:, e)
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  end subroutine lattice_axis0
 
   !-----------------------------------------------------------------------------------------------------
   ! prepare: the tables that do not depend on the point (once per call).

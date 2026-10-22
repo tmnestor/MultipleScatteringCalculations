@@ -674,3 +674,19 @@ body: the Galerkin voxel the cheaper at a few parts in 1e3, the point voxel near
 0.5; 9.0 against 24 s at 4), the Galerkin voxel alone below about 8e-4. Chapter 7 (sections 7.4 and 7.7,
 Figure 7.4) updated. The point solve at n = 64 is now about 60% GMRES, at its FFT floor (0.46 s of each
 0.6 s product); the Galerkin setup, chiefly its canonical blocks, is the larger remaining cost.
+
+## Item 13: the Galerkin canonical blocks (22 October 2026)
+
+Profiled line by line at n = 32 (9.1 s): kernel evaluations 3.1 s (1.0 s of it a copy transposing the
+compiled output), contractions 3.3 s (einsum and tensordot), copying reshapes 1.2 s, accumulation and
+array building 2.1 s. The kernel values, 9.5 GB over the n = 32 lattice, were written and read straight
+back: the stage is bound by memory traffic, not arithmetic.
+
+**Done.** (a) `kernel_9x9(..., transposed=True)`: the compiled routine's own layout, no copy (the lattice
+carries the transposed component order and transposes each finished block). (b) The contractions as
+matrix products on contiguous reshapes. (c) `point_kernel.f90`: `lattice_axis0`, the propagator on the
+lattice folded into its axis-0 sums as it is evaluated, never stored (OpenMP over the output points;
+equal to evaluating then contracting to 1e-14, independent of the thread count; the reference backend
+keeps the evaluate-then-contract route, equal to 1e-13). Blocks: 9.1 s to 5.3 s at n = 32, 15.2 s to
+9.3 s at n = 40. Tried and dropped: reordering the lattice points and merging the paired contractions
+(7.1 and 8.0 to 8.5 s against 6.8 to 7.1 s, three fresh runs each).

@@ -52,6 +52,7 @@ from .kernel import (
     _assemble,
     falling,
     kernel_9x9,
+    point_kernel_backend,
     power_F,
     radial_component,
     static_b2,
@@ -1118,6 +1119,9 @@ def coupling_blocks_far_lattice(
     lower = [cast(Callable[[NDArray], NDArray], _axis_parts(et, es, 0, h)[0][3]) for et, es in pairs]
     upper = [cast(Callable[[NDArray], NDArray], _axis_parts(et, es, 0, h)[1][3]) for et, es in pairs]
     k_s_h = abs(omega) / ref.beta * h
+    compiled = point_kernel_backend() == "fortran"
+    if compiled:
+        from .kernel_fortran import lattice_axis0_fortran  # local: kernel_fortran imports kernel
     out: dict[tuple[int, int, int], NDArray] = {}
     for o0 in range(2, n_sub):
         n_q = gauss_order((o0, 0, 0), k_s_h)
@@ -1126,32 +1130,38 @@ def coupling_blocks_far_lattice(
         w_lo = np.array([h * 2.0 * wt * p(-2.0 + 2.0 * t) for p in lower])  # (E, n_q)
         w_hi = np.array([h * 2.0 * wt * p(2.0 * t) for p in upper])
         n_e, n_o = len(pairs), o0 + 1
-        acc = np.zeros((n_o, n_e, n_o, n_e, n_e, 81), dtype=complex)  # [o1, e0, o2, e2, e1, z]
+        # [o1, e0, e1, o2, e2, z]; z the 81 components of the TRANSPOSED block (the kernel's own layout)
+        acc = np.zeros((n_o, n_e, n_e, n_o, n_e, 81), dtype=complex)
         x0 = h * (2.0 * np.array([o0 - 1.0, o0])[:, None] + 2.0 * t[None, :])  # (2, n_q): m0 = o0 - 1, o0
         for m1 in range(-1, o0 + 1):
             top = min(m1 + 1, o0)  # the largest o2 this row serves
             m2 = np.arange(-1, top + 1)
+            n_m = len(m2)
             x1 = h * (2.0 * m1 + 2.0 * t)
-            x2 = h * (2.0 * m2[:, None] + 2.0 * t[None, :])
-            X = np.stack(np.meshgrid(x0.ravel(), x1, x2.ravel(), indexing="ij"), -1).reshape(-1, 3)
-            P = kernel_9x9(X, omega, ref).reshape(2, n_q, n_q, len(m2), n_q, 81)  # [lh0, j0, j1, m2, j2, z]
+            x2 = h * (2.0 * m2[:, None] + 2.0 * t[None, :]).reshape(-1)
             # axis 0: the lower piece of o0 at m0 = o0 - 1, the upper at m0 = o0
-            A = np.tensordot(w_lo, P[0], axes=(1, 0)) + np.tensordot(
-                w_hi, P[1], axes=(1, 0)
-            )  # [e0, j1, m2, j2, z]
+            w_planes = np.concatenate([w_lo, w_hi], axis=1)  # (E, 2 n_q), as x0 is ordered
+            if compiled:  # each point's block folded into the axis-0 sums as it is evaluated
+                A = lattice_axis0_fortran(x0.reshape(-1), x1, x2, w_planes, omega, ref).reshape(-1, n_q, 81)
+            else:  # the transposed blocks evaluated, then contracted
+                X = np.stack(np.meshgrid(x0.reshape(-1), x1, x2, indexing="ij"), -1).reshape(-1, 3)
+                P = kernel_9x9(X, omega, ref, transposed=True).reshape(2 * n_q, -1)
+                A = (w_planes @ P).reshape(-1, n_q, 81)  # [(e0, j1, m2), j2, z]
             # axis 2: o2's lower piece at m2 = o2 - 1 (index o2), its upper at m2 = o2 (index o2 + 1)
-            b_lo = np.einsum("fk,ebmkz->ebmfz", w_lo, A, optimize=True)  # [e0, j1, m2, e2, z]
-            b_hi = np.einsum("fk,ebmkz->ebmfz", w_hi, A, optimize=True)
-            C = b_lo[:, :, : top + 1] + b_hi[:, :, 1 : top + 2]  # [e0, j1, o2, e2, z], o2 = 0 .. top
+            b_lo = np.matmul(w_lo, A).reshape(n_e, n_q, n_m, n_e, 81)  # [e0, j1, m2, e2, z]
+            b_hi = np.matmul(w_hi, A).reshape(n_e, n_q, n_m, n_e, 81)
+            C = (b_lo[:, :, : top + 1] + b_hi[:, :, 1 : top + 2]).reshape(
+                n_e, n_q, -1
+            )  # [e0, j1, (o2, e2, z)]
             # axis 1: this row is the lower piece of o1 = m1 + 1 and the upper piece of o1 = m1
             if m1 + 1 <= o0:
-                acc[m1 + 1, :, : top + 1] += np.einsum("gj,ejofz->eofgz", w_lo, C, optimize=True)
+                acc[m1 + 1, :, :, : top + 1] += np.matmul(w_lo, C).reshape(n_e, n_e, top + 1, n_e, 81)
             if m1 >= 0:
-                acc[m1, :, : top + 1] += np.einsum("gj,ejofz->eofgz", w_hi, C, optimize=True)
+                acc[m1, :, :, : top + 1] += np.matmul(w_hi, C).reshape(n_e, n_e, top + 1, n_e, 81)
         for o1 in range(o0 + 1):
             for o2 in range(o1 + 1):
-                blk = acc[o1, e_of[..., 0], o2, e_of[..., 2], e_of[..., 1]]  # (n_test, n_source, 81)
-                out[(o0, o1, o2)] = blk.reshape(n_test, n_source, 9, 9)
+                blk = acc[o1, e_of[..., 0], e_of[..., 1], o2, e_of[..., 2]]  # (n_test, n_source, 81)
+                out[(o0, o1, o2)] = blk.reshape(n_test, n_source, 9, 9).swapaxes(-1, -2)  # untransposed
     if n_test != 4:
         to_field = field_in_monomials(n_test)
         out = {k: np.einsum("am,m...->a...", to_field, v) for k, v in out.items()}

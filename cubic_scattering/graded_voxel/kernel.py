@@ -219,9 +219,16 @@ def point_kernel_backend() -> str:
 
 
 def kernel_9x9(
-    X: NDArray, omega: complex, ref: ReferenceMedium, *, static: bool = True, dynamic: bool = True
+    X: NDArray,
+    omega: complex,
+    ref: ReferenceMedium,
+    *,
+    static: bool = True,
+    dynamic: bool = True,
+    transposed: bool = False,
 ) -> NDArray:
-    """The propagator at separations X = x - x' (N, 3), shape (N, 9, 9).
+    """The propagator at separations X = x - x' (N, 3), shape (N, 9, 9); with ``transposed`` each block
+    transposed, which the compiled route returns without copying (its own memory layout).
 
     Evaluated by the implementation that ``cubic_scattering/numerics.yml`` names
     (``point_kernel.backend``): ``kernel_9x9_python`` below, or the compiled transcription of it,
@@ -235,8 +242,9 @@ def kernel_9x9(
     if point_kernel_backend() == "fortran":
         from .kernel_fortran import kernel_9x9_fortran  # local: kernel_fortran imports this module
 
-        return kernel_9x9_fortran(X, omega, ref, static=static, dynamic=dynamic)
-    return kernel_9x9_python(X, omega, ref, static=static, dynamic=dynamic)
+        return kernel_9x9_fortran(X, omega, ref, static=static, dynamic=dynamic, transposed=transposed)
+    p = kernel_9x9_python(X, omega, ref, static=static, dynamic=dynamic)
+    return p.transpose(0, 2, 1) if transposed else p
 
 
 def kernel_9x9_python(

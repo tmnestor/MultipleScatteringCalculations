@@ -42,3 +42,78 @@ def test_lattice_blocks_equal_the_batched_blocks(omega, n_source, n_test) -> Non
     scale = np.abs(want).max()
     for k, off in enumerate(far):
         assert np.abs(got[off] - want[k]).max() <= 1e-13 * scale, off
+
+
+@pytest.mark.parametrize("backend", ["fortran", "python"])
+def test_the_transposed_kernel_is_the_kernel_transposed(monkeypatch, backend) -> None:
+    """kernel_9x9(..., transposed=True) is each block transposed, a contiguous (N, 9, 9) array; on the
+    compiled route it is the routine's own output, taken without the copy that transposes it."""
+    from cubic_scattering.graded_voxel import kernel as KN
+
+    monkeypatch.setattr(KN, "point_kernel_backend", lambda: backend)
+    X = np.random.default_rng(4).normal(size=(50, 3)) * 7.0
+    omega = 900.0 * (1 + 0.03j)
+    want = KN.kernel_9x9(X, omega, REF).transpose(0, 2, 1)
+    got = KN.kernel_9x9(X, omega, REF, transposed=True)
+    np.testing.assert_array_equal(got, want)
+    assert got.shape == (50, 9, 9) and (backend == "python" or got.flags["C_CONTIGUOUS"])
+
+
+def _lattice_case():
+    rng = np.random.default_rng(9)
+    x0 = 3.0 + rng.uniform(0, 1, 6)
+    x1 = rng.uniform(-1, 1, 4)
+    x2 = rng.uniform(-1, 1, 5)
+    w = rng.normal(size=(3, 6))
+    return x0, x1, x2, w
+
+
+def test_the_fused_axis0_sum_equals_the_kernel_contracted_afterwards() -> None:
+    from cubic_scattering.graded_voxel.kernel import kernel_9x9
+    from cubic_scattering.graded_voxel.kernel_fortran import lattice_axis0_fortran
+
+    x0, x1, x2, w = _lattice_case()
+    omega = 900.0 * (1 + 0.03j)
+    X = np.stack(np.meshgrid(x0, x1, x2, indexing="ij"), -1).reshape(-1, 3)
+    P = kernel_9x9(X, omega, REF, transposed=True).reshape(len(x0), -1)
+    want = (w @ P).reshape(3, len(x1), len(x2), 81)
+    got = lattice_axis0_fortran(x0, x1, x2, w, omega, REF)
+    assert got.shape == want.shape and got.flags["C_CONTIGUOUS"]
+    assert np.abs(got - want).max() <= 1e-14 * np.abs(want).max()
+
+
+def test_the_fused_axis0_sum_is_independent_of_thread_count() -> None:
+    import os
+    import subprocess
+    import sys
+
+    code = (
+        'import numpy as np, sys; sys.path.insert(0, ".");'
+        "from cubic_scattering.tests.test_graded_voxel_blocks_lattice import _lattice_case, REF;"
+        "from cubic_scattering.graded_voxel.kernel_fortran import lattice_axis0_fortran;"
+        "x0, x1, x2, w = _lattice_case();"
+        "sys.stdout.buffer.write(lattice_axis0_fortran(x0, x1, x2, w, 900.0, REF).tobytes())"
+    )
+    outs = [
+        subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            check=True,
+            env=dict(os.environ, OMP_NUM_THREADS=n),
+        ).stdout
+        for n in ("1", "4")
+    ]
+    assert outs[0] == outs[1]
+
+
+def test_the_lattice_blocks_through_the_reference_kernel(monkeypatch) -> None:
+    """The reference backend contracts the kernel's values afterwards; the compiled one fuses the sum."""
+    from cubic_scattering.graded_voxel import kernel as KN
+
+    omega = 0.5 * REF.beta / 10.0
+    fused = B.coupling_blocks_far_lattice(5, H, omega, REF)
+    monkeypatch.setattr(KN, "point_kernel_backend", lambda: "python")
+    monkeypatch.setattr(B, "point_kernel_backend", lambda: "python")
+    plain = B.coupling_blocks_far_lattice(5, H, omega, REF)
+    scale = max(np.abs(v).max() for v in plain.values())
+    assert max(np.abs(fused[k] - plain[k]).max() for k in plain) <= 1e-13 * scale
