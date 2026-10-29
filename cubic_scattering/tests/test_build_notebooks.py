@@ -311,14 +311,21 @@ def test_clean_report_passes() -> None:
         cells=[("Print", "  [a] identity: rel 1.2e-16  PASS"), ("Output", "3.14159")]
     )
     assert bn.check_outputs(rep, _entry()) == []
-    assert bn.check_outputs(_report("exited", 0), _entry()) == []
+    assert bn.check_outputs(_report("exited", 0, [("Print", "done")]), _entry()) == []
+
+
+def test_script_without_outputs_fails_but_library_may_be_silent() -> None:
+    assert bn.check_outputs(_report(), _entry()) == [
+        "no output cells: an evaluated script must show its outputs"
+    ]
+    assert bn.check_outputs(_report(), _entry(kind="library")) == []
 
 
 @pytest.mark.parametrize(
     ("report", "fragment"),
     [
-        (_report("aborted"), "aborted"),
-        (_report("exited", 1), "exited with code 1"),
+        (_report("aborted", None, [("Print", "started")]), "aborted"),
+        (_report("exited", 1, [("Print", "started")]), "exited with code 1"),
         (_report(cells=[("Print", "check ****FAIL****")]), "FAIL in a Print cell"),
         (
             _report(
@@ -383,3 +390,36 @@ def test_repository_notebooks_current() -> None:
     cfg = bn.load_config(ROOT / "Mathematica" / "notebooks.yml")
     for problem in bn.staleness(cfg, bn.load_lock()):
         warnings.warn(f"stale notebook: {problem}", stacklevel=1)
+
+
+# --- build helpers (no Mathematica) -------------------------------------------------------------------
+
+
+def test_run_stops_at_timeout(tmp_path: Path) -> None:
+    code, _ = bn._run(
+        [sys.executable, "-c", "import time; time.sleep(30)"], tmp_path, 1
+    )
+    assert code is None
+    code, out = bn._run([sys.executable, "-c", "print(42)"], tmp_path, 30)
+    assert code == 0 and out.strip() == "42"
+
+
+def test_written_files_compares_with_committed(tmp_path: Path) -> None:
+    root, scratch = tmp_path / "repo", tmp_path / "scratch"
+    for d in (root / "Mathematica", scratch / "Mathematica" / "cache"):
+        d.mkdir(parents=True)
+    (root / "Mathematica" / "same.json").write_text("1")
+    (root / "Mathematica" / "diff.json").write_text("1")
+    (scratch / "Mathematica" / "input.wl").write_text("x")
+    before = bn._snapshot(scratch)
+    (scratch / "Mathematica" / "same.json").write_text("1")
+    (scratch / "Mathematica" / "diff.json").write_text("2")
+    (scratch / "Mathematica" / "new.json").write_text("3")
+    (scratch / "Mathematica" / "cache" / "E_1.mx").write_text("c")
+    (scratch / "Mathematica" / "A.nb").write_text("nb")
+    lines = bn.written_files(before, bn._snapshot(scratch), root, {"Mathematica/A.nb"})
+    assert lines == [
+        "Mathematica/diff.json: DIFFERS from the committed copy",
+        "Mathematica/new.json: not in the repository",
+        "Mathematica/same.json: identical to the committed copy",
+    ]

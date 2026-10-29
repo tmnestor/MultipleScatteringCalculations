@@ -23,10 +23,17 @@ writes stay in the scratch directory; any that differ from the committed copies 
 """
 
 import argparse
+import datetime
 import hashlib
 import json
+import os
 import re
+import shutil
+import signal
+import subprocess
 import sys
+import tempfile
+import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import NoReturn
@@ -653,6 +660,10 @@ def check_outputs(report: dict, entry: Entry) -> list[str]:
         problems.append("the evaluation was aborted")
     elif report["status"] == "exited" and report["exit_code"] != 0:
         problems.append(f"the script exited with code {report['exit_code']}")
+    # every script reports its checks; a script with no output at all means the outputs were not captured,
+    # and every other check here would then pass on nothing (a library may legitimately print nothing)
+    if entry.kind == "script" and not report["cells"]:
+        problems.append("no output cells: an evaluated script must show its outputs")
     for cell in report["cells"]:
         text, style = cell["text"], cell["style"]
         short = " ".join(text.split())[:240]
@@ -684,6 +695,170 @@ def check_notebook_file(path: Path, max_bytes: int, forbidden: list[str]) -> lis
         if s in text:
             problems.append(f"{path.name} contains {s!r}")
     return problems
+
+
+# --- building ------------------------------------------------------------------------------------------
+
+CONVERT_TIMEOUT_SECONDS = 600  # converting is a parse and a box conversion: minutes at most, even for 4,000 lines
+
+
+def _run(cmd: list[str], cwd: Path, timeout: int) -> tuple[int | None, str]:
+    """Run a command in its own process group; on timeout kill the group (kernel and front end too).
+
+    Returns (exit code, or None on timeout; combined output).
+    """
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        out, _ = proc.communicate(timeout=timeout)
+        return proc.returncode, out
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGKILL)
+        out, _ = proc.communicate()
+        return None, out
+
+
+def _snapshot(folder: Path) -> dict[str, str]:
+    return {
+        str(p.relative_to(folder)): sha256(p)
+        for p in sorted(folder.rglob("*"))
+        if p.is_file()
+    }
+
+
+def written_files(
+    before: dict[str, str], after: dict[str, str], root: Path, ignore: set[str]
+) -> list[str]:
+    """What the evaluation wrote, each compared with the committed copy of the same path."""
+    lines = []
+    for rel in sorted(after):
+        if (
+            rel in ignore
+            or rel.startswith(f"{MATHEMATICA}/cache/")
+            or before.get(rel) == after[rel]
+        ):
+            continue
+        committed = root / rel
+        if not committed.exists():
+            verdict = "not in the repository"
+        elif sha256(committed) == after[rel]:
+            verdict = "identical to the committed copy"
+        else:
+            verdict = "DIFFERS from the committed copy"
+        lines.append(f"{rel}: {verdict}")
+    return lines
+
+
+def build_one(
+    config: Config, entry: Entry, cold_cache: bool, lock: dict, root: Path = ROOT
+) -> bool:
+    """Convert (and, if the entry says so, evaluate) one script in a scratch folder; copy back on success."""
+    prov = provenance(entry, root)
+    scratch = Path(tempfile.mkdtemp(prefix="nbbuild-"))
+    folder = scratch / MATHEMATICA
+    folder.mkdir()
+    for rel in prov["inputs"]:
+        (scratch / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(root / rel, scratch / rel)
+    cache = root / MATHEMATICA / "cache"
+    if entry.evaluate and not cold_cache and cache.is_dir():
+        shutil.copytree(cache, folder / "cache")
+    spec = scratch / "spec.json"
+    spec.write_text(
+        json.dumps(
+            {
+                "intro": entry.intro,
+                "extra_cells": list(entry.extra_cells),
+                "args": list(entry.args),
+            }
+        )
+    )
+    script, nb, report_path = (
+        folder / entry.name,
+        folder / entry.notebook,
+        scratch / "report.json",
+    )
+    print(f"== {entry.name}  (scratch {scratch})", flush=True)
+
+    t0 = time.monotonic()
+    code, out = _run(
+        [
+            "wolframscript",
+            "-file",
+            str(root / TOOLS[0]),
+            str(script),
+            f"--spec={spec}",
+            "--force",
+        ],
+        folder,
+        CONVERT_TIMEOUT_SECONDS,
+    )
+    print(_indent(out.rstrip(), 3), flush=True)
+    if code != 0:
+        print(
+            f"   FAILED: conversion {'timed out' if code is None else f'exited {code}'}; scratch kept"
+        )
+        return False
+
+    problems: list[str] = []
+    report: dict = {}
+    if entry.evaluate:
+        before = _snapshot(scratch)
+        code, out = _run(
+            [
+                "wolframscript",
+                "-file",
+                str(root / TOOLS[1]),
+                str(nb),
+                f"--report={report_path}",
+            ],
+            folder,
+            entry.timeout_seconds,
+        )
+        print(_indent(out.rstrip(), 3), flush=True)
+        if code is None:
+            problems.append(
+                f"the evaluation passed timeout_seconds = {entry.timeout_seconds} and was stopped"
+            )
+        elif code != 0 or not report_path.exists():
+            problems.append(f"the evaluator exited {code} without a report")
+        else:
+            report = json.loads(report_path.read_text())
+            problems += check_outputs(report, entry)
+        ignore = {f"{MATHEMATICA}/{entry.notebook}", "report.json", "spec.json"}
+        for line in written_files(before, _snapshot(scratch), root, ignore):
+            print(f"   wrote {line}")
+    home = str(Path.home().parent) + "/"
+    forbidden = sorted({str(scratch), str(scratch.resolve()), home})
+    if nb.exists():
+        problems += check_notebook_file(nb, config.max_notebook_bytes, forbidden)
+    print(f"   {time.monotonic() - t0:.0f} s", flush=True)
+    if problems:
+        print(
+            f"   FAILED ({len(problems)} problem(s)); notebook not copied back; scratch kept:"
+        )
+        for p in problems:
+            print(f"     - {p}")
+        return False
+
+    shutil.copy2(nb, root / MATHEMATICA / entry.notebook)
+    lock[entry.name] = prov | {
+        "notebook_sha256": sha256(root / MATHEMATICA / entry.notebook),
+        "evaluated": entry.evaluate,
+        "cold_cache": cold_cache if entry.evaluate else True,
+        "built": datetime.date.today().isoformat(),
+        "wolfram_version": report.get("version"),
+    }
+    save_lock(lock, root)
+    shutil.rmtree(scratch)
+    print(f"   OK: {MATHEMATICA}/{entry.notebook}", flush=True)
+    return True
 
 
 # --- command line --------------------------------------------------------------------------------------
@@ -718,6 +893,41 @@ def _cmd_reads(args: argparse.Namespace) -> int:
     return status
 
 
+def _cmd_build(args: argparse.Namespace) -> int:
+    config = load_config(ROOT / MATHEMATICA / CONFIG_NAME)
+    check_against_manifest(config, reproduction_manifest())
+    if args.release:
+        names = [
+            n
+            for n, e in sorted(config.entries.items())
+            if e.release and e.builds_notebook
+        ]
+    else:
+        names = args.scripts
+    unknown = [
+        n
+        for n in names
+        if n not in config.entries or not config.entries[n].builds_notebook
+    ]
+    if unknown or not names:
+        print(
+            f"nothing to build, or not buildable entries of {CONFIG_NAME}: {unknown or 'none named'}"
+        )
+        return 2
+    lock = load_lock()
+    failed = []
+    for i, name in enumerate(names):
+        if i:
+            time.sleep(3)  # let the previous front end release its licence seat
+        if not build_one(config, config.entries[name], args.cold_cache, lock):
+            failed.append(name)
+    print(
+        f"built {len(names) - len(failed)} of {len(names)}"
+        + (f"; FAILED: {', '.join(failed)}" if failed else "")
+    )
+    return 1 if failed else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -731,6 +941,13 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("reads", help="print the files a script reads")
     p.add_argument("scripts", nargs="+")
     p.set_defaults(func=_cmd_reads)
+    p = sub.add_parser("build", help="build notebooks")
+    p.add_argument("scripts", nargs="*")
+    p.add_argument("--release", action="store_true", help="build every release entry")
+    p.add_argument(
+        "--cold-cache", action="store_true", help="start from an empty moment cache"
+    )
+    p.set_defaults(func=_cmd_build)
     args = parser.parse_args(argv)
     try:
         return args.func(args)
