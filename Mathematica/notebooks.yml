@@ -1,0 +1,437 @@
+# How each Wolfram file in this folder becomes a notebook: read by scripts/build_notebooks.py.
+# Every key of an entry is required; an empty value is written explicitly ([] , {}, null).
+#   kind     script | library (built into a notebook) | data | tool (no notebook)
+#   release  true for exactly the Wolfram files the reproduction repository ships
+#   evaluate true: the notebook is saved with its outputs
+#   reads    calls whose file the builder cannot read off the source, keyed "File.wl: call", with the
+#            files they read relative to that file ([] for the moment cache, which is never tracked)
+max_notebook_bytes: 5000000
+require_every_script_listed: false
+notebooks:
+  ContinuumLimit_AveragedSums.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_BornTerms.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_Chain.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_CubeT.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_ErrorConstant.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_Figure.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "ContinuumLimit_Figure.wl: Import[base <> file, \"Text\"]": [ContinuumLimit_FourthOrder.wl, ContinuumLimit_Oblique.wl]
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_FourthOrder.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_FourthOrderError.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_GradedContrast.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_GradedSphere.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_GradientHierarchy.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_Heterogeneous.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_IncidentS.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_IncidentSExport.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_LayerDefect.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_Oblique.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_ObliqueExport.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_Reduction3D.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_Reference.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_SecondMoment.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_SpecularSums.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_StaticLocal.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  ContinuumLimit_ThinLayer.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeA22Block.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeAnalytic.wl:
+    kind: library
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeMomentArchiveCheck.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeMomentCanonical.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeMomentCore.wl:
+    kind: library
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeMomentCoreTest.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeMomentHigherGrades.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeMomentStore.wl:
+    kind: library
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentStore.wl: Get[$storeFile]": [CubeScalarMoments.m]
+      "CubeMomentStore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeScalarMoments.m:
+    kind: data
+    release: true
+  CubeScalarMomentsCanonical.m:
+    kind: data
+    release: true
+  CubeShearSplit.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  CubeT6Masters.wl:
+    kind: library
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  GradedVoxel_LayerReduction.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  GradedVoxel_WeakKernel.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+      "GradedVoxel_WeakKernel.wl: Import[file, \"Text\"]": [GradedVoxel_term_integrals.jsonl]  # --retry-timeouts only
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: "held until the script has --gates-only (its default run rewrites the term integrals, about 5 h)"
+  MieAsymptoticRaw.wl:
+    kind: data
+    release: true
+  SphereClosureDynamic.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
+  TakeuchiSaito.wl:
+    kind: library
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: ["TSSelfTest[]"]  # the self-test runs only when the file is a script
+    intro: null
+    timeout_seconds: 3600
+    skip: null
