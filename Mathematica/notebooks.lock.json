@@ -65,6 +65,22 @@
   },
   "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
  },
+ "CubeMomentCornerQuadrature.wl": {
+  "built": "2026-10-30",
+  "cold_cache": false,
+  "entry_sha256": "a7690b3cb51b2b2578fbae6b18d50428e2881319e044d567ba9bb2c66a4052d9",
+  "evaluated": true,
+  "inputs": {
+   "Mathematica/CubeMomentCore.wl": "8df721bdb43bcaccf523454b7fec6104e795078d35018c6c652813b7ad8ceeae",
+   "Mathematica/CubeMomentCornerQuadrature.wl": "fe42223f260ef08ec824a568f9f564aaa2c593ccac23c756ace505b45d60abd9"
+  },
+  "notebook_sha256": "ea1e0a5197488c2bedf3abeadcc71aea8c9637db5ad94987c81d49b211449285",
+  "tools": {
+   "Mathematica/runnb.wls": "8337a329b660b11b1eae52bb43d8ae50c65efede4b6f4931ce8d6f32d53d12dd",
+   "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
+  },
+  "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
+ },
  "CubeMomentHigherGrades.wl": {
   "built": "2026-10-30",
   "cold_cache": true,

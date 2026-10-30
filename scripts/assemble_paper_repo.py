@@ -130,6 +130,7 @@ NOTEBOOKS = [
     "ContinuumLimit_GradientHierarchy.wl",
     "ContinuumLimit_EqualAccuracy.wl",  # loads ContinuumLimit_GradientHierarchy.wl and ContinuumLimit_SecondMoment.wl
     "CubeMomentHigherGrades.wl",
+    "CubeMomentCornerQuadrature.wl",  # adaptive cubature at the octant's corner against the closed forms
     "CubeMomentCanonical.wl",
     "CubeMomentStore.wl",  # the closed-form store the higher-grade notebooks read and extend
     "CubeScalarMoments.m",  # the store itself

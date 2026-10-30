@@ -319,6 +319,18 @@ notebooks:
     intro: null
     timeout_seconds: 3600
     skip: null
+  CubeMomentCornerQuadrature.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads:
+      "CubeMomentCore.wl: Import[f]": []  # the moment cache, never tracked
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
   CubeMomentCore.wl:
     kind: library
     release: true
