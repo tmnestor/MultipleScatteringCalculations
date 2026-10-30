@@ -128,3 +128,21 @@ def test_a_batch_profile_is_evaluated_once_for_all_cells() -> None:
     want = solve_point_plane_wave(*args, **{**kw, "profile": _graded})
     assert calls == [len(got.centres)]
     assert np.abs(got.psi - want.psi).max() <= 1e-12 * np.abs(want.psi).max()
+
+
+def test_the_cells_kept_follow_inside() -> None:
+    """inside=None keeps the cells whose centre is in the sphere; a rule that says the same gives the same
+    solve, and keeping every cell that overlaps the sphere keeps more."""
+    h = RADIUS / N_SUB
+    kw: dict[str, Any] = dict(
+        profile=None, single_site="exact", gmres_tol=1e-12, device=CPU, dtype=torch.complex128
+    )
+    args = (OMEGA, RADIUS, REF, CONTRAST, N_SUB, K_HAT, POL, "P")
+    default = solve_point_plane_wave(*args, **kw)
+    same = solve_point_plane_wave(*args, **kw, inside=lambda c: float(np.linalg.norm(c)) < RADIUS)
+    wider = solve_point_plane_wave(
+        *args, **kw, inside=lambda c: float(np.linalg.norm(np.maximum(np.abs(c) - h, 0.0))) < RADIUS
+    )
+    assert np.array_equal(same.centres, default.centres)
+    assert np.abs(same.psi - default.psi).max() <= 1e-14 * np.abs(default.psi).max()
+    assert len(wider.centres) > len(default.centres)

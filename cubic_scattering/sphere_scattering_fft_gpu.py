@@ -577,6 +577,7 @@ def solve_point_plane_wave(
     dtype: torch.dtype,
     gmres_maxiter: int = 500,
     timings: dict[str, float] | None = None,
+    inside: Callable[[NDArray[np.floating]], bool] | None = None,
 ) -> PointWaveResult:
     """The point formulation for one incident plane wave: one GMRES solve on the canonical kernel.
 
@@ -608,6 +609,10 @@ def solve_point_plane_wave(
         gmres_maxiter: GMRES iteration bound.
         timings: When given, filled with kernel_s (cell T-matrices, kernel and its canonical blocks),
             solve_s (GMRES) and iterations.
+        inside: Which cells of the n_sub grid to keep, decided from the cell centre
+            (``_build_grid_index_map``); None keeps those whose centre lies inside the sphere. Keeping every
+            cell that overlaps the sphere, with the cell mean of the contrast as ``profile``, gives the cells
+            and contrast of the mean-only Galerkin voxel.
 
     Raises:
         RuntimeError: if GMRES does not reach ``gmres_tol`` within ``gmres_maxiter`` iterations.
@@ -616,7 +621,7 @@ def solve_point_plane_wave(
     from .sphere_scattering import _plane_wave_strain_voigt
 
     t0 = time.perf_counter()
-    grid_idx_np, centres, a_sub = _build_grid_index_map(radius, n_sub)
+    grid_idx_np, centres, a_sub = _build_grid_index_map(radius, n_sub, inside)
     n_c, n_p = len(centres), fast_odd_size(2 * n_sub - 1)  # a fast FFT length (zero-padded)
 
     if single_site == "package":
