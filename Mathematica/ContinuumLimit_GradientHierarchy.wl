@@ -66,7 +66,10 @@ solveHier[om_, n_, q_, drho_, dm_] := Module[
   h = d/2; zc = Table[(j - 1/2) d, {j, n}];
   big = N[IdentityMatrix[n nu], prec];
   Do[
-   {gi, di} = N[cellInts[kk, h, zc[[i]] - zc[[j]], q], prec];
+   (* evaluated from 60-digit arguments: from exact ones, entries that are exactly zero but not recognised as
+      zero (1 - E^(3 I/100) against its partner) made N warn N::meprec, since no number of extra digits gives
+      a zero 60 digits of relative precision *)
+   {gi, di} = cellInts[N[kk, prec], N[h, prec], N[zc[[i]] - zc[[j]], prec], q];
    own = If[i == j, 1, 0];
    aDer = {gi, di};
    bDer = {Join[{0}, gi[[1 ;; q]]], Join[{0}, di[[1 ;; q]]]};
@@ -81,7 +84,7 @@ solveHier[om_, n_, q_, drho_, dm_] := Module[
   rhs = N[Flatten[Table[(I kk)^m Exp[I kk zc[[i]]], {i, n}, {m, 0, q}]], prec];
   sol = Partition[LinearSolve[big, rhs], nu];
   Table[
-   Sum[({gi, di} = N[cellInts[kk, h, zo - zc[[j]], q], prec];
+   Sum[({gi, di} = cellInts[N[kk, prec], N[h, prec], N[zo - zc[[j]], prec], q];
      a gi . sol[[j]] + b di[[1 ;; q]] . sol[[j, 2 ;;]]), {j, n}],
    {zo, {zR, zT}}]];
 

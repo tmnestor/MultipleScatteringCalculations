@@ -52,6 +52,17 @@ notebooks:
     intro: null
     timeout_seconds: 3600
     skip: null
+  ContinuumLimit_EqualAccuracy.wl:
+    kind: script
+    release: true
+    evaluate: true
+    args: []
+    reads: {}
+    allowed_messages: []
+    extra_cells: []
+    intro: null
+    timeout_seconds: 3600
+    skip: null
   ContinuumLimit_ErrorConstant.wl:
     kind: script
     release: true

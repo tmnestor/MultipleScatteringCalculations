@@ -1,4 +1,22 @@
 {
+ "ContinuumLimit_EqualAccuracy.wl": {
+  "built": "2026-10-30",
+  "cold_cache": false,
+  "entry_sha256": "ca12478cf0ba3fdfa9c32a21063ab9ab7201fcb495f544ac8f288408dd165294",
+  "evaluated": true,
+  "inputs": {
+   "Mathematica/ContinuumLimit_EqualAccuracy.wl": "4e14daa3df9e5e30c483dc50248d40e2805db4d93b49930d299353b05e0eb314",
+   "Mathematica/ContinuumLimit_FourthOrder.wl": "658655fe9523c368e2b11283f9fdab1f276d309853904071081f10a75f5ce484",
+   "Mathematica/ContinuumLimit_GradientHierarchy.wl": "fba9586d6e80fef86e7912a93617908c8c2c04666d211ef878175833c05a5bc5",
+   "Mathematica/ContinuumLimit_SecondMoment.wl": "e2ad559390782a2f80e64e0c26bdd08393e5ba126b38f4c1d20fd5275578c117"
+  },
+  "notebook_sha256": "289d14e1d6167adcbb2672e0b9e06ab8ea93e1127faee6d405f982c3ae25b576",
+  "tools": {
+   "Mathematica/runnb.wls": "8337a329b660b11b1eae52bb43d8ae50c65efede4b6f4931ce8d6f32d53d12dd",
+   "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
+  },
+  "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
+ },
  "ContinuumLimit_GradedSphere.wl": {
   "built": "2026-10-30",
   "cold_cache": false,
@@ -10,6 +28,21 @@
    "Mathematica/TakeuchiSaito.wl": "e850663a5c95cf53e28b69f0a591bd5a25f8ad8771c354c051d5b97ade941650"
   },
   "notebook_sha256": "d10c051bd5b842192dc0d8aa8aed6813f252098dffa901c0bf3b8c34c4dceb3a",
+  "tools": {
+   "Mathematica/runnb.wls": "8337a329b660b11b1eae52bb43d8ae50c65efede4b6f4931ce8d6f32d53d12dd",
+   "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
+  },
+  "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
+ },
+ "ContinuumLimit_GradientHierarchy.wl": {
+  "built": "2026-10-30",
+  "cold_cache": false,
+  "entry_sha256": "d40fadffda55f00125a273b028a879885e5fe2d3e7154b1378ebbaaae1cf03d5",
+  "evaluated": true,
+  "inputs": {
+   "Mathematica/ContinuumLimit_GradientHierarchy.wl": "fba9586d6e80fef86e7912a93617908c8c2c04666d211ef878175833c05a5bc5"
+  },
+  "notebook_sha256": "cea4f542aeeb4ad647314bed1181e478511374fdaa90813dee79b4eeae06c9bd",
   "tools": {
    "Mathematica/runnb.wls": "8337a329b660b11b1eae52bb43d8ae50c65efede4b6f4931ce8d6f32d53d12dd",
    "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
