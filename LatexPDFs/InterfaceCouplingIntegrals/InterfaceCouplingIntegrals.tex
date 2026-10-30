@@ -126,8 +126,8 @@ coupling of every such cell is therefore singular, and its plane-wave integral c
 algebraically.
 
 This is the price of Galerkin cells, paid again at an interface. Cells tested against their own polynomials
-need fewer unknowns than point-matching cells once the accuracy asked is high enough, because their order
-is cheap \citep{NestorError2026}; but every coupling is then a double integral over two cells, singular where they
+need fewer unknowns than point-matching cells given the same information about the medium, because their
+order is cheap \citep{NestorError2026}; but every coupling is then a double integral over two cells, singular where they
 touch, and an interface adds to the touching pairs every cell that touches its own image. Those are the
 integrals where numerical integration is weakest. Adaptive cubature with the singular point at a corner of
 the region can report convergence while in error by as much as $5\times10^{-7}$

@@ -20,9 +20,9 @@ from equal_accuracy import ROWS, equal_accuracy_table, load  # noqa: E402
 
 FIG = Path(__file__).resolve().parent.parent / "LatexPDFs" / "PolynomialVoxelError" / "figures"
 BODY = "graded"
-#: the exact classical point cell (the headline), the same cell with the package T-matrix, and the two
-#: fourth-order cells
-ARMS = ("point_exact", "point", "galerkin", "hierarchy")
+#: the exact classical point cell with the cell mean of the contrast (the headline: the Galerkin cell's
+#: representation of the medium), the same cell with the centre value, and the two fourth-order cells
+ARMS = ("point_exact_mean", "point_exact", "galerkin", "hierarchy")
 #: the frequencies of the figure's two panels, with the tag each one's file names carry
 PANELS = {0.5: "05", 4.0: "4"}
 #: the target errors of the paper's table, per frequency

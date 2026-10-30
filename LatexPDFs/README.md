@@ -17,13 +17,15 @@ Statuses:
 
 Read these before relying on any number from an older document.
 
-- **The Galerkin cell's gain over the classical point cell is a crossover, not a constant factor**
-  (31 October 2026). Earlier versions of the four live papers said that the cell of degree one needs
-  6.6 to 24 times fewer unknowns than the classical point cell. That point cell used the package's cube
-  T-matrix, whose far-field form-factor corrections make its error 7 to 11 times larger than the
-  uniform-strain closure itself. Against the closure, done exactly, the two need about the same
-  unknowns down to a crossover error; beyond it the gain grows as the three-quarters power of the
-  accuracy asked (Error paper, Section 11 and Appendix F).
+- **The Galerkin cell's gain over the classical point cell, restated** (31 October 2026). Earlier versions
+  of the four live papers said the cell of degree one needs 6.6 to 24 times fewer unknowns than the
+  classical point cell. That point cell used the package's cube T-matrix, whose far-field form-factor
+  corrections make its error 7 to 11 times larger than the uniform-strain closure itself, and sampled the
+  contrast at the cell centres. Measured again with the closure done exactly (Error paper, Section 11 and
+  Appendix F): given the same cell mean of the medium, the Galerkin cell needs 7.5 to 25 times fewer
+  unknowns, growing as the three-quarters power of the accuracy asked; sampled at the centres, whose error
+  on smooth bodies largely cancels the point cell's own, the two need about the same down to a crossover.
+  At equal degree the point cell is 1.6 to 1.9 times the more accurate on a sphere.
 - **Sphere comparisons before 20 September 2026** used a Mie arbiter with three sign errors, whose
   fixing reversed the verdict on the matched cell-average propagator at k a = 0.5. The cell-average
   propagator is better only in the Rayleigh regime (`reports/SphereMieArbiter`, as revised).
@@ -35,7 +37,7 @@ Read these before relying on any number from an older document.
 
 | Folder | Title | Date | What it establishes |
 |---|---|---|---|
-| `PolynomialVoxelError/` | The Error of Polynomial Voxels for Elastic Waves | 31 Oct 2026 | Order min(2p+2, 2r+2) on a layer, with closed-form constants; in 3-D a two-term error known before the solve; the gain over point matching (a crossover, then growing as the three-quarters power of the accuracy asked); the point cell in closed form (Appendix F) |
+| `PolynomialVoxelError/` | The Error of Polynomial Voxels for Elastic Waves | 31 Oct 2026 | Order min(2p+2, 2r+2) on a layer, with closed-form constants; in 3-D a two-term error known before the solve; the gain over point matching (7.5 to 25 times fewer unknowns like for like, growing as the three-quarters power of the accuracy asked); the point cell in closed form (Appendix F) |
 | `LegendreCellTMatrix/` | The Single-Site T-Matrix of a Legendre Cell in Closed Form | 31 Oct 2026 | The degree-one Legendre cell's T-matrix, every power of the frequency on six constants |
 | `ExactCouplingIntegrals/` | The Coupling Integrals of Polynomial Cubes in Closed Form | 31 Oct 2026 | Coupling blocks exact and accurate to round-off, touching cells included; frequency-independent coefficients, 9.3 to 19 times cheaper than quadrature over 1024 frequencies |
 | `InterfaceCouplingIntegrals/` | Coupling Integrals of Polynomial Cubes at a Welded Elastic Interface | 31 Oct 2026 | The static image in closed form and plane waves for the rest; the static and order-omega^2 parts computed once for every frequency |

@@ -56,30 +56,31 @@ def test_missing_arm_refused(tmp_path: Path) -> None:
 
 #: (k_S a, target, arm) -> (unknowns, status) as the paper's table prints them; None where it says not reached
 PAPER = {
-    (0.5, 1e-3, "point"): (5_632, "interpolated"),
     (0.5, 1e-3, "galerkin"): None,
-    (0.5, 1e-4, "point"): (69_610, "interpolated"),
     (0.5, 1e-4, "galerkin"): (10_610, "interpolated"),
     (0.5, 1e-4, "hierarchy"): (14_691, "interpolated"),
-    (0.5, 3e-5, "point"): (421_452, "interpolated"),
     (0.5, 3e-5, "galerkin"): (26_187, "interpolated"),
     (0.5, 3e-5, "hierarchy"): (35_893, "interpolated"),
-    (0.5, 1e-5, "point"): None,
     (0.5, 1e-5, "galerkin"): (60_305, "interpolated"),
     (0.5, 1e-5, "hierarchy"): (82_459, "interpolated"),
     (0.5, 1e-6, "galerkin"): (317_376, "measured"),
     (0.5, 1e-6, "hierarchy"): (437_847, "interpolated"),
-    (4.0, 1e-3, "point"): (933_316, "interpolated"),
     (4.0, 1e-3, "galerkin"): (38_204, "interpolated"),
     (4.0, 1e-3, "hierarchy"): (59_983, "interpolated"),
-    (4.0, 3e-4, "point"): None,
     (4.0, 3e-4, "galerkin"): (88_004, "interpolated"),
     (4.0, 3e-4, "hierarchy"): (134_023, "interpolated"),
     (4.0, 1e-4, "galerkin"): (192_727, "interpolated"),
     (4.0, 1e-4, "hierarchy"): (280_060, "interpolated"),
     (4.0, 1e-5, "galerkin"): (999_775, "interpolated"),
     (4.0, 1e-5, "hierarchy"): None,
-    # the classical point cell done exactly: the headline
+    # the classical point cell done exactly with the cell mean of the contrast: the headline
+    (0.5, 1e-3, "point_exact_mean"): (3_053, "interpolated"),
+    (0.5, 1e-4, "point_exact_mean"): (79_056, "interpolated"),
+    (0.5, 3e-5, "point_exact_mean"): (461_389, "interpolated"),
+    (0.5, 1e-5, "point_exact_mean"): None,
+    (4.0, 1e-3, "point_exact_mean"): (948_406, "interpolated"),
+    (4.0, 3e-4, "point_exact_mean"): None,
+    # the same cell with the centre value of the contrast
     (0.5, 1e-3, "point_exact"): (3_264, "interpolated"),
     (0.5, 1e-4, "point_exact"): (11_247, "interpolated"),
     (0.5, 3e-5, "point_exact"): (23_893, "interpolated"),
