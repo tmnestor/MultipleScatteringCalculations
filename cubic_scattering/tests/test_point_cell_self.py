@@ -123,3 +123,14 @@ def test_point_solver_refuses_an_unknown_single_site() -> None:
             device=torch.device("cpu"),
             dtype=torch.complex128,
         )
+
+
+def test_static_displacement_block_and_radiation_damping_in_closed_form() -> None:
+    # integral of 1/r over the cube is h^2 (12 ln(2 + sqrt 3) - 2 pi); Im g = sin(kr)/(4 pi r) gives the damping
+    omega = _omega(1e-4)
+    s_uu = self_block_9x9(omega, REF, D)[:3, :3]
+    m_p = LAM + 2 * MU
+    static = (2 / MU + 1 / m_p) * H**2 * (6 * np.log(2 + np.sqrt(3)) - np.pi) / (6 * np.pi)
+    damping = D**3 * omega * (2 / REF.beta**3 + 1 / REF.alpha**3) / (12 * np.pi * REF.rho)
+    assert np.max(np.abs(s_uu.real - static * np.eye(3))) <= 1e-8 * static
+    assert np.max(np.abs(s_uu.imag - damping * np.eye(3))) <= 1e-7 * damping

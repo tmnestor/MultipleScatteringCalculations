@@ -71,8 +71,8 @@ decision. The classical approximation, of Eshelby's equivalent-inclusion method 
 method for elastic waves, takes it as uniform in the cell. We expand the displacement and the strain
 independently in Legendre polynomials over the cube and test against the same polynomials: a Galerkin
 cell. We choose it because its order is cheap: it is no more accurate than a point-matching cell of the same
-size and degree, but raising its degree raises its order at small cost in unknowns, so that for a given
-accuracy it needs fewer unknowns than point matching, which imposes the equation at the cell's centre and
+size and degree, but raising its degree raises its order at small cost in unknowns, so that beyond a
+modest accuracy it needs fewer unknowns than point matching, which imposes the equation at the cell's centre and
 treats the receiving cell as a point. The price is that its interactions are double integrals over both
 cells, singular where cells touch. For the degree-one Legendre cell, whose expansions hold the constant and the three linear
 polynomials ($36$ unknowns), with a uniform contrast we give the single-site
@@ -167,9 +167,11 @@ point-matching cell of the same degree, which imposes the equation at its centre
 cell as a point, has an error of the same order with a different constant \citep{NestorError2026}. It is
 that its order is cheap. Raising the degree of its polynomials raises its order at small cost in unknowns,
 whereas point matching raises its order only by imposing the gradients of the equation at the centre as
-well: fourth order costs the Galerkin cell $36$ unknowns and point matching $60$, and on a graded sphere the
-Galerkin cell of degree one needs $6.6$ to $24$ times fewer unknowns than the classical uniform point cell
-for the same accuracy \citep{NestorError2026}. The price is in the integrals. The interactions of a Galerkin
+well: fourth order costs the Galerkin cell $36$ unknowns and point matching $60$. On a graded sphere the
+classical uniform point cell, its single site exact, needs about as many unknowns as the Galerkin cell of
+degree one down to a crossover error; beyond it, being second order against fourth, it needs more by a
+factor that grows as the three-quarters power of the accuracy asked, $4.2$ to $4.7$ within the grids run
+\citep{NestorError2026}. The price is in the integrals. The interactions of a Galerkin
 cell are double integrals over both cells, singular where cells touch, which is where numerical integration
 is weakest; here and in \citet{NestorCoupling2026} they are exact, and evaluated to round-off even for cells
 that touch. And a Galerkin cell holds the

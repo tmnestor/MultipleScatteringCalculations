@@ -79,6 +79,19 @@ PAPER = {
     (4.0, 1e-4, "hierarchy"): (280_060, "interpolated"),
     (4.0, 1e-5, "galerkin"): (999_775, "interpolated"),
     (4.0, 1e-5, "hierarchy"): None,
+    # the classical point cell done exactly: the headline
+    (0.5, 1e-3, "point_exact"): (3_264, "interpolated"),
+    (0.5, 1e-4, "point_exact"): (11_247, "interpolated"),
+    (0.5, 3e-5, "point_exact"): (23_893, "interpolated"),
+    (0.5, 1e-5, "point_exact"): (98_637, "interpolated"),
+    (0.5, 3e-6, "point_exact"): (679_751, "interpolated"),
+    (0.5, 3e-6, "galerkin"): (143_734, "interpolated"),
+    (0.5, 3e-6, "hierarchy"): (195_051, "interpolated"),
+    (0.5, 1e-6, "point_exact"): None,
+    (4.0, 1e-3, "point_exact"): (26_878, "interpolated"),
+    (4.0, 3e-4, "point_exact"): (155_304, "measured"),
+    (4.0, 1e-4, "point_exact"): (803_610, "interpolated"),
+    (4.0, 1e-5, "point_exact"): None,
 }
 
 

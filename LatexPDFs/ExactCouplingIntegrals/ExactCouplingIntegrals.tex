@@ -119,10 +119,11 @@ A volume-integral method for elastic scattering represents a heterogeneous mediu
 each carrying a polynomial field, and couples every pair of cells through the integral of the
 elastodynamic Green's tensor against the two cells' polynomials. Such Galerkin cells, tested against their
 own polynomials, earn their place by cheap order: they are no more accurate than point-matching cells of the
-same size and degree, but raising their degree raises their order at small cost in unknowns, and on a graded
-sphere the cell of degree one needs $6.6$ to $24$ times fewer unknowns than the classical point-matching cell
-for the same accuracy, and about $1.4$ times fewer than point matching carried to the same order
-\citep{NestorError2026}. Their price is the coupling. Point matching imposes the equation at each cell's
+same size and degree, but raising their degree raises their order at small cost in unknowns. On a graded
+sphere the cell of degree one needs about as many unknowns as the classical point-matching cell, its single
+site exact, down to a crossover error, and fewer beyond it by a factor that grows as the three-quarters
+power of the accuracy asked, $4.2$ to $4.7$ within the grids run; against point matching carried to the
+same order it needs about $1.4$ times fewer at every accuracy \citep{NestorError2026}. Their price is the coupling. Point matching imposes the equation at each cell's
 centre and needs single integrals; a Galerkin cell needs a double integral over two cells for every block,
 and this paper is about that price. Higher-order cells are worth having only
 if these coupling integrals are accurate: a cell whose field converges at fourth order in the cell size

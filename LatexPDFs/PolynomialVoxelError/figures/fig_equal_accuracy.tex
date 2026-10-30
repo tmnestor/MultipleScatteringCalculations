@@ -16,22 +16,26 @@
       text opacity=1},
   },
   eqpoint/.style={black, thick, densely dashed, mark=o, mark size=1.9pt, mark options={solid}},
+  eqpackage/.style={gray, thin, loosely dashed, mark=x, mark size=2.0pt, mark options={solid}},
   eqgalerkin/.style={black, thick, solid, mark=square*, mark size=1.7pt},
   eqhierarchy/.style={black, thick, densely dotted, mark=triangle, mark size=2.3pt, mark options={solid}},
 }
 \begin{tikzpicture}
   \begin{axis}[name=a, ylabel={relative error of the far field},
+      legend style={at={(1.07,-0.24)}, anchor=north, legend columns=2, /tikz/every even column/.append style={column sep=0.6cm}},
       title={(a) $k_Sa=0.5$}, title style={font=\small}]
-    \addplot[eqpoint] table[x=unknowns, y=error] {data_eqacc_ka05_point.dat};
+    \addplot[eqpoint] table[x=unknowns, y=error] {data_eqacc_ka05_point_exact.dat};
+    \addplot[eqpackage] table[x=unknowns, y=error] {data_eqacc_ka05_point.dat};
     \addplot[eqhierarchy] table[x=unknowns, y=error] {data_eqacc_ka05_hierarchy.dat};
     \addplot[eqgalerkin] table[x=unknowns, y=error] {data_eqacc_ka05_galerkin.dat};
+    \legend{{collocation, exact closure (9 a cell)}, {collocation, package $T$ (9)}, {gradient hierarchy, $q=3$ (60)}, {Galerkin, $p=r=1$ (36)}}
   \end{axis}
-  \begin{axis}[at={(a.east)}, anchor=west, legend pos=south west, xshift=1.0cm, title={(b) $k_Sa=4$},
+  \begin{axis}[at={(a.east)}, anchor=west, xshift=1.0cm, title={(b) $k_Sa=4$},
       title style={font=\small}]
-    \addplot[eqpoint] table[x=unknowns, y=error] {data_eqacc_ka4_point.dat};
+    \addplot[eqpoint] table[x=unknowns, y=error] {data_eqacc_ka4_point_exact.dat};
+    \addplot[eqpackage] table[x=unknowns, y=error] {data_eqacc_ka4_point.dat};
     \addplot[eqhierarchy] table[x=unknowns, y=error] {data_eqacc_ka4_hierarchy.dat};
     \addplot[eqgalerkin] table[x=unknowns, y=error] {data_eqacc_ka4_galerkin.dat};
-    \legend{{collocation (9 a cell)}, {gradient hierarchy, $q=3$ (60)}, {Galerkin, $p=r=1$ (36)}}
   \end{axis}
 \end{tikzpicture}
 \end{document}

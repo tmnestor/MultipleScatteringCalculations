@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The equal-accuracy figure of the Error paper: error against unknowns for the three arms on the graded sphere.
+"""The equal-accuracy figure of the Error paper: error against unknowns for the four arms on the graded sphere.
 
 Writes the coordinates of Fig. fig:equal_accuracy (``LatexPDFs/PolynomialVoxelError/figures/fig_equal_accuracy.tex``,
 pgfplots) from the measured ladders of ``scripts/compare_point_galerkin.py``: one whitespace table per frequency and
@@ -20,11 +20,13 @@ from equal_accuracy import ROWS, equal_accuracy_table, load  # noqa: E402
 
 FIG = Path(__file__).resolve().parent.parent / "LatexPDFs" / "PolynomialVoxelError" / "figures"
 BODY = "graded"
-ARMS = ("point", "galerkin", "hierarchy")
+#: the exact classical point cell (the headline), the same cell with the package T-matrix, and the two
+#: fourth-order cells
+ARMS = ("point_exact", "point", "galerkin", "hierarchy")
 #: the frequencies of the figure's two panels, with the tag each one's file names carry
 PANELS = {0.5: "05", 4.0: "4"}
 #: the target errors of the paper's table, per frequency
-TARGETS = {0.5: (1e-3, 1e-4, 3e-5, 1e-5, 1e-6), 4.0: (1e-3, 3e-4, 1e-4, 1e-5)}
+TARGETS = {0.5: (1e-3, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6), 4.0: (1e-3, 3e-4, 1e-4, 1e-5)}
 
 
 def data_name(ka: float, arm: str) -> str:
