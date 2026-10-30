@@ -1,4 +1,21 @@
 {
+ "ContinuumLimit_GradedSphere.wl": {
+  "built": "2026-10-30",
+  "cold_cache": false,
+  "entry_sha256": "1d80101edf963fa69268d4fad02569955a9a94e68abeffe4558e559928eb76c6",
+  "evaluated": true,
+  "inputs": {
+   "Mathematica/ContinuumLimit_GradedSphere.wl": "c1d569735e71ada296d0ccc0340c67f3e0d202b4692f4da36347ec35883f23f9",
+   "Mathematica/MieTmatrixReference.json": "a4be27754287997a869eab8007464af500b101fdc0678c38ccc25d5f15476aa7",
+   "Mathematica/TakeuchiSaito.wl": "e850663a5c95cf53e28b69f0a591bd5a25f8ad8771c354c051d5b97ade941650"
+  },
+  "notebook_sha256": "078136a959ea3c5064cf44ea456e825c05fe676d9e6a5ed20bc317fd86966e83",
+  "tools": {
+   "Mathematica/runnb.wls": "52d5e95d641cbac549a3083bedb602f00bcab9cd41894888c36354441fea1a6f",
+   "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
+  },
+  "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
+ },
  "ContinuumLimit_Reference.wl": {
   "built": "2026-10-30",
   "cold_cache": false,
@@ -8,9 +25,9 @@
    "Mathematica/ContinuumLimit_Reference.wl": "ca5e03af96823af6a6c326d3baef0373ed020537177061473f2007822a529a47",
    "Mathematica/ContinuumLimit_reference.json": "ced9f537ed621b1acc9808a41509c2445966b9607aba8ace6ffd77fb29ae3cf8"
   },
-  "notebook_sha256": "6eae9eb6115c35366582829aa9227da9430c8dd6ebf88ae58185b2d516bfa1b6",
+  "notebook_sha256": "b6f13c85113478888ecdff9f47b2b4e915a0aab529cde9ee2dbf682a88d35110",
   "tools": {
-   "Mathematica/runnb.wls": "a8ae99664f0d6acf40bcf870b4c04ffa31b9a0a6d653d27edf3e0a9504b78585",
+   "Mathematica/runnb.wls": "52d5e95d641cbac549a3083bedb602f00bcab9cd41894888c36354441fea1a6f",
    "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
   },
   "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"

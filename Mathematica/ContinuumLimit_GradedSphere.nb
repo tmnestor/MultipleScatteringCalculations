@@ -1,0 +1,1231 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     49962,       1222]
+NotebookOptionsPosition[     45056,       1159]
+NotebookOutlinePosition[     45373,       1173]
+CellTagsIndexPosition[     45330,       1170]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["ContinuumLimit_GradedSphere", "Title",ExpressionUUID->"f77c617f-a246-4f5a-bcc5-243d9f540eae"],
+
+Cell["\<\
+ContinuumLimit_GradedSphere.wl  --  notebook 16 of the continuum-limit study.\
+\
+\>", "Subtitle",ExpressionUUID->"a8d7f639-e144-4269-a790-e7c1a41ad196"],
+
+Cell["\<\
+WHY.  A voxelised sphere with a sharp surface is dominated by the staircase \
+error of its shape (section 10).  A sphere whose contrast falls SMOOTHLY to \
+zero at its surface has no staircase: the voxels that cross the surface carry \
+a vanishing contrast.  This notebook builds its exact scattering, the \
+reference against which the voxel scheme's own error can be measured.\
+\>", "Text",ExpressionUUID->"430ae018-e286-4039-8f2d-32760c8caa6f"],
+
+Cell["\<\
+THE BODY.  A homogeneous core r < b carrying the contrast Delta_0, and a \
+shell b < r < a across which the contrast falls to zero with the C2 smoothstep\
+\>", "Text",ExpressionUUID->"08d51362-803c-4623-b944-1bb1708d5f86"],
+
+Cell["\<\
+    f(r) = s(x),  s(x) = 10 x^3 - 15 x^4 + 6 x^5,  x = (a - r)/(a - b),\
+\>", "Program",ExpressionUUID->"32fa9a8b-ef5d-403f-86e4-798181ed81e1"],
+
+Cell["\<\
+so the contrast vanishes like (a - r)^3 at the surface.  In the core the \
+regular solutions are the homogeneous Mie interior functions, exactly.\
+\>", "Text",ExpressionUUID->"21e74c1f-5e44-45e1-ae95-86a909fc314d"],
+
+Cell["\<\
+THE METHOD.  Everything radial comes from the library TakeuchiSaito.wl (in \
+this folder; see its header and TSSelfTest[]): the Takeuchi-Saito systems, \
+derived from the equations of motion, the homogeneous basis, the propagator \
+and the per-order T-matrix TSSphereTMatrix, in the convention of \
+MieTmatrixReference.wl (incident potential coefficients to scattered ones); \
+and the closed form of a sphere of homogeneous shells, TSShellsTMatrix. This \
+notebook defines the body and the checks specific to it.\
+\>", "Text",ExpressionUUID->"2d76e2b9-d563-4765-8ff7-5a17e21a0a8a"],
+
+Cell["\<\
+CHECKS: [1] the library's own self-test (derivation, basis, invariant, \
+propagator, shells); [2] a uniform shell reproduces MieTmatrixReference (the \
+package's arbiter); [3] a two-shell stepped sphere with the benchmark's \
+contrast: the propagator with a break equals the closed form; [4] the graded \
+sphere's S-matrix is unitary per order; [5] 90 vs 120 digits; [6] N \
+homogeneous shells (midpoint contrast) converge to the graded result at \
+second order in 1/N. Time e^{-i w t}; SI units.\
+\>", "Text",ExpressionUUID->"d186946e-852c-4b09-8d2e-9ce8b789c7ee"],
+
+Cell[CellGroupData[{
+
+Cell["Notebook set-up", "Section",ExpressionUUID->"a7a0e206-178b-4389-b851-edf8260bdd72"],
+
+Cell["\<\
+Generated from ContinuumLimit_GradedSphere.wl (the script is the source; edit \
+it, not this notebook). To rerun, open this notebook from the folder holding \
+the script and the files it loads, and use Evaluation \[RightGuillemet] \
+Evaluate Notebook. The cell below stands in for the script environment: \
+$InputFileName became $nbInputFileName, $ScriptCommandLine became \
+$nbScriptCommandLine and Exit/Quit became nbExit, which skips every later \
+cell instead of ending the session (evaluate this cell again to reset).\
+\>", "Text",ExpressionUUID->"92ab88b1-56a4-41fc-a7e9-49b3d21b749a"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"stand", "-", 
+     RowBox[{
+     "ins", " ", "for", " ", "the", " ", "script", " ", "environment"}]}], ";",
+     " ", 
+    RowBox[{
+    "this", " ", "notebook", " ", "is", " ", "generated", " ", "from", " ", 
+     RowBox[{"ContinuumLimit_GradedSphere", ".", "wl"}]}]}], " ", "*)"}], 
+  "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"$nbInputFileName", " ", "=", " ", 
+     RowBox[{"Quiet", "[", 
+      RowBox[{"Check", "[", 
+       RowBox[{
+        RowBox[{"NotebookFileName", "[", 
+         RowBox[{"EvaluationNotebook", "[", "]"}], "]"}], ",", " ", 
+        RowBox[{"FileNameJoin", "[", 
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"Directory", "[", "]"}], ",", 
+           " ", "\"\<ContinuumLimit_GradedSphere.nb\>\""}], "}"}], "]"}]}], 
+       "]"}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"$nbScriptCommandLine", " ", "=", " ", 
+     RowBox[{"Join", "[", 
+      RowBox[{
+       RowBox[{"{", "$nbInputFileName", "}"}], ",", " ", 
+       RowBox[{"{", "}"}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{"Exit", "/", 
+      RowBox[{"Quit", ":", " ", 
+       RowBox[{
+        RowBox[{"Abort", "[", "]"}], " ", "alone", " ", "stops", " ", "only", 
+        " ", "the", " ", "current", " ", "cell"}]}]}], ",", " ", 
+     RowBox[{
+     "so", " ", "after", " ", "an", " ", "exit", " ", "$Pre", " ", "aborts", " ",
+       "every", " ", "later", " ", "cell"}], ",", "\n", "   ", 
+     RowBox[{
+     "except", " ", "one", " ", "that", " ", "mentions", " ", "$nbStopped", " ", 
+      RowBox[{"(", 
+       RowBox[{"this", " ", "cell"}], ")"}]}], ",", " ", 
+     RowBox[{"which", " ", "resets", " ", "it"}]}], " ", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"$nbStopped", " ", "=", " ", "False"}], ";", " ", 
+    RowBox[{"$nbExitCode", " ", "=", " ", "None"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"nbExit", "[", 
+      RowBox[{"code_", " ", ":", " ", "0"}], "]"}], " ", ":=", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"$nbStopped", " ", "=", " ", "True"}], ";", " ", 
+       RowBox[{"$nbExitCode", " ", "=", " ", "code"}], ";", " ", 
+       RowBox[{"Print", "[", 
+        RowBox[{"\"\<[the script exits here with code \>\"", ",", " ", "code",
+          ",", "\n", 
+         "    ", "\"\<; later cells are skipped until this set-up cell is \
+evaluated again]\>\""}], "]"}], ";", " ", 
+       RowBox[{"Abort", "[", "]"}]}], ")"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"$Pre", " ", "=", " ", 
+     RowBox[{"Function", "[", 
+      RowBox[{"in", ",", " ", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"TrueQ", "[", "$nbStopped", "]"}], " ", "&&", " ", 
+          RowBox[{"FreeQ", "[", 
+           RowBox[{
+            RowBox[{"Hold", "[", "in", "]"}], ",", " ", 
+            RowBox[{"HoldPattern", "[", "$nbStopped", "]"}]}], "]"}]}], ",", 
+         " ", 
+         RowBox[{"Abort", "[", "]"}], ",", " ", "in"}], "]"}], ",", " ", 
+       "HoldAll"}], "]"}]}], ";"}]}]}]], "Input",
+ CellLabel->"In[1]:=",ExpressionUUID->"fb551ebf-efc9-4b8d-97e5-4c273e5b1d0c"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Get", "[", 
+   RowBox[{"FileNameJoin", "[", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"DirectoryName", "[", "$nbInputFileName", "]"}], ",", 
+      " ", "\"\<TakeuchiSaito.wl\>\""}], "}"}], "]"}], "]"}], ";"}]], "Input",\
+
+ CellLabel->"In[6]:=",ExpressionUUID->"fd90d49c-1d33-4058-b517-f61b102da115"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"sci", "[", "x_", "]"}], " ", ":=", " ", 
+   RowBox[{"ToString", "[", 
+    RowBox[{
+     RowBox[{"NumberForm", "[", 
+      RowBox[{
+       RowBox[{"N", "[", "x", "]"}], ",", " ", "3", ",", " ", 
+       RowBox[{"NumberFormat", " ", "->", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"If", "[", 
+           RowBox[{
+            RowBox[{"#3", " ", "==", " ", "\"\<\>\""}], ",", " ", "#1", ",", 
+            " ", 
+            RowBox[{"Row", "[", 
+             RowBox[{"{", 
+              RowBox[{"#1", ",", " ", "\"\<e\>\"", ",", " ", "#3"}], "}"}], 
+             "]"}]}], "]"}], " ", "&"}], ")"}]}]}], "]"}], ",", " ", 
+     "OutputForm"}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"pass", "[", "b_", "]"}], " ", ":=", " ", 
+   RowBox[{"If", "[", 
+    RowBox[{
+     RowBox[{"TrueQ", "[", "b", "]"}], ",", " ", "\"\<PASS\>\"", ",", 
+     " ", "\"\<FAIL\>\""}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"oks", " ", "=", " ", 
+   RowBox[{"{", "}"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"chk", "[", "b_", "]"}], " ", ":=", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"AppendTo", "[", 
+      RowBox[{"oks", ",", " ", 
+       RowBox[{"TrueQ", "[", "b", "]"}]}], "]"}], ";", " ", 
+     RowBox[{"pass", "[", "b", "]"}]}], ")"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", "\"\<==== ContinuumLimit_GradedSphere :: a sphere whose \
+contrast falls smoothly to zero at its surface ====\>\"", "]"}], 
+  ";"}]}], "Input",
+ CellLabel->"In[7]:=",ExpressionUUID->"eba2c63a-e3ce-4fd4-acd7-1d443b940f2a"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"==== ContinuumLimit_GradedSphere :: a sphere whose contrast falls \
+smoothly to zero at its surface ====\""},
+  "RowDefault"]], "Print",ExpressionUUID->"acda865a-6f34-41fd-8315-\
+cc030a771e07"],
+
+Cell["[1] the library", "Text",ExpressionUUID->"f9ddf562-29a6-47b6-b911-44056e77594a"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+  "Print", "[", "\"\<  [1] the Takeuchi-Saito library's self-test:\>\"", 
+   "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{"\"\<  [1] -> \>\"", ",", " ", 
+    RowBox[{"chk", "[", 
+     RowBox[{"TSSelfTest", "[", "]"}], "]"}]}], "]"}], ";"}]}], "Input",
+ CellLabel->"In[8]:=",ExpressionUUID->"cb3c3dc9-f15c-44b7-a3ce-d71657f060d8"],
+
+Cell[BoxData[
+ TemplateBox[{"\"  [1] the Takeuchi-Saito library's self-test:\""},
+  "RowDefault"]], "Print",ExpressionUUID->"1b86abe6-e940-41c3-a20c-\
+eec306d8734e"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"==== TakeuchiSaito :: radial systems of a radially varying isotropic \
+elastic sphere ====\""},
+  "RowDefault"]], "Print",ExpressionUUID->"bf7e0a60-d8f3-4314-86df-\
+7e3b25ba563d"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [1] derived from the equations of motion = the closed forms: \
+spheroidal \"", "True", "\", toroidal \"", "True", 
+   "\"; free of material derivatives: \"", "True", "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"0c4c7101-601f-49a5-879e-\
+f00d883e1244"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [2] trace A = \"", "\"-4/r\"", "\", trace B = \"", "\"-2/r\"", 
+   "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"4097579d-ca57-4cd9-a1c0-\
+e509be2a2452"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [3] reciprocity: the antisymmetric J with d/dr(r^2 y1.J.y2) = 0 in \
+every medium (normalised J13 = 1): \"", 
+   "\"{{0, 0, 1, 0}, {0, 0, 0, L}, {-1, 0, 0, 0}, {0, -L, 0, 0}}\"", 
+   "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"81792301-33c1-41ad-99b7-\
+45f3d22edb9a"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [4] Frobenius exponents at r = 0: \"", 
+   "\"{-2 - nn, -1 + nn, -nn, 1 + nn}\"", 
+   "\"   (regular: n - 1 and n + 1, the P and SV solutions near the centre) \
+-> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"6fe7e791-8ed4-4bea-840e-\
+ad3f1aa86aa1"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [5] homogeneous basis (j, y, h1, h2; n = 0..4) satisfies dy/dr = A y \
+and dz/dr = B z: \"", "\"0.\"", "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"178be608-98f0-402e-94aa-\
+27f73b74b5bf"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [6] m-independence: exact 3-D fields with Y_3^2 satisfy the same \
+systems: \"", "\"0.\"", "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"38281aa4-cfb5-420e-8d1d-\
+68bab413051c"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [7] r^2 y1.J.y2 through the graded shell (n = 3), r = 5 -> 10: regular \
+P with irregular P \"", "\"5.12e9\"", "\" -> \"", "\"5.12e9\"", 
+   "\" (relative change \"", "\"5.5e-25\"", 
+   "\"); regular P with regular SV \"", "\"0.\"", "\" -> \"", "\"5.87e-17\"", 
+   "\" (relative to the scale \"", "\"1.15e-26\"", "\") -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"405e7cd5-d37a-43b1-a815-\
+a132a6cc5461"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [8] uniform shell propagated = closed-form homogeneous sphere (n = \
+0..6): \"", "\"1.89e-25\"", 
+   "\"; graded sphere unitary and reciprocal (S = S^T): \"", "\"1.19e-26\"", 
+   "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"bd4fc5c9-ecef-41de-bd68-\
+bff087b57360"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [9] stepped sphere (core + two shells, n = 0..5): propagator with \
+breaks = closed-form shells: \"", "\"3.94e-25\"", "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"16d7bd44-d0da-429e-8a6d-\
+6c2781faa507"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"==== TakeuchiSaito: \"", "\"ALL 9 CHECKS PASS\"", "\" ====\""},
+  "RowDefault"]], "Print",ExpressionUUID->"f5d33332-1b9d-4ac3-a394-\
+c86fe37e229b"],
+
+Cell[BoxData[
+ TemplateBox[{"\"  [1] -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"7c29dfe2-d7dd-47e7-9a4d-\
+c0f8594ea352"],
+
+Cell["\<\
+the background and a contrast profile: moduli and density as functions of r\
+\>", "Text",ExpressionUUID->"f33576bd-c7ec-4ddc-94c1-cdd560607332"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"background", "[", 
+    RowBox[{"al_", ",", " ", "be_", ",", " ", "rh_"}], "]"}], " ", ":=", " ", 
+   
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"rh", " ", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"al", "^", "2"}], " ", "-", " ", 
+        RowBox[{"2", " ", 
+         RowBox[{"be", "^", "2"}]}]}], ")"}]}], ",", " ", 
+     RowBox[{"rh", " ", 
+      RowBox[{"be", "^", "2"}]}], ",", " ", "rh"}], "}"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"material", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"lam0_", ",", " ", "mu0_", ",", " ", "rho0_"}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"dl_", ",", " ", "dm_", ",", " ", "dr_"}], "}"}], ",", " ", 
+     "f_"}], "]"}], " ", ":=", "\n", "  ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"Function", "[", 
+      RowBox[{"x", ",", " ", 
+       RowBox[{"lam0", " ", "+", " ", 
+        RowBox[{"dl", " ", 
+         RowBox[{"f", "[", "x", "]"}]}]}]}], "]"}], ",", " ", 
+     RowBox[{"Function", "[", 
+      RowBox[{"x", ",", " ", 
+       RowBox[{"mu0", " ", "+", " ", 
+        RowBox[{"dm", " ", 
+         RowBox[{"f", "[", "x", "]"}]}]}]}], "]"}], ",", " ", 
+     RowBox[{"Function", "[", 
+      RowBox[{"x", ",", " ", 
+       RowBox[{"rho0", " ", "+", " ", 
+        RowBox[{"dr", " ", 
+         RowBox[{"f", "[", "x", "]"}]}]}]}], "]"}]}], "}"}]}], 
+  ";"}]}], "Input",
+ CellLabel->"In[9]:=",ExpressionUUID->"50dbb4ea-62d0-429a-a0e7-ac142180821d"],
+
+Cell["\<\
+[2] a uniform shell is the homogeneous sphere of MieTmatrixReference.wl\
+\>", "Section",ExpressionUUID->"e464f61b-7a51-4c74-b265-04437586fe1e"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"refJ", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+     RowBox[{"FileNameJoin", "[", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"DirectoryName", "[", "$nbInputFileName", "]"}], ",", 
+        " ", "\"\<MieTmatrixReference.json\>\""}], "}"}], "]"}], ",", 
+     " ", "\"\<RawJSON\>\""}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"g", " ", "=", " ", 
+       RowBox[{
+        RowBox[{"refJ", "[", "\"\<tmatrices\>\"", "]"}], "[", "\"\<gate\>\"", 
+        "]"}]}], ",", " ", 
+      RowBox[{"s", " ", "=", " ", 
+       RowBox[{"11", "/", "10"}]}], ",", " ", 
+      RowBox[{"om0", " ", "=", " ", "60"}], ",", " ", 
+      RowBox[{"a", " ", "=", " ", "120"}], ",", " ", "bg", ",", " ", 
+      RowBox[{"worst", " ", "=", " ", "0"}], ",", " ", "cpx", ",", " ", 
+      "mat"}], "}"}], ",", "\n", "  ", 
+    RowBox[{
+     RowBox[{"bg", " ", "=", " ", 
+      RowBox[{"background", "[", 
+       RowBox[{"5000", ",", " ", "3000", ",", " ", "2500"}], "]"}]}], ";", 
+     "\n", "  ", 
+     RowBox[{"(*", " ", 
+      RowBox[{
+       RowBox[{"the", " ", "reference", " ", "scales", " ", "alpha"}], ",", 
+       " ", "beta", ",", " ", 
+       RowBox[{"rho", " ", "by", " ", "s", " ", 
+        RowBox[{"inside", ":", " ", 
+         RowBox[{"moduli", " ", "by", " ", 
+          RowBox[{"s", "^", "3"}]}]}]}]}], " ", "*)"}], "\n", "  ", 
+     RowBox[{"mat", " ", "=", " ", 
+      RowBox[{"material", "[", 
+       RowBox[{"bg", ",", " ", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{"s", "^", "3"}], " ", "-", " ", "1"}], ")"}], " ", 
+           RowBox[{"bg", "[", 
+            RowBox[{"[", "1", "]"}], "]"}]}], ",", " ", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{"s", "^", "3"}], " ", "-", " ", "1"}], ")"}], " ", 
+           RowBox[{"bg", "[", 
+            RowBox[{"[", "2", "]"}], "]"}]}], ",", " ", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"s", " ", "-", " ", "1"}], ")"}], " ", 
+           RowBox[{"bg", "[", 
+            RowBox[{"[", "3", "]"}], "]"}]}]}], "}"}], ",", " ", 
+        RowBox[{"1", " ", "&"}]}], "]"}]}], ";", "\n", "  ", 
+     RowBox[{
+      RowBox[{"cpx", "[", "v_", "]"}], " ", ":=", " ", 
+      RowBox[{
+       RowBox[{"v", "[", 
+        RowBox[{"[", "1", "]"}], "]"}], " ", "+", " ", 
+       RowBox[{"I", " ", 
+        RowBox[{"v", "[", 
+         RowBox[{"[", "2", "]"}], "]"}]}]}]}], ";", "\n", "  ", 
+     RowBox[{"Do", "[", 
+      RowBox[{
+       RowBox[{"Module", "[", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"mine", " ", "=", " ", 
+            RowBox[{"TSSphereTMatrix", "[", 
+             RowBox[{
+             "n", ",", " ", "om0", ",", " ", "bg", ",", " ", "mat", ",", " ", 
+              
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"a", "/", "2"}], ",", " ", "a"}], "}"}], ",", " ", 
+              RowBox[{"WorkingPrecision", " ", "->", " ", "60"}]}], "]"}]}], ",",
+            " ", 
+           RowBox[{"want", " ", "=", " ", 
+            RowBox[{"g", "[", 
+             RowBox[{"[", 
+              RowBox[{"n", " ", "+", " ", "1"}], "]"}], "]"}]}]}], "}"}], ",",
+          "\n", "     ", 
+         RowBox[{"worst", " ", "=", " ", 
+          RowBox[{"Max", "[", 
+           RowBox[{"worst", ",", " ", 
+            RowBox[{
+             RowBox[{"Max", "[", 
+              RowBox[{"Abs", "[", 
+               RowBox[{
+                RowBox[{"mine", "[", "\"\<Tpsv\>\"", "]"}], " ", "-", " ", 
+                RowBox[{"Map", "[", 
+                 RowBox[{"cpx", ",", " ", 
+                  RowBox[{"want", "[", "\"\<Tpsv\>\"", "]"}], ",", " ", 
+                  RowBox[{"{", "2", "}"}]}], "]"}]}], "]"}], "]"}], "/", 
+             RowBox[{"Max", "[", 
+              RowBox[{"Abs", "[", 
+               RowBox[{"Map", "[", 
+                RowBox[{"cpx", ",", " ", 
+                 RowBox[{"want", "[", "\"\<Tpsv\>\"", "]"}], ",", " ", 
+                 RowBox[{"{", "2", "}"}]}], "]"}], "]"}], "]"}]}], ",", "\n", 
+            "       ", 
+            RowBox[{"If", "[", 
+             RowBox[{
+              RowBox[{"n", " ", ">", " ", "0"}], ",", " ", 
+              RowBox[{
+               RowBox[{"Abs", "[", 
+                RowBox[{
+                 RowBox[{"mine", "[", "\"\<Tsh\>\"", "]"}], " ", "-", " ", 
+                 RowBox[{"cpx", "[", 
+                  RowBox[{"want", "[", "\"\<Tsh\>\"", "]"}], "]"}]}], "]"}], "/", 
+               RowBox[{"Abs", "[", 
+                RowBox[{"cpx", "[", 
+                 RowBox[{"want", "[", "\"\<Tsh\>\"", "]"}], "]"}], "]"}]}], ",",
+               " ", "0"}], "]"}]}], "]"}]}]}], "]"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"n", ",", " ", "0", ",", " ", "12"}], "}"}]}], "]"}], ";", 
+     "\n", "  ", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<  [2] uniform shell (integrated across b = a/2 .. a) vs \
+MieTmatrixReference 'gate', n = 0..12: \>\"", ",", " ", 
+       RowBox[{"sci", "[", "worst", "]"}], ",", "\n", "   ", "\"\< -> \>\"", ",",
+        " ", 
+       RowBox[{"chk", "[", 
+        RowBox[{"worst", " ", "<", " ", 
+         RowBox[{"10", "^", 
+          RowBox[{"-", "17"}]}]}], "]"}]}], "]"}]}]}], "]"}], ";"}]}], "Input",\
+
+ CellLabel->"In[10]:=",ExpressionUUID->"aeee9ba6-c70e-4216-a399-2870328fd5cd"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [2] uniform shell (integrated across b = a/2 .. a) vs \
+MieTmatrixReference 'gate', n = 0..12: \"", "\"0.\"", "\" -> \"", "\"PASS\""},
+  
+  "RowDefault"]], "Print",ExpressionUUID->"8f0b591d-f362-47f3-87af-\
+e177e6486ff5"],
+
+Cell["\<\
+the benchmark: gate contrast, radius 10 m, core b = a/2, smoothstep shell\
+\>", "Section",ExpressionUUID->"97d817b8-5c52-455b-ba6c-c45dd052fab1"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"smooth", "[", "x_", "]"}], " ", ":=", " ", 
+   RowBox[{
+    RowBox[{"10", " ", 
+     RowBox[{"x", "^", "3"}]}], " ", "-", " ", 
+    RowBox[{"15", " ", 
+     RowBox[{"x", "^", "4"}]}], " ", "+", " ", 
+    RowBox[{"6", " ", 
+     RowBox[{"x", "^", "5"}]}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"aB", " ", "=", " ", "10"}], ";", " ", 
+  RowBox[{"bB", " ", "=", " ", "5"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"bgB", " ", "=", " ", 
+   RowBox[{"background", "[", 
+    RowBox[{"5000", ",", " ", "3000", ",", " ", "2500"}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"dB", " ", "=", " ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"2", " ", 
+      RowBox[{"10", "^", "9"}]}], ",", " ", 
+     RowBox[{"1", " ", 
+      RowBox[{"10", "^", "9"}]}], ",", " ", "100"}], "}"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"profG", " ", "=", " ", 
+   RowBox[{"Function", "[", 
+    RowBox[{"x", ",", " ", 
+     RowBox[{"Piecewise", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"{", 
+         RowBox[{"1", ",", " ", 
+          RowBox[{"x", " ", "<", " ", "bB"}]}], "}"}], "}"}], ",", " ", 
+       RowBox[{"smooth", "[", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"aB", " ", "-", " ", "x"}], ")"}], "/", 
+         RowBox[{"(", 
+          RowBox[{"aB", " ", "-", " ", "bB"}], ")"}]}], "]"}]}], "]"}]}], 
+    "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"matG", " ", "=", " ", 
+   RowBox[{"material", "[", 
+    RowBox[{"bgB", ",", " ", "dB", ",", " ", "profG"}], "]"}]}], 
+  ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"omAt", "[", "kSa_", "]"}], " ", ":=", " ", 
+   RowBox[{"kSa", " ", 
+    RowBox[{"3000", "/", "aB"}]}]}], ";"}]}], "Input",
+ CellLabel->"In[11]:=",ExpressionUUID->"0efaf8b7-0f21-4af3-b6bd-fca04c22dd40"],
+
+Cell["\<\
+[3] two-shell stepped sphere with the benchmark's contrast: propagator with a \
+break vs the closed form\
+\>", "Text",ExpressionUUID->"503d5b3a-fe3b-497e-903e-05dc72f39091"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"om0", " ", "=", " ", 
+       RowBox[{"omAt", "[", "1", "]"}]}], ",", " ", 
+      RowBox[{"fs", " ", "=", " ", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", " ", 
+         RowBox[{"3", "/", "4"}], ",", " ", 
+         RowBox[{"1", "/", "4"}]}], "}"}]}], ",", " ", 
+      RowBox[{"rs", " ", "=", " ", 
+       RowBox[{"{", 
+        RowBox[{"bB", ",", " ", 
+         RowBox[{"15", "/", "2"}], ",", " ", "aB"}], "}"}]}], ",", " ", 
+      "step", ",", " ", 
+      RowBox[{"worst", " ", "=", " ", "0"}]}], "}"}], ",", "\n", "  ", 
+    RowBox[{
+     RowBox[{"step", " ", "=", " ", 
+      RowBox[{"Function", "[", 
+       RowBox[{"x", ",", " ", 
+        RowBox[{"Piecewise", "[", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"1", ",", " ", 
+              RowBox[{"x", " ", "<", " ", "bB"}]}], "}"}], ",", " ", 
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"3", "/", "4"}], ",", " ", 
+              RowBox[{"x", " ", "<", " ", 
+               RowBox[{"15", "/", "2"}]}]}], "}"}]}], "}"}], ",", " ", 
+          RowBox[{"1", "/", "4"}]}], "]"}]}], "]"}]}], ";", "\n", "  ", 
+     RowBox[{"Do", "[", 
+      RowBox[{
+       RowBox[{"Module", "[", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{"ode", ",", " ", "cf"}], "}"}], ",", "\n", "     ", 
+         RowBox[{
+          RowBox[{"ode", " ", "=", " ", 
+           RowBox[{"TSSphereTMatrix", "[", 
+            RowBox[{"n", ",", " ", "om0", ",", " ", "bgB", ",", " ", 
+             RowBox[{"material", "[", 
+              RowBox[{"bgB", ",", " ", "dB", ",", " ", "step"}], "]"}], ",", 
+             " ", 
+             RowBox[{"{", 
+              RowBox[{"bB", ",", " ", "aB"}], "}"}], ",", " ", 
+             RowBox[{"\"\<Breaks\>\"", " ", "->", " ", 
+              RowBox[{"{", 
+               RowBox[{"15", "/", "2"}], "}"}]}], ",", " ", 
+             RowBox[{"WorkingPrecision", " ", "->", " ", "60"}]}], "]"}]}], ";",
+           "\n", "     ", 
+          RowBox[{"cf", " ", "=", " ", 
+           RowBox[{"TSShellsTMatrix", "[", 
+            RowBox[{
+            "n", ",", " ", "om0", ",", " ", "bgB", ",", " ", "rs", ",", " ", 
+             RowBox[{"Table", "[", 
+              RowBox[{
+               RowBox[{"bgB", " ", "+", " ", 
+                RowBox[{"f", " ", "dB"}]}], ",", " ", 
+               RowBox[{"{", 
+                RowBox[{"f", ",", " ", "fs"}], "}"}]}], "]"}], ",", " ", 
+             RowBox[{"WorkingPrecision", " ", "->", " ", "60"}]}], "]"}]}], ";",
+           "\n", "     ", 
+          RowBox[{"worst", " ", "=", " ", 
+           RowBox[{"Max", "[", 
+            RowBox[{"worst", ",", " ", 
+             RowBox[{
+              RowBox[{"Max", "[", 
+               RowBox[{"Abs", "[", 
+                RowBox[{
+                 RowBox[{"ode", "[", "\"\<Tpsv\>\"", "]"}], " ", "-", " ", 
+                 RowBox[{"cf", "[", "\"\<Tpsv\>\"", "]"}]}], "]"}], "]"}], "/", 
+              RowBox[{"Max", "[", 
+               RowBox[{"Abs", "[", 
+                RowBox[{"cf", "[", "\"\<Tpsv\>\"", "]"}], "]"}], "]"}]}], ",",
+              "\n", "       ", 
+             RowBox[{"If", "[", 
+              RowBox[{
+               RowBox[{"n", " ", ">", " ", "0"}], ",", " ", 
+               RowBox[{
+                RowBox[{"Abs", "[", 
+                 RowBox[{
+                  RowBox[{"ode", "[", "\"\<Tsh\>\"", "]"}], " ", "-", " ", 
+                  RowBox[{"cf", "[", "\"\<Tsh\>\"", "]"}]}], "]"}], "/", 
+                RowBox[{"Abs", "[", 
+                 RowBox[{"cf", "[", "\"\<Tsh\>\"", "]"}], "]"}]}], ",", " ", 
+               "0"}], "]"}]}], "]"}]}]}]}], "]"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"n", ",", " ", "0", ",", " ", "6"}], "}"}]}], "]"}], ";", 
+     "\n", "  ", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<  [3] two-shell stepped sphere, k_S a = 1, n = 0..6: \
+propagator with a break vs closed form \>\"", ",", " ", 
+       RowBox[{"sci", "[", "worst", "]"}], ",", "\n", "   ", "\"\< -> \>\"", ",",
+        " ", 
+       RowBox[{"chk", "[", 
+        RowBox[{"worst", " ", "<", " ", 
+         RowBox[{"10", "^", 
+          RowBox[{"-", "20"}]}]}], "]"}]}], "]"}]}]}], "]"}], ";"}]], "Input",\
+
+ CellLabel->"In[12]:=",ExpressionUUID->"6fe7be7c-611b-478b-ad46-ab9adfd5fc94"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [3] two-shell stepped sphere, k_S a = 1, n = 0..6: propagator with a \
+break vs closed form \"", "\"3.84e-26\"", "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"15decd30-d933-4319-be53-\
+6bbb64dda6e5"],
+
+Cell["\<\
+[4], [5] the graded sphere: unitarity per order, and precision\
+\>", "Text",ExpressionUUID->"941c660d-ff81-4421-81ce-e4881edcac1d"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"nMax", " ", "=", " ", "14"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"graded", " ", "=", " ", 
+   RowBox[{"Association", "[", 
+    RowBox[{"Table", "[", 
+     RowBox[{
+      RowBox[{"kSa", " ", "->", " ", 
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"TSSphereTMatrix", "[", 
+          RowBox[{"n", ",", " ", 
+           RowBox[{"omAt", "[", "kSa", "]"}], ",", " ", "bgB", ",", " ", 
+           "matG", ",", " ", 
+           RowBox[{"{", 
+            RowBox[{"bB", ",", " ", "aB"}], "}"}], ",", " ", 
+           RowBox[{"WorkingPrecision", " ", "->", " ", "90"}]}], "]"}], ",", 
+         "\n", "      ", 
+         RowBox[{"{", 
+          RowBox[{"n", ",", " ", "0", ",", " ", "nMax"}], "}"}]}], "]"}]}], ",",
+       " ", 
+      RowBox[{"{", 
+       RowBox[{"kSa", ",", " ", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"1", "/", "2"}], ",", " ", "1"}], "}"}]}], "}"}]}], "]"}], 
+    "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"worstU", " ", "=", " ", "0"}], ",", " ", 
+      RowBox[{"worstP", " ", "=", " ", "0"}]}], "}"}], ",", "\n", "  ", 
+    RowBox[{
+     RowBox[{"Do", "[", 
+      RowBox[{
+       RowBox[{"Module", "[", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"rows", " ", "=", " ", 
+            RowBox[{"graded", "[", "kSa", "]"}]}], ",", " ", "hi"}], "}"}], ",",
+          "\n", "     ", 
+         RowBox[{
+          RowBox[{"Do", "[", 
+           RowBox[{
+            RowBox[{"Module", "[", 
+             RowBox[{
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"row", " ", "=", " ", 
+                 RowBox[{"rows", "[", 
+                  RowBox[{"[", 
+                   RowBox[{"n", " ", "+", " ", "1"}], "]"}], "]"}]}], ",", 
+                " ", "W", ",", " ", "S"}], "}"}], ",", "\n", "        ", 
+              RowBox[{"If", "[", 
+               RowBox[{
+                RowBox[{"n", " ", ">=", " ", "1"}], ",", "\n", "         ", 
+                RowBox[{
+                 RowBox[{"W", " ", "=", " ", 
+                  RowBox[{"DiagonalMatrix", "[", 
+                   RowBox[{"{", 
+                    RowBox[{
+                    RowBox[{"Sqrt", "[", "5000", "]"}], ",", " ", 
+                    RowBox[{"Sqrt", "[", 
+                    RowBox[{"3000", " ", "n", " ", 
+                    RowBox[{"(", 
+                    RowBox[{"n", " ", "+", " ", "1"}], ")"}]}], "]"}]}], 
+                    "}"}], "]"}]}], ";", "\n", "         ", 
+                 RowBox[{"S", " ", "=", " ", 
+                  RowBox[{"W", " ", ".", " ", 
+                   RowBox[{"(", 
+                    RowBox[{
+                    RowBox[{"IdentityMatrix", "[", "2", "]"}], " ", "+", " ", 
+                    
+                    RowBox[{"2", " ", 
+                    RowBox[{"row", "[", "\"\<Tpsv\>\"", "]"}]}]}], ")"}], " ",
+                    ".", " ", 
+                   RowBox[{"Inverse", "[", "W", "]"}]}]}], ";", "\n", 
+                 "         ", 
+                 RowBox[{"worstU", " ", "=", " ", 
+                  RowBox[{"Max", "[", 
+                   RowBox[{"worstU", ",", " ", 
+                    RowBox[{"Norm", "[", 
+                    RowBox[{
+                    RowBox[{
+                    RowBox[{"ConjugateTranspose", "[", "S", "]"}], " ", ".", 
+                    " ", "S"}], " ", "-", " ", 
+                    RowBox[{"IdentityMatrix", "[", "2", "]"}]}], "]"}], ",", 
+                    " ", 
+                    RowBox[{"Abs", "[", 
+                    RowBox[{
+                    RowBox[{"Abs", "[", 
+                    RowBox[{"1", " ", "+", " ", 
+                    RowBox[{"2", " ", 
+                    RowBox[{"row", "[", "\"\<Tsh\>\"", "]"}]}]}], "]"}], " ", 
+                    "-", " ", "1"}], "]"}]}], "]"}]}]}], ",", "\n", 
+                "         ", 
+                RowBox[{"worstU", " ", "=", " ", 
+                 RowBox[{"Max", "[", 
+                  RowBox[{"worstU", ",", " ", 
+                   RowBox[{"Abs", "[", 
+                    RowBox[{
+                    RowBox[{"Abs", "[", 
+                    RowBox[{"1", " ", "+", " ", 
+                    RowBox[{"2", " ", 
+                    RowBox[{
+                    RowBox[{"row", "[", "\"\<Tpsv\>\"", "]"}], "[", 
+                    RowBox[{"[", 
+                    RowBox[{"1", ",", " ", "1"}], "]"}], "]"}]}]}], "]"}], 
+                    " ", "-", " ", "1"}], "]"}]}], "]"}]}]}], "]"}]}], "]"}], 
+            ",", " ", 
+            RowBox[{"{", 
+             RowBox[{"n", ",", " ", "0", ",", " ", "nMax"}], "}"}]}], "]"}], ";",
+           "\n", "     ", 
+          RowBox[{"Do", "[", 
+           RowBox[{
+            RowBox[{
+             RowBox[{"hi", " ", "=", " ", 
+              RowBox[{"TSSphereTMatrix", "[", 
+               RowBox[{"n", ",", " ", 
+                RowBox[{"omAt", "[", "kSa", "]"}], ",", " ", "bgB", ",", " ", 
+                "matG", ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"bB", ",", " ", "aB"}], "}"}], ",", " ", 
+                RowBox[{"WorkingPrecision", " ", "->", " ", "120"}]}], 
+               "]"}]}], ";", "\n", "      ", 
+             RowBox[{"worstP", " ", "=", " ", 
+              RowBox[{"Max", "[", 
+               RowBox[{"worstP", ",", " ", 
+                RowBox[{
+                 RowBox[{"Max", "[", 
+                  RowBox[{"Abs", "[", 
+                   RowBox[{
+                    RowBox[{"hi", "[", "\"\<Tpsv\>\"", "]"}], " ", "-", " ", 
+                    RowBox[{
+                    RowBox[{"rows", "[", 
+                    RowBox[{"[", 
+                    RowBox[{"n", " ", "+", " ", "1"}], "]"}], "]"}], 
+                    "[", "\"\<Tpsv\>\"", "]"}]}], "]"}], "]"}], "/", 
+                 RowBox[{"Max", "[", 
+                  RowBox[{"Abs", "[", 
+                   RowBox[{"hi", "[", "\"\<Tpsv\>\"", "]"}], "]"}], "]"}]}]}],
+                "]"}]}]}], ",", " ", 
+            RowBox[{"{", 
+             RowBox[{"n", ",", " ", 
+              RowBox[{"{", 
+               RowBox[{"0", ",", " ", "1", ",", " ", "2", ",", " ", "5"}], 
+               "}"}]}], "}"}]}], "]"}]}]}], "]"}], ",", "\n", "   ", 
+       RowBox[{"{", 
+        RowBox[{"kSa", ",", " ", 
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"1", "/", "2"}], ",", " ", "1"}], "}"}]}], "}"}]}], "]"}], 
+     ";", "\n", "  ", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<  [4] graded sphere, k_S a = 0.5 and 1, n = 0..\>\"", ",", 
+       " ", "nMax", ",", " ", "\"\<: worst unitarity defect \>\"", ",", " ", 
+       RowBox[{"sci", "[", "worstU", "]"}], ",", " ", "\"\< -> \>\"", ",", 
+       "\n", "   ", 
+       RowBox[{"chk", "[", 
+        RowBox[{"worstU", " ", "<", " ", 
+         RowBox[{"10", "^", 
+          RowBox[{"-", "35"}]}]}], "]"}]}], "]"}], ";", "\n", "  ", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<  [5] 90 vs 120 digits: \>\"", ",", " ", 
+       RowBox[{"sci", "[", "worstP", "]"}], ",", " ", "\"\< -> \>\"", ",", 
+       " ", 
+       RowBox[{"chk", "[", 
+        RowBox[{"worstP", " ", "<", " ", 
+         RowBox[{"10", "^", 
+          RowBox[{"-", "35"}]}]}], "]"}]}], "]"}]}]}], "]"}], ";"}]}], "Input",\
+
+ CellLabel->"In[13]:=",ExpressionUUID->"78a62ff3-3972-4f6c-8932-6008a7cdfcac"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [4] graded sphere, k_S a = 0.5 and 1, n = 0..\"", "14", 
+   "\": worst unitarity defect \"", "\"1.9e-46\"", "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"e104492a-ede4-4c09-a97c-\
+aa420d568d02"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [5] 90 vs 120 digits: \"", "\"2.25e-41\"", "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"50f59647-8734-4563-85ae-\
+c623e0364a48"],
+
+Cell["\<\
+[6] N homogeneous shells, each at the contrast of its mid-radius, converge to \
+the graded sphere at 1/N^2\
+\>", "Text",ExpressionUUID->"acd19b82-c92b-4e2d-8891-d2a80dd9917c"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"nn", " ", "=", " ", "2"}], ",", " ", "errs", ",", " ", 
+      RowBox[{"ns", " ", "=", " ", 
+       RowBox[{"{", 
+        RowBox[{"4", ",", " ", "8", ",", " ", "16"}], "}"}]}], ",", " ", 
+      "want", ",", " ", "ord"}], "}"}], ",", "\n", "  ", 
+    RowBox[{
+     RowBox[{"want", " ", "=", " ", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"graded", "[", "1", "]"}], "[", 
+        RowBox[{"[", 
+         RowBox[{"nn", " ", "+", " ", "1"}], "]"}], "]"}], "[", "\"\<Tpsv\>\"",
+        "]"}]}], ";", "\n", "  ", 
+     RowBox[{"errs", " ", "=", " ", 
+      RowBox[{"Table", "[", 
+       RowBox[{
+        RowBox[{"Module", "[", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{"rs", ",", " ", "mids", ",", " ", "mats"}], "}"}], ",", 
+          "\n", "     ", 
+          RowBox[{
+           RowBox[{"rs", " ", "=", " ", 
+            RowBox[{"Join", "[", 
+             RowBox[{
+              RowBox[{"{", "bB", "}"}], ",", " ", 
+              RowBox[{"Table", "[", 
+               RowBox[{
+                RowBox[{"bB", " ", "+", " ", 
+                 RowBox[{
+                  RowBox[{"(", 
+                   RowBox[{"aB", " ", "-", " ", "bB"}], ")"}], " ", 
+                  RowBox[{"i", "/", "nsh"}]}]}], ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"i", ",", " ", "nsh"}], "}"}]}], "]"}]}], "]"}]}], ";",
+            "\n", "     ", 
+           RowBox[{"mids", " ", "=", " ", 
+            RowBox[{"Table", "[", 
+             RowBox[{
+              RowBox[{"bB", " ", "+", " ", 
+               RowBox[{
+                RowBox[{"(", 
+                 RowBox[{"aB", " ", "-", " ", "bB"}], ")"}], " ", 
+                RowBox[{
+                 RowBox[{"(", 
+                  RowBox[{"i", " ", "-", " ", 
+                   RowBox[{"1", "/", "2"}]}], ")"}], "/", "nsh"}]}]}], ",", 
+              " ", 
+              RowBox[{"{", 
+               RowBox[{"i", ",", " ", "nsh"}], "}"}]}], "]"}]}], ";", "\n", 
+           "     ", 
+           RowBox[{"mats", " ", "=", " ", 
+            RowBox[{"Join", "[", 
+             RowBox[{
+              RowBox[{"{", 
+               RowBox[{"bgB", " ", "+", " ", "dB"}], "}"}], ",", " ", 
+              RowBox[{"Table", "[", 
+               RowBox[{
+                RowBox[{"bgB", " ", "+", " ", 
+                 RowBox[{
+                  RowBox[{"profG", "[", "m", "]"}], " ", "dB"}]}], ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"m", ",", " ", "mids"}], "}"}]}], "]"}]}], "]"}]}], ";",
+            "\n", "     ", 
+           RowBox[{
+            RowBox[{"Max", "[", 
+             RowBox[{"Abs", "[", 
+              RowBox[{
+               RowBox[{
+                RowBox[{"TSShellsTMatrix", "[", 
+                 RowBox[{"nn", ",", " ", 
+                  RowBox[{"omAt", "[", "1", "]"}], ",", " ", "bgB", ",", " ", 
+                  "rs", ",", " ", "mats", ",", " ", 
+                  RowBox[{"WorkingPrecision", " ", "->", " ", "60"}]}], "]"}],
+                 "[", "\"\<Tpsv\>\"", "]"}], " ", "-", " ", "want"}], "]"}], 
+             "]"}], "/", 
+            RowBox[{"Max", "[", 
+             RowBox[{"Abs", "[", "want", "]"}], "]"}]}]}]}], "]"}], ",", "\n",
+         "    ", 
+        RowBox[{"{", 
+         RowBox[{"nsh", ",", " ", "ns"}], "}"}]}], "]"}]}], ";", "\n", "  ", 
+     RowBox[{"ord", " ", "=", " ", 
+      RowBox[{"N", "[", 
+       RowBox[{"Log", "[", 
+        RowBox[{"2", ",", " ", 
+         RowBox[{
+          RowBox[{"Most", "[", "errs", "]"}], "/", 
+          RowBox[{"Rest", "[", "errs", "]"}]}]}], "]"}], "]"}]}], ";", "\n", 
+     "  ", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<  [6] N-shell closed form vs the graded sphere (k_S a = 1, \
+n = 2), N = \>\"", ",", " ", "ns", ",", " ", "\"\<: \>\"", ",", " ", 
+       RowBox[{"sci", " ", "/@", " ", "errs"}], ",", "\n", 
+       "   ", "\"\<  order \>\"", ",", " ", "ord", ",", " ", "\"\< -> \>\"", ",",
+        " ", 
+       RowBox[{"chk", "[", 
+        RowBox[{"AllTrue", "[", 
+         RowBox[{"ord", ",", " ", 
+          RowBox[{
+           RowBox[{"1.8", " ", "<", " ", "#", " ", "<", " ", "2.2"}], " ", 
+           "&"}]}], "]"}], "]"}]}], "]"}]}]}], "]"}], ";"}]], "Input",
+ CellLabel->"In[14]:=",ExpressionUUID->"7ff709d6-0bc6-4e19-b30b-e981e28f6177"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"  [6] N-shell closed form vs the graded sphere (k_S a = 1, n = 2), N = \
+\"", 
+   RowBox[{"{", 
+     RowBox[{"4", ",", "8", ",", "16"}], "}"}], "\": \"", 
+   RowBox[{"{", 
+     RowBox[{"\"0.00362\"", ",", "\"0.000981\"", ",", "\"0.00025\""}], "}"}], 
+   "\"  order \"", 
+   RowBox[{"{", 
+     RowBox[{"1.8824656985226902`", ",", "1.9699201136974485`"}], "}"}], 
+   "\" -> \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"5ca781d0-69c6-469a-99ac-\
+587b5369cca2"],
+
+Cell["\<\
+export: per-order T-matrices of the graded sphere, in the format of \
+MieTmatrixReference.json\
+\>", "Text",ExpressionUUID->"b8b36bd2-abfd-4143-bde3-39f44d58bb90"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"reim", "[", "z_", "]"}], " ", ":=", " ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"N", "[", 
+      RowBox[{
+       RowBox[{"Re", "[", "z", "]"}], ",", " ", "20"}], "]"}], ",", " ", 
+     RowBox[{"N", "[", 
+      RowBox[{
+       RowBox[{"Im", "[", "z", "]"}], ",", " ", "20"}], "]"}]}], "}"}]}], 
+  ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Export", "[", 
+   RowBox[{
+    RowBox[{"FileNameJoin", "[", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"DirectoryName", "[", "$nbInputFileName", "]"}], ",", 
+       " ", "\"\<ContinuumLimit_graded_sphere_tmatrix.json\>\""}], "}"}], 
+     "]"}], ",", "\n", "  ", 
+    RowBox[{"<|", 
+     RowBox[{
+      RowBox[{"\"\<conventions\>\"", " ", "->", 
+       " ", "\"\<T maps incident potential coefficients (P,S) to scattered \
+(P,S); SH scalar likewise\>\""}], ",", "\n", "    ", 
+      RowBox[{"\"\<profile\>\"", " ", "->", 
+       " ", "\"\<core r < b carries the contrast; for b < r < a it is \
+multiplied by s((a-r)/(a-b)), s = 10x^3-15x^4+6x^5\>\""}], ",", "\n", "    ", 
+      
+      RowBox[{"\"\<radius\>\"", " ", "->", " ", "aB"}], ",", " ", 
+      RowBox[{"\"\<core\>\"", " ", "->", " ", "bB"}], ",", " ", 
+      RowBox[{"\"\<alpha\>\"", " ", "->", " ", "5000"}], ",", " ", 
+      RowBox[{"\"\<beta\>\"", " ", "->", " ", "3000"}], ",", " ", 
+      RowBox[{"\"\<rho\>\"", " ", "->", " ", "2500"}], ",", "\n", "    ", 
+      RowBox[{"\"\<contrast\>\"", " ", "->", " ", 
+       RowBox[{"<|", 
+        RowBox[{
+         RowBox[{"\"\<Dlambda\>\"", " ", "->", " ", 
+          RowBox[{"2", " ", 
+           RowBox[{"10", "^", "9"}]}]}], ",", " ", 
+         RowBox[{"\"\<Dmu\>\"", " ", "->", " ", 
+          RowBox[{"1", " ", 
+           RowBox[{"10", "^", "9"}]}]}], ",", " ", 
+         RowBox[{"\"\<Drho\>\"", " ", "->", " ", "100"}]}], "|>"}]}], ",", 
+      "\n", "    ", 
+      RowBox[{"\"\<sets\>\"", " ", "->", " ", 
+       RowBox[{"Association", "[", 
+        RowBox[{"Table", "[", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"ToString", "[", 
+            RowBox[{"N", "[", "kSa", "]"}], "]"}], " ", "->", " ", 
+           RowBox[{"<|", 
+            RowBox[{
+             RowBox[{"\"\<kSa\>\"", " ", "->", " ", 
+              RowBox[{"N", "[", "kSa", "]"}]}], ",", " ", 
+             RowBox[{"\"\<omega\>\"", " ", "->", " ", 
+              RowBox[{"N", "[", 
+               RowBox[{"omAt", "[", "kSa", "]"}], "]"}]}], ",", "\n", 
+             "        ", 
+             RowBox[{"\"\<tmatrices\>\"", " ", "->", " ", 
+              RowBox[{"MapIndexed", "[", 
+               RowBox[{
+                RowBox[{
+                 RowBox[{"<|", 
+                  RowBox[{
+                   RowBox[{"\"\<n\>\"", " ", "->", " ", 
+                    RowBox[{
+                    RowBox[{"First", "[", "#2", "]"}], " ", "-", " ", "1"}]}],
+                    ",", " ", 
+                   RowBox[{"\"\<Tpsv\>\"", " ", "->", " ", 
+                    RowBox[{"Map", "[", 
+                    RowBox[{"reim", ",", " ", 
+                    RowBox[{"#1", "[", "\"\<Tpsv\>\"", "]"}], ",", " ", 
+                    RowBox[{"{", "2", "}"}]}], "]"}]}], ",", " ", 
+                   RowBox[{"\"\<Tsh\>\"", " ", "->", " ", 
+                    RowBox[{"reim", "[", 
+                    RowBox[{"#1", "[", "\"\<Tsh\>\"", "]"}], "]"}]}]}], 
+                  "|>"}], " ", "&"}], ",", "\n", "          ", 
+                RowBox[{"graded", "[", "kSa", "]"}]}], "]"}]}]}], "|>"}]}], ",",
+           " ", 
+          RowBox[{"{", 
+           RowBox[{"kSa", ",", " ", 
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"1", "/", "2"}], ",", " ", "1"}], "}"}]}], "}"}]}], 
+         "]"}], "]"}]}]}], "|>"}], ",", " ", "\"\<JSON\>\""}], "]"}], 
+  ";"}]}], "Input",
+ CellLabel->"In[15]:=",ExpressionUUID->"42bc4a0d-0576-4314-81ca-dd9e7ce0ba8b"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{"\"\<==== ContinuumLimit_GradedSphere (stage 16): \>\"", ",", "\n",
+     "  ", 
+    RowBox[{"If", "[", 
+     RowBox[{
+      RowBox[{"And", " ", "@@", " ", "oks"}], ",", " ", 
+      RowBox[{"\"\<ALL \>\"", " ", "<>", " ", 
+       RowBox[{"ToString", "[", 
+        RowBox[{"Length", "[", "oks", "]"}], "]"}], " ", "<>", 
+       " ", "\"\< CHECKS PASS\>\""}], ",", " ", "\"\<CHECKS FAILED\>\""}], 
+     "]"}], ",", " ", "\"\< ====\>\""}], "]"}], ";"}]], "Input",
+ CellLabel->"In[16]:=",ExpressionUUID->"77aa9c88-96f0-43d2-a791-3aed9383a50f"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"==== ContinuumLimit_GradedSphere (stage 16): \"", 
+   "\"ALL 6 CHECKS PASS\"", "\" ====\""},
+  "RowDefault"]], "Print",ExpressionUUID->"7afe576f-3ca1-4a92-9fde-\
+a30637ab51fb"]
+},
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (July 2, 2026)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"c44dc113-d2f1-4619-9cdc-34c41edf5bb5"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 99, 0, 70, "Title",ExpressionUUID->"f77c617f-a246-4f5a-bcc5-243d9f540eae"],
+Cell[656, 22, 162, 3, 70, "Subtitle",ExpressionUUID->"a8d7f639-e144-4269-a790-e7c1a41ad196"],
+Cell[821, 27, 456, 6, 70, "Text",ExpressionUUID->"430ae018-e286-4039-8f2d-32760c8caa6f"],
+Cell[1280, 35, 232, 3, 70, "Text",ExpressionUUID->"08d51362-803c-4623-b944-1bb1708d5f86"],
+Cell[1515, 40, 153, 2, 70, "Program",ExpressionUUID->"32fa9a8b-ef5d-403f-86e4-798181ed81e1"],
+Cell[1671, 44, 224, 3, 70, "Text",ExpressionUUID->"21e74c1f-5e44-45e1-ae95-86a909fc314d"],
+Cell[1898, 49, 591, 8, 70, "Text",ExpressionUUID->"2d76e2b9-d563-4765-8ff7-5a17e21a0a8a"],
+Cell[2492, 59, 575, 8, 70, "Text",ExpressionUUID->"d186946e-852c-4b09-8d2e-9ce8b789c7ee"],
+Cell[CellGroupData[{
+Cell[3092, 71, 89, 0, 70, "Section",ExpressionUUID->"a7a0e206-178b-4389-b851-edf8260bdd72"],
+Cell[3184, 73, 601, 8, 70, "Text",ExpressionUUID->"92ab88b1-56a4-41fc-a7e9-49b3d21b749a"],
+Cell[3788, 83, 3128, 79, 70, "Input",ExpressionUUID->"fb551ebf-efc9-4b8d-97e5-4c273e5b1d0c"]
+}, Open  ]],
+Cell[6931, 165, 339, 9, 70, "Input",ExpressionUUID->"fd90d49c-1d33-4058-b517-f61b102da115"],
+Cell[7273, 176, 1591, 45, 70, "Input",ExpressionUUID->"eba2c63a-e3ce-4fd4-acd7-1d443b940f2a"],
+Cell[8867, 223, 227, 5, 70, "Print",ExpressionUUID->"acda865a-6f34-41fd-8315-cc030a771e07"],
+Cell[9097, 230, 86, 0, 70, "Text",ExpressionUUID->"f9ddf562-29a6-47b6-b911-44056e77594a"],
+Cell[9186, 232, 387, 10, 70, "Input",ExpressionUUID->"cb3c3dc9-f15c-44b7-a3ce-d71657f060d8"],
+Cell[9576, 244, 165, 3, 70, "Print",ExpressionUUID->"1b86abe6-e940-41c3-a20c-eec306d8734e"],
+Cell[9744, 249, 213, 5, 70, "Print",ExpressionUUID->"bf7e0a60-d8f3-4314-86df-7e3b25ba563d"],
+Cell[9960, 256, 310, 6, 70, "Print",ExpressionUUID->"0c4c7101-601f-49a5-879e-f00d883e1244"],
+Cell[10273, 264, 211, 5, 70, "Print",ExpressionUUID->"4097579d-ca57-4cd9-a1c0-e509be2a2452"],
+Cell[10487, 271, 327, 7, 70, "Print",ExpressionUUID->"81792301-33c1-41ad-99b7-45f3d22edb9a"],
+Cell[10817, 280, 301, 7, 70, "Print",ExpressionUUID->"6fe7e791-8ed4-4bea-840e-ad3f1aa86aa1"],
+Cell[11121, 289, 247, 5, 70, "Print",ExpressionUUID->"178be608-98f0-402e-94aa-27f73b74b5bf"],
+Cell[11371, 296, 235, 5, 70, "Print",ExpressionUUID->"38281aa4-cfb5-420e-8d1d-68bab413051c"],
+Cell[11609, 303, 458, 8, 70, "Print",ExpressionUUID->"405e7cd5-d37a-43b1-a815-a132a6cc5461"],
+Cell[12070, 313, 323, 7, 70, "Print",ExpressionUUID->"bd4fc5c9-ecef-41de-bd68-bff087b57360"],
+Cell[12396, 322, 262, 5, 70, "Print",ExpressionUUID->"16d7bd44-d0da-429e-8a6d-6c2781faa507"],
+Cell[12661, 329, 181, 4, 70, "Print",ExpressionUUID->"f5d33332-1b9d-4ac3-a394-c86fe37e229b"],
+Cell[12845, 335, 141, 3, 70, "Print",ExpressionUUID->"7c29dfe2-d7dd-47e7-9a4d-c0f8594ea352"],
+Cell[12989, 340, 154, 2, 70, "Text",ExpressionUUID->"f33576bd-c7ec-4ddc-94c1-cdd560607332"],
+Cell[13146, 344, 1477, 43, 70, "Input",ExpressionUUID->"50dbb4ea-62d0-429a-a0e7-ac142180821d"],
+Cell[14626, 389, 153, 2, 70, "Section",ExpressionUUID->"e464f61b-7a51-4c74-b265-04437586fe1e"],
+Cell[14782, 393, 5451, 136, 70, "Input",ExpressionUUID->"aeee9ba6-c70e-4216-a399-2870328fd5cd"],
+Cell[20236, 531, 257, 6, 70, "Print",ExpressionUUID->"8f0b591d-f362-47f3-87af-e177e6486ff5"],
+Cell[20496, 539, 155, 2, 70, "Section",ExpressionUUID->"97d817b8-5c52-455b-ba6c-c45dd052fab1"],
+Cell[20654, 543, 1771, 53, 70, "Input",ExpressionUUID->"0efaf8b7-0f21-4af3-b6bd-fca04c22dd40"],
+Cell[22428, 598, 183, 3, 70, "Text",ExpressionUUID->"503d5b3a-fe3b-497e-903e-05dc72f39091"],
+Cell[22614, 603, 4381, 105, 70, "Input",ExpressionUUID->"6fe7be7c-611b-478b-ad46-ab9adfd5fc94"],
+Cell[26998, 710, 257, 5, 70, "Print",ExpressionUUID->"15decd30-d933-4319-be53-6bbb64dda6e5"],
+Cell[27258, 717, 141, 2, 70, "Text",ExpressionUUID->"941c660d-ff81-4421-81ce-e4881edcac1d"],
+Cell[27402, 721, 7321, 175, 70, "Input",ExpressionUUID->"78a62ff3-3972-4f6c-8932-6008a7cdfcac"],
+Cell[34726, 898, 252, 5, 70, "Print",ExpressionUUID->"e104492a-ede4-4c09-a97c-aa420d568d02"],
+Cell[34981, 905, 187, 4, 70, "Print",ExpressionUUID->"50f59647-8734-4563-85ae-c623e0364a48"],
+Cell[35171, 911, 185, 3, 70, "Text",ExpressionUUID->"acd19b82-c92b-4e2d-8891-d2a80dd9917c"],
+Cell[35359, 916, 4345, 107, 70, "Input",ExpressionUUID->"7ff709d6-0bc6-4e19-b30b-e981e28f6177"],
+Cell[39707, 1025, 507, 13, 70, "Print",ExpressionUUID->"5ca781d0-69c6-469a-99ac-587b5369cca2"],
+Cell[40217, 1040, 173, 3, 70, "Text",ExpressionUUID->"b8b36bd2-abfd-4143-bde3-39f44d58bb90"],
+Cell[40393, 1045, 3845, 90, 70, "Input",ExpressionUUID->"42bc4a0d-0576-4314-81ca-dd9e7ce0ba8b"],
+Cell[44241, 1137, 598, 13, 70, "Input",ExpressionUUID->"77aa9c88-96f0-43d2-a791-3aed9383a50f"],
+Cell[44842, 1152, 210, 5, 70, "Print",ExpressionUUID->"7afe576f-3ca1-4a92-9fde-a30637ab51fb"]
+}
+]
+*)
+
+(* End of internal cache information *)
