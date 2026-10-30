@@ -418,6 +418,7 @@ Cell[BoxData[RowBox[{RowBox[{"f", "[", "z_", "]"}], ":=", "\n", RowBox[{"z", "^"
 """
 
 
+@pytest.mark.slow  # a Wolfram kernel starts in about 7 s alone, over the 10 s budget under the parallel gate
 @pytest.mark.skipif(shutil.which("wolframscript") is None, reason="needs wolframscript")
 def test_runnb_evaluates_each_line_of_a_cell(tmp_path: Path) -> None:
     """A cell holds one expression per top-level line, as in the front end: never their product.
@@ -461,6 +462,7 @@ Cell[BoxData[RowBox[{"Message", "[", RowBox[{RowBox[{"f", "::", "small"}], ",", 
 """
 
 
+@pytest.mark.slow  # a Wolfram kernel starts in about 7 s alone, over the 10 s budget under the parallel gate
 @pytest.mark.skipif(shutil.which("wolframscript") is None, reason="needs wolframscript")
 def test_runnb_keeps_a_message_on_one_line(tmp_path: Path) -> None:
     """A message argument is written in InputForm: in OutputForm a small number puts its exponent on
