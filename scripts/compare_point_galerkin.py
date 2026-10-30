@@ -8,6 +8,12 @@ Arms, each by its fastest route and for the one incident wave the scattered fiel
   galerkin  the graded first-moment Galerkin voxel, p = r = 1 (36 unknowns a cell,
             ``graded_voxel.fft.solve_graded_sphere_fft``), every cell overlapping the sphere carrying the L2
             projection of the contrast; the kernel at the canonical k only.
+  hierarchy the gradient hierarchy at q = 3 (60 unknowns a cell, fourth order like the Galerkin voxel): the
+            field a Taylor polynomial about each centre, the equation and its derivatives imposed there, the
+            contrast projected to degree 1 in each voxel, the FFT product of
+            ``measure_graded_sphere_gradient_hierarchy_fft.solve_fft``. The graded sphere only. It is the
+            point formulation at the Galerkin voxel's order: the check that separates the formulation from
+            the order.
 Bodies (radius a = 10 m, the validated contrast of ``gate_sphere_cell_average_vs_mie``):
   graded    contrast 1 in the core r < a/2, falling to zero across the shell as the C2 smoothstep, so no
             staircase: the exact field is ``crosscheck_graded_sphere.graded_mie_result``.
@@ -22,6 +28,7 @@ scripts/data/point_vs_galerkin.jsonl; a run already there (same body, k_S a, arm
 
 Run:  python -u scripts/compare_point_galerkin.py --body=graded --ka=0.5 --arm=point 8 12 16 24 32 40 48
       python -u scripts/compare_point_galerkin.py --body=graded --ka=0.5 --arm=galerkin 8 12 16 24 32
+      python -u scripts/compare_point_galerkin.py --body=graded --ka=0.5 --arm=hierarchy 4 6 8 10 12
       python -u scripts/compare_point_galerkin.py --report     (the table of every row)
 """
 
@@ -37,8 +44,10 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cubic_scattering.graded_voxel.site import BatchProfile  # noqa: E402
 from pilot_graded_sphere_vs_exact import profile as pilot_profile  # noqa: E402
+
+from cubic_scattering.graded_voxel.blocks import _NEAR_STORE  # noqa: E402
+from cubic_scattering.graded_voxel.site import BatchProfile  # noqa: E402
 
 OUT = Path(__file__).parent / "data" / "point_vs_galerkin.jsonl"
 RADIUS = 10.0
@@ -59,14 +68,34 @@ graded_profile = pilot_profile
 sharp_profile = BatchProfile(_sharp_values)
 
 
+ARMS = ("point", "galerkin", "hierarchy")
+
+
 def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
+    if arm not in ARMS:
+        raise ValueError(
+            f"arm {arm!r} is not one of {ARMS}: give --arm=point, --arm=galerkin or --arm=hierarchy"
+        )
+    if arm == "hierarchy" and body != "graded":
+        raise ValueError(
+            f"the hierarchy arm is defined for the graded sphere only (asked: {body!r}): it projects the contrast "
+            "on polynomials in each voxel, which a step across the sharp sphere's surface does not have; "
+            "run it with --body=graded"
+        )
     import torch
     from crosscheck_graded_sphere import graded_mie_result
+    from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points
+
     from cubic_scattering.graded_voxel.farfield import graded_far_field
     from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft
-    from cubic_scattering.sphere_scattering import compute_elastic_mie, mie_scattered_displacement
-    from cubic_scattering.sphere_scattering_fft_gpu import point_wave_far_field, solve_point_plane_wave
-    from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points
+    from cubic_scattering.sphere_scattering import (
+        compute_elastic_mie,
+        mie_scattered_displacement,
+    )
+    from cubic_scattering.sphere_scattering_fft_gpu import (
+        point_wave_far_field,
+        solve_point_plane_wave,
+    )
 
     omega = ka_s * REF.beta / RADIUS
     r_far = R_MULT * RADIUS
@@ -99,9 +128,25 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
         t1 = time.perf_counter()
         u_p, u_s = point_wave_far_field(res, pts / r_far, r_far)
         cells, unknowns = len(res.centres), 9 * len(res.centres)
+    elif arm == "hierarchy":
+        # the gradient hierarchy at q = 3 (fourth order), contrast to degree 1 in each voxel, FFT product;
+        # the same body, medium and observation set (tests/test_compare_point_galerkin.py)
+        import measure_graded_sphere_gradient_hierarchy as gs
+        import measure_graded_sphere_gradient_hierarchy_fft as hfft
+
+        side, centres, coefs, asm, sol, info = hfft.solve_fft(n, 3, omega, CONTRAST, tol=tol)
+        timings = {
+            "kernel_s": info["tables_s"],
+            "solve_s": info["solve_s"],
+            "iterations": info["iterations"],
+        }
+        t1 = time.perf_counter()
+        u_p = gs.far_field(side, centres, coefs, asm, sol, omega, CONTRAST, pts)
+        u_s = np.zeros_like(u_p)  # the hierarchy's readout is the whole displacement
+        cells, unknowns = len(centres), 3 * asm.nu * len(centres)
     else:
         profile = graded_profile if body == "graded" else sharp_profile
-        res = solve_graded_sphere_fft(
+        gres = solve_graded_sphere_fft(
             omega,
             RADIUS,
             REF,
@@ -117,8 +162,8 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
             timings=timings,
         )
         t1 = time.perf_counter()
-        u_p, u_s = graded_far_field(res, pts / r_far, r_far, K_HAT, POL, "P")
-        cells, unknowns = len(res.centres), 36 * len(res.centres)
+        u_p, u_s = graded_far_field(gres, pts / r_far, r_far, K_HAT, POL, "P")
+        cells, unknowns = len(gres.centres), 36 * len(gres.centres)
     t2 = time.perf_counter()
     peak = float(np.max(np.abs(exact)))
     return {
@@ -136,6 +181,10 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
         "readout_s": t2 - t1,
         "wall_s": t2 - t0,
         "peak_GB": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e9,  # bytes on macOS
+        # what makes timings comparable: the threads used, and whether the one on-disk store (the Galerkin
+        # near-block moments) was there; nothing else the three arms read is kept between runs
+        "threads": torch.get_num_threads(),
+        "near_store": _NEAR_STORE.exists(),
     }
 
 
@@ -162,13 +211,20 @@ def report() -> None:
 def main() -> int:
     argv = sys.argv[1:]
     if argv and argv[0] == "--child":
-        body, ka, arm, n, tol = argv[1:]
-        print(json.dumps(one(body, float(ka), arm, int(n), float(tol))), flush=True)
+        c_body, c_ka, c_arm, c_n, c_tol = argv[1:]
+        print(
+            json.dumps(one(c_body, float(c_ka), c_arm, int(c_n), float(c_tol))),
+            flush=True,
+        )
         return 0
     if argv == ["--report"]:
         report()
         return 0
-    body, ka_s, arm, tol, max_hours, ladder = None, None, None, 1e-10, 3.0, []
+    body: str | None = None
+    ka_s: float | None = None
+    arm: str | None = None
+    tol, max_hours = 1e-10, 3.0
+    ladder: list[int] = []
     for a in argv:
         if a.startswith("--body="):
             body = a.split("=", 1)[1]
@@ -182,9 +238,12 @@ def main() -> int:
             max_hours = float(a.split("=", 1)[1])
         else:
             ladder.append(int(a))
-    if body not in ("graded", "sharp") or arm not in ("point", "galerkin") or ka_s is None or not ladder:
+    if body not in ("graded", "sharp") or arm not in ARMS or ka_s is None or not ladder:
         print(__doc__)
-        print("give --body=graded|sharp, --ka=<k_S a>, --arm=point|galerkin and the grid sizes")
+        print("give --body=graded|sharp, --ka=<k_S a>, --arm=point|galerkin|hierarchy and the grid sizes")
+        return 2
+    if arm == "hierarchy" and body != "graded":
+        print("the hierarchy arm is defined for the graded sphere only: run it with --body=graded")
         return 2
     done = {(r["body"], r["ka_s"], r["arm"], r["n"], r["tol"]) for r in load()}
     print(f"{body} sphere, k_S a = {ka_s}, {arm}, GMRES to {tol:g}", flush=True)
@@ -192,7 +251,17 @@ def main() -> int:
         if (body, ka_s, arm, n, tol) in done:
             print(f"  n {n:3d}: already recorded", flush=True)
             continue
-        cmd = [sys.executable, "-u", __file__, "--child", body, str(ka_s), arm, str(n), str(tol)]
+        cmd = [
+            sys.executable,
+            "-u",
+            __file__,
+            "--child",
+            body,
+            str(ka_s),
+            arm,
+            str(n),
+            str(tol),
+        ]
         try:
             got = subprocess.run(cmd, capture_output=True, text=True, timeout=max_hours * 3600)
         except subprocess.TimeoutExpired:
