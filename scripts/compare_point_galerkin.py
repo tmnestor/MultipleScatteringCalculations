@@ -107,6 +107,9 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
         )
     else:
         exact = mie_scattered_displacement(compute_elastic_mie(omega, RADIUS, REF, CONTRAST), pts)
+    if arm == "hierarchy":
+        import measure_graded_sphere_gradient_hierarchy as gs
+        import measure_graded_sphere_gradient_hierarchy_fft as hfft
     timings: dict[str, float] = {}
     t0 = time.perf_counter()
     if arm == "point":
@@ -131,12 +134,13 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
     elif arm == "hierarchy":
         # the gradient hierarchy at q = 3 (fourth order), contrast to degree 1 in each voxel, FFT product;
         # the same body, medium and observation set (tests/test_compare_point_galerkin.py)
-        import measure_graded_sphere_gradient_hierarchy as gs
-        import measure_graded_sphere_gradient_hierarchy_fft as hfft
-
+        # (its modules are imported before the clock starts, as the other arms' are). Setup is everything
+        # solve_fft does but GMRES: its own tables_s counts the block tables only, not the operator and the
+        # right-hand side, so the wall time would otherwise exceed setup + GMRES + readout
+        ts = time.perf_counter()
         side, centres, coefs, asm, sol, info = hfft.solve_fft(n, 3, omega, CONTRAST, tol=tol)
         timings = {
-            "kernel_s": info["tables_s"],
+            "kernel_s": time.perf_counter() - ts - info["solve_s"],
             "solve_s": info["solve_s"],
             "iterations": info["iterations"],
         }
