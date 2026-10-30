@@ -117,7 +117,14 @@ cells of degree one.
 
 A volume-integral method for elastic scattering represents a heterogeneous medium by cells, here cubes,
 each carrying a polynomial field, and couples every pair of cells through the integral of the
-elastodynamic Green's tensor against the two cells' polynomials. Higher-order cells are worth having only
+elastodynamic Green's tensor against the two cells' polynomials. Such Galerkin cells, tested against their
+own polynomials, earn their place by cheap order: they are no more accurate than point-matching cells of the
+same size and degree, but raising their degree raises their order at small cost in unknowns, and on a graded
+sphere the cell of degree one needs $6.6$ to $24$ times fewer unknowns than the classical point-matching cell
+for the same accuracy, and about $1.4$ times fewer than point matching carried to the same order
+\citep{NestorError2026}. Their price is the coupling. Point matching imposes the equation at each cell's
+centre and needs single integrals; a Galerkin cell needs a double integral over two cells for every block,
+and this paper is about that price. Higher-order cells are worth having only
 if these coupling integrals are accurate: a cell whose field converges at fourth order in the cell size
 \citep{NestorError2026} needs couplings correct to a matching tolerance, and in practice to
 round-off, because errors in the touching blocks are not reduced by refinement. For cells that touch, the
@@ -125,7 +132,12 @@ integrand is singular. Quadrature with Duffy's transformation \citep{Duffy1982} 
 handles it, but it must be repeated for every frequency, and its accuracy has to be established case by
 case. Closed forms avoid both: the singular integrals are a power series in the wavenumber whose
 coefficients are universal numbers, independent of the frequency, the cell size and the medium, each a
-finite sum of elementary master integrals reduced from volume to faces to edges.
+finite sum of elementary master integrals reduced from volume to faces to edges. They are computed once and
+reused at every frequency, which in multi-frequency modelling, where a synthetic seismogram needs hundreds to
+thousands of frequencies, makes the blocks of $1024$ frequencies $9.3$ to $19$ times cheaper than quadrature
+at each frequency, the one-off cost included (\S\ref{sec:sweep}). And quadrature on touching cells can fail
+without warning: \S\ref{sec:discussion} measures a Gauss rule whose steps shrink with its order as if it
+were converging, while its value is $3.4$ times too large.
 
 The cells here fill space. That choice is what makes the touching integrals unavoidable. Methods that
 leave gaps between their scatterers couple them through expansions about each scatterer's own centre,

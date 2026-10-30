@@ -82,7 +82,10 @@ fraction of the response times the relative projection error of the medium, time
 that we derive in closed form, the nonlinear fraction itself following from two products with the matrix
 of a coarse grid, with no solve. A sphere whose contrast falls smoothly to zero converges at the orders
 the layer predicts, and against its exact solution the second term has one constant, for constant and
-degree-one cells, on every grid. Every result is derived symbolically and checked against an independent
+degree-one cells, on every grid. On that sphere the Galerkin cell of degree one needs $6.6$ to $24$ times
+fewer unknowns than the classical point-matching cell for the errors both reach, and about $1.4$ times fewer
+than point matching carried to the same order by the gradients of the field: it is not more accurate cell
+for cell, but its order is cheap. Every result is derived symbolically and checked against an independent
 implementation or an exact solution.
 \end{abstract}
 
@@ -179,6 +182,22 @@ known before the solve: the error of the term of first order, in closed form for
 contrast, and the nonlinear fraction of the response times the relative projection error of the medium,
 times a factor of order one derived in closed form (\S\S\ref{sec:twoterm}--\ref{sec:which}).
 
+\paragraph{What the Galerkin cell gains, and what it costs.} The voxels here, the collocation voxel
+apart, are Galerkin cells: each is tested against its own polynomials, so every coupling is a double integral over two
+cells. Point matching, the closure of the coupled-dipole method, imposes the equation at each cell's centre
+and needs only single integrals. The double integrals are worth their price only if they buy something, and
+\S\ref{sec:gain} measures what. It is not accuracy cell for cell: at equal degree the two formulations
+differ only in their constants (Table~\ref{tab:ratio}). It is cheap order. On the graded sphere the Galerkin
+cell of degree one needs $6.6$ to $24$ times fewer unknowns than the classical point-matching cell for the
+errors both reach, and reaches errors that the point cell does not reach with $1.24$ million unknowns; against
+point matching raised to the same order by carrying the gradients of the field at the centre, it needs about
+$1.4$ times fewer, and in the layer $1.26$ to $1.47$ times fewer cells at orders $2$ to $8$. The price is
+that the double integrals of cells that touch are singular, which is where numerical integration is weakest.
+The companion papers evaluate them in closed form, once and exactly, as power series in the wavenumber whose
+coefficients are independent of the frequency, so that a sweep over many frequencies reuses the same
+numbers \citep{NestorLegendre2026,NestorCoupling2026}; with both exact, the errors measured here are those
+of the discretisation alone.
+
 
 \paragraph{What makes the experiment exact.} The answer above can be trusted only if nothing but the
 two bases is approximated. Three results, set against the coupled-dipole method described below, secure
@@ -267,7 +286,8 @@ parts. Part~I establishes the law on a layer. \S\ref{sec:setting} sets out the d
 coupling fails, and \S\ref{sec:tiling} why the source-averaged coupling succeeds exactly.
 \S\S\ref{sec:convergence}--\ref{sec:fourth} take up the wavefield basis and \S\ref{sec:hetero} the medium
 basis and its projection error. Part~II carries the law to three dimensions: the Galerkin cells
-(\S\ref{sec:cells3d}), the graded sphere (\S\ref{sec:sphere}), the error in two terms
+(\S\ref{sec:cells3d}), the graded sphere (\S\ref{sec:sphere}), what the Galerkin cell gains over point
+matching (\S\ref{sec:gain}), the error in two terms
 (\S\ref{sec:twoterm}) and the matching of the bases (\S\ref{sec:which}). \S\ref{sec:discussion}
 discusses what the results imply, \S\ref{sec:status} states what is established, and
 \S\ref{sec:summary} concludes. Every result is derived symbolically in Mathematica and checked against an
