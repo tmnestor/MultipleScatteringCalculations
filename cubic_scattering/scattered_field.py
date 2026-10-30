@@ -483,7 +483,7 @@ def optical_theorem_from_amplitudes(
     forward amplitude and the differential amplitudes are in the same units.
 
     Extinction, standard form for e^{-iωt} and outgoing e^{ikr}/r
-    (``LatexPDFs/psvsh_optical_theorem.tex`` eq:ot-p):
+    (``LatexPDFs/notes/psvsh_optical_theorem/psvsh_optical_theorem.tex`` eq:ot-p):
 
         σ_ext = +(4π / k_inc) Im[ f_P(forward) ]
 

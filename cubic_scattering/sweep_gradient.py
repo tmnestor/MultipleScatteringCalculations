@@ -2,7 +2,7 @@
 """Adjoint-state misfit gradient for the directional-sweep Foldy-Lax solver.
 
 The derivation and every validation behind it are note (IV),
-LatexPDFs/AdjointStateGradients. For one source, frequency and k_y node:
+LatexPDFs/reports/AdjointStateGradients. For one source, frequency and k_y node:
 
     forward    (I - G0(k_y) T0) psi = psi_inc                    solve_sweep_foldy_lax
     data       d = R T0 psi                                      ReceiverMap

@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-FIGURE = ROOT / "LatexPDFs" / "FirstOrderContrastOperator" / "imbedding_vs_voxel.pdf"
+FIGURE = ROOT / "LatexPDFs" / "reports" / "FirstOrderContrastOperator" / "imbedding_vs_voxel.pdf"
 
 
 def crossing(ka: np.ndarray, ratio: np.ndarray) -> float | None:

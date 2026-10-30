@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-FIGURE = ROOT / "LatexPDFs" / "FirstOrderContrastOperator" / "angle_resolved.pdf"
+FIGURE = ROOT / "LatexPDFs" / "reports" / "FirstOrderContrastOperator" / "angle_resolved.pdf"
 
 
 def main(path: str) -> int:

@@ -16,9 +16,9 @@ one symbolic and one numerical.
 | Single-site T-matrix of a Legendre cell | `LatexPDFs/LegendreCellTMatrix/LegendreCellTMatrix.pdf` |
 | Coupling integrals of polynomial cubes in closed form | `LatexPDFs/ExactCouplingIntegrals/ExactCouplingIntegrals.pdf` |
 | The error of polynomial voxels: the law on a layer, and in three dimensions | `LatexPDFs/PolynomialVoxelError/PolynomialVoxelError.pdf` |
-| Octree refinement (archived, not a paper) | `LatexPDFs/OctreeRefinementArchive/OctreeRefinementArchive.pdf` |
-| Cartesian multipole hierarchy, superseded by the Legendre expansion (archived, not a paper) | `LatexPDFs/CartesianMultipoleHierarchyArchive/CartesianMultipoleHierarchyArchive.pdf` |
-| Earlier combined version, as submitted to JCP | `LatexPDFs/CartesianMultipoleHierarchyArchive/JCP/ContinuumLimit_JCP.pdf` |
+| Octree refinement (archived, not a paper) | `LatexPDFs/archive/OctreeRefinementArchive/OctreeRefinementArchive.pdf` |
+| Cartesian multipole hierarchy, superseded by the Legendre expansion (archived, not a paper) | `LatexPDFs/archive/CartesianMultipoleHierarchyArchive/CartesianMultipoleHierarchyArchive.pdf` |
+| Earlier combined version, as submitted to JCP | `LatexPDFs/archive/CartesianMultipoleHierarchyArchive/JCP/ContinuumLimit_JCP.pdf` |
 | Notebooks | `Mathematica/ContinuumLimit_*.wl` |
 | Python cross-checks | `scripts/crosscheck_*.py` and the pilots and gates named in the paper |
 

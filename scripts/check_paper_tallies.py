@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TEX = ROOT / "LatexPDFs" / "FirstOrderContrastOperator" / "FirstOrderContrastOperator.tex"
+TEX = ROOT / "LatexPDFs" / "reports" / "FirstOrderContrastOperator" / "FirstOrderContrastOperator.tex"
 
 #: Phrase in the caption -> gate script that must report that tally.  The
 #: symbolic scripts (25/25, 44/44) are Mathematica and are not run here.

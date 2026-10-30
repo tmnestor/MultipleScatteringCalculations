@@ -3,7 +3,7 @@
 This repository contains everything needed to reproduce the paper
 
 * *A Moment Hierarchy for the Voxel: Closed-Form Single-Site T-Matrices, and the Error of Elastic
-  Volume-Integral Scattering Isolated on a Space-Filling Layer of Cubes* (`LatexPDFs/CartesianMultipoleHierarchyArchive/`),
+  Volume-Integral Scattering Isolated on a Space-Filling Layer of Cubes* (`LatexPDFs/archive/CartesianMultipoleHierarchyArchive/`),
 
 by T. M. Nestor. It is assembled from the author's research repository by
 `scripts/assemble_paper_repo.py`, which records exactly which files a release contains.
@@ -132,9 +132,9 @@ in the papers without Mathematica.
 
 ## Building the papers
 
-    cd LatexPDFs/CartesianMultipoleHierarchyArchive && lualatex CartesianMultipoleHierarchyArchive && bibtex CartesianMultipoleHierarchyArchive && lualatex CartesianMultipoleHierarchyArchive && lualatex ContinuumLimit
+    cd LatexPDFs/archive/CartesianMultipoleHierarchyArchive && lualatex CartesianMultipoleHierarchyArchive && bibtex CartesianMultipoleHierarchyArchive && lualatex CartesianMultipoleHierarchyArchive && lualatex ContinuumLimit
 
-The journal version is generated from the same source by `LatexPDFs/CartesianMultipoleHierarchyArchive/JCP/make_jcp.py`.
+The journal version is generated from the same source by `LatexPDFs/archive/CartesianMultipoleHierarchyArchive/JCP/make_jcp.py`.
 
 ## Tests
 

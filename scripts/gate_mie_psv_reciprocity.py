@@ -3,7 +3,7 @@
 
 WHY THIS EXISTS
 ---------------
-``LatexPDFs/psvsh_reciprocity.tex`` Eq. (4) states the far-field reciprocity
+``LatexPDFs/notes/psvsh_reciprocity/psvsh_reciprocity.tex`` Eq. (4) states the far-field reciprocity
 relation for elastic scattering amplitudes (Varatharajulu 1977),
 
     k_in^2  q.f_{out<-in}(x; d, p)  =  k_out^2  p.f_{in<-out}(-d; -x, q),

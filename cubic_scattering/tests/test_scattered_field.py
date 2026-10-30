@@ -135,7 +135,7 @@ def _mie_forward_pp(mie) -> complex:
 def test_optical_theorem_mie_gate():
     """Ground-truth energy-conservation gate: exact-Mie σ_ext = σ_sc ≈ 1.0.
 
-    The elastic optical theorem (``LatexPDFs/psvsh_optical_theorem.tex``):
+    The elastic optical theorem (``LatexPDFs/notes/psvsh_optical_theorem/psvsh_optical_theorem.tex``):
 
         σ_ext = +(4π/k_P) Im[f_PP(0)],
         σ_sc  = 2π ∫ [ |f_P|² + (β/α)(|f_SV|²+|f_SH|²) ] sinθ dθ,

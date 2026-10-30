@@ -1,6 +1,6 @@
 """Which coarsening of a finely layered background preserves the propagator?
 
-Evidence for LatexPDFs/MultiscaleBackground.
+Evidence for LatexPDFs/reports/MultiscaleBackground.
 
 A Haar projection of the background replaces fine structure by block averages
 -- but averages of WHAT?  The layered problem marches as d_z b = A(z) b, so a

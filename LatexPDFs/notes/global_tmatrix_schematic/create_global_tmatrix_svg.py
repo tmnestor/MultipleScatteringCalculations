@@ -21,6 +21,8 @@ IMPORTANT DESIGN CONSTRAINT:
 Usage:
     python create_global_tmatrix_svg.py            # writes SVG to default path
     python create_global_tmatrix_svg.py -o fig.svg  # custom output path
+    python create_global_tmatrix_svg.py --fix-scripts global_tmatrix_schematic.svg
+                                    # set the sub- and superscripts of an existing SVG in place
 
 Author: T.M. Nestor (2026)
 """
@@ -30,6 +32,7 @@ from __future__ import annotations
 import argparse
 import math
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -521,7 +524,7 @@ def build_svg(cfg: FigureConfig) -> str:
         (62, "a single cube. Computed"),
         (76, "analytically (Part II)."),
         (96, "Absorbs all multiple scattering"),
-        (110, "inside the cell \u2014 exact to O(ka)\u2077."),
+        (110, "inside the cell, exact to O(ka)\u2077."),
     ]:
         L(f'    <text x="15" y="{dy}" font-size="10.5" fill="#333">{txt}</text>')
     L(
@@ -565,7 +568,7 @@ def build_svg(cfg: FigureConfig) -> str:
     L(
         f'    <text x="{bw // 2}" y="{g0_y + 206}" text-anchor="middle" '
         f'font-size="10" fill="{cfg.col_g0_cross}" font-style="italic">'
-        f"\u2718 Computationally expensive</text>"
+        f"\u00d7 Computationally expensive</text>"
     )
 
     # Box 3: Global T
@@ -642,6 +645,84 @@ def build_svg(cfg: FigureConfig) -> str:
 
 
 # ──────────────────────────────────────────────────────────────────
+# Sub- and superscripts
+# ──────────────────────────────────────────────────────────────────
+
+#: Unicode sub- and superscript characters, with the plain character each stands for. Many fonts lack
+#: these glyphs, and a viewer then substitutes full-size digits from another font, so the SVG sets them
+#: as real sub- and superscripts instead.
+SUBSCRIPTS = {chr(0x2080 + i): str(i) for i in range(10)}
+SUPERSCRIPTS = {
+    "⁰": "0",
+    "¹": "1",
+    "²": "2",
+    "³": "3",
+    **{chr(0x2070 + i): str(i) for i in range(4, 10)},
+    "⁺": "+",
+    "⁻": "−",
+}
+#: the baseline shifts of sub- and superscripts in the parent's em (down is positive), and their font scale
+SUB_SHIFT, SUP_SHIFT, SCRIPT_SCALE = 0.22, -0.38, 0.7
+
+
+def _script_runs(text: str) -> list[tuple[str, str]]:
+    """Split text into (kind, characters) runs, kind 'sub', 'sup' or 'normal'."""
+    runs: list[tuple[str, str]] = []
+    for ch in text:
+        kind = "sub" if ch in SUBSCRIPTS else "sup" if ch in SUPERSCRIPTS else "normal"
+        plain = SUBSCRIPTS.get(ch) or SUPERSCRIPTS.get(ch) or ch
+        if runs and runs[-1][0] == kind:
+            runs[-1] = (kind, runs[-1][1] + plain)
+        else:
+            runs.append((kind, plain))
+    return runs
+
+
+def _set_scripts(content: str) -> str:
+    """The content of one <text> element with its script characters as shifted, smaller tspans."""
+    runs = _script_runs(content)
+    if all(kind == "normal" for kind, _ in runs):
+        return content
+    out, offset = [], 0.0  # offset: the baseline's shift so far, in the parent's em
+    for kind, chars in runs:
+        shift = {"sub": SUB_SHIFT, "sup": SUP_SHIFT, "normal": 0.0}[kind]
+        dy = shift - offset
+        if kind == "normal":
+            # renderers drop the spaces that open a tspan, so the gap after a script is an offset, dx
+            gap = len(chars) - len(chars.lstrip(" ")) if offset != 0 else 0
+            dx = f' dx="{0.25 * gap:.2f}em"' if gap else ""
+            chars = chars[gap:]
+            out.append(chars if dy == 0 and not dx else f'<tspan{dx} dy="{dy:.2f}em">{chars}</tspan>')
+        else:
+            # the tspan's em is the scaled font's, so its dy is divided by the scale
+            out.append(
+                f'<tspan font-size="{SCRIPT_SCALE:.0%}" dy="{dy / SCRIPT_SCALE:.2f}em">{chars}</tspan>'
+            )
+        offset = shift
+    return "".join(out)
+
+
+def set_scripts(svg: str) -> str:
+    """Every Unicode sub- and superscript in the SVG's text set as a real sub- or superscript.
+
+    Numeric character references for those characters (&#x2080;) are read as the characters. Text
+    elements that already hold markup are left alone.
+    """
+    codes = {f"&#x{ord(ch):x};": ch for ch in (*SUBSCRIPTS, *SUPERSCRIPTS)}
+    codes |= {f"&#x{ord(ch):X};": ch for ch in (*SUBSCRIPTS, *SUPERSCRIPTS)}
+
+    def one(m: re.Match[str]) -> str:
+        content = m.group(2)
+        if "<" in content:
+            return m.group(0)
+        for ref, ch in codes.items():
+            content = content.replace(ref, ch)
+        return f"{m.group(1)}{_set_scripts(content)}{m.group(3)}"
+
+    return re.sub(r"(<text\b[^>]*>)(.*?)(</text>)", one, svg, flags=re.S)
+
+
+# ──────────────────────────────────────────────────────────────────
 # CLI entry point
 # ──────────────────────────────────────────────────────────────────
 
@@ -658,10 +739,20 @@ def main() -> None:
         ),
         help="Output SVG path (default: same directory as script)",
     )
+    parser.add_argument(
+        "--fix-scripts",
+        metavar="SVG",
+        help="Set the sub- and superscripts of an existing SVG in place, and write nothing else",
+    )
     args = parser.parse_args()
+    if args.fix_scripts:
+        path = Path(args.fix_scripts)
+        path.write_text(set_scripts(path.read_text(encoding="utf-8")), encoding="utf-8")
+        print(f"Set the sub- and superscripts of {path}")
+        return
 
     cfg = FigureConfig()
-    svg = build_svg(cfg)
+    svg = set_scripts(build_svg(cfg))
 
     out = Path(args.output)
     out.write_text(svg, encoding="utf-8")

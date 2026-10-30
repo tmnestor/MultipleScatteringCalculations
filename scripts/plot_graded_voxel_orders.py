@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-FIG = ROOT / "LatexPDFs" / "GradedVoxel" / "figures"
+FIG = ROOT / "LatexPDFs" / "archive" / "GradedVoxel" / "figures"
 OUT = FIG / "fig_orders.pdf"
 
 mpl.rcParams.update(

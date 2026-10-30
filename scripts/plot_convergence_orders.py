@@ -30,7 +30,7 @@ import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 MMA = ROOT / "Mathematica"
-FIG = ROOT / "LatexPDFs" / "ContinuumLimit" / "figures"
+FIG = ROOT / "LatexPDFs" / "PolynomialVoxelError" / "figures"
 OUT = FIG / "fig_convergence.pdf"
 
 mpl.rcParams.update(

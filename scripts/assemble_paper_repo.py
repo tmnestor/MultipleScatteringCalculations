@@ -145,7 +145,7 @@ NOTEBOOKS = [
 NOTEBOOK_OUTPUTS_GLOB = ["ContinuumLimit_*.json", "GradedVoxel_*.jsonl"]
 
 PAPERS = {
-    "LatexPDFs/CartesianMultipoleHierarchyArchive": [
+    "LatexPDFs/archive/CartesianMultipoleHierarchyArchive": [
         "CartesianMultipoleHierarchyArchive.pdf",
         "CartesianMultipoleHierarchyArchive.tex",
         "references.bib",

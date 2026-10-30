@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The sphere's scattered field as PLANE-WAVE MODE AMPLITUDES.
 
-ANCHOR: ``LatexPDFs/SpherePlaneWaveResponse/SpherePlaneWaveResponse.tex`` §4,
+ANCHOR: ``LatexPDFs/reports/SpherePlaneWaveResponse/SpherePlaneWaveResponse.tex`` §4,
 verified symbolically in ``Mathematica/MieSphericalWaves.wl`` §5-§7.  This is
 the Python twin of that result, assembled for a whole sphere rather than one
 multipole, and scored against the committed ``mie_scattered_displacement``.
