@@ -1,0 +1,18 @@
+{
+ "ContinuumLimit_Reference.wl": {
+  "built": "2026-10-30",
+  "cold_cache": false,
+  "entry_sha256": "c9357242161d76f81ee70f132a31c3065195539ce2a53dec15f38916c4872376",
+  "evaluated": true,
+  "inputs": {
+   "Mathematica/ContinuumLimit_Reference.wl": "ca5e03af96823af6a6c326d3baef0373ed020537177061473f2007822a529a47",
+   "Mathematica/ContinuumLimit_reference.json": "ced9f537ed621b1acc9808a41509c2445966b9607aba8ace6ffd77fb29ae3cf8"
+  },
+  "notebook_sha256": "6eae9eb6115c35366582829aa9227da9430c8dd6ebf88ae58185b2d516bfa1b6",
+  "tools": {
+   "Mathematica/runnb.wls": "a8ae99664f0d6acf40bcf870b4c04ffa31b9a0a6d653d27edf3e0a9504b78585",
+   "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
+  },
+  "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
+ }
+}
