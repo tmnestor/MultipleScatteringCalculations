@@ -83,10 +83,12 @@ runnb`split[BoxData[RowBox[items_List]]] /; MemberQ[items, "\n"] := Module[{acc 
    If[acc === {}, held, $Failed]];
 runnb`split[boxes_] := With[{h = runnb`parse[boxes]}, If[Head[h] === HoldComplete, {h}, $Failed]];
 
-(* each expression is evaluated in turn with its own Out[n]; an abort ends the cell, as in the front end *)
+(* each expression is evaluated in turn with its own Out[n]; an abort ends the cell, as in the front end.
+   Message arguments are written in InputForm: in the default OutputForm a number such as 3.4*^-12 puts its
+   exponent on a line of its own above the message, which the drain above would read as a separate message *)
 runnb`evalOne[held_HoldComplete] := Module[{result},
    runnb`line++;
-   result = Block[{$Messages}, runnb`openMessages[];
+   result = Block[{$Messages, $MessagePrePrint = InputForm}, runnb`openMessages[];
      With[{r = CheckAbort[Block[{Print = runnb`print}, ReleaseHold[held]], runnb`abortedQ = True; $Aborted]},
       runnb`drainMessages[]; Close /@ $Messages; r]];
    If[TrueQ[runnb`abortedQ], runnb`status = If[TrueQ[$nbStopped], "exited", "aborted"]];

@@ -454,6 +454,35 @@ def test_runnb_evaluates_each_line_of_a_cell(tmp_path: Path) -> None:
     ]
 
 
+MESSAGE_NB = r"""Notebook[{
+Cell[BoxData[RowBox[{RowBox[{RowBox[{"f", "::", "small"}], "=", "\"value `1`\""}], ";"}]], "Input"],
+Cell[BoxData[RowBox[{"Message", "[", RowBox[{RowBox[{"f", "::", "small"}], ",", "3.4*^-12"}], "]"}]], "Input"]
+}]
+"""
+
+
+@pytest.mark.skipif(shutil.which("wolframscript") is None, reason="needs wolframscript")
+def test_runnb_keeps_a_message_on_one_line(tmp_path: Path) -> None:
+    """A message argument is written in InputForm: in OutputForm a small number puts its exponent on
+    the line above, which the evaluator then read as a separate message named "-12"."""
+    nb, report = tmp_path / "message.nb", tmp_path / "report.json"
+    nb.write_text(MESSAGE_NB)
+    code, out = bn._run(
+        [
+            "wolframscript",
+            "-file",
+            str(ROOT / "Mathematica" / "runnb.wls"),
+            str(nb),
+            f"--report={report}",
+        ],
+        tmp_path,
+        60,
+    )
+    assert code == 0, out
+    cells = [(c["style"], c["text"]) for c in json.loads(report.read_text())["cells"]]
+    assert cells == [("Message", "f::small: value 3.4*^-12")]
+
+
 def test_written_files_compares_with_committed(tmp_path: Path) -> None:
     root, scratch = tmp_path / "repo", tmp_path / "scratch"
     for d in (root / "Mathematica", scratch / "Mathematica" / "cache"):
