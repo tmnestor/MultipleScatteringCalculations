@@ -87,8 +87,9 @@ no transcendental function evaluated; the pieces at the singular point are split
 touching blocks are then accurate to $5.4\times10^{-16}$ to $3.6\times10^{-15}$ for fields of degree one and
 two. Cells that do not touch are coupled by the same series with coefficients computed once per offset, and
 distant cells also by a two-centre multipole series where it converges. Every block at every frequency is
-then a weighted sum of stored numbers, and over $256$ frequencies the series costs $1.5$ to $1.9$ times less
-than quadrature, its one-off cost included. Because the coefficients are exact, the response of a whole
+then a weighted sum of stored numbers, and over $256$ frequencies the series costs $2.6$ to $5.5$ times less
+than quadrature, the one-off cost of the model included (the universal moments of the touching blocks are
+computed once for every model). Because the coefficients are exact, the response of a whole
 cell model can be expanded in powers of the frequency, each power by one solve with the static operator.
 For a graded sphere modelled by Legendre cells of degree two, every coefficient of the far field from
 $(ka)^2$ to $(ka)^7$ is accurate to $8\times10^{-8}$ to $2\times10^{-7}$ at $12$ cells across, with apparent
@@ -923,28 +924,34 @@ total is the one-off cost plus $256$ times their mean, on one machine with eight
 \toprule
 $n$ & quadrature & series \\
 \midrule
-$6$  & $8.5$  & $5.7$ \\
-$10$ & $12.8$ & $7.0$ \\
-$14$ & $22.2$ & $11.9$ \\
+$6$  & $8.4$  & $1.5$ \\
+$10$ & $12.0$ & $3.9$ \\
+$14$ & $24.6$ & $9.4$ \\
 \bottomrule
 \end{tabular}
-\caption{Minutes for the blocks of $256$ frequencies, one-off cost included. The series costs $336$, $403$
-and $684$\,s once (the universal moments of the touching blocks and the coefficients of every other
-offset) and $0.03$, $0.06$ and $0.12$\,s per frequency; quadrature $2.0$, $3.0$ and $5.2$\,s per
-frequency.}
+\caption{Minutes for the blocks of $256$ frequencies, the one-off cost of the model included. The series costs
+$87$, $224$ and $542$\,s once for the model (the coefficients of every offset that does not touch) and $0.018$,
+$0.040$ and $0.087$\,s per frequency; quadrature $1.97$, $2.82$ and $5.76$\,s per frequency. The universal
+moments of the touching blocks are read from a table computed once, for every contact geometry and both cell
+degrees, in $3745$\,s (\S\ref{sec:sweep}, above), and are not charged to any one model.}
 \label{tab:sweep}
 \end{table}
 
-Over the sweep the series is the cheaper route by a factor of $1.5$ to $1.9$, although the stable
-evaluation of \S\ref{sec:stable} has raised its one-off cost by $14$ to $94\%$ (from $173$, $302$ and
-$601$\,s), and it agrees with the quadrature blocks to round-off. The comparison is of the blocks alone:
-the solve, repeated at each frequency, is not included.
+Over the sweep the series is the cheaper route by a factor of $5.5$, $3.1$ and $2.6$, and it agrees with the
+quadrature blocks to round-off. Its one-off cost is in two tiers. The universal moments of the touching blocks
+depend on nothing but the contact geometry and the cell degree, so they are computed once and stored for every
+model, every cell size and every frequency; the coefficients of the offsets that do not touch are computed
+once for each grid. A model pays the second tier alone, recovered after $44$, $81$ and $96$ frequencies. Were
+the stored table computed for this one model, the series would cost more than quadrature over $256$
+frequencies, and would recover both tiers only after $760$ to $1960$; the table is what makes the series
+cheap, and it is paid once. The comparison is of the blocks alone: the solve, repeated at each frequency, is
+not included.
 
 \paragraph{Longer sweeps.} With the costs of Table~\ref{tab:sweep}, $1024$ frequencies cost
-the Legendre cell $6.1$, $7.7$ and $13.4$\,min by its series in the wavenumber, one-off cost included,
-against $34$, $51$ and $89$\,min for quadrature at each frequency ($n=6$, $10$ and $14$). The gain is the
-series'; the closed forms are what make the series exact for the touching blocks, at a one-off cost that
-over such a sweep does not matter.
+the Legendre cell $1.8$, $4.4$ and $10.5$\,min by its series in the wavenumber, the model's one-off cost
+included, against $34$, $48$ and $98$\,min for quadrature at each frequency ($n=6$, $10$ and $14$): $19$, $11$
+and $9.3$ times less. The gain is the series'; the closed forms are what make the series exact for the touching
+blocks, and its coefficients universal, so that their cost is paid once for every model.
 
 \section{Applications to a graded sphere}\label{sec:applications}
 
@@ -1332,8 +1339,10 @@ to five digits that the closed forms lose in the power basis (\S\ref{sec:conditi
 
 \item \emph{Universal tables.} The coefficients depend on neither the frequency, the cell size nor the
 medium. Computed in closed form and checked once, they can be tabulated and reused for every model, with no
-rule to choose and no calibration to trust for each new one. The one-off cost, $6$ to $11$ minutes for every
-offset of the grids of Table~\ref{tab:sweep}, is paid once for all models and all frequencies.
+rule to choose and no calibration to trust for each new one. The universal moments of the touching blocks
+are computed once, in $3745$\,s, for every contact geometry, both cell degrees, every model and every
+frequency; the coefficients of the offsets that do not touch then cost a grid $1.4$ to $9.0$ minutes on the
+grids of Table~\ref{tab:sweep}.
 \end{itemize}
 
 \paragraph{Relation to the fast multipole method.} The fast multipole method and this paper answer different
