@@ -39,6 +39,8 @@
 
 Get[FileNameJoin[{DirectoryName[$InputFileName], "CubeMomentCore.wl"}]];
 pass[b_] := If[TrueQ[b], "PASS", "****FAIL****"];
+(* a small number on one line, e.g. 1.1e-14 (ScientificForm prints its exponent on the line above) *)
+eNote[v_] := If[v == 0, "0", With[{e = Floor[Log10[v]]}, ToString[NumberForm[N[v/10^e], {2, 1}]] <> "e" <> ToString[e]]];
 maxSum = If[Length[$ScriptCommandLine] > 1, ToExpression[$ScriptCommandLine[[2]]], 6];
 
 (* every scalar moment used here is stored on disk (Mathematica/cache/, never committed): the symbolic face
@@ -48,16 +50,22 @@ eC[m_, ds_List, w_List] := Block[{Print},
     E$[m, Sort[ds], Sort[w]]]];
 
 (* an ordinary integral, for the grades with fewer than two derivatives, where no trace rule applies:
-   the integrand d^D (1/r) w is integrable for D <= 1, and is integrated numerically over the cube *)
-nintCheck[dd_, ww_] := Module[{ds, ws, rs, val, num, xs = {x, y, z}, f},
+   the integrand d^D (1/r) w is integrable for D <= 1, and every non-vanishing index class of the grade is
+   integrated numerically over the cube and compared with its closed form.  The integrand is not smooth at
+   the corner r = 0 of the octant, so the corner is resolved in Duffy coordinates (as in CubeT27Assemble.wl):
+   plain GlobalAdaptive reached the closed form of grade (1,3) to 1.7e-12 but warned NIntegrate::eincr.
+   Returns {pass, classes checked, largest relative difference}. *)
+nintCheck[dd_, ww_] := Module[{rs, xs = {x, y, z}, rel},
   rs = reps[dd, ww];
-  If[rs === {}, Return[True]];
-  {ds, ws} = Last[rs];
-  val = N[eC[-1, ds, ws] /. Del -> 1, 20];
-  f = (Times @@ (xs[[#]] & /@ ws)) D[1/Sqrt[x^2 + y^2 + z^2], Sequence @@ (xs[[#]] & /@ ds)];
-  num = 8 NIntegrate[f, {x, 0, 1/2}, {y, 0, 1/2}, {z, 0, 1/2}, Method -> "GlobalAdaptive",
-     PrecisionGoal -> 10, AccuracyGoal -> 12, MaxRecursion -> 25, WorkingPrecision -> 20];
-  Abs[val - num] < 10^-8 Max[1, Abs[val]]];
+  If[rs === {}, Return[{True, 0, 0}]];
+  rel = Function[{ds, ws}, Module[{val, num, f},
+      val = N[eC[-1, ds, ws] /. Del -> 1, 20];
+      f = (Times @@ (xs[[#]] & /@ ws)) D[1/Sqrt[x^2 + y^2 + z^2], Sequence @@ (xs[[#]] & /@ ds)];
+      num = 8 NIntegrate[f, {x, 0, 1/2}, {y, 0, 1/2}, {z, 0, 1/2},
+         Method -> {"GlobalAdaptive", "SingularityHandler" -> "DuffyCoordinates"},
+         PrecisionGoal -> 10, AccuracyGoal -> 12, MaxRecursion -> 25, WorkingPrecision -> 20];
+      Abs[val - num]/Max[1, Abs[val]]]] @@@ rs;
+  {Max[rel] < 10^-8, Length[rs], Max[rel]}];
 
 (* the zero test between closed forms.  The engine's zeroQ evaluates at 50 extra digits and falls back on
    Simplify; at the higher weights the integrator returns logarithms the Pell reduction does not recognise
@@ -110,10 +118,13 @@ checkGrade[{dd_, ww_}] := Module[{t0 = AbsoluteTime[], okA = True, okB = True, o
     If[ww > 0, okC = exactZero[eC[-1, ds, ws]]]]];
   rs = reps[dd, ww];
   If[dd < 2,
-   okA = okB = nintCheck[dd, ww];
-   Print["    grade (", dd, ",", ww, "): ", Length[rs], " non-vanishing index classes;  no trace rule (D < 2); ",
-    "against numerical integration over the cube ", pass[okA], "   (c) parity ", pass[okC], "   ",
-    Round[AbsoluteTime[] - t0], " s"],
+   Module[{ok, n, worst},
+    {ok, n, worst} = nintCheck[dd, ww];
+    okA = okB = ok;
+    Print["    grade (", dd, ",", ww, "): ", Length[rs], " non-vanishing index classes;  no trace rule (D < 2); ",
+     "against numerical integration over the cube x", n, " (largest relative difference ",
+     eNote[worst], ") ", pass[okA], "   (c) parity ", pass[okC], "   ",
+     Round[AbsoluteTime[] - t0], " s"]],
    Print["    grade (", dd, ",", ww, "): ", Length[rs], " non-vanishing index classes;  (a) chain x", nA, " ",
     pass[okA], "   (b) delta rule x", nB, " ", pass[okB], "   (c) parity ", pass[okC], "   ",
     Round[AbsoluteTime[] - t0], " s"]];

@@ -1,0 +1,1494 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     61562,       1485]
+NotebookOptionsPosition[     54940,       1404]
+NotebookOutlinePosition[     55257,       1418]
+CellTagsIndexPosition[     55214,       1415]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["CubeMomentHigherGrades", "Title",ExpressionUUID->"041db5cd-6557-4a37-836e-eb34e84595af"],
+
+Cell["THE MOMENTS BEYOND THE SIX:", "Subtitle",ExpressionUUID->"a5daa840-2949-442f-9882-a23a4133af61"],
+
+Cell["WHICH ARE NEEDED, AND DOES THE ENGINE REACH THEM?", "Text",ExpressionUUID->"d42012fc-4ba6-4a30-870a-1b248c362614"],
+
+Cell["\<\
+The hierarchy of degree q (displacement expanded to q-th gradients about the \
+centre, the equation and its first q derivatives imposed at the centre) needs \
+the moments of grade (D, W) = (derivatives on G, degree of the weight)\
+\>", "Text",ExpressionUUID->"f8579b8e-d1de-4de7-8dc6-c0da4b81fc6e"],
+
+Cell["\<\
+       density term   :  D = m,      W <= q,      m = 0..q,   D + W even
+       stiffness term :  D = m + 1,  W <= q - 1,  m = 0..q,   D + W even.\
+\>", "Program",ExpressionUUID->"271e0af2-a32e-4649-89a1-c375876b6401"],
+
+Cell["\<\
+q = 2 gives the six of the Basic System, G (0,0), K (0,2), N (1,1), M (2,0), \
+P (2,2), Q (3,1).  On the layer the order of convergence with both contrasts \
+is 2 for q = 1, 2;  4 for q = 3, 4;  6 for q = 5, 6 \
+(ContinuumLimit_GradientHierarchy.wl, 36/36).  So:\
+\>", "Text",ExpressionUUID->"587f2ed2-7ac5-49c1-9ab8-22c9d51ce6ae"],
+
+Cell["\<\
+fourth order needs q = 3:  four new grades  (1,3) (3,3) (4,0) (4,2) sixth  \
+order needs q = 5:  fifteen new grades in all (listed by [1]).\
+\>", "Text",ExpressionUUID->"033765d4-82e3-47a4-8342-82c963b0030c"],
+
+Cell["\<\
+Each moment reduces to the scalar moments  E[m; d1..dD'; w1..wW]  of r^m, \
+with D' = D or D + 2 (the tensor's own d_i d_n), which CubeMomentCore.wl \
+evaluates for any D' and W by peeling derivatives onto the faces.\
+\>", "Text",ExpressionUUID->"35e328b7-273d-40e7-9048-bc2685cf06e5"],
+
+Cell["\<\
+THE GATES.  A new grade is trusted only if it passes checks with answers \
+known independently of the engine:\
+\>", "Text",ExpressionUUID->"e13dd8e9-d051-4150-b737-7e4dd4569697"],
+
+Cell["\<\
+     (a) the Laplacian chain   Sum_p E[m; {p,p} + rest; w] = m (m+1) E[m-2; \
+rest; w]   for m >= 1,
+         because Lap r^m = m (m+1) r^(m-2);
+     (b) the delta rule        Sum_p E[-1; {p,p} + rest; w] = -4 Pi \
+(-1)^|rest| (d_rest w)(0),
+         because Lap (1/r) = -4 Pi delta: the sharp test that the \
+distributional
+         content (the Eshelby delta and its derivatives) is present and \
+right;
+     (c) parity: E vanishes unless every axis carries an even number of \
+indices.\
+\>", "Program",ExpressionUUID->"4fa00399-d087-4048-8898-ef909d3f6f54"],
+
+Cell["\<\
+This file: [1] lists the grades;  [2] runs (a), (b), (c) on the new grades of \
+q = 3 and times them;  [3] the same for q = 5, as far as the time allows.\
+\>", "Text",ExpressionUUID->"b7753ff1-6b28-4ae9-bd7e-a67cd6e46df2"],
+
+Cell["\<\
+Run:  wolframscript -file Mathematica/CubeMomentHigherGrades.wl [maxGradeSum]\
+\
+\>", "Text",ExpressionUUID->"99772df3-9c9d-4a31-a526-e295a640dc2d"],
+
+Cell[CellGroupData[{
+
+Cell["Notebook set-up", "Section",ExpressionUUID->"619bb014-ef35-48b2-be34-4fbdfe0254d2"],
+
+Cell["\<\
+Generated from CubeMomentHigherGrades.wl (the script is the source; edit it, \
+not this notebook). To rerun, open this notebook from the folder holding the \
+script and the files it loads, and use Evaluation \[RightGuillemet] Evaluate \
+Notebook. The cell below stands in for the script environment: $InputFileName \
+became $nbInputFileName, $ScriptCommandLine became $nbScriptCommandLine and \
+Exit/Quit became nbExit, which skips every later cell instead of ending the \
+session (evaluate this cell again to reset). The script reads command-line \
+arguments (line 44, line 148); this notebook passes none, so it takes its \
+defaults.\
+\>", "Text",ExpressionUUID->"0143ffae-1174-42f9-906a-74fbe9f3a876"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"stand", "-", 
+     RowBox[{
+     "ins", " ", "for", " ", "the", " ", "script", " ", "environment"}]}], ";",
+     " ", 
+    RowBox[{
+    "this", " ", "notebook", " ", "is", " ", "generated", " ", "from", " ", 
+     RowBox[{"CubeMomentHigherGrades", ".", "wl"}]}]}], " ", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"$nbInputFileName", " ", "=", " ", 
+     RowBox[{"Quiet", "[", 
+      RowBox[{"Check", "[", 
+       RowBox[{
+        RowBox[{"NotebookFileName", "[", 
+         RowBox[{"EvaluationNotebook", "[", "]"}], "]"}], ",", " ", 
+        RowBox[{"FileNameJoin", "[", 
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"Directory", "[", "]"}], ",", 
+           " ", "\"\<CubeMomentHigherGrades.nb\>\""}], "}"}], "]"}]}], "]"}], 
+      "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"$nbScriptCommandLine", " ", "=", " ", 
+     RowBox[{"Join", "[", 
+      RowBox[{
+       RowBox[{"{", "$nbInputFileName", "}"}], ",", " ", 
+       RowBox[{"{", "}"}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{"Exit", "/", 
+      RowBox[{"Quit", ":", " ", 
+       RowBox[{
+        RowBox[{"Abort", "[", "]"}], " ", "alone", " ", "stops", " ", "only", 
+        " ", "the", " ", "current", " ", "cell"}]}]}], ",", " ", 
+     RowBox[{
+     "so", " ", "after", " ", "an", " ", "exit", " ", "$Pre", " ", "aborts", " ",
+       "every", " ", "later", " ", "cell"}], ",", "\n", "   ", 
+     RowBox[{
+     "except", " ", "one", " ", "that", " ", "mentions", " ", "$nbStopped", " ", 
+      RowBox[{"(", 
+       RowBox[{"this", " ", "cell"}], ")"}]}], ",", " ", 
+     RowBox[{"which", " ", "resets", " ", "it"}]}], " ", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"$nbStopped", " ", "=", " ", "False"}], ";", " ", 
+    RowBox[{"$nbExitCode", " ", "=", " ", "None"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"nbExit", "[", 
+      RowBox[{"code_", " ", ":", " ", "0"}], "]"}], " ", ":=", " ", 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"$nbStopped", " ", "=", " ", "True"}], ";", " ", 
+       RowBox[{"$nbExitCode", " ", "=", " ", "code"}], ";", " ", 
+       RowBox[{"Print", "[", 
+        RowBox[{"\"\<[the script exits here with code \>\"", ",", " ", "code",
+          ",", "\n", 
+         "    ", "\"\<; later cells are skipped until this set-up cell is \
+evaluated again]\>\""}], "]"}], ";", " ", 
+       RowBox[{"Abort", "[", "]"}]}], ")"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"$Pre", " ", "=", " ", 
+     RowBox[{"Function", "[", 
+      RowBox[{"in", ",", " ", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"TrueQ", "[", "$nbStopped", "]"}], " ", "&&", " ", 
+          RowBox[{"FreeQ", "[", 
+           RowBox[{
+            RowBox[{"Hold", "[", "in", "]"}], ",", " ", 
+            RowBox[{"HoldPattern", "[", "$nbStopped", "]"}]}], "]"}]}], ",", 
+         " ", 
+         RowBox[{"Abort", "[", "]"}], ",", " ", "in"}], "]"}], ",", " ", 
+       "HoldAll"}], "]"}]}], ";"}]}]}]], "Input",
+ CellLabel->"In[1]:=",ExpressionUUID->"9142944c-d793-4886-b5b1-478e03a0b0ff"]
+}, Open  ]],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Get", "[", 
+   RowBox[{"FileNameJoin", "[", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"DirectoryName", "[", "$nbInputFileName", "]"}], ",", 
+      " ", "\"\<CubeMomentCore.wl\>\""}], "}"}], "]"}], "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"pass", "[", "b_", "]"}], " ", ":=", " ", 
+   RowBox[{"If", "[", 
+    RowBox[{
+     RowBox[{"TrueQ", "[", "b", "]"}], ",", " ", "\"\<PASS\>\"", ",", 
+     " ", "\"\<****FAIL****\>\""}], "]"}]}], ";"}]}], "Input",
+ CellLabel->"In[6]:=",ExpressionUUID->"22191036-f8fe-44d9-addb-ad567fb9ffd1"],
+
+Cell["\<\
+a small number on one line, e.g. 1.1e-14 (ScientificForm prints its exponent \
+on the line above)\
+\>", "Text",ExpressionUUID->"eabe19fd-742c-4126-aa58-89572b5619b6"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"eNote", "[", "v_", "]"}], " ", ":=", " ", 
+   RowBox[{"If", "[", 
+    RowBox[{
+     RowBox[{"v", " ", "==", " ", "0"}], ",", " ", "\"\<0\>\"", ",", " ", 
+     RowBox[{"With", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"e", " ", "=", " ", 
+         RowBox[{"Floor", "[", 
+          RowBox[{"Log10", "[", "v", "]"}], "]"}]}], "}"}], ",", " ", 
+       RowBox[{
+        RowBox[{"ToString", "[", 
+         RowBox[{"NumberForm", "[", 
+          RowBox[{
+           RowBox[{"N", "[", 
+            RowBox[{"v", "/", 
+             RowBox[{"10", "^", "e"}]}], "]"}], ",", " ", 
+           RowBox[{"{", 
+            RowBox[{"2", ",", " ", "1"}], "}"}]}], "]"}], "]"}], " ", "<>", 
+        " ", "\"\<e\>\"", " ", "<>", " ", 
+        RowBox[{"ToString", "[", "e", "]"}]}]}], "]"}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"maxSum", " ", "=", " ", 
+   RowBox[{"If", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Length", "[", "$nbScriptCommandLine", "]"}], " ", ">", " ", 
+      "1"}], ",", " ", 
+     RowBox[{"ToExpression", "[", 
+      RowBox[{"$nbScriptCommandLine", "[", 
+       RowBox[{"[", "2", "]"}], "]"}], "]"}], ",", " ", "6"}], "]"}]}], 
+  ";"}]}], "Input",
+ CellLabel->"In[7]:=",ExpressionUUID->"3b0e2146-5949-49a3-acde-747626fc35fc"],
+
+Cell["\<\
+every scalar moment used here is stored on disk (Mathematica/cache/, never \
+committed): the symbolic face integrals at four and more derivatives take \
+minutes each, and the tensor assembly will ask for them again\
+\>", "Text",ExpressionUUID->"faf23130-1c7b-4d58-b85a-73a9b56703ee"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"eC", "[", 
+    RowBox[{"m_", ",", " ", "ds_List", ",", " ", "w_List"}], "]"}], " ", ":=",
+    " ", 
+   RowBox[{"Block", "[", 
+    RowBox[{
+     RowBox[{"{", "Print", "}"}], ",", "\n", "   ", 
+     RowBox[{"cached", "[", 
+      RowBox[{
+       RowBox[{"\"\<E_\>\"", " ", "<>", " ", 
+        RowBox[{"ToString", "[", "m", "]"}], " ", "<>", " ", "\"\<_d\>\"", 
+        " ", "<>", " ", 
+        RowBox[{"StringJoin", "[", 
+         RowBox[{"ToString", " ", "/@", " ", 
+          RowBox[{"Sort", "[", "ds", "]"}]}], "]"}], " ", "<>", 
+        " ", "\"\<_w\>\"", " ", "<>", " ", 
+        RowBox[{"StringJoin", "[", 
+         RowBox[{"ToString", " ", "/@", " ", 
+          RowBox[{"Sort", "[", "w", "]"}]}], "]"}]}], ",", "\n", "    ", 
+       RowBox[{"E$", "[", 
+        RowBox[{"m", ",", " ", 
+         RowBox[{"Sort", "[", "ds", "]"}], ",", " ", 
+         RowBox[{"Sort", "[", "w", "]"}]}], "]"}]}], "]"}]}], "]"}]}], 
+  ";"}]], "Input",
+ CellLabel->"In[8]:=",ExpressionUUID->"fa5a5039-5f88-4337-ac22-f93467a38ab9"],
+
+Cell["\<\
+an ordinary integral, for the grades with fewer than two derivatives, where \
+no trace rule applies: the integrand d^D (1/r) w is integrable for D <= 1, \
+and every non-vanishing index class of the grade is integrated numerically \
+over the cube and compared with its closed form.  The integrand is not smooth \
+at the corner r = 0 of the octant, so the corner is resolved in Duffy \
+coordinates (as in CubeT27Assemble.wl): plain GlobalAdaptive reached the \
+closed form of grade (1,3) to 1.7e-12 but warned NIntegrate::eincr. Returns \
+{pass, classes checked, largest relative difference}.\
+\>", "Text",ExpressionUUID->"900a9096-0e53-418f-8dc1-912725253ef8"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"nintCheck", "[", 
+    RowBox[{"dd_", ",", " ", "ww_"}], "]"}], " ", ":=", " ", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"rs", ",", " ", 
+       RowBox[{"xs", " ", "=", " ", 
+        RowBox[{"{", 
+         RowBox[{"x", ",", " ", "y", ",", " ", "z"}], "}"}]}], ",", " ", 
+       "rel"}], "}"}], ",", "\n", "  ", 
+     RowBox[{
+      RowBox[{"rs", " ", "=", " ", 
+       RowBox[{"reps", "[", 
+        RowBox[{"dd", ",", " ", "ww"}], "]"}]}], ";", "\n", "  ", 
+      RowBox[{"If", "[", 
+       RowBox[{
+        RowBox[{"rs", " ", "===", " ", 
+         RowBox[{"{", "}"}]}], ",", " ", 
+        RowBox[{"Return", "[", 
+         RowBox[{"{", 
+          RowBox[{"True", ",", " ", "0", ",", " ", "0"}], "}"}], "]"}]}], 
+       "]"}], ";", "\n", "  ", 
+      RowBox[{"rel", " ", "=", " ", 
+       RowBox[{
+        RowBox[{"Function", "[", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{"ds", ",", " ", "ws"}], "}"}], ",", " ", 
+          RowBox[{"Module", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"val", ",", " ", "num", ",", " ", "f"}], "}"}], ",", 
+            "\n", "      ", 
+            RowBox[{
+             RowBox[{"val", " ", "=", " ", 
+              RowBox[{"N", "[", 
+               RowBox[{
+                RowBox[{
+                 RowBox[{"eC", "[", 
+                  RowBox[{
+                   RowBox[{"-", "1"}], ",", " ", "ds", ",", " ", "ws"}], 
+                  "]"}], " ", "/.", " ", 
+                 RowBox[{"Del", " ", "->", " ", "1"}]}], ",", " ", "20"}], 
+               "]"}]}], ";", "\n", "      ", 
+             RowBox[{"f", " ", "=", " ", 
+              RowBox[{
+               RowBox[{"(", 
+                RowBox[{"Times", " ", "@@", " ", 
+                 RowBox[{"(", 
+                  RowBox[{
+                   RowBox[{
+                    RowBox[{"xs", "[", 
+                    RowBox[{"[", "#", "]"}], "]"}], " ", "&"}], " ", "/@", 
+                   " ", "ws"}], ")"}]}], ")"}], " ", 
+               RowBox[{"D", "[", 
+                RowBox[{
+                 RowBox[{"1", "/", 
+                  RowBox[{"Sqrt", "[", 
+                   RowBox[{
+                    RowBox[{"x", "^", "2"}], " ", "+", " ", 
+                    RowBox[{"y", "^", "2"}], " ", "+", " ", 
+                    RowBox[{"z", "^", "2"}]}], "]"}]}], ",", " ", 
+                 RowBox[{"Sequence", " ", "@@", " ", 
+                  RowBox[{"(", 
+                   RowBox[{
+                    RowBox[{
+                    RowBox[{"xs", "[", 
+                    RowBox[{"[", "#", "]"}], "]"}], " ", "&"}], " ", "/@", 
+                    " ", "ds"}], ")"}]}]}], "]"}]}]}], ";", "\n", "      ", 
+             RowBox[{"num", " ", "=", " ", 
+              RowBox[{"8", " ", 
+               RowBox[{"NIntegrate", "[", 
+                RowBox[{"f", ",", " ", 
+                 RowBox[{"{", 
+                  RowBox[{"x", ",", " ", "0", ",", " ", 
+                   RowBox[{"1", "/", "2"}]}], "}"}], ",", " ", 
+                 RowBox[{"{", 
+                  RowBox[{"y", ",", " ", "0", ",", " ", 
+                   RowBox[{"1", "/", "2"}]}], "}"}], ",", " ", 
+                 RowBox[{"{", 
+                  RowBox[{"z", ",", " ", "0", ",", " ", 
+                   RowBox[{"1", "/", "2"}]}], "}"}], ",", "\n", "         ", 
+                 RowBox[{"Method", " ", "->", " ", 
+                  RowBox[{"{", 
+                   RowBox[{"\"\<GlobalAdaptive\>\"", ",", " ", 
+                    
+                    RowBox[{"\"\<SingularityHandler\>\"", " ", "->", 
+                    " ", "\"\<DuffyCoordinates\>\""}]}], "}"}]}], ",", "\n", 
+                 "         ", 
+                 RowBox[{"PrecisionGoal", " ", "->", " ", "10"}], ",", " ", 
+                 RowBox[{"AccuracyGoal", " ", "->", " ", "12"}], ",", " ", 
+                 RowBox[{"MaxRecursion", " ", "->", " ", "25"}], ",", " ", 
+                 RowBox[{"WorkingPrecision", " ", "->", " ", "20"}]}], 
+                "]"}]}]}], ";", "\n", "      ", 
+             RowBox[{
+              RowBox[{"Abs", "[", 
+               RowBox[{"val", " ", "-", " ", "num"}], "]"}], "/", 
+              RowBox[{"Max", "[", 
+               RowBox[{"1", ",", " ", 
+                RowBox[{"Abs", "[", "val", "]"}]}], "]"}]}]}]}], "]"}]}], 
+         "]"}], " ", "@@@", " ", "rs"}]}], ";", "\n", "  ", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Max", "[", "rel", "]"}], " ", "<", " ", 
+         RowBox[{"10", "^", 
+          RowBox[{"-", "8"}]}]}], ",", " ", 
+        RowBox[{"Length", "[", "rs", "]"}], ",", " ", 
+        RowBox[{"Max", "[", "rel", "]"}]}], "}"}]}]}], "]"}]}], 
+  ";"}]], "Input",
+ CellLabel->"In[9]:=",ExpressionUUID->"efe4efba-c8d9-4a3c-96db-16b598e926cf"],
+
+Cell["\<\
+the zero test between closed forms.  The engine's zeroQ evaluates at 50 extra \
+digits and falls back on Simplify; at the higher weights the integrator \
+returns logarithms the Pell reduction does not recognise (Log[Sqrt[3] - 1], \
+Log[1 + Sqrt[3]], ArcTanh), an exact zero is then not certified, and Simplify \
+can take the kernel down.  Here the difference is evaluated with 3000 extra \
+digits: an exact zero returns a zero of that accuracy.  \
+(CubeMomentCanonical.wl puts every stored form into one canonical basis \
+afterwards.)\
+\>", "Text",ExpressionUUID->"a8dedcca-bf57-4e5a-8ef9-2d885de9e9b8"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"exactZero", "[", "e_", "]"}], " ", ":=", " ", 
+   RowBox[{"Block", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"$MaxExtraPrecision", " ", "=", " ", "3000"}], "}"}], ",", "\n",
+      "   ", 
+     RowBox[{"With", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"v", " ", "=", " ", 
+         RowBox[{"Quiet", "[", 
+          RowBox[{"N", "[", 
+           RowBox[{
+            RowBox[{"e", " ", "/.", " ", 
+             RowBox[{"Del", " ", "->", " ", 
+              RowBox[{"37", "/", "29"}]}]}], ",", " ", "40"}], "]"}], "]"}]}],
+         "}"}], ",", " ", 
+       RowBox[{
+        RowBox[{"Abs", "[", "v", "]"}], " ", "<", " ", 
+        RowBox[{"10", "^", 
+         RowBox[{"-", "30"}]}]}]}], "]"}]}], "]"}]}], ";"}]], "Input",
+ CellLabel->"In[10]:=",ExpressionUUID->"ceeb3dfb-4b0b-4131-b8ac-026189af1159"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"grades", "[", "q_", "]"}], " ", ":=", " ", 
+   RowBox[{"Union", "[", "\n", "   ", 
+    RowBox[{
+     RowBox[{"Flatten", "[", 
+      RowBox[{
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"If", "[", 
+          RowBox[{
+           RowBox[{"EvenQ", "[", 
+            RowBox[{"m", " ", "+", " ", "w"}], "]"}], ",", " ", 
+           RowBox[{"{", 
+            RowBox[{"m", ",", " ", "w"}], "}"}], ",", " ", "Nothing"}], "]"}],
+          ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"m", ",", " ", "0", ",", " ", "q"}], "}"}], ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"w", ",", " ", "0", ",", " ", "q"}], "}"}]}], "]"}], ",", 
+       " ", "1"}], "]"}], ",", "\n", "   ", 
+     RowBox[{"Flatten", "[", 
+      RowBox[{
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"If", "[", 
+          RowBox[{
+           RowBox[{"EvenQ", "[", 
+            RowBox[{"m", " ", "+", " ", "1", " ", "+", " ", "w"}], "]"}], ",",
+            " ", 
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"m", " ", "+", " ", "1"}], ",", " ", "w"}], "}"}], ",", 
+           " ", "Nothing"}], "]"}], ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"m", ",", " ", "0", ",", " ", "q"}], "}"}], ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"w", ",", " ", "0", ",", " ", 
+           RowBox[{"q", " ", "-", " ", "1"}]}], "}"}]}], "]"}], ",", " ", 
+       "1"}], "]"}]}], "]"}]}], ";"}]], "Input",
+ CellLabel->"In[11]:=",ExpressionUUID->"0f95c6f2-922c-4dce-9605-0f87fb95bcf8"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+  "Print", "[", \
+"\"\<==============================================================\>\"", 
+   "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Print", "[", "\"\<MOMENTS BEYOND THE SIX\>\"", "]"}], 
+  ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", \
+"\"\<==============================================================\>\"", 
+   "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", "\"\<[1] grades (D, W) needed by the hierarchy of degree \
+q\>\"", "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Do", "[", 
+   RowBox[{
+    RowBox[{"Print", "[", 
+     RowBox[{"\"\<    q = \>\"", ",", " ", "q", ",", " ", "\"\<: \>\"", ",", 
+      " ", 
+      RowBox[{"Length", "[", 
+       RowBox[{"grades", "[", "q", "]"}], "]"}], ",", 
+      " ", "\"\< grades; new beyond q = \>\"", ",", " ", 
+      RowBox[{"q", " ", "-", " ", "1"}], ",", " ", "\"\<: \>\"", ",", "\n", 
+      "   ", 
+      RowBox[{"Complement", "[", 
+       RowBox[{
+        RowBox[{"grades", "[", "q", "]"}], ",", " ", 
+        RowBox[{"grades", "[", 
+         RowBox[{"q", " ", "-", " ", "1"}], "]"}]}], "]"}]}], "]"}], ",", " ", 
+    RowBox[{"{", 
+     RowBox[{"q", ",", " ", "2", ",", " ", "5"}], "}"}]}], "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{"\"\<    q = 2 is the six: \>\"", ",", " ", 
+    RowBox[{"grades", "[", "2", "]"}]}], "]"}], ";"}]}], "Input",
+ CellLabel->"In[12]:=",ExpressionUUID->"2f574bc7-01bf-44db-bbc9-c3508bea3dc7"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"==============================================================\""},
+  "RowDefault"]], "Print",ExpressionUUID->"952d0523-fe37-46d7-b02d-\
+210c7d35f785"],
+
+Cell[BoxData[
+ TemplateBox[{"\"MOMENTS BEYOND THE SIX\""},
+  "RowDefault"]], "Print",ExpressionUUID->"3b08fba5-06ff-4d80-95a3-\
+e46bc3942750"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"==============================================================\""},
+  "RowDefault"]], "Print",ExpressionUUID->"8f849674-9301-4844-97c7-\
+6d7838473d49"],
+
+Cell[BoxData[
+ TemplateBox[{"\"[1] grades (D, W) needed by the hierarchy of degree q\""},
+  "RowDefault"]], "Print",ExpressionUUID->"5a3a6387-378d-4ef7-ab9d-\
+9f4ccd5b1bd0"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    q = \"", "2", "\": \"", "6", "\" grades; new beyond q = \"", "1", 
+   "\": \"", 
+   RowBox[{"{", 
+     RowBox[{
+       RowBox[{"{", 
+         RowBox[{"0", ",", "2"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"2", ",", "2"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"3", ",", "1"}], "}"}]}], "}"}]},
+  "RowDefault"]], "Print",ExpressionUUID->"dc8bf841-9f7a-4dd0-91a6-\
+dfd7bc78be7e"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    q = \"", "3", "\": \"", "10", "\" grades; new beyond q = \"", "2", 
+   "\": \"", 
+   RowBox[{"{", 
+     RowBox[{
+       RowBox[{"{", 
+         RowBox[{"1", ",", "3"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"3", ",", "3"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"4", ",", "0"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"4", ",", "2"}], "}"}]}], "}"}]},
+  "RowDefault"]], "Print",ExpressionUUID->"48cc0be6-0d4f-4224-bba6-\
+41c0f8093610"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    q = \"", "4", "\": \"", "15", "\" grades; new beyond q = \"", "3", 
+   "\": \"", 
+   RowBox[{"{", 
+     RowBox[{
+       RowBox[{"{", 
+         RowBox[{"0", ",", "4"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"2", ",", "4"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"4", ",", "4"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"5", ",", "1"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"5", ",", "3"}], "}"}]}], "}"}]},
+  "RowDefault"]], "Print",ExpressionUUID->"6040aec8-533a-40bd-9853-\
+a89105c3d26a"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    q = \"", "5", "\": \"", "21", "\" grades; new beyond q = \"", "4", 
+   "\": \"", 
+   RowBox[{"{", 
+     RowBox[{
+       RowBox[{"{", 
+         RowBox[{"1", ",", "5"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"3", ",", "5"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"5", ",", "5"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"6", ",", "0"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"6", ",", "2"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"6", ",", "4"}], "}"}]}], "}"}]},
+  "RowDefault"]], "Print",ExpressionUUID->"06b960b2-c40b-4f86-85c6-\
+52d190f468d8"],
+
+Cell[BoxData[
+ TemplateBox[{"\"    q = 2 is the six: \"", 
+   RowBox[{"{", 
+     RowBox[{
+       RowBox[{"{", 
+         RowBox[{"0", ",", "0"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"0", ",", "2"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"1", ",", "1"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"2", ",", "0"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"2", ",", "2"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"3", ",", "1"}], "}"}]}], "}"}]},
+  "RowDefault"]], "Print",ExpressionUUID->"5da56b4d-6a9f-41a5-9043-\
+9ea5f3c1111b"],
+
+Cell["\<\
+(d_rest w)(0) for a monomial weight w = x_{w1}..x_{wW} and a derivative \
+multi-index rest\
+\>", "Text",ExpressionUUID->"b7cca6fc-555f-485b-b733-a928b14cd78c"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"derivAtZero", "[", 
+    RowBox[{"rest_List", ",", " ", "w_List"}], "]"}], " ", ":=", " ", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"xs", " ", "=", " ", 
+        RowBox[{"{", 
+         RowBox[{"xa", ",", " ", "xb", ",", " ", "xc"}], "}"}]}], ",", " ", 
+       "f"}], "}"}], ",", "\n", "  ", 
+     RowBox[{
+      RowBox[{"f", " ", "=", " ", 
+       RowBox[{"Times", " ", "@@", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"xs", "[", 
+            RowBox[{"[", "#", "]"}], "]"}], " ", "&"}], " ", "/@", " ", "w"}],
+          ")"}]}]}], ";", "\n", "  ", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"D", "[", 
+         RowBox[{"f", ",", " ", 
+          RowBox[{"Sequence", " ", "@@", " ", 
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"xs", "[", 
+               RowBox[{"[", "#", "]"}], "]"}], " ", "&"}], " ", "/@", " ", 
+             "rest"}], ")"}]}]}], "]"}], ")"}], " ", "/.", " ", 
+       RowBox[{"Thread", "[", 
+        RowBox[{"xs", " ", "->", " ", "0"}], "]"}]}]}]}], "]"}]}], 
+  ";"}]], "Input",
+ CellLabel->"In[13]:=",ExpressionUUID->"08beb126-3a7b-4643-b782-fa696803b3f7"],
+
+Cell["\<\
+representative index sets for a grade: all sorted derivative lists and \
+weights with even axis counts\
+\>", "Text",ExpressionUUID->"0e2a72c7-1bd5-4bda-9f93-1174fe838993"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"reps", "[", 
+    RowBox[{"dd_", ",", " ", "ww_"}], "]"}], " ", ":=", " ", 
+   RowBox[{"Select", "[", "\n", "   ", 
+    RowBox[{
+     RowBox[{"Flatten", "[", 
+      RowBox[{
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{"ds", ",", " ", "ws"}], "}"}], ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"ds", ",", " ", 
+           RowBox[{"DeleteDuplicates", "[", 
+            RowBox[{"Sort", " ", "/@", " ", 
+             RowBox[{"Tuples", "[", 
+              RowBox[{
+               RowBox[{"{", 
+                RowBox[{"1", ",", " ", "2", ",", " ", "3"}], "}"}], ",", " ", 
+               "dd"}], "]"}]}], "]"}]}], "}"}], ",", "\n", "     ", 
+         RowBox[{"{", 
+          RowBox[{"ws", ",", " ", 
+           RowBox[{"DeleteDuplicates", "[", 
+            RowBox[{"Sort", " ", "/@", " ", 
+             RowBox[{"Tuples", "[", 
+              RowBox[{
+               RowBox[{"{", 
+                RowBox[{"1", ",", " ", "2", ",", " ", "3"}], "}"}], ",", " ", 
+               "ww"}], "]"}]}], "]"}]}], "}"}]}], "]"}], ",", " ", "1"}], 
+      "]"}], ",", "\n", "   ", 
+     RowBox[{
+      RowBox[{"AllTrue", "[", 
+       RowBox[{
+        RowBox[{"Range", "[", "3", "]"}], ",", " ", 
+        RowBox[{"Function", "[", 
+         RowBox[{"ax", ",", " ", 
+          RowBox[{"EvenQ", "[", 
+           RowBox[{"Count", "[", 
+            RowBox[{
+             RowBox[{"Join", "[", 
+              RowBox[{
+               RowBox[{"#", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], ",", " ", 
+               RowBox[{"#", "[", 
+                RowBox[{"[", "2", "]"}], "]"}]}], "]"}], ",", " ", "ax"}], 
+            "]"}], "]"}]}], "]"}]}], "]"}], " ", "&"}]}], "]"}]}], 
+  ";"}]], "Input",
+ CellLabel->"In[14]:=",ExpressionUUID->"4e9e27fe-4434-4395-a08b-064e95312881"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"checkGrade", "[", 
+    RowBox[{"{", 
+     RowBox[{"dd_", ",", " ", "ww_"}], "}"}], "]"}], " ", ":=", " ", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"t0", " ", "=", " ", 
+        RowBox[{"AbsoluteTime", "[", "]"}]}], ",", " ", 
+       RowBox[{"okA", " ", "=", " ", "True"}], ",", " ", 
+       RowBox[{"okB", " ", "=", " ", "True"}], ",", " ", 
+       RowBox[{"okC", " ", "=", " ", "True"}], ",", " ", "rs", ",", " ", 
+       RowBox[{"nA", " ", "=", " ", "0"}], ",", " ", 
+       RowBox[{"nB", " ", "=", " ", "0"}]}], "}"}], ",", "\n", "  ", 
+     RowBox[{"(*", " ", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", "a", ")"}], " ", "and", " ", 
+        RowBox[{"(", "b", ")"}]}], ":", " ", 
+       RowBox[{
+        RowBox[{
+        "add", " ", "a", " ", "traced", " ", "pair", " ", "to", " ", "a", " ",
+          "rest", " ", "list", " ", "of", " ", "length", " ", "dd"}], " ", "-",
+         " ", "2"}]}], " ", "*)"}], "\n", "  ", 
+     RowBox[{
+      RowBox[{"If", "[", 
+       RowBox[{
+        RowBox[{"dd", " ", ">=", " ", "2"}], ",", "\n", "   ", 
+        RowBox[{"Do", "[", "\n", "    ", 
+         RowBox[{
+          RowBox[{"Module", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"rest", " ", "=", " ", 
+               RowBox[{"pr", "[", 
+                RowBox[{"[", "1", "]"}], "]"}]}], ",", " ", 
+              RowBox[{"w", " ", "=", " ", 
+               RowBox[{"pr", "[", 
+                RowBox[{"[", "2", "]"}], "]"}]}]}], "}"}], ",", "\n", "     ", 
+            RowBox[{"(*", " ", 
+             RowBox[{
+              RowBox[{"(", "b", ")"}], " ", "kernel", " ", 
+              RowBox[{"1", "/", "r"}]}], " ", "*)"}], "\n", "     ", 
+            RowBox[{
+             RowBox[{"With", "[", 
+              RowBox[{
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{"lhs", " ", "=", " ", 
+                  RowBox[{"Sum", "[", 
+                   RowBox[{
+                    RowBox[{"eC", "[", 
+                    RowBox[{
+                    RowBox[{"-", "1"}], ",", " ", 
+                    RowBox[{"Join", "[", 
+                    RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"p", ",", " ", "p"}], "}"}], ",", " ", "rest"}], 
+                    "]"}], ",", " ", "w"}], "]"}], ",", " ", 
+                    RowBox[{"{", 
+                    RowBox[{"p", ",", " ", "3"}], "}"}]}], "]"}]}], ",", "\n",
+                  "       ", 
+                 RowBox[{"rhs", " ", "=", " ", 
+                  RowBox[{
+                   RowBox[{"-", "4"}], " ", "Pi", " ", 
+                   RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"-", "1"}], ")"}], "^", 
+                    RowBox[{"Length", "[", "rest", "]"}]}], " ", 
+                   RowBox[{"derivAtZero", "[", 
+                    RowBox[{"rest", ",", " ", "w"}], "]"}]}]}]}], "}"}], ",", 
+               "\n", "      ", 
+               RowBox[{
+                RowBox[{"nB", "++"}], ";", " ", 
+                RowBox[{"If", "[", 
+                 RowBox[{
+                  RowBox[{"!", " ", 
+                   RowBox[{"exactZero", "[", 
+                    RowBox[{"lhs", " ", "-", " ", "rhs"}], "]"}]}], ",", " ", 
+                  
+                  RowBox[{
+                   RowBox[{"okB", " ", "=", " ", "False"}], ";", " ", 
+                   RowBox[{"Print", "[", 
+                    
+                    RowBox[{"\"\<      (b) fails at rest \>\"", ",", " ", 
+                    "rest", ",", " ", "\"\< w \>\"", ",", " ", "w"}], 
+                    "]"}]}]}], "]"}]}]}], "]"}], ";", "\n", "     ", 
+             RowBox[{"(*", " ", 
+              RowBox[{
+               RowBox[{"(", "a", ")"}], " ", "kernel", " ", "r"}], " ", 
+              "*)"}], "\n", "     ", 
+             RowBox[{"With", "[", 
+              RowBox[{
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{"lhs", " ", "=", " ", 
+                  RowBox[{"Sum", "[", 
+                   RowBox[{
+                    RowBox[{"eC", "[", 
+                    RowBox[{"1", ",", " ", 
+                    RowBox[{"Join", "[", 
+                    RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"p", ",", " ", "p"}], "}"}], ",", " ", "rest"}], 
+                    "]"}], ",", " ", "w"}], "]"}], ",", " ", 
+                    RowBox[{"{", 
+                    RowBox[{"p", ",", " ", "3"}], "}"}]}], "]"}]}], ",", " ", 
+                 
+                 RowBox[{"rhs", " ", "=", " ", 
+                  RowBox[{"2", " ", 
+                   RowBox[{"eC", "[", 
+                    RowBox[{
+                    RowBox[{"-", "1"}], ",", " ", "rest", ",", " ", "w"}], 
+                    "]"}]}]}]}], "}"}], ",", "\n", "      ", 
+               RowBox[{
+                RowBox[{"nA", "++"}], ";", " ", 
+                RowBox[{"If", "[", 
+                 RowBox[{
+                  RowBox[{"!", " ", 
+                   RowBox[{"exactZero", "[", 
+                    RowBox[{"lhs", " ", "-", " ", "rhs"}], "]"}]}], ",", " ", 
+                  
+                  RowBox[{
+                   RowBox[{"okA", " ", "=", " ", "False"}], ";", " ", 
+                   RowBox[{"Print", "[", 
+                    
+                    RowBox[{"\"\<      (a) fails at rest \>\"", ",", " ", 
+                    "rest", ",", " ", "\"\< w \>\"", ",", " ", "w"}], 
+                    "]"}]}]}], "]"}]}]}], "]"}]}]}], "]"}], ",", "\n", "    ", 
+          RowBox[{"{", 
+           RowBox[{"pr", ",", " ", 
+            RowBox[{"Flatten", "[", 
+             RowBox[{
+              RowBox[{"Table", "[", 
+               RowBox[{
+                RowBox[{"{", 
+                 RowBox[{"ds", ",", " ", "ws"}], "}"}], ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"ds", ",", " ", 
+                  RowBox[{"DeleteDuplicates", "[", 
+                   RowBox[{"Sort", " ", "/@", " ", 
+                    RowBox[{"Tuples", "[", 
+                    RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"1", ",", " ", "2", ",", " ", "3"}], "}"}], ",", 
+                    " ", 
+                    RowBox[{"dd", " ", "-", " ", "2"}]}], "]"}]}], "]"}]}], 
+                 "}"}], ",", "\n", "        ", 
+                RowBox[{"{", 
+                 RowBox[{"ws", ",", " ", 
+                  RowBox[{"DeleteDuplicates", "[", 
+                   RowBox[{"Sort", " ", "/@", " ", 
+                    RowBox[{"Tuples", "[", 
+                    RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"1", ",", " ", "2", ",", " ", "3"}], "}"}], ",", 
+                    " ", "ww"}], "]"}]}], "]"}]}], "}"}]}], "]"}], ",", " ", 
+              "1"}], "]"}]}], "}"}]}], "]"}]}], "]"}], ";", "\n", "  ", 
+      RowBox[{"(*", " ", 
+       RowBox[{
+        RowBox[{"(", "c", ")"}], " ", "parity", " ", "on", " ", "one", " ", 
+        "odd", " ", "component"}], " ", "*)"}], "\n", "  ", 
+      RowBox[{"If", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"dd", " ", "+", " ", "ww"}], " ", ">=", " ", "1"}], ",", 
+        "\n", "   ", 
+        RowBox[{"With", "[", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"ds", " ", "=", " ", 
+             RowBox[{"ConstantArray", "[", 
+              RowBox[{"1", ",", " ", "dd"}], "]"}]}], ",", " ", 
+            RowBox[{"ws", " ", "=", " ", 
+             RowBox[{"If", "[", 
+              RowBox[{
+               RowBox[{"ww", " ", ">", " ", "0"}], ",", " ", 
+               RowBox[{"Join", "[", 
+                RowBox[{
+                 RowBox[{"ConstantArray", "[", 
+                  RowBox[{"1", ",", " ", 
+                   RowBox[{"ww", " ", "-", " ", "1"}]}], "]"}], ",", " ", 
+                 RowBox[{"{", "2", "}"}]}], "]"}], ",", " ", 
+               RowBox[{"{", "}"}]}], "]"}]}]}], "}"}], ",", "\n", "    ", 
+          RowBox[{"If", "[", 
+           RowBox[{
+            RowBox[{"ww", " ", ">", " ", "0"}], ",", " ", 
+            RowBox[{"okC", " ", "=", " ", 
+             RowBox[{"exactZero", "[", 
+              RowBox[{"eC", "[", 
+               RowBox[{
+                RowBox[{"-", "1"}], ",", " ", "ds", ",", " ", "ws"}], "]"}], 
+              "]"}]}]}], "]"}]}], "]"}]}], "]"}], ";", "\n", "  ", 
+      RowBox[{"rs", " ", "=", " ", 
+       RowBox[{"reps", "[", 
+        RowBox[{"dd", ",", " ", "ww"}], "]"}]}], ";", "\n", "  ", 
+      RowBox[{"If", "[", 
+       RowBox[{
+        RowBox[{"dd", " ", "<", " ", "2"}], ",", "\n", "   ", 
+        RowBox[{"Module", "[", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{"ok", ",", " ", "n", ",", " ", "worst"}], "}"}], ",", "\n",
+           "    ", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"ok", ",", " ", "n", ",", " ", "worst"}], "}"}], " ", "=",
+             " ", 
+            RowBox[{"nintCheck", "[", 
+             RowBox[{"dd", ",", " ", "ww"}], "]"}]}], ";", "\n", "    ", 
+           RowBox[{"okA", " ", "=", " ", 
+            RowBox[{"okB", " ", "=", " ", "ok"}]}], ";", "\n", "    ", 
+           RowBox[{"Print", "[", 
+            
+            RowBox[{"\"\<    grade (\>\"", ",", " ", "dd", ",", 
+             " ", "\"\<,\>\"", ",", " ", "ww", ",", " ", "\"\<): \>\"", ",", 
+             " ", 
+             RowBox[{"Length", "[", "rs", "]"}], ",", 
+             " ", "\"\< non-vanishing index classes;  no trace rule (D < 2); \
+\>\"", ",", "\n", 
+             "     ", "\"\<against numerical integration over the cube x\>\"",
+              ",", " ", "n", ",", 
+             " ", "\"\< (largest relative difference \>\"", ",", "\n", 
+             "     ", 
+             RowBox[{"eNote", "[", "worst", "]"}], ",", " ", "\"\<) \>\"", ",",
+              " ", 
+             RowBox[{"pass", "[", "okA", "]"}], ",", 
+             " ", "\"\<   (c) parity \>\"", ",", " ", 
+             RowBox[{"pass", "[", "okC", "]"}], ",", " ", "\"\<   \>\"", ",", 
+             "\n", "     ", 
+             RowBox[{"Round", "[", 
+              RowBox[{
+               RowBox[{"AbsoluteTime", "[", "]"}], " ", "-", " ", "t0"}], 
+              "]"}], ",", " ", "\"\< s\>\""}], "]"}]}]}], "]"}], ",", "\n", 
+        "   ", 
+        RowBox[{"Print", "[", 
+         RowBox[{"\"\<    grade (\>\"", ",", " ", "dd", ",", " ", "\"\<,\>\"",
+           ",", " ", "ww", ",", " ", "\"\<): \>\"", ",", " ", 
+          RowBox[{"Length", "[", "rs", "]"}], ",", 
+          " ", "\"\< non-vanishing index classes;  (a) chain x\>\"", ",", " ",
+           "nA", ",", " ", "\"\< \>\"", ",", "\n", "    ", 
+          RowBox[{"pass", "[", "okA", "]"}], ",", 
+          " ", "\"\<   (b) delta rule x\>\"", ",", " ", "nB", ",", 
+          " ", "\"\< \>\"", ",", " ", 
+          RowBox[{"pass", "[", "okB", "]"}], ",", 
+          " ", "\"\<   (c) parity \>\"", ",", " ", 
+          RowBox[{"pass", "[", "okC", "]"}], ",", " ", "\"\<   \>\"", ",", 
+          "\n", "    ", 
+          RowBox[{"Round", "[", 
+           RowBox[{
+            RowBox[{"AbsoluteTime", "[", "]"}], " ", "-", " ", "t0"}], "]"}], 
+          ",", " ", "\"\< s\>\""}], "]"}]}], "]"}], ";", "\n", "  ", 
+      RowBox[{"okA", " ", "&&", " ", "okB", " ", "&&", " ", "okC"}]}]}], 
+    "]"}]}], ";"}]], "Input",
+ CellLabel->"In[15]:=",ExpressionUUID->"5758cb10-9832-4c4e-9145-c7437dba9bba"],
+
+Cell["\<\
+the tensor's own d_i d_n acts on the kernel r (and r^3, ... dynamically), so \
+a moment of grade (D, W) also needs E[1; D + 2 derivatives; W].  Gate: the \
+chain rule on those, Sum_p E[1;{p,p}+rest;w] = 2 E[-1;rest;w], with rest of \
+length D: every traced component of the D + 2 derivative moment against the \
+gated 1/r moment.\
+\>", "Text",ExpressionUUID->"27be2b93-1847-42f5-954f-285cc20bf766"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"checkTensorKernel", "[", 
+    RowBox[{"{", 
+     RowBox[{"dd_", ",", " ", "ww_"}], "}"}], "]"}], " ", ":=", " ", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"t0", " ", "=", " ", 
+        RowBox[{"AbsoluteTime", "[", "]"}]}], ",", " ", 
+       RowBox[{"ok", " ", "=", " ", "True"}], ",", " ", 
+       RowBox[{"n", " ", "=", " ", "0"}]}], "}"}], ",", "\n", "  ", 
+     RowBox[{
+      RowBox[{"Do", "[", "\n", "   ", 
+       RowBox[{
+        RowBox[{"With", "[", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"lhs", " ", "=", " ", 
+             RowBox[{"Sum", "[", 
+              RowBox[{
+               RowBox[{"eC", "[", 
+                RowBox[{"1", ",", " ", 
+                 RowBox[{"Join", "[", 
+                  RowBox[{
+                   RowBox[{"{", 
+                    RowBox[{"p", ",", " ", "p"}], "}"}], ",", " ", 
+                   RowBox[{"pr", "[", 
+                    RowBox[{"[", "1", "]"}], "]"}]}], "]"}], ",", " ", 
+                 RowBox[{"pr", "[", 
+                  RowBox[{"[", "2", "]"}], "]"}]}], "]"}], ",", " ", 
+               RowBox[{"{", 
+                RowBox[{"p", ",", " ", "3"}], "}"}]}], "]"}]}], ",", " ", 
+            RowBox[{"rhs", " ", "=", " ", 
+             RowBox[{"2", " ", 
+              RowBox[{"eC", "[", 
+               RowBox[{
+                RowBox[{"-", "1"}], ",", " ", 
+                RowBox[{"pr", "[", 
+                 RowBox[{"[", "1", "]"}], "]"}], ",", " ", 
+                RowBox[{"pr", "[", 
+                 RowBox[{"[", "2", "]"}], "]"}]}], "]"}]}]}]}], "}"}], ",", 
+          "\n", "    ", 
+          RowBox[{
+           RowBox[{"n", "++"}], ";", " ", 
+           RowBox[{"If", "[", 
+            RowBox[{
+             RowBox[{"!", " ", 
+              RowBox[{"exactZero", "[", 
+               RowBox[{"lhs", " ", "-", " ", "rhs"}], "]"}]}], ",", " ", 
+             RowBox[{
+              RowBox[{"ok", " ", "=", " ", "False"}], ";", " ", 
+              RowBox[{"Print", "[", 
+               
+               RowBox[{"\"\<      tensor-kernel chain fails at rest \>\"", ",",
+                 " ", 
+                RowBox[{"pr", "[", 
+                 RowBox[{"[", "1", "]"}], "]"}], ",", " ", "\"\< w \>\"", ",",
+                 " ", 
+                RowBox[{"pr", "[", 
+                 RowBox[{"[", "2", "]"}], "]"}]}], "]"}]}]}], "]"}]}]}], 
+         "]"}], ",", "\n", "   ", 
+        RowBox[{"{", 
+         RowBox[{"pr", ",", " ", 
+          RowBox[{"Flatten", "[", 
+           RowBox[{
+            RowBox[{"Table", "[", 
+             RowBox[{
+              RowBox[{"{", 
+               RowBox[{"ds", ",", " ", "ws"}], "}"}], ",", " ", 
+              RowBox[{"{", 
+               RowBox[{"ds", ",", " ", 
+                RowBox[{"DeleteDuplicates", "[", 
+                 RowBox[{"Sort", " ", "/@", " ", 
+                  RowBox[{"Tuples", "[", 
+                   RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"1", ",", " ", "2", ",", " ", "3"}], "}"}], ",", 
+                    " ", "dd"}], "]"}]}], "]"}]}], "}"}], ",", "\n", 
+              "       ", 
+              RowBox[{"{", 
+               RowBox[{"ws", ",", " ", 
+                RowBox[{"DeleteDuplicates", "[", 
+                 RowBox[{"Sort", " ", "/@", " ", 
+                  RowBox[{"Tuples", "[", 
+                   RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"1", ",", " ", "2", ",", " ", "3"}], "}"}], ",", 
+                    " ", "ww"}], "]"}]}], "]"}]}], "}"}]}], "]"}], ",", " ", 
+            "1"}], "]"}]}], "}"}]}], "]"}], ";", "\n", "  ", 
+      RowBox[{"Print", "[", 
+       RowBox[{"\"\<    grade (\>\"", ",", " ", "dd", ",", " ", "\"\<,\>\"", ",",
+         " ", "ww", ",", " ", "\"\<): kernel r with \>\"", ",", " ", 
+        RowBox[{"dd", " ", "+", " ", "2"}], ",", 
+        " ", "\"\< derivatives, chain x\>\"", ",", " ", "n", ",", 
+        " ", "\"\< \>\"", ",", " ", 
+        RowBox[{"pass", "[", "ok", "]"}], ",", " ", "\"\<   \>\"", ",", "\n", 
+        "   ", 
+        RowBox[{"Round", "[", 
+         RowBox[{
+          RowBox[{"AbsoluteTime", "[", "]"}], " ", "-", " ", "t0"}], "]"}], ",",
+         " ", "\"\< s\>\""}], "]"}], ";", "\n", "  ", "ok"}]}], "]"}]}], 
+  ";"}]], "Input",
+ CellLabel->"In[16]:=",ExpressionUUID->"21fda7b3-0e64-4a2f-841c-8fbd931dee15"],
+
+Cell["\<\
+a second argument restricts the run to grades with D + W >= minSum and skips \
+[2]: for a second kernel working on the heavy grades while the first does the \
+light ones (the cache on disk is shared)\
+\>", "Text",ExpressionUUID->"a2f98e35-4c39-4a3b-ad02-c277d4ea5419"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"minSum", " ", "=", " ", 
+   RowBox[{"If", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Length", "[", "$nbScriptCommandLine", "]"}], " ", ">", " ", 
+      "2"}], ",", " ", 
+     RowBox[{"ToExpression", "[", 
+      RowBox[{"$nbScriptCommandLine", "[", 
+       RowBox[{"[", "3", "]"}], "]"}], "]"}], ",", " ", "0"}], "]"}]}], 
+  ";"}], "\n", 
+ RowBox[{
+  RowBox[{"If", "[", 
+   RowBox[{
+    RowBox[{"minSum", " ", "==", " ", "0"}], ",", "\n", "  ", 
+    RowBox[{
+     RowBox[{"Print", "[", "]"}], ";", "\n", "  ", 
+     RowBox[{
+     "Print", "[", "\"\<[2] the new grades of q = 3 (fourth order with both \
+contrasts)\>\"", "]"}], ";", "\n", "  ", 
+     RowBox[{"ok3", " ", "=", " ", 
+      RowBox[{"checkGrade", " ", "/@", " ", 
+       RowBox[{"Complement", "[", 
+        RowBox[{
+         RowBox[{"grades", "[", "3", "]"}], ",", " ", 
+         RowBox[{"grades", "[", "2", "]"}]}], "]"}]}]}], ";", "\n", "  ", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<    all gates on the four new grades: \>\"", ",", " ", 
+       RowBox[{"pass", "[", 
+        RowBox[{"And", " ", "@@", " ", "ok3"}], "]"}]}], "]"}], ";", "\n", 
+     "  ", 
+     RowBox[{
+     "Print", "[", "\"\<    the same grades, the kernel of the tensor's \
+second term:\>\"", "]"}], ";", "\n", "  ", 
+     RowBox[{"ok3t", " ", "=", " ", 
+      RowBox[{"checkTensorKernel", " ", "/@", " ", 
+       RowBox[{"Complement", "[", 
+        RowBox[{
+         RowBox[{"grades", "[", "3", "]"}], ",", " ", 
+         RowBox[{"grades", "[", "2", "]"}]}], "]"}]}]}], ";", "\n", "  ", 
+     RowBox[{"Print", "[", 
+      RowBox[{"\"\<    tensor-kernel gates on the four new grades: \>\"", ",",
+        " ", 
+       RowBox[{"pass", "[", 
+        RowBox[{"And", " ", "@@", " ", "ok3t"}], "]"}]}], "]"}]}]}], "]"}], 
+  ";"}]}], "Input",
+ CellLabel->"In[17]:=",ExpressionUUID->"6d7c300d-9b7a-411b-8548-6d23e5033f21"],
+
+Cell[BoxData[
+ TemplateBox[{},
+  "RowDefault"]], "Print",ExpressionUUID->"9787be24-dc35-4c79-9ae9-303e5361af70"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"[2] the new grades of q = 3 (fourth order with both contrasts)\""},
+  "RowDefault"]], "Print",ExpressionUUID->"70121882-75cb-4d26-843e-\
+71c461340734"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "1", "\",\"", "3", "\"): \"", "9", 
+   "\" non-vanishing index classes;  no trace rule (D < 2); \"", 
+   "\"against numerical integration over the cube x\"", "9", 
+   "\" (largest relative difference \"", "\"1.1e-14\"", "\") \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "198", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"1ac493a6-0c3b-466b-bc41-\
+82cc587d76c1"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "3", "\",\"", "3", "\"): \"", "28", 
+   "\" non-vanishing index classes;  (a) chain x\"", "30", "\" \"", 
+   "\"PASS\"", "\"   (b) delta rule x\"", "30", "\" \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "315", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"0fb64224-6bbc-4c8f-812c-\
+e88b8ba1b228"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "4", "\",\"", "0", "\"): \"", "6", 
+   "\" non-vanishing index classes;  (a) chain x\"", "6", "\" \"", "\"PASS\"",
+    "\"   (b) delta rule x\"", "6", "\" \"", "\"PASS\"", "\"   (c) parity \"",
+    "\"PASS\"", "\"   \"", "37", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"693aa81b-1943-4621-ad30-\
+4701c5ebb8ef"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "4", "\",\"", "2", "\"): \"", "27", 
+   "\" non-vanishing index classes;  (a) chain x\"", "36", "\" \"", 
+   "\"PASS\"", "\"   (b) delta rule x\"", "36", "\" \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "311", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"158b2932-0218-4b08-9715-\
+b6695662f67b"],
+
+Cell[BoxData[
+ TemplateBox[{"\"    all gates on the four new grades: \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"1574190f-a43b-4feb-baca-\
+bf56d7725e17"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    the same grades, the kernel of the tensor's second term:\""},
+  "RowDefault"]], "Print",ExpressionUUID->"18a0d8d0-e20a-4cf2-85a0-\
+3c6e81e53739"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "1", "\",\"", "3", "\"): kernel r with \"", "3", 
+   "\" derivatives, chain x\"", "30", "\" \"", "\"PASS\"", "\"   \"", "0", 
+   "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"6fecf583-69da-462f-b631-\
+08832ffc771d"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "3", "\",\"", "3", "\"): kernel r with \"", "5", 
+   "\" derivatives, chain x\"", "100", "\" \"", "\"PASS\"", "\"   \"", "212", 
+   "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"8e369fb5-20c8-4c2d-84f2-\
+faa704bde5f7"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "4", "\",\"", "0", "\"): kernel r with \"", "6", 
+   "\" derivatives, chain x\"", "15", "\" \"", "\"PASS\"", "\"   \"", "28", 
+   "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"38e61073-fe10-4a55-93f2-\
+c0a9b77014f5"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "4", "\",\"", "2", "\"): kernel r with \"", "6", 
+   "\" derivatives, chain x\"", "90", "\" \"", "\"PASS\"", "\"   \"", "206", 
+   "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"8650f78a-ada4-4c5a-8057-\
+d5c06f981030"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    tensor-kernel gates on the four new grades: \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"bda0f68e-7548-49e3-ba02-\
+5c8abe7cae29"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"Print", "[", "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{"\"\<[3] the further grades of q = 4 and q = 5 (sixth order), \>\"",
+     ",", " ", "minSum", ",", " ", "\"\< <= D + W <= \>\"", ",", " ", 
+    "maxSum"}], "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"more", " ", "=", " ", 
+   RowBox[{"Select", "[", 
+    RowBox[{
+     RowBox[{"Complement", "[", 
+      RowBox[{
+       RowBox[{"grades", "[", "5", "]"}], ",", " ", 
+       RowBox[{"grades", "[", "3", "]"}]}], "]"}], ",", " ", 
+     RowBox[{
+      RowBox[{"minSum", " ", "<=", " ", 
+       RowBox[{"Total", "[", "#", "]"}], " ", "<=", " ", "maxSum"}], " ", 
+      "&"}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"ok5", " ", "=", " ", 
+   RowBox[{"checkGrade", " ", "/@", " ", 
+    RowBox[{"SortBy", "[", 
+     RowBox[{"more", ",", " ", "Total"}], "]"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{"\"\<    all gates on these \>\"", ",", " ", 
+    RowBox[{"Length", "[", "more", "]"}], ",", " ", "\"\< grades: \>\"", ",", 
+    " ", 
+    RowBox[{"pass", "[", 
+     RowBox[{"And", " ", "@@", " ", "ok5"}], "]"}]}], "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Print", "[", 
+   RowBox[{"\"\<    grades not attempted (D + W > \>\"", ",", " ", "maxSum", ",",
+     " ", "\"\<): \>\"", ",", " ", 
+    RowBox[{"Select", "[", 
+     RowBox[{
+      RowBox[{"Complement", "[", 
+       RowBox[{
+        RowBox[{"grades", "[", "5", "]"}], ",", " ", 
+        RowBox[{"grades", "[", "3", "]"}]}], "]"}], ",", " ", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"Total", "[", "#", "]"}], " ", ">", " ", "maxSum"}], " ", 
+       "&"}]}], "]"}]}], "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "Print", "[", \
+"\"\<==============================================================\>\"", 
+   "]"}], ";"}]}], "Input",
+ CellLabel->"In[18]:=",ExpressionUUID->"381512cb-5bce-4f34-97c7-8e3c326dc0ce"],
+
+Cell[BoxData[
+ TemplateBox[{},
+  "RowDefault"]], "Print",ExpressionUUID->"fedda184-2727-44ee-bcc8-226a6b1edc79"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"[3] the further grades of q = 4 and q = 5 (sixth order), \"", "0", 
+   "\" <= D + W <= \"", "6"},
+  "RowDefault"]], "Print",ExpressionUUID->"0bdbeeac-5acd-48a6-b3f2-\
+342df7b16f87"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "0", "\",\"", "4", "\"): \"", "6", 
+   "\" non-vanishing index classes;  no trace rule (D < 2); \"", 
+   "\"against numerical integration over the cube x\"", "6", 
+   "\" (largest relative difference \"", "\"8.9e-14\"", "\") \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "123", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"c06b33fe-2772-45c3-a062-\
+63adb830507b"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "1", "\",\"", "5", "\"): \"", "18", 
+   "\" non-vanishing index classes;  no trace rule (D < 2); \"", 
+   "\"against numerical integration over the cube x\"", "18", 
+   "\" (largest relative difference \"", "\"5.8e-14\"", "\") \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "127", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"63e4c3f2-b6fd-497c-9710-\
+627a261e0321"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "2", "\",\"", "4", "\"): \"", "27", 
+   "\" non-vanishing index classes;  (a) chain x\"", "15", "\" \"", 
+   "\"PASS\"", "\"   (b) delta rule x\"", "15", "\" \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "302", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"77e38176-7649-4188-9915-\
+bd52a7cfbfd3"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "5", "\",\"", "1", "\"): \"", "18", 
+   "\" non-vanishing index classes;  (a) chain x\"", "30", "\" \"", 
+   "\"PASS\"", "\"   (b) delta rule x\"", "30", "\" \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "69", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"270f9a2d-79c3-4676-a76c-\
+2e7c4fb18b0a"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"    grade (\"", "6", "\",\"", "0", "\"): \"", "10", 
+   "\" non-vanishing index classes;  (a) chain x\"", "15", "\" \"", 
+   "\"PASS\"", "\"   (b) delta rule x\"", "15", "\" \"", "\"PASS\"", 
+   "\"   (c) parity \"", "\"PASS\"", "\"   \"", "44", "\" s\""},
+  "RowDefault"]], "Print",ExpressionUUID->"2543bd2b-212b-4b27-b0e9-\
+1a11a75c436e"],
+
+Cell[BoxData[
+ TemplateBox[{"\"    all gates on these \"", "5", "\" grades: \"", "\"PASS\""},
+  "RowDefault"]], "Print",ExpressionUUID->"e1a3b483-019f-4db7-9a3d-\
+0e79ac20b224"],
+
+Cell[BoxData[
+ TemplateBox[{"\"    grades not attempted (D + W > \"", "6", "\"): \"", 
+   RowBox[{"{", 
+     RowBox[{
+       RowBox[{"{", 
+         RowBox[{"3", ",", "5"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"4", ",", "4"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"5", ",", "3"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"5", ",", "5"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"6", ",", "2"}], "}"}], ",", 
+       RowBox[{"{", 
+         RowBox[{"6", ",", "4"}], "}"}]}], "}"}]},
+  "RowDefault"]], "Print",ExpressionUUID->"61cefd8e-bfa0-4992-958d-\
+f8cd4e35a1ea"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "\"==============================================================\""},
+  "RowDefault"]], "Print",ExpressionUUID->"29d18368-7912-449d-bf0a-\
+40cac45c2714"]
+},
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (July 2, 2026)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"63563712-bb2a-420a-8618-47aa2b0e8b8f"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 94, 0, 70, "Title",ExpressionUUID->"041db5cd-6557-4a37-836e-eb34e84595af"],
+Cell[651, 22, 102, 0, 70, "Subtitle",ExpressionUUID->"a5daa840-2949-442f-9882-a23a4133af61"],
+Cell[756, 24, 120, 0, 70, "Text",ExpressionUUID->"d42012fc-4ba6-4a30-870a-1b248c362614"],
+Cell[879, 26, 308, 4, 70, "Text",ExpressionUUID->"f8579b8e-d1de-4de7-8dc6-c0da4b81fc6e"],
+Cell[1190, 32, 228, 3, 70, "Program",ExpressionUUID->"271e0af2-a32e-4649-89a1-c375876b6401"],
+Cell[1421, 37, 341, 5, 70, "Text",ExpressionUUID->"587f2ed2-7ac5-49c1-9ab8-22c9d51ce6ae"],
+Cell[1765, 44, 218, 3, 70, "Text",ExpressionUUID->"033765d4-82e3-47a4-8342-82c963b0030c"],
+Cell[1986, 49, 295, 4, 70, "Text",ExpressionUUID->"35e328b7-273d-40e7-9048-bc2685cf06e5"],
+Cell[2284, 55, 188, 3, 70, "Text",ExpressionUUID->"e13dd8e9-d051-4150-b737-7e4dd4569697"],
+Cell[2475, 60, 570, 12, 70, "Program",ExpressionUUID->"4fa00399-d087-4048-8898-ef909d3f6f54"],
+Cell[3048, 74, 232, 3, 70, "Text",ExpressionUUID->"b7753ff1-6b28-4ae9-bd7e-a67cd6e46df2"],
+Cell[3283, 79, 158, 3, 70, "Text",ExpressionUUID->"99772df3-9c9d-4a31-a526-e295a640dc2d"],
+Cell[CellGroupData[{
+Cell[3466, 86, 89, 0, 70, "Section",ExpressionUUID->"619bb014-ef35-48b2-be34-4fbdfe0254d2"],
+Cell[3558, 88, 714, 10, 70, "Text",ExpressionUUID->"0143ffae-1174-42f9-906a-74fbe9f3a876"],
+Cell[4275, 100, 3114, 78, 70, "Input",ExpressionUUID->"9142944c-d793-4886-b5b1-478e03a0b0ff"]
+}, Open  ]],
+Cell[7404, 181, 581, 15, 70, "Input",ExpressionUUID->"22191036-f8fe-44d9-addb-ad567fb9ffd1"],
+Cell[7988, 198, 176, 3, 70, "Text",ExpressionUUID->"eabe19fd-742c-4126-aa58-89572b5619b6"],
+Cell[8167, 203, 1302, 35, 70, "Input",ExpressionUUID->"3b0e2146-5949-49a3-acde-747626fc35fc"],
+Cell[9472, 240, 293, 4, 70, "Text",ExpressionUUID->"faf23130-1c7b-4d58-b85a-73a9b56703ee"],
+Cell[9768, 246, 1058, 26, 70, "Input",ExpressionUUID->"fa5a5039-5f88-4337-ac22-f93467a38ab9"],
+Cell[10829, 274, 669, 9, 70, "Text",ExpressionUUID->"900a9096-0e53-418f-8dc1-912725253ef8"],
+Cell[11501, 285, 4798, 113, 70, "Input",ExpressionUUID->"efe4efba-c8d9-4a3c-96db-16b598e926cf"],
+Cell[16302, 400, 613, 9, 70, "Text",ExpressionUUID->"a8dedcca-bf57-4e5a-8ef9-2d885de9e9b8"],
+Cell[16918, 411, 868, 24, 70, "Input",ExpressionUUID->"ceeb3dfb-4b0b-4131-b8ac-026189af1159"],
+Cell[17789, 437, 1560, 41, 70, "Input",ExpressionUUID->"0f95c6f2-922c-4dce-9605-0f87fb95bcf8"],
+Cell[19352, 480, 1452, 40, 70, "Input",ExpressionUUID->"2f574bc7-01bf-44db-bbc9-c3508bea3dc7"],
+Cell[20807, 522, 185, 4, 70, "Print",ExpressionUUID->"952d0523-fe37-46d7-b02d-210c7d35f785"],
+Cell[20995, 528, 142, 3, 70, "Print",ExpressionUUID->"3b08fba5-06ff-4d80-95a3-e46bc3942750"],
+Cell[21140, 533, 185, 4, 70, "Print",ExpressionUUID->"8f849674-9301-4844-97c7-6d7838473d49"],
+Cell[21328, 539, 173, 3, 70, "Print",ExpressionUUID->"5a3a6387-378d-4ef7-ab9d-9f4ccd5b1bd0"],
+Cell[21504, 544, 441, 13, 70, "Print",ExpressionUUID->"dc8bf841-9f7a-4dd0-91a6-dfd7bc78be7e"],
+Cell[21948, 559, 510, 15, 70, "Print",ExpressionUUID->"48cc0be6-0d4f-4224-bba6-41c0f8093610"],
+Cell[22461, 576, 578, 17, 70, "Print",ExpressionUUID->"6040aec8-533a-40bd-9853-a89105c3d26a"],
+Cell[23042, 595, 646, 19, 70, "Print",ExpressionUUID->"06b960b2-c40b-4f86-85c6-52d190f468d8"],
+Cell[23691, 616, 585, 17, 70, "Print",ExpressionUUID->"5da56b4d-6a9f-41a5-9043-9ea5f3c1111b"],
+Cell[24279, 635, 169, 3, 70, "Text",ExpressionUUID->"b7cca6fc-555f-485b-b733-a928b14cd78c"],
+Cell[24451, 640, 1267, 36, 70, "Input",ExpressionUUID->"08beb126-3a7b-4643-b782-fa696803b3f7"],
+Cell[25721, 678, 181, 3, 70, "Text",ExpressionUUID->"0e2a72c7-1bd5-4bda-9f93-1174fe838993"],
+Cell[25905, 683, 1854, 49, 70, "Input",ExpressionUUID->"4e9e27fe-4434-4395-a08b-064e95312881"],
+Cell[27762, 734, 11390, 260, 70, "Input",ExpressionUUID->"5758cb10-9832-4c4e-9145-c7437dba9bba"],
+Cell[39155, 996, 408, 6, 70, "Text",ExpressionUUID->"27be2b93-1847-42f5-954f-285cc20bf766"],
+Cell[39566, 1004, 4409, 106, 70, "Input",ExpressionUUID->"21fda7b3-0e64-4a2f-841c-8fbd931dee15"],
+Cell[43978, 1112, 278, 4, 70, "Text",ExpressionUUID->"a2f98e35-4c39-4a3b-ad02-c277d4ea5419"],
+Cell[44259, 1118, 1896, 47, 70, "Input",ExpressionUUID->"6d7c300d-9b7a-411b-8548-6d23e5033f21"],
+Cell[46158, 1167, 112, 2, 70, "Print",ExpressionUUID->"9787be24-dc35-4c79-9ae9-303e5361af70"],
+Cell[46273, 1171, 185, 4, 70, "Print",ExpressionUUID->"70121882-75cb-4d26-843e-71c461340734"],
+Cell[46461, 1177, 442, 8, 70, "Print",ExpressionUUID->"1ac493a6-0c3b-466b-bc41-82cc587d76c1"],
+Cell[46906, 1187, 375, 7, 70, "Print",ExpressionUUID->"0fb64224-6bbc-4c8f-812c-e88b8ba1b228"],
+Cell[47284, 1196, 371, 7, 70, "Print",ExpressionUUID->"693aa81b-1943-4621-ad30-4701c5ebb8ef"],
+Cell[47658, 1205, 375, 7, 70, "Print",ExpressionUUID->"158b2932-0218-4b08-9715-b6695662f67b"],
+Cell[48036, 1214, 170, 3, 70, "Print",ExpressionUUID->"1574190f-a43b-4feb-baca-bf56d7725e17"],
+Cell[48209, 1219, 183, 4, 70, "Print",ExpressionUUID->"18a0d8d0-e20a-4cf2-85a0-3c6e81e53739"],
+Cell[48395, 1225, 273, 6, 70, "Print",ExpressionUUID->"6fecf583-69da-462f-b631-08832ffc771d"],
+Cell[48671, 1233, 276, 6, 70, "Print",ExpressionUUID->"8e369fb5-20c8-4c2d-84f2-faa704bde5f7"],
+Cell[48950, 1241, 274, 6, 70, "Print",ExpressionUUID->"38e61073-fe10-4a55-93f2-c0a9b77014f5"],
+Cell[49227, 1249, 275, 6, 70, "Print",ExpressionUUID->"8650f78a-ada4-4c5a-8057-d5c06f981030"],
+Cell[49505, 1257, 183, 4, 70, "Print",ExpressionUUID->"bda0f68e-7548-49e3-ba02-5c8abe7cae29"],
+Cell[49691, 1263, 1904, 51, 70, "Input",ExpressionUUID->"381512cb-5bce-4f34-97c7-8e3c326dc0ce"],
+Cell[51598, 1316, 112, 2, 70, "Print",ExpressionUUID->"fedda184-2727-44ee-bcc8-226a6b1edc79"],
+Cell[51713, 1320, 215, 5, 70, "Print",ExpressionUUID->"0bdbeeac-5acd-48a6-b3f2-342df7b16f87"],
+Cell[51931, 1327, 442, 8, 70, "Print",ExpressionUUID->"c06b33fe-2772-45c3-a062-63adb830507b"],
+Cell[52376, 1337, 444, 8, 70, "Print",ExpressionUUID->"63e4c3f2-b6fd-497c-9710-627a261e0321"],
+Cell[52823, 1347, 375, 7, 70, "Print",ExpressionUUID->"77e38176-7649-4188-9915-bd52a7cfbfd3"],
+Cell[53201, 1356, 374, 7, 70, "Print",ExpressionUUID->"270f9a2d-79c3-4676-a76c-2e7c4fb18b0a"],
+Cell[53578, 1365, 374, 7, 70, "Print",ExpressionUUID->"2543bd2b-212b-4b27-b0e9-1a11a75c436e"],
+Cell[53955, 1374, 177, 3, 70, "Print",ExpressionUUID->"e1a3b483-019f-4db7-9a3d-0e79ac20b224"],
+Cell[54135, 1379, 613, 17, 70, "Print",ExpressionUUID->"61cefd8e-bfa0-4992-958d-f8cd4e35a1ea"],
+Cell[54751, 1398, 185, 4, 70, "Print",ExpressionUUID->"29d18368-7912-449d-bf0a-40cac45c2714"]
+}
+]
+*)
+
+(* End of internal cache information *)

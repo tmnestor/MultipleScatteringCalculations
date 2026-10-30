@@ -9,9 +9,9 @@
    "Mathematica/MieTmatrixReference.json": "a4be27754287997a869eab8007464af500b101fdc0678c38ccc25d5f15476aa7",
    "Mathematica/TakeuchiSaito.wl": "e850663a5c95cf53e28b69f0a591bd5a25f8ad8771c354c051d5b97ade941650"
   },
-  "notebook_sha256": "078136a959ea3c5064cf44ea456e825c05fe676d9e6a5ed20bc317fd86966e83",
+  "notebook_sha256": "d10c051bd5b842192dc0d8aa8aed6813f252098dffa901c0bf3b8c34c4dceb3a",
   "tools": {
-   "Mathematica/runnb.wls": "52d5e95d641cbac549a3083bedb602f00bcab9cd41894888c36354441fea1a6f",
+   "Mathematica/runnb.wls": "8337a329b660b11b1eae52bb43d8ae50c65efede4b6f4931ce8d6f32d53d12dd",
    "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
   },
   "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
@@ -25,9 +25,25 @@
    "Mathematica/ContinuumLimit_Reference.wl": "ca5e03af96823af6a6c326d3baef0373ed020537177061473f2007822a529a47",
    "Mathematica/ContinuumLimit_reference.json": "ced9f537ed621b1acc9808a41509c2445966b9607aba8ace6ffd77fb29ae3cf8"
   },
-  "notebook_sha256": "b6f13c85113478888ecdff9f47b2b4e915a0aab529cde9ee2dbf682a88d35110",
+  "notebook_sha256": "c96d4615e9f653830ef25f92ffb4b7f956055a4e49534160fe11f3bbef7a63df",
   "tools": {
-   "Mathematica/runnb.wls": "52d5e95d641cbac549a3083bedb602f00bcab9cd41894888c36354441fea1a6f",
+   "Mathematica/runnb.wls": "8337a329b660b11b1eae52bb43d8ae50c65efede4b6f4931ce8d6f32d53d12dd",
+   "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
+  },
+  "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"
+ },
+ "CubeMomentHigherGrades.wl": {
+  "built": "2026-10-30",
+  "cold_cache": true,
+  "entry_sha256": "d8defd1347ead38acfcb9ae9de860c21c9f6e58bce329038e3f6e0bbbe96c077",
+  "evaluated": true,
+  "inputs": {
+   "Mathematica/CubeMomentCore.wl": "8df721bdb43bcaccf523454b7fec6104e795078d35018c6c652813b7ad8ceeae",
+   "Mathematica/CubeMomentHigherGrades.wl": "c7a31ff0c6aa2b7204284ecb8db9e8df531beee1cfee3ab87f4aebd18ade6172"
+  },
+  "notebook_sha256": "6c390d2c7348b0f2d82995f0bf704df65aa1f124c399e1f1e94e9a178cef3206",
+  "tools": {
+   "Mathematica/runnb.wls": "8337a329b660b11b1eae52bb43d8ae50c65efede4b6f4931ce8d6f32d53d12dd",
    "Mathematica/wl2nb.wls": "cfb510f84e4e918d76319611737d3b96eff3ac79c4868a48aa1d3880d88b6f01"
   },
   "wolfram_version": "15.0.1 for Mac OS X ARM (64-bit) (July 2, 2026)"

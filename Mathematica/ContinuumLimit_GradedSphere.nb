@@ -18,12 +18,12 @@ WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["ContinuumLimit_GradedSphere", "Title",ExpressionUUID->"f77c617f-a246-4f5a-bcc5-243d9f540eae"],
+Cell["ContinuumLimit_GradedSphere", "Title",ExpressionUUID->"43431a3b-ae13-4af0-86e0-43f16adb63e1"],
 
 Cell["\<\
 ContinuumLimit_GradedSphere.wl  --  notebook 16 of the continuum-limit study.\
 \
-\>", "Subtitle",ExpressionUUID->"a8d7f639-e144-4269-a790-e7c1a41ad196"],
+\>", "Subtitle",ExpressionUUID->"a91df434-98b1-4812-b0a7-a2f875c75896"],
 
 Cell["\<\
 WHY.  A voxelised sphere with a sharp surface is dominated by the staircase \
@@ -31,21 +31,21 @@ error of its shape (section 10).  A sphere whose contrast falls SMOOTHLY to \
 zero at its surface has no staircase: the voxels that cross the surface carry \
 a vanishing contrast.  This notebook builds its exact scattering, the \
 reference against which the voxel scheme's own error can be measured.\
-\>", "Text",ExpressionUUID->"430ae018-e286-4039-8f2d-32760c8caa6f"],
+\>", "Text",ExpressionUUID->"ea137a33-40cf-4478-a1fd-674d8fca949d"],
 
 Cell["\<\
 THE BODY.  A homogeneous core r < b carrying the contrast Delta_0, and a \
 shell b < r < a across which the contrast falls to zero with the C2 smoothstep\
-\>", "Text",ExpressionUUID->"08d51362-803c-4623-b944-1bb1708d5f86"],
+\>", "Text",ExpressionUUID->"eab6295c-4376-44b4-a9e7-3e3486c03998"],
 
 Cell["\<\
     f(r) = s(x),  s(x) = 10 x^3 - 15 x^4 + 6 x^5,  x = (a - r)/(a - b),\
-\>", "Program",ExpressionUUID->"32fa9a8b-ef5d-403f-86e4-798181ed81e1"],
+\>", "Program",ExpressionUUID->"db2427ff-3b57-4189-a943-de860758a65b"],
 
 Cell["\<\
 so the contrast vanishes like (a - r)^3 at the surface.  In the core the \
 regular solutions are the homogeneous Mie interior functions, exactly.\
-\>", "Text",ExpressionUUID->"21e74c1f-5e44-45e1-ae95-86a909fc314d"],
+\>", "Text",ExpressionUUID->"8af9a885-9e1a-46a6-83d1-7b6cbb3b34ea"],
 
 Cell["\<\
 THE METHOD.  Everything radial comes from the library TakeuchiSaito.wl (in \
@@ -55,7 +55,7 @@ and the per-order T-matrix TSSphereTMatrix, in the convention of \
 MieTmatrixReference.wl (incident potential coefficients to scattered ones); \
 and the closed form of a sphere of homogeneous shells, TSShellsTMatrix. This \
 notebook defines the body and the checks specific to it.\
-\>", "Text",ExpressionUUID->"2d76e2b9-d563-4765-8ff7-5a17e21a0a8a"],
+\>", "Text",ExpressionUUID->"42a3d5bb-4e81-4c77-b0ad-b536e5690a79"],
 
 Cell["\<\
 CHECKS: [1] the library's own self-test (derivation, basis, invariant, \
@@ -65,11 +65,11 @@ contrast: the propagator with a break equals the closed form; [4] the graded \
 sphere's S-matrix is unitary per order; [5] 90 vs 120 digits; [6] N \
 homogeneous shells (midpoint contrast) converge to the graded result at \
 second order in 1/N. Time e^{-i w t}; SI units.\
-\>", "Text",ExpressionUUID->"d186946e-852c-4b09-8d2e-9ce8b789c7ee"],
+\>", "Text",ExpressionUUID->"c6be6131-930f-409b-8122-8020693e8a98"],
 
 Cell[CellGroupData[{
 
-Cell["Notebook set-up", "Section",ExpressionUUID->"a7a0e206-178b-4389-b851-edf8260bdd72"],
+Cell["Notebook set-up", "Section",ExpressionUUID->"26373bf8-af7d-4cfb-898e-6956b343498c"],
 
 Cell["\<\
 Generated from ContinuumLimit_GradedSphere.wl (the script is the source; edit \
@@ -79,7 +79,7 @@ Evaluate Notebook. The cell below stands in for the script environment: \
 $InputFileName became $nbInputFileName, $ScriptCommandLine became \
 $nbScriptCommandLine and Exit/Quit became nbExit, which skips every later \
 cell instead of ending the session (evaluate this cell again to reset).\
-\>", "Text",ExpressionUUID->"92ab88b1-56a4-41fc-a7e9-49b3d21b749a"],
+\>", "Text",ExpressionUUID->"9b983e5e-882f-4930-8b63-2eeb79295baa"],
 
 Cell[BoxData[
  RowBox[{
@@ -160,7 +160,7 @@ evaluated again]\>\""}], "]"}], ";", " ",
          " ", 
          RowBox[{"Abort", "[", "]"}], ",", " ", "in"}], "]"}], ",", " ", 
        "HoldAll"}], "]"}]}], ";"}]}]}]], "Input",
- CellLabel->"In[1]:=",ExpressionUUID->"fb551ebf-efc9-4b8d-97e5-4c273e5b1d0c"]
+ CellLabel->"In[1]:=",ExpressionUUID->"263f6b4d-56d7-47ec-934b-77ebefd15092"]
 }, Open  ]],
 
 Cell[BoxData[
@@ -172,7 +172,7 @@ Cell[BoxData[
       RowBox[{"DirectoryName", "[", "$nbInputFileName", "]"}], ",", 
       " ", "\"\<TakeuchiSaito.wl\>\""}], "}"}], "]"}], "]"}], ";"}]], "Input",\
 
- CellLabel->"In[6]:=",ExpressionUUID->"fd90d49c-1d33-4058-b517-f61b102da115"],
+ CellLabel->"In[6]:=",ExpressionUUID->"ba35e2a4-7979-4877-a120-eda1dd4d7b1d"],
 
 Cell[BoxData[{
  RowBox[{
@@ -219,16 +219,16 @@ Cell[BoxData[{
   "Print", "[", "\"\<==== ContinuumLimit_GradedSphere :: a sphere whose \
 contrast falls smoothly to zero at its surface ====\>\"", "]"}], 
   ";"}]}], "Input",
- CellLabel->"In[7]:=",ExpressionUUID->"eba2c63a-e3ce-4fd4-acd7-1d443b940f2a"],
+ CellLabel->"In[7]:=",ExpressionUUID->"011c631d-2266-4f06-bc09-cdd8c8c8762e"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"==== ContinuumLimit_GradedSphere :: a sphere whose contrast falls \
 smoothly to zero at its surface ====\""},
-  "RowDefault"]], "Print",ExpressionUUID->"acda865a-6f34-41fd-8315-\
-cc030a771e07"],
+  "RowDefault"]], "Print",ExpressionUUID->"9c10b042-3871-4f0e-86bb-\
+5d57a3bf50a7"],
 
-Cell["[1] the library", "Text",ExpressionUUID->"f9ddf562-29a6-47b6-b911-44056e77594a"],
+Cell["[1] the library", "Text",ExpressionUUID->"224c8264-3bd8-4fd4-b138-596a86f000e7"],
 
 Cell[BoxData[{
  RowBox[{
@@ -240,34 +240,34 @@ Cell[BoxData[{
    RowBox[{"\"\<  [1] -> \>\"", ",", " ", 
     RowBox[{"chk", "[", 
      RowBox[{"TSSelfTest", "[", "]"}], "]"}]}], "]"}], ";"}]}], "Input",
- CellLabel->"In[8]:=",ExpressionUUID->"cb3c3dc9-f15c-44b7-a3ce-d71657f060d8"],
+ CellLabel->"In[8]:=",ExpressionUUID->"96dcc86a-3cd1-4d68-b86e-8d3e8ebfb47e"],
 
 Cell[BoxData[
  TemplateBox[{"\"  [1] the Takeuchi-Saito library's self-test:\""},
-  "RowDefault"]], "Print",ExpressionUUID->"1b86abe6-e940-41c3-a20c-\
-eec306d8734e"],
+  "RowDefault"]], "Print",ExpressionUUID->"4e83453c-0bdd-4133-a9cd-\
+de13447f8a81"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"==== TakeuchiSaito :: radial systems of a radially varying isotropic \
 elastic sphere ====\""},
-  "RowDefault"]], "Print",ExpressionUUID->"bf7e0a60-d8f3-4314-86df-\
-7e3b25ba563d"],
+  "RowDefault"]], "Print",ExpressionUUID->"a559d64b-d85f-41fc-afb3-\
+aa2d1b5a9cb6"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [1] derived from the equations of motion = the closed forms: \
 spheroidal \"", "True", "\", toroidal \"", "True", 
    "\"; free of material derivatives: \"", "True", "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"0c4c7101-601f-49a5-879e-\
-f00d883e1244"],
+  "RowDefault"]], "Print",ExpressionUUID->"e04fb5b0-7fb8-415f-898c-\
+94bdbbc58051"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [2] trace A = \"", "\"-4/r\"", "\", trace B = \"", "\"-2/r\"", 
    "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"4097579d-ca57-4cd9-a1c0-\
-e509be2a2452"],
+  "RowDefault"]], "Print",ExpressionUUID->"43b4407d-d1ca-4ba1-b603-\
+5c57d0b74b84"],
 
 Cell[BoxData[
  TemplateBox[{
@@ -275,8 +275,8 @@ Cell[BoxData[
 every medium (normalised J13 = 1): \"", 
    "\"{{0, 0, 1, 0}, {0, 0, 0, L}, {-1, 0, 0, 0}, {0, -L, 0, 0}}\"", 
    "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"81792301-33c1-41ad-99b7-\
-45f3d22edb9a"],
+  "RowDefault"]], "Print",ExpressionUUID->"1cf0af93-e3fc-4248-95d8-\
+160625810fb3"],
 
 Cell[BoxData[
  TemplateBox[{
@@ -284,22 +284,22 @@ Cell[BoxData[
    "\"{-2 - nn, -1 + nn, -nn, 1 + nn}\"", 
    "\"   (regular: n - 1 and n + 1, the P and SV solutions near the centre) \
 -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"6fe7e791-8ed4-4bea-840e-\
-ad3f1aa86aa1"],
+  "RowDefault"]], "Print",ExpressionUUID->"abf80fcf-5324-4875-b9f5-\
+1925869bd4a3"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [5] homogeneous basis (j, y, h1, h2; n = 0..4) satisfies dy/dr = A y \
 and dz/dr = B z: \"", "\"0.\"", "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"178be608-98f0-402e-94aa-\
-27f73b74b5bf"],
+  "RowDefault"]], "Print",ExpressionUUID->"928cb467-7eac-4f13-a5f6-\
+73e6a3f4b232"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [6] m-independence: exact 3-D fields with Y_3^2 satisfy the same \
 systems: \"", "\"0.\"", "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"38281aa4-cfb5-420e-8d1d-\
-68bab413051c"],
+  "RowDefault"]], "Print",ExpressionUUID->"97b71631-5679-458f-a143-\
+b2e707417276"],
 
 Cell[BoxData[
  TemplateBox[{
@@ -308,8 +308,8 @@ P with irregular P \"", "\"5.12e9\"", "\" -> \"", "\"5.12e9\"",
    "\" (relative change \"", "\"5.5e-25\"", 
    "\"); regular P with regular SV \"", "\"0.\"", "\" -> \"", "\"5.87e-17\"", 
    "\" (relative to the scale \"", "\"1.15e-26\"", "\") -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"405e7cd5-d37a-43b1-a815-\
-a132a6cc5461"],
+  "RowDefault"]], "Print",ExpressionUUID->"651959ce-deb4-4a8e-919b-\
+6203baf6d479"],
 
 Cell[BoxData[
  TemplateBox[{
@@ -317,30 +317,30 @@ Cell[BoxData[
 0..6): \"", "\"1.89e-25\"", 
    "\"; graded sphere unitary and reciprocal (S = S^T): \"", "\"1.19e-26\"", 
    "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"bd4fc5c9-ecef-41de-bd68-\
-bff087b57360"],
+  "RowDefault"]], "Print",ExpressionUUID->"88681e3a-6192-4c3a-b9d9-\
+ae7619dca64a"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [9] stepped sphere (core + two shells, n = 0..5): propagator with \
 breaks = closed-form shells: \"", "\"3.94e-25\"", "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"16d7bd44-d0da-429e-8a6d-\
-6c2781faa507"],
+  "RowDefault"]], "Print",ExpressionUUID->"fd79de29-8fdc-4c93-a0d0-\
+930ac664ad0d"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"==== TakeuchiSaito: \"", "\"ALL 9 CHECKS PASS\"", "\" ====\""},
-  "RowDefault"]], "Print",ExpressionUUID->"f5d33332-1b9d-4ac3-a394-\
-c86fe37e229b"],
+  "RowDefault"]], "Print",ExpressionUUID->"fa103728-b131-4c94-9655-\
+bc7c5ca716eb"],
 
 Cell[BoxData[
  TemplateBox[{"\"  [1] -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"7c29dfe2-d7dd-47e7-9a4d-\
-c0f8594ea352"],
+  "RowDefault"]], "Print",ExpressionUUID->"f3034744-ed36-489f-9c49-\
+e4d10143755e"],
 
 Cell["\<\
 the background and a contrast profile: moduli and density as functions of r\
-\>", "Text",ExpressionUUID->"f33576bd-c7ec-4ddc-94c1-cdd560607332"],
+\>", "Text",ExpressionUUID->"5754c0c6-da75-4950-a758-7e81450667bb"],
 
 Cell[BoxData[{
  RowBox[{
@@ -385,11 +385,11 @@ Cell[BoxData[{
         RowBox[{"dr", " ", 
          RowBox[{"f", "[", "x", "]"}]}]}]}], "]"}]}], "}"}]}], 
   ";"}]}], "Input",
- CellLabel->"In[9]:=",ExpressionUUID->"50dbb4ea-62d0-429a-a0e7-ac142180821d"],
+ CellLabel->"In[9]:=",ExpressionUUID->"fad78ab0-289e-41bb-985a-614f88e93b3e"],
 
 Cell["\<\
 [2] a uniform shell is the homogeneous sphere of MieTmatrixReference.wl\
-\>", "Section",ExpressionUUID->"e464f61b-7a51-4c74-b265-04437586fe1e"],
+\>", "Section",ExpressionUUID->"ec93d960-f5fa-4a90-9bfc-75494ce555af"],
 
 Cell[BoxData[{
  RowBox[{
@@ -527,19 +527,19 @@ MieTmatrixReference 'gate', n = 0..12: \>\"", ",", " ",
          RowBox[{"10", "^", 
           RowBox[{"-", "17"}]}]}], "]"}]}], "]"}]}]}], "]"}], ";"}]}], "Input",\
 
- CellLabel->"In[10]:=",ExpressionUUID->"aeee9ba6-c70e-4216-a399-2870328fd5cd"],
+ CellLabel->"In[10]:=",ExpressionUUID->"7a75a86c-37d4-4395-9c48-b3fcc934f922"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [2] uniform shell (integrated across b = a/2 .. a) vs \
 MieTmatrixReference 'gate', n = 0..12: \"", "\"0.\"", "\" -> \"", "\"PASS\""},
   
-  "RowDefault"]], "Print",ExpressionUUID->"8f0b591d-f362-47f3-87af-\
-e177e6486ff5"],
+  "RowDefault"]], "Print",ExpressionUUID->"0f3a00ba-2ebc-4dd0-a481-\
+d59c4dbff73b"],
 
 Cell["\<\
 the benchmark: gate contrast, radius 10 m, core b = a/2, smoothstep shell\
-\>", "Section",ExpressionUUID->"97d817b8-5c52-455b-ba6c-c45dd052fab1"],
+\>", "Section",ExpressionUUID->"8590fd07-f265-4969-b146-cd46291d425e"],
 
 Cell[BoxData[{
  RowBox[{
@@ -594,12 +594,12 @@ Cell[BoxData[{
    RowBox[{"omAt", "[", "kSa_", "]"}], " ", ":=", " ", 
    RowBox[{"kSa", " ", 
     RowBox[{"3000", "/", "aB"}]}]}], ";"}]}], "Input",
- CellLabel->"In[11]:=",ExpressionUUID->"0efaf8b7-0f21-4af3-b6bd-fca04c22dd40"],
+ CellLabel->"In[11]:=",ExpressionUUID->"839aaa03-4b45-457e-b595-d578d8362c4c"],
 
 Cell["\<\
 [3] two-shell stepped sphere with the benchmark's contrast: propagator with a \
 break vs the closed form\
-\>", "Text",ExpressionUUID->"503d5b3a-fe3b-497e-903e-05dc72f39091"],
+\>", "Text",ExpressionUUID->"259ee28a-df5f-4c9e-8dd8-561291d4ce0d"],
 
 Cell[BoxData[
  RowBox[{
@@ -706,18 +706,18 @@ propagator with a break vs closed form \>\"", ",", " ",
          RowBox[{"10", "^", 
           RowBox[{"-", "20"}]}]}], "]"}]}], "]"}]}]}], "]"}], ";"}]], "Input",\
 
- CellLabel->"In[12]:=",ExpressionUUID->"6fe7be7c-611b-478b-ad46-ab9adfd5fc94"],
+ CellLabel->"In[12]:=",ExpressionUUID->"c3eb371c-5ed4-407d-aa2b-42712c33fb25"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [3] two-shell stepped sphere, k_S a = 1, n = 0..6: propagator with a \
 break vs closed form \"", "\"3.84e-26\"", "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"15decd30-d933-4319-be53-\
-6bbb64dda6e5"],
+  "RowDefault"]], "Print",ExpressionUUID->"2e22c611-d66e-4f21-9926-\
+3065d969e18c"],
 
 Cell["\<\
 [4], [5] the graded sphere: unitarity per order, and precision\
-\>", "Text",ExpressionUUID->"941c660d-ff81-4421-81ce-e4881edcac1d"],
+\>", "Text",ExpressionUUID->"c8410fcd-3ecc-4df9-a85a-1d1588a3588b"],
 
 Cell[BoxData[{
  RowBox[{
@@ -894,25 +894,25 @@ Cell[BoxData[{
          RowBox[{"10", "^", 
           RowBox[{"-", "35"}]}]}], "]"}]}], "]"}]}]}], "]"}], ";"}]}], "Input",\
 
- CellLabel->"In[13]:=",ExpressionUUID->"78a62ff3-3972-4f6c-8932-6008a7cdfcac"],
+ CellLabel->"In[13]:=",ExpressionUUID->"4b155b0e-71ae-47c7-b95a-02ce4435946c"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [4] graded sphere, k_S a = 0.5 and 1, n = 0..\"", "14", 
    "\": worst unitarity defect \"", "\"1.9e-46\"", "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"e104492a-ede4-4c09-a97c-\
-aa420d568d02"],
+  "RowDefault"]], "Print",ExpressionUUID->"163d2d1a-7ca5-4590-b2d2-\
+28f2bf22a19f"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"  [5] 90 vs 120 digits: \"", "\"2.25e-41\"", "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"50f59647-8734-4563-85ae-\
-c623e0364a48"],
+  "RowDefault"]], "Print",ExpressionUUID->"bb3d08f4-212a-4f07-87c8-\
+c1c440e1bf8b"],
 
 Cell["\<\
 [6] N homogeneous shells, each at the contrast of its mid-radius, converge to \
 the graded sphere at 1/N^2\
-\>", "Text",ExpressionUUID->"acd19b82-c92b-4e2d-8891-d2a80dd9917c"],
+\>", "Text",ExpressionUUID->"f38db034-b6e6-4760-9d82-1aff2ea90542"],
 
 Cell[BoxData[
  RowBox[{
@@ -1021,7 +1021,7 @@ n = 2), N = \>\"", ",", " ", "ns", ",", " ", "\"\<: \>\"", ",", " ",
           RowBox[{
            RowBox[{"1.8", " ", "<", " ", "#", " ", "<", " ", "2.2"}], " ", 
            "&"}]}], "]"}], "]"}]}], "]"}]}]}], "]"}], ";"}]], "Input",
- CellLabel->"In[14]:=",ExpressionUUID->"7ff709d6-0bc6-4e19-b30b-e981e28f6177"],
+ CellLabel->"In[14]:=",ExpressionUUID->"59a732f7-3f11-4fb0-a7dc-81383b3f5395"],
 
 Cell[BoxData[
  TemplateBox[{
@@ -1035,13 +1035,13 @@ Cell[BoxData[
    RowBox[{"{", 
      RowBox[{"1.8824656985226902`", ",", "1.9699201136974485`"}], "}"}], 
    "\" -> \"", "\"PASS\""},
-  "RowDefault"]], "Print",ExpressionUUID->"5ca781d0-69c6-469a-99ac-\
-587b5369cca2"],
+  "RowDefault"]], "Print",ExpressionUUID->"0f131dcc-b175-45c0-bba4-\
+45bf1c07c5f5"],
 
 Cell["\<\
 export: per-order T-matrices of the graded sphere, in the format of \
 MieTmatrixReference.json\
-\>", "Text",ExpressionUUID->"b8b36bd2-abfd-4143-bde3-39f44d58bb90"],
+\>", "Text",ExpressionUUID->"a54454bf-6361-4b75-a485-3c6120215f46"],
 
 Cell[BoxData[{
  RowBox[{
@@ -1133,7 +1133,7 @@ multiplied by s((a-r)/(a-b)), s = 10x^3-15x^4+6x^5\>\""}], ",", "\n", "    ",
               RowBox[{"1", "/", "2"}], ",", " ", "1"}], "}"}]}], "}"}]}], 
          "]"}], "]"}]}]}], "|>"}], ",", " ", "\"\<JSON\>\""}], "]"}], 
   ";"}]}], "Input",
- CellLabel->"In[15]:=",ExpressionUUID->"42bc4a0d-0576-4314-81ca-dd9e7ce0ba8b"],
+ CellLabel->"In[15]:=",ExpressionUUID->"1cd3a3de-b7ab-43ba-b6d1-99576448b670"],
 
 Cell[BoxData[
  RowBox[{
@@ -1148,18 +1148,18 @@ Cell[BoxData[
         RowBox[{"Length", "[", "oks", "]"}], "]"}], " ", "<>", 
        " ", "\"\< CHECKS PASS\>\""}], ",", " ", "\"\<CHECKS FAILED\>\""}], 
      "]"}], ",", " ", "\"\< ====\>\""}], "]"}], ";"}]], "Input",
- CellLabel->"In[16]:=",ExpressionUUID->"77aa9c88-96f0-43d2-a791-3aed9383a50f"],
+ CellLabel->"In[16]:=",ExpressionUUID->"de4c5c3e-05a2-49af-b5cb-4bacb8a128a6"],
 
 Cell[BoxData[
  TemplateBox[{
   "\"==== ContinuumLimit_GradedSphere (stage 16): \"", 
    "\"ALL 6 CHECKS PASS\"", "\" ====\""},
-  "RowDefault"]], "Print",ExpressionUUID->"7afe576f-3ca1-4a92-9fde-\
-a30637ab51fb"]
+  "RowDefault"]], "Print",ExpressionUUID->"81f1db96-b80f-40e4-8ca6-\
+2a3581b71aeb"]
 },
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (July 2, 2026)",
 StyleDefinitions->"Default.nb",
-ExpressionUUID->"c44dc113-d2f1-4619-9cdc-34c41edf5bb5"
+ExpressionUUID->"f5118d21-440d-47af-8b86-702272e75bde"
 ]
 (* End of Notebook Content *)
 
@@ -1172,58 +1172,58 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 99, 0, 70, "Title",ExpressionUUID->"f77c617f-a246-4f5a-bcc5-243d9f540eae"],
-Cell[656, 22, 162, 3, 70, "Subtitle",ExpressionUUID->"a8d7f639-e144-4269-a790-e7c1a41ad196"],
-Cell[821, 27, 456, 6, 70, "Text",ExpressionUUID->"430ae018-e286-4039-8f2d-32760c8caa6f"],
-Cell[1280, 35, 232, 3, 70, "Text",ExpressionUUID->"08d51362-803c-4623-b944-1bb1708d5f86"],
-Cell[1515, 40, 153, 2, 70, "Program",ExpressionUUID->"32fa9a8b-ef5d-403f-86e4-798181ed81e1"],
-Cell[1671, 44, 224, 3, 70, "Text",ExpressionUUID->"21e74c1f-5e44-45e1-ae95-86a909fc314d"],
-Cell[1898, 49, 591, 8, 70, "Text",ExpressionUUID->"2d76e2b9-d563-4765-8ff7-5a17e21a0a8a"],
-Cell[2492, 59, 575, 8, 70, "Text",ExpressionUUID->"d186946e-852c-4b09-8d2e-9ce8b789c7ee"],
+Cell[554, 20, 99, 0, 70, "Title",ExpressionUUID->"43431a3b-ae13-4af0-86e0-43f16adb63e1"],
+Cell[656, 22, 162, 3, 70, "Subtitle",ExpressionUUID->"a91df434-98b1-4812-b0a7-a2f875c75896"],
+Cell[821, 27, 456, 6, 70, "Text",ExpressionUUID->"ea137a33-40cf-4478-a1fd-674d8fca949d"],
+Cell[1280, 35, 232, 3, 70, "Text",ExpressionUUID->"eab6295c-4376-44b4-a9e7-3e3486c03998"],
+Cell[1515, 40, 153, 2, 70, "Program",ExpressionUUID->"db2427ff-3b57-4189-a943-de860758a65b"],
+Cell[1671, 44, 224, 3, 70, "Text",ExpressionUUID->"8af9a885-9e1a-46a6-83d1-7b6cbb3b34ea"],
+Cell[1898, 49, 591, 8, 70, "Text",ExpressionUUID->"42a3d5bb-4e81-4c77-b0ad-b536e5690a79"],
+Cell[2492, 59, 575, 8, 70, "Text",ExpressionUUID->"c6be6131-930f-409b-8122-8020693e8a98"],
 Cell[CellGroupData[{
-Cell[3092, 71, 89, 0, 70, "Section",ExpressionUUID->"a7a0e206-178b-4389-b851-edf8260bdd72"],
-Cell[3184, 73, 601, 8, 70, "Text",ExpressionUUID->"92ab88b1-56a4-41fc-a7e9-49b3d21b749a"],
-Cell[3788, 83, 3128, 79, 70, "Input",ExpressionUUID->"fb551ebf-efc9-4b8d-97e5-4c273e5b1d0c"]
+Cell[3092, 71, 89, 0, 70, "Section",ExpressionUUID->"26373bf8-af7d-4cfb-898e-6956b343498c"],
+Cell[3184, 73, 601, 8, 70, "Text",ExpressionUUID->"9b983e5e-882f-4930-8b63-2eeb79295baa"],
+Cell[3788, 83, 3128, 79, 70, "Input",ExpressionUUID->"263f6b4d-56d7-47ec-934b-77ebefd15092"]
 }, Open  ]],
-Cell[6931, 165, 339, 9, 70, "Input",ExpressionUUID->"fd90d49c-1d33-4058-b517-f61b102da115"],
-Cell[7273, 176, 1591, 45, 70, "Input",ExpressionUUID->"eba2c63a-e3ce-4fd4-acd7-1d443b940f2a"],
-Cell[8867, 223, 227, 5, 70, "Print",ExpressionUUID->"acda865a-6f34-41fd-8315-cc030a771e07"],
-Cell[9097, 230, 86, 0, 70, "Text",ExpressionUUID->"f9ddf562-29a6-47b6-b911-44056e77594a"],
-Cell[9186, 232, 387, 10, 70, "Input",ExpressionUUID->"cb3c3dc9-f15c-44b7-a3ce-d71657f060d8"],
-Cell[9576, 244, 165, 3, 70, "Print",ExpressionUUID->"1b86abe6-e940-41c3-a20c-eec306d8734e"],
-Cell[9744, 249, 213, 5, 70, "Print",ExpressionUUID->"bf7e0a60-d8f3-4314-86df-7e3b25ba563d"],
-Cell[9960, 256, 310, 6, 70, "Print",ExpressionUUID->"0c4c7101-601f-49a5-879e-f00d883e1244"],
-Cell[10273, 264, 211, 5, 70, "Print",ExpressionUUID->"4097579d-ca57-4cd9-a1c0-e509be2a2452"],
-Cell[10487, 271, 327, 7, 70, "Print",ExpressionUUID->"81792301-33c1-41ad-99b7-45f3d22edb9a"],
-Cell[10817, 280, 301, 7, 70, "Print",ExpressionUUID->"6fe7e791-8ed4-4bea-840e-ad3f1aa86aa1"],
-Cell[11121, 289, 247, 5, 70, "Print",ExpressionUUID->"178be608-98f0-402e-94aa-27f73b74b5bf"],
-Cell[11371, 296, 235, 5, 70, "Print",ExpressionUUID->"38281aa4-cfb5-420e-8d1d-68bab413051c"],
-Cell[11609, 303, 458, 8, 70, "Print",ExpressionUUID->"405e7cd5-d37a-43b1-a815-a132a6cc5461"],
-Cell[12070, 313, 323, 7, 70, "Print",ExpressionUUID->"bd4fc5c9-ecef-41de-bd68-bff087b57360"],
-Cell[12396, 322, 262, 5, 70, "Print",ExpressionUUID->"16d7bd44-d0da-429e-8a6d-6c2781faa507"],
-Cell[12661, 329, 181, 4, 70, "Print",ExpressionUUID->"f5d33332-1b9d-4ac3-a394-c86fe37e229b"],
-Cell[12845, 335, 141, 3, 70, "Print",ExpressionUUID->"7c29dfe2-d7dd-47e7-9a4d-c0f8594ea352"],
-Cell[12989, 340, 154, 2, 70, "Text",ExpressionUUID->"f33576bd-c7ec-4ddc-94c1-cdd560607332"],
-Cell[13146, 344, 1477, 43, 70, "Input",ExpressionUUID->"50dbb4ea-62d0-429a-a0e7-ac142180821d"],
-Cell[14626, 389, 153, 2, 70, "Section",ExpressionUUID->"e464f61b-7a51-4c74-b265-04437586fe1e"],
-Cell[14782, 393, 5451, 136, 70, "Input",ExpressionUUID->"aeee9ba6-c70e-4216-a399-2870328fd5cd"],
-Cell[20236, 531, 257, 6, 70, "Print",ExpressionUUID->"8f0b591d-f362-47f3-87af-e177e6486ff5"],
-Cell[20496, 539, 155, 2, 70, "Section",ExpressionUUID->"97d817b8-5c52-455b-ba6c-c45dd052fab1"],
-Cell[20654, 543, 1771, 53, 70, "Input",ExpressionUUID->"0efaf8b7-0f21-4af3-b6bd-fca04c22dd40"],
-Cell[22428, 598, 183, 3, 70, "Text",ExpressionUUID->"503d5b3a-fe3b-497e-903e-05dc72f39091"],
-Cell[22614, 603, 4381, 105, 70, "Input",ExpressionUUID->"6fe7be7c-611b-478b-ad46-ab9adfd5fc94"],
-Cell[26998, 710, 257, 5, 70, "Print",ExpressionUUID->"15decd30-d933-4319-be53-6bbb64dda6e5"],
-Cell[27258, 717, 141, 2, 70, "Text",ExpressionUUID->"941c660d-ff81-4421-81ce-e4881edcac1d"],
-Cell[27402, 721, 7321, 175, 70, "Input",ExpressionUUID->"78a62ff3-3972-4f6c-8932-6008a7cdfcac"],
-Cell[34726, 898, 252, 5, 70, "Print",ExpressionUUID->"e104492a-ede4-4c09-a97c-aa420d568d02"],
-Cell[34981, 905, 187, 4, 70, "Print",ExpressionUUID->"50f59647-8734-4563-85ae-c623e0364a48"],
-Cell[35171, 911, 185, 3, 70, "Text",ExpressionUUID->"acd19b82-c92b-4e2d-8891-d2a80dd9917c"],
-Cell[35359, 916, 4345, 107, 70, "Input",ExpressionUUID->"7ff709d6-0bc6-4e19-b30b-e981e28f6177"],
-Cell[39707, 1025, 507, 13, 70, "Print",ExpressionUUID->"5ca781d0-69c6-469a-99ac-587b5369cca2"],
-Cell[40217, 1040, 173, 3, 70, "Text",ExpressionUUID->"b8b36bd2-abfd-4143-bde3-39f44d58bb90"],
-Cell[40393, 1045, 3845, 90, 70, "Input",ExpressionUUID->"42bc4a0d-0576-4314-81ca-dd9e7ce0ba8b"],
-Cell[44241, 1137, 598, 13, 70, "Input",ExpressionUUID->"77aa9c88-96f0-43d2-a791-3aed9383a50f"],
-Cell[44842, 1152, 210, 5, 70, "Print",ExpressionUUID->"7afe576f-3ca1-4a92-9fde-a30637ab51fb"]
+Cell[6931, 165, 339, 9, 70, "Input",ExpressionUUID->"ba35e2a4-7979-4877-a120-eda1dd4d7b1d"],
+Cell[7273, 176, 1591, 45, 70, "Input",ExpressionUUID->"011c631d-2266-4f06-bc09-cdd8c8c8762e"],
+Cell[8867, 223, 227, 5, 70, "Print",ExpressionUUID->"9c10b042-3871-4f0e-86bb-5d57a3bf50a7"],
+Cell[9097, 230, 86, 0, 70, "Text",ExpressionUUID->"224c8264-3bd8-4fd4-b138-596a86f000e7"],
+Cell[9186, 232, 387, 10, 70, "Input",ExpressionUUID->"96dcc86a-3cd1-4d68-b86e-8d3e8ebfb47e"],
+Cell[9576, 244, 165, 3, 70, "Print",ExpressionUUID->"4e83453c-0bdd-4133-a9cd-de13447f8a81"],
+Cell[9744, 249, 213, 5, 70, "Print",ExpressionUUID->"a559d64b-d85f-41fc-afb3-aa2d1b5a9cb6"],
+Cell[9960, 256, 310, 6, 70, "Print",ExpressionUUID->"e04fb5b0-7fb8-415f-898c-94bdbbc58051"],
+Cell[10273, 264, 211, 5, 70, "Print",ExpressionUUID->"43b4407d-d1ca-4ba1-b603-5c57d0b74b84"],
+Cell[10487, 271, 327, 7, 70, "Print",ExpressionUUID->"1cf0af93-e3fc-4248-95d8-160625810fb3"],
+Cell[10817, 280, 301, 7, 70, "Print",ExpressionUUID->"abf80fcf-5324-4875-b9f5-1925869bd4a3"],
+Cell[11121, 289, 247, 5, 70, "Print",ExpressionUUID->"928cb467-7eac-4f13-a5f6-73e6a3f4b232"],
+Cell[11371, 296, 235, 5, 70, "Print",ExpressionUUID->"97b71631-5679-458f-a143-b2e707417276"],
+Cell[11609, 303, 458, 8, 70, "Print",ExpressionUUID->"651959ce-deb4-4a8e-919b-6203baf6d479"],
+Cell[12070, 313, 323, 7, 70, "Print",ExpressionUUID->"88681e3a-6192-4c3a-b9d9-ae7619dca64a"],
+Cell[12396, 322, 262, 5, 70, "Print",ExpressionUUID->"fd79de29-8fdc-4c93-a0d0-930ac664ad0d"],
+Cell[12661, 329, 181, 4, 70, "Print",ExpressionUUID->"fa103728-b131-4c94-9655-bc7c5ca716eb"],
+Cell[12845, 335, 141, 3, 70, "Print",ExpressionUUID->"f3034744-ed36-489f-9c49-e4d10143755e"],
+Cell[12989, 340, 154, 2, 70, "Text",ExpressionUUID->"5754c0c6-da75-4950-a758-7e81450667bb"],
+Cell[13146, 344, 1477, 43, 70, "Input",ExpressionUUID->"fad78ab0-289e-41bb-985a-614f88e93b3e"],
+Cell[14626, 389, 153, 2, 70, "Section",ExpressionUUID->"ec93d960-f5fa-4a90-9bfc-75494ce555af"],
+Cell[14782, 393, 5451, 136, 70, "Input",ExpressionUUID->"7a75a86c-37d4-4395-9c48-b3fcc934f922"],
+Cell[20236, 531, 257, 6, 70, "Print",ExpressionUUID->"0f3a00ba-2ebc-4dd0-a481-d59c4dbff73b"],
+Cell[20496, 539, 155, 2, 70, "Section",ExpressionUUID->"8590fd07-f265-4969-b146-cd46291d425e"],
+Cell[20654, 543, 1771, 53, 70, "Input",ExpressionUUID->"839aaa03-4b45-457e-b595-d578d8362c4c"],
+Cell[22428, 598, 183, 3, 70, "Text",ExpressionUUID->"259ee28a-df5f-4c9e-8dd8-561291d4ce0d"],
+Cell[22614, 603, 4381, 105, 70, "Input",ExpressionUUID->"c3eb371c-5ed4-407d-aa2b-42712c33fb25"],
+Cell[26998, 710, 257, 5, 70, "Print",ExpressionUUID->"2e22c611-d66e-4f21-9926-3065d969e18c"],
+Cell[27258, 717, 141, 2, 70, "Text",ExpressionUUID->"c8410fcd-3ecc-4df9-a85a-1d1588a3588b"],
+Cell[27402, 721, 7321, 175, 70, "Input",ExpressionUUID->"4b155b0e-71ae-47c7-b95a-02ce4435946c"],
+Cell[34726, 898, 252, 5, 70, "Print",ExpressionUUID->"163d2d1a-7ca5-4590-b2d2-28f2bf22a19f"],
+Cell[34981, 905, 187, 4, 70, "Print",ExpressionUUID->"bb3d08f4-212a-4f07-87c8-c1c440e1bf8b"],
+Cell[35171, 911, 185, 3, 70, "Text",ExpressionUUID->"f38db034-b6e6-4760-9d82-1aff2ea90542"],
+Cell[35359, 916, 4345, 107, 70, "Input",ExpressionUUID->"59a732f7-3f11-4fb0-a7dc-81383b3f5395"],
+Cell[39707, 1025, 507, 13, 70, "Print",ExpressionUUID->"0f131dcc-b175-45c0-bba4-45bf1c07c5f5"],
+Cell[40217, 1040, 173, 3, 70, "Text",ExpressionUUID->"a54454bf-6361-4b75-a485-3c6120215f46"],
+Cell[40393, 1045, 3845, 90, 70, "Input",ExpressionUUID->"1cd3a3de-b7ab-43ba-b6d1-99576448b670"],
+Cell[44241, 1137, 598, 13, 70, "Input",ExpressionUUID->"de4c5c3e-05a2-49af-b5cb-4bacb8a128a6"],
+Cell[44842, 1152, 210, 5, 70, "Print",ExpressionUUID->"81f1db96-b80f-40e4-8ca6-2a3581b71aeb"]
 }
 ]
 *)
