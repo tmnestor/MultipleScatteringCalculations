@@ -1226,20 +1226,26 @@ mean-only voxel, and the first test of that prediction on a body with genuine th
 structure.
 
 What makes the sequence this clean is that the voxel carries a single error. The collocation voxel
-of the sharp sphere applied to this body, each cell at the profile's value at its centre and only the
-cells whose centres lie inside the sphere kept, carries two: its own internal-field error and the
-error of sampling the profile, both $O(h^2)$. Its error falls from $1.0\times10^{-1}$ at
-$n_{\mathrm{sub}}=4$ to $4.7\times10^{-3}$, $2.6\times10^{-3}$, $6.4\times10^{-4}$ and
-$2.3\times10^{-4}$ at $6$, $8$, $12$ and $16$, apparent orders $7.6$, $2.0$, $3.5$ and $3.6$ at
-$k_Sa=0.5$, and at $k_Sa=1$ the apparent orders are $1.7$, $2.5$ and $2.4$ from $6$ to $16$: on
-these grids its error is below the mean-only voxel's, but its apparent order is not that of any
-single term and cannot be read from them. The same collocation voxel with the cell mean of the
-contrast, and every overlapping cell kept, gives $3.4\times10^{-3}$, $1.9\times10^{-3}$ and
-$8.2\times10^{-4}$ at $6$, $8$ and $12$, apparent orders $2.03$ and $2.05$: the sampling of the
-profile was the second term, and with it removed the collocation and mean-only voxels differ only by
-their constants, as in Table~\ref{tab:ratio}. The cell mean, with every
-overlapping cell kept, represents the same body on every grid, and the order the layer predicts is
-then the one observed.
+applied to this body, with the uniform-strain closure exact at every frequency as its single site
+(Appendix~\ref{app:pointcell}), each cell at the profile's value at its centre and only the cells whose
+centres lie inside the sphere kept, carries two: its own internal-field error and the error of sampling the
+profile, both $O(h^2)$ and of opposite signs. At $k_Sa=0.5$ its error falls from $1.0\times10^{-1}$ at
+$n_{\mathrm{sub}}=4$ to $2.8\times10^{-3}$, $1.6\times10^{-3}$, $1.8\times10^{-4}$, $3.5\times10^{-5}$,
+$1.3\times10^{-5}$ and $7.5\times10^{-6}$ at $6$, $8$, $12$, $16$, $24$ and $32$, apparent orders $8.8$,
+$2.0$, $5.4$, $5.7$, $2.4$ and $2.0$; at $k_Sa=1$ the apparent orders from $6$ to $32$ are $0.7$, $5.1$,
+$5.4$, $2.6$ and $2.1$. The two terms cancel over a range of grids, and only beyond it does the order
+settle at two. From $6$ cells across the error is below the mean-only voxel's, by a factor that reaches
+$14$ at $24$ across ($k_Sa=0.5$), but on coarser grids its apparent order is not that of any single term.
+The same collocation voxel with the cell mean of the contrast, and every overlapping cell kept, carries
+the internal-field error alone: $1.6\times10^{-3}$, $8.7\times10^{-4}$, $3.9\times10^{-4}$,
+$2.3\times10^{-4}$, $1.0\times10^{-4}$ and $5.8\times10^{-5}$ from $6$ to $32$ at $k_Sa=0.5$, order
+$1.96\pm0.01$ fitted from $6$, and $2.009\pm0.004$ at $k_Sa=1$, below the mean-only voxel's error by $1.5$
+to $1.9$ times on every grid (\path{scripts/measure_equal_degree_sphere.py}). The two voxels then differ
+only by their constants, as in the layer (Table~\ref{tab:ratio}), and in the far field of a sphere the
+collocation voxel's is the smaller (\S\ref{sec:gain}). The cell mean, with every overlapping cell kept,
+represents the same body on every grid, and the order the layer predicts is then the one observed. With
+the package's cube $T$-matrix in place of the exact closure, the cell-mean collocation voxel's errors are
+within $13\%$ of the mean-only voxel's.
 
 The first-moment voxel of \S\ref{sec:fourth}, extended to three dimensions with a contrast linear in
 each cell, converges at fourth order on this same sphere (Appendix~\ref{app:solver}): its apparent orders
@@ -1307,7 +1313,7 @@ with the closure exact as the collocation cell's single site (Appendix~\ref{app:
 voxel's error is $1.6$ to $1.9$ times smaller than the mean-only voxel's from $6$ to $32$ cells across, at
 $k_Sa=0.5$ and $1$, on the graded sphere and on a second sphere with a core of $3$\,m and a $\cos^2$ taper
 (\path{scripts/measure_equal_degree_sphere.py}); with the package $T$-matrix as its single site the two are
-within $13\%$, which is why they looked alike in \S\ref{sec:sphere}. Sampling the contrast at the cell
+within $13\%$, which is why they once looked alike (\S\ref{sec:sphere}). Sampling the contrast at the cell
 centre instead makes the collocation cell more accurate still, $8$ times at $k_Sa=0.5$ and $41$ times at
 $1$ on both spheres. The error of sampling a smooth profile at the centre is second order, as the cell's
 own error is, and on these bodies the two have opposite signs and largely cancel; the cell's apparent order
@@ -1994,10 +2000,10 @@ $n=2$: the S wave converted from incident P (solid) and reflected from incident 
 (dashed), against the number $m$ of voxel planes per model layer, fitted from $m=4$. (d)~The
 smoothly graded sphere of \S\ref{sec:sphere} against its exact solution, for $n_{\mathrm{sub}}$ voxels
 across: the mean-only voxel, fitted from $n_{\mathrm{sub}}=6$ (at $4$ a voxel is as wide as the
-graded shell); the collocation voxel with the contrast sampled at the cell centre, joined by dashed
-lines and not fitted, since its two $O(h^2)$ errors of opposite sign leave no single order to fit;
-and, at $k_Sa=0.5$, the same collocation voxel with the cell mean of the contrast, dotted, which
-recovers second order.}
+graded shell); the collocation voxel, its single site the uniform-strain closure exact
+(Appendix~\ref{app:pointcell}), with the contrast sampled at the cell centre, joined by dashed lines and not
+fitted, since its two $O(h^2)$ errors of opposite sign leave no single order to fit on these grids; and
+the same collocation voxel with the cell mean of the contrast, dotted, which recovers second order.}
 \label{fig:convergence}
 \par\smallskip{\footnotesize\textit{Alt text:} Four log--log panels of relative error against refinement,
 each showing data points and fitted straight lines with the fitted order in the legend. (a) Uniform layer
@@ -2006,12 +2012,13 @@ first-moment line order 4.000, falling from about $3\times10^{-7}$ to $2\times10
 line has order 6.000 and the third-moment line order 8.000, over 1 to 8 planes, reaching about $10^{-22}$. (b) Uniform layer at 20 degrees,
 1 to 8 planes: P-to-S and SV-to-S lines, order 2.00 for the mean-only voxel and 4.00 for the
 first-moment voxel. (c) Stratified layer, 1 to 16 planes per model layer: P and S reflection, order 2.000
-for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 24 voxels across:
-two straight falling lines of order 2 for the mean-only voxel, for $k_Sa=0.5$ and $1$, from about
-$10^{-2}$ and $3\times10^{-2}$ at 4 voxels to $2\times10^{-4}$ and $8\times10^{-4}$ at 24; two
-dashed collocation curves starting near $10^{-1}$ at 4 voxels, dropping steeply to 6 and then
-falling faster than the mean-only lines, crossing below them by 16 voxels; and a dotted line of order
-2 for the cell-mean collocation voxel, close to the mean-only line.\par}
+for collocation and mean-only, 4.000 for first moment. (d) Smoothly graded sphere, 4 to 32 voxels across,
+with the legend above the data: two straight falling lines of order 2 for the mean-only voxel, for
+$k_Sa=0.5$ and $1$, from about $8\times10^{-3}$ and $3\times10^{-2}$ at 4 voxels to $2\times10^{-4}$
+and $8\times10^{-4}$ at 24; two dotted lines of order 2 for the cell-mean collocation voxel, parallel to
+them and a little below, reaching about $6\times10^{-5}$ and $3\times10^{-4}$ at 32; and two dashed
+collocation curves for the centre value, close together, starting near $10^{-1}$ at 4 voxels, dropping
+below the other lines by 6, falling fastest between 8 and 16 and ending near $7\times10^{-6}$ at 32.\par}
 \end{figure}
 
 \paragraph{What each basis is for.} A voxel holds two functions, and the results give each basis its

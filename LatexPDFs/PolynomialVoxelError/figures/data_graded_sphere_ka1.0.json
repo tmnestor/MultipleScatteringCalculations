@@ -1,0 +1,78 @@
+{
+  "ka_s": 1.0,
+  "radius": 10.0,
+  "core": 5.0,
+  "voxel": "mean-only Galerkin voxel (p = r = 0): cell-mean contrast, every cell overlapping the sphere kept, far field at 5e8 radii, FFT solve",
+  "script": "scripts/pilot_graded_voxel_sphere.py --ka=1.0 --arms=g0fft 4 6 8 12 16 20 24",
+  "n_sub": [
+    4,
+    6,
+    8,
+    12,
+    16,
+    20,
+    24
+  ],
+  "unknowns": [
+    576,
+    1872,
+    3672,
+    11520,
+    24984,
+    47304,
+    79344
+  ],
+  "error_vs_exact": [
+    0.03240162285359743,
+    0.013190104545390107,
+    0.007516861698620438,
+    0.00334157827583532,
+    0.001878820867790582,
+    0.0012019890785164408,
+    0.0008344914359150185
+  ],
+  "collocation": {
+    "voxel": "collocation voxel, uniform-strain closure exact at every frequency: contrast at the cell centre, cells kept if the centre is inside, far field at 5e8 radii",
+    "script": "scripts/measure_equal_degree_sphere.py --body=smoothstep --ka=1.0 --arms=exact_centre",
+    "n_sub": [
+      4,
+      6,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "error_vs_exact": [
+      0.10138993309540667,
+      0.0015987663741862048,
+      0.0012979053067116335,
+      0.00016480485538998324,
+      3.530976634546065e-05,
+      1.2334737925023626e-05,
+      6.770276293429686e-06
+    ]
+  },
+  "collocation_cell_mean": {
+    "voxel": "the same collocation voxel with the cell mean of the contrast and every overlapping cell kept",
+    "script": "scripts/measure_equal_degree_sphere.py --body=smoothstep --ka=1.0 --arms=exact_mean",
+    "n_sub": [
+      4,
+      6,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "error_vs_exact": [
+      0.021120382102825682,
+      0.008011903570142184,
+      0.004558316891903325,
+      0.002007057287751317,
+      0.001123256293303478,
+      0.0004969343839933525,
+      0.00027901258603484265
+    ]
+  }
+}

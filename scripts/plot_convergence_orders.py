@@ -13,7 +13,9 @@ are plotted but not fitted). The legend gives the order p and its standard error
   (d) the smoothly graded sphere (a core with the contrast, falling to zero across a shell as a C2
       smoothstep), voxelised on n_sub^3 grids with the mean-only Galerkin voxel (cell-mean contrast,
       every overlapping cell kept), against its exact solution
-      (scripts/pilot_graded_voxel_sphere.py --arms=g0fft --summary=...).
+      (scripts/pilot_graded_voxel_sphere.py --arms=g0fft --summary=...), with the collocation voxel (the
+      exact uniform-strain closure) at the centre value and at the cell mean of the contrast
+      (scripts/write_graded_sphere_figure_data.py).
 
 Run:  conda run -n seismic python scripts/plot_convergence_orders.py
 """
@@ -173,8 +175,9 @@ def main() -> int:
         orders[f"graded sphere ka {s['ka_s']:g}"] = series(
             ax, s["n_sub"], s["error_vs_exact"], 6, colour, mk, f"{ka}, mean only"
         )
-        # the collocation voxel with the centre-sampled contrast: two O(h^2) errors of opposite sign,
-        # so its apparent order (2.0, 3.5, 3.6 at k_S a = 0.5) is not that of any single term
+        # the collocation voxel (the uniform-strain closure, exact) with the centre-sampled contrast: two
+        # O(h^2) errors of opposite sign, so its apparent order between grids (from 0.7 to 5.7) is not that of
+        # any single term until it settles at two
         c = s["collocation"]
         unfitted(ax, c["n_sub"], c["error_vs_exact"], colour, mk_centre, f"{ka}, collocation (centre)")
         if "collocation_cell_mean" in s:
@@ -189,9 +192,9 @@ def main() -> int:
                 f"{ka}, collocation (cell mean)",
                 ":",
             )
-    ticks = [4, 6, 8, 12, 16, 24]
+    ticks = [4, 6, 8, 12, 16, 24, 32]
     title = "(d) smoothly graded sphere"
-    style(ax, "voxels across the sphere $n_{\\rm sub}$", title, ticks, "lower left", bottom=2e-6)
+    style(ax, "voxels across the sphere $n_{\\rm sub}$", title, ticks, "upper right", top=3e3, bottom=2e-6)
 
     fig.savefig(OUT)
     for k, v in orders.items():

@@ -94,3 +94,7 @@
 {"body": "cos2", "ka_s": 1.0, "arm": "galerkin_mean", "n": 16, "cells": 2776, "error": 0.001904562410107407, "wall_s": 1.795285625004908}
 {"body": "cos2", "ka_s": 1.0, "arm": "galerkin_mean", "n": 24, "cells": 8816, "error": 0.0008458887588438539, "wall_s": 5.354162708987133}
 {"body": "cos2", "ka_s": 1.0, "arm": "galerkin_mean", "n": 32, "cells": 19760, "error": 0.00047570950517557335, "wall_s": 11.448627749996376}
+{"body": "smoothstep", "ka_s": 0.5, "arm": "exact_centre", "n": 4, "cells": 32, "error": 0.0997697963772325, "wall_s": 1.5335215419909218}
+{"body": "smoothstep", "ka_s": 0.5, "arm": "exact_mean", "n": 4, "cells": 64, "error": 0.00432071206682123, "wall_s": 0.6215177500125719}
+{"body": "smoothstep", "ka_s": 1.0, "arm": "exact_centre", "n": 4, "cells": 32, "error": 0.10138993309540667, "wall_s": 0.9180471669969847}
+{"body": "smoothstep", "ka_s": 1.0, "arm": "exact_mean", "n": 4, "cells": 64, "error": 0.021120382102825682, "wall_s": 0.6501947910001036}
