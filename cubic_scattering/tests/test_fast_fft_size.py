@@ -61,6 +61,7 @@ def test_the_point_solve_through_a_padded_embedding() -> None:
         k_hat,
         "P",
         profile=None,
+        single_site="package",
         gmres_tol=1e-12,
         device=torch.device("cpu"),
         dtype=torch.complex128,

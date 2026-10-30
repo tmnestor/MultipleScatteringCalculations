@@ -5,6 +5,12 @@ Arms, each by its fastest route and for the one incident wave the scattered fiel
   point     the uniform-field collocation voxel (9 unknowns a cell, ``solve_point_plane_wave``): the cube's
             closed-form T-matrix, the receiver-averaged propagator, the kernel at the canonical k only;
             cells whose centre lies inside the sphere, each at the contrast at its centre.
+  point_exact
+            the same cell with the uniform-strain closure itself as its single site,
+            T = d^3 D (I - S_self D)^-1 with the exact self term (``point_cell_self``), in place of the
+            package T-matrix, whose far-field form-factor corrections depart from the closure by about
+            0.25 (kh)^2. With it the scheme is the collocation of the continuum equation: the classical
+            point cell done exactly.
   galerkin  the graded first-moment Galerkin voxel, p = r = 1 (36 unknowns a cell,
             ``graded_voxel.fft.solve_graded_sphere_fft``), every cell overlapping the sphere carrying the L2
             projection of the contrast; the kernel at the canonical k only.
@@ -68,13 +74,13 @@ graded_profile = pilot_profile
 sharp_profile = BatchProfile(_sharp_values)
 
 
-ARMS = ("point", "galerkin", "hierarchy")
+ARMS = ("point", "point_exact", "galerkin", "hierarchy")
 
 
 def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
     if arm not in ARMS:
         raise ValueError(
-            f"arm {arm!r} is not one of {ARMS}: give --arm=point, --arm=galerkin or --arm=hierarchy"
+            f"arm {arm!r} is not one of {ARMS}: give --arm=point, point_exact, galerkin or hierarchy"
         )
     if arm == "hierarchy" and body != "graded":
         raise ValueError(
@@ -112,7 +118,7 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
         import measure_graded_sphere_gradient_hierarchy_fft as hfft
     timings: dict[str, float] = {}
     t0 = time.perf_counter()
-    if arm == "point":
+    if arm in ("point", "point_exact"):
         res = solve_point_plane_wave(
             omega,
             RADIUS,
@@ -123,6 +129,7 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
             POL,
             "P",
             profile=graded_profile if body == "graded" else None,
+            single_site="exact" if arm == "point_exact" else "package",
             gmres_tol=tol,
             device=torch.device("cpu"),
             dtype=torch.complex128,
@@ -244,7 +251,7 @@ def main() -> int:
             ladder.append(int(a))
     if body not in ("graded", "sharp") or arm not in ARMS or ka_s is None or not ladder:
         print(__doc__)
-        print("give --body=graded|sharp, --ka=<k_S a>, --arm=point|galerkin|hierarchy and the grid sizes")
+        print("give --body=graded|sharp, --ka=<k_S a>, --arm=point|point_exact|galerkin|hierarchy, sizes")
         return 2
     if arm == "hierarchy" and body != "graded":
         print("the hierarchy arm is defined for the graded sphere only: run it with --body=graded")

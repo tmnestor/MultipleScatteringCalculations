@@ -571,6 +571,7 @@ def solve_point_plane_wave(
     wave_type: str,
     *,
     profile: Callable[[NDArray[np.floating]], float] | None,
+    single_site: str,
     gmres_tol: float,
     device: torch.device,
     dtype: torch.dtype,
@@ -597,6 +598,10 @@ def solve_point_plane_wave(
         pol: Incident polarisation.
         wave_type: 'P' or 'S'.
         profile: The contrast profile, or None for a uniform contrast.
+        single_site: Each cell's T-matrix. 'package': ``compute_cube_tmatrix``, the uniform-strain closure
+            statically, with far-field form-factor corrections that depart from it by about 0.25 (kh)^2.
+            'exact': the closure itself, T = d^3 D (I - S_self D)^{-1} with the exact self term
+            (``point_cell_self``), which makes the scheme the collocation of the continuum equation.
         gmres_tol: GMRES relative tolerance.
         device: Torch device.
         dtype: Torch complex dtype.
@@ -614,8 +619,26 @@ def solve_point_plane_wave(
     grid_idx_np, centres, a_sub = _build_grid_index_map(radius, n_sub)
     n_c, n_p = len(centres), fast_odd_size(2 * n_sub - 1)  # a fast FFT length (zero-padded)
 
-    def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
-        return _sub_cell_tmatrix_9x9(compute_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
+    if single_site == "package":
+
+        def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
+            return _sub_cell_tmatrix_9x9(compute_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
+
+    elif single_site == "exact":
+        from .point_cell_self import exact_point_tmatrix_9x9, self_block_9x9
+
+        s_self = self_block_9x9(omega, ref, 2.0 * a_sub)  # independent of the contrast: once per solve
+
+        def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
+            return exact_point_tmatrix_9x9(omega, 2.0 * a_sub, c, s_self)
+
+    else:
+        raise ValueError(
+            f"solve_point_plane_wave: single_site = {single_site!r} is not a single site. Where: the "
+            "single_site argument of cubic_scattering.sphere_scattering_fft_gpu.solve_point_plane_wave. "
+            "Valid: 'package' (compute_cube_tmatrix) or 'exact' (the uniform-strain closure with the exact "
+            "self term). Fix: pass single_site='exact' for the classical point cell."
+        )
 
     if profile is None:
         t_loc = cell_tmatrix(contrast)

@@ -66,6 +66,7 @@ def test_the_single_wave_is_the_full_solvers_plane_wave_columns(profile) -> None
         POL,
         "P",
         profile=profile,
+        single_site="package",
         gmres_tol=1e-12,
         device=CPU,
         dtype=torch.complex128,
@@ -119,7 +120,9 @@ def test_a_batch_profile_is_evaluated_once_for_all_cells() -> None:
         calls.append(len(pts))
         return 1.0 - 0.004 * np.einsum("ni,ni->n", pts, pts)
 
-    kw: dict[str, Any] = dict(profile=None, gmres_tol=1e-12, device=CPU, dtype=torch.complex128)
+    kw: dict[str, Any] = dict(
+        profile=None, single_site="package", gmres_tol=1e-12, device=CPU, dtype=torch.complex128
+    )
     args = (OMEGA, RADIUS, REF, CONTRAST, N_SUB, K_HAT, POL, "P")
     got = solve_point_plane_wave(*args, **{**kw, "profile": BatchProfile(batch)})
     want = solve_point_plane_wave(*args, **{**kw, "profile": _graded})
