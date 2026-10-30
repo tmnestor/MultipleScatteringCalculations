@@ -1284,19 +1284,39 @@ those integrals too we have not examined. We have not found the relation \eqref{
 use of Legendre moments by a truncated boundary-value problem for integrals over boxes, in the literature
 we searched; the search was limited, and this is a statement of what we did not find.
 
-\paragraph{Closed forms or quadrature.} Coefficients computed by Gauss rules are as independent of the
-frequency as the closed forms, and over a sweep they cost as little per frequency, so the series in the
-wavenumber does not by itself justify the closed forms. Four properties do.
+\paragraph{Closed forms or quadrature.} The integrals in question are those a Galerkin cell needs: each coupling
+is a double integral over two cells, and in a tessellation that fills space the cells touch, so the integrand
+is singular on a shared face, edge or corner. That is where numerical integration is weakest. Coefficients
+computed by Gauss rules are as independent of the frequency as the closed forms, and over a sweep they cost as
+little per frequency, so the series in the wavenumber does not by itself justify the closed forms. Five
+properties do.
 \begin{itemize}
 \item \emph{Quadrature fails silently outside its calibration.} A Gauss rule is accurate where its order was
 chosen by measurement, and nothing warns when it is used outside that range. Two cases show it. A Gauss
 order for the blocks of distant cells set by distance alone leaves them wrong by $3\times10^{-11}$ at
 $k_Sh=2$ and by $10^{-6}$ at $k_Sh=4$ (\S\ref{sec:routes}). And for the face block of the static strain coupling of two uniform cells, a tensor
 Gauss rule whose two cells share one set of lateral nodes moved monotonically through $8.45$, $9.20$,
-$9.59$, $9.85$ and $10.02\times10^{-12}$ as its order rose from $4$ to $12$, with steps that shrank as if it
-were converging, towards about $1.05\times10^{-11}$; the exact value is $3.009\times10^{-12}$, obtained by a
-subdivision fixed point and by a reduction to smooth integrals that agree to $10^{-13}$. Refinement does not reveal such a limit; an independent exact
-value does.
+$9.59$, $9.85$, $10.02$, $10.14$ and $10.23\times10^{-12}$ as its order rose from $4$ to $16$, each step smaller
+than the last (from $7.4\times10^{-13}$ to $9.4\times10^{-14}$) as if it were converging; the exact value is
+$3.009\times10^{-12}$, obtained by a subdivision fixed point and by a reduction to smooth integrals that agree
+to $10^{-13}$, so the rule's value is $3.4$ times too large and still drifting away. The rule shares its
+lateral nodes between the two cells, so it samples the singular ray of the kernel at contact with a weight
+that does not vanish as the order rises. Refinement does not reveal such a limit; an independent exact value
+does.
+
+\item \emph{A warning is not an error estimate either.} Adaptive cubature reports when it cannot meet its goal,
+but its warnings point neither way. The scalar moments of the cube with fewer than two derivatives on the
+kernel, $E[-1;\mathbf d;\mathbf w]$ with $|\mathbf d|\le1$, are ordinary integrals whose integrand is bounded at
+the singular point but not smooth there; integrated over the octant whose corner is that point, by global
+adaptive cubature (\texttt{NIntegrate} in Mathematica, ten digits asked), every one of the nine index classes
+of the grade $(1,3)$ warned that its error estimate kept increasing, while the value agreed with the closed form
+to $1.7\times10^{-12}$; none of the $24$ classes of the grades $(0,4)$ and $(1,5)$ warned. Resolving the corner
+in Duffy coordinates removed every warning and agreed to $8.9\times10^{-14}$ in a third of the time; allowing
+more increases of the error estimate removed six of the nine warnings and replaced the other three by another,
+that the integration converged too slowly, at nearly three times the time. Conversely, in the integrals of a
+welded interface, adaptive three-dimensional cubature applied directly with the singular point at a corner
+reported convergence while in error by as much as $5\times10^{-7}$ \citep{NestorInterface2026}. A warning on a correct value and silence on a wrong one are the two failures of
+an error estimate that the integrator computes from its own samples.
 
 \item \emph{Each coefficient carries its own error estimate.} A closed form is a sum whose terms are known,
 so the magnitude $M$ on which its rounding acts can be carried through every step of the evaluation, as
@@ -1345,7 +1365,9 @@ test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalcul
 \path{cubic_scattering/tests/test_legendre_moments.py} and
 \path{cubic_scattering/tests/test_graded_voxel_closed_reference.py}; the near blocks and their cost, \path{scripts/measure_galerkin_near_blocks.py}; the two-centre series at contact,
 \path{scripts/measure_touching_multipole_series.py}; a face block checked by an exact reduction,
-\path{scripts/face_s_rederivation.py}; the distant blocks,
+\path{scripts/face_s_rederivation.py}, and the bias of the tensor Gauss rule at face contact,
+\path{scripts/measure_face_contact_gauss_bias.py}; adaptive cubature at the corner of the octant against the
+closed forms, \path{Mathematica/CubeMomentCornerQuadrature.wl}; the distant blocks,
 \path{cubic_scattering/graded_voxel/multipole.py} and \path{scripts/measure_distant_cell_blocks.py}; the
 sweep, \path{scripts/measure_frequency_sweep_cost.py}; and the graded sphere power by power,
 \path{scripts/measure_graded_sphere_legendre_series.py}, with the exact series
