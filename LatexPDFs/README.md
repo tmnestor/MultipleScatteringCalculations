@@ -82,7 +82,6 @@ Technical reports of the stratified-background programme.
 | `psvsh_unitarity/` | 25 Sep 2026 | P-SV-SH unitarity: energy flux, open channels, the Kennett recursion |
 | `spectral_9x9/` | 9 Mar 2026 | The 9x9 lattice propagator by horizontal residues |
 | `fragments/` | 7 Mar, 25 Sep 2026 | Two short write-ups (the spectral Green's tensor checked by inverse FFT; the horizontal Green's tensor by Cartesian residues) and a bibliography on the Redheffer star product |
-| `global_tmatrix_schematic/` | 7 Mar 2026 | The schematic of cubes on a layered medium, and the script that draws it |
 
 ## `references/`
 
