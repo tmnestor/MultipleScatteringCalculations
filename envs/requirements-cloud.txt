@@ -16,4 +16,5 @@ pytest-testmon==2.2.0
 pytest-xdist==3.8.0
 ruff==0.17.1
 finufft==2.5.1  # non-uniform FFTs: the low band of the interface operator (S5)
+boto3==1.43.122  # S3 from Python: aws/job.py in the images, and results from scripts and notebooks
 meson==1.12.1  # with gfortran (apt) and ninja, builds cubic_scattering/fortran

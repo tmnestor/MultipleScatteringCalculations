@@ -14,8 +14,8 @@
 # With the PyTorch solvers:  MSC_BUILD_ARGS="--build-arg WITH_TORCH=1" envs/docker-run.sh
 #
 # For AWS (aws/README.md; aws/msc_aws.py push-image builds these):
-#   CPU, arm64 (Graviton):   --platform linux/arm64 --build-arg WITH_TORCH=1 --build-arg WITH_AWS=1
-#   GPU, amd64 (CUDA 12.8):  --platform linux/amd64 --build-arg WITH_TORCH=1 --build-arg WITH_AWS=1 \
+#   CPU, arm64 (Graviton):   --platform linux/arm64 --build-arg WITH_TORCH=1
+#   GPU, amd64 (CUDA 12.8):  --platform linux/amd64 --build-arg WITH_TORCH=1 \
 #                            --build-arg TORCH_INDEX_URL=https://pypi.org/simple
 # PyPI's x86-64 wheel of torch 2.10.0 is the CUDA 12.8 build (its nvidia-* dependencies bring the CUDA libraries;
 # the host supplies only the driver, through the NVIDIA container toolkit); its aarch64 wheel is the CPU build.
@@ -30,9 +30,6 @@ FROM ubuntu:24.04
 ARG WITH_TORCH=0
 ARG TORCH_VERSION=2.10.0
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
-# WITH_AWS=1 adds boto3, for aws/job.py, which runs a command on a code bundle from S3 and returns its results.
-ARG WITH_AWS=0
-ARG BOTO3_VERSION=1.43.122
 
 ENV DEBIAN_FRONTEND=noninteractive \
     VIRTUAL_ENV=/opt/venv \
@@ -56,8 +53,7 @@ COPY envs/requirements-cloud.txt /tmp/requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip --mount=type=secret,id=ca,mode=0444 \
     if [ -f /run/secrets/ca ]; then export PIP_CERT=/run/secrets/ca; fi \
     && pip install -r /tmp/requirements.txt \
-    && if [ "$WITH_TORCH" = 1 ]; then pip install "torch==$TORCH_VERSION" --index-url "$TORCH_INDEX_URL"; fi \
-    && if [ "$WITH_AWS" = 1 ]; then pip install "boto3==$BOTO3_VERSION"; fi
+    && if [ "$WITH_TORCH" = 1 ]; then pip install "torch==$TORCH_VERSION" --index-url "$TORCH_INDEX_URL"; fi
 
 WORKDIR /work
 COPY . .

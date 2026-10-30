@@ -202,7 +202,7 @@ def cmd_push_image(a: argparse.Namespace) -> None:
         ).stdout.strip()
         or "nogit"
     )
-    args = ["--build-arg", "WITH_TORCH=1", "--build-arg", "WITH_AWS=1"]
+    args = ["--build-arg", "WITH_TORCH=1"]
     if a.kind == "gpu":
         platform, args = "linux/amd64", [*args, "--build-arg", "TORCH_INDEX_URL=https://pypi.org/simple"]
         print("building the amd64 image: on an Apple Silicon Mac this runs under emulation (expect 10-30 min)")

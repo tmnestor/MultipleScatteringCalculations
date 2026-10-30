@@ -19,7 +19,7 @@ Mac: python3 aws/msc_aws.py fetch RUN   → aws-runs/RUN/files/   (or --apply, i
 | `aws/infra.yml` | CloudFormation: S3 bucket, ECR registry, IAM roles, launch templates for the runners, Batch queues, optional budget alert |
 | `aws/msc_aws.py` | The Mac-side command (standard library and the `aws` CLI only) |
 | `aws/job.py` | Runs inside the container: unpack, run, return results |
-| `Dockerfile` | The image: `WITH_TORCH=1 WITH_AWS=1`; CPU build is arm64 (Graviton), GPU build is amd64 + CUDA 12.8 |
+| `Dockerfile` | The image, with `WITH_TORCH=1`; CPU build is arm64 (Graviton), GPU build is amd64 + CUDA 12.8 |
 | `envs/seismic-linux.yml` | The conda env for Linux, for using an instance without Docker |
 
 There are two ways to run:
