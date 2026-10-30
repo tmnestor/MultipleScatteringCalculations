@@ -1,0 +1,37 @@
+% Standalone source of the figure fig:equal_accuracy of the continuum-limit paper.
+% Coordinates: data_eqacc_*.dat, written by scripts/plot_equal_accuracy.py from the measured ladders.
+% Build: lualatex fig_equal_accuracy.tex (in this directory); the paper includes the PDF.
+\documentclass[border=2pt]{standalone}
+\input{fig_preamble}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+\pgfplotsset{
+  every axis/.append style={
+    width=7.4cm, height=6.2cm, xmode=log, ymode=log,
+    xmin=150, xmax=3e6, ymin=5e-8, ymax=0.5,
+    xlabel={unknowns}, grid=major, major grid style={gray!30, very thin},
+    tick label style={font=\scriptsize}, label style={font=\small},
+    legend cell align=left, legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85,
+      text opacity=1},
+  },
+  eqpoint/.style={black, thick, densely dashed, mark=o, mark size=1.9pt, mark options={solid}},
+  eqgalerkin/.style={black, thick, solid, mark=square*, mark size=1.7pt},
+  eqhierarchy/.style={black, thick, densely dotted, mark=triangle, mark size=2.3pt, mark options={solid}},
+}
+\begin{tikzpicture}
+  \begin{axis}[name=a, ylabel={relative error of the far field},
+      title={(a) $k_Sa=0.5$}, title style={font=\small}]
+    \addplot[eqpoint] table[x=unknowns, y=error] {data_eqacc_ka05_point.dat};
+    \addplot[eqhierarchy] table[x=unknowns, y=error] {data_eqacc_ka05_hierarchy.dat};
+    \addplot[eqgalerkin] table[x=unknowns, y=error] {data_eqacc_ka05_galerkin.dat};
+  \end{axis}
+  \begin{axis}[at={(a.east)}, anchor=west, legend pos=south west, xshift=1.0cm, title={(b) $k_Sa=4$},
+      title style={font=\small}]
+    \addplot[eqpoint] table[x=unknowns, y=error] {data_eqacc_ka4_point.dat};
+    \addplot[eqhierarchy] table[x=unknowns, y=error] {data_eqacc_ka4_hierarchy.dat};
+    \addplot[eqgalerkin] table[x=unknowns, y=error] {data_eqacc_ka4_galerkin.dat};
+    \legend{{collocation (9 a cell)}, {gradient hierarchy, $q=3$ (60)}, {Galerkin, $p=r=1$ (36)}}
+  \end{axis}
+\end{tikzpicture}
+\end{document}

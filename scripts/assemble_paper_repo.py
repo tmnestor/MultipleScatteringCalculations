@@ -80,6 +80,10 @@ SCRIPTS = [
     "measure_graded_sphere_near_field.py",
     "measure_graded_sphere_march.py",
     "measure_graded_sphere_planes.py",
+    # the Galerkin cell against point matching at equal accuracy (the section on what the Galerkin cell gains)
+    "compare_point_galerkin.py",
+    "equal_accuracy.py",
+    "plot_equal_accuracy.py",
     # three-dimensional voxels (the paper's appendix on the voxel solver)
     "measure_graded_voxel_site.py",
     "check_graded_voxel_subdivision.py",

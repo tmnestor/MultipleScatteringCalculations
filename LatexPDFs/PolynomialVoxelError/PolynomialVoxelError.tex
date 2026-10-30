@@ -919,7 +919,9 @@ $8.5\times10^{-7}$. Counting
 unknowns ($9$ per voxel against $36$), that is $3123$ against $288$ per vertical column of voxels, a
 factor of eleven. In three dimensions, with the lateral grid refined as the vertical one is, the
 number of voxels falls by $(347/8)^3\approx8\times10^4$ and the number of unknowns by about $2\times10^4$.
-The same model has been solved independently in Python, with a contrast for each plane: the raw
+This is the gain of order within one formulation, the Galerkin voxel of degree $0$ against that of degree
+$1$. Whether it is also a gain of the Galerkin formulation over point matching, which can raise its order
+too, is measured in \S\ref{sec:gain}. The same model has been solved independently in Python, with a contrast for each plane: the raw
 reflected displacements agree with the Mathematica scheme to $1.1\times10^{-15}$ at normal incidence
 and at $20^\circ$, with and without the first moments. Lateral
 heterogeneity needs the full three-dimensional solver; it is the first extension discussed below.
@@ -1223,6 +1225,219 @@ continues at close to fourth order below it, where the march is limited by the s
 the spheres of the periodic array it must solve (Table~\ref{tab:march}). And a sphere with a sharp
 surface does not converge: its error tracks the volume of its staircase, which changes with the grid
 (Table~\ref{tab:sphereraw}); the smooth sphere, like the layer, measures the scheme.
+
+\FloatBarrier
+
+\section{What the Galerkin cell gains}\label{sec:gain}
+
+A Galerkin cell pays for its formulation. Every block of Eq.~\eqref{eq:system} is a double integral of
+the Green's tensor over two cells, and in a space-filling grid neighbouring cells touch, so the
+integrand is singular on the faces, edges and corners they share \citep{NestorCoupling2026}. Point
+matching, or collocation, imposes the integral equation at a point of each cell instead, its centre, so
+that a coupling is a single integral over one cell of a kernel whose other point lies outside it, at
+least half a cell from its nearest face; only the cell's coupling to itself is singular. This section measures what the double integrals buy.
+The answer is fewer unknowns for a given accuracy, and it comes chiefly through order: a Galerkin cell
+raises its order by raising the degree of its polynomials, at small cost in unknowns, whereas a
+point-matching cell raises its order only by carrying gradients of the field at its centre, which cost
+more. Three comparisons separate the formulation from the order: at equal degree, at equal order, and
+at equal accuracy against the classical point-matching cell.
+
+\paragraph{Point matching of higher order: the gradient hierarchy.} The collocation voxel of
+\S\ref{sec:convergence} holds a uniform field and is second order. Its natural extension holds a
+polynomial field and imposes more conditions at the same point. In the \emph{gradient hierarchy} of
+depth $q$ the displacement in a cell is its Taylor polynomial of degree $q$ about the centre, with
+$\binom{q+3}{3}$ coefficients for each of its three components, and the strain is derived from it; the
+integral equation and its derivatives up to order $q$ are imposed at the centre, which gives as many
+equations as unknowns. In the layer the cell carries $q+1$ coefficients. The contrast is projected in
+each cell as for the Galerkin cell, and the source of a cell is that projection times the field's
+polynomial. The order is set by the two sources, the density term, whose polynomial has degree $q$, and
+the stiffness term, whose strain has degree $q-1$. A source held to its Taylor polynomial of degree $d$
+leaves a remainder that begins at the power $d+1$, and a remainder that begins at an odd power
+integrates to zero against the even part of the kernel at leading order, so the source converges at
+order $d+1$ when $d$ is odd and at $d+2$ when $d$ is even. The hierarchy converges at the lesser of the
+two: with both contrasts present its orders in the layer are $2$, $2$, $4$, $4$, $6$, $6$ and $8$ for
+$q=1$ to $7$, so gradients pay in pairs, and fourth order needs $q=3$, which in three dimensions is
+$3\times20=60$ unknowns a cell against the Galerkin cell's $36$ at the same order. The hierarchy has
+real advantages. The receiving cell is a point, so every coupling between distinct cells is a single
+integral over the source cell of a kernel that is smooth there, the receiving centre lying at least half
+a cell away: the touching-cell double integrals do not arise. Its singular self block is a set of
+moments of the cube against the Green's tensor and its derivatives, known in closed form. And on a
+given grid it is slightly the more accurate of the two fourth-order cells (below).
+
+\paragraph{At equal degree the formulations are alike.} The collocation voxel and the mean-only Galerkin
+voxel both hold a uniform field and both converge at second order, with the same number of unknowns. In
+the layer their leading constants, Table~\ref{tab:ratio}, are $(kd)^2/8$ against $(kd)^2/12$ in
+reflection and $-(kd)^2/24$ against $-(kd)^2/12$ in transmission: the Galerkin voxel is the more
+accurate in reflection and collocation in transmission. On the graded sphere of \S\ref{sec:sphere} the
+collocation voxel with the cell mean of the contrast differs from the mean-only voxel only by its
+constants, and with the contrast at the cell centre its error was below the mean-only voxel's on every
+grid computed. At equal degree, then, neither formulation is the more accurate, and nothing below claims
+that a Galerkin cell is more accurate than a point-matching cell of the same size and degree.
+
+\paragraph{At equal order the Galerkin cell keeps a modest advantage.} The layer gives the cleanest
+statement. Its model is that of \S\ref{sec:convergence}, the P wave at normal incidence and
+$\omega=300$\,rad\,s$^{-1}$; the Galerkin voxel of degree $p=0$ to $3$ (orders $2$ to $8$) and the
+hierarchy of depth $q=1$, $3$, $5$ and $7$ (the same orders) are each run on $n=1$, $2$, $3$, $4$, $6$,
+$8$, $12$, \dots, $64$ cells, stopping once the error passes $10^{-25}$, in $40$-digit arithmetic for the
+Galerkin chain and $60$-digit for the hierarchy, against the exact layer; the error of a run is the larger
+of the relative errors in reflection and transmission. The number of cells needed for a target error is
+read off each ladder by linear interpolation of $\log n$ against the logarithm of the error between the
+two grids that bracket the target, which is exact for a power law; a target outside a ladder is not
+extrapolated, and the counts are therefore not integers. In one dimension the two schemes carry the same
+number of unknowns a cell at each order, $2(p+1)$ for the Galerkin voxel (the displacement and the
+strain, $p+1$ Legendre moments each) and $q+1$ for the hierarchy, so the comparison isolates the error
+constant. The Galerkin voxel needs $1.26$ to $1.47$ times fewer cells (Table~\ref{tab:gainlayer};
+\nb{ContinuumLimit\_EqualAccuracy.wl}), and the ratio is the same at every target an order's two
+ladders share, to two digits. Both schemes reach their predicted orders, $2.000$, $4.000$, $6.000$ and
+$8.000$.
+\begin{table}[htbp]
+\centering
+\caption{The layer at equal order: cells needed by the Galerkin voxel of degree $p$ and by the gradient
+hierarchy of depth $q$ for a target error, read off measured ladders by interpolation (neither scheme
+is extrapolated). In one dimension both carry $2p+2=q+1$ unknowns a cell, so the ratio is the ratio of
+their error constants to the power $1/\text{order}$; it is the same, to two digits, at every target the
+two ladders of an order share ($10^{-3}$ to $10^{-6}$ at order $2$, $10^{-7}$ to $10^{-13}$ at $4$,
+$10^{-11}$ to $10^{-20}$ at $6$, $10^{-15}$ to $10^{-25}$ at $8$).}\label{tab:gainlayer}
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+order & $p$ & $q$ & unknowns a cell & target & Galerkin cells & hierarchy cells & ratio \\
+\midrule
+$2$ & $0$ & $1$ & $2$ & $10^{-6}$  & $42.0$ & $57.9$ & $1.38$ \\
+$4$ & $1$ & $3$ & $4$ & $10^{-12}$ & $22.9$ & $33.6$ & $1.47$ \\
+$6$ & $2$ & $5$ & $6$ & $10^{-18}$ & $18.6$ & $23.4$ & $1.26$ \\
+$8$ & $3$ & $7$ & $8$ & $10^{-24}$ & $14.1$ & $17.9$ & $1.27$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In three dimensions the same factor arises differently. On the graded sphere (the experiment is set out
+below) the hierarchy at $q=3$, with the contrast projected to degree $1$ in each cell as in the Galerkin
+cell, is at least as accurate on every grid: its error is $13$ to $23\%$ below the Galerkin cell's at
+$k_Sa=0.5$ from $4$ to $24$ voxels across, and at $k_Sa=4$ equal on the coarsest grids and $23\%$ below at
+$24$ across. But it carries $60$ unknowns a cell against $36$, so at equal error the Galerkin cell needs
+$1.37$ to $1.39$ times fewer unknowns at $k_Sa=0.5$ (errors $3\times10^{-4}$ to $10^{-6}$) and $1.45$ to
+$1.57$ times fewer at $k_Sa=4$ ($10^{-3}$ to $10^{-4}$), Table~\ref{tab:equalacc}. At equal order the
+gain is modest, and in three dimensions it is a gain in unknowns a cell, not in error a cell.
+
+\paragraph{At equal accuracy against the classical cell the gain is large.} The headline comparison is
+the Galerkin cell of degree one, $p=r=1$, against the classical point-matching cell, the collocation
+voxel of \S\ref{sec:convergence} in three dimensions: the nine-component state uniform in the cell, the
+closed-form cube $T$-matrix of the package as its single site, and the propagator averaged over the
+receiving cell from a point source, a single integral. It is the collocation voxel of
+\S\ref{sec:sphere}, and on the graded sphere it reproduces the errors quoted there. In the
+terms of the experiment of \S\ref{sec:sphere}, the test is this.
+\begin{enumerate}
+\item \emph{The body.} The graded sphere of \S\ref{sec:sphere}, radius $a=10$\,m, its contrast full in
+the core $r<a/2$ and falling to zero across the shell as the smoothstep, at $\omega=150$ and
+$1200$\,rad\,s$^{-1}$, for which $k_Sa=0.5$ and $4$ and $k_Pa=0.3$ and $2.4$. At $k_Sa=4$ the sphere is
+more than half an S wavelength across its radius, so a cell of a given size carries a larger phase.
+\item \emph{The cells.} Each scheme in its standard form. The collocation cell keeps the cells whose
+centres lie inside the sphere, each with the contrast at its centre, and has $9$ unknowns. The Galerkin
+cell, $p=r=1$, keeps every cell that overlaps the sphere, with the $L^2$ projection of the contrast onto
+the constant and linear Legendre products, and has $36$. The hierarchy, $q=3$, keeps the same cells with
+the same projection, and has $60$. With the cell mean of the contrast in place of its centre value, the
+collocation cell's error is within $30\%$ of the one used here on every grid where both were run
+(\S\ref{sec:sphere}), and both converge at second order, so the choice does not change the comparison.
+\item \emph{The solve.} An FFT-accelerated product and GMRES to a relative residual of $10^{-10}$, in
+double-precision complex arithmetic on the CPU, each run in a process of its own.
+\item \emph{The error.} That of \S\ref{sec:sphere}: the largest component of the difference between the
+far field and the exact displacement over the nine scattering angles, $5\times10^8$ radii away, divided
+by the largest component of the exact one. The exact series is summed to order $10$ at $k_Sa=0.5$ and
+$17$ at $k_Sa=4$.
+\item \emph{The ladders.} $n_{\mathrm{sub}}=4$ to $64$ cells across for collocation, $4$ to $40$ for the
+Galerkin cell and $4$ to $24$ for the hierarchy, as far as memory allows. The unknowns and the time at a
+target error are read off each ladder by the rule used for the layer; an entry within $2\%$ of a
+measured row is that row.
+\end{enumerate}
+Figure~\ref{fig:equalacc} shows the ladders and Table~\ref{tab:equalacc} the unknowns at equal error
+(\path{scripts/compare_point_galerkin.py}, \path{scripts/equal_accuracy.py},
+\path{scripts/plot_equal_accuracy.py}). At $k_Sa=0.5$ the collocation cell needs $6.6$ times the Galerkin
+cell's unknowns for an error of $10^{-4}$ and $16$ times for $3\times10^{-5}$, and with its finest grid,
+$64$ cells across and $1.24$ million unknowns, it reaches $1.45\times10^{-5}$; the Galerkin cell reaches
+$10^{-5}$ with $60\,305$ unknowns and $10^{-6}$ with $317\,376$ (a run, $24$ cells across). Carried at
+its second order from its finest grid, which is no run but the law
+$N=1.24\times10^6\,(1.45\times10^{-5}/\varepsilon)^{3/2}$, the collocation cell would need about
+$7\times10^7$ unknowns for $10^{-6}$, $216$ times the Galerkin cell's. At $k_Sa=4$ the collocation cell
+needs $24$ times the Galerkin cell's unknowns for $10^{-3}$ and does not reach $3\times10^{-4}$ on its
+finest grid ($8.3\times10^{-4}$); carried by the same law it would need about $3\times10^7$ for
+$10^{-4}$, about $150$ times the Galerkin cell's $192\,727$. The gap widens as the accuracy asked rises and as
+the frequency rises, because the two cells differ in order: the slopes in Fig.~\ref{fig:equalacc} are
+$-2/3$ and $-4/3$, the orders $2$ and $4$ divided by the three dimensions over which the unknowns grow.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_equal_accuracy.pdf}
+\caption{Error against unknowns on the graded sphere, at (a) $k_Sa=0.5$ and (b) $k_Sa=4$: the
+collocation (point-matching) cell with a uniform field, $9$ unknowns a cell, second order; the gradient
+hierarchy of depth $q=3$, $60$ unknowns a cell, fourth order; and the Galerkin cell of degree $p=r=1$,
+$36$ unknowns a cell, fourth order. Each marker is a run, from $4$ cells across the sphere to $64$, $24$
+and $40$. The error is that of \S\ref{sec:sphere}.}
+\label{fig:equalacc}
+\par\smallskip{\footnotesize\textit{Alt text:} Two log-log panels of relative error, from about
+$10^{-7}$ to $10^{-1}$, against the number of unknowns, from a few hundred to about two million. In each
+panel a dashed line with open circles (collocation) starts highest and falls slowly; a dotted line with
+open triangles (the hierarchy) and a solid line with filled squares (Galerkin) start lower and fall about
+twice as steeply, the solid line slightly below and to the left of the dotted one. In the left panel the
+dashed line ends near $10^{-5}$ at about a million unknowns while the solid line passes $10^{-6}$ near
+three hundred thousand; in the right panel the dashed line ends near $10^{-3}$ and the solid line falls
+below $10^{-5}$.\par}
+\end{figure}
+\begin{table}[htbp]
+\centering
+\caption{Unknowns at equal error on the graded sphere, read off the ladders of Fig.~\ref{fig:equalacc}
+by interpolation, with the wall time of the whole computation in brackets. An asterisk marks a measured
+run; every other entry is interpolated between two runs. A dash marks an error the arm's finest grid does
+not reach, and ``$<$'' one that its coarsest grid already passes. Times include setup, the solve and the
+far-field readout, on one workstation; they reflect the implementations as well as the schemes (see
+text).}\label{tab:equalacc}
+\small
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+$k_Sa$ & error & collocation & Galerkin, $p=r=1$ & hierarchy, $q=3$ \\
+\midrule
+$0.5$ & $10^{-3}$          & $5\,632$ ($0.2$\,s)   & $<2\,304$              & $<3\,840$ \\
+      & $10^{-4}$          & $69\,610$ ($0.5$\,s)  & $10\,610$ ($0.7$\,s)   & $14\,691$ ($2.7$\,s) \\
+      & $3\times10^{-5}$   & $421\,452$ ($3.0$\,s) & $26\,187$ ($1.1$\,s)   & $35\,893$ ($6.9$\,s) \\
+      & $10^{-5}$          & --                    & $60\,305$ ($2.0$\,s)   & $82\,459$ ($15$\,s) \\
+      & $10^{-6}$          & --                    & $317\,376^{*}$ ($8.8$\,s) & $437\,847$ ($111$\,s) \\
+\addlinespace
+$4$   & $10^{-3}$          & $933\,316$ ($7.4$\,s) & $38\,204$ ($1.5$\,s)   & $59\,983$ ($11$\,s) \\
+      & $3\times10^{-4}$   & --                    & $88\,004$ ($3.1$\,s)   & $134\,023$ ($26$\,s) \\
+      & $10^{-4}$          & --                    & $192\,727$ ($5.9$\,s)  & $280\,060$ ($57$\,s) \\
+      & $10^{-5}$          & --                    & $999\,775$ ($28$\,s)   & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Time.} Unknowns belong to the discretisation; time belongs also to the implementation. The
+collocation and Galerkin solvers have both been optimised, and per unknown the collocation cell is about
+four times the cheaper (at about $1.3$ million unknowns, $8.3$\,s against $37$\,s). Even so, at
+$k_Sa=0.5$ the Galerkin cell is the faster for every error below about $10^{-4}$ ($1.1$\,s against
+$3.0$\,s at $3\times10^{-5}$), and at $k_Sa=4$ for every error below a few parts in a thousand ($1.5$\,s
+against $7.4$\,s at $10^{-3}$); collocation is the faster only at the coarsest accuracies. The
+Galerkin cell's times exclude one cost: its touching-cell blocks come from a table of universal
+coefficients computed once, for every grid and every frequency \citep{NestorCoupling2026}. The hierarchy's
+implementation is a research code whose tables have not been through the same optimisation, so its
+times measure that code and not the scheme; its unknowns are the comparison that counts.
+
+\paragraph{A sharp sphere.} On the homogeneous sphere, whose voxelised surface is a staircase that
+changes with the grid, neither cell converges cleanly (\S\ref{sec:sphere}), and an error at equal
+accuracy cannot be read off ladders that rise and fall. The raw runs are clear enough at the lower
+frequency: at $k_Sa=0.5$ the Galerkin cell's error with $16$ cells across, $99\,936$ unknowns, is
+$7.5\times10^{-4}$, and the collocation cell's with $64$ across, $1.24$ million, is $8.0\times10^{-4}$. At
+$k_Sa=4$ the two are alike at the finest grids, $1.0\times10^{-3}$ with $1.37$ million unknowns against
+$1.2\times10^{-3}$ with $1.24$ million. Part of the Galerkin cell's error here is not its own: it projects
+a contrast that jumps inside the cells cut by the surface with a six-point Gauss rule in each direction,
+which is not exact for a step. The smooth body carries the comparison.
+
+\paragraph{What the double integrals buy.} The Galerkin cell is not more accurate than a point-matching
+cell of the same size and degree. What it gains is that its order is cheap: fourth order costs it $36$
+unknowns a cell, where point matching needs either many more cells at second order or the third
+gradients of the hierarchy at $60$ a cell. Against the classical cell that is a factor of $6.6$ to $24$
+in unknowns at the errors of Table~\ref{tab:equalacc} where both have a value, and a factor of more than a hundred, by extrapolation, at the errors
+only the Galerkin cell reaches on these grids; against the hierarchy at the same order it is a factor of
+about $1.4$. The price is the double integral over touching cells, where quadrature is weakest; it is
+paid once, exactly and for every frequency, by the closed forms of the companion papers
+\citep{NestorLegendre2026,NestorCoupling2026}.
 
 \FloatBarrier
 
@@ -1845,6 +2060,10 @@ latter the cell-by-cell Galerkin solution of the local problem; in three dimensi
 factor for constant cells in closed form, Eq.~\eqref{eq:F3}, verified symbolically and against the
 scheme and a direct evaluation, and for degree-one cells, Eq.~\eqref{eq:F3lin}, likewise. The factors of the
 fourth and higher terms are not derived.
+\item \emph{Established against an exact solution, by one implementation of each scheme.} The gain of
+the Galerkin cell at equal accuracy (\S\ref{sec:gain}): one smooth body at two frequencies, the three
+schemes sharing its observers and error measure; in the layer, at orders $2$ to $8$, against the exact solution in
+high-precision arithmetic.
 \item \emph{Size.} The solver is dense and stops near $20\,000$ unknowns, so the bodies are small: up to
 $1256$ constant cells or $408$ degree-one cells.
 \item \emph{Earlier work.} The survey behind \S\ref{sec:intro} found no statement of the two-term law,
@@ -1869,6 +2088,15 @@ degree $\min(p,r)$: it is the single site's, whose $T$-matrix sums the rescatter
 exactly for the voxel as represented, so the two bases must be matched, and where the medium is
 piecewise constant on the cells it vanishes. A sphere whose contrast falls smoothly to zero at its
 surface converges at the orders the layer predicts.
+
+The Galerkin cell is not more accurate than a point-matching cell of the same size and degree; what it
+gains is cheap order. On the graded sphere the Galerkin cell of degree one needs $6.6$ to $24$ times fewer
+unknowns than the classical point-matching cell for the errors both reach, and reaches errors that the
+point cell does not reach with $1.24$ million unknowns. Against point matching of the same order, the
+gradient hierarchy with third gradients, it needs about $1.4$ times fewer unknowns in three dimensions and
+$1.26$ to $1.47$ times fewer cells in the layer, at orders $2$ to $8$ (\S\ref{sec:gain}). The price is
+the double integral over touching cells, which the closed forms of the companion papers pay once and
+exactly.
 
 In three dimensions the error of the scattered field is two terms, and both are known before the solve.
 The first is the error of the term of first order in the contrast, from one pass over the cells and in
@@ -2896,7 +3124,11 @@ degree \path{scripts/crosscheck_second_moment_voxel.py}, and of the graded cell
 \path{scripts/measure_oblique_stratified_background.py} and \path{scripts/measure_oblique_two_term.py}, and the voxel of degree $2$ at oblique incidence by
 \path{scripts/measure_oblique_degree.py}; the convergence figure is drawn by
 \path{scripts/plot_convergence_orders.py}; the near field of the sphere is measured by
-\path{scripts/measure_graded_sphere_near_field.py}; All are available at
+\path{scripts/measure_graded_sphere_near_field.py}; the comparison at equal accuracy is
+\path{scripts/compare_point_galerkin.py} (its runs in \path{scripts/data/point_vs_galerkin.jsonl}),
+\path{scripts/equal_accuracy.py} and \path{scripts/plot_equal_accuracy.py} for the sphere, with the
+hierarchy of \path{scripts/measure_graded_sphere_gradient_hierarchy_fft.py}, and
+\path{Mathematica/ContinuumLimit_EqualAccuracy.wl} for the layer. All are available at
 \url{https://github.com/tmnestor/MultipleScatteringCalculations}.
 
 \begin{table}[htbp]
