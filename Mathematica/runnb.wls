@@ -59,21 +59,51 @@ runnb`print[args___] := (runnb`drainMessages[];
 runnb`line = 0;
 runnb`status = "finished";
 
-runnb`evalInput[boxes_] := Module[{held, result},
-   runnb`out = {};
+(* ---------------------------------------------------------------------------------------------------------
+   a cell holds one expression per top-level line, as in the front end. Parsed whole, its boxes would join the
+   lines into a product (three statements ending in ";" give Null^3) or fail to parse ("x = 1" over "y = 2").
+   So the boxes are split at their top-level line breaks, a line that does not parse alone is joined to the
+   next (an expression running over lines), and lines holding only comments or blanks are dropped. A line
+   that is one RowBox with line breaks of its own is opened in turn: the front end's parser writes statements
+   below a comment that way, as RowBox[{comment, "\n", RowBox[{stmt, "\n", stmt, ...}]}].
+   --------------------------------------------------------------------------------------------------------- *)
+runnb`parse[b_] := Quiet[ToExpression[b, StandardForm, HoldComplete]];
+runnb`blankQ[b_] := MatchQ[b, _String?(StringMatchQ[#, WhitespaceCharacter ...] &) | RowBox[{"(*", ___, "*)"}]];
+runnb`lines[items_List] := Join @@ Map[
+    Replace[DeleteCases[#, _?runnb`blankQ], {
+       {RowBox[inner_List]} /; MemberQ[inner, "\n"] :> runnb`lines[inner],
+       _ -> {#}}] &,
+    SequenceSplit[items, {"\n"}]];
+runnb`split[BoxData[RowBox[items_List]]] /; MemberQ[items, "\n"] := Module[{acc = {}, held = {}, h},
+   Do[acc = If[acc === {}, piece, Join[acc, {"\n"}, piece]];
+    If[AllTrue[acc, runnb`blankQ], acc = {}; Continue[]];
+    h = runnb`parse[BoxData[RowBox[acc]]];
+    If[Head[h] === HoldComplete, AppendTo[held, h]; acc = {}],
+    {piece, runnb`lines[items]}];
+   If[acc === {}, held, $Failed]];
+runnb`split[boxes_] := With[{h = runnb`parse[boxes]}, If[Head[h] === HoldComplete, {h}, $Failed]];
+
+(* each expression is evaluated in turn with its own Out[n]; an abort ends the cell, as in the front end *)
+runnb`evalOne[held_HoldComplete] := Module[{result},
    runnb`line++;
-   held = Quiet[ToExpression[boxes, StandardForm, HoldComplete]];
-   If[Head[held] =!= HoldComplete,
-    runnb`emit[Cell["runnb::parse: this cell could not be parsed", "Message", "MSG"],
-     "runnb::parse: this cell could not be parsed"];
-    Return[runnb`out, Module]];
    result = Block[{$Messages}, runnb`openMessages[];
      With[{r = CheckAbort[Block[{Print = runnb`print}, ReleaseHold[held]], runnb`abortedQ = True; $Aborted]},
       runnb`drainMessages[]; Close /@ $Messages; r]];
    If[TrueQ[runnb`abortedQ], runnb`status = If[TrueQ[$nbStopped], "exited", "aborted"]];
    If[result =!= Null && ! TrueQ[runnb`abortedQ],
     runnb`emit[Cell[BoxData[ToBoxes[result]], "Output", CellLabel -> "Out[" <> ToString[runnb`line] <> "]="],
-     ToString[Short[result, 40]]]];
+     ToString[Short[result, 40]]]]];
+
+runnb`evalInput[boxes_] := Module[{exprs = runnb`split[boxes]},
+   runnb`out = {};
+   runnb`inLine = runnb`line + 1;
+   If[exprs === $Failed,
+    runnb`line++;
+    runnb`emit[Cell["runnb::parse: this cell could not be parsed", "Message", "MSG"],
+     "runnb::parse: this cell could not be parsed"];
+    Return[runnb`out, Module]];
+   If[exprs === {}, runnb`line++];
+   Do[runnb`evalOne[h]; If[TrueQ[runnb`abortedQ], Break[]], {h, exprs}];
    runnb`out];
 
 (* walk the cells in order; after an exit or abort the rest are kept as they are, unevaluated *)
@@ -81,7 +111,7 @@ runnb`walk[cells_List] := Join @@ (runnb`walk1 /@ cells);
 runnb`walk1[Cell[CellGroupData[cs_List, o___], r___]] := {Cell[CellGroupData[runnb`walk[cs], o], r]};
 runnb`walk1[c : Cell[b_, "Input", r___]] := If[runnb`status =!= "finished", {c},
    With[{outs = runnb`evalInput[b]},
-    Join[{Cell[b, "Input", r, CellLabel -> "In[" <> ToString[runnb`line] <> "]:="]}, outs]]];
+    Join[{Cell[b, "Input", r, CellLabel -> "In[" <> ToString[runnb`inLine] <> "]:="]}, outs]]];
 runnb`walk1[c_] := {c};
 
 runnb`t0 = AbsoluteTime[];

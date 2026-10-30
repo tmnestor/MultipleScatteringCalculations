@@ -1,7 +1,9 @@
-"""The notebook builder's configuration, read discovery, provenance and output checks (no Mathematica needed)."""
+"""The notebook builder's configuration, read discovery, provenance and output checks (Mathematica needed
+only by the evaluator test, which is skipped without wolframscript)."""
 
 import importlib.util
 import json
+import shutil
 import sys
 import warnings
 from pathlib import Path
@@ -402,6 +404,54 @@ def test_run_stops_at_timeout(tmp_path: Path) -> None:
     assert code is None
     code, out = bn._run([sys.executable, "-c", "print(42)"], tmp_path, 30)
     assert code == 0 and out.strip() == "42"
+
+
+LINES_NB = r"""Notebook[{
+Cell[BoxData[RowBox[{RowBox[{"(*", " ", "two", " ", "lines", " ", "*)"}], "\n",
+  RowBox[{"x", "=", "1"}], "\n", RowBox[{"y", "=", "2"}]}]], "Input"],
+Cell[BoxData[RowBox[{RowBox[{"(*", " ", "nested", " ", "*)"}], "\n",
+  RowBox[{RowBox[{RowBox[{"a", "=", "3"}], ";"}], "\n",
+  RowBox[{RowBox[{"Print", "[", "a", "]"}], ";"}]}]}]], "Input"],
+Cell[BoxData[RowBox[{RowBox[{"f", "[", "z_", "]"}], ":=", "\n", RowBox[{"z", "^", "2"}], "\n",
+  RowBox[{"f", "[", "5", "]"}]}]], "Input"]
+}]
+"""
+
+
+@pytest.mark.skipif(shutil.which("wolframscript") is None, reason="needs wolframscript")
+def test_runnb_evaluates_each_line_of_a_cell(tmp_path: Path) -> None:
+    """A cell holds one expression per top-level line, as in the front end: never their product.
+
+    The second cell has the front end's own shape for a comment above statements (the set-up cell wl2nb
+    writes): the statements and their line breaks sit one RowBox down.
+    """
+    nb, report = tmp_path / "lines.nb", tmp_path / "report.json"
+    nb.write_text(LINES_NB)
+    code, out = bn._run(
+        [
+            "wolframscript",
+            "-file",
+            str(ROOT / "Mathematica" / "runnb.wls"),
+            str(nb),
+            f"--report={report}",
+        ],
+        tmp_path,
+        60,
+    )
+    assert code == 0, out
+    cells = [(c["style"], c["text"]) for c in json.loads(report.read_text())["cells"]]
+    assert cells == [("Output", "1"), ("Output", "2"), ("Print", "3"), ("Output", "25")]
+    saved = nb.read_text()
+    assert "Null" not in saved
+    # one In label per cell (its first line), one Out per expression: f[5] is the sixth
+    assert [s.split('"')[1] for s in saved.split("CellLabel->")[1:]] == [
+        "In[1]:=",
+        "Out[1]=",
+        "Out[2]=",
+        "In[3]:=",
+        "In[5]:=",
+        "Out[6]=",
+    ]
 
 
 def test_written_files_compares_with_committed(tmp_path: Path) -> None:
