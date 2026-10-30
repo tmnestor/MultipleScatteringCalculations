@@ -6,7 +6,11 @@ section compared them with the package's cube T-matrix as the collocation cell's
 with the uniform-strain closure itself (``point_cell_self``), and separates the two things the collocation cell
 of that section changed at once: the single site, and the representation of the contrast.
 
-Arms, each on the n_sub grid of the graded sphere (``pilot_graded_sphere_vs_exact``), at k_S a = 0.5 and 1:
+Bodies (radius 10 m, the contrast of ``gate_sphere_cell_average_vs_mie`` in a homogeneous core, tapered to zero
+at the surface with its gradient, so the exact solution is the radial integration of ``crosscheck_graded_sphere``):
+  smoothstep  core 5 m, the C2 smoothstep across the shell (the graded sphere of the papers);
+  cos2        core 3 m, cos^2 across the shell: a different shape, to see whether a result belongs to one body.
+Arms, each on the n_sub grid of the body:
   exact_centre    collocation, exact closure; cells whose centre is inside the sphere, contrast at the centre
                   (the headline arm of compare_point_galerkin.py).
   exact_mean      collocation, exact closure; every cell that overlaps the sphere, the cell mean of the contrast
@@ -17,13 +21,15 @@ Arms, each on the n_sub grid of the graded sphere (``pilot_graded_sphere_vs_exac
   galerkin_mean   the mean-only Galerkin voxel, p = r = 0 (graded_voxel.fft).
 The error is that of the sphere section: max |far field - exact| / peak over nine angles at 5e8 radii.
 
-Run:  python -u scripts/measure_equal_degree_sphere.py --ka=0.5 6 8 12 16 24 32
+Run:  python -u scripts/measure_equal_degree_sphere.py --body=smoothstep --ka=0.5 6 8 12 16 24 32
 Rows are appended to scripts/data/equal_degree_sphere.jsonl.
 """
 
 import json
 import sys
 import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -32,10 +38,9 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
+from crosscheck_graded_sphere import graded_mie_result, smoothstep  # noqa: E402
 from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
-from pilot_graded_sphere_vs_exact import CORE, RADIUS, THETA, _profile_values  # noqa: E402
-from pilot_graded_sphere_vs_exact import profile as point_profile  # noqa: E402
+from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
 
 from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E402
 from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft  # noqa: E402
@@ -54,6 +59,31 @@ R_MULT = 5.0e8
 N_GAUSS = 6  # points per axis of the Galerkin projection, so both cells see the same cell means
 
 
+@dataclass(frozen=True)
+class Body:
+    """A sphere whose contrast is full in the core and multiplied by taper(t) across the shell, t from 0 at the
+    surface to 1 at the core; the taper and its slope vanish at the surface."""
+
+    core: float
+    taper: Callable[[np.ndarray], np.ndarray]
+
+    def radial(self, r: float) -> float:
+        """The shell's factor at radius r, as the exact solution takes it."""
+        return float(self.taper(np.array((RADIUS - r) / (RADIUS - self.core))))
+
+    def values(self, pts: np.ndarray) -> np.ndarray:
+        """The contrast factor at points (M, 3)."""
+        r = np.linalg.norm(pts, axis=1)
+        t = np.clip((RADIUS - r) / (RADIUS - self.core), 0.0, 1.0)
+        return np.where(r <= self.core, 1.0, np.where(r >= RADIUS, 0.0, self.taper(t)))
+
+
+BODIES = {
+    "smoothstep": Body(RADIUS / 2, smoothstep),
+    "cos2": Body(0.3 * RADIUS, lambda t: np.sin(0.5 * np.pi * t) ** 2),
+}
+
+
 def overlaps(h: float):
     """Whether the cell of half-width h centred at c overlaps the sphere: its nearest point lies inside."""
 
@@ -63,7 +93,7 @@ def overlaps(h: float):
     return inside
 
 
-def cell_mean_profile(h: float) -> BatchProfile:
+def cell_mean_profile(body: Body, h: float) -> BatchProfile:
     """The cell mean of the contrast factor over the cell of half-width h at each centre, by Gauss quadrature."""
     x, w = np.polynomial.legendre.leggauss(N_GAUSS)
     offs = h * np.stack(np.meshgrid(x, x, x, indexing="ij"), -1).reshape(-1, 3)
@@ -71,13 +101,17 @@ def cell_mean_profile(h: float) -> BatchProfile:
 
     def means(centres: np.ndarray) -> np.ndarray:
         pts = centres[:, None, :] + offs[None, :, :]
-        vals = _profile_values(pts.reshape(-1, 3)).reshape(len(centres), -1)
+        vals = body.values(pts.reshape(-1, 3)).reshape(len(centres), -1)
         return vals @ wts
 
     return BatchProfile(means)
 
 
-def one(ka_s: float, arm: str, n: int, exact: np.ndarray, pts: np.ndarray, r_far: float) -> dict:
+def one(
+    name: str, ka_s: float, arm: str, n: int, exact: np.ndarray, pts: np.ndarray, r_far: float
+) -> dict:
+    body = BODIES[name]
+    point_profile = BatchProfile(body.values)
     omega = ka_s * REF.beta / RADIUS
     h = RADIUS / n
     t0 = time.perf_counter()
@@ -98,7 +132,7 @@ def one(ka_s: float, arm: str, n: int, exact: np.ndarray, pts: np.ndarray, r_far
             K_HAT,
             POL,
             "P",
-            profile=cell_mean_profile(h) if mean else point_profile,
+            profile=cell_mean_profile(body, h) if mean else point_profile,
             single_site="package" if arm == "package_mean" else "exact",
             gmres_tol=1e-10,
             device=torch.device("cpu"),
@@ -109,6 +143,7 @@ def one(ka_s: float, arm: str, n: int, exact: np.ndarray, pts: np.ndarray, r_far
         cells = len(res.centres)
     peak = float(np.max(np.abs(exact)))
     return {
+        "body": name,
         "ka_s": ka_s,
         "arm": arm,
         "n": n,
@@ -119,27 +154,32 @@ def one(ka_s: float, arm: str, n: int, exact: np.ndarray, pts: np.ndarray, r_far
 
 
 def main() -> int:
-    ka_s, ladder, arms = None, [], list(ARMS)
+    name, ka_s, ladder, arms = None, None, [], list(ARMS)
     for a in sys.argv[1:]:
-        if a.startswith("--ka="):
+        if a.startswith("--body="):
+            name = a.split("=", 1)[1]
+        elif a.startswith("--ka="):
             ka_s = float(a.split("=", 1)[1])
         elif a.startswith("--arms="):
             arms = a.split("=", 1)[1].split(",")
         else:
             ladder.append(int(a))
-    if ka_s is None or not ladder or not set(arms) <= set(ARMS):
+    if name not in BODIES or ka_s is None or not ladder or not set(arms) <= set(ARMS):
         print(__doc__)
         return 2
     omega = ka_s * REF.beta / RADIUS
     r_far = R_MULT * RADIUS
     pts = obs_points(r_far, THETA)
     n_max = max(8, int(np.ceil(ka_s + 4 * ka_s ** (1 / 3) + 6)))
-    exact = mie_scattered_displacement(graded_mie_result(omega, RADIUS, CORE, REF, CONTRAST, n_max), pts)
-    print(f"graded sphere, k_S a = {ka_s}", flush=True)
+    body = BODIES[name]
+    exact = mie_scattered_displacement(
+        graded_mie_result(omega, RADIUS, body.core, REF, CONTRAST, n_max, profile=body.radial), pts
+    )
+    print(f"{name} sphere, k_S a = {ka_s}", flush=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     for arm in arms:
         for n in ladder:
-            row = one(ka_s, arm, n, exact, pts, r_far)
+            row = one(name, ka_s, arm, n, exact, pts, r_far)
             with OUT.open("a") as fh:
                 fh.write(json.dumps(row) + "\n")
             print(

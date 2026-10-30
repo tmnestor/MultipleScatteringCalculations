@@ -174,14 +174,19 @@ def graded_mie_result(
     ref: ReferenceMedium,
     contrast: MaterialContrast,
     n_max: int,
+    profile: Callable[[float], float] | None = None,
 ) -> MieResult:
-    """The graded sphere as a MieResult: coefficients = T x the plane wave's (2n+1) i^n / (i k)."""
+    """The graded sphere as a MieResult: coefficients = T x the plane wave's (2n+1) i^n / (i k).
+
+    ``profile`` multiplies the contrast across the shell core < r < radius, as in ``graded_tmatrix`` (None: the
+    smoothstep).
+    """
     kp, ks = omega / ref.alpha, omega / ref.beta
     a_n, b_n, c_n, a_sv, b_sv = (np.zeros(n_max + 1, dtype=complex) for _ in range(5))
     for n in range(n_max + 1):
         cp = (2 * n + 1) * (1j) ** n / (1j * kp)
         cs = (2 * n + 1) * (1j) ** n / (1j * ks)
-        tm, tsh = graded_tmatrix(n, omega, radius, core, ref, contrast)
+        tm, tsh = graded_tmatrix(n, omega, radius, core, ref, contrast, profile=profile)
         a_n[n] = tm[0, 0] * cp
         if n == 0:
             continue

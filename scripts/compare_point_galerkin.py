@@ -11,6 +11,11 @@ Arms, each by its fastest route and for the one incident wave the scattered fiel
             package T-matrix, whose far-field form-factor corrections depart from the closure by about
             0.25 (kh)^2. With it the scheme is the collocation of the continuum equation: the classical
             point cell done exactly.
+  point_exact_mean
+            point_exact with the contrast represented as the Galerkin cell's is: every cell that overlaps the
+            sphere, each with the cell mean of the contrast (``measure_equal_degree_sphere``). The centre value
+            and the cell mean differ by a second-order error that, on the graded sphere, largely cancels the
+            cell's own; this arm removes that difference from the comparison. The graded sphere only.
   galerkin  the graded first-moment Galerkin voxel, p = r = 1 (36 unknowns a cell,
             ``graded_voxel.fft.solve_graded_sphere_fft``), every cell overlapping the sphere carrying the L2
             projection of the contrast; the kernel at the canonical k only.
@@ -74,17 +79,18 @@ graded_profile = pilot_profile
 sharp_profile = BatchProfile(_sharp_values)
 
 
-ARMS = ("point", "point_exact", "galerkin", "hierarchy")
+ARMS = ("point", "point_exact", "point_exact_mean", "galerkin", "hierarchy")
 
 
 def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
     if arm not in ARMS:
         raise ValueError(
-            f"arm {arm!r} is not one of {ARMS}: give --arm=point, point_exact, galerkin or hierarchy"
+            f"arm {arm!r} is not one of {ARMS}: give --arm=point, point_exact, point_exact_mean, galerkin or "
+            "hierarchy"
         )
-    if arm == "hierarchy" and body != "graded":
+    if arm in ("hierarchy", "point_exact_mean") and body != "graded":
         raise ValueError(
-            f"the hierarchy arm is defined for the graded sphere only (asked: {body!r}): it projects the contrast "
+            f"the {arm} arm is defined for the graded sphere only (asked: {body!r}): it projects the contrast "
             "on polynomials in each voxel, which a step across the sharp sphere's surface does not have; "
             "run it with --body=graded"
         )
@@ -118,7 +124,12 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
         import measure_graded_sphere_gradient_hierarchy_fft as hfft
     timings: dict[str, float] = {}
     t0 = time.perf_counter()
-    if arm in ("point", "point_exact"):
+    if arm in ("point", "point_exact", "point_exact_mean"):
+        mean = arm == "point_exact_mean"
+        if mean:
+            from measure_equal_degree_sphere import BODIES, cell_mean_profile, overlaps
+
+            h = RADIUS / n
         res = solve_point_plane_wave(
             omega,
             RADIUS,
@@ -128,12 +139,15 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
             K_HAT,
             POL,
             "P",
-            profile=graded_profile if body == "graded" else None,
-            single_site="exact" if arm == "point_exact" else "package",
+            profile=(
+                cell_mean_profile(BODIES["smoothstep"], h) if mean else graded_profile if body == "graded" else None
+            ),
+            single_site="package" if arm == "point" else "exact",
             gmres_tol=tol,
             device=torch.device("cpu"),
             dtype=torch.complex128,
             timings=timings,
+            inside=overlaps(h) if mean else None,
         )
         t1 = time.perf_counter()
         u_p, u_s = point_wave_far_field(res, pts / r_far, r_far)
@@ -251,10 +265,10 @@ def main() -> int:
             ladder.append(int(a))
     if body not in ("graded", "sharp") or arm not in ARMS or ka_s is None or not ladder:
         print(__doc__)
-        print("give --body=graded|sharp, --ka=<k_S a>, --arm=point|point_exact|galerkin|hierarchy, sizes")
+        print(f"give --body=graded|sharp, --ka=<k_S a>, --arm=<one of {ARMS}> and the grid sizes")
         return 2
-    if arm == "hierarchy" and body != "graded":
-        print("the hierarchy arm is defined for the graded sphere only: run it with --body=graded")
+    if arm in ("hierarchy", "point_exact_mean") and body != "graded":
+        print(f"the {arm} arm is defined for the graded sphere only: run it with --body=graded")
         return 2
     done = {(r["body"], r["ka_s"], r["arm"], r["n"], r["tol"]) for r in load()}
     print(f"{body} sphere, k_S a = {ka_s}, {arm}, GMRES to {tol:g}", flush=True)
