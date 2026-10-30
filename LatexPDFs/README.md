@@ -47,6 +47,7 @@ Read these before relying on any number from an older document.
 | `CartesianMultipoleHierarchyArchive/` | archived | 9 Oct 2026 | The field expanded about the cell centre, closed-form single sites of the elastic cube; superseded by the Legendre expansion. `JCP/` holds the earlier combined paper as submitted |
 | `OctreeRefinementArchive/` | archived | 9 Oct 2026 | The octree material removed from the Error paper: blocks between unequal cells, refinement by the two-term error estimate |
 | `GradedVoxel/` | retired | 15 Oct 2026 | Galerkin cubes with polynomial field and contrast; its results moved into the Error, Legendre and Coupling papers. Never edit |
+| `TMatrixPointVsGalerkin/` | archived | 16 Jun 2026 | Point-source against body-force Galerkin single sites of one cube, judged against the equal-volume Mie sphere and the layer reflectivity, with its evidence harness (`evidence/`). Superseded by the Error paper, Section 11: its verdict (the point model suffices, the Galerkin closure is dominated) compares one cube with a sphere, uses the package cube T-matrix and predates the corrections listed above. Built with biber; the PDF is the record |
 
 ## `reports/`
 

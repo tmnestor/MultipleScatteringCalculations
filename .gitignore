@@ -28,9 +28,6 @@ htmlcov/
 *.bcf
 *.run.xml
 
-# LaTeX build output (paper)
-paper/*.pdf
-
 reference_papers/
 
 # Backup files

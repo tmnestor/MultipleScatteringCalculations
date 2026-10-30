@@ -28,7 +28,7 @@ from pathlib import Path
 import numpy as np
 
 EV = Path(__file__).resolve().parent
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]  # the repository root, above LatexPDFs/archive/<paper>/evidence
 
 # The sweep imports the cubic_scattering package and the sibling run_evidence module.
 # Insert both the repo root (package) and the evidence dir (run_evidence) onto the
