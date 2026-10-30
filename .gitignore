@@ -88,3 +88,6 @@ scripts/data/octree_finest_blocks/
 
 # pytest-testmon coverage database
 .testmondata*
+
+# aws/msc_aws.py: run records and fetched results
+aws-runs/

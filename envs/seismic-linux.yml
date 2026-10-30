@@ -1,0 +1,27 @@
+# The seismic env for Linux (x86-64 or aarch64): an EC2 instance, a cluster, a Linux workstation; no Docker needed.
+# envs/seismic.yml is the macOS export, pinned to osx-arm64 builds (cctools, ld64, clang_impl_osx-arm64), and will
+# not solve on Linux.  This file names only what conda supplies (the interpreter and the Fortran toolchain); the
+# Python packages are envs/requirements-cloud.txt, the pinned set the Docker image uses, so there is still one list
+# to keep in step with envs/seismic.yml.  The env keeps the name seismic, so the README's commands work as written.
+#
+#   conda env create -f envs/seismic-linux.yml
+#   conda activate seismic
+#   pip install torch==2.10.0                 x86-64: the CUDA 12.8 build (PyPI's default); aarch64: the CPU build
+#   pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu    x86-64 without a GPU (smaller)
+#   python -m cubic_scattering.fortran.build
+#
+# OpenMP: on Linux, conda-forge's gfortran links libgomp, as the image's apt gfortran does, and the finufft wheel
+# carries its own renamed copy: the same pairing the Docker image and the cloud sessions run.  The macOS deadlock
+# noted in envs/seismic.yml (two OpenMP runtimes in finufft_setpts) came from the macOS wheel's bundled libomp.  If a
+# hang ever appears in finufft here, install it from conda-forge instead: add "- finufft=2.5.1" below and drop it
+# from requirements-cloud.txt.
+name: seismic
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - gfortran
+  - ninja
+  - pip
+  - pip:
+      - -r requirements-cloud.txt

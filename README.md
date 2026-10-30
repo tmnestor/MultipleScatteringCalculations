@@ -44,6 +44,9 @@ conda env create -f envs/seismic.yml
 conda activate seismic
 ```
 
+To run on AWS (EC2 runners, or AWS Batch for sweeps) from this checkout without committing, see
+`aws/README.md`.
+
 ## Running
 
 ```bash

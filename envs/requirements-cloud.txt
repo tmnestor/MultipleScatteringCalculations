@@ -1,5 +1,6 @@
 # Python packages for the cloud sessions.
 # Versions pinned to match envs/seismic.yml, the local conda env; keep the two in step.
+# Also the pip half of envs/seismic-linux.yml (conda on Linux) and of the AWS images (aws/README.md).
 # No torch: only the GPU solvers use it (imported lazily), and their tests are skipped without it.
 numpy==2.4.2
 scipy==1.17.1

@@ -1,0 +1,398 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  MultipleScatteringCalculations on AWS: an S3 bucket for code bundles and results, an ECR repository for the image,
+  launch templates for on-demand EC2 runners (CPU on Graviton, GPU on NVIDIA), and AWS Batch queues (CPU on Spot,
+  GPU on Spot or on-demand) that scale to zero. Deployed and driven by aws/msc_aws.py; see aws/README.md.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: The VPC (msc_aws.py deploy passes the default VPC).
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets with a route to the internet that give instances public IPs (the default VPC's do).
+  CpuInstanceTypes:
+    Type: CommaDelimitedList
+    Default: c7g,m7g,r7g
+    Description: Batch CPU instance families or types (arm64, to run the arm64 image). msc_aws.py deploy keeps those offered in the region.
+  GpuInstanceTypes:
+    Type: CommaDelimitedList
+    Default: g6e,g6,g5
+    Description: Batch GPU instance families or types (x86-64, NVIDIA). msc_aws.py deploy keeps those offered in the region.
+  CpuMaxVcpus:
+    Type: Number
+    Default: 256
+    Description: Most vCPUs the CPU queue may run at once (also bounded by your account's Spot quota).
+  GpuMaxVcpus:
+    Type: Number
+    Default: 32
+    Description: Most vCPUs the GPU queue may run at once (also bounded by your account's G/P quotas).
+  GpuPurchase:
+    Type: String
+    Default: SPOT
+    AllowedValues: [SPOT, EC2]
+    Description: SPOT (cheaper, can be interrupted; Batch retries) or EC2 (on-demand) for the GPU queue.
+  RunRetentionDays:
+    Type: Number
+    Default: 30
+    Description: Days to keep code bundles and results under runs/ in the bucket.
+  VolumeSizeGiB:
+    Type: Number
+    Default: 100
+    Description: Root volume of every instance (the GPU image is about 10 GB).
+  BudgetEmail:
+    Type: String
+    Default: ""
+    Description: If set, a monthly cost budget emails this address at 80% (forecast) and 100% (actual).
+  MonthlyBudgetUSD:
+    Type: Number
+    Default: 100
+
+Conditions:
+  GpuSpot: !Equals [!Ref GpuPurchase, SPOT]
+  WantBudget: !Not [!Equals [!Ref BudgetEmail, ""]]
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-runs
+            Status: Enabled
+            Prefix: runs/
+            ExpirationInDays: !Ref RunRetentionDays
+          - Id: abort-incomplete-uploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload: {DaysAfterInitiation: 2}
+
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${AWS::StackName}"
+      EmptyOnDelete: true
+      ImageScanningConfiguration: {ScanOnPush: false}
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules": [{"rulePriority": 1, "description": "untagged images after 7 days",
+                      "selection": {"tagStatus": "untagged", "countType": "sinceImagePushed",
+                                    "countUnit": "days", "countNumber": 7},
+                      "action": {"type": "expire"}}]}
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: msc instances - no inbound (shell access is through SSM Session Manager), all outbound
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - {IpProtocol: "-1", CidrIp: 0.0.0.0/0}
+
+  BucketAccess:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+            Resource: !Sub "${Bucket.Arn}/*"
+          - Effect: Allow
+            Action: [s3:ListBucket]
+            Resource: !GetAtt Bucket.Arn
+
+  # Instances: the runners and Batch's container hosts. ECS for Batch, SSM for the runners' commands and shells,
+  # ECR to pull the image, the bucket (the runners' jobs use the instance's credentials).
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - {Effect: Allow, Principal: {Service: ec2.amazonaws.com}, Action: sts:AssumeRole}
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - !Ref BucketAccess
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+
+  # Batch jobs' own credentials (the container's), for the bucket only
+  JobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - {Effect: Allow, Principal: {Service: ecs-tasks.amazonaws.com}, Action: sts:AssumeRole}
+      ManagedPolicyArns: [!Ref BucketAccess]
+
+  # ---- On-demand runners (msc_aws.py ec2 start) ----
+  # The ECS-optimised Amazon Linux 2023 AMIs: Docker and the SSM agent installed; the GPU one adds the NVIDIA driver
+  # and container toolkit. The ECS agent itself is switched off on runners. A timer stops the instance after
+  # IDLE_MINUTES with no job container running (shutdown behaviour: stop, so the disk and its caches are kept).
+  # Hop limit 2: containers reach the instance metadata service for the instance's credentials.
+  RunnerTemplateCpu:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: "{{resolve:ssm:/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id}}"
+        IamInstanceProfile: {Arn: !GetAtt InstanceProfile.Arn}
+        SecurityGroupIds: [!Ref SecurityGroup]
+        InstanceInitiatedShutdownBehavior: stop
+        MetadataOptions: {HttpTokens: required, HttpPutResponseHopLimit: 2}
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs: {VolumeSize: !Ref VolumeSizeGiB, VolumeType: gp3, DeleteOnTermination: true, Encrypted: true}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - {Key: Name, Value: !Sub "${AWS::StackName}-runner-cpu"}
+              - {Key: msc:stack, Value: !Ref AWS::StackName}
+              - {Key: msc:runner, Value: cpu}
+        UserData:
+          Fn::Base64: |
+            #!/bin/bash
+            # msc runner: no ECS agent; a persistent k-series cache; stop when idle.
+            set -eu
+            systemctl disable --now ecs.service 2>/dev/null || true
+            mkdir -p /var/lib/msc-cache
+            IDLE_MINUTES=30
+            cat > /usr/local/bin/msc-idle-stop <<EOF
+            #!/bin/bash
+            # Stop the instance after $IDLE_MINUTES minutes with no msc job container running.
+            busy=/var/run/msc-busy
+            [ -f \$busy ] || touch \$busy
+            if [ -n "\$(docker ps -q --filter label=msc.job)" ] || pgrep -f "ssm-session-worker" >/dev/null; then
+              touch \$busy
+            elif [ \$(( \$(date +%s) - \$(stat -c %Y \$busy) )) -gt $(( IDLE_MINUTES * 60 )) ]; then
+              shutdown -h now
+            fi
+            EOF
+            chmod +x /usr/local/bin/msc-idle-stop
+            cat > /etc/systemd/system/msc-idle-stop.service <<EOF
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/local/bin/msc-idle-stop
+            EOF
+            cat > /etc/systemd/system/msc-idle-stop.timer <<EOF
+            [Timer]
+            OnBootSec=5min
+            OnUnitActiveSec=5min
+            [Install]
+            WantedBy=timers.target
+            EOF
+            cat > /etc/systemd/system/msc-boot-busy.service <<EOF
+            [Unit]
+            Description=Reset the msc idle clock at boot
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/bin/touch /var/run/msc-busy
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+            systemctl daemon-reload
+            systemctl enable --now msc-boot-busy.service msc-idle-stop.timer
+
+  RunnerTemplateGpu:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: "{{resolve:ssm:/aws/service/ecs/optimized-ami/amazon-linux-2023/gpu/recommended/image_id}}"
+        IamInstanceProfile: {Arn: !GetAtt InstanceProfile.Arn}
+        SecurityGroupIds: [!Ref SecurityGroup]
+        InstanceInitiatedShutdownBehavior: stop
+        MetadataOptions: {HttpTokens: required, HttpPutResponseHopLimit: 2}
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs: {VolumeSize: !Ref VolumeSizeGiB, VolumeType: gp3, DeleteOnTermination: true, Encrypted: true}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - {Key: Name, Value: !Sub "${AWS::StackName}-runner-gpu"}
+              - {Key: msc:stack, Value: !Ref AWS::StackName}
+              - {Key: msc:runner, Value: gpu}
+        UserData:
+          Fn::Base64: |
+            #!/bin/bash
+            # msc runner: no ECS agent; a persistent k-series cache; stop when idle.
+            set -eu
+            systemctl disable --now ecs.service 2>/dev/null || true
+            mkdir -p /var/lib/msc-cache
+            IDLE_MINUTES=30
+            cat > /usr/local/bin/msc-idle-stop <<EOF
+            #!/bin/bash
+            # Stop the instance after $IDLE_MINUTES minutes with no msc job container running.
+            busy=/var/run/msc-busy
+            [ -f \$busy ] || touch \$busy
+            if [ -n "\$(docker ps -q --filter label=msc.job)" ] || pgrep -f "ssm-session-worker" >/dev/null; then
+              touch \$busy
+            elif [ \$(( \$(date +%s) - \$(stat -c %Y \$busy) )) -gt $(( IDLE_MINUTES * 60 )) ]; then
+              shutdown -h now
+            fi
+            EOF
+            chmod +x /usr/local/bin/msc-idle-stop
+            cat > /etc/systemd/system/msc-idle-stop.service <<EOF
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/local/bin/msc-idle-stop
+            EOF
+            cat > /etc/systemd/system/msc-idle-stop.timer <<EOF
+            [Timer]
+            OnBootSec=5min
+            OnUnitActiveSec=5min
+            [Install]
+            WantedBy=timers.target
+            EOF
+            cat > /etc/systemd/system/msc-boot-busy.service <<EOF
+            [Unit]
+            Description=Reset the msc idle clock at boot
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/bin/touch /var/run/msc-busy
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+            systemctl daemon-reload
+            systemctl enable --now msc-boot-busy.service msc-idle-stop.timer
+
+  # ---- AWS Batch (msc_aws.py run --on batch) ----
+  # Batch's hosts: a larger root volume than the AMI's 30 GB, for the GPU image. No user data (Batch adds its own).
+  BatchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        MetadataOptions: {HttpTokens: required}
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs: {VolumeSize: !Ref VolumeSizeGiB, VolumeType: gp3, DeleteOnTermination: true, Encrypted: true}
+
+  CpuEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      Type: MANAGED
+      State: ENABLED
+      ComputeResources:
+        Type: SPOT
+        AllocationStrategy: SPOT_PRICE_CAPACITY_OPTIMIZED
+        MinvCpus: 0
+        MaxvCpus: !Ref CpuMaxVcpus
+        InstanceTypes: !Ref CpuInstanceTypes
+        Subnets: !Ref SubnetIds
+        SecurityGroupIds: [!Ref SecurityGroup]
+        InstanceRole: !GetAtt InstanceProfile.Arn
+        LaunchTemplate: {LaunchTemplateId: !Ref BatchTemplate, Version: !GetAtt BatchTemplate.LatestVersionNumber}
+        Ec2Configuration: [{ImageType: ECS_AL2023}]
+        Tags: {Name: !Sub "${AWS::StackName}-batch-cpu", "msc:stack": !Ref AWS::StackName}
+
+  GpuEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      Type: MANAGED
+      State: ENABLED
+      ComputeResources:
+        Type: !Ref GpuPurchase
+        AllocationStrategy: !If [GpuSpot, SPOT_PRICE_CAPACITY_OPTIMIZED, BEST_FIT_PROGRESSIVE]
+        MinvCpus: 0
+        MaxvCpus: !Ref GpuMaxVcpus
+        InstanceTypes: !Ref GpuInstanceTypes
+        Subnets: !Ref SubnetIds
+        SecurityGroupIds: [!Ref SecurityGroup]
+        InstanceRole: !GetAtt InstanceProfile.Arn
+        LaunchTemplate: {LaunchTemplateId: !Ref BatchTemplate, Version: !GetAtt BatchTemplate.LatestVersionNumber}
+        Ec2Configuration: [{ImageType: ECS_AL2023_NVIDIA}]
+        Tags: {Name: !Sub "${AWS::StackName}-batch-gpu", "msc:stack": !Ref AWS::StackName}
+
+  CpuQueue:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      JobQueueName: !Sub "${AWS::StackName}-cpu"
+      Priority: 1
+      ComputeEnvironmentOrder: [{Order: 1, ComputeEnvironment: !Ref CpuEnvironment}]
+
+  GpuQueue:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      JobQueueName: !Sub "${AWS::StackName}-gpu"
+      Priority: 1
+      ComputeEnvironmentOrder: [{Order: 1, ComputeEnvironment: !Ref GpuEnvironment}]
+
+  # vCPUs and memory are the defaults; msc_aws.py run --vcpus/--memory overrides them per job. Memory is in MiB and
+  # must leave room for the ECS agent: about 7.5 GiB is usable on an 8 GiB instance.
+  CpuJobDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      JobDefinitionName: !Sub "${AWS::StackName}-cpu"
+      Type: container
+      PlatformCapabilities: [EC2]
+      ContainerProperties:
+        Image: !Sub "${Repository.RepositoryUri}:cpu"
+        JobRoleArn: !GetAtt JobRole.Arn
+        Command: [python, /work/aws/job.py, --help]
+        ResourceRequirements:
+          - {Type: VCPU, Value: "4"}
+          - {Type: MEMORY, Value: "7000"}
+      RetryStrategy:
+        Attempts: 3
+        EvaluateOnExit:
+          - {OnStatusReason: "Host EC2*", Action: RETRY}  # a Spot interruption
+          - {OnReason: "*", Action: EXIT}
+      Timeout: {AttemptDurationSeconds: 172800}
+
+  GpuJobDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      JobDefinitionName: !Sub "${AWS::StackName}-gpu"
+      Type: container
+      PlatformCapabilities: [EC2]
+      ContainerProperties:
+        Image: !Sub "${Repository.RepositoryUri}:gpu"
+        JobRoleArn: !GetAtt JobRole.Arn
+        Command: [python, /work/aws/job.py, --help]
+        ResourceRequirements:
+          - {Type: VCPU, Value: "4"}
+          - {Type: MEMORY, Value: "28000"}
+          - {Type: GPU, Value: "1"}
+      RetryStrategy:
+        Attempts: 3
+        EvaluateOnExit:
+          - {OnStatusReason: "Host EC2*", Action: RETRY}  # a Spot interruption
+          - {OnReason: "*", Action: EXIT}
+      Timeout: {AttemptDurationSeconds: 172800}
+
+  Budget:
+    Type: AWS::Budgets::Budget
+    Condition: WantBudget
+    Properties:
+      Budget:
+        BudgetName: !Sub "${AWS::StackName}-monthly"
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: {Amount: !Ref MonthlyBudgetUSD, Unit: USD}
+      NotificationsWithSubscribers:
+        - Notification: {NotificationType: FORECASTED, ComparisonOperator: GREATER_THAN, Threshold: 80}
+          Subscribers: [{SubscriptionType: EMAIL, Address: !Ref BudgetEmail}]
+        - Notification: {NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 100}
+          Subscribers: [{SubscriptionType: EMAIL, Address: !Ref BudgetEmail}]
+
+Outputs:
+  Bucket: {Value: !Ref Bucket}
+  RepositoryUri: {Value: !GetAtt Repository.RepositoryUri}
+  CpuQueue: {Value: !Ref CpuQueue}
+  GpuQueue: {Value: !Ref GpuQueue}
+  CpuJobDefinition: {Value: !Ref CpuJobDefinition}
+  GpuJobDefinition: {Value: !Ref GpuJobDefinition}
+  RunnerTemplateCpu: {Value: !Ref RunnerTemplateCpu}
+  RunnerTemplateGpu: {Value: !Ref RunnerTemplateGpu}
+  SubnetIds: {Value: !Join [",", !Ref SubnetIds]}
