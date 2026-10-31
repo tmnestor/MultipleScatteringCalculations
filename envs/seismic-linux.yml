@@ -10,6 +10,10 @@
 #   pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu    x86-64 without a GPU (smaller)
 #   python -m cubic_scattering.fortran.build
 #
+# aarch64 (Graviton): PyPI has no Linux arm64 wheel of finufft, so pip compiles it, which needs a C++ compiler and
+# FFTW: add "- cxx-compiler" and "- fftw" below, and export CMAKE_ARGS="-DFINUFFT_ARCH_FLAGS=-march=armv8.2-a"
+# before creating the env (finufft's default, -march=native, ties the build to the machine it was built on).
+#
 # OpenMP: on Linux, conda-forge's gfortran links libgomp, as the image's apt gfortran does, and the finufft wheel
 # carries its own renamed copy: the same pairing the Docker image and the cloud sessions run.  The macOS deadlock
 # noted in envs/seismic.yml (two OpenMP runtimes in finufft_setpts) came from the macOS wheel's bundled libomp.  If a

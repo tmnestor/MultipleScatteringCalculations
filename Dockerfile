@@ -30,6 +30,12 @@ FROM ubuntu:24.04
 ARG WITH_TORCH=0
 ARG TORCH_VERSION=2.10.0
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
+# Set by BuildKit from --platform (amd64, arm64).  PyPI has no Linux arm64 wheel of finufft, so on arm64 pip builds it
+# from source, with g++ and Ubuntu's FFTW (double, single and OpenMP variants; finufft would otherwise download and
+# build FFTW itself), and for a portable target: finufft's default, -march=native, would tune it to the build machine
+# (an Apple chip, building on a Mac), and the image could then fail with illegal instructions on Graviton.
+# armv8.2-a runs on every Graviton generation and on Apple silicon.
+ARG TARGETARCH
 
 ENV DEBIAN_FRONTEND=noninteractive \
     VIRTUAL_ENV=/opt/venv \
@@ -45,19 +51,31 @@ RUN --mount=type=secret,id=ca,mode=0444 \
     fi \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-        python3.12 python3.12-venv python3.12-dev gfortran ninja-build git ca-certificates \
+        python3.12 python3.12-venv python3.12-dev gfortran g++ libfftw3-dev ninja-build git ca-certificates \
     && rm -rf /var/lib/apt/lists/* /etc/apt/apt.conf.d/99ca \
     && python3.12 -m venv "$VIRTUAL_ENV"
 
 COPY envs/requirements-cloud.txt /tmp/requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip --mount=type=secret,id=ca,mode=0444 \
     if [ -f /run/secrets/ca ]; then export PIP_CERT=/run/secrets/ca; fi \
+    && if [ "$TARGETARCH" = arm64 ]; then export CMAKE_ARGS="-DFINUFFT_ARCH_FLAGS=-march=armv8.2-a"; fi \
     && pip install -r /tmp/requirements.txt \
     && if [ "$WITH_TORCH" = 1 ]; then pip install "torch==$TORCH_VERSION" --index-url "$TORCH_INDEX_URL"; fi
 
+# arm64: torch's wheel carries its own libgfortran.so.5 (torch/lib, versions to GFORTRAN_8), and once torch is
+# imported it is the libgfortran.so.5 in the process, so the kernels below, which need GFORTRAN_10, fail to load.
+# Ubuntu's (to GFORTRAN_13) serves both, so it is preloaded into every process.  (torch's libgomp.so.1 has the
+# OpenMP versions the kernels need, and only one copy loads, so it needs nothing.)
+RUN if [ "$TARGETARCH" = arm64 ]; then \
+        test -f /usr/lib/aarch64-linux-gnu/libgfortran.so.5 \
+        && echo /usr/lib/aarch64-linux-gnu/libgfortran.so.5 > /etc/ld.so.preload; \
+    fi
+
 WORKDIR /work
 COPY . .
-RUN PYTHON=python envs/build_kernels_if_stale.sh
+RUN PYTHON=python envs/build_kernels_if_stale.sh \
+    && python envs/check_kernels_load.py \
+    && if [ "$WITH_TORCH" = 1 ]; then python envs/check_kernels_load.py --after-torch; fi
 
 ENTRYPOINT ["/work/envs/docker-entrypoint.sh"]
 CMD ["bash"]
