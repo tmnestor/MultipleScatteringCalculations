@@ -1,0 +1,377 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmathfont{KpMath-Regular.otf}
+\setmathfont{KpMath-Bold.otf}[version=bold]
+\usepackage{microtype}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[margin=24mm, top=28mm, bottom=28mm]{geometry}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Where the FFT Sphere Solver Runs}
+\fancyhead[R]{\small\itshape 31 October 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setcounter{secnumdepth}{3}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+\usepackage{setspace}
+\setstretch{1.12}
+\setlength{\parskip}{0.4em}
+\usepackage[colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+\usepackage{xurl}
+
+\newcommand{\nsub}{n_{\mathrm{sub}}}
+\newcommand{\nP}{n_{P}}
+\newcommand{\code}[1]{\nolinkurl{#1}}
+
+\title{\bfseries Where the FFT Sphere Solver Runs\\[4pt]
+\large Memory, precision and hardware for the Foldy--Lax sphere,\\
+measured on Graviton CPUs and an NVIDIA A10G}
+\author{}
+\date{31 October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The FFT-accelerated Foldy--Lax solver for a voxelised sphere
+(\code{compute_sphere_foldy_lax_fft_gpu}) was measured from $\nsub = 12$ to $96$ cells across the diameter,
+up to 463\,400 cells and 4.2 million unknowns, on eight Graviton3 cores and on an NVIDIA A10G, at $k_S a = 1$. Four
+results follow.
+
+\emph{Memory.} The GMRES solver allocated its whole Krylov basis, $(\mathrm{maxiter}+1)$ vectors, before the first
+step: 13.4\,GB of a 27.7\,GB peak at $\nsub = 96$, for solves that took four steps. It now grows the basis a vector
+a step, with results bit-identical to before. What remains is dominated by the padded grids of the FFT product.
+
+\emph{Speed.} At $\nsub = 96$ the A10G forms the FFT product 15 times faster than the eight cores in complex128, and
+about 50 times faster in complex64. The solve then stops being the cost: the kernel and the right-hand sides, built on
+the CPU, take most of the time.
+
+\emph{Precision.} With the kernel built in complex128 and only the solve in complex64, the far field agrees with the
+complex128 solution to $3.9\times10^{-9}$ at a GMRES tolerance of $10^{-6}$, against a discretisation error of
+$6.7\times10^{-5}$. Single precision costs nothing measurable.
+
+\emph{Design.} The two halves want different machines: the kernel build, in complex128, parallel and mostly
+independent of frequency, on many CPU cores; the solve, in complex64 and limited by memory bandwidth, on a GPU. The
+canonical kernel that passes between them is 160\,MB at $\nsub = 96$ in complex64.
+\end{abstract}
+
+\tableofcontents
+
+%=====================================================================
+\section{The solver and the measurement}\label{sec:setup}
+
+\subsection{What is solved}
+
+A sphere of radius $a = 0.5$\,m is voxelised on a cubic grid of $\nsub$ cells across its diameter; the cells whose
+centres lie inside it, $N$ of them, each carry nine unknowns (displacement and Voigt strain). The Foldy--Lax system
+couples every pair of cells through the cell-averaged propagator. Its product with a vector is a convolution, formed
+by FFT on a zero-padded grid of $\nP^3$ points per component, with $\nP$ the smallest odd length at least
+$2\nsub - 1$ whose only prime factors are 3, 5 and 7 (\code{fast_odd_size}): $\nP = 225$ at $\nsub = 96$. The
+kernel is stored only at the canonical wavenumbers of the cube group, about $1/46$ of the grid
+(\S\ref{sec:design}). GMRES (\code{torch_gmres}) solves one column for each orbit of the right-hand sides under the
+symmetries: three Taylor patterns, which give the composite $9\times9$ T-matrix, and six plane-wave columns, which give
+the far field. The other columns follow by symmetry.
+
+The kernel is always built on the CPU in complex128: the cell-averaged pair blocks come from a wavenumber series
+whose recursions need the precision (\code{cell_average_kseries.py}). Only the solve runs in the device's dtype,
+on the kernel rounded to it.
+
+\subsection{The test case}
+
+The background is the project's test medium, $\alpha = 5000$\,m/s, $\beta = 3000$\,m/s, $\rho = 2500$\,kg/m$^3$; the
+sphere's contrast is $\Delta\lambda = 2$\,GPa, $\Delta\mu = 1$\,GPa, $\Delta\rho = 100$\,kg/m$^3$; the frequency is
+fixed at $k_S a = 1$, so that refining $\nsub$ refines the discretisation of the same physical problem. GMRES
+converged in three or four steps at every size.
+
+\subsection{The probe}
+
+\code{scripts/probe_fft_sphere_scaling.py} runs each size in a fresh process, so that its peak memory is its own,
+and records the time to build the kernel, each GMRES solve (iterations, products, time), the total, the peak resident
+memory of the process, and on CUDA the allocator's peak. The k-series store, the universal coefficients of the pair
+blocks (\code{numerics.yml}: \code{kseries_store}), grows on first use by the offsets a size needs; every run reported
+here found it already grown. \code{scripts/measure_fft_sphere_precision.py} compares precisions and the exact Mie
+solution (\S\ref{sec:precision}).
+
+\subsection{The machines}
+
+\begin{table}[h]
+\centering
+\caption{The two AWS instances (Sydney, \code{ap-southeast-2}), each used through the project's image
+(\code{aws/README.md}): Python 3.12, NumPy 2.4.2, torch 2.10.0 (the CUDA 12.8 build on the GPU).}
+\label{tab:machines}
+\small
+\begin{tabular}{llll}
+\toprule
+Instance & CPU & Memory & GPU \\
+\midrule
+r7g.2xlarge & 8 Graviton3 cores (arm64) & 64\,GiB & --- \\
+g5.xlarge & 4 vCPUs: 2 AMD EPYC cores, hyperthreaded & 16\,GiB & NVIDIA A10G, 24\,GB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The g5.xlarge was chosen for its GPU; its two physical cores matter for the stages that stay on the CPU
+(\S\ref{sec:profile}). Two GPU runs that shared the instance with another job are excluded from the data; the GPU
+rows here each had the instance to themselves.
+
+%=====================================================================
+\section{Memory}\label{sec:memory}
+
+\subsection{The Krylov basis was allocated in full}
+
+\code{torch_gmres} has no restart, and it allocated the basis for every iteration it might take,
+$(\mathrm{maxiter}+1) \times 9N$ complex numbers, before the first. At the default $\mathrm{maxiter} = 200$ that is
+13.4\,GB at $\nsub = 96$ in complex128, for solves that converged in four steps. Lowering $\mathrm{maxiter}$ to 20
+removed almost exactly that much (table~\ref{tab:krylov}).
+
+\begin{table}[h]
+\centering
+\caption{Peak resident memory on r7g.2xlarge, complex128, with the basis allocated in full. The drop is the
+basis's: 3.44 against 3.56\,GB at $\nsub = 64$, 11.16 against 12.01\,GB at $\nsub = 96$.}
+\label{tab:krylov}
+\begin{tabular}{rrrrrr}
+\toprule
+& & \multicolumn{2}{c}{$\mathrm{maxiter} = 200$} & \multicolumn{2}{c}{$\mathrm{maxiter} = 20$} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+$\nsub$ & cells & basis (GB) & peak (GB) & basis (GB) & peak (GB) \\
+\midrule
+64 & 137\,376 & 3.98 & 8.88 & 0.42 & 5.44 \\
+96 & 463\,400 & 13.41 & 27.71 & 1.40 & 16.55 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The basis is now a list to which Arnoldi appends each vector it makes, so its memory follows the iterations taken,
+$(n_{\mathrm{iter}}+1)\times 9N$, and $\mathrm{maxiter}$ can be set generously against hard cases at no cost; only the
+$(\mathrm{maxiter}+1)\times\mathrm{maxiter}$ Hessenberg matrix is sized by it. The arithmetic is unchanged: against the
+previous version, solutions, iteration counts and residuals are bit-identical in both precisions, for converging
+solves, solves that reach $\mathrm{maxiter}$, and the breakdown branch. With $10^6$ unknowns, $\mathrm{maxiter} = 200$
+and four steps, the peak fell from 3.29 to 0.24\,GB. Every GPU measurement below uses the new version.
+
+\subsection{What remains}
+
+Without the full basis, the A10G's peak at $\nsub = 96$ in complex128 is 14.6\,GB, of which the basis is 0.33\,GB and
+the canonical kernel 0.32\,GB. One padded grid stack, nine components of $\nP^3$ complex numbers, is 1.64\,GB, so the
+remainder is about eight to nine stacks: the temporaries of the FFT product (the packed grid, its transform, the
+product with the kernel and its inverse transform), as inferred from their size; it has not been profiled. Two
+consequences follow. Device memory scales as $\nP^3$, not as $N$, and the padding to a 3-5-7-smooth length makes
+$\nP^3$ at $\nsub = 96$ $(225/191)^3 = 1.63$ times the minimum. Reducing the temporaries, by transforming in place or
+component by component, is the next memory saving.
+
+The host's peak also includes about 2.5 to 3\,GB that does not grow with $N$: 2.7 to 3.1\,GB at $\nsub = 24$, where
+the solver's own arrays are well under 1\,GB. It is absent from the runs made while the k-series store held only the
+offsets of small sizes (0.36\,GB at $\nsub = 12$), so the memory-mapped store is the likely part of it.
+
+%=====================================================================
+\section{Time on the CPU and on the GPU}\label{sec:time}
+
+\begin{table}[h]
+\centering
+\caption{Time per FFT product, and the total for one sphere (both the composite T-matrix and the far-field columns),
+in seconds. CPU: r7g.2xlarge, complex128, gmres\_tol $10^{-8}$. GPU: g5.xlarge, complex128 at $10^{-8}$ (four
+steps a solve) and complex64 at $10^{-6}$ (three).}
+\label{tab:time}
+\begin{tabular}{rr rrr rrr}
+\toprule
+& & \multicolumn{3}{c}{seconds per product} & \multicolumn{3}{c}{total seconds} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+$\nsub$ & cells & CPU & GPU c128 & GPU c64 & CPU & GPU c128 & GPU c64 \\
+\midrule
+24 & 7\,208 & 0.0344 & 0.0184 & 0.0118 & 3.0 & 2.6 & 2.0 \\
+32 & 17\,256 & 0.0819 & 0.0119 & 0.0074 & 6.0 & 2.7 & 2.4 \\
+48 & 57\,856 & 0.437 & 0.0369 & 0.0138 & 26.9 & 6.6 & 5.2 \\
+64 & 137\,376 & 1.021 & 0.0694 & 0.0237 & 60.8 & 13.2 & 10.5 \\
+96 & 463\,400 & 4.911 & 0.318 & 0.096 & 283.1 & 50.2 & 37.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $\nsub = 96$ the A10G forms a product 15 times faster than the eight Graviton cores in complex128 (0.318 against
+4.6 to 4.9\,s), and 48 to 51 times faster in complex64 (0.096\,s). Complex128 is the A10G's weak mode for arithmetic,
+yet it still wins by an order of magnitude: the product is a sequence of FFTs and pointwise multiplications, limited
+by memory bandwidth more than by floating-point rate. Halving the bytes, complex64 makes the product 3.3 times faster
+still, and the tolerance it can reach, $10^{-6}$, takes three steps instead of four (42 products a sphere against 53
+or 54).
+
+The totals tell a different story from the products. In complex64 at $\nsub = 96$ the solves take 4.0\,s of 37.3: the
+rest is on the CPU. On the r7g.2xlarge, whose eight cores ran close to 800\% busy, the kernel took 11.7\,s; on the
+g5.xlarge's two cores it takes 18.5\,s; and about 15\,s more goes to stages that the probe did not separate. Section~\ref{sec:profile} finds
+them.
+
+%=====================================================================
+\section{Precision}\label{sec:precision}
+
+Each sphere was solved three times on the A10G with the same complex128 kernel: in complex128 at gmres\_tol
+$10^{-10}$, the reference, and in complex64 at $10^{-5}$ and at $10^{-6}$ (single precision cannot reach the
+reference's tolerance). Two errors are compared, both relative, in the maximum over the components and angles: the
+\emph{precision} error, complex64 against complex128, on the composite T-matrix and on the far field; and the
+\emph{discretisation} error, complex128 against the exact elastic Mie solution, on the far field. The far field is
+for a $P$ wave incident along $z$, observed at nine angles in the $z$--$x$ plane at $5\times10^4$ radii, the distance at
+which \code{gate_sphere_cell_average_vs_mie.py} established that the asymptotic and exact fields agree. The
+discretisation error is given raw and with the voxel volume scaled to the sphere's, which removes the staircase's
+dilution but not its shape.
+
+\begin{table}[h]
+\centering
+\caption{The error of solving in complex64, beside the error of the discretisation (g5.xlarge, $k_S a = 1$).}
+\label{tab:precision}
+\begin{tabular}{rr rr rrr}
+\toprule
+& & \multicolumn{2}{c}{c128 against Mie} & & \multicolumn{2}{c}{c64 against c128} \\
+\cmidrule(lr){3-4}\cmidrule(lr){6-7}
+$\nsub$ & cells & raw & volume-corrected & gmres\_tol & T-matrix & far field \\
+\midrule
+32 & 17\,256 & $4.97\times10^{-3}$ & $8.25\times10^{-4}$ & $10^{-5}$ & $4.8\times10^{-7}$ & $8.4\times10^{-7}$ \\
+   &         &                     &                     & $10^{-6}$ & $6.4\times10^{-8}$ & $4.9\times10^{-9}$ \\
+64 & 137\,376 & $7.14\times10^{-4}$ & $1.47\times10^{-4}$ & $10^{-5}$ & $5.1\times10^{-7}$ & $9.0\times10^{-7}$ \\
+   &          &                     &                     & $10^{-6}$ & $8.1\times10^{-8}$ & $3.8\times10^{-9}$ \\
+96 & 463\,400 & $2.69\times10^{-4}$ & $6.68\times10^{-5}$ & $10^{-5}$ & $5.1\times10^{-7}$ & $9.2\times10^{-7}$ \\
+   &          &                     &                     & $10^{-6}$ & $8.6\times10^{-8}$ & $3.9\times10^{-9}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The precision error is set by the GMRES tolerance, not by the word length. Tightening it from $10^{-5}$ to $10^{-6}$
+lowers the far-field difference from about $9\times10^{-7}$ to $4\times10^{-9}$, below single precision's unit
+roundoff, since the far field sums over all the cells; and it costs nothing measurable (31.3 against 30.8\,s at
+$\nsub = 96$). At $10^{-6}$ the precision error is about 17\,000 times smaller than the discretisation error at
+$\nsub = 96$, and the complex64 and complex128 far fields agree with Mie to the three figures shown at every size.
+
+The discretisation error falls at about second order in $\nsub$ (the volume-corrected column: a factor 5.6 from 32 to
+64 and 2.2 from 64 to 96, against 4 and 2.25 for second order), so a gmres\_tol of $10^{-5}$ would begin to matter
+only at sizes far beyond these; $10^{-6}$ is the safe default. Against a target of $10^{-5}$ relative to the exact
+solution, the limit at these sizes is the staircase, not the solver.
+
+%=====================================================================
+\section{Where the time goes}\label{sec:profile}
+
+A profile of one solve at $\nsub = 96$ in complex128 on the g5.xlarge
+(\code{scripts/data/profile_fft_sphere_gpu_g5.xlarge_complex128_n96.txt}) accounts for the stages the probe
+did not separate (table~\ref{tab:profile}). GPU work is asynchronous, so the solves' time appears where the solver
+waits for the device, inside \code{torch_gmres}.
+
+\begin{table}[h]
+\centering
+\caption{One solve, $\nsub = 96$, complex128, g5.xlarge (52.3\,s in the solver), before the vectorisation below.}
+\label{tab:profile}
+\small
+\begin{tabular}{lrl}
+\toprule
+Stage & seconds & where \\
+\midrule
+kernel build (\code{_point_canonical_kernel}) & 19.3 & CPU \\
+\quad cell-averaged pair blocks (k-series) & 7.1 & \quad depends on the frequency \\
+\quad symmetry and index tables & about 11 & \quad depends on $\nsub$ only \\
+GMRES solves & 16.9 & GPU \\
+incident patterns (\code{_build_incident_field_coupled}) & 11.7 & CPU, a loop over cells \\
+copies from the device & 3.1 & \\
+the solver's own lines, the composite T-matrix among them & 2.2 & CPU \\
+symmetry applied to the solved columns & 1.2 & CPU \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The incident patterns were built cell by cell, an identity block and six small strain tensors for each of 463\,400
+cells, though every entry is one product: 1 or $\tfrac12$ times a component of the cell's offset from the centre.
+Built for all cells at once, they take 0.45\,s against 5.55\,s for the loop, on a two-core x86-64 machine (11.7\,s on
+the g5.xlarge). The composite T-matrix, $\sum_n t_n \psi_n$ over the cells, is now formed in batches of 4096 cells
+that stay in cache: 0.35 against 1.16\,s. Both are bit-identical to the loops, signed zeros included: NumPy sums
+along the first axis in order, and the running sum enters each batch as its first row (the cheaper
+$t\,\sum_n\psi_n$ differs at $10^{-15}$ and was not used). The four solvers that built the T-matrix by the loop all
+use the new form, and their outputs, uniform and graded, in both precisions, are unchanged bit for bit.
+
+With these, a complex64 solve at $\nsub = 96$ on the g5.xlarge should take roughly 26\,s instead of 37 (not yet
+measured there), of which the kernel build is 18.5. That is the stage the design below moves off the GPU instance.
+
+%=====================================================================
+\section{A kernel stage and a solve stage}\label{sec:design}
+
+The measurements separate the solver into two stages with different needs.
+
+\begin{itemize}
+\item The \emph{kernel stage} runs in complex128, on the CPU, and parallelises well (the eight Graviton cores ran
+close to 800\% busy). More than half of it, at $\nsub = 96$, is symmetry and index tables that depend only on $\nsub$; the incident
+patterns depend only on the cell centres. Only the pair blocks, 7.1\,s here, depend on the frequency and the medium.
+\item The \emph{solve stage} runs in complex64, on the GPU, limited by memory bandwidth, and needs few CPU cores.
+\end{itemize}
+
+What passes between them is the canonical kernel, $K \times 9 \times 9$ complex numbers at the $K$ canonical
+wavenumbers (table~\ref{tab:handover}), built in complex128 and rounded to complex64 for the solve.
+
+\begin{table}[h]
+\centering
+\caption{The canonical kernel handed from the kernel stage to the solve stage.}
+\label{tab:handover}
+\begin{tabular}{rrrrr}
+\toprule
+$\nsub$ & $\nP$ & canonical wavenumbers $K$ & complex128 & complex64 \\
+\midrule
+64 & 135 & 54\,740 & 71\,MB & 35\,MB \\
+96 & 225 & 246\,905 & 320\,MB & 160\,MB \\
+128 & 315 & 669\,920 & 868\,MB & 434\,MB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+So the stages can run on different machines, with the kernel passed through object storage in seconds: the kernel
+stage on many Graviton cores, as a batch array over frequencies on Spot instances, with the $\nsub$-only tables
+computed once and kept; the solve stage on a small GPU instance, starting as each kernel is ready. In complex64 the
+A10G's 24\,GB holds $\nsub = 128$ (19.6\,GB by extrapolation of the measured sizes); $\nsub = 160$ would need about
+40\,GB, a 48\,GB GPU or fewer FFT temporaries (\S\ref{sec:memory}). Building this needs the solver split into a
+function that builds and saves the canonical kernel and one that solves from it, with the present function their
+composition; it has not been done.
+
+%=====================================================================
+\section{Limits of these measurements}\label{sec:limits}
+
+\begin{itemize}
+\item One frequency ($k_S a = 1$) and one moderate contrast, at which GMRES takes three or four steps. Stronger
+contrast or higher frequency takes more, and the Krylov basis, now sized by the steps taken, grows with them.
+\item The sphere is voxelised as a staircase; the discretisation error of table~\ref{tab:precision} is the
+staircase's, and a body the lattice resolves smoothly would set a lower bar for the precision error to clear.
+\item Each configuration was run once. Where two runs measured the same stage, they agreed to within about 6\% (the
+product at $\nsub = 96$ on the CPU, 4.91 and 4.61\,s; the GPU solves, 16.97 and 16.85\,s), but no spread is
+reported.
+\item The memory attributed to FFT temporaries and to the k-series store is inferred from sizes, not profiled.
+\item The timings of the vectorised stages (\S\ref{sec:profile}) were measured on a two-core x86-64 machine, not on
+the instances.
+\end{itemize}
+
+%=====================================================================
+\section{Reproduction}\label{sec:repro}
+
+The data are in \code{scripts/data/}: \code{fft_sphere_scaling_r7g.2xlarge_cpu_complex128.jsonl},
+\code{fft_sphere_scaling_g5.xlarge_cuda_complex128.jsonl}, \code{fft_sphere_scaling_g5.xlarge_cuda_complex64.jsonl},
+\code{fft_sphere_precision_g5.xlarge_cuda.jsonl} and the profile above. The commits are 8818dab (the growing Krylov
+basis), 4af0b78 (the data) and 9d72ca1 (the vectorised incident patterns and composite T-matrix). With the AWS
+tooling of \code{aws/README.md}, from a checkout:
+
+{\footnotesize
+\begin{verbatim}
+python3 aws/msc_aws.py run --on ec2 -- python scripts/probe_fft_sphere_scaling.py \
+    --device cpu --n-sub 24,32,48,64,96 --warm-store
+python3 aws/msc_aws.py run --on ec2 --gpu -- python scripts/probe_fft_sphere_scaling.py \
+    --device cuda --dtype complex128 --n-sub 24,32,48,64,96 --warm-store
+python3 aws/msc_aws.py run --on ec2 --gpu -- python scripts/probe_fft_sphere_scaling.py \
+    --device cuda --dtype complex64 --tol 1e-6 --n-sub 24,32,48,64,96
+python3 aws/msc_aws.py run --on ec2 --gpu -- python scripts/measure_fft_sphere_precision.py \
+    --device cuda --n-sub 32,64,96
+\end{verbatim}
+}
+
+\noindent
+The same scripts run locally with \code{PYTHONPATH=.}; \code{--fit-only} reprints a table from its data file.
+\code{--warm-store} grows the k-series store before the measured sizes, which otherwise include its one-time growth;
+at $\nsub = 96$ that growth took roughly 45 minutes on the r7g.2xlarge.
+
+\end{document}

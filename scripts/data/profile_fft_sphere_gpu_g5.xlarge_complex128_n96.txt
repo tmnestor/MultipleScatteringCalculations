@@ -1,0 +1,55 @@
+# cProfile of one compute_sphere_foldy_lax_fft_gpu solve: n_sub = 96, complex128, gmres_tol 1e-8, k_S a = 1,
+# on AWS g5.xlarge (NVIDIA A10G, 4 vCPUs), 31 October 2026, at commit 4af0b78 (before 9d72ca1 vectorised the incident
+# patterns and the composite T-matrix). Produced by:
+#   python -m cProfile -s cumtime scripts/probe_fft_sphere_scaling.py --one 96 --device cuda --dtype complex128
+# GPU work is asynchronous: its time appears in torch_gmres's own time, where the solver waits for the device.
+# The probe's JSON row for the run:
+# {"n_sub": 96, "device": "cuda", "dtype": "complex128", "ka": 1.0, "maxiter": 200, "tol": 1e-08, "n_cells": 463400, "unknowns": 4170600, "n_p": 225, "krylov_gb": 0.333648, "grid_stack_gb": 1.64025, "seconds_total": 52.34901164599978, "seconds_kernel": 19.290505664999728, "seconds_solves": 16.91162949399768, "seconds_per_product": 0.31908734894335244, "solves": [{"iterations": 4, "products": 6, "seconds": 2.1408956519999265, "rel_res": 2.1629025925427582e-10}, {"iterations": 4, "products": 6, "seconds": 1.8859222699993552, "rel_res": 2.926826342304086e-10}, {"iterations": 3, "products": 5, "seconds": 1.5677630760001193, "rel_res": 8.161662063660191e-09}, {"iterations": 4, "products": 6, "seconds": 1.88602078599979, "rel_res": 3.132388765896222e-10}, {"iterations": 4, "products": 6, "seconds": 1.8862916639991454, "rel_res": 3.118362917041265e-10}, {"iterations": 4, "products": 6, "seconds": 1.8864002999998775, "rel_res": 3.3405691685473233e-10}, {"iterations": 4, "products": 6, "seconds": 1.886046173000068, "rel_res": 3.0601460917943194e-10}, {"iterations": 4, "products": 6, "seconds": 1.8862429529999645, "rel_res": 1.0773179343990378e-10}, {"iterations": 4, "products": 6, "seconds": 1.8860466199994335, "rel_res": 1.41535603967837e-10}], "max_iterations": 4, "converged": true, "kseries_store_grew": false, "peak_host_gb": 9.133852, "baseline_host_gb": 0.688956, "peak_device_gb": 14.565052928, "host": "800bdfa65e8d", "machine": "x86_64", "gpu": "NVIDIA A10G", "torch": "2.10.0+cu128"}
+
+         9395555 function calls (9348348 primitive calls) in 54.977 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    2.160    2.160   52.344   52.344 sphere_scattering_fft_gpu.py:413(compute_sphere_foldy_lax_fft_gpu)
+        1    0.002    0.002   19.291   19.291 probe_fft_sphere_scaling.py:114(timed_kernel)
+        1    0.079    0.079   19.289   19.289 sphere_scattering_fft_gpu.py:172(_point_canonical_kernel)
+        9    0.000    0.000   16.914    1.879 probe_fft_sphere_scaling.py:123(timed_gmres)
+        9   13.508    1.501   16.911    1.879 torch_gmres.py:83(torch_gmres)
+        1    9.628    9.628   11.745   11.745 resonance_tmatrix.py:491(_build_incident_field_coupled)
+        1    0.037    0.037    7.145    7.145 cell_averaged_pair.py:495(averaged_pair_blocks_9x9)
+        1    0.343    0.343    6.941    6.941 cell_average_kseries.py:215(averaged_pair_blocks_9x9_kseries)
+      249    0.006    0.000    4.267    0.017 __init__.py:1(<module>)
+        1    1.225    1.225    4.035    4.035 fft.py:428(_orbit_arrays)
+      491    0.000    0.000    3.760    0.008 einsumfunc.py:1244(einsum)
+      491    3.760    0.008    3.760    0.008 {built-in method numpy._core._multiarray_umath.c_einsum}
+        1    2.346    2.346    3.348    3.348 sphere_scattering_fft_gpu.py:208(_canonical_kernel_from_blocks)
+        1    2.294    2.294    3.158    3.158 fft.py:291(_canonical_hat_from_blocks)
+       18    3.134    0.174    3.134    0.174 {method 'cpu' of 'torch._C.TensorBase' objects}
+        1    0.391    0.391    2.907    2.907 cell_average_kseries.py:267(canonical_greens)
+      508    1.873    0.004    1.873    0.004 {method 'reduce' of 'numpy.ufunc' objects}
+      373    0.001    0.000    1.817    0.005 fromnumeric.py:86(_wrapreduction_any_all)
+      360    0.000    0.000    1.809    0.005 fromnumeric.py:2548(all)
+       12    0.000    0.000    1.736    0.145 _jit_internal.py:1023(_overload)
+        1    0.389    0.389    1.399    1.399 cell_average_kseries.py:191(_coefficients_for)
+       11    0.638    0.058    1.299    0.118 shape_base.py:378(stack)
+  3244752    1.235    0.000    1.235    0.000 {built-in method numpy.zeros}
+        9    0.811    0.090    1.166    0.130 sphere_scattering_fft_gpu.py:368(_apply_symmetry)
+   463412    0.809    0.000    1.099    0.000 _twodim_base_impl.py:176(eye)
+   300111    0.563    0.000    1.015    0.000 memmap.py:359(__getitem__)
+        2    0.072    0.036    0.917    0.459 kernel.py:170(_assemble)
+      460    0.000    0.000    0.791    0.002 fromnumeric.py:48(_wrapfunc)
+   450167    0.584    0.000    0.676    0.000 memmap.py:312(__array_finalize__)
+   223/89    0.002    0.000    0.670    0.008 _ops.py:349(fallthrough)
+        1    0.286    0.286    0.640    0.640 fft.py:382(fourier_symmetry_tables)
+       29    0.626    0.022    0.626    0.022 {built-in method numpy.ascontiguousarray}
+        4    0.606    0.152    0.607    0.152 _shape_base_impl.py:62(take_along_axis)
+   150280    0.294    0.000    0.517    0.000 {method 'reshape' of 'numpy.ndarray' objects}
+        1    0.000    0.000    0.472    0.472 fromnumeric.py:939(sort)
+        1    0.000    0.000    0.461    0.461 fromnumeric.py:1421(searchsorted)
+        1    0.461    0.461    0.461    0.461 {method 'searchsorted' of 'numpy.ndarray' objects}
+        9    0.444    0.049    0.444    0.049 {method 'argsort' of 'numpy.ndarray' objects}
+       53    0.000    0.000    0.439    0.008 probe_fft_sphere_scaling.py:126(counted)
+       53    0.000    0.000    0.439    0.008 sphere_scattering_fft_gpu.py:480(matvec)
+       53    0.011    0.000    0.439    0.008 sphere_scattering_fft_gpu.py:305(_matvec_fft_canonical)
+   188/64    0.007    0.000    0.436    0.007 _ops.py:292(py_impl)

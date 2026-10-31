@@ -67,6 +67,7 @@ Technical reports of the stratified-background programme.
 | `GlobalMatrixMethod/` | 14 Sep 2026 | The stratified reference solver, and the source as a jump in the six-component state |
 | `IntraPlaneSpectralSweep/` | 26 Jul 2026 | The same-depth lattice sum by directional residues; its equivalence with Kambe's |
 | `MultiscaleBackground/` | 26 Jul 2026 | A multiresolution background inside a Krylov solve, assessed: the proposed direction conflicts with inexact-Krylov theory, and the idea has been done |
+| `SolverHardwareScaling/` | 31 Oct 2026 | The FFT sphere solver measured on Graviton CPUs and an A10G: the Krylov basis was allocated in full (fixed); the GPU forms the product 15x (complex128) to 50x (complex64) faster; complex64 solves cost nothing in accuracy; the kernel stage for many CPU cores, the solve for a GPU |
 | `SphereMieArbiter/` | 31 Oct 2026 | The voxel T-matrix of a sphere against exact Mie; a T-matrix and its propagator must close on the same quantity, the condition for the scheme to converge at all (revised for the sign fixes, the far-field fix and the exact single site) |
 | `SpherePlaneWaveResponse/` | 19 Sep 2026 | The plane-wave content of the Mie field on planes bounding the sphere, in closed form |
 | `StratifiedComposition/` | 27 Sep 2026 | Composing the stratified and lateral propagators: reciprocity gates and the source convention |
