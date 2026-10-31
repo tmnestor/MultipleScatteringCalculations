@@ -3,12 +3,13 @@
 ``compute_sphere_foldy_lax_fft_gpu`` for a sphere of n_sub cells along the diameter, at each n_sub in a fresh process
 so that its peak memory is its own: the kernel's build (``_point_canonical_kernel``), each GMRES solve (iterations,
 products, time), the total, the peak host memory (ru_maxrss) and the peak device memory (CUDA: the allocator's peak;
-MPS: the driver's allocation, sampled at every product).  Alongside, the two arrays whose size is known in advance:
-the Krylov basis ``torch_gmres`` allocates in full, (gmres_maxiter + 1) x 9 n_cells, which is set by gmres_maxiter
-and not by the iterations taken, and one padded grid stack of the product, 9 nP^3 with nP = fast_odd_size(2 n_sub - 1).
+MPS: the driver's allocation, sampled at every product).  Alongside, the two arrays whose size is known: the Krylov
+basis ``torch_gmres`` builds, (iterations + 1) x 9 n_cells (it grows by a vector a step; until 2026-10-31 it was
+allocated in full, (gmres_maxiter + 1) x 9 n_cells, rows measured before then carry that), and one padded grid stack
+of the product, 9 nP^3 with nP = fast_odd_size(2 n_sub - 1).
 
 Then a power law in the number of cells, fitted to the largest three measured sizes, extrapolates the peak memory
-and the times to the sizes asked for; the Krylov basis there is exact.  The extrapolation assumes the iteration
+and the times to the sizes asked for; the Krylov basis there is exact for the measured iteration count.  The extrapolation assumes the iteration
 count stays as measured: at fixed k_S a the discretisation is refined, not the physics changed, so it should, but a
 solve that reached gmres_maxiter without converging makes its times a lower bound (flagged).
 
@@ -167,7 +168,7 @@ def one(n_sub: int, device_name: str, dtype_name: str, ka: float, maxiter: int, 
         "n_cells": n_cells,
         "unknowns": 9 * n_cells,
         "n_p": n_p,
-        "krylov_gb": (maxiter + 1) * 9 * n_cells * item / 1e9,
+        "krylov_gb": (max(s["iterations"] for s in solves) + 1) * 9 * n_cells * item / 1e9,
         "grid_stack_gb": 9 * n_p**3 * item / 1e9,
         "seconds_total": t_total,
         "seconds_kernel": t_kernel,
@@ -241,7 +242,8 @@ def report(rows: list[dict], predict: list[int]) -> None:
         "product": _fit(use, "seconds_per_product"),
     }
     products = max(sum(s["products"] for s in r["solves"]) for r in use[-3:])
-    item = r0["krylov_gb"] / ((r0["maxiter"] + 1) * 9 * r0["n_cells"]) * 1e9
+    item = 16 if r0["dtype"] == "complex128" else 8
+    vectors = max(r["max_iterations"] for r in use) + 1  # the basis grows by a vector a step
     print(
         f"\nextrapolated from {'warm' if use is warm else 'all'} rows: power laws in cells over the largest 3 "
         f"(memory above the {base:.2f} GB baseline; exponents "
@@ -251,14 +253,21 @@ def report(rows: list[dict], predict: list[int]) -> None:
     print(f"{'n_sub':>6} {'cells':>10} {'Krylov GB':>10} {'grid GB':>8} {'peak GB':>8} {'kernel s':>9} {'solves s':>9}")
     for n in predict:
         cells = len(_build_grid_index_map(RADIUS, n)[1])
-        kry = (r0["maxiter"] + 1) * 9 * cells * item / 1e9
+        kry = vectors * 9 * cells * item / 1e9
         grid = 9 * fast_odd_size(2 * n - 1) ** 3 * item / 1e9
         fm = fits["memory"]
-        mem = base + max(fm[0] * cells ** fm[1] if fm else 0.0, kry)  # the basis alone is a floor
+        mem = base + max(fm[0] * cells ** fm[1] if fm else 0.0, kry + grid)  # the basis and one grid stack: a floor
         fk, fp = fits["kernel"], fits["product"]
         tk = f"{fk[0] * cells ** fk[1]:.0f}" if fk else "-"
         ts = f"{products * fp[0] * cells ** fp[1]:.0f}" if fp else "-"
         print(f"{n:>6} {cells:>10,} {kry:>10.1f} {grid:>8.1f} {mem:>8.1f} {tk:>9} {ts:>9}")
+    largest = max(use, key=lambda r: r["n_cells"])
+    if above(largest) < 2 * base:
+        print(
+            f"the largest measured size used {above(largest):.2f} GB above the {base:.2f} GB baseline: too little to "
+            "fit memory from, so the peak column is little more than its floor (the basis and one grid stack); "
+            "measure larger sizes"
+        )
     if not all(r["converged"] for r in rows):
         print("some solves reached gmres_maxiter without converging: the solve times are lower bounds")
     if use is not warm:
@@ -275,7 +284,7 @@ def main() -> None:
     ap.add_argument("--n-sub", default="12,16,24,32,40", help="sizes to measure, comma-separated")
     ap.add_argument("--predict", default="64,96,128,160", help="sizes to extrapolate to")
     ap.add_argument("--ka", type=float, default=1.0, help="k_S a, the same at every size")
-    ap.add_argument("--maxiter", type=int, default=200, help="gmres_maxiter (sets the Krylov basis' size)")
+    ap.add_argument("--maxiter", type=int, default=200, help="gmres_maxiter")
     ap.add_argument("--tol", type=float, default=1e-8, help="gmres_tol")
     ap.add_argument("--out", type=Path, default=None, help="output file (default under scripts/data/)")
     ap.add_argument("--fit-only", action="store_true", help="report the rows in the file; run nothing")
