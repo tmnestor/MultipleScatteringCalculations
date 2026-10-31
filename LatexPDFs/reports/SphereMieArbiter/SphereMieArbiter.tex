@@ -72,13 +72,16 @@ is the one arbiter that is both exact and laterally varying.  Two controls are
 needed for the comparison to measure the method rather than the test: the
 observation distance must reach the far field, and the staircase volume of the
 voxelised body must be divided out.  With those in place the matched pairing is
-$2.9$--$5.8\times$ closer to Mie than a point propagator in the Rayleigh
-regime.  Beyond it the pairing does not help: at $ka = 0.5$ and $ka = 1.5$ the
-averaged propagator is slightly \emph{worse} than the point one, and what limits
-the method is the staircase representation of a curved boundary.
+$4.7$--$8.0\times$ closer to Mie than a point propagator in the Rayleigh
+regime.  At $ka = 0.5$ the staircase of the sharp sphere decides the error and
+the two propagators cannot be told apart there; on a smoothly graded sphere,
+which has no staircase, the matched pairing converges at second order to the
+exact solution at $k_Sa = 0.5$ and $1$, while the point propagator stalls near
+$0.9\%$ however fine the grid.
 
-\emph{These numbers supersede an earlier set measured against an arbiter that
-carried three compensating sign errors; \S\ref{sec:results} records what
+\emph{These numbers supersede two earlier sets: one measured against an arbiter
+that carried three compensating sign errors, and one whose far field counted
+the incident wave's linear variation twice. \S\ref{sec:results} records what
 changed.}
 \end{abstract}
 
@@ -307,98 +310,111 @@ what makes it meaningful.
 
 \begin{quote}
 \small\itshape
-What changed, and why.  Every number in this section is a comparison between two
-objects that were \emph{both} wrong when it was first measured.  The exact Mie
-solution carried a spurious $(-1)^n$ in its multipole sum, inverting the
-density/dipole channel; the Foldy--Lax far field carried a sign error in its
-force term; and the contrast-extraction route carried a third error that
-cancelled the first, which is how all three survived more than a thousand
-tests.  They were found by an impedance-null test --- $\delta\rho/\rho = +
-\varepsilon$ with $\delta M/M = -\varepsilon$ leaves $Z=\sqrt{\rho M}$ unchanged
-and therefore cannot backscatter --- and fixed together; both solvers now agree
-with an independent Born calculation to $0.9997$--$1.0000$ across $k_Pa =
-0.18$ to $1.44$.
-
-Three conclusions of the earlier version do not survive the correction, and are
-stated here rather than quietly amended.  \textbf{(i)} The pairing improvement at
-$ka = 0.5$ reversed sign: the averaged propagator was reported $1.15$--$1.19
-\times$ better and is $0.71$--$0.84\times$, that is worse.  \textbf{(ii)} The
-Rayleigh improvement was reported stable to $8.8\%$ and has a spread of $64\%$.
-\textbf{(iii)} The resonance error roughly halved, from $52\%$ to $22$--$28\%$,
-and refinement from $n_{\rm sub} = 6$ to $8$ now \emph{improves} it where it
-previously made it worse.  What survives is the Rayleigh result and the whole of
-\S\ref{sec:pairing}--\S\ref{sec:average}, which concern the propagator alone and
-never passed through the arbiter.
+What changed, and why.  The numbers of the first version compared two objects
+that were \emph{both} wrong.  The exact Mie solution carried a spurious $(-1)^n$
+in its multipole sum, inverting the density/dipole channel; the Foldy--Lax far
+field carried a sign error in its force term; and the contrast-extraction route
+carried a third error that cancelled the first.  They were found by an
+impedance-null test and fixed together on 20 September 2026.  On 29 September a
+second far-field defect was fixed: it counted the incident wave's linear
+variation twice, an error of order $(ka)^2$ that no refinement removes.  The
+$ka = 0.5$ ``reversal'' reported after the first fix (the averaged propagator
+$0.71$--$0.84\times$ as good as the point one) did not survive it, and the
+$ka = 1.5$ numbers of that version are withdrawn.  On 31 October 2026 the single
+site became the uniform-strain closure exact at every frequency, in place of a
+cube $T$-matrix with far-field form-factor corrections; on this sharp sphere that
+moves the errors by under a tenth at $ka = 0.1$ and by up to a half at $ka = 0.5$,
+without changing either verdict.
+What survives throughout is \S\ref{sec:pairing}--\S\ref{sec:average}, which
+concern the propagator alone and never passed through the arbiter.
 \end{quote}
 
 Volume-corrected far-field error against exact Mie, for a sphere with
 $\Delta\lambda = 2$, $\Delta\mu = 1$, $\Delta\rho = 0.1$ on a background
-$\alpha=5$, $\beta=3$, $\rho=2.5$:
+$\alpha=5$, $\beta=3$, $\rho=2.5$ (\path{scripts/gate_sphere_cell_average_vs_mie.py}):
 
 \begin{center}
 \begin{tabular}{@{}rrrrr@{}}
 \toprule
 $ka$ & $n_{\rm sub}$ & point propagator & matched average & ratio\\
 \midrule
-$0.1$ & $3$ & $0.0055$ & $\mathbf{0.0019}$ & $2.86$\\
-      & $4$ & $0.0068$ & $\mathbf{0.0014}$ & $5.02$\\
-      & $6$ & $0.0086$ & $\mathbf{0.0015}$ & $5.76$\\
+$0.1$ & $3$ & $0.0056$ & $\mathbf{0.0012}$ & $4.66$\\
+      & $4$ & $0.0072$ & $\mathbf{0.0010}$ & $7.36$\\
+      & $6$ & $0.0087$ & $\mathbf{0.0011}$ & $8.01$\\
 \midrule
-$0.5$ & $3$ & $\mathbf{0.0306}$ & $0.0365$ & $0.84$\\
-      & $4$ & $\mathbf{0.0141}$ & $0.0181$ & $0.78$\\
-      & $6$ & $\mathbf{0.0198}$ & $0.0278$ & $0.71$\\
-\midrule
-$1.5$ & $6$ & $\mathbf{0.2780}$ & $0.2851$ & $0.97$\\
-      & $8$ & $\mathbf{0.2170}$ & $0.2247$ & $0.97$\\
+$0.5$ & $3$ & $\mathbf{0.0055}$ & $0.0092$ & $0.60$\\
+      & $4$ & $0.0098$ & $\mathbf{0.0028}$ & $3.48$\\
+      & $6$ & $0.0084$ & $\mathbf{0.0062}$ & $1.35$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{Bold is the better of the pair.  Matching the pairing helps in
-the Rayleigh regime and nowhere else: at $ka = 0.5$ the averaged propagator is
-$20$--$40\%$ \emph{worse}, consistently across resolutions, and at $ka = 1.5$ it
-is $3\%$ worse.  The Rayleigh improvement is also not as stable as it looked ---
-$2.86$ to $5.76$, a spread of $64\%$, driven by the coarsest geometry.}
+\captionof{table}{Bold is the better of the pair.  In the Rayleigh regime the
+matched average is $4.7$ to $8.0$ times closer to Mie, by a factor that varies
+by $50\%$ across resolutions.  At $ka = 0.5$ the ratios straddle one: on a
+staircased sphere no verdict is available there.}
 \end{center}
+
+\subsection{The pairing on a body without a staircase}
+
+The smoothly graded sphere of radius $a = 10$\,m, its contrast full in the core
+$r < a/2$ and falling to zero across the shell as a $C^2$ smoothstep, has no
+staircase: the contrast and its slope vanish at the surface, so the voxelised
+body converges to the body.  Solved with each cell at the profile's centre value
+and the exact closure as its single site, against its exact solution, the far
+field's error is (\path{scripts/measure_pairing_graded_sphere.py}):
+
+\begin{center}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{$k_Sa = 0.5$} & \multicolumn{2}{c}{$k_Sa = 1$}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+$n_{\rm sub}$ & point & matched average & point & matched average\\
+\midrule
+$6$  & $7.5\times10^{-3}$ & $2.8\times10^{-3}$ & $7.6\times10^{-3}$ & $1.6\times10^{-3}$\\
+$8$  & $8.1\times10^{-3}$ & $1.6\times10^{-3}$ & $8.5\times10^{-3}$ & $1.3\times10^{-3}$\\
+$12$ & $8.8\times10^{-3}$ & $1.8\times10^{-4}$ & $9.4\times10^{-3}$ & $1.6\times10^{-4}$\\
+$16$ & $9.1\times10^{-3}$ & $3.5\times10^{-5}$ & $9.7\times10^{-3}$ & $3.5\times10^{-5}$\\
+$24$ & $9.2\times10^{-3}$ & $1.3\times10^{-5}$ & $9.9\times10^{-3}$ & $1.2\times10^{-5}$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{With the point propagator the scheme does not converge: its
+error stays near $0.9\%$ and grows slightly as the grid is refined.  With the
+average over the receiving cell it converges at second order to the exact
+solution, $700$ to $800$ times closer at $24$ cells across.}
+\end{center}
+
+\noindent
+A plausible reading, not derived here: the two propagators differ at separation
+$s$ by $(d^2/24)\nabla^2 G$ to leading order, and summed over the neighbours of a
+cell the $\delta$-function content of $\nabla^2 G$ contributes an amount that does
+not shrink with $d$.  Whatever the mechanism, the measurement shows that the
+pairing of \S\ref{sec:pairing} is not a Rayleigh-regime refinement but the
+condition for the scheme to converge to the continuum at all.
 
 \subsection{The three regimes}
 
-\paragraph{Rayleigh, $ka\lesssim0.1$.}  The matched average reaches
-$0.14$--$0.19\%$, at or below the shape-factor floor of representing a sphere by
-cubes, against $0.55$--$0.86\%$ for the point propagator.  This is where the
-pairing argument of \S\ref{sec:pairing} is confirmed, and it is the one regime
-in which it is.  The improvement is not uniform: $2.86\times$ at
-$n_{\rm sub}=3$ against $5.76\times$ at $n_{\rm sub}=6$.  The coarsest case is
-also the most diluted ($26\%$), so the spread is plausibly geometric rather than
-a property of the propagator --- but that is an explanation offered, not one
-tested, and the earlier claim of stability across resolutions is withdrawn.
+\paragraph{Rayleigh, $ka\lesssim0.1$.}  On the sharp sphere the matched average
+reaches $0.10$--$0.12\%$, at the shape-factor floor of representing a sphere by
+cubes, against $0.56$--$0.87\%$ for the point propagator.
 
-\paragraph{Transition, $ka\sim0.5$.}  \textbf{The pairing stops helping and
-starts hurting}: $0.71$--$0.84\times$, consistently across all three
-resolutions.  The effect is systematic, not scatter, and it is larger than the
-harness uncertainty of the previous subsection.  Two readings are available and
-this note does not choose between them.  Either the collocation closure that
-\S\ref{sec:pairing} matches is itself losing validity as $ka_{\rm sub}$ grows,
-so that matching it matches the wrong thing; or the cell average is correct and
-is being scored against a staircase error that happens to cancel part of the
-point propagator's own.  Distinguishing them needs a body whose boundary the
-lattice resolves exactly --- a cube, not a sphere --- which is a different
-measurement from this one.
+\paragraph{Transition, $ka\sim0.5$ to $1$.}  On the sharp sphere the staircase
+decides the error and the two propagators cannot be told apart; on the graded
+sphere the matched pairing converges and the point propagator does not
+(above).  The question the first version left open, whether the collocation
+closure loses validity as $ka_{\rm sub}$ grows, is answered: at these
+frequencies it does not.
 
-\paragraph{Resonance, $ka\gtrsim1$.}  The error is $22$--$28\%$, and the
-propagator is not what is wrong: the two propagators differ by $3\%$ where the
-error is $25\%$.  The sub-cell $T$-matrices remain inside their Rayleigh
-validity ($ka_{\rm sub} = 0.25$ at $n_{\rm sub}=6$), and refining from
-$n_{\rm sub}=6$ to $8$ now improves the error from $27.8\%$ to $21.7\%$ as the
-dilution falls from $17\%$ to $4.3\%$ --- so what the ladder is tracking here is
-still the staircase, not the method.  What fails is the representation of a
-curved boundary at a wavelength comparable with the radius.  That is a limit of
-the discretisation itself, not of the propagator within it.
+\paragraph{Resonance, $ka\gtrsim1$.}  On a sphere with a sharp surface the error
+is set by the representation of the curved boundary at a wavelength comparable
+with the radius, not by the propagator.  The $ka = 1.5$ numbers of the first
+version, $22$--$28\%$, were measured with the far field that counted the
+incident wave twice and are not repeated here.
 
 %=====================================================================
 \section{Summary}
 
 \begin{enumerate}
-\item Partition the body into cubes; give each the analytic single-site
-      $T$-matrix for its contrast.
+\item Partition the body into cubes; give each the single-site $T$-matrix of
+      the uniform-strain closure, its self term exact at every frequency.
 \item Couple them with the propagator averaged over the \emph{receiver} cell,
       \eqref{eq:avgdef}, applied per mode --- matching the collocation closure
       of the single-site $T$-matrix.
@@ -410,15 +426,14 @@ the discretisation itself, not of the propagator within it.
 \end{enumerate}
 
 \noindent
-The method is accurate to a fraction of a percent in the Rayleigh regime,
-degrades to one to four percent through the transition, and is geometry limited
-beyond $ka\sim1$ at some twenty-five percent, where a representation that
-follows the boundary rather than staircasing it is required instead.
+On a sharp sphere the method is accurate to about a tenth of a per cent in the
+Rayleigh regime and is limited by the staircase of the curved surface beyond
+it, where a representation that follows the boundary is required instead.
 
 \noindent
-The pairing of step~2 is what the Rayleigh figure rests on, and it is
-established only there.  At $ka = 0.5$ and above the averaged propagator is
-measurably worse than the point one, and until that is understood step~2 should
-be read as a Rayleigh-regime recommendation rather than a general one.
+The pairing of step~2 is the condition for the scheme to converge at all: on a
+body without a staircase the matched pairing converges at second order to the
+exact solution at $k_Sa = 0.5$ and $1$, while the point propagator stalls near
+$0.9\%$.
 
 \end{document}

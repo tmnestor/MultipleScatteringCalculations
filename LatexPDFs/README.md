@@ -26,9 +26,11 @@ Read these before relying on any number from an older document.
   unknowns, growing as the three-quarters power of the accuracy asked; sampled at the centres, whose error
   on smooth bodies largely cancels the point cell's own, the two need about the same down to a crossover.
   At equal degree the point cell is 1.6 to 1.9 times the more accurate on a sphere.
-- **Sphere comparisons before 20 September 2026** used a Mie arbiter with three sign errors, whose
-  fixing reversed the verdict on the matched cell-average propagator at k a = 0.5. The cell-average
-  propagator is better only in the Rayleigh regime (`reports/SphereMieArbiter`, as revised).
+- **Sphere comparisons before 20 September 2026** used a Mie arbiter with three sign errors. The
+  verdict that followed their fixing, that the cell-average propagator is better only in the Rayleigh
+  regime, did not survive the far-field fix of 29 September either. On a body without a staircase the
+  matched pairing converges at second order at k_S a = 0.5 and 1 while the point propagator stalls near
+  0.9% (`reports/SphereMieArbiter`, revised 31 October 2026).
 - **Voxel-sphere far fields computed before 29 September 2026** through `foldy_lax_far_field` counted
   the incident plane wave's linear variation twice, an error of about (k a)^2: 1.1% at k_S a = 0.5 and
   4.6% at k_S a = 1.
@@ -65,7 +67,7 @@ Technical reports of the stratified-background programme.
 | `GlobalMatrixMethod/` | 14 Sep 2026 | The stratified reference solver, and the source as a jump in the six-component state |
 | `IntraPlaneSpectralSweep/` | 26 Jul 2026 | The same-depth lattice sum by directional residues; its equivalence with Kambe's |
 | `MultiscaleBackground/` | 26 Jul 2026 | A multiresolution background inside a Krylov solve, assessed: the proposed direction conflicts with inexact-Krylov theory, and the idea has been done |
-| `SphereMieArbiter/` | 20 Sep 2026 | The voxel T-matrix of a sphere against exact Mie; a T-matrix and its propagator must close on the same quantity (revised after the sign fixes) |
+| `SphereMieArbiter/` | 31 Oct 2026 | The voxel T-matrix of a sphere against exact Mie; a T-matrix and its propagator must close on the same quantity, the condition for the scheme to converge at all (revised for the sign fixes, the far-field fix and the exact single site) |
 | `SpherePlaneWaveResponse/` | 19 Sep 2026 | The plane-wave content of the Mie field on planes bounding the sphere, in closed form |
 | `StratifiedComposition/` | 27 Sep 2026 | Composing the stratified and lateral propagators: reciprocity gates and the source convention |
 | `WrapperProblem/` | 14 Sep 2026 | The 9x9 wrapper problem resolved: three defects, the gates to 1e-15 |
