@@ -87,9 +87,16 @@ def test_reused_kernel_skips_the_build(small, monkeypatch):
 
 
 def test_one_kernel_serves_many_incidence_angles(small):
-    """The sweep this exists for: many right-hand sides, one build."""
+    """The sweep this exists for: many right-hand sides, one build.
+
+    At 1 Hz, k_S h = 1.4. At the module's 10 Hz each cube is several S wavelengths wide (k_S h = 14),
+    where no uniform-field single site means anything: the package T-matrix's form factor collapsed it to
+    1e-5 there, leaving the slab nearly transparent, and with the exact closure the slab scatters as such a
+    lattice would and tilted incidence takes GMRES past 500 iterations. What this test checks, a reused
+    kernel giving the same bits, does not depend on the frequency.
+    """
     geom, mat = small
-    w = 2 * np.pi * 10.0
+    w = 2 * np.pi * 1.0
     kern = build_slab_kernels(geom, w, REF, periodic=True)
     for tilt in (0.0, 0.2, 0.4):
         k_hat = np.array([np.cos(tilt), np.sin(tilt), 0.0])

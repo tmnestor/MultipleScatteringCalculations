@@ -50,7 +50,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .directional_sweeps import G0Cache, SweepGrid, apply_g0
-from .effective_contrasts import MaterialContrast, ReferenceMedium, compute_cube_tmatrix
+from .effective_contrasts import MaterialContrast, ReferenceMedium
 from .resonance_tmatrix import _sub_cell_tmatrix_9x9
 from .sweep_kernels import vertical_kernel_9x9
 from .sweep_solver import solve_sweep_foldy_lax
@@ -292,7 +292,8 @@ def rayleigh_t0_and_derivative(
 
     def cube(m: NDArray, ref: ReferenceMedium) -> NDArray:
         contrast = MaterialContrast(Dlambda=m[0], Dmu=m[1], Drho=m[2])
-        res = compute_cube_tmatrix(omega, half_width, ref, contrast)
+        from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+        res = lattice_cube_tmatrix(omega, half_width, ref, contrast)
         return _sub_cell_tmatrix_9x9(res, omega, half_width)
 
     t0 = np.zeros((n_z, n_x, 9, 9), dtype=complex)

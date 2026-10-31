@@ -590,8 +590,11 @@ def test_coupled_rayleigh_limit():
 
     result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=1)
 
-    # Rayleigh reference: density-only T-matrix = ω² Δρ* V I₃
-    rayleigh = compute_cube_tmatrix(omega, a, ref, contrast)
+    # Reference: the density block of the single site the composite's cells carry (the configured lattice
+    # single site), omega^2 drho* V I_3
+    from cubic_scattering.point_cell_self import lattice_cube_tmatrix
+
+    rayleigh = lattice_cube_tmatrix(omega, a, ref, contrast)
     V = (2.0 * a) ** 3
     t_eff = V * omega**2 * complex(rayleigh.Drho_star)
     T_ray = t_eff * np.eye(3, dtype=complex)
@@ -680,14 +683,15 @@ def test_voigt_from_resonance_near_field():
     kx = 0.001
     ky = 0.0
 
-    rayleigh = compute_cube_tmatrix(omega, a, ref, contrast)
-    V = (2.0 * a) ** 3
-
     result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=1)
     T6_res = voigt_tmatrix_from_resonance_result(result, kx=kx, ky=ky)
+    # the near field is G_self (the lone cube's integrals of the Green's tensor) times the composite's own
+    # T-matrix, whose cells carry the configured lattice single site
+    rayleigh = result.rayleigh_result
+    t_comp = result.T_comp_9x9
 
-    # 1. Displacement block = Gamma0 * omega^2 * Drho* * V * I3
-    expected_u = complex(rayleigh.Gamma0 * omega**2 * rayleigh.Drho_star * V)
+    # 1. Displacement block = Gamma0 * T_uu, T_uu = omega^2 * Drho* * V of the composite's cell
+    expected_u = complex(rayleigh.Gamma0 * t_comp[0, 0])
     for i in range(3):
         rel_err = abs(T6_res[i, i] - expected_u) / max(abs(expected_u), 1e-30)
         assert rel_err < 1e-10, f"u diag [{i}] rel_err = {rel_err:.2e}"
@@ -700,11 +704,8 @@ def test_voigt_from_resonance_near_field():
     # 3. Traction block matches analytic G_self @ T_loc @ input_conv
     S_V = _volume_integral_voigt(rayleigh.Ac, rayleigh.Bc, rayleigh.Cc)
     C_trac = _traction_from_voigt_strain(ref)
-    Dc_star = effective_stiffness_voigt(
-        rayleigh.Dlambda_star, rayleigh.Dmu_star_diag, rayleigh.Dmu_star_off
-    )
     S = strain_from_displacement_traction(kx, ky, ref)
-    expected_trac = V * C_trac @ S_V @ Dc_star @ S
+    expected_trac = C_trac @ S_V @ t_comp[3:, 3:] @ S
     rel_err_t = np.linalg.norm(T6_res[3:, :] - expected_trac) / max(np.linalg.norm(expected_trac), 1e-30)
     assert rel_err_t < 1e-10, f"Traction block vs analytic: rel_err = {rel_err_t:.2e}"
 

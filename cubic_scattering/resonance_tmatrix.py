@@ -727,7 +727,8 @@ def compute_resonance_tmatrix(
         )
 
     # --- Sub-cell Rayleigh T-matrix (same for all cells) ---
-    rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, contrast)
+    from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+    rayleigh_sub = lattice_cube_tmatrix(omega, a_sub, ref, contrast)
 
     # --- Full-cube Rayleigh result (n_sub=1 reference for validation) ---
     rayleigh_full = compute_cube_tmatrix(omega, a, ref, contrast)
@@ -1040,8 +1041,10 @@ def validate_rayleigh_limit(
     result = compute_resonance_tmatrix(omega, a, ref, contrast, n_sub=1)
     T_res = result.T3x3
 
-    # Rayleigh reference: density-only T-matrix = ω² Δρ* V I₃
-    rayleigh = compute_cube_tmatrix(omega, a, ref, contrast)
+    # Reference: the density block of the single site the composite's cells carry, omega^2 drho* V I_3
+    from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+
+    rayleigh = lattice_cube_tmatrix(omega, a, ref, contrast)
     V = (2.0 * a) ** 3
     t_eff = V * omega**2 * complex(rayleigh.Drho_star)
     T_ray = t_eff * np.eye(3, dtype=complex)

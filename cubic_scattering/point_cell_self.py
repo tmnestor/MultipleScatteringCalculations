@@ -36,13 +36,17 @@ Conventions inherited from ``kupradze_derivatives`` and ``resonance_tmatrix``: g
 (z, x, y) ordering, time e^{-i omega t}, the 9x9 [[G, C], [H, S]] of ``_voigt_contract``.
 """
 
+import math
 from collections.abc import Callable
+from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
+import yaml
 from numpy.typing import NDArray
 
 from .cell_averaged_pair import _assemble
-from .effective_contrasts import MaterialContrast, ReferenceMedium
+from .effective_contrasts import CubeTMatrixResult, MaterialContrast, ReferenceMedium, compute_cube_tmatrix
 from .kupradze_derivatives import (
     MAX_ORDER,
     difference_derivative_tensors,
@@ -157,6 +161,88 @@ def offset_block_9x9(
     return _assemble(d_diff, d_s, omega, ref)
 
 
+#: Terms of the series in k h of the self term, and the largest |k_S| h it is used for. Its terms grow to
+#: about e^(sqrt(3) k h) before they cancel, which costs digits; against the face rule, measured
+#: (31 October 2026):
+#:   |k_S| h       <= 1     2        3        4        5        6        8
+#:   worst error   9e-15    2.3e-14  7e-14    2.0e-13  7.5e-13  4.1e-12  9.5e-8
+#: Beyond the reach the face rule is used directly (0.6 s rather than 0.6 ms).
+SERIES_TERMS = 48
+SERIES_REACH = 4.0
+
+
+@lru_cache(maxsize=1)
+def _unit_cube_moments() -> list[list[NDArray]]:
+    """J[t][n] = integral over the cube [-1, 1]^3 of the derivative tensor d^n r^(t-1), n = 0..4, as
+    distributions, for t = 0..SERIES_TERMS - 1. Frequency, cell size and medium free: computed once.
+
+    The same face rule as ``cube_integral_tensors``, vectorised over the face points: for n >= 1 the face
+    integral of n_{i1} d^(n-1) r^m with m = t - 1, the derivatives from the radial ladder
+    f_k = (1/r d/dr)^k r^m = m (m - 2) ... (m - 2k + 2) r^(m - 2k); for n = 0 the radial field
+    r^(m+3)/(m+3) x/r^3, whose divergence is r^m.
+    """
+    faces = _face_nodes(np.zeros(3), 1.0, N_FACE)
+    x = np.concatenate([f[2] for f in faces])  # (P, 3)
+    w = np.concatenate([f[3] for f in faces])
+    nrm = np.concatenate(
+        [np.tile(sign * np.eye(3)[axis], (len(f[3]), 1)) for f in faces for axis, sign in [f[:2]]]
+    )
+    r = np.linalg.norm(x, axis=1)
+    eye = np.eye(3)
+    out: list[list[NDArray]] = []
+    for t in range(SERIES_TERMS):
+        m = t - 1
+        lad = []
+        for k in range(4):
+            c = 1.0
+            for q in range(k):
+                c *= m - 2 * q
+            lad.append(c * r ** (m - 2 * k))
+        f0, f1, f2, f3 = lad
+        j0 = np.sum(w * r ** (m + 3) / (m + 3) * np.einsum("pi,pi->p", nrm, x) / r**3)
+        d1 = f1[:, None] * x
+        d2 = f1[:, None, None] * eye + f2[:, None, None] * np.einsum("pi,pj->pij", x, x)
+        sym = (
+            np.einsum("jk,pl->pjkl", eye, x)
+            + np.einsum("jl,pk->pjkl", eye, x)
+            + np.einsum("kl,pj->pjkl", eye, x)
+        )
+        d3 = f2[:, None, None, None] * sym + f3[:, None, None, None] * np.einsum("pj,pk,pl->pjkl", x, x, x)
+        out.append(
+            [
+                np.array(j0),
+                np.einsum("p,pi,p->i", w, nrm, f0),
+                np.einsum("p,pi,pj->ij", w, nrm, d1),
+                np.einsum("p,pi,pjk->ijk", w, nrm, d2),
+                np.einsum("p,pi,pjkl->ijkl", w, nrm, d3),
+            ]
+        )
+    return out
+
+
+def self_block_9x9_series(omega: complex, ref: ReferenceMedium, d: float) -> NDArray:
+    """S_self as the series in k h with the coefficients of ``_unit_cube_moments``: a short sum a frequency.
+
+    g_c = (1/4 pi) sum_t (i k_c)^t r^(t-1) / t! and D = g_S - g_P, whose t = 0 term cancels; the integral
+    over the cube of half-width h of d^n r^(t-1) is h^(t+2-n) J[t][n].
+    """
+    h = 0.5 * d
+    k_p, k_s = omega / ref.alpha, omega / ref.beta
+    moments = _unit_cube_moments()
+    d_s = [np.zeros((3,) * n, dtype=complex) for n in range(3)]
+    d_diff = [np.zeros((3,) * n, dtype=complex) for n in range(MAX_ORDER + 1)]
+    for t, jt in enumerate(moments):
+        inv = 1.0 / (4.0 * np.pi * math.factorial(t))
+        c_s = (1j * k_s) ** t * inv
+        c_d = (1j**t) * (k_s**t - k_p**t) * inv
+        for n in range(MAX_ORDER + 1):
+            term = h ** (t + 2 - n) * jt[n]
+            if n < 3:
+                d_s[n] = d_s[n] + c_s * term
+            d_diff[n] = d_diff[n] + c_d * term
+    return _assemble(d_diff, d_s, omega, ref)
+
+
 def contrast_9x9(omega: complex, contrast: MaterialContrast) -> NDArray:
     """D = diag(omega^2 drho I_3, dC_V), the Born limit of ``_sub_cell_tmatrix_9x9`` divided by d^3."""
     out = np.zeros((9, 9), dtype=complex)
@@ -181,3 +267,142 @@ def exact_point_tmatrix_9x9(
     """
     dm = contrast_9x9(omega, contrast)
     return d**3 * dm @ np.linalg.inv(np.eye(9) - s_self @ dm)
+
+
+# --------------------------------------------------------------------------------------------------------
+# The single site of a cube inside a lattice, as numerics.yml chooses it
+# --------------------------------------------------------------------------------------------------------
+
+NUMERICS_YAML = Path(__file__).with_name("numerics.yml")
+SINGLE_SITES = ("exact", "package")
+_SITE_EXAMPLE = "         single_site:\n           lattice: exact      # one of: exact, package"
+
+
+@lru_cache(maxsize=1)
+def lattice_single_site() -> str:
+    """``single_site.lattice`` from ``cubic_scattering/numerics.yml``: a lattice cell's single site.
+
+    Read once per process; there is no default.
+
+    Raises:
+        ValueError: with what is wrong, where to fix it, a valid example, and how to recover.
+    """
+
+    def error(problem: str) -> ValueError:
+        return ValueError(
+            f"single_site.lattice {problem}\n"
+            f"  Where: {NUMERICS_YAML}, key single_site.lattice\n"
+            f"  Valid:\n{_SITE_EXAMPLE}\n"
+            "  Fix:   add the block above at the top level of that file; exact is the uniform-strain\n"
+            "         closure, package the cube T-matrix with far-field form-factor corrections."
+        )
+
+    if not NUMERICS_YAML.is_file():
+        raise error("cannot be read: the numerics configuration file is missing.")
+    block = (yaml.safe_load(NUMERICS_YAML.read_text()) or {}).get("single_site")
+    if not isinstance(block, dict) or "lattice" not in block:
+        raise error("is missing.")
+    site = block["lattice"]
+    if site not in SINGLE_SITES:
+        raise error(f"is {site!r}; it must be one of {SINGLE_SITES}.")
+    return str(site)
+
+
+#: S_self by (omega, d, alpha, beta, rho), the speeds kept complex for an attenuating medium; bounded so a
+#: long sweep cannot grow it without limit (each entry is a 9x9 complex array, about 1.3 kB).
+_SELF_BLOCKS: dict[tuple[complex, float, complex, complex, complex], NDArray] = {}
+_SELF_BLOCKS_MAX = 100_000
+
+
+def _cached_self_block(omega: complex, d: float, ref: ReferenceMedium) -> NDArray:
+    """S_self for one frequency, cell size and medium; it does not depend on the contrast. Read-only. The
+    series in k h within SERIES_REACH, the face rule beyond."""
+    key = (complex(omega), float(d), complex(ref.alpha), complex(ref.beta), complex(ref.rho))
+    block = _SELF_BLOCKS.get(key)
+    if block is None:
+        if abs(omega / ref.beta) * 0.5 * d <= SERIES_REACH:
+            block = self_block_9x9_series(omega, ref, d)
+        else:
+            block = self_block_9x9(omega, ref, d)
+        block.setflags(write=False)
+        if len(_SELF_BLOCKS) < _SELF_BLOCKS_MAX:
+            _SELF_BLOCKS[key] = block
+    return block
+
+
+def exact_cube_tmatrix(
+    omega: complex, a: float, ref: ReferenceMedium, contrast: MaterialContrast
+) -> CubeTMatrixResult:
+    """The uniform-strain closure with the exact self term, as a CubeTMatrixResult's effective contrasts.
+
+    The closure is cubic-symmetric, so its 9x9 T-matrix is fixed by four effective contrasts: T_uu =
+    V omega^2 drho* I_3 and T_ee = V dC*_V(dlambda*, dmu*_diag, dmu*_off), the form
+    ``resonance_tmatrix._sub_cell_tmatrix_9x9`` builds from them. The intermediate quantities of
+    ``compute_cube_tmatrix`` (Gamma0, Ac, ..., the amplification factors) belong to its own derivation and
+    are NaN here, so that code reading them fails visibly instead of mixing the two single sites.
+
+    Args:
+        omega: Angular frequency (may be complex).
+        a: Cube HALF-width.
+        ref: Background medium.
+        contrast: The cube's contrast.
+
+    Raises:
+        ValueError: if the closure is not of the cubic form (a defect of the self term, not of the input).
+    """
+    d = 2.0 * a
+    # the medium's speeds may be complex (an attenuating background): keyed as given, never cast to real
+    s_self = _cached_self_block(omega, d, ref)  # the speeds may be complex (an attenuating medium)
+    dm = contrast_9x9(omega, contrast)
+    # (I - S D)^-1 is block diagonal by parity: the density and stiffness channels close separately
+    drho_star = complex(contrast.Drho / (1.0 - s_self[0, 0] * dm[0, 0])) if contrast.Drho else 0j
+    dc_star = dm[3:, 3:] @ np.linalg.inv(np.eye(6) - s_self[3:, 3:] @ dm[3:, 3:])
+    dlam, dmu_diag, dmu_off = dc_star[0, 1], 0.5 * (dc_star[0, 0] - dc_star[0, 1]), 0.5 * dc_star[3, 3]
+    rebuilt = effective_stiffness_voigt(dlam, dmu_diag, dmu_off)
+    scale = max(float(np.max(np.abs(dc_star))), 1e-300)
+    if float(np.max(np.abs(rebuilt - dc_star))) > 1e-9 * scale:
+        raise ValueError(
+            "the exact closure's stiffness block is not of the cubic form "
+            "dC*(dlambda*, dmu*_diag, dmu*_off): "
+            f"misfit {float(np.max(np.abs(rebuilt - dc_star))) / scale:.2e} of its largest entry.\n"
+            "  Where: cubic_scattering/point_cell_self.py, exact_cube_tmatrix\n"
+            "  Valid: a misfit at round-off, as test_point_cell_self checks\n"
+            "  Fix:   check self_block_9x9 (the face rule N_FACE) for this omega and cell size."
+        )
+    nan = complex(np.nan, np.nan)
+    return CubeTMatrixResult(
+        Gamma0=nan,
+        Ac=nan,
+        Bc=nan,
+        Cc=nan,
+        T1c=nan,
+        T2c=nan,
+        T3c=nan,
+        amp_u=nan,
+        amp_theta=nan,
+        amp_e_off=nan,
+        amp_e_diag=nan,
+        Drho_star=drho_star,
+        Dlambda_star=complex(dlam),
+        Dmu_star_off=complex(dmu_off),
+        Dmu_star_diag=complex(dmu_diag),
+    )
+
+
+def lattice_cube_tmatrix(
+    omega: complex,
+    a: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    k_hat: NDArray | None = None,
+) -> CubeTMatrixResult:
+    """The single site of a cube inside a lattice, the one ``single_site.lattice`` in numerics.yml names.
+
+    ``k_hat`` is passed to ``compute_cube_tmatrix`` (its directional form factor) when that is the site.
+
+    Every solver that couples cells takes its cell T-matrix from here; a lone cube takes
+    ``compute_cube_tmatrix`` directly (``tests/test_single_site_guard.py`` keeps the two apart).
+    """
+    if lattice_single_site() == "exact":
+        return exact_cube_tmatrix(omega, a, ref, contrast)  # isotropic: k_hat has no part in it
+    return compute_cube_tmatrix(omega, a, ref, contrast, k_hat=k_hat)

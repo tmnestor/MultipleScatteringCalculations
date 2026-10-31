@@ -7,8 +7,8 @@ from numpy.testing import assert_allclose
 from cubic_scattering.effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
-    compute_cube_tmatrix,
 )
+from cubic_scattering.point_cell_self import lattice_cube_tmatrix
 from cubic_scattering.resonance_tmatrix import (
     _propagator_block_9x9,
     _sub_cell_tmatrix_9x9,
@@ -144,7 +144,7 @@ class TestSlabMaterial:
 
 class TestSlabTMatrices:
     def test_matches_individual_computation(self):
-        """Each cube's T-matrix matches compute_cube_tmatrix + _sub_cell_tmatrix_9x9."""
+        """Each cube's T-matrix is the configured lattice single site (lattice_cube_tmatrix), as 9x9."""
         geom = SlabGeometry(M=2, N_z=2, a=A)
         mat = uniform_slab_material(geom, REF, CONTRAST)
         T_all = compute_slab_tmatrices(geom, mat, OMEGA)
@@ -152,7 +152,7 @@ class TestSlabTMatrices:
         assert T_all.shape == (2, 2, 2, 9, 9)
 
         # Compute reference T-matrix
-        result = compute_cube_tmatrix(OMEGA, A, REF, CONTRAST)
+        result = lattice_cube_tmatrix(OMEGA, A, REF, CONTRAST)
         T_ref = _sub_cell_tmatrix_9x9(result, OMEGA, A)
 
         assert_allclose(T_all[0, 0, 0], T_ref, rtol=1e-12)
@@ -171,7 +171,7 @@ class TestSlabTMatrices:
         mat = random_slab_material(geom, REF, CONTRAST, phi=0.5, seed=42)
         T_all = compute_slab_tmatrices(geom, mat, OMEGA)
         # All T-matrices should be either zero or the CONTRAST T-matrix
-        T_inc = _sub_cell_tmatrix_9x9(compute_cube_tmatrix(OMEGA, A, REF, CONTRAST), OMEGA, A)
+        T_inc = _sub_cell_tmatrix_9x9(lattice_cube_tmatrix(OMEGA, A, REF, CONTRAST), OMEGA, A)
         for lz in range(geom.N_z):
             for i in range(geom.M):
                 for j in range(geom.M):

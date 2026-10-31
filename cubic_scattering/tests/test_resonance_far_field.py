@@ -266,7 +266,13 @@ def test_born_far_field_converges_to_the_cube_form_factor(wave, ka):
 
     e2, e4 = err(far(2)), err(far(4))
     assert e4 < 0.3 * e2, f"not converging: err(n=2) = {e2:.3e}, err(n=4) = {e4:.3e}"
-    assert e4 < 0.03, f"err(n=4) = {e4:.3e} vs the continuum Born far field"
+    # With the exact closure as the cells' single site the error is c (k_S a_cell)^2, a_cell = a / n, with
+    # c = 0.67 for S and 0.36 for P (measured at n = 2, 4 and 8, orders 1.98 to 2.13, 31 October 2026); the
+    # package T-matrix's form factor approximated the cell's own phase variation and so had a smaller c.
+    bound = 0.8 * (ka / 4) ** 2
+    assert e4 < bound, (
+        f"err(n=4) = {e4:.3e} vs the continuum Born far field, above 0.8 (k_S a_cell)^2 = {bound:.3e}"
+    )
 
 
 def test_composite_is_independent_of_the_incidence():

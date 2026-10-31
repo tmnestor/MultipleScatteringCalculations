@@ -66,7 +66,7 @@ def test_the_single_wave_is_the_full_solvers_plane_wave_columns(profile) -> None
         POL,
         "P",
         profile=profile,
-        single_site="package",
+        single_site="exact",
         gmres_tol=1e-12,
         device=CPU,
         dtype=torch.complex128,

@@ -20,7 +20,6 @@ from .cell_averaged_lattice import averaged_same_plane_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
-    compute_cube_tmatrix,
 )
 from .inter_voxel_propagator import inter_voxel_propagator_9x9
 from .kennett_layers import (
@@ -206,7 +205,8 @@ def compute_slab_tmatrices(
                 key = (dl, dm, dr)
                 if key not in cache:
                     contrast = MaterialContrast(dl, dm, dr)
-                    result = compute_cube_tmatrix(omega, a, ref, contrast, k_hat=k_hat)
+                    from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+                    result = lattice_cube_tmatrix(omega, a, ref, contrast, k_hat=k_hat)
                     cache[key] = _sub_cell_tmatrix_9x9(result, omega, a)
                 T_all[lz, i, j] = cache[key]
 

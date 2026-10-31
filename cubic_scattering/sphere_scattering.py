@@ -29,7 +29,6 @@ from .cell_averaged_pair import averaged_pair_blocks_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
-    compute_cube_tmatrix,
 )
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
@@ -197,7 +196,8 @@ def compute_sphere_foldy_lax(
     N = len(centres)
 
     # Sub-cell Rayleigh T-matrix (same for all cells)
-    rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, contrast)
+    from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+    rayleigh_sub = lattice_cube_tmatrix(omega, a_sub, ref, contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
     # a_sub is the sub-cell HALF-width, so the cell side -- and the centre
@@ -1618,7 +1618,8 @@ def foldy_lax_far_field(
     u_S = np.zeros((M, 3), dtype=complex)
 
     # The sub-cell Rayleigh T-matrix: each cell's own when the cells carry different contrasts
-    rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, decomp_result.contrast)
+    from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+    rayleigh_sub = lattice_cube_tmatrix(omega, a_sub, ref, decomp_result.contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
     t_local = decomp_result.t_local
 

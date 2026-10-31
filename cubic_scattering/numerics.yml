@@ -66,3 +66,18 @@ cell_average:
   #            separations), equal to round-off (tests/test_cell_average_fortran.py). Build it first with
   #            conda run -n seismic python -m cubic_scattering.fortran.build
   backend: fortran
+
+single_site:
+  # The single-site T-matrix of a cube inside a lattice of cubes, for every solver that couples cells:
+  # sphere_scattering (the solve and foldy_lax_far_field), sphere_scattering_fft, sphere_scattering_fft_gpu,
+  # resonance_tmatrix's sub-cells, slab_scattering, cpa_iteration and sweep_gradient, through
+  # point_cell_self.lattice_cube_tmatrix.
+  #   exact    the uniform-strain closure with its self term exact at every frequency (point_cell_self).
+  #            With the receiver-averaged propagator it makes the scheme the collocation of the continuum
+  #            equation (Error paper, Eq. 15 and Appendix F).
+  #   package  effective_contrasts.compute_cube_tmatrix: the closure statically, plus far-field form-factor
+  #            corrections derived for a lone sphere and moved to the cube (partly heuristic). In a lattice
+  #            they depart from the closure by about 0.25 (kh)^2 and made the graded sphere's error 7 to 11
+  #            times larger at 64 cells across (Error paper, Section 11).
+  # A lone cube (cube_eshelby, resonance_tmatrix.validate_rayleigh_limit) uses compute_cube_tmatrix always.
+  lattice: exact

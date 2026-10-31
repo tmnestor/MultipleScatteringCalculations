@@ -456,7 +456,8 @@ def compute_sphere_foldy_lax_fft_gpu(
     nC = len(centres)
     nP = fast_odd_size(2 * n_sub - 1)  # a fast FFT length, at least 2 n_sub - 1 (zero-padded)
 
-    rayleigh_sub = compute_cube_tmatrix(omega, a_sub, ref, contrast)
+    from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+    rayleigh_sub = lattice_cube_tmatrix(omega, a_sub, ref, contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
     # Step 2: the kernel at the canonical k only (1/42 of it at n_sub = 32), from the canonical offsets

@@ -134,3 +134,15 @@ def test_static_displacement_block_and_radiation_damping_in_closed_form() -> Non
     damping = D**3 * omega * (2 / REF.beta**3 + 1 / REF.alpha**3) / (12 * np.pi * REF.rho)
     assert np.max(np.abs(s_uu.real - static * np.eye(3))) <= 1e-8 * static
     assert np.max(np.abs(s_uu.imag - damping * np.eye(3))) <= 1e-7 * damping
+
+
+@pytest.mark.parametrize("k_s_h", [1e-3, 0.3, 1.0, 2.5, 4.0])
+@pytest.mark.parametrize("damping", [0.0, 0.02])
+def test_the_series_self_term_is_the_face_rule(k_s_h: float, damping: float) -> None:
+    """Within its reach the frequency series of the self term (frequency-free coefficients) is the face rule."""
+    from cubic_scattering.point_cell_self import self_block_9x9_series
+
+    omega = _omega(k_s_h) * (1 + 1j * damping)
+    series = self_block_9x9_series(omega, REF, D)
+    faces = self_block_9x9(omega, REF, D)
+    assert np.max(np.abs(series - faces)) <= 5e-13 * np.max(np.abs(faces))

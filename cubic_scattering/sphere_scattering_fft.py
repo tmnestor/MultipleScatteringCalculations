@@ -31,7 +31,6 @@ from .cell_averaged_pair import averaged_pair_blocks_9x9
 from .effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,
-    compute_cube_tmatrix,
 )
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
@@ -352,7 +351,8 @@ def compute_sphere_foldy_lax_fft(
     nP = 2 * n_sub - 1
 
     def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
-        return _sub_cell_tmatrix_9x9(compute_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
+        from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+        return _sub_cell_tmatrix_9x9(lattice_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
 
     dim = 9 * nC
     t_local: NDArray[np.complexfloating] | None = None

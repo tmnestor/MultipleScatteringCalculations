@@ -26,7 +26,6 @@ from .effective_contrasts import (
     CubeTMatrixResult,
     MaterialContrast,
     ReferenceMedium,
-    compute_cube_tmatrix,
 )
 
 
@@ -206,7 +205,8 @@ def _compute_cpa_update(
 
     for phase in phases:
         contrast = _phase_contrast(phase, eff)
-        result = compute_cube_tmatrix(omega, a, ref, contrast)
+        from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+        result = lattice_cube_tmatrix(omega, a, ref, contrast)
         results.append(result)
 
         phi = phase.volume_fraction
