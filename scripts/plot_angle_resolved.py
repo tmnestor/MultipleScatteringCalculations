@@ -3,7 +3,7 @@
 
 The backscatter comparison of ``plot_imbedding_vs_voxel`` is one direction out
 of many.  This figure shows the rest.  At k_S a = 2.4 the march is the more
-accurate route at every angle, by 7x at the wide angles; at k_S a = 1 on this
+accurate route at every angle, by 5.6x at the wide angles; at k_S a = 1 on this
 900 m period only the specular orders propagate, and there the voxel route is
 the better, because the period is short against the wavelength and the array
 coupling it costs is largest.

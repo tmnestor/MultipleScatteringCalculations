@@ -152,7 +152,28 @@ def sphere_sub_cell_centres(
     return all_centres[mask], a_sub
 
 
-def compute_sphere_foldy_lax(
+@dataclass
+class SphereFoldyLaxSystem:
+    """The dense Foldy-Lax system of a voxelised sphere, as ``compute_sphere_foldy_lax`` solves it.
+
+    Attributes:
+        A_mat: A = I - P~ T~, shape (9N, 9N), complex.
+        psi_inc: The nine composite-T incident patterns, shape (9N, 9).
+        pw_inc: The plane-wave incident basis for the far field, shape (9N, 9).
+        T_loc: Each cell's 9x9 single site (the configured lattice single site).
+        centres: Cell centres, shape (N, 3).
+        a_sub: Cell half-width.
+    """
+
+    A_mat: NDArray
+    psi_inc: NDArray
+    pw_inc: NDArray
+    T_loc: NDArray
+    centres: NDArray
+    a_sub: float
+
+
+def assemble_sphere_foldy_lax_system(
     omega: float,
     radius: float,
     ref: ReferenceMedium,
@@ -163,37 +184,14 @@ def compute_sphere_foldy_lax(
     *,
     cell_average: bool = True,
     n_gauss: int | None = None,
-) -> SphereDecompositionResult:
-    """Compute sphere T-matrix via Foldy-Lax decomposition.
+) -> SphereFoldyLaxSystem:
+    """Assemble the dense Foldy-Lax system of ``compute_sphere_foldy_lax`` without solving it.
 
-    Voxelizes the sphere into small cubes and solves the 9N x 9N
-    multiple scattering problem.
-
-    Args:
-        omega: Angular frequency (rad/s).
-        radius: Sphere radius (m).
-        ref: Background medium.
-        contrast: Material contrasts.
-        n_sub: Number of sub-cells per edge of bounding cube.
-        k_hat: Unit incident direction (default z-hat).
-        wave_type: 'S' or 'P'.
-        cell_average: Use the SINGLE (sinc^1) receiver-cell average in place of
-            the point propagator.  The single-site closure here is collocation
-            (T9 closes on the cube-centre value), so the matching propagator is
-            the single average; the point propagator is no average at all and
-            is therefore an unmatched pair.  Default True, on the measurement in
-            ``scripts/gate_sphere_cell_average_vs_mie.py``: against exact Mie at
-            fixed geometry it is 5.2-5.7x closer at ka = 0.1 and 1.15-1.19x at
-            ka = 0.5, stable across three resolutions.  Pass False to recover
-            the pre-2026-09-19 point-propagator behaviour.
-        n_gauss: Gauss points per axis for that average.  ``None`` picks the
-            order from the separation, which the near neighbours require.
-
-    Returns:
-        SphereDecompositionResult with composite T-matrix.
+    The arguments are those of ``compute_sphere_foldy_lax``. A study that solves the same system another way
+    (``scripts/gate_imbedding_vs_foldy_lax.py``, GMRES against the direct solve) takes it from here, so both
+    routes are scored on exactly the same matrix.
     """
     centres, a_sub = sphere_sub_cell_centres(radius, n_sub)
-    N = len(centres)
 
     # Sub-cell Rayleigh T-matrix (same for all cells)
     from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
@@ -228,6 +226,56 @@ def compute_sphere_foldy_lax(
     # Incident field: the composite-T patterns, and the plane-wave basis for the far field
     psi_inc = _build_incident_field_coupled(centres)
     pw_inc = _build_incident_plane_wave_basis(centres, omega, ref, k_hat=k_hat, wave_type=wave_type)
+    return SphereFoldyLaxSystem(A_mat, psi_inc, pw_inc, T_loc, centres, a_sub)
+
+
+def compute_sphere_foldy_lax(
+    omega: float,
+    radius: float,
+    ref: ReferenceMedium,
+    contrast: MaterialContrast,
+    n_sub: int,
+    k_hat: NDArray | None = None,
+    wave_type: str = "S",
+    *,
+    cell_average: bool = True,
+    n_gauss: int | None = None,
+) -> SphereDecompositionResult:
+    """Compute sphere T-matrix via Foldy-Lax decomposition.
+
+    Voxelizes the sphere into small cubes and solves the 9N x 9N
+    multiple scattering problem (assembled by ``assemble_sphere_foldy_lax_system``).
+
+    Args:
+        omega: Angular frequency (rad/s).
+        radius: Sphere radius (m).
+        ref: Background medium.
+        contrast: Material contrasts.
+        n_sub: Number of sub-cells per edge of bounding cube.
+        k_hat: Unit incident direction (default z-hat).
+        wave_type: 'S' or 'P'.
+        cell_average: Use the SINGLE (sinc^1) receiver-cell average in place of
+            the point propagator.  The single-site closure here is collocation
+            (it closes on the cube-centre value), so the matching propagator is
+            the single average; the point propagator is no average at all and
+            is therefore an unmatched pair.  Default True: against exact Mie on a
+            sharp sphere it is 4.7-8.0x closer at ka = 0.1
+            (``scripts/gate_sphere_cell_average_vs_mie.py``), and on the smoothly
+            graded sphere the scheme converges at second order with it while the
+            point propagator stalls near 0.9% (``scripts/measure_pairing_graded_sphere.py``).
+            Pass False only to study that unmatched pair.
+        n_gauss: Gauss points per axis for that average.  ``None`` picks the
+            order from the separation, which the near neighbours require.
+
+    Returns:
+        SphereDecompositionResult with composite T-matrix.
+    """
+    system = assemble_sphere_foldy_lax_system(
+        omega, radius, ref, contrast, n_sub, k_hat, wave_type, cell_average=cell_average, n_gauss=n_gauss
+    )
+    A_mat, psi_inc, pw_inc, T_loc = system.A_mat, system.psi_inc, system.pw_inc, system.T_loc
+    centres, a_sub = system.centres, system.a_sub
+    N = len(centres)
 
     # Solve both with one factorisation, which also gives the condition estimate
     sol, cond_num = _solve_with_condition_estimate(A_mat, np.hstack([psi_inc, pw_inc]))

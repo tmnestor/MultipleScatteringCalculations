@@ -4987,7 +4987,12 @@ can be scored against the alternative the rest of this project is built on: a
 body voxelised into cubes, each carrying an analytic $T$-matrix, coupled and
 solved.  Both compute the same physical quantity --- the backscattered $P$
 amplitude of a sphere at $k_Sa=2.4$, contrast $\varepsilon=0.1$ --- and both are
-scored against exact Mie.
+scored against exact Mie.  \emph{The voxel numbers of this section were measured again on 31 October
+2026}, after the fix of 29 September to the voxel route's far field, which had counted the incident
+wave's linear variation twice, and with the uniform-strain closure exact at every frequency as the
+voxels' single site (\path{scripts/gate_imbedding_vs_foldy_lax.py}, its data in
+\path{data_imbedding_vs_voxel.json} and \path{data_angle_resolved.json} beside this note).  The march's
+numbers are unchanged.
 
 \paragraph{Two corrections to the framing, before the numbers.}  The voxel route
 \emph{as applied to a sphere} is not iterative: it ends in a direct dense solve
@@ -5049,16 +5054,16 @@ coincide, but the difference is real and is not calibrated away anywhere.
 \toprule
 & unknowns & error \eqref{eq:errmarch}/\eqref{eq:errvoxel} & time (s) \\
 \midrule
-voxel Foldy--Lax, $n_{\rm sub}=6$ & $1224$ & $0.379$  & $1.26$\\
-impedance march, $N=81$, $L=900$  & $\mathbf{243}$  & $\mathbf{0.0112}$ & $1.16$\\
+voxel Foldy--Lax, $n_{\rm sub}=6$ & $1224$ & $0.107$  & $0.17$\\
+impedance march, $N=81$, $L=900$  & $\mathbf{243}$  & $\mathbf{0.0112}$ & $0.84$\\
 \bottomrule
 \end{tabular}
-\captionof{table}{At matched cost \emph{and at this frequency}: $34\times$ the
+\captionof{table}{At matched cost \emph{and at this frequency}: $9.6\times$ the
 accuracy on a fifth of the unknowns.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  Both are backscatter, at
 $k_Sa=2.4$, $\varepsilon=0.1$.  The measured time exponents are $2.05$ and
 $2.14$ over the ranges tested, so the advantage is accuracy \emph{per unknown}
 and not a difference in scaling.  The ratio is strongly frequency dependent
-and falls to $3.3$ at $k_Sa=0.5$ --- see below.}
+and falls to $1.4$ at $k_Sa=0.5$ --- see below.}
 \end{center}
 
 \paragraph{Neither ladder converges monotonically.}  This is the part worth
@@ -5070,7 +5075,7 @@ either error monotonically:
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
 voxel route, $n_{\rm sub}$ & $3$ & $4$ & $6$ & $8$\\
-error & $0.502$ & $\mathbf{0.205}$ & $0.379$ & $0.282$\\
+error & $0.191$ & $0.103$ & $0.107$ & $\mathbf{0.023}$\\
 \midrule
 march, period (diameters) & $2.5$ & $3.8$ & $5.0$ & $6.7$\\
 error & $0.021$ & $\mathbf{0.011}$ & $0.023$ & $0.016$\\
@@ -5087,17 +5092,17 @@ Quoting a single convergence rate for either on this problem would be wrong.}
 \end{center}
 
 \noindent
-The difference that survives is in the floors, not the rates.  Forty times the
-cells buys the voxel route nothing: its best is $0.205$ and refinement does not
-go below it.
+The difference that survives is in the levels, not the rates.  The voxel route's error moves with
+the staircase rather than with the cell size: $0.107$ at $n_{\rm sub}=6$, $0.023$ at $8$ and $0.034$ at
+$10$.  Its best is twice the march's, $0.011$.
 
-\paragraph{The floor is geometric, and it is not the sub-cell validity limit.}
-That limit is the obvious suspect and it is worth ruling out explicitly, because
-the analytic cube $T$-matrix is validated only for $ka<0.3$ and at
-$k_Sa=2.4$ with $n_{\rm sub}=6$ the sub-cells sit at $0.40$ --- outside it.
-Refining to $n_{\rm sub}=10$ brings them to $0.24$, inside, and the error is
-$0.293$ against $0.205$ at $n_{\rm sub}=4$.  It does not help.  What fails is the
-representation of a curved boundary, which is \S\ref{sec:threed}'s conclusion
+\paragraph{The level is geometric, and it is not the sub-cell validity limit.}
+That limit is the obvious suspect, because at $k_Sa=2.4$ with $n_{\rm sub}=6$ the
+sub-cells sit at $ka=0.40$.  Refining to $n_{\rm sub}=8$ and $10$ brings them to
+$0.30$ and $0.24$, and the error is $0.023$ and $0.034$: it does not fall
+steadily as the cells come inside that range, but moves with the staircase,
+whose volume is $4.3\%$ wrong at $n_{\rm sub}=8$.  What limits the voxel route is
+the representation of a curved boundary, which is \S\ref{sec:threed}'s conclusion
 reached from the other direction and the reason the cross-section of
 Algorithm~2 is band-limited rather than voxelised.
 
@@ -5110,22 +5115,21 @@ the comparison is repeated across the band:
 \toprule
 $k_Sa$ & voxel \eqref{eq:errvoxel} & march \eqref{eq:errmarch} & ratio\\
 \midrule
-$0.10$ & $2.74\times10^{-3}$ & $4.66\times10^{-3}$ & $\mathbf{0.59}$\\
-$0.15$ & $3.22\times10^{-3}$ & $4.77\times10^{-3}$ & $\mathbf{0.67}$\\
-$0.20$ & $4.24\times10^{-3}$ & $4.91\times10^{-3}$ & $\mathbf{0.86}$\\
-$0.30$ & $6.50\times10^{-3}$ & $5.27\times10^{-3}$ & $1.23$\\
-$0.40$ & $1.12\times10^{-2}$ & $5.66\times10^{-3}$ & $1.98$\\
-$0.50$ & $1.98\times10^{-2}$ & $6.00\times10^{-3}$ & $3.29$\\
-$0.75$ & $3.62\times10^{-2}$ & $6.76\times10^{-3}$ & $5.36$\\
-$1.00$ & $6.70\times10^{-2}$ & $4.24\times10^{-3}$ & $15.8$\\
-$1.50$ & $1.45\times10^{-1}$ & $1.31\times10^{-2}$ & $11.0$\\
-$2.00$ & $2.69\times10^{-1}$ & $3.41\times10^{-2}$ & $7.9$\\
-$2.40$ & $3.79\times10^{-1}$ & $1.12\times10^{-2}$ & $33.9$\\
+$0.10$ & $2.35\times10^{-3}$ & $4.66\times10^{-3}$ & $\mathbf{0.50}$\\
+$0.15$ & $2.19\times10^{-3}$ & $4.77\times10^{-3}$ & $\mathbf{0.46}$\\
+$0.20$ & $2.55\times10^{-3}$ & $4.91\times10^{-3}$ & $\mathbf{0.52}$\\
+$0.30$ & $2.44\times10^{-3}$ & $5.27\times10^{-3}$ & $\mathbf{0.46}$\\
+$0.50$ & $8.38\times10^{-3}$ & $6.00\times10^{-3}$ & $1.40$\\
+$0.70$ & $1.07\times10^{-2}$ & $6.49\times10^{-3}$ & $1.65$\\
+$1.00$ & $2.12\times10^{-2}$ & $4.24\times10^{-3}$ & $5.01$\\
+$1.50$ & $4.59\times10^{-2}$ & $1.31\times10^{-2}$ & $3.50$\\
+$2.00$ & $7.97\times10^{-2}$ & $3.41\times10^{-2}$ & $2.34$\\
+$2.40$ & $1.07\times10^{-1}$ & $1.12\times10^{-2}$ & $9.60$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Backscatter error against the exact sphere, at
-$\varepsilon=0.1$, $n_{\rm sub}=6$ and period $900$\,m.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  The voxel error grows as $(k_Sa)^{1.7}$; the march's stays
-within a factor of eight across more than a decade, and within a factor of $1.6$
+$\varepsilon=0.1$, $n_{\rm sub}=6$ and period $900$\,m.  \emph{Error} is $|\bR_{\text{march}}-\bR_{\text{Mie}}|/|\bR_{\text{Mie}}|$ for the march --- a plane-wave coefficient \eqref{eq:errmarch} --- and $\|\bu_{\text{FL}}-c\,\bu_{\text{Mie}}\|_{\infty}/\|c\,\bu_{\text{Mie}}\|_{\infty}$, $c=V_{\text{sphere}}/V_{\text{voxel}}$, for the voxel route --- a volume-corrected displacement \eqref{eq:errvoxel}.  The two are not the same functional.  The voxel error is nearly flat below $k_Sa=0.3$ and grows as about $(k_Sa)^{1.3}$ over the band;
+the march's stays within a factor of eight across more than a decade, and within a factor of $1.4$
 below $k_Sa=1$.  The two errors are different \emph{kinds} of thing, which is
 why the gap opens: the march's is the array's coupling, a property of the
 arrangement, while the voxel route's is the staircase, whose phase error scales
@@ -5135,7 +5139,7 @@ with the cell size measured in wavelengths.  Bold marks the rows where the
 
 \noindent
 \textbf{The crossover is measured and not extrapolated: it is at
-$k_Sa=0.24$.}  Below it the voxel route wins --- by $1.7\times$ at $k_Sa=0.1$,
+$k_Sa=0.43$.}  Below it the voxel route wins --- by about $2\times$ from $k_Sa=0.1$ to $0.3$,
 where the staircase costs less than the array does.  Above it the imbedding
 route wins, by a margin that grows with frequency.  So the honest statement is
 not that one method is an order of magnitude better than the other; it is that
@@ -5148,9 +5152,9 @@ follows from where the problem sits.
 \emph{sphere's} radius; the voxels sit at $k_Sa/n_{\rm sub}$, a sixth of it
 here.  The upper panel is the error of each route; the lower is their ratio,
 crossing one at
-$k_Sa=0.24$.  The march's non-monotonicity above $k_Sa=1$ is the array coupling
-behaving as an interference rather than a decay; the voxel route's curve is a
-clean power law over the whole range.}
+$k_Sa=0.43$.  The march's non-monotonicity above $k_Sa=1$ is the array coupling
+behaving as an interference rather than a decay; the voxel route's error is
+nearly flat below $k_Sa=0.3$, where the staircase sets it, and grows above.}
 \end{center}
 
 \paragraph{Every direction, not only backscatter.}  Everything above scores one
@@ -5163,9 +5167,9 @@ scores the rest:
 \toprule
 $k_Sa$ & directions & march & voxel & ratio\\
 \midrule
-$1.0$ & specular only            & $\mathbf{1.39\times10^{-2}}$ & $3.45\times10^{-2}$ & $2.49$\\
-$2.4$ & specular                 & $\mathbf{1.67\times10^{-2}}$ & $2.16\times10^{-1}$ & $12.9$\\
-$2.4$ & wide angle               & $\mathbf{2.18\times10^{-2}}$ & $3.06\times10^{-1}$ & $14.0$\\
+$1.0$ & specular only            & $1.39\times10^{-2}$ & $\mathbf{1.31\times10^{-2}}$ & $0.95$\\
+$2.4$ & specular                 & $\mathbf{1.67\times10^{-2}}$ & $5.83\times10^{-2}$ & $3.50$\\
+$2.4$ & wide angle               & $\mathbf{2.18\times10^{-2}}$ & $1.22\times10^{-1}$ & $5.59$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Medians, over the propagating orders in each group, of the
@@ -5175,8 +5179,9 @@ summarises and does not replace the figure below.  The march's scores carry the
 translation phase \eqref{eq:centrephase}, exclude the zeroed-Nyquist orders,
 and, for the forward specular order, remove the unscattered wave from both
 sides, so that both routes are scored on the scattered field.  Bold is the
-better of the pair.  The march is the better route in every direction at both
-frequencies, by $14\times$ at the wide angles at $k_Sa=2.4$.}
+better of the pair.  At $k_Sa=2.4$ the march is the better route at every order, by
+$5.6\times$ at the wide angles; at $k_Sa=1$, where this period supports only the specular
+orders, the voxel route is marginally the better.}
 \end{center}
 
 \begin{center}
@@ -5193,7 +5198,7 @@ ones, and the march is the more accurate route at every one of them.}
 is not, but it keeps the four-fold rotation and the mirrors of the square, and
 for normal $P$ incidence those relate every order at $\theta=144.4^{\circ}$ to
 every other.  The march's errors there must therefore agree, and they do, at
-$0.00927$ to twelve figures, against the voxel route's $0.526$.  These orders
+$0.00927$ to twelve figures, against the voxel route's $0.185$.  These orders
 see two defects that the specular orders cannot.  A missing translation phase
 \eqref{eq:centrephase} scores them at $1.94$ to $1.98$ --- $|1-e^{i\phi}|$ for
 $\phi$ near $\pi$, an order-unity error alongside correct magnitudes --- and a
@@ -5215,12 +5220,12 @@ growing $L$ until wide-angle orders exist removes that:
 \cmidrule(lr){3-4}\cmidrule(lr){5-6}
 $k_Sa$ & $L$ (m) & march & voxel & march & voxel & voxel/march\\
 \midrule
-$2.4$ & $900$  & $\mathbf{1.67\times10^{-2}}$ & $2.16\times10^{-1}$
-       & $\mathbf{2.18\times10^{-2}}$ & $3.06\times10^{-1}$ & $14.0$\\
-$1.5$ & $1800$ & $\mathbf{1.27\times10^{-2}}$ & $8.03\times10^{-2}$
-       & $\mathbf{1.21\times10^{-2}}$ & $1.83\times10^{-1}$ & $15.1$\\
-$1.0$ & $2700$ & $\mathbf{9.42\times10^{-3}}$ & $3.45\times10^{-2}$
-       & $\mathbf{1.02\times10^{-2}}$ & $7.52\times10^{-2}$ & $7.4$\\
+$2.4$ & $900$  & $\mathbf{1.67\times10^{-2}}$ & $5.83\times10^{-2}$
+       & $\mathbf{2.18\times10^{-2}}$ & $1.22\times10^{-1}$ & $5.6$\\
+$1.5$ & $1800$ & $\mathbf{1.27\times10^{-2}}$ & $2.56\times10^{-2}$
+       & $\mathbf{1.21\times10^{-2}}$ & $3.74\times10^{-2}$ & $3.1$\\
+$1.0$ & $2700$ & $\mathbf{9.42\times10^{-3}}$ & $1.31\times10^{-2}$
+       & $\mathbf{1.02\times10^{-2}}$ & $2.39\times10^{-2}$ & $2.3$\\
 \bottomrule
 \end{tabular}
 \captionof{table}{Medians of the per-order relative errors \eqref{eq:errmarch}
@@ -5228,8 +5233,8 @@ and \eqref{eq:errvoxel}, scored as in the previous table, at $\varepsilon=0.1$
 and $n_{\rm sub}=6$, with the lateral pitch held at $112.5$\,m so only the
 period changes.  Bold is the better of the pair; the last column is the ratio
 at wide angles.  \textbf{The march is the better route at every frequency
-tested, at wide angles and at the specular orders}, by $7$ to $15$ times at
-wide angles and $3.7$ to $13$ times at the specular orders.}
+tested, at wide angles and at the specular orders}, by $2.3$ to $5.6$ times at
+wide angles and $1.4$ to $3.5$ times at the specular orders.}
 \end{center}
 
 \noindent

@@ -63,6 +63,7 @@ if str(ROOT) not in sys.path:
 from cubic_scattering import MaterialContrast, ReferenceMedium  # noqa: E402
 from cubic_scattering.sphere_scattering import (  # noqa: E402
     SphereDecompositionResult,
+    assemble_sphere_foldy_lax_system,
     compute_elastic_mie,
     compute_sphere_foldy_lax,
     foldy_lax_far_field,
@@ -243,10 +244,13 @@ def part3() -> None:
 
     print(f"      voxel Foldy-Lax  (136 cells, 1224 unknowns): err {fl_err:.4f} in {fl_t:.2f} s")
     print(f"      impedance march  (N=81, 243 unknowns)      : err {mr_err:.4f} in {mr_t:.2f} s")
-    print(f"      ratio of errors at comparable cost: {fl_err / mr_err:.0f}x")
+    print(f"      ratio of errors at comparable cost: {fl_err / mr_err:.1f}x")
     print("      ⚠ at k_S a = 2.4.  Part 6 shows this ratio is NOT a constant.")
     report("the march is the more accurate of the two at matched cost", mr_err < fl_err)
-    report("and by more than an order of magnitude", fl_err / mr_err > 10.0)
+    # The margin is measured, not assumed: 12x with the package cube T-matrix as the voxels' single site
+    # (0.132 against 0.0112, 29 September 2026), 9.6x with the exact uniform-strain closure (0.107,
+    # 31 October 2026). The check is that the march wins by a wide margin, not by a particular factor.
+    report("and by more than five times", fl_err / mr_err > 5.0)
 
     print(
         "\n      ⚠ BOTH ROUTES HERE SOLVE DIRECTLY; part 5 adds GMRES on the\n"
@@ -290,12 +294,12 @@ def part4() -> None:
 
 
 def foldy_system(eps: float, n_sub: int) -> tuple[NDArray, NDArray]:
-    """The assembled Foldy-Lax system, intercepted from the packaged solver.
+    """The assembled Foldy-Lax system of the packaged solver.
 
-    ``compute_sphere_foldy_lax`` builds ``A = I - P~ T~`` and solves it
-    directly.  Rather than duplicate the assembly -- which is where the physics
-    is -- this borrows it, so that the iterative and direct routes are scored on
-    exactly the same matrix.
+    ``assemble_sphere_foldy_lax_system`` builds ``A = I - P~ T~`` exactly as ``compute_sphere_foldy_lax``
+    solves it. Rather than duplicate the assembly -- which is where the physics is -- this takes it from
+    there, so that the iterative and direct routes are scored on exactly the same matrix. (Until 31 October
+    2026 it intercepted ``np.linalg.solve`` inside the solver; the solve stopped calling it on 3 October.)
 
     Args:
         eps: Fractional wave-speed contrast.
@@ -304,34 +308,16 @@ def foldy_system(eps: float, n_sub: int) -> tuple[NDArray, NDArray]:
     Returns:
         (A, B) with B the 9 incident right-hand sides.
     """
-    grabbed: dict[str, NDArray] = {}
-    real_solve = np.linalg.solve
-
-    def spy(a: NDArray, b: NDArray) -> NDArray:
-        grabbed["A"], grabbed["b"] = np.array(a), np.array(b)
-        return real_solve(a, b)
-
     s_fac = 1.0 + eps
     con = MaterialContrast(
         Dlambda=(s_fac**3 - 1.0) * REF.lam,
         Dmu=(s_fac**3 - 1.0) * REF.mu,
         Drho=(s_fac - 1.0) * REF.rho,
     )
-    np.linalg.solve = spy  # type: ignore[assignment]
-    try:
-        compute_sphere_foldy_lax(
-            OMEGA,
-            RADIUS,
-            REF,
-            con,
-            n_sub=n_sub,
-            k_hat=K_HAT,
-            wave_type="P",
-            cell_average=True,
-        )
-    finally:
-        np.linalg.solve = real_solve  # type: ignore[assignment]
-    return grabbed["A"], grabbed["b"]
+    system = assemble_sphere_foldy_lax_system(
+        OMEGA, RADIUS, REF, con, n_sub=n_sub, k_hat=K_HAT, wave_type="P", cell_average=True
+    )
+    return system.A_mat, system.psi_inc
 
 
 def part5() -> None:
@@ -342,7 +328,9 @@ def part5() -> None:
     print("      matvec of the periodic slab, not to iterative solution as such.")
     print("      This is the same matrix the direct route uses, solved by GMRES.")
 
+    rows: dict[int, list[tuple[float, int, int, float, float]]] = {}
     for n_sub in (6, 8):
+        rows[n_sub] = []
         print(f"\n      n_sub = {n_sub}")
         print(
             f"      {'eps':>6}{'9N_c':>7}{'cond(A)':>11}{'GMRES its':>11}"
@@ -382,6 +370,7 @@ def part5() -> None:
             if eps == 0.02:
                 its_first = its
             its_last = its
+            rows[n_sub].append((eps, a_mat.shape[0], its, t_gm, t_dir))
             print(
                 f"      {eps:6.2f}{a_mat.shape[0]:7d}{cond:11.3e}{its:11d}"
                 f"{err:11.1e}{t_gm:10.3f}{t_dir:10.3f}"
@@ -390,16 +379,19 @@ def part5() -> None:
         report(f"GMRES solves the sphere system at n_sub={n_sub}", its_last > 0)
         report(f"and its count grows with CONTRAST, not size (n_sub={n_sub})", its_last > 3 * its_first)
 
+    (e0, n6, a0, _, _), (e1, _, a1, _, _) = rows[6][0], rows[6][-1]
+    (_, n8, b0, tg_w, td_w), (_, _, b1, tg_s, td_s) = rows[8][0], rows[8][-1]
+    change = abs(b1 - a1) / a1
     print(
         "\n      ⚠ THE ITERATION COUNT IS SET BY THE CONTRAST AND NOT BY N.\n"
-        "      58 -> 244 as eps goes 0.02 -> 0.80 at 1224 unknowns, and 54 -> 247\n"
-        "      at 2520.  Doubling the system changes it by under 2%.  So the\n"
+        f"      {a0} -> {a1} as eps goes {e0:.2f} -> {e1:.2f} at {n6} unknowns, and {b0} -> {b1}\n"
+        f"      at {n8}.  Doubling the system changes it by {100 * change:.0f}%.  So the\n"
         "      iterative route's advantage GROWS with N -- direct is O(n^3) while\n"
         "      GMRES is (iterations) x O(n^2) -- and shrinks with contrast.\n"
-        "      Measured here it wins at weak contrast (0.073 s against 0.348 s at\n"
-        "      eps=0.02, n=2520) and loses at strong (0.352 s against 0.316 s at\n"
-        "      eps=0.80), where the direct route also amortises ONE factorisation\n"
-        "      over all nine right-hand sides while GMRES restarts for each.\n"
+        f"      Measured here at {n8} unknowns, GMRES takes {tg_w:.3f} s against {td_w:.3f} s direct\n"
+        f"      at eps={e0:.2f}, and {tg_s:.3f} s against {td_s:.3f} s at eps={e1:.2f}, where the\n"
+        "      direct route amortises ONE factorisation over all nine right-hand\n"
+        "      sides while GMRES restarts for each.\n"
         "\n"
         "      ⚠ THIS IS NOT THE FAST MATVEC -- but that one EXISTS; see part 7.\n"
         "      The matvec here\n"
@@ -479,21 +471,22 @@ def part6() -> None:
     report("the march's does not", spread < 4.0)
 
     print(
-        "\n      ⚠ SO THE HEADLINE RATIO IS NOT A CONSTANT.  It is 3x at\n"
-        "      k_S a = 0.5 and 34x at 2.4, because the two errors are different\n"
-        "      KINDS of thing: the march's is the array's coupling, a property of\n"
+        f"\n      ⚠ SO THE HEADLINE RATIO IS NOT A CONSTANT.  It is {fl_errs[0] / mr_errs[0]:.1f}x at\n"
+        f"      k_S a = 0.5 and {fl_errs[-1] / mr_errs[-1]:.1f}x at 2.4, because the two errors are\n"
+        "      different KINDS of thing: the march's is the array's coupling, a property of\n"
         "      the arrangement and nearly flat in frequency, while the voxel\n"
         "      route's is the staircase, whose phase error scales with the cell\n"
         "      size in wavelengths.  Extrapolating down, they meet near the\n"
-        "      Rayleigh regime -- the voxel route reaches 4.2e-3 at k_S a = 0.2,\n"
-        "      which is the march's own level.\n"
+        "      Rayleigh regime; the full sweep (--dump-backscatter) locates the\n"
+        "      crossover.\n"
         "\n"
-        "      ⚠ AND THE FLOOR IS NOT THE SUB-CELL VALIDITY LIMIT.  The analytic\n"
-        "      cube T-matrix is validated for ka < 0.3, and at k_S a = 2.4 with\n"
-        "      n_sub = 6 the sub-cells sit at 0.40, outside it -- an obvious\n"
-        "      suspect.  Refining to n_sub = 10 brings them to 0.24, inside, and\n"
-        "      the error is 0.293 against 0.205 at n_sub = 4.  It does not help.\n"
-        "      The floor is geometric, not a validity breach."
+        "      ⚠ AND THE FLOOR IS NOT THE SUB-CELL VALIDITY LIMIT.  At k_S a = 2.4\n"
+        "      with n_sub = 6 the sub-cells sit at k a = 0.40, an obvious suspect.\n"
+        "      Refining to n_sub = 10 brings them to 0.24, and on 25 September 2026\n"
+        "      (the package cube T-matrix as the single site) the error was 0.293\n"
+        "      against 0.205 at n_sub = 4: it did not help.  Not repeated here; the\n"
+        "      staircase, not the single site, sets the voxel route's level on\n"
+        "      this sphere (scripts/gate_sphere_cell_average_vs_mie.py)."
     )
 
 

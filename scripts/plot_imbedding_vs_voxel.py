@@ -3,7 +3,7 @@
 
 The two errors are different kinds of thing and the figure exists to make that
 legible: the voxel route's is the staircase, whose phase error scales with the
-cell size measured in wavelengths, so it grows as roughly (k_S a)^2; the march's
+cell size measured in wavelengths, so above k_S a ~ 0.3 it grows with frequency; the march's
 is the array's coupling, a property of the arrangement, so it is nearly flat.
 A single ratio quoted at one frequency hides both facts, which is what an
 earlier version of this comparison did.
