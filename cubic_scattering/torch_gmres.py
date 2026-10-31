@@ -98,6 +98,11 @@ def torch_gmres(
         tol: Relative residual tolerance.
         maxiter: Maximum number of iterations.
 
+    The Krylov basis grows by one vector a step, so its memory follows the iterations taken, (n_iter + 1) n, not
+    maxiter: maxiter can be generous at no cost (until 2026-10-31 the whole basis, (maxiter + 1) n, was allocated
+    up front, about 32 GB at n_sub = 128 in complex128 with maxiter = 200, for solves that took four steps).
+    Only the (maxiter + 1) x maxiter Hessenberg matrix is sized by maxiter.
+
     Returns:
         (x, n_iter, rel_residual) — solution, iteration count,
         final relative residual.
@@ -119,9 +124,8 @@ def torch_gmres(
     if r_norm / b_norm < tol:
         return x0.clone(), 0, float((r_norm / b_norm).cpu())
 
-    # Arnoldi basis vectors
-    V = torch.zeros(maxiter + 1, n, device=device, dtype=dtype)
-    V[0] = r / r_norm
+    # Arnoldi basis vectors, one appended each step
+    V = [r / r_norm]
 
     # Upper Hessenberg matrix
     H = torch.zeros(maxiter + 1, maxiter, device=device, dtype=dtype)
@@ -150,9 +154,9 @@ def torch_gmres(
 
         if H[j + 1, j].abs() < 1e-30:
             # Lucky breakdown
-            V[j + 1] = torch.zeros(n, device=device, dtype=dtype)
+            V.append(torch.zeros(n, device=device, dtype=dtype))
         else:
-            V[j + 1] = w / H[j + 1, j]
+            V.append(w / H[j + 1, j])
 
         # Apply previous Givens rotations to column j
         for i in range(j):
