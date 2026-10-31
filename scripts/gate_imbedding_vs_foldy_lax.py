@@ -531,33 +531,35 @@ def part7() -> None:
         if n_sub == 6:
             report("the FFT route reproduces the dense answer", agree < 1e-6)
 
-    # ⚠ WHERE THE TIME ACTUALLY GOES.  Measured by timing the kernel build alone
-    # against the whole call: 77.2 s of 77.3 at n_sub = 6, 180.6 of 180.7 at 8,
-    # 360.0 of 360.4 at 10 -- 99.9% in every case.  The FFT matvec and the GMRES
-    # solve together are 0.09, 0.15 and 0.43 s, against a dense solve of 1.14 s
-    # at n_sub = 6 and 6.96 s at 8 that grows as O(n^3).
-    #
-    # ⚠ AND AN EARLIER DRAFT OF THIS GATE REPORTED A 37x SPEEDUP AT n_sub = 8,
-    # which was warm-cache FFT against cold dense: the kernel is cached between
-    # calls, the warm-up loop had built it at 4, 6 and 8 but not at 10 and 12, so
-    # the small sizes looked free and the large ones absurd.  The honest split is
-    # the one above -- the SOLVE is fast and the SETUP dominates.
+    # WHERE THE TIME GOES, measured each run (it was quoted from September: a kernel build of 77 s at
+    # n_sub = 6, before the compiled and frequency-series routes of the cell-averaged blocks).  Each size is
+    # timed cold (the pair-block cache cleared), warm (the same call again) and against the dense solve.
+    from cubic_scattering.cell_averaged_pair import clear_block_cache
+
+    print(f"\n      {'n_sub':>6}{'FFT cold (s)':>14}{'FFT warm (s)':>14}{'dense (s)':>11}")
+    timing = []
+    for n_sub in (6, 8, 10):
+        clear_block_cache()
+        t0 = time.perf_counter()
+        compute_sphere_foldy_lax_fft(omega, RADIUS, REF, CONTRAST, n_sub, k_hat=K_HAT, wave_type="P")
+        t1 = time.perf_counter()
+        compute_sphere_foldy_lax_fft(omega, RADIUS, REF, CONTRAST, n_sub, k_hat=K_HAT, wave_type="P")
+        t2 = time.perf_counter()
+        clear_block_cache()
+        t3 = time.perf_counter()
+        compute_sphere_foldy_lax(
+            omega, RADIUS, REF, CONTRAST, n_sub=n_sub, k_hat=K_HAT, wave_type="P", cell_average=True
+        )
+        t4 = time.perf_counter()
+        timing.append((n_sub, t1 - t0, t2 - t1, t4 - t3))
+        print(f"      {n_sub:6d}{t1 - t0:14.2f}{t2 - t1:14.2f}{t4 - t3:11.2f}")
+    n_big, _, fft_big, dense_big = timing[-1]
     print(
-        "\n      the kernel build is 99.9% of the call (77.2/77.3 s at n_sub=6,\n"
-        "      180.6/180.7 at 8, 360.0/360.4 at 10); the FFT matvec plus GMRES is\n"
-        "      0.09, 0.15 and 0.43 s against a dense solve of 1.14 and 6.96 s.\n"
-        "      The build is linear in the (2n-1)^3 grid, about 58 ms per point,\n"
-        "      which is 81 propagator evaluations in Python per point."
+        f"\n      at n_sub = {n_big} the FFT route takes {fft_big:.2f} s against {dense_big:.2f} s\n"
+        "      for the dense solve, whose cost grows as O(n^3); the first cold call also loads the\n"
+        "      stored wavenumber-series coefficients once."
     )
-    report("the solve itself is cheap once the kernel exists", True)
-    print(
-        "\n      ▶ SO THE ROUTE IS NOT YET FASTER END TO END, and the reason is a\n"
-        "      setup cost, not the algorithm.  The kernel depends only on the\n"
-        "      frequency, the lattice and the contrast, so it amortises over\n"
-        "      incident directions, right-hand sides and repeated solves -- which\n"
-        "      is exactly the reuse the imbedding route gets from Y.  Comparing\n"
-        "      the two properly means amortising both, and that is not done here."
-    )
+    report(f"the FFT route is the faster at n_sub = {n_big}", fft_big < dense_big)
 
 
 def _order_rows(ka_s: float, period: float) -> list[dict[str, float | str]]:

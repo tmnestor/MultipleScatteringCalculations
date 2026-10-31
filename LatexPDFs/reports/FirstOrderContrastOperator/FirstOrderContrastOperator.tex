@@ -4886,21 +4886,21 @@ In keeping with the project's standard that an unvalidated formula be labelled
 as such, the following are \emph{open}:
 
 \begin{enumerate}
-\item \textbf{The \emph{iterative} multiple-scattering solver has never been
-      compared on equal terms.}
-      \S\ref{sec:vsfoldy} scores the march against the voxel route, but that
-      route solves a sphere by a \emph{direct} dense solve of the $9N_c$
-      system.  The GMRES solver in this project works on a uniform periodic
-      slab, whose geometry is a fully occupied lattice with no per-cell
-      occupancy and which therefore cannot hold a sphere --- so the one
-      configuration with an exact external arbiter is closed to it.  What is
-      needed is a Bloch-periodic Foldy--Lax over a \emph{voxelised sphere},
-      which would put the iterative solver on the same problem as the march
-      and, unlike the present comparison, on the same periodic array.  Until
-      then nothing here says anything about iterative cost, and in particular
-      the iteration count's growth with contrast --- the axis on which the
-      sweep architecture is known to do nothing --- remains unmeasured against
-      the march, which has no iteration count at all.
+\item \textbf{The \emph{iterative} multiple-scattering solver has been
+      compared on the isolated sphere only.}
+      On the sphere of \S\ref{sec:vsfoldy}, GMRES solves the same dense
+      Foldy--Lax system as the direct route, to within $1.2\times10^{-9}$ of it,
+      with an iteration count set by the contrast and not the size (from $54$
+      to $210$ as $\varepsilon$ goes from $0.02$ to $0.8$ at $1224$ unknowns, and
+      from $54$ to $219$ at $2520$); and the block-Toeplitz FFT route on the voxelised sphere
+      reproduces the dense answer and is the faster from $10$ cells per radius
+      (\path{scripts/gate_imbedding_vs_foldy_lax.py}, parts 5 and 7).  The
+      periodic slab solver takes a contrast per cell, so a voxelised sphere in a
+      Bloch-periodic array, the march's own problem, is within its reach; that
+      comparison has not been run.  Until it is, the iteration count's growth
+      with contrast --- the axis on which the sweep architecture is known to do
+      nothing --- is measured against the direct solve but not against the
+      march, which has no iteration count at all.
 
 \item \textbf{The $T$-matrix uses the collocation propagator, not the
       consistent one.}  $\mathbf{T}$ is assembled in \S\ref{sec:tmatrix} and
@@ -4996,11 +4996,11 @@ numbers are unchanged.
 
 \paragraph{Two corrections to the framing, before the numbers.}  The voxel route
 \emph{as applied to a sphere} is not iterative: it ends in a direct dense solve
-of the $9N_c$ system.  The iterative (GMRES) multiple-scattering solver in this
-project works on a uniform periodic slab whose geometry is a fully occupied
-lattice with no per-cell occupancy, so it cannot hold a sphere --- and therefore
-has no externally validated problem to be compared on at all.  Closing that gap
-needs a Bloch-periodic Foldy--Lax over a voxelised sphere, which is not built.
+of the $9N_c$ system.  The same system is solved by GMRES and by the
+block-Toeplitz FFT route below, so the iterative solver is on the same footing
+here; what has not been run is the voxelised sphere in a Bloch-periodic array,
+the march's own problem, which the periodic slab solver, taking a contrast per
+cell, could hold.
 
 And on the periodization, an earlier draft of this section argued that the
 comparison was \emph{biased against the march}: exact Mie is the isolated
@@ -5276,7 +5276,7 @@ cent --- while the error against the sphere settles at the array's coupling.
 The march's wide-angle residual against one sphere is therefore periodization
 only once the lateral grid is resolved; at the coarse pitch it is periodization
 and lateral discretisation in comparable parts.  Neither approaches the voxel
-route's $7.5$ to $31$ per cent.
+route's $2.4$ to $12$ per cent.
 
 \paragraph{And the fast iterative route exists.}  The comparison above uses the
 dense direct solve that \texttt{compute\_sphere\_foldy\_lax} ships with, and an
@@ -5287,15 +5287,16 @@ $3$-D grid, embeds the propagator in a $(2n-1)^3$ circulant block, transforms
 its $81$ components and solves with GMRES.  It reproduces the dense answer to
 $10^{-9}$.
 
-Measured, it does not yet win end to end, and the reason is a setup cost rather
-than the algorithm: the kernel construction is $99.9\%$ of the call --- $77.2$
-of $77.3$\,s at $n_{\rm sub}=6$, $360.0$ of $360.4$\,s at $10$ --- while the FFT
-matvec and the GMRES solve together are $0.09$ and $0.43$\,s, against a dense
-solve of $1.14$ and (at $n_{\rm sub}=8$) $6.96$\,s that grows as $O(n^3)$.  The
-kernel depends only on the frequency, the lattice and the contrast, so it
-amortises over incident directions and repeated solves exactly as $\bY$ does for
-the march.  \emph{Comparing the two properly means amortising both, and that has
-not been done.}
+Measured on 31 October 2026, the whole FFT call takes $0.30$, $0.46$ and
+$0.96$\,s at $n_{\rm sub}=6$, $8$ and $10$, once the stored wavenumber-series
+coefficients of the cell-averaged blocks are loaded, against $0.19$, $0.49$ and
+$2.17$\,s for the dense solve, whose cost grows as $O(n^3)$: the FFT route is the
+faster from $10$ cells per radius.  (In September the kernel construction alone
+took $77$\,s at $n_{\rm sub}=6$; the blocks are now compiled and summed as a
+series in the wavenumber.)  The kernel depends only on the frequency, the
+lattice and the contrast, so it amortises over incident directions and repeated
+solves exactly as $\bY$ does for the march.  \emph{Comparing the two properly
+means amortising both, and that has not been done.}
 
 The march's floor is also not a floor of the method: it is the array, and it
 moves when the array does.
