@@ -20,7 +20,8 @@ the offsets a size needs: a run that grew it is flagged "cold", and its kernel t
 cost (56 s against 0.6 s at n_sub = 16, measured).  --warm-store grows it first; the fits use the warm rows.
 
 Resumable: the rows already in the output file for the same device, dtype and settings are skipped.  Writes
-scripts/data/fft_sphere_scaling_<host>_<device>_<dtype>.jsonl.
+scripts/data/fft_sphere_scaling_<host>_<device>_<dtype>.jsonl, <host> the instance
+type on an AWS runner.
 
 Run:  PYTHONPATH=. python scripts/probe_fft_sphere_scaling.py
       PYTHONPATH=. python scripts/probe_fft_sphere_scaling.py --device cuda --dtype complex128 --n-sub 16,24,32,48,64
@@ -32,6 +33,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import platform
 import resource
 import socket
@@ -296,7 +298,8 @@ def main() -> None:
 
     device = get_device() if a.device == "auto" else torch.device(a.device)
     dtype = (select_dtype(device) if a.dtype == "auto" else getattr(torch, a.dtype)).__str__().removeprefix("torch.")
-    host = socket.gethostname().split(".")[0]
+    # on an AWS runner, the instance type (aws/msc_aws.py sets MSC_HOST): a container's hostname is random
+    host = os.environ.get("MSC_HOST") or socket.gethostname().split(".")[0]
     out = a.out or DATA / f"fft_sphere_scaling_{host}_{device.type}_{dtype}.jsonl"
     settings = {"device": device.type, "dtype": dtype, "ka": a.ka, "maxiter": a.maxiter, "tol": a.tol}
 
@@ -310,7 +313,7 @@ def main() -> None:
         todo = sorted(int(x) for x in a.n_sub.split(",") if int(x) not in done)
         if a.warm_store and todo:
             print(f"growing the k-series store at n_sub = {todo[-1]} (not recorded) ...", flush=True)
-            subprocess.run(
+            warm = subprocess.run(
                 [
                     sys.executable,
                     __file__,
@@ -330,6 +333,9 @@ def main() -> None:
                 capture_output=True,
                 check=False,
             )
+            if warm.returncode != 0:
+                tail = "\n    ".join(warm.stderr.decode(errors="replace").strip().splitlines()[-40:])
+                print(f"  the warm-up failed (exit {warm.returncode}); the end of its output:\n    {tail}")
         for n in sorted(int(s) for s in a.n_sub.split(",")):
             if n in done:
                 continue
@@ -353,10 +359,11 @@ def main() -> None:
             done_proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
             if done_proc.returncode != 0:
                 # most likely out of memory: record it, and stop, since larger sizes need more
-                err = {**settings, "n_sub": n, "error": done_proc.stderr.strip().splitlines()[-1:]}
+                err = {**settings, "n_sub": n, "error": done_proc.stderr.strip().splitlines()[-40:]}
                 with out.open("a") as f:
                     f.write(json.dumps(err) + "\n")
-                print(f"  failed (exit {done_proc.returncode}): {done_proc.stderr.strip()[-500:]}")
+                tail = "\n    ".join(done_proc.stderr.strip().splitlines()[-40:])
+                print(f"  failed (exit {done_proc.returncode}); the end of its output:\n    {tail}")
                 break
             row = json.loads(done_proc.stdout.strip().splitlines()[-1])
             with out.open("a") as f:
