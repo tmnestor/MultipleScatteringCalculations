@@ -44,12 +44,14 @@ import sys
 import tarfile
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "aws-runs"
 TEMPLATE = Path(__file__).resolve().parent / "infra.yml"
-DEFAULT_TYPE = {"cpu": "r7g.2xlarge", "gpu": "g6e.xlarge"}
+#: a runner's default instance type: the first of these families offered in the region, in this size
+DEFAULT_TYPE = {"cpu": (["r7g", "r8g", "m7g"], "2xlarge"), "gpu": (["g6e", "g6", "g5"], "xlarge")}
 CPU_FAMILIES = ["c8g", "c7g", "m8g", "m7g", "r8g", "r7g"]
 GPU_FAMILIES = ["g6e", "g6", "g5"]
 TERMINAL = {"SUCCEEDED", "FAILED", "Success", "Failed", "Cancelled", "TimedOut", "Cancelling"}
@@ -60,8 +62,8 @@ G: argparse.Namespace  # the global options, set in main
 # ---------------------------------------------------------------------------------------------------- the aws CLI
 
 
-def aws(*args: str, parse: bool = True, check: bool = True, stdin: str | None = None):
-    """Run the aws CLI with the global profile and region; its JSON output parsed (None if empty)."""
+def aws_cmd(*args: str, parse: bool = True) -> list[str]:
+    """The aws CLI command line, with the global profile and region."""
     cmd = ["aws", *args]
     if G.profile:
         cmd += ["--profile", G.profile]
@@ -69,6 +71,12 @@ def aws(*args: str, parse: bool = True, check: bool = True, stdin: str | None = 
         cmd += ["--region", G.region]
     if parse:
         cmd += ["--output", "json"]
+    return cmd
+
+
+def aws(*args: str, parse: bool = True, check: bool = True, stdin: str | None = None):
+    """Run the aws CLI with the global profile and region; its JSON output parsed (None if empty)."""
+    cmd = aws_cmd(*args, parse=parse)
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, input=stdin, check=False)
     except FileNotFoundError:
@@ -156,7 +164,8 @@ def cmd_deploy(a: argparse.Namespace) -> None:
         f"CPU {','.join(cpu)}, GPU {','.join(gpu)} ({a.gpu_purchase})",
         flush=True,
     )
-    p = aws(
+    started = datetime.now(timezone.utc)  # noqa: UP017  (not datetime.UTC: Python 3.9, the Mac's python3)
+    cmd = aws_cmd(
         "cloudformation",
         "deploy",
         "--template-file",
@@ -169,17 +178,65 @@ def cmd_deploy(a: argparse.Namespace) -> None:
         "--parameter-overrides",
         *params,
         parse=False,
-        check=False,
     )
-    sys.stdout.write(p.stdout)
-    if p.returncode != 0:
+    with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
+        proc = subprocess.Popen(cmd, stdout=out, stderr=err, text=True)
+        seen: set[str] = set()
+        while True:
+            done = proc.poll() is not None
+            _print_new_events(started, seen)
+            if done:
+                break
+            time.sleep(10)
+        out.seek(0)
+        err.seek(0)
+        output, error = out.read(), err.read()
+    if "No changes to deploy" in output:
+        print("no changes: the stack is already up to date")
+    if proc.returncode != 0:
         sys.exit(
-            f"{p.stderr.strip()}\nsee the stack's events: aws cloudformation describe-stack-events "
+            f"{error.strip() or output.strip()}\nsee the stack's events: aws cloudformation describe-stack-events "
             f"--stack-name {G.stack} --max-items 20"
         )
     for k, v in outputs().items():
         print(f"  {k:20} {v}")
     print("next: python3 aws/msc_aws.py push-image cpu   (and gpu)")
+
+
+def _when(ts: str) -> datetime:
+    """An ISO 8601 time as the aws CLI or its look-alikes write it ("Z" or "+00:00"; any fraction), on Python 3.9 on."""
+    ts = ts.replace("Z", "+00:00")
+    m = re.match(r"^(.*T\d\d:\d\d:\d\d)(?:\.(\d+))?(.*)$", ts)
+    if m:
+        ts = m.group(1) + (f".{(m.group(2) + '000000')[:6]}" if m.group(2) else "") + m.group(3)
+    return datetime.fromisoformat(ts)
+
+
+def _print_new_events(since: datetime, seen: set[str]) -> None:
+    """The stack's events since `since` not printed yet, oldest first; the reason with any failure."""
+    p = aws(
+        "cloudformation",
+        "describe-stack-events",
+        "--stack-name",
+        G.stack,
+        "--max-items",
+        "100",
+        parse=False,
+        check=False,
+    )
+    if p.returncode != 0:  # the stack does not exist yet: the change set is still being made
+        return
+    events = json.loads(p.stdout).get("StackEvents", [])
+    for e in reversed(events):
+        if e["EventId"] in seen or _when(e["Timestamp"]) < since:
+            continue
+        seen.add(e["EventId"])
+        when = _when(e["Timestamp"]).astimezone().strftime("%H:%M:%S")
+        reason = e.get("ResourceStatusReason", "") if "FAILED" in e["ResourceStatus"] else ""
+        print(
+            f"  {when}  {e['ResourceStatus']:<20} {e['LogicalResourceId']}" + (f"  ({reason})" if reason else ""),
+            flush=True,
+        )
 
 
 # ---------------------------------------------------------------------------------------------------- images
@@ -333,6 +390,24 @@ def job_command(rec: dict, cmd: list[str], cache: bool) -> list[str]:
     return [*out, "--", *cmd]
 
 
+def _require_image(uri: str, kind: str) -> None:
+    """Stop before anything is sent if the image the run needs was never pushed."""
+    p = aws(
+        "ecr",
+        "describe-images",
+        "--repository-name",
+        uri.split("/", 1)[1],
+        "--image-ids",
+        f"imageTag={kind}",
+        parse=False,
+        check=False,
+    )
+    if p.returncode != 0:
+        if "ImageNotFound" in p.stderr:
+            sys.exit(f"no {kind} image in {uri}: run  python3 aws/msc_aws.py push-image {kind}  first")
+        sys.exit(f"could not check for the {kind} image:\n{p.stderr.strip()}")
+
+
 def cmd_run(a: argparse.Namespace) -> None:
     cmd = a.cmd[1:] if a.cmd[:1] == ["--"] else a.cmd
     if not cmd:
@@ -352,6 +427,7 @@ def cmd_run(a: argparse.Namespace) -> None:
         "array": a.array,
     }
 
+    _require_image(o["RepositoryUri"], kind)
     data, n = make_bundle(a.exclude)
     print(f"{run_id}: {n} files, {len(data) / 1e6:.1f} MB -> s3://{o['Bucket']}/runs/{run_id}/", flush=True)
     _s3_put_bytes(data, f"s3://{o['Bucket']}/runs/{run_id}/code.tgz")
@@ -360,6 +436,7 @@ def cmd_run(a: argparse.Namespace) -> None:
         if a.array:
             sys.exit("--array is for Batch; on a runner, loop inside the command")
         iid = _ensure_runner(kind)
+        itype = (runner(kind) or {}).get("InstanceType", "")
         image = f"{o['RepositoryUri']}:{kind}"
         registry = image.split("/")[0]
         docker = [
@@ -371,6 +448,8 @@ def cmd_run(a: argparse.Namespace) -> None:
             "--ipc=host",
             "-e",
             f"AWS_DEFAULT_REGION={region()}",
+            "-e",
+            f"MSC_HOST={itype}",  # the machine's name for result files: the container's hostname is random
             "-v",
             "/var/lib/msc-cache:/root/.cache/cubic_scattering",
         ]
@@ -560,7 +639,7 @@ def cmd_fetch(a: argparse.Namespace) -> None:
         with tarfile.open(tgz) as tf:
             names = tf.getnames()
             target = ROOT if a.apply and str(sub) == "." else dest / "files" / sub
-            tf.extractall(target, filter="data")
+            _extract(tf, target)
         status = json.loads((tgz.parent / "status.json").read_text()) if (tgz.parent / "status.json").exists() else {}
         label = "" if str(sub) == "." else f"{sub}: "
         print(f"{label}exit {status.get('exit_code', '?')}, {len(names)} file(s) -> {target}")
@@ -570,6 +649,18 @@ def cmd_fetch(a: argparse.Namespace) -> None:
             print(f"    ... and {len(names) - 20} more")
     if a.apply and any(str(t.parent.relative_to(dest / "s3")) != "." for t in archives):
         print("array results are kept under aws-runs/ (--apply takes a single run's only)")
+
+
+def _extract(tf: tarfile.TarFile, target: Path) -> None:
+    """Extract safely (no absolute paths, no links out of target) where Python has the filter (3.12, and patches
+    of 3.9-3.11); the archives are this tool's own, written by aws/job.py."""
+    if hasattr(tarfile, "data_filter"):
+        tf.extractall(target, filter="data")
+    else:
+        for m in tf.getmembers():
+            if m.name.startswith("/") or ".." in Path(m.name).parts or m.issym() or m.islnk():
+                sys.exit(f"refusing to extract {m.name!r}")
+        tf.extractall(target)
 
 
 # ---------------------------------------------------------------------------------------------------- runners
@@ -592,7 +683,14 @@ def cmd_ec2(a: argparse.Namespace) -> None:
         return
     if a.action == "start":
         kind = kinds[0]
-        itype = a.type or DEFAULT_TYPE[kind]
+        if a.type:
+            itype = a.type
+        else:
+            families, size = DEFAULT_TYPE[kind]
+            first = offered(families)
+            if not first:
+                sys.exit(f"none of {', '.join(families)} is offered in {region()}: pass --type")
+            itype = f"{first[0]}.{size}"
         want = "arm64" if kind == "cpu" else "x86_64"
         if want not in _arch(itype):
             sys.exit(
@@ -770,7 +868,10 @@ def main() -> None:
     e.add_argument("action", choices=["start", "stop", "list", "shell", "terminate"])
     e.add_argument("--gpu", action="store_true")
     e.add_argument("--all", action="store_true", help="stop/terminate: both runners")
-    e.add_argument("--type", help=f"start: the instance type (default {DEFAULT_TYPE})")
+    e.add_argument(
+        "--type",
+        help="start: the instance type (default: CPU r7g.2xlarge, GPU g6e.xlarge, or the next family offered in the region)",
+    )
     e.set_defaults(func=cmd_ec2)
 
     t = sub.add_parser("teardown", help="delete everything the stack made, and the bucket's contents")

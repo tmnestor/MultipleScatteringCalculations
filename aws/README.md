@@ -70,7 +70,8 @@ with every run.
 ## Daily use
 
 ```bash
-# A GPU runner (default g6e.xlarge: L40S, 48 GB); first start takes ~2 min, later starts ~1 min
+# A GPU runner: g6e.xlarge (L40S, 48 GB) where offered, else g6.xlarge (L4, 24 GB) or g5.xlarge (A10G, 24 GB);
+# Sydney has no g6e. First start takes ~2 min, later starts ~1 min
 python3 aws/msc_aws.py ec2 start --gpu
 python3 aws/msc_aws.py run --on ec2 --gpu -- python -c "import torch; print(torch.cuda.get_device_name())"
 python3 aws/msc_aws.py run --on ec2 --gpu -- python scripts/probe_fft_sphere_scaling.py --device cuda --dtype complex128 --warm-store
