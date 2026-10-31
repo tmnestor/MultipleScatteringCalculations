@@ -29,6 +29,7 @@ from .effective_contrasts import (
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
     _build_incident_plane_wave_basis,
+    _composite_tmatrix,
     _sub_cell_tmatrix_9x9,
 )
 from .sphere_scattering import SphereDecompositionResult
@@ -517,9 +518,7 @@ def compute_sphere_foldy_lax_fft_gpu(
             psi[:, col] = sign * _apply_symmetry(psi[:, rep], grid_idx_np, n_sub, q)
 
     # Step 5: Extract composite T-matrix
-    T_comp = np.zeros((9, 9), dtype=complex)
-    for n in range(nC):
-        T_comp += T_loc @ psi_exc[9 * n : 9 * n + 9, :]
+    T_comp = _composite_tmatrix(T_loc, psi_exc)
 
     T3x3 = T_comp[:3, :3].copy()
 

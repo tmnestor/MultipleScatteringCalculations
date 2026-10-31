@@ -35,6 +35,7 @@ from .effective_contrasts import (
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
     _build_incident_plane_wave_basis,
+    _composite_tmatrix,
     _propagator_blocks_9x9,
     _sub_cell_tmatrix_9x9,
 )
@@ -415,9 +416,7 @@ def compute_sphere_foldy_lax_fft(
         psi_pw[:, col] = solve(pw_inc[:, col], f"plane-wave column {col}")
 
     # Step 5: Extract composite T-matrix
-    T_comp = np.zeros((9, 9), dtype=complex)
-    for n in range(nC):
-        T_comp += (T_loc if t_local is None else t_local[n]) @ psi_exc[9 * n : 9 * n + 9, :]
+    T_comp = _composite_tmatrix(T_loc if t_local is None else t_local, psi_exc)
 
     T3x3 = T_comp[:3, :3].copy()
 

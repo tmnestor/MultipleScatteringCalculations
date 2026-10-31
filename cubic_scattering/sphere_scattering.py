@@ -33,6 +33,7 @@ from .effective_contrasts import (
 from .resonance_tmatrix import (
     _build_incident_field_coupled,
     _build_incident_plane_wave_basis,
+    _composite_tmatrix,
     _pair_propagator_matrix,
     _propagator_blocks_9x9,
     _solve_with_condition_estimate,
@@ -282,9 +283,7 @@ def compute_sphere_foldy_lax(
     psi_exc, psi_pw = sol[:, :9], sol[:, 9:]
 
     # Composite T-matrix
-    T_comp = np.zeros((9, 9), dtype=complex)
-    for n in range(N):
-        T_comp += T_loc @ psi_exc[9 * n : 9 * n + 9, :]
+    T_comp = _composite_tmatrix(T_loc, psi_exc)
 
     T3x3 = T_comp[:3, :3].copy()
 
