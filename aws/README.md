@@ -90,11 +90,15 @@ python3 aws/msc_aws.py status                  # recent runs
 python3 aws/msc_aws.py logs RUN --follow       # live output (updated every 20 s); --index K for an array child
 python3 aws/msc_aws.py fetch RUN               # → aws-runs/RUN/files/ ; --apply writes into the checkout
 python3 aws/msc_aws.py ec2 shell --gpu         # a shell on the runner (nvidia-smi, htop, docker ps)
+python3 aws/msc_aws.py cancel RUN              # stop a run: on a runner its container, on Batch the job
+python3 aws/msc_aws.py ec2 kill --gpu          # stop every job on the GPU runner
 ```
 
 `RUN` can be any unique part of the run id. `run` on EC2 waits and fetches by default (`--no-wait` to return at
 once); on Batch it returns at once (`--wait` to follow). A stopped runner is started by `run` itself;
-`ec2 start --type …` on a stopped runner changes its type.
+`ec2 start --type …` on a stopped runner changes its type. A runner takes one run at a time: `run` refuses while
+an earlier run of yours is still going there, since two would share its CPUs and memory and spoil each other's
+timings (`--force` overrides). Closing the terminal or Ctrl-C stops only the waiting, never the run: use `cancel`.
 
 What gets sent: everything `git ls-files -co --exclude-standard` lists (tracked files, and untracked files that
 aren't ignored), less the `.dockerignore` patterns (LaTeX, Mathematica, the thesis Fortran, `scratch/`) and any
@@ -105,9 +109,11 @@ changed under the checkout (not caches or compiled kernels), plus its log and ex
 
 Run `scripts/probe_fft_sphere_scaling.py` on the Mac first: its extrapolation shows what a target n_sub needs.
 
-- **The Krylov basis dominates memory.** `torch_gmres` allocates (gmres_maxiter + 1) × 9 n_cells up front, so at
-  the default maxiter of 200 it is about 32 GB at n_sub = 128 in complex128, even when GMRES converges in 4
-  iterations. Lowering `gmres_maxiter` cuts it in proportion.
+- **Memory is mostly the FFT product's grids.** `torch_gmres` grows its Krylov basis by one vector a step (since
+  2026-10-31; before, it allocated all gmres_maxiter + 1 vectors up front, 32 GB at n_sub = 128 in complex128).
+  What remains does not depend on maxiter: about 16.5 GB at n_sub = 96 in complex128 (measured on r7g.2xlarge),
+  probably mostly the padded 9 × nP³ grids of the FFT product (inferred from their size, not profiled). The probe's
+  extrapolation gives about 37 GB at 128 and 69 GB at 160.
 - **GPUs and complex128.** The g-family GPUs (L4, L40S, A10G) are fast in single precision and slow in double.
   `select_dtype` picks complex128 on CUDA. If the FFT products in complex64 meet your tolerance, pass
   `dtype=torch.complex64` and the cheap GPUs are excellent. For complex128 at speed you need A100/H100 (p4d/p5),

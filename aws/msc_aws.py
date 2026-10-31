@@ -428,6 +428,17 @@ def cmd_run(a: argparse.Namespace) -> None:
     }
 
     _require_image(o["RepositoryUri"], kind)
+    if a.on == "ec2":
+        inst = runner(kind)
+        if inst is None:
+            sys.exit(f"no {kind} runner: python3 aws/msc_aws.py ec2 start{' --gpu' if kind == 'gpu' else ''}")
+        busy = _runs_in_progress(inst["InstanceId"])
+        if busy and not a.force:
+            sys.exit(
+                f"the {kind} runner is still running {', '.join(busy)}: two jobs would share its CPUs and memory "
+                "(and spoil each other's timings). Wait, or cancel it:  python3 aws/msc_aws.py cancel RUN  "
+                "(--force to run alongside anyway)"
+            )
     data, n = make_bundle(a.exclude)
     print(f"{run_id}: {n} files, {len(data) / 1e6:.1f} MB -> s3://{o['Bucket']}/runs/{run_id}/", flush=True)
     _s3_put_bytes(data, f"s3://{o['Bucket']}/runs/{run_id}/code.tgz")
@@ -445,6 +456,8 @@ def cmd_run(a: argparse.Namespace) -> None:
             "--rm",
             "--label",
             "msc.job=1",
+            "--name",
+            f"msc-{run_id}",
             "--ipc=host",
             "-e",
             f"AWS_DEFAULT_REGION={region()}",
@@ -588,6 +601,53 @@ def _print_runner_stderr(rec: dict) -> None:
         print(f"--- runner stderr ---\n{out}")
 
 
+def _runs_in_progress(instance_id: str, recent: int = 20) -> list[str]:
+    """This checkout's recent runs on that runner that have not finished (runs sent from elsewhere are not seen)."""
+    if not RUNS.exists():
+        return []
+    recs = [json.loads(f.read_text()) for f in sorted(RUNS.glob("*/run.json"))][-recent:]
+    going = []
+    for r in recs:
+        if r.get("on") != "ec2" or r.get("instance") != instance_id or r.get("final"):
+            continue
+        st = state(r)[0]
+        if st in TERMINAL:
+            r["final"] = st  # finished runs are not asked about again
+            _save(r)
+        else:
+            going.append(r["id"])
+    return going
+
+
+def _ssm_shell(instance_id: str, commands: list[str], timeout: int = 120) -> str:
+    """Run shell commands on a runner and wait for them; their standard output."""
+    sent = aws("ssm", "send-command", "--instance-ids", instance_id, "--document-name", "AWS-RunShellScript",
+               "--parameters", json.dumps({"commands": commands}))  # fmt: skip
+    cid = sent["Command"]["CommandId"]
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        time.sleep(3)
+        inv = aws("ssm", "get-command-invocation", "--command-id", cid, "--instance-id", instance_id,
+                  check=False, parse=False)  # fmt: skip
+        if inv.returncode == 0:
+            j = json.loads(inv.stdout)
+            if j["Status"] in TERMINAL:
+                return j.get("StandardOutputContent", "")
+    sys.exit(f"no answer from {instance_id} within {timeout} s")
+
+
+def cmd_cancel(a: argparse.Namespace) -> None:
+    rec = _record(a.run)
+    if rec["on"] == "batch":
+        aws("batch", "terminate-job", "--job-id", rec["job_id"], "--reason", "cancelled from msc_aws.py")
+        print(f"terminating Batch job {rec['job_id']} ({rec['id']})")
+        return
+    # the container first: stopping the SSM command alone would leave it running
+    out = _ssm_shell(rec["instance"], [f"docker kill msc-{rec['id']} 2>/dev/null && echo killed || echo 'not running'"])
+    aws("ssm", "cancel-command", "--command-id", rec["command_id"], check=False, parse=False)
+    print(f"{rec['id']}: {out.strip() or 'done'}")
+
+
 def cmd_logs(a: argparse.Namespace) -> None:
     rec = _record(a.run)
     if a.follow:
@@ -722,8 +782,8 @@ def cmd_ec2(a: argparse.Namespace) -> None:
                 )["InstanceTypeOfferings"]
             }
             subs = aws("ec2", "describe-subnets", "--subnet-ids", *o["SubnetIds"].split(","))["Subnets"]
-            subnet = next((s["SubnetId"] for s in subs if s["AvailabilityZone"] in azs), None)
-            if subnet is None:
+            candidates = [(s["SubnetId"], s["AvailabilityZone"]) for s in subs if s["AvailabilityZone"] in azs]
+            if not candidates:
                 alts = offered(GPU_FAMILIES if kind == "gpu" else CPU_FAMILIES)
                 sys.exit(
                     f"{itype} is not offered in the stack's zones in {region()}; families offered there: "
@@ -731,26 +791,36 @@ def cmd_ec2(a: argparse.Namespace) -> None:
                     f"(e.g. --type {alts[0] + '.xlarge' if alts else '...'})"
                 )
             tmpl = o["RunnerTemplateGpu" if kind == "gpu" else "RunnerTemplateCpu"]
-            got = aws(
-                "ec2",
-                "run-instances",
-                "--launch-template",
-                f"LaunchTemplateId={tmpl},Version=$Latest",
-                "--instance-type",
-                itype,
-                "--subnet-id",
-                subnet,
-                "--count",
-                "1",
-                check=False,
-                parse=False,
-            )
+            # a zone can be out of capacity for a type at times (GPUs especially): then try the next zone
+            for subnet, zone in candidates:
+                got = aws(
+                    "ec2",
+                    "run-instances",
+                    "--launch-template",
+                    f"LaunchTemplateId={tmpl},Version=$Latest",
+                    "--instance-type",
+                    itype,
+                    "--subnet-id",
+                    subnet,
+                    "--count",
+                    "1",
+                    check=False,
+                    parse=False,
+                )
+                if got.returncode == 0 or "InsufficientInstanceCapacity" not in got.stderr:
+                    break
+                print(f"no {itype} capacity in {zone} at the moment; trying the next zone", flush=True)
             if got.returncode != 0:
                 hint = ""
                 if "VcpuLimitExceeded" in got.stderr:
                     hint = (
                         "\nyour account's vCPU quota for this instance family is too low (new accounts: 0 for "
                         "G and P): Service Quotas -> Amazon EC2; see aws/README.md, 'Quotas'"
+                    )
+                elif "InsufficientInstanceCapacity" in got.stderr:
+                    hint = (
+                        f"\nno zone has {itype} capacity at the moment: try again later, or another type "
+                        "(e.g. --type g5.xlarge, or g6.2xlarge)"
                     )
                 sys.exit(f"run-instances failed:\n{got.stderr.strip()}{hint}")
             iid = json.loads(got.stdout)["Instances"][0]["InstanceId"]
@@ -771,6 +841,16 @@ def cmd_ec2(a: argparse.Namespace) -> None:
         elif a.action == "terminate":
             aws("ec2", "terminate-instances", "--instance-ids", iid)
             print(f"terminating {kind} runner {iid}")
+        elif a.action == "kill":
+            if inst["State"]["Name"] != "running":
+                print(f"the {kind} runner is {inst['State']['Name']}: no jobs")
+                continue
+            kill_all = (
+                "ids=$(docker ps -q --filter label=msc.job); "
+                'if [ -n "$ids" ]; then docker kill $ids; else echo "no jobs running"; fi'
+            )
+            out = _ssm_shell(iid, [kill_all])
+            print(f"{kind} runner {iid}: {out.strip()}")
         elif a.action == "shell":
             iid = _ensure_runner(kind)
             cmd = ["aws", "ssm", "start-session", "--target", iid, "--region", region()]
@@ -846,12 +926,17 @@ def main() -> None:
     w = r.add_mutually_exclusive_group()
     w.add_argument("--wait", dest="wait", action="store_true", default=None, help="follow the log (default on ec2)")
     w.add_argument("--no-wait", dest="wait", action="store_false", help="return once submitted (default on batch)")
+    r.add_argument("--force", action="store_true", help="ec2: run even if the runner is busy with another run")
     r.add_argument("cmd", nargs=argparse.REMAINDER)
     r.set_defaults(func=cmd_run)
 
     s = sub.add_parser("status", help="recent runs")
     s.add_argument("-n", type=int, default=15)
     s.set_defaults(func=cmd_status)
+
+    c = sub.add_parser("cancel", help="stop a run (on a runner, its container; on Batch, the job)")
+    c.add_argument("run")
+    c.set_defaults(func=cmd_cancel)
 
     lg = sub.add_parser("logs", help="a run's output")
     lg.add_argument("run")
@@ -865,7 +950,11 @@ def main() -> None:
     f.set_defaults(func=cmd_fetch)
 
     e = sub.add_parser("ec2", help="the on-demand runners")
-    e.add_argument("action", choices=["start", "stop", "list", "shell", "terminate"])
+    e.add_argument(
+        "action",
+        choices=["start", "stop", "list", "shell", "terminate", "kill"],
+        help="kill: stop every job running on the runner",
+    )
     e.add_argument("--gpu", action="store_true")
     e.add_argument("--all", action="store_true", help="stop/terminate: both runners")
     e.add_argument(
