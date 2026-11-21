@@ -286,14 +286,21 @@ def _ignore_patterns() -> list[str]:
 
 
 def _ignored(path: str, patterns: list[str]) -> bool:
+    """Whether the patterns leave path out. As in .dockerignore, a pattern that starts with ! puts
+    back what an earlier one left out, and the last pattern that matches decides."""
     parts = path.split("/")
-    for p in patterns:
+    out = False
+    for raw in patterns:
+        keep = raw.startswith("!")
+        p = raw[1:] if keep else raw
         bare = p.removeprefix("**/")
-        if fnmatch.fnmatch(path, p) or path.startswith(p.rstrip("/") + "/"):
-            return True
-        if p.startswith("**/") and any(fnmatch.fnmatch(x, bare) for x in parts):
-            return True
-    return False
+        if (
+            fnmatch.fnmatch(path, p)
+            or path.startswith(p.rstrip("/") + "/")
+            or (p.startswith("**/") and any(fnmatch.fnmatch(x, bare) for x in parts))
+        ):
+            out = not keep
+    return out
 
 
 def make_bundle(extra_excludes: list[str]) -> tuple[bytes, int]:

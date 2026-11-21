@@ -13,3 +13,9 @@ LatexPDFs
 PhD_fortran_code
 reference_papers
 aws-runs
+# Put back the reference data the tests read: Mathematica's exported numbers, the notebook list, and the
+# figure data of the live papers. (Everything else under those folders stays out.)
+!Mathematica/*.json
+!Mathematica/*.jsonl
+!Mathematica/notebooks.yml
+!LatexPDFs/*/figures/*.dat
