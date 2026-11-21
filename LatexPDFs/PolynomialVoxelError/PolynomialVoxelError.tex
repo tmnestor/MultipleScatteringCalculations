@@ -57,7 +57,7 @@
 \large Isolated Exactly on a Layer of Cubes,\\
 and Known before the Solve in Three Dimensions}
 \author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
-\date{Draft, 9 October 2026}
+\date{Draft, 11 November 2026}
 
 \begin{document}
 \maketitle
@@ -165,7 +165,11 @@ $c_p(kd)^{2p+2}$ with $c_0=1/12$, $c_1=1/720$ and $c_2=1/100800$ (\S\ref{sec:fou
 and $6$ of $p=0$, $1$ and $2$ hold for P, SV and SH waves at normal and oblique incidence. For the collocation scheme, the uniform-field voxel in its simplest form, the error
 is $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in transmission (\S\ref{sec:convergence}), and the
 opposite signs explain why no correction of the single site can improve both
-(\S\ref{sec:discussion}). (3) \emph{The error that remains is the single site's, and it is the
+(\S\ref{sec:discussion}); for any pair of incident and scattered waves, converted or not and at any
+angle, it is the closed form of Eq.~\eqref{eq:pairlaw}, which a lattice of cubes obeys to one part in a
+thousand; a reading of the same solution makes it reciprocal (Eq.~\eqref{eq:pairsym}), and another
+removes it, leaving an error of second order in the contrast that is some hundred times smaller
+(Eq.~\eqref{eq:firstorder}). (3) \emph{The error that remains is the single site's, and it is the
 projection error of the medium.} The single-site $T$-matrix sums the rescattering within a voxel to all
 orders and the coupling between voxels is exact, but the $T$-matrix is that of the voxel as
 represented, its contrast projected to degree $r$ and its field held to degree $p$. The error of the
@@ -706,7 +710,180 @@ confirmed for $n=1$ to $16$ to $10^{-4}$ of the error itself
 Eq.~\eqref{eq:ratio} hold to $4\times10^{-4}$ (\nb{ContinuumLimit\_IncidentS.wl}, \S\ref{sec:fourth}). At the full contrast the reflection constant is unchanged
 ($0.124$ against $1/8$); the transmission constant grows to $-0.092$.
 
-\paragraph{Why a uniform-field single site stops at second order.} The two constants have opposite
+\paragraph{Any pair of waves: conversion, oblique incidence and reciprocity.}
+Equation~\eqref{eq:errorR} is for one wave at normal incidence, where a plane of voxels acts as a plate.
+The same argument gives the law for a lattice of cubic voxels and any pair of plane waves. Let the
+incident wave have wavevector $\mathbf{k}_{\text{in}}$ and the scattered wave $\mathbf{k}_{\text{out}}$,
+each P or S, and let
+\begin{equation}\label{eq:cubeaverage}
+  C(\mathbf{q})=\frac{1}{d^3}\int_{\text{cube}}\mathrm{e}^{\mathrm{i}\mathbf{q}\cdot\mathbf{x}}\,\dd^3x
+  =\sinc(q_xh)\,\sinc(q_yh)\,\sinc(q_zh)
+\end{equation}
+be the average of a plane wave over a cube of side $d=2h$ about its centre. At first order in the
+contrast the scattered amplitude of the pair is an integral over the body of
+$\mathrm{e}^{\mathrm{i}(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})\cdot\mathbf{x}}$, the incident
+phase against the outgoing one. Collocation takes the incident wave at each voxel's centre, which is a
+midpoint rule for that integral, in error by the factor $1/C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})$.
+It then radiates from a source that is uniform over the voxel, whose plane-wave amplitude is that of a
+point source at the centre times $C(\mathbf{k}_{\text{out}})$. For a medium that is uniform within each
+cube, whatever the cubes' arrangement and their contrasts, therefore,
+\begin{equation}\label{eq:pairlaw}
+  \frac{A_{\text{disc}}}{A}
+  =\frac{C(\mathbf{k}_{\text{out}})}{C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})}
+  =1+\frac{d^2}{24}\Bigl(\lvert\mathbf{k}_{\text{in}}\rvert^2-2\,\mathbf{k}_{\text{in}}\cdot\mathbf{k}_{\text{out}}\Bigr)+O(d^4),
+\end{equation}
+with $A$ the first-order amplitude of the pair and $A_{\text{disc}}$ the scheme's: the integral over each
+cube is its centre value times $C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})$, the same factor for every
+cube. (A medium that varies smoothly within the cubes and is sampled at their centres is a different
+case, met on the sphere of \S\ref{sec:gain}: the first-order sum over cubes is then a midpoint rule on a
+smooth integrand, which carries no factor of this kind.) Equation~\eqref{eq:errorR}
+is its two simplest cases: the wave reflected into itself at normal incidence,
+$\mathbf{k}_{\text{out}}=-\mathbf{k}_{\text{in}}$, gives $\sinc(kh)/\sinc(2kh)$ and the constant $1/8$, and
+the forward wave, $\mathbf{k}_{\text{out}}=\mathbf{k}_{\text{in}}$, gives $\sinc(kh)$ and the constant
+$-1/24$. For a reflection in which the incident wave has vertical wavenumber $k_j$ and the reflected wave
+$k_i$, the two sharing the lateral wavenumber $k_x$, the factor is
+$\sinc(k_ih)\,\sinc(k_xh)/\sinc\bigl((k_i+k_j)h\bigr)$: the two-way phase in depth is
+$\mathrm{e}^{\mathrm{i}(k_i+k_j)z}$, and laterally the two phases cancel, so that the exact integrand is
+flat across a voxel and the factor $\sinc(k_xh)$ is the whole of the lateral error, as $\sinc(kh)$ is in
+transmission.
+
+Equation~\eqref{eq:pairlaw} is not reciprocal. The exact reflection matrix, with the waves normalised by
+their energy flux, is symmetric, $R_{PS}=R_{SP}$; the factor of Eq.~\eqref{eq:pairlaw} belongs to the
+outgoing wave alone and differs between the two conversions. The scheme has a twin with the same matrix.
+The source-cell average of the kernel (\S\ref{sec:setting}) is the field at a cell's centre from a source
+uniform over another cell, which is collocation; by the symmetry of the Green's tensor it is equally the
+field averaged over a cell from a point source at the centre of another. The second reading averages the
+incident wave over the voxel and radiates from a point: it is the adjoint scheme, and its factor is
+$C(\mathbf{k}_{\text{in}})/C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})$. The reflection matrices of
+the two readings are transposes of one another. They agree on $R_{PP}$ and $R_{SS}$, and their conversions
+differ by the ratio $\sinc(k_Ph)/\sinc(k_Sh)$ of the two vertical factors, which is
+$1+(k_S^2-k_P^2)h^2/6$ to leading order with $k_P$, $k_S$ the vertical wavenumbers. The geometric mean of
+the two,
+\begin{equation}\label{eq:pairsym}
+  \frac{A_{\text{disc}}}{A}
+  =\frac{\sqrt{C(\mathbf{k}_{\text{in}})\,C(\mathbf{k}_{\text{out}})}}{C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})}
+  =1+\frac{d^2}{48}\Bigl(\lvert\mathbf{k}_{\text{in}}\rvert^2+\lvert\mathbf{k}_{\text{out}}\rvert^2
+     -4\,\mathbf{k}_{\text{in}}\cdot\mathbf{k}_{\text{out}}\Bigr)+O(d^4),
+\end{equation}
+is symmetric under the exchange of the two waves, and it equals both readings wherever the incident and
+scattered waves are of the same type. It costs nothing: the system solved is the same, and only the
+amplitude read from its solution changes, by a factor known in closed form. Averaging the incident wave
+\emph{and} radiating through the cell gives the product $C(\mathbf{k}_{\text{in}})\,C(\mathbf{k}_{\text{out}})$
+in the numerator, which is the mean-only Galerkin voxel (Eq.~\eqref{eq:wavefactor} with $p=0$), with
+leading term $-d^2\,\mathbf{k}_{\text{in}}\cdot\mathbf{k}_{\text{out}}/12$ and the constant $1/12$ of
+Table~\ref{tab:ratio} at normal incidence. Collocation, its adjoint, their symmetric mean and the
+mean-only voxel thus differ only in which of the two waves is averaged over the cell.
+
+\paragraph{The first order made exact.} A factor that is known can be removed. Let the amplitude be read
+from point sources at the cell centres, which leaves the midpoint rule's
+$1/C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})$ alone, and let it be multiplied by
+$C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})$:
+\begin{equation}\label{eq:firstorder}
+  A_{\text{read}}=C(\mathbf{k}_{\text{in}}-\mathbf{k}_{\text{out}})\,A_{\text{point}},
+  \qquad
+  \frac{A_{\text{read}}}{A}=1+O(\bD^2).
+\end{equation}
+The first-order term of the pair is then the exact integral over every cube, for any medium that is
+uniform within each cube, at every frequency and angle, and what is left of the error is of second order
+in the contrast. For a reflection the factor is $\sinc\bigl((k_i+k_j)h\bigr)$. It is symmetric in the two
+waves, so the reading is reciprocal, and like Eq.~\eqref{eq:pairsym} it is a reading of the same solution.
+It is not a constant fitted to a body: it is the cell integral of the pair's phase, the statement for the
+incident and scattered waves together that the source-cell average of the kernel is for the coupling
+between cells. It needs the two wavevectors, which a reflection matrix or a far-field pattern for a plane
+incident wave supplies.
+
+\paragraph{The law on a lattice of cubes.} Equations~\eqref{eq:pairlaw} and \eqref{eq:pairsym} are tested
+on the three-dimensional lattice itself, against the exact layer.
+\begin{enumerate}
+\item \emph{The medium.} The background and the contrast of the experiment above. The layer is $6$\,m
+thick and is filled by three planes of cubes of side $d=2$\,m, or by six planes of cubes of side $1$\,m.
+\item \emph{The lattice.} The planes are periodic laterally, with four cubes to the period in each
+direction. A uniform layer cannot depend on that number, and it does not: with two cubes to the period
+and with four the reflection matrix of a single plane is the same to every digit computed.
+\item \emph{The scheme.} The system of Eq.~\eqref{eq:foldylax} for the nine-component state at the centre
+of every cube, with the uniform-strain closure exact as the single site (Appendix~\ref{app:pointcell}),
+the lattice sums exact at the lateral wavenumber of the incident wave, and the propagator averaged over
+the source cell: Eq.~\eqref{eq:collocation} in three dimensions.
+\item \emph{The waves.} At normal incidence, a P wave at $k_Sd=0.2$, $0.4$, $0.6$ and $1.0$
+($\omega=300$ to $1500$\,rad\,s$^{-1}$). At oblique incidence, P and SV waves at $k_Sd=0.6$ with lateral
+wavenumber $k_x=0.09$\,rad\,m$^{-1}$, for which the P wave travels at $30^\circ$ to the vertical and the S
+wave at $17.5^\circ$; all four entries of the P--SV reflection matrix are computed.
+\item \emph{The exact answer.} The reflection matrix of the uniform layer by the recursion of
+\citet{Kennett1983}.
+\item \emph{The error.} $R_{\text{disc}}/R-1$ for each entry, a complex number. A ratio of this kind does
+not depend on how the waves are normalised.
+\item \emph{The contrast.} The full contrast, and one hundredth of it, at which the terms beyond the
+first order are a hundred times smaller and the law is seen alone.
+\end{enumerate}
+At a hundredth of the contrast the errors are those of the law to one part in ten thousand at normal
+incidence and to one part in a thousand or better for every entry at oblique incidence (Tables~\ref{tab:slablaw} and \ref{tab:slaboblique};
+\path{scripts/measure_slab_collocation_law.py}). At the full contrast they lie $0.6$ to $1.5\%$ below it
+at normal incidence and within $1.3\%$ of it at oblique incidence, the difference being the second order
+in the contrast, as on the layer above ($0.124$ against $1/8$). The error is real and positive, as the law
+says: its imaginary part is under $2\%$ of it. With the symmetric reading of
+Eq.~\eqref{eq:pairsym} the two conversions agree to $10^{-10}$; with that of collocation they differ as
+Eq.~\eqref{eq:pairlaw} predicts, by $55\%$ of the smaller error. Halving the cubes divides every error by
+$4.03$ to $4.10$.
+
+Read with the first order exact, Eq.~\eqref{eq:firstorder}, the same solutions are far more accurate. At
+the full contrast the error of $R_{PP}$ at normal incidence falls to $1.1\times10^{-5}$ at $k_Sd=0.2$ and
+$7.7\times10^{-4}$ at $k_Sd=1.0$, $160$ to $60$ times smaller (Table~\ref{tab:slablaw}); at oblique
+incidence the errors of $R_{PP}$, $R_{SS}$ and the conversions fall from those of
+Table~\ref{tab:slaboblique} to $1.3\times10^{-4}$, $1.8\times10^{-4}$ and $2.4\times10^{-4}$, $85$, $230$
+and $94$ times smaller. At a hundredth of the contrast they are a hundred times smaller again, as an error
+of second order in the contrast must be.
+
+\begin{table}[htbp]
+\centering
+\caption{The collocation law on a lattice of cubes at normal incidence: $R_{PP}$ of three planes of
+$2$\,m cubes against the exact layer. Columns two to five are $R_{\text{disc}}/R-1$ in the symmetric
+reading (its real part; the imaginary part is under $1\%$ of it), against the law of
+Eq.~\eqref{eq:errorR} with $k=k_P$; the last is $\lvert R_{\text{read}}/R-1\rvert$ with the first order
+exact, Eq.~\eqref{eq:firstorder}.}\label{tab:slablaw}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+ & law, & \multicolumn{3}{c}{symmetric reading} & first order exact, \\
+$k_Sd$ & $\sinc(kh)/\sinc(2kh)-1$ & contrast $/\,100$ & full contrast & full / law & full contrast \\
+\midrule
+$0.2$ & $1.8027\times10^{-3}$ & $1.8026\times10^{-3}$ & $1.7925\times10^{-3}$ & $0.994$ & $1.12\times10^{-5}$ \\
+$0.4$ & $7.2435\times10^{-3}$ & $7.2428\times10^{-3}$ & $7.1918\times10^{-3}$ & $0.993$ & $6.19\times10^{-5}$ \\
+$0.6$ & $1.6422\times10^{-2}$ & $1.6420\times10^{-2}$ & $1.6269\times10^{-2}$ & $0.991$ & $1.82\times10^{-4}$ \\
+$1.0$ & $4.6752\times10^{-2}$ & $4.6745\times10^{-2}$ & $4.6052\times10^{-2}$ & $0.985$ & $7.66\times10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{The same at oblique incidence, $k_Sd=0.6$ on the $2$\,m cubes with the P wave at $30^\circ$:
+$R_{\text{disc}}/R-1$ for the entries of the P--SV reflection matrix, against the laws of
+Eqs.~\eqref{eq:pairsym} (symmetric) and \eqref{eq:pairlaw} (collocation). The two readings agree on
+$R_{PP}$ and $R_{SS}$.}\label{tab:slaboblique}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{three planes, $d=2$\,m} & \multicolumn{2}{c}{six planes, $d=1$\,m} \\
+entry & law & contrast $/\,100$ & full contrast & law & full contrast \\
+\midrule
+$R_{PP}$ & $1.091\times10^{-2}$ & $1.091\times10^{-2}$ & $1.087\times10^{-2}$ & $2.707\times10^{-3}$ & $2.696\times10^{-3}$ \\
+$R_{SS}$ & $4.099\times10^{-2}$ & $4.099\times10^{-2}$ & $4.096\times10^{-2}$ & $9.985\times10^{-3}$ & $9.980\times10^{-3}$ \\
+conversions, symmetric & $2.282\times10^{-2}$ & $2.282\times10^{-2}$ & $2.259\times10^{-2}$ & $5.620\times10^{-3}$ & $5.563\times10^{-3}$ \\
+S from P, collocation & $1.791\times10^{-2}$ & $1.790\times10^{-2}$ & $1.768\times10^{-2}$ & $4.413\times10^{-3}$ & $4.356\times10^{-3}$ \\
+P from S, collocation & $2.776\times10^{-2}$ & $2.776\times10^{-2}$ & $2.753\times10^{-2}$ & $6.829\times10^{-3}$ & $6.772\times10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The package $T$-matrix, put in place of the closure on the same lattice, has a reflection error of
+$2.7\times10^{-4}$ to $8.1\times10^{-3}$ at the four frequencies of Table~\ref{tab:slablaw}: about a sixth
+of the closure's in the symmetric reading, and $24$ to $11$ times the closure's with the first order
+exact. Its form-factor corrections remove most of the first-order reflection error, as the next paragraph
+shows on the layer, at the cost of a larger error in transmission and, on the sphere of
+\S\ref{sec:gain}, of an error $7$ to $11$ times larger; Eq.~\eqref{eq:firstorder} removes all of it, for
+every pair of waves, and changes nothing else.
+
+\paragraph{Why a uniform-field single site stops at second order.} The two constants of Eq.~\eqref{eq:errorR} have opposite
 signs, so no scalar correction of $\bT$, no single $O((kh)^2)$ factor, can cancel both. The
 package $T$-matrix illustrates it: its form-factor corrections reduce the reflection error by a
 factor $4.45$ and \emph{increase} the transmission error by $1.7$, at every $n$. The missing term in

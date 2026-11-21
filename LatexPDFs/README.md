@@ -17,6 +17,44 @@ Statuses:
 
 Read these before relying on any number from an older document.
 
+- **The exact closure is not the more accurate single site everywhere** (11 November 2026). On the graded
+  sphere the exact uniform-strain closure is 7 to 11 times more accurate than the package's cube T-matrix
+  (Error paper, Section 11). In reflection from a coarse uniform slab it is the reverse: with three planes
+  of voxels, k_S d = 0.2 to 1.0, the exact closure's R_PP error against the exact layer is about 6 times
+  the package T-matrix's (1.8e-3 to 4.6e-2 against 2.7e-4 to 8.1e-3). The exact closure's error there is
+  the paper's collocation law, sinc(kh)/sinc(2kh) - 1 = (k_P d)^2/8 + ... (Eq. 16), met to 0.01% at weak
+  contrast and to 0.6 to 1.5% at the full contrast. The package's form-factor corrections cancel most of
+  that error in reflection and enlarge it in transmission (Error paper, Section 6). Because the law is
+  known it can be divided out of the amplitude (Eq. 20, the slab solver's readout since that date): the
+  closure's error is then 1.1e-5 to 7.7e-4, 11 to 24 times smaller than the package T-matrix's.
+- **Periodic-slab results before 11 November 2026 carry three defects of the slab solver**
+  (`cubic_scattering/slab_scattering.py`, `cell_averaged_lattice.py`), all corrected on that date;
+  `cubic_scattering/tests/test_slab_convergence.py` holds the current figures. Slab reflection errors
+  quoted between 15 September and 31 October 2026 (4e-4 to 8e-3) were, besides, the package T-matrix's.
+  - *The reflection was read from point sources.* Each cell's source was summed as a point at its centre,
+    which leaves out the factor sinc(k_z h) of the kernel's cell integral: with the exact closure the error
+    was (k_P d)^2/6 where the paper's scheme has (k_P d)^2/8. The factor is now applied whenever the exact
+    closure is the single site the readout is now a named choice (`slab_readout.exact_site` in
+    `cubic_scattering/numerics.yml`): `symmetric`, the geometric mean of the incident and outgoing modes'
+    cell factors, which gives (k_P d)^2/8 and keeps the reflection matrix reciprocal (the outgoing factor
+    alone makes the two conversions differ by 1% to 3%); or `first_order`, the configured one, which
+    integrates the first-order term exactly over every cube and leaves an error of second order in the
+    contrast, 60 to 230 times smaller on the test slab.
+  - *The same-plane kernel at normal incidence removed the wrong self term.* The lattice sum over the
+    other cells of a plane is the plate's field less the cube's own integral. The kernel removed the
+    package T-matrix's self term instead, whose real part does not change with frequency: 0.4% off at
+    k_S h = 0.1 and 9% at 0.5. Every normal-incidence result on the exact cell-average route carried it;
+    on the test slab it put the full-contrast R_PP error 4.6 to 6.5% below the law, where it is now 0.6
+    to 1.5% below.
+  - *Oblique incidence was solved on the wrong lattice wavevectors.* The periodic kernels were built at
+    the lattice's own Bloch points whatever the incident wave, so an oblique wave that does not fit the
+    lattice a whole number of times was wrapped round it with the wrong phase; and the specular average
+    left the wave's lateral phase in, a factor sin(M k_x d/2) / (M sin(k_x d/2)) for M cells across (0.980
+    on the four-cell test slab at 30 degrees, zero when the lattice holds a whole wavelength). Oblique
+    results depended on M: on one plane the R_PP error moved between 1.4% and 2.0%, and the R_SS error
+    near the P critical angle read 25% where it is 3.6%. The kernels are now built at the wave's lateral
+    wavevector, and every entry of the oblique P-SV matrix follows its first-order law to 5e-4 at the
+    full contrast. Ocean-bottom results at oblique incidence used this solver.
 - **The Galerkin cell's gain over the classical point cell, restated** (31 October 2026). Earlier versions
   of the four live papers said the cell of degree one needs 6.6 to 24 times fewer unknowns than the
   classical point cell. That point cell used the package's cube T-matrix, whose far-field form-factor
@@ -39,7 +77,7 @@ Read these before relying on any number from an older document.
 
 | Folder | Title | Date | What it establishes |
 |---|---|---|---|
-| `PolynomialVoxelError/` | The Error of Polynomial Voxels for Elastic Waves | 31 Oct 2026 | Order min(2p+2, 2r+2) on a layer, with closed-form constants; in 3-D a two-term error known before the solve; the gain over point matching (7.5 to 25 times fewer unknowns like for like, growing as the three-quarters power of the accuracy asked); the point cell in closed form (Appendix F) |
+| `PolynomialVoxelError/` | The Error of Polynomial Voxels for Elastic Waves | 11 Nov 2026 | Order min(2p+2, 2r+2) on a layer, with closed-form constants; the collocation error for any pair of incident and scattered waves in closed form, and its reciprocal reading (Eqs. 18 and 19, met by a lattice of cubes to one part in a thousand), and the reading that removes it (Eq. 20); in 3-D a two-term error known before the solve; the gain over point matching (7.5 to 25 times fewer unknowns like for like, growing as the three-quarters power of the accuracy asked); the point cell in closed form (Appendix F) |
 | `LegendreCellTMatrix/` | The Single-Site T-Matrix of a Legendre Cell in Closed Form | 31 Oct 2026 | The degree-one Legendre cell's T-matrix, every power of the frequency on six constants |
 | `ExactCouplingIntegrals/` | The Coupling Integrals of Polynomial Cubes in Closed Form | 31 Oct 2026 | Coupling blocks exact and accurate to round-off, touching cells included; frequency-independent coefficients, 9.3 to 19 times cheaper than quadrature over 1024 frequencies |
 | `InterfaceCouplingIntegrals/` | Coupling Integrals of Polynomial Cubes at a Welded Elastic Interface | 31 Oct 2026 | The static image in closed form and plane waves for the rest; the static and order-omega^2 parts computed once for every frequency |
