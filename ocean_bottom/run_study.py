@@ -77,8 +77,7 @@ def _plot_ocean_bottom(result, cfg, output: str | Path) -> None:
         subtitle = "Normal incidence"
     H = cfg.geometry.N_z * cfg.geometry.d
     subtitle += (
-        f",  {cfg.geometry.M}$\\times${cfg.geometry.M}$\\times${cfg.geometry.N_z} slab"
-        f",  $H = {H:.1f}$ m"
+        f",  {cfg.geometry.M}$\\times${cfg.geometry.M}$\\times${cfg.geometry.N_z} slab,  $H = {H:.1f}$ m"
     )
     if cfg.free_surface:
         subtitle += ",  free surface"
@@ -230,15 +229,9 @@ def main() -> None:
     parser.add_argument("config", type=str, help="Path to YAML config file")
 
     # CLI overrides (seismic units: km/s, g/cm³, GPa, km, s/km)
-    parser.add_argument(
-        "--M", type=int, default=None, help="Override horizontal grid size (M×M)"
-    )
-    parser.add_argument(
-        "--a", type=float, default=None, help="Override cube half-width (km)"
-    )
-    parser.add_argument(
-        "--p", type=float, default=None, help="Override horizontal slowness (s/km)"
-    )
+    parser.add_argument("--M", type=int, default=None, help="Override horizontal grid size (M×M)")
+    parser.add_argument("--a", type=float, default=None, help="Override cube half-width (km)")
+    parser.add_argument("--p", type=float, default=None, help="Override horizontal slowness (s/km)")
     parser.add_argument(
         "--free-surface",
         action="store_true",
@@ -257,18 +250,10 @@ def main() -> None:
         default=None,
         help="Use volume-averaged propagator",
     )
-    parser.add_argument(
-        "--f-peak", type=float, default=None, help="Override Ricker peak frequency (Hz)"
-    )
-    parser.add_argument(
-        "--f-min", type=float, default=None, help="Override minimum frequency (Hz)"
-    )
-    parser.add_argument(
-        "--f-max", type=float, default=None, help="Override maximum frequency (Hz)"
-    )
-    parser.add_argument(
-        "--save", type=str, default=None, help="Save results to .npz file"
-    )
+    parser.add_argument("--f-peak", type=float, default=None, help="Override Ricker peak frequency (Hz)")
+    parser.add_argument("--f-min", type=float, default=None, help="Override minimum frequency (Hz)")
+    parser.add_argument("--f-max", type=float, default=None, help="Override maximum frequency (Hz)")
+    parser.add_argument("--save", type=str, default=None, help="Save results to .npz file")
     parser.add_argument("--no-plot", action="store_true", help="Skip plotting")
 
     args = parser.parse_args()

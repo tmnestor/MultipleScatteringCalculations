@@ -65,10 +65,7 @@ def contrast(medium: ReferenceMedium, eps: float) -> MaterialContrast:
 
 
 def contrasts(grid: iso.InterfaceGrid, eps: float) -> list:
-    return [
-        contrast(grid.medium(m), eps) if m < len(SCATTERER) else None
-        for m in range(len(grid.idx))
-    ]
+    return [contrast(grid.medium(m), eps) if m < len(SCATTERER) else None for m in range(len(grid.idx))]
 
 
 # ---------------------------------------------------------------------------
@@ -96,9 +93,7 @@ def mode_block(grid, r, s, n_source, n_test, n_phi=192):
     qh, wq = radial_rule(qh_max, branch, 1.0, order=24)
     phi = 2 * np.pi * np.arange(n_phi) / n_phi
     qq, pp = np.meshgrid(qh / H, phi, indexing="ij")
-    weight = (
-        np.repeat((wq / H * qh / H)[:, None], n_phi, 1) / (2 * np.pi * n_phi)
-    ).ravel()
+    weight = (np.repeat((wq / H * qh / H)[:, None], n_phi, 1) / (2 * np.pi * n_phi)).ravel()
     kx, ky = (qq * np.cos(pp)).ravel(), (qq * np.sin(pp)).ravel()
     cr, cs = grid.centres[r], grid.centres[s]
     rt = interface_rt(kx, ky, OMEGA, A, B)
@@ -114,17 +109,13 @@ def mode_block(grid, r, s, n_source, n_test, n_phi=192):
     src_to_if = _modes(kx, ky, src_med, s_sign_to_interface)
     paths = []  # (receiver modes, coupling (N, 3, 3) or None for direct, source modes)
     if r_in_a == s_in_a:
-        rec_from_if = _modes(
-            kx, ky, rec_med, -s_sign_to_interface
-        )  # back away from the interface
+        rec_from_if = _modes(kx, ky, rec_med, -s_sign_to_interface)  # back away from the interface
         coupling = rt["R_d"] if s_in_a else rt["R_u"]
         paths.append((rec_from_if, coupling, src_to_if))
         direct = _modes(kx, ky, src_med, float(np.sign(zr - zs)))
         paths.append((direct, None, direct))
     else:
-        rec_from_if = _modes(
-            kx, ky, rec_med, s_sign_to_interface
-        )  # onward through the interface
+        rec_from_if = _modes(kx, ky, rec_med, s_sign_to_interface)  # onward through the interface
         coupling = rt["T_d"] if s_in_a else rt["T_u"]
         paths.append((rec_from_if, coupling, src_to_if))
     for rec_modes, coupling, src_modes in paths:
@@ -136,9 +127,7 @@ def mode_block(grid, r, s, n_source, n_test, n_phi=192):
                 c = 1.0 if coupling is None else coupling[:, m, n]
                 ra, drv = side(kr, dr, cr, n_test, True)
                 coef = weight * ws * c
-                out += np.einsum(
-                    "n,na,nc,ni,nj->acij", coef, ra, sc, drv, dsv * SOURCE_PAIRING
-                )
+                out += np.einsum("n,na,nc,ni,nj->acij", coef, ra, sc, drv, dsv * SOURCE_PAIRING)
     return out
 
 
@@ -158,18 +147,14 @@ def check_identical() -> bool:
     res = iso.solve_interface(c, OMEGA, contrasts(grid, 0.1), KX, KY, "P", p=1)
     # the homogeneous solve: Paper 2's blocks, the incident plane wave
     blocks = {
-        (m, n): coupling_block(
-            tuple(int(v) for v in grid.idx[m] - grid.idx[n]), H, OMEGA, A, 10, 4
-        )
+        (m, n): coupling_block(tuple(int(v) for v in grid.idx[m] - grid.idx[n]), H, OMEGA, A, 10, 4)
         for m in range(len(SCATTERER))
         for n in range(len(SCATTERER))
     }
     a = iso.assemble(grid, blocks, res.delta, 1, 0)
     k_vec = np.array([np.sqrt((OMEGA / A.alpha) ** 2 - KX**2 - KY**2), KX, KY])
     k_hat = k_vec / np.linalg.norm(k_vec)
-    amp = np.concatenate(
-        [k_hat + 0j, _plane_wave_strain_voigt(k_hat, k_hat, OMEGA / A.alpha)]
-    )
+    amp = np.concatenate([k_hat + 0j, _plane_wave_strain_voigt(k_hat, k_hat, OMEGA / A.alpha)])
     rhs = plane_wave_moments(grid.centres, H, k_vec, amp, 4)
     psi = np.linalg.solve(a, rhs.ravel()).reshape(res.psi.shape)
     ref_err = np.abs(res.reference - rhs).max() / np.abs(rhs).max()
@@ -204,9 +189,7 @@ def check_born() -> bool:
 
     solve = 2 * s_over_eps(eps) - s_over_eps(2 * eps)
     # Born with the mode-route couplings
-    unit = (
-        iso.cell_contrasts(grid, OMEGA, contrasts(grid, 1e-3), 0) / 1e-3
-    )  # linear in the contrast
+    unit = iso.cell_contrasts(grid, OMEGA, contrasts(grid, 1e-3), 0) / 1e-3  # linear in the contrast
     psi0 = iso.reference_moments(grid, OMEGA, KX, KY, "P", 4) / m[None, :, None]
     worst = 0.0
     for i, r in enumerate(range(len(SCATTERER), len(grid.idx))):
@@ -247,9 +230,7 @@ def check_p() -> bool:
     out = {}
     for p in (0, 1, 2):
         ts = time.time()
-        res = iso.solve_interface(
-            c, OMEGA, contrasts(grid, 0.1), KX, KY, "P", p=p, blocks=blocks
-        )
+        res = iso.solve_interface(c, OMEGA, contrasts(grid, 0.1), KX, KY, "P", p=p, blocks=blocks)
         out[p] = scattered(res, 1)[len(SCATTERER) :, 0]  # the receivers' cell means
         print(f"   p = {p}: solve {time.time() - ts:.2f} s", flush=True)
     d01 = np.abs(out[0] - out[2]).max() / np.abs(out[2]).max()

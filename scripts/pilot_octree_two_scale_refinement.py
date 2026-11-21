@@ -45,7 +45,12 @@ sys.path[:0] = [str(ROOT), str(ROOT / "scripts")]
 import measure_graded_voxel_resolution as mres  # noqa: E402
 import pilot_octree_two_term_refinement as pt  # noqa: E402
 
-from cubic_scattering.graded_voxel.basis import SOURCE_EXPONENTS_QUARTIC, gram_test, monomials, source_expansion  # noqa: E402
+from cubic_scattering.graded_voxel.basis import (  # noqa: E402
+    SOURCE_EXPONENTS_QUARTIC,
+    gram_test,
+    monomials,
+    source_expansion,
+)
 from cubic_scattering.graded_voxel.blocks import coupling_block  # noqa: E402
 from cubic_scattering.graded_voxel.fft import _transform, signed_permutations, symmetry_reps  # noqa: E402
 from cubic_scattering.graded_voxel.octree import (  # noqa: E402
@@ -78,7 +83,9 @@ def finest_blocks(n_f, h0, omega, nc, nf, workers=4):
     CACHE.mkdir(parents=True, exist_ok=True)
     path = CACHE / f"n{n_f}_h{h0:.6g}_w{omega:.6g}_nc{nc}_nf{nf}.pkl"
     store = pickle.loads(path.read_bytes()) if path.exists() else {}
-    todo = sorted({tuple(sorted(o, reverse=True)) for o in itertools.product(range(n_f), repeat=3)} - set(store))
+    todo = sorted(
+        {tuple(sorted(o, reverse=True)) for o in itertools.product(range(n_f), repeat=3)} - set(store)
+    )
     if todo:
         env = {v: os.environ.get(v) for v in THREADS}
         os.environ.update({v: "1" for v in THREADS})
@@ -168,7 +175,14 @@ class Tree:
     """A tree's leaves on the finest grid: the Galerkin operator, its local blocks, its right-hand side."""
 
     def __init__(self, fin: Finest, centres, hs, omega, p, r):
-        self.fin, self.c, self.h, self.omega, self.p, self.r = fin, np.asarray(centres), np.asarray(hs), omega, p, r
+        self.fin, self.c, self.h, self.omega, self.p, self.r = (
+            fin,
+            np.asarray(centres),
+            np.asarray(hs),
+            omega,
+            p,
+            r,
+        )
         na, nf, nc = fin.na, fin.nf, fin.nc
         self.L = len(self.h)
         h0, a = fin.h0, RADIUS
@@ -196,10 +210,15 @@ class Tree:
             key = round(float(h), 9)
             if key not in selfk:
                 selfk[key] = coupling_block((0, 0, 0), float(h), omega, REF, nc, nf)[:na]
-            loc.append(np.kron(gm, np.eye(9)) - np.einsum("acij,cbjk->aibk", selfk[key], en).reshape(na * 9, na * 9))
+            loc.append(
+                np.kron(gm, np.eye(9))
+                - np.einsum("acij,cbjk->aibk", selfk[key], en).reshape(na * 9, na * 9)
+            )
         self.local_inv = np.linalg.inv(np.array(loc))
         k_mag = omega / REF.alpha
-        amp = np.concatenate([pt.K_HAT.astype(complex), _plane_wave_strain_voigt(pt.K_HAT, pt.K_HAT, k_mag)])
+        amp = np.concatenate(
+            [pt.K_HAT.astype(complex), _plane_wave_strain_voigt(pt.K_HAT, pt.K_HAT, k_mag)]
+        )
         self.b = np.array([plane_wave_moments(c[None, :], float(h), k_mag * pt.K_HAT, amp, nf)[0, :na]
                            for c, h in zip(self.c, self.h, strict=True)])  # fmt: skip
 
@@ -217,9 +236,15 @@ class Tree:
 
     def solve(self, rhs):
         dim = rhs.size
-        a = LinearOperator((dim, dim), matvec=lambda v: self.apply(v.reshape(rhs.shape)).ravel(), dtype=complex)
-        m = LinearOperator((dim, dim), matvec=lambda v: self.local_solve(v.reshape(rhs.shape)).ravel(), dtype=complex)
-        sol, info = gmres(a, rhs.ravel(), x0=m.matvec(rhs.ravel()), M=m, rtol=TOL, atol=0.0, restart=200, maxiter=40)
+        a = LinearOperator(
+            (dim, dim), matvec=lambda v: self.apply(v.reshape(rhs.shape)).ravel(), dtype=complex
+        )
+        m = LinearOperator(
+            (dim, dim), matvec=lambda v: self.local_solve(v.reshape(rhs.shape)).ravel(), dtype=complex
+        )
+        sol, info = gmres(
+            a, rhs.ravel(), x0=m.matvec(rhs.ravel()), M=m, rtol=TOL, atol=0.0, restart=200, maxiter=40
+        )
         assert info == 0, info
         return sol.reshape(rhs.shape)
 
@@ -239,7 +264,9 @@ def far_leaves(tree: Tree, psi, dirs, n_gauss=6):
     nodes = np.einsum("cg,lci->lgi", ms, src) * (ww[None, :, None] * tree.h[:, None, None] ** 3)
     pts = tree.c[:, None, :] + tree.h[:, None, None] * xi[None]
     forces = nodes[..., :3]
-    sig = np.array([_voigt_to_tensor(v) for v in nodes[..., 3:].reshape(-1, 6)]).reshape(*nodes.shape[:2], 3, 3)
+    sig = np.array([_voigt_to_tensor(v) for v in nodes[..., 3:].reshape(-1, 6)]).reshape(
+        *nodes.shape[:2], 3, 3
+    )
     kp, ks = tree.omega / REF.alpha, tree.omega / REF.beta
     out_p, out_s = [], []
     for rh in dirs:
@@ -308,7 +335,10 @@ def main() -> int:
     body = pt.Body(ka, p)
     dirs = body.pts / np.linalg.norm(body.pts, axis=1)[:, None]
     t0 = time.perf_counter()
-    print(f"localised feature (core 0.1a, to 0.3a, halo {pt.HALO}), k_S a = {ka}, p = r = {p}, finest h0 = a/32", flush=True)
+    print(
+        f"localised feature (core 0.1a, to 0.3a, halo {pt.HALO}), k_S a = {ka}, p = r = {p}, finest h0 = a/32",
+        flush=True,
+    )
     fin = Finest(n_f, h0, body.omega, p, p)
     print(f"   finest-grid operator: {n_f}^3 grid   [{time.perf_counter() - t0:.0f} s]", flush=True)
     exact = mres.exact_field(pt.SHAPE, pt.CORE, body.omega, 1.0, body.pts)
@@ -317,13 +347,17 @@ def main() -> int:
         for name, (cc, hh) in (("uniform n 4", uniform_leaves(RADIUS, 4)),):
             tree = Tree(fin, cc, hh, body.omega, p, p)
             x = tree.solve(tree.b)
-            ref = solve_graded_octree(body.omega, REF, CONTRAST, cc, hh, pt.prof, pt.K_HAT, pt.K_HAT, "P", p=p, r=p)
+            ref = solve_graded_octree(
+                body.omega, REF, CONTRAST, cc, hh, pt.prof, pt.K_HAT, pt.K_HAT, "P", p=p, r=p
+            )
             dx = np.abs(x - ref.psi[:, : fin.na]).max() / np.abs(x).max()
             print(f"   [check] {name}: finest-grid solve vs dense octree solve {dx:.1e}; "
                   f"error {true_error(tree, x, body, exact, peak):.4e}", flush=True)  # fmt: skip
         return 0
     rows = []
-    if "theta" in opts:  # Doerfler marking: refine the fewest leaves that hold a fraction theta of sum |eta|
+    if (
+        "theta" in opts
+    ):  # Doerfler marking: refine the fewest leaves that hold a fraction theta of sum |eta|
         theta, max_leaves = float(opts["theta"]), int(opts.get("max", 800))
         tols = []
         cc, hh = uniform_leaves(RADIUS, 2)
@@ -366,7 +400,16 @@ def main() -> int:
             sizes = {float(h): int((hh == h).sum()) for h in np.unique(hh)}
             print(f"   tol {tol:g} it {it}: leaves {len(hh):5d}, error {err:.3e}, two-scale difference {predicted:.3e}; "
                   f"{sizes}   [{time.perf_counter() - t0:.0f} s]", flush=True)  # fmt: skip
-            rows.append({"tol": tol, "it": it, "cells": len(hh), "error": err, "difference": predicted, "sizes": sizes})
+            rows.append(
+                {
+                    "tol": tol,
+                    "it": it,
+                    "cells": len(hh),
+                    "error": err,
+                    "difference": predicted,
+                    "sizes": sizes,
+                }
+            )
             flag = eta > tol
             if not flag.any():
                 break

@@ -26,10 +26,11 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from cubic_scattering.graded_voxel.basis import CONTRAST_NORMS, contrast_values  # noqa: E402
-from cubic_scattering.sphere_scattering_fft import _build_grid_index_map  # noqa: E402
 from measure_graded_voxel_resolution import projection_defect  # noqa: E402
 from pilot_graded_sphere_vs_exact import RADIUS  # noqa: E402
+
+from cubic_scattering.graded_voxel.basis import CONTRAST_NORMS, contrast_values  # noqa: E402
+from cubic_scattering.sphere_scattering_fft import _build_grid_index_map  # noqa: E402
 
 LEVELS = 4  # detail levels summed: cells of half-width h down to h / 16
 N_FUN = {0: 1, 1: 4, 2: 10}

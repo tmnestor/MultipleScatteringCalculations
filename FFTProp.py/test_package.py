@@ -188,9 +188,7 @@ def test_spectral_arrays():
     for i_depth in range(grid.Nscatz):
         pc_m0_p = sa.PC[:, 2, 0, i_depth]
         expected_m0 = np.sqrt(sa.dkx / (np.pi * sa.kzavec))
-        assert np.allclose(pc_m0_p, expected_m0, rtol=1e-12), (
-            f"PC m=0, P-wave, depth {i_depth} mismatch"
-        )
+        assert np.allclose(pc_m0_p, expected_m0, rtol=1e-12), f"PC m=0, P-wave, depth {i_depth} mismatch"
     print("  PC[m=0] = sqrt(dkx/pi*kz): verified for all depth layers")
 
     print("  PASSED\n")

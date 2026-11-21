@@ -140,7 +140,11 @@ def one(body: str, ka_s: float, arm: str, n: int, tol: float) -> dict:
             POL,
             "P",
             profile=(
-                cell_mean_profile(BODIES["smoothstep"], h) if mean else graded_profile if body == "graded" else None
+                cell_mean_profile(BODIES["smoothstep"], h)
+                if mean
+                else graded_profile
+                if body == "graded"
+                else None
             ),
             single_site="package" if arm == "point" else "exact",
             gmres_tol=tol,

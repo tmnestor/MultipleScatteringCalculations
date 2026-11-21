@@ -5,6 +5,7 @@ Exact Born: the same far-field formula with the exact profile and the exact plan
 spherical quadrature that integrates the polynomial-times-profile integrands exactly.
 Usage: python born_test.py [--rc=1] [--profile=smoothstep] n1 n2 ...
 """
+
 import math
 import sys
 from pathlib import Path
@@ -42,7 +43,8 @@ def exact_born():
     for lo, hi in ((0.0, b), (b, a)):
         x, w = np.polynomial.legendre.leggauss(80)
         xr.append((0.5 * (hi - lo) * x + 0.5 * (hi + lo), 0.5 * (hi - lo) * w))
-    r = np.concatenate([p[0] for p in xr]); wr = np.concatenate([p[1] for p in xr])
+    r = np.concatenate([p[0] for p in xr])
+    wr = np.concatenate([p[1] for p in xr])
     ct, wt = np.polynomial.legendre.leggauss(30)
     nph = 60
     ph = 2 * np.pi * np.arange(nph) / nph
@@ -99,10 +101,12 @@ def report(tag, vox, ex):
 if __name__ == "__main__":
     args = sys.argv[1:]
     for f in [x for x in args if x.startswith("--rc=")]:
-        gfft.R_C = int(f.split("=")[1]); args.remove(f)
+        gfft.R_C = int(f.split("=")[1])
+        args.remove(f)
     prof = "smoothstep"
     for f in [x for x in args if x.startswith("--profile=")]:
-        prof = f.split("=")[1]; args.remove(f)
+        prof = f.split("=")[1]
+        args.remove(f)
     gs.CORE = 0.1 * gs.RADIUS
     gs.set_profile(prof)
     OBS = fs.obs_points(gs.R_FAR, gs.THETA)

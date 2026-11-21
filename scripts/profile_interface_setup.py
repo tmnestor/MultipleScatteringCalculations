@@ -68,9 +68,7 @@ def _timed(name_of, fn):
 def _instrument() -> None:
     if getattr(isp, "_profiled", False):
         return
-    isp.image_block = _timed(
-        lambda a, k: "K1" if k.get("order", 0) == 1 else "K0", isp.image_block
-    )
+    isp.image_block = _timed(lambda a, k: "K1" if k.get("order", 0) == 1 else "K0", isp.image_block)
     isp._static_integral = _timed(lambda a, k: "Y0<Q0", isp._static_integral)
     isp.fp_low_integral = _timed(lambda a, k: "FP Y1", isp.fp_low_integral)
     isp.window_parts = _timed(lambda a, k: "window", isp.window_parts)
@@ -128,10 +126,7 @@ def jobs_of(n: int) -> list:
 
 def _table(title: str, groups: dict) -> None:
     print(f"\n{title}")
-    print(
-        f"  {'':>14} {'classes':>7} {'wall s':>8} "
-        + " ".join(f"{p:>8}" for p in PIECES)
-    )
+    print(f"  {'':>14} {'classes':>7} {'wall s':>8} " + " ".join(f"{p:>8}" for p in PIECES))
     for label, rows in groups.items():
         tot = {p: sum(r["pieces"][p] for r in rows) for p in PIECES}
         print(
@@ -165,9 +160,7 @@ def main() -> None:
             }
         )
         seen.add(pid)
-    OUT.write_text(
-        json.dumps({"n": n, "wall": wall, "workers": workers, "rows": rows}, indent=1)
-    )
+    OUT.write_text(json.dumps({"n": n, "wall": wall, "workers": workers, "rows": rows}, indent=1))
 
     warm = [r for r in rows if not r["first_in_worker"]]
     first = [r for r in rows if r["first_in_worker"]]
@@ -190,18 +183,12 @@ def main() -> None:
     }
     _table(
         "by depth pair (warm jobs)",
-        {
-            lbl: [r for r in warm if tuple(r["key"][:2]) == zz]
-            for zz, lbl in pair.items()
-        },
+        {lbl: [r for r in warm if tuple(r["key"][:2]) == zz] for zz, lbl in pair.items()},
     )
     bins = [(-1, 4), (4, 8), (8, 12), (12, 16), (16, 24), (24, 32)]
     _table(
         "by lateral reach |d|/h (warm jobs)",
-        {
-            f"({max(lo, 0)}, {hi}]": [r for r in warm if lo < r["reach"] <= hi]
-            for lo, hi in bins
-        },
+        {f"({max(lo, 0)}, {hi}]": [r for r in warm if lo < r["reach"] <= hi] for lo, hi in bins},
     )
     _table("first job of each worker", {"first": first})
 

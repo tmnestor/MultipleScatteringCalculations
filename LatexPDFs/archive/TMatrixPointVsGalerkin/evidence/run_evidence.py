@@ -393,9 +393,7 @@ def far_field_amplitudes(
         T27 = assemble_tmatrix_27(g)
         c_inc = cube_overlap_integrals(k_vec, pol, a)
         c_sc = T27 @ c_inc
-        return cube_far_field(
-            c_inc, c_sc, theta, ref, g, contrast, omega, a, k_vec, pol
-        )
+        return cube_far_field(c_inc, c_sc, theta, ref, g, contrast, omega, a, k_vec, pol)
 
     # ── born / eshelby: POINT source (no finite-size cube form factor) ──
     rho = ref.rho

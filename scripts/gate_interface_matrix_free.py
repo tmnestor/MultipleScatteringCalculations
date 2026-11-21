@@ -63,9 +63,7 @@ def main() -> None:
         cells = [(iz, ix, iy) for iz in layers for ix in range(n) for iy in range(n)]
         grid = iso.InterfaceGrid(np.array(cells), H, A, B)
         t0 = time.time()
-        c = iso.InterfaceCouplings(
-            grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True
-        )
+        c = iso.InterfaceCouplings(grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True)
         t_setup = time.time() - t0
         t0 = time.time()
         lat = iso.LateralOperator(c, OMEGA, p=1, r=0)
@@ -74,9 +72,9 @@ def main() -> None:
         mf = iso.MatrixFreeOperator(c, OMEGA, p=1, r=0)
         t_mf = time.time() - t0
         rng = np.random.default_rng(7)
-        src = rng.standard_normal(
+        src = rng.standard_normal((len(cells), lat.n_source * 9)) + 1j * rng.standard_normal(
             (len(cells), lat.n_source * 9)
-        ) + 1j * rng.standard_normal((len(cells), lat.n_source * 9))
+        )
         t0 = time.time()
         ref = lat._convolve(src)
         p_lat = time.time() - t0

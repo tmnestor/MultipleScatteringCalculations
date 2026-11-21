@@ -41,9 +41,7 @@ def _num(s: str) -> mp.mpf:
 def main() -> None:
     path = ROOT / "Mathematica" / "ImageCornerMoments.json"
     if not path.exists():
-        print(
-            "Mathematica/ImageCornerMoments.json not found: run the .wl to compare (SKIPPED, not PASS)"
-        )
+        print("Mathematica/ImageCornerMoments.json not found: run the .wl to compare (SKIPPED, not PASS)")
         return
     m = json.loads(path.read_text())
     mp.mp.dps = 30
@@ -70,14 +68,10 @@ def main() -> None:
         j, alpha, n, signs = case
         mine = corner_moment(j, tuple(alpha), tuple(n), (2, 2, 2), tuple(signs))
         theirs = _num(ref)
-        err = abs(mine - theirs) / max(
-            abs(theirs), mp.mpf(2) ** (sum(n)) * mp.mpf(10) ** -30
-        )
+        err = abs(mine - theirs) / max(abs(theirs), mp.mpf(2) ** (sum(n)) * mp.mpf(10) ** -30)
         passed = err < 1e-15
         ok &= passed
-        print(
-            f"Phi{j} d{alpha} s{n} signs {signs}: {mp.nstr(err, 3)}  {'PASS' if passed else 'FAIL'}"
-        )
+        print(f"Phi{j} d{alpha} s{n} signs {signs}: {mp.nstr(err, 3)}  {'PASS' if passed else 'FAIL'}")
     print("ALL PASS" if ok else "FAILURES")
 
 

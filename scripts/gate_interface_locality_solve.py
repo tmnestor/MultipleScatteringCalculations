@@ -64,8 +64,7 @@ def main() -> None:
         cut = copy.copy(full)
         cut.radius = radius
         cut.classes = {
-            k: (p if np.hypot(k[2], k[3]) <= radius else None, t)
-            for k, (p, t) in full.classes.items()
+            k: (p if np.hypot(k[2], k[3]) <= radius else None, t) for k, (p, t) in full.classes.items()
         }
         kept = sum(p is not None for p, _ in cut.classes.values())
         b2 = cut.blocks(OMEGA)
@@ -85,15 +84,9 @@ def main() -> None:
     t_cut = time.time() - t0
     same = all(
         (p is None) == (real.classes[k][0] is None)
-        and (
-            p is None
-            or all(
-                np.array_equal(x, y) for x, y in zip(p, real.classes[k][0], strict=True)
-            )
-        )
+        and (p is None or all(np.array_equal(x, y) for x, y in zip(p, real.classes[k][0], strict=True)))
         for k, (p, _) in {
-            k: (v[0] if np.hypot(k[2], k[3]) <= 16.0 else None, v[1])
-            for k, v in full.classes.items()
+            k: (v[0] if np.hypot(k[2], k[3]) <= 16.0 else None, v[1]) for k, v in full.classes.items()
         }.items()
     )
     ok &= same

@@ -51,9 +51,10 @@ from numpy.polynomial.legendre import leggauss
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_cube_moments_ball_shell import deriv, sphere_monomial, times_monomial  # noqa: E402
+from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
+
 from cubic_scattering import MaterialContrast, ReferenceMedium  # noqa: E402
 from cubic_scattering.sphere_scattering import compute_elastic_mie, mie_scattered_displacement  # noqa: E402
-from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
 
 REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
 CONTRAST = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)

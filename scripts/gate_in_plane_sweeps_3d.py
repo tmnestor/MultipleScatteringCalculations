@@ -55,6 +55,7 @@ import argparse
 import time
 
 import numpy as np
+
 from cubic_scattering import directional_sweeps as ds
 from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.pair_propagators import same_depth_table, separation_index

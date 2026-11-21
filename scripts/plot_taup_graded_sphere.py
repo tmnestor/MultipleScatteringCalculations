@@ -48,7 +48,9 @@ def main() -> int:
     t_ms = tau[i0 : i1 + 1] * 1e3
     ex, vx = ex[i0 : i1 + 1], vx[i0 : i1 + 1]
     diff = vx - ex
-    mag = 10 ** np.ceil(np.log10(0.5 / max(np.abs(diff).max(), 1e-30)))  # magnify the difference to a visible size
+    mag = 10 ** np.ceil(
+        np.log10(0.5 / max(np.abs(diff).max(), 1e-30))
+    )  # magnify the difference to a visible size
     p_ms = slow * 1e3  # s/km
     extent = (p_ms[0], p_ms[-1], t_ms[-1], t_ms[0])
 
@@ -59,7 +61,9 @@ def main() -> int:
     name = {"uz": "vertical", "ux": "horizontal"}[comp]
     for ax, data, title in ((axes[0], ex, "exact sphere"), (axes[1], vx, "Legendre cells"),
                             (axes[2], diff * mag, f"cells − exact, × {mag:g}")):  # fmt: skip
-        im = ax.imshow(data, aspect="auto", extent=extent, cmap=DIVERGING, vmin=-1, vmax=1, interpolation="bilinear")
+        im = ax.imshow(
+            data, aspect="auto", extent=extent, cmap=DIVERGING, vmin=-1, vmax=1, interpolation="bilinear"
+        )
         ax.set_title(title, fontsize=10)
         ax.set_xlabel("horizontal slowness p (s/km)")
         for pb, lab in ((1e3 / ALPHA, "1/α"), (1e3 / BETA, "1/β")):

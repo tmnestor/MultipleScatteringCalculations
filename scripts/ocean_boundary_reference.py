@@ -25,8 +25,9 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
-import cubic_scattering.layered_correction as LC  # noqa: E402
 from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
+
+import cubic_scattering.layered_correction as LC  # noqa: E402
 
 OUT = ROOT / "Mathematica" / "OceanBoundary_reference.json"
 A0, B0, R0 = 5000.0, 3000.0, 2500.0

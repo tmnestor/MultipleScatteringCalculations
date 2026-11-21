@@ -31,6 +31,7 @@ import argparse
 import time
 
 import numpy as np
+
 from cubic_scattering import directional_sweeps as ds
 from cubic_scattering.effective_contrasts import ReferenceMedium
 from cubic_scattering.sweep_solver import solve_foldy_lax_3d

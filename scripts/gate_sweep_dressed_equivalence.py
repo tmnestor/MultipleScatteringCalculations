@@ -61,6 +61,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
+from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
+
 from cubic_scattering.directional_sweeps import (  # noqa: E402
     LayeredBackground,
     apply_g0,
@@ -69,7 +71,6 @@ from cubic_scattering.directional_sweeps import (  # noqa: E402
 )
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.layered_correction import W9  # noqa: E402
-from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
 
 ALPHA, BETA, RHO, Q = 4.0, 2.22, 2.6, 2.0
 PITCH, N_LAY, FREQ = 1.0, 16, 6.0
@@ -238,8 +239,9 @@ def main() -> int:
     ok = ok and okr
 
     print("\n[D3] RECIPROCITY of the reverberation (symplectic law, 6x6)")
-    from cubic_scattering.layered_correction import J6, correct_6x6
     from GlobalMatrix.layered_greens import layered_greens_6x6
+
+    from cubic_scattering.layered_correction import J6, correct_6x6
 
     def g6(mod_, kx, ky, j, i):
         ss = mod_.complex_slowness_s()

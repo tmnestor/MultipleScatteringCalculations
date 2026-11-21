@@ -107,9 +107,7 @@ def cell_mean_profile(body: Body, h: float) -> BatchProfile:
     return BatchProfile(means)
 
 
-def one(
-    name: str, ka_s: float, arm: str, n: int, exact: np.ndarray, pts: np.ndarray, r_far: float
-) -> dict:
+def one(name: str, ka_s: float, arm: str, n: int, exact: np.ndarray, pts: np.ndarray, r_far: float) -> dict:
     body = BODIES[name]
     point_profile = BatchProfile(body.values)
     omega = ka_s * REF.beta / RADIUS

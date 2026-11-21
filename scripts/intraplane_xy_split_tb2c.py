@@ -97,9 +97,7 @@ def N_reg(n, m, kappa, rho0, theta, phi):
     x = kappa * rho0
     P = Pvec(n, m, theta, phi)
     B = Bvec(n, m, theta, phi)
-    return (n * (n + 1) / x) * sph_j(n, x) * P + (
-        sph_j(n, x) + x * sph_jp(n, x)
-    ) / x * B
+    return (n * (n + 1) / x) * sph_j(n, x) * P + (sph_j(n, x) + x * sph_jp(n, x)) / x * B
 
 
 def make_sphere(n_u=20, n_phi=40):

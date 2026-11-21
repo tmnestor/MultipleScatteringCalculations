@@ -36,6 +36,9 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_graded_sphere import MieResult, graded_tmatrix  # noqa: E402
+from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
+from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
+
 from cubic_scattering import MaterialContrast  # noqa: E402
 from cubic_scattering.graded_voxel.basis import (  # noqa: E402
     CONTRAST_NORMS,
@@ -52,8 +55,6 @@ from cubic_scattering.sphere_scattering import (  # noqa: E402
     mie_scattered_displacement,
 )
 from cubic_scattering.sphere_scattering_fft import _build_grid_index_map  # noqa: E402
-from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
-from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
 
 K_HAT = np.array([1.0, 0.0, 0.0])
 #: Contrast step of the central differences; with the 2d step the extracted T1, T2 err at O(d^4).

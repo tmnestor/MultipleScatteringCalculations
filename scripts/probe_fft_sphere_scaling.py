@@ -135,7 +135,9 @@ def one(n_sub: int, device_name: str, dtype_name: str, ka: float, maxiter: int, 
         x, n_iter, rel_res = real_gmres(counted, b, **kwargs)
         mem.sync()
         dt = time.perf_counter() - t0
-        solves.append({"iterations": n_iter, "products": products, "seconds": dt, "rel_res": float(rel_res)})
+        solves.append(
+            {"iterations": n_iter, "products": products, "seconds": dt, "rel_res": float(rel_res)}
+        )
         return x, n_iter, rel_res
 
     # both are looked up as module globals at call time, so patching the module is enough
@@ -177,7 +179,8 @@ def one(n_sub: int, device_name: str, dtype_name: str, ka: float, maxiter: int, 
         "solves": solves,
         "max_iterations": max(s["iterations"] for s in solves),
         "converged": all(s["rel_res"] <= tol for s in solves),
-        "kseries_store_grew": (sum(f.stat().st_size for f in store.glob("*")) if store.exists() else 0) > store_before,
+        "kseries_store_grew": (sum(f.stat().st_size for f in store.glob("*")) if store.exists() else 0)
+        > store_before,
         "peak_host_gb": _peak_host_gb(),
         "baseline_host_gb": baseline,
         "peak_device_gb": mem.peak_gb(),
@@ -193,7 +196,9 @@ def _fit(rows: list[dict], key, base: float = 0.0) -> tuple[float, float] | None
 
     key is a row's field or a function of the row."""
     get = key if callable(key) else (lambda r: r.get(key))
-    pts = sorted((r["n_cells"], get(r) - base) for r in rows if get(r) is not None and get(r) - base > 0)[-3:]
+    pts = sorted((r["n_cells"], get(r) - base) for r in rows if get(r) is not None and get(r) - base > 0)[
+        -3:
+    ]
     if len(pts) < 2:
         return None
     xs = [math.log(x) for x, _ in pts]
@@ -250,13 +255,17 @@ def report(rows: list[dict], predict: list[int]) -> None:
         + ", ".join(f"{k} {f[1]:.2f}" for k, f in fits.items() if f)
         + f"), {products} products a sphere as measured"
     )
-    print(f"{'n_sub':>6} {'cells':>10} {'Krylov GB':>10} {'grid GB':>8} {'peak GB':>8} {'kernel s':>9} {'solves s':>9}")
+    print(
+        f"{'n_sub':>6} {'cells':>10} {'Krylov GB':>10} {'grid GB':>8} {'peak GB':>8} {'kernel s':>9} {'solves s':>9}"
+    )
     for n in predict:
         cells = len(_build_grid_index_map(RADIUS, n)[1])
         kry = vectors * 9 * cells * item / 1e9
         grid = 9 * fast_odd_size(2 * n - 1) ** 3 * item / 1e9
         fm = fits["memory"]
-        mem = base + max(fm[0] * cells ** fm[1] if fm else 0.0, kry + grid)  # the basis and one grid stack: a floor
+        mem = base + max(
+            fm[0] * cells ** fm[1] if fm else 0.0, kry + grid
+        )  # the basis and one grid stack: a floor
         fk, fp = fits["kernel"], fits["product"]
         tk = f"{fk[0] * cells ** fk[1]:.0f}" if fk else "-"
         ts = f"{products * fp[0] * cells ** fp[1]:.0f}" if fp else "-"
@@ -306,7 +315,11 @@ def main() -> None:
     from cubic_scattering.torch_gmres import get_device, select_dtype
 
     device = get_device() if a.device == "auto" else torch.device(a.device)
-    dtype = (select_dtype(device) if a.dtype == "auto" else getattr(torch, a.dtype)).__str__().removeprefix("torch.")
+    dtype = (
+        (select_dtype(device) if a.dtype == "auto" else getattr(torch, a.dtype))
+        .__str__()
+        .removeprefix("torch.")
+    )
     # on an AWS runner, the instance type (aws/msc_aws.py sets MSC_HOST): a container's hostname is random
     host = os.environ.get("MSC_HOST") or socket.gethostname().split(".")[0]
     out = a.out or DATA / f"fft_sphere_scaling_{host}_{device.type}_{dtype}.jsonl"

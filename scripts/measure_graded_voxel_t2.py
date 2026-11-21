@@ -18,6 +18,10 @@ W = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(W / "scripts"))
 sys.path.insert(0, str(W))
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
+from gate_sphere_cell_average_vs_mie import CONTRAST as GATE  # noqa: E402
+from gate_sphere_cell_average_vs_mie import REF, obs_points  # noqa: E402
+from pilot_graded_sphere_vs_exact import CORE, RADIUS, THETA, profile  # noqa: E402
+
 from cubic_scattering import MaterialContrast  # noqa: E402
 from cubic_scattering.graded_voxel.basis import gram_test, source_expansion  # noqa: E402
 from cubic_scattering.graded_voxel.blocks import coupling_block  # noqa: E402
@@ -29,9 +33,6 @@ from cubic_scattering.sphere_scattering import (  # noqa: E402
     mie_scattered_displacement,
 )
 from cubic_scattering.sphere_scattering_fft import _build_grid_index_map  # noqa: E402
-from gate_sphere_cell_average_vs_mie import CONTRAST as GATE  # noqa: E402
-from gate_sphere_cell_average_vs_mie import REF, obs_points  # noqa: E402
-from pilot_graded_sphere_vs_exact import CORE, RADIUS, THETA, profile  # noqa: E402
 
 K = np.array([1.0, 0, 0])
 CHANNEL = sys.argv[3]

@@ -127,8 +127,7 @@ def kennett_reflectivity_batch(
     nlayer = model.n_layers
 
     logger.info(
-        f"Batched reflectivity: {np_slow} slowness × {nfreq} frequencies "
-        f"(float64, vectorised NumPy)"
+        f"Batched reflectivity: {np_slow} slowness × {nfreq} frequencies (float64, vectorised NumPy)"
     )
 
     # ===== PRECOMPUTE LAYER PROPERTIES =====
@@ -198,19 +197,9 @@ def kennett_reflectivity_batch(
     eb = np.ones((nlayer, np_slow, nfreq), dtype=np.complex128)
     for i in range(nlayer):
         if not np.isinf(model.thickness[i]):
-            phase_p = (
-                1j
-                * eta[i, :, np.newaxis]
-                * omega_np[np.newaxis, :]
-                * model.thickness[i]
-            )
+            phase_p = 1j * eta[i, :, np.newaxis] * omega_np[np.newaxis, :] * model.thickness[i]
             ea[i] = np.exp(phase_p)
-            phase_s = (
-                1j
-                * neta[i, :, np.newaxis]
-                * omega_np[np.newaxis, :]
-                * model.thickness[i]
-            )
+            phase_s = 1j * neta[i, :, np.newaxis] * omega_np[np.newaxis, :] * model.thickness[i]
             eb[i] = np.exp(phase_s)
 
     # ===== KENNETT UPWARD SWEEP (batched NumPy, float64) =====

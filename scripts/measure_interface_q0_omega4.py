@@ -47,19 +47,13 @@ Q_REF = 20.0
 
 def _parts(args):
     rec, src, q0h, omega4 = args
-    return isp.frequency_independent_parts(
-        rec, src, H, A, B, 10, 4, q0h, 160.0, omega4=omega4
-    )
+    return isp.frequency_independent_parts(rec, src, H, A, B, 10, 4, q0h, 160.0, omega4=omega4)
 
 
 def main() -> None:
-    jobs = [
-        (r, s, q, o4) for (r, s), q, o4 in itertools.product(PAIRS, Q0S, (False, True))
-    ]
+    jobs = [(r, s, q, o4) for (r, s), q, o4 in itertools.product(PAIRS, Q0S, (False, True))]
     jobs += [(r, s, Q_REF, True) for r, s in PAIRS]
-    with ProcessPoolExecutor(
-        os.cpu_count() or 1, mp_context=get_context("spawn")
-    ) as ex:
+    with ProcessPoolExecutor(os.cpu_count() or 1, mp_context=get_context("spawn")) as ex:
         parts = dict(zip(jobs, ex.map(_parts, jobs), strict=True))
     out = []
     for (rec, src), f in itertools.product(PAIRS, FREQS):

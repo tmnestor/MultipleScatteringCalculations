@@ -81,11 +81,6 @@ sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
-import cubic_scattering.layered_correction as LC  # noqa: E402
-from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
-from cubic_scattering.kennett_layers import kennett_layers  # noqa: E402
-from cubic_scattering.sweep_kernels import same_depth_kernel_9x9  # noqa: E402
-from cubic_scattering.sweep_modes import vertical_factorisation  # noqa: E402
 from gate_sh_impedance import (  # noqa: E402
     OM,
     PIT,
@@ -94,6 +89,12 @@ from gate_sh_impedance import (  # noqa: E402
     multilayer_model,
     substack_below_plane,
 )
+
+import cubic_scattering.layered_correction as LC  # noqa: E402
+from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
+from cubic_scattering.kennett_layers import kennett_layers  # noqa: E402
+from cubic_scattering.sweep_kernels import same_depth_kernel_9x9  # noqa: E402
+from cubic_scattering.sweep_modes import vertical_factorisation  # noqa: E402
 
 KH = (0.05, 0.5, 1.5, 3.0)
 TOL_SPAN = 1e-7

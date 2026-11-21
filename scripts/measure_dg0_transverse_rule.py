@@ -46,12 +46,13 @@ sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
-import cubic_scattering.layered_correction as LC  # noqa: E402
-from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
-from cubic_scattering.sweep_kernels import vertical_kernel_9x9  # noqa: E402
 from gate_sh_impedance import OM as OM_REAL  # noqa: E402
 from gate_sh_impedance import PIT as PITCH  # noqa: E402
 from gate_sh_impedance import PLANE, model  # noqa: E402
+
+import cubic_scattering.layered_correction as LC  # noqa: E402
+from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
+from cubic_scattering.sweep_kernels import vertical_kernel_9x9  # noqa: E402
 
 # Complex, for the same reason measure_sweep3d_cost.py insists on it.
 OM = OM_REAL * (1.0 + 0.03j)

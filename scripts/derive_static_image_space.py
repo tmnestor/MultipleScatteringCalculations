@@ -39,9 +39,7 @@ loc = {
     "E": sp.E,
     "I": sp.I,
 }
-ent = [
-    [sp.sympify(s.replace("^", "**"), locals=loc) for s in row] for row in J["entries"]
-]
+ent = [[sp.sympify(s.replace("^", "**"), locals=loc) for s in row] for row in J["entries"]]
 # frame entries (order z, x', y'): a=zz, b=z x', c=x' z, d=x'x', e=y'y'
 a, b, c, d, e = ent[0][0], ent[0][1], ent[1][0], ent[1][1], ent[2][2]
 X = sp.exp(q * (z + zp))
@@ -81,9 +79,7 @@ for hh in (1, 2):
     G[0, hh] = sp.diff(Tsum({k: v / sp.I for k, v in pb.items()}, -1), dh[hh - 1])
     G[hh, 0] = sp.diff(Tsum({k: v / sp.I for k, v in pc.items()}, -1), dh[hh - 1])
     for h2 in (1, 2):
-        G[hh, h2] = (Tsum(pe) if hh == h2 else 0) - sp.diff(
-            Tsum(pdm, -2), dh[hh - 1], dh[h2 - 1]
-        )
+        G[hh, h2] = (Tsum(pe) if hh == h2 else 0) - sp.diff(Tsum(pdm, -2), dh[hh - 1], dh[h2 - 1])
 pars = {lamA: 1.7, muA: 1.1, lamB: 2.6, muB: 1.9}
 fs = sp.lambdify((q, z, zp), sp.Matrix(ent).subs(pars), "numpy")
 gs = sp.lambdify((rx, ry, zeta, z, zp), G.subs(pars), "numpy")
@@ -127,6 +123,4 @@ if wl.exists():
         err = max(err, np.abs(mine - theirs).max() / np.abs(theirs).max())
     print(f"against Mathematica: {err:.1e}", "PASS" if err < 1e-12 else "FAIL")
 else:
-    print(
-        "Mathematica/StaticImageSpace.json not found: run the .wl to compare (SKIPPED, not PASS)"
-    )
+    print("Mathematica/StaticImageSpace.json not found: run the .wl to compare (SKIPPED, not PASS)")

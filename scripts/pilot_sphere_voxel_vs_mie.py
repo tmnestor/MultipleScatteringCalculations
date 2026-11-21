@@ -20,8 +20,9 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import gate_sphere_cell_average_vs_mie as gate  # noqa: E402
-from cubic_scattering.sphere_scattering_fft import compute_sphere_foldy_lax_fft  # noqa: E402
 from gate_sphere_cell_average_vs_mie import REF, pattern_error  # noqa: E402
+
+from cubic_scattering.sphere_scattering_fft import compute_sphere_foldy_lax_fft  # noqa: E402
 
 KA_S = 0.5  # sphere k_S a
 RADIUS = 10.0  # m

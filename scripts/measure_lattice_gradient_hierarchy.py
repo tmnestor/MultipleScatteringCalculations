@@ -32,8 +32,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import gradient_voxel_lattice as lat  # noqa: E402
 import measure_ball_gradient_hierarchy as hier  # noqa: E402
 import measure_cube_gradient_hierarchy as cube  # noqa: E402
-from cubic_scattering.resonance_tmatrix import elastodynamic_greens_deriv  # noqa: E402
 from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
+
+from cubic_scattering.resonance_tmatrix import elastodynamic_greens_deriv  # noqa: E402
 
 
 def check_green(omega: float) -> bool:

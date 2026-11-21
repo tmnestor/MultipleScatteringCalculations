@@ -163,9 +163,7 @@ def kennett_reflectivity(
 
     # Vertical slownesses for all layers (Fortran: ETA, NETA)
     cp = complex(p)
-    eta = np.array(
-        [vertical_slowness(s_p[i], cp) for i in range(nlayer)], dtype=np.complex128
-    )
+    eta = np.array([vertical_slowness(s_p[i], cp) for i in range(nlayer)], dtype=np.complex128)
     neta = np.zeros(nlayer, dtype=np.complex128)
     neta[0] = 0.0  # acoustic ocean: NETA(1) = C0
     for i in range(1, nlayer):

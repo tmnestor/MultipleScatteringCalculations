@@ -95,10 +95,7 @@ def example_3_reflectivity():
     for p in slownesses:
         R = kennett_reflectivity(model, p=p, omega=omega)
         abs_R = np.abs(R)
-        print(
-            f"{p:10.2f} {np.max(abs_R):12.6f} {np.min(abs_R):12.6f} "
-            f"{np.mean(abs_R):12.6f}"
-        )
+        print(f"{p:10.2f} {np.max(abs_R):12.6f} {np.min(abs_R):12.6f} {np.mean(abs_R):12.6f}")
 
 
 def example_4_seismogram():

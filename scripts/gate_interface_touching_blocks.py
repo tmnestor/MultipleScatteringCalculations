@@ -97,20 +97,14 @@ def _vertical_alg(poly, zc, s, a_max) -> dict:
     pc = _p_coeffs(n_max)
     out: dict = {}
     for a in range(a_max + 1):
-        p = (
-            nppoly.polymul(poly, nppoly.polypow([zc, H], a))
-            if a
-            else np.asarray(poly, float)
-        )
+        p = nppoly.polymul(poly, nppoly.polypow([zc, H], a)) if a else np.asarray(poly, float)
         for k, pk in enumerate(p):
             if pk == 0:
                 continue
             sign = (-1.0) ** k if s < 0 else 1.0  # E_k(-c) = (-1)^k E_k(c)
             for j, cj in enumerate(pc[k]):
                 if cj:
-                    out.setdefault(-(j + 1), np.zeros(a_max + 1))[a] += (
-                        H * pk * cj * sign * H ** (-(j + 1))
-                    )
+                    out.setdefault(-(j + 1), np.zeros(a_max + 1))[a] += H * pk * cj * sign * H ** (-(j + 1))
     return out
 
 
@@ -134,10 +128,7 @@ def alg_harmonics(order: int, kind: str, rec, src) -> dict:
                         p = m0 + m + pr + pq
                         g = np.einsum("ijab,a,b->ij", Cf[:, :, :, :, m], ar, bq)
                         acc[p] = acc.get(p, 0) + g
-            out[l, e] = {
-                p: isp._rotate_harmonics((g @ isp._M_INV)[None])[0]
-                for p, g in acc.items()
-            }
+            out[l, e] = {p: isp._rotate_harmonics((g @ isp._M_INV)[None])[0] for p, g in acc.items()}
     return out
 
 
@@ -154,8 +145,7 @@ def _weight(E: int, F: int) -> tuple:
     lo = sp.integrate(pe * (v - sg) ** F, (v, -1, sg + 1))
     hi = sp.integrate(pe * (v - sg) ** F, (v, sg - 1, 1))
     return tuple(
-        np.array([float(c) for c in sp.Poly(sp.expand(x), sg).all_coeffs()[::-1]])
-        for x in (lo, hi)
+        np.array([float(c) for c in sp.Poly(sp.expand(x), sg).all_coeffs()[::-1]]) for x in (lo, hi)
     )
 
 
@@ -171,14 +161,10 @@ def _m_laurent(p: int, nu: int) -> tuple:
     """M(p + eps, nu) = 2^(p+1+eps) Gamma((nu+p+2+eps)/2) / Gamma((nu-p-eps)/2) as (m_-1, m_0, m_1) in eps."""
     with mp.workdps(40):
         f = lambda e: (
-            mp.mpf(2) ** (p + 1 + e)
-            * mp.gamma((nu + p + 2 + e) / 2)
-            * mp.rgamma((nu - p - e) / 2)
+            mp.mpf(2) ** (p + 1 + e) * mp.gamma((nu + p + 2 + e) / 2) * mp.rgamma((nu - p - e) / 2)
         )
         if nu + p + 2 <= 0 and (nu + p + 2) % 2 == 0:  # pole of the numerator
-            g = mp.taylor(
-                lambda e: e * f(e) if e != 0 else mp.limit(lambda t: t * f(t), 0), 0, 2
-            )
+            g = mp.taylor(lambda e: e * f(e) if e != 0 else mp.limit(lambda t: t * f(t), 0), 0, 2)
             return float(g[0]), float(g[1]), float(g[2])
         t = mp.taylor(f, 0, 1)
         return 0.0, float(t[0]), float(t[1])
@@ -187,9 +173,7 @@ def _m_laurent(p: int, nu: int) -> tuple:
 _T_NODES = 48
 
 
-def _box_laurent(
-    a: float, b: float, sx: int, sy: int, alpha: int, beta: int, n: int, s: int
-) -> tuple:
+def _box_laurent(a: float, b: float, sx: int, sy: int, alpha: int, beta: int, n: int, s: int) -> tuple:
     """int over [0,a] x [0,b] (reflected by sx, sy) of (sx x)^alpha (sy y)^beta e^{i n theta_actual} rho^(s - eps)
     as (B_-1, B_0, B_1) in eps: polar about the corner, the radial integral exact, Gauss in the angle."""
     d = alpha + beta + s
@@ -205,15 +189,11 @@ def _box_laurent(
             out += np.array([-np.sum(ang), np.sum(ang * L), -np.sum(ang * L**2) / 2])
         else:  # R^(d+2-eps)/(d+2-eps)
             base = R ** (d + 2) / (d + 2)
-            out += np.array(
-                [0.0, np.sum(ang * base), np.sum(ang * base * (1 / (d + 2) - L))]
-            )
+            out += np.array([0.0, np.sum(ang * base), np.sum(ang * base * (1 / (d + 2) - L))])
     return tuple(out)
 
 
-def _box_regular(
-    lo: tuple, hi: tuple, cx: np.ndarray, cy: np.ndarray, n: int, s: int
-) -> tuple:
+def _box_regular(lo: tuple, hi: tuple, cx: np.ndarray, cy: np.ndarray, n: int, s: int) -> tuple:
     """A piece away from the origin: (0, B_0, B_1) by a tensor Gauss rule, B_1 = -int ... log rho."""
     (x, wx), (y, wy) = (
         gauss_interval(40, lo[0], hi[0]),
@@ -251,16 +231,12 @@ def lateral_fp(p: int, n: int, ea: tuple, ec: tuple, delta: tuple) -> complex:
                 for al, ca in enumerate(cx):
                     for be, cb in enumerate(cy):
                         if ca and cb:
-                            bsum += (
-                                ca
-                                * cb
-                                * np.array(_box_laurent(a, b, sx, sy, al, be, n, s))
-                            )
+                            bsum += ca * cb * np.array(_box_laurent(a, b, sx, sy, al, be, n, s))
             else:
                 bsum += np.array(_box_regular((x0, y0), (x1, y1), cx, cy, n, s))
     # scaling: rho = h u, rho^(s - eps) = h^(s - eps) u^(s - eps); d^2 rho -> h^2; lateral moments carry h^4 / h^2
-    hs = (
-        H ** (s + 4)
+    hs = H ** (
+        s + 4
     )  # h^4 (moments) x h^s, the d^2u of the s-form being in units of h (absorbed in the weights)
     h_eps = (1.0, -np.log(H), np.log(H) ** 2 / 2)
     # constant term of M(eps) * B(eps) * h^(-eps)
@@ -302,9 +278,7 @@ def fp_alg_plane(order, kind, rec, src) -> np.ndarray:
 def _cheb_shifted(k: int) -> tuple:
     """Power coefficients of T_k(2t - 1)."""
     t = sp.Symbol("t")
-    return tuple(
-        float(c) for c in sp.Poly(sp.chebyshevt(k, 2 * t - 1), t).all_coeffs()[::-1]
-    )
+    return tuple(float(c) for c in sp.Poly(sp.chebyshevt(k, 2 * t - 1), t).all_coeffs()[::-1])
 
 
 def _chebyshev_fp(values: np.ndarray, x: np.ndarray, qs: float, powers: list) -> dict:
@@ -319,11 +293,7 @@ def _chebyshev_fp(values: np.ndarray, x: np.ndarray, qs: float, powers: list) ->
             val = 0.0
             for j, cj in enumerate(co):
                 e = r + j
-                val += (
-                    float(cj)
-                    * (np.log(qs) if e == -1 else qs ** (e + 1) / (e + 1))
-                    * qs ** (-j)
-                )
+                val += float(cj) * (np.log(qs) if e == -1 else qs ** (e + 1) / (e + 1)) * qs ** (-j)
             acc = acc + val * coef[k]
         out[r] = acc
     return out
@@ -355,9 +325,7 @@ def _bessel_poly(n: int, k: int) -> np.ndarray:
 
 
 @cache
-def lateral_head(
-    p: int, n: int, ea: tuple, ec: tuple, delta: tuple, qs: float, kmax: int = 30
-) -> complex:
+def lateral_head(p: int, n: int, ea: tuple, ec: tuple, delta: tuple, qs: float, kmax: int = 30) -> complex:
     """(1/4 pi^2) FP int_{q < q_s} d^2k q^p e^{i n phi} L_a L_c e^{i k.Delta h}, exactly: J_n(q rho) by its Taylor
     series, FP int_0^{q_s} q^e dq = q_s^(e+1)/(e+1) (log q_s at e = -1), and the polynomials rho^(|n|+2k) e^{i n theta}
     integrated against the lateral weights over each piece."""
@@ -369,9 +337,7 @@ def lateral_head(
     total = 0.0
     for k in range(kmax + 1):
         # J_nu(x) = sum_k (-1)^k (x/2)^(nu+2k) / (k! (nu+k)!), x = q h |u|
-        ck = (-1) ** k / (
-            2.0 ** (nu + 2 * k) * float(sp.factorial(k) * sp.factorial(nu + k))
-        )
+        ck = (-1) ** k / (2.0 ** (nu + 2 * k) * float(sp.factorial(k) * sp.factorial(nu + k)))
         e = p + 1 + nu + 2 * k
         fq = np.log(qs) if e == -1 else qs ** (e + 1) / (e + 1)
         poly = _bessel_poly(n, k)
@@ -408,9 +374,7 @@ def fp_alg_head(order, kind, rec, src, qsh: float) -> np.ndarray:
                     continue
                 for p, harm in coeffs.items():
                     for k, n in enumerate(isp._HARM):
-                        out[a, c] += (
-                            lateral_head(p, int(n), ea, ec, delta, qs) * harm[k]
-                        )
+                        out[a, c] += lateral_head(p, int(n), ea, ec, delta, qs) * harm[k]
     return out.reshape(N_TEST, N_SOURCE, 9, 9)
 
 
@@ -497,9 +461,7 @@ def main() -> None:
             scale = np.abs(closed).max()
             err = np.abs(ref - closed).max() / scale
             imag = np.abs(ref.imag).max() / scale
-            alt = reference(
-                order, rec, src, qsh=0.5
-            )  # moving q_s must not change the sum
+            alt = reference(order, rec, src, qsh=0.5)  # moving q_s must not change the sum
             split = np.abs(alt - ref).max() / scale
             good = err < 1e-12
             ok &= good

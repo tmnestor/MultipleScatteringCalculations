@@ -73,9 +73,11 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
-import cubic_scattering.layered_correction as LC  # noqa: E402
 import GlobalMatrix.layer_matrix as LM  # noqa: E402
 import GlobalMatrix.layered_greens as LG  # noqa: E402
+from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
+
+import cubic_scattering.layered_correction as LC  # noqa: E402
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.kennett_layers import (  # noqa: E402
     _vertical_slowness,
@@ -85,7 +87,6 @@ from cubic_scattering.sweep_kernels import (  # noqa: E402
     vertical_kernel_9x9,
 )
 from cubic_scattering.sweep_modes import vertical_factorisation  # noqa: E402
-from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
 
 A, B, RH = 4.0, 2.22, 2.6
 PIT, FRQ = 1.0, 6.0

@@ -213,7 +213,9 @@ test, are available at \url{https://github.com/tmnestor/MultipleScatteringCalcul
 
 out = PREAMBLE + macros + "\n" + FRONT + body + BACK
 (HERE / "CartesianMultipoleHierarchyArchive_JCP.tex").write_text(out)
-print(f"wrote CartesianMultipoleHierarchyArchive_JCP.tex ({len(out.splitlines())} lines); abstract {words} words")
+print(
+    f"wrote CartesianMultipoleHierarchyArchive_JCP.tex ({len(out.splitlines())} lines); abstract {words} words"
+)
 
 
 def assemble_submission() -> None:

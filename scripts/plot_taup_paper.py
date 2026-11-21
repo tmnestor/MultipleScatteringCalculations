@@ -65,8 +65,13 @@ def main() -> int:
         ex, vx = ex / peak, vx / peak
         panels = [(ex, "exact sphere"), (vx, "cells, degree one")]
         for tag, label in ((tag1, "one"), (tag2, "two"))[: 2 if have2 else 1]:
-            tau2, _, e2, v2, _ = load(tag, comp)  # each run has its own time grid (the period is 2 pi / d omega)
-            diff = np.array([np.interp(t_ms, tau2 * 1e3, (v2 - e2)[:, j]) for j in range(e2.shape[1])]).T / peak
+            tau2, _, e2, v2, _ = load(
+                tag, comp
+            )  # each run has its own time grid (the period is 2 pi / d omega)
+            diff = (
+                np.array([np.interp(t_ms, tau2 * 1e3, (v2 - e2)[:, j]) for j in range(e2.shape[1])]).T
+                / peak
+            )
             mag = 10 ** np.ceil(np.log10(0.5 * CLIP / np.abs(diff).max()))
             panels.append((diff * mag, f"degree {label} $-$ exact\n{sup(mag)}"))
         p_skm = slow * 1e3
@@ -94,7 +99,9 @@ def main() -> int:
         gap = p_skm[1] - p_skm[0]  # one trace per slowness sample
         gain = 2.5 * gap  # deflection of the section's peak, in slowness units; neighbours may overlap
         for j in range(len(slow)):
-            ax.fill_betweenx(t_ms, p_skm[j], p_skm[j] + gain * ex[:, j], where=ex[:, j] > 0, color=INK, lw=0)
+            ax.fill_betweenx(
+                t_ms, p_skm[j], p_skm[j] + gain * ex[:, j], where=ex[:, j] > 0, color=INK, lw=0
+            )
             ax.plot(p_skm[j] + gain * ex[:, j], t_ms, color=INK, lw=0.4)
             ax.plot(p_skm[j] + gain * vx[:, j], t_ms, color=CELLS, lw=0.45, ls=(0, (2, 1.5)))
         for pb in (1e3 / ALPHA, 1e3 / BETA):
@@ -109,7 +116,9 @@ def main() -> int:
             ax.legend(loc="lower right", frameon=True, fontsize=6, labelcolor=INK, facecolor="white", edgecolor=MUTED,
                       framealpha=1)  # fmt: skip
     cb = fig.colorbar(im, ax=axes[:, : ncol - 1], location="bottom", shrink=0.6, pad=0.01, aspect=40)
-    cb.set_label("displacement / peak of the exact section (differences magnified; clipped at 0.5)", color=INK2)
+    cb.set_label(
+        "displacement / peak of the exact section (differences magnified; clipped at 0.5)", color=INK2
+    )
     cb.outline.set_edgecolor(MUTED)
     cb.outline.set_linewidth(0.6)
     out = ROOT / "LatexPDFs" / "ExactCouplingIntegrals" / "figures" / "fig_taup.pdf"

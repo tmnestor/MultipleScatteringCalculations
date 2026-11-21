@@ -234,7 +234,8 @@ def _print_new_events(since: datetime, seen: set[str]) -> None:
         when = _when(e["Timestamp"]).astimezone().strftime("%H:%M:%S")
         reason = e.get("ResourceStatusReason", "") if "FAILED" in e["ResourceStatus"] else ""
         print(
-            f"  {when}  {e['ResourceStatus']:<20} {e['LogicalResourceId']}" + (f"  ({reason})" if reason else ""),
+            f"  {when}  {e['ResourceStatus']:<20} {e['LogicalResourceId']}"
+            + (f"  ({reason})" if reason else ""),
             flush=True,
         )
 
@@ -262,7 +263,9 @@ def cmd_push_image(a: argparse.Namespace) -> None:
     args = ["--build-arg", "WITH_TORCH=1"]
     if a.kind == "gpu":
         platform, args = "linux/amd64", [*args, "--build-arg", "TORCH_INDEX_URL=https://pypi.org/simple"]
-        print("building the amd64 image: on an Apple Silicon Mac this runs under emulation (expect 10-30 min)")
+        print(
+            "building the amd64 image: on an Apple Silicon Mac this runs under emulation (expect 10-30 min)"
+        )
     else:
         platform = "linux/arm64"
     tags = [f"{uri}:{a.kind}", f"{uri}:{a.kind}-{sha}"]
@@ -309,7 +312,9 @@ def make_bundle(extra_excludes: list[str]) -> tuple[bytes, int]:
         ["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=ROOT, capture_output=True, check=True
     )
     patterns = _ignore_patterns() + extra_excludes
-    files = [f for f in p.stdout.decode().split("\0") if f and not _ignored(f, patterns) and (ROOT / f).is_file()]
+    files = [
+        f for f in p.stdout.decode().split("\0") if f and not _ignored(f, patterns) and (ROOT / f).is_file()
+    ]
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tf:
         for f in files:
@@ -366,7 +371,9 @@ def runner(kind: str, states: str = "pending,running,stopping,stopped") -> dict 
 def _wait_ssm(instance_id: str, timeout: float = 600) -> None:
     t0 = time.time()
     while time.time() - t0 < timeout:
-        info = aws("ssm", "describe-instance-information", "--filters", f"Key=InstanceIds,Values={instance_id}")
+        info = aws(
+            "ssm", "describe-instance-information", "--filters", f"Key=InstanceIds,Values={instance_id}"
+        )
         if info["InstanceInformationList"] and info["InstanceInformationList"][0]["PingStatus"] == "Online":
             return
         time.sleep(10)
@@ -438,7 +445,9 @@ def cmd_run(a: argparse.Namespace) -> None:
     if a.on == "ec2":
         inst = runner(kind)
         if inst is None:
-            sys.exit(f"no {kind} runner: python3 aws/msc_aws.py ec2 start{' --gpu' if kind == 'gpu' else ''}")
+            sys.exit(
+                f"no {kind} runner: python3 aws/msc_aws.py ec2 start{' --gpu' if kind == 'gpu' else ''}"
+            )
         busy = _runs_in_progress(inst["InstanceId"])
         if busy and not a.force:
             sys.exit(
@@ -511,7 +520,11 @@ def cmd_run(a: argparse.Namespace) -> None:
         }
         req = [
             {"type": t, "value": str(v)}
-            for t, v in (("VCPU", a.vcpus), ("MEMORY", a.memory), ("GPU", a.gpus if kind == "gpu" else None))
+            for t, v in (
+                ("VCPU", a.vcpus),
+                ("MEMORY", a.memory),
+                ("GPU", a.gpus if kind == "gpu" else None),
+            )
             if v
         ]
         if req:
@@ -566,7 +579,9 @@ def state(rec: dict) -> tuple[str, str]:
     job = job[0]
     detail = job.get("statusReason", "")
     if "arrayProperties" in job:
-        detail = " ".join(f"{k.lower()} {v}" for k, v in job["arrayProperties"].get("statusSummary", {}).items() if v)
+        detail = " ".join(
+            f"{k.lower()} {v}" for k, v in job["arrayProperties"].get("statusSummary", {}).items() if v
+        )
     elif "container" in job and "exitCode" in job["container"]:
         detail = f"exit {job['container']['exitCode']}"
     return job["status"], detail
@@ -650,7 +665,9 @@ def cmd_cancel(a: argparse.Namespace) -> None:
         print(f"terminating Batch job {rec['job_id']} ({rec['id']})")
         return
     # the container first: stopping the SSM command alone would leave it running
-    out = _ssm_shell(rec["instance"], [f"docker kill msc-{rec['id']} 2>/dev/null && echo killed || echo 'not running'"])
+    out = _ssm_shell(
+        rec["instance"], [f"docker kill msc-{rec['id']} 2>/dev/null && echo killed || echo 'not running'"]
+    )
     aws("ssm", "cancel-command", "--command-id", rec["command_id"], check=False, parse=False)
     print(f"{rec['id']}: {out.strip() or 'done'}")
 
@@ -707,7 +724,11 @@ def cmd_fetch(a: argparse.Namespace) -> None:
             names = tf.getnames()
             target = ROOT if a.apply and str(sub) == "." else dest / "files" / sub
             _extract(tf, target)
-        status = json.loads((tgz.parent / "status.json").read_text()) if (tgz.parent / "status.json").exists() else {}
+        status = (
+            json.loads((tgz.parent / "status.json").read_text())
+            if (tgz.parent / "status.json").exists()
+            else {}
+        )
         label = "" if str(sub) == "." else f"{sub}: "
         print(f"{label}exit {status.get('exit_code', '?')}, {len(names)} file(s) -> {target}")
         for nm in names[:20]:
@@ -765,7 +786,9 @@ def cmd_ec2(a: argparse.Namespace) -> None:
             )
         inst = runner(kind)
         if inst and inst["State"]["Name"] in ("running", "pending"):
-            print(f"{kind} runner {inst['InstanceId']} ({inst['InstanceType']}) is already {inst['State']['Name']}")
+            print(
+                f"{kind} runner {inst['InstanceId']} ({inst['InstanceType']}) is already {inst['State']['Name']}"
+            )
             _wait_ssm(inst["InstanceId"])
             return
         if inst:
@@ -773,7 +796,14 @@ def cmd_ec2(a: argparse.Namespace) -> None:
             if inst["State"]["Name"] == "stopping":
                 aws("ec2", "wait", "instance-stopped", "--instance-ids", iid, parse=False)
             if inst["InstanceType"] != itype and a.type:
-                aws("ec2", "modify-instance-attribute", "--instance-id", iid, "--instance-type", f"Value={itype}")
+                aws(
+                    "ec2",
+                    "modify-instance-attribute",
+                    "--instance-id",
+                    iid,
+                    "--instance-type",
+                    f"Value={itype}",
+                )
             aws("ec2", "start-instances", "--instance-ids", iid)
         else:
             o = outputs()
@@ -789,7 +819,9 @@ def cmd_ec2(a: argparse.Namespace) -> None:
                 )["InstanceTypeOfferings"]
             }
             subs = aws("ec2", "describe-subnets", "--subnet-ids", *o["SubnetIds"].split(","))["Subnets"]
-            candidates = [(s["SubnetId"], s["AvailabilityZone"]) for s in subs if s["AvailabilityZone"] in azs]
+            candidates = [
+                (s["SubnetId"], s["AvailabilityZone"]) for s in subs if s["AvailabilityZone"] in azs
+            ]
             if not candidates:
                 alts = offered(GPU_FAMILIES if kind == "gpu" else CPU_FAMILIES)
                 sys.exit(
@@ -900,13 +932,17 @@ def main() -> None:
     )
     ap.add_argument("--stack", default=os.environ.get("MSC_STACK", "msc"))
     ap.add_argument("--profile", default=None)
-    ap.add_argument("--region", default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION"))
+    ap.add_argument(
+        "--region", default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+    )
     sub = ap.add_subparsers(dest="command", required=True)
 
     d = sub.add_parser("deploy", help="create or update the stack")
     d.add_argument("--budget-email", help="email a monthly cost budget's alerts here")
     d.add_argument("--budget-usd", type=int, default=100)
-    d.add_argument("--gpu-purchase", choices=["SPOT", "EC2"], default="SPOT", help="the GPU queue's instances")
+    d.add_argument(
+        "--gpu-purchase", choices=["SPOT", "EC2"], default="SPOT", help="the GPU queue's instances"
+    )
     d.add_argument("--cpu-types", help="Batch CPU families/types (arm64), comma-separated")
     d.add_argument("--gpu-types", help="Batch GPU families/types, comma-separated")
     d.add_argument("--cpu-max-vcpus", type=int, default=256)
@@ -928,12 +964,20 @@ def main() -> None:
     r.add_argument("--gpus", type=int, help="Batch: GPUs for the job (with --gpu; default 1)")
     r.add_argument("--array", type=int, help="Batch: an array job of this many children")
     r.add_argument("--name", help="a label for the run id (default: the script's name)")
-    r.add_argument("--exclude", action="append", default=[], help="leave these paths out of the bundle (glob)")
+    r.add_argument(
+        "--exclude", action="append", default=[], help="leave these paths out of the bundle (glob)"
+    )
     r.add_argument("--timeout-hours", type=int, default=48)
     w = r.add_mutually_exclusive_group()
-    w.add_argument("--wait", dest="wait", action="store_true", default=None, help="follow the log (default on ec2)")
-    w.add_argument("--no-wait", dest="wait", action="store_false", help="return once submitted (default on batch)")
-    r.add_argument("--force", action="store_true", help="ec2: run even if the runner is busy with another run")
+    w.add_argument(
+        "--wait", dest="wait", action="store_true", default=None, help="follow the log (default on ec2)"
+    )
+    w.add_argument(
+        "--no-wait", dest="wait", action="store_false", help="return once submitted (default on batch)"
+    )
+    r.add_argument(
+        "--force", action="store_true", help="ec2: run even if the runner is busy with another run"
+    )
     r.add_argument("cmd", nargs=argparse.REMAINDER)
     r.set_defaults(func=cmd_run)
 

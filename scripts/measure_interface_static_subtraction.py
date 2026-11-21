@@ -70,10 +70,7 @@ lamA, muA, lamB, muB = sp.symbols("lamA muA lamB muB", positive=True)
 _LOC = {"z": z, "zp": zp, "q": q_, "lamA": lamA, "muA": muA, "lamB": lamB, "muB": muB}
 _JSON = Path(__file__).resolve().parent / "data" / "static_interface_image.json"
 _G = sp.Matrix(
-    [
-        [sp.sympify(e, locals=_LOC) for e in row]
-        for row in json.loads(_JSON.read_text())["entries"]
-    ]
+    [[sp.sympify(e, locals=_LOC) for e in row] for row in json.loads(_JSON.read_text())["entries"]]
 )
 assert _G.free_symbols <= set(_LOC.values())
 
@@ -95,17 +92,11 @@ def _static_frame_symbolic():
             out[i, k] = _G[i, k]
     for b, (m, n) in enumerate(VP):
         for i in range(3):
-            v = (
-                dsrc(_G[i, m], n)
-                if m == n
-                else (dsrc(_G[i, m], n) + dsrc(_G[i, n], m)) / 2
-            )
+            v = dsrc(_G[i, m], n) if m == n else (dsrc(_G[i, m], n) + dsrc(_G[i, n], m)) / 2
             out[i, 3 + b] = v
     for a, (p, r) in enumerate(VP):
         for k in range(3):
-            out[3 + a, k] = (
-                drec(_G[p, k], p) if p == r else drec(_G[r, k], p) + drec(_G[p, k], r)
-            )
+            out[3 + a, k] = drec(_G[p, k], p) if p == r else drec(_G[r, k], p) + drec(_G[p, k], r)
 
         def e(j, i, mm, nn):
             return drec(dsrc(_G[i, mm], nn), j)
@@ -134,15 +125,10 @@ def static_frame(q):
     """The static image's frame kernel, lateral moments excluded, 9 x 9 mp matrix (field 1, source 1)."""
     global _STATIC
     if _STATIC is None:
-        _STATIC = sp.lambdify(
-            (q_, z, zp, lamA, muA, lamB, muB), _static_frame_symbolic(), "mpmath"
-        )
+        _STATIC = sp.lambdify((q_, z, zp, lamA, muA, lamB, muB), _static_frame_symbolic(), "mpmath")
     pts = [(-0.01, -0.02), (-0.03, -0.02), (-0.01, -0.05), (-0.03, -0.05)]
     m4 = mp.inverse(mp.matrix([[1, a, b, a * b] for a, b in pts]))
-    vals = [
-        mp.matrix(_STATIC(q, mp.mpf(a), mp.mpf(b), A.lam, A.mu, B.lam, B.mu))
-        for a, b in pts
-    ]
+    vals = [mp.matrix(_STATIC(q, mp.mpf(a), mp.mpf(b), A.lam, A.mu, B.lam, B.mu)) for a, b in pts]
     out = mp.matrix(9, 9)
     for i, (ea, eb) in enumerate([(0, 0), (1, 0), (0, 1), (1, 1)]):
         c = sum((m4[i, j] * vals[j] for j in range(4)), mp.matrix(9, 9))
@@ -260,12 +246,7 @@ def rotation(phi):
 
 def lateral(q_h, phi):
     """L = (h^2 * 2 j0(k_x h) * 2 j0(k_y h))^2: the lateral moments of field and source cell."""
-    lat = (
-        H**2
-        * 4
-        * spherical_jn(0, q_h * np.cos(phi))
-        * spherical_jn(0, q_h * np.sin(phi))
-    )
+    lat = H**2 * 4 * spherical_jn(0, q_h * np.cos(phi)) * spherical_jn(0, q_h * np.sin(phi))
     return lat * lat
 
 
@@ -284,9 +265,7 @@ def panels(a, b, width=np.pi / 2, order=12):
     n = max(1, int(np.ceil((b - a) / width)))
     x, w = leggauss(order)
     edges = np.linspace(a, b, n + 1)
-    nodes = np.concatenate(
-        [(e0 + e1) / 2 + (e1 - e0) / 2 * x for e0, e1 in pairwise(edges)]
-    )
+    nodes = np.concatenate([(e0 + e1) / 2 + (e1 - e0) / 2 * x for e0, e1 in pairwise(edges)])
     wts = np.concatenate([(e1 - e0) / 2 * w for e0, e1 in pairwise(edges)])
     return nodes, wts
 
@@ -329,9 +308,7 @@ def contribution(nodes, wts, pool):
 
 def main() -> None:
     mp.mp.dps = DPS
-    d40 = frames(320.0)[
-        0
-    ]  # also builds the static kernel once, before the workers fork
+    d40 = frames(320.0)[0]  # also builds the static kernel once, before the workers fork
     mp.mp.dps = 60
     d60 = np.array(dynamic_frame(mp.mpf(320) / H).tolist(), dtype=complex)
     mp.mp.dps = DPS
@@ -367,12 +344,8 @@ def main() -> None:
             f" (contribution {np.abs(ref).max() / scale:.1e})"
         )
 
-    print(
-        "\nshell contribution relative to the block (max entry), and local order log2(previous / this):"
-    )
-    print(
-        f"{'q h':>10} {'total':>10} {'order':>6} {'static subtracted':>18} {'order':>6}"
-    )
+    print("\nshell contribution relative to the block (max entry), and local order log2(previous / this):")
+    print(f"{'q h':>10} {'total':>10} {'order':>6} {'static subtracted':>18} {'order':>6}")
     prev = None
     for (a, b), (d, s) in zip(pairwise(CUTS), shells, strict=True):
         t, r = np.abs(d).max() / scale, np.abs(d - s).max() / scale

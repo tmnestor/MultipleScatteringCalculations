@@ -45,19 +45,13 @@ OUT = Path(__file__).parent / "data" / "interface_d_decay.json"
 def _d(job):
     fam, freq, dx = job
     rec, src = (PAIRS[fam], dx, 0), (-1, 0, 0)
-    blk = isp.truncated_blocks(
-        [(rec, src)], H, FREQS[freq], A, B, N_SOURCE, N_TEST, Q0H, window=WINDOW
-    )[0]
+    blk = isp.truncated_blocks([(rec, src)], H, FREQS[freq], A, B, N_SOURCE, N_TEST, Q0H, window=WINDOW)[0]
     return float(np.abs(blk).max())
 
 
 def main() -> None:
     k0 = {
-        fam: float(
-            np.abs(
-                isp.image_block((z, 0, 0), (-1, 0, 0), H, A, B, N_SOURCE, N_TEST)
-            ).max()
-        )
+        fam: float(np.abs(isp.image_block((z, 0, 0), (-1, 0, 0), H, A, B, N_SOURCE, N_TEST)).max())
         for fam, z in PAIRS.items()
     }
     # the farthest first: a table costs ~ reach^2
@@ -71,25 +65,15 @@ def main() -> None:
     rows = []
     for fam in PAIRS:
         for freq in FREQS:
-            print(
-                f"\n{fam}, omega h / beta_A = {freq}: max |D| relative to max |K0| of the touching pair"
-            )
+            print(f"\n{fam}, omega h / beta_A = {freq}: max |D| relative to max |K0| of the touching pair")
             rel = [got[fam, freq, dx] / k0[fam] for dx in OFFSETS]
             for dx, r in zip(OFFSETS, rel, strict=True):
-                rows.append(
-                    {"family": fam, "omega_h_over_beta": freq, "offset": dx, "D": r}
-                )
+                rows.append({"family": fam, "omega_h_over_beta": freq, "offset": dx, "D": r})
                 print(f"  {dx:>4} h  {r:.2e}")
             far = [(dx, r) for dx, r in zip(OFFSETS, rel, strict=True) if dx >= 16]
-            slope = np.polyfit(
-                np.log([d for d, _ in far]), np.log([r for _, r in far]), 1
-            )[0]
+            slope = np.polyfit(np.log([d for d, _ in far]), np.log([r for _, r in far]), 1)[0]
             print(f"  log-log slope beyond 16 h: {slope:.2f}")
-    OUT.write_text(
-        json.dumps(
-            {"q0h": Q0H, "window_start": WINDOW.start, "k0": k0, "rows": rows}, indent=1
-        )
-    )
+    OUT.write_text(json.dumps({"q0h": Q0H, "window_start": WINDOW.start, "k0": k0, "rows": rows}, indent=1))
 
 
 if __name__ == "__main__":

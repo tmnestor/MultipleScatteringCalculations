@@ -66,9 +66,7 @@ def measure(job: tuple) -> dict:
     a0, a1 = isp.frequency_independent_parts(rec, src, H, A, B, q0h=Q0H, q1h=Q1H)
     out = {"K0": float(np.abs(image_block(rec, src, H, A, B)).max())}
     for name, w in WINDOWS.items():
-        r0, r1 = (
-            (0.0, 0.0) if w is None else isp.window_parts(rec, src, H, A, B, w, q0h=Q0H)
-        )
+        r0, r1 = (0.0, 0.0) if w is None else isp.window_parts(rec, src, H, A, B, w, q0h=Q0H)
         out[name] = [float(np.abs(a0 + r0).max()), float(np.abs(a1 + r1).max())]
     out["seconds"] = time.time() - t0
     print(f"  {kind} d = {d:2d}: {out['seconds']:.0f} s", flush=True)
@@ -102,9 +100,7 @@ def main() -> None:
             f" omega h / beta = {OMEGA * H / A.beta:.3f}, Q0 h = {Q0H:g}"
         )
         print(f"{'d/h':>4} {'K0':>8}  " + "  ".join(f"{n:>19}" for n in WINDOWS))
-        print(
-            f"{'':>4} {'':>8}  " + "  ".join(f"{'A0':>9} {'w2A1':>9}" for _ in WINDOWS)
-        )
+        print(f"{'':>4} {'':>8}  " + "  ".join(f"{'A0':>9} {'w2A1':>9}" for _ in WINDOWS))
         corr = {n: {} for n in WINDOWS}
         for d in OFFSETS:
             r = data[f"{kind}{d}"]
@@ -116,10 +112,7 @@ def main() -> None:
             print(f"{d:4d} {r['K0'] / scale:8.1e}  " + "  ".join(cells))
         print("radius beyond which |A0| + w2|A1| < tol:")
         for n in WINDOWS:
-            print(
-                f"  {n:>10}: "
-                + ", ".join(f"{t:.0e}: {radius(corr[n], t)}" for t in TOLS)
-            )
+            print(f"  {n:>10}: " + ", ".join(f"{t:.0e}: {radius(corr[n], t)}" for t in TOLS))
 
 
 if __name__ == "__main__":

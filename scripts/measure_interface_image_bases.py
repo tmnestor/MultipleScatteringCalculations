@@ -73,14 +73,8 @@ def _ld_kernel(j: int, alpha: tuple[int, int, int]):
             1: -sp.log(r + zeta) / (2 * sp.pi),
             2: (zeta * sp.log(r + zeta) - r) / (2 * sp.pi),
         }[j]
-        expr = (
-            sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2])
-            if sum(alpha)
-            else phi
-        )
-        _KERN[j, alpha] = sp.lambdify(
-            (rx, ry, zeta), expr, [{"pi": LD_PI}, "numpy"], cse=True
-        )
+        expr = sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2]) if sum(alpha) else phi
+        _KERN[j, alpha] = sp.lambdify((rx, ry, zeta), expr, [{"pi": LD_PI}, "numpy"], cse=True)
     return _KERN[j, alpha]
 
 
@@ -104,34 +98,24 @@ def reference(geo: dict, n_gauss: int = 40) -> dict:
                         centre = (0, 0, 0)
                         sides = tuple(int(max(abs(lo), abs(hi))) for lo, hi in box)
                         signs = tuple(-1 if lo < 0 else 1 for lo, _ in box[:2])
-                        mom = np.full(
-                            (deg[0] + 1, deg[1] + 1, deg[2] + 1), LD("nan"), dtype=LD
-                        )
+                        mom = np.full((deg[0] + 1, deg[1] + 1, deg[2] + 1), LD("nan"), dtype=LD)
                         for p in range(deg[0] + 1):
                             for q in range(deg[1] + 1):
                                 for r in range(deg[2] + 1):
                                     if 3 + p + q + r + d > 0:
                                         mom[p, q, r] = LD(
                                             mp.nstr(
-                                                corner_moment(
-                                                    j, alpha, (p, q, r), sides, signs
-                                                ),
+                                                corner_moment(j, alpha, (p, q, r), sides, signs),
                                                 30,
                                             )
                                         )
                     else:
                         centre = tuple((lo + hi) // 2 for lo, hi in box)
                         rules = [_ld_gauss(n_gauss, lo, hi) for lo, hi in box]
-                        sx, sy, sz = np.meshgrid(
-                            rules[0][0], rules[1][0], rules[2][0], indexing="ij"
-                        )
-                        fw = f(sx, sy, sz) * np.einsum(
-                            "i,j,k->ijk", rules[0][1], rules[1][1], rules[2][1]
-                        )
+                        sx, sy, sz = np.meshgrid(rules[0][0], rules[1][0], rules[2][0], indexing="ij")
+                        fw = f(sx, sy, sz) * np.einsum("i,j,k->ijk", rules[0][1], rules[1][1], rules[2][1])
                         vs = [
-                            np.vander(
-                                rules[i][0] - LD(centre[i]), deg[i] + 1, increasing=True
-                            )
+                            np.vander(rules[i][0] - LD(centre[i]), deg[i] + 1, increasing=True)
                             for i in range(3)
                         ]
                         mom = np.einsum("ijk,ia,jb,kc->abc", fw, *vs)
@@ -158,10 +142,7 @@ def reference(geo: dict, n_gauss: int = 40) -> dict:
                             if not all(nz):
                                 continue
                             sub = mom[np.ix_(*nz)]
-                            cs = [
-                                np.array([_ld(ps[i][k]) for k in nz[i]], dtype=LD)
-                                for i in range(3)
-                            ]
+                            cs = [np.array([_ld(ps[i][k]) for k in nz[i]], dtype=LD) for i in range(3)]
                             val[a, c] += np.einsum("i,j,k,ijk->", *cs, sub)
         out[j, alpha, a_pow, b_pow] = val
     return out
@@ -169,9 +150,7 @@ def reference(geo: dict, n_gauss: int = 40) -> dict:
 
 def main() -> None:
     if np.finfo(LD).eps > 1e-18:
-        raise SystemExit(
-            "numpy.longdouble is not wider than double here: no extended-precision reference."
-        )
+        raise SystemExit("numpy.longdouble is not wider than double here: no extended-precision reference.")
     print(
         f"{'case':42s} {'power':>9s} {'legendre':>9s}   (max over families of max|error| / max|reference|)"
     )
@@ -188,10 +167,7 @@ def main() -> None:
         errs = {}
         for basis in ("power", "legendre"):
             errs[basis] = max(
-                float(
-                    np.abs(res[basis][k].astype(LD) - ref[k]).max()
-                    / np.abs(ref[k]).max()
-                )
+                float(np.abs(res[basis][k].astype(LD) - ref[k]).max() / np.abs(ref[k]).max())
                 for k in ref
                 if np.abs(ref[k]).max() > 0
             )

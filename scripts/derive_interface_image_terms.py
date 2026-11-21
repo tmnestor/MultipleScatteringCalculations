@@ -115,20 +115,13 @@ if ORDER == 2 and MEDIA == "gate":
 elif ORDER >= 1:
     from sympy.parsing.mathematica import parse_mathematica
 
-    subs = {
-        sp.Symbol(k): v
-        for k, v in {**loc, "rhoA": rhoA, "rhoB": rhoB}.items()
-        if k not in ("E", "I")
-    }
+    subs = {sp.Symbol(k): v for k, v in {**loc, "rhoA": rhoA, "rhoB": rhoB}.items() if k not in ("E", "I")}
     ent = [
         [parse_mathematica(s).subs(subs) for s in row]
         for row in J[("R" if KIND == "reflected" else "T") + str(ORDER)]
     ]
 else:
-    ent = [
-        [sp.sympify(s.replace("^", "**"), locals=loc) for s in row]
-        for row in J["entries"]
-    ]
+    ent = [[sp.sympify(s.replace("^", "**"), locals=loc) for s in row] for row in J["entries"]]
 if MEDIA != "symbolic" and ORDER < 2:
     vals = {}
     for tag, (al, be, rh) in zip("AB", MEDIA_SETS[MEDIA], strict=True):
@@ -237,9 +230,7 @@ for hh in (1, 2):
     G[0][hh] = dlat(tsum({k: v * cst(-sp.I) for k, v in pb.items()}, -1), hh - 1)
     G[hh][0] = dlat(tsum({k: v * cst(-sp.I) for k, v in pc.items()}, -1), hh - 1)
     for h2 in (1, 2):
-        G[hh][h2] = add(
-            tsum(pe) if hh == h2 else {}, dlat(dlat(tsum(pdm, -2), hh - 1), h2 - 1), -1
-        )
+        G[hh][h2] = add(tsum(pe) if hh == h2 else {}, dlat(dlat(tsum(pdm, -2), hh - 1), h2 - 1), -1)
 
 
 # derivative operators on terms: receiver d_x, d_y, d_z (= d/dz explicit - d/dzeta); source -d'_x, -d'_y, -d'_z (= -d/dzp + d/dzeta)
@@ -346,16 +337,11 @@ def reduced(r: int, cc: int) -> dict:
         return canon(entry(r, cc))
     path = Path(CHECKPOINT) / f"{KIND}_order{ORDER}_{MEDIA}_{r}_{cc}.txt"
     if path.exists():
-        return {
-            tuple(json.loads(k)): _load(v)
-            for k, v in json.loads(path.read_text()).items()
-        }
+        return {tuple(json.loads(k)): _load(v) for k, v in json.loads(path.read_text()).items()}
     out = canon(entry(r, cc))
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(
-        json.dumps({json.dumps([int(x) for x in k]): _dump(v) for k, v in out.items()})
-    )
+    tmp.write_text(json.dumps({json.dumps([int(x) for x in k]): _dump(v) for k, v in out.items()}))
     tmp.replace(path)  # atomic: a restart never sees a half-written entry
     print(f"entry ({r}, {cc}) done", flush=True)
     return out

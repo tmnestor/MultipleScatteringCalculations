@@ -47,9 +47,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import crosscheck_graded_contrast as cg  # noqa: E402
 from crosscheck_first_moment_voxel import N_GAUSS, gauss, lateral, phi  # noqa: E402
-from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
-from cubic_scattering.graded_voxel.octree import born_wave_factor  # noqa: E402
-from cubic_scattering.sweep_modes import mode_basis, modes_to_state  # noqa: E402
 from measure_oblique_stratified_background import (  # noqa: E402
     ABOVE,
     BASES,
@@ -64,6 +61,10 @@ from measure_oblique_stratified_background import (  # noqa: E402
     kennett_same_type,
     traction_map,
 )
+
+from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
+from cubic_scattering.graded_voxel.octree import born_wave_factor  # noqa: E402
+from cubic_scattering.sweep_modes import mode_basis, modes_to_state  # noqa: E402
 from scripts.gate_first_order_impedance import ablocks  # noqa: E402
 from scripts.gate_first_order_impedance_march import (  # noqa: E402
     mode_columns,

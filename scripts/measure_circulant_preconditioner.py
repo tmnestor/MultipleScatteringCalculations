@@ -227,9 +227,10 @@ def build_near_field_preconditioner(t0: np.ndarray, omega: complex, shape, radiu
     background the plane-to-plane blocks differ and this construction would
     need the layered tables instead -- it is not simply reusable there.
     """
-    from cubic_scattering.resonance_tmatrix import _propagator_block_9x9
     from scipy.sparse import csc_matrix
     from scipy.sparse.linalg import splu
+
+    from cubic_scattering.resonance_tmatrix import _propagator_block_9x9
 
     n_z, n_x, n_y = shape
     n_sites = n_z * n_x * n_y

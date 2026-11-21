@@ -183,7 +183,9 @@ def main() -> None:
     from cubic_scattering.torch_gmres import get_device
 
     device = get_device() if a.device == "auto" else torch.device(a.device)
-    host = os.environ.get("MSC_HOST") or socket.gethostname().split(".")[0]  # on an AWS runner, the instance type
+    host = (
+        os.environ.get("MSC_HOST") or socket.gethostname().split(".")[0]
+    )  # on an AWS runner, the instance type
     out = a.out or DATA / f"fft_sphere_precision_{host}_{device.type}.jsonl"
     settings = {"device": device.type, "ka": a.ka, "tol128": a.tol128, "tols64": tols64}
     rows = [json.loads(x) for x in out.read_text().splitlines() if x.strip()] if out.exists() else []
@@ -202,14 +204,19 @@ def main() -> None:
                 tail = proc.stderr.strip().splitlines()[-40:]
                 with out.open("a") as f:
                     f.write(json.dumps({**settings, "n_sub": n, "error": tail}) + "\n")
-                print(f"  failed (exit {proc.returncode}); the end of its output:\n    " + "\n    ".join(tail))
+                print(
+                    f"  failed (exit {proc.returncode}); the end of its output:\n    " + "\n    ".join(tail)
+                )
                 break
             row = json.loads(proc.stdout.strip().splitlines()[-1])
             with out.open("a") as f:
                 f.write(json.dumps(row) + "\n")
             mine.append(row)
             worst = max(s["far_vs_128"] for s in row["single"])
-            print(f"  {row['n_cells']:,} cells: complex64 far field within {worst:.1e} of complex128", flush=True)
+            print(
+                f"  {row['n_cells']:,} cells: complex64 far field within {worst:.1e} of complex128",
+                flush=True,
+            )
     if mine:
         report(mine)
         print(f"\nrows in {out}")

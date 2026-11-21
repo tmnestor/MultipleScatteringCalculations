@@ -55,19 +55,12 @@ def main() -> None:
         for k in range(1, n):
             err = max(
                 err,
-                abs(
-                    sum(w * x ** (2 * k) for x, w in zip(xs, ws, strict=True))
-                    - mp.mpf(2) / (2 * k + 1)
-                ),
+                abs(sum(w * x ** (2 * k) for x, w in zip(xs, ws, strict=True)) - mp.mpf(2) / (2 * k + 1)),
             )
         for i in range(n):
             err = max(err, abs(xs[i] + xs[n - 1 - i]), abs(ws[i] - ws[n - 1 - i]))
         worst = max(worst, err)
-        half = [
-            (x, w)
-            for x, w in zip(xs, ws, strict=True)
-            if x >= 0 or abs(x) < mp.mpf(10) ** -35
-        ]
+        half = [(x, w) for x, w in zip(xs, ws, strict=True) if x >= 0 or abs(x) < mp.mpf(10) ** -35]
         out[str(n)] = {
             "x": [mp.nstr(abs(x), 30) for x, _ in half],
             "w": [mp.nstr(w, 30) for _, w in half],

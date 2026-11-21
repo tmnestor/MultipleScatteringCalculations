@@ -11,9 +11,7 @@ Reference: Wu & Ben-Menahem (1985), Geophys. J. R. astr. Soc. 81, 609-621.
 import numpy as np
 
 
-def stokes_tensor_kupradze(
-    x: np.ndarray, omega: float, rho: float, lam: float, mu: float
-) -> np.ndarray:
+def stokes_tensor_kupradze(x: np.ndarray, omega: float, rho: float, lam: float, mu: float) -> np.ndarray:
     """Exact frequency-domain elastodynamic Green's tensor via Kupradze representation.
 
     G_ij = (1/(4*pi*mu)) * [delta_ij Phi_beta + (1/k_beta^2) d_i d_j (Phi_beta - Phi_alpha)]
@@ -142,14 +140,10 @@ def main() -> None:
     k_beta = omega / beta
     wavelength_S = 2 * np.pi / k_beta
 
-    print(
-        f"alpha = {alpha:.1f} m/s, beta = {beta:.1f} m/s, alpha/beta = {alpha / beta:.4f}"
-    )
+    print(f"alpha = {alpha:.1f} m/s, beta = {beta:.1f} m/s, alpha/beta = {alpha / beta:.4f}")
     print(f"beta^2/alpha^2 = {(beta / alpha) ** 2:.6f}")
     print(f"1 - beta^2/alpha^2 = {1 - (beta / alpha) ** 2:.6f}")
-    print(
-        f"wavelength_S = {wavelength_S:.1f} m, wavelength_P = {2 * np.pi / k_alpha:.1f} m"
-    )
+    print(f"wavelength_S = {wavelength_S:.1f} m, wavelength_P = {2 * np.pi / k_alpha:.1f} m")
 
     # --- Test 0: Verify two exact implementations agree ---
     print("\n" + "=" * 75)
@@ -167,9 +161,7 @@ def main() -> None:
     print("\n" + "=" * 75)
     print("TEST 1: Exact G vs Eq.(5) [NF only] vs Eq.(6) [full asymptotic]")
     print("=" * 75)
-    print(
-        f"{'R/lam_S':>10} {'k_b*R':>10} {'err(Eq5)':>12} {'err(Eq6)':>12} {'Im/Re':>10}"
-    )
+    print(f"{'R/lam_S':>10} {'k_b*R':>10} {'err(Eq5)':>12} {'err(Eq6)':>12} {'Im/Re':>10}")
 
     for R_over_lam in [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]:
         R = R_over_lam * wavelength_S
@@ -184,10 +176,7 @@ def main() -> None:
         err6 = np.linalg.norm(G_exact - G_eq6) / norm_ex
         im_re = np.linalg.norm(G_exact.imag) / np.linalg.norm(G_exact.real)
 
-        print(
-            f"{R_over_lam:>10.4f} {k_beta * R:>10.4f}"
-            f" {err5:>12.6f} {err6:>12.6f} {im_re:>10.6f}"
-        )
+        print(f"{R_over_lam:>10.4f} {k_beta * R:>10.4f} {err5:>12.6f} {err6:>12.6f} {im_re:>10.6f}")
 
     # --- Test 2: Element-wise comparison at deep near field ---
     print("\n" + "=" * 75)
@@ -225,9 +214,7 @@ def main() -> None:
     print("TEST 4: Algebraic identity check")
     print("=" * 75)
     b2_a2 = (beta / alpha) ** 2
-    print(
-        f"1 - beta^2/alpha^2 = (lambda+mu)/(lambda+2mu) = {(lam + mu) / (lam + 2 * mu):.6f}"
-    )
+    print(f"1 - beta^2/alpha^2 = (lambda+mu)/(lambda+2mu) = {(lam + mu) / (lam + 2 * mu):.6f}")
     print(f"Direct: {1 - b2_a2:.6f}")
 
     # Eq. (6) second line: should equal (1/(8*pi*mu*R)) * [(1+b2/a2) I + (1-b2/a2) eReR]

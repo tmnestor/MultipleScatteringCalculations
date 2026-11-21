@@ -15,8 +15,9 @@ internal layers, including the conversions, breaks it.
 """
 
 import numpy as np
-from cubic_scattering.kennett_layers import LayerStack, kennett_layers
 from scipy.linalg import expm
+
+from cubic_scattering.kennett_layers import LayerStack, kennett_layers
 
 
 def system(alpha, beta, rho, p, w):

@@ -40,9 +40,7 @@ KY_MAX = 4 * np.pi / AL  # dy grid step = aL/4 = 0.5
 PARAMS = dict(omega=OMEGA, rho=RHO, alpha=ALPHA, beta=BETA)
 
 
-def residue_tensor_genz(
-    dx_abs: float, dz: float, kz_max: float, nkz: int
-) -> tuple[np.ndarray, np.ndarray]:
+def residue_tensor_genz(dx_abs: float, dz: float, kz_max: float, nkz: int) -> tuple[np.ndarray, np.ndarray]:
     """G_ik(dx, dy_grid, dz) for all dy on the FFT grid, general dz.
 
     Returns (G[3,3,Nky], y_grid[Nky]).
@@ -68,9 +66,7 @@ def residue_tensor_genz(
     return G, y_grid
 
 
-def worst_vs_exact(
-    dx: float, dz: float, kz_max: float, nkz: int, dy_max: float
-) -> float:
+def worst_vs_exact(dx: float, dz: float, kz_max: float, nkz: int, dy_max: float) -> float:
     """Worst rel error of the general-z residue tensor vs exact over |dy| <= dy_max."""
     G, y_grid = residue_tensor_genz(dx, dz, kz_max, nkz)
     sel = np.nonzero(np.abs(y_grid) <= dy_max + 1e-9)[0]

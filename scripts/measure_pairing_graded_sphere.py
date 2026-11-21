@@ -47,7 +47,9 @@ def main() -> int:
         r_far = R_MULT * RADIUS
         pts = obs_points(r_far, THETA)
         n_max = max(8, int(np.ceil(ka_s + 4 * ka_s ** (1 / 3) + 6)))
-        exact = mie_scattered_displacement(graded_mie_result(omega, RADIUS, CORE, REF, CONTRAST, n_max), pts)
+        exact = mie_scattered_displacement(
+            graded_mie_result(omega, RADIUS, CORE, REF, CONTRAST, n_max), pts
+        )
         peak = float(np.max(np.abs(exact)))
         print(f"graded sphere, k_S a = {ka_s}, single site {site}", flush=True)
         for n in ladder:

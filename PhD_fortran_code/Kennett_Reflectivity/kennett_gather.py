@@ -225,9 +225,7 @@ def compute_gather(
         f"{nwm} frequencies, {np_slow} slowness samples, "
         f"dp={dp:.6f} s/km, p_max={p_max:.3f} s/km"
     )
-    logger.info(
-        f"Total reflectivity calls: {np_slow} (each vectorised over {nwm} frequencies)"
-    )
+    logger.info(f"Total reflectivity calls: {np_slow} (each vectorised over {nwm} frequencies)")
 
     # --- Serialise model for multiprocessing ---
     model_params = {
@@ -266,9 +264,7 @@ def compute_gather(
 
     if n_workers > 1:
         with mp.Pool(n_workers) as pool:
-            for i_batch, batch_results in enumerate(
-                pool.imap_unordered(worker_fn, batches)
-            ):
+            for i_batch, batch_results in enumerate(pool.imap_unordered(worker_fn, batches)):
                 for jp, contrib in batch_results:
                     U += contrib
                 if (i_batch + 1) % max(1, len(batches) // 10) == 0:
@@ -502,8 +498,7 @@ def main() -> None:
     offsets = np.arange(args.r_min, args.r_max + args.dr / 2, args.dr)
 
     logger.info(
-        f"Model: {model.n_layers} layers, "
-        f"{len(offsets)} offsets [{offsets[0]:.1f}-{offsets[-1]:.1f} km]"
+        f"Model: {model.n_layers} layers, {len(offsets)} offsets [{offsets[0]:.1f}-{offsets[-1]:.1f} km]"
     )
 
     time, offsets, gather = compute_gather(

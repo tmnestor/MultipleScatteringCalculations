@@ -141,9 +141,7 @@ def d2G_static(w: np.ndarray) -> np.ndarray:
     t1 = (3.0 * n[..., :, None] * n[..., None, :] - d) / r3[..., None, None]
     nn = n[..., :, None] * n[..., None, :]
     dd_term = (
-        np.einsum("ij,kl->ijkl", d, d)
-        + np.einsum("ik,jl->ijkl", d, d)
-        + np.einsum("il,jk->ijkl", d, d)
+        np.einsum("ij,kl->ijkl", d, d) + np.einsum("ik,jl->ijkl", d, d) + np.einsum("il,jk->ijkl", d, d)
     )
     d_nn = (
         np.einsum("ij,...kl->...ijkl", d, nn)
@@ -200,9 +198,7 @@ def collapse_constants() -> dict[str, float]:
 
     def Kb(c):  # B1111 kernel (w2^2+w3^2)/rho^3
         return 4 * dbl(
-            lambda v, u: (
-                (1 - u) * (1 - v) * (u * u + v * v) / (c * c + u * u + v * v) ** 1.5
-            ),
+            lambda v, u: (1 - u) * (1 - v) * (u * u + v * v) / (c * c + u * u + v * v) ** 1.5,
             0,
             1,
             0,
@@ -211,12 +207,7 @@ def collapse_constants() -> dict[str, float]:
 
     def Mb(c):  # B2222 kernel (w1^2+w3^2)/rho^3, shifted tent in w1
         return 2 * dbl(
-            lambda v, u: (
-                (1 - abs(u - 1))
-                * (1 - v)
-                * (u * u + v * v)
-                / (c * c + u * u + v * v) ** 1.5
-            ),
+            lambda v, u: (1 - abs(u - 1)) * (1 - v) * (u * u + v * v) / (c * c + u * u + v * v) ** 1.5,
             0,
             2,
             0,
@@ -237,14 +228,8 @@ def collapse_constants() -> dict[str, float]:
         "A22": -sum(wpm[c] * Ja(abs(c)) for c in (-1, 0, 1)) / pi4,
         "B1111": -sum(w3[c] * Kb(c) for c in (0, 1, 2)) / pi8,
         "B2222": -sum(wpm[c] * Mb(abs(c)) for c in (-1, 0, 1)) / pi8,
-        "B1122": -sum(
-            w3[a] * wpm[b] * Lb(a * a + b * b) for a in (0, 1, 2) for b in (-1, 0, 1)
-        )
-        / pi8,
-        "B2233": -sum(
-            wpm[b] * wpm[c] * Nb(b * b + c * c) for b in (-1, 0, 1) for c in (-1, 0, 1)
-        )
-        / pi8,
+        "B1122": -sum(w3[a] * wpm[b] * Lb(a * a + b * b) for a in (0, 1, 2) for b in (-1, 0, 1)) / pi8,
+        "B2233": -sum(wpm[b] * wpm[c] * Nb(b * b + c * c) for b in (-1, 0, 1) for c in (-1, 0, 1)) / pi8,
     }
 
 
@@ -273,12 +258,7 @@ def smooth_table(n_vec: tuple[int, int, int], ng: int) -> np.ndarray:
 
 def _child_offsets(parent: tuple[int, int, int]):
     axes = [AXIS_PAR if c == 1 else AXIS_TRA for c in parent]
-    return [
-        ((a0, a1, a2), m0 * m1 * m2)
-        for a0, m0 in axes[0]
-        for a1, m1 in axes[1]
-        for a2, m2 in axes[2]
-    ]
+    return [((a0, a1, a2), m0 * m1 * m2) for a0, m0 in axes[0] for a1, m1 in axes[1] for a2, m2 in axes[2]]
 
 
 def _is_touching(n) -> bool:
@@ -302,9 +282,7 @@ def subdivision_tables(ng: int = 10, tol: float = 1e-13) -> dict[str, np.ndarray
     """
     canon = {"face": (1, 0, 0), "edge": (1, 1, 0), "corner": (1, 1, 1)}
     children = {k: _child_offsets(v) for k, v in canon.items()}
-    needed = sorted(
-        {n for offs in children.values() for n, _ in offs if not _is_touching(n)}
-    )
+    needed = sorted({n for offs in children.values() for n, _ in offs if not _is_touching(n)})
     smooth = {n: smooth_table(n, ng) for n in needed}
 
     cur = {
@@ -325,9 +303,7 @@ def subdivision_tables(ng: int = 10, tol: float = 1e-13) -> dict[str, np.ndarray
             for n, mult in children[kind]:
                 rhs += mult * table_of(n, {**cur, **new})
             new[kind] = rhs / 8.0
-        delta = max(
-            np.max(np.abs(new[k] - cur[k])) / np.max(np.abs(new[k])) for k in new
-        )
+        delta = max(np.max(np.abs(new[k] - cur[k])) / np.max(np.abs(new[k])) for k in new)
         cur = new
         if delta < tol:
             break
@@ -453,8 +429,7 @@ def _greens_dynamic(rvecs: np.ndarray, omega: float) -> np.ndarray:
     psi = 3.0 * nfS - 3.0 * nfP + kP**2 * eP / r - kS**2 * eS / r
     pref = 1.0 / (4.0 * np.pi * RHO * omega**2)
     return pref * (
-        phi[..., None, None] * np.eye(3)
-        + psi[..., None, None] * g[..., :, None] * g[..., None, :]
+        phi[..., None, None] * np.eye(3) + psi[..., None, None] * g[..., :, None] * g[..., None, :]
     )
 
 
@@ -465,8 +440,7 @@ def _G_kelvin(w: np.ndarray) -> np.ndarray:
     d = np.eye(3)
     pref = 1.0 / (16.0 * np.pi * MU * (1.0 - NU))
     return pref * (
-        (3.0 - 4.0 * NU) * d / r[..., None, None]
-        + n[..., :, None] * n[..., None, :] / r[..., None, None]
+        (3.0 - 4.0 * NU) * d / r[..., None, None] + n[..., :, None] * n[..., None, :] / r[..., None, None]
     )
 
 
@@ -510,9 +484,7 @@ def dynamic_audit(ka_values: tuple[float, ...] = (0.3, 0.5), n: int = 8) -> None
             blk = np.zeros(sep.shape[:-1] + (3, 3, 3, 3), dtype=complex)
             G0 = dG(sep)
             for k in range(3):
-                blk[..., k, k] = (
-                    dG(sep + h * e[k]) - 2 * G0 + dG(sep - h * e[k])
-                ) / h**2
+                blk[..., k, k] = (dG(sep + h * e[k]) - 2 * G0 + dG(sep - h * e[k])) / h**2
             for k in range(3):
                 for ll in range(k + 1, 3):
                     blk[..., k, ll] = blk[..., ll, k] = (
@@ -528,13 +500,9 @@ def dynamic_audit(ka_values: tuple[float, ...] = (0.3, 0.5), n: int = 8) -> None
         S0 = _P_to_voigt_S(inter_voxel_propagator((1, 0, 0), MU, NU))
         print(f"\nDynamic audit, face, ka={ka} (omega={omega:.0f} rad/s):")
         for n_ord in (1, 2, 3):
-            Pw = dynamic_inter_voxel_propagator(
-                (1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=n_ord
-            )
+            Pw = dynamic_inter_voxel_propagator((1, 0, 0), ALPHA, BETA, RHO, omega, n_orders=n_ord)
             dS_mod = _P_to_voigt_S(Pw) - S0
-            dev = np.max(np.abs(np.real(dS_mod) - np.real(dS_ref))) / np.max(
-                np.abs(np.real(dS_ref))
-            )
+            dev = np.max(np.abs(np.real(dS_mod) - np.real(dS_ref))) / np.max(np.abs(np.real(dS_ref)))
             print(f"  module orders<={n_ord}: max |Re dev| / scale = {dev:.3e}")
 
 
@@ -575,14 +543,8 @@ def main() -> None:
 
     print("\nIdentities (committed constants):")
     print(f"  Tr A = A11 + 2 A22           = {FACE_A11 + 2 * FACE_A22:+.3e}")
-    print(
-        f"  B1111 + 2 B1122 - A11        = "
-        f"{FACE_B1111 + 2 * FACE_B1122 - FACE_A11:+.3e}"
-    )
-    print(
-        f"  B1122 + B2222 + B2233 - A22  = "
-        f"{FACE_B1122 + FACE_B2222 + FACE_B2233 - FACE_A22:+.3e}"
-    )
+    print(f"  B1111 + 2 B1122 - A11        = {FACE_B1111 + 2 * FACE_B1122 - FACE_A11:+.3e}")
+    print(f"  B1122 + B2222 + B2233 - A22  = {FACE_B1122 + FACE_B2222 + FACE_B2233 - FACE_A22:+.3e}")
 
     print("\nEdge/corner cross-validation (subdivision vs module tables):")
     for kind, mod in (
@@ -595,17 +557,12 @@ def main() -> None:
         # P_ijkl = sym d2<G>_ik/dRj dRl, so Gdd[i,j,k,l] = P-entries with
         # i<->G-row, j<->G-col: Gdd[i,j,k,l] = module P[i,k,j,l] for the
         # kl-symmetrised part.  Spot-check the all-equal-index entries.
-        dev = max(
-            abs(tabs[kind][i, i, i, i] - mod[i, i, i, i]) / np.max(np.abs(mod))
-            for i in range(3)
-        )
+        dev = max(abs(tabs[kind][i, i, i, i] - mod[i, i, i, i]) / np.max(np.abs(mod)) for i in range(3))
         print(f"  {kind}: max diag-entry dev = {dev:.2e}")
 
     if full:
         print("\nRoute E: the artifact — study-style 6D tensor-Gauss at contact")
-        print(
-            f"  (true S00-entry value = Gdd[0,0,0,0] = {tabs['face'][0, 0, 0, 0]:+.6e})"
-        )
+        print(f"  (true S00-entry value = Gdd[0,0,0,0] = {tabs['face'][0, 0, 0, 0]:+.6e})")
         prev = None
         for n in (4, 6, 8, 10, 12):
             v = biased_tensor_gauss(n)

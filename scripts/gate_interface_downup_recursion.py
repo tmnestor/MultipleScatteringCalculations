@@ -49,9 +49,7 @@ def main() -> None:
     for layers, n in (BOXES[i] for i in picked):
         cells = [(iz, ix, iy) for iz in layers for ix in range(n) for iy in range(n)]
         grid = iso.InterfaceGrid(np.array(cells), H, A, B)
-        c = iso.InterfaceCouplings(
-            grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True
-        )
+        c = iso.InterfaceCouplings(grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True)
         ctr = [
             MaterialContrast(0.3 * m.lam, 0.3 * m.mu, 0.3 * m.rho)
             for m in (grid.medium(i) for i in range(len(cells)))
@@ -60,12 +58,7 @@ def main() -> None:
             lat = iso.LateralOperator(c, omega, p=1, r=0, parts=True)
             mf = iso.MatrixFreeOperator(c, omega, p=1, r=0)
             delta = iso.cell_contrasts(grid, omega, ctr, 0)
-            e = np.array(
-                [
-                    source_expansion(d, lat.n_field)[: lat.n_source, : lat.na]
-                    for d in delta
-                ]
-            )
+            e = np.array([source_expansion(d, lat.n_field)[: lat.n_source, : lat.na] for d in delta])
             v = np.random.default_rng(3).standard_normal(len(cells) * lat.na * 9) + 0j
             t0 = time.time()
             want = idu.DownUp(lat, e, inner_tol=1e-13, passes=passes)(v)

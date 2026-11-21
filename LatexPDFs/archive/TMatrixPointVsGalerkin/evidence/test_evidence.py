@@ -40,9 +40,7 @@ def test_formfactor_evidence_anchor():
 def test_radiation_reaction_gates_pass():
     csv_path = evidence_radiation_reaction()
     rows = list(_csv.DictReader(csv_path.open()))
-    assert all(r["passed"] == "True" for r in rows), (
-        "a radiation-reaction Mie gate failed"
-    )
+    assert all(r["passed"] == "True" for r in rows), "a radiation-reaction Mie gate failed"
 
 
 def test_optical_theorem_gate_passes():
@@ -186,9 +184,7 @@ def test_make_tables_emits_fragments():
     from make_tables import main
 
     main()
-    t = (
-        _Path(__file__).resolve().parent / "tables" / "tab_cost_accuracy.tex"
-    ).read_text()
+    t = (_Path(__file__).resolve().parent / "tables" / "tab_cost_accuracy.tex").read_text()
     assert r"\toprule" in t and r"\bottomrule" in t
     # the cost-accuracy table must contain only ok (P-incidence) data rows — no blank cells
     assert "undefined_for_incidence" not in t

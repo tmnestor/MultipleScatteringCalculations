@@ -51,9 +51,7 @@ def kz(c: str, alpha: float, beta: float, om: float, kx: float, ky: float) -> co
 # 2. The three energy-normalised eigenvectors (s = +1 down, s = -1 up)
 #    Transcribed from Peigen / SVeigen / SHeigen x eps (epsdef).
 # ---------------------------------------------------------------------------
-def eig_p(
-    s: int, alpha: float, beta: float, rho: float, om: float, kx: float, ky: float
-) -> np.ndarray:
+def eig_p(s: int, alpha: float, beta: float, rho: float, om: float, kx: float, ky: float) -> np.ndarray:
     """Downgoing(+)/upgoing(-) P eigenvector (6-vector), energy-normalised."""
     b2 = beta**2
     kzc = kz("P", alpha, beta, om, kx, ky)
@@ -71,9 +69,7 @@ def eig_p(
     )
 
 
-def eig_s(
-    s: int, alpha: float, beta: float, rho: float, om: float, kx: float, ky: float
-) -> np.ndarray:
+def eig_s(s: int, alpha: float, beta: float, rho: float, om: float, kx: float, ky: float) -> np.ndarray:
     """Downgoing(+)/upgoing(-) quasi-SV eigenvector (6-vector), energy-normalised."""
     b2 = beta**2
     ks = khat("S", alpha, beta, om, ky)
@@ -92,9 +88,7 @@ def eig_s(
     )
 
 
-def eig_h(
-    s: int, alpha: float, beta: float, rho: float, om: float, kx: float, ky: float
-) -> np.ndarray:
+def eig_h(s: int, alpha: float, beta: float, rho: float, om: float, kx: float, ky: float) -> np.ndarray:
     """Downgoing(+)/upgoing(-) quasi-SH eigenvector (6-vector), energy-normalised."""
     b2 = beta**2
     kh = khat("H", alpha, beta, om, ky)
@@ -116,9 +110,7 @@ def eig_h(
 # ---------------------------------------------------------------------------
 # 3. Eigen-matrix D_z = [ +P +S +H  -P -S -H ] (columns) and symplectic J6
 # ---------------------------------------------------------------------------
-def dz(
-    alpha: float, beta: float, rho: float, om: float, kx: float, ky: float
-) -> np.ndarray:
+def dz(alpha: float, beta: float, rho: float, om: float, kx: float, ky: float) -> np.ndarray:
     """Energy-normalised eigen-matrix D_z (6x6), columns (+P,+S,+H,-P,-S,-H)."""
     cols = [
         eig_p(1, alpha, beta, rho, om, kx, ky),
@@ -140,9 +132,7 @@ J6 = np.block(
 )
 
 
-def dz_inv(
-    alpha: float, beta: float, rho: float, om: float, kx: float, ky: float
-) -> np.ndarray:
+def dz_inv(alpha: float, beta: float, rho: float, om: float, kx: float, ky: float) -> np.ndarray:
     """Symplectic inverse (Eq. D1def): D_z^{-1}(k) = -i J6 D_z^T(-k) J6 (no elimination)."""
     return -1j * J6 @ dz(alpha, beta, rho, om, -kx, -ky).T @ J6
 
@@ -183,8 +173,7 @@ def _traction_from_u(
     uz, ux, uy = uvec[0], uvec[1], uvec[2]
     return np.array(
         [
-            lam * (1j * kx * ux + 1j * ky * uy + 1j * kzsig * uz)
-            + 2 * mu * (1j * kzsig * uz),
+            lam * (1j * kx * ux + 1j * ky * uy + 1j * kzsig * uz) + 2 * mu * (1j * kzsig * uz),
             mu * (1j * kzsig * ux + 1j * kx * uz),
             mu * (1j * kzsig * uy + 1j * ky * uz),
         ],
@@ -200,16 +189,12 @@ def _main() -> None:
     m2 = (5.5, 3.3, 2.7)
     om, kx, ky = 1500.0, 100.0, 50.0
     i6 = np.eye(6, dtype=np.complex128)
-    print(
-        "==== thesis_interface_rt :: half-space (u,t) eigenbasis + J6 (seismic units) ===="
-    )
+    print("==== thesis_interface_rt :: half-space (u,t) eigenbasis + J6 (seismic units) ====")
     print(f"  media: HS1 {m1}  HS2 {m2}  (om,kx,ky)=({om},{kx},{ky})")
 
     # [1] symplectic / energy-normalisation identity (J6 D(-k))^T D(k) == i J6  (dinv2)
     def symp(m: tuple[float, float, float]) -> float:
-        return float(
-            np.max(np.abs((J6 @ dz(*m, om, -kx, -ky)).T @ dz(*m, om, kx, ky) - 1j * J6))
-        )
+        return float(np.max(np.abs((J6 @ dz(*m, om, -kx, -ky)).T @ dz(*m, om, kx, ky) - 1j * J6)))
 
     s1, s2 = symp(m1), symp(m2)
     print(
@@ -254,9 +239,7 @@ def _main() -> None:
     with np.printoptions(precision=4, suppress=True):
         print("  R (down-in -> up-out) =\n", r)
         print("  T (down-in -> down-out) =\n", t)
-    col_power = np.array(
-        [np.sum(np.abs(r[:, i]) ** 2) + np.sum(np.abs(t[:, i]) ** 2) for i in range(3)]
-    )
+    col_power = np.array([np.sum(np.abs(r[:, i]) ** 2) + np.sum(np.abs(t[:, i]) ** 2) for i in range(3)])
     e_dev = float(np.max(np.abs(col_power - 1.0)))
     print(
         f"  [3] per-incident power |R|^2+|T|^2 (P,S,H) = {np.round(col_power.real, 12)}"
@@ -267,9 +250,7 @@ def _main() -> None:
     mmat = np.hstack([d1[:, 3:6], -d2[:, 0:3]])  # 6x6 (a_refl | a_trans)
     xsol = np.linalg.solve(mmat, -d1[:, 0:3])  # 6x3
     rt_dev = float(np.max(np.abs(np.vstack([r - xsol[0:3], t - xsol[3:6]]))))
-    print(
-        f"  [3b] 3x3-via-J R/T == 6x6 solve : {rt_dev:.3e} -> {'PASS' if rt_dev < tol else 'FAIL'}"
-    )
+    print(f"  [3b] 3x3-via-J R/T == 6x6 solve : {rt_dev:.3e} -> {'PASS' if rt_dev < tol else 'FAIL'}")
 
     assert max(s1, s2) < tol, "symplectic identity failed"
     assert max(b1, b2) < tol, "inverse consistency failed"

@@ -34,6 +34,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from gate_sphere_cell_average_vs_mie import CONTRAST, REF  # noqa: E402
+
 from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     _descendants,
     born_octree,
@@ -42,7 +44,6 @@ from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     refine_leaves,
     solve_graded_octree,
 )
-from gate_sphere_cell_average_vs_mie import CONTRAST, REF  # noqa: E402
 
 HALF_SIDE = 5.0
 OUTER = 0.25

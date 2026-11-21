@@ -63,9 +63,7 @@ def run_single_layer_study(
     va_tag = " (volume-averaged)" if volume_averaged else ""
     p_tag = " [periodic]" if periodic else ""
     print(f"\nSlab Convergence Study: Single-Layer (N_z=1){va_tag}{p_tag}")
-    print(
-        f"Background: alpha={REF.alpha} m/s, beta={REF.beta} m/s, rho={REF.rho} kg/m^3"
-    )
+    print(f"Background: alpha={REF.alpha} m/s, beta={REF.beta} m/s, rho={REF.rho} kg/m^3")
     print(
         f"Contrast: Dlambda={CONTRAST.Dlambda / 1e9:.1f} GPa, "
         f"Dmu={CONTRAST.Dmu / 1e9:.1f} GPa, Drho={CONTRAST.Drho:.0f} kg/m^3"
@@ -121,10 +119,7 @@ def run_single_layer_study(
             slopes = log_e / log_a
             print("\nConvergence rates (log-log slope error vs a):")
             for i, s in enumerate(slopes):
-                print(
-                    f"  a={a_arr[i]:.3f} -> {a_arr[i + 1]:.3f}: "
-                    f"slope = {s:.2f} (expect ~2 for O(ka^2))"
-                )
+                print(f"  a={a_arr[i]:.3f} -> {a_arr[i + 1]:.3f}: slope = {s:.2f} (expect ~2 for O(ka^2))")
 
     # Phase comparison
     print("\nPhase comparison (R_FL vs R_K):")
@@ -158,9 +153,7 @@ def run_fixed_H_study(
     va_tag = " (volume-averaged)" if volume_averaged else ""
     p_tag = " [periodic]" if periodic else ""
     print(f"\nSlab Convergence Study: Fixed Thickness H={H:.1f} m{va_tag}{p_tag}")
-    print(
-        f"Background: alpha={REF.alpha} m/s, beta={REF.beta} m/s, rho={REF.rho} kg/m^3"
-    )
+    print(f"Background: alpha={REF.alpha} m/s, beta={REF.beta} m/s, rho={REF.rho} kg/m^3")
     print(
         f"Contrast: Dlambda={CONTRAST.Dlambda / 1e9:.1f} GPa, "
         f"Dmu={CONTRAST.Dmu / 1e9:.1f} GPa, Drho={CONTRAST.Drho:.0f} kg/m^3"
@@ -230,10 +223,7 @@ def run_fixed_H_study(
             slopes = log_e / log_a
             print("\nConvergence rates (log-log slope error vs a):")
             for i, s in enumerate(slopes):
-                print(
-                    f"  a={a_arr[i]:.3f} -> {a_arr[i + 1]:.3f}: "
-                    f"slope = {s:.2f} (expect ~2 for O(ka^2))"
-                )
+                print(f"  a={a_arr[i]:.3f} -> {a_arr[i + 1]:.3f}: slope = {s:.2f} (expect ~2 for O(ka^2))")
 
     # Complex values
     print("\nComplex reflection coefficients:")

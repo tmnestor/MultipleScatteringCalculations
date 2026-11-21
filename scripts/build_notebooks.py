@@ -124,9 +124,7 @@ class Entry:
 
     def digest(self) -> str:
         """SHA-256 of the entry's settings, so a change to any of them makes the notebook stale."""
-        return hashlib.sha256(
-            json.dumps(asdict(self), sort_keys=True).encode()
-        ).hexdigest()
+        return hashlib.sha256(json.dumps(asdict(self), sort_keys=True).encode()).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -162,9 +160,7 @@ def _type_name(t: type | tuple[type, ...]) -> str:
     return " or ".join("null" if n == "NoneType" else n for n in names)
 
 
-def _check_keys(
-    data: dict, spec: dict, path: Path, prefix: str, fix_where: str
-) -> None:
+def _check_keys(data: dict, spec: dict, path: Path, prefix: str, fix_where: str) -> None:
     missing = [k for k in spec if k not in data]
     unknown = [k for k in data if k not in spec]
     if missing:
@@ -215,8 +211,7 @@ def load_config(path: Path, root: Path = ROOT) -> Config:
             "the notebook configuration file does not exist",
             path,
             "(the whole file)",
-            "max_notebook_bytes: 5000000\nrequire_every_script_listed: false\n"
-            + ENTRY_EXAMPLE,
+            "max_notebook_bytes: 5000000\nrequire_every_script_listed: false\n" + ENTRY_EXAMPLE,
             f"create {path} listing every Wolfram file of the reproduction manifest",
         )
     try:
@@ -303,12 +298,8 @@ def load_config(path: Path, root: Path = ROOT) -> Config:
                 evaluate=raw["evaluate"],
                 args=_string_list(raw["args"], path, f"{prefix}args"),
                 reads=reads,
-                allowed_messages=_string_list(
-                    raw["allowed_messages"], path, f"{prefix}allowed_messages"
-                ),
-                extra_cells=_string_list(
-                    raw["extra_cells"], path, f"{prefix}extra_cells"
-                ),
+                allowed_messages=_string_list(raw["allowed_messages"], path, f"{prefix}allowed_messages"),
+                extra_cells=_string_list(raw["extra_cells"], path, f"{prefix}extra_cells"),
                 intro=raw["intro"],
                 timeout_seconds=raw["timeout_seconds"],
                 skip=raw["skip"],
@@ -332,9 +323,7 @@ def load_config(path: Path, root: Path = ROOT) -> Config:
                 ENTRY_EXAMPLE,
                 "add an entry for each (kind data or tool for files that get no notebook, or skip: with a reason)",
             )
-    return Config(
-        path, data["max_notebook_bytes"], data["require_every_script_listed"], entries
-    )
+    return Config(path, data["max_notebook_bytes"], data["require_every_script_listed"], entries)
 
 
 def check_against_manifest(config: Config, manifest: list[str]) -> None:
@@ -527,9 +516,7 @@ def read_set(entry: Entry, root: Path = ROOT) -> ReadSet:
             for t in targets:
                 t = t.resolve()
                 if not t.is_relative_to(root.resolve()):
-                    problems.append(
-                        f"{current.name} line {call.line} reads outside the repository: {t}"
-                    )
+                    problems.append(f"{current.name} line {call.line} reads outside the repository: {t}")
                 elif not t.is_file():
                     problems.append(
                         f"{current.name} line {call.line} reads a file that does not exist: {t.relative_to(root.resolve())}"
@@ -583,14 +570,10 @@ def load_lock(root: Path = ROOT) -> dict:
 
 def save_lock(lock: dict, root: Path = ROOT) -> None:
     path = root / MATHEMATICA / LOCK_NAME
-    path.write_text(
-        json.dumps(dict(sorted(lock.items())), indent=1, sort_keys=True) + "\n"
-    )
+    path.write_text(json.dumps(dict(sorted(lock.items())), indent=1, sort_keys=True) + "\n")
 
 
-def staleness(
-    config: Config, lock: dict, root: Path = ROOT, release: bool = False
-) -> list[str]:
+def staleness(config: Config, lock: dict, root: Path = ROOT, release: bool = False) -> list[str]:
     """Why each notebook is not current; empty when every notebook matches what it was built from."""
     out = []
     folder = root / MATHEMATICA
@@ -614,27 +597,21 @@ def staleness(
                 f"{entry.notebook}: built {'with' if rec['evaluated'] else 'without'} outputs, entry says otherwise"
             )
         if release and entry.evaluate and not rec["cold_cache"]:
-            out.append(
-                f"{entry.notebook}: built from a warm moment cache; a release needs --cold-cache"
-            )
+            out.append(f"{entry.notebook}: built from a warm moment cache; a release needs --cold-cache")
         try:
             now = provenance(entry, root)
         except ConfigError as err:
             out.append(f"{entry.notebook}: cannot check: {str(err).splitlines()[0]}")
             continue
         if now["entry_sha256"] != rec["entry_sha256"]:
-            out.append(
-                f"{entry.notebook}: its notebooks.yml entry changed since it was built"
-            )
+            out.append(f"{entry.notebook}: its notebooks.yml entry changed since it was built")
         for kind in ("inputs", "tools"):
             old, new = rec[kind], now[kind]
             for f in sorted(set(old) | set(new)):
                 if f not in new:
                     out.append(f"{entry.notebook}: no longer reads {f}")
                 elif f not in old:
-                    out.append(
-                        f"{entry.notebook}: now reads {f}, which it did not when built"
-                    )
+                    out.append(f"{entry.notebook}: now reads {f}, which it did not when built")
                 elif old[f] != new[f]:
                     out.append(f"{entry.notebook}: {f} changed since it was built")
     return out
@@ -644,9 +621,7 @@ def staleness(
 
 _FAIL = re.compile(r"\bFAIL\b")
 _MESSAGE_NAME = re.compile(r"\s*([A-Za-z$][\w$`]*::[\w$]+)")
-_ABSOLUTE = re.compile(
-    r"(?<![\w.~])/(?:Users|home|private|tmp|var|opt|Volumes|Applications)/"
-)
+_ABSOLUTE = re.compile(r"(?<![\w.~])/(?:Users|home|private|tmp|var|opt|Volumes|Applications)/")
 
 
 def check_outputs(report: dict, entry: Entry) -> list[str]:
@@ -674,9 +649,7 @@ def check_outputs(report: dict, entry: Entry) -> list[str]:
             if m is None:
                 problems.append(f"a message whose name cannot be read: {short}")
             elif m.group(1) not in entry.allowed_messages:
-                problems.append(
-                    f"message {m.group(1)} (not in allowed_messages): {short}"
-                )
+                problems.append(f"message {m.group(1)} (not in allowed_messages): {short}")
         if _ABSOLUTE.search(text):
             problems.append(f"an absolute path in a {style} cell: {short}")
     return problems
@@ -687,9 +660,7 @@ def check_notebook_file(path: Path, max_bytes: int, forbidden: list[str]) -> lis
     problems = []
     size = path.stat().st_size
     if size > max_bytes:
-        problems.append(
-            f"{path.name} is {size} bytes, over max_notebook_bytes = {max_bytes}"
-        )
+        problems.append(f"{path.name} is {size} bytes, over max_notebook_bytes = {max_bytes}")
     text = path.read_text(errors="replace")
     for s in forbidden:
         if s in text:
@@ -699,7 +670,9 @@ def check_notebook_file(path: Path, max_bytes: int, forbidden: list[str]) -> lis
 
 # --- building ------------------------------------------------------------------------------------------
 
-CONVERT_TIMEOUT_SECONDS = 600  # converting is a parse and a box conversion: minutes at most, even for 4,000 lines
+CONVERT_TIMEOUT_SECONDS = (
+    600  # converting is a parse and a box conversion: minutes at most, even for 4,000 lines
+)
 
 
 def _run(cmd: list[str], cwd: Path, timeout: int) -> tuple[int | None, str]:
@@ -725,24 +698,14 @@ def _run(cmd: list[str], cwd: Path, timeout: int) -> tuple[int | None, str]:
 
 
 def _snapshot(folder: Path) -> dict[str, str]:
-    return {
-        str(p.relative_to(folder)): sha256(p)
-        for p in sorted(folder.rglob("*"))
-        if p.is_file()
-    }
+    return {str(p.relative_to(folder)): sha256(p) for p in sorted(folder.rglob("*")) if p.is_file()}
 
 
-def written_files(
-    before: dict[str, str], after: dict[str, str], root: Path, ignore: set[str]
-) -> list[str]:
+def written_files(before: dict[str, str], after: dict[str, str], root: Path, ignore: set[str]) -> list[str]:
     """What the evaluation wrote, each compared with the committed copy of the same path."""
     lines = []
     for rel in sorted(after):
-        if (
-            rel in ignore
-            or rel.startswith(f"{MATHEMATICA}/cache/")
-            or before.get(rel) == after[rel]
-        ):
+        if rel in ignore or rel.startswith(f"{MATHEMATICA}/cache/") or before.get(rel) == after[rel]:
             continue
         committed = root / rel
         if not committed.exists():
@@ -755,9 +718,7 @@ def written_files(
     return lines
 
 
-def build_one(
-    config: Config, entry: Entry, cold_cache: bool, lock: dict, root: Path = ROOT
-) -> bool:
+def build_one(config: Config, entry: Entry, cold_cache: bool, lock: dict, root: Path = ROOT) -> bool:
     """Convert (and, if the entry says so, evaluate) one script in a scratch folder; copy back on success."""
     prov = provenance(entry, root)
     scratch = Path(tempfile.mkdtemp(prefix="nbbuild-"))
@@ -801,9 +762,7 @@ def build_one(
     )
     print(_indent(out.rstrip(), 3), flush=True)
     if code != 0:
-        print(
-            f"   FAILED: conversion {'timed out' if code is None else f'exited {code}'}; scratch kept"
-        )
+        print(f"   FAILED: conversion {'timed out' if code is None else f'exited {code}'}; scratch kept")
         return False
 
     problems: list[str] = []
@@ -840,9 +799,7 @@ def build_one(
         problems += check_notebook_file(nb, config.max_notebook_bytes, forbidden)
     print(f"   {time.monotonic() - t0:.0f} s", flush=True)
     if problems:
-        print(
-            f"   FAILED ({len(problems)} problem(s)); notebook not copied back; scratch kept:"
-        )
+        print(f"   FAILED ({len(problems)} problem(s)); notebook not copied back; scratch kept:")
         for p in problems:
             print(f"     - {p}")
         return False
@@ -897,22 +854,12 @@ def _cmd_build(args: argparse.Namespace) -> int:
     config = load_config(ROOT / MATHEMATICA / CONFIG_NAME)
     check_against_manifest(config, reproduction_manifest())
     if args.release:
-        names = [
-            n
-            for n, e in sorted(config.entries.items())
-            if e.release and e.builds_notebook
-        ]
+        names = [n for n, e in sorted(config.entries.items()) if e.release and e.builds_notebook]
     else:
         names = args.scripts
-    unknown = [
-        n
-        for n in names
-        if n not in config.entries or not config.entries[n].builds_notebook
-    ]
+    unknown = [n for n in names if n not in config.entries or not config.entries[n].builds_notebook]
     if unknown or not names:
-        print(
-            f"nothing to build, or not buildable entries of {CONFIG_NAME}: {unknown or 'none named'}"
-        )
+        print(f"nothing to build, or not buildable entries of {CONFIG_NAME}: {unknown or 'none named'}")
         return 2
     lock = load_lock()
     failed = []
@@ -944,9 +891,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("build", help="build notebooks")
     p.add_argument("scripts", nargs="*")
     p.add_argument("--release", action="store_true", help="build every release entry")
-    p.add_argument(
-        "--cold-cache", action="store_true", help="start from an empty moment cache"
-    )
+    p.add_argument("--cold-cache", action="store_true", help="start from an empty moment cache")
     p.set_defaults(func=_cmd_build)
     args = parser.parse_args(argv)
     try:

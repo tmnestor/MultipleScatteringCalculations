@@ -70,15 +70,13 @@ def make():
     sa = types.SimpleNamespace(
         Eavec=rng.normal(size=NK) + 1j * rng.normal(size=NK),
         Ebvec=rng.normal(size=NK) + 1j * rng.normal(size=NK),
-        PC=rng.normal(size=(NK, 5, 2, NSCATZ))
-        + 1j * rng.normal(size=(NK, 5, 2, NSCATZ)),
+        PC=rng.normal(size=(NK, 5, 2, NSCATZ)) + 1j * rng.normal(size=(NK, 5, 2, NSCATZ)),
     )
     # damp the phase factors so the geometric series is well conditioned
     sa.Eavec *= 0.4 / np.abs(sa.Eavec)
     sa.Ebvec *= 0.4 / np.abs(sa.Ebvec)
     res = types.SimpleNamespace(
-        SY=rng.normal(size=(NSCATX, 5, 2, NSCATZ))
-        + 1j * rng.normal(size=(NSCATX, 5, 2, NSCATZ)),
+        SY=rng.normal(size=(NSCATX, 5, 2, NSCATZ)) + 1j * rng.normal(size=(NSCATX, 5, 2, NSCATZ)),
         PSY=np.zeros((NSCATX, 5, 2, NSCATZ), dtype=complex),
     )
     return grid, sa, res
@@ -102,18 +100,8 @@ def direct(sa, res, comp, E):
                         k1, k2 = 4 - mi, mpi
                     else:  # left sweep contribution
                         k1, k2 = mi, 4 - mpi
-                    kern = np.sum(
-                        sa.PC[sl, k1, comp, ISCAT]
-                        * sa.PC[sl, k2, comp, ISCAT]
-                        * E[sl] ** d
-                    )
-                    acc += (
-                        2.0
-                        * (1j**m)
-                        * ((-1j) ** mp)
-                        * kern
-                        * res.SY[chip, mpi, comp, ISCAT]
-                    )
+                    kern = np.sum(sa.PC[sl, k1, comp, ISCAT] * sa.PC[sl, k2, comp, ISCAT] * E[sl] ** d)
+                    acc += 2.0 * (1j**m) * ((-1j) ** mp) * kern * res.SY[chip, mpi, comp, ISCAT]
                 out[chi, mi] += acc
     return out
 

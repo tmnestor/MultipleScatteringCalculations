@@ -86,9 +86,7 @@ def _omega2_kernel():
     m = json.loads((_ROOT / "Mathematica" / "InterfaceOmega2.json").read_text())
     subs = {sp.Symbol(k): v for k, v in _materials().items()}
     subs |= {sp.Symbol("q"): q_, sp.Symbol("z"): z, sp.Symbol("zp"): zp}
-    return sp.Matrix(
-        [[parse_mathematica(e).subs(subs) for e in row] for row in m[KIND + "1"]]
-    )
+    return sp.Matrix([[parse_mathematica(e).subs(subs) for e in row] for row in m[KIND + "1"]])
 
 
 def _static_kernel():
@@ -99,9 +97,7 @@ def _static_kernel():
         return st._G.subs(subs)
     path = _ROOT / "scripts" / "data" / "static_interface_transmission.json"
     rows = json.loads(path.read_text())["entries"]
-    return sp.Matrix(
-        [[sp.sympify(e, locals=st._LOC) for e in row] for row in rows]
-    ).subs(subs)
+    return sp.Matrix([[sp.sympify(e, locals=st._LOC) for e in row] for row in rows]).subs(subs)
 
 
 def _sign():
@@ -111,9 +107,7 @@ def _sign():
 
 def _polys(G):
     """G = X P: P as a 3 x 3 matrix of rational functions of q, polynomial in z, zp."""
-    P = G.applyfunc(
-        lambda e: e.replace(sp.exp, lambda a: sp.Integer(1)) if e.has(sp.exp) else e
-    )
+    P = G.applyfunc(lambda e: e.replace(sp.exp, lambda a: sp.Integer(1)) if e.has(sp.exp) else e)
     for e in G:
         assert {a.args[0] for a in e.atoms(sp.exp)} <= {q_ * (_sign() * z + zp)}, e
     return P.applyfunc(sp.cancel)
@@ -132,16 +126,10 @@ def frame_coefficients(G):
             out[i, k] = P[i, k]
     for b, (m, n) in enumerate(st.VP):
         for i in range(3):
-            out[i, 3 + b] = (
-                dsrc(P[i, m], n)
-                if m == n
-                else (dsrc(P[i, m], n) + dsrc(P[i, n], m)) / 2
-            )
+            out[i, 3 + b] = dsrc(P[i, m], n) if m == n else (dsrc(P[i, m], n) + dsrc(P[i, n], m)) / 2
     for a, (p, r) in enumerate(st.VP):
         for k in range(3):
-            out[3 + a, k] = (
-                drec(P[p, k], p) if p == r else drec(P[r, k], p) + drec(P[p, k], r)
-            )
+            out[3 + a, k] = drec(P[p, k], p) if p == r else drec(P[r, k], p) + drec(P[p, k], r)
 
         def term(mm, nn, p=p, r=r):
             e = lambda j, i: drec(dsrc(P[i, mm], nn), j)
@@ -304,10 +292,7 @@ def main() -> None:
         row = []
         for q_h in (20, 40, 80, 160):
             k = kernels(q_h)
-            row.append(
-                np.abs((k[om] - k["Y0"]) / om**2 - k["Y1"]).max()
-                / np.abs(k["Y1"]).max()
-            )
+            row.append(np.abs((k[om] - k["Y0"]) / om**2 - k["Y1"]).max() / np.abs(k["Y1"]).max())
         print(f"  omega {om:5.1f}: " + "  ".join(f"{v:.2e}" for v in row), flush=True)
 
     with Pool(4) as pool:
@@ -344,16 +329,9 @@ def main() -> None:
         " T: source centre (-h, 0, 0), field centre (h, 0, 0)",
         "cuts_qh": CUTS,
         "low": {str(om): pack(lows[om]) for om in OMEGAS},
-        "shells": [
-            {k if isinstance(k, str) else str(k): pack(v) for k, v in sh.items()}
-            for sh in shells
-        ],
+        "shells": [{k if isinstance(k, str) else str(k): pack(v) for k, v in sh.items()} for sh in shells],
     }
-    out = (
-        Path(__file__).resolve().parent
-        / "data"
-        / f"interface_omega2_reference_{KIND}.json"
-    )
+    out = Path(__file__).resolve().parent / "data" / f"interface_omega2_reference_{KIND}.json"
     out.write_text(json.dumps(ref))
     print("written", out.name)
 
@@ -379,12 +357,8 @@ def main() -> None:
             "Y - Y0 - w2 Y1": rem,
             "w2 Y1": lambda s, om=om: om**2 * s["Y1"],
         }
-        vals = {
-            c: [np.abs(f(s)).max() / scale for s in shells] for c, f in cols.items()
-        }
-        print(
-            "shell contribution relative to the block (max entry), local order log2(previous / this):"
-        )
+        vals = {c: [np.abs(f(s)).max() / scale for s in shells] for c, f in cols.items()}
+        print("shell contribution relative to the block (max entry), local order log2(previous / this):")
         print(f"{'q h':>10}" + "".join(f"{c:>17} {'order':>6}" for c in cols))
         for j, (a, b) in enumerate(pairwise(CUTS)):
             line = f"{a:>4}-{b:<5}"
@@ -393,9 +367,7 @@ def main() -> None:
                 o = f"{np.log2(v[j - 1] / v[j]):6.2f}" if j else " " * 6
                 line += f"{v[j]:17.2e} {o}"
             print(line)
-        print(
-            "tail beyond the cutoff (measured shells + geometric extrapolation at the last order):"
-        )
+        print("tail beyond the cutoff (measured shells + geometric extrapolation at the last order):")
         print(f"{'Q h':>6}" + "".join(f"{c:>17}" for c in ("Y - Y0", "Y - Y0 - w2 Y1")))
         for j, a in enumerate(CUTS[:-1]):
             line = f"{a:>6}"

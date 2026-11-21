@@ -198,9 +198,7 @@ def basis_strains(pts: NDArray) -> NDArray:
                     continue
                 e2 = list(exps)
                 e2[ax] -= 1
-                grad[:, ax] = exps[ax] * (
-                    pts[:, 0] ** e2[0] * pts[:, 1] ** e2[1] * pts[:, 2] ** e2[2]
-                )
+                grad[:, ax] = exps[ax] * (pts[:, 0] ** e2[0] * pts[:, 1] ** e2[1] * pts[:, 2] ** e2[2])
             idx = 9 + 6 * d + m
             E[idx, :, d, :] += 0.5 * grad
             E[idx, :, :, d] += 0.5 * grad
@@ -272,8 +270,7 @@ def greens_tensor(rvecs: NDArray, omega: float, ref: ReferenceMedium) -> NDArray
     psi = 3.0 * nfS - 3.0 * nfP + kP**2 * eP / r - kS**2 * eS / r
     pref = 1.0 / (4.0 * np.pi * ref.rho * omega**2)
     return pref * (
-        phi[..., None, None] * np.eye(3)
-        + psi[..., None, None] * g[..., :, None] * g[..., None, :]
+        phi[..., None, None] * np.eye(3) + psi[..., None, None] * g[..., :, None] * g[..., None, :]
     )
 
 
@@ -510,9 +507,7 @@ def block_devs(X: NDArray, ref_mat: NDArray) -> dict[str, float]:
     return out
 
 
-def nine_block_deviation(
-    Rax: NDArray, omega: float, a: float, n: int = N_GAUSS
-) -> dict[str, float]:
+def nine_block_deviation(Rax: NDArray, omega: float, a: float, n: int = N_GAUSS) -> dict[str, float]:
     """Block-scale relative deviation of M9^-1 Pq W^-1 from exact_propagator_9x9.
 
     Args:
@@ -547,10 +542,7 @@ def run_calibration() -> None:
         G_ref = elastodynamic_greens(r_vec, omega, REF)
         G_vec = greens_tensor(r_vec[None, :], omega, REF)[0]
         errs.append(np.max(np.abs(G_vec - G_ref)) / np.max(np.abs(G_ref)))
-    print(
-        f"\nGreen's tensor (vectorised vs elastodynamic_greens): "
-        f"max rel err = {max(errs):.2e}"
-    )
+    print(f"\nGreen's tensor (vectorised vs elastodynamic_greens): max rel err = {max(errs):.2e}")
 
     # 2. Reciprocity P(-R) = P(R)^T
     Rt = np.array([2.0 * a, 1.0 * a, 0.5 * a])
@@ -566,9 +558,7 @@ def run_calibration() -> None:
     Rfix = np.array([2.0, 0.0, 0.0])
     for a_small in (0.25, 0.1, 0.05):
         dev = nine_block_deviation(Rfix, omega, a_small, n=8)
-        print(
-            f"  {a_small / 2.0:>6.3f}  " + "  ".join(f"{dev[b]:>9.2e}" for b in "GCHS")
-        )
+        print(f"  {a_small / 2.0:>6.3f}  " + "  ".join(f"{dev[b]:>9.2e}" for b in "GCHS"))
 
     # 4. Touching separations at a = 1 (the genuine volume-averaging effect)
     print("\nTouching separations at a = 1 (block-scale deviation from point")
@@ -601,13 +591,9 @@ def run_calibration() -> None:
     S_mine = weight_matrix(a) @ T_hat[:9, :9]
     mask = np.abs(T_loc) > 1e-8 * np.max(np.abs(T_loc))
     ratios = S_mine[mask] / T_loc[mask]
+    print("\nSource operator W T_hat[0:9,0:9] vs validated T_loc (Galerkin vs Path-A amplification):")
     print(
-        "\nSource operator W T_hat[0:9,0:9] vs validated T_loc "
-        "(Galerkin vs Path-A amplification):"
-    )
-    print(
-        f"  ratio range over nonzero entries: "
-        f"[{np.min(np.abs(ratios)):.4f}, {np.max(np.abs(ratios)):.4f}]"
+        f"  ratio range over nonzero entries: [{np.min(np.abs(ratios)):.4f}, {np.max(np.abs(ratios)):.4f}]"
     )
 
 
@@ -707,13 +693,10 @@ def run_propagator_comparison() -> None:
         Rphys = np.array([2.0 * a_try, 0.0, 0.0])
         om = 1e-3 * REF.beta / a_try
         G_q = avg_greens(Rphys, om, a_try, n=8)
-        P9 = inter_voxel_propagator_9x9(
-            (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=2.0 * a_try
-        )
+        P9 = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=2.0 * a_try)
         ratio = np.real(P9[0, 0] / G_q[0, 0])
         print(
-            f"  half-width a={a_try} (d={2.0 * a_try}): analytic G[0,0] / "
-            f"quadrature <G>[0,0] = {ratio:.4f}"
+            f"  half-width a={a_try} (d={2.0 * a_try}): analytic G[0,0] / quadrature <G>[0,0] = {ratio:.4f}"
         )
     print("  -> matches at every half-width: physical pitch threaded correctly.")
 
@@ -731,25 +714,18 @@ def run_propagator_comparison() -> None:
         "corner": ((1, 1, 1), np.array([1.0, 1.0, 1.0])),
     }
     for name, (Rlat, Rphys) in seps.items():
-        P9 = inter_voxel_propagator_9x9(
-            Rlat, REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
-        )
+        P9 = inter_voxel_propagator_9x9(Rlat, REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0)
         for ref_name, ref_mat in (
             ("FD-avg", avg_point_propagator_fd(Rphys, omega_static, a, n=8)),
             ("Galerkin", galerkin_9_block(Rphys, omega_static, a, n=8)),
         ):
             dev = block_devs(P9, ref_mat)
-            print(
-                f"  {name:>6} {ref_name:>9}  "
-                + "  ".join(f"{dev[b]:>9.2e}" for b in "GCHS")
-            )
+            print(f"  {name:>6} {ref_name:>9}  " + "  ".join(f"{dev[b]:>9.2e}" for b in "GCHS"))
 
     # 3. Specific structural findings — all RESOLVED (verified here).
     print("\nStructural findings (static, unit pitch) — all RESOLVED:")
     # H engineering ×2 now built in: H = W C^T, W = diag(1,1,1,2,2,2).
-    P9e = inter_voxel_propagator_9x9(
-        (1, 1, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
-    )
+    P9e = inter_voxel_propagator_9x9((1, 1, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0)
     Dfd = avg_point_propagator_fd(np.array([1.0, 1.0, 0.0]), omega_static, a, n=8)
     mask = np.abs(Dfd[6:9, 0:3]) > 0.05 * np.max(np.abs(Dfd[6:9, 0:3]))
     h_ratio = np.real(P9e[6:9, 0:3][mask] / Dfd[6:9, 0:3][mask])
@@ -759,9 +735,7 @@ def run_propagator_comparison() -> None:
         f"[{h_ratio.min():.4f}, {h_ratio.max():.4f}] (target 1)"
     )
     # Corner S now respects its own C3 site symmetry.
-    P9c = inter_voxel_propagator_9x9(
-        (1, 1, 1), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
-    )
+    P9c = inter_voxel_propagator_9x9((1, 1, 1), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0)
     Sc = np.real(P9c[3:, 3:])
     print(
         f"  [corner S fixed] C3-symmetry partners now equal: "
@@ -773,9 +747,7 @@ def run_propagator_comparison() -> None:
     # the analytic face S is exact (3 bias-free routes, 1e-8..1e-16) and
     # this arbiter's face-contact S is the biased quantity (see the
     # avg_point_propagator_fd docstring caveat).  Printed for transparency.
-    P9f = inter_voxel_propagator_9x9(
-        (1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0
-    )
+    P9f = inter_voxel_propagator_9x9((1, 0, 0), REF.alpha, REF.beta, REF.rho, 0.0, 0, d=1.0)
     Dfd_f = avg_point_propagator_fd(np.array([1.0, 0.0, 0.0]), omega_static, a, n=10)
     print(
         f"  [face S] analytic S[0,0]={np.real(P9f[3, 3]):.3e} (= bias-free truth) vs "
@@ -806,18 +778,14 @@ def run_propagator_comparison() -> None:
             om = ka * REF.beta / a
             ref_mat = avg_point_propagator_fd(Rphys, om, a, n=8)
             for n_ord in (2, 3):
-                P9 = inter_voxel_propagator_9x9(
-                    Rlat, REF.alpha, REF.beta, REF.rho, om, n_ord, d=1.0
-                )
+                P9 = inter_voxel_propagator_9x9(Rlat, REF.alpha, REF.beta, REF.rho, om, n_ord, d=1.0)
                 dev_re = block_devs(np.real(P9), np.real(ref_mat))
                 row = f"  {name:>6} {ka:>5.1f} {n_ord:>5}  "
                 row += "".join(f"{dev_re[b]:>10.2e} " for b in "GCS")
                 for b in "GS":
                     r_, c_ = _BLOCKS[b]
                     scale = np.max(np.abs(ref_mat[r_, c_]))
-                    im_res = np.max(
-                        np.abs(np.imag(P9[r_, c_]) - np.imag(ref_mat[r_, c_]))
-                    )
+                    im_res = np.max(np.abs(np.imag(P9[r_, c_]) - np.imag(ref_mat[r_, c_])))
                     row += f" {im_res / scale:>10.2e}"
                 print(row)
 
@@ -867,11 +835,7 @@ Incidence along z; P pol = z, SV pol = x.  a = {a} m, n = {N_GAUSS} per axis.
                 omega = ka * REF.beta / a
                 kmag = omega / (REF.alpha if wave == "P" else REF.beta)
                 kvec = np.array([kmag, 0.0, 0.0])
-                pol = (
-                    np.array([1.0, 0.0, 0.0])
-                    if wave == "P"
-                    else np.array([0.0, 1.0, 0.0])
-                )
+                pol = np.array([1.0, 0.0, 0.0]) if wave == "P" else np.array([0.0, 1.0, 0.0])
                 c0 = np.linalg.solve(M, cube_overlap_integrals(kvec, pol, a))
                 T_hat, _, T27 = source_operator(omega, a, REF, CONTRAST)
                 T_hat9 = source_operator_9(omega, a, CONTRAST, M, T27)
@@ -898,10 +862,7 @@ def main() -> None:
     """Run calibration and decision table."""
     print("T27 inter-voxel coupling study")
     print(f"Background: alpha={REF.alpha}, beta={REF.beta}, rho={REF.rho}")
-    print(
-        f"Contrast: Dlambda={CONTRAST.Dlambda:.1e}, Dmu={CONTRAST.Dmu:.1e}, "
-        f"Drho={CONTRAST.Drho}"
-    )
+    print(f"Contrast: Dlambda={CONTRAST.Dlambda:.1e}, Dmu={CONTRAST.Dmu:.1e}, Drho={CONTRAST.Drho}")
     run_calibration()
     run_propagator_comparison()
     run_decision_table()

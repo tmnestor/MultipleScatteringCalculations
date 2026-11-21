@@ -93,9 +93,7 @@ def compute_seismogram(
         - Hermitian spectrum of length NT=2*NW for real-valued output
         - Time step: dt = T/(2*NW)
     """
-    logger.info(
-        f"Computing seismogram: {model.n_layers} layers, p={p:.6f}, T={T:.1f}s, nw={nw}"
-    )
+    logger.info(f"Computing seismogram: {model.n_layers} layers, p={p:.6f}, T={T:.1f}s, nw={nw}")
 
     # Frequency grid (Fortran: DW = 2*PI/T, frequencies from DW to NWM*DW)
     dw = 2.0 * np.pi / T
@@ -139,9 +137,7 @@ def compute_seismogram(
     time = np.arange(nt, dtype=np.float64) * dt
     seismogram = np.real(seismogram_c) * np.exp(eps * time)
 
-    logger.info(
-        f"Seismogram computed: dt={dt:.6f}s, {nt} samples, duration={time[-1]:.1f}s"
-    )
+    logger.info(f"Seismogram computed: dt={dt:.6f}s, {nt} samples, duration={time[-1]:.1f}s")
 
     return time, seismogram
 
@@ -233,10 +229,7 @@ def main() -> None:
             ax1.axhline(0, color="k", linewidth=0.3)
             ax1.set_xlabel("Time (s)")
             ax1.set_ylabel("Amplitude")
-            ax1.set_title(
-                f"Kennett Reflectivity \u2014 5-layer ocean crust"
-                f" (p={args.slowness} s/km)"
-            )
+            ax1.set_title(f"Kennett Reflectivity \u2014 5-layer ocean crust (p={args.slowness} s/km)")
 
             # --- Bottom panel: early arrivals detail (0-15s) ---
             mask = time <= 15.0

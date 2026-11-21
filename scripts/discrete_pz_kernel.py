@@ -146,10 +146,7 @@ def discrete_pz_kernel(model, omega, m, n, M, d, q=8, pad=1, report=False):
     if report:
         beta_min = min(b for b in model.beta[1:] if b > 0)
         k_S = omega / beta_min
-        print(
-            f"    k_max/k_S = {k_max / k_S:5.2f}   samples per k_S = "
-            f"{k_S / dk:6.1f}   N = {N}"
-        )
+        print(f"    k_max/k_S = {k_max / k_S:5.2f}   samples per k_S = {k_S / dk:6.1f}   N = {N}")
 
     Ptilde = corrected_9x9_grid(model, omega, KX, KY, j=n + 1, i=m + 1)
 
@@ -208,9 +205,7 @@ def gate(M=8, N_z=3, a=0.5, freq=6.0, q=8):
 
         first = True
         for m, n in ((0, 1), (0, 2)):
-            K = discrete_pz_kernel(
-                model, omega, m, n, M, d, q=q, report=(first and Q > 1e4)
-            )
+            K = discrete_pz_kernel(model, omega, m, n, M, d, q=q, report=(first and Q > 1e4))
             first = False
             homo = kern[(m - n) + (N_z - 1)]
             msk = np.abs(homo) > 1e-9 * np.abs(homo).max()

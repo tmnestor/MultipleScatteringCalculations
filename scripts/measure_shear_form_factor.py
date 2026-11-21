@@ -54,14 +54,15 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from cubic_scattering.effective_contrasts import (  # noqa: E402
-    form_factor_c2,
-)
 from measure_shear_renormalisation import (  # noqa: E402
     H_PHYS,
     MU0,
     REF,
     _optimum,
+)
+
+from cubic_scattering.effective_contrasts import (  # noqa: E402
+    form_factor_c2,
 )
 
 KA_CEILING = 0.3

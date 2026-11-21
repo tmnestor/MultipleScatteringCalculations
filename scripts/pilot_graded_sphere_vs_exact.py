@@ -28,10 +28,11 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_graded_sphere import graded_mie_result, smoothstep  # noqa: E402
+from gate_sphere_cell_average_vs_mie import CONTRAST, R_MULT, REF, obs_points  # noqa: E402
+
 from cubic_scattering.graded_voxel.site import BatchProfile  # noqa: E402
 from cubic_scattering.sphere_scattering import foldy_lax_far_field, mie_scattered_displacement  # noqa: E402
 from cubic_scattering.sphere_scattering_fft import compute_sphere_foldy_lax_fft  # noqa: E402
-from gate_sphere_cell_average_vs_mie import CONTRAST, R_MULT, REF, obs_points  # noqa: E402
 
 RADIUS = 10.0
 CORE = RADIUS / 2

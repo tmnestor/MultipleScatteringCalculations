@@ -31,6 +31,9 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pilot_octree_two_term_refinement as base  # noqa: E402
+from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
+from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
+
 from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     _descendants,
     adapt_leaves,
@@ -41,8 +44,6 @@ from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     solve_graded_octree,
     uniform_leaves,
 )
-from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
-from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
 
 K_HAT = base.K_HAT
 N_FUN = (1, 4, 10)

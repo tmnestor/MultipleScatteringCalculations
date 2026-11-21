@@ -45,6 +45,7 @@ does not depend on the cube half-width.
 from __future__ import annotations
 
 import numpy as np
+
 from cubic_scattering.effective_contrasts import (
     MaterialContrast,
     ReferenceMedium,

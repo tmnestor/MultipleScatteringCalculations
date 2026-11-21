@@ -31,6 +31,10 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
+from measure_graded_voxel_resolution import exact_field, radial  # noqa: E402
+from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
+
 from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     adapt_leaves,
     born_octree,
@@ -39,9 +43,6 @@ from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     solve_graded_octree,
     uniform_leaves,
 )
-from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
-from measure_graded_voxel_resolution import exact_field, radial  # noqa: E402
-from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
 
 K_HAT = np.array([1.0, 0.0, 0.0])
 EPS = 1e-3

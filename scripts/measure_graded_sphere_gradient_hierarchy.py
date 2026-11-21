@@ -47,10 +47,11 @@ import gradient_voxel_lattice as lat  # noqa: E402, F401
 import measure_ball_gradient_hierarchy as hier  # noqa: E402
 import measure_cube_gradient_hierarchy as cube  # noqa: E402
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
-from cubic_scattering.graded_voxel import derivatives as gd  # noqa: E402
-from cubic_scattering.sphere_scattering import mie_scattered_displacement  # noqa: E402
 from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
 from pilot_graded_sphere_vs_exact import CORE, RADIUS, THETA  # noqa: E402
+
+from cubic_scattering.graded_voxel import derivatives as gd  # noqa: E402
+from cubic_scattering.sphere_scattering import mie_scattered_displacement  # noqa: E402
 
 AXES = (0, 1, 2)
 K_HAT = np.array([1.0, 0.0, 0.0])

@@ -25,13 +25,14 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from gate_sphere_cell_average_vs_mie import CONTRAST, R_MULT, REF, obs_points  # noqa: E402
+
 from cubic_scattering.sphere_scattering import (  # noqa: E402
     compute_elastic_mie,
     foldy_lax_far_field,
     mie_scattered_displacement,
 )
 from cubic_scattering.sphere_scattering_fft import compute_sphere_foldy_lax_fft  # noqa: E402
-from gate_sphere_cell_average_vs_mie import CONTRAST, R_MULT, REF, obs_points  # noqa: E402
 
 KA_S = 0.5
 RADIUS = 10.0

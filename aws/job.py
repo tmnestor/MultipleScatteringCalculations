@@ -164,7 +164,9 @@ def main() -> int:
     with log.open("w") as f:
         uploader = threading.Thread(target=upload_log, daemon=True)
         uploader.start()
-        proc = subprocess.Popen(cmd, cwd=WORK, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        proc = subprocess.Popen(
+            cmd, cwd=WORK, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
         assert proc.stdout is not None
         for line in proc.stdout:
             sys.stdout.write(line)

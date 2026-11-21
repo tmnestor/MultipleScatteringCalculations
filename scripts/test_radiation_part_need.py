@@ -107,8 +107,7 @@ def greens_tensor(rvecs: np.ndarray, omega: float, ref: ReferenceMedium) -> np.n
     psi = 3.0 * nfS - 3.0 * nfP + kP**2 * eP / r - kS**2 * eS / r
     pref = 1.0 / (4.0 * np.pi * ref.rho * omega**2)
     return pref * (
-        phi[..., None, None] * np.eye(3)
-        + psi[..., None, None] * g[..., :, None] * g[..., None, :]
+        phi[..., None, None] * np.eye(3) + psi[..., None, None] * g[..., :, None] * g[..., None, :]
     )
 
 
@@ -278,10 +277,7 @@ def run_measurement_b() -> None:
         e_v2 = abs(R_v2 - R_K) / absK
         e_v3 = abs(R_v3 - R_K) / absK
         diff_va = abs(R_v2 - R_pt) / absK
-        print(
-            f"{ka:5.2f}  {absK:10.4e}  "
-            f"{e_pt:12.4e}  {e_v2:11.4e}  {e_v3:11.4e}  {diff_va:15.4e}"
-        )
+        print(f"{ka:5.2f}  {absK:10.4e}  {e_pt:12.4e}  {e_v2:11.4e}  {e_v3:11.4e}  {diff_va:15.4e}")
     print(
         "\nINTERPRETATION KEY:\n"
         "  - VA tracks/beats pt and stays <~1-2% across ka  -> Fix 5 low priority.\n"

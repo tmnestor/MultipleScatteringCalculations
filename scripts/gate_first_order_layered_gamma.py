@@ -74,10 +74,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
-from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
-from cubic_scattering.layered_correction import correct_6x6  # noqa: E402
 from GlobalMatrix.layered_greens import layered_greens_6x6  # noqa: E402
 from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
+
+from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
+from cubic_scattering.layered_correction import correct_6x6  # noqa: E402
 from scripts.gate_first_order_propagator_bridge import system_matrix  # noqa: E402
 from scripts.gate_thesis_spectral import J6, dz_normalised, gamma_thesis  # noqa: E402
 

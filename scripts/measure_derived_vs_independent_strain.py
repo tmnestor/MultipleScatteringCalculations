@@ -70,7 +70,7 @@ def solve(scheme: str, p: int, n: int, omega: float) -> complex:
         return dpolys[b](s / h) / h
 
     # outer points in every cell
-    zo = (centres[:, None] + h * x[None, :])  # (n, NG)
+    zo = centres[:, None] + h * x[None, :]  # (n, NG)
     wo = h * wq
     nb = p + 1
     ncomp = 2 if scheme == "A" else 1
@@ -164,15 +164,21 @@ def main() -> int:
     omega = 1500.0
     ref = exact_reflection(omega)
     k = omega / ALPHA
-    print(f"layer D = {D_LAYER} m, omega = {omega}, k_P D = {k * D_LAYER:.2f}; exact reflected u = {ref:.6e}")
+    print(
+        f"layer D = {D_LAYER} m, omega = {omega}, k_P D = {k * D_LAYER:.2f}; exact reflected u = {ref:.6e}"
+    )
     ns = [2, 4, 8, 16, 32]
     for p in (1, 2, 3):
         print(f"p = {p}")
         for scheme in "ABC":
             errs = [abs(solve(scheme, p, n, omega) - ref) / abs(ref) for n in ns]
             ords = [math.log(errs[i] / errs[i + 1]) / math.log(2) for i in range(len(ns) - 1)]
-            print(f"   {scheme}: err " + " ".join(f"{e:.2e}" for e in errs)
-                  + " | order " + " ".join(f"{o:.2f}" for o in ords))
+            print(
+                f"   {scheme}: err "
+                + " ".join(f"{e:.2e}" for e in errs)
+                + " | order "
+                + " ".join(f"{o:.2f}" for o in ords)
+            )
     return 0
 
 

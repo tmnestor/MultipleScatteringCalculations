@@ -55,41 +55,22 @@ Jb_1122_raw = (
     sp.Rational(1, 18) * (-12 * sqrt3 - 4 * pi - 3 * sqrt2 * sp.log(5 - 2 * sqrt6))
     + sp.Rational(1, 36) * (-4 * pi - 3 * (4 * sqrt3 + sqrt2 * sp.log(5 - 2 * sqrt6)))
     + sp.Rational(1, 36)
-    * (
-        -12 * sqrt3
-        - 4 * pi
-        + 7 * sqrt2 * sp.log(5 - 2 * sqrt6)
-        + 10 * sqrt2 * sp.log(5 + 2 * sqrt6)
-    )
+    * (-12 * sqrt3 - 4 * pi + 7 * sqrt2 * sp.log(5 - 2 * sqrt6) + 10 * sqrt2 * sp.log(5 + 2 * sqrt6))
 )
 
 # -- Jb_{1212}
 Jb_1212_raw = (
     sp.Rational(1, 36) * (-12 * sqrt3 + 8 * pi - 3 * sqrt2 * sp.log(5 - 2 * sqrt6))
     + sp.Rational(1, 36)
-    * (
-        -12 * sqrt3
-        + 8 * pi
-        - 5 * sqrt2 * sp.log(5 - 2 * sqrt6)
-        - 2 * sqrt2 * sp.log(5 + 2 * sqrt6)
-    )
+    * (-12 * sqrt3 + 8 * pi - 5 * sqrt2 * sp.log(5 - 2 * sqrt6) - 2 * sqrt2 * sp.log(5 + 2 * sqrt6))
     + sp.Rational(1, 18)
-    * (
-        8 * pi
-        - 5 * sqrt2 * sp.log(5 - 2 * sqrt6)
-        - 2 * (6 * sqrt3 + sqrt2 * sp.log(5 + 2 * sqrt6))
-    )
+    * (8 * pi - 5 * sqrt2 * sp.log(5 - 2 * sqrt6) - 2 * (6 * sqrt3 + sqrt2 * sp.log(5 + 2 * sqrt6)))
 )
 
 # -- Jb_{1111}
-Jb_1111_raw = sp.Rational(1, 18) * (
-    12 * sqrt3 - 2 * pi + sqrt2 * sp.log(485 - 198 * sqrt6)
-) + sp.Rational(1, 12) * (
-    24 * sqrt3
-    - 4 * pi
-    + 7 * sqrt2 * sp.log(5 - 2 * sqrt6)
-    + sqrt2 * sp.log(5 + 2 * sqrt6)
-)
+Jb_1111_raw = sp.Rational(1, 18) * (12 * sqrt3 - 2 * pi + sqrt2 * sp.log(485 - 198 * sqrt6)) + sp.Rational(
+    1, 12
+) * (24 * sqrt3 - 4 * pi + 7 * sqrt2 * sp.log(5 - 2 * sqrt6) + sqrt2 * sp.log(5 + 2 * sqrt6))
 
 # Print numerical values of raw expressions
 print("\nNumerical values of raw expressions:")
@@ -126,9 +107,7 @@ for name, expr in [
     diff = abs(val - ref_val)
     ok = "PASS" if diff < 1e-10 else "FAIL"
     imag_note = f"  (imag={val_c.imag:.2e})" if abs(val_c.imag) > 1e-30 else ""
-    print(
-        f"  {name:>10s}: computed={val:.15f}  ref={ref_val:.15f}  diff={diff:.2e}  [{ok}]{imag_note}"
-    )
+    print(f"  {name:>10s}: computed={val:.15f}  ref={ref_val:.15f}  diff={diff:.2e}  [{ok}]{imag_note}")
 
 # ============================================================
 # SECTION 2: Pell identities
@@ -345,9 +324,7 @@ at3 = sp.atan(4 * sqrt2 + 3 * sqrt3)
 
 atan_combo = at1 - at2 + at3
 atan_combo_val = float(sp.N(atan_combo, 30))
-print(
-    "  atan(2*sqrt(2)-3*sqrt(3)) - atan(2*sqrt(2)-sqrt(3)) + atan(4*sqrt(2)+3*sqrt(3))"
-)
+print("  atan(2*sqrt(2)-3*sqrt(3)) - atan(2*sqrt(2)-sqrt(3)) + atan(4*sqrt(2)+3*sqrt(3))")
 print(f"  = {atan_combo_val:.15f}")
 print(f"  -pi/6 = {float(-sp.pi / 6):.15f}")
 print(f"  Match with -pi/6: {abs(atan_combo_val - float(-sp.pi / 6)) < 1e-14}")

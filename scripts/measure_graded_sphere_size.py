@@ -45,11 +45,12 @@ def one(n_sub: int, ka_s: float, p: int, kernel: str, disk: str) -> dict:
     """One resolution, in this process; ``kernel`` "c128" or "c64", ``disk`` a directory for the
     memory-mapped kernel or "-" (in memory)."""
     from crosscheck_graded_sphere import graded_mie_result
+    from gate_sphere_cell_average_vs_mie import CONTRAST, REF
+    from pilot_graded_sphere_vs_exact import CORE, RADIUS, profile
+
     from cubic_scattering.graded_voxel.farfield import graded_field
     from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft
     from cubic_scattering.sphere_scattering import mie_scattered_displacement
-    from gate_sphere_cell_average_vs_mie import CONTRAST, REF
-    from pilot_graded_sphere_vs_exact import CORE, RADIUS, profile
 
     omega = ka_s * REF.beta / RADIUS
     rec = np.array([[-GAP * RADIUS, x * RADIUS, 0.0] for x in np.linspace(0.0, X_MAX, N_REC)])

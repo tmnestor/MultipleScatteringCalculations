@@ -8,6 +8,7 @@
 """
 
 import numpy as np
+
 from cubic_scattering import interface_downup as idu
 from cubic_scattering import interface_solver as iso
 from cubic_scattering.effective_contrasts import MaterialContrast, ReferenceMedium

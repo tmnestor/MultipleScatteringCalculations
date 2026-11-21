@@ -83,9 +83,7 @@ def series_blocks(n_sub, h, omega, n_source, n_field, near="series"):
                 except ValueError:
                     canon[c] = gb.coupling_block(c, h, omega, REF, n_source, n_field)
         q = next(
-            q
-            for q in signed_permutations()
-            if np.array_equal(q @ np.array(c, float), np.array(off, float))
+            q for q in signed_permutations() if np.array_equal(q @ np.array(c, float), np.array(off, float))
         )
         out[off] = _transform(q, canon[c])
     return out
@@ -104,9 +102,7 @@ def cell_spectrum(res, omega, q):
     for i, qq in enumerate(q):
         for mode, k, speed in (("P", kp, REF.alpha), ("S", ks, REF.beta)):
             kz = kz_of(np.array([qq]), k)[0]
-            khat = (
-                np.array([-kz, qq, 0.0]) / k
-            )  # upward: the z component reversed; complex when evanescent
+            khat = np.array([-kz, qq, 0.0]) / k  # upward: the z component reversed; complex when evanescent
             mom = source_moments(res, k * khat, coef)
             force, sig = mom[:3], _voigt_to_tensor(mom[3:])
             pref = 1.0 / (4.0 * math.pi * REF.rho * speed**2)
@@ -123,9 +119,7 @@ def cell_spectrum(res, omega, q):
 
 
 def main() -> int:
-    opts = dict(
-        a[2:].split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a
-    )
+    opts = dict(a[2:].split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a)
     p, n = int(opts.get("p", 1)), int(opts.get("n", 8))
     nw, kmax, k0 = (
         int(opts.get("nw", 128)),
@@ -168,11 +162,7 @@ def main() -> int:
         q = omega * slow
         n_max = max(
             8,
-            int(
-                np.ceil(
-                    omega * a / REF.beta + 4 * (omega * a / REF.beta) ** (1 / 3) + 8
-                )
-            ),
+            int(np.ceil(omega * a / REF.beta + 4 * (omega * a / REF.beta) ** (1 / 3) + 8)),
         )
         mie = graded_mie_result(omega, a, gs.CORE, REF, CONTRAST, n_max)
         ex_p[iw], ex_s[iw] = mode_amplitudes(mie, q, upward=True)
@@ -180,15 +170,10 @@ def main() -> int:
         res = solve_graded_sphere_fft(omega, a, REF, CONTRAST, n, prof, gs.K_HAT, gs.POL, "P", p=p, r=p,
                                       gmres_tol=1e-11, blocks=blocks)  # fmt: skip
         vx_p[iw], vx_s[iw] = cell_spectrum(res, omega, q)
-        np.savez(
-            store, ex_p=ex_p, ex_s=ex_s, vx_p=vx_p, vx_s=vx_s, omegas=omegas, slow=slow
-        )
+        np.savez(store, ex_p=ex_p, ex_s=ex_s, vx_p=vx_p, vx_s=vx_s, omegas=omegas, slow=slow)
         if iw % 8 == 0 or iw == nw - 1:
             prop = slow < 1.0 / REF.alpha
-            e = (
-                np.abs(vx_p[iw][prop] - ex_p[iw][prop]).max()
-                / np.abs(ex_p[iw][prop]).max()
-            )
+            e = np.abs(vx_p[iw][prop] - ex_p[iw][prop]).max() / np.abs(ex_p[iw][prop]).max()
             print(f"   k_S a = {omega * a / REF.beta:5.3f}: c_P (propagating) off by {e:.2e}   "
                   f"[{time.perf_counter() - t0:.0f} s]", flush=True)  # fmt: skip
     # the seismograms
@@ -207,12 +192,12 @@ def main() -> int:
             kp, ks = omega / REF.alpha, omega / REF.beta
             kzp, kzs = kz_of(q, kp), kz_of(q, ks)
             # e_P = (-k_z, q)/k_P and e_SV = (-q, -k_z)/k_S upward, in (z, x)
-            uz[iw] = cp[iw] * (-kzp / kp) * np.exp(1j * kzp * zr_m) + cs[iw] * (
-                -q / ks
-            ) * np.exp(1j * kzs * zr_m)
-            ux[iw] = cp[iw] * (q / kp) * np.exp(1j * kzp * zr_m) + cs[iw] * (
-                -kzs / ks
-            ) * np.exp(1j * kzs * zr_m)
+            uz[iw] = cp[iw] * (-kzp / kp) * np.exp(1j * kzp * zr_m) + cs[iw] * (-q / ks) * np.exp(
+                1j * kzs * zr_m
+            )
+            ux[iw] = cp[iw] * (q / kp) * np.exp(1j * kzp * zr_m) + cs[iw] * (-kzs / ks) * np.exp(
+                1j * kzs * zr_m
+            )
         # time from the incident wave's crossing of the receiver plane, z_c/alpha before it reaches the centre
         shift = np.exp(1j * omegas * zr_m / REF.alpha)[:, None]
         sections[name] = (uz * shift, ux * shift)
@@ -223,9 +208,7 @@ def main() -> int:
     kern = np.exp(-1j * np.outer(tau, omegas))  # e^{-i omega tau}
 
     def to_time(spec):
-        return (
-            (2 * math.pi) ** 2 / math.pi * (kern @ (ricker[:, None] * spec)) * dw
-        ).real
+        return ((2 * math.pi) ** 2 / math.pi * (kern @ (ricker[:, None] * spec)) * dw).real
 
     out = {"tau": tau, "slow": slow, "omegas": omegas, "t_d": t_d}
     for name, (uz, ux) in sections.items():
@@ -237,10 +220,7 @@ def main() -> int:
         bands = {"P propagating (p < 1/alpha)": slow < 1 / REF.alpha,
                  "S only (1/alpha < p < 1/beta)": (slow > 1 / REF.alpha) & (slow < 1 / REF.beta),
                  "evanescent (p > 1/beta)": slow > 1 / REF.beta}  # fmt: skip
-        parts = [
-            f"{k}: {np.abs(vx[:, m] - ex[:, m]).max() / peak:.2e}"
-            for k, m in bands.items()
-        ]
+        parts = [f"{k}: {np.abs(vx[:, m] - ex[:, m]).max() / peak:.2e}" for k, m in bands.items()]
         print(
             f"   u_{comp[1]}(tau, p): cells against exact, max over tau, relative to the section's peak: "
             + "; ".join(parts),

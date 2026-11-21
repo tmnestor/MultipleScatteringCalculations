@@ -61,10 +61,7 @@ def main() -> None:
         # the depth-bounded set-up computes exactly the full one's parts within the radius: drop the rest
         cut = copy.copy(full)
         cut.depth_radius = depth
-        cut.classes = {
-            k: (p if cut.corrected(k) else None, t)
-            for k, (p, t) in full.classes.items()
-        }
+        cut.classes = {k: (p if cut.corrected(k) else None, t) for k, (p, t) in full.classes.items()}
         kept = sum(p is not None for p, _ in cut.classes.values())
         b2 = cut.blocks(OMEGA)
         err_b = max(np.abs(b2[k] - blocks[k]).max() for k in blocks) / scale
@@ -84,9 +81,7 @@ def main() -> None:
         (real.classes[k][0] is None) == (not real.corrected(k))
         and (
             real.classes[k][0] is None
-            or all(
-                np.array_equal(x, y) for x, y in zip(p, real.classes[k][0], strict=True)
-            )
+            or all(np.array_equal(x, y) for x, y in zip(p, real.classes[k][0], strict=True))
         )
         for k, (p, _) in full.classes.items()
     )

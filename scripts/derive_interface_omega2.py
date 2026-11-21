@@ -43,8 +43,20 @@ q = sp.Symbol("q", positive=True)
 SYM = sp.symbols("lamA muA rhoA lamB muB rhoB", positive=True)
 #: The materials, exact rationals (the first test point of Mathematica/InterfaceOmega2.wl).  With symbolic
 #: materials SymPy's solve and simplify exceed 13 GB; Mathematica's general result is checked at these values.
-MATS = dict(zip(SYM, (sp.Rational(17, 10), sp.Rational(11, 10), sp.Rational(5, 2), sp.Rational(13, 5),
-                      sp.Rational(19, 10), sp.Rational(14, 5)), strict=True))
+MATS = dict(
+    zip(
+        SYM,
+        (
+            sp.Rational(17, 10),
+            sp.Rational(11, 10),
+            sp.Rational(5, 2),
+            sp.Rational(13, 5),
+            sp.Rational(19, 10),
+            sp.Rational(14, 5),
+        ),
+        strict=True,
+    )
+)
 lamA, muA, rhoA, lamB, muB, rhoB = MATS.values()
 COMPS = ("x", "y", "z")
 
@@ -197,8 +209,11 @@ def _modes(qq, om, med, sign):
         elif wave == "SH":
             e = sh
         else:
-            e = [(k[1] * sh[2] - k[2] * sh[1]) * c / om, (k[2] * sh[0] - k[0] * sh[2]) * c / om,
-                 (k[0] * sh[1] - k[1] * sh[0]) * c / om]
+            e = [
+                (k[1] * sh[2] - k[2] * sh[1]) * c / om,
+                (k[2] * sh[0] - k[0] * sh[2]) * c / om,
+                (k[0] * sh[1] - k[1] * sh[0]) * c / om,
+            ]
         out.append((kz, k, e, mp.mpc(0, 1) / (2 * med["rho"] * c * c * kz)))
     return out
 
@@ -208,8 +223,14 @@ def _ut(k, e, med):
     i = mp.mpc(0, 1)
     eps = lambda a, b: i / 2 * (k[a] * e[b] + k[b] * e[a])
     tr = eps(0, 0) + eps(1, 1) + eps(2, 2)
-    return [e[0], e[1], e[2], med["lam"] * tr + 2 * med["mu"] * eps(0, 0), 2 * med["mu"] * eps(0, 1),
-            2 * med["mu"] * eps(0, 2)]
+    return [
+        e[0],
+        e[1],
+        e[2],
+        med["lam"] * tr + 2 * med["mu"] * eps(0, 0),
+        2 * med["mu"] * eps(0, 1),
+        2 * med["mu"] * eps(0, 2),
+    ]
 
 
 def dynamic(qq, om, zr, zs, ma, mb, kind):
@@ -245,7 +266,13 @@ def dynamic(qq, om, zr, zs, ma, mb, kind):
 
 def _med(lam, mu, rho):
     lam, mu, rho = mp.mpf(lam), mp.mpf(mu), mp.mpf(rho)
-    return {"lam": lam, "mu": mu, "rho": rho, "alpha": mp.sqrt((lam + 2 * mu) / rho), "beta": mp.sqrt(mu / rho)}
+    return {
+        "lam": lam,
+        "mu": mu,
+        "rho": rho,
+        "alpha": mp.sqrt((lam + 2 * mu) / rho),
+        "beta": mp.sqrt(mu / rho),
+    }
 
 
 def q_powers(expr, kind):
@@ -268,7 +295,9 @@ def q_powers(expr, kind):
 def _values(fn, t):
     """[[re, im], ...] as 20-digit strings, row by row."""
     m = mp.matrix(fn(*map(mp.mpf, t)))
-    return [[[mp.nstr(mp.re(m[i, j]), 20), mp.nstr(mp.im(m[i, j]), 20)] for j in range(3)] for i in range(3)]
+    return [
+        [[mp.nstr(mp.re(m[i, j]), 20), mp.nstr(mp.im(m[i, j]), 20)] for j in range(3)] for i in range(3)
+    ]
 
 
 def main() -> None:
@@ -277,8 +306,7 @@ def main() -> None:
     base = list(MATS.values())
     mats = tensors(base)
     same = tensors(base[:3] + base[:3])
-    print("identical media: R0 = 0, R1 = 0:",
-          all(_clean(same[n]) == sp.zeros(3, 3) for n in ("R0", "R1")))
+    print("identical media: R0 = 0, R1 = 0:", all(_clean(same[n]) == sp.zeros(3, 3) for n in ("R0", "R1")))
     print("identical media: T1 = Kelvin's omega^2 term:", _clean(same["T1"] - same["K1"]) == sp.zeros(3, 3))
     tensors(base)
 
@@ -296,7 +324,9 @@ def main() -> None:
             res = mp.mnorm(g - g0 - om**2 * g1, 1) / mp.mnorm(g0, 1)
             first = mp.mnorm(g - g0, 1) / mp.mnorm(g0, 1)
             ratio = "" if prev is None else f"  residual ratio {mp.nstr(prev / res, 4)}"
-            print(f"  omega {om:5.2f}: |G - G0|/|G0| {mp.nstr(first, 3)}   |G - G0 - w^2 G1|/|G0| {mp.nstr(res, 3)}{ratio}")
+            print(
+                f"  omega {om:5.2f}: |G - G0|/|G0| {mp.nstr(first, 3)}   |G - G0 - w^2 G1|/|G0| {mp.nstr(res, 3)}{ratio}"
+            )
             prev = res
 
     # against Mathematica's general result, at these materials, at random points
@@ -306,17 +336,29 @@ def main() -> None:
         m = json.loads(wl.read_text())
         loc = dict(zip([str(v) for v in SYM], SYM, strict=True))
         loc.update({"q": q, "z": z, "zp": zp})
-        general = {n: sp.Matrix([[parse_mathematica(e).subs({sp.Symbol(k): v for k, v in loc.items()})
-                                  for e in row] for row in m[n]]) for n in ("R1", "T1")}
+        general = {
+            n: sp.Matrix(
+                [
+                    [parse_mathematica(e).subs({sp.Symbol(k): v for k, v in loc.items()}) for e in row]
+                    for row in m[n]
+                ]
+            )
+            for n in ("R1", "T1")
+        }
         worst = mp.mpf(0)
-        for n, pts in (("R1", [(2.3, -0.4, -0.9), (0.7, -0.05, -1.3)]), ("T1", [(2.3, 0.4, -0.9), (0.7, 1.1, -0.2)])):
+        for n, pts in (
+            ("R1", [(2.3, -0.4, -0.9), (0.7, -0.05, -1.3)]),
+            ("T1", [(2.3, 0.4, -0.9), (0.7, 1.1, -0.2)]),
+        ):
             mine = sp.lambdify((q, z, zp), mats[n], "mpmath")
             theirs = sp.lambdify((q, z, zp), general[n].subs(MATS), "mpmath")
             for pt in pts:
                 a, b = mp.matrix(mine(*map(mp.mpf, pt))), mp.matrix(theirs(*map(mp.mpf, pt)))
                 worst = max(worst, mp.mnorm(a - b, 1) / mp.mnorm(b, 1))
-        print(f"against Mathematica's general R1, T1 at these materials: {mp.nstr(worst, 3)}",
-              "PASS" if worst < mp.mpf(10) ** -40 else "FAIL")
+        print(
+            f"against Mathematica's general R1, T1 at these materials: {mp.nstr(worst, 3)}",
+            "PASS" if worst < mp.mpf(10) ** -40 else "FAIL",
+        )
     else:
         print("Mathematica/InterfaceOmega2.json not found: run the .wl to compare (SKIPPED, not PASS)")
 
@@ -326,17 +368,24 @@ def main() -> None:
         "R1": [[q_powers(src["R1"][i, j], "R") for j in range(3)] for i in range(3)],
         "T1": [[q_powers(src["T1"][i, j], "T") for j in range(3)] for i in range(3)],
     }
-    lowest = {n: min(mm for row in powers[n] for d in row for ms in d.values() for mm in ms) for n in powers}
-    print("powers of q (after the exponential and the z, zp monomials), lowest:", lowest,
-          "(q^m e^-q zeta with m = -3 is Phi2; m <= -4 needs Phi3, ...)")
+    lowest = {
+        n: min(mm for row in powers[n] for d in row for ms in d.values() for mm in ms) for n in powers
+    }
+    print(
+        "powers of q (after the exponential and the z, zp monomials), lowest:",
+        lowest,
+        "(q^m e^-q zeta with m = -3 is Phi2; m <= -4 needs Phi3, ...)",
+    )
 
     out = {
         "order": "rows u_(z,x,y), columns force (z,x,y); frame x along the lateral wavevector; G = G0 + omega^2 G1",
         "materials": {str(k): str(v) for k, v in MATS.items()},
         "R1": [[str(mats["R1"][i, j]) for j in range(3)] for i in range(3)],
         "T1": [[str(mats["T1"][i, j]) for j in range(3)] for i in range(3)],
-        "q_powers": {n: [[{f"{a},{b}": ms for (a, b), ms in d.items()} for d in row] for row in powers[n]]
-                     for n in powers},
+        "q_powers": {
+            n: [[{f"{a},{b}": ms for (a, b), ms in d.items()} for d in row] for row in powers[n]]
+            for n in powers
+        },
     }
     path = Path(__file__).resolve().parent / "data" / "interface_omega2.json"
     path.write_text(json.dumps(out, indent=1))

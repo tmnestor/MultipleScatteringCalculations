@@ -97,9 +97,7 @@ def _gpu_bessel_summation(
     taper = 0.5 * (1.0 + np.cos(np.pi * p_samples / p_max))  # (np_slow,)
 
     # Weighted reflectivity: W[j, w] = R[j,w] · taper[j] · p_j · ω_w · dp
-    weight = (
-        taper[:, np.newaxis] * p_samples[:, np.newaxis] * omega_real[np.newaxis, :] * dp
-    )
+    weight = taper[:, np.newaxis] * p_samples[:, np.newaxis] * omega_real[np.newaxis, :] * dp
     W = R * weight  # (np_slow, nfreq), complex128
 
     # Accumulate U(r, ω) in chunks to control memory.
@@ -132,15 +130,11 @@ def _gpu_bessel_summation(
         W_im = torch.from_numpy(W_chunk.imag.astype(np.float32)).to(device)
 
         # Slowness values for this chunk
-        p_chunk = torch.from_numpy(p_samples[j_start:j_end].astype(np.float32)).to(
-            device
-        )  # (n_chunk,)
+        p_chunk = torch.from_numpy(p_samples[j_start:j_end].astype(np.float32)).to(device)  # (n_chunk,)
 
         # Bessel arguments: arg[r, j, w] = ω_w · p_j · r_i
         # Use outer products: (nr, 1, 1) * (1, n_chunk, 1) * (1, 1, nfreq)
-        arg = (
-            off_t[:, None, None] * p_chunk[None, :, None] * omega_t[None, None, :]
-        )  # (nr, n_chunk, nfreq)
+        arg = off_t[:, None, None] * p_chunk[None, :, None] * omega_t[None, None, :]  # (nr, n_chunk, nfreq)
 
         # Bessel J₀ via torch — use the sinc-based series or just transfer
         # to CPU for scipy. torch doesn't have j0, so compute on CPU.
@@ -384,8 +378,7 @@ def main() -> None:
         device = torch.device(args.device)
 
     logger.info(
-        f"Model: {model.n_layers} layers, "
-        f"{len(offsets)} offsets [{offsets[0]:.1f}-{offsets[-1]:.1f} km]"
+        f"Model: {model.n_layers} layers, {len(offsets)} offsets [{offsets[0]:.1f}-{offsets[-1]:.1f} km]"
     )
 
     t_start = time_module.perf_counter()

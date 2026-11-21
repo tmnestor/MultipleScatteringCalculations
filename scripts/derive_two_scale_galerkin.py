@@ -43,8 +43,15 @@ from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E40
 from cubic_scattering.graded_voxel.fft import offset_blocks, solve_graded_sphere_fft  # noqa: E402
 from cubic_scattering.graded_voxel.octree import field_reexpansion  # noqa: E402
 from cubic_scattering.graded_voxel.site import cell_contrast_coefficients  # noqa: E402
-from cubic_scattering.graded_voxel.solver import GradedVoxelResult, field_sizes, plane_wave_moments  # noqa: E402
-from cubic_scattering.sphere_scattering import _plane_wave_strain_voigt, mie_scattered_displacement  # noqa: E402
+from cubic_scattering.graded_voxel.solver import (  # noqa: E402
+    GradedVoxelResult,
+    field_sizes,
+    plane_wave_moments,
+)
+from cubic_scattering.sphere_scattering import (  # noqa: E402
+    _plane_wave_strain_voigt,
+    mie_scattered_displacement,
+)
 
 REF = hier.REF
 TOL = 1e-12
@@ -64,7 +71,9 @@ class GridOperator:
         rows, cols = na * 9, nc * 9
         kh = np.zeros((rows, cols, npad, npad, npad), dtype=complex)
         for off, blk in self.blocks.items():
-            kh[:, :, off[0] % npad, off[1] % npad, off[2] % npad] = blk[:na, :nc].transpose(0, 2, 1, 3).reshape(rows, cols)
+            kh[:, :, off[0] % npad, off[1] % npad, off[2] % npad] = (
+                blk[:na, :nc].transpose(0, 2, 1, 3).reshape(rows, cols)
+            )
         for row in range(rows):
             kh[row] = np.fft.fftn(kh[row], axes=(1, 2, 3))
         self.kh, self.npad, self.rows, self.cols = kh, npad, rows, cols
@@ -90,7 +99,9 @@ class GridOperator:
 
     def solve(self, rhs):
         dim = self.n * self.rows
-        a = LinearOperator((dim, dim), matvec=lambda v: self.apply(v.reshape(self.n, self.na, 9)).ravel(), dtype=complex)
+        a = LinearOperator(
+            (dim, dim), matvec=lambda v: self.apply(v.reshape(self.n, self.na, 9)).ravel(), dtype=complex
+        )
         m = LinearOperator((dim, dim), matvec=lambda v: np.einsum("nij,nj->ni", self.local_inv, v.reshape(self.n, -1)).ravel(),
                            dtype=complex)  # fmt: skip
         b = rhs.ravel()
@@ -168,7 +179,9 @@ def main() -> int:
     exact = None
     if not uniform:
         n_max = max(8, int(np.ceil(ka + 4 * ka ** (1 / 3) + 6)))
-        exact = mie_scattered_displacement(graded_mie_result(omega, gs.RADIUS, gs.CORE, REF, contrast, n_max), obs)
+        exact = mie_scattered_displacement(
+            graded_mie_result(omega, gs.RADIUS, gs.CORE, REF, contrast, n_max), obs
+        )
     na, n_field, _, _ = field_sizes(p, r)
     print(f"two-scale Galerkin: p = {p}, r = {r}, k_S a = {ka}, contrast x {scale}, "
           f"{'uniform medium' if uniform else 'graded sphere'}", flush=True)  # fmt: skip
@@ -183,9 +196,13 @@ def main() -> int:
         cf = np.concatenate([cH + 2 * h * s for s in CHILD_SHIFTS])  # child centre = parent + H s
         gf = np.concatenate([2 * gH + (s + 0.5).astype(int) for s in CHILD_SHIFTS])
         nH = len(cH)
-        child = [np.arange(d * nH, (d + 1) * nH) for d in range(8)]  # fine indices of child d of each parent
+        child = [
+            np.arange(d * nH, (d + 1) * nH) for d in range(8)
+        ]  # fine indices of child d of each parent
         cmat = [field_reexpansion(n_field, 0.5, tuple(float(v) for v in s))[:na, :na] for s in CHILD_SHIFTS]
-        delta_f = np.array([cell_contrast_coefficients(prof, c, h, contrast, REF, omega, degree=r) for c in cf])
+        delta_f = np.array(
+            [cell_contrast_coefficients(prof, c, h, contrast, REF, omega, degree=r) for c in cf]
+        )
         op = GridOperator(cf, gf, h, delta_f, 2 * n, omega, p, r)
         k_mag = omega / REF.alpha
         amp = np.concatenate([gs.POL.astype(complex), _plane_wave_strain_voigt(gs.K_HAT, gs.POL, k_mag)])
@@ -245,21 +262,30 @@ def main() -> int:
         print(f"     two-level estimate (local + one coarse solve): medium "
               f"{np.abs(F['med_2l']).max() / scale_f:.3e}, field {np.abs(F['fld_2l']).max() / scale_f:.3e}; "
               f"error of the estimated F_h - F_H {tl:.2e} of it", flush=True)  # fmt: skip
+
         # the share of each coarse cell: its children's error sources plus its own medium-detail radiation
         def per_parent(cells_fine):
             return sum(cells_fine[child[d]] for d in range(8))
 
         rad_cells = per_parent(far_cells(cf, gf, h, omega, delta_f, psi_H, p, r, dirs)) - far_cells(
-            cH, gH, H, omega, res_h.delta, xH, p, r, dirs)
+            cH, gH, H, omega, res_h.delta, xH, p, r, dirs
+        )
         eta_true = per_parent(far_cells(cf, gf, h, omega, delta_f, e_med + e_fld, p, r, dirs)) + rad_cells
-        eta_est = per_parent(far_cells(cf, gf, h, omega, delta_f, two_level(r_med) + two_level(r_fld), p, r, dirs)) + rad_cells
+        eta_est = (
+            per_parent(
+                far_cells(cf, gf, h, omega, delta_f, two_level(r_med) + two_level(r_fld), p, r, dirs)
+            )
+            + rad_cells
+        )
         # the far field of all cells, summed over the 2 x directions x 3 components: sum of shares = F_h - F_H
         sum_err = np.abs(eta_true.sum(0) - diff.ravel()).max() / np.abs(diff).max()
         nt, ne = np.linalg.norm(eta_true, axis=1), np.linalg.norm(eta_est, axis=1)
         shares = np.abs(ne - nt).sum() / nt.sum()
         # a rule on the medium alone: each coarse cell's contrast detail |Delta_h - Delta_H|, from the children's
         # projected contrast against the parent's re-expanded on them (Frobenius norm over the 9 x 9 operator)
-        cfull = [field_reexpansion(len(res_h.delta[0]), 0.5, tuple(float(v) for v in sv)) for sv in CHILD_SHIFTS]
+        cfull = [
+            field_reexpansion(len(res_h.delta[0]), 0.5, tuple(float(v) for v in sv)) for sv in CHILD_SHIFTS
+        ]
         med = np.zeros(nH)
         for d in range(8):
             dd = delta_f[child[d]] - np.einsum("ab,nbij->naij", cfull[d], res_h.delta)

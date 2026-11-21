@@ -8,6 +8,7 @@ is compared with the exact
 (the isotropic average of the static Green's function over a radial body), E by 1-D radial integrals.
 Usage: python dens2.py [--rc=1] [--profile=..] n1 n2 ...
 """
+
 import math
 import sys
 from pathlib import Path
@@ -19,6 +20,7 @@ ROOT = Path("/home/user/MultipleScatteringCalculations")
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 import measure_graded_sphere_frequency_series as fs  # noqa: E402
+
 from cubic_scattering import MaterialContrast  # noqa: E402
 
 gs, gfft, lowf, hier = fs.gs, fs.gfft, fs.lowf, fs.hier
@@ -28,10 +30,16 @@ def exact_f2():
     a = gs.RADIUS
     s = lambda r: float(gs.smoothstep(np.array([r]))[0])
     br = [gs.CORE]
-    m = lambda r: quad(lambda t: s(t) * t * t, 0, r, points=[p for p in br if p < r], epsabs=0, epsrel=1e-13)[0]
-    tail = lambda r: quad(lambda t: s(t) * t, r, a, points=[p for p in br if p > r], epsabs=0, epsrel=1e-13)[0]
+    m = lambda r: quad(
+        lambda t: s(t) * t * t, 0, r, points=[p for p in br if p < r], epsabs=0, epsrel=1e-13
+    )[0]
+    tail = lambda r: quad(
+        lambda t: s(t) * t, r, a, points=[p for p in br if p > r], epsabs=0, epsrel=1e-13
+    )[0]
     phi = lambda r: 4 * math.pi * (m(r) / r + tail(r))
-    e = quad(lambda r: 4 * math.pi * r * r * s(r) * phi(r), 0, a, points=br, epsabs=0, epsrel=1e-12, limit=200)[0]
+    e = quad(
+        lambda r: 4 * math.pi * r * r * s(r) * phi(r), 0, a, points=br, epsabs=0, epsrel=1e-12, limit=200
+    )[0]
     mu = fs.MU
     g = (1 - (1 - fs.RATIO**2) / 3) / (4 * math.pi * mu)
     return fs.REF.beta**4 * fs.CONTRAST.Drho**2 * g * e
@@ -69,10 +77,12 @@ def model_f2(n):
 if __name__ == "__main__":
     args = sys.argv[1:]
     for fl in [x for x in args if x.startswith("--rc=")]:
-        gfft.R_C = int(fl.split("=")[1]); args.remove(fl)
+        gfft.R_C = int(fl.split("=")[1])
+        args.remove(fl)
     prof = "smoothstep"
     for fl in [x for x in args if x.startswith("--profile=")]:
-        prof = fl.split("=")[1]; args.remove(fl)
+        prof = fl.split("=")[1]
+        args.remove(fl)
     lowf.NEAR = -1
     fs.J = 2
     gs.CORE = 0.1 * gs.RADIUS
@@ -84,5 +94,8 @@ if __name__ == "__main__":
         f = model_f2(n)
         err = abs(f[0] - ex) / abs(ex)
         o = "" if prev is None else f"  order {math.log(prev[1] / err) / math.log(n / prev[0]):.2f}"
-        print(f"{prof} rc={gfft.R_C} n={n:2d}  F2 rel err {err:.3e}  (transverse {abs(f[1]):.1e}){o}", flush=True)
+        print(
+            f"{prof} rc={gfft.R_C} n={n:2d}  F2 rel err {err:.3e}  (transverse {abs(f[1]):.1e}){o}",
+            flush=True,
+        )
         prev = (n, err)

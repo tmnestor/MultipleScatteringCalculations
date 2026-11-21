@@ -53,7 +53,9 @@ def main() -> int:
         for n in LADDER:
             d = D_LAYER / n
             t9 = compute_slab_tmatrices(SlabGeometry(M=1, N_z=1, a=d / 2), mat, om)[0, 0, 0]
-            cells.append({"omega": om, "n": n, "T": reim(t9), "self": reim(package_cube_self_9x9(d, om, REF))})
+            cells.append(
+                {"omega": om, "n": n, "T": reim(t9), "self": reim(package_cube_self_9x9(d, om, REF))}
+            )
     out = {
         "alpha": REF.alpha,
         "beta": REF.beta,

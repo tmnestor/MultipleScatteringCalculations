@@ -69,8 +69,7 @@ def _table(
     ]
     for r in rows:
         fmt_values = [
-            _tex_escape(col_formats[c](r[c])) if c in col_formats else _tex_escape(r[c])
-            for c in cols
+            _tex_escape(col_formats[c](r[c])) if c in col_formats else _tex_escape(r[c]) for c in cols
         ]
         lines.append(" & ".join(fmt_values) + r" \\")
     lines += [r"\bottomrule", r"\end{tabular}"]
@@ -100,18 +99,12 @@ def dump_pgfplots() -> None:
     Each file has a header line ``ka l2`` followed by rows sorted by ka ascending.
     """
     rows = list(csv.DictReader((EV / "cost_accuracy.csv").open()))
-    filtered = [
-        r
-        for r in rows
-        if r["contrast"] == "moderate" and r["pol"] == "P" and r["status"] == "ok"
-    ]
+    filtered = [r for r in rows if r["contrast"] == "moderate" and r["pol"] == "P" and r["status"] == "ok"]
 
     reps = ("born", "eshelby", "t9")
     TAB.mkdir(parents=True, exist_ok=True)
     for rep in reps:
-        rep_rows = sorted(
-            [r for r in filtered if r["rep"] == rep], key=lambda r: float(r["ka"])
-        )
+        rep_rows = sorted([r for r in filtered if r["rep"] == rep], key=lambda r: float(r["ka"]))
         out = TAB / f"error_vs_ka_{rep}.dat"
         lines = ["ka l2"]
         for r in rep_rows:

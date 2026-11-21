@@ -30,6 +30,10 @@ W = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(W / "scripts"))
 sys.path.insert(0, str(W))
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
+from gate_sphere_cell_average_vs_mie import CONTRAST as GATE  # noqa: E402
+from gate_sphere_cell_average_vs_mie import REF, obs_points  # noqa: E402
+from pilot_graded_sphere_vs_exact import RADIUS, THETA, profile, smoothstep  # noqa: E402
+
 from cubic_scattering import MaterialContrast  # noqa: E402
 from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     born_series_octree,
@@ -39,9 +43,6 @@ from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     uniform_leaves,
 )
 from cubic_scattering.sphere_scattering import mie_scattered_displacement  # noqa: E402
-from gate_sphere_cell_average_vs_mie import CONTRAST as GATE  # noqa: E402
-from gate_sphere_cell_average_vs_mie import REF, obs_points  # noqa: E402
-from pilot_graded_sphere_vs_exact import RADIUS, THETA, profile, smoothstep  # noqa: E402
 
 K = np.array([1.0, 0.0, 0.0])
 CONTRAST = MaterialContrast(GATE.Dlambda, GATE.Dmu, 0.0)  # stiffness only

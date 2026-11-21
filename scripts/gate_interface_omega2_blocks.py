@@ -92,19 +92,14 @@ def fp_head(rec, src, qsh: float, n_cheb: int) -> np.ndarray:
     mom = _mode_moments(n_cheb)
     pw = np.array([m[0] for m in mom])
     lg = np.array([m[1] for m in mom])
-    return (
-        np.einsum("k,k...->...", pw, coef)
-        + np.log(qs) * np.einsum("k,k...->...", lg, coef)
-    ) / qs
+    return (np.einsum("k,k...->...", pw, coef) + np.log(qs) * np.einsum("k,k...->...", lg, coef)) / qs
 
 
 def body(rec, src, qsh: float, qmax_h: float) -> np.ndarray:
     """int_{q_s}^{Q} I dq by Gauss panels."""
     kind = "R" if rec[0] < 0 else "T"
     qh, w = isp._panels(qsh, qmax_h, 0.5, 20)
-    return isp._static_integral(
-        1, kind, rec, src, H, isp._key(A), isp._key(B), qh, w, 10, 4
-    )
+    return isp._static_integral(1, kind, rec, src, H, isp._key(A), isp._key(B), qh, w, 10, 4)
 
 
 def main() -> None:
@@ -114,9 +109,7 @@ def main() -> None:
         closed = image_block(rec, src, H, A, B, order=1)
         t1 = time.time()
         b = body(rec, src, 0.5, 60.0)
-        heads = {
-            (qsh, n): fp_head(rec, src, qsh, n) for qsh in (0.5, 0.25) for n in (16, 24)
-        }
+        heads = {(qsh, n): fp_head(rec, src, qsh, n) for qsh in (0.5, 0.25) for n in (16, 24)}
         t2 = time.time()
         ref = heads[0.5, 24] + b
         scale = np.abs(ref).max()

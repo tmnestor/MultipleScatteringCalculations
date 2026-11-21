@@ -27,15 +27,8 @@ import numpy as np
 
 OUT = Path(__file__).parent / "data" / "interface_matrix_free_scaling.jsonl"
 #: (n, L, cache): cached factors only where they fit in memory
-CONFIGS = [
-    (n, layers, cache)
-    for n in (12, 24, 36)
-    for layers in (2, 4, 8)
-    for cache in (False, True)
-]
-CACHE_LIMIT = (
-    12 * 12 * 8
-)  # cached factors measured up to this many cells per layer x layers
+CONFIGS = [(n, layers, cache) for n in (12, 24, 36) for layers in (2, 4, 8) for cache in (False, True)]
+CACHE_LIMIT = 12 * 12 * 8  # cached factors measured up to this many cells per layer x layers
 
 
 def one(n: int, n_layers: int, cache: bool) -> dict:
@@ -66,11 +59,7 @@ def one(n: int, n_layers: int, cache: bool) -> dict:
     op._convolve(src)
     t_prod = time.time() - t0
     nodes = sum(
-        len(ch[0])
-        for prod in (op.low, op.high)
-        for side in (prod.a, prod.b)
-        if side
-        for ch in side.chunks
+        len(ch[0]) for prod in (op.low, op.high) for side in (prod.a, prod.b) if side for ch in side.chunks
     )
     march = sum(len(ch[0]) for _, _, m in op.sides if m for ch in m.chunks)
     stored = n_layers**2 * (2 * n - 1) ** 2 * (op.na * 9) * (op.n_source * 9) * 16
@@ -98,10 +87,7 @@ def main() -> None:
         return
     done = set()
     if OUT.exists():
-        done = {
-            (r["n"], r["L"], r["cache"])
-            for r in map(json.loads, OUT.read_text().splitlines())
-        }
+        done = {(r["n"], r["L"], r["cache"]) for r in map(json.loads, OUT.read_text().splitlines())}
     for n, n_layers, cache in CONFIGS:
         if (n, n_layers, cache) in done or (cache and n * n * n_layers > CACHE_LIMIT):
             continue

@@ -140,10 +140,7 @@ class LayerModel:
     def complex_slowness_p(self) -> np.ndarray:
         """Complex P-wave slowness for each layer. Matches Fortran A(IL)."""
         return np.array(
-            [
-                complex_slowness(self.alpha[i], self.Q_alpha[i])
-                for i in range(self.n_layers)
-            ],
+            [complex_slowness(self.alpha[i], self.Q_alpha[i]) for i in range(self.n_layers)],
             dtype=np.complex128,
         )
 

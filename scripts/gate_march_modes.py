@@ -36,12 +36,8 @@ def gate_g1() -> bool:
                 sign = float(np.sign(dz))
                 got = np.zeros((9, 9), dtype=complex)
                 for wave in ("P", "S"):
-                    for k, d, w in mode_family(
-                        np.array([kx]), np.array([ky]), omega, REF, wave, sign
-                    ):
-                        phase = np.exp(
-                            1j * k[0, 0] * dz
-                        )  # k[0, 0] = sign k_z, so this is e^{i k_z |dz|}
+                    for k, d, w in mode_family(np.array([kx]), np.array([ky]), omega, REF, wave, sign):
+                        phase = np.exp(1j * k[0, 0] * dz)  # k[0, 0] = sign k_z, so this is e^{i k_z |dz|}
                         got += w[0] * phase * np.outer(d[0], d[0] * SOURCE_PAIRING)
                 want = vertical_kernel_9x9(np.array([kx]), ky, dz, omega, REF)[:, :, 0]
                 worst = max(worst, np.abs(got - want).max() / np.abs(want).max())

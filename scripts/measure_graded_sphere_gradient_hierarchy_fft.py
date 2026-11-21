@@ -43,8 +43,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import measure_ball_gradient_hierarchy as hier  # noqa: E402
 import measure_graded_sphere_gradient_hierarchy as gs  # noqa: E402
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
-from cubic_scattering.sphere_scattering import mie_scattered_displacement  # noqa: E402
 from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
+
+from cubic_scattering.sphere_scattering import mie_scattered_displacement  # noqa: E402
 
 AXES = (0, 1, 2)
 R_C = 1

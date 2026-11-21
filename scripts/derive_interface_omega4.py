@@ -61,9 +61,7 @@ def solve_force(f, ma, mb, order=ORDER):
     tb, ta = d2.traction(below, la, mua), d2.traction(above, la, mua)
     eqs = [(below[k] - above[k]).subs(z, zp) for k in COMPS]
     eqs += [(tb[k] - ta[k]).subs(z, zp) + F[k] for k in COMPS]
-    sol = sp.solve(
-        eqs, list(sp.symbols("kb0:3")) + list(sp.symbols("ka0:3")), dict=True
-    )[0]
+    sol = sp.solve(eqs, list(sp.symbols("kb0:3")) + list(sp.symbols("ka0:3")), dict=True)[0]
     kb = [{k: d2._clean(below[k].subs(sol)) for k in COMPS}]
     ka = [{k: d2._clean(above[k].subs(sol)) for k in COMPS}]
     R, T = [], []
@@ -129,10 +127,7 @@ def main() -> None:
     )
     print(
         "identical media: T_n = Kelvin's term for all n:",
-        all(
-            d2._clean(same["T"][n] - same["K"][n]) == sp.zeros(3, 3)
-            for n in range(ORDER + 1)
-        ),
+        all(d2._clean(same["T"][n] - same["K"][n]) == sp.zeros(3, 3) for n in range(ORDER + 1)),
     )
 
     mp.mp.dps = 50
@@ -143,13 +138,9 @@ def main() -> None:
         print(f"{kind}: q = {qq}, z = {zr}, zp = {zs}")
         prev2 = prev4 = None
         for om in (0.4, 0.2, 0.1, 0.05):
-            ex = d2.dynamic(
-                mp.mpf(qq), mp.mpf(om), mp.mpf(zr), mp.mpf(zs), med_a, med_b, kind
-            )
+            ex = d2.dynamic(mp.mpf(qq), mp.mpf(om), mp.mpf(zr), mp.mpf(zs), med_a, med_b, kind)
             r2 = mp.mnorm(ex - gs[0] - om**2 * gs[1], 1) / mp.mnorm(gs[0], 1)
-            r4 = mp.mnorm(ex - gs[0] - om**2 * gs[1] - om**4 * gs[2], 1) / mp.mnorm(
-                gs[0], 1
-            )
+            r4 = mp.mnorm(ex - gs[0] - om**2 * gs[1] - om**4 * gs[2], 1) / mp.mnorm(gs[0], 1)
             rat = (
                 ""
                 if prev4 is None
@@ -163,12 +154,8 @@ def main() -> None:
 
     powers = {}
     for kind in ("R", "T"):
-        powers[kind] = [
-            [d2.q_powers(g[kind][2][i, j], kind) for j in range(3)] for i in range(3)
-        ]
-        low = min(
-            m for row in powers[kind] for dct in row for ms in dct.values() for m in ms
-        )
+        powers[kind] = [[d2.q_powers(g[kind][2][i, j], kind) for j in range(3)] for i in range(3)]
+        low = min(m for row in powers[kind] for dct in row for ms in dct.values() for m in ms)
         print(
             f"{kind}2: lowest power of q {low} (q^m e^-q zeta: Phi_j, j = -1 - m, so up to Phi{-1 - low})"
         )
@@ -182,10 +169,7 @@ def main() -> None:
         "R2": [[str(g["R"][2][i, j]) for j in range(3)] for i in range(3)],
         "T2": [[str(g["T"][2][i, j]) for j in range(3)] for i in range(3)],
         "q_powers": {
-            k: [
-                [{f"{a},{b}": ms for (a, b), ms in dct.items()} for dct in row]
-                for row in powers[k]
-            ]
+            k: [[{f"{a},{b}": ms for (a, b), ms in dct.items()} for dct in row] for row in powers[k]]
             for k in powers
         },
     }

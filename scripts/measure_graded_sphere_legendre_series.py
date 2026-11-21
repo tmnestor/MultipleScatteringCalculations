@@ -59,7 +59,12 @@ from cubic_scattering.graded_voxel.basis import (  # noqa: E402
     source_expansion,
 )
 from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E402
-from cubic_scattering.graded_voxel.fft import _transform, signed_permutations, solve_graded_sphere_fft, symmetry_reps  # noqa: E402
+from cubic_scattering.graded_voxel.fft import (  # noqa: E402
+    _transform,
+    signed_permutations,
+    solve_graded_sphere_fft,
+    symmetry_reps,
+)
 from cubic_scattering.graded_voxel.site import cell_contrast_coefficients  # noqa: E402
 from cubic_scattering.graded_voxel.solver import field_sizes  # noqa: E402
 from cubic_scattering.sphere_scattering import _plane_wave_strain_voigt, _voigt_to_tensor  # noqa: E402
@@ -96,8 +101,13 @@ def far_coefficients(job):
     offset, n_source, n_test, tmax = job
     ts = range(tmax + 1)
     part = gb._sform(
-        offset, 1.0, (0, 0, 0), functools.partial(gb._far_family_kernels, ts=ts), gb.gauss_order(offset),
-        n_source, n_test,
+        offset,
+        1.0,
+        (0, 0, 0),
+        functools.partial(gb._far_family_kernels, ts=ts),
+        gb.gauss_order(offset),
+        n_source,
+        n_test,
     )
     return offset, np.moveaxis(part.real.reshape(n_test, n_source, len(ts), 2, 81), (2, 3), (0, 1))
 
@@ -128,7 +138,9 @@ def all_far_coefficients(n_sub, n_source, n_test, J, workers=4) -> dict:
         os.environ.update({v: "1" for v in fs.THREAD_VARS})
         try:
             with ProcessPoolExecutor(workers, mp_context=multiprocessing.get_context("spawn")) as pool:
-                store.update(pool.map(far_coefficients, [(r, n_source, n_test, J + 2) for r in todo], chunksize=2))
+                store.update(
+                    pool.map(far_coefficients, [(r, n_source, n_test, J + 2) for r in todo], chunksize=2)
+                )
         finally:
             for v, val in env.items():
                 os.environ.pop(v, None) if val is None else os.environ.__setitem__(v, val)
@@ -161,7 +173,9 @@ def octant_transform(blocks_oct, n_sub, rs, cs):
     for m in range(3):
         par = np.outer(rs[m], cs[m])  # +1: entry even in axis m, -1: odd
         moved = np.moveaxis(out, m, 0)  # (n, n, n, rows, cols) with axis m first
-        tr = np.where(par > 0, np.tensordot(even, moved, axes=(1, 0)), np.tensordot(odd, moved, axes=(1, 0)))
+        tr = np.where(
+            par > 0, np.tensordot(even, moved, axes=(1, 0)), np.tensordot(odd, moved, axes=(1, 0))
+        )
         out = np.moveaxis(tr, 0, m)
     return out  # (n, n, n, rows, cols)
 
@@ -177,8 +191,13 @@ def solve_series(n_sub: int, p: int, r: int, J: int, profile):
     n = len(centres)
     rows, cols = na * 9, n_source * 9
     # contrast: Delta = Delta_0 + beta^2 k_S^2 Delta_1 (omega = beta k_S)
-    d0 = np.array([cell_contrast_coefficients(profile, c, h, CONTRAST, REF, 0.0, degree=r) for c in centres])
-    d1 = np.array([cell_contrast_coefficients(profile, c, h, CONTRAST, REF, 1.0, degree=r) for c in centres]) - d0
+    d0 = np.array(
+        [cell_contrast_coefficients(profile, c, h, CONTRAST, REF, 0.0, degree=r) for c in centres]
+    )
+    d1 = (
+        np.array([cell_contrast_coefficients(profile, c, h, CONTRAST, REF, 1.0, degree=r) for c in centres])
+        - d0
+    )
     e0 = np.array([source_expansion(d, n_field)[:, :na] for d in d0])  # (N, nc, na, 9, 9)
     e1 = np.array([source_expansion(d, n_field)[:, :na] for d in d1])
     # blocks per power, octant of the transform
@@ -309,7 +328,9 @@ def far_series(sol, obs, J):
             pref = 1.0 / (4.0 * math.pi * REF.rho * speed**2)
             for j, s in enumerate(srcs):
                 force = s[..., :3]
-                sig = np.array([_voigt_to_tensor(v) for v in s[..., 3:].reshape(-1, 6)]).reshape(*s.shape[:2], 3, 3)
+                sig = np.array([_voigt_to_tensor(v) for v in s[..., 3:].reshape(-1, 6)]).reshape(
+                    *s.shape[:2], 3, 3
+                )
                 sr = sig @ rh
                 for m in range(n_pow - j):
                     ph = (-1j * kr * proj) ** m / math.factorial(m)
@@ -333,12 +354,16 @@ def check(n_sub: int, p: int, r: int, J: int, obs) -> None:
     for off in ((0, 0, 0), (1, 0, 0), (1, 1, 1)):
         ser = sum(k**j * b for j, b in enumerate(near_powers(off, h, n_source, n_field, J)))
         ref = gb.near_block_series(off, h, k * REF.beta, REF, n_source, n_field)
-        print(f"[check] near K_j summed vs near_block_series {off}: {np.abs(ser - ref).max() / np.abs(ref).max():.1e}")
+        print(
+            f"[check] near K_j summed vs near_block_series {off}: {np.abs(ser - ref).max() / np.abs(ref).max():.1e}"
+        )
     for off in ((2, 0, 0), (3, 2, 1)):
         c = far_coefficients((off, n_source, n_field, J + 2))[1]
         ser = sum(k**j * b for j, b in enumerate(far_powers(c, h, J)))
         ref = gb.far_block_series(off, h, k * REF.beta, REF, n_source, n_field)
-        print(f"[check] far K_j summed vs far_block_series {off}: {np.abs(ser - ref).max() / np.abs(ref).max():.1e}")
+        print(
+            f"[check] far K_j summed vs far_block_series {off}: {np.abs(ser - ref).max() / np.abs(ref).max():.1e}"
+        )
     sol = solve_series(n_sub, p, r, J, profile_fn)
     ser = far_series(sol, obs, J)
     for ka in (0.02, 0.05):
@@ -352,7 +377,11 @@ def check(n_sub: int, p: int, r: int, J: int, obs) -> None:
             if c not in canon:
                 fn = gb.near_block_series if max(c) <= 1 else gb.far_block_series
                 canon[c] = fn(c, h, omega, REF, n_source, n_field)
-            q = next(q for q in signed_permutations() if np.array_equal(q @ np.array(c, float), np.array(off, float)))
+            q = next(
+                q
+                for q in signed_permutations()
+                if np.array_equal(q @ np.array(c, float), np.array(off, float))
+            )
             blocks[off] = _transform(q, canon[c])
         res = solve_graded_sphere_fft(omega, gs.RADIUS, REF, CONTRAST, n_sub, profile_fn, gs.K_HAT, gs.POL, "P",
                                       p=p, r=r, gmres_tol=TOL, blocks=blocks, max_cycles=60)  # fmt: skip

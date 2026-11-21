@@ -48,9 +48,7 @@ def test_complex_slowness():
     assert cs.imag > 0, "Imaginary part should be positive"
     assert cs.imag < 1e-3, f"Imaginary part should be small for high Q: {cs.imag}"
     print(f"  v=1.5, Q=20000: s = {cs}")
-    print(
-        f"  |Re(s) - 1/v| / (1/v) = {abs(cs.real - expected_real) / expected_real:.2e}"
-    )
+    print(f"  |Re(s) - 1/v| / (1/v) = {abs(cs.real - expected_real) / expected_real:.2e}")
 
     # Test case: CA0(3)=3.0, QA0(3)=100
     cs3 = complex_slowness(3.0, 100)
@@ -218,10 +216,7 @@ def test_kennett_reflectivity():
     print(f"\n  Model: {model.n_layers} layers")
     for i in range(model.n_layers):
         h = "inf" if np.isinf(model.thickness[i]) else f"{model.thickness[i]:.1f}"
-        print(
-            f"    Layer {i + 1}: alpha={model.alpha[i]}, beta={model.beta[i]}, "
-            f"rho={model.rho[i]}, h={h}"
-        )
+        print(f"    Layer {i + 1}: alpha={model.alpha[i]}, beta={model.beta[i]}, rho={model.rho[i]}, h={h}")
 
     # Test at multiple slownesses
     dw = 2.0 * np.pi / 64.0
@@ -231,10 +226,7 @@ def test_kennett_reflectivity():
         R = kennett_reflectivity(model, p=p_val, omega=omega)
         assert R.shape == (63,), f"Shape error: {R.shape}"
         assert np.all(np.isfinite(R)), f"NaN/Inf at p={p_val}"
-        print(
-            f"  p={p_val}: max|R| = {np.max(np.abs(R)):.6f}, "
-            f"mean|R| = {np.mean(np.abs(R)):.6f}"
-        )
+        print(f"  p={p_val}: max|R| = {np.max(np.abs(R)):.6f}, mean|R| = {np.mean(np.abs(R)):.6f}")
 
     # Full-scale test with 2047 frequencies (matching Fortran)
     omega_full = np.arange(1, 2048) * dw
@@ -285,12 +277,8 @@ def test_seismogram():
     for nw_test in [256, 512]:
         time, seis = compute_seismogram(model, p=0.2, T=64.0, nw=nw_test)
         nt_expected = 2 * nw_test
-        assert time.shape == (nt_expected,), (
-            f"Time shape: {time.shape} != ({nt_expected},)"
-        )
-        assert seis.shape == (nt_expected,), (
-            f"Seis shape: {seis.shape} != ({nt_expected},)"
-        )
+        assert time.shape == (nt_expected,), f"Time shape: {time.shape} != ({nt_expected},)"
+        assert seis.shape == (nt_expected,), f"Seis shape: {seis.shape} != ({nt_expected},)"
         assert np.all(np.isfinite(seis)), "Seismogram has NaN/Inf"
 
         dt = time[1] - time[0]

@@ -27,7 +27,10 @@ def main() -> None:
             scale = np.abs(quad).max()
             if scale > 0:
                 errs.append(float(np.abs(closed - quad).max() / scale))
-        print(f"{name:6s}: worst term {max(errs):.1e}, median {np.median(errs):.1e} ({len(errs)} terms)", flush=True)
+        print(
+            f"{name:6s}: worst term {max(errs):.1e}, median {np.median(errs):.1e} ({len(errs)} terms)",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

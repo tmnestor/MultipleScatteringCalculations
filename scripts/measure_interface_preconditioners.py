@@ -46,18 +46,14 @@ def main() -> None:
         }
     for spec in sys.argv[1:]:
         n_layers, n = map(int, spec.split("x"))
-        todo = [
-            (f, c) for f in FREQS for c in CONTRASTS if (n_layers, n, f, c) not in done
-        ]
+        todo = [(f, c) for f in FREQS for c in CONTRASTS if (n_layers, n, f, c) not in done]
         if not todo:
             continue
         layers = tuple(range(-n_layers // 2, n_layers // 2))
         cells = [(iz, ix, iy) for iz in layers for ix in range(n) for iy in range(n)]
         grid = iso.InterfaceGrid(np.array(cells), H, A, B)
         t0 = time.time()
-        c = iso.InterfaceCouplings(
-            grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True
-        )
+        c = iso.InterfaceCouplings(grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True)
         print(f"{spec}: set-up {time.time() - t0:.0f} s", flush=True)
         for f, omega in FREQS.items():
             if not any(ff == f for ff, _ in todo):
@@ -68,9 +64,7 @@ def main() -> None:
                 if (f, contrast) not in todo:
                     continue
                 ctr = [
-                    MaterialContrast(
-                        contrast * m.lam, contrast * m.mu, contrast * m.rho
-                    )
+                    MaterialContrast(contrast * m.lam, contrast * m.mu, contrast * m.rho)
                     for m in (grid.medium(i) for i in range(len(cells)))
                 ]
                 row = {"layers": n_layers, "n": n, "freq": f, "contrast": contrast}

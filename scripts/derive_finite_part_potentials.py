@@ -67,15 +67,10 @@ def phi(j: int) -> sp.Expr:
     const = sp.digamma(j) - 2 * (sp.digamma(2 * n + 1) - sp.digamma(n + 1))
     main = (const - sp.log((R + zeta) / 2)) * R**n * sp.legendre(n, x)
     rest = 2 * sum(
-        sp.Integer(-1) ** (n + k)
-        * sp.Rational(2 * k + 1, (n - k) * (n + k + 1))
-        * R**n
-        * sp.legendre(k, x)
+        sp.Integer(-1) ** (n + k) * sp.Rational(2 * k + 1, (n - k) * (n + k + 1)) * R**n * sp.legendre(k, x)
         for k in range(n)
     )
-    return sp.expand(
-        sp.Integer(-1) ** n / (sp.factorial(n) * 2 * sp.pi) * (main - rest)
-    )
+    return sp.expand(sp.Integer(-1) ** n / (sp.factorial(n) * 2 * sp.pi) * (main - rest))
 
 
 def in_rho(e: sp.Expr) -> sp.Expr:
@@ -95,18 +90,10 @@ def line_difference(j: int) -> sp.Expr:
     """H_j = Phi_j - (finite part at infinity of the line of images), in rho and zeta."""
     t, u = sp.symbols("t u", positive=True)
     n = j - 1
-    line = sp.integrate(
-        (t - zeta) ** n / sp.factorial(n) / sp.sqrt(rho**2 + t**2), (t, zeta, 1 / u)
-    )
+    line = sp.integrate((t - zeta) ** n / sp.factorial(n) / sp.sqrt(rho**2 + t**2), (t, zeta, 1 / u))
     ser = sp.series(sp.expand_log(line.rewrite(sp.log), force=True), u, 0, 1).removeO()
-    finite = sum(
-        a
-        for a in sp.Add.make_args(sp.expand(sp.expand_log(ser, force=True)))
-        if not a.has(u)
-    )
-    return sp.factor(
-        sp.simplify(sp.expand_log(in_rho(phi(j)) - finite / (2 * sp.pi), force=True))
-    )
+    finite = sum(a for a in sp.Add.make_args(sp.expand(sp.expand_log(ser, force=True))) if not a.has(u))
+    return sp.factor(sp.simplify(sp.expand_log(in_rho(phi(j)) - finite / (2 * sp.pi), force=True)))
 
 
 def main() -> None:
@@ -114,12 +101,8 @@ def main() -> None:
     for j in range(J_MAX):
         lad = sp.simplify(sp.diff(in_rho(phis[j + 1]), zeta) + in_rho(phis[j]))
         e = in_rho(phis[j + 1])
-        lap = sp.simplify(
-            sp.diff(e, rho, 2) + sp.diff(e, rho) / rho + sp.diff(e, zeta, 2)
-        )
-        print(
-            f"Phi{j + 1}: ladder d_zeta Phi{j + 1} + Phi{j} = {lad}, Laplacian = {lap}"
-        )
+        lap = sp.simplify(sp.diff(e, rho, 2) + sp.diff(e, rho) / rho + sp.diff(e, zeta, 2))
+        print(f"Phi{j + 1}: ladder d_zeta Phi{j + 1} + Phi{j} = {lad}, Laplacian = {lap}")
     mp.mp.dps = 40
     for rv, zv in ((mp.mpf("0.7"), mp.mpf("0.45")), (mp.mpf("0.7"), mp.mpf("1.3"))):
         errs = []
@@ -127,9 +110,7 @@ def main() -> None:
             val = sp.N(
                 phis[j].subs(
                     {
-                        R: sp.sqrt(
-                            sp.Float(str(rv), 45) ** 2 + sp.Float(str(zv), 45) ** 2
-                        ),
+                        R: sp.sqrt(sp.Float(str(rv), 45) ** 2 + sp.Float(str(zv), 45) ** 2),
                         zeta: sp.Float(str(zv), 45),
                     }
                 ),
@@ -153,9 +134,7 @@ def main() -> None:
     )
     for j in range(1, 5):
         h = line_difference(j)
-        lap = sp.simplify(
-            sp.diff(h, rho, 2) + sp.diff(h, rho) / rho + sp.diff(h, zeta, 2)
-        )
+        lap = sp.simplify(sp.diff(h, rho, 2) + sp.diff(h, rho) / rho + sp.diff(h, zeta, 2))
         print(f"H{j} = Phi{j} - FP_oo(line of images) = {h}   Laplacian {lap}")
     OUT.write_text(
         json.dumps(

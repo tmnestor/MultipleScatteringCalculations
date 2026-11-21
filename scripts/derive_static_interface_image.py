@@ -62,10 +62,7 @@ def basis(lam, mu, s):
     sol = sp.solve(coeffs, [c, d], dict=True)[0]
     sols = []
     for pa, pb in ((1, 0), (0, 1)):
-        uu = {
-            k: (sp.simplify(v.subs(sol).subs({a: pa, b: pb})) if v != 0 else 0)
-            for k, v in u.items()
-        }
+        uu = {k: (sp.simplify(v.subs(sol).subs({a: pa, b: pb})) if v != 0 else 0) for k, v in u.items()}
         sols.append(uu)
     sh = {"x": 0, "z": 0, "y": sp.exp(s * q * z)}
     return sols, sh
@@ -157,15 +154,8 @@ print("written", out.relative_to(root.parent))
 wl = root.parent / "Mathematica" / "StaticInterfaceImage.json"
 if wl.exists():
     m = json.loads(wl.read_text())
-    mv = [
-        np.array(r) + 1j * np.array(i)
-        for r, i in zip(m["values_re"], m["values_im"], strict=True)
-    ]
-    err = max(
-        np.abs(a - b).max() / np.abs(b).max() for a, b in zip(vals, mv, strict=True)
-    )
+    mv = [np.array(r) + 1j * np.array(i) for r, i in zip(m["values_re"], m["values_im"], strict=True)]
+    err = max(np.abs(a - b).max() / np.abs(b).max() for a, b in zip(vals, mv, strict=True))
     print(f"against Mathematica: {err:.1e}", "PASS" if err < 1e-12 else "FAIL")
 else:
-    print(
-        "Mathematica/StaticInterfaceImage.json not found: run the .wl to compare (SKIPPED, not PASS)"
-    )
+    print("Mathematica/StaticInterfaceImage.json not found: run the .wl to compare (SKIPPED, not PASS)")

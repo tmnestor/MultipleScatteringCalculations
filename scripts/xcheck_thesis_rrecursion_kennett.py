@@ -9,6 +9,7 @@ problems with impedances rho alpha and rho beta.
 """
 
 import numpy as np
+
 from cubic_scattering.kennett_layers import LayerStack, kennett_layers
 
 

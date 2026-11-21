@@ -67,23 +67,14 @@ def frame_kernel() -> sp.Matrix:
         src = (
             ROOT
             / "Mathematica"
-            / (
-                "StaticInterfaceImage.json"
-                if KIND == "reflected"
-                else "StaticInterfaceTransmission.json"
-            )
+            / ("StaticInterfaceImage.json" if KIND == "reflected" else "StaticInterfaceTransmission.json")
         )
         if not src.exists():
             src = DATA / "static_interface_transmission.json"
         rows = json.loads(src.read_text())["entries"]
         G = sp.Matrix(
             [
-                [
-                    sp.sympify(
-                        e.replace("^", "**"), locals={**loc, "E": sp.E, "I": sp.I}
-                    )
-                    for e in r
-                ]
+                [sp.sympify(e.replace("^", "**"), locals={**loc, "E": sp.E, "I": sp.I}) for e in r]
                 for r in rows
             ]
         )
@@ -92,16 +83,11 @@ def frame_kernel() -> sp.Matrix:
         rows = json.loads((DATA / "interface_omega4_gate.json").read_text())[
             "R2" if KIND == "reflected" else "T2"
         ]
-        return sp.Matrix(
-            [
-                [sp.sympify(e, locals={"q": q, "z": z, "zp": zp}) for e in r]
-                for r in rows
-            ]
-        )
+        return sp.Matrix([[sp.sympify(e, locals={"q": q, "z": z, "zp": zp}) for e in r] for r in rows])
     else:
-        rows = json.loads(
-            (ROOT / "Mathematica" / f"InterfaceOmega{2 * ORDER}.json").read_text()
-        )[("R" if KIND == "reflected" else "T") + str(ORDER)]
+        rows = json.loads((ROOT / "Mathematica" / f"InterfaceOmega{2 * ORDER}.json").read_text())[
+            ("R" if KIND == "reflected" else "T") + str(ORDER)
+        ]
         subs = {sp.Symbol(k): v for k, v in loc.items()}
         G = sp.Matrix([[parse_mathematica(e).subs(subs) for e in r] for r in rows])
     return G.subs(MEDIA)
@@ -171,11 +157,7 @@ def from_terms(entries: list, kx, ky) -> list:
 
 def main() -> None:
     name = (
-        (
-            "interface_image_terms"
-            if KIND == "reflected"
-            else "interface_transmission_terms"
-        )
+        ("interface_image_terms" if KIND == "reflected" else "interface_transmission_terms")
         if ORDER == 0
         else f"interface_omega2_terms_{KIND}"
         if ORDER == 1
@@ -216,15 +198,9 @@ def main() -> None:
         rv = [[complex(sp.N(e.subs(at), 30)) for e in r] for r in ref]
         gv = [[complex(sp.N(e.subs(at), 30)) for e in r] for r in got]
         scale = max(abs(v) for r in rv for v in r)
-        err = max(
-            abs(a - b)
-            for ra, rb in zip(rv, gv, strict=True)
-            for a, b in zip(ra, rb, strict=True)
-        )
+        err = max(abs(a - b) for ra, rb in zip(rv, gv, strict=True) for a, b in zip(ra, rb, strict=True))
         worst = max(worst, err / scale)
-        print(
-            f"  k = ({kx}, {ky}), z = {zv}, zp = {zpv}: {err / scale:.1e}", flush=True
-        )
+        print(f"  k = ({kx}, {ky}), z = {zv}, zp = {zpv}: {err / scale:.1e}", flush=True)
     print(
         f"{KIND}, order {ORDER}, {MEDIA_NAME}: 81 entries, worst {worst:.1e}  {'PASS' if worst < 1e-13 else 'FAIL'}"
     )

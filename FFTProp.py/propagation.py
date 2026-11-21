@@ -466,16 +466,8 @@ def right_sweep(
             im_factor = (-1j) ** m
 
             # Fortran: PU(ik) += im*PC(ik,m,1,iscat)*SY(jscat,m,1,iscat)
-            PU[::2] += (
-                im_factor
-                * sa.PC[::2, m_idx, 0, iscat]
-                * result.SY[jscat, m_idx, 0, iscat]
-            )
-            SU[::2] += (
-                im_factor
-                * sa.PC[::2, m_idx, 1, iscat]
-                * result.SY[jscat, m_idx, 1, iscat]
-            )
+            PU[::2] += im_factor * sa.PC[::2, m_idx, 0, iscat] * result.SY[jscat, m_idx, 0, iscat]
+            SU[::2] += im_factor * sa.PC[::2, m_idx, 1, iscat] * result.SY[jscat, m_idx, 1, iscat]
 
 
 def left_sweep(
@@ -520,12 +512,8 @@ def left_sweep(
 
             # Fortran: PSY(jscat,m,1,iscat) += im*PC(ik,m,1,iscat)*PD(ik)
             # NOTE: For left sweep, Fortran uses PC(ik, m, ...) not PC(ik, -m, ...)
-            result.PSY[jscat, m_idx, 0, iscat] += np.sum(
-                im_factor * sa.PC[::2, m_idx, 0, iscat] * PD[::2]
-            )
-            result.PSY[jscat, m_idx, 1, iscat] += np.sum(
-                im_factor * sa.PC[::2, m_idx, 1, iscat] * SD[::2]
-            )
+            result.PSY[jscat, m_idx, 0, iscat] += np.sum(im_factor * sa.PC[::2, m_idx, 0, iscat] * PD[::2])
+            result.PSY[jscat, m_idx, 1, iscat] += np.sum(im_factor * sa.PC[::2, m_idx, 1, iscat] * SD[::2])
 
         # --- Scatter from SY into wavefield (Fortran Do 120 m=-2,2) ---
         for m_idx in range(5):
@@ -536,16 +524,8 @@ def left_sweep(
             im_factor = (-1j) ** m
 
             # Fortran: PD(ik) += im*PC(ik,-m,1,iscat)*SY(jscat,m,1,iscat)
-            PD[::2] += (
-                im_factor
-                * sa.PC[::2, neg_m_idx, 0, iscat]
-                * result.SY[jscat, m_idx, 0, iscat]
-            )
-            SD[::2] += (
-                im_factor
-                * sa.PC[::2, neg_m_idx, 1, iscat]
-                * result.SY[jscat, m_idx, 1, iscat]
-            )
+            PD[::2] += im_factor * sa.PC[::2, neg_m_idx, 0, iscat] * result.SY[jscat, m_idx, 0, iscat]
+            SD[::2] += im_factor * sa.PC[::2, neg_m_idx, 1, iscat] * result.SY[jscat, m_idx, 1, iscat]
 
         # Phase advance (stride 2)
         PD[::2] = sa.Eavec[::2] * PD[::2]

@@ -60,18 +60,12 @@ def foldy_lax_forward_amplitude(
 
     if wave_type == "P":
         pol = np.array([1.0, 0.0, 0.0])
-        u_P, u_S = foldy_lax_far_field(
-            result, r_hat_arr, r_distance, k_hat, pol, wave_type="P"
-        )
+        u_P, u_S = foldy_lax_far_field(result, r_hat_arr, r_distance, k_hat, pol, wave_type="P")
         kP = result.omega / result.ref.alpha
-        return complex(
-            np.dot(u_P[0], r_hat_arr[0]) * r_distance * np.exp(-1j * kP * r_distance)
-        )
+        return complex(np.dot(u_P[0], r_hat_arr[0]) * r_distance * np.exp(-1j * kP * r_distance))
     else:
         pol = np.array([0.0, 1.0, 0.0])
-        u_P, u_S = foldy_lax_far_field(
-            result, r_hat_arr, r_distance, k_hat, pol, wave_type="S"
-        )
+        u_P, u_S = foldy_lax_far_field(result, r_hat_arr, r_distance, k_hat, pol, wave_type="S")
         kS = result.omega / result.ref.beta
         return complex(np.dot(u_S[0], pol) * r_distance * np.exp(-1j * kS * r_distance))
 
@@ -177,9 +171,7 @@ def run_angular_pattern(
     theta_arr = np.linspace(0.05, np.pi - 0.05, 19)
 
     incident_type_mie = "P" if wave_type == "P" else "SV"
-    f_P_mie, f_SV_mie, f_SH_mie = mie_far_field(
-        mie, theta_arr, incident_type=incident_type_mie
-    )
+    f_P_mie, f_SV_mie, f_SH_mie = mie_far_field(mie, theta_arr, incident_type=incident_type_mie)
 
     t0 = time.perf_counter()
     result = compute_sphere_foldy_lax_fft(
@@ -215,10 +207,7 @@ def run_angular_pattern(
     kS = omega / REF.beta
 
     f_P_fl = np.array(
-        [
-            np.dot(u_P_fl[i], r_hat_arr[i]) * r_distance * np.exp(-1j * kP * r_distance)
-            for i in range(M)
-        ]
+        [np.dot(u_P_fl[i], r_hat_arr[i]) * r_distance * np.exp(-1j * kP * r_distance) for i in range(M)]
     )
     f_SV_fl = np.array(
         [
@@ -233,9 +222,7 @@ def run_angular_pattern(
     )
 
     print(f"\nAngular pattern: {wave_type}-wave, ka_P={ka_P:.3f}, n_sub={n_sub}")
-    print(
-        f"N_cells={result.n_cells}, DOF={9 * result.n_cells}, solve time={elapsed:.1f}s"
-    )
+    print(f"N_cells={result.n_cells}, DOF={9 * result.n_cells}, solve time={elapsed:.1f}s")
     print()
     print(
         f"{'theta':>8}  {'|f_P_Mie|':>12}  {'|f_P_LF|':>12}  {'P err':>10}"

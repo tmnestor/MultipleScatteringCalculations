@@ -35,10 +35,7 @@ def coefficients(qh: float, n_phi: int, n_test: int, n_source: int) -> np.ndarra
     kx, ky = q * np.cos(phi), q * np.sin(phi)
     ef = isp.SOURCE_EXPONENTS_QUARTIC[:n_test]
     es = isp.SOURCE_EXPONENTS_QUARTIC[:n_source]
-    f = (
-        isp._lateral(kx, ky, H, ef, True)[:, :, None]
-        * isp._lateral(kx, ky, H, es, False)[:, None, :]
-    )
+    f = isp._lateral(kx, ky, H, ef, True)[:, :, None] * isp._lateral(kx, ky, H, es, False)[:, None, :]
     return np.fft.fft(f, axis=0) / n_phi
 
 
@@ -64,9 +61,7 @@ def harmonics(qh: float, off: tuple, n_test: int = 4, n_source: int = 10) -> np.
     dist, ang = np.hypot(*off), np.arctan2(off[1], off[0])
     p = np.arange(-big_m - 4, big_m + 5)
     g = 1j**p * jv(p, qh * dist) * np.exp(-1j * p * ang)
-    return np.stack([np.einsum("p,pac->ac", g, c[(-k - p) % n]) for k in isp._HARM]) / (
-        2 * np.pi
-    )
+    return np.stack([np.einsum("p,pac->ac", g, c[(-k - p) % n]) for k in isp._HARM]) / (2 * np.pi)
 
 
 def agreement() -> None:

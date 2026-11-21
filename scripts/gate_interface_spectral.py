@@ -135,9 +135,7 @@ def gate_routes(tol=1e-10) -> bool:
         t1 = time.time()
         old = isp._truncated_blocks_direct(PAIRS, H, om, A, B, q0h=q0)
         t2 = time.time()
-        err = max(
-            np.abs(a - b).max() / np.abs(b).max() for a, b in zip(new, old, strict=True)
-        )
+        err = max(np.abs(a - b).max() / np.abs(b).max() for a, b in zip(new, old, strict=True))
         good = err < tol
         ok &= good
         print(
@@ -175,13 +173,7 @@ def gate_row(tol=(1e-10, 2e-5), radius=4) -> bool:
             corr[d] = sharp[d][0] + r0 + om**2 * (sharp[d][1] + r1)
         t2 = time.time()
         scale = np.abs(image_block(*pairs[0], H, A, B)).max()
-        full = (
-            max(
-                np.abs(dw + corr[d] - k).max()
-                for dw, d, k in zip(d_win, ROW, ref, strict=True)
-            )
-            / scale
-        )
+        full = max(np.abs(dw + corr[d] - k).max() for dw, d, k in zip(d_win, ROW, ref, strict=True)) / scale
         local = (
             max(
                 np.abs(dw + (corr[d] if d <= radius else 0.0) - k).max()
@@ -225,13 +217,9 @@ def gate_reference(kind: str, tol=(1e-9, 2e-10)) -> bool:
         # the reference's low part is of Y; Y0 below q h = 10 is in K0 - (int Y0 beyond 10), so subtract
         # Y0 over q h < 10 the same way the package does
         qh, w = isp._panels(0.0, 10.0, np.pi / 2, 16)
-        y0_low = isp._static_integral(
-            0, kind, rec, src, H, isp._key(A), isp._key(B), qh, w, 1, 1
-        )[0, 0]
+        y0_low = isp._static_integral(0, kind, rec, src, H, isp._key(A), isp._key(B), qh, w, 1, 1)[0, 0]
         full = k0 - y0_low + low + y + tail
-        pkg = isp.interface_block(rec, src, H, om, A, B, n_source=1, n_test=1, q0h=q0)[
-            0, 0
-        ]
+        pkg = isp.interface_block(rec, src, H, om, A, B, n_source=1, n_test=1, q0h=q0)[0, 0]
         err = np.abs(pkg - full).max() / np.abs(full).max()
         good = err < t
         ok &= good

@@ -60,6 +60,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
+from GlobalMatrix.global_matrix import gmm_reflectivity  # noqa: E402
+
 from cubic_scattering.kennett_layers import (  # noqa: E402
     IsotropicLayer,
     LayerStack,
@@ -67,7 +69,6 @@ from cubic_scattering.kennett_layers import (  # noqa: E402
     kennett_layers,
     psv_fluid_solid,
 )
-from GlobalMatrix.global_matrix import gmm_reflectivity  # noqa: E402
 
 # Free surface | ocean | elastic 1 | elastic 2 | half-space
 W_ALPHA, W_RHO = 1.5, 1.03

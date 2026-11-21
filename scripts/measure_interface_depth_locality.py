@@ -66,14 +66,8 @@ def _k0_max(pair) -> float:
     """The largest entry of the touching static block K0 of a family (a source in B mirrored, as the split)."""
     zr, zs = pair
     if zs > 0:
-        return float(
-            np.abs(
-                isp.image_block((-zr, 0, 0), (-zs, 0, 0), H, B, A, N_SOURCE, N_TEST)
-            ).max()
-        )
-    return float(
-        np.abs(isp.image_block((zr, 0, 0), (zs, 0, 0), H, A, B, N_SOURCE, N_TEST)).max()
-    )
+        return float(np.abs(isp.image_block((-zr, 0, 0), (-zs, 0, 0), H, B, A, N_SOURCE, N_TEST)).max())
+    return float(np.abs(isp.image_block((zr, 0, 0), (zs, 0, 0), H, A, B, N_SOURCE, N_TEST)).max())
 
 
 def main() -> None:
@@ -86,9 +80,7 @@ def main() -> None:
     rows = []
     for fam, ps in FAMILIES.items():
         print(f"\n{fam}: relative to max |K0| of {touching[fam]} = {norm[fam]:.3e}")
-        print(
-            f"  {'z_r':>4} {'z_s':>4} {'gap/h':>5} {'|A0|':>10} {'w2|A1|':>10} {'|A0+w2A1|':>10}"
-        )
+        print(f"  {'z_r':>4} {'z_s':>4} {'gap/h':>5} {'|A0|':>10} {'w2|A1|':>10} {'|A0+w2A1|':>10}")
         for zr, zs in sorted(ps, key=lambda p: (gap(*p), p)):
             a0, a1 = parts[zr, zs]
             r0 = float(np.abs(a0).max()) / norm[fam]
@@ -105,24 +97,15 @@ def main() -> None:
                     "total": rt,
                 }
             )
-            print(
-                f"  {zr:>4} {zs:>4} {gap(zr, zs):>5} {r0:>10.1e} {r1:>10.1e} {rt:>10.1e}"
-            )
-    print(
-        "\ndepth radius: the least total gap g/h beyond which every pair is below the tolerance"
-    )
+            print(f"  {zr:>4} {zs:>4} {gap(zr, zs):>5} {r0:>10.1e} {r1:>10.1e} {rt:>10.1e}")
+    print("\ndepth radius: the least total gap g/h beyond which every pair is below the tolerance")
     radii = {}
     for tol in TOLS:
         worst = {
-            g: max(r["total"] for r in rows if r["gap"] == g)
-            for g in sorted({r["gap"] for r in rows})
+            g: max(r["total"] for r in rows if r["gap"] == g) for g in sorted({r["gap"] for r in rows})
         }
         above = [g for g, v in worst.items() if v >= tol]
-        radii[tol] = (
-            None
-            if above and max(above) == max(worst)
-            else (max(above) + 2 if above else 0)
-        )
+        radii[tol] = None if above and max(above) == max(worst) else (max(above) + 2 if above else 0)
         print(
             f"  {tol:.0e}: "
             + (

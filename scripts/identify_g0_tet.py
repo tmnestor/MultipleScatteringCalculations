@@ -142,9 +142,7 @@ def main():
         check = sum(c * v for c, v in zip(rel, vals, strict=True))
         print(f"      Verification: {mpmath.nstr(check, 15)}")
         if rel[0] != 0:
-            g0_expr = (
-                -sum(c * v for c, v in zip(rel[1:], vals[1:], strict=True)) / rel[0]
-            )
+            g0_expr = -sum(c * v for c, v in zip(rel[1:], vals[1:], strict=True)) / rel[0]
             err = g0_expr - g0
             print(f"      g0 = {mpmath.nstr(g0_expr, 40)}")
             print(f"      Error: {mpmath.nstr(err, 10)}")
@@ -174,9 +172,7 @@ def main():
                 rel = mpmath.pslq([g0, mpmath.mpf(1), pi, val], maxcoeff=10000)
                 if rel:
                     name = f"log({a}+{b}{n_name})"
-                    report_relation(
-                        rel, ["g0", "1", "pi", name], [g0, mpmath.mpf(1), pi, val]
-                    )
+                    report_relation(rel, ["g0", "1", "pi", name], [g0, mpmath.mpf(1), pi, val])
                     found_log = True
     if not found_log:
         print("  No log forms found.")
@@ -313,9 +309,7 @@ def main():
     print("    4*sqrt(2)*log(sqrt(2)+sqrt(3)) - (2/3)*pi")
 
     g0_v2 = 2 * sqrt2 * mpmath.log(5 + 2 * sqrt6) - 2 * pi / 3
-    print(
-        f"    2*sqrt(2)*log(5+2*sqrt(6)) - (2/3)*pi   [match: {mpmath.nstr(g0_v2 - g0_exact, 5)}]"
-    )
+    print(f"    2*sqrt(2)*log(5+2*sqrt(6)) - (2/3)*pi   [match: {mpmath.nstr(g0_v2 - g0_exact, 5)}]")
 
     g0_v3 = mpmath.mpf(2) / 3 * sqrt2 * mpmath.log(485 + 198 * sqrt6) - 2 * pi / 3
     print(
@@ -325,12 +319,8 @@ def main():
 
     # Comparison with cube
     g0_cube = mpmath.mpf(4) / 3 * mpmath.log(70226 + 40545 * sqrt3) - 2 * pi
-    print(
-        f"\n  g0_cube = (4/3)*log(70226+40545*sqrt(3)) - 2*pi = {mpmath.nstr(g0_cube, 30)}"
-    )
-    print(
-        f"  g0_tet  = 4*sqrt(2)*asinh(sqrt(2)) - (2/3)*pi    = {mpmath.nstr(g0_exact, 30)}"
-    )
+    print(f"\n  g0_cube = (4/3)*log(70226+40545*sqrt(3)) - 2*pi = {mpmath.nstr(g0_cube, 30)}")
+    print(f"  g0_tet  = 4*sqrt(2)*asinh(sqrt(2)) - (2/3)*pi    = {mpmath.nstr(g0_exact, 30)}")
     print(f"  Ratio g0_tet/g0_cube = {mpmath.nstr(g0_exact / g0_cube, 15)}")
 
     # mpmath.identify

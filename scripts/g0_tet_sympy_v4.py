@@ -74,11 +74,7 @@ print(f"g0 (8·J_face)     = {g0_from_J:.15f}")
 # And via 1D integral after t-integration
 # J = ∫₀¹ (√2/2)·asinh(√2(1-s)/√(6s²-4s+1)) ds
 J_1d, _ = quad(
-    lambda s: (
-        math.sqrt(2)
-        / 2
-        * math.asinh(math.sqrt(2) * (1 - s) / math.sqrt(6 * s**2 - 4 * s + 1))
-    ),
+    lambda s: math.sqrt(2) / 2 * math.asinh(math.sqrt(2) * (1 - s) / math.sqrt(6 * s**2 - 4 * s + 1)),
     0,
     1,
 )
@@ -113,9 +109,7 @@ print(f"I₁ = asinh(√2)/√2 = {I1:.15f}")
 
 # Term 2: I₂ = ∫₀¹ (-7u/3+2)/(P·√Q) du = ∫₀¹ (-7u+6)/(3P·√Q) du
 I2, _ = quad(
-    lambda u: (
-        (-7 * u + 6) / (3 * (6 * u**2 - 8 * u + 3) * math.sqrt(8 * u**2 - 8 * u + 3))
-    ),
+    lambda u: (-7 * u + 6) / (3 * (6 * u**2 - 8 * u + 3) * math.sqrt(8 * u**2 - 8 * u + 3)),
     0,
     1,
 )
@@ -162,8 +156,7 @@ print("=" * 60)
 # Let me verify numerically
 I2_check, _ = quad(
     lambda w: (
-        (-7 * w + 5 * math.sqrt(2))
-        / (6 * (3 * w**2 - 2 * math.sqrt(2) * w + 2) * math.sqrt(w**2 + 1))
+        (-7 * w + 5 * math.sqrt(2)) / (6 * (3 * w**2 - 2 * math.sqrt(2) * w + 2) * math.sqrt(w**2 + 1))
     ),
     -math.sqrt(2),
     math.sqrt(2),
@@ -390,9 +383,7 @@ print()
 # arg(ratio) = arg(r1u) + arg(r2l) - arg(r2u) - arg(r1l)
 # arg(r1u) = arg(√3-i) = -atan(1/√3) = -π/6
 arg_r1u = math.atan2(-1, math.sqrt(3))
-print(
-    f"arg(r1u) = arg(√3-i) = atan2(-1,√3) = {arg_r1u:.15f} = -π/6 = {-math.pi / 6:.15f}"
-)
+print(f"arg(r1u) = arg(√3-i) = atan2(-1,√3) = {arg_r1u:.15f} = -π/6 = {-math.pi / 6:.15f}")
 
 # arg(r2l) = arg((3√3-2√2-i)/3) = arg(3√3-2√2-i) = atan(-1/(3√3-2√2))
 arg_r2l = math.atan2(-1, 3 * math.sqrt(3) - 2 * math.sqrt(2))
@@ -485,9 +476,7 @@ print(f"  Match: {abs(at_diff - at_neg) < 1e-12}")
 # So atan(...) = atan(30√3/30) = atan(√3) = π/3
 
 print("\natan(√3-√2) + atan((2√2+√3)/5) = atan(√3) = π/3")
-lhs = math.atan(math.sqrt(3) - math.sqrt(2)) + math.atan(
-    (2 * math.sqrt(2) + math.sqrt(3)) / 5
-)
+lhs = math.atan(math.sqrt(3) - math.sqrt(2)) + math.atan((2 * math.sqrt(2) + math.sqrt(3)) / 5)
 print(f"  LHS = {lhs:.15f}")
 print(f"  π/3 = {math.pi / 3:.15f}")
 print(f"  Match: {abs(lhs - math.pi / 3) < 1e-12}")
@@ -584,9 +573,7 @@ print(f"Match: {abs(g0_exact - g0_scipy) < 1e-10}")
 
 # High precision check
 mpmath.mp.dps = 50
-g0_mp = (
-    4 * mpmath.sqrt(2) * mpmath.log(mpmath.sqrt(2) + mpmath.sqrt(3)) - 2 * mpmath.pi / 3
-)
+g0_mp = 4 * mpmath.sqrt(2) * mpmath.log(mpmath.sqrt(2) + mpmath.sqrt(3)) - 2 * mpmath.pi / 3
 print(f"\nHigh precision: {g0_mp}")
 
 # ============================================================

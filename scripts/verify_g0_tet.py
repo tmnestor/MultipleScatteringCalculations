@@ -80,9 +80,7 @@ def main():
     print(f"  log(sqrt(2)+sqrt(3)) = {mpmath.nstr(mpmath.log(sqrt2 + sqrt3), 50)}")
     print(f"  pi                   = {mpmath.nstr(pi, 50)}")
 
-    print(
-        f"\n  4*sqrt(2)*asinh(sqrt(2)) = {mpmath.nstr(4 * sqrt2 * mpmath.asinh(sqrt2), 50)}"
-    )
+    print(f"\n  4*sqrt(2)*asinh(sqrt(2)) = {mpmath.nstr(4 * sqrt2 * mpmath.asinh(sqrt2), 50)}")
     print(f"  (2/3)*pi                 = {mpmath.nstr(2 * pi / 3, 50)}")
     print(f"  Difference               = {mpmath.nstr(g0_exact, 50)}")
 
@@ -108,20 +106,14 @@ def main():
     # Using Pell: 5+2*sqrt6 = (sqrt2+sqrt3)^2
     # (5+2sqrt6)^2 = 49 + 20*sqrt6
     # (5+2sqrt6)^3 = 485 + 198*sqrt6  <-- the Pell number!
-    g0_v3 = (
-        mpmath.mpf(2) / 3 * sqrt2 * mpmath.log(485 + 198 * mpmath.sqrt(6)) - 2 * pi / 3
-    )
+    g0_v3 = mpmath.mpf(2) / 3 * sqrt2 * mpmath.log(485 + 198 * mpmath.sqrt(6)) - 2 * pi / 3
     print(f"  (2/3)*sqrt(2)*log(485+198*sqrt(6)) - (2/3)*pi = {mpmath.nstr(g0_v3, 50)}")
     print(f"  Match: {mpmath.nstr(g0_v3 - g0_exact, 10)}")
 
     # Comparison with cube
     g0_cube = mpmath.mpf(4) / 3 * mpmath.log(70226 + 40545 * sqrt3) - 2 * pi
-    print(
-        f"\n  g0_cube = (4/3)*log(70226+40545*sqrt(3)) - 2*pi = {mpmath.nstr(g0_cube, 40)}"
-    )
-    print(
-        f"  g0_tet  = 4*sqrt(2)*log(sqrt(2)+sqrt(3)) - (2/3)*pi = {mpmath.nstr(g0_exact, 40)}"
-    )
+    print(f"\n  g0_cube = (4/3)*log(70226+40545*sqrt(3)) - 2*pi = {mpmath.nstr(g0_cube, 40)}")
+    print(f"  g0_tet  = 4*sqrt(2)*log(sqrt(2)+sqrt(3)) - (2/3)*pi = {mpmath.nstr(g0_exact, 40)}")
     print(f"  Ratio g0_tet/g0_cube = {mpmath.nstr(g0_exact / g0_cube, 15)}")
 
     # Summary

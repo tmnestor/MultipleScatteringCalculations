@@ -49,11 +49,7 @@ MONOS = [(0, 0, 0), (1, 0, 2), (2, 1, 1)]
 
 def reference(j, alpha, mono):
     expr = ii._potential(j)
-    expr = (
-        sp.diff(expr, ii._RX, alpha[0], ii._RY, alpha[1], ii._ZETA, alpha[2])
-        if sum(alpha)
-        else expr
-    )
+    expr = sp.diff(expr, ii._RX, alpha[0], ii._RY, alpha[1], ii._ZETA, alpha[2]) if sum(alpha) else expr
     fm = sp.lambdify((ii._RX, ii._RY, ii._ZETA), expr, "mpmath")
     far = [lo if hi == 0 else hi for lo, hi in BOX]
     vol = abs(far[0] * far[1] * far[2])
@@ -74,18 +70,13 @@ def reference(j, alpha, mono):
 RUNS = Path(os.environ.get("CORNER_LOG_DIR", "."))
 #: worker k of n (argv): takes every n-th of the cases not yet logged; each worker appends to its own log,
 #: and every worker reads all logs, so a restart resumes after the last finished case.
-WORKER, N_WORKERS = (
-    (int(sys.argv[1]), int(sys.argv[2])) if len(sys.argv) > 2 else (0, 1)
-)
+WORKER, N_WORKERS = (int(sys.argv[1]), int(sys.argv[2])) if len(sys.argv) > 2 else (0, 1)
 done = "".join(f.read_text() for f in sorted(RUNS.glob("corner*.log")))
 
 
 def finished(j, alpha, mono):
     """The case is already in a log (a restart resumes after it)."""
-    return any(
-        ln.startswith(f"Phi{j} d^{alpha} ") and f"x^{mono}:" in ln
-        for ln in done.splitlines()
-    )
+    return any(ln.startswith(f"Phi{j} d^{alpha} ") and f"x^{mono}:" in ln for ln in done.splitlines())
 
 
 TODO = [(j, a, m) for j, a in FAMS for m in MONOS if not finished(j, a, m)]
@@ -104,10 +95,7 @@ for j, alpha in FAMS:
     euler = ii._corner_moments(f, d, BOX, deg, 40, g)
     # pyramids: weights are the monomials themselves (Poly in s about the corner)
     ws = [
-        {
-            m: tuple(Fraction(int(i == m)) for i in range(m + 1))
-            for m in range(deg[ax] + 1)
-        }
+        {m: tuple(Fraction(int(i == m)) for i in range(m + 1)) for m in range(deg[ax] + 1)}
         for ax in range(3)
     ]
     # a monomial with 3 + |n| + d <= 0 has no integral at the singular corner: both routes must refuse it

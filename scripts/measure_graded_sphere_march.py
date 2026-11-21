@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
 from gate_sphere_cell_average_vs_mie import CONTRAST, REF  # noqa: E402
 from pilot_graded_sphere_vs_exact import CORE, RADIUS  # noqa: E402
+
 from scripts import gate_sphere_vs_impedance_march as march  # noqa: E402
 from scripts.gate_first_order_lateral_impedance_3d import Slice  # noqa: E402
 
@@ -73,6 +74,7 @@ def configure(ka_s: float) -> None:
     n_max = max(8, int(np.ceil(ka_s + 4 * ka_s ** (1 / 3) + 6)))
     mie = graded_mie_result(omega, RADIUS, CORE, REF, CONTRAST, n_max)
     march.REF, march.OMEGA, march.RADIUS = REF, omega, RADIUS
+
     # The march module calls these with its own arguments. Those that describe the SHARP sphere must not
     # reach the graded one: its ``amplitude`` is the sharp sphere's fractional contrast (0.1), and passing
     # it on scales the graded profile to a tenth (an error of 0.89 where the answer is 0.06).

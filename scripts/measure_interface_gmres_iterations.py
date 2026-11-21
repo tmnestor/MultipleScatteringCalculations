@@ -49,20 +49,13 @@ def main() -> None:
         }
     picked = [int(a) for a in sys.argv[1:]] or range(len(GRIDS))
     for layers, n in (GRIDS[i] for i in picked):
-        todo = [
-            (f, c)
-            for f in FREQS
-            for c in CONTRASTS
-            if (len(layers), n, f, c) not in done
-        ]
+        todo = [(f, c) for f in FREQS for c in CONTRASTS if (len(layers), n, f, c) not in done]
         if not todo:
             continue
         cells = [(iz, ix, iy) for iz in layers for ix in range(n) for iy in range(n)]
         grid = iso.InterfaceGrid(np.array(cells), H, A, B)
         t0 = time.time()
-        c = iso.InterfaceCouplings(
-            grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True
-        )
+        c = iso.InterfaceCouplings(grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True)
         t_setup = time.time() - t0
         print(
             f"{len(cells)} cells, {len(layers)} layers: set-up {t_setup:.0f} s",
@@ -79,9 +72,7 @@ def main() -> None:
                 if (f, contrast) not in todo:
                     continue
                 ctr = [
-                    MaterialContrast(
-                        contrast * m.lam, contrast * m.mu, contrast * m.rho
-                    )
+                    MaterialContrast(contrast * m.lam, contrast * m.mu, contrast * m.rho)
                     for m in (grid.medium(i) for i in range(len(cells)))
                 ]
                 t0 = time.time()

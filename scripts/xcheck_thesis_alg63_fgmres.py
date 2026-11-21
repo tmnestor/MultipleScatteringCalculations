@@ -7,6 +7,7 @@
 """
 
 import numpy as np
+
 from cubic_scattering.interface_downup import fgmres
 
 rng = np.random.default_rng(3)

@@ -29,14 +29,15 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from crosscheck_graded_sphere import graded_mie_result  # noqa: E402
+from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
+from pilot_graded_sphere_vs_exact import CORE, RADIUS, THETA, profile  # noqa: E402
+
 from cubic_scattering import MaterialContrast  # noqa: E402
 from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E402
 from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft  # noqa: E402
 from cubic_scattering.graded_voxel.solver import solve_graded_sphere  # noqa: E402
 from cubic_scattering.sphere_scattering import foldy_lax_far_field, mie_scattered_displacement  # noqa: E402
 from cubic_scattering.sphere_scattering_fft import compute_sphere_foldy_lax_fft  # noqa: E402
-from gate_sphere_cell_average_vs_mie import CONTRAST, REF, obs_points  # noqa: E402
-from pilot_graded_sphere_vs_exact import CORE, RADIUS, THETA, profile  # noqa: E402
 
 K_HAT = np.array([1.0, 0.0, 0.0])
 POL = np.array([1.0, 0.0, 0.0])

@@ -5,6 +5,7 @@ the STATIC operator only; the measure is the far field's stress term at m = 0, i
 sum_c int s_h dC : grad u, projected on the observation directions.
 Usage: python static3.py [--deg=3] [--rc=1] [--profile=smoothstep] n1 n2 ...
 """
+
 import inspect
 import math
 import sys
@@ -23,7 +24,9 @@ gs, gfft, lowf = fs.gs, fs.gfft, fs.lowf
 
 def install(deg: int) -> None:
     src = inspect.getsource(fs.solve_series)
-    src = src.replace("for j in range(len(p_idx), J + 1):", f"for j in ([{deg}] if len(p_idx) <= {deg} else []):")
+    src = src.replace(
+        "for j in range(len(p_idx), J + 1):", f"for j in ([{deg}] if len(p_idx) <= {deg} else []):"
+    )
     src = src.replace("rhs[j][tuple(grid[c])]", "rhs[0][tuple(grid[c])]")
     exec(src, fs.__dict__)
 
@@ -32,12 +35,15 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     deg = 3
     for f in [x for x in args if x.startswith("--deg=")]:
-        deg = int(f.split("=")[1]); args.remove(f)
+        deg = int(f.split("=")[1])
+        args.remove(f)
     for f in [x for x in args if x.startswith("--rc=")]:
-        gfft.R_C = int(f.split("=")[1]); args.remove(f)
+        gfft.R_C = int(f.split("=")[1])
+        args.remove(f)
     prof = "smoothstep"
     for f in [x for x in args if x.startswith("--profile=")]:
-        prof = f.split("=")[1]; args.remove(f)
+        prof = f.split("=")[1]
+        args.remove(f)
     born = "--born" in args
     if born:
         args.remove("--born")

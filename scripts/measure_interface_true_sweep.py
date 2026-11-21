@@ -52,10 +52,7 @@ def contrast_factors(pattern: str, n_cells: int) -> np.ndarray:
 def main() -> None:
     done = set()
     if OUT.exists():
-        done = {
-            (r["layers"], r["n"], r["pattern"])
-            for r in map(json.loads, OUT.read_text().splitlines())
-        }
+        done = {(r["layers"], r["n"], r["pattern"]) for r in map(json.loads, OUT.read_text().splitlines())}
     for spec in sys.argv[1:]:
         n_layers, n = map(int, spec.split("x"))
         todo = [p for p in PATTERNS if (n_layers, n, p) not in done]
@@ -65,9 +62,7 @@ def main() -> None:
         cells = [(iz, ix, iy) for iz in layers for ix in range(n) for iy in range(n)]
         grid = iso.InterfaceGrid(np.array(cells), H, A, B)
         t0 = time.time()
-        c = iso.InterfaceCouplings(
-            grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True
-        )
+        c = iso.InterfaceCouplings(grid, window=isp.Window(0.25), radius=16.0, depth_radius=4.0, split=True)
         print(f"{spec}: set-up {time.time() - t0:.0f} s", flush=True)
         op = iso.LateralOperator(c, OMEGA, p=1, r=0, parts=True)
         kx, ky = 0.3 * OMEGA / A.alpha, 0.1 * OMEGA / A.alpha
@@ -75,9 +70,7 @@ def main() -> None:
             f = contrast_factors(pattern, len(cells))
             ctr = [
                 MaterialContrast(fm * m.lam, fm * m.mu, fm * m.rho)
-                for fm, m in zip(
-                    f, (grid.medium(i) for i in range(len(cells))), strict=True
-                )
+                for fm, m in zip(f, (grid.medium(i) for i in range(len(cells))), strict=True)
             ]
             row = {"layers": n_layers, "n": n, "freq": "1/2", "pattern": pattern}
             for pre in PRECONDITIONERS:
@@ -108,8 +101,7 @@ def main() -> None:
             with OUT.open("a") as fh:
                 fh.write(json.dumps(row) + "\n")
             print(
-                f"  {pattern}: "
-                + ", ".join(f"{p} {row[p]['outer']}" for p in PRECONDITIONERS),
+                f"  {pattern}: " + ", ".join(f"{p} {row[p]['outer']}" for p in PRECONDITIONERS),
                 flush=True,
             )
 

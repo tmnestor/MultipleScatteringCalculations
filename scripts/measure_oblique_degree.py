@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from crosscheck_first_moment_voxel import Scheme  # noqa: E402
+
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.kennett_layers import IsotropicLayer, LayerStack, kennett_layers  # noqa: E402
 

@@ -29,9 +29,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "scripts" / "data" / "near_series_moments.npz"
 CHECKPOINT = Path(
-    os.environ.get(
-        "NEAR_CHECKPOINT", Path.home() / ".cache" / "cubic_scattering" / "near_moments"
-    )
+    os.environ.get("NEAR_CHECKPOINT", Path.home() / ".cache" / "cubic_scattering" / "near_moments")
 )
 ORBITS = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)]
 N_SOURCE, N_TEST = 35, 10
@@ -47,9 +45,7 @@ def jobs(m_max: int) -> list:
     ta, tb = family_tables()
     out = []
     for m in range(-1, m_max + 1):
-        idxs = sorted(
-            set(ta) | (set(tb) if m > -1 else set()), key=lambda i: (len(i), i)
-        )
+        idxs = sorted(set(ta) | (set(tb) if m > -1 else set()), key=lambda i: (len(i), i))
         if m % 2 == 0:  # even m: d^idx r^m vanishes when |idx| > m
             idxs = [i for i in idxs if len(i) <= m]
         out += [(m, idx, off) for off in ORBITS for idx in idxs]
@@ -62,9 +58,7 @@ def compute(job) -> str:
     m, idx, off = job
     path = CHECKPOINT / (key(m, idx, off).replace("|", "_") + ".npy")
     if not path.exists():
-        u = universal_moment_direct(
-            m, idx, off, N_SOURCE, N_TEST
-        )  # not the store being built
+        u = universal_moment_direct(m, idx, off, N_SOURCE, N_TEST)  # not the store being built
         tmp = path.with_suffix(".tmp.npy")
         np.save(tmp, u)
         tmp.replace(path)
@@ -82,9 +76,7 @@ def main() -> None:
             if i % 50 == 0 or i == len(todo):
                 print(f"{i}/{len(todo)} moments", flush=True)
     data = {
-        key(m, idx, off): np.load(
-            CHECKPOINT / (key(m, idx, off).replace("|", "_") + ".npy")
-        )
+        key(m, idx, off): np.load(CHECKPOINT / (key(m, idx, off).replace("|", "_") + ".npy"))
         for m, idx, off in todo
     }
     data["meta"] = np.array([m_max, N_SOURCE, N_TEST])

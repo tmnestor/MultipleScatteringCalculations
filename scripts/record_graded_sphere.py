@@ -73,11 +73,12 @@ def receivers(s: dict, radius: float) -> np.ndarray:
 def one_frequency(omega: float, s: dict) -> dict:
     """The exact and the voxel scattered displacement at the receivers, at one frequency."""
     from crosscheck_graded_sphere import graded_mie_result
+    from gate_sphere_cell_average_vs_mie import CONTRAST, REF
+    from pilot_graded_sphere_vs_exact import CORE, RADIUS, profile
+
     from cubic_scattering.graded_voxel.farfield import graded_field
     from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft
     from cubic_scattering.sphere_scattering import mie_scattered_displacement
-    from gate_sphere_cell_average_vs_mie import CONTRAST, REF
-    from pilot_graded_sphere_vs_exact import CORE, RADIUS, profile
 
     rec = receivers(s, RADIUS)
     ka_s = omega * RADIUS / REF.beta

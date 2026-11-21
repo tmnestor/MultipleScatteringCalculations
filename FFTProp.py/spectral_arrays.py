@@ -306,10 +306,7 @@ def build_spectral_arrays(
         PC[:, 1, 1, i_depth] = PC[:, 2, 1, i_depth] * temp_neg  # m=-1
         PC[:, 0, 1, i_depth] = PC[:, 1, 1, i_depth] * temp_neg  # m=-2
 
-    logger.info(
-        f"Spectral arrays built: Nk={Nk}, Nscatz={Nscatz}, "
-        f"dkx={dkx:.6f}, dx={dx:.6f}, z={z:.6f}"
-    )
+    logger.info(f"Spectral arrays built: Nk={Nk}, Nscatz={Nscatz}, dkx={dkx:.6f}, dx={dx:.6f}, z={z:.6f}")
 
     return SpectralArrays(
         kxvec=kxvec,

@@ -53,9 +53,7 @@ def main() -> None:
         t_kernels = time.time() - t0
         mem = sum(k.nbytes for k in op.kernels.values()) / 1e6
         t0 = time.time()
-        res, n_it = iso.solve_interface_gmres(
-            c, OMEGA, contrasts(g), KX, KY, "P", p=1, operator=op
-        )
+        res, n_it = iso.solve_interface_gmres(c, OMEGA, contrasts(g), KX, KY, "P", p=1, operator=op)
         t_solve = time.time() - t0
         line = (
             f"{2 * n * n} cells: set-up {t_setup:.0f} s ({kept}/{len(c.classes)} classes with corrections);"

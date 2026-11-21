@@ -39,6 +39,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "PhD_fortran_code"))
 sys.path.insert(0, "/Users/tod/Desktop/SeismicInversion")
 
+from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
+
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.layered_correction import (  # noqa: E402
     correct_6x6,
@@ -50,7 +52,6 @@ from cubic_scattering.sweep_kernels import (  # noqa: E402
     same_depth_kernel_9x9,
     vertical_kernel_9x9,
 )
-from Kennett_Reflectivity.layer_model import LayerModel  # noqa: E402
 
 ALPHA, BETA, RHO = 4.0, 2.22, 2.6
 Q_LIMIT = 2.0  # heavy damping: kills the free-surface return in a few km

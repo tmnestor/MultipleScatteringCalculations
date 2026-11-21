@@ -69,7 +69,12 @@ def _multinomial_terms(n: int):
     k = n // 2
     for i in range(k + 1):
         for j in range(k - i + 1):
-            yield i, j, k - i - j, sp.factorial(k) / (sp.factorial(i) * sp.factorial(j) * sp.factorial(k - i - j))
+            yield (
+                i,
+                j,
+                k - i - j,
+                sp.factorial(k) / (sp.factorial(i) * sp.factorial(j) * sp.factorial(k - i - j)),
+            )
 
 
 @cache
@@ -79,9 +84,12 @@ def _poly_box(p: int, q: int, r: int, a: int, b: int, c: int, n: int) -> sp.Expr
     for i, j, l, mult in _multinomial_terms(n):
         tot += (
             mult
-            * sp.Integer(a) ** (p + 2 * i + 1) / (p + 2 * i + 1)
-            * sp.Integer(b) ** (q + 2 * j + 1) / (q + 2 * j + 1)
-            * sp.Integer(c) ** (r + 2 * l + 1) / (r + 2 * l + 1)
+            * sp.Integer(a) ** (p + 2 * i + 1)
+            / (p + 2 * i + 1)
+            * sp.Integer(b) ** (q + 2 * j + 1)
+            / (q + 2 * j + 1)
+            * sp.Integer(c) ** (r + 2 * l + 1)
+            / (r + 2 * l + 1)
         )
     return tot
 
@@ -94,8 +102,10 @@ def _poly_face(q: int, r: int, a: int, b: int, c: int, n: int) -> sp.Expr:
         tot += (
             mult
             * sp.Integer(a) ** (2 * i)
-            * sp.Integer(b) ** (q + 2 * j + 1) / (q + 2 * j + 1)
-            * sp.Integer(c) ** (r + 2 * l + 1) / (r + 2 * l + 1)
+            * sp.Integer(b) ** (q + 2 * j + 1)
+            / (q + 2 * j + 1)
+            * sp.Integer(c) ** (r + 2 * l + 1)
+            / (r + 2 * l + 1)
         )
     return tot
 
@@ -297,8 +307,10 @@ def reduce_on_irreps(blocks) -> dict:
         v = _vectors(name)
         k = v.shape[1]
         left = (v.T * v).inv() * v.T  # V^+
-        m_g = [sum(GRAM[p // 9] * v[p, j] ** 2 for p in range(36)) / sum(v[p, j] ** 2 for p in range(36))
-               for j in range(k)]
+        m_g = [
+            sum(GRAM[p // 9] * v[p, j] ** 2 for p in range(36)) / sum(v[p, j] ** 2 for p in range(36))
+            for j in range(k)
+        ]
         leak = 0
         na, nb = [], []
         for a_n, b_n in blocks:
@@ -331,7 +343,9 @@ def irrep_t(r: dict, values: dict, kh: float, gamma: float, mu: float, delta9: n
         wa = 1j**n / float(sp.factorial(n))
         wb = -(1j**n) * (1.0 - gamma ** (n + 2)) / float(sp.factorial(n + 2))
         for i, j in itertools.product(range(k), repeat=2):
-            n_g[i, j] += kh**n * (wa * lin_value(r["NA"][n][i][j], values) + wb * lin_value(r["NB"][n][i][j], values))
+            n_g[i, j] += kh**n * (
+                wa * lin_value(r["NA"][n][i][j], values) + wb * lin_value(r["NB"][n][i][j], values)
+            )
     n_g /= 4.0 * np.pi * mu
     pinv = np.linalg.solve(v.T @ v, v.T)
     d_g = pinv @ np.kron(np.eye(4), delta9) @ v
@@ -372,7 +386,9 @@ def write_blocks(reduced: dict, n_max: int) -> None:
                     x = store[n][i][j]
                     if x:
                         val = float(lin_value(x, {c: float(sp.N(c, 30)) for c in x})) / (4 * np.pi)
-                        lines.append(f"  {tag}_{n}[{i},{j}] = {[str(c) for c in _on_pi_basis(x)]}   ({val:+.12e})")
+                        lines.append(
+                            f"  {tag}_{n}[{i},{j}] = {[str(c) for c in _on_pi_basis(x)]}   ({val:+.12e})"
+                        )
         lines.append("")
     (OUT / "self_blocks_irreps.txt").write_text("\n".join(lines) + "\n")
     print(f"   wrote {OUT / 'self_blocks_irreps.txt'}")
@@ -397,13 +413,18 @@ def main() -> int:
     for (m, idx), mat in exact.items():
         got = np.array([[float(sp.N(e, 30)) for e in row] for row in mat])
         num = universal_moment(m, idx, (0, 0, 0), 10, 4)[:, :4]
-        err = float(np.abs(got - num).max() / max(np.abs(num).max(), 1e-300)) if np.abs(num).max() else float(
-            np.abs(got).max()
+        err = (
+            float(np.abs(got - num).max() / max(np.abs(num).max(), 1e-300))
+            if np.abs(num).max()
+            else float(np.abs(got).max())
         )
         if err > worst:
             worst, where = err, (m, idx)
-    check(f"1. {len(exact)} exact self-cell moments, m = -1..{n_max + 1}, equal the package's", worst < 1e-12,
-          f"{worst:.1e} at {where}")
+    check(
+        f"1. {len(exact)} exact self-cell moments, m = -1..{n_max + 1}, equal the package's",
+        worst < 1e-12,
+        f"{worst:.1e} at {where}",
+    )
 
     # 2. the series of the self block against the package's, at several k_S h
     blocks = series_blocks(exact, n_max)
@@ -418,16 +439,30 @@ def main() -> int:
         k_ser = near_block_series((0, 0, 0), h, omega, REF, n_source=10, n_test=4)[:, :4]
         k_quad = near_block((0, 0, 0), h, omega, REF, n_q=14)[:, :4]
         scale = np.abs(k_ser).max()
-        rows.append((kh, np.abs(k_ex - k_ser).max() / scale, np.abs(k_ex - k_quad).max() / scale,
-                     np.abs(k_ser - k_quad).max() / scale))
+        rows.append(
+            (
+                kh,
+                np.abs(k_ex - k_ser).max() / scale,
+                np.abs(k_ex - k_quad).max() / scale,
+                np.abs(k_ser - k_quad).max() / scale,
+            )
+        )
     for kh, e_ser, e_quad, e_pq in rows:
-        print(f"   k_S h = {kh:<5}: exact series to n = {n_max} against the package series {e_ser:.1e}, "
-              f"against quadrature {e_quad:.1e} (package series against quadrature {e_pq:.1e})")
+        print(
+            f"   k_S h = {kh:<5}: exact series to n = {n_max} against the package series {e_ser:.1e}, "
+            f"against quadrature {e_quad:.1e} (package series against quadrature {e_pq:.1e})"
+        )
     slope = np.log(rows[-1][1] / rows[-2][1]) / np.log(rows[-1][0] / rows[-2][0])
-    check(f"2a. the truncated exact series differs from the full one at order (k_S h)^{n_max + 1}",
-          abs(slope - (n_max + 1)) < 0.3, f"slope {slope:.2f}")
-    check("2b. at k_S h = 0.02 the truncated series is within its truncation of the package series",
-          rows[0][1] < 1e-10 * 10 ** (5 - n_max), f"{rows[0][1]:.1e}")
+    check(
+        f"2a. the truncated exact series differs from the full one at order (k_S h)^{n_max + 1}",
+        abs(slope - (n_max + 1)) < 0.3,
+        f"slope {slope:.2f}",
+    )
+    check(
+        "2b. at k_S h = 0.02 the truncated series is within its truncation of the package series",
+        rows[0][1] < 1e-10 * 10 ** (5 - n_max),
+        f"{rows[0][1]:.1e}",
+    )
 
     # 3. which constants occur at each order
     for n, (a_n, b_n) in enumerate(blocks):
@@ -448,10 +483,15 @@ def main() -> int:
         t_ex = single_site_t36(h, delta, pad)
         t_quad = single_site_t36(h, delta, near_block((0, 0, 0), h, omega, REF, n_q=14))
         t_rows.append((kh, np.abs(t_ex - t_quad).max() / np.abs(t_quad).max()))
-        print(f"   k_S h = {kh:<5}: T36 from the exact series against T36 by quadrature {t_rows[-1][1]:.1e}")
+        print(
+            f"   k_S h = {kh:<5}: T36 from the exact series against T36 by quadrature {t_rows[-1][1]:.1e}"
+        )
     slope = np.log(t_rows[-1][1] / t_rows[-2][1]) / np.log(t_rows[-1][0] / t_rows[-2][0])
-    check(f"4. T36 from the series to (k_S h)^{n_max} carries an error of order (k_S h)^{n_max + 1}",
-          abs(slope - (n_max + 1)) < 0.4, f"slope {slope:.2f}")
+    check(
+        f"4. T36 from the series to (k_S h)^{n_max} carries an error of order (k_S h)^{n_max + 1}",
+        abs(slope - (n_max + 1)) < 0.4,
+        f"slope {slope:.2f}",
+    )
     with open(OUT / "series_blocks.pkl", "wb") as fh:
         pickle.dump({"n_max": n_max, "blocks": blocks, "constants": consts}, fh)
 
@@ -462,22 +502,34 @@ def main() -> int:
     a1g = reduced["A1g"]["NA"][0][1][1], reduced["A1g"]["NB"][0][1][1]  # strain-strain, n = 0
     g = sp.Symbol("gamma", positive=True)
     static = sp.simplify(lin_expr(a1g[0]) - (1 - g**2) / 2 * lin_expr(a1g[1]))
-    check("5b. static uniform dilatation: 4 pi mu N = -4 pi gamma^2 / 3, i.e. N = -1 / 3 (lambda + 2 mu)",
-          sp.simplify(static + 4 * sp.pi * g**2 / 3) == 0, str(static))
+    check(
+        "5b. static uniform dilatation: 4 pi mu N = -4 pi gamma^2 / 3, i.e. N = -1 / 3 (lambda + 2 mu)",
+        sp.simplify(static + 4 * sp.pi * g**2 / 3) == 0,
+        str(static),
+    )
     worst = 0.0
     for kh in (0.05, 0.1, 0.2):
         omega = kh * REF.beta  # h = 1
         delta = np.zeros((4, 9, 9), dtype=complex)
         delta[0] = contrast_operator(dlam, dmu, drho, omega)
         t36 = single_site_t36(1.0, delta, near_block((0, 0, 0), 1.0, omega, REF, n_q=14))
-        err = max(
-            np.abs(t36 @ r["V"] - r["V"] @ irrep_t(r, values, kh, gamma, REF.mu, delta[0], n_max)).max()
-            for r in reduced.values()
-        ) / np.abs(t36).max()
+        err = (
+            max(
+                np.abs(t36 @ r["V"] - r["V"] @ irrep_t(r, values, kh, gamma, REF.mu, delta[0], n_max)).max()
+                for r in reduced.values()
+            )
+            / np.abs(t36).max()
+        )
         if kh == 0.05:
             worst = err
-        print(f"   k_S h = {kh:<5}: T36 against the irrep blocks of the series, worst over irreps {err:.1e}")
-    check("5c. T36 V = V T_Gamma for every irrep, to the truncation of the series", worst < 1e-8, f"{worst:.1e}")
+        print(
+            f"   k_S h = {kh:<5}: T36 against the irrep blocks of the series, worst over irreps {err:.1e}"
+        )
+    check(
+        "5c. T36 V = V T_Gamma for every irrep, to the truncation of the series",
+        worst < 1e-8,
+        f"{worst:.1e}",
+    )
     # 6. the static dilatation in closed form is Eshelby's sphere result: T = 8 h^3 D / (1 + D / 3(lambda + 2 mu)),
     #    D = 3 dlambda + 2 dmu = 3 dK, i.e. 8 h^3 3 dK (K + 4 mu / 3) / (K' + 4 mu / 3)
     lam = REF.rho * (REF.alpha**2 - 2 * REF.beta**2)
@@ -491,8 +543,11 @@ def main() -> int:
     k_bulk = lam + 2 * REF.mu / 3
     eshelby = 8.0 * 3 * (d_bulk / 3) * (k_bulk + 4 * REF.mu / 3) / (k_bulk + d_bulk / 3 + 4 * REF.mu / 3)
     err = abs(t_a1g / eshelby - 1)
-    check("6. static uniform dilatation of T36 equals Eshelby's sphere result in closed form", err < 1e-12,
-          f"{err:.1e}")
+    check(
+        "6. static uniform dilatation of T36 equals Eshelby's sphere result in closed form",
+        err < 1e-12,
+        f"{err:.1e}",
+    )
     # 7. each block holds at most one displacement vector; its column of X = N Delta vanishes as k_S h -> 0, and
     #    the Schur complement on it, (a, b, c, S), reproduces the inverse of I - X
     worst_inv, worst_col = 0.0, 0.0
@@ -504,9 +559,16 @@ def main() -> int:
             for n in range(n_max + 1):
                 wa = 1j**n / float(sp.factorial(n))
                 wb = -(1j**n) * (1.0 - gamma ** (n + 2)) / float(sp.factorial(n + 2))
-                n_g += kh**n * np.array([[wa * lin_value(r["NA"][n][i][j], values)
-                                          + wb * lin_value(r["NB"][n][i][j], values) for j in range(k)]
-                                         for i in range(k)])
+                n_g += kh**n * np.array(
+                    [
+                        [
+                            wa * lin_value(r["NA"][n][i][j], values)
+                            + wb * lin_value(r["NB"][n][i][j], values)
+                            for j in range(k)
+                        ]
+                        for i in range(k)
+                    ]
+                )
             n_g /= 4.0 * np.pi * REF.mu
             v = r["V"]
             x = n_g @ np.linalg.solve(v.T @ v, v.T @ np.kron(np.eye(4), d9) @ v)
@@ -527,8 +589,11 @@ def main() -> int:
             back[np.ix_(o, o)] = inv
             direct = np.linalg.inv(np.eye(k) - x)
             worst_inv = max(worst_inv, np.abs(back - direct).max() / np.abs(direct).max())
-    check("7. the displacement column of X vanishes statically; the Schur complement gives every inverse",
-          worst_col < 1e-12 and worst_inv < 1e-13, f"column {worst_col:.1e}, inverse {worst_inv:.1e}")
+    check(
+        "7. the displacement column of X vanishes statically; the Schur complement gives every inverse",
+        worst_col < 1e-12 and worst_inv < 1e-13,
+        f"column {worst_col:.1e}, inverse {worst_inv:.1e}",
+    )
     # 8. the uniform-shear channels E_g (dimension 2) and T_2g (dimension 3) average to the sphere's shear
     #    constant, exactly and for every Poisson ratio: (2 N_Eg + 3 N_T2g) / 5 = -(4 - 5 nu) / [15 mu (1 - nu)].
     #    Static 4 pi mu N = A_0 - (1 - g^2) B_0 / 2 on the uniform-strain vector, g = beta / alpha symbolic.
@@ -543,11 +608,16 @@ def main() -> int:
     avg = (2 * static_n("Eg") + 3 * static_n("T2g")) / 5
     sphere = -(4 - 5 * nu) / (15 * (1 - nu))
     resid = sp.simplify(sp.expand_log(sp.expand(avg - sphere), force=True))
-    print(f"   mu N_Eg = {float(static_n('Eg').subs(g, gamma)):.6f}, mu N_T2g = "
-          f"{float(static_n('T2g').subs(g, gamma)):.6f}, average {float(avg.subs(g, gamma)):.7f}, "
-          f"sphere {float(sphere.subs(g, gamma)):.7f}")
-    check("8. (2 N_Eg + 3 N_T2g) / 5 equals the sphere's Eshelby shear constant, exactly for every nu",
-          resid == 0, f"residual {resid}")
+    print(
+        f"   mu N_Eg = {float(static_n('Eg').subs(g, gamma)):.6f}, mu N_T2g = "
+        f"{float(static_n('T2g').subs(g, gamma)):.6f}, average {float(avg.subs(g, gamma)):.7f}, "
+        f"sphere {float(sphere.subs(g, gamma)):.7f}"
+    )
+    check(
+        "8. (2 N_Eg + 3 N_T2g) / 5 equals the sphere's Eshelby shear constant, exactly for every nu",
+        resid == 0,
+        f"residual {resid}",
+    )
     write_blocks(reduced, n_max)
 
     print(f"{sum(ok)}/{len(ok)} checks passed")

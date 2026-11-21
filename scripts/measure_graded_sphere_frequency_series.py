@@ -50,9 +50,10 @@ import measure_ball_gradient_hierarchy as hier  # noqa: E402
 import measure_graded_sphere_gradient_hierarchy as gs  # noqa: E402
 import measure_graded_sphere_gradient_hierarchy_fft as gfft  # noqa: E402
 import measure_graded_sphere_low_frequency as lowf  # noqa: E402
+from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
+
 from cubic_scattering.graded_voxel import derivatives as gd  # noqa: E402
 from cubic_scattering.sphere_scattering import mie_scattered_displacement  # noqa: E402
-from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
 
 J = 6  # powers of k_S kept in the cell model; the far field to (k a)^(2 + J)
 AXES = (0, 1, 2)
@@ -204,7 +205,9 @@ def solve_series(n_sub: int):
         if SPILL_DIR is None:
             bo = np.zeros(shape, dtype=complex)
         else:
-            bo = np.lib.format.open_memmap(SPILL_DIR / f"b_oct_{j}.npy", mode="w+", dtype=complex, shape=shape)
+            bo = np.lib.format.open_memmap(
+                SPILL_DIR / f"b_oct_{j}.npy", mode="w+", dtype=complex, shape=shape
+            )
         for vi in range(n_v):
             for r0 in range(0, nu3, nu3 // 3):
                 rows = slice(r0, r0 + nu3 // 3)

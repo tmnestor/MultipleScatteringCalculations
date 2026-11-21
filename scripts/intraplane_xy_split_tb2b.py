@@ -78,9 +78,7 @@ def g_exact(d: np.ndarray, kappa: complex) -> np.ndarray:
 def _uniform_nodes(kappa: complex):
     kmax = KMAX_FAC * abs(kappa)
     k = np.linspace(-kmax, kmax, N_TRANS)
-    w = np.full(
-        N_TRANS, (2 * kmax) / (N_TRANS - 1)
-    )  # trapezoid step (ends halved below)
+    w = np.full(N_TRANS, (2 * kmax) / (N_TRANS - 1))  # trapezoid step (ends halved below)
     w[0] *= 0.5
     w[-1] *= 0.5
     return k, w
@@ -114,9 +112,7 @@ def g_res(d: np.ndarray, kappa: complex) -> np.ndarray:
         for c0 in range(0, idx.size, 64):
             sl = slice(c0, c0 + 64)
             sweep = np.exp(1j * kperp * np.abs(d_sw[sl])[:, None, None]) / kperp
-            phase = np.exp(
-                1j * (ka * d_a[sl][:, None, None] + kb * d_b[sl][:, None, None])
-            )
+            phase = np.exp(1j * (ka * d_a[sl][:, None, None] + kb * d_b[sl][:, None, None]))
             out[idx[sl]] = pref * np.sum(w2 * phase * sweep, axis=(1, 2))
     return out
 
@@ -129,9 +125,7 @@ def build_sphere():
     WU = np.broadcast_to(wu[:, None], TH.shape)
     th, ph = TH.ravel(), PH.ravel()
     w = (WU * (2 * np.pi / N_PHI)).ravel()
-    sphere = RHO0 * np.column_stack(
-        [np.sin(th) * np.cos(ph), np.sin(th) * np.sin(ph), np.cos(th)]
-    )
+    sphere = RHO0 * np.column_stack([np.sin(th) * np.cos(ph), np.sin(th) * np.sin(ph), np.cos(th)])
     return sphere, th, ph, w
 
 
@@ -158,12 +152,7 @@ def project(field_vals, th, ph, w, kappa):
 
 
 def kambe_direct(kappa, lr):
-    iv = [
-        (i, j)
-        for i in range(-lr, lr + 1)
-        for j in range(-lr, lr + 1)
-        if not (i == 0 and j == 0)
-    ]
+    iv = [(i, j) for i in range(-lr, lr + 1) for j in range(-lr, lr + 1) if not (i == 0 and j == 0)]
     ij = np.array(iv)
     rn = AL * np.sqrt(ij[:, 0] ** 2 + ij[:, 1] ** 2)
     phi_r = np.arctan2(ij[:, 1], ij[:, 0])
@@ -200,10 +189,7 @@ def main() -> None:
     for name, kap in (("kP", KP), ("kS", KS)):
         ge, gr = g_exact(samp, kap), g_res(samp, kap)
         relA = np.max(np.abs(gr - ge) / np.abs(ge))
-        print(
-            f"  [A] g_res vs exact ({name}): {relA:.2e} -> "
-            f"{'PASS' if relA < 1e-4 else 'FAIL'}"
-        )
+        print(f"  [A] g_res vs exact ({name}): {relA:.2e} -> {'PASS' if relA < 1e-4 else 'FAIL'}")
 
     sphere, th, ph, w = build_sphere()
     for name, kap in (("kP", KP), ("kS", KS)):
@@ -220,10 +206,7 @@ def main() -> None:
         relB = maxdiff(Dr, Sk) / maxabs(Sk)
         relC = maxdiff(De, Sk) / maxabs(Sk)
         print(f"  [C] proj(exact) vs Kambe ({name}): {relC:.2e}")
-        print(
-            f"  [B] proj(residue) vs Kambe ({name}): {relB:.2e} -> "
-            f"{'PASS' if relB < 1e-3 else 'FAIL'}"
-        )
+        print(f"  [B] proj(residue) vs Kambe ({name}): {relB:.2e} -> {'PASS' if relB < 1e-3 else 'FAIL'}")
 
 
 if __name__ == "__main__":

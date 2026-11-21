@@ -101,9 +101,7 @@ def run() -> Path:
                     }
                     try:
                         t0 = time.perf_counter()
-                        f_tuple = far_field_amplitudes(
-                            rep, omega, A, REF, contrast, theta, incident=pol
-                        )
+                        f_tuple = far_field_amplitudes(rep, omega, A, REF, contrast, theta, incident=pol)
                         cost_s = time.perf_counter() - t0
                     except (ValueError, NotImplementedError) as exc:
                         # Only the documented incidence limitation (born/eshelby P-only;

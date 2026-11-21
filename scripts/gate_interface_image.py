@@ -86,22 +86,14 @@ def gate_corner(case: tuple) -> bool:
         1: -sp.log(r + zeta) / (2 * sp.pi),
         2: (zeta * sp.log(r + zeta) - r) / (2 * sp.pi),
     }[j]
-    expr = (
-        sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2]) if sum(alpha) else phi
-    )
-    g = sp.lambdify(
-        (rx, ry, zeta), expr * rx ** n[0] * ry ** n[1] * zeta ** n[2], "mpmath"
-    )
+    expr = sp.diff(phi, rx, alpha[0], ry, alpha[1], zeta, alpha[2]) if sum(alpha) else phi
+    g = sp.lambdify((rx, ry, zeta), expr * rx ** n[0] * ry ** n[1] * zeta ** n[2], "mpmath")
     mp.mp.dps = 15
     ref = float(mp.quad(g, bx, by, bz))
-    got = _corner_moments(
-        kernel_function(j, alpha), kernel_degree(j, alpha), (bx, by, bz), n, 40
-    )[n]
+    got = _corner_moments(kernel_function(j, alpha), kernel_degree(j, alpha), (bx, by, bz), n, 40)[n]
     err = abs(got - ref) / abs(ref)
     ok = err < 1e-12
-    print(
-        f"I1  Phi{j} d{alpha} s{n} box {bx, by, bz}: {err:.1e}  {'PASS' if ok else 'FAIL'}"
-    )
+    print(f"I1  Phi{j} d{alpha} s{n} box {bx, by, bz}: {err:.1e}  {'PASS' if ok else 'FAIL'}")
     return ok
 
 
@@ -125,10 +117,7 @@ def brute_block(
         ]
     )
     mc = np.array(
-        [
-            np.prod([v[:, i] ** e[i] for i in range(3)], 0)
-            for e in SOURCE_EXPONENTS_QUARTIC[:n_source]
-        ]
+        [np.prod([v[:, i] ** e[i] for i in range(3)], 0) for e in SOURCE_EXPONENTS_QUARTIC[:n_source]]
     )
     mats = (A.lam, A.mu, B.lam, B.mu)
     out = np.zeros((n_test, n_source, 9, 9))
@@ -149,15 +138,11 @@ def gate_block(case: tuple) -> bool:
     ref = brute_block(rc, sc, ns, nt, 10)
     err = np.abs(got - ref).max() / np.abs(ref).max()
     ok = err < 1e-11
-    print(
-        f"I2  {rc} <- {sc}, {nt} field x {ns} source: {err:.1e}  {'PASS' if ok else 'FAIL'}"
-    )
+    print(f"I2  {rc} <- {sc}, {nt} field x {ns} source: {err:.1e}  {'PASS' if ok else 'FAIL'}")
     return ok
 
 
-def gate_transmission_identical(
-    rc: tuple, sc: tuple, ns: int = 10, nt: int = 4
-) -> bool:
+def gate_transmission_identical(rc: tuple, sc: tuple, ns: int = 10, nt: int = 4) -> bool:
     """T1 for one pair across the interface, with identical media."""
     from cubic_scattering.graded_voxel.blocks import coupling_block
 
@@ -176,9 +161,7 @@ def gate_transmission_brute(rc: tuple, sc: tuple, ns: int = 10, nt: int = 4) -> 
     ref = brute_block(rc, sc, ns, nt, 10, kind="transmitted")
     err = np.abs(got - ref).max() / np.abs(ref).max()
     ok = err < 1e-11
-    print(
-        f"T2  {rc} <- {sc}, {nt} field x {ns} source: {err:.1e}  {'PASS' if ok else 'FAIL'}"
-    )
+    print(f"T2  {rc} <- {sc}, {nt} field x {ns} source: {err:.1e}  {'PASS' if ok else 'FAIL'}")
     return ok
 
 

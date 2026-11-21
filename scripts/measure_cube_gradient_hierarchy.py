@@ -36,9 +36,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import crosscheck_cube_moments_ball_shell as cm  # noqa: E402
 import measure_ball_gradient_hierarchy as hier  # noqa: E402
+from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
+
 from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E402
 from cubic_scattering.graded_voxel.solver import solve_graded_sphere  # noqa: E402
-from gate_sphere_cell_average_vs_mie import obs_points  # noqa: E402
 
 HALF = 10.0  # half-width of the cube
 THETA = np.linspace(0.2, np.pi - 0.2, 9)

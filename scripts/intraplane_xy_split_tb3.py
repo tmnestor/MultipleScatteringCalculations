@@ -32,9 +32,7 @@ KS = 2 * np.pi * (1 + 1j * ETA) / 3.0
 
 def row_brute(kxc: complex, r_x: float, kpar_x: float, m: int) -> complex:
     i = np.arange(-m, m + 1)
-    return np.sum(
-        np.exp(1j * kxc * np.abs(r_x - AL * i)) * np.exp(1j * kpar_x * AL * i)
-    )
+    return np.sum(np.exp(1j * kxc * np.abs(r_x - AL * i)) * np.exp(1j * kpar_x * AL * i))
 
 
 def row_closed(kxc: complex, r_x: float, kpar_x: float) -> complex:
@@ -56,9 +54,7 @@ def row_closed_vec(kxc: np.ndarray, r_x: float, kpar_x: float) -> np.ndarray:
     return left + right
 
 
-def field_sweep(
-    r: np.ndarray, kappa: complex, nmax: int, kz_max: float, nkz: int
-) -> complex:
+def field_sweep(r: np.ndarray, kappa: complex, nmax: int, kz_max: float, nkz: int) -> complex:
     """Resummed lattice field at receiver r (R != 0 sites), via the DUAL sweep.
 
     Sweep the lateral axis with the larger receiver coordinate (argmax(|r_x|,|r_y|))
@@ -104,9 +100,7 @@ def run_tb3b() -> None:
     for name, kap in (("kP", KP), ("kS", KS)):
         f_sweep = np.array([field_sweep(r, kap, nmax, kz_max, nkz) for r in sphere])
         D_sweep = t2.project(f_sweep, th, ph, w, kap)
-        D_brute = t2.project(
-            t2.lattice_field(t2.g_res, sphere, kap, lr), th, ph, w, kap
-        )
+        D_brute = t2.project(t2.lattice_field(t2.g_res, sphere, kap, lr), th, ph, w, kap)
         D_kambe = t2.kambe_direct(kap, lr)
         rel_sb = t2.maxdiff(D_sweep, D_brute) / t2.maxabs(D_brute)
         rel_sk = t2.maxdiff(D_sweep, D_kambe) / t2.maxabs(D_kambe)

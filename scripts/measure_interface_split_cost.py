@@ -30,9 +30,7 @@ def main() -> None:
     grid = iso.InterfaceGrid(np.array(cells), H, A, B)
     for split in (False, True):
         t0 = time.time()
-        c = iso.InterfaceCouplings(
-            grid, window=isp.Window(0.25), radius=16.0, split=split
-        )
+        c = iso.InterfaceCouplings(grid, window=isp.Window(0.25), radius=16.0, split=split)
         line = f"{'split' if split else 'unsplit'}: set-up {time.time() - t0:.0f} s"
         for i, omega in enumerate(OMEGAS):
             t0 = time.time()

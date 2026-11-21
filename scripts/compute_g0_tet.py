@@ -76,9 +76,7 @@ def main():
     val_str = mpmath.nstr(g0b, 55)
     from pathlib import Path
 
-    out = Path(
-        "/Users/tod/Desktop/MultipleScatteringCalculations/scripts/g0_tet_value.txt"
-    )
+    out = Path("/Users/tod/Desktop/MultipleScatteringCalculations/scripts/g0_tet_value.txt")
     out.write_text(val_str + "\n")
     print(f"\n  Saved to g0_tet_value.txt: {val_str}")
 

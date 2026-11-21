@@ -65,10 +65,7 @@ def main() -> None:
         f"1. 2 x 4 x 4: {len(full.classes)} classes; set-up {t_full:.0f} s unsplit, {t_split:.0f} s split",
         flush=True,
     )
-    k0 = max(
-        float(np.abs(isp.image_block((zr, 0, 0), (-1, 0, 0), H, A, B, 10, 4)).max())
-        for zr in (-1, 1)
-    )
+    k0 = max(float(np.abs(isp.image_block((zr, 0, 0), (-1, 0, 0), H, A, B, 10, 4)).max()) for zr in (-1, 1))
     for lab, omega in FREQS.items():
         t0 = time.time()
         ref = full.interface_canonical(omega)
@@ -103,9 +100,7 @@ def main() -> None:
     t0 = time.time()
     op = iso.LateralOperator(c, omega, p=1, r=0)
     t_kernels = time.time() - t0
-    _, n_it = iso.solve_interface_gmres(
-        c, omega, contrasts(g), kx, ky, "P", p=1, operator=op
-    )
+    _, n_it = iso.solve_interface_gmres(c, omega, contrasts(g), kx, ky, "P", p=1, operator=op)
     print(
         f"3. 2 x 12 x 12, split: set-up {t_setup:.0f} s (S1: 1443 s); kernels of one frequency {t_kernels:.0f} s"
         f" (S1: 183 s); GMRES {n_it} products",
