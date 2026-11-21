@@ -205,7 +205,10 @@ def compute_slab_tmatrices(
                 key = (dl, dm, dr)
                 if key not in cache:
                     contrast = MaterialContrast(dl, dm, dr)
-                    from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+                    from .point_cell_self import (
+                        lattice_cube_tmatrix,
+                    )  # the configured single site of a lattice cell
+
                     result = lattice_cube_tmatrix(omega, a, ref, contrast, k_hat=k_hat)
                     cache[key] = _sub_cell_tmatrix_9x9(result, omega, a)
                 T_all[lz, i, j] = cache[key]
@@ -218,6 +221,42 @@ def compute_slab_tmatrices(
 # ═══════════════════════════════════════════════════════════════
 
 
+class BlochKernel(np.ndarray):
+    """A slab kernel that records the lateral Bloch wavevector it was built at.
+
+    ``build_slab_kernels`` returns one. For a periodic slab the kernel is the lattice sum
+    sum_R G(dz, R) exp(-i (k_n + bloch_k) . R) at the M^2 lattice wavevectors k_n, and it serves only
+    waves whose lateral wavevector is ``bloch_k``: ``compute_slab_scattering`` checks that. A plain array
+    counts as built at (0, 0).
+    """
+
+    bloch_k: tuple[float, float]
+
+    def __new__(cls, array: NDArray, bloch_k: tuple[float, float]) -> "BlochKernel":
+        obj = np.asarray(array).view(cls)
+        obj.bloch_k = (float(bloch_k[0]), float(bloch_k[1]))
+        return obj
+
+    def __array_finalize__(self, obj: NDArray | None) -> None:
+        self.bloch_k = getattr(obj, "bloch_k", (0.0, 0.0))
+
+
+def incident_bloch_k(
+    omega: float, ref: ReferenceMedium, k_hat: NDArray, wave_type: str
+) -> tuple[float, float]:
+    """The lateral wavevector (k_x, k_y) of the plane wave ``_build_slab_incident_field`` builds."""
+    direction = np.asarray(k_hat, dtype=float)
+    direction = direction / np.linalg.norm(direction)
+    k_mag = omega / (ref.alpha if wave_type == "P" else ref.beta)
+    return (float(k_mag * direction[1]), float(k_mag * direction[2]))
+
+
+def _lateral_modulation(geometry: SlabGeometry, bloch_k: tuple[float, float]) -> NDArray:
+    """exp(i bloch_k . x) at the cell centres, shape (N_z, M, M, 1)."""
+    centres = geometry.all_centres()
+    return np.exp(1j * (bloch_k[0] * centres[..., 1] + bloch_k[1] * centres[..., 2]))[..., np.newaxis]
+
+
 def _add_supercell_images(
     kernel_circ: NDArray,
     M: int,
@@ -226,6 +265,7 @@ def _add_supercell_images(
     omega: float,
     ref: ReferenceMedium,
     n_img: int,
+    bloch_k: tuple[float, float] = (0.0, 0.0),
 ) -> None:
     """Add the periodic images the (2M-1)^2 patch leaves out, in place.
 
@@ -243,6 +283,8 @@ def _add_supercell_images(
     residual after truncation is what decides whether an Ewald split is needed.
     `scripts/gate_lateral_sum_invariance.py` measures it against the exact
     supercell-invariance requirement rather than inspecting the terms.
+
+    Each image carries the Bloch phase exp(-i bloch_k . R) of its own (unwrapped) offset R.
     """
     for cx in range(M):
         for cy in range(M):
@@ -258,7 +300,10 @@ def _add_supercell_images(
                         continue
                     seps.append((dz, gx * d, gy * d))
             if seps:
-                kernel_circ[cx, cy] += _propagator_blocks_9x9(np.array(seps), omega, ref).sum(axis=0)
+                sep_arr = np.array(seps)
+                phases = np.exp(-1j * (bloch_k[0] * sep_arr[:, 1] + bloch_k[1] * sep_arr[:, 2]))
+                blocks = _propagator_blocks_9x9(sep_arr, omega, ref)
+                kernel_circ[cx, cy] += np.einsum("n,nab->ab", phases, blocks)
 
 
 def _bloch_contact_correction(
@@ -273,6 +318,7 @@ def _bloch_contact_correction(
     va_gauss: int = 4,
     va_all_reach: int = 4,
     contact_average: str = "single",
+    bloch_k: tuple[float, float] = (0.0, 0.0),
 ) -> NDArray:
     """Bloch transform of [averaged - point] over the contact shell.
 
@@ -372,7 +418,7 @@ def _bloch_contact_correction(
     for n1 in range(M):
         for n2 in range(M):
             # Same convention as the kernel it corrects: sum_R f(R) exp(-i k.R).
-            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (M * d)
+            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (M * d) + np.asarray(bloch_k)
             for (dx, dy), delta in zip(offsets, deltas, strict=True):
                 phase = np.exp(-1j * (k_par[0] * dx * d + k_par[1] * dy * d))
                 out[n1, n2] += delta * phase
@@ -643,6 +689,7 @@ def _build_slab_kernels(
     exact_cell_average: bool | None = None,
     cell_avg_r0: int = 2,
     cell_avg_gauss: int = 6,
+    bloch_k: tuple[float, float] = (0.0, 0.0),
 ) -> NDArray:
     """Build FFT kernels for all vertical separations.
 
@@ -660,11 +707,27 @@ def _build_slab_kernels(
         periodic: If True, fold kernel to M×M for circular convolution
             (infinite periodic slab). Default False gives (2M-1)×(2M-1)
             linear convolution (finite slab).
+        bloch_k: The lateral wavevector (k_x, k_y) of the wave the kernel is to serve, periodic
+            slabs only. The field is then exp(i bloch_k . x) times a lattice-periodic function, and
+            the kernel is sum_R G(dz, R) exp(-i (k_n + bloch_k) . R) at the lattice wavevectors k_n.
+            At (0, 0), normal incidence, these are the lattice's own Bloch points. Used at any
+            other wave they wrap it round the lattice with the wrong phase unless the lattice holds
+            a whole number of its lateral wavelengths.
 
     Returns:
         FFT'd kernels, shape (2*N_z-1, H_xy, H_xy, 9, 9), complex,
         where H_xy = M if periodic else 2*M-1.
     """
+    bloch_k = (float(bloch_k[0]), float(bloch_k[1]))
+    if any(bloch_k) and not periodic:
+        msg = (
+            f"bloch_k = {bloch_k} was given for a finite slab (periodic=False).\n"
+            "  Where: cubic_scattering/slab_scattering.py, _build_slab_kernels()\n"
+            "  Valid: a finite slab is convolved with the field itself and has no Bloch wavevector;\n"
+            "         bloch_k applies to periodic=True only\n"
+            "  Fix:   drop bloch_k, or pass periodic=True"
+        )
+        raise ValueError(msg)
     if va_all_reach < 1:
         msg = (
             f"va_all_reach must be >= 1, got {va_all_reach}.\n"
@@ -801,7 +864,9 @@ def _build_slab_kernels(
                 if dz_vox == 0:
                     for n1 in range(M):
                         for n2 in range(M):
-                            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (M * d)
+                            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (M * d) + np.asarray(
+                                bloch_k
+                            )
                             kernel_hat[k, n1, n2] = averaged_same_plane_9x9(
                                 d,
                                 omega,
@@ -822,8 +887,9 @@ def _build_slab_kernels(
                         eta=ewald_eta,
                         cutoff=ewald_cutoff,
                         cell_half_width=half,
+                        k_offset=bloch_k,
                     )
-            return kernel_hat
+            return BlochKernel(kernel_hat, bloch_k)
 
         for k in range(n_dz):
             dz_vox = k - (N_z - 1)
@@ -835,6 +901,7 @@ def _build_slab_kernels(
                 ref,
                 eta=ewald_eta,
                 cutoff=ewald_cutoff,
+                k_offset=bloch_k,
             )
             if volume_averaged:
                 # The lattice sum is built from POINT propagators. The Galerkin
@@ -856,8 +923,9 @@ def _build_slab_kernels(
                     va_gauss,
                     va_all_reach=va_all_reach,
                     contact_average=contact_average,
+                    bloch_k=bloch_k,
                 )
-        return kernel_hat
+        return BlochKernel(kernel_hat, bloch_k)
 
     for k in range(n_dz):
         dz_vox = k - (N_z - 1)
@@ -922,6 +990,13 @@ def _build_slab_kernels(
                         kernel_spatial[sdx + M - 1, sdy + M - 1] = transform(G0)
 
         if periodic:
+            if any(bloch_k):
+                # the Bloch phase of each (unwrapped) offset, before the offsets are folded
+                offs = (np.arange(S) - (M - 1)) * d
+                bloch_phase = np.exp(
+                    -1j * (bloch_k[0] * offs[:, np.newaxis] + bloch_k[1] * offs[np.newaxis, :])
+                )
+                kernel_spatial = kernel_spatial * bloch_phase[:, :, np.newaxis, np.newaxis]
             # Fold (2M-1)×(2M-1) spatial kernel into M×M for circular convolution
             kernel_circ = np.zeros((M, M, 9, 9), dtype=complex)
             for ix in range(S):
@@ -942,13 +1017,13 @@ def _build_slab_kernels(
                 # Here the missing images are added explicitly. The nearest
                 # image is M cells away, far outside the contact shell, so the
                 # point propagator is the right object for every term added.
-                _add_supercell_images(kernel_circ, M, d, dz, omega, ref, lattice_images)
+                _add_supercell_images(kernel_circ, M, d, dz, omega, ref, lattice_images, bloch_k)
             kernel_hat[k] = np.fft.fft2(kernel_circ, axes=(0, 1))
         else:
             # FFT over spatial dimensions for all 9×9 components
             kernel_hat[k] = np.fft.fft2(kernel_spatial, axes=(0, 1))
 
-    return kernel_hat
+    return BlochKernel(kernel_hat, bloch_k)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1155,13 +1230,14 @@ def build_slab_kernels(
     exact_cell_average: bool | None = None,
     cell_avg_r0: int = 2,
     cell_avg_gauss: int = 6,
+    bloch_k: tuple[float, float] = (0.0, 0.0),
 ) -> NDArray:
     """Build the FFT propagator kernel, for reuse across right-hand sides.
 
-    The kernel depends only on the lattice, the frequency and the background
-    medium — not on the incident field — so one build serves every incidence
-    angle and wave type. Pass the result to ``compute_slab_scattering`` as
-    ``kernel_hat``.
+    The kernel depends on the lattice, the frequency, the background medium and, for a periodic
+    slab, the incident wave's LATERAL wavevector ``bloch_k`` (omega p along x): one build serves
+    every wave type and contrast at that lateral wavevector, and normal incidence is (0, 0). Pass
+    the result to ``compute_slab_scattering`` as ``kernel_hat``; it checks the wavevector.
 
     Args:
         geometry: Slab lattice geometry.
@@ -1204,9 +1280,12 @@ def build_slab_kernels(
         ewald_eta: Ewald splitting parameter; None uses sqrt(pi)/d. The result is
             independent of it, which is how the sum is gated.
         ewald_cutoff: Half-width of both Ewald sums (default 4, ~1e-12).
+        bloch_k: The lateral wavevector (k_x, k_y), rad/m, of the wave the kernel is to serve
+            (periodic slabs only); see ``_build_slab_kernels``. For slowness p along x it is
+            (omega p, 0).
 
     Returns:
-        The FFT kernel; pass it straight back as ``kernel_hat``.
+        The FFT kernel (a ``BlochKernel``); pass it straight back as ``kernel_hat``.
     """
     return _build_slab_kernels(
         geometry,
@@ -1227,6 +1306,7 @@ def build_slab_kernels(
         ewald_eta=ewald_eta,
         ewald_cutoff=ewald_cutoff,
         contact_average=contact_average,
+        bloch_k=bloch_k,
     )
 
 
@@ -1245,6 +1325,7 @@ def compute_slab_scattering(
     psi0: NDArray | None = None,
     kernel_hat: NDArray | None = None,
     T_local: NDArray | None = None,
+    bloch_k: tuple[float, float] | None = None,
 ) -> SlabResult:
     """Solve the Foldy-Lax slab scattering problem via GMRES.
 
@@ -1276,13 +1357,18 @@ def compute_slab_scattering(
             (horizontal) and slab_reflected_field output would be
             meaningless — use slab_weyl_amplitudes for extraction.
         kernel_hat: Optional prebuilt FFT kernel from ``build_slab_kernels``.
-            The kernel depends only on (geometry, omega, ref) and the
-            volume_averaged/n_orders/periodic flags — NOT on the incident
-            field — so one build serves every incidence angle and wave type
-            at that geometry and frequency. Building it costs 87–215 matvecs
-            (measured 2026-09-13), so reusing it across an angle sweep is
-            worth roughly a hundredfold. When given, the flags above must
-            match those the kernel was built with; they are not re-checked.
+            The kernel depends on (geometry, omega, ref), the
+            volume_averaged/n_orders/periodic flags and, for a periodic slab,
+            the incident wave's lateral wavevector: one build serves every
+            wave type and contrast at that lateral wavevector. Building it
+            costs 87–215 matvecs (measured 2026-09-13). When given, the flags
+            above must match those the kernel was built with; they are not
+            re-checked, but the lateral wavevector is.
+        bloch_k: The incident wave's lateral wavevector (k_x, k_y), rad/m, for a
+            periodic slab. None takes it from (k_hat, wave_type), which is right
+            whenever psi0 is not given; with psi0 it must be passed. The solve
+            is done on the lattice-periodic part of the field, with kernels at
+            that wavevector (see ``_build_slab_kernels``).
 
     Returns:
         SlabResult with exciting and incident fields.
@@ -1293,6 +1379,21 @@ def compute_slab_scattering(
     # which is the existing behaviour.
     if T_local is None:
         T_local = compute_slab_tmatrices(geometry, material, omega)
+    if not periodic:
+        wave_k = (0.0, 0.0)  # a finite slab is convolved with the field itself
+    elif bloch_k is not None:
+        wave_k = (float(bloch_k[0]), float(bloch_k[1]))
+    elif psi0 is None:
+        wave_k = incident_bloch_k(omega, material.ref, k_hat, wave_type)
+    else:
+        msg = (
+            "a periodic solve with a prebuilt psi0 needs the wave's lateral wavevector, bloch_k.\n"
+            "  Where: cubic_scattering/slab_scattering.py, compute_slab_scattering(bloch_k=...)\n"
+            "  Valid: (k_x, k_y) in rad/m, e.g. bloch_k=(omega * p, 0.0) for slowness p along x,\n"
+            "         or bloch_k=(0.0, 0.0) at normal incidence\n"
+            "  Fix:   pass bloch_k alongside psi0; it cannot be read off an arbitrary field"
+        )
+        raise ValueError(msg)
     if kernel_hat is None:
         kernel_hat = _build_slab_kernels(
             geometry,
@@ -1301,9 +1402,27 @@ def compute_slab_scattering(
             volume_averaged=volume_averaged,
             n_orders=n_orders,
             periodic=periodic,
+            bloch_k=wave_k,
         )
+    elif periodic:
+        built_k = getattr(kernel_hat, "bloch_k", (0.0, 0.0))
+        if max(abs(built_k[0] - wave_k[0]), abs(built_k[1] - wave_k[1])) > 1e-10 / geometry.d:
+            msg = (
+                f"the supplied kernel was built at lateral wavevector {built_k} rad/m, but the incident "
+                f"wave has {wave_k} rad/m.\n"
+                "  Where: cubic_scattering/slab_scattering.py, compute_slab_scattering(kernel_hat=...)\n"
+                "  Valid: a periodic kernel serves one lateral wavevector, e.g.\n"
+                "         build_slab_kernels(geom, omega, ref, periodic=True, bloch_k=(omega * p, 0.0))\n"
+                "  Fix:   rebuild the kernel with bloch_k equal to the wave's (normal incidence is "
+                "(0.0, 0.0)); used at another wave it wraps it round the lattice with the wrong phase"
+            )
+            raise ValueError(msg)
+    kernel_hat = np.asarray(kernel_hat)
     if psi0 is None:
         psi0 = _build_slab_incident_field(geometry, omega, material.ref, k_hat, wave_type)
+    # The field is exp(i wave_k . x) times a lattice-periodic function; GMRES works on that function.
+    # The T-matrices are local, so they are unchanged, and the kernels carry the wavevector.
+    modulation = _lateral_modulation(geometry, wave_k) if any(wave_k) else None
 
     n = geometry.N_z * geometry.M * geometry.M * 9
     n_matvec = [0]
@@ -1314,7 +1433,7 @@ def compute_slab_scattering(
 
     A = LinearOperator(shape=(n, n), matvec=matvec, dtype=complex)
 
-    b = psi0.ravel()
+    b = (psi0 if modulation is None else psi0 / modulation).ravel()
     x, info = gmres(A, b, x0=b.copy(), rtol=gmres_tol, maxiter=max_iter)
 
     if info != 0:
@@ -1327,8 +1446,12 @@ def compute_slab_scattering(
 
     residual = np.linalg.norm(matvec(x) - b) / np.linalg.norm(b)
 
+    psi = x.reshape(geometry.N_z, geometry.M, geometry.M, 9)
+    if modulation is not None:
+        psi = psi * modulation
+
     return SlabResult(
-        psi=x.reshape(geometry.N_z, geometry.M, geometry.M, 9),
+        psi=psi,
         psi0=psi0,
         geometry=geometry,
         material=material,
@@ -1471,7 +1594,48 @@ class WeylAmplitudes:
     eta_S: complex
 
 
-def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0) -> WeylAmplitudes:
+SLAB_READOUTS = ("point", "symmetric", "first_order")
+_READOUT_EXAMPLE = "         slab_readout:\n           exact_site: first_order      # one of: point, symmetric, first_order"
+
+
+@lru_cache(maxsize=1)
+def slab_readout() -> str:
+    """``slab_readout.exact_site`` from ``cubic_scattering/numerics.yml``: how amplitudes are read.
+
+    It applies when the cells carry the exact closure (``single_site.lattice: exact``); with the package
+    T-matrix the readout is ``point``, since that T-matrix carries a far-field form factor of its own.
+    Read once per process; there is no default.
+
+    Raises:
+        ValueError: with what is wrong, where to fix it, a valid example, and how to recover.
+    """
+    import yaml
+
+    from .point_cell_self import NUMERICS_YAML
+
+    def error(problem: str) -> ValueError:
+        return ValueError(
+            f"slab_readout.exact_site {problem}\n"
+            f"  Where: {NUMERICS_YAML}, key slab_readout.exact_site\n"
+            f"  Valid:\n{_READOUT_EXAMPLE}\n"
+            "  Fix:   add the block above at the top level of that file; first_order reads each amplitude\n"
+            "         with its first-order term integrated exactly over the cubes."
+        )
+
+    if not NUMERICS_YAML.is_file():
+        raise error("cannot be read: the numerics configuration file is missing.")
+    block = (yaml.safe_load(NUMERICS_YAML.read_text()) or {}).get("slab_readout")
+    if not isinstance(block, dict) or "exact_site" not in block:
+        raise error("is missing.")
+    readout = block["exact_site"]
+    if readout not in SLAB_READOUTS:
+        raise error(f"is {readout!r}; it must be one of {SLAB_READOUTS}.")
+    return str(readout)
+
+
+def slab_weyl_amplitudes(
+    result: SlabResult, T_local: NDArray, *, p: float = 0.0, readout: str | None = None
+) -> WeylAmplitudes:
     """Extract all specular outgoing amplitudes (P, SV, SH) via Weyl sums.
 
     The 2D lattice sum replaces exp(ikr)/(4πr) with i/(2k_z d²)·exp(ik_z|z|)
@@ -1487,6 +1651,30 @@ def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0
     Lippmann-Schwinger body force). Sources are averaged over the M²
     horizontal cubes per layer (specular/coherent response).
 
+    The readout. The sum above treats each cell's source as a point at its centre. Three readings of the
+    same solution differ by a factor on each amplitude, known in closed form; write k_i for the vertical
+    wavenumber of the outgoing mode, k_j for the incident mode's (read from result.wave_type, at the same
+    slowness p), h for the cube's half-side and c_m = sinc(k_m h) sinc(omega p h) for the average of mode
+    m's plane wave over the cube.
+
+      point        no factor. For a medium uniform within each cube the first-order term is then a
+                   midpoint rule on the two-way phase exp(i (k_i + k_j) z): the amplitude is the exact
+                   one times 1 / sinc((k_i + k_j) h), an error of (k d)^2 / 6 for a wave reflected into
+                   itself at normal incidence.
+      symmetric    sqrt(c_i c_j). Collocation radiates from a source uniform over the cell (c_i); its
+                   adjoint averages the incident wave over the cell (c_j); the two are transposes and
+                   neither is reciprocal, and this is their geometric mean, which is. The amplitude is
+                   the exact one times sqrt(c_i c_j) / sinc((k_i + k_j) h): (k d)^2 / 8, the Error
+                   paper's Eq. 16, and its Eq. 19 in general.
+      first_order  sinc((k_i + k_j) h): the factor the midpoint rule lacks, so that the first-order term
+                   is integrated exactly over every cube, for any medium uniform within each cube. The
+                   error left is of second order in the contrast: on three planes of 2 m cubes at the
+                   full contrast it is 60 to 230 times smaller than the symmetric reading's. Symmetric
+                   in the two modes, so the reflection matrix stays reciprocal.
+
+    The package cube T-matrix carries far-field form-factor corrections of its own, so with it the
+    readout is point.
+
     Undefined at grazing incidence p = 1/α (P) or p = 1/β (S), where the
     corresponding η_m = 0 makes the Weyl prefactor singular.
 
@@ -1494,6 +1682,10 @@ def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0
         result: Solved slab scattering result (use periodic=True).
         T_local: Per-cube T-matrices, shape (N_z, M, M, 9, 9).
         p: Horizontal slowness (s/m).
+        readout: 'point', 'symmetric' or 'first_order' (above). None (the default) takes
+            slab_readout.exact_site from numerics.yml when the configured single site of a lattice cell
+            is the exact closure, and 'point' when it is the package T-matrix. Pass it explicitly when
+            T_local was not built by compute_slab_tmatrices.
 
     Returns:
         WeylAmplitudes in the displacement convention.
@@ -1508,6 +1700,39 @@ def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0
     kz_P = omega * eta_P
     kz_S = omega * eta_S
 
+    if readout is None:
+        from .point_cell_self import lattice_single_site  # the configured single site of a lattice cell
+
+        readout = slab_readout() if lattice_single_site() == "exact" else "point"
+    if readout not in SLAB_READOUTS:
+        raise ValueError(
+            f"readout is {readout!r}.\n"
+            "  Where: cubic_scattering/slab_scattering.py, slab_weyl_amplitudes(readout=...)\n"
+            f"  Valid: one of {SLAB_READOUTS}, e.g. readout='first_order'\n"
+            "  Fix:   pass one of those, or None to take slab_readout.exact_site from numerics.yml"
+        )
+    cell_P: complex = 1.0
+    cell_S: complex = 1.0
+    if readout != "point":
+        if result.wave_type not in ("P", "S", "SH"):
+            raise ValueError(
+                f"the readout needs the incident mode, and result.wave_type is {result.wave_type!r}.\n"
+                "  Where: cubic_scattering/slab_scattering.py, slab_weyl_amplitudes\n"
+                "  Valid: 'P', 'S' or 'SH', as compute_slab_scattering records it\n"
+                "  Fix:   solve with one of those wave types, or pass readout='point'"
+            )
+        h = 0.5 * d
+        kz_in = kz_P if result.wave_type == "P" else kz_S
+        # np.sinc(x) is sin(pi x) / (pi x); it holds for the complex k_z of an evanescent mode too
+        if readout == "symmetric":
+            lateral = np.sinc(omega * p * h / np.pi)
+            incident = np.sinc(kz_in * h / np.pi)
+            cell_P = complex(np.sqrt(np.sinc(kz_P * h / np.pi) * incident) * lateral)
+            cell_S = complex(np.sqrt(np.sinc(kz_S * h / np.pi) * incident) * lateral)
+        else:
+            cell_P = complex(np.sinc((kz_P + kz_in) * h / np.pi))
+            cell_S = complex(np.sinc((kz_S + kz_in) * h / np.pi))
+
     # Upgoing slowness vectors, complex-unit directions, S polarisations
     s_vec_P = np.array([-eta_P, p, 0.0], dtype=complex)
     s_vec_S = np.array([-eta_S, p, 0.0], dtype=complex)
@@ -1521,9 +1746,14 @@ def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0
     tot_P = 0.0 + 0.0j
     tot_SV = 0.0 + 0.0j
     tot_SH = 0.0 + 0.0j
+    # The specular order is the lateral Fourier component at the incident wavenumber omega p (along x), so
+    # the sources are averaged against exp(-i omega p x). A plain mean leaves the incident wave's lateral
+    # phase in, and multiplies every amplitude by sin(M k_x d / 2) / (M sin(k_x d / 2)), which depends on
+    # the number of cells M and vanishes when the lattice holds a whole lateral wavelength.
+    specular = np.exp(-1j * omega * p * centres[0, :, :, 1])[:, :, np.newaxis]
     for lz in range(geom.N_z):
-        f_avg = np.mean(source[lz, :, :, :3], axis=(0, 1))
-        sig_avg = _voigt_to_tensor(np.mean(source[lz, :, :, 3:], axis=(0, 1)))
+        f_avg = np.mean(source[lz, :, :, :3] * specular, axis=(0, 1))
+        sig_avg = _voigt_to_tensor(np.mean(source[lz, :, :, 3:] * specular, axis=(0, 1)))
         z_l = centres[lz, 0, 0, 0]
 
         Q_P = -np.dot(d_P, f_avg) - 1j * omega * np.dot(s_vec_P, sig_avg @ d_P)
@@ -1534,8 +1764,8 @@ def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0
         tot_SV += np.dot(sv_hat, Q_S) * phase_S
         tot_SH += np.dot(sh_hat, Q_S) * phase_S
 
-    pref_P = -1j / (2.0 * kz_P * d**2 * ref.rho * ref.alpha**2)
-    pref_S = -1j / (2.0 * kz_S * d**2 * ref.rho * ref.beta**2)
+    pref_P = -1j * cell_P / (2.0 * kz_P * d**2 * ref.rho * ref.alpha**2)
+    pref_S = -1j * cell_S / (2.0 * kz_S * d**2 * ref.rho * ref.beta**2)
 
     return WeylAmplitudes(
         R_P=complex(pref_P * tot_P),
@@ -1547,7 +1777,9 @@ def slab_weyl_amplitudes(result: SlabResult, T_local: NDArray, *, p: float = 0.0
     )
 
 
-def slab_rpp_periodic(result: SlabResult, T_local: NDArray, *, p: float = 0.0) -> complex:
+def slab_rpp_periodic(
+    result: SlabResult, T_local: NDArray, *, p: float = 0.0, readout: str | None = None
+) -> complex:
     """Specular P→P reflection coefficient for a periodic slab.
 
     Uses the Weyl representation: the 2D lattice sum replaces
@@ -1567,6 +1799,7 @@ def slab_rpp_periodic(result: SlabResult, T_local: NDArray, *, p: float = 0.0) -
         result: Solved slab scattering result.
         T_local: Per-cube T-matrices, shape (N_z, M, M, 9, 9).
         p: Horizontal slowness (s/m). Default 0.0 (normal incidence).
+        readout: The readout of slab_weyl_amplitudes; None takes the configured one.
 
     Returns:
         Complex specular P→P reflection coefficient (dimensionless).
@@ -1576,7 +1809,7 @@ def slab_rpp_periodic(result: SlabResult, T_local: NDArray, *, p: float = 0.0) -
         uses the full wave vector (−iω s⃗·σ·d̂); the previous −i k_z σ_rr form
         was correct only at p=0.
     """
-    return slab_weyl_amplitudes(result, T_local, p=p).R_P
+    return slab_weyl_amplitudes(result, T_local, p=p, readout=readout).R_P
 
 
 @dataclass
@@ -1641,6 +1874,7 @@ def slab_reflection_matrix(
     n_orders: int = 2,
     include_sh: bool = True,
     kernel_hat: NDArray | None = None,
+    readout: str | None = None,
 ) -> SlabReflectionMatrix:
     """Full specular reflection matrix via three periodic Foldy-Lax solves.
 
@@ -1676,6 +1910,8 @@ def slab_reflection_matrix(
         include_sh: If False, skip the SH-incident solve (R_sh = 0).
             Intended for embeddings where SH cannot couple (e.g. through
             a fluid).
+        kernel_hat: Optional prebuilt kernel, built at bloch_k = (omega p, 0).
+        readout: The readout of slab_weyl_amplitudes; None takes the configured one.
 
     Returns:
         SlabReflectionMatrix (displacement convention; use .to_modified()
@@ -1728,8 +1964,9 @@ def slab_reflection_matrix(
             n_orders=n_orders,
             psi0=psi0,
             kernel_hat=kernel_hat,
+            bloch_k=(omega * p, 0.0),
         )
-        amps[wave_type] = slab_weyl_amplitudes(result, T_local, p=p)
+        amps[wave_type] = slab_weyl_amplitudes(result, T_local, p=p, readout=readout)
         iters[wave_type] = result.n_gmres_iter
 
     R_psv = np.array(

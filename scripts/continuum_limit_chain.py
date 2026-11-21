@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reference numbers for ``Mathematica/ContinuumLimit_Chain.wl``, notebook 5 of the continuum limit.
 
-The package's 9x9 cube T-matrix (``compute_slab_tmatrices``) and self term (``cube_self_9x9``) for the
+The package's 9x9 cube T-matrix (``compute_slab_tmatrices``) and self term (``package_cube_self_9x9``) for the
 refinement ladder of a D = 2 m layer, d = D/n with n = 1, 2, 4, 8, 16, at three frequencies (k_S a from
 0.02 to 0.2 at n = 1), for the gate's contrast.  The notebook assembles the chain itself.
 Every 9x9 in the order (u_z, u_x, u_y, e_zz, e_xx, e_yy, 2e_xy, 2e_zy, 2e_zx), [re, im].
@@ -19,7 +19,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from cubic_scattering.cell_averaged_lattice import cube_self_9x9  # noqa: E402
+from cubic_scattering.cell_averaged_lattice import package_cube_self_9x9  # noqa: E402
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.slab_scattering import (  # noqa: E402
     SlabGeometry,
@@ -53,7 +53,7 @@ def main() -> int:
         for n in LADDER:
             d = D_LAYER / n
             t9 = compute_slab_tmatrices(SlabGeometry(M=1, N_z=1, a=d / 2), mat, om)[0, 0, 0]
-            cells.append({"omega": om, "n": n, "T": reim(t9), "self": reim(cube_self_9x9(d, om, REF))})
+            cells.append({"omega": om, "n": n, "T": reim(t9), "self": reim(package_cube_self_9x9(d, om, REF))})
     out = {
         "alpha": REF.alpha,
         "beta": REF.beta,

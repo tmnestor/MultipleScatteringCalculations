@@ -27,7 +27,9 @@ from .slab_scattering import (
     SlabResult,
     _build_slab_incident_field,
     _build_slab_kernels,
+    _lateral_modulation,
     compute_slab_tmatrices,
+    incident_bloch_k,
 )
 from .torch_gmres import get_device, select_dtype, to_numpy, to_torch, torch_gmres
 
@@ -44,6 +46,7 @@ def _build_slab_kernels_gpu(
     volume_averaged: bool = False,
     n_orders: int = 2,
     periodic: bool = False,
+    bloch_k: tuple[float, float] = (0.0, 0.0),
 ) -> torch.Tensor:
     """Build 3D FFT kernel on GPU from CPU kernel.
 
@@ -63,6 +66,8 @@ def _build_slab_kernels_gpu(
             for nearest-neighbour separations.
         n_orders: Dynamic correction orders for volume-averaged propagator.
         periodic: If True, use circular convolution in xy (M×M kernel).
+        bloch_k: The incident wave's lateral wavevector (k_x, k_y) for a periodic slab; see
+            slab_scattering._build_slab_kernels.
 
     Returns:
         kernel_hat_3d: shape (9, 9, n_dz, H_xy, H_xy), complex, on device.
@@ -80,6 +85,7 @@ def _build_slab_kernels_gpu(
         volume_averaged=volume_averaged,
         n_orders=n_orders,
         periodic=periodic,
+        bloch_k=bloch_k,
     )
 
     # IFFT in xy to recover spatial domain
@@ -207,6 +213,10 @@ def compute_slab_scattering_gpu(
     # Step 1: Build T-matrices, kernel, incident field on CPU
     T_local_np = compute_slab_tmatrices(geometry, material, omega)
     psi0_np = _build_slab_incident_field(geometry, omega, material.ref, k_hat, wave_type)
+    # A periodic slab is solved on the lattice-periodic part of the field, with the kernels at the incident
+    # wave's lateral wavevector (as slab_scattering.compute_slab_scattering does).
+    wave_k = incident_bloch_k(omega, material.ref, k_hat, wave_type) if periodic else (0.0, 0.0)
+    modulation = _lateral_modulation(geometry, wave_k) if any(wave_k) else None
 
     # Build 3D FFT kernel on GPU
     kernel_hat_3d = _build_slab_kernels_gpu(
@@ -218,11 +228,12 @@ def compute_slab_scattering_gpu(
         volume_averaged=volume_averaged,
         n_orders=n_orders,
         periodic=periodic,
+        bloch_k=wave_k,
     )
 
     # Transfer T-matrices and incident field to GPU
     T_local_gpu = to_torch(T_local_np, device, dtype)
-    b = to_torch(psi0_np.ravel(), device, dtype)
+    b = to_torch((psi0_np if modulation is None else psi0_np / modulation).ravel(), device, dtype)
 
     # Step 2: Set up matvec
     def matvec(psi: torch.Tensor) -> torch.Tensor:
@@ -247,6 +258,8 @@ def compute_slab_scattering_gpu(
 
     # Step 5: Transfer solution back to CPU
     psi_np = to_numpy(x).reshape(N_z, M, M, 9)
+    if modulation is not None:
+        psi_np = psi_np * modulation
 
     return SlabResult(
         psi=psi_np,

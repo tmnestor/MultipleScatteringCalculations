@@ -159,6 +159,35 @@ class TestExactAtNormalIncidence:
         assert 1e-4 < rel_em < 2e-3, f"strain-from-moment {rel_em:.2e}: expected the tail route's ~9e-4"
         assert rel_uf < 1e-5, f"u <- f {rel_uf:.2e}"
 
+    def test_self_cell_is_the_exact_integral_at_frequency(self):
+        """The term the plate identity removes is the cube's integral itself, not the package T-matrix's.
+
+        At k_S h = 0.3 the package T-matrix's self term, whose real part is the static value, is 3% off
+        in u <- f and 6% off in strain <- moment; the kernel used it until 11 November 2026.
+        """
+        from cubic_scattering.cell_averaged_lattice import package_cube_self_9x9
+        from cubic_scattering.point_cell_self import self_block_9x9
+
+        d, omega = 2.0, 900.0
+        exact = self_block_9x9(omega, REF, d)  # the face rule, independent of the series
+        assert_allclose(cube_self_9x9(d, omega, REF), exact, rtol=0, atol=1e-12 * np.max(np.abs(exact)))
+        package = package_cube_self_9x9(d, omega, REF)
+        assert np.max(np.abs(package[:3, :3] - exact[:3, :3])) > 0.02 * np.max(np.abs(exact[:3, :3]))
+        assert np.max(np.abs(package[3:, 3:] - exact[3:, 3:])) > 0.04 * np.max(np.abs(exact[3:, 3:]))
+
+    @pytest.mark.slow
+    def test_continuous_with_the_oblique_route_at_frequency(self):
+        """At k_S h = 0.3 the closed form and the general route at k_par -> 0 agree to 3e-4.
+
+        Measured 1.5e-4, the general route's own accuracy at its defaults. With the package T-matrix's
+        self term in the closed form the two differed by 6.0e-3, which no static check could see.
+        """
+        d, omega = 2.0, 900.0
+        exact = exact_same_plane_9x9(d, omega, REF)
+        tail = averaged_same_plane_9x9(d, omega, REF, np.array([1e-7, 0.0]))
+        rel = np.max(np.abs(tail - exact)) / np.max(np.abs(exact))
+        assert rel < 3e-4, f"closed form against the general route at k_par -> 0: {rel:.2e}"
+
     def test_attenuative_medium_tends_to_the_lossless_one(self):
         """Complex velocities are accepted, and Q -> infinity recovers the real medium."""
         q = 1e8

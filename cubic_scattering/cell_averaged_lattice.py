@@ -360,12 +360,45 @@ def plate_average_9x9(d: float, omega: complex, ref: ReferenceMedium) -> NDArray
 
 
 def cube_self_9x9(d: float, omega: complex, ref: ReferenceMedium) -> NDArray:
-    """The cube's own cell integral int_cube Gamma(-y) dy, as a 9x9 -- the term the T-matrix carries.
+    """The cube's own cell integral int_cube Gamma(-y) dy, as a 9x9: the term the plate identity removes.
 
-    Built from the T-matrix's own integrals, so the kernel and the single site agree on what the
-    self cell is: ``Gamma0 = int_cube G_11`` for u <- f, and ``I_ijkl = int_cube d_k d_l G_ij``
-    (``A^c, B^c, C^c``, static Eshelby plus radiation) for strain <- moment.  The odd blocks vanish
-    by the cube's symmetry.
+    The integral itself, exact at every frequency (``point_cell_self``: the series in k h, the face rule
+    beyond its reach), which is also the self term of the exact uniform-strain closure. The lattice sum
+    over the OTHER cells is a property of the Green's tensor alone, so this is the term to remove whichever
+    single site the cells carry.
+
+    Until 11 November 2026 this was assembled from the package cube T-matrix's integrals (Gamma0 and
+    A^c, B^c, C^c), whose real parts are the static values at every frequency. They depart from the
+    integral by 0.36 (k_S h)^2 in u <- f and about 0.6 (k_S h)^2 in strain <- moment: 0.4% and 0.7% at
+    k_S h = 0.1, 9% and 14% at 0.5. The kernel at k_par = 0 carried that error, and the general route at
+    k_par -> 0, which never used it, did not: the two differed by 6e-3 at k_S h = 0.3 where they now agree
+    to 1.5e-4, the general route's own accuracy.
+
+    Args:
+        d: Cube side.
+        omega: Angular frequency.
+        ref: Background medium.
+
+    Returns:
+        Shape (9, 9) complex.
+    """
+    from .point_cell_self import _cached_self_block
+
+    out = np.array(_cached_self_block(omega, d, ref), dtype=complex)
+    # u <- M and strain <- f are odd over the cube and vanish; the series leaves round-off there
+    out[:3, 3:] = 0.0
+    out[3:, :3] = 0.0
+    return out
+
+
+def package_cube_self_9x9(d: float, omega: complex, ref: ReferenceMedium) -> NDArray:
+    """The self term the PACKAGE cube T-matrix carries, as a 9x9; not the cube's cell integral.
+
+    Built from the package T-matrix's integrals: ``Gamma0`` for u <- f, and ``A^c, B^c, C^c`` (the static
+    Eshelby values plus the radiation part) for strain <- moment. Their real parts do not change with
+    frequency, so this departs from the integral itself (``cube_self_9x9``) at order (k h)^2. It is kept
+    for the reference data of ``Mathematica/ContinuumLimit_Chain.wl`` and ``ContinuumLimit_CubeT.wl``,
+    which record the package T-matrix with its own self term; no kernel uses it.
 
     Args:
         d: Cube side.
@@ -411,6 +444,8 @@ def exact_same_plane_9x9(d: float, omega: complex, ref: ReferenceMedium) -> NDAr
     checked analytically in ``Mathematica/ContinuumLimit_AveragedSums.wl`` (static, all 21
     components of the plate identity to 4e-9); the Ewald + near-shell + O(d^2)-tail route it
     replaces here carried a static strain-from-moment error of 9.4e-4 at its defaults.
+    The self cell is the exact integral at every frequency (``cube_self_9x9``), so the identity is exact
+    dynamically too, not only in the static limit.
 
     Args:
         d: Lattice pitch (cube side).

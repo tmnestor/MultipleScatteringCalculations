@@ -81,3 +81,20 @@ single_site:
   #            times larger at 64 cells across (Error paper, Section 11).
   # A lone cube (cube_eshelby, resonance_tmatrix.validate_rayleigh_limit) uses compute_cube_tmatrix always.
   lattice: exact
+
+slab_readout:
+  # How the periodic slab solver (slab_scattering.slab_weyl_amplitudes) turns the solved cell sources into
+  # reflected plane-wave amplitudes, when the cells carry the exact closure (single_site.lattice: exact).
+  # The three read the same solution and differ by a closed-form factor on each amplitude. With k_i, k_j the
+  # vertical wavenumbers of the outgoing and incident modes and h the cube's half-side (Error paper,
+  # Section 6):
+  #   point        the sources as points at the cell centres. First-order error 1 / sinc((k_i + k_j) h) - 1,
+  #                (k d)^2 / 6 for a wave reflected into itself.
+  #   symmetric    the reciprocal reading of collocation, the cell average of each wave taken half on the
+  #                incident side and half on the outgoing one: (k d)^2 / 8, the paper's Eqs. 16 and 19.
+  #   first_order  the first-order term integrated exactly over every cube (any medium uniform within each
+  #                cube): the error left is of second order in the contrast, 60 to 230 times smaller than
+  #                symmetric's on three planes of 2 m cubes at the gate's contrast. Reciprocal.
+  # With single_site.lattice: package the readout is point whatever this says: that T-matrix carries a
+  # far-field form factor of its own.
+  exact_site: first_order

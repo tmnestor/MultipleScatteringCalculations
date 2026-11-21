@@ -3,9 +3,12 @@
 Two independent wins measured on 2026-09-13:
 
 * ``_build_slab_kernels`` was called unconditionally inside every solve, even
-  though it depends only on (geometry, omega, ref) and not on the incident
-  field.  An angle sweep therefore rebuilt it once per angle.  The build costs
-  87-215 matvecs, so reusing it is worth ~100x on any multi-angle sweep.
+  though it does not depend on the contrast or the wave type.  The build costs
+  87-215 matvecs, so reusing it across right-hand sides is worth ~100x.  For a
+  FINITE slab one kernel serves every incidence angle.  For a PERIODIC slab it
+  serves one lateral wavevector (corrected 11 November 2026: the kernel is the
+  lattice sum at the incident wave's lateral wavevector, and a kernel built at
+  normal incidence wraps a tilted wave round the lattice with the wrong phase).
 * The frequency loop is embarrassingly parallel and was running on one core of
   eight.  The kernel build is thousands of small NumPy calls and so is
   GIL-bound; processes, not threads.
@@ -27,7 +30,7 @@ from cubic_scattering import (
     uniform_slab_material,
 )
 from cubic_scattering.frequency_sweep import sweep_frequencies
-from cubic_scattering.slab_scattering import build_slab_kernels
+from cubic_scattering.slab_scattering import build_slab_kernels, incident_bloch_k
 
 REF = ReferenceMedium(alpha=4.0, beta=2.22, rho=2.6)
 CONTRAST = MaterialContrast(Dlambda=2.0, Dmu=1.0, Drho=0.1)
@@ -86,8 +89,8 @@ def test_reused_kernel_skips_the_build(small, monkeypatch):
     assert calls == [], "prebuilt kernel was ignored and the build ran anyway"
 
 
-def test_one_kernel_serves_many_incidence_angles(small):
-    """The sweep this exists for: many right-hand sides, one build.
+def test_one_kernel_serves_many_incidence_angles_on_a_finite_slab(small):
+    """A finite slab is convolved with the field itself, so one build serves every incidence angle.
 
     At 1 Hz, k_S h = 1.4. At the module's 10 Hz each cube is several S wavelengths wide (k_S h = 14),
     where no uniform-field single site means anything: the package T-matrix's form factor collapsed it to
@@ -97,12 +100,33 @@ def test_one_kernel_serves_many_incidence_angles(small):
     """
     geom, mat = small
     w = 2 * np.pi * 1.0
-    kern = build_slab_kernels(geom, w, REF, periodic=True)
+    kern = build_slab_kernels(geom, w, REF)
     for tilt in (0.0, 0.2, 0.4):
         k_hat = np.array([np.cos(tilt), np.sin(tilt), 0.0])
+        shared = compute_slab_scattering(geom, mat, w, k_hat, kernel_hat=kern)
+        fresh = compute_slab_scattering(geom, mat, w, k_hat)
+        assert np.array_equal(shared.psi, fresh.psi)
+
+
+def test_a_periodic_kernel_serves_one_lateral_wavevector(small):
+    """On a periodic slab the kernel is built at the wave's lateral wavevector, and checked against it.
+
+    A kernel built for the wave gives the same bits as the solver's own build, for every wave type at that
+    wavevector's angle; the normal-incidence kernel is refused for a tilted wave, where it used to be
+    accepted and to wrap the wave round the lattice with the wrong phase.
+    """
+    geom, mat = small
+    w = 2 * np.pi * 1.0
+    normal = build_slab_kernels(geom, w, REF, periodic=True)
+    for tilt in (0.0, 0.2, 0.4):
+        k_hat = np.array([np.cos(tilt), np.sin(tilt), 0.0])
+        kern = build_slab_kernels(geom, w, REF, periodic=True, bloch_k=incident_bloch_k(w, REF, k_hat, "P"))
         shared = compute_slab_scattering(geom, mat, w, k_hat, periodic=True, kernel_hat=kern)
         fresh = compute_slab_scattering(geom, mat, w, k_hat, periodic=True)
         assert np.array_equal(shared.psi, fresh.psi)
+        if tilt:
+            with pytest.raises(ValueError, match="lateral wavevector"):
+                compute_slab_scattering(geom, mat, w, k_hat, periodic=True, kernel_hat=normal)
 
 
 # ------------------------------------------------------- frequency parallel

@@ -2,8 +2,9 @@
 """Reference numbers for ``Mathematica/ContinuumLimit_CubeT.wl``, notebook 4 of the continuum limit.
 
 For a cube of side d = 1 m at five frequencies (k_S a from 0.01 to 0.3, a = d/2, the validated range):
-  * ``cube_self_9x9`` -- the cube's own cell integral of the Green's tensor, the term the exact
-    normal-incidence kernel subtracts (built from the T-matrix's Gamma0 and A^c, B^c, C^c);
+  * ``package_cube_self_9x9``: the self term of the package cube T-matrix, built from its Gamma0 and
+    A^c, B^c, C^c. The notebook compares it with the cube's exact cell integral. (The normal-incidence
+    kernel subtracted this term until 11 November 2026; it now subtracts the exact integral.)
   * the package's 9x9 cube T-matrix as the Foldy-Lax chain uses it (``compute_slab_tmatrices``), for
     the gate's contrast.
 Every 9x9 in the order (u_z, u_x, u_y, e_zz, e_xx, e_yy, 2e_xy, 2e_zy, 2e_zx), [re, im].
@@ -21,7 +22,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from cubic_scattering.cell_averaged_lattice import cube_self_9x9  # noqa: E402
+from cubic_scattering.cell_averaged_lattice import package_cube_self_9x9  # noqa: E402
 from cubic_scattering.effective_contrasts import ReferenceMedium  # noqa: E402
 from cubic_scattering.slab_scattering import (  # noqa: E402
     SlabGeometry,
@@ -53,7 +54,7 @@ def main() -> int:
     cases = []
     for om in OMEGAS:
         t9 = compute_slab_tmatrices(geom, mat, om)[0, 0, 0]
-        cases.append({"omega": om, "self": reim(cube_self_9x9(D, om, REF)), "T": reim(t9)})
+        cases.append({"omega": om, "self": reim(package_cube_self_9x9(D, om, REF)), "T": reim(t9)})
     out = {
         "alpha": REF.alpha,
         "beta": REF.beta,

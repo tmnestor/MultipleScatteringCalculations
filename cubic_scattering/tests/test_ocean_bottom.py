@@ -577,7 +577,9 @@ class TestModeConvertedOceanBottom:
         # order of magnitude instead.
         assert np.all(off > 0), "conversion entries missing at oblique p"
         assert np.all(off <= 3.0 * diag), "conversion implausibly large vs PP"
-        # Reciprocity: modified-convention matrix is symmetric
+        # Reciprocity: the modified-convention matrix is symmetric. The readout's cell factor is the
+        # geometric mean of the incident and outgoing modes' factors (slab_weyl_amplitudes), which keeps
+        # it so; the outgoing factor alone would make the two conversions differ by up to 3% here.
         np.testing.assert_allclose(
             result.R_slab_psv[active][:, 0, 1],
             result.R_slab_psv[active][:, 1, 0],

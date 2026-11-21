@@ -733,6 +733,7 @@ def bloch_kernel_hat_9x9(
     eta: float | None = None,
     cutoff: int = 4,
     cell_half_width: float | None = None,
+    k_offset: tuple[float, float] = (0.0, 0.0),
 ) -> NDArray:
     """The periodic 9x9 kernel in Bloch space, exactly -- no truncation, no FFT.
 
@@ -790,6 +791,10 @@ def bloch_kernel_hat_9x9(
             exp(-pi n^2) and `cutoff` = 4 already gives ~1e-12. The answer is
             independent of it; only the cost is not.
         cutoff: Half-width of both the real and reciprocal sums.
+        k_offset: A lateral wavevector (k_x, k_y) added to every Bloch point, so that the kernel is
+            sum_R G(dz, R) exp(-i (k_n + k_offset) . R). It is the incident wave's lateral
+            wavevector when the field is exp(i k_offset . x) times a lattice-periodic function
+            (oblique incidence on a periodic slab). (0, 0) is the lattice's own Bloch points.
 
     Returns:
         Shape (M, M, 9, 9), complex -- directly usable as one `kernel_hat` slice.
@@ -820,7 +825,9 @@ def bloch_kernel_hat_9x9(
     out = np.zeros((m_cells, m_cells, 9, 9), dtype=complex)
     for n1 in range(m_cells):
         for n2 in range(m_cells):
-            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (m_cells * d)
+            k_par = 2.0 * np.pi * np.array([n1, n2], dtype=float) / (m_cells * d) + np.asarray(
+                k_offset, dtype=float
+            )
             if on_plane:
                 d_diff = origin_difference_tensors(k_p, k_s, eta_val, cutoff, cutoff, d, k_par)
                 d_s = origin_scalar_tensors(k_s, eta_val, cutoff, cutoff, d, k_par)

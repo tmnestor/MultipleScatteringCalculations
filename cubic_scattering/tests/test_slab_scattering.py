@@ -831,6 +831,194 @@ class TestWeylAmplitudes:
         assert abs(amps.R_SV) < 1e-10 * max(abs(amps.R_P), 1e-30)
         assert abs(amps.R_SH) < 1e-10 * max(abs(amps.R_P), 1e-30)
 
+    @pytest.mark.parametrize("p", [0.0, 1.0e-4])
+    @pytest.mark.parametrize("wave_type", ["P", "S"])
+    def test_readouts_differ_by_their_closed_form_factors(self, p, wave_type):
+        """symmetric is the point sum times sqrt(c_out c_in); first_order, times sinc((k_out + k_in) h)."""
+        result, T_local = self._solve_uniform(p=p, wave_type=wave_type)
+        point = slab_weyl_amplitudes(result, T_local, p=p, readout="point")
+        symmetric = slab_weyl_amplitudes(result, T_local, p=p, readout="symmetric")
+        first = slab_weyl_amplitudes(result, T_local, p=p, readout="first_order")
+        h = 0.5 * result.geometry.d
+        omega = result.omega
+
+        def sinc(x):
+            return np.sin(x) / x if x else 1.0
+
+        k_P = omega * np.sqrt(1.0 / 5000.0**2 - p**2)
+        k_S = omega * np.sqrt(1.0 / 3000.0**2 - p**2)
+        k_in = k_P if wave_type == "P" else k_S
+        lateral = sinc(omega * p * h)
+        c_P, c_S, c_in = sinc(k_P * h) * lateral, sinc(k_S * h) * lateral, sinc(k_in * h) * lateral
+        for name, k_out, c_out in (("R_P", k_P, c_P), ("R_SV", k_S, c_S), ("R_SH", k_S, c_S)):
+            raw = getattr(point, name)
+            np.testing.assert_allclose(
+                getattr(symmetric, name), raw * np.sqrt(c_out * c_in), rtol=1e-13, atol=1e-30
+            )
+            np.testing.assert_allclose(
+                getattr(first, name), raw * sinc((k_out + k_in) * h), rtol=1e-13, atol=1e-30
+            )
+
+    def test_readout_follows_the_configuration(self, monkeypatch):
+        """By default the readout is the configured one for the exact closure, and point for the package."""
+        import cubic_scattering.point_cell_self as point_cell_self
+        import cubic_scattering.slab_scattering as slab_scattering
+
+        result, T_local = self._solve_uniform(p=0.0)
+        readings = {
+            r: slab_weyl_amplitudes(result, T_local, readout=r).R_P for r in slab_scattering.SLAB_READOUTS
+        }
+        assert len({complex(v) for v in readings.values()}) == 3
+        monkeypatch.setattr(point_cell_self, "lattice_single_site", lambda: "exact")
+        for configured in slab_scattering.SLAB_READOUTS:
+            monkeypatch.setattr(slab_scattering, "slab_readout", lambda configured=configured: configured)
+            assert slab_weyl_amplitudes(result, T_local).R_P == readings[configured]
+        monkeypatch.setattr(point_cell_self, "lattice_single_site", lambda: "package")
+        assert slab_weyl_amplitudes(result, T_local).R_P == readings["point"]
+
+    def test_unknown_readout_is_refused(self):
+        result, T_local = self._solve_uniform(p=0.0)
+        with pytest.raises(ValueError) as err:
+            slab_weyl_amplitudes(result, T_local, readout="cell")
+        for part in ("readout is 'cell'", "Where:", "Valid:", "Fix:", "first_order"):
+            assert part in str(err.value)
+
+    @pytest.mark.parametrize(
+        "text",
+        ["single_site:\n  lattice: exact\n", "slab_readout: {}\n", "slab_readout:\n  exact_site: cell\n"],
+    )
+    def test_readout_configuration_fails_fast(self, tmp_path, monkeypatch, text):
+        """A missing or invalid slab_readout.exact_site: what, where, a valid example, how to recover."""
+        import cubic_scattering.point_cell_self as point_cell_self
+        import cubic_scattering.slab_scattering as slab_scattering
+
+        path = tmp_path / "numerics.yml"
+        path.write_text(text)
+        monkeypatch.setattr(point_cell_self, "NUMERICS_YAML", path)
+        slab_scattering.slab_readout.cache_clear()
+        try:
+            with pytest.raises(ValueError) as err:
+                slab_scattering.slab_readout()
+        finally:
+            slab_scattering.slab_readout.cache_clear()
+        message = str(err.value)
+        for part in (
+            "slab_readout.exact_site",
+            str(path),
+            "exact_site: first_order",
+            "point, symmetric, first_order",
+            "Fix:",
+        ):
+            assert part in message
+
+
+class TestBlochWavevector:
+    """Periodic kernels at the incident wave's lateral wavevector, and the checks that guard their use."""
+
+    REF = ReferenceMedium(alpha=5000.0, beta=3000.0, rho=2500.0)
+    OMEGA = 900.0
+    GEOM = SlabGeometry(
+        M=2, N_z=2, a=1.0
+    )  # two cubes across: the smallest lattice with a wavevector to roll
+
+    @pytest.mark.parametrize(
+        "route",
+        [
+            {},
+            {"lattice_images": 2},
+            {"volume_averaged": True, "va_all": True},
+            {"lattice_ewald": True},
+            {"lattice_ewald": True, "volume_averaged": True, "va_all": True},
+        ],
+    )
+    @pytest.mark.parametrize("axis", [1, 2])
+    def test_a_lattice_wavevector_rolls_the_kernel(self, route, axis):
+        """At bloch_k = 2 pi / (M d), a lattice wavevector, the kernel is the plain one moved one point.
+
+        sum_R G(R) exp(-i (k_n + k_1) . R) is the plain sum at k_(n+1). This holds on every route to
+        round-off, and fails if the phase has the wrong sign, the wrong axis, or is applied to offsets
+        after they are wrapped.
+        """
+        k1 = 2.0 * np.pi / (self.GEOM.M * self.GEOM.d)
+        bloch_k = (k1, 0.0) if axis == 1 else (0.0, k1)
+        plain = np.asarray(build_slab_kernels(self.GEOM, self.OMEGA, self.REF, periodic=True, **route))
+        moved = build_slab_kernels(self.GEOM, self.OMEGA, self.REF, periodic=True, bloch_k=bloch_k, **route)
+        assert moved.bloch_k == bloch_k
+        expected = np.roll(plain, -1, axis=axis)
+        assert np.max(np.abs(plain - expected)) > 1e-3 * np.max(np.abs(plain)), (
+            "the roll must change something"
+        )
+        assert_allclose(np.asarray(moved), expected, rtol=0, atol=1e-12 * np.max(np.abs(plain)))
+
+    def test_kernel_built_for_another_wave_is_refused(self):
+        """A periodic kernel serves one lateral wavevector; using it for another fails with a diagnosis."""
+        contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+        mat = uniform_slab_material(self.GEOM, self.REF, contrast)
+        normal = build_slab_kernels(self.GEOM, self.OMEGA, self.REF, periodic=True)
+        with pytest.raises(ValueError) as err:
+            slab_reflection_matrix(self.GEOM, mat, self.OMEGA, p=1.0e-4, kernel_hat=normal)
+        text = str(err.value)
+        for part in ("lateral wavevector", "Where:", "Valid:", "Fix:", "bloch_k=(omega * p, 0.0)"):
+            assert part in text
+        oblique = build_slab_kernels(
+            self.GEOM, self.OMEGA, self.REF, periodic=True, bloch_k=(self.OMEGA * 1.0e-4, 0.0)
+        )
+        slab_reflection_matrix(self.GEOM, mat, self.OMEGA, p=1.0e-4, kernel_hat=oblique)  # accepted
+
+    def test_prebuilt_field_needs_the_wavevector(self):
+        """With psi0 given, a periodic solve cannot read the wavevector off the field: it must be passed."""
+        contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+        mat = uniform_slab_material(self.GEOM, self.REF, contrast)
+        k_hat = np.array([1.0, 0.0, 0.0])
+        psi0 = _build_slab_incident_field(self.GEOM, self.OMEGA, self.REF, k_hat, "P")
+        with pytest.raises(ValueError) as err:
+            compute_slab_scattering(self.GEOM, mat, self.OMEGA, k_hat, periodic=True, psi0=psi0)
+        text = str(err.value)
+        for part in ("bloch_k", "Where:", "Valid:", "Fix:"):
+            assert part in text
+        given = compute_slab_scattering(
+            self.GEOM, mat, self.OMEGA, k_hat, periodic=True, psi0=psi0, bloch_k=(0.0, 0.0)
+        )
+        built = compute_slab_scattering(self.GEOM, mat, self.OMEGA, k_hat, periodic=True)
+        assert_allclose(given.psi, built.psi, rtol=1e-12)
+
+    def test_finite_slab_has_no_wavevector(self):
+        """bloch_k on a finite slab is refused: there the kernel is convolved with the field itself."""
+        with pytest.raises(ValueError) as err:
+            build_slab_kernels(self.GEOM, self.OMEGA, self.REF, bloch_k=(0.1, 0.0))
+        text = str(err.value)
+        for part in ("finite slab", "Where:", "Valid:", "Fix:"):
+            assert part in text
+
+    def test_a_wave_that_fits_the_lattice_is_solved_as_before(self):
+        """When the lattice holds a whole lateral wavelength the old and new solves are the same system.
+
+        The kernels are then the plain ones at shifted points, so solving the lattice-periodic part on
+        them must reproduce the plain kernels applied to the field itself, which is what the solver did
+        before the wavevector was carried.
+        """
+        contrast = MaterialContrast(Dlambda=2.0e9, Dmu=1.0e9, Drho=100.0)
+        mat = uniform_slab_material(self.GEOM, self.REF, contrast)
+        # one lateral wavelength across the lattice; past both critical slownesses here, which the
+        # identity does not mind
+        p_fit = 2.0 * np.pi / (self.OMEGA * self.GEOM.M * self.GEOM.d)
+        T_local = compute_slab_tmatrices(self.GEOM, mat, self.OMEGA)
+        plain = np.asarray(build_slab_kernels(self.GEOM, self.OMEGA, self.REF, periodic=True))
+        s_vec = np.array([np.sqrt(1.0 / self.REF.alpha**2 - p_fit**2 + 0j), p_fit, 0.0])
+        psi0 = _build_slab_incident_field_slowness(self.GEOM, self.OMEGA, s_vec, self.REF.alpha * s_vec)
+        new = compute_slab_scattering(
+            self.GEOM,
+            mat,
+            self.OMEGA,
+            np.array([1.0, 0.0, 0.0]),
+            periodic=True,
+            psi0=psi0,
+            bloch_k=(self.OMEGA * p_fit, 0.0),
+            gmres_tol=1e-12,
+        )
+        residual = _slab_matvec(new.psi.ravel(), T_local, plain, self.GEOM, periodic=True) - psi0.ravel()
+        assert np.linalg.norm(residual) < 1e-9 * np.linalg.norm(psi0)
+
 
 class TestSHIncidence:
     """SH plane-wave incidence (polarisation ŷ)."""
@@ -868,6 +1056,31 @@ class TestSlabReflectionMatrix:
         geom = SlabGeometry(M=M, N_z=N_z, a=a)
         mat = uniform_slab_material(geom, self.REF, contrast)
         return slab_reflection_matrix(geom, mat, self.OMEGA, p=p)
+
+    def test_oblique_matrix_does_not_depend_on_the_number_of_lateral_cells(self):
+        """The specular amplitudes are averaged against the incident lateral phase.
+
+        At a contrast weak enough that only the first order counts, a uniform slab's reflection cannot
+        depend on how many cells the periodic lattice holds. A plain mean of the sources leaves the
+        factor sin(M k_x d / 2) / (M sin(k_x d / 2)) in, which is 0.9978 for M = 4 and 0.9906 for M = 8
+        here: a difference of 0.7% where the two now agree to 1e-5.
+        """
+        weak = MaterialContrast(Dlambda=2.0e5, Dmu=1.0e5, Drho=0.01)
+        p = 1.0e-4
+        k_x_d = self.OMEGA * p * 4.0
+        plain = [np.sin(M * k_x_d / 2) / (M * np.sin(k_x_d / 2)) for M in (4, 8)]
+        assert abs(plain[0] - plain[1]) > 5e-3
+        R4 = self._slab_matrix(p=p, M=4, contrast=weak).to_modified()
+        R8 = self._slab_matrix(p=p, M=8, contrast=weak).to_modified()
+        np.testing.assert_allclose(R4, R8, rtol=1e-5)
+
+    def test_oblique_matrix_is_reciprocal(self):
+        """The modified-convention matrix is symmetric to the solver's tolerance, cell factor included."""
+        R_mod = self._slab_matrix(p=1.0e-4, M=4).to_modified()
+        assert abs(R_mod[0, 1]) > 0.0
+        # the solves stop at the default GMRES tolerance of 1e-6 (measured asymmetry 1.2e-5; 1e-10 at a
+        # tolerance of 1e-10, in test_slab_convergence)
+        np.testing.assert_allclose(R_mod[0, 1], R_mod[1, 0], rtol=1e-4)
 
     def test_normal_incidence_diagonal(self):
         """p=0: R_PP and R_SS match Kennett; conversions vanish; R_SS == R_SH."""
