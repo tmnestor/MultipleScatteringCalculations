@@ -1,7 +1,6 @@
 """Self-convergence of a piece = variant A minus variant B (or A alone), coefficient (ka)^p.
 Usage: python piece.py A B|- rc"""
 
-import math
 import sys
 from pathlib import Path
 

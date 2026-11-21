@@ -7,7 +7,6 @@ Usage: python static3.py [--deg=3] [--rc=1] [--profile=smoothstep] n1 n2 ...
 """
 
 import inspect
-import math
 import sys
 import time
 from pathlib import Path

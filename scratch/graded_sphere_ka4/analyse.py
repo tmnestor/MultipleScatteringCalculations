@@ -49,7 +49,7 @@ for p in range(2, min(8, d[0]["P"].shape[0])):
         + " ".join(f"{o:.2f}" for o in o_err)
     )
     print(
-        f"      diff "
+        "      diff "
         + " ".join(f"{e:.2e}" for e in diffs)
         + " | ~ord "
         + " ".join(f"{o:.2f}" for o in o_dif)
