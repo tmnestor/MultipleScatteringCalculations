@@ -11,9 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-_spec = importlib.util.spec_from_file_location(
-    "build_notebooks", ROOT / "scripts" / "build_notebooks.py"
-)
+_spec = importlib.util.spec_from_file_location("build_notebooks", ROOT / "scripts" / "build_notebooks.py")
 assert _spec is not None and _spec.loader is not None
 bn = importlib.util.module_from_spec(_spec)
 sys.modules["build_notebooks"] = bn
@@ -56,11 +54,7 @@ def write(root: Path, name: str, text: str) -> Path:
 
 def config_text(entries: dict[str, str], top: str = "") -> str:
     head = top or "max_notebook_bytes: 1000\nrequire_every_script_listed: false\n"
-    return (
-        head
-        + "notebooks:\n"
-        + "".join(f"  {n}:\n{body}" for n, body in entries.items())
-    )
+    return head + "notebooks:\n" + "".join(f"  {n}:\n{body}" for n, body in entries.items())
 
 
 def load(repo: Path, text: str):
@@ -74,12 +68,8 @@ def load(repo: Path, text: str):
 def test_valid_config_loads(repo: Path) -> None:
     write(repo, "A.wl", "1 + 1\n")
     write(repo, "D.m", "{}\n")
-    cfg = load(
-        repo, config_text({"A.wl": FULL, "D.m": "    kind: data\n    release: false\n"})
-    )
-    assert (
-        cfg.entries["A.wl"].builds_notebook and cfg.entries["A.wl"].notebook == "A.nb"
-    )
+    cfg = load(repo, config_text({"A.wl": FULL, "D.m": "    kind: data\n    release: false\n"}))
+    assert cfg.entries["A.wl"].builds_notebook and cfg.entries["A.wl"].notebook == "A.nb"
     assert not cfg.entries["D.m"].builds_notebook
 
 
@@ -126,10 +116,7 @@ def test_every_script_listed(repo: Path) -> None:
     top = "max_notebook_bytes: 1000\nrequire_every_script_listed: true\n"
     with pytest.raises(bn.ConfigError) as err:
         load(repo, config_text({"A.wl": FULL}, top))
-    assert (
-        "B.wl" in str(err.value)
-        and "A.wl" not in str(err.value).split("listed:")[1].split("\n")[0]
-    )
+    assert "B.wl" in str(err.value) and "A.wl" not in str(err.value).split("listed:")[1].split("\n")[0]
 
 
 def test_manifest_cross_check(repo: Path) -> None:
@@ -137,9 +124,7 @@ def test_manifest_cross_check(repo: Path) -> None:
     write(repo, "B.wl", "1\n")
     cfg = load(
         repo,
-        config_text(
-            {"A.wl": FULL, "B.wl": FULL.replace("release: true", "release: false")}
-        ),
+        config_text({"A.wl": FULL, "B.wl": FULL.replace("release: true", "release: false")}),
     )
     bn.check_against_manifest(cfg, ["A.wl", "data.json"])
     with pytest.raises(bn.ConfigError) as err:
@@ -183,9 +168,7 @@ def test_find_read_calls(repo: Path) -> None:
 
 
 def _entry(**kw):
-    base = dict(
-        name="S.wl", kind="script", release=True, evaluate=True, timeout_seconds=60
-    )
+    base = dict(name="S.wl", kind="script", release=True, evaluate=True, timeout_seconds=60)
     base.update(kw)
     return bn.Entry(**base)
 
@@ -259,27 +242,19 @@ def test_never_built(repo: Path) -> None:
 def test_changed_input_names_the_file(repo: Path) -> None:
     cfg, lock = _built(repo)
     write(repo, "ref.json", '{"changed": 1}')
-    assert bn.staleness(cfg, lock, repo) == [
-        "A.nb: Mathematica/ref.json changed since it was built"
-    ]
+    assert bn.staleness(cfg, lock, repo) == ["A.nb: Mathematica/ref.json changed since it was built"]
 
 
 def test_hand_edit_and_entry_change(repo: Path) -> None:
     cfg, lock = _built(repo)
     write(repo, "A.nb", 'Notebook[{Cell["edited"]}]')
-    assert (
-        "changed since it was built (edited by hand" in bn.staleness(cfg, lock, repo)[0]
-    )
+    assert "changed since it was built (edited by hand" in bn.staleness(cfg, lock, repo)[0]
     cfg2 = load(
         repo,
-        config_text(
-            {"A.wl": FULL.replace("timeout_seconds: 60", "timeout_seconds: 61")}
-        ),
+        config_text({"A.wl": FULL.replace("timeout_seconds: 60", "timeout_seconds: 61")}),
     )
     write(repo, "A.nb", "Notebook[{}]")
-    assert bn.staleness(cfg2, lock, repo) == [
-        "A.nb: its notebooks.yml entry changed since it was built"
-    ]
+    assert bn.staleness(cfg2, lock, repo) == ["A.nb: its notebooks.yml entry changed since it was built"]
 
 
 def test_release_refuses_warm_cache(repo: Path) -> None:
@@ -309,9 +284,7 @@ def _report(status="finished", code=None, cells=()):
 
 
 def test_clean_report_passes() -> None:
-    rep = _report(
-        cells=[("Print", "  [a] identity: rel 1.2e-16  PASS"), ("Output", "3.14159")]
-    )
+    rep = _report(cells=[("Print", "  [a] identity: rel 1.2e-16  PASS"), ("Output", "3.14159")])
     assert bn.check_outputs(rep, _entry()) == []
     assert bn.check_outputs(_report("exited", 0, [("Print", "done")]), _entry()) == []
 
@@ -330,19 +303,13 @@ def test_script_without_outputs_fails_but_library_may_be_silent() -> None:
         (_report("exited", 1, [("Print", "started")]), "exited with code 1"),
         (_report(cells=[("Print", "check ****FAIL****")]), "FAIL in a Print cell"),
         (
-            _report(
-                cells=[("Message", "Power::infy: Infinite expression 1/0 encountered.")]
-            ),
+            _report(cells=[("Message", "Power::infy: Infinite expression 1/0 encountered.")]),
             "message Power::infy",
         ),
         (_report(cells=[("Message", "garbled")]), "cannot be read"),
         (_report(cells=[("Print", "wrote /Users/someone/x.json")]), "absolute path"),
         (
-            _report(
-                cells=[
-                    ("Print", "wrote /private/var/folders/x/T/tmpab/Mathematica/x.json")
-                ]
-            ),
+            _report(cells=[("Print", "wrote /private/var/folders/x/T/tmpab/Mathematica/x.json")]),
             "absolute path",
         ),
     ],
@@ -369,11 +336,7 @@ def test_notebook_file_checks(repo: Path) -> None:
     nb = write(repo, "A.nb", 'Notebook[{Cell["/scratch/abc/Mathematica"]}]')
     assert bn.check_notebook_file(nb, 10_000, []) == []
     problems = bn.check_notebook_file(nb, 10, ["/scratch/abc"])
-    assert (
-        len(problems) == 2
-        and "over max_notebook_bytes" in problems[0]
-        and "/scratch/abc" in problems[1]
-    )
+    assert len(problems) == 2 and "over max_notebook_bytes" in problems[0] and "/scratch/abc" in problems[1]
 
 
 # --- the repository's own configuration ----------------------------------------------------------------
@@ -398,9 +361,7 @@ def test_repository_notebooks_current() -> None:
 
 
 def test_run_stops_at_timeout(tmp_path: Path) -> None:
-    code, _ = bn._run(
-        [sys.executable, "-c", "import time; time.sleep(30)"], tmp_path, 1
-    )
+    code, _ = bn._run([sys.executable, "-c", "import time; time.sleep(30)"], tmp_path, 1)
     assert code is None
     code, out = bn._run([sys.executable, "-c", "print(42)"], tmp_path, 30)
     assert code == 0 and out.strip() == "42"

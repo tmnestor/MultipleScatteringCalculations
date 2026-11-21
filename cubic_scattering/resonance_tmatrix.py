@@ -750,6 +750,7 @@ def compute_resonance_tmatrix(
 
     # --- Sub-cell Rayleigh T-matrix (same for all cells) ---
     from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+
     rayleigh_sub = lattice_cube_tmatrix(omega, a_sub, ref, contrast)
 
     # --- Full-cube Rayleigh result (n_sub=1 reference for validation) ---

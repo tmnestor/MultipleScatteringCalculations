@@ -353,6 +353,7 @@ def compute_sphere_foldy_lax_fft(
 
     def cell_tmatrix(c: MaterialContrast) -> NDArray[np.complexfloating]:
         from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+
         return _sub_cell_tmatrix_9x9(lattice_cube_tmatrix(omega, a_sub, ref, c), omega, a_sub)
 
     dim = 9 * nC

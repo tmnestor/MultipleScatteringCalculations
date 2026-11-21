@@ -196,6 +196,7 @@ def assemble_sphere_foldy_lax_system(
 
     # Sub-cell Rayleigh T-matrix (same for all cells)
     from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+
     rayleigh_sub = lattice_cube_tmatrix(omega, a_sub, ref, contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
 
@@ -1666,6 +1667,7 @@ def foldy_lax_far_field(
 
     # The sub-cell Rayleigh T-matrix: each cell's own when the cells carry different contrasts
     from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+
     rayleigh_sub = lattice_cube_tmatrix(omega, a_sub, ref, decomp_result.contrast)
     T_loc = _sub_cell_tmatrix_9x9(rayleigh_sub, omega, a_sub)
     t_local = decomp_result.t_local

@@ -30,14 +30,10 @@ def test_vertical_series(zc, s):
         assert np.abs(val - direct).max() < 1e-12 * np.abs(direct).max()
 
 
-@pytest.mark.parametrize(
-    "kind,rec,src", [("R", (-1, 0, 0), (-1, 0, 0)), ("T", (1, 2, 2), (-1, 0, 0))]
-)
+@pytest.mark.parametrize("kind,rec,src", [("R", (-1, 0, 0), (-1, 0, 0)), ("T", (1, 2, 2), (-1, 0, 0))])
 def test_head_order0_against_plain(kind, rec, src):
     qs = il.qs_for(rec, src, H)
-    plain = isp._static_integral(
-        0, kind, rec, src, H, KA, KB, *isp._panels(0.0, qs * H, 0.05, 20), 10, 4
-    )
+    plain = isp._static_integral(0, kind, rec, src, H, KA, KB, *isp._panels(0.0, qs * H, 0.05, 20), 10, 4)
     head = il.head(0, kind, rec, src, H, KA, KB, qs, 10, 4)
     assert np.abs(head - plain).max() < 1e-13 * np.abs(plain).max()
 
@@ -45,9 +41,7 @@ def test_head_order0_against_plain(kind, rec, src):
 def test_sampled_head_order0_fixed():
     rec, src = (-1, 0, 0), (-1, 0, 0)
     qsh = 0.5
-    plain = isp._static_integral(
-        0, "R", rec, src, H, KA, KB, *isp._panels(0.0, qsh, 0.05, 20), 1, 1
-    )
+    plain = isp._static_integral(0, "R", rec, src, H, KA, KB, *isp._panels(0.0, qsh, 0.05, 20), 1, 1)
     sampled = isp.fp_low_integral(
         0, "R", rec, src, H, KA, KB, qsh * (1 + 1e-12), 1, 1, qsh=qsh, head="sampled"
     )

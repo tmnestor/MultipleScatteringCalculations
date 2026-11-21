@@ -293,6 +293,7 @@ def rayleigh_t0_and_derivative(
     def cube(m: NDArray, ref: ReferenceMedium) -> NDArray:
         contrast = MaterialContrast(Dlambda=m[0], Dmu=m[1], Drho=m[2])
         from .point_cell_self import lattice_cube_tmatrix  # the configured single site of a lattice cell
+
         res = lattice_cube_tmatrix(omega, half_width, ref, contrast)
         return _sub_cell_tmatrix_9x9(res, omega, half_width)
 
