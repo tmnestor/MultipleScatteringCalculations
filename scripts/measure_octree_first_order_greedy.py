@@ -54,8 +54,12 @@ under ``--rule=hybrid``, and it is the same safeguard against stalling that is k
 
 THE ORDER OF THE SECOND TERM ON UNIFORM GRIDS (``--secondorder=4,6,8,12``). For each number of cells
 across, the second-order error of the uniform grid (no solve) and the sum of e over its cells are stored
-under ``uniform_second``, in a file of its own (``_uniformsecond`` appended to the name). Halving the cell divides the second term by four on a smooth body; what it
-does on the sharp sphere is the question this option answers.
+under ``uniform_second``, in a file of its own (``_uniformsecond`` appended to the name). Halving the
+cell divides the second term by four on a smooth body; what it does on the sharp sphere is the question
+this option answers. Each grid small enough for the dense solver is also solved (unless ``--dry``), and
+its two-term prediction |dT1 + dT2| and solved error are stored beside the two terms. That is what a
+grown tree's solved error has to be set against: the first-order errors of tree and grid are not the
+whole of either error once the second term is the larger.
 
 THE GUARD AGAINST FITTING. A tree has hundreds of refinements to choose among, and with them it could
 cancel R at a handful of directions without being a better grid. So the tree is grown on one set of
@@ -340,13 +344,25 @@ def main() -> int:
             "dT2_test": float(np.abs(d_t2_u).max() / peak),
             "projection_energy": sum(energy(c, h) for c, h in kept),
         }
+        d_t1_u = (sum(born_of(c, h) for c, h in kept) - born_exact)[n_grow:]
+        row_s["two_term_test"] = float(np.abs(d_t1_u + d_t2_u).max() / peak)
+        if not dry and len(kept) * 9 <= DENSE_LIMIT:
+            set_scope(cs_u, hs_u)
+            res_u = solve_graded_octree(
+                omega, REF, CONTRAST, cs_u, hs_u, prof, K_HAT, K_HAT, "P", p=0, r=0, block_cache=block_cache
+            )
+            err_u = sum(octree_far_field(res_u, test_pts / rf, rf)) - exact
+            row_s["error"] = float(np.abs(err_u).max() / peak)
+            row_s["beyond_two_terms"] = float(np.abs(err_u - d_t1_u - d_t2_u).max() / peak)
         result["uniform_second"].append(row_s)
         print(
             f"  uniform grid of {n_across:2d} across, {row_s['cells']:5d} cells: second-order error "
             f"{row_s['dT2_test']:.3e}, first-order {row_s['dT1_test']:.3e}, projection energy "
-            f"{row_s['projection_energy']:.4e}",
+            f"{row_s['projection_energy']:.4e}, two terms {row_s['two_term_test']:.3e}"
+            + (f", solved {row_s['error']:.3e}" if "error" in row_s else ""),
             flush=True,
         )
+        out_path.write_text(json.dumps(result, indent=2) + "\n")
     c2 = 0.0  # second-order error on the growth directions per unit of projection energy; measured
     t_start = time.perf_counter()
     for target in targets:

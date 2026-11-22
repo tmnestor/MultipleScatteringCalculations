@@ -28,11 +28,21 @@ Run small first:
     ... <k_S a> <core_frac> <p> [--uniform=4,6,8,12,16] [--scale=1.0] [--tol=1e-11]
 
 ``--scale`` multiplies the contrast (the exact reference is solved at the same scaled contrast).
+
+``--shape=halo`` and ``--shape=sharp`` (constant cells only, p = 0) run the two further radial bodies of
+``measure_octree_first_order_greedy.py``: the strong centre in a weak surround, and the classical sharp
+uniform sphere (core_frac 1). On the sharp sphere each cell holds the fraction of its volume inside the
+sphere (exact along z, a 64 x 64 midpoint rule across), so the first-order term has no staircase error,
+and the relative projection error is the sum over the cells of volume x fraction x (1 - fraction) over
+the volume of the sphere. It falls as the first power of the cell and not the second, so this is where
+the law says the second term must overtake the first; the uniform grids here go far beyond the dense
+solver and show whether the solved error does what the law says. The file name gains ``_<shape>``.
 """
 
 import json
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -75,6 +85,11 @@ def main() -> int:
     uniform_ns = [int(v) for v in opts.get("uniform", "4,6,8").split(",") if v]
     scale = float(opts.get("scale", "1.0"))
     tol = float(opts.get("tol", "1e-11"))
+    shape = opts.get("shape", "s5")
+    sharp = shape == "sharp"
+    if shape != "s5" and p != 0:
+        raise SystemExit("--shape=halo and --shape=sharp are for constant cells: give p = 0")
+    ref_shape = "s5" if sharp else shape  # the sharp sphere is the shell body with its core at the surface
     omega = ka * REF.beta / RADIUS
     rf = 5e8 * RADIUS
     pts = obs_points(rf, THETA)
@@ -85,18 +100,55 @@ def main() -> int:
         return x**3 * (10.0 - 15.0 * x + 6.0 * x**2)
 
     def prof(pos: np.ndarray) -> float:
-        return radial("s5", core, float(np.linalg.norm(pos)))
+        return radial(shape, core, float(np.linalg.norm(pos)))
 
-    exact = exact_field("s5", core, omega, scale, pts)
+    mid = (np.arange(64) + 0.5) / 32.0 - 1.0
+    gauss_x, gauss_w = np.polynomial.legendre.leggauss(6)
+    gauss_xi = np.stack(np.meshgrid(gauss_x, gauss_x, gauss_x, indexing="ij"), -1).reshape(-1, 3)
+    gauss_ww = np.einsum("i,j,k->ijk", gauss_w, gauss_w, gauss_w).ravel() / 8.0
+
+    def fraction(c: np.ndarray, h: float) -> float:
+        """The fraction of the cell's volume inside the sphere: exact along z, midpoint rule in x and y."""
+        x, y = np.meshgrid(c[0] + h * mid, c[1] + h * mid, indexing="ij")
+        half = np.sqrt(np.clip(RADIUS**2 - x**2 - y**2, 0.0, None))
+        length = np.clip(np.minimum(c[2] + h, half) - np.maximum(c[2] - h, -half), 0.0, None)
+        return float(length.mean() / (2.0 * h))
+
+    def sharp_profile(h: float) -> Callable[[np.ndarray], float]:
+        """The sharp sphere on the grid of half-width h: at any point, the fraction of the cell it is in."""
+        known: dict = {}
+
+        def value(pos: np.ndarray) -> float:
+            idx = tuple(np.floor((np.asarray(pos) + RADIUS) / (2.0 * h)).astype(int))
+            if idx not in known:
+                known[idx] = fraction(-RADIUS + (np.array(idx) + 0.5) * 2.0 * h, h)
+            return known[idx]
+
+        return value
+
+    def other_energies(centres: np.ndarray, h: float, profile: Callable) -> tuple[np.ndarray, float]:
+        """For the halo and the sharp sphere: each cell's integral of (f - its mean)^2, and that of f^2."""
+        if sharp:
+            phi = np.array([profile(c) for c in centres])
+            return (2.0 * h) ** 3 * phi * (1.0 - phi), 4.0 * np.pi * RADIUS**3 / 3.0
+        lost = np.empty(len(centres))
+        for i, c in enumerate(centres):
+            f = np.array([profile(c + h * xi) for xi in gauss_xi])
+            lost[i] = (2.0 * h) ** 3 * max(float(gauss_ww @ f**2 - (gauss_ww @ f) ** 2), 0.0)
+        rr = (np.arange(200000) + 0.5) * RADIUS / 200000
+        ff = np.array([radial(shape, core, x) for x in rr])
+        return lost, float((4.0 * np.pi * rr**2 * ff**2).sum() * RADIUS / 200000)
+
+    exact = exact_field(ref_shape, core, omega, scale, pts)
     exact_born = (
         scale
-        * (exact_field("s5", core, omega, EPS, pts) - exact_field("s5", core, omega, -EPS, pts))
+        * (exact_field(ref_shape, core, omega, EPS, pts) - exact_field(ref_shape, core, omega, -EPS, pts))
         / (2 * EPS)
     )
     peak = float(np.abs(exact).max())
     nonlinear = float(np.abs(exact - exact_born).max() / peak)
     print(
-        f"thin-shell sphere: k_S a = {ka}, core = {core_frac} a, degree p = r = {p}, contrast x {scale};  "
+        f"radial body {shape}: k_S a = {ka}, core = {core_frac} a, degree p = r = {p}, contrast x {scale};  "
         f"nonlinear fraction |exact - exact Born| / peak = {nonlinear:.3e}",
         flush=True,
     )
@@ -105,18 +157,26 @@ def main() -> int:
         "products | kernel s, solve s | against the dense solver"
     )
     dense = dense_reference(core_frac, p) if scale == 1.0 and ka == 0.5 else {}
-    suffix = "" if scale == 1.0 else f"_scale{scale:g}"
+    suffix = ("" if shape == "s5" else f"_{shape}") + ("" if scale == 1.0 else f"_scale{scale:g}")
     out = ROOT / f"scripts/measure_two_term_fft_ka{ka:g}_core{core_frac:g}_p{p}{suffix}.json"
     rows = []
     for n in uniform_ns:
         centres, hs = uniform_leaves(RADIUS, n)
-        defect, _, norm = leaf_energies(prof_vec, centres, hs, p)
-        keep = norm > 0
-        e_p = float(defect.sum() / norm.sum())
+        prof_n = sharp_profile(float(hs[0])) if sharp else prof
+        if shape == "s5":
+            defect, _, norm = leaf_energies(prof_vec, centres, hs, p)
+            keep = norm > 0
+            e_p = float(defect.sum() / norm.sum())
+        else:
+            lost, whole = other_energies(centres, float(hs[0]), prof_n)
+            # the cells that reach inside the sphere: a positive fraction, or a nearest point within it
+            nearest = np.linalg.norm(np.clip(np.abs(centres) - float(hs[0]), 0.0, None), axis=1)
+            keep = np.array([prof_n(c) > 0.0 for c in centres]) if sharp else nearest < RADIUS
+            e_p = float(lost.sum() / whole)
         born = sum(
             octree_far_field(
                 born_octree(
-                    omega, REF, contrast, centres[keep], hs[keep], prof, K_HAT, K_HAT, "P", p=p, r=p
+                    omega, REF, contrast, centres[keep], hs[keep], prof_n, K_HAT, K_HAT, "P", p=p, r=p
                 ),
                 pts / rf,
                 rf,
@@ -131,7 +191,7 @@ def main() -> int:
             REF,
             contrast,
             n,
-            prof,
+            prof_n,
             K_HAT,
             K_HAT,
             "P",
@@ -173,6 +233,7 @@ def main() -> int:
                 {
                     "ka_s": ka,
                     "core_frac": core_frac,
+                    "shape": shape,
                     "p": p,
                     "contrast_scale": scale,
                     "nonlinear_fraction": nonlinear,

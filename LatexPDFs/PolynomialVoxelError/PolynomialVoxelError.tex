@@ -84,7 +84,10 @@ cells, where the wave's own variation across a cell adds the layer's constant fo
 the nonlinear fraction itself following from two products with the matrix
 of a coarse grid, with no solve. A sphere whose contrast falls smoothly to zero converges at the orders
 the layer predicts, and against its exact solution the second term settles on one constant as the cells
-shrink, for constant and degree-one cells. That constant is not independent of the frequency: a cell holds
+shrink, for constant and degree-one cells. On a sphere with a sharp boundary the projection error of
+constant cells falls only as the first power of the cell, so the second term overtakes the first and the
+scheme becomes first order, as grids solved to $1.33$ million unknowns confirm with the law's constant
+unchanged. That constant is not independent of the frequency: a cell holds
 the product of medium and wave and loses $\nabla^{p+1}(fw)=w(\nabla+\mathrm{i}\bk)^{p+1}f$, so the wave's
 variation enters beside the medium's, in powers of $kL$ with $L$ the length over which the medium varies. On that sphere, given the same cell mean of the medium, the Galerkin cell of
 degree one needs $7.5$ to $25$ times fewer unknowns than the classical point-matching cell, whose single site
@@ -2729,13 +2732,133 @@ since the cut cells grow in number as the inverse square of their size and the i
 inverse cube, and it is the case that needs a solver whose cost does not grow as the cube of the number
 of leaves.
 
-\emph{Cautions.} One body, whose steep shell makes the medium's detail large; a dense solver, which
-stopped the product's rule at $912$ leaves at $k_Sa=4$ (its next tree has $2368$); and constant cells
-only. With degree-one cells the same solver allows about $550$ leaves, on which the two rules build
-nearly the same trees, so that case is not decided. Against uniform grids the product's tree at
-$k_Sa=4$ is level (a uniform grid of $912$ cells would give about $0.044$ by interpolation): at that
-frequency the wave must be resolved wherever there is contrast, and on this body a tree has little to
-save.
+\emph{The overtaking, on solved grids.} The last two paragraphs rest on the second term taken alone,
+with nothing solved, and on trees of at most $2200$ leaves. A uniform grid needs no dense solver: the
+matrix-free solver of Appendix~\ref{app:solver} takes the sharp sphere as it takes the graded one, each
+cell holding its volume fraction, and it was run to $64$ cells across, $1.33$ million unknowns
+(\path{scripts/measure_two_term_fft.py} with \texttt{--shape=sharp}; on the grids of $4$ to $12$ across
+its solved errors are those of the dense solver to the four figures printed). Table~\ref{tab:sharpsolved}
+gives the solved error, the first-order error, and what remains when the first-order error is taken from
+the solved one, direction by direction, before the largest is taken.
+\begin{table}[htbp]
+\centering
+\caption{The sharp uniform sphere on uniform grids of constant cells, solved. \emph{Across} is the
+number of cells across the diameter and \emph{cells} the number that hold part of the sphere. $\cE$ is
+the relative projection error of the medium (Eq.~\eqref{eq:proj}). \emph{Error} is the largest
+difference between the scheme's far field and the exact one over the nine test directions, as a
+fraction of the peak of the exact far field; \emph{first} is the same measure of the first-order error
+$\delta T_1$, which needs no solve; \emph{rest} is that measure of the solved error less $\delta T_1$;
+the last column is the rest divided by $\cE$.}\label{tab:sharpsolved}
+\small
+\begin{tabular}{@{}lrrcllll@{}}
+\toprule
+$k_Sa$ & across & cells & $\cE$ & error & first & rest & rest$/\cE$ \\
+\midrule
+$0.5$ & $8$  & $408$      & $0.1225$ & $1.97\times10^{-3}$ & $2.04\times10^{-3}$ & $2.01\times10^{-3}$ & $0.0164$ \\
+      & $16$ & $2728$     & $0.0623$ & $9.99\times10^{-4}$ & $5.16\times10^{-4}$ & $1.02\times10^{-3}$ & $0.0164$ \\
+      & $32$ & $19\,544$  & $0.0309$ & $5.01\times10^{-4}$ & $1.29\times10^{-4}$ & $5.06\times10^{-4}$ & $0.0164$ \\
+      & $64$ & $146\,864$ & $0.0155$ & $2.52\times10^{-4}$ & $3.24\times10^{-5}$ & $2.54\times10^{-4}$ & $0.0163$ \\
+\midrule
+$2$   & $8$  & $408$      & $0.1225$ & $3.30\times10^{-2}$ & $3.19\times10^{-2}$ & $4.32\times10^{-3}$ & $0.0353$ \\
+      & $16$ & $2728$     & $0.0623$ & $8.82\times10^{-3}$ & $8.07\times10^{-3}$ & $2.14\times10^{-3}$ & $0.0344$ \\
+      & $32$ & $19\,544$  & $0.0309$ & $2.45\times10^{-3}$ & $2.03\times10^{-3}$ & $1.05\times10^{-3}$ & $0.0340$ \\
+      & $64$ & $146\,864$ & $0.0155$ & $7.29\times10^{-4}$ & $5.07\times10^{-4}$ & $5.25\times10^{-4}$ & $0.0338$ \\
+\midrule
+$4$   & $8$  & $408$      & $0.1225$ & $7.37\times10^{-2}$ & $7.21\times10^{-2}$ & $1.12\times10^{-2}$ & $0.0913$ \\
+      & $16$ & $2728$     & $0.0623$ & $2.06\times10^{-2}$ & $1.94\times10^{-2}$ & $5.85\times10^{-3}$ & $0.0939$ \\
+      & $32$ & $19\,544$  & $0.0309$ & $5.60\times10^{-3}$ & $4.94\times10^{-3}$ & $2.91\times10^{-3}$ & $0.0939$ \\
+      & $64$ & $146\,864$ & $0.0155$ & $1.59\times10^{-3}$ & $1.24\times10^{-3}$ & $1.45\times10^{-3}$ & $0.0936$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the rows at $k_Sa=2$. Each halving of the cell divides the first-order error by four ($3.19$, $0.807$,
+$0.203$ and $0.0507$, all $\times10^{-2}$), as a second-order term should, and divides the rest by two
+($4.32$, $2.14$, $1.05$ and $0.525$, all $\times10^{-3}$), as $\cE$ is divided. At $8$ across the rest
+is a seventh of the first-order error; at $64$ across it is the larger of the two. The same crossing has
+happened by $64$ across at $k_Sa=4$, and at $k_Sa=0.5$ the two are already equal at $8$ across, so that
+from $32$ to $64$ across the solved error falls by $1.98$: the scheme has become first order. At $k_Sa=2$ and $4$ the same halving
+divides the error by $3.35$ and $3.53$, on the way from four to two. Through all of it the rest divided
+by $\cE$ does not move: $0.0163$ to $0.0165$ over the nine grids from $4$ to $64$ across at $k_Sa=0.5$,
+within $9\%$ at $k_Sa=2$ and within $11\%$ at $4$, where the coarsest grids account for the spread. (The
+rest holds every order beyond the first, which is why $0.0164$ is a twentieth below the $0.0173$ of the
+second term alone in Table~\ref{tab:secondenergy}.) For comparison, the halo, which has no jump, was run
+on the same grids: there the rest stays below a tenth of the first-order error at $k_Sa=2$ and $4$
+on every grid, its ratio to $\cE$ is level ($0.0048$ to $0.0055$ at $k_Sa=0.5$), and from $32$ to $64$
+across the solved error falls by $3.80$, $4.01$ and $3.99$ at the three frequencies. So the loss of an order on the sharp sphere is
+the second term's and no other's, it is predicted in size by a quantity computed from the medium and the
+grid, and volume fractions do not prevent it: they make the first-order term second order and leave the
+projection error of a discontinuous medium on constant cells where it was.
+
+\emph{What a tree saves, on solved errors.} With uniform grids solved at $4$, $6$, $8$, $10$, $12$,
+$14$, $16$ and $24$ across, the solved error of each grown tree can be set against that of a uniform grid of
+as many cells, interpolating in the logarithms of error and cells (Table~\ref{tab:treesolved}; the
+uniform grids to $14$ across by the dense solver, with their two terms, are stored by the option
+\texttt{--secondorder} of \path{scripts/measure_octree_first_order_greedy.py}, on which the two-term
+prediction is within $1\%$ of the solved error at $k_Sa=2$ and $4$ and within $6\%$ at $0.5$, much as on
+the trees).
+\begin{table}[htbp]
+\centering
+\caption{Solved trees of constant cells against solved uniform grids. \emph{Solved} is the tree's
+solved far-field error divided by that of a uniform grid of as many cells; \emph{first} is the same
+ratio of the first-order errors, the quantity of Table~\ref{tab:greedybodies}; \emph{cells} is the
+tree's number of leaves divided by the number of cells a uniform grid needs for the tree's solved error.
+The trees of the graded shell and the halo are those of the single-best-step rule, which are the ones
+that were solved; those of the sharp sphere are of the rule that does not stall.}\label{tab:treesolved}
+\small
+\begin{tabular}{@{}llrccc@{}}
+\toprule
+body & $k_Sa$ & leaves & solved & first & cells \\
+\midrule
+graded shell, core $0.75a$ & $0.5$ & $856$  & $1.12$ & $0.79$ & $1.18$ \\
+                           &       & $1701$ & $0.98$ & $0.59$ & $0.97$ \\
+                           & $2$   & $1360$ & $0.70$ & $0.70$ & $0.62$ \\
+                           &       & $2200$ & $0.69$ & $0.68$ & $0.59$ \\
+                           & $4$   & $1360$ & $1.02$ & $0.99$ & $1.02$ \\
+                           &       & $2204$ & $0.96$ & $0.93$ & $0.94$ \\
+\midrule
+halo                       & $2$   & $1304$ & $0.92$ & $0.91$ & $0.91$ \\
+                           &       & $2204$ & $0.70$ & $0.69$ & $0.59$ \\
+                           & $4$   & $1300$ & $0.59$ & $0.56$ & $0.49$ \\
+                           &       & $2200$ & $0.57$ & $0.56$ & $0.43$ \\
+\midrule
+sharp uniform sphere       & $0.5$ & $1301$ & $0.80$ & $0.51$ & $0.55$ \\
+                           &       & $2203$ & $0.87$ & $0.51$ & $0.66$ \\
+                           & $2$   & $1301$ & $0.63$ & $0.60$ & $0.52$ \\
+                           &       & $2200$ & $0.66$ & $0.62$ & $0.53$ \\
+                           & $4$   & $1301$ & $0.58$ & $0.71$ & $0.45$ \\
+                           &       & $2202$ & $0.51$ & $0.70$ & $0.36$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the sharp sphere at $k_Sa=0.5$ with $2203$ leaves. The tree's first-order error is half that of a
+uniform grid of as many cells, and its solved error is $0.87$ of the grid's ($9.29\times10^{-4}$ against
+$1.07\times10^{-3}$): the first-order rule halved a term that was no longer the error. A uniform grid
+would need about $3350$ cells for the tree's error, so the tree does it with two thirds of the cells.
+Three things follow from the table. First, where the first term is the error (the sharp sphere and the
+graded shell at $k_Sa=2$, the halo at $4$) the solved ratio is the first-order ratio, and the tree
+reaches a given error with two fifths to three fifths of the cells; the first-order comparison of
+Table~\ref{tab:greedybodies} was a fair guide there. Secondly, where the second term matters the
+first-order ratio is not a guide in either direction. On the graded shell at $k_Sa=0.5$ a tree with
+$0.59$ of the grid's first-order error has $0.98$ of its solved error, because on the uniform grid the
+two terms partly cancel (first $6.8\times10^{-4}$, solved $5.0\times10^{-4}$ at $1840$ cells) and on the
+tree they do not (first $4.2\times10^{-4}$, solved $5.2\times10^{-4}$). On the sharp sphere at
+$k_Sa=4$ it goes the other way: the tree's solved error, $1.20\times10^{-2}$, is below its first-order
+error, $1.56\times10^{-2}$, and the tree does with $0.36$ of the cells what its first-order error
+promised with rather more. The two terms are complex vectors over the directions and add with a phase
+that the first-order rule neither knows nor controls. Thirdly, nowhere within reach of the dense solver
+does a tree of constant cells save an order of magnitude; the most is a factor of about three in cells. The
+column of cells is the roughest of the three, since it inverts an interpolation, and on the halo, whose
+uniform-grid errors do not fall evenly, it should be read as no better than a guide.
+
+\emph{Cautions.} Three bodies, all radial, and constant cells only. The trees rest on a dense solver,
+which stops near $2200$ constant leaves and stopped the product's rule at $912$ leaves at $k_Sa=4$ (its
+next tree has $2368$); the uniform grids do not. With degree-one cells the same solver allows about
+$550$ leaves, on which the two rules build nearly the same trees, so that case is not decided. Against
+uniform grids the product's tree on the graded shell at $k_Sa=4$ is a little worse (a uniform grid of
+$912$ cells gives $0.039$ by interpolation, the tree $0.043$): at that frequency the wave must be
+resolved wherever there is contrast, and on that body a tree has little to save.
 
 \paragraph{Cautions.} The derivation and its tests are for the term of second order in the contrast, on
 one body with a radial profile, with an incident P wave. The practical table at four frequencies
@@ -3170,6 +3293,15 @@ schemes sharing its observers and error measure, the point cell with its single 
 (Appendix~\ref{app:pointcell}; its self term checked against the cube's static closed forms and, off
 centre, against a volume quadrature); in the layer, at orders $2$ to $8$, against the exact solution in
 high-precision arithmetic.
+\item \emph{Measured against exact solutions; the trees by one solver, the uniform grids by two.}
+Trees grown by the first-order error, and both terms of their error with no solve
+(Tables~\ref{tab:greedy} to \ref{tab:greedybodies}): the two-term prediction is within $2\%$ of the
+solved error on $30$ trees of three radial bodies, and $5\%$ high in one case. The second term on a
+sharp boundary (Tables~\ref{tab:secondenergy} and \ref{tab:sharpsolved}): its ratio to the projection
+error is level from $4$ to $64$ cells across, and the scheme loses an order as that predicts. What a
+tree saves (Table~\ref{tab:treesolved}): at most a factor of about three in cells, for constant cells
+and at most $2200$ leaves. Not established: trees beyond the dense solver, trees of degree-one cells,
+and a body without radial symmetry.
 \item \emph{Size.} The dense solver stops near $20\,000$ unknowns ($1256$ constant cells or $408$
 degree-one cells). The two-term table and the factor of the second term no longer rest on it: the
 matrix-free solver has carried them to $2.56$ million unknowns. The other three-dimensional results of
@@ -3224,6 +3356,18 @@ follows the scheme to $2\%$ from $k_Sa=0.125$ to $4$ (\S\ref{sec:factorfreq}). T
 from two products with the matrix of a coarse grid, so neither term needs a solve, and the term of third
 order has a closed-form factor of its own.
 
+A body with a sharp boundary shows what the second term is worth. Volume fractions in the cut cells
+keep the first-order term at second order, but the relative projection error of a discontinuous medium
+on constant cells falls only as the first power of the cell, so the second term overtakes the first. On
+a uniform sphere it is the larger from $8$ cells across at $k_Sa=0.5$ and from about $64$ at $k_Sa=2$
+and $4$, after which the scheme is first order, and its ratio to the projection error is unchanged from
+$4$ to $64$ cells across (Table~\ref{tab:sharpsolved}). Because neither term needs a solve, an octree
+can be grown by them. A tree of constant cells grown by the first-order error has the error it was grown
+to have; where the wave or a boundary leaves it something to save it reaches a given solved error with
+between a third and two thirds of the cells of a uniform grid, and elsewhere with as many
+(Table~\ref{tab:treesolved}). It does not save an order of magnitude, because the wave must still be
+resolved wherever there is contrast.
+
 \paragraph{The error is known in advance.} For every discretisation studied here the error is not
 something to be discovered by refining until the answer stops changing. Its order and its leading
 constant are known before anything is computed: $+(kd)^2/8$ in reflection and $-(kd)^2/24$ in
@@ -3264,9 +3408,10 @@ Table~\ref{tab:twoterm} is \path{scripts/measure_octree_two_term.py} (dense solv
 \path{scripts/measure_t2_factor_operators.py}, with the symbolic step in
 \path{scripts/derive_cell_residual_moments.py}; their results are stored beside them in \path{scripts},
 and Figs.~\ref{fig:twotermlaw} and \ref{fig:factorfreq} are drawn from those files by
-\path{scripts/plot_error_law_figures.py}; Tables~\ref{tab:trees} and \ref{tab:greedy} to \ref{tab:secondenergy} are
+\path{scripts/plot_error_law_figures.py}; Tables~\ref{tab:trees} and \ref{tab:greedy} to \ref{tab:treesolved} are
 \path{scripts/measure_octree_product_indicator.py} and
-\path{scripts/measure_octree_first_order_greedy.py}; the constant medium with a richer
+\path{scripts/measure_octree_first_order_greedy.py}, with the uniform grids of
+Table~\ref{tab:sharpsolved} from \path{scripts/measure_two_term_fft.py}; the constant medium with a richer
 field is \path{scripts/pilot_octree_hp_refinement.py}. Their results are stored in
 \path{LatexPDFs/PolynomialVoxelError/figures}. Material on octree refinement, removed from this paper, is
 archived in \path{LatexPDFs/archive/OctreeRefinementArchive/}.}
