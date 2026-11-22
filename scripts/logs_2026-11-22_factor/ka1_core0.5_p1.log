@@ -1,0 +1,51 @@
+factor of the second term: k_S a = 1.0, core = 0.5 a, p = r = 1, stiffness contrast, step d = 0.3
+
+ n = 8: 408 cells, E = 4.6451e-03   [3 s]
+  angle    F for outgoing P   limit      F for outgoing S   limit
+   0.20       0.9870         nan         1.1611         nan
+   0.54       0.9732         nan         1.1623         nan
+   0.89       0.9470         nan         1.1723         nan
+   1.23       0.9126         nan         1.2250         nan
+   1.57       0.8836         nan         3.0778         nan
+   1.91       0.8738         nan         0.8910         nan
+   2.26       0.8804         nan         0.9680         nan
+   2.60       0.8911         nan         0.9903         nan
+   2.94       0.8981         nan         0.9996         nan
+
+ n = 16: 2728 cells, E = 3.6487e-04   [19 s]
+  angle    F for outgoing P   limit      F for outgoing S   limit
+   0.20       0.9839         nan         1.1652         nan
+   0.54       0.9702         nan         1.1618         nan
+   0.89       0.9446         nan         1.1673         nan
+   1.23       0.9114         nan         1.2266         nan
+   1.57       0.8825         nan         3.3916         nan
+   1.91       0.8721         nan         0.8586         nan
+   2.26       0.8794         nan         0.9684         nan
+   2.60       0.8927         nan         1.0136         nan
+   2.94       0.9020         nan         1.0365         nan
+
+ n = 32: 19544 cells, E = 2.4349e-05   [137 s]
+  angle    F for outgoing P   limit      F for outgoing S   limit
+   0.20       0.9805         nan         1.1564         nan
+   0.54       0.9675         nan         1.1510         nan
+   0.89       0.9432         nan         1.1551         nan
+   1.23       0.9113         nan         1.2187         nan
+   1.57       0.8824         nan         3.5594         nan
+   1.91       0.8701         nan         0.8291         nan
+   2.26       0.8758         nan         0.9548         nan
+   2.60       0.8886         nan         1.0107         nan
+   2.94       0.8982         nan         1.0398         nan
+
+ n = 48: 63256 cells, E = 4.8729e-06   [489 s]
+  angle    F for outgoing P   limit      F for outgoing S   limit
+   0.20       0.9789         nan         1.1535         nan
+   0.54       0.9663         nan         1.1477         nan
+   0.89       0.9428         nan         1.1512         nan
+   1.23       0.9118         nan         1.2160         nan
+   1.57       0.8831         nan         3.6032         nan
+   1.91       0.8701         nan         0.8210         nan
+   2.26       0.8748         nan         0.9508         nan
+   2.60       0.8872         nan         1.0099         nan
+   2.94       0.8967         nan         1.0407         nan
+
+ wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_t2_factor_fft_ka1_core0.5_p1.json

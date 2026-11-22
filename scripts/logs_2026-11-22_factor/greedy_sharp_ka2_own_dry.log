@@ -1,0 +1,4 @@
+an octree of constant cells grown by its first-order error (rule: own): k_S a = 2.0, core = 1.0 a, shape sharp, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells with contrast: first-order error on the test directions 1.192e-01
+  uniform grid of  8 across,   408 cells with contrast: first-order error on the test directions 3.186e-02
+  uniform grid of 16 across,  2728 cells with contrast: first-order error on the test directions 8.073e-03

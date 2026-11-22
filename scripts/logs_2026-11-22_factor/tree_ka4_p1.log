@@ -1,0 +1,15 @@
+refinement by the product against refinement by the medium: k_S a = 4.0, core = 0.75 a, degree p = r = 1, smallest half-width 0.625 m
+  uniform n   4: cells     64  error 4.317e-02  E_medium 6.119e-02  E_product 1.055e-01
+  uniform n   8: cells    408  error 4.005e-03  E_medium 1.510e-02  E_product 1.917e-02
+  uniform n  16: cells   2728  error 2.504e-04  E_medium 1.667e-03  E_product 2.052e-03
+  medium  tol   3e-03: cells    64  error 4.317e-02  dT1 4.347e-02  rest 7.527e-03  E_medium 6.119e-02  E_product 1.055e-01  leaves by half-width {'2.5': 64}  [3 s]
+  medium  tol   1e-03: cells   184  error 2.806e-02  dT1 3.080e-02  rest 4.690e-03  E_medium 3.638e-02  E_product 8.022e-02  leaves by half-width {'1.25': 144, '2.5': 40}  [10 s]
+  medium  tol   3e-04: cells   352  error 4.933e-03  dT1 4.437e-03  rest 1.669e-03  E_medium 1.511e-02  E_product 2.330e-02  leaves by half-width {'1.25': 336, '2.5': 16}  [37 s]
+  medium  tol   1e-04: cells   352  E_medium 1.511e-02  E_product 2.330e-02  leaves by half-width {'1.25': 336, '2.5': 16}  (the same tree as the previous tolerance, not solved again)
+  medium  tol   3e-05: cells  1840  E_medium 1.765e-03  E_product 6.665e-03  leaves by half-width {'0.625': 1704, '1.25': 120, '2.5': 16}  (over the dense limit, not solved)
+  product tol   3e-03: cells    64  error 4.317e-02  dT1 4.347e-02  rest 7.527e-03  E_medium 6.119e-02  E_product 1.055e-01  leaves by half-width {'2.5': 64}  [1 s]
+  product tol   1e-03: cells   352  error 4.933e-03  dT1 4.437e-03  rest 1.669e-03  E_medium 1.511e-02  E_product 2.330e-02  leaves by half-width {'1.25': 336, '2.5': 16}  [36 s]
+  product tol   3e-04: cells   408  error 4.367e-03  dT1 4.154e-03  rest 1.769e-03  E_medium 1.510e-02  E_product 1.918e-02  leaves by half-width {'1.25': 400, '2.5': 8}  [57 s]
+  product tol   1e-04: cells   576  E_medium 1.274e-02  E_product 1.665e-02  leaves by half-width {'0.625': 192, '1.25': 376, '2.5': 8}  (over the dense limit, not solved)
+  product tol   3e-05: cells  1896  E_medium 1.764e-03  E_product 2.542e-03  leaves by half-width {'0.625': 1704, '1.25': 184, '2.5': 8}  (over the dense limit, not solved)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_product_indicator_ka4_core0.75_p1.json

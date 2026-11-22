@@ -14,6 +14,17 @@ over a set of directions. Refining a leaf replaces its Born far field by the sum
 which changes R by a known vector. At each step the one refinement that most reduces |R| is made, until
 the tree has the number of leaves asked for.
 
+A SECOND RULE, BECAUSE THE FIRST CAN STALL (``--rule=own``). The rule above (``--rule=residual``, the
+default) takes the single step that most reduces |R|. On the uniform sphere with a sharp surface at
+k_S a = 4 it stalls: 24 large leaves in the interior, each two radians of shear phase across, are never
+divided, and the error stays at 0.05 however many leaves are added at the surface. The errors of those
+leaves largely cancel one another in R, so dividing any ONE of them makes |R| larger, although dividing
+all of them makes it much smaller. A rule of single best steps cannot see that. The second rule divides
+the leaf whose own first-order error is largest, |D| with
+    D = (the sum of its eight children's Born far fields) - (its own),
+whatever that does to |R| at that step. It cannot stall in this way, since a leaf with a large error of
+its own is always divided; what it gives up is the use of cancellation between leaves.
+
 THE GUARD AGAINST FITTING. A tree has hundreds of refinements to choose among, and with them it could
 cancel R at a handful of directions without being a better grid. So the tree is grown on one set of
 directions (40 spread over the whole sphere, out of the plane of the test as well as in it) and judged on
@@ -25,7 +36,42 @@ the nine test directions, with no solve; then, solved, its far-field error again
 the same nine directions. Beside them, from ``measure_octree_product_indicator_*.json`` where stored, the
 trees refined by the medium and by the product at the nearest numbers of leaves.
 
-Results are written to ``scripts/measure_octree_first_order_greedy_ka<ka>_core<c>.json``.
+THE SECOND TERM, ALSO WITH NO SOLVE. Where the body is small against the wavelength the first-order error
+is not the whole error (at k_S a = 0.5 it predicts a quarter low). The next term of the error is of
+second order in the contrast,
+    dT2 = (the scheme's second Born term on the tree) - (the exact second Born term),
+and the scheme's second Born term is one product of the assembled matrix with the first-order state
+(``born_series_octree``): the matrix must be assembled, but nothing is solved. The exact one is the second
+difference of the exact solution in the contrast, at steps d and 2d combined to remove the fourth-order
+term. So three numbers are stored for each tree: the first-order prediction |dT1|, the two-term
+prediction |dT1 + dT2| (a sum of complex vectors over the directions, not of magnitudes), and the solved
+error. What the two-term prediction still leaves out is of third order in the contrast.
+
+A SECOND BODY, WHERE A TREE HAS SOMETHING TO SAVE (``--shape=halo``). On the sphere with a thin graded
+shell the contrast is at full strength almost everywhere, so at a high frequency every cell must resolve
+the wave and a uniform grid is already the right grid. ``halo`` (defined in
+``measure_graded_voxel_resolution.SHAPES``) is a body of the other kind, still radial so that the exact
+solution is known: full contrast inside 0.2 a, falling over 0.2 a < r < 0.4 a to a tenth, a plateau of a
+tenth out to 0.8 a, and a fall to zero at the surface (run it with core_frac = 0.2). A cell's first-order
+error scales with the contrast it holds, so the weak plateau should tolerate cells about three times
+larger than the strong centre does; a uniform grid cannot give it them.
+
+A THIRD BODY: THE UNIFORM SPHERE WITH A SHARP SURFACE (``--shape=sharp``, core_frac = 1). The classical
+test body, with the classical exact solution. Its medium is constant inside and zero outside, so a cell
+wholly inside loses nothing of the medium and a cell cut by the surface loses a great deal: it is the body
+on which a tree has most to save, because the medium's part of the error lives on the surface alone. A
+constant cell holds the mean of the contrast over the cell, which for a cut cell is the fraction of its
+volume inside the sphere. That fraction is computed here exactly in one direction and by a midpoint rule
+of 64 x 64 points in the other two; the package's own six-point Gauss rule is not used for it, since it
+cannot integrate a step and would add an error of the quadrature to the error of the scheme. The profile
+handed to the package is then piecewise constant, each leaf at its own fraction.
+
+UNIFORM GRIDS, WITH NO SOLVE. For comparison the first-order error of the uniform grids of 4, 8 and 16
+cells across (and 32 when --hmin allows) is computed on the same test directions, from the same per-cell
+Born far fields.
+
+Results are written to ``scripts/measure_octree_first_order_greedy_ka<ka>_core<c>.json`` (with
+``_<shape>`` appended for a shape other than s5).
 
 Run small first:
     conda run -n seismic python -u scripts/measure_octree_first_order_greedy.py 4 0.75 --leaves=300
@@ -50,6 +96,7 @@ from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
 
 from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     born_octree,
+    born_series_octree,
     octree_far_field,
     solve_graded_octree,
     uniform_leaves,
@@ -57,6 +104,7 @@ from cubic_scattering.graded_voxel.octree import (  # noqa: E402
 
 K_HAT = np.array([1.0, 0.0, 0.0])
 EPS = 1e-3
+D_STEP = 1e-2
 DENSE_LIMIT = 20000
 SIGNS = np.array(list(itertools.product((-1.0, 1.0), repeat=3)))
 N_GROWTH = 40
@@ -77,7 +125,23 @@ def main() -> int:
     ka, core_frac = float(args[0]), float(args[1])
     targets = sorted(int(v) for v in opts.get("leaves", "900,1700").split(",") if v)
     h_min = float(opts.get("hmin", RADIUS / 16))
+    shape = opts.get("shape", "s5")
+    rule = opts.get("rule", "residual")
+    if rule not in ("residual", "own"):
+        raise SystemExit(
+            f"measure_octree_first_order_greedy: --rule={rule} is not a rule. Allowed: residual (the step "
+            "that most reduces the first-order error of the tree) or own (the leaf whose own first-order "
+            "error is largest). Fix: pass --rule=residual or --rule=own."
+        )
     core = RADIUS * core_frac
+    sharp = shape == "sharp"
+    if sharp and core_frac != 1.0:
+        raise SystemExit(
+            f"measure_octree_first_order_greedy: --shape=sharp is the uniform sphere, whose core is the whole "
+            f"sphere, but core_frac = {core_frac}. Fix: pass 1 as the second argument, e.g. "
+            "'measure_octree_first_order_greedy.py 2 1 --shape=sharp'."
+        )
+    ref_shape = "s5" if sharp else shape  # with core = radius the exact solution has no shell to integrate
     omega = ka * REF.beta / RADIUS
     rf = 5e8 * RADIUS
     test_pts = obs_points(rf, THETA)
@@ -86,16 +150,48 @@ def main() -> int:
     all_dirs = all_pts / rf
     n_grow = len(grow_dirs)
 
+    fractions: dict = {}
+    scope: dict = {}
+    mid = (2.0 * np.arange(64) + 1.0) / 64.0 - 1.0
+
+    def fraction(c: np.ndarray, h: float) -> float:
+        """The fraction of the cell's volume inside the sphere: exact along z, midpoint rule in x and y."""
+        key = (round(float(c[0]), 9), round(float(c[1]), 9), round(float(c[2]), 9), round(h, 9))
+        if key not in fractions:
+            x, y = np.meshgrid(c[0] + h * mid, c[1] + h * mid, indexing="ij")
+            half = np.sqrt(np.clip(RADIUS**2 - x**2 - y**2, 0.0, None))
+            length = np.clip(np.minimum(c[2] + h, half) - np.maximum(c[2] - h, -half), 0.0, None)
+            fractions[key] = float(length.mean() / (2.0 * h))
+        return fractions[key]
+
+    def set_scope(cs: np.ndarray, hs_: np.ndarray) -> None:
+        """Name the cells the piecewise-constant profile of the sharp sphere is to be read on."""
+        if sharp:
+            scope["c"], scope["h"] = cs, hs_
+            scope["f"] = np.array([fraction(c, float(h)) for c, h in zip(cs, hs_, strict=True)])
+
     def prof(pos: np.ndarray) -> float:
-        return radial("s5", core, float(np.linalg.norm(pos)))
+        if not sharp:
+            return radial(shape, core, float(np.linalg.norm(pos)))
+        inside = np.all(np.abs(pos - scope["c"]) <= scope["h"][:, None], axis=1)
+        return float(scope["f"][np.argmax(inside)])
 
     def exact_born_at(points: np.ndarray) -> np.ndarray:
         return (
-            exact_field("s5", core, omega, EPS, points) - exact_field("s5", core, omega, -EPS, points)
+            exact_field(ref_shape, core, omega, EPS, points)
+            - exact_field(ref_shape, core, omega, -EPS, points)
         ) / (2 * EPS)
 
     born_exact = exact_born_at(all_pts)  # (directions, 3)
-    exact = exact_field("s5", core, omega, 1.0, test_pts)
+    exact = exact_field(ref_shape, core, omega, 1.0, test_pts)
+
+    def even_part(d: float) -> np.ndarray:
+        return (
+            exact_field(ref_shape, core, omega, d, test_pts)
+            + exact_field(ref_shape, core, omega, -d, test_pts)
+        ) / (2 * d * d)
+
+    second_exact = (4.0 * even_part(D_STEP) - even_part(2 * D_STEP)) / 3.0  # the exact second Born term
     peak = float(np.abs(exact).max())
 
     cache: dict = {}
@@ -107,6 +203,7 @@ def main() -> int:
             if np.linalg.norm(c) - np.sqrt(3.0) * h >= RADIUS:
                 cache[key] = np.zeros((len(all_dirs), 3), dtype=complex)
             else:
+                set_scope(c[None, :], np.array([h]))
                 res = born_octree(
                     omega, REF, CONTRAST, c[None, :], np.array([h]), prof, K_HAT, K_HAT, "P", p=0, r=0
                 )
@@ -124,20 +221,45 @@ def main() -> int:
         return float(np.abs(vec[n_grow:] - born_exact[n_grow:]).max() / peak)
 
     stored = ROOT / f"scripts/measure_octree_product_indicator_ka{ka:g}_core{core_frac:g}_p0.json"
-    others = [t for t in json.loads(stored.read_text())["trees"] if "error" in t] if stored.exists() else []
-    out_path = ROOT / f"scripts/measure_octree_first_order_greedy_ka{ka:g}_core{core_frac:g}.json"
+    others = (
+        [t for t in json.loads(stored.read_text())["trees"] if "error" in t]
+        if stored.exists() and shape == "s5"
+        else []
+    )
+    tag = ("" if shape == "s5" else f"_{shape}") + ("" if rule == "residual" else f"_{rule}")
+    out_path = ROOT / f"scripts/measure_octree_first_order_greedy_ka{ka:g}_core{core_frac:g}{tag}.json"
     result: dict = {
         "ka_s": ka,
         "core_frac": core_frac,
         "h_min": h_min,
+        "shape": shape,
+        "rule": rule,
         "growth_directions": N_GROWTH,
+        "uniform": [],
         "trees": [],
     }
     print(
-        f"an octree of constant cells grown by its first-order error: k_S a = {ka}, core = {core_frac} a, "
+        f"an octree of constant cells grown by its first-order error (rule: {rule}): k_S a = {ka}, "
+        f"core = {core_frac} a, shape {shape}, "
         f"{N_GROWTH} growth directions, judged on the nine test directions",
         flush=True,
     )
+    n_uniform = 4
+    while RADIUS / n_uniform >= h_min * (1.0 - 1e-9):
+        cu, hu = uniform_leaves(RADIUS, n_uniform)
+        kept = [(c, float(h)) for c, h in zip(cu, hu, strict=True) if carries(c, float(h))]
+        row_u = {
+            "n": n_uniform,
+            "cells": len(kept),
+            "dT1_test": test_error(sum(born_of(c, h) for c, h in kept)),
+        }
+        result["uniform"].append(row_u)
+        print(
+            f"  uniform grid of {n_uniform:2d} across, {row_u['cells']:5d} cells with contrast: first-order "
+            f"error on the test directions {row_u['dT1_test']:.3e}",
+            flush=True,
+        )
+        n_uniform *= 2
     block_cache: dict = {}
     t_start = time.perf_counter()
     for target in targets:
@@ -149,7 +271,10 @@ def main() -> int:
                     continue
                 kids = [(c + 0.5 * h * s, 0.5 * h) for s in SIGNS]
                 delta = sum(born_of(kc, kh) for kc, kh in kids) - born_of(c, h)
-                norm = float(np.linalg.norm(residual + delta[:n_grow]))
+                if rule == "residual":
+                    norm = float(np.linalg.norm(residual + delta[:n_grow]))
+                else:
+                    norm = -float(np.linalg.norm(delta[:n_grow]))
                 if norm < best_norm:
                     best, best_norm, best_kids = i, norm, kids
             if best is None:
@@ -173,6 +298,26 @@ def main() -> int:
         }
         if not dry and len(leaves) * 9 <= DENSE_LIMIT:
             t0 = time.perf_counter()
+            set_scope(centres, hs)
+            series = born_series_octree(
+                omega,
+                REF,
+                CONTRAST,
+                centres,
+                hs,
+                prof,
+                K_HAT,
+                K_HAT,
+                "P",
+                2,
+                p=0,
+                r=0,
+                block_cache=block_cache,
+            )
+            d_t2 = sum(octree_far_field(series[1], test_pts / rf, rf)) - second_exact
+            first_again = sum(octree_far_field(series[0], test_pts / rf, rf))
+            second_seconds = time.perf_counter() - t0
+            t0 = time.perf_counter()
             res = solve_graded_octree(
                 omega,
                 REF,
@@ -192,13 +337,23 @@ def main() -> int:
             row.update(
                 error=float(np.abs(err).max() / peak),
                 rest=float(np.abs(err - d_t1).max() / peak),
+                dT2_test=float(np.abs(d_t2).max() / peak),
+                two_term_test=float(np.abs(d_t1 + d_t2).max() / peak),
+                beyond_two_terms=float(np.abs(err - d_t1 - d_t2).max() / peak),
+                first_order_check=float(np.abs(first_again - total[n_grow:]).max() / peak),
+                second_seconds=second_seconds,
                 solve_seconds=time.perf_counter() - t0,
             )
         result["trees"].append(row)
         print(
             f"  grown to {row['cells']:5d} leaves {sizes}: first-order error on the test directions "
             f"{row['dT1_test']:.3e} (on the growth directions {row['dT1_growth']:.3e})"
-            + (f"; solved: error {row['error']:.3e}, rest {row['rest']:.3e}" if "error" in row else ""),
+            + (
+                f"; two terms, no solve: {row['two_term_test']:.3e} (second term alone {row['dT2_test']:.3e}); "
+                f"solved: error {row['error']:.3e}, beyond two terms {row['beyond_two_terms']:.3e}"
+                if "error" in row
+                else ""
+            ),
             flush=True,
         )
         near = sorted(others, key=lambda t: abs(t["cells"] - row["cells"]))[:3]

@@ -1,0 +1,9 @@
+an octree of constant cells grown by its first-order error: k_S a = 4.0, core = 0.2 a, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells with contrast: first-order error on the test directions 6.245e-01
+  uniform grid of  8 across,   408 cells with contrast: first-order error on the test directions 8.697e-02
+  uniform grid of 16 across,  2728 cells with contrast: first-order error on the test directions 2.744e-02
+  uniform grid of 32 across, 19544 cells with contrast: first-order error on the test directions 6.899e-03
+  grown to   600 leaves {'0.625': 288, '1.25': 292, '2.5': 20}: first-order error on the test directions 4.481e-02 (on the growth directions 4.715e-02); two terms, no solve: 4.522e-02 (second term alone 1.671e-03); solved: error 4.520e-02, beyond two terms 9.378e-05
+  grown to  1300 leaves {'0.3125': 160, '0.625': 868, '1.25': 259, '2.5': 13}: first-order error on the test directions 2.744e-02 (on the growth directions 3.377e-02); two terms, no solve: 2.772e-02 (second term alone 1.362e-03); solved: error 2.770e-02, beyond two terms 8.252e-05
+  grown to  2200 leaves {'0.3125': 552, '0.625': 1427, '1.25': 213, '2.5': 8}: first-order error on the test directions 1.737e-02 (on the growth directions 1.773e-02); two terms, no solve: 1.748e-02 (second term alone 7.181e-04); solved: error 1.746e-02, beyond two terms 4.178e-05
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka4_core0.2_halo.json

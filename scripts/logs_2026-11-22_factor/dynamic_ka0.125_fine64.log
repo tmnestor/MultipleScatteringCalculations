@@ -1,0 +1,1 @@
+Terminated: 15             python -u scripts/measure_t2_factor_dynamic.py 0.125 0.5 64

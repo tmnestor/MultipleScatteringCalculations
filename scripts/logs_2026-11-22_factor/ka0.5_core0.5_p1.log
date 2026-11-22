@@ -1,0 +1,39 @@
+factor of the second term: k_S a = 0.5, core = 0.5 a, p = r = 1, stiffness contrast, step d = 0.3
+
+ n = 8: 408 cells, E = 4.6451e-03   [3 s]
+  angle    F for outgoing P   limit      F for outgoing S   limit
+   0.20       1.0419         nan         1.2799         nan
+   0.54       1.0234         nan         1.2804         nan
+   0.89       0.9900         nan         1.2834         nan
+   1.23       0.9520         nan         1.2984         nan
+   1.57       0.9312         nan         3.0815         nan
+   1.91       0.9424         nan         1.2169         nan
+   2.26       0.9736         nan         1.2347         nan
+   2.60       1.0031         nan         1.2399         nan
+   2.94       1.0200         nan         1.2418         nan
+
+ n = 16: 2728 cells, E = 3.6487e-04   [20 s]
+  angle    F for outgoing P   limit      F for outgoing S   limit
+   0.20       1.0423         nan         1.2873         nan
+   0.54       1.0235         nan         1.2864         nan
+   0.89       0.9896         nan         1.2881         nan
+   1.23       0.9512         nan         1.3050         nan
+   1.57       0.9300         nan         3.4048         nan
+   1.91       0.9414         nan         1.2148         nan
+   2.26       0.9736         nan         1.2413         nan
+   2.60       1.0045         nan         1.2529         nan
+   2.94       1.0224         nan         1.2588         nan
+
+ n = 32: 19544 cells, E = 2.4349e-05   [141 s]
+  angle    F for outgoing P   limit      F for outgoing S   limit
+   0.20       1.0405         nan         1.2778         nan
+   0.54       1.0221         nan         1.2764         nan
+   0.89       0.9892         nan         1.2776         nan
+   1.23       0.9517         nan         1.2958         nan
+   1.57       0.9307         nan         3.5780         nan
+   1.91       0.9414         nan         1.1997         nan
+   2.26       0.9725         nan         1.2305         nan
+   2.60       1.0028         nan         1.2449         nan
+   2.94       1.0205         nan         1.2525         nan
+
+ wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_t2_factor_fft_ka0.5_core0.5_p1.json

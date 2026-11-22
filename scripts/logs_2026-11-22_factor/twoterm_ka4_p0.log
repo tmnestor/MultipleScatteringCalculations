@@ -1,0 +1,9 @@
+thin-shell sphere: k_S a = 4.0, core = 0.75 a, degree p = r = 0, contrast x 1.0;  nonlinear fraction |exact - exact Born| / peak = 5.286e-02
+   n: cells unknowns | error | dT1 (no solve) | rest | E_p | error / E_p | rest / E_p | products | kernel s, solve s | against the dense solver
+     4:     64      576 | 3.224e-01 | 3.340e-01 | 1.493e-02 | 2.643e-01 | 1.2196 | 0.0565 |    8 | 2, 0 | 
+     8:    408     3672 | 7.490e-02 | 7.537e-02 | 5.928e-03 | 8.223e-02 | 0.9109 | 0.0721 |    9 | 1, 0 | 
+    16:   2728    24984 | 1.833e-02 | 1.859e-02 | 2.031e-03 | 2.525e-02 | 0.7260 | 0.0804 |    9 | 3, 0 | 
+    32:  19544   177840 | 4.636e-03 | 4.702e-03 | 5.777e-04 | 6.791e-03 | 0.6826 | 0.0851 |    9 | 21, 1 | 
+    48:  63256   574920 | 2.064e-03 | 2.094e-03 | 2.640e-04 | 3.063e-03 | 0.6738 | 0.0862 |    9 | 65, 4 | 
+   spread (max / min): error / E_p 1.81, rest / E_p 1.53
+   wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_two_term_fft_ka4_core0.75_p0.json

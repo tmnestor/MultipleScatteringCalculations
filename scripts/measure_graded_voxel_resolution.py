@@ -71,7 +71,22 @@ def _sinf(x: float) -> float:
     return float(a / (a + b))
 
 
+def _halo(x: float) -> float:
+    """A strong centre in a weak surround: a tenth of the contrast over the middle half of the shell.
+
+    x runs from 0 at the surface to 1 at the core. The profile rises from 0 to 0.1 over 0 < x < 1/4, stays
+    at 0.1 to x = 3/4, and rises to 1 over 3/4 < x < 1, each rise a quintic smoothstep.
+    """
+
+    def step(t: float) -> float:
+        t = min(max(t, 0.0), 1.0)
+        return t**3 * (10 - 15 * t + 6 * t**2)
+
+    return 0.1 * step(4.0 * x) + 0.9 * step(4.0 * x - 3.0)
+
+
 SHAPES = {
+    "halo": _halo,
     "s5": lambda x: x**3 * (10 - 15 * x + 6 * x**2),
     "s9": lambda x: x**5 * (126 - 420 * x + 540 * x**2 - 315 * x**3 + 70 * x**4),
     "sinf": _sinf,

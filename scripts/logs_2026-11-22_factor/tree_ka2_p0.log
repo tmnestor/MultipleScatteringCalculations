@@ -1,0 +1,15 @@
+refinement by the product against refinement by the medium: k_S a = 2.0, core = 0.75 a, degree p = r = 0, smallest half-width 0.625 m
+  uniform n   4: cells     64  error 1.447e-01  E_medium 2.643e-01  E_product 3.004e-01
+  uniform n   8: cells    408  error 3.251e-02  E_medium 8.223e-02  E_product 9.473e-02
+  uniform n  16: cells   2728  error 8.224e-03  E_medium 2.525e-02  E_product 2.866e-02
+  medium  tol   3e-03: cells   232  error 5.061e-02  dT1 5.015e-02  rest 3.072e-03  E_medium 1.026e-01  E_product 1.309e-01  leaves by half-width {'1.25': 192, '2.5': 40}  [7 s]
+  medium  tol   1e-03: cells   232  E_medium 1.026e-01  E_product 1.309e-01  leaves by half-width {'1.25': 192, '2.5': 40}  (the same tree as the previous tolerance, not solved again)
+  medium  tol   3e-04: cells   856  error 1.542e-02  dT1 1.505e-02  rest 1.164e-03  E_medium 4.417e-02  E_product 7.173e-02  leaves by half-width {'0.625': 576, '1.25': 264, '2.5': 16}  [31 s]
+  medium  tol   1e-04: cells  1360  error 9.198e-03  dT1 9.022e-03  rest 6.598e-04  E_medium 2.865e-02  E_product 5.621e-02  leaves by half-width {'0.625': 1152, '1.25': 192, '2.5': 16}  [52 s]
+  medium  tol   5e-05: cells  1696  error 7.328e-03  dT1 7.255e-03  rest 5.827e-04  E_medium 2.591e-02  E_product 5.090e-02  leaves by half-width {'0.625': 1536, '1.25': 144, '2.5': 16}  [94 s]
+  product tol   3e-03: cells   232  error 5.061e-02  dT1 5.015e-02  rest 3.072e-03  E_medium 1.026e-01  E_product 1.309e-01  leaves by half-width {'1.25': 192, '2.5': 40}  [2 s]
+  product tol   1e-03: cells   288  error 5.666e-02  dT1 5.624e-02  rest 3.264e-03  E_medium 1.026e-01  E_product 1.149e-01  leaves by half-width {'1.25': 256, '2.5': 32}  [2 s]
+  product tol   3e-04: cells   912  error 1.804e-02  dT1 1.776e-02  rest 1.336e-03  E_medium 4.417e-02  E_product 5.578e-02  leaves by half-width {'0.625': 576, '1.25': 328, '2.5': 8}  [24 s]
+  product tol   1e-04: cells  1752  error 7.441e-03  dT1 7.253e-03  rest 7.310e-04  E_medium 2.591e-02  E_product 3.494e-02  leaves by half-width {'0.625': 1536, '1.25': 208, '2.5': 8}  [98 s]
+  product tol   5e-05: cells  2368  E_medium 2.591e-02  E_product 2.931e-02  leaves by half-width {'0.625': 2240, '1.25': 120, '2.5': 8}  (over the dense limit, not solved)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_product_indicator_ka2_core0.75_p0.json
