@@ -1,0 +1,11 @@
+an octree of constant cells grown by its first-order error (rule: own): k_S a = 2.0, core = 0.2 a, shape halo, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells with contrast: first-order error on the test directions 1.636e-01
+  uniform grid of  8 across,   408 cells with contrast: first-order error on the test directions 3.047e-02
+  uniform grid of 16 across,  2728 cells with contrast: first-order error on the test directions 8.027e-03
+  uniform grid of 32 across, 19544 cells with contrast: first-order error on the test directions 2.013e-03
+  grown to   303 leaves {'1.25': 274, '2.5': 29}: first-order error on the test directions 4.560e-02 (on the growth directions 4.807e-02)
+  grown to   604 leaves {'0.625': 224, '1.25': 372, '2.5': 8}: first-order error on the test directions 2.449e-02 (on the growth directions 2.583e-02)
+  grown to  1304 leaves {'0.625': 1024, '1.25': 272, '2.5': 8}: first-order error on the test directions 1.237e-02 (on the growth directions 1.268e-02)
+  grown to  2204 leaves {'0.3125': 480, '0.625': 1516, '1.25': 200, '2.5': 8}: first-order error on the test directions 6.295e-03 (on the growth directions 6.359e-03)
+  grown to  4003 leaves {'0.3125': 1704, '0.625': 2195, '1.25': 104}: first-order error on the test directions 5.454e-03 (on the growth directions 5.462e-03)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core0.2_halo_own.json

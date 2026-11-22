@@ -2,3 +2,10 @@ an octree of constant cells grown by its first-order error (rule: own): k_S a = 
   uniform grid of  4 across,    64 cells with contrast: first-order error on the test directions 1.192e-01
   uniform grid of  8 across,   408 cells with contrast: first-order error on the test directions 3.186e-02
   uniform grid of 16 across,  2728 cells with contrast: first-order error on the test directions 8.073e-03
+  uniform grid of 32 across, 19544 cells with contrast: first-order error on the test directions 2.025e-03
+  grown to   303 leaves {'1.25': 280, '2.5': 23}: first-order error on the test directions 3.395e-02 (on the growth directions 4.493e-02)
+  grown to   603 leaves {'0.625': 224, '1.25': 379}: first-order error on the test directions 2.443e-02 (on the growth directions 2.551e-02)
+  grown to  1300 leaves {'0.625': 1048, '1.25': 252}: first-order error on the test directions 9.749e-03 (on the growth directions 1.017e-02)
+  grown to  2204 leaves {'0.625': 2088, '1.25': 116}: first-order error on the test directions 7.857e-03 (on the growth directions 7.944e-03)
+  grown to  4000 leaves {'0.3125': 1464, '0.625': 2536}: first-order error on the test directions 5.557e-03 (on the growth directions 5.776e-03)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core1_sharp_own.json

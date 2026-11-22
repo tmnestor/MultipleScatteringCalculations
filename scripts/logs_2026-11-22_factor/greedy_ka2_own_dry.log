@@ -1,0 +1,29 @@
+an octree of constant cells grown by its first-order error (rule: own): k_S a = 2.0, core = 0.75 a, shape s5, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells with contrast: first-order error on the test directions 1.451e-01
+  uniform grid of  8 across,   408 cells with contrast: first-order error on the test directions 3.216e-02
+  uniform grid of 16 across,  2728 cells with contrast: first-order error on the test directions 8.068e-03
+  grown to   302 leaves {'1.25': 276, '2.5': 26}: first-order error on the test directions 3.657e-02 (on the growth directions 3.821e-02)
+      beside it, refined by the medium :   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   288 leaves, error 5.666e-02, first-order 5.624e-02
+  grown to   604 leaves {'0.625': 224, '1.25': 372, '2.5': 8}: first-order error on the test directions 2.551e-02 (on the growth directions 2.603e-02)
+      beside it, refined by the medium :   856 leaves, error 1.542e-02, first-order 1.505e-02
+      beside it, refined by the product:   288 leaves, error 5.666e-02, first-order 5.624e-02
+      beside it, refined by the product:   912 leaves, error 1.804e-02, first-order 1.776e-02
+  grown to   912 leaves {'0.625': 576, '1.25': 328, '2.5': 8}: first-order error on the test directions 1.776e-02 (on the growth directions 1.774e-02)
+      beside it, refined by the medium :   856 leaves, error 1.542e-02, first-order 1.505e-02
+      beside it, refined by the medium :  1360 leaves, error 9.198e-03, first-order 9.022e-03
+      beside it, refined by the product:   912 leaves, error 1.804e-02, first-order 1.776e-02
+  grown to  1360 leaves {'0.625': 1088, '1.25': 264, '2.5': 8}: first-order error on the test directions 1.025e-02 (on the growth directions 1.075e-02)
+      beside it, refined by the medium :  1360 leaves, error 9.198e-03, first-order 9.022e-03
+      beside it, refined by the medium :  1696 leaves, error 7.328e-03, first-order 7.255e-03
+      beside it, refined by the product:  1752 leaves, error 7.441e-03, first-order 7.253e-03
+  grown to  1703 leaves {'0.625': 1480, '1.25': 215, '2.5': 8}: first-order error on the test directions 7.565e-03 (on the growth directions 8.059e-03)
+      beside it, refined by the medium :  1360 leaves, error 9.198e-03, first-order 9.022e-03
+      beside it, refined by the medium :  1696 leaves, error 7.328e-03, first-order 7.255e-03
+      beside it, refined by the product:  1752 leaves, error 7.441e-03, first-order 7.253e-03
+  grown to  2206 leaves {'0.625': 2056, '1.25': 142, '2.5': 8}: first-order error on the test directions 8.304e-03 (on the growth directions 8.324e-03)
+      beside it, refined by the medium :  1360 leaves, error 9.198e-03, first-order 9.022e-03
+      beside it, refined by the medium :  1696 leaves, error 7.328e-03, first-order 7.255e-03
+      beside it, refined by the product:  1752 leaves, error 7.441e-03, first-order 7.253e-03
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core0.75_own.json

@@ -25,6 +25,15 @@ the leaf whose own first-order error is largest, |D| with
 whatever that does to |R| at that step. It cannot stall in this way, since a leaf with a large error of
 its own is always divided; what it gives up is the use of cancellation between leaves.
 
+A THIRD RULE, WHICH JOINS THE TWO (``--rule=hybrid``). Run on three bodies, neither rule is the better
+everywhere: the first uses cancellation between leaves and is the better where it does not stall; the
+second cannot stall but its error does not fall steadily, since it divides leaves whose errors were
+cancelling. The sign that the first rule is about to stall is a leaf whose own error exceeds the error of
+the whole tree: it can only be so large if other leaves are cancelling it. So the third rule takes the
+single best step, as the first does, unless some leaf has |D| > factor x |R| (``--factor``, default 1), in
+which case it divides the leaf with the largest |D|, as the second does. ``--nouniform`` skips the uniform
+grids, which are the slow part of a run that only compares rules.
+
 THE GUARD AGAINST FITTING. A tree has hundreds of refinements to choose among, and with them it could
 cancel R at a handful of directions without being a better grid. So the tree is grown on one set of
 directions (40 spread over the whole sphere, out of the plane of the test as well as in it) and judged on
@@ -127,11 +136,13 @@ def main() -> int:
     h_min = float(opts.get("hmin", RADIUS / 16))
     shape = opts.get("shape", "s5")
     rule = opts.get("rule", "residual")
-    if rule not in ("residual", "own"):
+    factor = float(opts.get("factor", 1.0))
+    if rule not in ("residual", "own", "hybrid"):
         raise SystemExit(
             f"measure_octree_first_order_greedy: --rule={rule} is not a rule. Allowed: residual (the step "
             "that most reduces the first-order error of the tree) or own (the leaf whose own first-order "
-            "error is largest). Fix: pass --rule=residual or --rule=own."
+            "error is largest) or hybrid (the first unless a leaf's own error exceeds factor times the "
+            "tree's). Fix: pass --rule=residual, --rule=own or --rule=hybrid."
         )
     core = RADIUS * core_frac
     sharp = shape == "sharp"
@@ -226,7 +237,11 @@ def main() -> int:
         if stored.exists() and shape == "s5"
         else []
     )
-    tag = ("" if shape == "s5" else f"_{shape}") + ("" if rule == "residual" else f"_{rule}")
+    tag = ("" if shape == "s5" else f"_{shape}") + (
+        ""
+        if rule == "residual"
+        else f"_{rule}" + (f"{factor:g}" if rule == "hybrid" and factor != 1.0 else "")
+    )
     out_path = ROOT / f"scripts/measure_octree_first_order_greedy_ka{ka:g}_core{core_frac:g}{tag}.json"
     result: dict = {
         "ka_s": ka,
@@ -234,6 +249,7 @@ def main() -> int:
         "h_min": h_min,
         "shape": shape,
         "rule": rule,
+        "hybrid_factor": factor if rule == "hybrid" else None,
         "growth_directions": N_GROWTH,
         "uniform": [],
         "trees": [],
@@ -245,7 +261,7 @@ def main() -> int:
         flush=True,
     )
     n_uniform = 4
-    while RADIUS / n_uniform >= h_min * (1.0 - 1e-9):
+    while RADIUS / n_uniform >= h_min * (1.0 - 1e-9) and "--nouniform" not in sys.argv:
         cu, hu = uniform_leaves(RADIUS, n_uniform)
         kept = [(c, float(h)) for c, h in zip(cu, hu, strict=True) if carries(c, float(h))]
         row_u = {
@@ -266,19 +282,22 @@ def main() -> int:
         while len(leaves) < target:
             residual = (total - born_exact)[:n_grow]
             best, best_norm, best_kids = None, np.inf, None
+            own_best, own_norm, own_kids = None, 0.0, None
             for i, (c, h) in enumerate(leaves):
                 if h <= h_min * (1.0 + 1e-9):
                     continue
                 kids = [(c + 0.5 * h * s, 0.5 * h) for s in SIGNS]
                 delta = sum(born_of(kc, kh) for kc, kh in kids) - born_of(c, h)
-                if rule == "residual":
-                    norm = float(np.linalg.norm(residual + delta[:n_grow]))
-                else:
-                    norm = -float(np.linalg.norm(delta[:n_grow]))
+                own = float(np.linalg.norm(delta[:n_grow]))
+                if own > own_norm:
+                    own_best, own_norm, own_kids = i, own, kids
+                norm = -own if rule == "own" else float(np.linalg.norm(residual + delta[:n_grow]))
                 if norm < best_norm:
                     best, best_norm, best_kids = i, norm, kids
             if best is None:
                 break
+            if rule == "hybrid" and own_norm > factor * float(np.linalg.norm(residual)):
+                best, best_kids = own_best, own_kids
             c, h = leaves.pop(best)
             total = total - born_of(c, h)
             for kc, kh in best_kids:
