@@ -2550,8 +2550,130 @@ $k_Sa=2$ and none less at $k_Sa=4$, where a uniform grid is already what the wav
 body.
 At $k_Sa=0.5$, where the second term is as large as the first, the same rule still grows a good tree
 ($5.23\times10^{-4}$ on $1701$ leaves, between the two rules of Table~\ref{tab:trees}), but its prediction
-is then a quarter low ($4.22\times10^{-4}$): there the first-order error is not the whole error and the
-second term of the law must be added to it.
+is then a quarter low ($4.22\times10^{-4}$): there the first-order error is not the whole error.
+
+\emph{Both terms with no solve.} The term that is missing can also be had without solving. The scheme's
+response of second order in the contrast is the second term of its own Born series, which is one product
+of the assembled matrix with the first-order state (the projected incident wave in every leaf); its
+far field less the exact term of second order (a second difference of the exact solution in the contrast)
+is the second-order error $\delta T_2$ of the tree. The matrix must be assembled, which is the cost of one
+iteration of an iterative solver, but nothing is solved. The prediction is then $|\delta T_1+\delta T_2|$,
+a sum of complex vectors over the directions and not of magnitudes, since at $k_Sa=0.5$ the two partly
+cancel. Table~\ref{tab:greedytwo} sets it beside the solved error on three bodies. The first is the sphere
+of Table~\ref{tab:twoterm}. The second, called the halo, has the full contrast inside $0.2a$, falls over
+$0.2a<r<0.4a$ to a tenth of it, keeps a tenth out to $0.8a$ and falls to zero at the surface. The third is
+the classical uniform sphere with a sharp surface, on which a constant cell cut by the surface holds the
+contrast times the fraction of its volume inside (computed exactly along one axis and by a midpoint rule
+of $64\times64$ points across the other two, since a Gauss rule cannot integrate a step). All three are
+radial, so the exact solution is known.
+\begin{table}[htbp]
+\centering
+\caption{The error of a grown octree of constant cells predicted from one term and from two, with nothing
+solved, and the error once solved. \emph{First term} is $|\delta T_1|$, \emph{two terms}
+$|\delta T_1+\delta T_2|$, each the largest over the nine test directions as a fraction of the peak of the
+exact far field; \emph{error} is the same measure of the solved far field against the exact one. The
+smallest cell allowed is $a/16$ on the first body and $a/32$ on the other two.}\label{tab:greedytwo}
+\small
+\begin{tabular}{@{}llrccc@{}}
+\toprule
+body & $k_Sa$ & leaves & first term & two terms & error \\
+\midrule
+graded shell, core $0.75a$ & $0.5$ & $302$  & $2.38\times10^{-3}$ & $2.035\times10^{-3}$ & $2.036\times10^{-3}$ \\
+                           & $0.5$ & $1701$ & $4.22\times10^{-4}$ & $5.29\times10^{-4}$ & $5.23\times10^{-4}$ \\
+                           & $2$   & $2200$ & $6.31\times10^{-3}$ & $6.59\times10^{-3}$ & $6.57\times10^{-3}$ \\
+                           & $4$   & $2204$ & $1.98\times10^{-2}$ & $2.03\times10^{-2}$ & $2.02\times10^{-2}$ \\
+\midrule
+halo                       & $2$   & $2204$ & $6.33\times10^{-3}$ & $6.24\times10^{-3}$ & $6.25\times10^{-3}$ \\
+                           & $4$   & $2200$ & $1.74\times10^{-2}$ & $1.75\times10^{-2}$ & $1.75\times10^{-2}$ \\
+\midrule
+sharp uniform sphere       & $0.5$ & $2203$ & $3.07\times10^{-4}$ & $9.72\times10^{-4}$ & $9.29\times10^{-4}$ \\
+                           & $2$   & $2200$ & $5.81\times10^{-3}$ & $6.74\times10^{-3}$ & $6.70\times10^{-3}$ \\
+                           & $4$   & $2202$ & $1.56\times10^{-2}$ & $1.22\times10^{-2}$ & $1.20\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the second row. On $1701$ leaves the first term alone predicts $4.22\times10^{-4}$; with the second
+it predicts $5.29\times10^{-4}$; the solved error is $5.23\times10^{-4}$. Over the $30$ trees solved on
+the three bodies (\path{scripts/measure_octree_first_order_greedy_*.json} hold them all) the two-term
+prediction is within $1.3\%$ of the solved error on the two smooth bodies and within $2\%$ on the sharp
+sphere at $k_Sa=2$ and $4$. The exception is the sharp sphere at $k_Sa=0.5$, where it is $5\%$ high on
+each of three trees: what is left is of third order in the contrast, and it is largest where the medium
+jumps. The last three rows also show something the first body hid. On the sharp sphere the second term
+is not small beside the first at any of the frequencies, and at $k_Sa=0.5$ it is three times the first.
+
+\emph{A rule that does not stall, and what a tree saves.} The uniform sphere at $k_Sa=4$ broke the rule
+of single best steps. The grown tree kept $24$ large leaves in the interior, each two radians of shear
+phase across, and its first-order error only crept from $0.062$ to $0.050$ between $600$ leaves and $4000$, while a uniform
+grid of $2728$ cells has $0.019$. The errors of those leaves largely cancel in the sum, so dividing any
+one of them alone makes the total larger, though dividing all of them makes it much smaller; a rule that
+takes the single best step never takes that one. Dividing instead the leaf whose own first-order error is
+largest cannot stall in this way, but it gives up the cancellation and its error does not fall steadily.
+The two are joined by one test: a leaf whose own error exceeds a set fraction of the error of the whole
+tree can only be so large because other leaves are cancelling it, and that leaf is divided; otherwise the
+single best step is taken. The fraction was set to a quarter on the case that stalled (a half and one do
+not release it) and then run unchanged on the other seven cases. From $1300$ leaves up it is within $5\%$ of the
+better of the two simpler rules in every case; at $600$ leaves it is a tenth and a fifth worse in two
+cases. Table~\ref{tab:greedybodies} gives what it saves.
+\begin{table}[htbp]
+\centering
+\caption{The first-order error of an octree grown by the combined rule, divided by that of a uniform grid
+of the same number of cells, both computed with no solve. The uniform value is interpolated on
+logarithmic scales between the grids of $8$, $16$ and $32$ cells across ($408$, $2728$ and $19544$ cells
+with contrast). A value of $1$ means the tree saves nothing. The first body was run with a smallest cell
+of $a/16$, at which $4000$ leaves cannot be reached; \emph{first rule} is the rule of single best steps,
+shown where it stalls.}\label{tab:greedybodies}
+\small
+\begin{tabular}{@{}llccc@{}}
+\toprule
+body & $k_Sa$ & $1300$ leaves & $2200$ leaves & $4000$ leaves \\
+\midrule
+graded shell, core $0.75a$ & $0.5$ & $0.60$ & $0.60$ & \\
+                           & $2$   & $0.70$ & $0.68$ & \\
+                           & $4$   & $0.97$ & $0.91$ & \\
+\midrule
+halo                       & $2$   & $0.94$ & $0.68$ & $0.70$ \\
+                           & $4$   & $0.64$ & $0.57$ & $0.51$ \\
+\midrule
+sharp uniform sphere       & $0.5$ & $0.52$ & $0.51$ & $0.47$ \\
+                           & $2$   & $0.61$ & $0.62$ & $0.57$ \\
+                           & $4$   & $0.72$ & $0.69$ & $0.70$ \\
+\quad first rule           & $4$   & $1.68$ & $2.27$ & $3.38$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the row of the halo at $k_Sa=4$: with $2200$ leaves the grown tree has $0.57$ of the first-order
+error of a uniform grid of $2200$ cells. On these grids the error of a uniform grid falls as the number of
+cells to the power $-0.7$ (second order in the cell size), so a ratio of $0.6$ is the same error from half
+the cells and a ratio of $0.5$ the same error from three eighths of them. That is the size of the saving
+on all three bodies: the same error from two fifths to three fifths of the cells, not from a tenth of
+them. The reason is in
+Eq.~\eqref{eq:slope}. A constant cell loses the product of medium and wave, and in the interior of a
+uniform body, where the medium loses nothing, the wave part $(kh)^2$ remains; a tree can coarsen there
+only as far as the wavelength allows. The sharp surface does not change this as much as one might expect,
+because a cut cell that holds its exact volume fraction has a first-order error of second order in its
+size, like every other cell. Only where the wave part rules everywhere, as on the first body at $k_Sa=4$,
+does a tree save nothing.
+
+\emph{Where growth by the first-order error stops.} These ratios are of first-order errors, and on the
+sharp sphere at low frequency the first-order error is not the error. At $k_Sa=0.5$ the solved errors of
+the trees of $603$, $1301$ and $2203$ leaves are $1.56\times10^{-3}$, $1.04\times10^{-3}$ and
+$9.29\times10^{-4}$, a fall by a factor of $1.7$, while their first-order errors fall by $4.4$
+($1.34\times10^{-3}$, $4.57\times10^{-4}$, $3.07\times10^{-4}$): the second term has become the error, and the rule does not
+look at it. A rule that does was tried. The law says the second term follows the projection error of the
+medium, whose square is a sum over the leaves of $\int(f-\bar f)^2$, known for every candidate (on the
+sharp sphere it is the leaf's volume times $\phi(1-\phi)$, with $\phi$ the fraction inside); so the
+quantity minimised was $|\delta T_1|^2+c^2\sum\int(f-\bar f)^2$, with $c$ measured on the tree just grown
+from its $\delta T_2$. It gains nothing here: $9.41\times10^{-4}$ on $2204$ leaves against
+$9.29\times10^{-4}$. The reason is a limit of the experiment and not of the idea. The second term of a
+sharp body comes from the cut cells, and it falls only as their size (its ratio to the root of the
+projection energy falls by a quarter over these three trees, so the factor of the law is not constant on a
+body with a jump). At the smallest cell allowed the surface alone holds several thousand cut cells, more than
+the dense solver can take, so no tree in reach has refined the whole surface. This is the case in which a
+tree should save most, since the cut cells grow in number as the inverse square of their size and the
+interior cells as the inverse cube, and it is the case that needs a solver whose cost does not grow as the
+cube of the number of leaves.
 
 \emph{Cautions.} One body, whose steep shell makes the medium's detail large; a dense solver, which
 stopped the product's rule at $912$ leaves at $k_Sa=4$ (its next tree has $2368$); and constant cells
@@ -3088,7 +3210,7 @@ Table~\ref{tab:twoterm} is \path{scripts/measure_octree_two_term.py} (dense solv
 \path{scripts/measure_t2_factor_operators.py}, with the symbolic step in
 \path{scripts/derive_cell_residual_moments.py}; their results are stored beside them in \path{scripts},
 and Figs.~\ref{fig:twotermlaw} and \ref{fig:factorfreq} are drawn from those files by
-\path{scripts/plot_error_law_figures.py}; Tables~\ref{tab:trees} and \ref{tab:greedy} are
+\path{scripts/plot_error_law_figures.py}; Tables~\ref{tab:trees} and \ref{tab:greedy} to \ref{tab:greedybodies} are
 \path{scripts/measure_octree_product_indicator.py} and
 \path{scripts/measure_octree_first_order_greedy.py}; the constant medium with a richer
 field is \path{scripts/pilot_octree_hp_refinement.py}. Their results are stored in

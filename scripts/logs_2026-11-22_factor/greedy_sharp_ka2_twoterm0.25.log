@@ -1,0 +1,5 @@
+an octree of constant cells grown by its first-order error (rule: twoterm): k_S a = 2.0, core = 1.0 a, shape sharp, 40 growth directions, judged on the nine test directions
+  grown to   602 leaves {'0.625': 288, '1.25': 298, '2.5': 16}: first-order error on the test directions 2.262e-02 (on the growth directions 2.240e-02); two terms, no solve: 2.389e-02 (second term alone 3.582e-03); solved: error 2.381e-02, beyond two terms 1.852e-04
+  grown to  1301 leaves {'0.625': 1104, '1.25': 191, '2.5': 6}: first-order error on the test directions 8.556e-03 (on the growth directions 8.833e-03); two terms, no solve: 9.498e-03 (second term alone 2.254e-03); solved: error 9.451e-03, beyond two terms 1.085e-04
+  grown to  2200 leaves {'0.3125': 682, '0.625': 1358, '1.25': 160}: first-order error on the test directions 5.788e-03 (on the growth directions 5.720e-03); two terms, no solve: 6.692e-03 (second term alone 1.922e-03); solved: error 6.653e-03, beyond two terms 8.926e-05
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core1_sharp_twoterm0.25.json

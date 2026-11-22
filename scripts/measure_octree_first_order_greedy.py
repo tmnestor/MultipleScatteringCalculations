@@ -34,6 +34,21 @@ single best step, as the first does, unless some leaf has |D| > factor x |R| (``
 which case it divides the leaf with the largest |D|, as the second does. ``--nouniform`` skips the uniform
 grids, which are the slow part of a run that only compares rules.
 
+A FOURTH RULE, WHICH GROWS BY BOTH TERMS (``--rule=twoterm``). On the sharp sphere at k_S a = 0.5 the
+trees grown by the first-order error have a first-order error of 3e-4 and a total error of 9e-4: the
+second term is three times the first, and it barely falls as the tree grows, because nothing in the rule
+looks at it. The error law says what the second term follows: the projection error of the medium, whose
+square is the sum over the leaves of
+    e(leaf) = the integral over the leaf of (f - the leaf's mean of f)^2,
+known for every leaf and every candidate with no solve (for the sharp sphere it is the leaf's volume
+times phi (1 - phi), phi being the fraction of the leaf inside). So the fourth rule minimises
+    J = |R|^2 + c^2 x (the sum of e over the leaves),
+the two terms added as if they had no common phase. The constant c^2 is measured, not assumed: at each
+size asked for, the second-order error of the tree just grown is computed on the growth directions (one
+product with the assembled matrix, no solve) and divided by the tree's sum of e. Until the first such
+measurement c is zero, so the tree of the first size asked for is grown by the first-order error, as
+under ``--rule=hybrid``, and it is the same safeguard against stalling that is kept.
+
 THE GUARD AGAINST FITTING. A tree has hundreds of refinements to choose among, and with them it could
 cancel R at a handful of directions without being a better grid. So the tree is grown on one set of
 directions (40 spread over the whole sphere, out of the plane of the test as well as in it) and judged on
@@ -137,12 +152,13 @@ def main() -> int:
     shape = opts.get("shape", "s5")
     rule = opts.get("rule", "residual")
     factor = float(opts.get("factor", 1.0))
-    if rule not in ("residual", "own", "hybrid"):
+    if rule not in ("residual", "own", "hybrid", "twoterm"):
         raise SystemExit(
             f"measure_octree_first_order_greedy: --rule={rule} is not a rule. Allowed: residual (the step "
             "that most reduces the first-order error of the tree) or own (the leaf whose own first-order "
             "error is largest) or hybrid (the first unless a leaf's own error exceeds factor times the "
-            "tree's). Fix: pass --rule=residual, --rule=own or --rule=hybrid."
+            "tree's) or twoterm (hybrid, with the projection error of the medium added to what is "
+            "minimised). Fix: pass --rule=residual, --rule=own, --rule=hybrid or --rule=twoterm."
         )
     core = RADIUS * core_frac
     sharp = shape == "sharp"
@@ -175,6 +191,24 @@ def main() -> int:
             fractions[key] = float(length.mean() / (2.0 * h))
         return fractions[key]
 
+    energies: dict = {}
+    gauss_x, gauss_w = np.polynomial.legendre.leggauss(6)
+    gauss_xi = np.stack(np.meshgrid(gauss_x, gauss_x, gauss_x, indexing="ij"), -1).reshape(-1, 3)
+    gauss_ww = np.einsum("i,j,k->ijk", gauss_w, gauss_w, gauss_w).ravel() / 8.0
+
+    def energy(c: np.ndarray, h: float) -> float:
+        """The integral over the cell of (f - its mean over the cell)^2: what a constant cell loses of f."""
+        key = (round(float(c[0]), 9), round(float(c[1]), 9), round(float(c[2]), 9), round(h, 9))
+        if key not in energies:
+            if sharp:
+                phi = fraction(c, h)
+                var = phi * (1.0 - phi)
+            else:
+                f = np.array([radial(shape, core, float(np.linalg.norm(c + h * p))) for p in gauss_xi])
+                var = max(float(gauss_ww @ f**2 - (gauss_ww @ f) ** 2), 0.0)
+            energies[key] = (2.0 * h) ** 3 * var
+        return energies[key]
+
     def set_scope(cs: np.ndarray, hs_: np.ndarray) -> None:
         """Name the cells the piecewise-constant profile of the sharp sphere is to be read on."""
         if sharp:
@@ -198,8 +232,8 @@ def main() -> int:
 
     def even_part(d: float) -> np.ndarray:
         return (
-            exact_field(ref_shape, core, omega, d, test_pts)
-            + exact_field(ref_shape, core, omega, -d, test_pts)
+            exact_field(ref_shape, core, omega, d, all_pts)
+            + exact_field(ref_shape, core, omega, -d, all_pts)
         ) / (2 * d * d)
 
     second_exact = (4.0 * even_part(D_STEP) - even_part(2 * D_STEP)) / 3.0  # the exact second Born term
@@ -240,7 +274,7 @@ def main() -> int:
     tag = ("" if shape == "s5" else f"_{shape}") + (
         ""
         if rule == "residual"
-        else f"_{rule}" + (f"{factor:g}" if rule == "hybrid" and factor != 1.0 else "")
+        else f"_{rule}" + (f"{factor:g}" if rule in ("hybrid", "twoterm") and factor != 1.0 else "")
     )
     out_path = ROOT / f"scripts/measure_octree_first_order_greedy_ka{ka:g}_core{core_frac:g}{tag}.json"
     result: dict = {
@@ -249,7 +283,7 @@ def main() -> int:
         "h_min": h_min,
         "shape": shape,
         "rule": rule,
-        "hybrid_factor": factor if rule == "hybrid" else None,
+        "hybrid_factor": factor if rule in ("hybrid", "twoterm") else None,
         "growth_directions": N_GROWTH,
         "uniform": [],
         "trees": [],
@@ -277,12 +311,14 @@ def main() -> int:
         )
         n_uniform *= 2
     block_cache: dict = {}
+    c2 = 0.0  # (second-order error on the growth directions)^2 per unit of projection energy; measured
     t_start = time.perf_counter()
     for target in targets:
         while len(leaves) < target:
             residual = (total - born_exact)[:n_grow]
             best, best_norm, best_kids = None, np.inf, None
             own_best, own_norm, own_kids = None, 0.0, None
+            e_tot = sum(energy(c, h) for c, h in leaves) if rule == "twoterm" else 0.0
             for i, (c, h) in enumerate(leaves):
                 if h <= h_min * (1.0 + 1e-9):
                     continue
@@ -292,11 +328,14 @@ def main() -> int:
                 if own > own_norm:
                     own_best, own_norm, own_kids = i, own, kids
                 norm = -own if rule == "own" else float(np.linalg.norm(residual + delta[:n_grow]))
+                if rule == "twoterm":
+                    gain = energy(c, h) - sum(energy(kc, kh) for kc, kh in kids)
+                    norm = norm**2 + c2 * (e_tot - gain)
                 if norm < best_norm:
                     best, best_norm, best_kids = i, norm, kids
             if best is None:
                 break
-            if rule == "hybrid" and own_norm > factor * float(np.linalg.norm(residual)):
+            if rule in ("hybrid", "twoterm") and own_norm > factor * float(np.linalg.norm(residual)):
                 best, best_kids = own_best, own_kids
             c, h = leaves.pop(best)
             total = total - born_of(c, h)
@@ -333,7 +372,11 @@ def main() -> int:
                 r=0,
                 block_cache=block_cache,
             )
-            d_t2 = sum(octree_far_field(series[1], test_pts / rf, rf)) - second_exact
+            d_t2_all = sum(octree_far_field(series[1], all_dirs, rf)) - second_exact
+            d_t2 = d_t2_all[n_grow:]
+            e_now = sum(energy(c, h) for c, h in leaves)
+            c2 = float(np.linalg.norm(d_t2_all[:n_grow]) ** 2 / e_now) if e_now > 0.0 else 0.0
+            row.update(projection_energy=e_now, c2=c2)
             first_again = sum(octree_far_field(series[0], test_pts / rf, rf))
             second_seconds = time.perf_counter() - t0
             t0 = time.perf_counter()
