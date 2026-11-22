@@ -2505,6 +2505,54 @@ on the candidates; the detail of the product says where to look, and Eq.~\eqref{
 detail of the medium does not. At $k_Sa=0.5$ the two terms are comparable and partly cancel, and the
 first-order error alone does not rank the two finest trees.
 
+\emph{A tree grown by the first-order error.} The last observation is a method, and it was tried
+(\path{scripts/measure_octree_first_order_greedy.py}). The first-order error of a tree is a known vector
+over a set of directions, the sum of the leaves' Born far fields less the exact one, and refining a leaf
+changes it by a known amount. Starting from two cells across, the one refinement that most reduces that
+vector is made, again and again, with nothing solved; growing a tree of $1700$ leaves takes some tens of
+seconds. Because a tree has hundreds of refinements to choose among, it could cancel the error at a few
+directions without being a better grid, so it is grown on $40$ directions spread over the whole sphere
+and judged on the nine of Table~\ref{tab:twoterm}, which the growth never sees.
+\begin{table}[htbp]
+\centering
+\caption{Octrees of constant cells grown by their first-order error, with no solve, and then solved.
+\emph{Predicted} is the first-order error of the grown tree on the nine test directions, known before the
+solve; \emph{error} its far-field error once solved; the last two columns the errors of the trees of
+Table~\ref{tab:trees} with the nearest numbers of leaves ($856$ or $912$, $1360$, and $1696$ or $1752$),
+and of a uniform grid of the same number of cells, by interpolation on logarithmic scales between the
+grids of $8$ and $16$ across.}\label{tab:greedy}
+\small
+\begin{tabular}{@{}lrcccc@{}}
+\toprule
+$k_Sa$ & leaves & predicted & error & by the medium / by the product & uniform \\
+\midrule
+$2$ & $912$  & $1.44\times10^{-2}$ & $1.48\times10^{-2}$ & $1.54\times10^{-2}$ / $1.80\times10^{-2}$ & $1.8\times10^{-2}$ \\
+    & $1703$ & $7.20\times10^{-3}$ & $7.43\times10^{-3}$ & $7.33\times10^{-3}$ / $7.44\times10^{-3}$ & $1.2\times10^{-2}$ \\
+    & $2200$ & $6.31\times10^{-3}$ & $6.57\times10^{-3}$ & not solved & $9.6\times10^{-3}$ \\
+\midrule
+$4$ & $912$  & $4.18\times10^{-2}$ & $4.29\times10^{-2}$ & $7.13\times10^{-2}$ / $4.27\times10^{-2}$ & $4.1\times10^{-2}$ \\
+    & $1360$ & $3.02\times10^{-2}$ & $3.05\times10^{-2}$ & $5.88\times10^{-2}$ / not solved & $3.1\times10^{-2}$ \\
+    & $1703$ & $2.57\times10^{-2}$ & $2.61\times10^{-2}$ & $7.17\times10^{-2}$ / not solved & $2.6\times10^{-2}$ \\
+    & $2204$ & $1.98\times10^{-2}$ & $2.02\times10^{-2}$ & not solved & $2.2\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the row $k_Sa=4$, $1703$ leaves. Before any solve the tree's error is predicted as $0.0257$; solved,
+it is $0.0261$. The tree refined by the medium has $0.072$ with the same number of leaves, and a uniform
+grid of as many cells about $0.026$. Three things follow from the table as a whole. The prediction is the
+error, to $4\%$ in every row. The grown tree is within $1.5\%$ of the better of the two indicator rules at
+each frequency, which is the medium's at $k_Sa=2$ and the product's at $k_Sa=4$, without being told
+which; it does not need to know whether the wave or the medium is in charge. And nothing was fitted: on
+the $40$ directions it was grown on, the first-order error is within $3\%$ of its value on the nine it
+was not, in every row. Against uniform grids the grown tree has a fifth to a third less error at
+$k_Sa=2$ and none less at $k_Sa=4$, where a uniform grid is already what the wave asks for on this
+body.
+At $k_Sa=0.5$, where the second term is as large as the first, the same rule still grows a good tree
+($5.23\times10^{-4}$ on $1701$ leaves, between the two rules of Table~\ref{tab:trees}), but its prediction
+is then a quarter low ($4.22\times10^{-4}$): there the first-order error is not the whole error and the
+second term of the law must be added to it.
+
 \emph{Cautions.} One body, whose steep shell makes the medium's detail large; a dense solver, which
 stopped the product's rule at $912$ leaves at $k_Sa=4$ (its next tree has $2368$); and constant cells
 only. With degree-one cells the same solver allows about $550$ leaves, on which the two rules build
@@ -3040,8 +3088,9 @@ Table~\ref{tab:twoterm} is \path{scripts/measure_octree_two_term.py} (dense solv
 \path{scripts/measure_t2_factor_operators.py}, with the symbolic step in
 \path{scripts/derive_cell_residual_moments.py}; their results are stored beside them in \path{scripts},
 and Figs.~\ref{fig:twotermlaw} and \ref{fig:factorfreq} are drawn from those files by
-\path{scripts/plot_error_law_figures.py}; Table~\ref{tab:trees} is
-\path{scripts/measure_octree_product_indicator.py}; the constant medium with a richer
+\path{scripts/plot_error_law_figures.py}; Tables~\ref{tab:trees} and \ref{tab:greedy} are
+\path{scripts/measure_octree_product_indicator.py} and
+\path{scripts/measure_octree_first_order_greedy.py}; the constant medium with a richer
 field is \path{scripts/pilot_octree_hp_refinement.py}. Their results are stored in
 \path{LatexPDFs/PolynomialVoxelError/figures}. Material on octree refinement, removed from this paper, is
 archived in \path{LatexPDFs/archive/OctreeRefinementArchive/}.}
