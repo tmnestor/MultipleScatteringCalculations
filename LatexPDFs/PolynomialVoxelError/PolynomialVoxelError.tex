@@ -2445,6 +2445,74 @@ $-0.35$ near $110$ degrees; at $k_Sa=4$ the circles dip to $0.15$ near $120$ deg
 from $1.5$ to $4.9$ across $90$ degrees.\par}
 \end{figure}
 
+\paragraph{A consequence for grids of cells of several sizes.} If the error of the nonlinear part were a
+fixed multiple of the projection error of the medium, a grid would be refined where the medium's detail
+is large and left coarse where the medium is uniform. Equation~\eqref{eq:slope} says that this is safe
+only while $kL\ll1$: in a uniform region the medium has no detail and the product of medium and wave
+does. One experiment tests the point (\path{scripts/measure_octree_product_indicator.py}). The sphere of
+Table~\ref{tab:twoterm}, uniform to $0.75a$, is covered by an octree of constant cells of half-widths
+$a/4$, $a/8$ and $a/16$, grown from a grid of two cells across by refining every leaf whose indicator
+exceeds a tolerance. Two indicators are compared: the energy of the leaf's detail coefficients of the
+medium $f$, and the same for the real and imaginary parts of $fw$, summed over the P and the S wavenumber.
+\begin{table}[htbp]
+\centering
+\caption{Octrees of constant cells on the sphere with a graded shell, refined by the detail of the medium
+or by the detail of the product of medium and wave. \emph{Leaves} is the number of cells that carry
+contrast; \emph{core} the number of those of the largest size, half-width $a/4$, which are left in the
+uniform core; \emph{error} the error of the far field against the exact solution, as in
+Table~\ref{tab:twoterm}; \emph{first-order} the first-order error of \S\ref{sec:born}, computed without
+a solve.}\label{tab:trees}
+\small
+\begin{tabular}{@{}llrrcc@{}}
+\toprule
+$k_Sa$ & refined by & leaves & core & error & first-order \\
+\midrule
+$0.5$ & either (the same tree) & $856$ & $16$ & $9.28\times10^{-4}$ & $9.26\times10^{-4}$ \\
+      & medium  & $1696$ & $16$ & $5.75\times10^{-4}$ & $4.20\times10^{-4}$ \\
+      & product & $1752$ & $8$  & $4.42\times10^{-4}$ & $5.12\times10^{-4}$ \\
+\midrule
+$2$ & medium  & $856$  & $16$ & $1.54\times10^{-2}$ & $1.51\times10^{-2}$ \\
+    & product & $912$  & $8$  & $1.80\times10^{-2}$ & $1.78\times10^{-2}$ \\
+    & medium  & $1696$ & $16$ & $7.33\times10^{-3}$ & $7.26\times10^{-3}$ \\
+    & product & $1752$ & $8$  & $7.44\times10^{-3}$ & $7.25\times10^{-3}$ \\
+\midrule
+$4$ & medium  & $856$  & $16$ & $7.13\times10^{-2}$ & $7.46\times10^{-2}$ \\
+    & medium  & $1360$ & $16$ & $5.88\times10^{-2}$ & $6.12\times10^{-2}$ \\
+    & medium  & $1696$ & $16$ & $7.17\times10^{-2}$ & $7.46\times10^{-2}$ \\
+    & product & $912$  & $8$  & $4.27\times10^{-2}$ & $4.23\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{How to read it.} At $k_Sa=4$ take the three trees refined by the medium. From $856$ to $1696$ leaves
+every added cell is in the shell, where the medium varies, and the error does not fall: $0.071$, $0.059$,
+$0.072$. The sixteen leaves left in the core are each two radians of shear phase across, and they set the
+error whatever is done to the shell. The tree refined by the product has divided half of them, and with
+$912$ leaves its error is $0.043$: less than the medium's rule reaches with twice as many.
+
+\emph{What it shows, and what it does not.} Three things. At $k_Sa=0.5$ the two rules build the same
+trees down to $856$ leaves, as they must when $kL\ll1$, and part company only at the tightest
+tolerances, where the product's rule divides half the core leaves and the error is a quarter lower
+($4.42\times10^{-4}$ against $5.75\times10^{-4}$). At $k_Sa=4$ the medium's detail alone is the wrong
+guide and the product's is a better one. At $k_Sa=2$ the product's rule gains nothing: its trees are no
+better at an equal number of leaves. The reason is in the last column. At $k_Sa=2$ and $4$ the error of
+constant cells on this body \emph{is} the first-order error, to $2.5\%$ on every tree at $k_Sa=2$ and to
+$5\%$ at $k_Sa=4$, under either rule; and the first-order error is a sum of amplitudes with phases, not
+of energies, so no indicator built from an energy ranks the trees reliably. What does rank them there is
+the first-order error itself, which needs no solve. For constant cells on a body not small against the
+wavelength, then, a grid of mixed sizes can be chosen before anything is solved by evaluating that term
+on the candidates; the detail of the product says where to look, and Eq.~\eqref{eq:slope} says why the
+detail of the medium does not. At $k_Sa=0.5$ the two terms are comparable and partly cancel, and the
+first-order error alone does not rank the two finest trees.
+
+\emph{Cautions.} One body, whose steep shell makes the medium's detail large; a dense solver, which
+stopped the product's rule at $912$ leaves at $k_Sa=4$ (its next tree has $2368$); and constant cells
+only. With degree-one cells the same solver allows about $550$ leaves, on which the two rules build
+nearly the same trees, so that case is not decided. Against uniform grids the product's tree at
+$k_Sa=4$ is level (a uniform grid of $912$ cells would give about $0.044$ by interpolation): at that
+frequency the wave must be resolved wherever there is contrast, and on this body a tree has little to
+save.
+
 \paragraph{Cautions.} The derivation and its tests are for the term of second order in the contrast, on
 one body with a radial profile, with an incident P wave. The practical table at four frequencies
 (Table~\ref{tab:twotermfreq}) includes every order. For degree-one cells the test is with a stiffness
@@ -2972,7 +3040,8 @@ Table~\ref{tab:twoterm} is \path{scripts/measure_octree_two_term.py} (dense solv
 \path{scripts/measure_t2_factor_operators.py}, with the symbolic step in
 \path{scripts/derive_cell_residual_moments.py}; their results are stored beside them in \path{scripts},
 and Figs.~\ref{fig:twotermlaw} and \ref{fig:factorfreq} are drawn from those files by
-\path{scripts/plot_error_law_figures.py}; the constant medium with a richer
+\path{scripts/plot_error_law_figures.py}; Table~\ref{tab:trees} is
+\path{scripts/measure_octree_product_indicator.py}; the constant medium with a richer
 field is \path{scripts/pilot_octree_hp_refinement.py}. Their results are stored in
 \path{LatexPDFs/PolynomialVoxelError/figures}. Material on octree refinement, removed from this paper, is
 archived in \path{LatexPDFs/archive/OctreeRefinementArchive/}.}
