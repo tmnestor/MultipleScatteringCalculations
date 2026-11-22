@@ -1,0 +1,111 @@
+==============================================================================
+  First-order T against the ordinary T, on a common Kennett reference
+==============================================================================
+
+--- 1: the substitution is licensed ------------------------------
+    The Navier coupling must reproduce the package's own T9
+    amplification factors; only then does swapping them mean anything.
+    amp_u       assembled 1.00000238+1.88097879e-08j   T9 1.00000238+1.88099184e-08j   rel 8.68e-11
+    amp_theta   assembled 0.959078214-5.39557267e-09j   T9 0.959079284+5.86085262e-08j   rel 1.12e-06
+    amp_e_diag  assembled 0.9743261-1.13006775e-08j   T9 0.974327531-9.64941096e-09j   rel 1.47e-06
+    amp_e_off   assembled 0.981184575-1.14603329e-08j   T9 0.981185955-9.78573612e-09j   rel 1.41e-06
+  PASS  the Navier route reproduces T9's amplification factors
+
+--- 2: the two routes' amplification factors ---------------------
+    weak      amp_theta  Navier 0.99575136-5.8160708e-10j   first-order 0.99573331-5.8406738e-10j
+              worst channel difference 1.813e-05
+    moderate  amp_theta  Navier 0.95907836-5.3955541e-09j   first-order 0.95740765-5.6056547e-09j
+              worst channel difference 1.742e-03
+    strong    amp_theta  Navier 0.88652246-1.3830205e-08j   first-order 0.87388831-1.5126629e-08j
+              worst channel difference 1.425e-02
+
+--- 3: both routes through the same slab, against Kennett --------
+    M=8, N_z=16, a=0.5 m, omega=60.0 rad/s, p=0
+    weak      Kennett R_PP = +0.00018839-0.00097029i
+        package      +0.00018900-0.00097225i   err 2.0755e-03
+        navier       +0.00018900-0.00097225i   err 2.0755e-03
+        first-order  +0.00018900-0.00097224i   err 2.0682e-03
+        ratio of errors, first-order / package = 0.9964   first-order BETTER
+    moderate  Kennett R_PP = +0.00180537-0.00938428i
+        package      +0.00186003-0.00956783i   err 2.0040e-02
+        navier       +0.00186003-0.00956783i   err 2.0040e-02
+        first-order  +0.00185874-0.00956118i   err 1.9335e-02
+        ratio of errors, first-order / package = 0.9648   first-order BETTER
+    strong    Kennett R_PP = +0.00501243-0.02634535i
+        package      +0.00540358-0.02779201i   err 5.5881e-02
+        navier       +0.00540359-0.02779202i   err 5.5881e-02
+        first-order  +0.00537455-0.02764255i   err 5.0220e-02
+        ratio of errors, first-order / package = 0.8987   first-order BETTER
+
+--- 4: is the difference attributable to T_0? ---------------------
+    At weak contrast the two T_0 agree to 1.8e-5 yet both miss Kennett
+    by 2.1e-3, so most of the error is SHARED and belongs to the
+    lattice, not to T_0.  A difference in a mostly-shared error could
+    be cancellation rather than accuracy.  The discriminator is
+    whether the ratio survives refining the lattice: if the shared
+    part falls while the ratio holds, the ratio is about T_0.
+    M=  8   shared error at weak contrast 2.0755e-03    strong-contrast ratio fo/pkg 0.8987
+    M= 12   shared error at weak contrast 1.6919e-03    strong-contrast ratio fo/pkg 0.8765
+    M= 16   shared error at weak contrast 1.4452e-03    strong-contrast ratio fo/pkg 0.8569
+    the ratio moves AWAY from unity as the shared error falls: True
+    at the finest lattice the first-order error is 14.3% smaller,
+    and still improving, so that figure is a lower bound.
+  PASS  the advantage is not cancellation: it grows as the shared error falls
+  PASS  the first-order T_0 is the more accurate of the two here
+
+--- 5: which channel carries the improvement? ---------------------
+    STRUCTURAL FACT FIRST.  effective_stiffness_voigt takes ONE
+    Dmu*_off and writes it into all three shear slots, so the package's
+    T_0 is cubic-symmetric by construction and CANNOT represent an
+    e12/e13 split.  The symmetry-breaking part of the O(Dc^2)
+    difference is therefore excluded from this comparison already --
+    not by choice, but because there is no slot for it.  Of the four
+    channels only theta touches x3 at all; e_diag = e11 - e22 and
+    e_off = e12 are both x3-free.
+    baseline (all Navier)                  err 3.7802e-02   ratio 1.0000
+    first-order u       only               err 3.7802e-02   ratio 1.0000
+    first-order theta   only               err 3.2393e-02   ratio 0.8569
+    first-order e_diag  only               err 3.7802e-02   ratio 1.0000
+    first-order e_off   only               err 3.7802e-02   ratio 1.0000
+    all four first-order                   err 3.2393e-02   ratio 0.8569
+    all four, but e13 in place of e12      err 3.2393e-02   ratio 0.8569
+    the e12/e13 amplitude split itself is 7.201e-03
+    so the discarded symmetry breaking is worth 0.000e+00 of the baseline error
+  PASS  the improvement survives either choice of the split channel
+
+--- 6: oblique incidence, where the shear channels are probed -----
+    At p = 0 a normal-incidence P wave is pure compression along z: it
+    couples to the trace and to nothing else, which is why every shear
+    channel above moved R_PP by exactly zero.  SH incidence at p /= 0
+    probes the shear channels directly, and is the only place the
+    e12/e13 split can show at all.
+    Kennett R_SH reference at p=1.0e-04
+    baseline (all Navier)                  err 4.9763e-03   ratio 1.0000
+    all four first-order, e12              err 4.9763e-03   ratio 1.0000
+    all four first-order, e13              err 2.0248e-03   ratio 0.4069
+    the choice between e12 and e13 is worth 5.931e-01 of the baseline error
+  PASS  SH incidence does probe the shear channels
+
+--- 7: a TETRAGONAL T_0, which can carry the split ----------------
+    First, which Voigt slot does the SH channel actually read?  Two
+    docstrings agreeing is not evidence, so the slots are perturbed
+    separately and the answer is measured.
+    +10% on slot 3 (in-plane)    moves the SH error by 9.499e-01
+    +10% on slot 4 (depth)       moves the SH error by 9.190e+00
+    +10% on slot 5 (depth)       moves the SH error by 0.000e+00
+
+    SH:  ordinary                   err 4.9763e-03   ratio 1.0000
+         first-order, cubic T_0     err 4.9763e-03   ratio 1.0000
+         first-order, TETRAGONAL    err 1.6700e-03   ratio 0.3356
+  PASS  the tetragonal T_0 collects the improvement the cubic one cannot
+    P :  first-order, cubic T_0     err 3.2393e-02   ratio 0.8569
+         first-order, TETRAGONAL    err 3.2393e-02   ratio 0.8569
+  PASS  and does not spoil the normal-incidence channel
+
+==============================================================================
+  7/7 checks passed
+==============================================================================
+  This scores the SINGLE-SITE T only.  Everything else -- the lattice
+  sum, the contact correction, the Foldy-Lax solve -- is shared, so a
+  difference here is attributable to T_0 and a shared error is not
+  visible at all.  Read the RATIO of the errors, not either alone.

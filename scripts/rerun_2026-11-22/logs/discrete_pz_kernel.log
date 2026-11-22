@@ -1,0 +1,27 @@
+<repo>/cubic_scattering/graded_voxel/kernel_fortran.py:61: ComplexWarning: Casting complex values to real discards the imaginary part
+  float(ref.alpha),
+<repo>/cubic_scattering/graded_voxel/kernel_fortran.py:62: ComplexWarning: Casting complex values to real discards the imaginary part
+  float(ref.beta),
+<repo>/cubic_scattering/graded_voxel/kernel_fortran.py:63: ComplexWarning: Casting complex values to real discards the imaginary part
+  float(ref.mu),
+GATE - discrete stratified kernel vs the homogeneous lattice kernel
+  M=8, N_z=3, d=1.0 km, f=6.0 Hz, q=8
+  damping applied to BOTH media (reference built from the layered
+  model's own complex velocities)
+
+         Q    pair   |ratio| median       spread
+    k_max/k_S =  1.48   samples per k_S =   21.6   N = 64
+    100000    1->0       1.7812e+01    4.199e+00
+    100000    2->0       1.9439e+01    1.060e+01
+       100    1->0       1.3710e+01    2.579e+00
+       100    2->0       1.2632e+01    5.697e+00
+        30    1->0       9.0025e+00    2.062e+00
+        30    2->0       5.5811e+00    5.283e+00
+        10    1->0       3.4706e+00    1.631e+00
+        10    2->0       9.6048e-01    6.261e+00
+         3    1->0       1.8662e-01    2.581e+00
+         3    2->0       1.5181e-02    6.690e+00
+
+  PASS if the spread FALLS towards zero as Q falls: with the media now
+  identical, the only residual is free-surface/seabed reverberation,
+  which the whole-space kernel cannot contain and damping removes.

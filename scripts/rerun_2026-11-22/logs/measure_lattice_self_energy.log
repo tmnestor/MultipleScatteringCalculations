@@ -1,0 +1,19 @@
+====================================================================================
+MEASUREMENT -- is the residual a SELF-ENERGY (local-field) discrepancy?
+  gamma solved per rung; a LATTICE constant must not depend on n_z
+====================================================================================
+
+   n_z   |Gamma_0|         gamma  gamma/|G_0|    residual
+     1  1.6554e-12  -1.13035e-14     -0.00683   4.932e-04
+     2  3.3109e-12  -1.79236e-13     -0.05413   4.861e-04
+     4  1.0561e-11  -2.70421e-12     -0.25605   4.843e-04
+     8  8.4487e-11  -3.53813e-11     -0.41878   4.838e-04
+    16  6.7589e-10  -3.83603e-10     -0.56755   4.837e-04
+
+  gamma/|Gamma_0| spread across the ladder: 215.1%
+====================================================================================
+  NOT A CONSTANT SELF-ENERGY: gamma drifts with n_z, so a scalar shift
+  of the self-energy is not the missing physics either. Report the
+  drift and look at the STRUCTURE -- a scalar on the 9x9 identity may
+  simply be the wrong shape for a tensor local field.
+====================================================================================

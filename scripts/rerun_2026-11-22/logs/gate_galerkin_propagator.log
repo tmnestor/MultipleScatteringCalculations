@@ -1,0 +1,47 @@
+====================================================================================
+GATE -- the 9x9 Bubnov-Galerkin inter-cell propagator
+  cell side d = 1.0 m, omega = 60.0 rad/s
+====================================================================================
+
+  [G1] autocorrelation kernels vs the derivation's closed forms
+       constant x constant  (tent)            0.00e+00
+       displacement x axial strain            0.00e+00
+       axial strain x axial strain            0.00e+00
+
+  [G2] centre-of-mass reduction vs direct 6-D quadrature (non-touching)
+       R = (np.float64(0.0), np.float64(2.0), np.float64(0.0))   rel diff 5.915e-14
+       R = (np.float64(0.0), np.float64(2.0), np.float64(1.0))   rel diff 5.213e-14
+
+  [G3] convergence at FACE CONTACT (arbiter of [G2] not valid here)
+        n_quad       |Gamma|      change
+             6   3.12466e-12            
+             9   3.12466e-12    2.32e-08
+            12   3.12466e-12    1.71e-12
+            16   3.12466e-12    7.01e-14
+
+  [G4] reciprocity:  Gamma(-R) = Gamma(R)^T  (Bubnov -- no metric)
+       R = (np.float64(0.0), np.float64(2.0), np.float64(0.0))   rel 3.528e-16
+       R = (np.float64(1.0), np.float64(2.0), np.float64(0.0))   rel 8.325e-16
+       R = (np.float64(0.0), np.float64(1.0), np.float64(0.0))   rel 6.465e-16
+
+  [G5] Galerkin vs the moment operator -- more than a per-block scale?
+        block   best scalar   resid after fit
+            G       1.00000         5.469e-13
+            C      12.16316         1.563e-02
+            H      13.19189         2.334e-01
+            S     152.79652         1.095e-01
+
+====================================================================================
+  [G1] autocorrelations        : 0.00e+00
+  [G2] vs direct 6-D quadrature: 5.91e-14
+  [G3] contact convergence     : 7.01e-14
+  [G4] reciprocity             : 8.33e-16
+  [G5] differs from the moment operator: 2.33e-01
+
+  PASS: the Galerkin coupling is built and independently checked.
+  [G2] validates the centre-of-mass reduction against brute force;
+  [G3] shows the apex-pyramid rule handles the contact singularity;
+  [G4] is an invariant the construction does not impose; and [G5]
+  confirms there is a real difference to fix. Next: use it in the
+  lattice and test whether the refinement ladder resumes converging.
+====================================================================================

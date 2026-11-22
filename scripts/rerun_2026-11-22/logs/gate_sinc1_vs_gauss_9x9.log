@@ -1,0 +1,56 @@
+==============================================================================
+GATE: sinc^1 SPECTRAL average vs the real-space Gauss average
+==============================================================================
+
+  offset R = [2. 0. 0.], d = 1.0, K_max = 120, dk = 0.1
+  lam = 1.7500e+10, mu = 2.2500e+10, nu = 0.218750  (static kernel)
+
+  analytic static Kelvin Gdd, re-validated here:
+    vs elastodynamic_greens_deriv at omega = 0.6: 1.55e-08
+    Navier residual / term scale:                    1.21e-15
+    reference is sound: True
+
+  The spectral integral converges to its target with a 1/K envelope
+  (oscillatory tail), so the bar is set by the CONTROL arm, not by a
+  tolerance chosen in advance -- and the control must clear it first.
+
+    n=2  DOUBLE (control)
+         component     real-space Gauss     spectral (K=max)        rel
+      (0, 0, 0, 0)     7.2228691424e-13     7.2226480534e-13   3.06e-05
+      (0, 1, 0, 1)    -2.0577155656e-13    -2.0577141107e-13   7.07e-07
+      (0, 0, 1, 1)    -6.3736016922e-13    -6.3736006786e-13   1.59e-07
+
+      control error: 1.36e-03 at K/2  ->  3.06e-05 at K
+      CONTROL reproduces the validated double average: True
+
+    n=1  SINGLE (collocation)
+         component     real-space Gauss     spectral (K=max)        rel
+      (0, 0, 0, 0)     7.9810495631e-13     8.0611079454e-13   1.00e-02
+      (0, 1, 0, 1)    -2.4194390156e-13    -2.4130738557e-13   2.63e-03
+      (0, 0, 1, 1)    -6.7835661432e-13    -6.7880735533e-13   6.64e-04
+
+      single error:  1.02e-01 at K/2  ->  1.00e-02 at K
+
+  error reduction per doubling of K:  n=1 10.2x   n=2 44.4x
+
+==============================================================================
+PASS -- the sinc^1 spectral average reproduces the real-space
+Gauss average WITH the strain kernel Gamma(k_hat) in place.  The
+scope limit left open by gate_sinc1_uv_convergence.py is CLOSED:
+the direction-dependent weight does not re-expose the axis
+ridges.  So the spectral route is sound for the collocation
+scheme, and the build is one exponent in machinery that exists.
+
+⚠ n=1 carries a LARGER truncation error than n=2 at the same K,
+and that is EXPECTED, not a defect: sinc^1 decays as 1/k^3 where
+sinc^2 decays as 1/k^6, so the same K leaves a bigger tail.  It
+is the practical cost of the single average -- a spectral
+implementation needs a larger cutoff, or an analytic tail, to
+reach the accuracy the double average gets for free.
+
+⚠ SCOPE: static kernel, ONE non-contact offset (2d), three
+components.  The DYNAMIC part (poles at |k| = omega/alpha,
+omega/beta, and the subtracted formulation they force) is NOT
+tested here, nor is the CONTACT shell, where the double average
+is singular and the analytic O_h tables are required.
+==============================================================================

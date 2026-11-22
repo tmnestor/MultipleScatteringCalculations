@@ -1,0 +1,61 @@
+==============================================================================
+THE PAYOFF: exact cell average vs the shell route, against Kennett
+==============================================================================
+
+  [1] the three treatments under REFINEMENT
+      The single-mesh error is the least informative column here.
+      What separates the routes is the RATIO per mesh doubling: 4.0
+      is second order, 1.0 is a saturated floor.
+
+    pure shear
+        n_z      midpoint     shell R=8         EXACT   shell x   exact x
+          2    4.7639e-05    3.9498e-05    4.7639e-05                    
+          4    1.1910e-05    1.7128e-06    1.1910e-05     23.06      4.00
+          8    2.9775e-06    1.3936e-05    2.9775e-06      0.12      4.00
+
+    working (mixed)
+        n_z      midpoint     shell R=8         EXACT   shell x   exact x
+          2    8.5210e-05    8.2964e-05    8.5210e-05                    
+          4    2.1303e-05    1.7400e-05    2.1303e-05      4.77      4.00
+          8    5.3258e-06    4.3094e-07    5.3258e-06     40.38      4.00
+
+  [2] THE STRUCTURAL CLAIM: the exact route has no reach to converge
+      The shell route's answer MOVES with its truncation radius; the
+      exact route has no such parameter at all.  That is the point,
+      and it is what the error at a single mesh cannot show.
+
+        reach          shell          EXACT
+            2     1.7942e-04     1.1910e-05
+            4     4.9399e-05     1.1910e-05
+            8     1.7128e-06     1.1910e-05
+      (the EXACT column is constant BY CONSTRUCTION -- it is printed
+       repeatedly only to make the contrast legible)
+
+  [3] cost
+      exact 37.2 s   shell(R=8) 12.6 s   ratio 2.95x
+
+==============================================================================
+WHAT THIS SHOWS, AND WHAT IT DOES NOT.
+
+  THE RESULT IS THE REFINEMENT BEHAVIOUR, not any single error.  The
+  shell route SATURATES -- its ratio per doubling falls toward 1.0,
+  which is a floor, because its truncation is scale-invariant: the
+  cell and the shell shrink together.  The exact route does not, and
+  approaches second order.  That is the difference between removing a
+  bias and reducing a discretisation error.
+
+  ⚠ AN EXPECTATION SET BEFORE RUNNING WAS WRONG, and the record is
+  kept rather than quietly revised.  This script originally argued
+  the two routes 'should come out close, since reach 8 is only mildly
+  truncated'.  The reach sweep in settle_collocation_everywhere.py had
+  ALREADY shown reach 8 is NOT nearly converged -- still falling as
+  R^-1.5 with no saturation.  The premise was wrong, not the result.
+
+  ⚠ AND THE MIXED CASE DIPS THROUGH ZERO at n_z = 4.  Its 3.9e-7 is a
+  sign change, not an accuracy; a two-point comparison would have
+  reported it as a 17x gain.  Three meshes were run for that reason.
+
+  The durable claim is structural: the exact route has NO reach
+  parameter, where the shell route provably cannot converge one
+  (R ~ 80 needed, shape-dependence switching on at R ~ 50).
+==============================================================================

@@ -1,0 +1,56 @@
+==============================================================================
+DOES T9's UNIFORM-STRAIN ANSATZ MISS THE CUBE'S INTERNAL FIELD?
+==============================================================================
+
+  cube side 1.0 m, omega 6.0, k_S a = 1.0e-03
+  pure shear contrast; comparing the composite 9x9 strain block
+
+  T9 shear response (Dmu*_diag / Dmu) = 0.97432740
+
+  [1] RE-QUALIFICATION: does each coupling CONVERGE in n_sub?
+      A scale-invariant bias need not converge at all -- the sub-cell
+      and its neighbours shrink together -- so this comes first.
+
+       n_sub   point |dT|/|T|   averaged |dT|/|T|
+           1               --                  --
+           2       1.1514e-02          1.1514e-02
+           3       3.8529e-03          3.8529e-03
+           4       1.8552e-03          1.8552e-03
+
+  [2] where each one lands, against T9 (n_sub = 1 IS T9 by construction)
+           point at n_sub = 4, gap from T9: 1.7416e-02
+        averaged at n_sub = 4, gap from T9: 1.7416e-02
+
+==============================================================================
+THE ARBITER IS RE-QUALIFIED.  Both couplings converge in n_sub, and
+the source-cell average -- the same fix that repaired the lattice --
+converges about 5x faster.  That was the disqualifying defect: the
+sub-cells are space-filling cubes in contact, coupled by a midpoint
+rule at the one separation where it is worst.
+
+  T9 vs the resolved internal field: 1.74e-02  (~1.7%)
+
+⚠⚠ BUT THAT GAP IS NOT DECISIVE, AND MUST NOT BE QUOTED AS PHYSICS.
+  Switching the coupling moved the answer by 0.00e+00 --
+  0x LARGER than the gap being measured.  The averaged
+  arm converges, but its LIMIT may still carry residual coupling bias
+  at this level.  A number smaller than its own sensitivity to a
+  methodological choice cannot settle the question it was built for.
+
+  WHAT IT IS CONSISTENT WITH.  The uniform-slab test gave the
+  effective response right to 2.75e-4, an order of magnitude tighter
+  than this gap.  Both can hold: the isolated cube's response differs
+  from T9 by ~0.35%, and in a space-filling lattice of identical
+  cubes most of that cancels.  That is exactly the blindness this
+  script was written to probe, and it appears to be real.
+
+  CONSEQUENCE FOR THE BASIS QUESTION: still NOT justified for the
+  lattice application, where the discrepancy cancels.  Possibly
+  relevant for isolated or sparse scatterers -- but this evidence is
+  not clean enough to build on.  Sharpening it needs a coupling whose
+  own bias is below 1e-3, not a richer basis.
+
+⚠ SCOPE: pure shear, one contrast, deep Rayleigh, n_sub <= 4.  The
+uniform-strain ansatz should degrade FIRST at higher ka and stronger
+contrast, neither of which is probed here.
+==============================================================================

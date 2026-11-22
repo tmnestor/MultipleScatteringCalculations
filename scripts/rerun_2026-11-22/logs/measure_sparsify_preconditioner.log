@@ -1,0 +1,33 @@
+==============================================================================
+SPARSIFY-AND-SOLVE PRECONDITIONER ON THE 3-D FOLDY-LAX SYSTEM
+  6^3 voxels (1944 unknowns), pitch 100 m, ka = 0.236
+  8 points per S wavelength
+==============================================================================
+  dense G0 assembled in 43 s
+  stencils fitted in 19 s; worst annihilation ratio 8.79e-04
+
+  strength  rho(G0 T0)   none  truncated  sparsified  |PA-H|/|PA|
+      [     0 s] strength 1, rho(G0 T0): 0.062
+      [     1 s] sparsification error |PA - H|/|PA|: 6.63e-04
+      [     2 s] GMRES, no preconditioner: 7
+      [     2 s] GMRES, 27-voxel truncation: 7
+      [    38 s] GMRES, sparsified: -1
+         1       0.062      7          7          -1     6.63e-04
+      [     0 s] strength 10, rho(G0 T0): 0.571
+      [     1 s] sparsification error |PA - H|/|PA|: 5.62e-03
+      [     2 s] GMRES, no preconditioner: 20
+      [     2 s] GMRES, 27-voxel truncation: 16
+      [    37 s] GMRES, sparsified: -1
+        10       0.571     20         16          -1     5.62e-03
+      [     0 s] strength 30, rho(G0 T0): 1.870
+      [     1 s] sparsification error |PA - H|/|PA|: 1.21e-02
+      [     2 s] GMRES, no preconditioner: 61
+      [     3 s] GMRES, 27-voxel truncation: 36
+      [    38 s] GMRES, sparsified: -1
+        30       1.870     61         36          -1     1.21e-02
+      [     0 s] strength 60, rho(G0 T0): 4.267
+      [     1 s] sparsification error |PA - H|/|PA|: 1.66e-02
+      [     3 s] GMRES, no preconditioner: 263
+      [     3 s] GMRES, 27-voxel truncation: 132
+      [    39 s] GMRES, sparsified: -1
+        60       4.267    263        132          -1     1.66e-02

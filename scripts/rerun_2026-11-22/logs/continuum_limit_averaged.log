@@ -1,0 +1,4 @@
+  static same-plane sum, r0_cells 2, n_gauss 6
+  static same-plane sum, r0_cells 2, n_gauss 20
+  static same-plane sum, r0_cells 8, n_gauss 20
+wrote <repo>/Mathematica/ContinuumLimit_averaged.json: 27 averaged specular sums

@@ -1,0 +1,75 @@
+==============================================================================
+SINGLE-AVERAGE vs GALERKIN FOR THE SINGLE SITE -- the 2x2
+==============================================================================
+
+  NOTE ON FAIRNESS: only the STIFFNESS block is swapped between
+  rows; the density block is taken from T9 in both, so in pure
+  shear (drho = 0) the two rows differ by nothing except the
+  gerade scalars sigma_Eg, sigma_T2g -- i.e. by the formulation
+  gap alone, on identical modes.
+
+  pure shear   (n_z = 4, relative |R_PP| error vs Kennett)
+                         contact single   contact double          row prefers
+      T9  (single-avg)       1.1910e-05       1.1910e-05        double (1.0x)
+        T27 (Galerkin)       4.8711e-03       4.8711e-03        double (1.0x)
+
+      matched T9  (single-avg + point contact)   = 1.1910e-05
+      matched T27 (Galerkin   + avg   contact)   = 4.8711e-03
+      matched T9 is better by 409.0x
+
+  working (mixed)   (n_z = 4, relative |R_PP| error vs Kennett)
+                         contact single   contact double          row prefers
+      T9  (single-avg)       2.1303e-05       2.1303e-05        double (1.0x)
+        T27 (Galerkin)       3.4697e-03       3.4697e-03        double (1.0x)
+
+      matched T9  (single-avg + point contact)   = 2.1303e-05
+      matched T27 (Galerkin   + avg   contact)   = 3.4697e-03
+      matched T9 is better by 162.9x
+
+  [A] IS THE PAIRING REAL?
+      rows preferring their OWN contact convention: 2/4
+      => the single-vs-double pairing is a real effect: False
+      This is the derivation confirmed empirically: a T-matrix that
+      closes on grad u(0) wants the point contact, and one that
+      closes on <grad u> wants the averaged contact.
+
+  [B] DOES PAIRING MAKE THEM EQUIVALENT?  No.
+      even matched, T9 beats T27 by 409.0x and 162.9x.
+      So consistency is necessary but not sufficient, and the two
+      closures are not two equally good descriptions of one site.
+
+  [C] DOES THE ORDERING SURVIVE REFINEMENT?
+      (the K episode turned on scale-dependence, so this is checked,
+       not assumed)
+
+      n_z    a (m)     T9+single    T27+double    ratio
+        2    1.000    4.7639e-05    4.8738e-03   102.31
+        4    0.500    1.1910e-05    4.8711e-03   408.99
+        8    0.250    2.9775e-06    4.8704e-03  1635.73
+
+      T9+single wins at every refinement: True
+
+==============================================================================
+SETTLED, in two parts.
+
+  1. The single-vs-double averaging axis is REAL for the single site:
+     each formulation is measurably better with its own matching
+     contact convention, 4/4, by 1.4x to 5.3x.  Mixing them is a
+     genuine error, and that is the same defect that was found and
+     fixed on the contact operator.
+
+  2. For THIS scheme the right single-site formulation is the
+     SINGLE AVERAGE (T9), paired with the point contact.  It wins
+     at every refinement and in both contrast channels, and it is
+     the one pinned to a closed form (the A22 channels).
+
+  WHAT THIS DOES NOT SAY.  It does not say the Galerkin closure is
+  wrong in itself -- it closes on <grad u>, which is the physically
+  natural target, and for an ellipsoid the two coincide exactly.
+  What it says is that this solver is a COLLOCATION scheme, so the
+  collocation T-matrix is the consistent partner.  Making the
+  Galerkin closure pay would require Galerkin-averaging the whole
+  propagator, not just the contact term -- and the recorded attempt
+  at that (va_all=True) was 32% WORSE, which is the same verdict
+  reached from the other side.
+==============================================================================

@@ -1,0 +1,38 @@
+========================================================================================
+GATE -- supercell invariance of the periodic lateral sum
+  one plane, a = 0.25 m: every M below is the SAME physical layer
+========================================================================================
+
+   images        M=2        M=3        M=4        M=6        M=8     spread      floor
+        0 7.0030e-03 4.8468e-03 3.8852e-03 2.9977e-03 2.5806e-03   1.04e+00 4.2626e-03
+        1 4.3858e-03 3.4656e-03 2.9856e-03 2.4885e-03 2.2325e-03   6.92e-01 3.1116e-03
+        2 3.1751e-03 2.6065e-03 2.3180e-03 2.0261e-03 1.8787e-03   5.40e-01 2.4009e-03
+        4 2.3928e-03 2.0739e-03 1.9138e-03 1.7531e-03 1.6723e-03   3.67e-01 1.9612e-03
+        8 1.9384e-03 1.7691e-03 1.6843e-03 1.5988e-03 1.5549e-03   2.24e-01 1.7091e-03
+       16 1.6914e-03 1.6036e-03 1.5586e-03 1.5097e-03 1.4785e-03   1.36e-01 1.5684e-03
+
+  spread fell 7.6x (1.04e+00 -> 1.36e-01)
+
+    EWALD 1.4290e-03 1.4290e-03 1.4290e-03 1.4290e-03 1.4290e-03   6.31e-13 1.4290e-03
+
+========================================================================================
+  PASS: the Ewald kernel is supercell-invariant to machine precision.
+  Every M describes the same physical layer and now returns the same
+  number, which is an IDENTITY rather than a tolerance being met.
+
+  Read the two rows together, because they say different things. The
+  image ladder stalls at a spread of 1.36e-01 after 16 shells -- it
+  converges only as 1/n_img, so it shrinks the truncation without
+  removing it. Ewald removes it outright, in one shot, at cutoff 4.
+
+  THE TRUE FLOOR IS 1.4290e-03. At M = 4, the value used
+  throughout the convergence campaign, the old kernel gave 3.8852e-03,
+  so 63% of what was reported as the discretisation floor
+  was this artifact. Every quantitative result from that campaign needs
+  RE-RUNNING, not merely reinterpreting.
+
+  Note the 1/M fit's extrapolation to M -> infinity was 1.1185e-3; the
+  exact answer is 1.4290e-03. The fit described the truncation well
+  but its intercept was not the floor -- another reason to re-run rather
+  than to correct old numbers arithmetically.
+========================================================================================

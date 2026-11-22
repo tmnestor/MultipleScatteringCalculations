@@ -1,0 +1,38 @@
+==============================================================================
+MEASUREMENT -- the discretisation floor of the PERIODIC route
+  Weyl lattice sum = an INFINITE layer; compared against exact Kennett
+==============================================================================
+
+    a (m)  N_z   M  f (Hz)      ka     |R| per     |R| ken    rel err
+     2.00    1   4    23.9   0.060  6.0176e-03  5.9948e-03  4.035e-03
+     2.00    2   4    23.9   0.060  1.2002e-02  1.1905e-02  8.577e-03
+     1.00    1   4    23.9   0.030  3.0144e-03  3.0027e-03  3.925e-03
+     1.00    2   4    23.9   0.030  6.0443e-03  5.9948e-03  8.348e-03
+     0.50    1   4    23.9   0.015  1.5079e-03  1.5020e-03  3.895e-03
+     0.50    2   4    23.9   0.015  3.0275e-03  3.0027e-03  8.286e-03
+     2.00    1   4     9.5   0.024  2.4120e-03  2.4027e-03  3.911e-03
+     2.00    2   4     9.5   0.024  4.8396e-03  4.7999e-03  8.318e-03
+     1.00    1   4     9.5   0.012  1.2064e-03  1.2017e-03  3.891e-03
+     1.00    2   4     9.5   0.012  2.4226e-03  2.4027e-03  8.278e-03
+     0.50    1   4     9.5   0.006  6.0322e-04  6.0089e-04  3.886e-03
+     0.50    2   4     9.5   0.006  1.2116e-03  1.2017e-03  8.268e-03
+
+  best relative error inside the validated ka range: 3.886e-03
+
+  VOLUME-AVERAGED NEAREST NEIGHBOURS -- does the floor drop?
+      a (m)  N_z      ka       point  vol-avg n=0  vol-avg n=2
+       2.00    1   0.060   4.035e-03    2.887e-03    2.887e-03
+       2.00    2   0.060   8.577e-03    5.595e-03    5.595e-03
+       1.00    1   0.030   3.925e-03    2.688e-03    2.688e-03
+       1.00    2   0.030   8.348e-03    5.164e-03    5.164e-03
+
+    A drop confirms the touching-face diagnosis and makes the thesis
+    test viable. No drop means the per-plane floor is the single-site
+    T-matrix's own limit, and neither lattice route reaches the 10x
+    separation this question needs.
+
+  Reading it. This is the FLOOR the thesis-formulation test would
+  inherit. The ordering effect to be resolved is 1-3%, so a floor near
+  1e-2 is not enough -- it needs to be nearer 1e-3 for the comparison
+  to mean anything. Reported, not gated: this is a capability
+  measurement, and its job is to say whether the route is worth taking.

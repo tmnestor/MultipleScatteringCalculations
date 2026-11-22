@@ -1,0 +1,43 @@
+==============================================================================
+GATE -- is the thesis's two-potential formulation correct?
+  reference + contrast (solved)  vs  contrast folded into the background
+  the second is exact for this medium; agreement is the correctness test
+  contrast Dlam=2.0 Dmu=1.0 GPa, Drho=0.1 g/cm3, laterally uniform
+  ka = 0.094  (the cube T-matrix is validated for ka < 0.3)
+==============================================================================
+
+    n_x   sites   thesis ordering    dress-after
+      6      36        2.0649e-02     1.5047e-02
+     10     100        2.8401e-02     1.8024e-02
+     14     196        2.7202e-02     2.0789e-02
+
+  DISCRETISATION CONTROL -- uniform background, formulation removed
+      n_x     residual
+        6   2.1021e-02
+       10   2.5903e-02
+       14   1.6458e-02
+
+  discretisation residual is small enough to conclude: NO
+    The discretisation error is comparable to the quantity being
+    measured, so NOTHING above is evidence about the formulation.
+    Two known causes, both documented in this repository: a finite
+    patch is not a layer (the slab convergence study reached ~1%
+    only with a periodic Weyl sum, an INFINITE layer), and
+    space-filling cubes touch, where the point propagator is known
+    to differ from the volume-averaged one.
+
+==============================================================================
+  thesis ordering improves with lattice size : NO
+  dress-after separated by >10x at the widest: NO
+
+  The lateral truncation is a real error, not noise: a finite patch of
+  scatterers is not a layer. Refinement is the only honest reading, and
+  a single lattice size would prove nothing.
+
+  A thesis-ordering error that does NOT fall under refinement is a
+  REFUTATION, and would point at the stratified propagator or the
+  composition rather than at the ordering.
+
+  VERDICT: INCONCLUSIVE (discretisation-limited). Superseded by
+  scripts/gate_thesis_formulation_periodic.py, which settles the question.
+==============================================================================

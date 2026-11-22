@@ -1,0 +1,37 @@
+======================================================================================
+GATE -- the 9-component source convention
+  J = diag(1,1,1, 1,1,1, .5,.5,.5) is the STRAIN CONTRACTION METRIC,
+  not a fitted knob: it undoes the factor 2 of engineering shear.
+======================================================================================
+
+  [C1] closed-form propagator exact_propagator_9x9
+         separation (z,x,y)      plain P          J P
+            (2.0, 0.0, 0.0)    9.011e-02    0.000e+00
+            (2.0, 2.0, 0.0)    1.966e-01    0.000e+00
+            (2.0, 4.0, 6.0)    6.469e-02    8.989e-25
+           (4.0, -2.0, 2.0)    7.669e-02    2.917e-25
+
+  [C2] assembled lattice G0 (identity T0, so G0 = I - H exactly)
+       plain G0      : 1.000e+00
+       J G0          : 1.000e+00
+       (Sigma J) G0  : 2.863e-16   <-- the predicted metric
+
+  [C3] cube T0
+       plain T0   : 0.000e+00
+       J T0       : 0.000e+00
+       J T0 J     : 0.000e+00
+
+  [C4] W H symmetry -- what the thesis's bilinear form requires
+       W = T0 (as used)   : 1.428e-03
+       W = J T0           : 5.222e-06
+       W = T0 J           : 5.222e-06
+       W = J T0 J         : 7.141e-04
+       W = (Sigma J) T0   : 3.819e-18
+       W = T0 (Sigma J)   : 3.819e-18
+       W = (Sigma J) T0 (Sigma J) : 7.141e-04
+
+======================================================================================
+  CONSISTENT: W = (Sigma J) T0 makes the Foldy-Lax operator self-adjoint
+  at 3.819e-18. The thesis's bilinear form is well defined and
+  the variational summation can be tested on this operator.
+======================================================================================

@@ -1,0 +1,32 @@
+========================================================================================
+MEASUREMENT -- is the residual the isolated-cube depolarisation?
+  uniform slab H = 4.0 m, M = 4, exact lateral sum + Galerkin contact
+  the medium is UNIFORM, so the exact answer is a homogeneous layer
+========================================================================================
+
+  the amplification factors being switched off (A = 1):
+       A_u     = 1.000002+0.000000j
+       A_theta = 0.959079+0.000000j
+       A_e_off = 0.981186-0.000000j   A_e_diag = 0.974328-0.000000j
+
+  [D1] refinement ladder, starred (isolated-cube A) vs bare (A = 1)
+        n_z    d (m)       STARRED          BARE     ratio
+          1   4.0000   1.47933e-06   2.18091e-02      0.00
+          2   2.0000   3.69727e-07   2.18125e-02      0.00
+          4   1.0000   9.24251e-08   2.18134e-02      0.00
+          8   0.5000   2.31059e-08   2.18136e-02      0.00
+
+  [D2] contrast scaling of each, at n_z = 4
+              c       STARRED          BARE     ratio
+           0.03   4.27364e-09   6.86242e-04      0.00
+            0.1   1.38628e-08   2.27954e-03      0.00
+            0.3   3.83683e-08   6.77130e-03      0.00
+              1   9.24251e-08   2.18134e-02      0.00
+       relative-error slope in c:  starred 0.881   bare 0.987
+
+========================================================================================
+  THE OPPOSITE: removing the depolarisation makes it 236011.6x WORSE,
+  so the isolated-cube amplification is closer to right than A = 1 and
+  the residual is something else. The local-field story is refuted in
+  the direction that matters -- A = 1 is not the answer either.
+========================================================================================

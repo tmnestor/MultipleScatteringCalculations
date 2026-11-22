@@ -1,0 +1,34 @@
+========================================================================================
+GATE -- cross-check the extracted self-energy against cube_eshelby
+========================================================================================
+
+  [E1] eps-limit Born T vs compute_cube_born_tmatrix (independent route)
+          a (m)   Drho* eps-limit    Drho* module        rel
+          2.000      9.995623e+01    9.995623e+01   7.35e-09
+          1.000      9.998906e+01    9.998906e+01   1.84e-09
+          0.500      9.999726e+01    9.999726e+01   4.60e-10
+          0.250      9.999932e+01    9.999932e+01   1.15e-10
+          0.125      9.999983e+01    9.999983e+01   2.87e-11
+
+  [E2] amplification from the 9x9 T's vs the published Eshelby factors
+          a (m)       ka   T00 ratio         E_u        rel
+          2.000   0.0400    1.000074    1.000074   7.35e-09
+          1.000   0.0200    1.000018    1.000018   1.84e-09
+          0.500   0.0100    1.000005    1.000005   4.60e-10
+          0.250   0.0050    1.000001    1.000001   1.15e-10
+          0.125   0.0025    1.000000    1.000000   2.87e-11
+
+  [E3] conditioning of Gamma_0 = T_Born^-1 - T0^-1
+          a (m)    |Gamma_0|  |T_Born^-1|   rel diff    cond(T0)
+          2.000   3.2118e-12   4.3422e-08   7.40e-05   2.131e+04
+          1.000   6.4232e-12   3.4726e-07   1.85e-05   2.131e+04
+          0.500   1.2846e-11   2.7779e-06   4.62e-06   2.131e+04
+          0.250   8.4487e-11   2.2222e-05   3.80e-06   2.131e+04
+          0.125   6.7589e-10   1.7778e-04   3.80e-06   2.131e+04
+
+========================================================================================
+  PASS: the Born limit agrees by two independent routes, the
+  amplification reproduces the published Eshelby factors, and the
+  self-energy extraction is not dominated by cancellation. The
+  gamma result of measure_lattice_self_energy stands.
+========================================================================================

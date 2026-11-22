@@ -1,0 +1,33 @@
+==============================================================================
+MEASUREMENT -- does the dress-after omission compound with rho(G0 T)?
+  background lambda = 17.5 GPa; contrasts kept inside the 52% floor
+  scattering strength raised by ENLARGING THE LATTICE, at fixed contrast
+==============================================================================
+
+     lattice     T  Dlam/lam   rho(G0T)        diff        Born  diff/Born
+       2x4x4   1.0      0.17     0.6049   2.344e-01   2.923e-01      0.802
+       2x4x4   3.0      0.51     1.8211   6.896e-01   1.011e+00      0.682
+       2x6x6   1.0      0.17     1.2379   2.612e-01   4.694e-01      0.557
+       2x6x6   3.0      0.51     3.6884   5.662e-01   2.133e+00      0.265
+       3x6x6   1.0      0.17     1.6443   2.520e-01   5.606e-01      0.450
+       3x6x6   3.0      0.51     4.7748   5.951e-01   2.690e+00      0.221
+
+  Reading it. THE ABSOLUTE DIFFERENCE is the robust column: it grows
+  from ~10% of the field at rho < 1 to 70-90% at rho > 2.5. In strong
+  multiple scattering, dressing afterwards is not an approximation to
+  the stratified solve, it is a different answer. That holds across
+  every configuration tried.
+
+  DO NOT READ THE diff/Born RATIO AS A TREND. It is not robust:
+  moving the deep reflector by ONE layer (21 -> 22) took the
+  rho = 2 row from 1.99 to 0.63. Both are correct computations of
+  different geometries, but the ratio is too configuration-sensitive
+  to support a claim about compounding or saturation. It is kept
+  because near rho < 1 it is consistently ~0.9-1.0 across geometries,
+  which does support the weaker claim that the omission is
+  first-order THERE.
+
+  The Dlam/lam column is the validity check, not decoration: past
+  ~0.52 the single-site renormalisation is outside its measured range
+  and any trend beyond that says more about the T-matrix than the
+  ordering.

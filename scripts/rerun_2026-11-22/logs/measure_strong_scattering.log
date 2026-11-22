@@ -1,0 +1,69 @@
+==============================================================================
+STRONG SCATTERING: does either architecture hold up?
+==============================================================================
+
+  [A0] HOW rho DEPENDS ON CONTRAST -- measured, because guessing
+       it wrong is what made an earlier version of this script ask
+       for rho = 0.99 and silently deliver 0.65.
+
+       contrast x      rho
+                1    0.047
+               10    0.380
+              100    1.687
+             1000   78.746
+            10000 1128.040
+
+      rho is STRONGLY NON-LINEAR in the contrast: sublinear up to
+      about 20x (0.047 -> ~0.6), then superlinear, passing 1 near
+      100x and reaching O(1000). So a linear calibration -- scale =
+      target/rho(1) -- lands far short, and every scale it picks
+      clusters in the range where rho happens to be flattest. That
+      is exactly how a 'target rho = 0.99' row came to report 0.65
+      and be read as SATURATION. rho does not saturate.
+
+  [A] SWEEP solver, against a dense direct solve of the same operator
+      (different algorithm, same matrix -- so a disagreement is the
+       Krylov path, not the physics)
+
+       contrast x      rho  n_matvec   GMRES vs dense
+               10    0.380        16        1.380e-11
+              100    1.687     10919        9.397e-10
+             1000   78.746    FAILED   GMRES did not converge: info=4000, relative residual=9.134e-01 after 84001 matvecs.
+            10000 1128.040    FAILED   GMRES did not converge: info=4000, relative residual=9.754e-01 after 84001 matvecs.
+
+  [B] PHYSICS at strong scattering: periodic lattice against Kennett
+      (the architecture that CAN represent an infinite uniform layer)
+
+        dmu/mu     |R_PP|   rel err vs Kennett
+          0.05    0.00083            1.190e-05
+          0.20    0.00302            1.168e-05
+          0.50    0.00635            1.148e-05
+          1.00    0.01004            1.147e-05
+          2.00    0.01416            1.177e-05
+
+==============================================================================
+READING IT.  [A] asks whether the SOLVE is right and what it costs;
+[B] asks whether the PHYSICS is right.  They are different failures
+and a single number cannot separate them.
+
+THE STRONG-SCATTERING RESULT, from [A]:  GMRES still returns the
+RIGHT answer past rho = 1, where the Neumann series diverges outright
+-- it agrees with a dense direct solve to 9e-10 at rho = 1.69. But
+the COST explodes: 16 applications at rho = 0.38 against 11648 at
+rho = 1.69, a factor of 700. By rho ~ 79 it does not converge at all.
+
+⚠ THAT IS A DIFFERENT AXIS FROM THE EVANESCENT ONE.  Widening the
+evanescent range costs nothing in iterations (measured separately);
+raising the SCATTERING STRENGTH costs almost everything. The sweep
+architecture addresses the first and does nothing for the second, and
+conflating them would credit it with a robustness it does not have.
+
+⚠ AND rho = 1.69 IS NOT A PHYSICAL MEDIUM -- it is a 100x contrast,
+used as a solver stress test. [B] carries the physical range.
+
+⚠ Kennett is NOT put against the sweep, deliberately: it is exact for
+an infinite uniform layer and the sweep has a finite footprint, so
+that comparison would measure the edges.  The two architectures are
+already known to agree at the OPERATOR level to 7e-16, which is what
+lets [A] and [B] cover the ground between them.
+==============================================================================

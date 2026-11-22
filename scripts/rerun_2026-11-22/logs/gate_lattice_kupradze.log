@@ -1,0 +1,58 @@
+====================================================================================
+GATE -- Bloch-summed Kupradze derivative tensors and the same-plane 9x9
+  a_L = 2.0, k_par = (np.float64(0.2), np.float64(0.1)), eta = 0.7 vs 1.15, Rc = Gc = 8
+====================================================================================
+
+  [L1] ladder_from_plain vs exact closed forms
+       (a) monomial d^6, worst rel: 2.84e-14
+       (b) k = 0   Hankel  5.80857e-02   rel  2.67e-16
+       (b) k = 1   Hankel  7.07277e-02   rel  2.77e-16
+       (b) k = 2   Hankel  1.03634e-01   rel  1.50e-16
+       (b) k = 3   Hankel  2.14715e-01   rel  2.13e-16
+       (b) k = 4   Hankel  6.80788e-01   rel  1.64e-16
+
+  [L2] order-0 tensor vs planar_ewald.ewald_total (coordinate check)
+                    (z, x, y)          |D0|         rel
+           (0.31, 0.50, 0.00)   1.09314e-01    2.84e-16
+          (-0.24, 0.35, 0.28)   1.12940e-01    6.27e-16
+          (0.42, -0.60, 0.70)   7.23227e-02    3.84e-16
+           (0.00, 0.50, 0.00)   1.10333e-01    0.00e+00
+           (0.00, 0.35, 0.28)   1.13657e-01    2.44e-16
+          (0.00, -0.60, 0.70)   7.24166e-02    3.83e-16
+
+  [L3] eta-independence by derivative order (z != 0, k_par != 0)
+        order           |D|    rel diff
+            0   1.12940e-01    1.09e-15
+            1   6.90692e-02    4.03e-15
+            2   1.41554e-01    5.09e-15
+            3   1.70105e-01    2.51e-14
+            4   3.34500e-01    1.27e-13
+
+  [L4] damped kappa = (1.5+0.25j): Ewald vs direct tensor sum
+       arbiter self-convergence (radius 40 -> 60): 6.01e-10
+        order    rel diff
+            0    4.04e-15
+            1    2.46e-14
+            2    8.15e-15
+            3    3.15e-14
+            4    5.78e-14
+
+  [L5] z-parity at z = 0: odd numbers of z indices must vanish
+       worst odd-z entry, relative to the tensor scale: 0.00e+00
+
+  [--] the same-plane 9x9, for scale (not a pass/fail test)
+       |lattice 9x9|_max = 4.47184e-03   (free-space scalar 1.775e-01)
+
+====================================================================================
+  [L1] ladder bridge            : 2.84e-14
+  [L2] vs gated scalar Ewald    : 6.27e-16
+  [L3] eta-independence, order 4: 1.27e-13  (worst 1.27e-13)
+  [L4] vs converged direct sum  : 5.78e-14  (arbiter 6.01e-10)
+  [L5] z-parity at z = 0        : 0.00e+00
+
+  PASS: the Bloch lattice sum is exact to fourth order. The scalar
+  foundation, the derivative ladder and the summation now all carry
+  their own evidence, so the same-plane 9x9 can be wired into
+  build_slab_kernels -- whose acceptance test is the M-invariance of
+  a laterally uniform medium, scripts/gate_lateral_sum_invariance.py.
+====================================================================================

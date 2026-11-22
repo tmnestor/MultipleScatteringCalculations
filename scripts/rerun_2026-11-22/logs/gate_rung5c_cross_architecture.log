@@ -1,0 +1,23 @@
+==============================================================================
+GATE rung 5c -- 3-D real-space operator vs FFT convolution
+  lattice N_z=3, M=4, cube side d=0.05 km, omega=150.0 rad/s
+  background a=5.0 b=3.0 rho=2.5 (seismic)
+  slab: periodic=False (linear conv), volume_averaged=False (point)
+==============================================================================
+
+  [5c-0] cancellation guard |G0 psi| / |psi| : 2.633e+02
+         must exceed 1e-3, else psi - (psi - G0 psi) is noise
+
+  [5c-1] G0 psi, distinct sources : rel diff 1.262e-15
+         |G0 psi| (slab)          : 8.97650e+02
+         |G0 psi| (real space)    : 8.97650e+02
+  [5c-2] vacuity: distinct vs site-averaged : 9.367e-01 (must be LARGE)
+         uniform source is its own average  : 0.000e+00 (hence blind)
+
+  [5c-3] localisation -- each link against something independent
+         slab kernel, brute-convolved, vs real-space table : 1.202e-15
+         slab FFT path vs brute force on its OWN kernel    : 2.783e-16
+
+==============================================================================
+GATE rung 5c: PASS
+==============================================================================

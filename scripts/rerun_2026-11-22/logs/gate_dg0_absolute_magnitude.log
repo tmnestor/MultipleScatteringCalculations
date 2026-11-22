@@ -1,0 +1,45 @@
+==============================================================================
+GATE -- absolute magnitude of the same-plane reverberation DeltaG0
+  plane at interface 50, arbiter cubic_scattering.kennett_layers
+  FORWARD comparison of the full 9x9: no fitting, no ratio, no per-mode rescale
+==============================================================================
+
+  MULTI-INTERFACE below the plane -- every internal multiple
+        kh        |dG0|  out-of-span   fwd, no C  fwd, with C  |c fit - c pred|
+      0.05  4.48815e-02    3.890e-11   4.734e-03    1.556e-10         6.459e-10
+      0.50  4.48639e-02    3.772e-11   4.273e-02    1.517e-10         6.889e-10
+      1.50  4.36363e-02    2.930e-11   2.386e-02    1.133e-10         2.553e-09
+      3.00  3.63810e-02    1.409e-11   7.630e-01    3.457e-11         3.781e-11
+
+  WEAK single interface -- the single-bounce limit
+        kh        |dG0|  out-of-span   fwd, no C  fwd, with C  |c fit - c pred|
+      0.05  4.50077e-04    3.290e-09   9.944e-03    1.123e-08         2.558e-08
+      0.50  4.50271e-04    3.172e-09   9.916e-02    1.084e-08         2.445e-08
+      1.50  4.51109e-04    2.430e-09   2.913e-01    8.109e-09         1.686e-08
+      3.00  4.45741e-04    1.154e-09   5.516e-01    2.837e-09         4.367e-09
+
+  STRONG single interface
+        kh        |dG0|  out-of-span   fwd, no C  fwd, with C  |c fit - c pred|
+      0.05  3.46253e-02    4.847e-11   9.894e-03    1.865e-10         3.512e-10
+      0.50  3.46259e-02    4.660e-11   9.866e-02    1.790e-10         3.366e-10
+      1.50  3.45689e-02    3.473e-11   2.897e-01    1.264e-10         2.363e-10
+      3.00  3.36719e-02    1.543e-11   5.445e-01    3.832e-11         5.887e-11
+
+  every non-zero channel of R, renormalised Kennett vs fit, kh = 0.5
+         channel                        fit                    kennett      ratio
+         R[P<-P] +1.868912e-01+6.120123e-02j +1.868912e-01+6.120123e-02j   1.000000
+        R[P<-SV] +8.879963e-04+3.325786e-03j +8.879963e-04+3.325786e-03j   1.000000
+        R[SV<-P] -1.598142e-03-5.986646e-03j -1.598142e-03-5.986646e-03j   1.000000
+       R[SV<-SV] +2.448786e-02-7.798418e-02j +2.448786e-02-7.798418e-02j   1.000000
+       R[SH<-SH] -2.476134e-02+7.866355e-02j -2.476134e-02+7.866355e-02j   1.000000
+
+==============================================================================
+  [M1] DeltaG0 lies in the rank-3 one-way span      : PASS
+  [M2] forward 9x9 magnitude vs Kennett             : PASS
+  [M3] P/S basis factor predicted, not fitted       : PASS
+
+GATE DeltaG0 absolute magnitude: PASS
+  The 'fwd, no C' column is NOT a failure -- it is the size of the
+  conversion mismatch that a diagonal-only comparison cannot see, and
+  it is removed by an a priori basis factor carrying no free parameter.
+==============================================================================

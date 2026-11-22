@@ -1,0 +1,30 @@
+====================================================================================
+MEASUREMENT -- does the single-site T27 strain sector remove the bias?
+  physical slab fixed at H = 4.0 m; only the cell size changes
+====================================================================================
+
+  OLD (truncated kernel -- the conditions the first verdict was taken in)
+   n_z           T9   ratio          T27   ratio
+     1   3.9107e-03           7.2743e-03        
+     2   8.2780e-03           1.1819e-02        
+     4   1.3716e-02           1.7355e-02        
+     8   2.0319e-02           2.4050e-02        
+    16   2.6197e-02           3.0006e-02        
+    32   3.0143e-02           3.4006e-02        
+
+  EXACT lateral sum + Galerkin contact
+   n_z           T9   ratio          T27   ratio
+     1   1.4793e-06           3.3288e-03        
+     2   3.6973e-07    0.25   3.4415e-03    1.03
+     4   9.2425e-08    0.25   3.4697e-03    1.01
+     8   2.3106e-08    0.25   3.4768e-03    1.00
+    16   5.7765e-09    0.25   3.4785e-03    1.00
+    32   1.4441e-09    0.25   3.4790e-03    1.00
+
+  growth across the ladder:  T9 0.00x   T27 1.05x
+  finest rung:               T9 1.444e-09   T27 3.479e-03
+====================================================================================
+  T27 DOES NOT HELP. The scale-invariant single-site difference is
+  real but does not act in the direction of the bias, so the match in
+  magnitude was a coincidence.
+====================================================================================

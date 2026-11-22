@@ -1,0 +1,77 @@
+==============================================================================
+  The voxel T-matrix against exact Mie, with the single cell average
+  SI units; time convention e^{-i omega t}
+==============================================================================
+
+[1] the base: two independent routes to the point propagator
+      Kupradze ladder vs hand-derived, worst of 4: 7.700e-16
+  PASS  the derivative ladder reproduces the validated point propagator
+
+[2] the single average: convergence and regularity
+      convergence to a 24-point reference   g=4   g=8   g=12  g=16
+        face    1.8e-02  2.9e-05  3.6e-08  4.1e-11   auto picks g=16 -> 4.1e-11
+  PASS  the average converges in n_gauss at face contact
+  PASS  the single average is finite at face contact
+        edge    6.4e-04  9.0e-08  1.1e-11  5.6e-15   auto picks g=12 -> 1.1e-11
+  PASS  the average converges in n_gauss at edge contact
+  PASS  the single average is finite at edge contact
+        corner  6.1e-05  1.6e-10  1.6e-14  1.1e-14   auto picks g= 8 -> 1.6e-10
+  PASS  the average converges in n_gauss at corner contact
+  PASS  the single average is finite at corner contact
+  PASS  the adaptive order reaches the reference everywhere
+      reduction to the point value: 1.33e-02  3.24e-03  8.03e-04
+      order: 2.04  2.01
+  PASS  the average reduces to the point propagator at second order
+
+[3] two routes to the same average: direct quadrature vs the d^2 tail
+      |direct - tail| at d = 0.2, 0.1, 0.05: 5.34e-04  3.37e-05  2.12e-06
+      order: 3.98  4.00
+  PASS  direct and tail agree at FOURTH order in the cell size
+      where the tail stops being usable (d = 0.25):
+        separation 1 cell(s): 1.786e-01
+        separation 2 cell(s): 1.887e-02
+        separation 3 cell(s): 3.994e-03
+        separation 4 cell(s): 1.291e-03
+        separation 6 cell(s): 2.282e-04
+  PASS  the tail is much worse at contact than far away
+
+[4] the two propagators are genuinely different objects
+      at nearest-neighbour separation, |avg - point|/|point| = 7.736e-02
+  PASS  the average differs from the point value where it matters
+      cond(I - PT): point 2.253e+00   averaged 2.182e+00
+  PASS  the averaged solve is no worse conditioned
+  PASS  the composite T-matrices differ
+
+[5] against exact elastic Mie -- the measurement this gate exists for
+      far-field convergence: r/a = 5e+03 -> 0.0080,  5e+04 -> 0.0072
+      the last decade still moves it by 10% -- that is the precision floor
+  PASS  the far-field harness is good to better than 15%
+
+      ka = 0.1
+        n_sub     N   point raw     avg raw  point corr    avg corr  dilution
+            3    19      0.3495      0.3432      0.0056      0.0012    0.2559   (0.0 s)
+            4    32      0.0399      0.0451      0.0072      0.0010    0.0472   (0.0 s)
+            6   136      0.2103      0.2022      0.0087      0.0011    0.1684   (0.2 s)
+        raw error / dilution: 1.37  0.84  1.25
+  PASS  the raw error is dominated by the voxel dilution, ka=0.1
+        improvement (point / averaged) at fixed geometry, per n_sub:
+          n_sub=3: 4.66x   n_sub=4: 7.36x   n_sub=6: 8.01x
+        spread across resolutions: 50.2%
+  PASS  the averaged propagator is closer to exact Mie at every resolution, ka=0.1
+  PASS  but NOT by a stable factor -- the spread is real, ka=0.1
+
+      ka = 0.5
+        n_sub     N   point raw     avg raw  point corr    avg corr  dilution
+            3    19      0.3393      0.3332      0.0055      0.0092    0.2559   (0.0 s)
+            4    32      0.0376      0.0427      0.0098      0.0028    0.0472   (0.0 s)
+            6   136      0.2036      0.1959      0.0084      0.0062    0.1684   (0.2 s)
+        raw error / dilution: 1.33  0.80  1.21
+  PASS  the raw error is dominated by the voxel dilution, ka=0.5
+        improvement (point / averaged) at fixed geometry, per n_sub:
+          n_sub=3: 0.60x   n_sub=4: 3.48x   n_sub=6: 1.35x
+        spread across resolutions: 159.4%
+        no verdict at ka=0.5 on a staircased sphere: the ratios straddle 1
+
+==============================================================================
+  19/19 checks passed
+==============================================================================

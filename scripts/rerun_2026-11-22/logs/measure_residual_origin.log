@@ -1,0 +1,61 @@
+========================================================================================
+MEASUREMENT -- the origin of the residual that survives refinement
+  H = 4.0 m, M = 4, n_z = 4, exact lateral sum + Galerkin contact
+========================================================================================
+
+  [R1] dynamic content of the averaged propagator (suspect a)
+       n_orders 0 = static, 1 = +w^2, 2 = +w^4. If the residual is the
+       O(w^6) remainder, these must differ and the curve must fall with d.
+        n_orders      rel err
+               0  9.24251e-08
+               1  9.24251e-08
+               2  9.24251e-08
+       spread across n_orders: 0.00e+00
+
+       and the refinement behaviour, which is the stronger statement:
+        n_z    d (m)      rel err   (k d)^2 would give
+          1   4.0000  1.47933e-06          1.47933e-06
+          2   2.0000  3.69727e-07          3.69832e-07
+          4   1.0000  9.24251e-08          9.24580e-08
+          8   0.5000  2.31059e-08          2.31145e-08
+
+  [R2] contrast scaling -- quadrature is c^1, renormalisation is c^2
+                c   |r_lat-r_ken|     relative  local slope
+           0.0001    9.380651e-18  3.75973e-11             
+           0.0003    3.810391e-17  5.09068e-11        1.276
+            0.001    3.629961e-16  1.45493e-10        1.872
+            0.003    3.231857e-15  4.31822e-10        1.990
+             0.01    3.580417e-14  1.43558e-09        1.998
+             0.03    3.195104e-13  4.27364e-09        1.992
+              0.1    3.445286e-12  1.38628e-08        1.975
+              0.3    2.838630e-11  3.83683e-08        1.920
+                1    2.220698e-10  9.24251e-08        1.709
+
+       RESOLVED points (|err| > 1e-11): c = 0.3, 1
+       log-log slope of the ABSOLUTE error over those: 1.709
+       (fitting ALL points, noise included, would give 1.902 --
+        the sub-1e-11 points are at the pipeline's numerical floor, where
+        |r_kennett| itself is ~1e-7, so they carry no information.)
+
+  [R3] frequency scaling at fixed geometry (cross-check on suspect a)
+       a dynamic-truncation error grows like (k d)^2; a static
+       renormalisation does not.
+          omega       ka      rel err
+             30   0.0030  2.30323e-08
+             60   0.0060  9.24251e-08
+            120   0.0120  3.74395e-07
+            240   0.0240  1.57009e-06
+       log-log slope in omega: 2.029   (2.0 would indicate (k d)^2)
+
+========================================================================================
+  VERDICT
+    (a) REFUTED. n_orders 0/1/2 agree to 0.0e+00: the residual does
+        not live in the averaged propagator's dynamic content at all --
+        even the STATIC table gives the same answer.
+    (b) SUPPORTED. The absolute error scales as c^1.71. A
+        quadrature error is linear in the contrast -- the truncation
+        artifact fixed today measured c^1.00. Quadratic is the signature
+        of a field-renormalisation effect: one factor of the contrast to
+        scatter, one to respond. The isolated-cube T0 is being excited by
+        the average field where it should see the LOCAL field.
+========================================================================================

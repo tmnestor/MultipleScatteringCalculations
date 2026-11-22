@@ -1,0 +1,20 @@
+==============================================================================
+SPARSIFYING PRECONDITIONER, LAYERED BACKGROUND: 6^3 voxels, contrast between planes 14 and 16
+==============================================================================
+  [   538 s] layered table built
+  [   544 s] caches built
+  [   582 s] domain operator from the kernel; 5 columns vs direct apply: 0.0e+00
+  [   601 s] stencil types fitted (layered and whole-space control)
+  worst far leakage per centre plane (layered fit):
+    plane 10 (A): 1.01e-01
+    plane 12 (A): 5.21e-02
+    plane 14 (A): 7.48e-02
+    plane 16 (B): 7.02e-02
+    plane 18 (B): 4.98e-02
+    plane 20 (B): 9.13e-02
+
+  strength     rho   none  truncation whole-space st.  layered st.  |PA-H|/|PA| lay
+         1   0.053      6           5               4            4         3.10e-04
+        10   0.453     15          12               7            7         2.80e-03
+        30   1.454     43          27              11           11         7.72e-03
+        60   3.244    183          85              16           16         1.51e-02

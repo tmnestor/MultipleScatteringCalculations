@@ -1,0 +1,111 @@
+==============================================================================
+IS THE MIDPOINT-CORRECTION LATTICE SUM SHAPE-DEPENDENT?
+==============================================================================
+
+  quadrature gate: |corr(NG=8) - corr(NG=12)| / |corr| = 2.04e-13
+  NG = 8 is converged; the panels measure the correction, not quadrature.
+
+  [A] MECHANISM: which term of the midpoint error survives?
+
+    STATIC      (omega=6e-3)   k_S d = 2e-06   (k_S d)^2/24 = 1.667e-13
+       n (cells)     k_S r     |corr|/|G|        x r^2
+               4     0.000     3.4195e-03   5.4712e-02
+               8     0.000     8.3881e-04   5.3684e-02
+              16     0.000     2.0868e-04   5.3421e-02
+              32     0.000     5.2105e-05   5.3355e-02
+              64     0.000     1.3022e-05   5.3339e-02
+
+    OPERATING   (omega=60)   k_S d = 0.02   (k_S d)^2/24 = 1.667e-05
+       n (cells)     k_S r     |corr|/|G|        x r^2
+               4     0.080     3.4363e-03   5.4981e-02
+               8     0.160     8.5558e-04   5.4757e-02
+              16     0.320     2.2515e-04   5.7639e-02
+              32     0.640     6.7664e-05   6.9288e-02
+              64     1.280     2.6728e-05   1.0948e-01
+
+    FAR-FIELD   (omega=450)   k_S d = 0.15   (k_S d)^2/24 = 9.375e-04
+       n (cells)     k_S r     |corr|/|G|        x r^2
+               4     0.600     4.3014e-03   6.8822e-02
+               8     1.200     1.6202e-03   1.0369e-01
+              16     2.400     8.7865e-04   2.2494e-01
+              32     4.800     1.0275e-03   1.0521e+00
+              64     9.600     9.1447e-04   3.7457e+00
+
+      A FLAT 'x r^2' column means the correction decays TWO powers
+      faster than G -- the (d^2/24) grad^2 G term, with grad^2 G two
+      orders down from G.  It does NOT vanish statically: the Kelvin
+      tensor is built from r, which is BIHARMONIC (grad^2 r = 2/r),
+      not harmonic.  A ratio that instead PLATEAUS at (k_S d)^2/24
+      would be the Helmholtz regime, where grad^2 G = -k^2 G makes the
+      correction track G itself and become long-ranged.
+
+  [B] DIRECT SHAPE TEST: square region vs circular region
+
+    OPERATING (omega=60)   k_S * rmax = 0.40
+        rmax       |square|       |circle|    |sq - circ|       rel
+           6   8.326028e-12   8.328717e-12   1.673880e-14    0.0020
+          10   8.327112e-12   8.327709e-12   7.908138e-15    0.0009
+          14   8.327322e-12   8.327605e-12   5.205305e-15    0.0006
+          20   8.327405e-12   8.327500e-12   3.082887e-15    0.0004
+
+      |sq - circ| shrank by 5.43x from rmax 6 to 20
+      => gap closing (absolutely convergent): True
+
+    FAR-FIELD (omega=450)   k_S * rmax = 3.00
+        rmax       |square|       |circle|    |sq - circ|       rel
+           6   8.328716e-12   8.331868e-12   2.687398e-14    0.0032
+          10   8.329411e-12   8.330375e-12   2.835525e-14    0.0034
+          14   8.329117e-12   8.329893e-12   3.988087e-14    0.0048
+          20   8.328326e-12   8.328990e-12   5.358953e-14    0.0064
+
+      |sq - circ| shrank by 0.50x from rmax 6 to 20
+      => gap closing (absolutely convergent): False
+
+==============================================================================
+FINDING: THE ANSWER IS REGIME-DEPENDENT, and that is the whole point.
+
+  k r << 1 : grad^2 G is two orders down from G (the Kelvin tensor is
+             BIHARMONIC, not harmonic), so corr ~ d^2 G / r^2.  With
+             the displacement block G ~ 1/r that is corr ~ d^2/r^3,
+             a shell sum ~ d^2/R^2 and an O(1/R) TAIL -- slow, but
+             ABSOLUTELY convergent.  Measured: gap shrank 5.4x.
+
+  k r >> 1 : Helmholtz makes grad^2 G = -k^2 G, so corr -> -(k d)^2/24
+             times G itself.  Measured plateau 9.14e-4 against the
+             predicted (k_S d)^2/24 = 9.375e-4, within 3%.  The
+             correction then decays like G (~1/r), each shell
+             contributes a CONSTANT, and only oscillation converges
+             the sum -- CONDITIONALLY.  Measured: gap GREW 2x.
+
+  So the shape term is real but switches on at k r ~ 1.
+  At the operating point that is R ~ 1/(k_S d) = 50 cells.
+
+  ▶ THE CONSEQUENCE IS A CATCH-22, AND IT IS QUANTITATIVE.
+    The O(1/R) tail means converging the sum needs a LARGE box; the
+    shape term means the box must stay well inside R = 50.
+    The reach sweep was still falling at R = 8 with error 2.6e-5 and
+    an O(1/R) tail, so another decade demands R ~ 80 -- past the
+    crossover.  The box cannot be made big enough to converge without
+    being big enough to become shape-dependent.
+
+  ▶ SO THE SPECTRAL FORM FACTOR IS A CORRECTNESS ARGUMENT AFTER ALL,
+    not merely an efficiency one.  The source-cell average is a
+    CONVOLUTION with the cell indicator, hence EXACTLY the point
+    kernel times prod_i sinc(q_i d/2) on each spectral component.
+    That hands the conditional convergence back to whatever already
+    handles it for the BARE kernel (Ewald at dz=0, the spectral sum
+    for dz!=0), where it is already solved.  No such machinery exists
+    in the package today.
+
+  ▶ AND THE CURRENT NUMBERS ARE SAFE.  The solver runs at reach <= 8,
+    i.e. k_S r <= 0.16, a factor 6 inside the crossover.
+    Nothing already measured is invalidated; what is blocked is
+    EXTRAPOLATING the reach sweep to a converged value.
+
+⚠ SCOPE: dz=0 plane at k=0, which is where the bare sum's shape term
+is known to live.  The dz!=0 planes are expected to converge
+exponentially (the plane integral of d_i d_j G vanishes) and are NOT
+tested here.  The crossover radius is quoted for the operating point
+only -- it scales as 1/(k_S d), so a finer mesh pushes it OUT in cell
+counts while a higher frequency pulls it in.
+==============================================================================

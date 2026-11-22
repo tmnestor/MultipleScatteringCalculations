@@ -1,0 +1,23 @@
+==============================================================================
+GATE -- the thesis two-potential formulation, periodic lattice
+  ka = 0.0120 (validated range is ka < 0.3); N_z = 1, M = 4
+  kernel: {'volume_averaged': True, 'periodic': True, 'lattice_ewald': True, 'va_all': True, 'va_all_reach': 1}
+  (exact Ewald lattice sum; see the header's 27 September warning)
+==============================================================================
+Traceback (most recent call last):
+  File "<repo>/scripts/gate_thesis_formulation_periodic.py", line 416, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "<repo>/scripts/gate_thesis_formulation_periodic.py", line 343, in main
+    t1, s1 = _run(dressed=True, uniform=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/gate_thesis_formulation_periodic.py", line 317, in _run
+    res = compute_slab_scattering(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/cubic_scattering/slab_scattering.py", line 1396, in compute_slab_scattering
+    raise ValueError(msg)
+ValueError: a periodic solve with a prebuilt psi0 needs the wave's lateral wavevector, bloch_k.
+  Where: cubic_scattering/slab_scattering.py, compute_slab_scattering(bloch_k=...)
+  Valid: (k_x, k_y) in rad/m, e.g. bloch_k=(omega * p, 0.0) for slowness p along x,
+         or bloch_k=(0.0, 0.0) at normal incidence
+  Fix:   pass bloch_k alongside psi0; it cannot be read off an arbitrary field

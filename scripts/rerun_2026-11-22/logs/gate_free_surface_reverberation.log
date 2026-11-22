@@ -1,0 +1,67 @@
+==============================================================================
+GATE -- what the layered table's TOP reflector actually is
+  ocean over a UNIFORM half-space: the only reverberation is off the top
+==============================================================================
+
+  [F1]/[F2] diagonal vs depth and Q
+     plane  depth km         Q=2        Q=50       Q=1e4
+         3       3.0   1.213e-05   8.419e-02   2.231e-01
+         8       8.0   9.754e-14   1.105e-02   1.027e-01
+        14      14.0   1.049e-14   2.848e-03   1.802e-01
+    [F1] a top reflector exists                : PASS
+    [F2] it attenuates (>100x, Q 1e4 -> 2)     : PASS
+
+  [F3] does it depend on the WATER PROPERTIES? (a reflection must)
+       alpha      rho     diagonal
+        1.50     1.03   1.0267e-01
+        0.50     1.03   1.2676e-01
+        1.50     3.00   8.7467e-02
+        4.90     2.49   1.5863e-01
+    [F3] it is the fluid-solid interface       : PASS
+
+  [F4] does it depend on the WATER THICKNESS? (a free surface would)
+      water km       diagonal
+           3.0   1.026662e-01
+          30.0   1.026662e-01
+         300.0   1.026662e-01
+    -> insensitive to thickness: True
+       THE OCEAN IS A HALF-SPACE. There is no free surface here, and
+       no water-column reverberation. Reported, not gated: it is a
+       structural fact about the background, not a tolerance.
+
+  [F5] with free_surface=True the water column REVERBERATES
+       AT FIXED (kx, ky), stepping the thickness by quarter-cycles.
+       Fixed k is essential: the two-way phase is 2 w eta_w h_w and
+       eta_w varies across the transverse grid, so the INTEGRATED
+       table has no single period and cannot be periodic in h_w. An
+       earlier draft tested the integrated table and read its
+       aperiodicity as a failure; it is a property of the integral.
+    quarter-cycle step 0.03126 km
+      water km   phase (rad)   change vs base
+       1.00000         50.26        0.000e+00
+       1.03126         51.83        1.997e-01
+       1.06251         53.40        1.617e+00
+       1.09377         54.97        2.017e-01
+       1.12502         56.54        3.178e-05
+    [F5] swings within the cycle (> 0.1)      : PASS
+    [F5] returns after a FULL cycle (< 1e-4x) : PASS
+
+  [F6] the INTEGRATED table moves too (sensitivity, not periodicity)
+    thickness change, flag on  : 6.219e-01
+    flag on vs flag off        : 7.245e-01
+    [F6] the flag reaches the 3-D table       : PASS
+
+==============================================================================
+GATE top reflector: PASS
+  DEFAULT (free_surface=False): an ocean-bottom fluid-solid interface,
+  alive, attenuating, parameterised by the water properties -- but the
+  ocean above it is a HALF-SPACE. The stage-1 claim that the free
+  surface came for free with the layered background was wrong.
+  WITH free_surface=True: the water column is finite and reverberates,
+  periodically in the round-trip phase at fixed k, and the flag reaches
+  the 3-D table. Use it for any comparison against a solver that
+  carries a free surface -- FFTProp does.
+  STILL OPEN: the absolute magnitude of either. Existence, attenuation,
+  parameterisation and periodicity are all satisfied by a wrongly
+  scaled surface too. Arbiter: ocean_bottom.py.
+==============================================================================

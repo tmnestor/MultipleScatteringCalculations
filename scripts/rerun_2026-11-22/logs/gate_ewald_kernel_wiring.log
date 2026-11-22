@@ -1,0 +1,71 @@
+========================================================================================
+GATE -- the wired Ewald kernel, dz = 0 and dz != 0
+  M = 4, pitch = 0.5 m, omega = 60.0 rad/s
+========================================================================================
+
+  [E1] dz != 0: the EWALD route vs the SPECTRAL route (what is used)
+       Two constructions sharing no code -- real-space Ewald with
+       Kupradze derivatives, against a reciprocal sum of the spectral
+       9x9. Compared away from k_par = 0, where both are well
+       conditioned; AT k_par = 0 the Ewald route loses (eta/kappa)^n
+       and is shown separately as the reason it is not used here.
+        dz (m)   Bloch pt          G          C          H          S
+          0.50      (0,0)   4.74e-11   4.44e-07   2.22e-07   1.04e-05
+          0.50      (1,0)   1.92e-10   3.29e-10   3.96e-10   8.18e-10
+          0.50      (2,3)   1.65e-11   7.33e-11   7.33e-11   9.10e-11
+          1.00      (0,0)   2.99e-11   1.05e-06   5.23e-07   5.97e-03
+          1.00      (1,0)   3.90e-10   7.23e-09   4.21e-09   4.56e-08
+          1.00      (2,3)   8.26e-11   6.87e-11   8.39e-11   5.04e-09
+       At k_par = 0 the Ewald S block departs by 6.0e-03 and grows with
+       dz -- the direction a refinement ladder runs. Hence the split.
+
+  [E1b] the spectral route vs gate_interplane_bloch_sum's own reference
+       dz = 0.50  (0,0):  5.82e-18
+       dz = 0.50  (2,3):  8.70e-16
+       dz = 1.00  (0,0):  5.82e-18
+       dz = 1.00  (2,3):  1.83e-16
+
+  [E2] eta-independence by block
+        dz (m)                     G          C          H          S
+          0.00              1.10e-16   3.43e-15   2.58e-15   5.74e-13
+          0.50              0.00e+00   0.00e+00   0.00e+00   0.00e+00
+       kappa_P d = 0.0060; the S block loses about
+       (eta/kappa)^4 in the fourth-derivative term. [E5] decides if it matters.
+
+  [E3] cutoff convergence
+       dz =  0.00 m   cutoff 4 -> 7:  4.82e-31
+       dz =  0.50 m   cutoff 4 -> 7:  9.07e-16
+
+  [E4] the R = 0 convention (included at dz != 0, excluded at dz = 0)
+       the R = 0 term is 1.3% of the dz = 0.5 m kernel at k = 0.
+       If it were wrongly excluded the inter-plane coupling would lose
+       its largest single contribution, and no same-plane test would see it.
+
+  [E5] end-to-end: the computed reflection coefficient vs eta
+        eta/eta0  cutoff            floor         rel
+            1.00       4 1.4290303770e-03    0.00e+00
+            0.40      16 1.4290303770e-03    8.91e-13
+            1.40       8 1.4290303770e-03    3.03e-12
+            2.00      10 1.4290303771e-03    6.06e-11
+       A noisy kernel block only matters if the noise arrives here.
+
+========================================================================================
+  [E1]  Ewald vs spectral   G/C/H: 7.23e-09   S: 4.56e-08
+  [E1b] spectral vs gated reference: 8.70e-16
+  [E2]  eta-independence    G/C/H: 3.43e-15   S: 5.74e-13
+  [E3]  cutoff convergence       : 9.07e-16
+  [E5]  end-to-end eta stability : 6.06e-11
+
+  PASS: both branches of the wired kernel are correct. The dz != 0
+  branch agrees with a spectral construction that shares no code with
+  it, so the R = 0 convention and the Bloch phase sign are confirmed
+  against something independent rather than against themselves.
+
+  dz != 0 uses the SPECTRAL sum and dz = 0 the Ewald sum, because
+  Ewald is needed only where the plain reciprocal sum diverges, and
+  at dz != 0 it is the worse-conditioned of the two. The residual
+  S-block eta-dependence at dz = 0 is 5.7e-13, and [E5] shows it does
+  not reach the observable: a 5x change in eta moves the answer by 6.1e-11.
+  A case relying on the strain-strain coupling directly should
+  re-check [E5] rather than assume this carries over.
+========================================================================================

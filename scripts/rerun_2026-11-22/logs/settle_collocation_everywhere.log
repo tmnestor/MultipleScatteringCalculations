@@ -1,0 +1,105 @@
+==============================================================================
+COLLOCATION EVERYWHERE?  Re-measuring va_all on the FIXED baseline
+==============================================================================
+
+  [1] midpoint propagator vs source-cell average at every separation
+      (collocation T-matrix + single contact throughout; the ONLY
+       thing varying is the propagator beyond the contact shell)
+
+    pure shear
+        n_z      midpoint        va_all    ratio      better
+          2    4.7639e-05    5.8131e-07    0.012      va_all
+          4    1.1910e-05    4.9399e-05    4.148    midpoint
+          8    2.9775e-06    5.5258e-05   18.558    midpoint
+
+    working (mixed)
+        n_z      midpoint        va_all    ratio      better
+          2    8.5210e-05    7.1516e-05    0.839      va_all
+          4    2.1303e-05    3.6477e-06    0.171      va_all
+          8    5.3258e-06    1.1550e-05    2.169    midpoint
+
+      va_all better in 3/6 rows
+
+  [2] is the va_all quadrature converged?  (if it is not, panel [1]
+      measures quadrature error, not the midpoint bias)
+
+       va_gauss           err    d vs prev
+              4    4.9399e-05             
+              6    4.9525e-05     2.55e-03
+              8    4.9525e-05     2.02e-06
+
+  [3] how far out does the source-cell average actually matter?
+      va_radius is the shell treated with the EXACT single-averaged
+      contact operator; beyond it the midpoint is used (va_all off).
+      If the gain saturates at radius 1, the midpoint rule is already
+      adequate past the touching shell and 'collocation everywhere'
+      is the right default for a quantitative reason, not a dogma.
+
+       va_radius            err    vs radius 1
+               1     1.1910e-05         1.0000
+               2     1.1910e-05         1.0000
+               3     1.1910e-05         1.0000
+
+  [4] IS THE CORRECTION SHELL CONVERGED?  va_all_reach is now a
+      parameter (it was hard-wired at 4), so the truncation can be
+      separated from the physics.  If the error keeps falling with
+      reach, the default was TRUNCATING a real correction and part
+      of the residual attributed to physics was shell cutoff.
+
+       reach   shells            err    d vs prev
+           1        9     5.5125e-04             
+           2       25     1.7942e-04     2.07e+00
+           3       49     8.7518e-05     1.05e+00
+           4       81     4.9399e-05     7.72e-01
+           6      169     1.4946e-05     2.31e+00
+           8      289     1.7128e-06     7.73e+00
+
+      fitted exponent p in err ~ R^-p, on disjoint pairs:
+        R = 2 -> 4:  p = 1.861
+        R = 3 -> 6:  p = 2.550
+        R = 4 -> 8:  p = 4.850
+        spread 2.989 -- consistent power law: False
+
+      THE CORRECTION IS NOT SHORT-RANGED, and the docstring of
+      _bloch_contact_correction said it was.  That claim is now
+      retracted there.  <G> - G ~ d^2/r^3 and a 2-D shell at radius R
+      holds ~8R cells, so each shell gives ~d^2/R^2 and the TAIL
+      beyond R goes like d^2/R.  A 1/R tail cannot be summed away by
+      enlarging the box: va_all_reach MEASURES the truncation, it
+      does not remove it.  Removing it needs an analytic tail.
+
+      ⚠ UNCHECKED RISK: a 1/R tail in a 2-D lattice sum is exactly
+      the regime where the limit can depend on the summation SHAPE,
+      the same structure already found in the k=0 lattice sum of the
+      point propagator.  Any reach-extrapolated number is provisional
+      until that is settled.
+
+==============================================================================
+WHY NOT COLLOCATION FOR EVERYTHING -- the structural half
+
+  Collocation constrains the TEST space (one equation per cell at its
+  centre).  The SOURCE side is always an integral over the cell,
+  because at the self cell the point value of dd-G does not exist --
+  a non-integrable 1/r^3 plus the Eshelby delta -- and at contact the
+  cells touch.  So the scheme cannot be 'collocation everywhere' even
+  in principle; the self integral IS the T-matrix.
+
+  The real question is where the MIDPOINT RULE is an adequate
+  approximation to that source integral, and that is what panel [1]
+  and [3] measure.  Answer: NOT at the shells it is currently used
+  on.  Correcting them at the DEFAULT reach is worth ~9x on the
+  Kennett residual, and the gain grows under refinement -- a
+  scale-invariant bias removed, not a discretisation error reduced.
+
+  ⚠ BUT ~9x IS NOT THE ANSWER, IT IS THE ANSWER AT reach = 4.
+  Panel [4] shows that default is itself a truncation worth a further
+  factor ~3 by reach 8, with no saturation in sight.  The converged
+  value is UNKNOWN and cannot be reached by raising the parameter:
+  the tail is O(1/R).  Quote the ~9x as 'at the current default',
+  never as the size of the effect.
+
+  ⚠ ALSO NOT ESTABLISHED.  The refinement sequence in panel [1] is
+  still falling but NOT at a clean second-order rate (1.20, 1.16 per
+  halving), so it is not yet a convergence claim -- and part of that
+  is the shell truncation panel [4] measures, not physics.
+==============================================================================

@@ -1,0 +1,27 @@
+====================================================================================
+GATE -- the thesis's variational summation, Alg 6.2 (VariationalSum.tex)
+  ka = 0.0120 (validated range ka < 0.3);  6x6x6 sites, 45% coherent
+  thesis claim: a single transition converges in ~8 iterations
+====================================================================================
+
+  [V1] W H symmetry (forces H_dag = H at k_y = 0) : 2.411e-17
+
+  spectral radius of (I - H) = 0.4200   (Born converges)
+  exact transition <b~, Omega b> = 1.22448715e+09+8.85503617e+07j
+
+    n         BORN       BCGVAR   BiCG plain
+    0   3.1994e-01   1.1040e-01   1.1040e-01
+    1   7.0863e-02   1.1736e-03   1.1736e-03
+    2   1.9279e-02   5.5726e-06   5.5726e-06
+    3   4.4825e-03   1.0352e-05   1.0352e-05
+    4   1.1366e-03   1.0869e-09   1.0869e-09
+
+  [V0] Alg 6.2 leading term vs Eq. (BCGscat) closed form : 1.752e-16
+
+  iterations to 1e-06:  BCGVAR 4   BiCG plain 4
+====================================================================================
+  CONFIRMED: the variational sum reaches 1e-06 in 4 iterations,
+  within the 8 the thesis reports, and its leading term
+  reproduces the closed form of (BCGscat). The summation scheme --
+  the thesis's stated principal contribution -- does what it claims.
+====================================================================================

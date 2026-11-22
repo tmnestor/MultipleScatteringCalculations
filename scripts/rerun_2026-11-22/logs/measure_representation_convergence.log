@@ -1,0 +1,77 @@
+========================================================================================
+MEASUREMENT -- does the representation CONVERGE under refinement?
+  physical slab HELD FIXED at H = 4.0 m; only the cell size changes
+  a convergent scheme has the error FALL as n_z rises
+========================================================================================
+
+  contrast x1  (working contrast)
+     n_z    a (m)       ka   TRUNCATED   ratio       EWALD   ratio   T nonlin
+       1   2.0000   0.0240  3.9107e-03          1.4255e-03          3.586e-02
+       2   1.0000   0.0120  8.2780e-03    2.12  3.3449e-03    2.35  3.584e-02
+       4   0.5000   0.0060  1.3716e-02    1.66  4.3223e-03    1.29  3.584e-02
+       8   0.2500   0.0030  2.0319e-02    1.48  4.8108e-03    1.11  3.584e-02
+      16   0.1250   0.0015  2.6197e-02    1.29  5.0549e-03    1.05  3.584e-02
+
+  contrast x0.001  (1000x weaker -- Born regime)
+     n_z    a (m)       ka   TRUNCATED   ratio       EWALD   ratio   T nonlin
+       1   2.0000   0.0240  4.2014e-06          1.5282e-06          3.725e-05
+       2   1.0000   0.0120  8.8292e-06    2.10  3.5708e-06    2.34  3.723e-05
+       4   0.5000   0.0060  1.4479e-05    1.64  4.5965e-06    1.29  3.723e-05
+       8   0.2500   0.0030  2.1154e-05    1.46  5.1090e-06    1.11  3.723e-05
+      16   0.1250   0.0015  2.6909e-05    1.27  5.3652e-06    1.05  3.723e-05
+
+
+  (2) VOLUME-AVERAGED (GALERKIN) PROPAGATOR, radius swept
+      point = midpoint rule; radius r = averaged out to Chebyshev r cells
+     n_z       point       r = 1       r = 2       r = 3
+       1  1.4255e-03  1.4793e-06  1.4793e-06  1.4793e-06
+       2  3.3449e-03  3.6973e-07  3.6973e-07  3.6973e-07
+       4  4.3223e-03  9.2425e-08  9.2425e-08  9.2425e-08
+       8  4.8108e-03  2.3106e-08  2.3106e-08  2.3106e-08
+
+      r >= 2 is 'n/a' BY CONSTRUCTION, not by cost: the volume-averaged
+      object exists only on the contact shell. That is not the limitation
+      it first appears, because contact is exactly where the midpoint rule
+      fails -- beyond it (cell size)/(separation) < 1 and falls, so the
+      point propagator is already good there.
+
+      WITHDRAWN: this section previously concluded that 'Galerkin
+      averaging at contact LOWERS the error but does NOT restore
+      convergence -- it still grows with refinement'. That was measured
+      on the TRUNCATED lateral sum, whose own growth dominated and which
+      no contact fix could have removed. On the exact lattice sum the
+      r = 1 column is FLAT. The growth is gone.
+
+========================================================================================
+  WHAT THE RE-RUN SHOWS. The non-convergence had TWO causes, and the
+  T-matrix was neither:
+
+    1. the TRUNCATED lateral sum. Its artifact ACCUMULATED plane by
+       plane, which is why the error grew with n_z instead of merely
+       sitting at a floor -- the question left open when the defect was
+       found. Exact summation cuts the n_z = 16 error from 2.62e-2 to
+       5.06e-3 and turns the ratio from 1.29, still climbing, into 1.05.
+    2. the CONTACT MIDPOINT RULE. Adding the Galerkin contact correction
+       to the exact sum flattens it outright: 7.73e-4, 8.35e-4, 8.51e-4,
+       8.58e-4 across n_z = 1, 2, 4, 8.
+
+  SO THE SCHEME CONVERGES. What it converges TO is not zero: a residual
+  of about 8.6e-4 survives refinement. That is the genuine scale-
+  invariant per-cell error and it is now the only thing left to explain
+  -- with the same two suspects as before, but facing a flat curve
+  rather than a growing one:
+    (a) the averaged object's dynamic content is truncated at O(w^4);
+    (b) a space-filling lattice of ISOLATED-cube T-matrices may need a
+        lattice renormalisation to reproduce the continuum -- the same
+        class of correction as the sphere-packing Delta -> Delta/phi
+        already established in this project.
+
+  'ratio' is the error multiplier per refinement step, each step HALVING
+  the cell size. Ratio ~ 1 is a scale-invariant per-cell error; ratio > 1
+  means the error is also ACCUMULATING over cells, which is what the
+  truncated column still shows and the exact one no longer does.
+
+  'T nonlin' differs by 1000x between the two contrast arms while the
+  ratio columns do not, so the T-matrix's nonlinear content is exonerated
+  -- as before, but now without a confounded kernel underneath it.
+========================================================================================

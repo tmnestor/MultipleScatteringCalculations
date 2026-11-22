@@ -1,0 +1,27 @@
+==============================================================================
+GATE -- the 3-D real-space solver on a physical problem, end to end
+  lattice 3 x 6 x 6, cube side 2.0 m, ka = 0.030
+  background a=5000.0 b=3000.0 rho=2500.0; per-voxel contrast
+==============================================================================
+
+  T-matrices (3, 6, 6, 9, 9), incident field (3, 6, 6, 9)
+
+  [E1] exciting field, real-space vs FFT : 3.842e-14
+       matvecs: real-space 9, FFT 9
+
+  [E2] reflection amplitudes (P incident; R_SP is a copy of R_PP)
+                           real-space            FFT convolution    rel diff
+      R_PP -9.365153e-06-1.671141e-06j -9.365153e-06-1.671141e-06j   8.938e-14
+      R_PS +1.517147e-08+2.588541e-09j +1.517147e-08+2.588541e-09j   5.173e-12
+
+  [E3] multiple scattering is non-trivial
+       |psi - psi_inc| / |psi_inc| : 3.727e-03  (must be well above 0)
+       |R_PP|                      : 9.513086e-06
+
+==============================================================================
+GATE solver end to end: PASS
+  Both architectures were given the same T-matrices and the same
+  incident field, so this isolates the G0 application through a full
+  Krylov solve and a far-field projection -- neither of which is
+  guaranteed to preserve an operator-level agreement.
+==============================================================================

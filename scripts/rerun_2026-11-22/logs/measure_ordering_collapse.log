@@ -1,0 +1,56 @@
+==============================================================================
+MEASUREMENT -- does the dress-after error collapse onto rho(G0 T)?
+  two reflector depths, four lattices, three contrasts
+==============================================================================
+
+    rho(G0T)  refl   lattice     T  Dlam/lam        diff
+      0.6049    22     2x4x4   1.0      0.17   2.344e-01
+      1.2025    22     2x4x4   2.0      0.34   4.296e-01
+      1.2379    22     2x6x6   1.0      0.17   2.612e-01
+      1.6443    22     3x6x6   1.0      0.17   2.520e-01
+      1.8211    22     2x4x4   3.0      0.51   6.896e-01
+      2.0343    22     2x8x8   1.0      0.17   5.767e-01
+      2.2196    26     2x4x4   1.0      0.17   3.300e-01
+      2.4315    22     2x6x6   2.0      0.34   4.866e-01
+      3.1932    22     3x6x6   2.0      0.34   4.484e-01
+      3.6884    22     2x6x6   3.0      0.51   5.662e-01
+      3.9578    22     2x8x8   2.0      0.34   1.022e+00
+      4.4387    26     2x4x4   2.0      0.34   4.664e-01
+      4.5141    26     2x6x6   1.0      0.17   2.105e-01
+      4.7748    22     3x6x6   3.0      0.51   5.951e-01
+      6.7326    26     2x4x4   3.0      0.51   5.525e-01
+      6.7407    26     3x6x6   1.0      0.17   2.181e-01
+      7.0981    26     2x8x8   1.0      0.17   3.424e-01
+      9.1318    26     2x6x6   2.0      0.34   4.194e-01
+     13.2897    26     3x6x6   2.0      0.34   3.999e-01
+     13.8435    26     2x6x6   3.0      0.51   9.503e-01
+     13.9162    26     2x8x8   2.0      0.34   5.781e-01
+     20.1399    26     3x6x6   3.0      0.51   9.531e-01
+     21.0928    26     2x8x8   3.0      0.51   8.952e-01
+         nan    22     2x8x8   3.0      0.51   GMRES did not converge: info
+
+  collapse check -- spread of diff within rho bands
+          rho band   n    min diff    max diff    ratio
+           1.0-2.0   4   2.520e-01   6.896e-01     2.74
+           2.0-4.0   6   3.300e-01   1.022e+00     3.10
+    4.0-1000000000.0  12   2.105e-01   9.531e-01     4.53
+
+  MEASURED: THE COLLAPSE ONTO rho IS REFUTED. The spread within a rho
+  band is 5-6x, so the dress-after error is NOT governed by the
+  spectral radius. Sorting the same points by CONTRAST instead gives
+  ranges 0.13-0.34 (T=1), 0.26-0.74 (T=2), 0.35-1.11 (T=3) -- a ~3x
+  spread, still not a collapse but a far better organising variable.
+
+  rho WAS A CONFOUND in the earlier sweeps. They raised T and the
+  lattice together, rho rose with both, and the growth was attributed
+  to rho. The claim that the error 'grows from ~10% at rho < 1 to
+  70-90% at rho > 2.5' was reading a contrast effect off a rho axis.
+
+  What governs it is the magnitude of the OMITTED TERM itself,
+  DeltaG0 . T . psi: it scales with the contrast, and with DeltaG0's
+  strength at the voxels -- the refl = 26 rows are systematically
+  below refl = 22 at equal T, the deeper reflector giving a weaker
+  DeltaG0. rho(G0 T) is dominated by the whole-space G0, which grows
+  with lattice size and has nothing to do with the omission. That is
+  also why the Born estimate tracked well in the weak regime: the Born
+  estimate IS the magnitude of the omitted term.

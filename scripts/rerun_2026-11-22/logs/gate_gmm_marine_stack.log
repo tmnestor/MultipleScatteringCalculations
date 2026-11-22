@@ -1,0 +1,42 @@
+==============================================================================
+GATE -- GMM marine stack vs the Kennett recursion
+  free surface | ocean | 2 elastic layers | half-space
+  water a=1.5 rho=1.03; L1=(4.0, 2.3, 2.2, 2.0); L2=(5.5, 3.2, 2.6, 3.0); HS=(6.5, 3.8, 3.0)
+  PP component only -- convention-free under a diagonal similarity
+==============================================================================
+
+  water thickness 1.0 km
+     f (Hz)       p   [M1] top of water   [M2] free surface
+        3.0    0.02           1.377e-16           2.478e-16
+        5.0    0.02           1.467e-16           1.678e-16
+        8.0    0.02           1.589e-16           2.619e-16
+        3.0    0.08           1.414e-16           1.230e-16
+        5.0    0.08           1.570e-16           4.561e-16
+        8.0    0.08           4.519e-16           9.461e-16
+        3.0    0.14           5.004e-16           4.672e-16
+        5.0    0.14           3.029e-16           9.303e-16
+        8.0    0.14           2.201e-16           5.463e-16
+
+  water thickness 2.5 km
+     f (Hz)       p   [M1] top of water   [M2] free surface
+        3.0    0.02           1.373e-16           1.242e-16
+        5.0    0.02           4.149e-16           5.568e-16
+        8.0    0.02           1.422e-16           1.122e-16
+        3.0    0.08           1.372e-16           1.337e-16
+        5.0    0.08           1.202e-16           4.144e-16
+        8.0    0.08           8.770e-16           1.492e-15
+        3.0    0.14           6.069e-16           2.626e-16
+        5.0    0.14           1.469e-16           1.466e-16
+        8.0    0.14           1.557e-16           6.518e-17
+
+  [M1] top of water, no free surface : worst 8.770e-16
+  [M2] at the free surface           : worst 1.492e-15
+
+  [M3] water-thickness control -- the response MUST move
+    GMM     moves by 1.535e+00
+    Kennett moves by 1.535e+00
+    [M3] both carry a real water column : PASS
+
+==============================================================================
+GATE GMM marine stack: PASS
+==============================================================================

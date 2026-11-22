@@ -1,0 +1,40 @@
+====================================================================================
+MEASUREMENT -- ONE plane of cubes, which IS a uniform layer
+  a laterally uniform medium CANNOT depend on the periodic supercell size
+====================================================================================
+
+  [P1] supercell invariance -- every M describes the SAME physical layer
+          a (m)         M=2         M=4         M=6         M=8    spread
+         1.0000  7.0062e-03  3.8913e-03  3.0056e-03  2.5897e-03  1.07e+00
+         0.2500  7.0030e-03  3.8852e-03  2.9977e-03  2.5806e-03  1.07e+00
+
+  [P2] thinning the layer -- does the floor survive ka -> 0?
+            a (m)         ka     point G    cell-avg
+          2.00000    0.04000  3.9107e-03  2.5052e-03
+          1.00000    0.02000  3.8913e-03  2.4705e-03
+          0.50000    0.01000  3.8864e-03  2.4618e-03
+          0.25000    0.00500  3.8852e-03  2.4596e-03
+          0.12500    0.00250  3.8849e-03  2.4591e-03
+          0.06250    0.00125  3.8848e-03  2.4590e-03
+
+  [P3] the 1/M law: the lateral sum is truncated at M-1 cells
+          M       error     A + B/M      resid
+          2  7.0030e-03  6.8716e-03   1.88e-02
+          3  4.8468e-03  4.9537e-03   2.21e-02
+          4  3.8852e-03  3.9947e-03   2.82e-02
+          5  3.3440e-03  3.4193e-03   2.25e-02
+          6  2.9977e-03  3.0357e-03   1.27e-02
+          8  2.5806e-03  2.5562e-03   9.44e-03
+         10  2.3386e-03  2.2686e-03   3.00e-02
+         12  2.1807e-03  2.0768e-03   4.77e-02
+
+       fit: error = 1.1178e-03 + 1.1508e-02/M
+       => truncation tail at M = 4 is 2.877e-03, 74% of the measured error there
+       => the floor surviving M -> infinity is 1.118e-03
+
+====================================================================================
+  THE LATERAL SUM IS BROKEN: the answer depends on M by 1.1e+00,
+  and it cannot. Every M is the same physical layer. This is a defect
+  to fix, not physics to model -- and it would sit underneath every
+  hypothesis tested so far, none of which touched the lateral sum.
+====================================================================================

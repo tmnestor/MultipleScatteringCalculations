@@ -1,0 +1,38 @@
+========================================================================================
+GATE -- the ADP same-depth operator vs its Ewald resummation
+  pitch = 0.5 m, omega = (600+1800j) (damped so the direct sum converges)
+========================================================================================
+
+  [A0] arbiter self-convergence at k_par = 0
+       radius ->   80 cells (40 m):  drift 1.19e-04
+       radius ->  120 cells (60 m):  drift 6.20e-08
+
+  [A1] ADP closed form, Bloch-summed, vs the Ewald resummation
+                      k_par (1/m)           |K|    rel diff
+                   (0.000, 0.000)   1.44521e-10    3.76e-11
+                   (3.142, 0.000)   1.34810e-10    3.51e-12
+                   (3.142, 9.425)   3.74583e-11    2.45e-14
+
+  [A2] what truncation costs the ADP, at its own table sizes
+         table half-width   rel error vs exact
+                        1            1.615e-01
+                        3            3.870e-02
+                        7            1.436e-02
+                       15            2.290e-03
+
+========================================================================================
+  [A0] arbiter drift            : 6.20e-08
+  [A1] ADP sum vs Ewald         : 3.76e-11
+
+  PASS: the ADP's same-depth OPERATOR is correct. Its closed form,
+  summed over the lattice, is exactly what the Ewald route resums --
+  two independent constructions of the same object, agreeing at three
+  Bloch vectors including two away from k_par = 0 where a phase-sign
+  slip would show.
+
+  So what the ADP needs for an unbounded medium is a RESUMMATION, not
+  a reformulation. The composition is already verified at 5.1e-16
+  (gate_rung5c) and the inter-plane half is already exact by
+  reciprocal summation of the ADP's own vertical kernel. [A2] shows
+  the size of what truncation costs at the table widths actually used.
+========================================================================================

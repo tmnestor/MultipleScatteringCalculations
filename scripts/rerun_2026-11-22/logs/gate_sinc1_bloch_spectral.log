@@ -1,0 +1,31 @@
+==============================================================================
+GATE: sinc^1 in the Bloch kernel vs the real-space shell sum
+==============================================================================
+
+  d = 1.0, h = 0.5, omega = 60.0, M = 3, k_par = 0
+
+  [0] default path unchanged (cell_half_width=None): 0.00e+00
+
+  [1] dz = 0 must refuse, since Ewald cannot take a form factor
+      refused with a diagnostic naming where/why/fix: True
+
+  [2] averaged spectral kernel vs point + shell sum, at k_par = 0
+         dz   reach   |spectral - (pt + shell)|         rel
+          1       4                1.121827e-13    1.01e-04
+          1       8                6.368840e-14    5.73e-05
+          1      12                4.532438e-14    4.08e-05
+          2       4                9.527219e-14    8.57e-05
+          2       8                6.066128e-14    5.46e-05
+          2      12                4.432683e-14    3.99e-05
+
+==============================================================================
+PASS -- the spectral form factor reproduces the real-space shell
+sum at dz != 0, to better than 1e-3 relative once the shell has
+converged.  So for every non-equal-depth plane the source-cell
+average is now EXACT and needs no correction shell, no reach
+parameter, and no box to enlarge.
+
+REMAINING: dz = 0.  That is where the O(1/R) tail and the
+shape-dependence live, and it is the Ewald branch, so it needs
+an analytic tail rather than this multiplication.
+==============================================================================

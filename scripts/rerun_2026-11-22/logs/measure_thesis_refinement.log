@@ -1,0 +1,21 @@
+==============================================================================
+THESIS ORDERING UNDER REFINEMENT: slab D = 2 m in n planes of cubes of side D/n
+==============================================================================
+   n       ka  [T1] thesis   Toeplitz  [T2] dress-after  [T3] control  T1/T3  T2/T3  chain check
+Traceback (most recent call last):
+  File "<repo>/scripts/measure_thesis_refinement.py", line 290, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "<repo>/scripts/measure_thesis_refinement.py", line 272, in main
+    a1t, _ = run(geo, dressed=True, uniform=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/scripts/measure_thesis_refinement.py", line 185, in run
+    res = compute_slab_scattering(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<repo>/cubic_scattering/slab_scattering.py", line 1396, in compute_slab_scattering
+    raise ValueError(msg)
+ValueError: a periodic solve with a prebuilt psi0 needs the wave's lateral wavevector, bloch_k.
+  Where: cubic_scattering/slab_scattering.py, compute_slab_scattering(bloch_k=...)
+  Valid: (k_x, k_y) in rad/m, e.g. bloch_k=(omega * p, 0.0) for slowness p along x,
+         or bloch_k=(0.0, 0.0) at normal incidence
+  Fix:   pass bloch_k alongside psi0; it cannot be read off an arbitrary field

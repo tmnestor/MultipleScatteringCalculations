@@ -1,0 +1,104 @@
+T27 inter-voxel coupling study
+Background: alpha=5000.0, beta=3000.0, rho=2500.0
+Contrast: Dlambda=2.0e+09, Dmu=1.0e+09, Drho=100.0
+==============================================================================
+STEP 2 — CALIBRATION
+==============================================================================
+
+Green's tensor (vectorised vs elastodynamic_greens): max rel err = 6.45e-16
+Reciprocity P(-R) = P(R)^T: max rel err = 4.54e-16
+
+Normalisation W = diag(V, V, V, -V a^2/3 x6), field side M9^-1.
+Point limit (fixed R = 2 m, omega for ka(a=1) = 0.1; shrink a):
+     a/R          G          C          H          S
+   0.125   7.04e-03   2.64e-02   2.64e-02   6.37e-02
+   0.050   1.10e-03   4.19e-03   4.19e-03   1.04e-02
+   0.025   2.75e-04   1.05e-03   1.05e-03   2.61e-03
+
+Touching separations at a = 1 (block-scale deviation from point
+propagator — real O((a/R)^2) volume-averaging, not a bug):
+    face: G=1.19e-01  C=3.43e-01  H=3.43e-01  S=5.96e-01
+  corner: G=2.26e-02  C=1.68e-01  H=1.52e-01  S=1.86e-01
+
+Quadrature convergence of P entries at face separation (worst case,
+near-singular 1/r^3 kernel across the shared face):
+  n=8 vs n=10: max rel change (significant entries) = 4.32e-02
+  n=8 vs n=12: max rel change (significant entries) = 5.93e-02
+
+Source operator W T_hat[0:9,0:9] vs validated T_loc (Galerkin vs Path-A amplification):
+  ratio range over nonzero entries: [0.7671, 1.0062]
+
+==============================================================================
+STEP 2b — EXISTING ANALYTIC VOLUME-AVERAGED 9x9 PROPAGATOR vs QUADRATURE
+==============================================================================
+
+Scale convention (module given the PHYSICAL pitch d = 2a):
+  half-width a=0.5 (d=1.0): analytic G[0,0] / quadrature <G>[0,0] = 0.9991
+  half-width a=1.0 (d=2.0): analytic G[0,0] / quadrature <G>[0,0] = 0.9991
+  -> matches at every half-width: physical pitch threaded correctly.
+
+Static comparison (ka -> 0), per-block max deviation / block scale.
+  ref FD-avg = volume-averaged point propagator (the analytic module's
+  own definition); ref Galerkin = this study's M9^-1 P_quad W^-1.
+  (face-S deviation is the documented Galerkin projection envelope, not
+   a defect; the FD-avg face-S is biased — see docstrings.)
+     sep       ref          G          C          H          S
+    face    FD-avg   1.90e-03   4.94e-02   4.94e-02   6.90e-01
+    face  Galerkin   1.90e-03   5.41e-02   1.08e-01   4.78e-01
+    edge    FD-avg   2.52e-03   5.52e-04   5.38e-04   2.37e-02
+    edge  Galerkin   2.52e-03   3.76e-02   2.18e-02   2.08e-01
+  corner    FD-avg   3.24e-03   7.94e-06   5.10e-06   5.60e-05
+  corner  Galerkin   3.24e-03   3.52e-02   3.52e-02   2.35e-01
+
+Structural findings (static, unit pitch) — all RESOLVED:
+  [H fixed] engineering 2x now carried (H = W C^T): measured H_analytic/H_true on edge shear rows = [0.9995, 1.0005] (target 1)
+  [corner S fixed] C3-symmetry partners now equal: S[1,4]=7.026e-14 vs S[0,3]=7.026e-14; S[3,5]=4.975e-13 vs S[3,4]=4.975e-13
+  [face S] analytic S[0,0]=3.009e-12 (= bias-free truth) vs FD-avg arbiter 1.008e-11 (BIASED at face contact: tensor-Gauss diagonal artifact on the 1/w^3 kernel; see scripts/face_s_rederivation.py)
+
+Dynamic residual (edge/corner, where statics are clean; complex module):
+  dev(Re) = real-part deviation vs the complex FD-avg arbiter;
+  dev(Im) = imaginary (radiation) part deviation — now CARRIED, so
+  this is the residual, not 1.0 as in the old real-only series.
+     sep    ka n_ord   G dev(Re)  C dev(Re)  S dev(Re)   G dev(Im)  S dev(Im)
+    edge   0.1     2    7.19e-06   5.36e-04   2.40e-02    1.02e-07   5.36e-07
+    edge   0.1     3    8.51e-06   5.34e-04   2.40e-02    2.31e-10   2.60e-09
+    edge   0.5     2    9.60e-02   5.25e-02   9.93e-02    8.28e-03   3.33e-02
+    edge   0.5     3    6.80e-03   4.51e-03   3.26e-02    4.76e-04   2.72e-03
+  corner   0.1     2    4.23e-06   1.46e-05   5.22e-05    2.49e-07   2.09e-06
+  corner   0.1     3    1.70e-08   9.13e-06   5.44e-05    7.04e-10   1.21e-08
+  corner   0.5     2    3.49e-01   1.86e-01   2.73e-01    2.02e-02   1.13e-01
+  corner   0.5     3    3.10e-02   2.37e-02   4.02e-02    1.46e-03   1.24e-02
+
+==============================================================================
+STEPS 3-4 — TWO-VOXEL COUPLED SOLVE AND DECISION TABLE
+==============================================================================
+
+Observable: s = sum_voxels (M T_hat c_exc)[0:9] (net force + stress-dipole
+content of the pair's polynomial source).  Columns:
+  d(i,ii)      quadratic channels OFF in P only, M-orthogonalised (PRIMARY)
+  d(i,ii_raw)  same but raw-basis zeroing of P rows/cols 9-26 (artifact-prone:
+               raw squares carry monopole content; see docstring)
+  d(i,ii_K)    rows/cols 9-26 of coupling operator K = M^-1 P T_hat zeroed
+  d(i,iii)     9-component truncation everywhere (total quadratic effect)
+Incidence along z; P pol = z, SV pol = x.  a = 1.0 m, n = 8 per axis.
+
+wave    sep   ka     d(i,ii)  d(i,ii_raw)   d(i,ii_K)    d(i,iii)
+-----------------------------------------------------------------
+   P   face  0.1   4.094e-05    9.982e-03   4.093e-05   4.238e-05
+   P   face  0.3   8.739e-05    6.054e-03   8.626e-05   3.097e-04
+   P   face  0.5   1.753e-04    3.970e-03   1.654e-04   1.394e-03
+   P   edge  0.1   8.216e-06    3.778e-03   8.216e-06   1.400e-05
+   P   edge  0.3   1.426e-05    1.160e-03   1.408e-05   3.073e-04
+   P   edge  0.5   3.151e-05    1.316e-03   3.482e-05   1.428e-03
+   P corner  0.1   1.675e-06    7.487e-04   1.672e-06   1.150e-05
+   P corner  0.3   4.561e-06    3.039e-04   4.822e-06   3.080e-04
+   P corner  0.5   1.793e-05    1.186e-03   2.294e-05   1.432e-03
+  SV   face  0.1   1.800e-04    9.517e-03   2.358e-05   3.906e-04
+  SV   face  0.3   1.781e-04    5.425e-03   3.849e-05   3.810e-03
+  SV   face  0.5   2.069e-04    4.577e-03   9.942e-05   1.689e-02
+  SV   edge  0.1   6.956e-05    9.202e-03   4.580e-05   3.566e-04
+  SV   edge  0.3   2.607e-04    3.592e-03   2.331e-04   3.815e-03
+  SV   edge  0.5   6.825e-04    3.613e-03   6.086e-04   1.690e-02
+  SV corner  0.1   1.836e-05    1.033e-03   1.023e-05   3.522e-04
+  SV corner  0.3   6.698e-05    6.838e-04   5.755e-05   3.825e-03
+  SV corner  0.5   1.871e-04    2.032e-03   1.622e-04   1.696e-02

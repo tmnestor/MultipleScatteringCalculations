@@ -1,0 +1,112 @@
+==========================================================================
+GATE A - calibrate the invariant on the closed-form 9x9 propagator
+==========================================================================
+  (z,x,y)=(  1.0,  0.0,  0.0)  ||WP-(WP)^T||/||WP|| = 0.000e+00
+  (z,x,y)=(  0.0,  2.0,  0.0)  ||WP-(WP)^T||/||WP|| = 0.000e+00
+  (z,x,y)=(  1.5, -2.5,  3.5)  ||WP-(WP)^T||/||WP|| = 1.545e-23
+  (z,x,y)=( -4.0,  1.0,  2.0)  ||WP-(WP)^T||/||WP|| = 5.075e-19
+
+  GATE A: PASS  (worst 5.075e-19)
+  invariant:  P = W^-1 P^T W,  W = diag(1,1,1,1,1,1,.5,.5,.5)
+
+==========================================================================
+GATE B - layered_greens_9x9 must obey  G9(i<-j)(+k) = W^-1 G9(j<-i)(-k)^T W
+==========================================================================
+
+  1<->3, p=0.08:  overall rel = 1.127e+00
+    G (force->disp,    3x3): 1.499e+00
+    C (stress->disp,   3x6): 9.920e-01
+    H (force->strain,  6x3): 9.937e-01
+    S (stress->strain, 6x6): 1.144e+00
+
+  1<->3, p=0.15:  overall rel = 1.034e+00
+    G (force->disp,    3x3): 1.192e+00
+    C (stress->disp,   3x6): 9.883e-01
+    H (force->strain,  6x3): 9.941e-01
+    S (stress->strain, 6x6): 1.034e+00
+
+  2<->4, p=0.08:  overall rel = 1.068e+00
+    G (force->disp,    3x3): 1.193e+00
+    C (stress->disp,   3x6): 9.684e-01
+    H (force->strain,  6x3): 9.918e-01
+    S (stress->strain, 6x6): 1.070e+00
+
+  2<->4, p=0.15:  overall rel = 1.088e+00
+    G (force->disp,    3x3): 1.324e+00
+    C (stress->disp,   3x6): 1.009e+00
+    H (force->strain,  6x3): 9.989e-01
+    S (stress->strain, 6x6): 1.089e+00
+
+  GATE B: FAIL  (worst 1.127e+00)
+
+==========================================================================
+GATE C - localise to the 6x6 core
+==========================================================================
+  plain      ||M1-M2^T||/||M2^T||     = 1.408e+00
+  best +-1 diagonal signature (1, -1, 1, 1, -1, 1): 1.405e+00
+  symplectic J6                        = 6.577e-01
+
+  If the 6x6 also fails, the defect is NOT the A/B wrapper: it is
+  upstream, in the 6x6 source convention. Note riccati_greens_psv
+  documents its basis as [u_x, u_z, sigma_zz/(-iw), sigma_xz/(-iw)] --
+  a MIXED convention whose correct reciprocity weight is not yet derived.
+
+==========================================================================
+GATE D - the solved closed-form reciprocity law of the 6x6
+==========================================================================
+  f=  5.0 Hz  1->3  p=0.08:  rel = 5.537e-16
+  f=  5.0 Hz  2->4  p=0.15:  rel = 3.605e-16
+  f=  5.0 Hz  1->4  p=0.12:  rel = 5.670e-16
+  f= 10.0 Hz  1->3  p=0.08:  rel = 6.302e-16
+  f= 10.0 Hz  2->4  p=0.15:  rel = 4.144e-16
+  f= 10.0 Hz  1->4  p=0.12:  rel = 6.096e-16
+  f= 25.0 Hz  1->3  p=0.08:  rel = 6.373e-16
+  f= 25.0 Hz  2->4  p=0.15:  rel = 4.605e-16
+  f= 25.0 Hz  1->4  p=0.12:  rel = 7.841e-16
+
+  GATE D: PASS  (worst 7.841e-16)
+
+==========================================================================
+GATE E - corrected 9x9 (source normalisation + adjoint B) vs GATE B
+==========================================================================
+  f=  5.0 Hz  1->3  p=0.08:  rel = 4.349e-16
+  f=  5.0 Hz  2->4  p=0.15:  rel = 5.135e-16
+  f=  5.0 Hz  1->4  p=0.12:  rel = 9.286e-16
+  f= 10.0 Hz  1->3  p=0.08:  rel = 7.559e-16
+  f= 10.0 Hz  2->4  p=0.15:  rel = 4.552e-16
+  f= 10.0 Hz  1->4  p=0.12:  rel = 3.828e-16
+  f= 25.0 Hz  1->3  p=0.08:  rel = 4.362e-16
+  f= 25.0 Hz  2->4  p=0.15:  rel = 9.529e-16
+  f= 25.0 Hz  1->4  p=0.12:  rel = 5.997e-16
+
+  GATE E: PASS  (worst 9.529e-16)
+
+==========================================================================
+GATE F - within-matrix block structure (homogeneous limit)
+==========================================================================
+  f=  6.0 Hz  p=0.05:  ||WM-(WM)^T||/||WM|| = 1.047e+00
+  f=  6.0 Hz  p=0.12:  ||WM-(WM)^T||/||WM|| = 7.181e-01
+  f= 12.0 Hz  p=0.05:  ||WM-(WM)^T||/||WM|| = 7.367e-01
+  f= 12.0 Hz  p=0.12:  ||WM-(WM)^T||/||WM|| = 4.170e-01
+
+  GATE F: FAIL  (worst 1.047e+00)
+
+==========================================================================
+VERDICT
+==========================================================================
+  A  closed-form 9x9 invariant W P symmetric : PASS
+  B  layered 9x9 obeys that invariant       : FAIL
+  D  solved 6x6 reciprocity law             : PASS
+  E  CORRECTED 9x9 obeys the invariant      : PASS
+  F  within-matrix block structure          : FAIL
+
+  NOT SAFE TO COMPOSE.  E passes but F fails: the corrections fix
+  the behaviour under source<->receiver SWAP while leaving the
+  WITHIN-MATRIX block structure wrong.  E cannot see this -- it
+  compares two different matrices -- which is why an earlier run
+  of this script wrongly reported the conventions reconciled.
+  Symptom: against the closed form the ratio varies 3.9 -> 16.2
+  with offset and differs per block (G 15.3, C 4.5, H 2.6, S 3.9).
+  Fix the A/B wrapper until F passes; only then compose.
+==========================================================================
+  RECORD REPRODUCED (A and D hold; the raw wrapper fails B and F as documented).
