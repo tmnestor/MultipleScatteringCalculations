@@ -78,8 +78,10 @@ cells cannot represent, so the two bases must be matched. In three dimensions th
 far field is the sum of two terms, both available before the solve: the error of the term of first order
 in the contrast, from one pass over the cells and in closed form for a cell of uniform contrast, with
 leading term $-(\bk_{\mathrm{in}}\cdot\bk_{\mathrm{out}})\,d^2/12$ for a constant field; and the nonlinear
-fraction of the response times the relative projection error of the medium, times a factor of order one
-that we derive in closed form, the nonlinear fraction itself following from two products with the matrix
+fraction of the response times the relative projection error of the medium, times a factor that we derive,
+in closed form and of order one for a body small against the wavelength, and at any frequency for constant
+cells, where the wave's own variation across a cell adds the layer's constant for each of the two waves,
+the nonlinear fraction itself following from two products with the matrix
 of a coarse grid, with no solve. A sphere whose contrast falls smoothly to zero converges at the orders
 the layer predicts, and against its exact solution the second term has one constant, for constant and
 degree-one cells, on every grid. On that sphere, given the same cell mean of the medium, the Galerkin cell of
@@ -188,7 +190,8 @@ dimensions} the smoothly graded sphere converges at second order with the mean-o
 predicts (\S\ref{sec:sphere}). And the error of a three-dimensional body separates into two terms, both
 known before the solve: the error of the term of first order, in closed form for a cell of uniform
 contrast, and the nonlinear fraction of the response times the relative projection error of the medium,
-times a factor of order one derived in closed form (\S\S\ref{sec:twoterm}--\ref{sec:which}).
+times a factor derived in closed form for a body small against the wavelength and, for constant cells,
+at any frequency (\S\S\ref{sec:twoterm}--\ref{sec:which}).
 
 \paragraph{What the Galerkin cell gains, and what it costs.} The voxels here, the collocation voxel
 apart, are Galerkin cells: each is tested against its own polynomials, so every coupling is a double integral over two
@@ -1758,39 +1761,98 @@ Let $\cE_r$ be the relative projection error of the medium on the grid,
 \end{equation}
 with $f(\bx)$ the profile of the contrast and $\Pi_r$ the $L^2$ projection onto the polynomials of
 degree at most $r$ on each cell. Subtract from the error of the far field the first-order error of
-\S\ref{sec:born}. What is left, divided by $\cE_r$, is one constant (Table~\ref{tab:twoterm}). The test
+\S\ref{sec:born}. What is left, divided by $\cE_r$, settles on one constant as the cells shrink
+(Table~\ref{tab:twoterm}). The test
 body is a sphere of radius $a$ with a uniform core of radius $0.75a$ and a shell across which the
 contrast falls smoothly to zero, at $k_Sa=0.5$, whose exact solution is known; the error is the largest
 difference of the far field from the exact one over nine scattering angles, relative to its peak.
+
+\paragraph{What the table holds.} Each row is one uniform grid of cubes laid over the sphere.
+\begin{itemize}
+\item \emph{Across} is the number of cells along a diameter and \emph{cells} the number that overlap the
+sphere; each cell carries $9$ unknowns if constant and $36$ if of degree one, so the largest grids hold
+$2.56$ million unknowns (constant) and $0.71$ million (degree one).
+\item \emph{Error} is the error of the far field as just defined.
+\item $\cE$ is the relative projection error of Eq.~\eqref{eq:proj} at the degree of the cells. It is
+computed from the model and the grid alone, before anything is solved.
+\item \emph{Error}$/\cE$ is the test of the simplest law one might hope for, that the whole error is a
+fixed multiple of $\cE$.
+\item \emph{Rest}$/\cE$ is the test of the two-term law. The rest is the error less the first-order error
+of \S\ref{sec:born}, which is also known before the solve. The law says this ratio is the same on every
+grid.
+\end{itemize}
+The first four rows of the constant cells and the first three of the degree-one cells were computed
+twice, by a dense direct solver and by a matrix-free solver that shares the coupling blocks but not the
+assembly or the solve (Appendix~\ref{app:solver}); the two agree to $2\times10^{-9}$ of the error. The
+rows beyond are the matrix-free solver's alone, the dense one stopping near $20\,000$ unknowns.
 \begin{table}[htbp]
 \centering
-\caption{The error of the far field in two terms, on the sphere with a graded shell. The rest is the
-error less the first-order error, which is computed without a solve. $\cE$ is the relative projection
-error of Eq.~\eqref{eq:proj} at the degree of the cells. The nonlinear fraction of the exact response
-is $0.0151$.}\label{tab:twoterm}
+\caption{The error of the far field in two terms, on the sphere with a graded shell at $k_Sa=0.5$. The
+rest is the error less the first-order error, which is computed without a solve. $\cE$ is the relative
+projection error of Eq.~\eqref{eq:proj} at the degree of the cells. The nonlinear fraction of the exact
+response is $\nu=0.0151$. The columns are defined in the text.}\label{tab:twoterm}
 \small
-\begin{tabular}{@{}lrccc@{}}
+\begin{tabular}{@{}lrrcccc@{}}
 \toprule
-cells & number & error & error / $\cE$ & rest / $\cE$ \\
+cells & across & cells & error & $\cE$ & error / $\cE$ & rest / $\cE$ \\
 \midrule
-constant ($p=r=0$) & $64$   & $8.17\times10^{-3}$ & $0.0309$ & $0.0149$ \\
- & $184$  & $3.18\times10^{-3}$ & $0.0235$ & $0.0151$ \\
- & $408$  & $1.61\times10^{-3}$ & $0.0196$ & $0.0154$ \\
- & $1256$ & $6.77\times10^{-4}$ & $0.0166$ & $0.0158$ \\
+constant ($p=r=0$) & $4$ & $64$ & $8.17\times10^{-3}$ & $2.64\times10^{-1}$ & $0.0309$ & $0.0149$ \\
+ & $6$  & $184$      & $3.18\times10^{-3}$ & $1.36\times10^{-1}$ & $0.0235$ & $0.0151$ \\
+ & $8$  & $408$      & $1.61\times10^{-3}$ & $8.22\times10^{-2}$ & $0.0196$ & $0.0154$ \\
+ & $12$ & $1256$     & $6.77\times10^{-4}$ & $4.09\times10^{-2}$ & $0.0166$ & $0.0158$ \\
+ & $16$ & $2728$     & $4.01\times10^{-4}$ & $2.53\times10^{-2}$ & $0.0159$ & $0.0160$ \\
+ & $24$ & $8504$     & $1.91\times10^{-4}$ & $1.18\times10^{-2}$ & $0.0162$ & $0.0164$ \\
+ & $32$ & $19\,544$  & $1.11\times10^{-4}$ & $6.79\times10^{-3}$ & $0.0163$ & $0.0166$ \\
+ & $48$ & $63\,256$  & $5.04\times10^{-5}$ & $3.06\times10^{-3}$ & $0.0165$ & $0.0168$ \\
+ & $64$ & $146\,864$ & $2.86\times10^{-5}$ & $1.73\times10^{-3}$ & $0.0165$ & $0.0169$ \\
+ & $80$ & $283\,008$ & $1.84\times10^{-5}$ & $1.11\times10^{-3}$ & $0.0165$ & $0.0169$ \\
 \midrule
-degree one ($p=r=1$) & $64$  & $8.99\times10^{-4}$ & $0.0147$ & $0.0148$ \\
- & $184$ & $4.62\times10^{-4}$ & $0.0146$ & $0.0146$ \\
- & $408$ & $2.20\times10^{-4}$ & $0.0146$ & $0.0146$ \\
+degree one ($p=r=1$) & $4$ & $64$ & $8.99\times10^{-4}$ & $6.12\times10^{-2}$ & $0.0147$ & $0.0148$ \\
+ & $6$  & $184$     & $4.62\times10^{-4}$ & $3.15\times10^{-2}$ & $0.0146$ & $0.0146$ \\
+ & $8$  & $408$     & $2.20\times10^{-4}$ & $1.51\times10^{-2}$ & $0.0146$ & $0.0146$ \\
+ & $12$ & $1256$    & $6.80\times10^{-5}$ & $4.53\times10^{-3}$ & $0.0150$ & $0.0150$ \\
+ & $16$ & $2728$    & $2.56\times10^{-5}$ & $1.67\times10^{-3}$ & $0.0154$ & $0.0154$ \\
+ & $24$ & $8504$    & $6.01\times10^{-6}$ & $3.87\times10^{-4}$ & $0.0155$ & $0.0155$ \\
+ & $32$ & $19\,544$ & $2.02\times10^{-6}$ & $1.30\times10^{-4}$ & $0.0155$ & $0.0155$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-For constant cells the ratio of error to projection error varies by a factor of $1.86$ across the
-grids; the rest over the projection error varies by $1.06$. For degree-one cells the first-order error is small and both ratios are near $0.0146$. The constant
-is close to the nonlinear fraction of the exact response, $\nu=\lvert u-T_1\rvert/\lvert u\rvert=0.0151$.
-This is the law of the layer (\S\ref{sec:hetero}) carried to three dimensions: the error of the
-nonlinear part is that part times the relative projection error of the medium, times a factor of order
-one that \S\ref{sec:factor3d} derives. It holds for constant cells as it does for degree-one cells, once the
-first-order error is accounted for; without that, constant cells appear not to follow it.
+
+\paragraph{How to read it.} Take the constant cells at $4$ and at $80$ across. The error falls from
+$8.17\times10^{-3}$ to $1.84\times10^{-5}$, a factor of $445$, and the projection error from $0.264$ to
+$1.11\times10^{-3}$, a factor of $238$. Had the whole error been a fixed multiple of $\cE$ the two factors
+would be equal; they are not, and error$/\cE$ falls from $0.0309$ to $0.0165$, a factor of $1.9$. With
+the first-order error removed the ratio moves from $0.0149$ to $0.0169$, a factor of $1.14$, and from
+$64$ to $80$ cells across, where $\cE$ falls by a further third, it does not move in the fourth decimal
+place. For degree-one cells the first-order error is a tenth of the error on the coarsest grid and a
+hundredth of it or less from $12$ cells across, so the two ratios nearly coincide; they move from $0.0146$
+to $0.0155$ and are level from $20$ cells across.
+
+\paragraph{What it means.} The rest is a fixed multiple of the projection error once the cells are small,
+$0.0169$ for constant cells and $0.0155$ for degree-one cells, and both multiples are close to the
+nonlinear fraction of the exact response, $\nu=\lvert u-T_1\rvert/\lvert u\rvert=0.0151$: $1.12\,\nu$ and
+$1.03\,\nu$. This is the law of the layer (\S\ref{sec:hetero}) carried to three dimensions: the error of
+the nonlinear part is that part times the relative projection error of the medium, times a factor of
+order one that \S\ref{sec:factor3d} derives. It holds for constant cells as it does for degree-one cells,
+once the first-order error is accounted for; without that, constant cells appear not to follow it.
+
+\paragraph{Why the ratio rises on coarse grids.} The rise from $0.0149$ to $0.0169$ is not a part of the
+first-order error left behind in the rest. Two measurements show this. At a tenth of the contrast, where
+the response is ten times closer to linear ($\nu=0.00156$), the same rise appears in the same proportion:
+the rest over $\nu\cE$ goes $1.00$, $1.02$, $1.06$, $1.10$, $1.11$ at $4$, $8$, $16$, $32$ and $40$ cells
+across, against $0.99$, $1.02$, $1.06$, $1.10$, $1.10$ at the full contrast. A part of the first-order
+error would not scale with $\nu$; this does, so it belongs to the nonlinear part. And the factor of the
+term of second order, measured by itself (\S\ref{sec:factor3d}), rises with the number of cells in the
+same way towards its closed-form limit. The derivation of the factor is for cells small against the scale
+on which the medium varies, here the shell of width $a/4$, which $4$ cells across a diameter of $2a$ do
+not resolve at all; for constant cells the ratio is level once the shell holds about eight cells, for
+degree-one cells about three.
+
+\paragraph{Cautions.} The table is one body at one frequency. The limit of the ratio is $\nu$ times the
+factor $F$ of \S\ref{sec:factor3d} at the angle and for the wave type where the error is largest, and $F$
+depends on the frequency (\S\ref{sec:factorfreq}), so $1.12$ and $1.03$ are properties of this test and
+not universal numbers. The largest grid took five minutes on a desktop computer, almost all of it in
+building the kernel; the solve took seven matrix-vector products at every size.
 
 \subsection{The factor of the second term in three dimensions}\label{sec:factor3d}
 
@@ -1905,16 +1967,187 @@ distance falling as about $h^{1.7}$; for degree-one cells the factor is within $
 cells. The scheme on $8$ cells is three quarters of the way to the limit
 for constant cells.
 
+\paragraph{The scheme carried to the limit.} The dense solver cannot go beyond $8$ cells here, so the
+approach of the scheme itself to the limit was left to the direct evaluation. The matrix-free solver
+removes that restriction (\path{scripts/measure_t2_factor_fft.py}). Table~\ref{tab:t2factorfft} gives the
+factor of the scheme with constant cells on grids of $4$ to $64$ cells across, the same body, contrast and
+frequency as Table~\ref{tab:t2factor}. Each entry is formed as follows: the scheme is solved twice, with
+the contrast multiplied by $+0.3$ and by $-0.3$; half the sum of the two far fields, divided by $0.3^2$, is
+the scheme's $T_2$, the terms of odd order cancelling; the exact $T_2$ is the same combination of the exact
+solution; and $F$ is their difference over the exact $T_2$ and over $\cE$, as Eq.~\eqref{eq:t2factor}
+defines it.
+\begin{table}[htbp]
+\centering
+\caption{The factor $F$ of the scheme with constant cells, by the matrix-free solver, on grids of $4$ to
+$64$ cells across a diameter, against the closed-form limit of Eqs.~\eqref{eq:F0} and \eqref{eq:Fps}. The
+sphere of Table~\ref{tab:t2factor} at $k_Sa=0.125$.}\label{tab:t2factorfft}
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+outgoing wave & $4$ & $8$ & $16$ & $32$ & $64$ & limit \\
+\midrule
+P at $0.2$\,rad  & $1.049$ & $1.073$ & $1.091$ & $1.097$ & $1.099$ & $1.101$ \\
+P at $\pi/2$     & $0.962$ & $0.944$ & $0.931$ & $0.925$ & $0.924$ & $0.923$ \\
+SV at $0.2$\,rad & $1.250$ & $1.375$ & $1.464$ & $1.499$ & $1.509$ & $1.516$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+Read the last row: for an outgoing SV wave the factor is $1.250$ on $4$ cells and $1.509$ on $64$, against
+a limit of $1.516$; the distance to the limit is $0.266$, $0.141$, $0.052$, $0.017$ and $0.007$, falling
+by a factor of two to three for each halving of the cell. All three rows approach their limits from the
+side of one, the value in a layer: a coarse grid does not yet see the cell's axes as distinct from the
+body's directions. This is the rise of the last column of Table~\ref{tab:twoterm}, seen there in the
+whole nonlinear part and here in its leading term alone. The $64$-cell grid holds $146\,864$ cells and
+its two solves took $18$ minutes.
+
 \paragraph{What it means for the second term.} The second term of the error is the nonlinear part of the
-response times the relative projection error times $F$, a factor of order one that depends on the
+response times the relative projection error times $F$, a factor that depends on the
 background, the direction of scattering and the type of wave, and on the cells through their axes, not
-on the grid. For this background and contrast it lies between $0.92$ and $1.52$ for constant cells and
+on the grid. For this background and contrast, and a body small against the wavelength, it lies between
+$0.92$ and $1.52$ for constant cells and
 between $0.95$ and $1.34$ for degree-one cells, and it is one in a layer, which is why the layer's law is an
 equality. The constant of Table~\ref{tab:twoterm}, formed from the largest error over the angles and
-with every order above the first included, is $0.96$ to $1.05$ times $\nu$, inside that range. The second term is therefore known before
-the solve to within $F$, and in closed form once the direction of observation is chosen. The derivation
-holds for the term of second order, in the long-wave limit, for a body whose spectrum is isotropic; the
-terms of higher order are measured, not derived.
+with every order above the first included, is $0.97$ to $1.12$ times $\nu$, inside that range. The second term is therefore known before
+the solve to within $F$, and in closed form once the direction of observation is chosen. The closed forms
+hold for the term of second order, in the long-wave limit, for a body whose spectrum is isotropic; the
+terms of higher order are measured, not derived. What becomes of $F$ when the body is not small against
+the wavelength is the subject of \S\ref{sec:factorfreq}.
+
+\subsection{The factor at a finite frequency}\label{sec:factorfreq}
+
+\paragraph{The observation.} The closed forms of \S\ref{sec:factor3d} take the incident and the outgoing
+wave as uniform strains across the body. Measured at higher frequencies on the same sphere, with constant
+cells, the factor leaves those values: it stays within $2\%$ of them up to $k_Sa=0.25$, moves by up to a
+fifth at $k_Sa=1$, and at $k_Sa=4$, where the sphere is $1.3$ shear wavelengths across, it lies between
+$1.4$ and $4.2$ (Table~\ref{tab:factorfreq}). A factor that grows with the frequency is not a factor of
+order one, and the second term would not be known before the solve unless the growth is understood.
+
+\paragraph{Why it happens.} A constant cell replaces the product of the profile $f$ and a plane wave
+$w=\mathrm{e}^{\mathrm{i}\bk\cdot\bx}$ by the product of their cell means. What the cell loses is, to
+leading order, a sawtooth with the slope of the product,
+\begin{equation}\label{eq:slope}
+  \nabla(fw)=w\,\bigl(\nabla f+\mathrm{i}\bk f\bigr).
+\end{equation}
+The wave's own slope $\mathrm{i}\bk f$ stands beside the profile's slope $\nabla f$. In the long-wave
+limit the first is negligible and the residual is that of the profile alone, which is how
+\S\ref{sec:factor3d} treated it. At a finite frequency both are present, and where the profile is flat
+(the core of the sphere) the wave's slope is the only one. The relative projection error $\cE$ measures
+$\nabla f$ only, so an error normalised by it grows as $k^2$ times the ratio
+\begin{equation}\label{eq:L2}
+  L^2=\frac{\int f^2\,\dd V}{\int\lvert\nabla f\rvert^2\,\dd V},
+\end{equation}
+the square of the length over which the profile varies ($L=0.27a$ for the sphere of the test).
+
+\paragraph{The derivation.} Write the second-order term as the bilinear form
+$T_2=\langle fw_{\mathrm{out}},K\,fw_{\mathrm{in}}\rangle$, with
+$w_{\mathrm{in}}=\mathrm{e}^{\mathrm{i}\bk_{\mathrm{in}}\cdot\bx}$,
+$w_{\mathrm{out}}=\mathrm{e}^{-\mathrm{i}\bk_{\mathrm{out}}\cdot\bx}$ and $K$ now the operator of the
+background at the frequency of the wave, and write $T_2[A;B]$ for the same form with the profile $B$ in
+the first scattering and $A$ in the second, so that $T_2=T_2[f;f]$. With $g=fw-\bar f\,\bar w$ the part
+a cell loses on either side (bars for cell means), the error is
+$\langle g_{\mathrm{out}},Kfw_{\mathrm{in}}\rangle+\langle fw_{\mathrm{out}},Kg_{\mathrm{in}}\rangle
+-\langle g_{\mathrm{out}},Kg_{\mathrm{in}}\rangle$ exactly, as in Eq.~\eqref{eq:t2factor}. Two facts about
+a sawtooth of slope $\mathbf{G}$ in cells of half-width $h$, the same two as in the static case, evaluate
+the three forms to order $h^2$.
+\begin{itemize}
+\item Against a smooth field the sawtooth acts as $-(h^2/3)\,\nabla\cdot\mathbf{G}$, and the product of
+the cell means differs from the mean of the product by $(h^2/3)\nabla f\cdot\nabla w$. Together they give
+$g\to(h^2/3)\,w\,\bigl(-\nabla^2f+k^2f\mp\mathrm{i}\bk\cdot\nabla f\bigr)$, the upper sign for the incident
+side. The term $k^2f$ returns $T_2$ itself.
+\item The product of two sawtooths along axis $j$ has the mean $(h^2/3)G_jG'_j$, and its harmonics lie on
+that axis at wavenumbers of order $1/h$, far above $k$, where $K$ is the static strain Green operator
+along the axis, $\boldsymbol\Gamma(\mathbf{e}_j)$, whatever the frequency.
+\end{itemize}
+Dividing by $\cE=(h^2/3)/L^2$, the factor is
+\begin{equation}\label{eq:Fdyn}
+\begin{split}
+  F={}&\bigl(k_{\mathrm{in}}^2+k_{\mathrm{out}}^2\bigr)L^2
+     +\frac{L^2}{T_2}\Bigl(T_2\bigl[-\nabla^2f+\mathrm{i}\bk_{\mathrm{out}}\cdot\nabla f\,;f\bigr]
+     +T_2\bigl[f\,;-\nabla^2f-\mathrm{i}\bk_{\mathrm{in}}\cdot\nabla f\bigr]\Bigr)\\
+     &-\frac{L^2}{T_2}\sum_{j=1}^{3}m(\mathbf{e}_j)\int w_{\mathrm{out}}w_{\mathrm{in}}
+     \bigl(\partial_jf-\mathrm{i}k_{\mathrm{out},j}f\bigr)\bigl(\partial_jf+\mathrm{i}k_{\mathrm{in},j}f\bigr)\,\dd V ,
+\end{split}
+\end{equation}
+with $m(\mathbf{e}_j)$ the multiplier of Eq.~\eqref{eq:mfactor} along axis $j$. The three lines are
+called below the wave part, the profile part and the local part. It does not depend on $h$: it is the
+limit of the scheme's factor as the cells shrink, at any frequency. At zero frequency the wave part
+vanishes, the profile part is $2$ for a body with an isotropic spectrum and the local part is
+$m_{\mathrm{ax}}/\bar m$, which is Eq.~\eqref{eq:F0}.
+
+\paragraph{The wave part is the layer's constant.} In terms of the cell width $d=2h$ the wave part of the
+relative error of $T_2$ is $\bigl[(k_{\mathrm{in}}d)^2+(k_{\mathrm{out}}d)^2\bigr]/12$: the constant
+$c_0=1/12$ of the layer, Eq.~\eqref{eq:cp}, once for the wave that arrives and once for the wave that
+leaves. It does not involve the profile at all. For a body many wavelengths across it is the largest of
+the three parts, and the second term of the error is then governed by the number of cells in a
+wavelength, as the first term is, and not by the number of cells across the gradients of the medium.
+
+\paragraph{The test.} Equation~\eqref{eq:Fdyn} was evaluated and set against the factor of the scheme
+(\path{scripts/measure_t2_factor_dynamic.py}). The wave part is closed. The local part needs
+$\boldsymbol\Gamma(\mathbf{e}_j)$ in closed form and volume integrals of the profile. The profile part has
+no closed form at a finite frequency; it was evaluated on a fine grid of $48$ cells across, which plays
+the part of the continuum, with one application of the coupling operator for each first scattering and no
+solve. The exact $T_2$ is that of the radial reference. The scheme's factor is that of
+Table~\ref{tab:t2factorfft}, on $32$ cells across, at each frequency.
+\begin{table}[htbp]
+\centering
+\caption{The factor $F$ of the second term for constant cells against frequency: Eq.~\eqref{eq:Fdyn}
+(predicted) and the scheme on $32$ cells across (scheme). The sphere of Table~\ref{tab:t2factor}, a
+stiffness contrast, an incident P wave. The last three columns are the parts of the prediction for the
+outgoing SV wave at $0.2$\,rad.}\label{tab:factorfreq}
+\small
+\begin{tabular}{@{}lcccccccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{P at $0.2$\,rad} & \multicolumn{2}{c}{SV at $0.2$\,rad} &
+   \multicolumn{2}{c}{SV at $1.91$\,rad} & \multicolumn{3}{c}{parts, SV at $0.2$\,rad} \\
+$k_Sa$ & predicted & scheme & predicted & scheme & predicted & scheme & wave & profile & local \\
+\midrule
+$0.125$ & $1.083$ & $1.097$ & $1.489$ & $1.499$ & $1.488$ & $1.497$ & $0.002$ & $1.971$ & $0.484$ \\
+$0.25$  & $1.081$ & $1.095$ & $1.478$ & $1.487$ & $1.471$ & $1.480$ & $0.006$ & $1.954$ & $0.483$ \\
+$0.5$   & $1.072$ & $1.086$ & $1.441$ & $1.450$ & $1.410$ & $1.418$ & $0.024$ & $1.897$ & $0.480$ \\
+$1$     & $1.060$ & $1.073$ & $1.377$ & $1.385$ & $1.238$ & $1.244$ & $0.098$ & $1.763$ & $0.484$ \\
+$2$     & $1.147$ & $1.160$ & $1.487$ & $1.496$ & $0.913$ & $0.915$ & $0.391$ & $1.642$ & $0.545$ \\
+$4$     & $1.712$ & $1.725$ & $2.475$ & $2.484$ & $4.170$ & $4.192$ & $1.562$ & $1.600$ & $0.687$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{How to read the table.} Take the row $k_Sa=4$ and the outgoing SV wave at $1.91$\,rad. The
+static closed form gives $1.516$ at every angle. The scheme shows $4.192$, and Eq.~\eqref{eq:Fdyn} gives
+$4.170$. In the row $k_Sa=2$ the same wave shows $0.915$ against a prediction of $0.913$: the factor falls
+before it rises, and the prediction follows it down as well as up. For the outgoing SV wave at $0.2$\,rad
+the last three columns show how: the wave part grows as the square of the frequency, from $0.002$ to
+$1.562$, and is $(k_{\mathrm{P}}^2+k_{\mathrm{S}}^2)L^2$ exactly; the profile part falls from its static
+value of $2$ to $1.6$; the local part, which is the cell's axes, changes least.
+
+\paragraph{What it shows.} Over a range of $32$ in frequency and at every one of the nine angles, for
+both outgoing waves, the prediction and the scheme agree to between $0.2\%$ and $1.8\%$, apart from the SV
+wave at right angles, where its $T_2$ passes through zero and the ratio that defines $F$ is not
+meaningful. The agreement is within what the two computations allow. The scheme on $32$ cells is about
+$1\%$ short of its own limit (Table~\ref{tab:t2factorfft}: $1.499$ against $1.516$), and the fine grid
+leaves the profile part about $1\%$ short of its own (at $k_Sa=0.125$ it is $1.860$, $1.960$ and $1.980$
+on $16$, $32$ and $48$ cells against the exact $2$).
+
+At a finite frequency $F$ is complex: the error of $T_2$ has a part in phase with $T_2$, which the table
+gives, and a part in quadrature, which vanishes in the long-wave limit. The quadrature part is predicted
+by Eq.~\eqref{eq:Fdyn} as well. At $k_Sa=4$ it reaches $+0.920$ predicted against $+0.933$ in the scheme
+(outgoing P at $2.94$\,rad) and $-0.332$ against $-0.333$ (outgoing SV at $0.89$\,rad), and at $k_Sa=1$
+and $2$ the two agree to $0.004$ at every angle compared.
+
+\paragraph{What it means.} The second term of the error is known before the solve at any frequency, but
+not as a number of order one times $\nu\cE$. In absolute terms it is $h^2/3$ times three quantities, none
+of which needs a solve: the nonlinear part times $k_{\mathrm{in}}^2+k_{\mathrm{out}}^2$; two second-order
+terms with one profile replaced, each one application of the coupling operator on a grid that resolves
+the medium; and a sum of three integrals of the profile. The rule for choosing a grid changes with the
+size of the body. Where it is small against the wavelength the cells must resolve the gradients of the
+medium, and $F$ is the closed form of \S\ref{sec:factor3d}. Where it is large they must also resolve the
+wave, with the layer's constant.
+
+\paragraph{Cautions.} The derivation and the test are for constant cells, a stiffness contrast, the term
+of second order and one body. For degree-one cells the same reasoning applies with second derivatives in
+place of first, but the scheme then treats the two sides differently (the source is the product of the
+two linear forms, kept whole, while the readout projects the product), and that case is not derived here.
+A density contrast adds a channel whose local part vanishes at this order. Neither has been tested at a
+finite frequency.
 
 \subsection{The nonlinear fraction without a solve}\label{sec:nu}
 
@@ -2302,13 +2535,22 @@ is singular.
 \begin{itemize}
 \item \emph{Established twice.} The wave factor, Eqs.~\eqref{eq:factor} and \eqref{eq:lead}: a symbolic
 derivation and an independent numerical implementation, and both against the solver.
-\item \emph{Established against exact solutions, by one implementation.} The two-term separation
-(Table~\ref{tab:twoterm}) and the matched-degree rule (\S\ref{sec:which}): one frequency each, two
-bodies, both spheres with radial profiles.
+\item \emph{Established against an exact solution, by two solvers.} The two-term separation
+(Table~\ref{tab:twoterm}): a dense solver and a matrix-free one agree to $2\times10^{-9}$ where both
+run, and the second carries the table to $80$ cells across for constant cells and $32$ for degree-one
+cells, over a range of $445$ in the error, where the ratio of the rest to the projection error is level.
+One body, one frequency.
+\item \emph{Established against exact solutions, by one implementation.} The matched-degree rule
+(\S\ref{sec:which}): one frequency each, two bodies, both spheres with radial profiles.
 \item \emph{Derived, and established twice.} The factor of the second term, Eqs.~\eqref{eq:t2factor}
 to \eqref{eq:Fps}: a symbolic derivation, and the scheme and a direct evaluation against it
-(Table~\ref{tab:t2factor}). It is derived for the term of second order, in the long-wave limit, for a
-body with an isotropic spectrum.
+(Table~\ref{tab:t2factor}), the scheme carried to $64$ cells across, within $0.5\%$ of the closed
+forms (Table~\ref{tab:t2factorfft}). The closed forms are for the term of second order, in the long-wave
+limit, for a body with an isotropic spectrum.
+\item \emph{Derived, and established against the scheme.} The factor of the second term at a finite
+frequency for constant cells, Eq.~\eqref{eq:Fdyn}: it agrees with the scheme to $2\%$ at nine angles and
+six frequencies from $k_Sa=0.125$ to $4$ (Table~\ref{tab:factorfreq}), a stiffness contrast, one body.
+Not derived: degree-one cells and a density contrast at a finite frequency.
 \item \emph{Established against exact solutions, by one implementation.} The nonlinear fraction from
 two products with the matrix of a coarse grid, Eq.~\eqref{eq:nuest}: within $1.4\%$ on three bodies,
 for constant and degree-one cells (Table~\ref{tab:nu}).
@@ -2324,8 +2566,11 @@ schemes sharing its observers and error measure, the point cell with its single 
 (Appendix~\ref{app:pointcell}; its self term checked against the cube's static closed forms and, off
 centre, against a volume quadrature); in the layer, at orders $2$ to $8$, against the exact solution in
 high-precision arithmetic.
-\item \emph{Size.} The solver is dense and stops near $20\,000$ unknowns, so the bodies are small: up to
-$1256$ constant cells or $408$ degree-one cells.
+\item \emph{Size.} The dense solver stops near $20\,000$ unknowns ($1256$ constant cells or $408$
+degree-one cells). The two-term table and the factor of the second term no longer rest on it: the
+matrix-free solver has carried them to $2.56$ million unknowns. The other three-dimensional results of
+Part~II (the nonlinear fraction, the third term, the matched-degree rule) are still at the dense solver's
+sizes.
 \item \emph{Earlier work.} The survey behind \S\ref{sec:intro} found no statement of the two-term law,
 of the cell's factor or of the matched-degree rule, and no elastic volume scheme with polynomial cells.
 It rests on some twenty searches and on the opening pages of most of the works cited.
@@ -2367,7 +2612,11 @@ The first is the error of the term of first order in the contrast, from one pass
 closed form for a cell of uniform contrast; its one-dimensional case is the constants $c_p$ of the layer.
 The second is the nonlinear fraction of the response times the relative projection error of the medium,
 times a factor of order one that is one in a layer and in three dimensions depends, in closed form, on the
-background and the direction of scattering through the axes of the cells. The nonlinear fraction comes
+background and the direction of scattering through the axes of the cells. That closed form is for a body
+small against the wavelength. At a finite frequency a cell loses the slope of the product of medium and
+wave, so the wave's slope stands beside the medium's, and for constant cells the factor gains the layer's
+constant $(kd)^2/12$ once for the incident and once for the outgoing wave; the resulting expression
+follows the scheme to $2\%$ from $k_Sa=0.125$ to $4$ (\S\ref{sec:factorfreq}). The nonlinear fraction comes
 from two products with the matrix of a coarse grid, so neither term needs a solve, and the term of third
 order has a closed-form factor of its own.
 
@@ -2404,7 +2653,10 @@ with tests in \path{cubic_scattering/tests/test_graded_voxel_octree.py}. The wav
 \path{scripts/measure_layer_t3_law.py}, \path{scripts/measure_t3_law_3d.py} and
 \path{scripts/measure_t3_tensor_forms.py}, with the closed form of the third term derived in
 \path{Mathematica/AdaptiveOctree_F3.wl} and evaluated by \path{scripts/measure_f3_closed_form.py};
-Table~\ref{tab:twoterm} is \path{scripts/measure_octree_two_term.py}; the constant medium with a richer
+Table~\ref{tab:twoterm} is \path{scripts/measure_octree_two_term.py} (dense solver) and
+\path{scripts/measure_two_term_fft.py} (matrix-free solver); Tables~\ref{tab:t2factorfft} and
+\ref{tab:factorfreq} are \path{scripts/measure_t2_factor_fft.py} and
+\path{scripts/measure_t2_factor_dynamic.py}, their results stored beside them in \path{scripts}; the constant medium with a richer
 field is \path{scripts/pilot_octree_hp_refinement.py}. Their results are stored in
 \path{LatexPDFs/PolynomialVoxelError/figures}. Material on octree refinement, removed from this paper, is
 archived in \path{LatexPDFs/archive/OctreeRefinementArchive/}.}

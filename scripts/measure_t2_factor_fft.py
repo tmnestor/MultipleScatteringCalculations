@@ -20,8 +20,10 @@ WHAT IS MEASURED, for each grid of n cells across and each of the nine scatterin
                      by s: two solves. The terms of odd order cancel; what is left out is d^2 T4, smaller
                      than T2 by about (nonlinear fraction x d)^2.
   T2 exact           the same combination of the exact graded sphere at +-d.
-  F measured         Re[(T2 - T2_scheme) . conj(T2)] / (|T2|^2 E), for the P (radial) part and the S
-                     (transverse) part of the far field separately.
+  F measured         (T2 - T2_scheme) . conj(T2) / (|T2|^2 E), for the P (radial) part and the S
+                     (transverse) part of the far field separately. Its real part is the error in
+                     phase with T2 and is what is printed; the imaginary part, which vanishes in the
+                     long-wave limit, is stored beside it.
   F limit            2 - m_ax / m_bar, for constant cells and a stiffness contrast.
 
 The body is a sphere of radius a whose contrast is uniform within ``core_frac`` a and falls smoothly to
@@ -129,14 +131,15 @@ def main() -> int:
             up, us = graded_far_field(res, dirs, rf, K, K, "P")
             t2p += up / (2 * d * d)
             t2s += us / (2 * d * d)
-        f_p = [
-            float((((t2p_ex[j] - t2p[j]) @ np.conj(t2p_ex[j])) / np.vdot(t2p_ex[j], t2p_ex[j])).real / e_p)
+        c_p = [
+            complex(((t2p_ex[j] - t2p[j]) @ np.conj(t2p_ex[j])) / np.vdot(t2p_ex[j], t2p_ex[j])) / e_p
             for j in range(len(dirs))
         ]
-        f_s = [
-            float((((t2s_ex[j] - t2s[j]) @ np.conj(t2s_ex[j])) / np.vdot(t2s_ex[j], t2s_ex[j])).real / e_p)
+        c_s = [
+            complex(((t2s_ex[j] - t2s[j]) @ np.conj(t2s_ex[j])) / np.vdot(t2s_ex[j], t2s_ex[j])) / e_p
             for j in range(len(dirs))
         ]
+        f_p, f_s = [c.real for c in c_p], [c.real for c in c_s]
         rows.append(
             {
                 "n": n,
@@ -144,6 +147,8 @@ def main() -> int:
                 "E": e_p,
                 "F_P": f_p,
                 "F_S": f_s,
+                "F_P_imag": [c.imag for c in c_p],
+                "F_S_imag": [c.imag for c in c_s],
                 "seconds": time.perf_counter() - t0,
             }
         )
