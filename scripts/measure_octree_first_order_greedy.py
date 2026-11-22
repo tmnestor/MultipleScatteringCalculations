@@ -37,17 +37,25 @@ grids, which are the slow part of a run that only compares rules.
 A FOURTH RULE, WHICH GROWS BY BOTH TERMS (``--rule=twoterm``). On the sharp sphere at k_S a = 0.5 the
 trees grown by the first-order error have a first-order error of 3e-4 and a total error of 9e-4: the
 second term is three times the first, and it barely falls as the tree grows, because nothing in the rule
-looks at it. The error law says what the second term follows: the projection error of the medium, whose
-square is the sum over the leaves of
+looks at it. The error law says what the second term follows: the relative projection error of the
+medium, which is an energy, the sum over the leaves of
     e(leaf) = the integral over the leaf of (f - the leaf's mean of f)^2,
 known for every leaf and every candidate with no solve (for the sharp sphere it is the leaf's volume
 times phi (1 - phi), phi being the fraction of the leaf inside). So the fourth rule minimises
-    J = |R|^2 + c^2 x (the sum of e over the leaves),
-the two terms added as if they had no common phase. The constant c^2 is measured, not assumed: at each
+    J = |R|^2 + (c x the sum of e over the leaves)^2,
+the two terms added as if they had no common phase. (The first version of this rule had c^2 times the
+sum, taking the second term to follow the root of the energy; ``--secondorder`` showed that it follows
+the energy itself, with one constant on uniform grids and trees, and the results of the first version
+were discarded.) The constant c is measured, not assumed: at each
 size asked for, the second-order error of the tree just grown is computed on the growth directions (one
 product with the assembled matrix, no solve) and divided by the tree's sum of e. Until the first such
 measurement c is zero, so the tree of the first size asked for is grown by the first-order error, as
 under ``--rule=hybrid``, and it is the same safeguard against stalling that is kept.
+
+THE ORDER OF THE SECOND TERM ON UNIFORM GRIDS (``--secondorder=4,6,8,12``). For each number of cells
+across, the second-order error of the uniform grid (no solve) and the sum of e over its cells are stored
+under ``uniform_second``, in a file of its own (``_uniformsecond`` appended to the name). Halving the cell divides the second term by four on a smooth body; what it
+does on the sharp sphere is the question this option answers.
 
 THE GUARD AGAINST FITTING. A tree has hundreds of refinements to choose among, and with them it could
 cancel R at a handful of directions without being a better grid. So the tree is grown on one set of
@@ -271,10 +279,14 @@ def main() -> int:
         if stored.exists() and shape == "s5"
         else []
     )
-    tag = ("" if shape == "s5" else f"_{shape}") + (
-        ""
-        if rule == "residual"
-        else f"_{rule}" + (f"{factor:g}" if rule in ("hybrid", "twoterm") and factor != 1.0 else "")
+    tag = (
+        ("" if shape == "s5" else f"_{shape}")
+        + (
+            ""
+            if rule == "residual"
+            else f"_{rule}" + (f"{factor:g}" if rule in ("hybrid", "twoterm") and factor != 1.0 else "")
+        )
+        + ("_uniformsecond" if "secondorder" in opts else "")
     )
     out_path = ROOT / f"scripts/measure_octree_first_order_greedy_ka{ka:g}_core{core_frac:g}{tag}.json"
     result: dict = {
@@ -311,7 +323,31 @@ def main() -> int:
         )
         n_uniform *= 2
     block_cache: dict = {}
-    c2 = 0.0  # (second-order error on the growth directions)^2 per unit of projection energy; measured
+    result["uniform_second"] = []
+    for n_across in [int(v) for v in opts.get("secondorder", "").split(",") if v]:
+        cu, hu = uniform_leaves(RADIUS, n_across)
+        kept = [(c, float(h)) for c, h in zip(cu, hu, strict=True) if carries(c, float(h))]
+        cs_u, hs_u = np.array([c for c, _ in kept]), np.array([h for _, h in kept])
+        set_scope(cs_u, hs_u)
+        series_u = born_series_octree(
+            omega, REF, CONTRAST, cs_u, hs_u, prof, K_HAT, K_HAT, "P", 2, p=0, r=0, block_cache=block_cache
+        )
+        d_t2_u = (sum(octree_far_field(series_u[1], all_dirs, rf)) - second_exact)[n_grow:]
+        row_s = {
+            "n": n_across,
+            "cells": len(kept),
+            "dT1_test": test_error(sum(born_of(c, h) for c, h in kept)),
+            "dT2_test": float(np.abs(d_t2_u).max() / peak),
+            "projection_energy": sum(energy(c, h) for c, h in kept),
+        }
+        result["uniform_second"].append(row_s)
+        print(
+            f"  uniform grid of {n_across:2d} across, {row_s['cells']:5d} cells: second-order error "
+            f"{row_s['dT2_test']:.3e}, first-order {row_s['dT1_test']:.3e}, projection energy "
+            f"{row_s['projection_energy']:.4e}",
+            flush=True,
+        )
+    c2 = 0.0  # second-order error on the growth directions per unit of projection energy; measured
     t_start = time.perf_counter()
     for target in targets:
         while len(leaves) < target:
@@ -330,7 +366,7 @@ def main() -> int:
                 norm = -own if rule == "own" else float(np.linalg.norm(residual + delta[:n_grow]))
                 if rule == "twoterm":
                     gain = energy(c, h) - sum(energy(kc, kh) for kc, kh in kids)
-                    norm = norm**2 + c2 * (e_tot - gain)
+                    norm = norm**2 + (c2 * (e_tot - gain)) ** 2
                 if norm < best_norm:
                     best, best_norm, best_kids = i, norm, kids
             if best is None:
@@ -375,8 +411,8 @@ def main() -> int:
             d_t2_all = sum(octree_far_field(series[1], all_dirs, rf)) - second_exact
             d_t2 = d_t2_all[n_grow:]
             e_now = sum(energy(c, h) for c, h in leaves)
-            c2 = float(np.linalg.norm(d_t2_all[:n_grow]) ** 2 / e_now) if e_now > 0.0 else 0.0
-            row.update(projection_energy=e_now, c2=c2)
+            c2 = float(np.linalg.norm(d_t2_all[:n_grow]) / e_now) if e_now > 0.0 else 0.0
+            row.update(projection_energy=e_now, second_per_energy=c2)
             first_again = sum(octree_far_field(series[0], test_pts / rf, rf))
             second_seconds = time.perf_counter() - t0
             t0 = time.perf_counter()

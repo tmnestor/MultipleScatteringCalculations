@@ -1,0 +1,52 @@
+{
+  "ka_s": 4.0,
+  "core_frac": 1.0,
+  "h_min": 0.625,
+  "shape": "sharp",
+  "rule": "residual",
+  "hybrid_factor": null,
+  "growth_directions": 40,
+  "uniform": [],
+  "trees": [
+    {
+      "target": 8,
+      "cells": 8,
+      "sizes": {
+        "5": 8
+      },
+      "dT1_test": 1.7799635834819247,
+      "dT1_growth": 1.7100565901286626,
+      "grow_seconds": 0.00014120800187811255
+    }
+  ],
+  "uniform_second": [
+    {
+      "n": 4,
+      "cells": 64,
+      "dT1_test": 0.2834602966023791,
+      "dT2_test": 0.02544573816194437,
+      "projection_energy": 994.7344129424497
+    },
+    {
+      "n": 6,
+      "cells": 184,
+      "dT1_test": 0.1328731630931597,
+      "dT2_test": 0.015992058343467758,
+      "projection_energy": 692.4463679356047
+    },
+    {
+      "n": 8,
+      "cells": 408,
+      "dT1_test": 0.0721434866095634,
+      "dT2_test": 0.012271508979520208,
+      "projection_energy": 513.0446789717923
+    },
+    {
+      "n": 12,
+      "cells": 1256,
+      "dT1_test": 0.033964663087720025,
+      "dT2_test": 0.008436827060960831,
+      "projection_energy": 346.2108533777931
+    }
+  ]
+}

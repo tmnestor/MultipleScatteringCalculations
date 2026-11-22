@@ -1,0 +1,81 @@
+== 0.5 1 --shape=sharp
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 0.5, core = 1.0 a, shape sharp, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 4.131e-03, first-order 7.807e-03, projection energy 9.9473e+02
+  uniform grid of  6 across,   184 cells: second-order error 2.860e-03, first-order 3.584e-03, projection energy 6.9245e+02
+  uniform grid of  8 across,   408 cells: second-order error 2.117e-03, first-order 2.044e-03, projection energy 5.1304e+02
+  uniform grid of 12 across,  1256 cells: second-order error 1.424e-03, first-order 9.156e-04, projection energy 3.4621e+02
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 2.548e-02 (on the growth directions 2.577e-02)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka0.5_core1_sharp_uniformsecond.json
+== 2 1 --shape=sharp
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 2.0, core = 1.0 a, shape sharp, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 9.288e-03, first-order 1.192e-01, projection energy 9.9473e+02
+  uniform grid of  6 across,   184 cells: second-order error 6.246e-03, first-order 5.585e-02, projection energy 6.9245e+02
+  uniform grid of  8 across,   408 cells: second-order error 4.554e-03, first-order 3.186e-02, projection energy 5.1304e+02
+  uniform grid of 12 across,  1256 cells: second-order error 3.014e-03, first-order 1.432e-02, projection energy 3.4621e+02
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 3.982e-01 (on the growth directions 3.851e-01)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core1_sharp_uniformsecond.json
+== 4 1 --shape=sharp
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 4.0, core = 1.0 a, shape sharp, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 2.545e-02, first-order 2.835e-01, projection energy 9.9473e+02
+  uniform grid of  6 across,   184 cells: second-order error 1.599e-02, first-order 1.329e-01, projection energy 6.9245e+02
+  uniform grid of  8 across,   408 cells: second-order error 1.227e-02, first-order 7.214e-02, projection energy 5.1304e+02
+  uniform grid of 12 across,  1256 cells: second-order error 8.437e-03, first-order 3.396e-02, projection energy 3.4621e+02
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 1.780e+00 (on the growth directions 1.710e+00)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka4_core1_sharp_uniformsecond.json
+== 0.5 0.75
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 0.5, core = 0.75 a, shape s5, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 4.147e-03, first-order 9.679e-03, projection energy 6.7819e+02
+  uniform grid of  6 across,   184 cells: second-order error 2.147e-03, first-order 3.955e-03, projection energy 3.4816e+02
+  uniform grid of  8 across,   408 cells: second-order error 1.317e-03, first-order 2.100e-03, projection energy 2.1132e+02
+  uniform grid of 12 across,  1256 cells: second-order error 6.717e-04, first-order 9.150e-04, projection energy 1.0499e+02
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 4.299e-02 (on the growth directions 4.358e-02)
+      beside it, refined by the medium :   232 leaves, error 3.291e-03, first-order 3.832e-03
+      beside it, refined by the medium :   856 leaves, error 9.278e-04, first-order 9.261e-04
+      beside it, refined by the product:   232 leaves, error 3.291e-03, first-order 3.832e-03
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka0.5_core0.75_uniformsecond.json
+== 2 0.75
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 2.0, core = 0.75 a, shape s5, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 8.686e-03, first-order 1.451e-01, projection energy 6.7819e+02
+  uniform grid of  6 across,   184 cells: second-order error 4.342e-03, first-order 6.028e-02, projection energy 3.4816e+02
+  uniform grid of  8 across,   408 cells: second-order error 2.621e-03, first-order 3.216e-02, projection energy 2.1132e+02
+  uniform grid of 12 across,  1256 cells: second-order error 1.302e-03, first-order 1.418e-02, projection energy 1.0499e+02
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 4.977e-01 (on the growth directions 5.005e-01)
+      beside it, refined by the medium :   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   288 leaves, error 5.666e-02, first-order 5.624e-02
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core0.75_uniformsecond.json
+== 4 0.75
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 4.0, core = 0.75 a, shape s5, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 1.636e-02, first-order 3.340e-01, projection energy 6.7819e+02
+  uniform grid of  6 across,   184 cells: second-order error 9.748e-03, first-order 1.392e-01, projection energy 3.4816e+02
+  uniform grid of  8 across,   408 cells: second-order error 6.319e-03, first-order 7.537e-02, projection energy 2.1132e+02
+  uniform grid of 12 across,  1256 cells: second-order error 3.334e-03, first-order 3.231e-02, projection energy 1.0499e+02
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 2.147e+00 (on the growth directions 2.077e+00)
+      beside it, refined by the medium :   232 leaves, error 1.619e-01, first-order 1.652e-01
+      beside it, refined by the medium :   856 leaves, error 7.129e-02, first-order 7.456e-02
+      beside it, refined by the product:   288 leaves, error 1.351e-01, first-order 1.351e-01
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka4_core0.75_uniformsecond.json
+== 0.5 0.2 --shape=halo
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 0.5, core = 0.2 a, shape halo, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 2.900e-03, first-order 1.185e-02, projection energy 7.2307e+01
+  uniform grid of  6 across,   184 cells: second-order error 1.699e-03, first-order 3.752e-03, projection energy 4.2235e+01
+  uniform grid of  8 across,   408 cells: second-order error 7.541e-04, first-order 2.052e-03, projection energy 1.7921e+01
+  uniform grid of 12 across,  1256 cells: second-order error 5.999e-04, first-order 9.186e-04, projection energy 1.4518e+01
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 3.110e-02 (on the growth directions 3.036e-02)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka0.5_core0.2_halo_uniformsecond.json
+== 2 0.2 --shape=halo
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 2.0, core = 0.2 a, shape halo, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 4.846e-03, first-order 1.636e-01, projection energy 7.2307e+01
+  uniform grid of  6 across,   184 cells: second-order error 2.756e-03, first-order 5.821e-02, projection energy 4.2235e+01
+  uniform grid of  8 across,   408 cells: second-order error 1.235e-03, first-order 3.047e-02, projection energy 1.7921e+01
+  uniform grid of 12 across,  1256 cells: second-order error 9.652e-04, first-order 1.431e-02, projection energy 1.4518e+01
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 5.527e-01 (on the growth directions 5.646e-01)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core0.2_halo_uniformsecond.json
+== 4 0.2 --shape=halo
+an octree of constant cells grown by its first-order error (rule: residual): k_S a = 4.0, core = 0.2 a, shape halo, 40 growth directions, judged on the nine test directions
+  uniform grid of  4 across,    64 cells: second-order error 1.639e-02, first-order 6.245e-01, projection energy 7.2307e+01
+  uniform grid of  6 across,   184 cells: second-order error 9.549e-03, first-order 1.794e-01, projection energy 4.2235e+01
+  uniform grid of  8 across,   408 cells: second-order error 4.129e-03, first-order 8.697e-02, projection energy 1.7921e+01
+  uniform grid of 12 across,  1256 cells: second-order error 3.621e-03, first-order 5.053e-02, projection energy 1.4518e+01
+  grown to     8 leaves {'5': 8}: first-order error on the test directions 2.182e+00 (on the growth directions 2.105e+00)
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka4_core0.2_halo_uniformsecond.json

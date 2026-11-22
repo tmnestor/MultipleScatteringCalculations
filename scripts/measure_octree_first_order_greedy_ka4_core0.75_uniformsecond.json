@@ -1,0 +1,52 @@
+{
+  "ka_s": 4.0,
+  "core_frac": 0.75,
+  "h_min": 0.625,
+  "shape": "s5",
+  "rule": "residual",
+  "hybrid_factor": null,
+  "growth_directions": 40,
+  "uniform": [],
+  "trees": [
+    {
+      "target": 8,
+      "cells": 8,
+      "sizes": {
+        "5": 8
+      },
+      "dT1_test": 2.1471146596232633,
+      "dT1_growth": 2.0770327324410007,
+      "grow_seconds": 0.0003003330057254061
+    }
+  ],
+  "uniform_second": [
+    {
+      "n": 4,
+      "cells": 64,
+      "dT1_test": 0.3339666482792541,
+      "dT2_test": 0.01635553545302949,
+      "projection_energy": 678.1901346480038
+    },
+    {
+      "n": 6,
+      "cells": 184,
+      "dT1_test": 0.1391921122980182,
+      "dT2_test": 0.009748464978596614,
+      "projection_energy": 348.16407397686186
+    },
+    {
+      "n": 8,
+      "cells": 408,
+      "dT1_test": 0.0753711556023996,
+      "dT2_test": 0.006318819497120827,
+      "projection_energy": 211.31606881762988
+    },
+    {
+      "n": 12,
+      "cells": 1256,
+      "dT1_test": 0.03230564490173269,
+      "dT2_test": 0.0033341026090734603,
+      "projection_energy": 104.98630957694965
+    }
+  ]
+}
