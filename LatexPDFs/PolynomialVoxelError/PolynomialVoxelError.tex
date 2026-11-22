@@ -2729,8 +2729,8 @@ about that of the uniform grid of $16$ across ($0.062$ by the first-power rule),
 same half of the cells as on the first. To do better the cut cells must go to a half-width of $a/32$, of which there are
 several thousand, more than the dense solver can take. This is the case in which a tree should save most,
 since the cut cells grow in number as the inverse square of their size and the interior cells as the
-inverse cube, and it is the case that needs a solver whose cost does not grow as the cube of the number
-of leaves.
+inverse cube, and it needs a solver whose cost does not grow as the cube of the number of leaves. That
+solver, and the trees it reaches, are below (Table~\ref{tab:treesfree}).
 
 \emph{The overtaking, on solved grids.} The last two paragraphs rest on the second term taken alone,
 with nothing solved, and on trees of at most $2200$ leaves. A uniform grid needs no dense solver: the
@@ -2829,6 +2829,67 @@ grid) and the rest is a tenth of what it was, so the sharp sphere is second orde
 whether a jump costs an order depends on how nonlinear the response is, and $\nu\,\cE$ against the
 first-order error says in advance on which grid it will.
 
+\emph{Degree-one cells on the sharp sphere.} A cell of degree one cannot follow a jump either. Its
+medium is the projection of the indicator of the sphere onto the polynomials of degree one on the cell,
+which the experiment takes from the exact means of the indicator and of the indicator times each local
+coordinate $\boldsymbol\xi$: with $\phi$ the fraction of the cell inside and
+$\mathbf m=\langle\chi\,\boldsymbol\xi\rangle$, the cell holds $\phi+3\,\mathbf m\cdot\boldsymbol\xi$,
+and what it loses is $\phi-\phi^2-3\lvert\mathbf m\rvert^2$ times its volume, where a constant cell loses
+$\phi-\phi^2$. That is smaller, by a factor of about $0.45$ on these grids, and it falls at the same
+rate, the first power of the cell. So the law predicts for degree-one cells a first-order error of high
+order beside a second term of first order with the constant of the constant cells. The matrix-free
+solver was run with $p=r=1$ on uniform grids of $4$ to $48$ across, $2.3$ million unknowns
+(Table~\ref{tab:sharpdeg1}; \path{scripts/measure_two_term_fft.py} with \texttt{--shape=sharp} and
+$p=1$).
+\begin{table}[htbp]
+\centering
+\caption{The sharp uniform sphere on uniform grids of degree-one cells ($p=r=1$), solved; the columns
+are those of Table~\ref{tab:sharpsolved}, with $\cE$ the relative projection error at degree one. Each
+cell has four times the unknowns of a constant cell.}\label{tab:sharpdeg1}
+\small
+\begin{tabular}{@{}lrcllll@{}}
+\toprule
+$k_Sa$ & across & $\cE$ & error & first & rest & rest$/\cE$ \\
+\midrule
+$0.5$ & $8$  & $0.0568$  & $9.17\times10^{-4}$ & $8.4\times10^{-6}$ & $9.17\times10^{-4}$ & $0.0161$ \\
+      & $16$ & $0.0272$  & $4.38\times10^{-4}$ & $4.9\times10^{-7}$ & $4.38\times10^{-4}$ & $0.0161$ \\
+      & $32$ & $0.0140$  & $2.26\times10^{-4}$ & $2.1\times10^{-8}$ & $2.26\times10^{-4}$ & $0.0161$ \\
+      & $48$ & $0.00935$ & $1.50\times10^{-4}$ & $2.8\times10^{-8}$ & $1.50\times10^{-4}$ & $0.0160$ \\
+\midrule
+$2$   & $8$  & $0.0568$  & $1.90\times10^{-3}$ & $3.5\times10^{-4}$ & $1.91\times10^{-3}$ & $0.0336$ \\
+      & $16$ & $0.0272$  & $9.02\times10^{-4}$ & $2.2\times10^{-5}$ & $9.02\times10^{-4}$ & $0.0331$ \\
+      & $32$ & $0.0140$  & $4.64\times10^{-4}$ & $1.2\times10^{-6}$ & $4.64\times10^{-4}$ & $0.0330$ \\
+      & $48$ & $0.00935$ & $3.08\times10^{-4}$ & $3.9\times10^{-7}$ & $3.08\times10^{-4}$ & $0.0329$ \\
+\midrule
+$4$   & $8$  & $0.0568$  & $5.93\times10^{-3}$ & $5.6\times10^{-3}$ & $5.66\times10^{-3}$ & $0.0998$ \\
+      & $16$ & $0.0272$  & $2.56\times10^{-3}$ & $4.0\times10^{-4}$ & $2.57\times10^{-3}$ & $0.0945$ \\
+      & $32$ & $0.0140$  & $1.31\times10^{-3}$ & $2.6\times10^{-5}$ & $1.31\times10^{-3}$ & $0.0931$ \\
+      & $48$ & $0.00935$ & $8.67\times10^{-4}$ & $4.8\times10^{-6}$ & $8.67\times10^{-4}$ & $0.0927$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the rows at $k_Sa=2$. From $8$ to $16$ across the first-order error falls sixteenfold, from
+$3.5\times10^{-4}$ to $2.2\times10^{-5}$, the fourth order of a degree-one cell, and it is already a
+fortieth of the error at $16$ across. The error itself falls by $2.1$, with $\cE$, and from $16$ across
+on it is the rest to three figures. The rest divided by $\cE$ is $0.0329$ to $0.0336$; for constant
+cells on the same sphere it is $0.0338$ to $0.0353$ on these grids (Table~\ref{tab:sharpsolved}). At
+$k_Sa=0.5$ the two degrees give $0.0160$ to $0.0161$ and $0.0163$ to $0.0164$, and at $k_Sa=4$, on the
+grids of $16$ across and more, $0.093$ to $0.095$ and $0.094$. The factor of the law is the same for the two
+degrees to $3\%$: the degree enters through $\cE$ and through nothing else. (At $k_Sa=0.5$ the first-order error stops
+falling at $2\times10^{-8}$; that is the midpoint rule from which the means over the cut cells were
+taken, and it is four orders below the error.)
+
+Two things follow. On a body with a sharp boundary a cell of higher degree buys no order: the error of
+degree-one cells at $32$ across, $2.26\times10^{-4}$ at $k_Sa=0.5$, is $0.45$ of that of constant cells
+on the same grid, $5.01\times10^{-4}$, for four times the unknowns, and that ratio is the ratio of the
+two projection errors and will not improve with refinement. At equal unknowns the gain at
+$k_Sa=0.5$ is a factor of about $1.4$ ($4.38\times10^{-4}$ on $1.0\times10^5$ unknowns against about
+$6.2\times10^{-4}$ for constant cells by interpolation); at $k_Sa=4$, where the constant cells still
+carry a first-order error that the degree-one cells do not, it is about $3$. And the matched-degree rule of
+\S\ref{sec:which} has a sharper reading here: where the medium jumps within a cell no degree matches
+it, and what remains to be done is to make the cut cells small, which is what a tree is for.
+
 \emph{What a tree saves, on solved errors.} With uniform grids solved at $4$, $6$, $8$, $10$, $12$,
 $14$, $16$ and $24$ across, the solved error of each grown tree can be set against that of a uniform grid of
 as many cells, interpolating in the logarithms of error and cells (Table~\ref{tab:treesolved}; the
@@ -2891,10 +2952,78 @@ does a tree of constant cells save an order of magnitude; the most is a factor o
 column of cells is the roughest of the three, since it inverts an interpolation, and on the halo, whose
 uniform-grid errors do not fall evenly, it should be read as no better than a guide.
 
-\emph{Cautions.} Three bodies, all radial, and constant cells only. The trees rest on a dense solver,
-which stops near $2200$ constant leaves and stopped the product's rule at $912$ leaves at $k_Sa=4$ (its
-next tree has $2368$); the uniform grids do not. With degree-one cells the same solver allows about
-$550$ leaves, on which the two rules build nearly the same trees, so that case is not decided. Against
+\emph{Trees beyond the dense solver.} The convolution that a uniform grid allows is lost when the
+cells differ in size, but only at the level of the leaves. A leaf of half-width $2^jh$ is $8^j$ cells
+of the smallest half-width $h$ of the tree, and on each of them the leaf's polynomials are polynomials
+of the same degree, so the block between any two leaves is a finite sum of blocks between equal cells of
+the smallest size, which depend on their offset alone. The product of the tree's matrix with a vector is
+therefore a spread of each leaf's source to its smallest cells, one convolution by FFT on the uniform
+lattice of those cells, and a gather back to the leaves (Appendix~\ref{app:solver};
+\path{cubic_scattering/graded_voxel/octree_fft.py}). Nothing is approximated. On a tree of three sizes
+the product agrees with the dense matrix to $4\times10^{-14}$ of the coupling, for constant and
+degree-one cells, and on the trees of $603$ and $1301$ leaves of the sharp sphere the first-order error, the
+second-order error and the solved error are those of the dense solver to the four figures printed. The
+unknowns are the tree's; the time of a product and the memory of the kernel are those of the uniform
+grid of the smallest cells, so what is gained is reach and not a cheaper product. A solve takes $7$ to
+$9$ products on these trees, as on uniform grids.
+
+With it the trees of the sharp sphere were grown to $16\,000$ leaves, the smallest half-width allowed
+being $a/64$ (the option \texttt{--matrixfree} of \path{scripts/measure_octree_first_order_greedy.py}, the
+rule that does not stall). Table~\ref{tab:treesfree} sets each against the solved uniform grids of
+Table~\ref{tab:sharpsolved}.
+\begin{table}[htbp]
+\centering
+\caption{Trees of constant cells on the sharp uniform sphere, grown by the first-order error and solved
+by the matrix-free product. \emph{Smallest} is the smallest half-width in the tree. $\cE$, \emph{first},
+\emph{error} and rest$/\cE$ are as in Table~\ref{tab:sharpsolved}. \emph{Uniform} is the number of cells
+a uniform grid needs for the tree's solved error, by interpolation in the logarithms between the solved
+grids of $4$ to $64$ across, and \emph{share} is the tree's leaves divided by it.}\label{tab:treesfree}
+\small
+\begin{tabular}{@{}lrlcllcrc@{}}
+\toprule
+$k_Sa$ & leaves & smallest & $\cE$ & first & error & rest$/\cE$ & uniform & share \\
+\midrule
+$0.5$ & $4004$     & $a/32$ & $0.0394$ & $1.87\times10^{-4}$ & $6.37\times10^{-4}$ & $0.0166$ & $9700$     & $0.41$ \\
+      & $8005$     & $a/64$ & $0.0294$ & $8.86\times10^{-5}$ & $4.76\times10^{-4}$ & $0.0166$ & $22\,700$ & $0.35$ \\
+      & $16\,001$  & $a/64$ & $0.0202$ & $5.21\times10^{-5}$ & $3.31\times10^{-4}$ & $0.0167$ & $66\,100$ & $0.24$ \\
+\midrule
+$2$   & $4000$     & $a/32$ & $0.0400$ & $3.52\times10^{-3}$ & $4.18\times10^{-3}$ & $0.0334$ & $8400$     & $0.48$ \\
+      & $8000$     & $a/64$ & $0.0297$ & $1.65\times10^{-3}$ & $2.14\times10^{-3}$ & $0.0331$ & $24\,300$ & $0.33$ \\
+      & $16\,000$  & $a/64$ & $0.0208$ & $9.70\times10^{-4}$ & $1.35\times10^{-3}$ & $0.0341$ & $51\,400$ & $0.31$ \\
+\midrule
+$4$   & $4004$     & $a/32$ & $0.0487$ & $1.04\times10^{-2}$ & $7.77\times10^{-3}$ & $0.0840$ & $11\,800$ & $0.34$ \\
+      & $8002$     & $a/32$ & $0.0315$ & $6.23\times10^{-3}$ & $4.09\times10^{-3}$ & $0.0895$ & $32\,100$ & $0.25$ \\
+      & $16\,004$  & $a/64$ & $0.0279$ & $4.16\times10^{-3}$ & $2.75\times10^{-3}$ & $0.0878$ & $60\,100$ & $0.27$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the last row at $k_Sa=0.5$. The tree of $16\,001$ leaves has a solved error of
+$3.31\times10^{-4}$; the uniform grid of $48$ across, with $63\,256$ cells, has $3.35\times10^{-4}$. The
+tree does with a quarter of the cells what the grid does, where at $2200$ leaves it needed two thirds
+(Table~\ref{tab:treesolved}). The share falls with the size of the tree at all three frequencies, to
+$0.24$, $0.31$ and $0.27$, as it should when the cut cells grow in number as the inverse square of
+their size and the cells of a uniform grid as the inverse cube. It is still not an order of magnitude at
+these sizes, and the reason can be read from the columns: at $k_Sa=0.5$ the tree's first-order error is
+a sixth of its error, so the tree is paying for the projection error of its cut cells, and its
+$\cE=0.0202$ is that of the uniform grid of $48$ across ($0.0207$) although its smallest cells are those
+of the grid of $64$. Only $9860$ of its leaves are of the smallest size, where a uniform grid of $64$
+across has $19\,232$ cut cells.
+
+The law holds on these trees as on the grids. The rest divided by $\cE$ is $0.0166$ to $0.0167$ at
+$k_Sa=0.5$ and $0.0331$ to $0.0341$ at $2$, close to the constants of Table~\ref{tab:sharpsolved}; at $k_Sa=4$ it
+is $0.084$ to $0.090$ against $0.094$ on the uniform grids, a tenth lower. The two terms computed with no
+solve, now by products with the matrix-free operator, give the solved errors of the three largest trees
+to $4\%$, $1\%$ and $3\%$. The rule that grows by both terms was run on the same sizes and builds trees
+with errors within $6\%$ of these at $16\,000$ leaves, better at $k_Sa=2$ and $4$ and worse at $0.5$,
+and $16\%$ worse in one case at $8000$ leaves; it remains without a gain that would justify it.
+
+\emph{Cautions.} Three bodies, all radial, and trees of constant cells only. The trees of the graded
+shell and the halo rest on the dense solver, which stops near $2200$ constant leaves and stopped the
+product's rule at $912$ leaves at $k_Sa=4$ (its next tree has $2368$); those of the sharp sphere and the
+uniform grids do not. With degree-one cells the dense solver allows about $550$ leaves, on which the two
+rules build nearly the same trees, so that case is not decided: the matrix-free product takes degree-one
+leaves, but no tree of them has yet been grown with it. Against
 uniform grids the product's tree on the graded shell at $k_Sa=4$ is a little worse (a uniform grid of
 $912$ cells gives $0.039$ by interpolation, the tree $0.043$): at that frequency the wave must be
 resolved wherever there is contrast, and on that body a tree has little to save.
@@ -3339,10 +3468,13 @@ solved error on $30$ trees of three radial bodies, and $5\%$ high in one case. T
 sharp boundary (Tables~\ref{tab:secondenergy} and \ref{tab:sharpsolved}): its ratio to the projection
 error is level from $4$ to $64$ cells across, the scheme loses an order as that predicts, and the
 factor that remains moves by under $3\%$ over a tenfold range of the contrast
-(Table~\ref{tab:sharpcontrast}). What a
-tree saves (Table~\ref{tab:treesolved}): at most a factor of about three in cells, for constant cells
-and at most $2200$ leaves. Not established: trees beyond the dense solver, trees of degree-one cells,
-and a body without radial symmetry.
+(Table~\ref{tab:sharpcontrast}). Degree-one
+cells on the sharp sphere (Table~\ref{tab:sharpdeg1}): first order, with the factor of the constant
+cells to $3\%$, on grids to $2.3$ million unknowns. What a tree saves
+(Tables~\ref{tab:treesolved} and \ref{tab:treesfree}): for constant cells a factor of up to three in
+cells at $2200$ leaves and of four at $16\,000$ on the sharp sphere, the larger trees by a matrix-free
+product that agrees with the dense solver where both run. Not established: trees of degree-one cells,
+trees of the smooth bodies beyond the dense solver, and a body without radial symmetry.
 \item \emph{Size.} The dense solver stops near $20\,000$ unknowns ($1256$ constant cells or $408$
 degree-one cells). The two-term table and the factor of the second term no longer rest on it: the
 matrix-free solver has carried them to $2.56$ million unknowns. The other three-dimensional results of
@@ -3405,9 +3537,13 @@ and $4$, after which the scheme is first order, and its ratio to the projection 
 $4$ to $64$ cells across (Table~\ref{tab:sharpsolved}). Because neither term needs a solve, an octree
 can be grown by them. A tree of constant cells grown by the first-order error has the error it was grown
 to have; where the wave or a boundary leaves it something to save it reaches a given solved error with
-between a third and two thirds of the cells of a uniform grid, and elsewhere with as many
-(Table~\ref{tab:treesolved}). It does not save an order of magnitude, because the wave must still be
-resolved wherever there is contrast.
+between a third and two thirds of the cells of a uniform grid at $2200$ leaves, and elsewhere with
+as many (Table~\ref{tab:treesolved}). On the sharp sphere the share falls as the tree grows, to a quarter
+at $16\,000$ leaves (Table~\ref{tab:treesfree}), the larger trees solved by a product that spreads each
+leaf to the smallest cells and convolves there by FFT. Raising the degree of the cells does not help at
+a jump: degree-one cells on the sharp sphere are first order too, with the same factor and $0.45$ of the
+projection error (Table~\ref{tab:sharpdeg1}), so the cut cells must be made small, and a tree does that
+at the cost of the surface and not of the volume.
 
 \paragraph{The error is known in advance.} For every discretisation studied here the error is not
 something to be discovered by refining until the answer stops changing. Its order and its leading
@@ -3433,7 +3569,9 @@ and give a fast solver the tolerance it must meet.
 \vfill
 \noindent\rule{\linewidth}{0.4pt}\\
 {\footnotesize The cells, their blocks and the solver are \path{cubic_scattering/graded_voxel/octree.py},
-with tests in \path{cubic_scattering/tests/test_graded_voxel_octree.py}. The wave factor is derived in
+with tests in \path{cubic_scattering/tests/test_graded_voxel_octree.py}; the matrix-free product for
+cells of several sizes is \path{cubic_scattering/graded_voxel/octree_fft.py}, with tests in
+\path{cubic_scattering/tests/test_graded_voxel_octree_fft.py}. The wave factor is derived in
 \path{Mathematica/AdaptiveOctree_WaveFactor.wl} and measured by
 \path{scripts/measure_octree_wave_term.py}; the factor of the second term is derived in
 \path{Mathematica/AdaptiveOctree_T2Factor.wl} and measured by \path{scripts/measure_t2_law_3d.py} and
@@ -4121,6 +4259,31 @@ are not yet asymptotic, a voxel at $n=4$ being as wide as the graded shell
 $16$ voxels across, where the error is $4.9\times10^{-6}$ at $k_Sa=0.5$ and $5.9\times10^{-6}$ at
 $k_Sa=1$, and the apparent order approaches four at a rate set by the number of voxels across the graded
 shell.
+
+\paragraph{A matrix-free product for cells of several sizes.} On an octree the cells differ in size and
+the blocks no longer depend on an offset alone, so the solver for trees assembles its matrix densely and
+stops near $20\,000$ unknowns. The convolution is recovered one level down. Let $h$ be the smallest
+half-width in the tree. A leaf of half-width $2^jh$ is the union of $8^j$ cells of half-width $h$, and
+on each such cell $d$ the leaf's field functions $Q_a$ and source monomials $m_c$ are polynomials of
+the same degree in the cell's own coordinate,
+\begin{equation}\label{eq:reexpand}
+Q_a^{\text{leaf}}=\sum_b C^{(d)}_{ab}\,Q_b^{(d)},\qquad m_c^{\text{leaf}}=\sum_f D^{(d)}_{cf}\,m_f^{(d)},
+\end{equation}
+with $C^{(d)}$ and $D^{(d)}$ depending only on $j$ and on the place of $d$ within the leaf. The block
+between leaves $m$ and $n$ is then
+$K_{ac}(m,n)=\sum_{d\in m}\sum_{e\in n}\sum_{bf}C^{(d)}_{ab}\,K_{bf}(d-e)\,D^{(e)}_{cf}$, exactly, with
+$K(d-e)$ the block between equal cells of half-width $h$. So the product with the tree's matrix is three
+steps: each leaf's source coefficients are spread to its smallest cells by $D^{\mathsf T}$; the sources
+on the uniform lattice of smallest cells are convolved with $K$ by FFT, with the kernel and the compiled
+product of the uniform solver; and the result is gathered to the leaves by $C$. The mass term and the
+right-hand side are each leaf's own, and the preconditioner is block-Jacobi with each leaf's self block
+at its own size. The unknowns are those of the tree, while the time of a product and the memory of the
+kernel are those of the uniform grid of smallest cells over the cube that bounds the tree; the gain over
+the dense solver is in the number of leaves that can be solved, not in the cost of a product. It is
+tested against the dense matrix on a tree of three sizes for constant and degree-one cells (agreement to
+$4\times10^{-14}$ of the coupling, although the dense solver takes the block between two large leaves at
+their own size and this product sums it over their descendants), and against the dense solve and the
+dense Born series.
 
 \section{The point cell in closed form}\label{app:pointcell}
 

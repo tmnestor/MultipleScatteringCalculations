@@ -113,6 +113,12 @@ Run small first:
     conda run -n seismic python -u scripts/measure_octree_first_order_greedy.py 4 0.75 --leaves=300
     ... <k_S a> <core_frac> [--leaves=900,1700] [--hmin=0.625] [--dry]
 --dry grows the trees and prints their no-solve first-order errors without solving.
+
+--matrixfree solves every tree, of whatever size, with the matrix-free product for cells of several
+sizes (``graded_voxel.octree_fft``): one FFT on the lattice of the smallest cells, with a spread before
+it and a gather after. The dense solver stops near 2200 constant leaves; this one is limited by the
+uniform grid of the smallest cells and not by the number of leaves. Its results go to a file of their own
+(``_matrixfree`` appended to the name).
 """
 
 import itertools
@@ -137,6 +143,11 @@ from cubic_scattering.graded_voxel.octree import (  # noqa: E402
     solve_graded_octree,
     uniform_leaves,
 )
+from cubic_scattering.graded_voxel.octree_fft import (  # noqa: E402
+    born_series_octree_fft,
+    octree_operator_fft,
+    solve_graded_octree_fft,
+)
 
 K_HAT = np.array([1.0, 0.0, 0.0])
 EPS = 1e-3
@@ -158,6 +169,7 @@ def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     opts = dict(a[2:].split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a)
     dry = "--dry" in sys.argv
+    matrix_free = "--matrixfree" in sys.argv
     ka, core_frac = float(args[0]), float(args[1])
     targets = sorted(int(v) for v in opts.get("leaves", "900,1700").split(",") if v)
     h_min = float(opts.get("hmin", RADIUS / 16))
@@ -224,14 +236,26 @@ def main() -> int:
     def set_scope(cs: np.ndarray, hs_: np.ndarray) -> None:
         """Name the cells the piecewise-constant profile of the sharp sphere is to be read on."""
         if sharp:
-            scope["c"], scope["h"] = cs, hs_
-            scope["f"] = np.array([fraction(c, float(h)) for c, h in zip(cs, hs_, strict=True)])
+            # every cell of the smallest size in the scope is given the fraction of the leaf it lies in,
+            # so that a point finds its leaf by one lookup however many leaves there are
+            fine = float(np.min(hs_))
+            table: dict = {}
+            for c, h in zip(cs, hs_, strict=True):
+                m = round(float(h) / fine)
+                steps = (2 * np.arange(m) + 1 - m) * fine
+                phi = fraction(c, float(h))
+                for dx in steps:
+                    for dy in steps:
+                        for dz in steps:
+                            key = tuple(np.floor((c + (dx, dy, dz) + RADIUS) / (2.0 * fine)).astype(int))
+                            table[key] = phi
+            scope["fine"], scope["table"] = fine, table
 
     def prof(pos: np.ndarray) -> float:
         if not sharp:
             return radial(shape, core, float(np.linalg.norm(pos)))
-        inside = np.all(np.abs(pos - scope["c"]) <= scope["h"][:, None], axis=1)
-        return float(scope["f"][np.argmax(inside)])
+        key = tuple(np.floor((np.asarray(pos) + RADIUS) / (2.0 * scope["fine"])).astype(int))
+        return scope["table"][key]
 
     def exact_born_at(points: np.ndarray) -> np.ndarray:
         return (
@@ -291,6 +315,7 @@ def main() -> int:
             else f"_{rule}" + (f"{factor:g}" if rule in ("hybrid", "twoterm") and factor != 1.0 else "")
         )
         + ("_uniformsecond" if "secondorder" in opts else "")
+        + ("_matrixfree" if "--matrixfree" in sys.argv else "")
     )
     out_path = ROOT / f"scripts/measure_octree_first_order_greedy_ka{ka:g}_core{core_frac:g}{tag}.json"
     result: dict = {
@@ -406,24 +431,15 @@ def main() -> int:
             "dT1_growth": float(np.abs((total - born_exact)[:n_grow]).max() / peak),
             "grow_seconds": time.perf_counter() - t_start,
         }
-        if not dry and len(leaves) * 9 <= DENSE_LIMIT:
+        if not dry and (matrix_free or len(leaves) * 9 <= DENSE_LIMIT):
             t0 = time.perf_counter()
             set_scope(centres, hs)
-            series = born_series_octree(
-                omega,
-                REF,
-                CONTRAST,
-                centres,
-                hs,
-                prof,
-                K_HAT,
-                K_HAT,
-                "P",
-                2,
-                p=0,
-                r=0,
-                block_cache=block_cache,
-            )
+            tree_args = (omega, REF, CONTRAST, centres, hs, prof, K_HAT, K_HAT, "P")
+            if matrix_free:
+                operator = octree_operator_fft(*tree_args, p=0, r=0)
+                series = born_series_octree_fft(*tree_args, 2, p=0, r=0, operator=operator)
+            else:
+                series = born_series_octree(*tree_args, 2, p=0, r=0, block_cache=block_cache)
             d_t2_all = sum(octree_far_field(series[1], all_dirs, rf)) - second_exact
             d_t2 = d_t2_all[n_grow:]
             e_now = sum(energy(c, h) for c, h in leaves)
@@ -432,20 +448,14 @@ def main() -> int:
             first_again = sum(octree_far_field(series[0], test_pts / rf, rf))
             second_seconds = time.perf_counter() - t0
             t0 = time.perf_counter()
-            res = solve_graded_octree(
-                omega,
-                REF,
-                CONTRAST,
-                centres,
-                hs,
-                prof,
-                K_HAT,
-                K_HAT,
-                "P",
-                p=0,
-                r=0,
-                block_cache=block_cache,
-            )
+            if matrix_free:
+                res = solve_graded_octree_fft(*tree_args, p=0, r=0, operator=operator)
+                row.update(
+                    solver="matrix-free", fine_cells_across=operator.n_fine, products=operator.products[0]
+                )
+                del operator
+            else:
+                res = solve_graded_octree(*tree_args, p=0, r=0, block_cache=block_cache)
             err = sum(octree_far_field(res, test_pts / rf, rf)) - exact
             d_t1 = total[n_grow:] - born_exact[n_grow:]
             row.update(

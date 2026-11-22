@@ -29,7 +29,7 @@ Run small first:
 
 ``--scale`` multiplies the contrast (the exact reference is solved at the same scaled contrast).
 
-``--shape=halo`` and ``--shape=sharp`` (constant cells only, p = 0) run the two further radial bodies of
+``--shape=halo`` (constant cells only, p = 0) and ``--shape=sharp`` run the two further radial bodies of
 ``measure_octree_first_order_greedy.py``: the strong centre in a weak surround, and the classical sharp
 uniform sphere (core_frac 1). On the sharp sphere each cell holds the fraction of its volume inside the
 sphere (exact along z, a 64 x 64 midpoint rule across), so the first-order term has no staircase error,
@@ -37,6 +37,14 @@ and the relative projection error is the sum over the cells of volume x fraction
 the volume of the sphere. It falls as the first power of the cell and not the second, so this is where
 the law says the second term must overtake the first; the uniform grids here go far beyond the dense
 solver and show whether the solved error does what the law says. The file name gains ``_<shape>``.
+
+The sharp sphere also runs with degree-one cells (p = 1). The medium each cell holds is then the L2
+projection of the indicator of the sphere onto the polynomials of degree one on the cell, from the exact
+means of the indicator and of the indicator times each coordinate (exact along z, a 256 x 256 midpoint
+rule across), and the relative projection error is what that projection leaves: the sum over the cells
+of volume x (phi - phi^2 - 3 |m|^2) over the volume of the sphere, phi the fraction inside and m the
+means of indicator times local coordinate. A linear function cannot follow a jump either, so this too
+falls only as the first power of the cell.
 """
 
 import json
@@ -87,8 +95,8 @@ def main() -> int:
     tol = float(opts.get("tol", "1e-11"))
     shape = opts.get("shape", "s5")
     sharp = shape == "sharp"
-    if shape != "s5" and p != 0:
-        raise SystemExit("--shape=halo and --shape=sharp are for constant cells: give p = 0")
+    if (shape == "halo" and p != 0) or (sharp and p not in (0, 1)):
+        raise SystemExit("--shape=halo is for constant cells (p = 0); --shape=sharp for p = 0 or 1")
     ref_shape = "s5" if sharp else shape  # the sharp sphere is the shell body with its core at the surface
     omega = ka * REF.beta / RADIUS
     rf = 5e8 * RADIUS
@@ -114,23 +122,59 @@ def main() -> int:
         length = np.clip(np.minimum(c[2] + h, half) - np.maximum(c[2] - h, -half), 0.0, None)
         return float(length.mean() / (2.0 * h))
 
-    def sharp_profile(h: float) -> Callable[[np.ndarray], float]:
-        """The sharp sphere on the grid of half-width h: at any point, the fraction of the cell it is in."""
+    fine = (np.arange(256) + 0.5) / 128.0 - 1.0
+
+    def linear_moments(c: np.ndarray, h: float) -> tuple[float, np.ndarray]:
+        """The means over the cell of the indicator of the sphere and of the indicator times each local
+        coordinate xi_i = (x_i - c_i) / h: exact along z, a 256 x 256 midpoint rule in x and y. A cell
+        wholly inside or wholly outside is recognised by its farthest and nearest points."""
+        if np.linalg.norm(np.abs(c) + h) <= RADIUS:
+            return 1.0, np.zeros(3)
+        if np.linalg.norm(np.clip(np.abs(c) - h, 0.0, None)) >= RADIUS:
+            return 0.0, np.zeros(3)
+        x, y = np.meshgrid(fine, fine, indexing="ij")  # local coordinates
+        half = np.sqrt(np.clip(RADIUS**2 - (c[0] + h * x) ** 2 - (c[1] + h * y) ** 2, 0.0, None))
+        top = np.clip((np.minimum(c[2] + h, half) - c[2]) / h, -1.0, 1.0)
+        bottom = np.clip((np.maximum(c[2] - h, -half) - c[2]) / h, -1.0, 1.0)
+        length = np.clip(top - bottom, 0.0, None) / 2.0  # the fraction of each column inside
+        first_z = np.where(top > bottom, (top**2 - bottom**2) / 4.0, 0.0)
+        return float(length.mean()), np.array(
+            [float((x * length).mean()), float((y * length).mean()), float(first_z.mean())]
+        )
+
+    def sharp_profile(h: float) -> tuple[Callable[[np.ndarray], float], dict]:
+        """The sharp sphere as the cells of half-width h hold it, and the moments it was built from.
+
+        For constant cells the value at any point is the fraction of its cell inside the sphere. For
+        degree-one cells it is the L2 projection of the indicator onto the polynomials of degree one on
+        its cell, phi + 3 (m . xi) with phi the fraction and m the means of indicator times xi, so that
+        the solver's Gauss rule, which is exact for a polynomial, projects the true discontinuous medium
+        and not a sampled one.
+        """
         known: dict = {}
 
         def value(pos: np.ndarray) -> float:
-            idx = tuple(np.floor((np.asarray(pos) + RADIUS) / (2.0 * h)).astype(int))
+            pos = np.asarray(pos, dtype=float)
+            idx = tuple(np.floor((pos + RADIUS) / (2.0 * h)).astype(int))
+            c = -RADIUS + (np.array(idx) + 0.5) * 2.0 * h
             if idx not in known:
-                known[idx] = fraction(-RADIUS + (np.array(idx) + 0.5) * 2.0 * h, h)
-            return known[idx]
+                known[idx] = (fraction(c, h), np.zeros(3)) if p == 0 else linear_moments(c, h)
+            phi, m = known[idx]
+            return phi if p == 0 else float(phi + 3.0 * m @ ((pos - c) / h))
 
-        return value
+        return value, known
 
     def other_energies(centres: np.ndarray, h: float, profile: Callable) -> tuple[np.ndarray, float]:
-        """For the halo and the sharp sphere: each cell's integral of (f - its mean)^2, and that of f^2."""
+        """For the halo and the sharp sphere: each cell's integral of (f - its projection)^2, and that of
+        f^2. On the sharp sphere the projection is to the degree of the cells (0 or 1)."""
         if sharp:
-            phi = np.array([profile(c) for c in centres])
-            return (2.0 * h) ** 3 * phi * (1.0 - phi), 4.0 * np.pi * RADIUS**3 / 3.0
+            for c in centres:
+                profile(c)
+            got = [known_n[tuple(np.floor((c + RADIUS) / (2.0 * h)).astype(int))] for c in centres]
+            phi = np.array([g[0] for g in got])
+            slope = np.array([3.0 * g[1] @ g[1] for g in got])
+            lost = (2.0 * h) ** 3 * np.clip(phi * (1.0 - phi) - slope, 0.0, None)
+            return lost, 4.0 * np.pi * RADIUS**3 / 3.0
         lost = np.empty(len(centres))
         for i, c in enumerate(centres):
             f = np.array([profile(c + h * xi) for xi in gauss_xi])
@@ -162,7 +206,7 @@ def main() -> int:
     rows = []
     for n in uniform_ns:
         centres, hs = uniform_leaves(RADIUS, n)
-        prof_n = sharp_profile(float(hs[0])) if sharp else prof
+        prof_n, known_n = sharp_profile(float(hs[0])) if sharp else (prof, {})
         if shape == "s5":
             defect, _, norm = leaf_energies(prof_vec, centres, hs, p)
             keep = norm > 0
@@ -171,7 +215,14 @@ def main() -> int:
             lost, whole = other_energies(centres, float(hs[0]), prof_n)
             # the cells that reach inside the sphere: a positive fraction, or a nearest point within it
             nearest = np.linalg.norm(np.clip(np.abs(centres) - float(hs[0]), 0.0, None), axis=1)
-            keep = np.array([prof_n(c) > 0.0 for c in centres]) if sharp else nearest < RADIUS
+            keep = nearest < RADIUS
+            if sharp:
+                keep = np.array(
+                    [
+                        known_n[tuple(np.floor((c + RADIUS) / (2.0 * hs[0])).astype(int))][0] > 0.0
+                        for c in centres
+                    ]
+                )
             e_p = float(lost.sum() / whole)
         born = sum(
             octree_far_field(
