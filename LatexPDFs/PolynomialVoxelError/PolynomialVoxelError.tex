@@ -123,6 +123,16 @@ pair attains, and the error it leaves. The answer decides the cost of everything
 because a voxel that represents its contents more accurately can be larger, and the number of voxels,
 not the size of each one's state, sets the cost of the multiple-scattering solve.
 
+\paragraph{What an accurate model of the error gives.} A law that states the error of a grid before
+anything is solved, with its order, its constant and its dependence on the frequency, gives four things
+that convergence alone does not. The size and the degree of the cells that a required accuracy needs can
+be chosen in advance, from the wavenumber and the medium, without a refinement study. A refinement study
+becomes a test: the difference between two grids must have the known order and the known constant, and a
+computation whose differences do not is in error from some cause other than the discretisation. A result
+can be given with its error, and where the leading term is in closed form it can be removed
+(\S\ref{sec:factor}). And the law shows where effort pays, on the wave, on the medium or on neither,
+which no amount of refinement reveals (\S\ref{sec:summary}).
+
 \paragraph{Why the question is hard to answer.} For the media such a scheme is built for, there is no
 exact solution. Its error cannot be measured against the answer. Comparison with another numerical
 method mixes the errors of both. And a refinement study can mislead, because a voxel scheme can
