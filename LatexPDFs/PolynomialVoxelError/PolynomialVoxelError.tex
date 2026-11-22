@@ -2256,6 +2256,76 @@ waves, and to $0.03$ in the quadrature part. With the density present the SV wav
 longer vanishes, and there too the two agree ($0.630$ against $0.635$ at $k_Sa=0.5$, $-0.071$ against
 $-0.085$ at $k_Sa=4$).
 
+\paragraph{The two-term table at four frequencies.} Table~\ref{tab:twoterm} was one body at one
+frequency. Table~\ref{tab:twotermfreq} repeats it on the same body, with the same contrast in stiffness
+and density, at $k_Sa=1$, $2$ and $4$ (\path{scripts/measure_two_term_fft.py}). Here the whole response
+is used, every order in the contrast, and the error is the largest over the nine angles: it is the
+practical form of the law, not the term-by-term test of Tables~\ref{tab:factorfreq} and
+\ref{tab:factorfreqrho}. Three quantities are given for each grid.
+\begin{itemize}
+\item \emph{First / error}: the first-order error of \S\ref{sec:born}, computed without a solve, over the
+whole error. Where it is near one the first term is the whole error and the grid is set by it.
+\item \emph{Rest / error}: the rest, which is the error less the first-order error, over the whole error.
+(The two are complex and need not sum to one.)
+\item \emph{Rest /} $\nu\cE$: the rest over the nonlinear fraction times the relative projection error.
+The two-term law in its low-frequency form says this is a number of order one, the same on every grid.
+\end{itemize}
+\begin{table}[htbp]
+\centering
+\caption{The two-term separation of Table~\ref{tab:twoterm} at four frequencies: the sphere with a graded
+shell, stiffness and density contrast, uniform grids. $\nu$ is the nonlinear fraction of the exact response
+at each frequency. The columns are defined in the text.}\label{tab:twotermfreq}
+\small
+\begin{tabular}{@{}llrcccc@{}}
+\toprule
+$k_Sa$ ($\nu$) & cells & across & error & first / error & rest / error & rest / $\nu\cE$ \\
+\midrule
+$0.5$ ($0.0151$) & constant & $8$ & $1.61\times10^{-3}$ & $1.31$ & $0.79$ & $1.02$ \\
+ & & $48$ & $5.04\times10^{-5}$ & $1.14$ & $1.02$ & $1.11$ \\
+ & degree one & $8$ & $2.20\times10^{-4}$ & $0.02$ & $1.00$ & $0.96$ \\
+ & & $24$ & $6.01\times10^{-6}$ & $0.005$ & $1.00$ & $1.03$ \\
+\midrule
+$1$ ($0.0184$) & constant & $8$ & $7.68\times10^{-3}$ & $1.08$ & $0.21$ & $1.07$ \\
+ & & $48$ & $2.08\times10^{-4}$ & $1.10$ & $0.31$ & $1.14$ \\
+ & degree one & $8$ & $2.60\times10^{-4}$ & $0.08$ & $1.00$ & $0.94$ \\
+ & & $24$ & $7.22\times10^{-6}$ & $0.05$ & $1.00$ & $1.01$ \\
+\midrule
+$2$ ($0.0265$) & constant & $8$ & $3.25\times10^{-2}$ & $0.99$ & $0.08$ & $1.15$ \\
+ & & $48$ & $9.21\times10^{-4}$ & $0.98$ & $0.10$ & $1.15$ \\
+ & degree one & $8$ & $6.07\times10^{-4}$ & $0.81$ & $0.66$ & $1.01$ \\
+ & & $24$ & $1.05\times10^{-5}$ & $0.53$ & $1.00$ & $1.03$ \\
+\midrule
+$4$ ($0.0529$) & constant & $8$ & $7.49\times10^{-2}$ & $1.01$ & $0.08$ & $1.36$ \\
+ & & $48$ & $2.06\times10^{-3}$ & $1.01$ & $0.13$ & $1.63$ \\
+ & degree one & $8$ & $4.01\times10^{-3}$ & $0.90$ & $0.44$ & $2.22$ \\
+ & & $24$ & $5.18\times10^{-5}$ & $0.99$ & $0.88$ & $2.23$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{How to read it.} Take constant cells at $k_Sa=2$ on $48$ cells across. The error is
+$9.21\times10^{-4}$. The first-order error is $0.98$ of it and the rest a tenth: on this body, at this
+frequency, the error of constant cells is the first-order error, which is known in closed form
+(\S\ref{sec:factor}), and the second term is a correction to it. The rest is $1.15$ times $\nu\cE$, and
+it was $1.15$ on $8$ cells too. Now take degree-one cells at the same frequency on $24$ cells: the first
+term is half the error and the rest is all of it (the two differ in phase), and the rest is $1.03$ times
+$\nu\cE$.
+
+\emph{What it shows.} Up to $k_Sa=2$ the last column lies between $0.94$ and $1.15$ for both kinds of
+cell, on every grid: the low-frequency form of the law, a number of order one times $\nu\cE$, describes
+the practical error there. At $k_Sa=4$ it is $1.6$ for constant cells and $2.2$ for degree-one cells.
+It is still the same on every grid, to $1\%$ for degree-one cells from $8$ to $24$ across, so the rest is
+still proportional to the projection error; what has changed is the constant, and it has changed in the
+direction and by about the amount that Eq.~\eqref{eq:slope} gives. The length of this body is
+$L=0.22a$, so $k_SL$ is $0.11$, $0.22$, $0.43$ and $0.87$ at the four frequencies: the constant leaves its
+low-frequency value as $k_SL$ approaches one.
+
+\emph{What it means for choosing a grid.} For constant cells on a body of this kind the first term
+decides from $k_Sa=1$ upwards (at $0.5$ the two terms are comparable), and it is closed. For degree-one cells the first term is negligible
+at low frequency and the second decides; by $k_Sa=4$ the two are comparable. In both cases the error is
+known before the solve; what must not be done is to carry the low-frequency constant of the second term
+to a body more than about a wavelength across.
+
 \paragraph{Cautions.} The derivation and the tests of this subsection so far are for constant cells, the
 term of second order and one body. Degree-one cells are taken next.
 
