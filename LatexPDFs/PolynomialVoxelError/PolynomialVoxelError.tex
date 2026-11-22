@@ -2313,6 +2313,28 @@ $4$ ($0.0529$) & constant & $8$ & $7.49\times10^{-2}$ & $1.01$ & $0.08$ & $1.36$
 \end{tabular}
 \end{table}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_two_term_law.pdf}
+\caption{The two-term law against the number of cells across the sphere with a graded shell
+(Tables~\ref{tab:twoterm} and \ref{tab:twotermfreq}). (a) At $k_Sa=0.5$: the whole error (dashed, open
+markers) and the rest, which is the error less the first-order error (solid, filled markers), each
+divided by the relative projection error $\cE$, for constant cells (circles) and degree-one cells
+(squares); the horizontal line is the nonlinear fraction $\nu$ of the exact response. (b) The rest
+divided by $\nu\cE$ at four frequencies, constant cells. (c) The same for degree-one cells. Each marker
+is one grid and one solve. A level curve means that the quantity is a fixed multiple of the projection
+error, which is what the law asserts of the rest.}\label{fig:twotermlaw}
+\par\smallskip{\footnotesize\textit{Alt text:} Three panels against cells across the sphere, $4$ to
+$80$, on a logarithmic axis. In panel (a), from $0.012$ to $0.033$, a dashed line with open circles falls
+steeply from $0.031$ at $4$ cells to $0.0165$ at $32$ and is level after; a solid line with filled circles
+rises gently from $0.0149$ to $0.0169$; dashed and solid lines with squares lie together between $0.0146$
+and $0.0155$, ending at $32$ cells; a thin horizontal line at $0.0151$ runs through them. In panel (b),
+from $0.8$ to $2.5$, three lines for $k_Sa=0.5$, $1$ and $2$ lie between $1.0$ and $1.2$ and are nearly
+level, and a dash-dotted line with diamonds for $k_Sa=4$ rises from $1.07$ to $1.63$, flattening. In
+panel (c), the same three lines lie between $0.94$ and $1.10$, and the line for $k_Sa=4$ is level near
+$2.2$.\par}
+\end{figure}
+
 \emph{How to read it.} Take constant cells at $k_Sa=2$ on $48$ cells across. The error is
 $9.21\times10^{-4}$. The first-order error is $0.98$ of it and the rest a tenth: on this body, at this
 frequency, the error of constant cells is the first-order error, which is known in closed form
@@ -2336,8 +2358,93 @@ at low frequency and the second decides; by $k_Sa=4$ the two are comparable. In 
 known before the solve; what must not be done is to carry the low-frequency constant of the second term
 to a body more than about a wavelength across.
 
-\paragraph{Cautions.} The derivation and the tests of this subsection so far are for constant cells, the
-term of second order and one body. Degree-one cells are taken next.
+\paragraph{Degree-one cells: the test.} For degree-one cells the three terms of Eq.~\eqref{eq:t2split}
+were evaluated from Eqs.~\eqref{eq:D1out}, \eqref{eq:D1in} and \eqref{eq:local1}
+(\path{scripts/measure_t2_factor_operators.py}), on the same sphere with the stiffness contrast, and set
+against the factor of the scheme with degree-one cells. Three things about the comparison need saying.
+\begin{itemize}
+\item \emph{The scheme.} Its factor was measured on $8$, $16$, $32$ and, at $k_Sa=1$ and $2$, $48$ cells
+across ($2.3$ million unknowns). At $k_Sa=2$ it is $0.914$, $0.897$, $0.890$, $0.889$ for the outgoing P
+wave at $0.2$\,rad: converged. At $k_Sa=4$ it is $1.050$, $0.980$, $0.959$ on $8$, $16$ and $32$ cells and
+still falling, so there the scheme is the less certain of the two numbers.
+\item \emph{The prediction.} The field scattered once is taken from a fine grid of constant cells, which
+holds it as cell means, so the prediction carries an error of second order in the fine cell. It is
+removed by extrapolating from the two finest grids at that order. At $k_Sa=2$, where three fine grids
+were run ($32$, $48$ and $64$ across), the values are $0.841$, $0.864$, $0.873$ and the last two
+extrapolate to $0.885$.
+\item \emph{The check of the evaluation.} At $k_Sa=0.125$ the prediction must reproduce the closed forms
+of \S\ref{sec:factor3d} for degree-one cells, which were derived and tested separately; it gives $1.073$,
+$0.957$ and $1.342$ against $1.066$, $0.950$ and $1.337$.
+\end{itemize}
+\begin{table}[htbp]
+\centering
+\caption{The factor $F$ of the second term for degree-one cells against frequency: the three terms of
+Eq.~\eqref{eq:t2split} from Eqs.~\eqref{eq:D1out}--\eqref{eq:local1} (predicted) and the scheme on its
+finest grid ($32$ cells across; $48$ at $k_Sa=1$ and $2$). The sphere of Table~\ref{tab:t2factor}, a
+stiffness contrast, an incident P wave.}\label{tab:factorfreq1}
+\small
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{P at $0.2$\,rad} & \multicolumn{2}{c}{P at $\pi/2$} &
+   \multicolumn{2}{c}{SV at $0.2$\,rad} & \multicolumn{2}{c}{SV at $1.91$\,rad} \\
+$k_Sa$ & predicted & scheme & predicted & scheme & predicted & scheme & predicted & scheme \\
+\midrule
+$0.125$ & $1.073$ & $1.065$ & $0.957$ & $0.948$ & $1.342$ & $1.340$ & $\phantom{-}1.337$ & $\phantom{-}1.335$ \\
+$0.5$   & $1.045$ & $1.041$ & $0.939$ & $0.931$ & $1.276$ & $1.278$ & $\phantom{-}1.196$ & $\phantom{-}1.200$ \\
+$1$     & $0.981$ & $0.979$ & $0.886$ & $0.883$ & $1.150$ & $1.153$ & $\phantom{-}0.815$ & $\phantom{-}0.821$ \\
+$2$     & $0.885$ & $0.889$ & $0.735$ & $0.738$ & $1.032$ & $1.033$ & $-0.352$ & $-0.350$ \\
+$4$     & $0.939$ & $0.959$ & $0.498$ & $0.512$ & $1.325$ & $1.346$ & $\phantom{-}4.936$ & $\phantom{-}4.906$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{How to read it.} Take the outgoing SV wave at $1.91$\,rad. At low frequency its factor is $1.34$,
+the closed form of Eq.~\eqref{eq:Fps}. It falls to $0.82$ at $k_Sa=1$, is negative at $k_Sa=2$ ($-0.350$
+in the scheme, $-0.352$ predicted) and is $4.9$ at $k_Sa=4$. The prediction follows it through the
+change of sign and back.
+
+\emph{What it shows.} Up to $k_Sa=2$ the two agree to $0.01$ or better in $F$ at the median of the
+seventeen comparisons at each frequency (nine angles for P and eight for SV), and to $0.017$ at worst at
+$k_Sa=1$. The largest differences are for the SV wave scattered backwards, $0.037$ at $k_Sa=2$ ($0.435$
+against $0.473$), where the prediction converges most slowly on its fine grids. At $k_Sa=4$ the median
+difference is $0.026$ and the largest $0.065$ in a factor of $3$; there neither number has converged, the
+scheme having been run to $32$ cells only. Degree-one cells differ from constant cells in one respect
+that the table makes plain: for the outgoing P wave their factor \emph{falls} with frequency, to a half
+at right angles at $k_Sa=4$, where for constant cells it rises. The wave part of Eq.~\eqref{eq:Fdyn},
+which only adds, has no counterpart of fixed sign for degree-one cells: the terms in $\bk$ of
+Eqs.~\eqref{eq:D1out} and \eqref{eq:D1in} are of both signs.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_factor_frequency.pdf}
+\caption{The factor $F$ of the second term of the error against the angle of scattering, at four
+frequencies, for constant cells (upper row) and degree-one cells (lower row): the scheme (markers), the
+prediction of Eqs.~\eqref{eq:Fdyn} and \eqref{eq:D1out}--\eqref{eq:local1} (heavy lines) and the value at
+low frequency (thin grey lines; for constant cells the closed forms of \S\ref{sec:factor3d}, for
+degree-one cells the prediction at $k_Sa=0.125$). Solid lines and filled circles are the outgoing P wave,
+dashed lines and open squares the outgoing SV wave, which is not shown at right angles, where its
+second-order term vanishes. The sphere of Table~\ref{tab:t2factor}, a stiffness contrast, an incident P
+wave. Each marker is one angle of one pair of solves; the vertical scale of the panels at $k_Sa=4$ and of
+the degree-one panel at $k_Sa=2$ differs from the others. Where the markers lie on the heavy lines the
+law predicts the scheme; where the heavy lines leave the grey ones the factor depends on the
+frequency.}\label{fig:factorfreq}
+\par\smallskip{\footnotesize\textit{Alt text:} Eight small panels in two rows of four, each plotting a
+factor between about $-0.5$ and $5$ against scattering angle from $0$ to $180$ degrees, with a legend
+below. Columns are $k_Sa=0.125$, $1$, $2$ and $4$. In every panel filled circles lie on a solid heavy
+line and open squares on a dashed heavy line, the dashed line broken at $90$ degrees. In the first column
+the heavy lines coincide with thin grey ones: a shallow bowl from $1.1$ down to $0.93$ for circles and a
+level line near $1.5$ (upper row) or $1.34$ (lower row) for squares. Moving right the heavy lines leave
+the grey ones. In the upper row at $k_Sa=2$ the squares rise to $1.75$ near $70$ degrees and drop to
+$0.9$ near $110$; at $k_Sa=4$ the circles lie near $1.5$ to $1.9$ and the squares rise from $2.5$ to
+$4.2$. In the lower row at $k_Sa=2$ the circles fall steadily from $0.9$ to $0.55$ and the squares drop to
+$-0.35$ near $110$ degrees; at $k_Sa=4$ the circles dip to $0.15$ near $120$ degrees and the squares jump
+from $1.5$ to $4.9$ across $90$ degrees.\par}
+\end{figure}
+
+\paragraph{Cautions.} The derivation and its tests are for the term of second order in the contrast, on
+one body with a radial profile, with an incident P wave. The practical table at four frequencies
+(Table~\ref{tab:twotermfreq}) includes every order. For degree-one cells the test is with a stiffness
+contrast only, and at $k_Sa=4$ it is limited by the grids as described.
 
 \subsection{The nonlinear fraction without a solve}\label{sec:nu}
 
@@ -2742,8 +2849,16 @@ forms (Table~\ref{tab:t2factorfft}). The closed forms are for the term of second
 limit, for a body with an isotropic spectrum.
 \item \emph{Derived, and established against the scheme.} The factor of the second term at a finite
 frequency for constant cells, Eq.~\eqref{eq:Fdyn}: it agrees with the scheme to $2\%$ at nine angles and
-six frequencies from $k_Sa=0.125$ to $4$ (Table~\ref{tab:factorfreq}), a stiffness contrast, one body.
-Not derived: degree-one cells and a density contrast at a finite frequency.
+six frequencies from $k_Sa=0.125$ to $4$ (Table~\ref{tab:factorfreq}), and to $0.02$ in $F$ with a density
+contrast added (Table~\ref{tab:factorfreqrho}). One body.
+\item \emph{Derived symbolically, and established against the scheme.} The same for degree-one cells,
+Eqs.~\eqref{eq:D1out}--\eqref{eq:local1}: the densities by a symbolic expansion that also checks the
+printed forms, and the factor against the scheme at five frequencies (Table~\ref{tab:factorfreq1},
+Fig.~\ref{fig:factorfreq}), to $0.01$ at the median up to $k_Sa=2$ and $0.04$ at worst; at $k_Sa=4$ to
+$0.03$ at the median, limited by the grids. A stiffness contrast, one body.
+\item \emph{Measured, by one solver.} The two-term separation at $k_Sa=1$, $2$ and $4$
+(Table~\ref{tab:twotermfreq}, Fig.~\ref{fig:twotermlaw}): the low-frequency constant holds to $k_Sa=2$
+and not at $4$, as the origin of the frequency dependence, Eq.~\eqref{eq:slope}, requires.
 \item \emph{Established against exact solutions, by one implementation.} The nonlinear fraction from
 two products with the matrix of a coarse grid, Eq.~\eqref{eq:nuest}: within $1.4\%$ on three bodies,
 for constant and degree-one cells (Table~\ref{tab:nu}).
@@ -2849,7 +2964,11 @@ with tests in \path{cubic_scattering/tests/test_graded_voxel_octree.py}. The wav
 Table~\ref{tab:twoterm} is \path{scripts/measure_octree_two_term.py} (dense solver) and
 \path{scripts/measure_two_term_fft.py} (matrix-free solver); Tables~\ref{tab:t2factorfft} and
 \ref{tab:factorfreq} are \path{scripts/measure_t2_factor_fft.py} and
-\path{scripts/measure_t2_factor_dynamic.py}, their results stored beside them in \path{scripts}; the constant medium with a richer
+\path{scripts/measure_t2_factor_dynamic.py}; Table~\ref{tab:factorfreq1} is
+\path{scripts/measure_t2_factor_operators.py}, with the symbolic step in
+\path{scripts/derive_cell_residual_moments.py}; their results are stored beside them in \path{scripts},
+and Figs.~\ref{fig:twotermlaw} and \ref{fig:factorfreq} are drawn from those files by
+\path{scripts/plot_error_law_figures.py}; the constant medium with a richer
 field is \path{scripts/pilot_octree_hp_refinement.py}. Their results are stored in
 \path{LatexPDFs/PolynomialVoxelError/figures}. Material on octree refinement, removed from this paper, is
 archived in \path{LatexPDFs/archive/OctreeRefinementArchive/}.}

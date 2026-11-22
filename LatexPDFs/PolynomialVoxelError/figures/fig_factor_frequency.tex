@@ -1,0 +1,58 @@
+% Standalone source of the figure fig:factorfreq of the Error paper.
+% Coordinates: data_factor_p<p>_ka<ka>_<P|S>.dat, written by scripts/plot_error_law_figures.py.
+% Build: lualatex fig_factor_frequency.tex (in this directory); the paper includes the PDF.
+\documentclass[border=2pt]{standalone}
+\input{fig_preamble}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+\pgfplotsset{
+  every axis/.append style={
+    width=4.75cm, height=4.6cm, xmin=0, xmax=180, xtick={0,45,90,135,180},
+    grid=major, major grid style={gray!30, very thin},
+    tick label style={font=\scriptsize}, label style={font=\small}, title style={font=\small},
+  },
+  predP/.style={black, thick, solid, mark=none},
+  predS/.style={black, thick, densely dashed, mark=none},
+  schP/.style={black, only marks, mark=*, mark size=1.6pt},
+  schS/.style={black, only marks, mark=square, mark size=1.7pt},
+  statP/.style={gray, thin, solid, mark=none},
+  statS/.style={gray, thin, densely dashed, mark=none},
+}
+\newcommand{\panel}[2]{% degree, k_S a
+  \addplot[statP, unbounded coords=jump, empty line=jump] table[x=angle, y=static] {data_factor_p#1_ka#2_P.dat};
+  \addplot[statS, unbounded coords=jump, empty line=jump] table[x=angle, y=static] {data_factor_p#1_ka#2_S.dat};
+  \addplot[predP, unbounded coords=jump, empty line=jump] table[x=angle, y=predicted] {data_factor_p#1_ka#2_P.dat};
+  \addplot[predS, unbounded coords=jump, empty line=jump] table[x=angle, y=predicted] {data_factor_p#1_ka#2_S.dat};
+  \addplot[schP] table[x=angle, y=scheme] {data_factor_p#1_ka#2_P.dat};
+  \addplot[schS] table[x=angle, y=scheme] {data_factor_p#1_ka#2_S.dat};
+}
+\begin{tikzpicture}
+  \begin{groupplot}[group style={group size=4 by 2, horizontal sep=0.75cm, vertical sep=0.95cm}]
+    \nextgroupplot[title={$k_Sa=0.125$}, ylabel={$F$, constant cells}, ymin=0.6, ymax=1.8]
+      \panel{0}{0.125}
+    \nextgroupplot[title={$k_Sa=1$}, ymin=0.6, ymax=1.8]
+      \panel{0}{1}
+    \nextgroupplot[title={$k_Sa=2$}, ymin=0.6, ymax=1.8]
+      \panel{0}{2}
+    \nextgroupplot[title={$k_Sa=4$}, ymin=0, ymax=5.5]
+      \panel{0}{4}
+    \nextgroupplot[ylabel={$F$, degree-one cells}, ymin=0.6, ymax=1.8, xlabel={angle (degrees)},
+        legend to name=factorlegend,
+        legend style={font=\scriptsize, draw=none, legend columns=3,
+          /tikz/every even column/.append style={column sep=0.5cm}}]
+      \panel{1}{0.125}
+      \legend{{low-frequency value, P}, {low-frequency value, SV}, {predicted, P}, {predicted, SV},
+              {scheme, P}, {scheme, SV}}
+    \nextgroupplot[ymin=0.6, ymax=1.8, xlabel={angle (degrees)}]
+      \panel{1}{1}
+    \nextgroupplot[ymin=-0.6, ymax=1.8, xlabel={angle (degrees)}]
+      \panel{1}{2}
+    \nextgroupplot[ymin=0, ymax=5.5, xlabel={angle (degrees)}]
+      \panel{1}{4}
+  \end{groupplot}
+  \node[anchor=north] at ($(group c1r2.south west)!0.5!(group c4r2.south east)+(0,-0.95cm)$)
+    {\pgfplotslegendfromname{factorlegend}};
+\end{tikzpicture}
+\end{document}

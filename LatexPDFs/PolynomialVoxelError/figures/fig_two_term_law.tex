@@ -1,0 +1,57 @@
+% Standalone source of the figure fig:twotermlaw of the Error paper.
+% Coordinates: data_twoterm_*.dat, written by scripts/plot_error_law_figures.py from the measured tables.
+% Build: lualatex fig_two_term_law.tex (in this directory); the paper includes the PDF.
+\documentclass[border=2pt]{standalone}
+\input{fig_preamble}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+\pgfplotsset{
+  every axis/.append style={
+    width=5.9cm, height=5.6cm, xmode=log, xmin=3.2, xmax=100,
+    xtick={4,8,16,32,64}, xticklabels={4,8,16,32,64},
+    xlabel={cells across the sphere}, grid=major, major grid style={gray!30, very thin},
+    tick label style={font=\scriptsize}, label style={font=\small}, title style={font=\small},
+    legend cell align=left, legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85,
+      text opacity=1},
+  },
+  whole0/.style={black, thin, densely dashed, mark=o, mark size=1.7pt, mark options={solid}},
+  rest0/.style={black, thick, solid, mark=*, mark size=1.7pt},
+  whole1/.style={black, thin, densely dashed, mark=square, mark size=1.6pt, mark options={solid}},
+  rest1/.style={black, thick, solid, mark=square*, mark size=1.6pt},
+  fa/.style={black, thick, solid, mark=*, mark size=1.6pt},
+  fb/.style={black, thick, densely dashed, mark=square, mark size=1.6pt, mark options={solid}},
+  fc/.style={black, thick, densely dotted, mark=triangle, mark size=2.1pt, mark options={solid}},
+  fd/.style={black, thick, dash dot, mark=diamond*, mark size=2.0pt, mark options={solid}},
+}
+\begin{tikzpicture}
+  \begin{axis}[name=a, ymin=0.012, ymax=0.033, ylabel={ratio to the projection error $\mathcal{E}$},
+      ytick={0.015,0.020,0.025,0.030}, yticklabels={0.015,0.020,0.025,0.030},
+      scaled y ticks=false, title={(a) $k_Sa=0.5$},
+      legend style={at={(0.97,0.97)}, anchor=north east}]
+    \addplot[whole0] table[x=n, y=error_over_E] {data_twoterm_ratio_p0.dat};
+    \addplot[rest0] table[x=n, y=rest_over_E] {data_twoterm_ratio_p0.dat};
+    \addplot[whole1] table[x=n, y=error_over_E] {data_twoterm_ratio_p1.dat};
+    \addplot[rest1] table[x=n, y=rest_over_E] {data_twoterm_ratio_p1.dat};
+    \addplot[black, very thin, domain=3.2:100, samples=2, mark=none] {0.0151};
+    \node[font=\scriptsize, anchor=south east] at (axis cs:95,0.0126) {$\nu=0.0151$};
+    \legend{{error, $p=0$}, {rest, $p=0$}, {error, $p=1$}, {rest, $p=1$}}
+  \end{axis}
+  \begin{axis}[name=b, at={(a.east)}, anchor=west, xshift=1.25cm, ymin=0.8, ymax=2.5,
+      ylabel={rest / $\nu\mathcal{E}$}, title={(b) constant cells},
+      legend style={at={(0.03,0.97)}, anchor=north west}]
+    \addplot[fa] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka0.5_p0.dat};
+    \addplot[fb] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka1_p0.dat};
+    \addplot[fc] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka2_p0.dat};
+    \addplot[fd] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka4_p0.dat};
+    \legend{{$k_Sa=0.5$}, {$1$}, {$2$}, {$4$}}
+  \end{axis}
+  \begin{axis}[at={(b.east)}, anchor=west, xshift=0.55cm, ymin=0.8, ymax=2.5, yticklabels={},
+      title={(c) degree-one cells}]
+    \addplot[fa] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka0.5_p1.dat};
+    \addplot[fb] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka1_p1.dat};
+    \addplot[fc] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka2_p1.dat};
+    \addplot[fd] table[x=n, y=rest_over_nuE] {data_twoterm_freq_ka4_p1.dat};
+  \end{axis}
+\end{tikzpicture}
+\end{document}
