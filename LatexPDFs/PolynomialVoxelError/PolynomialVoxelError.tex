@@ -2790,6 +2790,45 @@ the second term's and no other's, it is predicted in size by a quantity computed
 grid, and volume fractions do not prevent it: they make the first-order term second order and leave the
 projection error of a discontinuous medium on constant cells where it was.
 
+\emph{The contrast.} The law has a third factor, the nonlinear fraction $\nu$ of the response
+(\S\ref{sec:rest}), and on the sharp sphere it can be tested by solving at a reduced contrast. The whole
+contrast, in $\lambda$, $\mu$ and density, was multiplied by $0.1$, $0.3$ and $0.6$, the exact solution
+taken at the same reduced contrast, and the grids of $8$, $16$ and $32$ across solved again
+(\texttt{--scale}). Table~\ref{tab:sharpcontrast} gives the rest of Table~\ref{tab:sharpsolved} divided
+by $\nu\,\cE$, which is the factor $F$ of the law as the scheme delivers it, every order included.
+\begin{table}[htbp]
+\centering
+\caption{The sharp uniform sphere at four strengths of the contrast, on the uniform grid of $32$ cells
+across. $\nu$ is the nonlinear fraction of the exact response: the largest difference over the nine test
+directions between the exact far field and its first-order term, as a fraction of the peak. $F$ is the
+solved error less the first-order error (the rest of Table~\ref{tab:sharpsolved}), divided by
+$\nu\,\cE$, with $\cE=0.0309$ on this grid.}\label{tab:sharpcontrast}
+\small
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{contrast $\times0.1$} & \multicolumn{2}{c}{$\times0.3$} & \multicolumn{2}{c}{$\times0.6$} & \multicolumn{2}{c}{full} \\
+$k_Sa$ & $\nu$ & $F$ & $\nu$ & $F$ & $\nu$ & $F$ & $\nu$ & $F$ \\
+\midrule
+$0.5$ & $0.0017$ & $0.975$ & $0.0052$ & $0.973$ & $0.0103$ & $0.970$ & $0.0169$ & $0.966$ \\
+$2$   & $0.0033$ & $1.063$ & $0.0098$ & $1.064$ & $0.0194$ & $1.065$ & $0.0319$ & $1.067$ \\
+$4$   & $0.0068$ & $1.416$ & $0.0203$ & $1.411$ & $0.0405$ & $1.404$ & $0.0673$ & $1.394$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the first row. From a tenth of the contrast to the whole of it the nonlinear fraction grows
+tenfold, from $0.0017$ to $0.0169$, and the rest of the error grows with it: the factor that is left
+moves from $0.975$ to $0.966$, by $1\%$. At $k_Sa=2$ it moves by $0.4\%$ and at $4$ by $1.5\%$. On the
+grids of $8$ and $16$ across the same holds to $2.6\%$ at worst, with factors of $0.97$ to
+$0.98$, $1.08$ to $1.11$ and $1.36$ to $1.42$ at the three frequencies. So on a body with a jump all
+three factors of the second term behave as the law says: the error beyond first order is the nonlinear
+fraction, times the relative projection error, times a number of order one that depends on the frequency
+and hardly at all on the contrast or the grid. One consequence is practical. At a tenth of the contrast
+the first-order error is unchanged as a fraction of the peak ($1.29\times10^{-4}$ at $k_Sa=0.5$ on this
+grid) and the rest is a tenth of what it was, so the sharp sphere is second order again on these grids:
+whether a jump costs an order depends on how nonlinear the response is, and $\nu\,\cE$ against the
+first-order error says in advance on which grid it will.
+
 \emph{What a tree saves, on solved errors.} With uniform grids solved at $4$, $6$, $8$, $10$, $12$,
 $14$, $16$ and $24$ across, the solved error of each grown tree can be set against that of a uniform grid of
 as many cells, interpolating in the logarithms of error and cells (Table~\ref{tab:treesolved}; the
@@ -3298,7 +3337,9 @@ Trees grown by the first-order error, and both terms of their error with no solv
 (Tables~\ref{tab:greedy} to \ref{tab:greedybodies}): the two-term prediction is within $2\%$ of the
 solved error on $30$ trees of three radial bodies, and $5\%$ high in one case. The second term on a
 sharp boundary (Tables~\ref{tab:secondenergy} and \ref{tab:sharpsolved}): its ratio to the projection
-error is level from $4$ to $64$ cells across, and the scheme loses an order as that predicts. What a
+error is level from $4$ to $64$ cells across, the scheme loses an order as that predicts, and the
+factor that remains moves by under $3\%$ over a tenfold range of the contrast
+(Table~\ref{tab:sharpcontrast}). What a
 tree saves (Table~\ref{tab:treesolved}): at most a factor of about three in cells, for constant cells
 and at most $2200$ leaves. Not established: trees beyond the dense solver, trees of degree-one cells,
 and a body without radial symmetry.

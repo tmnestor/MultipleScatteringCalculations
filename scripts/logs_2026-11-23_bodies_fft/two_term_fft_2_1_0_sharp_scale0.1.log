@@ -1,0 +1,7 @@
+radial body sharp: k_S a = 2.0, core = 1.0 a, degree p = r = 0, contrast x 0.1;  nonlinear fraction |exact - exact Born| / peak = 3.296e-03
+   n: cells unknowns | error | dT1 (no solve) | rest | E_p | error / E_p | rest / E_p | products | kernel s, solve s | against the dense solver
+     8:    408     3672 | 3.159e-02 | 3.148e-02 | 4.476e-04 | 1.225e-01 | 0.2579 | 0.0037 |    5 | 1, 0 | 
+    16:   2728    24984 | 8.053e-03 | 7.978e-03 | 2.211e-04 | 6.229e-02 | 0.1293 | 0.0036 |    5 | 3, 0 | 
+    32:  19544   177840 | 2.043e-03 | 2.001e-03 | 1.084e-04 | 3.094e-02 | 0.0660 | 0.0035 |    6 | 24, 1 | 
+   spread (max / min): error / E_p 3.91, rest / E_p 1.04
+   wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_two_term_fft_ka2_core1_p0_sharp_scale0.1.json
