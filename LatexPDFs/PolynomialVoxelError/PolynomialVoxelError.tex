@@ -2372,9 +2372,13 @@ holds it as cell means, so the prediction carries an error of second order in th
 removed by extrapolating from the two finest grids at that order. At $k_Sa=2$, where three fine grids
 were run ($32$, $48$ and $64$ across), the values are $0.841$, $0.864$, $0.873$ and the last two
 extrapolate to $0.885$.
-\item \emph{The check of the evaluation.} At $k_Sa=0.125$ the prediction must reproduce the closed forms
-of \S\ref{sec:factor3d} for degree-one cells, which were derived and tested separately; it gives $1.073$,
-$0.957$ and $1.342$ against $1.066$, $0.950$ and $1.337$.
+\item \emph{The check of the evaluation.} Two, each against something obtained another way. At
+$k_Sa=0.125$ the prediction must reproduce the closed forms of \S\ref{sec:factor3d} for degree-one cells,
+which were derived and tested separately; from fine grids of $48$ and $64$ it gives $1.068$, $0.951$ and
+$1.340$ against $1.066$, $0.950$ and $1.337$. And the same program run for constant cells must reproduce
+the scheme with constant cells and Eq.~\eqref{eq:Fdyn}, which was evaluated by a separate program along a
+separate route; at $k_Sa=0.5$ and $4$ it agrees with the scheme on $32$ cells to $0.9\%$ and $0.6\%$ at
+worst over the angles (at $k_Sa=4$, $4.218$ against $4.192$ for the outgoing SV wave at $1.91$\,rad).
 \end{itemize}
 \begin{table}[htbp]
 \centering
@@ -2389,7 +2393,7 @@ stiffness contrast, an incident P wave.}\label{tab:factorfreq1}
    \multicolumn{2}{c}{SV at $0.2$\,rad} & \multicolumn{2}{c}{SV at $1.91$\,rad} \\
 $k_Sa$ & predicted & scheme & predicted & scheme & predicted & scheme & predicted & scheme \\
 \midrule
-$0.125$ & $1.073$ & $1.065$ & $0.957$ & $0.948$ & $1.342$ & $1.340$ & $\phantom{-}1.337$ & $\phantom{-}1.335$ \\
+$0.125$ & $1.068$ & $1.065$ & $0.951$ & $0.948$ & $1.340$ & $1.340$ & $\phantom{-}1.335$ & $\phantom{-}1.335$ \\
 $0.5$   & $1.045$ & $1.041$ & $0.939$ & $0.931$ & $1.276$ & $1.278$ & $\phantom{-}1.196$ & $\phantom{-}1.200$ \\
 $1$     & $0.981$ & $0.979$ & $0.886$ & $0.883$ & $1.150$ & $1.153$ & $\phantom{-}0.815$ & $\phantom{-}0.821$ \\
 $2$     & $0.885$ & $0.889$ & $0.735$ & $0.738$ & $1.032$ & $1.033$ & $-0.352$ & $-0.350$ \\
