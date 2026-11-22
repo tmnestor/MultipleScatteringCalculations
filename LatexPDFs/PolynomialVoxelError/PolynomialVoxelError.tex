@@ -83,8 +83,10 @@ in closed form and of order one for a body small against the wavelength, and at 
 cells, where the wave's own variation across a cell adds the layer's constant for each of the two waves,
 the nonlinear fraction itself following from two products with the matrix
 of a coarse grid, with no solve. A sphere whose contrast falls smoothly to zero converges at the orders
-the layer predicts, and against its exact solution the second term has one constant, for constant and
-degree-one cells, on every grid. On that sphere, given the same cell mean of the medium, the Galerkin cell of
+the layer predicts, and against its exact solution the second term settles on one constant as the cells
+shrink, for constant and degree-one cells. That constant is not independent of the frequency: a cell holds
+the product of medium and wave and loses $\nabla^{p+1}(fw)=w(\nabla+\mathrm{i}\bk)^{p+1}f$, so the wave's
+variation enters beside the medium's, in powers of $kL$ with $L$ the length over which the medium varies. On that sphere, given the same cell mean of the medium, the Galerkin cell of
 degree one needs $7.5$ to $25$ times fewer unknowns than the classical point-matching cell, whose single site
 we evaluate exactly at every frequency, a factor that grows as the three-quarters power of the accuracy asked
 because the two differ in order; with the medium sampled at the cell centres, where on smooth bodies the
@@ -1228,7 +1230,10 @@ the strain scattered once is the profile itself, a cell holds it as $\Pi_{\min(p
 second scattering takes place in the cell of the first: the law is a statement about the single site,
 whose $T$-matrix is exact for the cell as represented and whose error is that the cell is not the
 medium. Measured, the part of $T_2$ between different cells carries at most $0.002$ of the error, and
-the departure from the law falls as $(kD)^2$.
+the departure from the law falls as $(kD)^2$. The law is therefore not independent of the frequency. The
+departure has a definite origin, which \S\ref{sec:factorfreq} derives in three dimensions: a cell holds
+the product of the medium and the wave, and what it loses of that product,
+$\nabla^{p+1}(fw)=w(\nabla+\mathrm{i}\bk)^{p+1}f$, contains the wave's variation beside the medium's.
 
 Three consequences follow. The two bases must be matched: a contrast of higher degree than the field is
 wasted (the pairs $(p,r)=(0,1)$ and $(0,2)$ have the errors of $(0,0)$ to three digits), and a field of
@@ -2022,43 +2027,102 @@ fifth at $k_Sa=1$, and at $k_Sa=4$, where the sphere is $1.3$ shear wavelengths 
 $1.4$ and $4.2$ (Table~\ref{tab:factorfreq}). A factor that grows with the frequency is not a factor of
 order one, and the second term would not be known before the solve unless the growth is understood.
 
-\paragraph{Why it happens.} A constant cell replaces the product of the profile $f$ and a plane wave
-$w=\mathrm{e}^{\mathrm{i}\bk\cdot\bx}$ by the product of their cell means. What the cell loses is, to
-leading order, a sawtooth with the slope of the product,
+\paragraph{The origin, in one formula.} A cell does not hold the medium; it holds the product of the
+medium and the wave that is passing through it. With $f$ the profile of the contrast and
+$w=\mathrm{e}^{\mathrm{i}\bk\cdot\bx}$ a plane wave, the source of scattering in a cell is $fw$, and a cell
+whose functions have degree $p$ loses, to leading order, the derivatives of order $p+1$ of that product.
+Since $\nabla w=\mathrm{i}\bk w$,
 \begin{equation}\label{eq:slope}
-  \nabla(fw)=w\,\bigl(\nabla f+\mathrm{i}\bk f\bigr).
+  \nabla^{p+1}(fw)=w\,(\nabla+\mathrm{i}\bk)^{p+1}f
+  =w\sum_{j=0}^{p+1}\binom{p+1}{j}\,(\mathrm{i}\bk)^{j}\,\nabla^{p+1-j}f ,
 \end{equation}
-The wave's own slope $\mathrm{i}\bk f$ stands beside the profile's slope $\nabla f$. In the long-wave
-limit the first is negligible and the residual is that of the profile alone, which is how
-\S\ref{sec:factor3d} treated it. At a finite frequency both are present, and where the profile is flat
-(the core of the sphere) the wave's slope is the only one. The relative projection error $\cE$ measures
-$\nabla f$ only, so an error normalised by it grows as $k^2$ times the ratio
+the products of vectors being symmetrised tensor products. The term $j=0$ is the derivative of the medium
+alone. It is the only one the relative projection error $\cE$ of Eq.~\eqref{eq:proj} measures, and the
+only one that survives in the long-wave limit, which is why \S\ref{sec:factor3d} found a factor that
+depends on nothing but the background and the directions. Every other term carries a power of the
+wavenumber. For constant cells ($p=0$) and for degree-one cells ($p=1$) Eq.~\eqref{eq:slope} reads
+\begin{equation}\label{eq:slope01}
+  \nabla(fw)=w\,\bigl(\nabla f+\mathrm{i}\bk f\bigr),\qquad
+  \nabla\nabla(fw)=w\,\bigl(\nabla\nabla f+\mathrm{i}\bk\,\nabla f+\mathrm{i}\,\nabla f\,\bk-\bk\bk f\bigr).
+\end{equation}
+The wave's own slope $\mathrm{i}\bk f$ stands beside the medium's slope $\nabla f$, and where the medium
+is uniform (the core of the sphere) the wave's slope is the only one. The relative size of the two is set
+by one length of the body,
 \begin{equation}\label{eq:L2}
-  L^2=\frac{\int f^2\,\dd V}{\int\lvert\nabla f\rvert^2\,\dd V},
+  L^2=\frac{\int f^2\,\dd V}{\int\lvert\nabla f\rvert^2\,\dd V},\qquad
+  \frac{\int\lvert\mathrm{i}\bk f\rvert^2\,\dd V}{\int\lvert\nabla f\rvert^2\,\dd V}=k^2L^2 ,
 \end{equation}
-the square of the length over which the profile varies ($L=0.27a$ for the sphere of the test).
+the square of the length over which the profile varies ($L=0.27a$ for the sphere of the test). An error
+normalised by $\cE$ therefore carries terms in $(kL)^2$ for constant cells and in $(kL)^2$ and $(kL)^4$
+for degree-one cells. The factor $F$ is independent of the frequency only while $kL\ll1$.
 
-\paragraph{The derivation.} Write the second-order term as the bilinear form
+\paragraph{What a cell loses, as it acts on a smooth field.} The error of $T_2$ needs the part $g$ that a
+cell loses of $fw$, integrated against a smooth field $\phi$ (the field scattered once, or its adjoint).
+Summed over the cells of half-width $h$ this is an integral over the body,
+\begin{equation}\label{eq:lostdensity}
+  \sum_{\text{cells}}\int g\,\phi\,\dd V=h^{2p+2}\int w\,\mathcal{D}_p[f,\phi]\,\dd V+O\bigl(h^{2p+4}\bigr),
+\end{equation}
+and the density $\mathcal{D}_p$ is bilinear in the derivatives of $f$ and of $\phi$ at a point. It was
+derived symbolically, by expanding $f$, $w$ and $\phi$ about the centre of a cube and integrating
+(\path{scripts/derive_cell_residual_moments.py}). The results have one structure. Write $\Pi$ for the
+projection onto the cell's functions and split what the scheme loses on the side of the readout, where
+it projects the product of the wave and the projected medium:
+\begin{equation}\label{eq:lostsplit}
+  g=fw-\Pi\bigl(w\,\Pi f\bigr)=\underbrace{fw-\Pi(fw)}_{\text{the product, unresolved}}
+  +\underbrace{\Pi\bigl(w\,(f-\Pi f)\bigr)}_{\text{the medium's residual, carried by the wave}} .
+\end{equation}
+The first part is orthogonal to the cell's functions and sees the derivatives of order $p+1$ of $\phi$;
+the second is a cell function and sees $\phi$ through the wave. For constant cells, on both sides,
+\begin{equation}\label{eq:D0}
+  \mathcal{D}_0[f,\phi]=\tfrac13\Bigl[\bigl(\nabla f+\mathrm{i}\bk f\bigr)\cdot\nabla\phi
+  +\mathrm{i}\,(\bk\cdot\nabla f)\,\phi\Bigr].
+\end{equation}
+For degree-one cells let $\langle\mathbf{A},\mathbf{B}\rangle_{\mathrm{c}}=\tfrac1{45}\sum_iA_{ii}B_{ii}
++\tfrac1{18}\sum_{i\ne j}A_{ij}B_{ij}$, the form that the second moments of a cube induce on symmetric
+tensors ($2h^4/45$ on the diagonal, $h^4/9$ off it), and $\mathbf{H}=\nabla\nabla f$. On the side of the
+readout
+\begin{equation}\label{eq:D1out}
+  \mathcal{D}_1^{\mathrm{out}}[f,\phi]
+  =\bigl\langle\mathbf{H}+\mathrm{i}\bk\,\nabla f+\mathrm{i}\,\nabla f\,\bk-\bk\bk f,\ \nabla\nabla\phi\bigr\rangle_{\mathrm{c}}
+  +\bigl\langle\mathbf{H},\ \mathrm{i}\bk\,\nabla\phi+\mathrm{i}\,\nabla\phi\,\bk-\bk\bk\,\phi\bigr\rangle_{\mathrm{c}} ,
+\end{equation}
+the two brackets being the two parts of Eq.~\eqref{eq:lostsplit}: the curvature of the product against
+the curvature of $\phi$, and the curvature of the medium against what the wave makes of the linear part
+of $\phi$. On the side of the source the scheme multiplies the two linear forms $\Pi f$ and $\Pi w$ and
+keeps the product whole, so it loses $fw-\Pi f\,\Pi w$, in which the cross term of the two slopes is not
+lost at all:
+\begin{equation}\label{eq:D1in}
+  \mathcal{D}_1^{\mathrm{in}}[f,\phi]
+  =\bigl\langle\mathbf{H},\ \nabla\nabla\phi+\mathrm{i}\bk\,\nabla\phi+\mathrm{i}\,\nabla\phi\,\bk-\bk\bk\,\phi\bigr\rangle_{\mathrm{c}}
+  -\bigl\langle\bk\bk,\ f\,\nabla\nabla\phi+\nabla f\,\nabla\phi+\nabla\phi\,\nabla f\bigr\rangle_{\mathrm{c}} .
+\end{equation}
+Here the first bracket is the medium's curvature against the curvature of $w\phi$, and the second is the
+wave's curvature, $-\bk\bk w$, against the curvature of $\phi$ times the linear part of $f$. In all three
+densities the terms without $\bk$ are the static ones of \S\ref{sec:factor3d}:
+$\tfrac13\nabla f\cdot\nabla\phi$ and $\langle\mathbf{H},\nabla\nabla\phi\rangle_{\mathrm{c}}$. Every other
+term is the frequency dependence, and each can be traced to a term $j\ge1$ of Eq.~\eqref{eq:slope}.
+
+\paragraph{The factor.} Write the second-order term as the bilinear form
 $T_2=\langle fw_{\mathrm{out}},K\,fw_{\mathrm{in}}\rangle$, with
 $w_{\mathrm{in}}=\mathrm{e}^{\mathrm{i}\bk_{\mathrm{in}}\cdot\bx}$,
 $w_{\mathrm{out}}=\mathrm{e}^{-\mathrm{i}\bk_{\mathrm{out}}\cdot\bx}$ and $K$ now the operator of the
 background at the frequency of the wave, and write $T_2[A;B]$ for the same form with the profile $B$ in
-the first scattering and $A$ in the second, so that $T_2=T_2[f;f]$. With $g=fw-\bar f\,\bar w$ the part
-a cell loses on either side (bars for cell means), the error is
-$\langle g_{\mathrm{out}},Kfw_{\mathrm{in}}\rangle+\langle fw_{\mathrm{out}},Kg_{\mathrm{in}}\rangle
--\langle g_{\mathrm{out}},Kg_{\mathrm{in}}\rangle$ exactly, as in Eq.~\eqref{eq:t2factor}. Two facts about
-a sawtooth of slope $\mathbf{G}$ in cells of half-width $h$, the same two as in the static case, evaluate
-the three forms to order $h^2$.
-\begin{itemize}
-\item Against a smooth field the sawtooth acts as $-(h^2/3)\,\nabla\cdot\mathbf{G}$, and the product of
-the cell means differs from the mean of the product by $(h^2/3)\nabla f\cdot\nabla w$. Together they give
-$g\to(h^2/3)\,w\,\bigl(-\nabla^2f+k^2f\mp\mathrm{i}\bk\cdot\nabla f\bigr)$, the upper sign for the incident
-side. The term $k^2f$ returns $T_2$ itself.
-\item The product of two sawtooths along axis $j$ has the mean $(h^2/3)G_jG'_j$, and its harmonics lie on
-that axis at wavenumbers of order $1/h$, far above $k$, where $K$ is the static strain Green operator
-along the axis, $\boldsymbol\Gamma(\mathbf{e}_j)$, whatever the frequency.
-\end{itemize}
-Dividing by $\cE=(h^2/3)/L^2$, the factor is
+the first scattering and $A$ in the second, so that $T_2=T_2[f;f]$. With $g_{\mathrm{in}}$ and
+$g_{\mathrm{out}}$ the parts lost on the two sides, the error is, exactly,
+\begin{equation}\label{eq:t2split}
+  T_2-T_2^{\mathrm{scheme}}=\langle g_{\mathrm{out}},K\,fw_{\mathrm{in}}\rangle
+  +\langle fw_{\mathrm{out}},K\,g_{\mathrm{in}}\rangle-\langle g_{\mathrm{out}},K\,g_{\mathrm{in}}\rangle .
+\end{equation}
+The first two terms are Eq.~\eqref{eq:lostdensity} with $\phi$ the field scattered once and its adjoint.
+The third is local: the lost parts oscillate from cell to cell, their spectrum lies on the axes of the
+cube (and, for degree-one cells, on the lattices of its coordinate planes) at wavenumbers of order $1/h$,
+far above $k$, and there $K$ is the static strain Green operator $\boldsymbol\Gamma$ whatever the
+frequency. So the third term is the static one of \S\ref{sec:factor3d} with the slopes of
+Eq.~\eqref{eq:slope01} in place of the medium's.
+
+For constant cells, integrating Eq.~\eqref{eq:D0} by parts onto the profile, the lost part acts as
+$(h^2/3)\,w\,\bigl(-\nabla^2f+k^2f\mp\mathrm{i}\bk\cdot\nabla f\bigr)$, the upper sign for the incident
+side, and the term $k^2f$ returns $T_2$ itself. Dividing by $\cE=(h^2/3)/L^2$,
 \begin{equation}\label{eq:Fdyn}
 \begin{split}
   F={}&\bigl(k_{\mathrm{in}}^2+k_{\mathrm{out}}^2\bigr)L^2
@@ -2069,11 +2133,25 @@ Dividing by $\cE=(h^2/3)/L^2$, the factor is
 \end{split}
 \end{equation}
 with $m(\mathbf{e}_j)$ the multiplier of Eq.~\eqref{eq:mfactor} along axis $j$. The three lines are
-called below the wave part, the profile part and the local part. It does not depend on $h$: it is the
+called below the wave part, the profile part and the local part. $F$ does not depend on $h$: it is the
 limit of the scheme's factor as the cells shrink, at any frequency. At zero frequency the wave part
 vanishes, the profile part is $2$ for a body with an isotropic spectrum and the local part is
 $m_{\mathrm{ax}}/\bar m$, which is Eq.~\eqref{eq:F0}.
 
+For degree-one cells the same three terms are formed from Eqs.~\eqref{eq:D1out} and \eqref{eq:D1in}, and
+the local term is
+\begin{equation}\label{eq:local1}
+  \langle g_{\mathrm{out}},K\,g_{\mathrm{in}}\rangle=h^4\int w_{\mathrm{out}}w_{\mathrm{in}}
+  \Bigl[\tfrac1{45}\sum_jm(\mathbf{e}_j)\,H^{\mathrm{out}}_{jj}H^{\mathrm{in}}_{jj}
+  +\tfrac19\sum_{i<j}M_{ij}\,H^{\mathrm{out}}_{ij}H^{\mathrm{in}}_{ij}\Bigr]\dd V,
+\end{equation}
+with $M_{ij}$ the lattice average of Eq.~\eqref{eq:F1} and the two curvatures different, as the two sides
+of the scheme are:
+$\mathbf{H}^{\mathrm{in}}=\mathbf{H}-\bk_{\mathrm{in}}\bk_{\mathrm{in}}f$ and
+$\mathbf{H}^{\mathrm{out}}=\mathbf{H}-\mathrm{i}\bk_{\mathrm{out}}\nabla f-\mathrm{i}\,\nabla f\,\bk_{\mathrm{out}}
+-\bk_{\mathrm{out}}\bk_{\mathrm{out}}f$. Its relative projection error is
+$\cE=h^4\int\langle\mathbf{H},\mathbf{H}\rangle_{\mathrm{c}}\,\dd V/\int f^2\,\dd V$, by which the sum is
+divided.
 \paragraph{The wave part is the layer's constant.} In terms of the cell width $d=2h$ the wave part of the
 relative error of $T_2$ is $\bigl[(k_{\mathrm{in}}d)^2+(k_{\mathrm{out}}d)^2\bigr]/12$: the constant
 $c_0=1/12$ of the layer, Eq.~\eqref{eq:cp}, once for the wave that arrives and once for the wave that
@@ -2471,9 +2549,12 @@ waves and at normal and oblique incidence alike. The basis of the medium sets ho
 make up for the other, and the second-order term shows why. The field scattered once is a copy of the
 medium's profile, so the wavefield basis must carry the profile as well as the wave, and the error of
 that term is the relative projection error of the profile at the lower of the two degrees
-(Eq.~\eqref{eq:defectlaw}). At the frequencies of interest the wave varies little across a cell and the
-medium may vary much, so it is the medium, not the wavelength, that decides the degree and the size of
-the cells. Two cases bracket the choice. Where the medium is piecewise constant on the cells, as in a
+(Eq.~\eqref{eq:defectlaw}). Which of the two decides the degree and the size of the cells depends on
+the product $kL$ of the wavenumber and the length $L$ over which the medium varies
+(Eq.~\eqref{eq:L2}). Where $kL\ll1$ the wave varies little across a cell and the medium may vary much, and
+it is the medium that decides. Where $kL$ is of order one or more the wave's variation enters the error of
+the nonlinear part with the same weight as the medium's (Eq.~\eqref{eq:slope}), and the cells must resolve
+both (\S\ref{sec:factorfreq}). Two cases bracket the choice. Where the medium is piecewise constant on the cells, as in a
 layered model with voxel faces on its interfaces, a constant is exact for the medium, the projection
 error vanishes, and the degree of the field is spent entirely on the wave. Where the medium varies
 smoothly within the cells, the two degrees should be equal: a higher degree for the contrast than for
