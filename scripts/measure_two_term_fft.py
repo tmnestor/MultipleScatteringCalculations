@@ -29,7 +29,7 @@ Run small first:
 
 ``--scale`` multiplies the contrast (the exact reference is solved at the same scaled contrast).
 
-``--shape=halo`` and ``--shape=sharp`` (cells of degree 0 or 1) run the two further radial bodies of
+``--shape=halo`` and ``--shape=sharp`` (cells of degree 0, 1 or 2) run the two further radial bodies of
 ``measure_octree_first_order_greedy.py``: the strong centre in a weak surround, and the classical sharp
 uniform sphere (core_frac 1). On the sharp sphere each cell holds the fraction of its volume inside the
 sphere (exact along z, a 64 x 64 midpoint rule across), so the first-order term has no staircase error,
@@ -45,6 +45,15 @@ rule across), and the relative projection error is what that projection leaves: 
 of volume x (phi - phi^2 - 3 |m|^2) over the volume of the sphere, phi the fraction inside and m the
 means of indicator times local coordinate. A linear function cannot follow a jump either, so this too
 falls only as the first power of the cell.
+
+Cells of degree two (p = 2, ten functions and 90 unknowns a cell) run on all three bodies. On the sharp
+sphere the cell holds the projection of the indicator onto the package's ten contrast functions (1, the
+three coordinates, the three Legendre polynomials of degree two and the three products of two
+coordinates), from the means of the indicator times each (exact along z, a 256 x 256 midpoint rule
+across), and what the projection leaves is the fraction inside less the sum of the squared coefficients
+times each function's mean square. On the halo what a cell leaves is the variance of the profile less
+what the nine functions above the constant hold, by the six-point Gauss rule. These are the grids for
+the question of degree against cell size: at equal unknowns, which degree has the smaller error.
 """
 
 import json
@@ -62,6 +71,11 @@ from measure_graded_voxel_resolution import exact_field, radial  # noqa: E402
 from pilot_graded_sphere_vs_exact import RADIUS, THETA  # noqa: E402
 
 from cubic_scattering.effective_contrasts import MaterialContrast  # noqa: E402
+from cubic_scattering.graded_voxel.basis import (  # noqa: E402
+    CONTRAST_BASIS,
+    CONTRAST_NORMS,
+    contrast_values,
+)
 from cubic_scattering.graded_voxel.farfield import graded_far_field  # noqa: E402
 from cubic_scattering.graded_voxel.fft import solve_graded_sphere_fft  # noqa: E402
 from cubic_scattering.graded_voxel.octree import (  # noqa: E402
@@ -95,8 +109,8 @@ def main() -> int:
     tol = float(opts.get("tol", "1e-11"))
     shape = opts.get("shape", "s5")
     sharp = shape == "sharp"
-    if shape != "s5" and p not in (0, 1):
-        raise SystemExit("--shape=halo and --shape=sharp are for cells of degree p = 0 or 1")
+    if p not in (0, 1, 2):
+        raise SystemExit("the cells are of degree p = 0, 1 or 2")
     ref_shape = "s5" if sharp else shape  # the sharp sphere is the shell body with its core at the surface
     omega = ka * REF.beta / RADIUS
     rf = 5e8 * RADIUS
@@ -114,6 +128,8 @@ def main() -> int:
     gauss_x, gauss_w = np.polynomial.legendre.leggauss(6)
     gauss_xi = np.stack(np.meshgrid(gauss_x, gauss_x, gauss_x, indexing="ij"), -1).reshape(-1, 3)
     gauss_ww = np.einsum("i,j,k->ijk", gauss_w, gauss_w, gauss_w).ravel() / 8.0
+
+    gauss_basis = contrast_values(gauss_xi)  # the ten contrast functions at the Gauss points
 
     def fraction(c: np.ndarray, h: float) -> float:
         """The fraction of the cell's volume inside the sphere: exact along z, midpoint rule in x and y."""
@@ -142,6 +158,35 @@ def main() -> int:
             [float((x * length).mean()), float((y * length).mean()), float(first_z.mean())]
         )
 
+    mean_square = np.array(CONTRAST_NORMS) / 8.0  # the mean over the cell of each contrast function squared
+
+    def quadratic_coefficients(c: np.ndarray, h: float) -> np.ndarray:
+        """The ten coefficients of the L2 projection of the indicator of the sphere onto the package's
+        contrast functions on the cell: the mean of the indicator times each function over the function's
+        mean square. Each mean is exact along z (the integral of a power of z over the part of the column
+        inside the sphere) and a 256 x 256 midpoint rule in x and y."""
+        if np.linalg.norm(np.abs(c) + h) <= RADIUS:
+            return np.eye(10)[0]
+        if np.linalg.norm(np.clip(np.abs(c) - h, 0.0, None)) >= RADIUS:
+            return np.zeros(10)
+        x, y = np.meshgrid(fine, fine, indexing="ij")
+        half = np.sqrt(np.clip(RADIUS**2 - (c[0] + h * x) ** 2 - (c[1] + h * y) ** 2, 0.0, None))
+        top = np.clip((np.minimum(c[2] + h, half) - c[2]) / h, -1.0, 1.0)
+        bottom = np.clip((np.maximum(c[2] - h, -half) - c[2]) / h, -1.0, 1.0)
+        inside = top > bottom
+        z_power = [
+            np.where(inside, (top ** (e + 1) - bottom ** (e + 1)) / (2.0 * (e + 1)), 0.0) for e in range(3)
+        ]
+        means = np.array(
+            [
+                sum(
+                    float((coef * x ** e[0] * y ** e[1] * z_power[e[2]]).mean()) for e, coef in poly.items()
+                )
+                for poly in CONTRAST_BASIS
+            ]
+        )
+        return means / mean_square
+
     def sharp_profile(h: float) -> tuple[Callable[[np.ndarray], float], dict]:
         """The sharp sphere as the cells of half-width h hold it, and the moments it was built from.
 
@@ -149,7 +194,8 @@ def main() -> int:
         degree-one cells it is the L2 projection of the indicator onto the polynomials of degree one on
         its cell, phi + 3 (m . xi) with phi the fraction and m the means of indicator times xi, so that
         the solver's Gauss rule, which is exact for a polynomial, projects the true discontinuous medium
-        and not a sampled one.
+        and not a sampled one. For degree-two cells it is the projection onto the ten contrast functions,
+        and the cell's record is (phi, the ten coefficients).
         """
         known: dict = {}
 
@@ -158,20 +204,30 @@ def main() -> int:
             idx = tuple(np.floor((pos + RADIUS) / (2.0 * h)).astype(int))
             c = -RADIUS + (np.array(idx) + 0.5) * 2.0 * h
             if idx not in known:
-                known[idx] = (fraction(c, h), np.zeros(3)) if p == 0 else linear_moments(c, h)
+                if p == 2:
+                    coeff = quadratic_coefficients(c, h)
+                    known[idx] = (float(coeff[0]), coeff)
+                else:
+                    known[idx] = (fraction(c, h), np.zeros(3)) if p == 0 else linear_moments(c, h)
             phi, m = known[idx]
+            if p == 2:
+                return float(m @ contrast_values(((pos - c) / h)[None, :])[:, 0])
             return phi if p == 0 else float(phi + 3.0 * m @ ((pos - c) / h))
 
         return value, known
 
     def other_energies(centres: np.ndarray, h: float, profile: Callable) -> tuple[np.ndarray, float]:
         """For the halo and the sharp sphere: each cell's integral of (f - its projection)^2, and that of
-        f^2. On the sharp sphere the projection is to the degree of the cells (0 or 1)."""
+        f^2. The projection is to the degree of the cells (0, 1 or 2)."""
         if sharp:
             for c in centres:
                 profile(c)
             got = [known_n[tuple(np.floor((c + RADIUS) / (2.0 * h)).astype(int))] for c in centres]
             phi = np.array([g[0] for g in got])
+            if p == 2:  # the indicator's mean square is phi; the projection holds sum coeff^2 x mean square
+                held = np.array([float((g[1] ** 2) @ mean_square) for g in got])
+                lost = (2.0 * h) ** 3 * np.clip(phi - held, 0.0, None)
+                return lost, 4.0 * np.pi * RADIUS**3 / 3.0
             slope = np.array([3.0 * g[1] @ g[1] for g in got])
             lost = (2.0 * h) ** 3 * np.clip(phi * (1.0 - phi) - slope, 0.0, None)
             return lost, 4.0 * np.pi * RADIUS**3 / 3.0
@@ -179,8 +235,10 @@ def main() -> int:
         for i, c in enumerate(centres):
             f = np.array([profile(c + h * xi) for xi in gauss_xi])
             var = float(gauss_ww @ f**2 - (gauss_ww @ f) ** 2)
-            if p == 1:  # less what the three linear polynomials hold
+            if p >= 1:  # less what the three linear polynomials hold
                 var -= 3.0 * float(np.sum(((gauss_ww * f) @ gauss_xi) ** 2))
+            if p == 2:  # and the six of degree two
+                var -= float(np.sum((gauss_basis[4:] @ (gauss_ww * f)) ** 2 / mean_square[4:]))
             lost[i] = (2.0 * h) ** 3 * max(var, 0.0)
         rr = (np.arange(200000) + 0.5) * RADIUS / 200000
         ff = np.array([radial(shape, core, x) for x in rr])

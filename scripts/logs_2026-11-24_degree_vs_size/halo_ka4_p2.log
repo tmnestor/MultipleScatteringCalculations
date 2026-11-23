@@ -1,0 +1,12 @@
+radial body halo: k_S a = 4.0, core = 0.2 a, degree p = r = 2, contrast x 1.0;  nonlinear fraction |exact - exact Born| / peak = 1.893e-02
+   n: cells unknowns | error | dT1 (no solve) | rest | E_p | error / E_p | rest / E_p | products | kernel s, solve s | against the dense solver
+     4:     64     5760 | 1.334e-02 | 1.506e-02 | 4.376e-03 | 1.250e-01 | 0.1067 | 0.0350 |    7 | 8, 0 | 
+     6:    184    18720 | 2.589e-03 | 2.327e-03 | 1.178e-03 | 4.197e-02 | 0.0617 | 0.0281 |    7 | 11, 0 | 
+     8:    408    36720 | 4.910e-04 | 3.134e-04 | 4.301e-04 | 1.443e-02 | 0.0340 | 0.0298 |    7 | 3, 1 | 
+    12:   1256   115200 | 9.617e-05 | 2.604e-05 | 9.449e-05 | 3.168e-03 | 0.0304 | 0.0298 |    7 | 6, 2 | 
+    16:   2728   249840 | 2.856e-05 | 2.083e-06 | 2.790e-05 | 9.273e-04 | 0.0308 | 0.0301 |    7 | 14, 5 | 
+    20:   5112   473040 | 9.455e-06 | 8.375e-07 | 9.312e-06 | 3.122e-04 | 0.0303 | 0.0298 |    7 | 39, 26 | 
+    24:   8504   793440 | 3.400e-06 | 6.898e-07 | 3.294e-06 | 1.119e-04 | 0.0304 | 0.0294 |    7 | 70, 28 | 
+    32:  19544  1778400 | 7.242e-07 | 3.491e-07 | 5.662e-07 | 2.309e-05 | 0.0314 | 0.0245 |    7 | 276, 188 | 
+   spread (max / min): error / E_p 3.52, rest / E_p 1.43
+   wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_two_term_fft_ka4_core0.2_p2_halo.json

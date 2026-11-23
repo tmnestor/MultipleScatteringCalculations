@@ -1,0 +1,12 @@
+radial body sharp: k_S a = 2.0, core = 1.0 a, degree p = r = 2, contrast x 1.0;  nonlinear fraction |exact - exact Born| / peak = 3.186e-02
+   n: cells unknowns | error | dT1 (no solve) | rest | E_p | error / E_p | rest / E_p | products | kernel s, solve s | against the dense solver
+     4:     64     5760 | 2.313e-03 | 4.579e-05 | 2.314e-03 | 6.802e-02 | 0.0340 | 0.0340 |    8 | 2, 0 | 
+     6:    184    18720 | 1.784e-03 | 1.490e-05 | 1.784e-03 | 5.356e-02 | 0.0333 | 0.0333 |    8 | 5, 1 | 
+     8:    408    36720 | 1.266e-03 | 2.507e-06 | 1.266e-03 | 3.844e-02 | 0.0329 | 0.0329 |    8 | 9, 1 | 
+    12:   1256   115200 | 8.257e-04 | 4.168e-07 | 8.257e-04 | 2.502e-02 | 0.0330 | 0.0330 |    8 | 23, 2 | 
+    16:   2728   249840 | 6.445e-04 | 2.069e-07 | 6.445e-04 | 1.961e-02 | 0.0329 | 0.0329 |    8 | 48, 6 | 
+    20:   5112   473040 | 5.028e-04 | 1.313e-07 | 5.028e-04 | 1.526e-02 | 0.0329 | 0.0329 |    8 | 94, 12 | 
+    24:   8504   793440 | 4.268e-04 | 5.877e-08 | 4.268e-04 | 1.299e-02 | 0.0329 | 0.0329 |    8 | 154, 17 | 
+    32:  19544  1778400 | 3.192e-04 | 5.150e-08 | 3.192e-04 | 9.719e-03 | 0.0328 | 0.0328 |    8 | 357, 64 | 
+   spread (max / min): error / E_p 1.04, rest / E_p 1.04
+   wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_two_term_fft_ka2_core1_p2_sharp.json
