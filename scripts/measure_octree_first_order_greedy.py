@@ -119,6 +119,20 @@ sizes (``graded_voxel.octree_fft``): one FFT on the lattice of the smallest cell
 it and a gather after. The dense solver stops near 2200 constant leaves; this one is limited by the
 uniform grid of the smallest cells and not by the number of leaves. Its results go to a file of their own
 (``_matrixfree`` appended to the name).
+
+TREES OF DEGREE-ONE CELLS (``--p=1``; ``_p1`` appended to the name). Every leaf then carries the four
+polynomials of degree at most one, for the field and for the medium alike (p = r = 1), and so 36 unknowns
+where a constant leaf carries 9. What changes in the script:
+  * the medium a leaf loses is what is left after its L2 projection onto the polynomials of degree one,
+        e(leaf) = volume x ( mean of f^2 - (mean of f)^2 - 3 sum_i (mean of f xi_i)^2 ),
+    xi being the local coordinates, each from -1 to 1 across the leaf;
+  * on the sharp sphere a leaf holds that projection of the indicator of the sphere, phi + 3 m . xi, with
+    phi the fraction of the leaf inside and m the means of indicator times xi (exact along z, a
+    256 x 256 midpoint rule across), so that e(leaf) = volume x (phi - phi^2 - 3 |m|^2) and the profile
+    handed to the package is linear on each leaf, which its Gauss rule projects exactly.
+The first-order error of degree-one cells is of fourth order in the cell, so on a body with a jump the
+whole error is the second term, and the rule that grows by the first-order error alone is growing by the
+wrong quantity; ``--rule=twoterm`` is the one to watch here.
 """
 
 import itertools
@@ -175,6 +189,13 @@ def main() -> int:
     h_min = float(opts.get("hmin", RADIUS / 16))
     shape = opts.get("shape", "s5")
     rule = opts.get("rule", "residual")
+    p = int(opts.get("p", 0))
+    if p not in (0, 1):
+        raise SystemExit(
+            f"measure_octree_first_order_greedy: --p={p} is not a degree this script grows. Allowed: 0 "
+            "(constant cells) or 1 (cells of degree one). Fix: pass --p=0 or --p=1."
+        )
+    per_leaf = 9 * (1 if p == 0 else 4)  # unknowns of a leaf
     factor = float(opts.get("factor", 1.0))
     if rule not in ("residual", "own", "hybrid", "twoterm"):
         raise SystemExit(
@@ -215,21 +236,56 @@ def main() -> int:
             fractions[key] = float(length.mean() / (2.0 * h))
         return fractions[key]
 
+    fine_mid = (np.arange(256) + 0.5) / 128.0 - 1.0
+    moments: dict = {}
+
+    def linear_moments(c: np.ndarray, h: float) -> tuple[float, np.ndarray]:
+        """The means over the cell of the indicator of the sphere and of the indicator times each local
+        coordinate xi_i = (x_i - c_i) / h: exact along z, a 256 x 256 midpoint rule in x and y. A cell
+        wholly inside or wholly outside is recognised by its farthest and nearest points."""
+        key = (round(float(c[0]), 9), round(float(c[1]), 9), round(float(c[2]), 9), round(h, 9))
+        if key not in moments:
+            if np.linalg.norm(np.abs(c) + h) <= RADIUS:
+                moments[key] = (1.0, np.zeros(3))
+            elif np.linalg.norm(np.clip(np.abs(c) - h, 0.0, None)) >= RADIUS:
+                moments[key] = (0.0, np.zeros(3))
+            else:
+                x, y = np.meshgrid(fine_mid, fine_mid, indexing="ij")  # local coordinates
+                half = np.sqrt(np.clip(RADIUS**2 - (c[0] + h * x) ** 2 - (c[1] + h * y) ** 2, 0.0, None))
+                top = np.clip((np.minimum(c[2] + h, half) - c[2]) / h, -1.0, 1.0)
+                bottom = np.clip((np.maximum(c[2] - h, -half) - c[2]) / h, -1.0, 1.0)
+                length = np.clip(top - bottom, 0.0, None) / 2.0  # the fraction of each column inside
+                first_z = np.where(top > bottom, (top**2 - bottom**2) / 4.0, 0.0)
+                moments[key] = (
+                    float(length.mean()),
+                    np.array(
+                        [float((x * length).mean()), float((y * length).mean()), float(first_z.mean())]
+                    ),
+                )
+        return moments[key]
+
     energies: dict = {}
     gauss_x, gauss_w = np.polynomial.legendre.leggauss(6)
     gauss_xi = np.stack(np.meshgrid(gauss_x, gauss_x, gauss_x, indexing="ij"), -1).reshape(-1, 3)
     gauss_ww = np.einsum("i,j,k->ijk", gauss_w, gauss_w, gauss_w).ravel() / 8.0
 
     def energy(c: np.ndarray, h: float) -> float:
-        """The integral over the cell of (f - its mean over the cell)^2: what a constant cell loses of f."""
+        """The integral over the cell of (f - its projection to the degree of the cells)^2: what a cell
+        of that degree loses of f."""
         key = (round(float(c[0]), 9), round(float(c[1]), 9), round(float(c[2]), 9), round(h, 9))
         if key not in energies:
-            if sharp:
+            if sharp and p == 0:
                 phi = fraction(c, h)
                 var = phi * (1.0 - phi)
+            elif sharp:
+                phi, m = linear_moments(c, h)
+                var = max(phi * (1.0 - phi) - 3.0 * float(m @ m), 0.0)
             else:
-                f = np.array([radial(shape, core, float(np.linalg.norm(c + h * p))) for p in gauss_xi])
-                var = max(float(gauss_ww @ f**2 - (gauss_ww @ f) ** 2), 0.0)
+                f = np.array([radial(shape, core, float(np.linalg.norm(c + h * xi))) for xi in gauss_xi])
+                var = float(gauss_ww @ f**2 - (gauss_ww @ f) ** 2)
+                if p == 1:
+                    var -= 3.0 * float(np.sum(((gauss_ww * f) @ gauss_xi) ** 2))
+                var = max(var, 0.0)
             energies[key] = (2.0 * h) ** 3 * var
         return energies[key]
 
@@ -243,19 +299,22 @@ def main() -> int:
             for c, h in zip(cs, hs_, strict=True):
                 m = round(float(h) / fine)
                 steps = (2 * np.arange(m) + 1 - m) * fine
-                phi = fraction(c, float(h))
+                held = fraction(c, float(h)) if p == 0 else (c, float(h), *linear_moments(c, float(h)))
                 for dx in steps:
                     for dy in steps:
                         for dz in steps:
                             key = tuple(np.floor((c + (dx, dy, dz) + RADIUS) / (2.0 * fine)).astype(int))
-                            table[key] = phi
+                            table[key] = held
             scope["fine"], scope["table"] = fine, table
 
     def prof(pos: np.ndarray) -> float:
         if not sharp:
             return radial(shape, core, float(np.linalg.norm(pos)))
         key = tuple(np.floor((np.asarray(pos) + RADIUS) / (2.0 * scope["fine"])).astype(int))
-        return scope["table"][key]
+        if p == 0:
+            return scope["table"][key]
+        c, h, phi, m = scope["table"][key]
+        return float(phi + 3.0 * m @ ((np.asarray(pos) - c) / h))
 
     def exact_born_at(points: np.ndarray) -> np.ndarray:
         return (
@@ -286,7 +345,7 @@ def main() -> int:
             else:
                 set_scope(c[None, :], np.array([h]))
                 res = born_octree(
-                    omega, REF, CONTRAST, c[None, :], np.array([h]), prof, K_HAT, K_HAT, "P", p=0, r=0
+                    omega, REF, CONTRAST, c[None, :], np.array([h]), prof, K_HAT, K_HAT, "P", p=p, r=p
                 )
                 cache[key] = sum(octree_far_field(res, all_dirs, rf))
         return cache[key]
@@ -309,6 +368,7 @@ def main() -> int:
     )
     tag = (
         ("" if shape == "s5" else f"_{shape}")
+        + ("" if p == 0 else f"_p{p}")
         + (
             ""
             if rule == "residual"
@@ -323,6 +383,8 @@ def main() -> int:
         "core_frac": core_frac,
         "h_min": h_min,
         "shape": shape,
+        "p": p,
+        "unknowns_per_leaf": per_leaf,
         "rule": rule,
         "hybrid_factor": factor if rule in ("hybrid", "twoterm") else None,
         "growth_directions": N_GROWTH,
@@ -330,7 +392,7 @@ def main() -> int:
         "trees": [],
     }
     print(
-        f"an octree of constant cells grown by its first-order error (rule: {rule}): k_S a = {ka}, "
+        f"an octree of cells of degree {p} grown by its first-order error (rule: {rule}): k_S a = {ka}, "
         f"core = {core_frac} a, shape {shape}, "
         f"{N_GROWTH} growth directions, judged on the nine test directions",
         flush=True,
@@ -359,7 +421,7 @@ def main() -> int:
         cs_u, hs_u = np.array([c for c, _ in kept]), np.array([h for _, h in kept])
         set_scope(cs_u, hs_u)
         series_u = born_series_octree(
-            omega, REF, CONTRAST, cs_u, hs_u, prof, K_HAT, K_HAT, "P", 2, p=0, r=0, block_cache=block_cache
+            omega, REF, CONTRAST, cs_u, hs_u, prof, K_HAT, K_HAT, "P", 2, p=p, r=p, block_cache=block_cache
         )
         d_t2_u = (sum(octree_far_field(series_u[1], all_dirs, rf)) - second_exact)[n_grow:]
         row_s = {
@@ -371,10 +433,10 @@ def main() -> int:
         }
         d_t1_u = (sum(born_of(c, h) for c, h in kept) - born_exact)[n_grow:]
         row_s["two_term_test"] = float(np.abs(d_t1_u + d_t2_u).max() / peak)
-        if not dry and len(kept) * 9 <= DENSE_LIMIT:
+        if not dry and len(kept) * per_leaf <= DENSE_LIMIT:
             set_scope(cs_u, hs_u)
             res_u = solve_graded_octree(
-                omega, REF, CONTRAST, cs_u, hs_u, prof, K_HAT, K_HAT, "P", p=0, r=0, block_cache=block_cache
+                omega, REF, CONTRAST, cs_u, hs_u, prof, K_HAT, K_HAT, "P", p=p, r=p, block_cache=block_cache
             )
             err_u = sum(octree_far_field(res_u, test_pts / rf, rf)) - exact
             row_s["error"] = float(np.abs(err_u).max() / peak)
@@ -431,15 +493,15 @@ def main() -> int:
             "dT1_growth": float(np.abs((total - born_exact)[:n_grow]).max() / peak),
             "grow_seconds": time.perf_counter() - t_start,
         }
-        if not dry and (matrix_free or len(leaves) * 9 <= DENSE_LIMIT):
+        if not dry and (matrix_free or len(leaves) * per_leaf <= DENSE_LIMIT):
             t0 = time.perf_counter()
             set_scope(centres, hs)
             tree_args = (omega, REF, CONTRAST, centres, hs, prof, K_HAT, K_HAT, "P")
             if matrix_free:
-                operator = octree_operator_fft(*tree_args, p=0, r=0)
-                series = born_series_octree_fft(*tree_args, 2, p=0, r=0, operator=operator)
+                operator = octree_operator_fft(*tree_args, p=p, r=p)
+                series = born_series_octree_fft(*tree_args, 2, p=p, r=p, operator=operator)
             else:
-                series = born_series_octree(*tree_args, 2, p=0, r=0, block_cache=block_cache)
+                series = born_series_octree(*tree_args, 2, p=p, r=p, block_cache=block_cache)
             d_t2_all = sum(octree_far_field(series[1], all_dirs, rf)) - second_exact
             d_t2 = d_t2_all[n_grow:]
             e_now = sum(energy(c, h) for c, h in leaves)
@@ -449,13 +511,13 @@ def main() -> int:
             second_seconds = time.perf_counter() - t0
             t0 = time.perf_counter()
             if matrix_free:
-                res = solve_graded_octree_fft(*tree_args, p=0, r=0, operator=operator)
+                res = solve_graded_octree_fft(*tree_args, p=p, r=p, operator=operator)
                 row.update(
                     solver="matrix-free", fine_cells_across=operator.n_fine, products=operator.products[0]
                 )
                 del operator
             else:
-                res = solve_graded_octree(*tree_args, p=0, r=0, block_cache=block_cache)
+                res = solve_graded_octree(*tree_args, p=p, r=p, block_cache=block_cache)
             err = sum(octree_far_field(res, test_pts / rf, rf)) - exact
             d_t1 = total[n_grow:] - born_exact[n_grow:]
             row.update(

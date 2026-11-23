@@ -3018,12 +3018,86 @@ to $4\%$, $1\%$ and $3\%$. The rule that grows by both terms was run on the same
 with errors within $6\%$ of these at $16\,000$ leaves, better at $k_Sa=2$ and $4$ and worse at $0.5$,
 and $16\%$ worse in one case at $8000$ leaves; it remains without a gain that would justify it.
 
-\emph{Cautions.} Three bodies, all radial, and trees of constant cells only. The trees of the graded
+\emph{Trees of degree-one cells.} The product takes leaves of any one degree, so the same experiment
+was run with degree-one leaves on the sharp sphere (the option \texttt{--p=1} of the same script). Each
+leaf holds the projection of the sphere's indicator onto the polynomials of degree one, as the cells of
+Table~\ref{tab:sharpdeg1} do, and carries $36$ unknowns where a constant leaf carries $9$; what a leaf
+loses of the medium, and so what the tree's $\cE$ sums, is what that projection leaves. The smallest
+half-width allowed was $a/32$. Before the run the uniform grids gave a prediction. At a cut cell,
+raising the degree multiplies the unknowns by four and the projection error by $0.45$
+(Table~\ref{tab:sharpdeg1}); dividing a constant cut cell once makes about four cut cells and halves the
+projection error. Near the surface the two are the same trade. The second term of the error should
+therefore be the same for the two kinds of tree at equal unknowns, and degree one should gain only
+through the first term, which it all but removes. Table~\ref{tab:treesdeg1} is the test.
+\begin{table}[htbp]
+\centering
+\caption{Trees of degree-one cells on the sharp uniform sphere, grown by both terms of the error and
+solved by the matrix-free product. $\cE$ is the relative projection error at degree one, \emph{first}
+the first-order error (no solve), \emph{error} the solved error and rest$/\cE$ the error beyond first
+order over $\cE$. \emph{Uniform} is the number of cells a uniform grid of degree-one cells needs for
+the tree's solved error (interpolated in the logarithms between the grids of
+Table~\ref{tab:sharpdeg1}) and \emph{share} the tree's leaves divided by it. \emph{Constant} is the
+solved error of the tree of constant cells with the same number of unknowns
+(Table~\ref{tab:treesfree}: four times the leaves), and \emph{gain} is that error divided by the
+degree-one tree's.}\label{tab:treesdeg1}
+\small
+\begin{tabular}{@{}lrcllcrclc@{}}
+\toprule
+$k_Sa$ & leaves & $\cE$ & first & error & rest$/\cE$ & uniform & share & constant & gain \\
+\midrule
+$0.5$ & $1000$ & $0.0383$ & $3.7\times10^{-6}$ & $6.15\times10^{-4}$ & $0.0161$ & $1170$ & $0.85$ & $6.37\times10^{-4}$ & $1.04$ \\
+      & $2000$ & $0.0247$ & $1.4\times10^{-6}$ & $3.99\times10^{-4}$ & $0.0162$ & $3600$ & $0.56$ & $4.76\times10^{-4}$ & $1.19$ \\
+      & $4003$ & $0.0191$ & $7.2\times10^{-7}$ & $3.07\times10^{-4}$ & $0.0161$ & $7840$ & $0.51$ & $3.31\times10^{-4}$ & $1.08$ \\
+\midrule
+$2$   & $1000$ & $0.0373$ & $6.1\times10^{-5}$ & $1.19\times10^{-3}$ & $0.0325$ & $1370$ & $0.73$ & $4.18\times10^{-3}$ & $3.50$ \\
+      & $2000$ & $0.0249$ & $8.2\times10^{-5}$ & $8.01\times10^{-4}$ & $0.0327$ & $3890$ & $0.51$ & $2.14\times10^{-3}$ & $2.68$ \\
+      & $4003$ & $0.0192$ & $1.0\times10^{-5}$ & $6.35\times10^{-4}$ & $0.0332$ & $7710$ & $0.52$ & $1.35\times10^{-3}$ & $2.13$ \\
+\midrule
+$4$   & $1001$ & $0.0437$ & $2.2\times10^{-3}$ & $3.98\times10^{-3}$ & $0.0942$ & $970$  & $1.03$ & $7.77\times10^{-3}$ & $1.96$ \\
+      & $2000$ & $0.0261$ & $3.3\times10^{-4}$ & $2.36\times10^{-3}$ & $0.0944$ & $3470$ & $0.58$ & $4.09\times10^{-3}$ & $1.74$ \\
+      & $4000$ & $0.0193$ & $2.9\times10^{-4}$ & $1.69\times10^{-3}$ & $0.0931$ & $9150$ & $0.44$ & $2.75\times10^{-3}$ & $1.62$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the last row at $k_Sa=0.5$. The tree of $4003$ degree-one leaves has $144\,108$ unknowns, a
+first-order error of $7\times10^{-7}$ and a solved error of $3.07\times10^{-4}$, which is therefore all
+second term: $0.0161$ of its projection error $0.0191$, the constant of the uniform grids. The tree of
+$16\,001$ constant leaves has $144\,009$ unknowns and an error of $3.31\times10^{-4}$, so degree one has
+gained $8\%$. The projection errors of the two trees are $0.0191$ and $0.0202$: at equal unknowns the two
+kinds of tree hold the surface equally well, as predicted, and at this frequency there is nothing else
+to gain. At $k_Sa=2$ the projection errors are again equal to $8\%$ ($0.0192$ and $0.0208$), and the
+error beyond first order is nearly the same ($6.4\times10^{-4}$ and $7.1\times10^{-4}$), but the
+constant tree still carries a first-order error of $9.7\times10^{-4}$ and the degree-one tree does not;
+that is the whole of the gain of $2.1$. The gain is therefore largest on small trees and falls as the
+trees grow ($3.5$, $2.7$, $2.1$ at $k_Sa=2$; $2.0$, $1.7$, $1.6$ at $4$), because a constant tree
+reduces its first-order error as it grows and both kinds are left with the surface. At a jump the
+degree and the refinement are interchangeable; the degree pays where the wave has to be resolved, and
+for that it pays everywhere inside the body, not at the surface.
+
+Three further readings. The law holds on these trees: the rest over $\cE$ is $0.0161$ to $0.0162$,
+$0.0325$ to $0.0335$ and $0.093$ to $0.098$ at the three frequencies on the trees of $500$ leaves and
+more, against $0.0161$, $0.0330$ and $0.093$ on the fine uniform grids of degree one. Against those
+uniform grids a tree needs about half the cells at $4000$ leaves (shares $0.51$, $0.52$, $0.44$),
+which is comparable with the constant trees of as many leaves ($0.41$, $0.48$, $0.34$ in
+Table~\ref{tab:treesfree}), and the share falls with the size of the tree in the same way. It is above
+one at $k_Sa=4$ with $1001$ leaves, and for the trees of $250$ leaves, which are not shown: a small
+tree is not yet better than a grid. And the growth rule now matters.
+With constant cells the rule that grows by both terms gained nothing over the rule that grows by the
+first-order error. With degree-one cells the first-order error is far below the error, so the
+first-order rule is steering by a quantity that no longer counts; its trees of $4000$ leaves have
+errors of $3.11\times10^{-4}$, $7.64\times10^{-4}$ and $2.03\times10^{-3}$, which is $1\%$, $20\%$ and
+$20\%$ above those of the table. It does not fail outright, because its trees too put most of their
+leaves at the surface ($2631$ of the smallest size at $k_Sa=0.5$, against $2880$). The two terms with no
+solve give the solved errors of
+the three largest trees to $5\%$, $4\%$ and $8\%$, always from above.
+
+\emph{Cautions.} Three bodies, all radial, and trees of degree-one cells on the sharp sphere only. The trees of the graded
 shell and the halo rest on the dense solver, which stops near $2200$ constant leaves and stopped the
 product's rule at $912$ leaves at $k_Sa=4$ (its next tree has $2368$); those of the sharp sphere and the
-uniform grids do not. With degree-one cells the dense solver allows about $550$ leaves, on which the two
-rules build nearly the same trees, so that case is not decided: the matrix-free product takes degree-one
-leaves, but no tree of them has yet been grown with it. Against
+uniform grids do not. The degree-one trees were held to a smallest half-width of $a/32$ and to $4000$
+leaves, and their comparison with constant trees is at equal unknowns, which is not equal time: a
+product costs what the uniform grid of the smallest cells costs, at either degree. Against
 uniform grids the product's tree on the graded shell at $k_Sa=4$ is a little worse (a uniform grid of
 $912$ cells gives $0.039$ by interpolation, the tree $0.043$): at that frequency the wave must be
 resolved wherever there is contrast, and on that body a tree has little to save.
@@ -3473,8 +3547,10 @@ cells on the sharp sphere (Table~\ref{tab:sharpdeg1}): first order, with the fac
 cells to $3\%$, on grids to $2.3$ million unknowns. What a tree saves
 (Tables~\ref{tab:treesolved} and \ref{tab:treesfree}): for constant cells a factor of up to three in
 cells at $2200$ leaves and of four at $16\,000$ on the sharp sphere, the larger trees by a matrix-free
-product that agrees with the dense solver where both run. Not established: trees of degree-one cells,
-trees of the smooth bodies beyond the dense solver, and a body without radial symmetry.
+product that agrees with the dense solver where both run. Trees of degree-one cells on the sharp sphere
+(Table~\ref{tab:treesdeg1}): at equal unknowns they hold the surface as well as constant trees and no
+better, and gain a factor of up to $3.5$ through the first-order error alone. Not established: trees of
+the smooth bodies beyond the dense solver, and a body without radial symmetry.
 \item \emph{Size.} The dense solver stops near $20\,000$ unknowns ($1256$ constant cells or $408$
 degree-one cells). The two-term table and the factor of the second term no longer rest on it: the
 matrix-free solver has carried them to $2.56$ million unknowns. The other three-dimensional results of
