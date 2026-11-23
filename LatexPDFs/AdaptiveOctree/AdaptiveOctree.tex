@@ -67,26 +67,31 @@
 
 \begin{abstract}
 \noindent
-A volume integral equation for elastic waves is usually solved on a uniform grid of voxels, fine
-everywhere because it must be fine somewhere. This paper puts the voxels on an octree, each leaf a cube
-that carries polynomials for the wavefield and for the medium, and chooses the tree by the error it will
-have. The companion paper \citep{NestorError2026} showed that the far-field error of such a scheme is
-two terms: the error of its first-order (Born) response, which needs no solve, and the nonlinear part of
-the response times the relative projection error of the medium on the cells. Here both terms are
-computed for a tree with nothing solved, the second from one product with the tree's matrix, and a tree
-is grown by them from a grid of two cells across. On three radial bodies with exact solutions (a sphere
-with a graded shell, a strong centre in a weak surround, and the classical uniform sphere with a sharp
-surface) the two terms give the solved error of the grown trees to $1.3\%$ on the smooth bodies and to
-$5\%$ on the sharp one. The product with the matrix of a tree is made exact and matrix-free: a leaf is a
-union of cells of the smallest size, on which its polynomials are polynomials of the same degree, so the
-product is a spread, one convolution by fast Fourier transform, and a gather. With it trees of the sharp
-sphere are solved to $16\,000$ leaves, where a tree needs between a quarter and a third of the cells of
-a uniform grid of the same error; on the two smooth bodies the largest trees need from a third of the
-cells to all of them. The saving is real and modest, and the paper says why: a constant cell
-must resolve the wave wherever there is contrast, and at a surface that cuts the cells the scheme is of
-first order for cells of any degree, with the degree and the refinement interchangeable. What the method
-offers is less a small grid than a known one: the error of every candidate grid is available before
-anything is solved.
+In a volume integral equation for elastic waves solved with polynomial voxels, a given number of
+unknowns can be spent on more cells or on more polynomials in each cell. This paper asks which is the
+better spending, and where in a body, and shows that the answer can be had before anything is solved.
+The companion paper \citep{NestorError2026} showed that the far-field error of such a scheme is two
+terms: the error of its first-order (Born) response, which needs no solve, and the nonlinear part of the
+response times the relative projection error of the medium on the cells. Here three radial bodies with
+exact solutions (a sphere with a graded shell, a strong centre in a weak surround, and the classical
+uniform sphere with a sharp surface) are solved on uniform grids of cells of degree $0$, $1$ and $2$ to
+$1.8$ million unknowns or more. The constant that multiplies the projection error is found not to depend on the
+degree, so the choice between degree and cell size rests on the medium alone. Where the medium is
+smooth the unknowns belong in the degree: at $300\,000$ unknowns degree one has an error $8$ to $130$
+times smaller than constant cells, and degree two an error smaller again by $2.3$ to $4.5$. Where a
+surface cuts the cells the error is of first order at every degree, degree two is within $6\%$ of
+degree one, and the unknowns belong in small cells of low degree. Predicted from the two terms and one
+solve of $64$ cells, the degree with the smallest error is the solved one in $44$ of $45$ comparisons.
+Small cells at a surface and nowhere else are an octree, and the second part of the paper builds one.
+Both terms of the error are computed for a tree with nothing solved, the second from one product with
+the tree's matrix, and a tree is grown by them from a grid of two cells across; the two terms give the
+solved error of the grown trees to $1.3\%$ on the smooth bodies and to $5\%$ on the sharp one. The
+product with the matrix of a tree is made exact and matrix-free, since a leaf is a union of cells of the
+smallest size. With it trees of the sharp sphere are solved to $16\,000$ leaves, where a tree needs
+between a quarter and a third of the cells of a uniform grid of the same error; on the two smooth bodies
+the largest trees need from a third of the cells to all of them, and there the degree is the large
+factor and the tree a small one. The trees carry leaves of one degree; a tree of low degree at a surface
+and high degree elsewhere is what the results point to and has not been built.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -98,6 +103,11 @@ whose matrix couples every voxel to every other. On a uniform grid the coupling 
 separation of two voxels alone, the product with the matrix is a convolution, and the fast Fourier
 transform makes systems of millions of unknowns routine. The price is the uniform grid itself: its cell
 is set by the most demanding place in the body and is paid for everywhere.
+
+There are two ways to do better with the same unknowns. One is to raise the degree of the polynomials
+that each voxel carries; the other is to make the voxels small only where they must be. They compete for
+the same unknowns, and a cell of degree two costs as many as ten constant cells. The question of this
+paper is how to balance the two: which a given body needs, and where.
 
 \paragraph{What is known.} Polynomial cells, and adaptive trees of them, are not new. For the scalar
 Lippmann--Schwinger equation in two dimensions, \citet{Ambikasaran2015} discretise on an adaptive quad
@@ -112,24 +122,32 @@ unknowns. In electromagnetics, large volume elements carry fields of high polyno
 voxels with a degree-one field are solved with fast Fourier transforms \citep{Georgakis2020}. Where
 error is estimated for such methods it is estimated \emph{a posteriori}, from a computed solution that
 is then refined and solved again \citep{Beilina2022}. For elastic waves the volume integral equation is
-solved on uniform grids at low order \citep{Shekhar2023}.
+solved on uniform grids at low order \citep{Shekhar2023}. The balance of degree against cell size has
+its classical answer in the finite element method, whose $h$-$p$ version raises the degree where the
+solution is smooth and refines the mesh towards its singularities, with exponential convergence for
+problems with piecewise analytic data \citep{Guo1986,Babuska1994}. There the smoothness that decides is
+that of the solution.
 
-\paragraph{What this paper adds.} In each of those methods the tree is refined by a property of the
+\paragraph{What this paper adds.} In each of those methods the grid is chosen by a property of the
 medium or of a computed solution, and the error of the result is found by solving. The companion paper
 \citep{NestorError2026}, cited below as Paper~I with its equations, tables and sections prefixed by
-\emph{I}, gives the error of a grid of polynomial voxels in a form known before the solve, and this
-paper turns that law into a method:
+\emph{I}, gives the error of a grid of polynomial voxels in a form known before the solve, and its
+second term is a property of the medium: how much of it the cells' polynomials cannot hold. This paper
+uses that law to answer the question of degree against cell size:
 \begin{enumerate}
-\item the error of a tree is computed from two terms with nothing solved, and the computation is tested
-against the solved error on three bodies (\S\ref{sec:grown});
-\item a tree is grown from two cells across by the error it will have, without being told whether the
-wave or the medium sets that error (\S\ref{sec:where}, \S\ref{sec:grown});
-\item the case of a surface that cuts the cells is worked through: the scheme is of first order there,
-for constant and for degree-one cells, and the law gives the size of the error (\S\ref{sec:jump});
+\item on uniform grids of degree $0$, $1$ and $2$ the constant of the law is shown not to depend on the
+degree, the three degrees are compared at equal unknowns and in time, and the choice between them is
+predicted without the fine solves (\S\ref{sec:degree});
+\item the case of a surface that cuts the cells is worked through: the scheme is of first order there
+at every degree, the degree and the refinement are interchangeable, and the law gives the size of the
+error (\S\ref{sec:degree}, \S\ref{sec:jump});
+\item small cells are then put only where they are needed: the error of an octree is computed from the
+two terms with nothing solved, and a tree is grown by the error it will have, without being told whether
+the wave or the medium sets that error (\S\ref{sec:where}, \S\ref{sec:grown});
 \item the product with the matrix of a tree is made exact and matrix-free, which carries the trees beyond
 the reach of a dense solver (\S\ref{sec:product});
 \item what a tree saves over a uniform grid is measured on solved errors, for constant and for
-degree-one leaves (\S\ref{sec:saves}).
+degree-one leaves, and set beside what the degree saves (\S\ref{sec:saves}).
 \end{enumerate}
 
 \paragraph{Relation to the adaptive integral method.} The \emph{adaptive integral method} of
@@ -160,8 +178,8 @@ given as $k_Sa$, the shear wavenumber of the background times the radius.
 \paragraph{Cells.} The body is covered by cubes, the leaves of an octree; leaf $\ell$ has centre
 $\bx_\ell$ and half-width $h_\ell$. On each leaf the nine-component state (displacement and strain) is
 expanded in the Legendre products of total degree at most $p$, and the contrast in those of degree at
-most $r$; this paper takes $p=r$, with $p=0$ (constant cells, $9$ unknowns a leaf) or $p=1$ (degree-one
-cells, $36$). The system is the Galerkin one of \S I.\ref{E-sec:cells3d}, its blocks integrated in closed
+most $r$; this paper takes $p=r$, with $p=0$ (constant cells, $9$ unknowns a leaf), $p=1$ (degree-one
+cells, $36$) or, on uniform grids, $p=2$ (degree-two cells, $90$). The system is the Galerkin one of \S I.\ref{E-sec:cells3d}, its blocks integrated in closed
 form, and a block between leaves of different sizes is an exact finite sum of blocks between equal cells.
 
 \paragraph{The law.} Write the scheme's response as its Born series in the contrast. The error of the
@@ -177,6 +195,194 @@ what the cells' polynomials of degree $r$ cannot hold of $f$ divided by the ener
 order $2p+2$ in the cell and depends on the wave; the second is of order $2r+2$ on a smooth medium and
 depends on the medium. The first is a sum over the leaves of known amplitudes, each leaf holding the
 projected incident wave, so it needs no solve (\S I.\ref{E-sec:born}).
+
+\section{Degree against cell size}\label{sec:degree}
+
+A fixed number of unknowns can be spent in two ways: on more cells, or on more polynomials in each cell.
+A constant cell has $9$ unknowns, a cell of degree one $36$ and a cell of degree two $90$, so for the same
+unknowns a grid of degree-one cells has a quarter of the cells of a constant grid, each $1.6$ times as
+wide, and a grid of degree-two cells a tenth, each $2.15$ times as wide. Which spending gives the smaller
+error is the question of this section, and it is asked first on uniform grids, where nothing else varies.
+
+\paragraph{The experiment.} Each of the three bodies is solved at $k_Sa=0.5$, $2$ and $4$ on uniform
+grids of constant, degree-one and degree-two cells, from $4$ cells across the diameter to $48$ or more
+for degrees $0$ and $1$ and to $32$ for degree $2$ ($1.78$ million unknowns), with the solver of
+Paper~I that uses the fast Fourier transform (\path{scripts/measure_two_term_fft.py}; the three degrees
+are compared by \path{scripts/analyse_degree_vs_size.py}, which solves nothing and reads the stored
+grids). On the sharp sphere a cell that the surface cuts holds the exact projection of the cut medium
+onto its polynomials: the fraction of the cell inside for degree $0$, and for degrees $1$ and $2$ the
+means over the cell of the indicator of the sphere times each polynomial, exact along one axis and by a
+$256\times256$ midpoint rule across. For every grid the script records the solved error, the
+first-order error $\delta T_1$, the rest (the error less $\delta T_1$) and the relative projection error
+$\cE$ of the medium at the degree of the cells.
+
+\paragraph{The law at each degree.} Table~\ref{tab:degreelaw} gives two things for each body, frequency
+and degree. The first is the constant of the law~\eqref{eq:law}, the rest divided by $\cE$, as its
+smallest and largest value over the grids whose error is above $10^{-7}$ of the peak (below that the
+exact reference is no longer reliable). If the law holds, that ratio is one number for all grids of one
+degree. The second is the order of the solved error in the cell size, the slope of its logarithm against
+the logarithm of the cells across, between the two finest grids.
+\begin{table}[htbp]
+\centering
+\caption{The law at each degree, on uniform grids. \emph{Constant}: the error beyond first order divided
+by the relative projection error $\cE$ of the medium at that degree, smallest and largest over the
+grids. \emph{Order}: the slope of the solved error against the cell size between the two finest
+grids.}\label{tab:degreelaw}
+\small
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+ & & \multicolumn{3}{c}{constant, rest$/\cE$} & \multicolumn{3}{c}{order of the error} \\
+body & $k_Sa$ & degree $0$ & degree $1$ & degree $2$ & $0$ & $1$ & $2$ \\
+\midrule
+graded shell & $0.5$ & $0.0149$--$0.0169$ & $0.0146$--$0.0155$ & $0.0143$--$0.0154$ & $1.98$ & $3.89$ & $5.43$ \\
+ & $2$ & $0.0302$--$0.0317$ & $0.0267$--$0.0291$ & $0.0258$--$0.0269$ & $2.00$ & $3.89$ & $5.43$ \\
+ & $4$ & $0.0565$--$0.0862$ & $0.1170$--$0.1230$ & $0.1063$--$0.1202$ & $2.00$ & $3.90$ & $5.54$ \\
+\midrule
+halo & $0.5$ & $0.0048$--$0.0055$ & $0.0047$--$0.0050$ & $0.0041$--$0.0050$ & $1.95$ & $3.85$ & $4.60$ \\
+ & $2$ & $0.0078$--$0.0082$ & $0.0053$--$0.0076$ & $0.0051$--$0.0157$ & $2.00$ & $3.86$ & $5.32$ \\
+ & $4$ & $0.0269$--$0.0317$ & $0.0306$--$0.0348$ & $0.0245$--$0.0350$ & $2.00$ & $3.96$ & $5.37$ \\
+\midrule
+sharp sphere & $0.5$ & $0.0163$--$0.0165$ & $0.0160$--$0.0161$ & $0.0160$--$0.0162$ & $0.99$ & $1.01$ & $1.01$ \\
+ & $2$ & $0.0338$--$0.0369$ & $0.0329$--$0.0345$ & $0.0328$--$0.0340$ & $1.71$ & $1.01$ & $1.01$ \\
+ & $4$ & $0.0880$--$0.0979$ & $0.0927$--$0.1138$ & $0.0927$--$0.1035$ & $1.79$ & $1.01$ & $1.01$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the first row of the sharp sphere. At $k_Sa=0.5$ the rest is $0.0163$ to $0.0165$ of $\cE$ on every
+grid of constant cells, $0.0160$ to $0.0161$ on every grid of degree-one cells and $0.0160$ to $0.0162$
+on every grid of degree-two cells: one number, to $3\%$, for three degrees and for cells from a quarter
+to a sixty-fourth of the diameter. The error falls as the first power of the cell at all three degrees.
+
+Two things follow from the table. First, the constant is nearly a property of the body and the
+frequency and not of the cells. On the sharp sphere the three degrees agree to $3\%$, $12\%$ and $29\%$ at
+the three frequencies (largest over smallest, all degrees and grids together), and on the two smooth
+bodies at $k_Sa=0.5$ and $2$ the three ranges overlap or nearly do. This is what Eq.~\eqref{eq:law}
+says: $\nu$ and $F$ do not know the degree. There are two exceptions, and both are understood. On the
+graded shell at $k_Sa=4$ the constant cells give $0.057$ to $0.086$ where the other two degrees give
+$0.106$ to $0.123$; these are the grids on which a constant cell does not yet resolve the wave, and the
+first-order error is as large as the rest, so their difference is poorly determined. On the halo at
+$k_Sa=2$ the degree-two range is widened to $0.0157$ by the single finest grid, whose error of
+$1.8\times10^{-7}$ is at the floor of the reference. Secondly, the orders are those of the projection
+error: $2$, $3.9$ and $5.4$ on the smooth bodies, where $\cE$ itself falls with fitted orders $1.96$ to $1.99$,
+$3.85$ to $3.88$ and $5.43$ to $5.53$ against the asymptotic $2r+2=2$, $4$, $6$; and one on the sharp
+sphere at every degree, where $\cE$ falls with orders $0.99$, $1.00$ and $1.01$. (The orders of $1.7$ and
+$1.8$ for constant cells on the sharp sphere at $k_Sa=2$ and $4$ are of grids on which the first-order
+error still leads; \S\ref{sec:jump} follows the overtaking.)
+
+\paragraph{The choice at equal unknowns.} Since the constant does not depend on the degree, the question
+of this section is, to a good approximation, a question about the medium alone: at equal unknowns, which
+degree leaves the smaller projection error, and which the smaller first-order error? Neither needs a
+solve. Table~\ref{tab:degreebudget} sets the answer so obtained against the solved one, at $300\,000$
+unknowns. The \emph{solved} error of each degree is interpolated in the logarithms between its two
+neighbouring grids (never extrapolated). The \emph{predicted} error is $\delta T_1+C\,\cE$, with
+$\delta T_1$ and $\cE$ computed for the same grids with no solve and $C$ taken from the single coarsest
+grid of that degree, of $4$ cells across ($64$ cells), whose solve takes a second or two.
+\begin{table}[htbp]
+\centering
+\caption{Degree against cell size at $300\,000$ unknowns on uniform grids: about $33\,000$ constant cells,
+$8300$ degree-one cells or $3300$ degree-two cells. \emph{Solved} is the solved error; \emph{pred.}\ is
+the first-order error plus the constant of the coarsest grid ($4$ across) times the projection error,
+which needs none of the fine solves.}\label{tab:degreebudget}
+\small
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{degree $0$} & \multicolumn{2}{c}{degree $1$} & \multicolumn{2}{c}{degree $2$} \\
+body & $k_Sa$ & solved & pred. & solved & pred. & solved & pred. \\
+\midrule
+graded shell & $0.5$ & $7.84\times10^{-5}$ & $1.62\times10^{-4}$ & $6.46\times10^{-6}$ & $6.21\times10^{-6}$ & $1.74\times10^{-6}$ & $1.66\times10^{-6}$ \\
+ & $2$ & $1.44\times10^{-3}$ & $1.56\times10^{-3}$ & $1.13\times10^{-5}$ & $1.81\times10^{-5}$ & $3.04\times10^{-6}$ & $3.00\times10^{-6}$ \\
+ & $4$ & $3.23\times10^{-3}$ & $3.55\times10^{-3}$ & $5.59\times10^{-5}$ & $1.07\times10^{-4}$ & $1.26\times10^{-5}$ & $1.47\times10^{-5}$ \\
+\midrule
+halo & $0.5$ & $6.83\times10^{-5}$ & $1.52\times10^{-4}$ & $8.81\times10^{-6}$ & $8.25\times10^{-6}$ & $3.78\times10^{-6}$ & $3.72\times10^{-6}$ \\
+ & $2$ & $1.36\times10^{-3}$ & $1.51\times10^{-3}$ & $1.32\times10^{-5}$ & $1.93\times10^{-5}$ & $5.21\times10^{-6}$ & $6.09\times10^{-6}$ \\
+ & $4$ & $4.79\times10^{-3}$ & $5.16\times10^{-3}$ & $8.55\times10^{-5}$ & $1.38\times10^{-4}$ & $2.08\times10^{-5}$ & $2.54\times10^{-5}$ \\
+\midrule
+sharp sphere & $0.5$ & $4.19\times10^{-4}$ & $5.18\times10^{-4}$ & $3.04\times10^{-4}$ & $3.04\times10^{-4}$ & $2.92\times10^{-4}$ & $2.96\times10^{-4}$ \\
+ & $2$ & $1.77\times10^{-3}$ & $2.38\times10^{-3}$ & $6.26\times10^{-4}$ & $6.62\times10^{-4}$ & $6.00\times10^{-4}$ & $6.21\times10^{-4}$ \\
+ & $4$ & $4.02\times10^{-3}$ & $6.01\times10^{-3}$ & $1.77\times10^{-3}$ & $2.25\times10^{-3}$ & $1.70\times10^{-3}$ & $1.90\times10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the graded shell at $k_Sa=2$. With $300\,000$ unknowns, $33\,000$ constant cells leave an error of
+$1.44\times10^{-3}$ of the peak; $8300$ cells of degree one, each $1.6$ times as wide, leave
+$1.13\times10^{-5}$, which is $128$ times smaller; and $3300$ cells of degree two, each $2.15$ times as
+wide as a constant cell, leave $3.04\times10^{-6}$, smaller again by $3.7$. The predictions are
+$1.56\times10^{-3}$, $1.81\times10^{-5}$ and $3.00\times10^{-6}$: the same ranking, and the same factors
+to within the $60\%$ by which the middle one is high.
+
+Now the sharp sphere at the same frequency. The same unknowns give $1.77\times10^{-3}$, $6.26\times10^{-4}$
+and $6.00\times10^{-4}$. Degree one is worth a factor of $2.8$ over constant cells, and that factor is
+the first-order error of the constant cells, which a degree-one cell removes; it is $1.4$ at $k_Sa=0.5$,
+where there is little first-order error to remove. Degree two is worth $4\%$ more. At a surface that cuts
+the cells, $\cE$ falls as the first power of the cell whatever the degree, and at equal unknowns the three
+degrees leave nearly the same $\cE$: the polynomials that a cell gains do as much for a jump as the
+smaller cells they displace, and no more.
+
+The pattern of the table holds at the other budgets. The script makes the comparison at $10\,000$,
+$30\,000$, $100\,000$, $300\,000$ and a million unknowns for the nine cases, $45$ comparisons in all. On
+the two smooth bodies degree two has the smallest solved error in $29$ of $30$, and its lead over degree
+one grows with the budget, from a factor of $1.1$ to $3$ at $30\,000$ unknowns to $4.7$ to $8.4$ at a
+million; the lead of degree one over constant cells is $2.7$ to $38$ at $30\,000$ and $16$ to $215$ at a
+million (in the four cases whose constant grids reach a million unknowns). The one case in which the lower degree wins is the halo at $k_Sa=0.5$ with $10\,000$ unknowns,
+where a degree-two grid has $111$ cells and its first-order error leads. On the sharp sphere degree two
+is ahead of degree one by $3\%$ to $6\%$ at every budget from $30\,000$ unknowns up.
+
+\paragraph{How good the prediction is.} It names the degree with the smallest solved error in $44$ of the
+$45$ comparisons. The one miss is the halo at $k_Sa=0.5$ with $30\,000$ unknowns, where the solved errors
+of degrees one and two are $1.18\times10^{-4}$ and $1.07\times10^{-4}$, $10\%$ apart, and the prediction
+puts them $6\%$ apart the other way. Most of the $45$ are not close calls, so the count says less than
+it seems to; what the prediction does is get the factors between the degrees, which run from $1.04$ to
+over $200$, well enough to rank them. As a figure for the error itself it is rougher than the
+predictions of \S\ref{sec:grown}: over all grids and budgets the predicted error is between $0.94$ and
+$2.3$ times the solved one. It errs high for two reasons. It adds the magnitudes of the two terms,
+which on constant cells at $k_Sa=0.5$ partly cancel (the factors of two in the first column of the
+table); and it takes the constant from a grid of four cells across, where it is not yet the constant of
+the fine grids (on the sharp sphere at $k_Sa=4$ with degree-one cells, $0.114$ against $0.093$). The predictions of \S\ref{sec:grown}, which compute the second
+term for the grid in hand and add the terms as complex amplitudes, are for the error; this one is for
+the choice.
+
+\paragraph{The cost in time.} Unknowns are not seconds. The product on a uniform grid multiplies, at
+each point of the transformed grid, a block whose side is the unknowns of a cell; applied as a full
+block, its cost for a given number of unknowns grows in proportion to the unknowns of a cell, so that a
+degree-two unknown costs $2.5$ times a degree-one unknown and ten times a constant one. Against that, a
+grid of higher degree needs fewer unknowns. For an
+error of $10^{-5}$ of the peak on the graded shell at $k_Sa=2$, degree one needs $329\,000$ unknowns and
+$14.3$ seconds (kernel and solve together, on one desktop machine), and degree two $156\,000$ unknowns
+and $14.5$ seconds; constant cells do not reach that error on any grid solved. Over the six smooth
+cases the times of degrees one and two for $10^{-5}$ are within a third of each other ($8.7$ to $70$
+seconds), degree two needing between $0.33$ and $0.62$ of the unknowns. For $10^{-4}$, constant cells
+are reached only at $k_Sa=0.5$, where they need $168\,000$ to $208\,000$ unknowns and $22$ to $39$
+seconds against $1.4$ to $2.4$ seconds for either higher degree. The times were taken with other runs
+on the machine and are good to a factor of about $1.5$; the unknowns are exact.
+
+\paragraph{What it means.} Three statements, in order of how much rests on each.
+\begin{enumerate}
+\item \emph{Where the medium is smooth, the unknowns belong in the degree.} At equal unknowns a higher
+degree leaves a smaller projection error and a smaller first-order error, by factors that grow with the
+budget, and the solved error follows. In memory the gain from degree one to degree two is a factor of
+two to three in unknowns at an error of $10^{-5}$; in time on these grids it is nothing, so degree one
+is already the practical choice for moderate accuracy and degree two the choice when memory binds or
+the accuracy asked is high.
+\item \emph{Where the medium jumps, the degree buys nothing beyond the first-order error.} The error is
+of first order in the cell at every degree, and at equal unknowns degrees one and two are within $6\%$.
+Since an unknown of low degree is the cheaper one, the unknowns at a surface belong in small cells of
+low degree. That is the case for a tree (\S\ref{sec:where} onwards): it puts small cells at the surface
+and nowhere else.
+\item \emph{Which of the two a given body needs is known before it is solved.} The constant of the law
+does not depend on the degree, so the ranking of the candidate grids is the ranking of
+$\delta T_1+C\,\cE$, in which only $C$ needs a solve, and a solve of $64$ cells.
+\end{enumerate}
+The first two are what the theory of the $h$-$p$ version of the finite element method leads one to
+expect: there, raising the degree where the solution is smooth and refining the mesh geometrically
+towards a singularity gives exponential convergence for problems with piecewise analytic data
+\citep{Guo1986,Babuska1994}. What is particular to the present scheme is where the smoothness is
+measured. In a finite element method it is the smoothness of the solution, which is not known in
+advance; here the second term of the error is the projection error of the \emph{medium}, which is. The
+trees of this paper carry leaves of one degree each; a tree whose leaves are of low degree at a surface
+and of high degree elsewhere is what these results point to, and has not been built
+(\S\ref{sec:conclusions}).
 
 \section{Where to refine}\label{sec:where}
 
@@ -923,7 +1129,10 @@ separated, and the figures are given as they stand.
 
 \section{Cautions}\label{sec:cautions}
 
-Three bodies, all radial. The trees refined by an indicator (Table~\ref{tab:trees}) rest on the dense
+Three bodies, all radial. The comparison of degrees (\S\ref{sec:degree}) is on uniform grids; its
+predictions take the constant of the law from a grid of four cells across and are good for ranking the
+degrees, to a factor of $2.3$ at worst in the error itself; and its times are of one machine under other
+load. The trees refined by an indicator (Table~\ref{tab:trees}) rest on the dense
 solver, which stops near $2200$ constant leaves and stopped the product's rule at $912$ leaves at
 $k_Sa=4$ (its next tree has $2368$); the grown trees and the uniform grids do not. The shares of
 Tables~\ref{tab:treesfree}, \ref{tab:treesdeg1} and \ref{tab:treessmooth} invert an interpolation between
@@ -936,6 +1145,19 @@ $912$ cells gives $0.039$ by interpolation, the tree $0.043$): at that frequency
 resolved wherever there is contrast, and on that body a tree has little to save.
 
 \section{Conclusions}\label{sec:conclusions}
+
+\paragraph{Degree or cell size: the medium decides, and it can be asked beforehand.} The error beyond
+first order is a constant times the relative projection error of the medium on the cells, and the
+constant does not depend on the degree of the cells: on the sharp sphere it is the same to $3\%$ for
+degrees $0$, $1$ and $2$ at $k_Sa=0.5$. The balance of degree against cell size is therefore the balance
+of the projection error, with the first-order error beside it, and neither needs a solve. Where the
+medium is smooth the projection error falls with order $2$, $4$ and nearly $6$ for the three degrees and
+the unknowns belong in the degree; at $300\,000$ unknowns the three degrees are separated by factors of
+$8$ to $130$ and then $2.3$ to $4.5$. Where a surface cuts the cells it falls with order one at every
+degree, degree two is within $6\%$ of degree one at equal unknowns, and the unknowns belong in small
+cells of low degree. The degree with the smallest solved error was named in advance in $44$ of $45$
+comparisons. In time, on the smooth bodies, degrees one and two are level, degree two needing a third to
+three fifths of the unknowns.
 
 \paragraph{The error of a tree is known before it is solved.} Both terms of the error law of Paper~I
 can be computed for an octree of polynomial voxels with nothing solved: the first from one pass over
@@ -972,9 +1194,10 @@ alone. On the two smooth bodies they gain a factor of $6.5$ to $101$ in error at
 the gain of the higher order and is had on a uniform grid as well: on a smooth body the degree is the
 large factor, and the tree a small one.
 
-\paragraph{What remains.} A body without radial symmetry; leaves of different degrees in one tree, which
-the results on the sharp sphere point to; and a product whose cost follows the leaves and not the
-smallest cell.
+\paragraph{What remains.} First, leaves of different degrees in one tree: low degree in small leaves at
+a surface, high degree in large leaves where the medium is smooth. Every result of this paper points to
+it, the law says what it would gain, and it has not been built. Then a body without radial symmetry, and
+a product whose cost follows the leaves and not the smallest cell.
 
 \section*{Data availability}
 The solver is the Python package \path{cubic_scattering}; the trees and their matrix-free product are in
