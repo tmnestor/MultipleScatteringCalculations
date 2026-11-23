@@ -57,10 +57,10 @@
 % the differential of every integral and derivative is upright; an italic d is the side of a cell
 \newcommand{\dd}{\mathrm{d}}
 
-\title{\bfseries Polynomial Voxels on an Octree for Elastic Waves\\[4pt]
-\large A Grid Grown and Judged by an Error Known before the Solve}
+\title{\bfseries Degree or Cell Size?\\[4pt]
+\large Choosing Polynomial Voxels for Elastic Waves by an Error Known before the Solve}
 \author{T. M. Nestor\\[2pt]\small Independent researcher, Australia}
-\date{Draft, 23 November 2026}
+\date{Draft, 24 November 2026}
 
 \begin{document}
 \maketitle
@@ -976,9 +976,38 @@ large factor, and the tree a small one.
 the results on the sharp sphere point to; and a product whose cost follows the leaves and not the
 smallest cell.
 
+\section*{Data availability}
+The solver is the Python package \path{cubic_scattering}; the trees and their matrix-free product are in
+\path{cubic_scattering/graded_voxel/octree.py} and \path{cubic_scattering/graded_voxel/octree_fft.py}.
+Every table of this paper is produced by a script named beside it, and each script stores its results in
+a data file of the same name next to itself in \path{scripts/}; the logs of the long runs are kept in the
+dated folders \path{scripts/logs_*}. All are available at
+\url{https://github.com/tmnestor/MultipleScatteringCalculations}.
+
 \section*{Acknowledgments}
 This work began thirty years ago in the author's doctoral research at the Research School of Earth
 Sciences of the Australian National University, Canberra \citep{Nestor1996}.
+
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+\paragraph{Software development.} Software development followed a human-directed, AI-assisted
+workflow, organised as a Test Driven Hypothesis Acceptance cycle: each derivation, implementation or
+numerical claim was stated as a hypothesis together with a test designed to refute it (an independent
+route, an exact limit, a high-precision reference or a convergence study), and was accepted only when
+the test passed; a failed test returned the hypothesis for diagnosis, never the test for adjustment. The author designed the software originally, but only directed and validated recent
+improvements, which build on the author's original Fortran implementation (the
+\href{https://github.com/tmnestor/MultipleScatteringCalculations/tree/main/PhD_fortran_code}{\texttt{PhD\_fortran\_code}}
+folder of the repository given under Data availability) and an extensive library of Mathematica notebooks, developed and extended since 1992, that carry out and verify the symbolic
+derivations; an agentic
+coding assistant (Anthropic Claude, Opus 5.5) operated under human-in-the-loop supervision to implement
+specified changes and diagnostic tests. The design, the choice of numerical methods, and the resolution
+of the principal technical difficulties were the author's. All AI-generated changes were subject to code
+review by the author and validated by automated tests and independent physical checks such as
+reciprocity, optical theorem, Hamiltonian symmetry, analytic limits and convergence.
+
+\paragraph{Manuscript preparation.} During the preparation of this work, the author used Claude
+(Anthropic) in order to search for relevant open-access research, to write the TikZ code of the
+diagrams and to help redraft the paper into more coherent sections for readability. After using this tool, the author reviewed and edited the content
+as needed and takes full responsibility for the content of the published article.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
