@@ -29,7 +29,7 @@ Run small first:
 
 ``--scale`` multiplies the contrast (the exact reference is solved at the same scaled contrast).
 
-``--shape=halo`` (constant cells only, p = 0) and ``--shape=sharp`` run the two further radial bodies of
+``--shape=halo`` and ``--shape=sharp`` (cells of degree 0 or 1) run the two further radial bodies of
 ``measure_octree_first_order_greedy.py``: the strong centre in a weak surround, and the classical sharp
 uniform sphere (core_frac 1). On the sharp sphere each cell holds the fraction of its volume inside the
 sphere (exact along z, a 64 x 64 midpoint rule across), so the first-order term has no staircase error,
@@ -95,8 +95,8 @@ def main() -> int:
     tol = float(opts.get("tol", "1e-11"))
     shape = opts.get("shape", "s5")
     sharp = shape == "sharp"
-    if (shape == "halo" and p != 0) or (sharp and p not in (0, 1)):
-        raise SystemExit("--shape=halo is for constant cells (p = 0); --shape=sharp for p = 0 or 1")
+    if shape != "s5" and p not in (0, 1):
+        raise SystemExit("--shape=halo and --shape=sharp are for cells of degree p = 0 or 1")
     ref_shape = "s5" if sharp else shape  # the sharp sphere is the shell body with its core at the surface
     omega = ka * REF.beta / RADIUS
     rf = 5e8 * RADIUS
@@ -178,7 +178,10 @@ def main() -> int:
         lost = np.empty(len(centres))
         for i, c in enumerate(centres):
             f = np.array([profile(c + h * xi) for xi in gauss_xi])
-            lost[i] = (2.0 * h) ** 3 * max(float(gauss_ww @ f**2 - (gauss_ww @ f) ** 2), 0.0)
+            var = float(gauss_ww @ f**2 - (gauss_ww @ f) ** 2)
+            if p == 1:  # less what the three linear polynomials hold
+                var -= 3.0 * float(np.sum(((gauss_ww * f) @ gauss_xi) ** 2))
+            lost[i] = (2.0 * h) ** 3 * max(var, 0.0)
         rr = (np.arange(200000) + 0.5) * RADIUS / 200000
         ff = np.array([radial(shape, core, x) for x in rr])
         return lost, float((4.0 * np.pi * rr**2 * ff**2).sum() * RADIUS / 200000)

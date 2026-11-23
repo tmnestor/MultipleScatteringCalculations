@@ -1,0 +1,22 @@
+an octree of cells of degree 1 grown by its first-order error (rule: twoterm): k_S a = 2.0, core = 0.75 a, shape s5, 40 growth directions, judged on the nine test directions
+  grown to   254 leaves {'1.25': 224, '2.5': 30}: first-order error on the test directions 1.084e-03 (on the growth directions 1.391e-03); two terms, no solve: 1.418e-03 (second term alone 7.992e-04); solved: error 1.414e-03, beyond two terms 2.727e-05
+      beside it, refined by the medium :   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   288 leaves, error 5.666e-02, first-order 5.624e-02
+  grown to   506 leaves {'0.625': 160, '1.25': 332, '2.5': 14}: first-order error on the test directions 4.455e-04 (on the growth directions 4.698e-04); two terms, no solve: 5.209e-04 (second term alone 3.559e-04); solved: error 5.190e-04, beyond two terms 1.989e-05
+      beside it, refined by the medium :   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   232 leaves, error 5.061e-02, first-order 5.015e-02
+      beside it, refined by the product:   288 leaves, error 5.666e-02, first-order 5.624e-02
+  grown to  1003 leaves {'0.625': 680, '1.25': 315, '2.5': 8}: first-order error on the test directions 1.250e-04 (on the growth directions 1.148e-04); two terms, no solve: 2.077e-04 (second term alone 2.067e-04); solved: error 2.059e-04, beyond two terms 1.036e-05
+      beside it, refined by the medium :   856 leaves, error 1.542e-02, first-order 1.505e-02
+      beside it, refined by the medium :  1360 leaves, error 9.198e-03, first-order 9.022e-03
+      beside it, refined by the product:   912 leaves, error 1.804e-02, first-order 1.776e-02
+  grown to  2002 leaves {'0.625': 1848, '1.25': 154}: first-order error on the test directions 3.557e-05 (on the growth directions 4.425e-05); two terms, no solve: 5.182e-05 (second term alone 5.120e-05); solved: error 5.151e-05, beyond two terms 2.128e-06
+      beside it, refined by the medium :  1360 leaves, error 9.198e-03, first-order 9.022e-03
+      beside it, refined by the medium :  1696 leaves, error 7.328e-03, first-order 7.255e-03
+      beside it, refined by the product:  1752 leaves, error 7.441e-03, first-order 7.253e-03
+  grown to  4003 leaves {'0.3125': 2216, '0.625': 1651, '1.25': 136}: first-order error on the test directions 1.342e-05 (on the growth directions 1.293e-05); two terms, no solve: 2.846e-05 (second term alone 3.020e-05); solved: error 2.739e-05, beyond two terms 1.065e-06
+      beside it, refined by the medium :  1360 leaves, error 9.198e-03, first-order 9.022e-03
+      beside it, refined by the medium :  1696 leaves, error 7.328e-03, first-order 7.255e-03
+      beside it, refined by the product:  1752 leaves, error 7.441e-03, first-order 7.253e-03
+  wrote /Users/tod/Desktop/MultipleScatteringCalculations/scripts/measure_octree_first_order_greedy_ka2_core0.75_p1_twoterm0.25_matrixfree.json

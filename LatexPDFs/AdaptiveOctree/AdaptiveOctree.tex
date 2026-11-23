@@ -81,7 +81,8 @@ $5\%$ on the sharp one. The product with the matrix of a tree is made exact and 
 union of cells of the smallest size, on which its polynomials are polynomials of the same degree, so the
 product is a spread, one convolution by fast Fourier transform, and a gather. With it trees of the sharp
 sphere are solved to $16\,000$ leaves, where a tree needs between a quarter and a third of the cells of
-a uniform grid of the same error. The saving is real and modest, and the paper says why: a constant cell
+a uniform grid of the same error; on the two smooth bodies the largest trees need from a third of the
+cells to all of them. The saving is real and modest, and the paper says why: a constant cell
 must resolve the wave wherever there is contrast, and at a surface that cuts the cells the scheme is of
 first order for cells of any degree, with the degree and the refinement interchangeable. What the method
 offers is less a small grid than a known one: the error of every candidate grid is available before
@@ -856,12 +857,78 @@ leaves at the surface ($2631$ of the smallest size at $k_Sa=0.5$, against $2880$
 solve give the solved errors of
 the three largest trees to $5\%$, $4\%$ and $8\%$, always from above.
 
+\paragraph{The two smooth bodies beyond the dense solver.} The same runs were made on the graded shell
+and the halo, with constant leaves to $16\,000$ (smallest half-width $a/64$, the rule that does not
+stall) and degree-one leaves to $4000$ (smallest half-width $a/32$, grown by both terms), so that the
+largest trees of the two kinds have the same $144\,000$ unknowns. For the degree-one leaves what a leaf
+loses of the medium is what is left of $f$ after its projection onto the polynomials of degree one, by
+the six-point Gauss rule of the package. The uniform grids they are set against are solved to $48$
+across or more, for both degrees
+(\path{scripts/measure_two_term_fft.py}).
+\begin{table}[htbp]
+\centering
+\caption{The largest trees of the two smooth bodies, solved by the matrix-free product: $16\,000$
+constant leaves and $4000$ degree-one leaves, each with $144\,000$ unknowns. \emph{Error} is the solved
+error; \emph{share} is the tree's leaves divided by the cells that a uniform grid of the same degree
+needs for that error (interpolated in the logarithms between the solved uniform grids), so that $1$
+means the tree saves nothing; \emph{gain} is the constant tree's error divided by the degree-one
+tree's.}\label{tab:treessmooth}
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{constant, $16\,000$ leaves} & \multicolumn{2}{c}{degree one, $4000$ leaves} & \\
+body & $k_Sa$ & error & share & error & share & gain \\
+\midrule
+graded shell, core $0.75a$ & $0.5$ & $1.19\times10^{-4}$ & $0.91$ & $1.82\times10^{-5}$ & $1.12$ & $6.5$ \\
+                           & $2$   & $1.55\times10^{-3}$ & $0.54$ & $2.74\times10^{-5}$ & $0.97$ & $57$ \\
+                           & $4$   & $5.00\times10^{-3}$ & $0.91$ & $1.46\times10^{-4}$ & $0.99$ & $34$ \\
+\midrule
+halo                       & $0.5$ & $7.92\times10^{-5}$ & $0.61$ & $5.25\times10^{-6}$ & $0.33$ & $15$ \\
+                           & $2$   & $1.23\times10^{-3}$ & $0.42$ & $1.23\times10^{-5}$ & $0.47$ & $101$ \\
+                           & $4$   & $4.03\times10^{-3}$ & $0.38$ & $4.54\times10^{-5}$ & $0.31$ & $89$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Read the halo at $k_Sa=4$. The tree of $16\,000$ constant leaves has an error of $4.03\times10^{-3}$,
+for which a uniform grid of constant cells needs about $42\,000$ cells, so the tree does it with $0.38$
+of them. The tree of $4000$ degree-one leaves, with the same number of unknowns, has
+$4.54\times10^{-5}$, for which a uniform grid of degree-one cells needs about $12\,700$ cells: a share
+of $0.31$. Between the two trees the error falls by a factor of $89$.
+
+Three things follow. First, the two bodies differ as they did within reach of the dense solver. On the
+halo, whose contrast is strong in a small part of the body, a tree needs a third to three fifths of a
+uniform grid's cells, for either degree. On the graded shell, whose contrast is at full strength over
+most of the body, a tree of degree-one leaves saves nothing at any of the three frequencies (shares
+$0.97$ to $1.12$), and a tree of constant leaves saves nothing at $k_Sa=0.5$ and $4$ and a factor of two
+at $k_Sa=2$. Larger trees have not changed that: the share on the shell is $0.93$, $0.96$, $1.07$,
+$0.71$ and $0.91$ from $1300$ to $16\,000$ constant leaves at $k_Sa=0.5$. Secondly, on a smooth body the
+large factor is the degree and not the tree. At equal unknowns the degree-one trees have errors $6.5$ to
+$101$ times smaller than the constant ones, and a uniform grid of degree-one cells has nearly all of
+that gain already, because it is the gain of fourth order over second. Thirdly, the law holds on all of
+these trees: the rest over $\cE$ on the degree-one trees of the halo is $0.0048$ to $0.0054$,
+$0.0072$ to $0.0079$ and $0.029$ to $0.035$ at the three frequencies, against $0.0050$, $0.0075$ and
+$0.031$ on the uniform grids of degree one (at $k_Sa=2$ the uniform value is for grids to $24$ across;
+at $48$ across, where the error is below $10^{-6}$, it reads $0.0053$), and on the constant trees of the halo it is $0.0049$ to
+$0.0055$ and $0.0077$ to $0.0082$ at $k_Sa=0.5$ and $2$, the uniform grids' values; at $k_Sa=4$ the
+constant trees give $0.021$ to $0.025$ against $0.031$, a quarter lower.
+
+The two terms with no solve give the solved errors of the six constant trees of the table to $1.4\%$ or
+better. For the degree-one trees they give those of the graded shell to $4\%$, and those of the halo to
+$1.4\%$, $32\%$ and $13\%$ at $k_Sa=0.5$, $2$ and $4$. The last two are the least accurate predictions in
+this paper. They are of errors near $10^{-5}$ of the peak, and the exact terms of first and second order
+that the predictions are measured against are themselves finite differences of the exact solution in
+the contrast; whether those differences or the terms of third order are what is left has not been
+separated, and the figures are given as they stand.
+
 \section{Cautions}\label{sec:cautions}
 
-Three bodies, all radial, and trees of degree-one cells on the sharp sphere only. The trees of the graded
-shell and the halo rest on the dense solver, which stops near $2200$ constant leaves and stopped the
-product's rule at $912$ leaves at $k_Sa=4$ (its next tree has $2368$); those of the sharp sphere and the
-uniform grids do not. The degree-one trees were held to a smallest half-width of $a/32$ and to $4000$
+Three bodies, all radial. The trees refined by an indicator (Table~\ref{tab:trees}) rest on the dense
+solver, which stops near $2200$ constant leaves and stopped the product's rule at $912$ leaves at
+$k_Sa=4$ (its next tree has $2368$); the grown trees and the uniform grids do not. The shares of
+Tables~\ref{tab:treesfree}, \ref{tab:treesdeg1} and \ref{tab:treessmooth} invert an interpolation between
+uniform grids, and on the halo, whose uniform-grid errors do not fall evenly, they are no better than a
+guide. The degree-one trees were held to a smallest half-width of $a/32$ and to $4000$
 leaves, and their comparison with constant trees is at equal unknowns, which is not equal time: a
 product costs what the uniform grid of the smallest cells costs, at either degree. Against
 uniform grids the product's tree on the graded shell at $k_Sa=4$ is a little worse (a uniform grid of
@@ -895,11 +962,15 @@ costs, so it extends the reach of the trees and not the speed of a product.
 
 \paragraph{What a tree saves is modest, and the reason is known.} At $2200$ constant leaves a tree
 reaches the error of a uniform grid with a third to two thirds of its cells, and on the sharp sphere at
-$16\,000$ leaves with a quarter to a third. A constant cell must resolve the wave wherever there is
+$16\,000$ leaves with a quarter to a third. On the halo the largest trees need a third to three fifths,
+and on the graded shell, whose contrast is strong almost everywhere, a tree saves nothing in five cases
+of six. A constant cell must resolve the wave wherever there is
 contrast, so the interior cannot be made coarse; at a jump the degree and the refinement are
 interchangeable, so a higher degree does not rescue the surface. Degree-one leaves gain where the wave
 has to be resolved, by up to $3.5$ at equal unknowns on the sharp sphere, through the first-order error
-alone.
+alone. On the two smooth bodies they gain a factor of $6.5$ to $101$ in error at equal unknowns, which is
+the gain of the higher order and is had on a uniform grid as well: on a smooth body the degree is the
+large factor, and the tree a small one.
 
 \paragraph{What remains.} A body without radial symmetry; leaves of different degrees in one tree, which
 the results on the sharp sphere point to; and a product whose cost follows the leaves and not the
